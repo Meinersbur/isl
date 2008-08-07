@@ -1,0 +1,80 @@
+#ifndef ISL_CTX_H
+#define ISL_CTX_H
+
+#include <assert.h>
+#include <stdlib.h>
+
+#include "isl_int.h"
+
+#undef ISL_POLYLIB
+#undef ISL_PIPLIB
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
+/* Nearly all isa functions require a struct isl_ctx allocated using
+ * isl_ctx_alloc.  This ctx contains (or will contain) options that
+ * control the behavior of the library and some caches.
+ *
+ * An object allocated within a given ctx should never be used inside
+ * another ctx.  Functions for moving objects from one ctx to another
+ * will be added as the need arises.
+ *
+ * A given context should only be used inside a single thread.
+ * A global context for synchronization between different threads
+ * as well as functions for moving a context to a different thread
+ * will be added as the need arises.
+ *
+ * If anything goes wrong (out of memory, failed assertion), then
+ * the library will currently simply abort.  This will be made
+ * configurable in the future.
+ * Users of the library should expect functions that return
+ * a pointer to a structure, to return NULL, indicating failure.
+ * Any function accepting a pointer to a structure will treat
+ * a NULL argument as a failure, resulting in the function freeing
+ * the remaining structures (if any) and returning NULL itself
+ * (in case of pointer return type).
+ * The only exception is the isl_ctx argument, which shoud never be NULL.
+ */
+struct isl_ctx {
+	isl_int		one;
+#ifdef ISL_POLYLIB
+	unsigned	MaxRays;
+#endif
+};
+
+/* Some helper macros */
+
+#define FL_INIT(l, f)   (l) = (f)               /* Specific flags location. */
+#define FL_SET(l, f)    ((l) |= (f))
+#define FL_CLR(l, f)    ((l) &= ~(f))
+#define FL_ISSET(l, f)  ((l) & (f))
+
+#define F_INIT(p, f)    FL_INIT((p)->flags, f)  /* Structure element flags. */
+#define F_SET(p, f)     FL_SET((p)->flags, f)
+#define F_CLR(p, f)     FL_CLR((p)->flags, f)
+#define F_ISSET(p, f)   FL_ISSET((p)->flags, f)
+
+#define isl_alloc(ctx,type,size)	(type *)malloc(size)
+#define isl_realloc(ctx,ptr,type,size)	(type *)realloc(ptr,size)
+#define isl_alloc_type(ctx,type)	isl_alloc(ctx,type,sizeof(type))
+#define isl_realloc_type(ctx,ptr,type)	isl_realloc(ctx,ptr,type,sizeof(type))
+#define isl_alloc_array(ctx,type,n)	isl_alloc(ctx,type,(n)*sizeof(type))
+#define isl_realloc_array(ctx,ptr,type,n) \
+				    isl_realloc(ctx,ptr,type,(n)*sizeof(type))
+
+#define isl_assert(ctx,test,code)	assert(test);
+
+#define isl_min(a,b)			((a < b) ? (a) : (b))
+
+/* struct isl_ctx functions */
+
+struct isl_ctx *isl_ctx_alloc();
+void isl_ctx_free(struct isl_ctx *ctx);
+
+#if defined(__cplusplus)
+}
+#endif
+
+#endif
