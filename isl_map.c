@@ -662,6 +662,7 @@ struct isl_basic_map *isl_basic_map_set_to_empty(
 	}
 	isl_int_set_si(bmap->eq[i][0], 1);
 	isl_seq_clr(bmap->eq[i]+1, total);
+	F_SET(bmap, ISL_BASIC_MAP_EMPTY);
 	return isl_basic_map_finalize(ctx, bmap);
 error:
 	isl_basic_map_free(ctx, bmap);
@@ -2483,6 +2484,9 @@ int isl_basic_map_is_empty(struct isl_ctx *ctx,
 
 	if (!bmap)
 		return -1;
+
+	if (F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
+		return 1;
 
 	bset = isl_basic_set_from_basic_map(ctx,
 			isl_basic_map_copy(ctx, bmap));
