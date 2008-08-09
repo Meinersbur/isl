@@ -6,9 +6,7 @@
 #include "isl_set.h"
 #include "isl_map.h"
 #include "isl_map_private.h"
-#ifdef ISL_PIPLIB
 #include "isl_map_piplib.h"
-#endif
 
 static struct isl_basic_map *basic_map_init(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap,
@@ -1903,26 +1901,14 @@ struct isl_map *isl_basic_map_lexmax(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap, struct isl_basic_set *dom,
 		struct isl_set **empty)
 {
-#ifdef ISL_PIPLIB
-	return pip_isl_basic_map_lexmax(ctx, bmap, dom, empty);
-#else
-	isl_basic_map_free(ctx, bmap);
-	isl_basic_set_free(ctx, dom);
-	return NULL;
-#endif
+	return isl_pip_basic_map_lexmax(ctx, bmap, dom, empty);
 }
 
 struct isl_map *isl_basic_map_lexmin(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap, struct isl_basic_set *dom,
 		struct isl_set **empty)
 {
-#ifdef ISL_PIPLIB
-	return pip_isl_basic_map_lexmin(ctx, bmap, dom, empty);
-#else
-	isl_basic_map_free(ctx, bmap);
-	isl_basic_set_free(ctx, dom);
-	return NULL;
-#endif
+	return isl_pip_basic_map_lexmin(ctx, bmap, dom, empty);
 }
 
 struct isl_set *isl_basic_set_lexmin(struct isl_ctx *ctx,
@@ -1952,12 +1938,7 @@ struct isl_map *isl_basic_map_compute_divs(struct isl_ctx *ctx,
 {
 	if (bmap->n_div == 0)
 		return isl_map_from_basic_map(ctx, bmap);
-#ifdef ISL_PIPLIB
-	return pip_isl_basic_map_compute_divs(ctx, bmap);
-#else
-	isl_basic_map_free(ctx, bmap);
-	return NULL;
-#endif
+	return isl_pip_basic_map_compute_divs(ctx, bmap);
 }
 
 struct isl_map *isl_map_compute_divs(struct isl_ctx *ctx, struct isl_map *map)

@@ -1,7 +1,7 @@
-#include <piplib/piplibMP.h>
 #include "isl_set.h"
 #include "isl_map.h"
-#include "isl_map_private.h"
+#include "isl_piplib.h"
+#include "isl_map_piplib.h"
 
 static void copy_values_from(isl_int *dst, Entier *src, unsigned n)
 {
@@ -204,7 +204,7 @@ error:
  * Returns a map with "context" as domain and as range the first
  * "keep" variables in the quast lists.
  */
-struct isl_map *isl_map_from_quast(struct isl_ctx *ctx, PipQuast *q,
+static struct isl_map *isl_map_from_quast(struct isl_ctx *ctx, PipQuast *q,
 		unsigned keep,
 		struct isl_basic_set *context,
 		struct isl_set **rest)
@@ -421,21 +421,21 @@ error:
 	return NULL;
 }
 
-struct isl_map *pip_isl_basic_map_lexmax(struct isl_ctx *ctx,
+struct isl_map *isl_pip_basic_map_lexmax(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap, struct isl_basic_set *dom,
 		struct isl_set **empty)
 {
 	return extremum_on(ctx, bmap, dom, empty, 1);
 }
 
-struct isl_map *pip_isl_basic_map_lexmin(struct isl_ctx *ctx,
+struct isl_map *isl_pip_basic_map_lexmin(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap, struct isl_basic_set *dom,
 		struct isl_set **empty)
 {
 	return extremum_on(ctx, bmap, dom, empty, 0);
 }
 
-struct isl_map *pip_isl_basic_map_compute_divs(struct isl_ctx *ctx,
+struct isl_map *isl_pip_basic_map_compute_divs(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap)
 {
 	PipMatrix *domain = NULL, *context = NULL;
