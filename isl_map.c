@@ -2619,6 +2619,8 @@ static struct isl_map *add_cut_constraint(struct isl_ctx *ctx,
 		isl_seq_cpy(copy->ineq[k], c, len);
 	isl_seq_clr(copy->ineq[k]+len, extra);
 	isl_inequality_negate(ctx, copy, k);
+	copy = isl_basic_map_simplify(ctx, copy);
+	copy = isl_basic_map_finalize(ctx, copy);
 	is_empty = isl_basic_map_is_empty(ctx, copy);
 	if (is_empty < 0)
 		goto error;
