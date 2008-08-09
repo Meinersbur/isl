@@ -35,7 +35,7 @@ extern "C" {
  */
 struct isl_basic_map {
 	int ref;
-#define ISL_PRIMITIVE_MAP_FINAL		(1 << 0)
+#define ISL_BASIC_MAP_FINAL		(1 << 0)
 	unsigned flags;
 
 	unsigned nparam;

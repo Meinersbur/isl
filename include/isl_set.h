@@ -12,7 +12,7 @@ extern "C" {
  */
 struct isl_basic_set {
 	int ref;
-#define ISL_PRIMITIVE_SET_FINAL		(1 << 0)
+#define ISL_BASIC_SET_FINAL		(1 << 0)
 	unsigned flags;
 
 	unsigned nparam;

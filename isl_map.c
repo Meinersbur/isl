@@ -118,7 +118,7 @@ static void dup_constraints(struct isl_ctx *ctx,
 		int j = isl_basic_map_alloc_div(ctx, dst);
 		isl_seq_cpy(dst->div[j], src->div[i], 1+1+total);
 	}
-	F_SET(dst, ISL_PRIMITIVE_SET_FINAL);
+	F_SET(dst, ISL_BASIC_SET_FINAL);
 }
 
 struct isl_basic_map *isl_basic_map_dup(struct isl_ctx *ctx,
@@ -150,7 +150,7 @@ struct isl_basic_set *isl_basic_set_copy(struct isl_ctx *ctx,
 	if (!bset)
 		return NULL;
 
-	if (F_ISSET(bset, ISL_PRIMITIVE_SET_FINAL)) {
+	if (F_ISSET(bset, ISL_BASIC_SET_FINAL)) {
 		bset->ref++;
 		return bset;
 	}
@@ -172,7 +172,7 @@ struct isl_basic_map *isl_basic_map_copy(struct isl_ctx *ctx,
 	if (!bmap)
 		return NULL;
 
-	if (F_ISSET(bmap, ISL_PRIMITIVE_SET_FINAL)) {
+	if (F_ISSET(bmap, ISL_BASIC_SET_FINAL)) {
 		bmap->ref++;
 		return bmap;
 	}
@@ -440,7 +440,7 @@ struct isl_basic_map *isl_basic_map_cow(struct isl_ctx *ctx,
 		bmap->ref--;
 		bmap = isl_basic_map_dup(ctx, bmap);
 	}
-	F_CLR(bmap, ISL_PRIMITIVE_SET_FINAL);
+	F_CLR(bmap, ISL_BASIC_SET_FINAL);
 	return bmap;
 }
 
@@ -2272,7 +2272,7 @@ struct isl_basic_map *isl_basic_map_finalize(struct isl_ctx *ctx,
 	bmap = remove_redundant_divs(ctx, bmap);
 	if (!bmap)
 		return NULL;
-	F_SET(bmap, ISL_PRIMITIVE_SET_FINAL);
+	F_SET(bmap, ISL_BASIC_SET_FINAL);
 	return bmap;
 }
 
