@@ -37,6 +37,7 @@ extern "C" {
  * (in case of pointer return type).
  * The only exception is the isl_ctx argument, which shoud never be NULL.
  */
+struct isl_vec;
 struct isl_ctx {
 	isl_int		one;
 #ifdef ISL_POLYLIB

@@ -16,11 +16,13 @@ if HAVE_PIPLIB
 ISL_PIPLIB = \
 	isl_lp_piplib.c \
 	isl_map_piplib.c \
+	isl_sample_piplib.c \
 	isl_piplib.c
 else
 ISL_PIPLIB = \
 	isl_lp_no_piplib.c \
-	isl_map_no_piplib.c
+	isl_map_no_piplib.c \
+	isl_sample_no_piplib.c
 endif
 if BUNDLED_PIPLIB
 PIPLIB_LA = $(top_builddir)/piplib/libpiplibMP.la
@@ -41,15 +43,21 @@ libisl_la_SOURCES = \
 	isl_map.h \
 	isl_map_affine_hull.c \
 	isl_map_private.h \
+	isl_sample.h \
+	isl_sample.c \
 	isl_set.h \
 	isl_seq.c \
-	isl_seq.h
+	isl_seq.h \
+	isl_vec.c \
+	isl_vec.h
 EXTRA_libisl_la_SOURCES = \
 	isl_lp_piplib.c \
 	isl_lp_no_piplib.c \
 	isl_map_piplib.c \
 	isl_map_no_piplib.c \
 	isl_map_polylib.c \
+	isl_sample_no_piplib.c \
+	isl_sample_piplib.c \
 	isl_piplib.c
 libisl_la_LIBADD = $(PIPLIB_LA) @PIPLIB_LIBS@ @POLYLIB_LIBS@ -lgmp
 libisl_la_LDFLAGS = -release @VERSION@ @PIPLIB_LDFLAGS@ @POLYLIB_LDFLAGS@ \

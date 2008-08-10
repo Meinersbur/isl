@@ -7,6 +7,8 @@
 #include "isl_map.h"
 #include "isl_map_private.h"
 #include "isl_map_piplib.h"
+#include "isl_sample.h"
+#include "isl_vec.h"
 
 static struct isl_basic_map *basic_map_init(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap,
@@ -1643,6 +1645,26 @@ error:
 	return NULL;
 }
 
+static struct isl_basic_set *isl_basic_map_underlying_set(
+		struct isl_ctx *ctx, struct isl_basic_map *bmap)
+{
+	if (!bmap)
+		goto error;
+	if (bmap->nparam == 0 && bmap->n_in == 0 && bmap->n_div == 0)
+		return (struct isl_basic_set *)bmap;
+	bmap = isl_basic_map_cow(ctx, bmap);
+	if (!bmap)
+		goto error;
+	bmap->n_out += bmap->nparam + bmap->n_in + bmap->n_div;
+	bmap->nparam = 0;
+	bmap->n_in = 0;
+	bmap->n_div = 0;
+	bmap = isl_basic_map_finalize(ctx, bmap);
+	return (struct isl_basic_set *)bmap;
+error:
+	return NULL;
+}
+
 struct isl_basic_set *isl_basic_map_domain(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap)
 {
@@ -2496,7 +2518,7 @@ int isl_basic_map_is_empty(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap)
 {
 	struct isl_basic_set *bset = NULL;
-	struct isl_set *min = NULL;
+	struct isl_vec *sample = NULL;
 	int empty;
 
 	if (!bmap)
@@ -2505,15 +2527,16 @@ int isl_basic_map_is_empty(struct isl_ctx *ctx,
 	if (F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
 		return 1;
 
-	bset = isl_basic_set_from_basic_map(ctx,
+	bset = isl_basic_map_underlying_set(ctx,
 			isl_basic_map_copy(ctx, bmap));
 	if (!bset)
 		return -1;
-	min = isl_basic_set_lexmin(ctx, bset);
-	if (!min)
+	sample = isl_basic_set_sample(ctx, bset);
+	if (!sample)
 		return -1;
-	empty = min->n == 0;
-	isl_set_free(ctx, min);
+	empty = sample->size == 0;
+	isl_vec_free(ctx, sample);
+
 	return empty;
 }
 
