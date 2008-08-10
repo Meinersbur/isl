@@ -35,6 +35,8 @@ libisl_la_SOURCES = \
 	isl_blk.h \
 	isl_ctx.c \
 	isl_ctx.h \
+	isl_equalities.c \
+	isl_equalities.h \
 	isl_gmp.c \
 	isl_int.h \
 	isl_lp.h \
@@ -43,6 +45,8 @@ libisl_la_SOURCES = \
 	isl_map.h \
 	isl_map_affine_hull.c \
 	isl_map_private.h \
+	isl_mat.c \
+	isl_mat.h \
 	isl_sample.h \
 	isl_sample.c \
 	isl_set.h \

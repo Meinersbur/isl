@@ -1,5 +1,13 @@
 #include "isl_blk.h"
 
+struct isl_blk isl_blk_empty()
+{
+	struct isl_blk block;
+	block.size = -1;
+	block.data = NULL;
+	return block;
+}
+
 struct isl_blk isl_blk_alloc(struct isl_ctx *ctx, size_t n)
 {
 	struct isl_blk block;

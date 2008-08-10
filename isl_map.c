@@ -423,7 +423,7 @@ struct isl_basic_set *isl_basic_set_extend(struct isl_ctx *ctx,
 					nparam, 0, dim, extra, n_eq, n_ineq);
 }
 
-static struct isl_basic_set *isl_basic_set_cow(struct isl_ctx *ctx,
+struct isl_basic_set *isl_basic_set_cow(struct isl_ctx *ctx,
 		struct isl_basic_set *bset)
 {
 	return (struct isl_basic_set *)
@@ -674,6 +674,13 @@ error:
 	return NULL;
 }
 
+struct isl_basic_set *isl_basic_set_set_to_empty(
+		struct isl_ctx *ctx, struct isl_basic_set *bset)
+{
+	return (struct isl_basic_set *)
+		isl_basic_map_set_to_empty(ctx, (struct isl_basic_map *)bset);
+}
+
 static void swap_equality(struct isl_basic_map *bmap, int a, int b)
 {
 	isl_int *t = bmap->eq[a];
@@ -786,6 +793,13 @@ struct isl_basic_map *isl_basic_map_gauss(struct isl_ctx *ctx,
 	}
 	isl_basic_map_free_equality(ctx, bmap, bmap->n_eq-done);
 	return bmap;
+}
+
+struct isl_basic_set *isl_basic_set_gauss(struct isl_ctx *ctx,
+	struct isl_basic_set *bset, int *progress)
+{
+	return (struct isl_basic_set*)isl_basic_map_gauss(ctx,
+			(struct isl_basic_map *)bset, progress);
 }
 
 static unsigned int round_up(unsigned int v)

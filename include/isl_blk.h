@@ -14,6 +14,7 @@ struct isl_blk {
 };
 
 struct isl_blk isl_blk_alloc(struct isl_ctx *ctx, size_t n);
+struct isl_blk isl_blk_empty();
 struct isl_blk isl_blk_extend(struct isl_ctx *ctx, struct isl_blk block,
 				size_t new_n);
 void isl_blk_free(struct isl_ctx *ctx, struct isl_blk block);
