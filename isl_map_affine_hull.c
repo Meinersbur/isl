@@ -5,20 +5,6 @@
 #include "isl_map.h"
 #include "isl_map_private.h"
 
-static void inequality_to_equality(struct isl_ctx *ctx,
-		struct isl_basic_map *bmap, unsigned pos)
-{
-	isl_int *t;
-
-	t = bmap->ineq[pos];
-	bmap->ineq[pos] = bmap->ineq[0];
-	bmap->ineq[0] = bmap->eq[bmap->n_eq];
-	bmap->eq[bmap->n_eq] = t;
-	bmap->n_eq++;
-	bmap->n_ineq--;
-	bmap->ineq++;
-}
-
 struct isl_basic_map *isl_basic_map_affine_hull(struct isl_ctx *ctx,
 						struct isl_basic_map *bmap)
 {
@@ -43,7 +29,7 @@ struct isl_basic_map *isl_basic_map_affine_hull(struct isl_ctx *ctx,
 		}
 		isl_int_add(opt, opt, bmap->ineq[i][0]);
 		if (isl_int_is_zero(opt)) {
-			inequality_to_equality(ctx, bmap, i);
+			isl_basic_map_inequality_to_equality(ctx, bmap, i);
 			--i;
 		}
 	}

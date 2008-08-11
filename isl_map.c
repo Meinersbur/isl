@@ -252,6 +252,20 @@ int isl_basic_map_drop_equality(struct isl_ctx *ctx,
 	return 0;
 }
 
+void isl_basic_map_inequality_to_equality(struct isl_ctx *ctx,
+		struct isl_basic_map *bmap, unsigned pos)
+{
+	isl_int *t;
+
+	t = bmap->ineq[pos];
+	bmap->ineq[pos] = bmap->ineq[0];
+	bmap->ineq[0] = bmap->eq[bmap->n_eq];
+	bmap->eq[bmap->n_eq] = t;
+	bmap->n_eq++;
+	bmap->n_ineq--;
+	bmap->ineq++;
+}
+
 int isl_basic_map_alloc_inequality(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap)
 {
@@ -813,6 +827,20 @@ static unsigned int round_up(unsigned int v)
 	return old_v << 1;
 }
 
+static int hash_index(int *index, unsigned int size, int bits,
+			struct isl_basic_map *bmap, int k)
+{
+	int h;
+	unsigned total = bmap->nparam + bmap->n_in + bmap->n_out + bmap->n_div;
+	u_int32_t hash = isl_seq_hash(bmap->ineq[k]+1, total, bits);
+	for (h = hash; index[h]; h = (h+1) % size)
+		if (k != index[h]-1 &&
+		    isl_seq_eq(bmap->ineq[k]+1,
+			       bmap->ineq[index[h]-1]+1, total))
+			break;
+	return h;
+}
+
 static struct isl_basic_map *remove_duplicate_constraints(
 	struct isl_ctx *ctx,
 	struct isl_basic_map *bmap, int *progress)
@@ -822,11 +850,12 @@ static struct isl_basic_map *remove_duplicate_constraints(
 	int k, l, h;
 	int bits;
 	unsigned total = bmap->nparam + bmap->n_in + bmap->n_out + bmap->n_div;
+	isl_int sum;
 
 	if (bmap->n_ineq <= 1)
 		return bmap;
 
-	size = round_up(4 * bmap->n_ineq / 3 - 1);
+	size = round_up(4 * (bmap->n_ineq+1) / 3 - 1);
 	bits = ffs(size) - 1;
 	index = isl_alloc_array(ctx, int, size);
 	memset(index, 0, size * sizeof(int));
@@ -835,11 +864,7 @@ static struct isl_basic_map *remove_duplicate_constraints(
 
 	index[isl_seq_hash(bmap->ineq[0]+1, total, bits)] = 1;
 	for (k = 1; k < bmap->n_ineq; ++k) {
-		u_int32_t hash = isl_seq_hash(bmap->ineq[k]+1, total, bits);
-		for (h = hash; index[h]; h = (h+1) % size)
-			if (isl_seq_eq(bmap->ineq[k]+1,
-				       bmap->ineq[index[h]-1]+1, total))
-				break;
+		h = hash_index(index, size, bits, bmap, k);
 		if (!index[h]) {
 			index[h] = k+1;
 			continue;
@@ -851,6 +876,30 @@ static struct isl_basic_map *remove_duplicate_constraints(
 		isl_basic_map_drop_inequality(ctx, bmap, k);
 		--k;
 	}
+	isl_int_init(sum);
+	for (k = 0; k < bmap->n_ineq-1; ++k) {
+		isl_seq_neg(bmap->ineq[k]+1, bmap->ineq[k]+1, total);
+		h = hash_index(index, size, bits, bmap, k);
+		isl_seq_neg(bmap->ineq[k]+1, bmap->ineq[k]+1, total);
+		if (!index[h])
+			continue;
+		l = index[h] - 1;
+		isl_int_add(sum, bmap->ineq[k][0], bmap->ineq[l][0]);
+		if (isl_int_is_pos(sum))
+			continue;
+		if (isl_int_is_zero(sum)) {
+			/* We need to break out of the loop after these
+			 * changes since the contents of the hash
+			 * will no longer be valid.
+			 * Plus, we probably we want to regauss first.
+			 */
+			isl_basic_map_drop_inequality(ctx, bmap, l);
+			isl_basic_map_inequality_to_equality(ctx, bmap, k);
+		} else
+			bmap = isl_basic_map_set_to_empty(ctx, bmap);
+		break;
+	}
+	isl_int_clear(sum);
 
 	free(index);
 	return bmap;

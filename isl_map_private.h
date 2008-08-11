@@ -13,6 +13,8 @@ int isl_basic_map_alloc_div(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap);
 int isl_basic_map_free_div(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap, unsigned n);
+void isl_basic_map_inequality_to_equality(struct isl_ctx *ctx,
+		struct isl_basic_map *bmap, unsigned pos);
 
 int isl_inequality_negate(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap, unsigned pos);
