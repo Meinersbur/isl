@@ -23,6 +23,8 @@ typedef mpz_t	isl_int;
 #define isl_int_abs(r,i)	mpz_abs(r,i)
 #define isl_int_neg(r,i)	mpz_neg(r,i)
 #define isl_int_swap(i,j)	mpz_swap(i,j)
+#define isl_int_swap_or_set(i,j)	mpz_swap(i,j)
+#define isl_int_add_ui(r,i,j)	mpz_add_ui(r,i,j)
 #define isl_int_sub_ui(r,i,j)	mpz_sub_ui(r,i,j)
 
 #define isl_int_add(r,i,j)	mpz_add(r,i,j)
@@ -51,6 +53,8 @@ typedef mpz_t	isl_int;
 #define isl_int_eq(i,j)		(mpz_cmp(i,j) == 0)
 #define isl_int_ne(i,j)		(mpz_cmp(i,j) != 0)
 #define isl_int_lt(i,j)		(mpz_cmp(i,j) < 0)
+#define isl_int_abs_eq(i,j)	(mpz_cmpabs(i,j) == 0)
+#define isl_int_abs_ne(i,j)	(mpz_cmpabs(i,j) != 0)
 #define isl_int_abs_lt(i,j)	(mpz_cmpabs(i,j) < 0)
 
 

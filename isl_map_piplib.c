@@ -45,6 +45,37 @@ static int add_inequality(struct isl_ctx *ctx,
 	return i;
 }
 
+/* For a div d = floor(f/m), add the constraints
+ *
+ *		f - m d >= 0
+ *		-(f-(n-1)) + m d >= 0
+ *
+ * Note that the second constraint is the negation of
+ *
+ *		f - m d >= n
+ */
+static int add_div_constraints(struct isl_ctx *ctx,
+	struct isl_basic_map *bmap, int *pos, PipNewparm *p, unsigned div)
+{
+	int i, j;
+	unsigned div_pos = 1 + bmap->nparam + bmap->n_in + bmap->n_out + div;
+	unsigned total = bmap->nparam + bmap->n_in + bmap->n_out + bmap->n_div;
+
+	i = add_inequality(ctx, bmap, pos, p->vector);
+	if (i < 0)
+		return -1;
+	copy_values_from(&bmap->ineq[i][div_pos], &p->deno, 1);
+	isl_int_neg(bmap->ineq[i][div_pos], bmap->ineq[i][div_pos]);
+
+	j = isl_basic_map_alloc_inequality(ctx, bmap);
+	if (j < 0)
+		return -1;
+	isl_seq_neg(bmap->ineq[j], bmap->ineq[i], 1 + total);
+	isl_int_add(bmap->ineq[j][0], bmap->ineq[j][0], bmap->ineq[j][div_pos]);
+	isl_int_sub_ui(bmap->ineq[j][0], bmap->ineq[j][0], 1);
+	return j;
+}
+
 static int add_equality(struct isl_ctx *ctx,
 		   struct isl_basic_map *bmap, int *pos,
 		   unsigned var, PipVector *vec)
@@ -69,7 +100,8 @@ static int find_div(struct isl_ctx *ctx,
 	int i, j;
 
 	i = isl_basic_map_alloc_div(ctx, bmap);
-	assert(i != -1);
+	if (i < 0)
+		return -1;
 
 	copy_constraint_from(bmap->div[i]+1, p->vector,
 	    bmap->nparam, bmap->n_in, bmap->n_out, bmap->extra, pos);
@@ -81,6 +113,9 @@ static int find_div(struct isl_ctx *ctx,
 			isl_basic_map_free_div(ctx, bmap, 1);
 			return j;
 		}
+
+	if (add_div_constraints(ctx, bmap, pos, p, i) < 0)
+		return -1;
 
 	return i;
 }
@@ -141,7 +176,6 @@ static struct isl_map *scan_quast_r(struct scan_data *data, PipQuast *q,
 
 	for (p = q->newparm; p; p = p->next) {
 		int pos;
-		PipVector *vec = p->vector;
 		unsigned pip_param = bmap->nparam + bmap->n_in;
 
 		pos = find_div(data->ctx, bmap, data->pos, p);
@@ -191,6 +225,9 @@ static struct isl_map *scan_quast_r(struct scan_data *data, PipQuast *q,
 		*data->rest = isl_set_add(data->ctx, *data->rest, bset);
 	}
 
+	if (isl_basic_map_free_inequality(data->ctx, bmap,
+					   2*(bmap->n_div - old_n_div)))
+		goto error;
 	if (isl_basic_map_free_div(data->ctx, bmap,
 					   bmap->n_div - old_n_div))
 		goto error;
@@ -249,7 +286,7 @@ static struct isl_map *isl_map_from_quast(struct isl_ctx *ctx, PipQuast *q,
 	data.bmap = isl_basic_map_from_basic_set(ctx, context,
 				context->dim, 0);
 	data.bmap = isl_basic_map_extend(data.ctx, data.bmap,
-			nparam, data.bmap->n_in, keep, nexist, keep, max_depth);
+	    nparam, data.bmap->n_in, keep, nexist, keep, max_depth+2*nexist);
 	if (!data.bmap)
 		goto error;
 
@@ -316,7 +353,7 @@ PipMatrix *isl_basic_map_to_pip(struct isl_basic_map *bmap, unsigned pip_param,
 				+ bmap->n_div - pip_param;
 	unsigned pip_dim = pip_var - bmap->n_div;
 
-	nrow = extra_front + bmap->n_eq + bmap->n_ineq + 2*bmap->n_div;
+	nrow = extra_front + bmap->n_eq + bmap->n_ineq;
 	ncol = 1 + extra_front + pip_var + pip_param + extra_back + 1;
 	M = pip_matrix_alloc(nrow, ncol);
 	if (!M)
@@ -333,29 +370,6 @@ PipMatrix *isl_basic_map_to_pip(struct isl_basic_map *bmap, unsigned pip_param,
 		entier_set_si(M->p[off+i][0], 1);
 		copy_constraint_to(M->p[off+i], bmap->ineq[i],
 				   pip_param, pip_var, extra_front, extra_back);
-	}
-	off += bmap->n_ineq;
-	for (i = 0; i < bmap->n_div; ++i) {
-		unsigned total = bmap->n_in + bmap->n_out
-				    + bmap->n_div + bmap->nparam + extra_back;
-		if (isl_int_is_zero(bmap->div[i][0]))
-			continue;
-		entier_set_si(M->p[off+2*i][0], 1);
-		copy_constraint_to(M->p[off+2*i], bmap->div[i]+1,
-				   pip_param, pip_var, extra_front, extra_back);
-		copy_values_to(M->p[off+2*i]+1+extra_front+pip_dim+i,
-				bmap->div[i], 1);
-		entier_oppose(M->p[off+2*i][1+extra_front+pip_dim+i],
-			      M->p[off+2*i][1+extra_front+pip_dim+i]);
-
-		entier_set_si(M->p[off+2*i+1][0], 1);
-		Vector_Oppose(M->p[off+2*i]+1+extra_front,
-			      M->p[off+2*i+1]+1+extra_front, total+1);
-		entier_addto(M->p[off+2*i+1][1+extra_front+total],
-			     M->p[off+2*i+1][1+extra_front+total],
-			     M->p[off+2*i+1][1+extra_front+pip_dim+i]);
-		entier_decrement(M->p[off+2*i+1][1+extra_front+total],
-				 M->p[off+2*i+1][1+extra_front+total]);
 	}
 	return M;
 }

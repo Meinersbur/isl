@@ -17,6 +17,7 @@ void isl_seq_gcd(isl_int *p, unsigned len, isl_int *gcd);
 int isl_seq_first_non_zero(isl_int *p, unsigned len);
 int isl_seq_abs_min_non_zero(isl_int *p, unsigned len);
 int isl_seq_eq(isl_int *p1, isl_int *p2, unsigned len);
+int isl_seq_is_neg(isl_int *p1, isl_int *p2, unsigned len);
 
 u_int32_t isl_seq_hash(isl_int *p, unsigned len, unsigned bits);
 

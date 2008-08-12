@@ -163,7 +163,7 @@ Polyhedron *isl_basic_map_to_polylib(struct isl_ctx *ctx,
 	Polyhedron *P;
 	unsigned off;
 
-	M = Matrix_Alloc(bmap->n_eq + bmap->n_ineq + 2*bmap->n_div,
+	M = Matrix_Alloc(bmap->n_eq + bmap->n_ineq,
 		 1 + bmap->n_in + bmap->n_out + bmap->n_div + bmap->nparam + 1);
 	for (i = 0; i < bmap->n_eq; ++i) {
 		value_set_si(M->p[i][0], 0);
@@ -175,26 +175,6 @@ Polyhedron *isl_basic_map_to_polylib(struct isl_ctx *ctx,
 		value_set_si(M->p[off+i][0], 1);
 		copy_constraint_to(M->p[off+i], bmap->ineq[i],
 			   bmap->nparam, bmap->n_in + bmap->n_out, bmap->n_div);
-	}
-	off += bmap->n_ineq;
-	for (i = 0; i < bmap->n_div; ++i) {
-		unsigned total = bmap->n_in+bmap->n_out+bmap->n_div+bmap->nparam;
-		if (isl_int_is_zero(bmap->div[i][0]))
-			continue;
-		value_set_si(M->p[off+2*i][0], 1);
-		copy_constraint_to(M->p[off+2*i], bmap->div[i]+1,
-			   bmap->nparam, bmap->n_in + bmap->n_out, bmap->n_div);
-		copy_values_to(M->p[off+2*i]+1+bmap->n_in+bmap->n_out+i,
-				bmap->div[i], 1);
-		value_oppose(M->p[off+2*i][1+bmap->n_in+bmap->n_out+i],
-			     M->p[off+2*i][1+bmap->n_in+bmap->n_out+i]);
-
-		value_set_si(M->p[off+2*i+1][0], 1);
-		Vector_Oppose(M->p[off+2*i]+1, M->p[off+2*i+1]+1, total+1);
-		value_addto(M->p[off+2*i+1][1+total], M->p[off+2*i+1][1+total],
-			    M->p[off+2*i+1][1+bmap->n_in+bmap->n_out+i]);
-		value_decrement(M->p[off+2*i+1][1+total],
-				M->p[off+2*i+1][1+total]);
 	}
 	P = Constraints2Polyhedron(M, ctx->MaxRays);
 	Matrix_Free(M);

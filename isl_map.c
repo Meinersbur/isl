@@ -590,8 +590,14 @@ static struct isl_basic_map *isl_basic_map_drop_div(struct isl_ctx *ctx,
 	for (i = 0; i < bmap->n_eq; ++i)
 		constraint_drop_vars(bmap->eq[i]+pos, 1, bmap->extra-div-1);
 
-	for (i = 0; i < bmap->n_ineq; ++i)
+	for (i = 0; i < bmap->n_ineq; ++i) {
+		if (!isl_int_is_zero(bmap->ineq[i][pos])) {
+			isl_basic_map_drop_inequality(ctx, bmap, i);
+			--i;
+			continue;
+		}
 		constraint_drop_vars(bmap->ineq[i]+pos, 1, bmap->extra-div-1);
+	}
 
 	for (i = 0; i < bmap->n_div; ++i)
 		constraint_drop_vars(bmap->div[i]+1+pos, 1, bmap->extra-div-1);
@@ -2209,6 +2215,14 @@ error:
 	return NULL;
 }
 
+/* If the only constraints a div d=floor(f/m)
+ * appears in are its two defining constraints
+ *
+ *	f - m d >=0
+ *	-(f - (m - 1)) + m d >= 0
+ *
+ * then it can safely be removed.
+ */
 static int div_is_redundant(struct isl_ctx *ctx, struct isl_basic_map *bmap,
 				int div)
 {
@@ -2219,9 +2233,32 @@ static int div_is_redundant(struct isl_ctx *ctx, struct isl_basic_map *bmap,
 		if (!isl_int_is_zero(bmap->eq[i][pos]))
 			return 0;
 
-	for (i = 0; i < bmap->n_ineq; ++i)
-		if (!isl_int_is_zero(bmap->ineq[i][pos]))
+	for (i = 0; i < bmap->n_ineq; ++i) {
+		if (isl_int_is_zero(bmap->ineq[i][pos]))
+			continue;
+		if (isl_int_eq(bmap->ineq[i][pos], bmap->div[div][0])) {
+			int neg;
+			isl_int_sub(bmap->div[div][1],
+					bmap->div[div][1], bmap->div[div][0]);
+			isl_int_add_ui(bmap->div[div][1], bmap->div[div][1], 1);
+			neg = isl_seq_is_neg(bmap->ineq[i], bmap->div[div]+1, pos);
+			isl_int_sub_ui(bmap->div[div][1], bmap->div[div][1], 1);
+			isl_int_add(bmap->div[div][1],
+					bmap->div[div][1], bmap->div[div][0]);
+			if (!neg)
+				return 0;
+			if (isl_seq_first_non_zero(bmap->ineq[i]+pos+1,
+						    bmap->n_div-div-1) != -1)
+				return 0;
+		} else if (isl_int_abs_eq(bmap->ineq[i][pos], bmap->div[div][0])) {
+			if (!isl_seq_eq(bmap->ineq[i], bmap->div[div]+1, pos))
+				return 0;
+			if (isl_seq_first_non_zero(bmap->ineq[i]+pos+1,
+						    bmap->n_div-div-1) != -1)
+				return 0;
+		} else
 			return 0;
+	}
 
 	for (i = 0; i < bmap->n_div; ++i)
 		if (!isl_int_is_zero(bmap->div[i][1+pos]))
@@ -2549,6 +2586,37 @@ static int find_div(struct isl_basic_map *dst,
 	return -1;
 }
 
+/* For a div d = floor(f/m), add the constraints
+ *
+ *		f - m d >= 0
+ *		-(f-(n-1)) + m d >= 0
+ *
+ * Note that the second constraint is the negation of
+ *
+ *		f - m d >= n
+ */
+static int add_div_constraints(struct isl_ctx *ctx,
+		struct isl_basic_map *bmap, unsigned div)
+{
+	int i, j;
+	unsigned div_pos = 1 + bmap->nparam + bmap->n_in + bmap->n_out + div;
+	unsigned total = bmap->nparam + bmap->n_in + bmap->n_out + bmap->n_div;
+
+	i = isl_basic_map_alloc_inequality(ctx, bmap);
+	if (i < 0)
+		return -1;
+	isl_seq_cpy(bmap->ineq[i], bmap->div[div]+1, 1+total);
+	isl_int_neg(bmap->ineq[i][div_pos], bmap->div[div][0]);
+
+	j = isl_basic_map_alloc_inequality(ctx, bmap);
+	if (j < 0)
+		return -1;
+	isl_seq_neg(bmap->ineq[j], bmap->ineq[i], 1 + total);
+	isl_int_add(bmap->ineq[j][0], bmap->ineq[j][0], bmap->ineq[j][div_pos]);
+	isl_int_sub_ui(bmap->ineq[j][0], bmap->ineq[j][0], 1);
+	return j;
+}
+
 struct isl_basic_map *isl_basic_map_align_divs(struct isl_ctx *ctx,
 		struct isl_basic_map *dst, struct isl_basic_map *src)
 {
@@ -2560,7 +2628,7 @@ struct isl_basic_map *isl_basic_map_align_divs(struct isl_ctx *ctx,
 
 	src = order_divs(ctx, src);
 	dst = isl_basic_map_extend(ctx, dst, dst->nparam, dst->n_in,
-			dst->n_out, src->n_div, 0, 0);
+			dst->n_out, src->n_div, 0, 2 * src->n_div);
 	if (!dst)
 		return NULL;
 	for (i = 0; i < src->n_div; ++i) {
@@ -2570,6 +2638,8 @@ struct isl_basic_map *isl_basic_map_align_divs(struct isl_ctx *ctx,
 			if (j < 0)
 				goto error;
 			isl_seq_cpy(dst->div[j], src->div[i], 1+1+total);
+			if (add_div_constraints(ctx, dst, j) < 0)
+				goto error;
 		}
 		if (j != i)
 			swap_div(dst, i, j);

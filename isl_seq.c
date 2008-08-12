@@ -90,6 +90,21 @@ int isl_seq_eq(isl_int *p1, isl_int *p2, unsigned len)
 	return 1;
 }
 
+int isl_seq_is_neg(isl_int *p1, isl_int *p2, unsigned len)
+{
+	int i;
+
+	for (i = 0; i < len; ++i) {
+		if (isl_int_abs_ne(p1[i], p2[i]))
+			return 0;
+		if (isl_int_is_zero(p1[i]))
+			continue;
+		if (isl_int_eq(p1[i], p2[i]))
+			return 0;
+	}
+	return 1;
+}
+
 int isl_seq_first_non_zero(isl_int *p, unsigned len)
 {
 	int i;
