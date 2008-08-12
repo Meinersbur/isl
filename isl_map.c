@@ -1284,6 +1284,7 @@ struct isl_basic_map *isl_basic_map_intersect_domain(
 						bset->dim, 0);
 	bmap = add_constraints(ctx, bmap, bmap_domain, 0, 0);
 
+	bmap = isl_basic_map_simplify(ctx, bmap);
 	return isl_basic_map_finalize(ctx, bmap);
 error:
 	isl_basic_map_free(ctx, bmap);
@@ -1312,6 +1313,7 @@ struct isl_basic_map *isl_basic_map_intersect_range(
 						0, bset->dim);
 	bmap = add_constraints(ctx, bmap, bmap_range, 0, 0);
 
+	bmap = isl_basic_map_simplify(ctx, bmap);
 	return isl_basic_map_finalize(ctx, bmap);
 error:
 	isl_basic_map_free(ctx, bmap);
@@ -1334,6 +1336,7 @@ struct isl_basic_map *isl_basic_map_intersect(
 		goto error;
 	bmap1 = add_constraints(ctx, bmap1, bmap2, 0, 0);
 
+	bmap1 = isl_basic_map_simplify(ctx, bmap1);
 	return isl_basic_map_finalize(ctx, bmap1);
 error:
 	isl_basic_map_free(ctx, bmap1);
@@ -1482,6 +1485,7 @@ struct isl_basic_map *isl_basic_map_apply_range(
 	if (!bmap1)
 		goto error;
 	bmap1 = add_constraints(ctx, bmap1, bmap2, bmap1->n_in - bmap2->n_in, 0);
+	bmap1 = isl_basic_map_simplify(ctx, bmap1);
 	bset = isl_basic_set_from_basic_map(ctx, bmap1);
 	bset = isl_basic_set_project_out(ctx, bset,
 						bset->dim - (n_in + n_out), 0);
@@ -1873,6 +1877,7 @@ struct isl_basic_map *isl_basic_map_fix_input_si(struct isl_ctx *ctx,
 		goto error;
 	isl_int_set_si(bmap->eq[j][1+bmap->nparam+input], -1);
 	isl_int_set_si(bmap->eq[j][0], value);
+	bmap = isl_basic_map_simplify(ctx, bmap);
 	return isl_basic_map_finalize(ctx, bmap);
 error:
 	isl_basic_map_free(ctx, bmap);
