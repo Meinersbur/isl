@@ -32,6 +32,8 @@ struct isl_basic_set {
 
 	isl_int **div;
 
+	struct isl_vec *sample;
+
 	struct isl_blk block;
 	struct isl_blk block2;
 };

@@ -71,6 +71,7 @@ static struct isl_basic_map *basic_map_init(struct isl_ctx *ctx,
 	bmap->n_eq = 0;
 	bmap->n_ineq = 0;
 	bmap->n_div = 0;
+	bmap->sample = NULL;
 
 	return bmap;
 }
@@ -132,6 +133,7 @@ struct isl_basic_map *isl_basic_map_dup(struct isl_ctx *ctx,
 	if (!dup)
 		return NULL;
 	dup_constraints(ctx, dup, bmap);
+	dup->sample = isl_vec_copy(ctx, bmap->sample);
 	return dup;
 }
 
@@ -200,6 +202,7 @@ void isl_basic_map_free(struct isl_ctx *ctx, struct isl_basic_map *bmap)
 	isl_blk_free(ctx, bmap->block2);
 	free(bmap->eq);
 	isl_blk_free(ctx, bmap->block);
+	isl_vec_free(ctx, bmap->sample);
 	free(bmap);
 }
 
@@ -2582,12 +2585,47 @@ int isl_basic_map_is_strict_subset(struct isl_ctx *ctx,
 	return !is_subset;
 }
 
+static int basic_map_contains(struct isl_ctx *ctx, struct isl_basic_map *bmap,
+					 struct isl_vec *vec)
+{
+	int i;
+	unsigned total;
+	isl_int s;
+
+	total = 1 + bmap->nparam + bmap->n_in + bmap->n_out + bmap->n_div;
+	if (total != vec->size)
+		return -1;
+
+	isl_int_init(s);
+
+	for (i = 0; i < bmap->n_eq; ++i) {
+		isl_seq_inner_product(vec->block.data, bmap->eq[i], total, &s);
+		if (!isl_int_is_zero(s)) {
+			isl_int_clear(s);
+			return 0;
+		}
+	}
+
+	for (i = 0; i < bmap->n_ineq; ++i) {
+		isl_seq_inner_product(vec->block.data, bmap->ineq[i], total, &s);
+		if (isl_int_is_neg(s)) {
+			isl_int_clear(s);
+			return 0;
+		}
+	}
+
+	isl_int_clear(s);
+
+	return 1;
+}
+
 int isl_basic_map_is_empty(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap)
 {
 	struct isl_basic_set *bset = NULL;
 	struct isl_vec *sample = NULL;
 	int empty;
+	unsigned total;
 
 	if (!bmap)
 		return -1;
@@ -2595,6 +2633,14 @@ int isl_basic_map_is_empty(struct isl_ctx *ctx,
 	if (F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
 		return 1;
 
+	total = 1 + bmap->nparam + bmap->n_in + bmap->n_out + bmap->n_div;
+	if (bmap->sample && bmap->sample->size == total) {
+		int contains = basic_map_contains(ctx, bmap, bmap->sample);
+		if (contains < 0)
+			return -1;
+		if (contains)
+			return 0;
+	}
 	bset = isl_basic_map_underlying_set(ctx,
 			isl_basic_map_copy(ctx, bmap));
 	if (!bset)
@@ -2603,7 +2649,9 @@ int isl_basic_map_is_empty(struct isl_ctx *ctx,
 	if (!sample)
 		return -1;
 	empty = sample->size == 0;
-	isl_vec_free(ctx, sample);
+	if (bmap->sample)
+		isl_vec_free(ctx, bmap->sample);
+	bmap->sample = sample;
 
 	return empty;
 }

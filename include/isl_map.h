@@ -33,6 +33,7 @@ extern "C" {
  * n_out is the number of out variables
  * n_in + n_out should be equal to set.dim
  */
+struct isl_vec;
 struct isl_basic_map {
 	int ref;
 #define ISL_BASIC_MAP_FINAL		(1 << 0)
@@ -54,6 +55,8 @@ struct isl_basic_map {
 	unsigned n_div;
 
 	isl_int **div;
+
+	struct isl_vec *sample;
 
 	struct isl_blk block;
 	struct isl_blk block2;
