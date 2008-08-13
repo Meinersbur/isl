@@ -383,6 +383,9 @@ static struct isl_map *extremum_on(struct isl_ctx *ctx,
 	struct isl_map	*map;
 	PipMatrix *domain = NULL, *context = NULL;
 
+	if (!bmap || !dom)
+		goto error;
+
 	isl_assert(ctx, bmap->nparam == dom->nparam, goto error);
 	isl_assert(ctx, bmap->n_in == dom->dim, goto error);
 

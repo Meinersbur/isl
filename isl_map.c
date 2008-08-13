@@ -479,6 +479,9 @@ struct isl_basic_map *isl_basic_map_cow(struct isl_ctx *ctx,
 
 static struct isl_set *isl_set_cow(struct isl_ctx *ctx, struct isl_set *set)
 {
+	if (!set)
+		return NULL;
+
 	if (set->ref == 1)
 		return set;
 	set->ref--;
@@ -487,6 +490,9 @@ static struct isl_set *isl_set_cow(struct isl_ctx *ctx, struct isl_set *set)
 
 struct isl_map *isl_map_cow(struct isl_ctx *ctx, struct isl_map *map)
 {
+	if (!map)
+		return NULL;
+
 	if (map->ref == 1)
 		return map;
 	map->ref--;
@@ -1198,6 +1204,11 @@ static void dump(struct isl_basic_map *bmap, FILE *out, int indent)
 void isl_basic_set_dump(struct isl_ctx *ctx, struct isl_basic_set *bset,
 				FILE *out, int indent)
 {
+	if (!bset) {
+		fprintf(out, "null basic set\n");
+		return;
+	}
+
 	fprintf(out, "%*s", indent, "");
 	fprintf(out, "nparam: %d, dim: %d, extra: %d\n",
 			bset->nparam, bset->dim, bset->extra);
@@ -1207,6 +1218,11 @@ void isl_basic_set_dump(struct isl_ctx *ctx, struct isl_basic_set *bset,
 void isl_basic_map_dump(struct isl_ctx *ctx, struct isl_basic_map *bmap,
 				FILE *out, int indent)
 {
+	if (!bmap) {
+		fprintf(out, "null basic map\n");
+		return;
+	}
+
 	fprintf(out, "%*s", indent, "");
 	fprintf(out, "ref: %d, nparam: %d, in: %d, out: %d, extra: %d\n",
 		bmap->ref,
@@ -1344,6 +1360,11 @@ void isl_map_dump(struct isl_ctx *ctx, struct isl_map *map, FILE *out,
 {
 	int i;
 
+	if (!map) {
+		fprintf(out, "null map\n");
+		return;
+	}
+
 	fprintf(out, "%*s", indent, "");
 	fprintf(out, "ref: %d, n: %d, nparam: %d, in: %d, out: %d\n",
 			map->ref, map->n, map->nparam, map->n_in, map->n_out);
@@ -1416,6 +1437,9 @@ struct isl_basic_map *isl_basic_map_intersect(
 		struct isl_ctx *ctx, struct isl_basic_map *bmap1,
 		struct isl_basic_map *bmap2)
 {
+	if (!bmap1 || !bmap2)
+		goto error;
+
 	isl_assert(ctx, bmap1->nparam == bmap2->nparam, goto error);
 	isl_assert(ctx, bmap1->n_in == bmap2->n_in, goto error);
 	isl_assert(ctx, bmap1->n_out == bmap2->n_out, goto error);
@@ -2061,6 +2085,8 @@ error:
 struct isl_map *isl_basic_map_compute_divs(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap)
 {
+	if (!bmap)
+		return NULL;
 	if (bmap->n_div == 0)
 		return isl_map_from_basic_map(ctx, bmap);
 	return isl_pip_basic_map_compute_divs(ctx, bmap);
