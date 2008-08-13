@@ -326,15 +326,31 @@ static void copy_constraint(struct isl_basic_map *dst_map, isl_int *dst,
 {
 	isl_int_set(dst[0], src[0]);
 	isl_seq_cpy(dst+1, src+1, isl_min(dst_map->nparam, src_map->nparam));
+	if (dst_map->nparam > src_map->nparam)
+		isl_seq_clr(dst+1+src_map->nparam,
+				dst_map->nparam - src_map->nparam);
+	isl_seq_clr(dst+1+dst_map->nparam, in_off);
 	isl_seq_cpy(dst+1+dst_map->nparam+in_off,
 		    src+1+src_map->nparam,
 		    isl_min(dst_map->n_in-in_off, src_map->n_in));
+	if (dst_map->n_in-in_off > src_map->n_in)
+		isl_seq_clr(dst+1+dst_map->nparam+in_off+src_map->n_in,
+				dst_map->n_in - in_off - src_map->n_in);
+	isl_seq_clr(dst+1+dst_map->nparam+dst_map->n_in, out_off);
 	isl_seq_cpy(dst+1+dst_map->nparam+dst_map->n_in+out_off,
 		    src+1+src_map->nparam+src_map->n_in,
 		    isl_min(dst_map->n_out-out_off, src_map->n_out));
+	if (dst_map->n_out-out_off > src_map->n_out)
+		isl_seq_clr(dst+1+dst_map->nparam+dst_map->n_in+out_off+src_map->n_out,
+				dst_map->n_out - out_off - src_map->n_out);
+	isl_seq_clr(dst+1+dst_map->nparam+dst_map->n_in+dst_map->n_out, div_off);
 	isl_seq_cpy(dst+1+dst_map->nparam+dst_map->n_in+dst_map->n_out+div_off,
 		    src+1+src_map->nparam+src_map->n_in+src_map->n_out,
 		    isl_min(dst_map->extra-div_off, src_map->extra));
+	if (dst_map->extra-div_off > src_map->extra)
+		isl_seq_clr(dst+1+dst_map->nparam+dst_map->n_in+dst_map->n_out+
+				div_off+src_map->extra,
+				dst_map->extra - div_off - src_map->extra);
 }
 
 static void copy_div(struct isl_basic_map *dst_map, isl_int *dst,
@@ -672,7 +688,7 @@ struct isl_basic_map *isl_basic_map_set_to_empty(
 	unsigned total;
 	if (!bmap)
 		goto error;
-	total = bmap->nparam + bmap->n_in + bmap->n_out;
+	total = bmap->nparam + bmap->n_in + bmap->n_out + bmap->extra;
 	isl_basic_map_free_div(ctx, bmap, bmap->n_div);
 	isl_basic_map_free_inequality(ctx, bmap, bmap->n_ineq);
 	if (bmap->n_eq > 0)
@@ -1118,6 +1134,8 @@ static void dump_constraint_sign(struct isl_basic_map *bmap, isl_int *c,
 static void dump_constraint(struct isl_basic_map *bmap, isl_int *c,
 				const char *op, FILE *out, int indent)
 {
+	int i;
+
 	fprintf(out, "%*s", indent, "");
 
 	dump_constraint_sign(bmap, c, 1, out);
@@ -1125,6 +1143,13 @@ static void dump_constraint(struct isl_basic_map *bmap, isl_int *c,
 	dump_constraint_sign(bmap, c, -1, out);
 
 	fprintf(out, "\n");
+
+	for (i = bmap->n_div; i < bmap->extra; ++i) {
+		if (isl_int_is_zero(c[1+bmap->nparam+bmap->n_in+bmap->n_out+i]))
+			continue;
+		fprintf(out, "%*s", indent, "");
+		fprintf(out, "ERROR: unused div coefficient not zero\n");
+	}
 }
 
 static void dump_constraints(struct isl_basic_map *bmap,
@@ -1941,6 +1966,8 @@ struct isl_basic_map *isl_basic_map_fix_input_si(struct isl_ctx *ctx,
 	j = isl_basic_map_alloc_equality(ctx, bmap);
 	if (j < 0)
 		goto error;
+	isl_seq_clr(bmap->eq[j],
+		    1 + bmap->nparam + bmap->n_in + bmap->n_out + bmap->extra);
 	isl_int_set_si(bmap->eq[j][1+bmap->nparam+input], -1);
 	isl_int_set_si(bmap->eq[j][0], value);
 	bmap = isl_basic_map_simplify(ctx, bmap);
@@ -2297,6 +2324,8 @@ struct isl_basic_set *isl_basic_map_deltas(struct isl_ctx *ctx,
 					    (struct isl_basic_map *)bset);
 		if (j < 0)
 			goto error;
+		isl_seq_clr(bset->eq[j],
+			    1 + bset->nparam + bset->dim + bset->extra);
 		isl_int_set_si(bset->eq[j][1+bset->nparam+i], 1);
 		isl_int_set_si(bset->eq[j][1+bset->nparam+dim+i], 1);
 		isl_int_set_si(bset->eq[j][1+bset->nparam+2*dim+i], -1);
@@ -2443,6 +2472,8 @@ struct isl_basic_map *isl_basic_map_identity(struct isl_ctx *ctx,
 		int j = isl_basic_map_alloc_equality(ctx, bmap);
 		if (j < 0)
 			goto error;
+		isl_seq_clr(bmap->eq[j],
+		    1 + bmap->nparam + bmap->n_in + bmap->n_out + bmap->extra);
 		isl_int_set_si(bmap->eq[j][1+nparam+i], 1);
 		isl_int_set_si(bmap->eq[j][1+nparam+dim+i], -1);
 	}
@@ -2738,7 +2769,7 @@ static int add_div_constraints(struct isl_ctx *ctx,
 {
 	int i, j;
 	unsigned div_pos = 1 + bmap->nparam + bmap->n_in + bmap->n_out + div;
-	unsigned total = bmap->nparam + bmap->n_in + bmap->n_out + bmap->n_div;
+	unsigned total = bmap->nparam + bmap->n_in + bmap->n_out + bmap->extra;
 
 	i = isl_basic_map_alloc_inequality(ctx, bmap);
 	if (i < 0)
@@ -2776,6 +2807,8 @@ struct isl_basic_map *isl_basic_map_align_divs(struct isl_ctx *ctx,
 			if (j < 0)
 				goto error;
 			isl_seq_cpy(dst->div[j], src->div[i], 1+1+total);
+			isl_seq_clr(dst->div[j]+1+1+total,
+						    dst->extra - src->n_div);
 			if (add_div_constraints(ctx, dst, j) < 0)
 				goto error;
 		}
@@ -2791,11 +2824,12 @@ error:
 static struct isl_map *add_cut_constraint(struct isl_ctx *ctx,
 		struct isl_map *dst,
 		struct isl_basic_map *src, isl_int *c,
-		unsigned len, unsigned extra, int oppose)
+		unsigned len, int oppose)
 {
 	struct isl_basic_map *copy = NULL;
 	int is_empty;
 	int k;
+	unsigned total;
 
 	copy = isl_basic_map_copy(ctx, src);
 	copy = isl_basic_map_cow(ctx, copy);
@@ -2810,7 +2844,8 @@ static struct isl_map *add_cut_constraint(struct isl_ctx *ctx,
 		isl_seq_neg(copy->ineq[k], c, len);
 	else
 		isl_seq_cpy(copy->ineq[k], c, len);
-	isl_seq_clr(copy->ineq[k]+len, extra);
+	total = 1 + copy->nparam + copy->n_in + copy->n_out + copy->extra;
+	isl_seq_clr(copy->ineq[k]+len, total - len);
 	isl_inequality_negate(ctx, copy, k);
 	copy = isl_basic_map_simplify(ctx, copy);
 	copy = isl_basic_map_finalize(ctx, copy);
@@ -2863,14 +2898,12 @@ static struct isl_map *subtract(struct isl_ctx *ctx, struct isl_map *map,
 	for (i = 0; i < bmap->n_eq; ++i) {
 		for (j = 0; j < map->n; ++j) {
 			rest = add_cut_constraint(ctx, rest,
-				map->p[j], bmap->eq[i],
-				1+total, map->p[j]->n_div - bmap->n_div, 0);
+				map->p[j], bmap->eq[i], 1+total, 0);
 			if (!rest)
 				goto error;
 
 			rest = add_cut_constraint(ctx, rest,
-				map->p[j], bmap->eq[i],
-				1+total, map->p[j]->n_div - bmap->n_div, 1);
+				map->p[j], bmap->eq[i], 1+total, 1);
 			if (!rest)
 				goto error;
 
@@ -2884,15 +2917,14 @@ static struct isl_map *subtract(struct isl_ctx *ctx, struct isl_map *map,
 				goto error;
 			isl_seq_cpy(map->p[j]->eq[k], bmap->eq[i], 1+total);
 			isl_seq_clr(map->p[j]->eq[k]+1+total,
-					map->p[j]->n_div - bmap->n_div);
+					map->p[j]->extra - bmap->n_div);
 		}
 	}
 
 	for (i = 0; i < bmap->n_ineq; ++i) {
 		for (j = 0; j < map->n; ++j) {
 			rest = add_cut_constraint(ctx, rest,
-				map->p[j], bmap->ineq[i],
-				1+total, map->p[j]->n_div - bmap->n_div, 0);
+				map->p[j], bmap->ineq[i], 1+total, 0);
 			if (!rest)
 				goto error;
 
@@ -2906,7 +2938,7 @@ static struct isl_map *subtract(struct isl_ctx *ctx, struct isl_map *map,
 				goto error;
 			isl_seq_cpy(map->p[j]->ineq[k], bmap->ineq[i], 1+total);
 			isl_seq_clr(map->p[j]->ineq[k]+1+total,
-					map->p[j]->n_div - bmap->n_div);
+					map->p[j]->extra - bmap->n_div);
 		}
 	}
 

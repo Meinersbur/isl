@@ -59,7 +59,7 @@ static int add_div_constraints(struct isl_ctx *ctx,
 {
 	int i, j;
 	unsigned div_pos = 1 + bmap->nparam + bmap->n_in + bmap->n_out + div;
-	unsigned total = bmap->nparam + bmap->n_in + bmap->n_out + bmap->n_div;
+	unsigned total = bmap->nparam + bmap->n_in + bmap->n_out + bmap->extra;
 
 	i = add_inequality(ctx, bmap, pos, p->vector);
 	if (i < 0)
