@@ -19,7 +19,7 @@ static struct isl_basic_map *basic_map_init(struct isl_ctx *ctx,
 	size_t row_size = 1 + nparam + n_in + n_out + extra;
 
 	bmap->block = isl_blk_alloc(ctx, (n_eq + n_ineq) * row_size);
-	if (!bmap->block.data) {
+	if (isl_blk_is_error(bmap->block)) {
 		free(bmap);
 		return NULL;
 	}
@@ -32,12 +32,11 @@ static struct isl_basic_map *basic_map_init(struct isl_ctx *ctx,
 	}
 
 	if (extra == 0) {
-		bmap->block2.size = 0;
-		bmap->block2.data = NULL;
+		bmap->block2 = isl_blk_empty();
 		bmap->div = NULL;
 	} else {
 		bmap->block2 = isl_blk_alloc(ctx, extra * (1 + row_size));
-		if (!bmap->block2.data) {
+		if (isl_blk_is_error(bmap->block2)) {
 			free(bmap->eq);
 			isl_blk_free(ctx, bmap->block);
 			free(bmap);
@@ -526,7 +525,7 @@ struct isl_basic_set *isl_basic_set_swap_vars(struct isl_ctx *ctx,
 		return NULL;
 
 	blk = isl_blk_alloc(ctx, bset->dim);
-	if (!blk.data)
+	if (isl_blk_is_error(blk))
 		goto error;
 
 	for (i = 0; i < bset->n_eq; ++i)
@@ -957,7 +956,7 @@ static struct isl_basic_map *remove_duplicate_divs(struct isl_ctx *ctx,
 	if (!index)
 		return bmap;
 	eq = isl_blk_alloc(ctx, 1+total);
-	if (!eq.data)
+	if (isl_blk_is_error(eq))
 		goto out;
 
 	isl_seq_clr(eq.data, 1+total);

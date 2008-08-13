@@ -12,10 +12,9 @@ struct isl_mat *isl_mat_alloc(struct isl_ctx *ctx,
 	if (!mat)
 		return NULL;
 
-	mat->block.size = 0;
 	mat->row = NULL;
 	mat->block = isl_blk_alloc(ctx, n_row * n_col);
-	if (!mat->block.data)
+	if (isl_blk_is_error(mat->block))
 		goto error;
 	mat->row = isl_alloc_array(ctx, isl_int *, n_row);
 	if (!mat->row)

@@ -9,7 +9,7 @@ struct isl_vec *isl_vec_alloc(struct isl_ctx *ctx, unsigned size)
 		return NULL;
 
 	vec->block = isl_blk_alloc(ctx, size);
-	if (!vec->block.data)
+	if (isl_blk_is_error(vec->block))
 		goto error;
 
 	vec->ref = 1;

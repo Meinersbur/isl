@@ -15,6 +15,8 @@ struct isl_ctx *isl_ctx_alloc()
 	isl_int_init(ctx->one);
 	isl_int_set_si(ctx->one, 1);
 
+	ctx->n_cached = 0;
+
 #ifdef ISL_POLYLIB
 	ctx->MaxRays = POL_NO_DUAL | POL_INTEGER;
 #endif
@@ -29,6 +31,7 @@ void isl_ctx_free(struct isl_ctx *ctx)
 {
 	if (!ctx)
 		return;
+	isl_blk_clear_cache(ctx);
 	isl_int_clear(ctx->one);
 	free(ctx);
 }

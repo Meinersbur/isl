@@ -4,7 +4,8 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#include "isl_int.h"
+#include <isl_int.h>
+#include <isl_blk.h>
 
 #undef ISL_POLYLIB
 #undef ISL_PIPLIB
@@ -40,6 +41,9 @@ extern "C" {
 struct isl_vec;
 struct isl_ctx {
 	isl_int		one;
+
+	int		n_cached;
+	struct isl_blk	cache[ISL_BLK_CACHE_SIZE];
 #ifdef ISL_POLYLIB
 	unsigned	MaxRays;
 #endif
