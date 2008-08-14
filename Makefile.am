@@ -31,6 +31,7 @@ endif
 libisl_la_SOURCES = \
 	$(ISL_PIPLIB) \
 	$(ISL_POLYLIB) \
+	isl_affine_hull.c \
 	isl_blk.c \
 	isl_blk.h \
 	isl_ctx.c \
@@ -44,7 +45,6 @@ libisl_la_SOURCES = \
 	isl_lp.c \
 	isl_map.c \
 	isl_map.h \
-	isl_map_affine_hull.c \
 	isl_map_private.h \
 	isl_mat.c \
 	isl_mat.h \
