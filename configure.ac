@@ -87,6 +87,7 @@ case "$with_polylib" in
 			AC_MSG_ERROR(no gmp polylib configured)
 		fi
 		POLYLIB_CPPFLAGS="-I$with_polylib_builddir/include -I$polylib_srcdir/include"
+		POLYLIB_LIBS="$with_polylib_builddir/libpolylibgmp.la"
 	;;
 	system)
 		POLYLIB_LIBS="-lpolylibgmp"
