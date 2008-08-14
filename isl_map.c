@@ -231,6 +231,12 @@ int isl_basic_map_alloc_equality(struct isl_ctx *ctx,
 	return bmap->n_eq++;
 }
 
+int isl_basic_set_alloc_equality(struct isl_ctx *ctx,
+		struct isl_basic_set *bset)
+{
+	return isl_basic_map_alloc_equality(ctx, (struct isl_basic_map *)bset);
+}
+
 int isl_basic_map_free_equality(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap, unsigned n)
 {
@@ -274,6 +280,12 @@ int isl_basic_map_alloc_inequality(struct isl_ctx *ctx,
 	isl_assert(ctx, (bmap->ineq - bmap->eq) + bmap->n_ineq < bmap->c_size,
 			return -1);
 	return bmap->n_ineq++;
+}
+
+int isl_basic_set_alloc_inequality(struct isl_ctx *ctx,
+		struct isl_basic_set *bset)
+{
+	return isl_basic_map_alloc_inequality(ctx, (struct isl_basic_map *)bset);
 }
 
 int isl_basic_map_free_inequality(struct isl_ctx *ctx,

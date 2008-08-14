@@ -38,6 +38,7 @@ libisl_la_SOURCES = \
 	isl_equalities.c \
 	isl_equalities.h \
 	isl_gmp.c \
+	isl_input.c \
 	isl_int.h \
 	isl_lp.h \
 	isl_lp.c \

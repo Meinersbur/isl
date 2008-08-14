@@ -3,8 +3,12 @@
 
 int isl_basic_map_alloc_equality(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap);
+int isl_basic_set_alloc_equality(struct isl_ctx *ctx,
+		struct isl_basic_set *bset);
 int isl_basic_map_free_equality(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap, unsigned n);
+int isl_basic_set_alloc_inequality(struct isl_ctx *ctx,
+		struct isl_basic_set *bset);
 int isl_basic_map_alloc_inequality(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap);
 int isl_basic_map_free_inequality(struct isl_ctx *ctx,

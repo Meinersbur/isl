@@ -82,6 +82,9 @@ struct isl_basic_set *isl_basic_set_affine_hull(struct isl_ctx *ctx,
 						struct isl_basic_set *bset);
 struct isl_basic_set *isl_basic_set_simplify(
 		struct isl_ctx *ctx, struct isl_basic_set *bset);
+#define ISL_FORMAT_POLYLIB	1
+struct isl_basic_set *isl_basic_set_read_from_file(struct isl_ctx *ctx,
+		FILE *input, unsigned input_format);
 
 struct isl_set *isl_basic_set_lexmin(struct isl_ctx *ctx,
 		struct isl_basic_set *bset);
