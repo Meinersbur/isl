@@ -5,15 +5,19 @@
 #include "isl_map.h"
 #include "isl_map_private.h"
 
-struct isl_basic_map *isl_basic_map_affine_hull(struct isl_ctx *ctx,
+struct isl_basic_map *isl_basic_map_implicit_equalities(struct isl_ctx *ctx,
 						struct isl_basic_map *bmap)
 {
 	int i;
 	isl_int opt;
 
-	bmap = isl_basic_map_cow(ctx, bmap);
 	if (!bmap)
-		return NULL;
+		return bmap;
+
+	if (F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
+		return bmap;
+	if (F_ISSET(bmap, ISL_BASIC_MAP_NO_IMPLICIT))
+		return bmap;
 
 	isl_int_init(opt);
 	for (i = 0; i < bmap->n_ineq; ++i) {
@@ -33,13 +37,29 @@ struct isl_basic_map *isl_basic_map_affine_hull(struct isl_ctx *ctx,
 			--i;
 		}
 	}
-	isl_basic_map_free_inequality(ctx, bmap, bmap->n_ineq);
 	isl_int_clear(opt);
-	return isl_basic_map_finalize(ctx, bmap);
+
+	F_SET(bmap, ISL_BASIC_MAP_NO_IMPLICIT);
+	return bmap;
 error:
 	isl_int_clear(opt);
 	isl_basic_map_free(ctx, bmap);
 	return NULL;
+}
+
+struct isl_basic_map *isl_basic_map_affine_hull(struct isl_ctx *ctx,
+						struct isl_basic_map *bmap)
+{
+	bmap = isl_basic_map_implicit_equalities(ctx, bmap);
+	if (!bmap)
+		return NULL;
+	if (bmap->n_ineq == 0)
+		return bmap;
+	bmap = isl_basic_map_cow(ctx, bmap);
+	if (!bmap)
+		return NULL;
+	isl_basic_map_free_inequality(ctx, bmap, bmap->n_ineq);
+	return isl_basic_map_finalize(ctx, bmap);
 }
 
 struct isl_basic_set *isl_basic_set_affine_hull(struct isl_ctx *ctx,

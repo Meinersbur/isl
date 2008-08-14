@@ -279,6 +279,7 @@ int isl_basic_map_alloc_inequality(struct isl_ctx *ctx,
 {
 	isl_assert(ctx, (bmap->ineq - bmap->eq) + bmap->n_ineq < bmap->c_size,
 			return -1);
+	F_CLR(bmap, ISL_BASIC_MAP_NO_IMPLICIT);
 	return bmap->n_ineq++;
 }
 

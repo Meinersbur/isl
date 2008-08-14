@@ -38,6 +38,7 @@ struct isl_basic_map {
 	int ref;
 #define ISL_BASIC_MAP_FINAL		(1 << 0)
 #define ISL_BASIC_MAP_EMPTY		(1 << 1)
+#define ISL_BASIC_MAP_NO_IMPLICIT	(1 << 2)
 	unsigned flags;
 
 	unsigned nparam;
