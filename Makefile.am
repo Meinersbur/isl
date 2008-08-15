@@ -5,6 +5,8 @@ endif
 SUBDIRS = $(MAYBE_PIPLIB) .
 
 lib_LTLIBRARIES = libisl.la
+noinst_PROGRAMS = isl_test
+TESTS = isl_test
 
 if HAVE_POLYLIB
 ISL_POLYLIB = \
@@ -34,6 +36,7 @@ libisl_la_SOURCES = \
 	isl_affine_hull.c \
 	isl_blk.c \
 	isl_blk.h \
+	isl_convex_hull.c \
 	isl_ctx.c \
 	isl_ctx.h \
 	isl_equalities.c \
@@ -70,6 +73,9 @@ libisl_la_LDFLAGS = -release @VERSION@ @PIPLIB_LDFLAGS@ @POLYLIB_LDFLAGS@ \
 libisl_la_CPPFLAGS = -I$(srcdir)/include -Iinclude/ \
 	@PIPLIB_CPPFLAGS@ @POLYLIB_CPPFLAGS@ \
 	@GMP_CPPFLAGS@
+
+isl_test_CPPFLAGS = -I$(srcdir)/include -Iinclude/
+isl_test_LDADD = libisl.la
 
 pkginclude_HEADERS = \
 	include/isl_blk.h \

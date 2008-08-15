@@ -55,6 +55,8 @@ struct isl_mat *isl_mat_inverse_product(struct isl_ctx *ctx,
 	struct isl_mat *left, struct isl_mat *right);
 struct isl_mat *isl_mat_product(struct isl_ctx *ctx,
 	struct isl_mat *left, struct isl_mat *right);
+struct isl_mat *isl_mat_right_inverse(struct isl_ctx *ctx,
+	struct isl_mat *mat);
 
 struct isl_mat *isl_mat_drop_col(struct isl_ctx *ctx, struct isl_mat *mat,
 				unsigned col);
@@ -63,6 +65,8 @@ struct isl_mat *isl_mat_drop_rows(struct isl_ctx *ctx, struct isl_mat *mat,
 
 struct isl_basic_set *isl_basic_set_preimage(struct isl_ctx *ctx,
 	struct isl_basic_set *bset, struct isl_mat *mat);
+struct isl_set *isl_set_preimage(struct isl_ctx *ctx,
+	struct isl_set *set, struct isl_mat *mat);
 
 void isl_mat_dump(struct isl_ctx *ctx, struct isl_mat *mat,
 				FILE *out, int indent);

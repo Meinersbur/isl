@@ -5,6 +5,8 @@ int isl_basic_map_alloc_equality(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap);
 int isl_basic_set_alloc_equality(struct isl_ctx *ctx,
 		struct isl_basic_set *bset);
+int isl_basic_set_free_inequality(struct isl_ctx *ctx,
+		struct isl_basic_set *bset, unsigned n);
 int isl_basic_map_free_equality(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap, unsigned n);
 int isl_basic_set_alloc_inequality(struct isl_ctx *ctx,
@@ -19,6 +21,10 @@ int isl_basic_map_free_div(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap, unsigned n);
 void isl_basic_map_inequality_to_equality(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap, unsigned pos);
+int isl_basic_set_drop_equality(struct isl_ctx *ctx,
+		struct isl_basic_set *bset, unsigned pos);
+int isl_basic_set_drop_inequality(struct isl_ctx *ctx,
+		struct isl_basic_set *bset, unsigned pos);
 
 int isl_inequality_negate(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap, unsigned pos);
@@ -44,6 +50,8 @@ struct isl_basic_map *isl_basic_map_gauss(struct isl_ctx *ctx,
 	struct isl_basic_map *bmap, int *progress);
 struct isl_basic_set *isl_basic_set_gauss(struct isl_ctx *ctx,
 	struct isl_basic_set *bset, int *progress);
+struct isl_basic_map *isl_basic_map_implicit_equalities(struct isl_ctx *ctx,
+						struct isl_basic_map *bmap);
 struct isl_set *isl_map_underlying_set(struct isl_ctx *ctx, struct isl_map *map);
 struct isl_basic_map *isl_basic_map_overlying_set(
 	struct isl_ctx *ctx, struct isl_basic_set *bset,
@@ -53,6 +61,9 @@ struct isl_map *isl_map_remove_empty_parts(struct isl_ctx *ctx,
 	struct isl_map *map);
 struct isl_set *isl_set_remove_empty_parts(struct isl_ctx *ctx,
 	struct isl_set *set);
+
+struct isl_set *isl_set_drop_vars(struct isl_ctx *ctx,
+		struct isl_set *set, unsigned first, unsigned n);
 
 struct isl_basic_set *isl_basic_set_eliminate_vars(struct isl_ctx *ctx,
 	struct isl_basic_set *bset, unsigned pos, unsigned n);

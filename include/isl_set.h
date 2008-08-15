@@ -69,6 +69,8 @@ struct isl_basic_set *isl_basic_set_finalize(struct isl_ctx *ctx,
 void isl_basic_set_free(struct isl_ctx *ctx, struct isl_basic_set *bset);
 struct isl_basic_set *isl_basic_set_copy(struct isl_ctx *ctx,
 					struct isl_basic_set *bset);
+struct isl_basic_set *isl_basic_set_universe(struct isl_ctx *ctx,
+		unsigned nparam, unsigned dim);
 void isl_basic_set_dump(struct isl_ctx *ctx, struct isl_basic_set *bset,
 				FILE *out, int indent);
 struct isl_basic_set *isl_basic_set_swap_vars(struct isl_ctx *ctx,
@@ -85,6 +87,9 @@ struct isl_basic_set *isl_basic_set_simplify(
 #define ISL_FORMAT_POLYLIB	1
 struct isl_basic_set *isl_basic_set_read_from_file(struct isl_ctx *ctx,
 		FILE *input, unsigned input_format);
+
+int isl_basic_set_is_equal(struct isl_ctx *ctx,
+		struct isl_basic_set *bset1, struct isl_basic_set *bset2);
 
 struct isl_set *isl_basic_set_lexmin(struct isl_ctx *ctx,
 		struct isl_basic_set *bset);
@@ -105,6 +110,8 @@ struct isl_set *isl_set_dup(struct isl_ctx *ctx, struct isl_set *set);
 struct isl_set *isl_set_from_basic_set(struct isl_ctx *ctx,
 				struct isl_basic_set *bset);
 struct isl_basic_set *isl_set_affine_hull(struct isl_ctx *ctx,
+		struct isl_set *set);
+struct isl_basic_set *isl_set_convex_hull(struct isl_ctx *ctx,
 		struct isl_set *set);
 
 struct isl_set *isl_set_union_disjoint(struct isl_ctx *ctx,

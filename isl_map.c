@@ -131,6 +131,7 @@ struct isl_basic_map *isl_basic_map_dup(struct isl_ctx *ctx,
 			bmap->n_div, bmap->n_eq, bmap->n_ineq);
 	if (!dup)
 		return NULL;
+	dup->flags = bmap->flags;
 	dup_constraints(ctx, dup, bmap);
 	dup->sample = isl_vec_copy(ctx, bmap->sample);
 	return dup;
@@ -260,6 +261,13 @@ int isl_basic_map_drop_equality(struct isl_ctx *ctx,
 	return 0;
 }
 
+int isl_basic_set_drop_equality(struct isl_ctx *ctx,
+		struct isl_basic_set *bset, unsigned pos)
+{
+	return isl_basic_map_drop_equality(ctx,
+			(struct isl_basic_map *)bset, pos);
+}
+
 void isl_basic_map_inequality_to_equality(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap, unsigned pos)
 {
@@ -280,6 +288,7 @@ int isl_basic_map_alloc_inequality(struct isl_ctx *ctx,
 	isl_assert(ctx, (bmap->ineq - bmap->eq) + bmap->n_ineq < bmap->c_size,
 			return -1);
 	F_CLR(bmap, ISL_BASIC_MAP_NO_IMPLICIT);
+	F_CLR(bmap, ISL_BASIC_MAP_NO_REDUNDANT);
 	return bmap->n_ineq++;
 }
 
@@ -297,6 +306,13 @@ int isl_basic_map_free_inequality(struct isl_ctx *ctx,
 	return 0;
 }
 
+int isl_basic_set_free_inequality(struct isl_ctx *ctx,
+		struct isl_basic_set *bset, unsigned n)
+{
+	return isl_basic_map_free_inequality(ctx,
+					    (struct isl_basic_map *)bset, n);
+}
+
 int isl_basic_map_drop_inequality(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap, unsigned pos)
 {
@@ -310,6 +326,13 @@ int isl_basic_map_drop_inequality(struct isl_ctx *ctx,
 	}
 	bmap->n_ineq--;
 	return 0;
+}
+
+int isl_basic_set_drop_inequality(struct isl_ctx *ctx,
+		struct isl_basic_set *bset, unsigned pos)
+{
+	return isl_basic_map_drop_inequality(ctx,
+			(struct isl_basic_map *)bset, pos);
 }
 
 int isl_basic_map_alloc_div(struct isl_ctx *ctx,
@@ -420,6 +443,7 @@ struct isl_basic_map *isl_basic_map_extend(struct isl_ctx *ctx,
 		unsigned n_eq, unsigned n_ineq)
 {
 	struct isl_basic_map *ext;
+	unsigned flags;
 	int dims_ok;
 
 	base = isl_basic_map_cow(ctx, base);
@@ -449,7 +473,12 @@ struct isl_basic_map *isl_basic_map_extend(struct isl_ctx *ctx,
 	if (!ext)
 		goto error;
 
+	flags = base->flags;
 	ext = add_constraints(ctx, ext, base, 0, 0);
+	if (ext) {
+		ext->flags = flags;
+		F_CLR(ext, ISL_BASIC_SET_FINAL);
+	}
 
 	return ext;
 
@@ -621,6 +650,35 @@ struct isl_basic_set *isl_basic_set_drop_vars(struct isl_ctx *ctx,
 	return isl_basic_set_finalize(ctx, bset);
 error:
 	isl_basic_set_free(ctx, bset);
+	return NULL;
+}
+
+struct isl_set *isl_set_drop_vars(struct isl_ctx *ctx,
+		struct isl_set *set, unsigned first, unsigned n)
+{
+	int i;
+
+	if (!set)
+		goto error;
+
+	isl_assert(ctx, first + n <= set->dim, goto error);
+
+	if (n == 0)
+		return set;
+	set = isl_set_cow(ctx, set);
+	if (!set)
+		goto error;
+
+	for (i = 0; i < set->n; ++i) {
+		set->p[i] = isl_basic_set_drop_vars(ctx, set->p[i], first, n);
+		if (!set->p[i])
+			goto error;
+	}
+	set->dim -= n;
+
+	return set;
+error:
+	isl_set_free(ctx, set);
 	return NULL;
 }
 
@@ -1054,6 +1112,8 @@ static struct isl_basic_map *normalize_constraints(
 			isl_basic_map_drop_equality(ctx, bmap, i);
 			continue;
 		}
+		if (F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL))
+			isl_int_gcd(gcd, gcd, bmap->eq[i][0]);
 		if (isl_int_is_one(gcd))
 			continue;
 		if (!isl_int_is_divisible_by(bmap->eq[i][0], gcd)) {
@@ -1073,6 +1133,8 @@ static struct isl_basic_map *normalize_constraints(
 			isl_basic_map_drop_inequality(ctx, bmap, i);
 			continue;
 		}
+		if (F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL))
+			isl_int_gcd(gcd, gcd, bmap->ineq[i][0]);
 		if (isl_int_is_one(gcd))
 			continue;
 		isl_int_fdiv_q(bmap->ineq[i][0], bmap->ineq[i][0], gcd);
@@ -1363,9 +1425,9 @@ void isl_basic_map_dump(struct isl_ctx *ctx, struct isl_basic_map *bmap,
 	}
 
 	fprintf(out, "%*s", indent, "");
-	fprintf(out, "ref: %d, nparam: %d, in: %d, out: %d, extra: %d\n",
+	fprintf(out, "ref: %d, nparam: %d, in: %d, out: %d, extra: %d, flags: %x\n",
 		bmap->ref,
-		bmap->nparam, bmap->n_in, bmap->n_out, bmap->extra);
+		bmap->nparam, bmap->n_in, bmap->n_out, bmap->extra, bmap->flags);
 	dump(bmap, out, indent);
 }
 
@@ -1947,6 +2009,7 @@ static struct isl_basic_set *isl_basic_map_underlying_set(
 	bmap->n_out += bmap->nparam + bmap->n_in + bmap->n_div;
 	bmap->nparam = 0;
 	bmap->n_in = 0;
+	bmap->extra -= bmap->n_div;
 	bmap->n_div = 0;
 	bmap = isl_basic_map_finalize(ctx, bmap);
 	return (struct isl_basic_set *)bmap;
@@ -2142,6 +2205,22 @@ struct isl_basic_map *isl_basic_map_empty(struct isl_ctx *ctx,
 	bmap = isl_basic_map_alloc(ctx, nparam, in, out, 0, 1, 0);
 	bmap = isl_basic_map_set_to_empty(ctx, bmap);
 	return bmap;
+}
+
+struct isl_basic_map *isl_basic_map_universe(struct isl_ctx *ctx,
+		unsigned nparam, unsigned in, unsigned out)
+{
+	struct isl_basic_map *bmap;
+	bmap = isl_basic_map_alloc(ctx, nparam, in, out, 0, 0, 0);
+	return bmap;
+}
+
+struct isl_basic_set *isl_basic_set_universe(struct isl_ctx *ctx,
+		unsigned nparam, unsigned dim)
+{
+	struct isl_basic_set *bset;
+	bset = isl_basic_set_alloc(ctx, nparam, dim, 0, 0, 0);
+	return bset;
 }
 
 struct isl_map *isl_map_empty(struct isl_ctx *ctx,
@@ -2819,6 +2898,27 @@ int isl_basic_map_is_subset(struct isl_ctx *ctx,
 	return is_subset;
 }
 
+int isl_basic_map_is_equal(struct isl_ctx *ctx,
+		struct isl_basic_map *bmap1, struct isl_basic_map *bmap2)
+{
+	int is_subset;
+
+	if (!bmap1 || !bmap2)
+		return -1;
+	is_subset = isl_basic_map_is_subset(ctx, bmap1, bmap2);
+	if (is_subset != 1)
+		return is_subset;
+	is_subset = isl_basic_map_is_subset(ctx, bmap2, bmap1);
+	return is_subset;
+}
+
+int isl_basic_set_is_equal(struct isl_ctx *ctx,
+		struct isl_basic_set *bset1, struct isl_basic_set *bset2)
+{
+	return isl_basic_map_is_equal(ctx,
+		(struct isl_basic_map *)bset1, (struct isl_basic_map *)bset2);
+}
+
 int isl_map_is_empty(struct isl_ctx *ctx, struct isl_map *map)
 {
 	int i;
@@ -2931,6 +3031,14 @@ static int basic_map_contains(struct isl_ctx *ctx, struct isl_basic_map *bmap,
 	isl_int_clear(s);
 
 	return 1;
+}
+
+int isl_basic_map_is_universe(struct isl_ctx *ctx,
+		struct isl_basic_map *bmap)
+{
+	if (!bmap)
+		return -1;
+	return bmap->n_eq == 0 && bmap->n_ineq == 0;
 }
 
 int isl_basic_map_is_empty(struct isl_ctx *ctx,

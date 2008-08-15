@@ -39,6 +39,8 @@ struct isl_basic_map {
 #define ISL_BASIC_MAP_FINAL		(1 << 0)
 #define ISL_BASIC_MAP_EMPTY		(1 << 1)
 #define ISL_BASIC_MAP_NO_IMPLICIT	(1 << 2)
+#define ISL_BASIC_MAP_NO_REDUNDANT	(1 << 3)
+#define ISL_BASIC_MAP_RATIONAL		(1 << 4)
 	unsigned flags;
 
 	unsigned nparam;
@@ -108,6 +110,8 @@ struct isl_basic_map *isl_basic_map_more_at(struct isl_ctx *ctx,
 		unsigned nparam, unsigned in, unsigned out, unsigned pos);
 struct isl_basic_map *isl_basic_map_empty(struct isl_ctx *ctx,
 		unsigned nparam, unsigned in, unsigned out);
+struct isl_basic_map *isl_basic_map_universe(struct isl_ctx *ctx,
+		unsigned nparam, unsigned in, unsigned out);
 
 struct isl_basic_map *isl_basic_map_intersect_domain(
 		struct isl_ctx *ctx, struct isl_basic_map *bmap,
@@ -148,6 +152,8 @@ struct isl_map *isl_basic_map_lexmin(struct isl_ctx *ctx,
 void isl_basic_map_dump(struct isl_ctx *ctx, struct isl_basic_map *bmap,
 				FILE *out, int indent);
 
+int isl_basic_map_is_universe(struct isl_ctx *ctx,
+		struct isl_basic_map *bmap);
 int isl_basic_map_is_empty(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap);
 int isl_basic_map_is_subset(struct isl_ctx *ctx,

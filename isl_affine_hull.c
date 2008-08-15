@@ -22,7 +22,7 @@ struct isl_basic_map *isl_basic_map_implicit_equalities(struct isl_ctx *ctx,
 	isl_int_init(opt);
 	for (i = 0; i < bmap->n_ineq; ++i) {
 		enum isl_lp_result res;
-		res = isl_solve_lp(bmap, 1, bmap->ineq[i]+1, ctx->one, &opt);
+		res = isl_solve_lp(bmap, 1, bmap->ineq[i]+1, ctx->one, &opt, NULL);
 		if (res == isl_lp_unbounded)
 			continue;
 		if (res == isl_lp_error)
