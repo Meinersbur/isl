@@ -230,6 +230,7 @@ struct isl_basic_map *isl_map_affine_hull(struct isl_ctx *ctx,
 		map->p[i] = isl_basic_map_align_divs(ctx, map->p[i], map->p[0]);
 
 	for (i = 0; i < map->n; ++i) {
+		map->p[i] = isl_basic_map_cow(ctx, map->p[i]);
 		map->p[i] = isl_basic_map_affine_hull(ctx, map->p[i]);
 		map->p[i] = isl_basic_map_gauss(ctx, map->p[i], NULL);
 		if (!map->p[i])
