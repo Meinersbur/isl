@@ -75,42 +75,42 @@ struct isl_basic_set *isl_basic_set_affine_hull(struct isl_ctx *ctx,
  * after column col are zero.
  */
 static void set_common_multiple(
-	struct isl_basic_map *bmap1, struct isl_basic_map *bmap2,
+	struct isl_basic_set *bset1, struct isl_basic_set *bset2,
 	unsigned row, unsigned col)
 {
 	isl_int m, c;
 
-	if (isl_int_eq(bmap1->eq[row][col], bmap2->eq[row][col]))
+	if (isl_int_eq(bset1->eq[row][col], bset2->eq[row][col]))
 		return;
 
 	isl_int_init(c);
 	isl_int_init(m);
-	isl_int_lcm(m, bmap1->eq[row][col], bmap2->eq[row][col]);
-	isl_int_divexact(c, m, bmap1->eq[row][col]);
-	isl_seq_scale(bmap1->eq[row], bmap1->eq[row], c, col+1);
-	isl_int_divexact(c, m, bmap2->eq[row][col]);
-	isl_seq_scale(bmap2->eq[row], bmap2->eq[row], c, col+1);
+	isl_int_lcm(m, bset1->eq[row][col], bset2->eq[row][col]);
+	isl_int_divexact(c, m, bset1->eq[row][col]);
+	isl_seq_scale(bset1->eq[row], bset1->eq[row], c, col+1);
+	isl_int_divexact(c, m, bset2->eq[row][col]);
+	isl_seq_scale(bset2->eq[row], bset2->eq[row], c, col+1);
 	isl_int_clear(c);
 	isl_int_clear(m);
 }
 
 /* Delete a given equality, moving all the following equalities one up.
  */
-static void delete_row(struct isl_basic_map *bmap, unsigned row)
+static void delete_row(struct isl_basic_set *bset, unsigned row)
 {
 	isl_int *t;
 	int r;
 
-	t = bmap->eq[row];
-	bmap->n_eq--;
-	for (r = row; r < bmap->n_eq; ++r)
-		bmap->eq[r] = bmap->eq[r+1];
-	bmap->eq[bmap->n_eq] = t;
+	t = bset->eq[row];
+	bset->n_eq--;
+	for (r = row; r < bset->n_eq; ++r)
+		bset->eq[r] = bset->eq[r+1];
+	bset->eq[bset->n_eq] = t;
 }
 
-/* Make first row entries in column col of bmap1 identical to
- * those of bmap2, using the fact that entry bmap1->eq[row][col]=a
- * is non-zero.  Initially, these elements of bmap1 are all zero.
+/* Make first row entries in column col of bset1 identical to
+ * those of bset2, using the fact that entry bset1->eq[row][col]=a
+ * is non-zero.  Initially, these elements of bset1 are all zero.
  * For each row i < row, we set
  *		A[i] = a * A[i] + B[i][col] * A[row]
  *		B[i] = a * B[i]
@@ -118,7 +118,7 @@ static void delete_row(struct isl_basic_map *bmap, unsigned row)
  *		A[i][col] = B[i][col] = a * old(B[i][col])
  */
 static void construct_column(
-	struct isl_basic_map *bmap1, struct isl_basic_map *bmap2,
+	struct isl_basic_set *bset1, struct isl_basic_set *bset2,
 	unsigned row, unsigned col)
 {
 	int r;
@@ -128,24 +128,24 @@ static void construct_column(
 
 	isl_int_init(a);
 	isl_int_init(b);
-	total = 1 + bmap1->nparam + bmap1->n_in + bmap1->n_out + bmap1->n_div;
+	total = 1 + bset1->dim;
 	for (r = 0; r < row; ++r) {
-		if (isl_int_is_zero(bmap2->eq[r][col]))
+		if (isl_int_is_zero(bset2->eq[r][col]))
 			continue;
-		isl_int_gcd(b, bmap2->eq[r][col], bmap1->eq[row][col]);
-		isl_int_divexact(a, bmap1->eq[row][col], b);
-		isl_int_divexact(b, bmap2->eq[r][col], b);
-		isl_seq_combine(bmap1->eq[r], a, bmap1->eq[r],
-					      b, bmap1->eq[row], total);
-		isl_seq_scale(bmap2->eq[r], bmap2->eq[r], a, total);
+		isl_int_gcd(b, bset2->eq[r][col], bset1->eq[row][col]);
+		isl_int_divexact(a, bset1->eq[row][col], b);
+		isl_int_divexact(b, bset2->eq[r][col], b);
+		isl_seq_combine(bset1->eq[r], a, bset1->eq[r],
+					      b, bset1->eq[row], total);
+		isl_seq_scale(bset2->eq[r], bset2->eq[r], a, total);
 	}
 	isl_int_clear(a);
 	isl_int_clear(b);
-	delete_row(bmap1, row);
+	delete_row(bset1, row);
 }
 
-/* Make first row entries in column col of bmap1 identical to
- * those of bmap2, using only these entries of the two matrices.
+/* Make first row entries in column col of bset1 identical to
+ * those of bset2, using only these entries of the two matrices.
  * Let t be the last row with different entries.
  * For each row i < t, we set
  *	A[i] = (A[t][col]-B[t][col]) * A[i] + (B[i][col]-A[i][col) * A[t]
@@ -154,7 +154,7 @@ static void construct_column(
  *	A[i][col] = B[i][col] = old(A[t][col]*B[i][col]-A[i][col]*B[t][col])
  */
 static int transform_column(
-	struct isl_basic_map *bmap1, struct isl_basic_map *bmap2,
+	struct isl_basic_set *bset1, struct isl_basic_set *bset2,
 	unsigned row, unsigned col)
 {
 	int i, t;
@@ -162,31 +162,31 @@ static int transform_column(
 	unsigned total;
 
 	for (t = row-1; t >= 0; --t)
-		if (isl_int_ne(bmap1->eq[t][col], bmap2->eq[t][col]))
+		if (isl_int_ne(bset1->eq[t][col], bset2->eq[t][col]))
 			break;
 	if (t < 0)
 		return 0;
 
-	total = 1 + bmap1->nparam + bmap1->n_in + bmap1->n_out + bmap1->n_div;
+	total = 1 + bset1->dim;
 	isl_int_init(a);
 	isl_int_init(b);
 	isl_int_init(g);
-	isl_int_sub(b, bmap1->eq[t][col], bmap2->eq[t][col]);
+	isl_int_sub(b, bset1->eq[t][col], bset2->eq[t][col]);
 	for (i = 0; i < t; ++i) {
-		isl_int_sub(a, bmap2->eq[i][col], bmap1->eq[i][col]);
+		isl_int_sub(a, bset2->eq[i][col], bset1->eq[i][col]);
 		isl_int_gcd(g, a, b);
 		isl_int_divexact(a, a, g);
 		isl_int_divexact(g, b, g);
-		isl_seq_combine(bmap1->eq[i], g, bmap1->eq[i], a, bmap1->eq[t],
+		isl_seq_combine(bset1->eq[i], g, bset1->eq[i], a, bset1->eq[t],
 				total);
-		isl_seq_combine(bmap2->eq[i], g, bmap2->eq[i], a, bmap2->eq[t],
+		isl_seq_combine(bset2->eq[i], g, bset2->eq[i], a, bset2->eq[t],
 				total);
 	}
 	isl_int_clear(a);
 	isl_int_clear(b);
 	isl_int_clear(g);
-	delete_row(bmap1, t);
-	delete_row(bmap2, t);
+	delete_row(bset1, t);
+	delete_row(bset2, t);
 	return 1;
 }
 
@@ -195,74 +195,91 @@ static int transform_column(
  * except that the echelon form we use starts from the last column
  * and that we are dealing with integer coefficients.
  */
-static struct isl_basic_map *affine_hull(struct isl_ctx *ctx,
-	struct isl_basic_map *bmap1, struct isl_basic_map *bmap2)
+static struct isl_basic_set *affine_hull(struct isl_ctx *ctx,
+	struct isl_basic_set *bset1, struct isl_basic_set *bset2)
 {
 	unsigned total;
 	int col;
 	int row;
 
-	total = 1 + bmap1->nparam + bmap1->n_in + bmap1->n_out + bmap1->n_div;
+	total = 1 + bset1->dim;
 
 	row = 0;
 	for (col = total-1; col >= 0; --col) {
-		int is_zero1 = row >= bmap1->n_eq ||
-			isl_int_is_zero(bmap1->eq[row][col]);
-		int is_zero2 = row >= bmap2->n_eq ||
-			isl_int_is_zero(bmap2->eq[row][col]);
+		int is_zero1 = row >= bset1->n_eq ||
+			isl_int_is_zero(bset1->eq[row][col]);
+		int is_zero2 = row >= bset2->n_eq ||
+			isl_int_is_zero(bset2->eq[row][col]);
 		if (!is_zero1 && !is_zero2) {
-			set_common_multiple(bmap1, bmap2, row, col);
+			set_common_multiple(bset1, bset2, row, col);
 			++row;
 		} else if (!is_zero1 && is_zero2) {
-			construct_column(bmap1, bmap2, row, col);
+			construct_column(bset1, bset2, row, col);
 		} else if (is_zero1 && !is_zero2) {
-			construct_column(bmap2, bmap1, row, col);
+			construct_column(bset2, bset1, row, col);
 		} else {
-			if (transform_column(bmap1, bmap2, row, col))
+			if (transform_column(bset1, bset2, row, col))
 				--row;
 		}
 	}
-	isl_basic_map_free(ctx, bmap2);
-	return bmap1;
+	isl_basic_set_free(ctx, bset2);
+	return bset1;
 }
 
 struct isl_basic_map *isl_map_affine_hull(struct isl_ctx *ctx,
 						struct isl_map *map)
 {
 	int i;
-	struct isl_basic_map *bmap;
+	struct isl_basic_map *model = NULL;
+	struct isl_basic_map *hull = NULL;
+	struct isl_set *set;
 
 	if (!map)
 		return NULL;
 
 	if (map->n == 0) {
-		bmap = isl_basic_map_empty(ctx,
+		hull = isl_basic_map_empty(ctx,
 					    map->nparam, map->n_in, map->n_out);
 		isl_map_free(ctx, map);
-		return bmap;
+		return hull;
 	}
 
 	map = isl_map_align_divs(ctx, map);
-	map = isl_map_cow(ctx, map);
+	model = isl_basic_map_copy(ctx, map->p[0]);
+	set = isl_map_underlying_set(ctx, map);
+	set = isl_set_cow(ctx, set);
+	if (!set)
+		goto error;
 
-	for (i = 0; i < map->n; ++i) {
-		map->p[i] = isl_basic_map_cow(ctx, map->p[i]);
-		map->p[i] = isl_basic_map_affine_hull(ctx, map->p[i]);
-		map->p[i] = isl_basic_map_gauss(ctx, map->p[i], NULL);
-		if (!map->p[i])
+	for (i = 0; i < set->n; ++i) {
+		set->p[i] = isl_basic_set_cow(ctx, set->p[i]);
+		set->p[i] = isl_basic_set_affine_hull(ctx, set->p[i]);
+		set->p[i] = isl_basic_set_gauss(ctx, set->p[i], NULL);
+		if (!set->p[i])
 			goto error;
 	}
-	while (map->n > 1) {
-		map->p[0] = affine_hull(ctx, map->p[0], map->p[--map->n]);
-		if (!map->p[0])
-			goto error;
+	set = isl_set_remove_empty_parts(ctx, set);
+	if (set->n == 0) {
+		hull = isl_basic_map_empty(ctx,
+				    model->nparam, model->n_in, model->n_out);
+		isl_basic_map_free(ctx, model);
+	} else {
+		struct isl_basic_set *bset;
+		while (set->n > 1) {
+			set->p[0] = affine_hull(ctx, set->p[0],
+							set->p[--set->n]);
+			if (!set->p[0])
+				goto error;
+		}
+		bset = isl_basic_set_copy(ctx, set->p[0]);
+		hull = isl_basic_map_overlying_set(ctx, bset, model);
 	}
-	bmap = isl_basic_map_copy(ctx, map->p[0]);
-	isl_map_free(ctx, map);
-	bmap = isl_basic_map_simplify(ctx, bmap);
-	return isl_basic_map_finalize(ctx, bmap);
+	isl_set_free(ctx, set);
+	hull = isl_basic_map_simplify(ctx, hull);
+	return isl_basic_map_finalize(ctx, hull);
 error:
-	isl_map_free(ctx, map);
+	isl_basic_map_free(ctx, model);
+	isl_set_free(ctx, set);
 	return NULL;
 }
 

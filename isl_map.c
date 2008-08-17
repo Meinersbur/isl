@@ -489,7 +489,7 @@ struct isl_basic_map *isl_basic_map_cow(struct isl_ctx *ctx,
 	return bmap;
 }
 
-static struct isl_set *isl_set_cow(struct isl_ctx *ctx, struct isl_set *set)
+struct isl_set *isl_set_cow(struct isl_ctx *ctx, struct isl_set *set)
 {
 	if (!set)
 		return NULL;
@@ -1776,6 +1776,37 @@ error:
 	return NULL;
 }
 
+/* For a div d = floor(f/m), add the constraints
+ *
+ *		f - m d >= 0
+ *		-(f-(n-1)) + m d >= 0
+ *
+ * Note that the second constraint is the negation of
+ *
+ *		f - m d >= n
+ */
+static int add_div_constraints(struct isl_ctx *ctx,
+		struct isl_basic_map *bmap, unsigned div)
+{
+	int i, j;
+	unsigned div_pos = 1 + bmap->nparam + bmap->n_in + bmap->n_out + div;
+	unsigned total = bmap->nparam + bmap->n_in + bmap->n_out + bmap->extra;
+
+	i = isl_basic_map_alloc_inequality(ctx, bmap);
+	if (i < 0)
+		return -1;
+	isl_seq_cpy(bmap->ineq[i], bmap->div[div]+1, 1+total);
+	isl_int_neg(bmap->ineq[i][div_pos], bmap->div[div][0]);
+
+	j = isl_basic_map_alloc_inequality(ctx, bmap);
+	if (j < 0)
+		return -1;
+	isl_seq_neg(bmap->ineq[j], bmap->ineq[i], 1 + total);
+	isl_int_add(bmap->ineq[j][0], bmap->ineq[j][0], bmap->ineq[j][div_pos]);
+	isl_int_sub_ui(bmap->ineq[j][0], bmap->ineq[j][0], 1);
+	return j;
+}
+
 static struct isl_basic_set *isl_basic_map_underlying_set(
 		struct isl_ctx *ctx, struct isl_basic_map *bmap)
 {
@@ -1793,6 +1824,93 @@ static struct isl_basic_set *isl_basic_map_underlying_set(
 	bmap = isl_basic_map_finalize(ctx, bmap);
 	return (struct isl_basic_set *)bmap;
 error:
+	return NULL;
+}
+
+struct isl_basic_map *isl_basic_map_overlying_set(
+	struct isl_ctx *ctx, struct isl_basic_set *bset,
+	struct isl_basic_map *like)
+{
+	struct isl_basic_map *bmap;
+	unsigned total;
+	int i, k;
+
+	if (!bset || !like)
+		goto error;
+	isl_assert(ctx, bset->dim ==
+			like->nparam + like->n_in + like->n_out + like->n_div,
+			goto error);
+	if (like->nparam == 0 && like->n_in == 0 && like->n_div == 0) {
+		isl_basic_map_free(ctx, like);
+		return (struct isl_basic_map *)bset;
+	}
+	bset = isl_basic_set_cow(ctx, bset);
+	total = bset->dim + bset->extra;
+	if (!bset)
+		goto error;
+	bmap = (struct isl_basic_map *)bset;
+	bmap->nparam = like->nparam;
+	bmap->n_in = like->n_in;
+	bmap->n_out = like->n_out;
+	bmap->extra += like->n_div;
+	if (bmap->extra) {
+		unsigned ltotal;
+		ltotal = total - bmap->extra + like->extra;
+		if (ltotal > total)
+			ltotal = total;
+		bmap->block2 = isl_blk_extend(ctx, bmap->block2,
+					bmap->extra * (1 + 1 + total));
+		if (isl_blk_is_error(bmap->block2))
+			goto error;
+		bmap->div = isl_realloc_array(ctx, bmap->div, isl_int *,
+						bmap->extra);
+		if (!bmap->div)
+			goto error;
+		bmap = isl_basic_map_extend(ctx, bmap, bmap->nparam,
+			bmap->n_in, bmap->n_out, 0, 0, 2 * like->n_div);
+		for (i = 0; i < like->n_div; ++i) {
+			k = isl_basic_map_alloc_div(ctx, bmap);
+			if (k < 0)
+				goto error;
+			isl_seq_cpy(bmap->div[k], like->div[i], 1 + 1 + ltotal);
+			isl_seq_clr(bmap->div[k]+1+1+ltotal, total - ltotal);
+			if (add_div_constraints(ctx, bmap, k) < 0)
+				goto error;
+		}
+	}
+	isl_basic_map_free(ctx, like);
+	bmap = isl_basic_map_finalize(ctx, bmap);
+	return bmap;
+error:
+	isl_basic_map_free(ctx, like);
+	isl_basic_set_free(ctx, bset);
+	return NULL;
+}
+
+struct isl_set *isl_map_underlying_set(struct isl_ctx *ctx, struct isl_map *map)
+{
+	int i;
+
+	map = isl_map_align_divs(ctx, map);
+	map = isl_map_cow(ctx, map);
+	if (!map)
+		return NULL;
+
+	for (i = 0; i < map->n; ++i) {
+		map->p[i] = (struct isl_basic_map *)
+				isl_basic_map_underlying_set(ctx, map->p[i]);
+		if (!map->p[i])
+			goto error;
+	}
+	if (map->n == 0)
+		map->n_out += map->nparam + map->n_in;
+	else
+		map->n_out = map->p[0]->n_out;
+	map->nparam = 0;
+	map->n_in = 0;
+	return (struct isl_set *)map;
+error:
+	isl_map_free(ctx, map);
 	return NULL;
 }
 
@@ -2791,37 +2909,6 @@ static int find_div(struct isl_basic_map *dst,
 						dst->n_div - src->n_div) == -1)
 			return i;
 	return -1;
-}
-
-/* For a div d = floor(f/m), add the constraints
- *
- *		f - m d >= 0
- *		-(f-(n-1)) + m d >= 0
- *
- * Note that the second constraint is the negation of
- *
- *		f - m d >= n
- */
-static int add_div_constraints(struct isl_ctx *ctx,
-		struct isl_basic_map *bmap, unsigned div)
-{
-	int i, j;
-	unsigned div_pos = 1 + bmap->nparam + bmap->n_in + bmap->n_out + div;
-	unsigned total = bmap->nparam + bmap->n_in + bmap->n_out + bmap->extra;
-
-	i = isl_basic_map_alloc_inequality(ctx, bmap);
-	if (i < 0)
-		return -1;
-	isl_seq_cpy(bmap->ineq[i], bmap->div[div]+1, 1+total);
-	isl_int_neg(bmap->ineq[i][div_pos], bmap->div[div][0]);
-
-	j = isl_basic_map_alloc_inequality(ctx, bmap);
-	if (j < 0)
-		return -1;
-	isl_seq_neg(bmap->ineq[j], bmap->ineq[i], 1 + total);
-	isl_int_add(bmap->ineq[j][0], bmap->ineq[j][0], bmap->ineq[j][div_pos]);
-	isl_int_sub_ui(bmap->ineq[j][0], bmap->ineq[j][0], 1);
-	return j;
 }
 
 struct isl_basic_map *isl_basic_map_align_divs(struct isl_ctx *ctx,
