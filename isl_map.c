@@ -654,7 +654,6 @@ struct isl_basic_map *isl_basic_map_set_to_empty(
 	if (!bmap)
 		goto error;
 	total = bmap->nparam + bmap->n_in + bmap->n_out;
-	isl_assert(ctx, bmap->n_ineq + bmap->n_eq > 0, goto error);
 	isl_basic_map_free_div(ctx, bmap, bmap->n_div);
 	isl_basic_map_free_inequality(ctx, bmap, bmap->n_ineq);
 	if (bmap->n_eq > 0)
