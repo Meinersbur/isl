@@ -958,7 +958,7 @@ static struct isl_basic_map *normalize_constraints(
 		}
 		if (isl_int_is_one(gcd))
 			continue;
-		isl_int_cdiv_q(bmap->ineq[i][0], bmap->ineq[i][0], gcd);
+		isl_int_fdiv_q(bmap->ineq[i][0], bmap->ineq[i][0], gcd);
 		isl_seq_scale_down(bmap->ineq[i]+1, bmap->ineq[i]+1, gcd, total);
 	}
 	isl_int_clear(gcd);
