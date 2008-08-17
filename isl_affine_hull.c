@@ -259,8 +259,8 @@ struct isl_basic_map *isl_map_affine_hull(struct isl_ctx *ctx,
 	}
 	bmap = isl_basic_map_copy(ctx, map->p[0]);
 	isl_map_free(ctx, map);
-	bmap = isl_basic_map_finalize(ctx, bmap);
-	return isl_basic_map_simplify(ctx, bmap);
+	bmap = isl_basic_map_simplify(ctx, bmap);
+	return isl_basic_map_finalize(ctx, bmap);
 error:
 	isl_map_free(ctx, map);
 	return NULL;
