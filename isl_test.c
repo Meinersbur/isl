@@ -6,6 +6,32 @@
 
 static char *srcdir;
 
+void test_affine_hull(struct isl_ctx *ctx)
+{
+	char filename[PATH_MAX];
+	FILE *input;
+	int n;
+	struct isl_basic_set *bset1, *bset2;
+
+	n = snprintf(filename, sizeof(filename),
+			"%s/test_inputs/affine.polylib", srcdir);
+	assert(n < sizeof(filename));
+	input = fopen(filename, "r");
+	assert(input);
+
+	bset1 = isl_basic_set_read_from_file(ctx, input, ISL_FORMAT_POLYLIB);
+	bset2 = isl_basic_set_read_from_file(ctx, input, ISL_FORMAT_POLYLIB);
+
+	bset1 = isl_basic_set_affine_hull(ctx, bset1);
+
+	assert(isl_basic_set_is_equal(ctx, bset1, bset2) == 1);
+
+	isl_basic_set_free(ctx, bset1);
+	isl_basic_set_free(ctx, bset2);
+
+	fclose(input);
+}
+
 void test_convex_hull_case(struct isl_ctx *ctx, const char *name)
 {
 	char filename[PATH_MAX];
@@ -55,6 +81,7 @@ int main()
 	srcdir = getenv("srcdir");
 
 	ctx = isl_ctx_alloc();
+	test_affine_hull(ctx);
 	test_convex_hull(ctx);
 	isl_ctx_free(ctx);
 	return 0;
