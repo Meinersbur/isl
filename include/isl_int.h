@@ -58,6 +58,7 @@ typedef mpz_t	isl_int;
 #define isl_int_abs_eq(i,j)	(mpz_cmpabs(i,j) == 0)
 #define isl_int_abs_ne(i,j)	(mpz_cmpabs(i,j) != 0)
 #define isl_int_abs_lt(i,j)	(mpz_cmpabs(i,j) < 0)
+#define isl_int_abs_gt(i,j)	(mpz_cmpabs(i,j) > 0)
 
 
 #define isl_int_is_zero(i)	(isl_int_sgn(i) == 0)

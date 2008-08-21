@@ -1003,7 +1003,9 @@ out:
 	return bmap;
 }
 
-static struct isl_basic_map *eliminate_divs(
+/* Elimininate divs based on equalities
+ */
+static struct isl_basic_map *eliminate_divs_eq(
 		struct isl_ctx *ctx, struct isl_basic_map *bmap,
 		int *progress)
 {
@@ -1026,10 +1028,11 @@ static struct isl_basic_map *eliminate_divs(
 			*progress = 1;
 			eliminate_div(ctx, bmap, bmap->eq[i], d);
 			isl_basic_map_drop_equality(ctx, bmap, i);
+			break;
 		}
 	}
 	if (modified)
-		return eliminate_divs(ctx, bmap, progress);
+		return eliminate_divs_eq(ctx, bmap, progress);
 	return bmap;
 }
 
@@ -1080,6 +1083,129 @@ static struct isl_basic_map *normalize_constraints(
 	return bmap;
 }
 
+
+/* Eliminate the specified variables from the constraints using
+ * Fourier-Motzkin.  The variables themselves are not removed.
+ */
+struct isl_basic_map *isl_basic_map_eliminate_vars(struct isl_ctx *ctx,
+	struct isl_basic_map *bmap, int pos, unsigned n)
+{
+	int d;
+	int i, j, k;
+	unsigned total;
+	unsigned extra;
+
+	if (!bmap)
+		return NULL;
+	total = bmap->nparam + bmap->n_in + bmap->n_out + bmap->n_div;
+	extra = bmap->extra - bmap->n_div;
+
+	bmap = isl_basic_map_cow(ctx, bmap);
+	bmap = isl_basic_map_gauss(ctx, bmap, NULL);
+	for (d = pos + n - 1; d >= pos; --d) {
+		int n_lower, n_upper;
+		if (!bmap)
+			return NULL;
+		for (i = 0; i < bmap->n_eq; ++i) {
+			if (isl_int_is_zero(bmap->eq[i][1+d]))
+				continue;
+			isl_basic_map_drop_equality(ctx, bmap, i);
+			break;
+		}
+		if (i < bmap->n_eq)
+			continue;
+		n_lower = 0;
+		n_upper = 0;
+		for (i = 0; i < bmap->n_ineq; ++i) {
+			if (isl_int_is_pos(bmap->ineq[i][1+d]))
+				n_lower++;
+			else if (isl_int_is_neg(bmap->ineq[i][1+d]))
+				n_upper++;
+		}
+		bmap = isl_basic_map_extend(ctx, bmap,
+				bmap->nparam, bmap->n_in, bmap->n_out, 0,
+				0, n_lower * n_upper);
+		for (i = bmap->n_ineq - 1; i >= 0; --i) {
+			int last;
+			if (isl_int_is_zero(bmap->ineq[i][1+d]))
+				continue;
+			last = -1;
+			for (j = 0; j < i; ++j) {
+				if (isl_int_is_zero(bmap->ineq[j][1+d]))
+					continue;
+				last = j;
+				if (isl_int_sgn(bmap->ineq[i][1+d]) ==
+				    isl_int_sgn(bmap->ineq[j][1+d]))
+					continue;
+				k = isl_basic_map_alloc_inequality(ctx, bmap);
+				if (k < 0)
+					goto error;
+				isl_seq_cpy(bmap->ineq[k], bmap->ineq[i],
+						1+total);
+				isl_seq_clr(bmap->ineq[k]+1+total, extra);
+				isl_seq_elim(bmap->ineq[k], bmap->ineq[j],
+						1+d, 1+total, NULL);
+			}
+			isl_basic_map_drop_inequality(ctx, bmap, i);
+			i = last + 1;
+		}
+		if (n_lower > 0 && n_upper > 0) {
+			bmap = normalize_constraints(ctx, bmap);
+			bmap = isl_basic_map_gauss(ctx, bmap, NULL);
+			if (F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
+				break;
+		}
+	}
+	return bmap;
+error:
+	isl_basic_map_free(ctx, bmap);
+	return NULL;
+}
+
+struct isl_basic_set *isl_basic_set_eliminate_vars(struct isl_ctx *ctx,
+	struct isl_basic_set *bset, unsigned pos, unsigned n)
+{
+	return (struct isl_basic_set *)isl_basic_map_eliminate_vars(ctx,
+			(struct isl_basic_map *)bset, pos, n);
+}
+
+/* Elimininate divs based on inequalities
+ */
+static struct isl_basic_map *eliminate_divs_ineq(
+		struct isl_ctx *ctx, struct isl_basic_map *bmap,
+		int *progress)
+{
+	int d;
+	int i;
+	unsigned off;
+
+	if (!bmap)
+		return NULL;
+
+	off = 1 + bmap->nparam + bmap->n_in + bmap->n_out;
+
+	for (d = bmap->n_div - 1; d >= 0 ; --d) {
+		for (i = 0; i < bmap->n_eq; ++i)
+			if (!isl_int_is_zero(bmap->eq[i][off + d]))
+				break;
+		if (i < bmap->n_eq)
+			continue;
+		for (i = 0; i < bmap->n_ineq; ++i)
+			if (isl_int_abs_gt(bmap->ineq[i][off + d], ctx->one))
+				break;
+		if (i < bmap->n_ineq)
+			continue;
+		*progress = 1;
+		bmap = isl_basic_map_eliminate_vars(ctx, bmap, (off-1)+d, 1);
+		if (F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
+			break;
+		bmap = isl_basic_map_drop_div(ctx, bmap, d);
+		if (!bmap)
+			break;
+	}
+	return bmap;
+}
+
 struct isl_basic_map *isl_basic_map_simplify(
 		struct isl_ctx *ctx, struct isl_basic_map *bmap)
 {
@@ -1089,7 +1215,8 @@ struct isl_basic_map *isl_basic_map_simplify(
 	while (progress) {
 		progress = 0;
 		bmap = normalize_constraints(ctx, bmap);
-		bmap = eliminate_divs(ctx, bmap, &progress);
+		bmap = eliminate_divs_eq(ctx, bmap, &progress);
+		bmap = eliminate_divs_ineq(ctx, bmap, &progress);
 		bmap = isl_basic_map_gauss(ctx, bmap, &progress);
 		bmap = remove_duplicate_divs(ctx, bmap, &progress);
 		bmap = remove_duplicate_constraints(ctx, bmap, &progress);

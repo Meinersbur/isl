@@ -53,3 +53,6 @@ struct isl_map *isl_map_remove_empty_parts(struct isl_ctx *ctx,
 	struct isl_map *map);
 struct isl_set *isl_set_remove_empty_parts(struct isl_ctx *ctx,
 	struct isl_set *set);
+
+struct isl_basic_set *isl_basic_set_eliminate_vars(struct isl_ctx *ctx,
+	struct isl_basic_set *bset, unsigned pos, unsigned n);
