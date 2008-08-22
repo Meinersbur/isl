@@ -610,10 +610,10 @@ static struct isl_basic_set *compute_facet(struct isl_ctx *ctx,
 	isl_int_set_si(m->row[0][0], 1);
 	isl_seq_clr(m->row[0]+1, set->dim);
 	isl_seq_cpy(m->row[1], c, 1+set->dim);
-	m = isl_mat_left_hermite(ctx, m, &U, &Q);
+	m = isl_mat_left_hermite(ctx, m, 0, &U, &Q);
 	if (!m)
 		goto error;
-	U = isl_mat_drop_col(ctx, U, 1);
+	U = isl_mat_drop_cols(ctx, U, 1, 1);
 	Q = isl_mat_drop_rows(ctx, Q, 1, 1);
 	set = isl_set_preimage(ctx, set, U);
 	facet = uset_convex_hull(ctx, set);
@@ -857,7 +857,7 @@ static struct isl_basic_set *modulo_lineality(struct isl_ctx *ctx,
 	old_dim = set->dim;
 	new_dim = bounds->n_row;
 	H = isl_mat_sub_alloc(ctx, bounds->row, 0, bounds->n_row, 1, set->dim);
-	H = isl_mat_left_hermite(ctx, H, &U, &Q);
+	H = isl_mat_left_hermite(ctx, H, 0, &U, &Q);
 	if (!H)
 		goto error;
 	U = isl_mat_lin_to_aff(ctx, U);

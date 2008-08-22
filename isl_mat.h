@@ -49,7 +49,7 @@ struct isl_vec *isl_mat_vec_product(struct isl_ctx *ctx,
 struct isl_mat *isl_mat_aff_direct_sum(struct isl_ctx *ctx,
 	struct isl_mat *left, struct isl_mat *right);
 struct isl_mat *isl_mat_left_hermite(struct isl_ctx *ctx,
-	struct isl_mat *M, struct isl_mat **U, struct isl_mat **Q);
+	struct isl_mat *M, int neg, struct isl_mat **U, struct isl_mat **Q);
 struct isl_mat *isl_mat_lin_to_aff(struct isl_ctx *ctx, struct isl_mat *mat);
 struct isl_mat *isl_mat_inverse_product(struct isl_ctx *ctx,
 	struct isl_mat *left, struct isl_mat *right);
@@ -58,8 +58,8 @@ struct isl_mat *isl_mat_product(struct isl_ctx *ctx,
 struct isl_mat *isl_mat_right_inverse(struct isl_ctx *ctx,
 	struct isl_mat *mat);
 
-struct isl_mat *isl_mat_drop_col(struct isl_ctx *ctx, struct isl_mat *mat,
-				unsigned col);
+struct isl_mat *isl_mat_drop_cols(struct isl_ctx *ctx, struct isl_mat *mat,
+				unsigned col, unsigned n);
 struct isl_mat *isl_mat_drop_rows(struct isl_ctx *ctx, struct isl_mat *mat,
 				unsigned row, unsigned n);
 

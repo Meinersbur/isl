@@ -275,11 +275,13 @@ static void oppose(struct isl_ctx *ctx, struct isl_mat *M, struct isl_mat **U,
  *
  * with U and Q unimodular matrices and H a matrix in column echelon form
  * such that on each echelon row the entries in the non-echelon column
- * are non-negative and stricly smaller than the entries in the echelon
- * column.  If U or Q are NULL, then these matrices are not computed.
+ * are non-negative (if neg == 0) or non-positive (if neg == 1)
+ * and stricly smaller (in absolute value) than the entries in the echelon
+ * column.
+ * If U or Q are NULL, then these matrices are not computed.
  */
 struct isl_mat *isl_mat_left_hermite(struct isl_ctx *ctx,
-	struct isl_mat *M, struct isl_mat **U, struct isl_mat **Q)
+	struct isl_mat *M, int neg, struct isl_mat **U, struct isl_mat **Q)
 {
 	isl_int c;
 	int row, col;
@@ -330,7 +332,10 @@ struct isl_mat *isl_mat_left_hermite(struct isl_ctx *ctx,
 		for (i = 0; i < col; ++i) {
 			if (isl_int_is_zero(M->row[row][i]))
 				continue;
-			isl_int_fdiv_q(c, M->row[row][i], M->row[row][col]);
+			if (neg)
+				isl_int_cdiv_q(c, M->row[row][i], M->row[row][col]);
+			else
+				isl_int_fdiv_q(c, M->row[row][i], M->row[row][col]);
 			if (isl_int_is_zero(c))
 				continue;
 			subtract(ctx, M, U, Q, row, col, i, c);
@@ -780,20 +785,20 @@ void isl_mat_dump(struct isl_ctx *ctx, struct isl_mat *mat,
 	}
 }
 
-struct isl_mat *isl_mat_drop_col(struct isl_ctx *ctx, struct isl_mat *mat,
-				unsigned col)
+struct isl_mat *isl_mat_drop_cols(struct isl_ctx *ctx, struct isl_mat *mat,
+				unsigned col, unsigned n)
 {
 	int r;
 
 	if (!mat)
 		return NULL;
 
-	if (col != mat->n_col-1) {
+	if (col != mat->n_col-n) {
 		for (r = 0; r < mat->n_row; ++r)
-			isl_seq_cpy(mat->row[r]+col, mat->row[r]+col+1,
-					mat->n_col - col - 1);
+			isl_seq_cpy(mat->row[r]+col, mat->row[r]+col+n,
+					mat->n_col - col - n);
 	}
-	mat->n_col--;
+	mat->n_col -= n;
 	return mat;
 }
 

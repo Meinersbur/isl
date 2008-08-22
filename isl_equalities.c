@@ -60,7 +60,7 @@ static struct isl_basic_set *compress_variables(struct isl_ctx *ctx,
 		return bset;
 
 	H = isl_mat_sub_alloc(ctx, bset->eq, 0, bset->n_eq, 1, bset->dim);
-	H = isl_mat_left_hermite(ctx, H, &U, T2);
+	H = isl_mat_left_hermite(ctx, H, 0, &U, T2);
 	if (!H || !U || (T2 && !*T2))
 		goto error;
 	if (T2) {
