@@ -52,6 +52,8 @@ struct isl_basic_set *isl_basic_set_gauss(struct isl_ctx *ctx,
 	struct isl_basic_set *bset, int *progress);
 struct isl_basic_map *isl_basic_map_implicit_equalities(struct isl_ctx *ctx,
 						struct isl_basic_map *bmap);
+struct isl_basic_set *isl_basic_map_underlying_set(
+		struct isl_ctx *ctx, struct isl_basic_map *bmap);
 struct isl_set *isl_map_underlying_set(struct isl_ctx *ctx, struct isl_map *map);
 struct isl_basic_map *isl_basic_map_overlying_set(
 	struct isl_ctx *ctx, struct isl_basic_set *bset,

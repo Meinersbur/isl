@@ -1996,7 +1996,7 @@ static int add_div_constraints(struct isl_ctx *ctx,
 	return j;
 }
 
-static struct isl_basic_set *isl_basic_map_underlying_set(
+struct isl_basic_set *isl_basic_map_underlying_set(
 		struct isl_ctx *ctx, struct isl_basic_map *bmap)
 {
 	if (!bmap)
@@ -2205,6 +2205,15 @@ struct isl_basic_map *isl_basic_map_empty(struct isl_ctx *ctx,
 	bmap = isl_basic_map_alloc(ctx, nparam, in, out, 0, 1, 0);
 	bmap = isl_basic_map_set_to_empty(ctx, bmap);
 	return bmap;
+}
+
+struct isl_basic_set *isl_basic_set_empty(struct isl_ctx *ctx,
+		unsigned nparam, unsigned dim)
+{
+	struct isl_basic_set *bset;
+	bset = isl_basic_set_alloc(ctx, nparam, dim, 0, 1, 0);
+	bset = isl_basic_set_set_to_empty(ctx, bset);
+	return bset;
 }
 
 struct isl_basic_map *isl_basic_map_universe(struct isl_ctx *ctx,
@@ -2759,6 +2768,9 @@ static struct isl_basic_map *remove_redundant_divs(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap)
 {
 	int i;
+
+	if (!bmap)
+		return NULL;
 
 	for (i = bmap->n_div-1; i >= 0; --i) {
 		if (!div_is_redundant(ctx, bmap, i))

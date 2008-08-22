@@ -4,6 +4,8 @@
 #include "isl_lp.h"
 #include "isl_map.h"
 #include "isl_map_private.h"
+#include "isl_equalities.h"
+#include "isl_sample.h"
 
 struct isl_basic_map *isl_basic_map_implicit_equalities(struct isl_ctx *ctx,
 						struct isl_basic_map *bmap)
@@ -45,28 +47,6 @@ error:
 	isl_int_clear(opt);
 	isl_basic_map_free(ctx, bmap);
 	return NULL;
-}
-
-struct isl_basic_map *isl_basic_map_affine_hull(struct isl_ctx *ctx,
-						struct isl_basic_map *bmap)
-{
-	bmap = isl_basic_map_implicit_equalities(ctx, bmap);
-	if (!bmap)
-		return NULL;
-	if (bmap->n_ineq == 0)
-		return bmap;
-	bmap = isl_basic_map_cow(ctx, bmap);
-	if (!bmap)
-		return NULL;
-	isl_basic_map_free_inequality(ctx, bmap, bmap->n_ineq);
-	return isl_basic_map_finalize(ctx, bmap);
-}
-
-struct isl_basic_set *isl_basic_set_affine_hull(struct isl_ctx *ctx,
-						struct isl_basic_set *bset)
-{
-	return (struct isl_basic_set *)
-		isl_basic_map_affine_hull(ctx, (struct isl_basic_map *)bset);
 }
 
 /* Make eq[row][col] of both bmaps equal so we can add the row
@@ -223,7 +203,157 @@ static struct isl_basic_set *affine_hull(struct isl_ctx *ctx,
 		}
 	}
 	isl_basic_set_free(ctx, bset2);
+	isl_assert(ctx, row == bset1->n_eq, goto error);
 	return bset1;
+error:
+	isl_basic_set_free(ctx, bset1);
+	return NULL;
+}
+
+static struct isl_basic_set *isl_basic_set_from_vec(struct isl_ctx *ctx,
+	struct isl_vec *vec)
+{
+	int i;
+	int k;
+	struct isl_basic_set *bset = NULL;
+
+	if (!vec)
+		return NULL;
+	isl_assert(ctx, vec->size != 0, goto error);
+
+	bset = isl_basic_set_alloc(ctx, 0, vec->size - 1, 0, vec->size - 1, 0);
+	for (i = bset->dim - 1; i >= 0; --i) {
+		k = isl_basic_set_alloc_equality(ctx, bset);
+		if (k < 0)
+			goto error;
+		isl_seq_clr(bset->eq[k], 1 + bset->dim);
+		isl_int_neg(bset->eq[k][0], vec->block.data[1 + i]);
+		isl_int_set(bset->eq[k][1 + i], vec->block.data[0]);
+	}
+	isl_vec_free(ctx, vec);
+
+	return bset;
+error:
+	isl_basic_set_free(ctx, bset);
+	isl_vec_free(ctx, vec);
+	return NULL;
+}
+
+static struct isl_basic_set *outside_point(struct isl_ctx *ctx,
+	struct isl_basic_set *bset, isl_int *eq, int up)
+{
+	struct isl_basic_set *slice = NULL;
+	struct isl_vec *sample;
+	struct isl_basic_set *point;
+	int k;
+
+	slice = isl_basic_set_copy(ctx, bset);
+	if (!slice)
+		goto error;
+	slice = isl_basic_set_extend(ctx, slice, 0, slice->dim, 0, 1, 0);
+	k = isl_basic_set_alloc_equality(ctx, slice);
+	if (k < 0)
+		goto error;
+	isl_seq_cpy(slice->eq[k], eq, 1 + slice->dim);
+	if (up)
+		isl_int_add_ui(slice->eq[k][0], slice->eq[k][0], 1);
+	else
+		isl_int_sub_ui(slice->eq[k][0], slice->eq[k][0], 1);
+
+	sample = isl_basic_set_sample(ctx, slice);
+	if (!sample)
+		goto error;
+	if (sample->size == 0) {
+		isl_vec_free(ctx, sample);
+		point = isl_basic_set_empty(ctx, 0, bset->dim);
+	} else
+		point = isl_basic_set_from_vec(ctx, sample);
+
+	return point;
+error:
+	isl_basic_set_free(ctx, slice);
+	return NULL;
+}
+
+/* After computing the rational affine hull (by detecting the implicit
+ * equalities), we remove all equalities found so far, compute
+ * the integer affine hull of what is left, and then add the original
+ * equalities back in.
+ *
+ * The integer affine hull is constructed by successively looking
+ * a point that is affinely independent of the points found so far.
+ * In particular, for each equality satisfied by the points so far,
+ * we check if there is any point on the corresponding hyperplane
+ * shifted by one (in either direction).
+ */
+struct isl_basic_map *isl_basic_map_affine_hull(struct isl_ctx *ctx,
+						struct isl_basic_map *bmap)
+{
+	int i, j;
+	struct isl_mat *T2 = NULL;
+	struct isl_basic_set *bset = NULL;
+	struct isl_basic_set *hull = NULL;
+	struct isl_vec *sample;
+
+	bmap = isl_basic_map_implicit_equalities(ctx, bmap);
+	if (!bmap)
+		return NULL;
+	if (bmap->n_ineq == 0)
+		return bmap;
+
+	bset = isl_basic_map_underlying_set(ctx, isl_basic_map_copy(ctx, bmap));
+	bset = isl_basic_set_remove_equalities(ctx, bset, NULL, &T2);
+
+	sample = isl_basic_set_sample(ctx, isl_basic_set_copy(ctx, bset));
+	hull = isl_basic_set_from_vec(ctx, sample);
+
+	for (i = 0; i < bset->dim; ++i) {
+		struct isl_basic_set *point;
+		for (j = 0; j < hull->n_eq; ++j) {
+			point = outside_point(ctx, bset, hull->eq[j], 1);
+			if (!point)
+				goto error;
+			if (!F_ISSET(point, ISL_BASIC_SET_EMPTY))
+				break;
+			isl_basic_set_free(ctx, point);
+			point = outside_point(ctx, bset, hull->eq[j], 0);
+			if (!point)
+				goto error;
+			if (!F_ISSET(point, ISL_BASIC_SET_EMPTY))
+				break;
+			isl_basic_set_free(ctx, point);
+		}
+		if (j == hull->n_eq)
+			break;
+		hull = affine_hull(ctx, hull, point);
+	}
+
+	isl_basic_set_free(ctx, bset);
+	bset = NULL;
+	bmap = isl_basic_map_cow(ctx, bmap);
+	if (!bmap)
+		goto error;
+	isl_basic_map_free_inequality(ctx, bmap, bmap->n_ineq);
+	if (T2)
+		hull = isl_basic_set_preimage(ctx, hull, T2);
+	bmap = isl_basic_map_intersect(ctx, bmap,
+					isl_basic_map_overlying_set(ctx, hull,
+						isl_basic_map_copy(ctx, bmap)));
+
+	return isl_basic_map_finalize(ctx, bmap);
+error:
+	isl_mat_free(ctx, T2);
+	isl_basic_set_free(ctx, bset);
+	isl_basic_set_free(ctx, hull);
+	isl_basic_map_free(ctx, bmap);
+	return NULL;
+}
+
+struct isl_basic_set *isl_basic_set_affine_hull(struct isl_ctx *ctx,
+						struct isl_basic_set *bset)
+{
+	return (struct isl_basic_set *)
+		isl_basic_map_affine_hull(ctx, (struct isl_basic_map *)bset);
 }
 
 struct isl_basic_map *isl_map_affine_hull(struct isl_ctx *ctx,
