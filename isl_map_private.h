@@ -42,3 +42,8 @@ struct isl_basic_map *isl_basic_map_gauss(struct isl_ctx *ctx,
 	struct isl_basic_map *bmap, int *progress);
 struct isl_basic_set *isl_basic_set_gauss(struct isl_ctx *ctx,
 	struct isl_basic_set *bset, int *progress);
+
+struct isl_map *isl_map_remove_empty_parts(struct isl_ctx *ctx,
+	struct isl_map *map);
+struct isl_set *isl_set_remove_empty_parts(struct isl_ctx *ctx,
+	struct isl_set *set);

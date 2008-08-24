@@ -3040,3 +3040,33 @@ error:
 	isl_map_free(ctx, map);
 	return NULL;
 }
+
+/* There is no need to cow as removing empty parts doesn't change
+ * the meaning of the set.
+ */
+struct isl_map *isl_map_remove_empty_parts(struct isl_ctx *ctx,
+	struct isl_map *map)
+{
+	int i;
+
+	if (!map)
+		return NULL;
+
+	for (i = map->n-1; i >= 0; --i) {
+		if (!F_ISSET(map->p[i], ISL_BASIC_MAP_EMPTY))
+			continue;
+		isl_basic_map_free(ctx, map->p[i]);
+		if (i != map->n-1)
+			map->p[i] = map->p[map->n-1];
+		map->n--;
+	}
+
+	return map;
+}
+
+struct isl_set *isl_set_remove_empty_parts(struct isl_ctx *ctx,
+	struct isl_set *set)
+{
+	return (struct isl_set *)
+		isl_map_remove_empty_parts(ctx, (struct isl_map *)set);
+}
