@@ -232,8 +232,6 @@ struct isl_basic_map *isl_map_affine_hull(struct isl_ctx *ctx,
 	int i;
 	struct isl_basic_map *bmap;
 
-	map = isl_map_compute_divs(ctx, map);
-	map = isl_map_cow(ctx, map);
 	if (!map)
 		return NULL;
 
@@ -244,10 +242,8 @@ struct isl_basic_map *isl_map_affine_hull(struct isl_ctx *ctx,
 		return bmap;
 	}
 
-	for (i = 1; i < map->n; ++i)
-		map->p[0] = isl_basic_map_align_divs(ctx, map->p[0], map->p[i]);
-	for (i = 1; i < map->n; ++i)
-		map->p[i] = isl_basic_map_align_divs(ctx, map->p[i], map->p[0]);
+	map = isl_map_align_divs(ctx, map);
+	map = isl_map_cow(ctx, map);
 
 	for (i = 0; i < map->n; ++i) {
 		map->p[i] = isl_basic_map_cow(ctx, map->p[i]);

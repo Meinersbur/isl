@@ -2859,6 +2859,23 @@ error:
 	return NULL;
 }
 
+struct isl_map *isl_map_align_divs(struct isl_ctx *ctx, struct isl_map *map)
+{
+	int i;
+
+	map = isl_map_compute_divs(ctx, map);
+	map = isl_map_cow(ctx, map);
+	if (!map)
+		return NULL;
+
+	for (i = 1; i < map->n; ++i)
+		map->p[0] = isl_basic_map_align_divs(ctx, map->p[0], map->p[i]);
+	for (i = 1; i < map->n; ++i)
+		map->p[i] = isl_basic_map_align_divs(ctx, map->p[i], map->p[0]);
+
+	return map;
+}
+
 static struct isl_map *add_cut_constraint(struct isl_ctx *ctx,
 		struct isl_map *dst,
 		struct isl_basic_map *src, isl_int *c,
