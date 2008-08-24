@@ -771,6 +771,14 @@ struct isl_basic_map *isl_basic_map_gauss(struct isl_ctx *ctx,
 				    bmap->eq[done][1+last_var]);
 		}
 	}
+	if (done == bmap->n_eq)
+		return bmap;
+	for (k = done; k < bmap->n_eq; ++k) {
+		if (isl_int_is_zero(bmap->eq[k][0]))
+			continue;
+		return isl_basic_map_set_to_empty(ctx, bmap);
+	}
+	isl_basic_map_free_equality(ctx, bmap, bmap->n_eq-done);
 	return bmap;
 }
 
