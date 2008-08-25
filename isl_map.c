@@ -2666,6 +2666,8 @@ struct isl_map *isl_map_apply_range(
 		}
 	isl_map_free(ctx, map1);
 	isl_map_free(ctx, map2);
+	if (result && result->n <= 1)
+		F_SET(result, ISL_MAP_DISJOINT);
 	return result;
 error:
 	isl_map_free(ctx, map1);
