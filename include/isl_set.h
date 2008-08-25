@@ -124,6 +124,8 @@ struct isl_set *isl_set_subtract(struct isl_ctx *ctx, struct isl_set *set1,
 		struct isl_set *set2);
 struct isl_set *isl_set_apply(struct isl_ctx *ctx, struct isl_set *set,
 		struct isl_map *map);
+struct isl_set *isl_set_fix_dim_si(struct isl_ctx *ctx, struct isl_set *set,
+		unsigned dim, int value);
 
 void isl_set_dump(struct isl_ctx *ctx, struct isl_set *set, FILE *out,
 		  int indent);

@@ -2320,17 +2320,13 @@ error:
 	return NULL;
 }
 
-struct isl_basic_map *isl_basic_map_fix_input_si(struct isl_ctx *ctx,
+static struct isl_basic_map *isl_basic_map_fix_var(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap,
-		unsigned input, int value)
+		unsigned var, int value)
 {
 	int j;
 
 	bmap = isl_basic_map_cow(ctx, bmap);
-	if (!bmap)
-		return NULL;
-	isl_assert(ctx, input < bmap->n_in, goto error);
-
 	bmap = isl_basic_map_extend(ctx, bmap,
 			bmap->nparam, bmap->n_in, bmap->n_out, 0, 1, 0);
 	j = isl_basic_map_alloc_equality(ctx, bmap);
@@ -2338,12 +2334,40 @@ struct isl_basic_map *isl_basic_map_fix_input_si(struct isl_ctx *ctx,
 		goto error;
 	isl_seq_clr(bmap->eq[j],
 		    1 + bmap->nparam + bmap->n_in + bmap->n_out + bmap->extra);
-	isl_int_set_si(bmap->eq[j][1+bmap->nparam+input], -1);
+	isl_int_set_si(bmap->eq[j][1 + var], -1);
 	isl_int_set_si(bmap->eq[j][0], value);
 	bmap = isl_basic_map_simplify(ctx, bmap);
 	return isl_basic_map_finalize(ctx, bmap);
 error:
 	isl_basic_map_free(ctx, bmap);
+	return NULL;
+}
+
+struct isl_basic_map *isl_basic_map_fix_input_si(struct isl_ctx *ctx,
+		struct isl_basic_map *bmap,
+		unsigned input, int value)
+{
+	if (!bmap)
+		return NULL;
+	isl_assert(ctx, input < bmap->n_in, goto error);
+	return isl_basic_map_fix_var(ctx, bmap, bmap->nparam + input, value);
+error:
+	isl_basic_map_free(ctx, bmap);
+	return NULL;
+}
+
+struct isl_basic_set *isl_basic_set_fix_dim_si(struct isl_ctx *ctx,
+		struct isl_basic_set *bset,
+		unsigned dim, int value)
+{
+	if (!bset)
+		return NULL;
+	isl_assert(ctx, dim < bset->dim, goto error);
+	return (struct isl_basic_set *)
+		isl_basic_map_fix_var(ctx, (struct isl_basic_map *)bset,
+						bset->nparam + dim, value);
+error:
+	isl_basic_set_free(ctx, bset);
 	return NULL;
 }
 
@@ -2366,6 +2390,28 @@ struct isl_map *isl_map_fix_input_si(struct isl_ctx *ctx, struct isl_map *map,
 	return map;
 error:
 	isl_map_free(ctx, map);
+	return NULL;
+}
+
+struct isl_set *isl_set_fix_dim_si(struct isl_ctx *ctx, struct isl_set *set,
+		unsigned dim, int value)
+{
+	int i;
+
+	set = isl_set_cow(ctx, set);
+	if (!set)
+		return NULL;
+
+	isl_assert(ctx, dim < set->dim, goto error);
+	for (i = 0; i < set->n; ++i) {
+		set->p[i] = isl_basic_set_fix_dim_si(ctx, set->p[i],
+								dim, value);
+		if (!set->p[i])
+			goto error;
+	}
+	return set;
+error:
+	isl_set_free(ctx, set);
 	return NULL;
 }
 
