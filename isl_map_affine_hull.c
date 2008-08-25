@@ -167,7 +167,7 @@ static int transform_column(
 	isl_int_init(g);
 	isl_int_sub(b, bmap1->eq[t][col], bmap2->eq[t][col]);
 	for (i = 0; i < t; ++i) {
-		isl_int_sub(a, bmap2->eq[t][col], bmap1->eq[t][col]);
+		isl_int_sub(a, bmap2->eq[i][col], bmap1->eq[i][col]);
 		isl_int_gcd(g, a, b);
 		isl_int_divexact(a, a, g);
 		isl_int_divexact(g, b, g);
