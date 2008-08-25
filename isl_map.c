@@ -1567,8 +1567,9 @@ void isl_map_dump(struct isl_ctx *ctx, struct isl_map *map, FILE *out,
 	}
 
 	fprintf(out, "%*s", indent, "");
-	fprintf(out, "ref: %d, n: %d, nparam: %d, in: %d, out: %d\n",
-			map->ref, map->n, map->nparam, map->n_in, map->n_out);
+	fprintf(out, "ref: %d, n: %d, nparam: %d, in: %d, out: %d, flags: %x\n",
+			map->ref, map->n, map->nparam, map->n_in, map->n_out,
+			map->flags);
 	for (i = 0; i < map->n; ++i) {
 		fprintf(out, "%*s", indent, "");
 		fprintf(out, "basic map %d:\n", i);
