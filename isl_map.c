@@ -2517,6 +2517,13 @@ struct isl_set *isl_basic_set_compute_divs(struct isl_ctx *ctx,
 			(struct isl_basic_map *)bset);
 }
 
+struct isl_set *isl_set_compute_divs(struct isl_ctx *ctx,
+		struct isl_set *set)
+{
+	return (struct isl_set *)
+		isl_map_compute_divs(ctx, (struct isl_map *)set);
+}
+
 struct isl_set *isl_map_domain(struct isl_ctx *ctx, struct isl_map *map)
 {
 	int i;
