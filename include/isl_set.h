@@ -82,11 +82,15 @@ struct isl_basic_set *isl_basic_set_drop_vars(struct isl_ctx *ctx,
 struct isl_basic_set *isl_basic_set_intersect(
 		struct isl_ctx *ctx, struct isl_basic_set *bset1,
 		struct isl_basic_set *bset2);
+struct isl_basic_set *isl_basic_set_apply(
+		struct isl_ctx *ctx, struct isl_basic_set *bset,
+		struct isl_basic_map *bmap);
 struct isl_basic_set *isl_basic_set_affine_hull(struct isl_ctx *ctx,
 						struct isl_basic_set *bset);
 struct isl_basic_set *isl_basic_set_simplify(
 		struct isl_ctx *ctx, struct isl_basic_set *bset);
 #define ISL_FORMAT_POLYLIB	1
+#define ISL_FORMAT_OMEGA	2
 struct isl_basic_set *isl_basic_set_read_from_file(struct isl_ctx *ctx,
 		FILE *input, unsigned input_format);
 

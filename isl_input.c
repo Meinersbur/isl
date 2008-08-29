@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <isl_set.h>
 #include "isl_map_private.h"
+#include "isl_input_omega.h"
 
 static char *next_line(FILE *input, char *line, unsigned len)
 {
@@ -17,8 +18,8 @@ static char *next_line(FILE *input, char *line, unsigned len)
 	return p;
 }
 
-struct isl_basic_set *isl_basic_set_read_from_file(struct isl_ctx *ctx,
-		FILE *input, unsigned input_format)
+static struct isl_basic_set *isl_basic_set_read_from_file_polylib(
+		struct isl_ctx *ctx, FILE *input)
 {
 	struct isl_basic_set *bset = NULL;
 	int i, j;
@@ -28,7 +29,6 @@ struct isl_basic_set *isl_basic_set_read_from_file(struct isl_ctx *ctx,
 	char val[1024];
 	char *p;
 
-	isl_assert(ctx, input_format == ISL_FORMAT_POLYLIB, return NULL);
 	isl_assert(ctx, next_line(input, line, sizeof(line)), return NULL);
 	isl_assert(ctx, sscanf(line, "%u %u", &n_row, &n_col) == 2, return NULL);
 	isl_assert(ctx, n_col >= 2, return NULL);
@@ -73,4 +73,24 @@ struct isl_basic_set *isl_basic_set_read_from_file(struct isl_ctx *ctx,
 error:
 	isl_basic_set_free(ctx, bset);
 	return NULL;
+}
+
+struct isl_basic_set *isl_basic_set_read_from_file(struct isl_ctx *ctx,
+		FILE *input, unsigned input_format)
+{
+	if (input_format == ISL_FORMAT_POLYLIB)
+		return isl_basic_set_read_from_file_polylib(ctx, input);
+	else if (input_format == ISL_FORMAT_OMEGA)
+		return isl_basic_set_read_from_file_omega(ctx, input);
+	else
+		isl_assert(ctx, 0, return NULL);
+}
+
+struct isl_basic_map *isl_basic_map_read_from_file(struct isl_ctx *ctx,
+		FILE *input, unsigned input_format)
+{
+	if (input_format == ISL_FORMAT_OMEGA)
+		return isl_basic_map_read_from_file_omega(ctx, input);
+	else
+		isl_assert(ctx, 0, return NULL);
 }

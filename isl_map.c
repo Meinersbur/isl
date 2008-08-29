@@ -1813,6 +1813,24 @@ error:
 	return NULL;
 }
 
+struct isl_basic_set *isl_basic_set_apply(
+		struct isl_ctx *ctx, struct isl_basic_set *bset,
+		struct isl_basic_map *bmap)
+{
+	if (!bset || !bmap)
+		goto error;
+
+	isl_assert(ctx, bset->dim == bmap->n_in, goto error);
+
+	return (struct isl_basic_set *)
+		isl_basic_map_apply_range(ctx,
+			(struct isl_basic_map *)bset, bmap);
+error:
+	isl_basic_set_free(ctx, bset);
+	isl_basic_map_free(ctx, bmap);
+	return NULL;
+}
+
 struct isl_basic_map *isl_basic_map_apply_domain(
 		struct isl_ctx *ctx, struct isl_basic_map *bmap1,
 		struct isl_basic_map *bmap2)

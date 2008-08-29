@@ -6,6 +6,41 @@
 
 static char *srcdir;
 
+void test_application_case(struct isl_ctx *ctx, const char *name)
+{
+	char filename[PATH_MAX];
+	FILE *input;
+	int n;
+	struct isl_basic_set *bset1, *bset2;
+	struct isl_basic_map *bmap;
+
+	n = snprintf(filename, sizeof(filename),
+			"%s/test_inputs/%s.omega", srcdir, name);
+	assert(n < sizeof(filename));
+	input = fopen(filename, "r");
+	assert(input);
+
+	bset1 = isl_basic_set_read_from_file(ctx, input, ISL_FORMAT_OMEGA);
+	bmap = isl_basic_map_read_from_file(ctx, input, ISL_FORMAT_OMEGA);
+
+	bset1 = isl_basic_set_apply(ctx, bset1, bmap);
+
+	bset2 = isl_basic_set_read_from_file(ctx, input, ISL_FORMAT_OMEGA);
+
+	assert(isl_basic_set_is_equal(ctx, bset1, bset2) == 1);
+
+	isl_basic_set_free(ctx, bset1);
+	isl_basic_set_free(ctx, bset2);
+
+	fclose(input);
+}
+
+void test_application(struct isl_ctx *ctx)
+{
+	test_application_case(ctx, "application");
+	test_application_case(ctx, "application2");
+}
+
 void test_affine_hull_case(struct isl_ctx *ctx, const char *name)
 {
 	char filename[PATH_MAX];
@@ -87,6 +122,7 @@ int main()
 	srcdir = getenv("srcdir");
 
 	ctx = isl_ctx_alloc();
+	test_application(ctx);
 	test_affine_hull(ctx);
 	test_convex_hull(ctx);
 	isl_ctx_free(ctx);
