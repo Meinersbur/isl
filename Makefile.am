@@ -19,6 +19,7 @@ ISL_PIPLIB = \
 	isl_lp_piplib.c \
 	isl_map_piplib.c \
 	isl_sample_piplib.c \
+	isl_sample_piplib.h \
 	isl_piplib.c
 else
 ISL_PIPLIB = \
@@ -59,6 +60,7 @@ EXTRA_libisl_la_SOURCES = \
 	isl_map_polylib.c \
 	isl_sample_no_piplib.c \
 	isl_sample_piplib.c \
+	isl_sample_piplib.h \
 	isl_piplib.c
 libisl_la_LIBADD = $(PIPLIB_LA) @PIPLIB_LIBS@ @POLYLIB_LIBS@ -lgmp
 libisl_la_LDFLAGS = -release @VERSION@ @PIPLIB_LDFLAGS@ @POLYLIB_LDFLAGS@ \
