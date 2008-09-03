@@ -86,3 +86,5 @@ pkginclude_HEADERS = \
 	include/isl_seq.h \
 	include/isl_set.h \
 	include/isl_set_polylib.h
+
+EXTRA_DIST = test_inputs
