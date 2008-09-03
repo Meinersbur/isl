@@ -10,8 +10,7 @@ TESTS = isl_test
 
 if HAVE_POLYLIB
 ISL_POLYLIB = \
-	isl_map_polylib.c \
-	isl_polylib.h
+	isl_map_polylib.c
 endif
 
 if HAVE_PIPLIB
@@ -35,27 +34,20 @@ libisl_la_SOURCES = \
 	$(ISL_POLYLIB) \
 	isl_affine_hull.c \
 	isl_blk.c \
-	isl_blk.h \
 	isl_convex_hull.c \
 	isl_ctx.c \
-	isl_ctx.h \
 	isl_equalities.c \
 	isl_equalities.h \
 	isl_gmp.c \
 	isl_input.c \
-	isl_int.h \
-	isl_lp.h \
 	isl_lp.c \
 	isl_map.c \
-	isl_map.h \
 	isl_map_private.h \
 	isl_mat.c \
 	isl_mat.h \
 	isl_sample.h \
 	isl_sample.c \
-	isl_set.h \
 	isl_seq.c \
-	isl_seq.h \
 	isl_vec.c \
 	isl_vec.h
 EXTRA_libisl_la_SOURCES = \
