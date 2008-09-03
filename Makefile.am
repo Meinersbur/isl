@@ -3,6 +3,7 @@ MAYBE_PIPLIB = piplib
 endif
 
 SUBDIRS = $(MAYBE_PIPLIB) .
+DIST_SUBDIRS = $(MAYBE_PIPLIB)
 
 lib_LTLIBRARIES = libisl.la
 noinst_PROGRAMS = isl_test
