@@ -75,6 +75,37 @@ error:
 	return NULL;
 }
 
+static struct isl_set *isl_set_read_from_file_polylib(
+		struct isl_ctx *ctx, FILE *input)
+{
+	struct isl_set *set = NULL;
+	char line[1024];
+	int i;
+	unsigned n;
+
+	isl_assert(ctx, next_line(input, line, sizeof(line)), return NULL);
+	isl_assert(ctx, sscanf(line, "%u", &n) == 1, return NULL);
+
+	set = isl_set_alloc(ctx, 0, 0, n, 0);
+	if (!set)
+		return NULL;
+	if (n == 0)
+		return set;
+	for (i = 0; i < n; ++i) {
+		set->p[i] = isl_basic_set_read_from_file_polylib(ctx, input);
+		if (!set->p[i])
+			goto error;
+	}
+	set->n = n;
+	set->dim = set->p[0]->dim;
+	for (i = 1; i < n; ++i)
+		isl_assert(ctx, set->dim == set->p[i]->dim, goto error);
+	return set;
+error:
+	isl_set_free(ctx, set);
+	return NULL;
+}
+
 struct isl_basic_set *isl_basic_set_read_from_file(struct isl_ctx *ctx,
 		FILE *input, unsigned input_format)
 {
@@ -91,6 +122,15 @@ struct isl_basic_map *isl_basic_map_read_from_file(struct isl_ctx *ctx,
 {
 	if (input_format == ISL_FORMAT_OMEGA)
 		return isl_basic_map_read_from_file_omega(ctx, input);
+	else
+		isl_assert(ctx, 0, return NULL);
+}
+
+struct isl_set *isl_set_read_from_file(struct isl_ctx *ctx,
+		FILE *input, unsigned input_format)
+{
+	if (input_format == ISL_FORMAT_POLYLIB)
+		return isl_set_read_from_file_polylib(ctx, input);
 	else
 		isl_assert(ctx, 0, return NULL);
 }
