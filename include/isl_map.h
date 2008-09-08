@@ -144,7 +144,7 @@ struct isl_basic_map *isl_basic_map_simplify(
 #define ISL_FORMAT_POLYLIB	1
 #define ISL_FORMAT_OMEGA	2
 struct isl_basic_map *isl_basic_map_read_from_file(struct isl_ctx *ctx,
-		FILE *input, unsigned input_format);
+		FILE *input, unsigned nparam, unsigned input_format);
 
 struct isl_map *isl_basic_map_lexmax(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap, struct isl_basic_set *dom,

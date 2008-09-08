@@ -19,7 +19,7 @@ static char *next_line(FILE *input, char *line, unsigned len)
 }
 
 static struct isl_basic_set *isl_basic_set_read_from_file_polylib(
-		struct isl_ctx *ctx, FILE *input)
+		struct isl_ctx *ctx, FILE *input, unsigned nparam)
 {
 	struct isl_basic_set *bset = NULL;
 	int i, j;
@@ -32,8 +32,8 @@ static struct isl_basic_set *isl_basic_set_read_from_file_polylib(
 	isl_assert(ctx, next_line(input, line, sizeof(line)), return NULL);
 	isl_assert(ctx, sscanf(line, "%u %u", &n_row, &n_col) == 2, return NULL);
 	isl_assert(ctx, n_col >= 2, return NULL);
-	dim = n_col - 2;
-	bset = isl_basic_set_alloc(ctx, 0, dim, 0, n_row, n_row);
+	dim = n_col - 2 - nparam;
+	bset = isl_basic_set_alloc(ctx, nparam, dim, 0, n_row, n_row);
 	if (!bset)
 		return NULL;
 	for (i = 0; i < n_row; ++i) {
@@ -60,6 +60,12 @@ static struct isl_basic_set *isl_basic_set_read_from_file_polylib(
 		for (j = 0; j < dim; ++j) {
 			n = sscanf(p, "%s%n", val, &offset);
 			isl_assert(ctx, n != 0, goto error);
+			isl_int_read(c[1+nparam+j], val);
+			p += offset;
+		}
+		for (j = 0; j < nparam; ++j) {
+			n = sscanf(p, "%s%n", val, &offset);
+			isl_assert(ctx, n != 0, goto error);
 			isl_int_read(c[1+j], val);
 			p += offset;
 		}
@@ -76,7 +82,7 @@ error:
 }
 
 static struct isl_set *isl_set_read_from_file_polylib(
-		struct isl_ctx *ctx, FILE *input)
+		struct isl_ctx *ctx, FILE *input, unsigned nparam)
 {
 	struct isl_set *set = NULL;
 	char line[1024];
@@ -86,13 +92,14 @@ static struct isl_set *isl_set_read_from_file_polylib(
 	isl_assert(ctx, next_line(input, line, sizeof(line)), return NULL);
 	isl_assert(ctx, sscanf(line, "%u", &n) == 1, return NULL);
 
-	set = isl_set_alloc(ctx, 0, 0, n, 0);
+	set = isl_set_alloc(ctx, nparam, 0, n, 0);
 	if (!set)
 		return NULL;
 	if (n == 0)
 		return set;
 	for (i = 0; i < n; ++i) {
-		set->p[i] = isl_basic_set_read_from_file_polylib(ctx, input);
+		set->p[i] = isl_basic_set_read_from_file_polylib(ctx, input,
+								 nparam);
 		if (!set->p[i])
 			goto error;
 	}
@@ -107,18 +114,19 @@ error:
 }
 
 struct isl_basic_set *isl_basic_set_read_from_file(struct isl_ctx *ctx,
-		FILE *input, unsigned input_format)
+		FILE *input, unsigned nparam, unsigned input_format)
 {
 	if (input_format == ISL_FORMAT_POLYLIB)
-		return isl_basic_set_read_from_file_polylib(ctx, input);
-	else if (input_format == ISL_FORMAT_OMEGA)
+		return isl_basic_set_read_from_file_polylib(ctx, input, nparam);
+	else if (input_format == ISL_FORMAT_OMEGA) {
+		isl_assert(ctx, nparam == 0, return NULL);
 		return isl_basic_set_read_from_file_omega(ctx, input);
-	else
+	} else
 		isl_assert(ctx, 0, return NULL);
 }
 
 struct isl_basic_map *isl_basic_map_read_from_file(struct isl_ctx *ctx,
-		FILE *input, unsigned input_format)
+		FILE *input, unsigned nparam, unsigned input_format)
 {
 	if (input_format == ISL_FORMAT_OMEGA)
 		return isl_basic_map_read_from_file_omega(ctx, input);
@@ -127,10 +135,10 @@ struct isl_basic_map *isl_basic_map_read_from_file(struct isl_ctx *ctx,
 }
 
 struct isl_set *isl_set_read_from_file(struct isl_ctx *ctx,
-		FILE *input, unsigned input_format)
+		FILE *input, unsigned nparam, unsigned input_format)
 {
 	if (input_format == ISL_FORMAT_POLYLIB)
-		return isl_set_read_from_file_polylib(ctx, input);
+		return isl_set_read_from_file_polylib(ctx, input, nparam);
 	else
 		isl_assert(ctx, 0, return NULL);
 }
