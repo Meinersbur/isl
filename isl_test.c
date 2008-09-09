@@ -23,14 +23,14 @@ void test_application_case(struct isl_ctx *ctx, const char *name)
 	bset1 = isl_basic_set_read_from_file(ctx, input, 0, ISL_FORMAT_OMEGA);
 	bmap = isl_basic_map_read_from_file(ctx, input, 0, ISL_FORMAT_OMEGA);
 
-	bset1 = isl_basic_set_apply(ctx, bset1, bmap);
+	bset1 = isl_basic_set_apply(bset1, bmap);
 
 	bset2 = isl_basic_set_read_from_file(ctx, input, 0, ISL_FORMAT_OMEGA);
 
-	assert(isl_basic_set_is_equal(ctx, bset1, bset2) == 1);
+	assert(isl_basic_set_is_equal(bset1, bset2) == 1);
 
-	isl_basic_set_free(ctx, bset1);
-	isl_basic_set_free(ctx, bset2);
+	isl_basic_set_free(bset1);
+	isl_basic_set_free(bset2);
 
 	fclose(input);
 }
@@ -57,12 +57,12 @@ void test_affine_hull_case(struct isl_ctx *ctx, const char *name)
 	bset1 = isl_basic_set_read_from_file(ctx, input, 0, ISL_FORMAT_POLYLIB);
 	bset2 = isl_basic_set_read_from_file(ctx, input, 0, ISL_FORMAT_POLYLIB);
 
-	bset1 = isl_basic_set_affine_hull(ctx, bset1);
+	bset1 = isl_basic_set_affine_hull(bset1);
 
-	assert(isl_basic_set_is_equal(ctx, bset1, bset2) == 1);
+	assert(isl_basic_set_is_equal(bset1, bset2) == 1);
 
-	isl_basic_set_free(ctx, bset1);
-	isl_basic_set_free(ctx, bset2);
+	isl_basic_set_free(bset1);
+	isl_basic_set_free(bset2);
 
 	fclose(input);
 }
@@ -90,15 +90,15 @@ void test_convex_hull_case(struct isl_ctx *ctx, const char *name)
 	bset1 = isl_basic_set_read_from_file(ctx, input, 0, ISL_FORMAT_POLYLIB);
 	bset2 = isl_basic_set_read_from_file(ctx, input, 0, ISL_FORMAT_POLYLIB);
 
-	set = isl_basic_set_union(ctx, bset1, bset2);
-	bset1 = isl_set_convex_hull(ctx, set);
+	set = isl_basic_set_union(bset1, bset2);
+	bset1 = isl_set_convex_hull(set);
 
 	bset2 = isl_basic_set_read_from_file(ctx, input, 0, ISL_FORMAT_POLYLIB);
 
-	assert(isl_basic_set_is_equal(ctx, bset1, bset2) == 1);
+	assert(isl_basic_set_is_equal(bset1, bset2) == 1);
 
-	isl_basic_set_free(ctx, bset1);
-	isl_basic_set_free(ctx, bset2);
+	isl_basic_set_free(bset1);
+	isl_basic_set_free(bset2);
 
 	fclose(input);
 }

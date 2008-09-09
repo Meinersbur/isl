@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-struct isl_basic_set *isl_basic_set_remove_equalities(struct isl_ctx *ctx,
+struct isl_basic_set *isl_basic_set_remove_equalities(
 	struct isl_basic_set *bset, struct isl_mat **T, struct isl_mat **T2);
 
 #if defined(__cplusplus)

@@ -89,7 +89,7 @@ static struct isl_basic_set *compress_variables(struct isl_ctx *ctx,
 					isl_mat_free(ctx, *T2);
 					*T2 = NULL;
 				}
-				return isl_basic_set_set_to_empty(ctx, bset);
+				return isl_basic_set_set_to_empty(bset);
 			}
 			isl_seq_scale_down(TC->row[1+i], TC->row[1+i], TC->row[0][0], 1);
 		}
@@ -112,7 +112,7 @@ error:
 	isl_mat_free(ctx, U);
 	if (T2)
 		isl_mat_free(ctx, *T2);
-	isl_basic_set_free(ctx, bset);
+	isl_basic_set_free(bset);
 	if (T)
 		*T = NULL;
 	if (T2)
@@ -120,21 +120,23 @@ error:
 	return NULL;
 }
 
-struct isl_basic_set *isl_basic_set_remove_equalities(struct isl_ctx *ctx,
+struct isl_basic_set *isl_basic_set_remove_equalities(
 	struct isl_basic_set *bset, struct isl_mat **T, struct isl_mat **T2)
 {
-	isl_assert(ctx, bset->nparam == 0, goto error);
 	if (T)
 		*T = NULL;
 	if (T2)
 		*T2 = NULL;
-	bset = isl_basic_set_gauss(ctx, bset, NULL);
+	if (!bset)
+		return NULL;
+	isl_assert(bset->ctx, bset->nparam == 0, goto error);
+	bset = isl_basic_set_gauss(bset, NULL);
 	if (F_ISSET(bset, ISL_BASIC_SET_EMPTY))
 		return bset;
-	bset = compress_variables(ctx, bset, T, T2);
+	bset = compress_variables(bset->ctx, bset, T, T2);
 	return bset;
 error:
-	isl_basic_set_free(ctx, bset);
+	isl_basic_set_free(bset);
 	*T = NULL;
 	return NULL;
 }

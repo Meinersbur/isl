@@ -59,6 +59,8 @@ static struct isl_basic_map *basic_map_init(struct isl_ctx *ctx,
 	for (i = 0; i < extra; ++i)
 		bmap->div[i] = bmap->block2.data + i * (1 + row_size);
 
+	bmap->ctx = ctx;
+	isl_ctx_ref(ctx);
 	bmap->ref = 1;
 	bmap->flags = 0;
 	bmap->c_size = n_eq + n_ineq;
@@ -98,56 +100,55 @@ struct isl_basic_map *isl_basic_map_alloc(struct isl_ctx *ctx,
 			       nparam, in, out, extra, n_eq, n_ineq);
 }
 
-static void dup_constraints(struct isl_ctx *ctx,
+static void dup_constraints(
 		struct isl_basic_map *dst, struct isl_basic_map *src)
 {
 	int i;
 	unsigned total = src->nparam + src->n_in + src->n_out + src->n_div;
 
 	for (i = 0; i < src->n_eq; ++i) {
-		int j = isl_basic_map_alloc_equality(ctx, dst);
+		int j = isl_basic_map_alloc_equality(dst);
 		isl_seq_cpy(dst->eq[j], src->eq[i], 1+total);
 	}
 
 	for (i = 0; i < src->n_ineq; ++i) {
-		int j = isl_basic_map_alloc_inequality(ctx, dst);
+		int j = isl_basic_map_alloc_inequality(dst);
 		isl_seq_cpy(dst->ineq[j], src->ineq[i], 1+total);
 	}
 
 	for (i = 0; i < src->n_div; ++i) {
-		int j = isl_basic_map_alloc_div(ctx, dst);
+		int j = isl_basic_map_alloc_div(dst);
 		isl_seq_cpy(dst->div[j], src->div[i], 1+1+total);
 	}
 	F_SET(dst, ISL_BASIC_SET_FINAL);
 }
 
-struct isl_basic_map *isl_basic_map_dup(struct isl_ctx *ctx,
-					struct isl_basic_map *bmap)
+struct isl_basic_map *isl_basic_map_dup(struct isl_basic_map *bmap)
 {
 	struct isl_basic_map *dup;
 
-	dup = isl_basic_map_alloc(ctx, bmap->nparam,
+	if (!bmap)
+		return NULL;
+	dup = isl_basic_map_alloc(bmap->ctx, bmap->nparam,
 			bmap->n_in, bmap->n_out,
 			bmap->n_div, bmap->n_eq, bmap->n_ineq);
 	if (!dup)
 		return NULL;
 	dup->flags = bmap->flags;
-	dup_constraints(ctx, dup, bmap);
-	dup->sample = isl_vec_copy(ctx, bmap->sample);
+	dup_constraints(dup, bmap);
+	dup->sample = isl_vec_copy(bmap->ctx, bmap->sample);
 	return dup;
 }
 
-struct isl_basic_set *isl_basic_set_dup(struct isl_ctx *ctx,
-					struct isl_basic_set *bset)
+struct isl_basic_set *isl_basic_set_dup(struct isl_basic_set *bset)
 {
 	struct isl_basic_map *dup;
 
-	dup = isl_basic_map_dup(ctx, (struct isl_basic_map *)bset);
+	dup = isl_basic_map_dup((struct isl_basic_map *)bset);
 	return (struct isl_basic_set *)dup;
 }
 
-struct isl_basic_set *isl_basic_set_copy(struct isl_ctx *ctx,
-					struct isl_basic_set *bset)
+struct isl_basic_set *isl_basic_set_copy(struct isl_basic_set *bset)
 {
 	if (!bset)
 		return NULL;
@@ -156,10 +157,10 @@ struct isl_basic_set *isl_basic_set_copy(struct isl_ctx *ctx,
 		bset->ref++;
 		return bset;
 	}
-	return isl_basic_set_dup(ctx, bset);
+	return isl_basic_set_dup(bset);
 }
 
-struct isl_set *isl_set_copy(struct isl_ctx *ctx, struct isl_set *set)
+struct isl_set *isl_set_copy(struct isl_set *set)
 {
 	if (!set)
 		return NULL;
@@ -168,8 +169,7 @@ struct isl_set *isl_set_copy(struct isl_ctx *ctx, struct isl_set *set)
 	return set;
 }
 
-struct isl_basic_map *isl_basic_map_copy(struct isl_ctx *ctx,
-					struct isl_basic_map *bmap)
+struct isl_basic_map *isl_basic_map_copy(struct isl_basic_map *bmap)
 {
 	if (!bmap)
 		return NULL;
@@ -178,10 +178,10 @@ struct isl_basic_map *isl_basic_map_copy(struct isl_ctx *ctx,
 		bmap->ref++;
 		return bmap;
 	}
-	return isl_basic_map_dup(ctx, bmap);
+	return isl_basic_map_dup(bmap);
 }
 
-struct isl_map *isl_map_copy(struct isl_ctx *ctx, struct isl_map *map)
+struct isl_map *isl_map_copy(struct isl_map *map)
 {
 	if (!map)
 		return NULL;
@@ -190,7 +190,7 @@ struct isl_map *isl_map_copy(struct isl_ctx *ctx, struct isl_map *map)
 	return map;
 }
 
-void isl_basic_map_free(struct isl_ctx *ctx, struct isl_basic_map *bmap)
+void isl_basic_map_free(struct isl_basic_map *bmap)
 {
 	if (!bmap)
 		return;
@@ -198,29 +198,31 @@ void isl_basic_map_free(struct isl_ctx *ctx, struct isl_basic_map *bmap)
 	if (--bmap->ref > 0)
 		return;
 
+	isl_ctx_deref(bmap->ctx);
 	free(bmap->div);
-	isl_blk_free(ctx, bmap->block2);
+	isl_blk_free(bmap->ctx, bmap->block2);
 	free(bmap->eq);
-	isl_blk_free(ctx, bmap->block);
-	isl_vec_free(ctx, bmap->sample);
+	isl_blk_free(bmap->ctx, bmap->block);
+	isl_vec_free(bmap->ctx, bmap->sample);
 	free(bmap);
 }
 
-void isl_basic_set_free(struct isl_ctx *ctx, struct isl_basic_set *bset)
+void isl_basic_set_free(struct isl_basic_set *bset)
 {
-	isl_basic_map_free(ctx, (struct isl_basic_map *)bset);
+	isl_basic_map_free((struct isl_basic_map *)bset);
 }
 
-int isl_basic_map_alloc_equality(struct isl_ctx *ctx,
-		struct isl_basic_map *bmap)
+int isl_basic_map_alloc_equality(struct isl_basic_map *bmap)
 {
+	struct isl_ctx *ctx;
 	if (!bmap)
 		return -1;
+	ctx = bmap->ctx;
 	isl_assert(ctx, bmap->n_eq + bmap->n_ineq < bmap->c_size, return -1);
 	isl_assert(ctx, bmap->eq + bmap->n_eq <= bmap->ineq, return -1);
 	if (bmap->eq + bmap->n_eq == bmap->ineq) {
 		isl_int *t;
-		int j = isl_basic_map_alloc_inequality(ctx, bmap);
+		int j = isl_basic_map_alloc_inequality(bmap);
 		if (j < 0)
 			return -1;
 		t = bmap->ineq[0];
@@ -232,25 +234,26 @@ int isl_basic_map_alloc_equality(struct isl_ctx *ctx,
 	return bmap->n_eq++;
 }
 
-int isl_basic_set_alloc_equality(struct isl_ctx *ctx,
-		struct isl_basic_set *bset)
+int isl_basic_set_alloc_equality(struct isl_basic_set *bset)
 {
-	return isl_basic_map_alloc_equality(ctx, (struct isl_basic_map *)bset);
+	return isl_basic_map_alloc_equality((struct isl_basic_map *)bset);
 }
 
-int isl_basic_map_free_equality(struct isl_ctx *ctx,
-		struct isl_basic_map *bmap, unsigned n)
+int isl_basic_map_free_equality(struct isl_basic_map *bmap, unsigned n)
 {
-	isl_assert(ctx, n <= bmap->n_eq, return -1);
+	if (!bmap)
+		return -1;
+	isl_assert(bmap->ctx, n <= bmap->n_eq, return -1);
 	bmap->n_eq -= n;
 	return 0;
 }
 
-int isl_basic_map_drop_equality(struct isl_ctx *ctx,
-		struct isl_basic_map *bmap, unsigned pos)
+int isl_basic_map_drop_equality(struct isl_basic_map *bmap, unsigned pos)
 {
 	isl_int *t;
-	isl_assert(ctx, pos < bmap->n_eq, return -1);
+	if (!bmap)
+		return -1;
+	isl_assert(bmap->ctx, pos < bmap->n_eq, return -1);
 
 	if (pos != bmap->n_eq - 1) {
 		t = bmap->eq[pos];
@@ -261,14 +264,12 @@ int isl_basic_map_drop_equality(struct isl_ctx *ctx,
 	return 0;
 }
 
-int isl_basic_set_drop_equality(struct isl_ctx *ctx,
-		struct isl_basic_set *bset, unsigned pos)
+int isl_basic_set_drop_equality(struct isl_basic_set *bset, unsigned pos)
 {
-	return isl_basic_map_drop_equality(ctx,
-			(struct isl_basic_map *)bset, pos);
+	return isl_basic_map_drop_equality((struct isl_basic_map *)bset, pos);
 }
 
-void isl_basic_map_inequality_to_equality(struct isl_ctx *ctx,
+void isl_basic_map_inequality_to_equality(
 		struct isl_basic_map *bmap, unsigned pos)
 {
 	isl_int *t;
@@ -282,9 +283,12 @@ void isl_basic_map_inequality_to_equality(struct isl_ctx *ctx,
 	bmap->ineq++;
 }
 
-int isl_basic_map_alloc_inequality(struct isl_ctx *ctx,
-		struct isl_basic_map *bmap)
+int isl_basic_map_alloc_inequality(struct isl_basic_map *bmap)
 {
+	struct isl_ctx *ctx;
+	if (!bmap)
+		return -1;
+	ctx = bmap->ctx;
 	isl_assert(ctx, (bmap->ineq - bmap->eq) + bmap->n_ineq < bmap->c_size,
 			return -1);
 	F_CLR(bmap, ISL_BASIC_MAP_NO_IMPLICIT);
@@ -292,32 +296,31 @@ int isl_basic_map_alloc_inequality(struct isl_ctx *ctx,
 	return bmap->n_ineq++;
 }
 
-int isl_basic_set_alloc_inequality(struct isl_ctx *ctx,
-		struct isl_basic_set *bset)
+int isl_basic_set_alloc_inequality(struct isl_basic_set *bset)
 {
-	return isl_basic_map_alloc_inequality(ctx, (struct isl_basic_map *)bset);
+	return isl_basic_map_alloc_inequality((struct isl_basic_map *)bset);
 }
 
-int isl_basic_map_free_inequality(struct isl_ctx *ctx,
-		struct isl_basic_map *bmap, unsigned n)
+int isl_basic_map_free_inequality(struct isl_basic_map *bmap, unsigned n)
 {
-	isl_assert(ctx, n <= bmap->n_ineq, return -1);
+	if (!bmap)
+		return -1;
+	isl_assert(bmap->ctx, n <= bmap->n_ineq, return -1);
 	bmap->n_ineq -= n;
 	return 0;
 }
 
-int isl_basic_set_free_inequality(struct isl_ctx *ctx,
-		struct isl_basic_set *bset, unsigned n)
+int isl_basic_set_free_inequality(struct isl_basic_set *bset, unsigned n)
 {
-	return isl_basic_map_free_inequality(ctx,
-					    (struct isl_basic_map *)bset, n);
+	return isl_basic_map_free_inequality((struct isl_basic_map *)bset, n);
 }
 
-int isl_basic_map_drop_inequality(struct isl_ctx *ctx,
-		struct isl_basic_map *bmap, unsigned pos)
+int isl_basic_map_drop_inequality(struct isl_basic_map *bmap, unsigned pos)
 {
 	isl_int *t;
-	isl_assert(ctx, pos < bmap->n_ineq, return -1);
+	if (!bmap)
+		return -1;
+	isl_assert(bmap->ctx, pos < bmap->n_ineq, return -1);
 
 	if (pos != bmap->n_ineq - 1) {
 		t = bmap->ineq[pos];
@@ -328,24 +331,24 @@ int isl_basic_map_drop_inequality(struct isl_ctx *ctx,
 	return 0;
 }
 
-int isl_basic_set_drop_inequality(struct isl_ctx *ctx,
-		struct isl_basic_set *bset, unsigned pos)
+int isl_basic_set_drop_inequality(struct isl_basic_set *bset, unsigned pos)
 {
-	return isl_basic_map_drop_inequality(ctx,
-			(struct isl_basic_map *)bset, pos);
+	return isl_basic_map_drop_inequality((struct isl_basic_map *)bset, pos);
 }
 
-int isl_basic_map_alloc_div(struct isl_ctx *ctx,
-		struct isl_basic_map *bmap)
+int isl_basic_map_alloc_div(struct isl_basic_map *bmap)
 {
-	isl_assert(ctx, bmap->n_div < bmap->extra, return -1);
+	if (!bmap)
+		return -1;
+	isl_assert(bmap->ctx, bmap->n_div < bmap->extra, return -1);
 	return bmap->n_div++;
 }
 
-int isl_basic_map_free_div(struct isl_ctx *ctx,
-		struct isl_basic_map *bmap, unsigned n)
+int isl_basic_map_free_div(struct isl_basic_map *bmap, unsigned n)
 {
-	isl_assert(ctx, n <= bmap->n_div, return -1);
+	if (!bmap)
+		return -1;
+	isl_assert(bmap->ctx, n <= bmap->n_div, return -1);
 	bmap->n_div -= n;
 	return 0;
 }
@@ -396,15 +399,14 @@ static void copy_div(struct isl_basic_map *dst_map, isl_int *dst,
 	copy_constraint(dst_map, dst+1, src_map, src+1, in_off, out_off, div_off);
 }
 
-static struct isl_basic_map *add_constraints(struct isl_ctx *ctx,
-		struct isl_basic_map *bmap1,
+static struct isl_basic_map *add_constraints(struct isl_basic_map *bmap1,
 		struct isl_basic_map *bmap2, unsigned i_pos, unsigned o_pos)
 {
 	int i;
 	unsigned div_off = bmap1->n_div;
 
 	for (i = 0; i < bmap2->n_eq; ++i) {
-		int i1 = isl_basic_map_alloc_equality(ctx, bmap1);
+		int i1 = isl_basic_map_alloc_equality(bmap1);
 		if (i1 < 0)
 			goto error;
 		copy_constraint(bmap1, bmap1->eq[i1], bmap2, bmap2->eq[i],
@@ -412,7 +414,7 @@ static struct isl_basic_map *add_constraints(struct isl_ctx *ctx,
 	}
 
 	for (i = 0; i < bmap2->n_ineq; ++i) {
-		int i1 = isl_basic_map_alloc_inequality(ctx, bmap1);
+		int i1 = isl_basic_map_alloc_inequality(bmap1);
 		if (i1 < 0)
 			goto error;
 		copy_constraint(bmap1, bmap1->ineq[i1], bmap2, bmap2->ineq[i],
@@ -420,25 +422,24 @@ static struct isl_basic_map *add_constraints(struct isl_ctx *ctx,
 	}
 
 	for (i = 0; i < bmap2->n_div; ++i) {
-		int i1 = isl_basic_map_alloc_div(ctx, bmap1);
+		int i1 = isl_basic_map_alloc_div(bmap1);
 		if (i1 < 0)
 			goto error;
 		copy_div(bmap1, bmap1->div[i1], bmap2, bmap2->div[i],
 			 i_pos, o_pos, div_off);
 	}
 
-	isl_basic_map_free(ctx, bmap2);
+	isl_basic_map_free(bmap2);
 
 	return bmap1;
 
 error:
-	isl_basic_map_free(ctx, bmap1);
-	isl_basic_map_free(ctx, bmap2);
+	isl_basic_map_free(bmap1);
+	isl_basic_map_free(bmap2);
 	return NULL;
 }
 
-struct isl_basic_map *isl_basic_map_extend(struct isl_ctx *ctx,
-		struct isl_basic_map *base,
+struct isl_basic_map *isl_basic_map_extend(struct isl_basic_map *base,
 		unsigned nparam, unsigned n_in, unsigned n_out, unsigned extra,
 		unsigned n_eq, unsigned n_ineq)
 {
@@ -446,7 +447,7 @@ struct isl_basic_map *isl_basic_map_extend(struct isl_ctx *ctx,
 	unsigned flags;
 	int dims_ok;
 
-	base = isl_basic_map_cow(ctx, base);
+	base = isl_basic_map_cow(base);
 	if (!base)
 		goto error;
 
@@ -457,16 +458,14 @@ struct isl_basic_map *isl_basic_map_extend(struct isl_ctx *ctx,
 	if (dims_ok && n_eq == 0 && n_ineq == 0)
 		return base;
 
-	if (base) {
-		isl_assert(ctx, base->nparam <= nparam, goto error);
-		isl_assert(ctx, base->n_in <= n_in, goto error);
-		isl_assert(ctx, base->n_out <= n_out, goto error);
-		extra += base->extra;
-		n_eq += base->n_eq;
-		n_ineq += base->n_ineq;
-	}
+	isl_assert(base->ctx, base->nparam <= nparam, goto error);
+	isl_assert(base->ctx, base->n_in <= n_in, goto error);
+	isl_assert(base->ctx, base->n_out <= n_out, goto error);
+	extra += base->extra;
+	n_eq += base->n_eq;
+	n_ineq += base->n_ineq;
 
-	ext = isl_basic_map_alloc(ctx, nparam, n_in, n_out,
+	ext = isl_basic_map_alloc(base->ctx, nparam, n_in, n_out,
 					extra, n_eq, n_ineq);
 	if (!base)
 		return ext;
@@ -474,7 +473,7 @@ struct isl_basic_map *isl_basic_map_extend(struct isl_ctx *ctx,
 		goto error;
 
 	flags = base->flags;
-	ext = add_constraints(ctx, ext, base, 0, 0);
+	ext = add_constraints(ext, base, 0, 0);
 	if (ext) {
 		ext->flags = flags;
 		F_CLR(ext, ISL_BASIC_SET_FINAL);
@@ -483,42 +482,39 @@ struct isl_basic_map *isl_basic_map_extend(struct isl_ctx *ctx,
 	return ext;
 
 error:
-	isl_basic_map_free(ctx, base);
+	isl_basic_map_free(base);
 	return NULL;
 }
 
-struct isl_basic_set *isl_basic_set_extend(struct isl_ctx *ctx,
-		struct isl_basic_set *base,
+struct isl_basic_set *isl_basic_set_extend(struct isl_basic_set *base,
 		unsigned nparam, unsigned dim, unsigned extra,
 		unsigned n_eq, unsigned n_ineq)
 {
 	return (struct isl_basic_set *)
-		isl_basic_map_extend(ctx, (struct isl_basic_map *)base,
+		isl_basic_map_extend((struct isl_basic_map *)base,
 					nparam, 0, dim, extra, n_eq, n_ineq);
 }
 
-struct isl_basic_set *isl_basic_set_cow(struct isl_ctx *ctx,
-		struct isl_basic_set *bset)
+struct isl_basic_set *isl_basic_set_cow(struct isl_basic_set *bset)
 {
 	return (struct isl_basic_set *)
-		isl_basic_map_cow(ctx, (struct isl_basic_map *)bset);
+		isl_basic_map_cow((struct isl_basic_map *)bset);
 }
 
-struct isl_basic_map *isl_basic_map_cow(struct isl_ctx *ctx,
-		struct isl_basic_map *bmap)
+struct isl_basic_map *isl_basic_map_cow(struct isl_basic_map *bmap)
 {
 	if (!bmap)
 		return NULL;
 
 	if (bmap->ref > 1) {
 		bmap->ref--;
-		bmap = isl_basic_map_dup(ctx, bmap);
+		bmap = isl_basic_map_dup(bmap);
 	}
 	F_CLR(bmap, ISL_BASIC_SET_FINAL);
 	return bmap;
 }
 
-struct isl_set *isl_set_cow(struct isl_ctx *ctx, struct isl_set *set)
+struct isl_set *isl_set_cow(struct isl_set *set)
 {
 	if (!set)
 		return NULL;
@@ -526,10 +522,10 @@ struct isl_set *isl_set_cow(struct isl_ctx *ctx, struct isl_set *set)
 	if (set->ref == 1)
 		return set;
 	set->ref--;
-	return isl_set_dup(ctx, set);
+	return isl_set_dup(set);
 }
 
-struct isl_map *isl_map_cow(struct isl_ctx *ctx, struct isl_map *map)
+struct isl_map *isl_map_cow(struct isl_map *map)
 {
 	if (!map)
 		return NULL;
@@ -537,7 +533,7 @@ struct isl_map *isl_map_cow(struct isl_ctx *ctx, struct isl_map *map)
 	if (map->ref == 1)
 		return map;
 	map->ref--;
-	return isl_map_dup(ctx, map);
+	return isl_map_dup(map);
 }
 
 static void swap_vars(struct isl_blk blk, isl_int *a,
@@ -548,7 +544,7 @@ static void swap_vars(struct isl_blk blk, isl_int *a,
 	isl_seq_cpy(a, blk.data, b_len+a_len);
 }
 
-struct isl_basic_set *isl_basic_set_swap_vars(struct isl_ctx *ctx,
+struct isl_basic_set *isl_basic_set_swap_vars(
 		struct isl_basic_set *bset, unsigned n)
 {
 	int i;
@@ -557,16 +553,16 @@ struct isl_basic_set *isl_basic_set_swap_vars(struct isl_ctx *ctx,
 	if (!bset)
 		goto error;
 
-	isl_assert(ctx, n <= bset->dim, goto error);
+	isl_assert(bset->ctx, n <= bset->dim, goto error);
 
 	if (n == bset->dim)
 		return bset;
 
-	bset = isl_basic_set_cow(ctx, bset);
+	bset = isl_basic_set_cow(bset);
 	if (!bset)
 		return NULL;
 
-	blk = isl_blk_alloc(ctx, bset->dim);
+	blk = isl_blk_alloc(bset->ctx, bset->dim);
 	if (isl_blk_is_error(blk))
 		goto error;
 
@@ -582,27 +578,26 @@ struct isl_basic_set *isl_basic_set_swap_vars(struct isl_ctx *ctx,
 		swap_vars(blk,
 			  bset->div[i]+1+1+bset->nparam, n, bset->dim - n);
 
-	isl_blk_free(ctx, blk);
+	isl_blk_free(bset->ctx, blk);
 
 	return bset;
 
 error:
-	isl_basic_set_free(ctx, bset);
+	isl_basic_set_free(bset);
 	return NULL;
 }
 
-struct isl_set *isl_set_swap_vars(struct isl_ctx *ctx,
-		struct isl_set *set, unsigned n)
+struct isl_set *isl_set_swap_vars(struct isl_set *set, unsigned n)
 {
 	int i;
-	set = isl_set_cow(ctx, set);
+	set = isl_set_cow(set);
 	if (!set)
 		return NULL;
 
 	for (i = 0; i < set->n; ++i) {
-		set->p[i] = isl_basic_set_swap_vars(ctx, set->p[i], n);
+		set->p[i] = isl_basic_set_swap_vars(set->p[i], n);
 		if (!set->p[i]) {
-			isl_set_free(ctx, set);
+			isl_set_free(set);
 			return NULL;
 		}
 	}
@@ -615,7 +610,7 @@ static void constraint_drop_vars(isl_int *c, unsigned n, unsigned rem)
 	isl_seq_clr(c + rem, n);
 }
 
-struct isl_basic_set *isl_basic_set_drop_vars(struct isl_ctx *ctx,
+struct isl_basic_set *isl_basic_set_drop_vars(
 		struct isl_basic_set *bset, unsigned first, unsigned n)
 {
 	int i;
@@ -623,12 +618,12 @@ struct isl_basic_set *isl_basic_set_drop_vars(struct isl_ctx *ctx,
 	if (!bset)
 		goto error;
 
-	isl_assert(ctx, first + n <= bset->dim, goto error);
+	isl_assert(bset->ctx, first + n <= bset->dim, goto error);
 
 	if (n == 0)
 		return bset;
 
-	bset = isl_basic_set_cow(ctx, bset);
+	bset = isl_basic_set_cow(bset);
 	if (!bset)
 		return NULL;
 
@@ -647,13 +642,13 @@ struct isl_basic_set *isl_basic_set_drop_vars(struct isl_ctx *ctx,
 	bset->dim -= n;
 	bset->extra += n;
 
-	return isl_basic_set_finalize(ctx, bset);
+	return isl_basic_set_finalize(bset);
 error:
-	isl_basic_set_free(ctx, bset);
+	isl_basic_set_free(bset);
 	return NULL;
 }
 
-struct isl_set *isl_set_drop_vars(struct isl_ctx *ctx,
+struct isl_set *isl_set_drop_vars(
 		struct isl_set *set, unsigned first, unsigned n)
 {
 	int i;
@@ -661,16 +656,16 @@ struct isl_set *isl_set_drop_vars(struct isl_ctx *ctx,
 	if (!set)
 		goto error;
 
-	isl_assert(ctx, first + n <= set->dim, goto error);
+	isl_assert(set->ctx, first + n <= set->dim, goto error);
 
 	if (n == 0)
 		return set;
-	set = isl_set_cow(ctx, set);
+	set = isl_set_cow(set);
 	if (!set)
 		goto error;
 
 	for (i = 0; i < set->n; ++i) {
-		set->p[i] = isl_basic_set_drop_vars(ctx, set->p[i], first, n);
+		set->p[i] = isl_basic_set_drop_vars(set->p[i], first, n);
 		if (!set->p[i])
 			goto error;
 	}
@@ -678,14 +673,14 @@ struct isl_set *isl_set_drop_vars(struct isl_ctx *ctx,
 
 	return set;
 error:
-	isl_set_free(ctx, set);
+	isl_set_free(set);
 	return NULL;
 }
 
 /*
  * We don't cow, as the div is assumed to be redundant.
  */
-static struct isl_basic_map *isl_basic_map_drop_div(struct isl_ctx *ctx,
+static struct isl_basic_map *isl_basic_map_drop_div(
 		struct isl_basic_map *bmap, unsigned div)
 {
 	int i;
@@ -696,14 +691,14 @@ static struct isl_basic_map *isl_basic_map_drop_div(struct isl_ctx *ctx,
 
 	pos = 1 + bmap->nparam + bmap->n_in + bmap->n_out + div;
 
-	isl_assert(ctx, div < bmap->n_div, goto error);
+	isl_assert(bmap->ctx, div < bmap->n_div, goto error);
 
 	for (i = 0; i < bmap->n_eq; ++i)
 		constraint_drop_vars(bmap->eq[i]+pos, 1, bmap->extra-div-1);
 
 	for (i = 0; i < bmap->n_ineq; ++i) {
 		if (!isl_int_is_zero(bmap->ineq[i][pos])) {
-			isl_basic_map_drop_inequality(ctx, bmap, i);
+			isl_basic_map_drop_inequality(bmap, i);
 			--i;
 			continue;
 		}
@@ -722,16 +717,15 @@ static struct isl_basic_map *isl_basic_map_drop_div(struct isl_ctx *ctx,
 
 		bmap->div[bmap->n_div - 1] = t;
 	}
-	isl_basic_map_free_div(ctx, bmap, 1);
+	isl_basic_map_free_div(bmap, 1);
 
 	return bmap;
 error:
-	isl_basic_map_free(ctx, bmap);
+	isl_basic_map_free(bmap);
 	return NULL;
 }
 
-static void eliminate_div(struct isl_ctx *ctx, struct isl_basic_map *bmap,
-				isl_int *eq, unsigned div)
+static void eliminate_div(struct isl_basic_map *bmap, isl_int *eq, unsigned div)
 {
 	int i;
 	unsigned pos = 1 + bmap->nparam + bmap->n_in + bmap->n_out + div;
@@ -754,40 +748,38 @@ static void eliminate_div(struct isl_ctx *ctx, struct isl_basic_map *bmap,
 		    !isl_int_is_zero(bmap->div[i][1 + pos]))
 			isl_seq_clr(bmap->div[i], 1 + len);
 
-	isl_basic_map_drop_div(ctx, bmap, div);
+	isl_basic_map_drop_div(bmap, div);
 }
 
-struct isl_basic_map *isl_basic_map_set_to_empty(
-		struct isl_ctx *ctx, struct isl_basic_map *bmap)
+struct isl_basic_map *isl_basic_map_set_to_empty(struct isl_basic_map *bmap)
 {
 	int i = 0;
 	unsigned total;
 	if (!bmap)
 		goto error;
 	total = bmap->nparam + bmap->n_in + bmap->n_out + bmap->extra;
-	isl_basic_map_free_div(ctx, bmap, bmap->n_div);
-	isl_basic_map_free_inequality(ctx, bmap, bmap->n_ineq);
+	isl_basic_map_free_div(bmap, bmap->n_div);
+	isl_basic_map_free_inequality(bmap, bmap->n_ineq);
 	if (bmap->n_eq > 0)
-		isl_basic_map_free_equality(ctx, bmap, bmap->n_eq-1);
+		isl_basic_map_free_equality(bmap, bmap->n_eq-1);
 	else {
-		isl_basic_map_alloc_equality(ctx, bmap);
+		isl_basic_map_alloc_equality(bmap);
 		if (i < 0)
 			goto error;
 	}
 	isl_int_set_si(bmap->eq[i][0], 1);
 	isl_seq_clr(bmap->eq[i]+1, total);
 	F_SET(bmap, ISL_BASIC_MAP_EMPTY);
-	return isl_basic_map_finalize(ctx, bmap);
+	return isl_basic_map_finalize(bmap);
 error:
-	isl_basic_map_free(ctx, bmap);
+	isl_basic_map_free(bmap);
 	return NULL;
 }
 
-struct isl_basic_set *isl_basic_set_set_to_empty(
-		struct isl_ctx *ctx, struct isl_basic_set *bset)
+struct isl_basic_set *isl_basic_set_set_to_empty(struct isl_basic_set *bset)
 {
 	return (struct isl_basic_set *)
-		isl_basic_map_set_to_empty(ctx, (struct isl_basic_map *)bset);
+		isl_basic_map_set_to_empty((struct isl_basic_map *)bset);
 }
 
 static void swap_equality(struct isl_basic_map *bmap, int a, int b)
@@ -822,7 +814,7 @@ static void swap_div(struct isl_basic_map *bmap, int a, int b)
 		isl_int_swap(bmap->div[i][1+1+off+a], bmap->div[i][1+1+off+b]);
 }
 
-struct isl_basic_map *isl_basic_map_gauss(struct isl_ctx *ctx,
+struct isl_basic_map *isl_basic_map_gauss(
 	struct isl_basic_map *bmap, int *progress)
 {
 	int k;
@@ -898,16 +890,16 @@ struct isl_basic_map *isl_basic_map_gauss(struct isl_ctx *ctx,
 	for (k = done; k < bmap->n_eq; ++k) {
 		if (isl_int_is_zero(bmap->eq[k][0]))
 			continue;
-		return isl_basic_map_set_to_empty(ctx, bmap);
+		return isl_basic_map_set_to_empty(bmap);
 	}
-	isl_basic_map_free_equality(ctx, bmap, bmap->n_eq-done);
+	isl_basic_map_free_equality(bmap, bmap->n_eq-done);
 	return bmap;
 }
 
-struct isl_basic_set *isl_basic_set_gauss(struct isl_ctx *ctx,
+struct isl_basic_set *isl_basic_set_gauss(
 	struct isl_basic_set *bset, int *progress)
 {
-	return (struct isl_basic_set*)isl_basic_map_gauss(ctx,
+	return (struct isl_basic_set*)isl_basic_map_gauss(
 			(struct isl_basic_map *)bset, progress);
 }
 
@@ -937,7 +929,6 @@ static int hash_index(int *index, unsigned int size, int bits,
 }
 
 static struct isl_basic_map *remove_duplicate_constraints(
-	struct isl_ctx *ctx,
 	struct isl_basic_map *bmap, int *progress)
 {
 	unsigned int size;
@@ -968,7 +959,7 @@ static struct isl_basic_map *remove_duplicate_constraints(
 		l = index[h] - 1;
 		if (isl_int_lt(bmap->ineq[k][0], bmap->ineq[l][0]))
 			swap_inequality(bmap, k, l);
-		isl_basic_map_drop_inequality(ctx, bmap, k);
+		isl_basic_map_drop_inequality(bmap, k);
 		--k;
 	}
 	isl_int_init(sum);
@@ -988,10 +979,10 @@ static struct isl_basic_map *remove_duplicate_constraints(
 			 * will no longer be valid.
 			 * Plus, we probably we want to regauss first.
 			 */
-			isl_basic_map_drop_inequality(ctx, bmap, l);
-			isl_basic_map_inequality_to_equality(ctx, bmap, k);
+			isl_basic_map_drop_inequality(bmap, l);
+			isl_basic_map_inequality_to_equality(bmap, k);
 		} else
-			bmap = isl_basic_map_set_to_empty(ctx, bmap);
+			bmap = isl_basic_map_set_to_empty(bmap);
 		break;
 	}
 	isl_int_clear(sum);
@@ -1000,7 +991,7 @@ static struct isl_basic_map *remove_duplicate_constraints(
 	return bmap;
 }
 
-static struct isl_basic_map *remove_duplicate_divs(struct isl_ctx *ctx,
+static struct isl_basic_map *remove_duplicate_divs(
 	struct isl_basic_map *bmap, int *progress)
 {
 	unsigned int size;
@@ -1010,10 +1001,12 @@ static struct isl_basic_map *remove_duplicate_divs(struct isl_ctx *ctx,
 	struct isl_blk eq;
 	unsigned total_var = bmap->nparam + bmap->n_in + bmap->n_out;
 	unsigned total = total_var + bmap->n_div;
+	struct isl_ctx *ctx;
 
 	if (bmap->n_div <= 1)
 		return bmap;
 
+	ctx = bmap->ctx;
 	for (k = bmap->n_div - 1; k >= 0; --k)
 		if (!isl_int_is_zero(bmap->div[k][0]))
 			break;
@@ -1048,7 +1041,7 @@ static struct isl_basic_map *remove_duplicate_divs(struct isl_ctx *ctx,
 			l = index[h] - 1;
 			isl_int_set_si(eq.data[1+total_var+k], -1);
 			isl_int_set_si(eq.data[1+total_var+l], 1);
-			eliminate_div(ctx, bmap, eq.data, l);
+			eliminate_div(bmap, eq.data, l);
 			isl_int_set_si(eq.data[1+total_var+k], 0);
 			isl_int_set_si(eq.data[1+total_var+l], 0);
 		}
@@ -1064,8 +1057,7 @@ out:
 /* Elimininate divs based on equalities
  */
 static struct isl_basic_map *eliminate_divs_eq(
-		struct isl_ctx *ctx, struct isl_basic_map *bmap,
-		int *progress)
+		struct isl_basic_map *bmap, int *progress)
 {
 	int d;
 	int i;
@@ -1084,18 +1076,17 @@ static struct isl_basic_map *eliminate_divs_eq(
 				continue;
 			modified = 1;
 			*progress = 1;
-			eliminate_div(ctx, bmap, bmap->eq[i], d);
-			isl_basic_map_drop_equality(ctx, bmap, i);
+			eliminate_div(bmap, bmap->eq[i], d);
+			isl_basic_map_drop_equality(bmap, i);
 			break;
 		}
 	}
 	if (modified)
-		return eliminate_divs_eq(ctx, bmap, progress);
+		return eliminate_divs_eq(bmap, progress);
 	return bmap;
 }
 
-static struct isl_basic_map *normalize_constraints(
-		struct isl_ctx *ctx, struct isl_basic_map *bmap)
+static struct isl_basic_map *normalize_constraints(struct isl_basic_map *bmap)
 {
 	int i;
 	isl_int gcd;
@@ -1106,10 +1097,10 @@ static struct isl_basic_map *normalize_constraints(
 		isl_seq_gcd(bmap->eq[i]+1, total, &gcd);
 		if (isl_int_is_zero(gcd)) {
 			if (!isl_int_is_zero(bmap->eq[i][0])) {
-				bmap = isl_basic_map_set_to_empty(ctx, bmap);
+				bmap = isl_basic_map_set_to_empty(bmap);
 				break;
 			}
-			isl_basic_map_drop_equality(ctx, bmap, i);
+			isl_basic_map_drop_equality(bmap, i);
 			continue;
 		}
 		if (F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL))
@@ -1117,7 +1108,7 @@ static struct isl_basic_map *normalize_constraints(
 		if (isl_int_is_one(gcd))
 			continue;
 		if (!isl_int_is_divisible_by(bmap->eq[i][0], gcd)) {
-			bmap = isl_basic_map_set_to_empty(ctx, bmap);
+			bmap = isl_basic_map_set_to_empty(bmap);
 			break;
 		}
 		isl_seq_scale_down(bmap->eq[i], bmap->eq[i], gcd, 1+total);
@@ -1127,10 +1118,10 @@ static struct isl_basic_map *normalize_constraints(
 		isl_seq_gcd(bmap->ineq[i]+1, total, &gcd);
 		if (isl_int_is_zero(gcd)) {
 			if (isl_int_is_neg(bmap->ineq[i][0])) {
-				bmap = isl_basic_map_set_to_empty(ctx, bmap);
+				bmap = isl_basic_map_set_to_empty(bmap);
 				break;
 			}
-			isl_basic_map_drop_inequality(ctx, bmap, i);
+			isl_basic_map_drop_inequality(bmap, i);
 			continue;
 		}
 		if (F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL))
@@ -1149,7 +1140,7 @@ static struct isl_basic_map *normalize_constraints(
 /* Eliminate the specified variables from the constraints using
  * Fourier-Motzkin.  The variables themselves are not removed.
  */
-struct isl_basic_map *isl_basic_map_eliminate_vars(struct isl_ctx *ctx,
+struct isl_basic_map *isl_basic_map_eliminate_vars(
 	struct isl_basic_map *bmap, int pos, unsigned n)
 {
 	int d;
@@ -1162,8 +1153,8 @@ struct isl_basic_map *isl_basic_map_eliminate_vars(struct isl_ctx *ctx,
 	total = bmap->nparam + bmap->n_in + bmap->n_out + bmap->n_div;
 	extra = bmap->extra - bmap->n_div;
 
-	bmap = isl_basic_map_cow(ctx, bmap);
-	bmap = isl_basic_map_gauss(ctx, bmap, NULL);
+	bmap = isl_basic_map_cow(bmap);
+	bmap = isl_basic_map_gauss(bmap, NULL);
 	for (d = pos + n - 1; d >= pos; --d) {
 		int n_lower, n_upper;
 		if (!bmap)
@@ -1171,7 +1162,7 @@ struct isl_basic_map *isl_basic_map_eliminate_vars(struct isl_ctx *ctx,
 		for (i = 0; i < bmap->n_eq; ++i) {
 			if (isl_int_is_zero(bmap->eq[i][1+d]))
 				continue;
-			isl_basic_map_drop_equality(ctx, bmap, i);
+			isl_basic_map_drop_equality(bmap, i);
 			break;
 		}
 		if (i < bmap->n_eq)
@@ -1184,7 +1175,7 @@ struct isl_basic_map *isl_basic_map_eliminate_vars(struct isl_ctx *ctx,
 			else if (isl_int_is_neg(bmap->ineq[i][1+d]))
 				n_upper++;
 		}
-		bmap = isl_basic_map_extend(ctx, bmap,
+		bmap = isl_basic_map_extend(bmap,
 				bmap->nparam, bmap->n_in, bmap->n_out, 0,
 				0, n_lower * n_upper);
 		for (i = bmap->n_ineq - 1; i >= 0; --i) {
@@ -1199,7 +1190,7 @@ struct isl_basic_map *isl_basic_map_eliminate_vars(struct isl_ctx *ctx,
 				if (isl_int_sgn(bmap->ineq[i][1+d]) ==
 				    isl_int_sgn(bmap->ineq[j][1+d]))
 					continue;
-				k = isl_basic_map_alloc_inequality(ctx, bmap);
+				k = isl_basic_map_alloc_inequality(bmap);
 				if (k < 0)
 					goto error;
 				isl_seq_cpy(bmap->ineq[k], bmap->ineq[i],
@@ -1208,42 +1199,43 @@ struct isl_basic_map *isl_basic_map_eliminate_vars(struct isl_ctx *ctx,
 				isl_seq_elim(bmap->ineq[k], bmap->ineq[j],
 						1+d, 1+total, NULL);
 			}
-			isl_basic_map_drop_inequality(ctx, bmap, i);
+			isl_basic_map_drop_inequality(bmap, i);
 			i = last + 1;
 		}
 		if (n_lower > 0 && n_upper > 0) {
-			bmap = normalize_constraints(ctx, bmap);
-			bmap = isl_basic_map_gauss(ctx, bmap, NULL);
+			bmap = normalize_constraints(bmap);
+			bmap = isl_basic_map_gauss(bmap, NULL);
 			if (F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
 				break;
 		}
 	}
 	return bmap;
 error:
-	isl_basic_map_free(ctx, bmap);
+	isl_basic_map_free(bmap);
 	return NULL;
 }
 
-struct isl_basic_set *isl_basic_set_eliminate_vars(struct isl_ctx *ctx,
+struct isl_basic_set *isl_basic_set_eliminate_vars(
 	struct isl_basic_set *bset, unsigned pos, unsigned n)
 {
-	return (struct isl_basic_set *)isl_basic_map_eliminate_vars(ctx,
+	return (struct isl_basic_set *)isl_basic_map_eliminate_vars(
 			(struct isl_basic_map *)bset, pos, n);
 }
 
 /* Elimininate divs based on inequalities
  */
 static struct isl_basic_map *eliminate_divs_ineq(
-		struct isl_ctx *ctx, struct isl_basic_map *bmap,
-		int *progress)
+		struct isl_basic_map *bmap, int *progress)
 {
 	int d;
 	int i;
 	unsigned off;
+	struct isl_ctx *ctx;
 
 	if (!bmap)
 		return NULL;
 
+	ctx = bmap->ctx;
 	off = 1 + bmap->nparam + bmap->n_in + bmap->n_out;
 
 	for (d = bmap->n_div - 1; d >= 0 ; --d) {
@@ -1258,40 +1250,37 @@ static struct isl_basic_map *eliminate_divs_ineq(
 		if (i < bmap->n_ineq)
 			continue;
 		*progress = 1;
-		bmap = isl_basic_map_eliminate_vars(ctx, bmap, (off-1)+d, 1);
+		bmap = isl_basic_map_eliminate_vars(bmap, (off-1)+d, 1);
 		if (F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
 			break;
-		bmap = isl_basic_map_drop_div(ctx, bmap, d);
+		bmap = isl_basic_map_drop_div(bmap, d);
 		if (!bmap)
 			break;
 	}
 	return bmap;
 }
 
-struct isl_basic_map *isl_basic_map_simplify(
-		struct isl_ctx *ctx, struct isl_basic_map *bmap)
+struct isl_basic_map *isl_basic_map_simplify(struct isl_basic_map *bmap)
 {
 	int progress = 1;
 	if (!bmap)
 		return NULL;
 	while (progress) {
 		progress = 0;
-		bmap = normalize_constraints(ctx, bmap);
-		bmap = eliminate_divs_eq(ctx, bmap, &progress);
-		bmap = eliminate_divs_ineq(ctx, bmap, &progress);
-		bmap = isl_basic_map_gauss(ctx, bmap, &progress);
-		bmap = remove_duplicate_divs(ctx, bmap, &progress);
-		bmap = remove_duplicate_constraints(ctx, bmap, &progress);
+		bmap = normalize_constraints(bmap);
+		bmap = eliminate_divs_eq(bmap, &progress);
+		bmap = eliminate_divs_ineq(bmap, &progress);
+		bmap = isl_basic_map_gauss(bmap, &progress);
+		bmap = remove_duplicate_divs(bmap, &progress);
+		bmap = remove_duplicate_constraints(bmap, &progress);
 	}
 	return bmap;
 }
 
-struct isl_basic_set *isl_basic_set_simplify(
-		struct isl_ctx *ctx, struct isl_basic_set *bset)
+struct isl_basic_set *isl_basic_set_simplify(struct isl_basic_set *bset)
 {
 	return (struct isl_basic_set *)
-		isl_basic_map_simplify(ctx,
-			(struct isl_basic_map *)bset);
+		isl_basic_map_simplify((struct isl_basic_map *)bset);
 }
 
 static void dump_term(struct isl_basic_map *bmap,
@@ -1402,8 +1391,7 @@ static void dump(struct isl_basic_map *bmap, FILE *out, int indent)
 	}
 }
 
-void isl_basic_set_dump(struct isl_ctx *ctx, struct isl_basic_set *bset,
-				FILE *out, int indent)
+void isl_basic_set_dump(struct isl_basic_set *bset, FILE *out, int indent)
 {
 	if (!bset) {
 		fprintf(out, "null basic set\n");
@@ -1416,8 +1404,7 @@ void isl_basic_set_dump(struct isl_ctx *ctx, struct isl_basic_set *bset,
 	dump((struct isl_basic_map *)bset, out, indent);
 }
 
-void isl_basic_map_dump(struct isl_ctx *ctx, struct isl_basic_map *bmap,
-				FILE *out, int indent)
+void isl_basic_map_dump(struct isl_basic_map *bmap, FILE *out, int indent)
 {
 	if (!bmap) {
 		fprintf(out, "null basic map\n");
@@ -1431,11 +1418,12 @@ void isl_basic_map_dump(struct isl_ctx *ctx, struct isl_basic_map *bmap,
 	dump(bmap, out, indent);
 }
 
-int isl_inequality_negate(struct isl_ctx *ctx,
-		struct isl_basic_map *bmap, unsigned pos)
+int isl_inequality_negate(struct isl_basic_map *bmap, unsigned pos)
 {
 	unsigned total = bmap->nparam + bmap->n_in + bmap->n_out + bmap->n_div;
-	isl_assert(ctx, pos < bmap->n_ineq, return -1);
+	if (!bmap)
+		return -1;
+	isl_assert(bmap->ctx, pos < bmap->n_ineq, return -1);
 	isl_seq_neg(bmap->ineq[pos], bmap->ineq[pos], 1 + total);
 	isl_int_sub_ui(bmap->ineq[pos][0], bmap->ineq[pos][0], 1);
 	return 0;
@@ -1452,6 +1440,8 @@ struct isl_set *isl_set_alloc(struct isl_ctx *ctx,
 	if (!set)
 		return NULL;
 
+	set->ctx = ctx;
+	isl_ctx_ref(ctx);
 	set->ref = 1;
 	set->size = n;
 	set->n = 0;
@@ -1462,67 +1452,73 @@ struct isl_set *isl_set_alloc(struct isl_ctx *ctx,
 	return set;
 }
 
-struct isl_set *isl_set_dup(struct isl_ctx *ctx, struct isl_set *set)
+struct isl_set *isl_set_dup(struct isl_set *set)
 {
 	int i;
 	struct isl_set *dup;
 
-	dup = isl_set_alloc(ctx, set->nparam, set->dim, set->n, set->flags);
+	if (!set)
+		return NULL;
+
+	dup = isl_set_alloc(set->ctx, set->nparam, set->dim, set->n, set->flags);
 	if (!dup)
 		return NULL;
 	for (i = 0; i < set->n; ++i)
-		dup = isl_set_add(ctx, dup,
-				  isl_basic_set_dup(ctx, set->p[i]));
+		dup = isl_set_add(dup,
+				  isl_basic_set_dup(set->p[i]));
 	return dup;
 }
 
-struct isl_set *isl_set_from_basic_set(struct isl_ctx *ctx,
-				struct isl_basic_set *bset)
+struct isl_set *isl_set_from_basic_set(struct isl_basic_set *bset)
 {
 	struct isl_set *set;
 
-	set = isl_set_alloc(ctx, bset->nparam, bset->dim, 1, ISL_MAP_DISJOINT);
+	if (!bset)
+		return NULL;
+
+	set = isl_set_alloc(bset->ctx, bset->nparam, bset->dim, 1, ISL_MAP_DISJOINT);
 	if (!set) {
-		isl_basic_set_free(ctx, bset);
+		isl_basic_set_free(bset);
 		return NULL;
 	}
-	return isl_set_add(ctx, set, bset);
+	return isl_set_add(set, bset);
 }
 
-struct isl_map *isl_map_from_basic_map(struct isl_ctx *ctx,
-				struct isl_basic_map *bmap)
+struct isl_map *isl_map_from_basic_map(struct isl_basic_map *bmap)
 {
 	struct isl_map *map;
 
-	map = isl_map_alloc(ctx, bmap->nparam, bmap->n_in, bmap->n_out, 1,
+	if (!bmap)
+		return NULL;
+
+	map = isl_map_alloc(bmap->ctx, bmap->nparam, bmap->n_in, bmap->n_out, 1,
 				ISL_MAP_DISJOINT);
 	if (!map) {
-		isl_basic_map_free(ctx, bmap);
+		isl_basic_map_free(bmap);
 		return NULL;
 	}
-	return isl_map_add(ctx, map, bmap);
+	return isl_map_add(map, bmap);
 }
 
-struct isl_set *isl_set_add(struct isl_ctx *ctx, struct isl_set *set,
-				struct isl_basic_set *bset)
+struct isl_set *isl_set_add(struct isl_set *set, struct isl_basic_set *bset)
 {
 	if (!bset || !set)
 		goto error;
-	isl_assert(ctx, set->nparam == bset->nparam, goto error);
-	isl_assert(ctx, set->dim == bset->dim, goto error);
-	isl_assert(ctx, set->n < set->size, goto error);
+	isl_assert(set->ctx, set->nparam == bset->nparam, goto error);
+	isl_assert(set->ctx, set->dim == bset->dim, goto error);
+	isl_assert(set->ctx, set->n < set->size, goto error);
 	set->p[set->n] = bset;
 	set->n++;
 	return set;
 error:
 	if (set)
-		isl_set_free(ctx, set);
+		isl_set_free(set);
 	if (bset)
-		isl_basic_set_free(ctx, bset);
+		isl_basic_set_free(bset);
 	return NULL;
 }
 
-void isl_set_free(struct isl_ctx *ctx, struct isl_set *set)
+void isl_set_free(struct isl_set *set)
 {
 	int i;
 
@@ -1532,13 +1528,13 @@ void isl_set_free(struct isl_ctx *ctx, struct isl_set *set)
 	if (--set->ref > 0)
 		return;
 
+	isl_ctx_deref(set->ctx);
 	for (i = 0; i < set->n; ++i)
-		isl_basic_set_free(ctx, set->p[i]);
+		isl_basic_set_free(set->p[i]);
 	free(set);
 }
 
-void isl_set_dump(struct isl_ctx *ctx, struct isl_set *set, FILE *out,
-		  int indent)
+void isl_set_dump(struct isl_set *set, FILE *out, int indent)
 {
 	int i;
 
@@ -1552,12 +1548,11 @@ void isl_set_dump(struct isl_ctx *ctx, struct isl_set *set, FILE *out,
 	for (i = 0; i < set->n; ++i) {
 		fprintf(out, "%*s", indent, "");
 		fprintf(out, "basic set %d:\n", i);
-		isl_basic_set_dump(ctx, set->p[i], out, indent+4);
+		isl_basic_set_dump(set->p[i], out, indent+4);
 	}
 }
 
-void isl_map_dump(struct isl_ctx *ctx, struct isl_map *map, FILE *out,
-		  int indent)
+void isl_map_dump(struct isl_map *map, FILE *out, int indent)
 {
 	int i;
 
@@ -1573,106 +1568,101 @@ void isl_map_dump(struct isl_ctx *ctx, struct isl_map *map, FILE *out,
 	for (i = 0; i < map->n; ++i) {
 		fprintf(out, "%*s", indent, "");
 		fprintf(out, "basic map %d:\n", i);
-		isl_basic_map_dump(ctx, map->p[i], out, indent+4);
+		isl_basic_map_dump(map->p[i], out, indent+4);
 	}
 }
 
 struct isl_basic_map *isl_basic_map_intersect_domain(
-		struct isl_ctx *ctx, struct isl_basic_map *bmap,
-		struct isl_basic_set *bset)
+		struct isl_basic_map *bmap, struct isl_basic_set *bset)
 {
 	struct isl_basic_map *bmap_domain;
 
 	if (!bmap || !bset)
 		goto error;
 
-	isl_assert(ctx, bset->dim == bmap->n_in, goto error);
-	isl_assert(ctx, bset->nparam == bmap->nparam, goto error);
+	isl_assert(bset->ctx, bset->dim == bmap->n_in, goto error);
+	isl_assert(bset->ctx, bset->nparam == bmap->nparam, goto error);
 
-	bmap = isl_basic_map_extend(ctx, bmap,
+	bmap = isl_basic_map_extend(bmap,
 			bset->nparam, bmap->n_in, bmap->n_out,
 			bset->n_div, bset->n_eq, bset->n_ineq);
 	if (!bmap)
 		goto error;
-	bmap_domain = isl_basic_map_from_basic_set(ctx, bset,
+	bmap_domain = isl_basic_map_from_basic_set(bset,
 						bset->dim, 0);
-	bmap = add_constraints(ctx, bmap, bmap_domain, 0, 0);
+	bmap = add_constraints(bmap, bmap_domain, 0, 0);
 
-	bmap = isl_basic_map_simplify(ctx, bmap);
-	return isl_basic_map_finalize(ctx, bmap);
+	bmap = isl_basic_map_simplify(bmap);
+	return isl_basic_map_finalize(bmap);
 error:
-	isl_basic_map_free(ctx, bmap);
-	isl_basic_set_free(ctx, bset);
+	isl_basic_map_free(bmap);
+	isl_basic_set_free(bset);
 	return NULL;
 }
 
 struct isl_basic_map *isl_basic_map_intersect_range(
-		struct isl_ctx *ctx, struct isl_basic_map *bmap,
-		struct isl_basic_set *bset)
+		struct isl_basic_map *bmap, struct isl_basic_set *bset)
 {
 	struct isl_basic_map *bmap_range;
 
 	if (!bmap || !bset)
 		goto error;
 
-	isl_assert(ctx, bset->dim == bmap->n_out, goto error);
-	isl_assert(ctx, bset->nparam == bmap->nparam, goto error);
+	isl_assert(bset->ctx, bset->dim == bmap->n_out, goto error);
+	isl_assert(bset->ctx, bset->nparam == bmap->nparam, goto error);
 
-	bmap = isl_basic_map_extend(ctx, bmap,
+	bmap = isl_basic_map_extend(bmap,
 			bset->nparam, bmap->n_in, bmap->n_out,
 			bset->n_div, bset->n_eq, bset->n_ineq);
 	if (!bmap)
 		goto error;
-	bmap_range = isl_basic_map_from_basic_set(ctx, bset,
+	bmap_range = isl_basic_map_from_basic_set(bset,
 						0, bset->dim);
-	bmap = add_constraints(ctx, bmap, bmap_range, 0, 0);
+	bmap = add_constraints(bmap, bmap_range, 0, 0);
 
-	bmap = isl_basic_map_simplify(ctx, bmap);
-	return isl_basic_map_finalize(ctx, bmap);
+	bmap = isl_basic_map_simplify(bmap);
+	return isl_basic_map_finalize(bmap);
 error:
-	isl_basic_map_free(ctx, bmap);
-	isl_basic_set_free(ctx, bset);
+	isl_basic_map_free(bmap);
+	isl_basic_set_free(bset);
 	return NULL;
 }
 
 struct isl_basic_map *isl_basic_map_intersect(
-		struct isl_ctx *ctx, struct isl_basic_map *bmap1,
-		struct isl_basic_map *bmap2)
+		struct isl_basic_map *bmap1, struct isl_basic_map *bmap2)
 {
 	if (!bmap1 || !bmap2)
 		goto error;
 
-	isl_assert(ctx, bmap1->nparam == bmap2->nparam, goto error);
-	isl_assert(ctx, bmap1->n_in == bmap2->n_in, goto error);
-	isl_assert(ctx, bmap1->n_out == bmap2->n_out, goto error);
+	isl_assert(bmap1->ctx, bmap1->nparam == bmap2->nparam, goto error);
+	isl_assert(bmap1->ctx, bmap1->n_in == bmap2->n_in, goto error);
+	isl_assert(bmap1->ctx, bmap1->n_out == bmap2->n_out, goto error);
 
-	bmap1 = isl_basic_map_extend(ctx, bmap1,
+	bmap1 = isl_basic_map_extend(bmap1,
 			bmap1->nparam, bmap1->n_in, bmap1->n_out,
 			bmap2->n_div, bmap2->n_eq, bmap2->n_ineq);
 	if (!bmap1)
 		goto error;
-	bmap1 = add_constraints(ctx, bmap1, bmap2, 0, 0);
+	bmap1 = add_constraints(bmap1, bmap2, 0, 0);
 
-	bmap1 = isl_basic_map_simplify(ctx, bmap1);
-	return isl_basic_map_finalize(ctx, bmap1);
+	bmap1 = isl_basic_map_simplify(bmap1);
+	return isl_basic_map_finalize(bmap1);
 error:
-	isl_basic_map_free(ctx, bmap1);
-	isl_basic_map_free(ctx, bmap2);
+	isl_basic_map_free(bmap1);
+	isl_basic_map_free(bmap2);
 	return NULL;
 }
 
 struct isl_basic_set *isl_basic_set_intersect(
-		struct isl_ctx *ctx, struct isl_basic_set *bset1,
-		struct isl_basic_set *bset2)
+		struct isl_basic_set *bset1, struct isl_basic_set *bset2)
 {
 	return (struct isl_basic_set *)
-		isl_basic_map_intersect(ctx,
+		isl_basic_map_intersect(
 			(struct isl_basic_map *)bset1,
 			(struct isl_basic_map *)bset2);
 }
 
-struct isl_map *isl_map_intersect(struct isl_ctx *ctx, struct isl_map *map1,
-		struct isl_map *map2)
+struct isl_map *isl_map_intersect(struct isl_map *map1, struct isl_map *map2)
 {
 	unsigned flags = 0;
 	struct isl_map *result;
@@ -1685,54 +1675,52 @@ struct isl_map *isl_map_intersect(struct isl_ctx *ctx, struct isl_map *map1,
 	    F_ISSET(map2, ISL_MAP_DISJOINT))
 		FL_SET(flags, ISL_MAP_DISJOINT);
 
-	result = isl_map_alloc(ctx, map1->nparam, map1->n_in, map1->n_out,
+	result = isl_map_alloc(map1->ctx, map1->nparam, map1->n_in, map1->n_out,
 				map1->n * map2->n, flags);
 	if (!result)
 		goto error;
 	for (i = 0; i < map1->n; ++i)
 		for (j = 0; j < map2->n; ++j) {
 			struct isl_basic_map *part;
-			part = isl_basic_map_intersect(ctx,
-				    isl_basic_map_copy(ctx, map1->p[i]),
-				    isl_basic_map_copy(ctx, map2->p[j]));
-			if (isl_basic_map_is_empty(ctx, part))
-				isl_basic_map_free(ctx, part);
+			part = isl_basic_map_intersect(
+				    isl_basic_map_copy(map1->p[i]),
+				    isl_basic_map_copy(map2->p[j]));
+			if (isl_basic_map_is_empty(part))
+				isl_basic_map_free(part);
 			else
-				result = isl_map_add(ctx, result, part);
+				result = isl_map_add(result, part);
 			if (!result)
 				goto error;
 		}
-	isl_map_free(ctx, map1);
-	isl_map_free(ctx, map2);
+	isl_map_free(map1);
+	isl_map_free(map2);
 	return result;
 error:
-	isl_map_free(ctx, map1);
-	isl_map_free(ctx, map2);
+	isl_map_free(map1);
+	isl_map_free(map2);
 	return NULL;
 }
 
-struct isl_basic_map *isl_basic_map_reverse(struct isl_ctx *ctx,
-		struct isl_basic_map *bmap)
+struct isl_basic_map *isl_basic_map_reverse(struct isl_basic_map *bmap)
 {
 	struct isl_basic_set *bset;
 	unsigned in;
 
 	if (!bmap)
 		return NULL;
-	bmap = isl_basic_map_cow(ctx, bmap);
+	bmap = isl_basic_map_cow(bmap);
 	if (!bmap)
 		return NULL;
 	in = bmap->n_in;
-	bset = isl_basic_set_from_basic_map(ctx, bmap);
-	bset = isl_basic_set_swap_vars(ctx, bset, in);
-	return isl_basic_map_from_basic_set(ctx, bset, bset->dim-in, in);
+	bset = isl_basic_set_from_basic_map(bmap);
+	bset = isl_basic_set_swap_vars(bset, in);
+	return isl_basic_map_from_basic_set(bset, bset->dim-in, in);
 }
 
 /* Turn final n dimensions into existentially quantified variables.
  */
 struct isl_basic_set *isl_basic_set_project_out(
-		struct isl_ctx *ctx, struct isl_basic_set *bset,
-		unsigned n, unsigned flags)
+		struct isl_basic_set *bset, unsigned n, unsigned flags)
 {
 	int i;
 	size_t row_size;
@@ -1742,16 +1730,16 @@ struct isl_basic_set *isl_basic_set_project_out(
 	if (!bset)
 		return NULL;
 
-	isl_assert(ctx, n <= bset->dim, goto error);
+	isl_assert(bset->ctx, n <= bset->dim, goto error);
 
 	if (n == 0)
 		return bset;
 
-	bset = isl_basic_set_cow(ctx, bset);
+	bset = isl_basic_set_cow(bset);
 
 	row_size = 1 + bset->nparam + bset->dim + bset->extra;
 	old = bset->block2.data;
-	bset->block2 = isl_blk_extend(ctx, bset->block2,
+	bset->block2 = isl_blk_extend(bset->ctx, bset->block2,
 					(bset->extra + n) * (1 + row_size));
 	if (!bset->block2.data)
 		goto error;
@@ -1770,16 +1758,15 @@ struct isl_basic_set *isl_basic_set_project_out(
 	bset->n_div += n;
 	bset->extra += n;
 	bset->dim -= n;
-	bset = isl_basic_set_simplify(ctx, bset);
-	return isl_basic_set_finalize(ctx, bset);
+	bset = isl_basic_set_simplify(bset);
+	return isl_basic_set_finalize(bset);
 error:
-	isl_basic_set_free(ctx, bset);
+	isl_basic_set_free(bset);
 	return NULL;
 }
 
 struct isl_basic_map *isl_basic_map_apply_range(
-		struct isl_ctx *ctx, struct isl_basic_map *bmap1,
-		struct isl_basic_map *bmap2)
+		struct isl_basic_map *bmap1, struct isl_basic_map *bmap2)
 {
 	struct isl_basic_set *bset;
 	unsigned n_in, n_out;
@@ -1787,53 +1774,50 @@ struct isl_basic_map *isl_basic_map_apply_range(
 	if (!bmap1 || !bmap2)
 		goto error;
 
-	isl_assert(ctx, bmap1->n_out == bmap2->n_in, goto error);
-	isl_assert(ctx, bmap1->nparam == bmap2->nparam, goto error);
+	isl_assert(bmap->ctx, bmap1->n_out == bmap2->n_in, goto error);
+	isl_assert(bmap->ctx, bmap1->nparam == bmap2->nparam, goto error);
 
 	n_in = bmap1->n_in;
 	n_out = bmap2->n_out;
 
-	bmap2 = isl_basic_map_reverse(ctx, bmap2);
+	bmap2 = isl_basic_map_reverse(bmap2);
 	if (!bmap2)
 		goto error;
-	bmap1 = isl_basic_map_extend(ctx, bmap1, bmap1->nparam,
+	bmap1 = isl_basic_map_extend(bmap1, bmap1->nparam,
 			bmap1->n_in + bmap2->n_in, bmap1->n_out,
 			bmap2->extra, bmap2->n_eq, bmap2->n_ineq);
 	if (!bmap1)
 		goto error;
-	bmap1 = add_constraints(ctx, bmap1, bmap2, bmap1->n_in - bmap2->n_in, 0);
-	bmap1 = isl_basic_map_simplify(ctx, bmap1);
-	bset = isl_basic_set_from_basic_map(ctx, bmap1);
-	bset = isl_basic_set_project_out(ctx, bset,
+	bmap1 = add_constraints(bmap1, bmap2, bmap1->n_in - bmap2->n_in, 0);
+	bmap1 = isl_basic_map_simplify(bmap1);
+	bset = isl_basic_set_from_basic_map(bmap1);
+	bset = isl_basic_set_project_out(bset,
 						bset->dim - (n_in + n_out), 0);
-	return isl_basic_map_from_basic_set(ctx, bset, n_in, n_out);
+	return isl_basic_map_from_basic_set(bset, n_in, n_out);
 error:
-	isl_basic_map_free(ctx, bmap1);
-	isl_basic_map_free(ctx, bmap2);
+	isl_basic_map_free(bmap1);
+	isl_basic_map_free(bmap2);
 	return NULL;
 }
 
 struct isl_basic_set *isl_basic_set_apply(
-		struct isl_ctx *ctx, struct isl_basic_set *bset,
-		struct isl_basic_map *bmap)
+		struct isl_basic_set *bset, struct isl_basic_map *bmap)
 {
 	if (!bset || !bmap)
 		goto error;
 
-	isl_assert(ctx, bset->dim == bmap->n_in, goto error);
+	isl_assert(bset->ctx, bset->dim == bmap->n_in, goto error);
 
 	return (struct isl_basic_set *)
-		isl_basic_map_apply_range(ctx,
-			(struct isl_basic_map *)bset, bmap);
+		isl_basic_map_apply_range((struct isl_basic_map *)bset, bmap);
 error:
-	isl_basic_set_free(ctx, bset);
-	isl_basic_map_free(ctx, bmap);
+	isl_basic_set_free(bset);
+	isl_basic_map_free(bmap);
 	return NULL;
 }
 
 struct isl_basic_map *isl_basic_map_apply_domain(
-		struct isl_ctx *ctx, struct isl_basic_map *bmap1,
-		struct isl_basic_map *bmap2)
+		struct isl_basic_map *bmap1, struct isl_basic_map *bmap2)
 {
 	if (!bmap1 || !bmap2)
 		goto error;
@@ -1841,12 +1825,12 @@ struct isl_basic_map *isl_basic_map_apply_domain(
 	isl_assert(ctx, bmap1->n_in == bmap2->n_in, goto error);
 	isl_assert(ctx, bmap1->nparam == bmap2->nparam, goto error);
 
-	bmap1 = isl_basic_map_reverse(ctx, bmap1);
-	bmap1 = isl_basic_map_apply_range(ctx, bmap1, bmap2);
-	return isl_basic_map_reverse(ctx, bmap1);
+	bmap1 = isl_basic_map_reverse(bmap1);
+	bmap1 = isl_basic_map_apply_range(bmap1, bmap2);
+	return isl_basic_map_reverse(bmap1);
 error:
-	isl_basic_map_free(ctx, bmap1);
-	isl_basic_map_free(ctx, bmap2);
+	isl_basic_map_free(bmap1);
+	isl_basic_map_free(bmap2);
 	return NULL;
 }
 
@@ -1854,16 +1838,16 @@ static struct isl_basic_map *var_equal(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap, unsigned pos)
 {
 	int i;
-	i = isl_basic_map_alloc_equality(ctx, bmap);
+	i = isl_basic_map_alloc_equality(bmap);
 	if (i < 0)
 		goto error;
 	isl_seq_clr(bmap->eq[i],
 		    1 + bmap->nparam + bmap->n_in + bmap->n_out + bmap->extra);
 	isl_int_set_si(bmap->eq[i][1+bmap->nparam+pos], -1);
 	isl_int_set_si(bmap->eq[i][1+bmap->nparam+bmap->n_in+pos], 1);
-	return isl_basic_map_finalize(ctx, bmap);
+	return isl_basic_map_finalize(bmap);
 error:
-	isl_basic_map_free(ctx, bmap);
+	isl_basic_map_free(bmap);
 	return NULL;
 }
 
@@ -1871,7 +1855,7 @@ static struct isl_basic_map *var_more(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap, unsigned pos)
 {
 	int i;
-	i = isl_basic_map_alloc_inequality(ctx, bmap);
+	i = isl_basic_map_alloc_inequality(bmap);
 	if (i < 0)
 		goto error;
 	isl_seq_clr(bmap->ineq[i],
@@ -1879,9 +1863,9 @@ static struct isl_basic_map *var_more(struct isl_ctx *ctx,
 	isl_int_set_si(bmap->ineq[i][0], -1);
 	isl_int_set_si(bmap->ineq[i][1+bmap->nparam+pos], -1);
 	isl_int_set_si(bmap->ineq[i][1+bmap->nparam+bmap->n_in+pos], 1);
-	return isl_basic_map_finalize(ctx, bmap);
+	return isl_basic_map_finalize(bmap);
 error:
-	isl_basic_map_free(ctx, bmap);
+	isl_basic_map_free(bmap);
 	return NULL;
 }
 
@@ -1889,7 +1873,7 @@ static struct isl_basic_map *var_less(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap, unsigned pos)
 {
 	int i;
-	i = isl_basic_map_alloc_inequality(ctx, bmap);
+	i = isl_basic_map_alloc_inequality(bmap);
 	if (i < 0)
 		goto error;
 	isl_seq_clr(bmap->ineq[i],
@@ -1897,9 +1881,9 @@ static struct isl_basic_map *var_less(struct isl_ctx *ctx,
 	isl_int_set_si(bmap->ineq[i][0], -1);
 	isl_int_set_si(bmap->ineq[i][1+bmap->nparam+pos], 1);
 	isl_int_set_si(bmap->ineq[i][1+bmap->nparam+bmap->n_in+pos], -1);
-	return isl_basic_map_finalize(ctx, bmap);
+	return isl_basic_map_finalize(bmap);
 error:
-	isl_basic_map_free(ctx, bmap);
+	isl_basic_map_free(bmap);
 	return NULL;
 }
 
@@ -1913,7 +1897,7 @@ struct isl_basic_map *isl_basic_map_equal(struct isl_ctx *ctx,
 		return NULL;
 	for (i = 0; i < n_equal && bmap; ++i)
 		bmap = var_equal(ctx, bmap, i);
-	return isl_basic_map_finalize(ctx, bmap);
+	return isl_basic_map_finalize(bmap);
 }
 
 struct isl_basic_map *isl_basic_map_less_at(struct isl_ctx *ctx,
@@ -1928,7 +1912,7 @@ struct isl_basic_map *isl_basic_map_less_at(struct isl_ctx *ctx,
 		bmap = var_equal(ctx, bmap, i);
 	if (bmap)
 		bmap = var_less(ctx, bmap, pos);
-	return isl_basic_map_finalize(ctx, bmap);
+	return isl_basic_map_finalize(bmap);
 }
 
 struct isl_basic_map *isl_basic_map_more_at(struct isl_ctx *ctx,
@@ -1943,16 +1927,15 @@ struct isl_basic_map *isl_basic_map_more_at(struct isl_ctx *ctx,
 		bmap = var_equal(ctx, bmap, i);
 	if (bmap)
 		bmap = var_more(ctx, bmap, pos);
-	return isl_basic_map_finalize(ctx, bmap);
+	return isl_basic_map_finalize(bmap);
 }
 
 struct isl_basic_map *isl_basic_map_from_basic_set(
-		struct isl_ctx *ctx, struct isl_basic_set *bset,
-		unsigned n_in, unsigned n_out)
+		struct isl_basic_set *bset, unsigned n_in, unsigned n_out)
 {
 	struct isl_basic_map *bmap;
 
-	bset = isl_basic_set_cow(ctx, bset);
+	bset = isl_basic_set_cow(bset);
 	if (!bset)
 		return NULL;
 
@@ -1960,25 +1943,24 @@ struct isl_basic_map *isl_basic_map_from_basic_set(
 	bmap = (struct isl_basic_map *) bset;
 	bmap->n_in = n_in;
 	bmap->n_out = n_out;
-	return isl_basic_map_finalize(ctx, bmap);
+	return isl_basic_map_finalize(bmap);
 error:
-	isl_basic_set_free(ctx, bset);
+	isl_basic_set_free(bset);
 	return NULL;
 }
 
-struct isl_basic_set *isl_basic_set_from_basic_map(
-		struct isl_ctx *ctx, struct isl_basic_map *bmap)
+struct isl_basic_set *isl_basic_set_from_basic_map(struct isl_basic_map *bmap)
 {
 	if (!bmap)
 		goto error;
 	if (bmap->n_in == 0)
 		return (struct isl_basic_set *)bmap;
-	bmap = isl_basic_map_cow(ctx, bmap);
+	bmap = isl_basic_map_cow(bmap);
 	if (!bmap)
 		goto error;
 	bmap->n_out += bmap->n_in;
 	bmap->n_in = 0;
-	bmap = isl_basic_map_finalize(ctx, bmap);
+	bmap = isl_basic_map_finalize(bmap);
 	return (struct isl_basic_set *)bmap;
 error:
 	return NULL;
@@ -1993,20 +1975,19 @@ error:
  *
  *		f - m d >= n
  */
-static int add_div_constraints(struct isl_ctx *ctx,
-		struct isl_basic_map *bmap, unsigned div)
+static int add_div_constraints(struct isl_basic_map *bmap, unsigned div)
 {
 	int i, j;
 	unsigned div_pos = 1 + bmap->nparam + bmap->n_in + bmap->n_out + div;
 	unsigned total = bmap->nparam + bmap->n_in + bmap->n_out + bmap->extra;
 
-	i = isl_basic_map_alloc_inequality(ctx, bmap);
+	i = isl_basic_map_alloc_inequality(bmap);
 	if (i < 0)
 		return -1;
 	isl_seq_cpy(bmap->ineq[i], bmap->div[div]+1, 1+total);
 	isl_int_neg(bmap->ineq[i][div_pos], bmap->div[div][0]);
 
-	j = isl_basic_map_alloc_inequality(ctx, bmap);
+	j = isl_basic_map_alloc_inequality(bmap);
 	if (j < 0)
 		return -1;
 	isl_seq_neg(bmap->ineq[j], bmap->ineq[i], 1 + total);
@@ -2016,13 +1997,13 @@ static int add_div_constraints(struct isl_ctx *ctx,
 }
 
 struct isl_basic_set *isl_basic_map_underlying_set(
-		struct isl_ctx *ctx, struct isl_basic_map *bmap)
+		struct isl_basic_map *bmap)
 {
 	if (!bmap)
 		goto error;
 	if (bmap->nparam == 0 && bmap->n_in == 0 && bmap->n_div == 0)
 		return (struct isl_basic_set *)bmap;
-	bmap = isl_basic_map_cow(ctx, bmap);
+	bmap = isl_basic_map_cow(bmap);
 	if (!bmap)
 		goto error;
 	bmap->n_out += bmap->nparam + bmap->n_in + bmap->n_div;
@@ -2030,30 +2011,31 @@ struct isl_basic_set *isl_basic_map_underlying_set(
 	bmap->n_in = 0;
 	bmap->extra -= bmap->n_div;
 	bmap->n_div = 0;
-	bmap = isl_basic_map_finalize(ctx, bmap);
+	bmap = isl_basic_map_finalize(bmap);
 	return (struct isl_basic_set *)bmap;
 error:
 	return NULL;
 }
 
 struct isl_basic_map *isl_basic_map_overlying_set(
-	struct isl_ctx *ctx, struct isl_basic_set *bset,
-	struct isl_basic_map *like)
+	struct isl_basic_set *bset, struct isl_basic_map *like)
 {
 	struct isl_basic_map *bmap;
+	struct isl_ctx *ctx;
 	unsigned total;
 	int i, k;
 
 	if (!bset || !like)
 		goto error;
+	ctx = bset->ctx;
 	isl_assert(ctx, bset->dim ==
 			like->nparam + like->n_in + like->n_out + like->n_div,
 			goto error);
 	if (like->nparam == 0 && like->n_in == 0 && like->n_div == 0) {
-		isl_basic_map_free(ctx, like);
+		isl_basic_map_free(like);
 		return (struct isl_basic_map *)bset;
 	}
-	bset = isl_basic_set_cow(ctx, bset);
+	bset = isl_basic_set_cow(bset);
 	total = bset->dim + bset->extra;
 	if (!bset)
 		goto error;
@@ -2075,39 +2057,39 @@ struct isl_basic_map *isl_basic_map_overlying_set(
 						bmap->extra);
 		if (!bmap->div)
 			goto error;
-		bmap = isl_basic_map_extend(ctx, bmap, bmap->nparam,
+		bmap = isl_basic_map_extend(bmap, bmap->nparam,
 			bmap->n_in, bmap->n_out, 0, 0, 2 * like->n_div);
 		for (i = 0; i < like->n_div; ++i) {
-			k = isl_basic_map_alloc_div(ctx, bmap);
+			k = isl_basic_map_alloc_div(bmap);
 			if (k < 0)
 				goto error;
 			isl_seq_cpy(bmap->div[k], like->div[i], 1 + 1 + ltotal);
 			isl_seq_clr(bmap->div[k]+1+1+ltotal, total - ltotal);
-			if (add_div_constraints(ctx, bmap, k) < 0)
+			if (add_div_constraints(bmap, k) < 0)
 				goto error;
 		}
 	}
-	isl_basic_map_free(ctx, like);
-	bmap = isl_basic_map_finalize(ctx, bmap);
+	isl_basic_map_free(like);
+	bmap = isl_basic_map_finalize(bmap);
 	return bmap;
 error:
-	isl_basic_map_free(ctx, like);
-	isl_basic_set_free(ctx, bset);
+	isl_basic_map_free(like);
+	isl_basic_set_free(bset);
 	return NULL;
 }
 
-struct isl_set *isl_map_underlying_set(struct isl_ctx *ctx, struct isl_map *map)
+struct isl_set *isl_map_underlying_set(struct isl_map *map)
 {
 	int i;
 
-	map = isl_map_align_divs(ctx, map);
-	map = isl_map_cow(ctx, map);
+	map = isl_map_align_divs(map);
+	map = isl_map_cow(map);
 	if (!map)
 		return NULL;
 
 	for (i = 0; i < map->n; ++i) {
 		map->p[i] = (struct isl_basic_map *)
-				isl_basic_map_underlying_set(ctx, map->p[i]);
+				isl_basic_map_underlying_set(map->p[i]);
 		if (!map->p[i])
 			goto error;
 	}
@@ -2119,56 +2101,52 @@ struct isl_set *isl_map_underlying_set(struct isl_ctx *ctx, struct isl_map *map)
 	map->n_in = 0;
 	return (struct isl_set *)map;
 error:
-	isl_map_free(ctx, map);
+	isl_map_free(map);
 	return NULL;
 }
 
-struct isl_basic_set *isl_basic_map_domain(struct isl_ctx *ctx,
-		struct isl_basic_map *bmap)
+struct isl_basic_set *isl_basic_map_domain(struct isl_basic_map *bmap)
 {
 	struct isl_basic_set *domain;
 	unsigned n_out;
 	if (!bmap)
 		return NULL;
 	n_out = bmap->n_out;
-	domain = isl_basic_set_from_basic_map(ctx, bmap);
-	return isl_basic_set_project_out(ctx, domain, n_out, 0);
+	domain = isl_basic_set_from_basic_map(bmap);
+	return isl_basic_set_project_out(domain, n_out, 0);
 }
 
-struct isl_basic_set *isl_basic_map_range(struct isl_ctx *ctx,
-		struct isl_basic_map *bmap)
+struct isl_basic_set *isl_basic_map_range(struct isl_basic_map *bmap)
 {
-	return isl_basic_map_domain(ctx,
-			isl_basic_map_reverse(ctx, bmap));
+	return isl_basic_map_domain(isl_basic_map_reverse(bmap));
 }
 
-struct isl_set *isl_map_range(struct isl_ctx *ctx, struct isl_map *map)
+struct isl_set *isl_map_range(struct isl_map *map)
 {
 	int i;
 	struct isl_set *set;
 
 	if (!map)
 		goto error;
-	map = isl_map_cow(ctx, map);
+	map = isl_map_cow(map);
 	if (!map)
 		goto error;
 
 	set = (struct isl_set *) map;
 	set->zero = 0;
 	for (i = 0; i < map->n; ++i) {
-		set->p[i] = isl_basic_map_range(ctx, map->p[i]);
+		set->p[i] = isl_basic_map_range(map->p[i]);
 		if (!set->p[i])
 			goto error;
 	}
 	F_CLR(set, ISL_MAP_DISJOINT);
 	return set;
 error:
-	isl_map_free(ctx, map);
+	isl_map_free(map);
 	return NULL;
 }
 
-struct isl_map *isl_map_from_set(
-		struct isl_ctx *ctx, struct isl_set *set,
+struct isl_map *isl_map_from_set(struct isl_set *set,
 		unsigned n_in, unsigned n_out)
 {
 	int i;
@@ -2176,13 +2154,13 @@ struct isl_map *isl_map_from_set(
 
 	if (!set)
 		return NULL;
-	isl_assert(ctx, set->dim == n_in + n_out, goto error);
-	set = isl_set_cow(ctx, set);
+	isl_assert(set->ctx, set->dim == n_in + n_out, goto error);
+	set = isl_set_cow(set);
 	if (!set)
 		return NULL;
 	map = (struct isl_map *)set;
 	for (i = 0; i < set->n; ++i) {
-		map->p[i] = isl_basic_map_from_basic_set(ctx,
+		map->p[i] = isl_basic_map_from_basic_set(
 				set->p[i], n_in, n_out);
 		if (!map->p[i])
 			goto error;
@@ -2191,7 +2169,7 @@ struct isl_map *isl_map_from_set(
 	map->n_out = n_out;
 	return map;
 error:
-	isl_set_free(ctx, set);
+	isl_set_free(set);
 	return NULL;
 }
 
@@ -2207,6 +2185,8 @@ struct isl_map *isl_map_alloc(struct isl_ctx *ctx,
 	if (!map)
 		return NULL;
 
+	map->ctx = ctx;
+	isl_ctx_ref(ctx);
 	map->ref = 1;
 	map->size = n;
 	map->n = 0;
@@ -2222,7 +2202,7 @@ struct isl_basic_map *isl_basic_map_empty(struct isl_ctx *ctx,
 {
 	struct isl_basic_map *bmap;
 	bmap = isl_basic_map_alloc(ctx, nparam, in, out, 0, 1, 0);
-	bmap = isl_basic_map_set_to_empty(ctx, bmap);
+	bmap = isl_basic_map_set_to_empty(bmap);
 	return bmap;
 }
 
@@ -2231,7 +2211,7 @@ struct isl_basic_set *isl_basic_set_empty(struct isl_ctx *ctx,
 {
 	struct isl_basic_set *bset;
 	bset = isl_basic_set_alloc(ctx, nparam, dim, 0, 1, 0);
-	bset = isl_basic_set_set_to_empty(ctx, bset);
+	bset = isl_basic_set_set_to_empty(bset);
 	return bset;
 }
 
@@ -2263,40 +2243,41 @@ struct isl_set *isl_set_empty(struct isl_ctx *ctx,
 	return isl_set_alloc(ctx, nparam, dim, 0, ISL_MAP_DISJOINT);
 }
 
-struct isl_map *isl_map_dup(struct isl_ctx *ctx, struct isl_map *map)
+struct isl_map *isl_map_dup(struct isl_map *map)
 {
 	int i;
 	struct isl_map *dup;
 
-	dup = isl_map_alloc(ctx, map->nparam, map->n_in, map->n_out, map->n,
+	if (!map)
+		return NULL;
+	dup = isl_map_alloc(map->ctx, map->nparam, map->n_in, map->n_out, map->n,
 				map->flags);
 	for (i = 0; i < map->n; ++i)
-		dup = isl_map_add(ctx, dup,
-				  isl_basic_map_dup(ctx, map->p[i]));
+		dup = isl_map_add(dup,
+				  isl_basic_map_dup(map->p[i]));
 	return dup;
 }
 
-struct isl_map *isl_map_add(struct isl_ctx *ctx, struct isl_map *map,
-				struct isl_basic_map *bmap)
+struct isl_map *isl_map_add(struct isl_map *map, struct isl_basic_map *bmap)
 {
 	if (!bmap || !map)
 		goto error;
-	isl_assert(ctx, map->nparam == bmap->nparam, goto error);
-	isl_assert(ctx, map->n_in == bmap->n_in, goto error);
-	isl_assert(ctx, map->n_out == bmap->n_out, goto error);
-	isl_assert(ctx, map->n < map->size, goto error);
+	isl_assert(map->ctx, map->nparam == bmap->nparam, goto error);
+	isl_assert(map->ctx, map->n_in == bmap->n_in, goto error);
+	isl_assert(map->ctx, map->n_out == bmap->n_out, goto error);
+	isl_assert(map->ctx, map->n < map->size, goto error);
 	map->p[map->n] = bmap;
 	map->n++;
 	return map;
 error:
 	if (map)
-		isl_map_free(ctx, map);
+		isl_map_free(map);
 	if (bmap)
-		isl_basic_map_free(ctx, bmap);
+		isl_basic_map_free(bmap);
 	return NULL;
 }
 
-void isl_map_free(struct isl_ctx *ctx, struct isl_map *map)
+void isl_map_free(struct isl_map *map)
 {
 	int i;
 
@@ -2306,139 +2287,134 @@ void isl_map_free(struct isl_ctx *ctx, struct isl_map *map)
 	if (--map->ref > 0)
 		return;
 
+	isl_ctx_deref(map->ctx);
 	for (i = 0; i < map->n; ++i)
-		isl_basic_map_free(ctx, map->p[i]);
+		isl_basic_map_free(map->p[i]);
 	free(map);
 }
 
-struct isl_map *isl_map_extend(struct isl_ctx *ctx, struct isl_map *base,
+struct isl_map *isl_map_extend(struct isl_map *base,
 		unsigned nparam, unsigned n_in, unsigned n_out)
 {
 	int i;
 
-	base = isl_map_cow(ctx, base);
+	base = isl_map_cow(base);
 	if (!base)
 		return NULL;
 
-	isl_assert(ctx, base->nparam <= nparam, goto error);
-	isl_assert(ctx, base->n_in <= n_in, goto error);
-	isl_assert(ctx, base->n_out <= n_out, goto error);
+	isl_assert(base->ctx, base->nparam <= nparam, goto error);
+	isl_assert(base->ctx, base->n_in <= n_in, goto error);
+	isl_assert(base->ctx, base->n_out <= n_out, goto error);
 	base->nparam = nparam;
 	base->n_in = n_in;
 	base->n_out = n_out;
 	for (i = 0; i < base->n; ++i) {
-		base->p[i] = isl_basic_map_extend(ctx, base->p[i],
+		base->p[i] = isl_basic_map_extend(base->p[i],
 				nparam, n_in, n_out, 0, 0, 0);
 		if (!base->p[i])
 			goto error;
 	}
 	return base;
 error:
-	isl_map_free(ctx, base);
+	isl_map_free(base);
 	return NULL;
 }
 
-static struct isl_basic_map *isl_basic_map_fix_var(struct isl_ctx *ctx,
-		struct isl_basic_map *bmap,
+static struct isl_basic_map *isl_basic_map_fix_var(struct isl_basic_map *bmap,
 		unsigned var, int value)
 {
 	int j;
 
-	bmap = isl_basic_map_cow(ctx, bmap);
-	bmap = isl_basic_map_extend(ctx, bmap,
+	bmap = isl_basic_map_cow(bmap);
+	bmap = isl_basic_map_extend(bmap,
 			bmap->nparam, bmap->n_in, bmap->n_out, 0, 1, 0);
-	j = isl_basic_map_alloc_equality(ctx, bmap);
+	j = isl_basic_map_alloc_equality(bmap);
 	if (j < 0)
 		goto error;
 	isl_seq_clr(bmap->eq[j],
 		    1 + bmap->nparam + bmap->n_in + bmap->n_out + bmap->extra);
 	isl_int_set_si(bmap->eq[j][1 + var], -1);
 	isl_int_set_si(bmap->eq[j][0], value);
-	bmap = isl_basic_map_simplify(ctx, bmap);
-	return isl_basic_map_finalize(ctx, bmap);
+	bmap = isl_basic_map_simplify(bmap);
+	return isl_basic_map_finalize(bmap);
 error:
-	isl_basic_map_free(ctx, bmap);
+	isl_basic_map_free(bmap);
 	return NULL;
 }
 
-struct isl_basic_map *isl_basic_map_fix_input_si(struct isl_ctx *ctx,
-		struct isl_basic_map *bmap,
+struct isl_basic_map *isl_basic_map_fix_input_si(struct isl_basic_map *bmap,
 		unsigned input, int value)
 {
 	if (!bmap)
 		return NULL;
-	isl_assert(ctx, input < bmap->n_in, goto error);
-	return isl_basic_map_fix_var(ctx, bmap, bmap->nparam + input, value);
+	isl_assert(bmap->ctx, input < bmap->n_in, goto error);
+	return isl_basic_map_fix_var(bmap, bmap->nparam + input, value);
 error:
-	isl_basic_map_free(ctx, bmap);
+	isl_basic_map_free(bmap);
 	return NULL;
 }
 
-struct isl_basic_set *isl_basic_set_fix_dim_si(struct isl_ctx *ctx,
-		struct isl_basic_set *bset,
+struct isl_basic_set *isl_basic_set_fix_dim_si(struct isl_basic_set *bset,
 		unsigned dim, int value)
 {
 	if (!bset)
 		return NULL;
-	isl_assert(ctx, dim < bset->dim, goto error);
+	isl_assert(bset->ctx, dim < bset->dim, goto error);
 	return (struct isl_basic_set *)
-		isl_basic_map_fix_var(ctx, (struct isl_basic_map *)bset,
+		isl_basic_map_fix_var((struct isl_basic_map *)bset,
 						bset->nparam + dim, value);
 error:
-	isl_basic_set_free(ctx, bset);
+	isl_basic_set_free(bset);
 	return NULL;
 }
 
-struct isl_map *isl_map_fix_input_si(struct isl_ctx *ctx, struct isl_map *map,
+struct isl_map *isl_map_fix_input_si(struct isl_map *map,
 		unsigned input, int value)
 {
 	int i;
 
-	map = isl_map_cow(ctx, map);
+	map = isl_map_cow(map);
 	if (!map)
 		return NULL;
 
 	isl_assert(ctx, input < map->n_in, goto error);
 	for (i = 0; i < map->n; ++i) {
-		map->p[i] = isl_basic_map_fix_input_si(ctx, map->p[i],
-								input, value);
+		map->p[i] = isl_basic_map_fix_input_si(map->p[i], input, value);
 		if (!map->p[i])
 			goto error;
 	}
 	return map;
 error:
-	isl_map_free(ctx, map);
+	isl_map_free(map);
 	return NULL;
 }
 
-struct isl_set *isl_set_fix_dim_si(struct isl_ctx *ctx, struct isl_set *set,
-		unsigned dim, int value)
+struct isl_set *isl_set_fix_dim_si(struct isl_set *set, unsigned dim, int value)
 {
 	int i;
 
-	set = isl_set_cow(ctx, set);
+	set = isl_set_cow(set);
 	if (!set)
 		return NULL;
 
-	isl_assert(ctx, dim < set->dim, goto error);
+	isl_assert(set->ctx, dim < set->dim, goto error);
 	for (i = 0; i < set->n; ++i) {
-		set->p[i] = isl_basic_set_fix_dim_si(ctx, set->p[i],
-								dim, value);
+		set->p[i] = isl_basic_set_fix_dim_si(set->p[i], dim, value);
 		if (!set->p[i])
 			goto error;
 	}
 	return set;
 error:
-	isl_set_free(ctx, set);
+	isl_set_free(set);
 	return NULL;
 }
 
-struct isl_map *isl_map_reverse(struct isl_ctx *ctx, struct isl_map *map)
+struct isl_map *isl_map_reverse(struct isl_map *map)
 {
 	int i;
 	unsigned t;
 
-	map = isl_map_cow(ctx, map);
+	map = isl_map_cow(map);
 	if (!map)
 		return NULL;
 
@@ -2446,32 +2422,31 @@ struct isl_map *isl_map_reverse(struct isl_ctx *ctx, struct isl_map *map)
 	map->n_in = map->n_out;
 	map->n_out = t;
 	for (i = 0; i < map->n; ++i) {
-		map->p[i] = isl_basic_map_reverse(ctx, map->p[i]);
+		map->p[i] = isl_basic_map_reverse(map->p[i]);
 		if (!map->p[i])
 			goto error;
 	}
 	return map;
 error:
-	isl_map_free(ctx, map);
+	isl_map_free(map);
 	return NULL;
 }
 
-struct isl_map *isl_basic_map_lexmax(struct isl_ctx *ctx,
+struct isl_map *isl_basic_map_lexmax(
 		struct isl_basic_map *bmap, struct isl_basic_set *dom,
 		struct isl_set **empty)
 {
-	return isl_pip_basic_map_lexmax(ctx, bmap, dom, empty);
+	return isl_pip_basic_map_lexmax(bmap, dom, empty);
 }
 
-struct isl_map *isl_basic_map_lexmin(struct isl_ctx *ctx,
+struct isl_map *isl_basic_map_lexmin(
 		struct isl_basic_map *bmap, struct isl_basic_set *dom,
 		struct isl_set **empty)
 {
-	return isl_pip_basic_map_lexmin(ctx, bmap, dom, empty);
+	return isl_pip_basic_map_lexmin(bmap, dom, empty);
 }
 
-struct isl_set *isl_basic_set_lexmin(struct isl_ctx *ctx,
-		struct isl_basic_set *bset)
+struct isl_set *isl_basic_set_lexmin(struct isl_basic_set *bset)
 {
 	struct isl_basic_map *bmap = NULL;
 	struct isl_basic_set *dom = NULL;
@@ -2479,30 +2454,29 @@ struct isl_set *isl_basic_set_lexmin(struct isl_ctx *ctx,
 
 	if (!bset)
 		goto error;
-	bmap = isl_basic_map_from_basic_set(ctx, bset, 0, bset->dim);
+	bmap = isl_basic_map_from_basic_set(bset, 0, bset->dim);
 	if (!bmap)
 		goto error;
-	dom = isl_basic_set_alloc(ctx, bmap->nparam, 0, 0, 0, 0);
+	dom = isl_basic_set_alloc(bmap->ctx, bmap->nparam, 0, 0, 0, 0);
 	if (!dom)
 		goto error;
-	min = isl_basic_map_lexmin(ctx, bmap, dom, NULL);
-	return isl_map_range(ctx, min);
+	min = isl_basic_map_lexmin(bmap, dom, NULL);
+	return isl_map_range(min);
 error:
-	isl_basic_map_free(ctx, bmap);
+	isl_basic_map_free(bmap);
 	return NULL;
 }
 
-struct isl_map *isl_basic_map_compute_divs(struct isl_ctx *ctx,
-		struct isl_basic_map *bmap)
+struct isl_map *isl_basic_map_compute_divs(struct isl_basic_map *bmap)
 {
 	if (!bmap)
 		return NULL;
 	if (bmap->n_div == 0)
-		return isl_map_from_basic_map(ctx, bmap);
-	return isl_pip_basic_map_compute_divs(ctx, bmap);
+		return isl_map_from_basic_map(bmap);
+	return isl_pip_basic_map_compute_divs(bmap);
 }
 
-struct isl_map *isl_map_compute_divs(struct isl_ctx *ctx, struct isl_map *map)
+struct isl_map *isl_map_compute_divs(struct isl_map *map)
 {
 	int i;
 	struct isl_map *res;
@@ -2511,38 +2485,33 @@ struct isl_map *isl_map_compute_divs(struct isl_ctx *ctx, struct isl_map *map)
 		return NULL;
 	if (map->n == 0)
 		return map;
-	res = isl_basic_map_compute_divs(ctx,
-		isl_basic_map_copy(ctx, map->p[0]));
+	res = isl_basic_map_compute_divs(isl_basic_map_copy(map->p[0]));
 	for (i = 1 ; i < map->n; ++i) {
 		struct isl_map *r2;
-		r2 = isl_basic_map_compute_divs(ctx,
-			isl_basic_map_copy(ctx, map->p[i]));
+		r2 = isl_basic_map_compute_divs(isl_basic_map_copy(map->p[i]));
 		if (F_ISSET(map, ISL_MAP_DISJOINT))
-			res = isl_map_union_disjoint(ctx, res, r2);
+			res = isl_map_union_disjoint(res, r2);
 		else
-			res = isl_map_union(ctx, res, r2);
+			res = isl_map_union(res, r2);
 	}
-	isl_map_free(ctx, map);
+	isl_map_free(map);
 
 	return res;
 }
 
-struct isl_set *isl_basic_set_compute_divs(struct isl_ctx *ctx,
-		struct isl_basic_set *bset)
+struct isl_set *isl_basic_set_compute_divs(struct isl_basic_set *bset)
 {
 	return (struct isl_set *)
-		isl_basic_map_compute_divs(ctx,
-			(struct isl_basic_map *)bset);
+		isl_basic_map_compute_divs((struct isl_basic_map *)bset);
 }
 
-struct isl_set *isl_set_compute_divs(struct isl_ctx *ctx,
-		struct isl_set *set)
+struct isl_set *isl_set_compute_divs(struct isl_set *set)
 {
 	return (struct isl_set *)
-		isl_map_compute_divs(ctx, (struct isl_map *)set);
+		isl_map_compute_divs((struct isl_map *)set);
 }
 
-struct isl_set *isl_map_domain(struct isl_ctx *ctx, struct isl_map *map)
+struct isl_set *isl_map_domain(struct isl_map *map)
 {
 	int i;
 	struct isl_set *set;
@@ -2550,7 +2519,7 @@ struct isl_set *isl_map_domain(struct isl_ctx *ctx, struct isl_map *map)
 	if (!map)
 		goto error;
 
-	map = isl_map_cow(ctx, map);
+	map = isl_map_cow(map);
 	if (!map)
 		return NULL;
 
@@ -2558,18 +2527,18 @@ struct isl_set *isl_map_domain(struct isl_ctx *ctx, struct isl_map *map)
 	set->dim = map->n_in;
 	set->zero = 0;
 	for (i = 0; i < map->n; ++i) {
-		set->p[i] = isl_basic_map_domain(ctx, map->p[i]);
+		set->p[i] = isl_basic_map_domain(map->p[i]);
 		if (!set->p[i])
 			goto error;
 	}
 	F_CLR(set, ISL_MAP_DISJOINT);
 	return set;
 error:
-	isl_map_free(ctx, map);
+	isl_map_free(map);
 	return NULL;
 }
 
-struct isl_map *isl_map_union_disjoint(struct isl_ctx *ctx,
+struct isl_map *isl_map_union_disjoint(
 			struct isl_map *map1, struct isl_map *map2)
 {
 	int i;
@@ -2580,52 +2549,51 @@ struct isl_map *isl_map_union_disjoint(struct isl_ctx *ctx,
 		goto error;
 
 	if (map1->n == 0) {
-		isl_map_free(ctx, map1);
+		isl_map_free(map1);
 		return map2;
 	}
 	if (map2->n == 0) {
-		isl_map_free(ctx, map2);
+		isl_map_free(map2);
 		return map1;
 	}
 
-	isl_assert(ctx, map1->nparam == map2->nparam, goto error);
-	isl_assert(ctx, map1->n_in == map2->n_in, goto error);
-	isl_assert(ctx, map1->n_out == map2->n_out, goto error);
+	isl_assert(map1->ctx, map1->nparam == map2->nparam, goto error);
+	isl_assert(map1->ctx, map1->n_in == map2->n_in, goto error);
+	isl_assert(map1->ctx, map1->n_out == map2->n_out, goto error);
 
 	if (F_ISSET(map1, ISL_MAP_DISJOINT) &&
 	    F_ISSET(map2, ISL_MAP_DISJOINT))
 		FL_SET(flags, ISL_MAP_DISJOINT);
 
-	map = isl_map_alloc(ctx, map1->nparam, map1->n_in, map1->n_out,
+	map = isl_map_alloc(map1->ctx, map1->nparam, map1->n_in, map1->n_out,
 				map1->n + map2->n, flags);
 	if (!map)
 		goto error;
 	for (i = 0; i < map1->n; ++i) {
-		map = isl_map_add(ctx, map,
-				  isl_basic_map_copy(ctx, map1->p[i]));
+		map = isl_map_add(map,
+				  isl_basic_map_copy(map1->p[i]));
 		if (!map)
 			goto error;
 	}
 	for (i = 0; i < map2->n; ++i) {
-		map = isl_map_add(ctx, map,
-				  isl_basic_map_copy(ctx, map2->p[i]));
+		map = isl_map_add(map,
+				  isl_basic_map_copy(map2->p[i]));
 		if (!map)
 			goto error;
 	}
-	isl_map_free(ctx, map1);
-	isl_map_free(ctx, map2);
+	isl_map_free(map1);
+	isl_map_free(map2);
 	return map;
 error:
-	isl_map_free(ctx, map);
-	isl_map_free(ctx, map1);
-	isl_map_free(ctx, map2);
+	isl_map_free(map);
+	isl_map_free(map1);
+	isl_map_free(map2);
 	return NULL;
 }
 
-struct isl_map *isl_map_union(struct isl_ctx *ctx,
-			struct isl_map *map1, struct isl_map *map2)
+struct isl_map *isl_map_union(struct isl_map *map1, struct isl_map *map2)
 {
-	map1 = isl_map_union_disjoint(ctx, map1, map2);
+	map1 = isl_map_union_disjoint(map1, map2);
 	if (!map1)
 		return NULL;
 	if (map1->n > 1)
@@ -2633,25 +2601,22 @@ struct isl_map *isl_map_union(struct isl_ctx *ctx,
 	return map1;
 }
 
-struct isl_set *isl_set_union_disjoint(struct isl_ctx *ctx,
+struct isl_set *isl_set_union_disjoint(
 			struct isl_set *set1, struct isl_set *set2)
 {
 	return (struct isl_set *)
-		isl_map_union_disjoint(ctx,
+		isl_map_union_disjoint(
 			(struct isl_map *)set1, (struct isl_map *)set2);
 }
 
-struct isl_set *isl_set_union(struct isl_ctx *ctx,
-			struct isl_set *set1, struct isl_set *set2)
+struct isl_set *isl_set_union(struct isl_set *set1, struct isl_set *set2)
 {
 	return (struct isl_set *)
-		isl_map_union(ctx,
-			(struct isl_map *)set1, (struct isl_map *)set2);
+		isl_map_union((struct isl_map *)set1, (struct isl_map *)set2);
 }
 
 struct isl_map *isl_map_intersect_range(
-		struct isl_ctx *ctx, struct isl_map *map,
-		struct isl_set *set)
+		struct isl_map *map, struct isl_set *set)
 {
 	unsigned flags = 0;
 	struct isl_map *result;
@@ -2664,54 +2629,51 @@ struct isl_map *isl_map_intersect_range(
 	    F_ISSET(set, ISL_MAP_DISJOINT))
 		FL_SET(flags, ISL_MAP_DISJOINT);
 
-	result = isl_map_alloc(ctx, map->nparam, map->n_in, map->n_out,
+	result = isl_map_alloc(map->ctx, map->nparam, map->n_in, map->n_out,
 				map->n * set->n, flags);
 	if (!result)
 		goto error;
 	for (i = 0; i < map->n; ++i)
 		for (j = 0; j < set->n; ++j) {
-			result = isl_map_add(ctx, result,
-			    isl_basic_map_intersect_range(ctx,
-				isl_basic_map_copy(ctx, map->p[i]),
-				isl_basic_set_copy(ctx, set->p[j])));
+			result = isl_map_add(result,
+			    isl_basic_map_intersect_range(
+				isl_basic_map_copy(map->p[i]),
+				isl_basic_set_copy(set->p[j])));
 			if (!result)
 				goto error;
 		}
-	isl_map_free(ctx, map);
-	isl_set_free(ctx, set);
+	isl_map_free(map);
+	isl_set_free(set);
 	return result;
 error:
-	isl_map_free(ctx, map);
-	isl_set_free(ctx, set);
+	isl_map_free(map);
+	isl_set_free(set);
 	return NULL;
 }
 
 struct isl_map *isl_map_intersect_domain(
-		struct isl_ctx *ctx, struct isl_map *map,
-		struct isl_set *set)
+		struct isl_map *map, struct isl_set *set)
 {
-	return isl_map_reverse(ctx,
-		isl_map_intersect_range(ctx, isl_map_reverse(ctx, map), set));
+	return isl_map_reverse(
+		isl_map_intersect_range(isl_map_reverse(map), set));
 }
 
 struct isl_map *isl_map_apply_domain(
-		struct isl_ctx *ctx, struct isl_map *map1,
-		struct isl_map *map2)
+		struct isl_map *map1, struct isl_map *map2)
 {
 	if (!map1 || !map2)
 		goto error;
-	map1 = isl_map_reverse(ctx, map1);
-	map1 = isl_map_apply_range(ctx, map1, map2);
-	return isl_map_reverse(ctx, map1);
+	map1 = isl_map_reverse(map1);
+	map1 = isl_map_apply_range(map1, map2);
+	return isl_map_reverse(map1);
 error:
-	isl_map_free(ctx, map1);
-	isl_map_free(ctx, map2);
+	isl_map_free(map1);
+	isl_map_free(map2);
 	return NULL;
 }
 
 struct isl_map *isl_map_apply_range(
-		struct isl_ctx *ctx, struct isl_map *map1,
-		struct isl_map *map2)
+		struct isl_map *map1, struct isl_map *map2)
 {
 	struct isl_map *result;
 	int i, j;
@@ -2719,38 +2681,37 @@ struct isl_map *isl_map_apply_range(
 	if (!map1 || !map2)
 		goto error;
 
-	isl_assert(ctx, map1->nparam == map2->nparam, goto error);
-	isl_assert(ctx, map1->n_out == map2->n_in, goto error);
+	isl_assert(map1->ctx, map1->nparam == map2->nparam, goto error);
+	isl_assert(map1->ctx, map1->n_out == map2->n_in, goto error);
 
-	result = isl_map_alloc(ctx, map1->nparam, map1->n_in, map2->n_out,
+	result = isl_map_alloc(map1->ctx, map1->nparam, map1->n_in, map2->n_out,
 				map1->n * map2->n, 0);
 	if (!result)
 		goto error;
 	for (i = 0; i < map1->n; ++i)
 		for (j = 0; j < map2->n; ++j) {
-			result = isl_map_add(ctx, result,
-			    isl_basic_map_apply_range(ctx,
-				isl_basic_map_copy(ctx, map1->p[i]),
-				isl_basic_map_copy(ctx, map2->p[j])));
+			result = isl_map_add(result,
+			    isl_basic_map_apply_range(
+				isl_basic_map_copy(map1->p[i]),
+				isl_basic_map_copy(map2->p[j])));
 			if (!result)
 				goto error;
 		}
-	isl_map_free(ctx, map1);
-	isl_map_free(ctx, map2);
+	isl_map_free(map1);
+	isl_map_free(map2);
 	if (result && result->n <= 1)
 		F_SET(result, ISL_MAP_DISJOINT);
 	return result;
 error:
-	isl_map_free(ctx, map1);
-	isl_map_free(ctx, map2);
+	isl_map_free(map1);
+	isl_map_free(map2);
 	return NULL;
 }
 
 /*
  * returns range - domain
  */
-struct isl_basic_set *isl_basic_map_deltas(struct isl_ctx *ctx,
-				struct isl_basic_map *bmap)
+struct isl_basic_set *isl_basic_map_deltas(struct isl_basic_map *bmap)
 {
 	struct isl_basic_set *bset;
 	unsigned dim;
@@ -2758,14 +2719,14 @@ struct isl_basic_set *isl_basic_map_deltas(struct isl_ctx *ctx,
 
 	if (!bmap)
 		goto error;
-	isl_assert(ctx, bmap->n_in == bmap->n_out, goto error);
+	isl_assert(bmap->ctx, bmap->n_in == bmap->n_out, goto error);
 	dim = bmap->n_in;
-	bset = isl_basic_set_from_basic_map(ctx, bmap);
-	bset = isl_basic_set_extend(ctx, bset, bset->nparam, 3*dim, 0,
+	bset = isl_basic_set_from_basic_map(bmap);
+	bset = isl_basic_set_extend(bset, bset->nparam, 3*dim, 0,
 					dim, 0);
-	bset = isl_basic_set_swap_vars(ctx, bset, 2*dim);
+	bset = isl_basic_set_swap_vars(bset, 2*dim);
 	for (i = 0; i < dim; ++i) {
-		int j = isl_basic_map_alloc_equality(ctx,
+		int j = isl_basic_map_alloc_equality(
 					    (struct isl_basic_map *)bset);
 		if (j < 0)
 			goto error;
@@ -2775,9 +2736,9 @@ struct isl_basic_set *isl_basic_map_deltas(struct isl_ctx *ctx,
 		isl_int_set_si(bset->eq[j][1+bset->nparam+dim+i], 1);
 		isl_int_set_si(bset->eq[j][1+bset->nparam+2*dim+i], -1);
 	}
-	return isl_basic_set_project_out(ctx, bset, 2*dim, 0);
+	return isl_basic_set_project_out(bset, 2*dim, 0);
 error:
-	isl_basic_map_free(ctx, bmap);
+	isl_basic_map_free(bmap);
 	return NULL;
 }
 
@@ -2789,8 +2750,7 @@ error:
  *
  * then it can safely be removed.
  */
-static int div_is_redundant(struct isl_ctx *ctx, struct isl_basic_map *bmap,
-				int div)
+static int div_is_redundant(struct isl_basic_map *bmap, int div)
 {
 	int i;
 	unsigned pos = 1 + bmap->nparam + bmap->n_in + bmap->n_out + div;
@@ -2838,8 +2798,7 @@ static int div_is_redundant(struct isl_ctx *ctx, struct isl_basic_map *bmap,
  * These can arise when dropping some of the variables in a quast
  * returned by piplib.
  */
-static struct isl_basic_map *remove_redundant_divs(struct isl_ctx *ctx,
-		struct isl_basic_map *bmap)
+static struct isl_basic_map *remove_redundant_divs(struct isl_basic_map *bmap)
 {
 	int i;
 
@@ -2847,62 +2806,59 @@ static struct isl_basic_map *remove_redundant_divs(struct isl_ctx *ctx,
 		return NULL;
 
 	for (i = bmap->n_div-1; i >= 0; --i) {
-		if (!div_is_redundant(ctx, bmap, i))
+		if (!div_is_redundant(bmap, i))
 			continue;
-		bmap = isl_basic_map_drop_div(ctx, bmap, i);
+		bmap = isl_basic_map_drop_div(bmap, i);
 	}
 	return bmap;
 }
 
-struct isl_basic_map *isl_basic_map_finalize(struct isl_ctx *ctx,
-		struct isl_basic_map *bmap)
+struct isl_basic_map *isl_basic_map_finalize(struct isl_basic_map *bmap)
 {
-	bmap = remove_redundant_divs(ctx, bmap);
+	bmap = remove_redundant_divs(bmap);
 	if (!bmap)
 		return NULL;
 	F_SET(bmap, ISL_BASIC_SET_FINAL);
 	return bmap;
 }
 
-struct isl_basic_set *isl_basic_set_finalize(struct isl_ctx *ctx,
-		struct isl_basic_set *bset)
+struct isl_basic_set *isl_basic_set_finalize(struct isl_basic_set *bset)
 {
 	return (struct isl_basic_set *)
-		isl_basic_map_finalize(ctx,
-			(struct isl_basic_map *)bset);
+		isl_basic_map_finalize((struct isl_basic_map *)bset);
 }
 
-struct isl_set *isl_set_finalize(struct isl_ctx *ctx, struct isl_set *set)
+struct isl_set *isl_set_finalize(struct isl_set *set)
 {
 	int i;
 
 	if (!set)
 		return NULL;
 	for (i = 0; i < set->n; ++i) {
-		set->p[i] = isl_basic_set_finalize(ctx, set->p[i]);
+		set->p[i] = isl_basic_set_finalize(set->p[i]);
 		if (!set->p[i])
 			goto error;
 	}
 	return set;
 error:
-	isl_set_free(ctx, set);
+	isl_set_free(set);
 	return NULL;
 }
 
-struct isl_map *isl_map_finalize(struct isl_ctx *ctx, struct isl_map *map)
+struct isl_map *isl_map_finalize(struct isl_map *map)
 {
 	int i;
 
 	if (!map)
 		return NULL;
 	for (i = 0; i < map->n; ++i) {
-		map->p[i] = isl_basic_map_finalize(ctx, map->p[i]);
+		map->p[i] = isl_basic_map_finalize(map->p[i]);
 		if (!map->p[i])
 			goto error;
 	}
 	return map;
 error:
-	isl_map_free(ctx, map);
+	isl_map_free(map);
 	return NULL;
 }
 
@@ -2917,7 +2873,7 @@ struct isl_basic_map *isl_basic_map_identity(struct isl_ctx *ctx,
 		goto error;
 
 	for (i = 0; i < dim; ++i) {
-		int j = isl_basic_map_alloc_equality(ctx, bmap);
+		int j = isl_basic_map_alloc_equality(bmap);
 		if (j < 0)
 			goto error;
 		isl_seq_clr(bmap->eq[j],
@@ -2925,9 +2881,9 @@ struct isl_basic_map *isl_basic_map_identity(struct isl_ctx *ctx,
 		isl_int_set_si(bmap->eq[j][1+nparam+i], 1);
 		isl_int_set_si(bmap->eq[j][1+nparam+dim+i], -1);
 	}
-	return isl_basic_map_finalize(ctx, bmap);
+	return isl_basic_map_finalize(bmap);
 error:
-	isl_basic_map_free(ctx, bmap);
+	isl_basic_map_free(bmap);
 	return NULL;
 }
 
@@ -2938,31 +2894,27 @@ struct isl_map *isl_map_identity(struct isl_ctx *ctx,
 						ISL_MAP_DISJOINT);
 	if (!map)
 		goto error;
-	map = isl_map_add(ctx, map,
+	map = isl_map_add(map,
 		isl_basic_map_identity(ctx, nparam, dim));
 	return map;
 error:
-	isl_map_free(ctx, map);
+	isl_map_free(map);
 	return NULL;
 }
 
-int isl_set_is_equal(struct isl_ctx *ctx,
-		struct isl_set *set1, struct isl_set *set2)
+int isl_set_is_equal(struct isl_set *set1, struct isl_set *set2)
 {
-	return isl_map_is_equal(ctx,
+	return isl_map_is_equal((struct isl_map *)set1, (struct isl_map *)set2);
+}
+
+int isl_set_is_subset(struct isl_set *set1, struct isl_set *set2)
+{
+	return isl_map_is_subset(
 			(struct isl_map *)set1, (struct isl_map *)set2);
 }
 
-int isl_set_is_subset(struct isl_ctx *ctx,
-		struct isl_set *set1, struct isl_set *set2)
-{
-	return isl_map_is_subset(ctx,
-			(struct isl_map *)set1, (struct isl_map *)set2);
-}
-
-int isl_basic_map_is_subset(struct isl_ctx *ctx,
-		struct isl_basic_map *bmap1,
-		struct isl_basic_map *bmap2)
+int isl_basic_map_is_subset(
+		struct isl_basic_map *bmap1, struct isl_basic_map *bmap2)
 {
 	int is_subset;
 	struct isl_map *map1;
@@ -2971,41 +2923,39 @@ int isl_basic_map_is_subset(struct isl_ctx *ctx,
 	if (!bmap1 || !bmap2)
 		return -1;
 
-	map1 = isl_map_from_basic_map(ctx,
-			isl_basic_map_copy(ctx, bmap1));
-	map2 = isl_map_from_basic_map(ctx,
-			isl_basic_map_copy(ctx, bmap2));
+	map1 = isl_map_from_basic_map(isl_basic_map_copy(bmap1));
+	map2 = isl_map_from_basic_map(isl_basic_map_copy(bmap2));
 
-	is_subset = isl_map_is_subset(ctx, map1, map2);
+	is_subset = isl_map_is_subset(map1, map2);
 
-	isl_map_free(ctx, map1);
-	isl_map_free(ctx, map2);
+	isl_map_free(map1);
+	isl_map_free(map2);
 
 	return is_subset;
 }
 
-int isl_basic_map_is_equal(struct isl_ctx *ctx,
+int isl_basic_map_is_equal(
 		struct isl_basic_map *bmap1, struct isl_basic_map *bmap2)
 {
 	int is_subset;
 
 	if (!bmap1 || !bmap2)
 		return -1;
-	is_subset = isl_basic_map_is_subset(ctx, bmap1, bmap2);
+	is_subset = isl_basic_map_is_subset(bmap1, bmap2);
 	if (is_subset != 1)
 		return is_subset;
-	is_subset = isl_basic_map_is_subset(ctx, bmap2, bmap1);
+	is_subset = isl_basic_map_is_subset(bmap2, bmap1);
 	return is_subset;
 }
 
-int isl_basic_set_is_equal(struct isl_ctx *ctx,
+int isl_basic_set_is_equal(
 		struct isl_basic_set *bset1, struct isl_basic_set *bset2)
 {
-	return isl_basic_map_is_equal(ctx,
+	return isl_basic_map_is_equal(
 		(struct isl_basic_map *)bset1, (struct isl_basic_map *)bset2);
 }
 
-int isl_map_is_empty(struct isl_ctx *ctx, struct isl_map *map)
+int isl_map_is_empty(struct isl_map *map)
 {
 	int i;
 	int is_empty;
@@ -3013,7 +2963,7 @@ int isl_map_is_empty(struct isl_ctx *ctx, struct isl_map *map)
 	if (!map)
 		return -1;
 	for (i = 0; i < map->n; ++i) {
-		is_empty = isl_basic_map_is_empty(ctx, map->p[i]);
+		is_empty = isl_basic_map_is_empty(map->p[i]);
 		if (is_empty < 0)
 			return -1;
 		if (!is_empty)
@@ -3022,13 +2972,12 @@ int isl_map_is_empty(struct isl_ctx *ctx, struct isl_map *map)
 	return 1;
 }
 
-int isl_set_is_empty(struct isl_ctx *ctx, struct isl_set *set)
+int isl_set_is_empty(struct isl_set *set)
 {
-	return isl_map_is_empty(ctx, (struct isl_map *)set);
+	return isl_map_is_empty((struct isl_map *)set);
 }
 
-int isl_map_is_subset(struct isl_ctx *ctx, struct isl_map *map1,
-		struct isl_map *map2)
+int isl_map_is_subset(struct isl_map *map1, struct isl_map *map2)
 {
 	int i;
 	int is_subset = 0;
@@ -3037,56 +2986,52 @@ int isl_map_is_subset(struct isl_ctx *ctx, struct isl_map *map1,
 	if (!map1 || !map2)
 		return -1;
 
-	if (isl_map_is_empty(ctx, map1))
+	if (isl_map_is_empty(map1))
 		return 1;
 
-	if (isl_map_is_empty(ctx, map2))
+	if (isl_map_is_empty(map2))
 		return 0;
 
-	diff = isl_map_subtract(ctx, isl_map_copy(ctx, map1),
-				     isl_map_copy(ctx, map2));
+	diff = isl_map_subtract(isl_map_copy(map1), isl_map_copy(map2));
 	if (!diff)
 		return -1;
 
-	is_subset = isl_map_is_empty(ctx, diff);
-	isl_map_free(ctx, diff);
+	is_subset = isl_map_is_empty(diff);
+	isl_map_free(diff);
 
 	return is_subset;
 }
 
-int isl_map_is_equal(struct isl_ctx *ctx,
-		struct isl_map *map1, struct isl_map *map2)
+int isl_map_is_equal(struct isl_map *map1, struct isl_map *map2)
 {
 	int is_subset;
 
 	if (!map1 || !map2)
 		return -1;
-	is_subset = isl_map_is_subset(ctx, map1, map2);
+	is_subset = isl_map_is_subset(map1, map2);
 	if (is_subset != 1)
 		return is_subset;
-	is_subset = isl_map_is_subset(ctx, map2, map1);
+	is_subset = isl_map_is_subset(map2, map1);
 	return is_subset;
 }
 
-int isl_basic_map_is_strict_subset(struct isl_ctx *ctx,
-		struct isl_basic_map *bmap1,
-		struct isl_basic_map *bmap2)
+int isl_basic_map_is_strict_subset(
+		struct isl_basic_map *bmap1, struct isl_basic_map *bmap2)
 {
 	int is_subset;
 
 	if (!bmap1 || !bmap2)
 		return -1;
-	is_subset = isl_basic_map_is_subset(ctx, bmap1, bmap2);
+	is_subset = isl_basic_map_is_subset(bmap1, bmap2);
 	if (is_subset != 1)
 		return is_subset;
-	is_subset = isl_basic_map_is_subset(ctx, bmap2, bmap1);
+	is_subset = isl_basic_map_is_subset(bmap2, bmap1);
 	if (is_subset == -1)
 		return is_subset;
 	return !is_subset;
 }
 
-static int basic_map_contains(struct isl_ctx *ctx, struct isl_basic_map *bmap,
-					 struct isl_vec *vec)
+static int basic_map_contains(struct isl_basic_map *bmap, struct isl_vec *vec)
 {
 	int i;
 	unsigned total;
@@ -3119,16 +3064,14 @@ static int basic_map_contains(struct isl_ctx *ctx, struct isl_basic_map *bmap,
 	return 1;
 }
 
-int isl_basic_map_is_universe(struct isl_ctx *ctx,
-		struct isl_basic_map *bmap)
+int isl_basic_map_is_universe(struct isl_basic_map *bmap)
 {
 	if (!bmap)
 		return -1;
 	return bmap->n_eq == 0 && bmap->n_ineq == 0;
 }
 
-int isl_basic_map_is_empty(struct isl_ctx *ctx,
-		struct isl_basic_map *bmap)
+int isl_basic_map_is_empty(struct isl_basic_map *bmap)
 {
 	struct isl_basic_set *bset = NULL;
 	struct isl_vec *sample = NULL;
@@ -3143,64 +3086,60 @@ int isl_basic_map_is_empty(struct isl_ctx *ctx,
 
 	total = 1 + bmap->nparam + bmap->n_in + bmap->n_out + bmap->n_div;
 	if (bmap->sample && bmap->sample->size == total) {
-		int contains = basic_map_contains(ctx, bmap, bmap->sample);
+		int contains = basic_map_contains(bmap, bmap->sample);
 		if (contains < 0)
 			return -1;
 		if (contains)
 			return 0;
 	}
-	bset = isl_basic_map_underlying_set(ctx,
-			isl_basic_map_copy(ctx, bmap));
+	bset = isl_basic_map_underlying_set(isl_basic_map_copy(bmap));
 	if (!bset)
 		return -1;
-	sample = isl_basic_set_sample(ctx, bset);
+	sample = isl_basic_set_sample(bset);
 	if (!sample)
 		return -1;
 	empty = sample->size == 0;
 	if (bmap->sample)
-		isl_vec_free(ctx, bmap->sample);
+		isl_vec_free(bmap->ctx, bmap->sample);
 	bmap->sample = sample;
 
 	return empty;
 }
 
 struct isl_map *isl_basic_map_union(
-		struct isl_ctx *ctx, struct isl_basic_map *bmap1,
-		struct isl_basic_map *bmap2)
+	struct isl_basic_map *bmap1, struct isl_basic_map *bmap2)
 {
 	struct isl_map *map;
 	if (!bmap1 || !bmap2)
 		return NULL;
 
-	isl_assert(ctx, bmap1->nparam == bmap2->nparam, goto error);
-	isl_assert(ctx, bmap1->n_in == bmap2->n_in, goto error);
-	isl_assert(ctx, bmap1->n_out == bmap2->n_out, goto error);
+	isl_assert(bmap1->ctx, bmap1->nparam == bmap2->nparam, goto error);
+	isl_assert(bmap1->ctx, bmap1->n_in == bmap2->n_in, goto error);
+	isl_assert(bmap1->ctx, bmap1->n_out == bmap2->n_out, goto error);
 
-	map = isl_map_alloc(ctx, bmap1->nparam,
+	map = isl_map_alloc(bmap1->ctx, bmap1->nparam,
 				bmap1->n_in, bmap1->n_out, 2, 0);
 	if (!map)
 		goto error;
-	map = isl_map_add(ctx, map, bmap1);
-	map = isl_map_add(ctx, map, bmap2);
+	map = isl_map_add(map, bmap1);
+	map = isl_map_add(map, bmap2);
 	return map;
 error:
-	isl_basic_map_free(ctx, bmap1);
-	isl_basic_map_free(ctx, bmap2);
+	isl_basic_map_free(bmap1);
+	isl_basic_map_free(bmap2);
 	return NULL;
 }
 
 struct isl_set *isl_basic_set_union(
-		struct isl_ctx *ctx, struct isl_basic_set *bset1,
-		struct isl_basic_set *bset2)
+		struct isl_basic_set *bset1, struct isl_basic_set *bset2)
 {
-	return (struct isl_set *)isl_basic_map_union(ctx,
+	return (struct isl_set *)isl_basic_map_union(
 					    (struct isl_basic_map *)bset1,
 					    (struct isl_basic_map *)bset2);
 }
 
 /* Order divs such that any div only depends on previous divs */
-static struct isl_basic_map *order_divs(struct isl_ctx *ctx,
-		struct isl_basic_map *bmap)
+static struct isl_basic_map *order_divs(struct isl_basic_map *bmap)
 {
 	int i;
 	unsigned off = bmap->nparam + bmap->n_in + bmap->n_out;
@@ -3232,7 +3171,7 @@ static int find_div(struct isl_basic_map *dst,
 	return -1;
 }
 
-struct isl_basic_map *isl_basic_map_align_divs(struct isl_ctx *ctx,
+struct isl_basic_map *isl_basic_map_align_divs(
 		struct isl_basic_map *dst, struct isl_basic_map *src)
 {
 	int i;
@@ -3241,21 +3180,21 @@ struct isl_basic_map *isl_basic_map_align_divs(struct isl_ctx *ctx,
 	if (src->n_div == 0)
 		return dst;
 
-	src = order_divs(ctx, src);
-	dst = isl_basic_map_extend(ctx, dst, dst->nparam, dst->n_in,
+	src = order_divs(src);
+	dst = isl_basic_map_extend(dst, dst->nparam, dst->n_in,
 			dst->n_out, src->n_div, 0, 2 * src->n_div);
 	if (!dst)
 		return NULL;
 	for (i = 0; i < src->n_div; ++i) {
 		int j = find_div(dst, src, i);
 		if (j < 0) {
-			j = isl_basic_map_alloc_div(ctx, dst);
+			j = isl_basic_map_alloc_div(dst);
 			if (j < 0)
 				goto error;
 			isl_seq_cpy(dst->div[j], src->div[i], 1+1+total);
 			isl_seq_clr(dst->div[j]+1+1+total,
 						    dst->extra - src->n_div);
-			if (add_div_constraints(ctx, dst, j) < 0)
+			if (add_div_constraints(dst, j) < 0)
 				goto error;
 		}
 		if (j != i)
@@ -3263,29 +3202,28 @@ struct isl_basic_map *isl_basic_map_align_divs(struct isl_ctx *ctx,
 	}
 	return dst;
 error:
-	isl_basic_map_free(ctx, dst);
+	isl_basic_map_free(dst);
 	return NULL;
 }
 
-struct isl_map *isl_map_align_divs(struct isl_ctx *ctx, struct isl_map *map)
+struct isl_map *isl_map_align_divs(struct isl_map *map)
 {
 	int i;
 
-	map = isl_map_compute_divs(ctx, map);
-	map = isl_map_cow(ctx, map);
+	map = isl_map_compute_divs(map);
+	map = isl_map_cow(map);
 	if (!map)
 		return NULL;
 
 	for (i = 1; i < map->n; ++i)
-		map->p[0] = isl_basic_map_align_divs(ctx, map->p[0], map->p[i]);
+		map->p[0] = isl_basic_map_align_divs(map->p[0], map->p[i]);
 	for (i = 1; i < map->n; ++i)
-		map->p[i] = isl_basic_map_align_divs(ctx, map->p[i], map->p[0]);
+		map->p[i] = isl_basic_map_align_divs(map->p[i], map->p[0]);
 
 	return map;
 }
 
-static struct isl_map *add_cut_constraint(struct isl_ctx *ctx,
-		struct isl_map *dst,
+static struct isl_map *add_cut_constraint(struct isl_map *dst,
 		struct isl_basic_map *src, isl_int *c,
 		unsigned len, int oppose)
 {
@@ -3294,13 +3232,13 @@ static struct isl_map *add_cut_constraint(struct isl_ctx *ctx,
 	int k;
 	unsigned total;
 
-	copy = isl_basic_map_copy(ctx, src);
-	copy = isl_basic_map_cow(ctx, copy);
+	copy = isl_basic_map_copy(src);
+	copy = isl_basic_map_cow(copy);
 	if (!copy)
 		goto error;
-	copy = isl_basic_map_extend(ctx, copy,
+	copy = isl_basic_map_extend(copy,
 		copy->nparam, copy->n_in, copy->n_out, 0, 0, 1);
-	k = isl_basic_map_alloc_inequality(ctx, copy);
+	k = isl_basic_map_alloc_inequality(copy);
 	if (k < 0)
 		goto error;
 	if (oppose)
@@ -3309,25 +3247,24 @@ static struct isl_map *add_cut_constraint(struct isl_ctx *ctx,
 		isl_seq_cpy(copy->ineq[k], c, len);
 	total = 1 + copy->nparam + copy->n_in + copy->n_out + copy->extra;
 	isl_seq_clr(copy->ineq[k]+len, total - len);
-	isl_inequality_negate(ctx, copy, k);
-	copy = isl_basic_map_simplify(ctx, copy);
-	copy = isl_basic_map_finalize(ctx, copy);
-	is_empty = isl_basic_map_is_empty(ctx, copy);
+	isl_inequality_negate(copy, k);
+	copy = isl_basic_map_simplify(copy);
+	copy = isl_basic_map_finalize(copy);
+	is_empty = isl_basic_map_is_empty(copy);
 	if (is_empty < 0)
 		goto error;
 	if (!is_empty)
-		dst = isl_map_add(ctx, dst, copy);
+		dst = isl_map_add(dst, copy);
 	else
-		isl_basic_map_free(ctx, copy);
+		isl_basic_map_free(copy);
 	return dst;
 error:
-	isl_basic_map_free(ctx, copy);
-	isl_map_free(ctx, dst);
+	isl_basic_map_free(copy);
+	isl_map_free(dst);
 	return NULL;
 }
 
-static struct isl_map *subtract(struct isl_ctx *ctx, struct isl_map *map,
-		struct isl_basic_map *bmap)
+static struct isl_map *subtract(struct isl_map *map, struct isl_basic_map *bmap)
 {
 	int i, j, k;
 	unsigned flags = 0;
@@ -3344,38 +3281,38 @@ static struct isl_map *subtract(struct isl_ctx *ctx, struct isl_map *map,
 		FL_SET(flags, ISL_MAP_DISJOINT);
 
 	max = map->n * (2 * bmap->n_eq + bmap->n_ineq);
-	rest = isl_map_alloc(ctx, map->nparam, map->n_in, map->n_out,
+	rest = isl_map_alloc(map->ctx, map->nparam, map->n_in, map->n_out,
 				max, flags);
 	if (!rest)
 		goto error;
 
 	for (i = 0; i < map->n; ++i) {
-		map->p[i] = isl_basic_map_align_divs(ctx, map->p[i], bmap);
+		map->p[i] = isl_basic_map_align_divs(map->p[i], bmap);
 		if (!map->p[i])
 			goto error;
 	}
 
 	for (j = 0; j < map->n; ++j)
-		map->p[j] = isl_basic_map_cow(ctx, map->p[j]);
+		map->p[j] = isl_basic_map_cow(map->p[j]);
 
 	for (i = 0; i < bmap->n_eq; ++i) {
 		for (j = 0; j < map->n; ++j) {
-			rest = add_cut_constraint(ctx, rest,
+			rest = add_cut_constraint(rest,
 				map->p[j], bmap->eq[i], 1+total, 0);
 			if (!rest)
 				goto error;
 
-			rest = add_cut_constraint(ctx, rest,
+			rest = add_cut_constraint(rest,
 				map->p[j], bmap->eq[i], 1+total, 1);
 			if (!rest)
 				goto error;
 
-			map->p[j] = isl_basic_map_extend(ctx, map->p[j],
+			map->p[j] = isl_basic_map_extend(map->p[j],
 				map->p[j]->nparam, map->p[j]->n_in,
 				map->p[j]->n_out, 0, 1, 0);
 			if (!map->p[j])
 				goto error;
-			k = isl_basic_map_alloc_equality(ctx, map->p[j]);
+			k = isl_basic_map_alloc_equality(map->p[j]);
 			if (k < 0)
 				goto error;
 			isl_seq_cpy(map->p[j]->eq[k], bmap->eq[i], 1+total);
@@ -3386,17 +3323,17 @@ static struct isl_map *subtract(struct isl_ctx *ctx, struct isl_map *map,
 
 	for (i = 0; i < bmap->n_ineq; ++i) {
 		for (j = 0; j < map->n; ++j) {
-			rest = add_cut_constraint(ctx, rest,
+			rest = add_cut_constraint(rest,
 				map->p[j], bmap->ineq[i], 1+total, 0);
 			if (!rest)
 				goto error;
 
-			map->p[j] = isl_basic_map_extend(ctx, map->p[j],
+			map->p[j] = isl_basic_map_extend(map->p[j],
 				map->p[j]->nparam, map->p[j]->n_in,
 				map->p[j]->n_out, 0, 0, 1);
 			if (!map->p[j])
 				goto error;
-			k = isl_basic_map_alloc_inequality(ctx, map->p[j]);
+			k = isl_basic_map_alloc_inequality(map->p[j]);
 			if (k < 0)
 				goto error;
 			isl_seq_cpy(map->p[j]->ineq[k], bmap->ineq[i], 1+total);
@@ -3405,72 +3342,70 @@ static struct isl_map *subtract(struct isl_ctx *ctx, struct isl_map *map,
 		}
 	}
 
-	isl_map_free(ctx, map);
+	isl_map_free(map);
 	return rest;
 error:
-	isl_map_free(ctx, map);
-	isl_map_free(ctx, rest);
+	isl_map_free(map);
+	isl_map_free(rest);
 	return NULL;
 }
 
-struct isl_map *isl_map_subtract(struct isl_ctx *ctx, struct isl_map *map1,
-		struct isl_map *map2)
+struct isl_map *isl_map_subtract(struct isl_map *map1, struct isl_map *map2)
 {
 	int i;
 	if (!map1 || !map2)
 		goto error;
 
-	isl_assert(ctx, map1->nparam == map2->nparam, goto error);
-	isl_assert(ctx, map1->n_in == map2->n_in, goto error);
-	isl_assert(ctx, map1->n_out == map2->n_out, goto error);
+	isl_assert(map1->ctx, map1->nparam == map2->nparam, goto error);
+	isl_assert(map1->ctx, map1->n_in == map2->n_in, goto error);
+	isl_assert(map1->ctx, map1->n_out == map2->n_out, goto error);
 
-	if (isl_map_is_empty(ctx, map2)) {
-		isl_map_free(ctx, map2);
+	if (isl_map_is_empty(map2)) {
+		isl_map_free(map2);
 		return map1;
 	}
 
-	map1 = isl_map_compute_divs(ctx, map1);
-	map2 = isl_map_compute_divs(ctx, map2);
+	map1 = isl_map_compute_divs(map1);
+	map2 = isl_map_compute_divs(map2);
 	if (!map1 || !map2)
 		goto error;
 
 	for (i = 0; map1 && i < map2->n; ++i)
-		map1 = subtract(ctx, map1, map2->p[i]);
+		map1 = subtract(map1, map2->p[i]);
 
-	isl_map_free(ctx, map2);
+	isl_map_free(map2);
 	return map1;
 error:
-	isl_map_free(ctx, map1);
-	isl_map_free(ctx, map2);
+	isl_map_free(map1);
+	isl_map_free(map2);
 	return NULL;
 }
 
-struct isl_set *isl_set_subtract(struct isl_ctx *ctx, struct isl_set *set1,
-		struct isl_set *set2)
+struct isl_set *isl_set_subtract(struct isl_set *set1, struct isl_set *set2)
 {
 	return (struct isl_set *)
-		isl_map_subtract(ctx,
+		isl_map_subtract(
 			(struct isl_map *)set1, (struct isl_map *)set2);
 }
 
-struct isl_set *isl_set_apply(struct isl_ctx *ctx, struct isl_set *set,
-		struct isl_map *map)
+struct isl_set *isl_set_apply(struct isl_set *set, struct isl_map *map)
 {
-	isl_assert(ctx, set->dim == map->n_in, goto error);
-	map = isl_map_intersect_domain(ctx, map, set);
-	set = isl_map_range(ctx, map);
+	if (!set || !map)
+		goto error;
+	isl_assert(set->ctx, set->dim == map->n_in, goto error);
+	map = isl_map_intersect_domain(map, set);
+	set = isl_map_range(map);
 	return set;
 error:
-	isl_set_free(ctx, set);
-	isl_map_free(ctx, map);
+	isl_set_free(set);
+	isl_map_free(map);
 	return NULL;
 }
 
 /* There is no need to cow as removing empty parts doesn't change
  * the meaning of the set.
  */
-struct isl_map *isl_map_remove_empty_parts(struct isl_ctx *ctx,
-	struct isl_map *map)
+struct isl_map *isl_map_remove_empty_parts(struct isl_map *map)
 {
 	int i;
 
@@ -3480,7 +3415,7 @@ struct isl_map *isl_map_remove_empty_parts(struct isl_ctx *ctx,
 	for (i = map->n-1; i >= 0; --i) {
 		if (!F_ISSET(map->p[i], ISL_BASIC_MAP_EMPTY))
 			continue;
-		isl_basic_map_free(ctx, map->p[i]);
+		isl_basic_map_free(map->p[i]);
 		if (i != map->n-1)
 			map->p[i] = map->p[map->n-1];
 		map->n--;
@@ -3489,9 +3424,8 @@ struct isl_map *isl_map_remove_empty_parts(struct isl_ctx *ctx,
 	return map;
 }
 
-struct isl_set *isl_set_remove_empty_parts(struct isl_ctx *ctx,
-	struct isl_set *set)
+struct isl_set *isl_set_remove_empty_parts(struct isl_set *set)
 {
 	return (struct isl_set *)
-		isl_map_remove_empty_parts(ctx, (struct isl_map *)set);
+		isl_map_remove_empty_parts((struct isl_map *)set);
 }

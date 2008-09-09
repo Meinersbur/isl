@@ -238,7 +238,7 @@ static void exchange(struct isl_ctx *ctx, struct isl_mat *M, struct isl_mat **U,
 		isl_mat_swap_rows(ctx, *Q, i, j);
 }
 
-static void subtract(struct isl_ctx *ctx, struct isl_mat *M, struct isl_mat **U,
+static void subtract(struct isl_mat *M, struct isl_mat **U,
 	struct isl_mat **Q, unsigned row, unsigned i, unsigned j, isl_int m)
 {
 	int r, c;
@@ -323,7 +323,7 @@ struct isl_mat *isl_mat_left_hermite(struct isl_ctx *ctx,
 						       M->n_col-first)) != -1) {
 			first += off;
 			isl_int_fdiv_q(c, M->row[row][first], M->row[row][col]);
-			subtract(ctx, M, U, Q, row, col, first, c);
+			subtract(M, U, Q, row, col, first, c);
 			if (!isl_int_is_zero(M->row[row][first]))
 				exchange(ctx, M, U, Q, row, first, col);
 			else
@@ -338,7 +338,7 @@ struct isl_mat *isl_mat_left_hermite(struct isl_ctx *ctx,
 				isl_int_fdiv_q(c, M->row[row][i], M->row[row][col]);
 			if (isl_int_is_zero(c))
 				continue;
-			subtract(ctx, M, U, Q, row, col, i, c);
+			subtract(M, U, Q, row, col, i, c);
 		}
 		++col;
 	}
@@ -581,7 +581,7 @@ struct isl_mat *isl_mat_right_inverse(struct isl_ctx *ctx,
 			first += off;
 			isl_int_fdiv_q(a, mat->row[row][first],
 						    mat->row[row][row]);
-			subtract(ctx, mat, &inv, NULL, row, row, first, a);
+			subtract(mat, &inv, NULL, row, row, first, a);
 			if (!isl_int_is_zero(mat->row[row][first]))
 				exchange(ctx, mat, &inv, NULL, row, row, first);
 			else
@@ -683,7 +683,7 @@ struct isl_basic_set *isl_basic_set_preimage(struct isl_ctx *ctx,
 	if (!bset || !mat)
 		goto error;
 
-	bset = isl_basic_set_cow(ctx, bset);
+	bset = isl_basic_set_cow(bset);
 	if (!bset)
 		goto error;
 
@@ -692,7 +692,7 @@ struct isl_basic_set *isl_basic_set_preimage(struct isl_ctx *ctx,
 	isl_assert(ctx, 1+bset->dim == mat->n_row, goto error);
 
 	if (mat->n_col > mat->n_row)
-		bset = isl_basic_set_extend(ctx, bset, 0, mat->n_col-1, 0,
+		bset = isl_basic_set_extend(bset, 0, mat->n_col-1, 0,
 						0, 0);
 	else {
 		bset->dim -= mat->n_row - mat->n_col;
@@ -719,14 +719,14 @@ struct isl_basic_set *isl_basic_set_preimage(struct isl_ctx *ctx,
 	}
 	isl_mat_free(ctx, t);
 
-	bset = isl_basic_set_simplify(ctx, bset);
-	bset = isl_basic_set_finalize(ctx, bset);
+	bset = isl_basic_set_simplify(bset);
+	bset = isl_basic_set_finalize(bset);
 
 	return bset;
 error:
 	isl_mat_free(ctx, mat);
 error2:
-	isl_basic_set_free(ctx, bset);
+	isl_basic_set_free(bset);
 	return NULL;
 }
 
@@ -735,10 +735,11 @@ struct isl_set *isl_set_preimage(struct isl_ctx *ctx,
 {
 	int i;
 
-	set = isl_set_cow(ctx, set);
+	set = isl_set_cow(set);
 	if (!set)
 		return NULL;
 
+	ctx = set->ctx;
 	for (i = 0; i < set->n; ++i) {
 		set->p[i] = isl_basic_set_preimage(ctx, set->p[i],
 						    isl_mat_copy(ctx, mat));
@@ -750,7 +751,7 @@ struct isl_set *isl_set_preimage(struct isl_ctx *ctx,
 	isl_mat_free(ctx, mat);
 	return set;
 error:
-	isl_set_free(ctx, set);
+	isl_set_free(set);
 	isl_mat_free(ctx, mat);
 	return NULL;
 }

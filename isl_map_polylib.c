@@ -1,6 +1,7 @@
 #include "isl_set.h"
 #include "isl_map.h"
 #include "isl_map_polylib.h"
+#include "isl_map_private.h"
 
 static void copy_values_from(isl_int *dst, Value *src, unsigned n)
 {
@@ -39,7 +40,7 @@ static void copy_constraint_to(Value *dst, isl_int *src,
 static int add_equality(struct isl_ctx *ctx, struct isl_basic_map *bmap,
 			 Value *constraint)
 {
-	int i = isl_basic_map_alloc_equality(ctx, bmap);
+	int i = isl_basic_map_alloc_equality(bmap);
 	if (i < 0)
 		return -1;
 	copy_constraint_from(bmap->eq[i], constraint, bmap->nparam,
@@ -50,7 +51,7 @@ static int add_equality(struct isl_ctx *ctx, struct isl_basic_map *bmap,
 static int add_inequality(struct isl_ctx *ctx, struct isl_basic_map *bmap,
 			 Value *constraint)
 {
-	int i = isl_basic_map_alloc_inequality(ctx, bmap);
+	int i = isl_basic_map_alloc_inequality(bmap);
 	if (i < 0)
 		return -1;
 	copy_constraint_from(bmap->ineq[i], constraint, bmap->nparam,
@@ -75,14 +76,14 @@ static struct isl_basic_map *copy_constraints(
 		}
 	}
 	for (i = 0; i < bmap->extra; ++i) {
-		int j = isl_basic_map_alloc_div(ctx, bmap);
+		int j = isl_basic_map_alloc_div(bmap);
 		if (j == -1)
 			goto error;
 		isl_seq_clr(bmap->div[j], 1+1+total);
 	}
 	return bmap;
 error:
-	isl_basic_map_free(ctx, bmap);
+	isl_basic_map_free(bmap);
 	return NULL;
 }
 
@@ -128,7 +129,7 @@ struct isl_set *isl_set_new_from_polylib(struct isl_ctx *ctx,
 		return NULL;
 
 	for (P = D; P; P = P->next)
-		isl_set_add(ctx, set,
+		isl_set_add(set,
 		    isl_basic_set_new_from_polylib(ctx, P, nparam, dim));
 	return set;
 }
@@ -149,19 +150,20 @@ struct isl_map *isl_map_new_from_polylib(struct isl_ctx *ctx,
 		return NULL;
 
 	for (P = D; P; P = P->next)
-		isl_map_add(ctx, map,
-			isl_basic_map_new_from_polylib(ctx, P,
+		isl_map_add(map, isl_basic_map_new_from_polylib(ctx, P,
 							    nparam, in, out));
 	return map;
 }
 
-Polyhedron *isl_basic_map_to_polylib(struct isl_ctx *ctx,
-						struct isl_basic_map *bmap)
+Polyhedron *isl_basic_map_to_polylib(struct isl_basic_map *bmap)
 {
 	int i;
 	Matrix *M;
 	Polyhedron *P;
 	unsigned off;
+
+	if (!bmap)
+		return NULL;
 
 	M = Matrix_Alloc(bmap->n_eq + bmap->n_ineq,
 		 1 + bmap->n_in + bmap->n_out + bmap->n_div + bmap->nparam + 1);
@@ -176,34 +178,35 @@ Polyhedron *isl_basic_map_to_polylib(struct isl_ctx *ctx,
 		copy_constraint_to(M->p[off+i], bmap->ineq[i],
 			   bmap->nparam, bmap->n_in + bmap->n_out, bmap->n_div);
 	}
-	P = Constraints2Polyhedron(M, ctx->MaxRays);
+	P = Constraints2Polyhedron(M, bmap->ctx->MaxRays);
 	Matrix_Free(M);
 
 	return P;
 }
 
-Polyhedron *isl_map_to_polylib(struct isl_ctx *ctx, struct isl_map *map)
+Polyhedron *isl_map_to_polylib(struct isl_map *map)
 {
 	int i;
 	Polyhedron *R = NULL;
 	Polyhedron **next = &R;
 
+	if (!map)
+		return NULL;
+
 	for (i = 0; i < map->n; ++i) {
-		*next = isl_basic_map_to_polylib(ctx, map->p[i]);
+		*next = isl_basic_map_to_polylib(map->p[i]);
 		next = &(*next)->next;
 	}
 
 	return R;
 }
 
-Polyhedron *isl_basic_set_to_polylib(struct isl_ctx *ctx,
-			struct isl_basic_set *bset)
+Polyhedron *isl_basic_set_to_polylib(struct isl_basic_set *bset)
 {
-	return isl_basic_map_to_polylib(ctx,
-			(struct isl_basic_map *)bset);
+	return isl_basic_map_to_polylib((struct isl_basic_map *)bset);
 }
 
-Polyhedron *isl_set_to_polylib(struct isl_ctx *ctx, struct isl_set *set)
+Polyhedron *isl_set_to_polylib(struct isl_set *set)
 {
-	return isl_map_to_polylib(ctx, (struct isl_map *)set);
+	return isl_map_to_polylib((struct isl_map *)set);
 }

@@ -16,6 +16,8 @@ struct isl_basic_set {
 #define ISL_BASIC_SET_EMPTY		(1 << 1)
 	unsigned flags;
 
+	struct isl_ctx *ctx;
+
 	unsigned nparam;
 	unsigned zero;
 	unsigned dim;
@@ -47,6 +49,8 @@ struct isl_set {
 #define ISL_SET_DISJOINT		(1 << 0)
 	unsigned flags;
 
+	struct isl_ctx *ctx;
+
 	unsigned nparam;
 	unsigned zero;
 	unsigned dim;
@@ -60,35 +64,30 @@ struct isl_set {
 struct isl_basic_set *isl_basic_set_alloc(struct isl_ctx *ctx,
 		unsigned nparam, unsigned dim, unsigned extra,
 		unsigned n_eq, unsigned n_ineq);
-struct isl_basic_set *isl_basic_set_extend(struct isl_ctx *ctx,
-		struct isl_basic_set *base,
+struct isl_basic_set *isl_basic_set_extend(struct isl_basic_set *base,
 		unsigned nparam, unsigned dim, unsigned extra,
 		unsigned n_eq, unsigned n_ineq);
-struct isl_basic_set *isl_basic_set_finalize(struct isl_ctx *ctx,
-		struct isl_basic_set *bset);
-void isl_basic_set_free(struct isl_ctx *ctx, struct isl_basic_set *bset);
-struct isl_basic_set *isl_basic_set_copy(struct isl_ctx *ctx,
-					struct isl_basic_set *bset);
+struct isl_basic_set *isl_basic_set_finalize(struct isl_basic_set *bset);
+void isl_basic_set_free(struct isl_basic_set *bset);
+struct isl_basic_set *isl_basic_set_copy(struct isl_basic_set *bset);
 struct isl_basic_set *isl_basic_set_empty(struct isl_ctx *ctx,
 		unsigned nparam, unsigned dim);
 struct isl_basic_set *isl_basic_set_universe(struct isl_ctx *ctx,
 		unsigned nparam, unsigned dim);
-void isl_basic_set_dump(struct isl_ctx *ctx, struct isl_basic_set *bset,
+void isl_basic_set_dump(struct isl_basic_set *bset,
 				FILE *out, int indent);
-struct isl_basic_set *isl_basic_set_swap_vars(struct isl_ctx *ctx,
+struct isl_basic_set *isl_basic_set_swap_vars(
 		struct isl_basic_set *bset, unsigned n);
-struct isl_basic_set *isl_basic_set_drop_vars(struct isl_ctx *ctx,
+struct isl_basic_set *isl_basic_set_drop_vars(
 		struct isl_basic_set *bset, unsigned first, unsigned n);
 struct isl_basic_set *isl_basic_set_intersect(
-		struct isl_ctx *ctx, struct isl_basic_set *bset1,
+		struct isl_basic_set *bset1,
 		struct isl_basic_set *bset2);
 struct isl_basic_set *isl_basic_set_apply(
-		struct isl_ctx *ctx, struct isl_basic_set *bset,
+		struct isl_basic_set *bset,
 		struct isl_basic_map *bmap);
-struct isl_basic_set *isl_basic_set_affine_hull(struct isl_ctx *ctx,
-						struct isl_basic_set *bset);
-struct isl_basic_set *isl_basic_set_simplify(
-		struct isl_ctx *ctx, struct isl_basic_set *bset);
+struct isl_basic_set *isl_basic_set_affine_hull(struct isl_basic_set *bset);
+struct isl_basic_set *isl_basic_set_simplify(struct isl_basic_set *bset);
 #define ISL_FORMAT_POLYLIB	1
 #define ISL_FORMAT_OMEGA	2
 struct isl_basic_set *isl_basic_set_read_from_file(struct isl_ctx *ctx,
@@ -96,55 +95,42 @@ struct isl_basic_set *isl_basic_set_read_from_file(struct isl_ctx *ctx,
 struct isl_set *isl_set_read_from_file(struct isl_ctx *ctx,
 		FILE *input, unsigned nparam, unsigned input_format);
 
-int isl_basic_set_is_equal(struct isl_ctx *ctx,
+int isl_basic_set_is_equal(
 		struct isl_basic_set *bset1, struct isl_basic_set *bset2);
 
-struct isl_set *isl_basic_set_lexmin(struct isl_ctx *ctx,
-		struct isl_basic_set *bset);
+struct isl_set *isl_basic_set_lexmin(struct isl_basic_set *bset);
 struct isl_set *isl_basic_set_union(
-		struct isl_ctx *ctx, struct isl_basic_set *bset1,
+		struct isl_basic_set *bset1,
 		struct isl_basic_set *bset2);
 
 struct isl_set *isl_set_alloc(struct isl_ctx *ctx,
 		unsigned nparam, unsigned dim, int n, unsigned flags);
 struct isl_set *isl_set_empty(struct isl_ctx *ctx,
 		unsigned nparam, unsigned dim);
-struct isl_set *isl_set_add(struct isl_ctx *ctx, struct isl_set *set,
-				struct isl_basic_set *bset);
-struct isl_set *isl_set_finalize(struct isl_ctx *ctx, struct isl_set *set);
-struct isl_set *isl_set_copy(struct isl_ctx *ctx, struct isl_set *set);
-void isl_set_free(struct isl_ctx *ctx, struct isl_set *set);
-struct isl_set *isl_set_dup(struct isl_ctx *ctx, struct isl_set *set);
-struct isl_set *isl_set_from_basic_set(struct isl_ctx *ctx,
-				struct isl_basic_set *bset);
-struct isl_basic_set *isl_set_affine_hull(struct isl_ctx *ctx,
-		struct isl_set *set);
-struct isl_basic_set *isl_set_convex_hull(struct isl_ctx *ctx,
-		struct isl_set *set);
+struct isl_set *isl_set_add(struct isl_set *set, struct isl_basic_set *bset);
+struct isl_set *isl_set_finalize(struct isl_set *set);
+struct isl_set *isl_set_copy(struct isl_set *set);
+void isl_set_free(struct isl_set *set);
+struct isl_set *isl_set_dup(struct isl_set *set);
+struct isl_set *isl_set_from_basic_set(struct isl_basic_set *bset);
+struct isl_basic_set *isl_set_affine_hull(struct isl_set *set);
+struct isl_basic_set *isl_set_convex_hull(struct isl_set *set);
 
-struct isl_set *isl_set_union_disjoint(struct isl_ctx *ctx,
+struct isl_set *isl_set_union_disjoint(
 			struct isl_set *set1, struct isl_set *set2);
-struct isl_set *isl_set_union(struct isl_ctx *ctx,
-			struct isl_set *set1, struct isl_set *set2);
-struct isl_set *isl_set_subtract(struct isl_ctx *ctx, struct isl_set *set1,
-		struct isl_set *set2);
-struct isl_set *isl_set_apply(struct isl_ctx *ctx, struct isl_set *set,
-		struct isl_map *map);
-struct isl_set *isl_set_fix_dim_si(struct isl_ctx *ctx, struct isl_set *set,
+struct isl_set *isl_set_union(struct isl_set *set1, struct isl_set *set2);
+struct isl_set *isl_set_subtract(struct isl_set *set1, struct isl_set *set2);
+struct isl_set *isl_set_apply(struct isl_set *set, struct isl_map *map);
+struct isl_set *isl_set_fix_dim_si(struct isl_set *set,
 		unsigned dim, int value);
 
-void isl_set_dump(struct isl_ctx *ctx, struct isl_set *set, FILE *out,
-		  int indent);
-struct isl_set *isl_set_swap_vars(struct isl_ctx *ctx,
-		struct isl_set *set, unsigned n);
-int isl_set_is_empty(struct isl_ctx *ctx, struct isl_set *set);
-int isl_set_is_subset(struct isl_ctx *ctx,
-		struct isl_set *set1, struct isl_set *set2);
-int isl_set_is_equal(struct isl_ctx *ctx,
-		struct isl_set *set1, struct isl_set *set2);
+void isl_set_dump(struct isl_set *set, FILE *out, int indent);
+struct isl_set *isl_set_swap_vars(struct isl_set *set, unsigned n);
+int isl_set_is_empty(struct isl_set *set);
+int isl_set_is_subset(struct isl_set *set1, struct isl_set *set2);
+int isl_set_is_equal(struct isl_set *set1, struct isl_set *set2);
 
-struct isl_set *isl_basic_set_compute_divs(struct isl_ctx *ctx,
-		struct isl_basic_set *bset);
+struct isl_set *isl_basic_set_compute_divs(struct isl_basic_set *bset);
 
 #if defined(__cplusplus)
 }

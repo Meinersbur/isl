@@ -50,10 +50,10 @@ static struct isl_basic_set *isl_basic_set_read_from_file_polylib(
 		p += offset;
 		isl_assert(ctx, type == 0 || type == 1, goto error);
 		if (type == 0) {
-			k = isl_basic_set_alloc_equality(ctx, bset);
+			k = isl_basic_set_alloc_equality(bset);
 			c = bset->eq[k];
 		} else {
-			k = isl_basic_set_alloc_inequality(ctx, bset);
+			k = isl_basic_set_alloc_inequality(bset);
 			c = bset->ineq[k];
 		}
 		isl_assert(ctx, k >= 0, goto error);
@@ -73,11 +73,11 @@ static struct isl_basic_set *isl_basic_set_read_from_file_polylib(
 		isl_assert(ctx, n != 0, goto error);
 		isl_int_read(c[0], val);
 	}
-	bset = isl_basic_set_simplify(ctx, bset);
-	bset = isl_basic_set_finalize(ctx, bset);
+	bset = isl_basic_set_simplify(bset);
+	bset = isl_basic_set_finalize(bset);
 	return bset;
 error:
-	isl_basic_set_free(ctx, bset);
+	isl_basic_set_free(bset);
 	return NULL;
 }
 
@@ -109,7 +109,7 @@ static struct isl_set *isl_set_read_from_file_polylib(
 		isl_assert(ctx, set->dim == set->p[i]->dim, goto error);
 	return set;
 error:
-	isl_set_free(ctx, set);
+	isl_set_free(set);
 	return NULL;
 }
 

@@ -2,6 +2,7 @@
 #include "isl_map.h"
 #include "isl_piplib.h"
 #include "isl_map_piplib.h"
+#include "isl_map_private.h"
 
 static void copy_values_from(isl_int *dst, Entier *src, unsigned n)
 {
@@ -36,7 +37,7 @@ static void copy_constraint_from(isl_int *dst, PipVector *src,
 static int add_inequality(struct isl_ctx *ctx,
 		   struct isl_basic_map *bmap, int *pos, PipVector *vec)
 {
-	int i = isl_basic_map_alloc_inequality(ctx, bmap);
+	int i = isl_basic_map_alloc_inequality(bmap);
 	if (i < 0)
 		return -1;
 	copy_constraint_from(bmap->ineq[i], vec,
@@ -67,7 +68,7 @@ static int add_div_constraints(struct isl_ctx *ctx,
 	copy_values_from(&bmap->ineq[i][div_pos], &p->deno, 1);
 	isl_int_neg(bmap->ineq[i][div_pos], bmap->ineq[i][div_pos]);
 
-	j = isl_basic_map_alloc_inequality(ctx, bmap);
+	j = isl_basic_map_alloc_inequality(bmap);
 	if (j < 0)
 		return -1;
 	isl_seq_neg(bmap->ineq[j], bmap->ineq[i], 1 + total);
@@ -84,7 +85,7 @@ static int add_equality(struct isl_ctx *ctx,
 
 	isl_assert(ctx, var < bmap->n_out, return -1);
 
-	i = isl_basic_map_alloc_equality(ctx, bmap);
+	i = isl_basic_map_alloc_equality(bmap);
 	if (i < 0)
 		return -1;
 	copy_constraint_from(bmap->eq[i], vec,
@@ -99,7 +100,7 @@ static int find_div(struct isl_ctx *ctx,
 {
 	int i, j;
 
-	i = isl_basic_map_alloc_div(ctx, bmap);
+	i = isl_basic_map_alloc_div(bmap);
 	if (i < 0)
 		return -1;
 
@@ -110,7 +111,7 @@ static int find_div(struct isl_ctx *ctx,
 	for (j = 0; j < i; ++j)
 		if (isl_seq_eq(bmap->div[i], bmap->div[j],
 				1+1+bmap->nparam+bmap->n_in+bmap->n_out+j)) {
-			isl_basic_map_free_div(ctx, bmap, 1);
+			isl_basic_map_free_div(bmap, 1);
 			return j;
 		}
 
@@ -192,11 +193,11 @@ static struct isl_map *scan_quast_r(struct scan_data *data, PipQuast *q,
 			goto error;
 		map = scan_quast_r(data, q->next_then, map);
 
-		if (isl_inequality_negate(data->ctx, bmap, pos))
+		if (isl_inequality_negate(bmap, pos))
 			goto error;
 		map = scan_quast_r(data, q->next_else, map);
 
-		if (isl_basic_map_free_inequality(data->ctx, bmap, 1))
+		if (isl_basic_map_free_inequality(bmap, 1))
 			goto error;
 	} else if (q->list) {
 		PipList *l;
@@ -208,32 +209,26 @@ static struct isl_map *scan_quast_r(struct scan_data *data, PipQuast *q,
 			if (add_equality(data->ctx, bmap, data->pos, j,
 						l->vector) < 0)
 				goto error;
-		map = isl_map_add(data->ctx, map,
-				isl_basic_map_copy(data->ctx, bmap));
-		if (isl_basic_map_free_equality(data->ctx, bmap,
-						    bmap->n_out))
+		map = isl_map_add(map, isl_basic_map_copy(bmap));
+		if (isl_basic_map_free_equality(bmap, bmap->n_out))
 			goto error;
 	} else if (map->n && data->rest) {
 		/* not interested in rest if no sol */
 		struct isl_basic_set *bset;
-		bset = isl_basic_set_from_basic_map(data->ctx,
-				isl_basic_map_copy(data->ctx, bmap));
-		bset = isl_basic_set_drop_vars(data->ctx, bset,
-				bmap->n_in, bmap->n_out);
+		bset = isl_basic_set_from_basic_map(isl_basic_map_copy(bmap));
+		bset = isl_basic_set_drop_vars(bset, bmap->n_in, bmap->n_out);
 		if (!bset)
 			goto error;
-		*data->rest = isl_set_add(data->ctx, *data->rest, bset);
+		*data->rest = isl_set_add(*data->rest, bset);
 	}
 
-	if (isl_basic_map_free_inequality(data->ctx, bmap,
-					   2*(bmap->n_div - old_n_div)))
+	if (isl_basic_map_free_inequality(bmap, 2*(bmap->n_div - old_n_div)))
 		goto error;
-	if (isl_basic_map_free_div(data->ctx, bmap,
-					   bmap->n_div - old_n_div))
+	if (isl_basic_map_free_div(bmap, bmap->n_div - old_n_div))
 		goto error;
 	return map;
 error:
-	isl_map_free(data->ctx, map);
+	isl_map_free(map);
 	return NULL;
 }
 
@@ -283,9 +278,9 @@ static struct isl_map *isl_map_from_quast(struct isl_ctx *ctx, PipQuast *q,
 	if (!map)
 		goto error;
 
-	data.bmap = isl_basic_map_from_basic_set(ctx, context,
+	data.bmap = isl_basic_map_from_basic_set(context,
 				context->dim, 0);
-	data.bmap = isl_basic_map_extend(data.ctx, data.bmap,
+	data.bmap = isl_basic_map_extend(data.bmap,
 	    nparam, data.bmap->n_in, keep, nexist, keep, max_depth+2*nexist);
 	if (!data.bmap)
 		goto error;
@@ -300,25 +295,25 @@ static struct isl_map *isl_map_from_quast(struct isl_ctx *ctx, PipQuast *q,
 	}
 
 	map = scan_quast_r(&data, q, map);
-	map = isl_map_finalize(ctx, map);
+	map = isl_map_finalize(map);
 	if (!map)
 		goto error;
 	if (rest) {
-		*rest = isl_set_finalize(ctx, *rest);
+		*rest = isl_set_finalize(*rest);
 		if (!*rest)
 			goto error;
 	}
-	isl_basic_map_free(data.ctx, data.bmap);
+	isl_basic_map_free(data.bmap);
 	if (data.pos)
 		free(data.pos);
 	return map;
 error:
 	if (data.pos)
 		free(data.pos);
-	isl_basic_map_free(data.ctx, data.bmap);
-	isl_map_free(ctx, map);
+	isl_basic_map_free(data.bmap);
+	isl_map_free(map);
 	if (rest) {
-		isl_set_free(ctx, *rest);
+		isl_set_free(*rest);
 		*rest = NULL;
 	}
 	return NULL;
@@ -374,18 +369,20 @@ PipMatrix *isl_basic_map_to_pip(struct isl_basic_map *bmap, unsigned pip_param,
 	return M;
 }
 
-static struct isl_map *extremum_on(struct isl_ctx *ctx,
+static struct isl_map *extremum_on(
 		struct isl_basic_map *bmap, struct isl_basic_set *dom,
 		struct isl_set **empty, int max)
 {
 	PipOptions	*options;
 	PipQuast	*sol;
 	struct isl_map	*map;
+	struct isl_ctx  *ctx;
 	PipMatrix *domain = NULL, *context = NULL;
 
 	if (!bmap || !dom)
 		goto error;
 
+	ctx = bmap->ctx;
 	isl_assert(ctx, bmap->nparam == dom->nparam, goto error);
 	isl_assert(ctx, bmap->n_in == dom->dim, goto error);
 
@@ -406,7 +403,7 @@ static struct isl_map *extremum_on(struct isl_ctx *ctx,
 
 	if (sol) {
 		struct isl_basic_set *copy;
-		copy = isl_basic_set_copy(ctx, dom);
+		copy = isl_basic_set_copy(dom);
 		map = isl_map_from_quast(ctx, sol, bmap->n_out, copy, empty);
 	} else {
 		map = isl_map_empty(ctx, bmap->nparam, bmap->n_in, bmap->n_out);
@@ -416,11 +413,11 @@ static struct isl_map *extremum_on(struct isl_ctx *ctx,
 	if (!map)
 		goto error;
 	if (map->n == 0 && empty) {
-		isl_set_free(ctx, *empty);
-		*empty = isl_set_from_basic_set(ctx, dom);
+		isl_set_free(*empty);
+		*empty = isl_set_from_basic_set(dom);
 	} else
-		isl_basic_set_free(ctx, dom);
-	isl_basic_map_free(ctx, bmap);
+		isl_basic_set_free(dom);
+	isl_basic_map_free(bmap);
 
 	pip_quast_free(sol);
 	pip_options_free(options);
@@ -433,31 +430,31 @@ error:
 		pip_matrix_free(domain);
 	if (context)
 		pip_matrix_free(context);
-	isl_basic_map_free(ctx, bmap);
-	isl_basic_set_free(ctx, dom);
+	isl_basic_map_free(bmap);
+	isl_basic_set_free(dom);
 	return NULL;
 }
 
-struct isl_map *isl_pip_basic_map_lexmax(struct isl_ctx *ctx,
+struct isl_map *isl_pip_basic_map_lexmax(
 		struct isl_basic_map *bmap, struct isl_basic_set *dom,
 		struct isl_set **empty)
 {
-	return extremum_on(ctx, bmap, dom, empty, 1);
+	return extremum_on(bmap, dom, empty, 1);
 }
 
-struct isl_map *isl_pip_basic_map_lexmin(struct isl_ctx *ctx,
+struct isl_map *isl_pip_basic_map_lexmin(
 		struct isl_basic_map *bmap, struct isl_basic_set *dom,
 		struct isl_set **empty)
 {
-	return extremum_on(ctx, bmap, dom, empty, 0);
+	return extremum_on(bmap, dom, empty, 0);
 }
 
-struct isl_map *isl_pip_basic_map_compute_divs(struct isl_ctx *ctx,
-		struct isl_basic_map *bmap)
+struct isl_map *isl_pip_basic_map_compute_divs(struct isl_basic_map *bmap)
 {
 	PipMatrix *domain = NULL, *context = NULL;
 	PipOptions	*options;
 	PipQuast	*sol;
+	struct isl_ctx  *ctx;
 	struct isl_map	*map;
 	struct isl_set	*set;
 	struct isl_basic_set	*dom;
@@ -467,6 +464,7 @@ struct isl_map *isl_pip_basic_map_compute_divs(struct isl_ctx *ctx,
 	if (!bmap)
 		goto error;
 
+	ctx = bmap->ctx;
 	n_in = bmap->n_in;
 	n_out = bmap->n_out;
 
@@ -491,17 +489,17 @@ struct isl_map *isl_pip_basic_map_compute_divs(struct isl_ctx *ctx,
 	pip_matrix_free(domain);
 	pip_matrix_free(context);
 
-	isl_basic_map_free(ctx, bmap);
+	isl_basic_map_free(bmap);
 
-	set = isl_map_domain(ctx, map);
+	set = isl_map_domain(map);
 
-	return isl_map_from_set(ctx, set, n_in, n_out);
+	return isl_map_from_set(set, n_in, n_out);
 error:
 	if (domain)
 		pip_matrix_free(domain);
 	if (context)
 		pip_matrix_free(context);
-	isl_basic_set_free(ctx, dom);
-	isl_basic_map_free(ctx, bmap);
+	isl_basic_set_free(dom);
+	isl_basic_map_free(bmap);
 	return NULL;
 }

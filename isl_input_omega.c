@@ -1,6 +1,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <strings.h>
+#include "isl_map_private.h"
 #include "isl_input_omega.h"
 
 enum token_type { TOKEN_UNKNOWN = 256, TOKEN_VALUE, TOKEN_IDENT, TOKEN_GE,
@@ -495,12 +496,12 @@ static struct isl_basic_map *add_exists(struct stream *s,
 	if (!*v)
 		goto error;
 	extra = (*v)->n - n;
-	bmap = isl_basic_map_extend(s->ctx, bmap, bmap->nparam,
+	bmap = isl_basic_map_extend(bmap, bmap->nparam,
 			bmap->n_in, bmap->n_out, extra, 0, 0);
 	total = bmap->nparam+bmap->n_in+bmap->n_out+bmap->extra;
 	for (i = 0; i < extra; ++i) {
 		int k;
-		if ((k = isl_basic_map_alloc_div(s->ctx, bmap)) < 0)
+		if ((k = isl_basic_map_alloc_div(bmap)) < 0)
 			goto error;
 		isl_seq_clr(bmap->div[k], 1+1+total);
 	}
@@ -513,7 +514,7 @@ static struct isl_basic_map *add_exists(struct stream *s,
 		goto error;
 	return bmap;
 error:
-	isl_basic_map_free(s->ctx, bmap);
+	isl_basic_map_free(bmap);
 	return NULL;
 }
 
@@ -536,9 +537,9 @@ static struct isl_basic_map *add_constraint(struct stream *s,
 	}
 	stream_push_token(s, tok);
 
-	bmap = isl_basic_map_extend(s->ctx, bmap, bmap->nparam,
+	bmap = isl_basic_map_extend(bmap, bmap->nparam,
 			bmap->n_in, bmap->n_out, 0, 0, 1);
-	k = isl_basic_map_alloc_inequality(s->ctx, bmap);
+	k = isl_basic_map_alloc_inequality(bmap);
 	if (k < 0)
 		goto error;
 	isl_seq_clr(bmap->ineq[k], 1+total);
@@ -612,12 +613,12 @@ static struct isl_basic_map *add_constraint(struct stream *s,
 		goto error;
 	}
 	if (equality)
-		isl_basic_map_inequality_to_equality(s->ctx, bmap, k);
+		isl_basic_map_inequality_to_equality(bmap, k);
 	return bmap;
 error:
 	if (tok)
 		token_free(tok);
-	isl_basic_map_free(s->ctx, bmap);
+	isl_basic_map_free(bmap);
 	return NULL;
 }
 
@@ -645,7 +646,7 @@ static struct isl_basic_map *add_constraints(struct stream *s,
 error:
 	if (tok)
 		token_free(tok);
-	isl_basic_map_free(s->ctx, bmap);
+	isl_basic_map_free(bmap);
 	return NULL;
 }
 
@@ -704,7 +705,7 @@ static struct isl_basic_map *basic_map_read(struct stream *s)
 
 	return bmap;
 error:
-	isl_basic_map_free(s->ctx, bmap);
+	isl_basic_map_free(bmap);
 	if (v)
 		vars_free(v);
 	return NULL;
@@ -732,6 +733,6 @@ struct isl_basic_set *isl_basic_set_read_from_file_omega(
 	isl_assert(ctx, bmap->n_in == 0, goto error);
 	return (struct isl_basic_set *)bmap;
 error:
-	isl_basic_map_free(ctx, bmap);
+	isl_basic_map_free(bmap);
 	return NULL;
 }

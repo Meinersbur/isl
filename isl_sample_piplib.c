@@ -78,18 +78,19 @@ static struct isl_mat *independent_bounds(struct isl_ctx *ctx,
 
 /* Skew into positive orthant and project out lineality space */
 static struct isl_basic_set *isl_basic_set_skew_to_positive_orthant(
-	struct isl_ctx *ctx, struct isl_basic_set *bset,
-	struct isl_mat **T)
+	struct isl_basic_set *bset, struct isl_mat **T)
 {
 	struct isl_mat *U = NULL;
 	struct isl_mat *bounds = NULL;
 	int i, j;
 	unsigned old_dim, new_dim;
+	struct isl_ctx *ctx;
 
 	*T = NULL;
 	if (!bset)
 		return NULL;
 
+	ctx = bset->ctx;
 	isl_assert(ctx, bset->nparam == 0, goto error);
 	isl_assert(ctx, bset->n_div == 0, goto error);
 	isl_assert(ctx, bset->n_eq == 0, goto error);
@@ -125,12 +126,11 @@ static struct isl_basic_set *isl_basic_set_skew_to_positive_orthant(
 error:
 	isl_mat_free(ctx, bounds);
 	isl_mat_free(ctx, U);
-	isl_basic_set_free(ctx, bset);
+	isl_basic_set_free(bset);
 	return NULL;
 }
 
-struct isl_vec *isl_pip_basic_set_sample(struct isl_ctx *ctx,
-	struct isl_basic_set *bset)
+struct isl_vec *isl_pip_basic_set_sample(struct isl_basic_set *bset)
 {
 	PipOptions	*options = NULL;
 	PipMatrix	*domain = NULL;
@@ -138,12 +138,14 @@ struct isl_vec *isl_pip_basic_set_sample(struct isl_ctx *ctx,
 	struct isl_vec *vec = NULL;
 	unsigned	dim;
 	struct isl_mat *T;
+	struct isl_ctx *ctx;
 
 	if (!bset)
 		goto error;
+	ctx = bset->ctx;
 	isl_assert(ctx, bset->nparam == 0, goto error);
 	isl_assert(ctx, bset->n_div == 0, goto error);
-	bset = isl_basic_set_skew_to_positive_orthant(ctx, bset, &T);
+	bset = isl_basic_set_skew_to_positive_orthant(bset, &T);
 	if (!bset)
 		goto error;
 	dim = bset->dim;
@@ -181,11 +183,11 @@ struct isl_vec *isl_pip_basic_set_sample(struct isl_ctx *ctx,
 	pip_options_free(options);
 	pip_matrix_free(domain);
 
-	isl_basic_set_free(ctx, bset);
+	isl_basic_set_free(bset);
 	return vec;
 error:
 	isl_vec_free(ctx, vec);
-	isl_basic_set_free(ctx, bset);
+	isl_basic_set_free(bset);
 	if (sol)
 		pip_quast_free(sol);
 	if (domain)

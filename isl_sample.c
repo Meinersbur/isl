@@ -9,7 +9,7 @@ static struct isl_vec *point_sample(struct isl_ctx *ctx,
 	struct isl_basic_set *bset)
 {
 	struct isl_vec *sample;
-	isl_basic_set_free(ctx, bset);
+	isl_basic_set_free(bset);
 	sample = isl_vec_alloc(ctx, 1);
 	if (!sample)
 		return NULL;
@@ -22,11 +22,11 @@ static struct isl_vec *interval_sample(struct isl_ctx *ctx,
 {
 	struct isl_vec *sample;
 
-	bset = isl_basic_set_simplify(ctx, bset);
+	bset = isl_basic_set_simplify(bset);
 	if (!bset)
 		return NULL;
 	if (bset->n_eq > 0)
-		return isl_basic_set_sample(ctx, bset);
+		return isl_basic_set_sample(bset);
 	sample = isl_vec_alloc(ctx, 2);
 	isl_int_set_si(sample->block.data[0], 1);
 	if (bset->n_ineq == 0)
@@ -51,7 +51,7 @@ static struct isl_vec *interval_sample(struct isl_ctx *ctx,
 			sample = isl_vec_alloc(ctx, 0);
 		}
 	}
-	isl_basic_set_free(ctx, bset);
+	isl_basic_set_free(bset);
 	return sample;
 }
 
@@ -130,19 +130,20 @@ static struct isl_basic_set *remove_lineality(struct isl_ctx *ctx,
 error:
 	isl_mat_free(ctx, bounds);
 	isl_mat_free(ctx, U);
-	isl_basic_set_free(ctx, bset);
+	isl_basic_set_free(bset);
 	return NULL;
 }
 
-struct isl_vec *isl_basic_set_sample(struct isl_ctx *ctx,
-	struct isl_basic_set *bset)
+struct isl_vec *isl_basic_set_sample(struct isl_basic_set *bset)
 {
+	struct isl_ctx *ctx;
 	struct isl_mat *bounds;
 	if (!bset)
 		return NULL;
 
+	ctx = bset->ctx;
 	if (F_ISSET(bset, ISL_BASIC_SET_EMPTY)) {
-		isl_basic_set_free(ctx, bset);
+		isl_basic_set_free(bset);
 		return isl_vec_alloc(ctx, 0);
 	}
 
@@ -153,8 +154,8 @@ struct isl_vec *isl_basic_set_sample(struct isl_ctx *ctx,
 		struct isl_mat *T;
 		struct isl_vec *sample;
 
-		bset = isl_basic_set_remove_equalities(ctx, bset, &T, NULL);
-		sample = isl_basic_set_sample(ctx, bset);
+		bset = isl_basic_set_remove_equalities(bset, &T, NULL);
+		sample = isl_basic_set_sample(bset);
 		if (sample && sample->size != 0)
 			sample = isl_mat_vec_product(ctx, T, sample);
 		else
@@ -175,15 +176,15 @@ struct isl_vec *isl_basic_set_sample(struct isl_ctx *ctx,
 		struct isl_vec *sample;
 
 		bset = remove_lineality(ctx, bset, bounds, &T);
-		sample = isl_basic_set_sample(ctx, bset);
+		sample = isl_basic_set_sample(bset);
 		if (sample && sample->size != 0)
 			sample = isl_mat_vec_product(ctx, T, sample);
 		else
 			isl_mat_free(ctx, T);
 		return sample;
 	}
-	return isl_pip_basic_set_sample(ctx, bset);
+	return isl_pip_basic_set_sample(bset);
 error:
-	isl_basic_set_free(ctx, bset);
+	isl_basic_set_free(bset);
 	return NULL;
 }

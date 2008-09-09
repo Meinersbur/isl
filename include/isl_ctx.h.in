@@ -40,6 +40,8 @@ extern "C" {
  */
 struct isl_vec;
 struct isl_ctx {
+	int		ref;
+
 	isl_int		one;
 
 	int		n_cached;
@@ -76,6 +78,8 @@ struct isl_ctx {
 /* struct isl_ctx functions */
 
 struct isl_ctx *isl_ctx_alloc();
+void isl_ctx_ref(struct isl_ctx *ctx);
+void isl_ctx_deref(struct isl_ctx *ctx);
 void isl_ctx_free(struct isl_ctx *ctx);
 
 #if defined(__cplusplus)
