@@ -1434,6 +1434,7 @@ struct isl_set *isl_set_alloc(struct isl_ctx *ctx,
 {
 	struct isl_set *set;
 
+	isl_assert(ctx, n >= 0, return NULL);
 	set = isl_alloc(ctx, struct isl_set,
 			sizeof(struct isl_set) +
 			n * sizeof(struct isl_basic_set *));
