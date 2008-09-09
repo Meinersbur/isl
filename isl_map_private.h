@@ -12,6 +12,7 @@ int isl_basic_map_alloc_div(struct isl_basic_map *bmap);
 int isl_basic_map_free_div(struct isl_basic_map *bmap, unsigned n);
 void isl_basic_map_inequality_to_equality(
 		struct isl_basic_map *bmap, unsigned pos);
+int isl_basic_map_drop_equality(struct isl_basic_map *bmap, unsigned pos);
 int isl_basic_set_drop_equality(struct isl_basic_set *bset, unsigned pos);
 int isl_basic_set_drop_inequality(struct isl_basic_set *bset, unsigned pos);
 
