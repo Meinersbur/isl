@@ -12,6 +12,8 @@ void isl_seq_cpy(isl_int *dst, isl_int *src, unsigned len);
 void isl_seq_swp_or_cpy(isl_int *dst, isl_int *src, unsigned len);
 void isl_seq_scale(isl_int *dst, isl_int *src, isl_int f, unsigned len);
 void isl_seq_scale_down(isl_int *dst, isl_int *src, isl_int f, unsigned len);
+void isl_seq_combine(isl_int *dst, isl_int m1, isl_int *src1,
+			isl_int m2, isl_int *src2, unsigned len);
 void isl_seq_elim(isl_int *dst, isl_int *src, unsigned pos, unsigned len,
 		  isl_int *m);
 void isl_seq_gcd(isl_int *p, unsigned len, isl_int *gcd);
