@@ -71,6 +71,7 @@ typedef mpz_t	isl_int;
 #define isl_int_is_nonneg(i)	(isl_int_sgn(i) >= 0)
 #define isl_int_is_divisible_by(i,j)	mpz_divisible_p(i,j)
 
+u_int32_t isl_gmp_hash(mpz_t v, u_int32_t hash);
 #define isl_int_hash(v,h)	isl_gmp_hash(v,h)
 
 #if defined(__cplusplus)
