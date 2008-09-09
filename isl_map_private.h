@@ -15,6 +15,7 @@ void isl_basic_map_inequality_to_equality(
 int isl_basic_map_drop_equality(struct isl_basic_map *bmap, unsigned pos);
 int isl_basic_set_drop_equality(struct isl_basic_set *bset, unsigned pos);
 int isl_basic_set_drop_inequality(struct isl_basic_set *bset, unsigned pos);
+int isl_basic_map_drop_inequality(struct isl_basic_map *bmap, unsigned pos);
 
 int isl_inequality_negate(struct isl_basic_map *bmap, unsigned pos);
 
