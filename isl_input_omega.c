@@ -1,6 +1,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <strings.h>
+#include <isl_seq.h>
 #include "isl_map_private.h"
 #include "isl_input_omega.h"
 
