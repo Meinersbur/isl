@@ -241,7 +241,7 @@ static void exchange(struct isl_ctx *ctx, struct isl_mat *M, struct isl_mat **U,
 static void subtract(struct isl_mat *M, struct isl_mat **U,
 	struct isl_mat **Q, unsigned row, unsigned i, unsigned j, isl_int m)
 {
-	int r, c;
+	int r;
 	for (r = row; r < M->n_row; ++r)
 		isl_int_submul(M->row[r][j], m, M->row[r][i]);
 	if (U) {
@@ -529,7 +529,7 @@ void isl_mat_col_scale(struct isl_mat *mat, unsigned col, isl_int m)
 		isl_int_mul(mat->row[i][col], mat->row[i][col], m);
 }
 
-isl_mat_col_combine(struct isl_mat *mat, unsigned dst,
+void isl_mat_col_combine(struct isl_mat *mat, unsigned dst,
 	isl_int m1, unsigned src1, isl_int m2, unsigned src2)
 {
 	int i;
