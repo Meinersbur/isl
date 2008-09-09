@@ -169,7 +169,6 @@ static struct isl_map *scan_quast_r(struct scan_data *data, PipQuast *q,
 				    struct isl_map *map)
 {
 	PipNewparm *p;
-	int error;
 	struct isl_basic_map *bmap = data->bmap;
 	unsigned old_n_div = bmap->n_div;
 
@@ -187,7 +186,6 @@ static struct isl_map *scan_quast_r(struct scan_data *data, PipQuast *q,
 	}
 
 	if (q->condition) {
-		int j;
 		int pos = add_inequality(data->ctx, bmap, data->pos,
 					 q->condition);
 		if (pos < 0)
@@ -347,7 +345,6 @@ PipMatrix *isl_basic_map_to_pip(struct isl_basic_map *bmap, unsigned pip_param,
 	unsigned off;
 	unsigned pip_var = bmap->nparam + bmap->n_in + bmap->n_out
 				+ bmap->n_div - pip_param;
-	unsigned pip_dim = pip_var - bmap->n_div;
 
 	nrow = extra_front + bmap->n_eq + bmap->n_ineq;
 	ncol = 1 + extra_front + pip_var + pip_param + extra_back + 1;
