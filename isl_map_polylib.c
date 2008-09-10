@@ -112,7 +112,9 @@ struct isl_basic_map *isl_basic_map_new_from_polylib(
 	if (!bmap)
 		return NULL;
 
-	return copy_constraints(ctx, bmap, P);
+	bmap = copy_constraints(ctx, bmap, P);
+	bmap = isl_basic_map_simplify(bmap);
+	return isl_basic_map_finalize(bmap);
 }
 
 struct isl_set *isl_set_new_from_polylib(struct isl_ctx *ctx,
@@ -132,6 +134,7 @@ struct isl_set *isl_set_new_from_polylib(struct isl_ctx *ctx,
 	for (P = D; P; P = P->next)
 		isl_set_add(set,
 		    isl_basic_set_new_from_polylib(ctx, P, nparam, dim));
+	set = isl_set_remove_empty_parts(set);
 	return set;
 }
 
@@ -153,6 +156,7 @@ struct isl_map *isl_map_new_from_polylib(struct isl_ctx *ctx,
 	for (P = D; P; P = P->next)
 		isl_map_add(map, isl_basic_map_new_from_polylib(ctx, P,
 							    nparam, in, out));
+	map = isl_map_remove_empty_parts(map);
 	return map;
 }
 
