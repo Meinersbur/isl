@@ -1545,7 +1545,8 @@ void isl_set_dump(struct isl_set *set, FILE *out, int indent)
 	}
 
 	fprintf(out, "%*s", indent, "");
-	fprintf(out, "ref: %d, n: %d\n", set->ref, set->n);
+	fprintf(out, "ref: %d, n: %d, nparam: %d, dim: %d, flags: %x\n",
+			set->ref, set->n, set->nparam, set->dim, set->flags);
 	for (i = 0; i < set->n; ++i) {
 		fprintf(out, "%*s", indent, "");
 		fprintf(out, "basic set %d:\n", i);
