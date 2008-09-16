@@ -203,7 +203,7 @@ Polyhedron *isl_map_to_polylib(struct isl_map *map)
 		next = &(*next)->next;
 	}
 
-	return R;
+	return R ? R : Empty_Polyhedron(map->nparam + map->n_in + map->n_out);
 }
 
 Polyhedron *isl_basic_set_to_polylib(struct isl_basic_set *bset)
