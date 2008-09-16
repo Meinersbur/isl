@@ -199,6 +199,7 @@ struct isl_set *isl_map_domain(struct isl_map *bmap);
 struct isl_map *isl_map_from_basic_map(struct isl_basic_map *bmap);
 struct isl_map *isl_map_from_set(struct isl_set *set,
 		unsigned n_in, unsigned n_out);
+struct isl_set *isl_set_from_map(struct isl_map *map);
 
 int isl_map_is_empty(struct isl_map *map);
 int isl_map_is_subset(struct isl_map *map1, struct isl_map *map2);

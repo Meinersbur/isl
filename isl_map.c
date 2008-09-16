@@ -2174,6 +2174,30 @@ error:
 	return NULL;
 }
 
+struct isl_set *isl_set_from_map(struct isl_map *map)
+{
+	int i;
+	struct isl_set *set = NULL;
+
+	if (!map)
+		return NULL;
+	map = isl_map_cow(map);
+	if (!map)
+		return NULL;
+	map->n_out += map->n_in;
+	map->n_in = 0;
+	set = (struct isl_set *)map;
+	for (i = 0; i < map->n; ++i) {
+		set->p[i] = isl_basic_set_from_basic_map(map->p[i]);
+		if (!set->p[i])
+			goto error;
+	}
+	return set;
+error:
+	isl_map_free(map);
+	return NULL;
+}
+
 struct isl_map *isl_map_alloc(struct isl_ctx *ctx,
 		unsigned nparam, unsigned in, unsigned out, int n,
 		unsigned flags)
