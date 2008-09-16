@@ -2352,6 +2352,13 @@ error:
 	return NULL;
 }
 
+struct isl_set *isl_set_extend(struct isl_set *base,
+		unsigned nparam, unsigned dim)
+{
+	return (struct isl_set *)isl_map_extend((struct isl_map *)base,
+							nparam, 0, dim);
+}
+
 static struct isl_basic_map *isl_basic_map_fix_var(struct isl_basic_map *bmap,
 		unsigned var, int value)
 {
