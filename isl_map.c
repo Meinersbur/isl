@@ -1702,6 +1702,13 @@ error:
 	return NULL;
 }
 
+struct isl_set *isl_set_intersect(struct isl_set *set1, struct isl_set *set2)
+{
+	return (struct isl_set *)
+		isl_map_intersect((struct isl_map *)set1,
+				  (struct isl_map *)set2);
+}
+
 struct isl_basic_map *isl_basic_map_reverse(struct isl_basic_map *bmap)
 {
 	struct isl_basic_set *bset;

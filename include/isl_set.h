@@ -119,6 +119,7 @@ struct isl_basic_set *isl_set_convex_hull(struct isl_set *set);
 struct isl_set *isl_set_union_disjoint(
 			struct isl_set *set1, struct isl_set *set2);
 struct isl_set *isl_set_union(struct isl_set *set1, struct isl_set *set2);
+struct isl_set *isl_set_intersect(struct isl_set *set1, struct isl_set *set2);
 struct isl_set *isl_set_subtract(struct isl_set *set1, struct isl_set *set2);
 struct isl_set *isl_set_apply(struct isl_set *set, struct isl_map *map);
 struct isl_set *isl_set_fix_dim_si(struct isl_set *set,
