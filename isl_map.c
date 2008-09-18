@@ -2045,9 +2045,9 @@ struct isl_basic_map *isl_basic_map_overlying_set(
 		return (struct isl_basic_map *)bset;
 	}
 	bset = isl_basic_set_cow(bset);
-	total = bset->dim + bset->extra;
 	if (!bset)
 		goto error;
+	total = bset->dim + bset->extra;
 	bmap = (struct isl_basic_map *)bset;
 	bmap->nparam = like->nparam;
 	bmap->n_in = like->n_in;
