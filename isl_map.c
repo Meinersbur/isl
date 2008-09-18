@@ -2087,6 +2087,13 @@ error:
 	return NULL;
 }
 
+struct isl_basic_set *isl_basic_set_from_underlying_set(
+	struct isl_basic_set *bset, struct isl_basic_set *like)
+{
+	return (struct isl_basic_set *)
+		isl_basic_map_overlying_set(bset, (struct isl_basic_map *)like);
+}
+
 struct isl_set *isl_map_underlying_set(struct isl_map *map)
 {
 	int i;
