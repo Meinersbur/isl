@@ -96,6 +96,9 @@ struct isl_set *isl_set_read_from_file(struct isl_ctx *ctx,
 		FILE *input, unsigned nparam, unsigned input_format);
 struct isl_basic_set *isl_basic_set_from_underlying_set(
 	struct isl_basic_set *bset, struct isl_basic_set *like);
+struct isl_set *isl_set_from_underlying_set(
+	struct isl_set *set, struct isl_basic_set *like);
+struct isl_set *isl_set_to_underlying_set(struct isl_set *set);
 
 int isl_basic_set_is_equal(
 		struct isl_basic_set *bset1, struct isl_basic_set *bset2);

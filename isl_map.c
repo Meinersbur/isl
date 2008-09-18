@@ -2094,6 +2094,38 @@ struct isl_basic_set *isl_basic_set_from_underlying_set(
 		isl_basic_map_overlying_set(bset, (struct isl_basic_map *)like);
 }
 
+struct isl_set *isl_set_from_underlying_set(
+	struct isl_set *set, struct isl_basic_set *like)
+{
+	int i;
+
+	if (!set || !like)
+		goto error;
+	isl_assert(set->ctx, set->dim == like->nparam + like->dim + like->n_div,
+		    goto error);
+	if (like->nparam == 0 && like->n_div == 0) {
+		isl_basic_set_free(like);
+		return set;
+	}
+	set = isl_set_cow(set);
+	if (!set)
+		goto error;
+	for (i = 0; i < set->n; ++i) {
+		set->p[i] = isl_basic_set_from_underlying_set(set->p[i],
+						      isl_basic_set_copy(like));
+		if (!set->p[i])
+			goto error;
+	}
+	set->nparam = like->nparam;
+	set->dim = like->dim;
+	isl_basic_set_free(like);
+	return set;
+error:
+	isl_basic_set_free(like);
+	isl_set_free(set);
+	return NULL;
+}
+
 struct isl_set *isl_map_underlying_set(struct isl_map *map)
 {
 	int i;
@@ -2119,6 +2151,11 @@ struct isl_set *isl_map_underlying_set(struct isl_map *map)
 error:
 	isl_map_free(map);
 	return NULL;
+}
+
+struct isl_set *isl_set_to_underlying_set(struct isl_set *set)
+{
+	return (struct isl_set *)isl_map_underlying_set((struct isl_map *)set);
 }
 
 struct isl_basic_set *isl_basic_map_domain(struct isl_basic_map *bmap)
