@@ -78,8 +78,6 @@ void isl_basic_set_dump(struct isl_basic_set *bset,
 				FILE *out, int indent);
 struct isl_basic_set *isl_basic_set_swap_vars(
 		struct isl_basic_set *bset, unsigned n);
-struct isl_basic_set *isl_basic_set_drop_vars(
-		struct isl_basic_set *bset, unsigned first, unsigned n);
 struct isl_basic_set *isl_basic_set_intersect(
 		struct isl_basic_set *bset1,
 		struct isl_basic_set *bset2);
@@ -131,6 +129,8 @@ struct isl_set *isl_set_subtract(struct isl_set *set1, struct isl_set *set2);
 struct isl_set *isl_set_apply(struct isl_set *set, struct isl_map *map);
 struct isl_set *isl_set_fix_dim_si(struct isl_set *set,
 		unsigned dim, int value);
+struct isl_set *isl_set_remove_dims(struct isl_set *set,
+		unsigned first, unsigned n);
 
 void isl_set_dump(struct isl_set *set, FILE *out, int indent);
 struct isl_set *isl_set_swap_vars(struct isl_set *set, unsigned n);

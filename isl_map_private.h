@@ -41,6 +41,8 @@ struct isl_basic_set *isl_basic_map_underlying_set(struct isl_basic_map *bmap);
 struct isl_set *isl_map_underlying_set(struct isl_map *map);
 struct isl_basic_map *isl_basic_map_overlying_set(struct isl_basic_set *bset,
 	struct isl_basic_map *like);
+struct isl_basic_set *isl_basic_set_drop_dims(
+		struct isl_basic_set *bset, unsigned first, unsigned n);
 
 struct isl_map *isl_map_remove_empty_parts(struct isl_map *map);
 struct isl_set *isl_set_remove_empty_parts(struct isl_set *set);

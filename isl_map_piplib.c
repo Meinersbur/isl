@@ -215,7 +215,7 @@ static struct isl_map *scan_quast_r(struct scan_data *data, PipQuast *q,
 		/* not interested in rest if no sol */
 		struct isl_basic_set *bset;
 		bset = isl_basic_set_from_basic_map(isl_basic_map_copy(bmap));
-		bset = isl_basic_set_drop_vars(bset, bmap->n_in, bmap->n_out);
+		bset = isl_basic_set_drop_dims(bset, bmap->n_in, bmap->n_out);
 		if (!bset)
 			goto error;
 		*data->rest = isl_set_add(*data->rest, bset);

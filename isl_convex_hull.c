@@ -818,23 +818,7 @@ error:
 static struct isl_set *set_project_out(struct isl_ctx *ctx,
 	struct isl_set *set, unsigned n)
 {
-	int i;
-
-	set = isl_set_cow(set);
-	if (!set)
-		return NULL;
-	
-	for (i = 0; i < set->n; ++i) {
-		set->p[i] = isl_basic_set_eliminate_vars(set->p[i],
-							    set->dim - n, n);
-		if (!set->p[i])
-			goto error;
-	}
-	set = isl_set_drop_vars(set, set->dim - n, n);
-	return set;
-error:
-	isl_set_free(set);
-	return NULL;
+	return isl_set_remove_dims(set, set->dim - n, n);
 }
 
 /* If the number of linearly independent bounds we found is smaller

@@ -610,7 +610,7 @@ static void constraint_drop_vars(isl_int *c, unsigned n, unsigned rem)
 	isl_seq_clr(c + rem, n);
 }
 
-struct isl_basic_set *isl_basic_set_drop_vars(
+struct isl_basic_set *isl_basic_set_drop_dims(
 		struct isl_basic_set *bset, unsigned first, unsigned n)
 {
 	int i;
@@ -648,7 +648,7 @@ error:
 	return NULL;
 }
 
-struct isl_set *isl_set_drop_vars(
+static struct isl_set *isl_set_drop_dims(
 		struct isl_set *set, unsigned first, unsigned n)
 {
 	int i;
@@ -665,7 +665,7 @@ struct isl_set *isl_set_drop_vars(
 		goto error;
 
 	for (i = 0; i < set->n; ++i) {
-		set->p[i] = isl_basic_set_drop_vars(set->p[i], first, n);
+		set->p[i] = isl_basic_set_drop_dims(set->p[i], first, n);
 		if (!set->p[i])
 			goto error;
 	}
@@ -1220,6 +1220,33 @@ struct isl_basic_set *isl_basic_set_eliminate_vars(
 {
 	return (struct isl_basic_set *)isl_basic_map_eliminate_vars(
 			(struct isl_basic_map *)bset, pos, n);
+}
+
+/* Project out n dimensions starting at first using Fourier-Motzkin */
+struct isl_set *isl_set_remove_dims(struct isl_set *set,
+	unsigned first, unsigned n)
+{
+	int i;
+
+	if (n == 0)
+		return set;
+
+	set = isl_set_cow(set);
+	if (!set)
+		return NULL;
+	isl_assert(set->ctx, first+n <= set->dim, goto error);
+	
+	for (i = 0; i < set->n; ++i) {
+		set->p[i] = isl_basic_set_eliminate_vars(set->p[i],
+							set->nparam + first, n);
+		if (!set->p[i])
+			goto error;
+	}
+	set = isl_set_drop_dims(set, first, n);
+	return set;
+error:
+	isl_set_free(set);
+	return NULL;
 }
 
 /* Elimininate divs based on inequalities
