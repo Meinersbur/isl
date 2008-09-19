@@ -113,6 +113,7 @@ void test_convex_hull(struct isl_ctx *ctx)
 	test_convex_hull_case(ctx, "convex5");
 	test_convex_hull_case(ctx, "convex6");
 	test_convex_hull_case(ctx, "convex7");
+	test_convex_hull_case(ctx, "convex8");
 }
 
 int main()
