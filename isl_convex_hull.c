@@ -686,6 +686,7 @@ static struct isl_basic_set *extend(struct isl_ctx *ctx, struct isl_set *set,
 	hull = isl_basic_set_finalize(hull);
 	return hull;
 error:
+	isl_basic_set_free(facet);
 	isl_basic_set_free(hull);
 	return NULL;
 }
