@@ -441,6 +441,8 @@ static isl_int *wrap_facet(struct isl_ctx *ctx, struct isl_set *set,
 	T = isl_mat_right_inverse(ctx, T);
 	set = isl_set_preimage(ctx, set, T);
 	T = NULL;
+	if (!set)
+		goto error;
 	lp = wrap_constraints(ctx, set);
 	obj = isl_vec_alloc(ctx, dim*set->n);
 	if (!obj)
