@@ -666,6 +666,11 @@ static struct isl_basic_set *extend(struct isl_ctx *ctx, struct isl_set *set,
 		facet = compute_facet(ctx, set, hull->ineq[i]);
 		if (!facet)
 			goto error;
+		if (facet->n_ineq + hull->n_ineq > n_ineq) {
+			hull = isl_basic_set_extend(hull,
+				hull->nparam, hull->dim, 0, 0, facet->n_ineq);
+			n_ineq = hull->n_ineq + facet->n_ineq;
+		}
 		for (j = 0; j < facet->n_ineq; ++j) {
 			k = isl_basic_set_alloc_inequality(hull);
 			if (k < 0)
