@@ -6,7 +6,7 @@
 #include "isl_seq.h"
 #include "isl_equalities.h"
 
-static struct isl_basic_set *uset_convex_hull(struct isl_set *set);
+static struct isl_basic_set *uset_convex_hull_wrap(struct isl_set *set);
 
 static swap_ineq(struct isl_basic_map *bmap, unsigned i, unsigned j)
 {
@@ -84,20 +84,64 @@ struct isl_basic_set *isl_basic_set_convex_hull(struct isl_basic_set *bset)
 		isl_basic_map_convex_hull((struct isl_basic_map *)bset);
 }
 
-/* Check if "c" is a direction with a lower bound in "set" that is independent
- * of the previously found "n" bounds in "dirs".
+static int uset_is_bound(struct isl_ctx *ctx, struct isl_set *set,
+	isl_int *c, unsigned len)
+{
+	int first;
+	int j;
+	isl_int opt;
+	isl_int opt_denom;
+
+	isl_int_init(opt);
+	isl_int_init(opt_denom);
+	first = 1;
+	for (j = 0; j < set->n; ++j) {
+		enum isl_lp_result res;
+
+		if (F_ISSET(set->p[j], ISL_BASIC_SET_EMPTY))
+			continue;
+
+		res = isl_solve_lp((struct isl_basic_map*)set->p[j],
+				0, c+1, ctx->one, &opt, &opt_denom);
+		if (res == isl_lp_unbounded)
+			break;
+		if (res == isl_lp_error)
+			goto error;
+		if (res == isl_lp_empty) {
+			set->p[j] = isl_basic_set_set_to_empty(set->p[j]);
+			if (!set->p[j])
+				goto error;
+			continue;
+		}
+		if (!isl_int_is_one(opt_denom))
+			isl_seq_scale(c, c, opt_denom, len);
+		if (first || isl_int_lt(opt, c[0]))
+			isl_int_set(c[0], opt);
+		first = 0;
+	}
+	isl_int_clear(opt);
+	isl_int_clear(opt_denom);
+	isl_int_neg(c[0], c[0]);
+	return j >= set->n;
+error:
+	isl_int_clear(opt);
+	isl_int_clear(opt_denom);
+	return -1;
+}
+
+/* Check if "c" is a direction with both a lower bound and an upper
+ * bound in "set" that is independent of the previously found "n"
+ * bounds in "dirs".
  * If so, add it to the list, with the negative of the lower bound
- * in the constant position, i.e., such that c correspond to a bounding
+ * in the constant position, i.e., such that c corresponds to a bounding
  * hyperplane (but not necessarily a facet).
  */
 static int is_independent_bound(struct isl_ctx *ctx,
 	struct isl_set *set, isl_int *c,
 	struct isl_mat *dirs, int n)
 {
-	int first;
-	int i = 0, j;
-	isl_int opt;
-	isl_int opt_denom;
+	int is_bound;
+	int i = 0;
 
 	isl_seq_cpy(dirs->row[n]+1, c+1, dirs->n_col-1);
 	if (n != 0) {
@@ -119,39 +163,14 @@ static int is_independent_bound(struct isl_ctx *ctx,
 		}
 	}
 
-	isl_int_init(opt);
-	isl_int_init(opt_denom);
-	first = 1;
-	for (j = 0; j < set->n; ++j) {
-		enum isl_lp_result res;
-
-		if (F_ISSET(set->p[j], ISL_BASIC_MAP_EMPTY))
-			continue;
-
-		res = isl_solve_lp((struct isl_basic_map*)set->p[j],
-				0, dirs->row[n]+1, ctx->one, &opt, &opt_denom);
-		if (res == isl_lp_unbounded)
-			break;
-		if (res == isl_lp_error)
-			goto error;
-		if (res == isl_lp_empty) {
-			set->p[j] = isl_basic_set_set_to_empty(set->p[j]);
-			if (!set->p[j])
-				goto error;
-			continue;
-		}
-		if (!isl_int_is_one(opt_denom))
-			isl_seq_scale(dirs->row[n], dirs->row[n], opt_denom,
-					dirs->n_col);
-		if (first || isl_int_lt(opt, dirs->row[n][0]))
-			isl_int_set(dirs->row[n][0], opt);
-		first = 0;
-	}
-	isl_int_clear(opt);
-	isl_int_clear(opt_denom);
-	if (j < set->n)
-		return 0;
-	isl_int_neg(dirs->row[n][0], dirs->row[n][0]);
+	isl_seq_neg(dirs->row[n] + 1, dirs->row[n] + 1, dirs->n_col - 1);
+	is_bound = uset_is_bound(ctx, set, dirs->row[n], dirs->n_col);
+	isl_seq_neg(dirs->row[n] + 1, dirs->row[n] + 1, dirs->n_col - 1);
+	if (is_bound != 1)
+		return is_bound;
+	is_bound = uset_is_bound(ctx, set, dirs->row[n], dirs->n_col);
+	if (is_bound != 1)
+		return is_bound;
 	if (i < n) {
 		int k;
 		isl_int *t = dirs->row[n];
@@ -160,10 +179,6 @@ static int is_independent_bound(struct isl_ctx *ctx,
 		dirs->row[i] = t;
 	}
 	return 1;
-error:
-	isl_int_clear(opt);
-	isl_int_clear(opt_denom);
-	return -1;
 }
 
 /* Compute and return a maximal set of linearly independent bounds
@@ -188,16 +203,6 @@ static struct isl_mat *independent_bounds(struct isl_ctx *ctx,
 		for (j = 0; n < set->dim && j < bset->n_eq; ++j) {
 			f = is_independent_bound(ctx, set, bset->eq[j],
 						dirs, n);
-			if (f < 0)
-				goto error;
-			if (f) {
-				++n;
-				continue;
-			}
-			isl_seq_neg(bset->eq[j], bset->eq[j], 1+set->dim);
-			f = is_independent_bound(ctx, set, bset->eq[j],
-						dirs, n);
-			isl_seq_neg(bset->eq[j], bset->eq[j], 1+set->dim);
 			if (f < 0)
 				goto error;
 			if (f)
@@ -234,7 +239,7 @@ static struct isl_basic_set *isl_basic_set_set_rational(
 
 	F_SET(bset, ISL_BASIC_MAP_RATIONAL);
 
-	return bset;
+	return isl_basic_set_finalize(bset);
 }
 
 static struct isl_set *isl_set_set_rational(struct isl_set *set)
@@ -372,7 +377,7 @@ static struct isl_basic_set *wrap_constraints(struct isl_ctx *ctx,
  *
  *			x_1 >= 0
  *
- * I.e., the facet is
+ * I.e., the facet lies in
  *
  *			x_1 = 0
  *
@@ -409,13 +414,17 @@ static struct isl_basic_set *wrap_constraints(struct isl_ctx *ctx,
  *				A_i [ x_i ] >= 0
  *
  * the constraints of each (transformed) basic set.
- * If a = n/d, then the consstraint defining the new facet (in the transformed
+ * If a = n/d, then the constraint defining the new facet (in the transformed
  * space) is
  *
  *			-n x_1 + d x_2 >= 0
  *
  * In the original space, we need to take the same combination of the
  * corresponding constraints "facet" and "ridge".
+ *
+ * If a = -infty = "-1/0", then we just return the original facet constraint.
+ * This means that the facet is unbounded, but has a bounded intersection
+ * with the union of sets.
  */
 static isl_int *wrap_facet(struct isl_ctx *ctx, struct isl_set *set,
 	isl_int *facet, isl_int *ridge)
@@ -465,7 +474,8 @@ static isl_int *wrap_facet(struct isl_ctx *ctx, struct isl_set *set,
 	isl_vec_free(ctx, obj);
 	isl_basic_set_free(lp);
 	isl_set_free(set);
-	isl_assert(ctx, res == isl_lp_ok, return NULL);
+	isl_assert(ctx, res == isl_lp_ok || res == isl_lp_unbounded, 
+		   return NULL);
 	return facet;
 error:
 	isl_basic_set_free(lp);
@@ -599,7 +609,7 @@ static struct isl_basic_set *compute_facet(struct isl_ctx *ctx,
 	U = isl_mat_drop_cols(ctx, U, 1, 1);
 	Q = isl_mat_drop_rows(ctx, Q, 1, 1);
 	set = isl_set_preimage(ctx, set, U);
-	facet = uset_convex_hull(set);
+	facet = uset_convex_hull_wrap(set);
 	facet = isl_basic_set_preimage(ctx, facet, Q);
 	return facet;
 error:
@@ -812,41 +822,195 @@ static struct isl_set *set_project_out(struct isl_ctx *ctx,
 	return isl_set_remove_dims(set, set->dim - n, n);
 }
 
-/* If the number of linearly independent bounds we found is smaller
- * than the dimension, then the convex hull will have a lineality space,
- * so we may as well project out this lineality space.
- * We first transform the set such that the first variables correspond
- * to the directions of the linearly independent bounds and then
- * project out the remaining variables.
- */
-static struct isl_basic_set *modulo_lineality(struct isl_ctx *ctx,
-	struct isl_set *set, struct isl_mat *bounds)
+static struct isl_basic_set *convex_hull_0d(struct isl_set *set)
 {
-	int i, j;
-	unsigned old_dim, new_dim;
-	struct isl_mat *H = NULL, *U = NULL, *Q = NULL;
-	struct isl_basic_set *hull;
+	struct isl_basic_set *convex_hull;
 
-	old_dim = set->dim;
-	new_dim = bounds->n_row;
-	H = isl_mat_sub_alloc(ctx, bounds->row, 0, bounds->n_row, 1, set->dim);
-	H = isl_mat_left_hermite(ctx, H, 0, &U, &Q);
-	if (!H)
+	if (!set)
+		return NULL;
+
+	if (isl_set_is_empty(set))
+		convex_hull = isl_basic_set_empty(set->ctx, 0, 0);
+	else
+		convex_hull = isl_basic_set_universe(set->ctx, 0, 0);
+	isl_set_free(set);
+	return convex_hull;
+}
+
+/* Compute the convex hull of a pair of basic sets without any parameters or
+ * integer divisions using Fourier-Motzkin elimination.
+ * The convex hull is the set of all points that can be written as
+ * the sum of points from both basic sets (in homogeneous coordinates).
+ * We set up the constraints in a space with dimensions for each of
+ * the three sets and then project out the dimensions corresponding
+ * to the two original basic sets, retaining only those corresponding
+ * to the convex hull.
+ */
+static struct isl_basic_set *convex_hull_pair(struct isl_basic_set *bset1,
+	struct isl_basic_set *bset2)
+{
+	int i, j, k;
+	struct isl_basic_set *bset[2];
+	struct isl_basic_set *hull = NULL;
+	unsigned dim;
+
+	if (!bset1 || !bset2)
 		goto error;
-	U = isl_mat_lin_to_aff(ctx, U);
-	Q = isl_mat_lin_to_aff(ctx, Q);
-	Q->n_row = 1 + new_dim;
-	isl_mat_free(ctx, H);
-	set = isl_set_preimage(ctx, set, U);
-	set = set_project_out(ctx, set, old_dim - new_dim);
-	hull = uset_convex_hull(set);
-	hull = isl_basic_set_preimage(ctx, hull, Q);
-	isl_mat_free(ctx, bounds);
+
+	dim = bset1->dim;
+	hull = isl_basic_set_alloc(bset1->ctx, 0, 2 + 3 * bset1->dim, 0,
+				1 + bset1->dim + bset1->n_eq + bset2->n_eq,
+				2 + bset1->n_ineq + bset2->n_ineq);
+	bset[0] = bset1;
+	bset[1] = bset2;
+	for (i = 0; i < 2; ++i) {
+		for (j = 0; j < bset[i]->n_eq; ++j) {
+			k = isl_basic_set_alloc_equality(hull);
+			if (k < 0)
+				goto error;
+			isl_seq_clr(hull->eq[k], (i+1) * (1+dim));
+			isl_seq_clr(hull->eq[k]+(i+2)*(1+dim), (1-i)*(1+dim));
+			isl_seq_cpy(hull->eq[k]+(i+1)*(1+dim), bset[i]->eq[j],
+					1+dim);
+		}
+		for (j = 0; j < bset[i]->n_ineq; ++j) {
+			k = isl_basic_set_alloc_inequality(hull);
+			if (k < 0)
+				goto error;
+			isl_seq_clr(hull->ineq[k], (i+1) * (1+dim));
+			isl_seq_clr(hull->ineq[k]+(i+2)*(1+dim), (1-i)*(1+dim));
+			isl_seq_cpy(hull->ineq[k]+(i+1)*(1+dim),
+					bset[i]->ineq[j], 1+dim);
+		}
+		k = isl_basic_set_alloc_inequality(hull);
+		if (k < 0)
+			goto error;
+		isl_seq_clr(hull->ineq[k], 1+hull->dim);
+		isl_int_set_si(hull->ineq[k][(i+1)*(1+dim)], 1);
+	}
+	for (j = 0; j < 1+dim; ++j) {
+		k = isl_basic_set_alloc_equality(hull);
+		if (k < 0)
+			goto error;
+		isl_seq_clr(hull->eq[k], 1+hull->dim);
+		isl_int_set_si(hull->eq[k][j], -1);
+		isl_int_set_si(hull->eq[k][1+dim+j], 1);
+		isl_int_set_si(hull->eq[k][2*(1+dim)+j], 1);
+	}
+	hull = isl_basic_set_set_rational(hull);
+	hull = isl_basic_set_remove_dims(hull, dim, 2*(1+dim));
+	hull = isl_basic_set_convex_hull(hull);
+	isl_basic_set_free(bset1);
+	isl_basic_set_free(bset2);
 	return hull;
 error:
-	isl_mat_free(ctx, bounds);
-	isl_mat_free(ctx, Q);
+	isl_basic_set_free(bset1);
+	isl_basic_set_free(bset2);
+	isl_basic_set_free(hull);
+	return NULL;
+}
+
+/* Compute the convex hull of a set without any parameters or
+ * integer divisions using Fourier-Motzkin elimination.
+ * In each step, we combined two basic sets until only one
+ * basic set is left.
+ */
+static struct isl_basic_set *uset_convex_hull_elim(struct isl_set *set)
+{
+	struct isl_basic_set *convex_hull = NULL;
+
+	convex_hull = isl_set_copy_basic_set(set);
+	set = isl_set_drop_basic_set(set, convex_hull);
+	if (!set)
+		goto error;
+	while (set->n > 0) {
+		struct isl_basic_set *t;
+		t = isl_set_copy_basic_set(set);
+		if (!t)
+			goto error;
+		set = isl_set_drop_basic_set(set, t);
+		if (!set)
+			goto error;
+		convex_hull = convex_hull_pair(convex_hull, t);
+	}
 	isl_set_free(set);
+	return convex_hull;
+error:
+	isl_set_free(set);
+	isl_basic_set_free(convex_hull);
+	return NULL;
+}
+
+static struct isl_basic_set *uset_convex_hull_wrap_with_bounds(
+	struct isl_set *set, struct isl_mat *bounds)
+{
+	struct isl_basic_set *convex_hull = NULL;
+
+	isl_assert(set->ctx, bounds->n_row == set->dim, goto error);
+	bounds = initial_facet_constraint(set->ctx, set, bounds);
+	if (!bounds)
+		goto error;
+	convex_hull = extend(set->ctx, set, bounds);
+	isl_mat_free(set->ctx, bounds);
+	isl_set_free(set);
+
+	return convex_hull;
+error:
+	isl_set_free(set);
+	return NULL;
+}
+
+/* Compute the convex hull of a set without any parameters or
+ * integer divisions.  Depending on whether the set is bounded,
+ * we pass control to the wrapping based convex hull or
+ * the Fourier-Motzkin elimination based convex hull.
+ * We also handle a few special cases before checking the boundedness.
+ */
+static struct isl_basic_set *uset_convex_hull(struct isl_set *set)
+{
+	int i;
+	struct isl_basic_set *convex_hull = NULL;
+	struct isl_mat *bounds;
+
+	if (set->dim == 0)
+		return convex_hull_0d(set);
+
+	set = isl_set_set_rational(set);
+
+	if (!set)
+		goto error;
+	for (i = 0; i < set->n; ++i) {
+		set->p[i] = isl_basic_set_convex_hull(set->p[i]);
+		if (!set->p[i])
+			goto error;
+	}
+	set = isl_set_remove_empty_parts(set);
+	if (!set)
+		return NULL;
+	if (set->n == 0) {
+		convex_hull = isl_basic_set_empty(set->ctx, 0, 0);
+		isl_set_free(set);
+		return convex_hull;
+	}
+	if (set->n == 1) {
+		convex_hull = isl_basic_set_copy(set->p[0]);
+		isl_set_free(set);
+		return convex_hull;
+	}
+	if (set->dim == 1)
+		return convex_hull_1d(set->ctx, set);
+
+	bounds = independent_bounds(set->ctx, set);
+	if (!bounds)
+		goto error;
+	if (bounds->n_row == set->dim)
+		return uset_convex_hull_wrap_with_bounds(set, bounds);
+	isl_mat_free(set->ctx, bounds);
+
+	return uset_convex_hull_elim(set);
+error:
+	isl_set_free(set);
+	isl_basic_set_free(convex_hull);
 	return NULL;
 }
 
@@ -854,7 +1018,7 @@ error:
  * without parameters or divs and where the convex hull of set is
  * known to be full-dimensional.
  */
-static struct isl_basic_set *uset_convex_hull(struct isl_set *set)
+static struct isl_basic_set *uset_convex_hull_wrap(struct isl_set *set)
 {
 	int i;
 	struct isl_basic_set *convex_hull = NULL;
@@ -890,16 +1054,7 @@ static struct isl_basic_set *uset_convex_hull(struct isl_set *set)
 	bounds = independent_bounds(set->ctx, set);
 	if (!bounds)
 		goto error;
-	if (bounds->n_row < set->dim)
-		return modulo_lineality(set->ctx, set, bounds);
-	bounds = initial_facet_constraint(set->ctx, set, bounds);
-	if (!bounds)
-		goto error;
-	convex_hull = extend(set->ctx, set, bounds);
-	isl_mat_free(set->ctx, bounds);
-	isl_set_free(set);
-
-	return convex_hull;
+	return uset_convex_hull_wrap_with_bounds(set, bounds);
 error:
 	isl_set_free(set);
 	return NULL;
