@@ -11,7 +11,9 @@ struct isl_basic_map *isl_basic_map_implicit_equalities(
 						struct isl_basic_map *bmap)
 {
 	int i;
+	int rational;
 	isl_int opt;
+	isl_int opt_denom;
 	struct isl_ctx *ctx;
 
 	if (!bmap)
@@ -23,10 +25,15 @@ struct isl_basic_map *isl_basic_map_implicit_equalities(
 		return bmap;
 
 	ctx = bmap->ctx;
+	rational = F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL);
 	isl_int_init(opt);
+	isl_int_init(opt_denom);
+	if (!rational)
+		isl_int_set_si(opt_denom, 1);
 	for (i = 0; i < bmap->n_ineq; ++i) {
 		enum isl_lp_result res;
-		res = isl_solve_lp(bmap, 1, bmap->ineq[i]+1, ctx->one, &opt, NULL);
+		res = isl_solve_lp(bmap, 1, bmap->ineq[i]+1, ctx->one,
+					&opt, rational ? &opt_denom : NULL);
 		if (res == isl_lp_unbounded)
 			continue;
 		if (res == isl_lp_error)
@@ -35,12 +42,15 @@ struct isl_basic_map *isl_basic_map_implicit_equalities(
 			bmap = isl_basic_map_set_to_empty(bmap);
 			break;
 		}
+		if (!isl_int_is_one(opt_denom))
+			continue;
 		isl_int_add(opt, opt, bmap->ineq[i][0]);
 		if (isl_int_is_zero(opt)) {
 			isl_basic_map_inequality_to_equality(bmap, i);
 			--i;
 		}
 	}
+	isl_int_clear(opt_denom);
 	isl_int_clear(opt);
 
 	F_SET(bmap, ISL_BASIC_MAP_NO_IMPLICIT);
@@ -303,6 +313,12 @@ struct isl_basic_map *isl_basic_map_affine_hull(struct isl_basic_map *bmap)
 	ctx = bmap->ctx;
 	if (bmap->n_ineq == 0)
 		return bmap;
+
+	if (F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL)) {
+		bmap = isl_basic_map_cow(bmap);
+		isl_basic_map_free_inequality(bmap, bmap->n_ineq);
+		return bmap;
+	}
 
 	bset = isl_basic_map_underlying_set(isl_basic_map_copy(bmap));
 	bset = isl_basic_set_remove_equalities(bset, NULL, &T2);
