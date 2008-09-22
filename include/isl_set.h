@@ -140,6 +140,10 @@ int isl_set_is_equal(struct isl_set *set1, struct isl_set *set2);
 
 struct isl_set *isl_basic_set_compute_divs(struct isl_basic_set *bset);
 
+struct isl_basic_set *isl_set_copy_basic_set(struct isl_set *set);
+struct isl_set *isl_set_drop_basic_set(struct isl_set *set,
+						struct isl_basic_set *bset);
+
 #if defined(__cplusplus)
 }
 #endif

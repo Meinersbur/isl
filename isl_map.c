@@ -1426,8 +1426,8 @@ void isl_basic_set_dump(struct isl_basic_set *bset, FILE *out, int indent)
 	}
 
 	fprintf(out, "%*s", indent, "");
-	fprintf(out, "nparam: %d, dim: %d, extra: %d\n",
-			bset->nparam, bset->dim, bset->extra);
+	fprintf(out, "ref: %d, nparam: %d, dim: %d, extra: %d\n",
+			bset->ref, bset->nparam, bset->dim, bset->extra);
 	dump((struct isl_basic_map *)bset, out, indent);
 }
 
@@ -3539,4 +3539,41 @@ struct isl_set *isl_set_remove_empty_parts(struct isl_set *set)
 {
 	return (struct isl_set *)
 		isl_map_remove_empty_parts((struct isl_map *)set);
+}
+
+struct isl_basic_set *isl_set_copy_basic_set(struct isl_set *set)
+{
+	struct isl_basic_set *bset;
+	if (!set || set->n == 0)
+		return NULL;
+	bset = set->p[set->n-1];
+	isl_assert(set->ctx, F_ISSET(bset, ISL_BASIC_SET_FINAL), return NULL);
+	return isl_basic_set_copy(bset);
+}
+
+struct isl_set *isl_set_drop_basic_set(struct isl_set *set,
+						struct isl_basic_set *bset)
+{
+	int i;
+
+	if (!set || !bset)
+		goto error;
+	for (i = set->n-1; i >= 0; --i) {
+		if (set->p[i] != bset)
+			continue;
+		set = isl_set_cow(set);
+		if (!set)
+			goto error;
+		isl_basic_set_free(set->p[i]);
+		if (i != set->n-1)
+			set->p[i] = set->p[set->n-1];
+		set->n--;
+		return set;
+	}
+	isl_basic_set_free(bset);
+	return set;
+error:
+	isl_set_free(set);
+	isl_basic_set_free(bset);
+	return NULL;
 }
