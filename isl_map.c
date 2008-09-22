@@ -955,7 +955,8 @@ static struct isl_basic_map *remove_duplicate_constraints(
 			index[h] = k+1;
 			continue;
 		}
-		*progress = 1;
+		if (progress)
+			*progress = 1;
 		l = index[h] - 1;
 		if (isl_int_lt(bmap->ineq[k][0], bmap->ineq[l][0]))
 			swap_inequality(bmap, k, l);
@@ -1204,7 +1205,11 @@ struct isl_basic_map *isl_basic_map_eliminate_vars(
 		}
 		if (n_lower > 0 && n_upper > 0) {
 			bmap = normalize_constraints(bmap);
+			bmap = remove_duplicate_constraints(bmap, NULL);
 			bmap = isl_basic_map_gauss(bmap, NULL);
+			bmap = isl_basic_map_convex_hull(bmap);
+			if (!bmap)
+				goto error;
 			if (F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
 				break;
 		}
