@@ -129,6 +129,8 @@ struct isl_set *isl_set_subtract(struct isl_set *set1, struct isl_set *set2);
 struct isl_set *isl_set_apply(struct isl_set *set, struct isl_map *map);
 struct isl_set *isl_set_fix_dim_si(struct isl_set *set,
 		unsigned dim, int value);
+struct isl_basic_set *isl_basic_set_remove_dims(struct isl_basic_set *bset,
+		unsigned first, unsigned n);
 struct isl_set *isl_set_remove_dims(struct isl_set *set,
 		unsigned first, unsigned n);
 

@@ -1249,6 +1249,15 @@ error:
 	return NULL;
 }
 
+/* Project out n dimensions starting at first using Fourier-Motzkin */
+struct isl_basic_set *isl_basic_set_remove_dims(struct isl_basic_set *bset,
+	unsigned first, unsigned n)
+{
+	bset = isl_basic_set_eliminate_vars(bset, bset->nparam + first, n);
+	bset = isl_basic_set_drop_dims(bset, first, n);
+	return bset;
+}
+
 /* Elimininate divs based on inequalities
  */
 static struct isl_basic_map *eliminate_divs_ineq(
