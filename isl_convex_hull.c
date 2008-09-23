@@ -1131,6 +1131,7 @@ struct isl_basic_map *isl_map_convex_hull(struct isl_map *map)
 			isl_basic_map_copy(map->p[0]));
 
 	isl_map_free(map);
+	F_CLR(convex_hull, ISL_BASIC_MAP_RATIONAL);
 	return convex_hull;
 error:
 	isl_set_free(set);
