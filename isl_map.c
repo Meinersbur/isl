@@ -1440,8 +1440,9 @@ void isl_basic_set_dump(struct isl_basic_set *bset, FILE *out, int indent)
 	}
 
 	fprintf(out, "%*s", indent, "");
-	fprintf(out, "ref: %d, nparam: %d, dim: %d, extra: %d\n",
-			bset->ref, bset->nparam, bset->dim, bset->extra);
+	fprintf(out, "ref: %d, nparam: %d, dim: %d, extra: %d, flags: %x\n",
+			bset->ref, bset->nparam, bset->dim, bset->extra,
+			bset->flags);
 	dump((struct isl_basic_map *)bset, out, indent);
 }
 
@@ -3208,6 +3209,14 @@ int isl_basic_map_is_empty(struct isl_basic_map *bmap)
 
 	if (F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
 		return 1;
+
+	if (F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL)) {
+		struct isl_basic_map *copy = isl_basic_map_copy(bmap);
+		copy = isl_basic_map_convex_hull(copy);
+		empty = F_ISSET(copy, ISL_BASIC_MAP_EMPTY);
+		isl_basic_map_free(copy);
+		return empty;
+	}
 
 	total = 1 + bmap->nparam + bmap->n_in + bmap->n_out + bmap->n_div;
 	if (bmap->sample && bmap->sample->size == total) {
