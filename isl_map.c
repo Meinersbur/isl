@@ -2,6 +2,7 @@
 #include <strings.h>
 #include "isl_ctx.h"
 #include "isl_blk.h"
+#include "isl_lp.h"
 #include "isl_seq.h"
 #include "isl_set.h"
 #include "isl_map.h"
@@ -3599,4 +3600,74 @@ error:
 	isl_set_free(set);
 	isl_basic_set_free(bset);
 	return NULL;
+}
+
+/* Given two _disjoint_ basic sets bset1 and bset2, check whether
+ * for any common value of the parameters and dimensions preceding dim
+ * in both basic sets, the values of dimension pos in bset1 are
+ * smaller or larger then those in bset2.
+ *
+ * Returns
+ *	 1 if bset1 follows bset2
+ *	-1 if bset1 precedes bset2
+ *	 0 if bset1 and bset2 are incomparable
+ *	-2 if some error occurred.
+ */
+int isl_basic_set_compare_at(struct isl_basic_set *bset1,
+	struct isl_basic_set *bset2, int pos)
+{
+	struct isl_basic_map *bmap1 = NULL;
+	struct isl_basic_map *bmap2 = NULL;
+	struct isl_ctx *ctx;
+	struct isl_vec *obj;
+	unsigned total;
+	isl_int num, den;
+	enum isl_lp_result res;
+	int cmp;
+
+	if (!bset1 || !bset2)
+		return -2;
+
+	bmap1 = isl_basic_map_from_basic_set(isl_basic_set_copy(bset1),
+						pos, bset1->dim - pos);
+	bmap2 = isl_basic_map_from_basic_set(isl_basic_set_copy(bset2),
+						pos, bset2->dim - pos);
+	if (!bmap1 || !bmap2)
+		goto error;
+	bmap1 = isl_basic_map_extend(bmap1, bmap1->nparam,
+			bmap1->n_in, bmap1->n_out + bmap2->n_out,
+			bmap2->n_div, bmap2->n_eq, bmap2->n_ineq);
+	if (!bmap1)
+		goto error;
+	total = bmap1->nparam + bmap1->n_in + bmap1->n_out + bmap1->n_div;
+	ctx = bmap1->ctx;
+	obj = isl_vec_alloc(ctx, total);
+	isl_seq_clr(obj->block.data, total);
+	isl_int_set_si(obj->block.data[bmap1->nparam+bmap1->n_in], 1);
+	isl_int_set_si(obj->block.data[bmap1->nparam+bmap1->n_in+
+					bmap1->n_out-bmap2->n_out], -1);
+	if (!obj)
+		goto error;
+	bmap1 = add_constraints(bmap1, bmap2, 0, bmap1->n_out - bmap2->n_out);
+	isl_int_init(num);
+	isl_int_init(den);
+	res = isl_solve_lp(bmap1, 0, obj->block.data, ctx->one, &num, &den);
+	if (res == isl_lp_empty)
+		cmp = 0;
+	else if (res == isl_lp_ok && isl_int_is_pos(num))
+		cmp = 1;
+	else if ((res == isl_lp_ok && isl_int_is_neg(num)) ||
+		  res == isl_lp_unbounded)
+		cmp = -1;
+	else
+		cmp = -2;
+	isl_int_clear(num);
+	isl_int_clear(den);
+	isl_basic_map_free(bmap1);
+	isl_vec_free(ctx, obj);
+	return cmp;
+error:
+	isl_basic_map_free(bmap1);
+	isl_basic_map_free(bmap2);
+	return -2;
 }
