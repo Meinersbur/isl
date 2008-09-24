@@ -2869,6 +2869,31 @@ error:
 	return NULL;
 }
 
+/*
+ * returns range - domain
+ */
+struct isl_set *isl_map_deltas(struct isl_map *map)
+{
+	int i;
+	struct isl_set *result;
+
+	if (!map)
+		return NULL;
+
+	isl_assert(map->ctx, map->n_in == map->n_out, goto error);
+	result = isl_set_alloc(map->ctx, map->nparam, map->n_in, map->n, map->flags);
+	if (!result)
+		goto error;
+	for (i = 0; i < map->n; ++i)
+		result = isl_set_add(result,
+			  isl_basic_map_deltas(isl_basic_map_copy(map->p[i])));
+	isl_map_free(map);
+	return result;
+error:
+	isl_map_free(map);
+	return NULL;
+}
+
 /* If the only constraints a div d=floor(f/m)
  * appears in are its two defining constraints
  *
