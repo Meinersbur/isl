@@ -3696,3 +3696,83 @@ error:
 	isl_basic_map_free(bmap2);
 	return -2;
 }
+
+static int isl_basic_map_fast_has_fixed_var(struct isl_basic_map *bmap,
+	unsigned pos, isl_int *val)
+{
+	int i;
+	int d;
+	unsigned total;
+
+	if (!bmap)
+		return -1;
+	total = bmap->nparam + bmap->n_in + bmap->n_out + bmap->n_div;
+	for (i = 0, d = total-1; i < bmap->n_eq && d+1 > pos; ++i) {
+		for (; d+1 > pos; --d)
+			if (!isl_int_is_zero(bmap->eq[i][1+d]))
+				break;
+		if (d != pos)
+			continue;
+		if (isl_seq_first_non_zero(bmap->eq[i]+1, d) != -1)
+			return 0;
+		if (isl_seq_first_non_zero(bmap->eq[i]+1+d+1, total-d-1) != -1)
+			return 0;
+		if (!isl_int_is_one(bmap->eq[i][1+d]))
+			return 0;
+		if (val)
+			isl_int_neg(*val, bmap->eq[i][0]);
+		return 1;
+	}
+	return 0;
+}
+
+static int isl_map_fast_has_fixed_var(struct isl_map *map,
+	unsigned pos, isl_int *val)
+{
+	int i;
+	isl_int v;
+	isl_int tmp;
+	int fixed;
+
+	if (!map)
+		return -1;
+	if (map->n == 0)
+		return 0;
+	if (map->n == 1)
+		return isl_basic_map_fast_has_fixed_var(map->p[0], pos, val); 
+	isl_int_init(v);
+	isl_int_init(tmp);
+	fixed = isl_basic_map_fast_has_fixed_var(map->p[0], pos, &v); 
+	for (i = 1; fixed == 1 && i < map->n; ++i) {
+		fixed = isl_basic_map_fast_has_fixed_var(map->p[i], pos, &tmp); 
+		if (fixed == 1 && isl_int_ne(tmp, v))
+			fixed = 0;
+	}
+	if (val)
+		isl_int_set(*val, v);
+	isl_int_clear(tmp);
+	isl_int_clear(v);
+	return fixed;
+}
+
+static int isl_set_fast_has_fixed_var(struct isl_set *set, unsigned pos,
+	isl_int *val)
+{
+	return isl_map_fast_has_fixed_var((struct isl_map *)set, pos, val);
+}
+
+/* Check if dimension dim has fixed value and if so and if val is not NULL,
+ * then return this fixed value in *val.
+ */
+int isl_set_fast_dim_is_fixed(struct isl_set *set, unsigned dim, isl_int *val)
+{
+	return isl_set_fast_has_fixed_var(set, set->nparam + dim, val);
+}
+
+/* Check if input variable in has fixed value and if so and if val is not NULL,
+ * then return this fixed value in *val.
+ */
+int isl_map_fast_input_is_fixed(struct isl_map *map, unsigned in, isl_int *val)
+{
+	return isl_map_fast_has_fixed_var(map, map->nparam + in, val);
+}

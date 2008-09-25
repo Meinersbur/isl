@@ -209,6 +209,9 @@ int isl_map_is_equal(struct isl_map *map1, struct isl_map *map2);
 
 void isl_map_dump(struct isl_map *map, FILE *out, int indent);
 
+int isl_map_fast_input_is_fixed(struct isl_map *map,
+		unsigned in, isl_int *val);
+
 #if defined(__cplusplus)
 }
 #endif
