@@ -2,6 +2,7 @@
 #include <strings.h>
 #include "isl_ctx.h"
 #include "isl_blk.h"
+#include "isl_equalities.h"
 #include "isl_lp.h"
 #include "isl_seq.h"
 #include "isl_set.h"
@@ -404,7 +405,12 @@ static struct isl_basic_map *add_constraints(struct isl_basic_map *bmap1,
 		struct isl_basic_map *bmap2, unsigned i_pos, unsigned o_pos)
 {
 	int i;
-	unsigned div_off = bmap1->n_div;
+	unsigned div_off;
+
+	if (!bmap1 || !bmap2)
+		goto error;
+
+	div_off = bmap1->n_div;
 
 	for (i = 0; i < bmap2->n_eq; ++i) {
 		int i1 = isl_basic_map_alloc_equality(bmap1);
@@ -438,6 +444,14 @@ error:
 	isl_basic_map_free(bmap1);
 	isl_basic_map_free(bmap2);
 	return NULL;
+}
+
+static struct isl_basic_set *set_add_constraints(struct isl_basic_set *bset1,
+		struct isl_basic_set *bset2, unsigned pos)
+{
+	return (struct isl_basic_set *)
+		add_constraints((struct isl_basic_map *)bset1,
+				(struct isl_basic_map *)bset2, 0, pos);
 }
 
 struct isl_basic_map *isl_basic_map_extend(struct isl_basic_map *base,
@@ -792,9 +806,16 @@ static void swap_equality(struct isl_basic_map *bmap, int a, int b)
 
 static void swap_inequality(struct isl_basic_map *bmap, int a, int b)
 {
-	isl_int *t = bmap->ineq[a];
-	bmap->ineq[a] = bmap->ineq[b];
-	bmap->ineq[b] = t;
+	if (a != b) {
+		isl_int *t = bmap->ineq[a];
+		bmap->ineq[a] = bmap->ineq[b];
+		bmap->ineq[b] = t;
+	}
+}
+
+static void set_swap_inequality(struct isl_basic_set *bset, int a, int b)
+{
+	swap_inequality((struct isl_basic_map *)bset, a, b);
 }
 
 static void swap_div(struct isl_basic_map *bmap, int a, int b)
@@ -3775,4 +3796,126 @@ int isl_set_fast_dim_is_fixed(struct isl_set *set, unsigned dim, isl_int *val)
 int isl_map_fast_input_is_fixed(struct isl_map *map, unsigned in, isl_int *val)
 {
 	return isl_map_fast_has_fixed_var(map, map->nparam + in, val);
+}
+
+/* Remove all information from bset that is redundant in the context
+ * of context.  In particular, equalities that are linear combinations
+ * of those in context are remobed.  Then the inequalities that are
+ * redundant in the context of the equalities and inequalities of
+ * context are removed.
+ */
+static struct isl_basic_set *uset_gist(struct isl_basic_set *bset,
+	struct isl_basic_set *context)
+{
+	int i;
+	isl_int opt;
+	struct isl_basic_set *combined;
+	struct isl_ctx *ctx;
+	enum isl_lp_result res = isl_lp_ok;
+
+	if (!bset || !context)
+		goto error;
+
+	if (context->n_eq > 0) {
+		struct isl_mat *T;
+		struct isl_mat *T2;
+		struct isl_ctx *ctx = context->ctx;
+		context = isl_basic_set_remove_equalities(context, &T, &T2);
+		if (!context)
+			goto error;
+		bset = isl_basic_set_preimage(ctx, bset, T);
+		bset = uset_gist(bset, context);
+		bset = isl_basic_set_preimage(ctx, bset, T2);
+		return bset;
+	}
+	combined = isl_basic_set_extend(isl_basic_set_copy(bset),
+			0, bset->dim, 0, context->n_eq, context->n_ineq);
+	context = set_add_constraints(combined, context, 0);
+	if (!context)
+		goto error;
+	ctx = context->ctx;
+	isl_int_init(opt);
+	for (i = bset->n_ineq-1; i >= 0; --i) {
+		set_swap_inequality(context, i, context->n_ineq-1);
+		context->n_ineq--;
+		res = isl_solve_lp((struct isl_basic_map *)context, 0,
+			context->ineq[context->n_ineq]+1, ctx->one, &opt, NULL);
+		context->n_ineq++;
+		set_swap_inequality(context, i, context->n_ineq-1);
+		if (res == isl_lp_unbounded)
+			continue;
+		if (res == isl_lp_error)
+			break;
+		if (res == isl_lp_empty) {
+			bset = isl_basic_set_set_to_empty(bset);
+			break;
+		}
+		isl_int_add(opt, opt, context->ineq[i][0]);
+		if (!isl_int_is_neg(opt)) {
+			isl_basic_set_drop_inequality(context, i);
+			isl_basic_set_drop_inequality(bset, i);
+		}
+	}
+	isl_int_clear(opt);
+	if (res == isl_lp_error)
+		goto error;
+	isl_basic_set_free(context);
+	return bset;
+error:
+	isl_basic_set_free(context);
+	isl_basic_set_free(bset);
+	return NULL;
+}
+
+struct isl_basic_map *isl_basic_map_gist(struct isl_basic_map *bmap,
+	struct isl_basic_map *context)
+{
+	struct isl_basic_set *bset;
+
+	if (!bmap || !context)
+		goto error;
+
+	context = isl_basic_map_align_divs(context, bmap);
+	bmap = isl_basic_map_align_divs(bmap, context);
+
+	bset = uset_gist(isl_basic_map_underlying_set(isl_basic_map_copy(bmap)),
+			 isl_basic_map_underlying_set(context));
+
+	return isl_basic_map_overlying_set(bset, bmap);
+error:
+	isl_basic_map_free(bmap);
+	isl_basic_map_free(context);
+	return NULL;
+}
+
+struct isl_map *isl_map_gist(struct isl_map *map, struct isl_basic_map *context)
+{
+	int i;
+
+	map = isl_map_cow(map);
+	if (!map || !context)
+		return NULL;
+	isl_assert(map->ctx, map->nparam == context->nparam, goto error);
+	isl_assert(map->ctx, map->n_in == context->n_in, goto error);
+	isl_assert(map->ctx, map->n_out == context->n_out, goto error);
+	for (i = 0; i < map->n; ++i)
+		context = isl_basic_map_align_divs(context, map->p[i]);
+	for (i = 0; i < map->n; ++i) {
+		map->p[i] = isl_basic_map_gist(map->p[i],
+						isl_basic_map_copy(context));
+		if (!map->p[i])
+			goto error;
+	}
+	isl_basic_map_free(context);
+	return map;
+error:
+	isl_map_free(map);
+	isl_basic_map_free(context);
+	return NULL;
+}
+
+struct isl_set *isl_set_gist(struct isl_set *set, struct isl_basic_set *context)
+{
+	return (struct isl_set *)isl_map_gist((struct isl_map *)set,
+					(struct isl_basic_map *)context);
 }

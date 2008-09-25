@@ -151,6 +151,9 @@ struct isl_set *isl_set_drop_basic_set(struct isl_set *set,
 
 int isl_set_fast_dim_is_fixed(struct isl_set *set, unsigned dim, isl_int *val);
 
+struct isl_set *isl_set_gist(struct isl_set *set,
+	struct isl_basic_set *context);
+
 #if defined(__cplusplus)
 }
 #endif
