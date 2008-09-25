@@ -141,3 +141,66 @@ error:
 	*T = NULL;
 	return NULL;
 }
+
+/* Check if dimension dim belongs to a residue class
+ *		i_dim \equiv r mod m
+ * with m != 1 and if so return m in *modulo and r in *residue.
+ */
+int isl_basic_set_dim_residue_class(struct isl_basic_set *bset,
+	int pos, isl_int *modulo, isl_int *residue)
+{
+	struct isl_ctx *ctx;
+	struct isl_mat *H = NULL, *U = NULL, *C, *H1, *U1;
+	unsigned total;
+
+	if (!bset || !modulo || !residue)
+		return -1;
+
+	ctx = bset->ctx;
+	total = bset->nparam + bset->dim + bset->n_div;
+	H = isl_mat_sub_alloc(ctx, bset->eq, 0, bset->n_eq, 1, total);
+	H = isl_mat_left_hermite(ctx, H, 0, &U, NULL);
+	if (!H)
+		return -1;
+
+	isl_seq_gcd(U->row[bset->nparam + pos]+bset->n_eq,
+			total-bset->n_eq, modulo);
+	if (isl_int_is_zero(*modulo) || isl_int_is_one(*modulo)) {
+		isl_int_set_si(*residue, 0);
+		isl_mat_free(ctx, H);
+		isl_mat_free(ctx, U);
+		return 0;
+	}
+
+	C = isl_mat_alloc(ctx, 1+bset->n_eq, 1);
+	if (!C)
+		goto error;
+	isl_int_set_si(C->row[0][0], 1);
+	isl_mat_sub_neg(ctx, C->row+1, bset->eq, bset->n_eq, 0, 0, 1);
+	H1 = isl_mat_sub_alloc(ctx, H->row, 0, H->n_row, 0, H->n_row);
+	H1 = isl_mat_lin_to_aff(ctx, H1);
+	C = isl_mat_inverse_product(ctx, H1, C);
+	isl_mat_free(ctx, H);
+	U1 = isl_mat_sub_alloc(ctx, U->row, bset->nparam+pos, 1, 0, bset->n_eq);
+	U1 = isl_mat_lin_to_aff(ctx, U1);
+	isl_mat_free(ctx, U);
+	C = isl_mat_product(ctx, U1, C);
+	if (!C)
+		goto error;
+	if (!isl_int_is_divisible_by(C->row[1][0], C->row[0][0])) {
+		bset = isl_basic_set_copy(bset);
+		bset = isl_basic_set_set_to_empty(bset);
+		isl_basic_set_free(bset);
+		isl_int_set_si(*modulo, 0);
+		isl_int_set_si(*residue, 0);
+		return 0;
+	}
+	isl_int_divexact(*residue, C->row[1][0], C->row[0][0]);
+	isl_int_fdiv_r(*residue, *residue, *modulo);
+	isl_mat_free(ctx, C);
+	return 0;
+error:
+	isl_mat_free(ctx, H);
+	isl_mat_free(ctx, U);
+	return -1;
+}

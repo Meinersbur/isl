@@ -153,6 +153,8 @@ int isl_set_fast_dim_is_fixed(struct isl_set *set, unsigned dim, isl_int *val);
 
 struct isl_set *isl_set_gist(struct isl_set *set,
 	struct isl_basic_set *context);
+int isl_basic_set_dim_residue_class(struct isl_basic_set *bset,
+	int pos, isl_int *modulo, isl_int *residue);
 
 #if defined(__cplusplus)
 }
