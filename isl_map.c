@@ -905,6 +905,44 @@ static void swap_div(struct isl_basic_map *bmap, int a, int b)
 		isl_int_swap(bmap->div[i][1+1+off+a], bmap->div[i][1+1+off+b]);
 }
 
+static void eliminate_var_using_equality(struct isl_basic_map *bmap,
+	unsigned pos, isl_int *eq, int *progress)
+{
+	unsigned total;
+	int k;
+
+	total = bmap->nparam + bmap->n_in + bmap->n_out + bmap->n_div;
+	for (k = 0; k < bmap->n_eq; ++k) {
+		if (bmap->eq[k] == eq)
+			continue;
+		if (isl_int_is_zero(bmap->eq[k][1+pos]))
+			continue;
+		if (progress)
+			*progress = 1;
+		isl_seq_elim(bmap->eq[k], eq, 1+pos, 1+total, NULL);
+	}
+
+	for (k = 0; k < bmap->n_ineq; ++k) {
+		if (isl_int_is_zero(bmap->ineq[k][1+pos]))
+			continue;
+		if (progress)
+			*progress = 1;
+		isl_seq_elim(bmap->ineq[k], eq, 1+pos, 1+total, NULL);
+	}
+
+	for (k = 0; k < bmap->n_div; ++k) {
+		if (isl_int_is_zero(bmap->div[k][0]))
+			continue;
+		if (isl_int_is_zero(bmap->div[k][1+1+pos]))
+			continue;
+		if (progress)
+			*progress = 1;
+		isl_seq_elim(bmap->div[k]+1, eq,
+				1+pos, 1+total, &bmap->div[k][0]);
+	}
+}
+	
+
 struct isl_basic_map *isl_basic_map_gauss(
 	struct isl_basic_map *bmap, int *progress)
 {
@@ -936,36 +974,8 @@ struct isl_basic_map *isl_basic_map_gauss(
 		if (isl_int_is_neg(bmap->eq[done][1+last_var]))
 			isl_seq_neg(bmap->eq[done], bmap->eq[done], 1+total);
 
-		for (k = 0; k < bmap->n_eq; ++k) {
-			if (k == done)
-				continue;
-			if (isl_int_is_zero(bmap->eq[k][1+last_var]))
-				continue;
-			if (progress)
-				*progress = 1;
-			isl_seq_elim(bmap->eq[k], bmap->eq[done],
-					1+last_var, 1+total, NULL);
-		}
-
-		for (k = 0; k < bmap->n_ineq; ++k) {
-			if (isl_int_is_zero(bmap->ineq[k][1+last_var]))
-				continue;
-			if (progress)
-				*progress = 1;
-			isl_seq_elim(bmap->ineq[k], bmap->eq[done],
-					1+last_var, 1+total, NULL);
-		}
-
-		for (k = 0; k < bmap->n_div; ++k) {
-			if (isl_int_is_zero(bmap->div[k][0]))
-				continue;
-			if (isl_int_is_zero(bmap->div[k][1+1+last_var]))
-				continue;
-			if (progress)
-				*progress = 1;
-			isl_seq_elim(bmap->div[k]+1, bmap->eq[done],
-					1+last_var, 1+total, &bmap->div[k][0]);
-		}
+		eliminate_var_using_equality(bmap, last_var, bmap->eq[done],
+						progress);
 
 		if (last_var >= total_var &&
 		    isl_int_is_zero(bmap->div[last_var - total_var][0])) {
@@ -1246,7 +1256,6 @@ struct isl_basic_map *isl_basic_map_eliminate_vars(
 	extra = bmap->extra - bmap->n_div;
 
 	bmap = isl_basic_map_cow(bmap);
-	bmap = isl_basic_map_gauss(bmap, NULL);
 	for (d = pos + n - 1; d >= pos; --d) {
 		int n_lower, n_upper;
 		if (!bmap)
@@ -1254,6 +1263,7 @@ struct isl_basic_map *isl_basic_map_eliminate_vars(
 		for (i = 0; i < bmap->n_eq; ++i) {
 			if (isl_int_is_zero(bmap->eq[i][1+d]))
 				continue;
+			eliminate_var_using_equality(bmap, d, bmap->eq[i], NULL);
 			isl_basic_map_drop_equality(bmap, i);
 			break;
 		}
