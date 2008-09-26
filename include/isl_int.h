@@ -52,6 +52,7 @@ typedef mpz_t	isl_int;
 	} while (0)
 
 #define isl_int_sgn(i)		mpz_sgn(i)
+#define isl_int_cmp(i,j)	mpz_cmp(i,j)
 #define isl_int_cmp_si(i,si)	mpz_cmp_si(i,si)
 #define isl_int_eq(i,j)		(mpz_cmp(i,j) == 0)
 #define isl_int_ne(i,j)		(mpz_cmp(i,j) != 0)

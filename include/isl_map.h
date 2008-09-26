@@ -41,6 +41,7 @@ struct isl_basic_map {
 #define ISL_BASIC_MAP_NO_IMPLICIT	(1 << 2)
 #define ISL_BASIC_MAP_NO_REDUNDANT	(1 << 3)
 #define ISL_BASIC_MAP_RATIONAL		(1 << 4)
+#define ISL_BASIC_MAP_NORMALIZED	(1 << 5)
 	unsigned flags;
 
 	struct isl_ctx *ctx;
@@ -77,6 +78,7 @@ struct isl_basic_set;
 struct isl_map {
 	int ref;
 #define ISL_MAP_DISJOINT		(1 << 0)
+#define ISL_MAP_NORMALIZED		(1 << 1)
 	unsigned flags;
 
 	struct isl_ctx *ctx;
@@ -213,6 +215,8 @@ void isl_map_dump(struct isl_map *map, FILE *out, int indent);
 
 int isl_map_fast_input_is_fixed(struct isl_map *map,
 		unsigned in, isl_int *val);
+
+int isl_map_fast_is_equal(struct isl_map *map1, struct isl_map *map2);
 
 #if defined(__cplusplus)
 }

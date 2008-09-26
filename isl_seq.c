@@ -97,6 +97,16 @@ int isl_seq_eq(isl_int *p1, isl_int *p2, unsigned len)
 	return 1;
 }
 
+int isl_seq_cmp(isl_int *p1, isl_int *p2, unsigned len)
+{
+	int i;
+	int cmp;
+	for (i = 0; i < len; ++i)
+		if ((cmp = isl_int_cmp(p1[i], p2[i])) != 0)
+			return cmp;
+	return 0;
+}
+
 int isl_seq_is_neg(isl_int *p1, isl_int *p2, unsigned len)
 {
 	int i;

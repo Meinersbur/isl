@@ -14,6 +14,7 @@ struct isl_basic_set {
 	int ref;
 #define ISL_BASIC_SET_FINAL		(1 << 0)
 #define ISL_BASIC_SET_EMPTY		(1 << 1)
+#define ISL_BASIC_SET_NORMALIZED	(1 << 5)
 	unsigned flags;
 
 	struct isl_ctx *ctx;
@@ -47,6 +48,7 @@ struct isl_basic_set {
 struct isl_set {
 	int ref;
 #define ISL_SET_DISJOINT		(1 << 0)
+#define ISL_SET_NORMALIZED		(1 << 1)
 	unsigned flags;
 
 	struct isl_ctx *ctx;
@@ -159,6 +161,8 @@ struct isl_set *isl_set_gist(struct isl_set *set,
 	struct isl_basic_set *context);
 int isl_basic_set_dim_residue_class(struct isl_basic_set *bset,
 	int pos, isl_int *modulo, isl_int *residue);
+
+int isl_set_fast_is_equal(struct isl_set *set1, struct isl_set *set2);
 
 #if defined(__cplusplus)
 }
