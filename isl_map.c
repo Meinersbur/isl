@@ -2557,6 +2557,47 @@ error:
 	return NULL;
 }
 
+struct isl_basic_set *isl_basic_set_lower_bound_dim(struct isl_basic_set *bset,
+	unsigned dim, isl_int value)
+{
+	int j;
+
+	bset = isl_basic_set_cow(bset);
+	bset = isl_basic_set_extend(bset, bset->nparam, bset->dim, 0, 0, 1);
+	j = isl_basic_set_alloc_inequality(bset);
+	if (j < 0)
+		goto error;
+	isl_seq_clr(bset->ineq[j], 1 + bset->nparam + bset->dim + bset->extra);
+	isl_int_set_si(bset->ineq[j][1 + bset->nparam + dim], 1);
+	isl_int_neg(bset->ineq[j][0], value);
+	bset = isl_basic_set_simplify(bset);
+	return isl_basic_set_finalize(bset);
+error:
+	isl_basic_set_free(bset);
+	return NULL;
+}
+
+struct isl_set *isl_set_lower_bound_dim(struct isl_set *set, unsigned dim,
+					isl_int value)
+{
+	int i;
+
+	set = isl_set_cow(set);
+	if (!set)
+		return NULL;
+
+	isl_assert(set->ctx, dim < set->dim, goto error);
+	for (i = 0; i < set->n; ++i) {
+		set->p[i] = isl_basic_set_lower_bound_dim(set->p[i], dim, value);
+		if (!set->p[i])
+			goto error;
+	}
+	return set;
+error:
+	isl_set_free(set);
+	return NULL;
+}
+
 struct isl_map *isl_map_reverse(struct isl_map *map)
 {
 	int i;
