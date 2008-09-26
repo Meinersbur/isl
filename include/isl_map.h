@@ -196,6 +196,8 @@ struct isl_basic_set *isl_basic_map_deltas(struct isl_basic_map *bmap);
 struct isl_set *isl_map_deltas(struct isl_map *map);
 struct isl_set *isl_map_range(struct isl_map *map);
 struct isl_basic_map *isl_map_affine_hull(struct isl_map *map);
+struct isl_map *isl_map_remove_inputs(struct isl_map *map,
+	unsigned first, unsigned n);
 
 struct isl_set *isl_map_domain(struct isl_map *bmap);
 struct isl_map *isl_map_from_basic_map(struct isl_basic_map *bmap);

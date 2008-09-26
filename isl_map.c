@@ -657,6 +657,7 @@ struct isl_basic_set *isl_basic_set_drop_dims(
 	bset->dim -= n;
 	bset->extra += n;
 
+	bset = isl_basic_set_simplify(bset);
 	return isl_basic_set_finalize(bset);
 error:
 	isl_basic_set_free(bset);
@@ -689,6 +690,74 @@ static struct isl_set *isl_set_drop_dims(
 	return set;
 error:
 	isl_set_free(set);
+	return NULL;
+}
+
+struct isl_basic_map *isl_basic_map_drop_inputs(
+		struct isl_basic_map *bmap, unsigned first, unsigned n)
+{
+	int i;
+
+	if (!bmap)
+		goto error;
+
+	isl_assert(bmap->ctx, first + n <= bmap->n_in, goto error);
+
+	if (n == 0)
+		return bmap;
+
+	bmap = isl_basic_map_cow(bmap);
+	if (!bmap)
+		return NULL;
+
+	for (i = 0; i < bmap->n_eq; ++i)
+		constraint_drop_vars(bmap->eq[i]+1+bmap->nparam+first, n,
+				 (bmap->n_in-first-n)+bmap->n_out+bmap->extra);
+
+	for (i = 0; i < bmap->n_ineq; ++i)
+		constraint_drop_vars(bmap->ineq[i]+1+bmap->nparam+first, n,
+				 (bmap->n_in-first-n)+bmap->n_out+bmap->extra);
+
+	for (i = 0; i < bmap->n_div; ++i)
+		constraint_drop_vars(bmap->div[i]+1+1+bmap->nparam+first, n,
+				 (bmap->n_in-first-n)+bmap->n_out+bmap->extra);
+
+	bmap->n_in -= n;
+	bmap->extra += n;
+
+	bmap = isl_basic_map_simplify(bmap);
+	return isl_basic_map_finalize(bmap);
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+static struct isl_map *isl_map_drop_inputs(
+		struct isl_map *map, unsigned first, unsigned n)
+{
+	int i;
+
+	if (!map)
+		goto error;
+
+	isl_assert(map->ctx, first + n <= map->n_in, goto error);
+
+	if (n == 0)
+		return map;
+	map = isl_map_cow(map);
+	if (!map)
+		goto error;
+
+	for (i = 0; i < map->n; ++i) {
+		map->p[i] = isl_basic_map_drop_inputs(map->p[i], first, n);
+		if (!map->p[i])
+			goto error;
+	}
+	map->n_in -= n;
+
+	return map;
+error:
+	isl_map_free(map);
 	return NULL;
 }
 
@@ -1273,6 +1342,33 @@ struct isl_set *isl_set_remove_dims(struct isl_set *set,
 	return set;
 error:
 	isl_set_free(set);
+	return NULL;
+}
+
+/* Project out n inputs starting at first using Fourier-Motzkin */
+struct isl_map *isl_map_remove_inputs(struct isl_map *map,
+	unsigned first, unsigned n)
+{
+	int i;
+
+	if (n == 0)
+		return map;
+
+	map = isl_map_cow(map);
+	if (!map)
+		return NULL;
+	isl_assert(map->ctx, first+n <= map->n_in, goto error);
+	
+	for (i = 0; i < map->n; ++i) {
+		map->p[i] = isl_basic_map_eliminate_vars(map->p[i],
+							map->nparam + first, n);
+		if (!map->p[i])
+			goto error;
+	}
+	map = isl_map_drop_inputs(map, first, n);
+	return map;
+error:
+	isl_map_free(map);
 	return NULL;
 }
 
