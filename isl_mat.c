@@ -777,7 +777,7 @@ void isl_mat_dump(struct isl_ctx *ctx, struct isl_mat *mat,
 		for (j = 0; j < mat->n_col; ++j) {
 			if (j)
 			    fprintf(out, ",");
-			isl_int_print(out, mat->row[i][j]);
+			isl_int_print(out, mat->row[i][j], 0);
 		}
 		if (i == mat->n_row-1)
 			fprintf(out, "]]\n");

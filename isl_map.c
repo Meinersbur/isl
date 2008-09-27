@@ -1473,10 +1473,10 @@ static void dump_term(struct isl_basic_map *bmap,
 	unsigned in = bmap->n_in;
 	unsigned dim = bmap->n_in + bmap->n_out;
 	if (!pos)
-		isl_int_print(out, c);
+		isl_int_print(out, c, 0);
 	else {
 		if (!isl_int_is_one(c))
-			isl_int_print(out, c);
+			isl_int_print(out, c, 0);
 		if (pos < 1 + bmap->nparam)
 			fprintf(out, "p%d", pos - 1);
 		else if (pos < 1 + bmap->nparam + in)
@@ -1570,7 +1570,7 @@ static void dump(struct isl_basic_map *bmap, FILE *out, int indent)
 		fprintf(out, "e%d = [(", i);
 		dump_affine(bmap, bmap->div[i]+1, out);
 		fprintf(out, ")/");
-		isl_int_print(out, bmap->div[i][0]);
+		isl_int_print(out, bmap->div[i][0], 0);
 		fprintf(out, "]\n");
 	}
 }

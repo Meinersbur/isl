@@ -41,12 +41,12 @@ typedef mpz_t	isl_int;
 #define isl_int_fdiv_r(r,i,j)	mpz_fdiv_r(r,i,j)
 
 #define isl_int_read(r,s)	mpz_set_str(r,s,10)
-#define isl_int_print(out,i)						\
+#define isl_int_print(out,i,width)					\
 	do {								\
 		char *s;						\
 		void (*gmp_free) (void *, size_t);			\
 		s = mpz_get_str(0, 10, i);				\
-		fprintf(out, "%s", s);					\
+		fprintf(out, "%*s", width, s);				\
 		mp_get_memory_functions(NULL, NULL, &gmp_free);		\
 		(*gmp_free)(s, strlen(s)+1);				\
 	} while (0)

@@ -49,6 +49,7 @@ libisl_la_SOURCES = \
 	isl_map_private.h \
 	isl_mat.c \
 	isl_mat.h \
+	isl_output.c \
 	isl_sample.h \
 	isl_sample.c \
 	isl_seq.c \

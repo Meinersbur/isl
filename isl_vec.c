@@ -50,7 +50,7 @@ void isl_vec_dump(struct isl_ctx *ctx, struct isl_vec *vec,
 	for (i = 0; i < vec->size; ++i) {
 		if (i)
 		    fprintf(out, ",");
-		isl_int_print(out, vec->block.data[i]);
+		isl_int_print(out, vec->block.data[i], 0);
 	}
 	fprintf(out, "]\n");
 }

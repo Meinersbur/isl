@@ -88,12 +88,18 @@ struct isl_basic_set *isl_basic_set_apply(
 		struct isl_basic_map *bmap);
 struct isl_basic_set *isl_basic_set_affine_hull(struct isl_basic_set *bset);
 struct isl_basic_set *isl_basic_set_simplify(struct isl_basic_set *bset);
-#define ISL_FORMAT_POLYLIB	1
-#define ISL_FORMAT_OMEGA	2
+#define ISL_FORMAT_POLYLIB		1
+#define ISL_FORMAT_OMEGA		2
 struct isl_basic_set *isl_basic_set_read_from_file(struct isl_ctx *ctx,
 		FILE *input, unsigned nparam, unsigned input_format);
 struct isl_set *isl_set_read_from_file(struct isl_ctx *ctx,
 		FILE *input, unsigned nparam, unsigned input_format);
+#define ISL_FORMAT_POLYLIB_CONSTRAINTS	3
+void isl_basic_set_print(struct isl_basic_set *bset, FILE *out, int indent,
+	const char *prefix, const char *suffix, unsigned output_format);
+void isl_set_print(struct isl_set *set, FILE *out, int indent,
+	unsigned output_format);
+
 struct isl_basic_set *isl_basic_set_from_underlying_set(
 	struct isl_basic_set *bset, struct isl_basic_set *like);
 struct isl_set *isl_set_from_underlying_set(
