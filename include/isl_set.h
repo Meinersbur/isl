@@ -144,6 +144,8 @@ struct isl_set *isl_set_lower_bound_dim(struct isl_set *set,
 		unsigned dim, isl_int value);
 struct isl_basic_set *isl_basic_set_remove_dims(struct isl_basic_set *bset,
 		unsigned first, unsigned n);
+struct isl_set *isl_set_eliminate_dims(struct isl_set *set,
+		unsigned first, unsigned n);
 struct isl_set *isl_set_remove_dims(struct isl_set *set,
 		unsigned first, unsigned n);
 

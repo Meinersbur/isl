@@ -1343,8 +1343,11 @@ struct isl_basic_set *isl_basic_set_eliminate_vars(
 			(struct isl_basic_map *)bset, pos, n);
 }
 
-/* Project out n dimensions starting at first using Fourier-Motzkin */
-struct isl_set *isl_set_remove_dims(struct isl_set *set,
+/* Eliminate the specified n dimensions starting at first from the
+ * constraints using Fourier-Motzkin, The dimensions themselves
+ * are not removed.
+ */
+struct isl_set *isl_set_eliminate_dims(struct isl_set *set,
 	unsigned first, unsigned n)
 {
 	int i;
@@ -1363,11 +1366,19 @@ struct isl_set *isl_set_remove_dims(struct isl_set *set,
 		if (!set->p[i])
 			goto error;
 	}
-	set = isl_set_drop_dims(set, first, n);
 	return set;
 error:
 	isl_set_free(set);
 	return NULL;
+}
+
+/* Project out n dimensions starting at first using Fourier-Motzkin */
+struct isl_set *isl_set_remove_dims(struct isl_set *set,
+	unsigned first, unsigned n)
+{
+	set = isl_set_eliminate_dims(set, first, n);
+	set = isl_set_drop_dims(set, first, n);
+	return set;
 }
 
 /* Project out n inputs starting at first using Fourier-Motzkin */
