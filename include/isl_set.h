@@ -171,6 +171,7 @@ int isl_basic_set_dim_residue_class(struct isl_basic_set *bset,
 	int pos, isl_int *modulo, isl_int *residue);
 
 int isl_set_fast_is_equal(struct isl_set *set1, struct isl_set *set2);
+int isl_set_fast_is_disjoint(struct isl_set *set1, struct isl_set *set2);
 
 #if defined(__cplusplus)
 }

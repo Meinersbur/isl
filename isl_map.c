@@ -1107,6 +1107,149 @@ static struct isl_basic_map *remove_duplicate_constraints(
 	return bmap;
 }
 
+static void compute_elimination_index(struct isl_basic_map *bmap, int *elim)
+{
+	int d, i;
+	unsigned total;
+
+	total = bmap->nparam + bmap->n_in + bmap->n_out;
+	for (d = 0; d < total; ++d)
+		elim[d] = -1;
+	for (d = total - 1, i = 0; d >= 0 && i < bmap->n_eq; ++i) {
+		for (; d >= 0; --d) {
+			if (isl_int_is_zero(bmap->eq[i][1+d]))
+				continue;
+			elim[d] = i;
+			break;
+		}
+	}
+}
+
+static int reduced_using_equalities(isl_int *c, struct isl_vec *v,
+	struct isl_basic_map *bmap, int *elim)
+{
+	int d, i;
+	int copied = 0;
+	unsigned total;
+
+	total = bmap->nparam + bmap->n_in + bmap->n_out;
+	for (d = total - 1; d >= 0; --d) {
+		if (isl_int_is_zero(c[1+d]))
+			continue;
+		if (elim[d] == -1)
+			continue;
+		if (!copied) {
+			isl_seq_cpy(v->block.data, c, 1 + total);
+			copied = 1;
+		}
+		isl_seq_elim(v->block.data, bmap->eq[elim[d]],
+				1 + d, 1 + total, NULL);
+	}
+	return copied;
+}
+
+/* Quick check to see if two basic maps are disjoint.
+ * In particular, we reduce the equalities and inequalities of
+ * one basic map in the context of the equalities of the other
+ * basic map and check if we get a contradiction.
+ */
+int isl_basic_map_fast_is_disjoint(struct isl_basic_map *bmap1,
+	struct isl_basic_map *bmap2)
+{
+	struct isl_vec *v = NULL;
+	int *elim = NULL;
+	unsigned total;
+	int d, i;
+
+	if (!bmap1 || !bmap2)
+		return -1;
+	isl_assert(bmap1->ctx, bmap1->nparam == bmap2->nparam, return -1);
+	isl_assert(bmap1->ctx, bmap1->n_in == bmap2->n_in, return -1);
+	isl_assert(bmap1->ctx, bmap1->n_out == bmap2->n_out, return -1);
+	if (bmap1->n_div || bmap2->n_div)
+		return 0;
+	if (!bmap1->n_eq && !bmap2->n_eq)
+		return 0;
+
+	total = bmap1->nparam + bmap1->n_in + bmap1->n_out;
+	if (total == 0)
+		return 0;
+	v = isl_vec_alloc(bmap1->ctx, 1 + total);
+	if (!v)
+		goto error;
+	elim = isl_alloc_array(bmap1->ctx, int, total);
+	if (!elim)
+		goto error;
+	compute_elimination_index(bmap1, elim);
+	for (i = 0; i < bmap2->n_eq; ++i) {
+		int reduced;
+		reduced = reduced_using_equalities(bmap2->eq[i], v, bmap1, elim);
+		if (reduced && !isl_int_is_zero(v->block.data[0]) &&
+		    isl_seq_first_non_zero(v->block.data + 1, total) == -1)
+			goto disjoint;
+	}
+	for (i = 0; i < bmap2->n_ineq; ++i) {
+		int reduced;
+		reduced = reduced_using_equalities(bmap2->ineq[i], v, bmap1, elim);
+		if (reduced && isl_int_is_neg(v->block.data[0]) &&
+		    isl_seq_first_non_zero(v->block.data + 1, total) == -1)
+			goto disjoint;
+	}
+	compute_elimination_index(bmap2, elim);
+	for (i = 0; i < bmap1->n_ineq; ++i) {
+		int reduced;
+		reduced = reduced_using_equalities(bmap1->ineq[i], v, bmap2, elim);
+		if (reduced && isl_int_is_neg(v->block.data[0]) &&
+		    isl_seq_first_non_zero(v->block.data + 1, total) == -1)
+			goto disjoint;
+	}
+	isl_vec_free(bmap1->ctx, v);
+	free(elim);
+	return 0;
+disjoint:
+	isl_vec_free(bmap1->ctx, v);
+	free(elim);
+	return 1;
+error:
+	isl_vec_free(bmap1->ctx, v);
+	free(elim);
+	return -1;
+}
+
+int isl_basic_set_fast_is_disjoint(struct isl_basic_set *bset1,
+	struct isl_basic_set *bset2)
+{
+	return isl_basic_map_fast_is_disjoint((struct isl_basic_map *)bset1,
+					      (struct isl_basic_map *)bset2);
+}
+
+int isl_map_fast_is_disjoint(struct isl_map *map1, struct isl_map *map2)
+{
+	int i, j;
+
+	if (!map1 || !map2)
+		return -1;
+
+	if (isl_map_fast_is_equal(map1, map2))
+		return 0;
+
+	for (i = 0; i < map1->n; ++i) {
+		for (j = 0; j < map2->n; ++j) {
+			int d = isl_basic_map_fast_is_disjoint(map1->p[i],
+							       map2->p[j]);
+			if (d != 1)
+				return d;
+		}
+	}
+	return 1;
+}
+
+int isl_set_fast_is_disjoint(struct isl_set *set1, struct isl_set *set2)
+{
+	return isl_map_fast_is_disjoint((struct isl_map *)set1,
+					(struct isl_map *)set2);
+}
+
 static struct isl_basic_map *remove_duplicate_divs(
 	struct isl_basic_map *bmap, int *progress)
 {
