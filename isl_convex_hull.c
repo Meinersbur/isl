@@ -84,6 +84,10 @@ struct isl_basic_set *isl_basic_set_convex_hull(struct isl_basic_set *bset)
 		isl_basic_map_convex_hull((struct isl_basic_map *)bset);
 }
 
+/* Check if the set set is bound in the direction of the affine
+ * constraint c and if so, set the constant term such that the
+ * resulting constraint is a bounding constraint for the set.
+ */
 static int uset_is_bound(struct isl_ctx *ctx, struct isl_set *set,
 	isl_int *c, unsigned len)
 {
@@ -1143,4 +1147,86 @@ struct isl_basic_set *isl_set_convex_hull(struct isl_set *set)
 {
 	return (struct isl_basic_set *)
 		isl_map_convex_hull((struct isl_map *)set);
+}
+
+/* Compute a superset of the convex hull of map that is described
+ * by only translates of the constraints in the constituents of map.
+ */
+struct isl_basic_map *isl_map_simple_hull(struct isl_map *map)
+{
+	struct isl_set *set = NULL;
+	struct isl_basic_map *hull;
+	struct isl_basic_set *bset = NULL;
+	int i, j;
+	unsigned n_ineq;
+
+	if (map->n == 0) {
+		hull = isl_basic_map_empty(map->ctx,
+					    map->nparam, map->n_in, map->n_out);
+		isl_map_free(map);
+		return hull;
+	}
+	if (map->n == 1) {
+		hull = isl_basic_map_copy(map->p[0]);
+		isl_map_free(map);
+		return hull;
+	}
+
+	n_ineq = 0;
+	for (i = 0; i < map->n; ++i) {
+		if (!map->p[i])
+			goto error;
+		n_ineq += map->p[i]->n_ineq;
+	}
+
+	set = isl_map_underlying_set(isl_map_copy(map));
+	if (!set)
+		goto error;
+
+	bset = isl_set_affine_hull(isl_set_copy(set));
+	if (!bset)
+		goto error;
+	bset = isl_basic_set_extend(bset, 0, bset->dim, 0, 0, n_ineq);
+	if (!bset)
+		goto error;
+
+	for (i = 0; i < set->n; ++i) {
+		for (j = 0; j < set->p[i]->n_ineq; ++j) {
+			int k;
+			int is_bound;
+
+			k = isl_basic_set_alloc_inequality(bset);
+			if (k < 0)
+				goto error;
+			isl_seq_cpy(bset->ineq[k], set->p[i]->ineq[j],
+					1 + bset->dim);
+			is_bound = uset_is_bound(set->ctx, set, bset->ineq[k],
+							1 + bset->dim);
+			if (is_bound < 0)
+				goto error;
+			if (!is_bound)
+				isl_basic_set_free_inequality(bset, 1);
+		}
+	}
+
+	bset = isl_basic_set_simplify(bset);
+	bset = isl_basic_set_finalize(bset);
+	bset = isl_basic_set_convex_hull(bset);
+
+	hull = isl_basic_map_overlying_set(bset, isl_basic_map_copy(map->p[0]));
+
+	isl_set_free(set);
+	isl_map_free(map);
+	return hull;
+error:
+	isl_basic_set_free(bset);
+	isl_set_free(set);
+	isl_map_free(map);
+	return NULL;
+}
+
+struct isl_basic_set *isl_set_simple_hull(struct isl_set *set)
+{
+	return (struct isl_basic_set *)
+		isl_map_simple_hull((struct isl_map *)set);
 }
