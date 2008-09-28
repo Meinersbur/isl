@@ -3,6 +3,7 @@
 #include "isl_ctx.h"
 #include "isl_blk.h"
 #include "isl_equalities.h"
+#include "isl_list.h"
 #include "isl_lp.h"
 #include "isl_seq.h"
 #include "isl_set.h"
@@ -4523,4 +4524,81 @@ int isl_set_fast_is_equal(struct isl_set *set1, struct isl_set *set2)
 {
 	return isl_map_fast_is_equal((struct isl_map *)set1,
 						(struct isl_map *)set2);
+}
+
+/* Return an interval that ranges from min to max (inclusive)
+ */
+struct isl_basic_set *isl_basic_set_interval(struct isl_ctx *ctx,
+	isl_int min, isl_int max)
+{
+	int k;
+	struct isl_basic_set *bset = NULL;
+
+	bset = isl_basic_set_alloc(ctx, 0, 1, 0, 0, 2);
+	if (!bset)
+		goto error;
+
+	k = isl_basic_set_alloc_inequality(bset);
+	if (k < 0)
+		goto error;
+	isl_int_set_si(bset->ineq[k][1], 1);
+	isl_int_neg(bset->ineq[k][0], min);
+
+	k = isl_basic_set_alloc_inequality(bset);
+	if (k < 0)
+		goto error;
+	isl_int_set_si(bset->ineq[k][1], -1);
+	isl_int_set(bset->ineq[k][0], max);
+
+	return bset;
+error:
+	isl_basic_set_free(bset);
+	return NULL;
+}
+
+/* Return the Cartesian product of the basic sets in list (in the given order).
+ */
+struct isl_basic_set *isl_basic_set_product(struct isl_basic_set_list *list)
+{
+	int i;
+	unsigned dim;
+	unsigned nparam;
+	unsigned extra;
+	unsigned n_eq;
+	unsigned n_ineq;
+	struct isl_basic_set *product = NULL;
+
+	if (!list)
+		goto error;
+	isl_assert(list->ctx, list->n > 0, goto error);
+	isl_assert(list->ctx, list->p[0], goto error);
+	nparam = list->p[0]->nparam;
+	dim = list->p[0]->dim;
+	extra = list->p[0]->n_div;
+	n_eq = list->p[0]->n_eq;
+	n_ineq = list->p[0]->n_ineq;
+	for (i = 1; i < list->n; ++i) {
+		isl_assert(list->ctx, list->p[i], goto error);
+		isl_assert(list->ctx, nparam == list->p[i]->nparam, goto error);
+		dim += list->p[i]->dim;
+		extra += list->p[i]->n_div;
+		n_eq += list->p[i]->n_eq;
+		n_ineq += list->p[i]->n_ineq;
+	}
+	product = isl_basic_set_alloc(list->ctx, nparam, dim, extra,
+					n_eq, n_ineq);
+	if (!product)
+		goto error;
+	dim = 0;
+	for (i = 0; i < list->n; ++i) {
+		set_add_constraints(product,
+					isl_basic_set_copy(list->p[i]), dim);
+		dim += list->p[i]->dim;
+	}
+	isl_basic_set_list_free(list);
+	return product;
+error:
+	isl_basic_set_free(product);
+	isl_basic_set_list_free(list);
+	return NULL;
 }

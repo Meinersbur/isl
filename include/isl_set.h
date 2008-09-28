@@ -2,6 +2,7 @@
 #define ISL_SET_H
 
 #include "isl_map.h"
+#include "isl_list.h"
 
 #if defined(__cplusplus)
 extern "C" {
@@ -76,6 +77,8 @@ struct isl_basic_set *isl_basic_set_empty(struct isl_ctx *ctx,
 		unsigned nparam, unsigned dim);
 struct isl_basic_set *isl_basic_set_universe(struct isl_ctx *ctx,
 		unsigned nparam, unsigned dim);
+struct isl_basic_set *isl_basic_set_interval(struct isl_ctx *ctx,
+	isl_int min, isl_int max);
 void isl_basic_set_dump(struct isl_basic_set *bset,
 				FILE *out, int indent);
 struct isl_basic_set *isl_basic_set_swap_vars(
@@ -88,6 +91,8 @@ struct isl_basic_set *isl_basic_set_apply(
 		struct isl_basic_map *bmap);
 struct isl_basic_set *isl_basic_set_affine_hull(struct isl_basic_set *bset);
 struct isl_basic_set *isl_basic_set_simplify(struct isl_basic_set *bset);
+struct isl_basic_set *isl_basic_set_product(struct isl_basic_set_list *list);
+
 #define ISL_FORMAT_POLYLIB		1
 #define ISL_FORMAT_OMEGA		2
 struct isl_basic_set *isl_basic_set_read_from_file(struct isl_ctx *ctx,
