@@ -1126,7 +1126,12 @@ static void compute_elimination_index(struct isl_basic_map *bmap, int *elim)
 	}
 }
 
-static int reduced_using_equalities(isl_int *c, struct isl_vec *v,
+static void set_compute_elimination_index(struct isl_basic_set *bset, int *elim)
+{
+	return compute_elimination_index((struct isl_basic_map *)bset, elim);
+}
+
+static int reduced_using_equalities(isl_int *dst, isl_int *src,
 	struct isl_basic_map *bmap, int *elim)
 {
 	int d, i;
@@ -1135,18 +1140,24 @@ static int reduced_using_equalities(isl_int *c, struct isl_vec *v,
 
 	total = bmap->nparam + bmap->n_in + bmap->n_out;
 	for (d = total - 1; d >= 0; --d) {
-		if (isl_int_is_zero(c[1+d]))
+		if (isl_int_is_zero(src[1+d]))
 			continue;
 		if (elim[d] == -1)
 			continue;
 		if (!copied) {
-			isl_seq_cpy(v->block.data, c, 1 + total);
+			isl_seq_cpy(dst, src, 1 + total);
 			copied = 1;
 		}
-		isl_seq_elim(v->block.data, bmap->eq[elim[d]],
-				1 + d, 1 + total, NULL);
+		isl_seq_elim(dst, bmap->eq[elim[d]], 1 + d, 1 + total, NULL);
 	}
 	return copied;
+}
+
+static int set_reduced_using_equalities(isl_int *dst, isl_int *src,
+	struct isl_basic_set *bset, int *elim)
+{
+	return reduced_using_equalities(dst, src,
+					(struct isl_basic_map *)bset, elim);
 }
 
 /* Quick check to see if two basic maps are disjoint.
@@ -1184,14 +1195,16 @@ int isl_basic_map_fast_is_disjoint(struct isl_basic_map *bmap1,
 	compute_elimination_index(bmap1, elim);
 	for (i = 0; i < bmap2->n_eq; ++i) {
 		int reduced;
-		reduced = reduced_using_equalities(bmap2->eq[i], v, bmap1, elim);
+		reduced = reduced_using_equalities(v->block.data, bmap2->eq[i],
+							bmap1, elim);
 		if (reduced && !isl_int_is_zero(v->block.data[0]) &&
 		    isl_seq_first_non_zero(v->block.data + 1, total) == -1)
 			goto disjoint;
 	}
 	for (i = 0; i < bmap2->n_ineq; ++i) {
 		int reduced;
-		reduced = reduced_using_equalities(bmap2->ineq[i], v, bmap1, elim);
+		reduced = reduced_using_equalities(v->block.data,
+						bmap2->ineq[i], bmap1, elim);
 		if (reduced && isl_int_is_neg(v->block.data[0]) &&
 		    isl_seq_first_non_zero(v->block.data + 1, total) == -1)
 			goto disjoint;
@@ -1199,7 +1212,8 @@ int isl_basic_map_fast_is_disjoint(struct isl_basic_map *bmap1,
 	compute_elimination_index(bmap2, elim);
 	for (i = 0; i < bmap1->n_ineq; ++i) {
 		int reduced;
-		reduced = reduced_using_equalities(bmap1->ineq[i], v, bmap2, elim);
+		reduced = reduced_using_equalities(v->block.data,
+						bmap1->ineq[i], bmap2, elim);
 		if (reduced && isl_int_is_neg(v->block.data[0]) &&
 		    isl_seq_first_non_zero(v->block.data + 1, total) == -1)
 			goto disjoint;
@@ -4202,6 +4216,40 @@ int isl_set_fast_dim_has_fixed_lower_bound(struct isl_set *set,
 	return fixed;
 }
 
+static struct isl_basic_set *isl_basic_set_reduce_using_equalities(
+	struct isl_basic_set *bset, struct isl_basic_set *context)
+{
+	int i;
+	int *elim;
+
+	if (!bset || !context)
+		goto error;
+
+	bset = isl_basic_set_cow(bset);
+	if (!bset)
+		goto error;
+
+	elim = isl_alloc_array(ctx, int, bset->dim);
+	if (!elim)
+		goto error;
+	set_compute_elimination_index(context, elim);
+	for (i = 0; i < bset->n_eq; ++i)
+		set_reduced_using_equalities(bset->eq[i], bset->eq[i],
+							context, elim);
+	for (i = 0; i < bset->n_ineq; ++i)
+		set_reduced_using_equalities(bset->ineq[i], bset->ineq[i],
+							context, elim);
+	isl_basic_set_free(context);
+	free(elim);
+	bset = isl_basic_set_simplify(bset);
+	bset = isl_basic_set_finalize(bset);
+	return bset;
+error:
+	isl_basic_set_free(bset);
+	isl_basic_set_free(context);
+	return NULL;
+}
+
 /* Remove all information from bset that is redundant in the context
  * of context.  In particular, equalities that are linear combinations
  * of those in context are remobed.  Then the inequalities that are
@@ -4224,12 +4272,15 @@ static struct isl_basic_set *uset_gist(struct isl_basic_set *bset,
 		struct isl_mat *T;
 		struct isl_mat *T2;
 		struct isl_ctx *ctx = context->ctx;
-		context = isl_basic_set_remove_equalities(context, &T, &T2);
-		if (!context)
+		struct isl_basic_set *reduced_context;
+		reduced_context = isl_basic_set_remove_equalities(
+					isl_basic_set_copy(context), &T, &T2);
+		if (!reduced_context)
 			goto error;
 		bset = isl_basic_set_preimage(ctx, bset, T);
-		bset = uset_gist(bset, context);
+		bset = uset_gist(bset, reduced_context);
 		bset = isl_basic_set_preimage(ctx, bset, T2);
+		bset = isl_basic_set_reduce_using_equalities(bset, context);
 		return bset;
 	}
 	combined = isl_basic_set_extend(isl_basic_set_copy(bset),
