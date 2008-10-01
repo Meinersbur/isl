@@ -73,6 +73,7 @@ struct isl_basic_set *isl_basic_set_extend(struct isl_basic_set *base,
 struct isl_basic_set *isl_basic_set_finalize(struct isl_basic_set *bset);
 void isl_basic_set_free(struct isl_basic_set *bset);
 struct isl_basic_set *isl_basic_set_copy(struct isl_basic_set *bset);
+struct isl_basic_set *isl_basic_set_dup(struct isl_basic_set *bset);
 struct isl_basic_set *isl_basic_set_empty(struct isl_ctx *ctx,
 		unsigned nparam, unsigned dim);
 struct isl_basic_set *isl_basic_set_universe(struct isl_ctx *ctx,
