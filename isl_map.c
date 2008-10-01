@@ -3696,6 +3696,9 @@ struct isl_basic_map *isl_basic_map_align_divs(
 	int i;
 	unsigned total = src->nparam + src->n_in + src->n_out + src->n_div;
 
+	if (!dst || !src)
+		goto error;
+
 	if (src->n_div == 0)
 		return dst;
 
@@ -3723,6 +3726,13 @@ struct isl_basic_map *isl_basic_map_align_divs(
 error:
 	isl_basic_map_free(dst);
 	return NULL;
+}
+
+struct isl_basic_set *isl_basic_set_align_divs(
+		struct isl_basic_set *dst, struct isl_basic_set *src)
+{
+	return (struct isl_basic_set *)isl_basic_map_align_divs(
+		(struct isl_basic_map *)dst, (struct isl_basic_map *)src);
 }
 
 struct isl_map *isl_map_align_divs(struct isl_map *map)

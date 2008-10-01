@@ -36,6 +36,7 @@ libisl_la_SOURCES = \
 	$(ISL_POLYLIB) \
 	isl_affine_hull.c \
 	isl_blk.c \
+	isl_constraint.c \
 	isl_convex_hull.c \
 	isl_ctx.c \
 	isl_equalities.c \
@@ -78,6 +79,7 @@ isl_test_LDADD = libisl.la
 
 pkginclude_HEADERS = \
 	include/isl_blk.h \
+	include/isl_constraint.h \
 	include/isl_ctx.h \
 	include/isl_int.h \
 	include/isl_list.h \

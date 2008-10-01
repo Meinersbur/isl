@@ -30,6 +30,8 @@ struct isl_map *isl_basic_map_compute_divs(struct isl_basic_map *bmap);
 struct isl_map *isl_map_compute_divs(struct isl_map *map);
 struct isl_basic_map *isl_basic_map_align_divs(
 		struct isl_basic_map *dst, struct isl_basic_map *src);
+struct isl_basic_set *isl_basic_set_align_divs(
+		struct isl_basic_set *dst, struct isl_basic_set *src);
 struct isl_map *isl_map_align_divs(struct isl_map *map);
 struct isl_basic_map *isl_basic_map_gauss(
 	struct isl_basic_map *bmap, int *progress);
