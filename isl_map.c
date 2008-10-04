@@ -1030,25 +1030,30 @@ static unsigned int round_up(unsigned int v)
 	return old_v << 1;
 }
 
-static int hash_index(int *index, unsigned int size, int bits,
+static int hash_index(isl_int ***index, unsigned int size, int bits,
 			struct isl_basic_map *bmap, int k)
 {
 	int h;
 	unsigned total = bmap->nparam + bmap->n_in + bmap->n_out + bmap->n_div;
 	u_int32_t hash = isl_seq_hash(bmap->ineq[k]+1, total, bits);
 	for (h = hash; index[h]; h = (h+1) % size)
-		if (k != index[h]-1 &&
-		    isl_seq_eq(bmap->ineq[k]+1,
-			       bmap->ineq[index[h]-1]+1, total))
+		if (&bmap->ineq[k] != index[h] &&
+		    isl_seq_eq(bmap->ineq[k]+1, index[h][0]+1, total))
 			break;
 	return h;
+}
+
+static int set_hash_index(isl_int ***index, unsigned int size, int bits,
+			  struct isl_basic_set *bset, int k)
+{
+	return hash_index(index, size, bits, (struct isl_basic_map *)bset, k);
 }
 
 static struct isl_basic_map *remove_duplicate_constraints(
 	struct isl_basic_map *bmap, int *progress)
 {
 	unsigned int size;
-	int *index;
+	isl_int ***index;
 	int k, l, h;
 	int bits;
 	unsigned total = bmap->nparam + bmap->n_in + bmap->n_out + bmap->n_div;
@@ -1059,21 +1064,21 @@ static struct isl_basic_map *remove_duplicate_constraints(
 
 	size = round_up(4 * (bmap->n_ineq+1) / 3 - 1);
 	bits = ffs(size) - 1;
-	index = isl_alloc_array(ctx, int, size);
-	memset(index, 0, size * sizeof(int));
+	index = isl_alloc_array(ctx, isl_int **, size);
+	memset(index, 0, size * sizeof(isl_int **));
 	if (!index)
 		return bmap;
 
-	index[isl_seq_hash(bmap->ineq[0]+1, total, bits)] = 1;
+	index[isl_seq_hash(bmap->ineq[0]+1, total, bits)] = &bmap->ineq[0];
 	for (k = 1; k < bmap->n_ineq; ++k) {
 		h = hash_index(index, size, bits, bmap, k);
 		if (!index[h]) {
-			index[h] = k+1;
+			index[h] = &bmap->ineq[k];
 			continue;
 		}
 		if (progress)
 			*progress = 1;
-		l = index[h] - 1;
+		l = index[h] - &bmap->ineq[0];
 		if (isl_int_lt(bmap->ineq[k][0], bmap->ineq[l][0]))
 			swap_inequality(bmap, k, l);
 		isl_basic_map_drop_inequality(bmap, k);
@@ -1086,7 +1091,7 @@ static struct isl_basic_map *remove_duplicate_constraints(
 		isl_seq_neg(bmap->ineq[k]+1, bmap->ineq[k]+1, total);
 		if (!index[h])
 			continue;
-		l = index[h] - 1;
+		l = index[h] - &bmap->ineq[0];
 		isl_int_add(sum, bmap->ineq[k][0], bmap->ineq[l][0]);
 		if (isl_int_is_pos(sum))
 			continue;
@@ -4260,6 +4265,48 @@ error:
 	return NULL;
 }
 
+static struct isl_basic_set *remove_shifted_constraints(
+	struct isl_basic_set *bset, struct isl_basic_set *context)
+{
+	unsigned int size;
+	isl_int ***index;
+	int bits;
+	int k, h, l;
+
+	if (!bset)
+		return NULL;
+
+	size = round_up(4 * (context->n_ineq+1) / 3 - 1);
+	bits = ffs(size) - 1;
+	index = isl_alloc_array(ctx, isl_int **, size);
+	memset(index, 0, size * sizeof(isl_int **));
+	if (!index)
+		return bset;
+
+	for (k = 0; k < context->n_ineq; ++k) {
+		h = set_hash_index(index, size, bits, context, k);
+		index[h] = &context->ineq[k];
+	}
+	for (k = 0; k < bset->n_ineq; ++k) {
+		h = set_hash_index(index, size, bits, bset, k);
+		if (!index[h])
+			continue;
+		l = index[h] - &context->ineq[0];
+		if (isl_int_lt(bset->ineq[k][0], context->ineq[l][0]))
+			continue;
+		bset = isl_basic_set_cow(bset);
+		if (!bset)
+			goto error;
+		isl_basic_set_drop_inequality(bset, k);
+		--k;
+	}
+	free(index);
+	return bset;
+error:
+	free(index);
+	return bset;
+}
+
 /* Remove all information from bset that is redundant in the context
  * of context.  In particular, equalities that are linear combinations
  * of those in context are remobed.  Then the inequalities that are
@@ -4293,6 +4340,9 @@ static struct isl_basic_set *uset_gist(struct isl_basic_set *bset,
 		bset = isl_basic_set_reduce_using_equalities(bset, context);
 		return bset;
 	}
+	if (!context->n_ineq)
+		goto done;
+	bset = remove_shifted_constraints(bset, context);
 	combined = isl_basic_set_extend(isl_basic_set_copy(bset),
 			0, bset->dim, 0, context->n_eq, context->n_ineq);
 	context = set_add_constraints(combined, context, 0);
@@ -4324,6 +4374,7 @@ static struct isl_basic_set *uset_gist(struct isl_basic_set *bset,
 	isl_int_clear(opt);
 	if (res == isl_lp_error)
 		goto error;
+done:
 	isl_basic_set_free(context);
 	return bset;
 error:
