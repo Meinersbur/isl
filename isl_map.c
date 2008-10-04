@@ -4320,7 +4320,6 @@ static struct isl_basic_set *uset_gist(struct isl_basic_set *bset,
 	isl_int opt;
 	struct isl_basic_set *combined;
 	struct isl_ctx *ctx;
-	enum isl_lp_result res = isl_lp_ok;
 
 	if (!bset || !context)
 		goto error;
@@ -4351,29 +4350,27 @@ static struct isl_basic_set *uset_gist(struct isl_basic_set *bset,
 	ctx = context->ctx;
 	isl_int_init(opt);
 	for (i = bset->n_ineq-1; i >= 0; --i) {
+		int redundant;
 		set_swap_inequality(context, i, context->n_ineq-1);
 		context->n_ineq--;
-		res = isl_solve_lp((struct isl_basic_map *)context, 0,
-			context->ineq[context->n_ineq]+1, ctx->one, &opt, NULL);
-		context->n_ineq++;
-		set_swap_inequality(context, i, context->n_ineq-1);
-		if (res == isl_lp_unbounded)
-			continue;
-		if (res == isl_lp_error)
-			break;
-		if (res == isl_lp_empty) {
+		redundant = isl_basic_set_constraint_is_redundant(&context,
+				context->ineq[context->n_ineq], &opt, NULL);
+		if (redundant == -1) {
+			isl_int_clear(opt);
+			goto error;
+		}
+		if (F_ISSET(context, ISL_BASIC_MAP_EMPTY)) {
 			bset = isl_basic_set_set_to_empty(bset);
 			break;
 		}
-		isl_int_add(opt, opt, context->ineq[i][0]);
-		if (!isl_int_is_neg(opt)) {
+		context->n_ineq++;
+		set_swap_inequality(context, i, context->n_ineq-1);
+		if (redundant) {
 			isl_basic_set_drop_inequality(context, i);
 			isl_basic_set_drop_inequality(bset, i);
 		}
 	}
 	isl_int_clear(opt);
-	if (res == isl_lp_error)
-		goto error;
 done:
 	isl_basic_set_free(context);
 	return bset;

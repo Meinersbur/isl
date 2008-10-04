@@ -54,3 +54,6 @@ struct isl_set *isl_set_drop_vars(
 
 struct isl_basic_set *isl_basic_set_eliminate_vars(
 	struct isl_basic_set *bset, unsigned pos, unsigned n);
+
+int isl_basic_set_constraint_is_redundant(struct isl_basic_set **bset,
+	isl_int *c, isl_int *opt_n, isl_int *opt_d);

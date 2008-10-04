@@ -58,8 +58,18 @@ int isl_basic_map_constraint_is_redundant(struct isl_basic_map **bmap,
 		*bmap = isl_basic_map_set_to_empty(*bmap);
 		return 0;
 	}
-	isl_int_addmul(*opt_n, *opt_d, c[0]);
+	if (opt_d)
+		isl_int_addmul(*opt_n, *opt_d, c[0]);
+	else
+		isl_int_add(*opt_n, *opt_n, c[0]);
 	return !isl_int_is_neg(*opt_n);
+}
+
+int isl_basic_set_constraint_is_redundant(struct isl_basic_set **bset,
+	isl_int *c, isl_int *opt_n, isl_int *opt_d)
+{
+	return isl_basic_map_constraint_is_redundant(
+			(struct isl_basic_map **)bset, c, opt_n, opt_d);
 }
 
 /* Compute the convex hull of a basic map, by removing the redundant
