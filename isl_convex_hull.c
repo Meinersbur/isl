@@ -8,7 +8,7 @@
 
 static struct isl_basic_set *uset_convex_hull_wrap(struct isl_set *set);
 
-static swap_ineq(struct isl_basic_map *bmap, unsigned i, unsigned j)
+static void swap_ineq(struct isl_basic_map *bmap, unsigned i, unsigned j)
 {
 	isl_int *t;
 
@@ -17,6 +17,49 @@ static swap_ineq(struct isl_basic_map *bmap, unsigned i, unsigned j)
 		bmap->ineq[i] = bmap->ineq[j];
 		bmap->ineq[j] = t;
 	}
+}
+
+/* Return 1 if constraint c is redundant with respect to the constraints
+ * in bmap.  If c is a lower [upper] bound in some variable and bmap
+ * does not have a lower [upper] bound in that variable, then c cannot
+ * be redundant and we do not need solve any lp.
+ */
+int isl_basic_map_constraint_is_redundant(struct isl_basic_map **bmap,
+	isl_int *c, isl_int *opt_n, isl_int *opt_d)
+{
+	enum isl_lp_result res;
+	unsigned total;
+	int i, j;
+
+	if (!bmap)
+		return -1;
+
+	total = (*bmap)->nparam + (*bmap)->n_in + (*bmap)->n_out + (*bmap)->n_div;
+	for (i = 0; i < total; ++i) {
+		int sign;
+		if (isl_int_is_zero(c[1+i]))
+			continue;
+		sign = isl_int_sgn(c[1+i]);
+		for (j = 0; j < (*bmap)->n_ineq; ++j)
+			if (sign == isl_int_sgn((*bmap)->ineq[j][1+i]))
+				break;
+		if (j == (*bmap)->n_ineq)
+			break;
+	}
+	if (i < total)
+		return 0;
+
+	res = isl_solve_lp(*bmap, 0, c+1, (*bmap)->ctx->one, opt_n, opt_d);
+	if (res == isl_lp_unbounded)
+		return 0;
+	if (res == isl_lp_error)
+		return -1;
+	if (res == isl_lp_empty) {
+		*bmap = isl_basic_map_set_to_empty(*bmap);
+		return 0;
+	}
+	isl_int_addmul(*opt_n, *opt_d, c[0]);
+	return !isl_int_is_neg(*opt_n);
 }
 
 /* Compute the convex hull of a basic map, by removing the redundant
@@ -47,23 +90,18 @@ struct isl_basic_map *isl_basic_map_convex_hull(struct isl_basic_map *bmap)
 	isl_int_init(opt_n);
 	isl_int_init(opt_d);
 	for (i = bmap->n_ineq-1; i >= 0; --i) {
-		enum isl_lp_result res;
+		int redundant;
 		swap_ineq(bmap, i, bmap->n_ineq-1);
 		bmap->n_ineq--;
-		res = isl_solve_lp(bmap, 0,
-			bmap->ineq[bmap->n_ineq]+1, ctx->one, &opt_n, &opt_d);
+		redundant = isl_basic_map_constraint_is_redundant(&bmap,
+				bmap->ineq[bmap->n_ineq], &opt_n, &opt_d);
+		if (redundant == -1)
+			goto error;
+		if (F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
+			break;
 		bmap->n_ineq++;
 		swap_ineq(bmap, i, bmap->n_ineq-1);
-		if (res == isl_lp_unbounded)
-			continue;
-		if (res == isl_lp_error)
-			goto error;
-		if (res == isl_lp_empty) {
-			bmap = isl_basic_map_set_to_empty(bmap);
-			break;
-		}
-		isl_int_addmul(opt_n, opt_d, bmap->ineq[i][0]);
-		if (!isl_int_is_neg(opt_n))
+		if (redundant)
 			isl_basic_map_drop_inequality(bmap, i);
 	}
 	isl_int_clear(opt_n);
