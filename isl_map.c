@@ -1825,8 +1825,7 @@ struct isl_set *isl_set_dup(struct isl_set *set)
 	if (!dup)
 		return NULL;
 	for (i = 0; i < set->n; ++i)
-		dup = isl_set_add(dup,
-				  isl_basic_set_dup(set->p[i]));
+		dup = isl_set_add(dup, isl_basic_set_copy(set->p[i]));
 	return dup;
 }
 
@@ -2691,8 +2690,7 @@ struct isl_map *isl_map_dup(struct isl_map *map)
 	dup = isl_map_alloc(map->ctx, map->nparam, map->n_in, map->n_out, map->n,
 				map->flags);
 	for (i = 0; i < map->n; ++i)
-		dup = isl_map_add(dup,
-				  isl_basic_map_dup(map->p[i]));
+		dup = isl_map_add(dup, isl_basic_map_copy(map->p[i]));
 	return dup;
 }
 
