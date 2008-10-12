@@ -1430,7 +1430,6 @@ struct isl_basic_map *isl_basic_map_eliminate_vars(
 	if (!bmap)
 		return NULL;
 	total = bmap->nparam + bmap->n_in + bmap->n_out + bmap->n_div;
-	extra = bmap->extra - bmap->n_div;
 
 	bmap = isl_basic_map_cow(bmap);
 	for (d = pos + n - 1; d >= pos; --d) {
@@ -1457,6 +1456,7 @@ struct isl_basic_map *isl_basic_map_eliminate_vars(
 		bmap = isl_basic_map_extend(bmap,
 				bmap->nparam, bmap->n_in, bmap->n_out, 0,
 				0, n_lower * n_upper);
+		extra = bmap->extra - bmap->n_div;
 		for (i = bmap->n_ineq - 1; i >= 0; --i) {
 			int last;
 			if (isl_int_is_zero(bmap->ineq[i][1+d]))
