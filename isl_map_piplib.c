@@ -42,7 +42,7 @@ static int add_inequality(struct isl_ctx *ctx,
 	if (i < 0)
 		return -1;
 	copy_constraint_from(bmap->ineq[i], vec,
-	    bmap->nparam, bmap->n_in, bmap->n_out, bmap->extra, pos);
+	    bmap->nparam, bmap->n_in, bmap->n_out, bmap->n_div, pos);
 
 	return i;
 }
