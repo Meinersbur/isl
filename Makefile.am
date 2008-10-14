@@ -5,6 +5,8 @@ endif
 SUBDIRS = $(MAYBE_PIPLIB) .
 DIST_SUBDIRS = $(MAYBE_PIPLIB)
 
+ACLOCAL_AMFLAGS = -I m4
+
 lib_LTLIBRARIES = libisl.la
 noinst_PROGRAMS = isl_test
 TESTS = isl_test
@@ -77,10 +79,12 @@ libisl_la_CPPFLAGS = -I$(srcdir)/include -Iinclude/ \
 isl_test_CPPFLAGS = -I$(srcdir)/include -Iinclude/
 isl_test_LDADD = libisl.la
 
+nodist_pkginclude_HEADERS = \
+	include/isl_ctx.h \
+	include/isl_stdint.h
 pkginclude_HEADERS = \
 	include/isl_blk.h \
 	include/isl_constraint.h \
-	include/isl_ctx.h \
 	include/isl_int.h \
 	include/isl_list.h \
 	include/isl_lp.h \

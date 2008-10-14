@@ -1041,7 +1041,7 @@ static int hash_index(isl_int ***index, unsigned int size, int bits,
 {
 	int h;
 	unsigned total = bmap->nparam + bmap->n_in + bmap->n_out + bmap->n_div;
-	u_int32_t hash = isl_seq_hash(bmap->ineq[k]+1, total, bits);
+	uint32_t hash = isl_seq_hash(bmap->ineq[k]+1, total, bits);
 	for (h = hash; index[h]; h = (h+1) % size)
 		if (&bmap->ineq[k] != index[h] &&
 		    isl_seq_eq(bmap->ineq[k]+1, index[h][0]+1, total))
@@ -1311,7 +1311,7 @@ static struct isl_basic_map *remove_duplicate_divs(
 	isl_seq_clr(eq.data, 1+total);
 	index[isl_seq_hash(bmap->div[k], 2+total, bits)] = k + 1;
 	for (--k; k >= 0; --k) {
-		u_int32_t hash;
+		uint32_t hash;
 
 		if (isl_int_is_zero(bmap->div[k][0]))
 			continue;

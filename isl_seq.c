@@ -177,10 +177,10 @@ void isl_seq_inner_product(isl_int *p1, isl_int *p2, unsigned len,
 		isl_int_addmul(*prod, p1[i], p2[i]);
 }
 
-u_int32_t isl_seq_hash(isl_int *p, unsigned len, unsigned bits)
+uint32_t isl_seq_hash(isl_int *p, unsigned len, unsigned bits)
 {
 	int i;
-	u_int32_t hash = 2166136261u;
+	uint32_t hash = 2166136261u;
 
 	for (i = 0; i < len; ++i) {
 		if (isl_int_is_zero(p[i]))
@@ -192,6 +192,6 @@ u_int32_t isl_seq_hash(isl_int *p, unsigned len, unsigned bits)
 	if (bits == 32)
 		return hash;
 	if (bits >= 16)
-		return (hash >> bits) ^ (hash & (((u_int32_t)1 << bits) - 1));
-	return ((hash >> bits) ^ hash) & (((u_int32_t)1 << bits) - 1);
+		return (hash >> bits) ^ (hash & (((uint32_t)1 << bits) - 1));
+	return ((hash >> bits) ^ hash) & (((uint32_t)1 << bits) - 1);
 }
