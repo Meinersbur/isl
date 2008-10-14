@@ -76,7 +76,7 @@ libisl_la_CPPFLAGS = -I$(srcdir)/include -Iinclude/ \
 	@PIPLIB_CPPFLAGS@ @POLYLIB_CPPFLAGS@ \
 	@GMP_CPPFLAGS@
 
-isl_test_CPPFLAGS = -I$(srcdir)/include -Iinclude/
+isl_test_CPPFLAGS = -I$(srcdir)/include -Iinclude/ @GMP_CPPFLAGS@
 isl_test_LDADD = libisl.la
 
 nodist_pkginclude_HEADERS = \
