@@ -1044,7 +1044,7 @@ static int hash_index(isl_int ***index, unsigned int size, int bits,
 {
 	int h;
 	unsigned total = bmap->nparam + bmap->n_in + bmap->n_out + bmap->n_div;
-	uint32_t hash = isl_seq_hash(bmap->ineq[k]+1, total, bits);
+	uint32_t hash = isl_seq_get_hash_bits(bmap->ineq[k]+1, total, bits);
 	for (h = hash; index[h]; h = (h+1) % size)
 		if (&bmap->ineq[k] != index[h] &&
 		    isl_seq_eq(bmap->ineq[k]+1, index[h][0]+1, total))
@@ -1078,7 +1078,7 @@ static struct isl_basic_map *remove_duplicate_constraints(
 	if (!index)
 		return bmap;
 
-	index[isl_seq_hash(bmap->ineq[0]+1, total, bits)] = &bmap->ineq[0];
+	index[isl_seq_get_hash_bits(bmap->ineq[0]+1, total, bits)] = &bmap->ineq[0];
 	for (k = 1; k < bmap->n_ineq; ++k) {
 		h = hash_index(index, size, bits, bmap, k);
 		if (!index[h]) {
@@ -1312,14 +1312,14 @@ static struct isl_basic_map *remove_duplicate_divs(
 		goto out;
 
 	isl_seq_clr(eq.data, 1+total);
-	index[isl_seq_hash(bmap->div[k], 2+total, bits)] = k + 1;
+	index[isl_seq_get_hash_bits(bmap->div[k], 2+total, bits)] = k + 1;
 	for (--k; k >= 0; --k) {
 		uint32_t hash;
 
 		if (isl_int_is_zero(bmap->div[k][0]))
 			continue;
 
-		hash = isl_seq_hash(bmap->div[k], 2+total, bits);
+		hash = isl_seq_get_hash_bits(bmap->div[k], 2+total, bits);
 		for (h = hash; index[h]; h = (h+1) % size)
 			if (isl_seq_eq(bmap->div[k],
 				       bmap->div[index[h]-1], 2+total))
@@ -4528,6 +4528,12 @@ struct isl_basic_map *isl_basic_map_normalize(struct isl_basic_map *bmap)
 	return bmap;
 }
 
+struct isl_basic_set *isl_basic_set_normalize(struct isl_basic_set *bset)
+{
+	return (struct isl_basic_set *)isl_basic_map_normalize(
+						(struct isl_basic_map *)bset);
+}
+
 static int isl_basic_map_fast_cmp(const struct isl_basic_map *bmap1,
 	const struct isl_basic_map *bmap2)
 {
@@ -4752,4 +4758,66 @@ error:
 	isl_basic_set_free(product);
 	isl_basic_set_list_free(list);
 	return NULL;
+}
+
+uint32_t isl_basic_set_get_hash(struct isl_basic_set *bset)
+{
+	int i;
+	uint32_t hash;
+	unsigned total;
+
+	if (!bset)
+		return 0;
+	bset = isl_basic_set_copy(bset);
+	bset = isl_basic_set_normalize(bset);
+	if (!bset)
+		return 0;
+	total = bset->nparam + bset->dim + bset->n_div;
+	isl_hash_byte(hash, bset->n_eq & 0xFF);
+	for (i = 0; i < bset->n_eq; ++i) {
+		uint32_t c_hash;
+		c_hash = isl_seq_get_hash(bset->eq[i], 1 + total);
+		isl_hash_hash(hash, c_hash);
+	}
+	isl_hash_byte(hash, bset->n_ineq & 0xFF);
+	for (i = 0; i < bset->n_ineq; ++i) {
+		uint32_t c_hash;
+		c_hash = isl_seq_get_hash(bset->ineq[i], 1 + total);
+		isl_hash_hash(hash, c_hash);
+	}
+	isl_hash_byte(hash, bset->n_div & 0xFF);
+	for (i = 0; i < bset->n_div; ++i) {
+		uint32_t c_hash;
+		if (isl_int_is_zero(bset->div[i][0]))
+			continue;
+		isl_hash_byte(hash, i & 0xFF);
+		c_hash = isl_seq_get_hash(bset->div[i], 1 + 1 + total);
+		isl_hash_hash(hash, c_hash);
+	}
+	isl_basic_set_free(bset);
+	return hash;
+}
+
+uint32_t isl_set_get_hash(struct isl_set *set)
+{
+	int i;
+	uint32_t hash;
+
+	if (!set)
+		return 0;
+	set = isl_set_copy(set);
+	set = isl_set_normalize(set);
+	if (!set)
+		return 0;
+
+	isl_hash_init(hash);
+	for (i = 0; i < set->n; ++i) {
+		uint32_t bset_hash;
+		bset_hash = isl_basic_set_get_hash(set->p[i]);
+		isl_hash_hash(hash, bset_hash);
+	}
+		
+	isl_set_free(set);
+
+	return hash;
 }

@@ -7,13 +7,9 @@ uint32_t isl_gmp_hash(mpz_t v, uint32_t hash)
 	unsigned char *data = (unsigned char *)v[0]._mp_d;
 	unsigned char *end = data + abs_sa * sizeof(v[0]._mp_d[0]);
 
-	if (sa < 0) {
-		hash *= 16777619;
-		hash ^= 0xFF;
-	}
-	for (; data < end; ++data) {
-		hash *= 16777619;
-		hash ^= *data;
-	}
+	if (sa < 0)
+		isl_hash_byte(hash, 0xFF);
+	for (; data < end; ++data)
+		isl_hash_byte(hash, *data);
 	return hash;
 }

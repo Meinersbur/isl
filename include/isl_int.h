@@ -77,6 +77,24 @@ typedef mpz_t	isl_int;
 uint32_t isl_gmp_hash(mpz_t v, uint32_t hash);
 #define isl_int_hash(v,h)	isl_gmp_hash(v,h)
 
+#define isl_hash_init(h)	(h = 2166136261u)
+#define isl_hash_byte(h,b)	do {					\
+					h *= 16777619;			\
+					h ^= b;				\
+				} while(0)
+#define isl_hash_hash(h,h2)						\
+	do {								\
+		isl_hash_byte(h, (h2) & 0xFF);				\
+		isl_hash_byte(h, ((h2) >> 8) & 0xFF);			\
+		isl_hash_byte(h, ((h2) >> 16) & 0xFF);			\
+		isl_hash_byte(h, ((h2) >> 24) & 0xFF);			\
+	} while(0)
+#define isl_hash_bits(h,bits)						\
+	((bits) == 32) ? (h) :						\
+	((bits) >= 16) ?						\
+	      ((h) >> (bits)) ^ ((h) & (((uint32_t)1 << (bits)) - 1)) :	\
+	      (((h) >> (bits)) ^ (h)) & (((uint32_t)1 << (bits)) - 1)
+
 #if defined(__cplusplus)
 }
 #endif
