@@ -4821,3 +4821,39 @@ uint32_t isl_set_get_hash(struct isl_set *set)
 
 	return hash;
 }
+
+/* Check if the value for dimension dim is completely determined
+ * by the values of the other parameters and variables.
+ * That is, check if dimension dim is involved in an equality.
+ */
+int isl_basic_set_dim_is_unique(struct isl_basic_set *bset, unsigned dim)
+{
+	int i;
+
+	if (!bset)
+		return -1;
+	for (i = 0; i < bset->n_eq; ++i)
+		if (!isl_int_is_zero(bset->eq[i][1 + bset->nparam + dim]))
+			return 1;
+	return 0;
+}
+
+/* Check if the value for dimension dim is completely determined
+ * by the values of the other parameters and variables.
+ * That is, check if dimension dim is involved in an equality
+ * for each of the subsets.
+ */
+int isl_set_dim_is_unique(struct isl_set *set, unsigned dim)
+{
+	int i;
+
+	if (!set)
+		return -1;
+	for (i = 0; i < set->n; ++i) {
+		int unique;
+		unique = isl_basic_set_dim_is_unique(set->p[i], dim);
+		if (unique != 1)
+			return unique;
+	}
+	return 1;
+}

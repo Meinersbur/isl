@@ -184,6 +184,8 @@ int isl_set_fast_is_disjoint(struct isl_set *set1, struct isl_set *set2);
 
 uint32_t isl_set_get_hash(struct isl_set *set);
 
+int isl_set_dim_is_unique(struct isl_set *set, unsigned dim);
+
 #if defined(__cplusplus)
 }
 #endif
