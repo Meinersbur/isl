@@ -4351,7 +4351,7 @@ error:
 
 /* Remove all information from bset that is redundant in the context
  * of context.  In particular, equalities that are linear combinations
- * of those in context are remobed.  Then the inequalities that are
+ * of those in context are removed.  Then the inequalities that are
  * redundant in the context of the equalities and inequalities of
  * context are removed.
  */
