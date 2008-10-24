@@ -1432,6 +1432,8 @@ struct isl_basic_map *isl_basic_map_eliminate_vars(
 	int i, j, k;
 	unsigned total;
 
+	if (n == 0)
+		return bmap;
 	if (!bmap)
 		return NULL;
 	total = bmap->nparam + bmap->n_in + bmap->n_out + bmap->n_div;
@@ -1518,6 +1520,8 @@ struct isl_set *isl_set_eliminate_dims(struct isl_set *set,
 {
 	int i;
 
+	if (!set)
+		return NULL;
 	if (n == 0)
 		return set;
 
@@ -1545,6 +1549,40 @@ struct isl_set *isl_set_remove_dims(struct isl_set *set,
 	set = isl_set_eliminate_dims(set, first, n);
 	set = isl_set_drop_dims(set, first, n);
 	return set;
+}
+
+struct isl_basic_set *isl_basic_set_remove_divs(struct isl_basic_set *bset)
+{
+	bset = isl_basic_set_eliminate_vars(bset, bset->nparam + bset->dim,
+						bset->n_div);
+	if (!bset)
+		return NULL;
+	bset->n_div = 0;
+	return bset;
+}
+
+struct isl_set *isl_set_remove_divs(struct isl_set *set)
+{
+	int i;
+
+	if (!set)
+		return NULL;
+	if (set->n == 0)
+		return set;
+
+	set = isl_set_cow(set);
+	if (!set)
+		return NULL;
+	
+	for (i = 0; i < set->n; ++i) {
+		set->p[i] = isl_basic_set_remove_divs(set->p[i]);
+		if (!set->p[i])
+			goto error;
+	}
+	return set;
+error:
+	isl_set_free(set);
+	return NULL;
 }
 
 /* Project out n inputs starting at first using Fourier-Motzkin */
