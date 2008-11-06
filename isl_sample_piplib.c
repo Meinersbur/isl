@@ -17,29 +17,31 @@ static struct isl_mat *independent_bounds(struct isl_ctx *ctx,
 	int i, j, n;
 	struct isl_mat *dirs = NULL;
 	struct isl_mat *bounds = NULL;
+	unsigned dim;
 
 	if (!bset)
 		return NULL;
 
-	bounds = isl_mat_alloc(ctx, 1+bset->dim, 1+bset->dim);
+	dim = isl_basic_set_n_dim(bset);
+	bounds = isl_mat_alloc(ctx, 1+dim, 1+dim);
 	if (!bounds)
 		return NULL;
 
 	isl_int_set_si(bounds->row[0][0], 1);
-	isl_seq_clr(bounds->row[0]+1, bset->dim);
+	isl_seq_clr(bounds->row[0]+1, dim);
 	bounds->n_row = 1;
 
 	if (bset->n_ineq == 0)
 		return bounds;
 
-	dirs = isl_mat_alloc(ctx, bset->dim, bset->dim);
+	dirs = isl_mat_alloc(ctx, dim, dim);
 	if (!dirs) {
 		isl_mat_free(ctx, bounds);
 		return NULL;
 	}
 	isl_seq_cpy(dirs->row[0], bset->ineq[0]+1, dirs->n_col);
 	isl_seq_cpy(bounds->row[1], bset->ineq[0], bounds->n_col);
-	for (j = 1, n = 1; n < bset->dim && j < bset->n_ineq; ++j) {
+	for (j = 1, n = 1; n < dim && j < bset->n_ineq; ++j) {
 		int pos;
 
 		isl_seq_cpy(dirs->row[n], bset->ineq[j]+1, dirs->n_col);
@@ -92,18 +94,18 @@ static struct isl_basic_set *isl_basic_set_skew_to_positive_orthant(
 		return NULL;
 
 	ctx = bset->ctx;
-	isl_assert(ctx, bset->nparam == 0, goto error);
+	isl_assert(ctx, isl_basic_set_n_param(bset) == 0, goto error);
 	isl_assert(ctx, bset->n_div == 0, goto error);
 	isl_assert(ctx, bset->n_eq == 0, goto error);
 	
+	old_dim = isl_basic_set_n_dim(bset);
 	/* Try to move (multiples of) unit rows up. */
 	for (i = 0, j = 0; i < bset->n_ineq; ++i) {
-		int pos = isl_seq_first_non_zero(bset->ineq[i]+1,
-							    bset->dim);
+		int pos = isl_seq_first_non_zero(bset->ineq[i]+1, old_dim);
 		if (pos < 0)
 			continue;
 		if (isl_seq_first_non_zero(bset->ineq[i]+1+pos+1,
-						bset->dim-pos-1) >= 0)
+						old_dim-pos-1) >= 0)
 			continue;
 		if (i != j)
 			swap_inequality(bset, i, j);
@@ -112,7 +114,6 @@ static struct isl_basic_set *isl_basic_set_skew_to_positive_orthant(
 	bounds = independent_bounds(ctx, bset);
 	if (!bounds)
 		goto error;
-	old_dim = bset->dim;
 	new_dim = bounds->n_row - 1;
 	bounds = isl_mat_left_hermite(ctx, bounds, 1, &U, NULL);
 	if (!bounds)
@@ -144,12 +145,12 @@ struct isl_vec *isl_pip_basic_set_sample(struct isl_basic_set *bset)
 	if (!bset)
 		goto error;
 	ctx = bset->ctx;
-	isl_assert(ctx, bset->nparam == 0, goto error);
+	isl_assert(ctx, isl_basic_set_n_param(bset) == 0, goto error);
 	isl_assert(ctx, bset->n_div == 0, goto error);
 	bset = isl_basic_set_skew_to_positive_orthant(bset, &T);
 	if (!bset)
 		goto error;
-	dim = bset->dim;
+	dim = isl_basic_set_n_dim(bset);
 	domain = isl_basic_map_to_pip((struct isl_basic_map *)bset, 0, 0, 0);
 	if (!domain)
 		goto error;

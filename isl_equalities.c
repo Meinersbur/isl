@@ -47,6 +47,7 @@ static struct isl_basic_set *compress_variables(struct isl_ctx *ctx,
 {
 	int i;
 	struct isl_mat *H = NULL, *C = NULL, *H1, *U = NULL, *U1, *U2, *TC;
+	unsigned dim;
 
 	if (T)
 		*T = NULL;
@@ -54,13 +55,14 @@ static struct isl_basic_set *compress_variables(struct isl_ctx *ctx,
 		*T2 = NULL;
 	if (!bset)
 		goto error;
-	isl_assert(ctx, bset->nparam == 0, goto error);
+	isl_assert(ctx, isl_basic_set_n_param(bset) == 0, goto error);
 	isl_assert(ctx, bset->n_div == 0, goto error);
-	isl_assert(ctx, bset->n_eq <= bset->dim, goto error);
+	dim = isl_basic_set_n_dim(bset);
+	isl_assert(ctx, bset->n_eq <= dim, goto error);
 	if (bset->n_eq == 0)
 		return bset;
 
-	H = isl_mat_sub_alloc(ctx, bset->eq, 0, bset->n_eq, 1, bset->dim);
+	H = isl_mat_sub_alloc(ctx, bset->eq, 0, bset->n_eq, 1, dim);
 	H = isl_mat_left_hermite(ctx, H, 0, &U, T2);
 	if (!H || !U || (T2 && !*T2))
 		goto error;
@@ -130,7 +132,7 @@ struct isl_basic_set *isl_basic_set_remove_equalities(
 		*T2 = NULL;
 	if (!bset)
 		return NULL;
-	isl_assert(bset->ctx, bset->nparam == 0, goto error);
+	isl_assert(bset->ctx, isl_basic_set_n_param(bset) == 0, goto error);
 	bset = isl_basic_set_gauss(bset, NULL);
 	if (F_ISSET(bset, ISL_BASIC_SET_EMPTY))
 		return bset;
@@ -152,18 +154,20 @@ int isl_basic_set_dim_residue_class(struct isl_basic_set *bset,
 	struct isl_ctx *ctx;
 	struct isl_mat *H = NULL, *U = NULL, *C, *H1, *U1;
 	unsigned total;
+	unsigned nparam;
 
 	if (!bset || !modulo || !residue)
 		return -1;
 
 	ctx = bset->ctx;
-	total = bset->nparam + bset->dim + bset->n_div;
+	total = isl_basic_set_total_dim(bset);
+	nparam = isl_basic_set_n_param(bset);
 	H = isl_mat_sub_alloc(ctx, bset->eq, 0, bset->n_eq, 1, total);
 	H = isl_mat_left_hermite(ctx, H, 0, &U, NULL);
 	if (!H)
 		return -1;
 
-	isl_seq_gcd(U->row[bset->nparam + pos]+bset->n_eq,
+	isl_seq_gcd(U->row[nparam + pos]+bset->n_eq,
 			total-bset->n_eq, modulo);
 	if (isl_int_is_zero(*modulo) || isl_int_is_one(*modulo)) {
 		isl_int_set_si(*residue, 0);
@@ -181,7 +185,7 @@ int isl_basic_set_dim_residue_class(struct isl_basic_set *bset,
 	H1 = isl_mat_lin_to_aff(ctx, H1);
 	C = isl_mat_inverse_product(ctx, H1, C);
 	isl_mat_free(ctx, H);
-	U1 = isl_mat_sub_alloc(ctx, U->row, bset->nparam+pos, 1, 0, bset->n_eq);
+	U1 = isl_mat_sub_alloc(ctx, U->row, nparam+pos, 1, 0, bset->n_eq);
 	U1 = isl_mat_lin_to_aff(ctx, U1);
 	isl_mat_free(ctx, U);
 	C = isl_mat_product(ctx, U1, C);

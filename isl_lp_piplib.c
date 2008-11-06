@@ -13,7 +13,7 @@ enum isl_lp_result isl_pip_solve_lp(struct isl_basic_map *bmap, int maximize,
 	PipQuast   	*sol;
 	unsigned	 total;
 
-	total = bmap->nparam + bmap->n_in + bmap->n_out + bmap->n_div;
+	total = isl_basic_map_total_dim(bmap);
 	domain = isl_basic_map_to_pip(bmap, 0, 1, 0);
 	if (!domain)
 		goto error;

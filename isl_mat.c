@@ -1,3 +1,4 @@
+#include "isl_dim.h"
 #include "isl_seq.h"
 #include "isl_mat.h"
 #include "isl_map_private.h"
@@ -687,15 +688,18 @@ struct isl_basic_set *isl_basic_set_preimage(struct isl_ctx *ctx,
 	if (!bset)
 		goto error;
 
-	isl_assert(ctx, bset->nparam == 0, goto error);
+	isl_assert(ctx, bset->dim->nparam == 0, goto error);
 	isl_assert(ctx, bset->n_div == 0, goto error);
-	isl_assert(ctx, 1+bset->dim == mat->n_row, goto error);
+	isl_assert(ctx, 1+bset->dim->n_out == mat->n_row, goto error);
 
 	if (mat->n_col > mat->n_row)
 		bset = isl_basic_set_extend(bset, 0, mat->n_col-1, 0,
 						0, 0);
-	else {
-		bset->dim -= mat->n_row - mat->n_col;
+	else if (mat->n_col < mat->n_row) {
+		bset->dim = isl_dim_cow(bset->dim);
+		if (!bset->dim)
+			goto error;
+		bset->dim->n_out -= mat->n_row - mat->n_col;
 		bset->extra += mat->n_row - mat->n_col;
 	}
 
@@ -746,8 +750,13 @@ struct isl_set *isl_set_preimage(struct isl_ctx *ctx,
 		if (!set->p[i])
 			goto error;
 	}
-	set->dim += mat->n_col;
-	set->dim -= mat->n_row;
+	if (mat->n_col != mat->n_row) {
+		set->dim = isl_dim_cow(set->dim);
+		if (!set->dim)
+			goto error;
+		set->dim->n_out += mat->n_col;
+		set->dim->n_out -= mat->n_row;
+	}
 	isl_mat_free(ctx, mat);
 	return set;
 error:

@@ -61,18 +61,20 @@ static struct isl_mat *independent_bounds(struct isl_ctx *ctx,
 {
 	int i, j, n;
 	struct isl_mat *dirs = NULL;
+	unsigned dim;
 
 	if (!bset)
 		return NULL;
 
+	dim = isl_basic_set_n_dim(bset);
 	if (bset->n_ineq == 0)
-		return isl_mat_alloc(ctx, 0, bset->dim);
+		return isl_mat_alloc(ctx, 0, dim);
 
-	dirs = isl_mat_alloc(ctx, bset->dim, bset->dim);
+	dirs = isl_mat_alloc(ctx, dim, dim);
 	if (!dirs)
 		return NULL;
 	isl_seq_cpy(dirs->row[0], bset->ineq[0]+1, dirs->n_col);
-	for (j = 1, n = 1; n < bset->dim && j < bset->n_ineq; ++j) {
+	for (j = 1, n = 1; n < dim && j < bset->n_ineq; ++j) {
 		int pos;
 
 		isl_seq_cpy(dirs->row[n], bset->ineq[j]+1, dirs->n_col);
@@ -114,7 +116,7 @@ static struct isl_basic_set *remove_lineality(struct isl_ctx *ctx,
 	struct isl_mat *U = NULL;
 	unsigned old_dim, new_dim;
 
-	old_dim = bset->dim;
+	old_dim = isl_basic_set_n_dim(bset);
 	new_dim = bounds->n_row;
 	*T = NULL;
 	bounds = isl_mat_left_hermite(ctx, bounds, 0, &U, NULL);
@@ -139,6 +141,7 @@ struct isl_vec *isl_basic_set_sample(struct isl_basic_set *bset)
 {
 	struct isl_ctx *ctx;
 	struct isl_mat *bounds;
+	unsigned dim;
 	if (!bset)
 		return NULL;
 
@@ -148,7 +151,8 @@ struct isl_vec *isl_basic_set_sample(struct isl_basic_set *bset)
 		return isl_vec_alloc(ctx, 0);
 	}
 
-	isl_assert(ctx, bset->nparam == 0, goto error);
+	dim = isl_basic_set_n_dim(bset);
+	isl_assert(ctx, isl_basic_set_n_param(bset) == 0, goto error);
 	isl_assert(ctx, bset->n_div == 0, goto error);
 
 	if (bset->n_eq > 0) {
@@ -163,14 +167,14 @@ struct isl_vec *isl_basic_set_sample(struct isl_basic_set *bset)
 			isl_mat_free(ctx, T);
 		return sample;
 	}
-	if (bset->dim == 0)
+	if (dim == 0)
 		return point_sample(ctx, bset);
-	if (bset->dim == 1)
+	if (dim == 1)
 		return interval_sample(ctx, bset);
 	bounds = independent_bounds(ctx, bset);
 	if (!bounds)
 		goto error;
-	if (bounds->n_row == bset->dim)
+	if (bounds->n_row == dim)
 		isl_mat_free(ctx, bounds);
 	else {
 		struct isl_mat *T;

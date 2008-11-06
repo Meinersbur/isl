@@ -1,6 +1,25 @@
 #include "isl_set.h"
 #include "isl_map.h"
 
+int isl_map_compatible_domain(struct isl_map *map, struct isl_set *set);
+int isl_basic_map_compatible_domain(struct isl_basic_map *bmap,
+		struct isl_basic_set *bset);
+int isl_basic_map_compatible_range(struct isl_basic_map *bmap,
+		struct isl_basic_set *bset);
+
+struct isl_basic_set *isl_basic_set_alloc_dim(struct isl_ctx *ctx,
+		struct isl_dim *dim, unsigned extra,
+		unsigned n_eq, unsigned n_ineq);
+struct isl_set *isl_set_alloc_dim(struct isl_ctx *ctx,
+		struct isl_dim *dim, int n, unsigned flags);
+struct isl_basic_map *isl_basic_map_alloc_dim(struct isl_ctx *ctx,
+		struct isl_dim *dim, unsigned extra,
+		unsigned n_eq, unsigned n_ineq);
+struct isl_map *isl_map_alloc_dim(struct isl_ctx *ctx,
+		struct isl_dim *dim, int n, unsigned flags);
+
+unsigned isl_basic_map_total_dim(const struct isl_basic_map *bmap);
+
 int isl_basic_map_alloc_equality(struct isl_basic_map *bmap);
 int isl_basic_set_alloc_equality(struct isl_basic_set *bset);
 int isl_basic_set_free_inequality(struct isl_basic_set *bset, unsigned n);

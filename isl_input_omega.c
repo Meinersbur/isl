@@ -497,9 +497,10 @@ static struct isl_basic_map *add_exists(struct stream *s,
 	if (!*v)
 		goto error;
 	extra = (*v)->n - n;
-	bmap = isl_basic_map_extend(bmap, bmap->nparam,
-			bmap->n_in, bmap->n_out, extra, 0, 0);
-	total = bmap->nparam+bmap->n_in+bmap->n_out+bmap->extra;
+	bmap = isl_basic_map_extend(bmap, isl_basic_map_n_param(bmap),
+			isl_basic_map_n_in(bmap), isl_basic_map_n_out(bmap),
+			extra, 0, 0);
+	total = isl_basic_map_total_dim(bmap);
 	for (i = 0; i < extra; ++i) {
 		int k;
 		if ((k = isl_basic_map_alloc_div(bmap)) < 0)
@@ -522,7 +523,7 @@ error:
 static struct isl_basic_map *add_constraint(struct stream *s,
 	struct vars **v, struct isl_basic_map *bmap)
 {
-	unsigned total = bmap->nparam+bmap->n_in+bmap->n_out+bmap->extra;
+	unsigned total = isl_basic_map_total_dim(bmap);
 	int k;
 	int sign = 1;
 	int equality = 0;
@@ -538,8 +539,7 @@ static struct isl_basic_map *add_constraint(struct stream *s,
 	}
 	stream_push_token(s, tok);
 
-	bmap = isl_basic_map_extend(bmap, bmap->nparam,
-			bmap->n_in, bmap->n_out, 0, 0, 1);
+	bmap = isl_basic_map_extend_constraints(bmap, 0, 1);
 	k = isl_basic_map_alloc_inequality(bmap);
 	if (k < 0)
 		goto error;
@@ -731,7 +731,7 @@ struct isl_basic_set *isl_basic_set_read_from_file_omega(
 	bmap = isl_basic_map_read_from_file_omega(ctx, input);
 	if (!bmap)
 		return NULL;
-	isl_assert(ctx, bmap->n_in == 0, goto error);
+	isl_assert(ctx, isl_basic_map_n_in(bmap) == 0, goto error);
 	return (struct isl_basic_set *)bmap;
 error:
 	isl_basic_map_free(bmap);

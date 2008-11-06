@@ -41,22 +41,34 @@ static void copy_constraint_to(Value *dst, isl_int *src,
 static int add_equality(struct isl_ctx *ctx, struct isl_basic_map *bmap,
 			 Value *constraint)
 {
+	unsigned nparam;
+	unsigned n_in;
+	unsigned n_out;
 	int i = isl_basic_map_alloc_equality(bmap);
 	if (i < 0)
 		return -1;
-	copy_constraint_from(bmap->eq[i], constraint, bmap->nparam,
-			     bmap->n_in + bmap->n_out, bmap->extra);
+	nparam = isl_basic_map_n_param(bmap);
+	n_in = isl_basic_map_n_in(bmap);
+	n_out = isl_basic_map_n_out(bmap);
+	copy_constraint_from(bmap->eq[i], constraint, nparam,
+			     n_in + n_out, bmap->extra);
 	return 0;
 }
 
 static int add_inequality(struct isl_ctx *ctx, struct isl_basic_map *bmap,
 			 Value *constraint)
 {
+	unsigned nparam;
+	unsigned n_in;
+	unsigned n_out;
 	int i = isl_basic_map_alloc_inequality(bmap);
 	if (i < 0)
 		return -1;
-	copy_constraint_from(bmap->ineq[i], constraint, bmap->nparam,
-			     bmap->n_in + bmap->n_out, bmap->extra);
+	nparam = isl_basic_map_n_param(bmap);
+	n_in = isl_basic_map_n_in(bmap);
+	n_out = isl_basic_map_n_out(bmap);
+	copy_constraint_from(bmap->ineq[i], constraint, nparam,
+			     n_in + n_out, bmap->extra);
 	return 0;
 }
 
@@ -65,7 +77,7 @@ static struct isl_basic_map *copy_constraints(
 			Polyhedron *P)
 {
 	int i;
-	unsigned total = bmap->nparam + bmap->n_in + bmap->n_out + bmap->extra;
+	unsigned total = isl_basic_map_total_dim(bmap);
 
 	for (i = 0; i < P->NbConstraints; ++i) {
 		if (value_zero_p(P->Constraint[i][0])) {
@@ -166,22 +178,28 @@ Polyhedron *isl_basic_map_to_polylib(struct isl_basic_map *bmap)
 	Matrix *M;
 	Polyhedron *P;
 	unsigned off;
+	unsigned nparam;
+	unsigned n_in;
+	unsigned n_out;
 
 	if (!bmap)
 		return NULL;
 
+	nparam = isl_basic_map_n_param(bmap);
+	n_in = isl_basic_map_n_in(bmap);
+	n_out = isl_basic_map_n_out(bmap);
 	M = Matrix_Alloc(bmap->n_eq + bmap->n_ineq,
-		 1 + bmap->n_in + bmap->n_out + bmap->n_div + bmap->nparam + 1);
+		 1 + n_in + n_out + bmap->n_div + nparam + 1);
 	for (i = 0; i < bmap->n_eq; ++i) {
 		value_set_si(M->p[i][0], 0);
 		copy_constraint_to(M->p[i], bmap->eq[i],
-			   bmap->nparam, bmap->n_in + bmap->n_out, bmap->n_div);
+			   nparam, n_in + n_out, bmap->n_div);
 	}
 	off = bmap->n_eq;
 	for (i = 0; i < bmap->n_ineq; ++i) {
 		value_set_si(M->p[off+i][0], 1);
 		copy_constraint_to(M->p[off+i], bmap->ineq[i],
-			   bmap->nparam, bmap->n_in + bmap->n_out, bmap->n_div);
+			   nparam, n_in + n_out, bmap->n_div);
 	}
 	P = Constraints2Polyhedron(M, bmap->ctx->MaxRays);
 	Matrix_Free(M);
@@ -203,7 +221,7 @@ Polyhedron *isl_map_to_polylib(struct isl_map *map)
 		next = &(*next)->next;
 	}
 
-	return R ? R : Empty_Polyhedron(map->nparam + map->n_in + map->n_out);
+	return R ? R : Empty_Polyhedron(isl_dim_total(map->dim));
 }
 
 Polyhedron *isl_basic_set_to_polylib(struct isl_basic_set *bset)

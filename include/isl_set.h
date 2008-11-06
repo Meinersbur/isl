@@ -20,9 +20,7 @@ struct isl_basic_set {
 
 	struct isl_ctx *ctx;
 
-	unsigned nparam;
-	unsigned zero;
-	unsigned dim;
+	struct isl_dim *dim;
 	unsigned extra;
 
 	unsigned n_eq;
@@ -54,9 +52,7 @@ struct isl_set {
 
 	struct isl_ctx *ctx;
 
-	unsigned nparam;
-	unsigned zero;
-	unsigned dim;
+	struct isl_dim *dim;
 
 	int n;
 
@@ -64,20 +60,31 @@ struct isl_set {
 	struct isl_basic_set *p[0];
 };
 
+unsigned isl_basic_set_n_dim(const struct isl_basic_set *bset);
+unsigned isl_basic_set_n_param(const struct isl_basic_set *bset);
+unsigned isl_basic_set_total_dim(const struct isl_basic_set *bset);
+
+unsigned isl_set_n_dim(const struct isl_set *set);
+unsigned isl_set_n_param(const struct isl_set *set);
+
 struct isl_basic_set *isl_basic_set_alloc(struct isl_ctx *ctx,
 		unsigned nparam, unsigned dim, unsigned extra,
 		unsigned n_eq, unsigned n_ineq);
 struct isl_basic_set *isl_basic_set_extend(struct isl_basic_set *base,
 		unsigned nparam, unsigned dim, unsigned extra,
 		unsigned n_eq, unsigned n_ineq);
+struct isl_basic_set *isl_basic_set_extend_constraints(
+		struct isl_basic_set *base, unsigned n_eq, unsigned n_ineq);
 struct isl_basic_set *isl_basic_set_finalize(struct isl_basic_set *bset);
 void isl_basic_set_free(struct isl_basic_set *bset);
 struct isl_basic_set *isl_basic_set_copy(struct isl_basic_set *bset);
 struct isl_basic_set *isl_basic_set_dup(struct isl_basic_set *bset);
 struct isl_basic_set *isl_basic_set_empty(struct isl_ctx *ctx,
 		unsigned nparam, unsigned dim);
+struct isl_basic_set *isl_basic_set_empty_like(struct isl_basic_set *bset);
 struct isl_basic_set *isl_basic_set_universe(struct isl_ctx *ctx,
 		unsigned nparam, unsigned dim);
+struct isl_basic_set *isl_basic_set_universe_like(struct isl_basic_set *bset);
 struct isl_basic_set *isl_basic_set_interval(struct isl_ctx *ctx,
 	isl_int min, isl_int max);
 void isl_basic_set_dump(struct isl_basic_set *bset,
@@ -129,6 +136,7 @@ struct isl_set *isl_set_extend(struct isl_set *base,
 		unsigned nparam, unsigned dim);
 struct isl_set *isl_set_empty(struct isl_ctx *ctx,
 		unsigned nparam, unsigned dim);
+struct isl_set *isl_set_empty_like(struct isl_set *set);
 struct isl_set *isl_set_add(struct isl_set *set, struct isl_basic_set *bset);
 struct isl_set *isl_set_finalize(struct isl_set *set);
 struct isl_set *isl_set_copy(struct isl_set *set);

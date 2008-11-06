@@ -5,19 +5,21 @@ static void print_constraint_polylib(struct isl_basic_set *bset,
 	FILE *out, int indent, const char *prefix, const char *suffix)
 {
 	int i;
+	unsigned dim = isl_basic_set_n_dim(bset);
+	unsigned nparam = isl_basic_set_n_param(bset);
 	isl_int *c = ineq ? bset->ineq[n] : bset->eq[n];
 
 	fprintf(out, "%*s%s", indent, "", prefix ? prefix : "");
 	fprintf(out, "%d", ineq);
-	for (i = 0; i < bset->dim; ++i) {
+	for (i = 0; i < dim; ++i) {
 		fprintf(out, " ");
-		isl_int_print(out, c[1+bset->nparam+i], 5);
+		isl_int_print(out, c[1+nparam+i], 5);
 	}
 	for (i = 0; i < bset->n_div; ++i) {
 		fprintf(out, " ");
-		isl_int_print(out, c[1+bset->nparam+bset->dim+i], 5);
+		isl_int_print(out, c[1+nparam+dim+i], 5);
 	}
-	for (i = 0; i < bset->nparam; ++i) {
+	for (i = 0; i < nparam; ++i) {
 		fprintf(out, " ");
 		isl_int_print(out, c[1+i], 5);
 	}
@@ -42,7 +44,7 @@ static void print_constraints_polylib(struct isl_basic_set *bset,
 static void isl_basic_set_print_polylib(struct isl_basic_set *bset, FILE *out,
 	int indent, const char *prefix, const char *suffix)
 {
-	unsigned total = bset->nparam + bset->dim + bset->n_div;
+	unsigned total = isl_basic_set_total_dim(bset);
 	fprintf(out, "%*s%s", indent, "", prefix ? prefix : "");
 	fprintf(out, "%d %d", bset->n_eq + bset->n_ineq, 1 + total + 1);
 	fprintf(out, "%s\n", suffix ? suffix : "");

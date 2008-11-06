@@ -1,6 +1,7 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <isl_set.h>
+#include "isl_dim.h"
 #include "isl_map_private.h"
 #include "isl_input_omega.h"
 
@@ -104,9 +105,11 @@ static struct isl_set *isl_set_read_from_file_polylib(
 			goto error;
 	}
 	set->n = n;
-	set->dim = set->p[0]->dim;
+	isl_dim_free(set->dim);
+	set->dim = isl_dim_copy(set->p[0]->dim);
 	for (i = 1; i < n; ++i)
-		isl_assert(ctx, set->dim == set->p[i]->dim, goto error);
+		isl_assert(ctx, isl_dim_equal(set->dim, set->p[i]->dim),
+				goto error);
 	return set;
 error:
 	isl_set_free(set);

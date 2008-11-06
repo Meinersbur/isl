@@ -120,7 +120,7 @@ static void construct_column(
 
 	isl_int_init(a);
 	isl_int_init(b);
-	total = 1 + bset1->dim;
+	total = 1 + isl_basic_set_n_dim(bset1);
 	for (r = 0; r < row; ++r) {
 		if (isl_int_is_zero(bset2->eq[r][col]))
 			continue;
@@ -159,7 +159,7 @@ static int transform_column(
 	if (t < 0)
 		return 0;
 
-	total = 1 + bset1->dim;
+	total = 1 + isl_basic_set_n_dim(bset1);
 	isl_int_init(a);
 	isl_int_init(b);
 	isl_int_init(g);
@@ -194,7 +194,7 @@ static struct isl_basic_set *affine_hull(
 	int col;
 	int row;
 
-	total = 1 + bset1->dim;
+	total = 1 + isl_basic_set_n_dim(bset1);
 
 	row = 0;
 	for (col = total-1; col >= 0; --col) {
@@ -228,17 +228,21 @@ static struct isl_basic_set *isl_basic_set_from_vec(struct isl_ctx *ctx,
 	int i;
 	int k;
 	struct isl_basic_set *bset = NULL;
+	unsigned dim;
 
 	if (!vec)
 		return NULL;
 	isl_assert(ctx, vec->size != 0, goto error);
 
 	bset = isl_basic_set_alloc(ctx, 0, vec->size - 1, 0, vec->size - 1, 0);
-	for (i = bset->dim - 1; i >= 0; --i) {
+	if (!bset)
+		goto error;
+	dim = isl_basic_set_n_dim(bset);
+	for (i = dim - 1; i >= 0; --i) {
 		k = isl_basic_set_alloc_equality(bset);
 		if (k < 0)
 			goto error;
-		isl_seq_clr(bset->eq[k], 1 + bset->dim);
+		isl_seq_clr(bset->eq[k], 1 + dim);
 		isl_int_neg(bset->eq[k][0], vec->block.data[1 + i]);
 		isl_int_set(bset->eq[k][1 + i], vec->block.data[0]);
 	}
@@ -257,16 +261,18 @@ static struct isl_basic_set *outside_point(struct isl_ctx *ctx,
 	struct isl_basic_set *slice = NULL;
 	struct isl_vec *sample;
 	struct isl_basic_set *point;
+	unsigned dim;
 	int k;
 
 	slice = isl_basic_set_copy(bset);
 	if (!slice)
 		goto error;
-	slice = isl_basic_set_extend(slice, 0, slice->dim, 0, 1, 0);
+	dim = isl_basic_set_n_dim(slice);
+	slice = isl_basic_set_extend(slice, 0, dim, 0, 1, 0);
 	k = isl_basic_set_alloc_equality(slice);
 	if (k < 0)
 		goto error;
-	isl_seq_cpy(slice->eq[k], eq, 1 + slice->dim);
+	isl_seq_cpy(slice->eq[k], eq, 1 + dim);
 	if (up)
 		isl_int_add_ui(slice->eq[k][0], slice->eq[k][0], 1);
 	else
@@ -277,7 +283,7 @@ static struct isl_basic_set *outside_point(struct isl_ctx *ctx,
 		goto error;
 	if (sample->size == 0) {
 		isl_vec_free(ctx, sample);
-		point = isl_basic_set_empty(ctx, 0, bset->dim);
+		point = isl_basic_set_empty_like(bset);
 	} else
 		point = isl_basic_set_from_vec(ctx, sample);
 
@@ -306,6 +312,7 @@ struct isl_basic_map *isl_basic_map_affine_hull(struct isl_basic_map *bmap)
 	struct isl_basic_set *hull = NULL;
 	struct isl_vec *sample;
 	struct isl_ctx *ctx;
+	unsigned dim;
 
 	bmap = isl_basic_map_implicit_equalities(bmap);
 	if (!bmap)
@@ -326,7 +333,8 @@ struct isl_basic_map *isl_basic_map_affine_hull(struct isl_basic_map *bmap)
 	sample = isl_basic_set_sample(isl_basic_set_copy(bset));
 	hull = isl_basic_set_from_vec(ctx, sample);
 
-	for (i = 0; i < bset->dim; ++i) {
+	dim = isl_basic_set_n_dim(bset);
+	for (i = 0; i < dim; ++i) {
 		struct isl_basic_set *point;
 		for (j = 0; j < hull->n_eq; ++j) {
 			point = outside_point(ctx, bset, hull->eq[j], 1);
@@ -385,8 +393,7 @@ struct isl_basic_map *isl_map_affine_hull(struct isl_map *map)
 		return NULL;
 
 	if (map->n == 0) {
-		hull = isl_basic_map_empty(map->ctx,
-					map->nparam, map->n_in, map->n_out);
+		hull = isl_basic_map_empty_like_map(map);
 		isl_map_free(map);
 		return hull;
 	}
@@ -407,8 +414,7 @@ struct isl_basic_map *isl_map_affine_hull(struct isl_map *map)
 	}
 	set = isl_set_remove_empty_parts(set);
 	if (set->n == 0) {
-		hull = isl_basic_map_empty(set->ctx,
-				    model->nparam, model->n_in, model->n_out);
+		hull = isl_basic_map_empty_like(model);
 		isl_basic_map_free(model);
 	} else {
 		struct isl_basic_set *bset;

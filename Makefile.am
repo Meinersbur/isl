@@ -46,6 +46,7 @@ libisl_la_SOURCES = \
 	isl_constraint.c \
 	isl_convex_hull.c \
 	isl_ctx.c \
+	isl_dim.c \
 	isl_equalities.c \
 	isl_equalities.h \
 	isl_gmp.c \
@@ -90,6 +91,7 @@ nodist_pkginclude_HEADERS = \
 pkginclude_HEADERS = \
 	include/isl_blk.h \
 	include/isl_constraint.h \
+	include/isl_dim.h \
 	include/isl_int.h \
 	include/isl_list.h \
 	include/isl_lp.h \
