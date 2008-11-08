@@ -353,6 +353,9 @@ int isl_basic_map_alloc_div(struct isl_basic_map *bmap)
 	if (!bmap)
 		return -1;
 	isl_assert(bmap->ctx, bmap->n_div < bmap->extra, return -1);
+	isl_seq_clr(bmap->div[bmap->n_div] +
+		      1 + 1 + bmap->nparam + bmap->n_in + bmap->n_out + bmap->n_div,
+		      bmap->extra - bmap->n_div);
 	return bmap->n_div++;
 }
 
