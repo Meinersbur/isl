@@ -4051,7 +4051,7 @@ error:
 /* Given two _disjoint_ basic sets bset1 and bset2, check whether
  * for any common value of the parameters and dimensions preceding dim
  * in both basic sets, the values of dimension pos in bset1 are
- * smaller or larger then those in bset2.
+ * smaller or larger than those in bset2.
  *
  * Returns
  *	 1 if bset1 follows bset2
