@@ -4470,6 +4470,13 @@ error:
 	return NULL;
 }
 
+struct isl_basic_set *isl_basic_set_gist(struct isl_basic_set *bset,
+						struct isl_basic_set *context)
+{
+	return (struct isl_basic_set *)isl_basic_map_gist(
+		(struct isl_basic_map *)bset, (struct isl_basic_map *)context);
+}
+
 struct isl_set *isl_set_gist(struct isl_set *set, struct isl_basic_set *context)
 {
 	return (struct isl_set *)isl_map_gist((struct isl_map *)set,

@@ -174,6 +174,8 @@ int isl_set_fast_dim_is_fixed(struct isl_set *set, unsigned dim, isl_int *val);
 int isl_set_fast_dim_has_fixed_lower_bound(struct isl_set *set,
 	unsigned dim, isl_int *val);
 
+struct isl_basic_set *isl_basic_set_gist(struct isl_basic_set *bset,
+						struct isl_basic_set *context);
 struct isl_set *isl_set_gist(struct isl_set *set,
 	struct isl_basic_set *context);
 int isl_basic_set_dim_residue_class(struct isl_basic_set *bset,
