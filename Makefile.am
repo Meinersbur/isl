@@ -33,9 +33,14 @@ if BUNDLED_PIPLIB
 PIPLIB_LA = $(top_builddir)/piplib/libpiplibMP.la
 endif
 
+if NEED_GET_MEMORY_FUNCTIONS
+GET_MEMORY_FUNCTIONS=mp_get_memory_functions.c
+endif
+
 libisl_la_SOURCES = \
 	$(ISL_PIPLIB) \
 	$(ISL_POLYLIB) \
+	$(GET_MEMORY_FUNCTIONS) \
 	isl_affine_hull.c \
 	isl_blk.c \
 	isl_constraint.c \

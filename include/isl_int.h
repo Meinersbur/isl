@@ -9,6 +9,13 @@
 extern "C" {
 #endif
 
+#ifndef mp_get_memory_functions
+void mp_get_memory_functions(
+		void *(**alloc_func_ptr) (size_t),
+		void *(**realloc_func_ptr) (void *, size_t, size_t),
+		void (**free_func_ptr) (void *, size_t));
+#endif
+
 /* isl_int is the basic integer type.  It currently always corresponds
  * to a gmp mpz_t, but in the future, different types such as long long
  * or cln::cl_I will be supported.

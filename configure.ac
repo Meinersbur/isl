@@ -18,6 +18,14 @@ if test "x$with_gmp_prefix" != "x"; then
 	GMP_CPPFLAGS="-I$with_gmp_prefix/include"
 	GMP_LDFLAGS="-L$with_gmp_prefix/lib"
 fi
+SAVE_CPPFLAGS="$CPPFLAGS"
+CPPFLAGS="$GMP_CPPFLAGS $CPPFLAGS"
+need_get_memory_functions=false
+AC_CHECK_DECLS(mp_get_memory_functions,[],[
+	need_get_memory_functions=true
+],[#include <gmp.h>])
+CPPFLAGS="$SAVE_CPPFLAGS"
+AM_CONDITIONAL(NEED_GET_MEMORY_FUNCTIONS, test x$need_get_memory_functions = xtrue)
 
 AC_DEFUN([ISL_SUBMODULE],[
 	AC_ARG_WITH($1_prefix,
