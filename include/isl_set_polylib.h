@@ -10,11 +10,11 @@ extern "C" {
 
 struct isl_basic_set *isl_basic_set_new_from_polylib(
 			struct isl_ctx *ctx,
-			Polyhedron *P, unsigned nparam, unsigned dim);
+			Polyhedron *P, struct isl_dim *dim);
 Polyhedron *isl_basic_set_to_polylib(struct isl_basic_set *bset);
 
 struct isl_set *isl_set_new_from_polylib(struct isl_ctx *ctx,
-			Polyhedron *D, unsigned nparam, unsigned dim);
+			Polyhedron *D, struct isl_dim *dim);
 Polyhedron *isl_set_to_polylib(struct isl_set *set);
 
 #if defined(__cplusplus)

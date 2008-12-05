@@ -6,6 +6,7 @@
 
 #include <isl_int.h>
 #include <isl_blk.h>
+#include <isl_hash.h>
 
 #undef ISL_POLYLIB
 #undef ISL_PIPLIB
@@ -38,16 +39,16 @@ extern "C" {
  * (in case of pointer return type).
  * The only exception is the isl_ctx argument, which shoud never be NULL.
  */
-struct isl_vec;
 struct isl_ctx {
-	int		ref;
+	int			ref;
 
-	isl_int		one;
+	isl_int			one;
 
-	int		n_cached;
-	struct isl_blk	cache[ISL_BLK_CACHE_SIZE];
+	int			n_cached;
+	struct isl_blk		cache[ISL_BLK_CACHE_SIZE];
+	struct isl_hash_table	name_hash;
 #ifdef ISL_POLYLIB
-	unsigned	MaxRays;
+	unsigned		MaxRays;
 #endif
 };
 

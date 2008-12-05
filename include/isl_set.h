@@ -134,8 +134,7 @@ struct isl_set *isl_set_alloc(struct isl_ctx *ctx,
 		unsigned nparam, unsigned dim, int n, unsigned flags);
 struct isl_set *isl_set_extend(struct isl_set *base,
 		unsigned nparam, unsigned dim);
-struct isl_set *isl_set_empty(struct isl_ctx *ctx,
-		unsigned nparam, unsigned dim);
+struct isl_set *isl_set_empty(struct isl_ctx *ctx, struct isl_dim *dim);
 struct isl_set *isl_set_empty_like(struct isl_set *set);
 struct isl_set *isl_set_add(struct isl_set *set, struct isl_basic_set *bset);
 struct isl_set *isl_set_finalize(struct isl_set *set);

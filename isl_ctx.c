@@ -12,6 +12,9 @@ struct isl_ctx *isl_ctx_alloc()
 	if (!ctx)
 		goto error;
 
+	if (isl_hash_table_init(ctx, &ctx->name_hash, 0))
+		goto error;
+
 	ctx->ref = 0;
 
 	isl_int_init(ctx->one);
@@ -45,6 +48,7 @@ void isl_ctx_free(struct isl_ctx *ctx)
 	if (!ctx)
 		return;
 	isl_assert(ctx, ctx->ref == 0, return);
+	isl_hash_table_clear(&ctx->name_hash);
 	isl_blk_clear_cache(ctx);
 	isl_int_clear(ctx->one);
 	free(ctx);

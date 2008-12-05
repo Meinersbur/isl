@@ -497,8 +497,7 @@ static struct isl_basic_map *add_exists(struct stream *s,
 	if (!*v)
 		goto error;
 	extra = (*v)->n - n;
-	bmap = isl_basic_map_extend(bmap, isl_basic_map_n_param(bmap),
-			isl_basic_map_n_in(bmap), isl_basic_map_n_out(bmap),
+	bmap = isl_basic_map_extend_dim(bmap, isl_dim_copy(bmap->dim),
 			extra, 0, 0);
 	total = isl_basic_map_total_dim(bmap);
 	for (i = 0; i < extra; ++i) {
