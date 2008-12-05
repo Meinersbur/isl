@@ -192,8 +192,7 @@ uint32_t isl_seq_hash(isl_int *p, unsigned len, uint32_t hash)
 
 uint32_t isl_seq_get_hash(isl_int *p, unsigned len)
 {
-	uint32_t hash;
-	isl_hash_init(hash);
+	uint32_t hash = isl_hash_init();
 
 	return isl_seq_hash(p, len, hash);
 }

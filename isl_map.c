@@ -5301,7 +5301,7 @@ uint32_t isl_set_get_hash(struct isl_set *set)
 	if (!set)
 		return 0;
 
-	isl_hash_init(hash);
+	hash = isl_hash_init();
 	for (i = 0; i < set->n; ++i) {
 		uint32_t bset_hash;
 		bset_hash = isl_basic_set_get_hash(set->p[i]);
