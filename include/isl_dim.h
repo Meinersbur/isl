@@ -17,6 +17,13 @@ struct isl_dim {
 	unsigned n_out;		/* dim for sets */
 };
 
+enum isl_dim_type {
+	isl_dim_param,
+	isl_dim_in,
+	isl_dim_out,
+	isl_dim_set = isl_dim_out,
+};
+
 struct isl_dim *isl_dim_alloc(struct isl_ctx *ctx,
 			unsigned nparam, unsigned n_in, unsigned n_out);
 struct isl_dim *isl_dim_copy(struct isl_dim *dim);
