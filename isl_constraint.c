@@ -54,6 +54,38 @@ struct isl_constraint *isl_basic_set_constraint(struct isl_basic_set *bset,
 	return isl_basic_map_constraint((struct isl_basic_map *)bset, line);
 }
 
+struct isl_constraint *isl_equality_alloc(struct isl_dim *dim)
+{
+	struct isl_basic_map *bmap;
+
+	if (!dim)
+		return NULL;
+
+	bmap = isl_basic_map_alloc_dim(dim->ctx, dim, 0, 1, 0);
+	if (!bmap)
+		return NULL;
+
+	isl_basic_map_alloc_equality(bmap);
+	isl_seq_clr(bmap->eq[0], 1 + isl_basic_map_total_dim(bmap));
+	return isl_basic_map_constraint(bmap, &bmap->eq[0]);
+}
+
+struct isl_constraint *isl_inequality_alloc(struct isl_dim *dim)
+{
+	struct isl_basic_map *bmap;
+
+	if (!dim)
+		return NULL;
+
+	bmap = isl_basic_map_alloc_dim(dim->ctx, dim, 0, 0, 1);
+	if (!bmap)
+		return NULL;
+
+	isl_basic_map_alloc_inequality(bmap);
+	isl_seq_clr(bmap->ineq[0], 1 + isl_basic_map_total_dim(bmap));
+	return isl_basic_map_constraint(bmap, &bmap->ineq[0]);
+}
+
 struct isl_constraint *isl_constraint_dup(struct isl_constraint *c)
 {
 	if (!c)
@@ -132,6 +164,25 @@ int isl_constraint_is_equal(struct isl_constraint *constraint1,
 		return 0;
 	return constraint1->bmap == constraint2->bmap &&
 	       constraint1->line == constraint2->line;
+}
+
+struct isl_basic_set *isl_basic_set_add_constraint(
+	struct isl_basic_set *bset, struct isl_constraint *constraint)
+{
+	if (!bset || !constraint)
+		goto error;
+
+	isl_assert(constraint->ctx,
+		isl_dim_equal(bset->dim, constraint->bmap->dim), goto error);
+
+	bset = isl_basic_set_intersect(bset,
+		isl_basic_set_copy((struct isl_basic_set *)constraint->bmap));
+	isl_constraint_free(constraint);
+	return bset;
+error:
+	isl_basic_set_free(bset);
+	isl_constraint_free(constraint);
+	return NULL;
 }
 
 int isl_constraint_dim(struct isl_constraint *constraint,

@@ -3,8 +3,39 @@
 #include <limits.h>
 #include <isl_ctx.h>
 #include <isl_set.h>
+#include <isl_constraint.h>
 
 static char *srcdir;
+
+/* Construct the basic set { [i] : 5 <= i <= N } */
+void test_construction(struct isl_ctx *ctx)
+{
+	isl_int v;
+	struct isl_basic_set *bset;
+	struct isl_constraint *c;
+
+	isl_int_init(v);
+
+	bset = isl_basic_set_universe(ctx, 1, 1);
+
+	c = isl_inequality_alloc(isl_dim_copy(bset->dim));
+	isl_int_set_si(v, -1);
+	isl_constraint_set_coefficient(c, isl_dim_set, 0, v);
+	isl_int_set_si(v, 1);
+	isl_constraint_set_coefficient(c, isl_dim_param, 0, v);
+	bset = isl_basic_set_add_constraint(bset, c);
+
+	c = isl_inequality_alloc(isl_dim_copy(bset->dim));
+	isl_int_set_si(v, 1);
+	isl_constraint_set_coefficient(c, isl_dim_set, 0, v);
+	isl_int_set_si(v, -5);
+	isl_constraint_set_constant(c, v);
+	bset = isl_basic_set_add_constraint(bset, c);
+
+	isl_basic_set_free(bset);
+
+	isl_int_clear(v);
+}
 
 void test_application_case(struct isl_ctx *ctx, const char *name)
 {
@@ -160,6 +191,7 @@ int main()
 	srcdir = getenv("srcdir");
 
 	ctx = isl_ctx_alloc();
+	test_construction(ctx);
 	test_application(ctx);
 	test_affine_hull(ctx);
 	test_convex_hull(ctx);

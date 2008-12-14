@@ -15,6 +15,8 @@ struct isl_constraint {
 	isl_int			**line;
 };
 
+struct isl_constraint *isl_equality_alloc(struct isl_dim *dim);
+struct isl_constraint *isl_inequality_alloc(struct isl_dim *dim);
 struct isl_constraint *isl_basic_set_constraint(struct isl_basic_set *bset,
 	isl_int **line);
 
@@ -27,6 +29,9 @@ struct isl_constraint *isl_basic_set_first_constraint(
 struct isl_constraint *isl_constraint_next(struct isl_constraint *c);
 int isl_constraint_is_equal(struct isl_constraint *constraint1,
 			    struct isl_constraint *constraint2);
+
+struct isl_basic_set *isl_basic_set_add_constraint(
+	struct isl_basic_set *bset, struct isl_constraint *constraint);
 
 int isl_basic_set_has_defining_equality(
 	struct isl_basic_set *bset, int pos,
