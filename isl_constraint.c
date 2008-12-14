@@ -1,230 +1,222 @@
 #include <isl_constraint.h>
 #include "isl_map_private.h"
 
-struct isl_basic_set *isl_basic_set_constraint_set(
-	struct isl_basic_set_constraint constraint)
+static unsigned n(struct isl_constraint *c, enum isl_dim_type type)
 {
-	return constraint.bset;
+	struct isl_dim *dim = c->bmap->dim;
+	switch (type) {
+	case isl_dim_param:	return dim->nparam;
+	case isl_dim_in:	return dim->n_in;
+	case isl_dim_out:	return dim->n_out;
+	case isl_dim_div:	return c->bmap->n_div;
+	case isl_dim_all:	return isl_basic_map_total_dim(c->bmap);
+	}
 }
 
-struct isl_basic_set_constraint isl_basic_set_constraint_invalid()
+static unsigned offset(struct isl_constraint *c, enum isl_dim_type type)
 {
-	struct isl_basic_set_constraint c;
-	c.bset = NULL;
-	c.line = NULL;
-	return c;
+	struct isl_dim *dim = c->bmap->dim;
+	switch (type) {
+	case isl_dim_param:	return 1;
+	case isl_dim_in:	return 1 + dim->nparam;
+	case isl_dim_out:	return 1 + dim->nparam + dim->n_in;
+	case isl_dim_div:	return 1 + dim->nparam + dim->n_in + dim->n_out;
+	}
 }
 
-struct isl_basic_set_constraint isl_basic_set_first_constraint(
+struct isl_constraint *isl_basic_map_constraint(struct isl_basic_map *bmap,
+	isl_int **line)
+{
+	struct isl_constraint *constraint;
+
+	if (!bmap || !line)
+		goto error;
+	
+	constraint = isl_alloc_type(bmap->ctx, struct isl_constraint);
+	if (!constraint)
+		goto error;
+
+	constraint->ctx = bmap->ctx;
+	isl_ctx_ref(constraint->ctx);
+	constraint->ref = 1;
+	constraint->bmap = bmap;
+	constraint->line = line;
+
+	return constraint;
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+struct isl_constraint *isl_basic_set_constraint(struct isl_basic_set *bset,
+	isl_int **line)
+{
+	return isl_basic_map_constraint((struct isl_basic_map *)bset, line);
+}
+
+struct isl_constraint *isl_constraint_dup(struct isl_constraint *c)
+{
+	if (!c)
+		return NULL;
+
+	return isl_basic_map_constraint(isl_basic_map_copy(c->bmap), c->line);
+}
+
+struct isl_constraint *isl_constraint_cow(struct isl_constraint *c)
+{
+	if (!c)
+		return NULL;
+
+	if (c->ref == 1)
+		return c;
+	c->ref--;
+	return isl_constraint_dup(c);
+}
+
+struct isl_constraint *isl_constraint_copy(struct isl_constraint *constraint)
+{
+	if (!constraint)
+		return NULL;
+
+	constraint->ref++;
+	return constraint;
+}
+
+struct isl_constraint *isl_constraint_free(struct isl_constraint *c)
+{
+	if (!c)
+		return;
+
+	if (--c->ref > 0)
+		return;
+
+	isl_basic_map_free(c->bmap);
+	isl_ctx_deref(c->ctx);
+	free(c);
+}
+
+struct isl_constraint *isl_basic_set_first_constraint(
 	struct isl_basic_set *bset)
 {
-	struct isl_basic_set_constraint c;
+	struct isl_constraint *c;
 
 	if (!bset)
-		return isl_basic_set_constraint_invalid();
+		return NULL;
 
-	if (bset->n_eq > 0) {
-		c.bset = bset;
-		c.line = &bset->eq[0];
+	if (bset->n_eq > 0)
+		return isl_basic_set_constraint(bset, &bset->eq[0]);
+
+	if (bset->n_ineq > 0)
+		return isl_basic_set_constraint(bset, &bset->ineq[0]);
+
+	isl_basic_set_free(bset);
+	return NULL;
+}
+
+struct isl_constraint *isl_constraint_next(struct isl_constraint *c)
+{
+	c = isl_constraint_cow(c);
+	c->line++;
+	if (c->line >= c->bmap->eq + c->bmap->n_eq && c->line < c->bmap->ineq)
+		c->line = c->bmap->ineq;
+	if (c->line < c->bmap->ineq + c->bmap->n_ineq)
 		return c;
-	}
-
-	if (bset->n_ineq > 0) {
-		c.bset = bset;
-		c.line = &bset->ineq[0];
-		return c;
-	}
-
-	return isl_basic_set_constraint_invalid();
+	isl_constraint_free(c);
+	return NULL;
 }
 
-struct isl_basic_set_constraint isl_basic_set_constraint_next(
-	struct isl_basic_set_constraint constraint)
+int isl_constraint_is_equal(struct isl_constraint *constraint1,
+	struct isl_constraint *constraint2)
 {
-	struct isl_basic_set_constraint c = constraint;
-
-	c.line++;
-	if (c.line >= c.bset->eq + c.bset->n_eq && c.line < c.bset->ineq)
-		c.line = c.bset->ineq;
-	if (c.line >= c.bset->ineq + c.bset->n_ineq)
-		return isl_basic_set_constraint_invalid();
-	return c;
+	if (!constraint1 || !constraint2)
+		return 0;
+	return constraint1->bmap == constraint2->bmap &&
+	       constraint1->line == constraint2->line;
 }
 
-int isl_basic_set_constraint_is_valid(
-	struct isl_basic_set_constraint constraint)
+int isl_constraint_dim(struct isl_constraint *constraint,
+	enum isl_dim_type type)
 {
-	return constraint.bset != NULL && constraint.line != NULL;
-}
-
-int isl_basic_set_constraint_is_equal(
-	struct isl_basic_set_constraint constraint1,
-	struct isl_basic_set_constraint constraint2)
-{
-	return constraint1.bset == constraint2.bset &&
-	       constraint1.line == constraint2.line;
-}
-
-int isl_basic_set_constraint_nparam(
-	struct isl_basic_set_constraint constraint)
-{
-	if (!isl_basic_set_constraint_is_valid(constraint))
+	if (!constraint)
 		return -1;
-	return isl_basic_set_n_param(constraint.bset);
+	return n(constraint, type);
 }
 
-int isl_basic_set_constraint_dim(
-	struct isl_basic_set_constraint constraint)
+void isl_constraint_get_constant(struct isl_constraint *constraint, isl_int *v)
 {
-	if (!isl_basic_set_constraint_is_valid(constraint))
-		return -1;
-	return isl_basic_set_n_dim(constraint.bset);
-}
-
-int isl_basic_set_constraint_n_div(
-	struct isl_basic_set_constraint constraint)
-{
-	if (!isl_basic_set_constraint_is_valid(constraint))
-		return -1;
-	return constraint.bset->n_div;
-}
-
-void isl_basic_set_constraint_get_constant(
-	struct isl_basic_set_constraint constraint, isl_int *v)
-{
-	if (!isl_basic_set_constraint_is_valid(constraint))
+	if (!constraint)
 		return;
-	isl_int_set(*v, constraint.line[0][0]);
+	isl_int_set(*v, constraint->line[0][0]);
 }
 
-void isl_basic_set_constraint_get_dim(
-	struct isl_basic_set_constraint constraint, int pos, isl_int *v)
+void isl_constraint_get_coefficient(struct isl_constraint *constraint,
+	enum isl_dim_type type, int pos, isl_int *v)
 {
-	unsigned dim;
-	unsigned nparam;
-	if (!isl_basic_set_constraint_is_valid(constraint))
+	if (!constraint)
 		return;
-	nparam = isl_basic_set_n_param(constraint.bset);
-	dim = isl_basic_set_n_dim(constraint.bset);
-	isl_assert(constraint.bset->ctx, pos < dim, return);
-	isl_int_set(*v, constraint.line[0][1 + nparam + pos]);
+
+	isl_assert(constraint->ctx, pos < n(constraint, type), return);
+	isl_int_set(*v, constraint->line[0][offset(constraint, type) + pos]);
 }
 
-void isl_basic_set_constraint_get_div(
-	struct isl_basic_set_constraint constraint, int pos, isl_int *v)
+void isl_constraint_set_constant(struct isl_constraint *constraint, isl_int v)
 {
-	unsigned dim;
-	unsigned nparam;
-	if (!isl_basic_set_constraint_is_valid(constraint))
+	if (!constraint)
 		return;
-	nparam = isl_basic_set_n_param(constraint.bset);
-	dim = isl_basic_set_n_dim(constraint.bset);
-	isl_assert(constraint.bset->ctx, pos < constraint.bset->n_div, return);
-	isl_int_set(*v, constraint.line[0][1 + nparam + dim + pos]);
+	isl_int_set(constraint->line[0][0], v);
 }
 
-void isl_basic_set_constraint_get_param(
-	struct isl_basic_set_constraint constraint, int pos, isl_int *v)
+void isl_constraint_set_coefficient(struct isl_constraint *constraint,
+	enum isl_dim_type type, int pos, isl_int v)
 {
-	unsigned nparam;
-	if (!isl_basic_set_constraint_is_valid(constraint))
+	if (!constraint)
 		return;
-	nparam = isl_basic_set_n_param(constraint.bset);
-	isl_assert(constraint.bset->ctx, pos < nparam, return);
-	isl_int_set(*v, constraint.line[0][1 + pos]);
+
+	isl_assert(constraint->ctx, pos < n(constraint, type), return);
+	isl_int_set(constraint->line[0][offset(constraint, type) + pos], v);
 }
 
-void isl_basic_set_constraint_set_dim(
-	struct isl_basic_set_constraint constraint, int pos, isl_int v)
+void isl_constraint_clear(struct isl_constraint *constraint)
 {
-	unsigned dim;
-	unsigned nparam;
-	if (!isl_basic_set_constraint_is_valid(constraint))
-		return;
-	isl_assert(constraint.bset->ctx, constraint.bset->ref == 1, return);
-	nparam = isl_basic_set_n_param(constraint.bset);
-	dim = isl_basic_set_n_dim(constraint.bset);
-	isl_assert(constraint.bset->ctx, pos < dim, return);
-	isl_int_set(constraint.line[0][1 + nparam + pos], v);
-}
-
-void isl_basic_set_constraint_set_param(
-	struct isl_basic_set_constraint constraint, int pos, isl_int v)
-{
-	unsigned nparam;
-	if (!isl_basic_set_constraint_is_valid(constraint))
-		return;
-	isl_assert(constraint.bset->ctx, constraint.bset->ref == 1, return);
-	nparam = isl_basic_set_n_param(constraint.bset);
-	isl_assert(constraint.bset->ctx, pos < nparam, return);
-	isl_int_set(constraint.line[0][1 + pos], v);
-}
-
-void isl_basic_set_constraint_clear(struct isl_basic_set_constraint constraint)
-{
-	struct isl_basic_set *bset = constraint.bset;
+	struct isl_basic_set *bset;
 	unsigned total;
 
-	if (!isl_basic_set_constraint_is_valid(constraint))
+	if (!constraint)
 		return;
-	total = isl_basic_set_total_dim(bset);
-	isl_seq_clr(constraint.line[0], 1 + total);
+	total = isl_basic_map_total_dim(constraint->bmap);
+	isl_seq_clr(constraint->line[0], 1 + total);
 }
 
-int isl_basic_set_constraint_is_equality(
-	struct isl_basic_set_constraint constraint)
+int isl_constraint_is_equality(struct isl_constraint *constraint)
 {
-	if (!isl_basic_set_constraint_is_valid(constraint))
+	if (!constraint)
 		return -1;
-	return constraint.line < constraint.bset->eq + constraint.bset->n_eq;
-}
-
-int isl_basic_set_constraint_is_dim_lower_bound(
-	struct isl_basic_set_constraint constraint, int pos)
-{
-	unsigned dim;
-	unsigned nparam;
-	if (!isl_basic_set_constraint_is_valid(constraint))
-		return -1;
-	nparam = isl_basic_set_n_param(constraint.bset);
-	dim = isl_basic_set_n_dim(constraint.bset);
-	isl_assert(constraint.bset->ctx, pos < dim, return -1);
-	return isl_int_is_pos(constraint.line[0][1+nparam+pos]);
-}
-
-int isl_basic_set_constraint_is_dim_upper_bound(
-	struct isl_basic_set_constraint constraint, int pos)
-{
-	unsigned dim;
-	unsigned nparam;
-	if (!isl_basic_set_constraint_is_valid(constraint))
-		return -1;
-	nparam = isl_basic_set_n_param(constraint.bset);
-	dim = isl_basic_set_n_dim(constraint.bset);
-	isl_assert(constraint.bset->ctx, pos < dim, return -1);
-	return isl_int_is_neg(constraint.line[0][1+nparam+pos]);
+	return constraint->line < constraint->bmap->eq + constraint->bmap->n_eq;
 }
 
 
 struct isl_basic_set *isl_basic_set_from_constraint(
-	struct isl_basic_set_constraint constraint)
+	struct isl_constraint *constraint)
 {
 	int k;
-	struct isl_basic_set *bset;
+	struct isl_basic_set *constraint_bset, *bset;
 	isl_int *c;
 	unsigned dim;
 	unsigned nparam;
 	unsigned total;
 
-	if (!isl_basic_set_constraint_is_valid(constraint))
+	if (!constraint)
 		return NULL;
 
-	bset = isl_basic_set_universe_like(constraint.bset);
-	bset = isl_basic_set_align_divs(bset, constraint.bset);
+	isl_assert(constraint->ctx,n(constraint, isl_dim_in) == 0, goto error);
+
+	constraint_bset = (struct isl_basic_set *)constraint->bmap;
+	bset = isl_basic_set_universe_like(constraint_bset);
+	bset = isl_basic_set_align_divs(bset, constraint_bset);
 	nparam = isl_basic_set_n_param(bset);
 	dim = isl_basic_set_n_dim(bset);
 	bset = isl_basic_set_extend(bset, nparam, dim, 0, 1, 1);
-	if (isl_basic_set_constraint_is_equality(constraint)) {
+	if (isl_constraint_is_equality(constraint)) {
 		k = isl_basic_set_alloc_equality(bset);
 		if (k < 0)
 			goto error;
@@ -237,16 +229,18 @@ struct isl_basic_set *isl_basic_set_from_constraint(
 		c = bset->ineq[k];
 	}
 	total = isl_basic_set_total_dim(bset);
-	isl_seq_cpy(c, constraint.line[0], 1 + total);
+	isl_seq_cpy(c, constraint->line[0], 1 + total);
+	isl_constraint_free(constraint);
 	return bset;
 error:
+	isl_constraint_free(constraint);
 	isl_basic_set_free(bset);
 	return NULL;
 }
 
 int isl_basic_set_has_defining_equality(
 	struct isl_basic_set *bset, int pos,
-	struct isl_basic_set_constraint *constraint)
+	struct isl_constraint **c)
 {
 	int i;
 	unsigned dim, nparam;
@@ -260,8 +254,8 @@ int isl_basic_set_has_defining_equality(
 		if (!isl_int_is_zero(bset->eq[i][1 + nparam + pos]) &&
 		    isl_seq_first_non_zero(bset->eq[i]+1+nparam+pos+1,
 					   dim-pos-1) == -1) {
-			constraint->bset = bset;
-			constraint->line = &bset->eq[i];
+			*c= isl_basic_set_constraint(isl_basic_set_copy(bset),
+								&bset->eq[i]);
 			return 1;
 		}
 	return 0;
@@ -269,14 +263,15 @@ int isl_basic_set_has_defining_equality(
 
 int isl_basic_set_has_defining_inequalities(
 	struct isl_basic_set *bset, int pos,
-	struct isl_basic_set_constraint *lower,
-	struct isl_basic_set_constraint *upper)
+	struct isl_constraint **lower,
+	struct isl_constraint **upper)
 {
 	int i, j;
 	unsigned dim;
 	unsigned nparam;
 	unsigned total;
 	isl_int m;
+	isl_int **lower_line, **upper_line;
 
 	if (!bset)
 		return -1;
@@ -303,19 +298,23 @@ int isl_basic_set_has_defining_inequalities(
 			if (isl_int_abs_ge(m, bset->ineq[i][1+nparam+pos]))
 				continue;
 
-			lower->bset = bset;
-			upper->bset = bset;
 			if (isl_int_is_pos(bset->ineq[i][1+nparam+pos])) {
-				lower->line = &bset->ineq[i];
-				upper->line = &bset->ineq[j];
+				lower_line = &bset->ineq[i];
+				upper_line = &bset->ineq[j];
 			} else {
-				lower->line = &bset->ineq[j];
-				upper->line = &bset->ineq[i];
+				lower_line = &bset->ineq[j];
+				upper_line = &bset->ineq[i];
 			}
+			*lower = isl_basic_set_constraint(
+					isl_basic_set_copy(bset), lower_line);
+			*upper = isl_basic_set_constraint(
+					isl_basic_set_copy(bset), upper_line);
 			isl_int_clear(m);
 			return 1;
 		}
 	}
+	*lower = NULL;
+	*upper = NULL;
 	isl_int_clear(m);
 	return 0;
 }

@@ -7,64 +7,51 @@
 extern "C" {
 #endif
 
-struct isl_basic_set_constraint {
-	struct isl_basic_set	*bset;
+struct isl_constraint {
+	int ref;
+	struct isl_ctx *ctx;
+
+	struct isl_basic_map	*bmap;
 	isl_int			**line;
 };
 
-struct isl_basic_set *isl_basic_set_constraint_set(
-	struct isl_basic_set_constraint constraint);
+struct isl_constraint *isl_basic_set_constraint(struct isl_basic_set *bset,
+	isl_int **line);
 
-struct isl_basic_set_constraint isl_basic_set_constraint_invalid();
-struct isl_basic_set_constraint isl_basic_set_first_constraint(
+struct isl_constraint *isl_constraint_cow(struct isl_constraint *c);
+struct isl_constraint *isl_constraint_copy(struct isl_constraint *c);
+struct isl_constraint *isl_constraint_free(struct isl_constraint *c);
+
+struct isl_constraint *isl_basic_set_first_constraint(
 	struct isl_basic_set *bset);
-struct isl_basic_set_constraint isl_basic_set_constraint_next(
-	struct isl_basic_set_constraint constraint);
-int isl_basic_set_constraint_is_valid(
-	struct isl_basic_set_constraint constraint);
-int isl_basic_set_constraint_is_equal(
-	struct isl_basic_set_constraint constraint1,
-	struct isl_basic_set_constraint constraint2);
+struct isl_constraint *isl_constraint_next(struct isl_constraint *c);
+int isl_constraint_is_equal(struct isl_constraint *constraint1,
+			    struct isl_constraint *constraint2);
 
 int isl_basic_set_has_defining_equality(
 	struct isl_basic_set *bset, int pos,
-	struct isl_basic_set_constraint *constraint);
+	struct isl_constraint **constraint);
 int isl_basic_set_has_defining_inequalities(
 	struct isl_basic_set *bset, int pos,
-	struct isl_basic_set_constraint *lower,
-	struct isl_basic_set_constraint *upper);
+	struct isl_constraint **lower,
+	struct isl_constraint **upper);
 
-int isl_basic_set_constraint_nparam(
-	struct isl_basic_set_constraint constraint);
-int isl_basic_set_constraint_dim(
-	struct isl_basic_set_constraint constraint);
-int isl_basic_set_constraint_n_div(
-	struct isl_basic_set_constraint constraint);
+int isl_constraint_dim(struct isl_constraint *constraint,
+	enum isl_dim_type type);
 
-void isl_basic_set_constraint_get_constant(
-	struct isl_basic_set_constraint constraint, isl_int *v);
-void isl_basic_set_constraint_get_dim(
-	struct isl_basic_set_constraint constraint, int pos, isl_int *v);
-void isl_basic_set_constraint_get_param(
-	struct isl_basic_set_constraint constraint, int pos, isl_int *v);
-void isl_basic_set_constraint_get_div(
-	struct isl_basic_set_constraint constraint, int pos, isl_int *v);
-void isl_basic_set_constraint_set_dim(
-	struct isl_basic_set_constraint constraint, int pos, isl_int v);
-void isl_basic_set_constraint_set_param(
-	struct isl_basic_set_constraint constraint, int pos, isl_int v);
+void isl_constraint_get_constant(struct isl_constraint *constraint, isl_int *v);
+void isl_constraint_get_coefficient(struct isl_constraint *constraint,
+	enum isl_dim_type type, int pos, isl_int *v);
+void isl_constraint_set_constant(struct isl_constraint *constraint, isl_int v);
+void isl_constraint_set_coefficient(struct isl_constraint *constraint,
+	enum isl_dim_type type, int pos, isl_int v);
 
-void isl_basic_set_constraint_clear(struct isl_basic_set_constraint constraint);
+void isl_constraint_clear(struct isl_constraint *constraint);
 
-int isl_basic_set_constraint_is_equality(
-	struct isl_basic_set_constraint constraint);
-int isl_basic_set_constraint_is_dim_lower_bound(
-	struct isl_basic_set_constraint constraint, int pos);
-int isl_basic_set_constraint_is_dim_upper_bound(
-	struct isl_basic_set_constraint constraint, int pos);
+int isl_constraint_is_equality(struct isl_constraint *constraint);
 
 struct isl_basic_set *isl_basic_set_from_constraint(
-	struct isl_basic_set_constraint constraint);
+	struct isl_constraint *constraint);
 
 #if defined(__cplusplus)
 }

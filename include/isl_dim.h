@@ -26,6 +26,8 @@ enum isl_dim_type {
 	isl_dim_in,
 	isl_dim_out,
 	isl_dim_set = isl_dim_out,
+	isl_dim_div,
+	isl_dim_all,
 };
 
 struct isl_dim *isl_dim_alloc(struct isl_ctx *ctx,
