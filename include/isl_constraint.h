@@ -52,6 +52,7 @@ void isl_constraint_set_coefficient(struct isl_constraint *constraint,
 	enum isl_dim_type type, int pos, isl_int v);
 
 void isl_constraint_clear(struct isl_constraint *constraint);
+struct isl_constraint *isl_constraint_negate(struct isl_constraint *constraint);
 
 int isl_constraint_is_equality(struct isl_constraint *constraint);
 

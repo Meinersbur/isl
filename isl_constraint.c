@@ -238,6 +238,26 @@ void isl_constraint_clear(struct isl_constraint *constraint)
 	isl_seq_clr(constraint->line[0], 1 + total);
 }
 
+struct isl_constraint *isl_constraint_negate(struct isl_constraint *constraint)
+{
+	unsigned total;
+
+	if (!constraint)
+		return NULL;
+
+	isl_assert(constraint->ctx, !isl_constraint_is_equality(constraint),
+			goto error);
+	isl_assert(constraint->ctx, constraint->bmap->ref == 1, goto error);
+	total = isl_basic_map_total_dim(constraint->bmap);
+	isl_seq_neg(constraint->line[0], constraint->line[0], 1 + total);
+	isl_int_sub_ui(constraint->line[0][0], constraint->line[0][0], 1);
+	F_CLR(constraint->bmap, ISL_BASIC_MAP_NORMALIZED);
+	return constraint;
+error:
+	isl_constraint_free(constraint);
+	return NULL;
+}
+
 int isl_constraint_is_equality(struct isl_constraint *constraint)
 {
 	if (!constraint)
