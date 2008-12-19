@@ -8,13 +8,11 @@
 extern "C" {
 #endif
 
-struct isl_basic_set *isl_basic_set_new_from_polylib(
-			struct isl_ctx *ctx,
-			Polyhedron *P, struct isl_dim *dim);
+struct isl_basic_set *isl_basic_set_new_from_polylib(Polyhedron *P,
+			struct isl_dim *dim);
 Polyhedron *isl_basic_set_to_polylib(struct isl_basic_set *bset);
 
-struct isl_set *isl_set_new_from_polylib(struct isl_ctx *ctx,
-			Polyhedron *D, struct isl_dim *dim);
+struct isl_set *isl_set_new_from_polylib(Polyhedron *D, struct isl_dim *dim);
 Polyhedron *isl_set_to_polylib(struct isl_set *set);
 
 #if defined(__cplusplus)

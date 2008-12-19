@@ -11,12 +11,14 @@ static char *srcdir;
 void test_construction(struct isl_ctx *ctx)
 {
 	isl_int v;
+	struct isl_dim *dim;
 	struct isl_basic_set *bset;
 	struct isl_constraint *c;
 
 	isl_int_init(v);
 
-	bset = isl_basic_set_universe(ctx, 1, 1);
+	dim = isl_dim_set_alloc(ctx, 1, 1);
+	bset = isl_basic_set_universe(dim);
 
 	c = isl_inequality_alloc(isl_dim_copy(bset->dim));
 	isl_int_set_si(v, -1);

@@ -250,32 +250,30 @@ struct isl_basic_set *isl_basic_set_alloc(struct isl_ctx *ctx,
 	return (struct isl_basic_set *)bmap;
 }
 
-struct isl_basic_set *isl_basic_set_alloc_dim(struct isl_ctx *ctx,
-		struct isl_dim *dim, unsigned extra,
-		unsigned n_eq, unsigned n_ineq)
+struct isl_basic_set *isl_basic_set_alloc_dim(struct isl_dim *dim,
+		unsigned extra, unsigned n_eq, unsigned n_ineq)
 {
 	struct isl_basic_map *bmap;
 	if (!dim)
 		return NULL;
-	isl_assert(ctx, dim->n_in == 0, return NULL);
-	bmap = isl_basic_map_alloc_dim(ctx, dim, extra, n_eq, n_ineq);
+	isl_assert(dim->ctx, dim->n_in == 0, return NULL);
+	bmap = isl_basic_map_alloc_dim(dim, extra, n_eq, n_ineq);
 	return (struct isl_basic_set *)bmap;
 }
 
-struct isl_basic_map *isl_basic_map_alloc_dim(struct isl_ctx *ctx,
-		struct isl_dim *dim, unsigned extra,
-		unsigned n_eq, unsigned n_ineq)
+struct isl_basic_map *isl_basic_map_alloc_dim(struct isl_dim *dim,
+		unsigned extra, unsigned n_eq, unsigned n_ineq)
 {
 	struct isl_basic_map *bmap;
 
 	if (!dim)
 		return NULL;
-	bmap = isl_alloc_type(ctx, struct isl_basic_map);
+	bmap = isl_alloc_type(dim->ctx, struct isl_basic_map);
 	if (!bmap)
 		goto error;
 	bmap->dim = dim;
 
-	return basic_map_init(ctx, bmap, extra, n_eq, n_ineq);
+	return basic_map_init(dim->ctx, bmap, extra, n_eq, n_ineq);
 error:
 	isl_dim_free(dim);
 	return NULL;
@@ -292,7 +290,7 @@ struct isl_basic_map *isl_basic_map_alloc(struct isl_ctx *ctx,
 	if (!dim)
 		return NULL;
 
-	bmap = isl_basic_map_alloc_dim(ctx, dim, extra, n_eq, n_ineq);
+	bmap = isl_basic_map_alloc_dim(dim, extra, n_eq, n_ineq);
 	return bmap;
 }
 
@@ -325,7 +323,7 @@ struct isl_basic_map *isl_basic_map_dup(struct isl_basic_map *bmap)
 
 	if (!bmap)
 		return NULL;
-	dup = isl_basic_map_alloc_dim(bmap->ctx, isl_dim_copy(bmap->dim),
+	dup = isl_basic_map_alloc_dim(isl_dim_copy(bmap->dim),
 			bmap->n_div, bmap->n_eq, bmap->n_ineq);
 	if (!dup)
 		return NULL;
@@ -756,7 +754,7 @@ struct isl_basic_map *isl_basic_map_extend_dim(struct isl_basic_map *base,
 	n_eq += base->n_eq;
 	n_ineq += base->n_ineq;
 
-	ext = isl_basic_map_alloc_dim(base->ctx, dim, extra, n_eq, n_ineq);
+	ext = isl_basic_map_alloc_dim(dim, extra, n_eq, n_ineq);
 	dim = NULL;
 	if (!ext)
 		goto error;
@@ -2159,23 +2157,22 @@ int isl_inequality_negate(struct isl_basic_map *bmap, unsigned pos)
 	return 0;
 }
 
-struct isl_set *isl_set_alloc_dim(struct isl_ctx *ctx,
-		struct isl_dim *dim, int n, unsigned flags)
+struct isl_set *isl_set_alloc_dim(struct isl_dim *dim, int n, unsigned flags)
 {
 	struct isl_set *set;
 
 	if (!dim)
 		return NULL;
-	isl_assert(ctx, dim->n_in == 0, return NULL);
-	isl_assert(ctx, n >= 0, return NULL);
-	set = isl_alloc(ctx, struct isl_set,
+	isl_assert(dim->ctx, dim->n_in == 0, return NULL);
+	isl_assert(dim->ctx, n >= 0, return NULL);
+	set = isl_alloc(dim->ctx, struct isl_set,
 			sizeof(struct isl_set) +
 			n * sizeof(struct isl_basic_set *));
 	if (!set)
 		goto error;
 
-	set->ctx = ctx;
-	isl_ctx_ref(ctx);
+	set->ctx = dim->ctx;
+	isl_ctx_ref(set->ctx);
 	set->ref = 1;
 	set->size = n;
 	set->n = 0;
@@ -2197,7 +2194,7 @@ struct isl_set *isl_set_alloc(struct isl_ctx *ctx,
 	if (!dims)
 		return NULL;
 
-	set = isl_set_alloc_dim(ctx, dims, n, flags);
+	set = isl_set_alloc_dim(dims, n, flags);
 	return set;
 }
 
@@ -2209,8 +2206,7 @@ struct isl_set *isl_set_dup(struct isl_set *set)
 	if (!set)
 		return NULL;
 
-	dup = isl_set_alloc_dim(set->ctx, isl_dim_copy(set->dim),
-				set->n, set->flags);
+	dup = isl_set_alloc_dim(isl_dim_copy(set->dim), set->n, set->flags);
 	if (!dup)
 		return NULL;
 	for (i = 0; i < set->n; ++i)
@@ -2225,8 +2221,7 @@ struct isl_set *isl_set_from_basic_set(struct isl_basic_set *bset)
 	if (!bset)
 		return NULL;
 
-	set = isl_set_alloc_dim(bset->ctx, isl_dim_copy(bset->dim),
-				1, ISL_MAP_DISJOINT);
+	set = isl_set_alloc_dim(isl_dim_copy(bset->dim), 1, ISL_MAP_DISJOINT);
 	if (!set) {
 		isl_basic_set_free(bset);
 		return NULL;
@@ -2241,8 +2236,7 @@ struct isl_map *isl_map_from_basic_map(struct isl_basic_map *bmap)
 	if (!bmap)
 		return NULL;
 
-	map = isl_map_alloc_dim(bmap->ctx, isl_dim_copy(bmap->dim),
-				1, ISL_MAP_DISJOINT);
+	map = isl_map_alloc_dim(isl_dim_copy(bmap->dim), 1, ISL_MAP_DISJOINT);
 	if (!map) {
 		isl_basic_map_free(bmap);
 		return NULL;
@@ -2423,7 +2417,7 @@ struct isl_map *isl_map_intersect(struct isl_map *map1, struct isl_map *map2)
 	    F_ISSET(map2, ISL_MAP_DISJOINT))
 		FL_SET(flags, ISL_MAP_DISJOINT);
 
-	result = isl_map_alloc_dim(map1->ctx, isl_dim_copy(map1->dim),
+	result = isl_map_alloc_dim(isl_dim_copy(map1->dim),
 				map1->n * map2->n, flags);
 	if (!result)
 		goto error;
@@ -2572,7 +2566,7 @@ struct isl_basic_map *isl_basic_map_apply_range(
 	isl_dim_map_dim(dim_map1, bmap1->dim, isl_dim_out, pos += bmap2->n_div);
 	isl_dim_map_dim(dim_map2, bmap2->dim, isl_dim_in, pos);
 
-	bmap = isl_basic_map_alloc_dim(bmap1->ctx, dim_result,
+	bmap = isl_basic_map_alloc_dim(dim_result,
 			bmap1->n_div + bmap2->n_div + n,
 			bmap1->n_eq + bmap2->n_eq,
 			bmap1->n_ineq + bmap2->n_ineq);
@@ -3063,22 +3057,21 @@ error:
 	return NULL;
 }
 
-struct isl_map *isl_map_alloc_dim(struct isl_ctx *ctx,
-		struct isl_dim *dim, int n, unsigned flags)
+struct isl_map *isl_map_alloc_dim(struct isl_dim *dim, int n, unsigned flags)
 {
 	struct isl_map *map;
 
 	if (!dim)
 		return NULL;
-	isl_assert(ctx, n >= 0, return NULL);
-	map = isl_alloc(ctx, struct isl_map,
+	isl_assert(dim->ctx, n >= 0, return NULL);
+	map = isl_alloc(dim->ctx, struct isl_map,
 			sizeof(struct isl_map) +
 			n * sizeof(struct isl_basic_map *));
 	if (!map)
 		goto error;
 
-	map->ctx = ctx;
-	isl_ctx_ref(ctx);
+	map->ctx = dim->ctx;
+	isl_ctx_ref(map->ctx);
 	map->ref = 1;
 	map->size = n;
 	map->n = 0;
@@ -3101,7 +3094,7 @@ struct isl_map *isl_map_alloc(struct isl_ctx *ctx,
 	if (!dims)
 		return NULL;
 
-	map = isl_map_alloc_dim(ctx, dims, n, flags);
+	map = isl_map_alloc_dim(dims, n, flags);
 	return map;
 }
 
@@ -3114,11 +3107,10 @@ struct isl_basic_map *isl_basic_map_empty(struct isl_ctx *ctx,
 	return bmap;
 }
 
-struct isl_basic_set *isl_basic_set_empty(struct isl_ctx *ctx,
-		unsigned nparam, unsigned dim)
+struct isl_basic_set *isl_basic_set_empty(struct isl_dim *dim)
 {
 	struct isl_basic_set *bset;
-	bset = isl_basic_set_alloc(ctx, nparam, dim, 0, 1, 0);
+	bset = isl_basic_set_alloc_dim(dim, 0, 1, 0);
 	bset = isl_basic_set_set_to_empty(bset);
 	return bset;
 }
@@ -3128,8 +3120,7 @@ struct isl_basic_map *isl_basic_map_empty_like(struct isl_basic_map *model)
 	struct isl_basic_map *bmap;
 	if (!model)
 		return NULL;
-	bmap = isl_basic_map_alloc_dim(model->ctx, isl_dim_copy(model->dim),
-					0, 1, 0);
+	bmap = isl_basic_map_alloc_dim(isl_dim_copy(model->dim), 0, 1, 0);
 	bmap = isl_basic_map_set_to_empty(bmap);
 	return bmap;
 }
@@ -3139,8 +3130,7 @@ struct isl_basic_map *isl_basic_map_empty_like_map(struct isl_map *model)
 	struct isl_basic_map *bmap;
 	if (!model)
 		return NULL;
-	bmap = isl_basic_map_alloc_dim(model->ctx, isl_dim_copy(model->dim),
-					0, 1, 0);
+	bmap = isl_basic_map_alloc_dim(isl_dim_copy(model->dim), 0, 1, 0);
 	bmap = isl_basic_map_set_to_empty(bmap);
 	return bmap;
 }
@@ -3150,25 +3140,22 @@ struct isl_basic_set *isl_basic_set_empty_like(struct isl_basic_set *model)
 	struct isl_basic_set *bset;
 	if (!model)
 		return NULL;
-	bset = isl_basic_set_alloc_dim(model->ctx, isl_dim_copy(model->dim),
-					0, 1, 0);
+	bset = isl_basic_set_alloc_dim(isl_dim_copy(model->dim), 0, 1, 0);
 	bset = isl_basic_set_set_to_empty(bset);
 	return bset;
 }
 
-struct isl_basic_map *isl_basic_map_universe(struct isl_ctx *ctx,
-		unsigned nparam, unsigned in, unsigned out)
+struct isl_basic_map *isl_basic_map_universe(struct isl_dim *dim)
 {
 	struct isl_basic_map *bmap;
-	bmap = isl_basic_map_alloc(ctx, nparam, in, out, 0, 0, 0);
+	bmap = isl_basic_map_alloc_dim(dim, 0, 0, 0);
 	return bmap;
 }
 
-struct isl_basic_set *isl_basic_set_universe(struct isl_ctx *ctx,
-		unsigned nparam, unsigned dim)
+struct isl_basic_set *isl_basic_set_universe(struct isl_dim *dim)
 {
 	struct isl_basic_set *bset;
-	bset = isl_basic_set_alloc(ctx, nparam, dim, 0, 0, 0);
+	bset = isl_basic_set_alloc_dim(dim, 0, 0, 0);
 	return bset;
 }
 
@@ -3176,8 +3163,7 @@ struct isl_basic_set *isl_basic_set_universe_like(struct isl_basic_set *model)
 {
 	if (!model)
 		return NULL;
-	return isl_basic_set_alloc_dim(model->ctx, isl_dim_copy(model->dim),
-					0, 0, 0);
+	return isl_basic_set_alloc_dim(isl_dim_copy(model->dim), 0, 0, 0);
 }
 
 struct isl_map *isl_map_empty(struct isl_ctx *ctx,
@@ -3190,20 +3176,19 @@ struct isl_map *isl_map_empty_like_basic_map(struct isl_basic_map *model)
 {
 	if (!model)
 		return NULL;
-	return isl_map_alloc_dim(model->ctx, isl_dim_copy(model->dim),
-					0, ISL_MAP_DISJOINT);
+	return isl_map_alloc_dim(isl_dim_copy(model->dim), 0, ISL_MAP_DISJOINT);
 }
 
-struct isl_set *isl_set_empty(struct isl_ctx *ctx, struct isl_dim *dim)
+struct isl_set *isl_set_empty(struct isl_dim *dim)
 {
-	return isl_set_alloc_dim(ctx, dim, 0, ISL_MAP_DISJOINT);
+	return isl_set_alloc_dim(dim, 0, ISL_MAP_DISJOINT);
 }
 
 struct isl_set *isl_set_empty_like(struct isl_set *model)
 {
 	if (!model)
 		return NULL;
-	return isl_set_empty(model->ctx, isl_dim_copy(model->dim));
+	return isl_set_empty(isl_dim_copy(model->dim));
 }
 
 struct isl_map *isl_map_dup(struct isl_map *map)
@@ -3213,8 +3198,7 @@ struct isl_map *isl_map_dup(struct isl_map *map)
 
 	if (!map)
 		return NULL;
-	dup = isl_map_alloc_dim(map->ctx, isl_dim_copy(map->dim),
-				map->n, map->flags);
+	dup = isl_map_alloc_dim(isl_dim_copy(map->dim), map->n, map->flags);
 	for (i = 0; i < map->n; ++i)
 		dup = isl_map_add(dup, isl_basic_map_copy(map->p[i]));
 	return dup;
@@ -3460,13 +3444,15 @@ struct isl_set *isl_basic_set_lexmin(struct isl_basic_set *bset)
 	struct isl_basic_map *bmap = NULL;
 	struct isl_basic_set *dom = NULL;
 	struct isl_map *min;
+	struct isl_dim *param_dim;
 
 	if (!bset)
 		goto error;
 	bmap = isl_basic_map_from_basic_set(bset, isl_dim_copy(bset->dim));
 	if (!bmap)
 		goto error;
-	dom = isl_basic_set_universe(bmap->ctx, isl_basic_map_n_param(bmap), 0);
+	param_dim = isl_dim_domain(isl_dim_copy(bmap->dim));
+	dom = isl_basic_set_universe(param_dim);
 	if (!dom)
 		goto error;
 	min = isl_basic_map_lexmin(bmap, dom, NULL);
@@ -3533,8 +3519,7 @@ struct isl_set *isl_map_domain(struct isl_map *map)
 		return NULL;
 
 	set = (struct isl_set *)map;
-	set->dim = isl_dim_drop_outputs(set->dim, 0, set->dim->n_out);
-	set->dim = isl_dim_reverse(set->dim);
+	set->dim = isl_dim_domain(set->dim);
 	if (!set->dim)
 		goto error;
 	for (i = 0; i < map->n; ++i) {
@@ -3575,7 +3560,7 @@ struct isl_map *isl_map_union_disjoint(
 	    F_ISSET(map2, ISL_MAP_DISJOINT))
 		FL_SET(flags, ISL_MAP_DISJOINT);
 
-	map = isl_map_alloc_dim(map1->ctx, isl_dim_copy(map1->dim),
+	map = isl_map_alloc_dim(isl_dim_copy(map1->dim),
 				map1->n + map2->n, flags);
 	if (!map)
 		goto error;
@@ -3639,7 +3624,7 @@ struct isl_map *isl_map_intersect_range(
 	    F_ISSET(set, ISL_MAP_DISJOINT))
 		FL_SET(flags, ISL_MAP_DISJOINT);
 
-	result = isl_map_alloc_dim(map->ctx, isl_dim_copy(map->dim),
+	result = isl_map_alloc_dim(isl_dim_copy(map->dim),
 					map->n * set->n, flags);
 	if (!result)
 		goto error;
@@ -3698,7 +3683,7 @@ struct isl_map *isl_map_apply_range(
 	dim_result = isl_dim_join(isl_dim_copy(map1->dim),
 				  isl_dim_copy(map2->dim));
 
-	result = isl_map_alloc_dim(map1->ctx, dim_result, map1->n * map2->n, 0);
+	result = isl_map_alloc_dim(dim_result, map1->n * map2->n, 0);
 	if (!result)
 		goto error;
 	for (i = 0; i < map1->n; ++i)
@@ -3914,7 +3899,7 @@ static struct isl_basic_map *basic_map_identity(struct isl_dim *dims)
 
 	nparam = dims->nparam;
 	dim = dims->n_out;
-	bmap = isl_basic_map_alloc_dim(dims->ctx, dims, 0, dim, 0);
+	bmap = isl_basic_map_alloc_dim(dims, 0, dim, 0);
 	if (!bmap)
 		goto error;
 
@@ -3951,7 +3936,7 @@ struct isl_basic_map *isl_basic_map_identity_like(struct isl_basic_map *model)
 
 static struct isl_map *map_identity(struct isl_dim *dim)
 {
-	struct isl_map *map = isl_map_alloc_dim(dim->ctx, dim, 1, ISL_MAP_DISJOINT);
+	struct isl_map *map = isl_map_alloc_dim(dim, 1, ISL_MAP_DISJOINT);
 	return isl_map_add(map, basic_map_identity(isl_dim_copy(dim)));
 }
 
@@ -4193,7 +4178,7 @@ struct isl_map *isl_basic_map_union(
 
 	isl_assert(map1->ctx, isl_dim_equal(bmap1->dim, bmap2->dim), goto error);
 
-	map = isl_map_alloc_dim(bmap1->ctx, isl_dim_copy(bmap1->dim), 2, 0);
+	map = isl_map_alloc_dim(isl_dim_copy(bmap1->dim), 2, 0);
 	if (!map)
 		goto error;
 	map = isl_map_add(map, bmap1);
@@ -4366,7 +4351,7 @@ static struct isl_map *subtract(struct isl_map *map, struct isl_basic_map *bmap)
 		FL_SET(flags, ISL_MAP_DISJOINT);
 
 	max = map->n * (2 * bmap->n_eq + bmap->n_ineq);
-	rest = isl_map_alloc_dim(map->ctx, isl_dim_copy(map->dim), max, flags);
+	rest = isl_map_alloc_dim(isl_dim_copy(map->dim), max, flags);
 	if (!rest)
 		goto error;
 

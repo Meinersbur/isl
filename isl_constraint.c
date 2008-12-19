@@ -61,7 +61,7 @@ struct isl_constraint *isl_equality_alloc(struct isl_dim *dim)
 	if (!dim)
 		return NULL;
 
-	bmap = isl_basic_map_alloc_dim(dim->ctx, dim, 0, 1, 0);
+	bmap = isl_basic_map_alloc_dim(dim, 0, 1, 0);
 	if (!bmap)
 		return NULL;
 
@@ -77,7 +77,7 @@ struct isl_constraint *isl_inequality_alloc(struct isl_dim *dim)
 	if (!dim)
 		return NULL;
 
-	bmap = isl_basic_map_alloc_dim(dim->ctx, dim, 0, 0, 1);
+	bmap = isl_basic_map_alloc_dim(dim, 0, 0, 1);
 	if (!bmap)
 		return NULL;
 

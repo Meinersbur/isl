@@ -891,9 +891,9 @@ static struct isl_basic_set *convex_hull_0d(struct isl_set *set)
 		return NULL;
 
 	if (isl_set_is_empty(set))
-		convex_hull = isl_basic_set_empty(set->ctx, 0, 0);
+		convex_hull = isl_basic_set_empty(isl_dim_copy(set->dim));
 	else
-		convex_hull = isl_basic_set_universe(set->ctx, 0, 0);
+		convex_hull = isl_basic_set_universe(isl_dim_copy(set->dim));
 	isl_set_free(set);
 	return convex_hull;
 }
@@ -1081,7 +1081,7 @@ static struct isl_basic_set *uset_convex_hull_wrap(struct isl_set *set)
 	struct isl_mat *bounds;
 
 	if (isl_set_n_dim(set) == 0) {
-		convex_hull = isl_basic_set_universe(set->ctx, 0, 0);
+		convex_hull = isl_basic_set_universe(isl_dim_copy(set->dim));
 		isl_set_free(set);
 		convex_hull = isl_basic_set_set_rational(convex_hull);
 		return convex_hull;

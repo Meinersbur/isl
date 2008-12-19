@@ -450,6 +450,14 @@ error:
 	return NULL;
 }
 
+struct isl_dim *isl_dim_domain(struct isl_dim *dim)
+{
+	if (!dim)
+		return NULL;
+	dim = isl_dim_drop_outputs(dim, 0, dim->n_out);
+	return isl_dim_reverse(dim);
+}
+
 unsigned isl_dim_total(struct isl_dim *dim)
 {
 	return dim->nparam + dim->n_in + dim->n_out;

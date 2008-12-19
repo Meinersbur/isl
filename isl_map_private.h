@@ -11,16 +11,12 @@ struct isl_basic_map *isl_basic_map_extend_dim(struct isl_basic_map *base,
 		struct isl_dim *dim, unsigned extra,
 		unsigned n_eq, unsigned n_ineq);
 
-struct isl_basic_set *isl_basic_set_alloc_dim(struct isl_ctx *ctx,
-		struct isl_dim *dim, unsigned extra,
-		unsigned n_eq, unsigned n_ineq);
-struct isl_set *isl_set_alloc_dim(struct isl_ctx *ctx,
-		struct isl_dim *dim, int n, unsigned flags);
-struct isl_basic_map *isl_basic_map_alloc_dim(struct isl_ctx *ctx,
-		struct isl_dim *dim, unsigned extra,
-		unsigned n_eq, unsigned n_ineq);
-struct isl_map *isl_map_alloc_dim(struct isl_ctx *ctx,
-		struct isl_dim *dim, int n, unsigned flags);
+struct isl_basic_set *isl_basic_set_alloc_dim(struct isl_dim *dim,
+		unsigned extra, unsigned n_eq, unsigned n_ineq);
+struct isl_set *isl_set_alloc_dim(struct isl_dim *dim, int n, unsigned flags);
+struct isl_basic_map *isl_basic_map_alloc_dim(struct isl_dim *dim,
+		unsigned extra, unsigned n_eq, unsigned n_ineq);
+struct isl_map *isl_map_alloc_dim(struct isl_dim *dim, int n, unsigned flags);
 
 unsigned isl_basic_map_total_dim(const struct isl_basic_map *bmap);
 

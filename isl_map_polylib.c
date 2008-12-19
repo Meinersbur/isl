@@ -1,6 +1,7 @@
 #include "isl_set.h"
 #include "isl_map.h"
 #include "isl_seq.h"
+#include "isl_set_polylib.h"
 #include "isl_map_polylib.h"
 #include "isl_map_private.h"
 
@@ -100,33 +101,36 @@ error:
 	return NULL;
 }
 
-struct isl_basic_set *isl_basic_set_new_from_polylib(
-			struct isl_ctx *ctx,
-			Polyhedron *P, struct isl_dim *dim)
+struct isl_basic_set *isl_basic_set_new_from_polylib(Polyhedron *P,
+			struct isl_dim *dim)
 {
-	isl_assert(ctx, dim->n_in == 0, return NULL);
+	if (!dim)
+		return NULL;
+	isl_assert(dim->ctx, dim->n_in == 0, return NULL);
 
 	return (struct isl_basic_set *)
-		isl_basic_map_new_from_polylib(ctx, P, dim);
+		isl_basic_map_new_from_polylib(P, dim);
 }
 
-struct isl_basic_map *isl_basic_map_new_from_polylib(
-			struct isl_ctx *ctx, Polyhedron *P,
+struct isl_basic_map *isl_basic_map_new_from_polylib(Polyhedron *P,
 			struct isl_dim *dim)
 {
 	struct isl_basic_map *bmap;
 	unsigned extra;
 
-	isl_assert(ctx, P, goto error);
-	isl_assert(ctx, P->Dimension >= isl_dim_total(dim), goto error);
+	if (!dim)
+		return NULL;
+
+	isl_assert(dim->ctx, P, goto error);
+	isl_assert(dim->ctx, P->Dimension >= isl_dim_total(dim), goto error);
 
 	extra = P->Dimension - isl_dim_total(dim);
-	bmap = isl_basic_map_alloc_dim(ctx, dim, extra,
+	bmap = isl_basic_map_alloc_dim(dim, extra,
 					P->NbEq, P->NbConstraints - P->NbEq);
 	if (!bmap)
 		return NULL;
 
-	bmap = copy_constraints(ctx, bmap, P);
+	bmap = copy_constraints(dim->ctx, bmap, P);
 	bmap = isl_basic_map_simplify(bmap);
 	return isl_basic_map_finalize(bmap);
 error:
@@ -134,8 +138,7 @@ error:
 	return NULL;
 }
 
-struct isl_set *isl_set_new_from_polylib(struct isl_ctx *ctx,
-			Polyhedron *D, struct isl_dim *dim)
+struct isl_set *isl_set_new_from_polylib(Polyhedron *D, struct isl_dim *dim)
 {
 	struct isl_set *set = NULL;
 	Polyhedron *P;
@@ -143,18 +146,18 @@ struct isl_set *isl_set_new_from_polylib(struct isl_ctx *ctx,
 
 	if (!dim)
 		return NULL;
-	isl_assert(ctx, dim->n_in == 0, goto error);
+	isl_assert(dim->ctx, dim->n_in == 0, goto error);
 
 	for (P = D; P; P = P->next)
 		++n;
 
-	set = isl_set_alloc_dim(ctx, isl_dim_copy(dim), n, ISL_MAP_DISJOINT);
+	set = isl_set_alloc_dim(isl_dim_copy(dim), n, ISL_MAP_DISJOINT);
 	if (!set)
 		goto error;
 
 	for (P = D; P; P = P->next)
 		isl_set_add(set,
-		    isl_basic_set_new_from_polylib(ctx, P, isl_dim_copy(dim)));
+		    isl_basic_set_new_from_polylib(P, isl_dim_copy(dim)));
 	isl_dim_free(dim);
 	set = isl_set_remove_empty_parts(set);
 	return set;
@@ -163,24 +166,25 @@ error:
 	return NULL;
 }
 
-struct isl_map *isl_map_new_from_polylib(struct isl_ctx *ctx,
-			Polyhedron *D,
-			struct isl_dim *dim)
+struct isl_map *isl_map_new_from_polylib(Polyhedron *D, struct isl_dim *dim)
 {
 	struct isl_map *map = NULL;
 	Polyhedron *P;
 	int n = 0;
 
+	if (!dim)
+		return NULL;
+
 	for (P = D; P; P = P->next)
 		++n;
 
-	map = isl_map_alloc_dim(ctx, isl_dim_copy(dim), n, ISL_MAP_DISJOINT);
+	map = isl_map_alloc_dim(isl_dim_copy(dim), n, ISL_MAP_DISJOINT);
 	if (!map)
 		goto error;
 
 	for (P = D; P; P = P->next)
 		isl_map_add(map,
-		    isl_basic_map_new_from_polylib(ctx, P, isl_dim_copy(dim)));
+		    isl_basic_map_new_from_polylib(P, isl_dim_copy(dim)));
 	isl_dim_free(dim);
 	map = isl_map_remove_empty_parts(map);
 	return map;
