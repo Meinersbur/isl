@@ -3191,6 +3191,16 @@ struct isl_set *isl_set_empty_like(struct isl_set *model)
 	return isl_set_empty(isl_dim_copy(model->dim));
 }
 
+struct isl_set *isl_set_universe(struct isl_dim *dim)
+{
+	struct isl_set *set;
+	if (!dim)
+		return NULL;
+	set = isl_set_alloc_dim(isl_dim_copy(dim), 1, ISL_MAP_DISJOINT);
+	set = isl_set_add(set, isl_basic_set_universe(dim));
+	return set;
+}
+
 struct isl_map *isl_map_dup(struct isl_map *map)
 {
 	int i;
