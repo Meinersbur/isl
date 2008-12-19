@@ -1048,11 +1048,6 @@ static struct isl_basic_set *uset_convex_hull(struct isl_set *set)
 	set = isl_set_remove_empty_parts(set);
 	if (!set)
 		return NULL;
-	if (isl_set_n_dim(set) == 0) {
-		convex_hull = isl_basic_set_empty(set->ctx, 0, 0);
-		isl_set_free(set);
-		return convex_hull;
-	}
 	if (set->n == 1) {
 		convex_hull = isl_basic_set_copy(set->p[0]);
 		isl_set_free(set);
