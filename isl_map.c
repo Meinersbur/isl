@@ -2840,11 +2840,13 @@ struct isl_basic_map *isl_basic_map_overlying_set(
 	struct isl_basic_map *bmap;
 	struct isl_ctx *ctx;
 	unsigned total;
-	int i, k;
+	int i;
 
 	if (!bset || !like)
 		goto error;
 	ctx = bset->ctx;
+	isl_assert(ctx, bset->n_div == 0, goto error);
+	isl_assert(ctx, isl_basic_set_n_param(bset) == 0, goto error);
 	isl_assert(ctx, bset->dim->n_out == isl_basic_map_total_dim(like),
 			goto error);
 	if (isl_dim_equal(bset->dim, like->dim) && like->n_div == 0) {
@@ -2860,6 +2862,7 @@ struct isl_basic_map *isl_basic_map_overlying_set(
 	bmap->dim = isl_dim_copy(like->dim);
 	if (!bmap->dim)
 		goto error;
+	bmap->n_div = like->n_div;
 	bmap->extra += like->n_div;
 	if (bmap->extra) {
 		unsigned ltotal;
@@ -2874,17 +2877,17 @@ struct isl_basic_map *isl_basic_map_overlying_set(
 						bmap->extra);
 		if (!bmap->div)
 			goto error;
+		for (i = 0; i < bmap->extra; ++i)
+			bmap->div[i] = bmap->block2.data + i * (1 + 1 + total);
+		for (i = 0; i < like->n_div; ++i) {
+			isl_seq_cpy(bmap->div[i], like->div[i], 1 + 1 + ltotal);
+			isl_seq_clr(bmap->div[i]+1+1+ltotal, total - ltotal);
+		}
 		bmap = isl_basic_map_extend_constraints(bmap, 
 							0, 2 * like->n_div);
-		for (i = 0; i < like->n_div; ++i) {
-			k = isl_basic_map_alloc_div(bmap);
-			if (k < 0)
+		for (i = 0; i < like->n_div; ++i)
+			if (add_div_constraints(bmap, i) < 0)
 				goto error;
-			isl_seq_cpy(bmap->div[k], like->div[i], 1 + 1 + ltotal);
-			isl_seq_clr(bmap->div[k]+1+1+ltotal, total - ltotal);
-			if (add_div_constraints(bmap, k) < 0)
-				goto error;
-		}
 	}
 	isl_basic_map_free(like);
 	bmap = isl_basic_map_finalize(bmap);
