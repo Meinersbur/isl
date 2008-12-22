@@ -938,6 +938,13 @@ static void constraint_drop_vars(isl_int *c, unsigned n, unsigned rem)
 	isl_seq_clr(c + rem, n);
 }
 
+/* Drop n dimensions starting at first.
+ *
+ * In principle, this frees up some extra variables as the number
+ * of columns remains constant, but we would have to extend
+ * the div array too as the number of rows in this array is assumed
+ * to be equal to extra.
+ */
 struct isl_basic_set *isl_basic_set_drop_dims(
 		struct isl_basic_set *bset, unsigned first, unsigned n)
 {
@@ -970,7 +977,6 @@ struct isl_basic_set *isl_basic_set_drop_dims(
 	bset->dim = isl_dim_drop_outputs(bset->dim, first, n);
 	if (!bset->dim)
 		goto error;
-	bset->extra += n;
 
 	F_CLR(bset, ISL_BASIC_SET_NORMALIZED);
 	bset = isl_basic_set_simplify(bset);
@@ -1012,6 +1018,13 @@ error:
 	return NULL;
 }
 
+/* Drop n input dimensions starting at first.
+ *
+ * In principle, this frees up some extra variables as the number
+ * of columns remains constant, but we would have to extend
+ * the div array too as the number of rows in this array is assumed
+ * to be equal to extra.
+ */
 struct isl_basic_map *isl_basic_map_drop_inputs(
 		struct isl_basic_map *bmap, unsigned first, unsigned n)
 {
@@ -1050,7 +1063,6 @@ struct isl_basic_map *isl_basic_map_drop_inputs(
 	bmap->dim = isl_dim_drop_inputs(bmap->dim, first, n);
 	if (!bmap->dim)
 		goto error;
-	bmap->extra += n;
 
 	F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
 	bmap = isl_basic_map_simplify(bmap);

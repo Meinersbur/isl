@@ -675,6 +675,16 @@ error:
 	return NULL;
 }
 
+/* Replace the variables x in bset by x' given by x = M x', with
+ * M the matrix mat.
+ *
+ * If there are fewer variables x' then there are x, then we perform
+ * the transformation in place, which that, in principle,
+ * this frees up some extra variables as the number
+ * of columns remains constant, but we would have to extend
+ * the div array too as the number of rows in this array is assumed
+ * to be equal to extra.
+ */
 struct isl_basic_set *isl_basic_set_preimage(struct isl_ctx *ctx,
 	struct isl_basic_set *bset, struct isl_mat *mat)
 {
@@ -700,7 +710,6 @@ struct isl_basic_set *isl_basic_set_preimage(struct isl_ctx *ctx,
 		if (!bset->dim)
 			goto error;
 		bset->dim->n_out -= mat->n_row - mat->n_col;
-		bset->extra += mat->n_row - mat->n_col;
 	}
 
 	t = isl_mat_sub_alloc(ctx, bset->eq, 0, bset->n_eq, 0, mat->n_row);
