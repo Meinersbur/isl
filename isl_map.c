@@ -4610,6 +4610,7 @@ int isl_basic_set_compare_at(struct isl_basic_set *bset1,
 	bmap1 = isl_basic_map_extend(bmap1, nparam,
 			pos, (dim1 - pos) + (dim2 - pos),
 			bmap2->n_div, bmap2->n_eq, bmap2->n_ineq);
+	bmap1 = add_constraints(bmap1, bmap2, 0, dim1 - pos);
 	if (!bmap1)
 		goto error;
 	total = isl_basic_map_total_dim(bmap1);
@@ -4620,7 +4621,6 @@ int isl_basic_set_compare_at(struct isl_basic_set *bset1,
 	isl_int_set_si(obj->block.data[nparam+pos+(dim1-pos)], -1);
 	if (!obj)
 		goto error;
-	bmap1 = add_constraints(bmap1, bmap2, 0, dim1 - pos);
 	isl_int_init(num);
 	isl_int_init(den);
 	res = isl_solve_lp(bmap1, 0, obj->block.data, ctx->one, &num, &den);
