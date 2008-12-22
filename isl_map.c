@@ -4238,17 +4238,24 @@ static struct isl_basic_map *order_divs(struct isl_basic_map *bmap)
 	return bmap;
 }
 
+/* Look for a div in dst that corresponds to the div "div" in src.
+ * The divs before "div" in src and dst are assumed to be the same.
+ * 
+ * Returns -1 if no corresponding div was found and the position
+ * of the corresponding div in dst otherwise.
+ */
 static int find_div(struct isl_basic_map *dst,
 			struct isl_basic_map *src, unsigned div)
 {
 	int i;
 
-	unsigned total = isl_basic_map_total_dim(src);
+	unsigned total = isl_dim_total(src->dim);
 
-	for (i = 0; i < dst->n_div; ++i)
-		if (isl_seq_eq(dst->div[i], src->div[div], 1+1+total) &&
-		    isl_seq_first_non_zero(dst->div[i]+1+1+total,
-						dst->n_div - src->n_div) == -1)
+	isl_assert(dst->ctx, div <= dst->n_div, return -1);
+	for (i = div; i < dst->n_div; ++i)
+		if (isl_seq_eq(dst->div[i], src->div[div], 1+1+total+div) &&
+		    isl_seq_first_non_zero(dst->div[i]+1+1+total+div,
+						dst->n_div - div) == -1)
 			return i;
 	return -1;
 }
@@ -4257,7 +4264,7 @@ struct isl_basic_map *isl_basic_map_align_divs(
 		struct isl_basic_map *dst, struct isl_basic_map *src)
 {
 	int i;
-	unsigned total = isl_basic_map_total_dim(src);
+	unsigned total = isl_dim_total(src->dim);
 
 	if (!dst || !src)
 		goto error;
@@ -4276,9 +4283,8 @@ struct isl_basic_map *isl_basic_map_align_divs(
 			j = isl_basic_map_alloc_div(dst);
 			if (j < 0)
 				goto error;
-			isl_seq_cpy(dst->div[j], src->div[i], 1+1+total);
-			isl_seq_clr(dst->div[j]+1+1+total,
-						    dst->n_div - src->n_div);
+			isl_seq_cpy(dst->div[j], src->div[i], 1+1+total+i);
+			isl_seq_clr(dst->div[j]+1+1+total+i, dst->n_div - i);
 			if (add_div_constraints(dst, j) < 0)
 				goto error;
 		}
