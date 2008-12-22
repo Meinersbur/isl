@@ -1153,6 +1153,7 @@ error:
 struct isl_basic_map *isl_map_convex_hull(struct isl_map *map)
 {
 	struct isl_basic_set *bset;
+	struct isl_basic_map *model = NULL;
 	struct isl_basic_set *affine_hull = NULL;
 	struct isl_basic_map *convex_hull = NULL;
 	struct isl_set *set = NULL;
@@ -1168,7 +1169,9 @@ struct isl_basic_map *isl_map_convex_hull(struct isl_map *map)
 		return convex_hull;
 	}
 
-	set = isl_map_underlying_set(isl_map_copy(map));
+	map = isl_map_align_divs(map);
+	model = isl_basic_map_copy(map->p[0]);
+	set = isl_map_underlying_set(map);
 	if (!set)
 		goto error;
 
@@ -1182,15 +1185,13 @@ struct isl_basic_map *isl_map_convex_hull(struct isl_map *map)
 		bset = uset_convex_hull(set);
 	}
 
-	convex_hull = isl_basic_map_overlying_set(bset,
-			isl_basic_map_copy(map->p[0]));
+	convex_hull = isl_basic_map_overlying_set(bset, model);
 
-	isl_map_free(map);
 	F_CLR(convex_hull, ISL_BASIC_MAP_RATIONAL);
 	return convex_hull;
 error:
 	isl_set_free(set);
-	isl_map_free(map);
+	isl_basic_map_free(model);
 	return NULL;
 }
 
@@ -1202,10 +1203,15 @@ struct isl_basic_set *isl_set_convex_hull(struct isl_set *set)
 
 /* Compute a superset of the convex hull of map that is described
  * by only translates of the constraints in the constituents of map.
+ *
+ * The implementation is not very efficient.  In particular, if
+ * constraints with the same normal appear in more than one
+ * basic map, they will be (re)examined each time.
  */
 struct isl_basic_map *isl_map_simple_hull(struct isl_map *map)
 {
 	struct isl_set *set = NULL;
+	struct isl_basic_map *model = NULL;
 	struct isl_basic_map *hull;
 	struct isl_basic_set *bset = NULL;
 	int i, j;
@@ -1225,6 +1231,9 @@ struct isl_basic_map *isl_map_simple_hull(struct isl_map *map)
 		return hull;
 	}
 
+	map = isl_map_align_divs(map);
+	model = isl_basic_map_copy(map->p[0]);
+
 	n_ineq = 0;
 	for (i = 0; i < map->n; ++i) {
 		if (!map->p[i])
@@ -1232,7 +1241,7 @@ struct isl_basic_map *isl_map_simple_hull(struct isl_map *map)
 		n_ineq += map->p[i]->n_ineq;
 	}
 
-	set = isl_map_underlying_set(isl_map_copy(map));
+	set = isl_map_underlying_set(map);
 	if (!set)
 		goto error;
 
@@ -1266,15 +1275,14 @@ struct isl_basic_map *isl_map_simple_hull(struct isl_map *map)
 	bset = isl_basic_set_finalize(bset);
 	bset = isl_basic_set_convex_hull(bset);
 
-	hull = isl_basic_map_overlying_set(bset, isl_basic_map_copy(map->p[0]));
+	hull = isl_basic_map_overlying_set(bset, isl_basic_map_copy(model));
 
 	isl_set_free(set);
-	isl_map_free(map);
 	return hull;
 error:
 	isl_basic_set_free(bset);
 	isl_set_free(set);
-	isl_map_free(map);
+	isl_basic_map_free(model);
 	return NULL;
 }
 

@@ -2943,7 +2943,6 @@ struct isl_set *isl_map_underlying_set(struct isl_map *map)
 {
 	int i;
 
-	map = isl_map_align_divs(map);
 	map = isl_map_cow(map);
 	if (!map)
 		return NULL;
@@ -2951,6 +2950,9 @@ struct isl_set *isl_map_underlying_set(struct isl_map *map)
 	if (!map->dim)
 		goto error;
 
+	for (i = 1; i < map->n; ++i)
+		isl_assert(map->ctx, map->p[0]->n_div == map->p[i]->n_div,
+				goto error);
 	for (i = 0; i < map->n; ++i) {
 		map->p[i] = (struct isl_basic_map *)
 				isl_basic_map_underlying_set(map->p[i]);
