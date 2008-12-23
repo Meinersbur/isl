@@ -1,6 +1,7 @@
 #ifndef ISL_CONSTRAINT_H
 #define ISL_CONSTRAINT_H
 
+#include "isl_div.h"
 #include "isl_set.h"
 
 #if defined(__cplusplus)
@@ -50,6 +51,8 @@ void isl_constraint_get_coefficient(struct isl_constraint *constraint,
 void isl_constraint_set_constant(struct isl_constraint *constraint, isl_int v);
 void isl_constraint_set_coefficient(struct isl_constraint *constraint,
 	enum isl_dim_type type, int pos, isl_int v);
+
+struct isl_div *isl_constraint_div(struct isl_constraint *constraint, int pos);
 
 void isl_constraint_clear(struct isl_constraint *constraint);
 struct isl_constraint *isl_constraint_negate(struct isl_constraint *constraint);

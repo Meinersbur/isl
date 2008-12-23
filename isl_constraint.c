@@ -210,6 +210,16 @@ void isl_constraint_get_coefficient(struct isl_constraint *constraint,
 	isl_int_set(*v, constraint->line[0][offset(constraint, type) + pos]);
 }
 
+struct isl_div *isl_constraint_div(struct isl_constraint *constraint, int pos)
+{
+	if (!constraint)
+		return NULL;
+
+	isl_assert(constraint->ctx, pos < n(constraint, isl_dim_div),
+			return NULL);
+	return isl_basic_map_div(constraint->bmap, constraint->bmap->div+pos);
+}
+
 void isl_constraint_set_constant(struct isl_constraint *constraint, isl_int v)
 {
 	if (!constraint)
