@@ -1746,11 +1746,32 @@ static struct isl_basic_map *normalize_constraints(struct isl_basic_map *bmap)
 }
 
 
+/* Remove any div that is defined in terms of the given variable.
+ */
+static struct isl_basic_map *remove_dependent_vars(struct isl_basic_map *bmap,
+									int pos)
+{
+	int i;
+	unsigned dim = isl_dim_total(bmap->dim);
+
+	for (i = 0; i < bmap->n_div; ++i) {
+		if (isl_int_is_zero(bmap->div[i][0]))
+			continue;
+		if (isl_int_is_zero(bmap->div[i][1+1+pos]))
+			continue;
+		bmap = isl_basic_map_eliminate_vars(bmap, dim + i, 1);
+		if (!bmap)
+			return NULL;
+	}
+	return bmap;
+}
+
+
 /* Eliminate the specified variables from the constraints using
  * Fourier-Motzkin.  The variables themselves are not removed.
  */
 struct isl_basic_map *isl_basic_map_eliminate_vars(
-	struct isl_basic_map *bmap, int pos, unsigned n)
+	struct isl_basic_map *bmap, unsigned pos, unsigned n)
 {
 	int d;
 	int i, j, k;
@@ -1763,10 +1784,13 @@ struct isl_basic_map *isl_basic_map_eliminate_vars(
 	total = isl_basic_map_total_dim(bmap);
 
 	bmap = isl_basic_map_cow(bmap);
-	for (d = pos + n - 1; d >= pos; --d) {
+	for (d = pos + n - 1; d >= 0 && d >= pos; --d) {
 		int n_lower, n_upper;
+		bmap = remove_dependent_vars(bmap, d);
 		if (!bmap)
 			return NULL;
+		if (d >= total - bmap->n_div)
+			isl_seq_clr(bmap->div[d-(total-bmap->n_div)], 2+total);
 		for (i = 0; i < bmap->n_eq; ++i) {
 			if (isl_int_is_zero(bmap->eq[i][1+d]))
 				continue;

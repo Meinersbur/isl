@@ -71,6 +71,8 @@ struct isl_set *isl_set_remove_empty_parts(struct isl_set *set);
 struct isl_set *isl_set_drop_vars(
 		struct isl_set *set, unsigned first, unsigned n);
 
+struct isl_basic_map *isl_basic_map_eliminate_vars(
+	struct isl_basic_map *bmap, unsigned pos, unsigned n);
 struct isl_basic_set *isl_basic_set_eliminate_vars(
 	struct isl_basic_set *bset, unsigned pos, unsigned n);
 
