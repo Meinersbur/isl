@@ -4312,6 +4312,9 @@ struct isl_basic_map *isl_basic_map_align_divs(
 	if (src->n_div == 0)
 		return dst;
 
+	for (i = 0; i < src->n_div; ++i)
+		isl_assert(src->ctx, !isl_int_is_zero(src->div[i][0]), goto error);
+
 	src = order_divs(src);
 	dst = isl_basic_map_extend_dim(dst, isl_dim_copy(dst->dim),
 			src->n_div, 0, 2 * src->n_div);
