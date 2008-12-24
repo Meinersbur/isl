@@ -5005,6 +5005,9 @@ error:
 	return NULL;
 }
 
+/*
+ * Assumes context has no implicit divs.
+ */
 struct isl_map *isl_map_gist(struct isl_map *map, struct isl_basic_map *context)
 {
 	int i;
@@ -5013,6 +5016,7 @@ struct isl_map *isl_map_gist(struct isl_map *map, struct isl_basic_map *context)
 	if (!map || !context)
 		return NULL;
 	isl_assert(map->ctx, isl_dim_equal(map->dim, context->dim), goto error);
+	map = isl_map_compute_divs(map);
 	for (i = 0; i < map->n; ++i)
 		context = isl_basic_map_align_divs(context, map->p[i]);
 	for (i = 0; i < map->n; ++i) {
