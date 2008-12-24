@@ -3515,11 +3515,22 @@ error:
 
 struct isl_map *isl_basic_map_compute_divs(struct isl_basic_map *bmap)
 {
+	int i;
+	unsigned off;
+
 	if (!bmap)
 		return NULL;
-	if (bmap->n_div == 0)
-		return isl_map_from_basic_map(bmap);
-	return isl_pip_basic_map_compute_divs(bmap);
+	off = isl_dim_total(bmap->dim);
+	for (i = 0; i < bmap->n_div; ++i) {
+		if (isl_int_is_zero(bmap->div[i][0]))
+			return isl_pip_basic_map_compute_divs(bmap);
+		isl_assert(bmap->ctx, isl_int_is_zero(bmap->div[i][1+1+off+i]),
+				goto error);
+	}
+	return isl_map_from_basic_map(bmap);
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
 }
 
 struct isl_map *isl_map_compute_divs(struct isl_map *map)
