@@ -66,6 +66,8 @@ libisl_la_SOURCES = \
 	isl_output.c \
 	isl_sample.h \
 	isl_sample.c \
+	isl_stream.c \
+	isl_stream.h \
 	isl_seq.c \
 	isl_vec.c \
 	isl_vec.h
