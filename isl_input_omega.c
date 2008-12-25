@@ -112,6 +112,13 @@ static struct stream* stream_new_file(struct isl_ctx *ctx, FILE *file)
 	return s;
 }
 
+static struct stream* stream_new_str(struct isl_ctx *ctx, const char *str)
+{
+    struct stream *s = stream_new(ctx);
+    s->str = str;
+    return s;
+}
+
 static int stream_getc(struct stream *s)
 {
 	int c;
@@ -728,6 +735,32 @@ struct isl_basic_set *isl_basic_set_read_from_file_omega(
 {
 	struct isl_basic_map *bmap;
 	bmap = isl_basic_map_read_from_file_omega(ctx, input);
+	if (!bmap)
+		return NULL;
+	isl_assert(ctx, isl_basic_map_n_in(bmap) == 0, goto error);
+	return (struct isl_basic_set *)bmap;
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+struct isl_basic_map *isl_basic_map_read_from_str_omega(
+		struct isl_ctx *ctx, const char *str)
+{
+	struct isl_basic_map *bmap;
+	struct stream *s = stream_new_str(ctx, str);
+	if (!s)
+		return NULL;
+	bmap = basic_map_read(s);
+	stream_free(s);
+	return bmap;
+}
+
+struct isl_basic_set *isl_basic_set_read_from_str_omega(
+		struct isl_ctx *ctx, const char *str)
+{
+	struct isl_basic_map *bmap;
+	bmap = isl_basic_map_read_from_str_omega(ctx, str);
 	if (!bmap)
 		return NULL;
 	isl_assert(ctx, isl_basic_map_n_in(bmap) == 0, goto error);

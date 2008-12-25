@@ -7,6 +7,31 @@
 
 static char *srcdir;
 
+void test_read(struct isl_ctx *ctx)
+{
+	char filename[PATH_MAX];
+	FILE *input;
+	int n;
+	struct isl_basic_set *bset1, *bset2;
+	const char *str = "{[y]: Exists ( alpha : 2alpha = y)}";
+
+	n = snprintf(filename, sizeof(filename),
+			"%s/test_inputs/set.omega", srcdir);
+	assert(n < sizeof(filename));
+	input = fopen(filename, "r");
+	assert(input);
+
+	bset1 = isl_basic_set_read_from_file(ctx, input, 0, ISL_FORMAT_OMEGA);
+	bset2 = isl_basic_set_read_from_str(ctx, str, 0, ISL_FORMAT_OMEGA);
+
+	assert(isl_basic_set_is_equal(bset1, bset2) == 1);
+
+	isl_basic_set_free(bset1);
+	isl_basic_set_free(bset2);
+
+	fclose(input);
+}
+
 /* Construct the basic set { [i] : 5 <= i <= N } */
 void test_construction(struct isl_ctx *ctx)
 {
@@ -193,6 +218,7 @@ int main()
 	srcdir = getenv("srcdir");
 
 	ctx = isl_ctx_alloc();
+	test_read(ctx);
 	test_construction(ctx);
 	test_application(ctx);
 	test_affine_hull(ctx);

@@ -128,6 +128,16 @@ struct isl_basic_set *isl_basic_set_read_from_file(struct isl_ctx *ctx,
 		isl_assert(ctx, 0, return NULL);
 }
 
+struct isl_basic_set *isl_basic_set_read_from_str(struct isl_ctx *ctx,
+		const char *str, unsigned nparam, unsigned input_format)
+{
+	if (input_format == ISL_FORMAT_OMEGA) {
+		isl_assert(ctx, nparam == 0, return NULL);
+		return isl_basic_set_read_from_str_omega(ctx, str);
+	} else
+		isl_assert(ctx, 0, return NULL);
+}
+
 struct isl_basic_map *isl_basic_map_read_from_file(struct isl_ctx *ctx,
 		FILE *input, unsigned nparam, unsigned input_format)
 {

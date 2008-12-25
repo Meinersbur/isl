@@ -103,6 +103,8 @@ struct isl_basic_set *isl_basic_set_product(struct isl_basic_set_list *list);
 #define ISL_FORMAT_OMEGA		2
 struct isl_basic_set *isl_basic_set_read_from_file(struct isl_ctx *ctx,
 		FILE *input, unsigned nparam, unsigned input_format);
+struct isl_basic_set *isl_basic_set_read_from_str(struct isl_ctx *ctx,
+		const char *str, unsigned nparam, unsigned input_format);
 struct isl_set *isl_set_read_from_file(struct isl_ctx *ctx,
 		FILE *input, unsigned nparam, unsigned input_format);
 #define ISL_FORMAT_POLYLIB_CONSTRAINTS	3
