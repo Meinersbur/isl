@@ -47,6 +47,7 @@ static struct isl_stream* isl_stream_new(struct isl_ctx *ctx)
 	if (!s)
 		return NULL;
 	s->ctx = ctx;
+	isl_ctx_ref(s->ctx);
 	s->size = 256;
 	s->file = NULL;
 	s->str = NULL;
@@ -297,5 +298,6 @@ void isl_stream_free(struct isl_stream *s)
 		isl_stream_error(s, tok, "unexpected token");
 		isl_token_free(tok);
 	}
+	isl_ctx_deref(s->ctx);
 	free(s);
 }
