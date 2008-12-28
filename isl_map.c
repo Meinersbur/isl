@@ -2914,6 +2914,7 @@ struct isl_basic_map *isl_basic_map_overlying_set(
 				goto error;
 	}
 	isl_basic_map_free(like);
+	bmap = isl_basic_map_simplify(bmap);
 	bmap = isl_basic_map_finalize(bmap);
 	return bmap;
 error:
