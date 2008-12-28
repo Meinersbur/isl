@@ -17,6 +17,18 @@ static unsigned offset(struct isl_constraint *c, enum isl_dim_type type)
 	}
 }
 
+static unsigned basic_set_offset(struct isl_basic_set *bset,
+							enum isl_dim_type type)
+{
+	struct isl_dim *dim = bset->dim;
+	switch (type) {
+	case isl_dim_param:	return 1;
+	case isl_dim_in:	return 1 + dim->nparam;
+	case isl_dim_out:	return 1 + dim->nparam + dim->n_in;
+	case isl_dim_div:	return 1 + dim->nparam + dim->n_in + dim->n_out;
+	}
+}
+
 struct isl_constraint *isl_basic_map_constraint(struct isl_basic_map *bmap,
 	isl_int **line)
 {
@@ -313,21 +325,22 @@ error:
 }
 
 int isl_basic_set_has_defining_equality(
-	struct isl_basic_set *bset, int pos,
+	struct isl_basic_set *bset, enum isl_dim_type type, int pos,
 	struct isl_constraint **c)
 {
 	int i;
-	unsigned dim, nparam;
+	unsigned offset;
+	unsigned total;
 
 	if (!bset)
 		return -1;
-	nparam = isl_basic_set_n_param(bset);
-	dim = isl_basic_set_n_dim(bset);
-	isl_assert(bset->ctx, pos < dim, return -1);
+	offset = basic_set_offset(bset, type);
+	total = isl_basic_set_total_dim(bset);
+	isl_assert(bset->ctx, pos < isl_basic_set_dim(bset, type), return -1);
 	for (i = 0; i < bset->n_eq; ++i)
-		if (!isl_int_is_zero(bset->eq[i][1 + nparam + pos]) &&
-		    isl_seq_first_non_zero(bset->eq[i]+1+nparam+pos+1,
-					   dim-pos-1) == -1) {
+		if (!isl_int_is_zero(bset->eq[i][offset + pos]) &&
+		    isl_seq_first_non_zero(bset->eq[i]+offset+pos+1,
+					   1+total-offset-pos-1) == -1) {
 			*c= isl_basic_set_constraint(isl_basic_set_copy(bset),
 								&bset->eq[i]);
 			return 1;
@@ -336,43 +349,41 @@ int isl_basic_set_has_defining_equality(
 }
 
 int isl_basic_set_has_defining_inequalities(
-	struct isl_basic_set *bset, int pos,
+	struct isl_basic_set *bset, enum isl_dim_type type, int pos,
 	struct isl_constraint **lower,
 	struct isl_constraint **upper)
 {
 	int i, j;
-	unsigned dim;
-	unsigned nparam;
+	unsigned offset;
 	unsigned total;
 	isl_int m;
 	isl_int **lower_line, **upper_line;
 
 	if (!bset)
 		return -1;
-	nparam = isl_basic_set_n_param(bset);
-	dim = isl_basic_set_n_dim(bset);
+	offset = basic_set_offset(bset, type);
 	total = isl_basic_set_total_dim(bset);
-	isl_assert(bset->ctx, pos < dim, return -1);
+	isl_assert(bset->ctx, pos < isl_basic_set_dim(bset, type), return -1);
 	isl_int_init(m);
 	for (i = 0; i < bset->n_ineq; ++i) {
-		if (isl_int_is_zero(bset->ineq[i][1 + nparam + pos]))
+		if (isl_int_is_zero(bset->ineq[i][offset + pos]))
 			continue;
-		if (isl_int_is_one(bset->ineq[i][1 + nparam + pos]))
+		if (isl_int_is_one(bset->ineq[i][offset + pos]))
 			continue;
-		if (isl_int_is_negone(bset->ineq[i][1 + nparam + pos]))
+		if (isl_int_is_negone(bset->ineq[i][offset + pos]))
 			continue;
-		if (isl_seq_first_non_zero(bset->ineq[i]+1+nparam+pos+1,
-						dim-pos-1) != -1)
+		if (isl_seq_first_non_zero(bset->ineq[i]+offset+pos+1,
+						1+total-offset-pos-1) != -1)
 			continue;
 		for (j = i + i; j < bset->n_ineq; ++j) {
 			if (!isl_seq_is_neg(bset->ineq[i]+1, bset->ineq[j]+1,
 					    total))
 				continue;
 			isl_int_add(m, bset->ineq[i][0], bset->ineq[j][0]);
-			if (isl_int_abs_ge(m, bset->ineq[i][1+nparam+pos]))
+			if (isl_int_abs_ge(m, bset->ineq[i][offset+pos]))
 				continue;
 
-			if (isl_int_is_pos(bset->ineq[i][1+nparam+pos])) {
+			if (isl_int_is_pos(bset->ineq[i][offset+pos])) {
 				lower_line = &bset->ineq[i];
 				upper_line = &bset->ineq[j];
 			} else {

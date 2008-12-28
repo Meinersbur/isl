@@ -35,10 +35,10 @@ struct isl_basic_set *isl_basic_set_add_constraint(
 	struct isl_basic_set *bset, struct isl_constraint *constraint);
 
 int isl_basic_set_has_defining_equality(
-	struct isl_basic_set *bset, int pos,
+	struct isl_basic_set *bset, enum isl_dim_type type, int pos,
 	struct isl_constraint **constraint);
 int isl_basic_set_has_defining_inequalities(
-	struct isl_basic_set *bset, int pos,
+	struct isl_basic_set *bset, enum isl_dim_type type, int pos,
 	struct isl_constraint **lower,
 	struct isl_constraint **upper);
 
