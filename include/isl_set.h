@@ -63,6 +63,8 @@ struct isl_set {
 unsigned isl_basic_set_n_dim(const struct isl_basic_set *bset);
 unsigned isl_basic_set_n_param(const struct isl_basic_set *bset);
 unsigned isl_basic_set_total_dim(const struct isl_basic_set *bset);
+unsigned isl_basic_set_dim(const struct isl_basic_set *bset,
+				enum isl_dim_type type);
 
 unsigned isl_set_n_dim(const struct isl_set *set);
 unsigned isl_set_n_param(const struct isl_set *set);

@@ -3,14 +3,7 @@
 
 static unsigned n(struct isl_constraint *c, enum isl_dim_type type)
 {
-	struct isl_dim *dim = c->bmap->dim;
-	switch (type) {
-	case isl_dim_param:	return dim->nparam;
-	case isl_dim_in:	return dim->n_in;
-	case isl_dim_out:	return dim->n_out;
-	case isl_dim_div:	return c->bmap->n_div;
-	case isl_dim_all:	return isl_basic_map_total_dim(c->bmap);
-	}
+	return isl_basic_map_dim(c->bmap, type);
 }
 
 static unsigned offset(struct isl_constraint *c, enum isl_dim_type type)

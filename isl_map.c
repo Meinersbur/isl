@@ -90,6 +90,25 @@ static void isl_dim_map_dump(struct isl_dim_map *dim_map)
 	fprintf(stderr, "\n");
 }
 
+unsigned isl_basic_map_dim(const struct isl_basic_map *bmap,
+				enum isl_dim_type type)
+{
+	struct isl_dim *dim = bmap->dim;
+	switch (type) {
+	case isl_dim_param:	return dim->nparam;
+	case isl_dim_in:	return dim->n_in;
+	case isl_dim_out:	return dim->n_out;
+	case isl_dim_div:	return bmap->n_div;
+	case isl_dim_all:	return isl_basic_map_total_dim(bmap);
+	}
+}
+
+unsigned isl_basic_set_dim(const struct isl_basic_set *bset,
+				enum isl_dim_type type)
+{
+	return isl_basic_map_dim((const struct isl_basic_map*)bset, type);
+}
+
 unsigned isl_basic_set_n_dim(const struct isl_basic_set *bset)
 {
 	return bset->dim->n_out;
