@@ -4915,6 +4915,60 @@ error:
 	return bset;
 }
 
+static struct isl_basic_set *uset_gist(struct isl_basic_set *bset,
+	struct isl_basic_set *context);
+
+static struct isl_basic_set *uset_gist_context_eq(struct isl_basic_set *bset,
+	struct isl_basic_set *context)
+{
+	struct isl_mat *T;
+	struct isl_mat *T2;
+	struct isl_ctx *ctx = context->ctx;
+	struct isl_basic_set *reduced_context;
+	reduced_context = isl_basic_set_remove_equalities(
+				isl_basic_set_copy(context), &T, &T2);
+	if (!reduced_context)
+		goto error;
+	bset = isl_basic_set_preimage(ctx, bset, T);
+	bset = uset_gist(bset, reduced_context);
+	bset = isl_basic_set_preimage(ctx, bset, T2);
+	bset = isl_basic_set_reduce_using_equalities(bset, context);
+	return bset;
+error:
+	isl_basic_set_free(context);
+	isl_basic_set_free(bset);
+	return NULL;
+}
+
+static struct isl_basic_set *uset_gist_set_eq(struct isl_basic_set *bset,
+	struct isl_basic_set *context)
+{
+	struct isl_mat *T;
+	struct isl_mat *T2;
+	struct isl_ctx *ctx = context->ctx;
+	struct isl_basic_set *affine_hull = NULL;
+
+	affine_hull = isl_basic_set_copy(bset);
+	affine_hull = isl_basic_set_cow(affine_hull);
+	if (!affine_hull)
+		goto error;
+	isl_basic_set_free_inequality(affine_hull, affine_hull->n_ineq);
+
+	bset = isl_basic_set_remove_equalities(bset, &T, &T2);
+	if (!bset)
+		goto error;
+	context = isl_basic_set_preimage(ctx, context, T);
+	bset = uset_gist(bset, context);
+	bset = isl_basic_set_preimage(ctx, bset, T2);
+	bset = isl_basic_set_intersect(bset, affine_hull);
+	return bset;
+error:
+	isl_basic_set_free(affine_hull);
+	isl_basic_set_free(context);
+	isl_basic_set_free(bset);
+	return NULL;
+}
+
 /* Remove all information from bset that is redundant in the context
  * of context.  In particular, equalities that are linear combinations
  * of those in context are removed.  Then the inequalities that are
@@ -4932,23 +4986,12 @@ static struct isl_basic_set *uset_gist(struct isl_basic_set *bset,
 	if (!bset || !context)
 		goto error;
 
-	if (context->n_eq > 0) {
-		struct isl_mat *T;
-		struct isl_mat *T2;
-		struct isl_ctx *ctx = context->ctx;
-		struct isl_basic_set *reduced_context;
-		reduced_context = isl_basic_set_remove_equalities(
-					isl_basic_set_copy(context), &T, &T2);
-		if (!reduced_context)
-			goto error;
-		bset = isl_basic_set_preimage(ctx, bset, T);
-		bset = uset_gist(bset, reduced_context);
-		bset = isl_basic_set_preimage(ctx, bset, T2);
-		bset = isl_basic_set_reduce_using_equalities(bset, context);
-		return bset;
-	}
+	if (context->n_eq > 0)
+		return uset_gist_context_eq(bset, context);
 	if (!context->n_ineq)
 		goto done;
+	if (bset->n_eq > 0)
+		return uset_gist_set_eq(bset, context);
 	bset = remove_shifted_constraints(bset, context);
 	combined = isl_basic_set_extend_constraints(isl_basic_set_copy(bset),
 			context->n_eq, context->n_ineq);
