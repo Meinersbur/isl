@@ -58,6 +58,7 @@ libisl_la_SOURCES = \
 	isl_list.c \
 	isl_lp.c \
 	isl_map.c \
+	isl_map_simplify.c \
 	isl_map_private.h \
 	isl_mat.c \
 	isl_mat.h \

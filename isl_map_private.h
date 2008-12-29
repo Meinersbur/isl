@@ -10,6 +10,8 @@ int isl_basic_map_compatible_range(struct isl_basic_map *bmap,
 struct isl_basic_map *isl_basic_map_extend_dim(struct isl_basic_map *base,
 		struct isl_dim *dim, unsigned extra,
 		unsigned n_eq, unsigned n_ineq);
+struct isl_basic_set *isl_basic_set_add_constraints(struct isl_basic_set *bset1,
+		struct isl_basic_set *bset2, unsigned pos);
 
 struct isl_basic_set *isl_basic_set_alloc_dim(struct isl_dim *dim,
 		unsigned extra, unsigned n_eq, unsigned n_ineq);
@@ -64,6 +66,10 @@ struct isl_basic_map *isl_basic_map_overlying_set(struct isl_basic_set *bset,
 	struct isl_basic_map *like);
 struct isl_basic_set *isl_basic_set_drop_dims(
 		struct isl_basic_set *bset, unsigned first, unsigned n);
+struct isl_set *isl_set_drop_dims(
+		struct isl_set *set, unsigned first, unsigned n);
+struct isl_map *isl_map_drop_inputs(
+		struct isl_map *map, unsigned first, unsigned n);
 
 struct isl_map *isl_map_remove_empty_parts(struct isl_map *map);
 struct isl_set *isl_set_remove_empty_parts(struct isl_set *set);
