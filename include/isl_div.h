@@ -15,6 +15,7 @@ struct isl_div {
 	isl_int			**line;
 };
 
+struct isl_div *isl_div_alloc(struct isl_dim *dim);
 struct isl_div *isl_basic_map_div(struct isl_basic_map *bmap, isl_int **line);
 struct isl_div *isl_div_free(struct isl_div *c);
 

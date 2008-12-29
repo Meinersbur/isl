@@ -1,5 +1,6 @@
 #include <isl_div.h>
 #include <isl_map.h>
+#include "isl_map_private.h"
 
 static unsigned n(struct isl_div *d, enum isl_dim_type type)
 {
@@ -44,6 +45,22 @@ struct isl_div *isl_basic_map_div(struct isl_basic_map *bmap, isl_int **line)
 error:
 	isl_basic_map_free(bmap);
 	return NULL;
+}
+
+struct isl_div *isl_div_alloc(struct isl_dim *dim)
+{
+	struct isl_basic_map *bmap;
+
+	if (!dim)
+		return NULL;
+
+	bmap = isl_basic_map_alloc_dim(dim, 1, 0, 0);
+	if (!bmap)
+		return NULL;
+
+	isl_basic_map_alloc_div(bmap);
+	isl_seq_clr(bmap->div[0], 1 + 1 + isl_basic_map_total_dim(bmap));
+	return isl_basic_map_div(bmap, &bmap->div[0]);
 }
 
 struct isl_div *isl_div_free(struct isl_div *c)
