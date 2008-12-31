@@ -44,6 +44,7 @@ struct isl_basic_map {
 #define ISL_BASIC_MAP_NO_REDUNDANT	(1 << 3)
 #define ISL_BASIC_MAP_RATIONAL		(1 << 4)
 #define ISL_BASIC_MAP_NORMALIZED	(1 << 5)
+#define ISL_BASIC_MAP_NORMALIZED_DIVS	(1 << 6)
 	unsigned flags;
 
 	struct isl_ctx *ctx;

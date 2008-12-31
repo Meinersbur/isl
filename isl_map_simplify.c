@@ -584,6 +584,193 @@ out:
 	return bmap;
 }
 
+/* Normalize divs that appear in equalities.
+ *
+ * In particular, we assume that bmap contains some equalities
+ * of the form
+ *
+ *	a x = m * e_i
+ *
+ * and we want to replace the set of e_i by a minimal set and
+ * such that the new e_i have a canonical representation in terms
+ * of the vector x.
+ * If any of the equalities involves more than one divs, then
+ * we currently simply bail out.
+ *
+ * Let us first additionally assume that all equalities involve
+ * a div.  The equalities then express modulo constraints on the
+ * remaining variables and we can use "parameter compression"
+ * to find a minimal set of constraints.  The result is a transformation
+ *
+ *	x = T(x') = x_0 + G x'
+ *
+ * with G a lower-triangular matrix with all elements below the diagonal
+ * non-negative and smaller than the diagonal element on the same row.
+ * We first normalize x_0 by making the same property hold in the affine
+ * T matrix.
+ * The rows i of G with a 1 on the diagonal do not impose any modulo
+ * constraint and simply express x_i = x'_i.
+ * For each of the remaining rows i, we introduce a div and a corresponding
+ * equality.  In particular
+ *
+ *	g_ii e_j = x_i - g_i(x')
+ *
+ * where each x'_k is replaced either by x_k (if g_kk = 1) or the
+ * corresponding div (if g_kk != 1).
+ *
+ * If there are any equalities not involving any div, then we
+ * first apply a variable compression on the variables x:
+ *
+ *	x = C x''	x'' = C_2 x
+ *
+ * and perform the above parameter compression on A C instead of on A.
+ * The resulting compression is then of the form
+ *
+ *	x'' = T(x') = x_0 + G x'
+ *
+ * and in constructing the new divs and the corresponding equalities,
+ * we have to replace each x'' by the corresponding row from C_2.
+ */
+static struct isl_basic_map *normalize_divs(
+	struct isl_basic_map *bmap, int *progress)
+{
+	int i, j, k;
+	int total;
+	int div_eq;
+	struct isl_mat *B;
+	struct isl_vec *d;
+	struct isl_mat *T = NULL;
+	struct isl_mat *C = NULL;
+	struct isl_mat *C2 = NULL;
+	isl_int v;
+	int *pos;
+
+	if (!bmap)
+		return NULL;
+
+	if (bmap->n_div == 0)
+		return bmap;
+
+	if (bmap->n_eq == 0)
+		return bmap;
+
+	if (F_ISSET(bmap, ISL_BASIC_MAP_NORMALIZED_DIVS))
+		return bmap;
+
+	total = isl_dim_total(bmap->dim);
+	for (i = 0, j = bmap->n_div-1; i < bmap->n_eq; ++i) {
+		while (j >= 0 && isl_int_is_zero(bmap->eq[i][1 + total + j]))
+			--j;
+		if (j < 0)
+			break;
+		if (isl_seq_first_non_zero(bmap->eq[i] + 1 + total, j) != -1)
+			goto done;
+	}
+	div_eq = i;
+	if (div_eq == 0)
+		return bmap;
+
+	if (div_eq < bmap->n_eq) {
+		B = isl_mat_sub_alloc(bmap->ctx, bmap->eq, div_eq,
+					bmap->n_eq - div_eq, 0, 1 + total);
+		C = isl_mat_variable_compression(bmap->ctx, B, &C2);
+		if (!C || !C2)
+			goto error;
+		if (C->n_col == 0) {
+			bmap = isl_basic_map_set_to_empty(bmap);
+			isl_mat_free(bmap->ctx, C);
+			isl_mat_free(bmap->ctx, C2);
+			goto done;
+		}
+	}
+
+	d = isl_vec_alloc(bmap->ctx, div_eq);
+	if (!d)
+		goto error;
+	for (i = 0, j = bmap->n_div-1; i < div_eq; ++i) {
+		while (j >= 0 && isl_int_is_zero(bmap->eq[i][1 + total + j]))
+			--j;
+		isl_int_set(d->block.data[i], bmap->eq[i][1 + total + j]);
+	}
+	B = isl_mat_sub_alloc(bmap->ctx, bmap->eq, 0, div_eq, 0, 1 + total);
+
+	if (C) {
+		B = isl_mat_product(bmap->ctx, B, C);
+		C = NULL;
+	}
+
+	T = isl_mat_parameter_compression(bmap->ctx, B, d);
+	if (!T)
+		goto error;
+	if (T->n_col == 0) {
+		bmap = isl_basic_map_set_to_empty(bmap);
+		isl_mat_free(bmap->ctx, C2);
+		isl_mat_free(bmap->ctx, T);
+		goto done;
+	}
+	isl_int_init(v);
+	for (i = 0; i < T->n_row - 1; ++i) {
+		isl_int_fdiv_q(v, T->row[1 + i][0], T->row[1 + i][1 + i]);
+		if (isl_int_is_zero(v))
+			continue;
+		isl_mat_col_submul(T, 0, v, 1 + i);
+	}
+	isl_int_clear(v);
+	pos = isl_alloc_array(bmap->ctx, int, T->n_row);
+	/* We have to be careful because dropping equalities may reorder them */
+	for (j = bmap->n_div - 1; j >= 0; --j) {
+		for (i = 0; i < bmap->n_eq; ++i)
+			if (!isl_int_is_zero(bmap->eq[i][1 + total + j]))
+				break;
+		if (i < bmap->n_eq) {
+			bmap = isl_basic_map_drop_div(bmap, j);
+			isl_basic_map_drop_equality(bmap, i);
+		}
+	}
+	pos[0] = 0;
+	for (i = 1; i < T->n_row; ++i) {
+		if (isl_int_is_one(T->row[i][i])) {
+			pos[i] = i;
+			continue;
+		}
+		k = isl_basic_map_alloc_div(bmap);
+		pos[i] = 1 + total + k;
+		isl_seq_clr(bmap->div[k] + 1, 1 + total + bmap->n_div);
+		isl_int_set(bmap->div[k][0], T->row[i][i]);
+		if (C2)
+			isl_seq_cpy(bmap->div[k] + 1, C2->row[i], 1 + total);
+		else
+			isl_int_set_si(bmap->div[k][1 + i], 1);
+		for (j = 0; j < i; ++j) {
+			if (isl_int_is_zero(T->row[i][j]))
+				continue;
+			if (C2)
+				isl_seq_submul(bmap->div[k] + 1, T->row[i][j],
+						C2->row[pos[j]], 1 + total);
+			else
+				isl_int_neg(bmap->div[k][1 + pos[j]],
+								T->row[i][j]);
+		}
+		j = isl_basic_map_alloc_equality(bmap);
+		isl_seq_neg(bmap->eq[j], bmap->div[k]+1, 1+total+bmap->n_div);
+		isl_int_set(bmap->eq[j][pos[i]], bmap->div[k][0]);
+	}
+	free(pos);
+	isl_mat_free(bmap->ctx, C2);
+	isl_mat_free(bmap->ctx, T);
+
+	*progress = 1;
+done:
+	F_SET(bmap, ISL_BASIC_MAP_NORMALIZED_DIVS);
+
+	return bmap;
+error:
+	isl_mat_free(bmap->ctx, C);
+	isl_mat_free(bmap->ctx, C2);
+	isl_mat_free(bmap->ctx, T);
+	return bmap;
+}
+
 static struct isl_basic_map *remove_duplicate_constraints(
 	struct isl_basic_map *bmap, int *progress)
 {
@@ -659,6 +846,8 @@ struct isl_basic_map *isl_basic_map_simplify(struct isl_basic_map *bmap)
 		bmap = eliminate_divs_eq(bmap, &progress);
 		bmap = eliminate_divs_ineq(bmap, &progress);
 		bmap = isl_basic_map_gauss(bmap, &progress);
+		/* requires equalities in normal form */
+		bmap = normalize_divs(bmap, &progress);
 		bmap = remove_duplicate_divs(bmap, &progress);
 		bmap = remove_duplicate_constraints(bmap, &progress);
 	}

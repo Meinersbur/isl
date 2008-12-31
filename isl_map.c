@@ -446,6 +446,7 @@ int isl_basic_map_alloc_equality(struct isl_basic_map *bmap)
 		isl_seq_clr(bmap->eq[bmap->n_eq] +
 		      1 + isl_basic_map_total_dim(bmap),
 		      bmap->extra - bmap->n_div);
+	F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED_DIVS);
 	return bmap->n_eq++;
 }
 
@@ -497,6 +498,7 @@ void isl_basic_map_inequality_to_equality(
 	bmap->n_ineq--;
 	bmap->ineq++;
 	F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
+	F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED_DIVS);
 }
 
 int isl_basic_map_alloc_inequality(struct isl_basic_map *bmap)
@@ -565,6 +567,7 @@ int isl_basic_map_alloc_div(struct isl_basic_map *bmap)
 	isl_seq_clr(bmap->div[bmap->n_div] +
 		      1 + 1 + isl_basic_map_total_dim(bmap),
 		      bmap->extra - bmap->n_div);
+	F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED_DIVS);
 	return bmap->n_div++;
 }
 
