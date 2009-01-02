@@ -9,6 +9,7 @@
 void isl_seq_clr(isl_int *p, unsigned len);
 void isl_seq_neg(isl_int *dat, isl_int *src, unsigned len);
 void isl_seq_cpy(isl_int *dst, isl_int *src, unsigned len);
+void isl_seq_submul(isl_int *dst, isl_int f, isl_int *src, unsigned len);
 void isl_seq_swp_or_cpy(isl_int *dst, isl_int *src, unsigned len);
 void isl_seq_scale(isl_int *dst, isl_int *src, isl_int f, unsigned len);
 void isl_seq_scale_down(isl_int *dst, isl_int *src, isl_int f, unsigned len);
