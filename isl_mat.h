@@ -57,6 +57,7 @@ struct isl_mat *isl_mat_product(struct isl_ctx *ctx,
 	struct isl_mat *left, struct isl_mat *right);
 struct isl_mat *isl_mat_right_inverse(struct isl_ctx *ctx,
 	struct isl_mat *mat);
+struct isl_mat *isl_mat_right_kernel(struct isl_ctx *ctx, struct isl_mat *mat);
 
 struct isl_mat *isl_mat_drop_cols(struct isl_ctx *ctx, struct isl_mat *mat,
 				unsigned col, unsigned n);

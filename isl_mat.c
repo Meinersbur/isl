@@ -358,6 +358,35 @@ error:
 	return NULL;
 }
 
+struct isl_mat *isl_mat_right_kernel(struct isl_ctx *ctx, struct isl_mat *mat)
+{
+	int i, rank;
+	struct isl_mat *U = NULL;
+	struct isl_mat *K;
+
+	mat = isl_mat_left_hermite(ctx, mat, 0, &U, NULL);
+	if (!mat || !U)
+		goto error;
+
+	for (i = 0, rank = 0; rank < mat->n_col; ++rank) {
+		while (i < mat->n_row && isl_int_is_zero(mat->row[i][rank]))
+			++i;
+		if (i >= mat->n_row)
+			break;
+	}
+	K = isl_mat_alloc(ctx, U->n_row, U->n_col - rank);
+	if (!K)
+		goto error;
+	isl_mat_sub_copy(ctx, K->row, U->row, U->n_row, 0, rank, U->n_col-rank);
+	isl_mat_free(ctx, mat);
+	isl_mat_free(ctx, U);
+	return K;
+error:
+	isl_mat_free(ctx, mat);
+	isl_mat_free(ctx, U);
+	return NULL;
+}
+
 struct isl_mat *isl_mat_lin_to_aff(struct isl_ctx *ctx, struct isl_mat *mat)
 {
 	int i;
