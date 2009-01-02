@@ -3192,6 +3192,11 @@ int isl_basic_map_is_empty(struct isl_basic_map *bmap)
 	return empty;
 }
 
+int isl_basic_set_is_empty(struct isl_basic_set *bset)
+{
+	return isl_basic_map_is_empty((struct isl_basic_map *)bset);
+}
+
 struct isl_map *isl_basic_map_union(
 	struct isl_basic_map *bmap1, struct isl_basic_map *bmap2)
 {
