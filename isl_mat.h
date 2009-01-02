@@ -63,6 +63,9 @@ struct isl_mat *isl_mat_drop_cols(struct isl_ctx *ctx, struct isl_mat *mat,
 struct isl_mat *isl_mat_drop_rows(struct isl_ctx *ctx, struct isl_mat *mat,
 				unsigned row, unsigned n);
 
+void isl_mat_col_submul(struct isl_mat *mat,
+			int dst_col, isl_int f, int src_col);
+
 struct isl_basic_set *isl_basic_set_preimage(struct isl_ctx *ctx,
 	struct isl_basic_set *bset, struct isl_mat *mat);
 struct isl_set *isl_set_preimage(struct isl_ctx *ctx,

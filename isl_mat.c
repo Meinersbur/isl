@@ -835,3 +835,12 @@ struct isl_mat *isl_mat_drop_rows(struct isl_ctx *ctx, struct isl_mat *mat,
 	mat->n_row -= n;
 	return mat;
 }
+
+void isl_mat_col_submul(struct isl_mat *mat,
+			int dst_col, isl_int f, int src_col)
+{
+	int i;
+
+	for (i = 0; i < mat->n_row; ++i)
+		isl_int_submul(mat->row[i][dst_col], f, mat->row[i][src_col]);
+}
