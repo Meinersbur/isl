@@ -3,6 +3,220 @@
 #include "isl_map_private.h"
 #include "isl_equalities.h"
 
+/* Given a set of modulo constraints
+ *
+ *		c + A y = 0 mod d
+ *
+ * this function computes a particular solution y_0
+ *
+ * The input is given as a matrix B = [ c A ] and a vector d.
+ *
+ * The output is matrix containing the solution y_0 or
+ * a zero-column matrix if the constraints admit no integer solution.
+ *
+ * The given set of constrains is equivalent to
+ *
+ *		c + A y = -D x
+ *
+ * with D = diag d and x a fresh set of variables.
+ * Reducing both c and A modulo d does not change the
+ * value of y in the solution and may lead to smaller coefficients.
+ * Let M = [ D A ] and [ H 0 ] = M U, the Hermite normal form of M.
+ * Then
+ *		  [ x ]
+ *		M [ y ] = - c
+ * and so
+ *		               [ x ]
+ *		[ H 0 ] U^{-1} [ y ] = - c
+ * Let
+ *		[ A ]          [ x ]
+ *		[ B ] = U^{-1} [ y ]
+ * then
+ *		H A + 0 B = -c
+ *
+ * so B may be chosen arbitrarily, e.g., B = 0, and then
+ *
+ *		       [ x ] = [ -c ]
+ *		U^{-1} [ y ] = [  0 ]
+ * or
+ *		[ x ]     [ -c ]
+ *		[ y ] = U [  0 ]
+ * specifically,
+ *
+ *		y = U_{2,1} (-c)
+ *
+ * If any of the coordinates of this y are non-integer
+ * then the constraints admit no integer solution and
+ * a zero-column matrix is returned.
+ */
+static struct isl_mat *particular_solution(struct isl_ctx *ctx,
+			struct isl_mat *B, struct isl_vec *d)
+{
+	int i, j;
+	struct isl_mat *M = NULL;
+	struct isl_mat *C = NULL;
+	struct isl_mat *U = NULL;
+	struct isl_mat *H = NULL;
+	struct isl_mat *cst = NULL;
+	struct isl_mat *T = NULL;
+
+	M = isl_mat_alloc(ctx, B->n_row, B->n_row + B->n_col - 1);
+	C = isl_mat_alloc(ctx, 1 + B->n_row, 1);
+	if (!M || !C)
+		goto error;
+	isl_int_set_si(C->row[0][0], 1);
+	for (i = 0; i < B->n_row; ++i) {
+		isl_seq_clr(M->row[i], B->n_row);
+		isl_int_set(M->row[i][i], d->block.data[i]);
+		isl_int_neg(C->row[1 + i][0], B->row[i][0]);
+		isl_int_fdiv_r(C->row[1+i][0], C->row[1+i][0], M->row[i][i]);
+		for (j = 0; j < B->n_col - 1; ++j)
+			isl_int_fdiv_r(M->row[i][B->n_row + j],
+					B->row[i][1 + j], M->row[i][i]);
+	}
+	M = isl_mat_left_hermite(ctx, M, 0, &U, NULL);
+	if (!M || !U)
+		goto error;
+	H = isl_mat_sub_alloc(ctx, M->row, 0, B->n_row, 0, B->n_row);
+	H = isl_mat_lin_to_aff(ctx, H);
+	C = isl_mat_inverse_product(ctx, H, C);
+	if (!C)
+		goto error;
+	for (i = 0; i < B->n_row; ++i) {
+		if (!isl_int_is_divisible_by(C->row[1+i][0], C->row[0][0]))
+			break;
+		isl_int_divexact(C->row[1+i][0], C->row[1+i][0], C->row[0][0]);
+	}
+	if (i < B->n_row)
+		cst = isl_mat_alloc(ctx, B->n_row, 0);
+	else
+		cst = isl_mat_sub_alloc(ctx, C->row, 1, B->n_row, 0, 1);
+	T = isl_mat_sub_alloc(ctx, U->row, B->n_row, B->n_col - 1, 0, B->n_row);
+	cst = isl_mat_product(ctx, T, cst);
+	isl_mat_free(ctx, M);
+	isl_mat_free(ctx, C);
+	isl_mat_free(ctx, U);
+	return cst;
+error:
+	isl_mat_free(ctx, M);
+	isl_mat_free(ctx, C);
+	isl_mat_free(ctx, U);
+	return NULL;
+}
+
+/* Given a set of modulo constraints
+ *
+ *		c + A y = 0 mod d
+ *
+ * this function returns an affine transformation T,
+ *
+ *		y = T y'
+ *
+ * that bijectively maps the integer vectors y' to integer
+ * vectors y that satisfy the modulo constraints.
+ *
+ * The implementation closely follows the description in Section 2.5.3
+ * of B. Meister, "Stating and Manipulating Periodicity in the Polytope
+ * Model.  Applications to Program Analysis and Optimization".
+ *
+ * The input is given as a matrix B = [ c A ] and a vector d.
+ * Each element of the vector d corresponds to a row in B.
+ * The output is a lower triangular matrix.
+ * If no integer vector y satisfies the given constraints then
+ * a matrix with zero columns is returned.
+ *
+ * We first compute a particular solution y_0 to the given set of
+ * modulo constraints in particular_solution.  If no such solution
+ * exists, then we return a zero-columned transformation matrix.
+ * Otherwise, we compute the generic solution to
+ *
+ *		A y = 0 mod d
+ *
+ * Let K be the right kernel of A, then any y = K y'' is a solution.
+ * Any multiple of a unit vector s_j e_j such that for each row i,
+ * we have that s_j a_{i,j} is a multiple of d_i, is also a generator
+ * for the set of solutions.  The smallest such s_j can be obtained
+ * by taking the lcm of all the a_{i,j}/gcd(a_{i,j},d).
+ * That is, y = K y'' + S y''', with S = diag s is the general solution.
+ * To obtain a minimal representation we compute the Hermite normal
+ * form [ G 0 ] of [ S K ].
+ * The affine transformation matrix returned is then
+ *
+ *		[  1   0  ]
+ *		[ y_0  G  ]
+ *
+ * as any y = y_0 + G y' with y' integer is a solution to the original
+ * modulo constraints.
+ */
+struct isl_mat *isl_mat_parameter_compression(struct isl_ctx *ctx,
+			struct isl_mat *B, struct isl_vec *d)
+{
+	int i, j;
+	struct isl_mat *cst = NULL;
+	struct isl_mat *K = NULL;
+	struct isl_mat *M = NULL;
+	struct isl_mat *T;
+	isl_int v;
+
+	if (!B || !d)
+		goto error;
+	isl_assert(ctx, B->n_row == d->size, goto error);
+	cst = particular_solution(ctx, B, d);
+	if (!cst)
+		goto error;
+	if (cst->n_col == 0) {
+		T = isl_mat_alloc(ctx, B->n_col, 0);
+		isl_mat_free(ctx, cst);
+		isl_mat_free(ctx, B);
+		isl_vec_free(ctx, d);
+		return T;
+	}
+	T = isl_mat_sub_alloc(ctx, B->row, 0, B->n_row, 1, B->n_col - 1);
+	K = isl_mat_right_kernel(ctx, T);
+	if (!K)
+		goto error;
+	M = isl_mat_alloc(ctx, B->n_col - 1, B->n_col - 1 + K->n_col);
+	if (!M)
+		goto error;
+	isl_mat_sub_copy(ctx, M->row, K->row, M->n_row,
+				B->n_col - 1, 0, K->n_col);
+	for (i = 0; i < M->n_row; ++i) {
+		isl_seq_clr(M->row[i], B->n_col - 1);
+		isl_int_set_si(M->row[i][i], 1);
+	}
+	isl_int_init(v);
+	for (i = 0; i < B->n_row; ++i)
+		for (j = 0; j < B->n_col - 1; ++j) {
+			isl_int_gcd(v, B->row[i][1+j], d->block.data[i]);
+			isl_int_divexact(v, d->block.data[i], v);
+			isl_int_lcm(M->row[j][j], M->row[j][j], v);
+		}
+	isl_int_clear(v);
+	M = isl_mat_left_hermite(ctx, M, 0, NULL, NULL);
+	if (!M)
+		goto error;
+	T = isl_mat_alloc(ctx, 1 + B->n_col - 1, B->n_col);
+	if (!T)
+		goto error;
+	isl_int_set_si(T->row[0][0], 1);
+	isl_seq_clr(T->row[0] + 1, T->n_col - 1);
+	isl_mat_sub_copy(ctx, T->row + 1, cst->row, cst->n_row, 0, 0, 1);
+	isl_mat_sub_copy(ctx, T->row + 1, M->row, M->n_row, 1, 0, T->n_col - 1);
+	isl_mat_free(ctx, K);
+	isl_mat_free(ctx, M);
+	isl_mat_free(ctx, cst);
+	isl_mat_free(ctx, B);
+	isl_vec_free(ctx, d);
+	return T;
+error:
+	isl_mat_free(ctx, K);
+	isl_mat_free(ctx, M);
+	isl_mat_free(ctx, cst);
+	isl_mat_free(ctx, B);
+	isl_vec_free(ctx, d);
+	return NULL;
+}
+
 /* Given a set of equalities
  *
  *		M x - c = 0
