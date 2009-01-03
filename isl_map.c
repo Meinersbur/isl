@@ -1925,12 +1925,9 @@ struct isl_basic_set *isl_basic_map_underlying_set(
 	bmap = isl_basic_map_cow(bmap);
 	if (!bmap)
 		goto error;
-	bmap->dim = isl_dim_cow(bmap->dim);
+	bmap->dim = isl_dim_underlying(bmap->dim, bmap->n_div);
 	if (!bmap->dim)
 		goto error;
-	bmap->dim->n_out += bmap->dim->nparam + bmap->dim->n_in + bmap->n_div;
-	bmap->dim->nparam = 0;
-	bmap->dim->n_in = 0;
 	bmap->extra -= bmap->n_div;
 	bmap->n_div = 0;
 	bmap = isl_basic_map_finalize(bmap);
@@ -2066,11 +2063,13 @@ struct isl_set *isl_map_underlying_set(struct isl_map *map)
 			goto error;
 	}
 	if (map->n == 0)
-		map->dim->n_out += map->dim->nparam + map->dim->n_in;
-	else
-		map->dim->n_out = map->p[0]->dim->n_out;
-	map->dim->nparam = 0;
-	map->dim->n_in = 0;
+		map->dim = isl_dim_underlying(map->dim, 0);
+	else {
+		isl_dim_free(map->dim);
+		map->dim = isl_dim_copy(map->p[0]->dim);
+	}
+	if (!map->dim)
+		goto error;
 	return (struct isl_set *)map;
 error:
 	isl_map_free(map);

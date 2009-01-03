@@ -458,6 +458,29 @@ struct isl_dim *isl_dim_domain(struct isl_dim *dim)
 	return isl_dim_reverse(dim);
 }
 
+struct isl_dim *isl_dim_underlying(struct isl_dim *dim, unsigned n_div)
+{
+	int i;
+
+	if (!dim)
+		return NULL;
+	if (n_div == 0 &&
+	    dim->nparam == 0 && dim->n_in == 0 && dim->n_name == 0)
+		return dim;
+	dim = isl_dim_cow(dim);
+	if (!dim)
+		return NULL;
+	dim->n_out += dim->nparam + dim->n_in + n_div;
+	dim->nparam = 0;
+	dim->n_in = 0;
+
+	for (i = 0; i < dim->n_name; ++i)
+		isl_name_free(dim->ctx, get_name(dim, isl_dim_out, i));
+	dim->n_name = 0;
+
+	return dim;
+}
+
 unsigned isl_dim_total(struct isl_dim *dim)
 {
 	return dim->nparam + dim->n_in + dim->n_out;
