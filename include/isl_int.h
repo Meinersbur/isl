@@ -4,6 +4,9 @@
 #include <isl_hash.h>
 #include <string.h>
 #include <gmp.h>
+#if defined(__cplusplus)
+#include <iostream>
+#endif
 
 #if defined(__cplusplus)
 extern "C" {
@@ -85,6 +88,19 @@ uint32_t isl_gmp_hash(mpz_t v, uint32_t hash);
 #define isl_int_hash(v,h)	isl_gmp_hash(v,h)
 
 #if defined(__cplusplus)
+}
+#endif
+
+#if defined(__cplusplus)
+static inline std::ostream &operator<<(std::ostream &os, isl_int i)
+{
+	char *s;
+	void (*gmp_free)(void *, size_t);
+	s = mpz_get_str(0, 10, i);
+	os << s;
+	mp_get_memory_functions(NULL, NULL, &gmp_free);
+	(*gmp_free)(s, strlen(s)+1);
+	return os;
 }
 #endif
 
