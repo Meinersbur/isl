@@ -1275,7 +1275,7 @@ struct isl_basic_map *isl_map_simple_hull(struct isl_map *map)
 	bset = isl_basic_set_finalize(bset);
 	bset = isl_basic_set_convex_hull(bset);
 
-	hull = isl_basic_map_overlying_set(bset, isl_basic_map_copy(model));
+	hull = isl_basic_map_overlying_set(bset, model);
 
 	isl_set_free(set);
 	return hull;
