@@ -91,4 +91,5 @@ void isl_hash_table_remove(struct isl_ctx *ctx,
 
 	entry->hash = 0;
 	entry->data = NULL;
+	table->n--;
 }
