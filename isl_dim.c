@@ -115,6 +115,11 @@ static unsigned n(struct isl_dim *dim, enum isl_dim_type type)
 	}
 }
 
+unsigned isl_dim_size(struct isl_dim *dim, enum isl_dim_type type)
+{
+	return n(dim, type);
+}
+
 static struct isl_dim *copy_names(struct isl_dim *dst,
 	enum isl_dim_type dst_type, struct isl_dim *src,
 	enum isl_dim_type src_type)
@@ -223,6 +228,12 @@ static int match(struct isl_dim *dim1, enum isl_dim_type dim1_type,
 			return 0;
 	}
 	return 1;
+}
+
+int isl_dim_match(struct isl_dim *dim1, enum isl_dim_type dim1_type,
+		struct isl_dim *dim2, enum isl_dim_type dim2_type)
+{
+	return match(dim1, dim1_type, dim2, dim2_type);
 }
 
 static void get_names(struct isl_dim *dim, enum isl_dim_type type,

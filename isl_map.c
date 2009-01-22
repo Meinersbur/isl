@@ -94,9 +94,9 @@ unsigned isl_basic_map_dim(const struct isl_basic_map *bmap,
 {
 	struct isl_dim *dim = bmap->dim;
 	switch (type) {
-	case isl_dim_param:	return dim->nparam;
-	case isl_dim_in:	return dim->n_in;
-	case isl_dim_out:	return dim->n_out;
+	case isl_dim_param:
+	case isl_dim_in:
+	case isl_dim_out:	return isl_dim_size(bmap->dim, type);
 	case isl_dim_div:	return bmap->n_div;
 	case isl_dim_all:	return isl_basic_map_total_dim(bmap);
 	}
@@ -1521,7 +1521,18 @@ struct isl_basic_map *isl_basic_map_intersect(
 	if (!bmap1 || !bmap2)
 		goto error;
 
-	isl_assert(map1->ctx, isl_dim_equal(bmap1->dim, bmap2->dim), goto error);
+	isl_assert(bmap1->ctx, isl_dim_match(bmap1->dim, isl_dim_param,
+				     bmap2->dim, isl_dim_param), goto error);
+	if (isl_dim_total(bmap1->dim) ==
+				isl_dim_size(bmap1->dim, isl_dim_param) &&
+	    isl_dim_total(bmap2->dim) !=
+				isl_dim_size(bmap2->dim, isl_dim_param))
+		return isl_basic_map_intersect(bmap2, bmap1);
+
+	if (isl_dim_total(bmap2->dim) !=
+					isl_dim_size(bmap2->dim, isl_dim_param))
+		isl_assert(bmap1->ctx,
+			    isl_dim_equal(bmap1->dim, bmap2->dim), goto error);
 
 	bmap1 = isl_basic_map_extend_dim(bmap1, isl_dim_copy(bmap1->dim),
 			bmap2->n_div, bmap2->n_eq, bmap2->n_ineq);
@@ -1554,6 +1565,17 @@ struct isl_map *isl_map_intersect(struct isl_map *map1, struct isl_map *map2)
 
 	if (!map1 || !map2)
 		goto error;
+
+	isl_assert(map1->ctx, isl_dim_match(map1->dim, isl_dim_param,
+					 map2->dim, isl_dim_param), goto error);
+	if (isl_dim_total(map1->dim) ==
+				isl_dim_size(map1->dim, isl_dim_param) &&
+	    isl_dim_total(map2->dim) != isl_dim_size(map2->dim, isl_dim_param))
+		return isl_map_intersect(map2, map1);
+
+	if (isl_dim_total(map2->dim) != isl_dim_size(map2->dim, isl_dim_param))
+		isl_assert(map1->ctx,
+			    isl_dim_equal(map1->dim, map2->dim), goto error);
 
 	if (F_ISSET(map1, ISL_MAP_DISJOINT) &&
 	    F_ISSET(map2, ISL_MAP_DISJOINT))
