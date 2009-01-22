@@ -1470,8 +1470,12 @@ struct isl_basic_map *isl_basic_map_intersect_domain(
 	if (!bmap || !bset)
 		goto error;
 
-	isl_assert(set->ctx, isl_basic_map_compatible_domain(bmap, bset),
-		    goto error);
+	isl_assert(bset->ctx, isl_dim_match(bmap->dim, isl_dim_param,
+					bset->dim, isl_dim_param), goto error);
+
+	if (isl_dim_size(bset->dim, isl_dim_set) != 0)
+		isl_assert(bset->ctx,
+		    isl_basic_map_compatible_domain(bmap, bset), goto error);
 
 	bmap = isl_basic_map_extend_dim(bmap, isl_dim_copy(bmap->dim),
 			bset->n_div, bset->n_eq, bset->n_ineq);
@@ -1497,8 +1501,12 @@ struct isl_basic_map *isl_basic_map_intersect_range(
 	if (!bmap || !bset)
 		goto error;
 
-	isl_assert(bset->ctx, isl_basic_map_compatible_range(bmap, bset),
-		   goto error);
+	isl_assert(bset->ctx, isl_dim_match(bmap->dim, isl_dim_param,
+					bset->dim, isl_dim_param), goto error);
+
+	if (isl_dim_size(bset->dim, isl_dim_set) != 0)
+		isl_assert(bset->ctx,
+		    isl_basic_map_compatible_range(bmap, bset), goto error);
 
 	bmap = isl_basic_map_extend_dim(bmap, isl_dim_copy(bmap->dim),
 			bset->n_div, bset->n_eq, bset->n_ineq);
