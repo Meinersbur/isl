@@ -644,6 +644,7 @@ static struct isl_basic_map *normalize_divs(
 	struct isl_mat *C2 = NULL;
 	isl_int v;
 	int *pos;
+	int dropped, needed;
 
 	if (!bmap)
 		return NULL;
@@ -718,6 +719,7 @@ static struct isl_basic_map *normalize_divs(
 	isl_int_clear(v);
 	pos = isl_alloc_array(bmap->ctx, int, T->n_row);
 	/* We have to be careful because dropping equalities may reorder them */
+	dropped = 0;
 	for (j = bmap->n_div - 1; j >= 0; --j) {
 		for (i = 0; i < bmap->n_eq; ++i)
 			if (!isl_int_is_zero(bmap->eq[i][1 + total + j]))
@@ -725,14 +727,26 @@ static struct isl_basic_map *normalize_divs(
 		if (i < bmap->n_eq) {
 			bmap = isl_basic_map_drop_div(bmap, j);
 			isl_basic_map_drop_equality(bmap, i);
+			++dropped;
 		}
 	}
 	pos[0] = 0;
+	needed = 0;
 	for (i = 1; i < T->n_row; ++i) {
-		if (isl_int_is_one(T->row[i][i])) {
+		if (isl_int_is_one(T->row[i][i]))
 			pos[i] = i;
+		else
+			needed++;
+	}
+	if (needed > dropped) {
+		bmap = isl_basic_map_extend_dim(bmap, isl_dim_copy(bmap->dim),
+				needed, needed, 0);
+		if (!bmap)
+			goto error;
+	}
+	for (i = 1; i < T->n_row; ++i) {
+		if (isl_int_is_one(T->row[i][i]))
 			continue;
-		}
 		k = isl_basic_map_alloc_div(bmap);
 		pos[i] = 1 + total + k;
 		isl_seq_clr(bmap->div[k] + 1, 1 + total + bmap->n_div);
