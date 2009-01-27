@@ -629,7 +629,8 @@ out:
  *	x'' = T(x') = x_0 + G x'
  *
  * and in constructing the new divs and the corresponding equalities,
- * we have to replace each x'' by the corresponding row from C_2.
+ * we have to replace each x'', i.e., the x'_k with (g_kk = 1),
+ * by the corresponding row from C_2.
  */
 static struct isl_basic_map *normalize_divs(
 	struct isl_basic_map *bmap, int *progress)
@@ -758,7 +759,7 @@ static struct isl_basic_map *normalize_divs(
 		for (j = 0; j < i; ++j) {
 			if (isl_int_is_zero(T->row[i][j]))
 				continue;
-			if (C2)
+			if (pos[j] < T->n_row && C2)
 				isl_seq_submul(bmap->div[k] + 1, T->row[i][j],
 						C2->row[pos[j]], 1 + total);
 			else

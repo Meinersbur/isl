@@ -266,6 +266,35 @@ void test_div(struct isl_ctx *ctx)
 	assert(bset->n_div == 1);
 	isl_basic_set_free(bset);
 
+	/* test 8 */
+	dim = isl_dim_set_alloc(ctx, 0, 4);
+	bset = isl_basic_set_universe(dim);
+
+	c = isl_equality_alloc(isl_dim_copy(bset->dim));
+	isl_int_set_si(v, -1);
+	isl_constraint_set_coefficient(c, isl_dim_set, 0, v);
+	isl_int_set_si(v, -3);
+	isl_constraint_set_coefficient(c, isl_dim_set, 1, v);
+	isl_int_set_si(v, -3);
+	isl_constraint_set_coefficient(c, isl_dim_set, 3, v);
+	div = isl_div_alloc(isl_dim_copy(bset->dim));
+	c = isl_constraint_add_div(c, div, &pos);
+	isl_int_set_si(v, 6);
+	isl_constraint_set_coefficient(c, isl_dim_div, pos, v);
+	bset = isl_basic_set_add_constraint(bset, c);
+
+	c = isl_equality_alloc(isl_dim_copy(bset->dim));
+	isl_int_set_si(v, -1);
+	isl_constraint_set_coefficient(c, isl_dim_set, 0, v);
+	isl_int_set_si(v, 1);
+	isl_constraint_set_coefficient(c, isl_dim_set, 2, v);
+	isl_int_set_si(v, 1);
+	isl_constraint_set_constant(c, v);
+	bset = isl_basic_set_add_constraint(bset, c);
+
+	assert(bset->n_div == 1);
+	isl_basic_set_free(bset);
+
 	isl_int_clear(v);
 }
 
