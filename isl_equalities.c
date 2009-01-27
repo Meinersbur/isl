@@ -302,7 +302,7 @@ struct isl_mat *isl_mat_variable_compression(struct isl_ctx *ctx,
 					isl_mat_free(ctx, *T2);
 					*T2 = NULL;
 				}
-				return isl_mat_alloc(ctx, 1 + B->n_col, 0);
+				return isl_mat_alloc(ctx, 1 + dim, 0);
 			}
 			isl_seq_scale_down(TC->row[1+i], TC->row[1+i], TC->row[0][0], 1);
 		}
