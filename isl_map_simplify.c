@@ -533,11 +533,17 @@ static int set_hash_index(isl_int ***index, unsigned int size, int bits,
 	return hash_index(index, size, bits, (struct isl_basic_map *)bset, k);
 }
 
+/* If we can eliminate more than one div, then we need to make
+ * sure we do it from last div to first div, in order not to
+ * change the position of the other divs that still need to
+ * be removed.
+ */
 static struct isl_basic_map *remove_duplicate_divs(
 	struct isl_basic_map *bmap, int *progress)
 {
 	unsigned int size;
 	int *index;
+	int *elim_for;
 	int k, l, h;
 	int bits;
 	struct isl_blk eq;
@@ -555,6 +561,7 @@ static struct isl_basic_map *remove_duplicate_divs(
 	if (k <= 0)
 		return bmap;
 
+	elim_for = isl_calloc_array(ctx, int, bmap->n_div);
 	size = round_up(4 * bmap->n_div / 3 - 1);
 	bits = ffs(size) - 1;
 	index = isl_calloc_array(ctx, int, size);
@@ -580,18 +587,25 @@ static struct isl_basic_map *remove_duplicate_divs(
 		if (index[h]) {
 			*progress = 1;
 			l = index[h] - 1;
-			isl_int_set_si(eq.data[1+total_var+k], -1);
-			isl_int_set_si(eq.data[1+total_var+l], 1);
-			eliminate_div(bmap, eq.data, l);
-			isl_int_set_si(eq.data[1+total_var+k], 0);
-			isl_int_set_si(eq.data[1+total_var+l], 0);
+			elim_for[l] = k + 1;
 		}
 		index[h] = k+1;
+	}
+	for (l = bmap->n_div - 1; l >= 0; --l) {
+		if (!elim_for[l])
+			continue;
+		k = elim_for[l] - 1;
+		isl_int_set_si(eq.data[1+total_var+k], -1);
+		isl_int_set_si(eq.data[1+total_var+l], 1);
+		eliminate_div(bmap, eq.data, l);
+		isl_int_set_si(eq.data[1+total_var+k], 0);
+		isl_int_set_si(eq.data[1+total_var+l], 0);
 	}
 
 	isl_blk_free(ctx, eq);
 out:
 	free(index);
+	free(elim_for);
 	return bmap;
 }
 
