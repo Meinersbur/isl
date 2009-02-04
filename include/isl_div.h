@@ -23,6 +23,10 @@ void isl_div_get_constant(struct isl_div *div, isl_int *v);
 void isl_div_get_denominator(struct isl_div *div, isl_int *v);
 void isl_div_get_coefficient(struct isl_div *div,
 	enum isl_dim_type type, int pos, isl_int *v);
+void isl_div_set_constant(struct isl_div *div, isl_int v);
+void isl_div_set_denominator(struct isl_div *div, isl_int v);
+void isl_div_set_coefficient(struct isl_div *div,
+	enum isl_dim_type type, int pos, isl_int v);
 
 #if defined(__cplusplus)
 }

@@ -99,3 +99,27 @@ void isl_div_get_coefficient(struct isl_div *div,
 	isl_assert(div->ctx, pos < n(div, type), return);
 	isl_int_set(*v, div->line[0][offset(div, type) + pos]);
 }
+
+void isl_div_set_constant(struct isl_div *div, isl_int v)
+{
+	if (!div)
+		return;
+	isl_int_set(div->line[0][1], v);
+}
+
+void isl_div_set_denominator(struct isl_div *div, isl_int v)
+{
+	if (!div)
+		return;
+	isl_int_set(div->line[0][0], v);
+}
+
+void isl_div_set_coefficient(struct isl_div *div,
+	enum isl_dim_type type, int pos, isl_int v)
+{
+	if (!div)
+		return;
+
+	isl_assert(div->ctx, pos < n(div, type), return);
+	isl_int_set(div->line[0][offset(div, type) + pos], v);
+}
