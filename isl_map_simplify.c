@@ -395,8 +395,12 @@ static void eliminate_var_using_equality(struct isl_basic_map *bmap,
 {
 	unsigned total;
 	int k;
+	int contains_divs;
 
 	total = isl_basic_map_total_dim(bmap);
+	contains_divs =
+		isl_seq_first_non_zero(eq + 1 + isl_dim_total(bmap->dim),
+						bmap->n_div) != -1;
 	for (k = 0; k < bmap->n_eq; ++k) {
 		if (bmap->eq[k] == eq)
 			continue;
@@ -423,8 +427,15 @@ static void eliminate_var_using_equality(struct isl_basic_map *bmap,
 			continue;
 		if (progress)
 			*progress = 1;
-		isl_seq_elim(bmap->div[k]+1, eq,
-				1+pos, 1+total, &bmap->div[k][0]);
+		/* We need to be careful about circular definitions,
+		 * so for now we just remove the definition of div k
+		 * if the equality contains any divs.
+		 */
+		if (contains_divs)
+			isl_seq_clr(bmap->div[k], 1 + total);
+		else
+			isl_seq_elim(bmap->div[k]+1, eq,
+					1+pos, 1+total, &bmap->div[k][0]);
 		F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
 	}
 }
