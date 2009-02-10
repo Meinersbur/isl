@@ -210,6 +210,8 @@ struct isl_map *isl_map_intersect(struct isl_map *map1, struct isl_map *map2);
 struct isl_map *isl_map_subtract(struct isl_map *map1, struct isl_map *map2);
 struct isl_map *isl_map_fix_input_si(struct isl_map *map,
 		unsigned input, int value);
+struct isl_map *isl_map_fix_si(struct isl_map *map,
+		enum isl_dim_type type, unsigned pos, int value);
 struct isl_basic_set *isl_basic_map_deltas(struct isl_basic_map *bmap);
 struct isl_set *isl_map_deltas(struct isl_map *map);
 struct isl_set *isl_map_range(struct isl_map *map);

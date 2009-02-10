@@ -102,6 +102,28 @@ unsigned isl_basic_map_dim(const struct isl_basic_map *bmap,
 	}
 }
 
+unsigned isl_map_dim(const struct isl_map *map, enum isl_dim_type type)
+{
+	return n(map->dim, type);
+}
+
+static unsigned basic_map_offset(struct isl_basic_map *bmap,
+					enum isl_dim_type type)
+{
+	struct isl_dim *dim = bmap->dim;
+	switch (type) {
+	case isl_dim_param:	return 1;
+	case isl_dim_in:	return 1 + dim->nparam;
+	case isl_dim_out:	return 1 + dim->nparam + dim->n_in;
+	case isl_dim_div:	return 1 + dim->nparam + dim->n_in + dim->n_out;
+	}
+}
+
+static unsigned map_offset(struct isl_map *map, enum isl_dim_type type)
+{
+	return pos(map->dim, type);
+}
+
 unsigned isl_basic_set_dim(const struct isl_basic_set *bset,
 				enum isl_dim_type type)
 {
@@ -2405,8 +2427,8 @@ struct isl_set *isl_set_extend(struct isl_set *base,
 							nparam, 0, dim);
 }
 
-static struct isl_basic_map *isl_basic_map_fix_var(struct isl_basic_map *bmap,
-		unsigned var, int value)
+static struct isl_basic_map *isl_basic_map_fix_pos(struct isl_basic_map *bmap,
+		unsigned pos, int value)
 {
 	int j;
 
@@ -2416,7 +2438,7 @@ static struct isl_basic_map *isl_basic_map_fix_var(struct isl_basic_map *bmap,
 	if (j < 0)
 		goto error;
 	isl_seq_clr(bmap->eq[j], 1 + isl_basic_map_total_dim(bmap));
-	isl_int_set_si(bmap->eq[j][1 + var], -1);
+	isl_int_set_si(bmap->eq[j][pos], -1);
 	isl_int_set_si(bmap->eq[j][0], value);
 	bmap = isl_basic_map_simplify(bmap);
 	return isl_basic_map_finalize(bmap);
@@ -2425,35 +2447,35 @@ error:
 	return NULL;
 }
 
-struct isl_basic_map *isl_basic_map_fix_input_si(struct isl_basic_map *bmap,
-		unsigned input, int value)
+struct isl_basic_map *isl_basic_map_fix_si(struct isl_basic_map *bmap,
+		enum isl_dim_type type, unsigned pos, int value)
 {
 	if (!bmap)
 		return NULL;
-	isl_assert(bmap->ctx, input < isl_basic_map_n_in(bmap), goto error);
-	return isl_basic_map_fix_var(bmap, isl_basic_map_n_param(bmap) + input,
+	isl_assert(bmap->ctx, pos < isl_basic_map_dim(bmap, type), goto error);
+	return isl_basic_map_fix_pos(bmap, basic_map_offset(bmap, type) + pos,
 					value);
 error:
 	isl_basic_map_free(bmap);
 	return NULL;
 }
 
+struct isl_basic_map *isl_basic_map_fix_input_si(struct isl_basic_map *bmap,
+		unsigned input, int value)
+{
+	return isl_basic_map_fix_si(bmap, isl_dim_in, input, value);
+}
+
 struct isl_basic_set *isl_basic_set_fix_dim_si(struct isl_basic_set *bset,
 		unsigned dim, int value)
 {
-	if (!bset)
-		return NULL;
-	isl_assert(bset->ctx, dim < isl_basic_set_n_dim(bset), goto error);
 	return (struct isl_basic_set *)
-		isl_basic_map_fix_var((struct isl_basic_map *)bset,
-				    isl_basic_set_n_param(bset) + dim, value);
-error:
-	isl_basic_set_free(bset);
-	return NULL;
+		isl_basic_map_fix_si((struct isl_basic_map *)bset,
+					isl_dim_set, dim, value);
 }
 
-struct isl_map *isl_map_fix_input_si(struct isl_map *map,
-		unsigned input, int value)
+struct isl_map *isl_map_fix_si(struct isl_map *map,
+		enum isl_dim_type type, unsigned pos, int value)
 {
 	int i;
 
@@ -2461,9 +2483,9 @@ struct isl_map *isl_map_fix_input_si(struct isl_map *map,
 	if (!map)
 		return NULL;
 
-	isl_assert(ctx, input < isl_map_n_in(map), goto error);
+	isl_assert(ctx, pos < isl_map_dim(map, type), goto error);
 	for (i = 0; i < map->n; ++i) {
-		map->p[i] = isl_basic_map_fix_input_si(map->p[i], input, value);
+		map->p[i] = isl_basic_map_fix_si(map->p[i], type, pos, value);
 		if (!map->p[i])
 			goto error;
 	}
@@ -2474,24 +2496,16 @@ error:
 	return NULL;
 }
 
+struct isl_map *isl_map_fix_input_si(struct isl_map *map,
+		unsigned input, int value)
+{
+	return isl_map_fix_si(map, isl_dim_in, input, value);
+}
+
 struct isl_set *isl_set_fix_dim_si(struct isl_set *set, unsigned dim, int value)
 {
-	int i;
-
-	set = isl_set_cow(set);
-	if (!set)
-		return NULL;
-
-	isl_assert(set->ctx, dim < isl_set_n_dim(set), goto error);
-	for (i = 0; i < set->n; ++i) {
-		set->p[i] = isl_basic_set_fix_dim_si(set->p[i], dim, value);
-		if (!set->p[i])
-			goto error;
-	}
-	return set;
-error:
-	isl_set_free(set);
-	return NULL;
+	return (struct isl_set *)
+		isl_map_fix_si((struct isl_map *)set, isl_dim_set, dim, value);
 }
 
 struct isl_basic_set *isl_basic_set_lower_bound_dim(struct isl_basic_set *bset,
