@@ -1845,6 +1845,60 @@ struct isl_basic_map *isl_basic_map_neg(struct isl_basic_map *bmap)
 	return isl_basic_map_finalize(bmap);
 }
 
+/* Given a basic map A -> f(A) and an integer d, construct a basic map
+ * A -> floor(f(A)/d).
+ */
+struct isl_basic_map *isl_basic_map_floordiv(struct isl_basic_map *bmap,
+		isl_int d)
+{
+	unsigned n_in, n_out, nparam, total, pos;
+	struct isl_basic_map *result = NULL;
+	struct isl_dim_map *dim_map;
+	int i;
+
+	if (!bmap)
+		return NULL;
+
+	nparam = isl_basic_map_n_param(bmap);
+	n_in = isl_basic_map_n_in(bmap);
+	n_out = isl_basic_map_n_out(bmap);
+
+	total = nparam + n_in + n_out + bmap->n_div + n_out;
+	dim_map = isl_dim_map_alloc(bmap->ctx, total);
+	isl_dim_map_dim(dim_map, bmap->dim, isl_dim_param, pos = 0);
+	isl_dim_map_dim(dim_map, bmap->dim, isl_dim_in, pos += nparam);
+	isl_dim_map_div(dim_map, bmap, pos += n_in + n_out);
+	isl_dim_map_dim(dim_map, bmap->dim, isl_dim_out, pos += bmap->n_div);
+
+	result = isl_basic_map_alloc_dim(isl_dim_copy(bmap->dim),
+			bmap->n_div + n_out,
+			bmap->n_eq, bmap->n_ineq + 2 * n_out);
+	result = add_constraints_dim_map(result, bmap, dim_map);
+	result = add_divs(result, n_out);
+	for (i = 0; i < n_out; ++i) {
+		int j;
+		j = isl_basic_map_alloc_inequality(result);
+		if (j < 0)
+			goto error;
+		isl_seq_clr(result->ineq[j], 1+total);
+		isl_int_neg(result->ineq[j][1+nparam+n_in+i], d);
+		isl_int_set_si(result->ineq[j][1+pos+i], 1);
+		j = isl_basic_map_alloc_inequality(result);
+		if (j < 0)
+			goto error;
+		isl_seq_clr(result->ineq[j], 1+total);
+		isl_int_set(result->ineq[j][1+nparam+n_in+i], d);
+		isl_int_set_si(result->ineq[j][1+pos+i], -1);
+		isl_int_sub_ui(result->ineq[j][0], d, 1);
+	}
+
+	result = isl_basic_map_simplify(result);
+	return isl_basic_map_finalize(result);
+error:
+	isl_basic_map_free(result);
+	return NULL;
+}
+
 static struct isl_basic_map *var_equal(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap, unsigned pos)
 {
