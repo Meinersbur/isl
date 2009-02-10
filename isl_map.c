@@ -1761,6 +1761,65 @@ error:
 	return NULL;
 }
 
+/* Given two basic maps A -> f(A) and B -> g(B), construct a basic map
+ * A \cap B -> f(A) + f(B)
+ */
+struct isl_basic_map *isl_basic_map_sum(
+		struct isl_basic_map *bmap1, struct isl_basic_map *bmap2)
+{
+	unsigned n_in, n_out, nparam, total, pos;
+	struct isl_basic_map *bmap = NULL;
+	struct isl_dim_map *dim_map1, *dim_map2;
+	int i;
+
+	if (!bmap1 || !bmap2)
+		goto error;
+
+	isl_assert(bmap1->ctx, isl_dim_equal(bmap1->dim, bmap2->dim),
+		goto error);
+
+	nparam = isl_basic_map_n_param(bmap1);
+	n_in = isl_basic_map_n_in(bmap1);
+	n_out = isl_basic_map_n_out(bmap1);
+
+	total = nparam + n_in + n_out + bmap1->n_div + bmap2->n_div + 2 * n_out;
+	dim_map1 = isl_dim_map_alloc(bmap1->ctx, total);
+	dim_map2 = isl_dim_map_alloc(bmap2->ctx, total);
+	isl_dim_map_dim(dim_map1, bmap1->dim, isl_dim_param, pos = 0);
+	isl_dim_map_dim(dim_map2, bmap2->dim, isl_dim_param, pos);
+	isl_dim_map_dim(dim_map1, bmap1->dim, isl_dim_in, pos += nparam);
+	isl_dim_map_dim(dim_map2, bmap2->dim, isl_dim_in, pos);
+	isl_dim_map_div(dim_map1, bmap1, pos += n_in + n_out);
+	isl_dim_map_div(dim_map2, bmap2, pos += bmap1->n_div);
+	isl_dim_map_dim(dim_map1, bmap1->dim, isl_dim_out, pos += bmap2->n_div);
+	isl_dim_map_dim(dim_map2, bmap2->dim, isl_dim_out, pos += n_out);
+
+	bmap = isl_basic_map_alloc_dim(isl_dim_copy(bmap1->dim),
+			bmap1->n_div + bmap2->n_div + 2 * n_out,
+			bmap1->n_eq + bmap2->n_eq + n_out,
+			bmap1->n_ineq + bmap2->n_ineq);
+	for (i = 0; i < n_out; ++i) {
+		int j = isl_basic_map_alloc_equality(bmap);
+		if (j < 0)
+			goto error;
+		isl_seq_clr(bmap->eq[j], 1+total);
+		isl_int_set_si(bmap->eq[j][1+nparam+n_in+i], -1);
+		isl_int_set_si(bmap->eq[j][1+pos+i], 1);
+		isl_int_set_si(bmap->eq[j][1+pos-n_out+i], 1);
+	}
+	bmap = add_constraints_dim_map(bmap, bmap1, dim_map1);
+	bmap = add_constraints_dim_map(bmap, bmap2, dim_map2);
+	bmap = add_divs(bmap, 2 * n_out);
+
+	bmap = isl_basic_map_simplify(bmap);
+	return isl_basic_map_finalize(bmap);
+error:
+	isl_basic_map_free(bmap);
+	isl_basic_map_free(bmap1);
+	isl_basic_map_free(bmap2);
+	return NULL;
+}
+
 static struct isl_basic_map *var_equal(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap, unsigned pos)
 {

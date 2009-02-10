@@ -158,6 +158,9 @@ struct isl_basic_map *isl_basic_map_simplify(struct isl_basic_map *bmap);
 struct isl_basic_map *isl_basic_map_read_from_file(struct isl_ctx *ctx,
 		FILE *input, unsigned nparam, unsigned input_format);
 
+struct isl_basic_map *isl_basic_map_sum(
+		struct isl_basic_map *bmap1, struct isl_basic_map *bmap2);
+
 struct isl_map *isl_basic_map_lexmax(
 		struct isl_basic_map *bmap, struct isl_basic_set *dom,
 		struct isl_set **empty);
