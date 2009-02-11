@@ -134,6 +134,9 @@ struct isl_basic_map *isl_basic_map_convex_hull(struct isl_basic_map *bmap);
 struct isl_basic_map *isl_basic_map_intersect_domain(
 		struct isl_basic_map *bmap,
 		struct isl_basic_set *bset);
+struct isl_basic_map *isl_basic_map_intersect_range(
+		struct isl_basic_map *bmap,
+		struct isl_basic_set *bset);
 struct isl_basic_map *isl_basic_map_intersect(
 		struct isl_basic_map *bmap1,
 		struct isl_basic_map *bmap2);
