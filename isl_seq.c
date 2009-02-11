@@ -171,6 +171,19 @@ void isl_seq_gcd(isl_int *p, unsigned len, isl_int *gcd)
 	}
 }
 
+void isl_seq_lcm(isl_int *p, unsigned len, isl_int *lcm)
+{
+	int i;
+
+	if (len == 0) {
+		isl_int_set_si(*lcm, 1);
+		return;
+	}
+	isl_int_set(*lcm, p[0]);
+	for (i = 1; i < len; ++i)
+		isl_int_lcm(*lcm, *lcm, p[i]);
+}
+
 void isl_seq_inner_product(isl_int *p1, isl_int *p2, unsigned len,
 			   isl_int *prod)
 {

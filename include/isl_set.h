@@ -114,6 +114,8 @@ void isl_basic_set_print(struct isl_basic_set *bset, FILE *out, int indent,
 	const char *prefix, const char *suffix, unsigned output_format);
 void isl_set_print(struct isl_set *set, FILE *out, int indent,
 	unsigned output_format);
+struct isl_basic_set *isl_basic_set_fix_si(struct isl_basic_set *bset,
+		enum isl_dim_type type, unsigned pos, int value);
 
 struct isl_basic_set *isl_basic_set_from_underlying_set(
 	struct isl_basic_set *bset, struct isl_basic_set *like);

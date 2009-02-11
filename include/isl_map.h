@@ -160,6 +160,8 @@ struct isl_basic_map *isl_basic_map_simplify(struct isl_basic_map *bmap);
 #define ISL_FORMAT_OMEGA	2
 struct isl_basic_map *isl_basic_map_read_from_file(struct isl_ctx *ctx,
 		FILE *input, unsigned nparam, unsigned input_format);
+struct isl_basic_map *isl_basic_map_fix_si(struct isl_basic_map *bmap,
+		enum isl_dim_type type, unsigned pos, int value);
 
 struct isl_basic_map *isl_basic_map_sum(
 		struct isl_basic_map *bmap1, struct isl_basic_map *bmap2);

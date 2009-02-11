@@ -104,6 +104,126 @@ error:
 	return NULL;
 }
 
+static struct isl_mat *unimodular_complete(struct isl_ctx *ctx,
+						struct isl_mat *M, int row)
+{
+	int r;
+	struct isl_mat *H = NULL, *Q = NULL;
+
+	isl_assert(ctx, M->n_row == M->n_col, goto error);
+	M->n_row = row;
+	H = isl_mat_left_hermite(ctx, isl_mat_copy(ctx, M), 0, NULL, &Q);
+	M->n_row = M->n_col;
+	if (!H)
+		goto error;
+	for (r = 0; r < row; ++r)
+		isl_assert(ctx, isl_int_is_one(H->row[r][r]), goto error);
+	for (r = row; r < M->n_row; ++r)
+		isl_seq_cpy(M->row[r], Q->row[r], M->n_col);
+	isl_mat_free(ctx, H);
+	isl_mat_free(ctx, Q);
+	return M;
+error:
+	isl_mat_free(ctx, H);
+	isl_mat_free(ctx, Q);
+	isl_mat_free(ctx, M);
+	return NULL;
+}
+
+/* Compute and return the matrix
+ *
+ *		U_1^{-1} diag(d_1, 1, ..., 1)
+ *
+ * with U_1 the unimodular completion of the first (and only) row of B.
+ * The columns of this matrix generate the lattice that satisfies
+ * the single (linear) modulo constraint.
+ */
+static struct isl_mat *parameter_compression_1(struct isl_ctx *ctx,
+			struct isl_mat *B, struct isl_vec *d)
+{
+	struct isl_mat *U;
+
+	U = isl_mat_alloc(ctx, B->n_col - 1, B->n_col - 1);
+	if (!U)
+		return NULL;
+	isl_seq_cpy(U->row[0], B->row[0] + 1, B->n_col - 1);
+	U = unimodular_complete(ctx, U, 1);
+	U = isl_mat_right_inverse(ctx, U);
+	if (!U)
+		return NULL;
+	isl_mat_col_mul(U, 0, d->block.data[0], 0);
+	U = isl_mat_lin_to_aff(ctx, U);
+	return U;
+error:
+	isl_mat_free(ctx, U);
+	return NULL;
+}
+
+/* Compute a common lattice of solutions to the linear modulo
+ * constraints specified by B and d.
+ * See also the documentation of isl_mat_parameter_compression.
+ * We put the matrix
+ * 
+ *		A = [ L_1^{-T} L_2^{-T} ... L_k^{-T} ]
+ *
+ * on a common denominator.  This denominator D is the lcm of modulos d.
+ * Since L_i = U_i^{-1} diag(d_i, 1, ... 1), we have
+ * L_i^{-T} = U_i^T diag(d_i, 1, ... 1)^{-T} = U_i^T diag(1/d_i, 1, ..., 1).
+ * Putting this on the common denominator, we have
+ * D * L_i^{-T} = U_i^T diag(D/d_i, D, ..., D).
+ */
+static struct isl_mat *parameter_compression_multi(struct isl_ctx *ctx,
+			struct isl_mat *B, struct isl_vec *d)
+{
+	int i, j, k;
+	int ok;
+	isl_int D;
+	struct isl_mat *A = NULL, *U = NULL;
+	struct isl_mat *T;
+	unsigned size;
+
+	isl_int_init(D);
+
+	isl_vec_lcm(ctx, d, &D);
+
+	size = B->n_col - 1;
+	A = isl_mat_alloc(ctx, size, B->n_row * size);
+	U = isl_mat_alloc(ctx, size, size);
+	if (!U || !A)
+		goto error;
+	for (i = 0; i < B->n_row; ++i) {
+		isl_seq_cpy(U->row[0], B->row[i] + 1, size);
+		U = unimodular_complete(ctx, U, 1);
+		if (!U)
+			goto error;
+		isl_int_divexact(D, D, d->block.data[i]);
+		for (k = 0; k < U->n_col; ++k)
+			isl_int_mul(A->row[k][i*size+0], D, U->row[0][k]);
+		isl_int_mul(D, D, d->block.data[i]);
+		for (j = 1; j < U->n_row; ++j)
+			for (k = 0; k < U->n_col; ++k)
+				isl_int_mul(A->row[k][i*size+j],
+						D, U->row[j][k]);
+	}
+	A = isl_mat_left_hermite(ctx, A, 0, NULL, NULL);
+	T = isl_mat_sub_alloc(ctx, A->row, 0, A->n_row, 0, A->n_row);
+	T = isl_mat_lin_to_aff(ctx, T);
+	isl_int_set(T->row[0][0], D);
+	T = isl_mat_right_inverse(ctx, T);
+	isl_assert(ctx, isl_int_is_one(T->row[0][0]), goto error);
+	T = isl_mat_transpose(ctx, T);
+	isl_mat_free(ctx, A);
+	isl_mat_free(ctx, U);
+
+	isl_int_clear(D);
+	return T;
+error:
+	isl_mat_free(ctx, A);
+	isl_mat_free(ctx, U);
+	isl_int_clear(D);
+	return NULL;
+}
+
 /* Given a set of modulo constraints
  *
  *		c + A y = 0 mod d
@@ -115,9 +235,16 @@ error:
  * that bijectively maps the integer vectors y' to integer
  * vectors y that satisfy the modulo constraints.
  *
- * The implementation closely follows the description in Section 2.5.3
+ * This function is inspired by Section 2.5.3
  * of B. Meister, "Stating and Manipulating Periodicity in the Polytope
  * Model.  Applications to Program Analysis and Optimization".
+ * However, the implementation only follows the algorithm of that
+ * section for computing a particular solution and not for computing
+ * a general homogeneous solution.  The latter is incomplete and
+ * may remove some valid solutions.
+ * Instead, we use an adaptation of the algorithm in Section 7 of
+ * B. Meister, S. Verdoolaege, "Polynomial Approximations in the Polytope
+ * Model: Bringing the Power of Quasi-Polynomials to the Masses".
  *
  * The input is given as a matrix B = [ c A ] and a vector d.
  * Each element of the vector d corresponds to a row in B.
@@ -132,14 +259,57 @@ error:
  *
  *		A y = 0 mod d
  *
- * Let K be the right kernel of A, then any y = K y'' is a solution.
- * Any multiple of a unit vector s_j e_j such that for each row i,
- * we have that s_j a_{i,j} is a multiple of d_i, is also a generator
- * for the set of solutions.  The smallest such s_j can be obtained
- * by taking the lcm of all the a_{i,j}/gcd(a_{i,j},d).
- * That is, y = K y'' + S y''', with S = diag s is the general solution.
- * To obtain a minimal representation we compute the Hermite normal
- * form [ G 0 ] of [ S K ].
+ * That is we want to compute G such that
+ *
+ *		y = G y''
+ *
+ * with y'' integer, describes the set of solutions.
+ *
+ * We first remove the common factors of each row.
+ * In particular if gcd(A_i,d_i) != 1, then we divide the whole
+ * row i (including d_i) by this common factor.  If afterwards gcd(A_i) != 1,
+ * then we divide this row of A by the common factor, unless gcd(A_i) = 0.
+ * In the later case, we simply drop the row (in both A and d).
+ *
+ * If there are no rows left in A, the G is the identity matrix. Otherwise,
+ * for each row i, we now determine the lattice of integer vectors
+ * that satisfies this row.  Let U_i be the unimodular extension of the
+ * row A_i.  This unimodular extension exists because gcd(A_i) = 1.
+ * The first component of
+ *
+ *		y' = U_i y
+ *
+ * needs to be a multiple of d_i.  Let y' = diag(d_i, 1, ..., 1) y''.
+ * Then,
+ *
+ *		y = U_i^{-1} diag(d_i, 1, ..., 1) y''
+ *
+ * for arbitrary integer vectors y''.  That is, y belongs to the lattice
+ * generated by the columns of L_i = U_i^{-1} diag(d_i, 1, ..., 1).
+ * If there is only one row, then G = L_1.
+ *
+ * If there is more than one row left, we need to compute the intersection
+ * of the lattices.  That is, we need to compute an L such that
+ *
+ *		L = L_i L_i'	for all i
+ *
+ * with L_i' some integer matrices.  Let A be constructed as follows
+ *
+ *		A = [ L_1^{-T} L_2^{-T} ... L_k^{-T} ]
+ *
+ * and computed the Hermite Normal Form of A = [ H 0 ] U
+ * Then,
+ *
+ *		L_i^{-T} = H U_{1,i}
+ *
+ * or
+ *
+ *		H^{-T} = L_i U_{1,i}^T
+ *
+ * In other words G = L = H^{-T}.
+ * To ensure that G is lower triangular, we compute and use its Hermite
+ * normal form.
+ *
  * The affine transformation matrix returned is then
  *
  *		[  1   0  ]
@@ -151,12 +321,10 @@ error:
 struct isl_mat *isl_mat_parameter_compression(struct isl_ctx *ctx,
 			struct isl_mat *B, struct isl_vec *d)
 {
-	int i, j;
+	int i;
 	struct isl_mat *cst = NULL;
-	struct isl_mat *K = NULL;
-	struct isl_mat *M = NULL;
-	struct isl_mat *T;
-	isl_int v;
+	struct isl_mat *T = NULL;
+	isl_int D;
 
 	if (!B || !d)
 		goto error;
@@ -171,46 +339,51 @@ struct isl_mat *isl_mat_parameter_compression(struct isl_ctx *ctx,
 		isl_vec_free(ctx, d);
 		return T;
 	}
-	T = isl_mat_sub_alloc(ctx, B->row, 0, B->n_row, 1, B->n_col - 1);
-	K = isl_mat_right_kernel(ctx, T);
-	if (!K)
-		goto error;
-	M = isl_mat_alloc(ctx, B->n_col - 1, B->n_col - 1 + K->n_col);
-	if (!M)
-		goto error;
-	isl_mat_sub_copy(ctx, M->row, K->row, M->n_row,
-				B->n_col - 1, 0, K->n_col);
-	for (i = 0; i < M->n_row; ++i) {
-		isl_seq_clr(M->row[i], B->n_col - 1);
-		isl_int_set_si(M->row[i][i], 1);
-	}
-	isl_int_init(v);
-	for (i = 0; i < B->n_row; ++i)
-		for (j = 0; j < B->n_col - 1; ++j) {
-			isl_int_gcd(v, B->row[i][1+j], d->block.data[i]);
-			isl_int_divexact(v, d->block.data[i], v);
-			isl_int_lcm(M->row[j][j], M->row[j][j], v);
+	isl_int_init(D);
+	/* Replace a*g*row = 0 mod g*m by row = 0 mod m */
+	for (i = 0; i < B->n_row; ++i) {
+		isl_seq_gcd(B->row[i] + 1, B->n_col - 1, &D);
+		if (isl_int_is_one(D))
+			continue;
+		if (isl_int_is_zero(D)) {
+			B = isl_mat_drop_rows(ctx, B, i, 1);
+			d = isl_vec_cow(ctx, d);
+			if (!B || !d)
+				goto error2;
+			isl_seq_cpy(d->block.data+i, d->block.data+i+1,
+							d->size - (i+1));
+			d->size--;
+			i--;
+			continue;
 		}
-	isl_int_clear(v);
-	M = isl_mat_left_hermite(ctx, M, 0, NULL, NULL);
-	if (!M)
-		goto error;
-	T = isl_mat_alloc(ctx, 1 + B->n_col - 1, B->n_col);
+		B = isl_mat_cow(ctx, B);
+		if (!B)
+			goto error2;
+		isl_seq_scale_down(B->row[i] + 1, B->row[i] + 1, D, B->n_col-1);
+		isl_int_gcd(D, D, d->block.data[i]);
+		d = isl_vec_cow(ctx, d);
+		if (!d)
+			goto error2;
+		isl_int_divexact(d->block.data[i], d->block.data[i], D);
+	}
+	isl_int_clear(D);
+	if (B->n_row == 0)
+		T = isl_mat_identity(ctx, B->n_col);
+	else if (B->n_row == 1)
+		T = parameter_compression_1(ctx, B, d);
+	else
+		T = parameter_compression_multi(ctx, B, d);
+	T = isl_mat_left_hermite(ctx, T, 0, NULL, NULL);
 	if (!T)
 		goto error;
-	isl_int_set_si(T->row[0][0], 1);
-	isl_seq_clr(T->row[0] + 1, T->n_col - 1);
 	isl_mat_sub_copy(ctx, T->row + 1, cst->row, cst->n_row, 0, 0, 1);
-	isl_mat_sub_copy(ctx, T->row + 1, M->row, M->n_row, 1, 0, T->n_col - 1);
-	isl_mat_free(ctx, K);
-	isl_mat_free(ctx, M);
 	isl_mat_free(ctx, cst);
 	isl_mat_free(ctx, B);
 	isl_vec_free(ctx, d);
 	return T;
+error2:
+	isl_int_clear(D);
 error:
-	isl_mat_free(ctx, K);
-	isl_mat_free(ctx, M);
 	isl_mat_free(ctx, cst);
 	isl_mat_free(ctx, B);
 	isl_vec_free(ctx, d);

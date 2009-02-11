@@ -653,6 +653,23 @@ error:
 	return NULL;
 }
 
+struct isl_mat *isl_mat_transpose(struct isl_ctx *ctx, struct isl_mat *mat)
+{
+	int i, j;
+
+	mat = isl_mat_cow(ctx, mat);
+	if (!mat)
+		return NULL;
+	isl_assert(ctx, mat->n_col == mat->n_row, goto error);
+	for (i = 0; i < mat->n_row; ++i)
+		for (j = i + 1; j < mat->n_col; ++j)
+			isl_int_swap(mat->row[i][j], mat->row[j][i]);
+	return mat;
+error:
+	isl_mat_free(ctx, mat);
+	return NULL;
+}
+
 struct isl_mat *isl_mat_swap_rows(struct isl_ctx *ctx,
 	struct isl_mat *mat, unsigned i, unsigned j)
 {
@@ -838,6 +855,7 @@ struct isl_mat *isl_mat_drop_cols(struct isl_ctx *ctx, struct isl_mat *mat,
 {
 	int r;
 
+	mat = isl_mat_cow(ctx, mat);
 	if (!mat)
 		return NULL;
 
@@ -855,6 +873,7 @@ struct isl_mat *isl_mat_drop_rows(struct isl_ctx *ctx, struct isl_mat *mat,
 {
 	int r;
 
+	mat = isl_mat_cow(ctx, mat);
 	if (!mat)
 		return NULL;
 
@@ -872,4 +891,12 @@ void isl_mat_col_submul(struct isl_mat *mat,
 
 	for (i = 0; i < mat->n_row; ++i)
 		isl_int_submul(mat->row[i][dst_col], f, mat->row[i][src_col]);
+}
+
+void isl_mat_col_mul(struct isl_mat *mat, int dst_col, isl_int f, int src_col)
+{
+	int i;
+
+	for (i = 0; i < mat->n_row; ++i)
+		isl_int_mul(mat->row[i][dst_col], f, mat->row[i][src_col]);
 }

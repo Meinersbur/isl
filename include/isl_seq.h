@@ -18,6 +18,7 @@ void isl_seq_combine(isl_int *dst, isl_int m1, isl_int *src1,
 void isl_seq_elim(isl_int *dst, isl_int *src, unsigned pos, unsigned len,
 		  isl_int *m);
 void isl_seq_gcd(isl_int *p, unsigned len, isl_int *gcd);
+void isl_seq_lcm(isl_int *p, unsigned len, isl_int *lcm);
 void isl_seq_inner_product(isl_int *p1, isl_int *p2, unsigned len,
 			   isl_int *prod);
 int isl_seq_first_non_zero(isl_int *p, unsigned len);
