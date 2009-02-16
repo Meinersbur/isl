@@ -2348,6 +2348,11 @@ error:
 	return NULL;
 }
 
+struct isl_map *isl_map_from_range(struct isl_set *set)
+{
+	return (struct isl_map *)set;
+}
+
 struct isl_set *isl_set_from_map(struct isl_map *map)
 {
 	int i;
