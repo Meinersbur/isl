@@ -2484,10 +2484,16 @@ struct isl_basic_set *isl_basic_set_universe_like(struct isl_basic_set *model)
 	return isl_basic_set_alloc_dim(isl_dim_copy(model->dim), 0, 0, 0);
 }
 
-struct isl_map *isl_map_empty(struct isl_ctx *ctx,
-		unsigned nparam, unsigned in, unsigned out)
+struct isl_map *isl_map_empty(struct isl_dim *dim)
 {
-	return isl_map_alloc(ctx, nparam, in, out, 0, ISL_MAP_DISJOINT);
+	return isl_map_alloc_dim(dim, 0, ISL_MAP_DISJOINT);
+}
+
+struct isl_map *isl_map_empty_like(struct isl_map *model)
+{
+	if (!model)
+		return NULL;
+	return isl_map_alloc_dim(isl_dim_copy(model->dim), 0, ISL_MAP_DISJOINT);
 }
 
 struct isl_map *isl_map_empty_like_basic_map(struct isl_basic_map *model)
