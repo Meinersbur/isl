@@ -3251,6 +3251,11 @@ int isl_map_is_empty(struct isl_map *map)
 	return 1;
 }
 
+int isl_map_fast_is_empty(struct isl_map *map)
+{
+	return map->n == 0;
+}
+
 int isl_set_is_empty(struct isl_set *set)
 {
 	return isl_map_is_empty((struct isl_map *)set);
