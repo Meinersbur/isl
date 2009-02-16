@@ -1929,8 +1929,7 @@ error:
 	return NULL;
 }
 
-static struct isl_basic_map *var_equal(struct isl_ctx *ctx,
-		struct isl_basic_map *bmap, unsigned pos)
+static struct isl_basic_map *var_equal(struct isl_basic_map *bmap, unsigned pos)
 {
 	int i;
 	unsigned nparam;
@@ -1950,8 +1949,7 @@ error:
 	return NULL;
 }
 
-static struct isl_basic_map *var_more(struct isl_ctx *ctx,
-		struct isl_basic_map *bmap, unsigned pos)
+static struct isl_basic_map *var_more(struct isl_basic_map *bmap, unsigned pos)
 {
 	int i;
 	unsigned nparam;
@@ -1972,8 +1970,7 @@ error:
 	return NULL;
 }
 
-static struct isl_basic_map *var_less(struct isl_ctx *ctx,
-		struct isl_basic_map *bmap, unsigned pos)
+static struct isl_basic_map *var_less(struct isl_basic_map *bmap, unsigned pos)
 {
 	int i;
 	unsigned nparam;
@@ -1994,46 +1991,43 @@ error:
 	return NULL;
 }
 
-struct isl_basic_map *isl_basic_map_equal(struct isl_ctx *ctx,
-		unsigned nparam, unsigned in, unsigned out, unsigned n_equal)
+struct isl_basic_map *isl_basic_map_equal(struct isl_dim *dim, unsigned n_equal)
 {
 	int i;
 	struct isl_basic_map *bmap;
-	bmap = isl_basic_map_alloc(ctx, nparam, in, out, 0, n_equal, 0);
+	bmap = isl_basic_map_alloc_dim(dim, 0, n_equal, 0);
 	if (!bmap)
 		return NULL;
 	for (i = 0; i < n_equal && bmap; ++i)
-		bmap = var_equal(ctx, bmap, i);
+		bmap = var_equal(bmap, i);
 	return isl_basic_map_finalize(bmap);
 }
 
-struct isl_basic_map *isl_basic_map_less_at(struct isl_ctx *ctx,
-		unsigned nparam, unsigned in, unsigned out, unsigned pos)
+struct isl_basic_map *isl_basic_map_less_at(struct isl_dim *dim, unsigned pos)
 {
 	int i;
 	struct isl_basic_map *bmap;
-	bmap = isl_basic_map_alloc(ctx, nparam, in, out, 0, pos, 1);
+	bmap = isl_basic_map_alloc_dim(dim, 0, pos, 1);
 	if (!bmap)
 		return NULL;
 	for (i = 0; i < pos && bmap; ++i)
-		bmap = var_equal(ctx, bmap, i);
+		bmap = var_equal(bmap, i);
 	if (bmap)
-		bmap = var_less(ctx, bmap, pos);
+		bmap = var_less(bmap, pos);
 	return isl_basic_map_finalize(bmap);
 }
 
-struct isl_basic_map *isl_basic_map_more_at(struct isl_ctx *ctx,
-		unsigned nparam, unsigned in, unsigned out, unsigned pos)
+struct isl_basic_map *isl_basic_map_more_at(struct isl_dim *dim, unsigned pos)
 {
 	int i;
 	struct isl_basic_map *bmap;
-	bmap = isl_basic_map_alloc(ctx, nparam, in, out, 0, pos, 1);
+	bmap = isl_basic_map_alloc_dim(dim, 0, pos, 1);
 	if (!bmap)
 		return NULL;
 	for (i = 0; i < pos && bmap; ++i)
-		bmap = var_equal(ctx, bmap, i);
+		bmap = var_equal(bmap, i);
 	if (bmap)
-		bmap = var_more(ctx, bmap, pos);
+		bmap = var_more(bmap, pos);
 	return isl_basic_map_finalize(bmap);
 }
 
