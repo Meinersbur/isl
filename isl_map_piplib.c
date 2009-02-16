@@ -244,11 +244,12 @@ error:
 }
 
 /*
- * Returns a map with "context" as domain and as range the first
- * "keep" variables in the quast lists.
+ * Returns a map of dimension "keep_dim" with "context" as domain and
+ * as range the first "isl_dim_size(keep_dim, isl_dim_out)" variables
+ * in the quast lists.
  */
 static struct isl_map *isl_map_from_quast(struct isl_ctx *ctx, PipQuast *q,
-		unsigned keep,
+		struct isl_dim *keep_dim,
 		struct isl_basic_set *context,
 		struct isl_set **rest)
 {
@@ -257,21 +258,23 @@ static struct isl_map *isl_map_from_quast(struct isl_ctx *ctx, PipQuast *q,
 	int		max_depth;
 	int		n_sol, n_nosol;
 	struct scan_data	data;
-	struct isl_map		*map;
+	struct isl_map		*map = NULL;
 	struct isl_dim		*dims;
 	unsigned		nparam;
 	unsigned		dim;
+	unsigned		keep;
 
 	data.ctx = ctx;
 	data.rest = rest;
 	data.bmap = NULL;
 	data.pos = NULL;
 
-	if (!context)
+	if (!context || !keep_dim)
 		goto error;
 
 	dim = isl_basic_set_n_dim(context);
 	nparam = isl_basic_set_n_param(context);
+	keep = isl_dim_size(keep_dim, isl_dim_out);
 	pip_param = nparam + dim;
 
 	max_depth = 0;
@@ -282,22 +285,22 @@ static struct isl_map *isl_map_from_quast(struct isl_ctx *ctx, PipQuast *q,
 	nexist -= pip_param-1;
 
 	if (rest) {
-		*rest = isl_set_alloc(data.ctx, nparam, dim, n_nosol,
+		*rest = isl_set_alloc_dim(isl_dim_copy(context->dim), n_nosol,
 					ISL_MAP_DISJOINT);
 		if (!*rest)
 			goto error;
 	}
-	map = isl_map_alloc(data.ctx, nparam, dim, keep, n_sol,
+	map = isl_map_alloc_dim(isl_dim_copy(keep_dim), n_sol,
 				ISL_MAP_DISJOINT);
 	if (!map)
 		goto error;
 
 	dims = isl_dim_reverse(isl_dim_copy(context->dim));
 	data.bmap = isl_basic_map_from_basic_set(context, dims);
-	data.bmap = isl_basic_map_extend(data.bmap,
-	    nparam, dim, keep, nexist, keep, max_depth+2*nexist);
+	data.bmap = isl_basic_map_extend_dim(data.bmap,
+		keep_dim, nexist, keep, max_depth+2*nexist);
 	if (!data.bmap)
-		goto error;
+		goto error2;
 
 	if (data.bmap->extra) {
 		int i;
@@ -311,17 +314,20 @@ static struct isl_map *isl_map_from_quast(struct isl_ctx *ctx, PipQuast *q,
 	map = scan_quast_r(&data, q, map);
 	map = isl_map_finalize(map);
 	if (!map)
-		goto error;
+		goto error2;
 	if (rest) {
 		*rest = isl_set_finalize(*rest);
 		if (!*rest)
-			goto error;
+			goto error2;
 	}
 	isl_basic_map_free(data.bmap);
 	if (data.pos)
 		free(data.pos);
 	return map;
 error:
+	isl_basic_set_free(context);
+	isl_dim_free(keep_dim);
+error2:
 	if (data.pos)
 		free(data.pos);
 	isl_basic_map_free(data.bmap);
@@ -418,7 +424,8 @@ static struct isl_map *extremum_on(
 	if (sol) {
 		struct isl_basic_set *copy;
 		copy = isl_basic_set_copy(dom);
-		map = isl_map_from_quast(ctx, sol, n_out, copy, empty);
+		map = isl_map_from_quast(ctx, sol,
+				isl_dim_copy(bmap->dim), copy, empty);
 	} else {
 		map = isl_map_empty_like_basic_map(bmap);
 		if (empty)
@@ -499,7 +506,8 @@ struct isl_map *isl_pip_basic_map_compute_divs(struct isl_basic_map *bmap)
 	sol = pip_solve(domain, context, -1, options);
 
 	dom = isl_basic_set_alloc(ctx, nparam, n_in + n_out, 0, 0, 0);
-	map = isl_map_from_quast(ctx, sol, 0, dom, NULL);
+	map = isl_map_from_quast(ctx, sol,
+		isl_dim_reverse(isl_dim_copy(dom->dim)), dom, NULL);
 
 	pip_quast_free(sol);
 	pip_options_free(options);
