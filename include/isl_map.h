@@ -178,6 +178,10 @@ struct isl_map *isl_basic_map_lexmin(
 
 void isl_basic_map_dump(struct isl_basic_map *bmap, FILE *out, int indent);
 
+struct isl_basic_map *isl_map_copy_basic_map(struct isl_map *map);
+struct isl_map *isl_map_drop_basic_map(struct isl_map *map,
+						struct isl_basic_map *bmap);
+
 int isl_basic_map_fast_is_fixed(struct isl_basic_map *bmap,
 	enum isl_dim_type type, unsigned pos, isl_int *val);
 

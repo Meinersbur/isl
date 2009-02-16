@@ -3745,43 +3745,55 @@ struct isl_set *isl_set_remove_empty_parts(struct isl_set *set)
 		isl_map_remove_empty_parts((struct isl_map *)set);
 }
 
+struct isl_basic_map *isl_map_copy_basic_map(struct isl_map *map)
+{
+	struct isl_basic_map *bmap;
+	if (!map || map->n == 0)
+		return NULL;
+	bmap = map->p[map->n-1];
+	isl_assert(map->ctx, F_ISSET(bmap, ISL_BASIC_SET_FINAL), return NULL);
+	return isl_basic_map_copy(bmap);
+}
+
 struct isl_basic_set *isl_set_copy_basic_set(struct isl_set *set)
 {
-	struct isl_basic_set *bset;
-	if (!set || set->n == 0)
-		return NULL;
-	bset = set->p[set->n-1];
-	isl_assert(set->ctx, F_ISSET(bset, ISL_BASIC_SET_FINAL), return NULL);
-	return isl_basic_set_copy(bset);
+	(struct isl_basic_set *)isl_map_copy_basic_map((struct isl_map *)set);
+}
+
+struct isl_map *isl_map_drop_basic_map(struct isl_map *map,
+						struct isl_basic_map *bmap)
+{
+	int i;
+
+	if (!map || !bmap)
+		goto error;
+	for (i = map->n-1; i >= 0; --i) {
+		if (map->p[i] != bmap)
+			continue;
+		map = isl_map_cow(map);
+		if (!map)
+			goto error;
+		isl_basic_map_free(map->p[i]);
+		if (i != map->n-1) {
+			F_CLR(map, ISL_SET_NORMALIZED);
+			map->p[i] = map->p[map->n-1];
+		}
+		map->n--;
+		return map;
+	}
+	isl_basic_map_free(bmap);
+	return map;
+error:
+	isl_map_free(map);
+	isl_basic_map_free(bmap);
+	return NULL;
 }
 
 struct isl_set *isl_set_drop_basic_set(struct isl_set *set,
 						struct isl_basic_set *bset)
 {
-	int i;
-
-	if (!set || !bset)
-		goto error;
-	for (i = set->n-1; i >= 0; --i) {
-		if (set->p[i] != bset)
-			continue;
-		set = isl_set_cow(set);
-		if (!set)
-			goto error;
-		isl_basic_set_free(set->p[i]);
-		if (i != set->n-1) {
-			F_CLR(set, ISL_SET_NORMALIZED);
-			set->p[i] = set->p[set->n-1];
-		}
-		set->n--;
-		return set;
-	}
-	isl_basic_set_free(bset);
-	return set;
-error:
-	isl_set_free(set);
-	isl_basic_set_free(bset);
-	return NULL;
+	(struct isl_set *)isl_map_drop_basic_map((struct isl_map *)set,
+						(struct isl_basic_map *)bset);
 }
 
 /* Given two _disjoint_ basic sets bset1 and bset2, check whether
