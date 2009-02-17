@@ -4312,6 +4312,99 @@ error:
 	return NULL;
 }
 
+struct isl_basic_map *isl_basic_map_product(
+		struct isl_basic_map *bmap1, struct isl_basic_map *bmap2)
+{
+	struct isl_dim *dim_result = NULL;
+	struct isl_basic_map *bmap;
+	unsigned in1, in2, out1, out2, nparam, total, pos;
+	struct isl_dim_map *dim_map1, *dim_map2;
+
+	if (!bmap1 || !bmap2)
+		goto error;
+
+	isl_assert(map1->ctx, isl_dim_match(bmap1->dim, isl_dim_param,
+				     bmap2->dim, isl_dim_param), goto error);
+	dim_result = isl_dim_product(isl_dim_copy(bmap1->dim),
+						   isl_dim_copy(bmap2->dim));
+
+	in1 = isl_basic_map_n_in(bmap1);
+	in2 = isl_basic_map_n_in(bmap2);
+	out1 = isl_basic_map_n_out(bmap1);
+	out2 = isl_basic_map_n_out(bmap2);
+	nparam = isl_basic_map_n_param(bmap1);
+
+	total = nparam + in1 + in2 + out1 + out2 + bmap1->n_div + bmap2->n_div;
+	dim_map1 = isl_dim_map_alloc(bmap1->ctx, total);
+	dim_map2 = isl_dim_map_alloc(bmap1->ctx, total);
+	isl_dim_map_dim(dim_map1, bmap1->dim, isl_dim_param, pos = 0);
+	isl_dim_map_dim(dim_map2, bmap2->dim, isl_dim_param, pos = 0);
+	isl_dim_map_dim(dim_map1, bmap1->dim, isl_dim_in, pos += nparam);
+	isl_dim_map_dim(dim_map2, bmap2->dim, isl_dim_in, pos += in1);
+	isl_dim_map_dim(dim_map1, bmap1->dim, isl_dim_out, pos += in2);
+	isl_dim_map_dim(dim_map2, bmap2->dim, isl_dim_out, pos += out1);
+	isl_dim_map_div(dim_map1, bmap1, pos += out2);
+	isl_dim_map_div(dim_map2, bmap2, pos += bmap1->n_div);
+
+	bmap = isl_basic_map_alloc_dim(dim_result,
+			bmap1->n_div + bmap2->n_div,
+			bmap1->n_eq + bmap2->n_eq,
+			bmap1->n_ineq + bmap2->n_ineq);
+	bmap = add_constraints_dim_map(bmap, bmap1, dim_map1);
+	bmap = add_constraints_dim_map(bmap, bmap2, dim_map2);
+	bmap = isl_basic_map_simplify(bmap);
+	return isl_basic_map_finalize(bmap);
+error:
+	isl_basic_map_free(bmap1);
+	isl_basic_map_free(bmap2);
+	return NULL;
+}
+
+/* Given two maps A -> B and C -> D, construct a map (A, C) -> (B, D)
+ */
+struct isl_map *isl_map_product(struct isl_map *map1, struct isl_map *map2)
+{
+	unsigned flags = 0;
+	struct isl_map *result;
+	int i, j;
+
+	if (!map1 || !map2)
+		goto error;
+
+	isl_assert(map1->ctx, isl_dim_match(map1->dim, isl_dim_param,
+					 map2->dim, isl_dim_param), goto error);
+
+	if (F_ISSET(map1, ISL_MAP_DISJOINT) &&
+	    F_ISSET(map2, ISL_MAP_DISJOINT))
+		FL_SET(flags, ISL_MAP_DISJOINT);
+
+	result = isl_map_alloc_dim(isl_dim_product(isl_dim_copy(map1->dim),
+						   isl_dim_copy(map2->dim)),
+				map1->n * map2->n, flags);
+	if (!result)
+		goto error;
+	for (i = 0; i < map1->n; ++i)
+		for (j = 0; j < map2->n; ++j) {
+			struct isl_basic_map *part;
+			part = isl_basic_map_product(
+				    isl_basic_map_copy(map1->p[i]),
+				    isl_basic_map_copy(map2->p[j]));
+			if (isl_basic_map_is_empty(part))
+				isl_basic_map_free(part);
+			else
+				result = isl_map_add(result, part);
+			if (!result)
+				goto error;
+		}
+	isl_map_free(map1);
+	isl_map_free(map2);
+	return result;
+error:
+	isl_map_free(map1);
+	isl_map_free(map2);
+	return NULL;
+}
+
 uint32_t isl_basic_set_get_hash(struct isl_basic_set *bset)
 {
 	int i;

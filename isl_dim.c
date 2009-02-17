@@ -121,17 +121,18 @@ unsigned isl_dim_size(struct isl_dim *dim, enum isl_dim_type type)
 }
 
 static struct isl_dim *copy_names(struct isl_dim *dst,
-	enum isl_dim_type dst_type, struct isl_dim *src,
+	enum isl_dim_type dst_type, unsigned offset, struct isl_dim *src,
 	enum isl_dim_type src_type)
 {
 	int i;
 	struct isl_name *name;
 
-	for (i = 0; i < n(dst, dst_type); ++i) {
+	for (i = 0; i < n(src, src_type); ++i) {
 		name = get_name(src, src_type, i);
 		if (!name)
 			continue;
-		dst = set_name(dst, dst_type, i, isl_name_copy(dst->ctx, name));
+		dst = set_name(dst, dst_type, offset + i,
+					isl_name_copy(dst->ctx, name));
 		if (!dst)
 			return NULL;
 	}
@@ -144,9 +145,9 @@ struct isl_dim *isl_dim_dup(struct isl_dim *dim)
 	dup = isl_dim_alloc(dim->ctx, dim->nparam, dim->n_in, dim->n_out);
 	if (!dim->names)
 		return dup;
-	dup = copy_names(dup, isl_dim_param, dim, isl_dim_param);
-	dup = copy_names(dup, isl_dim_in, dim, isl_dim_in);
-	dup = copy_names(dup, isl_dim_out, dim, isl_dim_out);
+	dup = copy_names(dup, isl_dim_param, 0, dim, isl_dim_param);
+	dup = copy_names(dup, isl_dim_in, 0, dim, isl_dim_in);
+	dup = copy_names(dup, isl_dim_out, 0, dim, isl_dim_out);
 	return dup;
 }
 
@@ -318,9 +319,40 @@ struct isl_dim *isl_dim_join(struct isl_dim *left, struct isl_dim *right)
 	if (!dim)
 		goto error;
 
-	dim = copy_names(dim, isl_dim_param, left, isl_dim_param);
-	dim = copy_names(dim, isl_dim_in, left, isl_dim_in);
-	dim = copy_names(dim, isl_dim_out, right, isl_dim_out);
+	dim = copy_names(dim, isl_dim_param, 0, left, isl_dim_param);
+	dim = copy_names(dim, isl_dim_in, 0, left, isl_dim_in);
+	dim = copy_names(dim, isl_dim_out, 0, right, isl_dim_out);
+
+	isl_dim_free(left);
+	isl_dim_free(right);
+
+	return dim;
+error:
+	isl_dim_free(left);
+	isl_dim_free(right);
+	return NULL;
+}
+
+struct isl_dim *isl_dim_product(struct isl_dim *left, struct isl_dim *right)
+{
+	struct isl_dim *dim;
+
+	if (!left || !right)
+		goto error;
+
+	isl_assert(left->ctx, match(left, isl_dim_param, right, isl_dim_param),
+			goto error);
+
+	dim = isl_dim_alloc(left->ctx, left->nparam,
+			left->n_in + right->n_in, left->n_out + right->n_out);
+	if (!dim)
+		goto error;
+
+	dim = copy_names(dim, isl_dim_param, 0, left, isl_dim_param);
+	dim = copy_names(dim, isl_dim_in, 0, left, isl_dim_in);
+	dim = copy_names(dim, isl_dim_in, left->n_in, right, isl_dim_in);
+	dim = copy_names(dim, isl_dim_out, 0, left, isl_dim_out);
+	dim = copy_names(dim, isl_dim_out, left->n_out, right, isl_dim_out);
 
 	isl_dim_free(left);
 	isl_dim_free(right);
@@ -354,7 +386,7 @@ struct isl_dim *isl_dim_map(struct isl_dim *dim)
 	}
 	dim->n_in = dim->n_out;
 	if (names) {
-		copy_names(dim, isl_dim_out, dim, isl_dim_in);
+		copy_names(dim, isl_dim_out, 0, dim, isl_dim_in);
 		free(dim->names);
 		dim->names = names;
 		dim->n_name = dim->nparam + dim->n_out + dim->n_out;

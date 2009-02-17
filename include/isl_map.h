@@ -221,6 +221,7 @@ struct isl_map *isl_map_apply_domain(
 struct isl_map *isl_map_apply_range(
 		struct isl_map *map1,
 		struct isl_map *map2);
+struct isl_map *isl_map_product(struct isl_map *map1, struct isl_map *map2);
 struct isl_map *isl_map_intersect(struct isl_map *map1, struct isl_map *map2);
 struct isl_map *isl_map_subtract(struct isl_map *map1, struct isl_map *map2);
 struct isl_map *isl_map_fix_input_si(struct isl_map *map,
