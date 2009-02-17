@@ -285,6 +285,23 @@ error:
 	return NULL;
 }
 
+struct isl_dim *isl_dim_add(struct isl_dim *dim, enum isl_dim_type type,
+	unsigned n)
+{
+	switch (type) {
+	case isl_dim_param:
+		return isl_dim_extend(dim,
+					dim->nparam + n, dim->n_in, dim->n_out);
+	case isl_dim_in:
+		return isl_dim_extend(dim,
+					dim->nparam, dim->n_in + n, dim->n_out);
+	case isl_dim_out:
+		return isl_dim_extend(dim,
+					dim->nparam, dim->n_in, dim->n_out + n);
+	}
+	return dim;
+}
+
 struct isl_dim *isl_dim_join(struct isl_dim *left, struct isl_dim *right)
 {
 	struct isl_dim *dim;

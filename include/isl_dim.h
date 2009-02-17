@@ -46,6 +46,8 @@ const char *isl_dim_get_name(struct isl_dim *dim,
 
 struct isl_dim *isl_dim_extend(struct isl_dim *dim,
 			unsigned nparam, unsigned n_in, unsigned n_out);
+struct isl_dim *isl_dim_add(struct isl_dim *dim, enum isl_dim_type type,
+		unsigned n);
 struct isl_dim *isl_dim_join(struct isl_dim *left, struct isl_dim *right);
 struct isl_dim *isl_dim_map(struct isl_dim *dim);
 struct isl_dim *isl_dim_reverse(struct isl_dim *dim);
