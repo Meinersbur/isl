@@ -80,8 +80,8 @@ static struct isl_dim *set_name(struct isl_dim *dim,
 			for (i = dim->n_name; i < isl_dim_total(dim); ++i)
 				dim->names[i] = NULL;
 		}
+		dim->n_name = isl_dim_total(dim);
 	}
-	dim->n_name = isl_dim_total(dim);
 
 	dim->names[pos] = name;
 
@@ -261,6 +261,7 @@ struct isl_dim *isl_dim_extend(struct isl_dim *dim,
 				names + nparam + n_in);
 		free(dim->names);
 		dim->names = names;
+		dim->n_name = nparam + n_in + n_out;
 	}
 	dim->nparam = nparam;
 	dim->n_in = n_in;
@@ -328,6 +329,7 @@ struct isl_dim *isl_dim_map(struct isl_dim *dim)
 		copy_names(dim, isl_dim_out, dim, isl_dim_in);
 		free(dim->names);
 		dim->names = names;
+		dim->n_name = dim->nparam + dim->n_out + dim->n_out;
 	}
 	return dim;
 error:
