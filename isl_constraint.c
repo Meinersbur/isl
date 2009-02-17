@@ -171,23 +171,31 @@ int isl_constraint_is_equal(struct isl_constraint *constraint1,
 	       constraint1->line == constraint2->line;
 }
 
-struct isl_basic_set *isl_basic_set_add_constraint(
-	struct isl_basic_set *bset, struct isl_constraint *constraint)
+struct isl_basic_map *isl_basic_map_add_constraint(
+	struct isl_basic_map *bmap, struct isl_constraint *constraint)
 {
-	if (!bset || !constraint)
+	if (!bmap || !constraint)
 		goto error;
 
 	isl_assert(constraint->ctx,
-		isl_dim_equal(bset->dim, constraint->bmap->dim), goto error);
+		isl_dim_equal(bmap->dim, constraint->bmap->dim), goto error);
 
-	bset = isl_basic_set_intersect(bset,
-		isl_basic_set_copy((struct isl_basic_set *)constraint->bmap));
+	bmap = isl_basic_map_intersect(bmap,
+				    isl_basic_map_copy(constraint->bmap));
 	isl_constraint_free(constraint);
-	return bset;
+	return bmap;
 error:
-	isl_basic_set_free(bset);
+	isl_basic_map_free(bmap);
 	isl_constraint_free(constraint);
 	return NULL;
+}
+
+struct isl_basic_set *isl_basic_set_add_constraint(
+	struct isl_basic_set *bset, struct isl_constraint *constraint)
+{
+	return (struct isl_basic_set *)
+		isl_basic_map_add_constraint((struct isl_basic_map *)bset,
+						constraint);
 }
 
 struct isl_constraint *isl_constraint_add_div(struct isl_constraint *constraint,

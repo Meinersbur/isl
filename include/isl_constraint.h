@@ -31,6 +31,8 @@ struct isl_constraint *isl_constraint_next(struct isl_constraint *c);
 int isl_constraint_is_equal(struct isl_constraint *constraint1,
 			    struct isl_constraint *constraint2);
 
+struct isl_basic_map *isl_basic_map_add_constraint(
+	struct isl_basic_map *bmap, struct isl_constraint *constraint);
 struct isl_basic_set *isl_basic_set_add_constraint(
 	struct isl_basic_set *bset, struct isl_constraint *constraint);
 
