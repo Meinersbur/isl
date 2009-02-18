@@ -52,6 +52,8 @@ struct isl_dim *isl_dim_join(struct isl_dim *left, struct isl_dim *right);
 struct isl_dim *isl_dim_product(struct isl_dim *left, struct isl_dim *right);
 struct isl_dim *isl_dim_map(struct isl_dim *dim);
 struct isl_dim *isl_dim_reverse(struct isl_dim *dim);
+struct isl_dim *isl_dim_drop(struct isl_dim *dim, enum isl_dim_type type,
+		unsigned first, unsigned num);
 struct isl_dim *isl_dim_drop_inputs(struct isl_dim *dim,
 		unsigned first, unsigned n);
 struct isl_dim *isl_dim_drop_outputs(struct isl_dim *dim,

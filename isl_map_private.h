@@ -1,6 +1,9 @@
 #include "isl_set.h"
 #include "isl_map.h"
 
+unsigned isl_basic_map_offset(struct isl_basic_map *bmap,
+					enum isl_dim_type type);
+
 int isl_map_compatible_domain(struct isl_map *map, struct isl_set *set);
 int isl_basic_map_compatible_domain(struct isl_basic_map *bmap,
 		struct isl_basic_set *bset);
@@ -64,6 +67,8 @@ struct isl_basic_set *isl_basic_map_underlying_set(struct isl_basic_map *bmap);
 struct isl_set *isl_map_underlying_set(struct isl_map *map);
 struct isl_basic_map *isl_basic_map_overlying_set(struct isl_basic_set *bset,
 	struct isl_basic_map *like);
+struct isl_basic_map *isl_basic_map_drop(struct isl_basic_map *bmap,
+	enum isl_dim_type type, unsigned first, unsigned n);
 struct isl_basic_set *isl_basic_set_drop_dims(
 		struct isl_basic_set *bset, unsigned first, unsigned n);
 struct isl_set *isl_set_drop_dims(

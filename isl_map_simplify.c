@@ -116,21 +116,19 @@ error:
  * the div array too as the number of rows in this array is assumed
  * to be equal to extra.
  */
-struct isl_basic_map *isl_basic_map_drop_inputs(
-		struct isl_basic_map *bmap, unsigned first, unsigned n)
+struct isl_basic_map *isl_basic_map_drop(struct isl_basic_map *bmap,
+	enum isl_dim_type type, unsigned first, unsigned n)
 {
 	int i;
-	unsigned nparam;
-	unsigned n_in;
-	unsigned n_out;
+	unsigned dim;
+	unsigned offset;
+	unsigned left;
 
 	if (!bmap)
 		goto error;
 
-	nparam = isl_basic_map_n_param(bmap);
-	n_in = isl_basic_map_n_in(bmap);
-	n_out = isl_basic_map_n_out(bmap);
-	isl_assert(bmap->ctx, first + n <= n_in, goto error);
+	dim = isl_basic_map_dim(bmap, type);
+	isl_assert(bmap->ctx, first + n <= dim, goto error);
 
 	if (n == 0)
 		return bmap;
@@ -139,19 +137,18 @@ struct isl_basic_map *isl_basic_map_drop_inputs(
 	if (!bmap)
 		return NULL;
 
+	offset = isl_basic_map_offset(bmap, type) + first;
+	left = isl_basic_map_total_dim(bmap) - (offset - 1) - n;
 	for (i = 0; i < bmap->n_eq; ++i)
-		constraint_drop_vars(bmap->eq[i]+1+nparam+first, n,
-				 (n_in-first-n)+n_out+bmap->extra);
+		constraint_drop_vars(bmap->eq[i]+offset, n, left);
 
 	for (i = 0; i < bmap->n_ineq; ++i)
-		constraint_drop_vars(bmap->ineq[i]+1+nparam+first, n,
-				 (n_in-first-n)+n_out+bmap->extra);
+		constraint_drop_vars(bmap->ineq[i]+offset, n, left);
 
 	for (i = 0; i < bmap->n_div; ++i)
-		constraint_drop_vars(bmap->div[i]+1+1+nparam+first, n,
-				 (n_in-first-n)+n_out+bmap->extra);
+		constraint_drop_vars(bmap->div[i]+1+offset, n, left);
 
-	bmap->dim = isl_dim_drop_inputs(bmap->dim, first, n);
+	bmap->dim = isl_dim_drop(bmap->dim, type, first, n);
 	if (!bmap->dim)
 		goto error;
 
@@ -161,6 +158,12 @@ struct isl_basic_map *isl_basic_map_drop_inputs(
 error:
 	isl_basic_map_free(bmap);
 	return NULL;
+}
+
+struct isl_basic_map *isl_basic_map_drop_inputs(
+		struct isl_basic_map *bmap, unsigned first, unsigned n)
+{
+	return isl_basic_map_drop(bmap, isl_dim_in, first, n);
 }
 
 struct isl_map *isl_map_drop_inputs(

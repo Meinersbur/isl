@@ -106,6 +106,15 @@ static struct isl_name *get_name(struct isl_dim *dim,
 	return dim->names[pos];
 }
 
+static unsigned offset(struct isl_dim *dim, enum isl_dim_type type)
+{
+	switch (type) {
+	case isl_dim_param:	return 0;
+	case isl_dim_in:	return dim->nparam;
+	case isl_dim_out:	return dim->nparam + dim->n_in;
+	}
+}
+
 static unsigned n(struct isl_dim *dim, enum isl_dim_type type)
 {
 	switch (type) {
@@ -448,8 +457,8 @@ error:
 	return NULL;
 }
 
-struct isl_dim *isl_dim_drop_inputs(struct isl_dim *dim,
-		unsigned first, unsigned n)
+struct isl_dim *isl_dim_drop(struct isl_dim *dim, enum isl_dim_type type,
+		unsigned first, unsigned num)
 {
 	int i;
 
@@ -459,57 +468,47 @@ struct isl_dim *isl_dim_drop_inputs(struct isl_dim *dim,
 	if (n == 0)
 		return dim;
 
-	isl_assert(dim->ctx, first + n <= dim->n_in, goto error);
+	isl_assert(dim->ctx, first + num <= n(dim, type), goto error);
 	dim = isl_dim_cow(dim);
 	if (!dim)
 		goto error;
 	if (dim->names) {
-		for (i = 0; i < n; ++i) {
-			isl_name_free(dim->ctx,
-					get_name(dim, isl_dim_in, first+i));
+		for (i = 0; i < num; ++i)
+			isl_name_free(dim->ctx, get_name(dim, type, first+i));
+		for (i = first+num; i < n(dim, type); ++i)
+			set_name(dim, type, i - num, get_name(dim, type, i));
+		switch (type) {
+		case isl_dim_param:
+			get_names(dim, isl_dim_in, 0, dim->n_in,
+				dim->names + offset(dim, isl_dim_in) - num);
+		case isl_dim_in:
+			get_names(dim, isl_dim_out, 0, dim->n_out,
+				dim->names + offset(dim, isl_dim_out) - num);
+		case isl_dim_out:
+			;
 		}
-		for (i = first+n; i < dim->n_in; ++i)
-			set_name(dim, isl_dim_in, i - n,
-				get_name(dim, isl_dim_in, i));
-		get_names(dim, isl_dim_out, 0, dim->n_out,
-				dim->names + dim->nparam + dim->n_in - n);
 	}
-	dim->n_in -= n;
+	switch (type) {
+	case isl_dim_param:	dim->nparam -= num; break;
+	case isl_dim_in:	dim->n_in -= num; break;
+	case isl_dim_out:	dim->n_out -= num; break;
+	}
 	return dim;
 error:
 	isl_dim_free(dim);
 	return NULL;
 }
 
+struct isl_dim *isl_dim_drop_inputs(struct isl_dim *dim,
+		unsigned first, unsigned n)
+{
+	return isl_dim_drop(dim, isl_dim_in, first, n);
+}
+
 struct isl_dim *isl_dim_drop_outputs(struct isl_dim *dim,
 		unsigned first, unsigned n)
 {
-	int i;
-
-	if (!dim)
-		return NULL;
-
-	if (n == 0)
-		return dim;
-
-	isl_assert(dim->ctx, first + n <= dim->n_out, goto error);
-	dim = isl_dim_cow(dim);
-	if (!dim)
-		goto error;
-	if (dim->names) {
-		for (i = 0; i < n; ++i) {
-			isl_name_free(dim->ctx,
-					get_name(dim, isl_dim_out, first+i));
-		}
-		for (i = first+n; i < dim->n_out; ++i)
-			set_name(dim, isl_dim_out, i - n,
-				get_name(dim, isl_dim_out, i));
-	}
-	dim->n_out -= n;
-	return dim;
-error:
-	isl_dim_free(dim);
-	return NULL;
+	return isl_dim_drop(dim, isl_dim_out, first, n);
 }
 
 struct isl_dim *isl_dim_domain(struct isl_dim *dim)

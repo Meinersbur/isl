@@ -150,6 +150,8 @@ struct isl_basic_map *isl_basic_map_apply_range(
 struct isl_basic_map *isl_basic_map_reverse(struct isl_basic_map *bmap);
 struct isl_basic_set *isl_basic_map_domain(struct isl_basic_map *bmap);
 struct isl_basic_set *isl_basic_map_range(struct isl_basic_map *bmap);
+struct isl_basic_map *isl_basic_map_remove(struct isl_basic_map *bmap,
+	enum isl_dim_type type, unsigned first, unsigned n);
 struct isl_basic_map *isl_basic_map_from_basic_set(struct isl_basic_set *bset,
 		struct isl_dim *dim);
 struct isl_basic_set *isl_basic_set_from_basic_map(struct isl_basic_map *bmap);

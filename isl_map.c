@@ -107,7 +107,7 @@ unsigned isl_map_dim(const struct isl_map *map, enum isl_dim_type type)
 	return n(map->dim, type);
 }
 
-static unsigned basic_map_offset(struct isl_basic_map *bmap,
+unsigned isl_basic_map_offset(struct isl_basic_map *bmap,
 					enum isl_dim_type type)
 {
 	struct isl_dim *dim = bmap->dim;
@@ -1101,6 +1101,24 @@ error:
 	return NULL;
 }
 
+struct isl_basic_map *isl_basic_map_remove(struct isl_basic_map *bmap,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	if (!bmap)
+		return NULL;
+	isl_assert(bmap->ctx, first + n <= isl_basic_map_dim(bmap, type),
+			goto error);
+	if (n == 0)
+		return bmap;
+	bmap = isl_basic_map_eliminate_vars(bmap,
+			isl_basic_map_offset(bmap, type) - 1 + first, n);
+	bmap = isl_basic_map_drop(bmap, type, first, n);
+	return bmap;
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
 /* Project out n inputs starting at first using Fourier-Motzkin */
 struct isl_map *isl_map_remove_inputs(struct isl_map *map,
 	unsigned first, unsigned n)
@@ -1862,7 +1880,7 @@ struct isl_basic_map *isl_basic_map_neg(struct isl_basic_map *bmap)
 		return NULL;
 
 	n = isl_basic_map_dim(bmap, isl_dim_out);
-	off = basic_map_offset(bmap, isl_dim_out);
+	off = isl_basic_map_offset(bmap, isl_dim_out);
 	for (i = 0; i < bmap->n_eq; ++i)
 		for (j = 0; j < n; ++j)
 			isl_int_neg(bmap->eq[i][off+j], bmap->eq[i][off+j]);
@@ -2629,7 +2647,7 @@ struct isl_basic_map *isl_basic_map_fix_si(struct isl_basic_map *bmap,
 	if (!bmap)
 		return NULL;
 	isl_assert(bmap->ctx, pos < isl_basic_map_dim(bmap, type), goto error);
-	return isl_basic_map_fix_pos(bmap, basic_map_offset(bmap, type) + pos,
+	return isl_basic_map_fix_pos(bmap, isl_basic_map_offset(bmap, type) + pos,
 					value);
 error:
 	isl_basic_map_free(bmap);
@@ -3935,7 +3953,7 @@ int isl_basic_map_fast_is_fixed(struct isl_basic_map *bmap,
 	if (pos >= isl_basic_map_dim(bmap, type))
 		return -1;
 	return isl_basic_map_fast_has_fixed_var(bmap,
-		basic_map_offset(bmap, type) - 1 + pos, val);
+		isl_basic_map_offset(bmap, type) - 1 + pos, val);
 }
 
 /* Check if dimension dim has fixed value and if so and if val is not NULL,
