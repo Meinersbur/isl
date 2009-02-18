@@ -520,6 +520,13 @@ struct isl_dim *isl_dim_domain(struct isl_dim *dim)
 	return isl_dim_reverse(dim);
 }
 
+struct isl_dim *isl_dim_range(struct isl_dim *dim)
+{
+	if (!dim)
+		return NULL;
+	return isl_dim_drop_inputs(dim, 0, dim->n_in);
+}
+
 struct isl_dim *isl_dim_underlying(struct isl_dim *dim, unsigned n_div)
 {
 	int i;

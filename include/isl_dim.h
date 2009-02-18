@@ -57,6 +57,7 @@ struct isl_dim *isl_dim_drop_inputs(struct isl_dim *dim,
 struct isl_dim *isl_dim_drop_outputs(struct isl_dim *dim,
 		unsigned first, unsigned n);
 struct isl_dim *isl_dim_domain(struct isl_dim *dim);
+struct isl_dim *isl_dim_range(struct isl_dim *dim);
 struct isl_dim *isl_dim_underlying(struct isl_dim *dim, unsigned n_div);
 
 int isl_dim_equal(struct isl_dim *dim1, struct isl_dim *dim2);
