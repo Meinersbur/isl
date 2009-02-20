@@ -1119,9 +1119,8 @@ error:
 	return NULL;
 }
 
-/* Project out n inputs starting at first using Fourier-Motzkin */
-struct isl_map *isl_map_remove_inputs(struct isl_map *map,
-	unsigned first, unsigned n)
+struct isl_map *isl_map_remove(struct isl_map *map,
+	enum isl_dim_type type, unsigned first, unsigned n)
 {
 	int i;
 	unsigned nparam;
@@ -1132,20 +1131,26 @@ struct isl_map *isl_map_remove_inputs(struct isl_map *map,
 	map = isl_map_cow(map);
 	if (!map)
 		return NULL;
-	nparam = isl_map_n_param(map);
-	isl_assert(map->ctx, first+n <= isl_map_n_in(map), goto error);
+	isl_assert(map->ctx, first + n <= isl_map_dim(map, type), goto error);
 	
 	for (i = 0; i < map->n; ++i) {
 		map->p[i] = isl_basic_map_eliminate_vars(map->p[i],
-							    nparam + first, n);
+			isl_basic_map_offset(map->p[i], type) - 1 + first, n);
 		if (!map->p[i])
 			goto error;
 	}
-	map = isl_map_drop_inputs(map, first, n);
+	map = isl_map_drop(map, type, first, n);
 	return map;
 error:
 	isl_map_free(map);
 	return NULL;
+}
+
+/* Project out n inputs starting at first using Fourier-Motzkin */
+struct isl_map *isl_map_remove_inputs(struct isl_map *map,
+	unsigned first, unsigned n)
+{
+	return isl_map_remove(map, isl_dim_in, first, n);
 }
 
 /* Project out n dimensions starting at first using Fourier-Motzkin */

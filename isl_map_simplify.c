@@ -166,27 +166,27 @@ struct isl_basic_map *isl_basic_map_drop_inputs(
 	return isl_basic_map_drop(bmap, isl_dim_in, first, n);
 }
 
-struct isl_map *isl_map_drop_inputs(
-		struct isl_map *map, unsigned first, unsigned n)
+struct isl_map *isl_map_drop(struct isl_map *map,
+	enum isl_dim_type type, unsigned first, unsigned n)
 {
 	int i;
 
 	if (!map)
 		goto error;
 
-	isl_assert(map->ctx, first + n <= map->dim->n_in, goto error);
+	isl_assert(map->ctx, first + n <= isl_map_dim(map, type), goto error);
 
 	if (n == 0)
 		return map;
 	map = isl_map_cow(map);
 	if (!map)
 		goto error;
-	map->dim = isl_dim_drop_inputs(map->dim, first, n);
+	map->dim = isl_dim_drop(map->dim, type, first, n);
 	if (!map->dim)
 		goto error;
 
 	for (i = 0; i < map->n; ++i) {
-		map->p[i] = isl_basic_map_drop_inputs(map->p[i], first, n);
+		map->p[i] = isl_basic_map_drop(map->p[i], type, first, n);
 		if (!map->p[i])
 			goto error;
 	}
@@ -196,6 +196,12 @@ struct isl_map *isl_map_drop_inputs(
 error:
 	isl_map_free(map);
 	return NULL;
+}
+
+struct isl_map *isl_map_drop_inputs(
+		struct isl_map *map, unsigned first, unsigned n)
+{
+	return isl_map_drop(map, isl_dim_in, first, n);
 }
 
 /*
