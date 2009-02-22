@@ -255,6 +255,13 @@ error:
 	return NULL;
 }
 
+/* Find an integer point in "bset" that lies outside of the equality
+ * "eq" e(x) = 0.
+ * If "up" is true, look for a point satisfying e(x) - 1 >= 0.
+ * Otherwise, look for a point satisfying -e(x) - 1 >= 0 (i.e., e(x) <= -1).
+ * The point, if found, is returned as a singleton set.
+ * If no point can be found, the empty set is returned.
+ */
 static struct isl_basic_set *outside_point(struct isl_ctx *ctx,
 	struct isl_basic_set *bset, isl_int *eq, int up)
 {
@@ -268,15 +275,15 @@ static struct isl_basic_set *outside_point(struct isl_ctx *ctx,
 	if (!slice)
 		goto error;
 	dim = isl_basic_set_n_dim(slice);
-	slice = isl_basic_set_extend(slice, 0, dim, 0, 1, 0);
-	k = isl_basic_set_alloc_equality(slice);
+	slice = isl_basic_set_extend(slice, 0, dim, 0, 0, 1);
+	k = isl_basic_set_alloc_inequality(slice);
 	if (k < 0)
 		goto error;
-	isl_seq_cpy(slice->eq[k], eq, 1 + dim);
 	if (up)
-		isl_int_add_ui(slice->eq[k][0], slice->eq[k][0], 1);
+		isl_seq_cpy(slice->ineq[k], eq, 1 + dim);
 	else
-		isl_int_sub_ui(slice->eq[k][0], slice->eq[k][0], 1);
+		isl_seq_neg(slice->ineq[k], eq, 1 + dim);
+	isl_int_sub_ui(slice->ineq[k][0], slice->ineq[k][0], 1);
 
 	sample = isl_basic_set_sample(slice);
 	if (!sample)

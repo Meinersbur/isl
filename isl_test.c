@@ -412,6 +412,7 @@ void test_affine_hull(struct isl_ctx *ctx)
 {
 	test_affine_hull_case(ctx, "affine2");
 	test_affine_hull_case(ctx, "affine");
+	test_affine_hull_case(ctx, "affine3");
 }
 
 void test_convex_hull_case(struct isl_ctx *ctx, const char *name)
