@@ -2150,9 +2150,12 @@ struct isl_basic_map *isl_basic_map_overlying_set(
 		}
 		bmap = isl_basic_map_extend_constraints(bmap, 
 							0, 2 * like->n_div);
-		for (i = 0; i < like->n_div; ++i)
+		for (i = 0; i < like->n_div; ++i) {
+			if (isl_int_is_zero(bmap->div[i][0]))
+				continue;
 			if (add_div_constraints(bmap, i) < 0)
 				goto error;
+		}
 	}
 	isl_basic_map_free(like);
 	bmap = isl_basic_map_simplify(bmap);
