@@ -45,6 +45,7 @@ struct isl_basic_map {
 #define ISL_BASIC_MAP_RATIONAL		(1 << 4)
 #define ISL_BASIC_MAP_NORMALIZED	(1 << 5)
 #define ISL_BASIC_MAP_NORMALIZED_DIVS	(1 << 6)
+#define ISL_BASIC_MAP_ALL_EQUALITIES	(1 << 7)
 	unsigned flags;
 
 	struct isl_ctx *ctx;
@@ -156,6 +157,8 @@ struct isl_basic_map *isl_basic_map_from_basic_set(struct isl_basic_set *bset,
 		struct isl_dim *dim);
 struct isl_basic_set *isl_basic_set_from_basic_map(struct isl_basic_map *bmap);
 struct isl_basic_map *isl_basic_map_simplify(struct isl_basic_map *bmap);
+struct isl_basic_map *isl_basic_map_detect_equalities(
+						struct isl_basic_map *bmap);
 #define ISL_FORMAT_POLYLIB	1
 #define ISL_FORMAT_OMEGA	2
 struct isl_basic_map *isl_basic_map_read_from_file(struct isl_ctx *ctx,

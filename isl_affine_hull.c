@@ -300,18 +300,27 @@ error:
 	return NULL;
 }
 
-/* After computing the rational affine hull (by detecting the implicit
- * equalities), we remove all equalities found so far, compute
- * the integer affine hull of what is left, and then add the original
- * equalities back in.
+/* Look for all equalities satisfied by the integer points in bmap
+ * that are independent of the equalities already explicitly available
+ * in bmap.
  *
- * The integer affine hull is constructed by successively looking
+ * We first remove all equalities already explicitly available,
+ * then look for additional equalities in the reduced space
+ * and then transform the result to the original space.
+ * The original equalities are _not_ added to this set.  This is
+ * the responsibility of the calling function.
+ * The resulting basic set has all meaning about the dimensions removed.
+ * In particular, dimensions that correspond to existential variables
+ * in bmap and that are found to be fixed are not removed.
+ *
+ * The additional equalities are obtained by successively looking for
  * a point that is affinely independent of the points found so far.
  * In particular, for each equality satisfied by the points so far,
- * we check if there is any point on the corresponding hyperplane
- * shifted by one (in either direction).
+ * we check if there is any point on a hyperplane parallel to the
+ * corresponding hyperplane shifted by at least one (in either direction).
  */
-struct isl_basic_map *isl_basic_map_affine_hull(struct isl_basic_map *bmap)
+static struct isl_basic_set *equalities_in_underlying_set(
+						struct isl_basic_map *bmap)
 {
 	int i, j;
 	struct isl_mat *T2 = NULL;
@@ -321,28 +330,26 @@ struct isl_basic_map *isl_basic_map_affine_hull(struct isl_basic_map *bmap)
 	struct isl_ctx *ctx;
 	unsigned dim;
 
-	bmap = isl_basic_map_implicit_equalities(bmap);
-	if (!bmap)
-		return NULL;
-	ctx = bmap->ctx;
-	if (bmap->n_ineq == 0)
-		return bmap;
-
-	if (F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL)) {
-		bmap = isl_basic_map_cow(bmap);
-		isl_basic_map_free_inequality(bmap, bmap->n_ineq);
-		return bmap;
-	}
-
-	bset = isl_basic_map_underlying_set(isl_basic_map_copy(bmap));
+	bset = isl_basic_map_underlying_set(bmap);
 	bset = isl_basic_set_remove_equalities(bset, NULL, &T2);
+	if (!bset)
+		goto error;
 
+	ctx = bset->ctx;
 	sample = isl_basic_set_sample(isl_basic_set_copy(bset));
-	hull = isl_basic_set_from_vec(ctx, sample);
+	if (!sample)
+		goto error;
+	if (sample->size == 0) {
+		isl_vec_free(ctx, sample);
+		hull = isl_basic_set_empty_like(bset);
+	} else
+		hull = isl_basic_set_from_vec(ctx, sample);
 
 	dim = isl_basic_set_n_dim(bset);
 	for (i = 0; i < dim; ++i) {
 		struct isl_basic_set *point;
+		if (F_ISSET(hull, ISL_BASIC_SET_EMPTY))
+			break;
 		for (j = 0; j < hull->n_eq; ++j) {
 			point = outside_point(ctx, bset, hull->eq[j], 1);
 			if (!point)
@@ -361,23 +368,94 @@ struct isl_basic_map *isl_basic_map_affine_hull(struct isl_basic_map *bmap)
 			break;
 		hull = affine_hull(hull, point);
 	}
-
 	isl_basic_set_free(bset);
-	bset = NULL;
+	if (T2)
+		hull = isl_basic_set_preimage(ctx, hull, T2);
+
+	return hull;
+error:
+	isl_mat_free(ctx, T2);
+	isl_basic_set_free(bset);
+	isl_basic_set_free(hull);
+	return NULL;
+}
+
+/* Detect and make explicit all equalities satisfied by the (integer)
+ * points in bmap.
+ */
+struct isl_basic_map *isl_basic_map_detect_equalities(
+						struct isl_basic_map *bmap)
+{
+	int i, j;
+	struct isl_basic_set *hull = NULL;
+
+	if (!bmap)
+		return NULL;
+	if (bmap->n_ineq == 0)
+		return bmap;
+	if (F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
+		return bmap;
+	if (F_ISSET(bmap, ISL_BASIC_MAP_ALL_EQUALITIES))
+		return bmap;
+	if (F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL))
+		return isl_basic_map_implicit_equalities(bmap);
+
+	hull = equalities_in_underlying_set(isl_basic_map_copy(bmap));
+	if (!hull)
+		goto error;
+	bmap = isl_basic_map_extend_dim(bmap, isl_dim_copy(bmap->dim), 0,
+					hull->n_eq, 0);
+	for (i = 0; i < hull->n_eq; ++i) {
+		j = isl_basic_map_alloc_equality(bmap);
+		if (j < 0)
+			goto error;
+		isl_seq_cpy(bmap->eq[j], hull->eq[i],
+				1 + isl_basic_set_total_dim(hull));
+	}
+	isl_basic_set_free(hull);
+	F_SET(bmap, ISL_BASIC_MAP_NO_IMPLICIT | ISL_BASIC_MAP_ALL_EQUALITIES);
+	bmap = isl_basic_map_simplify(bmap);
+	return isl_basic_map_finalize(bmap);
+error:
+	isl_basic_set_free(hull);
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+/* After computing the rational affine hull (by detecting the implicit
+ * equalities), we compute the additional equalities satisfied by
+ * the integer points (if any) and add the original equalities back in.
+ */
+struct isl_basic_map *isl_basic_map_affine_hull(struct isl_basic_map *bmap)
+{
+	struct isl_basic_set *hull = NULL;
+
+	bmap = isl_basic_map_implicit_equalities(bmap);
+	if (!bmap)
+		return NULL;
+	if (bmap->n_ineq == 0)
+		return bmap;
+
+	if (F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL)) {
+		bmap = isl_basic_map_cow(bmap);
+		isl_basic_map_free_inequality(bmap, bmap->n_ineq);
+		return bmap;
+	}
+
+	hull = equalities_in_underlying_set(isl_basic_map_copy(bmap));
+	if (!hull)
+		goto error;
+
 	bmap = isl_basic_map_cow(bmap);
 	if (!bmap)
 		goto error;
 	isl_basic_map_free_inequality(bmap, bmap->n_ineq);
-	if (T2)
-		hull = isl_basic_set_preimage(ctx, hull, T2);
 	bmap = isl_basic_map_intersect(bmap,
 					isl_basic_map_overlying_set(hull,
 						isl_basic_map_copy(bmap)));
 
 	return isl_basic_map_finalize(bmap);
 error:
-	isl_mat_free(ctx, T2);
-	isl_basic_set_free(bset);
 	isl_basic_set_free(hull);
 	isl_basic_map_free(bmap);
 	return NULL;
