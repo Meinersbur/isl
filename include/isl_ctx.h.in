@@ -65,8 +65,10 @@ struct isl_ctx {
 #define F_ISSET(p, f)   FL_ISSET((p)->flags, f)
 
 #define isl_alloc(ctx,type,size)	(type *)malloc(size)
+#define isl_calloc(ctx,type,size)	(type *)calloc(1, size)
 #define isl_realloc(ctx,ptr,type,size)	(type *)realloc(ptr,size)
 #define isl_alloc_type(ctx,type)	isl_alloc(ctx,type,sizeof(type))
+#define isl_calloc_type(ctx,type)	isl_calloc(ctx,type,sizeof(type))
 #define isl_realloc_type(ctx,ptr,type)	isl_realloc(ctx,ptr,type,sizeof(type))
 #define isl_alloc_array(ctx,type,n)	isl_alloc(ctx,type,(n)*sizeof(type))
 #define isl_calloc_array(ctx,type,n)	(type *)calloc(n, sizeof(type))
