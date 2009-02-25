@@ -827,7 +827,7 @@ void isl_mat_dump(struct isl_ctx *ctx, struct isl_mat *mat,
 	int i, j;
 
 	if (!mat) {
-		fprintf(out, "null mat\n");
+		fprintf(out, "%*snull mat\n", indent, "");
 		return;
 	}
 
