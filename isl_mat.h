@@ -41,6 +41,8 @@ void isl_mat_sub_copy(struct isl_ctx *ctx, isl_int **dst, isl_int **src,
 void isl_mat_sub_neg(struct isl_ctx *ctx, isl_int **dst, isl_int **src,
 	unsigned n_row, unsigned dst_col, unsigned src_col, unsigned n_col);
 
+struct isl_mat *isl_mat_swap_cols(struct isl_ctx *ctx,
+	struct isl_mat *mat, unsigned i, unsigned j);
 struct isl_mat *isl_mat_swap_rows(struct isl_ctx *ctx,
 	struct isl_mat *mat, unsigned i, unsigned j);
 

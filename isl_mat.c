@@ -670,6 +670,25 @@ error:
 	return NULL;
 }
 
+struct isl_mat *isl_mat_swap_cols(struct isl_ctx *ctx,
+	struct isl_mat *mat, unsigned i, unsigned j)
+{
+	int r;
+
+	mat = isl_mat_cow(ctx, mat);
+	if (!mat)
+		return NULL;
+	isl_assert(ctx, i < mat->n_col, goto error);
+	isl_assert(ctx, j < mat->n_col, goto error);
+
+	for (r = 0; r < mat->n_row; ++r)
+		isl_int_swap(mat->row[r][i], mat->row[r][j]);
+	return mat;
+error:
+	isl_mat_free(ctx, mat);
+	return NULL;
+}
+
 struct isl_mat *isl_mat_swap_rows(struct isl_ctx *ctx,
 	struct isl_mat *mat, unsigned i, unsigned j)
 {
