@@ -57,7 +57,7 @@ struct isl_ctx {
 #define ISL_FL_INIT(l, f)   (l) = (f)               /* Specific flags location. */
 #define ISL_FL_SET(l, f)    ((l) |= (f))
 #define ISL_FL_CLR(l, f)    ((l) &= ~(f))
-#define ISL_FL_ISSET(l, f)  ((l) & (f))
+#define ISL_FL_ISSET(l, f)  (!!((l) & (f)))
 
 #define ISL_F_INIT(p, f)    ISL_FL_INIT((p)->flags, f)  /* Structure element flags. */
 #define ISL_F_SET(p, f)     ISL_FL_SET((p)->flags, f)
