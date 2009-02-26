@@ -153,9 +153,13 @@ struct isl_constraint *isl_basic_set_first_constraint(
 struct isl_constraint *isl_constraint_next(struct isl_constraint *c)
 {
 	c = isl_constraint_cow(c);
-	c->line++;
-	if (c->line >= c->bmap->eq + c->bmap->n_eq && c->line < c->bmap->ineq)
+	if (c->line >= c->bmap->eq) {
+		c->line++;
+		if (c->line < c->bmap->eq + c->bmap->n_eq)
+			return c;
 		c->line = c->bmap->ineq;
+	} else
+		c->line++;
 	if (c->line < c->bmap->ineq + c->bmap->n_ineq)
 		return c;
 	isl_constraint_free(c);
@@ -314,7 +318,7 @@ int isl_constraint_is_equality(struct isl_constraint *constraint)
 {
 	if (!constraint)
 		return -1;
-	return constraint->line < constraint->bmap->eq + constraint->bmap->n_eq;
+	return constraint->line >= constraint->bmap->eq;
 }
 
 

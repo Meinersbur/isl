@@ -222,14 +222,14 @@ static struct isl_basic_map *basic_map_init(struct isl_ctx *ctx,
 	int i;
 	size_t row_size = 1 + isl_dim_total(bmap->dim) + extra;
 
-	bmap->block = isl_blk_alloc(ctx, (n_eq + n_ineq) * row_size);
+	bmap->block = isl_blk_alloc(ctx, (n_ineq + n_eq) * row_size);
 	if (isl_blk_is_error(bmap->block)) {
 		free(bmap);
 		return NULL;
 	}
 
-	bmap->eq = isl_alloc_array(ctx, isl_int *, n_eq + n_ineq);
-	if (!bmap->eq) {
+	bmap->ineq = isl_alloc_array(ctx, isl_int *, n_ineq + n_eq);
+	if (!bmap->ineq) {
 		isl_blk_free(ctx, bmap->block);
 		free(bmap);
 		return NULL;
@@ -241,7 +241,7 @@ static struct isl_basic_map *basic_map_init(struct isl_ctx *ctx,
 	} else {
 		bmap->block2 = isl_blk_alloc(ctx, extra * (1 + row_size));
 		if (isl_blk_is_error(bmap->block2)) {
-			free(bmap->eq);
+			free(bmap->ineq);
 			isl_blk_free(ctx, bmap->block);
 			free(bmap);
 			return NULL;
@@ -250,15 +250,15 @@ static struct isl_basic_map *basic_map_init(struct isl_ctx *ctx,
 		bmap->div = isl_alloc_array(ctx, isl_int *, extra);
 		if (!bmap->div) {
 			isl_blk_free(ctx, bmap->block2);
-			free(bmap->eq);
+			free(bmap->ineq);
 			isl_blk_free(ctx, bmap->block);
 			free(bmap);
 			return NULL;
 		}
 	}
 
-	for (i = 0; i < n_eq + n_ineq; ++i)
-		bmap->eq[i] = bmap->block.data + i * row_size;
+	for (i = 0; i < n_ineq + n_eq; ++i)
+		bmap->ineq[i] = bmap->block.data + i * row_size;
 
 	for (i = 0; i < extra; ++i)
 		bmap->div[i] = bmap->block2.data + i * (1 + row_size);
@@ -268,7 +268,7 @@ static struct isl_basic_map *basic_map_init(struct isl_ctx *ctx,
 	bmap->ref = 1;
 	bmap->flags = 0;
 	bmap->c_size = n_eq + n_ineq;
-	bmap->ineq = bmap->eq + n_eq;
+	bmap->eq = bmap->ineq + n_ineq;
 	bmap->extra = extra;
 	bmap->n_eq = 0;
 	bmap->n_ineq = 0;
@@ -434,7 +434,7 @@ void isl_basic_map_free(struct isl_basic_map *bmap)
 	isl_ctx_deref(bmap->ctx);
 	free(bmap->div);
 	isl_blk_free(bmap->ctx, bmap->block2);
-	free(bmap->eq);
+	free(bmap->ineq);
 	isl_blk_free(bmap->ctx, bmap->block);
 	isl_vec_free(bmap->ctx, bmap->sample);
 	isl_dim_free(bmap->dim);
@@ -453,22 +453,25 @@ int isl_basic_map_alloc_equality(struct isl_basic_map *bmap)
 		return -1;
 	ctx = bmap->ctx;
 	isl_assert(ctx, bmap->n_eq + bmap->n_ineq < bmap->c_size, return -1);
-	isl_assert(ctx, bmap->eq + bmap->n_eq <= bmap->ineq, return -1);
-	if (bmap->eq + bmap->n_eq == bmap->ineq) {
+	isl_assert(ctx, (bmap->eq - bmap->ineq) + bmap->n_eq <= bmap->c_size,
+			return -1);
+	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED_DIVS);
+	if ((bmap->eq - bmap->ineq) + bmap->n_eq == bmap->c_size) {
 		isl_int *t;
 		int j = isl_basic_map_alloc_inequality(bmap);
 		if (j < 0)
 			return -1;
-		t = bmap->ineq[0];
-		bmap->ineq[0] = bmap->ineq[j];
-		bmap->ineq[j] = t;
+		t = bmap->ineq[j];
+		bmap->ineq[j] = bmap->ineq[bmap->n_ineq - 1];
+		bmap->ineq[bmap->n_ineq - 1] = bmap->eq[-1];
+		bmap->eq[-1] = t;
+		bmap->n_eq++;
 		bmap->n_ineq--;
-		bmap->ineq++;
-	} else
-		isl_seq_clr(bmap->eq[bmap->n_eq] +
-		      1 + isl_basic_map_total_dim(bmap),
+		bmap->eq--;
+		return 0;
+	}
+	isl_seq_clr(bmap->eq[bmap->n_eq] + 1 + isl_basic_map_total_dim(bmap),
 		      bmap->extra - bmap->n_div);
-	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED_DIVS);
 	return bmap->n_eq++;
 }
 
@@ -513,12 +516,12 @@ void isl_basic_map_inequality_to_equality(
 	isl_int *t;
 
 	t = bmap->ineq[pos];
-	bmap->ineq[pos] = bmap->ineq[0];
-	bmap->ineq[0] = bmap->eq[bmap->n_eq];
-	bmap->eq[bmap->n_eq] = t;
+	bmap->ineq[pos] = bmap->ineq[bmap->n_ineq - 1];
+	bmap->ineq[bmap->n_ineq - 1] = bmap->eq[-1];
+	bmap->eq[-1] = t;
 	bmap->n_eq++;
 	bmap->n_ineq--;
-	bmap->ineq++;
+	bmap->eq--;
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED_DIVS);
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_ALL_EQUALITIES);
@@ -530,8 +533,7 @@ int isl_basic_map_alloc_inequality(struct isl_basic_map *bmap)
 	if (!bmap)
 		return -1;
 	ctx = bmap->ctx;
-	isl_assert(ctx, (bmap->ineq - bmap->eq) + bmap->n_ineq < bmap->c_size,
-			return -1);
+	isl_assert(ctx, bmap->n_ineq < bmap->eq - bmap->ineq, return -1);
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_IMPLICIT);
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_REDUNDANT);
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);

@@ -30,7 +30,7 @@ struct isl_basic_map *isl_basic_map_implicit_equalities(
 	isl_int_init(opt_denom);
 	if (!rational)
 		isl_int_set_si(opt_denom, 1);
-	for (i = 0; i < bmap->n_ineq; ++i) {
+	for (i = bmap->n_ineq - 1; i >= 0; --i) {
 		enum isl_lp_result res;
 		res = isl_solve_lp(bmap, 1, bmap->ineq[i]+1, ctx->one,
 					&opt, rational ? &opt_denom : NULL);
@@ -45,10 +45,8 @@ struct isl_basic_map *isl_basic_map_implicit_equalities(
 		if (!isl_int_is_one(opt_denom))
 			continue;
 		isl_int_add(opt, opt, bmap->ineq[i][0]);
-		if (isl_int_is_zero(opt)) {
+		if (isl_int_is_zero(opt))
 			isl_basic_map_inequality_to_equality(bmap, i);
-			--i;
-		}
 	}
 	isl_int_clear(opt_denom);
 	isl_int_clear(opt);
