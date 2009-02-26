@@ -171,6 +171,19 @@ void isl_seq_gcd(isl_int *p, unsigned len, isl_int *gcd)
 	}
 }
 
+void isl_seq_normalize(isl_int *p, unsigned len)
+{
+	isl_int gcd;
+
+	if (len == 0)
+		return;
+	isl_int_init(gcd);
+	isl_seq_gcd(p, len, &gcd);
+	if (!isl_int_is_zero(gcd))
+		isl_seq_scale_down(p, p, gcd, len);
+	isl_int_clear(gcd);
+}
+
 void isl_seq_lcm(isl_int *p, unsigned len, isl_int *lcm)
 {
 	int i;
