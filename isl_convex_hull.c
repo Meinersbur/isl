@@ -5,6 +5,7 @@
 #include "isl_set.h"
 #include "isl_seq.h"
 #include "isl_equalities.h"
+#include "isl_tab.h"
 
 static struct isl_basic_set *uset_convex_hull_wrap(struct isl_set *set);
 
@@ -82,48 +83,27 @@ int isl_basic_set_constraint_is_redundant(struct isl_basic_set **bset,
  */
 struct isl_basic_map *isl_basic_map_convex_hull(struct isl_basic_map *bmap)
 {
-	int i;
-	isl_int opt_n;
-	isl_int opt_d;
-	struct isl_ctx *ctx;
+	struct isl_tab *tab;
 
-	bmap = isl_basic_map_implicit_equalities(bmap);
 	if (!bmap)
 		return NULL;
 
+	bmap = isl_basic_map_gauss(bmap, NULL);
 	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
 		return bmap;
 	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_NO_REDUNDANT))
 		return bmap;
+	if (bmap->n_ineq <= 1)
+		return bmap;
 
-	ctx = bmap->ctx;
-	isl_int_init(opt_n);
-	isl_int_init(opt_d);
-	for (i = bmap->n_ineq-1; i >= 0; --i) {
-		int redundant;
-		swap_ineq(bmap, i, bmap->n_ineq-1);
-		bmap->n_ineq--;
-		redundant = isl_basic_map_constraint_is_redundant(&bmap,
-				bmap->ineq[bmap->n_ineq], &opt_n, &opt_d);
-		if (redundant == -1)
-			goto error;
-		if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
-			break;
-		bmap->n_ineq++;
-		swap_ineq(bmap, i, bmap->n_ineq-1);
-		if (redundant)
-			isl_basic_map_drop_inequality(bmap, i);
-	}
-	isl_int_clear(opt_n);
-	isl_int_clear(opt_d);
-
+	tab = isl_tab_from_basic_map(bmap);
+	tab = isl_tab_detect_equalities(bmap->ctx, tab);
+	tab = isl_tab_detect_redundant(bmap->ctx, tab);
+	bmap = isl_basic_map_update_from_tab(bmap, tab);
+	isl_tab_free(bmap->ctx, tab);
+	ISL_F_SET(bmap, ISL_BASIC_MAP_NO_IMPLICIT);
 	ISL_F_SET(bmap, ISL_BASIC_MAP_NO_REDUNDANT);
 	return bmap;
-error:
-	isl_int_clear(opt_n);
-	isl_int_clear(opt_d);
-	isl_basic_map_free(bmap);
-	return NULL;
 }
 
 struct isl_basic_set *isl_basic_set_convex_hull(struct isl_basic_set *bset)
