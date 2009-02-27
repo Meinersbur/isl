@@ -1550,9 +1550,44 @@ error:
 	return NULL;
 }
 
+static int basic_map_contains(struct isl_basic_map *bmap, struct isl_vec *vec)
+{
+	int i;
+	unsigned total;
+	isl_int s;
+
+	total = 1 + isl_basic_map_total_dim(bmap);
+	if (total != vec->size)
+		return -1;
+
+	isl_int_init(s);
+
+	for (i = 0; i < bmap->n_eq; ++i) {
+		isl_seq_inner_product(vec->block.data, bmap->eq[i], total, &s);
+		if (!isl_int_is_zero(s)) {
+			isl_int_clear(s);
+			return 0;
+		}
+	}
+
+	for (i = 0; i < bmap->n_ineq; ++i) {
+		isl_seq_inner_product(vec->block.data, bmap->ineq[i], total, &s);
+		if (isl_int_is_neg(s)) {
+			isl_int_clear(s);
+			return 0;
+		}
+	}
+
+	isl_int_clear(s);
+
+	return 1;
+}
+
 struct isl_basic_map *isl_basic_map_intersect(
 		struct isl_basic_map *bmap1, struct isl_basic_map *bmap2)
 {
+	struct isl_vec *sample = NULL;
+
 	if (!bmap1 || !bmap2)
 		goto error;
 
@@ -1569,15 +1604,31 @@ struct isl_basic_map *isl_basic_map_intersect(
 		isl_assert(bmap1->ctx,
 			    isl_dim_equal(bmap1->dim, bmap2->dim), goto error);
 
+	if (bmap1->sample &&
+	    basic_map_contains(bmap1, bmap1->sample) > 0 &&
+	    basic_map_contains(bmap2, bmap1->sample) > 0)
+		sample = isl_vec_copy(bmap1->ctx, bmap1->sample);
+	else if (bmap2->sample &&
+	    basic_map_contains(bmap1, bmap2->sample) > 0 &&
+	    basic_map_contains(bmap2, bmap2->sample) > 0)
+		sample = isl_vec_copy(bmap2->ctx, bmap2->sample);
+
 	bmap1 = isl_basic_map_extend_dim(bmap1, isl_dim_copy(bmap1->dim),
 			bmap2->n_div, bmap2->n_eq, bmap2->n_ineq);
 	if (!bmap1)
 		goto error;
 	bmap1 = add_constraints(bmap1, bmap2, 0, 0);
 
+	if (sample) {
+		isl_vec_free(bmap1->ctx, bmap1->sample);
+		bmap1->sample = sample;
+	}
+
 	bmap1 = isl_basic_map_simplify(bmap1);
 	return isl_basic_map_finalize(bmap1);
 error:
+	if (sample)
+		isl_vec_free(bmap1->ctx, sample);
 	isl_basic_map_free(bmap1);
 	isl_basic_map_free(bmap2);
 	return NULL;
@@ -3339,39 +3390,6 @@ int isl_basic_map_is_strict_subset(
 	if (is_subset == -1)
 		return is_subset;
 	return !is_subset;
-}
-
-static int basic_map_contains(struct isl_basic_map *bmap, struct isl_vec *vec)
-{
-	int i;
-	unsigned total;
-	isl_int s;
-
-	total = 1 + isl_basic_map_total_dim(bmap);
-	if (total != vec->size)
-		return -1;
-
-	isl_int_init(s);
-
-	for (i = 0; i < bmap->n_eq; ++i) {
-		isl_seq_inner_product(vec->block.data, bmap->eq[i], total, &s);
-		if (!isl_int_is_zero(s)) {
-			isl_int_clear(s);
-			return 0;
-		}
-	}
-
-	for (i = 0; i < bmap->n_ineq; ++i) {
-		isl_seq_inner_product(vec->block.data, bmap->ineq[i], total, &s);
-		if (isl_int_is_neg(s)) {
-			isl_int_clear(s);
-			return 0;
-		}
-	}
-
-	isl_int_clear(s);
-
-	return 1;
 }
 
 int isl_basic_map_is_universe(struct isl_basic_map *bmap)
