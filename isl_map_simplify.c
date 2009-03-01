@@ -1072,12 +1072,13 @@ struct isl_basic_map *isl_basic_map_eliminate_vars(
 	for (d = pos + n - 1; d >= 0 && d >= pos; --d)
 		bmap = remove_dependent_vars(bmap, d);
 
+	for (d = pos + n - 1;
+	     d >= 0 && d >= total - bmap->n_div && d >= pos; --d)
+		isl_seq_clr(bmap->div[d-(total-bmap->n_div)], 2+total);
 	for (d = pos + n - 1; d >= 0 && d >= pos; --d) {
 		int n_lower, n_upper;
 		if (!bmap)
 			return NULL;
-		if (d >= total - bmap->n_div)
-			isl_seq_clr(bmap->div[d-(total-bmap->n_div)], 2+total);
 		for (i = 0; i < bmap->n_eq; ++i) {
 			if (isl_int_is_zero(bmap->eq[i][1+d]))
 				continue;
