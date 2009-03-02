@@ -1040,12 +1040,7 @@ static struct isl_basic_set *uset_convex_hull(struct isl_set *set)
 
 	if (!set)
 		goto error;
-	for (i = 0; i < set->n; ++i) {
-		set->p[i] = isl_basic_set_convex_hull(set->p[i]);
-		if (!set->p[i])
-			goto error;
-	}
-	set = isl_set_remove_empty_parts(set);
+	set = isl_set_normalize(set);
 	if (!set)
 		return NULL;
 	if (set->n == 1) {
@@ -1091,12 +1086,7 @@ static struct isl_basic_set *uset_convex_hull_wrap(struct isl_set *set)
 
 	if (!set)
 		goto error;
-	for (i = 0; i < set->n; ++i) {
-		set->p[i] = isl_basic_set_convex_hull(set->p[i]);
-		if (!set->p[i])
-			goto error;
-	}
-	set = isl_set_remove_empty_parts(set);
+	set = isl_set_normalize(set);
 	if (!set)
 		goto error;
 	if (set->n == 1) {

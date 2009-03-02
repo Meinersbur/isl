@@ -81,6 +81,8 @@ struct isl_map *isl_map_drop(struct isl_map *map,
 struct isl_map *isl_map_remove_empty_parts(struct isl_map *map);
 struct isl_set *isl_set_remove_empty_parts(struct isl_set *set);
 
+struct isl_set *isl_set_normalize(struct isl_set *set);
+
 struct isl_set *isl_set_drop_vars(
 		struct isl_set *set, unsigned first, unsigned n);
 
