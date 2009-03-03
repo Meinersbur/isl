@@ -42,7 +42,7 @@ struct isl_hash_table {
 struct isl_ctx;
 
 int isl_hash_table_init(struct isl_ctx *ctx, struct isl_hash_table *table,
-			int init_bits);
+			int min_size);
 void isl_hash_table_clear(struct isl_hash_table *table);
 struct isl_hash_table_entry *isl_hash_table_find(struct isl_ctx *ctx,
 				struct isl_hash_table *table,

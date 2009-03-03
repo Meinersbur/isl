@@ -9,17 +9,28 @@ uint32_t isl_hash_string(uint32_t hash, const char *s)
 	return hash;
 }
 
+static unsigned int round_up(unsigned int v)
+{
+	int old_v = v;
+
+	while (v) {
+		old_v = v;
+		v ^= v & -v;
+	}
+	return old_v << 1;
+}
+
 int isl_hash_table_init(struct isl_ctx *ctx, struct isl_hash_table *table,
-			int init_bits)
+			int min_size)
 {
 	size_t size;
 
 	if (!table)
 		return -1;
 
-	if (init_bits < 2)
-		init_bits = 2;
-	table->bits = init_bits;
+	if (min_size < 2)
+		min_size = 2;
+	table->bits = ffs(round_up(4 * (min_size + 1) / 3 - 1)) - 1;
 	table->n = 0;
 
 	size = 2 << table->bits;
