@@ -13,6 +13,9 @@ int isl_basic_map_compatible_range(struct isl_basic_map *bmap,
 struct isl_basic_map *isl_basic_map_extend_dim(struct isl_basic_map *base,
 		struct isl_dim *dim, unsigned extra,
 		unsigned n_eq, unsigned n_ineq);
+struct isl_basic_set *isl_basic_set_extend_dim(struct isl_basic_set *base,
+		struct isl_dim *dim, unsigned extra,
+		unsigned n_eq, unsigned n_ineq);
 struct isl_basic_set *isl_basic_set_add_constraints(struct isl_basic_set *bset1,
 		struct isl_basic_set *bset2, unsigned pos);
 

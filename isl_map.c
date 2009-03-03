@@ -821,6 +821,15 @@ error:
 	return NULL;
 }
 
+struct isl_basic_set *isl_basic_set_extend_dim(struct isl_basic_set *base,
+		struct isl_dim *dim, unsigned extra,
+		unsigned n_eq, unsigned n_ineq)
+{
+	return (struct isl_basic_set *)
+		isl_basic_map_extend_dim((struct isl_basic_map *)base, dim,
+							extra, n_eq, n_ineq);
+}
+
 struct isl_basic_map *isl_basic_map_extend_constraints(
 		struct isl_basic_map *base, unsigned n_eq, unsigned n_ineq)
 {
