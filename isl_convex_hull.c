@@ -161,12 +161,12 @@ error:
 	return -1;
 }
 
-/* Check if "c" is a direction with both a lower bound and an upper
- * bound in "set" that is independent of the previously found "n"
+/* Check if "c" is a direction that is independent of the previously found "n"
  * bounds in "dirs".
  * If so, add it to the list, with the negative of the lower bound
  * in the constant position, i.e., such that c corresponds to a bounding
  * hyperplane (but not necessarily a facet).
+ * Assumes set "set" is bounded.
  */
 static int is_independent_bound(struct isl_ctx *ctx,
 	struct isl_set *set, isl_int *c,
@@ -195,11 +195,6 @@ static int is_independent_bound(struct isl_ctx *ctx,
 		}
 	}
 
-	isl_seq_neg(dirs->row[n] + 1, dirs->row[n] + 1, dirs->n_col - 1);
-	is_bound = uset_is_bound(ctx, set, dirs->row[n], dirs->n_col);
-	isl_seq_neg(dirs->row[n] + 1, dirs->row[n] + 1, dirs->n_col - 1);
-	if (is_bound != 1)
-		return is_bound;
 	is_bound = uset_is_bound(ctx, set, dirs->row[n], dirs->n_col);
 	if (is_bound != 1)
 		return is_bound;
@@ -997,8 +992,32 @@ static struct isl_basic_set *uset_convex_hull_wrap_with_bounds(
 
 	return convex_hull;
 error:
+	isl_mat_free(set->ctx, bounds);
 	isl_set_free(set);
 	return NULL;
+}
+
+static int isl_basic_set_is_bounded(struct isl_basic_set *bset)
+{
+	struct isl_tab *tab;
+	int bounded;
+
+	tab = isl_tab_from_recession_cone((struct isl_basic_map *)bset);
+	bounded = isl_tab_cone_is_bounded(bset->ctx, tab);
+	isl_tab_free(bset->ctx, tab);
+	return bounded;
+}
+
+static int isl_set_is_bounded(struct isl_set *set)
+{
+	int i;
+
+	for (i = 0; i < set->n; ++i) {
+		int bounded = isl_basic_set_is_bounded(set->p[i]);
+		if (!bounded || bounded < 0)
+			return bounded;
+	}
+	return 1;
 }
 
 /* Compute the convex hull of a set without any parameters or
@@ -1011,7 +1030,7 @@ static struct isl_basic_set *uset_convex_hull(struct isl_set *set)
 {
 	int i;
 	struct isl_basic_set *convex_hull = NULL;
-	struct isl_mat *bounds;
+	struct isl_mat *bounds = NULL;
 
 	if (isl_set_n_dim(set) == 0)
 		return convex_hull_0d(set);
@@ -1031,14 +1050,13 @@ static struct isl_basic_set *uset_convex_hull(struct isl_set *set)
 	if (isl_set_n_dim(set) == 1)
 		return convex_hull_1d(set->ctx, set);
 
+	if (!isl_set_is_bounded(set))
+		return uset_convex_hull_elim(set);
+
 	bounds = independent_bounds(set->ctx, set);
 	if (!bounds)
 		goto error;
-	if (bounds->n_row == isl_set_n_dim(set))
-		return uset_convex_hull_wrap_with_bounds(set, bounds);
-	isl_mat_free(set->ctx, bounds);
-
-	return uset_convex_hull_elim(set);
+	return uset_convex_hull_wrap_with_bounds(set, bounds);
 error:
 	isl_set_free(set);
 	isl_basic_set_free(convex_hull);
