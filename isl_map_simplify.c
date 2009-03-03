@@ -253,7 +253,8 @@ error:
 	return NULL;
 }
 
-static struct isl_basic_map *normalize_constraints(struct isl_basic_map *bmap)
+struct isl_basic_map *isl_basic_map_normalize_constraints(
+	struct isl_basic_map *bmap)
 {
 	int i;
 	isl_int gcd;
@@ -301,6 +302,13 @@ static struct isl_basic_map *normalize_constraints(struct isl_basic_map *bmap)
 	isl_int_clear(gcd);
 
 	return bmap;
+}
+
+struct isl_basic_set *isl_basic_set_normalize_constraints(
+	struct isl_basic_set *bset)
+{
+	(struct isl_basic_set *)isl_basic_map_normalize_constraints(
+		(struct isl_basic_map *)bset);
 }
 
 static void eliminate_div(struct isl_basic_map *bmap, isl_int *eq, unsigned div)
@@ -891,7 +899,7 @@ struct isl_basic_map *isl_basic_map_simplify(struct isl_basic_map *bmap)
 		return NULL;
 	while (progress) {
 		progress = 0;
-		bmap = normalize_constraints(bmap);
+		bmap = isl_basic_map_normalize_constraints(bmap);
 		bmap = eliminate_divs_eq(bmap, &progress);
 		bmap = eliminate_divs_ineq(bmap, &progress);
 		bmap = isl_basic_map_gauss(bmap, &progress);
@@ -1122,7 +1130,7 @@ struct isl_basic_map *isl_basic_map_eliminate_vars(
 			i = last + 1;
 		}
 		if (n_lower > 0 && n_upper > 0) {
-			bmap = normalize_constraints(bmap);
+			bmap = isl_basic_map_normalize_constraints(bmap);
 			bmap = remove_duplicate_constraints(bmap, NULL);
 			bmap = isl_basic_map_gauss(bmap, NULL);
 			bmap = isl_basic_map_convex_hull(bmap);
