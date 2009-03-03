@@ -813,6 +813,7 @@ struct isl_set *isl_set_preimage(struct isl_ctx *ctx,
 		set->dim->n_out -= mat->n_row;
 	}
 	isl_mat_free(ctx, mat);
+	F_CLR(set, ISL_SET_NORMALIZED);
 	return set;
 error:
 	isl_set_free(set);
