@@ -624,9 +624,11 @@ error:
 static struct isl_basic_set *compute_facet(struct isl_set *set, isl_int *c)
 {
 	struct isl_mat *m, *U, *Q;
-	struct isl_basic_set *facet;
+	struct isl_basic_set *facet = NULL;
+	struct isl_ctx *ctx;
 	unsigned dim;
 
+	ctx = set->ctx;
 	set = isl_set_copy(set);
 	dim = isl_set_n_dim(set);
 	m = isl_mat_alloc(set->ctx, 2, 1 + dim);
@@ -642,8 +644,10 @@ static struct isl_basic_set *compute_facet(struct isl_set *set, isl_int *c)
 	set = isl_set_preimage(set, U);
 	facet = uset_convex_hull_wrap_bounded(set);
 	facet = isl_basic_set_preimage(facet, Q);
+	isl_assert(ctx, facet->n_eq == 0, goto error);
 	return facet;
 error:
+	isl_basic_set_free(facet);
 	isl_set_free(set);
 	return NULL;
 }
@@ -997,9 +1001,206 @@ error:
 	return NULL;
 }
 
-static struct isl_basic_set *uset_convex_hull_wrap(struct isl_set *set)
+struct max_constraint {
+	struct isl_mat *c;
+	int	 	count;
+	int		ineq;
+};
+
+static int max_constraint_equal(const void *entry, const void *val)
 {
-	struct isl_basic_set *hull = NULL;
+	struct max_constraint *a = (struct max_constraint *)entry;
+	isl_int *b = (isl_int *)val;
+
+	return isl_seq_eq(a->c->row[0] + 1, b, a->c->n_col - 1);
+}
+
+static void update_constraint(struct isl_ctx *ctx, struct isl_hash_table *table,
+	isl_int *con, unsigned len, int n, int ineq)
+{
+	struct isl_hash_table_entry *entry;
+	struct max_constraint *c;
+	uint32_t c_hash;
+
+	c_hash = isl_seq_hash(con + 1, len, isl_hash_init());
+	entry = isl_hash_table_find(ctx, table, c_hash, max_constraint_equal,
+			con + 1, 0);
+	if (!entry)
+		return;
+	c = entry->data;
+	if (c->count < n) {
+		isl_hash_table_remove(ctx, table, entry);
+		return;
+	}
+	c->count++;
+	if (isl_int_gt(c->c->row[0][0], con[0]))
+		return;
+	if (isl_int_eq(c->c->row[0][0], con[0])) {
+		if (ineq)
+			c->ineq = ineq;
+		return;
+	}
+	c->c = isl_mat_cow(ctx, c->c);
+	isl_int_set(c->c->row[0][0], con[0]);
+	c->ineq = ineq;
+}
+
+/* Check whether the constraint hash table "table" constains the constraint
+ * "con".
+ */
+static int has_constraint(struct isl_ctx *ctx, struct isl_hash_table *table,
+	isl_int *con, unsigned len, int n)
+{
+	struct isl_hash_table_entry *entry;
+	struct max_constraint *c;
+	uint32_t c_hash;
+
+	c_hash = isl_seq_hash(con + 1, len, isl_hash_init());
+	entry = isl_hash_table_find(ctx, table, c_hash, max_constraint_equal,
+			con + 1, 0);
+	if (!entry)
+		return 0;
+	c = entry->data;
+	if (c->count < n)
+		return 0;
+	return isl_int_eq(c->c->row[0][0], con[0]);
+}
+
+/* Check for inequality constraints of a basic set without equalities
+ * such that the same or more stringent copies of the constraint appear
+ * in all of the basic sets.  Such constraints are necessarily facet
+ * constraints of the convex hull.
+ *
+ * If the resulting basic set is by chance identical to one of
+ * the basic sets in "set", then we know that this basic set contains
+ * all other basic sets and is therefore the convex hull of set.
+ * In this case we set *is_hull to 1.
+ */
+static struct isl_basic_set *common_constraints(struct isl_basic_set *hull,
+	struct isl_set *set, int *is_hull)
+{
+	int i, j, s, n;
+	int min_constraints;
+	int best;
+	struct max_constraint *constraints = NULL;
+	struct isl_hash_table *table = NULL;
+	unsigned total;
+
+	*is_hull = 0;
+
+	for (i = 0; i < set->n; ++i)
+		if (set->p[i]->n_eq == 0)
+			break;
+	if (i >= set->n)
+		return hull;
+	min_constraints = set->p[i]->n_ineq;
+	best = i;
+	for (i = best + 1; i < set->n; ++i) {
+		if (set->p[i]->n_eq != 0)
+			continue;
+		if (set->p[i]->n_ineq >= min_constraints)
+			continue;
+		min_constraints = set->p[i]->n_ineq;
+		best = i;
+	}
+	constraints = isl_calloc_array(hull->ctx, struct max_constraint,
+					min_constraints);
+	if (!constraints)
+		return hull;
+	table = isl_alloc_type(hull->ctx, struct isl_hash_table);
+	if (isl_hash_table_init(hull->ctx, table, min_constraints))
+		goto error;
+
+	total = isl_dim_total(set->dim);
+	for (i = 0; i < set->p[best]->n_ineq; ++i) {
+		constraints[i].c = isl_mat_sub_alloc(hull->ctx,
+			set->p[best]->ineq + i, 0, 1, 0, 1 + total);
+		if (!constraints[i].c)
+			goto error;
+		constraints[i].ineq = 1;
+	}
+	for (i = 0; i < min_constraints; ++i) {
+		struct isl_hash_table_entry *entry;
+		uint32_t c_hash;
+		c_hash = isl_seq_hash(constraints[i].c->row[0] + 1, total,
+					isl_hash_init());
+		entry = isl_hash_table_find(hull->ctx, table, c_hash,
+			max_constraint_equal, constraints[i].c->row[0] + 1, 1);
+		if (!entry)
+			goto error;
+		isl_assert(hull->ctx, !entry->data, goto error);
+		entry->data = &constraints[i];
+	}
+
+	n = 0;
+	for (s = 0; s < set->n; ++s) {
+		if (s == best)
+			continue;
+
+		for (i = 0; i < set->p[s]->n_eq; ++i) {
+			isl_int *eq = set->p[s]->eq[i];
+			for (j = 0; j < 2; ++j) {
+				isl_seq_neg(eq, eq, 1 + total);
+				update_constraint(hull->ctx, table,
+							    eq, total, n, 0);
+			}
+		}
+		for (i = 0; i < set->p[s]->n_ineq; ++i) {
+			isl_int *ineq = set->p[s]->ineq[i];
+			update_constraint(hull->ctx, table, ineq, total, n,
+				set->p[s]->n_eq == 0);
+		}
+		++n;
+	}
+
+	for (i = 0; i < min_constraints; ++i) {
+		if (constraints[i].count < n)
+			continue;
+		if (!constraints[i].ineq)
+			continue;
+		j = isl_basic_set_alloc_inequality(hull);
+		if (j < 0)
+			goto error;
+		isl_seq_cpy(hull->ineq[j], constraints[i].c->row[0], 1 + total);
+	}
+
+	for (s = 0; s < set->n; ++s) {
+		if (set->p[s]->n_eq)
+			continue;
+		if (set->p[s]->n_ineq != hull->n_ineq)
+			continue;
+		for (i = 0; i < set->p[s]->n_ineq; ++i) {
+			isl_int *ineq = set->p[s]->ineq[i];
+			if (!has_constraint(hull->ctx, table, ineq, total, n))
+				break;
+		}
+		if (i == set->p[s]->n_ineq)
+			*is_hull = 1;
+	}
+
+	isl_hash_table_clear(table);
+	for (i = 0; i < min_constraints; ++i)
+		isl_mat_free(hull->ctx, constraints[i].c);
+	free(constraints);
+	free(table);
+	return hull;
+error:
+	isl_hash_table_clear(table);
+	free(table);
+	if (constraints)
+		for (i = 0; i < min_constraints; ++i)
+			isl_mat_free(hull->ctx, constraints[i].c);
+	free(constraints);
+	return hull;
+}
+
+/* Create a template for the convex hull of "set" and fill it up
+ * obvious facet constraints, if any.  If the result happens to
+ * be the convex hull of "set" then *is_hull is set to 1.
+ */
+static struct isl_basic_set *proto_hull(struct isl_set *set, int *is_hull)
+{
+	struct isl_basic_set *hull;
 	unsigned n_ineq;
 	int i;
 
@@ -1010,14 +1211,25 @@ static struct isl_basic_set *uset_convex_hull_wrap(struct isl_set *set)
 	}
 	hull = isl_basic_set_alloc_dim(isl_dim_copy(set->dim), 0, 0, n_ineq);
 	hull = isl_basic_set_set_rational(hull);
-	hull = initial_hull(hull, set);
-	hull = extend(hull, set);
+	if (!hull)
+		return NULL;
+	return common_constraints(hull, set, is_hull);
+}
+
+static struct isl_basic_set *uset_convex_hull_wrap(struct isl_set *set)
+{
+	struct isl_basic_set *hull;
+	int is_hull;
+
+	hull = proto_hull(set, &is_hull);
+	if (hull && !is_hull) {
+		if (hull->n_ineq == 0)
+			hull = initial_hull(hull, set);
+		hull = extend(hull, set);
+	}
 	isl_set_free(set);
 
 	return hull;
-error:
-	isl_set_free(set);
-	return NULL;
 }
 
 static int isl_basic_set_is_bounded(struct isl_basic_set *bset)
