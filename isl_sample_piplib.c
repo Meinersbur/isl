@@ -119,7 +119,7 @@ static struct isl_basic_set *isl_basic_set_skew_to_positive_orthant(
 	if (!bounds)
 		goto error;
 	U = isl_mat_drop_cols(ctx, U, 1 + new_dim, old_dim - new_dim);
-	bset = isl_basic_set_preimage(ctx, bset, isl_mat_copy(ctx, U));
+	bset = isl_basic_set_preimage(bset, isl_mat_copy(ctx, U));
 	if (!bset)
 		goto error;
 	*T = U;

@@ -368,7 +368,7 @@ static struct isl_basic_set *equalities_in_underlying_set(
 	}
 	isl_basic_set_free(bset);
 	if (T2)
-		hull = isl_basic_set_preimage(ctx, hull, T2);
+		hull = isl_basic_set_preimage(hull, T2);
 
 	return hull;
 error:

@@ -504,7 +504,7 @@ static isl_int *wrap_facet(struct isl_ctx *ctx, struct isl_set *set,
 	isl_seq_cpy(T->row[1], facet, dim);
 	isl_seq_cpy(T->row[2], ridge, dim);
 	T = isl_mat_right_inverse(ctx, T);
-	set = isl_set_preimage(ctx, set, T);
+	set = isl_set_preimage(set, T);
 	T = NULL;
 	if (!set)
 		goto error;
@@ -667,9 +667,9 @@ static struct isl_basic_set *compute_facet(struct isl_ctx *ctx,
 	Q = isl_mat_right_inverse(ctx, isl_mat_copy(ctx, U));
 	U = isl_mat_drop_cols(ctx, U, 1, 1);
 	Q = isl_mat_drop_rows(ctx, Q, 1, 1);
-	set = isl_set_preimage(ctx, set, U);
+	set = isl_set_preimage(set, U);
 	facet = uset_convex_hull_wrap(set);
-	facet = isl_basic_set_preimage(ctx, facet, Q);
+	facet = isl_basic_set_preimage(facet, Q);
 	return facet;
 error:
 	isl_set_free(set);
@@ -1124,9 +1124,9 @@ static struct isl_basic_set *modulo_affine_hull(struct isl_ctx *ctx,
 	if (!dummy)
 		goto error;
 	isl_basic_set_free(dummy);
-	set = isl_set_preimage(ctx, set, T);
+	set = isl_set_preimage(set, T);
 	convex_hull = uset_convex_hull(set);
-	convex_hull = isl_basic_set_preimage(ctx, convex_hull, T2);
+	convex_hull = isl_basic_set_preimage(convex_hull, T2);
 	convex_hull = isl_basic_set_intersect(convex_hull, affine_hull);
 	return convex_hull;
 error:

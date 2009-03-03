@@ -1284,9 +1284,9 @@ static struct isl_basic_set *uset_gist_context_eq(struct isl_basic_set *bset,
 				isl_basic_set_copy(context), &T, &T2);
 	if (!reduced_context)
 		goto error;
-	bset = isl_basic_set_preimage(ctx, bset, T);
+	bset = isl_basic_set_preimage(bset, T);
 	bset = uset_gist(bset, reduced_context);
-	bset = isl_basic_set_preimage(ctx, bset, T2);
+	bset = isl_basic_set_preimage(bset, T2);
 	bset = isl_basic_set_reduce_using_equalities(bset, context);
 	return bset;
 error:
@@ -1312,9 +1312,9 @@ static struct isl_basic_set *uset_gist_set_eq(struct isl_basic_set *bset,
 	bset = isl_basic_set_remove_equalities(bset, &T, &T2);
 	if (!bset)
 		goto error;
-	context = isl_basic_set_preimage(ctx, context, T);
+	context = isl_basic_set_preimage(context, T);
 	bset = uset_gist(bset, context);
-	bset = isl_basic_set_preimage(ctx, bset, T2);
+	bset = isl_basic_set_preimage(bset, T2);
 	bset = isl_basic_set_intersect(bset, affine_hull);
 	return bset;
 error:

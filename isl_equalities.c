@@ -543,7 +543,7 @@ static struct isl_basic_set *compress_variables(struct isl_ctx *ctx,
 		return isl_basic_set_set_to_empty(bset);
 	}
 
-	bset = isl_basic_set_preimage(ctx, bset, T ? isl_mat_copy(ctx, TC) : TC);
+	bset = isl_basic_set_preimage(bset, T ? isl_mat_copy(ctx, TC) : TC);
 	if (T)
 		*T = TC;
 	return bset;

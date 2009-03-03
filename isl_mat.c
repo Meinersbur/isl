@@ -750,15 +750,17 @@ error:
  * the div array too as the number of rows in this array is assumed
  * to be equal to extra.
  */
-struct isl_basic_set *isl_basic_set_preimage(struct isl_ctx *ctx,
-	struct isl_basic_set *bset, struct isl_mat *mat)
+struct isl_basic_set *isl_basic_set_preimage(struct isl_basic_set *bset,
+	struct isl_mat *mat)
 {
+	struct isl_ctx *ctx;
 	struct isl_mat *t;
 	int i;
 
 	if (!bset || !mat)
 		goto error;
 
+	ctx = bset->ctx;
 	bset = isl_basic_set_cow(bset);
 	if (!bset)
 		goto error;
@@ -808,9 +810,9 @@ error2:
 	return NULL;
 }
 
-struct isl_set *isl_set_preimage(struct isl_ctx *ctx,
-	struct isl_set *set, struct isl_mat *mat)
+struct isl_set *isl_set_preimage(struct isl_set *set, struct isl_mat *mat)
 {
+	struct isl_ctx *ctx;
 	int i;
 
 	set = isl_set_cow(set);
@@ -819,7 +821,7 @@ struct isl_set *isl_set_preimage(struct isl_ctx *ctx,
 
 	ctx = set->ctx;
 	for (i = 0; i < set->n; ++i) {
-		set->p[i] = isl_basic_set_preimage(ctx, set->p[i],
+		set->p[i] = isl_basic_set_preimage(set->p[i],
 						    isl_mat_copy(ctx, mat));
 		if (!set->p[i])
 			goto error;
