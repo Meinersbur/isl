@@ -7,7 +7,7 @@
 #include "isl_equalities.h"
 #include "isl_tab.h"
 
-static struct isl_basic_set *uset_convex_hull_wrap(struct isl_set *set);
+static struct isl_basic_set *uset_convex_hull_wrap_bounded(struct isl_set *set);
 
 static void swap_ineq(struct isl_basic_map *bmap, unsigned i, unsigned j)
 {
@@ -643,7 +643,7 @@ static struct isl_basic_set *compute_facet(struct isl_ctx *ctx,
 	U = isl_mat_drop_cols(ctx, U, 1, 1);
 	Q = isl_mat_drop_rows(ctx, Q, 1, 1);
 	set = isl_set_preimage(set, U);
-	facet = uset_convex_hull_wrap(set);
+	facet = uset_convex_hull_wrap_bounded(set);
 	facet = isl_basic_set_preimage(facet, Q);
 	return facet;
 error:
@@ -977,11 +977,14 @@ error:
 	return NULL;
 }
 
-static struct isl_basic_set *uset_convex_hull_wrap_with_bounds(
-	struct isl_set *set, struct isl_mat *bounds)
+static struct isl_basic_set *uset_convex_hull_wrap(struct isl_set *set)
 {
+	struct isl_mat *bounds = NULL;
 	struct isl_basic_set *convex_hull = NULL;
 
+	bounds = independent_bounds(set->ctx, set);
+	if (!bounds)
+		goto error;
 	isl_assert(set->ctx, bounds->n_row == isl_set_n_dim(set), goto error);
 	bounds = initial_facet_constraint(set->ctx, set, bounds);
 	if (!bounds)
@@ -1030,7 +1033,6 @@ static struct isl_basic_set *uset_convex_hull(struct isl_set *set)
 {
 	int i;
 	struct isl_basic_set *convex_hull = NULL;
-	struct isl_mat *bounds = NULL;
 
 	if (isl_set_n_dim(set) == 0)
 		return convex_hull_0d(set);
@@ -1053,10 +1055,7 @@ static struct isl_basic_set *uset_convex_hull(struct isl_set *set)
 	if (!isl_set_is_bounded(set))
 		return uset_convex_hull_elim(set);
 
-	bounds = independent_bounds(set->ctx, set);
-	if (!bounds)
-		goto error;
-	return uset_convex_hull_wrap_with_bounds(set, bounds);
+	return uset_convex_hull_wrap(set);
 error:
 	isl_set_free(set);
 	isl_basic_set_free(convex_hull);
@@ -1067,11 +1066,10 @@ error:
  * without parameters or divs and where the convex hull of set is
  * known to be full-dimensional.
  */
-static struct isl_basic_set *uset_convex_hull_wrap(struct isl_set *set)
+static struct isl_basic_set *uset_convex_hull_wrap_bounded(struct isl_set *set)
 {
 	int i;
 	struct isl_basic_set *convex_hull = NULL;
-	struct isl_mat *bounds;
 
 	if (isl_set_n_dim(set) == 0) {
 		convex_hull = isl_basic_set_universe(isl_dim_copy(set->dim));
@@ -1095,10 +1093,7 @@ static struct isl_basic_set *uset_convex_hull_wrap(struct isl_set *set)
 	if (isl_set_n_dim(set) == 1)
 		return convex_hull_1d(set->ctx, set);
 
-	bounds = independent_bounds(set->ctx, set);
-	if (!bounds)
-		goto error;
-	return uset_convex_hull_wrap_with_bounds(set, bounds);
+	return uset_convex_hull_wrap(set);
 error:
 	isl_set_free(set);
 	return NULL;
