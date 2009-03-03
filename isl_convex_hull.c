@@ -657,6 +657,14 @@ error:
  * the adjacent facets through wrapping, adding those facets that we
  * hadn't already found before.
  *
+ * For each facet we have found so far, we first compute its facets
+ * in the resulting convex hull.  That is, we compute the ridges
+ * of the resulting convex hull contained in the facet.
+ * We also compute the corresponding facet in the current approximation
+ * of the convex hull.  There is no need to wrap around the ridges
+ * in this facet since that would result in a facet that is already
+ * present in the current approximation.
+ *
  * This function can still be significantly optimized by checking which of
  * the facets of the basic sets are also facets of the convex hull and
  * using all the facets so far to help in constructing the facets of the
@@ -671,6 +679,7 @@ static struct isl_basic_set *extend(struct isl_basic_set *hull,
 	int i, j, f;
 	int k;
 	struct isl_basic_set *facet = NULL;
+	struct isl_basic_set *hull_facet = NULL;
 	unsigned total;
 	unsigned dim;
 
@@ -680,31 +689,40 @@ static struct isl_basic_set *extend(struct isl_basic_set *hull,
 
 	for (i = 0; i < hull->n_ineq; ++i) {
 		facet = compute_facet(set, hull->ineq[i]);
+		facet = isl_basic_set_add_equality(facet->ctx, facet, hull->ineq[i]);
+		facet = isl_basic_set_gauss(facet, NULL);
+		facet = isl_basic_set_normalize_constraints(facet);
+		hull_facet = isl_basic_set_copy(hull);
+		hull_facet = isl_basic_set_add_equality(hull_facet->ctx, hull_facet, hull->ineq[i]);
+		hull_facet = isl_basic_set_gauss(hull_facet, NULL);
+		hull_facet = isl_basic_set_normalize_constraints(hull_facet);
 		if (!facet)
 			goto error;
 		if (facet->n_ineq + hull->n_ineq > hull->c_size)
 			hull = isl_basic_set_extend_dim(hull,
 				isl_dim_copy(hull->dim), 0, 0, facet->n_ineq);
 		for (j = 0; j < facet->n_ineq; ++j) {
+			for (f = 0; f < hull_facet->n_ineq; ++f)
+				if (isl_seq_eq(facet->ineq[j],
+						hull_facet->ineq[f], 1 + dim))
+					break;
+			if (f < hull_facet->n_ineq)
+				continue;
 			k = isl_basic_set_alloc_inequality(hull);
 			if (k < 0)
 				goto error;
 			isl_seq_cpy(hull->ineq[k], hull->ineq[i], 1+dim);
 			if (!wrap_facet(set, hull->ineq[k], facet->ineq[j]))
 				goto error;
-			for (f = 0; f < k; ++f)
-				if (isl_seq_eq(hull->ineq[f], hull->ineq[k],
-						1+dim))
-					break;
-			if (f < k)
-				isl_basic_set_free_inequality(hull, 1);
 		}
+		isl_basic_set_free(hull_facet);
 		isl_basic_set_free(facet);
 	}
 	hull = isl_basic_set_simplify(hull);
 	hull = isl_basic_set_finalize(hull);
 	return hull;
 error:
+	isl_basic_set_free(hull_facet);
 	isl_basic_set_free(facet);
 	isl_basic_set_free(hull);
 	return NULL;
