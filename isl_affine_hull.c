@@ -6,57 +6,30 @@
 #include "isl_map_private.h"
 #include "isl_equalities.h"
 #include "isl_sample.h"
+#include "isl_tab.h"
 
 struct isl_basic_map *isl_basic_map_implicit_equalities(
 						struct isl_basic_map *bmap)
 {
-	int i;
-	int rational;
-	isl_int opt;
-	isl_int opt_denom;
-	struct isl_ctx *ctx;
+	struct isl_tab *tab;
 
 	if (!bmap)
 		return bmap;
 
+	bmap = isl_basic_map_gauss(bmap, NULL);
 	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
 		return bmap;
 	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_NO_IMPLICIT))
 		return bmap;
+	if (bmap->n_ineq <= 1)
+		return bmap;
 
-	ctx = bmap->ctx;
-	rational = ISL_F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL);
-	isl_int_init(opt);
-	isl_int_init(opt_denom);
-	if (!rational)
-		isl_int_set_si(opt_denom, 1);
-	for (i = bmap->n_ineq - 1; i >= 0; --i) {
-		enum isl_lp_result res;
-		res = isl_solve_lp(bmap, 1, bmap->ineq[i]+1, ctx->one,
-					&opt, rational ? &opt_denom : NULL);
-		if (res == isl_lp_unbounded)
-			continue;
-		if (res == isl_lp_error)
-			goto error;
-		if (res == isl_lp_empty) {
-			bmap = isl_basic_map_set_to_empty(bmap);
-			break;
-		}
-		if (!isl_int_is_one(opt_denom))
-			continue;
-		isl_int_add(opt, opt, bmap->ineq[i][0]);
-		if (isl_int_is_zero(opt))
-			isl_basic_map_inequality_to_equality(bmap, i);
-	}
-	isl_int_clear(opt_denom);
-	isl_int_clear(opt);
-
+	tab = isl_tab_from_basic_map(bmap);
+	tab = isl_tab_detect_equalities(bmap->ctx, tab);
+	bmap = isl_basic_map_update_from_tab(bmap, tab);
+	isl_tab_free(bmap->ctx, tab);
 	ISL_F_SET(bmap, ISL_BASIC_MAP_NO_IMPLICIT);
 	return bmap;
-error:
-	isl_int_clear(opt);
-	isl_basic_map_free(bmap);
-	return NULL;
 }
 
 /* Make eq[row][col] of both bmaps equal so we can add the row
