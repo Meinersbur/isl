@@ -70,6 +70,8 @@ libisl_la_SOURCES = \
 	isl_stream.c \
 	isl_stream.h \
 	isl_seq.c \
+	isl_tab.c \
+	isl_tab.h \
 	isl_vec.c \
 	isl_vec.h
 EXTRA_libisl_la_SOURCES = \
