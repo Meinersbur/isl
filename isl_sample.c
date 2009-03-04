@@ -146,7 +146,7 @@ struct isl_vec *isl_basic_set_sample(struct isl_basic_set *bset)
 		return NULL;
 
 	ctx = bset->ctx;
-	if (F_ISSET(bset, ISL_BASIC_SET_EMPTY)) {
+	if (ISL_F_ISSET(bset, ISL_BASIC_SET_EMPTY)) {
 		isl_basic_set_free(bset);
 		return isl_vec_alloc(ctx, 0);
 	}

@@ -19,13 +19,13 @@ struct isl_basic_map *isl_basic_map_implicit_equalities(
 	if (!bmap)
 		return bmap;
 
-	if (F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
+	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
 		return bmap;
-	if (F_ISSET(bmap, ISL_BASIC_MAP_NO_IMPLICIT))
+	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_NO_IMPLICIT))
 		return bmap;
 
 	ctx = bmap->ctx;
-	rational = F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL);
+	rational = ISL_F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL);
 	isl_int_init(opt);
 	isl_int_init(opt_denom);
 	if (!rational)
@@ -53,7 +53,7 @@ struct isl_basic_map *isl_basic_map_implicit_equalities(
 	isl_int_clear(opt_denom);
 	isl_int_clear(opt);
 
-	F_SET(bmap, ISL_BASIC_MAP_NO_IMPLICIT);
+	ISL_F_SET(bmap, ISL_BASIC_MAP_NO_IMPLICIT);
 	return bmap;
 error:
 	isl_int_clear(opt);
@@ -348,19 +348,19 @@ static struct isl_basic_set *equalities_in_underlying_set(
 	dim = isl_basic_set_n_dim(bset);
 	for (i = 0; i < dim; ++i) {
 		struct isl_basic_set *point;
-		if (F_ISSET(hull, ISL_BASIC_SET_EMPTY))
+		if (ISL_F_ISSET(hull, ISL_BASIC_SET_EMPTY))
 			break;
 		for (j = 0; j < hull->n_eq; ++j) {
 			point = outside_point(ctx, bset, hull->eq[j], 1);
 			if (!point)
 				goto error;
-			if (!F_ISSET(point, ISL_BASIC_SET_EMPTY))
+			if (!ISL_F_ISSET(point, ISL_BASIC_SET_EMPTY))
 				break;
 			isl_basic_set_free(point);
 			point = outside_point(ctx, bset, hull->eq[j], 0);
 			if (!point)
 				goto error;
-			if (!F_ISSET(point, ISL_BASIC_SET_EMPTY))
+			if (!ISL_F_ISSET(point, ISL_BASIC_SET_EMPTY))
 				break;
 			isl_basic_set_free(point);
 		}
@@ -393,11 +393,11 @@ struct isl_basic_map *isl_basic_map_detect_equalities(
 		return NULL;
 	if (bmap->n_ineq == 0)
 		return bmap;
-	if (F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
+	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
 		return bmap;
-	if (F_ISSET(bmap, ISL_BASIC_MAP_ALL_EQUALITIES))
+	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_ALL_EQUALITIES))
 		return bmap;
-	if (F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL))
+	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL))
 		return isl_basic_map_implicit_equalities(bmap);
 
 	hull = equalities_in_underlying_set(isl_basic_map_copy(bmap));
@@ -413,7 +413,7 @@ struct isl_basic_map *isl_basic_map_detect_equalities(
 				1 + isl_basic_set_total_dim(hull));
 	}
 	isl_basic_set_free(hull);
-	F_SET(bmap, ISL_BASIC_MAP_NO_IMPLICIT | ISL_BASIC_MAP_ALL_EQUALITIES);
+	ISL_F_SET(bmap, ISL_BASIC_MAP_NO_IMPLICIT | ISL_BASIC_MAP_ALL_EQUALITIES);
 	bmap = isl_basic_map_simplify(bmap);
 	return isl_basic_map_finalize(bmap);
 error:
@@ -436,7 +436,7 @@ struct isl_basic_map *isl_basic_map_affine_hull(struct isl_basic_map *bmap)
 	if (bmap->n_ineq == 0)
 		return bmap;
 
-	if (F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL)) {
+	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL)) {
 		bmap = isl_basic_map_cow(bmap);
 		isl_basic_map_free_inequality(bmap, bmap->n_ineq);
 		return bmap;

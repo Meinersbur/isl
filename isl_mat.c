@@ -109,7 +109,7 @@ struct isl_mat *isl_mat_cow(struct isl_ctx *ctx, struct isl_mat *mat)
 	if (!mat)
 		return NULL;
 
-	if (mat->ref == 1 && !F_ISSET(mat, ISL_MAT_BORROWED))
+	if (mat->ref == 1 && !ISL_F_ISSET(mat, ISL_MAT_BORROWED))
 		return mat;
 
 	mat2 = isl_mat_dup(ctx, mat);
@@ -125,7 +125,7 @@ void isl_mat_free(struct isl_ctx *ctx, struct isl_mat *mat)
 	if (--mat->ref > 0)
 		return;
 
-	if (!F_ISSET(mat, ISL_MAT_BORROWED))
+	if (!ISL_F_ISSET(mat, ISL_MAT_BORROWED))
 		isl_blk_free(ctx, mat->block);
 	free(mat->row);
 	free(mat);
@@ -832,7 +832,7 @@ struct isl_set *isl_set_preimage(struct isl_ctx *ctx,
 		set->dim->n_out -= mat->n_row;
 	}
 	isl_mat_free(ctx, mat);
-	F_CLR(set, ISL_SET_NORMALIZED);
+	ISL_F_CLR(set, ISL_SET_NORMALIZED);
 	return set;
 error:
 	isl_set_free(set);

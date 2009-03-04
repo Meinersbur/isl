@@ -91,9 +91,9 @@ struct isl_basic_map *isl_basic_map_convex_hull(struct isl_basic_map *bmap)
 	if (!bmap)
 		return NULL;
 
-	if (F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
+	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
 		return bmap;
-	if (F_ISSET(bmap, ISL_BASIC_MAP_NO_REDUNDANT))
+	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_NO_REDUNDANT))
 		return bmap;
 
 	ctx = bmap->ctx;
@@ -107,7 +107,7 @@ struct isl_basic_map *isl_basic_map_convex_hull(struct isl_basic_map *bmap)
 				bmap->ineq[bmap->n_ineq], &opt_n, &opt_d);
 		if (redundant == -1)
 			goto error;
-		if (F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
+		if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
 			break;
 		bmap->n_ineq++;
 		swap_ineq(bmap, i, bmap->n_ineq-1);
@@ -117,7 +117,7 @@ struct isl_basic_map *isl_basic_map_convex_hull(struct isl_basic_map *bmap)
 	isl_int_clear(opt_n);
 	isl_int_clear(opt_d);
 
-	F_SET(bmap, ISL_BASIC_MAP_NO_REDUNDANT);
+	ISL_F_SET(bmap, ISL_BASIC_MAP_NO_REDUNDANT);
 	return bmap;
 error:
 	isl_int_clear(opt_n);
@@ -150,7 +150,7 @@ static int uset_is_bound(struct isl_ctx *ctx, struct isl_set *set,
 	for (j = 0; j < set->n; ++j) {
 		enum isl_lp_result res;
 
-		if (F_ISSET(set->p[j], ISL_BASIC_SET_EMPTY))
+		if (ISL_F_ISSET(set->p[j], ISL_BASIC_SET_EMPTY))
 			continue;
 
 		res = isl_solve_lp((struct isl_basic_map*)set->p[j],
@@ -283,14 +283,14 @@ static struct isl_basic_set *isl_basic_set_set_rational(
 	if (!bset)
 		return NULL;
 
-	if (F_ISSET(bset, ISL_BASIC_MAP_RATIONAL))
+	if (ISL_F_ISSET(bset, ISL_BASIC_MAP_RATIONAL))
 		return bset;
 
 	bset = isl_basic_set_cow(bset);
 	if (!bset)
 		return NULL;
 
-	F_SET(bset, ISL_BASIC_MAP_RATIONAL);
+	ISL_F_SET(bset, ISL_BASIC_MAP_RATIONAL);
 
 	return isl_basic_set_finalize(bset);
 }
@@ -320,7 +320,7 @@ static struct isl_basic_set *isl_basic_set_add_equality(struct isl_ctx *ctx,
 	unsigned total;
 	unsigned dim;
 
-	if (F_ISSET(bset, ISL_BASIC_SET_EMPTY))
+	if (ISL_F_ISSET(bset, ISL_BASIC_SET_EMPTY))
 		return bset;
 
 	isl_assert(ctx, isl_basic_set_n_param(bset) == 0, goto error);
@@ -1177,7 +1177,7 @@ struct isl_basic_map *isl_map_convex_hull(struct isl_map *map)
 
 	convex_hull = isl_basic_map_overlying_set(bset, model);
 
-	F_CLR(convex_hull, ISL_BASIC_MAP_RATIONAL);
+	ISL_F_CLR(convex_hull, ISL_BASIC_MAP_RATIONAL);
 	return convex_hull;
 error:
 	isl_set_free(set);

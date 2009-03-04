@@ -563,7 +563,7 @@ struct isl_basic_set *isl_basic_set_remove_equalities(
 		return NULL;
 	isl_assert(bset->ctx, isl_basic_set_n_param(bset) == 0, goto error);
 	bset = isl_basic_set_gauss(bset, NULL);
-	if (F_ISSET(bset, ISL_BASIC_SET_EMPTY))
+	if (ISL_F_ISSET(bset, ISL_BASIC_SET_EMPTY))
 		return bset;
 	bset = compress_variables(bset->ctx, bset, T, T2);
 	return bset;

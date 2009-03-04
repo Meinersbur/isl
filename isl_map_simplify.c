@@ -69,7 +69,7 @@ struct isl_basic_set *isl_basic_set_drop_dims(
 	if (!bset->dim)
 		goto error;
 
-	F_CLR(bset, ISL_BASIC_SET_NORMALIZED);
+	ISL_F_CLR(bset, ISL_BASIC_SET_NORMALIZED);
 	bset = isl_basic_set_simplify(bset);
 	return isl_basic_set_finalize(bset);
 error:
@@ -102,7 +102,7 @@ struct isl_set *isl_set_drop_dims(
 			goto error;
 	}
 
-	F_CLR(set, ISL_SET_NORMALIZED);
+	ISL_F_CLR(set, ISL_SET_NORMALIZED);
 	return set;
 error:
 	isl_set_free(set);
@@ -152,7 +152,7 @@ struct isl_basic_map *isl_basic_map_drop(struct isl_basic_map *bmap,
 	if (!bmap->dim)
 		goto error;
 
-	F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
+	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
 	bmap = isl_basic_map_simplify(bmap);
 	return isl_basic_map_finalize(bmap);
 error:
@@ -190,7 +190,7 @@ struct isl_map *isl_map_drop(struct isl_map *map,
 		if (!map->p[i])
 			goto error;
 	}
-	F_CLR(map, ISL_MAP_NORMALIZED);
+	ISL_F_CLR(map, ISL_MAP_NORMALIZED);
 
 	return map;
 error:
@@ -244,7 +244,7 @@ static struct isl_basic_map *isl_basic_map_drop_div(
 
 		bmap->div[bmap->n_div - 1] = t;
 	}
-	F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
+	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
 	isl_basic_map_free_div(bmap, 1);
 
 	return bmap;
@@ -270,7 +270,7 @@ static struct isl_basic_map *normalize_constraints(struct isl_basic_map *bmap)
 			isl_basic_map_drop_equality(bmap, i);
 			continue;
 		}
-		if (F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL))
+		if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL))
 			isl_int_gcd(gcd, gcd, bmap->eq[i][0]);
 		if (isl_int_is_one(gcd))
 			continue;
@@ -291,7 +291,7 @@ static struct isl_basic_map *normalize_constraints(struct isl_basic_map *bmap)
 			isl_basic_map_drop_inequality(bmap, i);
 			continue;
 		}
-		if (F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL))
+		if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL))
 			isl_int_gcd(gcd, gcd, bmap->ineq[i][0]);
 		if (isl_int_is_one(gcd))
 			continue;
@@ -390,7 +390,7 @@ static struct isl_basic_map *eliminate_divs_ineq(
 			continue;
 		*progress = 1;
 		bmap = isl_basic_map_eliminate_vars(bmap, (off-1)+d, 1);
-		if (F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
+		if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
 			break;
 		bmap = isl_basic_map_drop_div(bmap, d);
 		if (!bmap)
@@ -426,7 +426,7 @@ static void eliminate_var_using_equality(struct isl_basic_map *bmap,
 		if (progress)
 			*progress = 1;
 		isl_seq_elim(bmap->ineq[k], eq, 1+pos, 1+total, NULL);
-		F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
+		ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
 	}
 
 	for (k = 0; k < bmap->n_div; ++k) {
@@ -445,7 +445,7 @@ static void eliminate_var_using_equality(struct isl_basic_map *bmap,
 		else
 			isl_seq_elim(bmap->div[k]+1, eq,
 					1+pos, 1+total, &bmap->div[k][0]);
-		F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
+		ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
 	}
 }
 
@@ -490,7 +490,7 @@ struct isl_basic_map *isl_basic_map_gauss(
 			isl_int_set_si(bmap->div[div][1+1+last_var], 0);
 			isl_int_set(bmap->div[div][0],
 				    bmap->eq[done][1+last_var]);
-			F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
+			ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
 		}
 	}
 	if (done == bmap->n_eq)
@@ -690,7 +690,7 @@ static struct isl_basic_map *normalize_divs(
 	if (bmap->n_eq == 0)
 		return bmap;
 
-	if (F_ISSET(bmap, ISL_BASIC_MAP_NORMALIZED_DIVS))
+	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_NORMALIZED_DIVS))
 		return bmap;
 
 	total = isl_dim_total(bmap->dim);
@@ -810,7 +810,7 @@ static struct isl_basic_map *normalize_divs(
 
 	*progress = 1;
 done:
-	F_SET(bmap, ISL_BASIC_MAP_NORMALIZED_DIVS);
+	ISL_F_SET(bmap, ISL_BASIC_MAP_NORMALIZED_DIVS);
 
 	return bmap;
 error:
@@ -986,7 +986,7 @@ struct isl_basic_map *isl_basic_map_finalize(struct isl_basic_map *bmap)
 	bmap = remove_redundant_divs(bmap);
 	if (!bmap)
 		return NULL;
-	F_SET(bmap, ISL_BASIC_SET_FINAL);
+	ISL_F_SET(bmap, ISL_BASIC_SET_FINAL);
 	return bmap;
 }
 
@@ -1024,7 +1024,7 @@ struct isl_map *isl_map_finalize(struct isl_map *map)
 		if (!map->p[i])
 			goto error;
 	}
-	F_CLR(map, ISL_MAP_NORMALIZED);
+	ISL_F_CLR(map, ISL_MAP_NORMALIZED);
 	return map;
 error:
 	isl_map_free(map);
@@ -1125,11 +1125,11 @@ struct isl_basic_map *isl_basic_map_eliminate_vars(
 			bmap = isl_basic_map_convex_hull(bmap);
 			if (!bmap)
 				goto error;
-			if (F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
+			if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
 				break;
 		}
 	}
-	F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
+	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
 	return bmap;
 error:
 	isl_basic_map_free(bmap);
@@ -1365,7 +1365,7 @@ static struct isl_basic_set *uset_gist(struct isl_basic_set *bset,
 			isl_int_clear(opt);
 			goto error;
 		}
-		if (F_ISSET(context, ISL_BASIC_MAP_EMPTY)) {
+		if (ISL_F_ISSET(context, ISL_BASIC_MAP_EMPTY)) {
 			bset = isl_basic_set_set_to_empty(bset);
 			break;
 		}
@@ -1428,7 +1428,7 @@ struct isl_map *isl_map_gist(struct isl_map *map, struct isl_basic_map *context)
 			goto error;
 	}
 	isl_basic_map_free(context);
-	F_CLR(map, ISL_MAP_NORMALIZED);
+	ISL_F_CLR(map, ISL_MAP_NORMALIZED);
 	return map;
 error:
 	isl_map_free(map);
