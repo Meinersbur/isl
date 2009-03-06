@@ -41,6 +41,9 @@ struct isl_hash_table {
 
 struct isl_ctx;
 
+struct isl_hash_table *isl_hash_table_alloc(struct isl_ctx *ctx, int min_size);
+void isl_hash_table_free(struct isl_ctx *ctx, struct isl_hash_table *table);
+
 int isl_hash_table_init(struct isl_ctx *ctx, struct isl_hash_table *table,
 			int min_size);
 void isl_hash_table_clear(struct isl_hash_table *table);

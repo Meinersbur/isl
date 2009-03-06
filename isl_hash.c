@@ -42,11 +42,32 @@ int isl_hash_table_init(struct isl_ctx *ctx, struct isl_hash_table *table,
 	return 0;
 }
 
+struct isl_hash_table *isl_hash_table_alloc(struct isl_ctx *ctx, int min_size)
+{
+	struct isl_hash_table *table = NULL;
+
+	table = isl_alloc_type(ctx, struct isl_hash_table);
+	if (isl_hash_table_init(ctx, table, min_size))
+		goto error;
+	return table;
+error:
+	isl_hash_table_free(ctx, table);
+	return NULL;
+}
+
 void isl_hash_table_clear(struct isl_hash_table *table)
 {
 	if (!table)
 		return;
 	free(table->entries);
+}
+
+void isl_hash_table_free(struct isl_ctx *ctx, struct isl_hash_table *table)
+{
+	if (!table)
+		return;
+	isl_hash_table_clear(table);
+	free(table);
 }
 
 struct isl_hash_table_entry *isl_hash_table_find(struct isl_ctx *ctx,
