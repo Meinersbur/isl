@@ -1434,55 +1434,29 @@ struct isl_basic_set *isl_set_convex_hull(struct isl_set *set)
 		isl_map_convex_hull((struct isl_map *)set);
 }
 
-/* Compute a superset of the convex hull of map that is described
- * by only translates of the constraints in the constituents of map.
- *
- * The implementation is not very efficient.  In particular, if
- * constraints with the same normal appear in more than one
- * basic map, they will be (re)examined each time.
- */
-struct isl_basic_map *isl_map_simple_hull(struct isl_map *map)
+static struct isl_basic_set *uset_simple_hull(struct isl_set *set)
 {
-	struct isl_set *set = NULL;
-	struct isl_basic_map *model = NULL;
-	struct isl_basic_map *hull;
 	struct isl_basic_set *bset = NULL;
-	int i, j;
 	unsigned n_ineq;
 	unsigned dim;
+	int i, j;
 
-	if (!map)
+	if (!set)
 		return NULL;
-	if (map->n == 0) {
-		hull = isl_basic_map_empty_like_map(map);
-		isl_map_free(map);
-		return hull;
-	}
-	if (map->n == 1) {
-		hull = isl_basic_map_copy(map->p[0]);
-		isl_map_free(map);
-		return hull;
-	}
-
-	map = isl_map_align_divs(map);
-	model = isl_basic_map_copy(map->p[0]);
 
 	n_ineq = 0;
-	for (i = 0; i < map->n; ++i) {
-		if (!map->p[i])
+	for (i = 0; i < set->n; ++i) {
+		if (!set->p[i])
 			goto error;
-		n_ineq += map->p[i]->n_ineq;
+		n_ineq += set->p[i]->n_ineq;
 	}
-
-	set = isl_map_underlying_set(map);
-	if (!set)
-		goto error;
 
 	bset = isl_set_affine_hull(isl_set_copy(set));
 	if (!bset)
 		goto error;
 	dim = isl_basic_set_n_dim(bset);
-	bset = isl_basic_set_extend(bset, 0, dim, 0, 0, n_ineq);
+	bset = isl_basic_set_extend_dim(bset, isl_dim_copy(bset->dim),
+					0, 0, n_ineq);
 	if (!bset)
 		goto error;
 
@@ -1508,15 +1482,52 @@ struct isl_basic_map *isl_map_simple_hull(struct isl_map *map)
 	bset = isl_basic_set_finalize(bset);
 	bset = isl_basic_set_convex_hull(bset);
 
-	hull = isl_basic_map_overlying_set(bset, model);
-
 	isl_set_free(set);
-	return hull;
+
+	return bset;
 error:
 	isl_basic_set_free(bset);
 	isl_set_free(set);
-	isl_basic_map_free(model);
 	return NULL;
+}
+
+/* Compute a superset of the convex hull of map that is described
+ * by only translates of the constraints in the constituents of map.
+ *
+ * The implementation is not very efficient.  In particular, if
+ * constraints with the same normal appear in more than one
+ * basic map, they will be (re)examined each time.
+ */
+struct isl_basic_map *isl_map_simple_hull(struct isl_map *map)
+{
+	struct isl_set *set = NULL;
+	struct isl_basic_map *model = NULL;
+	struct isl_basic_map *hull;
+	struct isl_basic_set *bset = NULL;
+
+	if (!map)
+		return NULL;
+	if (map->n == 0) {
+		hull = isl_basic_map_empty_like_map(map);
+		isl_map_free(map);
+		return hull;
+	}
+	if (map->n == 1) {
+		hull = isl_basic_map_copy(map->p[0]);
+		isl_map_free(map);
+		return hull;
+	}
+
+	map = isl_map_align_divs(map);
+	model = isl_basic_map_copy(map->p[0]);
+
+	set = isl_map_underlying_set(map);
+
+	bset = uset_simple_hull(set);
+
+	hull = isl_basic_map_overlying_set(bset, model);
+
+	return hull;
 }
 
 struct isl_basic_set *isl_set_simple_hull(struct isl_set *set)
