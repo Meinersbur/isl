@@ -18,7 +18,8 @@ enum isl_lp_result isl_pip_solve_lp(struct isl_basic_map *bmap, int maximize,
 	if (!domain)
 		goto error;
 	entier_set_si(domain->p[0][1], -1);
-	isl_seq_cpy_to_pip(domain->p[0]+2, f, total);
+	isl_int_set(domain->p[0][domain->NbColumns - 1], f[0]);
+	isl_seq_cpy_to_pip(domain->p[0]+2, f+1, total);
 
 	options = pip_options_init();
 	if (!options)

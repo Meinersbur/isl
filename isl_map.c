@@ -3895,10 +3895,10 @@ int isl_basic_set_compare_at(struct isl_basic_set *bset1,
 		goto error;
 	total = isl_basic_map_total_dim(bmap1);
 	ctx = bmap1->ctx;
-	obj = isl_vec_alloc(ctx, total);
-	isl_seq_clr(obj->block.data, total);
-	isl_int_set_si(obj->block.data[nparam+pos], 1);
-	isl_int_set_si(obj->block.data[nparam+pos+(dim1-pos)], -1);
+	obj = isl_vec_alloc(ctx, 1 + total);
+	isl_seq_clr(obj->block.data, 1 + total);
+	isl_int_set_si(obj->block.data[1+nparam+pos], 1);
+	isl_int_set_si(obj->block.data[1+nparam+pos+(dim1-pos)], -1);
 	if (!obj)
 		goto error;
 	isl_int_init(num);

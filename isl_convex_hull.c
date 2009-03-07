@@ -50,7 +50,7 @@ int isl_basic_map_constraint_is_redundant(struct isl_basic_map **bmap,
 	if (i < total)
 		return 0;
 
-	res = isl_solve_lp(*bmap, 0, c+1, (*bmap)->ctx->one, opt_n, opt_d);
+	res = isl_solve_lp(*bmap, 0, c, (*bmap)->ctx->one, opt_n, opt_d);
 	if (res == isl_lp_unbounded)
 		return 0;
 	if (res == isl_lp_error)
@@ -59,10 +59,6 @@ int isl_basic_map_constraint_is_redundant(struct isl_basic_map **bmap,
 		*bmap = isl_basic_map_set_to_empty(*bmap);
 		return 0;
 	}
-	if (opt_d)
-		isl_int_addmul(*opt_n, *opt_d, c[0]);
-	else
-		isl_int_add(*opt_n, *opt_n, c[0]);
 	return !isl_int_is_neg(*opt_n);
 }
 
@@ -134,7 +130,7 @@ static int uset_is_bound(struct isl_ctx *ctx, struct isl_set *set,
 			continue;
 
 		res = isl_solve_lp((struct isl_basic_map*)set->p[j],
-				0, c+1, ctx->one, &opt, &opt_denom);
+				0, c, ctx->one, &opt, &opt_denom);
 		if (res == isl_lp_unbounded)
 			break;
 		if (res == isl_lp_error)
@@ -147,13 +143,12 @@ static int uset_is_bound(struct isl_ctx *ctx, struct isl_set *set,
 		}
 		if (!isl_int_is_one(opt_denom))
 			isl_seq_scale(c, c, opt_denom, len);
-		if (first || isl_int_lt(opt, c[0]))
-			isl_int_set(c[0], opt);
+		if (first || isl_int_is_neg(opt))
+			isl_int_sub(c[0], c[0], opt);
 		first = 0;
 	}
 	isl_int_clear(opt);
 	isl_int_clear(opt_denom);
-	isl_int_neg(c[0], c[0]);
 	return j >= set->n;
 error:
 	isl_int_clear(opt);
@@ -482,13 +477,14 @@ static isl_int *wrap_facet(struct isl_set *set, isl_int *facet, isl_int *ridge)
 	if (!set)
 		goto error;
 	lp = wrap_constraints(set);
-	obj = isl_vec_alloc(set->ctx, dim*set->n);
+	obj = isl_vec_alloc(set->ctx, 1 + dim*set->n);
 	if (!obj)
 		goto error;
+	isl_int_set_si(obj->block.data[0], 0);
 	for (i = 0; i < set->n; ++i) {
-		isl_seq_clr(obj->block.data+dim*i, 2);
-		isl_int_set_si(obj->block.data[dim*i+2], 1);
-		isl_seq_clr(obj->block.data+dim*i+3, dim-3);
+		isl_seq_clr(obj->block.data + 1 + dim*i, 2);
+		isl_int_set_si(obj->block.data[1 + dim*i+2], 1);
+		isl_seq_clr(obj->block.data + 1 + dim*i+3, dim-3);
 	}
 	isl_int_init(num);
 	isl_int_init(den);
