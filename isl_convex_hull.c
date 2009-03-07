@@ -1434,11 +1434,290 @@ struct isl_basic_set *isl_set_convex_hull(struct isl_set *set)
 		isl_map_convex_hull((struct isl_map *)set);
 }
 
+struct sh_data_entry {
+	struct isl_hash_table	*table;
+	struct isl_tab		*tab;
+};
+
+/* Holds the data needed during the simple hull computation.
+ * In particular,
+ *	n		the number of basic sets in the original set
+ *	hull_table	a hash table of already computed constraints
+ *			in the simple hull
+ *	p		for each basic set,
+ *		table		a hash table of the constraints
+ *		tab		the tableau corresponding to the basic set
+ */
+struct sh_data {
+	struct isl_ctx		*ctx;
+	unsigned		n;
+	struct isl_hash_table	*hull_table;
+	struct sh_data_entry	p[0];
+};
+
+static void sh_data_free(struct sh_data *data)
+{
+	int i;
+
+	if (!data)
+		return;
+	isl_hash_table_free(data->ctx, data->hull_table);
+	for (i = 0; i < data->n; ++i) {
+		isl_hash_table_free(data->ctx, data->p[i].table);
+		isl_tab_free(data->ctx, data->p[i].tab);
+	}
+	free(data);
+}
+
+struct ineq_cmp_data {
+	unsigned	len;
+	isl_int		*p;
+};
+
+static int has_ineq(const void *entry, const void *val)
+{
+	isl_int *row = (isl_int *)entry;
+	struct ineq_cmp_data *v = (struct ineq_cmp_data *)val;
+
+	return isl_seq_eq(row + 1, v->p + 1, v->len) ||
+	       isl_seq_is_neg(row + 1, v->p + 1, v->len);
+}
+
+static int hash_ineq(struct isl_ctx *ctx, struct isl_hash_table *table,
+			isl_int *ineq, unsigned len)
+{
+	uint32_t c_hash;
+	struct ineq_cmp_data v;
+	struct isl_hash_table_entry *entry;
+
+	v.len = len;
+	v.p = ineq;
+	c_hash = isl_seq_hash(ineq + 1, len, isl_hash_init());
+	entry = isl_hash_table_find(ctx, table, c_hash, has_ineq, &v, 1);
+	if (!entry)
+		return - 1;
+	entry->data = ineq;
+	return 0;
+}
+
+/* Fill hash table "table" with the constraints of "bset".
+ * Equalities are added as two inequalities.
+ * The value in the hash table is a pointer to the (in)equality of "bset".
+ */
+static int hash_basic_set(struct isl_hash_table *table,
+				struct isl_basic_set *bset)
+{
+	int i, j;
+	unsigned dim = isl_basic_set_total_dim(bset);
+
+	for (i = 0; i < bset->n_eq; ++i) {
+		for (j = 0; j < 2; ++j) {
+			isl_seq_neg(bset->eq[i], bset->eq[i], 1 + dim);
+			if (hash_ineq(bset->ctx, table, bset->eq[i], dim) < 0)
+				return -1;
+		}
+	}
+	for (i = 0; i < bset->n_ineq; ++i) {
+		if (hash_ineq(bset->ctx, table, bset->ineq[i], dim) < 0)
+			return -1;
+	}
+	return 0;
+}
+
+static struct sh_data *sh_data_alloc(struct isl_set *set, unsigned n_ineq)
+{
+	struct sh_data *data;
+	int i;
+
+	data = isl_calloc(set->ctx, struct sh_data,
+		sizeof(struct sh_data) + set->n * sizeof(struct sh_data_entry));
+	if (!data)
+		return NULL;
+	data->ctx = set->ctx;
+	data->n = set->n;
+	data->hull_table = isl_hash_table_alloc(set->ctx, n_ineq);
+	if (!data->hull_table)
+		goto error;
+	for (i = 0; i < set->n; ++i) {
+		data->p[i].table = isl_hash_table_alloc(set->ctx,
+				    2 * set->p[i]->n_eq + set->p[i]->n_ineq);
+		if (!data->p[i].table)
+			goto error;
+		if (hash_basic_set(data->p[i].table, set->p[i]) < 0)
+			goto error;
+	}
+	return data;
+error:
+	sh_data_free(data);
+	return NULL;
+}
+
+/* Check if inequality "ineq" is a bound for basic set "j" or if
+ * it can be relaxed (by increasing the constant term) to become
+ * a bound for that basic set.  In the latter case, the constant
+ * term is updated.
+ * Return 1 if "ineq" is a bound
+ *	  0 if "ineq" may attain arbitrarily small values on basic set "j"
+ *	 -1 if some error occurred
+ */
+static int is_bound(struct sh_data *data, struct isl_set *set, int j,
+			isl_int *ineq)
+{
+	enum isl_lp_result res;
+	isl_int opt;
+
+	if (!data->p[j].tab) {
+		data->p[j].tab = isl_tab_from_basic_set(set->p[j]);
+		if (!data->p[j].tab)
+			return -1;
+	}
+
+	isl_int_init(opt);
+
+	res = isl_tab_min(data->ctx, data->p[j].tab, ineq, data->ctx->one,
+				&opt, NULL);
+	if (res == isl_lp_ok && isl_int_is_neg(opt))
+		isl_int_sub(ineq[0], ineq[0], opt);
+
+	isl_int_clear(opt);
+
+	return res == isl_lp_ok ? 1 :
+	       res == isl_lp_unbounded ? 0 : -1;
+}
+
+/* Check if inequality "ineq" from basic set "i" can be relaxed to
+ * become a bound on the whole set.  If so, add the (relaxed) inequality
+ * to "hull".
+ *
+ * We first check if "hull" already contains a translate of the inequality.
+ * If so, we are done.
+ * Then, we check if any of the previous basic sets contains a translate
+ * of the inequality.  If so, then we have already considered this
+ * inequality and we are done.
+ * Otherwise, for each basic set other than "i", we check if the inequality
+ * is a bound on the basic set.
+ * For previous basic sets, we know that they do not contain a translate
+ * of the inequality, so we directly call is_bound.
+ * For following basic sets, we first check if a translate of the
+ * inequality appears in its description and if so directly update
+ * the inequality accordingly.
+ */
+static struct isl_basic_set *add_bound(struct isl_basic_set *hull,
+	struct sh_data *data, struct isl_set *set, int i, isl_int *ineq)
+{
+	uint32_t c_hash;
+	struct ineq_cmp_data v;
+	struct isl_hash_table_entry *entry;
+	int j, k;
+
+	if (!hull)
+		return NULL;
+
+	v.len = isl_basic_set_total_dim(hull);
+	v.p = ineq;
+	c_hash = isl_seq_hash(ineq + 1, v.len, isl_hash_init());
+
+	entry = isl_hash_table_find(hull->ctx, data->hull_table, c_hash,
+					has_ineq, &v, 0);
+	if (entry)
+		return hull;
+
+	for (j = 0; j < i; ++j) {
+		entry = isl_hash_table_find(hull->ctx, data->p[j].table,
+						c_hash, has_ineq, &v, 0);
+		if (entry)
+			break;
+	}
+	if (j < i)
+		return hull;
+
+	k = isl_basic_set_alloc_inequality(hull);
+	isl_seq_cpy(hull->ineq[k], ineq, 1 + v.len);
+	if (k < 0)
+		goto error;
+
+	for (j = 0; j < i; ++j) {
+		int bound;
+		bound = is_bound(data, set, j, hull->ineq[k]);
+		if (bound < 0)
+			goto error;
+		if (!bound)
+			break;
+	}
+	if (j < i) {
+		isl_basic_set_free_inequality(hull, 1);
+		return hull;
+	}
+
+	for (j = i + 1; j < set->n; ++j) {
+		int bound, neg;
+		isl_int *ineq_j;
+		entry = isl_hash_table_find(hull->ctx, data->p[j].table,
+						c_hash, has_ineq, &v, 0);
+		if (entry) {
+			ineq_j = entry->data;
+			neg = isl_seq_is_neg(ineq_j + 1,
+					     hull->ineq[k] + 1, v.len);
+			if (neg)
+				isl_int_neg(ineq_j[0], ineq_j[0]);
+			if (isl_int_gt(ineq_j[0], hull->ineq[k][0]))
+				isl_int_set(hull->ineq[k][0], ineq_j[0]);
+			if (neg)
+				isl_int_neg(ineq_j[0], ineq_j[0]);
+			continue;
+		}
+		bound = is_bound(data, set, j, hull->ineq[k]);
+		if (bound < 0)
+			goto error;
+		if (!bound)
+			break;
+	}
+	if (j < set->n) {
+		isl_basic_set_free_inequality(hull, 1);
+		return hull;
+	}
+
+	entry = isl_hash_table_find(hull->ctx, data->hull_table, c_hash,
+					has_ineq, &v, 1);
+	if (!entry)
+		goto error;
+	entry->data = hull->ineq[k];
+
+	return hull;
+error:
+	isl_basic_set_free(hull);
+	return NULL;
+}
+
+/* Check if any inequality from basic set "i" can be relaxed to
+ * become a bound on the whole set.  If so, add the (relaxed) inequality
+ * to "hull".
+ */
+static struct isl_basic_set *add_bounds(struct isl_basic_set *bset,
+	struct sh_data *data, struct isl_set *set, int i)
+{
+	int j, k;
+	unsigned dim = isl_basic_set_total_dim(bset);
+
+	for (j = 0; j < set->p[i]->n_eq; ++j) {
+		for (k = 0; k < 2; ++k) {
+			isl_seq_neg(set->p[i]->eq[j], set->p[i]->eq[j], 1+dim);
+			add_bound(bset, data, set, i, set->p[i]->eq[j]);
+		}
+	}
+	for (j = 0; j < set->p[i]->n_ineq; ++j)
+		add_bound(bset, data, set, i, set->p[i]->ineq[j]);
+	return bset;
+}
+
+/* Compute a superset of the convex hull of set that is described
+ * by only translates of the constraints in the constituents of set.
+ */
 static struct isl_basic_set *uset_simple_hull(struct isl_set *set)
 {
-	struct isl_basic_set *bset = NULL;
+	struct sh_data *data = NULL;
+	struct isl_basic_set *hull = NULL;
 	unsigned n_ineq;
-	unsigned dim;
 	int i, j;
 
 	if (!set)
@@ -1448,55 +1727,41 @@ static struct isl_basic_set *uset_simple_hull(struct isl_set *set)
 	for (i = 0; i < set->n; ++i) {
 		if (!set->p[i])
 			goto error;
-		n_ineq += set->p[i]->n_ineq;
+		n_ineq += 2 * set->p[i]->n_eq + set->p[i]->n_ineq;
 	}
 
-	bset = isl_set_affine_hull(isl_set_copy(set));
-	if (!bset)
+	hull = isl_set_affine_hull(isl_set_copy(set));
+	if (!hull)
 		goto error;
-	dim = isl_basic_set_n_dim(bset);
-	bset = isl_basic_set_extend_dim(bset, isl_dim_copy(bset->dim),
+	hull = isl_basic_set_extend_dim(hull, isl_dim_copy(hull->dim),
 					0, 0, n_ineq);
-	if (!bset)
+	if (!hull)
 		goto error;
 
-	for (i = 0; i < set->n; ++i) {
-		for (j = 0; j < set->p[i]->n_ineq; ++j) {
-			int k;
-			int is_bound;
+	data = sh_data_alloc(set, n_ineq);
+	if (!data)
+		goto error;
+	if (hash_basic_set(data->hull_table, hull) < 0)
+		goto error;
 
-			k = isl_basic_set_alloc_inequality(bset);
-			if (k < 0)
-				goto error;
-			isl_seq_cpy(bset->ineq[k], set->p[i]->ineq[j], 1 + dim);
-			is_bound = uset_is_bound(set->ctx, set, bset->ineq[k],
-							1 + dim);
-			if (is_bound < 0)
-				goto error;
-			if (!is_bound)
-				isl_basic_set_free_inequality(bset, 1);
-		}
-	}
+	for (i = 0; i < set->n; ++i)
+		hull = add_bounds(hull, data, set, i);
 
-	bset = isl_basic_set_simplify(bset);
-	bset = isl_basic_set_finalize(bset);
-	bset = isl_basic_set_convex_hull(bset);
+	hull = isl_basic_set_convex_hull(hull);
 
+	sh_data_free(data);
 	isl_set_free(set);
 
-	return bset;
+	return hull;
 error:
-	isl_basic_set_free(bset);
+	sh_data_free(data);
+	isl_basic_set_free(hull);
 	isl_set_free(set);
 	return NULL;
 }
 
 /* Compute a superset of the convex hull of map that is described
  * by only translates of the constraints in the constituents of map.
- *
- * The implementation is not very efficient.  In particular, if
- * constraints with the same normal appear in more than one
- * basic map, they will be (re)examined each time.
  */
 struct isl_basic_map *isl_map_simple_hull(struct isl_map *map)
 {
