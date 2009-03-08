@@ -26,6 +26,8 @@ struct isl_ctx *isl_ctx_alloc()
 	ctx->MaxRays = POL_NO_DUAL | POL_INTEGER;
 #endif
 
+	ctx->lp_solver = ISL_LP_TAB;
+
 	return ctx;
 error:
 	free(ctx);

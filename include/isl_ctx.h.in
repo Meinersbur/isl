@@ -50,6 +50,10 @@ struct isl_ctx {
 #ifdef ISL_POLYLIB
 	unsigned		MaxRays;
 #endif
+
+	#define			ISL_LP_TAB	0
+	#define			ISL_LP_PIP	1
+	unsigned		lp_solver;
 };
 
 /* Some helper macros */
