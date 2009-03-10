@@ -417,7 +417,7 @@ int isl_basic_set_has_defining_inequalities(
 		if (isl_seq_first_non_zero(bset->ineq[i]+offset+pos+1,
 						1+total-offset-pos-1) != -1)
 			continue;
-		for (j = i + i; j < bset->n_ineq; ++j) {
+		for (j = i + 1; j < bset->n_ineq; ++j) {
 			if (!isl_seq_is_neg(bset->ineq[i]+1, bset->ineq[j]+1,
 					    total))
 				continue;
