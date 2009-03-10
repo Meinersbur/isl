@@ -15,7 +15,12 @@ struct isl_basic_set {
 	int ref;
 #define ISL_BASIC_SET_FINAL		(1 << 0)
 #define ISL_BASIC_SET_EMPTY		(1 << 1)
+#define ISL_BASIC_SET_NO_IMPLICIT	(1 << 2)
+#define ISL_BASIC_SET_NO_REDUNDANT	(1 << 3)
+#define ISL_BASIC_SET_RATIONAL		(1 << 4)
 #define ISL_BASIC_SET_NORMALIZED	(1 << 5)
+#define ISL_BASIC_SET_NORMALIZED_DIVS	(1 << 6)
+#define ISL_BASIC_SET_ALL_EQUALITIES	(1 << 7)
 	unsigned flags;
 
 	struct isl_ctx *ctx;

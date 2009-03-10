@@ -372,8 +372,8 @@ struct isl_basic_map *isl_basic_map_dup(struct isl_basic_map *bmap)
 			bmap->n_div, bmap->n_eq, bmap->n_ineq);
 	if (!dup)
 		return NULL;
-	dup->flags = bmap->flags;
 	dup_constraints(dup, bmap);
+	dup->flags = bmap->flags;
 	dup->sample = isl_vec_copy(bmap->ctx, bmap->sample);
 	return dup;
 }
@@ -465,6 +465,10 @@ int isl_basic_map_alloc_equality(struct isl_basic_map *bmap)
 	isl_assert(ctx, room_for_con(bmap, 1), return -1);
 	isl_assert(ctx, (bmap->eq - bmap->ineq) + bmap->n_eq <= bmap->c_size,
 			return -1);
+	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
+	ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_REDUNDANT);
+	ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_IMPLICIT);
+	ISL_F_CLR(bmap, ISL_BASIC_MAP_ALL_EQUALITIES);
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED_DIVS);
 	if ((bmap->eq - bmap->ineq) + bmap->n_eq == bmap->c_size) {
 		isl_int *t;
@@ -532,6 +536,7 @@ void isl_basic_map_inequality_to_equality(
 	bmap->n_eq++;
 	bmap->n_ineq--;
 	bmap->eq--;
+	ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_REDUNDANT);
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED_DIVS);
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_ALL_EQUALITIES);

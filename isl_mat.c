@@ -844,6 +844,12 @@ struct isl_basic_set *isl_basic_set_preimage(struct isl_basic_set *bset,
 	}
 	isl_mat_free(ctx, t);
 
+	ISL_F_CLR(bset, ISL_BASIC_SET_NO_IMPLICIT);
+	ISL_F_CLR(bset, ISL_BASIC_SET_NO_REDUNDANT);
+	ISL_F_CLR(bset, ISL_BASIC_SET_NORMALIZED);
+	ISL_F_CLR(bset, ISL_BASIC_SET_NORMALIZED_DIVS);
+	ISL_F_CLR(bset, ISL_BASIC_SET_ALL_EQUALITIES);
+
 	bset = isl_basic_set_simplify(bset);
 	bset = isl_basic_set_finalize(bset);
 
