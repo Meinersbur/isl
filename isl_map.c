@@ -451,13 +451,18 @@ void isl_basic_set_free(struct isl_basic_set *bset)
 	isl_basic_map_free((struct isl_basic_map *)bset);
 }
 
+static int room_for_con(struct isl_basic_map *bmap, unsigned n)
+{
+	return bmap->n_eq + bmap->n_ineq + n <= bmap->c_size;
+}
+
 int isl_basic_map_alloc_equality(struct isl_basic_map *bmap)
 {
 	struct isl_ctx *ctx;
 	if (!bmap)
 		return -1;
 	ctx = bmap->ctx;
-	isl_assert(ctx, bmap->n_eq + bmap->n_ineq < bmap->c_size, return -1);
+	isl_assert(ctx, room_for_con(bmap, 1), return -1);
 	isl_assert(ctx, (bmap->eq - bmap->ineq) + bmap->n_eq <= bmap->c_size,
 			return -1);
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED_DIVS);
@@ -532,13 +537,18 @@ void isl_basic_map_inequality_to_equality(
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_ALL_EQUALITIES);
 }
 
+static int room_for_ineq(struct isl_basic_map *bmap, unsigned n)
+{
+	return bmap->n_ineq + n <= bmap->eq - bmap->ineq;
+}
+
 int isl_basic_map_alloc_inequality(struct isl_basic_map *bmap)
 {
 	struct isl_ctx *ctx;
 	if (!bmap)
 		return -1;
 	ctx = bmap->ctx;
-	isl_assert(ctx, bmap->n_ineq < bmap->eq - bmap->ineq, return -1);
+	isl_assert(ctx, room_for_ineq(bmap, 1), return -1);
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_IMPLICIT);
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_REDUNDANT);
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
@@ -794,7 +804,8 @@ struct isl_basic_map *isl_basic_map_extend_dim(struct isl_basic_map *base,
 	dims_ok = isl_dim_equal(base->dim, dim) &&
 		  base->extra >= base->n_div + extra;
 
-	if (dims_ok && n_eq == 0 && n_ineq == 0) {
+	if (dims_ok && room_for_con(base, n_eq + n_ineq) &&
+		       room_for_ineq(base, n_ineq)) {
 		isl_dim_free(dim);
 		return base;
 	}
