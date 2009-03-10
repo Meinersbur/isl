@@ -246,6 +246,7 @@ static struct isl_basic_set *outside_point(struct isl_ctx *ctx,
 	if (!slice)
 		goto error;
 	dim = isl_basic_set_n_dim(slice);
+	slice = isl_basic_set_cow(slice);
 	slice = isl_basic_set_extend(slice, 0, dim, 0, 0, 1);
 	k = isl_basic_set_alloc_inequality(slice);
 	if (k < 0)

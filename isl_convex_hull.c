@@ -296,6 +296,7 @@ static struct isl_basic_set *isl_basic_set_add_equality(struct isl_ctx *ctx,
 	isl_assert(ctx, isl_basic_set_n_param(bset) == 0, goto error);
 	isl_assert(ctx, bset->n_div == 0, goto error);
 	dim = isl_basic_set_n_dim(bset);
+	bset = isl_basic_set_cow(bset);
 	bset = isl_basic_set_extend(bset, 0, dim, 0, 1, 0);
 	i = isl_basic_set_alloc_equality(bset);
 	if (i < 0)
@@ -694,9 +695,9 @@ static struct isl_basic_set *extend(struct isl_basic_set *hull,
 		hull_facet = isl_basic_set_normalize_constraints(hull_facet);
 		if (!facet)
 			goto error;
-		if (facet->n_ineq + hull->n_ineq > hull->c_size)
-			hull = isl_basic_set_extend_dim(hull,
-				isl_dim_copy(hull->dim), 0, 0, facet->n_ineq);
+		hull = isl_basic_set_cow(hull);
+		hull = isl_basic_set_extend_dim(hull,
+			isl_dim_copy(hull->dim), 0, 0, facet->n_ineq);
 		for (j = 0; j < facet->n_ineq; ++j) {
 			for (f = 0; f < hull_facet->n_ineq; ++f)
 				if (isl_seq_eq(facet->ineq[j],
@@ -1729,6 +1730,7 @@ static struct isl_basic_set *uset_simple_hull(struct isl_set *set)
 	hull = isl_set_affine_hull(isl_set_copy(set));
 	if (!hull)
 		goto error;
+	hull = isl_basic_set_cow(hull),
 	hull = isl_basic_set_extend_dim(hull, isl_dim_copy(hull->dim),
 					0, 0, n_ineq);
 	if (!hull)

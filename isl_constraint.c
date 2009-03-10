@@ -213,6 +213,7 @@ struct isl_constraint *isl_constraint_add_div(struct isl_constraint *constraint,
 	isl_assert(constraint->ctx,
 	    constraint->bmap->n_eq + constraint->bmap->n_ineq == 1, goto error);
 
+	constraint->bmap = isl_basic_map_cow(constraint->bmap);
 	constraint->bmap = isl_basic_map_extend_dim(constraint->bmap,
 				isl_dim_copy(constraint->bmap->dim), 1, 0, 0);
 	if (!constraint->bmap)
@@ -343,6 +344,7 @@ struct isl_basic_set *isl_basic_set_from_constraint(
 	bset = isl_basic_set_align_divs(bset, constraint_bset);
 	nparam = isl_basic_set_n_param(bset);
 	dim = isl_basic_set_n_dim(bset);
+	bset = isl_basic_set_cow(bset);
 	bset = isl_basic_set_extend(bset, nparam, dim, 0, 1, 1);
 	if (isl_constraint_is_equality(constraint)) {
 		k = isl_basic_set_alloc_equality(bset);

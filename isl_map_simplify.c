@@ -1359,7 +1359,8 @@ static struct isl_basic_set *uset_gist(struct isl_basic_set *bset,
 	if (bset->n_eq > 0)
 		return uset_gist_set_eq(bset, context);
 	bset = remove_shifted_constraints(bset, context);
-	combined = isl_basic_set_extend_constraints(isl_basic_set_copy(bset),
+	combined = isl_basic_set_cow(isl_basic_set_copy(bset));
+	combined = isl_basic_set_extend_constraints(combined,
 			context->n_eq, context->n_ineq);
 	context = isl_basic_set_add_constraints(combined, context, 0);
 	if (!context)

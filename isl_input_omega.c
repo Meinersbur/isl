@@ -174,6 +174,7 @@ static struct isl_basic_map *add_exists(struct isl_stream *s,
 	if (!*v)
 		goto error;
 	extra = (*v)->n - n;
+	bmap = isl_basic_map_cow(bmap);
 	bmap = isl_basic_map_extend_dim(bmap, isl_dim_copy(bmap->dim),
 			extra, 0, 0);
 	total = isl_basic_map_total_dim(bmap);
@@ -215,6 +216,7 @@ static struct isl_basic_map *add_constraint(struct isl_stream *s,
 	}
 	isl_stream_push_token(s, tok);
 
+	bmap = isl_basic_map_cow(bmap);
 	bmap = isl_basic_map_extend_constraints(bmap, 0, 1);
 	k = isl_basic_map_alloc_inequality(bmap);
 	if (k < 0)

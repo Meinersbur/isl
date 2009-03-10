@@ -797,7 +797,6 @@ struct isl_basic_map *isl_basic_map_extend_dim(struct isl_basic_map *base,
 	if (!dim)
 		goto error;
 
-	base = isl_basic_map_cow(base);
 	if (!base)
 		goto error;
 
@@ -1529,6 +1528,7 @@ struct isl_basic_map *isl_basic_map_intersect_domain(
 		isl_assert(bset->ctx,
 		    isl_basic_map_compatible_domain(bmap, bset), goto error);
 
+	bmap = isl_basic_map_cow(bmap);
 	bmap = isl_basic_map_extend_dim(bmap, isl_dim_copy(bmap->dim),
 			bset->n_div, bset->n_eq, bset->n_ineq);
 	if (!bmap)
@@ -1560,6 +1560,7 @@ struct isl_basic_map *isl_basic_map_intersect_range(
 		isl_assert(bset->ctx,
 		    isl_basic_map_compatible_range(bmap, bset), goto error);
 
+	bmap = isl_basic_map_cow(bmap);
 	bmap = isl_basic_map_extend_dim(bmap, isl_dim_copy(bmap->dim),
 			bset->n_div, bset->n_eq, bset->n_ineq);
 	if (!bmap)
@@ -1638,6 +1639,7 @@ struct isl_basic_map *isl_basic_map_intersect(
 	    basic_map_contains(bmap2, bmap2->sample) > 0)
 		sample = isl_vec_copy(bmap2->ctx, bmap2->sample);
 
+	bmap1 = isl_basic_map_cow(bmap1);
 	bmap1 = isl_basic_map_extend_dim(bmap1, isl_dim_copy(bmap1->dim),
 			bmap2->n_div, bmap2->n_eq, bmap2->n_ineq);
 	if (!bmap1)
@@ -3169,6 +3171,7 @@ struct isl_basic_set *isl_basic_map_deltas(struct isl_basic_map *bmap)
 	nparam = isl_basic_map_n_param(bmap);
 	isl_assert(bmap->ctx, dim == isl_basic_map_n_out(bmap), goto error);
 	bset = isl_basic_set_from_basic_map(bmap);
+	bset = isl_basic_set_cow(bset);
 	bset = isl_basic_set_extend(bset, nparam, 3*dim, 0, dim, 0);
 	bset = isl_basic_set_swap_vars(bset, 2*dim);
 	for (i = 0; i < dim; ++i) {
@@ -3557,6 +3560,7 @@ struct isl_basic_map *isl_basic_map_align_divs(
 		isl_assert(src->ctx, !isl_int_is_zero(src->div[i][0]), goto error);
 
 	src = order_divs(src);
+	dst = isl_basic_map_cow(dst);
 	dst = isl_basic_map_extend_dim(dst, isl_dim_copy(dst->dim),
 			src->n_div, 0, 2 * src->n_div);
 	if (!dst)
@@ -3898,6 +3902,7 @@ int isl_basic_set_compare_at(struct isl_basic_set *bset1,
 	bmap2 = isl_basic_map_from_basic_set(isl_basic_set_copy(bset2), dims);
 	if (!bmap1 || !bmap2)
 		goto error;
+	bmap1 = isl_basic_map_cow(bmap1);
 	bmap1 = isl_basic_map_extend(bmap1, nparam,
 			pos, (dim1 - pos) + (dim2 - pos),
 			bmap2->n_div, bmap2->n_eq, bmap2->n_ineq);
