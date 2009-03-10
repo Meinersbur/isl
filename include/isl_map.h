@@ -239,6 +239,7 @@ struct isl_map *isl_map_fix_si(struct isl_map *map,
 struct isl_basic_set *isl_basic_map_deltas(struct isl_basic_map *bmap);
 struct isl_set *isl_map_deltas(struct isl_map *map);
 struct isl_set *isl_map_range(struct isl_map *map);
+struct isl_map *isl_map_detect_equalities(struct isl_map *map);
 struct isl_basic_map *isl_map_affine_hull(struct isl_map *map);
 struct isl_map *isl_map_remove(struct isl_map *map,
 	enum isl_dim_type type, unsigned first, unsigned n);

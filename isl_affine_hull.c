@@ -394,6 +394,29 @@ error:
 	return NULL;
 }
 
+struct isl_map *isl_map_detect_equalities(struct isl_map *map)
+{
+	struct isl_basic_map *bmap;
+	int i;
+
+	if (!map)
+		return NULL;
+
+	for (i = 0; i < map->n; ++i) {
+		bmap = isl_basic_map_copy(map->p[i]);
+		bmap = isl_basic_map_detect_equalities(bmap);
+		if (!bmap)
+			goto error;
+		isl_basic_map_free(map->p[i]);
+		map->p[i] = bmap;
+	}
+
+	return map;
+error:
+	isl_map_free(map);
+	return NULL;
+}
+
 /* After computing the rational affine hull (by detecting the implicit
  * equalities), we compute the additional equalities satisfied by
  * the integer points (if any) and add the original equalities back in.
@@ -402,35 +425,10 @@ struct isl_basic_map *isl_basic_map_affine_hull(struct isl_basic_map *bmap)
 {
 	struct isl_basic_set *hull = NULL;
 
-	bmap = isl_basic_map_implicit_equalities(bmap);
-	if (!bmap)
-		return NULL;
-	if (bmap->n_ineq == 0)
-		return bmap;
-
-	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL)) {
-		bmap = isl_basic_map_cow(bmap);
-		isl_basic_map_free_inequality(bmap, bmap->n_ineq);
-		return bmap;
-	}
-
-	hull = equalities_in_underlying_set(isl_basic_map_copy(bmap));
-	if (!hull)
-		goto error;
-
+	bmap = isl_basic_map_detect_equalities(bmap);
 	bmap = isl_basic_map_cow(bmap);
-	if (!bmap)
-		goto error;
 	isl_basic_map_free_inequality(bmap, bmap->n_ineq);
-	bmap = isl_basic_map_intersect(bmap,
-					isl_basic_map_overlying_set(hull,
-						isl_basic_map_copy(bmap)));
-
-	return isl_basic_map_finalize(bmap);
-error:
-	isl_basic_set_free(hull);
-	isl_basic_map_free(bmap);
-	return NULL;
+	return bmap;
 }
 
 struct isl_basic_set *isl_basic_set_affine_hull(struct isl_basic_set *bset)
@@ -455,7 +453,10 @@ struct isl_basic_map *isl_map_affine_hull(struct isl_map *map)
 		return hull;
 	}
 
+	map = isl_map_detect_equalities(map);
 	map = isl_map_align_divs(map);
+	if (!map)
+		return NULL;
 	model = isl_basic_map_copy(map->p[0]);
 	set = isl_map_underlying_set(map);
 	set = isl_set_cow(set);
