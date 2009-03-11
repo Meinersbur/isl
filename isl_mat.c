@@ -36,6 +36,51 @@ error:
 	return NULL;
 }
 
+struct isl_mat *isl_mat_extend(struct isl_ctx *ctx, struct isl_mat *mat,
+	unsigned n_row, unsigned n_col)
+{
+	int i;
+
+	if (!mat)
+		return NULL;
+
+	if (mat->n_col >= n_col && mat->n_row >= n_row)
+		return mat;
+
+	if (mat->n_col < n_col) {
+		struct isl_mat *new_mat;
+
+		new_mat = isl_mat_alloc(ctx, n_row, n_col);
+		if (!new_mat)
+			goto error;
+		for (i = 0; i < mat->n_row; ++i)
+			isl_seq_cpy(new_mat->row[i], mat->row[i], mat->n_col);
+		isl_mat_free(ctx, mat);
+		return new_mat;
+	}
+
+	mat = isl_mat_cow(ctx, mat);
+	if (!mat)
+		goto error;
+
+	assert(mat->ref == 1);
+	mat->block = isl_blk_extend(ctx, mat->block, n_row * mat->n_col);
+	if (isl_blk_is_error(mat->block))
+		goto error;
+	mat->row = isl_realloc_array(ctx, mat->row, isl_int *, n_row);
+	if (!mat->row)
+		goto error;
+
+	for (i = 0; i < n_row; ++i)
+		mat->row[i] = mat->block.data + i * mat->n_col;
+	mat->n_row = n_row;
+
+	return mat;
+error:
+	isl_mat_free(ctx, mat);
+	return NULL;
+}
+
 struct isl_mat *isl_mat_sub_alloc(struct isl_ctx *ctx, isl_int **row,
 	unsigned first_row, unsigned n_row, unsigned first_col, unsigned n_col)
 {
