@@ -158,6 +158,7 @@ struct isl_set *isl_set_from_basic_set(struct isl_basic_set *bset);
 struct isl_basic_set *isl_set_affine_hull(struct isl_set *set);
 struct isl_basic_set *isl_set_convex_hull(struct isl_set *set);
 struct isl_basic_set *isl_set_simple_hull(struct isl_set *set);
+struct isl_basic_set *isl_set_bounded_simple_hull(struct isl_set *set);
 
 struct isl_set *isl_set_union_disjoint(
 			struct isl_set *set1, struct isl_set *set2);

@@ -1798,3 +1798,83 @@ struct isl_basic_set *isl_set_simple_hull(struct isl_set *set)
 	return (struct isl_basic_set *)
 		isl_map_simple_hull((struct isl_map *)set);
 }
+
+/* Given a set "set", return parametric bounds on the dimension "dim".
+ */
+static struct isl_basic_set *set_bounds(struct isl_set *set, int dim)
+{
+	unsigned set_dim = isl_set_dim(set, isl_dim_set);
+	set = isl_set_copy(set);
+	set = isl_set_eliminate_dims(set, dim + 1, set_dim - (dim + 1));
+	set = isl_set_eliminate_dims(set, 0, dim);
+	return isl_set_convex_hull(set);
+}
+
+/* Computes a "simple hull" and then check if each dimension in the
+ * resulting hull is bounded by a symbolic constant.  If not, the
+ * hull is intersected with the corresponding bounds on the whole set.
+ */
+struct isl_basic_set *isl_set_bounded_simple_hull(struct isl_set *set)
+{
+	int i, j;
+	struct isl_basic_set *hull;
+	unsigned nparam, left;
+	int removed_divs = 0;
+
+	hull = isl_set_simple_hull(isl_set_copy(set));
+	if (!hull)
+		goto error;
+
+	nparam = isl_basic_set_dim(hull, isl_dim_param);
+	for (i = 0; i < isl_basic_set_dim(hull, isl_dim_set); ++i) {
+		int lower = 0, upper = 0;
+		struct isl_basic_set *bounds;
+
+		left = isl_basic_set_total_dim(hull) - nparam - i - 1;
+		for (j = 0; j < hull->n_eq; ++j) {
+			if (isl_int_is_zero(hull->eq[j][1 + nparam + i]))
+				continue;
+			if (isl_seq_first_non_zero(hull->eq[j]+1+nparam+i+1,
+						    left) == -1)
+				break;
+		}
+		if (j < hull->n_eq)
+			continue;
+
+		for (j = 0; j < hull->n_ineq; ++j) {
+			if (isl_int_is_zero(hull->ineq[j][1 + nparam + i]))
+				continue;
+			if (isl_seq_first_non_zero(hull->ineq[j]+1+nparam+i+1,
+						    left) != -1 ||
+			    isl_seq_first_non_zero(hull->ineq[j]+1+nparam,
+						    i) != -1)
+				continue;
+			if (isl_int_is_pos(hull->ineq[j][1 + nparam + i]))
+				lower = 1;
+			else
+				upper = 1;
+			if (lower && upper)
+				break;
+		}
+
+		if (lower && upper)
+			continue;
+
+		if (!removed_divs) {
+			set = isl_set_remove_divs(set);
+			if (!set)
+				goto error;
+			removed_divs = 1;
+		}
+		bounds = set_bounds(set, i);
+		hull = isl_basic_set_intersect(hull, bounds);
+		if (!hull)
+			goto error;
+	}
+
+	isl_set_free(set);
+	return hull;
+error:
+	isl_set_free(set);
+	return NULL;
+}
