@@ -1727,25 +1727,16 @@ static struct isl_basic_set *uset_simple_hull(struct isl_set *set)
 		n_ineq += 2 * set->p[i]->n_eq + set->p[i]->n_ineq;
 	}
 
-	hull = isl_set_affine_hull(isl_set_copy(set));
-	if (!hull)
-		goto error;
-	hull = isl_basic_set_cow(hull),
-	hull = isl_basic_set_extend_dim(hull, isl_dim_copy(hull->dim),
-					0, 0, n_ineq);
+	hull = isl_basic_set_alloc_dim(isl_dim_copy(set->dim), 0, 0, n_ineq);
 	if (!hull)
 		goto error;
 
 	data = sh_data_alloc(set, n_ineq);
 	if (!data)
 		goto error;
-	if (hash_basic_set(data->hull_table, hull) < 0)
-		goto error;
 
 	for (i = 0; i < set->n; ++i)
 		hull = add_bounds(hull, data, set, i);
-
-	hull = isl_basic_set_convex_hull(hull);
 
 	sh_data_free(data);
 	isl_set_free(set);
@@ -1766,6 +1757,7 @@ struct isl_basic_map *isl_map_simple_hull(struct isl_map *map)
 	struct isl_set *set = NULL;
 	struct isl_basic_map *model = NULL;
 	struct isl_basic_map *hull;
+	struct isl_basic_map *affine_hull;
 	struct isl_basic_set *bset = NULL;
 
 	if (!map)
@@ -1782,6 +1774,7 @@ struct isl_basic_map *isl_map_simple_hull(struct isl_map *map)
 	}
 
 	map = isl_map_detect_equalities(map);
+	affine_hull = isl_map_affine_hull(isl_map_copy(map));
 	map = isl_map_align_divs(map);
 	model = isl_basic_map_copy(map->p[0]);
 
@@ -1791,6 +1784,8 @@ struct isl_basic_map *isl_map_simple_hull(struct isl_map *map)
 
 	hull = isl_basic_map_overlying_set(bset, model);
 
+	hull = isl_basic_map_intersect(hull, affine_hull);
+	hull = isl_basic_map_convex_hull(hull);
 	ISL_F_SET(hull, ISL_BASIC_MAP_NO_IMPLICIT);
 	ISL_F_SET(hull, ISL_BASIC_MAP_ALL_EQUALITIES);
 
