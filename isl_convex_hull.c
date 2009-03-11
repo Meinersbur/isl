@@ -1781,6 +1781,7 @@ struct isl_basic_map *isl_map_simple_hull(struct isl_map *map)
 		return hull;
 	}
 
+	map = isl_map_detect_equalities(map);
 	map = isl_map_align_divs(map);
 	model = isl_basic_map_copy(map->p[0]);
 
@@ -1789,6 +1790,9 @@ struct isl_basic_map *isl_map_simple_hull(struct isl_map *map)
 	bset = uset_simple_hull(set);
 
 	hull = isl_basic_map_overlying_set(bset, model);
+
+	ISL_F_SET(hull, ISL_BASIC_MAP_NO_IMPLICIT);
+	ISL_F_SET(hull, ISL_BASIC_MAP_ALL_EQUALITIES);
 
 	return hull;
 }
