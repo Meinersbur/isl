@@ -700,16 +700,26 @@ error:
 
 struct isl_mat *isl_mat_transpose(struct isl_ctx *ctx, struct isl_mat *mat)
 {
+	struct isl_mat *transpose = NULL;
 	int i, j;
 
-	mat = isl_mat_cow(ctx, mat);
-	if (!mat)
-		return NULL;
-	isl_assert(ctx, mat->n_col == mat->n_row, goto error);
+	if (mat->n_col == mat->n_row) {
+		mat = isl_mat_cow(ctx, mat);
+		if (!mat)
+			return NULL;
+		for (i = 0; i < mat->n_row; ++i)
+			for (j = i + 1; j < mat->n_col; ++j)
+				isl_int_swap(mat->row[i][j], mat->row[j][i]);
+		return mat;
+	}
+	transpose = isl_mat_alloc(ctx, mat->n_col, mat->n_row);
+	if (!transpose)
+		goto error;
 	for (i = 0; i < mat->n_row; ++i)
-		for (j = i + 1; j < mat->n_col; ++j)
-			isl_int_swap(mat->row[i][j], mat->row[j][i]);
-	return mat;
+		for (j = 0; j < mat->n_col; ++j)
+			isl_int_set(transpose->row[j][i], mat->row[i][j]);
+	isl_mat_free(ctx, mat);
+	return transpose;
 error:
 	isl_mat_free(ctx, mat);
 	return NULL;
