@@ -71,6 +71,12 @@ void isl_vec_dump(struct isl_ctx *ctx, struct isl_vec *vec,
 				FILE *out, int indent)
 {
 	int i;
+
+	if (!vec) {
+		fprintf(out, "%*snull vec\n", indent, "");
+		return;
+	}
+
 	fprintf(out, "%*s[", indent, "");
 	for (i = 0; i < vec->size; ++i) {
 		if (i)
