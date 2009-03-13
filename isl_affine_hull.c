@@ -232,6 +232,11 @@ error:
  * Otherwise, look for a point satisfying -e(x) - 1 >= 0 (i.e., e(x) <= -1).
  * The point, if found, is returned as a singleton set.
  * If no point can be found, the empty set is returned.
+ *
+ * Before solving an ILP problem, we first check if simply
+ * adding the normal of the constraint to one of the known
+ * integer points in the basic set yields another point
+ * inside the basic set.
  */
 static struct isl_basic_set *outside_point(struct isl_ctx *ctx,
 	struct isl_basic_set *bset, isl_int *eq, int up)
@@ -242,10 +247,22 @@ static struct isl_basic_set *outside_point(struct isl_ctx *ctx,
 	unsigned dim;
 	int k;
 
+	dim = isl_basic_set_n_dim(bset);
+	sample = isl_vec_alloc(ctx, 1 + dim);
+	if (!sample)
+		return NULL;
+	isl_int_set_si(sample->block.data[0], 1);
+	isl_seq_combine(sample->block.data + 1,
+		ctx->one, bset->sample->block.data + 1,
+		up ? ctx->one : ctx->negone, eq + 1, dim);
+	if (isl_basic_set_contains(bset, sample))
+		return isl_basic_set_from_vec(ctx, sample);
+	isl_vec_free(ctx, sample);
+	sample = NULL;
+
 	slice = isl_basic_set_copy(bset);
 	if (!slice)
 		goto error;
-	dim = isl_basic_set_n_dim(slice);
 	slice = isl_basic_set_cow(slice);
 	slice = isl_basic_set_extend(slice, 0, dim, 0, 0, 1);
 	k = isl_basic_set_alloc_inequality(slice);
