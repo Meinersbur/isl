@@ -1614,6 +1614,11 @@ static int basic_map_contains(struct isl_basic_map *bmap, struct isl_vec *vec)
 	return 1;
 }
 
+int isl_basic_set_contains(struct isl_basic_set *bset, struct isl_vec *vec)
+{
+	return basic_map_contains((struct isl_basic_map *)bset, vec);
+}
+
 struct isl_basic_map *isl_basic_map_intersect(
 		struct isl_basic_map *bmap1, struct isl_basic_map *bmap2)
 {
