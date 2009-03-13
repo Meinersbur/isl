@@ -43,6 +43,7 @@ struct isl_ctx {
 	int			ref;
 
 	isl_int			one;
+	isl_int			negone;
 
 	int			n_cached;
 	struct isl_blk		cache[ISL_BLK_CACHE_SIZE];

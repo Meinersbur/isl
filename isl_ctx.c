@@ -20,6 +20,9 @@ struct isl_ctx *isl_ctx_alloc()
 	isl_int_init(ctx->one);
 	isl_int_set_si(ctx->one, 1);
 
+	isl_int_init(ctx->negone);
+	isl_int_set_si(ctx->negone, -1);
+
 	ctx->n_cached = 0;
 
 #ifdef ISL_POLYLIB
@@ -53,5 +56,6 @@ void isl_ctx_free(struct isl_ctx *ctx)
 	isl_hash_table_clear(&ctx->name_hash);
 	isl_blk_clear_cache(ctx);
 	isl_int_clear(ctx->one);
+	isl_int_clear(ctx->negone);
 	free(ctx);
 }
