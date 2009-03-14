@@ -33,6 +33,13 @@ struct isl_basic_map *isl_basic_map_implicit_equalities(
 	return bmap;
 }
 
+struct isl_basic_set *isl_basic_set_implicit_equalities(
+						struct isl_basic_set *bset)
+{
+	return (struct isl_basic_set *)
+		isl_basic_map_implicit_equalities((struct isl_basic_map*)bset);
+}
+
 /* Make eq[row][col] of both bmaps equal so we can add the row
  * add the column to the common matrix.
  * Note that because of the echelon form, the columns of row row
@@ -188,6 +195,7 @@ static struct isl_basic_set *affine_hull(
 	}
 	isl_basic_set_free(bset2);
 	isl_assert(ctx, row == bset1->n_eq, goto error);
+	bset1 = isl_basic_set_normalize_constraints(bset1);
 	return bset1;
 error:
 	isl_basic_set_free(bset1);
@@ -290,6 +298,49 @@ error:
 	return NULL;
 }
 
+static struct isl_basic_set *recession_cone(struct isl_basic_set *bset)
+{
+	int i;
+
+	bset = isl_basic_set_cow(bset);
+	if (!bset)
+		return NULL;
+
+	for (i = 0; i < bset->n_eq; ++i)
+		isl_int_set_si(bset->eq[i][0], 0);
+
+	for (i = 0; i < bset->n_ineq; ++i)
+		isl_int_set_si(bset->ineq[i][0], 0);
+
+	ISL_F_CLR(bset, ISL_BASIC_SET_NO_IMPLICIT);
+	return isl_basic_set_implicit_equalities(bset);
+}
+
+static struct isl_basic_set *shift(struct isl_basic_set *bset, isl_int *point)
+{
+	int i;
+	unsigned dim;
+
+	bset = isl_basic_set_cow(bset);
+	if (!bset)
+		return NULL;
+
+	dim = isl_basic_set_n_dim(bset);
+	for (i = 0; i < bset->n_eq; ++i) {
+		isl_seq_inner_product(bset->eq[i]+1, point+1, dim,
+					&bset->eq[i][0]);
+		isl_int_neg(bset->eq[i][0], bset->eq[i][0]);
+	}
+
+	for (i = 0; i < bset->n_ineq; ++i) {
+		isl_seq_inner_product(bset->ineq[i]+1, point+1, dim,
+					&bset->ineq[i][0]);
+		isl_int_neg(bset->ineq[i][0], bset->ineq[i][0]);
+	}
+
+	return bset;
+}
+
 /* Look for all equalities satisfied by the integer points in bset,
  * which is assume not to have any explicit equalities.
  *
@@ -298,6 +349,10 @@ error:
  * In particular, for each equality satisfied by the points so far,
  * we check if there is any point on a hyperplane parallel to the
  * corresponding hyperplane shifted by at least one (in either direction).
+ *
+ * Before looking for any outside points, we first remove the equalities
+ * that correspond to the affine hull of the recession cone.
+ * These equalities will never be equalities over the whols basic set.
  */
 static struct isl_basic_set *uset_affine_hull(struct isl_basic_set *bset)
 {
@@ -321,6 +376,15 @@ static struct isl_basic_set *uset_affine_hull(struct isl_basic_set *bset)
 		return hull;
 	} else
 		hull = isl_basic_set_from_vec(ctx, sample);
+
+	if (hull->n_eq > 0) {
+		struct isl_basic_set *cone;
+		cone = recession_cone(isl_basic_set_copy(bset));
+		isl_basic_set_free_inequality(cone, cone->n_ineq);
+		cone = isl_basic_set_normalize_constraints(cone);
+		cone = shift(cone, bset->sample->block.data);
+		hull = affine_hull(hull, cone);
+	}
 
 	dim = isl_basic_set_n_dim(bset);
 	for (i = 0; i < dim; ++i) {
