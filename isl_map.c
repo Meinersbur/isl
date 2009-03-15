@@ -3620,6 +3620,11 @@ struct isl_map *isl_map_align_divs(struct isl_map *map)
 	return map;
 }
 
+struct isl_set *isl_set_align_divs(struct isl_set *set)
+{
+	return (struct isl_set *)isl_map_align_divs((struct isl_map *)set);
+}
+
 static struct isl_map *add_cut_constraint(struct isl_map *dst,
 		struct isl_basic_map *src, isl_int *c,
 		unsigned len, int oppose)
