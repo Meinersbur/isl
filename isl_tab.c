@@ -50,7 +50,6 @@ struct isl_tab *isl_tab_alloc(struct isl_ctx *ctx,
 	tab->need_undo = 0;
 	tab->rational = 0;
 	tab->empty = 0;
-	tab->killed_col = 0;
 	tab->bottom.type = isl_tab_undo_bottom;
 	tab->bottom.next = NULL;
 	tab->top = &tab->bottom;
@@ -562,11 +561,12 @@ static int restore_row(struct isl_ctx *ctx,
 	while (isl_int_is_neg(tab->mat->row[var->index][1])) {
 		find_pivot(ctx, tab, var, 1, &row, &col);
 		if (row == -1)
-			return;
+			break;
 		pivot(ctx, tab, row, col);
 		if (!var->is_row) /* manifestly unbounded */
-			return;
+			return 1;
 	}
+	return isl_int_sgn(tab->mat->row[var->index][1]);
 }
 
 /* Perform pivots until we are sure that the row variable "var"
@@ -766,7 +766,6 @@ static void swap_cols(struct isl_ctx *ctx,
 static int kill_col(struct isl_ctx *ctx,
 	struct isl_tab *tab, int col)
 {
-	tab->killed_col = 1;
 	var_from_col(ctx, tab, col)->is_zero = 1;
 	if (tab->need_undo) {
 		push(ctx, tab, isl_tab_undo_zero, var_from_col(ctx, tab, col));
@@ -908,16 +907,12 @@ struct isl_tab *isl_tab_add_ineq(struct isl_ctx *ctx,
 		return tab;
 	}
 
-	sgn = sign_of_max(ctx, tab, &tab->con[r]);
+	sgn = restore_row(ctx, tab, &tab->con[r]);
 	if (sgn < 0)
 		mark_empty(ctx, tab);
-	else {
-		if (sgn == 0)
-			close_row(ctx, tab, &tab->con[r]);
-		else if (tab->con[r].is_row &&
-			 is_redundant(ctx, tab, tab->con[r].index))
-			mark_redundant(ctx, tab, tab->con[r].index);
-	}
+	else if (tab->con[r].is_row &&
+		 is_redundant(ctx, tab, tab->con[r].index))
+		mark_redundant(ctx, tab, tab->con[r].index);
 	return tab;
 error:
 	isl_tab_free(ctx, tab);
@@ -978,7 +973,6 @@ struct isl_tab *isl_tab_from_basic_map(struct isl_basic_map *bmap)
 		if (!tab)
 			return tab;
 	}
-	tab->killed_col = 0;
 	for (i = 0; i < bmap->n_ineq; ++i) {
 		tab = isl_tab_add_ineq(bmap->ctx, tab, bmap->ineq[i]);
 		if (!tab || tab->empty)
@@ -1016,7 +1010,6 @@ struct isl_tab *isl_tab_from_recession_cone(struct isl_basic_map *bmap)
 		if (!tab)
 			goto done;
 	}
-	tab->killed_col = 0;
 	for (i = 0; i < bmap->n_ineq; ++i) {
 		int r;
 		isl_int_swap(bmap->ineq[i][0], cst);
@@ -1271,12 +1264,6 @@ static int may_be_equality(struct isl_tab *tab, int row)
  *	- zero (in case of rational tableaus), or
  *	- strictly less than 1 (in case of integer tableaus)
  *
- * When the rows are added to the tableau, they are already
- * checked for being equal to zero.  If none of the rows
- * have been determined to be zero (killed_col is not set)
- * and we are dealing with a rational tableau, then we wouldn't
- * be able to find any zero row, so we can return immediately.
- *
  * We first mark all non-redundant and non-dead variables that
  * are not frozen and not obviously not an equality.
  * Then we iterate over all marked variables if they can attain
@@ -1296,8 +1283,6 @@ struct isl_tab *isl_tab_detect_equalities(struct isl_ctx *ctx,
 	if (!tab)
 		return NULL;
 	if (tab->empty)
-		return tab;
-	if (tab->rational && !tab->killed_col)
 		return tab;
 	if (tab->n_dead == tab->n_col)
 		return tab;
@@ -1351,7 +1336,6 @@ struct isl_tab *isl_tab_detect_equalities(struct isl_ctx *ctx,
 		}
 	}
 
-	tab->killed_col = 0;
 	return tab;
 }
 
@@ -1711,8 +1695,6 @@ void isl_tab_dump(struct isl_ctx *ctx, struct isl_tab *tab,
 		fprintf(out, ", rational");
 	if (tab->empty)
 		fprintf(out, ", empty");
-	if (tab->killed_col)
-		fprintf(out, ", killed_col");
 	fprintf(out, "\n");
 	fprintf(out, "%*s[", indent, "");
 	for (i = 0; i < tab->n_var; ++i) {

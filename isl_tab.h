@@ -90,7 +90,6 @@ struct isl_tab {
 	unsigned need_undo : 1;
 	unsigned rational : 1;
 	unsigned empty : 1;
-	unsigned killed_col : 1;
 };
 
 void isl_tab_free(struct isl_ctx *ctx, struct isl_tab *tab);
