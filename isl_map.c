@@ -617,6 +617,11 @@ int isl_basic_map_alloc_div(struct isl_basic_map *bmap)
 	return bmap->n_div++;
 }
 
+int isl_basic_set_alloc_div(struct isl_basic_set *bset)
+{
+	return isl_basic_map_alloc_div((struct isl_basic_map *)bset);
+}
+
 int isl_basic_map_free_div(struct isl_basic_map *bmap, unsigned n)
 {
 	if (!bmap)
