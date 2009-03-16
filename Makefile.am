@@ -43,6 +43,7 @@ libisl_la_SOURCES = \
 	$(GET_MEMORY_FUNCTIONS) \
 	isl_affine_hull.c \
 	isl_blk.c \
+	isl_coalesce.c \
 	isl_constraint.c \
 	isl_convex_hull.c \
 	isl_ctx.c \

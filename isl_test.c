@@ -495,6 +495,85 @@ void test_gist(struct isl_ctx *ctx)
 	test_gist_case(ctx, "gist1");
 }
 
+static struct isl_set *s_union(struct isl_ctx *ctx,
+	const char *s1, const char *s2)
+{
+	struct isl_basic_set *bset1;
+	struct isl_basic_set *bset2;
+	struct isl_set *set1, *set2;
+
+	bset1 = isl_basic_set_read_from_str(ctx, s1, 0, ISL_FORMAT_OMEGA);
+	bset2 = isl_basic_set_read_from_str(ctx, s2, 0, ISL_FORMAT_OMEGA);
+	set1 = isl_set_from_basic_set(bset1);
+	set2 = isl_set_from_basic_set(bset2);
+	return isl_set_union(set1, set2);
+}
+
+void test_coalesce(struct isl_ctx *ctx)
+{
+	struct isl_set *set;
+
+	set = s_union(ctx, "{[x,y]: x >= 0 & x <= 10 & y >= 0 & y <= 10}",
+			   "{[x,y]: y >= x & x >= 2 & 5 >= y}");
+	set = isl_set_coalesce(set);
+	assert(set->n == 1);
+	isl_set_free(set);
+
+	set = s_union(ctx, "{[x,y]: y >= 0 & 2x + y <= 30 & y <= 10 & x >= 0}",
+		       "{[x,y]: x + y >= 10 & y <= x & x + y <= 20 & y >= 0}");
+	set = isl_set_coalesce(set);
+	assert(set->n == 1);
+	isl_set_free(set);
+
+	set = s_union(ctx, "{[x,y]: y >= 0 & 2x + y <= 30 & y <= 10 & x >= 0}",
+		       "{[x,y]: x + y >= 10 & y <= x & x + y <= 19 & y >= 0}");
+	set = isl_set_coalesce(set);
+	assert(set->n == 2);
+	isl_set_free(set);
+
+	set = s_union(ctx, "{[x,y]: y >= 0 & x <= 5 & y <= x}",
+		       "{[x,y]: y >= 0 & x >= 6 & x <= 10 & y <= x}");
+	set = isl_set_coalesce(set);
+	assert(set->n == 1);
+	isl_set_free(set);
+
+	set = s_union(ctx, "{[x,y]: y >= 0 & x <= 5 & y <= x}",
+		       "{[x,y]: y >= 0 & x >= 7 & x <= 10 & y <= x}");
+	set = isl_set_coalesce(set);
+	assert(set->n == 2);
+	isl_set_free(set);
+
+	set = s_union(ctx, "{[x,y]: y >= 0 & x <= 5 & y <= x}",
+		       "{[x,y]: y >= 0 & x >= 6 & x <= 10 & y + 1 <= x}");
+	set = isl_set_coalesce(set);
+	assert(set->n == 2);
+	isl_set_free(set);
+
+	set = s_union(ctx, "{[x,y]: y >= 0 & x <= 5 & y <= x}",
+		       "{[x,y]: y >= 0 & x = 6 & y <= 6}");
+	set = isl_set_coalesce(set);
+	assert(set->n == 1);
+	isl_set_free(set);
+
+	set = s_union(ctx, "{[x,y]: y >= 0 & x <= 5 & y <= x}",
+		       "{[x,y]: y >= 0 & x = 7 & y <= 6}");
+	set = isl_set_coalesce(set);
+	assert(set->n == 2);
+	isl_set_free(set);
+
+	set = s_union(ctx, "{[x,y]: y >= 0 & x <= 5 & y <= x}",
+		       "{[x,y]: y >= 0 & x = 6 & y <= 5}");
+	set = isl_set_coalesce(set);
+	assert(set->n == 2);
+	isl_set_free(set);
+
+	set = s_union(ctx, "{[x,y]: y >= 0 & x <= 5 & y <= x}",
+		       "{[x,y]: y >= 0 & x = 6 & y <= 7}");
+	set = isl_set_coalesce(set);
+	assert(set->n == 2);
+	isl_set_free(set);
+}
+
 int main()
 {
 	struct isl_ctx *ctx;
@@ -509,6 +588,7 @@ int main()
 	test_affine_hull(ctx);
 	test_convex_hull(ctx);
 	test_gist(ctx);
+	test_coalesce(ctx);
 	isl_ctx_free(ctx);
 	return 0;
 }
