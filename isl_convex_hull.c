@@ -1284,11 +1284,11 @@ static struct isl_basic_set *uset_convex_hull(struct isl_set *set)
 	if (isl_set_n_dim(set) == 0)
 		return convex_hull_0d(set);
 
+	set = isl_set_coalesce(set);
 	set = isl_set_set_rational(set);
 
 	if (!set)
 		goto error;
-	set = isl_set_normalize(set);
 	if (!set)
 		return NULL;
 	if (set->n == 1) {
