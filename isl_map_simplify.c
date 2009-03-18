@@ -1154,6 +1154,9 @@ struct isl_basic_set *isl_basic_set_eliminate_vars(
 			(struct isl_basic_map *)bset, pos, n);
 }
 
+/* Don't assume equalities are in order, because align_divs
+ * may have changed the order of the divs.
+ */
 static void compute_elimination_index(struct isl_basic_map *bmap, int *elim)
 {
 	int d, i;
@@ -1162,8 +1165,8 @@ static void compute_elimination_index(struct isl_basic_map *bmap, int *elim)
 	total = isl_dim_total(bmap->dim);
 	for (d = 0; d < total; ++d)
 		elim[d] = -1;
-	for (d = total - 1, i = 0; d >= 0 && i < bmap->n_eq; ++i) {
-		for (; d >= 0; --d) {
+	for (i = 0; i < bmap->n_eq; ++i) {
+		for (d = total - 1; d >= 0; --d) {
 			if (isl_int_is_zero(bmap->eq[i][1+d]))
 				continue;
 			elim[d] = i;
