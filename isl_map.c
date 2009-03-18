@@ -503,6 +503,11 @@ int isl_basic_map_free_equality(struct isl_basic_map *bmap, unsigned n)
 	return 0;
 }
 
+int isl_basic_set_free_equality(struct isl_basic_set *bset, unsigned n)
+{
+	return isl_basic_map_free_equality((struct isl_basic_map *)bset, n);
+}
+
 int isl_basic_map_drop_equality(struct isl_basic_map *bmap, unsigned pos)
 {
 	isl_int *t;
