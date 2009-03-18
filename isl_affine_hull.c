@@ -272,40 +272,25 @@ error:
 	return NULL;
 }
 
-/* Look for all equalities satisfied by the integer points in bmap
- * that are independent of the equalities already explicitly available
- * in bmap.
+/* Look for all equalities satisfied by the integer points in bset,
+ * which is assume not to have any explicit equalities.
  *
- * We first remove all equalities already explicitly available,
- * then look for additional equalities in the reduced space
- * and then transform the result to the original space.
- * The original equalities are _not_ added to this set.  This is
- * the responsibility of the calling function.
- * The resulting basic set has all meaning about the dimensions removed.
- * In particular, dimensions that correspond to existential variables
- * in bmap and that are found to be fixed are not removed.
- *
- * The additional equalities are obtained by successively looking for
+ * The equalities are obtained by successively looking for
  * a point that is affinely independent of the points found so far.
  * In particular, for each equality satisfied by the points so far,
  * we check if there is any point on a hyperplane parallel to the
  * corresponding hyperplane shifted by at least one (in either direction).
  */
-static struct isl_basic_set *equalities_in_underlying_set(
-						struct isl_basic_map *bmap)
+static struct isl_basic_set *uset_affine_hull(struct isl_basic_set *bset)
 {
 	int i, j;
-	struct isl_mat *T2 = NULL;
-	struct isl_basic_set *bset = NULL;
 	struct isl_basic_set *hull = NULL;
 	struct isl_vec *sample;
 	struct isl_ctx *ctx;
 	unsigned dim;
 
-	bset = isl_basic_map_underlying_set(bmap);
-	bset = isl_basic_set_remove_equalities(bset, NULL, &T2);
-	if (!bset)
-		goto error;
+	if (isl_basic_set_is_empty(bset))
+		return bset;
 
 	ctx = bset->ctx;
 	sample = isl_basic_set_sample(isl_basic_set_copy(bset));
@@ -314,14 +299,14 @@ static struct isl_basic_set *equalities_in_underlying_set(
 	if (sample->size == 0) {
 		isl_vec_free(ctx, sample);
 		hull = isl_basic_set_empty_like(bset);
+		isl_basic_set_free(bset);
+		return hull;
 	} else
 		hull = isl_basic_set_from_vec(ctx, sample);
 
 	dim = isl_basic_set_n_dim(bset);
 	for (i = 0; i < dim; ++i) {
 		struct isl_basic_set *point;
-		if (ISL_F_ISSET(hull, ISL_BASIC_SET_EMPTY))
-			break;
 		for (j = 0; j < hull->n_eq; ++j) {
 			point = outside_point(ctx, bset, hull->eq[j], 1);
 			if (!point)
@@ -341,6 +326,42 @@ static struct isl_basic_set *equalities_in_underlying_set(
 		hull = affine_hull(hull, point);
 	}
 	isl_basic_set_free(bset);
+
+	return hull;
+error:
+	isl_basic_set_free(bset);
+	isl_basic_set_free(hull);
+	return NULL;
+}
+
+/* Look for all equalities satisfied by the integer points in bmap
+ * that are independent of the equalities already explicitly available
+ * in bmap.
+ *
+ * We first remove all equalities already explicitly available,
+ * then look for additional equalities in the reduced space
+ * and then transform the result to the original space.
+ * The original equalities are _not_ added to this set.  This is
+ * the responsibility of the calling function.
+ * The resulting basic set has all meaning about the dimensions removed.
+ * In particular, dimensions that correspond to existential variables
+ * in bmap and that are found to be fixed are not removed.
+ */
+static struct isl_basic_set *equalities_in_underlying_set(
+						struct isl_basic_map *bmap)
+{
+	struct isl_mat *T2 = NULL;
+	struct isl_basic_set *bset = NULL;
+	struct isl_basic_set *hull = NULL;
+	struct isl_ctx *ctx;
+
+	ctx = bmap->ctx;
+	bset = isl_basic_map_underlying_set(bmap);
+	bset = isl_basic_set_remove_equalities(bset, NULL, &T2);
+	if (!bset)
+		goto error;
+
+	hull = uset_affine_hull(bset);
 	if (T2)
 		hull = isl_basic_set_preimage(hull, T2);
 
