@@ -1484,6 +1484,25 @@ struct isl_basic_map *isl_basic_map_gist(struct isl_basic_map *bmap,
 	if (!bmap || !context)
 		goto error;
 
+	if (isl_basic_map_is_universe(context)) {
+		isl_basic_map_free(context);
+		return bmap;
+	}
+	if (isl_basic_map_is_universe(bmap)) {
+		isl_basic_map_free(context);
+		return bmap;
+	}
+	if (isl_basic_map_fast_is_empty(context)) {
+		struct isl_dim *dim = isl_dim_copy(bmap->dim);
+		isl_basic_map_free(context);
+		isl_basic_map_free(bmap);
+		return isl_basic_map_universe(dim);
+	}
+	if (isl_basic_map_fast_is_empty(bmap)) {
+		isl_basic_map_free(context);
+		return bmap;
+	}
+
 	bmap = isl_basic_map_convex_hull(bmap);
 	context = isl_basic_map_convex_hull(context);
 
@@ -1507,10 +1526,24 @@ struct isl_map *isl_map_gist(struct isl_map *map, struct isl_basic_map *context)
 {
 	int i;
 
+	if (!map || !context)
+		goto error;;
+
+	if (isl_basic_map_is_universe(context)) {
+		isl_basic_map_free(context);
+		return map;
+	}
+	if (isl_basic_map_fast_is_empty(context)) {
+		struct isl_dim *dim = isl_dim_copy(map->dim);
+		isl_basic_map_free(context);
+		isl_map_free(map);
+		return isl_map_universe(dim);
+	}
+
 	context = isl_basic_map_convex_hull(context);
 	map = isl_map_cow(map);
 	if (!map || !context)
-		return NULL;
+		goto error;;
 	isl_assert(map->ctx, isl_dim_equal(map->dim, context->dim), goto error);
 	map = isl_map_compute_divs(map);
 	for (i = 0; i < map->n; ++i)
