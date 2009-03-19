@@ -192,6 +192,7 @@ int isl_basic_map_fast_is_fixed(struct isl_basic_map *bmap,
 	enum isl_dim_type type, unsigned pos, isl_int *val);
 
 int isl_basic_map_is_universe(struct isl_basic_map *bmap);
+int isl_basic_map_fast_is_empty(struct isl_basic_map *bmap);
 int isl_basic_map_is_empty(struct isl_basic_map *bmap);
 int isl_basic_map_is_subset(struct isl_basic_map *bmap1,
 		struct isl_basic_map *bmap2);

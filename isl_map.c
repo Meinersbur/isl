@@ -3490,6 +3490,13 @@ int isl_basic_map_is_empty(struct isl_basic_map *bmap)
 	return empty;
 }
 
+int isl_basic_map_fast_is_empty(struct isl_basic_map *bmap)
+{
+	if (!bmap)
+		return -1;
+	return ISL_F_ISSET(bmap, ISL_BASIC_MAP_EMPTY);
+}
+
 int isl_basic_set_is_empty(struct isl_basic_set *bset)
 {
 	return isl_basic_map_is_empty((struct isl_basic_map *)bset);
