@@ -266,6 +266,8 @@ static struct isl_basic_map *add_constraint(struct isl_stream *s,
 				isl_int_neg(tok->u.v, tok->u.v);
 			isl_int_add(bmap->ineq[k][1+pos],
 					bmap->ineq[k][1+pos], tok->u.v);
+		} else if (tok->type == '+') {
+			/* nothing */
 		} else if (tok->type == ISL_TOKEN_LE) {
 			op = 1;
 			isl_seq_neg(bmap->ineq[k], bmap->ineq[k], 1+total);
