@@ -1409,6 +1409,8 @@ static struct isl_basic_set *uset_gist(struct isl_basic_set *bset,
 					isl_basic_set_copy(context));
 	if (!bset)
 		goto error;
+	if (isl_basic_set_fast_is_empty(bset))
+		goto done;
 
 	if (bset->n_eq > 0) {
 		struct isl_basic_set *affine_hull;
