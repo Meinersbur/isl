@@ -1336,6 +1336,9 @@ static struct isl_basic_set *normalize_constraints_in_compressed_space(
 	if (ISL_F_ISSET(bset, ISL_BASIC_SET_RATIONAL))
 		return bset;
 
+	if (!bset->n_ineq)
+		return bset;
+
 	bset = isl_basic_set_cow(bset);
 	if (!bset)
 		return NULL;
@@ -1410,6 +1413,8 @@ static struct isl_basic_set *uset_gist(struct isl_basic_set *bset,
 	if (!bset)
 		goto error;
 	if (isl_basic_set_fast_is_empty(bset))
+		goto done;
+	if (!bset->n_ineq)
 		goto done;
 
 	if (bset->n_eq > 0) {
