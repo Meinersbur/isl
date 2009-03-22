@@ -901,12 +901,12 @@ struct isl_basic_map *isl_basic_map_simplify(struct isl_basic_map *bmap)
 	while (progress) {
 		progress = 0;
 		bmap = isl_basic_map_normalize_constraints(bmap);
+		bmap = remove_duplicate_divs(bmap, &progress);
 		bmap = eliminate_divs_eq(bmap, &progress);
 		bmap = eliminate_divs_ineq(bmap, &progress);
 		bmap = isl_basic_map_gauss(bmap, &progress);
 		/* requires equalities in normal form */
 		bmap = normalize_divs(bmap, &progress);
-		bmap = remove_duplicate_divs(bmap, &progress);
 		bmap = remove_duplicate_constraints(bmap, &progress);
 	}
 	return bmap;
