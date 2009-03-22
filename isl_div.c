@@ -24,12 +24,14 @@ static unsigned offset(struct isl_div *d, enum isl_dim_type type)
 	}
 }
 
-struct isl_div *isl_basic_map_div(struct isl_basic_map *bmap, isl_int **line)
+struct isl_div *isl_basic_map_div(struct isl_basic_map *bmap, int pos)
 {
 	struct isl_div *div;
 
-	if (!bmap || !line)
+	if (!bmap)
 		goto error;
+
+	isl_assert(bmap->ctx, pos < bmap->n_div, goto error);
 	
 	div = isl_alloc_type(bmap->ctx, struct isl_div);
 	if (!div)
@@ -39,7 +41,7 @@ struct isl_div *isl_basic_map_div(struct isl_basic_map *bmap, isl_int **line)
 	isl_ctx_ref(div->ctx);
 	div->ref = 1;
 	div->bmap = bmap;
-	div->line = line;
+	div->line = &bmap->div[pos];
 
 	return div;
 error:
@@ -60,7 +62,7 @@ struct isl_div *isl_div_alloc(struct isl_dim *dim)
 
 	isl_basic_map_alloc_div(bmap);
 	isl_seq_clr(bmap->div[0], 1 + 1 + isl_basic_map_total_dim(bmap));
-	return isl_basic_map_div(bmap, &bmap->div[0]);
+	return isl_basic_map_div(bmap, 0);
 }
 
 struct isl_div *isl_div_free(struct isl_div *c)
