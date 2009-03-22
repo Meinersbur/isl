@@ -49,6 +49,11 @@ error:
 	return NULL;
 }
 
+struct isl_div *isl_basic_set_div(struct isl_basic_set *bset, int pos)
+{
+	return isl_basic_map_div((struct isl_basic_map *)bset, pos);
+}
+
 struct isl_div *isl_div_alloc(struct isl_dim *dim)
 {
 	struct isl_basic_map *bmap;
