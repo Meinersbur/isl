@@ -627,6 +627,23 @@ out:
 	return bmap;
 }
 
+static int n_pure_div_eq(struct isl_basic_map *bmap)
+{
+	int i, j;
+	unsigned total;
+
+	total = isl_dim_total(bmap->dim);
+	for (i = 0, j = bmap->n_div-1; i < bmap->n_eq; ++i) {
+		while (j >= 0 && isl_int_is_zero(bmap->eq[i][1 + total + j]))
+			--j;
+		if (j < 0)
+			break;
+		if (isl_seq_first_non_zero(bmap->eq[i] + 1 + total, j) != -1)
+			return 0;
+	}
+	return i;
+}
+
 /* Normalize divs that appear in equalities.
  *
  * In particular, we assume that bmap contains some equalities
@@ -703,15 +720,7 @@ static struct isl_basic_map *normalize_divs(
 		return bmap;
 
 	total = isl_dim_total(bmap->dim);
-	for (i = 0, j = bmap->n_div-1; i < bmap->n_eq; ++i) {
-		while (j >= 0 && isl_int_is_zero(bmap->eq[i][1 + total + j]))
-			--j;
-		if (j < 0)
-			break;
-		if (isl_seq_first_non_zero(bmap->eq[i] + 1 + total, j) != -1)
-			goto done;
-	}
-	div_eq = i;
+	div_eq = n_pure_div_eq(bmap);
 	if (div_eq == 0)
 		return bmap;
 
@@ -817,7 +826,8 @@ static struct isl_basic_map *normalize_divs(
 	isl_mat_free(bmap->ctx, C2);
 	isl_mat_free(bmap->ctx, T);
 
-	*progress = 1;
+	if (progress)
+		*progress = 1;
 done:
 	ISL_F_SET(bmap, ISL_BASIC_MAP_NORMALIZED_DIVS);
 
@@ -1480,6 +1490,43 @@ error2:
 	return NULL;
 }
 
+/* Normalize the divs in "bmap" in the context of the equalities in "context".
+ * We simply add the equalities in context to bmap and then do a regular
+ * div normalizations.  Better results can be obtained by normalizing
+ * only the divs in bmap than do not also appear in context.
+ * We need to be careful to reduce the divs using the equalities
+ * so that later calls to isl_basic_map_overlying_set wouldn't introduce
+ * spurious constraints.
+ */
+static struct isl_basic_map *normalize_divs_in_context(
+	struct isl_basic_map *bmap, struct isl_basic_map *context)
+{
+	int i;
+	unsigned total_context;
+	int div_eq;
+
+	div_eq = n_pure_div_eq(bmap);
+	if (div_eq == 0)
+		return bmap;
+
+	if (context->n_div > 0)
+		bmap = isl_basic_map_align_divs(bmap, context);
+
+	total_context = isl_basic_map_total_dim(context);
+	bmap = isl_basic_map_extend_constraints(bmap, context->n_eq, 0);
+	for (i = 0; i < context->n_eq; ++i) {
+		int k;
+		k = isl_basic_map_alloc_equality(bmap);
+		isl_seq_cpy(bmap->eq[k], context->eq[i], 1 + total_context);
+		isl_seq_clr(bmap->eq[k] + 1 + total_context,
+				isl_basic_map_total_dim(bmap) - total_context);
+	}
+	bmap = isl_basic_map_gauss(bmap, NULL);
+	bmap = normalize_divs(bmap, NULL);
+	bmap = isl_basic_map_gauss(bmap, NULL);
+	return bmap;
+}
+
 struct isl_basic_map *isl_basic_map_gist(struct isl_basic_map *bmap,
 	struct isl_basic_map *context)
 {
@@ -1509,6 +1556,9 @@ struct isl_basic_map *isl_basic_map_gist(struct isl_basic_map *bmap,
 
 	bmap = isl_basic_map_convex_hull(bmap);
 	context = isl_basic_map_convex_hull(context);
+
+	if (context->n_eq)
+		bmap = normalize_divs_in_context(bmap, context);
 
 	context = isl_basic_map_align_divs(context, bmap);
 	bmap = isl_basic_map_align_divs(bmap, context);
