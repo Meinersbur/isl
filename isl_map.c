@@ -220,6 +220,13 @@ int isl_basic_map_compatible_range(struct isl_basic_map *bmap,
 	       bmap->dim->nparam == bset->dim->nparam;
 }
 
+struct isl_dim *isl_basic_set_get_dim(struct isl_basic_set *bset)
+{
+	if (!bset)
+		return NULL;
+	return isl_dim_copy(bset->dim);
+}
+
 static struct isl_basic_map *basic_map_init(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap, unsigned extra,
 		unsigned n_eq, unsigned n_ineq)

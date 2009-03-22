@@ -75,6 +75,8 @@ unsigned isl_set_n_dim(const struct isl_set *set);
 unsigned isl_set_n_param(const struct isl_set *set);
 unsigned isl_set_dim(const struct isl_set *set, enum isl_dim_type type);
 
+struct isl_dim *isl_basic_set_get_dim(struct isl_basic_set *bset);
+
 struct isl_basic_set *isl_basic_set_alloc(struct isl_ctx *ctx,
 		unsigned nparam, unsigned dim, unsigned extra,
 		unsigned n_eq, unsigned n_ineq);
