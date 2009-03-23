@@ -40,6 +40,7 @@ struct isl_mat *isl_mat_extend(struct isl_ctx *ctx, struct isl_mat *mat,
 	unsigned n_row, unsigned n_col)
 {
 	int i;
+	isl_int *old;
 
 	if (!mat)
 		return NULL;
@@ -64,6 +65,7 @@ struct isl_mat *isl_mat_extend(struct isl_ctx *ctx, struct isl_mat *mat,
 		goto error;
 
 	assert(mat->ref == 1);
+	old = mat->block.data;
 	mat->block = isl_blk_extend(ctx, mat->block, n_row * mat->n_col);
 	if (isl_blk_is_error(mat->block))
 		goto error;
@@ -71,7 +73,9 @@ struct isl_mat *isl_mat_extend(struct isl_ctx *ctx, struct isl_mat *mat,
 	if (!mat->row)
 		goto error;
 
-	for (i = 0; i < n_row; ++i)
+	for (i = 0; i < mat->n_row; ++i)
+		mat->row[i] = mat->block.data + (mat->row[i] - old);
+	for (i = mat->n_row; i < n_row; ++i)
 		mat->row[i] = mat->block.data + i * mat->n_col;
 	mat->n_row = n_row;
 
