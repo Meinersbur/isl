@@ -78,6 +78,7 @@ struct isl_tab {
 
 	unsigned n_var;
 	unsigned n_con;
+	unsigned n_eq;
 	unsigned max_con;
 	struct isl_tab_var *var;
 	struct isl_tab_var *con;

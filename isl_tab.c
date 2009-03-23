@@ -42,6 +42,7 @@ struct isl_tab *isl_tab_alloc(struct isl_ctx *ctx,
 	}
 	tab->n_row = 0;
 	tab->n_con = 0;
+	tab->n_eq = 0;
 	tab->max_con = n_row;
 	tab->n_col = n_var;
 	tab->n_var = n_var;
@@ -944,6 +945,7 @@ static struct isl_tab *add_eq(struct isl_ctx *ctx,
 		kill_col(ctx, tab, i);
 		break;
 	}
+	tab->n_eq++;
 
 	return tab;
 error:
@@ -1117,7 +1119,7 @@ struct isl_basic_map *isl_basic_map_update_from_tab(struct isl_basic_map *bmap,
 	if (!tab)
 		return bmap;
 
-	n_eq = bmap->n_eq;
+	n_eq = tab->n_eq;
 	if (tab->empty)
 		bmap = isl_basic_map_set_to_empty(bmap);
 	else

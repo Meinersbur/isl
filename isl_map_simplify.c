@@ -1398,7 +1398,7 @@ static struct isl_basic_set *uset_gist(struct isl_basic_set *bset,
 {
 	int i;
 	struct isl_tab *tab;
-	unsigned context_ineq, bset_eq;
+	unsigned context_ineq;
 	struct isl_basic_set *combined = NULL;
 
 	if (!context || !bset)
@@ -1456,10 +1456,7 @@ static struct isl_basic_set *uset_gist(struct isl_basic_set *bset,
 		tab->con[i].is_zero = 0;
 		tab->con[i].is_redundant = 1;
 	}
-	bset_eq = bset->n_eq;
-	bset->n_eq = 0;
 	bset = isl_basic_set_update_from_tab(bset, tab);
-	bset->n_eq = bset_eq;
 	isl_tab_free(bset->ctx, tab);
 	ISL_F_SET(bset, ISL_BASIC_SET_NO_IMPLICIT);
 	ISL_F_SET(bset, ISL_BASIC_SET_NO_REDUNDANT);
