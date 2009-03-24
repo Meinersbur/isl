@@ -143,6 +143,7 @@ struct isl_set *isl_basic_set_union(
 int isl_basic_set_compare_at(struct isl_basic_set *bset1,
 	struct isl_basic_set *bset2, int pos);
 
+int isl_basic_set_is_universe(struct isl_basic_set *bset);
 int isl_basic_set_fast_is_empty(struct isl_basic_set *bset);
 int isl_basic_set_is_empty(struct isl_basic_set *bset);
 
