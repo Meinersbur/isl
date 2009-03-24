@@ -227,6 +227,13 @@ struct isl_dim *isl_basic_set_get_dim(struct isl_basic_set *bset)
 	return isl_dim_copy(bset->dim);
 }
 
+struct isl_dim *isl_set_get_dim(struct isl_set *set)
+{
+	if (!set)
+		return NULL;
+	return isl_dim_copy(set->dim);
+}
+
 static struct isl_basic_map *basic_map_init(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap, unsigned extra,
 		unsigned n_eq, unsigned n_ineq)
