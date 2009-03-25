@@ -943,6 +943,72 @@ error:
 	return NULL;
 }
 
+/* Compute the lineality space of an "underlying" basic set.
+ * We basically just drop the constants and turn every inequality
+ * into an equality.
+ */
+static struct isl_basic_set *ubasic_set_lineality_space(
+	struct isl_basic_set *bset)
+{
+	int i, k;
+	struct isl_basic_set *lin;
+	unsigned dim = isl_basic_set_total_dim(bset);
+
+	lin = isl_basic_set_alloc_dim(isl_basic_set_get_dim(bset), 0, dim, 0);
+	if (!lin)
+		goto error;
+	for (i = 0; i < bset->n_eq; ++i) {
+		k = isl_basic_set_alloc_equality(lin);
+		if (k < 0)
+			goto error;
+		isl_int_set_si(lin->eq[k][0], 0);
+		isl_seq_cpy(lin->eq[k] + 1, bset->eq[i] + 1, dim);
+	}
+	lin = isl_basic_set_gauss(lin, NULL);
+	if (!lin)
+		goto error;
+	for (i = 0; i < bset->n_ineq && lin->n_eq < dim; ++i) {
+		k = isl_basic_set_alloc_equality(lin);
+		if (k < 0)
+			goto error;
+		isl_int_set_si(lin->eq[k][0], 0);
+		isl_seq_cpy(lin->eq[k] + 1, bset->ineq[i] + 1, dim);
+		lin = isl_basic_set_gauss(lin, NULL);
+		if (!lin)
+			goto error;
+	}
+	isl_basic_set_free(bset);
+	return lin;
+error:
+	isl_basic_set_free(lin);
+	isl_basic_set_free(bset);
+	return NULL;
+}
+
+/* Compute the (linear) hull of the lineality spaces of the basic sets in the
+ * "underlying" set "set".
+ */
+static struct isl_basic_set *uset_combined_lineality_space(struct isl_set *set)
+{
+	int i;
+	struct isl_set *lin = NULL;
+
+	if (!set)
+		return NULL;
+	if (set->n == 0) {
+		struct isl_dim *dim = isl_set_get_dim(set);
+		isl_set_free(set);
+		return isl_basic_set_empty(dim);
+	}
+
+	lin = isl_set_alloc_dim(isl_set_get_dim(set), set->n, 0);
+	for (i = 0; i < set->n; ++i)
+		lin = isl_set_add(lin,
+		    ubasic_set_lineality_space(isl_basic_set_copy(set->p[i])));
+	isl_set_free(set);
+	return isl_set_affine_hull(lin);
+}
+
 /* Compute the convex hull of a set without any parameters or
  * integer divisions using Fourier-Motzkin elimination.
  * In each step, we combined two basic sets until only one
@@ -1268,6 +1334,63 @@ static int isl_set_is_bounded(struct isl_set *set)
 	return 1;
 }
 
+static struct isl_basic_set *uset_convex_hull(struct isl_set *set);
+
+/* Given a set and a linear space "lin" of dimension n > 0,
+ * project the linear space from the set, compute the convex hull
+ * and then map the set back to the original space.
+ *
+ * Let
+ *
+ *	M x = 0
+ *
+ * describe the linear space.  We first compute the Hermite normal
+ * form H = M U of M = H Q, to obtain
+ *
+ *	H Q x = 0
+ *
+ * The last n rows of H will be zero, so the last n variables of x' = Q x
+ * are the one we want to project out.  We do this by transforming each
+ * basic set A x >= b to A U x' >= b and then removing the last n dimensions.
+ * After computing the convex hull in x'_1, i.e., A' x'_1 >= b',
+ * we transform the hull back to the original space as A' Q_1 x >= b',
+ * with Q_1 all but the last n rows of Q.
+ */
+static struct isl_basic_set *modulo_lineality(struct isl_set *set,
+	struct isl_basic_set *lin)
+{
+	unsigned total = isl_basic_set_total_dim(lin);
+	unsigned lin_dim;
+	struct isl_basic_set *hull;
+	struct isl_mat *M, *U, *Q;
+
+	if (!set || !lin)
+		goto error;
+	lin_dim = total - lin->n_eq;
+	M = isl_mat_sub_alloc(set->ctx, lin->eq, 0, lin->n_eq, 1, total);
+	M = isl_mat_left_hermite(set->ctx, M, 0, &U, &Q);
+	if (!M)
+		goto error;
+	isl_mat_free(set->ctx, M);
+	isl_basic_set_free(lin);
+
+	isl_mat_drop_rows(set->ctx, Q, Q->n_row - lin_dim, lin_dim);
+
+	U = isl_mat_lin_to_aff(set->ctx, U);
+	Q = isl_mat_lin_to_aff(set->ctx, Q);
+
+	set = isl_set_preimage(set, U);
+	set = isl_set_remove_dims(set, total - lin_dim, lin_dim);
+	hull = uset_convex_hull(set);
+	hull = isl_basic_set_preimage(hull, Q);
+
+	return hull;
+error:
+	isl_basic_set_free(lin);
+	isl_set_free(set);
+	return NULL;
+}
+
 /* Compute the convex hull of a set without any parameters or
  * integer divisions.  Depending on whether the set is bounded,
  * we pass control to the wrapping based convex hull or
@@ -1278,6 +1401,7 @@ static struct isl_basic_set *uset_convex_hull(struct isl_set *set)
 {
 	int i;
 	struct isl_basic_set *convex_hull = NULL;
+	struct isl_basic_set *lin;
 
 	if (isl_set_n_dim(set) == 0)
 		return convex_hull_0d(set);
@@ -1297,10 +1421,21 @@ static struct isl_basic_set *uset_convex_hull(struct isl_set *set)
 	if (isl_set_n_dim(set) == 1)
 		return convex_hull_1d(set->ctx, set);
 
-	if (!isl_set_is_bounded(set))
-		return uset_convex_hull_elim(set);
+	if (isl_set_is_bounded(set))
+		return uset_convex_hull_wrap(set);
 
-	return uset_convex_hull_wrap(set);
+	lin = uset_combined_lineality_space(isl_set_copy(set));
+	if (!lin)
+		goto error;
+	if (isl_basic_set_is_universe(lin)) {
+		isl_set_free(set);
+		return lin;
+	}
+	if (lin->n_eq < isl_basic_set_total_dim(lin))
+		return modulo_lineality(set, lin);
+	isl_basic_set_free(lin);
+
+	return uset_convex_hull_elim(set);
 error:
 	isl_set_free(set);
 	isl_basic_set_free(convex_hull);
