@@ -1085,6 +1085,283 @@ error:
 	return NULL;
 }
 
+/* Given two polyhedra with as constraints h_{ij} x >= 0 in homegeneous space,
+ * set up an LP for solving
+ *
+ *	\sum_j \alpha_{1j} h_{1j} = \sum_j \alpha_{2j} h_{2j}
+ *
+ * \alpha{i0} corresponds to the (implicit) positivity constraint 1 >= 0
+ * The next \alpha{ij} correspond to the equalities and come in pairs.
+ * The final \alpha{ij} correspond to the inequalities.
+ */
+static struct isl_basic_set *valid_direction_lp(
+	struct isl_basic_set *bset1, struct isl_basic_set *bset2)
+{
+	struct isl_dim *dim;
+	struct isl_basic_set *lp;
+	unsigned d;
+	int n;
+	int i, j, k;
+
+	if (!bset1 || !bset2)
+		goto error;
+	d = 1 + isl_basic_set_total_dim(bset1);
+	n = 2 +
+	    2 * bset1->n_eq + bset1->n_ineq + 2 * bset2->n_eq + bset2->n_ineq;
+	dim = isl_dim_set_alloc(bset1->ctx, 0, n);
+	lp = isl_basic_set_alloc_dim(dim, 0, d, n);
+	if (!lp)
+		goto error;
+	for (i = 0; i < n; ++i) {
+		k = isl_basic_set_alloc_inequality(lp);
+		if (k < 0)
+			goto error;
+		isl_seq_clr(lp->ineq[k] + 1, n);
+		isl_int_set_si(lp->ineq[k][0], -1);
+		isl_int_set_si(lp->ineq[k][1 + i], 1);
+	}
+	for (i = 0; i < d; ++i) {
+		k = isl_basic_set_alloc_equality(lp);
+		if (k < 0)
+			goto error;
+		n = 0;
+		isl_int_set_si(lp->eq[k][n++], 0);
+		/* positivity constraint 1 >= 0 */
+		isl_int_set_si(lp->eq[k][n++], i == 0);
+		for (j = 0; j < bset1->n_eq; ++j) {
+			isl_int_set(lp->eq[k][n++], bset1->eq[j][i]);
+			isl_int_neg(lp->eq[k][n++], bset1->eq[j][i]);
+		}
+		for (j = 0; j < bset1->n_ineq; ++j)
+			isl_int_set(lp->eq[k][n++], bset1->ineq[j][i]);
+		/* positivity constraint 1 >= 0 */
+		isl_int_set_si(lp->eq[k][n++], -(i == 0));
+		for (j = 0; j < bset2->n_eq; ++j) {
+			isl_int_neg(lp->eq[k][n++], bset2->eq[j][i]);
+			isl_int_set(lp->eq[k][n++], bset2->eq[j][i]);
+		}
+		for (j = 0; j < bset2->n_ineq; ++j)
+			isl_int_neg(lp->eq[k][n++], bset2->ineq[j][i]);
+	}
+	lp = isl_basic_set_gauss(lp, NULL);
+	isl_basic_set_free(bset1);
+	isl_basic_set_free(bset2);
+	return lp;
+error:
+	isl_basic_set_free(bset1);
+	isl_basic_set_free(bset2);
+	return NULL;
+}
+
+/* Compute a vector s in the homogeneous space such that <s, r> > 0
+ * for all rays in the homogeneous space of the two cones that correspond
+ * to the input polyhedra bset1 and bset2.
+ *
+ * We compute s as a vector that satisfies
+ *
+ *	s = \sum_j \alpha_{ij} h_{ij}	for i = 1,2			(*)
+ *
+ * with h_{ij} the normals of the facets of polyhedron i
+ * (including the "positivity constraint" 1 >= 0) and \alpha_{ij}
+ * strictly positive numbers.  For simplicity we impose \alpha_{ij} >= 1.
+ * We first set up an LP with as variables the \alpha{ij}.
+ * In this formulateion, for each polyhedron i,
+ * the first constraint is the positivity constraint, followed by pairs
+ * of variables for the equalities, followed by variables for the inequalities.
+ * We then simply pick a feasible solution and compute s using (*).
+ *
+ * Note that we simply pick any valid direction and make no attempt
+ * to pick a "good" or even the "best" valid direction.
+ */
+static struct isl_vec *valid_direction(
+	struct isl_basic_set *bset1, struct isl_basic_set *bset2)
+{
+	struct isl_ctx *ctx = NULL;
+	struct isl_basic_set *lp;
+	struct isl_tab *tab;
+	struct isl_vec *sample = NULL;
+	struct isl_vec *dir;
+	unsigned d;
+	int i;
+	int n;
+
+	if (!bset1 || !bset2)
+		goto error;
+	ctx = bset1->ctx;
+	lp = valid_direction_lp(isl_basic_set_copy(bset1),
+				isl_basic_set_copy(bset2));
+	tab = isl_tab_from_basic_set(lp);
+	sample = isl_tab_get_sample_value(ctx, tab);
+	isl_tab_free(ctx, tab);
+	isl_basic_set_free(lp);
+	if (!sample)
+		goto error;
+	d = isl_basic_set_total_dim(bset1);
+	dir = isl_vec_alloc(ctx, 1 + d);
+	if (!dir)
+		goto error;
+	isl_seq_clr(dir->block.data + 1, dir->size - 1);
+	n = 1;
+	/* positivity constraint 1 >= 0 */
+	isl_int_set(dir->block.data[0], sample->block.data[n++]);
+	for (i = 0; i < bset1->n_eq; ++i) {
+		isl_int_sub(sample->block.data[n],
+			    sample->block.data[n], sample->block.data[n+1]);
+		isl_seq_combine(dir->block.data,
+				bset1->ctx->one, dir->block.data,
+				sample->block.data[n], bset1->eq[i], 1 + d);
+
+		n += 2;
+	}
+	for (i = 0; i < bset1->n_ineq; ++i)
+		isl_seq_combine(dir->block.data,
+				bset1->ctx->one, dir->block.data,
+				sample->block.data[n++], bset1->ineq[i], 1 + d);
+	isl_vec_free(ctx, sample);
+	isl_basic_set_free(bset1);
+	isl_basic_set_free(bset2);
+	isl_seq_normalize(dir->block.data + 1, dir->size - 1);
+	return dir;
+error:
+	isl_vec_free(ctx, sample);
+	isl_basic_set_free(bset1);
+	isl_basic_set_free(bset2);
+	return NULL;
+}
+
+/* Given a polyhedron b_i + A_i x >= 0 and a map T = S^{-1},
+ * compute b_i' + A_i' x' >= 0, with
+ *
+ *	[ b_i A_i ]        [ y' ]		              [ y' ]
+ *	[  1   0  ] S^{-1} [ x' ] >= 0	or	[ b_i' A_i' ] [ x' ] >= 0
+ *
+ * In particular, add the "positivity constraint" and then perform
+ * the mapping.
+ */
+static struct isl_basic_set *homogeneous_map(struct isl_basic_set *bset,
+	struct isl_mat *T)
+{
+	struct isl_ctx *ctx = NULL;
+	int k;
+
+	if (!bset)
+		goto error;
+	ctx = bset->ctx;
+	bset = isl_basic_set_extend_constraints(bset, 0, 1);
+	k = isl_basic_set_alloc_inequality(bset);
+	if (k < 0)
+		goto error;
+	isl_seq_clr(bset->ineq[k] + 1, isl_basic_set_total_dim(bset));
+	isl_int_set_si(bset->ineq[k][0], 1);
+	bset = isl_basic_set_preimage(bset, T);
+	return bset;
+error:
+	isl_mat_free(ctx, T);
+	isl_basic_set_free(bset);
+	return NULL;
+}
+
+/* Compute the convex hull of a pair of basic sets without any parameters or
+ * integer divisions, where the convex hull is known to be pointed,
+ * but the basic sets may be unbounded.
+ *
+ * We turn this problem into the computation of a convex hull of a pair
+ * _bounded_ polyhedra by "changing the direction of the homogeneous
+ * dimension".  This idea is due to Matthias Koeppe.
+ *
+ * Consider the cones in homogeneous space that correspond to the
+ * input polyhedra.  The rays of these cones are also rays of the
+ * polyhedra if the coordinate that corresponds to the homogeneous
+ * dimension is zero.  That is, if the inner product of the rays
+ * with the homogeneous direction is zero.
+ * The cones in the homogeneous space can also be considered to
+ * correspond to other pairs of polyhedra by chosing a different
+ * homogeneous direction.  To ensure that both of these polyhedra
+ * are bounded, we need to make sure that all rays of the cones
+ * correspond to vertices and not to rays.
+ * Let s be a direction such that <s, r> > 0 for all rays r of both cones.
+ * Then using s as a homogeneous direction, we obtain a pair of polytopes.
+ * The vector s is computed in valid_direction.
+ *
+ * Note that we need to consider _all_ rays of the cones and not just
+ * the rays that correspond to rays in the polyhedra.  If we were to
+ * only consider those rays and turn them into vertices, then we
+ * may inadvertently turn some vertices into rays.
+ *
+ * The standard homogeneous direction is the unit vector in the 0th coordinate.
+ * We therefore transform the two polyhedra such that the selected
+ * direction is mapped onto this standard direction and then proceed
+ * with the normal computation.
+ * Let S be a non-singular square matrix with s as its first row,
+ * then we want to map the polyhedra to the space
+ *
+ *	[ y' ]     [ y ]		[ y ]          [ y' ]
+ *	[ x' ] = S [ x ]	i.e.,	[ x ] = S^{-1} [ x' ]
+ *
+ * We take S to be the unimodular completion of s to limit the growth
+ * of the coefficients in the following computations.
+ *
+ * Let b_i + A_i x >= 0 be the constraints of polyhedron i.
+ * We first move to the homogeneous dimension
+ *
+ *	b_i y + A_i x >= 0		[ b_i A_i ] [ y ]    [ 0 ]
+ *	    y         >= 0	or	[  1   0  ] [ x ] >= [ 0 ]
+ *
+ * Then we change directoin
+ *
+ *	[ b_i A_i ]        [ y' ]		              [ y' ]
+ *	[  1   0  ] S^{-1} [ x' ] >= 0	or	[ b_i' A_i' ] [ x' ] >= 0
+ *
+ * Then we compute the convex hull of the polytopes b_i' + A_i' x' >= 0
+ * resulting in b' + A' x' >= 0, which we then convert back
+ *
+ *	            [ y ]		        [ y ]
+ *	[ b' A' ] S [ x ] >= 0	or	[ b A ] [ x ] >= 0
+ *
+ * The polyhedron b + A x >= 0 is then the convex hull of the input polyhedra.
+ */
+static struct isl_basic_set *convex_hull_pair_pointed(
+	struct isl_basic_set *bset1, struct isl_basic_set *bset2)
+{
+	struct isl_ctx *ctx = NULL;
+	struct isl_vec *dir = NULL;
+	struct isl_mat *T = NULL;
+	struct isl_mat *T2 = NULL;
+	struct isl_basic_set *hull;
+	struct isl_set *set;
+
+	if (!bset1 || !bset2)
+		goto error;
+	ctx = bset1->ctx;
+	dir = valid_direction(isl_basic_set_copy(bset1),
+				isl_basic_set_copy(bset2));
+	if (!dir)
+		goto error;
+	T = isl_mat_alloc(bset1->ctx, dir->size, dir->size);
+	if (!T)
+		goto error;
+	isl_seq_cpy(T->row[0], dir->block.data, dir->size);
+	T = isl_mat_unimodular_complete(ctx, T, 1);
+	T2 = isl_mat_right_inverse(ctx, isl_mat_copy(ctx, T));
+
+	bset1 = homogeneous_map(bset1, isl_mat_copy(ctx, T2));
+	bset2 = homogeneous_map(bset2, T2);
+	set = isl_set_alloc_dim(isl_basic_set_get_dim(bset1), 2, 0);
+	set = isl_set_add(set, bset1);
+	set = isl_set_add(set, bset2);
+	hull = uset_convex_hull(set);
+	hull = isl_basic_set_preimage(hull, T);
+	 
+	isl_vec_free(ctx, dir);
+
+	return hull;
+error:
+	isl_vec_free(ctx, dir);
+	isl_basic_set_free(bset1);
+	isl_basic_set_free(bset2);
+	return NULL;
+}
+
 /* Compute the convex hull of a pair of basic sets without any parameters or
  * integer divisions.
  *
@@ -1097,7 +1374,7 @@ static struct isl_basic_set *convex_hull_pair(struct isl_basic_set *bset1,
 	struct isl_basic_set *lin;
 
 	if (isl_basic_set_is_bounded(bset1) || isl_basic_set_is_bounded(bset2))
-		return convex_hull_pair_elim(bset1, bset2);
+		return convex_hull_pair_pointed(bset1, bset2);
 
 	lin = induced_lineality_space(isl_basic_set_copy(bset1),
 				      isl_basic_set_copy(bset2));
@@ -1117,7 +1394,7 @@ static struct isl_basic_set *convex_hull_pair(struct isl_basic_set *bset1,
 	}
 	isl_basic_set_free(lin);
 
-	return convex_hull_pair_elim(bset1, bset2);
+	return convex_hull_pair_pointed(bset1, bset2);
 error:
 	isl_basic_set_free(bset1);
 	isl_basic_set_free(bset2);
