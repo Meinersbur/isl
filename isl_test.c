@@ -459,6 +459,8 @@ void test_convex_hull(struct isl_ctx *ctx)
 	test_convex_hull_case(ctx, "convex9");
 	test_convex_hull_case(ctx, "convex10");
 	test_convex_hull_case(ctx, "convex11");
+	test_convex_hull_case(ctx, "convex12");
+	test_convex_hull_case(ctx, "convex13");
 }
 
 void test_gist_case(struct isl_ctx *ctx, const char *name)
