@@ -104,32 +104,6 @@ error:
 	return NULL;
 }
 
-static struct isl_mat *unimodular_complete(struct isl_ctx *ctx,
-						struct isl_mat *M, int row)
-{
-	int r;
-	struct isl_mat *H = NULL, *Q = NULL;
-
-	isl_assert(ctx, M->n_row == M->n_col, goto error);
-	M->n_row = row;
-	H = isl_mat_left_hermite(ctx, isl_mat_copy(ctx, M), 0, NULL, &Q);
-	M->n_row = M->n_col;
-	if (!H)
-		goto error;
-	for (r = 0; r < row; ++r)
-		isl_assert(ctx, isl_int_is_one(H->row[r][r]), goto error);
-	for (r = row; r < M->n_row; ++r)
-		isl_seq_cpy(M->row[r], Q->row[r], M->n_col);
-	isl_mat_free(ctx, H);
-	isl_mat_free(ctx, Q);
-	return M;
-error:
-	isl_mat_free(ctx, H);
-	isl_mat_free(ctx, Q);
-	isl_mat_free(ctx, M);
-	return NULL;
-}
-
 /* Compute and return the matrix
  *
  *		U_1^{-1} diag(d_1, 1, ..., 1)
@@ -147,7 +121,7 @@ static struct isl_mat *parameter_compression_1(struct isl_ctx *ctx,
 	if (!U)
 		return NULL;
 	isl_seq_cpy(U->row[0], B->row[0] + 1, B->n_col - 1);
-	U = unimodular_complete(ctx, U, 1);
+	U = isl_mat_unimodular_complete(ctx, U, 1);
 	U = isl_mat_right_inverse(ctx, U);
 	if (!U)
 		return NULL;
@@ -193,7 +167,7 @@ static struct isl_mat *parameter_compression_multi(struct isl_ctx *ctx,
 		goto error;
 	for (i = 0; i < B->n_row; ++i) {
 		isl_seq_cpy(U->row[0], B->row[i] + 1, size);
-		U = unimodular_complete(ctx, U, 1);
+		U = isl_mat_unimodular_complete(ctx, U, 1);
 		if (!U)
 			goto error;
 		isl_int_divexact(D, D, d->block.data[i]);

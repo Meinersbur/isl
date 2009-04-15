@@ -77,6 +77,9 @@ struct isl_basic_set *isl_basic_set_preimage(struct isl_basic_set *bset,
 	struct isl_mat *mat);
 struct isl_set *isl_set_preimage(struct isl_set *set, struct isl_mat *mat);
 
+struct isl_mat *isl_mat_unimodular_complete(struct isl_ctx *ctx,
+						struct isl_mat *M, int row);
+
 void isl_mat_dump(struct isl_ctx *ctx, struct isl_mat *mat,
 				FILE *out, int indent);
 
