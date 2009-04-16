@@ -441,7 +441,7 @@ static int check_adj_eq(struct isl_set *set, int i, int j,
  *		   of the valid constraints in both basic sets
  *
  *	4. there is a single adjacent pair of an inequality and an equality,
- *	   the other constraints of the basic set containing the equality are
+ *	   the other constraints of the basic set containing the inequality are
  *	   "valid".  Moreover, if the inequality the basic set is relaxed
  *	   and then turned into an equality, then resulting facet lies
  *	   entirely inside the other basic set
