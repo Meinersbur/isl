@@ -1631,7 +1631,7 @@ static enum isl_ineq_type separation_type(struct isl_ctx *ctx,
 /* Check the effect of inequality "ineq" on the tableau "tab".
  * The result may be
  *	isl_ineq_redundant:	satisfied by all points in the tableau
- *	isl_ineq_separate:	satisfied by no point in tha tableau
+ *	isl_ineq_separate:	satisfied by no point in the tableau
  *	isl_ineq_cut:		satisfied by some by not all points
  *	isl_ineq_adj_eq:	adjacent to an equality
  *	isl_ineq_adj_ineq:	adjacent to an inequality.
