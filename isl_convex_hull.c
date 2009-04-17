@@ -448,9 +448,8 @@ static struct isl_basic_set *wrap_constraints(struct isl_set *set)
  * In the original space, we need to take the same combination of the
  * corresponding constraints "facet" and "ridge".
  *
- * If a = -infty = "-1/0", then we just return the original facet constraint.
- * This means that the facet is unbounded, but has a bounded intersection
- * with the union of sets.
+ * Note that a is always finite, since we only apply the wrapping
+ * technique to a union of polytopes.
  */
 static isl_int *wrap_facet(struct isl_set *set, isl_int *facet, isl_int *ridge)
 {
@@ -500,8 +499,7 @@ static isl_int *wrap_facet(struct isl_set *set, isl_int *facet, isl_int *ridge)
 	isl_vec_free(set->ctx, obj);
 	isl_basic_set_free(lp);
 	isl_set_free(set);
-	isl_assert(set->ctx, res == isl_lp_ok || res == isl_lp_unbounded, 
-		   return NULL);
+	isl_assert(set->ctx, res == isl_lp_ok, return NULL);
 	return facet;
 error:
 	isl_basic_set_free(lp);
