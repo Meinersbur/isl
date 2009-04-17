@@ -335,7 +335,7 @@ error:
  *				    [ 1 ]
  *				A_i [ x ]  >= 0
  *
- * then the resulting set is of dimension n*(1+d) and has as contraints
+ * then the resulting set is of dimension n*(1+d) and has as constraints
  *
  *				    [ a_i ]
  *				A_i [ x_i ] >= 0
