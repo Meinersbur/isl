@@ -105,6 +105,7 @@ unsigned isl_basic_map_dim(const struct isl_basic_map *bmap,
 unsigned isl_map_n_in(const struct isl_map *map);
 unsigned isl_map_n_out(const struct isl_map *map);
 unsigned isl_map_n_param(const struct isl_map *map);
+unsigned isl_map_dim(const struct isl_map *map, enum isl_dim_type type);
 
 struct isl_basic_map *isl_basic_map_alloc(struct isl_ctx *ctx,
 		unsigned nparam, unsigned in, unsigned out, unsigned extra,
