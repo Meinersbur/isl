@@ -4550,6 +4550,14 @@ error:
 	return NULL;
 }
 
+/* Given two set A and B, construct its Cartesian product A x B.
+ */
+struct isl_set *isl_set_product(struct isl_set *set1, struct isl_set *set2)
+{
+	return (struct isl_set *)isl_map_product((struct isl_map *)set1,
+						 (struct isl_map *)set2);
+}
+
 uint32_t isl_basic_set_get_hash(struct isl_basic_set *bset)
 {
 	int i;
