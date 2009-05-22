@@ -110,7 +110,34 @@ error:
 	return NULL;
 }
 
-/* Drop n input dimensions starting at first.
+/* Move "n" divs starting at "first" to the end of the list of divs.
+ */
+static struct isl_basic_map *move_divs_last(struct isl_basic_map *bmap,
+	unsigned first, unsigned n)
+{
+	isl_int **div;
+	int i;
+
+	if (first + n == bmap->n_div)
+		return bmap;
+
+	div = isl_alloc_array(bmap->ctx, isl_int *, n);
+	if (!div)
+		goto error;
+	for (i = 0; i < n; ++i)
+		div[i] = bmap->div[first + i];
+	for (i = 0; i < bmap->n_div - first - n; ++i)
+		bmap->div[first + i] = bmap->div[first + n + i];
+	for (i = 0; i < n; ++i)
+		bmap->div[bmap->n_div - n + i] = div[i];
+	free(div);
+	return bmap;
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+/* Drop "n" dimensions of type "type" starting at "first".
  *
  * In principle, this frees up some extra variables as the number
  * of columns remains constant, but we would have to extend
@@ -149,7 +176,13 @@ struct isl_basic_map *isl_basic_map_drop(struct isl_basic_map *bmap,
 	for (i = 0; i < bmap->n_div; ++i)
 		constraint_drop_vars(bmap->div[i]+1+offset, n, left);
 
-	bmap->dim = isl_dim_drop(bmap->dim, type, first, n);
+	if (type == isl_dim_div) {
+		bmap = move_divs_last(bmap, first, n);
+		if (!bmap)
+			goto error;
+		isl_basic_map_free_div(bmap, n);
+	} else
+		bmap->dim = isl_dim_drop(bmap->dim, type, first, n);
 	if (!bmap->dim)
 		goto error;
 
