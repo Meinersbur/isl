@@ -407,6 +407,7 @@ static struct isl_map *extremum_on(
 	PipMatrix *domain = NULL, *context = NULL;
 	unsigned	 nparam, n_in, n_out;
 
+	bmap = isl_basic_map_detect_equalities(bmap);
 	if (!bmap || !dom)
 		goto error;
 
