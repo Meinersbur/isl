@@ -1855,3 +1855,91 @@ int isl_set_fast_is_disjoint(struct isl_set *set1, struct isl_set *set2)
 	return isl_map_fast_is_disjoint((struct isl_map *)set1,
 					(struct isl_map *)set2);
 }
+
+/* Remove divs that are not strictly needed.
+ * In particular, if a div only occurs positively (or negatively)
+ * in constraints, then it can simply be dropped.
+ * Also, if a div occurs only occurs in two constraints and if moreover
+ * those two constraints are opposite to each other, except for the constant
+ * term and if the sum of the constant terms is such that for any value
+ * of the other values, there is always at least one integer value of the
+ * div, i.e., if one plus this sum is greater than or equal to
+ * the (absolute value) of the coefficent of the div in the constraints,
+ * then we can also simply drop the div.
+ */
+struct isl_basic_map *isl_basic_map_drop_redundant_divs(
+	struct isl_basic_map *bmap)
+{
+	int i, j;
+	unsigned off;
+
+	if (!bmap)
+		goto error;
+
+	off = isl_dim_total(bmap->dim);
+
+	for (i = 0; i < bmap->n_div; ++i) {
+		int pos, neg;
+		int last_pos, last_neg;
+		int redundant;
+
+		if (!isl_int_is_zero(bmap->div[i][0]))
+			continue;
+		for (j = 0; j < bmap->n_eq; ++j)
+			if (!isl_int_is_zero(bmap->eq[j][1 + off + i]))
+				break;
+		if (j < bmap->n_eq)
+			continue;
+		pos = neg = 0;
+		for (j = 0; j < bmap->n_ineq; ++j) {
+			if (isl_int_is_pos(bmap->ineq[j][1 + off + i])) {
+				last_pos = j;
+				++pos;
+			}
+			if (isl_int_is_neg(bmap->ineq[j][1 + off + i])) {
+				last_neg = j;
+				++neg;
+			}
+		}
+		if (pos * neg == 0) {
+			for (j = bmap->n_ineq - 1; j >= 0; --j)
+				if (!isl_int_is_zero(bmap->ineq[j][1+off+i]))
+					isl_basic_map_drop_inequality(bmap, j);
+			bmap = isl_basic_map_drop_div(bmap, i);
+			return isl_basic_map_drop_redundant_divs(bmap);
+		}
+		if (pos * neg != 1)
+			continue;
+		if (!isl_seq_is_neg(bmap->ineq[last_pos] + 1,
+				    bmap->ineq[last_neg] + 1,
+				    off + bmap->n_div))
+			continue;
+
+		isl_int_add(bmap->ineq[last_pos][0],
+			    bmap->ineq[last_pos][0], bmap->ineq[last_neg][0]);
+		isl_int_add_ui(bmap->ineq[last_pos][0],
+			       bmap->ineq[last_pos][0], 1);
+		redundant = isl_int_ge(bmap->ineq[last_pos][0],
+				bmap->ineq[last_pos][1+off+i]);
+		isl_int_sub_ui(bmap->ineq[last_pos][0],
+			       bmap->ineq[last_pos][0], 1);
+		isl_int_sub(bmap->ineq[last_pos][0],
+			    bmap->ineq[last_pos][0], bmap->ineq[last_neg][0]);
+		if (!redundant)
+			continue;
+		if (last_pos > last_neg) {
+			isl_basic_map_drop_inequality(bmap, last_pos);
+			isl_basic_map_drop_inequality(bmap, last_neg);
+		} else {
+			isl_basic_map_drop_inequality(bmap, last_neg);
+			isl_basic_map_drop_inequality(bmap, last_pos);
+		}
+		bmap = isl_basic_map_drop_div(bmap, i);
+		return isl_basic_map_drop_redundant_divs(bmap);
+	}
+
+	return bmap;
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}

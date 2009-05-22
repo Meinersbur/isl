@@ -2944,6 +2944,11 @@ error:
 	return NULL;
 }
 
+/* If bmap contains any unknown divs, then compute explicit
+ * expressions for them.  However, this computation may be
+ * quite expensive, so first try to remove divs that aren't
+ * strictly needed.
+ */
 struct isl_map *isl_basic_map_compute_divs(struct isl_basic_map *bmap)
 {
 	int i;
@@ -2954,11 +2959,22 @@ struct isl_map *isl_basic_map_compute_divs(struct isl_basic_map *bmap)
 	off = isl_dim_total(bmap->dim);
 	for (i = 0; i < bmap->n_div; ++i) {
 		if (isl_int_is_zero(bmap->div[i][0]))
-			return isl_pip_basic_map_compute_divs(bmap);
+			break;
 		isl_assert(bmap->ctx, isl_int_is_zero(bmap->div[i][1+1+off+i]),
 				goto error);
 	}
-	return isl_map_from_basic_map(bmap);
+	if (i == bmap->n_div)
+		return isl_map_from_basic_map(bmap);
+	bmap = isl_basic_map_drop_redundant_divs(bmap);
+	if (!bmap)
+		goto error;
+	for (i = 0; i < bmap->n_div; ++i)
+		if (isl_int_is_zero(bmap->div[i][0]))
+			break;
+	if (i == bmap->n_div)
+		return isl_map_from_basic_map(bmap);
+	struct isl_map *map = isl_pip_basic_map_compute_divs(bmap);
+	return map;
 error:
 	isl_basic_map_free(bmap);
 	return NULL;

@@ -106,3 +106,6 @@ struct isl_basic_set *isl_basic_set_eliminate_vars(
 
 int isl_basic_set_constraint_is_redundant(struct isl_basic_set **bset,
 	isl_int *c, isl_int *opt_n, isl_int *opt_d);
+
+struct isl_basic_map *isl_basic_map_drop_redundant_divs(
+	struct isl_basic_map *bmap);
