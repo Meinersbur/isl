@@ -49,6 +49,13 @@ void isl_seq_scale_down(isl_int *dst, isl_int *src, isl_int m, unsigned len)
 		isl_int_divexact(dst[i], src[i], m);
 }
 
+void isl_seq_fdiv_r(isl_int *dst, isl_int *src, isl_int m, unsigned len)
+{
+	int i;
+	for (i = 0; i < len; ++i)
+		isl_int_fdiv_r(dst[i], src[i], m);
+}
+
 void isl_seq_combine(isl_int *dst, isl_int m1, isl_int *src1,
 			isl_int m2, isl_int *src2, unsigned len)
 {
