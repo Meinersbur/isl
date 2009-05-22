@@ -2090,9 +2090,15 @@ struct isl_basic_map *isl_basic_map_drop_redundant_divs(
 		isl_int_sub(bmap->ineq[last_pos][0],
 			    bmap->ineq[last_pos][0], bmap->ineq[last_neg][0]);
 		if (!redundant) {
-			pairs[i] = 0;
-			--n;
-			continue;
+			if (!ok_to_set_div_from_bound(bmap, i, last_pos)) {
+				pairs[i] = 0;
+				--n;
+				continue;
+			}
+			bmap = set_div_from_lower_bound(bmap, i, last_pos);
+			bmap = isl_basic_map_simplify(bmap);
+			free(pairs);
+			return isl_basic_map_drop_redundant_divs(bmap);
 		}
 		if (last_pos > last_neg) {
 			isl_basic_map_drop_inequality(bmap, last_pos);
