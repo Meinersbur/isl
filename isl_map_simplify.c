@@ -1856,6 +1856,159 @@ int isl_set_fast_is_disjoint(struct isl_set *set1, struct isl_set *set2)
 					(struct isl_map *)set2);
 }
 
+/* Given a lower and an upper bound on div i, construct an inequality
+ * that when nonnegative ensures that this pair of bounds always allows
+ * for an integer value of the given div.
+ * The lower bound is inequality l, while the upper bound is inequality u.
+ * The constructed inequality is stored in ineq.
+ * g, fl, fu are temporary scalars.
+ *
+ * Let the upper bound be
+ *
+ *	-n_u a + e_u >= 0
+ *
+ * and the lower bound
+ *
+ *	n_l a + e_l >= 0
+ *
+ * Let n_u = f_u g and n_l = f_l g, with g = gcd(n_u, n_l).
+ * We have
+ *
+ *	- f_u e_l <= f_u f_l g a <= f_l e_u
+ *
+ * Since all variables are integer valued, this is equivalent to
+ *
+ *	- f_u e_l - (f_u - 1) <= f_u f_l g a <= f_l e_u + (f_l - 1)
+ *
+ * If this interval is at least f_u f_l g, then it contains at least
+ * one integer value for a.
+ * That is, the test constraint is
+ *
+ *	f_l e_u + f_u e_l + f_l - 1 + f_u - 1 + 1 >= f_u f_l g
+ */
+static void construct_test_ineq(struct isl_basic_map *bmap, int i,
+	int l, int u, isl_int *ineq, isl_int g, isl_int fl, isl_int fu)
+{
+	unsigned dim;
+	dim = isl_dim_total(bmap->dim);
+
+	isl_int_gcd(g, bmap->ineq[l][1 + dim + i], bmap->ineq[u][1 + dim + i]);
+	isl_int_divexact(fl, bmap->ineq[l][1 + dim + i], g);
+	isl_int_divexact(fu, bmap->ineq[u][1 + dim + i], g);
+	isl_int_neg(fu, fu);
+	isl_seq_combine(ineq, fl, bmap->ineq[u], fu, bmap->ineq[l],
+			1 + dim + bmap->n_div);
+	isl_int_add(ineq[0], ineq[0], fl);
+	isl_int_add(ineq[0], ineq[0], fu);
+	isl_int_sub_ui(ineq[0], ineq[0], 1);
+	isl_int_mul(g, g, fl);
+	isl_int_mul(g, g, fu);
+	isl_int_sub(ineq[0], ineq[0], g);
+}
+
+/* Remove more kinds of divs that are not strictly needed.
+ * In particular, if all pairs of lower and upper bounds on a div
+ * are such that they allow at least one integer value of the div,
+ * the we can eliminate the div using Fourier-Motzkin without
+ * introducing any spurious solutions.
+ */
+static struct isl_basic_map *drop_more_redundant_divs(
+	struct isl_basic_map *bmap, int *pairs, int n)
+{
+	struct isl_ctx *ctx = NULL;
+	struct isl_tab *tab = NULL;
+	struct isl_vec *vec = NULL;
+	unsigned dim;
+	int remove = -1;
+	isl_int g, fl, fu;
+
+	isl_int_init(g);
+	isl_int_init(fl);
+	isl_int_init(fu);
+
+	if (!bmap)
+		goto error;
+
+	ctx = bmap->ctx;
+
+	dim = isl_dim_total(bmap->dim);
+	vec = isl_vec_alloc(ctx, 1 + dim + bmap->n_div);
+	if (!vec)
+		goto error;
+
+	tab = isl_tab_from_basic_map(bmap);
+
+	while (n > 0) {
+		int i, l, u;
+		int best = -1;
+		enum isl_lp_result res;
+
+		for (i = 0; i < bmap->n_div; ++i) {
+			if (!pairs[i])
+				continue;
+			if (best >= 0 && pairs[best] <= pairs[i])
+				continue;
+			best = i;
+		}
+
+		i = best;
+		for (l = 0; l < bmap->n_ineq; ++l) {
+			if (!isl_int_is_pos(bmap->ineq[l][1 + dim + i]))
+				continue;
+			for (u = 0; u < bmap->n_ineq; ++u) {
+				if (!isl_int_is_neg(bmap->ineq[u][1 + dim + i]))
+					continue;
+				construct_test_ineq(bmap, i, l, u,
+						    vec->block.data, g, fl, fu);
+				res = isl_tab_min(ctx, tab, vec->block.data,
+						  ctx->one, &g, NULL);
+				if (res == isl_lp_error)
+					goto error;
+				if (res == isl_lp_empty) {
+					bmap = isl_basic_map_set_to_empty(bmap);
+					break;
+				}
+				if (res != isl_lp_ok || isl_int_is_neg(g))
+					break;
+			}
+			if (u < bmap->n_ineq)
+				break;
+		}
+		if (l == bmap->n_ineq) {
+			remove = i;
+			break;
+		}
+		pairs[i] = 0;
+		--n;
+	}
+
+	isl_tab_free(ctx, tab);
+	isl_vec_free(ctx, vec);
+
+	isl_int_clear(g);
+	isl_int_clear(fl);
+	isl_int_clear(fu);
+
+	free(pairs);
+
+	if (remove < 0)
+		return bmap;
+
+	bmap = isl_basic_map_remove(bmap, isl_dim_div, remove, 1);
+	return isl_basic_map_drop_redundant_divs(bmap);
+error:
+	free(pairs);
+	isl_basic_map_free(bmap);
+	if (ctx) {
+		isl_tab_free(ctx, tab);
+		isl_vec_free(ctx, vec);
+	}
+	isl_int_clear(g);
+	isl_int_clear(fl);
+	isl_int_clear(fu);
+	return NULL;
+}
+
 /* Remove divs that are not strictly needed.
  * In particular, if a div only occurs positively (or negatively)
  * in constraints, then it can simply be dropped.
@@ -1866,17 +2019,25 @@ int isl_set_fast_is_disjoint(struct isl_set *set1, struct isl_set *set2)
  * div, i.e., if one plus this sum is greater than or equal to
  * the (absolute value) of the coefficent of the div in the constraints,
  * then we can also simply drop the div.
+ *
+ * If any divs are left after these simple checks then we move on
+ * to more complicated cases in drop_more_redundant_divs.
  */
 struct isl_basic_map *isl_basic_map_drop_redundant_divs(
 	struct isl_basic_map *bmap)
 {
 	int i, j;
 	unsigned off;
+	int *pairs = NULL;
+	int n = 0;
 
 	if (!bmap)
 		goto error;
 
 	off = isl_dim_total(bmap->dim);
+	pairs = isl_calloc_array(bmap->ctx, int, bmap->n_div);
+	if (!pairs)
+		goto error;
 
 	for (i = 0; i < bmap->n_div; ++i) {
 		int pos, neg;
@@ -1890,6 +2051,7 @@ struct isl_basic_map *isl_basic_map_drop_redundant_divs(
 				break;
 		if (j < bmap->n_eq)
 			continue;
+		++n;
 		pos = neg = 0;
 		for (j = 0; j < bmap->n_ineq; ++j) {
 			if (isl_int_is_pos(bmap->ineq[j][1 + off + i])) {
@@ -1901,14 +2063,16 @@ struct isl_basic_map *isl_basic_map_drop_redundant_divs(
 				++neg;
 			}
 		}
-		if (pos * neg == 0) {
+		pairs[i] = pos * neg;
+		if (pairs[i] == 0) {
 			for (j = bmap->n_ineq - 1; j >= 0; --j)
 				if (!isl_int_is_zero(bmap->ineq[j][1+off+i]))
 					isl_basic_map_drop_inequality(bmap, j);
 			bmap = isl_basic_map_drop_div(bmap, i);
+			free(pairs);
 			return isl_basic_map_drop_redundant_divs(bmap);
 		}
-		if (pos * neg != 1)
+		if (pairs[i] != 1)
 			continue;
 		if (!isl_seq_is_neg(bmap->ineq[last_pos] + 1,
 				    bmap->ineq[last_neg] + 1,
@@ -1925,8 +2089,11 @@ struct isl_basic_map *isl_basic_map_drop_redundant_divs(
 			       bmap->ineq[last_pos][0], 1);
 		isl_int_sub(bmap->ineq[last_pos][0],
 			    bmap->ineq[last_pos][0], bmap->ineq[last_neg][0]);
-		if (!redundant)
+		if (!redundant) {
+			pairs[i] = 0;
+			--n;
 			continue;
+		}
 		if (last_pos > last_neg) {
 			isl_basic_map_drop_inequality(bmap, last_pos);
 			isl_basic_map_drop_inequality(bmap, last_neg);
@@ -1935,11 +2102,17 @@ struct isl_basic_map *isl_basic_map_drop_redundant_divs(
 			isl_basic_map_drop_inequality(bmap, last_pos);
 		}
 		bmap = isl_basic_map_drop_div(bmap, i);
+		free(pairs);
 		return isl_basic_map_drop_redundant_divs(bmap);
 	}
 
+	if (n > 0)
+		return drop_more_redundant_divs(bmap, pairs, n);
+
+	free(pairs);
 	return bmap;
 error:
+	free(pairs);
 	isl_basic_map_free(bmap);
 	return NULL;
 }
