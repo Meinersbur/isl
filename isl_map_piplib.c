@@ -387,6 +387,13 @@ PipMatrix *isl_basic_map_to_pip(struct isl_basic_map *bmap, unsigned pip_param,
 	return M;
 }
 
+PipMatrix *isl_basic_set_to_pip(struct isl_basic_set *bset, unsigned pip_param,
+			 unsigned extra_front, unsigned extra_back)
+{
+	return isl_basic_map_to_pip((struct isl_basic_map *)bset,
+					pip_param, extra_front, extra_back);
+}
+
 static struct isl_map *extremum_on(
 		struct isl_basic_map *bmap, struct isl_basic_set *dom,
 		struct isl_set **empty, int max)
@@ -470,7 +477,13 @@ struct isl_map *isl_pip_basic_map_lexmin(
 	return extremum_on(bmap, dom, empty, 0);
 }
 
-struct isl_map *isl_pip_basic_map_compute_divs(struct isl_basic_map *bmap)
+/* Project the given basic set onto its parameter domain, possibly introducing
+ * new, explicit, existential variables in the constraints.
+ * The input has parameters and output variables.
+ * The output has the same parameters, but no output variables, only
+ * explicit existentially quantified variables.
+ */
+static struct isl_set *compute_divs(struct isl_basic_set *bset)
 {
 	PipMatrix *domain = NULL, *context = NULL;
 	PipOptions	*options;
@@ -481,21 +494,17 @@ struct isl_map *isl_pip_basic_map_compute_divs(struct isl_basic_map *bmap)
 	struct isl_set	*set;
 	struct isl_basic_set	*dom;
 	unsigned	 nparam;
-	unsigned	 n_in;
-	unsigned	 n_out;
 
-	if (!bmap)
+	if (!bset)
 		goto error;
 
-	ctx = bmap->ctx;
-	nparam = isl_basic_map_n_param(bmap);
-	n_in = isl_basic_map_n_in(bmap);
-	n_out = isl_basic_map_n_out(bmap);
+	ctx = bset->ctx;
+	nparam = isl_basic_set_n_param(bset);
 
-	domain = isl_basic_map_to_pip(bmap, nparam + n_in + n_out, 0, 0);
+	domain = isl_basic_set_to_pip(bset, nparam, 0, 0);
 	if (!domain)
 		goto error;
-	context = pip_matrix_alloc(0, nparam + n_in + n_out + 2);
+	context = pip_matrix_alloc(0, nparam + 2);
 	if (!context)
 		goto error;
 
@@ -505,27 +514,91 @@ struct isl_map *isl_pip_basic_map_compute_divs(struct isl_basic_map *bmap)
 	options->Urs_parms = -1;
 	sol = pip_solve(domain, context, -1, options);
 
-	dom = isl_basic_set_alloc(ctx, nparam, n_in + n_out, 0, 0, 0);
-	map = isl_map_from_quast(ctx, sol,
-		isl_dim_reverse(isl_dim_copy(dom->dim)), dom, NULL);
+	dom = isl_basic_set_alloc(ctx, nparam, 0, 0, 0, 0);
+	map = isl_map_from_quast(ctx, sol, isl_dim_copy(dom->dim), dom, NULL);
+	set = (struct isl_set *)map;
 
 	pip_quast_free(sol);
 	pip_options_free(options);
 	pip_matrix_free(domain);
 	pip_matrix_free(context);
 
-	dim = isl_dim_copy(bmap->dim);
-	isl_basic_map_free(bmap);
+	isl_basic_set_free(bset);
 
-	set = isl_map_domain(map);
-
-	return isl_map_from_set(set, dim);
+	return set;
 error:
 	if (domain)
 		pip_matrix_free(domain);
 	if (context)
 		pip_matrix_free(context);
 	isl_basic_set_free(dom);
+	isl_basic_set_free(bset);
+	return NULL;
+}
+
+static struct isl_map *isl_map_reset_dim(struct isl_map *map,
+	struct isl_dim *dim)
+{
+	int i;
+
+	if (!map || !dim)
+		goto error;
+
+	for (i = 0; i < map->n; ++i) {
+		isl_dim_free(map->p[i]->dim);
+		map->p[i]->dim = isl_dim_copy(dim);
+	}
+	isl_dim_free(map->dim);
+	map->dim = dim;
+
+	return map;
+error:
+	isl_map_free(map);
+	isl_dim_free(dim);
+	return NULL;
+}
+
+/* Compute an explicit representation for all the existentially
+ * quantified variables.
+ * The input and output dimensions are first turned into parameters
+ * and the existential variables into output dimensions.
+ * compute_divs then returns a map with the same parameters and
+ * no input or output dimensions and the dimension specification
+ * is reset to that of the input.
+ */
+struct isl_map *isl_pip_basic_map_compute_divs(struct isl_basic_map *bmap)
+{
+	struct isl_basic_set *bset;
+	struct isl_set *set;
+	struct isl_map *map;
+	struct isl_dim *dim, *orig_dim = NULL;
+	unsigned	 nparam;
+	unsigned	 n_in;
+	unsigned	 n_out;
+
+	bmap = isl_basic_map_cow(bmap);
+	if (!bmap)
+		return NULL;
+
+	nparam = isl_basic_map_dim(bmap, isl_dim_param);
+	n_in = isl_basic_map_dim(bmap, isl_dim_in);
+	n_out = isl_basic_map_dim(bmap, isl_dim_out);
+	dim = isl_dim_set_alloc(bmap->ctx, nparam + n_in + n_out, bmap->n_div);
+	if (!dim)
+		goto error;
+
+	orig_dim = bmap->dim;
+	bmap->dim = dim;
+	bmap->extra -= bmap->n_div;
+	bmap->n_div = 0;
+	bset = (struct isl_basic_set *)bmap;
+
+	set = compute_divs(bset);
+	map = (struct isl_map *)set;
+	map = isl_map_reset_dim(map, orig_dim);
+
+	return map;
+error:
 	isl_basic_map_free(bmap);
 	return NULL;
 }
