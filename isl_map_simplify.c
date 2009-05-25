@@ -1856,6 +1856,104 @@ int isl_set_fast_is_disjoint(struct isl_set *set1, struct isl_set *set2)
 					(struct isl_map *)set2);
 }
 
+/* Check if we can combine a given div with lower bound l and upper
+ * bound u with some other div and if so return that other div.
+ * Otherwise return -1.
+ *
+ * We first check that
+ *	- the bounds are opposites of each other (expect for the constant
+ *	  term
+ *	- the bounds do not reference any other div
+ *	- no div is defined in terms of this div
+ *
+ * Let m be the size of the range allowed on the div by the bounds.
+ * That is, the bounds are of the form
+ *
+ *	e <= a <= e + m - 1
+ *
+ * with e some expression in the other variables.
+ * We look for another div b such that no third div is defined in terms
+ * of this second div b and such that in any constraint that contains
+ * a (except for the given lower and upper bound), also contains b
+ * with a coefficient that is m times that of b.
+ * That is, all constraints (execpt for the lower and upper bound)
+ * are of the form
+ *
+ *	e + f (a + m b) >= 0
+ *
+ * If so, we return b so that "a + m b" can be replaced by
+ * a single div "c = a + m b".
+ */
+static int div_find_coalesce(struct isl_basic_map *bmap, int *pairs,
+	unsigned div, unsigned l, unsigned u)
+{
+	int i, j;
+	unsigned dim;
+	int coalesce = -1;
+
+	if (bmap->n_div <= 1)
+		return -1;
+	dim = isl_dim_total(bmap->dim);
+	if (isl_seq_first_non_zero(bmap->ineq[l] + 1 + dim, div) != -1)
+		return -1;
+	if (isl_seq_first_non_zero(bmap->ineq[l] + 1 + dim + div + 1,
+				   bmap->n_div - div - 1) != -1)
+		return -1;
+	if (!isl_seq_is_neg(bmap->ineq[l] + 1, bmap->ineq[u] + 1,
+			    dim + bmap->n_div))
+		return -1;
+
+	for (i = 0; i < bmap->n_div; ++i) {
+		if (isl_int_is_zero(bmap->div[i][0]))
+			continue;
+		if (!isl_int_is_zero(bmap->div[i][1 + 1 + dim + div]))
+			return -1;
+	}
+
+	isl_int_add(bmap->ineq[l][0], bmap->ineq[l][0], bmap->ineq[u][0]);
+	isl_int_add_ui(bmap->ineq[l][0], bmap->ineq[l][0], 1);
+	for (i = 0; i < bmap->n_div; ++i) {
+		if (i == div)
+			continue;
+		if (!pairs[i])
+			continue;
+		for (j = 0; j < bmap->n_div; ++j) {
+			if (isl_int_is_zero(bmap->div[j][0]))
+				continue;
+			if (!isl_int_is_zero(bmap->div[j][1 + 1 + dim + i]))
+				break;
+		}
+		if (j < bmap->n_div)
+			continue;
+		for (j = 0; j < bmap->n_ineq; ++j) {
+			int valid;
+			if (j == l || j == u)
+				continue;
+			if (isl_int_is_zero(bmap->ineq[j][1 + dim + div]))
+				continue;
+			if (isl_int_is_zero(bmap->ineq[j][1 + dim + i]))
+				break;
+			isl_int_mul(bmap->ineq[j][1 + dim + div],
+				    bmap->ineq[j][1 + dim + div],
+				    bmap->ineq[l][0]);
+			valid = isl_int_eq(bmap->ineq[j][1 + dim + div],
+					   bmap->ineq[j][1 + dim + i]);
+			isl_int_divexact(bmap->ineq[j][1 + dim + div],
+					 bmap->ineq[j][1 + dim + div],
+					 bmap->ineq[l][0]);
+			if (!valid)
+				break;
+		}
+		if (j < bmap->n_ineq)
+			continue;
+		coalesce = i;
+		break;
+	}
+	isl_int_sub_ui(bmap->ineq[l][0], bmap->ineq[l][0], 1);
+	isl_int_sub(bmap->ineq[l][0], bmap->ineq[l][0], bmap->ineq[u][0]);
+	return coalesce;
+}
+
 /* Given a lower and an upper bound on div i, construct an inequality
  * that when nonnegative ensures that this pair of bounds always allows
  * for an integer value of the given div.
@@ -2009,6 +2107,147 @@ error:
 	return NULL;
 }
 
+/* Given a pair of divs div1 and div2 such that, expect for the lower bound l
+ * and the upper bound u, div1 always occurs together with div2 in the form 
+ * (div1 + m div2), where m is the constant range on the variable div1
+ * allowed by l and u, replace the pair div1 and div2 by a single
+ * div that is equal to div1 + m div2.
+ *
+ * The new div will appear in the location that contains div2.
+ * We need to modify all constraints that contain
+ * div2 = (div - div1) / m
+ * (If a constraint does not contain div2, it will also not contain div1.)
+ * If the constraint also contains div1, then we know they appear
+ * as f (div1 + m div2) and we can simply replace (div1 + m div2) by div,
+ * i.e., the coefficient of div is f.
+ *
+ * Otherwise, we first need to introduce div1 into the constraint.
+ * Let the l be
+ *
+ *	div1 + f >=0
+ *
+ * and u
+ *
+ *	-div1 + f' >= 0
+ *
+ * A lower bound on div2
+ *
+ *	n div2 + t >= 0
+ *
+ * can be replaced by
+ *
+ *	(n * (m div 2 + div1) + m t + n f)/g >= 0
+ *
+ * with g = gcd(m,n).
+ * An upper bound
+ *
+ *	-n div2 + t >= 0
+ *
+ * can be replaced by
+ *
+ *	(-n * (m div2 + div1) + m t + n f')/g >= 0
+ *
+ * These constraint are those that we would obtain from eliminating
+ * div1 using Fourier-Motzkin.
+ *
+ * After all constraints have been modified, we drop the lower and upper
+ * bound and then drop div1.
+ */
+static struct isl_basic_map *coalesce_divs(struct isl_basic_map *bmap,
+	unsigned div1, unsigned div2, unsigned l, unsigned u)
+{
+	isl_int a;
+	isl_int b;
+	isl_int m;
+	unsigned dim, total;
+	int i;
+
+	dim = isl_dim_total(bmap->dim);
+	total = 1 + dim + bmap->n_div;
+
+	isl_int_init(a);
+	isl_int_init(b);
+	isl_int_init(m);
+	isl_int_add(m, bmap->ineq[l][0], bmap->ineq[u][0]);
+	isl_int_add_ui(m, m, 1);
+
+	for (i = 0; i < bmap->n_ineq; ++i) {
+		if (i == l || i == u)
+			continue;
+		if (isl_int_is_zero(bmap->ineq[i][1 + dim + div2]))
+			continue;
+		if (isl_int_is_zero(bmap->ineq[i][1 + dim + div1])) {
+			isl_int_gcd(b, m, bmap->ineq[i][1 + dim + div2]);
+			isl_int_divexact(a, m, b);
+			isl_int_divexact(b, bmap->ineq[i][1 + dim + div2], b);
+			if (isl_int_is_pos(b)) {
+				isl_seq_combine(bmap->ineq[i], a, bmap->ineq[i],
+						b, bmap->ineq[l], total);
+			} else {
+				isl_int_neg(b, b);
+				isl_seq_combine(bmap->ineq[i], a, bmap->ineq[i],
+						b, bmap->ineq[u], total);
+			}
+		}
+		isl_int_set(bmap->ineq[i][1 + dim + div2],
+			    bmap->ineq[i][1 + dim + div1]);
+		isl_int_set_si(bmap->ineq[i][1 + dim + div1], 0);
+	}
+
+	isl_int_clear(a);
+	isl_int_clear(b);
+	isl_int_clear(m);
+	if (l > u) {
+		isl_basic_map_drop_inequality(bmap, l);
+		isl_basic_map_drop_inequality(bmap, u);
+	} else {
+		isl_basic_map_drop_inequality(bmap, u);
+		isl_basic_map_drop_inequality(bmap, l);
+	}
+	bmap = isl_basic_map_drop_div(bmap, div1);
+	return bmap;
+}
+
+/* First check if we can coalesce any pair of divs and
+ * then continue with dropping more redundant divs.
+ *
+ * We loop over all pairs of lower and upper bounds on a div
+ * with coefficient 1 and -1, respectively, check if there
+ * is any other div "c" with which we can coalesce the div
+ * and if so, perform the coalescing.
+ */
+static struct isl_basic_map *coalesce_or_drop_more_redundant_divs(
+	struct isl_basic_map *bmap, int *pairs, int n)
+{
+	int i, l, u;
+	unsigned dim;
+
+	dim = isl_dim_total(bmap->dim);
+
+	for (i = 0; i < bmap->n_div; ++i) {
+		if (!pairs[i])
+			continue;
+		for (l = 0; l < bmap->n_ineq; ++l) {
+			if (!isl_int_is_one(bmap->ineq[l][1 + dim + i]))
+				continue;
+			for (u = 0; u < bmap->n_ineq; ++u) {
+				int c;
+
+				if (!isl_int_is_negone(bmap->ineq[u][1+dim+i]))
+					continue;
+				c = div_find_coalesce(bmap, pairs, i, l, u);
+				if (c < 0)
+					continue;
+				free(pairs);
+				bmap = coalesce_divs(bmap, i, c, l, u);
+				return isl_basic_map_drop_redundant_divs(bmap);
+			}
+		}
+	}
+
+	return drop_more_redundant_divs(bmap, pairs, n);
+}
+
 /* Remove divs that are not strictly needed.
  * In particular, if a div only occurs positively (or negatively)
  * in constraints, then it can simply be dropped.
@@ -2113,7 +2352,7 @@ struct isl_basic_map *isl_basic_map_drop_redundant_divs(
 	}
 
 	if (n > 0)
-		return drop_more_redundant_divs(bmap, pairs, n);
+		return coalesce_or_drop_more_redundant_divs(bmap, pairs, n);
 
 	free(pairs);
 	return bmap;
