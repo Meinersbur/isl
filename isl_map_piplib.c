@@ -1,9 +1,11 @@
 #include "isl_set.h"
 #include "isl_map.h"
+#include "isl_mat.h"
 #include "isl_seq.h"
 #include "isl_piplib.h"
 #include "isl_map_piplib.h"
 #include "isl_map_private.h"
+#include "isl_equalities.h"
 
 static void copy_values_from(isl_int *dst, Entier *src, unsigned n)
 {
@@ -483,7 +485,7 @@ struct isl_map *isl_pip_basic_map_lexmin(
  * The output has the same parameters, but no output variables, only
  * explicit existentially quantified variables.
  */
-static struct isl_set *compute_divs(struct isl_basic_set *bset)
+static struct isl_set *compute_divs_no_eq(struct isl_basic_set *bset)
 {
 	PipMatrix *domain = NULL, *context = NULL;
 	PipOptions	*options;
@@ -556,6 +558,235 @@ error:
 	isl_map_free(map);
 	isl_dim_free(dim);
 	return NULL;
+}
+
+static struct isl_set *isl_set_reset_dim(struct isl_set *set,
+	struct isl_dim *dim)
+{
+	return (struct isl_set *) isl_map_reset_dim((struct isl_map *)set, dim);
+}
+
+/* Given a matrix M (mat) and a size n (size), replace mat
+ * by the matrix
+ *
+ *		[ M 0 ]
+ *		[ 0 I ]
+ *
+ * where I is an n x n identity matrix.
+ */
+static struct isl_mat *append_identity(struct isl_ctx *ctx,
+	struct isl_mat *mat, unsigned size)
+{
+	int i;
+	unsigned n_row, n_col;
+
+	n_row = mat->n_row;
+	n_col = mat->n_col;
+	mat = isl_mat_extend(ctx, mat, n_row + size, n_col + size);
+	if (!mat)
+		return NULL;
+	for (i = 0; i < n_row; ++i)
+		isl_seq_clr(mat->row[i] + n_col, size);
+	for (i = 0; i < size; ++i) {
+		isl_seq_clr(mat->row[n_row + i], n_col + size);
+		isl_int_set_si(mat->row[n_row + i][n_col + i], 1);
+	}
+	return mat;
+}
+
+/* Apply a preimage specified by "mat" on the parameters of "bset".
+ */
+static struct isl_basic_set *basic_set_parameter_preimage(
+	struct isl_basic_set *bset, struct isl_mat *mat)
+{
+	unsigned nparam, n_out;
+
+	if (!bset || !mat)
+		goto error;
+
+	bset->dim = isl_dim_cow(bset->dim);
+	if (!bset->dim)
+		goto error;
+
+	nparam = isl_basic_set_dim(bset, isl_dim_param);
+	n_out = isl_basic_set_dim(bset, isl_dim_set);
+
+	isl_assert(bset->ctx, mat->n_row == 1 + nparam, goto error);
+
+	mat = append_identity(bset->ctx, mat, n_out);
+	if (!mat)
+		goto error;
+
+	bset->dim->nparam = 0;
+	bset->dim->n_out += nparam;
+	bset = isl_basic_set_preimage(bset, mat);
+	if (bset) {
+		bset->dim->nparam = bset->dim->n_out - n_out;
+		bset->dim->n_out = n_out;
+	}
+	return bset;
+error:
+	isl_mat_free(bset ? bset->ctx : NULL, mat);
+	isl_basic_set_free(bset);
+	return NULL;
+}
+
+/* Apply a preimage specified by "mat" on the parameters of "set".
+ */
+static struct isl_set *set_parameter_preimage(
+	struct isl_set *set, struct isl_mat *mat)
+{
+	struct isl_dim *dim = NULL;
+	unsigned nparam, n_out;
+
+	if (!set || !mat)
+		goto error;
+
+	dim = isl_dim_copy(set->dim);
+	dim = isl_dim_cow(dim);
+	if (!dim)
+		goto error;
+
+	nparam = isl_set_dim(set, isl_dim_param);
+	n_out = isl_set_dim(set, isl_dim_set);
+
+	isl_assert(set->ctx, mat->n_row == 1 + nparam, goto error);
+
+	mat = append_identity(set->ctx, mat, n_out);
+	if (!mat)
+		goto error;
+
+	dim->nparam = 0;
+	dim->n_out += nparam;
+	isl_set_reset_dim(set, dim);
+	set = isl_set_preimage(set, mat);
+	if (!set)
+		goto error2;
+	dim = isl_dim_copy(set->dim);
+	dim = isl_dim_cow(dim);
+	if (!dim)
+		goto error2;
+	dim->nparam = dim->n_out - n_out;
+	dim->n_out = n_out;
+	isl_set_reset_dim(set, dim);
+	return set;
+error:
+	isl_dim_free(dim);
+	isl_mat_free(set ? set->ctx : NULL, mat);
+error2:
+	isl_set_free(set);
+	return NULL;
+}
+
+/* Intersect the basic set "bset" with the affine space specified by the
+ * equalities in "eq".
+ */
+static struct isl_basic_set *basic_set_append_equalities(
+	struct isl_basic_set *bset, struct isl_mat *eq)
+{
+	int i, k;
+	unsigned len;
+
+	if (!bset || !eq)
+		goto error;
+
+	bset = isl_basic_set_extend_dim(bset, isl_dim_copy(bset->dim), 0,
+					eq->n_row, 0);
+	if (!bset)
+		goto error;
+
+	len = 1 + isl_dim_total(bset->dim) + bset->extra;
+	for (i = 0; i < eq->n_row; ++i) {
+		k = isl_basic_set_alloc_equality(bset);
+		if (k < 0)
+			goto error;
+		isl_seq_cpy(bset->eq[k], eq->row[i], eq->n_col);
+		isl_seq_clr(bset->eq[k] + eq->n_col, len - eq->n_col);
+	}
+	isl_mat_free(bset->ctx, eq);
+
+	return bset;
+error:
+	isl_mat_free(bset ? bset->ctx : NULL, eq);
+	isl_basic_set_free(bset);
+	return NULL;
+}
+
+/* Intersect the set "set" with the affine space specified by the
+ * equalities in "eq".
+ */
+static struct isl_set *set_append_equalities(struct isl_set *set,
+	struct isl_mat *eq)
+{
+	int i;
+
+	if (!set || !eq)
+		goto error;
+
+	for (i = 0; i < set->n; ++i) {
+		set->p[i] = basic_set_append_equalities(set->p[i],
+					isl_mat_copy(set->ctx, eq));
+		if (!set->p[i])
+			goto error;
+	}
+	isl_mat_free(set->ctx, eq);
+	return set;
+error:
+	isl_mat_free(set ? set->ctx : NULL, eq);
+	isl_set_free(set);
+	return NULL;
+}
+
+/* Project the given basic set onto its parameter domain, possibly introducing
+ * new, explicit, existential variables in the constraints.
+ * The input has parameters and output variables.
+ * The output has the same parameters, but no output variables, only
+ * explicit existentially quantified variables.
+ *
+ * The actual projection is performed by pip, but pip doesn't seem
+ * to like equalities very much, so we first remove the equalities
+ * among the parameters by performing a variable compression on
+ * the parameters.  Afterward, an inverse transformation is performed
+ * and the equalities among the parameters are inserted back in.
+ */
+static struct isl_set *compute_divs(struct isl_basic_set *bset)
+{
+	int i, j;
+	struct isl_mat *eq;
+	struct isl_mat *T, *T2;
+	struct isl_set *set;
+	unsigned nparam, n_out;
+
+	bset = isl_basic_set_cow(bset);
+	if (!bset)
+		return NULL;
+
+	if (bset->n_eq == 0)
+		return compute_divs_no_eq(bset);
+
+	isl_basic_set_gauss(bset, NULL);
+
+	nparam = isl_basic_set_dim(bset, isl_dim_param);
+	n_out = isl_basic_set_dim(bset, isl_dim_out);
+
+	for (i = 0, j = n_out - 1; i < bset->n_eq && j >= 0; --j) {
+		if (!isl_int_is_zero(bset->eq[i][1 + nparam + j]))
+			++i;
+	}
+	if (i == bset->n_eq)
+		return compute_divs_no_eq(bset);
+
+	eq = isl_mat_sub_alloc(bset->ctx, bset->eq, i, bset->n_eq - i,
+		0, 1 + nparam);
+	eq = isl_mat_cow(bset->ctx, eq);
+	T = isl_mat_variable_compression(bset->ctx,
+		isl_mat_copy(bset->ctx, eq), &T2);
+	bset = basic_set_parameter_preimage(bset, T);
+
+	set = compute_divs_no_eq(bset);
+	set = set_parameter_preimage(set, T2);
+	set = set_append_equalities(set, eq);
+	return set;
 }
 
 /* Compute an explicit representation for all the existentially
