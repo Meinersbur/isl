@@ -799,6 +799,45 @@ error:
 	return NULL;
 }
 
+/* Replace the variables x in the rows q by x' given by x = M x',
+ * with M the matrix mat.
+ *
+ * If the number of new variables is greater than the original
+ * number of variables, then the rows q have already been
+ * preextended.  If the new number is smaller, then the coefficients
+ * of the divs, which are not changed, need to be shifted down.
+ * The row q may be the equalities, the inequalities or the
+ * div expressions.  In the latter case, has_div is true and
+ * we need to take into account the extra denominator column.
+ */
+static int preimage(struct isl_ctx *ctx, isl_int **q, unsigned n,
+	unsigned n_div, int has_div, struct isl_mat *mat)
+{
+	int i;
+	struct isl_mat *t;
+	int e;
+
+	if (mat->n_col >= mat->n_row)
+		e = 0;
+	else
+		e = mat->n_row - mat->n_col;
+	if (has_div)
+		for (i = 0; i < n; ++i)
+			isl_int_mul(q[i][0], q[i][0], mat->row[0][0]);
+	t = isl_mat_sub_alloc(ctx, q, 0, n, has_div, mat->n_row);
+	t = isl_mat_product(ctx, t, mat);
+	if (!t)
+		return -1;
+	for (i = 0; i < n; ++i) {
+		isl_seq_swp_or_cpy(q[i] + has_div, t->row[i], t->n_col);
+		isl_seq_cpy(q[i] + has_div + t->n_col,
+			    q[i] + has_div + t->n_col + e, n_div);
+		isl_seq_clr(q[i] + has_div + t->n_col + n_div, e);
+	}
+	isl_mat_free(ctx, t);
+	return 0;
+}
+
 /* Replace the variables x in bset by x' given by x = M x', with
  * M the matrix mat.
  *
@@ -813,8 +852,6 @@ struct isl_basic_set *isl_basic_set_preimage(struct isl_basic_set *bset,
 	struct isl_mat *mat)
 {
 	struct isl_ctx *ctx;
-	struct isl_mat *t;
-	int i;
 
 	if (!bset || !mat)
 		goto error;
@@ -825,7 +862,6 @@ struct isl_basic_set *isl_basic_set_preimage(struct isl_basic_set *bset,
 		goto error;
 
 	isl_assert(ctx, bset->dim->nparam == 0, goto error);
-	isl_assert(ctx, bset->n_div == 0, goto error);
 	isl_assert(ctx, 1+bset->dim->n_out == mat->n_row, goto error);
 
 	if (mat->n_col > mat->n_row)
@@ -838,25 +874,16 @@ struct isl_basic_set *isl_basic_set_preimage(struct isl_basic_set *bset,
 		bset->dim->n_out -= mat->n_row - mat->n_col;
 	}
 
-	t = isl_mat_sub_alloc(ctx, bset->eq, 0, bset->n_eq, 0, mat->n_row);
-	t = isl_mat_product(ctx, t, isl_mat_copy(ctx, mat));
-	if (!t)
+	if (preimage(ctx, bset->eq, bset->n_eq, bset->n_div, 0,
+			isl_mat_copy(ctx, mat)) < 0)
 		goto error;
-	for (i = 0; i < bset->n_eq; ++i) {
-		isl_seq_swp_or_cpy(bset->eq[i], t->row[i], t->n_col);
-		isl_seq_clr(bset->eq[i]+t->n_col, bset->extra);
-	}
-	isl_mat_free(ctx, t);
 
-	t = isl_mat_sub_alloc(ctx, bset->ineq, 0, bset->n_ineq, 0, mat->n_row);
-	t = isl_mat_product(ctx, t, mat);
-	if (!t)
+	if (preimage(ctx, bset->ineq, bset->n_ineq, bset->n_div, 0,
+			isl_mat_copy(ctx, mat)) < 0)
+		goto error;
+
+	if (preimage(ctx, bset->div, bset->n_div, bset->n_div, 1, mat) < 0)
 		goto error2;
-	for (i = 0; i < bset->n_ineq; ++i) {
-		isl_seq_swp_or_cpy(bset->ineq[i], t->row[i], t->n_col);
-		isl_seq_clr(bset->ineq[i]+t->n_col, bset->extra);
-	}
-	isl_mat_free(ctx, t);
 
 	ISL_F_CLR(bset, ISL_BASIC_SET_NO_IMPLICIT);
 	ISL_F_CLR(bset, ISL_BASIC_SET_NO_REDUNDANT);
