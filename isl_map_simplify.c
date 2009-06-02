@@ -872,6 +872,92 @@ error:
 	return bmap;
 }
 
+static struct isl_basic_map *set_div_from_lower_bound(
+	struct isl_basic_map *bmap, int div, int ineq)
+{
+	unsigned total = 1 + isl_dim_total(bmap->dim);
+
+	isl_seq_neg(bmap->div[div] + 1, bmap->ineq[ineq], total + bmap->n_div);
+	isl_int_set(bmap->div[div][0], bmap->ineq[ineq][total + div]);
+	isl_int_add(bmap->div[div][1], bmap->div[div][1], bmap->div[div][0]);
+	isl_int_sub_ui(bmap->div[div][1], bmap->div[div][1], 1);
+	isl_int_set_si(bmap->div[div][1 + total + div], 0);
+
+	return bmap;
+}
+
+/* Check whether it is ok to define a div based on an inequality.
+ * To avoid the introduction of circular definitions of divs, we
+ * do not allow such a definition if the resulting expression would refer to
+ * any other undefined divs or if any known div is defined in
+ * terms of the unknown div.
+ */
+static int ok_to_set_div_from_bound(struct isl_basic_map *bmap,
+	int div, int ineq)
+{
+	int j;
+	unsigned total = 1 + isl_dim_total(bmap->dim);
+
+	/* Not defined in terms of unknown divs */
+	for (j = 0; j < bmap->n_div; ++j) {
+		if (div == j)
+			continue;
+		if (isl_int_is_zero(bmap->ineq[ineq][total + j]))
+			continue;
+		if (isl_int_is_zero(bmap->div[j][0]))
+			return 0;
+	}
+
+	/* No other div defined in terms of this one => avoid loops */
+	for (j = 0; j < bmap->n_div; ++j) {
+		if (div == j)
+			continue;
+		if (isl_int_is_zero(bmap->div[j][0]))
+			continue;
+		if (!isl_int_is_zero(bmap->div[j][1 + total + div]))
+			return 0;
+	}
+
+	return 1;
+}
+
+/* Given two constraints "k" and "l" that are opposite to each other,
+ * except for the constant term, check if we can use them
+ * to obtain an expression for one of the hitherto unknown divs.
+ * "sum" is the sum of the constant terms of the constraints.
+ * If this sum is strictly smaller than the coefficient of one
+ * of the divs, then this pair can be used define the div.
+ * To avoid the introduction of circular definitions of divs, we
+ * do not use the pair if the resulting expression would refer to
+ * any other undefined divs or if any known div is defined in
+ * terms of the unknown div.
+ */
+static struct isl_basic_map *check_for_div_constraints(
+	struct isl_basic_map *bmap, int k, int l, isl_int sum, int *progress)
+{
+	int i, j;
+	unsigned total = 1 + isl_dim_total(bmap->dim);
+
+	for (i = 0; i < bmap->n_div; ++i) {
+		if (!isl_int_is_zero(bmap->div[i][0]))
+			continue;
+		if (isl_int_is_zero(bmap->ineq[k][total + i]))
+			continue;
+		if (isl_int_abs_ge(sum, bmap->ineq[k][total + i]))
+			continue;
+		if (!ok_to_set_div_from_bound(bmap, i, k))
+			break;
+		if (isl_int_is_pos(bmap->ineq[k][total + i]))
+			bmap = set_div_from_lower_bound(bmap, i, k);
+		else
+			bmap = set_div_from_lower_bound(bmap, i, l);
+		if (progress)
+			*progress = 1;
+		break;
+	}
+	return bmap;
+}
+
 static struct isl_basic_map *remove_duplicate_constraints(
 	struct isl_basic_map *bmap, int *progress)
 {
@@ -915,8 +1001,11 @@ static struct isl_basic_map *remove_duplicate_constraints(
 			continue;
 		l = index[h] - &bmap->ineq[0];
 		isl_int_add(sum, bmap->ineq[k][0], bmap->ineq[l][0]);
-		if (isl_int_is_pos(sum))
+		if (isl_int_is_pos(sum)) {
+			bmap = check_for_div_constraints(bmap, k, l, sum,
+							 progress);
 			continue;
+		}
 		if (isl_int_is_zero(sum)) {
 			/* We need to break out of the loop after these
 			 * changes since the contents of the hash
