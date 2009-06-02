@@ -3517,6 +3517,8 @@ int isl_basic_map_is_empty(struct isl_basic_map *bmap)
 	if (bmap->sample)
 		isl_vec_free(bmap->ctx, bmap->sample);
 	bmap->sample = sample;
+	if (empty)
+		ISL_F_SET(bmap, ISL_BASIC_MAP_EMPTY);
 
 	return empty;
 }
