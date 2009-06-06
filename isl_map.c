@@ -3581,7 +3581,7 @@ static struct isl_basic_map *order_divs(struct isl_basic_map *bmap)
 							    bmap->n_div-i);
 		if (pos == -1)
 			continue;
-		swap_div(bmap, i, pos);
+		swap_div(bmap, i, i + pos);
 		--i;
 	}
 	return bmap;
