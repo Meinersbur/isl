@@ -1830,7 +1830,7 @@ error:
 	return NULL;
 }
 
-struct isl_basic_map *add_divs(struct isl_basic_map *bmap, unsigned n)
+static struct isl_basic_map *add_divs(struct isl_basic_map *bmap, unsigned n)
 {
 	int i, j;
 
