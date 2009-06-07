@@ -30,7 +30,7 @@ static struct vars *vars_new(struct isl_ctx *ctx)
 	return v;
 }
 
-void variable_free(struct variable *var)
+static void variable_free(struct variable *var)
 {
 	while (var) {
 		struct variable *next = var->next;
@@ -48,7 +48,7 @@ static void vars_free(struct vars *v)
 	free(v);
 }
 
-struct variable *variable_new(struct vars *v, const char *name, int len,
+static struct variable *variable_new(struct vars *v, const char *name, int len,
 				int pos)
 {
 	struct variable *var;
