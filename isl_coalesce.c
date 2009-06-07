@@ -590,6 +590,7 @@ struct isl_map *isl_map_coalesce(struct isl_map *map)
 		for (i = 0; i < map->n; ++i) {
 			map->p[i] = isl_basic_map_update_from_tab(map->p[i],
 								    tabs[i]);
+			map->p[i] = isl_basic_map_finalize(map->p[i]);
 			if (!map->p[i])
 				goto error;
 			ISL_F_SET(map->p[i], ISL_BASIC_MAP_NO_IMPLICIT);
