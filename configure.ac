@@ -145,7 +145,7 @@ AC_SUBST(PIPLIB_LIBS)
 case "$with_piplib" in
 	bundled)
 		PIPLIB_CPPFLAGS="-I$srcdir/piplib/include"
-		isl_configure_args="$isl_configure_args --enable-mp-version"
+		isl_configure_args="$isl_configure_args --with-bits=gmp"
 	;;
 	build)
 		PIPLIB_CPPFLAGS="-I$piplib_srcdir/include"
