@@ -8,7 +8,7 @@ DIST_SUBDIRS = $(MAYBE_PIPLIB)
 ACLOCAL_AMFLAGS = -I m4
 
 lib_LTLIBRARIES = libisl.la
-noinst_PROGRAMS = isl_test
+noinst_PROGRAMS = isl_test isl_polyhedron_sample
 TESTS = isl_test
 
 if HAVE_POLYLIB
@@ -96,6 +96,12 @@ libisl_la_CPPFLAGS = -I$(srcdir)/include -Iinclude/ \
 
 isl_test_CPPFLAGS = -I$(srcdir)/include -Iinclude/ @GMP_CPPFLAGS@
 isl_test_LDADD = libisl.la
+
+isl_polyhedron_sample_CPPFLAGS = -I$(srcdir)/include -Iinclude/ \
+	@GMP_CPPFLAGS@
+isl_polyhedron_sample_LDADD = libisl.la
+isl_polyhedron_sample_SOURCES = \
+	polyhedron_sample.c
 
 nodist_pkginclude_HEADERS = \
 	include/isl_ctx.h \
