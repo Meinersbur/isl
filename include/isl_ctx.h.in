@@ -39,8 +39,13 @@ extern "C" {
  * (in case of pointer return type).
  * The only exception is the isl_ctx argument, which shoud never be NULL.
  */
+struct isl_stats {
+	long	gbr_solved_lps;
+};
 struct isl_ctx {
 	int			ref;
+
+	struct isl_stats	*stats;
 
 	isl_int			one;
 	isl_int			negone;
@@ -55,6 +60,12 @@ struct isl_ctx {
 	#define			ISL_LP_TAB	0
 	#define			ISL_LP_PIP	1
 	unsigned		lp_solver;
+
+	#define			ISL_ILP_GBR	0
+	#define			ISL_ILP_PIP	1
+	unsigned		ilp_solver;
+
+	unsigned		gbr_only_first;
 };
 
 /* Some helper macros */

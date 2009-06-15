@@ -42,6 +42,8 @@ libisl_la_SOURCES = \
 	$(ISL_POLYLIB) \
 	$(GET_MEMORY_FUNCTIONS) \
 	isl_affine_hull.c \
+	isl_basis_reduction.h \
+	basis_reduction_tab.c \
 	isl_blk.c \
 	isl_coalesce.c \
 	isl_constraint.c \
@@ -117,4 +119,6 @@ pkginclude_HEADERS = \
 	include/isl_set.h \
 	include/isl_set_polylib.h
 
-EXTRA_DIST = test_inputs
+EXTRA_DIST = \
+	basis_reduction_templ.c \
+	test_inputs

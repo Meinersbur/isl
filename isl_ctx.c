@@ -8,11 +8,15 @@ struct isl_ctx *isl_ctx_alloc()
 {
 	struct isl_ctx *ctx = NULL;
 
-	ctx = isl_alloc_type(NULL, struct isl_ctx);
+	ctx = isl_calloc_type(NULL, struct isl_ctx);
 	if (!ctx)
 		goto error;
 
 	if (isl_hash_table_init(ctx, &ctx->name_hash, 0))
+		goto error;
+
+	ctx->stats = isl_calloc_type(ctx, struct isl_stats);
+	if (!ctx->stats)
 		goto error;
 
 	ctx->ref = 0;
@@ -30,6 +34,7 @@ struct isl_ctx *isl_ctx_alloc()
 #endif
 
 	ctx->lp_solver = ISL_LP_TAB;
+	ctx->ilp_solver = ISL_ILP_GBR;
 
 	return ctx;
 error:
@@ -57,5 +62,6 @@ void isl_ctx_free(struct isl_ctx *ctx)
 	isl_blk_clear_cache(ctx);
 	isl_int_clear(ctx->one);
 	isl_int_clear(ctx->negone);
+	free(ctx->stats);
 	free(ctx);
 }
