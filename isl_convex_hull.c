@@ -1401,12 +1401,12 @@ error:
 	return NULL;
 }
 
-/* Compute the lineality space of an "underlying" basic set.
+/* Compute the lineality space of a basic set.
+ * We currently do not allow the basic set to have any divs.
  * We basically just drop the constants and turn every inequality
  * into an equality.
  */
-static struct isl_basic_set *ubasic_set_lineality_space(
-	struct isl_basic_set *bset)
+struct isl_basic_set *isl_basic_set_lineality_space(struct isl_basic_set *bset)
 {
 	int i, k;
 	struct isl_basic_set *lin = NULL;
@@ -1414,6 +1414,7 @@ static struct isl_basic_set *ubasic_set_lineality_space(
 
 	if (!bset)
 		goto error;
+	isl_assert(bset->ctx, bset->n_div == 0, goto error);
 	dim = isl_basic_set_total_dim(bset);
 
 	lin = isl_basic_set_alloc_dim(isl_basic_set_get_dim(bset), 0, dim, 0);
@@ -1466,7 +1467,7 @@ static struct isl_basic_set *uset_combined_lineality_space(struct isl_set *set)
 	lin = isl_set_alloc_dim(isl_set_get_dim(set), set->n, 0);
 	for (i = 0; i < set->n; ++i)
 		lin = isl_set_add(lin,
-		    ubasic_set_lineality_space(isl_basic_set_copy(set->p[i])));
+		    isl_basic_set_lineality_space(isl_basic_set_copy(set->p[i])));
 	isl_set_free(set);
 	return isl_set_affine_hull(lin);
 }
@@ -1498,7 +1499,7 @@ static struct isl_basic_set *uset_convex_hull_unbounded(struct isl_set *set)
 		convex_hull = convex_hull_pair(convex_hull, t);
 		if (set->n == 0)
 			break;
-		t = ubasic_set_lineality_space(isl_basic_set_copy(convex_hull));
+		t = isl_basic_set_lineality_space(isl_basic_set_copy(convex_hull));
 		if (!t)
 			goto error;
 		if (isl_basic_set_is_universe(t)) {
