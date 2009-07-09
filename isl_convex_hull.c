@@ -1068,7 +1068,7 @@ static struct isl_basic_set *modulo_lineality(struct isl_set *set,
 	isl_mat_free(set->ctx, M);
 	isl_basic_set_free(lin);
 
-	isl_mat_drop_rows(set->ctx, Q, Q->n_row - lin_dim, lin_dim);
+	Q = isl_mat_drop_rows(set->ctx, Q, Q->n_row - lin_dim, lin_dim);
 
 	U = isl_mat_lin_to_aff(set->ctx, U);
 	Q = isl_mat_lin_to_aff(set->ctx, Q);
