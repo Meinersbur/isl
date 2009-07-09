@@ -213,14 +213,14 @@ struct isl_vec *isl_mat_vec_product(struct isl_ctx *ctx,
 		goto error;
 
 	for (i = 0; i < prod->size; ++i)
-		isl_seq_inner_product(mat->row[i], vec->block.data, vec->size,
+		isl_seq_inner_product(mat->row[i], vec->el, vec->size,
 					&prod->block.data[i]);
 	isl_mat_free(ctx, mat);
-	isl_vec_free(ctx, vec);
+	isl_vec_free(vec);
 	return prod;
 error:
 	isl_mat_free(ctx, mat);
-	isl_vec_free(ctx, vec);
+	isl_vec_free(vec);
 	return NULL;
 }
 

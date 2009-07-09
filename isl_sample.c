@@ -48,7 +48,7 @@ static struct isl_vec *interval_sample(struct isl_ctx *ctx,
 		}
 		isl_int_clear(t);
 		if (i < bset->n_ineq) {
-			isl_vec_free(ctx, sample);
+			isl_vec_free(sample);
 			sample = isl_vec_alloc(ctx, 0);
 		}
 	}

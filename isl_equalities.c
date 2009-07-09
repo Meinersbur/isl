@@ -158,7 +158,7 @@ static struct isl_mat *parameter_compression_multi(struct isl_ctx *ctx,
 
 	isl_int_init(D);
 
-	isl_vec_lcm(ctx, d, &D);
+	isl_vec_lcm(d, &D);
 
 	size = B->n_col - 1;
 	A = isl_mat_alloc(ctx, size, B->n_row * size);
@@ -310,7 +310,7 @@ struct isl_mat *isl_mat_parameter_compression(struct isl_ctx *ctx,
 		T = isl_mat_alloc(ctx, B->n_col, 0);
 		isl_mat_free(ctx, cst);
 		isl_mat_free(ctx, B);
-		isl_vec_free(ctx, d);
+		isl_vec_free(d);
 		return T;
 	}
 	isl_int_init(D);
@@ -321,7 +321,7 @@ struct isl_mat *isl_mat_parameter_compression(struct isl_ctx *ctx,
 			continue;
 		if (isl_int_is_zero(D)) {
 			B = isl_mat_drop_rows(ctx, B, i, 1);
-			d = isl_vec_cow(ctx, d);
+			d = isl_vec_cow(d);
 			if (!B || !d)
 				goto error2;
 			isl_seq_cpy(d->block.data+i, d->block.data+i+1,
@@ -335,7 +335,7 @@ struct isl_mat *isl_mat_parameter_compression(struct isl_ctx *ctx,
 			goto error2;
 		isl_seq_scale_down(B->row[i] + 1, B->row[i] + 1, D, B->n_col-1);
 		isl_int_gcd(D, D, d->block.data[i]);
-		d = isl_vec_cow(ctx, d);
+		d = isl_vec_cow(d);
 		if (!d)
 			goto error2;
 		isl_int_divexact(d->block.data[i], d->block.data[i], D);
@@ -353,14 +353,14 @@ struct isl_mat *isl_mat_parameter_compression(struct isl_ctx *ctx,
 	isl_mat_sub_copy(ctx, T->row + 1, cst->row, cst->n_row, 0, 0, 1);
 	isl_mat_free(ctx, cst);
 	isl_mat_free(ctx, B);
-	isl_vec_free(ctx, d);
+	isl_vec_free(d);
 	return T;
 error2:
 	isl_int_clear(D);
 error:
 	isl_mat_free(ctx, cst);
 	isl_mat_free(ctx, B);
-	isl_vec_free(ctx, d);
+	isl_vec_free(d);
 	return NULL;
 }
 

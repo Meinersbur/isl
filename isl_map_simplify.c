@@ -1809,15 +1809,15 @@ int isl_basic_map_fast_is_disjoint(struct isl_basic_map *bmap1,
 		    isl_seq_first_non_zero(v->block.data + 1, total) == -1)
 			goto disjoint;
 	}
-	isl_vec_free(bmap1->ctx, v);
+	isl_vec_free(v);
 	free(elim);
 	return 0;
 disjoint:
-	isl_vec_free(bmap1->ctx, v);
+	isl_vec_free(v);
 	free(elim);
 	return 1;
 error:
-	isl_vec_free(bmap1->ctx, v);
+	isl_vec_free(v);
 	free(elim);
 	return -1;
 }
@@ -2057,8 +2057,8 @@ static struct isl_basic_map *drop_more_redundant_divs(
 				if (!isl_int_is_neg(bmap->ineq[u][1 + dim + i]))
 					continue;
 				construct_test_ineq(bmap, i, l, u,
-						    vec->block.data, g, fl, fu);
-				res = isl_tab_min(ctx, tab, vec->block.data,
+						    vec->el, g, fl, fu);
+				res = isl_tab_min(ctx, tab, vec->el,
 						  ctx->one, &g, NULL);
 				if (res == isl_lp_error)
 					goto error;
@@ -2081,7 +2081,7 @@ static struct isl_basic_map *drop_more_redundant_divs(
 	}
 
 	isl_tab_free(ctx, tab);
-	isl_vec_free(ctx, vec);
+	isl_vec_free(vec);
 
 	isl_int_clear(g);
 	isl_int_clear(fl);
@@ -2099,7 +2099,7 @@ error:
 	isl_basic_map_free(bmap);
 	if (ctx) {
 		isl_tab_free(ctx, tab);
-		isl_vec_free(ctx, vec);
+		isl_vec_free(vec);
 	}
 	isl_int_clear(g);
 	isl_int_clear(fl);

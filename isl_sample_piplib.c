@@ -188,7 +188,7 @@ struct isl_vec *isl_pip_basic_set_sample(struct isl_basic_set *bset)
 	isl_basic_set_free(bset);
 	return vec;
 error:
-	isl_vec_free(ctx, vec);
+	isl_vec_free(vec);
 	isl_basic_set_free(bset);
 	if (sol)
 		pip_quast_free(sol);

@@ -388,7 +388,7 @@ struct isl_basic_map *isl_basic_map_dup(struct isl_basic_map *bmap)
 		return NULL;
 	dup_constraints(dup, bmap);
 	dup->flags = bmap->flags;
-	dup->sample = isl_vec_copy(bmap->ctx, bmap->sample);
+	dup->sample = isl_vec_copy(bmap->sample);
 	return dup;
 }
 
@@ -455,7 +455,7 @@ void isl_basic_map_free(struct isl_basic_map *bmap)
 	isl_blk_free(bmap->ctx, bmap->block2);
 	free(bmap->ineq);
 	isl_blk_free(bmap->ctx, bmap->block);
-	isl_vec_free(bmap->ctx, bmap->sample);
+	isl_vec_free(bmap->sample);
 	isl_dim_free(bmap->dim);
 	free(bmap);
 }
@@ -1618,7 +1618,7 @@ static int basic_map_contains(struct isl_basic_map *bmap, struct isl_vec *vec)
 	isl_int_init(s);
 
 	for (i = 0; i < bmap->n_eq; ++i) {
-		isl_seq_inner_product(vec->block.data, bmap->eq[i], total, &s);
+		isl_seq_inner_product(vec->el, bmap->eq[i], total, &s);
 		if (!isl_int_is_zero(s)) {
 			isl_int_clear(s);
 			return 0;
@@ -1626,7 +1626,7 @@ static int basic_map_contains(struct isl_basic_map *bmap, struct isl_vec *vec)
 	}
 
 	for (i = 0; i < bmap->n_ineq; ++i) {
-		isl_seq_inner_product(vec->block.data, bmap->ineq[i], total, &s);
+		isl_seq_inner_product(vec->el, bmap->ineq[i], total, &s);
 		if (isl_int_is_neg(s)) {
 			isl_int_clear(s);
 			return 0;
@@ -1667,11 +1667,11 @@ struct isl_basic_map *isl_basic_map_intersect(
 	if (bmap1->sample &&
 	    basic_map_contains(bmap1, bmap1->sample) > 0 &&
 	    basic_map_contains(bmap2, bmap1->sample) > 0)
-		sample = isl_vec_copy(bmap1->ctx, bmap1->sample);
+		sample = isl_vec_copy(bmap1->sample);
 	else if (bmap2->sample &&
 	    basic_map_contains(bmap1, bmap2->sample) > 0 &&
 	    basic_map_contains(bmap2, bmap2->sample) > 0)
-		sample = isl_vec_copy(bmap2->ctx, bmap2->sample);
+		sample = isl_vec_copy(bmap2->sample);
 
 	bmap1 = isl_basic_map_cow(bmap1);
 	bmap1 = isl_basic_map_extend_dim(bmap1, isl_dim_copy(bmap1->dim),
@@ -1681,7 +1681,7 @@ struct isl_basic_map *isl_basic_map_intersect(
 	bmap1 = add_constraints(bmap1, bmap2, 0, 0);
 
 	if (sample) {
-		isl_vec_free(bmap1->ctx, bmap1->sample);
+		isl_vec_free(bmap1->sample);
 		bmap1->sample = sample;
 	}
 
@@ -1689,7 +1689,7 @@ struct isl_basic_map *isl_basic_map_intersect(
 	return isl_basic_map_finalize(bmap1);
 error:
 	if (sample)
-		isl_vec_free(bmap1->ctx, sample);
+		isl_vec_free(sample);
 	isl_basic_map_free(bmap1);
 	isl_basic_map_free(bmap2);
 	return NULL;
@@ -3531,7 +3531,7 @@ int isl_basic_map_is_empty(struct isl_basic_map *bmap)
 		return -1;
 	empty = sample->size == 0;
 	if (bmap->sample)
-		isl_vec_free(bmap->ctx, bmap->sample);
+		isl_vec_free(bmap->sample);
 	bmap->sample = sample;
 	if (empty)
 		ISL_F_SET(bmap, ISL_BASIC_MAP_EMPTY);
@@ -4020,7 +4020,7 @@ int isl_basic_set_compare_at(struct isl_basic_set *bset1,
 	isl_int_clear(num);
 	isl_int_clear(den);
 	isl_basic_map_free(bmap1);
-	isl_vec_free(ctx, obj);
+	isl_vec_free(obj);
 	return cmp;
 error:
 	isl_basic_map_free(bmap1);

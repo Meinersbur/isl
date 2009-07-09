@@ -496,7 +496,7 @@ static isl_int *wrap_facet(struct isl_set *set, isl_int *facet, isl_int *ridge)
 	}
 	isl_int_clear(num);
 	isl_int_clear(den);
-	isl_vec_free(set->ctx, obj);
+	isl_vec_free(obj);
 	isl_basic_set_free(lp);
 	isl_set_free(set);
 	isl_assert(set->ctx, res == isl_lp_ok, return NULL);
@@ -1217,13 +1217,13 @@ static struct isl_vec *valid_direction(
 		isl_seq_combine(dir->block.data,
 				bset1->ctx->one, dir->block.data,
 				sample->block.data[n++], bset1->ineq[i], 1 + d);
-	isl_vec_free(ctx, sample);
+	isl_vec_free(sample);
 	isl_basic_set_free(bset1);
 	isl_basic_set_free(bset2);
 	isl_seq_normalize(dir->block.data + 1, dir->size - 1);
 	return dir;
 error:
-	isl_vec_free(ctx, sample);
+	isl_vec_free(sample);
 	isl_basic_set_free(bset1);
 	isl_basic_set_free(bset2);
 	return NULL;
@@ -1352,11 +1352,11 @@ static struct isl_basic_set *convex_hull_pair_pointed(
 	hull = uset_convex_hull(set);
 	hull = isl_basic_set_preimage(hull, T);
 	 
-	isl_vec_free(ctx, dir);
+	isl_vec_free(dir);
 
 	return hull;
 error:
-	isl_vec_free(ctx, dir);
+	isl_vec_free(dir);
 	isl_basic_set_free(bset1);
 	isl_basic_set_free(bset2);
 	return NULL;

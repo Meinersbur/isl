@@ -12,8 +12,11 @@ struct isl_vec *isl_vec_alloc(struct isl_ctx *ctx, unsigned size)
 	if (isl_blk_is_error(vec->block))
 		goto error;
 
+	vec->ctx = ctx;
+	isl_ctx_ref(ctx);
 	vec->ref = 1;
 	vec->size = size;
+	vec->el = vec->block.data;
 
 	return vec;
 error:
@@ -21,7 +24,7 @@ error:
 	return NULL;
 }
 
-struct isl_vec *isl_vec_copy(struct isl_ctx *ctx, struct isl_vec *vec)
+struct isl_vec *isl_vec_copy(struct isl_vec *vec)
 {
 	if (!vec)
 		return NULL;
@@ -30,18 +33,18 @@ struct isl_vec *isl_vec_copy(struct isl_ctx *ctx, struct isl_vec *vec)
 	return vec;
 }
 
-struct isl_vec *isl_vec_dup(struct isl_ctx *ctx, struct isl_vec *vec)
+struct isl_vec *isl_vec_dup(struct isl_vec *vec)
 {
 	struct isl_vec *vec2;
 
 	if (!vec)
 		return NULL;
-	vec2 = isl_vec_alloc(ctx, vec->size);
-	isl_seq_cpy(vec2->block.data, vec->block.data, vec->size);
+	vec2 = isl_vec_alloc(vec->ctx, vec->size);
+	isl_seq_cpy(vec2->el, vec->el, vec->size);
 	return vec2;
 }
 
-struct isl_vec *isl_vec_cow(struct isl_ctx *ctx, struct isl_vec *vec)
+struct isl_vec *isl_vec_cow(struct isl_vec *vec)
 {
 	struct isl_vec *vec2;
 	if (!vec)
@@ -50,12 +53,12 @@ struct isl_vec *isl_vec_cow(struct isl_ctx *ctx, struct isl_vec *vec)
 	if (vec->ref == 1)
 		return vec;
 
-	vec2 = isl_vec_dup(ctx, vec);
-	isl_vec_free(ctx, vec);
+	vec2 = isl_vec_dup(vec);
+	isl_vec_free( vec);
 	return vec2;
 }
 
-void isl_vec_free(struct isl_ctx *ctx, struct isl_vec *vec)
+void isl_vec_free(struct isl_vec *vec)
 {
 	if (!vec)
 		return;
@@ -63,12 +66,12 @@ void isl_vec_free(struct isl_ctx *ctx, struct isl_vec *vec)
 	if (--vec->ref > 0)
 		return;
 
-	isl_blk_free(ctx, vec->block);
+	isl_ctx_deref(vec->ctx);
+	isl_blk_free(vec->ctx, vec->block);
 	free(vec);
 }
 
-void isl_vec_dump(struct isl_ctx *ctx, struct isl_vec *vec,
-				FILE *out, int indent)
+void isl_vec_dump(struct isl_vec *vec, FILE *out, int indent)
 {
 	int i;
 
@@ -81,12 +84,12 @@ void isl_vec_dump(struct isl_ctx *ctx, struct isl_vec *vec,
 	for (i = 0; i < vec->size; ++i) {
 		if (i)
 		    fprintf(out, ",");
-		isl_int_print(out, vec->block.data[i], 0);
+		isl_int_print(out, vec->el[i], 0);
 	}
 	fprintf(out, "]\n");
 }
 
-void isl_vec_lcm(struct isl_ctx *ctx, struct isl_vec *vec, isl_int *lcm)
+void isl_vec_lcm(struct isl_vec *vec, isl_int *lcm)
 {
 	isl_seq_lcm(vec->block.data, vec->size, lcm);
 }

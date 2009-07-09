@@ -221,16 +221,17 @@ error:
 	return NULL;
 }
 
-static struct isl_basic_set *isl_basic_set_from_vec(struct isl_ctx *ctx,
-	struct isl_vec *vec)
+static struct isl_basic_set *isl_basic_set_from_vec(struct isl_vec *vec)
 {
 	int i;
 	int k;
 	struct isl_basic_set *bset = NULL;
+	struct isl_ctx *ctx;
 	unsigned dim;
 
 	if (!vec)
 		return NULL;
+	ctx = vec->ctx;
 	isl_assert(ctx, vec->size != 0, goto error);
 
 	bset = isl_basic_set_alloc(ctx, 0, vec->size - 1, 0, vec->size - 1, 0);
@@ -242,15 +243,15 @@ static struct isl_basic_set *isl_basic_set_from_vec(struct isl_ctx *ctx,
 		if (k < 0)
 			goto error;
 		isl_seq_clr(bset->eq[k], 1 + dim);
-		isl_int_neg(bset->eq[k][0], vec->block.data[1 + i]);
-		isl_int_set(bset->eq[k][1 + i], vec->block.data[0]);
+		isl_int_neg(bset->eq[k][0], vec->el[1 + i]);
+		isl_int_set(bset->eq[k][1 + i], vec->el[0]);
 	}
-	isl_vec_free(ctx, vec);
+	isl_vec_free(vec);
 
 	return bset;
 error:
 	isl_basic_set_free(bset);
-	isl_vec_free(ctx, vec);
+	isl_vec_free(vec);
 	return NULL;
 }
 
@@ -284,8 +285,8 @@ static struct isl_basic_set *outside_point(struct isl_ctx *ctx,
 		ctx->one, bset->sample->block.data + 1,
 		up ? ctx->one : ctx->negone, eq + 1, dim);
 	if (isl_basic_set_contains(bset, sample))
-		return isl_basic_set_from_vec(ctx, sample);
-	isl_vec_free(ctx, sample);
+		return isl_basic_set_from_vec(sample);
+	isl_vec_free(sample);
 	sample = NULL;
 
 	slice = isl_basic_set_copy(bset);
@@ -306,10 +307,10 @@ static struct isl_basic_set *outside_point(struct isl_ctx *ctx,
 	if (!sample)
 		goto error;
 	if (sample->size == 0) {
-		isl_vec_free(ctx, sample);
+		isl_vec_free(sample);
 		point = isl_basic_set_empty_like(bset);
 	} else
-		point = isl_basic_set_from_vec(ctx, sample);
+		point = isl_basic_set_from_vec(sample);
 
 	return point;
 error:
@@ -389,12 +390,12 @@ static struct isl_basic_set *uset_affine_hull(struct isl_basic_set *bset)
 	if (!sample)
 		goto error;
 	if (sample->size == 0) {
-		isl_vec_free(ctx, sample);
+		isl_vec_free(sample);
 		hull = isl_basic_set_empty_like(bset);
 		isl_basic_set_free(bset);
 		return hull;
 	} else
-		hull = isl_basic_set_from_vec(ctx, sample);
+		hull = isl_basic_set_from_vec(sample);
 
 	if (hull->n_eq > 0) {
 		struct isl_basic_set *cone;
