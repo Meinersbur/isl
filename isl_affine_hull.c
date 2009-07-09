@@ -318,13 +318,14 @@ error:
 	return NULL;
 }
 
-static struct isl_basic_set *recession_cone(struct isl_basic_set *bset)
+struct isl_basic_set *isl_basic_set_recession_cone(struct isl_basic_set *bset)
 {
 	int i;
 
 	bset = isl_basic_set_cow(bset);
 	if (!bset)
 		return NULL;
+	isl_assert(bset->ctx, bset->n_div == 0, goto error);
 
 	for (i = 0; i < bset->n_eq; ++i)
 		isl_int_set_si(bset->eq[i][0], 0);
@@ -334,6 +335,9 @@ static struct isl_basic_set *recession_cone(struct isl_basic_set *bset)
 
 	ISL_F_CLR(bset, ISL_BASIC_SET_NO_IMPLICIT);
 	return isl_basic_set_implicit_equalities(bset);
+error:
+	isl_basic_set_free(bset);
+	return NULL;
 }
 
 static struct isl_basic_set *shift(struct isl_basic_set *bset, isl_int *point)
@@ -399,7 +403,7 @@ static struct isl_basic_set *uset_affine_hull(struct isl_basic_set *bset)
 
 	if (hull->n_eq > 0) {
 		struct isl_basic_set *cone;
-		cone = recession_cone(isl_basic_set_copy(bset));
+		cone = isl_basic_set_recession_cone(isl_basic_set_copy(bset));
 		isl_basic_set_free_inequality(cone, cone->n_ineq);
 		cone = isl_basic_set_normalize_constraints(cone);
 		cone = shift(cone, bset->sample->block.data);
