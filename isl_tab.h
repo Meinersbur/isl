@@ -93,6 +93,8 @@ struct isl_tab {
 	unsigned empty : 1;
 };
 
+struct isl_tab *isl_tab_alloc(struct isl_ctx *ctx,
+	unsigned n_row, unsigned n_var);
 void isl_tab_free(struct isl_ctx *ctx, struct isl_tab *tab);
 
 struct isl_tab *isl_tab_from_basic_map(struct isl_basic_map *bmap);
