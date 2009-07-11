@@ -235,6 +235,9 @@ static int pivot_row(struct isl_ctx *ctx, struct isl_tab *tab,
 
 /* Find a pivot (row and col) that will increase (sgn > 0) or decrease
  * (sgn < 0) the value of row variable var.
+ * If not NULL, then skip_var is a row variable that should be ignored
+ * while looking for a pivot row.  It is usually equal to var.
+ *
  * As the given row in the tableau is of the form
  *
  *	x_r = a_r0 + \sum_i a_ri x_i
@@ -247,7 +250,8 @@ static int pivot_row(struct isl_ctx *ctx, struct isl_tab *tab,
  * opposite direction.
  */
 static void find_pivot(struct isl_ctx *ctx, struct isl_tab *tab,
-	struct isl_tab_var *var, int sgn, int *row, int *col)
+	struct isl_tab_var *var, struct isl_tab_var *skip_var,
+	int sgn, int *row, int *col)
 {
 	int j, r, c;
 	isl_int *tr;
@@ -271,7 +275,7 @@ static void find_pivot(struct isl_ctx *ctx, struct isl_tab *tab,
 		return;
 
 	sgn *= isl_int_sgn(tr[2 + c]);
-	r = pivot_row(ctx, tab, var, sgn, c);
+	r = pivot_row(ctx, tab, skip_var, sgn, c);
 	*row = r < 0 ? var->index : r;
 	*col = c;
 }
@@ -539,7 +543,7 @@ static int sign_of_max(struct isl_ctx *ctx,
 		return 1;
 	to_row(ctx, tab, var, 1);
 	while (!isl_int_is_pos(tab->mat->row[var->index][1])) {
-		find_pivot(ctx, tab, var, 1, &row, &col);
+		find_pivot(ctx, tab, var, var, 1, &row, &col);
 		if (row == -1)
 			return isl_int_sgn(tab->mat->row[var->index][1]);
 		pivot(ctx, tab, row, col);
@@ -560,7 +564,7 @@ static int restore_row(struct isl_ctx *ctx,
 	int row, col;
 
 	while (isl_int_is_neg(tab->mat->row[var->index][1])) {
-		find_pivot(ctx, tab, var, 1, &row, &col);
+		find_pivot(ctx, tab, var, var, 1, &row, &col);
 		if (row == -1)
 			break;
 		pivot(ctx, tab, row, col);
@@ -581,7 +585,7 @@ static int at_least_zero(struct isl_ctx *ctx,
 	int row, col;
 
 	while (isl_int_is_neg(tab->mat->row[var->index][1])) {
-		find_pivot(ctx, tab, var, 1, &row, &col);
+		find_pivot(ctx, tab, var, var, 1, &row, &col);
 		if (row == -1)
 			break;
 		if (row == var->index) /* manifestly unbounded */
@@ -637,7 +641,7 @@ static int sign_of_min(struct isl_ctx *ctx,
 	if (var->is_redundant)
 		return 0;
 	while (!isl_int_is_neg(tab->mat->row[var->index][1])) {
-		find_pivot(ctx, tab, var, -1, &row, &col);
+		find_pivot(ctx, tab, var, var, -1, &row, &col);
 		if (row == var->index)
 			return -1;
 		if (row == -1)
@@ -695,7 +699,7 @@ static int min_at_most_neg_one(struct isl_ctx *ctx,
 	if (var->is_redundant)
 		return 0;
 	do {
-		find_pivot(ctx, tab, var, -1, &row, &col);
+		find_pivot(ctx, tab, var, var, -1, &row, &col);
 		if (row == var->index)
 			return 1;
 		if (row == -1)
@@ -730,7 +734,7 @@ static int at_least_one(struct isl_ctx *ctx,
 	to_row(ctx, tab, var, 1);
 	r = tab->mat->row[var->index];
 	while (isl_int_lt(r[1], r[0])) {
-		find_pivot(ctx, tab, var, 1, &row, &col);
+		find_pivot(ctx, tab, var, var, 1, &row, &col);
 		if (row == -1)
 			return isl_int_ge(r[1], r[0]);
 		if (row == var->index) /* manifestly unbounded */
@@ -920,6 +924,36 @@ error:
 	return NULL;
 }
 
+/* Pivot a non-negative variable down until it reaches the value zero
+ * and then pivot the variable into a column position.
+ */
+static int to_col(struct isl_ctx *ctx,
+	struct isl_tab *tab, struct isl_tab_var *var)
+{
+	int i;
+	int row, col;
+
+	if (!var->is_row)
+		return;
+
+	while (isl_int_is_pos(tab->mat->row[var->index][1])) {
+		find_pivot(ctx, tab, var, NULL, -1, &row, &col);
+		isl_assert(ctx, row != -1, return -1);
+		pivot(ctx, tab, row, col);
+		if (!var->is_row)
+			return;
+	}
+
+	for (i = tab->n_dead; i < tab->n_col; ++i)
+		if (!isl_int_is_zero(tab->mat->row[var->index][2 + i]))
+			break;
+
+	isl_assert(ctx, i < tab->n_col, return -1);
+	pivot(ctx, tab, var->index, i);
+
+	return 0;
+}
+
 /* We assume Gaussian elimination has been performed on the equalities.
  * The equalities can therefore never conflict.
  * Adding the equalities is currently only really useful for a later call
@@ -946,6 +980,38 @@ static struct isl_tab *add_eq(struct isl_ctx *ctx,
 		break;
 	}
 	tab->n_eq++;
+
+	return tab;
+error:
+	isl_tab_free(ctx, tab);
+	return NULL;
+}
+
+/* Add an equality that is known to be valid for the given tableau.
+ */
+struct isl_tab *isl_tab_add_valid_eq(struct isl_ctx *ctx,
+	struct isl_tab *tab, isl_int *eq)
+{
+	struct isl_tab_var *var;
+	int i;
+	int r;
+
+	if (!tab)
+		return NULL;
+	r = add_row(ctx, tab, eq);
+	if (r < 0)
+		goto error;
+
+	var = &tab->con[r];
+	r = var->index;
+	if (isl_int_is_neg(tab->mat->row[r][1]))
+		isl_seq_neg(tab->mat->row[r] + 1, tab->mat->row[r] + 1,
+			    1 + tab->n_col);
+	var->is_nonneg = 1;
+	if (to_col(ctx, tab, var) < 0)
+		goto error;
+	var->is_nonneg = 0;
+	kill_col(ctx, tab, var->index);
 
 	return tab;
 error:
@@ -1498,7 +1564,7 @@ enum isl_lp_result isl_tab_min(struct isl_ctx *ctx, struct isl_tab *tab,
 		    tab->mat->row[var->index][0], denom);
 	for (;;) {
 		int row, col;
-		find_pivot(ctx, tab, var, -1, &row, &col);
+		find_pivot(ctx, tab, var, var, -1, &row, &col);
 		if (row == var->index) {
 			res = isl_lp_unbounded;
 			break;

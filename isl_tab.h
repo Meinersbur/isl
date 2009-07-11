@@ -116,6 +116,8 @@ struct isl_tab *isl_tab_extend(struct isl_ctx *ctx, struct isl_tab *tab,
 				unsigned n_new);
 struct isl_tab *isl_tab_add_ineq(struct isl_ctx *ctx,
 	struct isl_tab *tab, isl_int *ineq);
+struct isl_tab *isl_tab_add_valid_eq(struct isl_ctx *ctx,
+	struct isl_tab *tab, isl_int *eq);
 
 int isl_tab_is_equality(struct isl_ctx *ctx, struct isl_tab *tab, int con);
 int isl_tab_is_redundant(struct isl_ctx *ctx, struct isl_tab *tab, int con);
