@@ -2059,7 +2059,7 @@ static struct isl_basic_map *drop_more_redundant_divs(
 				construct_test_ineq(bmap, i, l, u,
 						    vec->el, g, fl, fu);
 				res = isl_tab_min(ctx, tab, vec->el,
-						  ctx->one, &g, NULL);
+						  ctx->one, &g, NULL, 0);
 				if (res == isl_lp_error)
 					goto error;
 				if (res == isl_lp_empty) {

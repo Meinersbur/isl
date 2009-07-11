@@ -2109,7 +2109,7 @@ static int is_bound(struct sh_data *data, struct isl_set *set, int j,
 	isl_int_init(opt);
 
 	res = isl_tab_min(data->ctx, data->p[j].tab, ineq, data->ctx->one,
-				&opt, NULL);
+				&opt, NULL, 0);
 	if (res == isl_lp_ok && isl_int_is_neg(opt))
 		isl_int_sub(ineq[0], ineq[0], opt);
 

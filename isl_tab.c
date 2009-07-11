@@ -115,6 +115,7 @@ void isl_tab_free(struct isl_ctx *ctx, struct isl_tab *tab)
 		return;
 	free_undo(ctx, tab);
 	isl_mat_free(ctx, tab->mat);
+	isl_vec_free(tab->dual);
 	free(tab->var);
 	free(tab->con);
 	free(tab->row_var);
@@ -1547,7 +1548,8 @@ int isl_tab_is_equality(struct isl_ctx *ctx, struct isl_tab *tab, int con)
  * minmimal value returned in *opt).
  */
 enum isl_lp_result isl_tab_min(struct isl_ctx *ctx, struct isl_tab *tab,
-	isl_int *f, isl_int denom, isl_int *opt, isl_int *opt_denom)
+	isl_int *f, isl_int denom, isl_int *opt, isl_int *opt_denom,
+	unsigned flags)
 {
 	int r;
 	enum isl_lp_result res = isl_lp_ok;
@@ -1575,6 +1577,24 @@ enum isl_lp_result isl_tab_min(struct isl_ctx *ctx, struct isl_tab *tab,
 	}
 	if (drop_row(ctx, tab, var->index) < 0)
 		return isl_lp_error;
+	if (ISL_FL_ISSET(flags, ISL_TAB_SAVE_DUAL)) {
+		int i;
+
+		isl_vec_free(tab->dual);
+		tab->dual = isl_vec_alloc(ctx, 1 + tab->n_con);
+		if (!tab->dual)
+			return isl_lp_error;
+		isl_int_set(tab->dual->el[0], tab->mat->row[var->index][0]);
+		for (i = 0; i < tab->n_con; ++i) {
+			if (tab->con[i].is_row)
+				isl_int_set_si(tab->dual->el[1 + i], 0);
+			else {
+				int pos = 2 + tab->con[i].index;
+				isl_int_set(tab->dual->el[1 + i],
+					    tab->mat->row[var->index][pos]);
+			}
+		}
+	}
 	if (res == isl_lp_ok) {
 		if (opt_denom) {
 			isl_int_set(*opt, tab->mat->row[var->index][1]);

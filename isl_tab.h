@@ -88,6 +88,8 @@ struct isl_tab {
 	struct isl_tab_undo bottom;
 	struct isl_tab_undo *top;
 
+	struct isl_vec *dual;
+
 	unsigned need_undo : 1;
 	unsigned rational : 1;
 	unsigned empty : 1;
@@ -109,8 +111,10 @@ struct isl_tab *isl_tab_detect_equalities(struct isl_ctx *ctx,
 				struct isl_tab *tab);
 struct isl_tab *isl_tab_detect_redundant(struct isl_ctx *ctx,
 				struct isl_tab *tab);
+#define ISL_TAB_SAVE_DUAL	(1 << 0)
 enum isl_lp_result isl_tab_min(struct isl_ctx *ctx, struct isl_tab *tab,
-	isl_int *f, isl_int denom, isl_int *opt, isl_int *opt_denom);
+	isl_int *f, isl_int denom, isl_int *opt, isl_int *opt_denom,
+	unsigned flags);
 
 struct isl_tab *isl_tab_extend(struct isl_ctx *ctx, struct isl_tab *tab,
 				unsigned n_new);
