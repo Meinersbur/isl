@@ -6,21 +6,30 @@
 #include "isl_map_private.h"
 #include "isl_equalities.h"
 
-static struct isl_vec *point_sample(struct isl_ctx *ctx,
-	struct isl_basic_set *bset)
+/* Construct a zero sample of the same dimension as bset.
+ * As a special case, if bset is zero-dimensional, this
+ * function creates a zero-dimensional sample point.
+ */
+static struct isl_vec *zero_sample(struct isl_basic_set *bset)
 {
+	unsigned dim;
 	struct isl_vec *sample;
+
+	dim = isl_basic_set_total_dim(bset);
+	sample = isl_vec_alloc(bset->ctx, 1 + dim);
+	if (sample) {
+		isl_int_set_si(sample->el[0], 1);
+		isl_seq_clr(sample->el + 1, dim);
+	}
 	isl_basic_set_free(bset);
-	sample = isl_vec_alloc(ctx, 1);
-	if (!sample)
-		return NULL;
-	isl_int_set_si(sample->block.data[0], 1);
 	return sample;
 }
 
 static struct isl_vec *interval_sample(struct isl_ctx *ctx,
 	struct isl_basic_set *bset)
 {
+	int i;
+	isl_int t;
 	struct isl_vec *sample;
 
 	bset = isl_basic_set_simplify(bset);
@@ -28,30 +37,28 @@ static struct isl_vec *interval_sample(struct isl_ctx *ctx,
 		return NULL;
 	if (bset->n_eq > 0)
 		return isl_basic_set_sample(bset);
+	if (bset->n_ineq == 0)
+		return zero_sample(bset);
+
 	sample = isl_vec_alloc(ctx, 2);
 	isl_int_set_si(sample->block.data[0], 1);
-	if (bset->n_ineq == 0)
-		isl_int_set_si(sample->block.data[1], 0);
-	else {
-		int i;
-		isl_int t;
-		isl_int_init(t);
-		if (isl_int_is_one(bset->ineq[0][1]))
-			isl_int_neg(sample->block.data[1], bset->ineq[0][0]);
-		else
-			isl_int_set(sample->block.data[1], bset->ineq[0][0]);
-		for (i = 1; i < bset->n_ineq; ++i) {
-			isl_seq_inner_product(sample->block.data,
-						bset->ineq[i], 2, &t);
-			if (isl_int_is_neg(t))
-				break;
-		}
-		isl_int_clear(t);
-		if (i < bset->n_ineq) {
-			isl_vec_free(sample);
-			sample = isl_vec_alloc(ctx, 0);
-		}
+	isl_int_init(t);
+	if (isl_int_is_one(bset->ineq[0][1]))
+		isl_int_neg(sample->block.data[1], bset->ineq[0][0]);
+	else
+		isl_int_set(sample->block.data[1], bset->ineq[0][0]);
+	for (i = 1; i < bset->n_ineq; ++i) {
+		isl_seq_inner_product(sample->block.data,
+					bset->ineq[i], 2, &t);
+		if (isl_int_is_neg(t))
+			break;
 	}
+	isl_int_clear(t);
+	if (i < bset->n_ineq) {
+		isl_vec_free(sample);
+		sample = isl_vec_alloc(ctx, 0);
+	}
+
 	isl_basic_set_free(bset);
 	return sample;
 }
@@ -168,7 +175,7 @@ struct isl_vec *isl_basic_set_sample(struct isl_basic_set *bset)
 		return sample;
 	}
 	if (dim == 0)
-		return point_sample(ctx, bset);
+		return zero_sample(bset);
 	if (dim == 1)
 		return interval_sample(ctx, bset);
 	bounds = independent_bounds(ctx, bset);
