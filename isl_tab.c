@@ -51,6 +51,7 @@ struct isl_tab *isl_tab_alloc(struct isl_ctx *ctx,
 	tab->need_undo = 0;
 	tab->rational = 0;
 	tab->empty = 0;
+	tab->in_undo = 0;
 	tab->bottom.type = isl_tab_undo_bottom;
 	tab->bottom.next = NULL;
 	tab->top = &tab->bottom;
@@ -484,6 +485,8 @@ static void pivot(struct isl_ctx *ctx,
 	var = var_from_col(ctx, tab, col);
 	var->is_row = 0;
 	var->index = col;
+	if (tab->in_undo)
+		return;
 	for (i = tab->n_redundant; i < tab->n_row; ++i) {
 		if (isl_int_is_zero(mat->row[i][2 + col]))
 			continue;
@@ -1701,6 +1704,7 @@ int isl_tab_rollback(struct isl_ctx *ctx, struct isl_tab *tab,
 	if (!tab)
 		return -1;
 
+	tab->in_undo = 1;
 	for (undo = tab->top; undo && undo != &tab->bottom; undo = next) {
 		next = undo->next;
 		if (undo == snap)
@@ -1708,6 +1712,7 @@ int isl_tab_rollback(struct isl_ctx *ctx, struct isl_tab *tab,
 		perform_undo(ctx, tab, undo);
 		free(undo);
 	}
+	tab->in_undo = 0;
 	tab->top = undo;
 	if (!undo)
 		return -1;

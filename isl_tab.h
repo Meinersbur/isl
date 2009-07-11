@@ -93,6 +93,7 @@ struct isl_tab {
 	unsigned need_undo : 1;
 	unsigned rational : 1;
 	unsigned empty : 1;
+	unsigned in_undo : 1;
 };
 
 struct isl_tab *isl_tab_alloc(struct isl_ctx *ctx,
