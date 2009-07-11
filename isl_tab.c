@@ -1554,10 +1554,12 @@ enum isl_lp_result isl_tab_min(struct isl_ctx *ctx, struct isl_tab *tab,
 	int r;
 	enum isl_lp_result res = isl_lp_ok;
 	struct isl_tab_var *var;
+	struct isl_tab_undo *snap;
 
 	if (tab->empty)
 		return isl_lp_empty;
 
+	snap = isl_tab_snap(ctx, tab);
 	r = add_row(ctx, tab, f);
 	if (r < 0)
 		return isl_lp_error;
@@ -1575,7 +1577,7 @@ enum isl_lp_result isl_tab_min(struct isl_ctx *ctx, struct isl_tab *tab,
 			break;
 		pivot(ctx, tab, row, col);
 	}
-	if (drop_row(ctx, tab, var->index) < 0)
+	if (isl_tab_rollback(ctx, tab, snap) < 0)
 		return isl_lp_error;
 	if (ISL_FL_ISSET(flags, ISL_TAB_SAVE_DUAL)) {
 		int i;
