@@ -172,6 +172,33 @@ error:
 	return NULL;
 }
 
+/* Find a sample integer point, if any, in bset, which is known
+ * to have equalities.  If bset contains no integer points, then
+ * return a zero-length vector.
+ * We simply remove the known equalities, compute a sample
+ * in the resulting bset, using the specified recurse function,
+ * and then transform the sample back to the original space.
+ */
+static struct isl_vec *sample_eq(struct isl_basic_set *bset,
+	struct isl_vec *(*recurse)(struct isl_basic_set *))
+{
+	struct isl_mat *T;
+	struct isl_vec *sample;
+	struct isl_ctx *ctx;
+
+	if (!bset)
+		return NULL;
+
+	ctx = bset->ctx;
+	bset = isl_basic_set_remove_equalities(bset, &T, NULL);
+	sample = recurse(bset);
+	if (!sample || sample->size == 0)
+		isl_mat_free(ctx, T);
+	else
+		sample = isl_mat_vec_product(ctx, T, sample);
+	return sample;
+}
+
 struct isl_vec *isl_basic_set_sample(struct isl_basic_set *bset)
 {
 	struct isl_ctx *ctx;
@@ -188,18 +215,8 @@ struct isl_vec *isl_basic_set_sample(struct isl_basic_set *bset)
 	isl_assert(ctx, isl_basic_set_n_param(bset) == 0, goto error);
 	isl_assert(ctx, bset->n_div == 0, goto error);
 
-	if (bset->n_eq > 0) {
-		struct isl_mat *T;
-		struct isl_vec *sample;
-
-		bset = isl_basic_set_remove_equalities(bset, &T, NULL);
-		sample = isl_basic_set_sample(bset);
-		if (sample && sample->size != 0)
-			sample = isl_mat_vec_product(ctx, T, sample);
-		else
-			isl_mat_free(ctx, T);
-		return sample;
-	}
+	if (bset->n_eq > 0)
+		return sample_eq(bset, isl_basic_set_sample);
 	if (dim == 0)
 		return zero_sample(bset);
 	if (dim == 1)
