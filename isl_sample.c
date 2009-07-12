@@ -6,6 +6,15 @@
 #include "isl_map_private.h"
 #include "isl_equalities.h"
 
+static struct isl_vec *empty_sample(struct isl_basic_set *bset)
+{
+	struct isl_vec *vec;
+
+	vec = isl_vec_alloc(bset->ctx, 0);
+	isl_basic_set_free(bset);
+	return vec;
+}
+
 /* Construct a zero sample of the same dimension as bset.
  * As a special case, if bset is zero-dimensional, this
  * function creates a zero-dimensional sample point.
@@ -56,7 +65,7 @@ static struct isl_vec *interval_sample(struct isl_ctx *ctx,
 	isl_int_clear(t);
 	if (i < bset->n_ineq) {
 		isl_vec_free(sample);
-		sample = isl_vec_alloc(ctx, 0);
+		return empty_sample(bset);
 	}
 
 	isl_basic_set_free(bset);
@@ -153,10 +162,8 @@ struct isl_vec *isl_basic_set_sample(struct isl_basic_set *bset)
 		return NULL;
 
 	ctx = bset->ctx;
-	if (ISL_F_ISSET(bset, ISL_BASIC_SET_EMPTY)) {
-		isl_basic_set_free(bset);
-		return isl_vec_alloc(ctx, 0);
-	}
+	if (isl_basic_set_fast_is_empty(bset))
+		return empty_sample(bset);
 
 	dim = isl_basic_set_n_dim(bset);
 	isl_assert(ctx, isl_basic_set_n_param(bset) == 0, goto error);
