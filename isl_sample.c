@@ -34,8 +34,7 @@ static struct isl_vec *zero_sample(struct isl_basic_set *bset)
 	return sample;
 }
 
-static struct isl_vec *interval_sample(struct isl_ctx *ctx,
-	struct isl_basic_set *bset)
+static struct isl_vec *interval_sample(struct isl_basic_set *bset)
 {
 	int i;
 	isl_int t;
@@ -49,7 +48,7 @@ static struct isl_vec *interval_sample(struct isl_ctx *ctx,
 	if (bset->n_eq == 0 && bset->n_ineq == 0)
 		return zero_sample(bset);
 
-	sample = isl_vec_alloc(ctx, 2);
+	sample = isl_vec_alloc(bset->ctx, 2);
 	isl_int_set_si(sample->block.data[0], 1);
 
 	if (bset->n_eq > 0) {
@@ -184,7 +183,7 @@ static struct isl_vec *sample_no_lineality(struct isl_basic_set *bset)
 	if (dim == 0)
 		return zero_sample(bset);
 	if (dim == 1)
-		return interval_sample(bset->ctx, bset);
+		return interval_sample(bset);
 
 	return isl_pip_basic_set_sample(bset);
 }
@@ -258,7 +257,7 @@ struct isl_vec *isl_basic_set_sample(struct isl_basic_set *bset)
 	if (dim == 0)
 		return zero_sample(bset);
 	if (dim == 1)
-		return interval_sample(ctx, bset);
+		return interval_sample(bset);
 	bounds = independent_bounds(ctx, bset);
 	if (!bounds)
 		goto error;
