@@ -145,33 +145,6 @@ static struct isl_mat *independent_bounds(struct isl_ctx *ctx,
 	return dirs;
 }
 
-static struct isl_basic_set *remove_lineality(struct isl_ctx *ctx,
-	struct isl_basic_set *bset, struct isl_mat *bounds, struct isl_mat **T)
-{
-	struct isl_mat *U = NULL;
-	unsigned old_dim, new_dim;
-
-	old_dim = isl_basic_set_n_dim(bset);
-	new_dim = bounds->n_row;
-	*T = NULL;
-	bounds = isl_mat_left_hermite(ctx, bounds, 0, &U, NULL);
-	if (!bounds)
-		goto error;
-	U = isl_mat_lin_to_aff(ctx, U);
-	U = isl_mat_drop_cols(ctx, U, 1 + new_dim, old_dim - new_dim);
-	bset = isl_basic_set_preimage(bset, isl_mat_copy(ctx, U));
-	if (!bset)
-		goto error;
-	*T = U;
-	isl_mat_free(ctx, bounds);
-	return bset;
-error:
-	isl_mat_free(ctx, bounds);
-	isl_mat_free(ctx, U);
-	isl_basic_set_free(bset);
-	return NULL;
-}
-
 /* Find a sample integer point, if any, in bset, which is known
  * to have equalities.  If bset contains no integer points, then
  * return a zero-length vector.
@@ -199,6 +172,71 @@ static struct isl_vec *sample_eq(struct isl_basic_set *bset,
 	return sample;
 }
 
+static struct isl_vec *sample_no_lineality(struct isl_basic_set *bset)
+{
+	unsigned dim;
+
+	if (isl_basic_set_fast_is_empty(bset))
+		return empty_sample(bset);
+	if (bset->n_eq > 0)
+		return sample_eq(bset, sample_no_lineality);
+	dim = isl_basic_set_total_dim(bset);
+	if (dim == 0)
+		return zero_sample(bset);
+	if (dim == 1)
+		return interval_sample(bset->ctx, bset);
+
+	return isl_pip_basic_set_sample(bset);
+}
+
+/* Compute an integer point in "bset" with a lineality space that
+ * is orthogonal to the constraints in "bounds".
+ *
+ * We first perform a unimodular transformation on bset that
+ * make the constraints in bounds (and therefore all constraints in bset)
+ * only involve the first dimensions.  The remaining dimensions
+ * then do not appear in any constraints and we can select any value
+ * for them, say zero.  We therefore project out this final dimensions
+ * and plug in the value zero later.  This is accomplished by simply
+ * dropping the final columns of the unimodular transformation.
+ */
+static struct isl_vec *sample_lineality(struct isl_basic_set *bset,
+	struct isl_mat *bounds)
+{
+	struct isl_mat *U = NULL;
+	unsigned old_dim, new_dim;
+	struct isl_vec *sample;
+	struct isl_ctx *ctx;
+
+	if (!bset || !bounds)
+		goto error;
+
+	ctx = bset->ctx;
+	old_dim = isl_basic_set_n_dim(bset);
+	new_dim = bounds->n_row;
+	bounds = isl_mat_left_hermite(ctx, bounds, 0, &U, NULL);
+	if (!bounds)
+		goto error;
+	U = isl_mat_lin_to_aff(ctx, U);
+	U = isl_mat_drop_cols(ctx, U, 1 + new_dim, old_dim - new_dim);
+	bset = isl_basic_set_preimage(bset, isl_mat_copy(ctx, U));
+	if (!bset)
+		goto error;
+	isl_mat_free(ctx, bounds);
+
+	sample = sample_no_lineality(bset);
+	if (sample && sample->size != 0)
+		sample = isl_mat_vec_product(ctx, U, sample);
+	else
+		isl_mat_free(ctx, U);
+	return sample;
+error:
+	isl_mat_free(ctx, bounds);
+	isl_mat_free(ctx, U);
+	isl_basic_set_free(bset);
+	return NULL;
+}
+
 struct isl_vec *isl_basic_set_sample(struct isl_basic_set *bset)
 {
 	struct isl_ctx *ctx;
@@ -224,21 +262,16 @@ struct isl_vec *isl_basic_set_sample(struct isl_basic_set *bset)
 	bounds = independent_bounds(ctx, bset);
 	if (!bounds)
 		goto error;
-	if (bounds->n_row == dim)
-		isl_mat_free(ctx, bounds);
-	else {
-		struct isl_mat *T;
-		struct isl_vec *sample;
 
-		bset = remove_lineality(ctx, bset, bounds, &T);
-		sample = isl_basic_set_sample(bset);
-		if (sample && sample->size != 0)
-			sample = isl_mat_vec_product(ctx, T, sample);
-		else
-			isl_mat_free(ctx, T);
-		return sample;
+	if (bounds->n_row == 0) {
+		isl_mat_free(ctx, bounds);
+		return zero_sample(bset);
 	}
-	return isl_pip_basic_set_sample(bset);
+	if (bounds->n_row < dim)
+		return sample_lineality(bset, bounds);
+
+	isl_mat_free(ctx, bounds);
+	return sample_no_lineality(bset);
 error:
 	isl_basic_set_free(bset);
 	return NULL;
