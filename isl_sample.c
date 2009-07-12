@@ -44,13 +44,28 @@ static struct isl_vec *interval_sample(struct isl_ctx *ctx,
 	bset = isl_basic_set_simplify(bset);
 	if (!bset)
 		return NULL;
-	if (bset->n_eq > 0)
-		return isl_basic_set_sample(bset);
-	if (bset->n_ineq == 0)
+	if (isl_basic_set_fast_is_empty(bset))
+		return empty_sample(bset);
+	if (bset->n_eq == 0 && bset->n_ineq == 0)
 		return zero_sample(bset);
 
 	sample = isl_vec_alloc(ctx, 2);
 	isl_int_set_si(sample->block.data[0], 1);
+
+	if (bset->n_eq > 0) {
+		isl_assert(bset->ctx, bset->n_eq == 1, goto error);
+		isl_assert(bset->ctx, bset->n_ineq == 0, goto error);
+		if (isl_int_is_one(bset->eq[0][1]))
+			isl_int_neg(sample->el[1], bset->eq[0][0]);
+		else {
+			isl_assert(bset->ctx, isl_int_is_negone(bset->eq[0][1]),
+				   goto error);
+			isl_int_set(sample->el[1], bset->eq[0][0]);
+		}
+		isl_basic_set_free(bset);
+		return sample;
+	}
+
 	isl_int_init(t);
 	if (isl_int_is_one(bset->ineq[0][1]))
 		isl_int_neg(sample->block.data[1], bset->ineq[0][0]);
@@ -70,6 +85,10 @@ static struct isl_vec *interval_sample(struct isl_ctx *ctx,
 
 	isl_basic_set_free(bset);
 	return sample;
+error:
+	isl_basic_set_free(bset);
+	isl_vec_free(sample);
+	return NULL;
 }
 
 static struct isl_mat *independent_bounds(struct isl_ctx *ctx,
