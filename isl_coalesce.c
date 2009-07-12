@@ -314,7 +314,7 @@ static int contains(struct isl_map *map, int i, int *ineq_i,
 
 	for (k = 0; k < map->p[i]->n_ineq; ++k) {
 		int stat;
-		if (ineq_i[l] == STATUS_REDUNDANT)
+		if (ineq_i[k] == STATUS_REDUNDANT)
 			continue;
 		stat = status_in(map->ctx, map->p[i]->ineq[k], tab);
 		if (stat != STATUS_VALID)
