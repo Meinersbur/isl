@@ -386,7 +386,7 @@ static void mark_empty(struct isl_ctx *ctx, struct isl_tab *tab)
 }
 
 /* Given a row number "row" and a column number "col", pivot the tableau
- * such that the associated variable are interchanged.
+ * such that the associated variables are interchanged.
  * The given row in the tableau expresses
  *
  *	x_r = a_r0 + \sum_i a_ri x_i
