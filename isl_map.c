@@ -3523,6 +3523,8 @@ int isl_basic_map_is_empty(struct isl_basic_map *bmap)
 		if (contains)
 			return 0;
 	}
+	isl_vec_free(bmap->sample);
+	bmap->sample = NULL;
 	bset = isl_basic_map_underlying_set(isl_basic_map_copy(bmap));
 	if (!bset)
 		return -1;
@@ -3530,8 +3532,7 @@ int isl_basic_map_is_empty(struct isl_basic_map *bmap)
 	if (!sample)
 		return -1;
 	empty = sample->size == 0;
-	if (bmap->sample)
-		isl_vec_free(bmap->sample);
+	isl_vec_free(bmap->sample);
 	bmap->sample = sample;
 	if (empty)
 		ISL_F_SET(bmap, ISL_BASIC_MAP_EMPTY);
