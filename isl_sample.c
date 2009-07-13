@@ -179,6 +179,9 @@ static struct isl_vec *sample_eq(struct isl_basic_set *bset,
  * The minimal value is rounded up to the nearest integer, while the
  * maximal value is rounded down.
  * The return value indicates whether the set was empty or unbounded.
+ *
+ * If we happen to find an integer point while looking for the minimal
+ * or maximal value, then we record that value in "bset" and return early.
  */
 static enum isl_lp_result basic_set_range(struct isl_basic_set *bset,
 	isl_int *f, isl_int denom, isl_int *min, isl_int *max)
@@ -194,18 +197,37 @@ static enum isl_lp_result basic_set_range(struct isl_basic_set *bset,
 
 	tab = isl_tab_from_basic_set(bset);
 	res = isl_tab_min(bset->ctx, tab, f, denom, min, NULL, 0);
-	if (res != isl_lp_ok) {
-		isl_tab_free(bset->ctx, tab);
-		return res;
+	if (res != isl_lp_ok)
+		goto done;
+
+	if (isl_tab_sample_is_integer(bset->ctx, tab)) {
+		isl_vec_free(bset->sample);
+		bset->sample = isl_tab_get_sample_value(bset->ctx, tab);
+		if (!bset->sample)
+			goto error;
+		isl_int_set(*max, *min);
+		goto done;
 	}
+
 	dim = isl_basic_set_total_dim(bset);
 	isl_seq_neg(f, f, 1 + dim);
 	res = isl_tab_min(bset->ctx, tab, f, denom, max, NULL, 0);
 	isl_seq_neg(f, f, 1 + dim);
 	isl_int_neg(*max, *max);
 
+	if (isl_tab_sample_is_integer(bset->ctx, tab)) {
+		isl_vec_free(bset->sample);
+		bset->sample = isl_tab_get_sample_value(bset->ctx, tab);
+		if (!bset->sample)
+			goto error;
+	}
+
+done:
 	isl_tab_free(bset->ctx, tab);
 	return res;
+error:
+	isl_tab_free(bset->ctx, tab);
+	return isl_lp_error;
 }
 
 /* Perform a basis reduction on "bset" and return the inverse of
@@ -349,6 +371,11 @@ static struct isl_vec *sample_bounded(struct isl_basic_set *bset)
 	if (res == isl_lp_error)
 		goto error;
 	isl_assert(bset->ctx, res != isl_lp_unbounded, goto error);
+	if (bset->sample) {
+		sample = isl_vec_copy(bset->sample);
+		isl_basic_set_free(bset);
+		goto out;
+	}
 	if (res == isl_lp_empty || isl_int_lt(max, min)) {
 		sample = empty_sample(bset);
 		goto out;
@@ -363,6 +390,11 @@ static struct isl_vec *sample_bounded(struct isl_basic_set *bset)
 		if (res == isl_lp_error)
 			goto error;
 		isl_assert(bset->ctx, res != isl_lp_unbounded, goto error);
+		if (bset->sample) {
+			sample = isl_vec_copy(bset->sample);
+			isl_basic_set_free(bset);
+			goto out;
+		}
 		if (res == isl_lp_empty || isl_int_lt(max, min)) {
 			sample = empty_sample(bset);
 			goto out;
