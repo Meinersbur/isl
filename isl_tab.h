@@ -127,6 +127,7 @@ struct isl_tab *isl_tab_add_valid_eq(struct isl_ctx *ctx,
 int isl_tab_is_equality(struct isl_ctx *ctx, struct isl_tab *tab, int con);
 int isl_tab_is_redundant(struct isl_ctx *ctx, struct isl_tab *tab, int con);
 
+int isl_tab_sample_is_integer(struct isl_ctx *ctx, struct isl_tab *tab);
 struct isl_vec *isl_tab_get_sample_value(struct isl_ctx *ctx,
 						struct isl_tab *tab);
 

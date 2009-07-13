@@ -1130,9 +1130,12 @@ int isl_tab_cone_is_bounded(struct isl_ctx *ctx, struct isl_tab *tab)
 	return 0;
 }
 
-static int sample_is_integer(struct isl_ctx *ctx, struct isl_tab *tab)
+int isl_tab_sample_is_integer(struct isl_ctx *ctx, struct isl_tab *tab)
 {
 	int i;
+
+	if (!tab)
+		return -1;
 
 	for (i = 0; i < tab->n_var; ++i) {
 		int row;
@@ -1236,7 +1239,7 @@ struct isl_basic_map *isl_basic_map_update_from_tab(struct isl_basic_map *bmap,
 				isl_basic_map_drop_inequality(bmap, i);
 		}
 	if (!tab->rational &&
-	    !bmap->sample && sample_is_integer(bmap->ctx, tab))
+	    !bmap->sample && isl_tab_sample_is_integer(bmap->ctx, tab))
 		bmap->sample = extract_integer_sample(bmap->ctx, tab);
 	return bmap;
 }
