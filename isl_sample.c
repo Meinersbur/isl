@@ -845,6 +845,19 @@ struct isl_vec *isl_basic_set_sample(struct isl_basic_set *bset)
 	isl_assert(ctx, isl_basic_set_n_param(bset) == 0, goto error);
 	isl_assert(ctx, bset->n_div == 0, goto error);
 
+	if (bset->sample && bset->sample->size == 1 + dim) {
+		int contains = isl_basic_set_contains(bset, bset->sample);
+		if (contains < 0)
+			goto error;
+		if (contains) {
+			struct isl_vec *sample = isl_vec_copy(bset->sample);
+			isl_basic_set_free(bset);
+			return sample;
+		}
+	}
+	isl_vec_free(bset->sample);
+	bset->sample = NULL;
+
 	if (bset->n_eq > 0)
 		return sample_eq(bset, isl_basic_set_sample);
 	if (dim == 0)
