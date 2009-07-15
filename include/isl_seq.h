@@ -13,6 +13,7 @@ void isl_seq_submul(isl_int *dst, isl_int f, isl_int *src, unsigned len);
 void isl_seq_swp_or_cpy(isl_int *dst, isl_int *src, unsigned len);
 void isl_seq_scale(isl_int *dst, isl_int *src, isl_int f, unsigned len);
 void isl_seq_scale_down(isl_int *dst, isl_int *src, isl_int f, unsigned len);
+void isl_seq_cdiv_q(isl_int *dst, isl_int *src, isl_int m, unsigned len);
 void isl_seq_fdiv_q(isl_int *dst, isl_int *src, isl_int m, unsigned len);
 void isl_seq_fdiv_r(isl_int *dst, isl_int *src, isl_int m, unsigned len);
 void isl_seq_combine(isl_int *dst, isl_int m1, isl_int *src1,
