@@ -2762,7 +2762,7 @@ static struct isl_basic_map *isl_basic_map_fix_pos(struct isl_basic_map *bmap,
 	j = isl_basic_map_alloc_equality(bmap);
 	if (j < 0)
 		goto error;
-	isl_seq_clr(bmap->eq[j], 1 + isl_basic_map_total_dim(bmap));
+	isl_seq_clr(bmap->eq[j] + 1, isl_basic_map_total_dim(bmap));
 	isl_int_set_si(bmap->eq[j][pos], -1);
 	isl_int_set_si(bmap->eq[j][0], value);
 	bmap = isl_basic_map_simplify(bmap);
