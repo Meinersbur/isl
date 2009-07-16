@@ -575,15 +575,14 @@ static struct isl_set *isl_set_reset_dim(struct isl_set *set,
  *
  * where I is an n x n identity matrix.
  */
-static struct isl_mat *append_identity(struct isl_ctx *ctx,
-	struct isl_mat *mat, unsigned size)
+static struct isl_mat *append_identity(struct isl_mat *mat, unsigned size)
 {
 	int i;
 	unsigned n_row, n_col;
 
 	n_row = mat->n_row;
 	n_col = mat->n_col;
-	mat = isl_mat_extend(ctx, mat, n_row + size, n_col + size);
+	mat = isl_mat_extend(mat, n_row + size, n_col + size);
 	if (!mat)
 		return NULL;
 	for (i = 0; i < n_row; ++i)
@@ -614,7 +613,7 @@ static struct isl_basic_set *basic_set_parameter_preimage(
 
 	isl_assert(bset->ctx, mat->n_row == 1 + nparam, goto error);
 
-	mat = append_identity(bset->ctx, mat, n_out);
+	mat = append_identity(mat, n_out);
 	if (!mat)
 		goto error;
 
@@ -627,7 +626,7 @@ static struct isl_basic_set *basic_set_parameter_preimage(
 	}
 	return bset;
 error:
-	isl_mat_free(bset ? bset->ctx : NULL, mat);
+	isl_mat_free(mat);
 	isl_basic_set_free(bset);
 	return NULL;
 }
@@ -653,7 +652,7 @@ static struct isl_set *set_parameter_preimage(
 
 	isl_assert(set->ctx, mat->n_row == 1 + nparam, goto error);
 
-	mat = append_identity(set->ctx, mat, n_out);
+	mat = append_identity(mat, n_out);
 	if (!mat)
 		goto error;
 
@@ -673,7 +672,7 @@ static struct isl_set *set_parameter_preimage(
 	return set;
 error:
 	isl_dim_free(dim);
-	isl_mat_free(set ? set->ctx : NULL, mat);
+	isl_mat_free(mat);
 error2:
 	isl_set_free(set);
 	return NULL;
@@ -704,11 +703,11 @@ static struct isl_basic_set *basic_set_append_equalities(
 		isl_seq_cpy(bset->eq[k], eq->row[i], eq->n_col);
 		isl_seq_clr(bset->eq[k] + eq->n_col, len - eq->n_col);
 	}
-	isl_mat_free(bset->ctx, eq);
+	isl_mat_free(eq);
 
 	return bset;
 error:
-	isl_mat_free(bset ? bset->ctx : NULL, eq);
+	isl_mat_free(eq);
 	isl_basic_set_free(bset);
 	return NULL;
 }
@@ -726,14 +725,14 @@ static struct isl_set *set_append_equalities(struct isl_set *set,
 
 	for (i = 0; i < set->n; ++i) {
 		set->p[i] = basic_set_append_equalities(set->p[i],
-					isl_mat_copy(set->ctx, eq));
+					isl_mat_copy(eq));
 		if (!set->p[i])
 			goto error;
 	}
-	isl_mat_free(set->ctx, eq);
+	isl_mat_free(eq);
 	return set;
 error:
-	isl_mat_free(set ? set->ctx : NULL, eq);
+	isl_mat_free(eq);
 	isl_set_free(set);
 	return NULL;
 }
@@ -779,9 +778,8 @@ static struct isl_set *compute_divs(struct isl_basic_set *bset)
 
 	eq = isl_mat_sub_alloc(bset->ctx, bset->eq, i, bset->n_eq - i,
 		0, 1 + nparam);
-	eq = isl_mat_cow(bset->ctx, eq);
-	T = isl_mat_variable_compression(bset->ctx,
-		isl_mat_copy(bset->ctx, eq), &T2);
+	eq = isl_mat_cow(eq);
+	T = isl_mat_variable_compression(isl_mat_copy(eq), &T2);
 	bset = basic_set_parameter_preimage(bset, T);
 
 	set = compute_divs_no_eq(bset);

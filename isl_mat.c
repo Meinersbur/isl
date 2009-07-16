@@ -24,6 +24,8 @@ struct isl_mat *isl_mat_alloc(struct isl_ctx *ctx,
 	for (i = 0; i < n_row; ++i)
 		mat->row[i] = mat->block.data + i * n_col;
 
+	mat->ctx = ctx;
+	isl_ctx_ref(ctx);
 	mat->ref = 1;
 	mat->n_row = n_row;
 	mat->n_col = n_col;
@@ -36,7 +38,7 @@ error:
 	return NULL;
 }
 
-struct isl_mat *isl_mat_extend(struct isl_ctx *ctx, struct isl_mat *mat,
+struct isl_mat *isl_mat_extend(struct isl_mat *mat,
 	unsigned n_row, unsigned n_col)
 {
 	int i;
@@ -51,25 +53,25 @@ struct isl_mat *isl_mat_extend(struct isl_ctx *ctx, struct isl_mat *mat,
 	if (mat->n_col < n_col) {
 		struct isl_mat *new_mat;
 
-		new_mat = isl_mat_alloc(ctx, n_row, n_col);
+		new_mat = isl_mat_alloc(mat->ctx, n_row, n_col);
 		if (!new_mat)
 			goto error;
 		for (i = 0; i < mat->n_row; ++i)
 			isl_seq_cpy(new_mat->row[i], mat->row[i], mat->n_col);
-		isl_mat_free(ctx, mat);
+		isl_mat_free(mat);
 		return new_mat;
 	}
 
-	mat = isl_mat_cow(ctx, mat);
+	mat = isl_mat_cow(mat);
 	if (!mat)
 		goto error;
 
 	assert(mat->ref == 1);
 	old = mat->block.data;
-	mat->block = isl_blk_extend(ctx, mat->block, n_row * mat->n_col);
+	mat->block = isl_blk_extend(mat->ctx, mat->block, n_row * mat->n_col);
 	if (isl_blk_is_error(mat->block))
 		goto error;
-	mat->row = isl_realloc_array(ctx, mat->row, isl_int *, n_row);
+	mat->row = isl_realloc_array(mat->ctx, mat->row, isl_int *, n_row);
 	if (!mat->row)
 		goto error;
 
@@ -81,7 +83,7 @@ struct isl_mat *isl_mat_extend(struct isl_ctx *ctx, struct isl_mat *mat,
 
 	return mat;
 error:
-	isl_mat_free(ctx, mat);
+	isl_mat_free(mat);
 	return NULL;
 }
 
@@ -99,6 +101,8 @@ struct isl_mat *isl_mat_sub_alloc(struct isl_ctx *ctx, isl_int **row,
 		goto error;
 	for (i = 0; i < n_row; ++i)
 		mat->row[i] = row[first_row+i] + first_col;
+	mat->ctx = ctx;
+	isl_ctx_ref(ctx);
 	mat->ref = 1;
 	mat->n_row = n_row;
 	mat->n_col = n_col;
@@ -128,7 +132,7 @@ void isl_mat_sub_neg(struct isl_ctx *ctx, isl_int **dst, isl_int **src,
 		isl_seq_neg(dst[i]+dst_col, src[i]+src_col, n_col);
 }
 
-struct isl_mat *isl_mat_copy(struct isl_ctx *ctx, struct isl_mat *mat)
+struct isl_mat *isl_mat_copy(struct isl_mat *mat)
 {
 	if (!mat)
 		return NULL;
@@ -137,14 +141,14 @@ struct isl_mat *isl_mat_copy(struct isl_ctx *ctx, struct isl_mat *mat)
 	return mat;
 }
 
-struct isl_mat *isl_mat_dup(struct isl_ctx *ctx, struct isl_mat *mat)
+struct isl_mat *isl_mat_dup(struct isl_mat *mat)
 {
 	int i;
 	struct isl_mat *mat2;
 
 	if (!mat)
 		return NULL;
-	mat2 = isl_mat_alloc(ctx, mat->n_row, mat->n_col);
+	mat2 = isl_mat_alloc(mat->ctx, mat->n_row, mat->n_col);
 	if (!mat2)
 		return NULL;
 	for (i = 0; i < mat->n_row; ++i)
@@ -152,7 +156,7 @@ struct isl_mat *isl_mat_dup(struct isl_ctx *ctx, struct isl_mat *mat)
 	return mat2;
 }
 
-struct isl_mat *isl_mat_cow(struct isl_ctx *ctx, struct isl_mat *mat)
+struct isl_mat *isl_mat_cow(struct isl_mat *mat)
 {
 	struct isl_mat *mat2;
 	if (!mat)
@@ -161,12 +165,12 @@ struct isl_mat *isl_mat_cow(struct isl_ctx *ctx, struct isl_mat *mat)
 	if (mat->ref == 1 && !ISL_F_ISSET(mat, ISL_MAT_BORROWED))
 		return mat;
 
-	mat2 = isl_mat_dup(ctx, mat);
-	isl_mat_free(ctx, mat);
+	mat2 = isl_mat_dup(mat);
+	isl_mat_free(mat);
 	return mat2;
 }
 
-void isl_mat_free(struct isl_ctx *ctx, struct isl_mat *mat)
+void isl_mat_free(struct isl_mat *mat)
 {
 	if (!mat)
 		return;
@@ -175,7 +179,8 @@ void isl_mat_free(struct isl_ctx *ctx, struct isl_mat *mat)
 		return;
 
 	if (!ISL_F_ISSET(mat, ISL_MAT_BORROWED))
-		isl_blk_free(ctx, mat->block);
+		isl_blk_free(mat->ctx, mat->block);
+	isl_ctx_deref(mat->ctx);
 	free(mat->row);
 	free(mat);
 }
@@ -197,8 +202,7 @@ struct isl_mat *isl_mat_identity(struct isl_ctx *ctx, unsigned n_row)
 	return mat;
 }
 
-struct isl_vec *isl_mat_vec_product(struct isl_ctx *ctx,
-	struct isl_mat *mat, struct isl_vec *vec)
+struct isl_vec *isl_mat_vec_product(struct isl_mat *mat, struct isl_vec *vec)
 {
 	int i;
 	struct isl_vec *prod;
@@ -208,24 +212,24 @@ struct isl_vec *isl_mat_vec_product(struct isl_ctx *ctx,
 
 	isl_assert(ctx, mat->n_col == vec->size, goto error);
 
-	prod = isl_vec_alloc(ctx, mat->n_row);
+	prod = isl_vec_alloc(mat->ctx, mat->n_row);
 	if (!prod)
 		goto error;
 
 	for (i = 0; i < prod->size; ++i)
 		isl_seq_inner_product(mat->row[i], vec->el, vec->size,
 					&prod->block.data[i]);
-	isl_mat_free(ctx, mat);
+	isl_mat_free(mat);
 	isl_vec_free(vec);
 	return prod;
 error:
-	isl_mat_free(ctx, mat);
+	isl_mat_free(mat);
 	isl_vec_free(vec);
 	return NULL;
 }
 
-struct isl_mat *isl_mat_aff_direct_sum(struct isl_ctx *ctx,
-	struct isl_mat *left, struct isl_mat *right)
+struct isl_mat *isl_mat_aff_direct_sum(struct isl_mat *left,
+	struct isl_mat *right)
 {
 	int i;
 	struct isl_mat *sum;
@@ -244,7 +248,7 @@ struct isl_mat *isl_mat_aff_direct_sum(struct isl_ctx *ctx,
 	    isl_seq_first_non_zero(right->row[0]+1, right->n_col-1) == -1,
 	    goto error);
 
-	sum = isl_mat_alloc(ctx, left->n_row, left->n_col + right->n_col - 1);
+	sum = isl_mat_alloc(left->ctx, left->n_row, left->n_col + right->n_col - 1);
 	if (!sum)
 		goto error;
 	isl_int_lcm(sum->row[0][0], left->row[0][0], right->row[0][0]);
@@ -265,16 +269,16 @@ struct isl_mat *isl_mat_aff_direct_sum(struct isl_ctx *ctx,
 
 	isl_int_divexact(left->row[0][0], sum->row[0][0], left->row[0][0]);
 	isl_int_divexact(right->row[0][0], sum->row[0][0], right->row[0][0]);
-	isl_mat_free(ctx, left);
-	isl_mat_free(ctx, right);
+	isl_mat_free(left);
+	isl_mat_free(right);
 	return sum;
 error:
-	isl_mat_free(ctx, left);
-	isl_mat_free(ctx, right);
+	isl_mat_free(left);
+	isl_mat_free(right);
 	return NULL;
 }
 
-static void exchange(struct isl_ctx *ctx, struct isl_mat *M, struct isl_mat **U,
+static void exchange(struct isl_mat *M, struct isl_mat **U,
 	struct isl_mat **Q, unsigned row, unsigned i, unsigned j)
 {
 	int r;
@@ -285,7 +289,7 @@ static void exchange(struct isl_ctx *ctx, struct isl_mat *M, struct isl_mat **U,
 			isl_int_swap((*U)->row[r][i], (*U)->row[r][j]);
 	}
 	if (Q)
-		isl_mat_swap_rows(ctx, *Q, i, j);
+		isl_mat_swap_rows(*Q, i, j);
 }
 
 static void subtract(struct isl_mat *M, struct isl_mat **U,
@@ -304,7 +308,7 @@ static void subtract(struct isl_mat *M, struct isl_mat **U,
 	}
 }
 
-static void oppose(struct isl_ctx *ctx, struct isl_mat *M, struct isl_mat **U,
+static void oppose(struct isl_mat *M, struct isl_mat **U,
 	struct isl_mat **Q, unsigned row, unsigned col)
 {
 	int r;
@@ -330,8 +334,8 @@ static void oppose(struct isl_ctx *ctx, struct isl_mat *M, struct isl_mat **U,
  * column.
  * If U or Q are NULL, then these matrices are not computed.
  */
-struct isl_mat *isl_mat_left_hermite(struct isl_ctx *ctx,
-	struct isl_mat *M, int neg, struct isl_mat **U, struct isl_mat **Q)
+struct isl_mat *isl_mat_left_hermite(struct isl_mat *M, int neg,
+	struct isl_mat **U, struct isl_mat **Q)
 {
 	isl_int c;
 	int row, col;
@@ -342,16 +346,16 @@ struct isl_mat *isl_mat_left_hermite(struct isl_ctx *ctx,
 		*Q = NULL;
 	if (!M)
 		goto error;
-	M = isl_mat_cow(ctx, M);
+	M = isl_mat_cow(M);
 	if (!M)
 		goto error;
 	if (U) {
-		*U = isl_mat_identity(ctx, M->n_col);
+		*U = isl_mat_identity(M->ctx, M->n_col);
 		if (!*U)
 			goto error;
 	}
 	if (Q) {
-		*Q = isl_mat_identity(ctx, M->n_col);
+		*Q = isl_mat_identity(M->ctx, M->n_col);
 		if (!*Q)
 			goto error;
 	}
@@ -365,9 +369,9 @@ struct isl_mat *isl_mat_left_hermite(struct isl_ctx *ctx,
 			continue;
 		first += col;
 		if (first != col)
-			exchange(ctx, M, U, Q, row, first, col);
+			exchange(M, U, Q, row, first, col);
 		if (isl_int_is_neg(M->row[row][col]))
-			oppose(ctx, M, U, Q, row, col);
+			oppose(M, U, Q, row, col);
 		first = col+1;
 		while ((off = isl_seq_first_non_zero(M->row[row]+first,
 						       M->n_col-first)) != -1) {
@@ -375,7 +379,7 @@ struct isl_mat *isl_mat_left_hermite(struct isl_ctx *ctx,
 			isl_int_fdiv_q(c, M->row[row][first], M->row[row][col]);
 			subtract(M, U, Q, row, col, first, c);
 			if (!isl_int_is_zero(M->row[row][first]))
-				exchange(ctx, M, U, Q, row, first, col);
+				exchange(M, U, Q, row, first, col);
 			else
 				++first;
 		}
@@ -397,23 +401,23 @@ struct isl_mat *isl_mat_left_hermite(struct isl_ctx *ctx,
 	return M;
 error:
 	if (Q) {
-		isl_mat_free(ctx, *Q);
+		isl_mat_free(*Q);
 		*Q = NULL;
 	}
 	if (U) {
-		isl_mat_free(ctx, *U);
+		isl_mat_free(*U);
 		*U = NULL;
 	}
 	return NULL;
 }
 
-struct isl_mat *isl_mat_right_kernel(struct isl_ctx *ctx, struct isl_mat *mat)
+struct isl_mat *isl_mat_right_kernel(struct isl_mat *mat)
 {
 	int i, rank;
 	struct isl_mat *U = NULL;
 	struct isl_mat *K;
 
-	mat = isl_mat_left_hermite(ctx, mat, 0, &U, NULL);
+	mat = isl_mat_left_hermite(mat, 0, &U, NULL);
 	if (!mat || !U)
 		goto error;
 
@@ -423,27 +427,27 @@ struct isl_mat *isl_mat_right_kernel(struct isl_ctx *ctx, struct isl_mat *mat)
 		if (i >= mat->n_row)
 			break;
 	}
-	K = isl_mat_alloc(ctx, U->n_row, U->n_col - rank);
+	K = isl_mat_alloc(U->ctx, U->n_row, U->n_col - rank);
 	if (!K)
 		goto error;
-	isl_mat_sub_copy(ctx, K->row, U->row, U->n_row, 0, rank, U->n_col-rank);
-	isl_mat_free(ctx, mat);
-	isl_mat_free(ctx, U);
+	isl_mat_sub_copy(K->ctx, K->row, U->row, U->n_row, 0, rank, U->n_col-rank);
+	isl_mat_free(mat);
+	isl_mat_free(U);
 	return K;
 error:
-	isl_mat_free(ctx, mat);
-	isl_mat_free(ctx, U);
+	isl_mat_free(mat);
+	isl_mat_free(U);
 	return NULL;
 }
 
-struct isl_mat *isl_mat_lin_to_aff(struct isl_ctx *ctx, struct isl_mat *mat)
+struct isl_mat *isl_mat_lin_to_aff(struct isl_mat *mat)
 {
 	int i;
 	struct isl_mat *mat2;
 
 	if (!mat)
 		return NULL;
-	mat2 = isl_mat_alloc(ctx, 1+mat->n_row, 1+mat->n_col);
+	mat2 = isl_mat_alloc(mat->ctx, 1+mat->n_row, 1+mat->n_col);
 	if (!mat2)
 		return NULL;
 	isl_int_set_si(mat2->row[0][0], 1);
@@ -452,7 +456,7 @@ struct isl_mat *isl_mat_lin_to_aff(struct isl_ctx *ctx, struct isl_mat *mat)
 		isl_int_set_si(mat2->row[1+i][0], 0);
 		isl_seq_cpy(mat2->row[1+i]+1, mat->row[i], mat->n_col);
 	}
-	isl_mat_free(ctx, mat);
+	isl_mat_free(mat);
 	return mat2;
 }
 
@@ -480,38 +484,36 @@ static int row_abs_min_non_zero(isl_int **row, unsigned n_row, unsigned col)
 	return min;
 }
 
-static void inv_exchange(struct isl_ctx *ctx,
-	struct isl_mat *left, struct isl_mat *right,
+static void inv_exchange(struct isl_mat *left, struct isl_mat *right,
 	unsigned i, unsigned j)
 {
-	left = isl_mat_swap_rows(ctx, left, i, j);
-	right = isl_mat_swap_rows(ctx, right, i, j);
+	left = isl_mat_swap_rows(left, i, j);
+	right = isl_mat_swap_rows(right, i, j);
 }
 
-static void inv_oppose(struct isl_ctx *ctx,
+static void inv_oppose(
 	struct isl_mat *left, struct isl_mat *right, unsigned row)
 {
 	isl_seq_neg(left->row[row]+row, left->row[row]+row, left->n_col-row);
 	isl_seq_neg(right->row[row], right->row[row], right->n_col);
 }
 
-static void inv_subtract(struct isl_ctx *ctx,
-	struct isl_mat *left, struct isl_mat *right,
+static void inv_subtract(struct isl_mat *left, struct isl_mat *right,
 	unsigned row, unsigned i, isl_int m)
 {
 	isl_int_neg(m, m);
 	isl_seq_combine(left->row[i]+row,
-			ctx->one, left->row[i]+row,
+			left->ctx->one, left->row[i]+row,
 			m, left->row[row]+row,
 			left->n_col-row);
-	isl_seq_combine(right->row[i], ctx->one, right->row[i],
+	isl_seq_combine(right->row[i], right->ctx->one, right->row[i],
 			m, right->row[row], right->n_col);
 }
 
 /* Compute inv(left)*right
  */
-struct isl_mat *isl_mat_inverse_product(struct isl_ctx *ctx,
-	struct isl_mat *left, struct isl_mat *right)
+struct isl_mat *isl_mat_inverse_product(struct isl_mat *left,
+	struct isl_mat *right)
 {
 	int row;
 	isl_int a, b;
@@ -519,16 +521,16 @@ struct isl_mat *isl_mat_inverse_product(struct isl_ctx *ctx,
 	if (!left || !right)
 		goto error;
 
-	isl_assert(ctx, left->n_row == left->n_col, goto error);
-	isl_assert(ctx, left->n_row == right->n_row, goto error);
+	isl_assert(left->ctx, left->n_row == left->n_col, goto error);
+	isl_assert(left->ctx, left->n_row == right->n_row, goto error);
 
 	if (left->n_row == 0) {
-		isl_mat_free(ctx, left);
+		isl_mat_free(left);
 		return right;
 	}
 
-	left = isl_mat_cow(ctx, left);
-	right = isl_mat_cow(ctx, right);
+	left = isl_mat_cow(left);
+	right = isl_mat_cow(right);
 	if (!left || !right)
 		goto error;
 
@@ -544,18 +546,18 @@ struct isl_mat *isl_mat_inverse_product(struct isl_ctx *ctx,
 		}
 		pivot += row;
 		if (pivot != row)
-			inv_exchange(ctx, left, right, pivot, row);
+			inv_exchange(left, right, pivot, row);
 		if (isl_int_is_neg(left->row[row][row]))
-			inv_oppose(ctx, left, right, row);
+			inv_oppose(left, right, row);
 		first = row+1;
 		while ((off = row_first_non_zero(left->row+first,
 					left->n_row-first, row)) != -1) {
 			first += off;
 			isl_int_fdiv_q(a, left->row[first][row],
 					left->row[row][row]);
-			inv_subtract(ctx, left, right, row, first, a);
+			inv_subtract(left, right, row, first, a);
 			if (!isl_int_is_zero(left->row[first][row]))
-				inv_exchange(ctx, left, right, row, first);
+				inv_exchange(left, right, row, first);
 			else
 				++first;
 		}
@@ -592,11 +594,11 @@ struct isl_mat *isl_mat_inverse_product(struct isl_ctx *ctx,
 	}
 	isl_int_clear(a);
 
-	isl_mat_free(ctx, left);
+	isl_mat_free(left);
 	return right;
 error:
-	isl_mat_free(ctx, left);
-	isl_mat_free(ctx, right);
+	isl_mat_free(left);
+	isl_mat_free(right);
 	return NULL;
 }
 
@@ -623,19 +625,18 @@ void isl_mat_col_combine(struct isl_mat *mat, unsigned dst,
 	isl_int_clear(tmp);
 }
 
-struct isl_mat *isl_mat_right_inverse(struct isl_ctx *ctx,
-	struct isl_mat *mat)
+struct isl_mat *isl_mat_right_inverse(struct isl_mat *mat)
 {
 	struct isl_mat *inv;
 	int row;
 	isl_int a, b;
 
-	mat = isl_mat_cow(ctx, mat);
+	mat = isl_mat_cow(mat);
 	if (!mat)
 		return NULL;
 
-	inv = isl_mat_identity(ctx, mat->n_col);
-	inv = isl_mat_cow(ctx, inv);
+	inv = isl_mat_identity(mat->ctx, mat->n_col);
+	inv = isl_mat_cow(inv);
 	if (!inv)
 		goto error;
 
@@ -651,9 +652,9 @@ struct isl_mat *isl_mat_right_inverse(struct isl_ctx *ctx,
 		}
 		pivot += row;
 		if (pivot != row)
-			exchange(ctx, mat, &inv, NULL, row, pivot, row);
+			exchange(mat, &inv, NULL, row, pivot, row);
 		if (isl_int_is_neg(mat->row[row][row]))
-			oppose(ctx, mat, &inv, NULL, row, row);
+			oppose(mat, &inv, NULL, row, row);
 		first = row+1;
 		while ((off = isl_seq_first_non_zero(mat->row[row]+first,
 						    mat->n_col-first)) != -1) {
@@ -662,7 +663,7 @@ struct isl_mat *isl_mat_right_inverse(struct isl_ctx *ctx,
 						    mat->row[row][row]);
 			subtract(mat, &inv, NULL, row, row, first, a);
 			if (!isl_int_is_zero(mat->row[row][first]))
-				exchange(ctx, mat, &inv, NULL, row, row, first);
+				exchange(mat, &inv, NULL, row, row, first);
 			else
 				++first;
 		}
@@ -694,21 +695,21 @@ struct isl_mat *isl_mat_right_inverse(struct isl_ctx *ctx,
 	}
 	isl_int_clear(a);
 
-	isl_mat_free(ctx, mat);
+	isl_mat_free(mat);
 
 	return inv;
 error:
-	isl_mat_free(ctx, mat);
+	isl_mat_free(mat);
 	return NULL;
 }
 
-struct isl_mat *isl_mat_transpose(struct isl_ctx *ctx, struct isl_mat *mat)
+struct isl_mat *isl_mat_transpose(struct isl_mat *mat)
 {
 	struct isl_mat *transpose = NULL;
 	int i, j;
 
 	if (mat->n_col == mat->n_row) {
-		mat = isl_mat_cow(ctx, mat);
+		mat = isl_mat_cow(mat);
 		if (!mat)
 			return NULL;
 		for (i = 0; i < mat->n_row; ++i)
@@ -716,25 +717,24 @@ struct isl_mat *isl_mat_transpose(struct isl_ctx *ctx, struct isl_mat *mat)
 				isl_int_swap(mat->row[i][j], mat->row[j][i]);
 		return mat;
 	}
-	transpose = isl_mat_alloc(ctx, mat->n_col, mat->n_row);
+	transpose = isl_mat_alloc(mat->ctx, mat->n_col, mat->n_row);
 	if (!transpose)
 		goto error;
 	for (i = 0; i < mat->n_row; ++i)
 		for (j = 0; j < mat->n_col; ++j)
 			isl_int_set(transpose->row[j][i], mat->row[i][j]);
-	isl_mat_free(ctx, mat);
+	isl_mat_free(mat);
 	return transpose;
 error:
-	isl_mat_free(ctx, mat);
+	isl_mat_free(mat);
 	return NULL;
 }
 
-struct isl_mat *isl_mat_swap_cols(struct isl_ctx *ctx,
-	struct isl_mat *mat, unsigned i, unsigned j)
+struct isl_mat *isl_mat_swap_cols(struct isl_mat *mat, unsigned i, unsigned j)
 {
 	int r;
 
-	mat = isl_mat_cow(ctx, mat);
+	mat = isl_mat_cow(mat);
 	if (!mat)
 		return NULL;
 	isl_assert(ctx, i < mat->n_col, goto error);
@@ -744,18 +744,17 @@ struct isl_mat *isl_mat_swap_cols(struct isl_ctx *ctx,
 		isl_int_swap(mat->row[r][i], mat->row[r][j]);
 	return mat;
 error:
-	isl_mat_free(ctx, mat);
+	isl_mat_free(mat);
 	return NULL;
 }
 
-struct isl_mat *isl_mat_swap_rows(struct isl_ctx *ctx,
-	struct isl_mat *mat, unsigned i, unsigned j)
+struct isl_mat *isl_mat_swap_rows(struct isl_mat *mat, unsigned i, unsigned j)
 {
 	isl_int *t;
 
 	if (!mat)
 		return NULL;
-	mat = isl_mat_cow(ctx, mat);
+	mat = isl_mat_cow(mat);
 	if (!mat)
 		return NULL;
 	t = mat->row[i];
@@ -764,8 +763,7 @@ struct isl_mat *isl_mat_swap_rows(struct isl_ctx *ctx,
 	return mat;
 }
 
-struct isl_mat *isl_mat_product(struct isl_ctx *ctx,
-	struct isl_mat *left, struct isl_mat *right)
+struct isl_mat *isl_mat_product(struct isl_mat *left, struct isl_mat *right)
 {
 	int i, j, k;
 	struct isl_mat *prod;
@@ -773,7 +771,7 @@ struct isl_mat *isl_mat_product(struct isl_ctx *ctx,
 	if (!left || !right)
 		goto error;
 	isl_assert(ctx, left->n_col == right->n_row, goto error);
-	prod = isl_mat_alloc(ctx, left->n_row, right->n_col);
+	prod = isl_mat_alloc(left->ctx, left->n_row, right->n_col);
 	if (!prod)
 		goto error;
 	if (left->n_col == 0) {
@@ -790,12 +788,12 @@ struct isl_mat *isl_mat_product(struct isl_ctx *ctx,
 					    left->row[i][k], right->row[k][j]);
 		}
 	}
-	isl_mat_free(ctx, left);
-	isl_mat_free(ctx, right);
+	isl_mat_free(left);
+	isl_mat_free(right);
 	return prod;
 error:
-	isl_mat_free(ctx, left);
-	isl_mat_free(ctx, right);
+	isl_mat_free(left);
+	isl_mat_free(right);
 	return NULL;
 }
 
@@ -824,8 +822,8 @@ static int preimage(struct isl_ctx *ctx, isl_int **q, unsigned n,
 	if (has_div)
 		for (i = 0; i < n; ++i)
 			isl_int_mul(q[i][0], q[i][0], mat->row[0][0]);
-	t = isl_mat_sub_alloc(ctx, q, 0, n, has_div, mat->n_row);
-	t = isl_mat_product(ctx, t, mat);
+	t = isl_mat_sub_alloc(mat->ctx, q, 0, n, has_div, mat->n_row);
+	t = isl_mat_product(t, mat);
 	if (!t)
 		return -1;
 	for (i = 0; i < n; ++i) {
@@ -834,7 +832,7 @@ static int preimage(struct isl_ctx *ctx, isl_int **q, unsigned n,
 			    q[i] + has_div + t->n_col + e, n_div);
 		isl_seq_clr(q[i] + has_div + t->n_col + n_div, e);
 	}
-	isl_mat_free(ctx, t);
+	isl_mat_free(t);
 	return 0;
 }
 
@@ -875,11 +873,11 @@ struct isl_basic_set *isl_basic_set_preimage(struct isl_basic_set *bset,
 	}
 
 	if (preimage(ctx, bset->eq, bset->n_eq, bset->n_div, 0,
-			isl_mat_copy(ctx, mat)) < 0)
+			isl_mat_copy(mat)) < 0)
 		goto error;
 
 	if (preimage(ctx, bset->ineq, bset->n_ineq, bset->n_div, 0,
-			isl_mat_copy(ctx, mat)) < 0)
+			isl_mat_copy(mat)) < 0)
 		goto error;
 
 	if (preimage(ctx, bset->div, bset->n_div, bset->n_div, 1, mat) < 0)
@@ -896,7 +894,7 @@ struct isl_basic_set *isl_basic_set_preimage(struct isl_basic_set *bset,
 
 	return bset;
 error:
-	isl_mat_free(ctx, mat);
+	isl_mat_free(mat);
 error2:
 	isl_basic_set_free(bset);
 	return NULL;
@@ -914,7 +912,7 @@ struct isl_set *isl_set_preimage(struct isl_set *set, struct isl_mat *mat)
 	ctx = set->ctx;
 	for (i = 0; i < set->n; ++i) {
 		set->p[i] = isl_basic_set_preimage(set->p[i],
-						    isl_mat_copy(ctx, mat));
+						    isl_mat_copy(mat));
 		if (!set->p[i])
 			goto error;
 	}
@@ -925,17 +923,16 @@ struct isl_set *isl_set_preimage(struct isl_set *set, struct isl_mat *mat)
 		set->dim->n_out += mat->n_col;
 		set->dim->n_out -= mat->n_row;
 	}
-	isl_mat_free(ctx, mat);
+	isl_mat_free(mat);
 	ISL_F_CLR(set, ISL_SET_NORMALIZED);
 	return set;
 error:
 	isl_set_free(set);
-	isl_mat_free(ctx, mat);
+	isl_mat_free(mat);
 	return NULL;
 }
 
-void isl_mat_dump(struct isl_ctx *ctx, struct isl_mat *mat,
-				FILE *out, int indent)
+void isl_mat_dump(struct isl_mat *mat, FILE *out, int indent)
 {
 	int i, j;
 
@@ -964,12 +961,11 @@ void isl_mat_dump(struct isl_ctx *ctx, struct isl_mat *mat,
 	}
 }
 
-struct isl_mat *isl_mat_drop_cols(struct isl_ctx *ctx, struct isl_mat *mat,
-				unsigned col, unsigned n)
+struct isl_mat *isl_mat_drop_cols(struct isl_mat *mat, unsigned col, unsigned n)
 {
 	int r;
 
-	mat = isl_mat_cow(ctx, mat);
+	mat = isl_mat_cow(mat);
 	if (!mat)
 		return NULL;
 
@@ -982,12 +978,11 @@ struct isl_mat *isl_mat_drop_cols(struct isl_ctx *ctx, struct isl_mat *mat,
 	return mat;
 }
 
-struct isl_mat *isl_mat_drop_rows(struct isl_ctx *ctx, struct isl_mat *mat,
-				unsigned row, unsigned n)
+struct isl_mat *isl_mat_drop_rows(struct isl_mat *mat, unsigned row, unsigned n)
 {
 	int r;
 
-	mat = isl_mat_cow(ctx, mat);
+	mat = isl_mat_cow(mat);
 	if (!mat)
 		return NULL;
 
@@ -1015,15 +1010,14 @@ void isl_mat_col_mul(struct isl_mat *mat, int dst_col, isl_int f, int src_col)
 		isl_int_mul(mat->row[i][dst_col], f, mat->row[i][src_col]);
 }
 
-struct isl_mat *isl_mat_unimodular_complete(struct isl_ctx *ctx,
-						struct isl_mat *M, int row)
+struct isl_mat *isl_mat_unimodular_complete(struct isl_mat *M, int row)
 {
 	int r;
 	struct isl_mat *H = NULL, *Q = NULL;
 
 	isl_assert(ctx, M->n_row == M->n_col, goto error);
 	M->n_row = row;
-	H = isl_mat_left_hermite(ctx, isl_mat_copy(ctx, M), 0, NULL, &Q);
+	H = isl_mat_left_hermite(isl_mat_copy(M), 0, NULL, &Q);
 	M->n_row = M->n_col;
 	if (!H)
 		goto error;
@@ -1031,12 +1025,12 @@ struct isl_mat *isl_mat_unimodular_complete(struct isl_ctx *ctx,
 		isl_assert(ctx, isl_int_is_one(H->row[r][r]), goto error);
 	for (r = row; r < M->n_row; ++r)
 		isl_seq_cpy(M->row[r], Q->row[r], M->n_col);
-	isl_mat_free(ctx, H);
-	isl_mat_free(ctx, Q);
+	isl_mat_free(H);
+	isl_mat_free(Q);
 	return M;
 error:
-	isl_mat_free(ctx, H);
-	isl_mat_free(ctx, Q);
-	isl_mat_free(ctx, M);
+	isl_mat_free(H);
+	isl_mat_free(Q);
+	isl_mat_free(M);
 	return NULL;
 }

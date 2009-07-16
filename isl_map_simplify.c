@@ -760,13 +760,13 @@ static struct isl_basic_map *normalize_divs(
 	if (div_eq < bmap->n_eq) {
 		B = isl_mat_sub_alloc(bmap->ctx, bmap->eq, div_eq,
 					bmap->n_eq - div_eq, 0, 1 + total);
-		C = isl_mat_variable_compression(bmap->ctx, B, &C2);
+		C = isl_mat_variable_compression(B, &C2);
 		if (!C || !C2)
 			goto error;
 		if (C->n_col == 0) {
 			bmap = isl_basic_map_set_to_empty(bmap);
-			isl_mat_free(bmap->ctx, C);
-			isl_mat_free(bmap->ctx, C2);
+			isl_mat_free(C);
+			isl_mat_free(C2);
 			goto done;
 		}
 	}
@@ -782,17 +782,17 @@ static struct isl_basic_map *normalize_divs(
 	B = isl_mat_sub_alloc(bmap->ctx, bmap->eq, 0, div_eq, 0, 1 + total);
 
 	if (C) {
-		B = isl_mat_product(bmap->ctx, B, C);
+		B = isl_mat_product(B, C);
 		C = NULL;
 	}
 
-	T = isl_mat_parameter_compression(bmap->ctx, B, d);
+	T = isl_mat_parameter_compression(B, d);
 	if (!T)
 		goto error;
 	if (T->n_col == 0) {
 		bmap = isl_basic_map_set_to_empty(bmap);
-		isl_mat_free(bmap->ctx, C2);
-		isl_mat_free(bmap->ctx, T);
+		isl_mat_free(C2);
+		isl_mat_free(T);
 		goto done;
 	}
 	isl_int_init(v);
@@ -856,8 +856,8 @@ static struct isl_basic_map *normalize_divs(
 		isl_int_set(bmap->eq[j][pos[i]], bmap->div[k][0]);
 	}
 	free(pos);
-	isl_mat_free(bmap->ctx, C2);
-	isl_mat_free(bmap->ctx, T);
+	isl_mat_free(C2);
+	isl_mat_free(T);
 
 	if (progress)
 		*progress = 1;
@@ -866,9 +866,9 @@ done:
 
 	return bmap;
 error:
-	isl_mat_free(bmap->ctx, C);
-	isl_mat_free(bmap->ctx, C2);
-	isl_mat_free(bmap->ctx, T);
+	isl_mat_free(C);
+	isl_mat_free(C2);
+	isl_mat_free(T);
 	return bmap;
 }
 
@@ -1477,16 +1477,16 @@ static struct isl_basic_set *normalize_constraints_in_compressed_space(
 
 	total = isl_basic_set_total_dim(bset);
 	B = isl_mat_sub_alloc(bset->ctx, bset->eq, 0, bset->n_eq, 0, 1 + total);
-	C = isl_mat_variable_compression(bset->ctx, B, NULL);
+	C = isl_mat_variable_compression(B, NULL);
 	if (!C)
 		return bset;
 	if (C->n_col == 0) {
-		isl_mat_free(bset->ctx, C);
+		isl_mat_free(C);
 		return isl_basic_set_set_to_empty(bset);
 	}
 	B = isl_mat_sub_alloc(bset->ctx, bset->ineq,
 						0, bset->n_ineq, 0, 1 + total);
-	C = isl_mat_product(bset->ctx, B, C);
+	C = isl_mat_product(B, C);
 	if (!C)
 		return bset;
 
@@ -1500,7 +1500,7 @@ static struct isl_basic_set *normalize_constraints_in_compressed_space(
 	}
 	isl_int_clear(gcd);
 
-	isl_mat_free(bset->ctx, C);
+	isl_mat_free(C);
 
 	return bset;
 }

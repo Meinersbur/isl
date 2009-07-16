@@ -76,7 +76,7 @@ static int extend_cons(struct isl_ctx *ctx, struct isl_tab *tab, unsigned n_new)
 	if (tab->mat->n_row < tab->n_row + n_new) {
 		int *row_var;
 
-		tab->mat = isl_mat_extend(ctx, tab->mat,
+		tab->mat = isl_mat_extend(tab->mat,
 						tab->n_row + n_new, tab->n_col);
 		if (!tab->mat)
 			return -1;
@@ -115,7 +115,7 @@ void isl_tab_free(struct isl_ctx *ctx, struct isl_tab *tab)
 	if (!tab)
 		return;
 	free_undo(ctx, tab);
-	isl_mat_free(ctx, tab->mat);
+	isl_mat_free(tab->mat);
 	isl_vec_free(tab->dual);
 	free(tab->var);
 	free(tab->con);
@@ -318,7 +318,7 @@ static void swap_rows(struct isl_ctx *ctx,
 	tab->row_var[row2] = t;
 	var_from_row(ctx, tab, row1)->index = row1;
 	var_from_row(ctx, tab, row2)->index = row2;
-	tab->mat = isl_mat_swap_rows(ctx, tab->mat, row1, row2);
+	tab->mat = isl_mat_swap_rows(tab->mat, row1, row2);
 }
 
 static void push(struct isl_ctx *ctx, struct isl_tab *tab,
@@ -757,7 +757,7 @@ static void swap_cols(struct isl_ctx *ctx,
 	tab->col_var[col2] = t;
 	var_from_col(ctx, tab, col1)->index = col1;
 	var_from_col(ctx, tab, col2)->index = col2;
-	tab->mat = isl_mat_swap_cols(ctx, tab->mat, 2 + col1, 2 + col2);
+	tab->mat = isl_mat_swap_cols(tab->mat, 2 + col1, 2 + col2);
 }
 
 /* Mark column with index "col" as representing a zero variable.
@@ -1870,7 +1870,7 @@ void isl_tab_dump(struct isl_ctx *ctx, struct isl_tab *tab,
 	tab->mat->n_row = tab->n_row;
 	c = tab->mat->n_col;
 	tab->mat->n_col = 2 + tab->n_col;
-	isl_mat_dump(ctx, tab->mat, out, indent);
+	isl_mat_dump(tab->mat, out, indent);
 	tab->mat->n_row = r;
 	tab->mat->n_col = c;
 }

@@ -92,8 +92,7 @@ error:
 	return NULL;
 }
 
-static struct isl_mat *independent_bounds(struct isl_ctx *ctx,
-	struct isl_basic_set *bset)
+static struct isl_mat *independent_bounds(struct isl_basic_set *bset)
 {
 	int i, j, n;
 	struct isl_mat *dirs = NULL;
@@ -104,7 +103,7 @@ static struct isl_mat *independent_bounds(struct isl_ctx *ctx,
 		return NULL;
 
 	dim = isl_basic_set_n_dim(bset);
-	bounds = isl_mat_alloc(ctx, 1+dim, 1+dim);
+	bounds = isl_mat_alloc(bset->ctx, 1+dim, 1+dim);
 	if (!bounds)
 		return NULL;
 
@@ -115,9 +114,9 @@ static struct isl_mat *independent_bounds(struct isl_ctx *ctx,
 	if (bset->n_ineq == 0)
 		return bounds;
 
-	dirs = isl_mat_alloc(ctx, dim, dim);
+	dirs = isl_mat_alloc(bset->ctx, dim, dim);
 	if (!dirs) {
-		isl_mat_free(ctx, bounds);
+		isl_mat_free(bounds);
 		return NULL;
 	}
 	isl_seq_cpy(dirs->row[0], bset->ineq[0]+1, dirs->n_col);
@@ -155,7 +154,7 @@ static struct isl_mat *independent_bounds(struct isl_ctx *ctx,
 		++n;
 		isl_seq_cpy(bounds->row[n], bset->ineq[j], bounds->n_col);
 	}
-	isl_mat_free(ctx, dirs);
+	isl_mat_free(dirs);
 	bounds->n_row = 1+n;
 	return bounds;
 }
@@ -190,16 +189,14 @@ static struct isl_basic_set *isl_basic_set_skew_to_positive_orthant(
 	struct isl_mat *bounds = NULL;
 	int i, j;
 	unsigned old_dim, new_dim;
-	struct isl_ctx *ctx;
 
 	*T = NULL;
 	if (!bset)
 		return NULL;
 
-	ctx = bset->ctx;
-	isl_assert(ctx, isl_basic_set_n_param(bset) == 0, goto error);
-	isl_assert(ctx, bset->n_div == 0, goto error);
-	isl_assert(ctx, bset->n_eq == 0, goto error);
+	isl_assert(bset->ctx, isl_basic_set_n_param(bset) == 0, goto error);
+	isl_assert(bset->ctx, bset->n_div == 0, goto error);
+	isl_assert(bset->ctx, bset->n_eq == 0, goto error);
 	
 	old_dim = isl_basic_set_n_dim(bset);
 	/* Try to move (multiples of) unit rows up. */
@@ -214,23 +211,23 @@ static struct isl_basic_set *isl_basic_set_skew_to_positive_orthant(
 			swap_inequality(bset, i, j);
 		++j;
 	}
-	bounds = independent_bounds(ctx, bset);
+	bounds = independent_bounds(bset);
 	if (!bounds)
 		goto error;
 	new_dim = bounds->n_row - 1;
-	bounds = isl_mat_left_hermite(ctx, bounds, 1, &U, NULL);
+	bounds = isl_mat_left_hermite(bounds, 1, &U, NULL);
 	if (!bounds)
 		goto error;
-	U = isl_mat_drop_cols(ctx, U, 1 + new_dim, old_dim - new_dim);
-	bset = isl_basic_set_preimage(bset, isl_mat_copy(ctx, U));
+	U = isl_mat_drop_cols(U, 1 + new_dim, old_dim - new_dim);
+	bset = isl_basic_set_preimage(bset, isl_mat_copy(U));
 	if (!bset)
 		goto error;
 	*T = U;
-	isl_mat_free(ctx, bounds);
+	isl_mat_free(bounds);
 	return bset;
 error:
-	isl_mat_free(ctx, bounds);
-	isl_mat_free(ctx, U);
+	isl_mat_free(bounds);
+	isl_mat_free(U);
 	isl_basic_set_free(bset);
 	return NULL;
 }
@@ -247,18 +244,16 @@ static struct isl_vec *sample_eq(struct isl_basic_set *bset,
 {
 	struct isl_mat *T;
 	struct isl_vec *sample;
-	struct isl_ctx *ctx;
 
 	if (!bset)
 		return NULL;
 
-	ctx = bset->ctx;
 	bset = isl_basic_set_remove_equalities(bset, &T, NULL);
 	sample = recurse(bset);
 	if (!sample || sample->size == 0)
-		isl_mat_free(ctx, T);
+		isl_mat_free(T);
 	else
-		sample = isl_mat_vec_product(ctx, T, sample);
+		sample = isl_mat_vec_product(T, sample);
 	return sample;
 }
 
@@ -326,30 +321,27 @@ error:
 static struct isl_basic_set *basic_set_reduced(struct isl_basic_set *bset,
 	struct isl_mat **T)
 {
-	struct isl_ctx *ctx;
 	unsigned gbr_only_first;
 
 	*T = NULL;
 	if (!bset)
 		return NULL;
 
-	ctx = bset->ctx;
-
-	gbr_only_first = ctx->gbr_only_first;
-	ctx->gbr_only_first = 1;
+	gbr_only_first = bset->ctx->gbr_only_first;
+	bset->ctx->gbr_only_first = 1;
 	*T = isl_basic_set_reduced_basis(bset);
-	ctx->gbr_only_first = gbr_only_first;
+	bset->ctx->gbr_only_first = gbr_only_first;
 
-	*T = isl_mat_lin_to_aff(bset->ctx, *T);
-	*T = isl_mat_right_inverse(bset->ctx, *T);
+	*T = isl_mat_lin_to_aff(*T);
+	*T = isl_mat_right_inverse(*T);
 
-	bset = isl_basic_set_preimage(bset, isl_mat_copy(bset->ctx, *T));
+	bset = isl_basic_set_preimage(bset, isl_mat_copy(*T));
 	if (!bset)
 		goto error;
 
 	return bset;
 error:
-	isl_mat_free(ctx, *T);
+	isl_mat_free(*T);
 	*T = NULL;
 	return NULL;
 }
@@ -426,7 +418,6 @@ error:
 static struct isl_vec *sample_bounded(struct isl_basic_set *bset)
 {
 	unsigned dim;
-	struct isl_ctx *ctx;
 	struct isl_vec *sample;
 	struct isl_vec *obj = NULL;
 	struct isl_mat *T = NULL;
@@ -439,7 +430,6 @@ static struct isl_vec *sample_bounded(struct isl_basic_set *bset)
 	if (isl_basic_set_fast_is_empty(bset))
 		return empty_sample(bset);
 
-	ctx = bset->ctx;
 	dim = isl_basic_set_total_dim(bset);
 	if (dim == 0)
 		return zero_sample(bset);
@@ -494,16 +484,16 @@ static struct isl_vec *sample_bounded(struct isl_basic_set *bset)
 out:
 	if (T) {
 		if (!sample || sample->size == 0)
-			isl_mat_free(ctx, T);
+			isl_mat_free(T);
 		else
-			sample = isl_mat_vec_product(ctx, T, sample);
+			sample = isl_mat_vec_product(T, sample);
 	}
 	isl_vec_free(obj);
 	isl_int_clear(min);
 	isl_int_clear(max);
 	return sample;
 error:
-	isl_mat_free(ctx, T);
+	isl_mat_free(T);
 	isl_basic_set_free(bset);
 	isl_vec_free(obj);
 	isl_int_clear(min);
@@ -695,7 +685,7 @@ static struct isl_vec *round_up_in_cone(struct isl_vec *vec,
 
 	isl_assert(vec->ctx, vec->size != 0, goto error);
 	if (isl_int_is_one(vec->el[0])) {
-		isl_mat_free(vec->ctx, U);
+		isl_mat_free(U);
 		isl_basic_set_free(cone);
 		return vec;
 	}
@@ -710,7 +700,7 @@ static struct isl_vec *round_up_in_cone(struct isl_vec *vec,
 	vec = isl_vec_ceil(vec);
 	return vec;
 error:
-	isl_mat_free(vec ? vec->ctx : cone ? cone->ctx : NULL, U);
+	isl_mat_free(U);
 	isl_vec_free(vec);
 	isl_basic_set_free(cone);
 	return NULL;
@@ -825,13 +815,13 @@ static struct isl_vec *sample_with_cone(struct isl_basic_set *bset,
 	cone_dim = total - cone->n_eq;
 
 	M = isl_mat_sub_alloc(bset->ctx, cone->eq, 0, cone->n_eq, 1, total);
-	M = isl_mat_left_hermite(bset->ctx, M, 0, &U, NULL);
+	M = isl_mat_left_hermite(M, 0, &U, NULL);
 	if (!M)
 		goto error;
-	isl_mat_free(bset->ctx, M);
+	isl_mat_free(M);
 
-	U = isl_mat_lin_to_aff(bset->ctx, U);
-	bset = isl_basic_set_preimage(bset, isl_mat_copy(bset->ctx, U));
+	U = isl_mat_lin_to_aff(U);
+	bset = isl_basic_set_preimage(bset, isl_mat_copy(U));
 
 	bounded = isl_basic_set_copy(bset);
 	bounded = drop_constraints_involving(bounded, total - cone_dim, cone_dim);
@@ -840,14 +830,14 @@ static struct isl_vec *sample_with_cone(struct isl_basic_set *bset,
 	if (!sample || sample->size == 0) {
 		isl_basic_set_free(bset);
 		isl_basic_set_free(cone);
-		isl_mat_free(ctx, U);
+		isl_mat_free(U);
 		return sample;
 	}
 	bset = plug_in(bset, isl_vec_copy(sample));
 	cone_sample = rational_sample(bset);
-	cone_sample = round_up_in_cone(cone_sample, cone, isl_mat_copy(ctx, U));
+	cone_sample = round_up_in_cone(cone_sample, cone, isl_mat_copy(U));
 	sample = vec_concat(sample, cone_sample);
-	sample = isl_mat_vec_product(ctx, U, sample);
+	sample = isl_mat_vec_product(U, sample);
 	return sample;
 error:
 	isl_basic_set_free(cone);
@@ -891,9 +881,9 @@ static struct isl_vec *pip_sample(struct isl_basic_set *bset)
 	sample = isl_pip_basic_set_sample(bset);
 
 	if (sample && sample->size != 0)
-		sample = isl_mat_vec_product(ctx, T, sample);
+		sample = isl_mat_vec_product(T, sample);
 	else
-		isl_mat_free(ctx, T);
+		isl_mat_free(T);
 
 	return sample;
 }

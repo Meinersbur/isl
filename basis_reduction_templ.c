@@ -162,7 +162,7 @@ struct isl_mat *isl_basic_set_reduced_basis(struct isl_basic_set *bset)
 		GBR_set_ui(mu_F[1], 3);
 		GBR_mul(mu_F[1], mu_F[1], F_old);
 		if (GBR_lt(mu_F[0], mu_F[1])) {
-			basis = isl_mat_swap_rows(bset->ctx, basis, i, i + 1);
+			basis = isl_mat_swap_rows(basis, i, i + 1);
 			if (i > 0) {
 				use_saved = 1;
 				GBR_set(F_saved, F_new);
@@ -182,7 +182,7 @@ struct isl_mat *isl_basic_set_reduced_basis(struct isl_basic_set *bset)
 
 	if (0) {
 error:
-	    isl_mat_free(bset->ctx, basis);
+	    isl_mat_free(basis);
 	    basis = NULL;
 	}
 

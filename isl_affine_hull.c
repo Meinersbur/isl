@@ -459,9 +459,7 @@ static struct isl_basic_set *equalities_in_underlying_set(
 	struct isl_mat *T2 = NULL;
 	struct isl_basic_set *bset = NULL;
 	struct isl_basic_set *hull = NULL;
-	struct isl_ctx *ctx;
 
-	ctx = bmap->ctx;
 	bset = isl_basic_map_underlying_set(bmap);
 	bset = isl_basic_set_remove_equalities(bset, NULL, &T2);
 	if (!bset)
@@ -473,7 +471,7 @@ static struct isl_basic_set *equalities_in_underlying_set(
 
 	return hull;
 error:
-	isl_mat_free(ctx, T2);
+	isl_mat_free(T2);
 	isl_basic_set_free(bset);
 	isl_basic_set_free(hull);
 	return NULL;
