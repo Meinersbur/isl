@@ -9,9 +9,9 @@
 #define STATUS_ADJ_EQ	 	 5
 #define STATUS_ADJ_INEQ	 	 6
 
-static int status_in(struct isl_ctx *ctx, isl_int *ineq, struct isl_tab *tab)
+static int status_in(isl_int *ineq, struct isl_tab *tab)
 {
-	enum isl_ineq_type type = isl_tab_ineq_type(ctx, tab, ineq);
+	enum isl_ineq_type type = isl_tab_ineq_type(tab, ineq);
 	switch (type) {
 	case isl_ineq_error:		return STATUS_ERROR;
 	case isl_ineq_redundant:	return STATUS_VALID;
@@ -39,8 +39,7 @@ static int *eq_status_in(struct isl_map *map, int i, int j,
 	for (k = 0; k < map->p[i]->n_eq; ++k) {
 		for (l = 0; l < 2; ++l) {
 			isl_seq_neg(map->p[i]->eq[k], map->p[i]->eq[k], 1+dim);
-			eq[2 * k + l] = status_in(map->ctx, map->p[i]->eq[k],
-								    tabs[j]);
+			eq[2 * k + l] = status_in(map->p[i]->eq[k], tabs[j]);
 			if (eq[2 * k + l] == STATUS_ERROR)
 				goto error;
 		}
@@ -66,11 +65,11 @@ static int *ineq_status_in(struct isl_map *map, int i, int j,
 	int *ineq = isl_calloc_array(map->ctx, int, map->p[i]->n_ineq);
 
 	for (k = 0; k < map->p[i]->n_ineq; ++k) {
-		if (isl_tab_is_redundant(map->ctx, tabs[i], n_eq + k)) {
+		if (isl_tab_is_redundant(tabs[i], n_eq + k)) {
 			ineq[k] = STATUS_REDUNDANT;
 			continue;
 		}
-		ineq[k] = status_in(map->ctx, map->p[i]->ineq[k], tabs[j]);
+		ineq[k] = status_in(map->p[i]->ineq[k], tabs[j]);
 		if (ineq[k] == STATUS_ERROR)
 			goto error;
 		if (ineq[k] == STATUS_SEPARATE)
@@ -120,7 +119,7 @@ static int all(int *con, unsigned len, int status)
 static void drop(struct isl_map *map, int i, struct isl_tab **tabs)
 {
 	isl_basic_map_free(map->p[i]);
-	isl_tab_free(map->ctx, tabs[i]);
+	isl_tab_free(tabs[i]);
 
 	if (i != map->n - 1) {
 		map->p[i] = map->p[map->n - 1];
@@ -181,13 +180,13 @@ static int fuse(struct isl_map *map, int i, int j, struct isl_tab **tabs,
 	ISL_F_SET(fused, ISL_BASIC_MAP_FINAL);
 
 	fused_tab = isl_tab_from_basic_map(fused);
-	fused_tab = isl_tab_detect_redundant(map->ctx, fused_tab);
+	fused_tab = isl_tab_detect_redundant(fused_tab);
 	if (!fused_tab)
 		goto error;
 
 	isl_basic_map_free(map->p[i]);
 	map->p[i] = fused;
-	isl_tab_free(map->ctx, tabs[i]);
+	isl_tab_free(tabs[i]);
 	tabs[i] = fused_tab;
 	drop(map, j, tabs);
 
@@ -223,21 +222,21 @@ static int check_facets(struct isl_map *map, int i, int j,
 	struct isl_tab_undo *snap;
 	unsigned n_eq = map->p[i]->n_eq;
 
-	snap = isl_tab_snap(map->ctx, tabs[i]);
+	snap = isl_tab_snap(tabs[i]);
 
 	for (k = 0; k < map->p[i]->n_ineq; ++k) {
 		if (ineq_i[k] != STATUS_CUT)
 			continue;
-		tabs[i] = isl_tab_select_facet(map->ctx, tabs[i], n_eq + k);
+		tabs[i] = isl_tab_select_facet(tabs[i], n_eq + k);
 		for (l = 0; l < map->p[j]->n_ineq; ++l) {
 			int stat;
 			if (ineq_j[l] != STATUS_CUT)
 				continue;
-			stat = status_in(map->ctx, map->p[j]->ineq[l], tabs[i]);
+			stat = status_in(map->p[j]->ineq[l], tabs[i]);
 			if (stat != STATUS_VALID)
 				break;
 		}
-		isl_tab_rollback(map->ctx, tabs[i], snap);
+		isl_tab_rollback(tabs[i], snap);
 		if (l < map->p[j]->n_ineq)
 			break;
 	}
@@ -306,7 +305,7 @@ static int contains(struct isl_map *map, int i, int *ineq_i,
 		for (l = 0; l < 2; ++l) {
 			int stat;
 			isl_seq_neg(map->p[i]->eq[k], map->p[i]->eq[k], 1+dim);
-			stat = status_in(map->ctx, map->p[i]->eq[k], tab);
+			stat = status_in(map->p[i]->eq[k], tab);
 			if (stat != STATUS_VALID)
 				return 0;
 		}
@@ -316,7 +315,7 @@ static int contains(struct isl_map *map, int i, int *ineq_i,
 		int stat;
 		if (ineq_i[k] == STATUS_REDUNDANT)
 			continue;
-		stat = status_in(map->ctx, map->p[i]->ineq[k], tab);
+		stat = status_in(map->p[i]->ineq[k], tab);
 		if (stat != STATUS_VALID)
 			return 0;
 	}
@@ -381,13 +380,13 @@ static int check_adj_eq(struct isl_map *map, int i, int j,
 		if (ineq_i[k] == STATUS_ADJ_EQ)
 			break;
 
-	snap = isl_tab_snap(map->ctx, tabs[i]);
-	tabs[i] = isl_tab_relax(map->ctx, tabs[i], n_eq + k);
-	snap2 = isl_tab_snap(map->ctx, tabs[i]);
-	tabs[i] = isl_tab_select_facet(map->ctx, tabs[i], n_eq + k);
+	snap = isl_tab_snap(tabs[i]);
+	tabs[i] = isl_tab_relax(tabs[i], n_eq + k);
+	snap2 = isl_tab_snap(tabs[i]);
+	tabs[i] = isl_tab_select_facet(tabs[i], n_eq + k);
 	super = contains(map, j, ineq_j, tabs[i]);
 	if (super) {
-		isl_tab_rollback(map->ctx, tabs[i], snap2);
+		isl_tab_rollback(tabs[i], snap2);
 		map->p[i] = isl_basic_map_cow(map->p[i]);
 		if (!map->p[i])
 			return -1;
@@ -396,7 +395,7 @@ static int check_adj_eq(struct isl_map *map, int i, int j,
 		drop(map, j, tabs);
 		changed = 1;
 	} else
-		isl_tab_rollback(map->ctx, tabs[i], snap);
+		isl_tab_rollback(tabs[i], snap);
 
 	return changed;
 }
@@ -554,7 +553,6 @@ struct isl_map *isl_map_coalesce(struct isl_map *map)
 {
 	int i;
 	unsigned n;
-	struct isl_ctx *ctx;
 	struct isl_tab **tabs = NULL;
 
 	if (!map)
@@ -570,15 +568,14 @@ struct isl_map *isl_map_coalesce(struct isl_map *map)
 		goto error;
 
 	n = map->n;
-	ctx = map->ctx;
 	for (i = 0; i < map->n; ++i) {
 		tabs[i] = isl_tab_from_basic_map(map->p[i]);
 		if (!tabs[i])
 			goto error;
 		if (!ISL_F_ISSET(map->p[i], ISL_BASIC_MAP_NO_IMPLICIT))
-			tabs[i] = isl_tab_detect_equalities(map->ctx, tabs[i]);
+			tabs[i] = isl_tab_detect_equalities(tabs[i]);
 		if (!ISL_F_ISSET(map->p[i], ISL_BASIC_MAP_NO_REDUNDANT))
-			tabs[i] = isl_tab_detect_redundant(map->ctx, tabs[i]);
+			tabs[i] = isl_tab_detect_redundant(tabs[i]);
 	}
 	for (i = map->n - 1; i >= 0; --i)
 		if (tabs[i]->empty)
@@ -598,7 +595,7 @@ struct isl_map *isl_map_coalesce(struct isl_map *map)
 		}
 
 	for (i = 0; i < n; ++i)
-		isl_tab_free(ctx, tabs[i]);
+		isl_tab_free(tabs[i]);
 
 	free(tabs);
 
@@ -606,7 +603,7 @@ struct isl_map *isl_map_coalesce(struct isl_map *map)
 error:
 	if (tabs)
 		for (i = 0; i < n; ++i)
-			isl_tab_free(ctx, tabs[i]);
+			isl_tab_free(tabs[i]);
 	free(tabs);
 	return NULL;
 }

@@ -17,8 +17,8 @@ enum isl_lp_result isl_tab_solve_lp(struct isl_basic_map *bmap, int maximize,
 
 	bmap = isl_basic_map_gauss(bmap, NULL);
 	tab = isl_tab_from_basic_map(bmap);
-	res = isl_tab_min(bmap->ctx, tab, f, bmap->ctx->one, opt, opt_denom, 0);
-	isl_tab_free(bmap->ctx, tab);
+	res = isl_tab_min(tab, f, bmap->ctx->one, opt, opt_denom, 0);
+	isl_tab_free(tab);
 
 	if (maximize)
 		isl_seq_neg(f, f, 1 + dim);

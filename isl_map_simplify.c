@@ -1581,14 +1581,14 @@ static struct isl_basic_set *uset_gist(struct isl_basic_set *bset,
 		goto error;
 	for (i = 0; i < context_ineq; ++i)
 		tab->con[i].frozen = 1;
-	tab = isl_tab_extend(bset->ctx, tab, bset->n_ineq);
+	tab = isl_tab_extend(tab, bset->n_ineq);
 	if (!tab)
 		goto error;
 	for (i = 0; i < bset->n_ineq; ++i)
-		tab = isl_tab_add_ineq(bset->ctx, tab, bset->ineq[i]);
+		tab = isl_tab_add_ineq(tab, bset->ineq[i]);
 	bset = isl_basic_set_add_constraints(combined, bset, 0);
-	tab = isl_tab_detect_equalities(bset->ctx, tab);
-	tab = isl_tab_detect_redundant(bset->ctx, tab);
+	tab = isl_tab_detect_equalities(tab);
+	tab = isl_tab_detect_redundant(tab);
 	if (!tab)
 		goto error2;
 	for (i = 0; i < context_ineq; ++i) {
@@ -1596,7 +1596,7 @@ static struct isl_basic_set *uset_gist(struct isl_basic_set *bset,
 		tab->con[i].is_redundant = 1;
 	}
 	bset = isl_basic_set_update_from_tab(bset, tab);
-	isl_tab_free(bset->ctx, tab);
+	isl_tab_free(tab);
 	ISL_F_SET(bset, ISL_BASIC_SET_NO_IMPLICIT);
 	ISL_F_SET(bset, ISL_BASIC_SET_NO_REDUNDANT);
 done:
@@ -2013,7 +2013,6 @@ static void construct_test_ineq(struct isl_basic_map *bmap, int i,
 static struct isl_basic_map *drop_more_redundant_divs(
 	struct isl_basic_map *bmap, int *pairs, int n)
 {
-	struct isl_ctx *ctx = NULL;
 	struct isl_tab *tab = NULL;
 	struct isl_vec *vec = NULL;
 	unsigned dim;
@@ -2027,10 +2026,8 @@ static struct isl_basic_map *drop_more_redundant_divs(
 	if (!bmap)
 		goto error;
 
-	ctx = bmap->ctx;
-
 	dim = isl_dim_total(bmap->dim);
-	vec = isl_vec_alloc(ctx, 1 + dim + bmap->n_div);
+	vec = isl_vec_alloc(bmap->ctx, 1 + dim + bmap->n_div);
 	if (!vec)
 		goto error;
 
@@ -2058,8 +2055,8 @@ static struct isl_basic_map *drop_more_redundant_divs(
 					continue;
 				construct_test_ineq(bmap, i, l, u,
 						    vec->el, g, fl, fu);
-				res = isl_tab_min(ctx, tab, vec->el,
-						  ctx->one, &g, NULL, 0);
+				res = isl_tab_min(tab, vec->el,
+						  bmap->ctx->one, &g, NULL, 0);
 				if (res == isl_lp_error)
 					goto error;
 				if (res == isl_lp_empty) {
@@ -2080,7 +2077,7 @@ static struct isl_basic_map *drop_more_redundant_divs(
 		--n;
 	}
 
-	isl_tab_free(ctx, tab);
+	isl_tab_free(tab);
 	isl_vec_free(vec);
 
 	isl_int_clear(g);
@@ -2097,10 +2094,8 @@ static struct isl_basic_map *drop_more_redundant_divs(
 error:
 	free(pairs);
 	isl_basic_map_free(bmap);
-	if (ctx) {
-		isl_tab_free(ctx, tab);
-		isl_vec_free(vec);
-	}
+	isl_tab_free(tab);
+	isl_vec_free(vec);
 	isl_int_clear(g);
 	isl_int_clear(fl);
 	isl_int_clear(fu);

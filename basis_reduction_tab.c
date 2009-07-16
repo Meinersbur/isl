@@ -67,7 +67,7 @@ static struct isl_tab *gbr_tab(struct isl_basic_set *bset,
 			isl_int_set(row->el[0], bset->ineq[j][0]);
 			isl_seq_cpy(row->el + 1 + i * dim,
 				    bset->ineq[j] + 1, dim);
-			tab = isl_tab_add_ineq(bset->ctx, tab, row->el);
+			tab = isl_tab_add_ineq(tab, row->el);
 			if (!tab || tab->empty)
 				return tab;
 		}
@@ -130,7 +130,7 @@ static int solve_lp(struct tab_lp *lp)
 	isl_seq_neg(lp->row->el + 1 + lp->dim, lp->obj, lp->dim);
 	if (lp->neq)
 		flags = ISL_TAB_SAVE_DUAL;
-	res = isl_tab_min(lp->ctx, lp->tab, lp->row->el, lp->ctx->one,
+	res = isl_tab_min(lp->tab, lp->row->el, lp->ctx->one,
 			  &lp->opt, &lp->opt_denom, flags);
 	if (res != isl_lp_ok)
 		return -1;
@@ -152,20 +152,20 @@ static void delete_lp(struct tab_lp *lp)
 	isl_int_clear(lp->opt_denom);
 	isl_vec_free(lp->row);
 	free(lp->stack);
-	isl_tab_free(lp->ctx, lp->tab);
+	isl_tab_free(lp->tab);
 	isl_ctx_deref(lp->ctx);
 	free(lp);
 }
 
 static int add_lp_row(struct tab_lp *lp, isl_int *row, int dim)
 {
-	lp->stack[lp->neq] = isl_tab_snap(lp->ctx, lp->tab);
+	lp->stack[lp->neq] = isl_tab_snap(lp->tab);
 
 	isl_int_set_si(lp->row->el[0], 0);
 	isl_seq_cpy(lp->row->el + 1, row, lp->dim);
 	isl_seq_neg(lp->row->el + 1 + lp->dim, row, lp->dim);
 
-	lp->tab = isl_tab_add_valid_eq(lp->ctx, lp->tab, lp->row->el);
+	lp->tab = isl_tab_add_valid_eq(lp->tab, lp->row->el);
 
 	return lp->neq++;
 }
@@ -180,5 +180,5 @@ static void get_alpha(struct tab_lp* lp, int row, mpq_t *alpha)
 static void del_lp_row(struct tab_lp *lp)
 {
 	lp->neq--;
-	isl_tab_rollback(lp->ctx, lp->tab, lp->stack[lp->neq]);
+	isl_tab_rollback(lp->tab, lp->stack[lp->neq]);
 }

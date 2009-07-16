@@ -93,10 +93,10 @@ struct isl_basic_map *isl_basic_map_convex_hull(struct isl_basic_map *bmap)
 		return bmap;
 
 	tab = isl_tab_from_basic_map(bmap);
-	tab = isl_tab_detect_equalities(bmap->ctx, tab);
-	tab = isl_tab_detect_redundant(bmap->ctx, tab);
+	tab = isl_tab_detect_equalities(tab);
+	tab = isl_tab_detect_redundant(tab);
 	bmap = isl_basic_map_update_from_tab(bmap, tab);
-	isl_tab_free(bmap->ctx, tab);
+	isl_tab_free(tab);
 	ISL_F_SET(bmap, ISL_BASIC_MAP_NO_IMPLICIT);
 	ISL_F_SET(bmap, ISL_BASIC_MAP_NO_REDUNDANT);
 	return bmap;
@@ -940,8 +940,8 @@ static int isl_basic_set_is_bounded(struct isl_basic_set *bset)
 	int bounded;
 
 	tab = isl_tab_from_recession_cone((struct isl_basic_map *)bset);
-	bounded = isl_tab_cone_is_bounded(bset->ctx, tab);
-	isl_tab_free(bset->ctx, tab);
+	bounded = isl_tab_cone_is_bounded(tab);
+	isl_tab_free(tab);
 	return bounded;
 }
 
@@ -1167,7 +1167,6 @@ error:
 static struct isl_vec *valid_direction(
 	struct isl_basic_set *bset1, struct isl_basic_set *bset2)
 {
-	struct isl_ctx *ctx = NULL;
 	struct isl_basic_set *lp;
 	struct isl_tab *tab;
 	struct isl_vec *sample = NULL;
@@ -1178,17 +1177,16 @@ static struct isl_vec *valid_direction(
 
 	if (!bset1 || !bset2)
 		goto error;
-	ctx = bset1->ctx;
 	lp = valid_direction_lp(isl_basic_set_copy(bset1),
 				isl_basic_set_copy(bset2));
 	tab = isl_tab_from_basic_set(lp);
-	sample = isl_tab_get_sample_value(ctx, tab);
-	isl_tab_free(ctx, tab);
+	sample = isl_tab_get_sample_value(tab);
+	isl_tab_free(tab);
 	isl_basic_set_free(lp);
 	if (!sample)
 		goto error;
 	d = isl_basic_set_total_dim(bset1);
-	dir = isl_vec_alloc(ctx, 1 + d);
+	dir = isl_vec_alloc(bset1->ctx, 1 + d);
 	if (!dir)
 		goto error;
 	isl_seq_clr(dir->block.data + 1, dir->size - 1);
@@ -1987,7 +1985,7 @@ static void sh_data_free(struct sh_data *data)
 	isl_hash_table_free(data->ctx, data->hull_table);
 	for (i = 0; i < data->n; ++i) {
 		isl_hash_table_free(data->ctx, data->p[i].table);
-		isl_tab_free(data->ctx, data->p[i].tab);
+		isl_tab_free(data->p[i].tab);
 	}
 	free(data);
 }
@@ -2097,7 +2095,7 @@ static int is_bound(struct sh_data *data, struct isl_set *set, int j,
 
 	isl_int_init(opt);
 
-	res = isl_tab_min(data->ctx, data->p[j].tab, ineq, data->ctx->one,
+	res = isl_tab_min(data->p[j].tab, ineq, data->ctx->one,
 				&opt, NULL, 0);
 	if (res == isl_lp_ok && isl_int_is_neg(opt))
 		isl_int_sub(ineq[0], ineq[0], opt);

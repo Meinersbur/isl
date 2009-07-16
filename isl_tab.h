@@ -98,38 +98,32 @@ struct isl_tab {
 
 struct isl_tab *isl_tab_alloc(struct isl_ctx *ctx,
 	unsigned n_row, unsigned n_var);
-void isl_tab_free(struct isl_ctx *ctx, struct isl_tab *tab);
+void isl_tab_free(struct isl_tab *tab);
 
 struct isl_tab *isl_tab_from_basic_map(struct isl_basic_map *bmap);
 struct isl_tab *isl_tab_from_basic_set(struct isl_basic_set *bset);
 struct isl_tab *isl_tab_from_recession_cone(struct isl_basic_map *bmap);
-int isl_tab_cone_is_bounded(struct isl_ctx *ctx, struct isl_tab *tab);
+int isl_tab_cone_is_bounded(struct isl_tab *tab);
 struct isl_basic_map *isl_basic_map_update_from_tab(struct isl_basic_map *bmap,
 	struct isl_tab *tab);
 struct isl_basic_set *isl_basic_set_update_from_tab(struct isl_basic_set *bset,
 	struct isl_tab *tab);
-struct isl_tab *isl_tab_detect_equalities(struct isl_ctx *ctx,
-				struct isl_tab *tab);
-struct isl_tab *isl_tab_detect_redundant(struct isl_ctx *ctx,
-				struct isl_tab *tab);
+struct isl_tab *isl_tab_detect_equalities(struct isl_tab *tab);
+struct isl_tab *isl_tab_detect_redundant(struct isl_tab *tab);
 #define ISL_TAB_SAVE_DUAL	(1 << 0)
-enum isl_lp_result isl_tab_min(struct isl_ctx *ctx, struct isl_tab *tab,
+enum isl_lp_result isl_tab_min(struct isl_tab *tab,
 	isl_int *f, isl_int denom, isl_int *opt, isl_int *opt_denom,
 	unsigned flags);
 
-struct isl_tab *isl_tab_extend(struct isl_ctx *ctx, struct isl_tab *tab,
-				unsigned n_new);
-struct isl_tab *isl_tab_add_ineq(struct isl_ctx *ctx,
-	struct isl_tab *tab, isl_int *ineq);
-struct isl_tab *isl_tab_add_valid_eq(struct isl_ctx *ctx,
-	struct isl_tab *tab, isl_int *eq);
+struct isl_tab *isl_tab_extend(struct isl_tab *tab, unsigned n_new);
+struct isl_tab *isl_tab_add_ineq(struct isl_tab *tab, isl_int *ineq);
+struct isl_tab *isl_tab_add_valid_eq(struct isl_tab *tab, isl_int *eq);
 
-int isl_tab_is_equality(struct isl_ctx *ctx, struct isl_tab *tab, int con);
-int isl_tab_is_redundant(struct isl_ctx *ctx, struct isl_tab *tab, int con);
+int isl_tab_is_equality(struct isl_tab *tab, int con);
+int isl_tab_is_redundant(struct isl_tab *tab, int con);
 
-int isl_tab_sample_is_integer(struct isl_ctx *ctx, struct isl_tab *tab);
-struct isl_vec *isl_tab_get_sample_value(struct isl_ctx *ctx,
-						struct isl_tab *tab);
+int isl_tab_sample_is_integer(struct isl_tab *tab);
+struct isl_vec *isl_tab_get_sample_value(struct isl_tab *tab);
 
 enum isl_ineq_type {
 	isl_ineq_error = -1,
@@ -140,19 +134,14 @@ enum isl_ineq_type {
 	isl_ineq_adj_ineq,
 };
 
-enum isl_ineq_type isl_tab_ineq_type(struct isl_ctx *ctx, struct isl_tab *tab,
-	isl_int *ineq);
+enum isl_ineq_type isl_tab_ineq_type(struct isl_tab *tab, isl_int *ineq);
 
-struct isl_tab_undo *isl_tab_snap(struct isl_ctx *ctx, struct isl_tab *tab);
-int isl_tab_rollback(struct isl_ctx *ctx, struct isl_tab *tab,
-	struct isl_tab_undo *snap);
+struct isl_tab_undo *isl_tab_snap(struct isl_tab *tab);
+int isl_tab_rollback(struct isl_tab *tab, struct isl_tab_undo *snap);
 
-struct isl_tab *isl_tab_relax(struct isl_ctx *ctx,
-	struct isl_tab *tab, int con);
-struct isl_tab *isl_tab_select_facet(struct isl_ctx *ctx,
-	struct isl_tab *tab, int con);
+struct isl_tab *isl_tab_relax(struct isl_tab *tab, int con);
+struct isl_tab *isl_tab_select_facet(struct isl_tab *tab, int con);
 
-void isl_tab_dump(struct isl_ctx *ctx, struct isl_tab *tab,
-				FILE *out, int indent);
+void isl_tab_dump(struct isl_tab *tab, FILE *out, int indent);
 
 #endif

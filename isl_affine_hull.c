@@ -25,9 +25,9 @@ struct isl_basic_map *isl_basic_map_implicit_equalities(
 		return bmap;
 
 	tab = isl_tab_from_basic_map(bmap);
-	tab = isl_tab_detect_equalities(bmap->ctx, tab);
+	tab = isl_tab_detect_equalities(tab);
 	bmap = isl_basic_map_update_from_tab(bmap, tab);
-	isl_tab_free(bmap->ctx, tab);
+	isl_tab_free(tab);
 	bmap = isl_basic_map_gauss(bmap, NULL);
 	ISL_F_SET(bmap, ISL_BASIC_MAP_NO_IMPLICIT);
 	return bmap;

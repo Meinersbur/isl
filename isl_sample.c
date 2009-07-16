@@ -280,13 +280,13 @@ static enum isl_lp_result basic_set_range(struct isl_basic_set *bset,
 		return isl_lp_empty;
 
 	tab = isl_tab_from_basic_set(bset);
-	res = isl_tab_min(bset->ctx, tab, f, denom, min, NULL, 0);
+	res = isl_tab_min(tab, f, denom, min, NULL, 0);
 	if (res != isl_lp_ok)
 		goto done;
 
-	if (isl_tab_sample_is_integer(bset->ctx, tab)) {
+	if (isl_tab_sample_is_integer(tab)) {
 		isl_vec_free(bset->sample);
-		bset->sample = isl_tab_get_sample_value(bset->ctx, tab);
+		bset->sample = isl_tab_get_sample_value(tab);
 		if (!bset->sample)
 			goto error;
 		isl_int_set(*max, *min);
@@ -295,22 +295,22 @@ static enum isl_lp_result basic_set_range(struct isl_basic_set *bset,
 
 	dim = isl_basic_set_total_dim(bset);
 	isl_seq_neg(f, f, 1 + dim);
-	res = isl_tab_min(bset->ctx, tab, f, denom, max, NULL, 0);
+	res = isl_tab_min(tab, f, denom, max, NULL, 0);
 	isl_seq_neg(f, f, 1 + dim);
 	isl_int_neg(*max, *max);
 
-	if (isl_tab_sample_is_integer(bset->ctx, tab)) {
+	if (isl_tab_sample_is_integer(tab)) {
 		isl_vec_free(bset->sample);
-		bset->sample = isl_tab_get_sample_value(bset->ctx, tab);
+		bset->sample = isl_tab_get_sample_value(tab);
 		if (!bset->sample)
 			goto error;
 	}
 
 done:
-	isl_tab_free(bset->ctx, tab);
+	isl_tab_free(tab);
 	return res;
 error:
-	isl_tab_free(bset->ctx, tab);
+	isl_tab_free(tab);
 	return isl_lp_error;
 }
 
@@ -558,8 +558,8 @@ static struct isl_vec *rational_sample(struct isl_basic_set *bset)
 		return NULL;
 
 	tab = isl_tab_from_basic_set(bset);
-	sample = isl_tab_get_sample_value(bset->ctx, tab);
-	isl_tab_free(bset->ctx, tab);
+	sample = isl_tab_get_sample_value(tab);
+	isl_tab_free(tab);
 
 	isl_basic_set_free(bset);
 

@@ -57,16 +57,16 @@ struct isl_tab *isl_tab_alloc(struct isl_ctx *ctx,
 	tab->top = &tab->bottom;
 	return tab;
 error:
-	isl_tab_free(ctx, tab);
+	isl_tab_free(tab);
 	return NULL;
 }
 
-static int extend_cons(struct isl_ctx *ctx, struct isl_tab *tab, unsigned n_new)
+static int extend_cons(struct isl_tab *tab, unsigned n_new)
 {
 	if (tab->max_con < tab->n_con + n_new) {
 		struct isl_tab_var *con;
 
-		con = isl_realloc_array(ctx, tab->con,
+		con = isl_realloc_array(tab->mat->ctx, tab->con,
 				    struct isl_tab_var, tab->max_con + n_new);
 		if (!con)
 			return -1;
@@ -80,7 +80,7 @@ static int extend_cons(struct isl_ctx *ctx, struct isl_tab *tab, unsigned n_new)
 						tab->n_row + n_new, tab->n_col);
 		if (!tab->mat)
 			return -1;
-		row_var = isl_realloc_array(ctx, tab->row_var,
+		row_var = isl_realloc_array(tab->mat->ctx, tab->row_var,
 					    int, tab->mat->n_row);
 		if (!row_var)
 			return -1;
@@ -89,17 +89,16 @@ static int extend_cons(struct isl_ctx *ctx, struct isl_tab *tab, unsigned n_new)
 	return 0;
 }
 
-struct isl_tab *isl_tab_extend(struct isl_ctx *ctx, struct isl_tab *tab,
-				unsigned n_new)
+struct isl_tab *isl_tab_extend(struct isl_tab *tab, unsigned n_new)
 {
-	if (extend_cons(ctx, tab, n_new) >= 0)
+	if (extend_cons(tab, n_new) >= 0)
 		return tab;
 
-	isl_tab_free(ctx, tab);
+	isl_tab_free(tab);
 	return NULL;
 }
 
-static void free_undo(struct isl_ctx *ctx, struct isl_tab *tab)
+static void free_undo(struct isl_tab *tab)
 {
 	struct isl_tab_undo *undo, *next;
 
@@ -110,11 +109,11 @@ static void free_undo(struct isl_ctx *ctx, struct isl_tab *tab)
 	tab->top = undo;
 }
 
-void isl_tab_free(struct isl_ctx *ctx, struct isl_tab *tab)
+void isl_tab_free(struct isl_tab *tab)
 {
 	if (!tab)
 		return;
-	free_undo(ctx, tab);
+	free_undo(tab);
 	isl_mat_free(tab->mat);
 	isl_vec_free(tab->dual);
 	free(tab->var);
@@ -124,8 +123,7 @@ void isl_tab_free(struct isl_ctx *ctx, struct isl_tab *tab)
 	free(tab);
 }
 
-static struct isl_tab_var *var_from_index(struct isl_ctx *ctx,
-	struct isl_tab *tab, int i)
+static struct isl_tab_var *var_from_index(struct isl_tab *tab, int i)
 {
 	if (i >= 0)
 		return &tab->var[i];
@@ -133,24 +131,22 @@ static struct isl_tab_var *var_from_index(struct isl_ctx *ctx,
 		return &tab->con[~i];
 }
 
-static struct isl_tab_var *var_from_row(struct isl_ctx *ctx,
-	struct isl_tab *tab, int i)
+static struct isl_tab_var *var_from_row(struct isl_tab *tab, int i)
 {
-	return var_from_index(ctx, tab, tab->row_var[i]);
+	return var_from_index(tab, tab->row_var[i]);
 }
 
-static struct isl_tab_var *var_from_col(struct isl_ctx *ctx,
-	struct isl_tab *tab, int i)
+static struct isl_tab_var *var_from_col(struct isl_tab *tab, int i)
 {
-	return var_from_index(ctx, tab, tab->col_var[i]);
+	return var_from_index(tab, tab->col_var[i]);
 }
 
 /* Check if there are any upper bounds on column variable "var",
  * i.e., non-negative rows where var appears with a negative coefficient.
  * Return 1 if there are no such bounds.
  */
-static int max_is_manifestly_unbounded(struct isl_ctx *ctx,
-	struct isl_tab *tab, struct isl_tab_var *var)
+static int max_is_manifestly_unbounded(struct isl_tab *tab,
+	struct isl_tab_var *var)
 {
 	int i;
 
@@ -159,7 +155,7 @@ static int max_is_manifestly_unbounded(struct isl_ctx *ctx,
 	for (i = tab->n_redundant; i < tab->n_row; ++i) {
 		if (!isl_int_is_neg(tab->mat->row[i][2 + var->index]))
 			continue;
-		if (var_from_row(ctx, tab, i)->is_nonneg)
+		if (var_from_row(tab, i)->is_nonneg)
 			return 0;
 	}
 	return 1;
@@ -169,8 +165,8 @@ static int max_is_manifestly_unbounded(struct isl_ctx *ctx,
  * i.e., non-negative rows where var appears with a positive coefficient.
  * Return 1 if there are no such bounds.
  */
-static int min_is_manifestly_unbounded(struct isl_ctx *ctx,
-	struct isl_tab *tab, struct isl_tab_var *var)
+static int min_is_manifestly_unbounded(struct isl_tab *tab,
+	struct isl_tab_var *var)
 {
 	int i;
 
@@ -179,7 +175,7 @@ static int min_is_manifestly_unbounded(struct isl_ctx *ctx,
 	for (i = tab->n_redundant; i < tab->n_row; ++i) {
 		if (!isl_int_is_pos(tab->mat->row[i][2 + var->index]))
 			continue;
-		if (var_from_row(ctx, tab, i)->is_nonneg)
+		if (var_from_row(tab, i)->is_nonneg)
 			return 0;
 	}
 	return 1;
@@ -205,7 +201,7 @@ static int min_is_manifestly_unbounded(struct isl_ctx *ctx,
  * we check if -sign(a_jc) (a_j0 a_rc - a_r0 a_jc) < 0,
  * where -sign(a_jc) is equal to "sgn".
  */
-static int pivot_row(struct isl_ctx *ctx, struct isl_tab *tab,
+static int pivot_row(struct isl_tab *tab,
 	struct isl_tab_var *var, int sgn, int c)
 {
 	int j, r, tsgn;
@@ -216,7 +212,7 @@ static int pivot_row(struct isl_ctx *ctx, struct isl_tab *tab,
 	for (j = tab->n_redundant; j < tab->n_row; ++j) {
 		if (var && j == var->index)
 			continue;
-		if (!var_from_row(ctx, tab, j)->is_nonneg)
+		if (!var_from_row(tab, j)->is_nonneg)
 			continue;
 		if (sgn * isl_int_sgn(tab->mat->row[j][2 + c]) >= 0)
 			continue;
@@ -251,7 +247,7 @@ static int pivot_row(struct isl_ctx *ctx, struct isl_tab *tab,
  * to obtain the desired effect.  Otherwise, x_i has to move in the
  * opposite direction.
  */
-static void find_pivot(struct isl_ctx *ctx, struct isl_tab *tab,
+static void find_pivot(struct isl_tab *tab,
 	struct isl_tab_var *var, struct isl_tab_var *skip_var,
 	int sgn, int *row, int *col)
 {
@@ -260,7 +256,7 @@ static void find_pivot(struct isl_ctx *ctx, struct isl_tab *tab,
 
 	*row = *col = -1;
 
-	isl_assert(ctx, var->is_row, return);
+	isl_assert(tab->mat->ctx, var->is_row, return);
 	tr = tab->mat->row[var->index];
 
 	c = -1;
@@ -268,7 +264,7 @@ static void find_pivot(struct isl_ctx *ctx, struct isl_tab *tab,
 		if (isl_int_is_zero(tr[2 + j]))
 			continue;
 		if (isl_int_sgn(tr[2 + j]) != sgn &&
-		    var_from_col(ctx, tab, j)->is_nonneg)
+		    var_from_col(tab, j)->is_nonneg)
 			continue;
 		if (c < 0 || tab->col_var[j] < tab->col_var[c])
 			c = j;
@@ -277,7 +273,7 @@ static void find_pivot(struct isl_ctx *ctx, struct isl_tab *tab,
 		return;
 
 	sgn *= isl_int_sgn(tr[2 + c]);
-	r = pivot_row(ctx, tab, skip_var, sgn, c);
+	r = pivot_row(tab, skip_var, sgn, c);
 	*row = r < 0 ? var->index : r;
 	*col = c;
 }
@@ -288,11 +284,11 @@ static void find_pivot(struct isl_ctx *ctx, struct isl_tab *tab,
  *	- that is the sum of a non-negative sample value and a positive
  *	  combination of zero or more non-negative variables.
  */
-static int is_redundant(struct isl_ctx *ctx, struct isl_tab *tab, int row)
+static int is_redundant(struct isl_tab *tab, int row)
 {
 	int i;
 
-	if (tab->row_var[row] < 0 && !var_from_row(ctx, tab, row)->is_nonneg)
+	if (tab->row_var[row] < 0 && !var_from_row(tab, row)->is_nonneg)
 		return 0;
 
 	if (isl_int_is_neg(tab->mat->row[row][1]))
@@ -303,25 +299,24 @@ static int is_redundant(struct isl_ctx *ctx, struct isl_tab *tab, int row)
 			continue;
 		if (isl_int_is_neg(tab->mat->row[row][2 + i]))
 			return 0;
-		if (!var_from_col(ctx, tab, i)->is_nonneg)
+		if (!var_from_col(tab, i)->is_nonneg)
 			return 0;
 	}
 	return 1;
 }
 
-static void swap_rows(struct isl_ctx *ctx,
-	struct isl_tab *tab, int row1, int row2)
+static void swap_rows(struct isl_tab *tab, int row1, int row2)
 {
 	int t;
 	t = tab->row_var[row1];
 	tab->row_var[row1] = tab->row_var[row2];
 	tab->row_var[row2] = t;
-	var_from_row(ctx, tab, row1)->index = row1;
-	var_from_row(ctx, tab, row2)->index = row2;
+	var_from_row(tab, row1)->index = row1;
+	var_from_row(tab, row2)->index = row2;
 	tab->mat = isl_mat_swap_rows(tab->mat, row1, row2);
 }
 
-static void push(struct isl_ctx *ctx, struct isl_tab *tab,
+static void push(struct isl_tab *tab,
 	enum isl_tab_undo_type type, struct isl_tab_var *var)
 {
 	struct isl_tab_undo *undo;
@@ -329,9 +324,9 @@ static void push(struct isl_ctx *ctx, struct isl_tab *tab,
 	if (!tab->need_undo)
 		return;
 
-	undo = isl_alloc_type(ctx, struct isl_tab_undo);
+	undo = isl_alloc_type(tab->mat->ctx, struct isl_tab_undo);
 	if (!undo) {
-		free_undo(ctx, tab);
+		free_undo(tab);
 		tab->top = NULL;
 		return;
 	}
@@ -353,35 +348,34 @@ static void push(struct isl_ctx *ctx, struct isl_tab *tab,
  * then a return value of 1 means that the row with the given
  * row number may now contain a different row that hasn't been checked yet.
  */
-static int mark_redundant(struct isl_ctx *ctx,
-	struct isl_tab *tab, int row)
+static int mark_redundant(struct isl_tab *tab, int row)
 {
-	struct isl_tab_var *var = var_from_row(ctx, tab, row);
+	struct isl_tab_var *var = var_from_row(tab, row);
 	var->is_redundant = 1;
-	isl_assert(ctx, row >= tab->n_redundant, return);
+	isl_assert(tab->mat->ctx, row >= tab->n_redundant, return);
 	if (tab->need_undo || tab->row_var[row] >= 0) {
 		if (tab->row_var[row] >= 0) {
 			var->is_nonneg = 1;
-			push(ctx, tab, isl_tab_undo_nonneg, var);
+			push(tab, isl_tab_undo_nonneg, var);
 		}
 		if (row != tab->n_redundant)
-			swap_rows(ctx, tab, row, tab->n_redundant);
-		push(ctx, tab, isl_tab_undo_redundant, var);
+			swap_rows(tab, row, tab->n_redundant);
+		push(tab, isl_tab_undo_redundant, var);
 		tab->n_redundant++;
 		return 0;
 	} else {
 		if (row != tab->n_row - 1)
-			swap_rows(ctx, tab, row, tab->n_row - 1);
-		var_from_row(ctx, tab, tab->n_row - 1)->index = -1;
+			swap_rows(tab, row, tab->n_row - 1);
+		var_from_row(tab, tab->n_row - 1)->index = -1;
 		tab->n_row--;
 		return 1;
 	}
 }
 
-static void mark_empty(struct isl_ctx *ctx, struct isl_tab *tab)
+static void mark_empty(struct isl_tab *tab)
 {
 	if (!tab->empty && tab->need_undo)
-		push(ctx, tab, isl_tab_undo_empty, NULL);
+		push(tab, isl_tab_undo_empty, NULL);
 	tab->empty = 1;
 }
 
@@ -435,8 +429,7 @@ static void mark_empty(struct isl_ctx *ctx, struct isl_tab *tab)
  * s(n_rc)d_r n_jc/(|n_rc| d_j)	(n_ji |n_rc| - s(n_rc)n_jc n_ri)/(|n_rc| d_j)
  *
  */
-static void pivot(struct isl_ctx *ctx,
-	struct isl_tab *tab, int row, int col)
+static void pivot(struct isl_tab *tab, int row, int col)
 {
 	int i, j;
 	int sgn;
@@ -479,10 +472,10 @@ static void pivot(struct isl_ctx *ctx,
 	t = tab->row_var[row];
 	tab->row_var[row] = tab->col_var[col];
 	tab->col_var[col] = t;
-	var = var_from_row(ctx, tab, row);
+	var = var_from_row(tab, row);
 	var->is_row = 1;
 	var->index = row;
-	var = var_from_col(ctx, tab, col);
+	var = var_from_col(tab, col);
 	var->is_row = 0;
 	var->index = col;
 	if (tab->in_undo)
@@ -490,9 +483,9 @@ static void pivot(struct isl_ctx *ctx,
 	for (i = tab->n_redundant; i < tab->n_row; ++i) {
 		if (isl_int_is_zero(mat->row[i][2 + col]))
 			continue;
-		if (!var_from_row(ctx, tab, i)->frozen &&
-		    is_redundant(ctx, tab, i))
-			if (mark_redundant(ctx, tab, i))
+		if (!var_from_row(tab, i)->frozen &&
+		    is_redundant(tab, i))
+			if (mark_redundant(tab, i))
 				--i;
 	}
 }
@@ -501,27 +494,26 @@ static void pivot(struct isl_ctx *ctx,
  * or down (sgn < 0) to a row.  The variable is assumed not to be
  * unbounded in the specified direction.
  */
-static void to_row(struct isl_ctx *ctx,
-	struct isl_tab *tab, struct isl_tab_var *var, int sign)
+static void to_row(struct isl_tab *tab, struct isl_tab_var *var, int sign)
 {
 	int r;
 
 	if (var->is_row)
 		return;
 
-	r = pivot_row(ctx, tab, NULL, sign, var->index);
-	isl_assert(ctx, r >= 0, return);
-	pivot(ctx, tab, r, var->index);
+	r = pivot_row(tab, NULL, sign, var->index);
+	isl_assert(tab->mat->ctx, r >= 0, return);
+	pivot(tab, r, var->index);
 }
 
-static void check_table(struct isl_ctx *ctx, struct isl_tab *tab)
+static void check_table(struct isl_tab *tab)
 {
 	int i;
 
 	if (tab->empty)
 		return;
 	for (i = 0; i < tab->n_row; ++i) {
-		if (!var_from_row(ctx, tab, i)->is_nonneg)
+		if (!var_from_row(tab, i)->is_nonneg)
 			continue;
 		assert(!isl_int_is_neg(tab->mat->row[i][1]));
 	}
@@ -538,19 +530,18 @@ static void check_table(struct isl_ctx *ctx, struct isl_tab *tab)
  *	- the sample value is positive
  *	- the variable is pivoted into a manifestly unbounded column
  */
-static int sign_of_max(struct isl_ctx *ctx,
-	struct isl_tab *tab, struct isl_tab_var *var)
+static int sign_of_max(struct isl_tab *tab, struct isl_tab_var *var)
 {
 	int row, col;
 
-	if (max_is_manifestly_unbounded(ctx, tab, var))
+	if (max_is_manifestly_unbounded(tab, var))
 		return 1;
-	to_row(ctx, tab, var, 1);
+	to_row(tab, var, 1);
 	while (!isl_int_is_pos(tab->mat->row[var->index][1])) {
-		find_pivot(ctx, tab, var, var, 1, &row, &col);
+		find_pivot(tab, var, var, 1, &row, &col);
 		if (row == -1)
 			return isl_int_sgn(tab->mat->row[var->index][1]);
-		pivot(ctx, tab, row, col);
+		pivot(tab, row, col);
 		if (!var->is_row) /* manifestly unbounded */
 			return 1;
 	}
@@ -562,16 +553,15 @@ static int sign_of_max(struct isl_ctx *ctx,
  * Return the sign of the sample value after the pivots have been
  * performed.
  */
-static int restore_row(struct isl_ctx *ctx,
-	struct isl_tab *tab, struct isl_tab_var *var)
+static int restore_row(struct isl_tab *tab, struct isl_tab_var *var)
 {
 	int row, col;
 
 	while (isl_int_is_neg(tab->mat->row[var->index][1])) {
-		find_pivot(ctx, tab, var, var, 1, &row, &col);
+		find_pivot(tab, var, var, 1, &row, &col);
 		if (row == -1)
 			break;
-		pivot(ctx, tab, row, col);
+		pivot(tab, row, col);
 		if (!var->is_row) /* manifestly unbounded */
 			return 1;
 	}
@@ -583,18 +573,17 @@ static int restore_row(struct isl_ctx *ctx,
  * function, "var" is still a row variable, but its sample
  * value may not be non-negative, even if the function returns 1.
  */
-static int at_least_zero(struct isl_ctx *ctx,
-	struct isl_tab *tab, struct isl_tab_var *var)
+static int at_least_zero(struct isl_tab *tab, struct isl_tab_var *var)
 {
 	int row, col;
 
 	while (isl_int_is_neg(tab->mat->row[var->index][1])) {
-		find_pivot(ctx, tab, var, var, 1, &row, &col);
+		find_pivot(tab, var, var, 1, &row, &col);
 		if (row == -1)
 			break;
 		if (row == var->index) /* manifestly unbounded */
 			return 1;
-		pivot(ctx, tab, row, col);
+		pivot(tab, row, col);
 	}
 	return !isl_int_is_neg(tab->mat->row[var->index][1]);
 }
@@ -616,28 +605,27 @@ static int at_least_zero(struct isl_ctx *ctx,
  * In that case we look for upward pivots until we reach a non-negative
  * value again.
  */
-static int sign_of_min(struct isl_ctx *ctx,
-	struct isl_tab *tab, struct isl_tab_var *var)
+static int sign_of_min(struct isl_tab *tab, struct isl_tab_var *var)
 {
 	int row, col;
 	struct isl_tab_var *pivot_var;
 
-	if (min_is_manifestly_unbounded(ctx, tab, var))
+	if (min_is_manifestly_unbounded(tab, var))
 		return -1;
 	if (!var->is_row) {
 		col = var->index;
-		row = pivot_row(ctx, tab, NULL, -1, col);
-		pivot_var = var_from_col(ctx, tab, col);
-		pivot(ctx, tab, row, col);
+		row = pivot_row(tab, NULL, -1, col);
+		pivot_var = var_from_col(tab, col);
+		pivot(tab, row, col);
 		if (var->is_redundant)
 			return 0;
 		if (isl_int_is_neg(tab->mat->row[var->index][1])) {
 			if (var->is_nonneg) {
 				if (!pivot_var->is_redundant &&
 				    pivot_var->index == row)
-					pivot(ctx, tab, row, col);
+					pivot(tab, row, col);
 				else
-					restore_row(ctx, tab, var);
+					restore_row(tab, var);
 			}
 			return -1;
 		}
@@ -645,22 +633,22 @@ static int sign_of_min(struct isl_ctx *ctx,
 	if (var->is_redundant)
 		return 0;
 	while (!isl_int_is_neg(tab->mat->row[var->index][1])) {
-		find_pivot(ctx, tab, var, var, -1, &row, &col);
+		find_pivot(tab, var, var, -1, &row, &col);
 		if (row == var->index)
 			return -1;
 		if (row == -1)
 			return isl_int_sgn(tab->mat->row[var->index][1]);
-		pivot_var = var_from_col(ctx, tab, col);
-		pivot(ctx, tab, row, col);
+		pivot_var = var_from_col(tab, col);
+		pivot(tab, row, col);
 		if (var->is_redundant)
 			return 0;
 	}
 	if (var->is_nonneg) {
 		/* pivot back to non-negative value */
 		if (!pivot_var->is_redundant && pivot_var->index == row)
-			pivot(ctx, tab, row, col);
+			pivot(tab, row, col);
 		else
-			restore_row(ctx, tab, var);
+			restore_row(tab, var);
 	}
 	return -1;
 }
@@ -672,19 +660,18 @@ static int sign_of_min(struct isl_ctx *ctx,
  * the function is called and will be made non-negative again before
  * the function returns.
  */
-static int min_at_most_neg_one(struct isl_ctx *ctx,
-	struct isl_tab *tab, struct isl_tab_var *var)
+static int min_at_most_neg_one(struct isl_tab *tab, struct isl_tab_var *var)
 {
 	int row, col;
 	struct isl_tab_var *pivot_var;
 
-	if (min_is_manifestly_unbounded(ctx, tab, var))
+	if (min_is_manifestly_unbounded(tab, var))
 		return 1;
 	if (!var->is_row) {
 		col = var->index;
-		row = pivot_row(ctx, tab, NULL, -1, col);
-		pivot_var = var_from_col(ctx, tab, col);
-		pivot(ctx, tab, row, col);
+		row = pivot_row(tab, NULL, -1, col);
+		pivot_var = var_from_col(tab, col);
+		pivot(tab, row, col);
 		if (var->is_redundant)
 			return 0;
 		if (isl_int_is_neg(tab->mat->row[var->index][1]) &&
@@ -693,9 +680,9 @@ static int min_at_most_neg_one(struct isl_ctx *ctx,
 			if (var->is_nonneg) {
 				if (!pivot_var->is_redundant &&
 				    pivot_var->index == row)
-					pivot(ctx, tab, row, col);
+					pivot(tab, row, col);
 				else
-					restore_row(ctx, tab, var);
+					restore_row(tab, var);
 			}
 			return 1;
 		}
@@ -703,13 +690,13 @@ static int min_at_most_neg_one(struct isl_ctx *ctx,
 	if (var->is_redundant)
 		return 0;
 	do {
-		find_pivot(ctx, tab, var, var, -1, &row, &col);
+		find_pivot(tab, var, var, -1, &row, &col);
 		if (row == var->index)
 			return 1;
 		if (row == -1)
 			return 0;
-		pivot_var = var_from_col(ctx, tab, col);
-		pivot(ctx, tab, row, col);
+		pivot_var = var_from_col(tab, col);
+		pivot(tab, row, col);
 		if (var->is_redundant)
 			return 0;
 	} while (!isl_int_is_neg(tab->mat->row[var->index][1]) ||
@@ -718,8 +705,8 @@ static int min_at_most_neg_one(struct isl_ctx *ctx,
 	if (var->is_nonneg) {
 		/* pivot back to non-negative value */
 		if (!pivot_var->is_redundant && pivot_var->index == row)
-			pivot(ctx, tab, row, col);
-		restore_row(ctx, tab, var);
+			pivot(tab, row, col);
+		restore_row(tab, var);
 	}
 	return 1;
 }
@@ -727,36 +714,34 @@ static int min_at_most_neg_one(struct isl_ctx *ctx,
 /* Return 1 if "var" can attain values >= 1.
  * Return 0 otherwise.
  */
-static int at_least_one(struct isl_ctx *ctx,
-	struct isl_tab *tab, struct isl_tab_var *var)
+static int at_least_one(struct isl_tab *tab, struct isl_tab_var *var)
 {
 	int row, col;
 	isl_int *r;
 
-	if (max_is_manifestly_unbounded(ctx, tab, var))
+	if (max_is_manifestly_unbounded(tab, var))
 		return 1;
-	to_row(ctx, tab, var, 1);
+	to_row(tab, var, 1);
 	r = tab->mat->row[var->index];
 	while (isl_int_lt(r[1], r[0])) {
-		find_pivot(ctx, tab, var, var, 1, &row, &col);
+		find_pivot(tab, var, var, 1, &row, &col);
 		if (row == -1)
 			return isl_int_ge(r[1], r[0]);
 		if (row == var->index) /* manifestly unbounded */
 			return 1;
-		pivot(ctx, tab, row, col);
+		pivot(tab, row, col);
 	}
 	return 1;
 }
 
-static void swap_cols(struct isl_ctx *ctx,
-	struct isl_tab *tab, int col1, int col2)
+static void swap_cols(struct isl_tab *tab, int col1, int col2)
 {
 	int t;
 	t = tab->col_var[col1];
 	tab->col_var[col1] = tab->col_var[col2];
 	tab->col_var[col2] = t;
-	var_from_col(ctx, tab, col1)->index = col1;
-	var_from_col(ctx, tab, col2)->index = col2;
+	var_from_col(tab, col1)->index = col1;
+	var_from_col(tab, col2)->index = col2;
 	tab->mat = isl_mat_swap_cols(tab->mat, 2 + col1, 2 + col2);
 }
 
@@ -772,20 +757,19 @@ static void swap_cols(struct isl_ctx *ctx,
  * column number may now contain a different column that
  * hasn't been checked yet.
  */
-static int kill_col(struct isl_ctx *ctx,
-	struct isl_tab *tab, int col)
+static int kill_col(struct isl_tab *tab, int col)
 {
-	var_from_col(ctx, tab, col)->is_zero = 1;
+	var_from_col(tab, col)->is_zero = 1;
 	if (tab->need_undo) {
-		push(ctx, tab, isl_tab_undo_zero, var_from_col(ctx, tab, col));
+		push(tab, isl_tab_undo_zero, var_from_col(tab, col));
 		if (col != tab->n_dead)
-			swap_cols(ctx, tab, col, tab->n_dead);
+			swap_cols(tab, col, tab->n_dead);
 		tab->n_dead++;
 		return 0;
 	} else {
 		if (col != tab->n_col - 1)
-			swap_cols(ctx, tab, col, tab->n_col - 1);
-		var_from_col(ctx, tab, tab->n_col - 1)->index = -1;
+			swap_cols(tab, col, tab->n_col - 1);
+		var_from_col(tab, tab->n_col - 1)->index = -1;
 		tab->n_col--;
 		return 1;
 	}
@@ -799,23 +783,22 @@ static int kill_col(struct isl_ctx *ctx,
  * then also be written as the negative sum of non-negative variables
  * and must therefore also be zero.
  */
-static void close_row(struct isl_ctx *ctx,
-	struct isl_tab *tab, struct isl_tab_var *var)
+static void close_row(struct isl_tab *tab, struct isl_tab_var *var)
 {
 	int j;
 	struct isl_mat *mat = tab->mat;
 
-	isl_assert(ctx, var->is_nonneg, return);
+	isl_assert(tab->mat->ctx, var->is_nonneg, return);
 	var->is_zero = 1;
 	for (j = tab->n_dead; j < tab->n_col; ++j) {
 		if (isl_int_is_zero(mat->row[var->index][2 + j]))
 			continue;
-		isl_assert(ctx, isl_int_is_neg(mat->row[var->index][2 + j]),
-			return);
-		if (kill_col(ctx, tab, j))
+		isl_assert(tab->mat->ctx,
+			isl_int_is_neg(mat->row[var->index][2 + j]), return);
+		if (kill_col(tab, j))
 			--j;
 	}
-	mark_redundant(ctx, tab, var->index);
+	mark_redundant(tab, var->index);
 }
 
 /* Add a row to the tableau.  The row is given as an affine combination
@@ -834,14 +817,14 @@ static void close_row(struct isl_ctx *ctx,
  *
  *	with g the gcd of d_r and d_x and m the lcm of d_r and d_x.
  */
-static int add_row(struct isl_ctx *ctx, struct isl_tab *tab, isl_int *line)
+static int add_row(struct isl_tab *tab, isl_int *line)
 {
 	int i;
 	unsigned r;
 	isl_int *row;
 	isl_int a, b;
 
-	isl_assert(ctx, tab->n_row < tab->mat->n_row, return -1);
+	isl_assert(tab->mat->ctx, tab->n_row < tab->mat->n_row, return -1);
 
 	isl_int_init(a);
 	isl_int_init(b);
@@ -878,18 +861,18 @@ static int add_row(struct isl_ctx *ctx, struct isl_tab *tab, isl_int *line)
 	isl_seq_normalize(row, 2 + tab->n_col);
 	tab->n_row++;
 	tab->n_con++;
-	push(ctx, tab, isl_tab_undo_allocate, &tab->con[r]);
+	push(tab, isl_tab_undo_allocate, &tab->con[r]);
 	isl_int_clear(a);
 	isl_int_clear(b);
 
 	return r;
 }
 
-static int drop_row(struct isl_ctx *ctx, struct isl_tab *tab, int row)
+static int drop_row(struct isl_tab *tab, int row)
 {
-	isl_assert(ctx, ~tab->row_var[row] == tab->n_con - 1, return -1);
+	isl_assert(tab->mat->ctx, ~tab->row_var[row] == tab->n_con - 1, return -1);
 	if (row != tab->n_row - 1)
-		swap_rows(ctx, tab, row, tab->n_row - 1);
+		swap_rows(tab, row, tab->n_row - 1);
 	tab->n_row--;
 	tab->n_con--;
 	return 0;
@@ -898,41 +881,39 @@ static int drop_row(struct isl_ctx *ctx, struct isl_tab *tab, int row)
 /* Add inequality "ineq" and check if it conflicts with the
  * previously added constraints or if it is obviously redundant.
  */
-struct isl_tab *isl_tab_add_ineq(struct isl_ctx *ctx,
-	struct isl_tab *tab, isl_int *ineq)
+struct isl_tab *isl_tab_add_ineq(struct isl_tab *tab, isl_int *ineq)
 {
 	int r;
 	int sgn;
 
 	if (!tab)
 		return NULL;
-	r = add_row(ctx, tab, ineq);
+	r = add_row(tab, ineq);
 	if (r < 0)
 		goto error;
 	tab->con[r].is_nonneg = 1;
-	push(ctx, tab, isl_tab_undo_nonneg, &tab->con[r]);
-	if (is_redundant(ctx, tab, tab->con[r].index)) {
-		mark_redundant(ctx, tab, tab->con[r].index);
+	push(tab, isl_tab_undo_nonneg, &tab->con[r]);
+	if (is_redundant(tab, tab->con[r].index)) {
+		mark_redundant(tab, tab->con[r].index);
 		return tab;
 	}
 
-	sgn = restore_row(ctx, tab, &tab->con[r]);
+	sgn = restore_row(tab, &tab->con[r]);
 	if (sgn < 0)
-		mark_empty(ctx, tab);
+		mark_empty(tab);
 	else if (tab->con[r].is_row &&
-		 is_redundant(ctx, tab, tab->con[r].index))
-		mark_redundant(ctx, tab, tab->con[r].index);
+		 is_redundant(tab, tab->con[r].index))
+		mark_redundant(tab, tab->con[r].index);
 	return tab;
 error:
-	isl_tab_free(ctx, tab);
+	isl_tab_free(tab);
 	return NULL;
 }
 
 /* Pivot a non-negative variable down until it reaches the value zero
  * and then pivot the variable into a column position.
  */
-static int to_col(struct isl_ctx *ctx,
-	struct isl_tab *tab, struct isl_tab_var *var)
+static int to_col(struct isl_tab *tab, struct isl_tab_var *var)
 {
 	int i;
 	int row, col;
@@ -941,9 +922,9 @@ static int to_col(struct isl_ctx *ctx,
 		return;
 
 	while (isl_int_is_pos(tab->mat->row[var->index][1])) {
-		find_pivot(ctx, tab, var, NULL, -1, &row, &col);
-		isl_assert(ctx, row != -1, return -1);
-		pivot(ctx, tab, row, col);
+		find_pivot(tab, var, NULL, -1, &row, &col);
+		isl_assert(tab->mat->ctx, row != -1, return -1);
+		pivot(tab, row, col);
 		if (!var->is_row)
 			return;
 	}
@@ -952,8 +933,8 @@ static int to_col(struct isl_ctx *ctx,
 		if (!isl_int_is_zero(tab->mat->row[var->index][2 + i]))
 			break;
 
-	isl_assert(ctx, i < tab->n_col, return -1);
-	pivot(ctx, tab, var->index, i);
+	isl_assert(tab->mat->ctx, i < tab->n_col, return -1);
+	pivot(tab, var->index, i);
 
 	return 0;
 }
@@ -963,15 +944,14 @@ static int to_col(struct isl_ctx *ctx,
  * Adding the equalities is currently only really useful for a later call
  * to isl_tab_ineq_type.
  */
-static struct isl_tab *add_eq(struct isl_ctx *ctx,
-	struct isl_tab *tab, isl_int *eq)
+static struct isl_tab *add_eq(struct isl_tab *tab, isl_int *eq)
 {
 	int i;
 	int r;
 
 	if (!tab)
 		return NULL;
-	r = add_row(ctx, tab, eq);
+	r = add_row(tab, eq);
 	if (r < 0)
 		goto error;
 
@@ -979,22 +959,21 @@ static struct isl_tab *add_eq(struct isl_ctx *ctx,
 	for (i = tab->n_dead; i < tab->n_col; ++i) {
 		if (isl_int_is_zero(tab->mat->row[r][2 + i]))
 			continue;
-		pivot(ctx, tab, r, i);
-		kill_col(ctx, tab, i);
+		pivot(tab, r, i);
+		kill_col(tab, i);
 		break;
 	}
 	tab->n_eq++;
 
 	return tab;
 error:
-	isl_tab_free(ctx, tab);
+	isl_tab_free(tab);
 	return NULL;
 }
 
 /* Add an equality that is known to be valid for the given tableau.
  */
-struct isl_tab *isl_tab_add_valid_eq(struct isl_ctx *ctx,
-	struct isl_tab *tab, isl_int *eq)
+struct isl_tab *isl_tab_add_valid_eq(struct isl_tab *tab, isl_int *eq)
 {
 	struct isl_tab_var *var;
 	int i;
@@ -1002,7 +981,7 @@ struct isl_tab *isl_tab_add_valid_eq(struct isl_ctx *ctx,
 
 	if (!tab)
 		return NULL;
-	r = add_row(ctx, tab, eq);
+	r = add_row(tab, eq);
 	if (r < 0)
 		goto error;
 
@@ -1012,14 +991,14 @@ struct isl_tab *isl_tab_add_valid_eq(struct isl_ctx *ctx,
 		isl_seq_neg(tab->mat->row[r] + 1, tab->mat->row[r] + 1,
 			    1 + tab->n_col);
 	var->is_nonneg = 1;
-	if (to_col(ctx, tab, var) < 0)
+	if (to_col(tab, var) < 0)
 		goto error;
 	var->is_nonneg = 0;
-	kill_col(ctx, tab, var->index);
+	kill_col(tab, var->index);
 
 	return tab;
 error:
-	isl_tab_free(ctx, tab);
+	isl_tab_free(tab);
 	return NULL;
 }
 
@@ -1037,16 +1016,16 @@ struct isl_tab *isl_tab_from_basic_map(struct isl_basic_map *bmap)
 		return NULL;
 	tab->rational = ISL_F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL);
 	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_EMPTY)) {
-		mark_empty(bmap->ctx, tab);
+		mark_empty(tab);
 		return tab;
 	}
 	for (i = 0; i < bmap->n_eq; ++i) {
-		tab = add_eq(bmap->ctx, tab, bmap->eq[i]);
+		tab = add_eq(tab, bmap->eq[i]);
 		if (!tab)
 			return tab;
 	}
 	for (i = 0; i < bmap->n_ineq; ++i) {
-		tab = isl_tab_add_ineq(bmap->ctx, tab, bmap->ineq[i]);
+		tab = isl_tab_add_ineq(tab, bmap->ineq[i]);
 		if (!tab || tab->empty)
 			return tab;
 	}
@@ -1077,7 +1056,7 @@ struct isl_tab *isl_tab_from_recession_cone(struct isl_basic_map *bmap)
 	isl_int_init(cst);
 	for (i = 0; i < bmap->n_eq; ++i) {
 		isl_int_swap(bmap->eq[i][0], cst);
-		tab = add_eq(bmap->ctx, tab, bmap->eq[i]);
+		tab = add_eq(tab, bmap->eq[i]);
 		isl_int_swap(bmap->eq[i][0], cst);
 		if (!tab)
 			goto done;
@@ -1085,26 +1064,26 @@ struct isl_tab *isl_tab_from_recession_cone(struct isl_basic_map *bmap)
 	for (i = 0; i < bmap->n_ineq; ++i) {
 		int r;
 		isl_int_swap(bmap->ineq[i][0], cst);
-		r = add_row(bmap->ctx, tab, bmap->ineq[i]);
+		r = add_row(tab, bmap->ineq[i]);
 		isl_int_swap(bmap->ineq[i][0], cst);
 		if (r < 0)
 			goto error;
 		tab->con[r].is_nonneg = 1;
-		push(bmap->ctx, tab, isl_tab_undo_nonneg, &tab->con[r]);
+		push(tab, isl_tab_undo_nonneg, &tab->con[r]);
 	}
 done:
 	isl_int_clear(cst);
 	return tab;
 error:
 	isl_int_clear(cst);
-	isl_tab_free(bmap->ctx, tab);
+	isl_tab_free(tab);
 	return NULL;
 }
 
 /* Assuming "tab" is the tableau of a cone, check if the cone is
  * bounded, i.e., if it is empty or only contains the origin.
  */
-int isl_tab_cone_is_bounded(struct isl_ctx *ctx, struct isl_tab *tab)
+int isl_tab_cone_is_bounded(struct isl_tab *tab)
 {
 	int i;
 
@@ -1117,11 +1096,11 @@ int isl_tab_cone_is_bounded(struct isl_ctx *ctx, struct isl_tab *tab)
 
 	for (i = tab->n_redundant; i < tab->n_row; ++i) {
 		struct isl_tab_var *var;
-		var = var_from_row(ctx, tab, i);
+		var = var_from_row(tab, i);
 		if (!var->is_nonneg)
 			continue;
-		if (sign_of_max(ctx, tab, var) == 0)
-			close_row(ctx, tab, var);
+		if (sign_of_max(tab, var) == 0)
+			close_row(tab, var);
 		else
 			return 0;
 		if (tab->n_dead == tab->n_col)
@@ -1130,7 +1109,7 @@ int isl_tab_cone_is_bounded(struct isl_ctx *ctx, struct isl_tab *tab)
 	return 0;
 }
 
-int isl_tab_sample_is_integer(struct isl_ctx *ctx, struct isl_tab *tab)
+int isl_tab_sample_is_integer(struct isl_tab *tab)
 {
 	int i;
 
@@ -1149,13 +1128,12 @@ int isl_tab_sample_is_integer(struct isl_ctx *ctx, struct isl_tab *tab)
 	return 1;
 }
 
-static struct isl_vec *extract_integer_sample(struct isl_ctx *ctx,
-						struct isl_tab *tab)
+static struct isl_vec *extract_integer_sample(struct isl_tab *tab)
 {
 	int i;
 	struct isl_vec *vec;
 
-	vec = isl_vec_alloc(ctx, 1 + tab->n_var);
+	vec = isl_vec_alloc(tab->mat->ctx, 1 + tab->n_var);
 	if (!vec)
 		return NULL;
 
@@ -1173,8 +1151,7 @@ static struct isl_vec *extract_integer_sample(struct isl_ctx *ctx,
 	return vec;
 }
 
-struct isl_vec *isl_tab_get_sample_value(struct isl_ctx *ctx,
-						struct isl_tab *tab)
+struct isl_vec *isl_tab_get_sample_value(struct isl_tab *tab)
 {
 	int i;
 	struct isl_vec *vec;
@@ -1183,7 +1160,7 @@ struct isl_vec *isl_tab_get_sample_value(struct isl_ctx *ctx,
 	if (!tab)
 		return NULL;
 
-	vec = isl_vec_alloc(ctx, 1 + tab->n_var);
+	vec = isl_vec_alloc(tab->mat->ctx, 1 + tab->n_var);
 	if (!vec)
 		return NULL;
 
@@ -1233,14 +1210,14 @@ struct isl_basic_map *isl_basic_map_update_from_tab(struct isl_basic_map *bmap,
 		bmap = isl_basic_map_set_to_empty(bmap);
 	else
 		for (i = bmap->n_ineq - 1; i >= 0; --i) {
-			if (isl_tab_is_equality(bmap->ctx, tab, n_eq + i))
+			if (isl_tab_is_equality(tab, n_eq + i))
 				isl_basic_map_inequality_to_equality(bmap, i);
-			else if (isl_tab_is_redundant(bmap->ctx, tab, n_eq + i))
+			else if (isl_tab_is_redundant(tab, n_eq + i))
 				isl_basic_map_drop_inequality(bmap, i);
 		}
 	if (!tab->rational &&
-	    !bmap->sample && isl_tab_sample_is_integer(bmap->ctx, tab))
-		bmap->sample = extract_integer_sample(bmap->ctx, tab);
+	    !bmap->sample && isl_tab_sample_is_integer(tab))
+		bmap->sample = extract_integer_sample(tab);
 	return bmap;
 }
 
@@ -1260,14 +1237,14 @@ struct isl_basic_set *isl_basic_set_update_from_tab(struct isl_basic_set *bset,
  * the resulting tableau is empty.
  * Otherwise, we know the value will be zero and we close the row.
  */
-static struct isl_tab *cut_to_hyperplane(struct isl_ctx *ctx,
-	struct isl_tab *tab, struct isl_tab_var *var)
+static struct isl_tab *cut_to_hyperplane(struct isl_tab *tab,
+	struct isl_tab_var *var)
 {
 	unsigned r;
 	isl_int *row;
 	int sgn;
 
-	if (extend_cons(ctx, tab, 1) < 0)
+	if (extend_cons(tab, 1) < 0)
 		goto error;
 
 	r = tab->n_con;
@@ -1292,21 +1269,21 @@ static struct isl_tab *cut_to_hyperplane(struct isl_ctx *ctx,
 
 	tab->n_row++;
 	tab->n_con++;
-	push(ctx, tab, isl_tab_undo_allocate, &tab->con[r]);
+	push(tab, isl_tab_undo_allocate, &tab->con[r]);
 
-	sgn = sign_of_max(ctx, tab, &tab->con[r]);
+	sgn = sign_of_max(tab, &tab->con[r]);
 	if (sgn < 0)
-		mark_empty(ctx, tab);
+		mark_empty(tab);
 	else {
 		tab->con[r].is_nonneg = 1;
-		push(ctx, tab, isl_tab_undo_nonneg, &tab->con[r]);
+		push(tab, isl_tab_undo_nonneg, &tab->con[r]);
 		/* sgn == 0 */
-		close_row(ctx, tab, &tab->con[r]);
+		close_row(tab, &tab->con[r]);
 	}
 
 	return tab;
 error:
-	isl_tab_free(ctx, tab);
+	isl_tab_free(tab);
 	return NULL;
 }
 
@@ -1319,8 +1296,7 @@ error:
  * refers to r = r' - 1 by substituting this equality, effectively
  * subtracting the coefficient of the column from the constant.
  */
-struct isl_tab *isl_tab_relax(struct isl_ctx *ctx,
-	struct isl_tab *tab, int con)
+struct isl_tab *isl_tab_relax(struct isl_tab *tab, int con)
 {
 	struct isl_tab_var *var;
 	if (!tab)
@@ -1328,8 +1304,8 @@ struct isl_tab *isl_tab_relax(struct isl_ctx *ctx,
 
 	var = &tab->con[con];
 
-	if (!var->is_row && !max_is_manifestly_unbounded(ctx, tab, var))
-		to_row(ctx, tab, var, 1);
+	if (!var->is_row && !max_is_manifestly_unbounded(tab, var))
+		to_row(tab, var, 1);
 
 	if (var->is_row)
 		isl_int_add(tab->mat->row[var->index][1],
@@ -1346,18 +1322,17 @@ struct isl_tab *isl_tab_relax(struct isl_ctx *ctx,
 
 	}
 
-	push(ctx, tab, isl_tab_undo_relax, var);
+	push(tab, isl_tab_undo_relax, var);
 
 	return tab;
 }
 
-struct isl_tab *isl_tab_select_facet(struct isl_ctx *ctx,
-	struct isl_tab *tab, int con)
+struct isl_tab *isl_tab_select_facet(struct isl_tab *tab, int con)
 {
 	if (!tab)
 		return NULL;
 
-	return cut_to_hyperplane(ctx, tab, &tab->con[con]);
+	return cut_to_hyperplane(tab, &tab->con[con]);
 }
 
 static int may_be_equality(struct isl_tab *tab, int row)
@@ -1385,8 +1360,7 @@ static int may_be_equality(struct isl_tab *tab, int row)
  * tableau is integer), then we restrict the value to being zero
  * by adding an opposite non-negative variable.
  */
-struct isl_tab *isl_tab_detect_equalities(struct isl_ctx *ctx,
-				struct isl_tab *tab)
+struct isl_tab *isl_tab_detect_equalities(struct isl_tab *tab)
 {
 	int i;
 	unsigned n_marked;
@@ -1400,14 +1374,14 @@ struct isl_tab *isl_tab_detect_equalities(struct isl_ctx *ctx,
 
 	n_marked = 0;
 	for (i = tab->n_redundant; i < tab->n_row; ++i) {
-		struct isl_tab_var *var = var_from_row(ctx, tab, i);
+		struct isl_tab_var *var = var_from_row(tab, i);
 		var->marked = !var->frozen && var->is_nonneg &&
 			may_be_equality(tab, i);
 		if (var->marked)
 			n_marked++;
 	}
 	for (i = tab->n_dead; i < tab->n_col; ++i) {
-		struct isl_tab_var *var = var_from_col(ctx, tab, i);
+		struct isl_tab_var *var = var_from_col(tab, i);
 		var->marked = !var->frozen && var->is_nonneg;
 		if (var->marked)
 			n_marked++;
@@ -1415,13 +1389,13 @@ struct isl_tab *isl_tab_detect_equalities(struct isl_ctx *ctx,
 	while (n_marked) {
 		struct isl_tab_var *var;
 		for (i = tab->n_redundant; i < tab->n_row; ++i) {
-			var = var_from_row(ctx, tab, i);
+			var = var_from_row(tab, i);
 			if (var->marked)
 				break;
 		}
 		if (i == tab->n_row) {
 			for (i = tab->n_dead; i < tab->n_col; ++i) {
-				var = var_from_col(ctx, tab, i);
+				var = var_from_col(tab, i);
 				if (var->marked)
 					break;
 			}
@@ -1430,14 +1404,14 @@ struct isl_tab *isl_tab_detect_equalities(struct isl_ctx *ctx,
 		}
 		var->marked = 0;
 		n_marked--;
-		if (sign_of_max(ctx, tab, var) == 0)
-			close_row(ctx, tab, var);
-		else if (!tab->rational && !at_least_one(ctx, tab, var)) {
-			tab = cut_to_hyperplane(ctx, tab, var);
-			return isl_tab_detect_equalities(ctx, tab);
+		if (sign_of_max(tab, var) == 0)
+			close_row(tab, var);
+		else if (!tab->rational && !at_least_one(tab, var)) {
+			tab = cut_to_hyperplane(tab, var);
+			return isl_tab_detect_equalities(tab);
 		}
 		for (i = tab->n_redundant; i < tab->n_row; ++i) {
-			var = var_from_row(ctx, tab, i);
+			var = var_from_row(tab, i);
 			if (!var->marked)
 				continue;
 			if (may_be_equality(tab, i))
@@ -1463,8 +1437,7 @@ struct isl_tab *isl_tab_detect_equalities(struct isl_ctx *ctx,
  * If not, we mark the row as being redundant (assuming it hasn't
  * been detected as being obviously redundant in the mean time).
  */
-struct isl_tab *isl_tab_detect_redundant(struct isl_ctx *ctx,
-				struct isl_tab *tab)
+struct isl_tab *isl_tab_detect_redundant(struct isl_tab *tab)
 {
 	int i;
 	unsigned n_marked;
@@ -1478,28 +1451,28 @@ struct isl_tab *isl_tab_detect_redundant(struct isl_ctx *ctx,
 
 	n_marked = 0;
 	for (i = tab->n_redundant; i < tab->n_row; ++i) {
-		struct isl_tab_var *var = var_from_row(ctx, tab, i);
+		struct isl_tab_var *var = var_from_row(tab, i);
 		var->marked = !var->frozen && var->is_nonneg;
 		if (var->marked)
 			n_marked++;
 	}
 	for (i = tab->n_dead; i < tab->n_col; ++i) {
-		struct isl_tab_var *var = var_from_col(ctx, tab, i);
+		struct isl_tab_var *var = var_from_col(tab, i);
 		var->marked = !var->frozen && var->is_nonneg &&
-			!min_is_manifestly_unbounded(ctx, tab, var);
+			!min_is_manifestly_unbounded(tab, var);
 		if (var->marked)
 			n_marked++;
 	}
 	while (n_marked) {
 		struct isl_tab_var *var;
 		for (i = tab->n_redundant; i < tab->n_row; ++i) {
-			var = var_from_row(ctx, tab, i);
+			var = var_from_row(tab, i);
 			if (var->marked)
 				break;
 		}
 		if (i == tab->n_row) {
 			for (i = tab->n_dead; i < tab->n_col; ++i) {
-				var = var_from_col(ctx, tab, i);
+				var = var_from_col(tab, i);
 				if (var->marked)
 					break;
 			}
@@ -1508,15 +1481,15 @@ struct isl_tab *isl_tab_detect_redundant(struct isl_ctx *ctx,
 		}
 		var->marked = 0;
 		n_marked--;
-		if ((tab->rational ? (sign_of_min(ctx, tab, var) >= 0)
-				   : !min_at_most_neg_one(ctx, tab, var)) &&
+		if ((tab->rational ? (sign_of_min(tab, var) >= 0)
+				   : !min_at_most_neg_one(tab, var)) &&
 		    !var->is_redundant)
-			mark_redundant(ctx, tab, var->index);
+			mark_redundant(tab, var->index);
 		for (i = tab->n_dead; i < tab->n_col; ++i) {
-			var = var_from_col(ctx, tab, i);
+			var = var_from_col(tab, i);
 			if (!var->marked)
 				continue;
-			if (!min_is_manifestly_unbounded(ctx, tab, var))
+			if (!min_is_manifestly_unbounded(tab, var))
 				continue;
 			var->marked = 0;
 			n_marked--;
@@ -1526,7 +1499,7 @@ struct isl_tab *isl_tab_detect_redundant(struct isl_ctx *ctx,
 	return tab;
 }
 
-int isl_tab_is_equality(struct isl_ctx *ctx, struct isl_tab *tab, int con)
+int isl_tab_is_equality(struct isl_tab *tab, int con)
 {
 	int row;
 
@@ -1553,7 +1526,7 @@ int isl_tab_is_equality(struct isl_ctx *ctx, struct isl_tab *tab, int con)
  * The return value reflects the nature of the result (empty, unbounded,
  * minmimal value returned in *opt).
  */
-enum isl_lp_result isl_tab_min(struct isl_ctx *ctx, struct isl_tab *tab,
+enum isl_lp_result isl_tab_min(struct isl_tab *tab,
 	isl_int *f, isl_int denom, isl_int *opt, isl_int *opt_denom,
 	unsigned flags)
 {
@@ -1565,8 +1538,8 @@ enum isl_lp_result isl_tab_min(struct isl_ctx *ctx, struct isl_tab *tab,
 	if (tab->empty)
 		return isl_lp_empty;
 
-	snap = isl_tab_snap(ctx, tab);
-	r = add_row(ctx, tab, f);
+	snap = isl_tab_snap(tab);
+	r = add_row(tab, f);
 	if (r < 0)
 		return isl_lp_error;
 	var = &tab->con[r];
@@ -1574,22 +1547,22 @@ enum isl_lp_result isl_tab_min(struct isl_ctx *ctx, struct isl_tab *tab,
 		    tab->mat->row[var->index][0], denom);
 	for (;;) {
 		int row, col;
-		find_pivot(ctx, tab, var, var, -1, &row, &col);
+		find_pivot(tab, var, var, -1, &row, &col);
 		if (row == var->index) {
 			res = isl_lp_unbounded;
 			break;
 		}
 		if (row == -1)
 			break;
-		pivot(ctx, tab, row, col);
+		pivot(tab, row, col);
 	}
-	if (isl_tab_rollback(ctx, tab, snap) < 0)
+	if (isl_tab_rollback(tab, snap) < 0)
 		return isl_lp_error;
 	if (ISL_FL_ISSET(flags, ISL_TAB_SAVE_DUAL)) {
 		int i;
 
 		isl_vec_free(tab->dual);
-		tab->dual = isl_vec_alloc(ctx, 1 + tab->n_con);
+		tab->dual = isl_vec_alloc(tab->mat->ctx, 1 + tab->n_con);
 		if (!tab->dual)
 			return isl_lp_error;
 		isl_int_set(tab->dual->el[0], tab->mat->row[var->index][0]);
@@ -1614,7 +1587,7 @@ enum isl_lp_result isl_tab_min(struct isl_ctx *ctx, struct isl_tab *tab,
 	return res;
 }
 
-int isl_tab_is_redundant(struct isl_ctx *ctx, struct isl_tab *tab, int con)
+int isl_tab_is_redundant(struct isl_tab *tab, int con)
 {
 	int row;
 	unsigned n_col;
@@ -1631,7 +1604,7 @@ int isl_tab_is_redundant(struct isl_ctx *ctx, struct isl_tab *tab, int con)
 /* Take a snapshot of the tableau that can be restored by s call to
  * isl_tab_rollback.
  */
-struct isl_tab_undo *isl_tab_snap(struct isl_ctx *ctx, struct isl_tab *tab)
+struct isl_tab_undo *isl_tab_snap(struct isl_tab *tab)
 {
 	if (!tab)
 		return NULL;
@@ -1641,11 +1614,10 @@ struct isl_tab_undo *isl_tab_snap(struct isl_ctx *ctx, struct isl_tab *tab)
 
 /* Undo the operation performed by isl_tab_relax.
  */
-static void unrelax(struct isl_ctx *ctx,
-	struct isl_tab *tab, struct isl_tab_var *var)
+static void unrelax(struct isl_tab *tab, struct isl_tab_var *var)
 {
-	if (!var->is_row && !max_is_manifestly_unbounded(ctx, tab, var))
-		to_row(ctx, tab, var, 1);
+	if (!var->is_row && !max_is_manifestly_unbounded(tab, var))
+		to_row(tab, var, 1);
 
 	if (var->is_row)
 		isl_int_sub(tab->mat->row[var->index][1],
@@ -1663,8 +1635,7 @@ static void unrelax(struct isl_ctx *ctx,
 	}
 }
 
-static void perform_undo(struct isl_ctx *ctx, struct isl_tab *tab,
-	struct isl_tab_undo *undo)
+static void perform_undo(struct isl_tab *tab, struct isl_tab_undo *undo)
 {
 	switch(undo->type) {
 	case isl_tab_undo_empty:
@@ -1683,15 +1654,15 @@ static void perform_undo(struct isl_ctx *ctx, struct isl_tab *tab,
 		break;
 	case isl_tab_undo_allocate:
 		if (!undo->var->is_row) {
-			if (max_is_manifestly_unbounded(ctx, tab, undo->var))
-				to_row(ctx, tab, undo->var, -1);
+			if (max_is_manifestly_unbounded(tab, undo->var))
+				to_row(tab, undo->var, -1);
 			else
-				to_row(ctx, tab, undo->var, 1);
+				to_row(tab, undo->var, 1);
 		}
-		drop_row(ctx, tab, undo->var->index);
+		drop_row(tab, undo->var->index);
 		break;
 	case isl_tab_undo_relax:
-		unrelax(ctx, tab, undo->var);
+		unrelax(tab, undo->var);
 		break;
 	}
 }
@@ -1699,8 +1670,7 @@ static void perform_undo(struct isl_ctx *ctx, struct isl_tab *tab,
 /* Return the tableau to the state it was in when the snapshot "snap"
  * was taken.
  */
-int isl_tab_rollback(struct isl_ctx *ctx, struct isl_tab *tab,
-	struct isl_tab_undo *snap)
+int isl_tab_rollback(struct isl_tab *tab, struct isl_tab_undo *snap)
 {
 	struct isl_tab_undo *undo, *next;
 
@@ -1712,7 +1682,7 @@ int isl_tab_rollback(struct isl_ctx *ctx, struct isl_tab *tab,
 		next = undo->next;
 		if (undo == snap)
 			break;
-		perform_undo(ctx, tab, undo);
+		perform_undo(tab, undo);
 		free(undo);
 	}
 	tab->in_undo = 0;
@@ -1732,8 +1702,7 @@ int isl_tab_rollback(struct isl_ctx *ctx, struct isl_tab *tab,
  * of the tableau, then the inequality is adjacent (but opposite)
  * to the inequality r'.
  */
-static enum isl_ineq_type separation_type(struct isl_ctx *ctx,
-	struct isl_tab *tab, unsigned row)
+static enum isl_ineq_type separation_type(struct isl_tab *tab, unsigned row)
 {
 	int pos;
 
@@ -1768,8 +1737,7 @@ static enum isl_ineq_type separation_type(struct isl_ctx *ctx,
  *	isl_ineq_adj_eq:	adjacent to an equality
  *	isl_ineq_adj_ineq:	adjacent to an inequality.
  */
-enum isl_ineq_type isl_tab_ineq_type(struct isl_ctx *ctx, struct isl_tab *tab,
-	isl_int *ineq)
+enum isl_ineq_type isl_tab_ineq_type(struct isl_tab *tab, isl_int *ineq)
 {
 	enum isl_ineq_type type = isl_ineq_error;
 	struct isl_tab_undo *snap = NULL;
@@ -1779,42 +1747,41 @@ enum isl_ineq_type isl_tab_ineq_type(struct isl_ctx *ctx, struct isl_tab *tab,
 	if (!tab)
 		return isl_ineq_error;
 
-	if (extend_cons(ctx, tab, 1) < 0)
+	if (extend_cons(tab, 1) < 0)
 		return isl_ineq_error;
 
-	snap = isl_tab_snap(ctx, tab);
+	snap = isl_tab_snap(tab);
 
-	con = add_row(ctx, tab, ineq);
+	con = add_row(tab, ineq);
 	if (con < 0)
 		goto error;
 
 	row = tab->con[con].index;
-	if (is_redundant(ctx, tab, row))
+	if (is_redundant(tab, row))
 		type = isl_ineq_redundant;
 	else if (isl_int_is_neg(tab->mat->row[row][1]) &&
 		 (tab->rational ||
 		    isl_int_abs_ge(tab->mat->row[row][1],
 				   tab->mat->row[row][0]))) {
-		if (at_least_zero(ctx, tab, &tab->con[con]))
+		if (at_least_zero(tab, &tab->con[con]))
 			type = isl_ineq_cut;
 		else
-			type = separation_type(ctx, tab, row);
-	} else if (tab->rational ? (sign_of_min(ctx, tab, &tab->con[con]) < 0)
-			     : min_at_most_neg_one(ctx, tab, &tab->con[con]))
+			type = separation_type(tab, row);
+	} else if (tab->rational ? (sign_of_min(tab, &tab->con[con]) < 0)
+			     : min_at_most_neg_one(tab, &tab->con[con]))
 		type = isl_ineq_cut;
 	else
 		type = isl_ineq_redundant;
 
-	if (isl_tab_rollback(ctx, tab, snap))
+	if (isl_tab_rollback(tab, snap))
 		return isl_ineq_error;
 	return type;
 error:
-	isl_tab_rollback(ctx, tab, snap);
+	isl_tab_rollback(tab, snap);
 	return isl_ineq_error;
 }
 
-void isl_tab_dump(struct isl_ctx *ctx, struct isl_tab *tab,
-				FILE *out, int indent)
+void isl_tab_dump(struct isl_tab *tab, FILE *out, int indent)
 {
 	unsigned r, c;
 	int i;
@@ -1855,7 +1822,7 @@ void isl_tab_dump(struct isl_ctx *ctx, struct isl_tab *tab,
 		if (i)
 			fprintf(out, ", ");
 		fprintf(out, "r%d: %d%s", i, tab->row_var[i],
-		    var_from_row(ctx, tab, i)->is_nonneg ? " [>=0]" : "");
+		    var_from_row(tab, i)->is_nonneg ? " [>=0]" : "");
 	}
 	fprintf(out, "]\n");
 	fprintf(out, "%*s[", indent, "");
@@ -1863,7 +1830,7 @@ void isl_tab_dump(struct isl_ctx *ctx, struct isl_tab *tab,
 		if (i)
 			fprintf(out, ", ");
 		fprintf(out, "c%d: %d%s", i, tab->col_var[i],
-		    var_from_col(ctx, tab, i)->is_nonneg ? " [>=0]" : "");
+		    var_from_col(tab, i)->is_nonneg ? " [>=0]" : "");
 	}
 	fprintf(out, "]\n");
 	r = tab->mat->n_row;
