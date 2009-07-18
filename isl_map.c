@@ -4087,6 +4087,13 @@ static int isl_map_fast_has_fixed_var(struct isl_map *map,
 	return fixed;
 }
 
+static int isl_basic_set_fast_has_fixed_var(struct isl_basic_set *bset,
+	unsigned pos, isl_int *val)
+{
+	return isl_basic_map_fast_has_fixed_var((struct isl_basic_map *)bset,
+						pos, val);
+}
+
 static int isl_set_fast_has_fixed_var(struct isl_set *set, unsigned pos,
 	isl_int *val)
 {
@@ -4100,6 +4107,16 @@ int isl_basic_map_fast_is_fixed(struct isl_basic_map *bmap,
 		return -1;
 	return isl_basic_map_fast_has_fixed_var(bmap,
 		isl_basic_map_offset(bmap, type) - 1 + pos, val);
+}
+
+/* Check if dimension dim has fixed value and if so and if val is not NULL,
+ * then return this fixed value in *val.
+ */
+int isl_basic_set_fast_dim_is_fixed(struct isl_basic_set *bset, unsigned dim,
+	isl_int *val)
+{
+	return isl_basic_set_fast_has_fixed_var(bset,
+					isl_basic_set_n_param(bset) + dim, val);
 }
 
 /* Check if dimension dim has fixed value and if so and if val is not NULL,
