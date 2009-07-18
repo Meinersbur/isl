@@ -550,6 +550,11 @@ error:
 /* Check if dimension dim belongs to a residue class
  *		i_dim \equiv r mod m
  * with m != 1 and if so return m in *modulo and r in *residue.
+ * As a special case, when i_dim has a fixed value v, then
+ * *modulo is set to 0 and *residue to v.
+ *
+ * If i_dim does not belong to such a residue class, then *modulo
+ * is set to 1 and *residue is set to 0.
  */
 int isl_basic_set_dim_residue_class(struct isl_basic_set *bset,
 	int pos, isl_int *modulo, isl_int *residue)
@@ -562,6 +567,11 @@ int isl_basic_set_dim_residue_class(struct isl_basic_set *bset,
 	if (!bset || !modulo || !residue)
 		return -1;
 
+	if (isl_basic_set_fast_dim_is_fixed(bset, pos, residue)) {
+		isl_int_set_si(*modulo, 0);
+		return 0;
+	}
+
 	ctx = bset->ctx;
 	total = isl_basic_set_total_dim(bset);
 	nparam = isl_basic_set_n_param(bset);
@@ -572,7 +582,9 @@ int isl_basic_set_dim_residue_class(struct isl_basic_set *bset,
 
 	isl_seq_gcd(U->row[nparam + pos]+bset->n_eq,
 			total-bset->n_eq, modulo);
-	if (isl_int_is_zero(*modulo) || isl_int_is_one(*modulo)) {
+	if (isl_int_is_zero(*modulo))
+		isl_int_set_si(*modulo, 1);
+	if (isl_int_is_one(*modulo)) {
 		isl_int_set_si(*residue, 0);
 		isl_mat_free(H);
 		isl_mat_free(U);
@@ -598,7 +610,7 @@ int isl_basic_set_dim_residue_class(struct isl_basic_set *bset,
 		bset = isl_basic_set_copy(bset);
 		bset = isl_basic_set_set_to_empty(bset);
 		isl_basic_set_free(bset);
-		isl_int_set_si(*modulo, 0);
+		isl_int_set_si(*modulo, 1);
 		isl_int_set_si(*residue, 0);
 		return 0;
 	}
