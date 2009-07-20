@@ -1094,19 +1094,22 @@ int isl_tab_cone_is_bounded(struct isl_tab *tab)
 	if (tab->n_dead == tab->n_col)
 		return 1;
 
-	for (i = tab->n_redundant; i < tab->n_row; ++i) {
-		struct isl_tab_var *var;
-		var = var_from_row(tab, i);
-		if (!var->is_nonneg)
-			continue;
-		if (sign_of_max(tab, var) == 0)
+	for (;;) {
+		for (i = tab->n_redundant; i < tab->n_row; ++i) {
+			struct isl_tab_var *var;
+			var = var_from_row(tab, i);
+			if (!var->is_nonneg)
+				continue;
+			if (sign_of_max(tab, var) != 0)
+				return 0;
 			close_row(tab, var);
-		else
-			return 0;
+			break;
+		}
 		if (tab->n_dead == tab->n_col)
 			return 1;
+		if (i == tab->n_row)
+			return 0;
 	}
-	return 0;
 }
 
 int isl_tab_sample_is_integer(struct isl_tab *tab)
