@@ -178,6 +178,9 @@ static int fuse(struct isl_map *map, int i, int j, struct isl_tab **tabs,
 
 	fused = isl_basic_map_gauss(fused, NULL);
 	ISL_F_SET(fused, ISL_BASIC_MAP_FINAL);
+	if (ISL_F_ISSET(map->p[i], ISL_BASIC_MAP_RATIONAL) &&
+	    ISL_F_ISSET(map->p[j], ISL_BASIC_MAP_RATIONAL))
+		ISL_F_SET(fused, ISL_BASIC_MAP_RATIONAL);
 
 	fused_tab = isl_tab_from_basic_map(fused);
 	fused_tab = isl_tab_detect_redundant(fused_tab);
