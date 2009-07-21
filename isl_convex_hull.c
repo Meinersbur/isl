@@ -1850,7 +1850,7 @@ static struct isl_basic_set *uset_convex_hull_wrap_bounded(struct isl_set *set)
 
 	if (!set)
 		goto error;
-	set = isl_set_normalize(set);
+	set = isl_set_coalesce(set);
 	if (!set)
 		goto error;
 	if (set->n == 1) {
