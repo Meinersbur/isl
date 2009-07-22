@@ -242,8 +242,7 @@ error:
 	return NULL;
 }
 
-static struct isl_basic_set *isl_basic_set_set_rational(
-	struct isl_basic_set *bset)
+struct isl_basic_set *isl_basic_set_set_rational(struct isl_basic_set *bset)
 {
 	if (!bset)
 		return NULL;
