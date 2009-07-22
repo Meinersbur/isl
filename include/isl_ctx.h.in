@@ -65,6 +65,10 @@ struct isl_ctx {
 	#define			ISL_ILP_PIP	1
 	unsigned		ilp_solver;
 
+	#define			ISL_PIP_TAB	0
+	#define			ISL_PIP_PIP	1
+	unsigned		pip;
+
 	unsigned		gbr_only_first;
 };
 

@@ -35,6 +35,7 @@ struct isl_ctx *isl_ctx_alloc()
 
 	ctx->lp_solver = ISL_LP_TAB;
 	ctx->ilp_solver = ISL_ILP_GBR;
+	ctx->pip = ISL_PIP_TAB;
 
 	return ctx;
 error:

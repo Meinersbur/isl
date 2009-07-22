@@ -66,7 +66,7 @@ struct isl_tab_undo {
  * The big parameter represents an arbitrarily big (and divisible)
  * positive number.  If present, then the sign of a row is determined
  * lexicographically, with the sign of the big parameter coefficient
- * considered first.  The big parameter will only be used while
+ * considered first.  The big parameter is only used while
  * solving PILP problems.
  *
  * The first n_dead column variables have their values fixed to zero.
@@ -84,7 +84,8 @@ struct isl_tab_undo {
  * There are "n_var" variables in total.  The first "n_param" of these
  * are called parameters and the last "n_div" of these are called divs.
  * The basic tableau operations makes no distinction between different
- * kinds of variables.
+ * kinds of variables.  These special variables are only used while
+ * solving PILP problems.
  *
  * Dead columns and redundant rows are detected on the fly.
  * However, the basic operations do not ensure that all dead columns
@@ -96,7 +97,8 @@ struct isl_tab_undo {
  * point been elements satisfying the tableau.  The first "n_outside"
  * of them no longer satisfy the tableau.  They are kept because they
  * can be reinstated during rollback when the constraint that cut them
- * out is removed.
+ * out is removed.  These samples are only maintained for the context
+ * tableau while solving PILP problems.
  */
 enum isl_tab_row_sign {
 	isl_tab_row_unknown = 0,
@@ -189,6 +191,10 @@ struct isl_tab *isl_tab_relax(struct isl_tab *tab, int con);
 struct isl_tab *isl_tab_select_facet(struct isl_tab *tab, int con);
 
 void isl_tab_dump(struct isl_tab *tab, FILE *out, int indent);
+
+struct isl_map *isl_tab_basic_map_partial_lexopt(
+		struct isl_basic_map *bmap, struct isl_basic_set *dom,
+		struct isl_set **empty, int max);
 
 /* private */
 
