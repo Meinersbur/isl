@@ -372,11 +372,12 @@ static int mark_redundant(struct isl_tab *tab, int row)
 	}
 }
 
-static void mark_empty(struct isl_tab *tab)
+static struct isl_tab *mark_empty(struct isl_tab *tab)
 {
 	if (!tab->empty && tab->need_undo)
 		push(tab, isl_tab_undo_empty, NULL);
 	tab->empty = 1;
+	return tab;
 }
 
 /* Given a row number "row" and a column number "col", pivot the tableau
@@ -916,9 +917,8 @@ struct isl_tab *isl_tab_add_ineq(struct isl_tab *tab, isl_int *ineq)
 
 	sgn = restore_row(tab, &tab->con[r]);
 	if (sgn < 0)
-		mark_empty(tab);
-	else if (tab->con[r].is_row &&
-		 is_redundant(tab, tab->con[r].index))
+		return mark_empty(tab);
+	if (tab->con[r].is_row && is_redundant(tab, tab->con[r].index))
 		mark_redundant(tab, tab->con[r].index);
 	return tab;
 error:
@@ -1030,10 +1030,8 @@ struct isl_tab *isl_tab_from_basic_map(struct isl_basic_map *bmap)
 	if (!tab)
 		return NULL;
 	tab->rational = ISL_F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL);
-	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_EMPTY)) {
-		mark_empty(tab);
-		return tab;
-	}
+	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
+		return mark_empty(tab);
 	for (i = 0; i < bmap->n_eq; ++i) {
 		tab = add_eq(tab, bmap->eq[i]);
 		if (!tab)
@@ -1291,13 +1289,11 @@ static struct isl_tab *cut_to_hyperplane(struct isl_tab *tab,
 
 	sgn = sign_of_max(tab, &tab->con[r]);
 	if (sgn < 0)
-		mark_empty(tab);
-	else {
-		tab->con[r].is_nonneg = 1;
-		push(tab, isl_tab_undo_nonneg, &tab->con[r]);
-		/* sgn == 0 */
-		close_row(tab, &tab->con[r]);
-	}
+		return mark_empty(tab);
+	tab->con[r].is_nonneg = 1;
+	push(tab, isl_tab_undo_nonneg, &tab->con[r]);
+	/* sgn == 0 */
+	close_row(tab, &tab->con[r]);
 
 	return tab;
 error:
