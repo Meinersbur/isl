@@ -972,13 +972,12 @@ static struct isl_tab *add_eq(struct isl_tab *tab, isl_int *eq)
 		goto error;
 
 	r = tab->con[r].index;
-	for (i = tab->n_dead; i < tab->n_col; ++i) {
-		if (isl_int_is_zero(tab->mat->row[r][2 + i]))
-			continue;
-		pivot(tab, r, i);
-		kill_col(tab, i);
-		break;
-	}
+	i = isl_seq_first_non_zero(tab->mat->row[r] + 2 + tab->n_dead,
+					tab->n_col - tab->n_dead);
+	isl_assert(tab->mat->ctx, i >= 0, goto error);
+	i += tab->n_dead;
+	pivot(tab, r, i);
+	kill_col(tab, i);
 	tab->n_eq++;
 
 	return tab;
