@@ -801,6 +801,31 @@ static void close_row(struct isl_tab *tab, struct isl_tab_var *var)
 	mark_redundant(tab, var->index);
 }
 
+/* Add a constraint to the tableau and allocate a row for it.
+ * Return the index into the constraint array "con".
+ */
+static int allocate_con(struct isl_tab *tab)
+{
+	int r;
+
+	isl_assert(tab->mat->ctx, tab->n_row < tab->mat->n_row, return -1);
+
+	r = tab->n_con;
+	tab->con[r].index = tab->n_row;
+	tab->con[r].is_row = 1;
+	tab->con[r].is_nonneg = 0;
+	tab->con[r].is_zero = 0;
+	tab->con[r].is_redundant = 0;
+	tab->con[r].frozen = 0;
+	tab->row_var[tab->n_row] = ~r;
+
+	tab->n_row++;
+	tab->n_con++;
+	push(tab, isl_tab_undo_allocate, &tab->con[r]);
+
+	return r;
+}
+
 /* Add a row to the tableau.  The row is given as an affine combination
  * of the original variables and needs to be expressed in terms of the
  * column variables.
@@ -820,23 +845,17 @@ static void close_row(struct isl_tab *tab, struct isl_tab_var *var)
 static int add_row(struct isl_tab *tab, isl_int *line)
 {
 	int i;
-	unsigned r;
+	int r;
 	isl_int *row;
 	isl_int a, b;
 
-	isl_assert(tab->mat->ctx, tab->n_row < tab->mat->n_row, return -1);
+	r = allocate_con(tab);
+	if (r < 0)
+		return -1;
 
 	isl_int_init(a);
 	isl_int_init(b);
-	r = tab->n_con;
-	tab->con[r].index = tab->n_row;
-	tab->con[r].is_row = 1;
-	tab->con[r].is_nonneg = 0;
-	tab->con[r].is_zero = 0;
-	tab->con[r].is_redundant = 0;
-	tab->con[r].frozen = 0;
-	tab->row_var[tab->n_row] = ~r;
-	row = tab->mat->row[tab->n_row];
+	row = tab->mat->row[tab->con[r].index];
 	isl_int_set_si(row[0], 1);
 	isl_int_set(row[1], line[0]);
 	isl_seq_clr(row + 2, tab->n_col);
@@ -859,9 +878,6 @@ static int add_row(struct isl_tab *tab, isl_int *line)
 							line[1 + i], row[0]);
 	}
 	isl_seq_normalize(row, 2 + tab->n_col);
-	tab->n_row++;
-	tab->n_con++;
-	push(tab, isl_tab_undo_allocate, &tab->con[r]);
 	isl_int_clear(a);
 	isl_int_clear(b);
 
