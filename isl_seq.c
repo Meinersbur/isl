@@ -160,6 +160,16 @@ int isl_seq_first_non_zero(isl_int *p, unsigned len)
 	return -1;
 }
 
+int isl_seq_last_non_zero(isl_int *p, unsigned len)
+{
+	int i;
+
+	for (i = len - 1; i >= 0; --i)
+		if (!isl_int_is_zero(p[i]))
+			return i;
+	return -1;
+}
+
 int isl_seq_abs_min_non_zero(isl_int *p, unsigned len)
 {
 	int i, min = isl_seq_first_non_zero(p, len);

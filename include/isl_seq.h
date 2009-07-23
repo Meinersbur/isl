@@ -26,6 +26,7 @@ void isl_seq_normalize(isl_int *p, unsigned len);
 void isl_seq_inner_product(isl_int *p1, isl_int *p2, unsigned len,
 			   isl_int *prod);
 int isl_seq_first_non_zero(isl_int *p, unsigned len);
+int isl_seq_last_non_zero(isl_int *p, unsigned len);
 int isl_seq_abs_min_non_zero(isl_int *p, unsigned len);
 int isl_seq_eq(isl_int *p1, isl_int *p2, unsigned len);
 int isl_seq_is_neg(isl_int *p1, isl_int *p2, unsigned len);
