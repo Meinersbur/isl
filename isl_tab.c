@@ -494,6 +494,8 @@ static void pivot(struct isl_tab *tab, int row, int col)
 /* If "var" represents a column variable, then pivot is up (sgn > 0)
  * or down (sgn < 0) to a row.  The variable is assumed not to be
  * unbounded in the specified direction.
+ * If sgn = 0, then the variable is unbounded in both directions,
+ * and we pivot with any row we can find.
  */
 static void to_row(struct isl_tab *tab, struct isl_tab_var *var, int sign)
 {
@@ -502,8 +504,16 @@ static void to_row(struct isl_tab *tab, struct isl_tab_var *var, int sign)
 	if (var->is_row)
 		return;
 
-	r = pivot_row(tab, NULL, sign, var->index);
-	isl_assert(tab->mat->ctx, r >= 0, return);
+	if (sign == 0) {
+		for (r = tab->n_redundant; r < tab->n_row; ++r)
+			if (!isl_int_is_zero(tab->mat->row[r][2 + var->index]))
+				break;
+		isl_assert(tab->mat->ctx, r < tab->n_row, return);
+	} else {
+		r = pivot_row(tab, NULL, sign, var->index);
+		isl_assert(tab->mat->ctx, r >= 0, return);
+	}
+
 	pivot(tab, r, var->index);
 }
 
@@ -1668,10 +1678,12 @@ static void perform_undo(struct isl_tab *tab, struct isl_tab_undo *undo)
 		break;
 	case isl_tab_undo_allocate:
 		if (!undo->var->is_row) {
-			if (max_is_manifestly_unbounded(tab, undo->var))
+			if (!max_is_manifestly_unbounded(tab, undo->var))
+				to_row(tab, undo->var, 1);
+			else if (!min_is_manifestly_unbounded(tab, undo->var))
 				to_row(tab, undo->var, -1);
 			else
-				to_row(tab, undo->var, 1);
+				to_row(tab, undo->var, 0);
 		}
 		drop_row(tab, undo->var->index);
 		break;
