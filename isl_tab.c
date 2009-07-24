@@ -387,7 +387,12 @@ static void push(struct isl_tab *tab,
 		return;
 	}
 	undo->type = type;
-	undo->var = var;
+	if (!var)
+		undo->var_index = 0;
+	else if (var->is_row)
+		undo->var_index = tab->row_var[var->index];
+	else
+		undo->var_index = tab->col_var[var->index];
 	undo->next = tab->top;
 	tab->top = undo;
 }
@@ -1717,34 +1722,35 @@ static void unrelax(struct isl_tab *tab, struct isl_tab_var *var)
 
 static void perform_undo(struct isl_tab *tab, struct isl_tab_undo *undo)
 {
+	struct isl_tab_var *var = var_from_index(tab, undo->var_index);
 	switch(undo->type) {
 	case isl_tab_undo_empty:
 		tab->empty = 0;
 		break;
 	case isl_tab_undo_nonneg:
-		undo->var->is_nonneg = 0;
+		var->is_nonneg = 0;
 		break;
 	case isl_tab_undo_redundant:
-		undo->var->is_redundant = 0;
+		var->is_redundant = 0;
 		tab->n_redundant--;
 		break;
 	case isl_tab_undo_zero:
-		undo->var->is_zero = 0;
+		var->is_zero = 0;
 		tab->n_dead--;
 		break;
 	case isl_tab_undo_allocate:
-		if (!undo->var->is_row) {
-			if (!max_is_manifestly_unbounded(tab, undo->var))
-				to_row(tab, undo->var, 1);
-			else if (!min_is_manifestly_unbounded(tab, undo->var))
-				to_row(tab, undo->var, -1);
+		if (!var->is_row) {
+			if (!max_is_manifestly_unbounded(tab, var))
+				to_row(tab, var, 1);
+			else if (!min_is_manifestly_unbounded(tab, var))
+				to_row(tab, var, -1);
 			else
-				to_row(tab, undo->var, 0);
+				to_row(tab, var, 0);
 		}
-		drop_row(tab, undo->var->index);
+		drop_row(tab, var->index);
 		break;
 	case isl_tab_undo_relax:
-		unrelax(tab, undo->var);
+		unrelax(tab, var);
 		break;
 	}
 }

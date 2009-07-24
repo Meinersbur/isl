@@ -27,7 +27,7 @@ enum isl_tab_undo_type {
 
 struct isl_tab_undo {
 	enum isl_tab_undo_type	type;
-	struct isl_tab_var	*var;
+	int			var_index;
 	struct isl_tab_undo	*next;
 };
 
