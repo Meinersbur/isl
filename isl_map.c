@@ -1434,6 +1434,42 @@ struct isl_set *isl_set_alloc(struct isl_ctx *ctx,
 	return set;
 }
 
+/* Make sure "map" has room for at least "n" more basic maps.
+ */
+struct isl_map *isl_map_grow(struct isl_map *map, int n)
+{
+	int i;
+	struct isl_map *grown = NULL;
+
+	if (!map)
+		return NULL;
+	isl_assert(map->ctx, n >= 0, goto error);
+	if (map->n + n <= map->size)
+		return map;
+	grown = isl_map_alloc_dim(isl_map_get_dim(map), map->n + n, map->flags);
+	if (!grown)
+		goto error;
+	for (i = 0; i < map->n; ++i) {
+		grown->p[i] = isl_basic_map_copy(map->p[i]);
+		if (!grown->p[i])
+			goto error;
+		grown->n++;
+	}
+	isl_map_free(map);
+	return grown;
+error:
+	isl_map_free(grown);
+	isl_map_free(map);
+	return NULL;
+}
+
+/* Make sure "set" has room for at least "n" more basic sets.
+ */
+struct isl_set *isl_set_grow(struct isl_set *set, int n)
+{
+	return (struct isl_set *)isl_map_grow((struct isl_map *)set, n);
+}
+
 struct isl_set *isl_set_dup(struct isl_set *set)
 {
 	int i;
