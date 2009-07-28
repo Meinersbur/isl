@@ -40,6 +40,7 @@ static unsigned n(struct isl_dim *dim, enum isl_dim_type type)
 	case isl_dim_param:	return dim->nparam;
 	case isl_dim_in:	return dim->n_in;
 	case isl_dim_out:	return dim->n_out;
+	case isl_dim_all:	return dim->nparam + dim->n_in + dim->n_out;
 	}
 }
 
