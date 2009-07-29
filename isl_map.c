@@ -2963,14 +2963,14 @@ error:
 	return NULL;
 }
 
-struct isl_map *isl_basic_map_lexmax(
+struct isl_map *isl_basic_map_partial_lexmax(
 		struct isl_basic_map *bmap, struct isl_basic_set *dom,
 		struct isl_set **empty)
 {
 	return isl_pip_basic_map_lexmax(bmap, dom, empty);
 }
 
-struct isl_map *isl_basic_map_lexmin(
+struct isl_map *isl_basic_map_partial_lexmin(
 		struct isl_basic_map *bmap, struct isl_basic_set *dom,
 		struct isl_set **empty)
 {
@@ -2993,7 +2993,7 @@ struct isl_set *isl_basic_set_lexmin(struct isl_basic_set *bset)
 	dom = isl_basic_set_universe(param_dim);
 	if (!dom)
 		goto error;
-	min = isl_basic_map_lexmin(bmap, dom, NULL);
+	min = isl_basic_map_partial_lexmin(bmap, dom, NULL);
 	return isl_map_range(min);
 error:
 	isl_basic_map_free(bmap);

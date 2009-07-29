@@ -179,10 +179,10 @@ struct isl_basic_map *isl_basic_map_floordiv(struct isl_basic_map *bmap,
 int isl_basic_map_is_equal(
 		struct isl_basic_map *bmap1, struct isl_basic_map *bmap2);
 
-struct isl_map *isl_basic_map_lexmax(
+struct isl_map *isl_basic_map_partial_lexmax(
 		struct isl_basic_map *bmap, struct isl_basic_set *dom,
 		struct isl_set **empty);
-struct isl_map *isl_basic_map_lexmin(
+struct isl_map *isl_basic_map_partial_lexmin(
 		struct isl_basic_map *bmap, struct isl_basic_set *dom,
 		struct isl_set **empty);
 
