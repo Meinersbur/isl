@@ -135,6 +135,12 @@ struct isl_set *isl_set_to_underlying_set(struct isl_set *set);
 int isl_basic_set_is_equal(
 		struct isl_basic_set *bset1, struct isl_basic_set *bset2);
 
+struct isl_set *isl_basic_set_partial_lexmin(
+		struct isl_basic_set *bset, struct isl_basic_set *dom,
+		struct isl_set **empty);
+struct isl_set *isl_basic_set_partial_lexmax(
+		struct isl_basic_set *bset, struct isl_basic_set *dom,
+		struct isl_set **empty);
 struct isl_set *isl_basic_set_lexmin(struct isl_basic_set *bset);
 struct isl_set *isl_basic_set_union(
 		struct isl_basic_set *bset1,

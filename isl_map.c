@@ -2977,6 +2977,24 @@ struct isl_map *isl_basic_map_partial_lexmin(
 	return isl_pip_basic_map_lexmin(bmap, dom, empty);
 }
 
+struct isl_set *isl_basic_set_partial_lexmin(
+		struct isl_basic_set *bset, struct isl_basic_set *dom,
+		struct isl_set **empty)
+{
+	return (struct isl_set *)
+		isl_basic_map_partial_lexmin((struct isl_basic_map *)bset,
+			dom, empty);
+}
+
+struct isl_set *isl_basic_set_partial_lexmax(
+		struct isl_basic_set *bset, struct isl_basic_set *dom,
+		struct isl_set **empty)
+{
+	return (struct isl_set *)
+		isl_basic_map_partial_lexmax((struct isl_basic_map *)bset,
+			dom, empty);
+}
+
 struct isl_set *isl_basic_set_lexmin(struct isl_basic_set *bset)
 {
 	struct isl_basic_map *bmap = NULL;
