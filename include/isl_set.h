@@ -96,6 +96,7 @@ struct isl_basic_set *isl_basic_set_universe(struct isl_dim *dim);
 struct isl_basic_set *isl_basic_set_universe_like(struct isl_basic_set *bset);
 struct isl_basic_set *isl_basic_set_interval(struct isl_ctx *ctx,
 	isl_int min, isl_int max);
+struct isl_basic_set *isl_basic_set_positive_orthant(struct isl_dim *dims);
 void isl_basic_set_dump(struct isl_basic_set *bset,
 				FILE *out, int indent);
 struct isl_basic_set *isl_basic_set_swap_vars(

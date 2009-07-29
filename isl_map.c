@@ -3420,6 +3420,36 @@ struct isl_map *isl_map_identity_like(struct isl_basic_map *model)
 	return map_identity(isl_dim_copy(model->dim));
 }
 
+/* Construct a basic set with all set dimensions having only non-negative
+ * values.
+ */
+struct isl_basic_set *isl_basic_set_positive_orthant(struct isl_dim *dims)
+{
+	int i;
+	unsigned nparam;
+	unsigned dim;
+	struct isl_basic_set *bset;
+
+	if (!dims)
+		return NULL;
+	nparam = dims->nparam;
+	dim = dims->n_out;
+	bset = isl_basic_set_alloc_dim(dims, 0, 0, dim);
+	if (!bset)
+		return NULL;
+	for (i = 0; i < dim; ++i) {
+		int k = isl_basic_set_alloc_inequality(bset);
+		if (k < 0)
+			goto error;
+		isl_seq_clr(bset->ineq[k], 1 + isl_basic_set_total_dim(bset));
+		isl_int_set_si(bset->ineq[k][1 + nparam + i], 1);
+	}
+	return bset;
+error:
+	isl_basic_set_free(bset);
+	return NULL;
+}
+
 int isl_set_is_equal(struct isl_set *set1, struct isl_set *set2)
 {
 	return isl_map_is_equal((struct isl_map *)set1, (struct isl_map *)set2);
