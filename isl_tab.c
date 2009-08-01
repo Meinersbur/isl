@@ -528,7 +528,7 @@ static void pivot(struct isl_tab *tab, int row, int col)
 		}
 		isl_int_mul(mat->row[i][2 + col],
 			    mat->row[i][2 + col], mat->row[row][2 + col]);
-		if (!isl_int_is_one(mat->row[row][0]))
+		if (!isl_int_is_one(mat->row[i][0]))
 			isl_seq_normalize(mat->row[i], 2 + tab->n_col);
 	}
 	t = tab->row_var[row];
