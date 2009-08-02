@@ -60,14 +60,17 @@ libisl_la_SOURCES = \
 	isl_input_omega.h \
 	isl_list.c \
 	isl_lp.c \
+	isl_lp_piplib.h \
 	isl_map.c \
 	isl_map_simplify.c \
 	isl_map_private.h \
+	isl_map_piplib.h \
 	isl_mat.c \
 	isl_mat.h \
 	isl_name.c \
 	isl_name.h \
 	isl_output.c \
+	isl_piplib.h \
 	isl_sample.h \
 	isl_sample.c \
 	isl_stream.c \
@@ -115,11 +118,8 @@ pkginclude_HEADERS = \
 	include/isl_hash.h \
 	include/isl_list.h \
 	include/isl_lp.h \
-	include/isl_lp_piplib.h \
 	include/isl_map.h \
-	include/isl_map_piplib.h \
 	include/isl_map_polylib.h \
-	include/isl_piplib.h \
 	include/isl_polylib.h \
 	include/isl_seq.h \
 	include/isl_set.h \
