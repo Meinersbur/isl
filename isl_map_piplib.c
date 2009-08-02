@@ -396,7 +396,7 @@ PipMatrix *isl_basic_set_to_pip(struct isl_basic_set *bset, unsigned pip_param,
 					pip_param, extra_front, extra_back);
 }
 
-static struct isl_map *extremum_on(
+struct isl_map *isl_pip_basic_map_lexopt(
 		struct isl_basic_map *bmap, struct isl_basic_set *dom,
 		struct isl_set **empty, int max)
 {
@@ -464,20 +464,6 @@ error:
 	isl_basic_map_free(bmap);
 	isl_basic_set_free(dom);
 	return NULL;
-}
-
-struct isl_map *isl_pip_basic_map_lexmax(
-		struct isl_basic_map *bmap, struct isl_basic_set *dom,
-		struct isl_set **empty)
-{
-	return extremum_on(bmap, dom, empty, 1);
-}
-
-struct isl_map *isl_pip_basic_map_lexmin(
-		struct isl_basic_map *bmap, struct isl_basic_set *dom,
-		struct isl_set **empty)
-{
-	return extremum_on(bmap, dom, empty, 0);
 }
 
 /* Project the given basic set onto its parameter domain, possibly introducing

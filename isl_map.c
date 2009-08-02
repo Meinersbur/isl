@@ -2963,18 +2963,25 @@ error:
 	return NULL;
 }
 
+static struct isl_map *isl_basic_map_partial_lexopt(
+		struct isl_basic_map *bmap, struct isl_basic_set *dom,
+		struct isl_set **empty, int max)
+{
+	return isl_pip_basic_map_lexopt(bmap, dom, empty, max);
+}
+
 struct isl_map *isl_basic_map_partial_lexmax(
 		struct isl_basic_map *bmap, struct isl_basic_set *dom,
 		struct isl_set **empty)
 {
-	return isl_pip_basic_map_lexmax(bmap, dom, empty);
+	return isl_basic_map_partial_lexopt(bmap, dom, empty, 1);
 }
 
 struct isl_map *isl_basic_map_partial_lexmin(
 		struct isl_basic_map *bmap, struct isl_basic_set *dom,
 		struct isl_set **empty)
 {
-	return isl_pip_basic_map_lexmin(bmap, dom, empty);
+	return isl_basic_map_partial_lexopt(bmap, dom, empty, 0);
 }
 
 struct isl_set *isl_basic_set_partial_lexmin(
