@@ -29,6 +29,7 @@ struct isl_mat *isl_mat_alloc(struct isl_ctx *ctx,
 	mat->ref = 1;
 	mat->n_row = n_row;
 	mat->n_col = n_col;
+	mat->max_col = n_col;
 	mat->flags = 0;
 
 	return mat;
@@ -47,10 +48,13 @@ struct isl_mat *isl_mat_extend(struct isl_mat *mat,
 	if (!mat)
 		return NULL;
 
-	if (mat->n_col >= n_col && mat->n_row >= n_row)
+	if (mat->max_col >= n_col && mat->n_row >= n_row) {
+		if (mat->n_col < n_col)
+			mat->n_col = n_col;
 		return mat;
+	}
 
-	if (mat->n_col < n_col) {
+	if (mat->max_col < n_col) {
 		struct isl_mat *new_mat;
 
 		new_mat = isl_mat_alloc(mat->ctx, n_row, n_col);
@@ -68,7 +72,7 @@ struct isl_mat *isl_mat_extend(struct isl_mat *mat,
 
 	assert(mat->ref == 1);
 	old = mat->block.data;
-	mat->block = isl_blk_extend(mat->ctx, mat->block, n_row * mat->n_col);
+	mat->block = isl_blk_extend(mat->ctx, mat->block, n_row * mat->max_col);
 	if (isl_blk_is_error(mat->block))
 		goto error;
 	mat->row = isl_realloc_array(mat->ctx, mat->row, isl_int *, n_row);
@@ -78,8 +82,10 @@ struct isl_mat *isl_mat_extend(struct isl_mat *mat,
 	for (i = 0; i < mat->n_row; ++i)
 		mat->row[i] = mat->block.data + (mat->row[i] - old);
 	for (i = mat->n_row; i < n_row; ++i)
-		mat->row[i] = mat->block.data + i * mat->n_col;
+		mat->row[i] = mat->block.data + i * mat->max_col;
 	mat->n_row = n_row;
+	if (mat->n_col < n_col)
+		mat->n_col = n_col;
 
 	return mat;
 error:

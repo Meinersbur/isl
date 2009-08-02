@@ -26,6 +26,9 @@ struct isl_mat {
 
 	isl_int **row;
 
+	/* actual size of the rows in memory; n_col <= max_col */
+	unsigned max_col;
+
 	struct isl_blk block;
 };
 
