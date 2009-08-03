@@ -1083,7 +1083,7 @@ struct isl_basic_set *isl_basic_set_set_to_empty(struct isl_basic_set *bset)
 		isl_basic_map_set_to_empty((struct isl_basic_map *)bset);
 }
 
-static void swap_div(struct isl_basic_map *bmap, int a, int b)
+void isl_basic_map_swap_div(struct isl_basic_map *bmap, int a, int b)
 {
 	int i;
 	unsigned off = isl_dim_total(bmap->dim);
@@ -3704,7 +3704,7 @@ static struct isl_basic_map *order_divs(struct isl_basic_map *bmap)
 							    bmap->n_div-i);
 		if (pos == -1)
 			continue;
-		swap_div(bmap, i, i + pos);
+		isl_basic_map_swap_div(bmap, i, i + pos);
 		--i;
 	}
 	return bmap;
@@ -3765,7 +3765,7 @@ struct isl_basic_map *isl_basic_map_align_divs(
 				goto error;
 		}
 		if (j != i)
-			swap_div(dst, i, j);
+			isl_basic_map_swap_div(dst, i, j);
 	}
 	return dst;
 error:
