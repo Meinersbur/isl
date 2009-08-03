@@ -553,39 +553,13 @@ static struct isl_set *isl_set_reset_dim(struct isl_set *set,
 	return (struct isl_set *) isl_map_reset_dim((struct isl_map *)set, dim);
 }
 
-/* Given a matrix M (mat) and a size n (size), replace mat
- * by the matrix
- *
- *		[ M 0 ]
- *		[ 0 I ]
- *
- * where I is an n x n identity matrix.
- */
-static struct isl_mat *append_identity(struct isl_mat *mat, unsigned size)
-{
-	int i;
-	unsigned n_row, n_col;
-
-	n_row = mat->n_row;
-	n_col = mat->n_col;
-	mat = isl_mat_extend(mat, n_row + size, n_col + size);
-	if (!mat)
-		return NULL;
-	for (i = 0; i < n_row; ++i)
-		isl_seq_clr(mat->row[i] + n_col, size);
-	for (i = 0; i < size; ++i) {
-		isl_seq_clr(mat->row[n_row + i], n_col + size);
-		isl_int_set_si(mat->row[n_row + i][n_col + i], 1);
-	}
-	return mat;
-}
-
 /* Apply a preimage specified by "mat" on the parameters of "bset".
+ * bset is assumed to have only parameters and divs.
  */
 static struct isl_basic_set *basic_set_parameter_preimage(
 	struct isl_basic_set *bset, struct isl_mat *mat)
 {
-	unsigned nparam, n_out;
+	unsigned nparam;
 
 	if (!bset || !mat)
 		goto error;
@@ -595,20 +569,15 @@ static struct isl_basic_set *basic_set_parameter_preimage(
 		goto error;
 
 	nparam = isl_basic_set_dim(bset, isl_dim_param);
-	n_out = isl_basic_set_dim(bset, isl_dim_set);
 
 	isl_assert(bset->ctx, mat->n_row == 1 + nparam, goto error);
 
-	mat = append_identity(mat, n_out);
-	if (!mat)
-		goto error;
-
 	bset->dim->nparam = 0;
-	bset->dim->n_out += nparam;
+	bset->dim->n_out = nparam;
 	bset = isl_basic_set_preimage(bset, mat);
 	if (bset) {
-		bset->dim->nparam = bset->dim->n_out - n_out;
-		bset->dim->n_out = n_out;
+		bset->dim->nparam = bset->dim->n_out;
+		bset->dim->n_out = 0;
 	}
 	return bset;
 error:
@@ -618,12 +587,13 @@ error:
 }
 
 /* Apply a preimage specified by "mat" on the parameters of "set".
+ * set is assumed to have only parameters and divs.
  */
 static struct isl_set *set_parameter_preimage(
 	struct isl_set *set, struct isl_mat *mat)
 {
 	struct isl_dim *dim = NULL;
-	unsigned nparam, n_out;
+	unsigned nparam;
 
 	if (!set || !mat)
 		goto error;
@@ -634,16 +604,11 @@ static struct isl_set *set_parameter_preimage(
 		goto error;
 
 	nparam = isl_set_dim(set, isl_dim_param);
-	n_out = isl_set_dim(set, isl_dim_set);
 
 	isl_assert(set->ctx, mat->n_row == 1 + nparam, goto error);
 
-	mat = append_identity(mat, n_out);
-	if (!mat)
-		goto error;
-
 	dim->nparam = 0;
-	dim->n_out += nparam;
+	dim->n_out = nparam;
 	isl_set_reset_dim(set, dim);
 	set = isl_set_preimage(set, mat);
 	if (!set)
@@ -652,8 +617,8 @@ static struct isl_set *set_parameter_preimage(
 	dim = isl_dim_cow(dim);
 	if (!dim)
 		goto error2;
-	dim->nparam = dim->n_out - n_out;
-	dim->n_out = n_out;
+	dim->nparam = dim->n_out;
+	dim->n_out = 0;
 	isl_set_reset_dim(set, dim);
 	return set;
 error:
@@ -725,8 +690,8 @@ error:
 
 /* Project the given basic set onto its parameter domain, possibly introducing
  * new, explicit, existential variables in the constraints.
- * The input has parameters and output variables.
- * The output has the same parameters, but no output variables, only
+ * The input has parameters and (possibly implicit) existential variables.
+ * The output has the same parameters, but only
  * explicit existentially quantified variables.
  *
  * The actual projection is performed by pip, but pip doesn't seem
@@ -741,7 +706,7 @@ static struct isl_set *compute_divs(struct isl_basic_set *bset)
 	struct isl_mat *eq;
 	struct isl_mat *T, *T2;
 	struct isl_set *set;
-	unsigned nparam, n_out;
+	unsigned nparam, n_div;
 
 	bset = isl_basic_set_cow(bset);
 	if (!bset)
@@ -753,9 +718,9 @@ static struct isl_set *compute_divs(struct isl_basic_set *bset)
 	isl_basic_set_gauss(bset, NULL);
 
 	nparam = isl_basic_set_dim(bset, isl_dim_param);
-	n_out = isl_basic_set_dim(bset, isl_dim_out);
+	n_div = isl_basic_set_dim(bset, isl_dim_div);
 
-	for (i = 0, j = n_out - 1; i < bset->n_eq && j >= 0; --j) {
+	for (i = 0, j = n_div - 1; i < bset->n_eq && j >= 0; --j) {
 		if (!isl_int_is_zero(bset->eq[i][1 + nparam + j]))
 			++i;
 	}
@@ -776,8 +741,7 @@ static struct isl_set *compute_divs(struct isl_basic_set *bset)
 
 /* Compute an explicit representation for all the existentially
  * quantified variables.
- * The input and output dimensions are first turned into parameters
- * and the existential variables into output dimensions.
+ * The input and output dimensions are first turned into parameters.
  * compute_divs then returns a map with the same parameters and
  * no input or output dimensions and the dimension specification
  * is reset to that of the input.
@@ -799,14 +763,12 @@ struct isl_map *isl_pip_basic_map_compute_divs(struct isl_basic_map *bmap)
 	nparam = isl_basic_map_dim(bmap, isl_dim_param);
 	n_in = isl_basic_map_dim(bmap, isl_dim_in);
 	n_out = isl_basic_map_dim(bmap, isl_dim_out);
-	dim = isl_dim_set_alloc(bmap->ctx, nparam + n_in + n_out, bmap->n_div);
+	dim = isl_dim_set_alloc(bmap->ctx, nparam + n_in + n_out, 0);
 	if (!dim)
 		goto error;
 
 	orig_dim = bmap->dim;
 	bmap->dim = dim;
-	bmap->extra -= bmap->n_div;
-	bmap->n_div = 0;
 	bset = (struct isl_basic_set *)bmap;
 
 	set = compute_divs(bset);
