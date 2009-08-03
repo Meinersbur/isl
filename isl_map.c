@@ -1524,19 +1524,8 @@ struct isl_map *isl_map_from_basic_map(struct isl_basic_map *bmap)
 
 struct isl_set *isl_set_add(struct isl_set *set, struct isl_basic_set *bset)
 {
-	if (!bset || !set)
-		goto error;
-	isl_assert(set->ctx, isl_dim_equal(set->dim, bset->dim), goto error);
-	isl_assert(set->ctx, set->n < set->size, goto error);
-	set->p[set->n] = bset;
-	set->n++;
-	return set;
-error:
-	if (set)
-		isl_set_free(set);
-	if (bset)
-		isl_basic_set_free(bset);
-	return NULL;
+	return (struct isl_set *)isl_map_add((struct isl_map *)set,
+						(struct isl_basic_map *)bset);
 }
 
 void isl_set_free(struct isl_set *set)
@@ -2746,6 +2735,10 @@ struct isl_map *isl_map_add(struct isl_map *map, struct isl_basic_map *bmap)
 {
 	if (!bmap || !map)
 		goto error;
+	if (isl_basic_map_fast_is_empty(bmap)) {
+		isl_basic_map_free(bmap);
+		return map;
+	}
 	isl_assert(map->ctx, isl_dim_equal(map->dim, bmap->dim), goto error);
 	isl_assert(map->ctx, map->n < map->size, goto error);
 	map->p[map->n] = bmap;
