@@ -1173,7 +1173,9 @@ error:
 }
 
 
-/* Remove any div that is defined in terms of the given variable.
+/* Remove definition of any div that is defined in terms of the given variable.
+ * The div itself is not removed.  Functions such as
+ * eliminate_divs_ineq depend on the other divs remaining in place.
  */
 static struct isl_basic_map *remove_dependent_vars(struct isl_basic_map *bmap,
 									int pos)
@@ -1186,9 +1188,7 @@ static struct isl_basic_map *remove_dependent_vars(struct isl_basic_map *bmap,
 			continue;
 		if (isl_int_is_zero(bmap->div[i][1+1+pos]))
 			continue;
-		bmap = isl_basic_map_eliminate_vars(bmap, dim + i, 1);
-		if (!bmap)
-			return NULL;
+		isl_int_set_si(bmap->div[i][0], 0);
 	}
 	return bmap;
 }
