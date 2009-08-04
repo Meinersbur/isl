@@ -31,6 +31,7 @@ struct isl_mat {
 
 struct isl_mat *isl_mat_alloc(struct isl_ctx *ctx,
 	unsigned n_row, unsigned n_col);
+struct isl_mat *isl_mat_dup(struct isl_mat *mat);
 struct isl_mat *isl_mat_extend(struct isl_mat *mat,
 	unsigned n_row, unsigned n_col);
 struct isl_mat *isl_mat_identity(struct isl_ctx *ctx, unsigned n_row);
