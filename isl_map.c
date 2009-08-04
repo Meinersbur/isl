@@ -3957,6 +3957,8 @@ static struct isl_basic_map *order_divs(struct isl_basic_map *bmap)
 
 	for (i = 0; i < bmap->n_div; ++i) {
 		int pos;
+		if (isl_int_is_zero(bmap->div[i][0]))
+			continue;
 		pos = isl_seq_first_non_zero(bmap->div[i]+1+1+off+i,
 							    bmap->n_div-i);
 		if (pos == -1)
@@ -3965,6 +3967,11 @@ static struct isl_basic_map *order_divs(struct isl_basic_map *bmap)
 		--i;
 	}
 	return bmap;
+}
+
+struct isl_basic_set *isl_basic_set_order_divs(struct isl_basic_set *bset)
+{
+	return (struct isl_basic_set *)order_divs((struct isl_basic_map *)bset);
 }
 
 /* Look for a div in dst that corresponds to the div "div" in src.

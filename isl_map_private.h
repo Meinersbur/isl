@@ -64,6 +64,7 @@ struct isl_basic_map *isl_basic_map_set_to_empty(struct isl_basic_map *bmap);
 struct isl_basic_set *isl_basic_set_set_to_empty(struct isl_basic_set *bset);
 struct isl_map *isl_basic_map_compute_divs(struct isl_basic_map *bmap);
 struct isl_map *isl_map_compute_divs(struct isl_map *map);
+struct isl_basic_set *isl_basic_set_order_divs(struct isl_basic_set *bset);
 void isl_basic_map_swap_div(struct isl_basic_map *bmap, int a, int b);
 struct isl_basic_map *isl_basic_map_align_divs(
 		struct isl_basic_map *dst, struct isl_basic_map *src);
