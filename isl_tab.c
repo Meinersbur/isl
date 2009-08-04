@@ -1,3 +1,4 @@
+#include "isl_mat.h"
 #include "isl_map_private.h"
 #include "isl_tab.h"
 
@@ -121,6 +122,61 @@ void isl_tab_free(struct isl_tab *tab)
 	free(tab->row_var);
 	free(tab->col_var);
 	free(tab);
+}
+
+struct isl_tab *isl_tab_dup(struct isl_tab *tab)
+{
+	int i;
+	struct isl_tab *dup;
+
+	if (!tab)
+		return NULL;
+
+	dup = isl_calloc_type(tab->ctx, struct isl_tab);
+	if (!dup)
+		return NULL;
+	dup->mat = isl_mat_dup(tab->mat);
+	if (!dup->mat)
+		goto error;
+	dup->var = isl_alloc_array(tab->ctx, struct isl_tab_var, tab->n_var);
+	if (!dup->var)
+		goto error;
+	for (i = 0; i < tab->n_var; ++i)
+		dup->var[i] = tab->var[i];
+	dup->con = isl_alloc_array(tab->ctx, struct isl_tab_var, tab->max_con);
+	if (!dup->con)
+		goto error;
+	for (i = 0; i < tab->n_con; ++i)
+		dup->con[i] = tab->con[i];
+	dup->col_var = isl_alloc_array(tab->ctx, int, tab->mat->n_col);
+	if (!dup->col_var)
+		goto error;
+	for (i = 0; i < tab->n_var; ++i)
+		dup->col_var[i] = tab->col_var[i];
+	dup->row_var = isl_alloc_array(tab->ctx, int, tab->mat->n_row);
+	if (!dup->row_var)
+		goto error;
+	for (i = 0; i < tab->n_row; ++i)
+		dup->row_var[i] = tab->row_var[i];
+	dup->n_row = tab->n_row;
+	dup->n_con = tab->n_con;
+	dup->n_eq = tab->n_eq;
+	dup->max_con = tab->max_con;
+	dup->n_col = tab->n_col;
+	dup->n_var = tab->n_var;
+	dup->n_dead = tab->n_dead;
+	dup->n_redundant = tab->n_redundant;
+	dup->rational = tab->rational;
+	dup->empty = tab->empty;
+	dup->need_undo = 0;
+	dup->in_undo = 0;
+	dup->bottom.type = isl_tab_undo_bottom;
+	dup->bottom.next = NULL;
+	dup->top = &dup->bottom;
+	return dup;
+error:
+	isl_tab_free(dup);
+	return NULL;
 }
 
 static struct isl_tab_var *var_from_index(struct isl_tab *tab, int i)
