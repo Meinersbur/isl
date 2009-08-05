@@ -157,6 +157,7 @@ void isl_tab_free(struct isl_tab *tab)
 	free_undo(tab);
 	isl_mat_free(tab->mat);
 	isl_vec_free(tab->dual);
+	isl_basic_set_free(tab->bset);
 	free(tab->var);
 	free(tab->con);
 	free(tab->row_var);
@@ -2010,6 +2011,15 @@ static int perform_undo(struct isl_tab *tab, struct isl_tab_undo *undo)
 	case isl_tab_undo_relax:
 		perform_undo_var(tab, undo);
 		break;
+	case isl_tab_undo_bset_eq:
+		isl_basic_set_free_equality(tab->bset, 1);
+		break;
+	case isl_tab_undo_bset_ineq:
+		isl_basic_set_free_inequality(tab->bset, 1);
+		break;
+	case isl_tab_undo_bset_div:
+		isl_basic_set_free_div(tab->bset, 1);
+		break;
 	case isl_tab_undo_saved_basis:
 		if (restore_basis(tab, undo->u.col_var) < 0)
 			return -1;
@@ -2200,4 +2210,6 @@ void isl_tab_dump(struct isl_tab *tab, FILE *out, int indent)
 	isl_mat_dump(tab->mat, out, indent);
 	tab->mat->n_row = r;
 	tab->mat->n_col = c;
+	if (tab->bset)
+		isl_basic_set_dump(tab->bset, out, indent);
 }

@@ -4,6 +4,7 @@
 #include "isl_lp.h"
 #include "isl_map.h"
 #include "isl_mat.h"
+#include "isl_set.h"
 
 struct isl_tab_var {
 	int index;
@@ -23,6 +24,9 @@ enum isl_tab_undo_type {
 	isl_tab_undo_zero,
 	isl_tab_undo_allocate,
 	isl_tab_undo_relax,
+	isl_tab_undo_bset_ineq,
+	isl_tab_undo_bset_eq,
+	isl_tab_undo_bset_div,
 	isl_tab_undo_saved_basis,
 };
 
@@ -111,6 +115,7 @@ struct isl_tab {
 	struct isl_tab_undo *top;
 
 	struct isl_vec *dual;
+	struct isl_basic_set *bset;
 
 	unsigned need_undo : 1;
 	unsigned rational : 1;
