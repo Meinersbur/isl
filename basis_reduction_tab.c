@@ -59,7 +59,7 @@ static struct isl_tab *gbr_tab(struct isl_basic_set *bset,
 		return NULL;
 
 	dim = isl_basic_set_total_dim(bset);
-	tab = isl_tab_alloc(bset->ctx, 2 * bset->n_ineq + dim + 1, 2 * dim);
+	tab = isl_tab_alloc(bset->ctx, 2 * bset->n_ineq + dim + 1, 2 * dim, 0);
 
 	for (i = 0; i < 2; ++i) {
 		isl_seq_clr(row->el + 1 + (1 - i) * dim, dim);

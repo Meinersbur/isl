@@ -47,7 +47,9 @@ struct isl_tab_undo {
  * Each row expresses the corresponding row variable as an affine expression
  * of the column variables.
  * The first two columns in the matrix contain the common denominator of
- * the row and the numerator of the constant term.  The third column
+ * the row and the numerator of the constant term.
+ * If "M" is set, then the third column represents the "big parameter".
+ * The third (M = 0) or fourth (M = 1) column
  * in the matrix is called column 0 with respect to the col_var array.
  * The sample value of the tableau is the value that assigns zero
  * to all the column variables and the constant term of each affine
@@ -55,6 +57,12 @@ struct isl_tab_undo {
  * The operations on the tableau maintain the property that the sample
  * value satisfies the non-negativity constraints (usually on the slack
  * variables).
+ *
+ * The big parameter represents an arbitrarily big (and divisible)
+ * positive number.  If present, then the sign of a row is determined
+ * lexicographically, with the sign of the big parameter coefficient
+ * considered first.  The big parameter will only be used while
+ * solving PILP problems.
  *
  * The first n_dead column variables have their values fixed to zero.
  * The corresponding tab_vars are flagged "is_zero".
@@ -108,10 +116,11 @@ struct isl_tab {
 	unsigned rational : 1;
 	unsigned empty : 1;
 	unsigned in_undo : 1;
+	unsigned M : 1;
 };
 
 struct isl_tab *isl_tab_alloc(struct isl_ctx *ctx,
-	unsigned n_row, unsigned n_var);
+	unsigned n_row, unsigned n_var, unsigned M);
 void isl_tab_free(struct isl_tab *tab);
 
 struct isl_tab *isl_tab_from_basic_map(struct isl_basic_map *bmap);
