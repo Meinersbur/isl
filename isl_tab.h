@@ -23,10 +23,12 @@ enum isl_tab_undo_type {
 	isl_tab_undo_zero,
 	isl_tab_undo_allocate,
 	isl_tab_undo_relax,
+	isl_tab_undo_saved_basis,
 };
 
 union isl_tab_undo_val {
 	int		var_index;
+	int		*col_var;
 };
 
 struct isl_tab_undo {
@@ -164,5 +166,6 @@ int isl_tab_min_at_most_neg_one(struct isl_tab *tab, struct isl_tab_var *var);
 void isl_tab_push(struct isl_tab *tab, enum isl_tab_undo_type type);
 void isl_tab_push_var(struct isl_tab *tab,
 	enum isl_tab_undo_type type, struct isl_tab_var *var);
+void isl_tab_push_basis(struct isl_tab *tab);
 
 #endif

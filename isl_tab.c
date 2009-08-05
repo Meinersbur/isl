@@ -409,6 +409,25 @@ void isl_tab_push(struct isl_tab *tab, enum isl_tab_undo_type type)
 	push_union(tab, type, u);
 }
 
+/* Push a record on the undo stack describing the current basic
+ * variables, so that the this state can be restored during rollback.
+ */
+void isl_tab_push_basis(struct isl_tab *tab)
+{
+	int i;
+	union isl_tab_undo_val u;
+
+	u.col_var = isl_alloc_array(tab->mat->ctx, int, tab->n_col);
+	if (!u.col_var) {
+		free_undo(tab);
+		tab->top = NULL;
+		return;
+	}
+	for (i = 0; i < tab->n_col; ++i)
+		u.col_var[i] = tab->col_var[i];
+	push_union(tab, isl_tab_undo_saved_basis, u);
+}
+
 /* Mark row with index "row" as being redundant.
  * If we may need to undo the operation or if the row represents
  * a variable of the original problem, the row is kept,
@@ -1764,6 +1783,63 @@ static void perform_undo_var(struct isl_tab *tab, struct isl_tab_undo *undo)
 	}
 }
 
+/* Restore the tableau to the state where the basic variables
+ * are those in "col_var".
+ * We first construct a list of variables that are currently in
+ * the basis, but shouldn't.  Then we iterate over all variables
+ * that should be in the basis and for each one that is currently
+ * not in the basis, we exchange it with one of the elements of the
+ * list constructed before.
+ * We can always find an appropriate variable to pivot with because
+ * the current basis is mapped to the old basis by a non-singular
+ * matrix and so we can never end up with a zero row.
+ */
+static int restore_basis(struct isl_tab *tab, int *col_var)
+{
+	int i, j;
+	int n_extra = 0;
+	int *extra = NULL;	/* current columns that contain bad stuff */
+	unsigned off = 2;
+
+	extra = isl_alloc_array(tab->mat->ctx, int, tab->n_col);
+	if (!extra)
+		goto error;
+	for (i = 0; i < tab->n_col; ++i) {
+		for (j = 0; j < tab->n_col; ++j)
+			if (tab->col_var[i] == col_var[j])
+				break;
+		if (j < tab->n_col)
+			continue;
+		extra[n_extra++] = i;
+	}
+	for (i = 0; i < tab->n_col && n_extra > 0; ++i) {
+		struct isl_tab_var *var;
+		int row;
+
+		for (j = 0; j < tab->n_col; ++j)
+			if (col_var[i] == tab->col_var[j])
+				break;
+		if (j < tab->n_col)
+			continue;
+		var = var_from_index(tab, col_var[i]);
+		row = var->index;
+		for (j = 0; j < n_extra; ++j)
+			if (!isl_int_is_zero(tab->mat->row[row][off+extra[j]]))
+				break;
+		isl_assert(tab->mat->ctx, j < n_extra, goto error);
+		isl_tab_pivot(tab, row, extra[j]);
+		extra[j] = extra[--n_extra];
+	}
+
+	free(extra);
+	free(col_var);
+	return 0;
+error:
+	free(extra);
+	free(col_var);
+	return -1;
+}
+
 static int perform_undo(struct isl_tab *tab, struct isl_tab_undo *undo)
 {
 	switch (undo->type) {
@@ -1776,6 +1852,10 @@ static int perform_undo(struct isl_tab *tab, struct isl_tab_undo *undo)
 	case isl_tab_undo_allocate:
 	case isl_tab_undo_relax:
 		perform_undo_var(tab, undo);
+		break;
+	case isl_tab_undo_saved_basis:
+		if (restore_basis(tab, undo->u.col_var) < 0)
+			return -1;
 		break;
 	default:
 		isl_assert(tab->mat->ctx, 0, return -1);
