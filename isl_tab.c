@@ -47,6 +47,8 @@ struct isl_tab *isl_tab_alloc(struct isl_ctx *ctx,
 	tab->max_con = n_row;
 	tab->n_col = n_var;
 	tab->n_var = n_var;
+	tab->n_param = 0;
+	tab->n_div = 0;
 	tab->n_dead = 0;
 	tab->n_redundant = 0;
 	tab->need_undo = 0;
@@ -164,6 +166,8 @@ struct isl_tab *isl_tab_dup(struct isl_tab *tab)
 	dup->max_con = tab->max_con;
 	dup->n_col = tab->n_col;
 	dup->n_var = tab->n_var;
+	dup->n_param = tab->n_param;
+	dup->n_div = tab->n_div;
 	dup->n_dead = tab->n_dead;
 	dup->n_redundant = tab->n_redundant;
 	dup->rational = tab->rational;
@@ -2000,7 +2004,9 @@ void isl_tab_dump(struct isl_tab *tab, FILE *out, int indent)
 	fprintf(out, "%*s[", indent, "");
 	for (i = 0; i < tab->n_var; ++i) {
 		if (i)
-			fprintf(out, ", ");
+			fprintf(out, (i == tab->n_param ||
+				      i == tab->n_var - tab->n_div) ? "; "
+								    : ", ");
 		fprintf(out, "%c%d%s", tab->var[i].is_row ? 'r' : 'c',
 					tab->var[i].index,
 					tab->var[i].is_zero ? " [=0]" :

@@ -68,6 +68,11 @@ struct isl_tab_undo {
  * since the constraint has been reduced to 0 = 0 and is therefore always
  * satisfied.
  *
+ * There are "n_var" variables in total.  The first "n_param" of these
+ * are called parameters and the last "n_div" of these are called divs.
+ * The basic tableau operations makes no distinction between different
+ * kinds of variables.
+ *
  * Dead columns and redundant rows are detected on the fly.
  * However, the basic operations do not ensure that all dead columns
  * or all redundant rows are detected.
@@ -83,6 +88,8 @@ struct isl_tab {
 	unsigned n_redundant;
 
 	unsigned n_var;
+	unsigned n_param;
+	unsigned n_div;
 	unsigned n_con;
 	unsigned n_eq;
 	unsigned max_con;
