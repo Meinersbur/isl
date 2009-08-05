@@ -92,6 +92,14 @@ int isl_tab_extend_cons(struct isl_tab *tab, unsigned n_new)
 		if (!row_var)
 			return -1;
 		tab->row_var = row_var;
+		if (tab->row_sign) {
+			enum isl_tab_row_sign *s;
+			s = isl_realloc_array(tab->mat->ctx, tab->row_sign,
+					enum isl_tab_row_sign, tab->mat->n_row);
+			if (!s)
+				return -1;
+			tab->row_sign = s;
+		}
 	}
 	return 0;
 }
@@ -162,6 +170,7 @@ void isl_tab_free(struct isl_tab *tab)
 	free(tab->con);
 	free(tab->row_var);
 	free(tab->col_var);
+	free(tab->row_sign);
 	free(tab);
 }
 
@@ -199,6 +208,14 @@ struct isl_tab *isl_tab_dup(struct isl_tab *tab)
 		goto error;
 	for (i = 0; i < tab->n_row; ++i)
 		dup->row_var[i] = tab->row_var[i];
+	if (tab->row_sign) {
+		dup->row_sign = isl_alloc_array(tab->ctx, enum isl_tab_row_sign,
+						tab->mat->n_row);
+		if (!dup->row_sign)
+			goto error;
+		for (i = 0; i < tab->n_row; ++i)
+			dup->row_sign[i] = tab->row_sign[i];
+	}
 	dup->n_row = tab->n_row;
 	dup->n_con = tab->n_con;
 	dup->n_eq = tab->n_eq;
@@ -436,6 +453,12 @@ static void swap_rows(struct isl_tab *tab, int row1, int row2)
 	isl_tab_var_from_row(tab, row1)->index = row1;
 	isl_tab_var_from_row(tab, row2)->index = row2;
 	tab->mat = isl_mat_swap_rows(tab->mat, row1, row2);
+
+	if (!tab->row_sign)
+		return;
+	t = tab->row_sign[row1];
+	tab->row_sign[row1] = tab->row_sign[row2];
+	tab->row_sign[row2] = t;
 }
 
 static void push_union(struct isl_tab *tab,
@@ -538,6 +561,54 @@ struct isl_tab *isl_tab_mark_empty(struct isl_tab *tab)
 	return tab;
 }
 
+/* Update the rows signs after a pivot of "row" and "col", with "row_sgn"
+ * the original sign of the pivot element.
+ * We only keep track of row signs during PILP solving and in this case
+ * we only pivot a row with negative sign (meaning the value is always
+ * non-positive) using a positive pivot element.
+ *
+ * For each row j, the new value of the parametric constant is equal to
+ *
+ *	a_j0 - a_jc a_r0/a_rc
+ *
+ * where a_j0 is the original parametric constant, a_rc is the pivot element,
+ * a_r0 is the parametric constant of the pivot row and a_jc is the
+ * pivot column entry of the row j.
+ * Since a_r0 is non-positive and a_rc is positive, the sign of row j
+ * remains the same if a_jc has the same sign as the row j or if
+ * a_jc is zero.  In all other cases, we reset the sign to "unknown".
+ */
+static void update_row_sign(struct isl_tab *tab, int row, int col, int row_sgn)
+{
+	int i;
+	struct isl_mat *mat = tab->mat;
+	unsigned off = 2 + tab->M;
+
+	if (!tab->row_sign)
+		return;
+
+	if (tab->row_sign[row] == 0)
+		return;
+	isl_assert(mat->ctx, row_sgn > 0, return);
+	isl_assert(mat->ctx, tab->row_sign[row] == isl_tab_row_neg, return);
+	tab->row_sign[row] = isl_tab_row_pos;
+	for (i = 0; i < tab->n_row; ++i) {
+		int s;
+		if (i == row)
+			continue;
+		s = isl_int_sgn(mat->row[i][off + col]);
+		if (!s)
+			continue;
+		if (!tab->row_sign[i])
+			continue;
+		if (s < 0 && tab->row_sign[i] == isl_tab_row_neg)
+			continue;
+		if (s > 0 && tab->row_sign[i] == isl_tab_row_pos)
+			continue;
+		tab->row_sign[i] = isl_tab_row_unknown;
+	}
+}
+
 /* Given a row number "row" and a column number "col", pivot the tableau
  * such that the associated variables are interchanged.
  * The given row in the tableau expresses
@@ -638,6 +709,7 @@ void isl_tab_pivot(struct isl_tab *tab, int row, int col)
 	var = var_from_col(tab, col);
 	var->is_row = 0;
 	var->index = col;
+	update_row_sign(tab, row, col, sgn);
 	if (tab->in_undo)
 		return;
 	for (i = tab->n_redundant; i < tab->n_row; ++i) {
@@ -1117,6 +1189,9 @@ int isl_tab_add_row(struct isl_tab *tab, isl_int *line)
 	isl_seq_normalize(row, off + tab->n_col);
 	isl_int_clear(a);
 	isl_int_clear(b);
+
+	if (tab->row_sign)
+		tab->row_sign[tab->con[r].index] = 0;
 
 	return r;
 }
@@ -2189,10 +2264,21 @@ void isl_tab_dump(struct isl_tab *tab, FILE *out, int indent)
 	fprintf(out, "]\n");
 	fprintf(out, "%*s[", indent, "");
 	for (i = 0; i < tab->n_row; ++i) {
+		const char *sign = "";
 		if (i)
 			fprintf(out, ", ");
-		fprintf(out, "r%d: %d%s", i, tab->row_var[i],
-		    isl_tab_var_from_row(tab, i)->is_nonneg ? " [>=0]" : "");
+		if (tab->row_sign) {
+			if (tab->row_sign[i] == isl_tab_row_unknown)
+				sign = "?";
+			else if (tab->row_sign[i] == isl_tab_row_neg)
+				sign = "-";
+			else if (tab->row_sign[i] == isl_tab_row_pos)
+				sign = "+";
+			else
+				sign = "+-";
+		}
+		fprintf(out, "r%d: %d%s%s", i, tab->row_var[i],
+		    isl_tab_var_from_row(tab, i)->is_nonneg ? " [>=0]" : "", sign);
 	}
 	fprintf(out, "]\n");
 	fprintf(out, "%*s[", indent, "");

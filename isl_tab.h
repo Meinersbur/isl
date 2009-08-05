@@ -91,6 +91,12 @@ struct isl_tab_undo {
  * isl_tab_detect_equalities and isl_tab_detect_redundant can be used
  * to perform and exhaustive search for dead columns and redundant rows.
  */
+enum isl_tab_row_sign {
+	isl_tab_row_unknown = 0,
+	isl_tab_row_pos,
+	isl_tab_row_neg,
+	isl_tab_row_any,
+};
 struct isl_tab {
 	struct isl_mat *mat;
 
@@ -110,6 +116,7 @@ struct isl_tab {
 	struct isl_tab_var *con;
 	int *row_var;	/* v >= 0 -> var v;	v < 0 -> con ~v */
 	int *col_var;	/* v >= 0 -> var v;	v < 0 -> con ~v */
+	enum isl_tab_row_sign *row_sign;
 
 	struct isl_tab_undo bottom;
 	struct isl_tab_undo *top;
