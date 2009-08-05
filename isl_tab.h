@@ -25,9 +25,13 @@ enum isl_tab_undo_type {
 	isl_tab_undo_relax,
 };
 
+union isl_tab_undo_val {
+	int		var_index;
+};
+
 struct isl_tab_undo {
 	enum isl_tab_undo_type	type;
-	int			var_index;
+	union isl_tab_undo_val	u;
 	struct isl_tab_undo	*next;
 };
 

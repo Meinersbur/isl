@@ -372,8 +372,8 @@ static void swap_rows(struct isl_tab *tab, int row1, int row2)
 	tab->mat = isl_mat_swap_rows(tab->mat, row1, row2);
 }
 
-static void push(struct isl_tab *tab,
-	enum isl_tab_undo_type type, struct isl_tab_var *var)
+static void push_union(struct isl_tab *tab,
+	enum isl_tab_undo_type type, union isl_tab_undo_val u)
 {
 	struct isl_tab_undo *undo;
 
@@ -387,14 +387,26 @@ static void push(struct isl_tab *tab,
 		return;
 	}
 	undo->type = type;
-	if (!var)
-		undo->var_index = 0;
-	else if (var->is_row)
-		undo->var_index = tab->row_var[var->index];
-	else
-		undo->var_index = tab->col_var[var->index];
+	undo->u = u;
 	undo->next = tab->top;
 	tab->top = undo;
+}
+
+void push_var(struct isl_tab *tab,
+	enum isl_tab_undo_type type, struct isl_tab_var *var)
+{
+	union isl_tab_undo_val u;
+	if (var->is_row)
+		u.var_index = tab->row_var[var->index];
+	else
+		u.var_index = tab->col_var[var->index];
+	push_union(tab, type, u);
+}
+
+void push(struct isl_tab *tab, enum isl_tab_undo_type type)
+{
+	union isl_tab_undo_val u = { 0 };
+	push_union(tab, type, u);
 }
 
 /* Mark row with index "row" as being redundant.
@@ -417,11 +429,11 @@ static int mark_redundant(struct isl_tab *tab, int row)
 	if (tab->need_undo || tab->row_var[row] >= 0) {
 		if (tab->row_var[row] >= 0 && !var->is_nonneg) {
 			var->is_nonneg = 1;
-			push(tab, isl_tab_undo_nonneg, var);
+			push_var(tab, isl_tab_undo_nonneg, var);
 		}
 		if (row != tab->n_redundant)
 			swap_rows(tab, row, tab->n_redundant);
-		push(tab, isl_tab_undo_redundant, var);
+		push_var(tab, isl_tab_undo_redundant, var);
 		tab->n_redundant++;
 		return 0;
 	} else {
@@ -436,7 +448,7 @@ static int mark_redundant(struct isl_tab *tab, int row)
 static struct isl_tab *mark_empty(struct isl_tab *tab)
 {
 	if (!tab->empty && tab->need_undo)
-		push(tab, isl_tab_undo_empty, NULL);
+		push(tab, isl_tab_undo_empty);
 	tab->empty = 1;
 	return tab;
 }
@@ -833,7 +845,7 @@ static int kill_col(struct isl_tab *tab, int col)
 {
 	var_from_col(tab, col)->is_zero = 1;
 	if (tab->need_undo) {
-		push(tab, isl_tab_undo_zero, var_from_col(tab, col));
+		push_var(tab, isl_tab_undo_zero, var_from_col(tab, col));
 		if (col != tab->n_dead)
 			swap_cols(tab, col, tab->n_dead);
 		tab->n_dead++;
@@ -893,7 +905,7 @@ static int allocate_con(struct isl_tab *tab)
 
 	tab->n_row++;
 	tab->n_con++;
-	push(tab, isl_tab_undo_allocate, &tab->con[r]);
+	push_var(tab, isl_tab_undo_allocate, &tab->con[r]);
 
 	return r;
 }
@@ -980,7 +992,7 @@ struct isl_tab *isl_tab_add_ineq(struct isl_tab *tab, isl_int *ineq)
 	if (r < 0)
 		goto error;
 	tab->con[r].is_nonneg = 1;
-	push(tab, isl_tab_undo_nonneg, &tab->con[r]);
+	push_var(tab, isl_tab_undo_nonneg, &tab->con[r]);
 	if (is_redundant(tab, tab->con[r].index)) {
 		mark_redundant(tab, tab->con[r].index);
 		return tab;
@@ -1153,7 +1165,7 @@ struct isl_tab *isl_tab_from_recession_cone(struct isl_basic_map *bmap)
 		if (r < 0)
 			goto error;
 		tab->con[r].is_nonneg = 1;
-		push(tab, isl_tab_undo_nonneg, &tab->con[r]);
+		push_var(tab, isl_tab_undo_nonneg, &tab->con[r]);
 	}
 done:
 	isl_int_clear(cst);
@@ -1356,13 +1368,13 @@ static struct isl_tab *cut_to_hyperplane(struct isl_tab *tab,
 
 	tab->n_row++;
 	tab->n_con++;
-	push(tab, isl_tab_undo_allocate, &tab->con[r]);
+	push_var(tab, isl_tab_undo_allocate, &tab->con[r]);
 
 	sgn = sign_of_max(tab, &tab->con[r]);
 	if (sgn < 0)
 		return mark_empty(tab);
 	tab->con[r].is_nonneg = 1;
-	push(tab, isl_tab_undo_nonneg, &tab->con[r]);
+	push_var(tab, isl_tab_undo_nonneg, &tab->con[r]);
 	/* sgn == 0 */
 	close_row(tab, &tab->con[r]);
 
@@ -1407,7 +1419,7 @@ struct isl_tab *isl_tab_relax(struct isl_tab *tab, int con)
 
 	}
 
-	push(tab, isl_tab_undo_relax, var);
+	push_var(tab, isl_tab_undo_relax, var);
 
 	return tab;
 }
@@ -1720,13 +1732,10 @@ static void unrelax(struct isl_tab *tab, struct isl_tab_var *var)
 	}
 }
 
-static void perform_undo(struct isl_tab *tab, struct isl_tab_undo *undo)
+static void perform_undo_var(struct isl_tab *tab, struct isl_tab_undo *undo)
 {
-	struct isl_tab_var *var = var_from_index(tab, undo->var_index);
+	struct isl_tab_var *var = var_from_index(tab, undo->u.var_index);
 	switch(undo->type) {
-	case isl_tab_undo_empty:
-		tab->empty = 0;
-		break;
 	case isl_tab_undo_nonneg:
 		var->is_nonneg = 0;
 		break;
@@ -1755,6 +1764,25 @@ static void perform_undo(struct isl_tab *tab, struct isl_tab_undo *undo)
 	}
 }
 
+static int perform_undo(struct isl_tab *tab, struct isl_tab_undo *undo)
+{
+	switch (undo->type) {
+	case isl_tab_undo_empty:
+		tab->empty = 0;
+		break;
+	case isl_tab_undo_nonneg:
+	case isl_tab_undo_redundant:
+	case isl_tab_undo_zero:
+	case isl_tab_undo_allocate:
+	case isl_tab_undo_relax:
+		perform_undo_var(tab, undo);
+		break;
+	default:
+		isl_assert(tab->mat->ctx, 0, return -1);
+	}
+	return 0;
+}
+
 /* Return the tableau to the state it was in when the snapshot "snap"
  * was taken.
  */
@@ -1770,7 +1798,11 @@ int isl_tab_rollback(struct isl_tab *tab, struct isl_tab_undo *snap)
 		next = undo->next;
 		if (undo == snap)
 			break;
-		perform_undo(tab, undo);
+		if (perform_undo(tab, undo) < 0) {
+			free_undo(tab);
+			tab->in_undo = 0;
+			return -1;
+		}
 		free(undo);
 	}
 	tab->in_undo = 0;
