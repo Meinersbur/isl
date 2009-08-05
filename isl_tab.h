@@ -90,6 +90,7 @@ struct isl_tab {
 	unsigned n_var;
 	unsigned n_param;
 	unsigned n_div;
+	unsigned max_var;
 	unsigned n_con;
 	unsigned n_eq;
 	unsigned max_con;
@@ -165,6 +166,8 @@ struct isl_tab *isl_tab_mark_empty(struct isl_tab *tab);
 struct isl_tab *isl_tab_dup(struct isl_tab *tab);
 int isl_tab_extend_cons(struct isl_tab *tab, unsigned n_new);
 int isl_tab_allocate_con(struct isl_tab *tab);
+int isl_tab_extend_vars(struct isl_tab *tab, unsigned n_new);
+int isl_tab_allocate_var(struct isl_tab *tab);
 void isl_tab_pivot(struct isl_tab *tab, int row, int col);
 int isl_tab_add_row(struct isl_tab *tab, isl_int *line);
 int isl_tab_row_is_redundant(struct isl_tab *tab, int row);

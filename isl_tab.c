@@ -47,6 +47,7 @@ struct isl_tab *isl_tab_alloc(struct isl_ctx *ctx,
 	tab->max_con = n_row;
 	tab->n_col = n_var;
 	tab->n_var = n_var;
+	tab->max_var = n_var;
 	tab->n_param = 0;
 	tab->n_div = 0;
 	tab->n_dead = 0;
@@ -89,6 +90,40 @@ int isl_tab_extend_cons(struct isl_tab *tab, unsigned n_new)
 			return -1;
 		tab->row_var = row_var;
 	}
+	return 0;
+}
+
+/* Make room for at least n_new extra variables.
+ * Return -1 if anything went wrong.
+ */
+int isl_tab_extend_vars(struct isl_tab *tab, unsigned n_new)
+{
+	struct isl_tab_var *var;
+	unsigned off = 2;
+
+	if (tab->max_var < tab->n_var + n_new) {
+		var = isl_realloc_array(tab->mat->ctx, tab->var,
+				    struct isl_tab_var, tab->n_var + n_new);
+		if (!var)
+			return -1;
+		tab->var = var;
+		tab->max_var += n_new;
+	}
+
+	if (tab->mat->n_col < off + tab->n_col + n_new) {
+		int *p;
+
+		tab->mat = isl_mat_extend(tab->mat,
+				    tab->mat->n_row, off + tab->n_col + n_new);
+		if (!tab->mat)
+			return -1;
+		p = isl_realloc_array(tab->mat->ctx, tab->col_var,
+					    int, tab->mat->n_col);
+		if (!p)
+			return -1;
+		tab->col_var = p;
+	}
+
 	return 0;
 }
 
@@ -140,7 +175,7 @@ struct isl_tab *isl_tab_dup(struct isl_tab *tab)
 	dup->mat = isl_mat_dup(tab->mat);
 	if (!dup->mat)
 		goto error;
-	dup->var = isl_alloc_array(tab->ctx, struct isl_tab_var, tab->n_var);
+	dup->var = isl_alloc_array(tab->ctx, struct isl_tab_var, tab->max_var);
 	if (!dup->var)
 		goto error;
 	for (i = 0; i < tab->n_var; ++i)
@@ -166,6 +201,7 @@ struct isl_tab *isl_tab_dup(struct isl_tab *tab)
 	dup->max_con = tab->max_con;
 	dup->n_col = tab->n_col;
 	dup->n_var = tab->n_var;
+	dup->max_var = tab->max_var;
 	dup->n_param = tab->n_param;
 	dup->n_div = tab->n_div;
 	dup->n_dead = tab->n_dead;
@@ -933,6 +969,37 @@ int isl_tab_allocate_con(struct isl_tab *tab)
 	return r;
 }
 
+/* Add a variable to the tableau and allocate a column for it.
+ * Return the index into the variable array "var".
+ */
+int isl_tab_allocate_var(struct isl_tab *tab)
+{
+	int r;
+	int i;
+	unsigned off = 2;
+
+	isl_assert(tab->mat->ctx, tab->n_col < tab->mat->n_col, return -1);
+	isl_assert(tab->mat->ctx, tab->n_var < tab->max_var, return -1);
+
+	r = tab->n_var;
+	tab->var[r].index = tab->n_col;
+	tab->var[r].is_row = 0;
+	tab->var[r].is_nonneg = 0;
+	tab->var[r].is_zero = 0;
+	tab->var[r].is_redundant = 0;
+	tab->var[r].frozen = 0;
+	tab->col_var[tab->n_col] = r;
+
+	for (i = 0; i < tab->n_row; ++i)
+		isl_int_set_si(tab->mat->row[i][off + tab->n_col], 0);
+
+	tab->n_var++;
+	tab->n_col++;
+	isl_tab_push_var(tab, isl_tab_undo_allocate, &tab->var[r]);
+
+	return r;
+}
+
 /* Add a row to the tableau.  The row is given as an affine combination
  * of the original variables and needs to be expressed in terms of the
  * column variables.
@@ -998,6 +1065,16 @@ static int drop_row(struct isl_tab *tab, int row)
 		swap_rows(tab, row, tab->n_row - 1);
 	tab->n_row--;
 	tab->n_con--;
+	return 0;
+}
+
+static int drop_col(struct isl_tab *tab, int col)
+{
+	isl_assert(tab->mat->ctx, tab->col_var[col] == tab->n_var - 1, return -1);
+	if (col != tab->n_col - 1)
+		swap_cols(tab, col, tab->n_col - 1);
+	tab->n_col--;
+	tab->n_var--;
 	return 0;
 }
 
@@ -1771,6 +1848,11 @@ static void perform_undo_var(struct isl_tab *tab, struct isl_tab_undo *undo)
 		tab->n_dead--;
 		break;
 	case isl_tab_undo_allocate:
+		if (undo->u.var_index >= 0) {
+			isl_assert(tab->mat->ctx, !var->is_row, return);
+			drop_col(tab, var->index);
+			break;
+		}
 		if (!var->is_row) {
 			if (!max_is_manifestly_unbounded(tab, var))
 				to_row(tab, var, 1);
