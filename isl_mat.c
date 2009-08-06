@@ -57,6 +57,8 @@ struct isl_mat *isl_mat_extend(struct isl_mat *mat,
 	if (mat->max_col < n_col) {
 		struct isl_mat *new_mat;
 
+		if (n_row < mat->n_row)
+			n_row = mat->n_row;
 		new_mat = isl_mat_alloc(mat->ctx, n_row, n_col);
 		if (!new_mat)
 			goto error;
