@@ -8,6 +8,7 @@ extern "C" {
 #endif
 
 struct isl_vec *isl_basic_set_sample(struct isl_basic_set *bset);
+struct isl_vec *isl_basic_set_sample_bounded(struct isl_basic_set *bset);
 
 #if defined(__cplusplus)
 }

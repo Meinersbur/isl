@@ -888,7 +888,7 @@ static struct isl_vec *pip_sample(struct isl_basic_set *bset)
 	return sample;
 }
 
-struct isl_vec *isl_basic_set_sample(struct isl_basic_set *bset)
+struct isl_vec *basic_set_sample(struct isl_basic_set *bset, int bounded)
 {
 	struct isl_ctx *ctx;
 	unsigned dim;
@@ -927,10 +927,23 @@ struct isl_vec *isl_basic_set_sample(struct isl_basic_set *bset)
 	case ISL_ILP_PIP:
 		return pip_sample(bset);
 	case ISL_ILP_GBR:
-		return gbr_sample(bset);
+		return bounded ? sample_bounded(bset) : gbr_sample(bset);
 	}
 	isl_assert(bset->ctx, 0, );
 error:
 	isl_basic_set_free(bset);
 	return NULL;
+}
+
+struct isl_vec *isl_basic_set_sample(struct isl_basic_set *bset)
+{
+	return basic_set_sample(bset, 0);
+}
+
+/* Compute an integer sample in "bset", where the caller guarantees
+ * that "bset" is bounded.
+ */
+struct isl_vec *isl_basic_set_sample_bounded(struct isl_basic_set *bset)
+{
+	return basic_set_sample(bset, 1);
 }
