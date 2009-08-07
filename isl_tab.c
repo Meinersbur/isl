@@ -171,6 +171,7 @@ void isl_tab_free(struct isl_tab *tab)
 	free(tab->row_var);
 	free(tab->col_var);
 	free(tab->row_sign);
+	isl_mat_free(tab->samples);
 	free(tab);
 }
 
@@ -215,6 +216,13 @@ struct isl_tab *isl_tab_dup(struct isl_tab *tab)
 			goto error;
 		for (i = 0; i < tab->n_row; ++i)
 			dup->row_sign[i] = tab->row_sign[i];
+	}
+	if (tab->samples) {
+		dup->samples = isl_mat_dup(tab->samples);
+		if (!dup->samples)
+			goto error;
+		dup->n_sample = tab->n_sample;
+		dup->n_outside = tab->n_outside;
 	}
 	dup->n_row = tab->n_row;
 	dup->n_con = tab->n_con;
@@ -2094,10 +2102,15 @@ static int perform_undo(struct isl_tab *tab, struct isl_tab_undo *undo)
 		break;
 	case isl_tab_undo_bset_div:
 		isl_basic_set_free_div(tab->bset, 1);
+		if (tab->samples)
+			tab->samples->n_col--;
 		break;
 	case isl_tab_undo_saved_basis:
 		if (restore_basis(tab, undo->u.col_var) < 0)
 			return -1;
+		break;
+	case isl_tab_undo_drop_sample:
+		tab->n_outside--;
 		break;
 	default:
 		isl_assert(tab->mat->ctx, 0, return -1);

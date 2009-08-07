@@ -28,6 +28,7 @@ enum isl_tab_undo_type {
 	isl_tab_undo_bset_eq,
 	isl_tab_undo_bset_div,
 	isl_tab_undo_saved_basis,
+	isl_tab_undo_drop_sample,
 };
 
 union isl_tab_undo_val {
@@ -90,6 +91,12 @@ struct isl_tab_undo {
  * or all redundant rows are detected.
  * isl_tab_detect_equalities and isl_tab_detect_redundant can be used
  * to perform and exhaustive search for dead columns and redundant rows.
+ *
+ * The samples matrix contains "n_sample" integer points that have at some
+ * point been elements satisfying the tableau.  The first "n_outside"
+ * of them no longer satisfy the tableau.  They are kept because they
+ * can be reinstated during rollback when the constraint that cut them
+ * out is removed.
  */
 enum isl_tab_row_sign {
 	isl_tab_row_unknown = 0,
@@ -123,6 +130,10 @@ struct isl_tab {
 
 	struct isl_vec *dual;
 	struct isl_basic_set *bset;
+
+	unsigned n_sample;
+	unsigned n_outside;
+	struct isl_mat *samples;
 
 	unsigned need_undo : 1;
 	unsigned rational : 1;
