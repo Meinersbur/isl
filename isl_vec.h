@@ -31,6 +31,9 @@ void isl_vec_dump(struct isl_vec *vec, FILE *out, int indent);
 
 void isl_vec_lcm(struct isl_vec *vec, isl_int *lcm);
 
+struct isl_vec *isl_vec_read_from_file(struct isl_ctx *ctx,
+		FILE *input, unsigned input_format);
+
 #if defined(__cplusplus)
 }
 #endif

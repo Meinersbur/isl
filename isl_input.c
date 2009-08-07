@@ -155,3 +155,45 @@ struct isl_set *isl_set_read_from_file(struct isl_ctx *ctx,
 	else
 		isl_assert(ctx, 0, return NULL);
 }
+
+static struct isl_vec *isl_vec_read_from_file_polylib(struct isl_ctx *ctx,
+		FILE *input)
+{
+	struct isl_vec *vec = NULL;
+	char line[1024];
+	char val[1024];
+	char *p;
+	unsigned size;
+	int j;
+	int n;
+	int offset;
+
+	isl_assert(ctx, next_line(input, line, sizeof(line)), return NULL);
+	isl_assert(ctx, sscanf(line, "%u", &size) == 1, return NULL);
+
+	vec = isl_vec_alloc(ctx, size);
+
+	p = next_line(input, line, sizeof(line));
+	isl_assert(ctx, p, goto error);
+
+	for (j = 0; j < size; ++j) {
+		n = sscanf(p, "%s%n", val, &offset);
+		isl_assert(ctx, n != 0, goto error);
+		isl_int_read(vec->el[j], val);
+		p += offset;
+	}
+
+	return vec;
+error:
+	isl_vec_free(vec);
+	return NULL;
+}
+
+struct isl_vec *isl_vec_read_from_file(struct isl_ctx *ctx,
+		FILE *input, unsigned input_format)
+{
+	if (input_format == ISL_FORMAT_POLYLIB)
+		return isl_vec_read_from_file_polylib(ctx, input);
+	else
+		isl_assert(ctx, 0, return NULL);
+}
