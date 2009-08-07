@@ -29,57 +29,7 @@ AC_CHECK_DECLS(mp_get_memory_functions,[],[
 CPPFLAGS="$SAVE_CPPFLAGS"
 AM_CONDITIONAL(NEED_GET_MEMORY_FUNCTIONS, test x$need_get_memory_functions = xtrue)
 
-AC_DEFUN([ISL_SUBMODULE],[
-	AC_ARG_WITH($1_prefix,
-		[AS_HELP_STRING([--with-$1-prefix=DIR],
-				[Location of system $1])])
-	AC_ARG_WITH($1_builddir,
-		    [AS_HELP_STRING([--with-$1-builddir=DIR],
-				    [Location of $1 builddir])])
-	if test "x$with_$1_prefix" != "x"; then
-		if test "x$with_$1" != "x" -a "x$with_$1" != "xsystem"; then
-			AC_MSG_ERROR([Setting $with_$1_prefix implies use of system $1])
-		fi
-		with_$1="system"
-	fi
-	if test "x$with_$1_builddir" != "x"; then
-		if test "x$with_$1" != "x" -a "x$with_$1" != "xbuild"; then
-			AC_MSG_ERROR([Setting $with_$1_builddir implies use of build $1])
-		fi
-		with_$1="build"
-		$1_srcdir=`echo @abs_srcdir@ | $with_$1_builddir/config.status --file=-`
-		AC_MSG_NOTICE($1 sources in $$1_srcdir)
-	fi
-	case "$with_$1" in
-	no|bundled|system|build)
-		;;
-	*)
-		if test -d $srcdir/.git -a \
-			-d $srcdir/$1 -a \
-			! -d $srcdir/$1/.git; then
-			AC_MSG_WARN(
-[git repo detected, but submodule $1 not initialized])
-			AC_MSG_WARN([You may want to run])
-			AC_MSG_WARN([	git submodule init])
-			AC_MSG_WARN([	git submodule update])
-			AC_MSG_WARN([	sh autogen.sh])
-		fi
-		if test -f $srcdir/$1/configure; then
-			with_$1="bundled"
-		fi
-		;;
-	esac
-])
-
-AC_ARG_WITH(polylib,
-	[AS_HELP_STRING([--with-polylib=build|system|no],
-			[Which PolyLib to use])])
-ISL_SUBMODULE(polylib)
-if test "x$with_polylib" = "x"; then
-	with_polylib="no"
-fi
-AC_MSG_CHECKING([which polylib to use])
-AC_MSG_RESULT($with_polylib)
+AX_SUBMODULE(polylib,no|system|build,no)
 
 have_polylib=false
 AC_SUBST(POLYLIB_CPPFLAGS)
@@ -129,15 +79,7 @@ if test "$with_polylib" != "no"; then
 fi
 AM_CONDITIONAL(HAVE_POLYLIB, test x$have_polylib = xtrue)
 
-AC_ARG_WITH(piplib,
-	[AS_HELP_STRING([--with-piplib=build|bundled|system|no],
-			[Which piplib to use])])
-ISL_SUBMODULE(piplib)
-if test "x$with_piplib" = "x"; then
-	with_piplib="system"
-fi
-AC_MSG_CHECKING([which piplib to use])
-AC_MSG_RESULT($with_piplib)
+AX_SUBMODULE(piplib,no|system|build|bundled,no)
 
 have_piplib=false
 AC_SUBST(PIPLIB_CPPFLAGS)
