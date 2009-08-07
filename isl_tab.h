@@ -72,7 +72,7 @@ struct isl_tab_undo {
  * However, the basic operations do not ensure that all dead columns
  * or all redundant rows are detected.
  * isl_tab_detect_equalities and isl_tab_detect_redundant can be used
- * to peform and exhaustive search for dead columns and redundant rows.
+ * to perform and exhaustive search for dead columns and redundant rows.
  */
 struct isl_tab {
 	struct isl_mat *mat;
