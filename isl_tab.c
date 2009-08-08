@@ -1935,7 +1935,7 @@ enum isl_lp_result isl_tab_min(struct isl_tab *tab,
 					    tab->mat->row[var->index][pos]);
 		}
 	}
-	if (res == isl_lp_ok) {
+	if (opt && res == isl_lp_ok) {
 		if (opt_denom) {
 			isl_int_set(*opt, tab->mat->row[var->index][1]);
 			isl_int_set(*opt_denom, tab->mat->row[var->index][0]);

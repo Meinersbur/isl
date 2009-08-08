@@ -1,11 +1,54 @@
 #include "isl_map.h"
+#include "isl_vec.h"
 #include "isl_lp.h"
 #include "isl_piplib.h"
 #include "isl_map_piplib.h"
 
+static void copy_solution(struct isl_vec *vec, int maximize, isl_int *opt,
+	isl_int *opt_denom, PipQuast *sol)
+{
+	int i;
+	PipList *list;
+	isl_int tmp;
+
+	if (opt) {
+		if (opt_denom) {
+			isl_seq_cpy_from_pip(opt,
+				 &sol->list->vector->the_vector[0], 1);
+			isl_seq_cpy_from_pip(opt_denom,
+				 &sol->list->vector->the_deno[0], 1);
+		} else if (maximize)
+			mpz_fdiv_q(*opt, sol->list->vector->the_vector[0],
+					 sol->list->vector->the_deno[0]);
+		else
+			mpz_cdiv_q(*opt, sol->list->vector->the_vector[0],
+					 sol->list->vector->the_deno[0]);
+	}
+
+	if (!vec)
+		return;
+
+	isl_int_init(tmp);
+	isl_int_set_si(vec->el[0], 1);
+	for (i = 0, list = sol->list->next; list; ++i, list = list->next) {
+		isl_seq_cpy_from_pip(&vec->el[1 + i],
+			&list->vector->the_deno[0], 1);
+		isl_int_lcm(vec->el[0], vec->el[0], vec->el[1 + i]);
+	}
+	for (i = 0, list = sol->list->next; list; ++i, list = list->next) {
+		isl_seq_cpy_from_pip(&tmp, &list->vector->the_deno[0], 1);
+		isl_int_divexact(tmp, vec->el[0], tmp);
+		isl_seq_cpy_from_pip(&vec->el[1 + i],
+			&list->vector->the_vector[0], 1);
+		isl_int_mul(vec->el[1 + i], vec->el[1 + i], tmp);
+	}
+	isl_int_clear(tmp);
+}
+
 enum isl_lp_result isl_pip_solve_lp(struct isl_basic_map *bmap, int maximize,
 				      isl_int *f, isl_int denom, isl_int *opt,
-				      isl_int *opt_denom)
+				      isl_int *opt_denom,
+				      struct isl_vec **vec)
 {
 	enum isl_lp_result res = isl_lp_ok;
 	PipMatrix	*domain = NULL;
@@ -32,23 +75,16 @@ enum isl_lp_result isl_pip_solve_lp(struct isl_basic_map *bmap, int maximize,
 	if (!sol)
 		goto error;
 
-	if (!sol->list)
+	if (vec)
+		*vec = isl_vec_alloc(bmap->ctx, 1 + total);
+	if (vec && !*vec)
+		res = isl_lp_error;
+	else if (!sol->list)
 		res = isl_lp_empty;
 	else if (entier_zero_p(sol->list->vector->the_deno[0]))
 		res = isl_lp_unbounded;
-	else {
-		if (opt_denom) {
-			isl_seq_cpy_from_pip(opt,
-				 &sol->list->vector->the_vector[0], 1);
-			isl_seq_cpy_from_pip(opt_denom,
-				 &sol->list->vector->the_deno[0], 1);
-		} else if (maximize)
-			mpz_fdiv_q(*opt, sol->list->vector->the_vector[0],
-					 sol->list->vector->the_deno[0]);
-		else
-			mpz_cdiv_q(*opt, sol->list->vector->the_vector[0],
-					 sol->list->vector->the_deno[0]);
-	}
+	else
+		copy_solution(*vec, maximize, opt, opt_denom, sol);
 	pip_matrix_free(domain);
 	pip_quast_free(sol);
 	return res;

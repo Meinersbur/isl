@@ -6,7 +6,8 @@
 
 enum isl_lp_result isl_tab_solve_lp(struct isl_basic_map *bmap, int maximize,
 				      isl_int *f, isl_int denom, isl_int *opt,
-				      isl_int *opt_denom)
+				      isl_int *opt_denom,
+				      struct isl_vec **sol)
 {
 	struct isl_tab *tab;
 	enum isl_lp_result res;
@@ -18,6 +19,11 @@ enum isl_lp_result isl_tab_solve_lp(struct isl_basic_map *bmap, int maximize,
 	bmap = isl_basic_map_gauss(bmap, NULL);
 	tab = isl_tab_from_basic_map(bmap);
 	res = isl_tab_min(tab, f, bmap->ctx->one, opt, opt_denom, 0);
+	if (res == isl_lp_ok && sol) {
+		*sol = isl_tab_get_sample_value(tab);
+		if (!*sol)
+			res = isl_lp_error;
+	}
 	isl_tab_free(tab);
 
 	if (maximize)
@@ -36,18 +42,22 @@ enum isl_lp_result isl_tab_solve_lp(struct isl_basic_map *bmap, int maximize,
  * The return value reflects the nature of the result (empty, unbounded,
  * minmimal or maximal value returned in *opt).
  */
-enum isl_lp_result isl_solve_lp(struct isl_basic_map *bmap, int maximize,
+enum isl_lp_result isl_solve_lp(struct isl_basic_map *bmap, int max,
 				      isl_int *f, isl_int d, isl_int *opt,
-				      isl_int *opt_denom)
+				      isl_int *opt_denom,
+				      struct isl_vec **sol)
 {
+	if (sol)
+		*sol = NULL;
+
 	if (!bmap)
 		return isl_lp_error;
 
 	switch (bmap->ctx->lp_solver) {
 	case ISL_LP_PIP:
-		return isl_pip_solve_lp(bmap, maximize, f, d, opt, opt_denom);
+		return isl_pip_solve_lp(bmap, max, f, d, opt, opt_denom, sol);
 	case ISL_LP_TAB:
-		return isl_tab_solve_lp(bmap, maximize, f, d, opt, opt_denom);
+		return isl_tab_solve_lp(bmap, max, f, d, opt, opt_denom, sol);
 	default:
 		return isl_lp_error;
 	}

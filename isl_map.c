@@ -4396,7 +4396,7 @@ int isl_basic_set_compare_at(struct isl_basic_set *bset1,
 		goto error;
 	isl_int_init(num);
 	isl_int_init(den);
-	res = isl_solve_lp(bmap1, 0, obj->block.data, ctx->one, &num, &den);
+	res = isl_solve_lp(bmap1, 0, obj->block.data, ctx->one, &num, &den, NULL);
 	if (res == isl_lp_empty)
 		cmp = 0;
 	else if (res == isl_lp_ok && isl_int_is_pos(num))

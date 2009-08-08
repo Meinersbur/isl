@@ -50,7 +50,7 @@ int isl_basic_map_constraint_is_redundant(struct isl_basic_map **bmap,
 	if (i < total)
 		return 0;
 
-	res = isl_solve_lp(*bmap, 0, c, (*bmap)->ctx->one, opt_n, opt_d);
+	res = isl_solve_lp(*bmap, 0, c, (*bmap)->ctx->one, opt_n, opt_d, NULL);
 	if (res == isl_lp_unbounded)
 		return 0;
 	if (res == isl_lp_error)
@@ -129,7 +129,7 @@ static int uset_is_bound(struct isl_set *set, isl_int *c, unsigned len)
 			continue;
 
 		res = isl_solve_lp((struct isl_basic_map*)set->p[j],
-				0, c, set->ctx->one, &opt, &opt_denom);
+				0, c, set->ctx->one, &opt, &opt_denom, NULL);
 		if (res == isl_lp_unbounded)
 			break;
 		if (res == isl_lp_error)
@@ -482,7 +482,7 @@ static isl_int *wrap_facet(struct isl_set *set, isl_int *facet, isl_int *ridge)
 	isl_int_init(num);
 	isl_int_init(den);
 	res = isl_solve_lp((struct isl_basic_map *)lp, 0,
-				    obj->block.data, set->ctx->one, &num, &den);
+			    obj->block.data, set->ctx->one, &num, &den, NULL);
 	if (res == isl_lp_ok) {
 		isl_int_neg(num, num);
 		isl_seq_combine(facet, num, facet, den, ridge, dim);
