@@ -1912,8 +1912,6 @@ enum isl_lp_result isl_tab_min(struct isl_tab *tab,
 			break;
 		isl_tab_pivot(tab, row, col);
 	}
-	if (isl_tab_rollback(tab, snap) < 0)
-		return isl_lp_error;
 	if (ISL_FL_ISSET(flags, ISL_TAB_SAVE_DUAL)) {
 		int i;
 
@@ -1945,6 +1943,8 @@ enum isl_lp_result isl_tab_min(struct isl_tab *tab,
 			isl_int_cdiv_q(*opt, tab->mat->row[var->index][1],
 					     tab->mat->row[var->index][0]);
 	}
+	if (isl_tab_rollback(tab, snap) < 0)
+		return isl_lp_error;
 	return res;
 }
 
