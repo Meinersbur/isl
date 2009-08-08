@@ -40,6 +40,7 @@ struct isl_tab *isl_tab_alloc(struct isl_ctx *ctx,
 		tab->var[i].is_zero = 0;
 		tab->var[i].is_redundant = 0;
 		tab->var[i].frozen = 0;
+		tab->var[i].negated = 0;
 		tab->col_var[i] = i;
 	}
 	tab->n_row = 0;
@@ -1100,6 +1101,7 @@ int isl_tab_allocate_con(struct isl_tab *tab)
 	tab->con[r].is_zero = 0;
 	tab->con[r].is_redundant = 0;
 	tab->con[r].frozen = 0;
+	tab->con[r].negated = 0;
 	tab->row_var[tab->n_row] = ~r;
 
 	tab->n_row++;
@@ -1128,6 +1130,7 @@ int isl_tab_allocate_var(struct isl_tab *tab)
 	tab->var[r].is_zero = 0;
 	tab->var[r].is_redundant = 0;
 	tab->var[r].frozen = 0;
+	tab->var[r].negated = 0;
 	tab->col_var[tab->n_col] = r;
 
 	for (i = 0; i < tab->n_row; ++i)
@@ -1332,9 +1335,11 @@ struct isl_tab *isl_tab_add_valid_eq(struct isl_tab *tab, isl_int *eq)
 
 	var = &tab->con[r];
 	r = var->index;
-	if (isl_int_is_neg(tab->mat->row[r][1]))
+	if (isl_int_is_neg(tab->mat->row[r][1])) {
 		isl_seq_neg(tab->mat->row[r] + 1, tab->mat->row[r] + 1,
 			    1 + tab->n_col);
+		var->negated = 1;
+	}
 	var->is_nonneg = 1;
 	if (to_col(tab, var) < 0)
 		goto error;
@@ -1601,6 +1606,7 @@ static struct isl_tab *cut_to_hyperplane(struct isl_tab *tab,
 	tab->con[r].is_zero = 0;
 	tab->con[r].is_redundant = 0;
 	tab->con[r].frozen = 0;
+	tab->con[r].negated = 0;
 	tab->row_var[tab->n_row] = ~r;
 	row = tab->mat->row[tab->n_row];
 
@@ -1917,13 +1923,18 @@ enum isl_lp_result isl_tab_min(struct isl_tab *tab,
 			return isl_lp_error;
 		isl_int_set(tab->dual->el[0], tab->mat->row[var->index][0]);
 		for (i = 0; i < tab->n_con; ++i) {
-			if (tab->con[i].is_row)
+			int pos;
+			if (tab->con[i].is_row) {
 				isl_int_set_si(tab->dual->el[1 + i], 0);
-			else {
-				int pos = 2 + tab->con[i].index;
+				continue;
+			}
+			pos = 2 + tab->M + tab->con[i].index;
+			if (tab->con[i].negated)
+				isl_int_neg(tab->dual->el[1 + i],
+					    tab->mat->row[var->index][pos]);
+			else
 				isl_int_set(tab->dual->el[1 + i],
 					    tab->mat->row[var->index][pos]);
-			}
 		}
 	}
 	if (res == isl_lp_ok) {

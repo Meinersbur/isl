@@ -14,6 +14,7 @@ struct isl_tab_var {
 	unsigned is_redundant : 1;
 	unsigned marked : 1;
 	unsigned frozen : 1;
+	unsigned negated : 1;
 };
 
 enum isl_tab_undo_type {
