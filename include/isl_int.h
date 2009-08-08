@@ -50,6 +50,7 @@ typedef mpz_t	isl_int;
 #define isl_int_cdiv_q(r,i,j)	mpz_cdiv_q(r,i,j)
 #define isl_int_fdiv_q(r,i,j)	mpz_fdiv_q(r,i,j)
 #define isl_int_fdiv_r(r,i,j)	mpz_fdiv_r(r,i,j)
+#define isl_int_fdiv_q_ui(r,i,j)	mpz_fdiv_q_ui(r,i,j)
 
 #define isl_int_read(r,s)	mpz_set_str(r,s,10)
 #define isl_int_print(out,i,width)					\
