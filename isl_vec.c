@@ -93,3 +93,21 @@ void isl_vec_lcm(struct isl_vec *vec, isl_int *lcm)
 {
 	isl_seq_lcm(vec->block.data, vec->size, lcm);
 }
+
+/* Given a rational vector, with the denominator in the first element
+ * of the vector, round up all coordinates.
+ */
+struct isl_vec *isl_vec_ceil(struct isl_vec *vec)
+{
+	int i;
+
+	vec = isl_vec_cow(vec);
+	if (!vec)
+		return NULL;
+
+	isl_seq_cdiv_q(vec->el + 1, vec->el + 1, vec->el[0], vec->size - 1);
+
+	isl_int_set_si(vec->el[0], 1);
+
+	return vec;
+}

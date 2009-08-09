@@ -576,24 +576,6 @@ static struct isl_vec *rational_sample(struct isl_basic_set *bset)
 	return sample;
 }
 
-/* Given a rational vector, with the denominator in the first element
- * of the vector, round up all coordinates.
- */
-struct isl_vec *isl_vec_ceil(struct isl_vec *vec)
-{
-	int i;
-
-	vec = isl_vec_cow(vec);
-	if (!vec)
-		return NULL;
-
-	isl_seq_cdiv_q(vec->el + 1, vec->el + 1, vec->el[0], vec->size - 1);
-
-	isl_int_set_si(vec->el[0], 1);
-
-	return vec;
-}
-
 /* Given a linear cone "cone" and a rational point "vec",
  * construct a polyhedron with shifted copies of the constraints in "cone",
  * i.e., a polyhedron with "cone" as its recession cone, such that each
