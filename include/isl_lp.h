@@ -2,6 +2,7 @@
 #define ISL_LP_H
 
 #include <isl_map.h>
+#include <isl_set.h>
 
 enum isl_lp_result {
 	isl_lp_error = -1,
@@ -14,7 +15,11 @@ enum isl_lp_result {
 extern "C" {
 #endif
 
-enum isl_lp_result isl_solve_lp(struct isl_basic_map *bmap, int maximize,
+enum isl_lp_result isl_basic_map_solve_lp(struct isl_basic_map *bmap, int max,
+				      isl_int *f, isl_int denom, isl_int *opt,
+				      isl_int *opt_denom,
+				      struct isl_vec **sol);
+enum isl_lp_result isl_basic_set_solve_lp(struct isl_basic_set *bset, int max,
 				      isl_int *f, isl_int denom, isl_int *opt,
 				      isl_int *opt_denom,
 				      struct isl_vec **sol);

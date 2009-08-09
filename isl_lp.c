@@ -42,7 +42,7 @@ enum isl_lp_result isl_tab_solve_lp(struct isl_basic_map *bmap, int maximize,
  * The return value reflects the nature of the result (empty, unbounded,
  * minmimal or maximal value returned in *opt).
  */
-enum isl_lp_result isl_solve_lp(struct isl_basic_map *bmap, int max,
+enum isl_lp_result isl_basic_map_solve_lp(struct isl_basic_map *bmap, int max,
 				      isl_int *f, isl_int d, isl_int *opt,
 				      isl_int *opt_denom,
 				      struct isl_vec **sol)
@@ -61,4 +61,13 @@ enum isl_lp_result isl_solve_lp(struct isl_basic_map *bmap, int max,
 	default:
 		return isl_lp_error;
 	}
+}
+
+enum isl_lp_result isl_basic_set_solve_lp(struct isl_basic_set *bset, int max,
+				      isl_int *f, isl_int d, isl_int *opt,
+				      isl_int *opt_denom,
+				      struct isl_vec **sol)
+{
+	return isl_basic_map_solve_lp((struct isl_basic_map *)bset, max,
+					f, d, opt, opt_denom, sol);
 }
