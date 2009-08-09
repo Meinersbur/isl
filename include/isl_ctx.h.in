@@ -69,6 +69,10 @@ struct isl_ctx {
 	#define			ISL_PIP_PIP	1
 	unsigned		pip;
 
+	#define			ISL_GBR_NEVER	0
+	#define			ISL_GBR_ONCE	1
+	#define			ISL_GBR_ALWAYS	2
+	unsigned		gbr;
 	unsigned		gbr_only_first;
 };
 

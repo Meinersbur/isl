@@ -328,7 +328,7 @@ static struct isl_basic_set *basic_set_reduced(struct isl_basic_set *bset,
 		return NULL;
 
 	gbr_only_first = bset->ctx->gbr_only_first;
-	bset->ctx->gbr_only_first = 1;
+	bset->ctx->gbr_only_first = bset->ctx->gbr == ISL_GBR_ONCE;
 	*T = isl_basic_set_reduced_basis(bset);
 	bset->ctx->gbr_only_first = gbr_only_first;
 
@@ -418,6 +418,8 @@ error:
 static struct isl_vec *sample_bounded(struct isl_basic_set *bset)
 {
 	unsigned dim;
+	unsigned gbr;
+	struct isl_ctx *ctx;
 	struct isl_vec *sample;
 	struct isl_vec *obj = NULL;
 	struct isl_mat *T = NULL;
@@ -437,6 +439,9 @@ static struct isl_vec *sample_bounded(struct isl_basic_set *bset)
 		return interval_sample(bset);
 	if (bset->n_eq > 0)
 		return sample_eq(bset, sample_bounded);
+
+	ctx = bset->ctx;
+	gbr = ctx->gbr;
 
 	isl_int_init(min);
 	isl_int_init(max);
@@ -460,7 +465,10 @@ static struct isl_vec *sample_bounded(struct isl_basic_set *bset)
 		goto out;
 	}
 
-	if (isl_int_ne(min, max)) {
+	if (ctx->gbr != ISL_GBR_NEVER && isl_int_ne(min, max)) {
+		if (ctx->gbr == ISL_GBR_ONCE)
+			ctx->gbr = ISL_GBR_NEVER;
+
 		bset = basic_set_reduced(bset, &T);
 		if (!bset)
 			goto error;
@@ -491,8 +499,10 @@ out:
 	isl_vec_free(obj);
 	isl_int_clear(min);
 	isl_int_clear(max);
+	ctx->gbr = gbr;
 	return sample;
 error:
+	ctx->gbr = gbr;
 	isl_mat_free(T);
 	isl_basic_set_free(bset);
 	isl_vec_free(obj);

@@ -37,6 +37,9 @@ struct isl_ctx *isl_ctx_alloc()
 	ctx->ilp_solver = ISL_ILP_GBR;
 	ctx->pip = ISL_PIP_TAB;
 
+	ctx->gbr = ISL_GBR_ONCE;
+	ctx->gbr_only_first = 0;
+
 	return ctx;
 error:
 	free(ctx);
