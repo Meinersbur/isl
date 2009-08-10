@@ -55,6 +55,7 @@ libisl_la_SOURCES = \
 	isl_equalities.h \
 	isl_gmp.c \
 	isl_hash.c \
+	isl_ilp.c \
 	isl_input.c \
 	isl_input_omega.c \
 	isl_input_omega.h \
@@ -120,6 +121,7 @@ pkginclude_HEADERS = \
 	include/isl_constraint.h \
 	include/isl_dim.h \
 	include/isl_div.h \
+	include/isl_ilp.h \
 	include/isl_int.h \
 	include/isl_hash.h \
 	include/isl_list.h \
