@@ -2356,3 +2356,34 @@ error:
 	isl_basic_map_free(bmap);
 	return NULL;
 }
+
+struct isl_basic_set *isl_basic_set_drop_redundant_divs(
+	struct isl_basic_set *bset)
+{
+	return (struct isl_basic_set *)
+	    isl_basic_map_drop_redundant_divs((struct isl_basic_map *)bset);
+}
+
+struct isl_map *isl_map_drop_redundant_divs(struct isl_map *map)
+{
+	int i;
+
+	if (!map)
+		return NULL;
+	for (i = 0; i < map->n; ++i) {
+		map->p[i] = isl_basic_map_drop_redundant_divs(map->p[i]);
+		if (!map->p[i])
+			goto error;
+	}
+	ISL_F_CLR(map, ISL_MAP_NORMALIZED);
+	return map;
+error:
+	isl_map_free(map);
+	return NULL;
+}
+
+struct isl_set *isl_set_drop_redundant_divs(struct isl_set *set)
+{
+	return (struct isl_set *)
+	    isl_map_drop_redundant_divs((struct isl_map *)set);
+}

@@ -1877,6 +1877,7 @@ struct isl_basic_set *isl_basic_set_project_out(
 	if (!bset->dim)
 		goto error;
 	bset = isl_basic_set_simplify(bset);
+	bset = isl_basic_set_drop_redundant_divs(bset);
 	return isl_basic_set_finalize(bset);
 error:
 	isl_basic_set_free(bset);
