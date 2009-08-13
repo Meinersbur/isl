@@ -1861,8 +1861,8 @@ int isl_set_fast_is_disjoint(struct isl_set *set1, struct isl_set *set2)
  * Otherwise return -1.
  *
  * We first check that
- *	- the bounds are opposites of each other (expect for the constant
- *	  term
+ *	- the bounds are opposites of each other (except for the constant
+ *	  term)
  *	- the bounds do not reference any other div
  *	- no div is defined in terms of this div
  *
