@@ -872,6 +872,8 @@ struct isl_basic_map *isl_basic_map_extend_dim(struct isl_basic_map *base,
 	if (!ext)
 		goto error;
 
+	if (dims_ok)
+		ext->sample = isl_vec_copy(base->sample);
 	flags = base->flags;
 	ext = add_constraints(ext, base, 0, 0);
 	if (ext) {
