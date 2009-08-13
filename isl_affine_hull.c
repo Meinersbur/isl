@@ -352,7 +352,7 @@ error:
 static struct isl_basic_set *extend_affine_hull(struct isl_basic_set *bset,
 	struct isl_basic_set *hull)
 {
-	int i, j;
+	int i, j, k;
 	struct isl_ctx *ctx;
 	unsigned dim;
 
@@ -373,6 +373,16 @@ static struct isl_basic_set *extend_affine_hull(struct isl_basic_set *bset,
 			if (!ISL_F_ISSET(point, ISL_BASIC_SET_EMPTY))
 				break;
 			isl_basic_set_free(point);
+
+			bset = isl_basic_set_extend_constraints(bset, 1, 0);
+			k = isl_basic_set_alloc_equality(bset);
+			if (k < 0)
+				goto error;
+			isl_seq_cpy(bset->eq[k], hull->eq[j],
+					1 + isl_basic_set_total_dim(hull));
+			bset = isl_basic_set_gauss(bset, NULL);
+			if (!bset)
+				goto error;
 		}
 		if (j == hull->n_eq)
 			break;
