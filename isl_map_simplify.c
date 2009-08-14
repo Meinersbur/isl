@@ -2277,9 +2277,9 @@ struct isl_basic_map *isl_basic_map_drop_redundant_divs(
 		int pos, neg;
 		int last_pos, last_neg;
 		int redundant;
+		int defined;
 
-		if (!isl_int_is_zero(bmap->div[i][0]))
-			continue;
+		defined = !isl_int_is_zero(bmap->div[i][0]);
 		for (j = 0; j < bmap->n_eq; ++j)
 			if (!isl_int_is_zero(bmap->eq[j][1 + off + i]))
 				break;
@@ -2324,7 +2324,8 @@ struct isl_basic_map *isl_basic_map_drop_redundant_divs(
 		isl_int_sub(bmap->ineq[last_pos][0],
 			    bmap->ineq[last_pos][0], bmap->ineq[last_neg][0]);
 		if (!redundant) {
-			if (!ok_to_set_div_from_bound(bmap, i, last_pos)) {
+			if (defined ||
+			    !ok_to_set_div_from_bound(bmap, i, last_pos)) {
 				pairs[i] = 0;
 				--n;
 				continue;
