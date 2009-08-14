@@ -1939,6 +1939,7 @@ struct isl_basic_map *isl_basic_map_apply_range(
 	bmap = add_constraints_dim_map(bmap, bmap2, dim_map2);
 	bmap = add_divs(bmap, n);
 	bmap = isl_basic_map_simplify(bmap);
+	bmap = isl_basic_map_drop_redundant_divs(bmap);
 	return isl_basic_map_finalize(bmap);
 error:
 	isl_basic_map_free(bmap1);
