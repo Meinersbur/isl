@@ -398,7 +398,7 @@ static struct isl_vec *get_row_parameter_ineq(struct isl_tab *tab, int row)
 
 	get_row_parameter_line(tab, row, ineq->el);
 	if (ineq)
-		isl_seq_normalize(ineq->el, ineq->size);
+		ineq = isl_vec_normalize(ineq);
 
 	return ineq;
 }
@@ -423,7 +423,7 @@ static struct isl_vec *get_row_parameter_div(struct isl_tab *tab, int row)
 
 	isl_int_set(div->el[0], tab->mat->row[row][0]);
 	get_row_parameter_line(tab, row, div->el + 1);
-	isl_seq_normalize(div->el, div->size);
+	div = isl_vec_normalize(div);
 	isl_seq_neg(div->el + 1, div->el + 1, div->size - 1);
 	isl_seq_fdiv_r(div->el + 1, div->el + 1, div->el[0], div->size - 1);
 
@@ -451,7 +451,7 @@ static struct isl_vec *get_row_split_div(struct isl_tab *tab, int row)
 
 	isl_int_set(div->el[0], tab->mat->row[row][0]);
 	get_row_parameter_line(tab, row, div->el + 1);
-	isl_seq_normalize(div->el, div->size);
+	div = isl_vec_normalize(div);
 	isl_seq_fdiv_r(div->el + 1, div->el + 1, div->el[0], div->size - 1);
 
 	return div;
@@ -2394,7 +2394,7 @@ static struct isl_sol *find_solutions_main(struct isl_sol *sol,
 		eq = isl_vec_alloc(tab->mat->ctx, 1+tab->n_param+tab->n_div);
 		get_row_parameter_line(tab, row, eq->el);
 		isl_int_neg(eq->el[1 + p], tab->mat->row[row][0]);
-		isl_seq_normalize(eq->el, eq->size);
+		eq = isl_vec_normalize(eq);
 
 		sol = no_sol_in_strict(sol, tab, eq);
 

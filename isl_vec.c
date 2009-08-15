@@ -111,3 +111,11 @@ struct isl_vec *isl_vec_ceil(struct isl_vec *vec)
 
 	return vec;
 }
+
+struct isl_vec *isl_vec_normalize(struct isl_vec *vec)
+{
+	if (!vec)
+		return NULL;
+	isl_seq_normalize(vec->el, vec->size);
+	return vec;
+}

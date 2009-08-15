@@ -1531,7 +1531,7 @@ struct isl_vec *isl_tab_get_sample_value(struct isl_tab *tab)
 		isl_int_divexact(m, vec->block.data[0], tab->mat->row[row][0]);
 		isl_int_mul(vec->block.data[1 + i], m, tab->mat->row[row][1]);
 	}
-	isl_seq_normalize(vec->block.data, vec->size);
+	vec = isl_vec_normalize(vec);
 
 	isl_int_clear(m);
 	return vec;
