@@ -236,6 +236,34 @@ error:
 	return NULL;
 }
 
+struct isl_vec *isl_vec_mat_product(struct isl_vec *vec, struct isl_mat *mat)
+{
+	int i, j;
+	struct isl_vec *prod;
+
+	if (!mat || !vec)
+		goto error;
+
+	isl_assert(ctx, mat->n_row == vec->size, goto error);
+
+	prod = isl_vec_alloc(mat->ctx, mat->n_col);
+	if (!prod)
+		goto error;
+
+	for (i = 0; i < prod->size; ++i) {
+		isl_int_set_si(prod->el[i], 0);
+		for (j = 0; j < vec->size; ++j)
+			isl_int_addmul(prod->el[i], vec->el[j], mat->row[j][i]);
+	}
+	isl_mat_free(mat);
+	isl_vec_free(vec);
+	return prod;
+error:
+	isl_mat_free(mat);
+	isl_vec_free(vec);
+	return NULL;
+}
+
 struct isl_mat *isl_mat_aff_direct_sum(struct isl_mat *left,
 	struct isl_mat *right)
 {
