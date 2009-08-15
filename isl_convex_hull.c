@@ -1207,9 +1207,9 @@ static struct isl_vec *valid_direction(
 				bset1->ctx->one, dir->block.data,
 				sample->block.data[n++], bset1->ineq[i], 1 + d);
 	isl_vec_free(sample);
+	isl_seq_normalize(bset1->ctx, dir->block.data + 1, dir->size - 1);
 	isl_basic_set_free(bset1);
 	isl_basic_set_free(bset2);
-	isl_seq_normalize(dir->block.data + 1, dir->size - 1);
 	return dir;
 error:
 	isl_vec_free(sample);

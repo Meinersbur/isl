@@ -202,17 +202,14 @@ void isl_seq_gcd(isl_int *p, unsigned len, isl_int *gcd)
 	}
 }
 
-void isl_seq_normalize(isl_int *p, unsigned len)
+void isl_seq_normalize(struct isl_ctx *ctx, isl_int *p, unsigned len)
 {
-	isl_int gcd;
-
 	if (len == 0)
 		return;
-	isl_int_init(gcd);
-	isl_seq_gcd(p, len, &gcd);
-	if (!isl_int_is_zero(gcd) && !isl_int_is_one(gcd))
-		isl_seq_scale_down(p, p, gcd, len);
-	isl_int_clear(gcd);
+	isl_seq_gcd(p, len, &ctx->normalize_gcd);
+	if (!isl_int_is_zero(ctx->normalize_gcd) &&
+	    !isl_int_is_one(ctx->normalize_gcd))
+		isl_seq_scale_down(p, p, ctx->normalize_gcd, len);
 }
 
 void isl_seq_lcm(isl_int *p, unsigned len, isl_int *lcm)

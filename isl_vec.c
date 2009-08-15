@@ -116,6 +116,6 @@ struct isl_vec *isl_vec_normalize(struct isl_vec *vec)
 {
 	if (!vec)
 		return NULL;
-	isl_seq_normalize(vec->el, vec->size);
+	isl_seq_normalize(vec->ctx, vec->el, vec->size);
 	return vec;
 }

@@ -1,6 +1,7 @@
 #include "isl_mat.h"
 #include "isl_map_private.h"
 #include "isl_tab.h"
+#include "isl_seq.h"
 
 /*
  * The implementation of tableaus in this file was inspired by Section 8
@@ -689,7 +690,7 @@ void isl_tab_pivot(struct isl_tab *tab, int row, int col)
 			isl_int_neg(mat->row[row][1 + j], mat->row[row][1 + j]);
 		}
 	if (!isl_int_is_one(mat->row[row][0]))
-		isl_seq_normalize(mat->row[row], off + tab->n_col);
+		isl_seq_normalize(mat->ctx, mat->row[row], off + tab->n_col);
 	for (i = 0; i < tab->n_row; ++i) {
 		if (i == row)
 			continue;
@@ -707,7 +708,7 @@ void isl_tab_pivot(struct isl_tab *tab, int row, int col)
 		isl_int_mul(mat->row[i][off + col],
 			    mat->row[i][off + col], mat->row[row][off + col]);
 		if (!isl_int_is_one(mat->row[i][0]))
-			isl_seq_normalize(mat->row[i], off + tab->n_col);
+			isl_seq_normalize(mat->ctx, mat->row[i], off + tab->n_col);
 	}
 	t = tab->row_var[row];
 	tab->row_var[row] = tab->col_var[col];
@@ -1197,7 +1198,7 @@ int isl_tab_add_row(struct isl_tab *tab, isl_int *line)
 		if (tab->M && i >= tab->n_param && i < tab->n_var - tab->n_div)
 			isl_int_submul(row[2], line[1 + i], row[0]);
 	}
-	isl_seq_normalize(row, off + tab->n_col);
+	isl_seq_normalize(tab->mat->ctx, row, off + tab->n_col);
 	isl_int_clear(a);
 	isl_int_clear(b);
 
