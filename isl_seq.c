@@ -210,7 +210,7 @@ void isl_seq_normalize(isl_int *p, unsigned len)
 		return;
 	isl_int_init(gcd);
 	isl_seq_gcd(p, len, &gcd);
-	if (!isl_int_is_zero(gcd))
+	if (!isl_int_is_zero(gcd) && !isl_int_is_one(gcd))
 		isl_seq_scale_down(p, p, gcd, len);
 	isl_int_clear(gcd);
 }
