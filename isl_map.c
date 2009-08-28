@@ -1193,6 +1193,10 @@ struct isl_basic_map *isl_basic_map_remove(struct isl_basic_map *bmap,
 		return bmap;
 	bmap = isl_basic_map_eliminate_vars(bmap,
 			isl_basic_map_offset(bmap, type) - 1 + first, n);
+	if (!bmap)
+		return bmap;
+	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_EMPTY) && type == isl_dim_div)
+		return bmap;
 	bmap = isl_basic_map_drop(bmap, type, first, n);
 	return bmap;
 error:
