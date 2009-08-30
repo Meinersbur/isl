@@ -262,6 +262,7 @@ struct isl_set *isl_set_from_map(struct isl_map *map);
 int isl_map_fast_is_empty(struct isl_map *map);
 int isl_map_is_empty(struct isl_map *map);
 int isl_map_is_subset(struct isl_map *map1, struct isl_map *map2);
+int isl_map_is_strict_subset(struct isl_map *map1, struct isl_map *map2);
 int isl_map_is_equal(struct isl_map *map1, struct isl_map *map2);
 
 void isl_map_dump(struct isl_map *map, FILE *out, int indent);
