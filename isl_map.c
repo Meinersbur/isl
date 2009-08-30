@@ -2044,6 +2044,45 @@ error:
 	return NULL;
 }
 
+/* Given two maps A -> f(A) and B -> g(B), construct a map
+ * A \cap B -> f(A) + f(B)
+ */
+struct isl_map *isl_map_sum(struct isl_map *map1, struct isl_map *map2)
+{
+	struct isl_map *result;
+	int i, j;
+
+	if (!map1 || !map2)
+		goto error;
+
+	isl_assert(map1->ctx, isl_dim_equal(map1->dim, map2->dim), goto error);
+
+	result = isl_map_alloc_dim(isl_dim_copy(map1->dim),
+				map1->n * map2->n, 0);
+	if (!result)
+		goto error;
+	for (i = 0; i < map1->n; ++i)
+		for (j = 0; j < map2->n; ++j) {
+			struct isl_basic_map *part;
+			part = isl_basic_map_sum(
+				    isl_basic_map_copy(map1->p[i]),
+				    isl_basic_map_copy(map2->p[j]));
+			if (isl_basic_map_is_empty(part))
+				isl_basic_map_free(part);
+			else
+				result = isl_map_add(result, part);
+			if (!result)
+				goto error;
+		}
+	isl_map_free(map1);
+	isl_map_free(map2);
+	return result;
+error:
+	isl_map_free(map1);
+	isl_map_free(map2);
+	return NULL;
+}
+
 /* Given a basic map A -> f(A), construct A -> -f(A).
  */
 struct isl_basic_map *isl_basic_map_neg(struct isl_basic_map *bmap)

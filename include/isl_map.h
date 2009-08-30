@@ -176,6 +176,7 @@ struct isl_basic_map *isl_basic_map_neg(struct isl_basic_map *bmap);
 struct isl_basic_map *isl_basic_map_floordiv(struct isl_basic_map *bmap,
 		isl_int d);
 
+struct isl_map *isl_map_sum(struct isl_map *map1, struct isl_map *map2);
 struct isl_map *isl_map_neg(struct isl_map *map);
 struct isl_map *isl_map_floordiv(struct isl_map *map, isl_int d);
 
