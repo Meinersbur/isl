@@ -3688,7 +3688,7 @@ struct isl_map *isl_map_identity(struct isl_dim *set_dim)
 	return map_identity(dim);
 }
 
-struct isl_map *isl_map_identity_like(struct isl_basic_map *model)
+struct isl_map *isl_map_identity_like_basic_map(struct isl_basic_map *model)
 {
 	if (!model || !model->dim)
 		return NULL;
