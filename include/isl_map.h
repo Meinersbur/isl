@@ -268,6 +268,8 @@ void isl_map_dump(struct isl_map *map, FILE *out, int indent);
 
 int isl_map_fast_input_is_fixed(struct isl_map *map,
 		unsigned in, isl_int *val);
+int isl_map_fast_is_fixed(struct isl_map *map,
+	enum isl_dim_type type, unsigned pos, isl_int *val);
 
 struct isl_map *isl_map_coalesce(struct isl_map *map);
 

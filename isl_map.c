@@ -4507,6 +4507,15 @@ int isl_basic_map_fast_is_fixed(struct isl_basic_map *bmap,
 		isl_basic_map_offset(bmap, type) - 1 + pos, val);
 }
 
+int isl_map_fast_is_fixed(struct isl_map *map,
+	enum isl_dim_type type, unsigned pos, isl_int *val)
+{
+	if (pos >= isl_map_dim(map, type))
+		return -1;
+	return isl_map_fast_has_fixed_var(map,
+		map_offset(map, type) - 1 + pos, val);
+}
+
 /* Check if dimension dim has fixed value and if so and if val is not NULL,
  * then return this fixed value in *val.
  */
