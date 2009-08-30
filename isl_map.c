@@ -2069,6 +2069,28 @@ struct isl_basic_map *isl_basic_map_neg(struct isl_basic_map *bmap)
 	return isl_basic_map_finalize(bmap);
 }
 
+/* Given a map A -> f(A), construct A -> -f(A).
+ */
+struct isl_map *isl_map_neg(struct isl_map *map)
+{
+	int i;
+
+	map = isl_map_cow(map);
+	if (!map)
+		return NULL;
+
+	for (i = 0; i < map->n; ++i) {
+		map->p[i] = isl_basic_map_neg(map->p[i]);
+		if (!map->p[i])
+			goto error;
+	}
+
+	return map;
+error:
+	isl_map_free(map);
+	return NULL;
+}
+
 /* Given a basic map A -> f(A) and an integer d, construct a basic map
  * A -> floor(f(A)/d).
  */
