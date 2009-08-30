@@ -213,6 +213,7 @@ struct isl_map *isl_map_empty_like_basic_map(struct isl_basic_map *model);
 struct isl_map *isl_map_dup(struct isl_map *map);
 struct isl_map *isl_map_add(struct isl_map *map, struct isl_basic_map *bmap);
 struct isl_map *isl_map_identity(struct isl_dim *set_dim);
+struct isl_map *isl_map_identity_like(struct isl_map *model);
 struct isl_map *isl_map_identity_like_basic_map(struct isl_basic_map *model);
 struct isl_map *isl_map_finalize(struct isl_map *map);
 void isl_map_free(struct isl_map *map);
