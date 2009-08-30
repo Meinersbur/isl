@@ -2145,6 +2145,31 @@ error:
 	return NULL;
 }
 
+/* Given a map A -> f(A) and an integer d, construct a map
+ * A -> floor(f(A)/d).
+ */
+struct isl_map *isl_map_floordiv(struct isl_map *map, isl_int d)
+{
+	int i;
+
+	map = isl_map_cow(map);
+	if (!map)
+		return NULL;
+
+	ISL_F_CLR(map, ISL_MAP_DISJOINT);
+	ISL_F_CLR(map, ISL_MAP_NORMALIZED);
+	for (i = 0; i < map->n; ++i) {
+		map->p[i] = isl_basic_map_floordiv(map->p[i], d);
+		if (!map->p[i])
+			goto error;
+	}
+
+	return map;
+error:
+	isl_map_free(map);
+	return NULL;
+}
+
 static struct isl_basic_map *var_equal(struct isl_basic_map *bmap, unsigned pos)
 {
 	int i;
