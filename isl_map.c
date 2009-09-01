@@ -4080,7 +4080,7 @@ struct isl_set *isl_basic_set_union(
 }
 
 /* Order divs such that any div only depends on previous divs */
-static struct isl_basic_map *order_divs(struct isl_basic_map *bmap)
+struct isl_basic_map *isl_basic_map_order_divs(struct isl_basic_map *bmap)
 {
 	int i;
 	unsigned off = isl_dim_total(bmap->dim);
@@ -4101,7 +4101,8 @@ static struct isl_basic_map *order_divs(struct isl_basic_map *bmap)
 
 struct isl_basic_set *isl_basic_set_order_divs(struct isl_basic_set *bset)
 {
-	return (struct isl_basic_set *)order_divs((struct isl_basic_map *)bset);
+	return (struct isl_basic_set *)
+		isl_basic_map_order_divs((struct isl_basic_map *)bset);
 }
 
 /* Look for a div in dst that corresponds to the div "div" in src.
@@ -4141,7 +4142,7 @@ struct isl_basic_map *isl_basic_map_align_divs(
 	for (i = 0; i < src->n_div; ++i)
 		isl_assert(src->ctx, !isl_int_is_zero(src->div[i][0]), goto error);
 
-	src = order_divs(src);
+	src = isl_basic_map_order_divs(src);
 	dst = isl_basic_map_cow(dst);
 	dst = isl_basic_map_extend_dim(dst, isl_dim_copy(dst->dim),
 			src->n_div, 0, 2 * src->n_div);

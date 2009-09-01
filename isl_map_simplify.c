@@ -441,17 +441,18 @@ static struct isl_basic_map *eliminate_divs_ineq(
 	return bmap;
 }
 
+/* Assumes divs have been ordered if keep_divs is set.
+ */
 static void eliminate_var_using_equality(struct isl_basic_map *bmap,
-	unsigned pos, isl_int *eq, int *progress)
+	unsigned pos, isl_int *eq, int keep_divs, int *progress)
 {
 	unsigned total;
 	int k;
-	int contains_divs;
+	int last_div;
 
 	total = isl_basic_map_total_dim(bmap);
-	contains_divs =
-		isl_seq_first_non_zero(eq + 1 + isl_dim_total(bmap->dim),
-						bmap->n_div) != -1;
+	last_div = isl_seq_last_non_zero(eq + 1 + isl_dim_total(bmap->dim),
+						bmap->n_div);
 	for (k = 0; k < bmap->n_eq; ++k) {
 		if (bmap->eq[k] == eq)
 			continue;
@@ -481,12 +482,15 @@ static void eliminate_var_using_equality(struct isl_basic_map *bmap,
 		/* We need to be careful about circular definitions,
 		 * so for now we just remove the definition of div k
 		 * if the equality contains any divs.
+		 * If keep_divs is set, then the divs have been ordered
+		 * and we can keep the definition as long as the result
+		 * is still ordered.
 		 */
-		if (contains_divs)
-			isl_seq_clr(bmap->div[k], 1 + total);
-		else
+		if (last_div == -1 || (keep_divs && last_div < k))
 			isl_seq_elim(bmap->div[k]+1, eq,
 					1+pos, 1+total, &bmap->div[k][0]);
+		else
+			isl_seq_clr(bmap->div[k], 1 + total);
 		ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
 	}
 }
@@ -499,6 +503,8 @@ struct isl_basic_map *isl_basic_map_gauss(
 	int last_var;
 	unsigned total_var;
 	unsigned total;
+
+	bmap = isl_basic_map_order_divs(bmap);
 
 	if (!bmap)
 		return NULL;
@@ -522,7 +528,7 @@ struct isl_basic_map *isl_basic_map_gauss(
 		if (isl_int_is_neg(bmap->eq[done][1+last_var]))
 			isl_seq_neg(bmap->eq[done], bmap->eq[done], 1+total);
 
-		eliminate_var_using_equality(bmap, last_var, bmap->eq[done],
+		eliminate_var_using_equality(bmap, last_var, bmap->eq[done], 1,
 						progress);
 
 		if (last_var >= total_var &&
@@ -1223,7 +1229,7 @@ struct isl_basic_map *isl_basic_map_eliminate_vars(
 		for (i = 0; i < bmap->n_eq; ++i) {
 			if (isl_int_is_zero(bmap->eq[i][1+d]))
 				continue;
-			eliminate_var_using_equality(bmap, d, bmap->eq[i], NULL);
+			eliminate_var_using_equality(bmap, d, bmap->eq[i], 0, NULL);
 			isl_basic_map_drop_equality(bmap, i);
 			break;
 		}
