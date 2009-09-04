@@ -1238,27 +1238,32 @@ int sample_is_finite(struct isl_tab *tab)
 	return 1;
 }
 
-/* Move to an integer point in the tableau and if such a point can be found
- * and if moreover it is finite, then add it to the list of sample values.
- * As a side effect, the tableau will be marked empty if no integer point
- * can be found.
+/* Check if the context tableau of sol has any integer points.
+ * Returns -1 if an error occurred.
+ * If an integer point can be found and if moreover it is finite,
+ * then it is added to the list of sample values.
  *
  * This function is only called when none of the currently active sample
  * values satisfies the most recently added constraint.
  */
-static struct isl_tab *check_integer_feasible(struct isl_tab *tab)
+static int context_is_feasible(struct isl_sol *sol)
 {
 	struct isl_tab_undo *snap;
+	struct isl_tab *tab;
+	int feasible;
 
-	if (!tab)
-		return NULL;
+	if (!sol || !sol->context_tab)
+		return -1;
 
-	snap = isl_tab_snap(tab);
-	isl_tab_push_basis(tab);
+	snap = isl_tab_snap(sol->context_tab);
+	isl_tab_push_basis(sol->context_tab);
 
-	tab = cut_to_integer_lexmin(tab);
+	sol->context_tab = cut_to_integer_lexmin(sol->context_tab);
+	if (!sol->context_tab)
+		goto error;
 
-	if (tab && !tab->empty && sample_is_finite(tab)) {
+	tab = sol->context_tab;
+	if (!tab->empty && sample_is_finite(tab)) {
 		struct isl_vec *sample;
 
 		tab->samples = isl_mat_extend(tab->samples,
@@ -1275,28 +1280,32 @@ static struct isl_tab *check_integer_feasible(struct isl_tab *tab)
 		tab->n_sample++;
 	}
 
-	if (isl_tab_rollback(tab, snap) < 0)
+	feasible = !sol->context_tab->empty;
+	if (isl_tab_rollback(sol->context_tab, snap) < 0)
 		goto error;
 
-	return tab;
+	return feasible;
 error:
-	isl_tab_free(tab);
-	return NULL;
+	isl_tab_free(sol->context_tab);
+	sol->context_tab = NULL;
+	return -1;
 }
 
 /* First check if any of the currently active sample values satisfies
  * the inequality "ineq" (an equality if eq is set).
  * If not, continue with check_integer_feasible.
  */
-static struct isl_tab *check_sample_or_integer_feasible(struct isl_tab *tab,
+static int context_valid_sample_or_feasible(struct isl_sol *sol,
 	isl_int *ineq, int eq)
 {
 	int i;
 	isl_int v;
+	struct isl_tab *tab;
 
-	if (!tab)
-		return NULL;
+	if (!sol || !sol->context_tab)
+		return -1;
 
+	tab = sol->context_tab;
 	isl_assert(tab->mat->ctx, tab->bset, goto error);
 	isl_assert(tab->mat->ctx, tab->samples, goto error);
 	isl_assert(tab->mat->ctx, tab->samples->n_col == 1 + tab->n_var, goto error);
@@ -1313,9 +1322,9 @@ static struct isl_tab *check_sample_or_integer_feasible(struct isl_tab *tab,
 	isl_int_clear(v);
 
 	if (i < tab->n_sample)
-		return tab;
+		return 1;
 
-	return check_integer_feasible(tab);
+	return context_is_feasible(sol);
 }
 
 /* For a div d = floor(f/m), add the constraints
@@ -1675,6 +1684,7 @@ static struct isl_sol_map *sol_map_init(struct isl_basic_map *bmap,
 {
 	struct isl_sol_map *sol_map;
 	struct isl_tab *context_tab;
+	int f;
 
 	sol_map = isl_calloc_type(bset->ctx, struct isl_sol_map);
 	if (!sol_map)
@@ -1690,10 +1700,10 @@ static struct isl_sol_map *sol_map_init(struct isl_basic_map *bmap,
 
 	context_tab = context_tab_for_lexmin(isl_basic_set_copy(dom));
 	context_tab = restore_lexmin(context_tab);
-	context_tab = check_integer_feasible(context_tab);
-	if (!context_tab)
-		goto error;
 	sol_map->sol.context_tab = context_tab;
+	f = context_is_feasible(&sol_map->sol);
+	if (f < 0)
+		goto error;
 
 	if (track_empty) {
 		sol_map->empty = isl_set_alloc_dim(isl_basic_set_get_dim(dom),
@@ -1874,7 +1884,7 @@ static int is_strict(struct isl_vec *vec)
  *	>=0 ?	     Y      N
  *		    any    neg
  */
-static int row_sign(struct isl_tab *tab, struct isl_tab *context_tab, int row)
+static int row_sign(struct isl_tab *tab, struct isl_sol *sol, int row)
 {
 	int i;
 	struct isl_tab_undo *snap = NULL;
@@ -1887,6 +1897,7 @@ static int row_sign(struct isl_tab *tab, struct isl_tab *context_tab, int row)
 	int sgn;
 	int row2;
 	isl_int tmp;
+	struct isl_tab *context_tab = sol->context_tab;
 
 	if (tab->row_sign[row] != isl_tab_row_unknown)
 		return tab->row_sign[row];
@@ -1942,15 +1953,17 @@ static int row_sign(struct isl_tab *tab, struct isl_tab *context_tab, int row)
 
 	if (res == isl_tab_row_unknown || res == isl_tab_row_pos) {
 		/* test for negative values */
+		int feasible;
 		isl_seq_neg(ineq->el, ineq->el, ineq->size);
 		isl_int_sub_ui(ineq->el[0], ineq->el[0], 1);
 
 		isl_tab_push_basis(context_tab);
-		context_tab = add_lexmin_ineq(context_tab, ineq->el);
-		context_tab = check_integer_feasible(context_tab);
-		if (!context_tab)
+		sol->context_tab = add_lexmin_ineq(sol->context_tab, ineq->el);
+		feasible = context_is_feasible(sol);
+		if (feasible < 0)
 			goto error;
-		if (context_tab->empty)
+		context_tab = sol->context_tab;
+		if (!feasible)
 			res = isl_tab_row_pos;
 		else
 			res = (res == isl_tab_row_unknown) ? isl_tab_row_neg
@@ -1966,15 +1979,17 @@ static int row_sign(struct isl_tab *tab, struct isl_tab *context_tab, int row)
 
 	if (res == isl_tab_row_neg) {
 		/* test for positive values */
+		int feasible;
 		if (!critical && !strict)
 			isl_int_sub_ui(ineq->el[0], ineq->el[0], 1);
 
 		isl_tab_push_basis(context_tab);
-		context_tab = add_lexmin_ineq(context_tab, ineq->el);
-		context_tab = check_integer_feasible(context_tab);
-		if (!context_tab)
+		sol->context_tab = add_lexmin_ineq(sol->context_tab, ineq->el);
+		feasible = context_is_feasible(sol);
+		if (feasible < 0)
 			goto error;
-		if (!context_tab->empty)
+		context_tab = sol->context_tab;
+		if (feasible)
 			res = isl_tab_row_any;
 		if (isl_tab_rollback(context_tab, snap) < 0)
 			goto error;
@@ -2037,6 +2052,7 @@ static struct isl_sol *no_sol_in_strict(struct isl_sol *sol,
 	struct isl_tab *tab, struct isl_vec *ineq)
 {
 	int empty;
+	int f;
 	struct isl_tab_undo *snap;
 	snap = isl_tab_snap(sol->context_tab);
 	isl_tab_push_basis(sol->context_tab);
@@ -2046,8 +2062,9 @@ static struct isl_sol *no_sol_in_strict(struct isl_sol *sol,
 	isl_int_sub_ui(ineq->el[0], ineq->el[0], 1);
 
 	sol->context_tab = add_lexmin_ineq(sol->context_tab, ineq->el);
-	sol->context_tab = check_sample_or_integer_feasible(sol->context_tab,
-								ineq->el, 0);
+	f = context_valid_sample_or_feasible(sol, ineq->el, 0);
+	if (f < 0)
+		goto error;
 
 	empty = tab->empty;
 	tab->empty = 1;
@@ -2267,7 +2284,7 @@ static struct isl_sol *find_solutions(struct isl_sol *sol, struct isl_tab *tab)
 		for (row = tab->n_redundant; row < tab->n_row; ++row) {
 			if (!isl_tab_var_from_row(tab, row)->is_nonneg)
 				continue;
-			sgn = row_sign(tab, *context_tab, row);
+			sgn = row_sign(tab, sol, row);
 			if (!sgn)
 				goto error;
 			tab->row_sign[row] = sgn;
@@ -2403,8 +2420,7 @@ static struct isl_sol *find_solutions_main(struct isl_sol *sol,
 		isl_seq_neg(eq->el, eq->el, eq->size);
 
 		sol->context_tab = add_lexmin_eq(sol->context_tab, eq->el);
-		sol->context_tab = check_sample_or_integer_feasible(
-						sol->context_tab, eq->el, 1);
+		context_valid_sample_or_feasible(sol, eq->el, 1);
 		sol->context_tab = check_samples(sol->context_tab, eq->el, 1);
 
 		isl_vec_free(eq);
