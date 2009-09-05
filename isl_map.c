@@ -2695,11 +2695,10 @@ struct isl_map *isl_map_alloc(struct isl_ctx *ctx,
 	return map;
 }
 
-struct isl_basic_map *isl_basic_map_empty(struct isl_ctx *ctx,
-		unsigned nparam, unsigned in, unsigned out)
+struct isl_basic_map *isl_basic_map_empty(struct isl_dim *dim)
 {
 	struct isl_basic_map *bmap;
-	bmap = isl_basic_map_alloc(ctx, nparam, in, out, 0, 1, 0);
+	bmap = isl_basic_map_alloc_dim(dim, 0, 1, 0);
 	bmap = isl_basic_map_set_to_empty(bmap);
 	return bmap;
 }

@@ -127,8 +127,7 @@ struct isl_basic_map *isl_basic_map_equal(
 		struct isl_dim *dim, unsigned n_equal);
 struct isl_basic_map *isl_basic_map_less_at(struct isl_dim *dim, unsigned pos);
 struct isl_basic_map *isl_basic_map_more_at(struct isl_dim *dim, unsigned pos);
-struct isl_basic_map *isl_basic_map_empty(struct isl_ctx *ctx,
-		unsigned nparam, unsigned in, unsigned out);
+struct isl_basic_map *isl_basic_map_empty(struct isl_dim *dim);
 struct isl_basic_map *isl_basic_map_empty_like(struct isl_basic_map *model);
 struct isl_basic_map *isl_basic_map_empty_like_map(struct isl_map *model);
 struct isl_basic_map *isl_basic_map_universe(struct isl_dim *dim);
