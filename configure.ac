@@ -9,9 +9,7 @@ AC_PROG_LIBTOOL
 
 AX_CREATE_STDINT_H(include/isl_stdint.h)
 
-AC_ARG_WITH(gmp_prefix,
-	[AS_HELP_STRING([--with-gmp-prefix=DIR],
-			[Location of GMP installation])])
+AX_SUBMODULE(gmp,system,system)
 
 AC_SUBST(GMP_CPPFLAGS)
 AC_SUBST(GMP_LDFLAGS)
