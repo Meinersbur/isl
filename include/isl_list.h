@@ -12,7 +12,7 @@ struct isl_basic_set_list {
 	int n;
 
 	size_t size;
-	struct isl_basic_set *p[0];
+	struct isl_basic_set *p[1];
 };
 
 struct isl_basic_set_list *isl_basic_set_list_alloc(struct isl_ctx *ctx, int n);

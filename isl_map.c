@@ -1417,7 +1417,7 @@ struct isl_set *isl_set_alloc_dim(struct isl_dim *dim, int n, unsigned flags)
 	isl_assert(dim->ctx, n >= 0, return NULL);
 	set = isl_alloc(dim->ctx, struct isl_set,
 			sizeof(struct isl_set) +
-			n * sizeof(struct isl_basic_set *));
+			(n - 1) * sizeof(struct isl_basic_set *));
 	if (!set)
 		goto error;
 
@@ -2663,7 +2663,7 @@ struct isl_map *isl_map_alloc_dim(struct isl_dim *dim, int n, unsigned flags)
 	isl_assert(dim->ctx, n >= 0, return NULL);
 	map = isl_alloc(dim->ctx, struct isl_map,
 			sizeof(struct isl_map) +
-			n * sizeof(struct isl_basic_map *));
+			(n - 1) * sizeof(struct isl_basic_map *));
 	if (!map)
 		goto error;
 

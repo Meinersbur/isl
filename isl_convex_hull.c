@@ -1973,7 +1973,7 @@ struct sh_data {
 	struct isl_ctx		*ctx;
 	unsigned		n;
 	struct isl_hash_table	*hull_table;
-	struct sh_data_entry	p[0];
+	struct sh_data_entry	p[1];
 };
 
 static void sh_data_free(struct sh_data *data)
@@ -2051,7 +2051,8 @@ static struct sh_data *sh_data_alloc(struct isl_set *set, unsigned n_ineq)
 	int i;
 
 	data = isl_calloc(set->ctx, struct sh_data,
-		sizeof(struct sh_data) + set->n * sizeof(struct sh_data_entry));
+		sizeof(struct sh_data) +
+		(set->n - 1) * sizeof(struct sh_data_entry));
 	if (!data)
 		return NULL;
 	data->ctx = set->ctx;

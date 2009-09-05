@@ -7,7 +7,7 @@ struct isl_basic_set_list *isl_basic_set_list_alloc(struct isl_ctx *ctx, int n)
 	isl_assert(ctx, n >= 0, return NULL);
 	list = isl_alloc(ctx, struct isl_basic_set_list,
 			 sizeof(struct isl_basic_set_list) +
-			 n * sizeof(struct isl_basic_set *));
+			 (n - 1) * sizeof(struct isl_basic_set *));
 	if (!list)
 		return NULL;
 

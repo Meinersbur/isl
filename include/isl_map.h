@@ -90,7 +90,7 @@ struct isl_map {
 	int n;
 
 	size_t size;
-	struct isl_basic_map *p[0];
+	struct isl_basic_map *p[1];
 };
 struct isl_set;
 

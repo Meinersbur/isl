@@ -62,7 +62,7 @@ struct isl_set {
 	int n;
 
 	size_t size;
-	struct isl_basic_set *p[0];
+	struct isl_basic_set *p[1];
 };
 
 unsigned isl_basic_set_n_dim(const struct isl_basic_set *bset);
