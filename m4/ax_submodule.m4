@@ -3,7 +3,7 @@ AC_DEFUN([AX_SUBMODULE],
 
 AC_ARG_WITH($1,
 	[AS_HELP_STRING([--with-$1=$2],
-			[Which $1 to use])])
+			[Which $1 to use [default=$3]])])
 case "system" in
 $2)
 	AC_ARG_WITH($1_prefix,
