@@ -1569,7 +1569,7 @@ static void update_constraint(struct isl_ctx *ctx, struct isl_hash_table *table,
 	struct max_constraint *c;
 	uint32_t c_hash;
 
-	c_hash = isl_seq_hash(con + 1, len, isl_hash_init());
+	c_hash = isl_seq_get_hash(con + 1, len);
 	entry = isl_hash_table_find(ctx, table, c_hash, max_constraint_equal,
 			con + 1, 0);
 	if (!entry)
@@ -1602,7 +1602,7 @@ static int has_constraint(struct isl_ctx *ctx, struct isl_hash_table *table,
 	struct max_constraint *c;
 	uint32_t c_hash;
 
-	c_hash = isl_seq_hash(con + 1, len, isl_hash_init());
+	c_hash = isl_seq_get_hash(con + 1, len);
 	entry = isl_hash_table_find(ctx, table, c_hash, max_constraint_equal,
 			con + 1, 0);
 	if (!entry)
@@ -1669,8 +1669,7 @@ static struct isl_basic_set *common_constraints(struct isl_basic_set *hull,
 	for (i = 0; i < min_constraints; ++i) {
 		struct isl_hash_table_entry *entry;
 		uint32_t c_hash;
-		c_hash = isl_seq_hash(constraints[i].c->row[0] + 1, total,
-					isl_hash_init());
+		c_hash = isl_seq_get_hash(constraints[i].c->row[0] + 1, total);
 		entry = isl_hash_table_find(hull->ctx, table, c_hash,
 			max_constraint_equal, constraints[i].c->row[0] + 1, 1);
 		if (!entry)
@@ -2013,7 +2012,7 @@ static int hash_ineq(struct isl_ctx *ctx, struct isl_hash_table *table,
 
 	v.len = len;
 	v.p = ineq;
-	c_hash = isl_seq_hash(ineq + 1, len, isl_hash_init());
+	c_hash = isl_seq_get_hash(ineq + 1, len);
 	entry = isl_hash_table_find(ctx, table, c_hash, has_ineq, &v, 1);
 	if (!entry)
 		return - 1;
@@ -2137,7 +2136,7 @@ static struct isl_basic_set *add_bound(struct isl_basic_set *hull,
 
 	v.len = isl_basic_set_total_dim(hull);
 	v.p = ineq;
-	c_hash = isl_seq_hash(ineq + 1, v.len, isl_hash_init());
+	c_hash = isl_seq_get_hash(ineq + 1, v.len);
 
 	entry = isl_hash_table_find(hull->ctx, data->hull_table, c_hash,
 					has_ineq, &v, 0);
