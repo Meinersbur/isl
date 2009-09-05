@@ -618,5 +618,5 @@ error:
  */
 struct isl_set *isl_set_coalesce(struct isl_set *set)
 {
-	(struct isl_set *)isl_map_coalesce((struct isl_map *)set);
+	return (struct isl_set *)isl_map_coalesce((struct isl_map *)set);
 }
