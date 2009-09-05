@@ -128,7 +128,7 @@ AM_CONDITIONAL(HAVE_PIPLIB, test x$have_piplib = xtrue)
 AM_CONDITIONAL(BUNDLED_PIPLIB, test $with_piplib = bundled)
 
 AC_CONFIG_HEADERS(config.h)
-AC_CONFIG_HEADERS(include/isl_ctx.h)
+AC_CONFIG_HEADERS(include/isl_libs.h)
 AC_CONFIG_FILES(Makefile)
 if test $with_piplib = bundled; then
 	AC_CONFIG_SUBDIRS(piplib)

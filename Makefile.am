@@ -127,11 +127,12 @@ isl_polytope_scan_SOURCES = \
 	polytope_scan.c
 
 nodist_pkginclude_HEADERS = \
-	include/isl_ctx.h \
+	include/isl_libs.h \
 	include/isl_stdint.h
 pkginclude_HEADERS = \
 	include/isl_blk.h \
 	include/isl_constraint.h \
+	include/isl_ctx.h \
 	include/isl_dim.h \
 	include/isl_div.h \
 	include/isl_ilp.h \

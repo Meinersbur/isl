@@ -7,9 +7,7 @@
 #include <isl_int.h>
 #include <isl_blk.h>
 #include <isl_hash.h>
-
-#undef ISL_POLYLIB
-#undef ISL_PIPLIB
+#include <isl_libs.h>
 
 #if defined(__cplusplus)
 extern "C" {
