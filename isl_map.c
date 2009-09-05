@@ -4447,7 +4447,7 @@ error:
 struct isl_set *isl_set_drop_basic_set(struct isl_set *set,
 						struct isl_basic_set *bset)
 {
-	(struct isl_set *)isl_map_drop_basic_map((struct isl_map *)set,
+	return (struct isl_set *)isl_map_drop_basic_map((struct isl_map *)set,
 						(struct isl_basic_map *)bset);
 }
 
