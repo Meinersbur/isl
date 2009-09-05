@@ -582,6 +582,7 @@ int main()
 	struct isl_ctx *ctx;
 
 	srcdir = getenv("srcdir");
+	assert(srcdir);
 
 	ctx = isl_ctx_alloc();
 	test_read(ctx);
