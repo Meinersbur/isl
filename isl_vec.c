@@ -1,3 +1,4 @@
+#include "isl_seq.h"
 #include "isl_vec.h"
 
 struct isl_vec *isl_vec_alloc(struct isl_ctx *ctx, unsigned size)
