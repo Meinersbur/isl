@@ -1,4 +1,5 @@
 #include <isl_constraint.h>
+#include "isl_seq.h"
 #include "isl_map_private.h"
 
 static unsigned n(struct isl_constraint *c, enum isl_dim_type type)
