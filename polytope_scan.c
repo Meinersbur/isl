@@ -1,6 +1,7 @@
 #include <assert.h>
 #include "isl_basis_reduction.h"
 #include "isl_equalities.h"
+#include "isl_seq.h"
 #include "isl_tab.h"
 #include "isl_vec.h"
 
