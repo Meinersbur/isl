@@ -4412,7 +4412,8 @@ struct isl_basic_map *isl_map_copy_basic_map(struct isl_map *map)
 
 struct isl_basic_set *isl_set_copy_basic_set(struct isl_set *set)
 {
-	(struct isl_basic_set *)isl_map_copy_basic_map((struct isl_map *)set);
+	return (struct isl_basic_set *)
+		isl_map_copy_basic_map((struct isl_map *)set);
 }
 
 struct isl_map *isl_map_drop_basic_map(struct isl_map *map,
