@@ -1,6 +1,7 @@
 #include "isl_equalities.h"
 #include "isl_map.h"
 #include "isl_map_private.h"
+#include "isl_seq.h"
 #include "isl_tab.h"
 
 static void swap_equality(struct isl_basic_map *bmap, int a, int b)
