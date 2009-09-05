@@ -1262,21 +1262,21 @@ error:
 /* Pivot a non-negative variable down until it reaches the value zero
  * and then pivot the variable into a column position.
  */
-int to_col(struct isl_tab *tab, struct isl_tab_var *var)
+static int to_col(struct isl_tab *tab, struct isl_tab_var *var)
 {
 	int i;
 	int row, col;
 	unsigned off = 2 + tab->M;
 
 	if (!var->is_row)
-		return;
+		return 0;
 
 	while (isl_int_is_pos(tab->mat->row[var->index][1])) {
 		find_pivot(tab, var, NULL, -1, &row, &col);
 		isl_assert(tab->mat->ctx, row != -1, return -1);
 		isl_tab_pivot(tab, row, col);
 		if (!var->is_row)
-			return;
+			return 0;
 	}
 
 	for (i = tab->n_dead; i < tab->n_col; ++i)
