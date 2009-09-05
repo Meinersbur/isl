@@ -1317,7 +1317,7 @@ static void compute_elimination_index(struct isl_basic_map *bmap, int *elim)
 
 static void set_compute_elimination_index(struct isl_basic_set *bset, int *elim)
 {
-	return compute_elimination_index((struct isl_basic_map *)bset, elim);
+	compute_elimination_index((struct isl_basic_map *)bset, elim);
 }
 
 static int reduced_using_equalities(isl_int *dst, isl_int *src,
