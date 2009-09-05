@@ -1,4 +1,5 @@
 #include "isl_map_private.h"
+#include "isl_seq.h"
 #include "isl_tab.h"
 
 #define STATUS_ERROR		-1
