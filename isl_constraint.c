@@ -120,7 +120,7 @@ struct isl_constraint *isl_constraint_copy(struct isl_constraint *constraint)
 	return constraint;
 }
 
-struct isl_constraint *isl_constraint_free(struct isl_constraint *c)
+void isl_constraint_free(struct isl_constraint *c)
 {
 	if (!c)
 		return;

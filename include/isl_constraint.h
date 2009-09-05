@@ -23,7 +23,7 @@ struct isl_constraint *isl_basic_set_constraint(struct isl_basic_set *bset,
 
 struct isl_constraint *isl_constraint_cow(struct isl_constraint *c);
 struct isl_constraint *isl_constraint_copy(struct isl_constraint *c);
-struct isl_constraint *isl_constraint_free(struct isl_constraint *c);
+void isl_constraint_free(struct isl_constraint *c);
 
 struct isl_constraint *isl_basic_set_first_constraint(
 	struct isl_basic_set *bset);
