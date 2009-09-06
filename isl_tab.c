@@ -1325,7 +1325,6 @@ error:
 struct isl_tab *isl_tab_add_valid_eq(struct isl_tab *tab, isl_int *eq)
 {
 	struct isl_tab_var *var;
-	int i;
 	int r;
 
 	if (!tab)
@@ -1951,9 +1950,6 @@ enum isl_lp_result isl_tab_min(struct isl_tab *tab,
 
 int isl_tab_is_redundant(struct isl_tab *tab, int con)
 {
-	int row;
-	unsigned n_col;
-
 	if (!tab)
 		return -1;
 	if (tab->con[con].is_zero)
