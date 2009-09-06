@@ -681,8 +681,6 @@ error:
  */
 struct isl_basic_map *isl_basic_map_affine_hull(struct isl_basic_map *bmap)
 {
-	struct isl_basic_set *hull = NULL;
-
 	bmap = isl_basic_map_detect_equalities(bmap);
 	bmap = isl_basic_map_cow(bmap);
 	isl_basic_map_free_inequality(bmap, bmap->n_ineq);
