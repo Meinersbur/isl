@@ -470,7 +470,6 @@ void test_gist_case(struct isl_ctx *ctx, const char *name)
 	FILE *input;
 	int n;
 	struct isl_basic_set *bset1, *bset2;
-	struct isl_set *set;
 
 	n = snprintf(filename, sizeof(filename),
 			"%s/test_inputs/%s.polylib", srcdir, name);
