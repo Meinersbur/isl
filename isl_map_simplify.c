@@ -342,7 +342,7 @@ struct isl_basic_map *isl_basic_map_normalize_constraints(
 struct isl_basic_set *isl_basic_set_normalize_constraints(
 	struct isl_basic_set *bset)
 {
-	(struct isl_basic_set *)isl_basic_map_normalize_constraints(
+	return (struct isl_basic_set *)isl_basic_map_normalize_constraints(
 		(struct isl_basic_map *)bset);
 }
 
