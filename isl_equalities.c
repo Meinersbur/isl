@@ -127,9 +127,6 @@ static struct isl_mat *parameter_compression_1(
 	isl_mat_col_mul(U, 0, d->block.data[0], 0);
 	U = isl_mat_lin_to_aff(U);
 	return U;
-error:
-	isl_mat_free(U);
-	return NULL;
 }
 
 /* Compute a common lattice of solutions to the linear modulo
