@@ -95,7 +95,6 @@ static void isl_dim_map_dump(struct isl_dim_map *dim_map)
 unsigned isl_basic_map_dim(const struct isl_basic_map *bmap,
 				enum isl_dim_type type)
 {
-	struct isl_dim *dim = bmap->dim;
 	switch (type) {
 	case isl_dim_param:
 	case isl_dim_in:
@@ -1208,7 +1207,6 @@ struct isl_map *isl_map_remove(struct isl_map *map,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
 	int i;
-	unsigned nparam;
 
 	if (n == 0)
 		return map;
@@ -2989,7 +2987,6 @@ struct isl_basic_set *isl_basic_set_lower_bound_dim(struct isl_basic_set *bset,
 	unsigned dim, isl_int value)
 {
 	int j;
-	unsigned nparam;
 
 	bset = isl_basic_set_cow(bset);
 	bset = isl_basic_set_extend_constraints(bset, 0, 1);
@@ -3030,7 +3027,6 @@ error:
 struct isl_map *isl_map_reverse(struct isl_map *map)
 {
 	int i;
-	unsigned t;
 
 	map = isl_map_cow(map);
 	if (!map)
@@ -3618,9 +3614,6 @@ struct isl_map *isl_map_apply_range(
 	struct isl_dim *dim_result;
 	struct isl_map *result;
 	int i, j;
-	unsigned nparam;
-	unsigned n_in;
-	unsigned n_out;
 
 	if (!map1 || !map2)
 		goto error;
@@ -3903,7 +3896,6 @@ int isl_set_is_empty(struct isl_set *set)
 
 int isl_map_is_subset(struct isl_map *map1, struct isl_map *map2)
 {
-	int i;
 	int is_subset = 0;
 	struct isl_map *diff;
 
