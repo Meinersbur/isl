@@ -183,6 +183,8 @@ struct isl_set *isl_set_fix_dim_si(struct isl_set *set,
 		unsigned dim, int value);
 struct isl_set *isl_set_lower_bound_dim(struct isl_set *set,
 		unsigned dim, isl_int value);
+struct isl_basic_set *isl_basic_set_project_out(struct isl_basic_set *bset,
+		enum isl_dim_type type, unsigned first, unsigned n);
 struct isl_basic_set *isl_basic_set_remove_dims(struct isl_basic_set *bset,
 		unsigned first, unsigned n);
 struct isl_basic_set *isl_basic_set_remove_divs(struct isl_basic_set *bset);

@@ -1832,8 +1832,8 @@ struct isl_basic_map *isl_basic_map_reverse(struct isl_basic_map *bmap)
 
 /* Turn final n dimensions into existentially quantified variables.
  */
-struct isl_basic_set *isl_basic_set_project_out(
-		struct isl_basic_set *bset, unsigned n, unsigned flags)
+struct isl_basic_set *isl_basic_set_project_out(struct isl_basic_set *bset,
+		enum isl_dim_type type, unsigned first, unsigned n)
 {
 	int i;
 	size_t row_size;
@@ -1843,7 +1843,8 @@ struct isl_basic_set *isl_basic_set_project_out(
 	if (!bset)
 		return NULL;
 
-	isl_assert(bset->ctx, n <= isl_basic_set_n_dim(bset), goto error);
+	isl_assert(bset->ctx, type == isl_dim_set, goto error);
+	isl_assert(bset->ctx, first + n == isl_basic_set_n_dim(bset), goto error);
 
 	if (n == 0)
 		return bset;
@@ -2552,12 +2553,14 @@ struct isl_set *isl_set_to_underlying_set(struct isl_set *set)
 struct isl_basic_set *isl_basic_map_domain(struct isl_basic_map *bmap)
 {
 	struct isl_basic_set *domain;
+	unsigned n_in;
 	unsigned n_out;
 	if (!bmap)
 		return NULL;
+	n_in = isl_basic_map_n_in(bmap);
 	n_out = isl_basic_map_n_out(bmap);
 	domain = isl_basic_set_from_basic_map(bmap);
-	return isl_basic_set_project_out(domain, n_out, 0);
+	return isl_basic_set_project_out(domain, isl_dim_set, n_in, n_out);
 }
 
 struct isl_basic_set *isl_basic_map_range(struct isl_basic_map *bmap)
@@ -3673,7 +3676,7 @@ struct isl_basic_set *isl_basic_map_deltas(struct isl_basic_map *bmap)
 		isl_int_set_si(bset->eq[j][1+nparam+dim+i], 1);
 		isl_int_set_si(bset->eq[j][1+nparam+2*dim+i], -1);
 	}
-	return isl_basic_set_project_out(bset, 2*dim, 0);
+	return isl_basic_set_project_out(bset, isl_dim_set, dim, 2*dim);
 error:
 	isl_basic_map_free(bmap);
 	return NULL;
