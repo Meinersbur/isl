@@ -1953,7 +1953,7 @@ struct isl_basic_set *isl_basic_set_apply(
 	if (!bset || !bmap)
 		goto error;
 
-	isl_assert(set->ctx, isl_basic_map_compatible_domain(bmap, bset),
+	isl_assert(bset->ctx, isl_basic_map_compatible_domain(bmap, bset),
 		    goto error);
 
 	return (struct isl_basic_set *)
@@ -1970,9 +1970,9 @@ struct isl_basic_map *isl_basic_map_apply_domain(
 	if (!bmap1 || !bmap2)
 		goto error;
 
-	isl_assert(ctx,
+	isl_assert(bmap1->ctx,
 	    isl_basic_map_n_in(bmap1) == isl_basic_map_n_in(bmap2), goto error);
-	isl_assert(ctx,
+	isl_assert(bmap1->ctx,
 	    isl_basic_map_n_param(bmap1) == isl_basic_map_n_param(bmap2),
 	    goto error);
 
@@ -2960,7 +2960,7 @@ struct isl_map *isl_map_fix_si(struct isl_map *map,
 	if (!map)
 		return NULL;
 
-	isl_assert(ctx, pos < isl_map_dim(map, type), goto error);
+	isl_assert(map->ctx, pos < isl_map_dim(map, type), goto error);
 	for (i = 0; i < map->n; ++i) {
 		map->p[i] = isl_basic_map_fix_si(map->p[i], type, pos, value);
 		if (!map->p[i])
@@ -4056,7 +4056,7 @@ struct isl_map *isl_basic_map_union(
 	if (!bmap1 || !bmap2)
 		return NULL;
 
-	isl_assert(map1->ctx, isl_dim_equal(bmap1->dim, bmap2->dim), goto error);
+	isl_assert(bmap1->ctx, isl_dim_equal(bmap1->dim, bmap2->dim), goto error);
 
 	map = isl_map_alloc_dim(isl_dim_copy(bmap1->dim), 2, 0);
 	if (!map)
@@ -5013,7 +5013,7 @@ struct isl_basic_map *isl_basic_map_product(
 	if (!bmap1 || !bmap2)
 		goto error;
 
-	isl_assert(map1->ctx, isl_dim_match(bmap1->dim, isl_dim_param,
+	isl_assert(bmap1->ctx, isl_dim_match(bmap1->dim, isl_dim_param,
 				     bmap2->dim, isl_dim_param), goto error);
 	dim_result = isl_dim_product(isl_dim_copy(bmap1->dim),
 						   isl_dim_copy(bmap2->dim));

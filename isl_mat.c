@@ -218,7 +218,7 @@ struct isl_vec *isl_mat_vec_product(struct isl_mat *mat, struct isl_vec *vec)
 	if (!mat || !vec)
 		goto error;
 
-	isl_assert(ctx, mat->n_col == vec->size, goto error);
+	isl_assert(mat->ctx, mat->n_col == vec->size, goto error);
 
 	prod = isl_vec_alloc(mat->ctx, mat->n_row);
 	if (!prod)
@@ -244,7 +244,7 @@ struct isl_vec *isl_vec_mat_product(struct isl_vec *vec, struct isl_mat *mat)
 	if (!mat || !vec)
 		goto error;
 
-	isl_assert(ctx, mat->n_row == vec->size, goto error);
+	isl_assert(mat->ctx, mat->n_row == vec->size, goto error);
 
 	prod = isl_vec_alloc(mat->ctx, mat->n_col);
 	if (!prod)
@@ -273,14 +273,14 @@ struct isl_mat *isl_mat_aff_direct_sum(struct isl_mat *left,
 	if (!left || !right)
 		goto error;
 
-	isl_assert(ctx, left->n_row == right->n_row, goto error);
-	isl_assert(ctx, left->n_row >= 1, goto error);
-	isl_assert(ctx, left->n_col >= 1, goto error);
-	isl_assert(ctx, right->n_col >= 1, goto error);
-	isl_assert(ctx,
+	isl_assert(left->ctx, left->n_row == right->n_row, goto error);
+	isl_assert(left->ctx, left->n_row >= 1, goto error);
+	isl_assert(left->ctx, left->n_col >= 1, goto error);
+	isl_assert(left->ctx, right->n_col >= 1, goto error);
+	isl_assert(left->ctx,
 	    isl_seq_first_non_zero(left->row[0]+1, left->n_col-1) == -1,
 	    goto error);
-	isl_assert(ctx,
+	isl_assert(left->ctx,
 	    isl_seq_first_non_zero(right->row[0]+1, right->n_col-1) == -1,
 	    goto error);
 
@@ -578,7 +578,7 @@ struct isl_mat *isl_mat_inverse_product(struct isl_mat *left,
 		if (pivot < 0) {
 			isl_int_clear(a);
 			isl_int_clear(b);
-			isl_assert(ctx, pivot >= 0, goto error);
+			isl_assert(left->ctx, pivot >= 0, goto error);
 		}
 		pivot += row;
 		if (pivot != row)
@@ -619,7 +619,7 @@ struct isl_mat *isl_mat_inverse_product(struct isl_mat *left,
 		isl_int_lcm(a, a, left->row[row][row]);
 	if (isl_int_is_zero(a)){
 		isl_int_clear(a);
-		isl_assert(ctx, 0, goto error);
+		isl_assert(left->ctx, 0, goto error);
 	}
 	for (row = 0; row < left->n_row; ++row) {
 		isl_int_divexact(left->row[row][row], a, left->row[row][row]);
@@ -773,8 +773,8 @@ struct isl_mat *isl_mat_swap_cols(struct isl_mat *mat, unsigned i, unsigned j)
 	mat = isl_mat_cow(mat);
 	if (!mat)
 		return NULL;
-	isl_assert(ctx, i < mat->n_col, goto error);
-	isl_assert(ctx, j < mat->n_col, goto error);
+	isl_assert(mat->ctx, i < mat->n_col, goto error);
+	isl_assert(mat->ctx, j < mat->n_col, goto error);
 
 	for (r = 0; r < mat->n_row; ++r)
 		isl_int_swap(mat->row[r][i], mat->row[r][j]);
@@ -806,7 +806,7 @@ struct isl_mat *isl_mat_product(struct isl_mat *left, struct isl_mat *right)
 
 	if (!left || !right)
 		goto error;
-	isl_assert(ctx, left->n_col == right->n_row, goto error);
+	isl_assert(left->ctx, left->n_col == right->n_row, goto error);
 	prod = isl_mat_alloc(left->ctx, left->n_row, right->n_col);
 	if (!prod)
 		goto error;
@@ -1051,14 +1051,17 @@ struct isl_mat *isl_mat_unimodular_complete(struct isl_mat *M, int row)
 	int r;
 	struct isl_mat *H = NULL, *Q = NULL;
 
-	isl_assert(ctx, M->n_row == M->n_col, goto error);
+	if (!M)
+		return NULL;
+
+	isl_assert(M->ctx, M->n_row == M->n_col, goto error);
 	M->n_row = row;
 	H = isl_mat_left_hermite(isl_mat_copy(M), 0, NULL, &Q);
 	M->n_row = M->n_col;
 	if (!H)
 		goto error;
 	for (r = 0; r < row; ++r)
-		isl_assert(ctx, isl_int_is_one(H->row[r][r]), goto error);
+		isl_assert(M->ctx, isl_int_is_one(H->row[r][r]), goto error);
 	for (r = row; r < M->n_row; ++r)
 		isl_seq_cpy(M->row[r], Q->row[r], M->n_col);
 	isl_mat_free(H);

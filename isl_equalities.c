@@ -183,7 +183,7 @@ static struct isl_mat *parameter_compression_multi(
 	T = isl_mat_lin_to_aff(T);
 	isl_int_set(T->row[0][0], D);
 	T = isl_mat_right_inverse(T);
-	isl_assert(ctx, isl_int_is_one(T->row[0][0]), goto error);
+	isl_assert(T->ctx, isl_int_is_one(T->row[0][0]), goto error);
 	T = isl_mat_transpose(T);
 	isl_mat_free(A);
 	isl_mat_free(U);
@@ -301,7 +301,7 @@ struct isl_mat *isl_mat_parameter_compression(
 
 	if (!B || !d)
 		goto error;
-	isl_assert(ctx, B->n_row == d->size, goto error);
+	isl_assert(B->ctx, B->n_row == d->size, goto error);
 	cst = particular_solution(B, d);
 	if (!cst)
 		goto error;
@@ -497,10 +497,10 @@ static struct isl_basic_set *compress_variables(
 		*T2 = NULL;
 	if (!bset)
 		goto error;
-	isl_assert(ctx, isl_basic_set_n_param(bset) == 0, goto error);
-	isl_assert(ctx, bset->n_div == 0, goto error);
+	isl_assert(bset->ctx, isl_basic_set_n_param(bset) == 0, goto error);
+	isl_assert(bset->ctx, bset->n_div == 0, goto error);
 	dim = isl_basic_set_n_dim(bset);
-	isl_assert(ctx, bset->n_eq <= dim, goto error);
+	isl_assert(bset->ctx, bset->n_eq <= dim, goto error);
 	if (bset->n_eq == 0)
 		return bset;
 

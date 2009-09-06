@@ -1214,6 +1214,9 @@ static struct isl_tab *check_samples(struct isl_tab *tab, isl_int *ineq, int eq)
 	isl_int_clear(v);
 
 	return tab;
+error:
+	isl_tab_free(tab);
+	return NULL;
 }
 
 /* Check whether the sample value of the tableau is finite,
@@ -1307,9 +1310,9 @@ static int context_valid_sample_or_feasible(struct isl_sol *sol,
 		return -1;
 
 	tab = sol->context_tab;
-	isl_assert(tab->mat->ctx, tab->bset, goto error);
-	isl_assert(tab->mat->ctx, tab->samples, goto error);
-	isl_assert(tab->mat->ctx, tab->samples->n_col == 1 + tab->n_var, goto error);
+	isl_assert(tab->mat->ctx, tab->bset, return -1);
+	isl_assert(tab->mat->ctx, tab->samples, return -1);
+	isl_assert(tab->mat->ctx, tab->samples->n_col == 1 + tab->n_var, return -1);
 
 	isl_int_init(v);
 	for (i = tab->n_outside; i < tab->n_sample; ++i) {

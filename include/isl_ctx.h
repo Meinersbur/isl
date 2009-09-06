@@ -99,7 +99,13 @@ struct isl_ctx {
 #define isl_realloc_array(ctx,ptr,type,n) \
 				    isl_realloc(ctx,ptr,type,(n)*sizeof(type))
 
-#define isl_assert(ctx,test,code)	assert(test)
+#define isl_assert(ctx,test,code)					\
+	do {								\
+		assert(test);						\
+		if (0 && !ctx) {					\
+			code;						\
+		}							\
+	} while(0)
 
 #define isl_min(a,b)			((a < b) ? (a) : (b))
 

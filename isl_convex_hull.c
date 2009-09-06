@@ -288,8 +288,8 @@ static struct isl_basic_set *isl_basic_set_add_equality(
 	if (ISL_F_ISSET(bset, ISL_BASIC_SET_EMPTY))
 		return bset;
 
-	isl_assert(ctx, isl_basic_set_n_param(bset) == 0, goto error);
-	isl_assert(ctx, bset->n_div == 0, goto error);
+	isl_assert(bset->ctx, isl_basic_set_n_param(bset) == 0, goto error);
+	isl_assert(bset->ctx, bset->n_div == 0, goto error);
 	dim = isl_basic_set_n_dim(bset);
 	bset = isl_basic_set_cow(bset);
 	bset = isl_basic_set_extend(bset, 0, dim, 0, 1, 0);
@@ -523,8 +523,8 @@ static struct isl_mat *initial_facet_constraint(struct isl_set *set,
 	int i;
 	unsigned dim = isl_set_n_dim(set);
 
-	isl_assert(ctx, set->n > 0, goto error);
-	isl_assert(ctx, bounds->n_row == dim, goto error);
+	isl_assert(set->ctx, set->n > 0, goto error);
+	isl_assert(set->ctx, bounds->n_row == dim, goto error);
 
 	while (bounds->n_row > 1) {
 		slice = isl_set_copy(set);
@@ -554,7 +554,7 @@ static struct isl_mat *initial_facet_constraint(struct isl_set *set,
 		while (isl_seq_first_non_zero(bounds->row[bounds->n_row-1],
 					      bounds->n_col) == -1) {
 			bounds->n_row--;
-			isl_assert(ctx, bounds->n_row > 1, goto error);
+			isl_assert(set->ctx, bounds->n_row > 1, goto error);
 		}
 		if (!wrap_facet(set, bounds->row[0],
 					  bounds->row[bounds->n_row-1]))

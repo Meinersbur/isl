@@ -213,7 +213,7 @@ static struct isl_basic_set *affine_hull(
 		}
 	}
 	isl_basic_set_free(bset2);
-	isl_assert(ctx, row == bset1->n_eq, goto error);
+	isl_assert(bset1->ctx, row == bset1->n_eq, goto error);
 	bset1 = isl_basic_set_normalize_constraints(bset1);
 	return bset1;
 error:

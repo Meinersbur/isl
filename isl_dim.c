@@ -45,7 +45,7 @@ static unsigned global_pos(struct isl_dim *dim,
 		isl_assert(ctx, pos < dim->n_out, return isl_dim_total(dim));
 		return pos + dim->nparam + dim->n_in;
 	default:
-		isl_assert(ctx, 0, goto error);
+		isl_assert(ctx, 0, return isl_dim_total(dim));
 	}
 	return isl_dim_total(dim);
 }
