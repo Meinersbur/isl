@@ -100,8 +100,6 @@ void isl_vec_lcm(struct isl_vec *vec, isl_int *lcm)
  */
 struct isl_vec *isl_vec_ceil(struct isl_vec *vec)
 {
-	int i;
-
 	vec = isl_vec_cow(vec);
 	if (!vec)
 		return NULL;
