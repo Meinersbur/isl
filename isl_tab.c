@@ -543,7 +543,7 @@ int isl_tab_mark_redundant(struct isl_tab *tab, int row)
 {
 	struct isl_tab_var *var = isl_tab_var_from_row(tab, row);
 	var->is_redundant = 1;
-	isl_assert(tab->mat->ctx, row >= tab->n_redundant, return);
+	isl_assert(tab->mat->ctx, row >= tab->n_redundant, return -1);
 	if (tab->need_undo || tab->row_var[row] >= 0) {
 		if (tab->row_var[row] >= 0 && !var->is_nonneg) {
 			var->is_nonneg = 1;
