@@ -149,7 +149,6 @@ static struct isl_mat *parameter_compression_multi(
 			struct isl_mat *B, struct isl_vec *d)
 {
 	int i, j, k;
-	int ok;
 	isl_int D;
 	struct isl_mat *A = NULL, *U = NULL;
 	struct isl_mat *T;
