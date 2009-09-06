@@ -882,7 +882,7 @@ static int at_least_zero(struct isl_tab *tab, struct isl_tab_var *var)
 static int sign_of_min(struct isl_tab *tab, struct isl_tab_var *var)
 {
 	int row, col;
-	struct isl_tab_var *pivot_var;
+	struct isl_tab_var *pivot_var = NULL;
 
 	if (min_is_manifestly_unbounded(tab, var))
 		return -1;
@@ -917,7 +917,7 @@ static int sign_of_min(struct isl_tab *tab, struct isl_tab_var *var)
 		if (var->is_redundant)
 			return 0;
 	}
-	if (var->is_nonneg) {
+	if (pivot_var && var->is_nonneg) {
 		/* pivot back to non-negative value */
 		if (!pivot_var->is_redundant && pivot_var->index == row)
 			isl_tab_pivot(tab, row, col);
