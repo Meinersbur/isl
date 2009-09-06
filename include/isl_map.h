@@ -69,7 +69,9 @@ struct isl_basic_map {
 	struct isl_blk block;
 	struct isl_blk block2;
 };
+typedef struct isl_basic_map isl_basic_map;
 struct isl_basic_set;
+typedef struct isl_basic_set isl_basic_set;
 
 /* A "map" is a (disjoint) union of basic maps.
  *
@@ -92,7 +94,9 @@ struct isl_map {
 	size_t size;
 	struct isl_basic_map *p[1];
 };
+typedef struct isl_map isl_map;
 struct isl_set;
+typedef struct isl_set isl_set;
 
 unsigned isl_basic_map_n_in(const struct isl_basic_map *bmap);
 unsigned isl_basic_map_n_out(const struct isl_basic_map *bmap);
@@ -113,11 +117,11 @@ struct isl_dim *isl_map_get_dim(struct isl_map *map);
 struct isl_basic_map *isl_basic_map_alloc(struct isl_ctx *ctx,
 		unsigned nparam, unsigned in, unsigned out, unsigned extra,
 		unsigned n_eq, unsigned n_ineq);
-struct isl_basic_map *isl_basic_map_identity(struct isl_dim *set_dim);
+__isl_give isl_basic_map *isl_basic_map_identity(__isl_take isl_dim *set_dim);
 struct isl_basic_map *isl_basic_map_identity_like(struct isl_basic_map *model);
 struct isl_basic_map *isl_basic_map_finalize(struct isl_basic_map *bmap);
-void isl_basic_map_free(struct isl_basic_map *bmap);
-struct isl_basic_map *isl_basic_map_copy(struct isl_basic_map *bmap);
+void isl_basic_map_free(__isl_take isl_basic_map *bmap);
+__isl_give isl_basic_map *isl_basic_map_copy(__isl_keep isl_basic_map *bmap);
 struct isl_basic_map *isl_basic_map_extend(struct isl_basic_map *base,
 		unsigned nparam, unsigned n_in, unsigned n_out, unsigned extra,
 		unsigned n_eq, unsigned n_ineq);
@@ -127,33 +131,35 @@ struct isl_basic_map *isl_basic_map_equal(
 		struct isl_dim *dim, unsigned n_equal);
 struct isl_basic_map *isl_basic_map_less_at(struct isl_dim *dim, unsigned pos);
 struct isl_basic_map *isl_basic_map_more_at(struct isl_dim *dim, unsigned pos);
-struct isl_basic_map *isl_basic_map_empty(struct isl_dim *dim);
+__isl_give isl_basic_map *isl_basic_map_empty(__isl_take isl_dim *dim);
 struct isl_basic_map *isl_basic_map_empty_like(struct isl_basic_map *model);
 struct isl_basic_map *isl_basic_map_empty_like_map(struct isl_map *model);
-struct isl_basic_map *isl_basic_map_universe(struct isl_dim *dim);
+__isl_give isl_basic_map *isl_basic_map_universe(__isl_take isl_dim *dim);
 struct isl_basic_map *isl_basic_map_convex_hull(struct isl_basic_map *bmap);
 
-struct isl_basic_map *isl_basic_map_intersect_domain(
-		struct isl_basic_map *bmap,
-		struct isl_basic_set *bset);
-struct isl_basic_map *isl_basic_map_intersect_range(
-		struct isl_basic_map *bmap,
-		struct isl_basic_set *bset);
-struct isl_basic_map *isl_basic_map_intersect(
-		struct isl_basic_map *bmap1,
-		struct isl_basic_map *bmap2);
-struct isl_map *isl_basic_map_union(
-		struct isl_basic_map *bmap1,
-		struct isl_basic_map *bmap2);
-struct isl_basic_map *isl_basic_map_apply_domain(
-		struct isl_basic_map *bmap1,
-		struct isl_basic_map *bmap2);
-struct isl_basic_map *isl_basic_map_apply_range(
-		struct isl_basic_map *bmap1,
-		struct isl_basic_map *bmap2);
+__isl_give isl_basic_map *isl_basic_map_intersect_domain(
+		__isl_take isl_basic_map *bmap,
+		__isl_take isl_basic_set *bset);
+__isl_give isl_basic_map *isl_basic_map_intersect_range(
+		__isl_take isl_basic_map *bmap,
+		__isl_take isl_basic_set *bset);
+__isl_give isl_basic_map *isl_basic_map_intersect(
+		__isl_take isl_basic_map *bmap1,
+		__isl_take isl_basic_map *bmap2);
+__isl_give isl_map *isl_basic_map_union(
+		__isl_take isl_basic_map *bmap1,
+		__isl_take isl_basic_map *bmap2);
+__isl_give isl_basic_map *isl_basic_map_apply_domain(
+		__isl_take isl_basic_map *bmap1,
+		__isl_take isl_basic_map *bmap2);
+__isl_give isl_basic_map *isl_basic_map_apply_range(
+		__isl_take isl_basic_map *bmap1,
+		__isl_take isl_basic_map *bmap2);
+__isl_give isl_basic_map *isl_basic_map_affine_hull(
+		__isl_take isl_basic_map *bmap);
 struct isl_basic_map *isl_basic_map_reverse(struct isl_basic_map *bmap);
-struct isl_basic_set *isl_basic_map_domain(struct isl_basic_map *bmap);
-struct isl_basic_set *isl_basic_map_range(struct isl_basic_map *bmap);
+__isl_give isl_basic_set *isl_basic_map_domain(__isl_take isl_basic_map *bmap);
+__isl_give isl_basic_set *isl_basic_map_range(__isl_take isl_basic_map *bmap);
 struct isl_basic_map *isl_basic_map_remove(struct isl_basic_map *bmap,
 	enum isl_dim_type type, unsigned first, unsigned n);
 struct isl_basic_map *isl_basic_map_from_basic_set(struct isl_basic_set *bset,
@@ -164,7 +170,7 @@ struct isl_basic_map *isl_basic_map_detect_equalities(
 						struct isl_basic_map *bmap);
 #define ISL_FORMAT_POLYLIB	1
 #define ISL_FORMAT_OMEGA	2
-struct isl_basic_map *isl_basic_map_read_from_file(struct isl_ctx *ctx,
+__isl_give isl_basic_map *isl_basic_map_read_from_file(isl_ctx *ctx,
 		FILE *input, unsigned nparam, unsigned input_format);
 struct isl_basic_map *isl_basic_map_fix_si(struct isl_basic_map *bmap,
 		enum isl_dim_type type, unsigned pos, int value);
@@ -180,16 +186,17 @@ struct isl_map *isl_map_neg(struct isl_map *map);
 struct isl_map *isl_map_floordiv(struct isl_map *map, isl_int d);
 
 int isl_basic_map_is_equal(
-		struct isl_basic_map *bmap1, struct isl_basic_map *bmap2);
+		__isl_keep isl_basic_map *bmap1,
+		__isl_keep isl_basic_map *bmap2);
 
-struct isl_map *isl_basic_map_partial_lexmax(
-		struct isl_basic_map *bmap, struct isl_basic_set *dom,
-		struct isl_set **empty);
-struct isl_map *isl_basic_map_partial_lexmin(
-		struct isl_basic_map *bmap, struct isl_basic_set *dom,
-		struct isl_set **empty);
+__isl_give isl_map *isl_basic_map_partial_lexmax(
+		__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
+		__isl_give isl_set **empty);
+__isl_give isl_map *isl_basic_map_partial_lexmin(
+		__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
+		__isl_give isl_set **empty);
 
-void isl_basic_map_dump(struct isl_basic_map *bmap, FILE *out, int indent);
+void isl_basic_map_dump(__isl_keep isl_basic_map *bmap, FILE *out, int indent);
 
 struct isl_basic_map *isl_map_copy_basic_map(struct isl_map *map);
 struct isl_map *isl_map_drop_basic_map(struct isl_map *map,
@@ -198,86 +205,92 @@ struct isl_map *isl_map_drop_basic_map(struct isl_map *map,
 int isl_basic_map_fast_is_fixed(struct isl_basic_map *bmap,
 	enum isl_dim_type type, unsigned pos, isl_int *val);
 
-int isl_basic_map_is_universe(struct isl_basic_map *bmap);
-int isl_basic_map_fast_is_empty(struct isl_basic_map *bmap);
-int isl_basic_map_is_empty(struct isl_basic_map *bmap);
-int isl_basic_map_is_subset(struct isl_basic_map *bmap1,
-		struct isl_basic_map *bmap2);
-int isl_basic_map_is_strict_subset(struct isl_basic_map *bmap1,
-		struct isl_basic_map *bmap2);
+int isl_basic_map_is_universe(__isl_keep isl_basic_map *bmap);
+int isl_basic_map_fast_is_empty(__isl_keep isl_basic_map *bmap);
+int isl_basic_map_is_empty(__isl_keep isl_basic_map *bmap);
+int isl_basic_map_is_subset(__isl_keep isl_basic_map *bmap1,
+		__isl_keep isl_basic_map *bmap2);
+int isl_basic_map_is_strict_subset(__isl_keep isl_basic_map *bmap1,
+		__isl_keep isl_basic_map *bmap2);
 
 struct isl_map *isl_map_alloc(struct isl_ctx *ctx,
 		unsigned nparam, unsigned in, unsigned out, int n,
 		unsigned flags);
-struct isl_map *isl_map_universe(struct isl_dim *dim);
-struct isl_map *isl_map_empty(struct isl_dim *dim);
+__isl_give isl_map *isl_map_universe(__isl_take isl_dim *dim);
+__isl_give isl_map *isl_map_empty(__isl_take isl_dim *dim);
 struct isl_map *isl_map_empty_like(struct isl_map *model);
 struct isl_map *isl_map_empty_like_basic_map(struct isl_basic_map *model);
 struct isl_map *isl_map_dup(struct isl_map *map);
 struct isl_map *isl_map_add(struct isl_map *map, struct isl_basic_map *bmap);
-struct isl_map *isl_map_identity(struct isl_dim *set_dim);
+__isl_give isl_map *isl_map_identity(__isl_take isl_dim *set_dim);
 struct isl_map *isl_map_identity_like(struct isl_map *model);
 struct isl_map *isl_map_identity_like_basic_map(struct isl_basic_map *model);
 struct isl_map *isl_map_finalize(struct isl_map *map);
-void isl_map_free(struct isl_map *map);
-struct isl_map *isl_map_copy(struct isl_map *map);
+void isl_map_free(__isl_take isl_map *map);
+__isl_give isl_map *isl_map_copy(__isl_keep isl_map *map);
 struct isl_map *isl_map_extend(struct isl_map *base,
 		unsigned nparam, unsigned n_in, unsigned n_out);
 struct isl_map *isl_map_reverse(struct isl_map *map);
-struct isl_map *isl_map_union(struct isl_map *map1, struct isl_map *map2);
+__isl_give isl_map *isl_map_union(
+		__isl_take isl_map *map1,
+		__isl_take isl_map *map2);
 struct isl_map *isl_map_union_disjoint(
 			struct isl_map *map1, struct isl_map *map2);
-struct isl_map *isl_map_intersect_domain(
-		struct isl_map *map,
-		struct isl_set *set);
-struct isl_map *isl_map_intersect_range(
-		struct isl_map *map,
-		struct isl_set *set);
-struct isl_map *isl_map_apply_domain(
-		struct isl_map *map1,
-		struct isl_map *map2);
-struct isl_map *isl_map_apply_range(
-		struct isl_map *map1,
-		struct isl_map *map2);
+__isl_give isl_map *isl_map_intersect_domain(
+		__isl_take isl_map *map,
+		__isl_take isl_set *set);
+__isl_give isl_map *isl_map_intersect_range(
+		__isl_take isl_map *map,
+		__isl_take isl_set *set);
+__isl_give isl_map *isl_map_apply_domain(
+		__isl_take isl_map *map1,
+		__isl_take isl_map *map2);
+__isl_give isl_map *isl_map_apply_range(
+		__isl_take isl_map *map1,
+		__isl_take isl_map *map2);
 struct isl_map *isl_map_product(struct isl_map *map1, struct isl_map *map2);
-struct isl_map *isl_map_intersect(struct isl_map *map1, struct isl_map *map2);
-struct isl_map *isl_map_subtract(struct isl_map *map1, struct isl_map *map2);
+__isl_give isl_map *isl_map_intersect(__isl_take isl_map *map1,
+				      __isl_take isl_map *map2);
+__isl_give isl_map *isl_map_subtract(
+		__isl_take isl_map *map1,
+		__isl_take isl_map *map2);
 struct isl_map *isl_map_fix_input_si(struct isl_map *map,
 		unsigned input, int value);
 struct isl_map *isl_map_fix_si(struct isl_map *map,
 		enum isl_dim_type type, unsigned pos, int value);
 struct isl_basic_set *isl_basic_map_deltas(struct isl_basic_map *bmap);
 struct isl_set *isl_map_deltas(struct isl_map *map);
-struct isl_set *isl_map_range(struct isl_map *map);
 struct isl_map *isl_map_detect_equalities(struct isl_map *map);
-struct isl_basic_map *isl_map_affine_hull(struct isl_map *map);
+__isl_give isl_basic_map *isl_map_affine_hull(__isl_take isl_map *map);
+__isl_give isl_basic_map *isl_map_convex_hull(__isl_take isl_map *map);
 struct isl_map *isl_map_remove(struct isl_map *map,
 	enum isl_dim_type type, unsigned first, unsigned n);
 struct isl_map *isl_map_remove_inputs(struct isl_map *map,
 	unsigned first, unsigned n);
 
-struct isl_set *isl_map_domain(struct isl_map *bmap);
-struct isl_map *isl_map_from_basic_map(struct isl_basic_map *bmap);
+__isl_give isl_set *isl_map_domain(__isl_take isl_map *bmap);
+__isl_give isl_set *isl_map_range(__isl_take isl_map *map);
+__isl_give isl_map *isl_map_from_basic_map(__isl_take isl_basic_map *bmap);
 struct isl_map *isl_map_from_range(struct isl_set *set);
 struct isl_map *isl_map_from_set(struct isl_set *set, struct isl_dim *dim);
 struct isl_set *isl_set_from_map(struct isl_map *map);
 
-int isl_map_fast_is_empty(struct isl_map *map);
-int isl_map_is_empty(struct isl_map *map);
-int isl_map_is_subset(struct isl_map *map1, struct isl_map *map2);
-int isl_map_is_strict_subset(struct isl_map *map1, struct isl_map *map2);
-int isl_map_is_equal(struct isl_map *map1, struct isl_map *map2);
+int isl_map_fast_is_empty(__isl_keep isl_map *map);
+int isl_map_is_empty(__isl_keep isl_map *map);
+int isl_map_is_subset(__isl_keep isl_map *map1, __isl_keep isl_map *map2);
+int isl_map_is_strict_subset(__isl_keep isl_map *map1, __isl_keep isl_map *map2);
+int isl_map_is_equal(__isl_keep isl_map *map1, __isl_keep isl_map *map2);
 
-void isl_map_dump(struct isl_map *map, FILE *out, int indent);
+void isl_map_dump(__isl_keep isl_map *map, FILE *out, int indent);
 
 int isl_map_fast_input_is_fixed(struct isl_map *map,
 		unsigned in, isl_int *val);
 int isl_map_fast_is_fixed(struct isl_map *map,
 	enum isl_dim_type type, unsigned pos, isl_int *val);
 
-struct isl_map *isl_map_coalesce(struct isl_map *map);
+__isl_give isl_map *isl_map_coalesce(__isl_take isl_map *map);
 
-int isl_map_fast_is_equal(struct isl_map *map1, struct isl_map *map2);
+int isl_map_fast_is_equal(__isl_keep isl_map *map1, __isl_keep isl_map *map2);
 
 #if defined(__cplusplus)
 }

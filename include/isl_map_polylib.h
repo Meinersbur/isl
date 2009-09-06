@@ -9,11 +9,12 @@
 extern "C" {
 #endif
 
-struct isl_basic_map *isl_basic_map_new_from_polylib(Polyhedron *P,
-			struct isl_dim *dim);
-struct isl_map *isl_map_new_from_polylib(Polyhedron *D, struct isl_dim *dim);
-Polyhedron *isl_basic_map_to_polylib(struct isl_basic_map *bmap);
-Polyhedron *isl_map_to_polylib(struct isl_map *map);
+__isl_give isl_basic_map *isl_basic_map_new_from_polylib(Polyhedron *P,
+			__isl_take isl_dim *dim);
+__isl_give isl_map *isl_map_new_from_polylib(Polyhedron *D,
+			__isl_take isl_dim *dim);
+Polyhedron *isl_basic_map_to_polylib(__isl_keep isl_basic_map *bmap);
+Polyhedron *isl_map_to_polylib(__isl_keep isl_map *map);
 
 #if defined(__cplusplus)
 }

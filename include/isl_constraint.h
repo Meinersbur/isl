@@ -15,9 +15,10 @@ struct isl_constraint {
 	struct isl_basic_map	*bmap;
 	isl_int			**line;
 };
+typedef struct isl_constraint isl_constraint;
 
-struct isl_constraint *isl_equality_alloc(struct isl_dim *dim);
-struct isl_constraint *isl_inequality_alloc(struct isl_dim *dim);
+__isl_give isl_constraint *isl_equality_alloc(__isl_take isl_dim *dim);
+__isl_give isl_constraint *isl_inequality_alloc(__isl_take isl_dim *dim);
 struct isl_constraint *isl_basic_set_constraint(struct isl_basic_set *bset,
 	isl_int **line);
 
@@ -31,10 +32,10 @@ struct isl_constraint *isl_constraint_next(struct isl_constraint *c);
 int isl_constraint_is_equal(struct isl_constraint *constraint1,
 			    struct isl_constraint *constraint2);
 
-struct isl_basic_map *isl_basic_map_add_constraint(
-	struct isl_basic_map *bmap, struct isl_constraint *constraint);
-struct isl_basic_set *isl_basic_set_add_constraint(
-	struct isl_basic_set *bset, struct isl_constraint *constraint);
+__isl_give isl_basic_map *isl_basic_map_add_constraint(
+	__isl_take isl_basic_map *bmap, __isl_take isl_constraint *constraint);
+__isl_give isl_basic_set *isl_basic_set_add_constraint(
+	__isl_take isl_basic_set *bset, __isl_take isl_constraint *constraint);
 
 int isl_basic_set_has_defining_equality(
 	struct isl_basic_set *bset, enum isl_dim_type type, int pos,
@@ -50,8 +51,8 @@ int isl_constraint_dim(struct isl_constraint *constraint,
 void isl_constraint_get_constant(struct isl_constraint *constraint, isl_int *v);
 void isl_constraint_get_coefficient(struct isl_constraint *constraint,
 	enum isl_dim_type type, int pos, isl_int *v);
-void isl_constraint_set_constant(struct isl_constraint *constraint, isl_int v);
-void isl_constraint_set_coefficient(struct isl_constraint *constraint,
+void isl_constraint_set_constant(__isl_keep isl_constraint *constraint, isl_int v);
+void isl_constraint_set_coefficient(__isl_keep isl_constraint *constraint,
 	enum isl_dim_type type, int pos, isl_int v);
 
 struct isl_div *isl_constraint_div(struct isl_constraint *constraint, int pos);

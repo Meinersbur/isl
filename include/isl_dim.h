@@ -20,6 +20,7 @@ struct isl_dim {
 	unsigned n_name;
 	struct isl_name **names;
 };
+typedef struct isl_dim isl_dim;
 
 enum isl_dim_type {
 	isl_dim_param,
@@ -30,13 +31,13 @@ enum isl_dim_type {
 	isl_dim_all,
 };
 
-struct isl_dim *isl_dim_alloc(struct isl_ctx *ctx,
+__isl_give isl_dim *isl_dim_alloc(isl_ctx *ctx,
 			unsigned nparam, unsigned n_in, unsigned n_out);
-struct isl_dim *isl_dim_set_alloc(struct isl_ctx *ctx,
+__isl_give isl_dim *isl_dim_set_alloc(isl_ctx *ctx,
 			unsigned nparam, unsigned dim);
-struct isl_dim *isl_dim_copy(struct isl_dim *dim);
+__isl_give isl_dim *isl_dim_copy(__isl_keep isl_dim *dim);
 struct isl_dim *isl_dim_cow(struct isl_dim *dim);
-void isl_dim_free(struct isl_dim *dim);
+void isl_dim_free(__isl_take isl_dim *dim);
 
 struct isl_dim *isl_dim_set_name(struct isl_dim *dim,
 				 enum isl_dim_type type, unsigned pos,
@@ -66,7 +67,7 @@ int isl_dim_equal(struct isl_dim *dim1, struct isl_dim *dim2);
 int isl_dim_match(struct isl_dim *dim1, enum isl_dim_type dim1_type,
 		struct isl_dim *dim2, enum isl_dim_type dim2_type);
 int isl_dim_compatible(struct isl_dim *dim1, struct isl_dim *dim2);
-unsigned isl_dim_size(struct isl_dim *dim, enum isl_dim_type type);
+unsigned isl_dim_size(__isl_keep isl_dim *dim, enum isl_dim_type type);
 unsigned isl_dim_total(struct isl_dim *dim);
 
 #if defined(__cplusplus)

@@ -9,6 +9,10 @@
 #include <isl_hash.h>
 #include <isl_libs.h>
 
+#define __isl_give
+#define __isl_take
+#define __isl_keep
+
 #if defined(__cplusplus)
 extern "C" {
 #endif
@@ -75,6 +79,7 @@ struct isl_ctx {
 	unsigned		gbr;
 	unsigned		gbr_only_first;
 };
+typedef struct isl_ctx isl_ctx;
 
 /* Some helper macros */
 
@@ -111,10 +116,10 @@ struct isl_ctx {
 
 /* struct isl_ctx functions */
 
-struct isl_ctx *isl_ctx_alloc();
+isl_ctx *isl_ctx_alloc();
 void isl_ctx_ref(struct isl_ctx *ctx);
 void isl_ctx_deref(struct isl_ctx *ctx);
-void isl_ctx_free(struct isl_ctx *ctx);
+void isl_ctx_free(isl_ctx *ctx);
 
 #if defined(__cplusplus)
 }
