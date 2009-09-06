@@ -44,10 +44,12 @@ int main(int argc, char **argv)
 	int urs_parms = 0;
 	int urs_unknowns = 0;
 	int max = 0;
+	int n;
 
 	context = isl_basic_set_read_from_file(ctx, stdin, 0, ISL_FORMAT_POLYLIB);
 	assert(context);
-	fscanf(stdin, "%d", &neg_one);
+	n = fscanf(stdin, "%d", &neg_one);
+	assert(n == 1);
 	assert(neg_one == -1);
 	bset = isl_basic_set_read_from_file(ctx, stdin,
 		isl_basic_set_dim(context, isl_dim_set), ISL_FORMAT_POLYLIB);
