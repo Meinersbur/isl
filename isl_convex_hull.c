@@ -282,7 +282,6 @@ static struct isl_basic_set *isl_basic_set_add_equality(
 	struct isl_basic_set *bset, isl_int *c)
 {
 	int i;
-	unsigned total;
 	unsigned dim;
 
 	if (ISL_F_ISSET(bset, ISL_BASIC_SET_EMPTY))
@@ -667,7 +666,6 @@ static struct isl_basic_set *extend(struct isl_basic_set *hull,
 	int k;
 	struct isl_basic_set *facet = NULL;
 	struct isl_basic_set *hull_facet = NULL;
-	unsigned total;
 	unsigned dim;
 
 	isl_assert(set->ctx, set->n > 0, goto error);
@@ -1786,7 +1784,6 @@ static struct isl_basic_set *uset_convex_hull_wrap(struct isl_set *set)
  */
 static struct isl_basic_set *uset_convex_hull(struct isl_set *set)
 {
-	int i;
 	struct isl_basic_set *convex_hull = NULL;
 	struct isl_basic_set *lin;
 
@@ -1835,7 +1832,6 @@ error:
  */
 static struct isl_basic_set *uset_convex_hull_wrap_bounded(struct isl_set *set)
 {
-	int i;
 	struct isl_basic_set *convex_hull = NULL;
 
 	if (isl_set_n_dim(set) == 0) {
@@ -2239,7 +2235,7 @@ static struct isl_basic_set *uset_simple_hull(struct isl_set *set)
 	struct sh_data *data = NULL;
 	struct isl_basic_set *hull = NULL;
 	unsigned n_ineq;
-	int i, j;
+	int i;
 
 	if (!set)
 		return NULL;
