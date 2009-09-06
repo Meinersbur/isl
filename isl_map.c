@@ -5106,7 +5106,7 @@ struct isl_set *isl_set_product(struct isl_set *set1, struct isl_set *set2)
 uint32_t isl_basic_set_get_hash(struct isl_basic_set *bset)
 {
 	int i;
-	uint32_t hash;
+	uint32_t hash = isl_hash_init();
 	unsigned total;
 
 	if (!bset)
