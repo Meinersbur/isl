@@ -942,7 +942,7 @@ static int ok_to_set_div_from_bound(struct isl_basic_map *bmap,
 static struct isl_basic_map *check_for_div_constraints(
 	struct isl_basic_map *bmap, int k, int l, isl_int sum, int *progress)
 {
-	int i, j;
+	int i;
 	unsigned total = 1 + isl_dim_total(bmap->dim);
 
 	for (i = 0; i < bmap->n_div; ++i) {
@@ -1188,7 +1188,6 @@ static struct isl_basic_map *remove_dependent_vars(struct isl_basic_map *bmap,
 									int pos)
 {
 	int i;
-	unsigned dim = isl_dim_total(bmap->dim);
 
 	for (i = 0; i < bmap->n_div; ++i) {
 		if (isl_int_is_zero(bmap->div[i][0]))
@@ -1323,7 +1322,7 @@ static void set_compute_elimination_index(struct isl_basic_set *bset, int *elim)
 static int reduced_using_equalities(isl_int *dst, isl_int *src,
 	struct isl_basic_map *bmap, int *elim)
 {
-	int d, i;
+	int d;
 	int copied = 0;
 	unsigned total;
 
@@ -1770,7 +1769,7 @@ int isl_basic_map_fast_is_disjoint(struct isl_basic_map *bmap1,
 	struct isl_vec *v = NULL;
 	int *elim = NULL;
 	unsigned total;
-	int d, i;
+	int i;
 
 	if (!bmap1 || !bmap2)
 		return -1;
