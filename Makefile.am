@@ -93,8 +93,8 @@ EXTRA_libisl_la_SOURCES = \
 	isl_sample_piplib.h \
 	isl_piplib.c
 libisl_la_LIBADD = $(PIPLIB_LA) @PIPLIB_LIBS@ @POLYLIB_LIBS@ -lgmp
-libisl_la_LDFLAGS = -release @VERSION@ @PIPLIB_LDFLAGS@ @POLYLIB_LDFLAGS@ \
-	@GMP_LDFLAGS@
+libisl_la_LDFLAGS = -version-info @versioninfo@ \
+	@PIPLIB_LDFLAGS@ @POLYLIB_LDFLAGS@ @GMP_LDFLAGS@
 libisl_la_CPPFLAGS = -I$(srcdir)/include -Iinclude/ \
 	@PIPLIB_CPPFLAGS@ @POLYLIB_CPPFLAGS@ \
 	@GMP_CPPFLAGS@
