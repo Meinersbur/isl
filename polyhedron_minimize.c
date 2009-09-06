@@ -66,8 +66,10 @@ int main(int argc, char **argv)
 	else
 		obj = vec_ror(obj);
 	res = isl_basic_set_solve_ilp(bset, 0, obj->el, &opt, &sol);
-	assert(res != isl_lp_error);
 	switch (res) {
+	case isl_lp_error:
+		fprintf(stderr, "error\n");
+		return -1;
 	case isl_lp_empty:
 		fprintf(stdout, "empty\n");
 		break;
