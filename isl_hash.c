@@ -100,7 +100,7 @@ void isl_hash_table_remove(struct isl_ctx *ctx,
 				struct isl_hash_table *table,
 				struct isl_hash_table_entry *entry)
 {
-	int h, h2, last_h;
+	int h, h2;
 	size_t size;
 
 	if (!table || !entry)
