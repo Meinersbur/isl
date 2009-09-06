@@ -501,7 +501,6 @@ static struct isl_vec *ineq_for_div(struct isl_basic_set *bset, unsigned div)
  */
 static struct isl_tab *set_row_cst_to_div(struct isl_tab *tab, int row, int div)
 {
-	int i;
 	int col;
 	unsigned off = 2 + tab->M;
 
@@ -890,7 +889,6 @@ static int is_constant(struct isl_tab *tab, int row)
 static struct isl_tab *add_lexmin_eq(struct isl_tab *tab, isl_int *eq)
 {
 	int r1, r2;
-	int sgn;
 	int row;
 
 	if (!tab)
@@ -959,7 +957,6 @@ error:
 static struct isl_tab *add_lexmin_ineq(struct isl_tab *tab, isl_int *ineq)
 {
 	int r;
-	int sgn;
 
 	if (!tab)
 		return NULL;
@@ -1342,7 +1339,6 @@ static int context_valid_sample_or_feasible(struct isl_sol *sol,
  */
 static struct isl_tab *add_div_constraints(struct isl_tab *tab, unsigned div)
 {
-	int i, j;
 	unsigned total;
 	unsigned div_pos;
 	struct isl_vec *ineq;
@@ -1894,8 +1890,6 @@ static int row_sign(struct isl_tab *tab, struct isl_sol *sol, int row)
 	struct isl_tab_undo *snap = NULL;
 	struct isl_vec *ineq = NULL;
 	int res = isl_tab_row_unknown;
-	int r;
-	int context_row;
 	int critical;
 	int strict;
 	int sgn;
