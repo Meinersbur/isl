@@ -5,6 +5,8 @@ AM_INIT_AUTOMAKE(isl, 0.00)
 
 AC_PROG_CC
 
+AX_CC_MAXOPT
+
 AC_PROG_LIBTOOL
 
 AX_CREATE_STDINT_H(include/isl_stdint.h)
