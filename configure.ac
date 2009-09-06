@@ -9,6 +9,12 @@ AX_CC_MAXOPT
 
 AC_PROG_LIBTOOL
 
+AC_CHECK_PROG(PERL, perl, perl, [])
+AC_CHECK_PROG(PDFLATEX, pdflatex, pdflatex, [])
+AC_CHECK_PROG(POD2HTML, pod2html, pod2html, [])
+
+AM_CONDITIONAL(GENERATE_DOC, test -n "$PERL" -a -n "$PDFLATEX" -a -n "$POD2HTML")
+
 AX_CREATE_STDINT_H(include/isl_stdint.h)
 
 AX_SUBMODULE(gmp,system,system)
@@ -130,6 +136,7 @@ AM_CONDITIONAL(BUNDLED_PIPLIB, test $with_piplib = bundled)
 AC_CONFIG_HEADERS(config.h)
 AC_CONFIG_HEADERS(include/isl_libs.h)
 AC_CONFIG_FILES(Makefile)
+AC_CONFIG_FILES(doc/Makefile)
 if test $with_piplib = bundled; then
 	AC_CONFIG_SUBDIRS(piplib)
 fi

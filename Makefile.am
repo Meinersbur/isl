@@ -2,8 +2,8 @@ if BUNDLED_PIPLIB
 MAYBE_PIPLIB = piplib
 endif
 
-SUBDIRS = $(MAYBE_PIPLIB) .
-DIST_SUBDIRS = $(MAYBE_PIPLIB)
+SUBDIRS = $(MAYBE_PIPLIB) . doc
+DIST_SUBDIRS = $(MAYBE_PIPLIB) doc
 
 ACLOCAL_AMFLAGS = -I m4
 
@@ -150,4 +150,11 @@ pkginclude_HEADERS = \
 
 EXTRA_DIST = \
 	basis_reduction_templ.c \
+	doc/mypod2latex \
+	doc/manual.tex \
+	doc/user.pod \
 	test_inputs
+
+dist-hook:
+	(cd doc; make manual.pdf)
+	cp doc/manual.pdf $(distdir)/doc/

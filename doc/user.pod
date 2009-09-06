@@ -1,0 +1,912 @@
+=head1 Introduction
+
+C<isl> is a thread-safe C library for manipulating
+sets and relations of integer points bounded by affine constraints.
+The descriptions of the sets and relations may involve
+both parameters and existentially quantified variables.
+All computations are performed in exact integer arithmetic
+using C<GMP>.
+The C<isl> library offers functionality that is similar
+to that offered by the C<Omega> and C<Omega+> libraries,
+but the underlying algorithms are in most cases completely different.
+
+The library is by no means complete and some fairly basic
+functionality is still missing.
+Still, even in its current form, the library has been successfully
+used as a backend polyhedral library for the polyhedral
+scanner C<CLooG> and as part of an equivalence checker of
+static affine programs.
+
+=head1 Installation
+
+The source of C<isl> can be obtained either as a tarball
+or from the git repository.  Both are available from
+L<http://freshmeat.net/projects/isl/>.
+The installation process depends on how you obtained
+the source.
+
+=head2 Installation from the git repository
+
+=over
+
+=item 1 Clone or update the repository
+
+The first time the source is obtained, you need to clone
+the repository.
+
+	git clone git://repo.or.cz/isl.git
+
+To obtain updates, you need to pull in the latest changes
+
+	git pull
+
+=item 2 Get submodule (optional)
+
+C<isl> can optionally use the C<piplib> library and provides
+this library as a submodule.  If you want to use it, then
+after you have cloned C<isl>, you need to grab the submodules
+
+	git submodule init
+	git submodule update
+
+To obtain updates, you only need
+
+	git submodule update
+
+Note that C<isl> currently does not use any C<piplib>
+functionality by default.
+
+=item 3 Generate C<configure>
+
+	./autogen.sh
+
+=back
+
+After performing the above steps, continue
+with the L<Common installation instructions>.
+
+=head2 Common installation instructions
+
+=over
+
+=item 1 Obtain C<GMP>
+
+Building C<isl> requires C<GMP>, including its headers files.
+Your distribution may not provide these header files by default
+and you may need to install a package called C<gmp-devel> or something
+similar.  Alternatively, C<GMP> can be built from
+source, available from L<http://gmplib.org/>.
+
+=item 2 Configure
+
+C<isl> uses the standard C<autoconf> C<configure> script.
+To run it, just type
+
+	./configure
+
+optionally followed by some configure options.
+A complete list of options can be obtained by running
+
+	./configure --help
+
+Below we discuss some of the more common options.
+
+C<isl> can optionally use both C<PolyLib> and C<piplib>.
+C<PolyLib> is mainly used to convert between C<PolyLib> objects
+and C<isl> objects.  No C<piplib> functionality is currently
+used by default.
+The C<--with-polylib> and C<--with-piplib> options can
+be used to specify which C<PolyLib> or C<piplib>
+library to use, either an installed version (C<system>),
+an externally built version (C<build>), a bundled version (C<bundled>)
+or no version (C<no>).  The option C<build> is mostly useful
+in C<configure> scripts of larger projects that bundle both C<isl>
+and either C<PolyLib> or C<piplib>.
+
+=over
+
+=item C<--prefix>
+
+Installation prefix for C<isl>
+
+=item C<--with-gmp>
+
+Dummy option, included for consistency.  Always set to C<system>.
+
+=item C<--with-gmp-prefix>
+
+Installation prefix for C<GMP> (architecture-independent files).
+
+=item C<--with-gmp-exec-prefix>
+
+Installation prefix for C<GMP> (architecture-dependent files).
+
+=item C<--with-polylib>
+
+Which copy of C<PolyLib> to use, either C<no> (default), C<system> or C<build>.
+
+=item C<--with-polylib-prefix>
+
+Installation prefix for C<system> C<PolyLib> (architecture-independent files).
+
+=item C<--with-polylib-exec-prefix>
+
+Installation prefix for C<system> C<PolyLib> (architecture-dependent files).
+
+=item C<--with-polylib-builddir>
+
+Location where C<build> C<PolyLib> was built.
+
+=item C<--with-piplib>
+
+Which copy of C<piplib> to use, either C<no> (default), C<system>, C<build>
+or C<bundled>.  Note that C<bundled> only works if you have obtained
+C<isl> and its submodules from the git repository.
+
+=item C<--with-piplib-prefix>
+
+Installation prefix for C<system> C<piplib> (architecture-independent files).
+
+=item C<--with-piplib-exec-prefix>
+
+Installation prefix for C<system> C<piplib> (architecture-dependent files).
+
+=item C<--with-piplib-builddir>
+
+Location where C<build> C<piplib> was built.
+
+=back
+
+=item 3 Compile
+
+	make
+
+=item 4 Install (optional)
+
+	make install
+
+=back
+
+=head1 Library
+
+=head2 Initialization
+
+All manipulations of integer sets and relations occur within
+the context of an C<isl_ctx>.
+A given C<isl_ctx> can only be used within a single thread.
+All arguments of a function are required to have been allocated
+within the same context.
+There are currently no functions available for moving an object
+from one C<isl_ctx> to another C<isl_ctx>.  This means that
+there is currently no way of safely moving an object from one
+thread to another, unless the whole C<isl_ctx> is moved.
+
+An C<isl_ctx> can be allocated using C<isl_ctx_alloc> and
+freed using C<isl_ctx_free>.
+All objects allocated within an C<isl_ctx> should be freed
+before the C<isl_ctx> itself is freed.
+
+	isl_ctx *isl_ctx_alloc();
+	void isl_ctx_free(isl_ctx *ctx);
+
+=head2 Integers
+
+All operations on integers, mainly the coefficients
+of the constraints describing the sets and relations,
+are performed in exact integer arithmetic using C<GMP>.
+However, to allow future versions of C<isl> to optionally
+support fixed integer arithmetic, all calls to C<GMP>
+are wrapped inside C<isl> specific macros.
+The basic type is C<isl_int> and the following operations
+are available on this type.
+
+=over
+
+=item isl_int_init(i)
+
+=item isl_int_clear(i)
+
+=item isl_int_set(r,i)
+
+=item isl_int_set_si(r,i)
+
+=item isl_int_abs(r,i)
+
+=item isl_int_neg(r,i)
+
+=item isl_int_swap(i,j)
+
+=item isl_int_swap_or_set(i,j)
+
+=item isl_int_add_ui(r,i,j)
+
+=item isl_int_sub_ui(r,i,j)
+
+=item isl_int_add(r,i,j)
+
+=item isl_int_sub(r,i,j)
+
+=item isl_int_mul(r,i,j)
+
+=item isl_int_mul_ui(r,i,j)
+
+=item isl_int_addmul(r,i,j)
+
+=item isl_int_submul(r,i,j)
+
+=item isl_int_gcd(r,i,j)
+
+=item isl_int_lcm(r,i,j)
+
+=item isl_int_divexact(r,i,j)
+
+=item isl_int_cdiv_q(r,i,j)
+
+=item isl_int_fdiv_q(r,i,j)
+
+=item isl_int_fdiv_r(r,i,j)
+
+=item isl_int_fdiv_q_ui(r,i,j)
+
+=item isl_int_read(r,s)
+
+=item isl_int_print(out,i,width)
+
+=item isl_int_sgn(i)
+
+=item isl_int_cmp(i,j)
+
+=item isl_int_cmp_si(i,si)
+
+=item isl_int_eq(i,j)
+
+=item isl_int_ne(i,j)
+
+=item isl_int_lt(i,j)
+
+=item isl_int_le(i,j)
+
+=item isl_int_gt(i,j)
+
+=item isl_int_ge(i,j)
+
+=item isl_int_abs_eq(i,j)
+
+=item isl_int_abs_ne(i,j)
+
+=item isl_int_abs_lt(i,j)
+
+=item isl_int_abs_gt(i,j)
+
+=item isl_int_abs_ge(i,j)
+
+=item isl_int_is_zero(i)
+
+=item isl_int_is_one(i)
+
+=item isl_int_is_negone(i)
+
+=item isl_int_is_pos(i)
+
+=item isl_int_is_neg(i)
+
+=item isl_int_is_nonpos(i)
+
+=item isl_int_is_nonneg(i)
+
+=item isl_int_is_divisible_by(i,j)
+
+=back
+
+=head2 Sets and Relations
+
+C<isl> uses four types of objects for representing sets and relations,
+C<isl_basic_set>, C<isl_basic_map>, C<isl_set> and C<isl_map>.
+C<isl_basic_set> and C<isl_basic_map> represent sets and relations that
+can be described as a conjunction of affine constraints, while
+C<isl_set> and C<isl_map> represent unions of
+C<isl_basic_set>s and C<isl_basic_map>s, respectively.
+The difference between sets and relations (maps) is that sets have
+one set of variables, while relations have two sets of variables,
+input variables and output variables.
+
+=head2 Memory Management
+
+Since a high-level operation on sets and/or relations usually involves
+several substeps and since the user is usually not interested in
+the intermediate results, most functions that return a new object
+will also release all the objects passed as arguments.
+If the user still wants to use one or more of these arguments
+after the function call, she should pass along a copy of the
+object rather than the object itself.
+The user is then responsible for make sure that the original
+object gets used somewhere else or is explicitly freed.
+
+The arguments and return values of all documents functions are
+annotated to make clear which arguments are released and which
+arguments are preserved.  In particular, the following annotations
+are used
+
+=over
+
+=item C<__isl_give>
+
+C<__isl_give> means that a new object is returned.
+The user should make sure that the returned pointer is
+used exactly once as a value for an C<__isl_take> argument.
+In between, it can be used as a value for as many
+C<__isl_keep> arguments as the user likes.
+There is one exception, and that is the case where the
+pointer returned is C<NULL>.  Is this case, the user
+is free to use it as an C<__isl_take> argument or not.
+
+=item C<__isl_take>
+
+C<__isl_take> means that the object the argument points to
+is taken over by the function and may no longer be used
+by the user as an argument to any other function.
+The pointer value must be one returned by a function
+returning an C<__isl_give> pointer.
+If the user passes in a C<NULL> value, then this will
+be treated as an error in the sense that the function will
+not perform its usual operation.  However, it will still
+make sure that all the the other C<__isl_take> arguments
+are released.
+
+=item C<__isl_keep>
+
+C<__isl_keep> means that the function will only use the object
+temporarily.  After the function has finished, the user
+can still use it as an argument to other functions.
+A C<NULL> value will be treated in the same way as
+a C<NULL> value for an C<__isl_take> argument.
+
+=back
+
+=head2 Dimension Specifications
+
+Whenever a new set or relation is created from scratch,
+its dimension needs to be specified using an C<isl_dim>.
+
+	#include <isl_dim.h>
+	__isl_give isl_dim *isl_dim_alloc(isl_ctx *ctx,
+		unsigned nparam, unsigned n_in, unsigned n_out);
+	__isl_give isl_dim *isl_dim_set_alloc(isl_ctx *ctx,
+		unsigned nparam, unsigned dim);
+	__isl_give isl_dim *isl_dim_copy(__isl_keep isl_dim *dim);
+	void isl_dim_free(__isl_take isl_dim *dim);
+	unsigned isl_dim_size(__isl_keep isl_dim *dim,
+		enum isl_dim_type type);
+
+The dimension specification used for creating a set
+needs to be created using C<isl_dim_set_alloc>, while
+that for creating a relation
+needs to be created using C<isl_dim_alloc>.
+C<isl_dim_size> can be used
+to find out the number of dimensions of each type in
+a dimension specification, where type may be
+C<isl_dim_param>, C<isl_dim_in> (only for relations),
+C<isl_dim_out> (only for relations), C<isl_dim_set>
+(only for sets) or C<isl_dim_all>.
+
+=head2 Input and Output
+
+Proper input and output functions are still in development.
+However, some functions are provided to read and write
+to foreign file formats and to convert between
+C<isl> objects and C<PolyLib> objects (if C<PolyLib> is available).
+
+=head3 Input
+
+	#include <isl_set.h>
+	__isl_give isl_basic_set *isl_basic_set_read_from_file(
+		isl_ctx *ctx, FILE *input, unsigned nparam,
+		unsigned input_format);
+	__isl_give isl_basic_set *isl_basic_set_read_from_str(
+		isl_ctx *ctx, const char *str, unsigned nparam,
+		unsigned input_format);
+	__isl_give isl_set *isl_set_read_from_file(isl_ctx *ctx,
+		FILE *input, unsigned nparam,
+		unsigned input_format);
+
+	#include <isl_map.h>
+	__isl_give isl_basic_map *isl_basic_map_read_from_file(
+		isl_ctx *ctx, FILE *input, unsigned nparam,
+		unsigned input_format);
+
+C<input_format> may be either C<ISL_FORMAT_POLYLIB> or
+C<ISL_FORMAT_OMEGA>.  However, not all combination are currently
+supported.  Furthermore, only a very limited subset of
+the C<Omega> input format is currently supported.
+In particular, C<isl_basic_set_read_from_str> and
+C<isl_basic_map_read_from_file> only
+support C<ISL_FORMAT_OMEGA>, while C<isl_set_read_from_file>
+only supports C<ISL_FORMAT_POLYLIB>.
+C<nparam> specifies how many of the final columns in
+the C<PolyLib> format correspond to parameters.  It should
+be zero when C<ISL_FORMAT_OMEGA> is used.
+
+=head3 Output
+
+	#include <isl_set.h>
+	void isl_basic_set_print(__isl_keep isl_basic_set *bset,
+		FILE *out, int indent,
+		const char *prefix, const char *suffix,
+		unsigned output_format);
+	void isl_set_print(__isl_keep struct isl_set *set,
+		FILE *out, int indent, unsigned output_format);
+
+C<input_format> must be C<ISL_FORMAT_POLYLIB>.
+Each line in the output is indented by C<indent> spaces,
+prefixed by C<prefix> and suffixed by C<suffix>.
+The coefficients of the existentially quantified variables
+appear between those of the set variables and those
+of the parameters.
+
+=head3 Conversion from/to C<PolyLib>
+
+The following functions are only available if C<isl> has
+been configured to use C<PolyLib>.
+
+	#include <isl_set_polylib.h>
+	__isl_give isl_basic_set *isl_basic_set_new_from_polylib(
+		Polyhedron *P, __isl_take isl_dim *dim);
+	Polyhedron *isl_basic_set_to_polylib(
+		__isl_keep isl_basic_set *bset);
+	__isl_give isl_set *isl_set_new_from_polylib(Polyhedron *D,
+		__isl_take isl_dim *dim);
+	Polyhedron *isl_set_to_polylib(__isl_keep isl_set *set);
+
+	#include <isl_map_polylib.h>
+	__isl_give isl_basic_map *isl_basic_map_new_from_polylib(
+		Polyhedron *P, __isl_take isl_dim *dim);
+	__isl_give isl_map *isl_map_new_from_polylib(Polyhedron *D,
+		__isl_take isl_dim *dim);
+	Polyhedron *isl_basic_map_to_polylib(
+		__isl_keep isl_basic_map *bmap);
+	Polyhedron *isl_map_to_polylib(__isl_keep isl_map *map);
+
+=head3 Dumping the internal state
+
+For lack of proper output functions, the following functions
+can be used to dump the internal state of a set or relation.
+The user should not depend on the output format of these functions.
+
+	void isl_basic_set_dump(__isl_keep isl_basic_set *bset,
+		FILE *out, int indent);
+	void isl_basic_map_dump(__isl_keep isl_basic_map *bmap,
+		FILE *out, int indent);
+	void isl_set_dump(__isl_keep isl_set *set,
+		FILE *out, int indent);
+	void isl_map_dump(__isl_keep isl_map *map,
+		FILE *out, int indent);
+
+=head2 Creating New Sets and Relations
+
+C<isl> has functions for creating some standard sets and relations.
+
+=over
+
+=item * Empty sets and relations
+
+	__isl_give isl_basic_set *isl_basic_set_empty(
+		__isl_take isl_dim *dim);
+	__isl_give isl_basic_map *isl_basic_map_empty(
+		__isl_take isl_dim *dim);
+	__isl_give isl_set *isl_set_empty(
+		__isl_take isl_dim *dim);
+	__isl_give isl_map *isl_map_empty(
+		__isl_take isl_dim *dim);
+
+=item * Universe sets and relations
+
+	__isl_give isl_basic_set *isl_basic_set_universe(
+		__isl_take isl_dim *dim);
+	__isl_give isl_basic_map *isl_basic_map_universe(
+		__isl_take isl_dim *dim);
+	__isl_give isl_set *isl_set_universe(
+		__isl_take isl_dim *dim);
+	__isl_give isl_map *isl_map_universe(
+		__isl_take isl_dim *dim);
+
+=item * Identity relations
+
+	__isl_give isl_basic_map *isl_basic_map_identity(
+		__isl_take isl_dim *set_dim);
+	__isl_give isl_map *isl_map_identity(
+		__isl_take isl_dim *set_dim);
+
+These functions take a dimension specification for a B<set>
+and return an identity relation between two such sets.
+
+=back
+
+A basic set or relation can be converted to a set or relation
+using the following functions.
+
+	__isl_give isl_set *isl_set_from_basic_set(
+		__isl_take isl_basic_set *bset);
+	__isl_give isl_map *isl_map_from_basic_map(
+		__isl_take isl_basic_map *bmap);
+
+Sets and relations can be copied and freed again using the following
+functions.
+
+	__isl_give isl_basic_set *isl_basic_set_copy(
+		__isl_keep isl_basic_set *bset);
+	__isl_give isl_set *isl_set_copy(__isl_keep isl_set *set);
+	__isl_give isl_basic_map *isl_basic_map_copy(
+		__isl_keep isl_basic_map *bmap);
+	__isl_give isl_map *isl_map_copy(__isl_keep isl_map *map);
+	void isl_basic_set_free(__isl_take isl_basic_set *bset);
+	void isl_set_free(__isl_take isl_set *set);
+	void isl_basic_map_free(__isl_take isl_basic_map *bmap);
+	void isl_map_free(__isl_take isl_map *map);
+
+Other sets and relations can be constructed by starting
+from a universe set or relation, adding equality and/or
+inequality constraints and then projecting out the
+existentially quantified variables, if any.
+Constraints can be constructed, manipulated and
+added to basic sets and relations using the following functions.
+
+	#include <isl_constraint.h>
+	__isl_give isl_constraint *isl_equality_alloc(
+		__isl_take isl_dim *dim);
+	__isl_give isl_constraint *isl_inequality_alloc(
+		__isl_take isl_dim *dim);
+	void isl_constraint_set_constant(
+		__isl_keep isl_constraint *constraint, isl_int v);
+	void isl_constraint_set_coefficient(
+		__isl_keep isl_constraint *constraint,
+		enum isl_dim_type type, int pos, isl_int v);
+	__isl_give isl_basic_map *isl_basic_map_add_constraint(
+		__isl_take isl_basic_map *bmap,
+		__isl_take isl_constraint *constraint);
+	__isl_give isl_basic_set *isl_basic_set_add_constraint(
+		__isl_take isl_basic_set *bset,
+		__isl_take isl_constraint *constraint);
+
+For example, to create a set containing the even integers
+between 10 and 42, you would use the following code.
+
+	isl_int v;
+	struct isl_dim *dim;
+	struct isl_constraint *c;
+	struct isl_basic_set *bset;
+
+	isl_int_init(v);
+	dim = isl_dim_set_alloc(ctx, 0, 2);
+	bset = isl_basic_set_universe(isl_dim_copy(dim));
+
+	c = isl_equality_alloc(isl_dim_copy(dim));
+	isl_int_set_si(v, -1);
+	isl_constraint_set_coefficient(c, isl_dim_set, 0, v);
+	isl_int_set_si(v, 2);
+	isl_constraint_set_coefficient(c, isl_dim_set, 1, v);
+	bset = isl_basic_set_add_constraint(bset, c);
+
+	c = isl_inequality_alloc(isl_dim_copy(dim));
+	isl_int_set_si(v, -10);
+	isl_constraint_set_constant(c, v);
+	isl_int_set_si(v, 1);
+	isl_constraint_set_coefficient(c, isl_dim_set, 0, v);
+	bset = isl_basic_set_add_constraint(bset, c);
+
+	c = isl_inequality_alloc(dim);
+	isl_int_set_si(v, 42);
+	isl_constraint_set_constant(c, v);
+	isl_int_set_si(v, -1);
+	isl_constraint_set_coefficient(c, isl_dim_set, 0, v);
+	bset = isl_basic_set_add_constraint(bset, c);
+
+	bset = isl_basic_set_project_out(bset, isl_dim_set, 1, 1);
+
+	isl_int_clear(v);
+
+=head2 Properties
+
+=head3 Unary Properties
+
+=over
+
+=item Emptiness
+
+The following functions test whether the given set or relation
+contains any integer points.  The ``fast'' variants do not perform
+any computations, but simply check if the given set or relation
+is already known to be empty.
+
+	int isl_basic_set_fast_is_empty(__isl_keep isl_basic_set *bset);
+	int isl_basic_set_is_empty(__isl_keep isl_basic_set *bset);
+	int isl_set_is_empty(__isl_keep isl_set *set);
+	int isl_basic_map_fast_is_empty(__isl_keep isl_basic_map *bmap);
+	int isl_basic_map_is_empty(__isl_keep isl_basic_map *bmap);
+	int isl_map_fast_is_empty(__isl_keep isl_map *map);
+	int isl_map_is_empty(__isl_keep isl_map *map);
+
+=item * Universality
+
+	int isl_basic_set_is_universe(__isl_keep isl_basic_set *bset);
+	int isl_basic_map_is_universe(__isl_keep isl_basic_map *bmap);
+
+=back
+
+=head3 Binary Properties
+
+=over
+
+=item * Equality
+
+	int isl_set_fast_is_equal(__isl_keep isl_set *set1,
+		__isl_keep isl_set *set2);
+	int isl_set_is_equal(__isl_keep isl_set *set1,
+		__isl_keep isl_set *set2);
+	int isl_map_is_equal(__isl_keep isl_map *map1,
+		__isl_keep isl_map *map2);
+	int isl_map_fast_is_equal(__isl_keep isl_map *map1,
+		__isl_keep isl_map *map2);
+	int isl_basic_map_is_equal(
+		__isl_keep isl_basic_map *bmap1,
+		__isl_keep isl_basic_map *bmap2);
+
+=item * Disjointness
+
+	int isl_set_fast_is_disjoint(__isl_keep isl_set *set1,
+		__isl_keep isl_set *set2);
+
+=item * Subset
+
+	int isl_set_is_subset(__isl_keep isl_set *set1,
+		__isl_keep isl_set *set2);
+	int isl_basic_map_is_subset(
+		__isl_keep isl_basic_map *bmap1,
+		__isl_keep isl_basic_map *bmap2);
+	int isl_basic_map_is_strict_subset(
+		__isl_keep isl_basic_map *bmap1,
+		__isl_keep isl_basic_map *bmap2);
+	int isl_map_is_subset(
+		__isl_keep isl_map *map1,
+		__isl_keep isl_map *map2);
+	int isl_map_is_strict_subset(
+		__isl_keep isl_map *map1,
+		__isl_keep isl_map *map2);
+
+=back
+
+=head2 Unary Operations
+
+=over
+
+=item * Projection
+
+	__isl_give isl_basic_set *isl_basic_set_project_out(
+		__isl_take isl_basic_set *bset,
+		enum isl_dim_type type, unsigned first, unsigned n);
+	__isl_give isl_basic_set *isl_basic_map_domain(
+		__isl_take isl_basic_map *bmap);
+	__isl_give isl_basic_set *isl_basic_map_range(
+		__isl_take isl_basic_map *bmap);
+	__isl_give isl_set *isl_map_domain(
+		__isl_take isl_map *bmap);
+	__isl_give isl_set *isl_map_range(
+		__isl_take isl_map *map);
+
+C<isl_basic_set_project_out> currently only supports projecting
+out the final C<isl_dim_set> dimensions.
+
+=item * Coalescing
+
+Simplify the representation of a set or relation by trying
+to combine pairs of basic sets or relations into a single
+basic set or relation.
+
+	__isl_give isl_set *isl_set_coalesce(__isl_take isl_set *set);
+	__isl_give isl_map *isl_map_coalesce(__isl_take isl_map *map);
+
+=item * Convex hull
+
+	__isl_give isl_basic_set *isl_set_convex_hull(
+		__isl_take isl_set *set);
+	__isl_give isl_basic_map *isl_map_convex_hull(
+		__isl_take isl_map *map);
+
+If the input set or relation has any existentially quantified
+variables, then the result of these operations is currently undefined.
+
+=item * Affine hull
+
+	__isl_give isl_basic_set *isl_basic_set_affine_hull(
+		__isl_take isl_basic_set *bset);
+	__isl_give isl_basic_set *isl_set_affine_hull(
+		__isl_take isl_set *set);
+	__isl_give isl_basic_map *isl_basic_map_affine_hull(
+		__isl_take isl_basic_map *bmap);
+	__isl_give isl_basic_map *isl_map_affine_hull(
+		__isl_take isl_map *map);
+
+=back
+
+=head2 Binary Operations
+
+The two arguments of a binary operation not only need to live
+in the same C<isl_ctx>, they currently also need to have
+the same (number of) parameters.
+
+=head3 Basic Operations
+
+=over
+
+=item * Intersection
+
+	__isl_give isl_basic_set *isl_basic_set_intersect(
+		__isl_take isl_basic_set *bset1,
+		__isl_take isl_basic_set *bset2);
+	__isl_give isl_set *isl_set_intersect(
+		__isl_take isl_set *set1,
+		__isl_take isl_set *set2);
+	__isl_give isl_basic_map *isl_basic_map_intersect_domain(
+		__isl_take isl_basic_map *bmap,
+		__isl_take isl_basic_set *bset);
+	__isl_give isl_basic_map *isl_basic_map_intersect_range(
+		__isl_take isl_basic_map *bmap,
+		__isl_take isl_basic_set *bset);
+	__isl_give isl_basic_map *isl_basic_map_intersect(
+		__isl_take isl_basic_map *bmap1,
+		__isl_take isl_basic_map *bmap2);
+	__isl_give isl_map *isl_map_intersect_domain(
+		__isl_take isl_map *map,
+		__isl_take isl_set *set);
+	__isl_give isl_map *isl_map_intersect_range(
+		__isl_take isl_map *map,
+		__isl_take isl_set *set);
+	__isl_give isl_map *isl_map_intersect(
+		__isl_take isl_map *map1,
+		__isl_take isl_map *map2);
+
+=item * Union
+
+	__isl_give isl_set *isl_basic_set_union(
+		__isl_take isl_basic_set *bset1,
+		__isl_take isl_basic_set *bset2);
+	__isl_give isl_map *isl_basic_map_union(
+		__isl_take isl_basic_map *bmap1,
+		__isl_take isl_basic_map *bmap2);
+	__isl_give isl_set *isl_set_union(
+		__isl_take isl_set *set1,
+		__isl_take isl_set *set2);
+	__isl_give isl_map *isl_map_union(
+		__isl_take isl_map *map1,
+		__isl_take isl_map *map2);
+
+=item * Set difference
+
+	__isl_give isl_set *isl_set_subtract(
+		__isl_take isl_set *set1,
+		__isl_take isl_set *set2);
+	__isl_give isl_map *isl_map_subtract(
+		__isl_take isl_map *map1,
+		__isl_take isl_map *map2);
+
+=item * Application
+
+	__isl_give isl_basic_set *isl_basic_set_apply(
+		__isl_take isl_basic_set *bset,
+		__isl_take isl_basic_map *bmap);
+	__isl_give isl_set *isl_set_apply(
+		__isl_take isl_set *set,
+		__isl_take isl_map *map);
+	__isl_give isl_basic_map *isl_basic_map_apply_domain(
+		__isl_take isl_basic_map *bmap1,
+		__isl_take isl_basic_map *bmap2);
+	__isl_give isl_basic_map *isl_basic_map_apply_range(
+		__isl_take isl_basic_map *bmap1,
+		__isl_take isl_basic_map *bmap2);
+	__isl_give isl_map *isl_map_apply_domain(
+		__isl_take isl_map *map1,
+		__isl_take isl_map *map2);
+	__isl_give isl_map *isl_map_apply_range(
+		__isl_take isl_map *map1,
+		__isl_take isl_map *map2);
+
+=back
+
+=head3 Lexicographic Optimization
+
+Given a basic set C<bset> and a zero-dimensional domain C<dom>,
+the following functions
+compute a set that contains the lexicographic minimum or maximum
+of the elements in C<bset> for those values of the parameters
+that satisfy C<dom>.
+If C<empty> is not C<NULL>, then C<*empty> is assigned a set
+that contains the parameter values in C<dom> for which C<bset>
+has no elements.
+In other words, the union of the parameter values
+for which the result is non-empty and of C<*empty>
+is equal to C<dom>.
+
+	__isl_give isl_set *isl_basic_set_partial_lexmin(
+		__isl_take isl_basic_set *bset,
+		__isl_take isl_basic_set *dom,
+		__isl_give isl_set **empty);
+	__isl_give isl_set *isl_basic_set_partial_lexmax(
+		__isl_take isl_basic_set *bset,
+		__isl_take isl_basic_set *dom,
+		__isl_give isl_set **empty);
+
+Given a basic set C<bset>, the following function simply
+returns a set contains the lexicographic minimum
+of the elements in C<bset>.
+
+	__isl_give isl_set *isl_basic_set_lexmin(
+		__isl_take isl_basic_set *bset);
+
+Given a basic relation C<bmap> and a domain C<dom>,
+the following functions
+compute a relation that maps each element of C<dom>
+to the single lexicographic minimum or maximum
+of the elements that are associated to that same
+element in C<bmap>.
+If C<empty> is not C<NULL>, then C<*empty> is assigned a set
+that contains the elements in C<dom> that do not map
+to any elements in C<bmap>.
+In other words, the union of the domain of the result and of C<*empty>
+is equal to C<dom>.
+
+	__isl_give isl_map *isl_basic_map_partial_lexmax(
+		__isl_take isl_basic_map *bmap,
+		__isl_take isl_basic_set *dom,
+		__isl_give isl_set **empty);
+	__isl_give isl_map *isl_basic_map_partial_lexmin(
+		__isl_take isl_basic_map *bmap,
+		__isl_take isl_basic_set *dom,
+		__isl_give isl_set **empty);
+
+=head1 Applications
+
+Although C<isl> is mainly meant to be used as a library,
+it also contains some basic applications that use some
+of the functionality of C<isl>.
+Since C<isl> does not have its own input format yet, these
+applications currently take input in C<PolyLib> style.
+That is, a line with the number of rows and columns,
+where the number of rows is equal to the number of constraints
+and the number of columns is equal to two plus the number of variables,
+followed by the actual rows.
+In each row, the first column indicates whether the constraint
+is an equality (C<0>) or inequality (C<1>).  The final column
+corresponds to the constant term.
+
+=head2 C<isl_polyhedron_sample>
+
+C<isl_polyhedron_sample>
+takes a polyhedron in C<PolyLib> format as input and prints
+an integer element of the polyhedron, if there is any.
+The first column in the output is the denominator and is always
+equal to 1.  If the polyhedron contains no integer points,
+then a vector of length zero is printed.
+
+=head2 C<isl_pip>
+
+C<isl_pip> takes the same input as the C<example> program
+from the C<piplib> distribution, i.e., a set of constraints
+on the parameters in C<PolyLib> format,
+a line contains only -1 and finally a set
+of constraints on a parametric polyhedron, again in C<PolyLib> format.
+The coefficients of the parameters appear in the last columns
+(but before the final constant column).
+The output is the lexicographic minimum of the parametric polyhedron.
+As C<isl> currently does not have its own output format, the output
+is just a dump of the internal state.
+
+=head2 C<isl_polyhedron_minimize>
+
+C<isl_polyhedron_minimize> computes the minimum of some linear
+or affine objective function over the integer points in a polyhedron.
+The input is in C<PolyLib> format.  If an affine objective function
+is given, then the constant should appear in the last column.
+
+=head2 C<isl_polytope_scan>
+
+Given a polytope in C<PolyLib> format, C<isl_polytope_scan> prints
+all integer points in the polytope.
