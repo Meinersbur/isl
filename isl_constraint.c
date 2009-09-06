@@ -136,8 +136,6 @@ void isl_constraint_free(struct isl_constraint *c)
 struct isl_constraint *isl_basic_set_first_constraint(
 	struct isl_basic_set *bset)
 {
-	struct isl_constraint *c;
-
 	if (!bset)
 		return NULL;
 
@@ -287,7 +285,6 @@ void isl_constraint_set_coefficient(struct isl_constraint *constraint,
 
 void isl_constraint_clear(struct isl_constraint *constraint)
 {
-	struct isl_basic_set *bset;
 	unsigned total;
 
 	if (!constraint)
