@@ -225,6 +225,8 @@ struct isl_map *isl_map_add(struct isl_map *map, struct isl_basic_map *bmap);
 __isl_give isl_map *isl_map_identity(__isl_take isl_dim *set_dim);
 struct isl_map *isl_map_identity_like(struct isl_map *model);
 struct isl_map *isl_map_identity_like_basic_map(struct isl_basic_map *model);
+__isl_give isl_map *isl_map_lex_lt(__isl_take isl_dim *set_dim);
+__isl_give isl_map *isl_map_lex_gt(__isl_take isl_dim *set_dim);
 struct isl_map *isl_map_finalize(struct isl_map *map);
 void isl_map_free(__isl_take isl_map *map);
 __isl_give isl_map *isl_map_copy(__isl_keep isl_map *map);
