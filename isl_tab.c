@@ -131,7 +131,7 @@ int isl_tab_extend_vars(struct isl_tab *tab, unsigned n_new)
 		if (!tab->mat)
 			return -1;
 		p = isl_realloc_array(tab->mat->ctx, tab->col_var,
-					    int, tab->mat->n_col);
+					    int, tab->n_col + n_new);
 		if (!p)
 			return -1;
 		tab->col_var = p;
@@ -181,10 +181,12 @@ struct isl_tab *isl_tab_dup(struct isl_tab *tab)
 {
 	int i;
 	struct isl_tab *dup;
+	unsigned off;
 
 	if (!tab)
 		return NULL;
 
+	off = 2 + tab->M;
 	dup = isl_calloc_type(tab->ctx, struct isl_tab);
 	if (!dup)
 		return NULL;
@@ -201,10 +203,10 @@ struct isl_tab *isl_tab_dup(struct isl_tab *tab)
 		goto error;
 	for (i = 0; i < tab->n_con; ++i)
 		dup->con[i] = tab->con[i];
-	dup->col_var = isl_alloc_array(tab->ctx, int, tab->mat->n_col);
+	dup->col_var = isl_alloc_array(tab->ctx, int, tab->mat->n_col - off);
 	if (!dup->col_var)
 		goto error;
-	for (i = 0; i < tab->n_var; ++i)
+	for (i = 0; i < tab->n_col; ++i)
 		dup->col_var[i] = tab->col_var[i];
 	dup->row_var = isl_alloc_array(tab->ctx, int, tab->mat->n_row);
 	if (!dup->row_var)
