@@ -2228,7 +2228,9 @@ error:
 	return NULL;
 }
 
-static struct isl_basic_map *var_more(struct isl_basic_map *bmap, unsigned pos)
+/* Add a constraints to "bmap" expressing i_pos < o_pos
+ */
+static struct isl_basic_map *var_less(struct isl_basic_map *bmap, unsigned pos)
 {
 	int i;
 	unsigned nparam;
@@ -2249,7 +2251,9 @@ error:
 	return NULL;
 }
 
-static struct isl_basic_map *var_less(struct isl_basic_map *bmap, unsigned pos)
+/* Add a constraints to "bmap" expressing i_pos > o_pos
+ */
+static struct isl_basic_map *var_more(struct isl_basic_map *bmap, unsigned pos)
 {
 	int i;
 	unsigned nparam;
@@ -2282,6 +2286,8 @@ struct isl_basic_map *isl_basic_map_equal(struct isl_dim *dim, unsigned n_equal)
 	return isl_basic_map_finalize(bmap);
 }
 
+/* Return a relation on pairs of sets of dimension "dim" expressing i_pos < o_pos
+ */
 struct isl_basic_map *isl_basic_map_less_at(struct isl_dim *dim, unsigned pos)
 {
 	int i;
@@ -2296,6 +2302,8 @@ struct isl_basic_map *isl_basic_map_less_at(struct isl_dim *dim, unsigned pos)
 	return isl_basic_map_finalize(bmap);
 }
 
+/* Return a relation on pairs of sets of dimension "dim" expressing i_pos > o_pos
+ */
 struct isl_basic_map *isl_basic_map_more_at(struct isl_dim *dim, unsigned pos)
 {
 	int i;
