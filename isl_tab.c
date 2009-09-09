@@ -1598,6 +1598,10 @@ static struct isl_tab *cut_to_hyperplane(struct isl_tab *tab,
 	int sgn;
 	unsigned off = 2 + tab->M;
 
+	if (var->is_zero)
+		return tab;
+	isl_assert(tab->mat->ctx, !var->is_redundant, goto error);
+
 	if (isl_tab_extend_cons(tab, 1) < 0)
 		goto error;
 
