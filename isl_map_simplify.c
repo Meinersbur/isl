@@ -1917,6 +1917,14 @@ static int div_find_coalesce(struct isl_basic_map *bmap, int *pairs,
 	}
 
 	isl_int_add(bmap->ineq[l][0], bmap->ineq[l][0], bmap->ineq[u][0]);
+	if (isl_int_is_neg(bmap->ineq[l][0])) {
+		isl_int_sub(bmap->ineq[l][0],
+			    bmap->ineq[l][0], bmap->ineq[u][0]);
+		bmap = isl_basic_map_copy(bmap);
+		bmap = isl_basic_map_set_to_empty(bmap);
+		isl_basic_map_free(bmap);
+		return -1;
+	}
 	isl_int_add_ui(bmap->ineq[l][0], bmap->ineq[l][0], 1);
 	for (i = 0; i < bmap->n_div; ++i) {
 		if (i == div)
@@ -2245,6 +2253,9 @@ static struct isl_basic_map *coalesce_or_drop_more_redundant_divs(
 			}
 		}
 	}
+
+	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
+		return bmap;
 
 	return drop_more_redundant_divs(bmap, pairs, n);
 }
