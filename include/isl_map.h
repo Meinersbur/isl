@@ -135,6 +135,8 @@ __isl_give isl_basic_map *isl_basic_map_empty(__isl_take isl_dim *dim);
 struct isl_basic_map *isl_basic_map_empty_like(struct isl_basic_map *model);
 struct isl_basic_map *isl_basic_map_empty_like_map(struct isl_map *model);
 __isl_give isl_basic_map *isl_basic_map_universe(__isl_take isl_dim *dim);
+__isl_give isl_basic_map *isl_basic_map_universe_like(
+		__isl_keep isl_basic_map *bmap);
 struct isl_basic_map *isl_basic_map_convex_hull(struct isl_basic_map *bmap);
 
 __isl_give isl_basic_map *isl_basic_map_intersect_domain(

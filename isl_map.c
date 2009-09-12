@@ -2812,6 +2812,14 @@ struct isl_basic_set *isl_basic_set_universe(struct isl_dim *dim)
 	return bset;
 }
 
+__isl_give isl_basic_map *isl_basic_map_universe_like(
+		__isl_keep isl_basic_map *model)
+{
+	if (!model)
+		return NULL;
+	return isl_basic_map_alloc_dim(isl_dim_copy(model->dim), 0, 0, 0);
+}
+
 struct isl_basic_set *isl_basic_set_universe_like(struct isl_basic_set *model)
 {
 	if (!model)
