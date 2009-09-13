@@ -21,6 +21,7 @@ struct isl_vec {
 
 	struct isl_blk block;
 };
+typedef struct isl_vec isl_vec;
 
 struct isl_vec *isl_vec_alloc(struct isl_ctx *ctx, unsigned size);
 struct isl_vec *isl_vec_copy(struct isl_vec *vec);

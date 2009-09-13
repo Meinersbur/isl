@@ -4077,7 +4077,7 @@ int isl_basic_map_is_empty(struct isl_basic_map *bmap)
 	bset = isl_basic_map_underlying_set(isl_basic_map_copy(bmap));
 	if (!bset)
 		return -1;
-	sample = isl_basic_set_sample(bset);
+	sample = isl_basic_set_sample_vec(bset);
 	if (!sample)
 		return -1;
 	empty = sample->size == 0;

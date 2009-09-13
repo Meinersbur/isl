@@ -7,6 +7,7 @@
 #include <isl_ctx.h>
 #include <isl_blk.h>
 #include <isl_dim.h>
+#include <isl_vec.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -34,7 +35,6 @@ extern "C" {
  * n_out is the number of out variables
  * n_in + n_out should be equal to set.dim
  */
-struct isl_vec;
 struct isl_dim;
 struct isl_basic_map {
 	int ref;

@@ -78,7 +78,7 @@ static struct isl_vec *initial_solution(struct isl_basic_set *bset, isl_int *f)
 
 	isl_basic_set_free(unit_box);
 
-	return isl_basic_set_sample(isl_basic_set_copy(bset));
+	return isl_basic_set_sample_vec(isl_basic_set_copy(bset));
 }
 
 /* Restrict "bset" to those points with values for f in the interval [l, u].
@@ -187,7 +187,7 @@ static enum isl_lp_result solve_ilp(struct isl_basic_set *bset,
 			isl_int_add(tmp, tmp, l);
 		}
 		slice = add_bounds(isl_basic_set_copy(bset), f, l, tmp);
-		sample = isl_basic_set_sample(slice);
+		sample = isl_basic_set_sample_vec(slice);
 		if (!sample) {
 			isl_vec_free(sol);
 			sol = NULL;

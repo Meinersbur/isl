@@ -531,7 +531,7 @@ static struct isl_basic_set *uset_affine_hull(struct isl_basic_set *bset)
 	if (isl_basic_set_is_empty(bset))
 		return bset;
 
-	sample = isl_basic_set_sample(isl_basic_set_copy(bset));
+	sample = isl_basic_set_sample_vec(isl_basic_set_copy(bset));
 	if (!sample)
 		goto error;
 	if (sample->size == 0) {
