@@ -221,7 +221,7 @@ static enum isl_lp_result solve_ilp(struct isl_basic_set *bset,
 	return res;
 }
 
-enum isl_lp_result solve_ilp_with_eq(struct isl_basic_set *bset, int max,
+static enum isl_lp_result solve_ilp_with_eq(struct isl_basic_set *bset, int max,
 				      isl_int *f, isl_int *opt,
 				      struct isl_vec **sol_p)
 {

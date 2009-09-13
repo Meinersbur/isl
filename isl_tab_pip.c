@@ -1221,7 +1221,7 @@ error:
  * all values of the variables are equal to the big parameter plus
  * some constant.  This constant is the actual sample value.
  */
-int sample_is_finite(struct isl_tab *tab)
+static int sample_is_finite(struct isl_tab *tab)
 {
 	int i;
 

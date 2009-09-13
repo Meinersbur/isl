@@ -880,7 +880,7 @@ static struct isl_vec *pip_sample(struct isl_basic_set *bset)
 	return sample;
 }
 
-struct isl_vec *basic_set_sample(struct isl_basic_set *bset, int bounded)
+static struct isl_vec *basic_set_sample(struct isl_basic_set *bset, int bounded)
 {
 	struct isl_ctx *ctx;
 	unsigned dim;
