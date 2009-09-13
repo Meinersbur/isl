@@ -184,8 +184,7 @@ struct isl_basic_map *isl_basic_map_add_constraint(
 		isl_dim_equal(bmap->dim, constraint->bmap->dim), goto error);
 
 	bmap = isl_basic_map_intersect(bmap,
-				    isl_basic_map_copy(constraint->bmap));
-	isl_constraint_free(constraint);
+				isl_basic_map_from_constraint(constraint));
 	return bmap;
 error:
 	isl_basic_map_free(bmap);
