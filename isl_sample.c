@@ -939,3 +939,37 @@ struct isl_vec *isl_basic_set_sample_bounded(struct isl_basic_set *bset)
 {
 	return basic_set_sample(bset, 1);
 }
+
+__isl_give isl_basic_set *isl_basic_set_from_vec(__isl_take isl_vec *vec)
+{
+	int i;
+	int k;
+	struct isl_basic_set *bset = NULL;
+	struct isl_ctx *ctx;
+	unsigned dim;
+
+	if (!vec)
+		return NULL;
+	ctx = vec->ctx;
+	isl_assert(ctx, vec->size != 0, goto error);
+
+	bset = isl_basic_set_alloc(ctx, 0, vec->size - 1, 0, vec->size - 1, 0);
+	if (!bset)
+		goto error;
+	dim = isl_basic_set_n_dim(bset);
+	for (i = dim - 1; i >= 0; --i) {
+		k = isl_basic_set_alloc_equality(bset);
+		if (k < 0)
+			goto error;
+		isl_seq_clr(bset->eq[k], 1 + dim);
+		isl_int_neg(bset->eq[k][0], vec->el[1 + i]);
+		isl_int_set(bset->eq[k][1 + i], vec->el[0]);
+	}
+	isl_vec_free(vec);
+
+	return bset;
+error:
+	isl_basic_set_free(bset);
+	isl_vec_free(vec);
+	return NULL;
+}
