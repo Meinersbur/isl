@@ -320,48 +320,53 @@ int isl_constraint_is_equality(struct isl_constraint *constraint)
 	return constraint->line >= constraint->bmap->eq;
 }
 
-
-struct isl_basic_set *isl_basic_set_from_constraint(
-	struct isl_constraint *constraint)
+__isl_give isl_basic_map *isl_basic_map_from_constraint(
+	__isl_take isl_constraint *constraint)
 {
 	int k;
-	struct isl_basic_set *constraint_bset, *bset;
+	struct isl_basic_map *bmap;
 	isl_int *c;
-	unsigned dim;
-	unsigned nparam;
 	unsigned total;
 
 	if (!constraint)
 		return NULL;
 
-	isl_assert(constraint->ctx,n(constraint, isl_dim_in) == 0, goto error);
-
-	constraint_bset = (struct isl_basic_set *)constraint->bmap;
-	bset = isl_basic_set_universe_like(constraint_bset);
-	bset = isl_basic_set_align_divs(bset, constraint_bset);
-	nparam = isl_basic_set_n_param(bset);
-	dim = isl_basic_set_n_dim(bset);
-	bset = isl_basic_set_cow(bset);
-	bset = isl_basic_set_extend(bset, nparam, dim, 0, 1, 1);
+	bmap = isl_basic_map_universe_like(constraint->bmap);
+	bmap = isl_basic_map_align_divs(bmap, constraint->bmap);
+	bmap = isl_basic_map_cow(bmap);
+	bmap = isl_basic_map_extend_constraints(bmap, 1, 1);
 	if (isl_constraint_is_equality(constraint)) {
-		k = isl_basic_set_alloc_equality(bset);
+		k = isl_basic_map_alloc_equality(bmap);
 		if (k < 0)
 			goto error;
-		c = bset->eq[k];
+		c = bmap->eq[k];
 	}
 	else {
-		k = isl_basic_set_alloc_inequality(bset);
+		k = isl_basic_map_alloc_inequality(bmap);
 		if (k < 0)
 			goto error;
-		c = bset->ineq[k];
+		c = bmap->ineq[k];
 	}
-	total = isl_basic_set_total_dim(bset);
+	total = isl_basic_map_total_dim(bmap);
 	isl_seq_cpy(c, constraint->line[0], 1 + total);
 	isl_constraint_free(constraint);
-	return bset;
+	return bmap;
 error:
 	isl_constraint_free(constraint);
-	isl_basic_set_free(bset);
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+struct isl_basic_set *isl_basic_set_from_constraint(
+	struct isl_constraint *constraint)
+{
+	if (!constraint)
+		return NULL;
+
+	isl_assert(constraint->ctx,n(constraint, isl_dim_in) == 0, goto error);
+	return (isl_basic_set *)isl_basic_map_from_constraint(constraint);
+error:
+	isl_constraint_free(constraint);
 	return NULL;
 }
 
