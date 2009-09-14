@@ -973,3 +973,56 @@ error:
 	isl_vec_free(vec);
 	return NULL;
 }
+
+__isl_give isl_basic_map *isl_basic_map_sample(__isl_take isl_basic_map *bmap)
+{
+	struct isl_basic_set *bset;
+	struct isl_vec *sample_vec;
+
+	bset = isl_basic_map_underlying_set(isl_basic_map_copy(bmap));
+	sample_vec = isl_basic_set_sample_vec(bset);
+	if (!sample_vec)
+		goto error;
+	if (sample_vec->size == 0) {
+		struct isl_basic_map *sample;
+		sample = isl_basic_map_empty_like(bmap);
+		isl_vec_free(sample_vec);
+		isl_basic_map_free(bmap);
+		return sample;
+	}
+	bset = isl_basic_set_from_vec(sample_vec);
+	return isl_basic_map_overlying_set(bset, bmap);
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+__isl_give isl_basic_map *isl_map_sample(__isl_take isl_map *map)
+{
+	int i;
+	isl_basic_map *sample = NULL;
+
+	if (!map)
+		goto error;
+
+	for (i = 0; i < map->n; ++i) {
+		sample = isl_basic_map_sample(isl_basic_map_copy(map->p[i]));
+		if (!sample)
+			goto error;
+		if (!ISL_F_ISSET(sample, ISL_BASIC_MAP_EMPTY))
+			break;
+		isl_basic_map_free(sample);
+	}
+	if (i == map->n)
+		sample = isl_basic_map_empty_like_map(map);
+	isl_map_free(map);
+	return sample;
+error:
+	isl_map_free(map);
+	return NULL;
+}
+
+__isl_give isl_basic_set *isl_set_sample(__isl_take isl_set *set)
+{
+	return (isl_basic_set *) isl_map_sample((isl_map *)set);
+}

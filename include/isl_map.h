@@ -167,6 +167,7 @@ struct isl_basic_map *isl_basic_map_remove(struct isl_basic_map *bmap,
 struct isl_basic_map *isl_basic_map_from_basic_set(struct isl_basic_set *bset,
 		struct isl_dim *dim);
 struct isl_basic_set *isl_basic_set_from_basic_map(struct isl_basic_map *bmap);
+__isl_give isl_basic_map *isl_basic_map_sample(__isl_take isl_basic_map *bmap);
 struct isl_basic_map *isl_basic_map_simplify(struct isl_basic_map *bmap);
 struct isl_basic_map *isl_basic_map_detect_equalities(
 						struct isl_basic_map *bmap);
@@ -278,6 +279,7 @@ __isl_give isl_map *isl_map_from_basic_map(__isl_take isl_basic_map *bmap);
 struct isl_map *isl_map_from_range(struct isl_set *set);
 struct isl_map *isl_map_from_set(struct isl_set *set, struct isl_dim *dim);
 struct isl_set *isl_set_from_map(struct isl_map *map);
+__isl_give isl_basic_map *isl_map_sample(__isl_take isl_map *map);
 
 int isl_map_fast_is_empty(__isl_keep isl_map *map);
 int isl_map_is_empty(__isl_keep isl_map *map);
