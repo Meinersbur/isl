@@ -2318,7 +2318,7 @@ struct isl_basic_map *isl_basic_map_more_at(struct isl_dim *dim, unsigned pos)
 	return isl_basic_map_finalize(bmap);
 }
 
-static __isl_give isl_map *map_lex_lt(__isl_take isl_dim *dims)
+static __isl_give isl_map *map_lex_lte(__isl_take isl_dim *dims, int equal)
 {
 	struct isl_map *map;
 	unsigned dim;
@@ -2327,11 +2327,14 @@ static __isl_give isl_map *map_lex_lt(__isl_take isl_dim *dims)
 	if (!dims)
 		return NULL;
 	dim = dims->n_out;
-	map = isl_map_alloc_dim(isl_dim_copy(dims), dim, ISL_MAP_DISJOINT);
+	map = isl_map_alloc_dim(isl_dim_copy(dims), dim + equal, ISL_MAP_DISJOINT);
 
 	for (i = 0; i < dim; ++i)
 		map = isl_map_add(map,
 				  isl_basic_map_less_at(isl_dim_copy(dims), i));
+	if (equal)
+		map = isl_map_add(map,
+				  isl_basic_map_equal(isl_dim_copy(dims), dim));
 
 	isl_dim_free(dims);
 	return map;
@@ -2339,10 +2342,15 @@ static __isl_give isl_map *map_lex_lt(__isl_take isl_dim *dims)
 
 __isl_give isl_map *isl_map_lex_lt(__isl_take isl_dim *set_dim)
 {
-	return map_lex_lt(isl_dim_map(set_dim));
+	return map_lex_lte(isl_dim_map(set_dim), 0);
 }
 
-static __isl_give isl_map *map_lex_gt(__isl_take isl_dim *dims)
+__isl_give isl_map *isl_map_lex_le(__isl_take isl_dim *set_dim)
+{
+	return map_lex_lte(isl_dim_map(set_dim), 1);
+}
+
+static __isl_give isl_map *map_lex_gte(__isl_take isl_dim *dims, int equal)
 {
 	struct isl_map *map;
 	unsigned dim;
@@ -2351,11 +2359,14 @@ static __isl_give isl_map *map_lex_gt(__isl_take isl_dim *dims)
 	if (!dims)
 		return NULL;
 	dim = dims->n_out;
-	map = isl_map_alloc_dim(isl_dim_copy(dims), dim, ISL_MAP_DISJOINT);
+	map = isl_map_alloc_dim(isl_dim_copy(dims), dim + equal, ISL_MAP_DISJOINT);
 
 	for (i = 0; i < dim; ++i)
 		map = isl_map_add(map,
 				  isl_basic_map_more_at(isl_dim_copy(dims), i));
+	if (equal)
+		map = isl_map_add(map,
+				  isl_basic_map_equal(isl_dim_copy(dims), dim));
 
 	isl_dim_free(dims);
 	return map;
@@ -2363,7 +2374,12 @@ static __isl_give isl_map *map_lex_gt(__isl_take isl_dim *dims)
 
 __isl_give isl_map *isl_map_lex_gt(__isl_take isl_dim *set_dim)
 {
-	return map_lex_gt(isl_dim_map(set_dim));
+	return map_lex_gte(isl_dim_map(set_dim), 0);
+}
+
+__isl_give isl_map *isl_map_lex_ge(__isl_take isl_dim *set_dim)
+{
+	return map_lex_gte(isl_dim_map(set_dim), 1);
 }
 
 struct isl_basic_map *isl_basic_map_from_basic_set(
