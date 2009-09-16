@@ -330,6 +330,12 @@ __isl_give isl_basic_map *isl_basic_map_from_constraint(
 	if (!constraint)
 		return NULL;
 
+	if (constraint->bmap->n_eq + constraint->bmap->n_ineq == 1) {
+		bmap = isl_basic_map_copy(constraint->bmap);
+		isl_constraint_free(constraint);
+		return bmap;
+	}
+
 	bmap = isl_basic_map_universe_like(constraint->bmap);
 	bmap = isl_basic_map_align_divs(bmap, constraint->bmap);
 	bmap = isl_basic_map_cow(bmap);
