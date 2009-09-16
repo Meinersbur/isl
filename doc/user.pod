@@ -531,10 +531,11 @@ and return an identity relation between two such sets.
 		__isl_take isl_dim *set_dim);
 
 These functions take a dimension specification for a B<set>
-and return maps that map elements of a set of the given dimension
-to elements that are lexicograhically less
+and return relations that express that the elements in the domain
+are lexicograhically less
 (C<isl_map_lex_lt>), less or equal (C<isl_map_lex_le>),
-greater (C<isl_map_lex_gt>) or greater or equal (C<isl_map_lex_ge>).
+greater (C<isl_map_lex_gt>) or greater or equal (C<isl_map_lex_ge>)
+than the elements in the range.
 
 =back
 
