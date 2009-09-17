@@ -1335,14 +1335,24 @@ static int add_div(struct isl_tab *tab, struct isl_tab **context_tab,
 	int i;
 	int r;
 	int k;
+	int nonneg;
 	struct isl_mat *samples;
+
+	for (i = 0; i < (*context_tab)->n_var; ++i) {
+		if (isl_int_is_zero(div->el[2 + i]))
+			continue;
+		if (!(*context_tab)->var[i].is_nonneg)
+			break;
+	}
+	nonneg = i == (*context_tab)->n_var;
 
 	if (isl_tab_extend_vars(*context_tab, 1) < 0)
 		goto error;
 	r = isl_tab_allocate_var(*context_tab);
 	if (r < 0)
 		goto error;
-	(*context_tab)->var[r].is_nonneg = 1;
+	if (nonneg)
+		(*context_tab)->var[r].is_nonneg = 1;
 	(*context_tab)->var[r].frozen = 1;
 
 	samples = isl_mat_extend((*context_tab)->samples,
@@ -1373,7 +1383,7 @@ static int add_div(struct isl_tab *tab, struct isl_tab **context_tab,
 	r = isl_tab_allocate_var(tab);
 	if (r < 0)
 		goto error;
-	if (!(*context_tab)->M)
+	if (nonneg)
 		tab->var[r].is_nonneg = 1;
 	tab->var[r].frozen = 1;
 	tab->n_div++;
