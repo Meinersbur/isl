@@ -2563,6 +2563,17 @@ error:
 	return NULL;
 }
 
+static struct isl_context *isl_context_alloc(struct isl_basic_set *dom)
+{
+	if (!dom)
+		return NULL;
+
+	if (dom->ctx->context == ISL_CONTEXT_LEXMIN)
+		return isl_context_lex_alloc(dom);
+	else
+		return isl_context_gbr_alloc(dom);
+}
+
 /* Construct an isl_sol_map structure for accumulating the solution.
  * If track_empty is set, then we also keep track of the parts
  * of the context where there is no solution.
@@ -2587,7 +2598,7 @@ static struct isl_sol_map *sol_map_init(struct isl_basic_map *bmap,
 	if (!sol_map->map)
 		goto error;
 
-	sol_map->sol.context = isl_context_lex_alloc(dom);
+	sol_map->sol.context = isl_context_alloc(dom);
 	if (!sol_map->sol.context)
 		goto error;
 
@@ -3405,7 +3416,7 @@ static struct isl_sol_for *sol_for_init(struct isl_basic_map *bmap, int max,
 	sol_for->sol.add = &sol_for_add_wrap;
 	sol_for->sol.free = &sol_for_free_wrap;
 
-	sol_for->sol.context = isl_context_lex_alloc(dom);
+	sol_for->sol.context = isl_context_alloc(dom);
 	if (!sol_for->sol.context)
 		goto error;
 
