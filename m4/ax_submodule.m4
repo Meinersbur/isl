@@ -1,9 +1,10 @@
 AC_DEFUN([AX_SUBMODULE],
 [
 
-AC_ARG_WITH($1,
-	[AS_HELP_STRING([--with-$1=$2],
-			[Which $1 to use [default=$3]])])
+m4_if(m4_bregexp($2,|,choice),choice,
+	[AC_ARG_WITH($1,
+		[AS_HELP_STRING([--with-$1=$2],
+				[Which $1 to use [default=$3]])])])
 case "system" in
 $2)
 	AC_ARG_WITH($1_prefix,
@@ -13,12 +14,10 @@ $2)
 		    [AS_HELP_STRING([--with-$1-exec-prefix=DIR],
 				    [Exec prefix of $1 installation])])
 esac
-case "build" in
-$2)
-	AC_ARG_WITH($1_builddir,
-		    [AS_HELP_STRING([--with-$1-builddir=DIR],
-				    [Location of $1 builddir])])
-esac
+m4_if(m4_bregexp($2,build,build),build,
+	[AC_ARG_WITH($1_builddir,
+		[AS_HELP_STRING([--with-$1-builddir=DIR],
+				[Location of $1 builddir])])])
 if test "x$with_$1_prefix" != "x" -a "x$with_$1_exec_prefix" = "x"; then
 	with_$1_exec_prefix=$with_$1_prefix
 fi

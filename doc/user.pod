@@ -109,10 +109,6 @@ and either C<PolyLib> or C<piplib>.
 
 Installation prefix for C<isl>
 
-=item C<--with-gmp>
-
-Dummy option, included for consistency.  Always set to C<system>.
-
 =item C<--with-gmp-prefix>
 
 Installation prefix for C<GMP> (architecture-independent files).
