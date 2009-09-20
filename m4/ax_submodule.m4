@@ -35,6 +35,9 @@ if test "x$with_$1_builddir" != "x"; then
 	$1_srcdir=`echo @abs_srcdir@ | $with_$1_builddir/config.status --file=-`
 	AC_MSG_NOTICE($1 sources in $$1_srcdir)
 fi
+if test "x$with_$1_exec_prefix" != "x"; then
+	export PKG_CONFIG_PATH="$with_$1_exec_prefix/lib/pkgconfig${PKG_CONFIG_PATH+:$PKG_CONFIG_PATH}"
+fi
 case "$with_$1" in
 $2)
 	;;
