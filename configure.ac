@@ -135,6 +135,9 @@ fi
 AM_CONDITIONAL(HAVE_PIPLIB, test x$have_piplib = xtrue)
 AM_CONDITIONAL(BUNDLED_PIPLIB, test $with_piplib = bundled)
 
+PACKAGE_CFLAGS="-I$prefix/include/isl"
+AX_CREATE_PKGCONFIG_INFO
+
 AC_CONFIG_HEADERS(config.h)
 AC_CONFIG_HEADERS(include/isl_libs.h)
 AC_CONFIG_FILES(Makefile)

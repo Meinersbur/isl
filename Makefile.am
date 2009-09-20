@@ -158,3 +158,6 @@ EXTRA_DIST = \
 dist-hook:
 	(cd doc; make manual.pdf)
 	cp doc/manual.pdf $(distdir)/doc/
+
+pkgconfigdir=$(pkgconfig_libdir)
+pkgconfig_DATA = $(pkgconfig_libfile)
