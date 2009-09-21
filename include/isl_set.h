@@ -171,6 +171,7 @@ __isl_give isl_set *isl_set_copy(__isl_keep isl_set *set);
 void isl_set_free(__isl_take isl_set *set);
 struct isl_set *isl_set_dup(struct isl_set *set);
 __isl_give isl_set *isl_set_from_basic_set(__isl_take isl_basic_set *bset);
+__isl_give isl_basic_set *isl_set_sample(__isl_take isl_set *set);
 __isl_give isl_basic_set *isl_set_affine_hull(__isl_take isl_set *set);
 __isl_give isl_basic_set *isl_set_convex_hull(__isl_take isl_set *set);
 struct isl_basic_set *isl_set_simple_hull(struct isl_set *set);
