@@ -94,6 +94,8 @@ __isl_give isl_basic_set *isl_basic_set_empty(__isl_take isl_dim *dim);
 struct isl_basic_set *isl_basic_set_empty_like(struct isl_basic_set *bset);
 __isl_give isl_basic_set *isl_basic_set_universe(__isl_take isl_dim *dim);
 struct isl_basic_set *isl_basic_set_universe_like(struct isl_basic_set *bset);
+__isl_give isl_basic_set *isl_basic_set_universe_like_set(
+	__isl_keep isl_set *model);
 struct isl_basic_set *isl_basic_set_interval(struct isl_ctx *ctx,
 	isl_int min, isl_int max);
 struct isl_basic_set *isl_basic_set_positive_orthant(struct isl_dim *dims);

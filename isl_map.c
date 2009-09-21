@@ -2843,6 +2843,14 @@ struct isl_basic_set *isl_basic_set_universe_like(struct isl_basic_set *model)
 	return isl_basic_set_alloc_dim(isl_dim_copy(model->dim), 0, 0, 0);
 }
 
+__isl_give isl_basic_set *isl_basic_set_universe_like_set(
+	__isl_keep isl_set *model)
+{
+	if (!model)
+		return NULL;
+	return isl_basic_set_alloc_dim(isl_dim_copy(model->dim), 0, 0, 0);
+}
+
 struct isl_map *isl_map_empty(struct isl_dim *dim)
 {
 	return isl_map_alloc_dim(dim, 0, ISL_MAP_DISJOINT);
