@@ -673,6 +673,9 @@ is already known to be empty.
 
 	int isl_set_is_subset(__isl_keep isl_set *set1,
 		__isl_keep isl_set *set2);
+	int isl_set_is_strict_subset(
+		__isl_keep isl_set *set1,
+		__isl_keep isl_set *set2);
 	int isl_basic_map_is_subset(
 		__isl_keep isl_basic_map *bmap1,
 		__isl_keep isl_basic_map *bmap2);

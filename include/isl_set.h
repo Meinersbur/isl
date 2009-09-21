@@ -209,6 +209,7 @@ void isl_set_dump(__isl_keep isl_set *set, FILE *out, int indent);
 struct isl_set *isl_set_swap_vars(struct isl_set *set, unsigned n);
 int isl_set_is_empty(__isl_keep isl_set *set);
 int isl_set_is_subset(__isl_keep isl_set *set1, __isl_keep isl_set *set2);
+int isl_set_is_strict_subset(__isl_keep isl_set *set1, __isl_keep isl_set *set2);
 int isl_set_is_equal(__isl_keep isl_set *set1, __isl_keep isl_set *set2);
 
 struct isl_set *isl_basic_set_compute_divs(struct isl_basic_set *bset);

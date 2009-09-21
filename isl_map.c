@@ -4052,6 +4052,11 @@ int isl_map_is_strict_subset(struct isl_map *map1, struct isl_map *map2)
 	return !is_subset;
 }
 
+int isl_set_is_strict_subset(__isl_keep isl_set *set1, __isl_keep isl_set *set2)
+{
+	return isl_map_is_strict_subset((isl_map *)set1, (isl_map *)set2);
+}
+
 int isl_basic_map_is_universe(struct isl_basic_map *bmap)
 {
 	if (!bmap)
