@@ -147,7 +147,7 @@ if test $with_piplib = bundled; then
 fi
 AC_CONFIG_COMMANDS_POST([
 	dnl pass on arguments to subdir configures, but don't
-	ac_configure_args="$ac_configure_args $isl_configure_args"
+	dnl add them to config.status
 	ac_configure_args="$ac_configure_args $isl_configure_args"
 ])
 AC_OUTPUT
