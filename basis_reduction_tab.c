@@ -64,26 +64,20 @@ static struct isl_tab *gbr_tab(struct isl_basic_set *bset,
 	int i, j;
 	unsigned dim;
 	struct isl_tab *tab;
+	struct isl_tab *prod;
 
 	if (!bset || !row)
 		return NULL;
 
 	dim = isl_basic_set_total_dim(bset);
-	tab = isl_tab_alloc(bset->ctx, 2 * bset->n_ineq + 3 * dim + 1, 2 * dim, 0);
-
-	for (i = 0; i < 2; ++i) {
-		isl_seq_clr(row->el + 1 + (1 - i) * dim, dim);
-		for (j = 0; j < bset->n_ineq; ++j) {
-			isl_int_set(row->el[0], bset->ineq[j][0]);
-			isl_seq_cpy(row->el + 1 + i * dim,
-				    bset->ineq[j] + 1, dim);
-			tab = isl_tab_add_ineq(tab, row->el);
-			if (!tab || tab->empty)
-				return tab;
-		}
+	tab = isl_tab_from_basic_set(bset);
+	prod = isl_tab_product(tab, tab);
+	isl_tab_free(tab);
+	if (isl_tab_extend_cons(prod, 3 * dim + 1) < 0) {
+		isl_tab_free(prod);
+		return NULL;
 	}
-
-	return tab;
+	return prod;
 }
 
 static struct tab_lp *init_lp(struct isl_basic_set *bset)
