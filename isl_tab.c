@@ -183,6 +183,7 @@ void isl_tab_free(struct isl_tab *tab)
 	free(tab->col_var);
 	free(tab->row_sign);
 	isl_mat_free(tab->samples);
+	free(tab->sample_index);
 	isl_mat_free(tab->basis);
 	free(tab);
 }
@@ -234,6 +235,10 @@ struct isl_tab *isl_tab_dup(struct isl_tab *tab)
 	if (tab->samples) {
 		dup->samples = isl_mat_dup(tab->samples);
 		if (!dup->samples)
+			goto error;
+		dup->sample_index = isl_alloc_array(tab->mat->ctx, int,
+							tab->samples->n_row);
+		if (!dup->sample_index)
 			goto error;
 		dup->n_sample = tab->n_sample;
 		dup->n_outside = tab->n_outside;
@@ -485,6 +490,7 @@ struct isl_tab *isl_tab_product(struct isl_tab *tab1, struct isl_tab *tab2)
 		prod->row_var[pos] = t;
 	}
 	prod->samples = NULL;
+	prod->sample_index = NULL;
 	prod->n_row = tab1->n_row + tab2->n_row;
 	prod->n_con = tab1->n_con + tab2->n_con;
 	prod->n_eq = 0;
@@ -801,6 +807,9 @@ struct isl_tab *isl_tab_init_samples(struct isl_tab *tab)
 	tab->samples = isl_mat_alloc(tab->mat->ctx, 1, 1 + tab->n_var);
 	if (!tab->samples)
 		goto error;
+	tab->sample_index = isl_alloc_array(tab->mat->ctx, int, 1);
+	if (!tab->sample_index)
+		goto error;
 	return tab;
 error:
 	isl_tab_free(tab);
@@ -813,6 +822,14 @@ struct isl_tab *isl_tab_add_sample(struct isl_tab *tab,
 	if (!tab || !sample)
 		goto error;
 
+	if (tab->n_sample + 1 > tab->samples->n_row) {
+		int *t = isl_realloc_array(tab->mat->ctx,
+			    tab->sample_index, int, tab->n_sample + 1);
+		if (!t)
+			goto error;
+		tab->sample_index = t;
+	}
+
 	tab->samples = isl_mat_extend(tab->samples,
 				tab->n_sample + 1, tab->samples->n_col);
 	if (!tab->samples)
@@ -820,6 +837,7 @@ struct isl_tab *isl_tab_add_sample(struct isl_tab *tab,
 
 	isl_seq_cpy(tab->samples->row[tab->n_sample], sample->el, sample->size);
 	isl_vec_free(sample);
+	tab->sample_index[tab->n_sample] = tab->n_sample;
 	tab->n_sample++;
 
 	return tab;
@@ -831,12 +849,30 @@ error:
 
 struct isl_tab *isl_tab_drop_sample(struct isl_tab *tab, int s)
 {
-	if (s != tab->n_outside)
+	if (s != tab->n_outside) {
+		int t = tab->sample_index[tab->n_outside];
+		tab->sample_index[tab->n_outside] = tab->sample_index[s];
+		tab->sample_index[s] = t;
 		isl_mat_swap_rows(tab->samples, tab->n_outside, s);
+	}
 	tab->n_outside++;
 	isl_tab_push(tab, isl_tab_undo_drop_sample);
 
 	return tab;
+}
+
+/* Record the current number of samples so that we can remove newer
+ * samples during a rollback.
+ */
+void isl_tab_save_samples(struct isl_tab *tab)
+{
+	union isl_tab_undo_val u;
+
+	if (!tab)
+		return;
+
+	u.n = tab->n_sample;
+	push_union(tab, isl_tab_undo_saved_samples, u);
 }
 
 /* Mark row with index "row" as being redundant.
@@ -2524,6 +2560,28 @@ error:
 	return -1;
 }
 
+/* Remove all samples with index n or greater, i.e., those samples
+ * that were added since we saved this number of samples in
+ * isl_tab_save_samples.
+ */
+static int drop_samples_since(struct isl_tab *tab, int n)
+{
+	int i;
+
+	for (i = tab->n_sample - 1; i >= 0 && tab->n_sample > n; --i) {
+		if (tab->sample_index[i] < n)
+			continue;
+
+		if (i != tab->n_sample - 1) {
+			int t = tab->sample_index[tab->n_sample-1];
+			tab->sample_index[tab->n_sample-1] = tab->sample_index[i];
+			tab->sample_index[i] = t;
+			isl_mat_swap_rows(tab->samples, tab->n_sample-1, i);
+		}
+		tab->n_sample--;
+	}
+}
+
 static int perform_undo(struct isl_tab *tab, struct isl_tab_undo *undo)
 {
 	switch (undo->type) {
@@ -2554,6 +2612,9 @@ static int perform_undo(struct isl_tab *tab, struct isl_tab_undo *undo)
 		break;
 	case isl_tab_undo_drop_sample:
 		tab->n_outside--;
+		break;
+	case isl_tab_undo_saved_samples:
+		drop_samples_since(tab, undo->u.n);
 		break;
 	default:
 		isl_assert(tab->mat->ctx, 0, return -1);

@@ -1973,6 +1973,7 @@ static struct isl_sol *find_in_pos(struct isl_sol *sol,
 
 	snap = isl_tab_snap(sol->context_tab);
 	isl_tab_push_basis(sol->context_tab);
+	isl_tab_save_samples(sol->context_tab);
 	if (isl_tab_extend_cons(sol->context_tab, 1) < 0)
 		goto error;
 
@@ -2004,6 +2005,7 @@ static struct isl_sol *no_sol_in_strict(struct isl_sol *sol,
 	struct isl_tab_undo *snap;
 	snap = isl_tab_snap(sol->context_tab);
 	isl_tab_push_basis(sol->context_tab);
+	isl_tab_save_samples(sol->context_tab);
 	if (isl_tab_extend_cons(sol->context_tab, 1) < 0)
 		goto error;
 

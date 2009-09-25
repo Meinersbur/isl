@@ -30,11 +30,13 @@ enum isl_tab_undo_type {
 	isl_tab_undo_bset_div,
 	isl_tab_undo_saved_basis,
 	isl_tab_undo_drop_sample,
+	isl_tab_undo_saved_samples,
 };
 
 union isl_tab_undo_val {
 	int		var_index;
 	int		*col_var;
+	int		n;
 };
 
 struct isl_tab_undo {
@@ -136,6 +138,7 @@ struct isl_tab {
 
 	unsigned n_sample;
 	unsigned n_outside;
+	int *sample_index;
 	struct isl_mat *samples;
 
 	int n_zero;
@@ -228,5 +231,6 @@ struct isl_tab *isl_tab_init_samples(struct isl_tab *tab);
 struct isl_tab *isl_tab_add_sample(struct isl_tab *tab,
 	__isl_take isl_vec *sample);
 struct isl_tab *isl_tab_drop_sample(struct isl_tab *tab, int s);
+void isl_tab_save_samples(struct isl_tab *tab);
 
 #endif
