@@ -12,7 +12,8 @@ struct tab_lp {
 	isl_int		 opt_denom;
 	int	         neq;
 	unsigned	 dim;
-	int		 n_ineq;
+	/* number of constraints in initial product tableau */
+	int		 con_offset;
 };
 
 static struct tab_lp *init_lp(struct isl_basic_set *bset);
@@ -94,7 +95,6 @@ static struct tab_lp *init_lp(struct isl_basic_set *bset)
 	isl_int_init(lp->opt_denom);
 
 	lp->dim = isl_basic_set_total_dim(bset);
-	lp->n_ineq = bset->n_ineq;
 
 	lp->ctx = bset->ctx;
 	isl_ctx_ref(lp->ctx);
@@ -107,6 +107,7 @@ static struct tab_lp *init_lp(struct isl_basic_set *bset)
 	lp->tab = gbr_tab(bset, lp->row);
 	if (!lp->tab)
 		goto error;
+	lp->con_offset = lp->tab->n_con;
 	lp->obj = NULL;
 	lp->neq = 0;
 
@@ -173,7 +174,7 @@ static int add_lp_row(struct tab_lp *lp, isl_int *row, int dim)
 
 static void get_alpha(struct tab_lp* lp, int row, mpq_t *alpha)
 {
-	row += 2 * lp->n_ineq;
+	row += lp->con_offset;
 	isl_int_neg(mpq_numref(*alpha), lp->tab->dual->el[1 + row]);
 	isl_int_set(mpq_denref(*alpha), lp->tab->dual->el[0]);
 }
