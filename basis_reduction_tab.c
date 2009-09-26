@@ -20,7 +20,7 @@ struct tab_lp {
 	int		 is_fixed;
 };
 
-static struct tab_lp *init_lp(struct isl_basic_set *bset);
+static struct tab_lp *init_lp(struct isl_tab *tab);
 static void set_lp_obj(struct tab_lp *lp, isl_int *row, int dim);
 static int solve_lp(struct tab_lp *lp);
 static void get_obj_val(struct tab_lp* lp, mpq_t *F);
@@ -58,21 +58,17 @@ static int cut_lp_to_hyperplane(struct tab_lp *lp, isl_int *row);
  * This could be optimized by first setting up a tableau for bset
  * and then performing the Cartesian product on the tableau.
  */
-static struct isl_tab *gbr_tab(struct isl_basic_set *bset,
-	struct isl_vec *row)
+static struct isl_tab *gbr_tab(struct isl_tab *tab, struct isl_vec *row)
 {
 	int i, j;
 	unsigned dim;
-	struct isl_tab *tab;
 	struct isl_tab *prod;
 
-	if (!bset || !row)
+	if (!tab || !row)
 		return NULL;
 
-	dim = isl_basic_set_total_dim(bset);
-	tab = isl_tab_from_basic_set(bset);
+	dim = tab->n_var;
 	prod = isl_tab_product(tab, tab);
-	isl_tab_free(tab);
 	if (isl_tab_extend_cons(prod, 3 * dim + 1) < 0) {
 		isl_tab_free(prod);
 		return NULL;
@@ -80,16 +76,14 @@ static struct isl_tab *gbr_tab(struct isl_basic_set *bset,
 	return prod;
 }
 
-static struct tab_lp *init_lp(struct isl_basic_set *bset)
+static struct tab_lp *init_lp(struct isl_tab *tab)
 {
 	struct tab_lp *lp = NULL;
 
-	if (!bset)
+	if (!tab)
 		return NULL;
 
-	isl_assert(bset->ctx, bset->n_eq == 0, return NULL);
-
-	lp = isl_calloc_type(bset->ctx, struct tab_lp);
+	lp = isl_calloc_type(tab->mat->ctx, struct tab_lp);
 	if (!lp)
 		return NULL;
 
@@ -98,9 +92,9 @@ static struct tab_lp *init_lp(struct isl_basic_set *bset)
 	isl_int_init(lp->tmp);
 	isl_int_init(lp->tmp2);
 
-	lp->dim = isl_basic_set_total_dim(bset);
+	lp->dim = tab->n_var;
 
-	lp->ctx = bset->ctx;
+	lp->ctx = tab->mat->ctx;
 	isl_ctx_ref(lp->ctx);
 
 	lp->stack = isl_alloc_array(lp->ctx, struct isl_tab_undo *, lp->dim);
@@ -108,7 +102,7 @@ static struct tab_lp *init_lp(struct isl_basic_set *bset)
 	lp->row = isl_vec_alloc(lp->ctx, 1 + 2 * lp->dim);
 	if (!lp->row)
 		goto error;
-	lp->tab = gbr_tab(bset, lp->row);
+	lp->tab = gbr_tab(tab, lp->row);
 	if (!lp->tab)
 		goto error;
 	lp->con_offset = lp->tab->n_con;

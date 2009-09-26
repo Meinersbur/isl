@@ -18,9 +18,10 @@ static void save_alpha(GBR_LP *lp, int first, int n, GBR_type *alpha)
  * in the first direction.  In this case we stop the basis reduction when
  * the width in the first direction becomes smaller than 2.
  */
-struct isl_mat *isl_basic_set_reduced_basis(struct isl_basic_set *bset)
+struct isl_mat *isl_tab_reduced_basis(struct isl_tab *tab)
 {
 	unsigned dim;
+	struct isl_ctx *ctx;
 	struct isl_mat *basis;
 	int unbounded;
 	int i;
@@ -44,11 +45,12 @@ struct isl_mat *isl_basic_set_reduced_basis(struct isl_basic_set *bset)
 	int fixed_saved = 0;
 	int mu_fixed[2];
 
-	if (!bset)
+	if (!tab)
 		return NULL;
 
-	dim = isl_basic_set_total_dim(bset);
-	basis = isl_mat_identity(bset->ctx, dim);
+	ctx = tab->mat->ctx;
+	dim = tab->n_var;
+	basis = isl_mat_identity(ctx, dim);
 	if (!basis)
 		return NULL;
 
@@ -68,13 +70,13 @@ struct isl_mat *isl_basic_set_reduced_basis(struct isl_basic_set *bset)
 	GBR_init(two);
 	GBR_init(one);
 
-	b_tmp = isl_vec_alloc(bset->ctx, dim);
+	b_tmp = isl_vec_alloc(ctx, dim);
 	if (!b_tmp)
 		goto error;
 
-	F = isl_alloc_array(bset->ctx, GBR_type, dim);
-	alpha_buffer[0] = isl_alloc_array(bset->ctx, GBR_type, dim);
-	alpha_buffer[1] = isl_alloc_array(bset->ctx, GBR_type, dim);
+	F = isl_alloc_array(ctx, GBR_type, dim);
+	alpha_buffer[0] = isl_alloc_array(ctx, GBR_type, dim);
+	alpha_buffer[1] = isl_alloc_array(ctx, GBR_type, dim);
 	alpha_saved = alpha_buffer[0];
 
 	if (!F || !alpha_buffer[0] || !alpha_buffer[1])
@@ -89,16 +91,16 @@ struct isl_mat *isl_basic_set_reduced_basis(struct isl_basic_set *bset)
 	GBR_set_ui(two, 2);
 	GBR_set_ui(one, 1);
 
-	lp = GBR_lp_init(bset);
+	lp = GBR_lp_init(tab);
 	if (!lp)
 		goto error;
 
 	i = 0;
 
 	GBR_lp_set_obj(lp, basis->row[0], dim);
-	bset->ctx->stats->gbr_solved_lps++;
+	ctx->stats->gbr_solved_lps++;
 	unbounded = GBR_lp_solve(lp);
-	isl_assert(bset->ctx, !unbounded, goto error);
+	isl_assert(ctx, !unbounded, goto error);
 	GBR_lp_get_obj_val(lp, &F[0]);
 
 	if (GBR_lt(F[0], one)) {
@@ -114,9 +116,9 @@ struct isl_mat *isl_basic_set_reduced_basis(struct isl_basic_set *bset)
 	do {
 		if (i+1 == n_zero) {
 			GBR_lp_set_obj(lp, basis->row[i+1], dim);
-			bset->ctx->stats->gbr_solved_lps++;
+			ctx->stats->gbr_solved_lps++;
 			unbounded = GBR_lp_solve(lp);
-			isl_assert(bset->ctx, !unbounded, goto error);
+			isl_assert(ctx, !unbounded, goto error);
 			GBR_lp_get_obj_val(lp, &F_new);
 			fixed = GBR_lp_is_fixed(lp);
 			GBR_set_ui(alpha, 0);
@@ -129,9 +131,9 @@ struct isl_mat *isl_basic_set_reduced_basis(struct isl_basic_set *bset)
 		} else {
 			row = GBR_lp_add_row(lp, basis->row[i], dim);
 			GBR_lp_set_obj(lp, basis->row[i+1], dim);
-			bset->ctx->stats->gbr_solved_lps++;
+			ctx->stats->gbr_solved_lps++;
 			unbounded = GBR_lp_solve(lp);
-			isl_assert(bset->ctx, !unbounded, goto error);
+			isl_assert(ctx, !unbounded, goto error);
 			GBR_lp_get_obj_val(lp, &F_new);
 			fixed = GBR_lp_is_fixed(lp);
 
@@ -155,12 +157,12 @@ struct isl_mat *isl_basic_set_reduced_basis(struct isl_basic_set *bset)
 			for (j = 0; j <= 1; ++j) {
 				isl_int_set(tmp, mu[j]);
 				isl_seq_combine(b_tmp->el,
-						bset->ctx->one, basis->row[i+1],
+						ctx->one, basis->row[i+1],
 						tmp, basis->row[i], dim);
 				GBR_lp_set_obj(lp, b_tmp->el, dim);
-				bset->ctx->stats->gbr_solved_lps++;
+				ctx->stats->gbr_solved_lps++;
 				unbounded = GBR_lp_solve(lp);
-				isl_assert(bset->ctx, !unbounded, goto error);
+				isl_assert(ctx, !unbounded, goto error);
 				GBR_lp_get_obj_val(lp, &mu_F[j]);
 				mu_fixed[j] = GBR_lp_is_fixed(lp);
 				if (i > 0)
@@ -177,8 +179,7 @@ struct isl_mat *isl_basic_set_reduced_basis(struct isl_basic_set *bset)
 			fixed = mu_fixed[j];
 			alpha_saved = alpha_buffer[j];
 		}
-		isl_seq_combine(basis->row[i+1],
-				bset->ctx->one, basis->row[i+1],
+		isl_seq_combine(basis->row[i+1], ctx->one, basis->row[i+1],
 				tmp, basis->row[i], dim);
 
 		if (i+1 == n_zero && fixed) {
@@ -209,8 +210,7 @@ struct isl_mat *isl_basic_set_reduced_basis(struct isl_basic_set *bset)
 				--i;
 			} else {
 				GBR_set(F[0], F_new);
-				if (bset->ctx->gbr_only_first &&
-				    GBR_lt(F[0], two))
+				if (ctx->gbr_only_first && GBR_lt(F[0], two))
 					break;
 
 				if (fixed) {
@@ -264,6 +264,21 @@ error:
 	isl_int_clear(tmp);
 	isl_int_clear(mu[0]);
 	isl_int_clear(mu[1]);
+
+	return basis;
+}
+
+struct isl_mat *isl_basic_set_reduced_basis(struct isl_basic_set *bset)
+{
+	struct isl_mat *basis;
+	struct isl_tab *tab;
+
+	isl_assert(bset->ctx, bset->n_eq == 0, return NULL);
+
+	tab = isl_tab_from_basic_set(bset);
+	basis = isl_tab_reduced_basis(tab);
+
+	isl_tab_free(tab);
 
 	return basis;
 }
