@@ -257,162 +257,29 @@ static struct isl_vec *sample_eq(struct isl_basic_set *bset,
 	return sample;
 }
 
-/* Given a basic set "bset" and an affine function "f"/"denom",
- * check if bset is bounded and non-empty and if so, return the minimal
- * and maximal value attained by the affine function in "min" and "max".
- * The minimal value is rounded up to the nearest integer, while the
- * maximal value is rounded down.
- * The return value indicates whether the set was empty or unbounded.
- *
- * If we happen to find an integer point while looking for the minimal
- * or maximal value, then we record that value in "bset" and return early.
- */
-static enum isl_lp_result basic_set_range(struct isl_basic_set *bset,
-	isl_int *f, isl_int denom, isl_int *min, isl_int *max)
-{
-	unsigned dim;
-	struct isl_tab *tab;
-	enum isl_lp_result res;
-
-	if (!bset)
-		return isl_lp_error;
-	if (isl_basic_set_fast_is_empty(bset))
-		return isl_lp_empty;
-
-	tab = isl_tab_from_basic_set(bset);
-	res = isl_tab_min(tab, f, denom, min, NULL, 0);
-	if (res != isl_lp_ok)
-		goto done;
-
-	if (isl_tab_sample_is_integer(tab)) {
-		isl_vec_free(bset->sample);
-		bset->sample = isl_tab_get_sample_value(tab);
-		if (!bset->sample)
-			goto error;
-		isl_int_set(*max, *min);
-		goto done;
-	}
-
-	dim = isl_basic_set_total_dim(bset);
-	isl_seq_neg(f, f, 1 + dim);
-	res = isl_tab_min(tab, f, denom, max, NULL, 0);
-	isl_seq_neg(f, f, 1 + dim);
-	isl_int_neg(*max, *max);
-
-	if (isl_tab_sample_is_integer(tab)) {
-		isl_vec_free(bset->sample);
-		bset->sample = isl_tab_get_sample_value(tab);
-		if (!bset->sample)
-			goto error;
-	}
-
-done:
-	isl_tab_free(tab);
-	return res;
-error:
-	isl_tab_free(tab);
-	return isl_lp_error;
-}
-
-/* Perform a basis reduction on "bset" and return the inverse of
- * the new basis, i.e., an affine mapping from the new coordinates to the old,
- * in *T.
- */
-static struct isl_basic_set *basic_set_reduced(struct isl_basic_set *bset,
-	struct isl_mat **T)
-{
-	unsigned gbr_only_first;
-
-	*T = NULL;
-	if (!bset)
-		return NULL;
-
-	gbr_only_first = bset->ctx->gbr_only_first;
-	bset->ctx->gbr_only_first = bset->ctx->gbr == ISL_GBR_ALWAYS;
-	*T = isl_basic_set_reduced_basis(bset);
-	bset->ctx->gbr_only_first = gbr_only_first;
-
-	*T = isl_mat_right_inverse(*T);
-
-	bset = isl_basic_set_preimage(bset, isl_mat_copy(*T));
-	if (!bset)
-		goto error;
-
-	return bset;
-error:
-	isl_mat_free(*T);
-	*T = NULL;
-	return NULL;
-}
-
-static struct isl_vec *sample_bounded(struct isl_basic_set *bset);
-
-/* Given a basic set "bset" whose first coordinate ranges between
- * "min" and "max", step through all values from min to max, until
- * the slice of bset with the first coordinate fixed to one of these
- * values contains an integer point.  If such a point is found, return it.
- * If none of the slices contains any integer point, then bset itself
- * doesn't contain any integer point and an empty sample is returned.
- */
-static struct isl_vec *sample_scan(struct isl_basic_set *bset,
-	isl_int min, isl_int max)
-{
-	unsigned total;
-	struct isl_basic_set *slice = NULL;
-	struct isl_vec *sample = NULL;
-	isl_int tmp;
-
-	total = isl_basic_set_total_dim(bset);
-
-	isl_int_init(tmp);
-	for (isl_int_set(tmp, min); isl_int_le(tmp, max);
-	     isl_int_add_ui(tmp, tmp, 1)) {
-		int k;
-
-		slice = isl_basic_set_copy(bset);
-		slice = isl_basic_set_cow(slice);
-		slice = isl_basic_set_extend_constraints(slice, 1, 0);
-		k = isl_basic_set_alloc_equality(slice);
-		if (k < 0)
-			goto error;
-		isl_int_set(slice->eq[k][0], tmp);
-		isl_int_set_si(slice->eq[k][1], -1);
-		isl_seq_clr(slice->eq[k] + 2, total - 1);
-		slice = isl_basic_set_simplify(slice);
-		sample = sample_bounded(slice);
-		slice = NULL;
-		if (!sample)
-			goto error;
-		if (sample->size > 0)
-			break;
-		isl_vec_free(sample);
-		sample = NULL;
-	}
-	if (!sample)
-		sample = empty_sample(bset);
-	else
-		isl_basic_set_free(bset);
-	isl_int_clear(tmp);
-	return sample;
-error:
-	isl_basic_set_free(bset);
-	isl_basic_set_free(slice);
-	isl_int_clear(tmp);
-	return NULL;
-}
-
 /* Given a basic set that is known to be bounded, find and return
  * an integer point in the basic set, if there is any.
  *
- * After handling some trivial cases, we check the range of the
- * first coordinate.  If this coordinate can only attain one integer
- * value, we are happy.  Otherwise, we perform basis reduction and
- * determine the new range.
+ * After handling some trivial cases, we perform a depth first search
+ * for an integer point, by scanning all possible values in the range
+ * attained by a basis vector.
  *
- * Then we step through all possible values in the range in sample_scan.
+ * The search is implemented iteratively.  "level" identifies the current
+ * basis vector.  "init" is true if we want the first value at the current
+ * level and false if we want the next value.
  *
- * If any basis reduction was performed, the sample value found, if any,
- * is transformed back to the original space.
+ * The initial basis is the identity matrix.  If the range in some direction
+ * contains more than one integer value, we perform basis reduction based
+ * on the value of ctx->gbr
+ *	- ISL_GBR_NEVER:	never perform basis reduction
+ *	- ISL_GBR_ONCE:		only perform basis reduction the first
+ *				time such a range is encountered
+ *	- ISL_GBR_ALWAYS:	always perform basis reduction when
+ *				such a range is encountered
+ *
+ * When ctx->gbr is set to ISL_GBR_ALWAYS, then we allow the basis
+ * reduction computation to return early.  That is, as soon as it
+ * finds a reasonable first direction.
  */ 
 static struct isl_vec *sample_bounded(struct isl_basic_set *bset)
 {
@@ -420,10 +287,14 @@ static struct isl_vec *sample_bounded(struct isl_basic_set *bset)
 	unsigned gbr;
 	struct isl_ctx *ctx;
 	struct isl_vec *sample;
-	struct isl_vec *obj = NULL;
-	struct isl_mat *T = NULL;
-	isl_int min, max;
+	struct isl_vec *min;
+	struct isl_vec *max;
 	enum isl_lp_result res;
+	int level;
+	int init;
+	int reduced;
+	struct isl_tab_undo **snap;
+	struct isl_tab *tab = NULL;
 
 	if (!bset)
 		return NULL;
@@ -442,71 +313,108 @@ static struct isl_vec *sample_bounded(struct isl_basic_set *bset)
 	ctx = bset->ctx;
 	gbr = ctx->gbr;
 
-	isl_int_init(min);
-	isl_int_init(max);
-	obj = isl_vec_alloc(bset->ctx, 1 + dim);
-	if (!obj)
-		goto error;
-	isl_seq_clr(obj->el, 1+ dim);
-	isl_int_set_si(obj->el[1], 1);
+	min = isl_vec_alloc(bset->ctx, dim);
+	max = isl_vec_alloc(bset->ctx, dim);
+	snap = isl_alloc_array(bset->ctx, struct isl_tab_undo *, dim);
 
-	res = basic_set_range(bset, obj->el, bset->ctx->one, &min, &max);
-	if (res == isl_lp_error)
+	if (!min || !max || !snap)
 		goto error;
-	isl_assert(bset->ctx, res != isl_lp_unbounded, goto error);
-	if (bset->sample) {
-		sample = isl_vec_copy(bset->sample);
+
+	tab = isl_tab_from_basic_set(bset);
+	if (!tab)
+		goto error;
+
+	tab->basis = isl_mat_identity(bset->ctx, 1 + dim);
+	if (!tab->basis)
+		goto error;
+
+	level = 0;
+	init = 1;
+	reduced = 0;
+
+	while (level >= 0) {
+		int empty = 0;
+		if (init) {
+			res = isl_tab_min(tab, tab->basis->row[1 + level],
+				    bset->ctx->one, &min->el[level], NULL, 0);
+			if (res == isl_lp_empty)
+				empty = 1;
+			if (res == isl_lp_error || res == isl_lp_unbounded)
+				goto error;
+			if (!empty && isl_tab_sample_is_integer(tab))
+				break;
+			isl_seq_neg(tab->basis->row[1 + level] + 1,
+				    tab->basis->row[1 + level] + 1, dim);
+			res = isl_tab_min(tab, tab->basis->row[1 + level],
+				    bset->ctx->one, &max->el[level], NULL, 0);
+			isl_seq_neg(tab->basis->row[1 + level] + 1,
+				    tab->basis->row[1 + level] + 1, dim);
+			isl_int_neg(max->el[level], max->el[level]);
+			if (res == isl_lp_empty)
+				empty = 1;
+			if (res == isl_lp_error || res == isl_lp_unbounded)
+				goto error;
+			if (!empty && isl_tab_sample_is_integer(tab))
+				break;
+			if (!empty && !reduced && ctx->gbr != ISL_GBR_NEVER &&
+			    isl_int_lt(min->el[level], max->el[level])) {
+				unsigned gbr_only_first;
+				if (ctx->gbr == ISL_GBR_ONCE)
+					ctx->gbr = ISL_GBR_NEVER;
+				tab->n_zero = level;
+				gbr_only_first = bset->ctx->gbr_only_first;
+				bset->ctx->gbr_only_first =
+					bset->ctx->gbr == ISL_GBR_ALWAYS;
+				tab = isl_tab_compute_reduced_basis(tab);
+				bset->ctx->gbr_only_first = gbr_only_first;
+				if (!tab || !tab->basis)
+					goto error;
+				reduced = 1;
+				continue;
+			}
+			reduced = 0;
+			snap[level] = isl_tab_snap(tab);
+		} else
+			isl_int_add_ui(min->el[level], min->el[level], 1);
+
+		if (empty || isl_int_gt(min->el[level], max->el[level])) {
+			level--;
+			init = 0;
+			if (level >= 0)
+				isl_tab_rollback(tab, snap[level]);
+			continue;
+		}
+		isl_int_neg(tab->basis->row[1 + level][0], min->el[level]);
+		tab = isl_tab_add_valid_eq(tab, tab->basis->row[1 + level]);
+		isl_int_set_si(tab->basis->row[1 + level][0], 0);
+		if (level < dim - 1) {
+			++level;
+			init = 1;
+			continue;
+		}
+		break;
+	}
+	if (level >= 0) {
+		sample = isl_tab_get_sample_value(tab);
+		isl_vec_free(bset->sample);
+		bset->sample = isl_vec_copy(sample);
 		isl_basic_set_free(bset);
-		goto out;
-	}
-	if (res == isl_lp_empty || isl_int_lt(max, min)) {
+	} else
 		sample = empty_sample(bset);
-		goto out;
-	}
 
-	if (ctx->gbr != ISL_GBR_NEVER && isl_int_ne(min, max)) {
-		if (ctx->gbr == ISL_GBR_ONCE)
-			ctx->gbr = ISL_GBR_NEVER;
-
-		bset = basic_set_reduced(bset, &T);
-		if (!bset)
-			goto error;
-
-		res = basic_set_range(bset, obj->el, bset->ctx->one, &min, &max);
-		if (res == isl_lp_error)
-			goto error;
-		isl_assert(bset->ctx, res != isl_lp_unbounded, goto error);
-		if (bset->sample) {
-			sample = isl_vec_copy(bset->sample);
-			isl_basic_set_free(bset);
-			goto out;
-		}
-		if (res == isl_lp_empty || isl_int_lt(max, min)) {
-			sample = empty_sample(bset);
-			goto out;
-		}
-	}
-
-	sample = sample_scan(bset, min, max);
-out:
-	if (T) {
-		if (!sample || sample->size == 0)
-			isl_mat_free(T);
-		else
-			sample = isl_mat_vec_product(T, sample);
-	}
-	isl_vec_free(obj);
-	isl_int_clear(min);
-	isl_int_clear(max);
+	isl_vec_free(min);
+	isl_vec_free(max);
+	free(snap);
 	ctx->gbr = gbr;
+	isl_tab_free(tab);
 	return sample;
 error:
 	ctx->gbr = gbr;
-	isl_mat_free(T);
 	isl_basic_set_free(bset);
-	isl_vec_free(obj);
-	isl_int_clear(min);
-	isl_int_clear(max);
+	isl_vec_free(min);
+	isl_vec_free(max);
+	free(snap);
+	isl_tab_free(tab);
 	return NULL;
 }
 
