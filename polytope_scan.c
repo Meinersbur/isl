@@ -94,12 +94,15 @@ static struct isl_mat *isl_basic_set_samples(struct isl_basic_set *bset)
 		goto error;
 
 	tab = isl_tab_from_basic_set(bset);
+	if (!tab)
+		goto error;
 
+	tab->basis = isl_mat_identity(bset->ctx, dim);
 	if (1)
-		B = isl_tab_reduced_basis(tab);
-	else
-		B = isl_mat_identity(bset->ctx, dim);
-	B = isl_mat_lin_to_aff(B);
+		tab = isl_tab_compute_reduced_basis(tab);
+	if (!tab)
+		goto error;
+	B = isl_mat_lin_to_aff(isl_mat_copy(tab->basis));
 	if (!B)
 		goto error;
 

@@ -63,6 +63,10 @@ struct isl_tab *isl_tab_alloc(struct isl_ctx *ctx,
 	tab->bottom.type = isl_tab_undo_bottom;
 	tab->bottom.next = NULL;
 	tab->top = &tab->bottom;
+
+	tab->n_zero = 0;
+	tab->basis = NULL;
+
 	return tab;
 error:
 	isl_tab_free(tab);
@@ -178,6 +182,7 @@ void isl_tab_free(struct isl_tab *tab)
 	free(tab->col_var);
 	free(tab->row_sign);
 	isl_mat_free(tab->samples);
+	isl_mat_free(tab->basis);
 	free(tab);
 }
 
@@ -251,6 +256,10 @@ struct isl_tab *isl_tab_dup(struct isl_tab *tab)
 	dup->bottom.type = isl_tab_undo_bottom;
 	dup->bottom.next = NULL;
 	dup->top = &dup->bottom;
+
+	dup->n_zero = tab->n_zero;
+	dup->basis = isl_mat_dup(tab->basis);
+
 	return dup;
 error:
 	isl_tab_free(dup);
@@ -493,6 +502,10 @@ struct isl_tab *isl_tab_product(struct isl_tab *tab1, struct isl_tab *tab2)
 	prod->bottom.type = isl_tab_undo_bottom;
 	prod->bottom.next = NULL;
 	prod->top = &prod->bottom;
+
+	prod->n_zero = 0;
+	prod->basis = NULL;
+
 	return prod;
 error:
 	isl_tab_free(prod);

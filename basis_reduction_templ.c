@@ -9,7 +9,15 @@ static void save_alpha(GBR_LP *lp, int first, int n, GBR_type *alpha)
 		GBR_lp_get_alpha(lp, first + i, &alpha[i]);
 }
 
-/* This function implements the algorithm described in
+/* Compute a reduced basis for the set represented by the tableau "tab".
+ * tab->basis, must be initialized by the calling function to a unimodular
+ * basis, is updated to reflect the reduced basis.
+ * The first tab->n_zero rows of the basis are assumed to correspond
+ * to equalities and are left untouched.
+ * tab->n_zero is updated to reflect any additional equalities that
+ * have been detected in the first rows of the new basis.
+ *
+ * This function implements the algorithm described in
  * "An Implementation of the Generalized Basis Reduction Algorithm
  *  for Integer Programming" of Cook el al. to compute a reduced basis.
  * We use \epsilon = 1/4.
@@ -18,7 +26,7 @@ static void save_alpha(GBR_LP *lp, int first, int n, GBR_type *alpha)
  * in the first direction.  In this case we stop the basis reduction when
  * the width in the first direction becomes smaller than 2.
  */
-struct isl_mat *isl_tab_reduced_basis(struct isl_tab *tab)
+struct isl_tab *isl_tab_compute_reduced_basis(struct isl_tab *tab)
 {
 	unsigned dim;
 	struct isl_ctx *ctx;
@@ -39,7 +47,6 @@ struct isl_mat *isl_tab_reduced_basis(struct isl_tab *tab)
 	GBR_type mu_F[2];
 	GBR_type two;
 	GBR_type one;
-	int n_zero = 0;
 	int empty = 0;
 	int fixed = 0;
 	int fixed_saved = 0;
@@ -50,12 +57,12 @@ struct isl_mat *isl_tab_reduced_basis(struct isl_tab *tab)
 
 	ctx = tab->mat->ctx;
 	dim = tab->n_var;
-	basis = isl_mat_identity(ctx, dim);
+	basis = tab->basis;
 	if (!basis)
-		return NULL;
+		return tab;
 
-	if (dim == 1)
-		return basis;
+	if (dim <= tab->n_zero + 1)
+		return tab;
 
 	isl_int_init(tmp);
 	isl_int_init(mu[0]);
@@ -95,26 +102,26 @@ struct isl_mat *isl_tab_reduced_basis(struct isl_tab *tab)
 	if (!lp)
 		goto error;
 
-	i = 0;
+	i = tab->n_zero;
 
-	GBR_lp_set_obj(lp, basis->row[0], dim);
+	GBR_lp_set_obj(lp, basis->row[i], dim);
 	ctx->stats->gbr_solved_lps++;
 	unbounded = GBR_lp_solve(lp);
 	isl_assert(ctx, !unbounded, goto error);
-	GBR_lp_get_obj_val(lp, &F[0]);
+	GBR_lp_get_obj_val(lp, &F[i]);
 
-	if (GBR_lt(F[0], one)) {
-		if (!GBR_is_zero(F[0])) {
-			empty = GBR_lp_cut(lp, basis->row[0]);
+	if (GBR_lt(F[i], one)) {
+		if (!GBR_is_zero(F[i])) {
+			empty = GBR_lp_cut(lp, basis->row[i]);
 			if (empty)
 				goto done;
-			GBR_set_ui(F[0], 0);
+			GBR_set_ui(F[i], 0);
 		}
-		n_zero++;
+		tab->n_zero++;
 	}
 
 	do {
-		if (i+1 == n_zero) {
+		if (i+1 == tab->n_zero) {
 			GBR_lp_set_obj(lp, basis->row[i+1], dim);
 			ctx->stats->gbr_solved_lps++;
 			unbounded = GBR_lp_solve(lp);
@@ -182,14 +189,14 @@ struct isl_mat *isl_tab_reduced_basis(struct isl_tab *tab)
 		isl_seq_combine(basis->row[i+1], ctx->one, basis->row[i+1],
 				tmp, basis->row[i], dim);
 
-		if (i+1 == n_zero && fixed) {
+		if (i+1 == tab->n_zero && fixed) {
 			if (!GBR_is_zero(F[i+1])) {
 				empty = GBR_lp_cut(lp, basis->row[i+1]);
 				if (empty)
 					goto done;
 				GBR_set_ui(F[i+1], 0);
 			}
-			n_zero++;
+			tab->n_zero++;
 		}
 
 		GBR_set(F_old, F[i]);
@@ -202,25 +209,25 @@ struct isl_mat *isl_tab_reduced_basis(struct isl_tab *tab)
 		GBR_mul(mu_F[1], mu_F[1], F_old);
 		if (GBR_lt(mu_F[0], mu_F[1])) {
 			basis = isl_mat_swap_rows(basis, i, i + 1);
-			if (i > 0) {
+			if (i > tab->n_zero) {
 				use_saved = 1;
 				GBR_set(F_saved, F_new);
 				fixed_saved = fixed;
 				GBR_lp_del_row(lp);
 				--i;
 			} else {
-				GBR_set(F[0], F_new);
-				if (ctx->gbr_only_first && GBR_lt(F[0], two))
+				GBR_set(F[tab->n_zero], F_new);
+				if (ctx->gbr_only_first && GBR_lt(F[tab->n_zero], two))
 					break;
 
 				if (fixed) {
-					if (!GBR_is_zero(F[0])) {
-						empty = GBR_lp_cut(lp, basis->row[0]);
+					if (!GBR_is_zero(F[tab->n_zero])) {
+						empty = GBR_lp_cut(lp, basis->row[tab->n_zero]);
 						if (empty)
 							goto done;
-						GBR_set_ui(F[0], 0);
+						GBR_set_ui(F[tab->n_zero], 0);
 					}
-					n_zero++;
+					tab->n_zero++;
 				}
 			}
 		} else {
@@ -265,7 +272,9 @@ error:
 	isl_int_clear(mu[0]);
 	isl_int_clear(mu[1]);
 
-	return basis;
+	tab->basis = basis;
+
+	return tab;
 }
 
 struct isl_mat *isl_basic_set_reduced_basis(struct isl_basic_set *bset)
@@ -276,7 +285,12 @@ struct isl_mat *isl_basic_set_reduced_basis(struct isl_basic_set *bset)
 	isl_assert(bset->ctx, bset->n_eq == 0, return NULL);
 
 	tab = isl_tab_from_basic_set(bset);
-	basis = isl_tab_reduced_basis(tab);
+	tab->basis = isl_mat_identity(bset->ctx, tab->n_var);
+	tab = isl_tab_compute_reduced_basis(tab);
+	if (!tab)
+		return NULL;
+
+	basis = isl_mat_copy(tab->basis);
 
 	isl_tab_free(tab);
 
