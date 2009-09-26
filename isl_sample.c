@@ -909,7 +909,8 @@ static struct isl_vec *basic_set_sample(struct isl_basic_set *bset, int bounded)
 	bset->sample = NULL;
 
 	if (bset->n_eq > 0)
-		return sample_eq(bset, isl_basic_set_sample_vec);
+		return sample_eq(bset, bounded ? isl_basic_set_sample_bounded
+					       : isl_basic_set_sample_vec);
 	if (dim == 0)
 		return zero_sample(bset);
 	if (dim == 1)
