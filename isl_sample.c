@@ -332,7 +332,6 @@ static struct isl_basic_set *basic_set_reduced(struct isl_basic_set *bset,
 	*T = isl_basic_set_reduced_basis(bset);
 	bset->ctx->gbr_only_first = gbr_only_first;
 
-	*T = isl_mat_lin_to_aff(*T);
 	*T = isl_mat_right_inverse(*T);
 
 	bset = isl_basic_set_preimage(bset, isl_mat_copy(*T));
