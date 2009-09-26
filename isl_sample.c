@@ -328,7 +328,7 @@ static struct isl_basic_set *basic_set_reduced(struct isl_basic_set *bset,
 		return NULL;
 
 	gbr_only_first = bset->ctx->gbr_only_first;
-	bset->ctx->gbr_only_first = bset->ctx->gbr == ISL_GBR_ONCE;
+	bset->ctx->gbr_only_first = bset->ctx->gbr == ISL_GBR_ALWAYS;
 	*T = isl_basic_set_reduced_basis(bset);
 	bset->ctx->gbr_only_first = gbr_only_first;
 
