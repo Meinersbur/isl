@@ -93,15 +93,15 @@ static struct isl_mat *isl_basic_set_samples(struct isl_basic_set *bset)
 	if (!min || !max || !samples || !snap)
 		goto error;
 
+	tab = isl_tab_from_basic_set(bset);
+
 	if (1)
-		B = isl_basic_set_reduced_basis(bset);
+		B = isl_tab_reduced_basis(tab);
 	else
 		B = isl_mat_identity(bset->ctx, dim);
 	B = isl_mat_lin_to_aff(B);
 	if (!B)
 		goto error;
-
-	tab = isl_tab_from_basic_set(bset);
 
 	level = 0;
 	init = 1;
