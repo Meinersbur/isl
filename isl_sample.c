@@ -257,12 +257,14 @@ static struct isl_vec *sample_eq(struct isl_basic_set *bset,
 	return sample;
 }
 
-/* Given a basic set that is known to be bounded, find and return
- * an integer point in the basic set, if there is any.
+/* Given a tableau that is known to represent a bounded set, find and return
+ * an integer point in the set, if there is any.
  *
- * After handling some trivial cases, we perform a depth first search
+ * We perform a depth first search
  * for an integer point, by scanning all possible values in the range
- * attained by a basis vector.
+ * attained by a basis vector, where the initial basis is assumed
+ * to have been set by the calling function.
+ * tab->n_zero is currently ignored and is clobbered by this function.
  *
  * The search is implemented iteratively.  "level" identifies the current
  * basis vector.  "init" is true if we want the first value at the current
@@ -281,7 +283,7 @@ static struct isl_vec *sample_eq(struct isl_basic_set *bset,
  * reduction computation to return early.  That is, as soon as it
  * finds a reasonable first direction.
  */ 
-static struct isl_vec *sample_bounded(struct isl_basic_set *bset)
+struct isl_vec *isl_tab_sample(struct isl_tab *tab)
 {
 	unsigned dim;
 	unsigned gbr;
@@ -294,38 +296,26 @@ static struct isl_vec *sample_bounded(struct isl_basic_set *bset)
 	int init;
 	int reduced;
 	struct isl_tab_undo **snap;
-	struct isl_tab *tab = NULL;
 
-	if (!bset)
+	if (!tab)
 		return NULL;
+	if (tab->empty)
+		return isl_vec_alloc(tab->mat->ctx, 0);
 
-	if (isl_basic_set_fast_is_empty(bset))
-		return empty_sample(bset);
-
-	dim = isl_basic_set_total_dim(bset);
-	if (dim == 0)
-		return zero_sample(bset);
-	if (dim == 1)
-		return interval_sample(bset);
-	if (bset->n_eq > 0)
-		return sample_eq(bset, sample_bounded);
-
-	ctx = bset->ctx;
+	ctx = tab->mat->ctx;
+	dim = tab->n_var;
 	gbr = ctx->gbr;
 
-	min = isl_vec_alloc(bset->ctx, dim);
-	max = isl_vec_alloc(bset->ctx, dim);
-	snap = isl_alloc_array(bset->ctx, struct isl_tab_undo *, dim);
+	isl_assert(ctx, tab->basis, return NULL);
+
+	if (isl_tab_extend_cons(tab, dim + 1) < 0)
+		return NULL;
+
+	min = isl_vec_alloc(ctx, dim);
+	max = isl_vec_alloc(ctx, dim);
+	snap = isl_alloc_array(ctx, struct isl_tab_undo *, dim);
 
 	if (!min || !max || !snap)
-		goto error;
-
-	tab = isl_tab_from_basic_set(bset);
-	if (!tab)
-		goto error;
-
-	tab->basis = isl_mat_identity(bset->ctx, 1 + dim);
-	if (!tab->basis)
 		goto error;
 
 	level = 0;
@@ -336,7 +326,7 @@ static struct isl_vec *sample_bounded(struct isl_basic_set *bset)
 		int empty = 0;
 		if (init) {
 			res = isl_tab_min(tab, tab->basis->row[1 + level],
-				    bset->ctx->one, &min->el[level], NULL, 0);
+				    ctx->one, &min->el[level], NULL, 0);
 			if (res == isl_lp_empty)
 				empty = 1;
 			if (res == isl_lp_error || res == isl_lp_unbounded)
@@ -346,7 +336,7 @@ static struct isl_vec *sample_bounded(struct isl_basic_set *bset)
 			isl_seq_neg(tab->basis->row[1 + level] + 1,
 				    tab->basis->row[1 + level] + 1, dim);
 			res = isl_tab_min(tab, tab->basis->row[1 + level],
-				    bset->ctx->one, &max->el[level], NULL, 0);
+				    ctx->one, &max->el[level], NULL, 0);
 			isl_seq_neg(tab->basis->row[1 + level] + 1,
 				    tab->basis->row[1 + level] + 1, dim);
 			isl_int_neg(max->el[level], max->el[level]);
@@ -362,11 +352,11 @@ static struct isl_vec *sample_bounded(struct isl_basic_set *bset)
 				if (ctx->gbr == ISL_GBR_ONCE)
 					ctx->gbr = ISL_GBR_NEVER;
 				tab->n_zero = level;
-				gbr_only_first = bset->ctx->gbr_only_first;
-				bset->ctx->gbr_only_first =
-					bset->ctx->gbr == ISL_GBR_ALWAYS;
+				gbr_only_first = ctx->gbr_only_first;
+				ctx->gbr_only_first =
+					ctx->gbr == ISL_GBR_ALWAYS;
 				tab = isl_tab_compute_reduced_basis(tab);
-				bset->ctx->gbr_only_first = gbr_only_first;
+				ctx->gbr_only_first = gbr_only_first;
 				if (!tab || !tab->basis)
 					goto error;
 				reduced = 1;
@@ -394,26 +384,77 @@ static struct isl_vec *sample_bounded(struct isl_basic_set *bset)
 		}
 		break;
 	}
-	if (level >= 0) {
-		sample = isl_tab_get_sample_value(tab);
-		isl_vec_free(bset->sample);
-		bset->sample = isl_vec_copy(sample);
-		isl_basic_set_free(bset);
-	} else
-		sample = empty_sample(bset);
 
+	if (level >= 0)
+		sample = isl_tab_get_sample_value(tab);
+	else
+		sample = isl_vec_alloc(ctx, 0);
+
+	ctx->gbr = gbr;
 	isl_vec_free(min);
 	isl_vec_free(max);
 	free(snap);
-	ctx->gbr = gbr;
-	isl_tab_free(tab);
 	return sample;
 error:
 	ctx->gbr = gbr;
-	isl_basic_set_free(bset);
 	isl_vec_free(min);
 	isl_vec_free(max);
 	free(snap);
+	return NULL;
+}
+
+/* Given a basic set that is known to be bounded, find and return
+ * an integer point in the basic set, if there is any.
+ *
+ * After handling some trivial cases, we construct a tableau
+ * and then use isl_tab_sample to find a sample, passing it
+ * the identity matrix as initial basis.
+ */ 
+static struct isl_vec *sample_bounded(struct isl_basic_set *bset)
+{
+	unsigned dim;
+	struct isl_ctx *ctx;
+	struct isl_vec *sample;
+	struct isl_tab *tab = NULL;
+
+	if (!bset)
+		return NULL;
+
+	if (isl_basic_set_fast_is_empty(bset))
+		return empty_sample(bset);
+
+	dim = isl_basic_set_total_dim(bset);
+	if (dim == 0)
+		return zero_sample(bset);
+	if (dim == 1)
+		return interval_sample(bset);
+	if (bset->n_eq > 0)
+		return sample_eq(bset, sample_bounded);
+
+	ctx = bset->ctx;
+
+	tab = isl_tab_from_basic_set(bset);
+	if (!tab)
+		goto error;
+
+	tab->basis = isl_mat_identity(bset->ctx, 1 + dim);
+	if (!tab->basis)
+		goto error;
+
+	sample = isl_tab_sample(tab);
+	if (!sample)
+		goto error;
+
+	if (sample->size > 0) {
+		isl_vec_free(bset->sample);
+		bset->sample = isl_vec_copy(sample);
+	}
+
+	isl_basic_set_free(bset);
+	isl_tab_free(tab);
+	return sample;
+error:
+	isl_basic_set_free(bset);
 	isl_tab_free(tab);
 	return NULL;
 }
