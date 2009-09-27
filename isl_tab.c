@@ -1390,35 +1390,35 @@ struct isl_tab *isl_tab_from_basic_set(struct isl_basic_set *bset)
 	return isl_tab_from_basic_map((struct isl_basic_map *)bset);
 }
 
-/* Construct a tableau corresponding to the recession cone of "bmap".
+/* Construct a tableau corresponding to the recession cone of "bset".
  */
-struct isl_tab *isl_tab_from_recession_cone(struct isl_basic_map *bmap)
+struct isl_tab *isl_tab_from_recession_cone(struct isl_basic_set *bset)
 {
 	isl_int cst;
 	int i;
 	struct isl_tab *tab;
 
-	if (!bmap)
+	if (!bset)
 		return NULL;
-	tab = isl_tab_alloc(bmap->ctx, bmap->n_eq + bmap->n_ineq,
-				isl_basic_map_total_dim(bmap), 0);
+	tab = isl_tab_alloc(bset->ctx, bset->n_eq + bset->n_ineq,
+				isl_basic_set_total_dim(bset), 0);
 	if (!tab)
 		return NULL;
-	tab->rational = ISL_F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL);
+	tab->rational = ISL_F_ISSET(bset, ISL_BASIC_SET_RATIONAL);
 
 	isl_int_init(cst);
-	for (i = 0; i < bmap->n_eq; ++i) {
-		isl_int_swap(bmap->eq[i][0], cst);
-		tab = add_eq(tab, bmap->eq[i]);
-		isl_int_swap(bmap->eq[i][0], cst);
+	for (i = 0; i < bset->n_eq; ++i) {
+		isl_int_swap(bset->eq[i][0], cst);
+		tab = add_eq(tab, bset->eq[i]);
+		isl_int_swap(bset->eq[i][0], cst);
 		if (!tab)
 			goto done;
 	}
-	for (i = 0; i < bmap->n_ineq; ++i) {
+	for (i = 0; i < bset->n_ineq; ++i) {
 		int r;
-		isl_int_swap(bmap->ineq[i][0], cst);
-		r = isl_tab_add_row(tab, bmap->ineq[i]);
-		isl_int_swap(bmap->ineq[i][0], cst);
+		isl_int_swap(bset->ineq[i][0], cst);
+		r = isl_tab_add_row(tab, bset->ineq[i]);
+		isl_int_swap(bset->ineq[i][0], cst);
 		if (r < 0)
 			goto error;
 		tab->con[r].is_nonneg = 1;

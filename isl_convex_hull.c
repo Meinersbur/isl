@@ -937,7 +937,7 @@ static int isl_basic_set_is_bounded(struct isl_basic_set *bset)
 	struct isl_tab *tab;
 	int bounded;
 
-	tab = isl_tab_from_recession_cone((struct isl_basic_map *)bset);
+	tab = isl_tab_from_recession_cone(bset);
 	bounded = isl_tab_cone_is_bounded(tab);
 	isl_tab_free(tab);
 	return bounded;
