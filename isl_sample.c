@@ -257,13 +257,86 @@ static struct isl_vec *sample_eq(struct isl_basic_set *bset,
 	return sample;
 }
 
+/* Return a matrix containing the equalities of the tableau
+ * in constraint form.  The tableau is assumed to have
+ * an associated bset that has been kept up-to-date.
+ */
+static struct isl_mat *tab_equalities(struct isl_tab *tab)
+{
+	int i, j;
+	int n_eq;
+	struct isl_mat *eq;
+	struct isl_basic_set *bset;
+
+	if (!tab)
+		return NULL;
+
+	isl_assert(tab->mat->ctx, tab->bset, return NULL);
+	bset = tab->bset;
+
+	n_eq = tab->n_var - tab->n_col + tab->n_dead;
+	if (tab->empty || n_eq == 0)
+		return isl_mat_alloc(tab->mat->ctx, 0, tab->n_var);
+	if (n_eq == tab->n_var)
+		return isl_mat_identity(tab->mat->ctx, tab->n_var);
+
+	eq = isl_mat_alloc(tab->mat->ctx, n_eq, tab->n_var);
+	if (!eq)
+		return NULL;
+	for (i = 0, j = 0; i < tab->n_con; ++i) {
+		if (tab->con[i].is_row)
+			continue;
+		if (tab->con[i].index >= 0 && tab->con[i].index >= tab->n_dead)
+			continue;
+		if (i < bset->n_eq)
+			isl_seq_cpy(eq->row[j], bset->eq[i] + 1, tab->n_var);
+		else
+			isl_seq_cpy(eq->row[j],
+				    bset->ineq[i - bset->n_eq] + 1, tab->n_var);
+		++j;
+	}
+	isl_assert(bset->ctx, j == n_eq, goto error);
+	return eq;
+error:
+	isl_mat_free(eq);
+	return NULL;
+}
+
+/* Compute and return an initial basis for the bounded tableau "tab".
+ *
+ * If the tableau is either full-dimensional or zero-dimensional,
+ * the we simply return an identity matrix.
+ * Otherwise, we construct a basis whose first directions correspond
+ * to equalities.
+ */
+static struct isl_mat *initial_basis(struct isl_tab *tab)
+{
+	int n_eq;
+	struct isl_mat *eq;
+	struct isl_mat *Q;
+
+	n_eq = tab->n_var - tab->n_col + tab->n_dead;
+	if (tab->empty || n_eq == 0 || n_eq == tab->n_var)
+		return isl_mat_identity(tab->mat->ctx, 1 + tab->n_var);
+
+	eq = tab_equalities(tab);
+	eq = isl_mat_left_hermite(eq, 0, NULL, &Q);
+	if (!eq)
+		return NULL;
+	isl_mat_free(eq);
+
+	Q = isl_mat_lin_to_aff(Q);
+	return Q;
+}
+
 /* Given a tableau that is known to represent a bounded set, find and return
  * an integer point in the set, if there is any.
  *
  * We perform a depth first search
  * for an integer point, by scanning all possible values in the range
- * attained by a basis vector, where the initial basis is assumed
- * to have been set by the calling function.
+ * attained by a basis vector, where an initial basis may have been set
+ * by the calling function.  Otherwise an initial basis that exploits
+ * the equalities in the tableau is created.
  * tab->n_zero is currently ignored and is clobbered by this function.
  *
  * The search is implemented iteratively.  "level" identifies the current
@@ -302,11 +375,18 @@ struct isl_vec *isl_tab_sample(struct isl_tab *tab)
 	if (tab->empty)
 		return isl_vec_alloc(tab->mat->ctx, 0);
 
+	if (!tab->basis)
+		tab->basis = initial_basis(tab);
+	if (!tab->basis)
+		return NULL;
+	isl_assert(tab->mat->ctx, tab->basis->n_row == tab->n_var + 1,
+		    return NULL);
+	isl_assert(tab->mat->ctx, tab->basis->n_col == tab->n_var + 1,
+		    return NULL);
+
 	ctx = tab->mat->ctx;
 	dim = tab->n_var;
 	gbr = ctx->gbr;
-
-	isl_assert(ctx, tab->basis, return NULL);
 
 	if (isl_tab_extend_cons(tab, dim + 1) < 0)
 		return NULL;
@@ -436,12 +516,12 @@ static struct isl_vec *sample_bounded(struct isl_basic_set *bset)
 	ctx = bset->ctx;
 
 	tab = isl_tab_from_basic_set(bset);
+	if (!ISL_F_ISSET(bset, ISL_BASIC_SET_NO_IMPLICIT))
+		tab = isl_tab_detect_implicit_equalities(tab);
 	if (!tab)
 		goto error;
 
-	tab->basis = isl_mat_identity(bset->ctx, 1 + dim);
-	if (!tab->basis)
-		goto error;
+	tab->bset = isl_basic_set_copy(bset);
 
 	sample = isl_tab_sample(tab);
 	if (!sample)
