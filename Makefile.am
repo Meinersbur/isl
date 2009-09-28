@@ -9,7 +9,8 @@ ACLOCAL_AMFLAGS = -I m4
 
 lib_LTLIBRARIES = libisl.la
 noinst_PROGRAMS = isl_test isl_polyhedron_sample isl_pip \
-	isl_polyhedron_minimize isl_polytope_scan
+	isl_polyhedron_minimize isl_polytope_scan \
+	isl_polyhedron_detect_equalities
 TESTS = isl_test
 
 if HAVE_POLYLIB
@@ -124,6 +125,12 @@ isl_polytope_scan_CPPFLAGS = -I$(srcdir)/include -Iinclude/ \
 isl_polytope_scan_LDADD = libisl.la
 isl_polytope_scan_SOURCES = \
 	polytope_scan.c
+
+isl_polyhedron_detect_equalities_CPPFLAGS = -I$(srcdir)/include -Iinclude/ \
+	@GMP_CPPFLAGS@
+isl_polyhedron_detect_equalities_LDADD = libisl.la
+isl_polyhedron_detect_equalities_SOURCES = \
+	polyhedron_detect_equalities.c
 
 nodist_pkginclude_HEADERS = \
 	include/isl_libs.h \
