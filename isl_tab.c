@@ -1098,6 +1098,7 @@ int isl_tab_allocate_con(struct isl_tab *tab)
 	int r;
 
 	isl_assert(tab->mat->ctx, tab->n_row < tab->mat->n_row, return -1);
+	isl_assert(tab->mat->ctx, tab->n_con < tab->max_con, return -1);
 
 	r = tab->n_con;
 	tab->con[r].index = tab->n_row;
