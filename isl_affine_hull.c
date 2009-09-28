@@ -618,6 +618,13 @@ error:
 	return NULL;
 }
 
+__isl_give isl_basic_set *isl_basic_set_detect_equalities(
+						__isl_take isl_basic_set *bset)
+{
+	return (isl_basic_set *)
+		isl_basic_map_detect_equalities((isl_basic_map *)bset);
+}
+
 struct isl_map *isl_map_detect_equalities(struct isl_map *map)
 {
 	struct isl_basic_map *bmap;

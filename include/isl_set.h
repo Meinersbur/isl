@@ -112,6 +112,8 @@ __isl_give isl_basic_set *isl_basic_set_apply(
 __isl_give isl_basic_set *isl_basic_set_affine_hull(
 		__isl_take isl_basic_set *bset);
 struct isl_basic_set *isl_basic_set_simplify(struct isl_basic_set *bset);
+__isl_give isl_basic_set *isl_basic_set_detect_equalities(
+						__isl_take isl_basic_set *bset);
 struct isl_basic_set *isl_basic_set_product(struct isl_basic_set_list *list);
 
 #define ISL_FORMAT_POLYLIB		1
