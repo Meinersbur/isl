@@ -1502,6 +1502,17 @@ struct isl_tab *isl_tab_add_ineq(struct isl_tab *tab, isl_int *ineq)
 
 	if (!tab)
 		return NULL;
+	if (tab->bset) {
+		struct isl_basic_set *bset = tab->bset;
+
+		isl_assert(tab->mat->ctx, tab->n_eq == bset->n_eq, goto error);
+		isl_assert(tab->mat->ctx,
+			    tab->n_con == bset->n_eq + bset->n_ineq, goto error);
+		tab->bset = isl_basic_set_add_ineq(tab->bset, ineq);
+		isl_tab_push(tab, isl_tab_undo_bset_ineq);
+		if (!tab->bset)
+			goto error;
+	}
 	r = isl_tab_add_row(tab, ineq);
 	if (r < 0)
 		goto error;
@@ -1634,6 +1645,22 @@ error:
 	return NULL;
 }
 
+static int add_zero_row(struct isl_tab *tab)
+{
+	int r;
+	isl_int *row;
+
+	r = isl_tab_allocate_con(tab);
+	if (r < 0)
+		return -1;
+
+	row = tab->mat->row[tab->con[r].index];
+	isl_seq_clr(row + 1, 1 + tab->M + tab->n_col);
+	isl_int_set_si(row[0], 1);
+
+	return r;
+}
+
 /* Add equality "eq" and check if it conflicts with the
  * previously added constraints or if it is obviously redundant.
  */
@@ -1665,6 +1692,19 @@ struct isl_tab *isl_tab_add_eq(struct isl_tab *tab, isl_int *eq)
 		} else
 			drop_row(tab, row);
 		return tab;
+	}
+
+	if (tab->bset) {
+		tab->bset = isl_basic_set_add_ineq(tab->bset, eq);
+		isl_tab_push(tab, isl_tab_undo_bset_ineq);
+		isl_seq_neg(eq, eq, 1 + tab->n_var);
+		tab->bset = isl_basic_set_add_ineq(tab->bset, eq);
+		isl_seq_neg(eq, eq, 1 + tab->n_var);
+		isl_tab_push(tab, isl_tab_undo_bset_ineq);
+		if (!tab->bset)
+			goto error;
+		if (add_zero_row(tab) < 0)
+			goto error;
 	}
 
 	sgn = isl_int_sgn(tab->mat->row[row][1]);

@@ -854,15 +854,11 @@ static struct isl_tab *add_lexmin_eq(struct isl_tab *tab, isl_int *eq)
 {
 	int r1, r2;
 	int row;
+	struct isl_tab_undo *snap;
 
 	if (!tab)
 		return NULL;
-	if (tab->bset) {
-		tab->bset = isl_basic_set_add_eq(tab->bset, eq);
-		isl_tab_push(tab, isl_tab_undo_bset_eq);
-		if (!tab->bset)
-			goto error;
-	}
+	snap = isl_tab_snap(tab);
 	r1 = isl_tab_add_row(tab, eq);
 	if (r1 < 0)
 		goto error;
@@ -874,6 +870,8 @@ static struct isl_tab *add_lexmin_eq(struct isl_tab *tab, isl_int *eq)
 		if (!isl_int_is_zero(tab->mat->row[row][1]) ||
 		    (tab->M && !isl_int_is_zero(tab->mat->row[row][2])))
 			return isl_tab_mark_empty(tab);
+		if (isl_tab_rollback(tab, snap) < 0)
+			goto error;
 		return tab;
 	}
 
@@ -907,6 +905,17 @@ static struct isl_tab *add_lexmin_eq(struct isl_tab *tab, isl_int *eq)
 			isl_tab_pivot(tab, row, tab->n_dead + i);
 			isl_tab_kill_col(tab, tab->n_dead + i);
 		}
+	}
+
+	if (tab->bset) {
+		tab->bset = isl_basic_set_add_ineq(tab->bset, eq);
+		isl_tab_push(tab, isl_tab_undo_bset_ineq);
+		isl_seq_neg(eq, eq, 1 + tab->n_var);
+		tab->bset = isl_basic_set_add_ineq(tab->bset, eq);
+		isl_seq_neg(eq, eq, 1 + tab->n_var);
+		isl_tab_push(tab, isl_tab_undo_bset_ineq);
+		if (!tab->bset)
+			goto error;
 	}
 
 	return tab;
