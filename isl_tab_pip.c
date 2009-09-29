@@ -284,43 +284,6 @@ static struct isl_sol *sol_map_add_wrap(struct isl_sol *sol,
 }
 
 
-static struct isl_basic_set *isl_basic_set_add_ineq(struct isl_basic_set *bset,
-	isl_int *ineq)
-{
-	int k;
-
-	bset = isl_basic_set_extend_constraints(bset, 0, 1);
-	if (!bset)
-		return NULL;
-	k = isl_basic_set_alloc_inequality(bset);
-	if (k < 0)
-		goto error;
-	isl_seq_cpy(bset->ineq[k], ineq, 1 + isl_basic_set_total_dim(bset));
-	return bset;
-error:
-	isl_basic_set_free(bset);
-	return NULL;
-}
-
-static struct isl_basic_set *isl_basic_set_add_eq(struct isl_basic_set *bset,
-	isl_int *eq)
-{
-	int k;
-
-	bset = isl_basic_set_extend_constraints(bset, 1, 0);
-	if (!bset)
-		return NULL;
-	k = isl_basic_set_alloc_equality(bset);
-	if (k < 0)
-		goto error;
-	isl_seq_cpy(bset->eq[k], eq, 1 + isl_basic_set_total_dim(bset));
-	return bset;
-error:
-	isl_basic_set_free(bset);
-	return NULL;
-}
-
-
 /* Store the "parametric constant" of row "row" of tableau "tab" in "line",
  * i.e., the constant term and the coefficients of all variables that
  * appear in the context tableau.

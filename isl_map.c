@@ -640,6 +640,42 @@ int isl_basic_set_drop_inequality(struct isl_basic_set *bset, unsigned pos)
 	return isl_basic_map_drop_inequality((struct isl_basic_map *)bset, pos);
 }
 
+__isl_give isl_basic_set *isl_basic_set_add_eq(__isl_take isl_basic_set *bset,
+	isl_int *eq)
+{
+	int k;
+
+	bset = isl_basic_set_extend_constraints(bset, 1, 0);
+	if (!bset)
+		return NULL;
+	k = isl_basic_set_alloc_equality(bset);
+	if (k < 0)
+		goto error;
+	isl_seq_cpy(bset->eq[k], eq, 1 + isl_basic_set_total_dim(bset));
+	return bset;
+error:
+	isl_basic_set_free(bset);
+	return NULL;
+}
+
+__isl_give isl_basic_set *isl_basic_set_add_ineq(__isl_take isl_basic_set *bset,
+	isl_int *ineq)
+{
+	int k;
+
+	bset = isl_basic_set_extend_constraints(bset, 0, 1);
+	if (!bset)
+		return NULL;
+	k = isl_basic_set_alloc_inequality(bset);
+	if (k < 0)
+		goto error;
+	isl_seq_cpy(bset->ineq[k], ineq, 1 + isl_basic_set_total_dim(bset));
+	return bset;
+error:
+	isl_basic_set_free(bset);
+	return NULL;
+}
+
 int isl_basic_map_alloc_div(struct isl_basic_map *bmap)
 {
 	if (!bmap)
