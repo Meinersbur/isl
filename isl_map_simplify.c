@@ -1593,7 +1593,7 @@ static struct isl_basic_set *uset_gist(struct isl_basic_set *bset,
 	for (i = 0; i < bset->n_ineq; ++i)
 		tab = isl_tab_add_ineq(tab, bset->ineq[i]);
 	bset = isl_basic_set_add_constraints(combined, bset, 0);
-	tab = isl_tab_detect_equalities(tab);
+	tab = isl_tab_detect_implicit_equalities(tab);
 	tab = isl_tab_detect_redundant(tab);
 	if (!tab)
 		goto error2;

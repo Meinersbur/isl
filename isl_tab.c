@@ -1723,7 +1723,7 @@ static int may_be_equality(struct isl_tab *tab, int row)
  * tableau is integer), then we restrict the value to being zero
  * by adding an opposite non-negative variable.
  */
-struct isl_tab *isl_tab_detect_equalities(struct isl_tab *tab)
+struct isl_tab *isl_tab_detect_implicit_equalities(struct isl_tab *tab)
 {
 	int i;
 	unsigned n_marked;
@@ -1771,7 +1771,7 @@ struct isl_tab *isl_tab_detect_equalities(struct isl_tab *tab)
 			close_row(tab, var);
 		else if (!tab->rational && !at_least_one(tab, var)) {
 			tab = cut_to_hyperplane(tab, var);
-			return isl_tab_detect_equalities(tab);
+			return isl_tab_detect_implicit_equalities(tab);
 		}
 		for (i = tab->n_redundant; i < tab->n_row; ++i) {
 			var = isl_tab_var_from_row(tab, i);

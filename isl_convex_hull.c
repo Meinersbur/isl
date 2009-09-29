@@ -94,7 +94,7 @@ struct isl_basic_map *isl_basic_map_convex_hull(struct isl_basic_map *bmap)
 		return bmap;
 
 	tab = isl_tab_from_basic_map(bmap);
-	tab = isl_tab_detect_equalities(tab);
+	tab = isl_tab_detect_implicit_equalities(tab);
 	tab = isl_tab_detect_redundant(tab);
 	bmap = isl_basic_map_update_from_tab(bmap, tab);
 	isl_tab_free(tab);

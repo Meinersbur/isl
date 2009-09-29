@@ -91,7 +91,7 @@ struct isl_tab_undo {
  * Dead columns and redundant rows are detected on the fly.
  * However, the basic operations do not ensure that all dead columns
  * or all redundant rows are detected.
- * isl_tab_detect_equalities and isl_tab_detect_redundant can be used
+ * isl_tab_detect_implicit_equalities and isl_tab_detect_redundant can be used
  * to perform and exhaustive search for dead columns and redundant rows.
  *
  * The samples matrix contains "n_sample" integer points that have at some
@@ -157,7 +157,7 @@ struct isl_basic_map *isl_basic_map_update_from_tab(struct isl_basic_map *bmap,
 	struct isl_tab *tab);
 struct isl_basic_set *isl_basic_set_update_from_tab(struct isl_basic_set *bset,
 	struct isl_tab *tab);
-struct isl_tab *isl_tab_detect_equalities(struct isl_tab *tab);
+struct isl_tab *isl_tab_detect_implicit_equalities(struct isl_tab *tab);
 struct isl_tab *isl_tab_detect_redundant(struct isl_tab *tab);
 #define ISL_TAB_SAVE_DUAL	(1 << 0)
 enum isl_lp_result isl_tab_min(struct isl_tab *tab,

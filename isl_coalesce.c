@@ -577,7 +577,7 @@ struct isl_map *isl_map_coalesce(struct isl_map *map)
 		if (!tabs[i])
 			goto error;
 		if (!ISL_F_ISSET(map->p[i], ISL_BASIC_MAP_NO_IMPLICIT))
-			tabs[i] = isl_tab_detect_equalities(tabs[i]);
+			tabs[i] = isl_tab_detect_implicit_equalities(tabs[i]);
 		if (!ISL_F_ISSET(map->p[i], ISL_BASIC_MAP_NO_REDUNDANT))
 			tabs[i] = isl_tab_detect_redundant(tabs[i]);
 	}
