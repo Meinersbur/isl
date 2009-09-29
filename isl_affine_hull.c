@@ -391,8 +391,47 @@ static struct isl_basic_set *drop_constraints_involving
 	return bset;
 }
 
-/* Compute the affine hull of "bset", where "hull" is an initial approximation
- * with only a single point of "bset" and "cone" is the recession cone
+/* Look for all equalities satisfied by the integer points in bset,
+ * which is assumed to be bounded.
+ *
+ * The equalities are obtained by successively looking for
+ * a point that is affinely independent of the points found so far.
+ * In particular, for each equality satisfied by the points so far,
+ * we check if there is any point on a hyperplane parallel to the
+ * corresponding hyperplane shifted by at least one (in either direction).
+ */
+static struct isl_basic_set *uset_affine_hull_bounded(struct isl_basic_set *bset)
+{
+	struct isl_vec *sample = NULL;
+	struct isl_basic_set *hull;
+
+	if (isl_basic_set_is_empty(bset))
+		return bset;
+
+	sample = isl_basic_set_sample_vec(isl_basic_set_copy(bset));
+	if (!sample)
+		goto error;
+	if (sample->size == 0) {
+		struct isl_basic_set *hull;
+		isl_vec_free(sample);
+		hull = isl_basic_set_empty_like(bset);
+		isl_basic_set_free(bset);
+		return hull;
+	}
+	if (sample->size == 1) {
+		isl_vec_free(sample);
+		return bset;
+	}
+
+	hull = isl_basic_set_from_vec(sample);
+
+	return extend_affine_hull(bset, hull);
+error:
+	isl_basic_set_free(bset);
+	return NULL;
+}
+
+/* Compute the affine hull of "bset", where "cone" is the recession cone
  * of "bset".
  *
  * We first compute a unimodular transformation that puts the unbounded
@@ -404,11 +443,10 @@ static struct isl_basic_set *drop_constraints_involving
  *	       [ y_1 ]			[ y_1 ]   [ Q_1 ]
  *	x = U  [ y_2 ]			[ y_2 ] = [ Q_2 ] x
  *
- * Let's call the input basic set S and the initial hull H.
- * We compute S' = preimage(S, U) and H' = preimage(H, U)
+ * Let's call the input basic set S.  We compute S' = preimage(S, U)
  * and drop the final dimensions including any constraints involving them.
- * This results in sets S'' and H''.
- * Then we extend H'' to the affine hull A'' of S''.
+ * This results in set S''.
+ * Then we compute the affine hull A'' of S''.
  * Let F y_1 >= g be the constraint system of A''.  In the transformed
  * space the y_2 are unbounded, so we can add them back without any constraints,
  * resulting in
@@ -425,13 +463,14 @@ static struct isl_basic_set *drop_constraints_involving
  * A = preimage(A'', Q_1).
  */
 static struct isl_basic_set *affine_hull_with_cone(struct isl_basic_set *bset,
-	struct isl_basic_set *hull, struct isl_basic_set *cone)
+	struct isl_basic_set *cone)
 {
 	unsigned total;
 	unsigned cone_dim;
+	struct isl_basic_set *hull;
 	struct isl_mat *M, *U, *Q;
 
-	if (!bset || !hull || !cone)
+	if (!bset || !cone)
 		goto error;
 
 	total = isl_basic_set_total_dim(cone);
@@ -444,21 +483,18 @@ static struct isl_basic_set *affine_hull_with_cone(struct isl_basic_set *bset,
 	isl_mat_free(M);
 
 	U = isl_mat_lin_to_aff(U);
-	bset = isl_basic_set_preimage(bset, isl_mat_copy(U));
-	hull = isl_basic_set_preimage(hull, U);
+	bset = isl_basic_set_preimage(bset, U);
 
 	bset = drop_constraints_involving(bset, total - cone_dim, cone_dim);
 	bset = isl_basic_set_drop_dims(bset, total - cone_dim, cone_dim);
-	hull = drop_constraints_involving(hull, total - cone_dim, cone_dim);
-	hull = isl_basic_set_drop_dims(hull, total - cone_dim, cone_dim);
 
 	Q = isl_mat_lin_to_aff(Q);
 	Q = isl_mat_drop_rows(Q, 1 + total - cone_dim, cone_dim);
 
-	if (bset && bset->sample)
+	if (bset && bset->sample && bset->sample->size == 1 + total)
 		bset->sample = isl_mat_vec_product(isl_mat_copy(Q), bset->sample);
 
-	hull = extend_affine_hull(bset, hull);
+	hull = uset_affine_hull_bounded(bset);
 
 	hull = isl_basic_set_preimage(hull, Q);
 
@@ -467,7 +503,6 @@ static struct isl_basic_set *affine_hull_with_cone(struct isl_basic_set *bset,
 	return hull;
 error:
 	isl_basic_set_free(bset);
-	isl_basic_set_free(hull);
 	isl_basic_set_free(cone);
 	return NULL;
 }
@@ -490,48 +525,29 @@ error:
  */
 static struct isl_basic_set *uset_affine_hull(struct isl_basic_set *bset)
 {
-	struct isl_basic_set *hull = NULL;
-	struct isl_vec *sample = NULL;
 	struct isl_basic_set *cone;
 
-	if (isl_basic_set_is_empty(bset))
+	if (isl_basic_set_fast_is_empty(bset))
 		return bset;
-
-	sample = isl_basic_set_sample_vec(isl_basic_set_copy(bset));
-	if (!sample)
-		goto error;
-	if (sample->size == 0) {
-		isl_vec_free(sample);
-		hull = isl_basic_set_empty_like(bset);
-		isl_basic_set_free(bset);
-		return hull;
-	}
-	if (sample->size == 1) {
-		isl_vec_free(sample);
-		return bset;
-	}
 
 	cone = isl_basic_set_recession_cone(isl_basic_set_copy(bset));
 	if (!cone)
 		goto error;
 	if (cone->n_eq == 0) {
+		struct isl_basic_set *hull;
 		isl_basic_set_free(cone);
-		isl_vec_free(sample);
 		hull = isl_basic_set_universe_like(bset);
 		isl_basic_set_free(bset);
 		return hull;
 	}
 
-	hull = isl_basic_set_from_vec(sample);
 	if (cone->n_eq < isl_basic_set_total_dim(cone))
-		return affine_hull_with_cone(bset, hull, cone);
+		return affine_hull_with_cone(bset, cone);
 
 	isl_basic_set_free(cone);
-	return extend_affine_hull(bset, hull);
+	return uset_affine_hull_bounded(bset);
 error:
-	isl_vec_free(sample);
 	isl_basic_set_free(bset);
-	isl_basic_set_free(hull);
 	return NULL;
 }
 
