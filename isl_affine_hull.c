@@ -483,7 +483,7 @@ static struct isl_basic_set *affine_hull_with_cone(struct isl_basic_set *bset,
 	isl_mat_free(M);
 
 	U = isl_mat_lin_to_aff(U);
-	bset = isl_basic_set_preimage(bset, U);
+	bset = isl_basic_set_preimage(bset, isl_mat_copy(U));
 
 	bset = drop_constraints_involving(bset, total - cone_dim, cone_dim);
 	bset = isl_basic_set_drop_dims(bset, total - cone_dim, cone_dim);
@@ -496,7 +496,19 @@ static struct isl_basic_set *affine_hull_with_cone(struct isl_basic_set *bset,
 
 	hull = uset_affine_hull_bounded(bset);
 
-	hull = isl_basic_set_preimage(hull, Q);
+	if (!hull)
+		isl_mat_free(U);
+	else {
+		struct isl_vec *sample = isl_vec_copy(hull->sample);
+		U = isl_mat_drop_cols(U, 1 + total - cone_dim, cone_dim);
+		if (sample && sample->size > 0)
+			sample = isl_mat_vec_product(U, sample);
+		else
+			isl_mat_free(U);
+		hull = isl_basic_set_preimage(hull, Q);
+		isl_vec_free(hull->sample);
+		hull->sample = sample;
+	}
 
 	isl_basic_set_free(cone);
 
@@ -567,18 +579,35 @@ error:
 static struct isl_basic_set *equalities_in_underlying_set(
 						struct isl_basic_map *bmap)
 {
+	struct isl_mat *T1 = NULL;
 	struct isl_mat *T2 = NULL;
 	struct isl_basic_set *bset = NULL;
 	struct isl_basic_set *hull = NULL;
 
 	bset = isl_basic_map_underlying_set(bmap);
-	bset = isl_basic_set_remove_equalities(bset, NULL, &T2);
+	if (!bset)
+		return NULL;
+	if (bset->n_eq)
+		bset = isl_basic_set_remove_equalities(bset, &T1, &T2);
 	if (!bset)
 		goto error;
 
 	hull = uset_affine_hull(bset);
-	if (T2)
+	if (!T2)
+		return hull;
+
+	if (!hull)
+		isl_mat_free(T1);
+	else {
+		struct isl_vec *sample = isl_vec_copy(hull->sample);
+		if (sample && sample->size > 0)
+			sample = isl_mat_vec_product(T1, sample);
+		else
+			isl_mat_free(T1);
 		hull = isl_basic_set_preimage(hull, T2);
+		isl_vec_free(hull->sample);
+		hull->sample = sample;
+	}
 
 	return hull;
 error:
@@ -624,6 +653,8 @@ struct isl_basic_map *isl_basic_map_detect_equalities(
 		isl_seq_cpy(bmap->eq[j], hull->eq[i],
 				1 + isl_basic_set_total_dim(hull));
 	}
+	isl_vec_free(bmap->sample);
+	bmap->sample = isl_vec_copy(hull->sample);
 	isl_basic_set_free(hull);
 	ISL_F_SET(bmap, ISL_BASIC_MAP_NO_IMPLICIT | ISL_BASIC_MAP_ALL_EQUALITIES);
 	bmap = isl_basic_map_simplify(bmap);

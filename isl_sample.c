@@ -1039,7 +1039,7 @@ __isl_give isl_basic_set *isl_basic_set_from_vec(__isl_take isl_vec *vec)
 		isl_int_neg(bset->eq[k][0], vec->el[1 + i]);
 		isl_int_set(bset->eq[k][1 + i], vec->el[0]);
 	}
-	isl_vec_free(vec);
+	bset->sample = vec;
 
 	return bset;
 error:
