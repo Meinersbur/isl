@@ -307,6 +307,8 @@ int isl_map_fast_is_equal(__isl_keep isl_map *map1, __isl_keep isl_map *map2);
 int isl_map_foreach_basic_map(__isl_keep isl_map *map,
 	int (*fn)(__isl_take isl_basic_map *bmap, void *user), void *user);
 
+__isl_give isl_map *isl_set_lifting(__isl_take isl_set *set);
+
 #if defined(__cplusplus)
 }
 #endif

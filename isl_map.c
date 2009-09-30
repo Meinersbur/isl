@@ -4271,6 +4271,10 @@ struct isl_map *isl_map_align_divs(struct isl_map *map)
 {
 	int i;
 
+	if (!map)
+		return NULL;
+	if (map->n == 0)
+		return map;
 	map = isl_map_compute_divs(map);
 	map = isl_map_cow(map);
 	if (!map)
@@ -5309,4 +5313,63 @@ int isl_map_foreach_basic_map(__isl_keep isl_map *map,
 			return -1;
 
 	return 0;
+}
+
+__isl_give isl_map *isl_set_lifting(__isl_take isl_set *set)
+{
+	struct isl_dim *dim;
+	struct isl_basic_map *bmap;
+	unsigned n_set;
+	unsigned n_div;
+	unsigned n_param;
+	unsigned total;
+	int i, k, l;
+
+	set = isl_set_align_divs(set);
+
+	if (!set)
+		return NULL;
+
+	dim = isl_set_get_dim(set);
+	if (set->n == 0 || set->p[0]->n_div == 0) {
+		isl_set_free(set);
+		return isl_map_identity(dim);
+	}
+
+	n_div = set->p[0]->n_div;
+	dim = isl_dim_map(dim);
+	n_param = isl_dim_size(dim, isl_dim_param);
+	n_set = isl_dim_size(dim, isl_dim_in);
+	dim = isl_dim_extend(dim, n_param, n_set, n_set + n_div);
+	bmap = isl_basic_map_alloc_dim(dim, 0, n_set, 2 * n_div);
+	for (i = 0; i < n_set; ++i)
+		bmap = var_equal(bmap, i);
+
+	total = n_param + n_set + n_set + n_div;
+	for (i = 0; i < n_div; ++i) {
+		k = isl_basic_map_alloc_inequality(bmap);
+		if (k < 0)
+			goto error;
+		isl_seq_cpy(bmap->ineq[k], set->p[0]->div[i]+1, 1+n_param);
+		isl_seq_clr(bmap->ineq[k]+1+n_param, n_set);
+		isl_seq_cpy(bmap->ineq[k]+1+n_param+n_set,
+			    set->p[0]->div[i]+1+1+n_param, n_set + n_div);
+		isl_int_neg(bmap->ineq[k][1+n_param+n_set+n_set+i],
+			    set->p[0]->div[i][0]);
+
+		l = isl_basic_map_alloc_inequality(bmap);
+		if (l < 0)
+			goto error;
+		isl_seq_neg(bmap->ineq[l], bmap->ineq[k], 1 + total);
+		isl_int_add(bmap->ineq[l][0], bmap->ineq[l][0],
+			    set->p[0]->div[i][0]);
+		isl_int_sub_ui(bmap->ineq[l][0], bmap->ineq[l][0], 1);
+	}
+
+	isl_set_free(set);
+	return isl_map_from_basic_map(bmap);
+error:
+	isl_set_free(set);
+	isl_basic_map_free(bmap);
+	return NULL;
 }
