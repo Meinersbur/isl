@@ -123,3 +123,9 @@ struct isl_basic_set *isl_basic_set_recession_cone(struct isl_basic_set *bset);
 struct isl_basic_set *isl_basic_set_lineality_space(struct isl_basic_set *bset);
 
 struct isl_basic_set *isl_basic_set_set_rational(struct isl_basic_set *bset);
+
+struct isl_mat;
+
+struct isl_basic_set *isl_basic_set_preimage(struct isl_basic_set *bset,
+	struct isl_mat *mat);
+struct isl_set *isl_set_preimage(struct isl_set *set, struct isl_mat *mat);

@@ -6,8 +6,7 @@
 #include <isl_int.h>
 #include <isl_ctx.h>
 #include <isl_blk.h>
-#include <isl_set.h>
-#include "isl_vec.h"
+#include <isl_vec.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -31,6 +30,7 @@ struct isl_mat {
 
 	struct isl_blk block;
 };
+typedef struct isl_mat	isl_mat;
 
 struct isl_mat *isl_mat_alloc(struct isl_ctx *ctx,
 	unsigned n_row, unsigned n_col);
@@ -74,10 +74,6 @@ struct isl_mat *isl_mat_drop_rows(struct isl_mat *mat,
 void isl_mat_col_mul(struct isl_mat *mat, int dst_col, isl_int f, int src_col);
 void isl_mat_col_submul(struct isl_mat *mat,
 			int dst_col, isl_int f, int src_col);
-
-struct isl_basic_set *isl_basic_set_preimage(struct isl_basic_set *bset,
-	struct isl_mat *mat);
-struct isl_set *isl_set_preimage(struct isl_set *set, struct isl_mat *mat);
 
 struct isl_mat *isl_mat_unimodular_complete(struct isl_mat *M, int row);
 
