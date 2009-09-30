@@ -126,6 +126,8 @@ static unsigned n(struct isl_dim *dim, enum isl_dim_type type)
 
 unsigned isl_dim_size(struct isl_dim *dim, enum isl_dim_type type)
 {
+	if (!dim)
+		return 0;
 	return n(dim, type);
 }
 
