@@ -5297,3 +5297,18 @@ int isl_set_dim_is_unique(struct isl_set *set, unsigned dim)
 	}
 	return 1;
 }
+
+int isl_map_foreach_basic_map(__isl_keep isl_map *map,
+	int (*fn)(__isl_take isl_basic_map *bmap, void *user), void *user)
+{
+	int i;
+
+	if (!map)
+		return -1;
+
+	for (i = 0; i < map->n; ++i)
+		if (fn(isl_basic_map_copy(map->p[i]), user) < 0)
+			return -1;
+
+	return 0;
+}
