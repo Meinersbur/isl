@@ -3195,27 +3195,25 @@ struct isl_set *isl_basic_set_partial_lexmax(
 			dom, empty);
 }
 
-struct isl_set *isl_basic_set_lexmin(struct isl_basic_set *bset)
+__isl_give isl_map *isl_basic_map_lexmin(__isl_take isl_basic_map *bmap)
 {
-	struct isl_basic_map *bmap = NULL;
 	struct isl_basic_set *dom = NULL;
 	struct isl_map *min;
-	struct isl_dim *param_dim;
+	struct isl_dim *dom_dim;
 
-	if (!bset)
-		goto error;
-	bmap = isl_basic_map_from_basic_set(bset, isl_dim_copy(bset->dim));
 	if (!bmap)
 		goto error;
-	param_dim = isl_dim_domain(isl_dim_copy(bmap->dim));
-	dom = isl_basic_set_universe(param_dim);
-	if (!dom)
-		goto error;
-	min = isl_basic_map_partial_lexmin(bmap, dom, NULL);
-	return isl_map_range(min);
+	dom_dim = isl_dim_domain(isl_dim_copy(bmap->dim));
+	dom = isl_basic_set_universe(dom_dim);
+	return isl_basic_map_partial_lexmin(bmap, dom, NULL);
 error:
 	isl_basic_map_free(bmap);
 	return NULL;
+}
+
+__isl_give isl_set *isl_basic_set_lexmin(__isl_take isl_basic_set *bset)
+{
+	return (isl_set *)isl_basic_map_lexmin((isl_basic_map *)bset);
 }
 
 static struct isl_map *isl_map_reset_dim(struct isl_map *map,
