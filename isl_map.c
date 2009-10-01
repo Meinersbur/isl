@@ -1883,6 +1883,39 @@ error:
 	return NULL;
 }
 
+/* Turn final n dimensions into existentially quantified variables.
+ */
+__isl_give isl_set *isl_set_project_out(__isl_take isl_set *set,
+		enum isl_dim_type type, unsigned first, unsigned n)
+{
+	int i;
+
+	if (!set)
+		return NULL;
+
+	isl_assert(set->ctx, type == isl_dim_set, goto error);
+	isl_assert(set->ctx, first + n == isl_set_n_dim(set), goto error);
+
+	if (n == 0)
+		return set;
+
+	set = isl_set_cow(set);
+	if (!set)
+		goto error;
+	set->dim = isl_dim_drop_outputs(set->dim, first, n);
+	for (i = 0; i < set->n; ++i) {
+		set->p[i] = isl_basic_set_project_out(set->p[i], type, first, n);
+		if (!set->p[i])
+			goto error;
+	}
+
+	ISL_F_CLR(set, ISL_SET_NORMALIZED);
+	return set;
+error:
+	isl_set_free(set);
+	return NULL;
+}
+
 static struct isl_basic_map *add_divs(struct isl_basic_map *bmap, unsigned n)
 {
 	int i, j;
