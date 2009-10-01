@@ -641,6 +641,11 @@ error:
 	return NULL;
 }
 
+__isl_give isl_set *isl_set_detect_equalities(__isl_take isl_set *set)
+{
+	return (isl_set *)isl_map_detect_equalities((isl_map *)set);
+}
+
 /* After computing the rational affine hull (by detecting the implicit
  * equalities), we compute the additional equalities satisfied by
  * the integer points (if any) and add the original equalities back in.
