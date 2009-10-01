@@ -5315,6 +5315,21 @@ int isl_map_foreach_basic_map(__isl_keep isl_map *map,
 	return 0;
 }
 
+int isl_set_foreach_basic_set(__isl_keep isl_set *set,
+	int (*fn)(__isl_take isl_basic_set *bset, void *user), void *user)
+{
+	int i;
+
+	if (!set)
+		return -1;
+
+	for (i = 0; i < set->n; ++i)
+		if (fn(isl_basic_set_copy(set->p[i]), user) < 0)
+			return -1;
+
+	return 0;
+}
+
 __isl_give isl_map *isl_set_lifting(__isl_take isl_set *set)
 {
 	struct isl_dim *dim;
