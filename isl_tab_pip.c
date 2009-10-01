@@ -47,10 +47,12 @@
  *
  * The context tableau is owned by isl_sol and is updated incrementally.
  *
- * There is currently only one implementation of this interface,
+ * There are currently two implementations of this interface,
  * isl_sol_map, which simply collects the solutions in an isl_map
  * and (optionally) the parts of the context where there is no solution
- * in an isl_set.
+ * in an isl_set, and
+ * isl_sol_for, which calls a user-defined function for each part of
+ * the solution.
  */
 struct isl_sol {
 	struct isl_tab *context_tab;
@@ -112,7 +114,7 @@ error:
  *			+ the number of extra divs constructed
  *      Of these, the first tab->n_param and the last tab->n_div variables
  *	correspond to the variables in the context, i.e.,
-		tab->n_param + tab->n_div = context_tab->n_var
+ *		tab->n_param + tab->n_div = context_tab->n_var
  *	tab->n_param is equal to the number of parameters and input
  *			dimensions in the input map
  *	tab->n_div is equal to the number of divs in the context
@@ -2587,4 +2589,219 @@ error:
 	sol_map_free(sol_map);
 	isl_basic_map_free(bmap);
 	return NULL;
+}
+
+struct isl_sol_for {
+	struct isl_sol	sol;
+	int		(*fn)(__isl_take isl_basic_set *dom,
+				__isl_take isl_mat *map, void *user);
+	void		*user;
+	int		max;
+};
+
+static void sol_for_free(struct isl_sol_for *sol_for)
+{
+	isl_tab_free(sol_for->sol.context_tab);
+	free(sol_for);
+}
+
+static void sol_for_free_wrap(struct isl_sol *sol)
+{
+	sol_for_free((struct isl_sol_for *)sol);
+}
+
+/* Add the solution identified by the tableau and the context tableau.
+ *
+ * See documentation of sol_map_add for more details.
+ *
+ * Instead of constructing a basic map, this function calls a user
+ * defined function with the current context as a basic set and
+ * an affine matrix reprenting the relation between the input and output.
+ * The number of rows in this matrix is equal to one plus the number
+ * of output variables.  The number of columns is equal to one plus
+ * the total dimension of the context, i.e., the number of parameters,
+ * input variables and divs.  Since some of the columns in the matrix
+ * may refer to the divs, the basic set is not simplified.
+ * (Simplification may reorder or remove divs.)
+ */
+static struct isl_sol_for *sol_for_add(struct isl_sol_for *sol,
+	struct isl_tab *tab)
+{
+	struct isl_tab *context_tab;
+	struct isl_basic_set *bset;
+	struct isl_mat *mat = NULL;
+	unsigned n_out;
+	unsigned off;
+	int row, i;
+
+	if (!sol || !tab)
+		goto error;
+
+	if (tab->empty)
+		return sol;
+
+	off = 2 + tab->M;
+	context_tab = sol->sol.context_tab;
+
+	n_out = tab->n_var - tab->n_param - tab->n_div;
+	mat = isl_mat_alloc(tab->mat->ctx, 1 + n_out, 1 + tab->n_param + tab->n_div);
+	if (!mat)
+		goto error;
+
+	isl_seq_clr(mat->row[0] + 1, mat->n_col - 1);
+	isl_int_set_si(mat->row[0][0], 1);
+	for (row = 0; row < n_out; ++row) {
+		int i = tab->n_param + row;
+		int r, j;
+
+		isl_seq_clr(mat->row[1 + row], mat->n_col);
+		if (!tab->var[i].is_row)
+			continue;
+
+		r = tab->var[i].index;
+		/* no unbounded */
+		if (tab->M)
+			isl_assert(mat->ctx, isl_int_eq(tab->mat->row[r][2],
+					                tab->mat->row[r][0]),
+				    goto error);
+		isl_int_set(mat->row[1 + row][0], tab->mat->row[r][1]);
+		for (j = 0; j < tab->n_param; ++j) {
+			int col;
+			if (tab->var[j].is_row)
+				continue;
+			col = tab->var[j].index;
+			isl_int_set(mat->row[1 + row][1 + j],
+				    tab->mat->row[r][off + col]);
+		}
+		for (j = 0; j < tab->n_div; ++j) {
+			int col;
+			if (tab->var[tab->n_var - tab->n_div+j].is_row)
+				continue;
+			col = tab->var[tab->n_var - tab->n_div+j].index;
+			isl_int_set(mat->row[1 + row][1 + tab->n_param + j],
+				    tab->mat->row[r][off + col]);
+		}
+		if (!isl_int_is_one(tab->mat->row[r][0]))
+			isl_seq_scale_down(mat->row[1 + row], mat->row[1 + row],
+					    tab->mat->row[r][0], mat->n_col);
+		if (sol->max)
+			isl_seq_neg(mat->row[1 + row], mat->row[1 + row],
+				    mat->n_col);
+	}
+
+	bset = isl_basic_set_dup(context_tab->bset);
+	bset = isl_basic_set_finalize(bset);
+
+	if (sol->fn(bset, isl_mat_copy(mat), sol->user) < 0)
+		goto error;
+
+	isl_mat_free(mat);
+	return sol;
+error:
+	isl_mat_free(mat);
+	sol_free(&sol->sol);
+	return NULL;
+}
+
+static struct isl_sol *sol_for_add_wrap(struct isl_sol *sol,
+	struct isl_tab *tab)
+{
+	return (struct isl_sol *)sol_for_add((struct isl_sol_for *)sol, tab);
+}
+
+static struct isl_sol_for *sol_for_init(struct isl_basic_map *bmap, int max,
+	int (*fn)(__isl_take isl_basic_set *dom, __isl_take isl_mat *map,
+		  void *user),
+	void *user)
+{
+	struct isl_sol_for *sol_for = NULL;
+	struct isl_dim *dom_dim;
+	struct isl_basic_set *dom = NULL;
+	struct isl_tab *context_tab;
+	int f;
+
+	sol_for = isl_calloc_type(bset->ctx, struct isl_sol_for);
+	if (!sol_for)
+		goto error;
+
+	dom_dim = isl_dim_domain(isl_dim_copy(bmap->dim));
+	dom = isl_basic_set_universe(dom_dim);
+
+	sol_for->fn = fn;
+	sol_for->user = user;
+	sol_for->max = max;
+	sol_for->sol.add = &sol_for_add_wrap;
+	sol_for->sol.free = &sol_for_free_wrap;
+
+	context_tab = context_tab_for_lexmin(isl_basic_set_copy(dom));
+	context_tab = restore_lexmin(context_tab);
+	sol_for->sol.context_tab = context_tab;
+	f = context_is_feasible(&sol_for->sol);
+	if (f < 0)
+		goto error;
+
+	isl_basic_set_free(dom);
+	return sol_for;
+error:
+	isl_basic_set_free(dom);
+	sol_for_free(sol_for);
+	return NULL;
+}
+
+static struct isl_sol_for *sol_for_find_solutions(struct isl_sol_for *sol_for,
+	struct isl_tab *tab)
+{
+	return (struct isl_sol_for *)find_solutions_main(&sol_for->sol, tab);
+}
+
+int isl_basic_map_foreach_lexopt(__isl_keep isl_basic_map *bmap, int max,
+	int (*fn)(__isl_take isl_basic_set *dom, __isl_take isl_mat *map,
+		  void *user),
+	void *user)
+{
+	struct isl_sol_for *sol_for = NULL;
+
+	bmap = isl_basic_map_copy(bmap);
+	if (!bmap)
+		return -1;
+
+	bmap = isl_basic_map_detect_equalities(bmap);
+	sol_for = sol_for_init(bmap, max, fn, user);
+
+	if (isl_basic_map_fast_is_empty(bmap))
+		/* nothing */;
+	else {
+		struct isl_tab *tab;
+		tab = tab_for_lexmin(bmap,
+					sol_for->sol.context_tab->bset, 1, max);
+		tab = tab_detect_nonnegative_parameters(tab,
+						sol_for->sol.context_tab);
+		sol_for = sol_for_find_solutions(sol_for, tab);
+		if (!sol_for)
+			goto error;
+	}
+
+	sol_for_free(sol_for);
+	isl_basic_map_free(bmap);
+	return 0;
+error:
+	sol_for_free(sol_for);
+	isl_basic_map_free(bmap);
+	return -1;
+}
+
+int isl_basic_map_foreach_lexmin(__isl_keep isl_basic_map *bmap,
+	int (*fn)(__isl_take isl_basic_set *dom, __isl_take isl_mat *map,
+		  void *user),
+	void *user)
+{
+	return isl_basic_map_foreach_lexopt(bmap, 0, fn, user);
+}
+
+int isl_basic_map_foreach_lexmax(__isl_keep isl_basic_map *bmap,
+	int (*fn)(__isl_take isl_basic_set *dom, __isl_take isl_mat *map,
+		  void *user),
+	void *user)
+{
+	return isl_basic_map_foreach_lexopt(bmap, 1, fn, user);
 }

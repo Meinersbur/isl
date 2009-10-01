@@ -8,6 +8,7 @@
 #include <isl_blk.h>
 #include <isl_dim.h>
 #include <isl_vec.h>
+#include <isl_mat.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -199,6 +200,10 @@ __isl_give isl_map *isl_basic_map_partial_lexmin(
 		__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
 		__isl_give isl_set **empty);
 __isl_give isl_map *isl_basic_map_lexmin(__isl_take isl_basic_map *bmap);
+int isl_basic_map_foreach_lexmin(__isl_keep isl_basic_map *bmap,
+	int (*fn)(__isl_take isl_basic_set *dom, __isl_take isl_mat *map,
+		  void *user),
+	void *user);
 
 void isl_basic_map_dump(__isl_keep isl_basic_map *bmap, FILE *out, int indent);
 
