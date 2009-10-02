@@ -1073,3 +1073,37 @@ error:
 	isl_mat_free(M);
 	return NULL;
 }
+
+__isl_give isl_mat *isl_mat_concat(__isl_take isl_mat *top,
+	__isl_take isl_mat *bot)
+{
+	struct isl_mat *mat;
+
+	if (!top || !bot)
+		goto error;
+
+	isl_assert(top->ctx, top->n_col == bot->n_col, goto error);
+	if (top->n_row == 0) {
+		isl_mat_free(top);
+		return bot;
+	}
+	if (bot->n_row == 0) {
+		isl_mat_free(bot);
+		return top;
+	}
+
+	mat = isl_mat_alloc(top->ctx, top->n_row + bot->n_row, top->n_col);
+	if (!mat)
+		goto error;
+	isl_mat_sub_copy(mat->ctx, mat->row, top->row, top->n_row,
+			 0, 0, mat->n_col);
+	isl_mat_sub_copy(mat->ctx, mat->row + top->n_row, bot->row, bot->n_row,
+			 0, 0, mat->n_col);
+	isl_mat_free(top);
+	isl_mat_free(bot);
+	return mat;
+error:
+	isl_mat_free(top);
+	isl_mat_free(bot);
+	return NULL;
+}
