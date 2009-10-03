@@ -603,11 +603,11 @@ struct isl_mat *isl_mat_inverse_product(struct isl_mat *left,
 			isl_int_gcd(a, left->row[row][row], left->row[i][row]);
 			isl_int_divexact(b, left->row[i][row], a);
 			isl_int_divexact(a, left->row[row][row], a);
-			isl_int_neg(a, a);
-			isl_seq_combine(left->row[i]+row,
-					a, left->row[i]+row,
-					b, left->row[row]+row,
-					left->n_col-row);
+			isl_int_neg(b, b);
+			isl_seq_combine(left->row[i] + i,
+					a, left->row[i] + i,
+					b, left->row[row] + i,
+					left->n_col - i);
 			isl_seq_combine(right->row[i], a, right->row[i],
 					b, right->row[row], right->n_col);
 		}
