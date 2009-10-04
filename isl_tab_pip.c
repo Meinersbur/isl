@@ -263,8 +263,7 @@ static struct isl_sol_map *sol_map_add(struct isl_sol_map *sol,
 					    tab->mat->row[row][0]);
 		}
 	}
-	bmap = isl_basic_map_gauss(bmap, NULL);
-	bmap = isl_basic_map_normalize_constraints(bmap);
+	bmap = isl_basic_map_simplify(bmap);
 	bmap = isl_basic_map_finalize(bmap);
 	sol->map = isl_map_grow(sol->map, 1);
 	sol->map = isl_map_add(sol->map, bmap);
