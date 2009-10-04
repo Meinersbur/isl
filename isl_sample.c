@@ -910,6 +910,132 @@ error:
 	return NULL;
 }
 
+static void vec_sum_of_neg(struct isl_vec *v, isl_int *s)
+{
+	int i;
+
+	isl_int_set_si(*s, 0);
+
+	for (i = 0; i < v->size; ++i)
+		if (isl_int_is_neg(v->el[i]))
+			isl_int_add(*s, *s, v->el[i]);
+}
+
+/* Given a tableau "tab", a tableau "tab_cone" that corresponds
+ * to the recession cone and the inverse of a new basis U = inv(B),
+ * with the unbounded directions in B last,
+ * add constraints to "tab" that ensure any rational value
+ * in the unbounded directions can be rounded up to an integer value.
+ *
+ * The new basis is given by x' = B x, i.e., x = U x'.
+ * For any rational value of the last tab->n_unbounded coordinates
+ * in the update tableau, the value that is obtained by rounding
+ * up this value should be contained in the original tableau.
+ * For any constraint "a x + c >= 0", we therefore need to add
+ * a constraint "a x + c + s >= 0", with s the sum of all negative
+ * entries in the last elements of "a U".
+ *
+ * Since we are not interested in the first entries of any of the "a U",
+ * we first drop the columns of U that correpond to bounded directions.
+ */
+static int tab_shift_cone(struct isl_tab *tab,
+	struct isl_tab *tab_cone, struct isl_mat *U)
+{
+	int i;
+	isl_int v;
+	struct isl_basic_set *bset = NULL;
+
+	if (tab && tab->n_unbounded == 0) {
+		isl_mat_free(U);
+		return 0;
+	}
+	isl_int_init(v);
+	if (!tab || !tab_cone || !U)
+		goto error;
+	bset = tab_cone->bset;
+	U = isl_mat_drop_cols(U, 0, tab->n_var - tab->n_unbounded);
+	for (i = 0; i < bset->n_ineq; ++i) {
+		struct isl_vec *row = NULL;
+		if (isl_tab_is_equality(tab_cone, tab_cone->n_eq + i))
+			continue;
+		row = isl_vec_alloc(bset->ctx, tab_cone->n_var);
+		if (!row)
+			goto error;
+		isl_seq_cpy(row->el, bset->ineq[i] + 1, tab_cone->n_var);
+		row = isl_vec_mat_product(row, isl_mat_copy(U));
+		if (!row)
+			goto error;
+		vec_sum_of_neg(row, &v);
+		isl_vec_free(row);
+		if (isl_int_is_zero(v))
+			continue;
+		tab = isl_tab_extend(tab, 1);
+		isl_int_add(bset->ineq[i][0], bset->ineq[i][0], v);
+		tab = isl_tab_add_ineq(tab, bset->ineq[i]);
+		isl_int_sub(bset->ineq[i][0], bset->ineq[i][0], v);
+		if (!tab)
+			goto error;
+	}
+
+	isl_mat_free(U);
+	isl_int_clear(v);
+	return 0;
+error:
+	isl_mat_free(U);
+	isl_int_clear(v);
+	return -1;
+}
+
+/* Compute and return an initial basis for the possibly
+ * unbounded tableau "tab".  "tab_cone" is a tableau
+ * for the corresponding recession cone.
+ * Additionally, add constraints to "tab" that ensure
+ * that any rational value for the unbounded directions
+ * can be rounded up to an integer value.
+ *
+ * If the tableau is bounded, i.e., if the recession cone
+ * is zero-dimensional, then we just use inital_basis.
+ * Otherwise, we construct a basis whose first directions
+ * correspond to equalities, followed by bounded directions,
+ * i.e., equalities in the recession cone.
+ * The remaining directions are then unbounded.
+ */
+int isl_tab_set_initial_basis_with_cone(struct isl_tab *tab,
+	struct isl_tab *tab_cone)
+{
+	struct isl_mat *eq;
+	struct isl_mat *cone_eq;
+	struct isl_mat *U, *Q;
+
+	if (!tab || !tab_cone)
+		return -1;
+
+	if (tab_cone->n_col == tab_cone->n_dead) {
+		tab->basis = initial_basis(tab);
+		return tab->basis ? 0 : -1;
+	}
+
+	eq = tab_equalities(tab);
+	if (!eq)
+		return -1;
+	tab->n_zero = eq->n_row;
+	cone_eq = tab_equalities(tab_cone);
+	eq = isl_mat_concat(eq, cone_eq);
+	if (!eq)
+		return -1;
+	tab->n_unbounded = tab->n_var - (eq->n_row - tab->n_zero);
+	eq = isl_mat_left_hermite(eq, 0, &U, &Q);
+	if (!eq)
+		return -1;
+	isl_mat_free(eq);
+	tab->basis = isl_mat_lin_to_aff(Q);
+	if (tab_shift_cone(tab, tab_cone, U) < 0)
+		return -1;
+	if (!tab->basis)
+		return -1;
+	return 0;
+}
+
 /* Compute and return a sample point in bset using generalized basis
  * reduction.  We first check if the input set has a non-trivial
  * recession cone.  If so, we perform some extra preprocessing in
