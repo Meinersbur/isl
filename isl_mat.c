@@ -236,6 +236,35 @@ error:
 	return NULL;
 }
 
+__isl_give isl_vec *isl_mat_vec_inverse_product(__isl_take isl_mat *mat,
+	__isl_take isl_vec *vec)
+{
+	struct isl_mat *vec_mat;
+	int i;
+
+	if (!mat || !vec)
+		goto error;
+	vec_mat = isl_mat_alloc(vec->ctx, vec->size, 1);
+	if (!vec_mat)
+		goto error;
+	for (i = 0; i < vec->size; ++i)
+		isl_int_set(vec_mat->row[i][0], vec->el[i]);
+	vec_mat = isl_mat_inverse_product(mat, vec_mat);
+	isl_vec_free(vec);
+	if (!vec_mat)
+		return NULL;
+	vec = isl_vec_alloc(vec_mat->ctx, vec_mat->n_row);
+	if (vec)
+		for (i = 0; i < vec->size; ++i)
+			isl_int_set(vec->el[i], vec_mat->row[i][0]);
+	isl_mat_free(vec_mat);
+	return vec;
+error:
+	isl_mat_free(mat);
+	isl_vec_free(vec);
+	return NULL;
+}
+
 struct isl_vec *isl_vec_mat_product(struct isl_vec *vec, struct isl_mat *mat)
 {
 	int i, j;
