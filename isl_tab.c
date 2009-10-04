@@ -65,6 +65,7 @@ struct isl_tab *isl_tab_alloc(struct isl_ctx *ctx,
 	tab->top = &tab->bottom;
 
 	tab->n_zero = 0;
+	tab->n_unbounded = 0;
 	tab->basis = NULL;
 
 	return tab;
@@ -258,6 +259,7 @@ struct isl_tab *isl_tab_dup(struct isl_tab *tab)
 	dup->top = &dup->bottom;
 
 	dup->n_zero = tab->n_zero;
+	dup->n_unbounded = tab->n_unbounded;
 	dup->basis = isl_mat_dup(tab->basis);
 
 	return dup;
@@ -504,6 +506,7 @@ struct isl_tab *isl_tab_product(struct isl_tab *tab1, struct isl_tab *tab2)
 	prod->top = &prod->bottom;
 
 	prod->n_zero = 0;
+	prod->n_unbounded = 0;
 	prod->basis = NULL;
 
 	return prod;

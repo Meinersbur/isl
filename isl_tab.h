@@ -139,6 +139,7 @@ struct isl_tab {
 	struct isl_mat *samples;
 
 	int n_zero;
+	int n_unbounded;
 	struct isl_mat *basis;
 
 	unsigned need_undo : 1;

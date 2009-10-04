@@ -16,6 +16,10 @@ static void save_alpha(GBR_LP *lp, int first, int n, GBR_type *alpha)
  * are assumed to correspond to equalities and are left untouched.
  * tab->n_zero is updated to reflect any additional equalities that
  * have been detected in the first rows of the new basis.
+ * The final tab->n_unbounded rows of the basis are assumed to correspond
+ * to unbounded directions and are also left untouched.
+ * In particular this means that the remaining rows are assumed to
+ * correspond to bounded directions.
  *
  * This function implements the algorithm described in
  * "An Implementation of the Generalized Basis Reduction Algorithm
@@ -51,6 +55,7 @@ struct isl_tab *isl_tab_compute_reduced_basis(struct isl_tab *tab)
 	int fixed = 0;
 	int fixed_saved = 0;
 	int mu_fixed[2];
+	int n_bounded;
 
 	if (!tab)
 		return NULL;
@@ -61,7 +66,8 @@ struct isl_tab *isl_tab_compute_reduced_basis(struct isl_tab *tab)
 	if (!B)
 		return tab;
 
-	if (dim <= tab->n_zero + 1)
+	n_bounded = dim - tab->n_unbounded;
+	if (n_bounded <= tab->n_zero + 1)
 		return tab;
 
 	isl_int_init(tmp);
@@ -81,15 +87,15 @@ struct isl_tab *isl_tab_compute_reduced_basis(struct isl_tab *tab)
 	if (!b_tmp)
 		goto error;
 
-	F = isl_alloc_array(ctx, GBR_type, dim);
-	alpha_buffer[0] = isl_alloc_array(ctx, GBR_type, dim);
-	alpha_buffer[1] = isl_alloc_array(ctx, GBR_type, dim);
+	F = isl_alloc_array(ctx, GBR_type, n_bounded);
+	alpha_buffer[0] = isl_alloc_array(ctx, GBR_type, n_bounded);
+	alpha_buffer[1] = isl_alloc_array(ctx, GBR_type, n_bounded);
 	alpha_saved = alpha_buffer[0];
 
 	if (!F || !alpha_buffer[0] || !alpha_buffer[1])
 		goto error;
 
-	for (i = 0; i < dim; ++i) {
+	for (i = 0; i < n_bounded; ++i) {
 		GBR_init(F[i]);
 		GBR_init(alpha_buffer[0][i]);
 		GBR_init(alpha_buffer[1][i]);
@@ -234,7 +240,7 @@ struct isl_tab *isl_tab_compute_reduced_basis(struct isl_tab *tab)
 			GBR_lp_add_row(lp, B->row[1+i]+1, dim);
 			++i;
 		}
-	} while (i < dim-1);
+	} while (i < n_bounded - 1);
 
 	if (0) {
 done:
@@ -248,7 +254,7 @@ error:
 	GBR_lp_delete(lp);
 
 	if (alpha_buffer[1])
-		for (i = 0; i < dim; ++i) {
+		for (i = 0; i < n_bounded; ++i) {
 			GBR_clear(F[i]);
 			GBR_clear(alpha_buffer[0][i]);
 			GBR_clear(alpha_buffer[1][i]);
