@@ -329,7 +329,7 @@ static struct isl_mat *initial_basis(struct isl_tab *tab)
 	return Q;
 }
 
-/* Given a tableau that is known to represent a bounded set, find and return
+/* Given a tableau representing a set, find and return
  * an integer point in the set, if there is any.
  *
  * We perform a depth first search
@@ -338,6 +338,31 @@ static struct isl_mat *initial_basis(struct isl_tab *tab)
  * by the calling function.  Otherwise an initial basis that exploits
  * the equalities in the tableau is created.
  * tab->n_zero is currently ignored and is clobbered by this function.
+ *
+ * The tableau is allowed to have unbounded direction, but then
+ * the calling function needs to set an initial basis, with the
+ * unbounded directions last and with tab->n_unbounded set
+ * to the number of unbounded directions.
+ * Furthermore, the calling functions needs to add shifted copies
+ * of all constraints involving unbounded directions to ensure
+ * that any feasible rational value in these directions can be rounded
+ * up to yield a feasible integer value.
+ * In particular, let B define the given basis x' = B x
+ * and let T be the inverse of B, i.e., X = T x'.
+ * Let a x + c >= 0 be a constraint of the set represented by the tableau,
+ * or a T x' + c >= 0 in terms of the given basis.  Assume that
+ * the bounded directions have an integer value, then we can safely
+ * round up the values for the unbounded directions if we make sure
+ * that x' not only satisfies the original constraint, but also
+ * the constraint "a T x' + c + s >= 0" with s the sum of all
+ * negative values in the last n_unbounded entries of "a T".
+ * The calling function therefore needs to add the constraint
+ * a x + c + s >= 0.  The current function then scans the first
+ * directions for an integer value and once those have been found,
+ * it can compute "T ceil(B x)" to yield an integer point in the set.
+ * Note that during the search, the first rows of B may be changed
+ * by a basis reduction, but the last n_unbounded rows of B remain
+ * unaltered and are also not mixed into the first rows.
  *
  * The search is implemented iteratively.  "level" identifies the current
  * basis vector.  "init" is true if we want the first value at the current
@@ -387,6 +412,15 @@ struct isl_vec *isl_tab_sample(struct isl_tab *tab)
 	ctx = tab->mat->ctx;
 	dim = tab->n_var;
 	gbr = ctx->gbr;
+
+	if (tab->n_unbounded == tab->n_var) {
+		sample = isl_tab_get_sample_value(tab);
+		sample = isl_mat_vec_product(isl_mat_copy(tab->basis), sample);
+		sample = isl_vec_ceil(sample);
+		sample = isl_mat_vec_inverse_product(isl_mat_copy(tab->basis),
+							sample);
+		return sample;
+	}
 
 	if (isl_tab_extend_cons(tab, dim + 1) < 0)
 		return NULL;
@@ -459,7 +493,7 @@ struct isl_vec *isl_tab_sample(struct isl_tab *tab)
 		isl_int_neg(tab->basis->row[1 + level][0], min->el[level]);
 		tab = isl_tab_add_valid_eq(tab, tab->basis->row[1 + level]);
 		isl_int_set_si(tab->basis->row[1 + level][0], 0);
-		if (level < dim - 1) {
+		if (level + tab->n_unbounded < dim - 1) {
 			++level;
 			init = 1;
 			continue;
@@ -467,9 +501,18 @@ struct isl_vec *isl_tab_sample(struct isl_tab *tab)
 		break;
 	}
 
-	if (level >= 0)
+	if (level >= 0) {
 		sample = isl_tab_get_sample_value(tab);
-	else
+		if (!sample)
+			goto error;
+		if (tab->n_unbounded && !isl_int_is_one(sample->el[0])) {
+			sample = isl_mat_vec_product(isl_mat_copy(tab->basis),
+						     sample);
+			sample = isl_vec_ceil(sample);
+			sample = isl_mat_vec_inverse_product(
+					isl_mat_copy(tab->basis), sample);
+		}
+	} else
 		sample = isl_vec_alloc(ctx, 0);
 
 	ctx->gbr = gbr;
