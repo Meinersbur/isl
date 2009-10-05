@@ -791,6 +791,54 @@ void isl_tab_push_basis(struct isl_tab *tab)
 	push_union(tab, isl_tab_undo_saved_basis, u);
 }
 
+struct isl_tab *isl_tab_init_samples(struct isl_tab *tab)
+{
+	if (!tab)
+		return NULL;
+
+	tab->n_sample = 0;
+	tab->n_outside = 0;
+	tab->samples = isl_mat_alloc(tab->mat->ctx, 1, 1 + tab->n_var);
+	if (!tab->samples)
+		goto error;
+	return tab;
+error:
+	isl_tab_free(tab);
+	return NULL;
+}
+
+struct isl_tab *isl_tab_add_sample(struct isl_tab *tab,
+	__isl_take isl_vec *sample)
+{
+	if (!tab || !sample)
+		goto error;
+
+	tab->samples = isl_mat_extend(tab->samples,
+				tab->n_sample + 1, tab->samples->n_col);
+	if (!tab->samples)
+		goto error;
+
+	isl_seq_cpy(tab->samples->row[tab->n_sample], sample->el, sample->size);
+	isl_vec_free(sample);
+	tab->n_sample++;
+
+	return tab;
+error:
+	isl_vec_free(sample);
+	isl_tab_free(tab);
+	return NULL;
+}
+
+struct isl_tab *isl_tab_drop_sample(struct isl_tab *tab, int s)
+{
+	if (s != tab->n_outside)
+		isl_mat_swap_rows(tab->samples, tab->n_outside, s);
+	tab->n_outside++;
+	isl_tab_push(tab, isl_tab_undo_drop_sample);
+
+	return tab;
+}
+
 /* Mark row with index "row" as being redundant.
  * If we may need to undo the operation or if the row represents
  * a variable of the original problem, the row is kept,

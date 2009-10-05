@@ -1143,16 +1143,6 @@ error:
 	return NULL;
 }
 
-static struct isl_tab *drop_sample(struct isl_tab *tab, int s)
-{
-	if (s != tab->n_outside)
-		isl_mat_swap_rows(tab->samples, tab->n_outside, s);
-	tab->n_outside++;
-	isl_tab_push(tab, isl_tab_undo_drop_sample);
-
-	return tab;
-}
-
 /* Check whether all the currently active samples also satisfy the inequality
  * "ineq" (treated as an equality if eq is set).
  * Remove those samples that do not.
@@ -1177,7 +1167,7 @@ static struct isl_tab *check_samples(struct isl_tab *tab, isl_int *ineq, int eq)
 		sgn = isl_int_sgn(v);
 		if (eq ? (sgn == 0) : (sgn >= 0))
 			continue;
-		tab = drop_sample(tab, i);
+		tab = isl_tab_drop_sample(tab, i);
 		if (!tab)
 			break;
 	}
@@ -1240,18 +1230,9 @@ static int context_is_feasible(struct isl_sol *sol)
 	if (!tab->empty && sample_is_finite(tab)) {
 		struct isl_vec *sample;
 
-		tab->samples = isl_mat_extend(tab->samples,
-					tab->n_sample + 1, tab->samples->n_col);
-		if (!tab->samples)
-			goto error;
-
 		sample = isl_tab_get_sample_value(tab);
-		if (!sample)
-			goto error;
-		isl_seq_cpy(tab->samples->row[tab->n_sample],
-				sample->el, sample->size);
-		isl_vec_free(sample);
-		tab->n_sample++;
+
+		tab = isl_tab_add_sample(tab, sample);
 	}
 
 	feasible = !sol->context_tab->empty;
@@ -1634,11 +1615,7 @@ static struct isl_tab *context_tab_for_lexmin(struct isl_basic_set *bset)
 	if (!tab)
 		goto error;
 	tab->bset = bset;
-	tab->n_sample = 0;
-	tab->n_outside = 0;
-	tab->samples = isl_mat_alloc(bset->ctx, 1, 1 + tab->n_var);
-	if (!tab->samples)
-		goto error;
+	tab = isl_tab_init_samples(tab);
 	return tab;
 error:
 	isl_basic_set_free(bset);

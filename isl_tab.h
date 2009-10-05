@@ -224,4 +224,9 @@ void isl_tab_push_var(struct isl_tab *tab,
 	enum isl_tab_undo_type type, struct isl_tab_var *var);
 void isl_tab_push_basis(struct isl_tab *tab);
 
+struct isl_tab *isl_tab_init_samples(struct isl_tab *tab);
+struct isl_tab *isl_tab_add_sample(struct isl_tab *tab,
+	__isl_take isl_vec *sample);
+struct isl_tab *isl_tab_drop_sample(struct isl_tab *tab, int s);
+
 #endif
