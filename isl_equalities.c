@@ -619,3 +619,67 @@ error:
 	isl_mat_free(U);
 	return -1;
 }
+
+/* Check if dimension dim belongs to a residue class
+ *		i_dim \equiv r mod m
+ * with m != 1 and if so return m in *modulo and r in *residue.
+ * As a special case, when i_dim has a fixed value v, then
+ * *modulo is set to 0 and *residue to v.
+ *
+ * If i_dim does not belong to such a residue class, then *modulo
+ * is set to 1 and *residue is set to 0.
+ */
+int isl_set_dim_residue_class(struct isl_set *set,
+	int pos, isl_int *modulo, isl_int *residue)
+{
+	isl_int m;
+	isl_int r;
+	int i;
+
+	if (!set || !modulo || !residue)
+		return -1;
+
+	if (set->n == 0) {
+		isl_int_set_si(*modulo, 0);
+		isl_int_set_si(*residue, 0);
+		return 0;
+	}
+
+	if (isl_basic_set_dim_residue_class(set->p[0], pos, modulo, residue)<0)
+		return -1;
+
+	if (set->n == 1)
+		return 0;
+
+	if (isl_int_is_one(*modulo))
+		return 0;
+
+	isl_int_init(m);
+	isl_int_init(r);
+
+	for (i = 1; i < set->n; ++i) {
+		if (isl_basic_set_dim_residue_class(set->p[0], pos, &m, &r) < 0)
+			goto error;
+		isl_int_gcd(*modulo, *modulo, m);
+		if (!isl_int_is_zero(*modulo))
+			isl_int_fdiv_r(*residue, *residue, *modulo);
+		if (isl_int_is_one(*modulo))
+			break;
+		if (!isl_int_is_zero(*modulo))
+			isl_int_fdiv_r(r, r, *modulo);
+		if (isl_int_ne(*residue, r)) {
+			isl_int_set_si(*modulo, 1);
+			isl_int_set_si(*residue, 0);
+			break;
+		}
+	}
+
+	isl_int_clear(m);
+	isl_int_clear(r);
+
+	return 0;
+error:
+	isl_int_clear(m);
+	isl_int_clear(r);
+	return -1;
+}

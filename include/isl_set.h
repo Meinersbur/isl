@@ -238,6 +238,8 @@ struct isl_set *isl_set_gist(struct isl_set *set,
 	struct isl_basic_set *context);
 int isl_basic_set_dim_residue_class(struct isl_basic_set *bset,
 	int pos, isl_int *modulo, isl_int *residue);
+int isl_set_dim_residue_class(struct isl_set *set,
+	int pos, isl_int *modulo, isl_int *residue);
 
 __isl_give isl_set *isl_set_coalesce(__isl_take isl_set *set);
 
