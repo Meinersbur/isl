@@ -74,6 +74,8 @@ struct isl_context_op {
 	/* add div "div" to context and return index and non-negativity */
 	int (*add_div)(struct isl_context *context, struct isl_vec *div,
 			int *nonneg);
+	int (*detect_equalities)(struct isl_context *context,
+			struct isl_tab *tab);
 	/* return row index of "best" split */
 	int (*best_split)(struct isl_context *context, struct isl_tab *tab);
 	/* check if context has already been determined to be empty */
@@ -1537,6 +1539,7 @@ static int add_parametric_cut(struct isl_tab *tab, int row,
 	int r;
 	isl_int *r_row;
 	int col;
+	int n;
 	unsigned off = 2 + tab->M;
 
 	if (!context)
@@ -1546,6 +1549,7 @@ static int add_parametric_cut(struct isl_tab *tab, int row,
 	if (!div)
 		return -1;
 
+	n = tab->n_div;
 	d = context->op->get_div(context, tab, div);
 	if (d < 0)
 		return -1;
@@ -1613,7 +1617,12 @@ static int add_parametric_cut(struct isl_tab *tab, int row,
 
 	isl_vec_free(div);
 
-	return tab->con[r].index;
+	row = tab->con[r].index;
+
+	if (d >= n && context->op->detect_equalities(context, tab) < 0)
+		return -1;
+
+	return row;
 }
 
 /* Construct a tableau for bmap that can be used for computing
@@ -1924,6 +1933,12 @@ static int context_lex_add_div(struct isl_context *context, struct isl_vec *div,
 	return context_tab_add_div(clex->tab, div, nonneg);
 }
 
+static int context_lex_detect_equalities(struct isl_context *context,
+		struct isl_tab *tab)
+{
+	return 0;
+}
+
 static int context_lex_best_split(struct isl_context *context,
 		struct isl_tab *tab)
 {
@@ -2078,6 +2093,7 @@ struct isl_context_op isl_context_lex_op = {
 	context_lex_test_ineq,
 	context_lex_get_div,
 	context_lex_add_div,
+	context_lex_detect_equalities,
 	context_lex_best_split,
 	context_lex_is_empty,
 	context_lex_is_ok,
@@ -2415,6 +2431,34 @@ static int context_gbr_test_ineq(struct isl_context *context, isl_int *ineq)
 	return feasible;
 }
 
+static int context_gbr_detect_equalities(struct isl_context *context,
+	struct isl_tab *tab)
+{
+	struct isl_context_gbr *cgbr = (struct isl_context_gbr *)context;
+	struct isl_ctx *ctx;
+	struct isl_tab *tab_cone;
+	int i;
+	enum isl_lp_result res;
+
+	ctx = cgbr->tab->mat->ctx;
+
+	tab_cone = isl_tab_from_recession_cone(cgbr->tab->bset);
+	if (!tab_cone)
+		goto error;
+	tab_cone->bset = isl_basic_set_dup(cgbr->tab->bset);
+	tab_cone = isl_tab_detect_implicit_equalities(tab_cone);
+
+	cgbr->tab = isl_tab_detect_equalities(cgbr->tab, tab_cone);
+
+	isl_tab_free(tab_cone);
+
+	return 0;
+error:
+	isl_tab_free(cgbr->tab);
+	cgbr->tab = NULL;
+	return -1;
+}
+
 static int context_gbr_get_div(struct isl_context *context, struct isl_tab *tab,
 		struct isl_vec *div)
 {
@@ -2525,6 +2569,7 @@ struct isl_context_op isl_context_gbr_op = {
 	context_gbr_test_ineq,
 	context_gbr_get_div,
 	context_gbr_add_div,
+	context_gbr_detect_equalities,
 	context_gbr_best_split,
 	context_gbr_is_empty,
 	context_gbr_is_ok,
