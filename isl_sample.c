@@ -329,7 +329,8 @@ struct isl_vec *isl_tab_sample(struct isl_tab *tab)
 				    ctx->one, &min->el[level], NULL, 0);
 			if (res == isl_lp_empty)
 				empty = 1;
-			if (res == isl_lp_error || res == isl_lp_unbounded)
+			isl_assert(ctx, res != isl_lp_unbounded, goto error);
+			if (res == isl_lp_error)
 				goto error;
 			if (!empty && isl_tab_sample_is_integer(tab))
 				break;
@@ -342,7 +343,8 @@ struct isl_vec *isl_tab_sample(struct isl_tab *tab)
 			isl_int_neg(max->el[level], max->el[level]);
 			if (res == isl_lp_empty)
 				empty = 1;
-			if (res == isl_lp_error || res == isl_lp_unbounded)
+			isl_assert(ctx, res != isl_lp_unbounded, goto error);
+			if (res == isl_lp_error)
 				goto error;
 			if (!empty && isl_tab_sample_is_integer(tab))
 				break;
