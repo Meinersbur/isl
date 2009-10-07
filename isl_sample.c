@@ -788,8 +788,8 @@ static struct isl_basic_set *drop_constraints_involving
  * then combined into a single sample point and transformed back
  * to the original space.
  */
-static struct isl_vec *sample_with_cone(struct isl_basic_set *bset,
-	struct isl_basic_set *cone)
+__isl_give isl_vec *isl_basic_set_sample_with_cone(
+	__isl_take isl_basic_set *bset, __isl_take isl_basic_set *cone)
 {
 	unsigned total;
 	unsigned cone_dim;
@@ -853,7 +853,7 @@ static struct isl_vec *gbr_sample(struct isl_basic_set *bset)
 	cone = isl_basic_set_recession_cone(isl_basic_set_copy(bset));
 
 	if (cone->n_eq < dim)
-		return sample_with_cone(bset, cone);
+		return isl_basic_set_sample_with_cone(bset, cone);
 
 	isl_basic_set_free(cone);
 	return sample_bounded(bset);
