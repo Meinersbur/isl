@@ -10,10 +10,14 @@ struct tab_lp {
 	isl_int		*obj;
 	isl_int		 opt;
 	isl_int		 opt_denom;
+	isl_int		 tmp;
+	isl_int		 tmp2;
 	int	         neq;
 	unsigned	 dim;
 	/* number of constraints in initial product tableau */
 	int		 con_offset;
+	/* objective function has fixed or no integer value */
+	int		 is_fixed;
 };
 
 static struct tab_lp *init_lp(struct isl_basic_set *bset);
@@ -24,6 +28,7 @@ static void delete_lp(struct tab_lp *lp);
 static int add_lp_row(struct tab_lp *lp, isl_int *row, int dim);
 static void get_alpha(struct tab_lp* lp, int row, mpq_t *alpha);
 static void del_lp_row(struct tab_lp *lp);
+static int cut_lp_to_hyperplane(struct tab_lp *lp, isl_int *row);
 
 #define GBR_LP			    	    struct tab_lp
 #define GBR_type		    	    mpq_t
@@ -33,6 +38,7 @@ static void del_lp_row(struct tab_lp *lp);
 #define GBR_set_ui(a,b)			    mpq_set_ui(a,b,1)
 #define GBR_mul(a,b,c)			    mpq_mul(a,b,c)
 #define GBR_lt(a,b)			    (mpq_cmp(a,b) < 0)
+#define GBR_is_zero(a)			    (mpq_sgn(a) == 0)
 #define GBR_floor(a,b)			    mpz_fdiv_q(a,mpq_numref(b),mpq_denref(b))
 #define GBR_ceil(a,b)			    mpz_cdiv_q(a,mpq_numref(b),mpq_denref(b))
 #define GBR_lp_init(P)		    	    init_lp(P)
@@ -43,7 +49,9 @@ static void del_lp_row(struct tab_lp *lp);
 #define GBR_lp_next_row(lp)		    lp->neq
 #define GBR_lp_add_row(lp, row, dim)	    add_lp_row(lp, row, dim)
 #define GBR_lp_get_alpha(lp, row, alpha)    get_alpha(lp, row, alpha)
-#define GBR_lp_del_row(lp)		    del_lp_row(lp);
+#define GBR_lp_del_row(lp)		    del_lp_row(lp)
+#define GBR_lp_is_fixed(lp)		    (lp)->is_fixed
+#define GBR_lp_cut(lp, obj)	    	    cut_lp_to_hyperplane(lp, obj)
 #include "basis_reduction_templ.c"
 
 /* Set up a tableau for the Cartesian product of bset with itself.
@@ -61,7 +69,7 @@ static struct isl_tab *gbr_tab(struct isl_basic_set *bset,
 		return NULL;
 
 	dim = isl_basic_set_total_dim(bset);
-	tab = isl_tab_alloc(bset->ctx, 2 * bset->n_ineq + dim + 1, 2 * dim, 0);
+	tab = isl_tab_alloc(bset->ctx, 2 * bset->n_ineq + 3 * dim + 1, 2 * dim, 0);
 
 	for (i = 0; i < 2; ++i) {
 		isl_seq_clr(row->el + 1 + (1 - i) * dim, dim);
@@ -93,6 +101,8 @@ static struct tab_lp *init_lp(struct isl_basic_set *bset)
 
 	isl_int_init(lp->opt);
 	isl_int_init(lp->opt_denom);
+	isl_int_init(lp->tmp);
+	isl_int_init(lp->tmp2);
 
 	lp->dim = isl_basic_set_total_dim(bset);
 
@@ -127,6 +137,8 @@ static int solve_lp(struct tab_lp *lp)
 	enum isl_lp_result res;
 	unsigned flags = 0;
 
+	lp->is_fixed = 0;
+
 	isl_int_set_si(lp->row->el[0], 0);
 	isl_seq_cpy(lp->row->el + 1, lp->obj, lp->dim);
 	isl_seq_neg(lp->row->el + 1 + lp->dim, lp->obj, lp->dim);
@@ -134,9 +146,52 @@ static int solve_lp(struct tab_lp *lp)
 		flags = ISL_TAB_SAVE_DUAL;
 	res = isl_tab_min(lp->tab, lp->row->el, lp->ctx->one,
 			  &lp->opt, &lp->opt_denom, flags);
+	isl_int_mul_ui(lp->opt_denom, lp->opt_denom, 2);
+	if (isl_int_abs_lt(lp->opt, lp->opt_denom)) {
+		struct isl_vec *sample = isl_tab_get_sample_value(lp->tab);
+		if (!sample)
+			return -1;
+		isl_seq_inner_product(lp->obj, sample->el + 1, lp->dim, &lp->tmp);
+		isl_seq_inner_product(lp->obj, sample->el + 1 + lp->dim, lp->dim, &lp->tmp2);
+		isl_int_cdiv_q(lp->tmp, lp->tmp, sample->el[0]);
+		isl_int_fdiv_q(lp->tmp2, lp->tmp2, sample->el[0]);
+		if (isl_int_ge(lp->tmp, lp->tmp2))
+			lp->is_fixed = 1;
+		isl_vec_free(sample);
+	}
+	isl_int_divexact_ui(lp->opt_denom, lp->opt_denom, 2);
 	if (res != isl_lp_ok)
 		return -1;
 	return 0;
+}
+
+/* The current objective function has a fixed (or no) integer value.
+ * Cut the tableau to the hyperplane that fixes this value in
+ * both halves of the tableau.
+ * Return 1 if the resulting tableau is empty.
+ */
+static int cut_lp_to_hyperplane(struct tab_lp *lp, isl_int *row)
+{
+	enum isl_lp_result res;
+
+	isl_int_set_si(lp->row->el[0], 0);
+	isl_seq_cpy(lp->row->el + 1, row, lp->dim);
+	isl_seq_clr(lp->row->el + 1 + lp->dim, lp->dim);
+	res = isl_tab_min(lp->tab, lp->row->el, lp->ctx->one,
+			  &lp->tmp, NULL, 0);
+	if (res != isl_lp_ok)
+		return -1;
+
+	isl_int_neg(lp->row->el[0], lp->tmp);
+	lp->tab = isl_tab_add_eq(lp->tab, lp->row->el);
+
+	isl_seq_cpy(lp->row->el + 1 + lp->dim, row, lp->dim);
+	isl_seq_clr(lp->row->el + 1, lp->dim);
+	lp->tab = isl_tab_add_eq(lp->tab, lp->row->el);
+
+	lp->con_offset += 2;
+
+	return lp->tab->empty;
 }
 
 static void get_obj_val(struct tab_lp* lp, mpq_t *F)
@@ -152,6 +207,8 @@ static void delete_lp(struct tab_lp *lp)
 
 	isl_int_clear(lp->opt);
 	isl_int_clear(lp->opt_denom);
+	isl_int_clear(lp->tmp);
+	isl_int_clear(lp->tmp2);
 	isl_vec_free(lp->row);
 	free(lp->stack);
 	isl_tab_free(lp->tab);

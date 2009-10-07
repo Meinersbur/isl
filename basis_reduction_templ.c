@@ -37,6 +37,12 @@ struct isl_mat *isl_basic_set_reduced_basis(struct isl_basic_set *bset)
 	isl_int mu[2];
 	GBR_type mu_F[2];
 	GBR_type two;
+	GBR_type one;
+	int n_zero = 0;
+	int empty = 0;
+	int fixed = 0;
+	int fixed_saved = 0;
+	int mu_fixed[2];
 
 	if (!bset)
 		return NULL;
@@ -60,6 +66,7 @@ struct isl_mat *isl_basic_set_reduced_basis(struct isl_basic_set *bset)
 	GBR_init(mu_F[0]);
 	GBR_init(mu_F[1]);
 	GBR_init(two);
+	GBR_init(one);
 
 	b_tmp = isl_vec_alloc(bset->ctx, dim);
 	if (!b_tmp)
@@ -80,6 +87,7 @@ struct isl_mat *isl_basic_set_reduced_basis(struct isl_basic_set *bset)
 	}
 
 	GBR_set_ui(two, 2);
+	GBR_set_ui(one, 1);
 
 	lp = GBR_lp_init(bset);
 	if (!lp)
@@ -93,10 +101,30 @@ struct isl_mat *isl_basic_set_reduced_basis(struct isl_basic_set *bset)
 	isl_assert(bset->ctx, !unbounded, goto error);
 	GBR_lp_get_obj_val(lp, &F[0]);
 
+	if (GBR_lt(F[0], one)) {
+		if (!GBR_is_zero(F[0])) {
+			empty = GBR_lp_cut(lp, basis->row[0]);
+			if (empty)
+				goto done;
+			GBR_set_ui(F[0], 0);
+		}
+		n_zero++;
+	}
+
 	do {
+		if (i+1 == n_zero) {
+			GBR_lp_set_obj(lp, basis->row[i+1], dim);
+			bset->ctx->stats->gbr_solved_lps++;
+			unbounded = GBR_lp_solve(lp);
+			isl_assert(bset->ctx, !unbounded, goto error);
+			GBR_lp_get_obj_val(lp, &F_new);
+			fixed = GBR_lp_is_fixed(lp);
+			GBR_set_ui(alpha, 0);
+		} else
 		if (use_saved) {
 			row = GBR_lp_next_row(lp);
 			GBR_set(F_new, F_saved);
+			fixed = fixed_saved;
 			GBR_set(alpha, alpha_saved[i]);
 		} else {
 			row = GBR_lp_add_row(lp, basis->row[i], dim);
@@ -105,6 +133,7 @@ struct isl_mat *isl_basic_set_reduced_basis(struct isl_basic_set *bset)
 			unbounded = GBR_lp_solve(lp);
 			isl_assert(bset->ctx, !unbounded, goto error);
 			GBR_lp_get_obj_val(lp, &F_new);
+			fixed = GBR_lp_is_fixed(lp);
 
 			GBR_lp_get_alpha(lp, row, &alpha);
 
@@ -133,6 +162,7 @@ struct isl_mat *isl_basic_set_reduced_basis(struct isl_basic_set *bset)
 				unbounded = GBR_lp_solve(lp);
 				isl_assert(bset->ctx, !unbounded, goto error);
 				GBR_lp_get_obj_val(lp, &mu_F[j]);
+				mu_fixed[j] = GBR_lp_is_fixed(lp);
 				if (i > 0)
 					save_alpha(lp, row-i, i, alpha_buffer[j]);
 			}
@@ -144,11 +174,22 @@ struct isl_mat *isl_basic_set_reduced_basis(struct isl_basic_set *bset)
 
 			isl_int_set(tmp, mu[j]);
 			GBR_set(F_new, mu_F[j]);
+			fixed = mu_fixed[j];
 			alpha_saved = alpha_buffer[j];
 		}
 		isl_seq_combine(basis->row[i+1],
 				bset->ctx->one, basis->row[i+1],
 				tmp, basis->row[i], dim);
+
+		if (i+1 == n_zero && fixed) {
+			if (!GBR_is_zero(F[i+1])) {
+				empty = GBR_lp_cut(lp, basis->row[i+1]);
+				if (empty)
+					goto done;
+				GBR_set_ui(F[i+1], 0);
+			}
+			n_zero++;
+		}
 
 		GBR_set(F_old, F[i]);
 
@@ -163,6 +204,7 @@ struct isl_mat *isl_basic_set_reduced_basis(struct isl_basic_set *bset)
 			if (i > 0) {
 				use_saved = 1;
 				GBR_set(F_saved, F_new);
+				fixed_saved = fixed;
 				GBR_lp_del_row(lp);
 				--i;
 			} else {
@@ -170,6 +212,16 @@ struct isl_mat *isl_basic_set_reduced_basis(struct isl_basic_set *bset)
 				if (bset->ctx->gbr_only_first &&
 				    GBR_lt(F[0], two))
 					break;
+
+				if (fixed) {
+					if (!GBR_is_zero(F[0])) {
+						empty = GBR_lp_cut(lp, basis->row[0]);
+						if (empty)
+							goto done;
+						GBR_set_ui(F[0], 0);
+					}
+					n_zero++;
+				}
 			}
 		} else {
 			GBR_lp_add_row(lp, basis->row[i], dim);
@@ -178,9 +230,12 @@ struct isl_mat *isl_basic_set_reduced_basis(struct isl_basic_set *bset)
 	} while (i < dim-1);
 
 	if (0) {
+done:
+		if (empty < 0) {
 error:
-	    isl_mat_free(basis);
-	    basis = NULL;
+			isl_mat_free(basis);
+			basis = NULL;
+		}
 	}
 
 	GBR_lp_delete(lp);
@@ -204,6 +259,7 @@ error:
 	GBR_clear(mu_F[0]);
 	GBR_clear(mu_F[1]);
 	GBR_clear(two);
+	GBR_clear(one);
 
 	isl_int_clear(tmp);
 	isl_int_clear(mu[0]);
