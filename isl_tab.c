@@ -1077,6 +1077,8 @@ static void close_row(struct isl_tab *tab, struct isl_tab_var *var)
 
 	isl_assert(tab->mat->ctx, var->is_nonneg, return);
 	var->is_zero = 1;
+	if (tab->need_undo)
+		isl_tab_push_var(tab, isl_tab_undo_zero, var);
 	for (j = tab->n_dead; j < tab->n_col; ++j) {
 		if (isl_int_is_zero(mat->row[var->index][off + j]))
 			continue;
@@ -2014,7 +2016,8 @@ static void perform_undo_var(struct isl_tab *tab, struct isl_tab_undo *undo)
 		break;
 	case isl_tab_undo_zero:
 		var->is_zero = 0;
-		tab->n_dead--;
+		if (!var->is_row)
+			tab->n_dead--;
 		break;
 	case isl_tab_undo_allocate:
 		if (undo->u.var_index >= 0) {
