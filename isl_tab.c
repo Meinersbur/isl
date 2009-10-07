@@ -1329,6 +1329,18 @@ error:
 	return NULL;
 }
 
+static int row_is_manifestly_zero(struct isl_tab *tab, int row)
+{
+	unsigned off = 2 + tab->M;
+
+	if (!isl_int_is_zero(tab->mat->row[row][1]))
+		return 0;
+	if (tab->M && !isl_int_is_zero(tab->mat->row[row][2]))
+		return 0;
+	return isl_seq_first_non_zero(tab->mat->row[row] + off + tab->n_dead,
+					tab->n_col - tab->n_dead) == -1;
+}
+
 /* Add an equality that is known to be valid for the given tableau.
  */
 struct isl_tab *isl_tab_add_valid_eq(struct isl_tab *tab, isl_int *eq)
@@ -1344,6 +1356,12 @@ struct isl_tab *isl_tab_add_valid_eq(struct isl_tab *tab, isl_int *eq)
 
 	var = &tab->con[r];
 	r = var->index;
+	if (row_is_manifestly_zero(tab, r)) {
+		var->is_zero = 1;
+		isl_tab_mark_redundant(tab, r);
+		return tab;
+	}
+
 	if (isl_int_is_neg(tab->mat->row[r][1])) {
 		isl_seq_neg(tab->mat->row[r] + 1, tab->mat->row[r] + 1,
 			    1 + tab->n_col);
