@@ -38,6 +38,63 @@
  * to M from the initial context tableau.
  */
 
+struct isl_context;
+struct isl_context_op {
+	/* detect nonnegative parameters in context and mark them in tab */
+	struct isl_tab *(*detect_nonnegative_parameters)(
+			struct isl_context *context, struct isl_tab *tab);
+	/* return temporary reference to basic set representation of context */
+	struct isl_basic_set *(*peek_basic_set)(struct isl_context *context);
+	/* return temporary reference to tableau representation of context */
+	struct isl_tab *(*peek_tab)(struct isl_context *context);
+	/* add equality; check is 1 if eq may not be valid;
+	 * update is 1 if we may want to call ineq_sign on context later.
+	 */
+	void (*add_eq)(struct isl_context *context, isl_int *eq,
+			int check, int update);
+	/* add inequality; check is 1 if ineq may not be valid;
+	 * update is 1 if we may want to call ineq_sign on context later.
+	 */
+	void (*add_ineq)(struct isl_context *context, isl_int *ineq,
+			int check, int update);
+	/* check sign of ineq based on previous information.
+	 * strict is 1 if saturation should be treated as a positive sign.
+	 */
+	enum isl_tab_row_sign (*ineq_sign)(struct isl_context *context,
+			isl_int *ineq, int strict);
+	/* check if inequality maintains feasibility */
+	int (*test_ineq)(struct isl_context *context, isl_int *ineq);
+	/* return index of a div that corresponds to "div" */
+	int (*get_div)(struct isl_context *context, struct isl_tab *tab,
+			struct isl_vec *div);
+	/* add div "div" to context and return index and non-negativity */
+	int (*add_div)(struct isl_context *context, struct isl_vec *div,
+			int *nonneg);
+	/* return row index of "best" split */
+	int (*best_split)(struct isl_context *context, struct isl_tab *tab);
+	/* check if context has already been determined to be empty */
+	int (*is_empty)(struct isl_context *context);
+	/* check if context is still usable */
+	int (*is_ok)(struct isl_context *context);
+	/* save a copy/snapshot of context */
+	void *(*save)(struct isl_context *context);
+	/* restore saved context */
+	void (*restore)(struct isl_context *context, void *);
+	/* invalidate context */
+	void (*invalidate)(struct isl_context *context);
+	/* free context */
+	void (*free)(struct isl_context *context);
+};
+
+struct isl_context {
+	struct isl_context_op *op;
+};
+
+struct isl_context_lex {
+	struct isl_context context;
+	struct isl_tab *tab;
+};
+
 /* isl_sol is an interface for constructing a solution to
  * a parametric integer linear programming problem.
  * Every time the algorithm reaches a state where a solution
@@ -55,7 +112,7 @@
  * the solution.
  */
 struct isl_sol {
-	struct isl_tab *context_tab;
+	struct isl_context *context;
 	struct isl_sol *(*add)(struct isl_sol *sol, struct isl_tab *tab);
 	void (*free)(struct isl_sol *sol);
 };
@@ -76,7 +133,8 @@ struct isl_sol_map {
 
 static void sol_map_free(struct isl_sol_map *sol_map)
 {
-	isl_tab_free(sol_map->sol.context_tab);
+	if (sol_map->sol.context)
+		sol_map->sol.context->op->free(sol_map->sol.context);
 	isl_map_free(sol_map->map);
 	isl_set_free(sol_map->empty);
 	free(sol_map);
@@ -94,7 +152,8 @@ static struct isl_sol_map *add_empty(struct isl_sol_map *sol)
 	if (!sol->empty)
 		return sol;
 	sol->empty = isl_set_grow(sol->empty, 1);
-	bset = isl_basic_set_copy(sol->sol.context_tab->bset);
+	bset = sol->sol.context->op->peek_basic_set(sol->sol.context);
+	bset = isl_basic_set_copy(bset);
 	bset = isl_basic_set_simplify(bset);
 	bset = isl_basic_set_finalize(bset);
 	sol->empty = isl_set_add(sol->empty, bset);
@@ -158,7 +217,7 @@ static struct isl_sol_map *sol_map_add(struct isl_sol_map *sol,
 {
 	int i;
 	struct isl_basic_map *bmap = NULL;
-	struct isl_tab *context_tab;
+	isl_basic_set *context_bset;
 	unsigned n_eq;
 	unsigned n_ineq;
 	unsigned nparam;
@@ -173,11 +232,11 @@ static struct isl_sol_map *sol_map_add(struct isl_sol_map *sol,
 	if (tab->empty)
 		return add_empty(sol);
 
-	context_tab = sol->sol.context_tab;
+	context_bset = sol->sol.context->op->peek_basic_set(sol->sol.context);
 	off = 2 + tab->M;
 	n_out = isl_map_dim(sol->map, isl_dim_out);
-	n_eq = context_tab->bset->n_eq + n_out;
-	n_ineq = context_tab->bset->n_ineq;
+	n_eq = context_bset->n_eq + n_out;
+	n_ineq = context_bset->n_ineq;
 	nparam = tab->n_param;
 	total = isl_map_dim(sol->map, isl_dim_all);
 	bmap = isl_basic_map_alloc_dim(isl_map_get_dim(sol->map),
@@ -187,34 +246,34 @@ static struct isl_sol_map *sol_map_add(struct isl_sol_map *sol,
 	n_div = tab->n_div;
 	if (tab->rational)
 		ISL_F_SET(bmap, ISL_BASIC_MAP_RATIONAL);
-	for (i = 0; i < context_tab->bset->n_div; ++i) {
+	for (i = 0; i < context_bset->n_div; ++i) {
 		int k = isl_basic_map_alloc_div(bmap);
 		if (k < 0)
 			goto error;
 		isl_seq_cpy(bmap->div[k],
-			    context_tab->bset->div[i], 1 + 1 + nparam);
+			    context_bset->div[i], 1 + 1 + nparam);
 		isl_seq_clr(bmap->div[k] + 1 + 1 + nparam, total - nparam);
 		isl_seq_cpy(bmap->div[k] + 1 + 1 + total,
-			    context_tab->bset->div[i] + 1 + 1 + nparam, i);
+			    context_bset->div[i] + 1 + 1 + nparam, i);
 	}
-	for (i = 0; i < context_tab->bset->n_eq; ++i) {
+	for (i = 0; i < context_bset->n_eq; ++i) {
 		int k = isl_basic_map_alloc_equality(bmap);
 		if (k < 0)
 			goto error;
-		isl_seq_cpy(bmap->eq[k], context_tab->bset->eq[i], 1 + nparam);
+		isl_seq_cpy(bmap->eq[k], context_bset->eq[i], 1 + nparam);
 		isl_seq_clr(bmap->eq[k] + 1 + nparam, total - nparam);
 		isl_seq_cpy(bmap->eq[k] + 1 + total,
-			    context_tab->bset->eq[i] + 1 + nparam, n_div);
+			    context_bset->eq[i] + 1 + nparam, n_div);
 	}
-	for (i = 0; i < context_tab->bset->n_ineq; ++i) {
+	for (i = 0; i < context_bset->n_ineq; ++i) {
 		int k = isl_basic_map_alloc_inequality(bmap);
 		if (k < 0)
 			goto error;
 		isl_seq_cpy(bmap->ineq[k],
-			context_tab->bset->ineq[i], 1 + nparam);
+			context_bset->ineq[i], 1 + nparam);
 		isl_seq_clr(bmap->ineq[k] + 1 + nparam, total - nparam);
 		isl_seq_cpy(bmap->ineq[k] + 1 + total,
-			context_tab->bset->ineq[i] + 1 + nparam, n_div);
+			context_bset->ineq[i] + 1 + nparam, n_div);
 	}
 	for (i = tab->n_param; i < total; ++i) {
 		int k = isl_basic_map_alloc_equality(bmap);
@@ -437,6 +496,9 @@ static struct isl_vec *ineq_for_div(struct isl_basic_set *bset, unsigned div)
 	unsigned total;
 	unsigned div_pos;
 	struct isl_vec *ineq;
+
+	if (!bset)
+		return NULL;
 
 	total = isl_basic_set_total_dim(bset);
 	div_pos = 1 + total - bset->n_div + div;
@@ -1203,30 +1265,28 @@ static int sample_is_finite(struct isl_tab *tab)
 }
 
 /* Check if the context tableau of sol has any integer points.
- * Returns -1 if an error occurred.
+ * Leave tab in empty state if no integer point can be found.
  * If an integer point can be found and if moreover it is finite,
  * then it is added to the list of sample values.
  *
  * This function is only called when none of the currently active sample
  * values satisfies the most recently added constraint.
  */
-static int context_is_feasible(struct isl_sol *sol)
+static struct isl_tab *check_integer_feasible(struct isl_tab *tab)
 {
 	struct isl_tab_undo *snap;
-	struct isl_tab *tab;
 	int feasible;
 
-	if (!sol || !sol->context_tab)
-		return -1;
+	if (!tab)
+		return NULL;
 
-	snap = isl_tab_snap(sol->context_tab);
-	isl_tab_push_basis(sol->context_tab);
+	snap = isl_tab_snap(tab);
+	isl_tab_push_basis(tab);
 
-	sol->context_tab = cut_to_integer_lexmin(sol->context_tab);
-	if (!sol->context_tab)
+	tab = cut_to_integer_lexmin(tab);
+	if (!tab)
 		goto error;
 
-	tab = sol->context_tab;
 	if (!tab->empty && sample_is_finite(tab)) {
 		struct isl_vec *sample;
 
@@ -1235,32 +1295,26 @@ static int context_is_feasible(struct isl_sol *sol)
 		tab = isl_tab_add_sample(tab, sample);
 	}
 
-	feasible = !sol->context_tab->empty;
-	if (isl_tab_rollback(sol->context_tab, snap) < 0)
+	if (!tab->empty && isl_tab_rollback(tab, snap) < 0)
 		goto error;
 
-	return feasible;
+	return tab;
 error:
-	isl_tab_free(sol->context_tab);
-	sol->context_tab = NULL;
-	return -1;
+	isl_tab_free(tab);
+	return NULL;
 }
 
-/* First check if any of the currently active sample values satisfies
+/* Check if any of the currently active sample values satisfies
  * the inequality "ineq" (an equality if eq is set).
- * If not, continue with check_integer_feasible.
  */
-static int context_valid_sample_or_feasible(struct isl_sol *sol,
-	isl_int *ineq, int eq)
+static int tab_has_valid_sample(struct isl_tab *tab, isl_int *ineq, int eq)
 {
 	int i;
 	isl_int v;
-	struct isl_tab *tab;
 
-	if (!sol || !sol->context_tab)
+	if (!tab)
 		return -1;
 
-	tab = sol->context_tab;
 	isl_assert(tab->mat->ctx, tab->bset, return -1);
 	isl_assert(tab->mat->ctx, tab->samples, return -1);
 	isl_assert(tab->mat->ctx, tab->samples->n_col == 1 + tab->n_var, return -1);
@@ -1276,10 +1330,7 @@ static int context_valid_sample_or_feasible(struct isl_sol *sol,
 	}
 	isl_int_clear(v);
 
-	if (i < tab->n_sample)
-		return 1;
-
-	return context_is_feasible(sol);
+	return i < tab->n_sample;
 }
 
 /* For a div d = floor(f/m), add the constraints
@@ -1291,36 +1342,92 @@ static int context_valid_sample_or_feasible(struct isl_sol *sol,
  *
  *		f - m d >= m
  */
-static struct isl_tab *add_div_constraints(struct isl_tab *tab, unsigned div)
+static void add_div_constraints(struct isl_context *context, unsigned div)
 {
 	unsigned total;
 	unsigned div_pos;
 	struct isl_vec *ineq;
+	struct isl_basic_set *bset;
 
-	if (!tab)
-		return NULL;
+	bset = context->op->peek_basic_set(context);
+	if (!bset)
+		goto error;
 
-	total = isl_basic_set_total_dim(tab->bset);
-	div_pos = 1 + total - tab->bset->n_div + div;
+	total = isl_basic_set_total_dim(bset);
+	div_pos = 1 + total - bset->n_div + div;
 
-	ineq = ineq_for_div(tab->bset, div);
+	ineq = ineq_for_div(bset, div);
 	if (!ineq)
 		goto error;
 
-	tab = add_lexmin_ineq(tab, ineq->el);
+	context->op->add_ineq(context, ineq->el, 0, 0);
 
-	isl_seq_neg(ineq->el, tab->bset->div[div] + 1, 1 + total);
-	isl_int_set(ineq->el[div_pos], tab->bset->div[div][0]);
+	isl_seq_neg(ineq->el, bset->div[div] + 1, 1 + total);
+	isl_int_set(ineq->el[div_pos], bset->div[div][0]);
 	isl_int_add(ineq->el[0], ineq->el[0], ineq->el[div_pos]);
 	isl_int_sub_ui(ineq->el[0], ineq->el[0], 1);
-	tab = add_lexmin_ineq(tab, ineq->el);
+
+	context->op->add_ineq(context, ineq->el, 0, 0);
 
 	isl_vec_free(ineq);
 
-	return tab;
+	return;
 error:
-	isl_tab_free(tab);
-	return NULL;
+	context->op->invalidate(context);
+}
+
+/* Add a div specifed by "div" to the tableau "tab" and return
+ * the index of the new div.  *nonneg is set to 1 if the div
+ * is obviously non-negative.
+ */
+static int context_tab_add_div(struct isl_tab *tab, struct isl_vec *div,
+	int *nonneg)
+{
+	int i;
+	int r;
+	int k;
+	struct isl_mat *samples;
+
+	for (i = 0; i < tab->n_var; ++i) {
+		if (isl_int_is_zero(div->el[2 + i]))
+			continue;
+		if (!tab->var[i].is_nonneg)
+			break;
+	}
+	*nonneg = i == tab->n_var;
+
+	if (isl_tab_extend_cons(tab, 3) < 0)
+		return -1;
+	if (isl_tab_extend_vars(tab, 1) < 0)
+		return -1;
+	r = isl_tab_allocate_var(tab);
+	if (r < 0)
+		return -1;
+	if (*nonneg)
+		tab->var[r].is_nonneg = 1;
+	tab->var[r].frozen = 1;
+
+	samples = isl_mat_extend(tab->samples,
+			tab->n_sample, 1 + tab->n_var);
+	tab->samples = samples;
+	if (!samples)
+		return -1;
+	for (i = tab->n_outside; i < samples->n_row; ++i) {
+		isl_seq_inner_product(div->el + 1, samples->row[i],
+			div->size - 1, &samples->row[i][samples->n_col - 1]);
+		isl_int_fdiv_q(samples->row[i][samples->n_col - 1],
+			       samples->row[i][samples->n_col - 1], div->el[0]);
+	}
+
+	tab->bset = isl_basic_set_extend_dim(tab->bset,
+		isl_basic_set_get_dim(tab->bset), 1, 0, 2);
+	k = isl_basic_set_alloc_div(tab->bset);
+	if (k < 0)
+		return -1;
+	isl_seq_cpy(tab->bset->div[k], div->el, div->size);
+	isl_tab_push(tab, isl_tab_undo_bset_div);
+
+	return k;
 }
 
 /* Add a div specified by "div" to both the main tableau and
@@ -1329,53 +1436,19 @@ error:
  * need to express the meaning of the div.
  * Return the index of the div or -1 if anything went wrong.
  */
-static int add_div(struct isl_tab *tab, struct isl_tab **context_tab,
+static int add_div(struct isl_tab *tab, struct isl_context *context,
 	struct isl_vec *div)
 {
-	int i;
 	int r;
 	int k;
 	int nonneg;
-	struct isl_mat *samples;
 
-	for (i = 0; i < (*context_tab)->n_var; ++i) {
-		if (isl_int_is_zero(div->el[2 + i]))
-			continue;
-		if (!(*context_tab)->var[i].is_nonneg)
-			break;
-	}
-	nonneg = i == (*context_tab)->n_var;
-
-	if (isl_tab_extend_vars(*context_tab, 1) < 0)
-		goto error;
-	r = isl_tab_allocate_var(*context_tab);
-	if (r < 0)
-		goto error;
-	if (nonneg)
-		(*context_tab)->var[r].is_nonneg = 1;
-	(*context_tab)->var[r].frozen = 1;
-
-	samples = isl_mat_extend((*context_tab)->samples,
-			(*context_tab)->n_sample, 1 + (*context_tab)->n_var);
-	(*context_tab)->samples = samples;
-	if (!samples)
-		goto error;
-	for (i = (*context_tab)->n_outside; i < samples->n_row; ++i) {
-		isl_seq_inner_product(div->el + 1, samples->row[i],
-			div->size - 1, &samples->row[i][samples->n_col - 1]);
-		isl_int_fdiv_q(samples->row[i][samples->n_col - 1],
-			       samples->row[i][samples->n_col - 1], div->el[0]);
-	}
-
-	(*context_tab)->bset = isl_basic_set_extend_dim((*context_tab)->bset,
-		isl_basic_set_get_dim((*context_tab)->bset), 1, 0, 2);
-	k = isl_basic_set_alloc_div((*context_tab)->bset);
+	k = context->op->add_div(context, div, &nonneg);
 	if (k < 0)
 		goto error;
-	isl_seq_cpy((*context_tab)->bset->div[k], div->el, div->size);
-	isl_tab_push((*context_tab), isl_tab_undo_bset_div);
-	*context_tab = add_div_constraints(*context_tab, k);
-	if (!*context_tab)
+
+	add_div_constraints(context, k);
+	if (!context->op->is_ok(context))
 		goto error;
 
 	if (isl_tab_extend_vars(tab, 1) < 0)
@@ -1390,8 +1463,7 @@ static int add_div(struct isl_tab *tab, struct isl_tab **context_tab,
 
 	return tab->n_div - 1;
 error:
-	isl_tab_free(*context_tab);
-	*context_tab = NULL;
+	context->op->invalidate(context);
 	return -1;
 }
 
@@ -1413,16 +1485,20 @@ static int find_div(struct isl_tab *tab, isl_int *div, isl_int denom)
 /* Return the index of a div that corresponds to "div".
  * We first check if we already have such a div and if not, we create one.
  */
-static int get_div(struct isl_tab *tab, struct isl_tab **context_tab,
+static int get_div(struct isl_tab *tab, struct isl_context *context,
 	struct isl_vec *div)
 {
 	int d;
+	struct isl_tab *context_tab = context->op->peek_tab(context);
 
-	d = find_div(*context_tab, div->el + 1, div->el[0]);
+	if (!context_tab)
+		return -1;
+
+	d = find_div(context_tab, div->el + 1, div->el[0]);
 	if (d != -1)
 		return d;
 
-	return add_div(tab, context_tab, div);
+	return add_div(tab, context, div);
 }
 
 /* Add a parametric cut to cut away the non-integral sample value
@@ -1449,7 +1525,7 @@ static int get_div(struct isl_tab *tab, struct isl_tab **context_tab,
  * Return the row of the cut or -1.
  */
 static int add_parametric_cut(struct isl_tab *tab, int row,
-	struct isl_tab **context_tab)
+	struct isl_context *context)
 {
 	struct isl_vec *div;
 	int d;
@@ -1459,19 +1535,16 @@ static int add_parametric_cut(struct isl_tab *tab, int row,
 	int col;
 	unsigned off = 2 + tab->M;
 
-	if (!*context_tab)
-		goto error;
-
-	if (isl_tab_extend_cons(*context_tab, 3) < 0)
-		goto error;
+	if (!context)
+		return -1;
 
 	div = get_row_parameter_div(tab, row);
 	if (!div)
 		return -1;
 
-	d = get_div(tab, context_tab, div);
+	d = context->op->get_div(context, tab, div);
 	if (d < 0)
-		goto error;
+		return -1;
 
 	if (isl_tab_extend_cons(tab, 1) < 0)
 		return -1;
@@ -1537,10 +1610,6 @@ static int add_parametric_cut(struct isl_tab *tab, int row,
 	isl_vec_free(div);
 
 	return tab->con[r].index;
-error:
-	isl_tab_free(*context_tab);
-	*context_tab = NULL;
-	return -1;
 }
 
 /* Construct a tableau for bmap that can be used for computing
@@ -1614,6 +1683,406 @@ error:
 	return NULL;
 }
 
+/* Given a main tableau where more than one row requires a split,
+ * determine and return the "best" row to split on.
+ *
+ * Given two rows in the main tableau, if the inequality corresponding
+ * to the first row is redundant with respect to that of the second row
+ * in the current tableau, then it is better to split on the second row,
+ * since in the positive part, both row will be positive.
+ * (In the negative part a pivot will have to be performed and just about
+ * anything can happen to the sign of the other row.)
+ *
+ * As a simple heuristic, we therefore select the row that makes the most
+ * of the other rows redundant.
+ *
+ * Perhaps it would also be useful to look at the number of constraints
+ * that conflict with any given constraint.
+ */
+static int best_split(struct isl_tab *tab, struct isl_tab *context_tab)
+{
+	struct isl_tab_undo *snap;
+	int split;
+	int row;
+	int best = -1;
+	int best_r;
+
+	if (isl_tab_extend_cons(context_tab, 2) < 0)
+		return -1;
+
+	snap = isl_tab_snap(context_tab);
+
+	for (split = tab->n_redundant; split < tab->n_row; ++split) {
+		struct isl_tab_undo *snap2;
+		struct isl_vec *ineq = NULL;
+		int r = 0;
+
+		if (!isl_tab_var_from_row(tab, split)->is_nonneg)
+			continue;
+		if (tab->row_sign[split] != isl_tab_row_any)
+			continue;
+
+		ineq = get_row_parameter_ineq(tab, split);
+		if (!ineq)
+			return -1;
+		context_tab = isl_tab_add_ineq(context_tab, ineq->el);
+		isl_vec_free(ineq);
+
+		snap2 = isl_tab_snap(context_tab);
+
+		for (row = tab->n_redundant; row < tab->n_row; ++row) {
+			struct isl_tab_var *var;
+
+			if (row == split)
+				continue;
+			if (!isl_tab_var_from_row(tab, row)->is_nonneg)
+				continue;
+			if (tab->row_sign[row] != isl_tab_row_any)
+				continue;
+
+			ineq = get_row_parameter_ineq(tab, row);
+			if (!ineq)
+				return -1;
+			context_tab = isl_tab_add_ineq(context_tab, ineq->el);
+			isl_vec_free(ineq);
+			var = &context_tab->con[context_tab->n_con - 1];
+			if (!context_tab->empty &&
+			    !isl_tab_min_at_most_neg_one(context_tab, var))
+				r++;
+			if (isl_tab_rollback(context_tab, snap2) < 0)
+				return -1;
+		}
+		if (best == -1 || r > best_r) {
+			best = split;
+			best_r = r;
+		}
+		if (isl_tab_rollback(context_tab, snap) < 0)
+			return -1;
+	}
+
+	return best;
+}
+
+static struct isl_basic_set *context_lex_peek_basic_set(
+	struct isl_context *context)
+{
+	struct isl_context_lex *clex = (struct isl_context_lex *)context;
+	if (!clex->tab)
+		return NULL;
+	return clex->tab->bset;
+}
+
+static struct isl_tab *context_lex_peek_tab(struct isl_context *context)
+{
+	struct isl_context_lex *clex = (struct isl_context_lex *)context;
+	return clex->tab;
+}
+
+static void context_lex_extend(struct isl_context *context, int n)
+{
+	struct isl_context_lex *clex = (struct isl_context_lex *)context;
+	if (!clex->tab)
+		return;
+	if (isl_tab_extend_cons(clex->tab, n) >= 0)
+		return;
+	isl_tab_free(clex->tab);
+	clex->tab = NULL;
+}
+
+static void context_lex_add_eq(struct isl_context *context, isl_int *eq,
+		int check, int update)
+{
+	struct isl_context_lex *clex = (struct isl_context_lex *)context;
+	if (isl_tab_extend_cons(clex->tab, 2) < 0)
+		goto error;
+	clex->tab = add_lexmin_eq(clex->tab, eq);
+	if (check) {
+		int v = tab_has_valid_sample(clex->tab, eq, 1);
+		if (v < 0)
+			goto error;
+		if (!v)
+			clex->tab = check_integer_feasible(clex->tab);
+	}
+	if (update)
+		clex->tab = check_samples(clex->tab, eq, 1);
+	return;
+error:
+	isl_tab_free(clex->tab);
+	clex->tab = NULL;
+}
+
+static void context_lex_add_ineq(struct isl_context *context, isl_int *ineq,
+		int check, int update)
+{
+	struct isl_context_lex *clex = (struct isl_context_lex *)context;
+	if (isl_tab_extend_cons(clex->tab, 1) < 0)
+		goto error;
+	clex->tab = add_lexmin_ineq(clex->tab, ineq);
+	if (check) {
+		int v = tab_has_valid_sample(clex->tab, ineq, 0);
+		if (v < 0)
+			goto error;
+		if (!v)
+			clex->tab = check_integer_feasible(clex->tab);
+	}
+	if (update)
+		clex->tab = check_samples(clex->tab, ineq, 0);
+	return;
+error:
+	isl_tab_free(clex->tab);
+	clex->tab = NULL;
+}
+
+/* Check which signs can be obtained by "ineq" on all the currently
+ * active sample values.  See row_sign for more information.
+ */
+static enum isl_tab_row_sign tab_ineq_sign(struct isl_tab *tab, isl_int *ineq,
+	int strict)
+{
+	int i;
+	int sgn;
+	isl_int tmp;
+	int res = isl_tab_row_unknown;
+
+	isl_assert(tab->mat->ctx, tab->samples, return 0);
+	isl_assert(tab->mat->ctx, tab->samples->n_col == 1 + tab->n_var, return 0);
+
+	isl_int_init(tmp);
+	for (i = tab->n_outside; i < tab->n_sample; ++i) {
+		isl_seq_inner_product(tab->samples->row[i], ineq,
+					1 + tab->n_var, &tmp);
+		sgn = isl_int_sgn(tmp);
+		if (sgn > 0 || (sgn == 0 && strict)) {
+			if (res == isl_tab_row_unknown)
+				res = isl_tab_row_pos;
+			if (res == isl_tab_row_neg)
+				res = isl_tab_row_any;
+		}
+		if (sgn < 0) {
+			if (res == isl_tab_row_unknown)
+				res = isl_tab_row_neg;
+			if (res == isl_tab_row_pos)
+				res = isl_tab_row_any;
+		}
+		if (res == isl_tab_row_any)
+			break;
+	}
+	isl_int_clear(tmp);
+
+	return res;
+}
+
+static enum isl_tab_row_sign context_lex_ineq_sign(struct isl_context *context,
+			isl_int *ineq, int strict)
+{
+	struct isl_context_lex *clex = (struct isl_context_lex *)context;
+	return tab_ineq_sign(clex->tab, ineq, strict);
+}
+
+/* Check whether "ineq" can be added to the tableau without rendering
+ * it infeasible.
+ */
+static int context_lex_test_ineq(struct isl_context *context, isl_int *ineq)
+{
+	struct isl_context_lex *clex = (struct isl_context_lex *)context;
+	struct isl_tab_undo *snap;
+	int feasible;
+
+	if (!clex->tab)
+		return -1;
+
+	if (isl_tab_extend_cons(clex->tab, 1) < 0)
+		return -1;
+
+	snap = isl_tab_snap(clex->tab);
+	isl_tab_push_basis(clex->tab);
+	clex->tab = add_lexmin_ineq(clex->tab, ineq);
+	clex->tab = check_integer_feasible(clex->tab);
+	if (!clex->tab)
+		return -1;
+	feasible = !clex->tab->empty;
+	if (isl_tab_rollback(clex->tab, snap) < 0)
+		return -1;
+
+	return feasible;
+}
+
+static int context_lex_get_div(struct isl_context *context, struct isl_tab *tab,
+		struct isl_vec *div)
+{
+	return get_div(tab, context, div);
+}
+
+static int context_lex_add_div(struct isl_context *context, struct isl_vec *div,
+	int *nonneg)
+{
+	struct isl_context_lex *clex = (struct isl_context_lex *)context;
+	return context_tab_add_div(clex->tab, div, nonneg);
+}
+
+static int context_lex_best_split(struct isl_context *context,
+		struct isl_tab *tab)
+{
+	struct isl_context_lex *clex = (struct isl_context_lex *)context;
+	struct isl_tab_undo *snap;
+	int r;
+
+	snap = isl_tab_snap(clex->tab);
+	isl_tab_push_basis(clex->tab);
+	r = best_split(tab, clex->tab);
+
+	if (isl_tab_rollback(clex->tab, snap) < 0)
+		return -1;
+
+	return r;
+}
+
+static int context_lex_is_empty(struct isl_context *context)
+{
+	struct isl_context_lex *clex = (struct isl_context_lex *)context;
+	if (!clex->tab)
+		return -1;
+	return clex->tab->empty;
+}
+
+static void *context_lex_save(struct isl_context *context)
+{
+	struct isl_context_lex *clex = (struct isl_context_lex *)context;
+	struct isl_tab_undo *snap;
+
+	snap = isl_tab_snap(clex->tab);
+	isl_tab_push_basis(clex->tab);
+	isl_tab_save_samples(clex->tab);
+
+	return snap;
+}
+
+static void context_lex_restore(struct isl_context *context, void *save)
+{
+	struct isl_context_lex *clex = (struct isl_context_lex *)context;
+	if (isl_tab_rollback(clex->tab, (struct isl_tab_undo *)save) < 0) {
+		isl_tab_free(clex->tab);
+		clex->tab = NULL;
+	}
+}
+
+static int context_lex_is_ok(struct isl_context *context)
+{
+	struct isl_context_lex *clex = (struct isl_context_lex *)context;
+	return !!clex->tab;
+}
+
+/* For each variable in the context tableau, check if the variable can
+ * only attain non-negative values.  If so, mark the parameter as non-negative
+ * in the main tableau.  This allows for a more direct identification of some
+ * cases of violated constraints.
+ */
+static struct isl_tab *tab_detect_nonnegative_parameters(struct isl_tab *tab,
+	struct isl_tab *context_tab)
+{
+	int i;
+	struct isl_tab_undo *snap;
+	struct isl_vec *ineq = NULL;
+	struct isl_tab_var *var;
+	int n;
+
+	if (context_tab->n_var == 0)
+		return tab;
+
+	ineq = isl_vec_alloc(tab->mat->ctx, 1 + context_tab->n_var);
+	if (!ineq)
+		goto error;
+
+	if (isl_tab_extend_cons(context_tab, 1) < 0)
+		goto error;
+
+	snap = isl_tab_snap(context_tab);
+
+	n = 0;
+	isl_seq_clr(ineq->el, ineq->size);
+	for (i = 0; i < context_tab->n_var; ++i) {
+		isl_int_set_si(ineq->el[1 + i], 1);
+		context_tab = isl_tab_add_ineq(context_tab, ineq->el);
+		var = &context_tab->con[context_tab->n_con - 1];
+		if (!context_tab->empty &&
+		    !isl_tab_min_at_most_neg_one(context_tab, var)) {
+			int j = i;
+			if (i >= tab->n_param)
+				j = i - tab->n_param + tab->n_var - tab->n_div;
+			tab->var[j].is_nonneg = 1;
+			n++;
+		}
+		isl_int_set_si(ineq->el[1 + i], 0);
+		if (isl_tab_rollback(context_tab, snap) < 0)
+			goto error;
+	}
+
+	if (context_tab->M && n == context_tab->n_var) {
+		context_tab->mat = isl_mat_drop_cols(context_tab->mat, 2, 1);
+		context_tab->M = 0;
+	}
+
+	isl_vec_free(ineq);
+	return tab;
+error:
+	isl_vec_free(ineq);
+	isl_tab_free(tab);
+	return NULL;
+}
+
+static struct isl_tab *context_lex_detect_nonnegative_parameters(
+	struct isl_context *context, struct isl_tab *tab)
+{
+	struct isl_context_lex *clex = (struct isl_context_lex *)context;
+	struct isl_tab_undo *snap;
+
+	snap = isl_tab_snap(clex->tab);
+	isl_tab_push_basis(clex->tab);
+
+	tab = tab_detect_nonnegative_parameters(tab, clex->tab);
+
+	if (isl_tab_rollback(clex->tab, snap) < 0)
+		goto error;
+
+	return tab;
+error:
+	isl_tab_free(tab);
+	return NULL;
+}
+
+static void context_lex_invalidate(struct isl_context *context)
+{
+	struct isl_context_lex *clex = (struct isl_context_lex *)context;
+	isl_tab_free(clex->tab);
+	clex->tab = NULL;
+}
+
+static void context_lex_free(struct isl_context *context)
+{
+	struct isl_context_lex *clex = (struct isl_context_lex *)context;
+	isl_tab_free(clex->tab);
+	free(clex);
+}
+
+struct isl_context_op isl_context_lex_op = {
+	context_lex_detect_nonnegative_parameters,
+	context_lex_peek_basic_set,
+	context_lex_peek_tab,
+	context_lex_add_eq,
+	context_lex_add_ineq,
+	context_lex_ineq_sign,
+	context_lex_test_ineq,
+	context_lex_get_div,
+	context_lex_add_div,
+	context_lex_best_split,
+	context_lex_is_empty,
+	context_lex_is_ok,
+	context_lex_save,
+	context_lex_restore,
+	context_lex_invalidate,
+	context_lex_free,
+};
+
 static struct isl_tab *context_tab_for_lexmin(struct isl_basic_set *bset)
 {
 	struct isl_tab *tab;
@@ -1632,6 +2101,31 @@ error:
 	return NULL;
 }
 
+static struct isl_context *isl_context_lex_alloc(struct isl_basic_set *dom)
+{
+	struct isl_context_lex *clex;
+
+	if (!dom)
+		return NULL;
+
+	clex = isl_alloc_type(dom->ctx, struct isl_context_lex);
+	if (!clex)
+		return NULL;
+
+	clex->context.op = &isl_context_lex_op;
+
+	clex->tab = context_tab_for_lexmin(isl_basic_set_copy(dom));
+	clex->tab = restore_lexmin(clex->tab);
+	clex->tab = check_integer_feasible(clex->tab);
+	if (!clex->tab)
+		goto error;
+
+	return &clex->context;
+error:
+	clex->context.op->free(&clex->context);
+	return NULL;
+}
+
 /* Construct an isl_sol_map structure for accumulating the solution.
  * If track_empty is set, then we also keep track of the parts
  * of the context where there is no solution.
@@ -1643,8 +2137,6 @@ static struct isl_sol_map *sol_map_init(struct isl_basic_map *bmap,
 	struct isl_basic_set *dom, int track_empty, int max)
 {
 	struct isl_sol_map *sol_map;
-	struct isl_tab *context_tab;
-	int f;
 
 	sol_map = isl_calloc_type(bset->ctx, struct isl_sol_map);
 	if (!sol_map)
@@ -1658,11 +2150,8 @@ static struct isl_sol_map *sol_map_init(struct isl_basic_map *bmap,
 	if (!sol_map->map)
 		goto error;
 
-	context_tab = context_tab_for_lexmin(isl_basic_set_copy(dom));
-	context_tab = restore_lexmin(context_tab);
-	sol_map->sol.context_tab = context_tab;
-	f = context_is_feasible(&sol_map->sol);
-	if (f < 0)
+	sol_map->sol.context = isl_context_lex_alloc(dom);
+	if (!sol_map->sol.context)
 		goto error;
 
 	if (track_empty) {
@@ -1677,70 +2166,6 @@ static struct isl_sol_map *sol_map_init(struct isl_basic_map *bmap,
 error:
 	isl_basic_set_free(dom);
 	sol_map_free(sol_map);
-	return NULL;
-}
-
-/* For each variable in the context tableau, check if the variable can
- * only attain non-negative values.  If so, mark the parameter as non-negative
- * in the main tableau.  This allows for a more direct identification of some
- * cases of violated constraints.
- */
-static struct isl_tab *tab_detect_nonnegative_parameters(struct isl_tab *tab,
-	struct isl_tab *context_tab)
-{
-	int i;
-	struct isl_tab_undo *snap, *snap2;
-	struct isl_vec *ineq = NULL;
-	struct isl_tab_var *var;
-	int n;
-
-	if (context_tab->n_var == 0)
-		return tab;
-
-	ineq = isl_vec_alloc(tab->mat->ctx, 1 + context_tab->n_var);
-	if (!ineq)
-		goto error;
-
-	if (isl_tab_extend_cons(context_tab, 1) < 0)
-		goto error;
-
-	snap = isl_tab_snap(context_tab);
-	isl_tab_push_basis(context_tab);
-
-	snap2 = isl_tab_snap(context_tab);
-
-	n = 0;
-	isl_seq_clr(ineq->el, ineq->size);
-	for (i = 0; i < context_tab->n_var; ++i) {
-		isl_int_set_si(ineq->el[1 + i], 1);
-		context_tab = isl_tab_add_ineq(context_tab, ineq->el);
-		var = &context_tab->con[context_tab->n_con - 1];
-		if (!context_tab->empty &&
-		    !isl_tab_min_at_most_neg_one(context_tab, var)) {
-			int j = i;
-			if (i >= tab->n_param)
-				j = i - tab->n_param + tab->n_var - tab->n_div;
-			tab->var[j].is_nonneg = 1;
-			n++;
-		}
-		isl_int_set_si(ineq->el[1 + i], 0);
-		if (isl_tab_rollback(context_tab, snap2) < 0)
-			goto error;
-	}
-
-	if (isl_tab_rollback(context_tab, snap) < 0)
-		goto error;
-
-	if (n == context_tab->n_var) {
-		context_tab->mat = isl_mat_drop_cols(context_tab->mat, 2, 1);
-		context_tab->M = 0;
-	}
-
-	isl_vec_free(ineq);
-	return tab;
-error:
-	isl_vec_free(ineq);
-	isl_tab_free(tab);
 	return NULL;
 }
 
@@ -1844,18 +2269,14 @@ static int is_strict(struct isl_vec *vec)
  *	>=0 ?	     Y      N
  *		    any    neg
  */
-static int row_sign(struct isl_tab *tab, struct isl_sol *sol, int row)
+static enum isl_tab_row_sign row_sign(struct isl_tab *tab,
+	struct isl_sol *sol, int row)
 {
-	int i;
-	struct isl_tab_undo *snap = NULL;
 	struct isl_vec *ineq = NULL;
 	int res = isl_tab_row_unknown;
 	int critical;
 	int strict;
-	int sgn;
 	int row2;
-	isl_int tmp;
-	struct isl_tab *context_tab = sol->context_tab;
 
 	if (tab->row_sign[row] != isl_tab_row_unknown)
 		return tab->row_sign[row];
@@ -1870,44 +2291,14 @@ static int row_sign(struct isl_tab *tab, struct isl_sol *sol, int row)
 
 	critical = is_critical(tab, row);
 
-	isl_assert(tab->mat->ctx, context_tab->samples, goto error);
-	isl_assert(tab->mat->ctx, context_tab->samples->n_col == 1 + context_tab->n_var, goto error);
-
 	ineq = get_row_parameter_ineq(tab, row);
 	if (!ineq)
 		goto error;
 
 	strict = is_strict(ineq);
 
-	isl_int_init(tmp);
-	for (i = context_tab->n_outside; i < context_tab->n_sample; ++i) {
-		isl_seq_inner_product(context_tab->samples->row[i], ineq->el,
-					ineq->size, &tmp);
-		sgn = isl_int_sgn(tmp);
-		if (sgn > 0 || (sgn == 0 && (critical || strict))) {
-			if (res == isl_tab_row_unknown)
-				res = isl_tab_row_pos;
-			if (res == isl_tab_row_neg)
-				res = isl_tab_row_any;
-		}
-		if (sgn < 0) {
-			if (res == isl_tab_row_unknown)
-				res = isl_tab_row_neg;
-			if (res == isl_tab_row_pos)
-				res = isl_tab_row_any;
-		}
-		if (res == isl_tab_row_any)
-			break;
-	}
-	isl_int_clear(tmp);
-
-	if (res != isl_tab_row_any) {
-		if (isl_tab_extend_cons(context_tab, 1) < 0)
-			goto error;
-
-		snap = isl_tab_snap(context_tab);
-		isl_tab_push_basis(context_tab);
-	}
+	res = sol->context->op->ineq_sign(sol->context, ineq->el,
+					  critical || strict);
 
 	if (res == isl_tab_row_unknown || res == isl_tab_row_pos) {
 		/* test for negative values */
@@ -1915,20 +2306,14 @@ static int row_sign(struct isl_tab *tab, struct isl_sol *sol, int row)
 		isl_seq_neg(ineq->el, ineq->el, ineq->size);
 		isl_int_sub_ui(ineq->el[0], ineq->el[0], 1);
 
-		isl_tab_push_basis(context_tab);
-		sol->context_tab = add_lexmin_ineq(sol->context_tab, ineq->el);
-		feasible = context_is_feasible(sol);
+		feasible = sol->context->op->test_ineq(sol->context, ineq->el);
 		if (feasible < 0)
 			goto error;
-		context_tab = sol->context_tab;
 		if (!feasible)
 			res = isl_tab_row_pos;
 		else
 			res = (res == isl_tab_row_unknown) ? isl_tab_row_neg
 							   : isl_tab_row_any;
-		if (isl_tab_rollback(context_tab, snap) < 0)
-			goto error;
-
 		if (res == isl_tab_row_neg) {
 			isl_seq_neg(ineq->el, ineq->el, ineq->size);
 			isl_int_sub_ui(ineq->el[0], ineq->el[0], 1);
@@ -1941,16 +2326,11 @@ static int row_sign(struct isl_tab *tab, struct isl_sol *sol, int row)
 		if (!critical && !strict)
 			isl_int_sub_ui(ineq->el[0], ineq->el[0], 1);
 
-		isl_tab_push_basis(context_tab);
-		sol->context_tab = add_lexmin_ineq(sol->context_tab, ineq->el);
-		feasible = context_is_feasible(sol);
+		feasible = sol->context->op->test_ineq(sol->context, ineq->el);
 		if (feasible < 0)
 			goto error;
-		context_tab = sol->context_tab;
 		if (feasible)
 			res = isl_tab_row_any;
-		if (isl_tab_rollback(context_tab, snap) < 0)
-			goto error;
 	}
 
 	isl_vec_free(ineq);
@@ -1979,27 +2359,23 @@ static struct isl_sol *find_solutions(struct isl_sol *sol, struct isl_tab *tab);
 static struct isl_sol *find_in_pos(struct isl_sol *sol,
 	struct isl_tab *tab, isl_int *ineq)
 {
-	struct isl_tab_undo *snap;
+	void *saved;
 
-	snap = isl_tab_snap(sol->context_tab);
-	isl_tab_push_basis(sol->context_tab);
-	isl_tab_save_samples(sol->context_tab);
-	if (isl_tab_extend_cons(sol->context_tab, 1) < 0)
+	if (!sol->context)
 		goto error;
+	saved = sol->context->op->save(sol->context);
 
 	tab = isl_tab_dup(tab);
 	if (!tab)
 		goto error;
 
-	sol->context_tab = add_lexmin_ineq(sol->context_tab, ineq);
-	sol->context_tab = check_samples(sol->context_tab, ineq, 0);
+	sol->context->op->add_ineq(sol->context, ineq, 0, 1);
 
 	sol = find_solutions(sol, tab);
 
-	isl_tab_rollback(sol->context_tab, snap);
+	sol->context->op->restore(sol->context, saved);
 	return sol;
 error:
-	isl_tab_rollback(sol->context_tab, snap);
 	sol_free(sol);
 	return NULL;
 }
@@ -2011,19 +2387,16 @@ static struct isl_sol *no_sol_in_strict(struct isl_sol *sol,
 	struct isl_tab *tab, struct isl_vec *ineq)
 {
 	int empty;
-	int f;
-	struct isl_tab_undo *snap;
-	snap = isl_tab_snap(sol->context_tab);
-	isl_tab_push_basis(sol->context_tab);
-	isl_tab_save_samples(sol->context_tab);
-	if (isl_tab_extend_cons(sol->context_tab, 1) < 0)
+	void *saved;
+
+	if (!sol->context)
 		goto error;
+	saved = sol->context->op->save(sol->context);
 
 	isl_int_sub_ui(ineq->el[0], ineq->el[0], 1);
 
-	sol->context_tab = add_lexmin_ineq(sol->context_tab, ineq->el);
-	f = context_valid_sample_or_feasible(sol, ineq->el, 0);
-	if (f < 0)
+	sol->context->op->add_ineq(sol->context, ineq->el, 1, 0);
+	if (!sol->context)
 		goto error;
 
 	empty = tab->empty;
@@ -2033,97 +2406,11 @@ static struct isl_sol *no_sol_in_strict(struct isl_sol *sol,
 
 	isl_int_add_ui(ineq->el[0], ineq->el[0], 1);
 
-	if (isl_tab_rollback(sol->context_tab, snap) < 0)
-		goto error;
+	sol->context->op->restore(sol->context, saved);
 	return sol;
 error:
 	sol_free(sol);
 	return NULL;
-}
-
-/* Given a main tableau where more than one row requires a split,
- * determine and return the "best" row to split on.
- *
- * Given two rows in the main tableau, if the inequality corresponding
- * to the first row is redundant with respect to that of the second row
- * in the current tableau, then it is better to split on the second row,
- * since in the positive part, both row will be positive.
- * (In the negative part a pivot will have to be performed and just about
- * anything can happen to the sign of the other row.)
- *
- * As a simple heuristic, we therefore select the row that makes the most
- * of the other rows redundant.
- *
- * Perhaps it would also be useful to look at the number of constraints
- * that conflict with any given constraint.
- */
-static int best_split(struct isl_tab *tab, struct isl_tab *context_tab)
-{
-	struct isl_tab_undo *snap, *snap2;
-	int split;
-	int row;
-	int best = -1;
-	int best_r;
-
-	if (isl_tab_extend_cons(context_tab, 2) < 0)
-		return -1;
-
-	snap = isl_tab_snap(context_tab);
-	isl_tab_push_basis(context_tab);
-	snap2 = isl_tab_snap(context_tab);
-
-	for (split = tab->n_redundant; split < tab->n_row; ++split) {
-		struct isl_tab_undo *snap3;
-		struct isl_vec *ineq = NULL;
-		int r = 0;
-
-		if (!isl_tab_var_from_row(tab, split)->is_nonneg)
-			continue;
-		if (tab->row_sign[split] != isl_tab_row_any)
-			continue;
-
-		ineq = get_row_parameter_ineq(tab, split);
-		if (!ineq)
-			return -1;
-		context_tab = isl_tab_add_ineq(context_tab, ineq->el);
-		isl_vec_free(ineq);
-
-		snap3 = isl_tab_snap(context_tab);
-
-		for (row = tab->n_redundant; row < tab->n_row; ++row) {
-			struct isl_tab_var *var;
-
-			if (row == split)
-				continue;
-			if (!isl_tab_var_from_row(tab, row)->is_nonneg)
-				continue;
-			if (tab->row_sign[row] != isl_tab_row_any)
-				continue;
-
-			ineq = get_row_parameter_ineq(tab, row);
-			if (!ineq)
-				return -1;
-			context_tab = isl_tab_add_ineq(context_tab, ineq->el);
-			isl_vec_free(ineq);
-			var = &context_tab->con[context_tab->n_con - 1];
-			if (!context_tab->empty &&
-			    !isl_tab_min_at_most_neg_one(context_tab, var))
-				r++;
-			if (isl_tab_rollback(context_tab, snap3) < 0)
-				return -1;
-		}
-		if (best == -1 || r > best_r) {
-			best = split;
-			best_r = r;
-		}
-		if (isl_tab_rollback(context_tab, snap2) < 0)
-			return -1;
-	}
-
-	if (isl_tab_rollback(context_tab, snap) < 0)
-		return -1;
-
-	return best;
 }
 
 /* Compute the lexicographic minimum of the set represented by the main
@@ -2222,16 +2509,16 @@ static int best_split(struct isl_tab *tab, struct isl_tab *context_tab)
  */
 static struct isl_sol *find_solutions(struct isl_sol *sol, struct isl_tab *tab)
 {
-	struct isl_tab **context_tab;
+	struct isl_context *context;
 
 	if (!tab || !sol)
 		goto error;
 
-	context_tab = &sol->context_tab;
+	context = sol->context;
 
 	if (tab->empty)
 		goto done;
-	if ((*context_tab)->empty)
+	if (context->op->is_empty(context))
 		goto done;
 
 	for (; tab && !tab->empty; tab = restore_lexmin(tab)) {
@@ -2260,7 +2547,7 @@ static struct isl_sol *find_solutions(struct isl_sol *sol, struct isl_tab *tab)
 		if (split != -1) {
 			struct isl_vec *ineq;
 			if (n_split != 1)
-				split = best_split(tab, *context_tab);
+				split = context->op->best_split(context, tab);
 			if (split < 0)
 				goto error;
 			ineq = get_row_parameter_ineq(tab, split);
@@ -2279,8 +2566,7 @@ static struct isl_sol *find_solutions(struct isl_sol *sol, struct isl_tab *tab)
 			row = split;
 			isl_seq_neg(ineq->el, ineq->el, ineq->size);
 			isl_int_sub_ui(ineq->el[0], ineq->el[0], 1);
-			*context_tab = add_lexmin_ineq(*context_tab, ineq->el);
-			*context_tab = check_samples(*context_tab, ineq->el, 0);
+			context->op->add_ineq(context, ineq->el, 0, 1);
 			isl_vec_free(ineq);
 			if (!sol)
 				goto error;
@@ -2301,26 +2587,23 @@ static struct isl_sol *find_solutions(struct isl_sol *sol, struct isl_tab *tab)
 			struct isl_vec *div;
 			struct isl_vec *ineq;
 			int d;
-			if (isl_tab_extend_cons(*context_tab, 3) < 0)
-				goto error;
 			div = get_row_split_div(tab, row);
 			if (!div)
 				goto error;
-			d = get_div(tab, context_tab, div);
+			d = context->op->get_div(context, tab, div);
 			isl_vec_free(div);
 			if (d < 0)
 				goto error;
-			ineq = ineq_for_div((*context_tab)->bset, d);
+			ineq = ineq_for_div(context->op->peek_basic_set(context), d);
 			sol = no_sol_in_strict(sol, tab, ineq);
 			isl_seq_neg(ineq->el, ineq->el, ineq->size);
-			*context_tab = add_lexmin_ineq(*context_tab, ineq->el);
-			*context_tab = check_samples(*context_tab, ineq->el, 0);
+			context->op->add_ineq(context, ineq->el, 1, 1);
 			isl_vec_free(ineq);
-			if (!sol)
+			if (!sol || !context->op->is_ok(context))
 				goto error;
 			tab = set_row_cst_to_div(tab, row, d);
 		} else
-			row = add_parametric_cut(tab, row, context_tab);
+			row = add_parametric_cut(tab, row, context);
 		if (row < 0)
 			goto error;
 	}
@@ -2365,9 +2648,6 @@ static struct isl_sol *find_solutions_main(struct isl_sol *sol,
 			p = tab->row_var[row]
 				+ tab->n_param - (tab->n_var - tab->n_div);
 
-		if (isl_tab_extend_cons(sol->context_tab, 2) < 0)
-			goto error;
-
 		eq = isl_vec_alloc(tab->mat->ctx, 1+tab->n_param+tab->n_div);
 		get_row_parameter_line(tab, row, eq->el);
 		isl_int_neg(eq->el[1 + p], tab->mat->row[row][0]);
@@ -2379,17 +2659,13 @@ static struct isl_sol *find_solutions_main(struct isl_sol *sol,
 		sol = no_sol_in_strict(sol, tab, eq);
 		isl_seq_neg(eq->el, eq->el, eq->size);
 
-		sol->context_tab = add_lexmin_eq(sol->context_tab, eq->el);
-		context_valid_sample_or_feasible(sol, eq->el, 1);
-		sol->context_tab = check_samples(sol->context_tab, eq->el, 1);
+		sol->context->op->add_eq(sol->context, eq->el, 1, 1);
 
 		isl_vec_free(eq);
 
 		isl_tab_mark_redundant(tab, row);
 
-		if (!sol->context_tab)
-			goto error;
-		if (sol->context_tab->empty)
+		if (sol->context->op->is_empty(sol->context))
 			break;
 
 		row = tab->n_redundant - 1;
@@ -2506,6 +2782,7 @@ struct isl_map *isl_tab_basic_map_partial_lexopt(
 	struct isl_tab *tab;
 	struct isl_map *result = NULL;
 	struct isl_sol_map *sol_map = NULL;
+	struct isl_context *context;
 
 	if (empty)
 		*empty = NULL;
@@ -2525,15 +2802,15 @@ struct isl_map *isl_tab_basic_map_partial_lexopt(
 	if (!sol_map)
 		goto error;
 
-	if (isl_basic_set_fast_is_empty(sol_map->sol.context_tab->bset))
+	context = sol_map->sol.context;
+	if (isl_basic_set_fast_is_empty(context->op->peek_basic_set(context)))
 		/* nothing */;
 	else if (isl_basic_map_fast_is_empty(bmap))
 		sol_map = add_empty(sol_map);
 	else {
 		tab = tab_for_lexmin(bmap,
-					sol_map->sol.context_tab->bset, 1, max);
-		tab = tab_detect_nonnegative_parameters(tab,
-						sol_map->sol.context_tab);
+				    context->op->peek_basic_set(context), 1, max);
+		tab = context->op->detect_nonnegative_parameters(context, tab);
 		sol_map = sol_map_find_solutions(sol_map, tab);
 		if (!sol_map)
 			goto error;
@@ -2561,7 +2838,8 @@ struct isl_sol_for {
 
 static void sol_for_free(struct isl_sol_for *sol_for)
 {
-	isl_tab_free(sol_for->sol.context_tab);
+	if (sol_for->sol.context)
+		sol_for->sol.context->op->free(sol_for->sol.context);
 	free(sol_for);
 }
 
@@ -2587,7 +2865,6 @@ static void sol_for_free_wrap(struct isl_sol *sol)
 static struct isl_sol_for *sol_for_add(struct isl_sol_for *sol,
 	struct isl_tab *tab)
 {
-	struct isl_tab *context_tab;
 	struct isl_basic_set *bset;
 	struct isl_mat *mat = NULL;
 	unsigned n_out;
@@ -2601,7 +2878,6 @@ static struct isl_sol_for *sol_for_add(struct isl_sol_for *sol,
 		return sol;
 
 	off = 2 + tab->M;
-	context_tab = sol->sol.context_tab;
 
 	n_out = tab->n_var - tab->n_param - tab->n_div;
 	mat = isl_mat_alloc(tab->mat->ctx, 1 + n_out, 1 + tab->n_param + tab->n_div);
@@ -2649,7 +2925,8 @@ static struct isl_sol_for *sol_for_add(struct isl_sol_for *sol,
 				    mat->n_col);
 	}
 
-	bset = isl_basic_set_dup(context_tab->bset);
+	bset = sol->sol.context->op->peek_basic_set(sol->sol.context);
+	bset = isl_basic_set_dup(bset);
 	bset = isl_basic_set_finalize(bset);
 
 	if (sol->fn(bset, isl_mat_copy(mat), sol->user) < 0)
@@ -2677,8 +2954,6 @@ static struct isl_sol_for *sol_for_init(struct isl_basic_map *bmap, int max,
 	struct isl_sol_for *sol_for = NULL;
 	struct isl_dim *dom_dim;
 	struct isl_basic_set *dom = NULL;
-	struct isl_tab *context_tab;
-	int f;
 
 	sol_for = isl_calloc_type(bset->ctx, struct isl_sol_for);
 	if (!sol_for)
@@ -2693,11 +2968,8 @@ static struct isl_sol_for *sol_for_init(struct isl_basic_map *bmap, int max,
 	sol_for->sol.add = &sol_for_add_wrap;
 	sol_for->sol.free = &sol_for_free_wrap;
 
-	context_tab = context_tab_for_lexmin(isl_basic_set_copy(dom));
-	context_tab = restore_lexmin(context_tab);
-	sol_for->sol.context_tab = context_tab;
-	f = context_is_feasible(&sol_for->sol);
-	if (f < 0)
+	sol_for->sol.context = isl_context_lex_alloc(dom);
+	if (!sol_for->sol.context)
 		goto error;
 
 	isl_basic_set_free(dom);
@@ -2732,10 +3004,10 @@ int isl_basic_map_foreach_lexopt(__isl_keep isl_basic_map *bmap, int max,
 		/* nothing */;
 	else {
 		struct isl_tab *tab;
+		struct isl_context *context = sol_for->sol.context;
 		tab = tab_for_lexmin(bmap,
-					sol_for->sol.context_tab->bset, 1, max);
-		tab = tab_detect_nonnegative_parameters(tab,
-						sol_for->sol.context_tab);
+				context->op->peek_basic_set(context), 1, max);
+		tab = context->op->detect_nonnegative_parameters(context, tab);
 		sol_for = sol_for_find_solutions(sol_for, tab);
 		if (!sol_for)
 			goto error;
