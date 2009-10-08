@@ -1,6 +1,7 @@
 #include "isl_map_private.h"
 #include "isl_seq.h"
 #include "isl_tab.h"
+#include "isl_sample.h"
 
 /*
  * The implementation of parametric integer linear programming in this file
@@ -31,11 +32,14 @@
  * Taking as initial smaple value x' = 0 corresponds to x = -M,
  * which is always smaller than any possible value of x.
  *
- * We use the big parameter trick both in the main tableau and
- * the context tableau, each of course having its own big parameter.
+ * The big parameter trick is used in the main tableau and
+ * also in the context tableau if isl_context_lex is used.
+ * In this case, each tableaus has its own big parameter.
  * Before doing any real work, we check if all the parameters
  * happen to be non-negative.  If so, we drop the column corresponding
  * to M from the initial context tableau.
+ * If isl_context_gbr is used, then the big parameter trick is only
+ * used in the main tableau.
  */
 
 struct isl_context;
@@ -2123,6 +2127,439 @@ static struct isl_context *isl_context_lex_alloc(struct isl_basic_set *dom)
 	return &clex->context;
 error:
 	clex->context.op->free(&clex->context);
+	return NULL;
+}
+
+struct isl_context_gbr {
+	struct isl_context context;
+	struct isl_tab *tab;
+	struct isl_tab *shifted;
+};
+
+static struct isl_tab *context_gbr_detect_nonnegative_parameters(
+	struct isl_context *context, struct isl_tab *tab)
+{
+	struct isl_context_gbr *cgbr = (struct isl_context_gbr *)context;
+	return tab_detect_nonnegative_parameters(tab, cgbr->tab);
+}
+
+static struct isl_basic_set *context_gbr_peek_basic_set(
+	struct isl_context *context)
+{
+	struct isl_context_gbr *cgbr = (struct isl_context_gbr *)context;
+	if (!cgbr->tab)
+		return NULL;
+	return cgbr->tab->bset;
+}
+
+static struct isl_tab *context_gbr_peek_tab(struct isl_context *context)
+{
+	struct isl_context_gbr *cgbr = (struct isl_context_gbr *)context;
+	return cgbr->tab;
+}
+
+/* Initialize the "shifted" tableau of the context, which
+ * contains the constraints of the original tableau shifted
+ * by the sum of all negative coefficients.  This ensures
+ * that any rational point in the shifted tableau can
+ * be rounded up to yield an integer point in the original tableau.
+ */
+static void gbr_init_shifted(struct isl_context_gbr *cgbr)
+{
+	int i, j;
+	struct isl_vec *cst;
+	struct isl_basic_set *bset = cgbr->tab->bset;
+	unsigned dim = isl_basic_set_total_dim(bset);
+
+	cst = isl_vec_alloc(cgbr->tab->mat->ctx, bset->n_ineq);
+	if (!cst)
+		return;
+
+	for (i = 0; i < bset->n_ineq; ++i) {
+		isl_int_set(cst->el[i], bset->ineq[i][0]);
+		for (j = 0; j < dim; ++j) {
+			if (!isl_int_is_neg(bset->ineq[i][1 + j]))
+				continue;
+			isl_int_add(bset->ineq[i][0], bset->ineq[i][0],
+				    bset->ineq[i][1 + j]);
+		}
+	}
+
+	cgbr->shifted = isl_tab_from_basic_set(bset);
+
+	for (i = 0; i < bset->n_ineq; ++i)
+		isl_int_set(bset->ineq[i][0], cst->el[i]);
+
+	isl_vec_free(cst);
+}
+
+/* Check if the shifted tableau is non-empty, and if so
+ * use the sample point to construct an integer point
+ * of the context tableau.
+ */
+static struct isl_vec *gbr_get_shifted_sample(struct isl_context_gbr *cgbr)
+{
+	struct isl_vec *sample;
+
+	if (!cgbr->shifted)
+		gbr_init_shifted(cgbr);
+	if (!cgbr->shifted)
+		return NULL;
+	if (cgbr->shifted->empty)
+		return isl_vec_alloc(cgbr->tab->mat->ctx, 0);
+
+	sample = isl_tab_get_sample_value(cgbr->shifted);
+	sample = isl_vec_ceil(sample);
+
+	return sample;
+}
+
+static int use_shifted(struct isl_context_gbr *cgbr)
+{
+	return cgbr->tab->bset->n_eq == 0 && cgbr->tab->bset->n_div == 0;
+}
+
+static struct isl_vec *gbr_get_sample(struct isl_context_gbr *cgbr)
+{
+	struct isl_basic_set *bset;
+
+	if (isl_tab_sample_is_integer(cgbr->tab))
+		return isl_tab_get_sample_value(cgbr->tab);
+
+	if (use_shifted(cgbr)) {
+		struct isl_vec *sample;
+
+		sample = gbr_get_shifted_sample(cgbr);
+		if (!sample || sample->size > 0)
+			return sample;
+
+		isl_vec_free(sample);
+	}
+
+	bset = isl_basic_set_underlying_set(isl_basic_set_copy(cgbr->tab->bset));
+	return isl_basic_set_sample_vec(bset);
+}
+
+static void check_gbr_integer_feasible(struct isl_context_gbr *cgbr)
+{
+	struct isl_vec *sample;
+
+	if (!cgbr->tab)
+		return;
+
+	if (cgbr->tab->empty)
+		return;
+
+	sample = gbr_get_sample(cgbr);
+	if (!sample)
+		goto error;
+
+	if (sample->size == 0) {
+		isl_vec_free(sample);
+		cgbr->tab = isl_tab_mark_empty(cgbr->tab);
+		return;
+	}
+
+	cgbr->tab = isl_tab_add_sample(cgbr->tab, sample);
+
+	return;
+error:
+	isl_tab_free(cgbr->tab);
+	cgbr->tab = NULL;
+}
+
+static struct isl_tab *add_gbr_eq(struct isl_tab *tab, isl_int *eq)
+{
+	int r;
+
+	if (!tab)
+		return NULL;
+
+	if (isl_tab_extend_cons(tab, 2) < 0)
+		goto error;
+
+	tab = isl_tab_add_eq(tab, eq);
+
+	return tab;
+error:
+	isl_tab_free(tab);
+	return NULL;
+}
+
+static void context_gbr_add_eq(struct isl_context *context, isl_int *eq,
+		int check, int update)
+{
+	struct isl_context_gbr *cgbr = (struct isl_context_gbr *)context;
+
+	cgbr->tab = add_gbr_eq(cgbr->tab, eq);
+
+	if (check) {
+		int v = tab_has_valid_sample(cgbr->tab, eq, 1);
+		if (v < 0)
+			goto error;
+		if (!v)
+			check_gbr_integer_feasible(cgbr);
+	}
+	if (update)
+		cgbr->tab = check_samples(cgbr->tab, eq, 1);
+	return;
+error:
+	isl_tab_free(cgbr->tab);
+	cgbr->tab = NULL;
+}
+
+static void add_gbr_ineq(struct isl_context_gbr *cgbr, isl_int *ineq)
+{
+	if (!cgbr->tab)
+		return;
+
+	if (isl_tab_extend_cons(cgbr->tab, 1) < 0)
+		goto error;
+
+	cgbr->tab = isl_tab_add_ineq(cgbr->tab, ineq);
+
+	if (cgbr->shifted && !cgbr->shifted->empty && use_shifted(cgbr)) {
+		int i;
+		unsigned dim;
+		dim = isl_basic_set_total_dim(cgbr->tab->bset);
+
+		if (isl_tab_extend_cons(cgbr->shifted, 1) < 0)
+			goto error;
+
+		for (i = 0; i < dim; ++i) {
+			if (!isl_int_is_neg(ineq[1 + i]))
+				continue;
+			isl_int_add(ineq[0], ineq[0], ineq[1 + i]);
+		}
+
+		cgbr->shifted = isl_tab_add_ineq(cgbr->shifted, ineq);
+
+		for (i = 0; i < dim; ++i) {
+			if (!isl_int_is_neg(ineq[1 + i]))
+				continue;
+			isl_int_sub(ineq[0], ineq[0], ineq[1 + i]);
+		}
+	}
+
+	return;
+error:
+	isl_tab_free(cgbr->tab);
+	cgbr->tab = NULL;
+}
+
+static void context_gbr_add_ineq(struct isl_context *context, isl_int *ineq,
+		int check, int update)
+{
+	struct isl_context_gbr *cgbr = (struct isl_context_gbr *)context;
+
+	add_gbr_ineq(cgbr, ineq);
+	if (!cgbr->tab)
+		return;
+
+	if (check) {
+		int v = tab_has_valid_sample(cgbr->tab, ineq, 0);
+		if (v < 0)
+			goto error;
+		if (!v)
+			check_gbr_integer_feasible(cgbr);
+	}
+	if (update)
+		cgbr->tab = check_samples(cgbr->tab, ineq, 0);
+	return;
+error:
+	isl_tab_free(cgbr->tab);
+	cgbr->tab = NULL;
+}
+
+static enum isl_tab_row_sign context_gbr_ineq_sign(struct isl_context *context,
+			isl_int *ineq, int strict)
+{
+	struct isl_context_gbr *cgbr = (struct isl_context_gbr *)context;
+	return tab_ineq_sign(cgbr->tab, ineq, strict);
+}
+
+/* Check whether "ineq" can be added to the tableau without rendering
+ * it infeasible.
+ */
+static int context_gbr_test_ineq(struct isl_context *context, isl_int *ineq)
+{
+	struct isl_context_gbr *cgbr = (struct isl_context_gbr *)context;
+	struct isl_tab_undo *snap;
+	struct isl_tab_undo *shifted_snap = NULL;
+	int feasible;
+
+	if (!cgbr->tab)
+		return -1;
+
+	if (isl_tab_extend_cons(cgbr->tab, 1) < 0)
+		return -1;
+
+	snap = isl_tab_snap(cgbr->tab);
+	if (cgbr->shifted)
+		shifted_snap = isl_tab_snap(cgbr->shifted);
+	add_gbr_ineq(cgbr, ineq);
+	check_gbr_integer_feasible(cgbr);
+	if (!cgbr->tab)
+		return -1;
+	feasible = !cgbr->tab->empty;
+	if (isl_tab_rollback(cgbr->tab, snap) < 0)
+		return -1;
+	if (shifted_snap) {
+		if (isl_tab_rollback(cgbr->shifted, shifted_snap))
+			return -1;
+	} else if (cgbr->shifted) {
+		isl_tab_free(cgbr->shifted);
+		cgbr->shifted = NULL;
+	}
+
+	return feasible;
+}
+
+static int context_gbr_get_div(struct isl_context *context, struct isl_tab *tab,
+		struct isl_vec *div)
+{
+	return get_div(tab, context, div);
+}
+
+static int context_gbr_add_div(struct isl_context *context, struct isl_vec *div,
+	int *nonneg)
+{
+	struct isl_context_gbr *cgbr = (struct isl_context_gbr *)context;
+	return context_tab_add_div(cgbr->tab, div, nonneg);
+}
+
+static int context_gbr_best_split(struct isl_context *context,
+		struct isl_tab *tab)
+{
+	struct isl_context_gbr *cgbr = (struct isl_context_gbr *)context;
+	struct isl_tab_undo *snap;
+	int r;
+
+	snap = isl_tab_snap(cgbr->tab);
+	r = best_split(tab, cgbr->tab);
+
+	if (isl_tab_rollback(cgbr->tab, snap) < 0)
+		return -1;
+
+	return r;
+}
+
+static int context_gbr_is_empty(struct isl_context *context)
+{
+	struct isl_context_gbr *cgbr = (struct isl_context_gbr *)context;
+	if (!cgbr->tab)
+		return -1;
+	return cgbr->tab->empty;
+}
+
+struct isl_gbr_tab_undo {
+	struct isl_tab_undo *tab_snap;
+	struct isl_tab_undo *shifted_snap;
+};
+
+static void *context_gbr_save(struct isl_context *context)
+{
+	struct isl_context_gbr *cgbr = (struct isl_context_gbr *)context;
+	struct isl_gbr_tab_undo *snap;
+
+	snap = isl_alloc_type(cgbr->tab->mat->ctx, struct isl_gbr_tab_undo);
+	if (!snap)
+		return NULL;
+
+	snap->tab_snap = isl_tab_snap(cgbr->tab);
+	isl_tab_save_samples(cgbr->tab);
+
+	if (cgbr->shifted)
+		snap->shifted_snap = isl_tab_snap(cgbr->shifted);
+	else
+		snap->shifted_snap = NULL;
+
+	return snap;
+}
+
+static void context_gbr_restore(struct isl_context *context, void *save)
+{
+	struct isl_context_gbr *cgbr = (struct isl_context_gbr *)context;
+	struct isl_gbr_tab_undo *snap = (struct isl_gbr_tab_undo *)save;
+	if (isl_tab_rollback(cgbr->tab, snap->tab_snap) < 0) {
+		isl_tab_free(cgbr->tab);
+		cgbr->tab = NULL;
+	}
+	if (snap->shifted_snap)
+		isl_tab_rollback(cgbr->shifted, snap->shifted_snap);
+	else if (cgbr->shifted) {
+		isl_tab_free(cgbr->shifted);
+		cgbr->shifted = NULL;
+	}
+	free(snap);
+}
+
+static int context_gbr_is_ok(struct isl_context *context)
+{
+	struct isl_context_gbr *cgbr = (struct isl_context_gbr *)context;
+	return !!cgbr->tab;
+}
+
+static void context_gbr_invalidate(struct isl_context *context)
+{
+	struct isl_context_gbr *cgbr = (struct isl_context_gbr *)context;
+	isl_tab_free(cgbr->tab);
+	cgbr->tab = NULL;
+}
+
+static void context_gbr_free(struct isl_context *context)
+{
+	struct isl_context_gbr *cgbr = (struct isl_context_gbr *)context;
+	isl_tab_free(cgbr->tab);
+	isl_tab_free(cgbr->shifted);
+	free(cgbr);
+}
+
+struct isl_context_op isl_context_gbr_op = {
+	context_gbr_detect_nonnegative_parameters,
+	context_gbr_peek_basic_set,
+	context_gbr_peek_tab,
+	context_gbr_add_eq,
+	context_gbr_add_ineq,
+	context_gbr_ineq_sign,
+	context_gbr_test_ineq,
+	context_gbr_get_div,
+	context_gbr_add_div,
+	context_gbr_best_split,
+	context_gbr_is_empty,
+	context_gbr_is_ok,
+	context_gbr_save,
+	context_gbr_restore,
+	context_gbr_invalidate,
+	context_gbr_free,
+};
+
+static struct isl_context *isl_context_gbr_alloc(struct isl_basic_set *dom)
+{
+	struct isl_context_gbr *cgbr;
+
+	if (!dom)
+		return NULL;
+
+	cgbr = isl_calloc_type(dom->ctx, struct isl_context_gbr);
+	if (!cgbr)
+		return NULL;
+
+	cgbr->context.op = &isl_context_gbr_op;
+
+	cgbr->shifted = NULL;
+	cgbr->tab = isl_tab_from_basic_set(dom);
+	cgbr->tab = isl_tab_init_samples(cgbr->tab);
+	if (!cgbr->tab)
+		goto error;
+	cgbr->tab->bset = isl_basic_set_cow(isl_basic_set_copy(dom));
+	if (!cgbr->tab->bset)
+		goto error;
+	check_gbr_integer_feasible(cgbr);
+
+	return &cgbr->context;
+error:
+	cgbr->context.op->free(&cgbr->context);
 	return NULL;
 }
 
