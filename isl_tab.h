@@ -204,6 +204,7 @@ struct isl_tab_var *isl_tab_var_from_row(struct isl_tab *tab, int i);
 int isl_tab_mark_redundant(struct isl_tab *tab, int row);
 struct isl_tab *isl_tab_mark_empty(struct isl_tab *tab);
 struct isl_tab *isl_tab_dup(struct isl_tab *tab);
+struct isl_tab *isl_tab_product(struct isl_tab *tab1, struct isl_tab *tab2);
 int isl_tab_extend_cons(struct isl_tab *tab, unsigned n_new);
 int isl_tab_allocate_con(struct isl_tab *tab);
 int isl_tab_extend_vars(struct isl_tab *tab, unsigned n_new);

@@ -257,6 +257,248 @@ error:
 	return NULL;
 }
 
+/* Construct the coefficient matrix of the product tableau
+ * of two tableaus.
+ * mat{1,2} is the coefficient matrix of tableau {1,2}
+ * row{1,2} is the number of rows in tableau {1,2}
+ * col{1,2} is the number of columns in tableau {1,2}
+ * off is the offset to the coefficient column (skipping the
+ *	denominator, the constant term and the big parameter if any)
+ * r{1,2} is the number of redundant rows in tableau {1,2}
+ * d{1,2} is the number of dead columns in tableau {1,2}
+ *
+ * The order of the rows and columns in the result is as explained
+ * in isl_tab_product.
+ */
+static struct isl_mat *tab_mat_product(struct isl_mat *mat1,
+	struct isl_mat *mat2, unsigned row1, unsigned row2,
+	unsigned col1, unsigned col2,
+	unsigned off, unsigned r1, unsigned r2, unsigned d1, unsigned d2)
+{
+	int i;
+	struct isl_mat *prod;
+	unsigned n;
+
+	prod = isl_mat_alloc(mat1->ctx, mat1->n_row + mat2->n_row,
+					off + col1 + col2);
+
+	n = 0;
+	for (i = 0; i < r1; ++i) {
+		isl_seq_cpy(prod->row[n + i], mat1->row[i], off + d1);
+		isl_seq_clr(prod->row[n + i] + off + d1, d2);
+		isl_seq_cpy(prod->row[n + i] + off + d1 + d2,
+				mat1->row[i] + off + d1, col1 - d1);
+		isl_seq_clr(prod->row[n + i] + off + col1 + d1, col2 - d2);
+	}
+
+	n += r1;
+	for (i = 0; i < r2; ++i) {
+		isl_seq_cpy(prod->row[n + i], mat2->row[i], off);
+		isl_seq_clr(prod->row[n + i] + off, d1);
+		isl_seq_cpy(prod->row[n + i] + off + d1,
+			    mat2->row[i] + off, d2);
+		isl_seq_clr(prod->row[n + i] + off + d1 + d2, col1 - d1);
+		isl_seq_cpy(prod->row[n + i] + off + col1 + d1,
+			    mat2->row[i] + off + d2, col2 - d2);
+	}
+
+	n += r2;
+	for (i = 0; i < row1 - r1; ++i) {
+		isl_seq_cpy(prod->row[n + i], mat1->row[r1 + i], off + d1);
+		isl_seq_clr(prod->row[n + i] + off + d1, d2);
+		isl_seq_cpy(prod->row[n + i] + off + d1 + d2,
+				mat1->row[r1 + i] + off + d1, col1 - d1);
+		isl_seq_clr(prod->row[n + i] + off + col1 + d1, col2 - d2);
+	}
+
+	n += row1 - r1;
+	for (i = 0; i < row2 - r2; ++i) {
+		isl_seq_cpy(prod->row[n + i], mat2->row[r2 + i], off);
+		isl_seq_clr(prod->row[n + i] + off, d1);
+		isl_seq_cpy(prod->row[n + i] + off + d1,
+			    mat2->row[r2 + i] + off, d2);
+		isl_seq_clr(prod->row[n + i] + off + d1 + d2, col1 - d1);
+		isl_seq_cpy(prod->row[n + i] + off + col1 + d1,
+			    mat2->row[r2 + i] + off + d2, col2 - d2);
+	}
+
+	return prod;
+}
+
+/* Update the row or column index of a variable that corresponds
+ * to a variable in the first input tableau.
+ */
+static void update_index1(struct isl_tab_var *var,
+	unsigned r1, unsigned r2, unsigned d1, unsigned d2)
+{
+	if (var->index == -1)
+		return;
+	if (var->is_row && var->index >= r1)
+		var->index += r2;
+	if (!var->is_row && var->index >= d1)
+		var->index += d2;
+}
+
+/* Update the row or column index of a variable that corresponds
+ * to a variable in the second input tableau.
+ */
+static void update_index2(struct isl_tab_var *var,
+	unsigned row1, unsigned col1,
+	unsigned r1, unsigned r2, unsigned d1, unsigned d2)
+{
+	if (var->index == -1)
+		return;
+	if (var->is_row) {
+		if (var->index < r2)
+			var->index += r1;
+		else
+			var->index += row1;
+	} else {
+		if (var->index < d2)
+			var->index += d1;
+		else
+			var->index += col1;
+	}
+}
+
+/* Create a tableau that represents the Cartesian product of the sets
+ * represented by tableaus tab1 and tab2.
+ * The order of the rows in the product is
+ *	- redundant rows of tab1
+ *	- redundant rows of tab2
+ *	- non-redundant rows of tab1
+ *	- non-redundant rows of tab2
+ * The order of the columns is
+ *	- denominator
+ *	- constant term
+ *	- coefficient of big parameter, if any
+ *	- dead columns of tab1
+ *	- dead columns of tab2
+ *	- live columns of tab1
+ *	- live columns of tab2
+ * The order of the variables and the constraints is a concatenation
+ * of order in the two input tableaus.
+ */
+struct isl_tab *isl_tab_product(struct isl_tab *tab1, struct isl_tab *tab2)
+{
+	int i;
+	struct isl_tab *prod;
+	unsigned off;
+	unsigned r1, r2, d1, d2;
+
+	if (!tab1 || !tab2)
+		return NULL;
+
+	isl_assert(tab1->mat->ctx, tab1->M == tab2->M, return NULL);
+	isl_assert(tab1->mat->ctx, tab1->rational == tab2->rational, return NULL);
+	isl_assert(tab1->mat->ctx, !tab1->row_sign, return NULL);
+	isl_assert(tab1->mat->ctx, !tab2->row_sign, return NULL);
+	isl_assert(tab1->mat->ctx, tab1->n_param == 0, return NULL);
+	isl_assert(tab1->mat->ctx, tab2->n_param == 0, return NULL);
+	isl_assert(tab1->mat->ctx, tab1->n_div == 0, return NULL);
+	isl_assert(tab1->mat->ctx, tab2->n_div == 0, return NULL);
+
+	off = 2 + tab1->M;
+	r1 = tab1->n_redundant;
+	r2 = tab2->n_redundant;
+	d1 = tab1->n_dead;
+	d2 = tab2->n_dead;
+	prod = isl_calloc_type(tab1->mat->ctx, struct isl_tab);
+	if (!prod)
+		return NULL;
+	prod->mat = tab_mat_product(tab1->mat, tab2->mat,
+				tab1->n_row, tab2->n_row,
+				tab1->n_col, tab2->n_col, off, r1, r2, d1, d2);
+	if (!prod->mat)
+		goto error;
+	prod->var = isl_alloc_array(tab1->mat->ctx, struct isl_tab_var,
+					tab1->max_var + tab2->max_var);
+	if (!prod->var)
+		goto error;
+	for (i = 0; i < tab1->n_var; ++i) {
+		prod->var[i] = tab1->var[i];
+		update_index1(&prod->var[i], r1, r2, d1, d2);
+	}
+	for (i = 0; i < tab2->n_var; ++i) {
+		prod->var[tab1->n_var + i] = tab2->var[i];
+		update_index2(&prod->var[tab1->n_var + i],
+				tab1->n_row, tab1->n_col,
+				r1, r2, d1, d2);
+	}
+	prod->con = isl_alloc_array(tab1->mat->ctx, struct isl_tab_var,
+					tab1->max_con +  tab2->max_con);
+	if (!prod->con)
+		goto error;
+	for (i = 0; i < tab1->n_con; ++i) {
+		prod->con[i] = tab1->con[i];
+		update_index1(&prod->con[i], r1, r2, d1, d2);
+	}
+	for (i = 0; i < tab2->n_con; ++i) {
+		prod->con[tab1->n_con + i] = tab2->con[i];
+		update_index2(&prod->con[tab1->n_con + i],
+				tab1->n_row, tab1->n_col,
+				r1, r2, d1, d2);
+	}
+	prod->col_var = isl_alloc_array(tab1->mat->ctx, int,
+					tab1->n_col + tab2->n_col);
+	if (!prod->col_var)
+		goto error;
+	for (i = 0; i < tab1->n_col; ++i) {
+		int pos = i < d1 ? i : i + d2;
+		prod->col_var[pos] = tab1->col_var[i];
+	}
+	for (i = 0; i < tab2->n_col; ++i) {
+		int pos = i < d2 ? d1 + i : tab1->n_col + i;
+		int t = tab2->col_var[i];
+		if (t >= 0)
+			t += tab1->n_var;
+		else
+			t -= tab1->n_con;
+		prod->col_var[pos] = t;
+	}
+	prod->row_var = isl_alloc_array(tab1->mat->ctx, int,
+					tab1->mat->n_row + tab2->mat->n_row);
+	if (!prod->row_var)
+		goto error;
+	for (i = 0; i < tab1->n_row; ++i) {
+		int pos = i < r1 ? i : i + r2;
+		prod->row_var[pos] = tab1->row_var[i];
+	}
+	for (i = 0; i < tab2->n_row; ++i) {
+		int pos = i < r2 ? r1 + i : tab1->n_row + i;
+		int t = tab2->row_var[i];
+		if (t >= 0)
+			t += tab1->n_var;
+		else
+			t -= tab1->n_con;
+		prod->row_var[pos] = t;
+	}
+	prod->samples = NULL;
+	prod->n_row = tab1->n_row + tab2->n_row;
+	prod->n_con = tab1->n_con + tab2->n_con;
+	prod->n_eq = 0;
+	prod->max_con = tab1->max_con + tab2->max_con;
+	prod->n_col = tab1->n_col + tab2->n_col;
+	prod->n_var = tab1->n_var + tab2->n_var;
+	prod->max_var = tab1->max_var + tab2->max_var;
+	prod->n_param = 0;
+	prod->n_div = 0;
+	prod->n_dead = tab1->n_dead + tab2->n_dead;
+	prod->n_redundant = tab1->n_redundant + tab2->n_redundant;
+	prod->rational = tab1->rational;
+	prod->empty = tab1->empty || tab2->empty;
+	prod->need_undo = 0;
+	prod->in_undo = 0;
+	prod->M = tab1->M;
+	prod->bottom.type = isl_tab_undo_bottom;
+	prod->bottom.next = NULL;
+	prod->top = &prod->bottom;
+	return prod;
+error:
+	isl_tab_free(prod);
+	return NULL;
+}
+
 static struct isl_tab_var *var_from_index(struct isl_tab *tab, int i)
 {
 	if (i >= 0)
