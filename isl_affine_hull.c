@@ -233,7 +233,8 @@ error:
  * integer points in the basic set represented by "tab"
  * yields another point inside the basic set.
  *
- * The caller of this function ensures that the tableau is bounded.
+ * The caller of this function ensures that the tableau is bounded or
+ * that tab->basis and tab->n_unbounded have been set appropriately.
  */
 static struct isl_vec *outside_point(struct isl_tab *tab, isl_int *eq, int up)
 {
@@ -313,7 +314,8 @@ error:
  * in the current approximation and adding them to that approximation
  * until no such points can be found any more.
  *
- * The caller of this function ensures that "tab" is bounded.
+ * The caller of this function ensures that "tab" is bounded or
+ * that tab->basis and tab->n_unbounded have been set appropriately.
  */
 static struct isl_basic_set *extend_affine_hull(struct isl_tab *tab,
 	struct isl_basic_set *hull)
@@ -352,6 +354,10 @@ static struct isl_basic_set *extend_affine_hull(struct isl_tab *tab,
 		}
 		if (j == hull->n_eq)
 			break;
+		if (tab->samples)
+			tab = isl_tab_add_sample(tab, isl_vec_copy(sample));
+		if (!tab)
+			goto error;
 		point = isl_basic_set_from_vec(sample);
 		hull = affine_hull(hull, point);
 	}
@@ -459,6 +465,134 @@ error:
 	isl_vec_free(sample);
 	isl_tab_free(tab);
 	isl_basic_set_free(bset);
+	return NULL;
+}
+
+/* Given an unbounded tableau and an integer point satisfying the tableau,
+ * construct an intial affine hull containing the recession cone
+ * shifted to the given point.
+ *
+ * The unbounded directions are taken from the last rows of the basis,
+ * which is assumed to have been initialized appropriately.
+ */
+static __isl_give isl_basic_set *initial_hull(struct isl_tab *tab,
+	__isl_take isl_vec *vec)
+{
+	int i;
+	int k;
+	struct isl_basic_set *bset = NULL;
+	struct isl_ctx *ctx;
+	unsigned dim;
+
+	if (!vec || !tab)
+		return NULL;
+	ctx = vec->ctx;
+	isl_assert(ctx, vec->size != 0, goto error);
+
+	bset = isl_basic_set_alloc(ctx, 0, vec->size - 1, 0, vec->size - 1, 0);
+	if (!bset)
+		goto error;
+	dim = isl_basic_set_n_dim(bset) - tab->n_unbounded;
+	for (i = 0; i < dim; ++i) {
+		k = isl_basic_set_alloc_equality(bset);
+		if (k < 0)
+			goto error;
+		isl_seq_cpy(bset->eq[k] + 1, tab->basis->row[1 + i] + 1,
+			    vec->size - 1);
+		isl_seq_inner_product(bset->eq[k] + 1, vec->el +1,
+				      vec->size - 1, &bset->eq[k][0]);
+		isl_int_neg(bset->eq[k][0], bset->eq[k][0]);
+	}
+	bset->sample = vec;
+	bset = isl_basic_set_gauss(bset, NULL);
+
+	return bset;
+error:
+	isl_basic_set_free(bset);
+	isl_vec_free(vec);
+	return NULL;
+}
+
+/* Given a tableau of a set and a tableau of the corresponding
+ * recession cone, detect and add all equalities to the tableau.
+ * If the tableau is bounded, then we can simply keep the
+ * tableau in its state after the return from extend_affine_hull.
+ * However, if the tableau is unbounded, then
+ * isl_tab_set_initial_basis_with_cone will add some additional
+ * constraints to the tableau that have to be removed again.
+ * In this case, we therefore rollback to the state before
+ * any constraints were added and then add the eqaulities back in.
+ */
+struct isl_tab *isl_tab_detect_equalities(struct isl_tab *tab,
+	struct isl_tab *tab_cone)
+{
+	int j;
+	struct isl_vec *sample;
+	struct isl_basic_set *hull;
+	struct isl_tab_undo *snap;
+
+	if (!tab || !tab_cone)
+		goto error;
+
+	snap = isl_tab_snap(tab);
+
+	isl_mat_free(tab->basis);
+	tab->basis = NULL;
+
+	isl_assert(tab->mat->ctx, tab->bset, goto error);
+	isl_assert(tab->mat->ctx, tab->samples, goto error);
+	isl_assert(tab->mat->ctx, tab->samples->n_col == 1 + tab->n_var, goto error);
+	isl_assert(tab->mat->ctx, tab->n_sample > tab->n_outside, goto error);
+
+	if (isl_tab_set_initial_basis_with_cone(tab, tab_cone) < 0)
+		goto error;
+
+	sample = isl_vec_alloc(tab->mat->ctx, 1 + tab->n_var);
+	if (!sample)
+		goto error;
+
+	isl_seq_cpy(sample->el, tab->samples->row[tab->n_outside], sample->size);
+
+	isl_vec_free(tab->bset->sample);
+	tab->bset->sample = isl_vec_copy(sample);
+
+	if (tab->n_unbounded == 0)
+		hull = isl_basic_set_from_vec(isl_vec_copy(sample));
+	else
+		hull = initial_hull(tab, isl_vec_copy(sample));
+
+	for (j = tab->n_outside + 1; j < tab->n_sample; ++j) {
+		isl_seq_cpy(sample->el, tab->samples->row[j], sample->size);
+		hull = affine_hull(hull,
+				isl_basic_set_from_vec(isl_vec_copy(sample)));
+	}
+
+	isl_vec_free(sample);
+
+	hull = extend_affine_hull(tab, hull);
+	if (!hull)
+		goto error;
+
+	if (tab->n_unbounded == 0) {
+		isl_basic_set_free(hull);
+		return tab;
+	}
+
+	if (isl_tab_rollback(tab, snap) < 0)
+		goto error;
+
+	if (hull->n_eq > tab->n_zero) {
+		for (j = 0; j < hull->n_eq; ++j) {
+			isl_seq_normalize(tab->mat->ctx, hull->eq[j], 1 + tab->n_var);
+			tab = isl_tab_add_eq(tab, hull->eq[j]);
+		}
+	}
+
+	isl_basic_set_free(hull);
+
+	return tab;
+error:
+	isl_tab_free(tab);
 	return NULL;
 }
 

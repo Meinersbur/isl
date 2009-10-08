@@ -233,4 +233,7 @@ struct isl_tab *isl_tab_add_sample(struct isl_tab *tab,
 struct isl_tab *isl_tab_drop_sample(struct isl_tab *tab, int s);
 void isl_tab_save_samples(struct isl_tab *tab);
 
+struct isl_tab *isl_tab_detect_equalities(struct isl_tab *tab,
+	struct isl_tab *tab_cone);
+
 #endif
