@@ -1379,6 +1379,63 @@ error:
 	return NULL;
 }
 
+/* Add equality "eq" and check if it conflicts with the
+ * previously added constraints or if it is obviously redundant.
+ */
+struct isl_tab *isl_tab_add_eq(struct isl_tab *tab, isl_int *eq)
+{
+	struct isl_tab_undo *snap = NULL;
+	struct isl_tab_var *var;
+	int r;
+	int row;
+	int sgn;
+
+	if (!tab)
+		return NULL;
+	isl_assert(tab->mat->ctx, !tab->M, goto error);
+
+	if (tab->need_undo)
+		snap = isl_tab_snap(tab);
+
+	r = isl_tab_add_row(tab, eq);
+	if (r < 0)
+		goto error;
+
+	var = &tab->con[r];
+	row = var->index;
+	if (row_is_manifestly_zero(tab, row)) {
+		if (snap) {
+			if (isl_tab_rollback(tab, snap) < 0)
+				goto error;
+		} else
+			drop_row(tab, row);
+		return tab;
+	}
+
+	sgn = isl_int_sgn(tab->mat->row[row][1]);
+
+	if (sgn > 0) {
+		isl_seq_neg(tab->mat->row[row] + 1, tab->mat->row[row] + 1,
+			    1 + tab->n_col);
+		var->negated = 1;
+		sgn = -1;
+	}
+
+	if (sgn < 0 && sign_of_max(tab, var) < 0)
+		return isl_tab_mark_empty(tab);
+
+	var->is_nonneg = 1;
+	if (to_col(tab, var) < 0)
+		goto error;
+	var->is_nonneg = 0;
+	isl_tab_kill_col(tab, var->index);
+
+	return tab;
+error:
+	isl_tab_free(tab);
+	return NULL;
+}
+
 struct isl_tab *isl_tab_from_basic_map(struct isl_basic_map *bmap)
 {
 	int i;
