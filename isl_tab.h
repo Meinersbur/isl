@@ -150,6 +150,7 @@ struct isl_tab {
 	unsigned empty : 1;
 	unsigned in_undo : 1;
 	unsigned M : 1;
+	unsigned cone : 1;
 };
 
 struct isl_tab *isl_tab_alloc(struct isl_ctx *ctx,

@@ -60,6 +60,7 @@ struct isl_tab *isl_tab_alloc(struct isl_ctx *ctx,
 	tab->empty = 0;
 	tab->in_undo = 0;
 	tab->M = M;
+	tab->cone = 0;
 	tab->bottom.type = isl_tab_undo_bottom;
 	tab->bottom.next = NULL;
 	tab->top = &tab->bottom;
@@ -259,6 +260,7 @@ struct isl_tab *isl_tab_dup(struct isl_tab *tab)
 	dup->need_undo = 0;
 	dup->in_undo = 0;
 	dup->M = tab->M;
+	tab->cone = tab->cone;
 	dup->bottom.type = isl_tab_undo_bottom;
 	dup->bottom.next = NULL;
 	dup->top = &dup->bottom;
@@ -407,6 +409,7 @@ struct isl_tab *isl_tab_product(struct isl_tab *tab1, struct isl_tab *tab2)
 
 	isl_assert(tab1->mat->ctx, tab1->M == tab2->M, return NULL);
 	isl_assert(tab1->mat->ctx, tab1->rational == tab2->rational, return NULL);
+	isl_assert(tab1->mat->ctx, tab1->cone == tab2->cone, return NULL);
 	isl_assert(tab1->mat->ctx, !tab1->row_sign, return NULL);
 	isl_assert(tab1->mat->ctx, !tab2->row_sign, return NULL);
 	isl_assert(tab1->mat->ctx, tab1->n_param == 0, return NULL);
@@ -507,6 +510,7 @@ struct isl_tab *isl_tab_product(struct isl_tab *tab1, struct isl_tab *tab2)
 	prod->need_undo = 0;
 	prod->in_undo = 0;
 	prod->M = tab1->M;
+	prod->cone = tab1->cone;
 	prod->bottom.type = isl_tab_undo_bottom;
 	prod->bottom.next = NULL;
 	prod->top = &prod->bottom;
@@ -1586,6 +1590,7 @@ struct isl_tab *isl_tab_add_ineq(struct isl_tab *tab, isl_int *ineq)
 {
 	int r;
 	int sgn;
+	isl_int cst;
 
 	if (!tab)
 		return NULL;
@@ -1600,7 +1605,15 @@ struct isl_tab *isl_tab_add_ineq(struct isl_tab *tab, isl_int *ineq)
 		if (!tab->bset)
 			goto error;
 	}
+	if (tab->cone) {
+		isl_int_init(cst);
+		isl_int_swap(ineq[0], cst);
+	}
 	r = isl_tab_add_row(tab, ineq);
+	if (tab->cone) {
+		isl_int_swap(ineq[0], cst);
+		isl_int_clear(cst);
+	}
 	if (r < 0)
 		goto error;
 	tab->con[r].is_nonneg = 1;
@@ -1758,6 +1771,7 @@ struct isl_tab *isl_tab_add_eq(struct isl_tab *tab, isl_int *eq)
 	int r;
 	int row;
 	int sgn;
+	isl_int cst;
 
 	if (!tab)
 		return NULL;
@@ -1766,7 +1780,15 @@ struct isl_tab *isl_tab_add_eq(struct isl_tab *tab, isl_int *eq)
 	if (tab->need_undo)
 		snap = isl_tab_snap(tab);
 
+	if (tab->cone) {
+		isl_int_init(cst);
+		isl_int_swap(eq[0], cst);
+	}
 	r = isl_tab_add_row(tab, eq);
+	if (tab->cone) {
+		isl_int_swap(eq[0], cst);
+		isl_int_clear(cst);
+	}
 	if (r < 0)
 		goto error;
 
@@ -1866,6 +1888,7 @@ struct isl_tab *isl_tab_from_recession_cone(struct isl_basic_set *bset)
 	if (!tab)
 		return NULL;
 	tab->rational = ISL_F_ISSET(bset, ISL_BASIC_SET_RATIONAL);
+	tab->cone = 1;
 
 	isl_int_init(cst);
 	for (i = 0; i < bset->n_eq; ++i) {

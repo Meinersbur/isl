@@ -2156,6 +2156,7 @@ struct isl_context_gbr {
 	struct isl_context context;
 	struct isl_tab *tab;
 	struct isl_tab *shifted;
+	struct isl_tab *cone;
 };
 
 static struct isl_tab *context_gbr_detect_nonnegative_parameters(
@@ -2236,6 +2237,22 @@ static struct isl_vec *gbr_get_shifted_sample(struct isl_context_gbr *cgbr)
 	return sample;
 }
 
+static struct isl_basic_set *drop_constant_terms(struct isl_basic_set *bset)
+{
+	int i;
+
+	if (!bset)
+		return NULL;
+
+	for (i = 0; i < bset->n_eq; ++i)
+		isl_int_set_si(bset->eq[i][0], 0);
+
+	for (i = 0; i < bset->n_ineq; ++i)
+		isl_int_set_si(bset->ineq[i][0], 0);
+
+	return bset;
+}
+
 static int use_shifted(struct isl_context_gbr *cgbr)
 {
 	return cgbr->tab->bset->n_eq == 0 && cgbr->tab->bset->n_div == 0;
@@ -2244,6 +2261,7 @@ static int use_shifted(struct isl_context_gbr *cgbr)
 static struct isl_vec *gbr_get_sample(struct isl_context_gbr *cgbr)
 {
 	struct isl_basic_set *bset;
+	struct isl_basic_set *cone;
 
 	if (isl_tab_sample_is_integer(cgbr->tab))
 		return isl_tab_get_sample_value(cgbr->tab);
@@ -2258,8 +2276,54 @@ static struct isl_vec *gbr_get_sample(struct isl_context_gbr *cgbr)
 		isl_vec_free(sample);
 	}
 
-	bset = isl_basic_set_underlying_set(isl_basic_set_copy(cgbr->tab->bset));
-	return isl_basic_set_sample_vec(bset);
+	if (!cgbr->cone) {
+		cgbr->cone = isl_tab_from_recession_cone(cgbr->tab->bset);
+		if (!cgbr->cone)
+			return NULL;
+		cgbr->cone->bset = isl_basic_set_dup(cgbr->tab->bset);
+	}
+	cgbr->cone = isl_tab_detect_implicit_equalities(cgbr->cone);
+	if (!cgbr->cone)
+		return NULL;
+
+	if (cgbr->cone->n_dead == cgbr->cone->n_col) {
+		struct isl_vec *sample;
+		struct isl_tab_undo *snap;
+
+		if (cgbr->tab->basis) {
+			if (cgbr->tab->basis->n_col != 1 + cgbr->tab->n_var) {
+				isl_mat_free(cgbr->tab->basis);
+				cgbr->tab->basis = NULL;
+			} else {
+				cgbr->tab->n_zero = 0;
+				cgbr->tab->n_unbounded = 0;
+			}
+		}
+
+		snap = isl_tab_snap(cgbr->tab);
+
+		sample = isl_tab_sample(cgbr->tab);
+
+		if (isl_tab_rollback(cgbr->tab, snap) < 0) {
+			isl_vec_free(sample);
+			return NULL;
+		}
+
+		return sample;
+	}
+
+	cone = isl_basic_set_dup(cgbr->cone->bset);
+	cone = drop_constant_terms(cone);
+	cone = isl_basic_set_update_from_tab(cone, cgbr->cone);
+	cone = isl_basic_set_underlying_set(cone);
+	cone = isl_basic_set_gauss(cone, NULL);
+
+	bset = isl_basic_set_dup(cgbr->tab->bset);
+	bset = isl_basic_set_update_from_tab(bset, cgbr->tab);
+	bset = isl_basic_set_underlying_set(bset);
+	bset = isl_basic_set_gauss(bset, NULL);
+
+	return isl_basic_set_sample_with_cone(bset, cone);
 }
 
 static void check_gbr_integer_feasible(struct isl_context_gbr *cgbr)
@@ -2315,6 +2379,12 @@ static void context_gbr_add_eq(struct isl_context *context, isl_int *eq,
 
 	cgbr->tab = add_gbr_eq(cgbr->tab, eq);
 
+	if (cgbr->cone && cgbr->cone->n_col != cgbr->cone->n_dead) {
+		if (isl_tab_extend_cons(cgbr->cone, 2) < 0)
+			goto error;
+		cgbr->cone = isl_tab_add_eq(cgbr->cone, eq);
+	}
+
 	if (check) {
 		int v = tab_has_valid_sample(cgbr->tab, eq, 1);
 		if (v < 0)
@@ -2363,6 +2433,12 @@ static void add_gbr_ineq(struct isl_context_gbr *cgbr, isl_int *ineq)
 		}
 	}
 
+	if (cgbr->cone && cgbr->cone->n_col != cgbr->cone->n_dead) {
+		if (isl_tab_extend_cons(cgbr->cone, 1) < 0)
+			goto error;
+		cgbr->cone = isl_tab_add_ineq(cgbr->cone, ineq);
+	}
+
 	return;
 error:
 	isl_tab_free(cgbr->tab);
@@ -2408,6 +2484,7 @@ static int context_gbr_test_ineq(struct isl_context *context, isl_int *ineq)
 	struct isl_context_gbr *cgbr = (struct isl_context_gbr *)context;
 	struct isl_tab_undo *snap;
 	struct isl_tab_undo *shifted_snap = NULL;
+	struct isl_tab_undo *cone_snap = NULL;
 	int feasible;
 
 	if (!cgbr->tab)
@@ -2419,6 +2496,8 @@ static int context_gbr_test_ineq(struct isl_context *context, isl_int *ineq)
 	snap = isl_tab_snap(cgbr->tab);
 	if (cgbr->shifted)
 		shifted_snap = isl_tab_snap(cgbr->shifted);
+	if (cgbr->cone)
+		cone_snap = isl_tab_snap(cgbr->cone);
 	add_gbr_ineq(cgbr, ineq);
 	check_gbr_integer_feasible(cgbr);
 	if (!cgbr->tab)
@@ -2432,6 +2511,13 @@ static int context_gbr_test_ineq(struct isl_context *context, isl_int *ineq)
 	} else if (cgbr->shifted) {
 		isl_tab_free(cgbr->shifted);
 		cgbr->shifted = NULL;
+	}
+	if (cone_snap) {
+		if (isl_tab_rollback(cgbr->cone, cone_snap))
+			return -1;
+	} else if (cgbr->cone) {
+		isl_tab_free(cgbr->cone);
+		cgbr->cone = NULL;
 	}
 
 	return feasible;
@@ -2535,25 +2621,24 @@ static int context_gbr_detect_equalities(struct isl_context *context,
 {
 	struct isl_context_gbr *cgbr = (struct isl_context_gbr *)context;
 	struct isl_ctx *ctx;
-	struct isl_tab *tab_cone;
 	int i;
 	enum isl_lp_result res;
 	unsigned n_ineq;
 
 	ctx = cgbr->tab->mat->ctx;
 
-	tab_cone = isl_tab_from_recession_cone(cgbr->tab->bset);
-	if (!tab_cone)
-		goto error;
-	tab_cone->bset = isl_basic_set_dup(cgbr->tab->bset);
-	tab_cone = isl_tab_detect_implicit_equalities(tab_cone);
+	if (!cgbr->cone) {
+		cgbr->cone = isl_tab_from_recession_cone(cgbr->tab->bset);
+		if (!cgbr->cone)
+			goto error;
+		cgbr->cone->bset = isl_basic_set_dup(cgbr->tab->bset);
+	}
+	cgbr->cone = isl_tab_detect_implicit_equalities(cgbr->cone);
 
 	n_ineq = cgbr->tab->bset->n_ineq;
-	cgbr->tab = isl_tab_detect_equalities(cgbr->tab, tab_cone);
+	cgbr->tab = isl_tab_detect_equalities(cgbr->tab, cgbr->cone);
 	if (cgbr->tab && cgbr->tab->bset->n_ineq > n_ineq)
 		propagate_equalities(cgbr, tab, n_ineq);
-
-	isl_tab_free(tab_cone);
 
 	return 0;
 error:
@@ -2572,6 +2657,24 @@ static int context_gbr_add_div(struct isl_context *context, struct isl_vec *div,
 	int *nonneg)
 {
 	struct isl_context_gbr *cgbr = (struct isl_context_gbr *)context;
+	if (cgbr->cone) {
+		int k;
+
+		if (isl_tab_extend_cons(cgbr->cone, 3) < 0)
+			return -1;
+		if (isl_tab_extend_vars(cgbr->cone, 1) < 0)
+			return -1;
+		if (isl_tab_allocate_var(cgbr->cone) <0)
+			return -1;
+
+		cgbr->cone->bset = isl_basic_set_extend_dim(cgbr->cone->bset,
+			isl_basic_set_get_dim(cgbr->cone->bset), 1, 0, 2);
+		k = isl_basic_set_alloc_div(cgbr->cone->bset);
+		if (k < 0)
+			return -1;
+		isl_seq_cpy(cgbr->cone->bset->div[k], div->el, div->size);
+		isl_tab_push(cgbr->cone, isl_tab_undo_bset_div);
+	}
 	return context_tab_add_div(cgbr->tab, div, nonneg);
 }
 
@@ -2602,6 +2705,7 @@ static int context_gbr_is_empty(struct isl_context *context)
 struct isl_gbr_tab_undo {
 	struct isl_tab_undo *tab_snap;
 	struct isl_tab_undo *shifted_snap;
+	struct isl_tab_undo *cone_snap;
 };
 
 static void *context_gbr_save(struct isl_context *context)
@@ -2621,6 +2725,11 @@ static void *context_gbr_save(struct isl_context *context)
 	else
 		snap->shifted_snap = NULL;
 
+	if (cgbr->cone)
+		snap->cone_snap = isl_tab_snap(cgbr->cone);
+	else
+		snap->cone_snap = NULL;
+
 	return snap;
 }
 
@@ -2632,12 +2741,21 @@ static void context_gbr_restore(struct isl_context *context, void *save)
 		isl_tab_free(cgbr->tab);
 		cgbr->tab = NULL;
 	}
+
 	if (snap->shifted_snap)
 		isl_tab_rollback(cgbr->shifted, snap->shifted_snap);
 	else if (cgbr->shifted) {
 		isl_tab_free(cgbr->shifted);
 		cgbr->shifted = NULL;
 	}
+
+	if (snap->cone_snap)
+		isl_tab_rollback(cgbr->cone, snap->cone_snap);
+	else if (cgbr->cone) {
+		isl_tab_free(cgbr->cone);
+		cgbr->cone = NULL;
+	}
+
 	free(snap);
 }
 
@@ -2659,6 +2777,7 @@ static void context_gbr_free(struct isl_context *context)
 	struct isl_context_gbr *cgbr = (struct isl_context_gbr *)context;
 	isl_tab_free(cgbr->tab);
 	isl_tab_free(cgbr->shifted);
+	isl_tab_free(cgbr->cone);
 	free(cgbr);
 }
 
@@ -2696,6 +2815,7 @@ static struct isl_context *isl_context_gbr_alloc(struct isl_basic_set *dom)
 	cgbr->context.op = &isl_context_gbr_op;
 
 	cgbr->shifted = NULL;
+	cgbr->cone = NULL;
 	cgbr->tab = isl_tab_from_basic_set(dom);
 	cgbr->tab = isl_tab_init_samples(cgbr->tab);
 	if (!cgbr->tab)
