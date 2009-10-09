@@ -221,68 +221,67 @@ error:
 	return NULL;
 }
 
-/* Find an integer point in "bset" that lies outside of the equality
- * "eq" e(x) = 0.
+/* Find an integer point in the set represented by "tab"
+ * that lies outside of the equality "eq" e(x) = 0.
  * If "up" is true, look for a point satisfying e(x) - 1 >= 0.
  * Otherwise, look for a point satisfying -e(x) - 1 >= 0 (i.e., e(x) <= -1).
- * The point, if found, is returned as a singleton set.
- * If no point can be found, the empty set is returned.
+ * The point, if found, is returned.
+ * If no point can be found, a zero-length vector is returned.
  *
  * Before solving an ILP problem, we first check if simply
  * adding the normal of the constraint to one of the known
- * integer points in the basic set yields another point
- * inside the basic set.
+ * integer points in the basic set represented by "tab"
+ * yields another point inside the basic set.
  *
- * The caller of this function ensures that "bset" is bounded.
+ * The caller of this function ensures that the tableau is bounded.
  */
-static struct isl_basic_set *outside_point(struct isl_ctx *ctx,
-	struct isl_basic_set *bset, isl_int *eq, int up)
+static struct isl_vec *outside_point(struct isl_tab *tab, isl_int *eq, int up)
 {
-	struct isl_basic_set *slice = NULL;
+	struct isl_ctx *ctx;
 	struct isl_vec *sample;
-	struct isl_basic_set *point;
+	struct isl_tab_undo *snap;
 	unsigned dim;
 	int k;
 
-	dim = isl_basic_set_n_dim(bset);
+	if (!tab)
+		return NULL;
+	ctx = tab->mat->ctx;
+
+	dim = tab->n_var;
 	sample = isl_vec_alloc(ctx, 1 + dim);
 	if (!sample)
 		return NULL;
-	isl_int_set_si(sample->block.data[0], 1);
-	isl_seq_combine(sample->block.data + 1,
-		ctx->one, bset->sample->block.data + 1,
+	isl_int_set_si(sample->el[0], 1);
+	isl_seq_combine(sample->el + 1,
+		ctx->one, tab->bset->sample->el + 1,
 		up ? ctx->one : ctx->negone, eq + 1, dim);
-	if (isl_basic_set_contains(bset, sample))
-		return isl_basic_set_from_vec(sample);
+	if (isl_basic_set_contains(tab->bset, sample))
+		return sample;
 	isl_vec_free(sample);
 	sample = NULL;
 
-	slice = isl_basic_set_copy(bset);
-	if (!slice)
-		goto error;
-	slice = isl_basic_set_cow(slice);
-	slice = isl_basic_set_extend(slice, 0, dim, 0, 0, 1);
-	k = isl_basic_set_alloc_inequality(slice);
-	if (k < 0)
-		goto error;
-	if (up)
-		isl_seq_cpy(slice->ineq[k], eq, 1 + dim);
-	else
-		isl_seq_neg(slice->ineq[k], eq, 1 + dim);
-	isl_int_sub_ui(slice->ineq[k][0], slice->ineq[k][0], 1);
+	snap = isl_tab_snap(tab);
 
-	sample = isl_basic_set_sample_bounded(slice);
-	if (!sample)
-		goto error;
-	if (sample->size == 0) {
-		isl_vec_free(sample);
-		point = isl_basic_set_empty_like(bset);
-	} else
-		point = isl_basic_set_from_vec(sample);
+	if (!up)
+		isl_seq_neg(eq, eq, 1 + dim);
+	isl_int_sub_ui(eq[0], eq[0], 1);
 
-	return point;
+	if (isl_tab_extend_cons(tab, 1) < 0)
+		goto error;
+	tab = isl_tab_add_ineq(tab, eq);
+
+	sample = isl_tab_sample(tab);
+
+	isl_int_add_ui(eq[0], eq[0], 1);
+	if (!up)
+		isl_seq_neg(eq, eq, 1 + dim);
+
+	if (isl_tab_rollback(tab, snap) < 0)
+		goto error;
+
+	return sample;
 error:
-	isl_basic_set_free(slice);
+	isl_vec_free(sample);
 	return NULL;
 }
 
@@ -308,57 +307,57 @@ error:
 	return NULL;
 }
 
-/* Extend an initial (under-)approximation of the affine hull of "bset"
+/* Extend an initial (under-)approximation of the affine hull of basic
+ * set represented by the tableau "tab"
  * by looking for points that do not satisfy one of the equalities
  * in the current approximation and adding them to that approximation
  * until no such points can be found any more.
  *
- * The caller of this function ensures that "bset" is bounded.
+ * The caller of this function ensures that "tab" is bounded.
  */
-static struct isl_basic_set *extend_affine_hull(struct isl_basic_set *bset,
+static struct isl_basic_set *extend_affine_hull(struct isl_tab *tab,
 	struct isl_basic_set *hull)
 {
 	int i, j, k;
-	struct isl_ctx *ctx;
 	unsigned dim;
 
-	ctx = bset->ctx;
-	dim = isl_basic_set_n_dim(bset);
+	if (!tab || !hull)
+		goto error;
+
+	dim = tab->n_var;
+
+	if (isl_tab_extend_cons(tab, 2 * dim + 1) < 0)
+		goto error;
+
 	for (i = 0; i < dim; ++i) {
+		struct isl_vec *sample;
 		struct isl_basic_set *point;
 		for (j = 0; j < hull->n_eq; ++j) {
-			point = outside_point(ctx, bset, hull->eq[j], 1);
-			if (!point)
+			sample = outside_point(tab, hull->eq[j], 1);
+			if (!sample)
 				goto error;
-			if (!ISL_F_ISSET(point, ISL_BASIC_SET_EMPTY))
+			if (sample->size > 0)
 				break;
-			isl_basic_set_free(point);
-			point = outside_point(ctx, bset, hull->eq[j], 0);
-			if (!point)
+			isl_vec_free(sample);
+			sample = outside_point(tab, hull->eq[j], 0);
+			if (!sample)
 				goto error;
-			if (!ISL_F_ISSET(point, ISL_BASIC_SET_EMPTY))
+			if (sample->size > 0)
 				break;
-			isl_basic_set_free(point);
+			isl_vec_free(sample);
 
-			bset = isl_basic_set_extend_constraints(bset, 1, 0);
-			k = isl_basic_set_alloc_equality(bset);
-			if (k < 0)
-				goto error;
-			isl_seq_cpy(bset->eq[k], hull->eq[j],
-					1 + isl_basic_set_total_dim(hull));
-			bset = isl_basic_set_gauss(bset, NULL);
-			if (!bset)
+			tab = isl_tab_add_eq(tab, hull->eq[j]);
+			if (!tab)
 				goto error;
 		}
 		if (j == hull->n_eq)
 			break;
+		point = isl_basic_set_from_vec(sample);
 		hull = affine_hull(hull, point);
 	}
-	isl_basic_set_free(bset);
 
 	return hull;
 error:
-	isl_basic_set_free(bset);
 	isl_basic_set_free(hull);
 	return NULL;
 }
@@ -404,29 +403,61 @@ static struct isl_basic_set *uset_affine_hull_bounded(struct isl_basic_set *bset
 {
 	struct isl_vec *sample = NULL;
 	struct isl_basic_set *hull;
+	struct isl_tab *tab = NULL;
+	unsigned dim;
 
-	if (isl_basic_set_is_empty(bset))
+	if (isl_basic_set_fast_is_empty(bset))
 		return bset;
 
-	sample = isl_basic_set_sample_vec(isl_basic_set_copy(bset));
+	dim = isl_basic_set_n_dim(bset);
+
+	if (bset->sample && bset->sample->size == 1 + dim) {
+		int contains = isl_basic_set_contains(bset, bset->sample);
+		if (contains < 0)
+			goto error;
+		if (contains) {
+			if (dim == 0)
+				return bset;
+			sample = isl_vec_copy(bset->sample);
+		} else {
+			isl_vec_free(bset->sample);
+			bset->sample = NULL;
+		}
+	}
+
+	tab = isl_tab_from_basic_set(bset);
+	if (!tab)
+		goto error;
+	tab->bset = isl_basic_set_copy(bset);
+
+	if (!sample) {
+		struct isl_tab_undo *snap;
+		snap = isl_tab_snap(tab);
+		sample = isl_tab_sample(tab);
+		if (isl_tab_rollback(tab, snap) < 0)
+			goto error;
+		isl_vec_free(tab->bset->sample);
+		tab->bset->sample = isl_vec_copy(sample);
+	}
+
 	if (!sample)
 		goto error;
 	if (sample->size == 0) {
-		struct isl_basic_set *hull;
+		isl_tab_free(tab);
 		isl_vec_free(sample);
-		hull = isl_basic_set_empty_like(bset);
-		isl_basic_set_free(bset);
-		return hull;
-	}
-	if (sample->size == 1) {
-		isl_vec_free(sample);
-		return bset;
+		return isl_basic_set_set_to_empty(bset);
 	}
 
 	hull = isl_basic_set_from_vec(sample);
 
-	return extend_affine_hull(bset, hull);
+	isl_basic_set_free(bset);
+	hull = extend_affine_hull(tab, hull);
+	isl_tab_free(tab);
+
+	return hull;
 error:
+	isl_vec_free(sample);
+	isl_tab_free(tab);
 	isl_basic_set_free(bset);
 	return NULL;
 }
