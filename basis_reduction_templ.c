@@ -14,12 +14,9 @@ static void save_alpha(GBR_LP *lp, int first, int n, GBR_type *alpha)
  *  for Integer Programming" of Cook el al. to compute a reduced basis.
  * We use \epsilon = 1/4.
  *
- * If options->gbr_only_first is set, the user is only interested
+ * If ctx->gbr_only_first is set, the user is only interested
  * in the first direction.  In this case we stop the basis reduction when
- *	- the width in the first direction becomes smaller than 2
- * or
- *	- we have moved forward all the way to the last direction
- *	  and then back again all the way to the first direction.
+ * the width in the first direction becomes smaller than 2.
  */
 struct isl_mat *isl_basic_set_reduced_basis(struct isl_basic_set *bset)
 {
