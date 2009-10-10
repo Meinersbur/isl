@@ -240,7 +240,8 @@ static int check_facets(struct isl_map *map, int i, int j,
 			if (stat != STATUS_VALID)
 				break;
 		}
-		isl_tab_rollback(tabs[i], snap);
+		if (isl_tab_rollback(tabs[i], snap) < 0)
+			return -1;
 		if (l < map->p[j]->n_ineq)
 			break;
 	}
@@ -390,7 +391,8 @@ static int check_adj_eq(struct isl_map *map, int i, int j,
 	tabs[i] = isl_tab_select_facet(tabs[i], n_eq + k);
 	super = contains(map, j, ineq_j, tabs[i]);
 	if (super) {
-		isl_tab_rollback(tabs[i], snap2);
+		if (isl_tab_rollback(tabs[i], snap2) < 0)
+			return -1;
 		map->p[i] = isl_basic_map_cow(map->p[i]);
 		if (!map->p[i])
 			return -1;
@@ -399,7 +401,8 @@ static int check_adj_eq(struct isl_map *map, int i, int j,
 		drop(map, j, tabs);
 		changed = 1;
 	} else
-		isl_tab_rollback(tabs[i], snap);
+		if (isl_tab_rollback(tabs[i], snap) < 0)
+			return -1;
 
 	return changed;
 }

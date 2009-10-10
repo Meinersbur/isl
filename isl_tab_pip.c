@@ -796,6 +796,7 @@ static int first_neg(struct isl_tab *tab)
  * smallest increment in the sample point.  If there is no such column
  * then the tableau is infeasible.
  */
+static struct isl_tab *restore_lexmin(struct isl_tab *tab);
 static struct isl_tab *restore_lexmin(struct isl_tab *tab)
 {
 	int row, col;
@@ -810,7 +811,8 @@ static struct isl_tab *restore_lexmin(struct isl_tab *tab)
 			return isl_tab_mark_empty(tab);
 		if (col < 0)
 			goto error;
-		isl_tab_pivot(tab, row, col);
+		if (isl_tab_pivot(tab, row, col) < 0)
+			goto error;
 	}
 	return tab;
 error:
@@ -884,16 +886,20 @@ static struct isl_tab *add_lexmin_valid_eq(struct isl_tab *tab, isl_int *eq)
 	i = last_var_col_or_int_par_col(tab, r);
 	if (i < 0) {
 		tab->con[r].is_nonneg = 1;
-		isl_tab_push_var(tab, isl_tab_undo_nonneg, &tab->con[r]);
+		if (isl_tab_push_var(tab, isl_tab_undo_nonneg, &tab->con[r]) < 0)
+			goto error;
 		isl_seq_neg(eq, eq, 1 + tab->n_var);
 		r = isl_tab_add_row(tab, eq);
 		if (r < 0)
 			goto error;
 		tab->con[r].is_nonneg = 1;
-		isl_tab_push_var(tab, isl_tab_undo_nonneg, &tab->con[r]);
+		if (isl_tab_push_var(tab, isl_tab_undo_nonneg, &tab->con[r]) < 0)
+			goto error;
 	} else {
-		isl_tab_pivot(tab, r, i);
-		isl_tab_kill_col(tab, i);
+		if (isl_tab_pivot(tab, r, i) < 0)
+			goto error;
+		if (isl_tab_kill_col(tab, i) < 0)
+			goto error;
 		tab->n_eq++;
 
 		tab = restore_lexmin(tab);
@@ -937,7 +943,8 @@ static struct isl_tab *add_lexmin_eq(struct isl_tab *tab, isl_int *eq)
 	if (r1 < 0)
 		goto error;
 	tab->con[r1].is_nonneg = 1;
-	isl_tab_push_var(tab, isl_tab_undo_nonneg, &tab->con[r1]);
+	if (isl_tab_push_var(tab, isl_tab_undo_nonneg, &tab->con[r1]) < 0)
+		goto error;
 
 	row = tab->con[r1].index;
 	if (is_constant(tab, row)) {
@@ -959,35 +966,42 @@ static struct isl_tab *add_lexmin_eq(struct isl_tab *tab, isl_int *eq)
 	if (r2 < 0)
 		goto error;
 	tab->con[r2].is_nonneg = 1;
-	isl_tab_push_var(tab, isl_tab_undo_nonneg, &tab->con[r2]);
+	if (isl_tab_push_var(tab, isl_tab_undo_nonneg, &tab->con[r2]) < 0)
+		goto error;
 
 	tab = restore_lexmin(tab);
 	if (!tab || tab->empty)
 		return tab;
 
-	if (!tab->con[r1].is_row)
-		isl_tab_kill_col(tab, tab->con[r1].index);
-	else if (!tab->con[r2].is_row)
-		isl_tab_kill_col(tab, tab->con[r2].index);
-	else if (isl_int_is_zero(tab->mat->row[tab->con[r1].index][1])) {
+	if (!tab->con[r1].is_row) {
+		if (isl_tab_kill_col(tab, tab->con[r1].index) < 0)
+			goto error;
+	} else if (!tab->con[r2].is_row) {
+		if (isl_tab_kill_col(tab, tab->con[r2].index) < 0)
+			goto error;
+	} else if (isl_int_is_zero(tab->mat->row[tab->con[r1].index][1])) {
 		unsigned off = 2 + tab->M;
 		int i;
 		int row = tab->con[r1].index;
 		i = isl_seq_first_non_zero(tab->mat->row[row]+off+tab->n_dead,
 						tab->n_col - tab->n_dead);
 		if (i != -1) {
-			isl_tab_pivot(tab, row, tab->n_dead + i);
-			isl_tab_kill_col(tab, tab->n_dead + i);
+			if (isl_tab_pivot(tab, row, tab->n_dead + i) < 0)
+				goto error;
+			if (isl_tab_kill_col(tab, tab->n_dead + i) < 0)
+				goto error;
 		}
 	}
 
 	if (tab->bset) {
 		tab->bset = isl_basic_set_add_ineq(tab->bset, eq);
-		isl_tab_push(tab, isl_tab_undo_bset_ineq);
+		if (isl_tab_push(tab, isl_tab_undo_bset_ineq) < 0)
+			goto error;
 		isl_seq_neg(eq, eq, 1 + tab->n_var);
 		tab->bset = isl_basic_set_add_ineq(tab->bset, eq);
 		isl_seq_neg(eq, eq, 1 + tab->n_var);
-		isl_tab_push(tab, isl_tab_undo_bset_ineq);
+		if (isl_tab_push(tab, isl_tab_undo_bset_ineq) < 0)
+			goto error;
 		if (!tab->bset)
 			goto error;
 	}
@@ -1009,7 +1023,8 @@ static struct isl_tab *add_lexmin_ineq(struct isl_tab *tab, isl_int *ineq)
 		return NULL;
 	if (tab->bset) {
 		tab->bset = isl_basic_set_add_ineq(tab->bset, ineq);
-		isl_tab_push(tab, isl_tab_undo_bset_ineq);
+		if (isl_tab_push(tab, isl_tab_undo_bset_ineq) < 0)
+			goto error;
 		if (!tab->bset)
 			goto error;
 	}
@@ -1017,16 +1032,19 @@ static struct isl_tab *add_lexmin_ineq(struct isl_tab *tab, isl_int *ineq)
 	if (r < 0)
 		goto error;
 	tab->con[r].is_nonneg = 1;
-	isl_tab_push_var(tab, isl_tab_undo_nonneg, &tab->con[r]);
+	if (isl_tab_push_var(tab, isl_tab_undo_nonneg, &tab->con[r]) < 0)
+		goto error;
 	if (isl_tab_row_is_redundant(tab, tab->con[r].index)) {
-		isl_tab_mark_redundant(tab, tab->con[r].index);
+		if (isl_tab_mark_redundant(tab, tab->con[r].index) < 0)
+			goto error;
 		return tab;
 	}
 
 	tab = restore_lexmin(tab);
 	if (tab && !tab->empty && tab->con[r].is_row &&
 		 isl_tab_row_is_redundant(tab, tab->con[r].index))
-		isl_tab_mark_redundant(tab, tab->con[r].index);
+		if (isl_tab_mark_redundant(tab, tab->con[r].index) < 0)
+			goto error;
 	return tab;
 error:
 	isl_tab_free(tab);
@@ -1173,7 +1191,8 @@ static int add_cut(struct isl_tab *tab, int row)
 			tab->mat->row[row][off + i], tab->mat->row[row][0]);
 
 	tab->con[r].is_nonneg = 1;
-	isl_tab_push_var(tab, isl_tab_undo_nonneg, &tab->con[r]);
+	if (isl_tab_push_var(tab, isl_tab_undo_nonneg, &tab->con[r]) < 0)
+		return -1;
 	if (tab->row_sign)
 		tab->row_sign[tab->con[r].index] = isl_tab_row_neg;
 
@@ -1293,7 +1312,8 @@ static struct isl_tab *check_integer_feasible(struct isl_tab *tab)
 		return NULL;
 
 	snap = isl_tab_snap(tab);
-	isl_tab_push_basis(tab);
+	if (isl_tab_push_basis(tab) < 0)
+		goto error;
 
 	tab = cut_to_integer_lexmin(tab);
 	if (!tab)
@@ -1437,7 +1457,8 @@ static int context_tab_add_div(struct isl_tab *tab, struct isl_vec *div,
 	if (k < 0)
 		return -1;
 	isl_seq_cpy(tab->bset->div[k], div->el, div->size);
-	isl_tab_push(tab, isl_tab_undo_bset_div);
+	if (isl_tab_push(tab, isl_tab_undo_bset_div) < 0)
+		return -1;
 
 	return k;
 }
@@ -1617,7 +1638,8 @@ static int add_parametric_cut(struct isl_tab *tab, int row,
 	}
 
 	tab->con[r].is_nonneg = 1;
-	isl_tab_push_var(tab, isl_tab_undo_nonneg, &tab->con[r]);
+	if (isl_tab_push_var(tab, isl_tab_undo_nonneg, &tab->con[r]) < 0)
+		return -1;
 	if (tab->row_sign)
 		tab->row_sign[tab->con[r].index] = isl_tab_row_neg;
 
@@ -1914,7 +1936,8 @@ static int context_lex_test_ineq(struct isl_context *context, isl_int *ineq)
 		return -1;
 
 	snap = isl_tab_snap(clex->tab);
-	isl_tab_push_basis(clex->tab);
+	if (isl_tab_push_basis(clex->tab) < 0)
+		return -1;
 	clex->tab = add_lexmin_ineq(clex->tab, ineq);
 	clex->tab = check_integer_feasible(clex->tab);
 	if (!clex->tab)
@@ -1953,7 +1976,8 @@ static int context_lex_best_split(struct isl_context *context,
 	int r;
 
 	snap = isl_tab_snap(clex->tab);
-	isl_tab_push_basis(clex->tab);
+	if (isl_tab_push_basis(clex->tab) < 0)
+		return -1;
 	r = best_split(tab, clex->tab);
 
 	if (isl_tab_rollback(clex->tab, snap) < 0)
@@ -1976,8 +2000,10 @@ static void *context_lex_save(struct isl_context *context)
 	struct isl_tab_undo *snap;
 
 	snap = isl_tab_snap(clex->tab);
-	isl_tab_push_basis(clex->tab);
-	isl_tab_save_samples(clex->tab);
+	if (isl_tab_push_basis(clex->tab) < 0)
+		return NULL;
+	if (isl_tab_save_samples(clex->tab) < 0)
+		return NULL;
 
 	return snap;
 }
@@ -2062,7 +2088,8 @@ static struct isl_tab *context_lex_detect_nonnegative_parameters(
 	struct isl_tab_undo *snap;
 
 	snap = isl_tab_snap(clex->tab);
-	isl_tab_push_basis(clex->tab);
+	if (isl_tab_push_basis(clex->tab) < 0)
+		goto error;
 
 	tab = tab_detect_nonnegative_parameters(tab, clex->tab);
 
@@ -2601,8 +2628,10 @@ static void propagate_equalities(struct isl_context_gbr *cgbr,
 				goto error;
 			continue;
 		}
-		isl_tab_pivot(tab, r, j);
-		isl_tab_kill_col(tab, j);
+		if (isl_tab_pivot(tab, r, j) < 0)
+			goto error;
+		if (isl_tab_kill_col(tab, j) < 0)
+			goto error;
 
 		tab = restore_lexmin(tab);
 	}
@@ -2673,7 +2702,8 @@ static int context_gbr_add_div(struct isl_context *context, struct isl_vec *div,
 		if (k < 0)
 			return -1;
 		isl_seq_cpy(cgbr->cone->bset->div[k], div->el, div->size);
-		isl_tab_push(cgbr->cone, isl_tab_undo_bset_div);
+		if (isl_tab_push(cgbr->cone, isl_tab_undo_bset_div) < 0)
+			return -1;
 	}
 	return context_tab_add_div(cgbr->tab, div, nonneg);
 }
@@ -2718,7 +2748,8 @@ static void *context_gbr_save(struct isl_context *context)
 		return NULL;
 
 	snap->tab_snap = isl_tab_snap(cgbr->tab);
-	isl_tab_save_samples(cgbr->tab);
+	if (isl_tab_save_samples(cgbr->tab) < 0)
+		goto error;
 
 	if (cgbr->shifted)
 		snap->shifted_snap = isl_tab_snap(cgbr->shifted);
@@ -2731,32 +2762,45 @@ static void *context_gbr_save(struct isl_context *context)
 		snap->cone_snap = NULL;
 
 	return snap;
+error:
+	free(snap);
+	return NULL;
 }
 
 static void context_gbr_restore(struct isl_context *context, void *save)
 {
 	struct isl_context_gbr *cgbr = (struct isl_context_gbr *)context;
 	struct isl_gbr_tab_undo *snap = (struct isl_gbr_tab_undo *)save;
+	if (!snap)
+		goto error;
 	if (isl_tab_rollback(cgbr->tab, snap->tab_snap) < 0) {
 		isl_tab_free(cgbr->tab);
 		cgbr->tab = NULL;
 	}
 
-	if (snap->shifted_snap)
-		isl_tab_rollback(cgbr->shifted, snap->shifted_snap);
-	else if (cgbr->shifted) {
+	if (snap->shifted_snap) {
+		if (isl_tab_rollback(cgbr->shifted, snap->shifted_snap) < 0)
+			goto error;
+	} else if (cgbr->shifted) {
 		isl_tab_free(cgbr->shifted);
 		cgbr->shifted = NULL;
 	}
 
-	if (snap->cone_snap)
-		isl_tab_rollback(cgbr->cone, snap->cone_snap);
-	else if (cgbr->cone) {
+	if (snap->cone_snap) {
+		if (isl_tab_rollback(cgbr->cone, snap->cone_snap) < 0)
+			goto error;
+	} else if (cgbr->cone) {
 		isl_tab_free(cgbr->cone);
 		cgbr->cone = NULL;
 	}
 
 	free(snap);
+
+	return;
+error:
+	free(snap);
+	isl_tab_free(cgbr->tab);
+	cgbr->tab = NULL;
 }
 
 static int context_gbr_is_ok(struct isl_context *context)
@@ -3379,7 +3423,8 @@ static struct isl_sol *find_solutions_main(struct isl_sol *sol,
 
 		isl_vec_free(eq);
 
-		isl_tab_mark_redundant(tab, row);
+		if (isl_tab_mark_redundant(tab, row) < 0)
+			goto error;
 
 		if (sol->context->op->is_empty(sol->context))
 			break;

@@ -155,7 +155,8 @@ struct isl_tab *isl_tab_compute_reduced_basis(struct isl_tab *tab)
 			if (i > 0)
 				save_alpha(lp, row-i, i, alpha_saved);
 
-			GBR_lp_del_row(lp);
+			if (GBR_lp_del_row(lp) < 0)
+				goto error;
 		}
 		GBR_set(F[i+1], F_new);
 
@@ -219,7 +220,8 @@ struct isl_tab *isl_tab_compute_reduced_basis(struct isl_tab *tab)
 				use_saved = 1;
 				GBR_set(F_saved, F_new);
 				fixed_saved = fixed;
-				GBR_lp_del_row(lp);
+				if (GBR_lp_del_row(lp) < 0)
+					goto error;
 				--i;
 			} else {
 				GBR_set(F[tab->n_zero], F_new);

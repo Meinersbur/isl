@@ -217,22 +217,22 @@ int isl_tab_extend_cons(struct isl_tab *tab, unsigned n_new);
 int isl_tab_allocate_con(struct isl_tab *tab);
 int isl_tab_extend_vars(struct isl_tab *tab, unsigned n_new);
 int isl_tab_allocate_var(struct isl_tab *tab);
-void isl_tab_pivot(struct isl_tab *tab, int row, int col);
+int isl_tab_pivot(struct isl_tab *tab, int row, int col);
 int isl_tab_add_row(struct isl_tab *tab, isl_int *line);
 int isl_tab_row_is_redundant(struct isl_tab *tab, int row);
 int isl_tab_min_at_most_neg_one(struct isl_tab *tab, struct isl_tab_var *var);
 int isl_tab_kill_col(struct isl_tab *tab, int col);
 
-void isl_tab_push(struct isl_tab *tab, enum isl_tab_undo_type type);
-void isl_tab_push_var(struct isl_tab *tab,
+int isl_tab_push(struct isl_tab *tab, enum isl_tab_undo_type type);
+int isl_tab_push_var(struct isl_tab *tab,
 	enum isl_tab_undo_type type, struct isl_tab_var *var);
-void isl_tab_push_basis(struct isl_tab *tab);
+int isl_tab_push_basis(struct isl_tab *tab);
 
 struct isl_tab *isl_tab_init_samples(struct isl_tab *tab);
 struct isl_tab *isl_tab_add_sample(struct isl_tab *tab,
 	__isl_take isl_vec *sample);
 struct isl_tab *isl_tab_drop_sample(struct isl_tab *tab, int s);
-void isl_tab_save_samples(struct isl_tab *tab);
+int isl_tab_save_samples(struct isl_tab *tab);
 
 struct isl_tab *isl_tab_detect_equalities(struct isl_tab *tab,
 	struct isl_tab *tab_cone);

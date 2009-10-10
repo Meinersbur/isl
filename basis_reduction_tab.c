@@ -27,7 +27,7 @@ static void get_obj_val(struct tab_lp* lp, mpq_t *F);
 static void delete_lp(struct tab_lp *lp);
 static int add_lp_row(struct tab_lp *lp, isl_int *row, int dim);
 static void get_alpha(struct tab_lp* lp, int row, mpq_t *alpha);
-static void del_lp_row(struct tab_lp *lp);
+static int del_lp_row(struct tab_lp *lp);
 static int cut_lp_to_hyperplane(struct tab_lp *lp, isl_int *row);
 
 #define GBR_LP			    	    struct tab_lp
@@ -224,8 +224,8 @@ static void get_alpha(struct tab_lp* lp, int row, mpq_t *alpha)
 	isl_int_set(mpq_denref(*alpha), lp->tab->dual->el[0]);
 }
 
-static void del_lp_row(struct tab_lp *lp)
+static int del_lp_row(struct tab_lp *lp)
 {
 	lp->neq--;
-	isl_tab_rollback(lp->tab, lp->stack[lp->neq]);
+	return isl_tab_rollback(lp->tab, lp->stack[lp->neq]);
 }

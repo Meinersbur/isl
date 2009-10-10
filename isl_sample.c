@@ -487,7 +487,8 @@ struct isl_vec *isl_tab_sample(struct isl_tab *tab)
 			level--;
 			init = 0;
 			if (level >= 0)
-				isl_tab_rollback(tab, snap[level]);
+				if (isl_tab_rollback(tab, snap[level]) < 0)
+					goto error;
 			continue;
 		}
 		isl_int_neg(tab->basis->row[1 + level][0], min->el[level]);

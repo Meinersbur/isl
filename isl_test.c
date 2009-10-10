@@ -518,61 +518,61 @@ void test_coalesce(struct isl_ctx *ctx)
 	set = s_union(ctx, "{[x,y]: x >= 0 & x <= 10 & y >= 0 & y <= 10}",
 			   "{[x,y]: y >= x & x >= 2 & 5 >= y}");
 	set = isl_set_coalesce(set);
-	assert(set->n == 1);
+	assert(set && set->n == 1);
 	isl_set_free(set);
 
 	set = s_union(ctx, "{[x,y]: y >= 0 & 2x + y <= 30 & y <= 10 & x >= 0}",
 		       "{[x,y]: x + y >= 10 & y <= x & x + y <= 20 & y >= 0}");
 	set = isl_set_coalesce(set);
-	assert(set->n == 1);
+	assert(set && set->n == 1);
 	isl_set_free(set);
 
 	set = s_union(ctx, "{[x,y]: y >= 0 & 2x + y <= 30 & y <= 10 & x >= 0}",
 		       "{[x,y]: x + y >= 10 & y <= x & x + y <= 19 & y >= 0}");
 	set = isl_set_coalesce(set);
-	assert(set->n == 2);
+	assert(set && set->n == 2);
 	isl_set_free(set);
 
 	set = s_union(ctx, "{[x,y]: y >= 0 & x <= 5 & y <= x}",
 		       "{[x,y]: y >= 0 & x >= 6 & x <= 10 & y <= x}");
 	set = isl_set_coalesce(set);
-	assert(set->n == 1);
+	assert(set && set->n == 1);
 	isl_set_free(set);
 
 	set = s_union(ctx, "{[x,y]: y >= 0 & x <= 5 & y <= x}",
 		       "{[x,y]: y >= 0 & x >= 7 & x <= 10 & y <= x}");
 	set = isl_set_coalesce(set);
-	assert(set->n == 2);
+	assert(set && set->n == 2);
 	isl_set_free(set);
 
 	set = s_union(ctx, "{[x,y]: y >= 0 & x <= 5 & y <= x}",
 		       "{[x,y]: y >= 0 & x >= 6 & x <= 10 & y + 1 <= x}");
 	set = isl_set_coalesce(set);
-	assert(set->n == 2);
+	assert(set && set->n == 2);
 	isl_set_free(set);
 
 	set = s_union(ctx, "{[x,y]: y >= 0 & x <= 5 & y <= x}",
 		       "{[x,y]: y >= 0 & x = 6 & y <= 6}");
 	set = isl_set_coalesce(set);
-	assert(set->n == 1);
+	assert(set && set->n == 1);
 	isl_set_free(set);
 
 	set = s_union(ctx, "{[x,y]: y >= 0 & x <= 5 & y <= x}",
 		       "{[x,y]: y >= 0 & x = 7 & y <= 6}");
 	set = isl_set_coalesce(set);
-	assert(set->n == 2);
+	assert(set && set->n == 2);
 	isl_set_free(set);
 
 	set = s_union(ctx, "{[x,y]: y >= 0 & x <= 5 & y <= x}",
 		       "{[x,y]: y >= 0 & x = 6 & y <= 5}");
 	set = isl_set_coalesce(set);
-	assert(set->n == 2);
+	assert(set && set->n == 2);
 	isl_set_free(set);
 
 	set = s_union(ctx, "{[x,y]: y >= 0 & x <= 5 & y <= x}",
 		       "{[x,y]: y >= 0 & x = 6 & y <= 7}");
 	set = isl_set_coalesce(set);
-	assert(set->n == 2);
+	assert(set && set->n == 2);
 	isl_set_free(set);
 }
 

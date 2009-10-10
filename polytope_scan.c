@@ -137,7 +137,8 @@ static struct isl_mat *isl_basic_set_samples(struct isl_basic_set *bset)
 			level--;
 			init = 0;
 			if (level >= 0)
-				isl_tab_rollback(tab, snap[level]);
+				if (isl_tab_rollback(tab, snap[level]) < 0)
+					goto error;
 			continue;
 		}
 		isl_int_neg(B->row[1 + level][0], min->el[level]);
@@ -150,7 +151,8 @@ static struct isl_mat *isl_basic_set_samples(struct isl_basic_set *bset)
 		}
 		samples = add_solution(samples, tab);
 		init = 0;
-		isl_tab_rollback(tab, snap[level]);
+		if (isl_tab_rollback(tab, snap[level]) < 0)
+			goto error;
 	}
 
 	isl_tab_free(tab);
