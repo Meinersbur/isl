@@ -4152,6 +4152,14 @@ int isl_basic_set_is_universe(struct isl_basic_set *bset)
 	return bset->n_eq == 0 && bset->n_ineq == 0;
 }
 
+int isl_map_fast_is_universe(__isl_keep isl_map *map)
+{
+	if (!map)
+		return -1;
+
+	return map->n == 1 && isl_basic_map_is_universe(map->p[0]);
+}
+
 int isl_basic_map_is_empty(struct isl_basic_map *bmap)
 {
 	struct isl_basic_set *bset = NULL;

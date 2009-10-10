@@ -290,6 +290,7 @@ struct isl_set *isl_set_from_map(struct isl_map *map);
 __isl_give isl_basic_map *isl_map_sample(__isl_take isl_map *map);
 
 int isl_map_fast_is_empty(__isl_keep isl_map *map);
+int isl_map_fast_is_universe(__isl_keep isl_map *map);
 int isl_map_is_empty(__isl_keep isl_map *map);
 int isl_map_is_subset(__isl_keep isl_map *map1, __isl_keep isl_map *map2);
 int isl_map_is_strict_subset(__isl_keep isl_map *map1, __isl_keep isl_map *map2);
