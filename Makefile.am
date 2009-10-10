@@ -133,7 +133,7 @@ isl_polyhedron_detect_equalities_SOURCES = \
 	polyhedron_detect_equalities.c
 
 nodist_pkginclude_HEADERS = \
-	include/isl_libs.h \
+	include/isl_config.h \
 	include/isl_stdint.h
 pkginclude_HEADERS = \
 	include/isl_blk.h \

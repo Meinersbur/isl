@@ -165,17 +165,17 @@ struct isl_basic_map *isl_basic_map_update_from_tab(struct isl_basic_map *bmap,
 	struct isl_tab *tab);
 struct isl_basic_set *isl_basic_set_update_from_tab(struct isl_basic_set *bset,
 	struct isl_tab *tab);
-struct isl_tab *isl_tab_detect_implicit_equalities(struct isl_tab *tab);
-struct isl_tab *isl_tab_detect_redundant(struct isl_tab *tab);
+struct isl_tab *isl_tab_detect_implicit_equalities(struct isl_tab *tab) WARN_UNUSED;
+struct isl_tab *isl_tab_detect_redundant(struct isl_tab *tab) WARN_UNUSED;
 #define ISL_TAB_SAVE_DUAL	(1 << 0)
 enum isl_lp_result isl_tab_min(struct isl_tab *tab,
 	isl_int *f, isl_int denom, isl_int *opt, isl_int *opt_denom,
-	unsigned flags);
+	unsigned flags) WARN_UNUSED;
 
-struct isl_tab *isl_tab_extend(struct isl_tab *tab, unsigned n_new);
-struct isl_tab *isl_tab_add_ineq(struct isl_tab *tab, isl_int *ineq);
-struct isl_tab *isl_tab_add_eq(struct isl_tab *tab, isl_int *eq);
-struct isl_tab *isl_tab_add_valid_eq(struct isl_tab *tab, isl_int *eq);
+struct isl_tab *isl_tab_extend(struct isl_tab *tab, unsigned n_new) WARN_UNUSED;
+struct isl_tab *isl_tab_add_ineq(struct isl_tab *tab, isl_int *ineq) WARN_UNUSED;
+struct isl_tab *isl_tab_add_eq(struct isl_tab *tab, isl_int *eq) WARN_UNUSED;
+struct isl_tab *isl_tab_add_valid_eq(struct isl_tab *tab, isl_int *eq) WARN_UNUSED;
 
 int isl_tab_is_equality(struct isl_tab *tab, int con);
 int isl_tab_is_redundant(struct isl_tab *tab, int con);
@@ -195,10 +195,10 @@ enum isl_ineq_type {
 enum isl_ineq_type isl_tab_ineq_type(struct isl_tab *tab, isl_int *ineq);
 
 struct isl_tab_undo *isl_tab_snap(struct isl_tab *tab);
-int isl_tab_rollback(struct isl_tab *tab, struct isl_tab_undo *snap);
+int isl_tab_rollback(struct isl_tab *tab, struct isl_tab_undo *snap) WARN_UNUSED;
 
-struct isl_tab *isl_tab_relax(struct isl_tab *tab, int con);
-struct isl_tab *isl_tab_select_facet(struct isl_tab *tab, int con);
+struct isl_tab *isl_tab_relax(struct isl_tab *tab, int con) WARN_UNUSED;
+struct isl_tab *isl_tab_select_facet(struct isl_tab *tab, int con) WARN_UNUSED;
 
 void isl_tab_dump(struct isl_tab *tab, FILE *out, int indent);
 
@@ -209,32 +209,32 @@ struct isl_map *isl_tab_basic_map_partial_lexopt(
 /* private */
 
 struct isl_tab_var *isl_tab_var_from_row(struct isl_tab *tab, int i);
-int isl_tab_mark_redundant(struct isl_tab *tab, int row);
+int isl_tab_mark_redundant(struct isl_tab *tab, int row) WARN_UNUSED;
 struct isl_tab *isl_tab_mark_empty(struct isl_tab *tab);
 struct isl_tab *isl_tab_dup(struct isl_tab *tab);
 struct isl_tab *isl_tab_product(struct isl_tab *tab1, struct isl_tab *tab2);
-int isl_tab_extend_cons(struct isl_tab *tab, unsigned n_new);
-int isl_tab_allocate_con(struct isl_tab *tab);
-int isl_tab_extend_vars(struct isl_tab *tab, unsigned n_new);
-int isl_tab_allocate_var(struct isl_tab *tab);
-int isl_tab_pivot(struct isl_tab *tab, int row, int col);
-int isl_tab_add_row(struct isl_tab *tab, isl_int *line);
+int isl_tab_extend_cons(struct isl_tab *tab, unsigned n_new) WARN_UNUSED;
+int isl_tab_allocate_con(struct isl_tab *tab) WARN_UNUSED;
+int isl_tab_extend_vars(struct isl_tab *tab, unsigned n_new) WARN_UNUSED;
+int isl_tab_allocate_var(struct isl_tab *tab) WARN_UNUSED;
+int isl_tab_pivot(struct isl_tab *tab, int row, int col) WARN_UNUSED;
+int isl_tab_add_row(struct isl_tab *tab, isl_int *line) WARN_UNUSED;
 int isl_tab_row_is_redundant(struct isl_tab *tab, int row);
 int isl_tab_min_at_most_neg_one(struct isl_tab *tab, struct isl_tab_var *var);
-int isl_tab_kill_col(struct isl_tab *tab, int col);
+int isl_tab_kill_col(struct isl_tab *tab, int col) WARN_UNUSED;
 
-int isl_tab_push(struct isl_tab *tab, enum isl_tab_undo_type type);
+int isl_tab_push(struct isl_tab *tab, enum isl_tab_undo_type type) WARN_UNUSED;
 int isl_tab_push_var(struct isl_tab *tab,
-	enum isl_tab_undo_type type, struct isl_tab_var *var);
-int isl_tab_push_basis(struct isl_tab *tab);
+	enum isl_tab_undo_type type, struct isl_tab_var *var) WARN_UNUSED;
+int isl_tab_push_basis(struct isl_tab *tab) WARN_UNUSED;
 
-struct isl_tab *isl_tab_init_samples(struct isl_tab *tab);
+struct isl_tab *isl_tab_init_samples(struct isl_tab *tab) WARN_UNUSED;
 struct isl_tab *isl_tab_add_sample(struct isl_tab *tab,
-	__isl_take isl_vec *sample);
+	__isl_take isl_vec *sample) WARN_UNUSED;
 struct isl_tab *isl_tab_drop_sample(struct isl_tab *tab, int s);
-int isl_tab_save_samples(struct isl_tab *tab);
+int isl_tab_save_samples(struct isl_tab *tab) WARN_UNUSED;
 
 struct isl_tab *isl_tab_detect_equalities(struct isl_tab *tab,
-	struct isl_tab *tab_cone);
+	struct isl_tab *tab_cone) WARN_UNUSED;
 
 #endif

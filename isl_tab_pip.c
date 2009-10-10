@@ -796,7 +796,7 @@ static int first_neg(struct isl_tab *tab)
  * smallest increment in the sample point.  If there is no such column
  * then the tableau is infeasible.
  */
-static struct isl_tab *restore_lexmin(struct isl_tab *tab);
+static struct isl_tab *restore_lexmin(struct isl_tab *tab) WARN_UNUSED;
 static struct isl_tab *restore_lexmin(struct isl_tab *tab)
 {
 	int row, col;
@@ -930,6 +930,7 @@ static int is_constant(struct isl_tab *tab, int row)
  * In the end we try to use one of the two constraints to eliminate
  * a column.
  */
+static struct isl_tab *add_lexmin_eq(struct isl_tab *tab, isl_int *eq) WARN_UNUSED;
 static struct isl_tab *add_lexmin_eq(struct isl_tab *tab, isl_int *eq)
 {
 	int r1, r2;

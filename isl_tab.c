@@ -746,6 +746,8 @@ static void swap_rows(struct isl_tab *tab, int row1, int row2)
 }
 
 static int push_union(struct isl_tab *tab,
+	enum isl_tab_undo_type type, union isl_tab_undo_val u) WARN_UNUSED;
+static int push_union(struct isl_tab *tab,
 	enum isl_tab_undo_type type, union isl_tab_undo_val u)
 {
 	struct isl_tab_undo *undo;
@@ -1099,6 +1101,7 @@ int isl_tab_pivot(struct isl_tab *tab, int row, int col)
  * If sgn = 0, then the variable is unbounded in both directions,
  * and we pivot with any row we can find.
  */
+static int to_row(struct isl_tab *tab, struct isl_tab_var *var, int sign) WARN_UNUSED;
 static int to_row(struct isl_tab *tab, struct isl_tab_var *var, int sign)
 {
 	int r;
@@ -1448,6 +1451,7 @@ int isl_tab_kill_col(struct isl_tab *tab, int col)
  * then also be written as the negative sum of non-negative variables
  * and must therefore also be zero.
  */
+static int close_row(struct isl_tab *tab, struct isl_tab_var *var) WARN_UNUSED;
 static int close_row(struct isl_tab *tab, struct isl_tab_var *var)
 {
 	int j;
@@ -1677,6 +1681,7 @@ error:
 /* Pivot a non-negative variable down until it reaches the value zero
  * and then pivot the variable into a column position.
  */
+static int to_col(struct isl_tab *tab, struct isl_tab_var *var) WARN_UNUSED;
 static int to_col(struct isl_tab *tab, struct isl_tab_var *var)
 {
 	int i;
@@ -2567,6 +2572,7 @@ struct isl_tab_undo *isl_tab_snap(struct isl_tab *tab)
 
 /* Undo the operation performed by isl_tab_relax.
  */
+static int unrelax(struct isl_tab *tab, struct isl_tab_var *var) WARN_UNUSED;
 static int unrelax(struct isl_tab *tab, struct isl_tab_var *var)
 {
 	unsigned off = 2 + tab->M;
@@ -2593,6 +2599,7 @@ static int unrelax(struct isl_tab *tab, struct isl_tab_var *var)
 	return 0;
 }
 
+static int perform_undo_var(struct isl_tab *tab, struct isl_tab_undo *undo) WARN_UNUSED;
 static int perform_undo_var(struct isl_tab *tab, struct isl_tab_undo *undo)
 {
 	struct isl_tab_var *var = var_from_index(tab, undo->u.var_index);
@@ -2715,6 +2722,7 @@ static void drop_samples_since(struct isl_tab *tab, int n)
 	}
 }
 
+static int perform_undo(struct isl_tab *tab, struct isl_tab_undo *undo) WARN_UNUSED;
 static int perform_undo(struct isl_tab *tab, struct isl_tab_undo *undo)
 {
 	switch (undo->type) {

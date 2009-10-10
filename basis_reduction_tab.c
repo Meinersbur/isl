@@ -27,7 +27,7 @@ static void get_obj_val(struct tab_lp* lp, mpq_t *F);
 static void delete_lp(struct tab_lp *lp);
 static int add_lp_row(struct tab_lp *lp, isl_int *row, int dim);
 static void get_alpha(struct tab_lp* lp, int row, mpq_t *alpha);
-static int del_lp_row(struct tab_lp *lp);
+static int del_lp_row(struct tab_lp *lp) WARN_UNUSED;
 static int cut_lp_to_hyperplane(struct tab_lp *lp, isl_int *row);
 
 #define GBR_LP			    	    struct tab_lp

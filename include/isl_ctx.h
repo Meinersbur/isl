@@ -7,11 +7,17 @@
 #include <isl_int.h>
 #include <isl_blk.h>
 #include <isl_hash.h>
-#include <isl_libs.h>
+#include <isl_config.h>
 
 #define __isl_give
 #define __isl_take
 #define __isl_keep
+
+#ifdef GCC_WARN_UNUSED_RESULT
+#define	WARN_UNUSED	GCC_WARN_UNUSED_RESULT
+#else
+#define WARN_UNUSED
+#endif
 
 #if defined(__cplusplus)
 extern "C" {

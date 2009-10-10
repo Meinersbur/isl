@@ -8,6 +8,7 @@ versioninfo=1:0:0
 AC_PROG_CC
 
 AX_CC_MAXOPT
+AX_GCC_WARN_UNUSED_RESULT
 
 AC_PROG_LIBTOOL
 
@@ -139,7 +140,7 @@ PACKAGE_CFLAGS="-I$prefix/include/isl"
 AX_CREATE_PKGCONFIG_INFO
 
 AC_CONFIG_HEADERS(config.h)
-AC_CONFIG_HEADERS(include/isl_libs.h)
+AC_CONFIG_HEADERS(include/isl_config.h)
 AC_CONFIG_FILES(Makefile)
 AC_CONFIG_FILES(doc/Makefile)
 if test $with_piplib = bundled; then
