@@ -4079,6 +4079,9 @@ int isl_map_is_subset(struct isl_map *map1, struct isl_map *map2)
 	if (isl_map_is_empty(map2))
 		return 0;
 
+	if (isl_map_fast_is_universe(map2))
+		return 1;
+
 	diff = isl_map_subtract(isl_map_copy(map1), isl_map_copy(map2));
 	if (!diff)
 		return -1;
