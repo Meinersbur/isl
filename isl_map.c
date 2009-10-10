@@ -5463,3 +5463,33 @@ error:
 	isl_basic_map_free(bmap);
 	return NULL;
 }
+
+int isl_basic_set_size(__isl_keep isl_basic_set *bset)
+{
+	unsigned dim;
+	int size = 0;
+
+	if (!bset)
+		return -1;
+
+	dim = isl_basic_set_total_dim(bset);
+	size += bset->n_eq * (1 + dim);
+	size += bset->n_ineq * (1 + dim);
+	size += bset->n_div * (2 + dim);
+
+	return size;
+}
+
+int isl_set_size(__isl_keep isl_set *set)
+{
+	int i;
+	int size = 0;
+
+	if (!set)
+		return -1;
+
+	for (i = 0; i < set->n; ++i)
+		size += isl_basic_set_size(set->p[i]);
+
+	return size;
+}

@@ -255,6 +255,8 @@ int isl_set_dim_is_unique(struct isl_set *set, unsigned dim);
 int isl_set_foreach_basic_set(__isl_keep isl_set *set,
 	int (*fn)(__isl_take isl_basic_set *bset, void *user), void *user);
 
+int isl_set_size(__isl_keep isl_set *set);
+
 #if defined(__cplusplus)
 }
 #endif
