@@ -533,19 +533,25 @@ static struct isl_vec *ineq_for_div(struct isl_basic_set *bset, unsigned div)
  */
 static struct isl_tab *set_row_cst_to_div(struct isl_tab *tab, int row, int div)
 {
-	int col;
-	unsigned off = 2 + tab->M;
-
 	isl_seq_fdiv_q(tab->mat->row[row] + 1, tab->mat->row[row] + 1,
 			tab->mat->row[row][0], 1 + tab->M + tab->n_col);
 
 	isl_int_set_si(tab->mat->row[row][0], 1);
 
-	isl_assert(tab->mat->ctx,
-		!tab->var[tab->n_var - tab->n_div + div].is_row, goto error);
+	if (tab->var[tab->n_var - tab->n_div + div].is_row) {
+		int drow = tab->var[tab->n_var - tab->n_div + div].index;
 
-	col = tab->var[tab->n_var - tab->n_div + div].index;
-	isl_int_set_si(tab->mat->row[row][off + col], 1);
+		isl_assert(tab->mat->ctx,
+			isl_int_is_one(tab->mat->row[drow][0]), goto error);
+		isl_seq_combine(tab->mat->row[row] + 1,
+			tab->mat->ctx->one, tab->mat->row[row] + 1,
+			tab->mat->ctx->one, tab->mat->row[drow] + 1,
+			1 + tab->M + tab->n_col);
+	} else {
+		int dcol = tab->var[tab->n_var - tab->n_div + div].index;
+
+		isl_int_set_si(tab->mat->row[row][2 + tab->M + dcol], 1);
+	}
 
 	return tab;
 error:
@@ -2431,6 +2437,99 @@ static int context_gbr_test_ineq(struct isl_context *context, isl_int *ineq)
 	return feasible;
 }
 
+/* Return the column of the last of the variables associated to
+ * a column that has a non-zero coefficient.
+ * This function is called in a context where only coefficients
+ * of parameters or divs can be non-zero.
+ */
+static int last_non_zero_var_col(struct isl_tab *tab, isl_int *p)
+{
+	int i;
+	int col;
+	unsigned dim = tab->n_var - tab->n_param - tab->n_div;
+
+	if (tab->n_var == 0)
+		return -1;
+
+	for (i = tab->n_var - 1; i >= 0; --i) {
+		if (i >= tab->n_param && i < tab->n_var - tab->n_div)
+			continue;
+		if (tab->var[i].is_row)
+			continue;
+		col = tab->var[i].index;
+		if (!isl_int_is_zero(p[col]))
+			return col;
+	}
+
+	return -1;
+}
+
+/* Look through all the recently added equalities in the context
+ * to see if we can propagate any of them to the main tableau.
+ *
+ * The newly added equalities in the context are encoded as pairs
+ * of inequalities starting at inequality "first".
+ *
+ * We tentatively add each of these equalities to the main tableau
+ * and if this happens to result in a row with a final coefficient
+ * that is one or negative one, we use it to kill a column
+ * in the main tableau.  Otherwise, we discard the tentatively
+ * added row.
+ */
+static void propagate_equalities(struct isl_context_gbr *cgbr,
+	struct isl_tab *tab, unsigned first)
+{
+	int i;
+	struct isl_vec *eq = NULL;
+
+	eq = isl_vec_alloc(tab->mat->ctx, 1 + tab->n_var);
+	if (!eq)
+		goto error;
+
+	if (isl_tab_extend_cons(tab, (cgbr->tab->bset->n_ineq - first)/2) < 0)
+		goto error;
+
+	isl_seq_clr(eq->el + 1 + tab->n_param,
+		    tab->n_var - tab->n_param - tab->n_div);
+	for (i = first; i < cgbr->tab->bset->n_ineq; i += 2) {
+		int j;
+		int r;
+		struct isl_tab_undo *snap;
+		snap = isl_tab_snap(tab);
+
+		isl_seq_cpy(eq->el, cgbr->tab->bset->ineq[i], 1 + tab->n_param);
+		isl_seq_cpy(eq->el + 1 + tab->n_var - tab->n_div,
+			    cgbr->tab->bset->ineq[i] + 1 + tab->n_param,
+			    tab->n_div);
+
+		r = isl_tab_add_row(tab, eq->el);
+		if (r < 0)
+			goto error;
+		r = tab->con[r].index;
+		j = last_non_zero_var_col(tab, tab->mat->row[r] + 2 + tab->M);
+		if (j < 0 || j < tab->n_dead ||
+		    !isl_int_is_one(tab->mat->row[r][0]) ||
+		    (!isl_int_is_one(tab->mat->row[r][2 + tab->M + j]) &&
+		     !isl_int_is_negone(tab->mat->row[r][2 + tab->M + j]))) {
+			if (isl_tab_rollback(tab, snap) < 0)
+				goto error;
+			continue;
+		}
+		isl_tab_pivot(tab, r, j);
+		isl_tab_kill_col(tab, j);
+
+		tab = restore_lexmin(tab);
+	}
+
+	isl_vec_free(eq);
+
+	return;
+error:
+	isl_vec_free(eq);
+	isl_tab_free(cgbr->tab);
+	cgbr->tab = NULL;
+}
+
 static int context_gbr_detect_equalities(struct isl_context *context,
 	struct isl_tab *tab)
 {
@@ -2439,6 +2538,7 @@ static int context_gbr_detect_equalities(struct isl_context *context,
 	struct isl_tab *tab_cone;
 	int i;
 	enum isl_lp_result res;
+	unsigned n_ineq;
 
 	ctx = cgbr->tab->mat->ctx;
 
@@ -2448,7 +2548,10 @@ static int context_gbr_detect_equalities(struct isl_context *context,
 	tab_cone->bset = isl_basic_set_dup(cgbr->tab->bset);
 	tab_cone = isl_tab_detect_implicit_equalities(tab_cone);
 
+	n_ineq = cgbr->tab->bset->n_ineq;
 	cgbr->tab = isl_tab_detect_equalities(cgbr->tab, tab_cone);
+	if (cgbr->tab && cgbr->tab->bset->n_ineq > n_ineq)
+		propagate_equalities(cgbr, tab, n_ineq);
 
 	isl_tab_free(tab_cone);
 
