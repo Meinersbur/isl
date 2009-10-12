@@ -4104,6 +4104,150 @@ int isl_set_is_empty(struct isl_set *set)
 	return isl_map_is_empty((struct isl_map *)set);
 }
 
+/* Return 1 if "bmap" contains a single element.
+ */
+int isl_basic_map_is_singleton(__isl_keep isl_basic_map *bmap)
+{
+	if (!bmap)
+		return -1;
+	if (bmap->n_div)
+		return 0;
+	if (bmap->n_ineq)
+		return 0;
+	return bmap->n_eq == isl_basic_map_total_dim(bmap);
+}
+
+/* Return 1 if "map" contains a single element.
+ */
+int isl_map_is_singleton(__isl_keep isl_map *map)
+{
+	if (!map)
+		return -1;
+	if (map->n != 1)
+		return 0;
+
+	return isl_basic_map_is_singleton(map->p[0]);
+}
+
+/* Given a singleton basic map, extract the single element
+ * as an isl_vec.
+ */
+static __isl_give isl_vec *singleton_extract_point(__isl_keep isl_basic_map *bmap)
+{
+	int i, j;
+	unsigned dim;
+	struct isl_vec *point;
+	isl_int m;
+
+	if (!bmap)
+		return NULL;
+
+	dim = isl_basic_map_total_dim(bmap);
+	isl_assert(bmap->ctx, bmap->n_eq == dim, return NULL);
+	point = isl_vec_alloc(bmap->ctx, 1 + dim);
+	if (!point)
+		return NULL;
+
+	isl_int_init(m);
+
+	isl_int_set_si(point->el[0], 1);
+	for (j = 0; j < bmap->n_eq; ++j) {
+		int s;
+		int i = dim - 1 - j;
+		isl_assert(bmap->ctx,
+		    isl_seq_first_non_zero(bmap->eq[j] + 1, i) == -1,
+		    goto error);
+		isl_assert(bmap->ctx,
+		    isl_int_is_one(bmap->eq[j][1 + i]) ||
+		    isl_int_is_negone(bmap->eq[j][1 + i]),
+		    goto error);
+		isl_assert(bmap->ctx,
+		    isl_seq_first_non_zero(bmap->eq[j]+1+i+1, dim-i-1) == -1,
+		    goto error);
+
+		isl_int_gcd(m, point->el[0], bmap->eq[j][1 + i]);
+		isl_int_divexact(m, bmap->eq[j][1 + i], m);
+		isl_int_abs(m, m);
+		isl_seq_scale(point->el, point->el, m, 1 + i);
+		isl_int_divexact(m, point->el[0], bmap->eq[j][1 + i]);
+		isl_int_neg(m, m);
+		isl_int_mul(point->el[1 + i], m, bmap->eq[j][0]);
+	}
+
+	isl_int_clear(m);
+	return point;
+error:
+	isl_int_clear(m);
+	isl_vec_free(point);
+	return NULL;
+}
+
+/* Return 1 if "bmap" contains the point "point".
+ * "bmap" is assumed to have known divs.
+ * The point is first extended with the divs and then passed
+ * to basic_map_contains.
+ */
+static int basic_map_contains_point(__isl_keep isl_basic_map *bmap,
+	__isl_keep isl_vec *point)
+{
+	int i;
+	struct isl_vec *vec;
+	unsigned dim;
+	int contains;
+
+	if (!bmap || !point)
+		return -1;
+	if (bmap->n_div == 0)
+		return basic_map_contains(bmap, point);
+
+	dim = isl_basic_map_total_dim(bmap) - bmap->n_div;
+	vec = isl_vec_alloc(bmap->ctx, 1 + dim + bmap->n_div);
+	if (!vec)
+		return -1;
+
+	isl_seq_cpy(vec->el, point->el, point->size);
+	for (i = 0; i < bmap->n_div; ++i) {
+		isl_seq_inner_product(bmap->div[i] + 1, vec->el,
+					1 + dim + i, &vec->el[1+dim+i]);
+		isl_int_fdiv_q(vec->el[1+dim+i], vec->el[1+dim+i],
+				bmap->div[i][0]);
+	}
+
+	contains = basic_map_contains(bmap, vec);
+
+	isl_vec_free(vec);
+	return contains;
+}
+
+/* Return 1 is the singleton map "map1" is a subset of "map2",
+ * i.e., if the single element of "map1" is also an element of "map2".
+ */
+static int map_is_singleton_subset(__isl_keep isl_map *map1,
+	__isl_keep isl_map *map2)
+{
+	int i;
+	int is_subset = 0;
+	struct isl_vec *point;
+
+	if (!map1 || !map2)
+		return -1;
+	if (map1->n != 1)
+		return -1;
+
+	point = singleton_extract_point(map1->p[0]);
+	if (!point)
+		return -1;
+
+	for (i = 0; i < map2->n; ++i) {
+		is_subset = basic_map_contains_point(map2->p[i], point);
+		if (is_subset)
+			break;
+	}
+
+	isl_vec_free(point);
+	return is_subset;
+}
+
 int isl_map_is_subset(struct isl_map *map1, struct isl_map *map2)
 {
 	int is_subset = 0;
@@ -4121,7 +4265,13 @@ int isl_map_is_subset(struct isl_map *map1, struct isl_map *map2)
 	if (isl_map_fast_is_universe(map2))
 		return 1;
 
-	diff = isl_map_subtract(isl_map_copy(map1), isl_map_copy(map2));
+	map2 = isl_map_compute_divs(isl_map_copy(map2));
+	if (isl_map_is_singleton(map1)) {
+		is_subset = map_is_singleton_subset(map1, map2);
+		isl_map_free(map2);
+		return is_subset;
+	}
+	diff = isl_map_subtract(isl_map_copy(map1), map2);
 	if (!diff)
 		return -1;
 
