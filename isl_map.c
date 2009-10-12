@@ -3547,6 +3547,40 @@ error:
 	return NULL;
 }
 
+static int basic_map_divs_known(__isl_keep isl_basic_map *bmap)
+{
+	int i;
+	unsigned off;
+
+	if (!bmap)
+		return -1;
+
+	off = isl_dim_total(bmap->dim);
+	for (i = 0; i < bmap->n_div; ++i) {
+		if (isl_int_is_zero(bmap->div[i][0]))
+			return 0;
+		isl_assert(bmap->ctx, isl_int_is_zero(bmap->div[i][1+1+off+i]),
+				return -1);
+	}
+	return 1;
+}
+
+static int map_divs_known(__isl_keep isl_map *map)
+{
+	int i;
+
+	if (!map)
+		return -1;
+
+	for (i = 0; i < map->n; ++i) {
+		int known = basic_map_divs_known(map->p[i]);
+		if (known <= 0)
+			return known;
+	}
+
+	return 1;
+}
+
 /* If bmap contains any unknown divs, then compute explicit
  * expressions for them.  However, this computation may be
  * quite expensive, so first try to remove divs that aren't
@@ -3555,27 +3589,22 @@ error:
 struct isl_map *isl_basic_map_compute_divs(struct isl_basic_map *bmap)
 {
 	int i;
-	unsigned off;
+	int known;
 
-	if (!bmap)
-		return NULL;
-	off = isl_dim_total(bmap->dim);
-	for (i = 0; i < bmap->n_div; ++i) {
-		if (isl_int_is_zero(bmap->div[i][0]))
-			break;
-		isl_assert(bmap->ctx, isl_int_is_zero(bmap->div[i][1+1+off+i]),
-				goto error);
-	}
-	if (i == bmap->n_div)
-		return isl_map_from_basic_map(bmap);
-	bmap = isl_basic_map_drop_redundant_divs(bmap);
-	if (!bmap)
+	known = basic_map_divs_known(bmap);
+	if (known < 0)
 		goto error;
-	for (i = 0; i < bmap->n_div; ++i)
-		if (isl_int_is_zero(bmap->div[i][0]))
-			break;
-	if (i == bmap->n_div)
+	if (known)
 		return isl_map_from_basic_map(bmap);
+
+	bmap = isl_basic_map_drop_redundant_divs(bmap);
+
+	known = basic_map_divs_known(bmap);
+	if (known < 0)
+		goto error;
+	if (known)
+		return isl_map_from_basic_map(bmap);
+
 	struct isl_map *map = compute_divs(bmap);
 	return map;
 error:
@@ -3586,12 +3615,22 @@ error:
 struct isl_map *isl_map_compute_divs(struct isl_map *map)
 {
 	int i;
+	int known;
 	struct isl_map *res;
 
 	if (!map)
 		return NULL;
 	if (map->n == 0)
 		return map;
+
+	known = map_divs_known(map);
+	if (known < 0) {
+		isl_map_free(map);
+		return NULL;
+	}
+	if (known)
+		return map;
+
 	res = isl_basic_map_compute_divs(isl_basic_map_copy(map->p[0]));
 	for (i = 1 ; i < map->n; ++i) {
 		struct isl_map *r2;
@@ -4428,9 +4467,9 @@ static struct isl_map *subtract(struct isl_map *map, struct isl_basic_map *bmap)
 	unsigned max;
 	unsigned total = isl_basic_map_total_dim(bmap);
 
-	assert(bmap);
+	map = isl_map_cow(map);
 
-	if (!map)
+	if (!map || !bmap)
 		goto error;
 
 	if (ISL_F_ISSET(map, ISL_MAP_DISJOINT))
@@ -4520,6 +4559,9 @@ struct isl_map *isl_map_subtract(struct isl_map *map1, struct isl_map *map2)
 	map2 = isl_map_compute_divs(map2);
 	if (!map1 || !map2)
 		goto error;
+
+	map1 = isl_map_remove_empty_parts(map1);
+	map2 = isl_map_remove_empty_parts(map2);
 
 	for (i = 0; map1 && i < map2->n; ++i)
 		map1 = subtract(map1, map2->p[i]);
