@@ -118,8 +118,13 @@ struct isl_context_lex {
  * the solution.
  */
 struct isl_sol {
+	int max;
+	int n_out;
 	struct isl_context *context;
-	struct isl_sol *(*add)(struct isl_sol *sol, struct isl_tab *tab);
+	struct isl_sol *(*add)(struct isl_sol *sol,
+			    struct isl_basic_set *dom, struct isl_mat *M);
+	struct isl_sol *(*add_empty)(struct isl_sol *sol,
+					struct isl_basic_set *bset);
 	void (*free)(struct isl_sol *sol);
 };
 
@@ -130,11 +135,159 @@ static void sol_free(struct isl_sol *sol)
 	sol->free(sol);
 }
 
+static void scale_rows(struct isl_mat *mat, isl_int m, int n_row)
+{
+	int i;
+
+	if (isl_int_is_one(m))
+		return;
+
+	for (i = 0; i < n_row; ++i)
+		isl_seq_scale(mat->row[i], mat->row[i], m, mat->n_col);
+}
+
+/* Add the solution identified by the tableau and the context tableau.
+ *
+ * The layout of the variables is as follows.
+ *	tab->n_var is equal to the total number of variables in the input
+ *			map (including divs that were copied from the context)
+ *			+ the number of extra divs constructed
+ *      Of these, the first tab->n_param and the last tab->n_div variables
+ *	correspond to the variables in the context, i.e.,
+ *		tab->n_param + tab->n_div = context_tab->n_var
+ *	tab->n_param is equal to the number of parameters and input
+ *			dimensions in the input map
+ *	tab->n_div is equal to the number of divs in the context
+ *
+ * If there is no solution, then call add_empty with a basic set
+ * that corresponds to the context tableau.  (If add_empty is NULL,
+ * then do nothing).
+ *
+ * If there is a solution, then first construct a matrix that maps
+ * all dimensions of the context to the output variables, i.e.,
+ * the output dimensions in the input map.
+ * The divs in the input map (if any) that do not correspond to any
+ * div in the context do not appear in the solution.
+ * The algorithm will make sure that they have an integer value,
+ * but these values themselves are of no interest.
+ * We have to be careful not to drop or rearrange any divs in the
+ * context because that would change the meaning of the matrix.
+ *
+ * To extract the value of the output variables, it should be noted
+ * that we always use a big parameter M in the main tableau and so
+ * the variable stored in this tableau is not an output variable x itself, but
+ *	x' = M + x (in case of minimization)
+ * or
+ *	x' = M - x (in case of maximization)
+ * If x' appears in a column, then its optimal value is zero,
+ * which means that the optimal value of x is an unbounded number
+ * (-M for minimization and M for maximization).
+ * We currently assume that the output dimensions in the original map
+ * are bounded, so this cannot occur.
+ * Similarly, when x' appears in a row, then the coefficient of M in that
+ * row is necessarily 1.
+ * If the row in the tableau represents
+ *	d x' = c + d M + e(y)
+ * then, in case of minimization, the corresponding row in the matrix
+ * will be
+ *	a c + a e(y)
+ * with a d = m, the (updated) common denominator of the matrix.
+ * In case of maximization, the row will be
+ *	-a c - a e(y)
+ */
+static struct isl_sol *sol_add(struct isl_sol *sol, struct isl_tab *tab)
+{
+	struct isl_basic_set *bset = NULL;
+	struct isl_mat *mat = NULL;
+	unsigned off;
+	int row, i;
+	isl_int m;
+
+	if (!sol || !tab)
+		goto error;
+
+	if (tab->empty && !sol->add_empty)
+		return sol;
+
+	bset = isl_basic_set_dup(sol->context->op->peek_basic_set(sol->context));
+	bset = isl_basic_set_update_from_tab(bset,
+			sol->context->op->peek_tab(sol->context));
+	if (tab->rational)
+		ISL_F_SET(bset, ISL_BASIC_SET_RATIONAL);
+
+	if (tab->empty)
+		return sol->add_empty(sol, bset);
+
+	off = 2 + tab->M;
+
+	mat = isl_mat_alloc(tab->mat->ctx, 1 + sol->n_out,
+					    1 + tab->n_param + tab->n_div);
+	if (!mat)
+		goto error;
+
+	isl_int_init(m);
+
+	isl_seq_clr(mat->row[0] + 1, mat->n_col - 1);
+	isl_int_set_si(mat->row[0][0], 1);
+	for (row = 0; row < sol->n_out; ++row) {
+		int i = tab->n_param + row;
+		int r, j;
+
+		isl_seq_clr(mat->row[1 + row], mat->n_col);
+		if (!tab->var[i].is_row) {
+			/* no unbounded */
+			isl_assert(mat->ctx, !tab->M, goto error2);
+			continue;
+		}
+
+		r = tab->var[i].index;
+		/* no unbounded */
+		if (tab->M)
+			isl_assert(mat->ctx, isl_int_eq(tab->mat->row[r][2],
+					                tab->mat->row[r][0]),
+				    goto error2);
+		isl_int_gcd(m, mat->row[0][0], tab->mat->row[r][0]);
+		isl_int_divexact(m, tab->mat->row[r][0], m);
+		scale_rows(mat, m, 1 + row);
+		isl_int_divexact(m, mat->row[0][0], tab->mat->row[r][0]);
+		isl_int_mul(mat->row[1 + row][0], m, tab->mat->row[r][1]);
+		for (j = 0; j < tab->n_param; ++j) {
+			int col;
+			if (tab->var[j].is_row)
+				continue;
+			col = tab->var[j].index;
+			isl_int_mul(mat->row[1 + row][1 + j], m,
+				    tab->mat->row[r][off + col]);
+		}
+		for (j = 0; j < tab->n_div; ++j) {
+			int col;
+			if (tab->var[tab->n_var - tab->n_div+j].is_row)
+				continue;
+			col = tab->var[tab->n_var - tab->n_div+j].index;
+			isl_int_mul(mat->row[1 + row][1 + tab->n_param + j], m,
+				    tab->mat->row[r][off + col]);
+		}
+		if (sol->max)
+			isl_seq_neg(mat->row[1 + row], mat->row[1 + row],
+				    mat->n_col);
+	}
+
+	isl_int_clear(m);
+
+	return sol->add(sol, bset, mat);
+error2:
+	isl_int_clear(m);
+error:
+	isl_basic_set_free(bset);
+	isl_mat_free(mat);
+	sol_free(sol);
+	return NULL;
+}
+
 struct isl_sol_map {
 	struct isl_sol	sol;
 	struct isl_map	*map;
 	struct isl_set	*empty;
-	int		max;
 };
 
 static void sol_map_free(struct isl_sol_map *sol_map)
@@ -151,75 +304,54 @@ static void sol_map_free_wrap(struct isl_sol *sol)
 	sol_map_free((struct isl_sol_map *)sol);
 }
 
-static struct isl_sol_map *add_empty(struct isl_sol_map *sol)
+/* This function is called for parts of the context where there is
+ * no solution, with "bset" corresponding to the context tableau.
+ * Simply add the basic set to the set "empty".
+ */
+static struct isl_sol_map *sol_map_add_empty(struct isl_sol_map *sol,
+	struct isl_basic_set *bset)
 {
-	struct isl_basic_set *bset;
+	if (!bset)
+		goto error;
+	isl_assert(bset->ctx, sol->empty, goto error);
 
-	if (!sol->empty)
-		return sol;
 	sol->empty = isl_set_grow(sol->empty, 1);
-	bset = sol->sol.context->op->peek_basic_set(sol->sol.context);
-	bset = isl_basic_set_copy(bset);
 	bset = isl_basic_set_simplify(bset);
 	bset = isl_basic_set_finalize(bset);
-	sol->empty = isl_set_add(sol->empty, bset);
+	sol->empty = isl_set_add(sol->empty, isl_basic_set_copy(bset));
 	if (!sol->empty)
 		goto error;
+	isl_basic_set_free(bset);
 	return sol;
 error:
+	isl_basic_set_free(bset);
 	sol_map_free(sol);
 	return NULL;
 }
 
-/* Add the solution identified by the tableau and the context tableau.
- *
- * The layout of the variables is as follows.
- *	tab->n_var is equal to the total number of variables in the input
- *			map (including divs that were copied from the context)
- *			+ the number of extra divs constructed
- *      Of these, the first tab->n_param and the last tab->n_div variables
- *	correspond to the variables in the context, i.e.,
- *		tab->n_param + tab->n_div = context_tab->n_var
- *	tab->n_param is equal to the number of parameters and input
- *			dimensions in the input map
- *	tab->n_div is equal to the number of divs in the context
- *
- * If there is no solution, then the basic set corresponding to the
- * context tableau is added to the set "empty".
- *
- * Otherwise, a basic map is constructed with the same parameters
+static struct isl_sol *sol_map_add_empty_wrap(struct isl_sol *sol,
+	struct isl_basic_set *bset)
+{
+	return (struct isl_sol *)
+		sol_map_add_empty((struct isl_sol_map *)sol, bset);
+}
+
+/* Given a basic map "dom" that represents the context and an affine
+ * matrix "M" that maps the dimensions of the context to the
+ * output variables, construct a basic map with the same parameters
  * and divs as the context, the dimensions of the context as input
  * dimensions and a number of output dimensions that is equal to
  * the number of output dimensions in the input map.
- * The divs in the input map (if any) that do not correspond to any
- * div in the context do not appear in the solution.
- * The algorithm will make sure that they have an integer value,
- * but these values themselves are of no interest.
  *
  * The constraints and divs of the context are simply copied
- * fron context_tab->bset.
- * To extract the value of the output variables, it should be noted
- * that we always use a big parameter M and so the variable stored
- * in the tableau is not an output variable x itself, but
- *	x' = M + x (in case of minimization)
- * or
- *	x' = M - x (in case of maximization)
- * If x' appears in a column, then its optimal value is zero,
- * which means that the optimal value of x is an unbounded number
- * (-M for minimization and M for maximization).
- * We currently assume that the output dimensions in the original map
- * are bounded, so this cannot occur.
- * Similarly, when x' appears in a row, then the coefficient of M in that
- * row is necessarily 1.
- * If the row represents
- *	d x' = c + d M + e(y)
- * then, in case of minimization, an equality
- *	c + e(y) - d x' = 0
- * is added, and in case of maximization,
- *	c + e(y) + d x' = 0
+ * from "dom".  For each row
+ *	x = c + e(y)
+ * an equality
+ *	c + e(y) - d x = 0
+ * is added, with d the common denominator of M.
  */
 static struct isl_sol_map *sol_map_add(struct isl_sol_map *sol,
-	struct isl_tab *tab)
+	struct isl_basic_set *dom, struct isl_mat *M)
 {
 	int i;
 	struct isl_basic_map *bmap = NULL;
@@ -230,103 +362,58 @@ static struct isl_sol_map *sol_map_add(struct isl_sol_map *sol,
 	unsigned total;
 	unsigned n_div;
 	unsigned n_out;
-	unsigned off;
 
-	if (!sol || !tab)
+	if (!sol || !dom || !M)
 		goto error;
 
-	if (tab->empty)
-		return add_empty(sol);
-
-	context_bset = sol->sol.context->op->peek_basic_set(sol->sol.context);
-	off = 2 + tab->M;
-	n_out = isl_map_dim(sol->map, isl_dim_out);
-	n_eq = context_bset->n_eq + n_out;
-	n_ineq = context_bset->n_ineq;
-	nparam = tab->n_param;
+	n_out = sol->sol.n_out;
+	n_eq = dom->n_eq + n_out;
+	n_ineq = dom->n_ineq;
+	n_div = dom->n_div;
+	nparam = isl_basic_set_total_dim(dom) - n_div;
 	total = isl_map_dim(sol->map, isl_dim_all);
 	bmap = isl_basic_map_alloc_dim(isl_map_get_dim(sol->map),
-				    tab->n_div, n_eq, 2 * tab->n_div + n_ineq);
+					n_div, n_eq, 2 * n_div + n_ineq);
 	if (!bmap)
 		goto error;
-	n_div = tab->n_div;
-	if (tab->rational)
+	if (ISL_F_ISSET(dom, ISL_BASIC_SET_RATIONAL))
 		ISL_F_SET(bmap, ISL_BASIC_MAP_RATIONAL);
-	for (i = 0; i < context_bset->n_div; ++i) {
+	for (i = 0; i < dom->n_div; ++i) {
 		int k = isl_basic_map_alloc_div(bmap);
 		if (k < 0)
 			goto error;
-		isl_seq_cpy(bmap->div[k],
-			    context_bset->div[i], 1 + 1 + nparam);
+		isl_seq_cpy(bmap->div[k], dom->div[i], 1 + 1 + nparam);
 		isl_seq_clr(bmap->div[k] + 1 + 1 + nparam, total - nparam);
 		isl_seq_cpy(bmap->div[k] + 1 + 1 + total,
-			    context_bset->div[i] + 1 + 1 + nparam, i);
+			    dom->div[i] + 1 + 1 + nparam, i);
 	}
-	for (i = 0; i < context_bset->n_eq; ++i) {
+	for (i = 0; i < dom->n_eq; ++i) {
 		int k = isl_basic_map_alloc_equality(bmap);
 		if (k < 0)
 			goto error;
-		isl_seq_cpy(bmap->eq[k], context_bset->eq[i], 1 + nparam);
+		isl_seq_cpy(bmap->eq[k], dom->eq[i], 1 + nparam);
 		isl_seq_clr(bmap->eq[k] + 1 + nparam, total - nparam);
 		isl_seq_cpy(bmap->eq[k] + 1 + total,
-			    context_bset->eq[i] + 1 + nparam, n_div);
+			    dom->eq[i] + 1 + nparam, n_div);
 	}
-	for (i = 0; i < context_bset->n_ineq; ++i) {
+	for (i = 0; i < dom->n_ineq; ++i) {
 		int k = isl_basic_map_alloc_inequality(bmap);
 		if (k < 0)
 			goto error;
-		isl_seq_cpy(bmap->ineq[k],
-			context_bset->ineq[i], 1 + nparam);
+		isl_seq_cpy(bmap->ineq[k], dom->ineq[i], 1 + nparam);
 		isl_seq_clr(bmap->ineq[k] + 1 + nparam, total - nparam);
 		isl_seq_cpy(bmap->ineq[k] + 1 + total,
-			context_bset->ineq[i] + 1 + nparam, n_div);
+			dom->ineq[i] + 1 + nparam, n_div);
 	}
-	for (i = tab->n_param; i < total; ++i) {
+	for (i = 0; i < M->n_row - 1; ++i) {
 		int k = isl_basic_map_alloc_equality(bmap);
 		if (k < 0)
 			goto error;
-		isl_seq_clr(bmap->eq[k] + 1, isl_basic_map_total_dim(bmap));
-		if (!tab->var[i].is_row) {
-			/* no unbounded */
-			isl_assert(bmap->ctx, !tab->M, goto error);
-			isl_int_set_si(bmap->eq[k][0], 0);
-			if (sol->max)
-				isl_int_set_si(bmap->eq[k][1 + i], 1);
-			else
-				isl_int_set_si(bmap->eq[k][1 + i], -1);
-		} else {
-			int row, j;
-			row = tab->var[i].index;
-			/* no unbounded */
-			if (tab->M)
-				isl_assert(bmap->ctx,
-					isl_int_eq(tab->mat->row[row][2],
-						   tab->mat->row[row][0]),
-					goto error);
-			isl_int_set(bmap->eq[k][0], tab->mat->row[row][1]);
-			for (j = 0; j < tab->n_param; ++j) {
-				int col;
-				if (tab->var[j].is_row)
-					continue;
-				col = tab->var[j].index;
-				isl_int_set(bmap->eq[k][1 + j],
-					    tab->mat->row[row][off + col]);
-			}
-			for (j = 0; j < tab->n_div; ++j) {
-				int col;
-				if (tab->var[tab->n_var - tab->n_div+j].is_row)
-					continue;
-				col = tab->var[tab->n_var - tab->n_div+j].index;
-				isl_int_set(bmap->eq[k][1 + total + j],
-					    tab->mat->row[row][off + col]);
-			}
-			if (sol->max)
-				isl_int_set(bmap->eq[k][1 + i],
-					    tab->mat->row[row][0]);
-			else
-				isl_int_neg(bmap->eq[k][1 + i],
-					    tab->mat->row[row][0]);
-		}
+		isl_seq_cpy(bmap->eq[k], M->row[1 + i], 1 + nparam);
+		isl_seq_clr(bmap->eq[k] + 1 + nparam, n_out);
+		isl_int_neg(bmap->eq[k][1 + nparam + i], M->row[0][0]);
+		isl_seq_cpy(bmap->eq[k] + 1 + nparam + n_out,
+			    M->row[1 + i] + 1 + nparam, n_div);
 	}
 	bmap = isl_basic_map_simplify(bmap);
 	bmap = isl_basic_map_finalize(bmap);
@@ -334,17 +421,21 @@ static struct isl_sol_map *sol_map_add(struct isl_sol_map *sol,
 	sol->map = isl_map_add(sol->map, bmap);
 	if (!sol->map)
 		goto error;
+	isl_basic_set_free(dom);
+	isl_mat_free(M);
 	return sol;
 error:
+	isl_basic_set_free(dom);
+	isl_mat_free(M);
 	isl_basic_map_free(bmap);
 	sol_free(&sol->sol);
 	return NULL;
 }
 
 static struct isl_sol *sol_map_add_wrap(struct isl_sol *sol,
-	struct isl_tab *tab)
+	struct isl_basic_set *dom, struct isl_mat *M)
 {
-	return (struct isl_sol *)sol_map_add((struct isl_sol_map *)sol, tab);
+	return (struct isl_sol *)sol_map_add((struct isl_sol_map *)sol, dom, M);
 }
 
 
@@ -2903,8 +2994,10 @@ static struct isl_sol_map *sol_map_init(struct isl_basic_map *bmap,
 	if (!sol_map)
 		goto error;
 
-	sol_map->max = max;
+	sol_map->sol.max = max;
+	sol_map->sol.n_out = isl_basic_map_dim(bmap, isl_dim_out);
 	sol_map->sol.add = &sol_map_add_wrap;
+	sol_map->sol.add_empty = track_empty ? &sol_map_add_empty_wrap : NULL;
 	sol_map->sol.free = &sol_map_free_wrap;
 	sol_map->map = isl_map_alloc_dim(isl_basic_map_get_dim(bmap), 1,
 					    ISL_MAP_DISJOINT);
@@ -3162,7 +3255,7 @@ static struct isl_sol *no_sol_in_strict(struct isl_sol *sol,
 
 	empty = tab->empty;
 	tab->empty = 1;
-	sol = sol->add(sol, tab);
+	sol = sol_add(sol, tab);
 	tab->empty = empty;
 
 	isl_int_add_ui(ineq->el[0], ineq->el[0], 1);
@@ -3369,7 +3462,7 @@ static struct isl_sol *find_solutions(struct isl_sol *sol, struct isl_tab *tab)
 			goto error;
 	}
 done:
-	sol = sol->add(sol, tab);
+	sol = sol_add(sol, tab);
 	isl_tab_free(tab);
 	return sol;
 error:
@@ -3568,7 +3661,8 @@ struct isl_map *isl_tab_basic_map_partial_lexopt(
 	if (isl_basic_set_fast_is_empty(context->op->peek_basic_set(context)))
 		/* nothing */;
 	else if (isl_basic_map_fast_is_empty(bmap))
-		sol_map = add_empty(sol_map);
+		sol_map = sol_map_add_empty(sol_map,
+		    isl_basic_set_dup(context->op->peek_basic_set(context)));
 	else {
 		tab = tab_for_lexmin(bmap,
 				    context->op->peek_basic_set(context), 1, max);
@@ -3595,7 +3689,6 @@ struct isl_sol_for {
 	int		(*fn)(__isl_take isl_basic_set *dom,
 				__isl_take isl_mat *map, void *user);
 	void		*user;
-	int		max;
 };
 
 static void sol_for_free(struct isl_sol_for *sol_for)
@@ -3612,7 +3705,7 @@ static void sol_for_free_wrap(struct isl_sol *sol)
 
 /* Add the solution identified by the tableau and the context tableau.
  *
- * See documentation of sol_map_add for more details.
+ * See documentation of sol_add for more details.
  *
  * Instead of constructing a basic map, this function calls a user
  * defined function with the current context as a basic set and
@@ -3625,87 +3718,31 @@ static void sol_for_free_wrap(struct isl_sol *sol)
  * (Simplification may reorder or remove divs.)
  */
 static struct isl_sol_for *sol_for_add(struct isl_sol_for *sol,
-	struct isl_tab *tab)
+	struct isl_basic_set *dom, struct isl_mat *M)
 {
-	struct isl_basic_set *bset;
-	struct isl_mat *mat = NULL;
-	unsigned n_out;
-	unsigned off;
-	int row, i;
-
-	if (!sol || !tab)
+	if (!sol || !dom || !M)
 		goto error;
 
-	if (tab->empty)
-		return sol;
+	dom = isl_basic_set_simplify(dom);
+	dom = isl_basic_set_finalize(dom);
 
-	off = 2 + tab->M;
-
-	n_out = tab->n_var - tab->n_param - tab->n_div;
-	mat = isl_mat_alloc(tab->mat->ctx, 1 + n_out, 1 + tab->n_param + tab->n_div);
-	if (!mat)
+	if (sol->fn(isl_basic_set_copy(dom), isl_mat_copy(M), sol->user) < 0)
 		goto error;
 
-	isl_seq_clr(mat->row[0] + 1, mat->n_col - 1);
-	isl_int_set_si(mat->row[0][0], 1);
-	for (row = 0; row < n_out; ++row) {
-		int i = tab->n_param + row;
-		int r, j;
-
-		isl_seq_clr(mat->row[1 + row], mat->n_col);
-		if (!tab->var[i].is_row)
-			continue;
-
-		r = tab->var[i].index;
-		/* no unbounded */
-		if (tab->M)
-			isl_assert(mat->ctx, isl_int_eq(tab->mat->row[r][2],
-					                tab->mat->row[r][0]),
-				    goto error);
-		isl_int_set(mat->row[1 + row][0], tab->mat->row[r][1]);
-		for (j = 0; j < tab->n_param; ++j) {
-			int col;
-			if (tab->var[j].is_row)
-				continue;
-			col = tab->var[j].index;
-			isl_int_set(mat->row[1 + row][1 + j],
-				    tab->mat->row[r][off + col]);
-		}
-		for (j = 0; j < tab->n_div; ++j) {
-			int col;
-			if (tab->var[tab->n_var - tab->n_div+j].is_row)
-				continue;
-			col = tab->var[tab->n_var - tab->n_div+j].index;
-			isl_int_set(mat->row[1 + row][1 + tab->n_param + j],
-				    tab->mat->row[r][off + col]);
-		}
-		if (!isl_int_is_one(tab->mat->row[r][0]))
-			isl_seq_scale_down(mat->row[1 + row], mat->row[1 + row],
-					    tab->mat->row[r][0], mat->n_col);
-		if (sol->max)
-			isl_seq_neg(mat->row[1 + row], mat->row[1 + row],
-				    mat->n_col);
-	}
-
-	bset = sol->sol.context->op->peek_basic_set(sol->sol.context);
-	bset = isl_basic_set_dup(bset);
-	bset = isl_basic_set_finalize(bset);
-
-	if (sol->fn(bset, isl_mat_copy(mat), sol->user) < 0)
-		goto error;
-
-	isl_mat_free(mat);
+	isl_basic_set_free(dom);
+	isl_mat_free(M);
 	return sol;
 error:
-	isl_mat_free(mat);
+	isl_basic_set_free(dom);
+	isl_mat_free(M);
 	sol_free(&sol->sol);
 	return NULL;
 }
 
 static struct isl_sol *sol_for_add_wrap(struct isl_sol *sol,
-	struct isl_tab *tab)
+	struct isl_basic_set *dom, struct isl_mat *M)
 {
-	return (struct isl_sol *)sol_for_add((struct isl_sol_for *)sol, tab);
+	return (struct isl_sol *)sol_for_add((struct isl_sol_for *)sol, dom, M);
 }
 
 static struct isl_sol_for *sol_for_init(struct isl_basic_map *bmap, int max,
@@ -3726,8 +3763,10 @@ static struct isl_sol_for *sol_for_init(struct isl_basic_map *bmap, int max,
 
 	sol_for->fn = fn;
 	sol_for->user = user;
-	sol_for->max = max;
+	sol_for->sol.max = max;
+	sol_for->sol.n_out = isl_basic_map_dim(bmap, isl_dim_out);
 	sol_for->sol.add = &sol_for_add_wrap;
+	sol_for->sol.add_empty = NULL;
 	sol_for->sol.free = &sol_for_free_wrap;
 
 	sol_for->sol.context = isl_context_alloc(dom);
