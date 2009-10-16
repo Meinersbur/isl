@@ -118,13 +118,13 @@ struct isl_context_lex {
  * the solution.
  */
 struct isl_sol {
+	int error;
 	int max;
 	int n_out;
 	struct isl_context *context;
-	struct isl_sol *(*add)(struct isl_sol *sol,
+	void (*add)(struct isl_sol *sol,
 			    struct isl_basic_set *dom, struct isl_mat *M);
-	struct isl_sol *(*add_empty)(struct isl_sol *sol,
-					struct isl_basic_set *bset);
+	void (*add_empty)(struct isl_sol *sol, struct isl_basic_set *bset);
 	void (*free)(struct isl_sol *sol);
 };
 
@@ -195,7 +195,7 @@ static void scale_rows(struct isl_mat *mat, isl_int m, int n_row)
  * In case of maximization, the row will be
  *	-a c - a e(y)
  */
-static struct isl_sol *sol_add(struct isl_sol *sol, struct isl_tab *tab)
+static void sol_add(struct isl_sol *sol, struct isl_tab *tab)
 {
 	struct isl_basic_set *bset = NULL;
 	struct isl_mat *mat = NULL;
@@ -203,11 +203,11 @@ static struct isl_sol *sol_add(struct isl_sol *sol, struct isl_tab *tab)
 	int row, i;
 	isl_int m;
 
-	if (!sol || !tab)
+	if (sol->error || !tab)
 		goto error;
 
 	if (tab->empty && !sol->add_empty)
-		return sol;
+		return;
 
 	bset = isl_basic_set_dup(sol->context->op->peek_basic_set(sol->context));
 	bset = isl_basic_set_update_from_tab(bset,
@@ -215,8 +215,10 @@ static struct isl_sol *sol_add(struct isl_sol *sol, struct isl_tab *tab)
 	if (tab->rational)
 		ISL_F_SET(bset, ISL_BASIC_SET_RATIONAL);
 
-	if (tab->empty)
-		return sol->add_empty(sol, bset);
+	if (tab->empty) {
+		sol->add_empty(sol, bset);
+		return;
+	}
 
 	off = 2 + tab->M;
 
@@ -274,14 +276,14 @@ static struct isl_sol *sol_add(struct isl_sol *sol, struct isl_tab *tab)
 
 	isl_int_clear(m);
 
-	return sol->add(sol, bset, mat);
+	sol->add(sol, bset, mat);
+	return;
 error2:
 	isl_int_clear(m);
 error:
 	isl_basic_set_free(bset);
 	isl_mat_free(mat);
 	sol_free(sol);
-	return NULL;
 }
 
 struct isl_sol_map {
@@ -308,7 +310,7 @@ static void sol_map_free_wrap(struct isl_sol *sol)
  * no solution, with "bset" corresponding to the context tableau.
  * Simply add the basic set to the set "empty".
  */
-static struct isl_sol_map *sol_map_add_empty(struct isl_sol_map *sol,
+static void sol_map_add_empty(struct isl_sol_map *sol,
 	struct isl_basic_set *bset)
 {
 	if (!bset)
@@ -322,18 +324,16 @@ static struct isl_sol_map *sol_map_add_empty(struct isl_sol_map *sol,
 	if (!sol->empty)
 		goto error;
 	isl_basic_set_free(bset);
-	return sol;
+	return;
 error:
 	isl_basic_set_free(bset);
-	sol_map_free(sol);
-	return NULL;
+	sol->sol.error = 1;
 }
 
-static struct isl_sol *sol_map_add_empty_wrap(struct isl_sol *sol,
+static void sol_map_add_empty_wrap(struct isl_sol *sol,
 	struct isl_basic_set *bset)
 {
-	return (struct isl_sol *)
-		sol_map_add_empty((struct isl_sol_map *)sol, bset);
+	sol_map_add_empty((struct isl_sol_map *)sol, bset);
 }
 
 /* Given a basic map "dom" that represents the context and an affine
@@ -350,7 +350,7 @@ static struct isl_sol *sol_map_add_empty_wrap(struct isl_sol *sol,
  *	c + e(y) - d x = 0
  * is added, with d the common denominator of M.
  */
-static struct isl_sol_map *sol_map_add(struct isl_sol_map *sol,
+static void sol_map_add(struct isl_sol_map *sol,
 	struct isl_basic_set *dom, struct isl_mat *M)
 {
 	int i;
@@ -363,7 +363,7 @@ static struct isl_sol_map *sol_map_add(struct isl_sol_map *sol,
 	unsigned n_div;
 	unsigned n_out;
 
-	if (!sol || !dom || !M)
+	if (sol->sol.error || !dom || !M)
 		goto error;
 
 	n_out = sol->sol.n_out;
@@ -423,19 +423,18 @@ static struct isl_sol_map *sol_map_add(struct isl_sol_map *sol,
 		goto error;
 	isl_basic_set_free(dom);
 	isl_mat_free(M);
-	return sol;
+	return;
 error:
 	isl_basic_set_free(dom);
 	isl_mat_free(M);
 	isl_basic_map_free(bmap);
-	sol_free(&sol->sol);
-	return NULL;
+	sol->sol.error = 1;
 }
 
-static struct isl_sol *sol_map_add_wrap(struct isl_sol *sol,
+static void sol_map_add_wrap(struct isl_sol *sol,
 	struct isl_basic_set *dom, struct isl_mat *M)
 {
-	return (struct isl_sol *)sol_map_add((struct isl_sol_map *)sol, dom, M);
+	sol_map_add((struct isl_sol_map *)sol, dom, M);
 }
 
 
@@ -3194,7 +3193,7 @@ error:
 	return 0;
 }
 
-static struct isl_sol *find_solutions(struct isl_sol *sol, struct isl_tab *tab);
+static void find_solutions(struct isl_sol *sol, struct isl_tab *tab);
 
 /* Find solutions for values of the parameters that satisfy the given
  * inequality.
@@ -3210,8 +3209,7 @@ static struct isl_sol *find_solutions(struct isl_sol *sol, struct isl_tab *tab);
  * and that we need to do this before saving the current basis
  * such that the basis has been restore before we restore the row signs.
  */
-static struct isl_sol *find_in_pos(struct isl_sol *sol,
-	struct isl_tab *tab, isl_int *ineq)
+static void find_in_pos(struct isl_sol *sol, struct isl_tab *tab, isl_int *ineq)
 {
 	void *saved;
 
@@ -3225,19 +3223,18 @@ static struct isl_sol *find_in_pos(struct isl_sol *sol,
 
 	sol->context->op->add_ineq(sol->context, ineq, 0, 1);
 
-	sol = find_solutions(sol, tab);
+	find_solutions(sol, tab);
 
 	sol->context->op->restore(sol->context, saved);
-	return sol;
+	return;
 error:
-	sol_free(sol);
-	return NULL;
+	sol->error = 1;
 }
 
 /* Record the absence of solutions for those values of the parameters
  * that do not satisfy the given inequality with equality.
  */
-static struct isl_sol *no_sol_in_strict(struct isl_sol *sol,
+static void no_sol_in_strict(struct isl_sol *sol,
 	struct isl_tab *tab, struct isl_vec *ineq)
 {
 	int empty;
@@ -3255,16 +3252,15 @@ static struct isl_sol *no_sol_in_strict(struct isl_sol *sol,
 
 	empty = tab->empty;
 	tab->empty = 1;
-	sol = sol_add(sol, tab);
+	sol_add(sol, tab);
 	tab->empty = empty;
 
 	isl_int_add_ui(ineq->el[0], ineq->el[0], 1);
 
 	sol->context->op->restore(sol->context, saved);
-	return sol;
+	return;
 error:
-	sol_free(sol);
-	return NULL;
+	sol->error = 1;
 }
 
 /* Compute the lexicographic minimum of the set represented by the main
@@ -3361,11 +3357,11 @@ error:
  * In the part of the context where this inequality does not hold, the
  * main tableau is marked as being empty.
  */
-static struct isl_sol *find_solutions(struct isl_sol *sol, struct isl_tab *tab)
+static void find_solutions(struct isl_sol *sol, struct isl_tab *tab)
 {
 	struct isl_context *context;
 
-	if (!tab || !sol)
+	if (!tab || sol->error)
 		goto error;
 
 	context = sol->context;
@@ -3415,14 +3411,14 @@ static struct isl_sol *find_solutions(struct isl_sol *sol, struct isl_tab *tab)
 					tab->row_sign[row] = isl_tab_row_unknown;
 			}
 			tab->row_sign[split] = isl_tab_row_pos;
-			sol = find_in_pos(sol, tab, ineq->el);
+			find_in_pos(sol, tab, ineq->el);
 			tab->row_sign[split] = isl_tab_row_neg;
 			row = split;
 			isl_seq_neg(ineq->el, ineq->el, ineq->size);
 			isl_int_sub_ui(ineq->el[0], ineq->el[0], 1);
 			context->op->add_ineq(context, ineq->el, 0, 1);
 			isl_vec_free(ineq);
-			if (!sol)
+			if (sol->error)
 				goto error;
 			continue;
 		}
@@ -3449,11 +3445,11 @@ static struct isl_sol *find_solutions(struct isl_sol *sol, struct isl_tab *tab)
 			if (d < 0)
 				goto error;
 			ineq = ineq_for_div(context->op->peek_basic_set(context), d);
-			sol = no_sol_in_strict(sol, tab, ineq);
+			no_sol_in_strict(sol, tab, ineq);
 			isl_seq_neg(ineq->el, ineq->el, ineq->size);
 			context->op->add_ineq(context, ineq->el, 1, 1);
 			isl_vec_free(ineq);
-			if (!sol || !context->op->is_ok(context))
+			if (sol->error || !context->op->is_ok(context))
 				goto error;
 			tab = set_row_cst_to_div(tab, row, d);
 		} else
@@ -3462,13 +3458,12 @@ static struct isl_sol *find_solutions(struct isl_sol *sol, struct isl_tab *tab)
 			goto error;
 	}
 done:
-	sol = sol_add(sol, tab);
+	sol_add(sol, tab);
 	isl_tab_free(tab);
-	return sol;
+	return;
 error:
 	isl_tab_free(tab);
 	sol_free(sol);
-	return NULL;
 }
 
 /* Compute the lexicographic minimum of the set represented by the main
@@ -3482,8 +3477,7 @@ error:
  * In parts of the context where the added equality does not hold,
  * the main tableau is marked as being empty.
  */
-static struct isl_sol *find_solutions_main(struct isl_sol *sol,
-	struct isl_tab *tab)
+static void find_solutions_main(struct isl_sol *sol, struct isl_tab *tab)
 {
 	int row;
 
@@ -3507,10 +3501,10 @@ static struct isl_sol *find_solutions_main(struct isl_sol *sol,
 		isl_int_neg(eq->el[1 + p], tab->mat->row[row][0]);
 		eq = isl_vec_normalize(eq);
 
-		sol = no_sol_in_strict(sol, tab, eq);
+		no_sol_in_strict(sol, tab, eq);
 
 		isl_seq_neg(eq->el, eq->el, eq->size);
-		sol = no_sol_in_strict(sol, tab, eq);
+		no_sol_in_strict(sol, tab, eq);
 		isl_seq_neg(eq->el, eq->el, eq->size);
 
 		sol->context->op->add_eq(sol->context, eq->el, 1, 1);
@@ -3526,17 +3520,17 @@ static struct isl_sol *find_solutions_main(struct isl_sol *sol,
 		row = tab->n_redundant - 1;
 	}
 
-	return find_solutions(sol, tab);
+	find_solutions(sol, tab);
+	return;
 error:
 	isl_tab_free(tab);
 	sol_free(sol);
-	return NULL;
 }
 
-static struct isl_sol_map *sol_map_find_solutions(struct isl_sol_map *sol_map,
+static void sol_map_find_solutions(struct isl_sol_map *sol_map,
 	struct isl_tab *tab)
 {
-	return (struct isl_sol_map *)find_solutions_main(&sol_map->sol, tab);
+	find_solutions_main(&sol_map->sol, tab);
 }
 
 /* Check if integer division "div" of "dom" also occurs in "bmap".
@@ -3661,25 +3655,25 @@ struct isl_map *isl_tab_basic_map_partial_lexopt(
 	if (isl_basic_set_fast_is_empty(context->op->peek_basic_set(context)))
 		/* nothing */;
 	else if (isl_basic_map_fast_is_empty(bmap))
-		sol_map = sol_map_add_empty(sol_map,
+		sol_map_add_empty(sol_map,
 		    isl_basic_set_dup(context->op->peek_basic_set(context)));
 	else {
 		tab = tab_for_lexmin(bmap,
 				    context->op->peek_basic_set(context), 1, max);
 		tab = context->op->detect_nonnegative_parameters(context, tab);
-		sol_map = sol_map_find_solutions(sol_map, tab);
-		if (!sol_map)
-			goto error;
+		sol_map_find_solutions(sol_map, tab);
 	}
+	if (sol_map->sol.error)
+		goto error;
 
 	result = isl_map_copy(sol_map->map);
 	if (empty)
 		*empty = isl_set_copy(sol_map->empty);
-	sol_map_free(sol_map);
+	sol_free(&sol_map->sol);
 	isl_basic_map_free(bmap);
 	return result;
 error:
-	sol_map_free(sol_map);
+	sol_free(&sol_map->sol);
 	isl_basic_map_free(bmap);
 	return NULL;
 }
@@ -3717,10 +3711,10 @@ static void sol_for_free_wrap(struct isl_sol *sol)
  * may refer to the divs, the basic set is not simplified.
  * (Simplification may reorder or remove divs.)
  */
-static struct isl_sol_for *sol_for_add(struct isl_sol_for *sol,
+static void sol_for_add(struct isl_sol_for *sol,
 	struct isl_basic_set *dom, struct isl_mat *M)
 {
-	if (!sol || !dom || !M)
+	if (sol->sol.error || !dom || !M)
 		goto error;
 
 	dom = isl_basic_set_simplify(dom);
@@ -3731,18 +3725,17 @@ static struct isl_sol_for *sol_for_add(struct isl_sol_for *sol,
 
 	isl_basic_set_free(dom);
 	isl_mat_free(M);
-	return sol;
+	return;
 error:
 	isl_basic_set_free(dom);
 	isl_mat_free(M);
-	sol_free(&sol->sol);
-	return NULL;
+	sol->sol.error = 1;
 }
 
-static struct isl_sol *sol_for_add_wrap(struct isl_sol *sol,
+static void sol_for_add_wrap(struct isl_sol *sol,
 	struct isl_basic_set *dom, struct isl_mat *M)
 {
-	return (struct isl_sol *)sol_for_add((struct isl_sol_for *)sol, dom, M);
+	sol_for_add((struct isl_sol_for *)sol, dom, M);
 }
 
 static struct isl_sol_for *sol_for_init(struct isl_basic_map *bmap, int max,
@@ -3781,10 +3774,10 @@ error:
 	return NULL;
 }
 
-static struct isl_sol_for *sol_for_find_solutions(struct isl_sol_for *sol_for,
+static void sol_for_find_solutions(struct isl_sol_for *sol_for,
 	struct isl_tab *tab)
 {
-	return (struct isl_sol_for *)find_solutions_main(&sol_for->sol, tab);
+	find_solutions_main(&sol_for->sol, tab);
 }
 
 int isl_basic_map_foreach_lexopt(__isl_keep isl_basic_map *bmap, int max,
@@ -3809,16 +3802,16 @@ int isl_basic_map_foreach_lexopt(__isl_keep isl_basic_map *bmap, int max,
 		tab = tab_for_lexmin(bmap,
 				context->op->peek_basic_set(context), 1, max);
 		tab = context->op->detect_nonnegative_parameters(context, tab);
-		sol_for = sol_for_find_solutions(sol_for, tab);
-		if (!sol_for)
+		sol_for_find_solutions(sol_for, tab);
+		if (sol_for->sol.error)
 			goto error;
 	}
 
-	sol_for_free(sol_for);
+	sol_free(&sol_for->sol);
 	isl_basic_map_free(bmap);
 	return 0;
 error:
-	sol_for_free(sol_for);
+	sol_free(&sol_for->sol);
 	isl_basic_map_free(bmap);
 	return -1;
 }
