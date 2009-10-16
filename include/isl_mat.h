@@ -82,6 +82,8 @@ struct isl_mat *isl_mat_unimodular_complete(struct isl_mat *M, int row);
 __isl_give isl_mat *isl_mat_concat(__isl_take isl_mat *top,
 	__isl_take isl_mat *bot);
 
+int isl_mat_is_equal(__isl_keep isl_mat *mat1, __isl_keep isl_mat *mat2);
+
 void isl_mat_dump(struct isl_mat *mat, FILE *out, int indent);
 
 #if defined(__cplusplus)
