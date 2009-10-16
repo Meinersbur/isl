@@ -101,6 +101,20 @@ struct isl_context_lex {
 	struct isl_tab *tab;
 };
 
+struct isl_partial_sol {
+	int level;
+	struct isl_basic_set *dom;
+	struct isl_mat *M;
+
+	struct isl_partial_sol *next;
+};
+
+struct isl_sol;
+struct isl_sol_callback {
+	struct isl_tab_callback callback;
+	struct isl_sol *sol;
+};
+
 /* isl_sol is an interface for constructing a solution to
  * a parametric integer linear programming problem.
  * Every time the algorithm reaches a state where a solution
@@ -119,20 +133,213 @@ struct isl_context_lex {
  */
 struct isl_sol {
 	int error;
+	int rational;
+	int level;
 	int max;
 	int n_out;
 	struct isl_context *context;
+	struct isl_partial_sol *partial;
 	void (*add)(struct isl_sol *sol,
 			    struct isl_basic_set *dom, struct isl_mat *M);
 	void (*add_empty)(struct isl_sol *sol, struct isl_basic_set *bset);
 	void (*free)(struct isl_sol *sol);
+	struct isl_sol_callback	dec_level;
 };
 
 static void sol_free(struct isl_sol *sol)
 {
+	struct isl_partial_sol *partial, *next;
 	if (!sol)
 		return;
+	for (partial = sol->partial; partial; partial = next) {
+		next = partial->next;
+		isl_basic_set_free(partial->dom);
+		isl_mat_free(partial->M);
+		free(partial);
+	}
 	sol->free(sol);
+}
+
+/* Push a partial solution represented by a domain and mapping M
+ * onto the stack of partial solutions.
+ */
+static void sol_push_sol(struct isl_sol *sol,
+	struct isl_basic_set *dom, struct isl_mat *M)
+{
+	struct isl_partial_sol *partial;
+
+	if (sol->error || !dom)
+		goto error;
+
+	partial = isl_alloc_type(dom->ctx, struct isl_partial_sol);
+	if (!partial)
+		goto error;
+
+	partial->level = sol->level;
+	partial->dom = dom;
+	partial->M = M;
+	partial->next = sol->partial;
+
+	sol->partial = partial;
+
+	return;
+error:
+	isl_basic_set_free(dom);
+	sol->error = 1;
+}
+
+/* Pop one partial solution from the partial solution stack and
+ * pass it on to sol->add or sol->add_empty.
+ */
+static void sol_pop_one(struct isl_sol *sol)
+{
+	struct isl_partial_sol *partial;
+
+	partial = sol->partial;
+	sol->partial = partial->next;
+
+	if (partial->M)
+		sol->add(sol, partial->dom, partial->M);
+	else
+		sol->add_empty(sol, partial->dom);
+	free(partial);
+}
+
+/* Return a fresh copy of the domain represented by the context tableau.
+ */
+static struct isl_basic_set *sol_domain(struct isl_sol *sol)
+{
+	struct isl_basic_set *bset;
+
+	if (sol->error)
+		return NULL;
+
+	bset = isl_basic_set_dup(sol->context->op->peek_basic_set(sol->context));
+	bset = isl_basic_set_update_from_tab(bset,
+			sol->context->op->peek_tab(sol->context));
+
+	return bset;
+}
+
+/* Check whether two partial solutions have the same mapping, where n_div
+ * is the number of divs that the two partial solutions have in common.
+ */
+static int same_solution(struct isl_partial_sol *s1, struct isl_partial_sol *s2,
+	unsigned n_div)
+{
+	int i;
+	unsigned dim;
+
+	if (!s1->M != !s2->M)
+		return 0;
+	if (!s1->M)
+		return 1;
+
+	dim = isl_basic_set_total_dim(s1->dom) - s1->dom->n_div;
+
+	for (i = 0; i < s1->M->n_row; ++i) {
+		if (isl_seq_first_non_zero(s1->M->row[i]+1+dim+n_div,
+					    s1->M->n_col-1-dim-n_div) != -1)
+			return 0;
+		if (isl_seq_first_non_zero(s2->M->row[i]+1+dim+n_div,
+					    s2->M->n_col-1-dim-n_div) != -1)
+			return 0;
+		if (!isl_seq_eq(s1->M->row[i], s2->M->row[i], 1+dim+n_div))
+			return 0;
+	}
+	return 1;
+}
+
+/* Pop all solutions from the partial solution stack that were pushed onto
+ * the stack at levels that are deeper than the current level.
+ * If the two topmost elements on the stack have the same level
+ * and represent the same solution, then their domains are combined.
+ * This combined domain is the same as the current context domain
+ * as sol_pop is called each time we move back to a higher level.
+ */
+static void sol_pop(struct isl_sol *sol)
+{
+	struct isl_partial_sol *partial;
+	unsigned n_div;
+
+	if (sol->error)
+		return;
+
+	if (sol->level == 0) {
+		for (partial = sol->partial; partial; partial = sol->partial)
+			sol_pop_one(sol);
+		return;
+	}
+
+	partial = sol->partial;
+	if (!partial)
+		return;
+
+	if (partial->level <= sol->level)
+		return;
+
+	if (partial->next && partial->next->level == partial->level) {
+		n_div = isl_basic_set_dim(
+				sol->context->op->peek_basic_set(sol->context),
+				isl_dim_div);
+
+		if (!same_solution(partial, partial->next, n_div)) {
+			sol_pop_one(sol);
+			sol_pop_one(sol);
+		} else {
+			struct isl_basic_set *bset;
+
+			bset = sol_domain(sol);
+
+			isl_basic_set_free(partial->next->dom);
+			partial->next->dom = bset;
+			partial->next->level = sol->level;
+
+			sol->partial = partial->next;
+			isl_basic_set_free(partial->dom);
+			isl_mat_free(partial->M);
+			free(partial);
+		}
+	} else
+		sol_pop_one(sol);
+}
+
+static void sol_dec_level(struct isl_sol *sol)
+{
+	if (sol->error)
+		return;
+
+	sol->level--;
+
+	sol_pop(sol);
+}
+
+static int sol_dec_level_wrap(struct isl_tab_callback *cb)
+{
+	struct isl_sol_callback *callback = (struct isl_sol_callback *)cb;
+
+	sol_dec_level(callback->sol);
+
+	return callback->sol->error ? -1 : 0;
+}
+
+/* Move down to next level and push callback onto context tableau
+ * to decrease the level again when it gets rolled back across
+ * the current state.  That is, dec_level will be called with
+ * the context tableau in the same state as it is when inc_level
+ * is called.
+ */
+static void sol_inc_level(struct isl_sol *sol)
+{
+	struct isl_tab *tab;
+
+	if (sol->error)
+		return;
+
+	sol->level++;
+	tab = sol->context->op->peek_tab(sol->context);
+	if (isl_tab_push_callback(tab, &sol->dec_level.callback) < 0)
+		sol->error = 1;
 }
 
 static void scale_rows(struct isl_mat *mat, isl_int m, int n_row)
@@ -209,14 +416,10 @@ static void sol_add(struct isl_sol *sol, struct isl_tab *tab)
 	if (tab->empty && !sol->add_empty)
 		return;
 
-	bset = isl_basic_set_dup(sol->context->op->peek_basic_set(sol->context));
-	bset = isl_basic_set_update_from_tab(bset,
-			sol->context->op->peek_tab(sol->context));
-	if (tab->rational)
-		ISL_F_SET(bset, ISL_BASIC_SET_RATIONAL);
+	bset = sol_domain(sol);
 
 	if (tab->empty) {
-		sol->add_empty(sol, bset);
+		sol_push_sol(sol, bset, NULL);
 		return;
 	}
 
@@ -276,7 +479,7 @@ static void sol_add(struct isl_sol *sol, struct isl_tab *tab)
 
 	isl_int_clear(m);
 
-	sol->add(sol, bset, mat);
+	sol_push_sol(sol, bset, mat);
 	return;
 error2:
 	isl_int_clear(m);
@@ -376,7 +579,7 @@ static void sol_map_add(struct isl_sol_map *sol,
 					n_div, n_eq, 2 * n_div + n_ineq);
 	if (!bmap)
 		goto error;
-	if (ISL_F_ISSET(dom, ISL_BASIC_SET_RATIONAL))
+	if (sol->sol.rational)
 		ISL_F_SET(bmap, ISL_BASIC_MAP_RATIONAL);
 	for (i = 0; i < dom->n_div; ++i) {
 		int k = isl_basic_map_alloc_div(bmap);
@@ -2993,6 +3196,9 @@ static struct isl_sol_map *sol_map_init(struct isl_basic_map *bmap,
 	if (!sol_map)
 		goto error;
 
+	sol_map->sol.rational = ISL_F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL);
+	sol_map->sol.dec_level.callback.run = &sol_dec_level_wrap;
+	sol_map->sol.dec_level.sol = &sol_map->sol;
 	sol_map->sol.max = max;
 	sol_map->sol.n_out = isl_basic_map_dim(bmap, isl_dim_out);
 	sol_map->sol.add = &sol_map_add_wrap;
@@ -3411,6 +3617,7 @@ static void find_solutions(struct isl_sol *sol, struct isl_tab *tab)
 					tab->row_sign[row] = isl_tab_row_unknown;
 			}
 			tab->row_sign[split] = isl_tab_row_pos;
+			sol_inc_level(sol);
 			find_in_pos(sol, tab, ineq->el);
 			tab->row_sign[split] = isl_tab_row_neg;
 			row = split;
@@ -3445,6 +3652,7 @@ static void find_solutions(struct isl_sol *sol, struct isl_tab *tab)
 			if (d < 0)
 				goto error;
 			ineq = ineq_for_div(context->op->peek_basic_set(context), d);
+			sol_inc_level(sol);
 			no_sol_in_strict(sol, tab, ineq);
 			isl_seq_neg(ineq->el, ineq->el, ineq->size);
 			context->op->add_ineq(context, ineq->el, 1, 1);
@@ -3481,6 +3689,8 @@ static void find_solutions_main(struct isl_sol *sol, struct isl_tab *tab)
 {
 	int row;
 
+	sol->level = 0;
+
 	for (row = tab->n_redundant; row < tab->n_row; ++row) {
 		int p;
 		struct isl_vec *eq;
@@ -3501,9 +3711,11 @@ static void find_solutions_main(struct isl_sol *sol, struct isl_tab *tab)
 		isl_int_neg(eq->el[1 + p], tab->mat->row[row][0]);
 		eq = isl_vec_normalize(eq);
 
+		sol_inc_level(sol);
 		no_sol_in_strict(sol, tab, eq);
 
 		isl_seq_neg(eq->el, eq->el, eq->size);
+		sol_inc_level(sol);
 		no_sol_in_strict(sol, tab, eq);
 		isl_seq_neg(eq->el, eq->el, eq->size);
 
@@ -3521,6 +3733,10 @@ static void find_solutions_main(struct isl_sol *sol, struct isl_tab *tab)
 	}
 
 	find_solutions(sol, tab);
+
+	sol->level = 0;
+	sol_pop(sol);
+
 	return;
 error:
 	isl_tab_free(tab);
@@ -3754,6 +3970,9 @@ static struct isl_sol_for *sol_for_init(struct isl_basic_map *bmap, int max,
 	dom_dim = isl_dim_domain(isl_dim_copy(bmap->dim));
 	dom = isl_basic_set_universe(dom_dim);
 
+	sol_for->sol.rational = ISL_F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL);
+	sol_for->sol.dec_level.callback.run = &sol_dec_level_wrap;
+	sol_for->sol.dec_level.sol = &sol_for->sol;
 	sol_for->fn = fn;
 	sol_for->user = user;
 	sol_for->sol.max = max;
