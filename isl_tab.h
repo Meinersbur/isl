@@ -31,12 +31,18 @@ enum isl_tab_undo_type {
 	isl_tab_undo_saved_basis,
 	isl_tab_undo_drop_sample,
 	isl_tab_undo_saved_samples,
+	isl_tab_undo_callback,
+};
+
+struct isl_tab_callback {
+	int (*run)(struct isl_tab_callback *cb);
 };
 
 union isl_tab_undo_val {
 	int		var_index;
 	int		*col_var;
 	int		n;
+	struct isl_tab_callback	*callback;
 };
 
 struct isl_tab_undo {
@@ -236,5 +242,8 @@ int isl_tab_save_samples(struct isl_tab *tab) WARN_UNUSED;
 
 struct isl_tab *isl_tab_detect_equalities(struct isl_tab *tab,
 	struct isl_tab *tab_cone) WARN_UNUSED;
+
+int isl_tab_push_callback(struct isl_tab *tab,
+	struct isl_tab_callback *callback) WARN_UNUSED;
 
 #endif

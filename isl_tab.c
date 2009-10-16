@@ -799,6 +799,13 @@ int isl_tab_push_basis(struct isl_tab *tab)
 	return push_union(tab, isl_tab_undo_saved_basis, u);
 }
 
+int isl_tab_push_callback(struct isl_tab *tab, struct isl_tab_callback *callback)
+{
+	union isl_tab_undo_val u;
+	u.callback = callback;
+	return push_union(tab, isl_tab_undo_callback, u);
+}
+
 struct isl_tab *isl_tab_init_samples(struct isl_tab *tab)
 {
 	if (!tab)
@@ -2755,6 +2762,8 @@ static int perform_undo(struct isl_tab *tab, struct isl_tab_undo *undo)
 	case isl_tab_undo_saved_samples:
 		drop_samples_since(tab, undo->u.n);
 		break;
+	case isl_tab_undo_callback:
+		return undo->u.callback->run(undo->u.callback);
 	default:
 		isl_assert(tab->mat->ctx, 0, return -1);
 	}
