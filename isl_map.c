@@ -1892,6 +1892,9 @@ struct isl_basic_set *isl_basic_set_project_out(struct isl_basic_set *bset,
 	if (n == 0)
 		return bset;
 
+	if (ISL_F_ISSET(bset, ISL_BASIC_SET_RATIONAL))
+		return isl_basic_set_remove(bset, type, first, n);
+
 	bset = isl_basic_set_cow(bset);
 
 	row_size = 1 + isl_dim_total(bset->dim) + bset->extra;
