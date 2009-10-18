@@ -3600,6 +3600,7 @@ struct isl_map *isl_basic_map_compute_divs(struct isl_basic_map *bmap)
 {
 	int i;
 	int known;
+	struct isl_map *map;
 
 	known = basic_map_divs_known(bmap);
 	if (known < 0)
@@ -3615,7 +3616,7 @@ struct isl_map *isl_basic_map_compute_divs(struct isl_basic_map *bmap)
 	if (known)
 		return isl_map_from_basic_map(bmap);
 
-	struct isl_map *map = compute_divs(bmap);
+	map = compute_divs(bmap);
 	return map;
 error:
 	isl_basic_map_free(bmap);
