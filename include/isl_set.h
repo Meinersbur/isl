@@ -111,6 +111,8 @@ __isl_give isl_basic_set *isl_basic_set_apply(
 		__isl_take isl_basic_map *bmap);
 __isl_give isl_basic_set *isl_basic_set_affine_hull(
 		__isl_take isl_basic_set *bset);
+__isl_give isl_basic_set *isl_basic_set_remove(__isl_take isl_basic_set *bset,
+	enum isl_dim_type type, unsigned first, unsigned n);
 struct isl_basic_set *isl_basic_set_simplify(struct isl_basic_set *bset);
 __isl_give isl_basic_set *isl_basic_set_detect_equalities(
 						__isl_take isl_basic_set *bset);
