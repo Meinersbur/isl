@@ -75,6 +75,8 @@ libisl_la_SOURCES = \
 	isl_piplib.h \
 	isl_sample.h \
 	isl_sample.c \
+	isl_scan.c \
+	isl_scan.h \
 	isl_stream.c \
 	isl_stream.h \
 	isl_seq.c \
