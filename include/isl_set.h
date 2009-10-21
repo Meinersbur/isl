@@ -131,6 +131,8 @@ void isl_basic_set_print(__isl_keep isl_basic_set *bset, FILE *out, int indent,
 	const char *prefix, const char *suffix, unsigned output_format);
 void isl_set_print(__isl_keep struct isl_set *set, FILE *out, int indent,
 	unsigned output_format);
+__isl_give isl_basic_set *isl_basic_set_fix(__isl_take isl_basic_set *bset,
+		enum isl_dim_type type, unsigned pos, isl_int value);
 struct isl_basic_set *isl_basic_set_fix_si(struct isl_basic_set *bset,
 		enum isl_dim_type type, unsigned pos, int value);
 

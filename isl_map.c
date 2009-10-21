@@ -3077,8 +3077,8 @@ struct isl_set *isl_set_extend(struct isl_set *base,
 							nparam, 0, dim);
 }
 
-static struct isl_basic_map *isl_basic_map_fix_pos(struct isl_basic_map *bmap,
-		unsigned pos, int value)
+static struct isl_basic_map *isl_basic_map_fix_pos_si(
+	struct isl_basic_map *bmap, unsigned pos, int value)
 {
 	int j;
 
@@ -3097,14 +3097,47 @@ error:
 	return NULL;
 }
 
+static __isl_give isl_basic_map *isl_basic_map_fix_pos(
+	__isl_take isl_basic_map *bmap, unsigned pos, isl_int value)
+{
+	int j;
+
+	bmap = isl_basic_map_cow(bmap);
+	bmap = isl_basic_map_extend_constraints(bmap, 1, 0);
+	j = isl_basic_map_alloc_equality(bmap);
+	if (j < 0)
+		goto error;
+	isl_seq_clr(bmap->eq[j] + 1, isl_basic_map_total_dim(bmap));
+	isl_int_set_si(bmap->eq[j][pos], -1);
+	isl_int_set(bmap->eq[j][0], value);
+	bmap = isl_basic_map_simplify(bmap);
+	return isl_basic_map_finalize(bmap);
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
 struct isl_basic_map *isl_basic_map_fix_si(struct isl_basic_map *bmap,
 		enum isl_dim_type type, unsigned pos, int value)
 {
 	if (!bmap)
 		return NULL;
 	isl_assert(bmap->ctx, pos < isl_basic_map_dim(bmap, type), goto error);
-	return isl_basic_map_fix_pos(bmap, isl_basic_map_offset(bmap, type) + pos,
-					value);
+	return isl_basic_map_fix_pos_si(bmap,
+		isl_basic_map_offset(bmap, type) + pos, value);
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+__isl_give isl_basic_map *isl_basic_map_fix(__isl_take isl_basic_map *bmap,
+		enum isl_dim_type type, unsigned pos, isl_int value)
+{
+	if (!bmap)
+		return NULL;
+	isl_assert(bmap->ctx, pos < isl_basic_map_dim(bmap, type), goto error);
+	return isl_basic_map_fix_pos(bmap,
+		isl_basic_map_offset(bmap, type) + pos, value);
 error:
 	isl_basic_map_free(bmap);
 	return NULL;
@@ -3115,6 +3148,14 @@ struct isl_basic_set *isl_basic_set_fix_si(struct isl_basic_set *bset,
 {
 	return (struct isl_basic_set *)
 		isl_basic_map_fix_si((struct isl_basic_map *)bset,
+					type, pos, value);
+}
+
+__isl_give isl_basic_set *isl_basic_set_fix(__isl_take isl_basic_set *bset,
+		enum isl_dim_type type, unsigned pos, isl_int value)
+{
+	return (struct isl_basic_set *)
+		isl_basic_map_fix((struct isl_basic_map *)bset,
 					type, pos, value);
 }
 
