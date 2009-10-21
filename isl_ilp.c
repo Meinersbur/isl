@@ -250,6 +250,7 @@ static enum isl_lp_result solve_ilp_with_eq(struct isl_basic_set *bset, int max,
 	struct isl_mat *T = NULL;
 	struct isl_vec *v;
 
+	bset = isl_basic_set_copy(bset);
 	dim = isl_basic_set_total_dim(bset);
 	v = isl_vec_alloc(bset->ctx, 1 + dim);
 	if (!v)
@@ -261,12 +262,13 @@ static enum isl_lp_result solve_ilp_with_eq(struct isl_basic_set *bset, int max,
 		goto error;
 	res = isl_basic_set_solve_ilp(bset, max, v->el, opt, sol_p);
 	isl_vec_free(v);
-	if (res == isl_lp_ok && *sol_p) {
+	if (res == isl_lp_ok && sol_p) {
 		*sol_p = isl_mat_vec_product(T, *sol_p);
 		if (!*sol_p)
 			res = isl_lp_error;
 	} else
 		isl_mat_free(T);
+	isl_basic_set_free(bset);
 	return res;
 error:
 	isl_mat_free(T);
