@@ -346,102 +346,6 @@ struct isl_basic_set *isl_basic_set_normalize_constraints(
 		(struct isl_basic_map *)bset);
 }
 
-static void eliminate_div(struct isl_basic_map *bmap, isl_int *eq, unsigned div)
-{
-	int i;
-	unsigned pos = 1 + isl_dim_total(bmap->dim) + div;
-	unsigned len;
-	len = 1 + isl_basic_map_total_dim(bmap);
-
-	for (i = 0; i < bmap->n_eq; ++i)
-		if (bmap->eq[i] != eq)
-			isl_seq_elim(bmap->eq[i], eq, pos, len, NULL);
-
-	for (i = 0; i < bmap->n_ineq; ++i)
-		isl_seq_elim(bmap->ineq[i], eq, pos, len, NULL);
-
-	/* We need to be careful about circular definitions,
-	 * so for now we just remove the definitions of other divs that
-	 * depend on this div and (possibly) recompute them later.
-	 */
-	for (i = 0; i < bmap->n_div; ++i)
-		if (!isl_int_is_zero(bmap->div[i][0]) &&
-		    !isl_int_is_zero(bmap->div[i][1 + pos]))
-			isl_seq_clr(bmap->div[i], 1 + len);
-
-	isl_basic_map_drop_div(bmap, div);
-}
-
-/* Elimininate divs based on equalities
- */
-static struct isl_basic_map *eliminate_divs_eq(
-		struct isl_basic_map *bmap, int *progress)
-{
-	int d;
-	int i;
-	int modified = 0;
-	unsigned off;
-
-	if (!bmap)
-		return NULL;
-
-	off = 1 + isl_dim_total(bmap->dim);
-
-	for (d = bmap->n_div - 1; d >= 0 ; --d) {
-		for (i = 0; i < bmap->n_eq; ++i) {
-			if (!isl_int_is_one(bmap->eq[i][off + d]) &&
-			    !isl_int_is_negone(bmap->eq[i][off + d]))
-				continue;
-			modified = 1;
-			*progress = 1;
-			eliminate_div(bmap, bmap->eq[i], d);
-			isl_basic_map_drop_equality(bmap, i);
-			break;
-		}
-	}
-	if (modified)
-		return eliminate_divs_eq(bmap, progress);
-	return bmap;
-}
-
-/* Elimininate divs based on inequalities
- */
-static struct isl_basic_map *eliminate_divs_ineq(
-		struct isl_basic_map *bmap, int *progress)
-{
-	int d;
-	int i;
-	unsigned off;
-	struct isl_ctx *ctx;
-
-	if (!bmap)
-		return NULL;
-
-	ctx = bmap->ctx;
-	off = 1 + isl_dim_total(bmap->dim);
-
-	for (d = bmap->n_div - 1; d >= 0 ; --d) {
-		for (i = 0; i < bmap->n_eq; ++i)
-			if (!isl_int_is_zero(bmap->eq[i][off + d]))
-				break;
-		if (i < bmap->n_eq)
-			continue;
-		for (i = 0; i < bmap->n_ineq; ++i)
-			if (isl_int_abs_gt(bmap->ineq[i][off + d], ctx->one))
-				break;
-		if (i < bmap->n_ineq)
-			continue;
-		*progress = 1;
-		bmap = isl_basic_map_eliminate_vars(bmap, (off-1)+d, 1);
-		if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
-			break;
-		bmap = isl_basic_map_drop_div(bmap, d);
-		if (!bmap)
-			break;
-	}
-	return bmap;
-}
-
 /* Assumes divs have been ordered if keep_divs is set.
  */
 static void eliminate_var_using_equality(struct isl_basic_map *bmap,
@@ -494,6 +398,90 @@ static void eliminate_var_using_equality(struct isl_basic_map *bmap,
 			isl_seq_clr(bmap->div[k], 1 + total);
 		ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
 	}
+}
+
+/* Assumes divs have been ordered if keep_divs is set.
+ */
+static void eliminate_div(struct isl_basic_map *bmap, isl_int *eq,
+	unsigned div, int keep_divs)
+{
+	unsigned pos = isl_dim_total(bmap->dim) + div;
+
+	eliminate_var_using_equality(bmap, pos, eq, keep_divs, NULL);
+
+	isl_basic_map_drop_div(bmap, div);
+}
+
+/* Elimininate divs based on equalities
+ */
+static struct isl_basic_map *eliminate_divs_eq(
+		struct isl_basic_map *bmap, int *progress)
+{
+	int d;
+	int i;
+	int modified = 0;
+	unsigned off;
+
+	bmap = isl_basic_map_order_divs(bmap);
+
+	if (!bmap)
+		return NULL;
+
+	off = 1 + isl_dim_total(bmap->dim);
+
+	for (d = bmap->n_div - 1; d >= 0 ; --d) {
+		for (i = 0; i < bmap->n_eq; ++i) {
+			if (!isl_int_is_one(bmap->eq[i][off + d]) &&
+			    !isl_int_is_negone(bmap->eq[i][off + d]))
+				continue;
+			modified = 1;
+			*progress = 1;
+			eliminate_div(bmap, bmap->eq[i], d, 1);
+			isl_basic_map_drop_equality(bmap, i);
+			break;
+		}
+	}
+	if (modified)
+		return eliminate_divs_eq(bmap, progress);
+	return bmap;
+}
+
+/* Elimininate divs based on inequalities
+ */
+static struct isl_basic_map *eliminate_divs_ineq(
+		struct isl_basic_map *bmap, int *progress)
+{
+	int d;
+	int i;
+	unsigned off;
+	struct isl_ctx *ctx;
+
+	if (!bmap)
+		return NULL;
+
+	ctx = bmap->ctx;
+	off = 1 + isl_dim_total(bmap->dim);
+
+	for (d = bmap->n_div - 1; d >= 0 ; --d) {
+		for (i = 0; i < bmap->n_eq; ++i)
+			if (!isl_int_is_zero(bmap->eq[i][off + d]))
+				break;
+		if (i < bmap->n_eq)
+			continue;
+		for (i = 0; i < bmap->n_ineq; ++i)
+			if (isl_int_abs_gt(bmap->ineq[i][off + d], ctx->one))
+				break;
+		if (i < bmap->n_ineq)
+			continue;
+		*progress = 1;
+		bmap = isl_basic_map_eliminate_vars(bmap, (off-1)+d, 1);
+		if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
+			break;
+		bmap = isl_basic_map_drop_div(bmap, d);
+		if (!bmap)
+			break;
+	}
+	return bmap;
 }
 
 struct isl_basic_map *isl_basic_map_gauss(
@@ -655,7 +643,7 @@ static struct isl_basic_map *remove_duplicate_divs(
 		k = elim_for[l] - 1;
 		isl_int_set_si(eq.data[1+total_var+k], -1);
 		isl_int_set_si(eq.data[1+total_var+l], 1);
-		eliminate_div(bmap, eq.data, l);
+		eliminate_div(bmap, eq.data, l, 0);
 		isl_int_set_si(eq.data[1+total_var+k], 0);
 		isl_int_set_si(eq.data[1+total_var+l], 0);
 	}
