@@ -298,6 +298,9 @@ enum isl_lp_result isl_basic_set_solve_ilp(struct isl_basic_set *bset, int max,
 
 	isl_assert(bset->ctx, isl_basic_set_n_param(bset) == 0, goto error);
 
+	if (isl_basic_set_fast_is_empty(bset))
+		return isl_lp_empty;
+
 	if (bset->n_eq)
 		return solve_ilp_with_eq(bset, max, f, opt, sol_p);
 
