@@ -60,6 +60,9 @@ struct isl_tab *isl_tab_compute_reduced_basis(struct isl_tab *tab)
 	if (!tab)
 		return NULL;
 
+	if (tab->empty)
+		return tab;
+
 	ctx = tab->mat->ctx;
 	dim = tab->n_var;
 	B = tab->basis;
