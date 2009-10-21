@@ -3195,6 +3195,34 @@ error:
 	return NULL;
 }
 
+__isl_give isl_map *isl_map_fix(__isl_take isl_map *map,
+		enum isl_dim_type type, unsigned pos, isl_int value)
+{
+	int i;
+
+	map = isl_map_cow(map);
+	if (!map)
+		return NULL;
+
+	isl_assert(map->ctx, pos < isl_map_dim(map, type), goto error);
+	for (i = 0; i < map->n; ++i) {
+		map->p[i] = isl_basic_map_fix(map->p[i], type, pos, value);
+		if (!map->p[i])
+			goto error;
+	}
+	ISL_F_CLR(map, ISL_MAP_NORMALIZED);
+	return map;
+error:
+	isl_map_free(map);
+	return NULL;
+}
+
+__isl_give isl_set *isl_set_fix(__isl_take isl_set *set,
+		enum isl_dim_type type, unsigned pos, isl_int value)
+{
+	return (struct isl_set *)isl_map_fix((isl_map *)set, type, pos, value);
+}
+
 struct isl_map *isl_map_fix_input_si(struct isl_map *map,
 		unsigned input, int value)
 {
