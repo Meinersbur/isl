@@ -1272,6 +1272,12 @@ error:
 	return NULL;
 }
 
+__isl_give isl_set *isl_set_remove(__isl_take isl_set *bset,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	return (isl_set *)isl_map_remove((isl_map *)bset, type, first, n);
+}
+
 /* Project out n inputs starting at first using Fourier-Motzkin */
 struct isl_map *isl_map_remove_inputs(struct isl_map *map,
 	unsigned first, unsigned n)
