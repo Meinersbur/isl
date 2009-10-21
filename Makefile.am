@@ -44,6 +44,7 @@ libisl_la_SOURCES = \
 	$(ISL_POLYLIB) \
 	$(GET_MEMORY_FUNCTIONS) \
 	isl_affine_hull.c \
+	isl_arg.c \
 	isl_basis_reduction.h \
 	basis_reduction_tab.c \
 	isl_blk.c \
@@ -138,6 +139,7 @@ nodist_pkginclude_HEADERS = \
 	include/isl_config.h \
 	include/isl_stdint.h
 pkginclude_HEADERS = \
+	include/isl_arg.h \
 	include/isl_blk.h \
 	include/isl_constraint.h \
 	include/isl_ctx.h \

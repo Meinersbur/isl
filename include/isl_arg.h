@@ -1,0 +1,81 @@
+#ifndef ISL_ARG_H
+#define ISL_ARG_H
+
+#include <stddef.h>
+
+struct isl_arg_choice {
+	const char	*name;
+	unsigned	 value;
+};
+
+enum isl_arg_type {
+	isl_arg_end,
+	isl_arg_choice,
+	isl_arg_bool,
+	isl_arg_child,
+};
+
+struct isl_arg {
+	enum isl_arg_type	 type;
+	char			 short_name;
+	const char		*long_name;
+	size_t			 offset;
+	union {
+	struct {
+		struct isl_arg_choice	*choice;
+		unsigned	 	 default_value;
+	} choice;
+	struct {
+		unsigned		 default_value;
+	} b;
+	struct {
+		struct isl_arg		*child;
+		size_t			 size;
+	} child;
+	} u;
+};
+
+#define ISL_ARG_CHOICE(st,f,s,l,c,d)	{				\
+	.type = isl_arg_choice,						\
+	.short_name = s,						\
+	.long_name = l,							\
+	.offset = offsetof(st, f),					\
+	.u = { .choice = { .choice = c, .default_value = d } }		\
+},
+#define ISL_ARG_BOOL(st,f,s,l,d)	{				\
+	.type = isl_arg_bool,						\
+	.short_name = s,						\
+	.long_name = l,							\
+	.offset = offsetof(st, f),					\
+	.u = { .b = { .default_value = d } }				\
+},
+#define ISL_ARG_CHILD(st,f,l,c)		{				\
+	.type = isl_arg_child,						\
+	.long_name = l,							\
+	.offset = offsetof(st, f),					\
+	.u = { .child = { .child = c, .size = sizeof(*((st *)NULL)->f) } }\
+},
+#define ISL_ARG_END	{ isl_arg_end }
+
+void isl_arg_set_defaults(struct isl_arg *arg, void *opt);
+int isl_arg_parse(struct isl_arg *arg, int argc, char **argv, void *opt);
+
+#define ISL_ARG_DECL(prefix,st,arg)					\
+st *prefix ## _new_with_defaults();					\
+int prefix ## _parse(st *opt, int argc, char **argv);
+
+#define ISL_ARG_DEF(prefix,st,arg)					\
+st *prefix ## _new_with_defaults()					\
+{									\
+	st *opt = (st *)calloc(1, sizeof(st));				\
+	if (opt)							\
+		isl_arg_set_defaults(arg, opt);				\
+	return opt;							\
+}									\
+									\
+int prefix ## _parse(st *opt, int argc, char **argv)			\
+{									\
+	return isl_arg_parse(arg, argc, argv, opt);			\
+}
+
+#endif
