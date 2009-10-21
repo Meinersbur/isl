@@ -54,7 +54,7 @@ enum isl_lp_result isl_basic_map_solve_lp(struct isl_basic_map *bmap, int max,
 	if (!bmap)
 		return isl_lp_error;
 
-	switch (bmap->ctx->lp_solver) {
+	switch (bmap->ctx->opt->lp_solver) {
 	case ISL_LP_PIP:
 		return isl_pip_solve_lp(bmap, max, f, d, opt, opt_denom, sol);
 	case ISL_LP_TAB:

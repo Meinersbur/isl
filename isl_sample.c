@@ -370,14 +370,14 @@ static struct isl_mat *initial_basis(struct isl_tab *tab)
  *
  * The initial basis is the identity matrix.  If the range in some direction
  * contains more than one integer value, we perform basis reduction based
- * on the value of ctx->gbr
+ * on the value of ctx->opt->gbr
  *	- ISL_GBR_NEVER:	never perform basis reduction
  *	- ISL_GBR_ONCE:		only perform basis reduction the first
  *				time such a range is encountered
  *	- ISL_GBR_ALWAYS:	always perform basis reduction when
  *				such a range is encountered
  *
- * When ctx->gbr is set to ISL_GBR_ALWAYS, then we allow the basis
+ * When ctx->opt->gbr is set to ISL_GBR_ALWAYS, then we allow the basis
  * reduction computation to return early.  That is, as soon as it
  * finds a reasonable first direction.
  */ 
@@ -411,7 +411,7 @@ struct isl_vec *isl_tab_sample(struct isl_tab *tab)
 
 	ctx = tab->mat->ctx;
 	dim = tab->n_var;
-	gbr = ctx->gbr;
+	gbr = ctx->opt->gbr;
 
 	if (tab->n_unbounded == tab->n_var) {
 		sample = isl_tab_get_sample_value(tab);
@@ -462,17 +462,18 @@ struct isl_vec *isl_tab_sample(struct isl_tab *tab)
 				goto error;
 			if (!empty && isl_tab_sample_is_integer(tab))
 				break;
-			if (!empty && !reduced && ctx->gbr != ISL_GBR_NEVER &&
+			if (!empty && !reduced &&
+			    ctx->opt->gbr != ISL_GBR_NEVER &&
 			    isl_int_lt(min->el[level], max->el[level])) {
 				unsigned gbr_only_first;
-				if (ctx->gbr == ISL_GBR_ONCE)
-					ctx->gbr = ISL_GBR_NEVER;
+				if (ctx->opt->gbr == ISL_GBR_ONCE)
+					ctx->opt->gbr = ISL_GBR_NEVER;
 				tab->n_zero = level;
-				gbr_only_first = ctx->gbr_only_first;
-				ctx->gbr_only_first =
-					ctx->gbr == ISL_GBR_ALWAYS;
+				gbr_only_first = ctx->opt->gbr_only_first;
+				ctx->opt->gbr_only_first =
+					ctx->opt->gbr == ISL_GBR_ALWAYS;
 				tab = isl_tab_compute_reduced_basis(tab);
-				ctx->gbr_only_first = gbr_only_first;
+				ctx->opt->gbr_only_first = gbr_only_first;
 				if (!tab || !tab->basis)
 					goto error;
 				reduced = 1;
@@ -516,13 +517,13 @@ struct isl_vec *isl_tab_sample(struct isl_tab *tab)
 	} else
 		sample = isl_vec_alloc(ctx, 0);
 
-	ctx->gbr = gbr;
+	ctx->opt->gbr = gbr;
 	isl_vec_free(min);
 	isl_vec_free(max);
 	free(snap);
 	return sample;
 error:
-	ctx->gbr = gbr;
+	ctx->opt->gbr = gbr;
 	isl_vec_free(min);
 	isl_vec_free(max);
 	free(snap);
@@ -1116,7 +1117,7 @@ static struct isl_vec *basic_set_sample(struct isl_basic_set *bset, int bounded)
 	if (dim == 1)
 		return interval_sample(bset);
 
-	switch (bset->ctx->ilp_solver) {
+	switch (bset->ctx->opt->ilp_solver) {
 	case ISL_ILP_PIP:
 		return pip_sample(bset);
 	case ISL_ILP_GBR:

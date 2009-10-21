@@ -4,9 +4,12 @@
 #include <polylib/polylibgmp.h>
 #endif
 
-struct isl_ctx *isl_ctx_alloc()
+isl_ctx *isl_ctx_alloc_with_options(struct isl_options *opt)
 {
 	struct isl_ctx *ctx = NULL;
+
+	if (!opt)
+		return NULL;
 
 	ctx = isl_calloc_type(NULL, struct isl_ctx);
 	if (!ctx)
@@ -19,6 +22,7 @@ struct isl_ctx *isl_ctx_alloc()
 	if (!ctx->stats)
 		goto error;
 
+	ctx->opt = opt;
 	ctx->ref = 0;
 
 	isl_int_init(ctx->one);
@@ -35,18 +39,19 @@ struct isl_ctx *isl_ctx_alloc()
 	ctx->MaxRays = POL_NO_DUAL | POL_INTEGER;
 #endif
 
-	ctx->lp_solver = ISL_LP_TAB;
-	ctx->ilp_solver = ISL_ILP_GBR;
-	ctx->pip = ISL_PIP_TAB;
-	ctx->context = ISL_CONTEXT_GBR;
-
-	ctx->gbr = ISL_GBR_ONCE;
-	ctx->gbr_only_first = 0;
-
 	return ctx;
 error:
 	free(ctx);
 	return NULL;
+}
+
+struct isl_ctx *isl_ctx_alloc()
+{
+	struct isl_options *opt;
+
+	opt = isl_options_new_with_defaults();
+
+	return isl_ctx_alloc_with_options(opt);
 }
 
 void isl_ctx_ref(struct isl_ctx *ctx)
@@ -70,6 +75,14 @@ void isl_ctx_free(struct isl_ctx *ctx)
 	isl_int_clear(ctx->one);
 	isl_int_clear(ctx->negone);
 	isl_int_clear(ctx->normalize_gcd);
+	free(ctx->opt);
 	free(ctx->stats);
 	free(ctx);
+}
+
+struct isl_options *isl_ctx_options(isl_ctx *ctx)
+{
+	if (!ctx)
+		return NULL;
+	return ctx->opt;
 }

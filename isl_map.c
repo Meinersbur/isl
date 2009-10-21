@@ -3311,7 +3311,7 @@ static struct isl_map *isl_basic_map_partial_lexopt(
 {
 	if (!bmap)
 		goto error;
-	if (bmap->ctx->pip == ISL_PIP_PIP)
+	if (bmap->ctx->opt->pip == ISL_PIP_PIP)
 		return isl_pip_basic_map_lexopt(bmap, dom, empty, max);
 	else
 		return isl_tab_basic_map_partial_lexopt(bmap, dom, empty, max);

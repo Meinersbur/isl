@@ -26,7 +26,7 @@ static void save_alpha(GBR_LP *lp, int first, int n, GBR_type *alpha)
  *  for Integer Programming" of Cook el al. to compute a reduced basis.
  * We use \epsilon = 1/4.
  *
- * If ctx->gbr_only_first is set, the user is only interested
+ * If ctx->opt->gbr_only_first is set, the user is only interested
  * in the first direction.  In this case we stop the basis reduction when
  * the width in the first direction becomes smaller than 2.
  */
@@ -56,6 +56,7 @@ struct isl_tab *isl_tab_compute_reduced_basis(struct isl_tab *tab)
 	int fixed_saved = 0;
 	int mu_fixed[2];
 	int n_bounded;
+	int gbr_only_first;
 
 	if (!tab)
 		return NULL;
@@ -64,6 +65,7 @@ struct isl_tab *isl_tab_compute_reduced_basis(struct isl_tab *tab)
 		return tab;
 
 	ctx = tab->mat->ctx;
+	gbr_only_first = ctx->opt->gbr_only_first;
 	dim = tab->n_var;
 	B = tab->basis;
 	if (!B)
@@ -228,7 +230,7 @@ struct isl_tab *isl_tab_compute_reduced_basis(struct isl_tab *tab)
 				--i;
 			} else {
 				GBR_set(F[tab->n_zero], F_new);
-				if (ctx->gbr_only_first && GBR_lt(F[tab->n_zero], two))
+				if (gbr_only_first && GBR_lt(F[tab->n_zero], two))
 					break;
 
 				if (fixed) {

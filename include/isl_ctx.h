@@ -5,6 +5,7 @@
 #include <stdlib.h>
 
 #include <isl_int.h>
+#include <isl_options.h>
 #include <isl_blk.h>
 #include <isl_hash.h>
 #include <isl_config.h>
@@ -55,6 +56,8 @@ struct isl_ctx {
 
 	struct isl_stats	*stats;
 
+	struct isl_options	*opt;
+
 	isl_int			one;
 	isl_int			negone;
 
@@ -66,28 +69,6 @@ struct isl_ctx {
 #ifdef ISL_POLYLIB
 	unsigned		MaxRays;
 #endif
-
-	#define			ISL_LP_TAB	0
-	#define			ISL_LP_PIP	1
-	unsigned		lp_solver;
-
-	#define			ISL_ILP_GBR	0
-	#define			ISL_ILP_PIP	1
-	unsigned		ilp_solver;
-
-	#define			ISL_PIP_TAB	0
-	#define			ISL_PIP_PIP	1
-	unsigned		pip;
-
-	#define			ISL_CONTEXT_GBR		0
-	#define			ISL_CONTEXT_LEXMIN	1
-	unsigned		context;
-
-	#define			ISL_GBR_NEVER	0
-	#define			ISL_GBR_ONCE	1
-	#define			ISL_GBR_ALWAYS	2
-	unsigned		gbr;
-	unsigned		gbr_only_first;
 };
 typedef struct isl_ctx isl_ctx;
 
@@ -126,6 +107,9 @@ typedef struct isl_ctx isl_ctx;
 
 /* struct isl_ctx functions */
 
+struct isl_options *isl_ctx_options(isl_ctx *ctx);
+
+isl_ctx *isl_ctx_alloc_with_options(struct isl_options *opt);
 isl_ctx *isl_ctx_alloc();
 void isl_ctx_ref(struct isl_ctx *ctx);
 void isl_ctx_deref(struct isl_ctx *ctx);

@@ -3174,7 +3174,7 @@ static struct isl_context *isl_context_alloc(struct isl_basic_set *dom)
 	if (!dom)
 		return NULL;
 
-	if (dom->ctx->context == ISL_CONTEXT_LEXMIN)
+	if (dom->ctx->opt->context == ISL_CONTEXT_LEXMIN)
 		return isl_context_lex_alloc(dom);
 	else
 		return isl_context_gbr_alloc(dom);

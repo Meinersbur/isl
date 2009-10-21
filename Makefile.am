@@ -72,6 +72,7 @@ libisl_la_SOURCES = \
 	isl_mat.c \
 	isl_name.c \
 	isl_name.h \
+	isl_options.c \
 	isl_output.c \
 	isl_piplib.h \
 	isl_sample.h \
@@ -153,6 +154,7 @@ pkginclude_HEADERS = \
 	include/isl_mat.h \
 	include/isl_map.h \
 	include/isl_map_polylib.h \
+	include/isl_options.h \
 	include/isl_polylib.h \
 	include/isl_seq.h \
 	include/isl_set.h \
