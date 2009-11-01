@@ -1380,7 +1380,7 @@ static int integer_variable(struct isl_tab *tab, int row)
 	int i;
 	unsigned off = 2 + tab->M;
 
-	for (i = 0; i < tab->n_col; ++i) {
+	for (i = tab->n_dead; i < tab->n_col; ++i) {
 		if (tab->col_var[i] >= 0 &&
 		    (tab->col_var[i] < tab->n_param ||
 		     tab->col_var[i] >= tab->n_var - tab->n_div))
