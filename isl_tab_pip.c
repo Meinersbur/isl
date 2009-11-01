@@ -3848,6 +3848,7 @@ struct isl_map *isl_tab_basic_map_partial_lexopt(
 	struct isl_map *result = NULL;
 	struct isl_sol_map *sol_map = NULL;
 	struct isl_context *context;
+	struct isl_basic_map *eq;
 
 	if (empty)
 		*empty = NULL;
@@ -3857,7 +3858,10 @@ struct isl_map *isl_tab_basic_map_partial_lexopt(
 	isl_assert(bmap->ctx,
 	    isl_basic_map_compatible_domain(bmap, dom), goto error);
 
-	bmap = isl_basic_map_detect_equalities(bmap);
+	eq = isl_basic_map_copy(bmap);
+	eq = isl_basic_map_intersect_domain(eq, isl_basic_set_copy(dom));
+	eq = isl_basic_map_affine_hull(eq);
+	bmap = isl_basic_map_intersect(bmap, eq);
 
 	if (dom->n_div) {
 		dom = isl_basic_set_order_divs(dom);
