@@ -702,7 +702,7 @@ static void find_pivot(struct isl_tab *tab,
  * This means
  *	- it represents an inequality or a variable
  *	- that is the sum of a non-negative sample value and a positive
- *	  combination of zero or more non-negative variables.
+ *	  combination of zero or more non-negative constraints.
  */
 int isl_tab_row_is_redundant(struct isl_tab *tab, int row)
 {
@@ -720,6 +720,8 @@ int isl_tab_row_is_redundant(struct isl_tab *tab, int row)
 	for (i = tab->n_dead; i < tab->n_col; ++i) {
 		if (isl_int_is_zero(tab->mat->row[row][off + i]))
 			continue;
+		if (tab->col_var[i] >= 0)
+			return 0;
 		if (isl_int_is_neg(tab->mat->row[row][off + i]))
 			return 0;
 		if (!var_from_col(tab, i)->is_nonneg)
