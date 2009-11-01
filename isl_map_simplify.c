@@ -1007,6 +1007,8 @@ static struct isl_basic_map *remove_duplicate_constraints(
 			 * will no longer be valid.
 			 * Plus, we probably we want to regauss first.
 			 */
+			if (progress)
+				*progress = 1;
 			isl_basic_map_drop_inequality(bmap, l);
 			isl_basic_map_inequality_to_equality(bmap, k);
 		} else
