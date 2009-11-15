@@ -208,8 +208,8 @@ int isl_basic_map_foreach_lexmin(__isl_keep isl_basic_map *bmap,
 void isl_basic_map_dump(__isl_keep isl_basic_map *bmap, FILE *out, int indent);
 
 struct isl_basic_map *isl_map_copy_basic_map(struct isl_map *map);
-struct isl_map *isl_map_drop_basic_map(struct isl_map *map,
-						struct isl_basic_map *bmap);
+__isl_give isl_map *isl_map_drop_basic_map(__isl_take isl_map *map,
+						__isl_keep isl_basic_map *bmap);
 
 int isl_basic_map_fast_is_fixed(struct isl_basic_map *bmap,
 	enum isl_dim_type type, unsigned pos, isl_int *val);

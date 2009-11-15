@@ -4877,8 +4877,8 @@ struct isl_basic_set *isl_set_copy_basic_set(struct isl_set *set)
 		isl_map_copy_basic_map((struct isl_map *)set);
 }
 
-struct isl_map *isl_map_drop_basic_map(struct isl_map *map,
-						struct isl_basic_map *bmap)
+__isl_give isl_map *isl_map_drop_basic_map(__isl_take isl_map *map,
+						__isl_keep isl_basic_map *bmap)
 {
 	int i;
 
@@ -4898,11 +4898,9 @@ struct isl_map *isl_map_drop_basic_map(struct isl_map *map,
 		map->n--;
 		return map;
 	}
-	isl_basic_map_free(bmap);
 	return map;
 error:
 	isl_map_free(map);
-	isl_basic_map_free(bmap);
 	return NULL;
 }
 
