@@ -883,12 +883,14 @@ is equal to C<dom>.
 		__isl_take isl_basic_set *dom,
 		__isl_give isl_set **empty);
 
-Given a basic map C<bmap>, the following function simply
-returns a map mapping each element in the domain of
-C<bmap> to the lexicographic minimum of all elements associated
-to that element.
+Given a basic map C<bmap>, the following functions simply
+return a map mapping each element in the domain of
+C<bmap> to the lexicographic minimum or maximum
+of all elements associated to that element.
 
 	__isl_give isl_map *isl_basic_map_lexmin(
+		__isl_take isl_basic_map *bmap);
+	__isl_give isl_map *isl_basic_map_lexmax(
 		__isl_take isl_basic_map *bmap);
 
 =head1 Applications
