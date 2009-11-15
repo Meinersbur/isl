@@ -853,11 +853,13 @@ is equal to C<dom>.
 		__isl_take isl_basic_set *dom,
 		__isl_give isl_set **empty);
 
-Given a basic set C<bset>, the following function simply
-returns a set containing the lexicographic minimum
+Given a basic set C<bset>, the following functions simply
+return a set containing the lexicographic minimum or maximum
 of the elements in C<bset>.
 
 	__isl_give isl_set *isl_basic_set_lexmin(
+		__isl_take isl_basic_set *bset);
+	__isl_give isl_set *isl_basic_set_lexmax(
 		__isl_take isl_basic_set *bset);
 
 Given a basic relation C<bmap> and a domain C<dom>,
