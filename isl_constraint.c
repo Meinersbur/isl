@@ -133,20 +133,26 @@ void isl_constraint_free(struct isl_constraint *c)
 	free(c);
 }
 
-struct isl_constraint *isl_basic_set_first_constraint(
-	struct isl_basic_set *bset)
+__isl_give isl_constraint *isl_basic_map_first_constraint(
+	__isl_take isl_basic_map *bmap)
 {
-	if (!bset)
+	if (!bmap)
 		return NULL;
 
-	if (bset->n_eq > 0)
-		return isl_basic_set_constraint(bset, &bset->eq[0]);
+	if (bmap->n_eq > 0)
+		return isl_basic_map_constraint(bmap, &bmap->eq[0]);
 
-	if (bset->n_ineq > 0)
-		return isl_basic_set_constraint(bset, &bset->ineq[0]);
+	if (bmap->n_ineq > 0)
+		return isl_basic_map_constraint(bmap, &bmap->ineq[0]);
 
-	isl_basic_set_free(bset);
+	isl_basic_map_free(bmap);
 	return NULL;
+}
+
+__isl_give isl_constraint *isl_basic_set_first_constraint(
+	__isl_take isl_basic_set *bset)
+{
+	return isl_basic_map_first_constraint((struct isl_basic_map *)bset);
 }
 
 struct isl_constraint *isl_constraint_next(struct isl_constraint *c)
