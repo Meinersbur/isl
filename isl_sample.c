@@ -957,6 +957,7 @@ static int tab_shift_cone(struct isl_tab *tab,
 	bset = tab_cone->bset;
 	U = isl_mat_drop_cols(U, 0, tab->n_var - tab->n_unbounded);
 	for (i = 0; i < bset->n_ineq; ++i) {
+		int ok;
 		struct isl_vec *row = NULL;
 		if (isl_tab_is_equality(tab_cone, tab_cone->n_eq + i))
 			continue;
@@ -973,9 +974,9 @@ static int tab_shift_cone(struct isl_tab *tab,
 			continue;
 		tab = isl_tab_extend(tab, 1);
 		isl_int_add(bset->ineq[i][0], bset->ineq[i][0], v);
-		tab = isl_tab_add_ineq(tab, bset->ineq[i]);
+		ok = isl_tab_add_ineq(tab, bset->ineq[i]) >= 0;
 		isl_int_sub(bset->ineq[i][0], bset->ineq[i][0], v);
-		if (!tab)
+		if (!ok)
 			goto error;
 	}
 

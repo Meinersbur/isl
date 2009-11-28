@@ -1100,8 +1100,11 @@ static struct isl_tab *restore_lexmin(struct isl_tab *tab)
 		return tab;
 	while ((row = first_neg(tab)) != -1) {
 		col = lexmin_pivot_col(tab, row);
-		if (col >= tab->n_col)
-			return isl_tab_mark_empty(tab);
+		if (col >= tab->n_col) {
+			if (isl_tab_mark_empty(tab) < 0)
+				goto error;
+			return tab;
+		}
 		if (col < 0)
 			goto error;
 		if (isl_tab_pivot(tab, row, col) < 0)
@@ -1243,8 +1246,11 @@ static struct isl_tab *add_lexmin_eq(struct isl_tab *tab, isl_int *eq)
 	row = tab->con[r1].index;
 	if (is_constant(tab, row)) {
 		if (!isl_int_is_zero(tab->mat->row[row][1]) ||
-		    (tab->M && !isl_int_is_zero(tab->mat->row[row][2])))
-			return isl_tab_mark_empty(tab);
+		    (tab->M && !isl_int_is_zero(tab->mat->row[row][2]))) {
+			if (isl_tab_mark_empty(tab) < 0)
+				goto error;
+			return tab;
+		}
 		if (isl_tab_rollback(tab, snap) < 0)
 			goto error;
 		return tab;
@@ -1515,8 +1521,11 @@ static struct isl_tab *cut_to_integer_lexmin(struct isl_tab *tab)
 		return tab;
 
 	while ((row = first_non_integer(tab, &flags)) != -1) {
-		if (ISL_FL_ISSET(flags, I_VAR))
-			return isl_tab_mark_empty(tab);
+		if (ISL_FL_ISSET(flags, I_VAR)) {
+			if (isl_tab_mark_empty(tab) < 0)
+				goto error;
+			return tab;
+		}
 		row = add_cut(tab, row);
 		if (row < 0)
 			goto error;
@@ -1979,8 +1988,11 @@ static struct isl_tab *tab_for_lexmin(struct isl_basic_map *bmap,
 		if (!tab->row_sign)
 			goto error;
 	}
-	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
-		return isl_tab_mark_empty(tab);
+	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_EMPTY)) {
+		if (isl_tab_mark_empty(tab) < 0)
+			goto error;
+		return tab;
+	}
 
 	for (i = tab->n_param; i < tab->n_var - tab->n_div; ++i) {
 		tab->var[i].is_nonneg = 1;
@@ -2051,6 +2063,7 @@ static int best_split(struct isl_tab *tab, struct isl_tab *context_tab)
 		struct isl_tab_undo *snap2;
 		struct isl_vec *ineq = NULL;
 		int r = 0;
+		int ok;
 
 		if (!isl_tab_var_from_row(tab, split)->is_nonneg)
 			continue;
@@ -2060,8 +2073,10 @@ static int best_split(struct isl_tab *tab, struct isl_tab *context_tab)
 		ineq = get_row_parameter_ineq(tab, split);
 		if (!ineq)
 			return -1;
-		context_tab = isl_tab_add_ineq(context_tab, ineq->el);
+		ok = isl_tab_add_ineq(context_tab, ineq->el) >= 0;
 		isl_vec_free(ineq);
+		if (!ok)
+			return -1;
 
 		snap2 = isl_tab_snap(context_tab);
 
@@ -2078,8 +2093,10 @@ static int best_split(struct isl_tab *tab, struct isl_tab *context_tab)
 			ineq = get_row_parameter_ineq(tab, row);
 			if (!ineq)
 				return -1;
-			context_tab = isl_tab_add_ineq(context_tab, ineq->el);
+			ok = isl_tab_add_ineq(context_tab, ineq->el) >= 0;
 			isl_vec_free(ineq);
+			if (!ok)
+				return -1;
 			var = &context_tab->con[context_tab->n_con - 1];
 			if (!context_tab->empty &&
 			    !isl_tab_min_at_most_neg_one(context_tab, var))
@@ -2347,7 +2364,8 @@ static struct isl_tab *tab_detect_nonnegative_parameters(struct isl_tab *tab,
 	isl_seq_clr(ineq->el, ineq->size);
 	for (i = 0; i < context_tab->n_var; ++i) {
 		isl_int_set_si(ineq->el[1 + i], 1);
-		context_tab = isl_tab_add_ineq(context_tab, ineq->el);
+		if (isl_tab_add_ineq(context_tab, ineq->el) < 0)
+			goto error;
 		var = &context_tab->con[context_tab->n_con - 1];
 		if (!context_tab->empty &&
 		    !isl_tab_min_at_most_neg_one(context_tab, var)) {
@@ -2663,7 +2681,8 @@ static void check_gbr_integer_feasible(struct isl_context_gbr *cgbr)
 
 	if (sample->size == 0) {
 		isl_vec_free(sample);
-		cgbr->tab = isl_tab_mark_empty(cgbr->tab);
+		if (isl_tab_mark_empty(cgbr->tab) < 0)
+			goto error;
 		return;
 	}
 
@@ -2729,7 +2748,8 @@ static void add_gbr_ineq(struct isl_context_gbr *cgbr, isl_int *ineq)
 	if (isl_tab_extend_cons(cgbr->tab, 1) < 0)
 		goto error;
 
-	cgbr->tab = isl_tab_add_ineq(cgbr->tab, ineq);
+	if (isl_tab_add_ineq(cgbr->tab, ineq) < 0)
+		goto error;
 
 	if (cgbr->shifted && !cgbr->shifted->empty && use_shifted(cgbr)) {
 		int i;
@@ -2745,7 +2765,8 @@ static void add_gbr_ineq(struct isl_context_gbr *cgbr, isl_int *ineq)
 			isl_int_add(ineq[0], ineq[0], ineq[1 + i]);
 		}
 
-		cgbr->shifted = isl_tab_add_ineq(cgbr->shifted, ineq);
+		if (isl_tab_add_ineq(cgbr->shifted, ineq) < 0)
+			goto error;
 
 		for (i = 0; i < dim; ++i) {
 			if (!isl_int_is_neg(ineq[1 + i]))
@@ -2757,7 +2778,8 @@ static void add_gbr_ineq(struct isl_context_gbr *cgbr, isl_int *ineq)
 	if (cgbr->cone && cgbr->cone->n_col != cgbr->cone->n_dead) {
 		if (isl_tab_extend_cons(cgbr->cone, 1) < 0)
 			goto error;
-		cgbr->cone = isl_tab_add_ineq(cgbr->cone, ineq);
+		if (isl_tab_add_ineq(cgbr->cone, ineq) < 0)
+			goto error;
 	}
 
 	return;
@@ -3636,7 +3658,8 @@ static void find_solutions(struct isl_sol *sol, struct isl_tab *tab)
 			break;
 		if (ISL_FL_ISSET(flags, I_PAR)) {
 			if (ISL_FL_ISSET(flags, I_VAR)) {
-				tab = isl_tab_mark_empty(tab);
+				if (isl_tab_mark_empty(tab) < 0)
+					goto error;
 				break;
 			}
 			row = add_cut(tab, row);

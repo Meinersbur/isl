@@ -179,7 +179,7 @@ enum isl_lp_result isl_tab_min(struct isl_tab *tab,
 	unsigned flags) WARN_UNUSED;
 
 struct isl_tab *isl_tab_extend(struct isl_tab *tab, unsigned n_new) WARN_UNUSED;
-struct isl_tab *isl_tab_add_ineq(struct isl_tab *tab, isl_int *ineq) WARN_UNUSED;
+int isl_tab_add_ineq(struct isl_tab *tab, isl_int *ineq) WARN_UNUSED;
 struct isl_tab *isl_tab_add_eq(struct isl_tab *tab, isl_int *eq) WARN_UNUSED;
 struct isl_tab *isl_tab_add_valid_eq(struct isl_tab *tab, isl_int *eq) WARN_UNUSED;
 
@@ -216,7 +216,7 @@ struct isl_map *isl_tab_basic_map_partial_lexopt(
 
 struct isl_tab_var *isl_tab_var_from_row(struct isl_tab *tab, int i);
 int isl_tab_mark_redundant(struct isl_tab *tab, int row) WARN_UNUSED;
-struct isl_tab *isl_tab_mark_empty(struct isl_tab *tab);
+int isl_tab_mark_empty(struct isl_tab *tab) WARN_UNUSED;
 struct isl_tab *isl_tab_dup(struct isl_tab *tab);
 struct isl_tab *isl_tab_product(struct isl_tab *tab1, struct isl_tab *tab2);
 int isl_tab_extend_cons(struct isl_tab *tab, unsigned n_new) WARN_UNUSED;

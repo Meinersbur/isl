@@ -925,17 +925,15 @@ int isl_tab_mark_redundant(struct isl_tab *tab, int row)
 	}
 }
 
-struct isl_tab *isl_tab_mark_empty(struct isl_tab *tab)
+int isl_tab_mark_empty(struct isl_tab *tab)
 {
 	if (!tab)
-		return NULL;
+		return -1;
 	if (!tab->empty && tab->need_undo)
-		if (isl_tab_push(tab, isl_tab_undo_empty) < 0) {
-			isl_tab_free(tab);
-			return NULL;
-		}
+		if (isl_tab_push(tab, isl_tab_undo_empty) < 0)
+			return -1;
 	tab->empty = 1;
-	return tab;
+	return 0;
 }
 
 /* Update the rows signs after a pivot of "row" and "col", with "row_sgn"
@@ -1633,25 +1631,25 @@ static int drop_col(struct isl_tab *tab, int col)
 /* Add inequality "ineq" and check if it conflicts with the
  * previously added constraints or if it is obviously redundant.
  */
-struct isl_tab *isl_tab_add_ineq(struct isl_tab *tab, isl_int *ineq)
+int isl_tab_add_ineq(struct isl_tab *tab, isl_int *ineq)
 {
 	int r;
 	int sgn;
 	isl_int cst;
 
 	if (!tab)
-		return NULL;
+		return -1;
 	if (tab->bset) {
 		struct isl_basic_set *bset = tab->bset;
 
-		isl_assert(tab->mat->ctx, tab->n_eq == bset->n_eq, goto error);
+		isl_assert(tab->mat->ctx, tab->n_eq == bset->n_eq, return -1);
 		isl_assert(tab->mat->ctx,
-			    tab->n_con == bset->n_eq + bset->n_ineq, goto error);
+			    tab->n_con == bset->n_eq + bset->n_ineq, return -1);
 		tab->bset = isl_basic_set_add_ineq(tab->bset, ineq);
 		if (isl_tab_push(tab, isl_tab_undo_bset_ineq) < 0)
-			goto error;
+			return -1;
 		if (!tab->bset)
-			goto error;
+			return -1;
 	}
 	if (tab->cone) {
 		isl_int_init(cst);
@@ -1663,28 +1661,25 @@ struct isl_tab *isl_tab_add_ineq(struct isl_tab *tab, isl_int *ineq)
 		isl_int_clear(cst);
 	}
 	if (r < 0)
-		goto error;
+		return -1;
 	tab->con[r].is_nonneg = 1;
 	if (isl_tab_push_var(tab, isl_tab_undo_nonneg, &tab->con[r]) < 0)
-		goto error;
+		return -1;
 	if (isl_tab_row_is_redundant(tab, tab->con[r].index)) {
 		if (isl_tab_mark_redundant(tab, tab->con[r].index) < 0)
-			goto error;
-		return tab;
+			return -1;
+		return 0;
 	}
 
 	sgn = restore_row(tab, &tab->con[r]);
 	if (sgn < -1)
-		goto error;
+		return -1;
 	if (sgn < 0)
 		return isl_tab_mark_empty(tab);
 	if (tab->con[r].is_row && isl_tab_row_is_redundant(tab, tab->con[r].index))
 		if (isl_tab_mark_redundant(tab, tab->con[r].index) < 0)
-			goto error;
-	return tab;
-error:
-	isl_tab_free(tab);
-	return NULL;
+			return -1;
+	return 0;
 }
 
 /* Pivot a non-negative variable down until it reaches the value zero
@@ -1891,8 +1886,11 @@ struct isl_tab *isl_tab_add_eq(struct isl_tab *tab, isl_int *eq)
 		sgn = sign_of_max(tab, var);
 		if (sgn < -1)
 			goto error;
-		if (sgn < 0)
-			return isl_tab_mark_empty(tab);
+		if (sgn < 0) {
+			if (isl_tab_mark_empty(tab) < 0)
+				goto error;
+			return tab;
+		}
 	}
 
 	var->is_nonneg = 1;
@@ -1921,19 +1919,26 @@ struct isl_tab *isl_tab_from_basic_map(struct isl_basic_map *bmap)
 	if (!tab)
 		return NULL;
 	tab->rational = ISL_F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL);
-	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
-		return isl_tab_mark_empty(tab);
+	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_EMPTY)) {
+		if (isl_tab_mark_empty(tab) < 0)
+			goto error;
+		return tab;
+	}
 	for (i = 0; i < bmap->n_eq; ++i) {
 		tab = add_eq(tab, bmap->eq[i]);
 		if (!tab)
 			return tab;
 	}
 	for (i = 0; i < bmap->n_ineq; ++i) {
-		tab = isl_tab_add_ineq(tab, bmap->ineq[i]);
-		if (!tab || tab->empty)
+		if (isl_tab_add_ineq(tab, bmap->ineq[i]) < 0)
+			goto error;
+		if (tab->empty)
 			return tab;
 	}
 	return tab;
+error:
+	isl_tab_free(tab);
+	return NULL;
 }
 
 struct isl_tab *isl_tab_from_basic_set(struct isl_basic_set *bset)
@@ -2195,8 +2200,11 @@ static struct isl_tab *cut_to_hyperplane(struct isl_tab *tab,
 	sgn = sign_of_max(tab, &tab->con[r]);
 	if (sgn < -1)
 		goto error;
-	if (sgn < 0)
-		return isl_tab_mark_empty(tab);
+	if (sgn < 0) {
+		if (isl_tab_mark_empty(tab) < 0)
+			goto error;
+		return tab;
+	}
 	tab->con[r].is_nonneg = 1;
 	if (isl_tab_push_var(tab, isl_tab_undo_nonneg, &tab->con[r]) < 0)
 		goto error;

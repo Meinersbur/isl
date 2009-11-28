@@ -239,7 +239,7 @@ error:
 static struct isl_vec *outside_point(struct isl_tab *tab, isl_int *eq, int up)
 {
 	struct isl_ctx *ctx;
-	struct isl_vec *sample;
+	struct isl_vec *sample = NULL;
 	struct isl_tab_undo *snap;
 	unsigned dim;
 	int k;
@@ -269,7 +269,8 @@ static struct isl_vec *outside_point(struct isl_tab *tab, isl_int *eq, int up)
 
 	if (isl_tab_extend_cons(tab, 1) < 0)
 		goto error;
-	tab = isl_tab_add_ineq(tab, eq);
+	if (isl_tab_add_ineq(tab, eq) < 0)
+		goto error;
 
 	sample = isl_tab_sample(tab);
 
