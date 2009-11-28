@@ -1718,7 +1718,7 @@ error:
 	return NULL;
 }
 
-static int basic_map_contains(struct isl_basic_map *bmap, struct isl_vec *vec)
+int isl_basic_map_contains(struct isl_basic_map *bmap, struct isl_vec *vec)
 {
 	int i;
 	unsigned total;
@@ -1753,7 +1753,7 @@ static int basic_map_contains(struct isl_basic_map *bmap, struct isl_vec *vec)
 
 int isl_basic_set_contains(struct isl_basic_set *bset, struct isl_vec *vec)
 {
-	return basic_map_contains((struct isl_basic_map *)bset, vec);
+	return isl_basic_map_contains((struct isl_basic_map *)bset, vec);
 }
 
 struct isl_basic_map *isl_basic_map_intersect(
@@ -1778,12 +1778,12 @@ struct isl_basic_map *isl_basic_map_intersect(
 			    isl_dim_equal(bmap1->dim, bmap2->dim), goto error);
 
 	if (bmap1->sample &&
-	    basic_map_contains(bmap1, bmap1->sample) > 0 &&
-	    basic_map_contains(bmap2, bmap1->sample) > 0)
+	    isl_basic_map_contains(bmap1, bmap1->sample) > 0 &&
+	    isl_basic_map_contains(bmap2, bmap1->sample) > 0)
 		sample = isl_vec_copy(bmap1->sample);
 	else if (bmap2->sample &&
-	    basic_map_contains(bmap1, bmap2->sample) > 0 &&
-	    basic_map_contains(bmap2, bmap2->sample) > 0)
+	    isl_basic_map_contains(bmap1, bmap2->sample) > 0 &&
+	    isl_basic_map_contains(bmap2, bmap2->sample) > 0)
 		sample = isl_vec_copy(bmap2->sample);
 
 	bmap1 = isl_basic_map_cow(bmap1);
@@ -4311,7 +4311,7 @@ static int basic_map_contains_point(__isl_keep isl_basic_map *bmap,
 	if (!bmap || !point)
 		return -1;
 	if (bmap->n_div == 0)
-		return basic_map_contains(bmap, point);
+		return isl_basic_map_contains(bmap, point);
 
 	dim = isl_basic_map_total_dim(bmap) - bmap->n_div;
 	vec = isl_vec_alloc(bmap->ctx, 1 + dim + bmap->n_div);
@@ -4326,7 +4326,7 @@ static int basic_map_contains_point(__isl_keep isl_basic_map *bmap,
 				bmap->div[i][0]);
 	}
 
-	contains = basic_map_contains(bmap, vec);
+	contains = isl_basic_map_contains(bmap, vec);
 
 	isl_vec_free(vec);
 	return contains;
@@ -4488,7 +4488,7 @@ int isl_basic_map_is_empty(struct isl_basic_map *bmap)
 
 	total = 1 + isl_basic_map_total_dim(bmap);
 	if (bmap->sample && bmap->sample->size == total) {
-		int contains = basic_map_contains(bmap, bmap->sample);
+		int contains = isl_basic_map_contains(bmap, bmap->sample);
 		if (contains < 0)
 			return -1;
 		if (contains)

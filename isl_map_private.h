@@ -24,6 +24,7 @@ struct isl_map *isl_map_grow(struct isl_map *map, int n);
 struct isl_set *isl_set_grow(struct isl_set *set, int n);
 
 int isl_basic_set_contains(struct isl_basic_set *bset, struct isl_vec *vec);
+int isl_basic_map_contains(struct isl_basic_map *bmap, struct isl_vec *vec);
 
 struct isl_basic_set *isl_basic_set_alloc_dim(struct isl_dim *dim,
 		unsigned extra, unsigned n_eq, unsigned n_ineq);
