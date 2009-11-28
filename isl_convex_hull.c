@@ -95,12 +95,17 @@ struct isl_basic_map *isl_basic_map_convex_hull(struct isl_basic_map *bmap)
 
 	tab = isl_tab_from_basic_map(bmap);
 	tab = isl_tab_detect_implicit_equalities(tab);
-	tab = isl_tab_detect_redundant(tab);
+	if (isl_tab_detect_redundant(tab) < 0)
+		goto error;
 	bmap = isl_basic_map_update_from_tab(bmap, tab);
 	isl_tab_free(tab);
 	ISL_F_SET(bmap, ISL_BASIC_MAP_NO_IMPLICIT);
 	ISL_F_SET(bmap, ISL_BASIC_MAP_NO_REDUNDANT);
 	return bmap;
+error:
+	isl_tab_free(tab);
+	isl_basic_map_free(bmap);
+	return NULL;
 }
 
 struct isl_basic_set *isl_basic_set_convex_hull(struct isl_basic_set *bset)

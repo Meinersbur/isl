@@ -2421,17 +2421,17 @@ static int con_is_redundant(struct isl_tab *tab, struct isl_tab_var *var)
  * If not, we mark the row as being redundant (assuming it hasn't
  * been detected as being obviously redundant in the mean time).
  */
-struct isl_tab *isl_tab_detect_redundant(struct isl_tab *tab)
+int isl_tab_detect_redundant(struct isl_tab *tab)
 {
 	int i;
 	unsigned n_marked;
 
 	if (!tab)
-		return NULL;
+		return -1;
 	if (tab->empty)
-		return tab;
+		return 0;
 	if (tab->n_redundant == tab->n_row)
-		return tab;
+		return 0;
 
 	n_marked = 0;
 	for (i = tab->n_redundant; i < tab->n_row; ++i) {
@@ -2468,10 +2468,10 @@ struct isl_tab *isl_tab_detect_redundant(struct isl_tab *tab)
 		n_marked--;
 		red = con_is_redundant(tab, var);
 		if (red < 0)
-			goto error;
+			return -1;
 		if (red && !var->is_redundant)
 			if (isl_tab_mark_redundant(tab, var->index) < 0)
-				goto error;
+				return -1;
 		for (i = tab->n_dead; i < tab->n_col; ++i) {
 			var = var_from_col(tab, i);
 			if (!var->marked)
@@ -2483,10 +2483,7 @@ struct isl_tab *isl_tab_detect_redundant(struct isl_tab *tab)
 		}
 	}
 
-	return tab;
-error:
-	isl_tab_free(tab);
-	return NULL;
+	return 0;
 }
 
 int isl_tab_is_equality(struct isl_tab *tab, int con)

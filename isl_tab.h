@@ -173,7 +173,7 @@ struct isl_basic_map *isl_basic_map_update_from_tab(struct isl_basic_map *bmap,
 struct isl_basic_set *isl_basic_set_update_from_tab(struct isl_basic_set *bset,
 	struct isl_tab *tab);
 struct isl_tab *isl_tab_detect_implicit_equalities(struct isl_tab *tab) WARN_UNUSED;
-struct isl_tab *isl_tab_detect_redundant(struct isl_tab *tab) WARN_UNUSED;
+int isl_tab_detect_redundant(struct isl_tab *tab) WARN_UNUSED;
 #define ISL_TAB_SAVE_DUAL	(1 << 0)
 enum isl_lp_result isl_tab_min(struct isl_tab *tab,
 	isl_int *f, isl_int denom, isl_int *opt, isl_int *opt_denom,

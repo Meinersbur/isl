@@ -184,8 +184,7 @@ static int fuse(struct isl_map *map, int i, int j, struct isl_tab **tabs,
 		ISL_F_SET(fused, ISL_BASIC_MAP_RATIONAL);
 
 	fused_tab = isl_tab_from_basic_map(fused);
-	fused_tab = isl_tab_detect_redundant(fused_tab);
-	if (!fused_tab)
+	if (isl_tab_detect_redundant(fused_tab) < 0)
 		goto error;
 
 	isl_basic_map_free(map->p[i]);
@@ -196,6 +195,7 @@ static int fuse(struct isl_map *map, int i, int j, struct isl_tab **tabs,
 
 	return 1;
 error:
+	isl_tab_free(fused_tab);
 	isl_basic_map_free(fused);
 	return -1;
 }
@@ -582,7 +582,8 @@ struct isl_map *isl_map_coalesce(struct isl_map *map)
 		if (!ISL_F_ISSET(map->p[i], ISL_BASIC_MAP_NO_IMPLICIT))
 			tabs[i] = isl_tab_detect_implicit_equalities(tabs[i]);
 		if (!ISL_F_ISSET(map->p[i], ISL_BASIC_MAP_NO_REDUNDANT))
-			tabs[i] = isl_tab_detect_redundant(tabs[i]);
+			if (isl_tab_detect_redundant(tabs[i]) < 0)
+				goto error;
 	}
 	for (i = map->n - 1; i >= 0; --i)
 		if (tabs[i]->empty)

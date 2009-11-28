@@ -1586,9 +1586,10 @@ static struct isl_basic_set *uset_gist(struct isl_basic_set *bset,
 			goto error;
 	bset = isl_basic_set_add_constraints(combined, bset, 0);
 	tab = isl_tab_detect_implicit_equalities(tab);
-	tab = isl_tab_detect_redundant(tab);
-	if (!tab)
+	if (isl_tab_detect_redundant(tab) < 0) {
+		isl_tab_free(tab);
 		goto error2;
+	}
 	for (i = 0; i < context_ineq; ++i) {
 		tab->con[i].is_zero = 0;
 		tab->con[i].is_redundant = 1;
