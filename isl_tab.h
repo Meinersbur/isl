@@ -22,6 +22,7 @@ enum isl_tab_undo_type {
 	isl_tab_undo_empty,
 	isl_tab_undo_nonneg,
 	isl_tab_undo_redundant,
+	isl_tab_undo_freeze,
 	isl_tab_undo_zero,
 	isl_tab_undo_allocate,
 	isl_tab_undo_relax,
@@ -182,6 +183,8 @@ struct isl_tab *isl_tab_extend(struct isl_tab *tab, unsigned n_new) WARN_UNUSED;
 int isl_tab_add_ineq(struct isl_tab *tab, isl_int *ineq) WARN_UNUSED;
 struct isl_tab *isl_tab_add_eq(struct isl_tab *tab, isl_int *eq) WARN_UNUSED;
 struct isl_tab *isl_tab_add_valid_eq(struct isl_tab *tab, isl_int *eq) WARN_UNUSED;
+
+int isl_tab_freeze_constraint(struct isl_tab *tab, int con) WARN_UNUSED;
 
 int isl_tab_is_equality(struct isl_tab *tab, int con);
 int isl_tab_is_redundant(struct isl_tab *tab, int con);

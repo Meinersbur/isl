@@ -936,6 +936,26 @@ int isl_tab_mark_empty(struct isl_tab *tab)
 	return 0;
 }
 
+int isl_tab_freeze_constraint(struct isl_tab *tab, int con)
+{
+	struct isl_tab_var *var;
+
+	if (!tab)
+		return -1;
+
+	var = &tab->con[con];
+	if (var->frozen)
+		return 0;
+	if (var->index < 0)
+		return 0;
+	var->frozen = 1;
+
+	if (tab->need_undo)
+		return isl_tab_push_var(tab, isl_tab_undo_freeze, var);
+
+	return 0;
+}
+
 /* Update the rows signs after a pivot of "row" and "col", with "row_sgn"
  * the original sign of the pivot element.
  * We only keep track of row signs during PILP solving and in this case
@@ -2628,6 +2648,9 @@ static int perform_undo_var(struct isl_tab *tab, struct isl_tab_undo *undo)
 		var->is_redundant = 0;
 		tab->n_redundant--;
 		break;
+	case isl_tab_undo_freeze:
+		var->frozen = 0;
+		break;
 	case isl_tab_undo_zero:
 		var->is_zero = 0;
 		if (!var->is_row)
@@ -2748,6 +2771,7 @@ static int perform_undo(struct isl_tab *tab, struct isl_tab_undo *undo)
 		break;
 	case isl_tab_undo_nonneg:
 	case isl_tab_undo_redundant:
+	case isl_tab_undo_freeze:
 	case isl_tab_undo_zero:
 	case isl_tab_undo_allocate:
 	case isl_tab_undo_relax:

@@ -1576,7 +1576,8 @@ static struct isl_basic_set *uset_gist(struct isl_basic_set *bset,
 	if (!tab)
 		goto error;
 	for (i = 0; i < context_ineq; ++i)
-		tab->con[i].frozen = 1;
+		if (isl_tab_freeze_constraint(tab, i) < 0)
+			goto error;
 	tab = isl_tab_extend(tab, bset->n_ineq);
 	if (!tab)
 		goto error;
