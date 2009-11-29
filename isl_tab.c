@@ -2163,6 +2163,8 @@ struct isl_basic_map *isl_basic_map_update_from_tab(struct isl_basic_map *bmap,
 			else if (isl_tab_is_redundant(tab, n_eq + i))
 				isl_basic_map_drop_inequality(bmap, i);
 		}
+	if (bmap->n_eq != n_eq)
+		isl_basic_map_gauss(bmap, NULL);
 	if (!tab->rational &&
 	    !bmap->sample && isl_tab_sample_is_integer(tab))
 		bmap->sample = extract_integer_sample(tab);
