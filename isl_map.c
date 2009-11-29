@@ -1066,8 +1066,7 @@ struct isl_basic_set *isl_basic_set_swap_vars(
 	isl_blk_free(bset->ctx, blk);
 
 	ISL_F_CLR(bset, ISL_BASIC_SET_NORMALIZED);
-	return bset;
-
+	return isl_basic_set_gauss(bset, NULL);
 error:
 	isl_basic_set_free(bset);
 	return NULL;
