@@ -411,6 +411,71 @@ struct isl_set *isl_set_subtract(struct isl_set *set1, struct isl_set *set2)
 			(struct isl_map *)set1, (struct isl_map *)set2);
 }
 
+/* A diff collector that aborts as soon as its add function is called,
+ * setting empty to 0.
+ */
+struct isl_is_empty_diff_collector {
+	struct isl_diff_collector dc;
+	int empty;
+};
+
+/* isl_is_empty_diff_collector callback.
+ */
+int basic_map_is_empty_add(struct isl_diff_collector *dc,
+			    __isl_take isl_basic_map *bmap)
+{
+	struct isl_is_empty_diff_collector *edc;
+	edc = (struct isl_is_empty_diff_collector *)dc;
+
+	edc->empty = 0;
+
+	isl_basic_map_free(bmap);
+	return -1;
+}
+
+/* Check if bmap \ map is empty by computing this set difference
+ * and breaking off as soon as the difference is known to be non-empty.
+ */
+static int basic_map_diff_is_empty(__isl_keep isl_basic_map *bmap,
+	__isl_keep isl_map *map)
+{
+	int r;
+	struct isl_is_empty_diff_collector edc;
+
+	r = isl_basic_map_fast_is_empty(bmap);
+	if (r)
+		return r;
+
+	edc.dc.add = &basic_map_is_empty_add;
+	edc.empty = 1;
+	r = basic_map_collect_diff(isl_basic_map_copy(bmap),
+				   isl_map_copy(map), &edc.dc);
+	if (!edc.empty)
+		return 0;
+
+	return r < 0 ? -1 : 1;
+}
+
+/* Check if map1 \ map2 is empty by checking if the set difference is empty
+ * for each of the basic maps in map1.
+ */
+static int map_diff_is_empty(__isl_keep isl_map *map1, __isl_keep isl_map *map2)
+{
+	int i;
+	int is_empty = 1;
+
+	if (!map1 || !map2)
+		return -1;
+	
+	for (i = 0; i < map1->n; ++i) {
+		is_empty = basic_map_diff_is_empty(map1->p[i], map2);
+		if (is_empty < 0 || !is_empty)
+			 break;
+	}
+
+	return is_empty;
+}
+
 /* Return 1 if "bmap" contains a single element.
  */
 int isl_basic_map_is_singleton(__isl_keep isl_basic_map *bmap)
@@ -572,18 +637,17 @@ int isl_map_is_subset(struct isl_map *map1, struct isl_map *map2)
 	if (isl_map_fast_is_universe(map2))
 		return 1;
 
+	map1 = isl_map_compute_divs(isl_map_copy(map1));
 	map2 = isl_map_compute_divs(isl_map_copy(map2));
 	if (isl_map_is_singleton(map1)) {
 		is_subset = map_is_singleton_subset(map1, map2);
+		isl_map_free(map1);
 		isl_map_free(map2);
 		return is_subset;
 	}
-	diff = isl_map_subtract(isl_map_copy(map1), map2);
-	if (!diff)
-		return -1;
-
-	is_subset = isl_map_is_empty(diff);
-	isl_map_free(diff);
+	is_subset = map_diff_is_empty(map1, map2);
+	isl_map_free(map1);
+	isl_map_free(map2);
 
 	return is_subset;
 }
