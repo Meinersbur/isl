@@ -1817,6 +1817,52 @@ struct isl_basic_set *isl_basic_set_intersect(
 			(struct isl_basic_map *)bset2);
 }
 
+/* Special case of isl_map_intersect, where both map1 and map2
+ * are convex, without any divs and such that either map1 or map2
+ * contains a single constraint.  This constraint is then simply
+ * added to the other map.
+ */
+static __isl_give isl_map *map_intersect_add_constraint(
+	__isl_take isl_map *map1, __isl_take isl_map *map2)
+{
+	struct isl_basic_map *bmap1;
+	struct isl_basic_map *bmap2;
+
+	isl_assert(map1->ctx, map1->n == 1, goto error);
+	isl_assert(map2->ctx, map1->n == 1, goto error);
+	isl_assert(map1->ctx, map1->p[0]->n_div == 0, goto error);
+	isl_assert(map2->ctx, map1->p[0]->n_div == 0, goto error);
+
+	if (map2->p[0]->n_eq + map2->p[0]->n_ineq != 1)
+		return isl_map_intersect(map2, map1);
+
+	isl_assert(map2->ctx,
+		    map2->p[0]->n_eq + map2->p[0]->n_ineq == 1, goto error);
+
+	map1 = isl_map_cow(map1);
+	if (!map1)
+		goto error;
+	map1->p[0] = isl_basic_map_cow(map1->p[0]);
+	if (map2->p[0]->n_eq == 1)
+		map1->p[0] = isl_basic_map_add_eq(map1->p[0], map2->p[0]->eq[0]);
+	else
+		map1->p[0] = isl_basic_map_add_ineq(map1->p[0],
+							map2->p[0]->ineq[0]);
+
+	map1->p[0] = isl_basic_map_simplify(map1->p[0]);
+	map1->p[0] = isl_basic_map_finalize(map1->p[0]);
+	if (!map1->p[0])
+		goto error;
+
+	isl_map_free(map2);
+
+	return map1;
+error:
+	isl_map_free(map1);
+	isl_map_free(map2);
+	return NULL;
+}
+
 struct isl_map *isl_map_intersect(struct isl_map *map1, struct isl_map *map2)
 {
 	unsigned flags = 0;
@@ -1826,6 +1872,12 @@ struct isl_map *isl_map_intersect(struct isl_map *map1, struct isl_map *map2)
 	if (!map1 || !map2)
 		goto error;
 
+	if (map1->n == 1 && map2->n == 1 &&
+	    map1->p[0]->n_div == 0 && map2->p[0]->n_div == 0 &&
+	    isl_dim_equal(map1->dim, map2->dim) &&
+	    (map1->p[0]->n_eq + map1->p[0]->n_ineq == 1 ||
+	     map2->p[0]->n_eq + map2->p[0]->n_ineq == 1))
+		return map_intersect_add_constraint(map1, map2);
 	isl_assert(map1->ctx, isl_dim_match(map1->dim, isl_dim_param,
 					 map2->dim, isl_dim_param), goto error);
 	if (isl_dim_total(map1->dim) ==
