@@ -2,133 +2,369 @@
 #include "isl_set.h"
 #include "isl_map.h"
 #include "isl_map_private.h"
+#include "isl_tab.h"
 
-static struct isl_map *add_cut_constraint(struct isl_map *dst,
-		struct isl_basic_map *src, isl_int *c,
-		unsigned len, int oppose)
+/* Add all constraints of bmap to tab.  The equalities of bmap
+ * are added as a pair of inequalities.
+ */
+static int tab_add_constraints(struct isl_tab *tab,
+	__isl_keep isl_basic_map *bmap)
 {
-	struct isl_basic_map *copy = NULL;
-	int is_empty;
-	int k;
+	int i;
 	unsigned total;
 
-	copy = isl_basic_map_copy(src);
-	copy = isl_basic_map_cow(copy);
-	if (!copy)
-		goto error;
-	copy = isl_basic_map_extend_constraints(copy, 0, 1);
-	k = isl_basic_map_alloc_inequality(copy);
-	if (k < 0)
-		goto error;
-	if (oppose)
-		isl_seq_neg(copy->ineq[k], c, len);
-	else
-		isl_seq_cpy(copy->ineq[k], c, len);
-	total = 1 + isl_basic_map_total_dim(copy);
-	isl_seq_clr(copy->ineq[k]+len, total - len);
-	isl_inequality_negate(copy, k);
-	copy = isl_basic_map_simplify(copy);
-	copy = isl_basic_map_finalize(copy);
-	is_empty = isl_basic_map_is_empty(copy);
-	if (is_empty < 0)
-		goto error;
-	if (!is_empty)
-		dst = isl_map_add(dst, copy);
-	else
-		isl_basic_map_free(copy);
-	return dst;
-error:
-	isl_basic_map_free(copy);
-	isl_map_free(dst);
-	return NULL;
+	if (!tab || !bmap)
+		return -1;
+
+	total = isl_basic_map_total_dim(bmap);
+
+	if (isl_tab_extend_cons(tab, 2 * bmap->n_eq + bmap->n_ineq) < 0)
+		return -1;
+
+	for (i = 0; i < bmap->n_eq; ++i) {
+		if (isl_tab_add_ineq(tab, bmap->eq[i]) < 0)
+			return -1;
+		isl_seq_neg(bmap->eq[i], bmap->eq[i], 1 + total);
+		if (isl_tab_add_ineq(tab, bmap->eq[i]) < 0)
+			return -1;
+		isl_seq_neg(bmap->eq[i], bmap->eq[i], 1 + total);
+		if (tab->empty)
+			return 0;
+	}
+
+	for (i = 0; i < bmap->n_ineq; ++i) {
+		if (isl_tab_add_ineq(tab, bmap->ineq[i]) < 0)
+			return -1;
+		if (tab->empty)
+			return 0;
+	}
+
+	return 0;
 }
 
-static struct isl_map *subtract(struct isl_map *map, struct isl_basic_map *bmap)
+/* Add a specific constraint of bmap (or its opposite) to tab.
+ * The position of the constraint is specified by "c", where
+ * the equalities of bmap are counted twice, once for the inequality
+ * that is equal to the equality, and once for its negation.
+ */
+static int tab_add_constraint(struct isl_tab *tab,
+	__isl_keep isl_basic_map *bmap, int c, int oppose)
 {
-	int i, j, k;
-	unsigned flags = 0;
-	struct isl_map *rest = NULL;
-	unsigned max;
-	unsigned total = isl_basic_map_total_dim(bmap);
+	unsigned total;
+	int r;
 
+	if (!tab || !bmap)
+		return -1;
+
+	total = isl_basic_map_total_dim(bmap);
+
+	if (c < 2 * bmap->n_eq) {
+		if ((c % 2) != oppose)
+			isl_seq_neg(bmap->eq[c/2], bmap->eq[c/2], 1 + total);
+		if (oppose)
+			isl_int_sub_ui(bmap->eq[c/2][0], bmap->eq[c/2][0], 1);
+		r = isl_tab_add_ineq(tab, bmap->eq[c/2]);
+		if (oppose)
+			isl_int_add_ui(bmap->eq[c/2][0], bmap->eq[c/2][0], 1);
+		if ((c % 2) != oppose)
+			isl_seq_neg(bmap->eq[c/2], bmap->eq[c/2], 1 + total);
+	} else {
+		c -= 2 * bmap->n_eq;
+		if (oppose) {
+			isl_seq_neg(bmap->ineq[c], bmap->ineq[c], 1 + total);
+			isl_int_sub_ui(bmap->ineq[c][0], bmap->ineq[c][0], 1);
+		}
+		r = isl_tab_add_ineq(tab, bmap->ineq[c]);
+		if (oppose) {
+			isl_int_add_ui(bmap->ineq[c][0], bmap->ineq[c][0], 1);
+			isl_seq_neg(bmap->ineq[c], bmap->ineq[c], 1 + total);
+		}
+	}
+
+	return r;
+}
+
+/* Freeze all constraints of tableau tab.
+ */
+static int tab_freeze_constraints(struct isl_tab *tab)
+{
+	int i;
+
+	for (i = 0; i < tab->n_con; ++i)
+		if (isl_tab_freeze_constraint(tab, i) < 0)
+			return -1;
+
+	return 0;
+}
+
+/* Check for redundant constraints starting at offset.
+ * Put the indices of the redundant constraints in index
+ * and return the number of redundant constraints.
+ */
+static int n_non_redundant(struct isl_tab *tab, int offset, int **index)
+{
+	int i, n;
+	int n_test = tab->n_con - offset;
+
+	if (isl_tab_detect_redundant(tab) < 0)
+		return -1;
+
+	if (!*index)
+		*index = isl_alloc_array(tab->mat->ctx, int, n_test);
+	if (!*index)
+		return -1;
+
+	for (n = 0, i = 0; i < n_test; ++i) {
+		int r;
+		r = isl_tab_is_redundant(tab, offset + i);
+		if (r < 0)
+			return -1;
+		if (r)
+			continue;
+		(*index)[n++] = i;
+	}
+
+	return n;
+}
+
+/* basic_map_collect_diff calls add on each of the pieces of
+ * the set difference between bmap and map until the add method
+ * return a negative value.
+ */
+struct isl_diff_collector {
+	int (*add)(struct isl_diff_collector *dc,
+		    __isl_take isl_basic_map *bmap);
+};
+
+/* Compute the set difference between bmap and map and call
+ * dc->add on each of the piece until this function returns
+ * a negative value.
+ * Return 0 on success and -1 on error.  dc->add returning
+ * a negative value is treated as an error, but the calling
+ * function can interpret the results based on the state of dc.
+ *
+ * Assumes that both bmap and map have known divs.
+ *
+ * The difference is computed by a backtracking algorithm.
+ * Each level corresponds to a basic map in "map".
+ * When a node in entered for the first time, we check
+ * if the corresonding basic map intersect the current piece
+ * of "bmap".  If not, we move to the next level.
+ * Otherwise, we split the current piece into as many
+ * pieces as there are non-redundant constraints of the current
+ * basic map in the intersection.  Each of these pieces is
+ * handled by a child of the current node.
+ * In particular, if there are n non-redundant constraints,
+ * then for each 0 <= i < n, a piece is cut off by adding
+ * constraints 0 <= j < i and adding the opposite of constrain i.
+ * If there are no non-redundant constraints, meaning that the current
+ * piece is a subset of the current basic map, then we simply backtrack.
+ *
+ * In the leaves, we check if the remaining piece has any integer points
+ * and if so, pass it along to dc->add.  As a special case, if nothing
+ * has been removed when we end up in a leaf, we simply pass along
+ * the original basic map.
+ */
+static int basic_map_collect_diff(__isl_take isl_basic_map *bmap,
+	__isl_take isl_map *map, struct isl_diff_collector *dc)
+{
+	int i;
+	int modified;
+	int level;
+	int init;
+	int empty;
+	struct isl_tab *tab = NULL;
+	struct isl_tab_undo **snap = NULL;
+	int *k = NULL;
+	int *n = NULL;
+	int **index = NULL;
+
+	empty = isl_basic_map_is_empty(bmap);
+	if (empty) {
+		isl_basic_map_free(bmap);
+		isl_map_free(map);
+		return empty < 0 ? -1 : 0;
+	}
+
+	bmap = isl_basic_map_cow(bmap);
 	map = isl_map_cow(map);
 
-	if (!map || !bmap)
+	if (!bmap || !map)
 		goto error;
 
-	if (ISL_F_ISSET(map, ISL_MAP_DISJOINT))
-		ISL_FL_SET(flags, ISL_MAP_DISJOINT);
-
-	max = map->n * (2 * bmap->n_eq + bmap->n_ineq);
-	rest = isl_map_alloc_dim(isl_dim_copy(map->dim), max, flags);
-	if (!rest)
+	snap = isl_alloc_array(map->ctx, struct isl_tab_undo *, map->n);
+	k = isl_alloc_array(map->ctx, int, map->n);
+	n = isl_alloc_array(map->ctx, int, map->n);
+	index = isl_calloc_array(map->ctx, int *, map->n);
+	if (!snap || !k || !n || !index)
 		goto error;
 
+	for (i = 0; i < map->n; ++i) {
+		bmap = isl_basic_map_align_divs(bmap, map->p[i]);
+		if (!bmap)
+			goto error;
+	}
 	for (i = 0; i < map->n; ++i) {
 		map->p[i] = isl_basic_map_align_divs(map->p[i], bmap);
 		if (!map->p[i])
 			goto error;
 	}
 
-	for (j = 0; j < map->n; ++j)
-		map->p[j] = isl_basic_map_cow(map->p[j]);
+	tab = isl_tab_from_basic_map(bmap);
+	if (isl_tab_track_bmap(tab, isl_basic_map_copy(bmap)) < 0)
+		goto error;
 
-	for (i = 0; i < bmap->n_eq; ++i) {
-		for (j = 0; j < map->n; ++j) {
-			rest = add_cut_constraint(rest,
-				map->p[j], bmap->eq[i], 1+total, 0);
-			if (!rest)
-				goto error;
+	modified = 0;
+	level = 0;
+	init = 1;
 
-			rest = add_cut_constraint(rest,
-				map->p[j], bmap->eq[i], 1+total, 1);
-			if (!rest)
+	while (level >= 0) {
+		if (level >= map->n) {
+			int empty;
+			struct isl_basic_map *bm;
+			if (!modified) {
+				if (dc->add(dc, isl_basic_map_copy(bmap)) < 0)
+					goto error;
+				break;
+			}
+			bm = isl_basic_map_copy(tab->bmap);
+			bm = isl_basic_map_cow(bm);
+			bm = isl_basic_map_update_from_tab(bm, tab);
+			bm = isl_basic_map_simplify(bm);
+			bm = isl_basic_map_finalize(bm);
+			empty = isl_basic_map_is_empty(bm);
+			if (empty)
+				isl_basic_map_free(bm);
+			else if (dc->add(dc, bm) < 0)
 				goto error;
-
-			map->p[j] = isl_basic_map_extend_constraints(map->p[j],
-				1, 0);
-			if (!map->p[j])
+			if (empty < 0)
 				goto error;
-			k = isl_basic_map_alloc_equality(map->p[j]);
-			if (k < 0)
+			level--;
+			init = 0;
+			continue;
+		}
+		if (init) {
+			int offset = tab->n_con;
+			snap[level] = isl_tab_snap(tab);
+			if (tab_freeze_constraints(tab) < 0)
 				goto error;
-			isl_seq_cpy(map->p[j]->eq[k], bmap->eq[i], 1+total);
-			isl_seq_clr(map->p[j]->eq[k]+1+total,
-					map->p[j]->n_div - bmap->n_div);
+			if (tab_add_constraints(tab, map->p[level]) < 0)
+				goto error;
+			k[level] = 0;
+			n[level] = 0;
+			if (tab->empty) {
+				if (isl_tab_rollback(tab, snap[level]) < 0)
+					goto error;
+				level++;
+				continue;
+			}
+			modified = 1;
+			n[level] = n_non_redundant(tab, offset, &index[level]);
+			if (n[level] < 0)
+				goto error;
+			if (n[level] == 0) {
+				level--;
+				init = 0;
+				continue;
+			}
+			if (isl_tab_rollback(tab, snap[level]) < 0)
+				goto error;
+			if (tab_add_constraint(tab, map->p[level],
+						index[level][0], 1) < 0)
+				goto error;
+			level++;
+			continue;
+		} else {
+			if (k[level] + 1 >= n[level]) {
+				level--;
+				continue;
+			}
+			if (isl_tab_rollback(tab, snap[level]) < 0)
+				goto error;
+			if (tab_add_constraint(tab, map->p[level],
+						index[level][k[level]], 0) < 0)
+				goto error;
+			snap[level] = isl_tab_snap(tab);
+			k[level]++;
+			if (tab_add_constraint(tab, map->p[level],
+						index[level][k[level]], 1) < 0)
+				goto error;
+			level++;
+			init = 1;
+			continue;
 		}
 	}
 
-	for (i = 0; i < bmap->n_ineq; ++i) {
-		for (j = 0; j < map->n; ++j) {
-			rest = add_cut_constraint(rest,
-				map->p[j], bmap->ineq[i], 1+total, 0);
-			if (!rest)
-				goto error;
+	isl_tab_free(tab);
+	free(snap);
+	free(n);
+	free(k);
+	for (i = 0; index && i < map->n; ++i)
+		free(index[i]);
+	free(index);
 
-			map->p[j] = isl_basic_map_extend_constraints(map->p[j],
-				0, 1);
-			if (!map->p[j])
-				goto error;
-			k = isl_basic_map_alloc_inequality(map->p[j]);
-			if (k < 0)
-				goto error;
-			isl_seq_cpy(map->p[j]->ineq[k], bmap->ineq[i], 1+total);
-			isl_seq_clr(map->p[j]->ineq[k]+1+total,
-					map->p[j]->n_div - bmap->n_div);
-		}
-	}
-
+	isl_basic_map_free(bmap);
 	isl_map_free(map);
-	return rest;
+
+	return 0;
 error:
+	isl_tab_free(tab);
+	free(snap);
+	free(n);
+	free(k);
+	for (i = 0; index && i < map->n; ++i)
+		free(index[i]);
+	free(index);
+	isl_basic_map_free(bmap);
 	isl_map_free(map);
-	isl_map_free(rest);
-	return NULL;
+	return -1;
 }
 
+/* A diff collector that actually collects all parts of the
+ * set difference in the field diff.
+ */
+struct isl_subtract_diff_collector {
+	struct isl_diff_collector dc;
+	struct isl_map *diff;
+};
+
+/* isl_subtract_diff_collector callback.
+ */
+int basic_map_subtract_add(struct isl_diff_collector *dc,
+			    __isl_take isl_basic_map *bmap)
+{
+	struct isl_subtract_diff_collector *sdc;
+	sdc = (struct isl_subtract_diff_collector *)dc;
+
+	sdc->diff = isl_map_union_disjoint(sdc->diff,
+			isl_map_from_basic_map(bmap));
+
+	return sdc->diff ? 0 : -1;
+}
+
+/* Return the set difference between bmap and map.
+ */
+static __isl_give isl_map *basic_map_subtract(__isl_take isl_basic_map *bmap,
+	__isl_take isl_map *map)
+{
+	struct isl_subtract_diff_collector sdc;
+	sdc.dc.add = &basic_map_subtract_add;
+	sdc.diff = isl_map_empty_like_basic_map(bmap);
+	if (basic_map_collect_diff(bmap, map, &sdc.dc) < 0) {
+		isl_map_free(sdc.diff);
+		sdc.diff = NULL;
+	}
+	return sdc.diff;
+}
+
+/* Return the set difference between map1 and map2.
+ * (U_i A_i) \ (U_j B_j) is computed as U_i (A_i \ (U_j B_j))
+ */
 struct isl_map *isl_map_subtract(struct isl_map *map1, struct isl_map *map2)
 {
 	int i;
+	struct isl_map *diff;
+
 	if (!map1 || !map2)
 		goto error;
 
@@ -147,11 +383,21 @@ struct isl_map *isl_map_subtract(struct isl_map *map1, struct isl_map *map2)
 	map1 = isl_map_remove_empty_parts(map1);
 	map2 = isl_map_remove_empty_parts(map2);
 
-	for (i = 0; map1 && i < map2->n; ++i)
-		map1 = subtract(map1, map2->p[i]);
+	diff = isl_map_empty_like(map1);
+	for (i = 0; i < map1->n; ++i) {
+		struct isl_map *d;
+		d = basic_map_subtract(isl_basic_map_copy(map1->p[i]),
+				       isl_map_copy(map2));
+		if (ISL_F_ISSET(map1, ISL_MAP_DISJOINT))
+			diff = isl_map_union_disjoint(diff, d);
+		else
+			diff = isl_map_union(diff, d);
+	}
 
+	isl_map_free(map1);
 	isl_map_free(map2);
-	return map1;
+
+	return diff;
 error:
 	isl_map_free(map1);
 	isl_map_free(map2);
