@@ -271,8 +271,8 @@ static struct isl_mat *tab_equalities(struct isl_tab *tab)
 	if (!tab)
 		return NULL;
 
-	isl_assert(tab->mat->ctx, tab->bset, return NULL);
-	bset = tab->bset;
+	bset = isl_tab_peek_bset(tab);
+	isl_assert(tab->mat->ctx, bset, return NULL);
 
 	n_eq = tab->n_var - tab->n_col + tab->n_dead;
 	if (tab->empty || n_eq == 0)
@@ -561,12 +561,20 @@ static struct isl_vec *sample_bounded(struct isl_basic_set *bset)
 	ctx = bset->ctx;
 
 	tab = isl_tab_from_basic_set(bset);
+	if (tab && tab->empty) {
+		isl_tab_free(tab);
+		ISL_F_SET(bset, ISL_BASIC_SET_EMPTY);
+		sample = isl_vec_alloc(bset->ctx, 0);
+		isl_basic_set_free(bset);
+		return sample;
+	}
+
+	if (isl_tab_track_bset(tab, isl_basic_set_copy(bset)) < 0)
+		goto error;
 	if (!ISL_F_ISSET(bset, ISL_BASIC_SET_NO_IMPLICIT))
 		tab = isl_tab_detect_implicit_equalities(tab);
 	if (!tab)
 		goto error;
-
-	tab->bset = isl_basic_set_copy(bset);
 
 	sample = isl_tab_sample(tab);
 	if (!sample)
@@ -954,7 +962,7 @@ static int tab_shift_cone(struct isl_tab *tab,
 	isl_int_init(v);
 	if (!tab || !tab_cone || !U)
 		goto error;
-	bset = tab_cone->bset;
+	bset = isl_tab_peek_bset(tab_cone);
 	U = isl_mat_drop_cols(U, 0, tab->n_var - tab->n_unbounded);
 	for (i = 0; i < bset->n_ineq; ++i) {
 		int ok;

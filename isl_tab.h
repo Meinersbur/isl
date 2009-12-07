@@ -26,9 +26,9 @@ enum isl_tab_undo_type {
 	isl_tab_undo_zero,
 	isl_tab_undo_allocate,
 	isl_tab_undo_relax,
-	isl_tab_undo_bset_ineq,
-	isl_tab_undo_bset_eq,
-	isl_tab_undo_bset_div,
+	isl_tab_undo_bmap_ineq,
+	isl_tab_undo_bmap_eq,
+	isl_tab_undo_bmap_div,
 	isl_tab_undo_saved_basis,
 	isl_tab_undo_drop_sample,
 	isl_tab_undo_saved_samples,
@@ -141,7 +141,7 @@ struct isl_tab {
 	struct isl_tab_undo *top;
 
 	struct isl_vec *dual;
-	struct isl_basic_set *bset;
+	struct isl_basic_map *bmap;
 
 	unsigned n_sample;
 	unsigned n_outside;
@@ -185,6 +185,10 @@ struct isl_tab *isl_tab_add_eq(struct isl_tab *tab, isl_int *eq) WARN_UNUSED;
 struct isl_tab *isl_tab_add_valid_eq(struct isl_tab *tab, isl_int *eq) WARN_UNUSED;
 
 int isl_tab_freeze_constraint(struct isl_tab *tab, int con) WARN_UNUSED;
+
+int isl_tab_track_bmap(struct isl_tab *tab, __isl_take isl_basic_map *bmap) WARN_UNUSED;
+int isl_tab_track_bset(struct isl_tab *tab, __isl_take isl_basic_set *bset) WARN_UNUSED;
+__isl_keep isl_basic_set *isl_tab_peek_bset(struct isl_tab *tab);
 
 int isl_tab_is_equality(struct isl_tab *tab, int con);
 int isl_tab_is_redundant(struct isl_tab *tab, int con);

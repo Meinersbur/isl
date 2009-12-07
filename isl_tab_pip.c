@@ -1293,16 +1293,16 @@ static struct isl_tab *add_lexmin_eq(struct isl_tab *tab, isl_int *eq)
 		}
 	}
 
-	if (tab->bset) {
-		tab->bset = isl_basic_set_add_ineq(tab->bset, eq);
-		if (isl_tab_push(tab, isl_tab_undo_bset_ineq) < 0)
+	if (tab->bmap) {
+		tab->bmap = isl_basic_map_add_ineq(tab->bmap, eq);
+		if (isl_tab_push(tab, isl_tab_undo_bmap_ineq) < 0)
 			goto error;
 		isl_seq_neg(eq, eq, 1 + tab->n_var);
-		tab->bset = isl_basic_set_add_ineq(tab->bset, eq);
+		tab->bmap = isl_basic_map_add_ineq(tab->bmap, eq);
 		isl_seq_neg(eq, eq, 1 + tab->n_var);
-		if (isl_tab_push(tab, isl_tab_undo_bset_ineq) < 0)
+		if (isl_tab_push(tab, isl_tab_undo_bmap_ineq) < 0)
 			goto error;
-		if (!tab->bset)
+		if (!tab->bmap)
 			goto error;
 	}
 
@@ -1321,11 +1321,11 @@ static struct isl_tab *add_lexmin_ineq(struct isl_tab *tab, isl_int *ineq)
 
 	if (!tab)
 		return NULL;
-	if (tab->bset) {
-		tab->bset = isl_basic_set_add_ineq(tab->bset, ineq);
-		if (isl_tab_push(tab, isl_tab_undo_bset_ineq) < 0)
+	if (tab->bmap) {
+		tab->bmap = isl_basic_map_add_ineq(tab->bmap, ineq);
+		if (isl_tab_push(tab, isl_tab_undo_bmap_ineq) < 0)
 			goto error;
-		if (!tab->bset)
+		if (!tab->bmap)
 			goto error;
 	}
 	r = isl_tab_add_row(tab, ineq);
@@ -1551,7 +1551,7 @@ static struct isl_tab *check_samples(struct isl_tab *tab, isl_int *ineq, int eq)
 	if (!tab)
 		return NULL;
 
-	isl_assert(tab->mat->ctx, tab->bset, goto error);
+	isl_assert(tab->mat->ctx, tab->bmap, goto error);
 	isl_assert(tab->mat->ctx, tab->samples, goto error);
 	isl_assert(tab->mat->ctx, tab->samples->n_col == 1 + tab->n_var, goto error);
 
@@ -1650,7 +1650,7 @@ static int tab_has_valid_sample(struct isl_tab *tab, isl_int *ineq, int eq)
 	if (!tab)
 		return -1;
 
-	isl_assert(tab->mat->ctx, tab->bset, return -1);
+	isl_assert(tab->mat->ctx, tab->bmap, return -1);
 	isl_assert(tab->mat->ctx, tab->samples, return -1);
 	isl_assert(tab->mat->ctx, tab->samples->n_col == 1 + tab->n_var, return -1);
 
@@ -1754,13 +1754,13 @@ static int context_tab_add_div(struct isl_tab *tab, struct isl_vec *div,
 			       samples->row[i][samples->n_col - 1], div->el[0]);
 	}
 
-	tab->bset = isl_basic_set_extend_dim(tab->bset,
-		isl_basic_set_get_dim(tab->bset), 1, 0, 2);
-	k = isl_basic_set_alloc_div(tab->bset);
+	tab->bmap = isl_basic_map_extend_dim(tab->bmap,
+		isl_basic_map_get_dim(tab->bmap), 1, 0, 2);
+	k = isl_basic_map_alloc_div(tab->bmap);
 	if (k < 0)
 		return -1;
-	isl_seq_cpy(tab->bset->div[k], div->el, div->size);
-	if (isl_tab_push(tab, isl_tab_undo_bset_div) < 0)
+	isl_seq_cpy(tab->bmap->div[k], div->el, div->size);
+	if (isl_tab_push(tab, isl_tab_undo_bmap_div) < 0)
 		return -1;
 
 	return k;
@@ -1806,12 +1806,12 @@ error:
 static int find_div(struct isl_tab *tab, isl_int *div, isl_int denom)
 {
 	int i;
-	unsigned total = isl_basic_set_total_dim(tab->bset);
+	unsigned total = isl_basic_map_total_dim(tab->bmap);
 
-	for (i = 0; i < tab->bset->n_div; ++i) {
-		if (isl_int_ne(tab->bset->div[i][0], denom))
+	for (i = 0; i < tab->bmap->n_div; ++i) {
+		if (isl_int_ne(tab->bmap->div[i][0], denom))
 			continue;
-		if (!isl_seq_eq(tab->bset->div[i] + 1, div, total))
+		if (!isl_seq_eq(tab->bmap->div[i] + 1, div, total))
 			continue;
 		return i;
 	}
@@ -2121,7 +2121,7 @@ static struct isl_basic_set *context_lex_peek_basic_set(
 	struct isl_context_lex *clex = (struct isl_context_lex *)context;
 	if (!clex->tab)
 		return NULL;
-	return clex->tab->bset;
+	return isl_tab_peek_bset(clex->tab);
 }
 
 static struct isl_tab *context_lex_peek_tab(struct isl_context *context)
@@ -2458,7 +2458,8 @@ static struct isl_tab *context_tab_for_lexmin(struct isl_basic_set *bset)
 	tab = tab_for_lexmin((struct isl_basic_map *)bset, NULL, 1, 0);
 	if (!tab)
 		goto error;
-	tab->bset = bset;
+	if (isl_tab_track_bset(tab, bset) < 0)
+		goto error;
 	tab = isl_tab_init_samples(tab);
 	return tab;
 error:
@@ -2511,7 +2512,7 @@ static struct isl_basic_set *context_gbr_peek_basic_set(
 	struct isl_context_gbr *cgbr = (struct isl_context_gbr *)context;
 	if (!cgbr->tab)
 		return NULL;
-	return cgbr->tab->bset;
+	return isl_tab_peek_bset(cgbr->tab);
 }
 
 static struct isl_tab *context_gbr_peek_tab(struct isl_context *context)
@@ -2530,7 +2531,7 @@ static void gbr_init_shifted(struct isl_context_gbr *cgbr)
 {
 	int i, j;
 	struct isl_vec *cst;
-	struct isl_basic_set *bset = cgbr->tab->bset;
+	struct isl_basic_set *bset = isl_tab_peek_bset(cgbr->tab);
 	unsigned dim = isl_basic_set_total_dim(bset);
 
 	cst = isl_vec_alloc(cgbr->tab->mat->ctx, bset->n_ineq);
@@ -2594,7 +2595,7 @@ static struct isl_basic_set *drop_constant_terms(struct isl_basic_set *bset)
 
 static int use_shifted(struct isl_context_gbr *cgbr)
 {
-	return cgbr->tab->bset->n_eq == 0 && cgbr->tab->bset->n_div == 0;
+	return cgbr->tab->bmap->n_eq == 0 && cgbr->tab->bmap->n_div == 0;
 }
 
 static struct isl_vec *gbr_get_sample(struct isl_context_gbr *cgbr)
@@ -2616,10 +2617,12 @@ static struct isl_vec *gbr_get_sample(struct isl_context_gbr *cgbr)
 	}
 
 	if (!cgbr->cone) {
-		cgbr->cone = isl_tab_from_recession_cone(cgbr->tab->bset);
+		bset = isl_tab_peek_bset(cgbr->tab);
+		cgbr->cone = isl_tab_from_recession_cone(bset);
 		if (!cgbr->cone)
 			return NULL;
-		cgbr->cone->bset = isl_basic_set_dup(cgbr->tab->bset);
+		if (isl_tab_track_bset(cgbr->cone, isl_basic_set_dup(bset)) < 0)
+			return NULL;
 	}
 	cgbr->cone = isl_tab_detect_implicit_equalities(cgbr->cone);
 	if (!cgbr->cone)
@@ -2651,13 +2654,13 @@ static struct isl_vec *gbr_get_sample(struct isl_context_gbr *cgbr)
 		return sample;
 	}
 
-	cone = isl_basic_set_dup(cgbr->cone->bset);
+	cone = isl_basic_set_dup(isl_tab_peek_bset(cgbr->cone));
 	cone = drop_constant_terms(cone);
 	cone = isl_basic_set_update_from_tab(cone, cgbr->cone);
 	cone = isl_basic_set_underlying_set(cone);
 	cone = isl_basic_set_gauss(cone, NULL);
 
-	bset = isl_basic_set_dup(cgbr->tab->bset);
+	bset = isl_basic_set_dup(isl_tab_peek_bset(cgbr->tab));
 	bset = isl_basic_set_update_from_tab(bset, cgbr->tab);
 	bset = isl_basic_set_underlying_set(bset);
 	bset = isl_basic_set_gauss(bset, NULL);
@@ -2754,7 +2757,7 @@ static void add_gbr_ineq(struct isl_context_gbr *cgbr, isl_int *ineq)
 	if (cgbr->shifted && !cgbr->shifted->empty && use_shifted(cgbr)) {
 		int i;
 		unsigned dim;
-		dim = isl_basic_set_total_dim(cgbr->tab->bset);
+		dim = isl_basic_map_total_dim(cgbr->tab->bmap);
 
 		if (isl_tab_extend_cons(cgbr->shifted, 1) < 0)
 			goto error;
@@ -2915,20 +2918,20 @@ static void propagate_equalities(struct isl_context_gbr *cgbr,
 	if (!eq)
 		goto error;
 
-	if (isl_tab_extend_cons(tab, (cgbr->tab->bset->n_ineq - first)/2) < 0)
+	if (isl_tab_extend_cons(tab, (cgbr->tab->bmap->n_ineq - first)/2) < 0)
 		goto error;
 
 	isl_seq_clr(eq->el + 1 + tab->n_param,
 		    tab->n_var - tab->n_param - tab->n_div);
-	for (i = first; i < cgbr->tab->bset->n_ineq; i += 2) {
+	for (i = first; i < cgbr->tab->bmap->n_ineq; i += 2) {
 		int j;
 		int r;
 		struct isl_tab_undo *snap;
 		snap = isl_tab_snap(tab);
 
-		isl_seq_cpy(eq->el, cgbr->tab->bset->ineq[i], 1 + tab->n_param);
+		isl_seq_cpy(eq->el, cgbr->tab->bmap->ineq[i], 1 + tab->n_param);
 		isl_seq_cpy(eq->el + 1 + tab->n_var - tab->n_div,
-			    cgbr->tab->bset->ineq[i] + 1 + tab->n_param,
+			    cgbr->tab->bmap->ineq[i] + 1 + tab->n_param,
 			    tab->n_div);
 
 		r = isl_tab_add_row(tab, eq->el);
@@ -2973,16 +2976,18 @@ static int context_gbr_detect_equalities(struct isl_context *context,
 	ctx = cgbr->tab->mat->ctx;
 
 	if (!cgbr->cone) {
-		cgbr->cone = isl_tab_from_recession_cone(cgbr->tab->bset);
+		struct isl_basic_set *bset = isl_tab_peek_bset(cgbr->tab);
+		cgbr->cone = isl_tab_from_recession_cone(bset);
 		if (!cgbr->cone)
 			goto error;
-		cgbr->cone->bset = isl_basic_set_dup(cgbr->tab->bset);
+		if (isl_tab_track_bset(cgbr->cone, isl_basic_set_dup(bset)) < 0)
+			goto error;
 	}
 	cgbr->cone = isl_tab_detect_implicit_equalities(cgbr->cone);
 
-	n_ineq = cgbr->tab->bset->n_ineq;
+	n_ineq = cgbr->tab->bmap->n_ineq;
 	cgbr->tab = isl_tab_detect_equalities(cgbr->tab, cgbr->cone);
-	if (cgbr->tab && cgbr->tab->bset->n_ineq > n_ineq)
+	if (cgbr->tab && cgbr->tab->bmap->n_ineq > n_ineq)
 		propagate_equalities(cgbr, tab, n_ineq);
 
 	return 0;
@@ -3012,13 +3017,13 @@ static int context_gbr_add_div(struct isl_context *context, struct isl_vec *div,
 		if (isl_tab_allocate_var(cgbr->cone) <0)
 			return -1;
 
-		cgbr->cone->bset = isl_basic_set_extend_dim(cgbr->cone->bset,
-			isl_basic_set_get_dim(cgbr->cone->bset), 1, 0, 2);
-		k = isl_basic_set_alloc_div(cgbr->cone->bset);
+		cgbr->cone->bmap = isl_basic_map_extend_dim(cgbr->cone->bmap,
+			isl_basic_map_get_dim(cgbr->cone->bmap), 1, 0, 2);
+		k = isl_basic_map_alloc_div(cgbr->cone->bmap);
 		if (k < 0)
 			return -1;
-		isl_seq_cpy(cgbr->cone->bset->div[k], div->el, div->size);
-		if (isl_tab_push(cgbr->cone, isl_tab_undo_bset_div) < 0)
+		isl_seq_cpy(cgbr->cone->bmap->div[k], div->el, div->size);
+		if (isl_tab_push(cgbr->cone, isl_tab_undo_bmap_div) < 0)
 			return -1;
 	}
 	return context_tab_add_div(cgbr->tab, div, nonneg);
@@ -3180,8 +3185,8 @@ static struct isl_context *isl_context_gbr_alloc(struct isl_basic_set *dom)
 	cgbr->tab = isl_tab_init_samples(cgbr->tab);
 	if (!cgbr->tab)
 		goto error;
-	cgbr->tab->bset = isl_basic_set_cow(isl_basic_set_copy(dom));
-	if (!cgbr->tab->bset)
+	if (isl_tab_track_bset(cgbr->tab,
+				isl_basic_set_cow(isl_basic_set_copy(dom))) < 0)
 		goto error;
 	check_gbr_integer_feasible(cgbr);
 

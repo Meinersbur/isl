@@ -254,9 +254,9 @@ static struct isl_vec *outside_point(struct isl_tab *tab, isl_int *eq, int up)
 		return NULL;
 	isl_int_set_si(sample->el[0], 1);
 	isl_seq_combine(sample->el + 1,
-		ctx->one, tab->bset->sample->el + 1,
+		ctx->one, tab->bmap->sample->el + 1,
 		up ? ctx->one : ctx->negone, eq + 1, dim);
-	if (isl_basic_set_contains(tab->bset, sample))
+	if (isl_basic_map_contains(tab->bmap, sample))
 		return sample;
 	isl_vec_free(sample);
 	sample = NULL;
@@ -435,7 +435,13 @@ static struct isl_basic_set *uset_affine_hull_bounded(struct isl_basic_set *bset
 	tab = isl_tab_from_basic_set(bset);
 	if (!tab)
 		goto error;
-	tab->bset = isl_basic_set_copy(bset);
+	if (tab->empty) {
+		isl_tab_free(tab);
+		isl_vec_free(sample);
+		return isl_basic_set_set_to_empty(bset);
+	}
+	if (isl_tab_track_bset(tab, isl_basic_set_copy(bset)) < 0)
+		goto error;
 
 	if (!sample) {
 		struct isl_tab_undo *snap;
@@ -443,8 +449,8 @@ static struct isl_basic_set *uset_affine_hull_bounded(struct isl_basic_set *bset
 		sample = isl_tab_sample(tab);
 		if (isl_tab_rollback(tab, snap) < 0)
 			goto error;
-		isl_vec_free(tab->bset->sample);
-		tab->bset->sample = isl_vec_copy(sample);
+		isl_vec_free(tab->bmap->sample);
+		tab->bmap->sample = isl_vec_copy(sample);
 	}
 
 	if (!sample)
@@ -540,7 +546,7 @@ struct isl_tab *isl_tab_detect_equalities(struct isl_tab *tab,
 	isl_mat_free(tab->basis);
 	tab->basis = NULL;
 
-	isl_assert(tab->mat->ctx, tab->bset, goto error);
+	isl_assert(tab->mat->ctx, tab->bmap, goto error);
 	isl_assert(tab->mat->ctx, tab->samples, goto error);
 	isl_assert(tab->mat->ctx, tab->samples->n_col == 1 + tab->n_var, goto error);
 	isl_assert(tab->mat->ctx, tab->n_sample > tab->n_outside, goto error);
@@ -554,8 +560,8 @@ struct isl_tab *isl_tab_detect_equalities(struct isl_tab *tab,
 
 	isl_seq_cpy(sample->el, tab->samples->row[tab->n_outside], sample->size);
 
-	isl_vec_free(tab->bset->sample);
-	tab->bset->sample = isl_vec_copy(sample);
+	isl_vec_free(tab->bmap->sample);
+	tab->bmap->sample = isl_vec_copy(sample);
 
 	if (tab->n_unbounded == 0)
 		hull = isl_basic_set_from_vec(isl_vec_copy(sample));

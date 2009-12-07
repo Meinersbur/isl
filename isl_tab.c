@@ -177,7 +177,7 @@ void isl_tab_free(struct isl_tab *tab)
 	free_undo(tab);
 	isl_mat_free(tab->mat);
 	isl_vec_free(tab->dual);
-	isl_basic_set_free(tab->bset);
+	isl_basic_map_free(tab->bmap);
 	free(tab->var);
 	free(tab->con);
 	free(tab->row_var);
@@ -1659,16 +1659,16 @@ int isl_tab_add_ineq(struct isl_tab *tab, isl_int *ineq)
 
 	if (!tab)
 		return -1;
-	if (tab->bset) {
-		struct isl_basic_set *bset = tab->bset;
+	if (tab->bmap) {
+		struct isl_basic_map *bmap = tab->bmap;
 
-		isl_assert(tab->mat->ctx, tab->n_eq == bset->n_eq, return -1);
+		isl_assert(tab->mat->ctx, tab->n_eq == bmap->n_eq, return -1);
 		isl_assert(tab->mat->ctx,
-			    tab->n_con == bset->n_eq + bset->n_ineq, return -1);
-		tab->bset = isl_basic_set_add_ineq(tab->bset, ineq);
-		if (isl_tab_push(tab, isl_tab_undo_bset_ineq) < 0)
+			    tab->n_con == bmap->n_eq + bmap->n_ineq, return -1);
+		tab->bmap = isl_basic_map_add_ineq(tab->bmap, ineq);
+		if (isl_tab_push(tab, isl_tab_undo_bmap_ineq) < 0)
 			return -1;
-		if (!tab->bset)
+		if (!tab->bmap)
 			return -1;
 	}
 	if (tab->cone) {
@@ -1878,16 +1878,16 @@ struct isl_tab *isl_tab_add_eq(struct isl_tab *tab, isl_int *eq)
 		return tab;
 	}
 
-	if (tab->bset) {
-		tab->bset = isl_basic_set_add_ineq(tab->bset, eq);
-		if (isl_tab_push(tab, isl_tab_undo_bset_ineq) < 0)
+	if (tab->bmap) {
+		tab->bmap = isl_basic_map_add_ineq(tab->bmap, eq);
+		if (isl_tab_push(tab, isl_tab_undo_bmap_ineq) < 0)
 			goto error;
 		isl_seq_neg(eq, eq, 1 + tab->n_var);
-		tab->bset = isl_basic_set_add_ineq(tab->bset, eq);
+		tab->bmap = isl_basic_map_add_ineq(tab->bmap, eq);
 		isl_seq_neg(eq, eq, 1 + tab->n_var);
-		if (isl_tab_push(tab, isl_tab_undo_bset_ineq) < 0)
+		if (isl_tab_push(tab, isl_tab_undo_bmap_ineq) < 0)
 			goto error;
-		if (!tab->bset)
+		if (!tab->bmap)
 			goto error;
 		if (add_zero_row(tab) < 0)
 			goto error;
@@ -2773,12 +2773,12 @@ static int perform_undo(struct isl_tab *tab, struct isl_tab_undo *undo)
 	case isl_tab_undo_allocate:
 	case isl_tab_undo_relax:
 		return perform_undo_var(tab, undo);
-	case isl_tab_undo_bset_eq:
-		return isl_basic_set_free_equality(tab->bset, 1);
-	case isl_tab_undo_bset_ineq:
-		return isl_basic_set_free_inequality(tab->bset, 1);
-	case isl_tab_undo_bset_div:
-		if (isl_basic_set_free_div(tab->bset, 1) < 0)
+	case isl_tab_undo_bmap_eq:
+		return isl_basic_map_free_equality(tab->bmap, 1);
+	case isl_tab_undo_bmap_ineq:
+		return isl_basic_map_free_inequality(tab->bmap, 1);
+	case isl_tab_undo_bmap_div:
+		if (isl_basic_map_free_div(tab->bmap, 1) < 0)
 			return -1;
 		if (tab->samples)
 			tab->samples->n_col--;
@@ -2926,6 +2926,36 @@ error:
 	return isl_ineq_error;
 }
 
+int isl_tab_track_bmap(struct isl_tab *tab, __isl_take isl_basic_map *bmap)
+{
+	if (!tab || !bmap)
+		goto error;
+
+	isl_assert(tab->mat->ctx, tab->n_eq == bmap->n_eq, return -1);
+	isl_assert(tab->mat->ctx,
+		    tab->n_con == bmap->n_eq + bmap->n_ineq, return -1);
+
+	tab->bmap = bmap;
+
+	return 0;
+error:
+	isl_basic_map_free(bmap);
+	return -1;
+}
+
+int isl_tab_track_bset(struct isl_tab *tab, __isl_take isl_basic_set *bset)
+{
+	return isl_tab_track_bmap(tab, (isl_basic_map *)bset);
+}
+
+__isl_keep isl_basic_set *isl_tab_peek_bset(struct isl_tab *tab)
+{
+	if (!tab)
+		return NULL;
+
+	return (isl_basic_set *)tab->bmap;
+}
+
 void isl_tab_dump(struct isl_tab *tab, FILE *out, int indent)
 {
 	unsigned r, c;
@@ -2998,6 +3028,6 @@ void isl_tab_dump(struct isl_tab *tab, FILE *out, int indent)
 	isl_mat_dump(tab->mat, out, indent);
 	tab->mat->n_row = r;
 	tab->mat->n_col = c;
-	if (tab->bset)
-		isl_basic_set_dump(tab->bset, out, indent);
+	if (tab->bmap)
+		isl_basic_map_dump(tab->bmap, out, indent);
 }
