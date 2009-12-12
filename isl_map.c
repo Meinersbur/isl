@@ -4654,19 +4654,13 @@ struct isl_set *isl_set_drop_basic_set(struct isl_set *set,
 						(struct isl_basic_map *)bset);
 }
 
-/* Given two _disjoint_ basic sets bset1 and bset2, check whether
- * for any common value of the parameters and dimensions preceding dim
- * in both basic sets, the values of dimension pos in bset1 are
- * smaller or larger than those in bset2.
- *
- * Returns
- *	 1 if bset1 follows bset2
- *	-1 if bset1 precedes bset2
- *	 0 if bset1 and bset2 are incomparable
- *	-2 if some error occurred.
+/* Given two basic sets bset1 and bset2, compute the maximal difference
+ * between the values of dimension pos in bset1 and those in bset2
+ * for any common value of the parameters and dimensions preceding pos.
  */
-int isl_basic_set_compare_at(struct isl_basic_set *bset1,
-	struct isl_basic_set *bset2, int pos)
+static enum isl_lp_result basic_set_maximal_difference_at(
+	__isl_keep isl_basic_set *bset1, __isl_keep isl_basic_set *bset2,
+	int pos, isl_int *opt)
 {
 	struct isl_dim *dims;
 	struct isl_basic_map *bmap1 = NULL;
@@ -4676,12 +4670,10 @@ int isl_basic_set_compare_at(struct isl_basic_set *bset1,
 	unsigned total;
 	unsigned nparam;
 	unsigned dim1, dim2;
-	isl_int opt;
 	enum isl_lp_result res;
-	int cmp;
 
 	if (!bset1 || !bset2)
-		return -2;
+		return isl_lp_error;
 
 	nparam = isl_basic_set_n_param(bset1);
 	dim1 = isl_basic_set_n_dim(bset1);
@@ -4707,9 +4699,39 @@ int isl_basic_set_compare_at(struct isl_basic_set *bset1,
 	isl_int_set_si(obj->block.data[1+nparam+pos+(dim1-pos)], -1);
 	if (!obj)
 		goto error;
-	isl_int_init(opt);
 	res = isl_basic_map_solve_lp(bmap1, 1, obj->block.data, ctx->one,
-					&opt, NULL, NULL);
+					opt, NULL, NULL);
+	isl_basic_map_free(bmap1);
+	isl_vec_free(obj);
+	return res;
+error:
+	isl_basic_map_free(bmap1);
+	isl_basic_map_free(bmap2);
+	return isl_lp_error;
+}
+
+/* Given two _disjoint_ basic sets bset1 and bset2, check whether
+ * for any common value of the parameters and dimensions preceding pos
+ * in both basic sets, the values of dimension pos in bset1 are
+ * smaller or larger than those in bset2.
+ *
+ * Returns
+ *	 1 if bset1 follows bset2
+ *	-1 if bset1 precedes bset2
+ *	 0 if bset1 and bset2 are incomparable
+ *	-2 if some error occurred.
+ */
+int isl_basic_set_compare_at(struct isl_basic_set *bset1,
+	struct isl_basic_set *bset2, int pos)
+{
+	isl_int opt;
+	enum isl_lp_result res;
+	int cmp;
+
+	isl_int_init(opt);
+
+	res = basic_set_maximal_difference_at(bset1, bset2, pos, &opt);
+
 	if (res == isl_lp_empty)
 		cmp = 0;
 	else if ((res == isl_lp_ok && isl_int_is_pos(opt)) ||
@@ -4719,14 +4741,80 @@ int isl_basic_set_compare_at(struct isl_basic_set *bset1,
 		cmp = -1;
 	else
 		cmp = -2;
+
 	isl_int_clear(opt);
-	isl_basic_map_free(bmap1);
-	isl_vec_free(obj);
 	return cmp;
-error:
-	isl_basic_map_free(bmap1);
-	isl_basic_map_free(bmap2);
-	return -2;
+}
+
+/* Given two basic sets bset1 and bset2, check whether
+ * for any common value of the parameters and dimensions preceding pos
+ * there is a value of dimension pos in bset1 that is larger
+ * than a value of the same dimension in bset2.
+ *
+ * Return
+ *	 1 if there exists such a pair
+ *	 0 if there is no such pair, but there is a pair of equal values
+ *	-1 otherwise
+ *	-2 if some error occurred.
+ */
+int isl_basic_set_follows_at(__isl_keep isl_basic_set *bset1,
+	__isl_keep isl_basic_set *bset2, int pos)
+{
+	isl_int opt;
+	enum isl_lp_result res;
+	int cmp;
+
+	isl_int_init(opt);
+
+	res = basic_set_maximal_difference_at(bset1, bset2, pos, &opt);
+
+	if (res == isl_lp_empty)
+		cmp = -1;
+	else if ((res == isl_lp_ok && isl_int_is_pos(opt)) ||
+		  res == isl_lp_unbounded)
+		cmp = 1;
+	else if (res == isl_lp_ok && isl_int_is_neg(opt))
+		cmp = -1;
+	else if (res == isl_lp_ok)
+		cmp = 0;
+	else
+		cmp = -2;
+
+	isl_int_clear(opt);
+	return cmp;
+}
+
+/* Given two sets set1 and set2, check whether
+ * for any common value of the parameters and dimensions preceding pos
+ * there is a value of dimension pos in set1 that is larger
+ * than a value of the same dimension in set2.
+ *
+ * Return
+ *	 1 if there exists such a pair
+ *	 0 if there is no such pair, but there is a pair of equal values
+ *	-1 otherwise
+ *	-2 if some error occurred.
+ */
+int isl_set_follows_at(__isl_keep isl_set *set1,
+	__isl_keep isl_set *set2, int pos)
+{
+	int i, j;
+	int follows = -1;
+
+	if (!set1 || !set2)
+		return -2;
+
+	for (i = 0; i < set1->n; ++i)
+		for (j = 0; j < set2->n; ++j) {
+			int f;
+			f = isl_basic_set_follows_at(set1->p[i], set2->p[j], pos);
+			if (f == 1 || f == -2)
+				return f;
+			if (f > follows)
+				follows = f;
+		}
+
+	return follows;
 }
 
 static int isl_basic_map_fast_has_fixed_var(struct isl_basic_map *bmap,
