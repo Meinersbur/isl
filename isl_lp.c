@@ -29,6 +29,8 @@ enum isl_lp_result isl_tab_solve_lp(struct isl_basic_map *bmap, int maximize,
 
 	if (maximize)
 		isl_seq_neg(f, f, 1 + dim);
+	if (maximize && opt)
+		isl_int_neg(*opt, *opt);
 
 	return res;
 }
