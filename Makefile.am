@@ -13,11 +13,6 @@ noinst_PROGRAMS = isl_test isl_polyhedron_sample isl_pip \
 	isl_polyhedron_detect_equalities
 TESTS = isl_test
 
-if HAVE_POLYLIB
-ISL_POLYLIB = \
-	isl_map_polylib.c
-endif
-
 if HAVE_PIPLIB
 ISL_PIPLIB = \
 	isl_lp_piplib.c \
@@ -41,7 +36,6 @@ endif
 
 libisl_la_SOURCES = \
 	$(ISL_PIPLIB) \
-	$(ISL_POLYLIB) \
 	$(GET_MEMORY_FUNCTIONS) \
 	isl_affine_hull.c \
 	isl_arg.c \
@@ -92,17 +86,15 @@ EXTRA_libisl_la_SOURCES = \
 	isl_lp_no_piplib.c \
 	isl_map_piplib.c \
 	isl_map_no_piplib.c \
-	isl_map_polylib.c \
 	isl_sample_no_piplib.c \
 	isl_sample_piplib.c \
 	isl_sample_piplib.h \
 	isl_piplib.c
-libisl_la_LIBADD = $(PIPLIB_LA) @PIPLIB_LIBS@ @POLYLIB_LIBS@ -lgmp
+libisl_la_LIBADD = $(PIPLIB_LA) @PIPLIB_LIBS@ -lgmp
 libisl_la_LDFLAGS = -version-info @versioninfo@ \
-	@PIPLIB_LDFLAGS@ @POLYLIB_LDFLAGS@ @GMP_LDFLAGS@
+	@PIPLIB_LDFLAGS@ @GMP_LDFLAGS@
 libisl_la_CPPFLAGS = -I$(srcdir)/include -Iinclude/ \
-	@PIPLIB_CPPFLAGS@ @POLYLIB_CPPFLAGS@ \
-	@GMP_CPPFLAGS@
+	@PIPLIB_CPPFLAGS@ @GMP_CPPFLAGS@
 
 isl_test_CPPFLAGS = -I$(srcdir)/include -Iinclude/ @GMP_CPPFLAGS@
 isl_test_LDADD = libisl.la
@@ -154,12 +146,9 @@ pkginclude_HEADERS = \
 	include/isl_lp.h \
 	include/isl_mat.h \
 	include/isl_map.h \
-	include/isl_map_polylib.h \
 	include/isl_options.h \
-	include/isl_polylib.h \
 	include/isl_seq.h \
 	include/isl_set.h \
-	include/isl_set_polylib.h \
 	include/isl_vec.h
 
 EXTRA_DIST = \

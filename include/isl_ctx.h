@@ -66,9 +66,6 @@ struct isl_ctx {
 	int			n_cached;
 	struct isl_blk		cache[ISL_BLK_CACHE_SIZE];
 	struct isl_hash_table	name_hash;
-#ifdef ISL_POLYLIB
-	unsigned		MaxRays;
-#endif
 };
 typedef struct isl_ctx isl_ctx;
 

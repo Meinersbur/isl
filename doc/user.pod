@@ -91,17 +91,15 @@ A complete list of options can be obtained by running
 
 Below we discuss some of the more common options.
 
-C<isl> can optionally use both C<PolyLib> and C<piplib>.
-C<PolyLib> is mainly used to convert between C<PolyLib> objects
-and C<isl> objects.  No C<piplib> functionality is currently
-used by default.
-The C<--with-polylib> and C<--with-piplib> options can
-be used to specify which C<PolyLib> or C<piplib>
+C<isl> can optionally use C<piplib>, but no
+C<piplib> functionality is currently used by default.
+The C<--with-piplib> option can
+be used to specify which C<piplib>
 library to use, either an installed version (C<system>),
 an externally built version (C<build>), a bundled version (C<bundled>)
 or no version (C<no>).  The option C<build> is mostly useful
 in C<configure> scripts of larger projects that bundle both C<isl>
-and either C<PolyLib> or C<piplib>.
+and C<piplib>.
 
 =over
 
@@ -116,22 +114,6 @@ Installation prefix for C<GMP> (architecture-independent files).
 =item C<--with-gmp-exec-prefix>
 
 Installation prefix for C<GMP> (architecture-dependent files).
-
-=item C<--with-polylib>
-
-Which copy of C<PolyLib> to use, either C<no> (default), C<system> or C<build>.
-
-=item C<--with-polylib-prefix>
-
-Installation prefix for C<system> C<PolyLib> (architecture-independent files).
-
-=item C<--with-polylib-exec-prefix>
-
-Installation prefix for C<system> C<PolyLib> (architecture-dependent files).
-
-=item C<--with-polylib-builddir>
-
-Location where C<build> C<PolyLib> was built.
 
 =item C<--with-piplib>
 
@@ -389,8 +371,7 @@ C<isl_dim_out> (only for relations), C<isl_dim_set>
 
 Proper input and output functions are still in development.
 However, some functions are provided to read and write
-to foreign file formats and to convert between
-C<isl> objects and C<PolyLib> objects (if C<PolyLib> is available).
+to foreign file formats.
 
 =head3 Input
 
@@ -438,29 +419,6 @@ prefixed by C<prefix> and suffixed by C<suffix>.
 The coefficients of the existentially quantified variables
 appear between those of the set variables and those
 of the parameters.
-
-=head3 Conversion from/to C<PolyLib>
-
-The following functions are only available if C<isl> has
-been configured to use C<PolyLib>.
-
-	#include <isl_set_polylib.h>
-	__isl_give isl_basic_set *isl_basic_set_new_from_polylib(
-		Polyhedron *P, __isl_take isl_dim *dim);
-	Polyhedron *isl_basic_set_to_polylib(
-		__isl_keep isl_basic_set *bset);
-	__isl_give isl_set *isl_set_new_from_polylib(Polyhedron *D,
-		__isl_take isl_dim *dim);
-	Polyhedron *isl_set_to_polylib(__isl_keep isl_set *set);
-
-	#include <isl_map_polylib.h>
-	__isl_give isl_basic_map *isl_basic_map_new_from_polylib(
-		Polyhedron *P, __isl_take isl_dim *dim);
-	__isl_give isl_map *isl_map_new_from_polylib(Polyhedron *D,
-		__isl_take isl_dim *dim);
-	Polyhedron *isl_basic_map_to_polylib(
-		__isl_keep isl_basic_map *bmap);
-	Polyhedron *isl_map_to_polylib(__isl_keep isl_map *map);
 
 =head3 Dumping the internal state
 
@@ -941,3 +899,27 @@ is given, then the constant should appear in the last column.
 
 Given a polytope in C<PolyLib> format, C<isl_polytope_scan> prints
 all integer points in the polytope.
+
+=head1 C<isl-polylib>
+
+The C<isl-polylib> library provides the following functions for converting
+between C<isl> objects and C<PolyLib> objects.
+The library is distributed separately for licensing reasons.
+
+	#include <isl_set_polylib.h>
+	__isl_give isl_basic_set *isl_basic_set_new_from_polylib(
+		Polyhedron *P, __isl_take isl_dim *dim);
+	Polyhedron *isl_basic_set_to_polylib(
+		__isl_keep isl_basic_set *bset);
+	__isl_give isl_set *isl_set_new_from_polylib(Polyhedron *D,
+		__isl_take isl_dim *dim);
+	Polyhedron *isl_set_to_polylib(__isl_keep isl_set *set);
+
+	#include <isl_map_polylib.h>
+	__isl_give isl_basic_map *isl_basic_map_new_from_polylib(
+		Polyhedron *P, __isl_take isl_dim *dim);
+	__isl_give isl_map *isl_map_new_from_polylib(Polyhedron *D,
+		__isl_take isl_dim *dim);
+	Polyhedron *isl_basic_map_to_polylib(
+		__isl_keep isl_basic_map *bmap);
+	Polyhedron *isl_map_to_polylib(__isl_keep isl_map *map);

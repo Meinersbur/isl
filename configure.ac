@@ -38,56 +38,6 @@ AC_CHECK_DECLS(mp_get_memory_functions,[],[
 CPPFLAGS="$SAVE_CPPFLAGS"
 AM_CONDITIONAL(NEED_GET_MEMORY_FUNCTIONS, test x$need_get_memory_functions = xtrue)
 
-AX_SUBMODULE(polylib,no|system|build,no)
-
-have_polylib=false
-AC_SUBST(POLYLIB_CPPFLAGS)
-AC_SUBST(POLYLIB_LDFLAGS)
-AC_SUBST(POLYLIB_LIBS)
-case "$with_polylib" in
-	build)
-		polylibs=`echo @polylibs@ | $with_polylib_builddir/config.status --file=-`
-		AC_MSG_NOTICE(Configured polylibs: $polylibs)
-		isl_cv_polylib=missing
-		for bits in $polylibs; do
-			if test "$bits" = "libpolylibgmp.la"; then
-				isl_cv_polylib=ok
-			fi
-		done
-		if test "$isl_cv_polylib" = "missing"; then
-			AC_MSG_ERROR(no gmp polylib configured)
-		fi
-		POLYLIB_CPPFLAGS="-I$with_polylib_builddir/include -I$polylib_srcdir/include"
-		POLYLIB_LIBS="$with_polylib_builddir/libpolylibgmp.la"
-	;;
-	system)
-		POLYLIB_LIBS="-lpolylibgmp"
-		if test "x$with_polylib_prefix" != "x"; then
-			POLYLIB_CPPFLAGS="-I$with_polylib_prefix/include"
-			POLYLIB_LDFLAGS="-L$with_polylib_prefix/lib"
-		fi
-		SAVE_CPPFLAGS="$CPPFLAGS"
-		SAVE_LDFLAGS="$LDFLAGS"
-		CPPFLAGS="$POLYLIB_CPPFLAGS $CPPFLAGS"
-		LDFLAGS="$POLYLIB_LDFLAGS $LDFLAGS"
-		AC_CHECK_LIB(polylibgmp, PolyhedronTSort,[ true ],[
-			AC_MSG_ERROR(Need polylib)
-		])
-		CPPFLAGS="$SAVE_CPPFLAGS"
-		LDFLAGS="$SAVE_LDFLAGS"
-	;;
-	no)
-	;;
-	*)
-		AC_MSG_ERROR(unsupported)
-	;;
-esac
-if test "$with_polylib" != "no"; then
-	AC_DEFINE(ISL_POLYLIB,,polylib is available)
-	have_polylib=true
-fi
-AM_CONDITIONAL(HAVE_POLYLIB, test x$have_polylib = xtrue)
-
 AX_SUBMODULE(piplib,no|system|build|bundled,no)
 
 have_piplib=false
