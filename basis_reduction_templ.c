@@ -1,3 +1,15 @@
+/*
+ * Copyright 2006-2007 Universiteit Leiden
+ * Copyright 2008-2009 Katholieke Universiteit Leuven
+ *
+ * Use of this software is governed by the GNU LGPLv2.1 license
+ *
+ * Written by Sven Verdoolaege, Leiden Institute of Advanced Computer Science,
+ * Universiteit Leiden, Niels Bohrweg 1, 2333 CA Leiden, The Netherlands
+ * and K.U.Leuven, Departement * Computerwetenschappen, Celestijnenlaan 200A,
+ * B-3001 Leuven, Belgium
+ */
+
 #include <stdlib.h>
 #include "isl_basis_reduction.h"
 
