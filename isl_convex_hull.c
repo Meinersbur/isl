@@ -155,10 +155,11 @@ static int uset_is_bound(struct isl_set *set, isl_int *c, unsigned len)
 				goto error;
 			continue;
 		}
-		if (!isl_int_is_one(opt_denom))
-			isl_seq_scale(c, c, opt_denom, len);
-		if (first || isl_int_is_neg(opt))
+		if (first || isl_int_is_neg(opt)) {
+			if (!isl_int_is_one(opt_denom))
+				isl_seq_scale(c, c, opt_denom, len);
 			isl_int_sub(c[0], c[0], opt);
+		}
 		first = 0;
 	}
 	isl_int_clear(opt);
@@ -206,6 +207,7 @@ static int is_independent_bound(struct isl_set *set, isl_int *c,
 	is_bound = uset_is_bound(set, dirs->row[n], dirs->n_col);
 	if (is_bound != 1)
 		return is_bound;
+	isl_seq_normalize(set->ctx, dirs->row[n], dirs->n_col);
 	if (i < n) {
 		int k;
 		isl_int *t = dirs->row[n];
