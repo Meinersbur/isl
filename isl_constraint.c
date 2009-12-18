@@ -103,10 +103,19 @@ struct isl_constraint *isl_inequality_alloc(struct isl_dim *dim)
 
 struct isl_constraint *isl_constraint_dup(struct isl_constraint *c)
 {
+	struct isl_basic_map *bmap;
+	int i;
+	int eq;
+
 	if (!c)
 		return NULL;
 
-	return isl_basic_map_constraint(isl_basic_map_copy(c->bmap), c->line);
+	eq = c->line < c->bmap->eq + c->bmap->n_eq;
+	i = eq ? c->line - c->bmap->eq : c->line - c->bmap->ineq;
+	bmap = isl_basic_map_copy(c->bmap);
+	if (!bmap)
+		return NULL;
+	return isl_basic_map_constraint(bmap, eq ? bmap->eq + i : bmap->ineq + i);
 }
 
 struct isl_constraint *isl_constraint_cow(struct isl_constraint *c)
