@@ -682,6 +682,9 @@ static struct isl_basic_set *extend(struct isl_basic_set *hull,
 	struct isl_basic_set *hull_facet = NULL;
 	unsigned dim;
 
+	if (!hull)
+		return NULL;
+
 	isl_assert(set->ctx, set->n > 0, goto error);
 
 	dim = isl_set_n_dim(set);
