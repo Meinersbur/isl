@@ -517,6 +517,55 @@ error:
 	return NULL;
 }
 
+/* Drop rows in "rows" that are redundant with respect to earlier rows,
+ * assuming that "rows" is of full column rank.
+ *
+ * We compute the column echelon form.  The non-redundant rows are
+ * those that are the first to contain a non-zero entry in a column.
+ * All the other rows can be removed.
+ */
+static __isl_give isl_mat *drop_redundant_rows(__isl_take isl_mat *rows)
+{
+	struct isl_mat *H = NULL;
+	int col;
+	int row;
+	int last_row;
+
+	if (!rows)
+		return NULL;
+
+	isl_assert(rows->ctx, rows->n_row >= rows->n_col, goto error);
+
+	if (rows->n_row == rows->n_col)
+		return rows;
+
+	H = isl_mat_left_hermite(isl_mat_copy(rows), 0, NULL, NULL);
+	if (!H)
+		goto error;
+
+	last_row = rows->n_row;
+	for (col = rows->n_col - 1; col >= 0; --col) {
+		for (row = col; row < last_row; ++row)
+			if (!isl_int_is_zero(H->row[row][col]))
+				break;
+		isl_assert(rows->ctx, row < last_row, goto error);
+		if (row + 1 < last_row) {
+			rows = isl_mat_drop_rows(rows, row + 1, last_row - (row + 1));
+			if (rows->n_row == rows->n_col)
+				break;
+		}
+		last_row = row;
+	}
+
+	isl_mat_free(H);
+
+	return rows;
+error:
+	isl_mat_free(H);
+	isl_mat_free(rows);
+	return NULL;
+}
+
 /* Given a set of d linearly independent bounding constraints of the
  * convex hull of "set", compute the constraint of a facet of "set".
  *
@@ -565,12 +614,9 @@ static struct isl_mat *initial_facet_constraint(struct isl_set *set,
 		U = isl_mat_drop_cols(U, 0, 1);
 		Q = isl_mat_drop_rows(Q, 0, 1);
 		bounds = isl_mat_product(bounds, U);
+		bounds = drop_redundant_rows(bounds);
 		bounds = isl_mat_product(bounds, Q);
-		while (isl_seq_first_non_zero(bounds->row[bounds->n_row-1],
-					      bounds->n_col) == -1) {
-			bounds->n_row--;
-			isl_assert(set->ctx, bounds->n_row > 1, goto error);
-		}
+		isl_assert(set->ctx, bounds->n_row > 1, goto error);
 		if (!wrap_facet(set, bounds->row[0],
 					  bounds->row[bounds->n_row-1]))
 			goto error;
