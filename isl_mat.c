@@ -722,7 +722,7 @@ struct isl_mat *isl_mat_right_inverse(struct isl_mat *mat)
 		if (pivot < 0) {
 			isl_int_clear(a);
 			isl_int_clear(b);
-			goto error;
+			isl_assert(mat->ctx, pivot >= 0, goto error);
 		}
 		pivot += row;
 		if (pivot != row)
