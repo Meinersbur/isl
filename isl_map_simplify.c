@@ -1576,9 +1576,10 @@ static struct isl_basic_set *uset_gist(struct isl_basic_set *bset,
 	bset = remove_shifted_constraints(bset, context);
 	if (!bset->n_ineq)
 		goto done;
-	isl_basic_set_free_equality(context, context->n_eq);
 	context_ineq = context->n_ineq;
 	combined = isl_basic_set_cow(isl_basic_set_copy(context));
+	if (isl_basic_set_free_equality(combined, context->n_eq) < 0)
+		goto error;
 	combined = isl_basic_set_extend_constraints(combined,
 						    bset->n_eq, bset->n_ineq);
 	tab = isl_tab_from_basic_set(combined);
