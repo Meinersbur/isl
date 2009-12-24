@@ -4676,7 +4676,7 @@ int isl_basic_set_compare_at(struct isl_basic_set *bset1,
 	unsigned total;
 	unsigned nparam;
 	unsigned dim1, dim2;
-	isl_int num, den;
+	isl_int opt;
 	enum isl_lp_result res;
 	int cmp;
 
@@ -4707,21 +4707,19 @@ int isl_basic_set_compare_at(struct isl_basic_set *bset1,
 	isl_int_set_si(obj->block.data[1+nparam+pos+(dim1-pos)], -1);
 	if (!obj)
 		goto error;
-	isl_int_init(num);
-	isl_int_init(den);
-	res = isl_basic_map_solve_lp(bmap1, 0, obj->block.data, ctx->one,
-					&num, &den, NULL);
+	isl_int_init(opt);
+	res = isl_basic_map_solve_lp(bmap1, 1, obj->block.data, ctx->one,
+					&opt, NULL, NULL);
 	if (res == isl_lp_empty)
 		cmp = 0;
-	else if (res == isl_lp_ok && isl_int_is_pos(num))
-		cmp = 1;
-	else if ((res == isl_lp_ok && isl_int_is_neg(num)) ||
+	else if ((res == isl_lp_ok && isl_int_is_pos(opt)) ||
 		  res == isl_lp_unbounded)
+		cmp = 1;
+	else if (res == isl_lp_ok && isl_int_is_neg(opt))
 		cmp = -1;
 	else
 		cmp = -2;
-	isl_int_clear(num);
-	isl_int_clear(den);
+	isl_int_clear(opt);
 	isl_basic_map_free(bmap1);
 	isl_vec_free(obj);
 	return cmp;
