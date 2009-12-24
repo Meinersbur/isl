@@ -1419,8 +1419,9 @@ static int integer_constant(struct isl_tab *tab, int row)
 #define I_PAR	1 << 1
 #define I_VAR	1 << 2
 
-/* Check for first (non-parameter) variable that is non-integer and
- * therefore requires a cut.
+/* Check for next (non-parameter) variable after "var" (first if var == -1)
+ * that is non-integer and therefore requires a cut and return
+ * the index of the variable.
  * For parametric tableaus, there are three parts in a row,
  * the constant, the coefficients of the parameters and the rest.
  * For each part, we check whether the coefficients in that part
@@ -1429,16 +1430,16 @@ static int integer_constant(struct isl_tab *tab, int row)
  * current sample value is integral and no cut is required
  * (irrespective of whether the variable part is integral).
  */
-static int first_non_integer(struct isl_tab *tab, int *f)
+static int next_non_integer_var(struct isl_tab *tab, int var, int *f)
 {
-	int i;
+	var = var < 0 ? tab->n_param : var + 1;
 
-	for (i = tab->n_param; i < tab->n_var - tab->n_div; ++i) {
+	for (; var < tab->n_var - tab->n_div; ++var) {
 		int flags = 0;
 		int row;
-		if (!tab->var[i].is_row)
+		if (!tab->var[var].is_row)
 			continue;
-		row = tab->var[i].index;
+		row = tab->var[var].index;
 		if (integer_constant(tab, row))
 			ISL_FL_SET(flags, I_CST);
 		if (integer_parameter(tab, row))
@@ -1448,9 +1449,26 @@ static int first_non_integer(struct isl_tab *tab, int *f)
 		if (integer_variable(tab, row))
 			ISL_FL_SET(flags, I_VAR);
 		*f = flags;
-		return row;
+		return var;
 	}
 	return -1;
+}
+
+/* Check for first (non-parameter) variable that is non-integer and
+ * therefore requires a cut and return the corresponding row.
+ * For parametric tableaus, there are three parts in a row,
+ * the constant, the coefficients of the parameters and the rest.
+ * For each part, we check whether the coefficients in that part
+ * are all integral and if so, set the corresponding flag in *f.
+ * If the constant and the parameter part are integral, then the
+ * current sample value is integral and no cut is required
+ * (irrespective of whether the variable part is integral).
+ */
+static int first_non_integer_row(struct isl_tab *tab, int *f)
+{
+	int var = next_non_integer_var(tab, -1, f);
+
+	return var < 0 ? -1 : tab->var[var].index;
 }
 
 /* Add a (non-parametric) cut to cut away the non-integral sample
@@ -1512,15 +1530,17 @@ static int add_cut(struct isl_tab *tab, int row)
  * sample point is obtained or until the tableau is determined
  * to be integer infeasible.
  * As long as there is any non-integer value in the sample point,
- * we add an appropriate cut, if possible and resolve the violated
- * cut constraint using restore_lexmin.
+ * we add appropriate cuts, if possible, for each of these
+ * non-integer values and then resolve the violated
+ * cut constraints using restore_lexmin.
  * If one of the corresponding rows is equal to an integral
  * combination of variables/constraints plus a non-integral constant,
- * then there is no way to obtain an integer point an we return
+ * then there is no way to obtain an integer point and we return
  * a tableau that is marked empty.
  */
 static struct isl_tab *cut_to_integer_lexmin(struct isl_tab *tab)
 {
+	int var;
 	int row;
 	int flags;
 
@@ -1529,15 +1549,18 @@ static struct isl_tab *cut_to_integer_lexmin(struct isl_tab *tab)
 	if (tab->empty)
 		return tab;
 
-	while ((row = first_non_integer(tab, &flags)) != -1) {
-		if (ISL_FL_ISSET(flags, I_VAR)) {
-			if (isl_tab_mark_empty(tab) < 0)
+	while ((var = next_non_integer_var(tab, -1, &flags)) != -1) {
+		do {
+			if (ISL_FL_ISSET(flags, I_VAR)) {
+				if (isl_tab_mark_empty(tab) < 0)
+					goto error;
+				return tab;
+			}
+			row = tab->var[var].index;
+			row = add_cut(tab, row);
+			if (row < 0)
 				goto error;
-			return tab;
-		}
-		row = add_cut(tab, row);
-		if (row < 0)
-			goto error;
+		} while ((var = next_non_integer_var(tab, var, &flags)) != -1);
 		tab = restore_lexmin(tab);
 		if (!tab || tab->empty)
 			break;
@@ -3667,7 +3690,7 @@ static void find_solutions(struct isl_sol *sol, struct isl_tab *tab)
 		}
 		if (tab->rational)
 			break;
-		row = first_non_integer(tab, &flags);
+		row = first_non_integer_row(tab, &flags);
 		if (row < 0)
 			break;
 		if (ISL_FL_ISSET(flags, I_PAR)) {
