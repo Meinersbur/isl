@@ -22,13 +22,13 @@ if test "x$with_$1_prefix" != "x" -a "x$with_$1_exec_prefix" = "x"; then
 	with_$1_exec_prefix=$with_$1_prefix
 fi
 if test "x$with_$1_prefix" != "x" -o "x$with_$1_exec_prefix" != "x"; then
-	if test "x$with_$1" != "x" -a "x$with_$1" != "xsystem"; then
+	if test "x$with_$1" != "x" -a "x$with_$1" != "xyes" -a "x$with_$1" != "xsystem"; then
 		AC_MSG_ERROR([Setting $with_$1_prefix implies use of system $1])
 	fi
 	with_$1="system"
 fi
 if test "x$with_$1_builddir" != "x"; then
-	if test "x$with_$1" != "x" -a "x$with_$1" != "xbuild"; then
+	if test "x$with_$1" != "x" -a "x$with_$1" != "xyes" -a "x$with_$1" != "xbuild"; then
 		AC_MSG_ERROR([Setting $with_$1_builddir implies use of build $1])
 	fi
 	with_$1="build"
