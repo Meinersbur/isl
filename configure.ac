@@ -38,17 +38,13 @@ AC_CHECK_DECLS(mp_get_memory_functions,[],[
 CPPFLAGS="$SAVE_CPPFLAGS"
 AM_CONDITIONAL(NEED_GET_MEMORY_FUNCTIONS, test x$need_get_memory_functions = xtrue)
 
-AX_SUBMODULE(piplib,no|system|build|bundled,no)
+AX_SUBMODULE(piplib,no|system|build,no)
 
 have_piplib=false
 AC_SUBST(PIPLIB_CPPFLAGS)
 AC_SUBST(PIPLIB_LDFLAGS)
 AC_SUBST(PIPLIB_LIBS)
 case "$with_piplib" in
-	bundled)
-		PIPLIB_CPPFLAGS="-I$srcdir/piplib/include"
-		isl_configure_args="$isl_configure_args --with-bits=gmp"
-	;;
 	build)
 		PIPLIB_CPPFLAGS="-I$piplib_srcdir/include"
 		PIPLIB_LIBS="$with_piplib_builddir/libpiplibMP.la"
@@ -84,7 +80,6 @@ if test "$with_piplib" != "no"; then
 	have_piplib=true
 fi
 AM_CONDITIONAL(HAVE_PIPLIB, test x$have_piplib = xtrue)
-AM_CONDITIONAL(BUNDLED_PIPLIB, test $with_piplib = bundled)
 
 PACKAGE_CFLAGS="-I$prefix/include/isl"
 AX_CREATE_PKGCONFIG_INFO
@@ -93,9 +88,6 @@ AC_CONFIG_HEADERS(config.h)
 AC_CONFIG_HEADERS(include/isl_config.h)
 AC_CONFIG_FILES(Makefile)
 AC_CONFIG_FILES(doc/Makefile)
-if test $with_piplib = bundled; then
-	AC_CONFIG_SUBDIRS(piplib)
-fi
 AC_CONFIG_COMMANDS_POST([
 	dnl pass on arguments to subdir configures, but don't
 	dnl add them to config.status

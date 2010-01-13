@@ -1,9 +1,5 @@
-if BUNDLED_PIPLIB
-MAYBE_PIPLIB = piplib
-endif
-
-SUBDIRS = $(MAYBE_PIPLIB) . doc
-DIST_SUBDIRS = $(MAYBE_PIPLIB) doc
+SUBDIRS = . doc
+DIST_SUBDIRS = doc
 
 ACLOCAL_AMFLAGS = -I m4
 
@@ -25,9 +21,6 @@ ISL_PIPLIB = \
 	isl_lp_no_piplib.c \
 	isl_map_no_piplib.c \
 	isl_sample_no_piplib.c
-endif
-if BUNDLED_PIPLIB
-PIPLIB_LA = $(top_builddir)/piplib/libpiplibMP.la
 endif
 
 if NEED_GET_MEMORY_FUNCTIONS
@@ -90,7 +83,7 @@ EXTRA_libisl_la_SOURCES = \
 	isl_sample_piplib.c \
 	isl_sample_piplib.h \
 	isl_piplib.c
-libisl_la_LIBADD = $(PIPLIB_LA) @PIPLIB_LIBS@ -lgmp
+libisl_la_LIBADD = @PIPLIB_LIBS@ -lgmp
 libisl_la_LDFLAGS = -version-info @versioninfo@ \
 	@PIPLIB_LDFLAGS@ @GMP_LDFLAGS@
 libisl_la_CPPFLAGS = -I$(srcdir)/include -Iinclude/ \
