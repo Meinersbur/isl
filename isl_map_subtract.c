@@ -666,3 +666,44 @@ int isl_set_is_subset(struct isl_set *set1, struct isl_set *set2)
 	return isl_map_is_subset(
 			(struct isl_map *)set1, (struct isl_map *)set2);
 }
+
+__isl_give isl_map *isl_map_make_disjoint(__isl_take isl_map *map)
+{
+	int i;
+	struct isl_subtract_diff_collector sdc;
+	sdc.dc.add = &basic_map_subtract_add;
+
+	if (!map)
+		return NULL;
+	if (ISL_F_ISSET(map, ISL_MAP_DISJOINT))
+		return map;
+	if (map->n <= 1)
+		return map;
+
+	map = isl_map_compute_divs(map);
+	map = isl_map_remove_empty_parts(map);
+
+	if (!map || map->n <= 1)
+		return map;
+
+	sdc.diff = isl_map_from_basic_map(isl_basic_map_copy(map->p[0]));
+
+	for (i = 1; i < map->n; ++i) {
+		struct isl_basic_map *bmap = isl_basic_map_copy(map->p[i]);
+		struct isl_map *copy = isl_map_copy(sdc.diff);
+		if (basic_map_collect_diff(bmap, copy, &sdc.dc) < 0) {
+			isl_map_free(sdc.diff);
+			sdc.diff = NULL;
+			break;
+		}
+	}
+
+	isl_map_free(map);
+
+	return sdc.diff;
+}
+
+__isl_give isl_set *isl_set_make_disjoint(__isl_take isl_set *set)
+{
+	return (struct isl_set *)isl_map_make_disjoint((struct isl_map *)set);
+}
