@@ -183,6 +183,8 @@ struct isl_basic_map *isl_basic_map_detect_equalities(
 						struct isl_basic_map *bmap);
 __isl_give isl_basic_map *isl_basic_map_read_from_file(isl_ctx *ctx,
 		FILE *input, unsigned nparam);
+__isl_give isl_basic_map *isl_basic_map_read_from_str(isl_ctx *ctx,
+		const char *str, unsigned nparam);
 struct isl_basic_map *isl_basic_map_fix_si(struct isl_basic_map *bmap,
 		enum isl_dim_type type, unsigned pos, int value);
 

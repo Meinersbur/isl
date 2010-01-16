@@ -386,6 +386,8 @@ to foreign file formats.
 	#include <isl_map.h>
 	__isl_give isl_basic_map *isl_basic_map_read_from_file(
 		isl_ctx *ctx, FILE *input, unsigned nparam);
+	__isl_give isl_basic_map *isl_basic_map_read_from_str(
+		isl_ctx *ctx, const char *str, unsigned nparam);
 
 The input may be either in C<PolyLib> format or in an
 C<Omega>-like format.
