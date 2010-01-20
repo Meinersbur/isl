@@ -1132,6 +1132,8 @@ struct isl_basic_map *isl_basic_map_set_to_empty(struct isl_basic_map *bmap)
 	isl_int_set_si(bmap->eq[i][0], 1);
 	isl_seq_clr(bmap->eq[i]+1, total);
 	ISL_F_SET(bmap, ISL_BASIC_MAP_EMPTY);
+	isl_vec_free(bmap->sample);
+	bmap->sample = NULL;
 	return isl_basic_map_finalize(bmap);
 error:
 	isl_basic_map_free(bmap);
