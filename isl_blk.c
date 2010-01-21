@@ -7,8 +7,8 @@
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
  */
 
-#include "isl_blk.h"
-#include "isl_ctx.h"
+#include <isl/blk.h>
+#include <isl/ctx.h>
 
 struct isl_blk isl_blk_empty()
 {

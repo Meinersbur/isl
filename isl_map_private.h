@@ -10,10 +10,10 @@
 #ifndef ISL_MAP_PRIVATE_H
 #define ISL_MAP_PRIVATE_H
 
-#include "isl_set.h"
-#include "isl_map.h"
+#include <isl/set.h>
+#include <isl/map.h>
 #include <isl_reordering.h>
-#include "isl_vec.h"
+#include <isl/vec.h>
 
 __isl_give isl_map *isl_map_realign(__isl_take isl_map *map,
 	__isl_take isl_reordering *r);

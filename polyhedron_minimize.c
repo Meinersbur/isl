@@ -8,10 +8,10 @@
  */
 
 #include <assert.h>
-#include "isl_set.h"
-#include "isl_vec.h"
-#include "isl_ilp.h"
-#include "isl_seq.h"
+#include <isl/set.h>
+#include <isl/vec.h>
+#include <isl/ilp.h>
+#include <isl/seq.h>
 
 /* The input of this program is the same as that of the "polytope_minimize"
  * program from the barvinok distribution.

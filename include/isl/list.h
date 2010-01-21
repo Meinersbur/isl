@@ -10,7 +10,7 @@
 #ifndef ISL_LIST_H
 #define ISL_LIST_H
 
-#include <isl_ctx.h>
+#include <isl/ctx.h>
 
 struct isl_basic_set;
 

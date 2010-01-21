@@ -1,5 +1,5 @@
-#include <isl_constraint.h>
-#include <isl_set.h>
+#include <isl/constraint.h>
+#include <isl/set.h>
 #include <isl_polynomial_private.h>
 #include <isl_morph.h>
 #include <isl_range.h>

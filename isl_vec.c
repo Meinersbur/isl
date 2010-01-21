@@ -7,8 +7,8 @@
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
  */
 
-#include "isl_seq.h"
-#include "isl_vec.h"
+#include <isl/seq.h>
+#include <isl/vec.h>
 
 struct isl_vec *isl_vec_alloc(struct isl_ctx *ctx, unsigned size)
 {

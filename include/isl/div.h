@@ -10,8 +10,8 @@
 #ifndef ISL_DIV_H
 #define ISL_DIV_H
 
-#include "isl_dim.h"
-#include "isl_set.h"
+#include <isl/dim.h>
+#include <isl/set.h>
 
 #if defined(__cplusplus)
 extern "C" {

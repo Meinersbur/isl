@@ -9,7 +9,7 @@
 
 #include "isl_basis_reduction.h"
 #include "isl_scan.h"
-#include "isl_seq.h"
+#include <isl/seq.h>
 #include "isl_tab.h"
 #include <isl_map_private.h>
 

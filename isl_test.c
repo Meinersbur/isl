@@ -10,12 +10,12 @@
 #include <assert.h>
 #include <stdio.h>
 #include <limits.h>
-#include <isl_ctx.h>
-#include <isl_set.h>
-#include <isl_flow.h>
-#include <isl_constraint.h>
-#include <isl_polynomial.h>
-#include <isl_union_map.h>
+#include <isl/ctx.h>
+#include <isl/set.h>
+#include <isl/flow.h>
+#include <isl/constraint.h>
+#include <isl/polynomial.h>
+#include <isl/union_map.h>
 
 static char *srcdir;
 

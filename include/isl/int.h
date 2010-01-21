@@ -10,7 +10,7 @@
 #ifndef ISL_INT_H
 #define ISL_INT_H
 
-#include <isl_hash.h>
+#include <isl/hash.h>
 #include <string.h>
 #include <gmp.h>
 #if defined(__cplusplus)

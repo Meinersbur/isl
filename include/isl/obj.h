@@ -1,12 +1,12 @@
 #ifndef ISL_OBJ_H
 #define ISL_OBJ_H
 
-#include <isl_set.h>
-#include <isl_map.h>
-#include <isl_union_set.h>
-#include <isl_union_map.h>
-#include <isl_polynomial.h>
-#include <isl_printer.h>
+#include <isl/set.h>
+#include <isl/map.h>
+#include <isl/union_set.h>
+#include <isl/union_map.h>
+#include <isl/polynomial.h>
+#include <isl/printer.h>
 
 #if defined(__cplusplus)
 extern "C" {

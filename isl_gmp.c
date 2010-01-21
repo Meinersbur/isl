@@ -7,7 +7,7 @@
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
  */
 
-#include "isl_int.h"
+#include <isl/int.h>
 
 uint32_t isl_gmp_hash(mpz_t v, uint32_t hash)
 {

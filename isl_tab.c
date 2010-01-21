@@ -10,7 +10,7 @@
 #include <isl_mat_private.h>
 #include "isl_map_private.h"
 #include "isl_tab.h"
-#include "isl_seq.h"
+#include <isl/seq.h>
 
 /*
  * The implementation of tableaus in this file was inspired by Section 8

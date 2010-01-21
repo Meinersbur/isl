@@ -8,7 +8,7 @@
  */
 
 #include "isl_map_piplib.h"
-#include "isl_set.h"
+#include <isl/set.h>
 
 struct isl_map *isl_pip_basic_map_lexopt(
 		struct isl_basic_map *bmap, struct isl_basic_set *dom,

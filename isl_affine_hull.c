@@ -7,11 +7,11 @@
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
  */
 
-#include "isl_ctx.h"
-#include "isl_seq.h"
-#include "isl_set.h"
-#include "isl_lp.h"
-#include "isl_map.h"
+#include <isl/ctx.h>
+#include <isl/seq.h>
+#include <isl/set.h>
+#include <isl/lp.h>
+#include <isl/map.h>
 #include "isl_map_private.h"
 #include "isl_equalities.h"
 #include "isl_sample.h"

@@ -9,9 +9,9 @@
 
 #include "isl_sample.h"
 #include "isl_sample_piplib.h"
-#include "isl_vec.h"
-#include "isl_mat.h"
-#include "isl_seq.h"
+#include <isl/vec.h>
+#include <isl/mat.h>
+#include <isl/seq.h>
 #include "isl_map_private.h"
 #include "isl_equalities.h"
 #include "isl_tab.h"

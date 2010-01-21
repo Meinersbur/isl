@@ -10,8 +10,8 @@
 
 #include <stdlib.h>
 #include <isl_factorization.h>
-#include <isl_lp.h>
-#include <isl_seq.h>
+#include <isl/lp.h>
+#include <isl/seq.h>
 #include <isl_union_map_private.h>
 #include <isl_polynomial_private.h>
 #include <isl_point_private.h>

@@ -12,9 +12,9 @@
 #define ISL_MORHP_H
 
 #include <stdio.h>
-#include <isl_dim.h>
-#include <isl_mat.h>
-#include <isl_set.h>
+#include <isl/dim.h>
+#include <isl/mat.h>
+#include <isl/set.h>
 
 #if defined(__cplusplus)
 extern "C" {

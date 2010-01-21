@@ -8,8 +8,8 @@
  */
 
 #include <stdlib.h>
-#include "isl_hash.h"
-#include "isl_ctx.h"
+#include <isl/hash.h>
+#include <isl/ctx.h>
 
 uint32_t isl_hash_string(uint32_t hash, const char *s)
 {

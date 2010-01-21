@@ -18,7 +18,7 @@ AC_CHECK_PROG(POD2HTML, pod2html, pod2html, [])
 
 AM_CONDITIONAL(GENERATE_DOC, test -n "$PERL" -a -n "$PDFLATEX" -a -n "$POD2HTML")
 
-AX_CREATE_STDINT_H(include/isl_stdint.h)
+AX_CREATE_STDINT_H(include/isl/stdint.h)
 
 AX_SUBMODULE(gmp,system,system)
 
@@ -81,14 +81,13 @@ if test "$with_piplib" != "no"; then
 fi
 AM_CONDITIONAL(HAVE_PIPLIB, test x$have_piplib = xtrue)
 
-PACKAGE_CFLAGS="-I$prefix/include/isl"
 AX_CREATE_PKGCONFIG_INFO
 
 AX_DETECT_GIT_HEAD
 echo '#define GIT_HEAD_ID "'$GIT_HEAD_ID'"' > gitversion.h
 
-AC_CONFIG_HEADERS(config.h)
-AC_CONFIG_HEADERS(include/isl_config.h)
+AC_CONFIG_HEADERS(isl_config.h)
+AC_CONFIG_HEADERS(include/isl/config.h)
 AC_CONFIG_FILES(Makefile)
 AC_CONFIG_FILES(doc/Makefile)
 AC_CONFIG_COMMANDS_POST([

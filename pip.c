@@ -9,13 +9,13 @@
 
 #include <assert.h>
 #include <string.h>
-#include "isl_set.h"
+#include <isl/set.h>
 #include "isl_tab.h"
 #include "isl_map_private.h"
 #include "isl_sample.h"
 #include "isl_scan.h"
-#include "isl_seq.h"
-#include "isl_ilp.h"
+#include <isl/seq.h>
+#include <isl/ilp.h>
 #include <isl_point_private.h>
 
 /* The input of this program is the same as that of the "example" program

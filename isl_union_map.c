@@ -8,14 +8,14 @@
  * 91893 Orsay, France 
  */
 
-#include <isl_ctx.h>
-#include <isl_hash.h>
-#include <isl_map.h>
-#include <isl_set.h>
+#include <isl/ctx.h>
+#include <isl/hash.h>
+#include <isl/map.h>
+#include <isl/set.h>
 #include <isl_dim_private.h>
 #include <isl_map_private.h>
 #include <isl_union_map_private.h>
-#include <isl_union_set.h>
+#include <isl/union_set.h>
 
 static __isl_give isl_union_map *isl_union_map_alloc(__isl_take isl_dim *dim,
 	int size)

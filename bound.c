@@ -1,5 +1,5 @@
 #include <assert.h>
-#include <isl_stream.h>
+#include <isl/stream.h>
 #include <isl_polynomial_private.h>
 #include <isl_scan.h>
 

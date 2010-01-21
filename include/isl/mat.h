@@ -12,10 +12,10 @@
 
 #include <stdio.h>
 
-#include <isl_int.h>
-#include <isl_ctx.h>
-#include <isl_blk.h>
-#include <isl_vec.h>
+#include <isl/int.h>
+#include <isl/ctx.h>
+#include <isl/blk.h>
+#include <isl/vec.h>
 
 #if defined(__cplusplus)
 extern "C" {

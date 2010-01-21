@@ -11,7 +11,7 @@
 #define ISL_HASH_H
 
 #include <stdlib.h>
-#include <isl_stdint.h>
+#include <isl/stdint.h>
 
 #if defined(__cplusplus)
 extern "C" {

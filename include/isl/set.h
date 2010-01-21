@@ -10,9 +10,9 @@
 #ifndef ISL_SET_H
 #define ISL_SET_H
 
-#include "isl_map.h"
-#include "isl_list.h"
-#include <isl_point.h>
+#include <isl/map.h>
+#include <isl/list.h>
+#include <isl/point.h>
 
 #if defined(__cplusplus)
 extern "C" {

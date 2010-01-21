@@ -1,14 +1,14 @@
 #ifndef ISL_POLYNOMIAL_H
 #define ISL_POLYNOMIAL_H
 
-#include <isl_ctx.h>
-#include <isl_constraint.h>
-#include <isl_dim.h>
-#include <isl_div.h>
-#include <isl_set.h>
-#include <isl_point.h>
-#include <isl_printer.h>
-#include <isl_union_set.h>
+#include <isl/ctx.h>
+#include <isl/constraint.h>
+#include <isl/dim.h>
+#include <isl/div.h>
+#include <isl/set.h>
+#include <isl/point.h>
+#include <isl/printer.h>
+#include <isl/union_set.h>
 
 #if defined(__cplusplus)
 extern "C" {

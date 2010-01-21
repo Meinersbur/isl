@@ -10,7 +10,7 @@
 #ifndef ISL_SAMPLE_H
 #define ISL_SAMPLE
 
-#include <isl_set.h>
+#include <isl/set.h>
 #include <isl_tab.h>
 
 #if defined(__cplusplus)

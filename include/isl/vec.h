@@ -12,9 +12,9 @@
 
 #include <stdio.h>
 
-#include <isl_int.h>
-#include <isl_ctx.h>
-#include <isl_blk.h>
+#include <isl/int.h>
+#include <isl/ctx.h>
+#include <isl/blk.h>
 
 #if defined(__cplusplus)
 extern "C" {

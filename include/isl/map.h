@@ -12,13 +12,13 @@
 
 #include <stdio.h>
 
-#include <isl_int.h>
-#include <isl_ctx.h>
-#include <isl_blk.h>
-#include <isl_dim.h>
-#include <isl_vec.h>
-#include <isl_mat.h>
-#include <isl_printer.h>
+#include <isl/int.h>
+#include <isl/ctx.h>
+#include <isl/blk.h>
+#include <isl/dim.h>
+#include <isl/vec.h>
+#include <isl/mat.h>
+#include <isl/printer.h>
 
 #if defined(__cplusplus)
 extern "C" {

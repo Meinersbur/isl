@@ -11,8 +11,8 @@
 #define ISL_SEQ_H
 
 #include <sys/types.h>
-#include <isl_int.h>
-#include <isl_ctx.h>
+#include <isl/int.h>
+#include <isl/ctx.h>
 
 /* Some common operations on sequences of isl_int's */
 

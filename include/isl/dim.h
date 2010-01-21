@@ -10,7 +10,7 @@
 #ifndef ISL_DIM_H
 #define ISL_DIM_H
 
-#include <isl_ctx.h>
+#include <isl/ctx.h>
 
 #if defined(__cplusplus)
 extern "C" {

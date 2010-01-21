@@ -1,8 +1,8 @@
 #ifndef ISL_UNION_SET_H
 #define ISL_UNION_SET_H
 
-#include <isl_point.h>
-#include <isl_union_map.h>
+#include <isl/point.h>
+#include <isl/union_map.h>
 
 #if defined(__cplusplus)
 extern "C" {

@@ -1,7 +1,7 @@
 #include <assert.h>
-#include <isl_obj.h>
-#include <isl_printer.h>
-#include <isl_stream.h>
+#include <isl/obj.h>
+#include <isl/printer.h>
+#include <isl/stream.h>
 
 struct isl_arg_choice cat_format[] = {
 	{"isl",		ISL_FORMAT_ISL},

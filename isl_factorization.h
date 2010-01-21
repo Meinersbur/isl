@@ -1,4 +1,4 @@
-#include <isl_set.h>
+#include <isl/set.h>
 #include <isl_morph.h>
 
 #if defined(__cplusplus)

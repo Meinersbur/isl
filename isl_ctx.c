@@ -7,8 +7,8 @@
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
  */
 
-#include "isl_ctx.h"
-#include "isl_vec.h"
+#include <isl/ctx.h>
+#include <isl/vec.h>
 
 static struct isl_options *find_nested_options(struct isl_arg *arg,
 	void *opt, struct isl_arg *wanted)

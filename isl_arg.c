@@ -11,8 +11,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "isl_arg.h"
-#include <isl_ctx.h>
+#include <isl/arg.h>
+#include <isl/ctx.h>
 
 static void set_default_choice(struct isl_arg *arg, void *opt)
 {

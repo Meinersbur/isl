@@ -11,9 +11,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "isl_ctx.h"
-#include "isl_options.h"
-#include <isl_version.h>
+#include <isl/ctx.h>
+#include <isl/options.h>
+#include <isl/version.h>
 
 struct isl_arg_choice isl_lp_solver_choice[] = {
 	{"tab",		ISL_LP_TAB},

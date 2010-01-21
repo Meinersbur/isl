@@ -8,7 +8,7 @@
  * 91893 Orsay, France 
  */
 
-#include <isl_obj.h>
+#include <isl/obj.h>
 
 static void *isl_obj_map_copy(void *v)
 {

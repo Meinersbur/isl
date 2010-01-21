@@ -13,11 +13,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <isl_int.h>
-#include <isl_options.h>
-#include <isl_blk.h>
-#include <isl_hash.h>
-#include <isl_config.h>
+#include <isl/int.h>
+#include <isl/options.h>
+#include <isl/blk.h>
+#include <isl/hash.h>
+#include <isl/config.h>
 
 #define __isl_give
 #define __isl_take

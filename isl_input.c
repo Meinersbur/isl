@@ -14,14 +14,14 @@
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
-#include <isl_set.h>
-#include <isl_seq.h>
-#include <isl_div.h>
-#include "isl_stream.h"
+#include <isl/set.h>
+#include <isl/seq.h>
+#include <isl/div.h>
+#include <isl/stream.h>
 #include "isl_map_private.h"
-#include "isl_obj.h"
+#include <isl/obj.h>
 #include "isl_polynomial_private.h"
-#include <isl_union_map.h>
+#include <isl/union_map.h>
 #include <isl_mat_private.h>
 
 struct variable {

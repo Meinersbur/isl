@@ -10,7 +10,7 @@
 #ifndef ISL_MAP_PIPLIB_H
 #define ISL_MAP_PIPLIB_H
 
-#include <isl_map.h>
+#include <isl/map.h>
 
 #if defined(__cplusplus)
 extern "C" {

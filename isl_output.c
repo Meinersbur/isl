@@ -12,14 +12,14 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <isl_set.h>
-#include <isl_seq.h>
+#include <isl/set.h>
+#include <isl/seq.h>
 #include <isl_polynomial_private.h>
 #include <isl_printer_private.h>
 #include <isl_dim_private.h>
 #include <isl_map_private.h>
 #include <isl_mat_private.h>
-#include <isl_union_map.h>
+#include <isl/union_map.h>
 
 static const char *s_to[2] = { " -> ", " \\to " };
 static const char *s_and[2] = { " and ", " \\wedge " };

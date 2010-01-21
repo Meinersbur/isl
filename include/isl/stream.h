@@ -11,8 +11,8 @@
 #define ISL_STREAM_H
 
 #include <stdio.h>
-#include <isl_hash.h>
-#include <isl_obj.h>
+#include <isl/hash.h>
+#include <isl/obj.h>
 
 #if defined(__cplusplus)
 extern "C" {

@@ -1,5 +1,5 @@
-#include <isl_set.h>
-#include <isl_vertices.h>
+#include <isl/set.h>
+#include <isl/vertices.h>
 
 #if defined(__cplusplus)
 extern "C" {

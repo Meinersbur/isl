@@ -1,7 +1,7 @@
 #ifndef ISL_REORDERING_H
 #define ISL_REORDERING_H
 
-#include <isl_dim.h>
+#include <isl/dim.h>
 
 /* pos maps original dimensions to new dimensions.
  * The final dimension is given by dim.

@@ -7,7 +7,7 @@
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
  */
 
-#include "isl_set.h"
+#include <isl/set.h>
 
 int main(int argc, char **argv)
 {

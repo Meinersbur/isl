@@ -13,8 +13,8 @@
 #include <isl_point_private.h>
 #include <isl_dim_private.h>
 #include <isl_map_private.h>
-#include <isl_lp.h>
-#include <isl_seq.h>
+#include <isl/lp.h>
+#include <isl/seq.h>
 #include <isl_mat_private.h>
 
 static __isl_give isl_qpolynomial_fold *qpolynomial_fold_alloc(

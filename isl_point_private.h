@@ -1,6 +1,6 @@
-#include <isl_dim.h>
-#include <isl_point.h>
-#include <isl_vec.h>
+#include <isl/dim.h>
+#include <isl/point.h>
+#include <isl/vec.h>
 
 struct isl_point {
 	int		ref;

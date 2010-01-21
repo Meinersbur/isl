@@ -1,9 +1,9 @@
 #include <stdio.h>
-#include <isl_div.h>
-#include <isl_map.h>
-#include <isl_mat.h>
+#include <isl/div.h>
+#include <isl/map.h>
+#include <isl/mat.h>
 #include <isl_morph.h>
-#include <isl_polynomial.h>
+#include <isl/polynomial.h>
 #include <isl_reordering.h>
 
 struct isl_upoly {

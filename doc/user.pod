@@ -46,6 +46,15 @@ renamed to C<isl_union_pw_qpolynomial_fold_fold>.
 
 =back
 
+=head3 Changes since isl-0.04
+
+=over
+
+=item * All header files have been renamed from C<isl_header.h>
+to C<isl/header.h>.
+
+=back
+
 =head1 Installation
 
 The source of C<isl> can be obtained either as a tarball
@@ -373,7 +382,7 @@ a C<NULL> value for an C<__isl_take> argument.
 Whenever a new set or relation is created from scratch,
 its dimension needs to be specified using an C<isl_dim>.
 
-	#include <isl_dim.h>
+	#include <isl/dim.h>
 	__isl_give isl_dim *isl_dim_alloc(isl_ctx *ctx,
 		unsigned nparam, unsigned n_in, unsigned n_out);
 	__isl_give isl_dim *isl_dim_set_alloc(isl_ctx *ctx,
@@ -401,25 +410,25 @@ by creating the new objects
 L<Creating New (Piecewise) Quasipolynomials>) based on the dimension
 specification of the original object.
 
-	#include <isl_set.h>
+	#include <isl/set.h>
 	__isl_give isl_dim *isl_basic_set_get_dim(
 		__isl_keep isl_basic_set *bset);
 	__isl_give isl_dim *isl_set_get_dim(__isl_keep isl_set *set);
 
-	#include <isl_union_set.h>
+	#include <isl/union_set.h>
 	__isl_give isl_dim *isl_union_set_get_dim(
 		__isl_keep isl_union_set *uset);
 
-	#include <isl_map.h>
+	#include <isl/map.h>
 	__isl_give isl_dim *isl_basic_map_get_dim(
 		__isl_keep isl_basic_map *bmap);
 	__isl_give isl_dim *isl_map_get_dim(__isl_keep isl_map *map);
 
-	#include <isl_union_map.h>
+	#include <isl/union_map.h>
 	__isl_give isl_dim *isl_union_map_get_dim(
 		__isl_keep isl_union_map *umap);
 
-	#include <isl_polynomial.h>
+	#include <isl/polynomial.h>
 	__isl_give isl_dim *isl_qpolynomial_get_dim(
 		__isl_keep isl_qpolynomial *qp);
 	__isl_give isl_dim *isl_pw_qpolynomial_get_dim(
@@ -432,7 +441,7 @@ specification of the original object.
 The names of the individual dimensions may be set or read off
 using the following functions.
 
-	#include <isl_dim.h>
+	#include <isl/dim.h>
 	__isl_give isl_dim *isl_dim_set_name(__isl_take isl_dim *dim,
 				 enum isl_dim_type type, unsigned pos,
 				 __isl_keep const char *name);
@@ -454,7 +463,7 @@ the arguments.
 The names of entire spaces may be set or read off
 using the following functions.
 
-	#include <isl_dim.h>
+	#include <isl/dim.h>
 	__isl_give isl_dim *isl_dim_set_tuple_name(
 		__isl_take isl_dim *dim,
 		enum isl_dim_type type, const char *s);
@@ -473,7 +482,7 @@ the domain or range of a relation can be a nested relation.
 The following functions can be used to construct and deconstruct
 such nested dimension specifications.
 
-	#include <isl_dim.h>
+	#include <isl/dim.h>
 	int isl_dim_is_wrapping(__isl_keep isl_dim *dim);
 	__isl_give isl_dim *isl_dim_wrap(__isl_take isl_dim *dim);
 	__isl_give isl_dim *isl_dim_unwrap(__isl_take isl_dim *dim);
@@ -565,7 +574,7 @@ dimensions is zero.
 
 =head3 Input
 
-	#include <isl_set.h>
+	#include <isl/set.h>
 	__isl_give isl_basic_set *isl_basic_set_read_from_file(
 		isl_ctx *ctx, FILE *input, int nparam);
 	__isl_give isl_basic_set *isl_basic_set_read_from_str(
@@ -575,7 +584,7 @@ dimensions is zero.
 	__isl_give isl_set *isl_set_read_from_str(isl_ctx *ctx,
 		const char *str, int nparam);
 
-	#include <isl_map.h>
+	#include <isl/map.h>
 	__isl_give isl_basic_map *isl_basic_map_read_from_file(
 		isl_ctx *ctx, FILE *input, int nparam);
 	__isl_give isl_basic_map *isl_basic_map_read_from_str(
@@ -585,11 +594,11 @@ dimensions is zero.
 	__isl_give isl_map *isl_map_read_from_str(isl_ctx *ctx,
 		const char *str, int nparam);
 
-	#include <isl_union_set.h>
+	#include <isl/union_set.h>
 	__isl_give isl_union_set *isl_union_set_read_from_str(
 		struct isl_ctx *ctx, const char *str);
 
-	#include <isl_union_map.h>
+	#include <isl/union_map.h>
 	__isl_give isl_union_map *isl_union_map_read_from_str(
 		struct isl_ctx *ctx, const char *str);
 
@@ -638,7 +647,7 @@ of the parameters.
 
 To actually print something, use
 
-	#include <isl_set.h>
+	#include <isl/set.h>
 	__isl_give isl_printer *isl_printer_print_basic_set(
 		__isl_take isl_printer *printer,
 		__isl_keep isl_basic_set *bset);
@@ -646,7 +655,7 @@ To actually print something, use
 		__isl_take isl_printer *printer,
 		__isl_keep isl_set *set);
 
-	#include <isl_map.h>
+	#include <isl/map.h>
 	__isl_give isl_printer *isl_printer_print_basic_map(
 		__isl_take isl_printer *printer,
 		__isl_keep isl_basic_map *bmap);
@@ -654,12 +663,12 @@ To actually print something, use
 		__isl_take isl_printer *printer,
 		__isl_keep isl_map *map);
 
-	#include <isl_union_set.h>
+	#include <isl/union_set.h>
 	__isl_give isl_printer *isl_printer_print_union_set(
 		__isl_take isl_printer *p,
 		__isl_keep isl_union_set *uset);
 
-	#include <isl_union_map.h>
+	#include <isl/union_map.h>
 	__isl_give isl_printer *isl_printer_print_union_map(
 		__isl_take isl_printer *p,
 		__isl_keep isl_union_map *umap);
@@ -792,7 +801,7 @@ existentially quantified variables, if any.
 Constraints can be constructed, manipulated and
 added to basic sets and relations using the following functions.
 
-	#include <isl_constraint.h>
+	#include <isl/constraint.h>
 	__isl_give isl_constraint *isl_equality_alloc(
 		__isl_take isl_dim *dim);
 	__isl_give isl_constraint *isl_inequality_alloc(
@@ -974,7 +983,7 @@ from
 
 To iterate over the constraints of a basic set or map, use
 
-	#include <isl_constraint.h>
+	#include <isl/constraint.h>
 
 	int isl_basic_map_foreach_constraint(
 		__isl_keep isl_basic_map *bmap,
@@ -1665,7 +1674,7 @@ In case of union relations, the optimum is computed per space.
 
 Matrices can be created, copied and freed using the following functions.
 
-	#include <isl_mat.h>
+	#include <isl/mat.h>
 	__isl_give isl_mat *isl_mat_alloc(struct isl_ctx *ctx,
 		unsigned n_row, unsigned n_col);
 	__isl_give isl_mat *isl_mat_copy(__isl_keep isl_mat *mat);
@@ -2263,7 +2272,7 @@ then memory based dependence analysis is performed.
 If, on the other hand, all sources are I<must> accesses,
 then value based dependence analysis is performed.
 
-	#include <isl_flow.h>
+	#include <isl/flow.h>
 
 	typedef int (*isl_access_level_before)(void *first, void *second);
 
@@ -2350,7 +2359,7 @@ C<isl_flow_free> to free all associated memory.
 A higher-level interface to dependence analysis is provided
 by the following function.
 
-	#include <isl_flow.h>
+	#include <isl/flow.h>
 
 	int isl_union_map_compute_flow(__isl_take isl_union_map *sink,
 		__isl_take isl_union_map *must_source,
@@ -2375,7 +2384,7 @@ The parametric vertex enumeration described in this section
 is mainly intended to be used internally and by the C<barvinok>
 library.
 
-	#include <isl_vertices.h>
+	#include <isl/vertices.h>
 	__isl_give isl_vertices *isl_basic_set_compute_vertices(
 		__isl_keep isl_basic_set *bset);
 

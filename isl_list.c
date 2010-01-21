@@ -7,8 +7,8 @@
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
  */
 
-#include "isl_list.h"
-#include "isl_set.h"
+#include <isl/list.h>
+#include <isl/set.h>
 
 struct isl_basic_set_list *isl_basic_set_list_alloc(struct isl_ctx *ctx, int n)
 {

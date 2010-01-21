@@ -1,7 +1,7 @@
 #ifndef ISL_BOUND_H
 #define ISL_BOUND_H
 
-#include <isl_polynomial.h>
+#include <isl/polynomial.h>
 
 struct isl_bound {
 	/* input */

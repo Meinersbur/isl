@@ -8,12 +8,12 @@
  * 91893 Orsay, France 
  */
 
-#include "isl_map.h"
+#include <isl/map.h>
 #include "isl_map_private.h"
-#include "isl_seq.h"
+#include <isl/seq.h>
 #include <isl_dim_private.h>
-#include <isl_lp.h>
-#include <isl_union_map.h>
+#include <isl/lp.h>
+#include <isl/union_map.h>
 #include <isl_mat_private.h>
 
 int isl_map_is_transitively_closed(__isl_keep isl_map *map)

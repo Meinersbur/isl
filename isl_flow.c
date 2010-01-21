@@ -13,7 +13,7 @@
  * ZAC des vignes, 4 rue Jacques Monod, 91893 Orsay, France 
  */
 
-#include <isl_flow.h>
+#include <isl/flow.h>
 
 /* A private structure to keep track of a mapping together with
  * a user-specified identifier and a boolean indicating whether

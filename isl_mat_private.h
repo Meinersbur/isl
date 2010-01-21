@@ -1,4 +1,4 @@
-#include <isl_mat.h>
+#include <isl/mat.h>
 
 struct isl_mat {
 	int ref;

@@ -12,21 +12,21 @@
 
 #include <string.h>
 #include <strings.h>
-#include "isl_ctx.h"
-#include "isl_blk.h"
+#include <isl/ctx.h>
+#include <isl/blk.h>
 #include "isl_dim_private.h"
 #include "isl_equalities.h"
-#include "isl_list.h"
-#include "isl_lp.h"
-#include "isl_seq.h"
-#include "isl_set.h"
-#include "isl_map.h"
+#include <isl/list.h>
+#include <isl/lp.h>
+#include <isl/seq.h>
+#include <isl/set.h>
+#include <isl/map.h>
 #include "isl_map_private.h"
 #include "isl_map_piplib.h"
 #include <isl_reordering.h>
 #include "isl_sample.h"
 #include "isl_tab.h"
-#include "isl_vec.h"
+#include <isl/vec.h>
 #include <isl_mat_private.h>
 
 /* Maps dst positions to src positions */

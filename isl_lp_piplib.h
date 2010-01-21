@@ -10,7 +10,7 @@
 #ifndef ISL_LP_PIPLIB_H
 #define ISL_LP_PIPLIB_H
 
-#include <isl_lp.h>
+#include <isl/lp.h>
 
 #if defined(__cplusplus)
 extern "C" {

@@ -10,9 +10,9 @@
 #ifndef ISL_PIPLIB_H
 #define ISL_PIPLIB_H
 
-#include <isl_ctx.h>
-#include <isl_int.h>
-#include <isl_map.h>
+#include <isl/ctx.h>
+#include <isl/int.h>
+#include <isl/map.h>
 #ifndef ISL_PIPLIB
 #error "no piplib"
 #endif

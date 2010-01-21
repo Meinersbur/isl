@@ -2,6 +2,7 @@ SUBDIRS = . doc
 DIST_SUBDIRS = doc
 
 ACLOCAL_AMFLAGS = -I m4
+AUTOMAKE_OPTIONS = nostdinc
 
 lib_LTLIBRARIES = libisl.la
 noinst_PROGRAMS = isl_test isl_polyhedron_sample isl_pip \
@@ -27,6 +28,8 @@ endif
 if NEED_GET_MEMORY_FUNCTIONS
 GET_MEMORY_FUNCTIONS=mp_get_memory_functions.c
 endif
+
+INCLUDES = -I. -I$(srcdir) -I$(srcdir)/include -Iinclude/ 
 
 libisl_la_SOURCES = \
 	$(ISL_PIPLIB) \
@@ -113,91 +116,82 @@ EXTRA_libisl_la_SOURCES = \
 libisl_la_LIBADD = @PIPLIB_LIBS@ -lgmp
 libisl_la_LDFLAGS = -version-info @versioninfo@ \
 	@PIPLIB_LDFLAGS@ @GMP_LDFLAGS@
-libisl_la_CPPFLAGS = -I$(srcdir)/include -Iinclude/ \
-	@PIPLIB_CPPFLAGS@ @GMP_CPPFLAGS@
+libisl_la_CPPFLAGS = $(INCLUDES) @PIPLIB_CPPFLAGS@ @GMP_CPPFLAGS@
 
-isl_test_CPPFLAGS = -I$(srcdir)/include -Iinclude/ @GMP_CPPFLAGS@
+isl_test_CPPFLAGS = $(INCLUDES) @GMP_CPPFLAGS@
 isl_test_LDADD = libisl.la
 
-isl_polyhedron_sample_CPPFLAGS = -I$(srcdir)/include -Iinclude/ \
-	@GMP_CPPFLAGS@
+isl_polyhedron_sample_CPPFLAGS = $(INCLUDES) @GMP_CPPFLAGS@
 isl_polyhedron_sample_LDADD = libisl.la
 isl_polyhedron_sample_SOURCES = \
 	polyhedron_sample.c
 
-isl_pip_CPPFLAGS = -I$(srcdir)/include -Iinclude/ \
-	@GMP_CPPFLAGS@
+isl_pip_CPPFLAGS = $(INCLUDES) @GMP_CPPFLAGS@
 isl_pip_LDADD = libisl.la
 isl_pip_SOURCES = \
 	pip.c
 
-isl_bound_CPPFLAGS = -I$(srcdir)/include -Iinclude/ \
-	@GMP_CPPFLAGS@
+isl_bound_CPPFLAGS = $(INCLUDES) @GMP_CPPFLAGS@
 isl_bound_LDADD = libisl.la
 isl_bound_SOURCES = \
 	bound.c
 
-isl_polyhedron_minimize_CPPFLAGS = -I$(srcdir)/include -Iinclude/ \
-	@GMP_CPPFLAGS@
+isl_polyhedron_minimize_CPPFLAGS = $(INCLUDES) @GMP_CPPFLAGS@
 isl_polyhedron_minimize_LDADD = libisl.la
 isl_polyhedron_minimize_SOURCES = \
 	polyhedron_minimize.c
 
-isl_polytope_scan_CPPFLAGS = -I$(srcdir)/include -Iinclude/ \
-	@GMP_CPPFLAGS@
+isl_polytope_scan_CPPFLAGS = $(INCLUDES) @GMP_CPPFLAGS@
 isl_polytope_scan_LDADD = libisl.la
 isl_polytope_scan_SOURCES = \
 	polytope_scan.c
 
-isl_polyhedron_detect_equalities_CPPFLAGS = -I$(srcdir)/include -Iinclude/ \
-	@GMP_CPPFLAGS@
+isl_polyhedron_detect_equalities_CPPFLAGS = $(INCLUDES) @GMP_CPPFLAGS@
 isl_polyhedron_detect_equalities_LDADD = libisl.la
 isl_polyhedron_detect_equalities_SOURCES = \
 	polyhedron_detect_equalities.c
 
-isl_cat_CPPFLAGS = -I$(srcdir)/include -Iinclude/ \
-	@GMP_CPPFLAGS@
+isl_cat_CPPFLAGS = $(INCLUDES) @GMP_CPPFLAGS@
 isl_cat_LDADD = libisl.la
 isl_cat_SOURCES = \
 	cat.c
 
-isl_closure_CPPFLAGS = -I$(srcdir)/include -Iinclude/ \
-	@GMP_CPPFLAGS@
+isl_closure_CPPFLAGS = $(INCLUDES) @GMP_CPPFLAGS@
 isl_closure_LDADD = libisl.la
 isl_closure_SOURCES = \
 	closure.c
 
 nodist_pkginclude_HEADERS = \
-	include/isl_config.h \
-	include/isl_stdint.h
+	include/isl/config.h \
+	include/isl/stdint.h
 pkginclude_HEADERS = \
-	include/isl_arg.h \
-	include/isl_blk.h \
-	include/isl_constraint.h \
-	include/isl_ctx.h \
-	include/isl_dim.h \
-	include/isl_div.h \
-	include/isl_flow.h \
-	include/isl_ilp.h \
-	include/isl_int.h \
-	include/isl_hash.h \
-	include/isl_list.h \
-	include/isl_lp.h \
-	include/isl_mat.h \
-	include/isl_map.h \
-	include/isl_obj.h \
-	include/isl_options.h \
-	include/isl_point.h \
-	include/isl_polynomial.h \
-	include/isl_printer.h \
-	include/isl_seq.h \
-	include/isl_set.h \
-	include/isl_stream.h \
-	include/isl_union_map.h \
-	include/isl_union_set.h \
-	include/isl_vec.h \
-	include/isl_version.h \
-	include/isl_vertices.h
+	include/isl/arg.h \
+	include/isl/blk.h \
+	include/isl/constraint.h \
+	include/isl/ctx.h \
+	include/isl/dim.h \
+	include/isl/div.h \
+	include/isl/flow.h \
+	include/isl/ilp.h \
+	include/isl/int.h \
+	include/isl/hash.h \
+	include/isl/list.h \
+	include/isl/lp.h \
+	include/isl/mat.h \
+	include/isl/map.h \
+	include/isl/obj.h \
+	include/isl/options.h \
+	include/isl/point.h \
+	include/isl/polynomial.h \
+	include/isl/printer.h \
+	include/isl/seq.h \
+	include/isl/set.h \
+	include/isl/stream.h \
+	include/isl/union_map.h \
+	include/isl/union_set.h \
+	include/isl/vec.h \
+	include/isl/version.h \
+	include/isl/vertices.h
 
 EXTRA_DIST = \
 	basis_reduction_templ.c \

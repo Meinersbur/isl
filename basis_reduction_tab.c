@@ -8,7 +8,7 @@
  */
 
 #include <assert.h>
-#include "isl_seq.h"
+#include <isl/seq.h>
 #include "isl_tab.h"
 
 struct tab_lp {

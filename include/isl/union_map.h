@@ -1,9 +1,9 @@
 #ifndef ISL_UNION_MAP_H
 #define ISL_UNION_MAP_H
 
-#include <isl_dim.h>
-#include <isl_map.h>
-#include <isl_printer.h>
+#include <isl/dim.h>
+#include <isl/map.h>
+#include <isl/printer.h>
 
 #if defined(__cplusplus)
 extern "C" {

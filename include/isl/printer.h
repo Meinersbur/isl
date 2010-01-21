@@ -2,7 +2,7 @@
 #define ISL_PRINTER_H
 
 #include <stdio.h>
-#include <isl_ctx.h>
+#include <isl/ctx.h>
 
 #if defined(__cplusplus)
 extern "C" {

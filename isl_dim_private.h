@@ -1,5 +1,5 @@
-#include <isl_dim.h>
-#include <isl_hash.h>
+#include <isl/dim.h>
+#include <isl/hash.h>
 
 struct isl_name;
 struct isl_dim {

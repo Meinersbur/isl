@@ -10,8 +10,8 @@
 #include <ctype.h>
 #include <string.h>
 #include <strings.h>
-#include <isl_ctx.h>
-#include "isl_stream.h"
+#include <isl/ctx.h>
+#include <isl/stream.h>
 
 struct isl_keyword {
 	char			*name;

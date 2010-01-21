@@ -10,8 +10,8 @@
 #ifndef ISL_CONSTRAINT_H
 #define ISL_CONSTRAINT_H
 
-#include "isl_div.h"
-#include "isl_set.h"
+#include <isl/div.h>
+#include <isl/set.h>
 
 #if defined(__cplusplus)
 extern "C" {

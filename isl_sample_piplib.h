@@ -10,7 +10,7 @@
 #ifndef ISL_SAMPLE_PIP_H
 #define ISL_SAMPLE_PIP
 
-#include <isl_set.h>
+#include <isl/set.h>
 
 #if defined(__cplusplus)
 extern "C" {

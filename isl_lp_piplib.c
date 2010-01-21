@@ -7,9 +7,9 @@
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
  */
 
-#include "isl_map.h"
-#include "isl_vec.h"
-#include "isl_lp.h"
+#include <isl/map.h>
+#include <isl/vec.h>
+#include <isl/lp.h>
 #include "isl_piplib.h"
 #include "isl_map_piplib.h"
 

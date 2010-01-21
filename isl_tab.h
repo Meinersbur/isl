@@ -10,10 +10,10 @@
 #ifndef ISL_TAB_H
 #define ISL_TAB_H
 
-#include "isl_lp.h"
-#include "isl_map.h"
-#include "isl_mat.h"
-#include "isl_set.h"
+#include <isl/lp.h>
+#include <isl/map.h>
+#include <isl/mat.h>
+#include <isl/set.h>
 
 struct isl_tab_var {
 	int index;
