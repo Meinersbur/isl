@@ -238,6 +238,8 @@ struct isl_token *isl_stream_next_token(struct isl_stream *s)
 		isl_stream_push_char(s, '\0');
 		if (!strcasecmp(s->buffer, "exists"))
 			tok->type = ISL_TOKEN_EXISTS;
+		else if (!strcasecmp(s->buffer, "and"))
+			tok->type = ISL_TOKEN_AND;
 		else {
 			tok->type = ISL_TOKEN_IDENT;
 			tok->u.s = strdup(s->buffer);
