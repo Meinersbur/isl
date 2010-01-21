@@ -548,6 +548,18 @@ static void sol_map_add_empty_wrap(struct isl_sol *sol,
 	sol_map_add_empty((struct isl_sol_map *)sol, bset);
 }
 
+/* Add bset to sol's empty, but only if we are actually collecting
+ * the empty set.
+ */
+static void sol_map_add_empty_if_needed(struct isl_sol_map *sol,
+	struct isl_basic_set *bset)
+{
+	if (sol->empty)
+		sol_map_add_empty(sol, bset);
+	else
+		isl_basic_set_free(bset);
+}
+
 /* Given a basic map "dom" that represents the context and an affine
  * matrix "M" that maps the dimensions of the context to the
  * output variables, construct a basic map with the same parameters
@@ -3935,8 +3947,8 @@ struct isl_map *isl_tab_basic_map_partial_lexopt(
 	if (isl_basic_set_fast_is_empty(context->op->peek_basic_set(context)))
 		/* nothing */;
 	else if (isl_basic_map_fast_is_empty(bmap))
-		sol_map_add_empty(sol_map,
-		    isl_basic_set_dup(context->op->peek_basic_set(context)));
+		sol_map_add_empty_if_needed(sol_map,
+		    isl_basic_set_copy(context->op->peek_basic_set(context)));
 	else {
 		tab = tab_for_lexmin(bmap,
 				    context->op->peek_basic_set(context), 1, max);
