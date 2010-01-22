@@ -90,7 +90,7 @@ static int vars_pos(struct vars *v, const char *s, int len)
 	else {
 		pos = v->n;
 		v->v = variable_new(v, s, len, v->n);
-		if (!v)
+		if (!v->v)
 			return -1;
 		v->n++;
 	}
