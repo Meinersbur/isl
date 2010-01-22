@@ -468,6 +468,60 @@ error:
 	return NULL;
 }
 
+static struct isl_basic_map *read_disjunct(struct isl_stream *s,
+	struct vars **v, __isl_take isl_dim *dim)
+{
+	struct isl_basic_map *bmap;
+
+	bmap = isl_basic_map_alloc_dim(dim, 0, 0, 0);
+	if (!bmap)
+		return NULL;
+
+	bmap = add_constraints(s, v, bmap);
+	bmap = isl_basic_map_simplify(bmap);
+	bmap = isl_basic_map_finalize(bmap);
+	return bmap;
+}
+
+static struct isl_map *read_disjuncts(struct isl_stream *s,
+	struct vars **v, __isl_take isl_dim *dim)
+{
+	struct isl_token *tok;
+	struct isl_map *map;
+
+	tok = isl_stream_next_token(s);
+	if (!tok) {
+		isl_stream_error(s, NULL, "unexpected EOF");
+		goto error;
+	}
+	if (tok->type == '}') {
+		isl_stream_push_token(s, tok);
+		return isl_map_universe(dim);
+	}
+	isl_stream_push_token(s, tok);
+
+	map = isl_map_empty(isl_dim_copy(dim));
+	for (;;) {
+		struct isl_basic_map *bmap;
+
+		bmap = read_disjunct(s, v, isl_dim_copy(dim));
+		map = isl_map_union(map, isl_map_from_basic_map(bmap));
+
+		tok = isl_stream_next_token(s);
+		if (!tok || tok->type != ISL_TOKEN_OR)
+			break;
+		isl_token_free(tok);
+	}
+	if (tok)
+		isl_stream_push_token(s, tok);
+
+	isl_dim_free(dim);
+	return map;
+error:
+	isl_dim_free(dim);
+	return NULL;
+}
+
 static __isl_give isl_basic_map *basic_map_read_polylib_constraint(
 	struct isl_stream *s, __isl_take isl_basic_map *bmap)
 {
@@ -663,8 +717,8 @@ static struct isl_dim *dim_from_vars(struct vars *vars,
 
 static struct isl_map *map_read(struct isl_stream *s, int nparam)
 {
-	struct isl_dim *dim;
-	struct isl_basic_map *bmap = NULL;
+	struct isl_dim *dim = NULL;
+	struct isl_map *map = NULL;
 	struct isl_token *tok;
 	struct vars *v = NULL;
 	int n1;
@@ -725,15 +779,17 @@ static struct isl_map *map_read(struct isl_stream *s, int nparam)
 		n1 = 0;
 	}
 	dim = dim_from_vars(v, nparam, n1, n2);
-	bmap = isl_basic_map_alloc_dim(dim, 0, 0, 0);
-	if (!bmap)
-		goto error;
 	tok = isl_stream_next_token(s);
-	if (tok && tok->type == ':') {
-		isl_token_free(tok);
-		bmap = add_constraints(s, &v, bmap);
-		tok = isl_stream_next_token(s);
+	if (!tok) {
+		isl_stream_error(s, NULL, "unexpected EOF");
+		goto error;
 	}
+	if (tok->type == ':') {
+		isl_token_free(tok);
+		map = read_disjuncts(s, &v, isl_dim_copy(dim));
+		tok = isl_stream_next_token(s);
+	} else
+		map = isl_map_universe(isl_dim_copy(dim));
 	if (tok && tok->type == '}') {
 		isl_token_free(tok);
 	} else {
@@ -743,12 +799,12 @@ static struct isl_map *map_read(struct isl_stream *s, int nparam)
 		goto error;
 	}
 	vars_free(v);
+	isl_dim_free(dim);
 
-	bmap = isl_basic_map_simplify(bmap);
-	bmap = isl_basic_map_finalize(bmap);
-	return isl_map_from_basic_map(bmap);
+	return map;
 error:
-	isl_basic_map_free(bmap);
+	isl_dim_free(dim);
+	isl_map_free(map);
 	if (v)
 		vars_free(v);
 	return NULL;

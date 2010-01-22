@@ -240,6 +240,8 @@ struct isl_token *isl_stream_next_token(struct isl_stream *s)
 			tok->type = ISL_TOKEN_EXISTS;
 		else if (!strcasecmp(s->buffer, "and"))
 			tok->type = ISL_TOKEN_AND;
+		else if (!strcasecmp(s->buffer, "or"))
+			tok->type = ISL_TOKEN_OR;
 		else {
 			tok->type = ISL_TOKEN_IDENT;
 			tok->u.s = strdup(s->buffer);
@@ -276,6 +278,15 @@ struct isl_token *isl_stream_next_token(struct isl_stream *s)
 			return NULL;
 		tok->type = ISL_TOKEN_AND;
 		if ((c = isl_stream_getc(s)) != '&' && c != -1)
+			isl_stream_ungetc(s, c);
+		return tok;
+	}
+	if (c == '|') {
+		tok = isl_token_new(s->ctx, line, col, old_line != line);
+		if (!tok)
+			return NULL;
+		tok->type = ISL_TOKEN_OR;
+		if ((c = isl_stream_getc(s)) != '|' && c != -1)
 			isl_stream_ungetc(s, c);
 		return tok;
 	}
