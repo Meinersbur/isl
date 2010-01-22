@@ -393,6 +393,8 @@ static struct isl_basic_map *basic_map_read(struct isl_stream *s)
 	}
 	vars_free(v);
 
+	bmap = isl_basic_map_simplify(bmap);
+	bmap = isl_basic_map_finalize(bmap);
 	return bmap;
 error:
 	isl_basic_map_free(bmap);
