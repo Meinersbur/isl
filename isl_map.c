@@ -2593,7 +2593,7 @@ error:
  *
  *		f - m d >= n
  */
-static int add_div_constraints(struct isl_basic_map *bmap, unsigned div)
+int isl_basic_map_add_div_constraints(struct isl_basic_map *bmap, unsigned div)
 {
 	int i, j;
 	unsigned total = isl_basic_map_total_dim(bmap);
@@ -2695,7 +2695,7 @@ struct isl_basic_map *isl_basic_map_overlying_set(
 		for (i = 0; i < like->n_div; ++i) {
 			if (isl_int_is_zero(bmap->div[i][0]))
 				continue;
-			if (add_div_constraints(bmap, i) < 0)
+			if (isl_basic_map_add_div_constraints(bmap, i) < 0)
 				goto error;
 		}
 	}
@@ -4521,7 +4521,7 @@ struct isl_basic_map *isl_basic_map_align_divs(
 				goto error;
 			isl_seq_cpy(dst->div[j], src->div[i], 1+1+total+i);
 			isl_seq_clr(dst->div[j]+1+1+total+i, dst->n_div - i);
-			if (add_div_constraints(dst, j) < 0)
+			if (isl_basic_map_add_div_constraints(dst, j) < 0)
 				goto error;
 		}
 		if (j != i)
