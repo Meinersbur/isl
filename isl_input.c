@@ -210,31 +210,15 @@ error:
 	return NULL;
 }
 
-static struct isl_basic_map *add_constraint(struct isl_stream *s,
-	struct vars **v, struct isl_basic_map *bmap)
+static struct isl_vec *accept_affine(struct isl_stream *s, struct vars *v)
 {
-	unsigned total = isl_basic_map_total_dim(bmap);
-	int k;
-	int sign = 1;
-	int equality = 0;
-	int op = 0;
 	struct isl_token *tok = NULL;
+	struct isl_vec *aff;
 
-	tok = isl_stream_next_token(s);
-	if (!tok)
-		goto error;
-	if (tok->type == ISL_TOKEN_EXISTS) {
-		isl_token_free(tok);
-		return add_exists(s, v, bmap);
-	}
-	isl_stream_push_token(s, tok);
-
-	bmap = isl_basic_map_cow(bmap);
-	bmap = isl_basic_map_extend_constraints(bmap, 0, 1);
-	k = isl_basic_map_alloc_inequality(bmap);
-	if (k < 0)
-		goto error;
-	isl_seq_clr(bmap->ineq[k], 1+total);
+	aff = isl_vec_alloc(v->ctx, 1 + v->n);
+	isl_seq_clr(aff->el, aff->size);
+	if (!aff)
+		return NULL;
 
 	for (;;) {
 		tok = isl_stream_next_token(s);
@@ -243,27 +227,22 @@ static struct isl_basic_map *add_constraint(struct isl_stream *s,
 			goto error;
 		}
 		if (tok->type == ISL_TOKEN_IDENT) {
-			int n = (*v)->n;
-			int pos = vars_pos(*v, tok->u.s, -1);
+			int n = v->n;
+			int pos = vars_pos(v, tok->u.s, -1);
 			if (pos < 0)
 				goto error;
 			if (pos >= n) {
 				isl_stream_error(s, tok, "unknown identifier");
 				goto error;
 			}
-			if (sign > 0)
-				isl_int_add_ui(bmap->ineq[k][1+pos],
-						bmap->ineq[k][1+pos], 1);
-			else
-				isl_int_sub_ui(bmap->ineq[k][1+pos],
-						bmap->ineq[k][1+pos], 1);
+			isl_int_add_ui(aff->el[1 + pos], aff->el[1 + pos], 1);
 		} else if (tok->type == ISL_TOKEN_VALUE) {
 			struct isl_token *tok2;
-			int n = (*v)->n;
+			int n = v->n;
 			int pos = -1;
 			tok2 = isl_stream_next_token(s);
 			if (tok2 && tok2->type == ISL_TOKEN_IDENT) {
-				pos = vars_pos(*v, tok2->u.s, -1);
+				pos = vars_pos(v, tok2->u.s, -1);
 				if (pos < 0)
 					goto error;
 				if (pos >= n) {
@@ -275,43 +254,91 @@ static struct isl_basic_map *add_constraint(struct isl_stream *s,
 				isl_token_free(tok2);
 			} else if (tok2)
 				isl_stream_push_token(s, tok2);
-			if (sign < 0)
-				isl_int_neg(tok->u.v, tok->u.v);
-			isl_int_add(bmap->ineq[k][1+pos],
-					bmap->ineq[k][1+pos], tok->u.v);
+			isl_int_add(aff->el[1 + pos],
+					aff->el[1 + pos], tok->u.v);
 		} else if (tok->type == '+') {
 			/* nothing */
-		} else if (tok->type == ISL_TOKEN_LE) {
-			op = 1;
-			isl_seq_neg(bmap->ineq[k], bmap->ineq[k], 1+total);
-		} else if (tok->type == ISL_TOKEN_GE) {
-			op = 1;
-			sign = -1;
-		} else if (tok->type == '=') {
-			if (op) {
-				isl_stream_error(s, tok, "too many operators");
-				goto error;
-			}
-			op = 1;
-			equality = 1;
-			sign = -1;
 		} else {
 			isl_stream_push_token(s, tok);
 			break;
 		}
 		isl_token_free(tok);
 	}
+
+	return aff;
+error:
+	isl_vec_free(aff);
+	return NULL;
+}
+
+static struct isl_basic_map *add_constraint(struct isl_stream *s,
+	struct vars **v, struct isl_basic_map *bmap)
+{
+	unsigned total = isl_basic_map_total_dim(bmap);
+	int k;
+	struct isl_token *tok = NULL;
+	struct isl_vec *aff1 = NULL, *aff2 = NULL;
+
+	tok = isl_stream_next_token(s);
+	if (!tok)
+		goto error;
+	if (tok->type == ISL_TOKEN_EXISTS) {
+		isl_token_free(tok);
+		return add_exists(s, v, bmap);
+	}
+	isl_stream_push_token(s, tok);
 	tok = NULL;
-	if (!op) {
+
+	bmap = isl_basic_map_cow(bmap);
+	bmap = isl_basic_map_extend_constraints(bmap, 0, 1);
+	k = isl_basic_map_alloc_inequality(bmap);
+	if (k < 0)
+		goto error;
+
+	aff1 = accept_affine(s, *v);
+	if (!aff1)
+		goto error;
+	tok = isl_stream_next_token(s);
+	switch (tok->type) {
+	case ISL_TOKEN_LE:
+	case ISL_TOKEN_GE:
+	case '=':
+		break;
+	default:
 		isl_stream_error(s, tok, "missing operator");
+		isl_stream_push_token(s, tok);
 		goto error;
 	}
-	if (equality)
+	aff2 = accept_affine(s, *v);
+	if (!aff2)
+		goto error;
+	isl_assert(aff1->ctx, aff1->size == 1 + total, goto error);
+	isl_assert(aff2->ctx, aff2->size == 1 + total, goto error);
+
+	if (tok->type == ISL_TOKEN_LE)
+		isl_seq_combine(bmap->ineq[k], (*v)->ctx->negone, aff1->el,
+					       (*v)->ctx->one, aff2->el,
+					       aff1->size);
+	else if (tok->type == ISL_TOKEN_GE)
+		isl_seq_combine(bmap->ineq[k], (*v)->ctx->one, aff1->el,
+					       (*v)->ctx->negone, aff2->el,
+					       aff1->size);
+	else {
+		isl_seq_combine(bmap->ineq[k], (*v)->ctx->one, aff1->el,
+					       (*v)->ctx->negone, aff2->el,
+					       aff1->size);
 		isl_basic_map_inequality_to_equality(bmap, k);
+	}
+	isl_token_free(tok);
+	isl_vec_free(aff1);
+	isl_vec_free(aff2);
+
 	return bmap;
 error:
 	if (tok)
 		isl_token_free(tok);
+	isl_vec_free(aff1);
+	isl_vec_free(aff2);
 	isl_basic_map_free(bmap);
 	return NULL;
 }
