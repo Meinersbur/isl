@@ -187,6 +187,8 @@ __isl_give isl_basic_map *isl_basic_map_read_from_str(isl_ctx *ctx,
 		const char *str, int nparam);
 __isl_give isl_map *isl_map_read_from_file(struct isl_ctx *ctx,
 		FILE *input, int nparam);
+__isl_give isl_map *isl_map_read_from_str(isl_ctx *ctx,
+		const char *str, int nparam);
 struct isl_basic_map *isl_basic_map_fix_si(struct isl_basic_map *bmap,
 		enum isl_dim_type type, unsigned pos, int value);
 

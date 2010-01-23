@@ -390,6 +390,8 @@ to foreign file formats.
 		isl_ctx *ctx, const char *str, int nparam);
 	__isl_give isl_map *isl_map_read_from_file(
 		struct isl_ctx *ctx, FILE *input, int nparam);
+	__isl_give isl_map *isl_map_read_from_str(isl_ctx *ctx,
+		const char *str, int nparam);
 
 The input may be either in C<PolyLib> format or in the
 C<isl> format, which is similar to the C<Omega> format.

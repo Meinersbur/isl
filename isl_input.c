@@ -898,6 +898,18 @@ __isl_give isl_map *isl_map_read_from_file(struct isl_ctx *ctx,
 	return map;
 }
 
+__isl_give isl_map *isl_map_read_from_str(struct isl_ctx *ctx,
+		const char *str, int nparam)
+{
+	struct isl_map *map;
+	struct isl_stream *s = isl_stream_new_str(ctx, str);
+	if (!s)
+		return NULL;
+	map = map_read(s, nparam);
+	isl_stream_free(s);
+	return map;
+}
+
 __isl_give isl_set *isl_set_read_from_file(struct isl_ctx *ctx,
 		FILE *input, int nparam)
 {
