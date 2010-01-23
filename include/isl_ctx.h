@@ -10,7 +10,7 @@
 #ifndef ISL_CTX_H
 #define ISL_CTX_H
 
-#include <assert.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #include <isl_int.h>
@@ -60,6 +60,11 @@ extern "C" {
 struct isl_stats {
 	long	gbr_solved_lps;
 };
+enum isl_error {
+	isl_error_none = 0,
+	isl_error_unknown,
+	isl_error_invalid,
+};
 struct isl_ctx {
 	int			ref;
 
@@ -80,6 +85,8 @@ struct isl_ctx {
 	int			n_cached;
 	struct isl_blk		cache[ISL_BLK_CACHE_SIZE];
 	struct isl_hash_table	name_hash;
+
+	enum isl_error		error;
 };
 typedef struct isl_ctx isl_ctx;
 
@@ -106,13 +113,21 @@ typedef struct isl_ctx isl_ctx;
 #define isl_realloc_array(ctx,ptr,type,n) \
 				    isl_realloc(ctx,ptr,type,(n)*sizeof(type))
 
-#define isl_assert(ctx,test,code)					\
+#define isl_die(ctx,errno,msg,code)					\
 	do {								\
-		assert(test);						\
-		if (0 && !ctx) {					\
-			code;						\
-		}							\
-	} while(0)
+		if (ctx)						\
+			ctx->error = errno;				\
+		fprintf(stderr, "%s:%d: %s\n", __FILE__, __LINE__, msg);	\
+		code;							\
+	} while (0)
+#define isl_assert4(ctx,test,code,errno)				\
+	do {								\
+		if (test)						\
+			break;						\
+		isl_die(ctx, errno, "Assertion \"" #test "\" failed", code);	\
+	} while (0)
+#define isl_assert(ctx,test,code)					\
+	isl_assert4(ctx,test,code,isl_error_unknown)
 
 #define isl_min(a,b)			((a < b) ? (a) : (b))
 
@@ -135,6 +150,9 @@ st *isl_ctx_peek_ ## prefix(isl_ctx *ctx)				\
 {									\
 	return (st *)isl_ctx_peek_options(ctx, arg);			\
 }
+
+enum isl_error isl_ctx_last_error(isl_ctx *ctx);
+void isl_ctx_reset_error(isl_ctx *ctx);
 
 #if defined(__cplusplus)
 }

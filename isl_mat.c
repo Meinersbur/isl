@@ -81,7 +81,6 @@ struct isl_mat *isl_mat_extend(struct isl_mat *mat,
 	if (!mat)
 		goto error;
 
-	assert(mat->ref == 1);
 	old = mat->block.data;
 	mat->block = isl_blk_extend(mat->ctx, mat->block, n_row * mat->max_col);
 	if (isl_blk_is_error(mat->block))

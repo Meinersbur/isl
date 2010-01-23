@@ -94,6 +94,8 @@ isl_ctx *isl_ctx_alloc_with_options(struct isl_arg *arg, void *user_opt)
 
 	ctx->n_cached = 0;
 
+	ctx->error = isl_error_none;
+
 	return ctx;
 error:
 	isl_arg_free(arg, user_opt);
@@ -147,4 +149,14 @@ struct isl_options *isl_ctx_options(isl_ctx *ctx)
 	if (!ctx)
 		return NULL;
 	return ctx->opt;
+}
+
+enum isl_error isl_ctx_last_error(isl_ctx *ctx)
+{
+	return ctx->error;
+}
+
+void isl_ctx_reset_error(isl_ctx *ctx)
+{
+	ctx->error = isl_error_none;
 }

@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <isl_map.h>
 
 struct isl_arg_choice cat_format[] = {
