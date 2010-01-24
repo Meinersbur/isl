@@ -157,10 +157,17 @@ struct isl_token *isl_stream_next_token(struct isl_stream *s)
 
 	s->len = 0;
 
-	/* skip spaces */
-	while ((c = isl_stream_getc(s)) != -1 && isspace(c))
-		/* nothing */
-		;
+	/* skip spaces and comment lines */
+	while ((c = isl_stream_getc(s)) != -1) {
+		if (c == '#') {
+			while ((c = isl_stream_getc(s)) != -1 && c != '\n')
+				/* nothing */
+				;
+			if (c == -1)
+				break;
+		} else if (!isspace(c))
+			break;
+	}
 
 	line = s->line;
 	col = s->col;
