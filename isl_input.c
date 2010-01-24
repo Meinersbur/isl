@@ -924,6 +924,20 @@ error:
 	return NULL;
 }
 
+struct isl_set *isl_set_read_from_str(struct isl_ctx *ctx,
+		const char *str, int nparam)
+{
+	struct isl_map *map;
+	map = isl_map_read_from_str(ctx, str, nparam);
+	if (!map)
+		return NULL;
+	isl_assert(ctx, isl_map_n_in(map) == 0, goto error);
+	return (struct isl_set *)map;
+error:
+	isl_map_free(map);
+	return NULL;
+}
+
 static char *next_line(FILE *input, char *line, unsigned len)
 {
 	char *p;

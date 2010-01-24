@@ -382,6 +382,8 @@ to foreign file formats.
 		isl_ctx *ctx, const char *str, int nparam);
 	__isl_give isl_set *isl_set_read_from_file(isl_ctx *ctx,
 		FILE *input, int nparam);
+	__isl_give isl_set *isl_set_read_from_str(isl_ctx *ctx,
+		const char *str, int nparam);
 
 	#include <isl_map.h>
 	__isl_give isl_basic_map *isl_basic_map_read_from_file(
