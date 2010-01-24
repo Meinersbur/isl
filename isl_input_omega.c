@@ -1,10 +1,13 @@
 /*
  * Copyright 2008-2009 Katholieke Universiteit Leuven
+ * Copyright 2010      INRIA Saclay
  *
  * Use of this software is governed by the GNU LGPLv2.1 license
  *
  * Written by Sven Verdoolaege, K.U.Leuven, Departement
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
+ * and INRIA Saclay - Ile-de-France, Parc Club Orsay Universite,
+ * ZAC des vignes, 4 rue Jacques Monod, 91893 Orsay, France 
  */
 
 #include <ctype.h>
@@ -340,6 +343,172 @@ error:
 	return NULL;
 }
 
+static __isl_give isl_basic_map *basic_map_read_polylib_constraint(
+	struct isl_stream *s, __isl_take isl_basic_map *bmap)
+{
+	int j;
+	struct isl_token *tok;
+	int type;
+	int k;
+	isl_int *c;
+	unsigned nparam;
+	unsigned dim;
+
+	if (!bmap)
+		return NULL;
+
+	nparam = isl_basic_map_dim(bmap, isl_dim_param);
+	dim = isl_basic_map_dim(bmap, isl_dim_out);
+
+	tok = isl_stream_next_token(s);
+	if (!tok || tok->type != ISL_TOKEN_VALUE) {
+		isl_stream_error(s, tok, "expecting coefficient");
+		if (tok)
+			isl_stream_push_token(s, tok);
+		goto error;
+	}
+	if (!tok->on_new_line) {
+		isl_stream_error(s, tok, "coefficient should appear on new line");
+		isl_stream_push_token(s, tok);
+		goto error;
+	}
+
+	type = isl_int_get_si(tok->u.v);
+	isl_token_free(tok);
+
+	isl_assert(s->ctx, type == 0 || type == 1, goto error);
+	if (type == 0) {
+		k = isl_basic_map_alloc_equality(bmap);
+		c = bmap->eq[k];
+	} else {
+		k = isl_basic_map_alloc_inequality(bmap);
+		c = bmap->ineq[k];
+	}
+	if (k < 0)
+		goto error;
+
+	for (j = 0; j < dim; ++j) {
+		tok = isl_stream_next_token(s);
+		if (!tok || tok->type != ISL_TOKEN_VALUE) {
+			isl_stream_error(s, tok, "expecting coefficient");
+			if (tok)
+				isl_stream_push_token(s, tok);
+			goto error;
+		}
+		isl_int_set(c[1 + nparam + j], tok->u.v);
+		isl_token_free(tok);
+	}
+	for (j = 0; j < nparam; ++j) {
+		tok = isl_stream_next_token(s);
+		if (!tok || tok->type != ISL_TOKEN_VALUE) {
+			isl_stream_error(s, tok, "expecting coefficient");
+			if (tok)
+				isl_stream_push_token(s, tok);
+			goto error;
+		}
+		isl_int_set(c[1 + j], tok->u.v);
+		isl_token_free(tok);
+	}
+	tok = isl_stream_next_token(s);
+	if (!tok || tok->type != ISL_TOKEN_VALUE) {
+		isl_stream_error(s, tok, "expecting coefficient");
+		if (tok)
+			isl_stream_push_token(s, tok);
+		goto error;
+	}
+	isl_int_set(c[0], tok->u.v);
+	isl_token_free(tok);
+
+	return bmap;
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+static __isl_give isl_basic_map *basic_map_read_polylib(struct isl_stream *s,
+	int nparam)
+{
+	int i;
+	struct isl_token *tok;
+	struct isl_token *tok2;
+	int n_row, n_col;
+	int on_new_line;
+	unsigned dim;
+	struct isl_basic_map *bmap = NULL;
+
+	if (nparam < 0)
+		nparam = 0;
+
+	tok = isl_stream_next_token(s);
+	if (!tok) {
+		isl_stream_error(s, NULL, "unexpected EOF");
+		return NULL;
+	}
+	tok2 = isl_stream_next_token(s);
+	if (!tok2) {
+		isl_token_free(tok);
+		isl_stream_error(s, NULL, "unexpected EOF");
+		return NULL;
+	}
+	n_row = isl_int_get_si(tok->u.v);
+	n_col = isl_int_get_si(tok2->u.v);
+	on_new_line = tok2->on_new_line;
+	isl_token_free(tok2);
+	isl_token_free(tok);
+	isl_assert(s->ctx, !on_new_line, return NULL);
+	isl_assert(s->ctx, n_row >= 0, return NULL);
+	isl_assert(s->ctx, n_col >= 2 + nparam, return NULL);
+	dim = n_col - 2 - nparam;
+	bmap = isl_basic_map_alloc(s->ctx, nparam, 0, dim, 0, n_row, n_row);
+	if (!bmap)
+		return NULL;
+
+	for (i = 0; i < n_row; ++i)
+		bmap = basic_map_read_polylib_constraint(s, bmap);
+
+	bmap = isl_basic_map_simplify(bmap);
+	bmap = isl_basic_map_finalize(bmap);
+	return bmap;
+}
+
+static struct isl_map *map_read_polylib(struct isl_stream *s, int nparam)
+{
+	struct isl_token *tok;
+	struct isl_token *tok2;
+	int i, n;
+	struct isl_map *map;
+
+	tok = isl_stream_next_token(s);
+	if (!tok) {
+		isl_stream_error(s, NULL, "unexpected EOF");
+		return NULL;
+	}
+	tok2 = isl_stream_next_token(s);
+	if (!tok2) {
+		isl_token_free(tok);
+		isl_stream_error(s, NULL, "unexpected EOF");
+		return NULL;
+	}
+	if (!tok2->on_new_line) {
+		isl_stream_push_token(s, tok2);
+		isl_stream_push_token(s, tok);
+		return isl_map_from_basic_map(basic_map_read_polylib(s, nparam));
+	}
+	isl_stream_push_token(s, tok2);
+	n = isl_int_get_si(tok->u.v);
+	isl_token_free(tok);
+
+	isl_assert(s->ctx, n >= 1, return NULL);
+
+	map = isl_map_from_basic_map(basic_map_read_polylib(s, nparam));
+
+	for (i = 1; i < n; ++i)
+		map = isl_map_union(map,
+			isl_map_from_basic_map(basic_map_read_polylib(s, nparam)));
+
+	return map;
+}
+
 static struct isl_map *map_read(struct isl_stream *s, int nparam)
 {
 	struct isl_basic_map *bmap = NULL;
@@ -349,7 +518,15 @@ static struct isl_map *map_read(struct isl_stream *s, int nparam)
 	int n2;
 
 	tok = isl_stream_next_token(s);
-	if (!tok || tok->type != '{') {
+	if (!tok) {
+		isl_stream_error(s, NULL, "unexpected EOF");
+		goto error;
+	}
+	if (tok->type == ISL_TOKEN_VALUE) {
+		isl_stream_push_token(s, tok);
+		return map_read_polylib(s, nparam);
+	}
+	if (tok->type != '{') {
 		isl_stream_error(s, tok, "expecting '{'");
 		if (tok)
 			isl_stream_push_token(s, tok);
