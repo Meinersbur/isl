@@ -47,8 +47,6 @@ libisl_la_SOURCES = \
 	isl_hash.c \
 	isl_ilp.c \
 	isl_input.c \
-	isl_input_omega.c \
-	isl_input_omega.h \
 	isl_list.c \
 	isl_lp.c \
 	isl_lp_piplib.h \
