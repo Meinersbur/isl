@@ -340,7 +340,7 @@ error:
 	return NULL;
 }
 
-static struct isl_basic_map *basic_map_read(struct isl_stream *s)
+static struct isl_map *map_read(struct isl_stream *s, int nparam)
 {
 	struct isl_basic_map *bmap = NULL;
 	struct isl_token *tok;
@@ -395,11 +395,35 @@ static struct isl_basic_map *basic_map_read(struct isl_stream *s)
 
 	bmap = isl_basic_map_simplify(bmap);
 	bmap = isl_basic_map_finalize(bmap);
-	return bmap;
+	return isl_map_from_basic_map(bmap);
 error:
 	isl_basic_map_free(bmap);
 	if (v)
 		vars_free(v);
+	return NULL;
+}
+
+static struct isl_basic_map *basic_map_read(struct isl_stream *s, int nparam)
+{
+	struct isl_map *map;
+	struct isl_basic_map *bmap;
+
+	map = map_read(s, nparam);
+	if (!map)
+		return NULL;
+
+	isl_assert(map->ctx, map->n <= 1, goto error);
+
+	if (map->n == 0)
+		bmap = isl_basic_map_empty_like_map(map);
+	else
+		bmap = isl_basic_map_copy(map->p[0]);
+
+	isl_map_free(map);
+
+	return bmap;
+error:
+	isl_map_free(map);
 	return NULL;
 }
 
@@ -410,7 +434,7 @@ struct isl_basic_map *isl_basic_map_read_from_file_omega(
 	struct isl_stream *s = isl_stream_new_file(ctx, input);
 	if (!s)
 		return NULL;
-	bmap = basic_map_read(s);
+	bmap = basic_map_read(s, 0);
 	isl_stream_free(s);
 	return bmap;
 }
@@ -436,7 +460,7 @@ struct isl_basic_map *isl_basic_map_read_from_str_omega(
 	struct isl_stream *s = isl_stream_new_str(ctx, str);
 	if (!s)
 		return NULL;
-	bmap = basic_map_read(s);
+	bmap = basic_map_read(s, 0);
 	isl_stream_free(s);
 	return bmap;
 }
