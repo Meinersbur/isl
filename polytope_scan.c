@@ -86,7 +86,7 @@ int main(int argc, char **argv)
 	struct isl_basic_set *bset;
 	struct isl_mat *samples;
 
-	bset = isl_basic_set_read_from_file(ctx, stdin, 0, ISL_FORMAT_POLYLIB);
+	bset = isl_basic_set_read_from_file(ctx, stdin, 0);
 	samples = isl_basic_set_samples(bset);
 	isl_mat_dump(samples, stdout, 0);
 	isl_mat_free(samples);

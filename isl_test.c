@@ -30,8 +30,8 @@ void test_read(struct isl_ctx *ctx)
 	input = fopen(filename, "r");
 	assert(input);
 
-	bset1 = isl_basic_set_read_from_file(ctx, input, 0, ISL_FORMAT_OMEGA);
-	bset2 = isl_basic_set_read_from_str(ctx, str, 0, ISL_FORMAT_OMEGA);
+	bset1 = isl_basic_set_read_from_file(ctx, input, 0);
+	bset2 = isl_basic_set_read_from_str(ctx, str, 0);
 
 	assert(isl_basic_set_is_equal(bset1, bset2) == 1);
 
@@ -370,12 +370,12 @@ void test_application_case(struct isl_ctx *ctx, const char *name)
 	input = fopen(filename, "r");
 	assert(input);
 
-	bset1 = isl_basic_set_read_from_file(ctx, input, 0, ISL_FORMAT_OMEGA);
-	bmap = isl_basic_map_read_from_file(ctx, input, 0, ISL_FORMAT_OMEGA);
+	bset1 = isl_basic_set_read_from_file(ctx, input, 0);
+	bmap = isl_basic_map_read_from_file(ctx, input, 0);
 
 	bset1 = isl_basic_set_apply(bset1, bmap);
 
-	bset2 = isl_basic_set_read_from_file(ctx, input, 0, ISL_FORMAT_OMEGA);
+	bset2 = isl_basic_set_read_from_file(ctx, input, 0);
 
 	assert(isl_basic_set_is_equal(bset1, bset2) == 1);
 
@@ -404,8 +404,8 @@ void test_affine_hull_case(struct isl_ctx *ctx, const char *name)
 	input = fopen(filename, "r");
 	assert(input);
 
-	bset1 = isl_basic_set_read_from_file(ctx, input, 0, ISL_FORMAT_POLYLIB);
-	bset2 = isl_basic_set_read_from_file(ctx, input, 0, ISL_FORMAT_POLYLIB);
+	bset1 = isl_basic_set_read_from_file(ctx, input, 0);
+	bset2 = isl_basic_set_read_from_file(ctx, input, 0);
 
 	bset1 = isl_basic_set_affine_hull(bset1);
 
@@ -438,13 +438,13 @@ void test_convex_hull_case(struct isl_ctx *ctx, const char *name)
 	input = fopen(filename, "r");
 	assert(input);
 
-	bset1 = isl_basic_set_read_from_file(ctx, input, 0, ISL_FORMAT_POLYLIB);
-	bset2 = isl_basic_set_read_from_file(ctx, input, 0, ISL_FORMAT_POLYLIB);
+	bset1 = isl_basic_set_read_from_file(ctx, input, 0);
+	bset2 = isl_basic_set_read_from_file(ctx, input, 0);
 
 	set = isl_basic_set_union(bset1, bset2);
 	bset1 = isl_set_convex_hull(set);
 
-	bset2 = isl_basic_set_read_from_file(ctx, input, 0, ISL_FORMAT_POLYLIB);
+	bset2 = isl_basic_set_read_from_file(ctx, input, 0);
 
 	assert(isl_basic_set_is_equal(bset1, bset2) == 1);
 
@@ -486,12 +486,12 @@ void test_gist_case(struct isl_ctx *ctx, const char *name)
 	input = fopen(filename, "r");
 	assert(input);
 
-	bset1 = isl_basic_set_read_from_file(ctx, input, 0, ISL_FORMAT_POLYLIB);
-	bset2 = isl_basic_set_read_from_file(ctx, input, 0, ISL_FORMAT_POLYLIB);
+	bset1 = isl_basic_set_read_from_file(ctx, input, 0);
+	bset2 = isl_basic_set_read_from_file(ctx, input, 0);
 
 	bset1 = isl_basic_set_gist(bset1, bset2);
 
-	bset2 = isl_basic_set_read_from_file(ctx, input, 0, ISL_FORMAT_POLYLIB);
+	bset2 = isl_basic_set_read_from_file(ctx, input, 0);
 
 	assert(isl_basic_set_is_equal(bset1, bset2) == 1);
 
@@ -513,8 +513,8 @@ static struct isl_set *s_union(struct isl_ctx *ctx,
 	struct isl_basic_set *bset2;
 	struct isl_set *set1, *set2;
 
-	bset1 = isl_basic_set_read_from_str(ctx, s1, 0, ISL_FORMAT_OMEGA);
-	bset2 = isl_basic_set_read_from_str(ctx, s2, 0, ISL_FORMAT_OMEGA);
+	bset1 = isl_basic_set_read_from_str(ctx, s1, 0);
+	bset2 = isl_basic_set_read_from_str(ctx, s2, 0);
 	set1 = isl_set_from_basic_set(bset1);
 	set2 = isl_set_from_basic_set(bset2);
 	return isl_set_union(set1, set2);

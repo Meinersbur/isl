@@ -18,7 +18,7 @@ int main(int argc, char **argv)
 	struct isl_basic_set *bset;
 	struct isl_vec *sample;
 
-	bset = isl_basic_set_read_from_file(ctx, stdin, 0, ISL_FORMAT_POLYLIB);
+	bset = isl_basic_set_read_from_file(ctx, stdin, 0);
 	sample = isl_basic_set_sample_vec(isl_basic_set_copy(bset));
 	isl_vec_dump(sample, stdout, 0);
 	assert(sample);

@@ -318,13 +318,13 @@ int main(int argc, char **argv)
 	ctx = isl_ctx_alloc_with_options(options->isl);
 	options->isl = NULL;
 
-	context = isl_basic_set_read_from_file(ctx, stdin, 0, ISL_FORMAT_POLYLIB);
+	context = isl_basic_set_read_from_file(ctx, stdin, 0);
 	assert(context);
 	n = fscanf(stdin, "%d", &neg_one);
 	assert(n == 1);
 	assert(neg_one == -1);
 	bset = isl_basic_set_read_from_file(ctx, stdin,
-		isl_basic_set_dim(context, isl_dim_set), ISL_FORMAT_POLYLIB);
+		isl_basic_set_dim(context, isl_dim_set));
 
 	while (fgets(s, sizeof(s), stdin)) {
 		if (strncasecmp(s, "Maximize", 8) == 0)

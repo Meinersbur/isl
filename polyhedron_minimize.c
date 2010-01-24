@@ -64,7 +64,7 @@ int main(int argc, char **argv)
 	enum isl_lp_result res;
 
 	isl_int_init(opt);
-	bset = isl_basic_set_read_from_file(ctx, stdin, 0, ISL_FORMAT_POLYLIB);
+	bset = isl_basic_set_read_from_file(ctx, stdin, 0);
 	assert(bset);
 	obj = isl_vec_read_from_file(ctx, stdin, ISL_FORMAT_POLYLIB);
 	assert(obj);

@@ -607,7 +607,7 @@ error:
 }
 
 __isl_give isl_basic_map *isl_basic_map_read_from_file(isl_ctx *ctx,
-		FILE *input, unsigned nparam, unsigned input_format)
+		FILE *input, unsigned nparam)
 {
 	struct isl_basic_map *bmap;
 	struct isl_stream *s = isl_stream_new_file(ctx, input);
@@ -619,10 +619,10 @@ __isl_give isl_basic_map *isl_basic_map_read_from_file(isl_ctx *ctx,
 }
 
 __isl_give isl_basic_set *isl_basic_set_read_from_file(isl_ctx *ctx,
-		FILE *input, unsigned nparam, unsigned input_format)
+		FILE *input, unsigned nparam)
 {
 	struct isl_basic_map *bmap;
-	bmap = isl_basic_map_read_from_file(ctx, input, nparam, input_format);
+	bmap = isl_basic_map_read_from_file(ctx, input, nparam);
 	if (!bmap)
 		return NULL;
 	isl_assert(ctx, isl_basic_map_n_in(bmap) == 0, goto error);
@@ -633,7 +633,7 @@ error:
 }
 
 struct isl_basic_map *isl_basic_map_read_from_str(struct isl_ctx *ctx,
-		const char *str, unsigned nparam, unsigned input_format)
+		const char *str, unsigned nparam)
 {
 	struct isl_basic_map *bmap;
 	struct isl_stream *s = isl_stream_new_str(ctx, str);
@@ -645,10 +645,10 @@ struct isl_basic_map *isl_basic_map_read_from_str(struct isl_ctx *ctx,
 }
 
 struct isl_basic_set *isl_basic_set_read_from_str(struct isl_ctx *ctx,
-		const char *str, unsigned nparam, unsigned input_format)
+		const char *str, unsigned nparam)
 {
 	struct isl_basic_map *bmap;
-	bmap = isl_basic_map_read_from_str(ctx, str, nparam, input_format);
+	bmap = isl_basic_map_read_from_str(ctx, str, nparam);
 	if (!bmap)
 		return NULL;
 	isl_assert(ctx, isl_basic_map_n_in(bmap) == 0, goto error);
@@ -659,7 +659,7 @@ error:
 }
 
 __isl_give isl_map *isl_map_read_from_file(struct isl_ctx *ctx,
-		FILE *input, unsigned nparam, unsigned input_format)
+		FILE *input, unsigned nparam)
 {
 	struct isl_map *map;
 	struct isl_stream *s = isl_stream_new_file(ctx, input);
@@ -671,10 +671,10 @@ __isl_give isl_map *isl_map_read_from_file(struct isl_ctx *ctx,
 }
 
 __isl_give isl_set *isl_set_read_from_file(struct isl_ctx *ctx,
-		FILE *input, unsigned nparam, unsigned input_format)
+		FILE *input, unsigned nparam)
 {
 	struct isl_map *map;
-	map = isl_map_read_from_file(ctx, input, nparam, input_format);
+	map = isl_map_read_from_file(ctx, input, nparam);
 	if (!map)
 		return NULL;
 	isl_assert(ctx, isl_map_n_in(map) == 0, goto error);

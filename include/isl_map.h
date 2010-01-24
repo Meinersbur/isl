@@ -181,10 +181,8 @@ __isl_give isl_basic_map *isl_basic_map_sample(__isl_take isl_basic_map *bmap);
 struct isl_basic_map *isl_basic_map_simplify(struct isl_basic_map *bmap);
 struct isl_basic_map *isl_basic_map_detect_equalities(
 						struct isl_basic_map *bmap);
-#define ISL_FORMAT_POLYLIB	1
-#define ISL_FORMAT_OMEGA	2
 __isl_give isl_basic_map *isl_basic_map_read_from_file(isl_ctx *ctx,
-		FILE *input, unsigned nparam, unsigned input_format);
+		FILE *input, unsigned nparam);
 struct isl_basic_map *isl_basic_map_fix_si(struct isl_basic_map *bmap,
 		enum isl_dim_type type, unsigned pos, int value);
 

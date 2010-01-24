@@ -127,15 +127,14 @@ __isl_give isl_basic_set *isl_basic_set_detect_equalities(
 						__isl_take isl_basic_set *bset);
 struct isl_basic_set *isl_basic_set_product(struct isl_basic_set_list *list);
 
-#define ISL_FORMAT_POLYLIB		1
-#define ISL_FORMAT_OMEGA		2
 __isl_give isl_basic_set *isl_basic_set_read_from_file(isl_ctx *ctx,
-		FILE *input, unsigned nparam, unsigned input_format);
+		FILE *input, unsigned nparam);
 __isl_give isl_basic_set *isl_basic_set_read_from_str(isl_ctx *ctx,
-		const char *str, unsigned nparam, unsigned input_format);
+		const char *str, unsigned nparam);
 __isl_give isl_set *isl_set_read_from_file(isl_ctx *ctx,
-		FILE *input, unsigned nparam, unsigned input_format);
-#define ISL_FORMAT_POLYLIB_CONSTRAINTS	3
+		FILE *input, unsigned nparam);
+#define ISL_FORMAT_POLYLIB		1
+#define ISL_FORMAT_POLYLIB_CONSTRAINTS	2
 void isl_basic_set_print(__isl_keep isl_basic_set *bset, FILE *out, int indent,
 	const char *prefix, const char *suffix, unsigned output_format);
 void isl_set_print(__isl_keep struct isl_set *set, FILE *out, int indent,
