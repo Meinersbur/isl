@@ -6,7 +6,7 @@ ACLOCAL_AMFLAGS = -I m4
 lib_LTLIBRARIES = libisl.la
 noinst_PROGRAMS = isl_test isl_polyhedron_sample isl_pip \
 	isl_polyhedron_minimize isl_polytope_scan \
-	isl_polyhedron_detect_equalities
+	isl_polyhedron_detect_equalities isl_cat
 TESTS = isl_test
 
 if HAVE_PIPLIB
@@ -119,6 +119,12 @@ isl_polyhedron_detect_equalities_CPPFLAGS = -I$(srcdir)/include -Iinclude/ \
 isl_polyhedron_detect_equalities_LDADD = libisl.la
 isl_polyhedron_detect_equalities_SOURCES = \
 	polyhedron_detect_equalities.c
+
+isl_cat_CPPFLAGS = -I$(srcdir)/include -Iinclude/ \
+	@GMP_CPPFLAGS@
+isl_cat_LDADD = libisl.la
+isl_cat_SOURCES = \
+	cat.c
 
 nodist_pkginclude_HEADERS = \
 	include/isl_config.h \
