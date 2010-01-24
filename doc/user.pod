@@ -377,25 +377,29 @@ to foreign file formats.
 
 	#include <isl_set.h>
 	__isl_give isl_basic_set *isl_basic_set_read_from_file(
-		isl_ctx *ctx, FILE *input, unsigned nparam);
+		isl_ctx *ctx, FILE *input, int nparam);
 	__isl_give isl_basic_set *isl_basic_set_read_from_str(
-		isl_ctx *ctx, const char *str, unsigned nparam);
+		isl_ctx *ctx, const char *str, int nparam);
 	__isl_give isl_set *isl_set_read_from_file(isl_ctx *ctx,
-		FILE *input, unsigned nparam);
+		FILE *input, int nparam);
 
 	#include <isl_map.h>
 	__isl_give isl_basic_map *isl_basic_map_read_from_file(
-		isl_ctx *ctx, FILE *input, unsigned nparam);
+		isl_ctx *ctx, FILE *input, int nparam);
 	__isl_give isl_basic_map *isl_basic_map_read_from_str(
-		isl_ctx *ctx, const char *str, unsigned nparam);
+		isl_ctx *ctx, const char *str, int nparam);
 	__isl_give isl_map *isl_map_read_from_file(
-		struct isl_ctx *ctx, FILE *input, unsigned nparam);
+		struct isl_ctx *ctx, FILE *input, int nparam);
 
-The input may be either in C<PolyLib> format or in an
-C<Omega>-like format.
+The input may be either in C<PolyLib> format or in the
+C<isl> format, which is similar to the C<Omega> format.
 C<nparam> specifies how many of the final columns in
-the C<PolyLib> format correspond to parameters.  It should
-be zero when C<Omega>-like input is expected.
+the C<PolyLib> format correspond to parameters.
+If input is given in the C<isl> format, then the number
+of parameters needs to be equal to C<nparam>.
+If C<nparam> is negative, then any number of parameters
+is accepted in the C<isl> format and zero parameters
+are assumed in the C<PolyLib> format.
 
 =head3 Output
 

@@ -510,8 +510,36 @@ static struct isl_map *map_read_polylib(struct isl_stream *s, int nparam)
 	return map;
 }
 
+static struct isl_dim *set_names(struct isl_dim *dim, struct vars *vars,
+	enum isl_dim_type type, int offset, int n)
+{
+	int i;
+	struct variable *v;
+
+	for (i = 0, v = vars->v; i < offset; ++i, v = v->next)
+		;
+	for (i = n - 1; i >= 0; --i, v = v->next)
+		dim = isl_dim_set_name(dim, type, i, v->name);
+
+	return dim;
+}
+
+static struct isl_dim *dim_from_vars(struct vars *vars,
+	int nparam, int n_in, int n_out)
+{
+	struct isl_dim *dim;
+
+	dim = isl_dim_alloc(vars->ctx, nparam, n_in, n_out);
+	dim = set_names(dim, vars, isl_dim_param, n_out + n_in, nparam);
+	dim = set_names(dim, vars, isl_dim_in, n_out, n_in);
+	dim = set_names(dim, vars, isl_dim_out, 0, n_out);
+
+	return dim;
+}
+
 static struct isl_map *map_read(struct isl_stream *s, int nparam)
 {
+	struct isl_dim *dim;
 	struct isl_basic_map *bmap = NULL;
 	struct isl_token *tok;
 	struct vars *v = NULL;
@@ -527,33 +555,53 @@ static struct isl_map *map_read(struct isl_stream *s, int nparam)
 		isl_stream_push_token(s, tok);
 		return map_read_polylib(s, nparam);
 	}
-	if (tok->type != '{') {
+	v = vars_new(s->ctx);
+	if (tok->type == '[') {
+		isl_stream_push_token(s, tok);
+		v = read_tuple(s, v);
+		if (!v)
+			return NULL;
+		if (nparam >= 0)
+			isl_assert(s->ctx, nparam == v->n, goto error);
+		nparam = v->n;
+		tok = isl_stream_next_token(s);
+		if (!tok || tok->type != ISL_TOKEN_TO) {
+			isl_stream_error(s, tok, "expecting '->'");
+			if (tok)
+				isl_stream_push_token(s, tok);
+			goto error;
+		}
+		isl_token_free(tok);
+		tok = isl_stream_next_token(s);
+	}
+	if (nparam < 0)
+		nparam = 0;
+	if (!tok || tok->type != '{') {
 		isl_stream_error(s, tok, "expecting '{'");
 		if (tok)
 			isl_stream_push_token(s, tok);
 		goto error;
 	}
 	isl_token_free(tok);
-	isl_assert(s->ctx, nparam == 0, goto error);
-	v = vars_new(s->ctx);
 	v = read_tuple(s, v);
 	if (!v)
 		return NULL;
-	n1 = v->n;
+	n1 = v->n - nparam;
 	tok = isl_stream_next_token(s);
 	if (tok && tok->type == ISL_TOKEN_TO) {
 		isl_token_free(tok);
 		v = read_tuple(s, v);
 		if (!v)
 			return NULL;
-		n2 = v->n - n1;
+		n2 = v->n - n1 - nparam;
 	} else {
 		if (tok)
 			isl_stream_push_token(s, tok);
 		n2 = n1;
 		n1 = 0;
 	}
-	bmap = isl_basic_map_alloc(s->ctx, 0, n1, n2, 0, 0,0);
+	dim = dim_from_vars(v, nparam, n1, n2);
+	bmap = isl_basic_map_alloc_dim(dim, 0, 0, 0);
 	if (!bmap)
 		goto error;
 	tok = isl_stream_next_token(s);
@@ -607,7 +655,7 @@ error:
 }
 
 __isl_give isl_basic_map *isl_basic_map_read_from_file(isl_ctx *ctx,
-		FILE *input, unsigned nparam)
+		FILE *input, int nparam)
 {
 	struct isl_basic_map *bmap;
 	struct isl_stream *s = isl_stream_new_file(ctx, input);
@@ -619,7 +667,7 @@ __isl_give isl_basic_map *isl_basic_map_read_from_file(isl_ctx *ctx,
 }
 
 __isl_give isl_basic_set *isl_basic_set_read_from_file(isl_ctx *ctx,
-		FILE *input, unsigned nparam)
+		FILE *input, int nparam)
 {
 	struct isl_basic_map *bmap;
 	bmap = isl_basic_map_read_from_file(ctx, input, nparam);
@@ -633,7 +681,7 @@ error:
 }
 
 struct isl_basic_map *isl_basic_map_read_from_str(struct isl_ctx *ctx,
-		const char *str, unsigned nparam)
+		const char *str, int nparam)
 {
 	struct isl_basic_map *bmap;
 	struct isl_stream *s = isl_stream_new_str(ctx, str);
@@ -645,7 +693,7 @@ struct isl_basic_map *isl_basic_map_read_from_str(struct isl_ctx *ctx,
 }
 
 struct isl_basic_set *isl_basic_set_read_from_str(struct isl_ctx *ctx,
-		const char *str, unsigned nparam)
+		const char *str, int nparam)
 {
 	struct isl_basic_map *bmap;
 	bmap = isl_basic_map_read_from_str(ctx, str, nparam);
@@ -659,7 +707,7 @@ error:
 }
 
 __isl_give isl_map *isl_map_read_from_file(struct isl_ctx *ctx,
-		FILE *input, unsigned nparam)
+		FILE *input, int nparam)
 {
 	struct isl_map *map;
 	struct isl_stream *s = isl_stream_new_file(ctx, input);
@@ -671,7 +719,7 @@ __isl_give isl_map *isl_map_read_from_file(struct isl_ctx *ctx,
 }
 
 __isl_give isl_set *isl_set_read_from_file(struct isl_ctx *ctx,
-		FILE *input, unsigned nparam)
+		FILE *input, int nparam)
 {
 	struct isl_map *map;
 	map = isl_map_read_from_file(ctx, input, nparam);
