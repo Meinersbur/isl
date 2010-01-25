@@ -498,7 +498,7 @@ and return an identity relation between two such sets.
 
 These functions take a dimension specification for a B<set>
 and return relations that express that the elements in the domain
-are lexicograhically less
+are lexicographically less
 (C<isl_map_lex_lt>), less or equal (C<isl_map_lex_le>),
 greater (C<isl_map_lex_gt>) or greater or equal (C<isl_map_lex_ge>)
 than the elements in the range.
