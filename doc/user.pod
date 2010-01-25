@@ -415,10 +415,19 @@ are assumed in the C<PolyLib> format.
 	void isl_set_print(__isl_keep struct isl_set *set,
 		FILE *out, int indent, unsigned output_format);
 
-C<input_format> must be C<ISL_FORMAT_POLYLIB>.
+	#include <isl_map.h>
+	void isl_basic_map_print(__isl_keep isl_basic_map *bmap,
+		FILE *out, int indent,
+		const char *prefix, const char *suffix,
+		unsigned output_format);
+	void isl_map_print(__isl_keep struct isl_map *map,
+		FILE *out, int indent, unsigned output_format);
+
+C<output_format> may be either C<ISL_FORMAT_ISL> or C<ISL_FORMAT_POLYLIB>.
 Each line in the output is indented by C<indent> spaces,
 prefixed by C<prefix> and suffixed by C<suffix>.
-The coefficients of the existentially quantified variables
+In the C<PolyLib> format output,
+the coefficients of the existentially quantified variables
 appear between those of the set variables and those
 of the parameters.
 

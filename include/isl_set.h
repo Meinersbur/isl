@@ -135,6 +135,7 @@ __isl_give isl_set *isl_set_read_from_file(isl_ctx *ctx,
 		FILE *input, int nparam);
 __isl_give isl_set *isl_set_read_from_str(isl_ctx *ctx,
 		const char *str, int nparam);
+#define ISL_FORMAT_ISL			0
 #define ISL_FORMAT_POLYLIB		1
 #define ISL_FORMAT_POLYLIB_CONSTRAINTS	2
 void isl_basic_set_print(__isl_keep isl_basic_set *bset, FILE *out, int indent,

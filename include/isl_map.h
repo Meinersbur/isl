@@ -189,6 +189,12 @@ __isl_give isl_map *isl_map_read_from_file(struct isl_ctx *ctx,
 		FILE *input, int nparam);
 __isl_give isl_map *isl_map_read_from_str(isl_ctx *ctx,
 		const char *str, int nparam);
+#define ISL_FORMAT_ISL			0
+#define ISL_FORMAT_POLYLIB		1
+void isl_basic_map_print(__isl_keep isl_basic_map *bmap, FILE *out, int indent,
+	const char *prefix, const char *suffix, unsigned output_format);
+void isl_map_print(__isl_keep isl_map *map, FILE *out, int indent,
+	unsigned output_format);
 struct isl_basic_map *isl_basic_map_fix_si(struct isl_basic_map *bmap,
 		enum isl_dim_type type, unsigned pos, int value);
 
