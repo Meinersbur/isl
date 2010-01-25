@@ -369,9 +369,48 @@ C<isl_dim_out> (only for relations), C<isl_dim_set>
 
 =head2 Input and Output
 
-Proper input and output functions are still in development.
-However, some functions are provided to read and write
-to foreign file formats.
+C<isl> supports its own input/output format, which is similar
+to the C<Omega> format, but also supports the C<PolyLib> format
+in some cases.
+
+=head3 C<isl> format
+
+The C<isl> format is similar to that of C<Omega>, but has a different
+syntax for describing the parameters and allows for the definition
+of an existentially quantified variable as the integer division
+of an affine expression.
+For example, the set of integers C<i> between C<0> and C<n>
+such that C<i % 10 <= 6> can be described as
+
+	[n] -> { [i] : exists (a = [i/10] : 0 <= i and i <= n and
+				i - 10 a <= 6) }
+
+A set or relation can have several disjuncts, separated
+by the keyword C<or>.  Each disjunct is either a conjunction
+of constraints or a projection (C<exists>) of a conjunction
+of constraints.  The constraints are separated by the keyword
+C<and>.
+
+=head3 C<PolyLib> format
+
+If the represented set is a union, then the first line
+contains a single number representing the number of disjuncts.
+Otherwise, a line containing the number C<1> is optional.
+
+Each disjunct is represented by a matrix of constraints.
+The first line contains two numbers representing
+the number of rows and columns,
+where the number of rows is equal to the number of constraints
+and the number of columns is equal to two plus the number of variables.
+The following lines contain the actual rows of the constraint matrix.
+In each row, the first column indicates whether the constraint
+is an equality (C<0>) or inequality (C<1>).  The final column
+corresponds to the constant term.
+
+If the set is parametric, then the coefficients of the parameters
+appear in the last columns before the constant column.
+The coefficients of any existentially quantified variables appear
+between those of the set variables and those of the parameters.
 
 =head3 Input
 
@@ -395,8 +434,8 @@ to foreign file formats.
 	__isl_give isl_map *isl_map_read_from_str(isl_ctx *ctx,
 		const char *str, int nparam);
 
-The input may be either in C<PolyLib> format or in the
-C<isl> format, which is similar to the C<Omega> format.
+The input format is autodetected and may be either the C<PolyLib> format
+or the C<isl> format.
 C<nparam> specifies how many of the final columns in
 the C<PolyLib> format correspond to parameters.
 If input is given in the C<isl> format, then the number
@@ -423,7 +462,7 @@ are assumed in the C<PolyLib> format.
 	void isl_map_print(__isl_keep struct isl_map *map,
 		FILE *out, int indent, unsigned output_format);
 
-C<output_format> may be either C<ISL_FORMAT_ISL>, C<ISL_FORMAT_OMEGA>
+The C<output_format> may be either C<ISL_FORMAT_ISL>, C<ISL_FORMAT_OMEGA>
 or C<ISL_FORMAT_POLYLIB>.
 Each line in the output is indented by C<indent> spaces,
 prefixed by C<prefix> and suffixed by C<suffix>.
@@ -587,6 +626,12 @@ between 10 and 42, you would use the following code.
 	bset = isl_basic_set_project_out(bset, isl_dim_set, 1, 1);
 
 	isl_int_clear(v);
+
+Or, alternatively,
+
+	struct isl_basic_set *bset;
+	bset = isl_basic_set_read_from_str(ctx,
+		"{[i] : exists (a : i = 2a and i >= 10 and i <= 42)}", -1);
 
 =head2 Properties
 
@@ -868,20 +913,12 @@ of all elements associated to that element.
 Although C<isl> is mainly meant to be used as a library,
 it also contains some basic applications that use some
 of the functionality of C<isl>.
-Since C<isl> does not have its own input format yet, these
-applications currently take input in C<PolyLib> style.
-That is, a line with the number of rows and columns,
-where the number of rows is equal to the number of constraints
-and the number of columns is equal to two plus the number of variables,
-followed by the actual rows.
-In each row, the first column indicates whether the constraint
-is an equality (C<0>) or inequality (C<1>).  The final column
-corresponds to the constant term.
+The input may specified either in the L<isl format>
+or the L<PolyLib format>.
 
 =head2 C<isl_polyhedron_sample>
 
-C<isl_polyhedron_sample>
-takes a polyhedron in C<PolyLib> format as input and prints
+C<isl_polyhedron_sample> takes a polyhedron as input and prints
 an integer element of the polyhedron, if there is any.
 The first column in the output is the denominator and is always
 equal to 1.  If the polyhedron contains no integer points,
@@ -891,9 +928,8 @@ then a vector of length zero is printed.
 
 C<isl_pip> takes the same input as the C<example> program
 from the C<piplib> distribution, i.e., a set of constraints
-on the parameters in C<PolyLib> format,
-a line contains only -1 and finally a set
-of constraints on a parametric polyhedron, again in C<PolyLib> format.
+on the parameters, a line contains only -1 and finally a set
+of constraints on a parametric polyhedron.
 The coefficients of the parameters appear in the last columns
 (but before the final constant column).
 The output is the lexicographic minimum of the parametric polyhedron.
@@ -904,12 +940,12 @@ is just a dump of the internal state.
 
 C<isl_polyhedron_minimize> computes the minimum of some linear
 or affine objective function over the integer points in a polyhedron.
-The input is in C<PolyLib> format.  If an affine objective function
+If an affine objective function
 is given, then the constant should appear in the last column.
 
 =head2 C<isl_polytope_scan>
 
-Given a polytope in C<PolyLib> format, C<isl_polytope_scan> prints
+Given a polytope, C<isl_polytope_scan> prints
 all integer points in the polytope.
 
 =head1 C<isl-polylib>
