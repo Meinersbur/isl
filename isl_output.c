@@ -118,6 +118,17 @@ static void print_tuple(__isl_keep isl_dim *dim, FILE *out,
 	fprintf(out, "]");
 }
 
+static void print_omega_parameters(struct isl_dim *dim, FILE *out,
+	int indent, const char *prefix, const char *suffix)
+{
+	if (isl_dim_size(dim, isl_dim_param) == 0)
+		return;
+
+	fprintf(out, "%*s%ssymbolic ", indent, "", prefix ? prefix : "");
+	print_var_list(dim, out, isl_dim_param, 0);
+	fprintf(out, ";%s\n", suffix ? suffix : "");
+}
+
 static void print_term(__isl_keep isl_dim *dim,
 			isl_int c, int pos, FILE *out, int set)
 {
@@ -189,6 +200,98 @@ static void print_constraints(__isl_keep isl_basic_map *bmap, FILE *out,
 	for (i = 0; i < bmap->n_ineq; ++i)
 		print_constraint(bmap, out, bmap->ineq[i], ">= 0",
 					!bmap->n_eq && !i, set);
+}
+
+static void print_omega_constraints(__isl_keep isl_basic_map *bmap, FILE *out,
+	int set)
+{
+	if (bmap->n_eq + bmap->n_ineq == 0)
+		return;
+
+	fprintf(out, ": ");
+	if (bmap->n_div > 0) {
+		int i;
+		fprintf(out, "exists (");
+		for (i = 0; i < bmap->n_div; ++i) {
+			if (i)
+				fprintf(out, ", ");
+			print_name(bmap->dim, out, isl_dim_div, i, 0);
+		}
+		fprintf(out, ": ");
+	}
+	print_constraints(bmap, out, set);
+	if (bmap->n_div > 0)
+		fprintf(out, ")");
+}
+
+static void basic_map_print_omega(struct isl_basic_map *bmap, FILE *out)
+{
+	fprintf(out, "{ [");
+	print_var_list(bmap->dim, out, isl_dim_in, 0);
+	fprintf(out, "] -> [");
+	print_var_list(bmap->dim, out, isl_dim_out, 0);
+	fprintf(out, "] ");
+	print_omega_constraints(bmap, out, 0);
+	fprintf(out, " }");
+}
+
+static void isl_basic_map_print_omega(struct isl_basic_map *bmap, FILE *out,
+	int indent, const char *prefix, const char *suffix)
+{
+	print_omega_parameters(bmap->dim, out, indent, prefix, suffix);
+
+	fprintf(out, "%*s%s", indent, "", prefix ? prefix : "");
+	basic_map_print_omega(bmap, out);
+	fprintf(out, "%s\n", suffix ? suffix : "");
+}
+
+static void basic_set_print_omega(struct isl_basic_set *bset, FILE *out)
+{
+	fprintf(out, "{ [");
+	print_var_list(bset->dim, out, isl_dim_set, 1);
+	fprintf(out, "] ");
+	print_omega_constraints((isl_basic_map *)bset, out, 1);
+	fprintf(out, " }");
+}
+
+static void isl_basic_set_print_omega(struct isl_basic_set *bset, FILE *out,
+	int indent, const char *prefix, const char *suffix)
+{
+	print_omega_parameters(bset->dim, out, indent, prefix, suffix);
+
+	fprintf(out, "%*s%s", indent, "", prefix ? prefix : "");
+	basic_set_print_omega(bset, out);
+	fprintf(out, "%s\n", suffix ? suffix : "");
+}
+
+static void isl_map_print_omega(struct isl_map *map, FILE *out, int indent)
+{
+	int i;
+
+	print_omega_parameters(map->dim, out, indent, "", "");
+
+	fprintf(out, "%*s", indent, "");
+	for (i = 0; i < map->n; ++i) {
+		if (i)
+			fprintf(out, " union ");
+		basic_map_print_omega(map->p[i], out);
+	}
+	fprintf(out, "\n");
+}
+
+static void isl_set_print_omega(struct isl_set *set, FILE *out, int indent)
+{
+	int i;
+
+	print_omega_parameters(set->dim, out, indent, "", "");
+
+	fprintf(out, "%*s", indent, "");
+	for (i = 0; i < set->n; ++i) {
+		if (i)
+			fprintf(out, " union ");
+		basic_set_print_omega(set->p[i], out);
+	}
+	fprintf(out, "\n");
 }
 
 static void print_disjunct(__isl_keep isl_basic_map *bmap, FILE *out, int set)
@@ -306,6 +409,8 @@ void isl_basic_map_print(__isl_keep isl_basic_map *bmap, FILE *out, int indent,
 		return;
 	if (output_format == ISL_FORMAT_ISL)
 		isl_basic_map_print_isl(bmap, out, indent, prefix, suffix);
+	else if (output_format == ISL_FORMAT_OMEGA)
+		isl_basic_map_print_omega(bmap, out, indent, prefix, suffix);
 	else
 		isl_assert(bmap->ctx, 0, return);
 }
@@ -321,6 +426,8 @@ void isl_basic_set_print(struct isl_basic_set *bset, FILE *out, int indent,
 		isl_basic_set_print_polylib(bset, out, indent, prefix, suffix);
 	else if (output_format == ISL_FORMAT_POLYLIB_CONSTRAINTS)
 		print_constraints_polylib(bset, out, indent, prefix, suffix);
+	else if (output_format == ISL_FORMAT_OMEGA)
+		isl_basic_set_print_omega(bset, out, indent, prefix, suffix);
 	else
 		isl_assert(bset->ctx, 0, return);
 }
@@ -334,6 +441,8 @@ void isl_set_print(struct isl_set *set, FILE *out, int indent,
 		isl_set_print_isl(set, out, indent);
 	else if (output_format == ISL_FORMAT_POLYLIB)
 		isl_set_print_polylib(set, out, indent);
+	else if (output_format == ISL_FORMAT_OMEGA)
+		isl_set_print_omega(set, out, indent);
 	else
 		isl_assert(set->ctx, 0, return);
 }
@@ -345,6 +454,8 @@ void isl_map_print(__isl_keep isl_map *map, FILE *out, int indent,
 		return;
 	if (output_format == ISL_FORMAT_ISL)
 		isl_map_print_isl(map, out, indent);
+	else if (output_format == ISL_FORMAT_OMEGA)
+		isl_map_print_omega(map, out, indent);
 	else
 		isl_assert(map->ctx, 0, return);
 }

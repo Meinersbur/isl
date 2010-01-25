@@ -423,7 +423,8 @@ are assumed in the C<PolyLib> format.
 	void isl_map_print(__isl_keep struct isl_map *map,
 		FILE *out, int indent, unsigned output_format);
 
-C<output_format> may be either C<ISL_FORMAT_ISL> or C<ISL_FORMAT_POLYLIB>.
+C<output_format> may be either C<ISL_FORMAT_ISL>, C<ISL_FORMAT_OMEGA>
+or C<ISL_FORMAT_POLYLIB>.
 Each line in the output is indented by C<indent> spaces,
 prefixed by C<prefix> and suffixed by C<suffix>.
 In the C<PolyLib> format output,
