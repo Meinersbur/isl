@@ -593,8 +593,8 @@ unsigned isl_dim_total(struct isl_dim *dim)
 int isl_dim_equal(struct isl_dim *dim1, struct isl_dim *dim2)
 {
 	return match(dim1, isl_dim_param, dim2, isl_dim_param) &&
-	       match(dim1, isl_dim_in, dim2, isl_dim_in) &&
-	       match(dim1, isl_dim_out, dim2, isl_dim_out);
+	       n(dim1, isl_dim_in) == n(dim2, isl_dim_in) &&
+	       n(dim1, isl_dim_out) == n(dim2, isl_dim_out);
 }
 
 int isl_dim_compatible(struct isl_dim *dim1, struct isl_dim *dim2)
