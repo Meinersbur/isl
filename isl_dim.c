@@ -427,10 +427,10 @@ struct isl_dim *isl_dim_map(struct isl_dim *dim)
 	}
 	dim->n_in = dim->n_out;
 	if (names) {
-		copy_names(dim, isl_dim_out, 0, dim, isl_dim_in);
 		free(dim->names);
 		dim->names = names;
 		dim->n_name = dim->nparam + dim->n_out + dim->n_out;
+		dim = copy_names(dim, isl_dim_out, 0, dim, isl_dim_in);
 	}
 	return dim;
 error:
