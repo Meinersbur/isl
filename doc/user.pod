@@ -177,6 +177,12 @@ support fixed integer arithmetic, all calls to C<GMP>
 are wrapped inside C<isl> specific macros.
 The basic type is C<isl_int> and the following operations
 are available on this type.
+The meanings of these operations are essentially the same
+as their C<GMP> C<mpz_> counterparts.
+As always with C<GMP> types, C<isl_int>s need to be
+initialized with C<isl_int_init> before they can be used
+and they need to be released with C<isl_int_clear>
+after the last use.
 
 =over
 
