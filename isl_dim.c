@@ -59,6 +59,39 @@ static unsigned global_pos(struct isl_dim *dim,
 	return isl_dim_total(dim);
 }
 
+/* Extend length of names array to the total number of dimensions.
+ */
+static __isl_give isl_dim *extend_names(__isl_take isl_dim *dim)
+{
+	struct isl_name **names;
+	int i;
+
+	if (isl_dim_total(dim) <= dim->n_name)
+		return dim;
+
+	if (!dim->names) {
+		dim->names = isl_calloc_array(dim->ctx,
+				struct isl_name *, isl_dim_total(dim));
+		if (!dim->names)
+			goto error;
+	} else {
+		names = isl_realloc_array(dim->ctx, dim->names,
+				struct isl_name *, isl_dim_total(dim));
+		if (!names)
+			goto error;
+		dim->names = names;
+		for (i = dim->n_name; i < isl_dim_total(dim); ++i)
+			dim->names[i] = NULL;
+	}
+
+	dim->n_name = isl_dim_total(dim);
+
+	return dim;
+error:
+	isl_dim_free(dim);
+	return NULL;
+}
+
 static struct isl_dim *set_name(struct isl_dim *dim,
 				 enum isl_dim_type type, unsigned pos,
 				 struct isl_name *name)
@@ -75,21 +108,9 @@ static struct isl_dim *set_name(struct isl_dim *dim,
 	if (pos >= dim->n_name) {
 		if (!name)
 			return dim;
-		if (!dim->names) {
-			dim->names = isl_calloc_array(dim->ctx,
-					struct isl_name *, isl_dim_total(dim));
-			if (!dim->names)
-				goto error;
-		} else {
-			int i;
-			dim->names = isl_realloc_array(dim->ctx, dim->names,
-					struct isl_name *, isl_dim_total(dim));
-			if (!dim->names)
-				goto error;
-			for (i = dim->n_name; i < isl_dim_total(dim); ++i)
-				dim->names[i] = NULL;
-		}
-		dim->n_name = isl_dim_total(dim);
+		dim = extend_names(dim);
+		if (!dim)
+			goto error;
 	}
 
 	dim->names[pos] = name;
@@ -484,6 +505,9 @@ struct isl_dim *isl_dim_drop(struct isl_dim *dim, enum isl_dim_type type,
 	if (!dim)
 		goto error;
 	if (dim->names) {
+		dim = extend_names(dim);
+		if (!dim)
+			goto error;
 		for (i = 0; i < num; ++i)
 			isl_name_free(dim->ctx, get_name(dim, type, first+i));
 		for (i = first+num; i < n(dim, type); ++i)
@@ -498,6 +522,7 @@ struct isl_dim *isl_dim_drop(struct isl_dim *dim, enum isl_dim_type type,
 		case isl_dim_out:
 			;
 		}
+		dim->n_name -= num;
 	}
 	switch (type) {
 	case isl_dim_param:	dim->nparam -= num; break;
