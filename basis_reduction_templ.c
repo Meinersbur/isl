@@ -6,7 +6,7 @@
  *
  * Written by Sven Verdoolaege, Leiden Institute of Advanced Computer Science,
  * Universiteit Leiden, Niels Bohrweg 1, 2333 CA Leiden, The Netherlands
- * and K.U.Leuven, Departement * Computerwetenschappen, Celestijnenlaan 200A,
+ * and K.U.Leuven, Departement Computerwetenschappen, Celestijnenlaan 200A,
  * B-3001 Leuven, Belgium
  */
 
