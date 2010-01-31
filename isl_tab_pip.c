@@ -3732,6 +3732,8 @@ static void find_solutions(struct isl_sol *sol, struct isl_tab *tab)
 			if (sol->error || !context->op->is_ok(context))
 				goto error;
 			tab = set_row_cst_to_div(tab, row, d);
+			if (context->op->is_empty(context))
+				break;
 		} else
 			row = add_parametric_cut(tab, row, context);
 		if (row < 0)
