@@ -43,6 +43,7 @@ libisl_la_SOURCES = \
 	isl_div.c \
 	isl_equalities.c \
 	isl_equalities.h \
+	isl_flow.c \
 	isl_gmp.c \
 	isl_hash.c \
 	isl_ilp.c \
@@ -136,6 +137,7 @@ pkginclude_HEADERS = \
 	include/isl_ctx.h \
 	include/isl_dim.h \
 	include/isl_div.h \
+	include/isl_flow.h \
 	include/isl_ilp.h \
 	include/isl_int.h \
 	include/isl_hash.h \

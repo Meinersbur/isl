@@ -934,6 +934,86 @@ of all elements associated to that element.
 	__isl_give isl_map *isl_map_lexmax(
 		__isl_take isl_map *map);
 
+=head2 Dependence Analysis
+
+C<isl> contains specialized functionality for performing
+array dataflow analysis.  That is, given a I<sink> access relation
+and a collection of possible I<source> access relations,
+C<isl> can compute relations that describe
+for each iteration of the sink access, which iteration
+of which of the source access relations was the last
+to access the same data element before the given iteration
+of the sink access.
+To compute standard flow dependences, the sink should be
+a read, while the sources should be writes.
+
+	#include <isl_flow.h>
+
+	__isl_give isl_access_info *isl_access_info_alloc(
+		__isl_take isl_map *sink,
+		void *sink_user, isl_access_level_before fn,
+		int max_source);
+	__isl_give isl_access_info *isl_access_info_add_source(
+		__isl_take isl_access_info *acc,
+		__isl_take isl_map *source, void *source_user);
+
+	__isl_give isl_flow *isl_access_info_compute_flow(
+		__isl_take isl_access_info *acc);
+
+	int isl_flow_foreach(__isl_keep isl_flow *deps,
+		int (*fn)(__isl_take isl_map *dep, void *dep_user,
+			  void *user),
+		void *user);
+	__isl_give isl_set *isl_flow_get_no_source(
+		__isl_keep isl_flow *deps);
+	void isl_flow_free(__isl_take isl_flow *deps);
+
+The function C<isl_access_info_compute_flow> performs the actual
+dependence analysis.  The other functions are used to construct
+the input for this function or to read off the output.
+
+The input is collected in an C<isl_access_info>, which can
+be created through a call to C<isl_access_info_alloc>.
+The arguments to this functions are the sink access relation
+C<sink>, a token C<sink_user> used to identify the sink
+access to the user, a callback function for specifying the
+relative order of source and sink accesses, and the number
+of source access relations that will be added.
+The callback function has type C<int (*)(void *first, void *second)>.
+The function is called with two user supplied tokens identifying
+either a source or the sink and it should return the shared nesting
+level and the relative order of the two accesses.
+In particular, let I<n> be the number of loops shared by
+the two accesses.  If C<first> precedes C<second> textually,
+then the function should return I<2 * n + 1>; otherwise,
+it should return I<2 * n>.
+The sources can be added to the C<isl_access_info> by performing
+(at most) C<max_source> calls to C<isl_access_info_add_source>.
+The C<source_user> token is again used to identify
+the source access.  The range of the source access relation
+C<source> should have the same dimension as the range
+of the sink access relation.
+
+The result of the dependence analysis is collected in an
+C<isl_flow>.  There may be elements in the domain of
+the sink access for which no preceding source access could be
+find.  The set of these elements can be obtained through
+a call to C<isl_flow_get_no_source>.
+In the case of standard flow dependence analysis,
+this set corresponds to the reads from uninitialized
+array elements.
+The actual flow dependences can be extracted using
+C<isl_flow_foreach>.  This function will call the user-specified
+callback function C<fn> for each B<non-empty> dependence between
+a source and the sink.  The callback function is called
+with three arguments, the actual flow dependence relation
+mapping source iterations to sink iterations, a token
+identifying the source and an additional C<void *> with value
+equal to the third argument of the C<isl_flow_foreach> call.
+
+After finishing with an C<isl_flow>, the user should call
+C<isl_flow_free> to free all associated memory.
+
 =head1 Applications
 
 Although C<isl> is mainly meant to be used as a library,
