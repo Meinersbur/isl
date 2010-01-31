@@ -3431,6 +3431,181 @@ struct isl_set *isl_basic_set_partial_lexmax(
 			dom, empty);
 }
 
+/* Given a basic map "bmap", compute the lexicograhically minimal
+ * (or maximal) image element for each domain element in dom.
+ * Set *empty to those elements in dom that do not have an image element.
+ *
+ * We first make sure the basic sets in dom are disjoint and then
+ * simply collect the results over each of the basic sets separately.
+ * We could probably improve the efficiency a bit by moving the union
+ * domain down into the parametric integer programming.
+ */
+static __isl_give isl_map *basic_map_partial_lexopt(
+		__isl_take isl_basic_map *bmap, __isl_take isl_set *dom,
+		__isl_give isl_set **empty, int max)
+{
+	int i;
+	struct isl_map *res;
+
+	dom = isl_set_make_disjoint(dom);
+	if (!dom)
+		goto error;
+
+	if (isl_set_fast_is_empty(dom)) {
+		res = isl_map_empty_like_basic_map(bmap);
+		*empty = isl_set_empty_like(dom);
+		isl_set_free(dom);
+		isl_basic_map_free(bmap);
+		return res;
+	}
+
+	res = isl_basic_map_partial_lexopt(isl_basic_map_copy(bmap),
+			isl_basic_set_copy(dom->p[0]), empty, max);
+		
+	for (i = 1; i < dom->n; ++i) {
+		struct isl_map *res_i;
+		struct isl_set *empty_i;
+
+		res_i = isl_basic_map_partial_lexopt(isl_basic_map_copy(bmap),
+				isl_basic_set_copy(dom->p[i]), &empty_i, max);
+
+		res = isl_map_union_disjoint(res, res_i);
+		*empty = isl_set_union_disjoint(*empty, empty_i);
+	}
+
+	isl_set_free(dom);
+	isl_basic_map_free(bmap);
+	return res;
+error:
+	*empty = NULL;
+	isl_set_free(dom);
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+/* Given a map "map", compute the lexicograhically minimal
+ * (or maximal) image element for each domain element in dom.
+ * Set *empty to those elements in dom that do not have an image element.
+ *
+ * We first compute the lexicographically minimal or maximal element
+ * in the first basic map.  This results in a partial solution "res"
+ * and a subset "todo" of dom that still need to be handled.
+ * We then consider each of the remaining maps in "map" and successively
+ * improve both "res" and "todo".
+ *
+ * Let res^k and todo^k be the results after k steps and let i = k + 1.
+ * Assume we are computing the lexicographical maximum.
+ * We first intersect basic map i with a relation that maps elements
+ * to elements that are lexicographically larger than the image elements
+ * in res^k and the compute the maximum image element of this intersection.
+ * The result ("better") corresponds to those image elements in basic map i
+ * that are better than what we had before.  The remainder ("keep") are the
+ * domain elements for which the image element in res_k was better.
+ * We also compute the lexicographical maximum of basic map i in todo^k.
+ * res^i is the result of the operation + better + those elements in
+ *		res^k that we should keep
+ * todo^i is the remainder of the maximum operation on todo^k.
+ */
+static __isl_give isl_map *isl_map_partial_lexopt(
+		__isl_take isl_map *map, __isl_take isl_set *dom,
+		__isl_give isl_set **empty, int max)
+{
+	int i;
+	struct isl_map *res;
+	struct isl_set *todo;
+
+	if (!map || !dom)
+		goto error;
+
+	if (isl_map_fast_is_empty(map)) {
+		if (empty)
+			*empty = dom;
+		else
+			isl_set_free(dom);
+		return map;
+	}
+
+	res = basic_map_partial_lexopt(isl_basic_map_copy(map->p[0]),
+					isl_set_copy(dom), &todo, max);
+
+	for (i = 1; i < map->n; ++i) {
+		struct isl_map *lt;
+		struct isl_map *better;
+		struct isl_set *keep;
+		struct isl_map *res_i;
+		struct isl_set *todo_i;
+		struct isl_dim *dim = isl_map_get_dim(res);
+
+		dim = isl_dim_range(dim);
+		if (max)
+			lt = isl_map_lex_lt(dim);
+		else
+			lt = isl_map_lex_gt(dim);
+		lt = isl_map_apply_range(isl_map_copy(res), lt);
+		lt = isl_map_intersect(lt,
+			isl_map_from_basic_map(isl_basic_map_copy(map->p[i])));
+		better = isl_map_partial_lexopt(lt,
+			isl_map_domain(isl_map_copy(res)),
+			&keep, max);
+
+		res_i = basic_map_partial_lexopt(isl_basic_map_copy(map->p[i]),
+						todo, &todo_i, max);
+
+		res = isl_map_intersect_domain(res, keep);
+		res = isl_map_union_disjoint(res, res_i);
+		res = isl_map_union_disjoint(res, better);
+		todo = todo_i;
+	}
+
+	isl_set_free(dom);
+	isl_map_free(map);
+
+	if (empty)
+		*empty = todo;
+	else
+		isl_set_free(todo);
+
+	return res;
+error:
+	if (empty)
+		*empty = NULL;
+	isl_set_free(dom);
+	isl_map_free(map);
+	return NULL;
+}
+
+__isl_give isl_map *isl_map_partial_lexmax(
+		__isl_take isl_map *map, __isl_take isl_set *dom,
+		__isl_give isl_set **empty)
+{
+	return isl_map_partial_lexopt(map, dom, empty, 1);
+}
+
+__isl_give isl_map *isl_map_partial_lexmin(
+		__isl_take isl_map *map, __isl_take isl_set *dom,
+		__isl_give isl_set **empty)
+{
+	return isl_map_partial_lexopt(map, dom, empty, 0);
+}
+
+__isl_give isl_set *isl_set_partial_lexmin(
+		__isl_take isl_set *set, __isl_take isl_set *dom,
+		__isl_give isl_set **empty)
+{
+	return (struct isl_set *)
+		isl_map_partial_lexmin((struct isl_map *)set,
+			dom, empty);
+}
+
+__isl_give isl_set *isl_set_partial_lexmax(
+		__isl_take isl_set *set, __isl_take isl_set *dom,
+		__isl_give isl_set **empty)
+{
+	return (struct isl_set *)
+		isl_map_partial_lexmax((struct isl_map *)set,
+			dom, empty);
+}
+
 __isl_give isl_map *isl_basic_map_lexopt(__isl_take isl_basic_map *bmap, int max)
 {
 	struct isl_basic_set *dom = NULL;
@@ -3464,6 +3639,41 @@ __isl_give isl_set *isl_basic_set_lexmin(__isl_take isl_basic_set *bset)
 __isl_give isl_set *isl_basic_set_lexmax(__isl_take isl_basic_set *bset)
 {
 	return (isl_set *)isl_basic_map_lexmax((isl_basic_map *)bset);
+}
+
+__isl_give isl_map *isl_map_lexopt(__isl_take isl_map *map, int max)
+{
+	struct isl_set *dom = NULL;
+	struct isl_dim *dom_dim;
+
+	if (!map)
+		goto error;
+	dom_dim = isl_dim_domain(isl_dim_copy(map->dim));
+	dom = isl_set_universe(dom_dim);
+	return isl_map_partial_lexopt(map, dom, NULL, max);
+error:
+	isl_map_free(map);
+	return NULL;
+}
+
+__isl_give isl_map *isl_map_lexmin(__isl_take isl_map *map)
+{
+	return isl_map_lexopt(map, 0);
+}
+
+__isl_give isl_map *isl_map_lexmax(__isl_take isl_map *map)
+{
+	return isl_map_lexopt(map, 1);
+}
+
+__isl_give isl_set *isl_set_lexmin(__isl_take isl_set *set)
+{
+	return (isl_set *)isl_map_lexmin((isl_map *)set);
+}
+
+__isl_give isl_set *isl_set_lexmax(__isl_take isl_set *set)
+{
+	return (isl_set *)isl_map_lexmax((isl_map *)set);
 }
 
 static struct isl_map *isl_map_reset_dim(struct isl_map *map,

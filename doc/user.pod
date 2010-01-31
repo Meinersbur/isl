@@ -853,13 +853,13 @@ the same (number of) parameters.
 
 =head3 Lexicographic Optimization
 
-Given a basic set C<bset> and a zero-dimensional domain C<dom>,
+Given a (basic) set C<set> (or C<bset>) and a zero-dimensional domain C<dom>,
 the following functions
 compute a set that contains the lexicographic minimum or maximum
-of the elements in C<bset> for those values of the parameters
+of the elements in C<set> (or C<bset>) for those values of the parameters
 that satisfy C<dom>.
 If C<empty> is not C<NULL>, then C<*empty> is assigned a set
-that contains the parameter values in C<dom> for which C<bset>
+that contains the parameter values in C<dom> for which C<set> (or C<bset>)
 has no elements.
 In other words, the union of the parameter values
 for which the result is non-empty and of C<*empty>
@@ -873,25 +873,35 @@ is equal to C<dom>.
 		__isl_take isl_basic_set *bset,
 		__isl_take isl_basic_set *dom,
 		__isl_give isl_set **empty);
+	__isl_give isl_set *isl_set_partial_lexmin(
+		__isl_take isl_set *set, __isl_take isl_set *dom,
+		__isl_give isl_set **empty);
+	__isl_give isl_set *isl_set_partial_lexmax(
+		__isl_take isl_set *set, __isl_take isl_set *dom,
+		__isl_give isl_set **empty);
 
-Given a basic set C<bset>, the following functions simply
+Given a (basic) set C<set> (or C<bset>), the following functions simply
 return a set containing the lexicographic minimum or maximum
-of the elements in C<bset>.
+of the elements in C<set> (or C<bset>).
 
 	__isl_give isl_set *isl_basic_set_lexmin(
 		__isl_take isl_basic_set *bset);
 	__isl_give isl_set *isl_basic_set_lexmax(
 		__isl_take isl_basic_set *bset);
+	__isl_give isl_set *isl_set_lexmin(
+		__isl_take isl_set *set);
+	__isl_give isl_set *isl_set_lexmax(
+		__isl_take isl_set *set);
 
-Given a basic relation C<bmap> and a domain C<dom>,
+Given a (basic) relation C<map> (or C<bmap>) and a domain C<dom>,
 the following functions
 compute a relation that maps each element of C<dom>
 to the single lexicographic minimum or maximum
 of the elements that are associated to that same
-element in C<bmap>.
+element in C<map> (or C<bmap>).
 If C<empty> is not C<NULL>, then C<*empty> is assigned a set
 that contains the elements in C<dom> that do not map
-to any elements in C<bmap>.
+to any elements in C<map> (or C<bmap>).
 In other words, the union of the domain of the result and of C<*empty>
 is equal to C<dom>.
 
@@ -903,16 +913,26 @@ is equal to C<dom>.
 		__isl_take isl_basic_map *bmap,
 		__isl_take isl_basic_set *dom,
 		__isl_give isl_set **empty);
+	__isl_give isl_map *isl_map_partial_lexmax(
+		__isl_take isl_map *map, __isl_take isl_set *dom,
+		__isl_give isl_set **empty);
+	__isl_give isl_map *isl_map_partial_lexmin(
+		__isl_take isl_map *map, __isl_take isl_set *dom,
+		__isl_give isl_set **empty);
 
-Given a basic map C<bmap>, the following functions simply
+Given a (basic) map C<map> (or C<bmap>), the following functions simply
 return a map mapping each element in the domain of
-C<bmap> to the lexicographic minimum or maximum
+C<map> (or C<bmap>) to the lexicographic minimum or maximum
 of all elements associated to that element.
 
 	__isl_give isl_map *isl_basic_map_lexmin(
 		__isl_take isl_basic_map *bmap);
 	__isl_give isl_map *isl_basic_map_lexmax(
 		__isl_take isl_basic_map *bmap);
+	__isl_give isl_map *isl_map_lexmin(
+		__isl_take isl_map *map);
+	__isl_give isl_map *isl_map_lexmax(
+		__isl_take isl_map *map);
 
 =head1 Applications
 

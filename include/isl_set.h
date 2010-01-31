@@ -162,8 +162,16 @@ __isl_give isl_set *isl_basic_set_partial_lexmin(
 __isl_give isl_set *isl_basic_set_partial_lexmax(
 		__isl_take isl_basic_set *bset, __isl_take isl_basic_set *dom,
 		__isl_give isl_set **empty);
+__isl_give isl_set *isl_set_partial_lexmin(
+		__isl_take isl_set *set, __isl_take isl_set *dom,
+		__isl_give isl_set **empty);
+__isl_give isl_set *isl_set_partial_lexmax(
+		__isl_take isl_set *set, __isl_take isl_set *dom,
+		__isl_give isl_set **empty);
 __isl_give isl_set *isl_basic_set_lexmin(__isl_take isl_basic_set *bset);
 __isl_give isl_set *isl_basic_set_lexmax(__isl_take isl_basic_set *bset);
+__isl_give isl_set *isl_set_lexmin(__isl_take isl_set *set);
+__isl_give isl_set *isl_set_lexmax(__isl_take isl_set *set);
 __isl_give isl_set *isl_basic_set_union(
 		__isl_take isl_basic_set *bset1,
 		__isl_take isl_basic_set *bset2);
