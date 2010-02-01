@@ -204,6 +204,13 @@ struct isl_token *isl_stream_next_token(struct isl_stream *s)
 		}
 		if (c != -1)
 			isl_stream_ungetc(s, c);
+		if (!isdigit(c)) {
+			tok = isl_token_new(s->ctx, line, col, old_line != line);
+			if (!tok)
+				return NULL;
+			tok->type = (enum isl_token_type) '-';
+			return tok;
+		}
 	}
 	if (c == '-' || isdigit(c)) {
 		tok = isl_token_new(s->ctx, line, col, old_line != line);
@@ -218,12 +225,8 @@ struct isl_token *isl_stream_next_token(struct isl_stream *s)
 				goto error;
 		if (c != -1)
 			isl_stream_ungetc(s, c);
-		if (s->len == 1 && s->buffer[0] == '-')
-			isl_int_set_si(tok->u.v, -1);
-		else {
-			isl_stream_push_char(s, '\0');
-			isl_int_read(tok->u.v, s->buffer);
-		}
+		isl_stream_push_char(s, '\0');
+		isl_int_read(tok->u.v, s->buffer);
 		return tok;
 	}
 	if (isalpha(c)) {

@@ -140,6 +140,7 @@ static struct isl_vec *accept_affine(struct isl_stream *s, struct vars *v)
 {
 	struct isl_token *tok = NULL;
 	struct isl_vec *aff;
+	int sign = 1;
 
 	aff = isl_vec_alloc(v->ctx, 1 + v->n);
 	isl_seq_clr(aff->el, aff->size);
@@ -161,7 +162,13 @@ static struct isl_vec *accept_affine(struct isl_stream *s, struct vars *v)
 				isl_stream_error(s, tok, "unknown identifier");
 				goto error;
 			}
-			isl_int_add_ui(aff->el[1 + pos], aff->el[1 + pos], 1);
+			if (sign > 0)
+				isl_int_add_ui(aff->el[1 + pos],
+					       aff->el[1 + pos], 1);
+			else
+				isl_int_sub_ui(aff->el[1 + pos],
+					       aff->el[1 + pos], 1);
+			sign = 1;
 		} else if (tok->type == ISL_TOKEN_VALUE) {
 			struct isl_token *tok2;
 			int n = v->n;
@@ -180,8 +187,13 @@ static struct isl_vec *accept_affine(struct isl_stream *s, struct vars *v)
 				isl_token_free(tok2);
 			} else if (tok2)
 				isl_stream_push_token(s, tok2);
+			if (sign < 0)
+				isl_int_neg(tok->u.v, tok->u.v);
 			isl_int_add(aff->el[1 + pos],
 					aff->el[1 + pos], tok->u.v);
+			sign = 1;
+		} else if (tok->type == '-') {
+			sign = -sign;
 		} else if (tok->type == '+') {
 			/* nothing */
 		} else {
