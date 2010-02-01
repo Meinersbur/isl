@@ -404,6 +404,7 @@ static struct isl_basic_map *add_constraint(struct isl_stream *s,
 	default:
 		isl_stream_error(s, tok, "missing operator");
 		isl_stream_push_token(s, tok);
+		tok = NULL;
 		goto error;
 	}
 	aff2 = accept_affine(s, *v);
