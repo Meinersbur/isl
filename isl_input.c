@@ -397,6 +397,8 @@ static struct isl_basic_map *add_constraint(struct isl_stream *s,
 		goto error;
 	tok = isl_stream_next_token(s);
 	switch (tok->type) {
+	case ISL_TOKEN_LT:
+	case ISL_TOKEN_GT:
 	case ISL_TOKEN_LE:
 	case ISL_TOKEN_GE:
 	case '=':
@@ -421,7 +423,17 @@ static struct isl_basic_map *add_constraint(struct isl_stream *s,
 		isl_seq_combine(bmap->ineq[k], (*v)->ctx->one, aff1->el,
 					       (*v)->ctx->negone, aff2->el,
 					       aff1->size);
-	else {
+	else if (tok->type == ISL_TOKEN_LT) {
+		isl_seq_combine(bmap->ineq[k], (*v)->ctx->negone, aff1->el,
+					       (*v)->ctx->one, aff2->el,
+					       aff1->size);
+		isl_int_sub_ui(bmap->ineq[k][0], bmap->ineq[k][0], 1);
+	} else if (tok->type == ISL_TOKEN_GT) {
+		isl_seq_combine(bmap->ineq[k], (*v)->ctx->one, aff1->el,
+					       (*v)->ctx->negone, aff2->el,
+					       aff1->size);
+		isl_int_sub_ui(bmap->ineq[k][0], bmap->ineq[k][0], 1);
+	} else {
 		isl_seq_combine(bmap->ineq[k], (*v)->ctx->one, aff1->el,
 					       (*v)->ctx->negone, aff2->el,
 					       aff1->size);

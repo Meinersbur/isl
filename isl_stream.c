@@ -250,27 +250,31 @@ struct isl_token *isl_stream_next_token(struct isl_stream *s)
 	}
 	if (c == '>') {
 		int c;
+		tok = isl_token_new(s->ctx, line, col, old_line != line);
+		if (!tok)
+			return NULL;
 		if ((c = isl_stream_getc(s)) == '=') {
-			tok = isl_token_new(s->ctx, line, col, old_line != line);
-			if (!tok)
-				return NULL;
 			tok->type = ISL_TOKEN_GE;
 			return tok;
 		}
 		if (c != -1)
 			isl_stream_ungetc(s, c);
+		tok->type = ISL_TOKEN_GT;
+		return tok;
 	}
 	if (c == '<') {
 		int c;
+		tok = isl_token_new(s->ctx, line, col, old_line != line);
+		if (!tok)
+			return NULL;
 		if ((c = isl_stream_getc(s)) == '=') {
-			tok = isl_token_new(s->ctx, line, col, old_line != line);
-			if (!tok)
-				return NULL;
 			tok->type = ISL_TOKEN_LE;
 			return tok;
 		}
 		if (c != -1)
 			isl_stream_ungetc(s, c);
+		tok->type = ISL_TOKEN_LT;
+		return tok;
 	}
 	if (c == '&') {
 		tok = isl_token_new(s->ctx, line, col, old_line != line);
