@@ -193,7 +193,8 @@ __isl_give isl_set *isl_set_empty(__isl_take isl_dim *dim);
 struct isl_set *isl_set_empty_like(struct isl_set *set);
 __isl_give isl_set *isl_set_universe(__isl_take isl_dim *dim);
 __isl_give isl_set *isl_set_universe_like(__isl_keep isl_set *model);
-struct isl_set *isl_set_add(struct isl_set *set, struct isl_basic_set *bset);
+__isl_give isl_set *isl_set_add_basic_set(__isl_take isl_set *set,
+						__isl_take isl_basic_set *bset);
 struct isl_set *isl_set_finalize(struct isl_set *set);
 __isl_give isl_set *isl_set_copy(__isl_keep isl_set *set);
 void isl_set_free(__isl_take isl_set *set);

@@ -532,7 +532,7 @@ static void sol_map_add_empty(struct isl_sol_map *sol,
 	sol->empty = isl_set_grow(sol->empty, 1);
 	bset = isl_basic_set_simplify(bset);
 	bset = isl_basic_set_finalize(bset);
-	sol->empty = isl_set_add(sol->empty, isl_basic_set_copy(bset));
+	sol->empty = isl_set_add_basic_set(sol->empty, isl_basic_set_copy(bset));
 	if (!sol->empty)
 		goto error;
 	isl_basic_set_free(bset);
@@ -642,7 +642,7 @@ static void sol_map_add(struct isl_sol_map *sol,
 	bmap = isl_basic_map_simplify(bmap);
 	bmap = isl_basic_map_finalize(bmap);
 	sol->map = isl_map_grow(sol->map, 1);
-	sol->map = isl_map_add(sol->map, bmap);
+	sol->map = isl_map_add_basic_map(sol->map, bmap);
 	if (!sol->map)
 		goto error;
 	isl_basic_set_free(dom);

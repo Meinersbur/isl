@@ -318,7 +318,7 @@ error:
 	return NULL;
 }
 
-static struct isl_set *isl_set_add_equality(struct isl_set *set, isl_int *c)
+static struct isl_set *isl_set_add_basic_set_equality(struct isl_set *set, isl_int *c)
 {
 	int i;
 
@@ -592,7 +592,7 @@ static struct isl_mat *initial_facet_constraint(struct isl_set *set,
 
 	while (bounds->n_row > 1) {
 		slice = isl_set_copy(set);
-		slice = isl_set_add_equality(slice, bounds->row[0]);
+		slice = isl_set_add_basic_set_equality(slice, bounds->row[0]);
 		face = isl_set_affine_hull(slice);
 		if (!face)
 			goto error;
@@ -1397,8 +1397,8 @@ static struct isl_basic_set *convex_hull_pair_pointed(
 	bset1 = homogeneous_map(bset1, isl_mat_copy(T2));
 	bset2 = homogeneous_map(bset2, T2);
 	set = isl_set_alloc_dim(isl_basic_set_get_dim(bset1), 2, 0);
-	set = isl_set_add(set, bset1);
-	set = isl_set_add(set, bset2);
+	set = isl_set_add_basic_set(set, bset1);
+	set = isl_set_add_basic_set(set, bset2);
 	hull = uset_convex_hull(set);
 	hull = isl_basic_set_preimage(hull, T);
 	 
@@ -1438,8 +1438,8 @@ static struct isl_basic_set *convex_hull_pair(struct isl_basic_set *bset1,
 	if (lin->n_eq < isl_basic_set_total_dim(lin)) {
 		struct isl_set *set;
 		set = isl_set_alloc_dim(isl_basic_set_get_dim(bset1), 2, 0);
-		set = isl_set_add(set, bset1);
-		set = isl_set_add(set, bset2);
+		set = isl_set_add_basic_set(set, bset1);
+		set = isl_set_add_basic_set(set, bset2);
 		return modulo_lineality(set, lin);
 	}
 	isl_basic_set_free(lin);
@@ -1516,7 +1516,7 @@ static struct isl_basic_set *uset_combined_lineality_space(struct isl_set *set)
 
 	lin = isl_set_alloc_dim(isl_set_get_dim(set), set->n, 0);
 	for (i = 0; i < set->n; ++i)
-		lin = isl_set_add(lin,
+		lin = isl_set_add_basic_set(lin,
 		    isl_basic_set_lineality_space(isl_basic_set_copy(set->p[i])));
 	isl_set_free(set);
 	return isl_set_affine_hull(lin);
@@ -1558,7 +1558,7 @@ static struct isl_basic_set *uset_convex_hull_unbounded(struct isl_set *set)
 			break;
 		}
 		if (t->n_eq < isl_basic_set_total_dim(t)) {
-			set = isl_set_add(set, convex_hull);
+			set = isl_set_add_basic_set(set, convex_hull);
 			return modulo_lineality(set, t);
 		}
 		isl_basic_set_free(t);

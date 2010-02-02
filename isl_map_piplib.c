@@ -231,7 +231,7 @@ static struct isl_map *scan_quast_r(struct scan_data *data, PipQuast *q,
 			if (add_equality(data->ctx, bmap, data->pos, j,
 						l->vector) < 0)
 				goto error;
-		map = isl_map_add(map, isl_basic_map_copy(bmap));
+		map = isl_map_add_basic_map(map, isl_basic_map_copy(bmap));
 		if (isl_basic_map_free_equality(bmap, n_out))
 			goto error;
 	} else if (data->rest) {
@@ -240,7 +240,7 @@ static struct isl_map *scan_quast_r(struct scan_data *data, PipQuast *q,
 		bset = isl_basic_set_drop_dims(bset, n_in, n_out);
 		if (!bset)
 			goto error;
-		*data->rest = isl_set_add(*data->rest, bset);
+		*data->rest = isl_set_add_basic_set(*data->rest, bset);
 	}
 
 	if (isl_basic_map_free_inequality(bmap, 2*(bmap->n_div - old_n_div)))

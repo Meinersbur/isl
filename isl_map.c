@@ -1567,7 +1567,7 @@ struct isl_set *isl_set_dup(struct isl_set *set)
 	if (!dup)
 		return NULL;
 	for (i = 0; i < set->n; ++i)
-		dup = isl_set_add(dup, isl_basic_set_copy(set->p[i]));
+		dup = isl_set_add_basic_set(dup, isl_basic_set_copy(set->p[i]));
 	return dup;
 }
 
@@ -1583,7 +1583,7 @@ struct isl_set *isl_set_from_basic_set(struct isl_basic_set *bset)
 		isl_basic_set_free(bset);
 		return NULL;
 	}
-	return isl_set_add(set, bset);
+	return isl_set_add_basic_set(set, bset);
 }
 
 struct isl_map *isl_map_from_basic_map(struct isl_basic_map *bmap)
@@ -1598,12 +1598,13 @@ struct isl_map *isl_map_from_basic_map(struct isl_basic_map *bmap)
 		isl_basic_map_free(bmap);
 		return NULL;
 	}
-	return isl_map_add(map, bmap);
+	return isl_map_add_basic_map(map, bmap);
 }
 
-struct isl_set *isl_set_add(struct isl_set *set, struct isl_basic_set *bset)
+__isl_give isl_set *isl_set_add_basic_set(__isl_take isl_set *set,
+						__isl_take isl_basic_set *bset)
 {
-	return (struct isl_set *)isl_map_add((struct isl_map *)set,
+	return (struct isl_set *)isl_map_add_basic_map((struct isl_map *)set,
 						(struct isl_basic_map *)bset);
 }
 
@@ -1917,7 +1918,7 @@ struct isl_map *isl_map_intersect(struct isl_map *map1, struct isl_map *map2)
 			if (isl_basic_map_is_empty(part))
 				isl_basic_map_free(part);
 			else
-				result = isl_map_add(result, part);
+				result = isl_map_add_basic_map(result, part);
 			if (!result)
 				goto error;
 		}
@@ -2227,7 +2228,7 @@ struct isl_map *isl_map_sum(struct isl_map *map1, struct isl_map *map2)
 			if (isl_basic_map_is_empty(part))
 				isl_basic_map_free(part);
 			else
-				result = isl_map_add(result, part);
+				result = isl_map_add_basic_map(result, part);
 			if (!result)
 				goto error;
 		}
@@ -2488,10 +2489,10 @@ static __isl_give isl_map *map_lex_lte(__isl_take isl_dim *dims, int equal)
 	map = isl_map_alloc_dim(isl_dim_copy(dims), dim + equal, ISL_MAP_DISJOINT);
 
 	for (i = 0; i < dim; ++i)
-		map = isl_map_add(map,
+		map = isl_map_add_basic_map(map,
 				  isl_basic_map_less_at(isl_dim_copy(dims), i));
 	if (equal)
-		map = isl_map_add(map,
+		map = isl_map_add_basic_map(map,
 				  isl_basic_map_equal(isl_dim_copy(dims), dim));
 
 	isl_dim_free(dims);
@@ -2520,10 +2521,10 @@ static __isl_give isl_map *map_lex_gte(__isl_take isl_dim *dims, int equal)
 	map = isl_map_alloc_dim(isl_dim_copy(dims), dim + equal, ISL_MAP_DISJOINT);
 
 	for (i = 0; i < dim; ++i)
-		map = isl_map_add(map,
+		map = isl_map_add_basic_map(map,
 				  isl_basic_map_more_at(isl_dim_copy(dims), i));
 	if (equal)
-		map = isl_map_add(map,
+		map = isl_map_add_basic_map(map,
 				  isl_basic_map_equal(isl_dim_copy(dims), dim));
 
 	isl_dim_free(dims);
@@ -3064,7 +3065,7 @@ struct isl_map *isl_map_universe(struct isl_dim *dim)
 	if (!dim)
 		return NULL;
 	map = isl_map_alloc_dim(isl_dim_copy(dim), 1, ISL_MAP_DISJOINT);
-	map = isl_map_add(map, isl_basic_map_universe(dim));
+	map = isl_map_add_basic_map(map, isl_basic_map_universe(dim));
 	return map;
 }
 
@@ -3074,7 +3075,7 @@ struct isl_set *isl_set_universe(struct isl_dim *dim)
 	if (!dim)
 		return NULL;
 	set = isl_set_alloc_dim(isl_dim_copy(dim), 1, ISL_MAP_DISJOINT);
-	set = isl_set_add(set, isl_basic_set_universe(dim));
+	set = isl_set_add_basic_set(set, isl_basic_set_universe(dim));
 	return set;
 }
 
@@ -3094,11 +3095,12 @@ struct isl_map *isl_map_dup(struct isl_map *map)
 		return NULL;
 	dup = isl_map_alloc_dim(isl_dim_copy(map->dim), map->n, map->flags);
 	for (i = 0; i < map->n; ++i)
-		dup = isl_map_add(dup, isl_basic_map_copy(map->p[i]));
+		dup = isl_map_add_basic_map(dup, isl_basic_map_copy(map->p[i]));
 	return dup;
 }
 
-struct isl_map *isl_map_add(struct isl_map *map, struct isl_basic_map *bmap)
+__isl_give isl_map *isl_map_add_basic_map(__isl_take isl_map *map,
+						__isl_take isl_basic_map *bmap)
 {
 	if (!bmap || !map)
 		goto error;
@@ -4111,13 +4113,13 @@ struct isl_map *isl_map_union_disjoint(
 	if (!map)
 		goto error;
 	for (i = 0; i < map1->n; ++i) {
-		map = isl_map_add(map,
+		map = isl_map_add_basic_map(map,
 				  isl_basic_map_copy(map1->p[i]));
 		if (!map)
 			goto error;
 	}
 	for (i = 0; i < map2->n; ++i) {
-		map = isl_map_add(map,
+		map = isl_map_add_basic_map(map,
 				  isl_basic_map_copy(map2->p[i]));
 		if (!map)
 			goto error;
@@ -4176,7 +4178,7 @@ struct isl_map *isl_map_intersect_range(
 		goto error;
 	for (i = 0; i < map->n; ++i)
 		for (j = 0; j < set->n; ++j) {
-			result = isl_map_add(result,
+			result = isl_map_add_basic_map(result,
 			    isl_basic_map_intersect_range(
 				isl_basic_map_copy(map->p[i]),
 				isl_basic_set_copy(set->p[j])));
@@ -4231,7 +4233,7 @@ struct isl_map *isl_map_apply_range(
 		goto error;
 	for (i = 0; i < map1->n; ++i)
 		for (j = 0; j < map2->n; ++j) {
-			result = isl_map_add(result,
+			result = isl_map_add_basic_map(result,
 			    isl_basic_map_apply_range(
 				isl_basic_map_copy(map1->p[i]),
 				isl_basic_map_copy(map2->p[j])));
@@ -4301,7 +4303,7 @@ struct isl_set *isl_map_deltas(struct isl_map *map)
 	if (!result)
 		goto error;
 	for (i = 0; i < map->n; ++i)
-		result = isl_set_add(result,
+		result = isl_set_add_basic_set(result,
 			  isl_basic_map_deltas(isl_basic_map_copy(map->p[i])));
 	isl_map_free(map);
 	return result;
@@ -4360,7 +4362,7 @@ struct isl_basic_map *isl_basic_map_identity_like(struct isl_basic_map *model)
 static struct isl_map *map_identity(struct isl_dim *dim)
 {
 	struct isl_map *map = isl_map_alloc_dim(dim, 1, ISL_MAP_DISJOINT);
-	return isl_map_add(map, basic_map_identity(isl_dim_copy(dim)));
+	return isl_map_add_basic_map(map, basic_map_identity(isl_dim_copy(dim)));
 }
 
 struct isl_map *isl_map_identity(struct isl_dim *set_dim)
@@ -4646,8 +4648,8 @@ struct isl_map *isl_basic_map_union(
 	map = isl_map_alloc_dim(isl_dim_copy(bmap1->dim), 2, 0);
 	if (!map)
 		goto error;
-	map = isl_map_add(map, bmap1);
-	map = isl_map_add(map, bmap2);
+	map = isl_map_add_basic_map(map, bmap1);
+	map = isl_map_add_basic_map(map, bmap2);
 	return map;
 error:
 	isl_basic_map_free(bmap1);
@@ -5596,7 +5598,7 @@ struct isl_map *isl_map_product(struct isl_map *map1, struct isl_map *map2)
 			if (isl_basic_map_is_empty(part))
 				isl_basic_map_free(part);
 			else
-				result = isl_map_add(result, part);
+				result = isl_map_add_basic_map(result, part);
 			if (!result)
 				goto error;
 		}
