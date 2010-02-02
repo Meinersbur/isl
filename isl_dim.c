@@ -353,7 +353,7 @@ struct isl_dim *isl_dim_join(struct isl_dim *left, struct isl_dim *right)
 
 	isl_assert(left->ctx, match(left, isl_dim_param, right, isl_dim_param),
 			goto error);
-	isl_assert(left->ctx, match(left, isl_dim_out, right, isl_dim_in),
+	isl_assert(left->ctx, n(left, isl_dim_out) == n(right, isl_dim_in),
 			goto error);
 
 	dim = isl_dim_alloc(left->ctx, left->nparam, left->n_in, right->n_out);
