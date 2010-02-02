@@ -2024,9 +2024,6 @@ __isl_give isl_set *isl_set_project_out(__isl_take isl_set *set,
 	isl_assert(set->ctx, type == isl_dim_set, goto error);
 	isl_assert(set->ctx, first + n == isl_set_n_dim(set), goto error);
 
-	if (n == 0)
-		return set;
-
 	set = isl_set_cow(set);
 	if (!set)
 		goto error;
