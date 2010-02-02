@@ -1956,6 +1956,92 @@ struct isl_basic_map *isl_basic_map_reverse(struct isl_basic_map *bmap)
 	return isl_basic_map_from_basic_set(bset, dim);
 }
 
+__isl_give isl_basic_map *isl_basic_map_add(__isl_take isl_basic_map *bmap,
+		enum isl_dim_type type, unsigned n)
+{
+	struct isl_dim *res_dim;
+	struct isl_basic_map *res;
+	struct isl_dim_map *dim_map;
+	unsigned total, pos;
+
+	if (n == 0)
+		return bmap;
+
+	if (!bmap)
+		return NULL;
+
+	res_dim = isl_dim_add(isl_basic_map_get_dim(bmap), type, n);
+
+	total = isl_basic_map_total_dim(bmap) + n;
+	dim_map = isl_dim_map_alloc(bmap->ctx, total);
+	pos = 0;
+	isl_dim_map_dim(dim_map, bmap->dim, isl_dim_param, pos);
+	pos += isl_dim_size(res_dim, isl_dim_param);
+	isl_dim_map_dim(dim_map, bmap->dim, isl_dim_in, pos);
+	pos += isl_dim_size(res_dim, isl_dim_in);
+	isl_dim_map_dim(dim_map, bmap->dim, isl_dim_out, pos);
+	pos += isl_dim_size(res_dim, isl_dim_out);
+	isl_dim_map_div(dim_map, bmap, pos);
+
+	res = isl_basic_map_alloc_dim(res_dim,
+			bmap->n_div, bmap->n_eq, bmap->n_ineq);
+	res = add_constraints_dim_map(res, bmap, dim_map);
+	res = isl_basic_map_simplify(res);
+	return isl_basic_map_finalize(res);
+}
+
+__isl_give isl_basic_set *isl_basic_set_add(__isl_take isl_basic_set *bset,
+		enum isl_dim_type type, unsigned n)
+{
+	if (!bset)
+		return NULL;
+	isl_assert(bset->ctx, type != isl_dim_in, goto error);
+	return (isl_basic_set *)isl_basic_map_add((isl_basic_map *)bset, type, n);
+error:
+	isl_basic_set_free(bset);
+	return NULL;
+}
+
+__isl_give isl_map *isl_map_add(__isl_take isl_map *map,
+		enum isl_dim_type type, unsigned n)
+{
+	int i;
+
+	if (n == 0)
+		return map;
+
+	map = isl_map_cow(map);
+	if (!map)
+		return NULL;
+
+	map->dim = isl_dim_add(map->dim, type, n);
+	if (!map->dim)
+		goto error;
+
+	for (i = 0; i < map->n; ++i) {
+		map->p[i] = isl_basic_map_add(map->p[i], type, n);
+		if (!map->p[i])
+			goto error;
+	}
+
+	return map;
+error:
+	isl_map_free(map);
+	return NULL;
+}
+
+__isl_give isl_set *isl_set_add(__isl_take isl_set *set,
+		enum isl_dim_type type, unsigned n)
+{
+	if (!set)
+		return NULL;
+	isl_assert(set->ctx, type != isl_dim_in, goto error);
+	return (isl_set *)isl_map_add((isl_map *)set, type, n);
+error:
+	isl_set_free(set);
+	return NULL;
+}
+
 /* Turn final n dimensions into existentially quantified variables.
  */
 struct isl_basic_set *isl_basic_set_project_out(struct isl_basic_set *bset,

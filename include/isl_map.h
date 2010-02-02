@@ -306,6 +306,10 @@ struct isl_set *isl_map_deltas(struct isl_map *map);
 struct isl_map *isl_map_detect_equalities(struct isl_map *map);
 __isl_give isl_basic_map *isl_map_affine_hull(__isl_take isl_map *map);
 __isl_give isl_basic_map *isl_map_convex_hull(__isl_take isl_map *map);
+__isl_give isl_basic_map *isl_basic_map_add(__isl_take isl_basic_map *bmap,
+		enum isl_dim_type type, unsigned n);
+__isl_give isl_map *isl_map_add(__isl_take isl_map *map,
+		enum isl_dim_type type, unsigned n);
 struct isl_map *isl_map_remove(struct isl_map *map,
 	enum isl_dim_type type, unsigned first, unsigned n);
 struct isl_map *isl_map_remove_inputs(struct isl_map *map,

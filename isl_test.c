@@ -73,6 +73,20 @@ void test_construction(struct isl_ctx *ctx)
 	isl_int_clear(v);
 }
 
+void test_dim(struct isl_ctx *ctx)
+{
+	isl_map *map1, *map2;
+
+	map1 = isl_map_read_from_str(ctx,
+	    "[n] -> { [i] -> [j] : exists (a = [i/10] : i - 10a <= n ) }", -1);
+	map1 = isl_map_add(map1, isl_dim_in, 1);
+	map2 = isl_map_read_from_str(ctx,
+	    "[n] -> { [i,k] -> [j] : exists (a = [i/10] : i - 10a <= n ) }", -1);
+	assert(isl_map_is_equal(map1, map2));
+	isl_map_free(map1);
+	isl_map_free(map2);
+}
+
 void test_div(struct isl_ctx *ctx)
 {
 	isl_int v;
@@ -591,6 +605,7 @@ int main()
 	ctx = isl_ctx_alloc();
 	test_read(ctx);
 	test_construction(ctx);
+	test_dim(ctx);
 	test_div(ctx);
 	test_application(ctx);
 	test_affine_hull(ctx);

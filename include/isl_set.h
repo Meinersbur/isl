@@ -228,6 +228,10 @@ struct isl_set *isl_set_fix_dim_si(struct isl_set *set,
 		unsigned dim, int value);
 struct isl_set *isl_set_lower_bound_dim(struct isl_set *set,
 		unsigned dim, isl_int value);
+__isl_give isl_basic_set *isl_basic_set_add(__isl_take isl_basic_set *bset,
+		enum isl_dim_type type, unsigned n);
+__isl_give isl_set *isl_set_add(__isl_take isl_set *set,
+		enum isl_dim_type type, unsigned n);
 __isl_give isl_basic_set *isl_basic_set_project_out(
 		__isl_take isl_basic_set *bset,
 		enum isl_dim_type type, unsigned first, unsigned n);
