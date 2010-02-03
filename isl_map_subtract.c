@@ -339,7 +339,7 @@ struct isl_subtract_diff_collector {
 
 /* isl_subtract_diff_collector callback.
  */
-int basic_map_subtract_add(struct isl_diff_collector *dc,
+static int basic_map_subtract_add(struct isl_diff_collector *dc,
 			    __isl_take isl_basic_map *bmap)
 {
 	struct isl_subtract_diff_collector *sdc;
@@ -430,7 +430,7 @@ struct isl_is_empty_diff_collector {
 
 /* isl_is_empty_diff_collector callback.
  */
-int basic_map_is_empty_add(struct isl_diff_collector *dc,
+static int basic_map_is_empty_add(struct isl_diff_collector *dc,
 			    __isl_take isl_basic_map *bmap)
 {
 	struct isl_is_empty_diff_collector *edc;
