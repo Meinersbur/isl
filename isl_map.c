@@ -1,10 +1,13 @@
 /*
  * Copyright 2008-2009 Katholieke Universiteit Leuven
+ * Copyright 2010      INRIA Saclay
  *
  * Use of this software is governed by the GNU LGPLv2.1 license
  *
  * Written by Sven Verdoolaege, K.U.Leuven, Departement
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
+ * and INRIA Saclay - Ile-de-France, Parc Club Orsay Universite,
+ * ZAC des vignes, 4 rue Jacques Monod, 91893 Orsay, France 
  */
 
 #include <string.h>
@@ -64,8 +67,9 @@ static unsigned pos(struct isl_dim *dim, enum isl_dim_type type)
 	}
 }
 
-static void isl_dim_map_dim(struct isl_dim_map *dim_map, struct isl_dim *dim,
-		enum isl_dim_type type, unsigned dst_pos)
+static void isl_dim_map_dim_range(struct isl_dim_map *dim_map,
+	struct isl_dim *dim, enum isl_dim_type type,
+	unsigned first, unsigned n, unsigned dst_pos)
 {
 	int i;
 	unsigned src_pos;
@@ -74,8 +78,14 @@ static void isl_dim_map_dim(struct isl_dim_map *dim_map, struct isl_dim *dim,
 		return;
 	
 	src_pos = pos(dim, type);
-	for (i = 0; i < n(dim, type); ++i)
-		dim_map->pos[1 + dst_pos + i] = src_pos + i;
+	for (i = 0; i < n; ++i)
+		dim_map->pos[1 + dst_pos + i] = src_pos + first + i;
+}
+
+static void isl_dim_map_dim(struct isl_dim_map *dim_map, struct isl_dim *dim,
+		enum isl_dim_type type, unsigned dst_pos)
+{
+	isl_dim_map_dim_range(dim_map, dim, type, 0, n(dim, type), dst_pos);
 }
 
 static void isl_dim_map_div(struct isl_dim_map *dim_map,
@@ -2042,9 +2052,56 @@ error:
 	return NULL;
 }
 
-/* Turn final n dimensions into existentially quantified variables.
+/* Move the specified dimensions to the last columns right before
+ * the divs.  Don't change the dimension specification of bmap.
+ * That's the responsibility of the caller.
  */
-struct isl_basic_set *isl_basic_set_project_out(struct isl_basic_set *bset,
+static __isl_give isl_basic_map *move_last(__isl_take isl_basic_map *bmap,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	struct isl_dim_map *dim_map;
+	struct isl_basic_map *res;
+	enum isl_dim_type t;
+	unsigned total, off;
+
+	if (!bmap)
+		return NULL;
+	if (pos(bmap->dim, type) + first + n == 1 + isl_dim_total(bmap->dim))
+		return bmap;
+
+	total = isl_basic_map_total_dim(bmap);
+	dim_map = isl_dim_map_alloc(bmap->ctx, total);
+
+	off = 0;
+	for (t = isl_dim_param; t <= isl_dim_out; ++t) {
+		unsigned size = isl_dim_size(bmap->dim, t);
+		if (t == type) {
+			isl_dim_map_dim_range(dim_map, bmap->dim, t,
+					    0, first, off);
+			off += first;
+			isl_dim_map_dim_range(dim_map, bmap->dim, t,
+					    first, n, total - bmap->n_div - n);
+			isl_dim_map_dim_range(dim_map, bmap->dim, t,
+					    first + n, size - (first + n), off);
+			off += size - (first + n);
+		} else {
+			isl_dim_map_dim(dim_map, bmap->dim, t, off);
+			off += size;
+		}
+	}
+	isl_dim_map_div(dim_map, bmap, off + n);
+
+	res = isl_basic_map_alloc_dim(isl_basic_map_get_dim(bmap),
+			bmap->n_div, bmap->n_eq, bmap->n_ineq);
+	res = add_constraints_dim_map(res, bmap, dim_map);
+	return res;
+}
+
+/* Turn the n dimensions of type type, starting at first
+ * into existentially quantified variables.
+ */
+__isl_give isl_basic_map *isl_basic_map_project_out(
+		__isl_take isl_basic_map *bmap,
 		enum isl_dim_type type, unsigned first, unsigned n)
 {
 	int i;
@@ -2052,80 +2109,106 @@ struct isl_basic_set *isl_basic_set_project_out(struct isl_basic_set *bset,
 	isl_int **new_div;
 	isl_int *old;
 
-	if (!bset)
+	if (n == 0)
+		return bmap;
+
+	if (!bmap)
 		return NULL;
 
-	isl_assert(bset->ctx, type == isl_dim_set, goto error);
-	isl_assert(bset->ctx, first + n == isl_basic_set_n_dim(bset), goto error);
+	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL))
+		return isl_basic_map_remove(bmap, type, first, n);
 
-	if (n == 0)
-		return bset;
+	isl_assert(bmap->ctx, first + n <= isl_basic_map_dim(bmap, type),
+			goto error);
 
-	if (ISL_F_ISSET(bset, ISL_BASIC_SET_RATIONAL))
-		return isl_basic_set_remove(bset, type, first, n);
+	bmap = move_last(bmap, type, first, n);
+	bmap = isl_basic_map_cow(bmap);
 
-	bset = isl_basic_set_cow(bset);
-
-	row_size = 1 + isl_dim_total(bset->dim) + bset->extra;
-	old = bset->block2.data;
-	bset->block2 = isl_blk_extend(bset->ctx, bset->block2,
-					(bset->extra + n) * (1 + row_size));
-	if (!bset->block2.data)
+	row_size = 1 + isl_dim_total(bmap->dim) + bmap->extra;
+	old = bmap->block2.data;
+	bmap->block2 = isl_blk_extend(bmap->ctx, bmap->block2,
+					(bmap->extra + n) * (1 + row_size));
+	if (!bmap->block2.data)
 		goto error;
-	new_div = isl_alloc_array(ctx, isl_int *, bset->extra + n);
+	new_div = isl_alloc_array(ctx, isl_int *, bmap->extra + n);
 	if (!new_div)
 		goto error;
 	for (i = 0; i < n; ++i) {
-		new_div[i] = bset->block2.data +
-				(bset->extra + i) * (1 + row_size);
+		new_div[i] = bmap->block2.data +
+				(bmap->extra + i) * (1 + row_size);
 		isl_seq_clr(new_div[i], 1 + row_size);
 	}
-	for (i = 0; i < bset->extra; ++i)
-		new_div[n + i] = bset->block2.data + (bset->div[i] - old);
-	free(bset->div);
-	bset->div = new_div;
-	bset->n_div += n;
-	bset->extra += n;
-	bset->dim = isl_dim_drop_outputs(bset->dim,
-					    isl_basic_set_n_dim(bset) - n, n);
-	if (!bset->dim)
+	for (i = 0; i < bmap->extra; ++i)
+		new_div[n + i] = bmap->block2.data + (bmap->div[i] - old);
+	free(bmap->div);
+	bmap->div = new_div;
+	bmap->n_div += n;
+	bmap->extra += n;
+
+	bmap->dim = isl_dim_drop(bmap->dim, type, first, n);
+	if (!bmap->dim)
 		goto error;
-	bset = isl_basic_set_simplify(bset);
-	bset = isl_basic_set_drop_redundant_divs(bset);
-	return isl_basic_set_finalize(bset);
+	bmap = isl_basic_map_simplify(bmap);
+	bmap = isl_basic_map_drop_redundant_divs(bmap);
+	return isl_basic_map_finalize(bmap);
 error:
-	isl_basic_set_free(bset);
+	isl_basic_map_free(bmap);
 	return NULL;
 }
 
-/* Turn final n dimensions into existentially quantified variables.
+/* Turn the n dimensions of type type, starting at first
+ * into existentially quantified variables.
  */
-__isl_give isl_set *isl_set_project_out(__isl_take isl_set *set,
+struct isl_basic_set *isl_basic_set_project_out(struct isl_basic_set *bset,
+		enum isl_dim_type type, unsigned first, unsigned n)
+{
+	return (isl_basic_set *)isl_basic_map_project_out(
+			(isl_basic_map *)bset, type, first, n);
+}
+
+/* Turn the n dimensions of type type, starting at first
+ * into existentially quantified variables.
+ */
+__isl_give isl_map *isl_map_project_out(__isl_take isl_map *map,
 		enum isl_dim_type type, unsigned first, unsigned n)
 {
 	int i;
 
-	if (!set)
+	if (!map)
 		return NULL;
 
-	isl_assert(set->ctx, type == isl_dim_set, goto error);
-	isl_assert(set->ctx, first + n == isl_set_n_dim(set), goto error);
+	if (n == 0)
+		return map;
 
-	set = isl_set_cow(set);
-	if (!set)
+	isl_assert(map->ctx, first + n <= isl_map_dim(map, type), goto error);
+
+	map = isl_map_cow(map);
+	if (!map)
+		return NULL;
+
+	map->dim = isl_dim_drop(map->dim, type, first, n);
+	if (!map->dim)
 		goto error;
-	set->dim = isl_dim_drop_outputs(set->dim, first, n);
-	for (i = 0; i < set->n; ++i) {
-		set->p[i] = isl_basic_set_project_out(set->p[i], type, first, n);
-		if (!set->p[i])
+
+	for (i = 0; i < map->n; ++i) {
+		map->p[i] = isl_basic_map_project_out(map->p[i], type, first, n);
+		if (!map->p[i])
 			goto error;
 	}
 
-	ISL_F_CLR(set, ISL_SET_NORMALIZED);
-	return set;
+	return map;
 error:
-	isl_set_free(set);
-	return NULL;
+	isl_map_free(map);
+	return map;
+}
+
+/* Turn the n dimensions of type type, starting at first
+ * into existentially quantified variables.
+ */
+__isl_give isl_set *isl_set_project_out(__isl_take isl_set *set,
+		enum isl_dim_type type, unsigned first, unsigned n)
+{
+	return (isl_set *)isl_map_project_out((isl_map *)set, type, first, n);
 }
 
 static struct isl_basic_map *add_divs(struct isl_basic_map *bmap, unsigned n)
