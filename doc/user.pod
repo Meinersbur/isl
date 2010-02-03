@@ -767,6 +767,29 @@ variables, then the result of these operations is currently undefined.
 	__isl_give isl_basic_map *isl_map_affine_hull(
 		__isl_take isl_map *map);
 
+=item * Power
+
+	__isl_give isl_map *isl_map_power(__isl_take isl_map *map,
+		unsigned param, int *exact);
+
+Compute a parametric representation for all positive powers I<k> of C<map>.
+The power I<k> is equated to the parameter at position C<param>.
+The result may be an overapproximation.  If the result is exact,
+then C<*exact> is set to C<1>.
+The current implementation only produces exact results for particular
+cases of piecewise translations (i.e., piecewise uniform dependences).
+
+=item * Transitive closure
+
+	__isl_give isl_map *isl_map_transitive_closure(
+		__isl_take isl_map *map, int *exact);
+
+Compute the transitive closure of C<map>.
+The result may be an overapproximation.  If the result is exact,
+then C<*exact> is set to C<1>.
+The current implementation only produces exact results for particular
+cases of piecewise translations (i.e., piecewise uniform dependences).
+
 =back
 
 =head2 Binary Operations

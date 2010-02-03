@@ -72,6 +72,7 @@ libisl_la_SOURCES = \
 	isl_tab.c \
 	isl_tab.h \
 	isl_tab_pip.c \
+	isl_transitive_closure.c \
 	isl_vec.c
 EXTRA_libisl_la_SOURCES = \
 	isl_lp_piplib.c \

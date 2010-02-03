@@ -601,6 +601,114 @@ void test_coalesce(struct isl_ctx *ctx)
 	isl_set_free(set);
 }
 
+void test_closure(struct isl_ctx *ctx)
+{
+	isl_set *dom;
+	isl_map *up, *right;
+	isl_map *map, *map2;
+	int exact;
+
+	// COCOA example 1
+	map = isl_map_read_from_str(ctx,
+		"[n,k] -> { [i,j] -> [i2,j2] : i2 = i + 1 and j2 = j + 1 and "
+			"1 <= i and i < n and 1 <= j and j < n or "
+			"i2 = i + 1 and j2 = j - 1 and "
+			"1 <= i and i < n and 2 <= j and j <= n }", -1);
+	map = isl_map_power(map, 1, &exact);
+	assert(exact);
+	isl_map_free(map);
+
+	// COCOA example 1
+	map = isl_map_read_from_str(ctx,
+		"[n] -> { [i,j] -> [i2,j2] : i2 = i + 1 and j2 = j + 1 and "
+			"1 <= i and i < n and 1 <= j and j < n or "
+			"i2 = i + 1 and j2 = j - 1 and "
+			"1 <= i and i < n and 2 <= j and j <= n }", -1);
+	map = isl_map_transitive_closure(map, &exact);
+	assert(exact);
+	map2 = isl_map_read_from_str(ctx,
+		"[n] -> { [i,j] -> [i2,j2] : exists (k1,k2,k : "
+			"1 <= i and i < n and 1 <= j and j <= n and "
+			"2 <= i2 and i2 <= n and 1 <= j2 and j2 <= n and "
+			"i2 = i + k1 + k2 and j2 = j + k1 - k2 and "
+			"k1 >= 0 and k2 >= 0 and k1 + k2 = k and k >= 1 )}", -1);
+	assert(isl_map_is_equal(map, map2));
+	isl_map_free(map2);
+	isl_map_free(map);
+
+	map = isl_map_read_from_str(ctx,
+		"[n] -> { [x] -> [y] : y = x + 1 and 0 <= x and x <= n and "
+				     " 0 <= y and y <= n }", -1);
+	map = isl_map_transitive_closure(map, &exact);
+	map2 = isl_map_read_from_str(ctx,
+		"[n] -> { [x] -> [y] : y > x and 0 <= x and x <= n and "
+				     " 0 <= y and y <= n }", -1);
+	assert(isl_map_is_equal(map, map2));
+	isl_map_free(map2);
+	isl_map_free(map);
+
+	// COCOA example 2
+	map = isl_map_read_from_str(ctx,
+		"[n] -> { [i,j] -> [i2,j2] : i2 = i + 2 and j2 = j + 2 and "
+			"1 <= i and i < n - 1 and 1 <= j and j < n - 1 or "
+			"i2 = i + 2 and j2 = j - 2 and "
+			"1 <= i and i < n - 1 and 3 <= j and j <= n }", -1);
+	map = isl_map_transitive_closure(map, &exact);
+	assert(exact);
+	map2 = isl_map_read_from_str(ctx,
+		"[n] -> { [i,j] -> [i2,j2] : exists (k1,k2,k : "
+			"1 <= i and i < n - 1 and 1 <= j and j <= n and "
+			"3 <= i2 and i2 <= n and 1 <= j2 and j2 <= n and "
+			"i2 = i + 2 k1 + 2 k2 and j2 = j + 2 k1 - 2 k2 and "
+			"k1 >= 0 and k2 >= 0 and k1 + k2 = k and k >= 1) }", -1);
+	assert(isl_map_is_equal(map, map2));
+	isl_map_free(map);
+	isl_map_free(map2);
+
+	// COCOA Fig.2 left
+	map = isl_map_read_from_str(ctx,
+		"[n] -> { [i,j] -> [i2,j2] : i2 = i + 2 and j2 = j and "
+			"i <= 2 j - 3 and i <= n - 2 and j <= 2 i - 1 and "
+			"j <= n or "
+			"i2 = i and j2 = j + 2 and i <= 2 j - 1 and i <= n and "
+			"j <= 2 i - 3 and j <= n - 2 or "
+			"i2 = i + 1 and j2 = j + 1 and i <= 2 j - 1 and "
+			"i <= n - 1 and j <= 2 i - 1 and j <= n - 1 }", -1);
+	map = isl_map_transitive_closure(map, &exact);
+	assert(exact);
+	isl_map_free(map);
+
+	// COCOA Fig.2 right
+	map = isl_map_read_from_str(ctx,
+		"[n] -> { [i,j] -> [i2,j2] : i2 = i + 3 and j2 = j and "
+			"i <= 2 j - 4 and i <= n - 3 and j <= 2 i - 1 and "
+			"j <= n or "
+			"i2 = i and j2 = j + 3 and i <= 2 j - 1 and i <= n and "
+			"j <= 2 i - 4 and j <= n - 3 or "
+			"i2 = i + 1 and j2 = j + 1 and i <= 2 j - 1 and "
+			"i <= n - 1 and j <= 2 i - 1 and j <= n - 1 }", -1);
+	map = isl_map_transitive_closure(map, &exact);
+	assert(!exact);
+	isl_map_free(map);
+
+	// COCOA Fig.1 right
+	dom = isl_set_read_from_str(ctx,
+		"{ [x,y] : x >= 0 and -2 x + 3 y >= 0 and x <= 3 and "
+			"2 x - 3 y + 3 >= 0 }", -1);
+	right = isl_map_read_from_str(ctx,
+		"{ [x,y] -> [x2,y2] : x2 = x + 1 and y2 = y }", -1);
+	up = isl_map_read_from_str(ctx,
+		"{ [x,y] -> [x2,y2] : x2 = x and y2 = y + 1 }", -1);
+	right = isl_map_intersect_domain(right, isl_set_copy(dom));
+	right = isl_map_intersect_range(right, isl_set_copy(dom));
+	up = isl_map_intersect_domain(up, isl_set_copy(dom));
+	up = isl_map_intersect_range(up, dom);
+	map = isl_map_union(up, right);
+	map = isl_map_transitive_closure(map, &exact);
+	assert(!exact);
+	isl_map_free(map);
+}
+
 int main()
 {
 	struct isl_ctx *ctx;
@@ -618,6 +726,7 @@ int main()
 	test_convex_hull(ctx);
 	test_gist(ctx);
 	test_coalesce(ctx);
+	test_closure(ctx);
 	isl_ctx_free(ctx);
 	return 0;
 }
