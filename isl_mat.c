@@ -1165,3 +1165,28 @@ int isl_mat_is_equal(__isl_keep isl_mat *mat1, __isl_keep isl_mat *mat2)
 
 	return 1;
 }
+
+__isl_give isl_mat *isl_mat_from_row_vec(__isl_take isl_vec *vec)
+{
+	struct isl_mat *mat;
+
+	if (!vec)
+		return NULL;
+	mat = isl_mat_alloc(vec->ctx, 1, vec->size);
+	if (!mat)
+		goto error;
+
+	isl_seq_cpy(mat->row[0], vec->el, vec->size);
+
+	isl_vec_free(vec);
+	return mat;
+error:
+	isl_vec_free(vec);
+	return NULL;
+}
+
+__isl_give isl_mat *isl_mat_vec_concat(__isl_take isl_mat *top,
+	__isl_take isl_vec *bot)
+{
+	return isl_mat_concat(top, isl_mat_from_row_vec(bot));
+}

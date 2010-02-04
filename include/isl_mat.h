@@ -88,8 +88,11 @@ void isl_mat_col_submul(struct isl_mat *mat,
 
 struct isl_mat *isl_mat_unimodular_complete(struct isl_mat *M, int row);
 
+__isl_give isl_mat *isl_mat_from_row_vec(__isl_take isl_vec *vec);
 __isl_give isl_mat *isl_mat_concat(__isl_take isl_mat *top,
 	__isl_take isl_mat *bot);
+__isl_give isl_mat *isl_mat_vec_concat(__isl_take isl_mat *top,
+	__isl_take isl_vec *bot);
 
 int isl_mat_is_equal(__isl_keep isl_mat *mat1, __isl_keep isl_mat *mat2);
 
