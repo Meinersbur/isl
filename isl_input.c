@@ -623,6 +623,12 @@ static __isl_give isl_basic_map *basic_map_read_polylib_constraint(
 				isl_stream_push_token(s, tok);
 			goto error;
 		}
+		if (tok->on_new_line) {
+			isl_stream_error(s, tok,
+				"coefficient should not appear on new line");
+			isl_stream_push_token(s, tok);
+			goto error;
+		}
 		pos = polylib_pos_to_isl_pos(bmap, j);
 		isl_int_set(c[pos], tok->u.v);
 		isl_token_free(tok);
