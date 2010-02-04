@@ -209,6 +209,42 @@ error:
 	return NULL;
 }
 
+static __isl_give isl_mat *accept_affine_list(struct isl_stream *s,
+	struct vars *v)
+{
+	struct isl_vec *vec;
+	struct isl_mat *mat;
+	struct isl_token *tok = NULL;
+
+	vec = accept_affine(s, v);
+	mat = isl_mat_from_row_vec(vec);
+	if (!mat)
+		return NULL;
+
+	for (;;) {
+		tok = isl_stream_next_token(s);
+		if (!tok) {
+			isl_stream_error(s, NULL, "unexpected EOF");
+			goto error;
+		}
+		if (tok->type != ',') {
+			isl_stream_push_token(s, tok);
+			break;
+		}
+		isl_token_free(tok);
+
+		vec = accept_affine(s, v);
+		mat = isl_mat_vec_concat(mat, vec);
+		if (!mat)
+			return NULL;
+	}
+
+	return mat;
+error:
+	isl_mat_free(mat);
+	return NULL;
+}
+
 static struct isl_basic_map *add_div_definition(struct isl_stream *s,
 	struct vars *v, struct isl_basic_map *bmap, int k)
 {
@@ -380,13 +416,60 @@ error:
 	return NULL;
 }
 
+static __isl_give isl_basic_map *construct_constraint(
+	__isl_take isl_basic_map *bmap, enum isl_token_type type,
+	isl_int *left, isl_int *right)
+{
+	int k;
+	unsigned len;
+	struct isl_ctx *ctx;
+
+	if (!bmap)
+		return NULL;
+	len = 1 + isl_basic_map_total_dim(bmap);
+	ctx = bmap->ctx;
+
+	k = isl_basic_map_alloc_inequality(bmap);
+	if (k < 0)
+		goto error;
+	if (type == ISL_TOKEN_LE)
+		isl_seq_combine(bmap->ineq[k], ctx->negone, left,
+					       ctx->one, right,
+					       len);
+	else if (type == ISL_TOKEN_GE)
+		isl_seq_combine(bmap->ineq[k], ctx->one, left,
+					       ctx->negone, right,
+					       len);
+	else if (type == ISL_TOKEN_LT) {
+		isl_seq_combine(bmap->ineq[k], ctx->negone, left,
+					       ctx->one, right,
+					       len);
+		isl_int_sub_ui(bmap->ineq[k][0], bmap->ineq[k][0], 1);
+	} else if (type == ISL_TOKEN_GT) {
+		isl_seq_combine(bmap->ineq[k], ctx->one, left,
+					       ctx->negone, right,
+					       len);
+		isl_int_sub_ui(bmap->ineq[k][0], bmap->ineq[k][0], 1);
+	} else {
+		isl_seq_combine(bmap->ineq[k], ctx->one, left,
+					       ctx->negone, right,
+					       len);
+		isl_basic_map_inequality_to_equality(bmap, k);
+	}
+
+	return bmap;
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
 static struct isl_basic_map *add_constraint(struct isl_stream *s,
 	struct vars **v, struct isl_basic_map *bmap)
 {
+	int i, j;
 	unsigned total = isl_basic_map_total_dim(bmap);
-	int k;
 	struct isl_token *tok = NULL;
-	struct isl_vec *aff1 = NULL, *aff2 = NULL;
+	struct isl_mat *aff1 = NULL, *aff2 = NULL;
 
 	tok = isl_stream_next_token(s);
 	if (!tok)
@@ -399,12 +482,8 @@ static struct isl_basic_map *add_constraint(struct isl_stream *s,
 	tok = NULL;
 
 	bmap = isl_basic_map_cow(bmap);
-	bmap = isl_basic_map_extend_constraints(bmap, 0, 1);
-	k = isl_basic_map_alloc_inequality(bmap);
-	if (k < 0)
-		goto error;
 
-	aff1 = accept_affine(s, *v);
+	aff1 = accept_affine_list(s, *v);
 	if (!aff1)
 		goto error;
 	tok = isl_stream_next_token(s);
@@ -421,46 +500,27 @@ static struct isl_basic_map *add_constraint(struct isl_stream *s,
 		tok = NULL;
 		goto error;
 	}
-	aff2 = accept_affine(s, *v);
+	aff2 = accept_affine_list(s, *v);
 	if (!aff2)
 		goto error;
-	isl_assert(aff1->ctx, aff1->size == 1 + total, goto error);
-	isl_assert(aff2->ctx, aff2->size == 1 + total, goto error);
+	isl_assert(aff1->ctx, aff1->n_col == 1 + total, goto error);
+	isl_assert(aff2->ctx, aff2->n_col == 1 + total, goto error);
 
-	if (tok->type == ISL_TOKEN_LE)
-		isl_seq_combine(bmap->ineq[k], (*v)->ctx->negone, aff1->el,
-					       (*v)->ctx->one, aff2->el,
-					       aff1->size);
-	else if (tok->type == ISL_TOKEN_GE)
-		isl_seq_combine(bmap->ineq[k], (*v)->ctx->one, aff1->el,
-					       (*v)->ctx->negone, aff2->el,
-					       aff1->size);
-	else if (tok->type == ISL_TOKEN_LT) {
-		isl_seq_combine(bmap->ineq[k], (*v)->ctx->negone, aff1->el,
-					       (*v)->ctx->one, aff2->el,
-					       aff1->size);
-		isl_int_sub_ui(bmap->ineq[k][0], bmap->ineq[k][0], 1);
-	} else if (tok->type == ISL_TOKEN_GT) {
-		isl_seq_combine(bmap->ineq[k], (*v)->ctx->one, aff1->el,
-					       (*v)->ctx->negone, aff2->el,
-					       aff1->size);
-		isl_int_sub_ui(bmap->ineq[k][0], bmap->ineq[k][0], 1);
-	} else {
-		isl_seq_combine(bmap->ineq[k], (*v)->ctx->one, aff1->el,
-					       (*v)->ctx->negone, aff2->el,
-					       aff1->size);
-		isl_basic_map_inequality_to_equality(bmap, k);
-	}
+	bmap = isl_basic_map_extend_constraints(bmap, 0, aff1->n_row * aff2->n_row);
+	for (i = 0; i < aff1->n_row; ++i)
+		for (j = 0; j < aff2->n_row; ++j)
+			bmap = construct_constraint(bmap, tok->type,
+						    aff1->row[i], aff2->row[j]);
 	isl_token_free(tok);
-	isl_vec_free(aff1);
-	isl_vec_free(aff2);
+	isl_mat_free(aff1);
+	isl_mat_free(aff2);
 
 	return bmap;
 error:
 	if (tok)
 		isl_token_free(tok);
-	isl_vec_free(aff1);
-	isl_vec_free(aff2);
+	isl_mat_free(aff1);
+	isl_mat_free(aff2);
 	isl_basic_map_free(bmap);
 	return NULL;
 }
