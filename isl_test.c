@@ -680,6 +680,19 @@ void test_closure(struct isl_ctx *ctx)
 
 	// COCOA Fig.2 right
 	map = isl_map_read_from_str(ctx,
+		"[n,k] -> { [i,j] -> [i2,j2] : i2 = i + 3 and j2 = j and "
+			"i <= 2 j - 4 and i <= n - 3 and j <= 2 i - 1 and "
+			"j <= n or "
+			"i2 = i and j2 = j + 3 and i <= 2 j - 1 and i <= n and "
+			"j <= 2 i - 4 and j <= n - 3 or "
+			"i2 = i + 1 and j2 = j + 1 and i <= 2 j - 1 and "
+			"i <= n - 1 and j <= 2 i - 1 and j <= n - 1 }", -1);
+	map = isl_map_power(map, 1, &exact);
+	assert(!exact);
+	isl_map_free(map);
+
+	// COCOA Fig.2 right
+	map = isl_map_read_from_str(ctx,
 		"[n] -> { [i,j] -> [i2,j2] : i2 = i + 3 and j2 = j and "
 			"i <= 2 j - 4 and i <= n - 3 and j <= 2 i - 1 and "
 			"j <= n or "
@@ -688,7 +701,18 @@ void test_closure(struct isl_ctx *ctx)
 			"i2 = i + 1 and j2 = j + 1 and i <= 2 j - 1 and "
 			"i <= n - 1 and j <= 2 i - 1 and j <= n - 1 }", -1);
 	map = isl_map_transitive_closure(map, &exact);
-	assert(!exact);
+	assert(exact);
+	map2 = isl_map_read_from_str(ctx,
+		"[n] -> { [i,j] -> [i2,j2] : exists (k1,k2,k3,k : "
+			"i <= 2 j - 1 and i <= n and j <= 2 i - 1 and "
+			"j <= n and 3 + i + 2 j <= 3 n and "
+			"3 + 2 i + j <= 3n and i2 <= 2 j2 -1 and i2 <= n and "
+			"i2 <= 3 j2 - 4 and j2 <= 2 i2 -1 and j2 <= n and "
+			"13 + 4 j2 <= 11 i2 and i2 = i + 3 k1 + k3 and "
+			"j2 = j + 3 k2 + k3 and k1 >= 0 and k2 >= 0 and "
+			"k3 >= 0 and k1 + k2 + k3 = k and k > 0) }", -1);
+	assert(isl_map_is_equal(map, map2));
+	isl_map_free(map2);
 	isl_map_free(map);
 
 	// COCOA Fig.1 right

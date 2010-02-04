@@ -161,6 +161,8 @@ error:
  * that starts of in domain or range and ends up in the range,
  * check whether there is at least one path of the same length
  * with a valid first segment, i.e., one in "map".
+ * If "project" is set, then we drop the condition that the lengths
+ * should be the same.
  *
  * "domain" and "range" are the domain and range of "map"
  * "steps" represents the translations of "map"
@@ -169,9 +171,10 @@ error:
  * "domain", "range", "steps" and "path" have been precomputed by the calling
  * function.
  */
-static int check_exactness(__isl_take isl_map *map, __isl_take isl_set *domain,
-	__isl_take isl_set *range, __isl_take isl_map *path,
-	__isl_keep isl_mat *steps, unsigned param)
+static int check_path_exactness(__isl_take isl_map *map,
+	__isl_take isl_set *domain, __isl_take isl_set *range,
+	__isl_take isl_map *path, __isl_keep isl_mat *steps, unsigned param,
+	int project)
 {
 	isl_map *test;
 	int ok;
@@ -197,6 +200,11 @@ static int check_exactness(__isl_take isl_map *map, __isl_take isl_set *domain,
 	path = isl_map_intersect_domain(path, domain);
 	path = isl_map_intersect_range(path, range);
 
+	if (project) {
+		path = isl_map_project_out(path, isl_dim_param, param, 1);
+		test = isl_map_project_out(test, isl_dim_param, param, 1);
+	}
+
 	ok = isl_map_is_subset(path, test);
 
 	isl_map_free(path);
@@ -211,12 +219,102 @@ error:
 	return -1;
 }
 
+/* Check whether any path of length at least one along "steps" is acyclic.
+ * That is, check whether
+ *
+ *	\sum_i k_i = \delta_i
+ *	\sum_i k_i >= 1
+ *	k_i >= 0
+ *
+ * with \delta_i the rows of "steps", is infeasible.
+ */
+static int is_acyclic(__isl_keep isl_mat *steps)
+{
+	int acyclic;
+	int i, j, k;
+	struct isl_basic_set *test;
+
+	if (!steps)
+		return -1;
+
+	test = isl_basic_set_alloc(steps->ctx, 0, steps->n_row, 0,
+					steps->n_col, steps->n_row + 1);
+
+	for (i = 0; i < steps->n_col; ++i) {
+		k = isl_basic_set_alloc_equality(test);
+		if (k < 0)
+			goto error;
+		isl_int_set_si(test->eq[k][0], 0);
+		for (j = 0; j < steps->n_row; ++j)
+			isl_int_set(test->eq[k][1 + j], steps->row[j][i]);
+	}
+	for (j = 0; j < steps->n_row; ++j) {
+		k = isl_basic_set_alloc_inequality(test);
+		if (k < 0)
+			goto error;
+		isl_seq_clr(test->ineq[k], 1 + steps->n_row);
+		isl_int_set_si(test->ineq[k][1 + j], 1);
+	}
+
+	k = isl_basic_set_alloc_inequality(test);
+	if (k < 0)
+		goto error;
+	isl_int_set_si(test->ineq[k][0], -1);
+	for (j = 0; j < steps->n_row; ++j)
+		isl_int_set_si(test->ineq[k][1 + j], 1);
+
+	acyclic = isl_basic_set_is_empty(test);
+
+	isl_basic_set_free(test);
+	return acyclic;
+error:
+	isl_basic_set_free(test);
+	return -1;
+}
+
+/* Check whether the overapproximation of the power of "map" is exactly
+ * the power of "map", possibly after projecting out the power (if "project"
+ * is set).
+ *
+ * If "project" is not set, then we simply check for each power if there
+ * is a path of the given length with valid initial segment.
+ * If "project" is set, then we check if "steps" can only result in acyclic
+ * paths.  If so, we only need to check that there is a path of _some_
+ * length >= 1.  Otherwise, we perform the standard check, i.e., whether
+ * there is a path of the given length.
+ */
+static int check_exactness(__isl_take isl_map *map, __isl_take isl_set *domain,
+	__isl_take isl_set *range, __isl_take isl_map *path,
+	__isl_keep isl_mat *steps, unsigned param, int project)
+{
+	int acyclic;
+
+	if (!project)
+		return check_path_exactness(map, domain, range, path, steps,
+						param, 0);
+
+	acyclic = is_acyclic(steps);
+	if (acyclic < 0)
+		goto error;
+
+	return check_path_exactness(map, domain, range, path, steps,
+					param, acyclic);
+error:
+	isl_map_free(map);
+	isl_set_free(domain);
+	isl_set_free(range);
+	isl_map_free(path);
+	return -1;
+}
+
 /* Compute the positive powers of "map", or an overapproximation.
  * The power is given by parameter "param".  If the result is exact,
  * then *exact is set to 1.
+ * If project is set, then we are actually interested in the transitive
+ * closure, so we can use a more relaxed exactness check.
  */
-__isl_give isl_map *isl_map_power(__isl_take isl_map *map, unsigned param,
-	int *exact)
+static __isl_give isl_map *map_power(__isl_take isl_map *map, unsigned param,
+	int *exact, int project)
 {
 	struct isl_mat *steps = NULL;
 	struct isl_set *domain = NULL;
@@ -255,7 +353,7 @@ __isl_give isl_map *isl_map_power(__isl_take isl_map *map, unsigned param,
 	if (exact &&
 	    (*exact = check_exactness(isl_map_copy(map), isl_set_copy(domain),
 				  isl_set_copy(range), isl_map_copy(path),
-				  steps, param)) < 0)
+				  steps, param, project)) < 0)
 		goto error;
 
 	if (0) {
@@ -279,6 +377,16 @@ error:
 	return NULL;
 }
 
+/* Compute the positive powers of "map", or an overapproximation.
+ * The power is given by parameter "param".  If the result is exact,
+ * then *exact is set to 1.
+ */
+__isl_give isl_map *isl_map_power(__isl_take isl_map *map, unsigned param,
+	int *exact)
+{
+	return map_power(map, param, exact, 0);
+}
+
 /* Compute the transitive closure  of "map", or an overapproximation.
  * If the result is exact, then *exact is set to 1.
  * Simply compute the powers of map and then project out the parameter
@@ -294,7 +402,7 @@ __isl_give isl_map *isl_map_transitive_closure(__isl_take isl_map *map,
 
 	param = isl_map_dim(map, isl_dim_param);
 	map = isl_map_add(map, isl_dim_param, 1);
-	map = isl_map_power(map, param, exact);
+	map = map_power(map, param, exact, 1);
 	map = isl_map_project_out(map, isl_dim_param, param, 1);
 
 	return map;
