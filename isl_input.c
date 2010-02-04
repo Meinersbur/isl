@@ -547,6 +547,29 @@ error:
 	return NULL;
 }
 
+static int polylib_pos_to_isl_pos(__isl_keep isl_basic_map *bmap, int pos)
+{
+	if (pos < isl_basic_map_dim(bmap, isl_dim_out))
+		return 1 + isl_basic_map_dim(bmap, isl_dim_param) +
+			   isl_basic_map_dim(bmap, isl_dim_in) + pos;
+	pos -= isl_basic_map_dim(bmap, isl_dim_out);
+
+	if (pos < isl_basic_map_dim(bmap, isl_dim_in))
+		return 1 + isl_basic_map_dim(bmap, isl_dim_param) + pos;
+	pos -= isl_basic_map_dim(bmap, isl_dim_in);
+
+	if (pos < isl_basic_map_dim(bmap, isl_dim_div))
+		return 1 + isl_basic_map_dim(bmap, isl_dim_param) +
+			   isl_basic_map_dim(bmap, isl_dim_in) +
+			   isl_basic_map_dim(bmap, isl_dim_out) + pos;
+	pos -= isl_basic_map_dim(bmap, isl_dim_div);
+
+	if (pos < isl_basic_map_dim(bmap, isl_dim_param))
+		return 1 + pos;
+
+	return 0;
+}
+
 static __isl_give isl_basic_map *basic_map_read_polylib_constraint(
 	struct isl_stream *s, __isl_take isl_basic_map *bmap)
 {
@@ -591,7 +614,8 @@ static __isl_give isl_basic_map *basic_map_read_polylib_constraint(
 	if (k < 0)
 		goto error;
 
-	for (j = 0; j < dim; ++j) {
+	for (j = 0; j < 1 + isl_basic_map_total_dim(bmap); ++j) {
+		int pos;
 		tok = isl_stream_next_token(s);
 		if (!tok || tok->type != ISL_TOKEN_VALUE) {
 			isl_stream_error(s, tok, "expecting coefficient");
@@ -599,29 +623,10 @@ static __isl_give isl_basic_map *basic_map_read_polylib_constraint(
 				isl_stream_push_token(s, tok);
 			goto error;
 		}
-		isl_int_set(c[1 + nparam + j], tok->u.v);
+		pos = polylib_pos_to_isl_pos(bmap, j);
+		isl_int_set(c[pos], tok->u.v);
 		isl_token_free(tok);
 	}
-	for (j = 0; j < nparam; ++j) {
-		tok = isl_stream_next_token(s);
-		if (!tok || tok->type != ISL_TOKEN_VALUE) {
-			isl_stream_error(s, tok, "expecting coefficient");
-			if (tok)
-				isl_stream_push_token(s, tok);
-			goto error;
-		}
-		isl_int_set(c[1 + j], tok->u.v);
-		isl_token_free(tok);
-	}
-	tok = isl_stream_next_token(s);
-	if (!tok || tok->type != ISL_TOKEN_VALUE) {
-		isl_stream_error(s, tok, "expecting coefficient");
-		if (tok)
-			isl_stream_push_token(s, tok);
-		goto error;
-	}
-	isl_int_set(c[0], tok->u.v);
-	isl_token_free(tok);
 
 	return bmap;
 error:
