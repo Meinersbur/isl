@@ -61,6 +61,7 @@ void isl_stream_free(struct isl_stream *s);
 void isl_stream_error(struct isl_stream *s, struct isl_token *tok, char *msg);
 
 struct isl_token *isl_stream_next_token(struct isl_stream *s);
+struct isl_token *isl_stream_next_token_on_same_line(struct isl_stream *s);
 void isl_stream_push_token(struct isl_stream *s, struct isl_token *tok);
 int isl_stream_eat(struct isl_stream *s, int type);
 

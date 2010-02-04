@@ -145,15 +145,18 @@ void isl_stream_push_token(struct isl_stream *s, struct isl_token *tok)
 	s->tokens[s->n_token++] = tok;
 }
 
-struct isl_token *isl_stream_next_token(struct isl_stream *s)
+static struct isl_token *next_token(struct isl_stream *s, int same_line)
 {
 	int c;
 	struct isl_token *tok = NULL;
 	int line, col;
 	int old_line = s->line;
 
-	if (s->n_token)
+	if (s->n_token) {
+		if (same_line && s->tokens[s->n_token - 1]->on_new_line)
+			return NULL;
 		return s->tokens[--s->n_token];
+	}
 
 	s->len = 0;
 
@@ -163,16 +166,16 @@ struct isl_token *isl_stream_next_token(struct isl_stream *s)
 			while ((c = isl_stream_getc(s)) != -1 && c != '\n')
 				/* nothing */
 				;
-			if (c == -1)
+			if (c == -1 || (same_line && c == '\n'))
 				break;
-		} else if (!isspace(c))
+		} else if (!isspace(c) || (same_line && c == '\n'))
 			break;
 	}
 
 	line = s->line;
 	col = s->col;
 
-	if (c == -1)
+	if (c == -1 || (same_line && c == '\n'))
 		return NULL;
 	if (c == '(' ||
 	    c == ')' ||
@@ -306,6 +309,16 @@ struct isl_token *isl_stream_next_token(struct isl_stream *s)
 error:
 	isl_token_free(tok);
 	return NULL;
+}
+
+struct isl_token *isl_stream_next_token(struct isl_stream *s)
+{
+	return next_token(s, 0);
+}
+
+struct isl_token *isl_stream_next_token_on_same_line(struct isl_stream *s)
+{
+	return next_token(s, 1);
 }
 
 int isl_stream_eat(struct isl_stream *s, int type)
