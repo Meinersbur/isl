@@ -125,12 +125,12 @@ unsigned isl_basic_map_dim(const struct isl_basic_map *bmap,
 
 unsigned isl_map_dim(const struct isl_map *map, enum isl_dim_type type)
 {
-	return n(map->dim, type);
+	return map ? n(map->dim, type) : 0;
 }
 
 unsigned isl_set_dim(const struct isl_set *set, enum isl_dim_type type)
 {
-	return n(set->dim, type);
+	return set ? n(set->dim, type) : 0;
 }
 
 unsigned isl_basic_map_offset(struct isl_basic_map *bmap,
