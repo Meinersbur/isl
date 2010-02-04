@@ -648,7 +648,7 @@ static __isl_give isl_basic_map *basic_map_read_polylib(struct isl_stream *s,
 	struct isl_token *tok2;
 	int n_row, n_col;
 	int on_new_line;
-	unsigned dim;
+	unsigned in = 0, out, local = 0;
 	struct isl_basic_map *bmap = NULL;
 
 	if (nparam < 0)
@@ -673,10 +673,65 @@ static __isl_give isl_basic_map *basic_map_read_polylib(struct isl_stream *s,
 	isl_assert(s->ctx, !on_new_line, return NULL);
 	isl_assert(s->ctx, n_row >= 0, return NULL);
 	isl_assert(s->ctx, n_col >= 2 + nparam, return NULL);
-	dim = n_col - 2 - nparam;
-	bmap = isl_basic_map_alloc(s->ctx, nparam, 0, dim, 0, n_row, n_row);
+	tok = isl_stream_next_token_on_same_line(s);
+	if (tok) {
+		if (tok->type != ISL_TOKEN_VALUE) {
+			isl_stream_error(s, tok,
+				    "expecting number of output dimensions");
+			isl_stream_push_token(s, tok);
+			goto error;
+		}
+		out = isl_int_get_si(tok->u.v);
+		isl_token_free(tok);
+
+		tok = isl_stream_next_token_on_same_line(s);
+		if (!tok || tok->type != ISL_TOKEN_VALUE) {
+			isl_stream_error(s, tok,
+				    "expecting number of input dimensions");
+			if (tok)
+				isl_stream_push_token(s, tok);
+			goto error;
+		}
+		in = isl_int_get_si(tok->u.v);
+		isl_token_free(tok);
+
+		tok = isl_stream_next_token_on_same_line(s);
+		if (!tok || tok->type != ISL_TOKEN_VALUE) {
+			isl_stream_error(s, tok,
+				    "expecting number of existentials");
+			if (tok)
+				isl_stream_push_token(s, tok);
+			goto error;
+		}
+		local = isl_int_get_si(tok->u.v);
+		isl_token_free(tok);
+
+		tok = isl_stream_next_token_on_same_line(s);
+		if (!tok || tok->type != ISL_TOKEN_VALUE) {
+			isl_stream_error(s, tok,
+				    "expecting number of parameters");
+			if (tok)
+				isl_stream_push_token(s, tok);
+			goto error;
+		}
+		nparam = isl_int_get_si(tok->u.v);
+		isl_token_free(tok);
+		if (n_col != 1 + out + in + local + nparam + 1) {
+			isl_stream_error(s, NULL,
+				    "dimensions don't match");
+			goto error;
+		}
+	} else
+		out = n_col - 2 - nparam;
+	bmap = isl_basic_map_alloc(s->ctx, nparam, in, out, local, n_row, n_row);
 	if (!bmap)
 		return NULL;
+
+	for (i = 0; i < local; ++i) {
+		int k = isl_basic_map_alloc_div(bmap);
+		if (k < 0)
+			goto error;
+	}
 
 	for (i = 0; i < n_row; ++i)
 		bmap = basic_map_read_polylib_constraint(s, bmap);
@@ -684,6 +739,9 @@ static __isl_give isl_basic_map *basic_map_read_polylib(struct isl_stream *s,
 	bmap = isl_basic_map_simplify(bmap);
 	bmap = isl_basic_map_finalize(bmap);
 	return bmap;
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
 }
 
 static struct isl_map *map_read_polylib(struct isl_stream *s, int nparam)
