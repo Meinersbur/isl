@@ -222,7 +222,7 @@ error:
 /* Check whether any path of length at least one along "steps" is acyclic.
  * That is, check whether
  *
- *	\sum_i k_i = \delta_i
+ *	\sum_i k_i \delta_i = 0
  *	\sum_i k_i >= 1
  *	k_i >= 0
  *
