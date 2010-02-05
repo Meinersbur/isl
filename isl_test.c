@@ -608,7 +608,7 @@ void test_closure(struct isl_ctx *ctx)
 	isl_map *map, *map2;
 	int exact;
 
-	// COCOA example 1
+	/* COCOA example 1 */
 	map = isl_map_read_from_str(ctx,
 		"[n,k] -> { [i,j] -> [i2,j2] : i2 = i + 1 and j2 = j + 1 and "
 			"1 <= i and i < n and 1 <= j and j < n or "
@@ -618,7 +618,7 @@ void test_closure(struct isl_ctx *ctx)
 	assert(exact);
 	isl_map_free(map);
 
-	// COCOA example 1
+	/* COCOA example 1 */
 	map = isl_map_read_from_str(ctx,
 		"[n] -> { [i,j] -> [i2,j2] : i2 = i + 1 and j2 = j + 1 and "
 			"1 <= i and i < n and 1 <= j and j < n or "
@@ -647,7 +647,7 @@ void test_closure(struct isl_ctx *ctx)
 	isl_map_free(map2);
 	isl_map_free(map);
 
-	// COCOA example 2
+	/* COCOA example 2 */
 	map = isl_map_read_from_str(ctx,
 		"[n] -> { [i,j] -> [i2,j2] : i2 = i + 2 and j2 = j + 2 and "
 			"1 <= i and i < n - 1 and 1 <= j and j < n - 1 or "
@@ -665,7 +665,7 @@ void test_closure(struct isl_ctx *ctx)
 	isl_map_free(map);
 	isl_map_free(map2);
 
-	// COCOA Fig.2 left
+	/* COCOA Fig.2 left */
 	map = isl_map_read_from_str(ctx,
 		"[n] -> { [i,j] -> [i2,j2] : i2 = i + 2 and j2 = j and "
 			"i <= 2 j - 3 and i <= n - 2 and j <= 2 i - 1 and "
@@ -678,7 +678,7 @@ void test_closure(struct isl_ctx *ctx)
 	assert(exact);
 	isl_map_free(map);
 
-	// COCOA Fig.2 right
+	/* COCOA Fig.2 right */
 	map = isl_map_read_from_str(ctx,
 		"[n,k] -> { [i,j] -> [i2,j2] : i2 = i + 3 and j2 = j and "
 			"i <= 2 j - 4 and i <= n - 3 and j <= 2 i - 1 and "
@@ -691,7 +691,7 @@ void test_closure(struct isl_ctx *ctx)
 	assert(!exact);
 	isl_map_free(map);
 
-	// COCOA Fig.2 right
+	/* COCOA Fig.2 right */
 	map = isl_map_read_from_str(ctx,
 		"[n] -> { [i,j] -> [i2,j2] : i2 = i + 3 and j2 = j and "
 			"i <= 2 j - 4 and i <= n - 3 and j <= 2 i - 1 and "
@@ -715,7 +715,7 @@ void test_closure(struct isl_ctx *ctx)
 	isl_map_free(map2);
 	isl_map_free(map);
 
-	// COCOA Fig.1 right
+	/* COCOA Fig.1 right */
 	dom = isl_set_read_from_str(ctx,
 		"{ [x,y] : x >= 0 and -2 x + 3 y >= 0 and x <= 3 and "
 			"2 x - 3 y + 3 >= 0 }", -1);
@@ -728,6 +728,15 @@ void test_closure(struct isl_ctx *ctx)
 	up = isl_map_intersect_domain(up, isl_set_copy(dom));
 	up = isl_map_intersect_range(up, dom);
 	map = isl_map_union(up, right);
+	map = isl_map_transitive_closure(map, &exact);
+	assert(!exact);
+	isl_map_free(map);
+
+	/* COCOA Theorem 1 counter example */
+	map = isl_map_read_from_str(ctx,
+		"{ [i,j] -> [i2,j2] : i = 0 and 0 <= j and j <= 1 and "
+			"i2 = 1 and j2 = j or "
+			"i = 0 and j = 0 and i2 = 0 and j2 = 1 }", -1);
 	map = isl_map_transitive_closure(map, &exact);
 	assert(!exact);
 	isl_map_free(map);
