@@ -139,7 +139,7 @@ static void drop(struct isl_map *map, int i, struct isl_tab **tabs)
 	map->n--;
 }
 
-/* Replace the pair of basic maps i and j but the basic map bounded
+/* Replace the pair of basic maps i and j by the basic map bounded
  * by the valid constraints in both basic maps.
  */
 static int fuse(struct isl_map *map, int i, int j, struct isl_tab **tabs,
