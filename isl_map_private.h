@@ -153,3 +153,6 @@ struct isl_set *isl_set_preimage(struct isl_set *set, struct isl_mat *mat);
 
 __isl_give isl_set *isl_set_make_disjoint(__isl_take isl_set *set);
 __isl_give isl_map *isl_map_make_disjoint(__isl_take isl_map *map);
+
+isl_int *isl_set_wrap_facet(__isl_keep isl_set *set,
+	isl_int *facet, isl_int *ridge);

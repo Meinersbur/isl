@@ -461,7 +461,8 @@ static struct isl_basic_set *wrap_constraints(struct isl_set *set)
  * This means that the facet is unbounded, but has a bounded intersection
  * with the union of sets.
  */
-static isl_int *wrap_facet(struct isl_set *set, isl_int *facet, isl_int *ridge)
+isl_int *isl_set_wrap_facet(__isl_keep isl_set *set,
+	isl_int *facet, isl_int *ridge)
 {
 	int i;
 	struct isl_mat *T = NULL;
@@ -619,7 +620,7 @@ static struct isl_mat *initial_facet_constraint(struct isl_set *set,
 		bounds = drop_redundant_rows(bounds);
 		bounds = isl_mat_product(bounds, Q);
 		isl_assert(set->ctx, bounds->n_row > 1, goto error);
-		if (!wrap_facet(set, bounds->row[0],
+		if (!isl_set_wrap_facet(set, bounds->row[0],
 					  bounds->row[bounds->n_row-1]))
 			goto error;
 		isl_basic_set_free(face);
@@ -764,7 +765,7 @@ static struct isl_basic_set *extend(struct isl_basic_set *hull,
 			if (k < 0)
 				goto error;
 			isl_seq_cpy(hull->ineq[k], hull->ineq[i], 1+dim);
-			if (!wrap_facet(set, hull->ineq[k], facet->ineq[j]))
+			if (!isl_set_wrap_facet(set, hull->ineq[k], facet->ineq[j]))
 				goto error;
 		}
 		isl_basic_set_free(hull_facet);
