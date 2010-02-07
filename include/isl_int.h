@@ -107,10 +107,12 @@ uint32_t isl_gmp_hash(mpz_t v, uint32_t hash);
 #endif
 
 #if defined(__cplusplus)
+extern "C" { typedef void (*isl_gmp_free_t)(void *, size_t); }
+
 static inline std::ostream &operator<<(std::ostream &os, isl_int i)
 {
 	char *s;
-	void (*gmp_free)(void *, size_t);
+	isl_gmp_free_t gmp_free;
 	s = mpz_get_str(0, 10, i);
 	os << s;
 	mp_get_memory_functions(NULL, NULL, &gmp_free);
