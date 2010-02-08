@@ -3497,6 +3497,31 @@ struct isl_set *isl_set_fix_dim_si(struct isl_set *set, unsigned dim, int value)
 		isl_map_fix_si((struct isl_map *)set, isl_dim_set, dim, value);
 }
 
+__isl_give isl_basic_map *isl_basic_map_lower_bound_si(
+		__isl_take isl_basic_map *bmap,
+		enum isl_dim_type type, unsigned pos, int value)
+{
+	int j;
+
+	if (!bmap)
+		return NULL;
+	isl_assert(bmap->ctx, pos < isl_basic_map_dim(bmap, type), goto error);
+	pos += isl_basic_map_offset(bmap, type);
+	bmap = isl_basic_map_cow(bmap);
+	bmap = isl_basic_map_extend_constraints(bmap, 0, 1);
+	j = isl_basic_map_alloc_inequality(bmap);
+	if (j < 0)
+		goto error;
+	isl_seq_clr(bmap->ineq[j], 1 + isl_basic_map_total_dim(bmap));
+	isl_int_set_si(bmap->ineq[j][pos], 1);
+	isl_int_set_si(bmap->ineq[j][0], -value);
+	bmap = isl_basic_map_simplify(bmap);
+	return isl_basic_map_finalize(bmap);
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
 struct isl_basic_set *isl_basic_set_lower_bound_dim(struct isl_basic_set *bset,
 	unsigned dim, isl_int value)
 {
@@ -3514,6 +3539,29 @@ struct isl_basic_set *isl_basic_set_lower_bound_dim(struct isl_basic_set *bset,
 	return isl_basic_set_finalize(bset);
 error:
 	isl_basic_set_free(bset);
+	return NULL;
+}
+
+__isl_give isl_map *isl_map_lower_bound_si(__isl_take isl_map *map,
+		enum isl_dim_type type, unsigned pos, int value)
+{
+	int i;
+
+	map = isl_map_cow(map);
+	if (!map)
+		return NULL;
+
+	isl_assert(map->ctx, pos < isl_map_dim(map, type), goto error);
+	for (i = 0; i < map->n; ++i) {
+		map->p[i] = isl_basic_map_lower_bound_si(map->p[i],
+							 type, pos, value);
+		if (!map->p[i])
+			goto error;
+	}
+	ISL_F_CLR(map, ISL_MAP_NORMALIZED);
+	return map;
+error:
+	isl_map_free(map);
 	return NULL;
 }
 
