@@ -339,7 +339,9 @@ static __isl_give isl_map *map_power(__isl_take isl_map *map, unsigned param,
 		goto error);
 
 	domain = isl_map_domain(isl_map_copy(map));
+	domain = isl_set_coalesce(domain);
 	range = isl_map_range(isl_map_copy(map));
+	range = isl_set_coalesce(range);
 	app = isl_map_from_domain_and_range(isl_set_copy(domain),
 					    isl_set_copy(range));
 
