@@ -528,7 +528,7 @@ void test_gist(struct isl_ctx *ctx)
 
 void test_coalesce(struct isl_ctx *ctx)
 {
-	struct isl_set *set;
+	struct isl_set *set, *set2;
 
 	set = isl_set_read_from_str(ctx,
 		"{[x,y]: x >= 0 & x <= 10 & y >= 0 & y <= 10 or "
@@ -590,8 +590,13 @@ void test_coalesce(struct isl_ctx *ctx)
 		"{[x,y]: y >= 0 & x <= 5 & y <= x or "
 		       "y >= 0 & x = 6 & y <= 5}", -1);
 	set = isl_set_coalesce(set);
-	assert(set && set->n == 2);
+	assert(set && set->n == 1);
+	set2 = isl_set_read_from_str(ctx,
+		"{[x,y]: y >= 0 & x <= 5 & y <= x or "
+		       "y >= 0 & x = 6 & y <= 5}", -1);
+	assert(isl_set_is_equal(set, set2));
 	isl_set_free(set);
+	isl_set_free(set2);
 
 	set = isl_set_read_from_str(ctx,
 		"{[x,y]: y >= 0 & x <= 5 & y <= x or "
@@ -599,6 +604,37 @@ void test_coalesce(struct isl_ctx *ctx)
 	set = isl_set_coalesce(set);
 	assert(set && set->n == 2);
 	isl_set_free(set);
+
+	set = isl_set_read_from_str(ctx,
+		"[n] -> { [i] : i = 1 and n >= 2 or 2 <= i and i <= n }", -1);
+	set = isl_set_coalesce(set);
+	assert(set && set->n == 1);
+	set2 = isl_set_read_from_str(ctx,
+		"[n] -> { [i] : i = 1 and n >= 2 or 2 <= i and i <= n }", -1);
+	assert(isl_set_is_equal(set, set2));
+	isl_set_free(set);
+	isl_set_free(set2);
+
+	set = isl_set_read_from_str(ctx,
+		"{[x,y] : x >= 0 and y >= 0 or 0 <= y and y <= 5 and x = -1}", -1);
+	set = isl_set_coalesce(set);
+	set2 = isl_set_read_from_str(ctx,
+		"{[x,y] : x >= 0 and y >= 0 or 0 <= y and y <= 5 and x = -1}", -1);
+	assert(isl_set_is_equal(set, set2));
+	isl_set_free(set);
+	isl_set_free(set2);
+
+	set = isl_set_read_from_str(ctx,
+		"[n] -> { [i] : 1 <= i and i <= n - 1 or "
+				"2 <= i and i <= n }", -1);
+	set = isl_set_coalesce(set);
+	assert(set && set->n == 1);
+	set2 = isl_set_read_from_str(ctx,
+		"[n] -> { [i] : 1 <= i and i <= n - 1 or "
+				"2 <= i and i <= n }", -1);
+	assert(isl_set_is_equal(set, set2));
+	isl_set_free(set);
+	isl_set_free(set2);
 }
 
 void test_closure(struct isl_ctx *ctx)
