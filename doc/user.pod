@@ -785,7 +785,7 @@ cases of piecewise translations (i.e., piecewise uniform dependences).
 		__isl_take isl_map *map, int *exact);
 
 Compute the transitive closure of C<map>.
-The result may be an overapproximation.  If the result is exact,
+The result may be an overapproximation.  If the result is known to be exact,
 then C<*exact> is set to C<1>.
 The current implementation only produces exact results for particular
 cases of piecewise translations (i.e., piecewise uniform dependences).
