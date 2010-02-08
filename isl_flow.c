@@ -82,7 +82,7 @@ error:
  * isl_access_info_compute_flow on any isl_access_info structure
  * he creates.
  */
-static isl_access_info_free(__isl_take isl_access_info *acc)
+static void isl_access_info_free(__isl_take isl_access_info *acc)
 {
 	int i;
 
