@@ -738,7 +738,7 @@ void test_closure(struct isl_ctx *ctx)
 			"i2 = 1 and j2 = j or "
 			"i = 0 and j = 0 and i2 = 0 and j2 = 1 }", -1);
 	map = isl_map_transitive_closure(map, &exact);
-	assert(!exact);
+	assert(exact);
 	isl_map_free(map);
 }
 
