@@ -121,6 +121,7 @@ unsigned isl_basic_map_dim(const struct isl_basic_map *bmap,
 	if (!bmap)
 		return 0;
 	switch (type) {
+	case isl_dim_cst:	return 1;
 	case isl_dim_param:
 	case isl_dim_in:
 	case isl_dim_out:	return isl_dim_size(bmap->dim, type);
@@ -145,6 +146,7 @@ unsigned isl_basic_map_offset(struct isl_basic_map *bmap,
 {
 	struct isl_dim *dim = bmap->dim;
 	switch (type) {
+	case isl_dim_cst:	return 0;
 	case isl_dim_param:	return 1;
 	case isl_dim_in:	return 1 + dim->nparam;
 	case isl_dim_out:	return 1 + dim->nparam + dim->n_in;
@@ -7494,4 +7496,62 @@ __isl_give isl_set *isl_set_realign(__isl_take isl_set *set,
 	__isl_take isl_reordering *r)
 {
 	return (isl_set *)isl_map_realign((isl_map *)set, r);
+}
+
+__isl_give isl_mat *isl_basic_map_equalities_matrix(
+		__isl_keep isl_basic_map *bmap, enum isl_dim_type c1,
+		enum isl_dim_type c2, enum isl_dim_type c3,
+		enum isl_dim_type c4, enum isl_dim_type c5)
+{
+	enum isl_dim_type c[5] = { c1, c2, c3, c4, c5 };
+	struct isl_mat *mat;
+	int i, j, k;
+	int pos;
+
+	if (!bmap)
+		return NULL;
+	mat = isl_mat_alloc(bmap->ctx, bmap->n_eq,
+				isl_basic_map_total_dim(bmap) + 1);
+	if (!mat)
+		return NULL;
+	for (i = 0; i < bmap->n_eq; ++i)
+		for (j = 0, pos = 0; j < 5; ++j) {
+			int off = isl_basic_map_offset(bmap, c[j]);
+			for (k = 0; k < isl_basic_map_dim(bmap, c[j]); ++k) {
+				isl_int_set(mat->row[i][pos],
+					    bmap->eq[i][off + k]);
+				++pos;
+			}
+		}
+
+	return mat;
+}
+
+__isl_give isl_mat *isl_basic_map_inequalities_matrix(
+		__isl_keep isl_basic_map *bmap, enum isl_dim_type c1,
+		enum isl_dim_type c2, enum isl_dim_type c3,
+		enum isl_dim_type c4, enum isl_dim_type c5)
+{
+	enum isl_dim_type c[5] = { c1, c2, c3, c4, c5 };
+	struct isl_mat *mat;
+	int i, j, k;
+	int pos;
+
+	if (!bmap)
+		return NULL;
+	mat = isl_mat_alloc(bmap->ctx, bmap->n_ineq,
+				isl_basic_map_total_dim(bmap) + 1);
+	if (!mat)
+		return NULL;
+	for (i = 0; i < bmap->n_ineq; ++i)
+		for (j = 0, pos = 0; j < 5; ++j) {
+			int off = isl_basic_map_offset(bmap, c[j]);
+			for (k = 0; k < isl_basic_map_dim(bmap, c[j]); ++k) {
+				isl_int_set(mat->row[i][pos],
+					    bmap->ineq[i][off + k]);
+				++pos;
+			}
+		}
+
+	return mat;
 }

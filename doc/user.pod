@@ -916,6 +916,25 @@ to C<isl_set_compute_divs> or C<isl_map_compute_divs>.
 	void isl_div_get_coefficient(__isl_keep isl_div *div,
 		enum isl_dim_type type, int pos, isl_int *v);
 
+To obtain the constraints of a basic map in matrix
+form, use the following functions.
+
+	__isl_give isl_mat *isl_basic_map_equalities_matrix(
+			__isl_keep isl_basic_map *bmap,
+			enum isl_dim_type c1,
+			enum isl_dim_type c2, enum isl_dim_type c3,
+			enum isl_dim_type c4, enum isl_dim_type c5);
+	__isl_give isl_mat *isl_basic_map_inequalities_matrix(
+			__isl_keep isl_basic_map *bmap,
+			enum isl_dim_type c1,
+			enum isl_dim_type c2, enum isl_dim_type c3,
+			enum isl_dim_type c4, enum isl_dim_type c5);
+
+The C<isl_dim_type> arguments dictate the order in which
+different kinds of variables appear in the resulting matrix
+and should be a permutation of C<isl_dim_cst>, C<isl_dim_param>,
+C<isl_dim_in>, C<isl_dim_out> and C<isl_dim_div>.
+
 =head2 Properties
 
 =head3 Unary Properties

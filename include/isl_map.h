@@ -434,6 +434,15 @@ __isl_give isl_map *isl_map_lex_ge_map(__isl_take isl_map *map1,
 __isl_give isl_map *isl_map_lex_gt_map(__isl_take isl_map *map1,
 	__isl_take isl_map *map2);
 
+__isl_give isl_mat *isl_basic_map_equalities_matrix(
+		__isl_keep isl_basic_map *bmap, enum isl_dim_type c1,
+		enum isl_dim_type c2, enum isl_dim_type c3,
+		enum isl_dim_type c4, enum isl_dim_type c5);
+__isl_give isl_mat *isl_basic_map_inequalities_matrix(
+		__isl_keep isl_basic_map *bmap, enum isl_dim_type c1,
+		enum isl_dim_type c2, enum isl_dim_type c3,
+		enum isl_dim_type c4, enum isl_dim_type c5);
+
 #if defined(__cplusplus)
 }
 #endif

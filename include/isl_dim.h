@@ -20,6 +20,7 @@ struct isl_dim;
 typedef struct isl_dim isl_dim;
 
 enum isl_dim_type {
+	isl_dim_cst,
 	isl_dim_param,
 	isl_dim_in,
 	isl_dim_out,

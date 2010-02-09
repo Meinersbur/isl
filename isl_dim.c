@@ -520,7 +520,8 @@ __isl_give isl_dim *isl_dim_insert(__isl_take isl_dim *dim,
 	if (dim->names) {
 		enum isl_dim_type t;
 		int off;
-		int size[3];
+		int s[3];
+		int *size = s - isl_dim_param;
 		names = isl_calloc_array(dim->ctx, struct isl_name *,
 				     dim->nparam + dim->n_in + dim->n_out + n);
 		if (!names)
@@ -585,7 +586,8 @@ __isl_give isl_dim *isl_dim_move(__isl_take isl_dim *dim,
 		struct isl_name **names;
 		enum isl_dim_type t;
 		int off;
-		int size[3];
+		int s[3];
+		int *size = s - isl_dim_param;
 		names = isl_calloc_array(dim->ctx, struct isl_name *,
 					 dim->nparam + dim->n_in + dim->n_out);
 		if (!names)
