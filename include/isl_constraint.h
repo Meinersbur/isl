@@ -63,14 +63,16 @@ int isl_basic_set_has_defining_inequalities(
 int isl_constraint_dim(struct isl_constraint *constraint,
 	enum isl_dim_type type);
 
-void isl_constraint_get_constant(struct isl_constraint *constraint, isl_int *v);
-void isl_constraint_get_coefficient(struct isl_constraint *constraint,
+void isl_constraint_get_constant(__isl_keep isl_constraint *constraint,
+	isl_int *v);
+void isl_constraint_get_coefficient(__isl_keep isl_constraint *constraint,
 	enum isl_dim_type type, int pos, isl_int *v);
 void isl_constraint_set_constant(__isl_keep isl_constraint *constraint, isl_int v);
 void isl_constraint_set_coefficient(__isl_keep isl_constraint *constraint,
 	enum isl_dim_type type, int pos, isl_int v);
 
-struct isl_div *isl_constraint_div(struct isl_constraint *constraint, int pos);
+__isl_give isl_div *isl_constraint_div(__isl_keep isl_constraint *constraint,
+	int pos);
 struct isl_constraint *isl_constraint_add_div(struct isl_constraint *constraint,
 	struct isl_div *div, int *pos);
 

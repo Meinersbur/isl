@@ -624,6 +624,78 @@ Or, alternatively,
 	bset = isl_basic_set_read_from_str(ctx,
 		"{[i] : exists (a : i = 2a and i >= 10 and i <= 42)}", -1);
 
+=head2 Inspecting Sets and Relations
+
+Usually, the user should not have to care about the actual constraints
+of the sets and maps, but should instead apply the abstract operations
+explained in the following sections.
+Occasionally, however, it may be required to inspect the individual
+coefficients of the constraints.  This section explains how to do so.
+In these cases, it may also be useful to have C<isl> compute
+an explicit representation of the existentially quantified variables.
+
+	__isl_give isl_set *isl_set_compute_divs(
+		__isl_take isl_set *set);
+	__isl_give isl_map *isl_map_compute_divs(
+		__isl_take isl_map *map);
+
+This explicit representation defines the existentially quantified
+variables as integer divisions of the other variables, possibly
+including earlier existentially quantified variables.
+An explicitly represented existentially quantified variable therefore
+has a unique value when the values of the other variables are known.
+
+To iterate over all the basic sets or maps in a set or map, use
+
+	int isl_set_foreach_basic_set(__isl_keep isl_set *set,
+		int (*fn)(__isl_take isl_basic_set *bset, void *user),
+		void *user);
+	int isl_map_foreach_basic_map(__isl_keep isl_map *map,
+		int (*fn)(__isl_take isl_basic_map *bmap, void *user),
+		void *user);
+
+The callback function C<fn> should return 0 if successful and
+-1 if an error occurs.  In the latter case, or if any other error
+occurs, the above functions will return -1.
+
+To iterate over the constraints of a basic set or map, use
+
+	#include <isl_constraint.h>
+
+	int isl_basic_map_foreach_constraint(
+		__isl_keep isl_basic_map *bmap,
+		int (*fn)(__isl_take isl_constraint *c, void *user),
+		void *user);
+	void isl_constraint_free(struct isl_constraint *c);
+
+Again, the callback function C<fn> should return 0 if successful and
+-1 if an error occurs.  In the latter case, or if any other error
+occurs, the above functions will return -1.
+
+The coefficients of the constraints can be inspected using
+the following functions.
+
+	void isl_constraint_get_constant(
+		__isl_keep isl_constraint *constraint, isl_int *v);
+	void isl_constraint_get_coefficient(
+		__isl_keep isl_constraint *constraint,
+		enum isl_dim_type type, int pos, isl_int *v);
+
+The explicit representations of the existentially quantified
+variables can be inspected using the following functions.
+Note that the user is only allowed to use these functions
+if the inspected set or map is the result of a call
+to C<isl_set_compute_divs> or C<isl_map_compute_divs>.
+
+	__isl_give isl_div *isl_constraint_div(
+		__isl_keep isl_constraint *constraint, int pos);
+	void isl_div_get_constant(__isl_keep isl_div *div,
+		isl_int *v);
+	void isl_div_get_denominator(__isl_keep isl_div *div,
+		isl_int *v);
+	void isl_div_get_coefficient(__isl_keep isl_div *div,
+		enum isl_dim_type type, int pos, isl_int *v);
+
 =head2 Properties
 
 =head3 Unary Properties
