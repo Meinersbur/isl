@@ -477,21 +477,6 @@ the coefficients of the existentially quantified variables
 appear between those of the set variables and those
 of the parameters.
 
-=head3 Dumping the internal state
-
-For lack of proper output functions, the following functions
-can be used to dump the internal state of a set or relation.
-The user should not depend on the output format of these functions.
-
-	void isl_basic_set_dump(__isl_keep isl_basic_set *bset,
-		FILE *out, int indent);
-	void isl_basic_map_dump(__isl_keep isl_basic_map *bmap,
-		FILE *out, int indent);
-	void isl_set_dump(__isl_keep isl_set *set,
-		FILE *out, int indent);
-	void isl_map_dump(__isl_keep isl_map *map,
-		FILE *out, int indent);
-
 =head2 Creating New Sets and Relations
 
 C<isl> has functions for creating some standard sets and relations.
