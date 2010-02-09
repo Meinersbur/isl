@@ -322,6 +322,8 @@ struct isl_div *isl_constraint_div(struct isl_constraint *constraint, int pos)
 
 	isl_assert(constraint->ctx, pos < n(constraint, isl_dim_div),
 			return NULL);
+	isl_assert(constraint->ctx,
+		!isl_int_is_zero(constraint->bmap->div[pos][0]), return NULL);
 	return isl_basic_map_div(isl_basic_map_copy(constraint->bmap), pos);
 }
 
