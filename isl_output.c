@@ -11,6 +11,7 @@
  */
 
 #include <isl_set.h>
+#include <isl_seq.h>
 
 static void print_constraint_polylib(struct isl_basic_set *bset,
 	int ineq, int n,
@@ -142,7 +143,11 @@ static void print_term(__isl_keep isl_dim *dim,
 		return;
 	}
 
-	if (!isl_int_is_one(c))
+	if (isl_int_is_one(c))
+		;
+	else if (isl_int_is_negone(c))
+		fprintf(out, "-");
+	else
 		isl_int_print(out, c, 0);
 	if (pos < 1 + nparam) {
 		type = isl_dim_param;
@@ -168,38 +173,77 @@ static void print_affine(__isl_keep isl_basic_map *bmap, FILE *out,
 	unsigned len = 1 + isl_basic_map_total_dim(bmap);
 
 	for (i = 0, first = 1; i < len; ++i) {
+		int flip = 0;
 		if (isl_int_is_zero(c[i]))
 			continue;
-		if (!first && isl_int_is_pos(c[i]))
-			fprintf(out, " + ");
+		if (!first) {
+			if (isl_int_is_neg(c[i])) {
+				flip = 1;
+				isl_int_neg(c[i], c[i]);
+				fprintf(out, " - ");
+			} else 
+				fprintf(out, " + ");
+		}
 		first = 0;
 		print_term(bmap->dim, c[i], i, out, set);
+		if (flip)
+			isl_int_neg(c[i], c[i]);
 	}
 	if (first)
 		fprintf(out, "0");
 }
 
 static void print_constraint(struct isl_basic_map *bmap, FILE *out,
-	isl_int *c, const char *suffix, int first_constraint, int set)
+	isl_int *c, int last, const char *op, int first_constraint, int set)
 {
 	if (!first_constraint)
 		fprintf(out, " and ");
 
-	print_affine(bmap, out, c, set);
+	isl_int_abs(c[last], c[last]);
 
-	fprintf(out, " %s", suffix);
+	print_term(bmap->dim, c[last], last, out, set);
+
+	fprintf(out, " %s ", op);
+
+	isl_int_set_si(c[last], 0);
+	print_affine(bmap, out, c, set);
 }
 
 static void print_constraints(__isl_keep isl_basic_map *bmap, FILE *out,
 	int set)
 {
 	int i;
+	struct isl_vec *c;
+	unsigned total = isl_basic_map_total_dim(bmap);
 
-	for (i = 0; i < bmap->n_eq; ++i)
-		print_constraint(bmap, out, bmap->eq[i], "= 0", !i, set);
-	for (i = 0; i < bmap->n_ineq; ++i)
-		print_constraint(bmap, out, bmap->ineq[i], ">= 0",
-					!bmap->n_eq && !i, set);
+	c = isl_vec_alloc(bmap->ctx, 1 + total);
+	if (!c)
+		return;
+
+	for (i = bmap->n_eq - 1; i >= 0; --i) {
+		int l = isl_seq_last_non_zero(bmap->eq[i], 1 + total);
+		isl_assert(bmap->ctx, l >= 0, return);
+		if (isl_int_is_neg(bmap->eq[i][l]))
+			isl_seq_cpy(c->el, bmap->eq[i], 1 + total);
+		else
+			isl_seq_neg(c->el, bmap->eq[i], 1 + total);
+		print_constraint(bmap, out, c->el, l,
+				    "=", i == bmap->n_eq - 1, set);
+	}
+	for (i = 0; i < bmap->n_ineq; ++i) {
+		int l = isl_seq_last_non_zero(bmap->ineq[i], 1 + total);
+		int s;
+		isl_assert(bmap->ctx, l >= 0, return);
+		s = isl_int_sgn(bmap->ineq[i][l]);
+		if (s < 0)
+			isl_seq_cpy(c->el, bmap->ineq[i], 1 + total);
+		else
+			isl_seq_neg(c->el, bmap->ineq[i], 1 + total);
+		print_constraint(bmap, out, c->el, l,
+				    s < 0 ? "<=" : ">=", !bmap->n_eq && !i, set);
+	}
+
+	isl_vec_free(c);
 }
 
 static void print_omega_constraints(__isl_keep isl_basic_map *bmap, FILE *out,
