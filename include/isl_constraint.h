@@ -40,6 +40,10 @@ __isl_give isl_constraint *isl_basic_map_first_constraint(
 __isl_give isl_constraint *isl_basic_set_first_constraint(
 	__isl_take isl_basic_set *bset);
 struct isl_constraint *isl_constraint_next(struct isl_constraint *c);
+int isl_basic_map_foreach_constraint(__isl_keep isl_basic_map *bmap,
+	int (*fn)(__isl_take isl_constraint *c, void *user), void *user);
+int isl_basic_set_foreach_constraint(__isl_keep isl_basic_set *bset,
+	int (*fn)(__isl_take isl_constraint *c, void *user), void *user);
 int isl_constraint_is_equal(struct isl_constraint *constraint1,
 			    struct isl_constraint *constraint2);
 

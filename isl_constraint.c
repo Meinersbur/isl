@@ -189,6 +189,42 @@ struct isl_constraint *isl_constraint_next(struct isl_constraint *c)
 	return NULL;
 }
 
+int isl_basic_map_foreach_constraint(__isl_keep isl_basic_map *bmap,
+	int (*fn)(__isl_take isl_constraint *c, void *user), void *user)
+{
+	int i;
+	struct isl_constraint *c;
+
+	if (!bmap)
+		return -1;
+
+	for (i = 0; i < bmap->n_eq; ++i) {
+		c = isl_basic_map_constraint(isl_basic_map_copy(bmap),
+						&bmap->eq[i]);
+		if (!c)
+			return -1;
+		if (fn(c, user) < 0)
+			return -1;
+	}
+
+	for (i = 0; i < bmap->n_ineq; ++i) {
+		c = isl_basic_map_constraint(isl_basic_map_copy(bmap),
+						&bmap->ineq[i]);
+		if (!c)
+			return -1;
+		if (fn(c, user) < 0)
+			return -1;
+	}
+
+	return 0;
+}
+
+int isl_basic_set_foreach_constraint(__isl_keep isl_basic_set *bset,
+	int (*fn)(__isl_take isl_constraint *c, void *user), void *user)
+{
+	return isl_basic_map_foreach_constraint((isl_basic_map *)bset, fn, user);
+}
+
 int isl_constraint_is_equal(struct isl_constraint *constraint1,
 	struct isl_constraint *constraint2)
 {
