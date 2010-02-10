@@ -644,6 +644,15 @@ variables as integer divisions of the other variables, possibly
 including earlier existentially quantified variables.
 An explicitly represented existentially quantified variable therefore
 has a unique value when the values of the other variables are known.
+If, furthermore, the same existentials, i.e., existentials
+with the same explicit representations, should appear in the
+same order in each of the disjuncts of a set or map, then the user should call
+either of the following functions.
+
+	__isl_give isl_set *isl_set_align_divs(
+		__isl_take isl_set *set);
+	__isl_give isl_map *isl_map_align_divs(
+		__isl_take isl_map *map);
 
 To iterate over all the basic sets or maps in a set or map, use
 
