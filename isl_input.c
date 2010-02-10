@@ -380,13 +380,13 @@ error:
 }
 
 static struct isl_basic_map *add_constraints(struct isl_stream *s,
-	struct vars **v, struct isl_basic_map *bmap);
+	struct vars *v, struct isl_basic_map *bmap);
 
 static struct isl_basic_map *add_exists(struct isl_stream *s,
-	struct vars **v, struct isl_basic_map *bmap)
+	struct vars *v, struct isl_basic_map *bmap)
 {
 	struct isl_token *tok;
-	int n = (*v)->n;
+	int n = v->n;
 	int extra;
 	int seen_paren = 0;
 	int i;
@@ -401,7 +401,7 @@ static struct isl_basic_map *add_exists(struct isl_stream *s,
 	} else
 		isl_stream_push_token(s, tok);
 
-	bmap = read_defined_var_list(s, *v, bmap);
+	bmap = read_defined_var_list(s, v, bmap);
 	if (!bmap)
 		goto error;
 
@@ -464,7 +464,7 @@ error:
 }
 
 static struct isl_basic_map *add_constraint(struct isl_stream *s,
-	struct vars **v, struct isl_basic_map *bmap)
+	struct vars *v, struct isl_basic_map *bmap)
 {
 	int i, j;
 	unsigned total = isl_basic_map_total_dim(bmap);
@@ -483,7 +483,7 @@ static struct isl_basic_map *add_constraint(struct isl_stream *s,
 
 	bmap = isl_basic_map_cow(bmap);
 
-	aff1 = accept_affine_list(s, *v);
+	aff1 = accept_affine_list(s, v);
 	if (!aff1)
 		goto error;
 	tok = isl_stream_next_token(s);
@@ -500,7 +500,7 @@ static struct isl_basic_map *add_constraint(struct isl_stream *s,
 		tok = NULL;
 		goto error;
 	}
-	aff2 = accept_affine_list(s, *v);
+	aff2 = accept_affine_list(s, v);
 	if (!aff2)
 		goto error;
 	isl_assert(aff1->ctx, aff1->n_col == 1 + total, goto error);
@@ -526,7 +526,7 @@ error:
 }
 
 static struct isl_basic_map *add_constraints(struct isl_stream *s,
-	struct vars **v, struct isl_basic_map *bmap)
+	struct vars *v, struct isl_basic_map *bmap)
 {
 	struct isl_token *tok;
 
@@ -554,7 +554,7 @@ error:
 }
 
 static struct isl_basic_map *read_disjunct(struct isl_stream *s,
-	struct vars **v, __isl_take isl_dim *dim)
+	struct vars *v, __isl_take isl_dim *dim)
 {
 	struct isl_basic_map *bmap;
 
@@ -569,7 +569,7 @@ static struct isl_basic_map *read_disjunct(struct isl_stream *s,
 }
 
 static struct isl_map *read_disjuncts(struct isl_stream *s,
-	struct vars **v, __isl_take isl_dim *dim)
+	struct vars *v, __isl_take isl_dim *dim)
 {
 	struct isl_token *tok;
 	struct isl_map *map;
@@ -940,7 +940,7 @@ static struct isl_map *map_read(struct isl_stream *s, int nparam)
 	}
 	if (tok->type == ':') {
 		isl_token_free(tok);
-		map = read_disjuncts(s, &v, isl_dim_copy(dim));
+		map = read_disjuncts(s, v, isl_dim_copy(dim));
 		tok = isl_stream_next_token(s);
 	} else
 		map = isl_map_universe(isl_dim_copy(dim));
