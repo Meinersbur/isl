@@ -61,6 +61,25 @@ static void vars_free(struct vars *v)
 	free(v);
 }
 
+static void vars_drop(struct vars *v, int n)
+{
+	struct variable *var;
+
+	if (!v)
+		return;
+
+	v->n -= n;
+
+	var = v->v;
+	while (--n >= 0) {
+		struct variable *next = var->next;
+		free(var->name);
+		free(var);
+		var = next;
+	}
+	v->v = var;
+}
+
 static struct variable *variable_new(struct vars *v, const char *name, int len,
 				int pos)
 {
@@ -588,9 +607,12 @@ static struct isl_map *read_disjuncts(struct isl_stream *s,
 	map = isl_map_empty(isl_dim_copy(dim));
 	for (;;) {
 		struct isl_basic_map *bmap;
+		int n = v->n;
 
 		bmap = read_disjunct(s, v, isl_dim_copy(dim));
 		map = isl_map_union(map, isl_map_from_basic_map(bmap));
+
+		vars_drop(v, v->n - n);
 
 		tok = isl_stream_next_token(s);
 		if (!tok || tok->type != ISL_TOKEN_OR)
