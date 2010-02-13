@@ -18,59 +18,6 @@
  * Albert Cohen.
  */
 
-/* Given a union of translations (uniform dependences), return a matrix
- * with as many rows as there are disjuncts in the union and as many
- * columns as there are input dimensions (which should be equal to
- * the number of output dimensions).
- * Each row contains the translation performed by the corresponding disjunct.
- * If "map" turns out not to be a union of translations, then the contents
- * of the returned matrix are undefined and *ok is set to 0.
- */
-static __isl_give isl_mat *extract_steps(__isl_keep isl_map *map, int *ok)
-{
-	int i, j;
-	struct isl_mat *steps;
-	unsigned dim = isl_map_dim(map, isl_dim_in);
-
-	*ok = 1;
-
-	steps = isl_mat_alloc(map->ctx, map->n, dim);
-	if (!steps)
-		return NULL;
-
-	for (i = 0; i < map->n; ++i) {
-		struct isl_basic_set *delta;
-
-		delta = isl_basic_map_deltas(isl_basic_map_copy(map->p[i]));
-
-		for (j = 0; j < dim; ++j) {
-			int fixed;
-
-			fixed = isl_basic_set_fast_dim_is_fixed(delta, j,
-							    &steps->row[i][j]);
-			if (fixed < 0) {
-				isl_basic_set_free(delta);
-				goto error;
-			}
-			if (!fixed)
-				break;
-		}
-
-		isl_basic_set_free(delta);
-
-		if (j < dim)
-			break;
-	}
-
-	if (i < map->n)
-		*ok = 0;
-
-	return steps;
-error:
-	isl_mat_free(steps);
-	return NULL;
-}
-
 /* Given a set of n offsets v_i (the rows of "steps"), construct a relation
  * of the given dimension specification (Z^{n+1} -> Z^{n+1})
  * that maps an element x to any element that can be reached
@@ -208,8 +155,11 @@ error:
  * In the final step, this difference is equated to the parameter "param"
  * and made positive.  The extra coordinates are subsequently projected out.
  *
- * If any of the \Delta_i contains more than one element, then
- * we currently simply return a universal map { (x) -> (y) }.
+ * The elements of the singleton \Delta_i's are collected as the
+ * rows of the steps matrix.  For all these \Delta_i's together,
+ * a single path is constructed.
+ * For each of the other \Delta_i's
+ * we currently simply construct a universal map { (x) -> (y) }.
  */
 static __isl_give isl_map *construct_path(__isl_keep isl_map *map,
 	unsigned param)
@@ -217,35 +167,70 @@ static __isl_give isl_map *construct_path(__isl_keep isl_map *map,
 	struct isl_mat *steps = NULL;
 	struct isl_map *path = NULL;
 	struct isl_map *diff;
-	struct isl_dim *dim;
+	struct isl_dim *dim = NULL;
 	unsigned d;
-	int ok;
+	int i, j, n;
 
 	if (!map)
 		return NULL;
-
-	steps = extract_steps(map, &ok);
-	if (!steps)
-		return NULL;
-	if (!ok) {
-		isl_mat_free(steps);
-		return isl_map_universe(isl_map_get_dim(map));
-	}
 
 	dim = isl_map_get_dim(map);
 
 	d = isl_dim_size(dim, isl_dim_in);
 	dim = isl_dim_add(dim, isl_dim_in, 1);
 	dim = isl_dim_add(dim, isl_dim_out, 1);
-	path = path_along_steps(isl_dim_copy(dim), steps);
-	diff = equate_parameter_to_length(dim, param);
 
+	path = isl_map_identity(isl_dim_domain(isl_dim_copy(dim)));
+
+	steps = isl_mat_alloc(map->ctx, map->n, d);
+	if (!steps)
+		goto error;
+
+	n = 0;
+	for (i = 0; i < map->n; ++i) {
+		struct isl_basic_set *delta;
+
+		delta = isl_basic_map_deltas(isl_basic_map_copy(map->p[i]));
+
+		for (j = 0; j < d; ++j) {
+			int fixed;
+
+			fixed = isl_basic_set_fast_dim_is_fixed(delta, j,
+							    &steps->row[n][j]);
+			if (fixed < 0) {
+				isl_basic_set_free(delta);
+				goto error;
+			}
+			if (!fixed)
+				break;
+		}
+
+		isl_basic_set_free(delta);
+
+		if (j < d) {
+			isl_map_free(path);
+			path = isl_map_universe(isl_dim_copy(dim));
+		} else
+			++n;
+	}
+
+	if (n > 0) {
+		steps->n_row = n;
+		path = isl_map_apply_range(path,
+				path_along_steps(isl_dim_copy(dim), steps));
+	}
+
+	diff = equate_parameter_to_length(dim, param);
 	path = isl_map_intersect(path, diff);
 	path = isl_map_project_out(path, isl_dim_in, d, 1);
 	path = isl_map_project_out(path, isl_dim_out, d, 1);
 
 	isl_mat_free(steps);
 	return path;
+error:
+	isl_dim_free(dim);
+	isl_map_free(path);
+	return NULL;
 }
 
 /* Check whether "path" is acyclic.
