@@ -152,6 +152,49 @@ error:
 	return NULL;
 }
 
+/* Given a union of basic maps R = \cup_i R_i \subseteq D \times D,
+ * construct a map that is an overapproximation of the map
+ * that takes an element from the space D to another
+ * element from the same space, such that the difference between
+ * them is a strictly positive sum of differences between images
+ * and pre-images in one of the R_i.
+ * The number of differences in the sum is equated to parameter "param".
+ * That is, let
+ *
+ *	\Delta_i = { y - x | (x, y) in R_i }
+ *
+ * then the constructed map is an overapproximation of
+ *
+ *	{ (x) -> (x + d) | \exists k_i >= 0, \delta_i \in \Delta_i :
+ *				d = \sum_i k_i and k = \sum_i k_i > 0 }
+ *
+ * If any of the \Delta_i contains more than one element, then
+ * we currently simply return a universal map { (x) -> (y) }.
+ */
+static __isl_give isl_map *construct_path(__isl_keep isl_map *map,
+	unsigned param)
+{
+	struct isl_mat *steps = NULL;
+	struct isl_map *path = NULL;
+	int ok;
+
+	if (!map)
+		return NULL;
+
+	steps = extract_steps(map, &ok);
+	if (!steps)
+		return NULL;
+	if (!ok) {
+		isl_mat_free(steps);
+		return isl_map_universe(isl_map_get_dim(map));
+	}
+
+	path = path_along_steps(isl_map_get_dim(map), steps, param);
+
+	isl_mat_free(steps);
+	return path;
+}
+
 /* Check whether "path" is acyclic.
  * That is, check whether
  *
@@ -335,12 +378,10 @@ error:
 static __isl_give isl_map *map_power(__isl_take isl_map *map, unsigned param,
 	int *exact, int project)
 {
-	struct isl_mat *steps = NULL;
 	struct isl_set *domain = NULL;
 	struct isl_set *range = NULL;
 	struct isl_map *app = NULL;
 	struct isl_map *path = NULL;
-	int ok;
 
 	if (exact)
 		*exact = 1;
@@ -364,11 +405,7 @@ static __isl_give isl_map *map_power(__isl_take isl_map *map, unsigned param,
 	app = isl_map_from_domain_and_range(isl_set_copy(domain),
 					    isl_set_copy(range));
 
-	steps = extract_steps(map, &ok);
-	if (!ok)
-		goto not_exact;
-
-	path = path_along_steps(isl_map_get_dim(map), steps, param);
+	path = construct_path(map, param);
 	app = isl_map_intersect(app, isl_map_copy(path));
 
 	if (exact &&
@@ -376,21 +413,14 @@ static __isl_give isl_map *map_power(__isl_take isl_map *map, unsigned param,
 				  isl_map_copy(path), param, project)) < 0)
 		goto error;
 
-	if (0) {
-not_exact:
-		if (exact)
-			*exact = 0;
-	}
 	isl_set_free(domain);
 	isl_set_free(range);
-	isl_mat_free(steps);
 	isl_map_free(path);
 	isl_map_free(map);
 	return app;
 error:
 	isl_set_free(domain);
 	isl_set_free(range);
-	isl_mat_free(steps);
 	isl_map_free(path);
 	isl_map_free(map);
 	isl_map_free(app);
