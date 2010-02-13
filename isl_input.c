@@ -482,6 +482,23 @@ error:
 	return NULL;
 }
 
+static int is_comparator(struct isl_token *tok)
+{
+	if (!tok)
+		return 0;
+
+	switch (tok->type) {
+	case ISL_TOKEN_LT:
+	case ISL_TOKEN_GT:
+	case ISL_TOKEN_LE:
+	case ISL_TOKEN_GE:
+	case '=':
+		return 1;
+	default:
+		return 0;
+	}
+}
+
 static struct isl_basic_map *add_constraint(struct isl_stream *s,
 	struct vars *v, struct isl_basic_map *bmap)
 {
@@ -506,33 +523,38 @@ static struct isl_basic_map *add_constraint(struct isl_stream *s,
 	if (!aff1)
 		goto error;
 	tok = isl_stream_next_token(s);
-	switch (tok->type) {
-	case ISL_TOKEN_LT:
-	case ISL_TOKEN_GT:
-	case ISL_TOKEN_LE:
-	case ISL_TOKEN_GE:
-	case '=':
-		break;
-	default:
+	if (!is_comparator(tok)) {
 		isl_stream_error(s, tok, "missing operator");
-		isl_stream_push_token(s, tok);
+		if (tok)
+			isl_stream_push_token(s, tok);
 		tok = NULL;
 		goto error;
 	}
-	aff2 = accept_affine_list(s, v);
-	if (!aff2)
-		goto error;
 	isl_assert(aff1->ctx, aff1->n_col == 1 + total, goto error);
-	isl_assert(aff2->ctx, aff2->n_col == 1 + total, goto error);
+	for (;;) {
+		aff2 = accept_affine_list(s, v);
+		if (!aff2)
+			goto error;
+		isl_assert(aff2->ctx, aff2->n_col == 1 + total, goto error);
 
-	bmap = isl_basic_map_extend_constraints(bmap, 0, aff1->n_row * aff2->n_row);
-	for (i = 0; i < aff1->n_row; ++i)
-		for (j = 0; j < aff2->n_row; ++j)
-			bmap = construct_constraint(bmap, tok->type,
+		bmap = isl_basic_map_extend_constraints(bmap, 0,
+						aff1->n_row * aff2->n_row);
+		for (i = 0; i < aff1->n_row; ++i)
+			for (j = 0; j < aff2->n_row; ++j)
+				bmap = construct_constraint(bmap, tok->type,
 						    aff1->row[i], aff2->row[j]);
-	isl_token_free(tok);
+		isl_token_free(tok);
+		isl_mat_free(aff1);
+		aff1 = aff2;
+
+		tok = isl_stream_next_token(s);
+		if (!is_comparator(tok)) {
+			if (tok)
+				isl_stream_push_token(s, tok);
+			break;
+		}
+	}
 	isl_mat_free(aff1);
-	isl_mat_free(aff2);
 
 	return bmap;
 error:
