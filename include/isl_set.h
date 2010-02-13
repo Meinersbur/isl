@@ -146,6 +146,8 @@ __isl_give isl_basic_set *isl_basic_set_fix(__isl_take isl_basic_set *bset,
 		enum isl_dim_type type, unsigned pos, isl_int value);
 struct isl_basic_set *isl_basic_set_fix_si(struct isl_basic_set *bset,
 		enum isl_dim_type type, unsigned pos, int value);
+__isl_give isl_set *isl_set_fix_si(__isl_take isl_set *set,
+		enum isl_dim_type type, unsigned pos, int value);
 
 struct isl_basic_set *isl_basic_set_from_underlying_set(
 	struct isl_basic_set *bset, struct isl_basic_set *like);
