@@ -776,6 +776,15 @@ void test_closure(struct isl_ctx *ctx)
 	map = isl_map_transitive_closure(map, &exact);
 	assert(exact);
 	isl_map_free(map);
+
+	map = isl_map_read_from_str(ctx,
+		"[m,n] -> { [i,j] -> [i2,j2] : i2 = i and j2 = j + 2 and "
+			"1 <= i,i2 <= n and 1 <= j,j2 <= m or "
+			"i2 = i + 1 and 3 <= j2 - j <= 4 and "
+			"1 <= i,i2 <= n and 1 <= j,j2 <= m }", -1);
+	map = isl_map_transitive_closure(map, &exact);
+	assert(exact);
+	isl_map_free(map);
 }
 
 int main()

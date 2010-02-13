@@ -10,6 +10,7 @@
 
 #include "isl_map.h"
 #include "isl_map_private.h"
+#include "isl_seq.h"
  
 /*
  * The transitive closure implementation is based on the paper
@@ -91,6 +92,147 @@ error:
 	return NULL;
 }
 
+#define IMPURE		0
+#define PURE_PARAM	1
+#define PURE_VAR	2
+
+/* Return PURE_PARAM if only the coefficients of the parameters are non-zero.
+ * Return PURE_VAR if only the coefficients of the set variables are non-zero.
+ * Return IMPURE otherwise.
+ */
+static int purity(__isl_keep isl_basic_set *bset, isl_int *c)
+{
+	unsigned d;
+	unsigned n_div;
+	unsigned nparam;
+
+	n_div = isl_basic_set_dim(bset, isl_dim_div);
+	d = isl_basic_set_dim(bset, isl_dim_set);
+	nparam = isl_basic_set_dim(bset, isl_dim_param);
+
+	if (isl_seq_first_non_zero(c + 1 + nparam + d, n_div) != -1)
+		return IMPURE;
+	if (isl_seq_first_non_zero(c + 1, nparam) == -1)
+		return PURE_VAR;
+	if (isl_seq_first_non_zero(c + 1 + nparam, d) == -1)
+		return PURE_PARAM;
+	return IMPURE;
+}
+
+/* Given a set of offsets "delta", construct a relation of the
+ * given dimension specification (Z^{n+1} -> Z^{n+1}) that
+ * is an overapproximation of the relations that
+ * maps an element x to any element that can be reached
+ * by taking a non-negative number of steps along any of
+ * the elements in "delta".
+ * That is, construct an approximation of
+ *
+ *	{ [x] -> [y] : exists f \in \delta, k \in Z :
+ *					y = x + k [f, 1] and k >= 0 }
+ *
+ * For any element in this relation, the number of steps taken
+ * is equal to the difference in the final coordinates.
+ *
+ * In particular, let delta be defined as
+ *
+ *	\delta = [p] -> { [x] : A x + a >= and B p + b >= 0 and
+ *				C x + C'p + c >= 0 }
+ *
+ * then the relation is constructed as
+ *
+ *	{ [x] -> [y] : exists [f, k] \in Z^{n+1} : y = x + f and
+ *			A f + k a >= 0 and B p + b >= 0 and k >= 1 }
+ *	union { [x] -> [x] }
+ *
+ * Existentially quantified variables in \delta are currently ignored.
+ * This is safe, but leads to an additional overapproximation.
+ */
+static __isl_give isl_map *path_along_delta(__isl_take isl_dim *dim,
+	__isl_take isl_basic_set *delta)
+{
+	isl_basic_map *path = NULL;
+	unsigned d;
+	unsigned n_div;
+	unsigned nparam;
+	unsigned off;
+	int i, k;
+
+	if (!delta)
+		goto error;
+	n_div = isl_basic_set_dim(delta, isl_dim_div);
+	d = isl_basic_set_dim(delta, isl_dim_set);
+	nparam = isl_basic_set_dim(delta, isl_dim_param);
+	path = isl_basic_map_alloc_dim(isl_dim_copy(dim), n_div + d + 1,
+			d + 1 + delta->n_eq, delta->n_ineq + 1);
+	off = 1 + nparam + 2 * (d + 1) + n_div;
+
+	for (i = 0; i < n_div + d + 1; ++i) {
+		k = isl_basic_map_alloc_div(path);
+		if (k < 0)
+			goto error;
+		isl_int_set_si(path->div[k][0], 0);
+	}
+
+	for (i = 0; i < d + 1; ++i) {
+		k = isl_basic_map_alloc_equality(path);
+		if (k < 0)
+			goto error;
+		isl_seq_clr(path->eq[k], 1 + isl_basic_map_total_dim(path));
+		isl_int_set_si(path->eq[k][1 + nparam + i], 1);
+		isl_int_set_si(path->eq[k][1 + nparam + d + 1 + i], -1);
+		isl_int_set_si(path->eq[k][off + i], 1);
+	}
+
+	for (i = 0; i < delta->n_eq; ++i) {
+		int p = purity(delta, delta->eq[i]);
+		if (p == IMPURE)
+			continue;
+		k = isl_basic_map_alloc_equality(path);
+		if (k < 0)
+			goto error;
+		isl_seq_clr(path->eq[k], 1 + isl_basic_map_total_dim(path));
+		if (p == PURE_VAR) {
+			isl_seq_cpy(path->eq[k] + off,
+				    delta->eq[i] + 1 + nparam, d);
+			isl_int_set(path->eq[k][off + d], delta->eq[i][0]);
+		} else
+			isl_seq_cpy(path->eq[k], delta->eq[i], 1 + nparam);
+	}
+
+	for (i = 0; i < delta->n_ineq; ++i) {
+		int p = purity(delta, delta->ineq[i]);
+		if (p == IMPURE)
+			continue;
+		k = isl_basic_map_alloc_inequality(path);
+		if (k < 0)
+			goto error;
+		isl_seq_clr(path->ineq[k], 1 + isl_basic_map_total_dim(path));
+		if (p == PURE_VAR) {
+			isl_seq_cpy(path->ineq[k] + off,
+				    delta->ineq[i] + 1 + nparam, d);
+			isl_int_set(path->ineq[k][off + d], delta->ineq[i][0]);
+		} else
+			isl_seq_cpy(path->ineq[k], delta->ineq[i], 1 + nparam);
+	}
+
+	k = isl_basic_map_alloc_inequality(path);
+	if (k < 0)
+		goto error;
+	isl_seq_clr(path->ineq[k], 1 + isl_basic_map_total_dim(path));
+	isl_int_set_si(path->ineq[k][0], -1);
+	isl_int_set_si(path->ineq[k][off + d], 1);
+			
+	isl_basic_set_free(delta);
+	path = isl_basic_map_finalize(path);
+	return isl_basic_map_union(path,
+				isl_basic_map_identity(isl_dim_domain(dim)));
+error:
+	isl_dim_free(dim);
+	isl_basic_set_free(delta);
+	isl_basic_map_free(path);
+	return NULL;
+}
+
 /* Given a dimenion specification Z^{n+1} -> Z^{n+1} and a parameter "param",
  * construct a map that equates the parameter to the difference
  * in the final coordinates and imposes that this difference is positive.
@@ -158,8 +300,10 @@ error:
  * The elements of the singleton \Delta_i's are collected as the
  * rows of the steps matrix.  For all these \Delta_i's together,
  * a single path is constructed.
- * For each of the other \Delta_i's
- * we currently simply construct a universal map { (x) -> (y) }.
+ * For each of the other \Delta_i's, we compute an overapproximation
+ * of the paths along elements of \Delta_i.
+ * Since each of these paths performs an addition, composition is
+ * symmetric and we can simply compose all resulting paths in any order.
  */
 static __isl_give isl_map *construct_path(__isl_keep isl_map *map,
 	unsigned param)
@@ -205,13 +349,14 @@ static __isl_give isl_map *construct_path(__isl_keep isl_map *map,
 				break;
 		}
 
-		isl_basic_set_free(delta);
 
 		if (j < d) {
-			isl_map_free(path);
-			path = isl_map_universe(isl_dim_copy(dim));
-		} else
+			path = isl_map_apply_range(path,
+				path_along_delta(isl_dim_copy(dim), delta));
+		} else {
+			isl_basic_set_free(delta);
 			++n;
+		}
 	}
 
 	if (n > 0) {
