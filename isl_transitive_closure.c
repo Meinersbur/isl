@@ -152,57 +152,29 @@ error:
 	return NULL;
 }
 
-/* Check whether any path of length at least one along "steps" is acyclic.
+/* Check whether "path" is acyclic.
  * That is, check whether
  *
- *	\sum_i k_i \delta_i = 0
- *	\sum_i k_i >= 1
- *	k_i >= 0
+ *	{ d | d = y - x and (x,y) in path }
  *
- * with \delta_i the rows of "steps", is infeasible.
+ * does not contain the origin.
  */
-static int is_acyclic(__isl_keep isl_mat *steps)
+static int is_acyclic(__isl_take isl_map *path)
 {
+	int i;
 	int acyclic;
-	int i, j, k;
-	struct isl_basic_set *test;
+	unsigned dim;
+	struct isl_set *delta;
 
-	if (!steps)
-		return -1;
+	delta = isl_map_deltas(path);
+	dim = isl_set_dim(delta, isl_dim_set);
+	for (i = 0; i < dim; ++i)
+		delta = isl_set_fix_si(delta, isl_dim_set, i, 0);
 
-	test = isl_basic_set_alloc(steps->ctx, 0, steps->n_row, 0,
-					steps->n_col, steps->n_row + 1);
+	acyclic = isl_set_is_empty(delta);
+	isl_set_free(delta);
 
-	for (i = 0; i < steps->n_col; ++i) {
-		k = isl_basic_set_alloc_equality(test);
-		if (k < 0)
-			goto error;
-		isl_int_set_si(test->eq[k][0], 0);
-		for (j = 0; j < steps->n_row; ++j)
-			isl_int_set(test->eq[k][1 + j], steps->row[j][i]);
-	}
-	for (j = 0; j < steps->n_row; ++j) {
-		k = isl_basic_set_alloc_inequality(test);
-		if (k < 0)
-			goto error;
-		isl_seq_clr(test->ineq[k], 1 + steps->n_row);
-		isl_int_set_si(test->ineq[k][1 + j], 1);
-	}
-
-	k = isl_basic_set_alloc_inequality(test);
-	if (k < 0)
-		goto error;
-	isl_int_set_si(test->ineq[k][0], -1);
-	for (j = 0; j < steps->n_row; ++j)
-		isl_int_set_si(test->ineq[k][1 + j], 1);
-
-	acyclic = isl_basic_set_is_empty(test);
-
-	isl_basic_set_free(test);
 	return acyclic;
-error:
-	isl_basic_set_free(test);
-	return -1;
 }
 
 /* Shift variable at position "pos" up by one.
@@ -319,16 +291,17 @@ static int check_power_exactness(__isl_take isl_map *map,
  * Otherwise, we check if the power is exact.
  */
 static int check_exactness(__isl_take isl_map *map, __isl_take isl_map *app,
-	__isl_keep isl_mat *steps, unsigned param, int project)
+	__isl_take isl_map *path, unsigned param, int project)
 {
 	isl_map *test;
 	int exact;
 
 	if (project) {
-		project = is_acyclic(steps);
+		project = is_acyclic(path);
 		if (project < 0)
 			goto error;
-	}
+	} else
+		isl_map_free(path);
 
 	if (!project)
 		return check_power_exactness(map, app, param);
@@ -400,7 +373,7 @@ static __isl_give isl_map *map_power(__isl_take isl_map *map, unsigned param,
 
 	if (exact &&
 	    (*exact = check_exactness(isl_map_copy(map), isl_map_copy(app),
-				  steps, param, project)) < 0)
+				  isl_map_copy(path), param, project)) < 0)
 		goto error;
 
 	if (0) {
