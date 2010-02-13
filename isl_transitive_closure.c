@@ -72,16 +72,19 @@ error:
 }
 
 /* Given a set of n offsets v_i (the rows of "steps"), construct a relation
- * of the given dimension specification that maps a element x to any
- * element that can be reached by taking a positive number of steps
- * along any of the offsets, where the number of steps k is equal to
- * parameter "param".  That is, construct
+ * of the given dimension specification (Z^{n+1} -> Z^{n+1})
+ * that maps an element x to any element that can be reached
+ * by taking a non-negative number of steps along any of
+ * the extended offsets v'_i = [v_i 1].
+ * That is, construct
  *
- * { [x] -> [y] : exists k_i >= 0, y = x + \sum_i k_i v_i, k = \sum_i k_i > 0 }
+ * { [x] -> [y] : exists k_i >= 0, y = x + \sum_i k_i v'_i }
  *
+ * For any element in this relation, the number of steps taken
+ * is equal to the difference in the final coordinates.
  */
 static __isl_give isl_map *path_along_steps(__isl_take isl_dim *dim,
-	__isl_keep isl_mat *steps, unsigned param)
+	__isl_keep isl_mat *steps)
 {
 	int i, j, k;
 	struct isl_basic_map *path = NULL;
@@ -96,7 +99,7 @@ static __isl_give isl_map *path_along_steps(__isl_take isl_dim *dim,
 	n = steps->n_row;
 	nparam = isl_dim_size(dim, isl_dim_param);
 
-	path = isl_basic_map_alloc_dim(isl_dim_copy(dim), n, d + 1, n + 1);
+	path = isl_basic_map_alloc_dim(isl_dim_copy(dim), n, d, n);
 
 	for (i = 0; i < n; ++i) {
 		k = isl_basic_map_alloc_div(path);
@@ -113,18 +116,14 @@ static __isl_give isl_map *path_along_steps(__isl_take isl_dim *dim,
 		isl_seq_clr(path->eq[k], 1 + isl_basic_map_total_dim(path));
 		isl_int_set_si(path->eq[k][1 + nparam + i], 1);
 		isl_int_set_si(path->eq[k][1 + nparam + d + i], -1);
-		for (j = 0; j < n; ++j)
-			isl_int_set(path->eq[k][1 + nparam + 2 * d + j],
-				    steps->row[j][i]);
+		if (i == d - 1)
+			for (j = 0; j < n; ++j)
+				isl_int_set_si(path->eq[k][1 + nparam + 2 * d + j], 1);
+		else
+			for (j = 0; j < n; ++j)
+				isl_int_set(path->eq[k][1 + nparam + 2 * d + j],
+					    steps->row[j][i]);
 	}
-
-	k = isl_basic_map_alloc_equality(path);
-	if (k < 0)
-		goto error;
-	isl_seq_clr(path->eq[k], 1 + isl_basic_map_total_dim(path));
-	isl_int_set_si(path->eq[k][1 + param], -1);
-	for (j = 0; j < n; ++j)
-		isl_int_set_si(path->eq[k][1 + nparam + 2 * d + j], 1);
 
 	for (i = 0; i < n; ++i) {
 		k = isl_basic_map_alloc_inequality(path);
@@ -134,13 +133,6 @@ static __isl_give isl_map *path_along_steps(__isl_take isl_dim *dim,
 		isl_int_set_si(path->ineq[k][1 + nparam + 2 * d + i], 1);
 	}
 
-	k = isl_basic_map_alloc_inequality(path);
-	if (k < 0)
-		goto error;
-	isl_seq_clr(path->ineq[k], 1 + isl_basic_map_total_dim(path));
-	isl_int_set_si(path->ineq[k][1 + param], 1);
-	isl_int_set_si(path->ineq[k][0], -1);
-
 	isl_dim_free(dim);
 
 	path = isl_basic_map_simplify(path);
@@ -149,6 +141,46 @@ static __isl_give isl_map *path_along_steps(__isl_take isl_dim *dim,
 error:
 	isl_dim_free(dim);
 	isl_basic_map_free(path);
+	return NULL;
+}
+
+/* Given a dimenion specification Z^{n+1} -> Z^{n+1} and a parameter "param",
+ * construct a map that equates the parameter to the difference
+ * in the final coordinates and imposes that this difference is positive.
+ * That is, construct
+ *
+ *	{ [x,x_s] -> [y,y_s] : k = y_s - x_s > 0 }
+ */
+static __isl_give isl_map *equate_parameter_to_length(__isl_take isl_dim *dim,
+	unsigned param)
+{
+	struct isl_basic_map *bmap;
+	unsigned d;
+	unsigned nparam;
+	int k;
+
+	d = isl_dim_size(dim, isl_dim_in);
+	nparam = isl_dim_size(dim, isl_dim_param);
+	bmap = isl_basic_map_alloc_dim(dim, 0, 1, 1);
+	k = isl_basic_map_alloc_equality(bmap);
+	if (k < 0)
+		goto error;
+	isl_seq_clr(bmap->eq[k], 1 + isl_basic_map_total_dim(bmap));
+	isl_int_set_si(bmap->eq[k][1 + param], -1);
+	isl_int_set_si(bmap->eq[k][1 + nparam + d - 1], -1);
+	isl_int_set_si(bmap->eq[k][1 + nparam + d + d - 1], 1);
+
+	k = isl_basic_map_alloc_inequality(bmap);
+	if (k < 0)
+		goto error;
+	isl_seq_clr(bmap->ineq[k], 1 + isl_basic_map_total_dim(bmap));
+	isl_int_set_si(bmap->ineq[k][1 + param], 1);
+	isl_int_set_si(bmap->ineq[k][0], -1);
+
+	bmap = isl_basic_map_finalize(bmap);
+	return isl_map_from_basic_map(bmap);
+error:
+	isl_basic_map_free(bmap);
 	return NULL;
 }
 
@@ -168,6 +200,14 @@ error:
  *	{ (x) -> (x + d) | \exists k_i >= 0, \delta_i \in \Delta_i :
  *				d = \sum_i k_i and k = \sum_i k_i > 0 }
  *
+ * We first construct an extended mapping with an extra coordinate
+ * that indicates the number of steps taken.  In particular,
+ * the difference in the last coordinate is equal to the number
+ * of steps taken to move from a domain element to the corresponding
+ * image element(s).
+ * In the final step, this difference is equated to the parameter "param"
+ * and made positive.  The extra coordinates are subsequently projected out.
+ *
  * If any of the \Delta_i contains more than one element, then
  * we currently simply return a universal map { (x) -> (y) }.
  */
@@ -176,6 +216,9 @@ static __isl_give isl_map *construct_path(__isl_keep isl_map *map,
 {
 	struct isl_mat *steps = NULL;
 	struct isl_map *path = NULL;
+	struct isl_map *diff;
+	struct isl_dim *dim;
+	unsigned d;
 	int ok;
 
 	if (!map)
@@ -189,7 +232,17 @@ static __isl_give isl_map *construct_path(__isl_keep isl_map *map,
 		return isl_map_universe(isl_map_get_dim(map));
 	}
 
-	path = path_along_steps(isl_map_get_dim(map), steps, param);
+	dim = isl_map_get_dim(map);
+
+	d = isl_dim_size(dim, isl_dim_in);
+	dim = isl_dim_add(dim, isl_dim_in, 1);
+	dim = isl_dim_add(dim, isl_dim_out, 1);
+	path = path_along_steps(isl_dim_copy(dim), steps);
+	diff = equate_parameter_to_length(dim, param);
+
+	path = isl_map_intersect(path, diff);
+	path = isl_map_project_out(path, isl_dim_in, d, 1);
+	path = isl_map_project_out(path, isl_dim_out, d, 1);
 
 	isl_mat_free(steps);
 	return path;
