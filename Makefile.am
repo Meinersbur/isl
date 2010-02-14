@@ -6,7 +6,8 @@ ACLOCAL_AMFLAGS = -I m4
 lib_LTLIBRARIES = libisl.la
 noinst_PROGRAMS = isl_test isl_polyhedron_sample isl_pip \
 	isl_polyhedron_minimize isl_polytope_scan \
-	isl_polyhedron_detect_equalities isl_cat
+	isl_polyhedron_detect_equalities isl_cat \
+	isl_closure
 TESTS = isl_test
 
 if HAVE_PIPLIB
@@ -127,6 +128,12 @@ isl_cat_CPPFLAGS = -I$(srcdir)/include -Iinclude/ \
 isl_cat_LDADD = libisl.la
 isl_cat_SOURCES = \
 	cat.c
+
+isl_closure_CPPFLAGS = -I$(srcdir)/include -Iinclude/ \
+	@GMP_CPPFLAGS@
+isl_closure_LDADD = libisl.la
+isl_closure_SOURCES = \
+	closure.c
 
 nodist_pkginclude_HEADERS = \
 	include/isl_config.h \
