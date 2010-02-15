@@ -419,7 +419,11 @@ static void isl_map_print_isl(__isl_keep isl_map *map, FILE *out, int indent)
 	for (i = 0; i < map->n; ++i) {
 		if (i)
 			fprintf(out, " or ");
+		if (map->n > 1 && map->p[i]->n_eq + map->p[i]->n_ineq > 1)
+			fprintf(out, "(");
 		print_disjunct(map->p[i], out, 0);
+		if (map->n > 1 && map->p[i]->n_eq + map->p[i]->n_ineq > 1)
+			fprintf(out, ")");
 	}
 	fprintf(out, " }\n");
 }

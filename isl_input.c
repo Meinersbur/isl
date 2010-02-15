@@ -597,16 +597,34 @@ error:
 static struct isl_basic_map *read_disjunct(struct isl_stream *s,
 	struct vars *v, __isl_take isl_dim *dim)
 {
+	int seen_paren = 0;
+	struct isl_token *tok;
 	struct isl_basic_map *bmap;
 
 	bmap = isl_basic_map_alloc_dim(dim, 0, 0, 0);
 	if (!bmap)
 		return NULL;
 
+	tok = isl_stream_next_token(s);
+	if (!tok)
+		goto error;
+	if (tok->type == '(') {
+		seen_paren = 1;
+		isl_token_free(tok);
+	} else
+		isl_stream_push_token(s, tok);
+
 	bmap = add_constraints(s, v, bmap);
 	bmap = isl_basic_map_simplify(bmap);
 	bmap = isl_basic_map_finalize(bmap);
+
+	if (seen_paren && isl_stream_eat(s, ')'))
+		goto error;
+
 	return bmap;
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
 }
 
 static struct isl_map *read_disjuncts(struct isl_stream *s,
