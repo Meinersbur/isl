@@ -51,6 +51,48 @@ int isl_hash_table_init(struct isl_ctx *ctx, struct isl_hash_table *table,
 	return 0;
 }
 
+static int grow_table(struct isl_ctx *ctx, struct isl_hash_table *table,
+			int (*eq)(const void *entry, const void *val))
+{
+	size_t old_size, size;
+	struct isl_hash_table_entry *entries;
+	uint32_t h;
+
+	entries = table->entries;
+	old_size = 2 << table->bits;
+	size = 2 * old_size;
+	table->entries = isl_calloc_array(ctx, struct isl_hash_table_entry,
+					  size);
+	if (!table->entries) {
+		table->entries = entries;
+		return -1;
+	}
+
+	table->bits++;
+
+	for (h = 0; h < old_size; ++h) {
+		struct isl_hash_table_entry *entry;
+
+		if (!entries[h].data)
+			continue;
+
+		entry = isl_hash_table_find(ctx, table, entries[h].hash,
+					    eq, entries[h].data, 1);
+		if (!entry) {
+			table->bits--;
+			free(table->entries);
+			table->entries = entries;
+			return -1;
+		}
+
+		*entry = entries[h];
+	}
+
+	free(entries);
+
+	return 0;
+}
+
 struct isl_hash_table *isl_hash_table_alloc(struct isl_ctx *ctx, int min_size)
 {
 	struct isl_hash_table *table = NULL;
@@ -98,7 +140,12 @@ struct isl_hash_table_entry *isl_hash_table_find(struct isl_ctx *ctx,
 	if (!reserve)
 		return NULL;
 
-	assert(4 * table->n < 3 * size); /* XXX */
+	if (4 * table->n >= 3 * size) {
+		if (grow_table(ctx, table, eq) < 0)
+			return NULL;
+		return isl_hash_table_find(ctx, table, key_hash, eq, val, 1);
+	}
+
 	table->n++;
 	table->entries[h].hash = key_hash;
 
