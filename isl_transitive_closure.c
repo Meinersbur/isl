@@ -304,13 +304,14 @@ static int is_acyclic(__isl_take isl_map *path)
 	return acyclic;
 }
 
-/* Given a union of basic maps R = \cup_i R_i \subseteq D \times D,
+/* Given a union of basic maps R = \cup_i R_i \subseteq D \times D
+ * and a dimension specification (Z^{n+1} -> Z^{n+1}),
  * construct a map that is an overapproximation of the map
- * that takes an element from the space D to another
- * element from the same space, such that the difference between
- * them is a strictly positive sum of differences between images
- * and pre-images in one of the R_i.
- * The number of differences in the sum is equated to parameter "param".
+ * that takes an element from the space D \times Z to another
+ * element from the same space, such that the first n coordinates of the
+ * difference between them is a sum of differences between images
+ * and pre-images in one of the R_i and such that the last coordinate
+ * is equal to the number of steps taken.
  * That is, let
  *
  *	\Delta_i = { y - x | (x, y) in R_i }
@@ -318,15 +319,7 @@ static int is_acyclic(__isl_take isl_map *path)
  * then the constructed map is an overapproximation of
  *
  *	{ (x) -> (x + d) | \exists k_i >= 0, \delta_i \in \Delta_i :
- *				d = \sum_i k_i and k = \sum_i k_i > 0 }
- *
- * We first construct an extended mapping with an extra coordinate
- * that indicates the number of steps taken.  In particular,
- * the difference in the last coordinate is equal to the number
- * of steps taken to move from a domain element to the corresponding
- * image element(s).
- * In the final step, this difference is equated to the parameter "param"
- * and made positive.  The extra coordinates are subsequently projected out.
+ *				d = (\sum_i k_i \delta_i, \sum_i k_i) }
  *
  * The elements of the singleton \Delta_i's are collected as the
  * rows of the steps matrix.  For all these \Delta_i's together,
@@ -336,24 +329,15 @@ static int is_acyclic(__isl_take isl_map *path)
  * Since each of these paths performs an addition, composition is
  * symmetric and we can simply compose all resulting paths in any order.
  */
-static __isl_give isl_map *construct_path(__isl_keep isl_map *map,
-	unsigned param, int *project)
+static __isl_give isl_map *construct_extended_path(__isl_take isl_dim *dim,
+	__isl_keep isl_map *map, int *project)
 {
 	struct isl_mat *steps = NULL;
 	struct isl_map *path = NULL;
-	struct isl_map *diff;
-	struct isl_dim *dim = NULL;
 	unsigned d;
 	int i, j, n;
 
-	if (!map)
-		return NULL;
-
-	dim = isl_map_get_dim(map);
-
-	d = isl_dim_size(dim, isl_dim_in);
-	dim = isl_dim_add(dim, isl_dim_in, 1);
-	dim = isl_dim_add(dim, isl_dim_out, 1);
+	d = isl_map_dim(map, isl_dim_in);
 
 	path = isl_map_identity(isl_dim_domain(isl_dim_copy(dim)));
 
@@ -402,17 +386,65 @@ static __isl_give isl_map *construct_path(__isl_keep isl_map *map,
 			goto error;
 	}
 
+	isl_dim_free(dim);
+	isl_mat_free(steps);
+	return path;
+error:
+	isl_dim_free(dim);
+	isl_mat_free(steps);
+	isl_map_free(path);
+	return NULL;
+}
+
+/* Given a union of basic maps R = \cup_i R_i \subseteq D \times D,
+ * construct a map that is an overapproximation of the map
+ * that takes an element from the space D to another
+ * element from the same space, such that the difference between
+ * them is a strictly positive sum of differences between images
+ * and pre-images in one of the R_i.
+ * The number of differences in the sum is equated to parameter "param".
+ * That is, let
+ *
+ *	\Delta_i = { y - x | (x, y) in R_i }
+ *
+ * then the constructed map is an overapproximation of
+ *
+ *	{ (x) -> (x + d) | \exists k_i >= 0, \delta_i \in \Delta_i :
+ *				d = \sum_i k_i \delta_i and k = \sum_i k_i > 0 }
+ *
+ * We first construct an extended mapping with an extra coordinate
+ * that indicates the number of steps taken.  In particular,
+ * the difference in the last coordinate is equal to the number
+ * of steps taken to move from a domain element to the corresponding
+ * image element(s).
+ * In the final step, this difference is equated to the parameter "param"
+ * and made positive.  The extra coordinates are subsequently projected out.
+ */
+static __isl_give isl_map *construct_path(__isl_keep isl_map *map,
+	unsigned param, int *project)
+{
+	struct isl_map *path = NULL;
+	struct isl_map *diff;
+	struct isl_dim *dim = NULL;
+	unsigned d;
+
+	if (!map)
+		return NULL;
+
+	dim = isl_map_get_dim(map);
+
+	d = isl_dim_size(dim, isl_dim_in);
+	dim = isl_dim_add(dim, isl_dim_in, 1);
+	dim = isl_dim_add(dim, isl_dim_out, 1);
+
+	path = construct_extended_path(isl_dim_copy(dim), map, project);
+
 	diff = equate_parameter_to_length(dim, param);
 	path = isl_map_intersect(path, diff);
 	path = isl_map_project_out(path, isl_dim_in, d, 1);
 	path = isl_map_project_out(path, isl_dim_out, d, 1);
 
-	isl_mat_free(steps);
 	return path;
-error:
-	isl_dim_free(dim);
-	isl_map_free(path);
-	return NULL;
 }
 
 /* Shift variable at position "pos" up by one.
