@@ -591,10 +591,13 @@ static int can_wrap_in_set(struct isl_map *map, int i, int j,
 	isl_assert(map->ctx, k < map->p[i]->n_ineq, return -1);
 
 	isl_int_add_ui(map->p[i]->ineq[k][0], map->p[i]->ineq[k][0], 1);
-	for (l = 0; l < map->p[j]->n_ineq; ++l)
+	for (l = 0; l < map->p[j]->n_ineq; ++l) {
+		if (isl_tab_is_redundant(tabs[j], map->p[j]->n_eq + l))
+			continue;
 		if (isl_seq_eq(map->p[i]->ineq[k],
 				map->p[j]->ineq[l], 1 + total))
 			break;
+	}
 	isl_int_sub_ui(map->p[i]->ineq[k][0], map->p[i]->ineq[k][0], 1);
 
 	if (l >= map->p[j]->n_ineq)
