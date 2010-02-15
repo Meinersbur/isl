@@ -42,7 +42,7 @@ int isl_hash_table_init(struct isl_ctx *ctx, struct isl_hash_table *table,
 	table->bits = ffs(round_up(4 * (min_size + 1) / 3 - 1)) - 1;
 	table->n = 0;
 
-	size = 2 << table->bits;
+	size = 1 << table->bits;
 	table->entries = isl_calloc_array(ctx, struct isl_hash_table_entry,
 					  size);
 	if (!table->entries)
@@ -59,7 +59,7 @@ static int grow_table(struct isl_ctx *ctx, struct isl_hash_table *table,
 	uint32_t h;
 
 	entries = table->entries;
-	old_size = 2 << table->bits;
+	old_size = 1 << table->bits;
 	size = 2 * old_size;
 	table->entries = isl_calloc_array(ctx, struct isl_hash_table_entry,
 					  size);
@@ -131,7 +131,7 @@ struct isl_hash_table_entry *isl_hash_table_find(struct isl_ctx *ctx,
 	uint32_t h, key_bits;
 
 	key_bits = isl_hash_bits(key_hash, table->bits);
-	size = 2 << table->bits;
+	size = 1 << table->bits;
 	for (h = key_bits; table->entries[h].data; h = (h+1) % size)
 		if (table->entries[h].hash == key_hash &&
 		    eq(table->entries[h].data, val))
@@ -162,7 +162,7 @@ void isl_hash_table_remove(struct isl_ctx *ctx,
 	if (!table || !entry)
 		return;
 
-	size = 2 << table->bits;
+	size = 1 << table->bits;
 	h = entry - table->entries;
 	isl_assert(ctx, h >= 0 && h < size, return);
 
