@@ -13,24 +13,29 @@
 #include <isl_set.h>
 #include <isl_seq.h>
 
-static void print_constraint_polylib(struct isl_basic_set *bset,
+static void print_constraint_polylib(struct isl_basic_map *bmap,
 	int ineq, int n,
 	FILE *out, int indent, const char *prefix, const char *suffix)
 {
 	int i;
-	unsigned dim = isl_basic_set_n_dim(bset);
-	unsigned nparam = isl_basic_set_n_param(bset);
-	isl_int *c = ineq ? bset->ineq[n] : bset->eq[n];
+	unsigned n_in = isl_basic_map_dim(bmap, isl_dim_in);
+	unsigned n_out = isl_basic_map_dim(bmap, isl_dim_out);
+	unsigned nparam = isl_basic_map_dim(bmap, isl_dim_param);
+	isl_int *c = ineq ? bmap->ineq[n] : bmap->eq[n];
 
 	fprintf(out, "%*s%s", indent, "", prefix ? prefix : "");
 	fprintf(out, "%d", ineq);
-	for (i = 0; i < dim; ++i) {
+	for (i = 0; i < n_out; ++i) {
+		fprintf(out, " ");
+		isl_int_print(out, c[1+nparam+n_in+i], 5);
+	}
+	for (i = 0; i < n_in; ++i) {
 		fprintf(out, " ");
 		isl_int_print(out, c[1+nparam+i], 5);
 	}
-	for (i = 0; i < bset->n_div; ++i) {
+	for (i = 0; i < bmap->n_div; ++i) {
 		fprintf(out, " ");
-		isl_int_print(out, c[1+nparam+dim+i], 5);
+		isl_int_print(out, c[1+nparam+n_in+n_out+i], 5);
 	}
 	for (i = 0; i < nparam; ++i) {
 		fprintf(out, " ");
@@ -41,39 +46,58 @@ static void print_constraint_polylib(struct isl_basic_set *bset,
 	fprintf(out, "%s\n", suffix ? suffix : "");
 }
 
-static void print_constraints_polylib(struct isl_basic_set *bset,
+static void print_constraints_polylib(struct isl_basic_map *bmap,
 	FILE *out, int indent, const char *prefix, const char *suffix)
 {
 	int i;
 
-	for (i = 0; i < bset->n_eq; ++i)
-		print_constraint_polylib(bset, 0, i, out,
+	for (i = 0; i < bmap->n_eq; ++i)
+		print_constraint_polylib(bmap, 0, i, out,
 					indent, prefix, suffix);
-	for (i = 0; i < bset->n_ineq; ++i)
-		print_constraint_polylib(bset, 1, i, out,
+	for (i = 0; i < bmap->n_ineq; ++i)
+		print_constraint_polylib(bmap, 1, i, out,
 					indent, prefix, suffix);
+}
+
+static void bset_print_constraints_polylib(struct isl_basic_set *bset,
+	FILE *out, int indent, const char *prefix, const char *suffix)
+{
+	print_constraints_polylib((struct isl_basic_map *)bset,
+				 out, indent, prefix, suffix);
+}
+
+static void isl_basic_map_print_polylib(struct isl_basic_map *bmap, FILE *out,
+	int indent, const char *prefix, const char *suffix)
+{
+	unsigned total = isl_basic_map_total_dim(bmap);
+	fprintf(out, "%*s%s", indent, "", prefix ? prefix : "");
+	fprintf(out, "%d %d", bmap->n_eq + bmap->n_ineq, 1 + total + 1);
+	fprintf(out, "%s\n", suffix ? suffix : "");
+	print_constraints_polylib(bmap, out, indent, prefix, suffix);
 }
 
 static void isl_basic_set_print_polylib(struct isl_basic_set *bset, FILE *out,
 	int indent, const char *prefix, const char *suffix)
 {
-	unsigned total = isl_basic_set_total_dim(bset);
-	fprintf(out, "%*s%s", indent, "", prefix ? prefix : "");
-	fprintf(out, "%d %d", bset->n_eq + bset->n_ineq, 1 + total + 1);
-	fprintf(out, "%s\n", suffix ? suffix : "");
-	print_constraints_polylib(bset, out, indent, prefix, suffix);
+	isl_basic_map_print_polylib((struct isl_basic_map *)bset, out,
+					indent, prefix, suffix);
 }
 
-static void isl_set_print_polylib(struct isl_set *set, FILE *out, int indent)
+static void isl_map_print_polylib(struct isl_map *map, FILE *out, int indent)
 {
 	int i;
 
 	fprintf(out, "%*s", indent, "");
-	fprintf(out, "%d\n", set->n);
-	for (i = 0; i < set->n; ++i) {
+	fprintf(out, "%d\n", map->n);
+	for (i = 0; i < map->n; ++i) {
 		fprintf(out, "\n");
-		isl_basic_set_print_polylib(set->p[i], out, indent, NULL, NULL);
+		isl_basic_map_print_polylib(map->p[i], out, indent, NULL, NULL);
 	}
+}
+
+static void isl_set_print_polylib(struct isl_set *set, FILE *out, int indent)
+{
+	isl_map_print_polylib((struct isl_map *)set, out, indent);
 }
 
 static print_name(struct isl_dim *dim, FILE *out,
@@ -473,7 +497,7 @@ void isl_basic_set_print(struct isl_basic_set *bset, FILE *out, int indent,
 	else if (output_format == ISL_FORMAT_POLYLIB)
 		isl_basic_set_print_polylib(bset, out, indent, prefix, suffix);
 	else if (output_format == ISL_FORMAT_POLYLIB_CONSTRAINTS)
-		print_constraints_polylib(bset, out, indent, prefix, suffix);
+		bset_print_constraints_polylib(bset, out, indent, prefix, suffix);
 	else if (output_format == ISL_FORMAT_OMEGA)
 		isl_basic_set_print_omega(bset, out, indent, prefix, suffix);
 	else
@@ -502,6 +526,8 @@ void isl_map_print(__isl_keep isl_map *map, FILE *out, int indent,
 		return;
 	if (output_format == ISL_FORMAT_ISL)
 		isl_map_print_isl(map, out, indent);
+	else if (output_format == ISL_FORMAT_POLYLIB)
+		isl_map_print_polylib(map, out, indent);
 	else if (output_format == ISL_FORMAT_OMEGA)
 		isl_map_print_omega(map, out, indent);
 	else
