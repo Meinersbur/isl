@@ -3572,6 +3572,13 @@ error:
 	return NULL;
 }
 
+__isl_give isl_set *isl_set_lower_bound_si(__isl_take isl_set *set,
+		enum isl_dim_type type, unsigned pos, int value)
+{
+	return (struct isl_set *)
+		isl_map_lower_bound_si((struct isl_map *)set, type, pos, value);
+}
+
 struct isl_set *isl_set_lower_bound_dim(struct isl_set *set, unsigned dim,
 					isl_int value)
 {
