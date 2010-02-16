@@ -802,6 +802,17 @@ void test_closure(struct isl_ctx *ctx)
 	assert(isl_map_is_equal(map, map2));
 	isl_map_free(map2);
 	isl_map_free(map);
+
+	/* Omega's closure4 */
+	map = isl_map_read_from_str(ctx,
+		"[m,n] -> { [x,y] -> [x2,y2] : x2 = x and y2 = y + 1 and "
+			"1 <= x,y <= 10 or "
+			"x2 = x + 1 and y2 = y and "
+			"1 <= x <= 20 && 5 <= y <= 15 }", -1);
+	map = isl_map_transitive_closure(map, &exact);
+	assert(exact);
+	isl_map_free(map);
+
 }
 
 int main()
