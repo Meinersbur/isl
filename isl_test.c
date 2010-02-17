@@ -724,7 +724,7 @@ void test_closure(struct isl_ctx *ctx)
 			"i2 = i + 1 and j2 = j + 1 and i <= 2 j - 1 and "
 			"i <= n - 1 and j <= 2 i - 1 and j <= n - 1 }", -1);
 	map = isl_map_power(map, 1, &exact);
-	assert(!exact);
+	assert(exact);
 	isl_map_free(map);
 
 	/* COCOA Fig.2 right */

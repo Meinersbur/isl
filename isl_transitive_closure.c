@@ -398,7 +398,8 @@ error:
 
 /* Given a union of basic maps R = \cup_i R_i \subseteq D \times D
  * and a dimension specification (Z^{n+1} -> Z^{n+1}),
- * construct a map that is an overapproximation of the map
+ * construct a map that is the union of the identity map and
+ * an overapproximation of the map
  * that takes an element from the dom R \times Z to an
  * element from ran R \times Z, such that the first n coordinates of the
  * difference between them is a sum of differences between images
@@ -412,9 +413,10 @@ error:
  *
  *	{ (x) -> (x + d) | \exists k_i >= 0, \delta_i \in \Delta_i :
  *				d = (\sum_i k_i \delta_i, \sum_i k_i) and
- *				x in dom R and x + d in ran R}
+ *				x in dom R and x + d in ran R } union
+ *	{ (x) -> (x) }
  */
-static __isl_give isl_map *construct_extended_power(__isl_take isl_dim *dim,
+static __isl_give isl_map *construct_component(__isl_take isl_dim *dim,
 	__isl_keep isl_map *map, int *project)
 {
 	struct isl_set *domain = NULL;
@@ -430,10 +432,272 @@ static __isl_give isl_map *construct_extended_power(__isl_take isl_dim *dim,
 	app = isl_map_add(app, isl_dim_in, 1);
 	app = isl_map_add(app, isl_dim_out, 1);
 
-	path = construct_extended_path(dim, map, project);
+	path = construct_extended_path(isl_dim_copy(dim), map, project);
 	app = isl_map_intersect(app, path);
 
-	return app;
+	return isl_map_union(app, isl_map_identity(isl_dim_domain(dim)));
+}
+
+/* Structure for representing the nodes in the graph being traversed
+ * using Tarjan's algorithm.
+ * index represents the order in which nodes are visited.
+ * min_index is the index of the root of a (sub)component.
+ * on_stack indicates whether the node is currently on the stack.
+ */
+struct basic_map_sort_node {
+	int index;
+	int min_index;
+	int on_stack;
+};
+/* Structure for representing the graph being traversed
+ * using Tarjan's algorithm.
+ * len is the number of nodes
+ * node is an array of nodes
+ * stack contains the nodes on the path from the root to the current node
+ * sp is the stack pointer
+ * index is the index of the last node visited
+ * order contains the elements of the components separated by -1
+ * op represents the current position in order
+ */
+struct basic_map_sort {
+	int len;
+	struct basic_map_sort_node *node;
+	int *stack;
+	int sp;
+	int index;
+	int *order;
+	int op;
+};
+
+static void basic_map_sort_free(struct basic_map_sort *s)
+{
+	if (!s)
+		return;
+	free(s->node);
+	free(s->stack);
+	free(s->order);
+	free(s);
+}
+
+static struct basic_map_sort *basic_map_sort_alloc(struct isl_ctx *ctx, int len)
+{
+	struct basic_map_sort *s;
+	int i;
+
+	s = isl_calloc_type(ctx, struct basic_map_sort);
+	if (!s)
+		return NULL;
+	s->len = len;
+	s->node = isl_alloc_array(ctx, struct basic_map_sort_node, len);
+	if (!s->node)
+		goto error;
+	for (i = 0; i < len; ++i)
+		s->node[i].index = -1;
+	s->stack = isl_alloc_array(ctx, int, len);
+	if (!s->stack)
+		goto error;
+	s->order = isl_alloc_array(ctx, int, 2 * len);
+	if (!s->order)
+		goto error;
+
+	s->sp = 0;
+	s->index = 0;
+	s->op = 0;
+
+	return s;
+error:
+	basic_map_sort_free(s);
+	return NULL;
+}
+
+/* Check whether in the computation of the transitive closure
+ * "bmap1" (R_1) should follow (or be part of the same component as)
+ * "bmap2" (R_2).
+ *
+ * That is check whether
+ *
+ *	R_1 \circ R_2
+ *
+ * is non-empty and that moreover, it is non-empty on the set
+ * of elements that do not get mapped to the same set of elements
+ * by both "R_1 \circ R_2" and "R_2 \circ R_1".
+ * For elements that do get mapped to the same elements by these
+ * two compositions, R_1 and R_2 are commutative, so if these
+ * elements are the only ones for which R_1 \circ R_2 is non-empty,
+ * then you may just as well apply R_1 first.
+ */
+static int basic_map_follows(__isl_keep isl_basic_map *bmap1,
+	__isl_keep isl_basic_map *bmap2)
+{
+	struct isl_map *map12 = NULL;
+	struct isl_map *map21 = NULL;
+	struct isl_map *d = NULL;
+	struct isl_set *dom = NULL;
+	int empty;
+
+	map21 = isl_map_from_basic_map(
+			isl_basic_map_apply_range(
+				isl_basic_map_copy(bmap2),
+				isl_basic_map_copy(bmap1)));
+	empty = isl_map_is_empty(map21);
+	if (empty < 0)
+		goto error;
+	if (empty) {
+		isl_map_free(map21);
+		return 0;
+	}
+
+	map12 = isl_map_from_basic_map(
+			isl_basic_map_apply_range(
+				isl_basic_map_copy(bmap1),
+				isl_basic_map_copy(bmap2)));
+	d = isl_map_subtract(isl_map_copy(map12), isl_map_copy(map21));
+	d = isl_map_union(d,
+		isl_map_subtract(isl_map_copy(map21), isl_map_copy(map12)));
+	dom = isl_map_domain(d);
+
+	map21 = isl_map_intersect_domain(map21, dom);
+	empty = isl_map_is_empty(map21);
+
+	isl_map_free(map12);
+	isl_map_free(map21);
+
+	return empty < 0 ? -1 : !empty;
+error:
+	isl_map_free(map21);
+	return -1;
+}
+
+/* Perform Tarjan's algorithm for computing the strongly connected components
+ * in the graph with the disjuncts of "map" as vertices and with an
+ * edge between any pair of disjuncts such that the first has
+ * to be applied after the second.
+ */
+static int power_components_tarjan(struct basic_map_sort *s,
+	__isl_keep isl_map *map, int i)
+{
+	int j;
+
+	s->node[i].index = s->index;
+	s->node[i].min_index = s->index;
+	s->node[i].on_stack = 1;
+	s->index++;
+	s->stack[s->sp++] = i;
+
+	for (j = s->len - 1; j >= 0; --j) {
+		int f;
+
+		if (j == i)
+			continue;
+		if (s->node[j].index >= 0 &&
+			(!s->node[j].on_stack ||
+			 s->node[j].index > s->node[i].min_index))
+			continue;
+
+		f = basic_map_follows(map->p[i], map->p[j]);
+		if (f < 0)
+			return -1;
+		if (!f)
+			continue;
+
+		if (s->node[j].index < 0) {
+			power_components_tarjan(s, map, j);
+			if (s->node[j].min_index < s->node[i].min_index)
+				s->node[i].min_index = s->node[j].min_index;
+		} else if (s->node[j].index < s->node[i].min_index)
+			s->node[i].min_index = s->node[j].index;
+	}
+
+	if (s->node[i].index != s->node[i].min_index)
+		return 0;
+
+	do {
+		j = s->stack[--s->sp];
+		s->node[j].on_stack = 0;
+		s->order[s->op++] = j;
+	} while (j != i);
+	s->order[s->op++] = -1;
+
+	return 0;
+}
+
+/* Given a union of basic maps R = \cup_i R_i \subseteq D \times D
+ * and a dimension specification (Z^{n+1} -> Z^{n+1}),
+ * construct a map that is the union of the identity map and
+ * an overapproximation of the map
+ * that takes an element from the dom R \times Z to an
+ * element from ran R \times Z, such that the first n coordinates of the
+ * difference between them is a sum of differences between images
+ * and pre-images in one of the R_i and such that the last coordinate
+ * is equal to the number of steps taken.
+ * That is, let
+ *
+ *	\Delta_i = { y - x | (x, y) in R_i }
+ *
+ * then the constructed map is an overapproximation of
+ *
+ *	{ (x) -> (x + d) | \exists k_i >= 0, \delta_i \in \Delta_i :
+ *				d = (\sum_i k_i \delta_i, \sum_i k_i) and
+ *				x in dom R and x + d in ran R } union
+ *	{ (x) -> (x) }
+ *
+ * We first split the map into strongly connected components, perform
+ * the above on each component and the join the results in the correct
+ * order.  The power of each of the components needs to be extended
+ * with the identity map because a path in the global result need
+ * not go through every component.
+ * The final result will then also contain the identity map, but
+ * this part will be removed when the length of the path is forced
+ * to be strictly positive.
+ */
+static __isl_give isl_map *construct_power_components(__isl_take isl_dim *dim,
+	__isl_keep isl_map *map, int *project)
+{
+	int i, n;
+	struct isl_map *path = NULL;
+	struct basic_map_sort *s = NULL;
+
+	if (!map)
+		goto error;
+	if (map->n <= 1)
+		return construct_component(dim, map, project);
+
+	s = basic_map_sort_alloc(map->ctx, map->n);
+	if (!s)
+		goto error;
+	for (i = map->n - 1; i >= 0; --i) {
+		if (s->node[i].index >= 0)
+			continue;
+		if (power_components_tarjan(s, map, i) < 0)
+			goto error;
+	}
+
+	i = 0;
+	n = map->n;
+	path = isl_map_identity(isl_dim_domain(isl_dim_copy(dim)));
+	while (n) {
+		struct isl_map *comp;
+		comp = isl_map_alloc_dim(isl_map_get_dim(map), n, 0);
+		while (s->order[i] != -1) {
+			comp = isl_map_add_basic_map(comp,
+				    isl_basic_map_copy(map->p[s->order[i]]));
+			--n;
+			++i;
+		}
+		path = isl_map_apply_range(path,
+			    construct_component(isl_dim_copy(dim), comp, project));
+		isl_map_free(comp);
+		++i;
+	}
+
+	basic_map_sort_free(s);
+	isl_dim_free(dim);
+
+	return path;
+error:
+	basic_map_sort_free(s);
+	isl_dim_free(dim);
+	return NULL;
 }
 
 /* Given a union of basic maps R = \cup_i R_i \subseteq D \times D,
@@ -477,7 +741,7 @@ static __isl_give isl_map *construct_power(__isl_keep isl_map *map,
 	dim = isl_dim_add(dim, isl_dim_in, 1);
 	dim = isl_dim_add(dim, isl_dim_out, 1);
 
-	app = construct_extended_power(isl_dim_copy(dim), map, project);
+	app = construct_power_components(isl_dim_copy(dim), map, project);
 
 	diff = equate_parameter_to_length(dim, param);
 	app = isl_map_intersect(app, diff);
