@@ -189,8 +189,8 @@ static void print_term(__isl_keep isl_dim *dim,
 	print_name(dim, out, type, pos, set);
 }
 
-static void print_affine(__isl_keep isl_basic_map *bmap, FILE *out,
-	isl_int *c, int set)
+static void print_affine(__isl_keep isl_basic_map *bmap,
+	__isl_keep isl_dim *dim, FILE *out, isl_int *c, int set)
 {
 	int i;
 	int first;
@@ -209,7 +209,7 @@ static void print_affine(__isl_keep isl_basic_map *bmap, FILE *out,
 				fprintf(out, " + ");
 		}
 		first = 0;
-		print_term(bmap->dim, c[i], i, out, set);
+		print_term(dim, c[i], i, out, set);
 		if (flip)
 			isl_int_neg(c[i], c[i]);
 	}
@@ -217,7 +217,8 @@ static void print_affine(__isl_keep isl_basic_map *bmap, FILE *out,
 		fprintf(out, "0");
 }
 
-static void print_constraint(struct isl_basic_map *bmap, FILE *out,
+static void print_constraint(struct isl_basic_map *bmap,
+	__isl_keep isl_dim *dim, FILE *out,
 	isl_int *c, int last, const char *op, int first_constraint, int set)
 {
 	if (!first_constraint)
@@ -225,16 +226,16 @@ static void print_constraint(struct isl_basic_map *bmap, FILE *out,
 
 	isl_int_abs(c[last], c[last]);
 
-	print_term(bmap->dim, c[last], last, out, set);
+	print_term(dim, c[last], last, out, set);
 
 	fprintf(out, " %s ", op);
 
 	isl_int_set_si(c[last], 0);
-	print_affine(bmap, out, c, set);
+	print_affine(bmap, dim, out, c, set);
 }
 
-static void print_constraints(__isl_keep isl_basic_map *bmap, FILE *out,
-	int set)
+static void print_constraints(__isl_keep isl_basic_map *bmap,
+	__isl_keep isl_dim *dim, FILE *out, int set)
 {
 	int i;
 	struct isl_vec *c;
@@ -251,7 +252,7 @@ static void print_constraints(__isl_keep isl_basic_map *bmap, FILE *out,
 			isl_seq_cpy(c->el, bmap->eq[i], 1 + total);
 		else
 			isl_seq_neg(c->el, bmap->eq[i], 1 + total);
-		print_constraint(bmap, out, c->el, l,
+		print_constraint(bmap, dim, out, c->el, l,
 				    "=", i == bmap->n_eq - 1, set);
 	}
 	for (i = 0; i < bmap->n_ineq; ++i) {
@@ -263,7 +264,7 @@ static void print_constraints(__isl_keep isl_basic_map *bmap, FILE *out,
 			isl_seq_cpy(c->el, bmap->ineq[i], 1 + total);
 		else
 			isl_seq_neg(c->el, bmap->ineq[i], 1 + total);
-		print_constraint(bmap, out, c->el, l,
+		print_constraint(bmap, dim, out, c->el, l,
 				    s < 0 ? "<=" : ">=", !bmap->n_eq && !i, set);
 	}
 
@@ -287,7 +288,7 @@ static void print_omega_constraints(__isl_keep isl_basic_map *bmap, FILE *out,
 		}
 		fprintf(out, ": ");
 	}
-	print_constraints(bmap, out, set);
+	print_constraints(bmap, bmap->dim, out, set);
 	if (bmap->n_div > 0)
 		fprintf(out, ")");
 }
@@ -362,7 +363,8 @@ static void isl_set_print_omega(struct isl_set *set, FILE *out, int indent)
 	fprintf(out, "\n");
 }
 
-static void print_disjunct(__isl_keep isl_basic_map *bmap, FILE *out, int set)
+static void print_disjunct(__isl_keep isl_basic_map *bmap,
+	__isl_keep isl_dim *dim, FILE *out, int set)
 {
 	if (bmap->n_div > 0) {
 		int i;
@@ -370,11 +372,11 @@ static void print_disjunct(__isl_keep isl_basic_map *bmap, FILE *out, int set)
 		for (i = 0; i < bmap->n_div; ++i) {
 			if (i)
 				fprintf(out, ", ");
-			print_name(bmap->dim, out, isl_dim_div, i, 0);
+			print_name(dim, out, isl_dim_div, i, 0);
 			if (isl_int_is_zero(bmap->div[i][0]))
 				continue;
 			fprintf(out, " = [(");
-			print_affine(bmap, out, bmap->div[i] + 1, set);
+			print_affine(bmap, dim, out, bmap->div[i] + 1, set);
 			fprintf(out, ")/");
 			isl_int_print(out, bmap->div[i][0], 0);
 			fprintf(out, "]");
@@ -382,7 +384,7 @@ static void print_disjunct(__isl_keep isl_basic_map *bmap, FILE *out, int set)
 		fprintf(out, ": ");
 	}
 
-	print_constraints(bmap, out, set);
+	print_constraints(bmap, dim, out, set);
 
 	if (bmap->n_div > 0)
 		fprintf(out, ")");
@@ -403,7 +405,7 @@ static void isl_basic_map_print_isl(__isl_keep isl_basic_map *bmap, FILE *out,
 	fprintf(out, " -> ");
 	print_tuple(bmap->dim, out, isl_dim_out, 0);
 	fprintf(out, " : ");
-	print_disjunct(bmap, out, 0);
+	print_disjunct(bmap, bmap->dim, out, 0);
 	fprintf(out, " }%s\n", suffix ? suffix : "");
 }
 
@@ -420,7 +422,7 @@ static void isl_basic_set_print_isl(__isl_keep isl_basic_set *bset, FILE *out,
 	fprintf(out, "{ ");
 	print_tuple(bset->dim, out, isl_dim_set, 1);
 	fprintf(out, " : ");
-	print_disjunct((isl_basic_map *)bset, out, 1);
+	print_disjunct((isl_basic_map *)bset, bset->dim, out, 1);
 	fprintf(out, " }%s\n", suffix ? suffix : "");
 }
 
@@ -445,7 +447,7 @@ static void isl_map_print_isl(__isl_keep isl_map *map, FILE *out, int indent)
 			fprintf(out, " or ");
 		if (map->n > 1 && map->p[i]->n_eq + map->p[i]->n_ineq > 1)
 			fprintf(out, "(");
-		print_disjunct(map->p[i], out, 0);
+		print_disjunct(map->p[i], map->dim, out, 0);
 		if (map->n > 1 && map->p[i]->n_eq + map->p[i]->n_ineq > 1)
 			fprintf(out, ")");
 	}
@@ -469,7 +471,7 @@ static void isl_set_print_isl(__isl_keep isl_set *set, FILE *out, int indent)
 	for (i = 0; i < set->n; ++i) {
 		if (i)
 			fprintf(out, " or ");
-		print_disjunct((isl_basic_map *)set->p[i], out, 1);
+		print_disjunct((isl_basic_map *)set->p[i], set->dim, out, 1);
 	}
 	fprintf(out, " }\n");
 }
