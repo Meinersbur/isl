@@ -273,6 +273,37 @@ error:
 	return NULL;
 }
 
+/* Check whether "path" is acyclic, where the last coordinates of domain
+ * and range of path encode the number of steps taken.
+ * That is, check whether
+ *
+ *	{ d | d = y - x and (x,y) in path }
+ *
+ * does not contain any element with positive last coordinate (positive length)
+ * and zero remaining coordinates (cycle).
+ */
+static int is_acyclic(__isl_take isl_map *path)
+{
+	int i;
+	int acyclic;
+	unsigned dim;
+	struct isl_set *delta;
+
+	delta = isl_map_deltas(path);
+	dim = isl_set_dim(delta, isl_dim_set);
+	for (i = 0; i < dim; ++i) {
+		if (i == dim -1)
+			delta = isl_set_lower_bound_si(delta, isl_dim_set, i, 1);
+		else
+			delta = isl_set_fix_si(delta, isl_dim_set, i, 0);
+	}
+
+	acyclic = isl_set_is_empty(delta);
+	isl_set_free(delta);
+
+	return acyclic;
+}
+
 /* Given a union of basic maps R = \cup_i R_i \subseteq D \times D,
  * construct a map that is an overapproximation of the map
  * that takes an element from the space D to another
@@ -306,7 +337,7 @@ error:
  * symmetric and we can simply compose all resulting paths in any order.
  */
 static __isl_give isl_map *construct_path(__isl_keep isl_map *map,
-	unsigned param)
+	unsigned param, int *project)
 {
 	struct isl_mat *steps = NULL;
 	struct isl_map *path = NULL;
@@ -365,6 +396,12 @@ static __isl_give isl_map *construct_path(__isl_keep isl_map *map,
 				path_along_steps(isl_dim_copy(dim), steps));
 	}
 
+	if (project && *project) {
+		*project = is_acyclic(isl_map_copy(path));
+		if (*project < 0)
+			goto error;
+	}
+
 	diff = equate_parameter_to_length(dim, param);
 	path = isl_map_intersect(path, diff);
 	path = isl_map_project_out(path, isl_dim_in, d, 1);
@@ -376,31 +413,6 @@ error:
 	isl_dim_free(dim);
 	isl_map_free(path);
 	return NULL;
-}
-
-/* Check whether "path" is acyclic.
- * That is, check whether
- *
- *	{ d | d = y - x and (x,y) in path }
- *
- * does not contain the origin.
- */
-static int is_acyclic(__isl_take isl_map *path)
-{
-	int i;
-	int acyclic;
-	unsigned dim;
-	struct isl_set *delta;
-
-	delta = isl_map_deltas(path);
-	dim = isl_set_dim(delta, isl_dim_set);
-	for (i = 0; i < dim; ++i)
-		delta = isl_set_fix_si(delta, isl_dim_set, i, 0);
-
-	acyclic = isl_set_is_empty(delta);
-	isl_set_free(delta);
-
-	return acyclic;
 }
 
 /* Shift variable at position "pos" up by one.
@@ -517,17 +529,10 @@ static int check_power_exactness(__isl_take isl_map *map,
  * Otherwise, we check if the power is exact.
  */
 static int check_exactness(__isl_take isl_map *map, __isl_take isl_map *app,
-	__isl_take isl_map *path, unsigned param, int project)
+	unsigned param, int project)
 {
 	isl_map *test;
 	int exact;
-
-	if (project) {
-		project = is_acyclic(path);
-		if (project < 0)
-			goto error;
-	} else
-		isl_map_free(path);
 
 	if (!project)
 		return check_power_exactness(map, app, param);
@@ -588,12 +593,12 @@ static __isl_give isl_map *map_power(__isl_take isl_map *map, unsigned param,
 	app = isl_map_from_domain_and_range(isl_set_copy(domain),
 					    isl_set_copy(range));
 
-	path = construct_path(map, param);
+	path = construct_path(map, param, exact ? &project : NULL);
 	app = isl_map_intersect(app, isl_map_copy(path));
 
 	if (exact &&
 	    (*exact = check_exactness(isl_map_copy(map), isl_map_copy(app),
-				  isl_map_copy(path), param, project)) < 0)
+				      param, project)) < 0)
 		goto error;
 
 	isl_set_free(domain);
