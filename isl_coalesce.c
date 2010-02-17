@@ -166,6 +166,7 @@ static int fuse(struct isl_map *map, int i, int j,
 	for (k = 0; k < map->p[i]->n_eq; ++k) {
 		if (eq_i && (eq_i[2 * k] != STATUS_VALID ||
 			     eq_i[2 * k + 1] != STATUS_VALID))
+			continue;
 		l = isl_basic_map_alloc_equality(fused);
 		if (l < 0)
 			goto error;
@@ -198,6 +199,13 @@ static int fuse(struct isl_map *map, int i, int j,
 		if (l < 0)
 			goto error;
 		isl_seq_cpy(fused->ineq[l], map->p[j]->ineq[k], 1 + total);
+	}
+
+	for (k = 0; k < map->p[i]->n_div; ++k) {
+		int l = isl_basic_map_alloc_div(fused);
+		if (l < 0)
+			goto error;
+		isl_seq_cpy(fused->div[l], map->p[i]->div[k], 1 + 1 + total);
 	}
 
 	for (k = 0; k < extra_rows; ++k) {
