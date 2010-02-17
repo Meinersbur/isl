@@ -396,6 +396,46 @@ error:
 	return NULL;
 }
 
+/* Given a union of basic maps R = \cup_i R_i \subseteq D \times D
+ * and a dimension specification (Z^{n+1} -> Z^{n+1}),
+ * construct a map that is an overapproximation of the map
+ * that takes an element from the dom R \times Z to an
+ * element from ran R \times Z, such that the first n coordinates of the
+ * difference between them is a sum of differences between images
+ * and pre-images in one of the R_i and such that the last coordinate
+ * is equal to the number of steps taken.
+ * That is, let
+ *
+ *	\Delta_i = { y - x | (x, y) in R_i }
+ *
+ * then the constructed map is an overapproximation of
+ *
+ *	{ (x) -> (x + d) | \exists k_i >= 0, \delta_i \in \Delta_i :
+ *				d = (\sum_i k_i \delta_i, \sum_i k_i) and
+ *				x in dom R and x + d in ran R}
+ */
+static __isl_give isl_map *construct_extended_power(__isl_take isl_dim *dim,
+	__isl_keep isl_map *map, int *project)
+{
+	struct isl_set *domain = NULL;
+	struct isl_set *range = NULL;
+	struct isl_map *app = NULL;
+	struct isl_map *path = NULL;
+
+	domain = isl_map_domain(isl_map_copy(map));
+	domain = isl_set_coalesce(domain);
+	range = isl_map_range(isl_map_copy(map));
+	range = isl_set_coalesce(range);
+	app = isl_map_from_domain_and_range(domain, range);
+	app = isl_map_add(app, isl_dim_in, 1);
+	app = isl_map_add(app, isl_dim_out, 1);
+
+	path = construct_extended_path(dim, map, project);
+	app = isl_map_intersect(app, path);
+
+	return app;
+}
+
 /* Given a union of basic maps R = \cup_i R_i \subseteq D \times D,
  * construct a map that is an overapproximation of the map
  * that takes an element from the space D to another
@@ -420,10 +460,10 @@ error:
  * In the final step, this difference is equated to the parameter "param"
  * and made positive.  The extra coordinates are subsequently projected out.
  */
-static __isl_give isl_map *construct_path(__isl_keep isl_map *map,
+static __isl_give isl_map *construct_power(__isl_keep isl_map *map,
 	unsigned param, int *project)
 {
-	struct isl_map *path = NULL;
+	struct isl_map *app = NULL;
 	struct isl_map *diff;
 	struct isl_dim *dim = NULL;
 	unsigned d;
@@ -437,14 +477,14 @@ static __isl_give isl_map *construct_path(__isl_keep isl_map *map,
 	dim = isl_dim_add(dim, isl_dim_in, 1);
 	dim = isl_dim_add(dim, isl_dim_out, 1);
 
-	path = construct_extended_path(isl_dim_copy(dim), map, project);
+	app = construct_extended_power(isl_dim_copy(dim), map, project);
 
 	diff = equate_parameter_to_length(dim, param);
-	path = isl_map_intersect(path, diff);
-	path = isl_map_project_out(path, isl_dim_in, d, 1);
-	path = isl_map_project_out(path, isl_dim_out, d, 1);
+	app = isl_map_intersect(app, diff);
+	app = isl_map_project_out(app, isl_dim_in, d, 1);
+	app = isl_map_project_out(app, isl_dim_out, d, 1);
 
-	return path;
+	return app;
 }
 
 /* Shift variable at position "pos" up by one.
@@ -598,10 +638,7 @@ error:
 static __isl_give isl_map *map_power(__isl_take isl_map *map, unsigned param,
 	int *exact, int project)
 {
-	struct isl_set *domain = NULL;
-	struct isl_set *range = NULL;
 	struct isl_map *app = NULL;
-	struct isl_map *path = NULL;
 
 	if (exact)
 		*exact = 1;
@@ -618,30 +655,16 @@ static __isl_give isl_map *map_power(__isl_take isl_map *map, unsigned param,
 		isl_map_dim(map, isl_dim_in) == isl_map_dim(map, isl_dim_out),
 		goto error);
 
-	domain = isl_map_domain(isl_map_copy(map));
-	domain = isl_set_coalesce(domain);
-	range = isl_map_range(isl_map_copy(map));
-	range = isl_set_coalesce(range);
-	app = isl_map_from_domain_and_range(isl_set_copy(domain),
-					    isl_set_copy(range));
-
-	path = construct_path(map, param, exact ? &project : NULL);
-	app = isl_map_intersect(app, isl_map_copy(path));
+	app = construct_power(map, param, exact ? &project : NULL);
 
 	if (exact &&
 	    (*exact = check_exactness(isl_map_copy(map), isl_map_copy(app),
 				      param, project)) < 0)
 		goto error;
 
-	isl_set_free(domain);
-	isl_set_free(range);
-	isl_map_free(path);
 	isl_map_free(map);
 	return app;
 error:
-	isl_set_free(domain);
-	isl_set_free(range);
-	isl_map_free(path);
 	isl_map_free(map);
 	isl_map_free(app);
 	return NULL;
