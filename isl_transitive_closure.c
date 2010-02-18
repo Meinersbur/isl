@@ -12,6 +12,157 @@
 #include "isl_map_private.h"
 #include "isl_seq.h"
  
+/* Given a map that represents a path with the length of the path
+ * encoded as the difference between the last output coordindate
+ * and the last input coordinate, set this length to either
+ * exactly "length" (if "exactly" is set) or at least "length"
+ * (if "exactly" is not set).
+ */
+static __isl_give isl_map *set_path_length(__isl_take isl_map *map,
+	int exactly, int length)
+{
+	struct isl_dim *dim;
+	struct isl_basic_map *bmap;
+	unsigned d;
+	unsigned nparam;
+	int k;
+	isl_int *c;
+
+	if (!map)
+		return NULL;
+
+	dim = isl_map_get_dim(map);
+	d = isl_dim_size(dim, isl_dim_in);
+	nparam = isl_dim_size(dim, isl_dim_param);
+	bmap = isl_basic_map_alloc_dim(dim, 0, 1, 1);
+	if (exactly) {
+		k = isl_basic_map_alloc_equality(bmap);
+		c = bmap->eq[k];
+	} else {
+		k = isl_basic_map_alloc_inequality(bmap);
+		c = bmap->ineq[k];
+	}
+	if (k < 0)
+		goto error;
+	isl_seq_clr(c, 1 + isl_basic_map_total_dim(bmap));
+	isl_int_set_si(c[0], -length);
+	isl_int_set_si(c[1 + nparam + d - 1], -1);
+	isl_int_set_si(c[1 + nparam + d + d - 1], 1);
+
+	bmap = isl_basic_map_finalize(bmap);
+	map = isl_map_intersect(map, isl_map_from_basic_map(bmap));
+
+	return map;
+error:
+	isl_basic_map_free(bmap);
+	isl_map_free(map);
+	return NULL;
+}
+
+/* Check whether the overapproximation of the power of "map" is exactly
+ * the power of "map".  Let R be "map" and A_k the overapproximation.
+ * The approximation is exact if
+ *
+ *	A_1 = R
+ *	A_k = A_{k-1} \circ R			k >= 2
+ *
+ * Since A_k is known to be an overapproximation, we only need to check
+ *
+ *	A_1 \subset R
+ *	A_k \subset A_{k-1} \circ R		k >= 2
+ *
+ * In practice, "app" has an extra input and output coordinate
+ * to encode the length of the path.  So, we first need to add
+ * this coordinate to "map" and set the length of the path to
+ * one.
+ */
+static int check_power_exactness(__isl_take isl_map *map,
+	__isl_take isl_map *app)
+{
+	int exact;
+	isl_map *app_1;
+	isl_map *app_2;
+
+	map = isl_map_add(map, isl_dim_in, 1);
+	map = isl_map_add(map, isl_dim_out, 1);
+	map = set_path_length(map, 1, 1);
+
+	app_1 = set_path_length(isl_map_copy(app), 1, 1);
+
+	exact = isl_map_is_subset(app_1, map);
+	isl_map_free(app_1);
+
+	if (!exact || exact < 0) {
+		isl_map_free(app);
+		isl_map_free(map);
+		return exact;
+	}
+
+	app_1 = set_path_length(isl_map_copy(app), 0, 1);
+	app_2 = set_path_length(app, 0, 2);
+	app_1 = isl_map_apply_range(map, app_1);
+
+	exact = isl_map_is_subset(app_2, app_1);
+
+	isl_map_free(app_1);
+	isl_map_free(app_2);
+
+	return exact;
+}
+
+/* Check whether the overapproximation of the power of "map" is exactly
+ * the power of "map", possibly after projecting out the power (if "project"
+ * is set).
+ *
+ * If "project" is set and if "steps" can only result in acyclic paths,
+ * then we check
+ *
+ *	A = R \cup (A \circ R)
+ *
+ * where A is the overapproximation with the power projected out, i.e.,
+ * an overapproximation of the transitive closure.
+ * More specifically, since A is known to be an overapproximation, we check
+ *
+ *	A \subset R \cup (A \circ R)
+ *
+ * Otherwise, we check if the power is exact.
+ *
+ * Note that "app" has an extra input and output coordinate to encode
+ * the length of the part.  If we are only interested in the transitive
+ * closure, then we can simply project out these coordinates first.
+ */
+static int check_exactness(__isl_take isl_map *map, __isl_take isl_map *app,
+	int project)
+{
+	isl_map *test;
+	int exact;
+	unsigned d;
+
+	if (!project)
+		return check_power_exactness(map, app);
+
+	d = isl_map_dim(map, isl_dim_in);
+	app = set_path_length(app, 0, 1);
+	app = isl_map_project_out(app, isl_dim_in, d, 1);
+	app = isl_map_project_out(app, isl_dim_out, d, 1);
+
+	test = isl_map_apply_range(isl_map_copy(map), isl_map_copy(app));
+	test = isl_map_union(test, isl_map_copy(map));
+
+	exact = isl_map_is_subset(app, test);
+
+	isl_map_free(app);
+	isl_map_free(test);
+
+	isl_map_free(map);
+
+	return exact;
+error:
+	isl_map_free(app);
+	isl_map_free(map);
+	return -1;
+}
+
 /*
  * The transitive closure implementation is based on the paper
  * "Computing the Transitive Closure of a Union of Affine Integer
@@ -725,7 +876,7 @@ error:
  * and made positive.  The extra coordinates are subsequently projected out.
  */
 static __isl_give isl_map *construct_power(__isl_keep isl_map *map,
-	unsigned param, int *project)
+	unsigned param, int *exact, int project)
 {
 	struct isl_map *app = NULL;
 	struct isl_map *diff;
@@ -741,7 +892,13 @@ static __isl_give isl_map *construct_power(__isl_keep isl_map *map,
 	dim = isl_dim_add(dim, isl_dim_in, 1);
 	dim = isl_dim_add(dim, isl_dim_out, 1);
 
-	app = construct_power_components(isl_dim_copy(dim), map, project);
+	app = construct_power_components(isl_dim_copy(dim), map,
+					exact ? &project : NULL);
+
+	if (exact &&
+	    (*exact = check_exactness(isl_map_copy(map), isl_map_copy(app),
+				      project)) < 0)
+		goto error;
 
 	diff = equate_parameter_to_length(dim, param);
 	app = isl_map_intersect(app, diff);
@@ -749,148 +906,10 @@ static __isl_give isl_map *construct_power(__isl_keep isl_map *map,
 	app = isl_map_project_out(app, isl_dim_out, d, 1);
 
 	return app;
-}
-
-/* Shift variable at position "pos" up by one.
- * That is, replace the corresponding variable v by v - 1.
- */
-static __isl_give isl_basic_map *basic_map_shift_pos(
-	__isl_take isl_basic_map *bmap, unsigned pos)
-{
-	int i;
-
-	bmap = isl_basic_map_cow(bmap);
-	if (!bmap)
-		return NULL;
-
-	for (i = 0; i < bmap->n_eq; ++i)
-		isl_int_sub(bmap->eq[i][0], bmap->eq[i][0], bmap->eq[i][pos]);
-
-	for (i = 0; i < bmap->n_ineq; ++i)
-		isl_int_sub(bmap->ineq[i][0],
-				bmap->ineq[i][0], bmap->ineq[i][pos]);
-
-	for (i = 0; i < bmap->n_div; ++i) {
-		if (isl_int_is_zero(bmap->div[i][0]))
-			continue;
-		isl_int_sub(bmap->div[i][1],
-				bmap->div[i][1], bmap->div[i][1 + pos]);
-	}
-
-	return bmap;
-}
-
-/* Shift variable at position "pos" up by one.
- * That is, replace the corresponding variable v by v - 1.
- */
-static __isl_give isl_map *map_shift_pos(__isl_take isl_map *map, unsigned pos)
-{
-	int i;
-
-	map = isl_map_cow(map);
-	if (!map)
-		return NULL;
-
-	for (i = 0; i < map->n; ++i) {
-		map->p[i] = basic_map_shift_pos(map->p[i], pos);
-		if (!map->p[i])
-			goto error;
-	}
-	ISL_F_CLR(map, ISL_MAP_NORMALIZED);
-	return map;
 error:
-	isl_map_free(map);
+	isl_dim_free(dim);
+	isl_map_free(app);
 	return NULL;
-}
-
-/* Check whether the overapproximation of the power of "map" is exactly
- * the power of "map".  Let R be "map" and A_k the overapproximation.
- * The approximation is exact if
- *
- *	A_1 = R
- *	A_k = A_{k-1} \circ R			k >= 2
- *
- * Since A_k is known to be an overapproximation, we only need to check
- *
- *	A_1 \subset R
- *	A_k \subset A_{k-1} \circ R		k >= 2
- *
- */
-static int check_power_exactness(__isl_take isl_map *map,
-	__isl_take isl_map *app, unsigned param)
-{
-	int exact;
-	isl_map *app_1;
-	isl_map *app_2;
-
-	app_1 = isl_map_fix_si(isl_map_copy(app), isl_dim_param, param, 1);
-
-	exact = isl_map_is_subset(app_1, map);
-	isl_map_free(app_1);
-
-	if (!exact || exact < 0) {
-		isl_map_free(app);
-		isl_map_free(map);
-		return exact;
-	}
-
-	app_2 = isl_map_lower_bound_si(isl_map_copy(app),
-					isl_dim_param, param, 2);
-	app_1 = map_shift_pos(app, 1 + param);
-	app_1 = isl_map_apply_range(map, app_1);
-
-	exact = isl_map_is_subset(app_2, app_1);
-
-	isl_map_free(app_1);
-	isl_map_free(app_2);
-
-	return exact;
-}
-
-/* Check whether the overapproximation of the power of "map" is exactly
- * the power of "map", possibly after projecting out the power (if "project"
- * is set).
- *
- * If "project" is set and if "steps" can only result in acyclic paths,
- * then we check
- *
- *	A = R \cup (A \circ R)
- *
- * where A is the overapproximation with the power projected out, i.e.,
- * an overapproximation of the transitive closure.
- * More specifically, since A is known to be an overapproximation, we check
- *
- *	A \subset R \cup (A \circ R)
- *
- * Otherwise, we check if the power is exact.
- */
-static int check_exactness(__isl_take isl_map *map, __isl_take isl_map *app,
-	unsigned param, int project)
-{
-	isl_map *test;
-	int exact;
-
-	if (!project)
-		return check_power_exactness(map, app, param);
-
-	map = isl_map_project_out(map, isl_dim_param, param, 1);
-	app = isl_map_project_out(app, isl_dim_param, param, 1);
-
-	test = isl_map_apply_range(isl_map_copy(map), isl_map_copy(app));
-	test = isl_map_union(test, isl_map_copy(map));
-
-	exact = isl_map_is_subset(app, test);
-
-	isl_map_free(app);
-	isl_map_free(test);
-
-	isl_map_free(map);
-
-	return exact;
-error:
-	isl_map_free(app);
-	isl_map_free(map);
-	return -1;
 }
 
 /* Compute the positive powers of "map", or an overapproximation.
@@ -919,12 +938,7 @@ static __isl_give isl_map *map_power(__isl_take isl_map *map, unsigned param,
 		isl_map_dim(map, isl_dim_in) == isl_map_dim(map, isl_dim_out),
 		goto error);
 
-	app = construct_power(map, param, exact ? &project : NULL);
-
-	if (exact &&
-	    (*exact = check_exactness(isl_map_copy(map), isl_map_copy(app),
-				      param, project)) < 0)
-		goto error;
+	app = construct_power(map, param, exact, project);
 
 	isl_map_free(map);
 	return app;
