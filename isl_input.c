@@ -146,47 +146,6 @@ error:
 	return NULL;
 }
 
-static __isl_give isl_basic_map *read_var_list(struct isl_stream *s,
-	__isl_take isl_basic_map *bmap, enum isl_dim_type type, struct vars *v)
-{
-	int i = 0;
-	struct isl_token *tok;
-
-	while ((tok = isl_stream_next_token(s)) != NULL) {
-		int p;
-		int n = v->n;
-
-		if (tok->type != ISL_TOKEN_IDENT)
-			break;
-
-		p = vars_pos(v, tok->u.s, -1);
-		if (p < 0)
-			goto error;
-		if (p < n) {
-			isl_stream_error(s, tok, "expecting unique identifier");
-			goto error;
-		}
-		isl_token_free(tok);
-
-		bmap = isl_basic_map_add(bmap, type, 1);
-		bmap = set_name(bmap, type, i++, v->v->name);
-
-		tok = isl_stream_next_token(s);
-		if (!tok || tok->type != ',')
-			break;
-
-		isl_token_free(tok);
-	}
-	if (tok)
-		isl_stream_push_token(s, tok);
-
-	return bmap;
-error:
-	isl_token_free(tok);
-	isl_basic_map_free(bmap);
-	return NULL;
-}
-
 static struct isl_vec *accept_affine(struct isl_stream *s, struct vars *v)
 {
 	struct isl_token *tok = NULL;
@@ -257,6 +216,72 @@ static struct isl_vec *accept_affine(struct isl_stream *s, struct vars *v)
 	return aff;
 error:
 	isl_vec_free(aff);
+	return NULL;
+}
+
+static __isl_give isl_basic_map *read_var_list(struct isl_stream *s,
+	__isl_take isl_basic_map *bmap, enum isl_dim_type type, struct vars *v)
+{
+	int i = 0;
+	struct isl_token *tok;
+
+	while ((tok = isl_stream_next_token(s)) != NULL) {
+		int new_name = 0;
+
+		if (tok->type == ISL_TOKEN_IDENT) {
+			int n = v->n;
+			int p = vars_pos(v, tok->u.s, -1);
+			if (p < 0)
+				goto error;
+			new_name = p >= n;
+		}
+
+		if (new_name) {
+			bmap = isl_basic_map_add(bmap, type, 1);
+			bmap = set_name(bmap, type, i, v->v->name);
+			isl_token_free(tok);
+		} else if (tok->type == ISL_TOKEN_IDENT ||
+			   tok->type == ISL_TOKEN_VALUE) {
+			struct isl_vec *vec;
+			int k;
+			if (type == isl_dim_param) {
+				isl_stream_error(s, tok,
+						"expecting unique identifier");
+				goto error;
+			}
+			isl_stream_push_token(s, tok);
+			tok = NULL;
+			vec = accept_affine(s, v);
+			if (!vec)
+				goto error;
+			v->n++;
+			bmap = isl_basic_map_add(bmap, type, 1);
+			bmap = isl_basic_map_extend_constraints(bmap, 1, 0);
+			k = isl_basic_map_alloc_equality(bmap);
+			if (k >= 0) {
+				isl_seq_cpy(bmap->eq[k], vec->el, vec->size);
+				isl_int_set_si(bmap->eq[k][vec->size], -1);
+			}
+			isl_vec_free(vec);
+			if (k < 0)
+				goto error;
+		} else
+			break;
+
+		tok = isl_stream_next_token(s);
+		if (!tok || tok->type != ',')
+			break;
+
+		isl_token_free(tok);
+		i++;
+	}
+	if (tok)
+		isl_stream_push_token(s, tok);
+
+	return bmap;
+error:
+	isl_token_free(tok);
+	isl_basic_map_free(bmap);
 	return NULL;
 }
 
