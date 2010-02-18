@@ -241,6 +241,10 @@ static struct isl_token *next_token(struct isl_stream *s, int same_line)
 			isl_stream_push_char(s, c);
 		if (c != -1)
 			isl_stream_ungetc(s, c);
+		while ((c = isl_stream_getc(s)) != -1 && c == '\'')
+			isl_stream_push_char(s, c);
+		if (c != -1)
+			isl_stream_ungetc(s, c);
 		isl_stream_push_char(s, '\0');
 		if (!strcasecmp(s->buffer, "exists"))
 			tok->type = ISL_TOKEN_EXISTS;

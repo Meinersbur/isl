@@ -912,8 +912,14 @@ static struct isl_dim *set_names(struct isl_dim *dim, struct vars *vars,
 
 	for (i = 0, v = vars->v; i < offset; ++i, v = v->next)
 		;
-	for (i = n - 1; i >= 0; --i, v = v->next)
+	for (i = n - 1; i >= 0; --i, v = v->next) {
+		char *prime = strchr(v->name, '\'');
+		if (prime)
+			*prime = '\0';
 		dim = isl_dim_set_name(dim, type, i, v->name);
+		if (prime)
+			*prime = '\'';
+	}
 
 	return dim;
 }

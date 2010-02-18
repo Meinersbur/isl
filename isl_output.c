@@ -10,6 +10,7 @@
  * ZAC des vignes, 4 rue Jacques Monod, 91893 Orsay, France 
  */
 
+#include <string.h>
 #include <isl_set.h>
 #include <isl_seq.h>
 
@@ -100,16 +101,34 @@ static void isl_set_print_polylib(struct isl_set *set, FILE *out, int indent)
 	isl_map_print_polylib((struct isl_map *)set, out, indent);
 }
 
-static print_name(struct isl_dim *dim, FILE *out,
+static int count_same_name(__isl_keep isl_dim *dim,
+	enum isl_dim_type type, unsigned pos, const char *name)
+{
+	enum isl_dim_type t;
+	unsigned p, s;
+	int count = 0;
+
+	for (t = isl_dim_param; t <= type && t <= isl_dim_out; ++t) {
+		s = t == type ? pos : isl_dim_size(dim, t);
+		for (p = 0; p < s; ++p) {
+			const char *n = isl_dim_get_name(dim, t, p);
+			if (n && !strcmp(n, name))
+				count++;
+		}
+	}
+	return count;
+}
+
+static void print_name(struct isl_dim *dim, FILE *out,
 	enum isl_dim_type type, unsigned pos, int set)
 {
 	const char *name;
+	char buffer[20];
+	int primes;
 
 	name = type == isl_dim_div ? NULL : isl_dim_get_name(dim, type, pos);
 
-	if (name)
-		fprintf(out, "%s", name);
-	else {
+	if (!name) {
 		const char *prefix;
 		if (type == isl_dim_param)
 			prefix = "p";
@@ -119,8 +138,14 @@ static print_name(struct isl_dim *dim, FILE *out,
 			prefix = "i";
 		else
 			prefix = "o";
-		fprintf(out, "%s%d", prefix, pos);
+		snprintf(buffer, sizeof(buffer), "%s%d", prefix, pos);
+		name = buffer;
 	}
+	primes = count_same_name(dim, name == buffer ? isl_dim_div : type,
+				 pos, name);
+	fprintf(out, "%s", name);
+	while (primes-- > 0)
+		fputc('\'', out);
 }
 
 static void print_var_list(struct isl_dim *dim, FILE *out,
