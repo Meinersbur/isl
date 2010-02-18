@@ -120,8 +120,36 @@ static int vars_pos(struct vars *v, const char *s, int len)
 	return pos;
 }
 
-static struct vars *read_var_list(struct isl_stream *s, struct vars *v)
+static __isl_give isl_basic_map *set_name(__isl_take isl_basic_map *bmap,
+	enum isl_dim_type type, unsigned pos, char *name)
 {
+	char *prime;
+
+	if (!bmap)
+		return NULL;
+	if (!name)
+		return bmap;
+
+	prime = strchr(name, '\'');
+	if (prime)
+		*prime = '\0';
+	bmap->dim = isl_dim_set_name(bmap->dim, type, pos, name);
+	if (prime)
+		*prime = '\'';
+
+	if (!bmap->dim)
+		goto error;
+
+	return bmap;
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+static __isl_give isl_basic_map *read_var_list(struct isl_stream *s,
+	__isl_take isl_basic_map *bmap, enum isl_dim_type type, struct vars *v)
+{
+	int i = 0;
 	struct isl_token *tok;
 
 	while ((tok = isl_stream_next_token(s)) != NULL) {
@@ -139,6 +167,10 @@ static struct vars *read_var_list(struct isl_stream *s, struct vars *v)
 			goto error;
 		}
 		isl_token_free(tok);
+
+		bmap = isl_basic_map_add(bmap, type, 1);
+		bmap = set_name(bmap, type, i++, v->v->name);
+
 		tok = isl_stream_next_token(s);
 		if (!tok || tok->type != ',')
 			break;
@@ -148,10 +180,10 @@ static struct vars *read_var_list(struct isl_stream *s, struct vars *v)
 	if (tok)
 		isl_stream_push_token(s, tok);
 
-	return v;
+	return bmap;
 error:
 	isl_token_free(tok);
-	vars_free(v);
+	isl_basic_map_free(bmap);
 	return NULL;
 }
 
@@ -372,7 +404,8 @@ error:
 	return NULL;
 }
 
-static struct vars *read_tuple(struct isl_stream *s, struct vars *v)
+static __isl_give isl_basic_map *read_tuple(struct isl_stream *s,
+	__isl_take isl_basic_map *bmap, enum isl_dim_type type, struct vars *v)
 {
 	struct isl_token *tok;
 
@@ -382,7 +415,7 @@ static struct vars *read_tuple(struct isl_stream *s, struct vars *v)
 		goto error;
 	}
 	isl_token_free(tok);
-	v = read_var_list(s, v);
+	bmap = read_var_list(s, bmap, type, v);
 	tok = isl_stream_next_token(s);
 	if (!tok || tok->type != ']') {
 		isl_stream_error(s, tok, "expecting ']'");
@@ -390,11 +423,11 @@ static struct vars *read_tuple(struct isl_stream *s, struct vars *v)
 	}
 	isl_token_free(tok);
 
-	return v;
+	return bmap;
 error:
 	if (tok)
 		isl_token_free(tok);
-	vars_free(v);
+	isl_basic_map_free(bmap);
 	return NULL;
 }
 
@@ -904,47 +937,12 @@ static struct isl_map *map_read_polylib(struct isl_stream *s, int nparam)
 	return map;
 }
 
-static struct isl_dim *set_names(struct isl_dim *dim, struct vars *vars,
-	enum isl_dim_type type, int offset, int n)
-{
-	int i;
-	struct variable *v;
-
-	for (i = 0, v = vars->v; i < offset; ++i, v = v->next)
-		;
-	for (i = n - 1; i >= 0; --i, v = v->next) {
-		char *prime = strchr(v->name, '\'');
-		if (prime)
-			*prime = '\0';
-		dim = isl_dim_set_name(dim, type, i, v->name);
-		if (prime)
-			*prime = '\'';
-	}
-
-	return dim;
-}
-
-static struct isl_dim *dim_from_vars(struct vars *vars,
-	int nparam, int n_in, int n_out)
-{
-	struct isl_dim *dim;
-
-	dim = isl_dim_alloc(vars->ctx, nparam, n_in, n_out);
-	dim = set_names(dim, vars, isl_dim_param, n_out + n_in, nparam);
-	dim = set_names(dim, vars, isl_dim_in, n_out, n_in);
-	dim = set_names(dim, vars, isl_dim_out, 0, n_out);
-
-	return dim;
-}
-
 static struct isl_map *map_read(struct isl_stream *s, int nparam)
 {
-	struct isl_dim *dim = NULL;
+	struct isl_basic_map *bmap = NULL;
 	struct isl_map *map = NULL;
 	struct isl_token *tok;
 	struct vars *v = NULL;
-	int n1;
-	int n2;
 
 	tok = isl_stream_next_token(s);
 	if (!tok) {
@@ -956,14 +954,14 @@ static struct isl_map *map_read(struct isl_stream *s, int nparam)
 		return map_read_polylib(s, nparam);
 	}
 	v = vars_new(s->ctx);
+	bmap = isl_basic_map_alloc(s->ctx, 0, 0, 0, 0, 0, 0);
 	if (tok->type == '[') {
 		isl_stream_push_token(s, tok);
-		v = read_tuple(s, v);
-		if (!v)
-			return NULL;
+		bmap = read_tuple(s, bmap, isl_dim_param, v);
+		if (!bmap)
+			goto error;
 		if (nparam >= 0)
 			isl_assert(s->ctx, nparam == v->n, goto error);
-		nparam = v->n;
 		tok = isl_stream_next_token(s);
 		if (!tok || tok->type != ISL_TOKEN_TO) {
 			isl_stream_error(s, tok, "expecting '->'");
@@ -973,9 +971,8 @@ static struct isl_map *map_read(struct isl_stream *s, int nparam)
 		}
 		isl_token_free(tok);
 		tok = isl_stream_next_token(s);
-	}
-	if (nparam < 0)
-		nparam = 0;
+	} if (nparam > 0)
+		bmap = isl_basic_map_add(bmap, isl_dim_param, nparam);
 	if (!tok || tok->type != '{') {
 		isl_stream_error(s, tok, "expecting '{'");
 		if (tok)
@@ -983,35 +980,32 @@ static struct isl_map *map_read(struct isl_stream *s, int nparam)
 		goto error;
 	}
 	isl_token_free(tok);
-	v = read_tuple(s, v);
-	if (!v)
-		return NULL;
-	n1 = v->n - nparam;
+	bmap = read_tuple(s, bmap, isl_dim_in, v);
+	if (!bmap)
+		goto error;
 	tok = isl_stream_next_token(s);
 	if (tok && tok->type == ISL_TOKEN_TO) {
 		isl_token_free(tok);
-		v = read_tuple(s, v);
-		if (!v)
-			return NULL;
-		n2 = v->n - n1 - nparam;
+		bmap = read_tuple(s, bmap, isl_dim_out, v);
+		if (!bmap)
+			goto error;
 	} else {
+		bmap = isl_basic_map_reverse(bmap);
 		if (tok)
 			isl_stream_push_token(s, tok);
-		n2 = n1;
-		n1 = 0;
 	}
-	dim = dim_from_vars(v, nparam, n1, n2);
 	tok = isl_stream_next_token(s);
 	if (!tok) {
 		isl_stream_error(s, NULL, "unexpected EOF");
 		goto error;
 	}
+	map = isl_map_from_basic_map(isl_basic_map_copy(bmap));
 	if (tok->type == ':') {
 		isl_token_free(tok);
-		map = read_disjuncts(s, v, isl_dim_copy(dim));
+		map = isl_map_intersect(map,
+			    read_disjuncts(s, v, isl_basic_map_get_dim(bmap)));
 		tok = isl_stream_next_token(s);
-	} else
-		map = isl_map_universe(isl_dim_copy(dim));
+	}
 	if (tok && tok->type == '}') {
 		isl_token_free(tok);
 	} else {
@@ -1021,11 +1015,11 @@ static struct isl_map *map_read(struct isl_stream *s, int nparam)
 		goto error;
 	}
 	vars_free(v);
-	isl_dim_free(dim);
+	isl_basic_map_free(bmap);
 
 	return map;
 error:
-	isl_dim_free(dim);
+	isl_basic_map_free(bmap);
 	isl_map_free(map);
 	if (v)
 		vars_free(v);
