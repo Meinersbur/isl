@@ -568,7 +568,7 @@ error:
  *	{ (x) -> (x) }
  */
 static __isl_give isl_map *construct_component(__isl_take isl_dim *dim,
-	__isl_keep isl_map *map, int *project)
+	__isl_keep isl_map *map, int *exact, int project)
 {
 	struct isl_set *domain = NULL;
 	struct isl_set *range = NULL;
@@ -583,10 +583,20 @@ static __isl_give isl_map *construct_component(__isl_take isl_dim *dim,
 	app = isl_map_add(app, isl_dim_in, 1);
 	app = isl_map_add(app, isl_dim_out, 1);
 
-	path = construct_extended_path(isl_dim_copy(dim), map, project);
+	path = construct_extended_path(isl_dim_copy(dim), map,
+					exact && *exact ? &project : NULL);
 	app = isl_map_intersect(app, path);
 
+	if (exact && *exact &&
+	    (*exact = check_exactness(isl_map_copy(map), isl_map_copy(app),
+				      project)) < 0)
+		goto error;
+
 	return isl_map_union(app, isl_map_identity(isl_dim_domain(dim)));
+error:
+	isl_dim_free(dim);
+	isl_map_free(app);
+	return NULL;
 }
 
 /* Structure for representing the nodes in the graph being traversed
@@ -802,7 +812,7 @@ static int power_components_tarjan(struct basic_map_sort *s,
  * to be strictly positive.
  */
 static __isl_give isl_map *construct_power_components(__isl_take isl_dim *dim,
-	__isl_keep isl_map *map, int *project)
+	__isl_keep isl_map *map, int *exact, int project)
 {
 	int i, n;
 	struct isl_map *path = NULL;
@@ -811,7 +821,7 @@ static __isl_give isl_map *construct_power_components(__isl_take isl_dim *dim,
 	if (!map)
 		goto error;
 	if (map->n <= 1)
-		return construct_component(dim, map, project);
+		return construct_component(dim, map, exact, project);
 
 	s = basic_map_sort_alloc(map->ctx, map->n);
 	if (!s)
@@ -836,7 +846,8 @@ static __isl_give isl_map *construct_power_components(__isl_take isl_dim *dim,
 			++i;
 		}
 		path = isl_map_apply_range(path,
-			    construct_component(isl_dim_copy(dim), comp, project));
+			    construct_component(isl_dim_copy(dim), comp,
+						exact, project));
 		isl_map_free(comp);
 		++i;
 	}
@@ -893,12 +904,7 @@ static __isl_give isl_map *construct_power(__isl_keep isl_map *map,
 	dim = isl_dim_add(dim, isl_dim_out, 1);
 
 	app = construct_power_components(isl_dim_copy(dim), map,
-					exact ? &project : NULL);
-
-	if (exact &&
-	    (*exact = check_exactness(isl_map_copy(map), isl_map_copy(app),
-				      project)) < 0)
-		goto error;
+					exact, project);
 
 	diff = equate_parameter_to_length(dim, param);
 	app = isl_map_intersect(app, diff);
@@ -906,10 +912,6 @@ static __isl_give isl_map *construct_power(__isl_keep isl_map *map,
 	app = isl_map_project_out(app, isl_dim_out, d, 1);
 
 	return app;
-error:
-	isl_dim_free(dim);
-	isl_map_free(app);
-	return NULL;
 }
 
 /* Compute the positive powers of "map", or an overapproximation.
