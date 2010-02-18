@@ -246,16 +246,22 @@ error:
 #define IMPURE		0
 #define PURE_PARAM	1
 #define PURE_VAR	2
+#define MIXED		3
 
 /* Return PURE_PARAM if only the coefficients of the parameters are non-zero.
  * Return PURE_VAR if only the coefficients of the set variables are non-zero.
+ * Return MIXED if only the coefficients of the parameters and the set
+ * 	variables are non-zero and if moreover the parametric constant
+ * 	can never attain positive values.
  * Return IMPURE otherwise.
  */
-static int purity(__isl_keep isl_basic_set *bset, isl_int *c)
+static int purity(__isl_keep isl_basic_set *bset, isl_int *c, int eq)
 {
 	unsigned d;
 	unsigned n_div;
 	unsigned nparam;
+	int k;
+	int empty;
 
 	n_div = isl_basic_set_dim(bset, isl_dim_div);
 	d = isl_basic_set_dim(bset, isl_dim_set);
@@ -267,7 +273,25 @@ static int purity(__isl_keep isl_basic_set *bset, isl_int *c)
 		return PURE_VAR;
 	if (isl_seq_first_non_zero(c + 1 + nparam, d) == -1)
 		return PURE_PARAM;
-	return IMPURE;
+	if (eq)
+		return IMPURE;
+
+	bset = isl_basic_set_copy(bset);
+	bset = isl_basic_set_cow(bset);
+	bset = isl_basic_set_extend_constraints(bset, 0, 1);
+	k = isl_basic_set_alloc_inequality(bset);
+	if (k < 0)
+		goto error;
+	isl_seq_clr(bset->ineq[k], 1 + isl_basic_set_total_dim(bset));
+	isl_seq_cpy(bset->ineq[k], c, 1 + nparam);
+	isl_int_sub_ui(bset->ineq[k][0], bset->ineq[k][0], 1);
+	empty = isl_basic_set_is_empty(bset);
+	isl_basic_set_free(bset);
+
+	return empty < 0 ? -1 : empty ? MIXED : IMPURE;
+error:
+	isl_basic_set_free(bset);
+	return -1;
 }
 
 /* Given a set of offsets "delta", construct a relation of the
@@ -287,12 +311,16 @@ static int purity(__isl_keep isl_basic_set *bset, isl_int *c)
  * In particular, let delta be defined as
  *
  *	\delta = [p] -> { [x] : A x + a >= and B p + b >= 0 and
- *				C x + C'p + c >= 0 }
+ *				C x + C'p + c >= 0 and
+ *				D x + D'p + d >= 0 }
  *
- * then the relation is constructed as
+ * where the constraints C x + C'p + c >= 0 are such that the parametric
+ * constant term of each constraint j, "C_j x + C'_j p + c_j",
+ * can never attain positive values, then the relation is constructed as
  *
  *	{ [x] -> [y] : exists [f, k] \in Z^{n+1} : y = x + f and
- *			A f + k a >= 0 and B p + b >= 0 and k >= 1 }
+ *			A f + k a >= 0 and B p + b >= 0 and
+ *			C f + C'p + c >= 0 and k >= 1 }
  *	union { [x] -> [x] }
  *
  * Existentially quantified variables in \delta are currently ignored.
@@ -335,7 +363,9 @@ static __isl_give isl_map *path_along_delta(__isl_take isl_dim *dim,
 	}
 
 	for (i = 0; i < delta->n_eq; ++i) {
-		int p = purity(delta, delta->eq[i]);
+		int p = purity(delta, delta->eq[i], 1);
+		if (p < 0)
+			goto error;
 		if (p == IMPURE)
 			continue;
 		k = isl_basic_map_alloc_equality(path);
@@ -351,7 +381,9 @@ static __isl_give isl_map *path_along_delta(__isl_take isl_dim *dim,
 	}
 
 	for (i = 0; i < delta->n_ineq; ++i) {
-		int p = purity(delta, delta->ineq[i]);
+		int p = purity(delta, delta->ineq[i], 0);
+		if (p < 0)
+			goto error;
 		if (p == IMPURE)
 			continue;
 		k = isl_basic_map_alloc_inequality(path);
@@ -362,8 +394,13 @@ static __isl_give isl_map *path_along_delta(__isl_take isl_dim *dim,
 			isl_seq_cpy(path->ineq[k] + off,
 				    delta->ineq[i] + 1 + nparam, d);
 			isl_int_set(path->ineq[k][off + d], delta->ineq[i][0]);
-		} else
+		} else if (p == PURE_PARAM) {
 			isl_seq_cpy(path->ineq[k], delta->ineq[i], 1 + nparam);
+		} else {
+			isl_seq_cpy(path->ineq[k] + off,
+				    delta->ineq[i] + 1 + nparam, d);
+			isl_seq_cpy(path->ineq[k], delta->ineq[i], 1 + nparam);
+		}
 	}
 
 	k = isl_basic_map_alloc_inequality(path);

@@ -813,6 +813,15 @@ void test_closure(struct isl_ctx *ctx)
 	assert(exact);
 	isl_map_free(map);
 
+	map = isl_map_read_from_str(ctx,
+		"[n] -> { [x] -> [y]: 1 <= n <= y - x <= 10 }", -1);
+	map = isl_map_transitive_closure(map, &exact);
+	assert(!exact);
+	map2 = isl_map_read_from_str(ctx,
+		"[n] -> { [x] -> [y] : 1 <= n <= 10 and y >= n + x }", -1);
+	assert(isl_map_is_equal(map, map2));
+	isl_map_free(map);
+	isl_map_free(map2);
 }
 
 int main()
