@@ -1052,9 +1052,20 @@ static struct isl_map *map_read(struct isl_stream *s, int nparam)
 	}
 	isl_token_free(tok);
 
-	map = map_read_body(s, isl_basic_map_copy(bmap), v);
+	for (;;) {
+		isl_map *m = map_read_body(s, isl_basic_map_copy(bmap), v);
+		if (!m)
+			break;
+		if (map)
+			map = isl_map_union(map, m);
+		else
+			map = m;
+		tok = isl_stream_next_token(s);
+		if (!tok || tok->type != ';')
+			break;
+		isl_token_free(tok);
+	}
 
-	tok = isl_stream_next_token(s);
 	if (tok && tok->type == '}') {
 		isl_token_free(tok);
 	} else {
