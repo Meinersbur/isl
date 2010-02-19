@@ -254,6 +254,9 @@ static __isl_give isl_basic_map *read_var_list(struct isl_stream *s,
 			vec = accept_affine(s, v);
 			if (!vec)
 				goto error;
+			v->v = variable_new(v, "", 0, v->n);
+			if (!v->v)
+				goto error;
 			v->n++;
 			bmap = isl_basic_map_add(bmap, type, 1);
 			bmap = isl_basic_map_extend_constraints(bmap, 1, 0);
