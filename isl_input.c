@@ -965,6 +965,49 @@ static struct isl_map *map_read_polylib(struct isl_stream *s, int nparam)
 	return map;
 }
 
+static struct isl_map *map_read_body(struct isl_stream *s,
+	__isl_take isl_basic_map *bmap, struct vars *v)
+{
+	struct isl_map *map = NULL;
+	struct isl_token *tok;
+	int n = v->n;
+
+	bmap = read_tuple(s, bmap, isl_dim_in, v);
+	if (!bmap)
+		goto error;
+	tok = isl_stream_next_token(s);
+	if (tok && tok->type == ISL_TOKEN_TO) {
+		isl_token_free(tok);
+		bmap = read_tuple(s, bmap, isl_dim_out, v);
+		if (!bmap)
+			goto error;
+	} else {
+		bmap = isl_basic_map_reverse(bmap);
+		if (tok)
+			isl_stream_push_token(s, tok);
+	}
+	tok = isl_stream_next_token(s);
+	if (!tok) {
+		isl_stream_error(s, NULL, "unexpected EOF");
+		goto error;
+	}
+	map = isl_map_from_basic_map(isl_basic_map_copy(bmap));
+	if (tok->type == ':') {
+		isl_token_free(tok);
+		map = isl_map_intersect(map,
+			    read_disjuncts(s, v, isl_basic_map_get_dim(bmap)));
+	} else
+		isl_stream_push_token(s, tok);
+
+	vars_drop(v, v->n - n);
+
+	isl_basic_map_free(bmap);
+	return map;
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
 static struct isl_map *map_read(struct isl_stream *s, int nparam)
 {
 	struct isl_basic_map *bmap = NULL;
@@ -1008,32 +1051,10 @@ static struct isl_map *map_read(struct isl_stream *s, int nparam)
 		goto error;
 	}
 	isl_token_free(tok);
-	bmap = read_tuple(s, bmap, isl_dim_in, v);
-	if (!bmap)
-		goto error;
+
+	map = map_read_body(s, isl_basic_map_copy(bmap), v);
+
 	tok = isl_stream_next_token(s);
-	if (tok && tok->type == ISL_TOKEN_TO) {
-		isl_token_free(tok);
-		bmap = read_tuple(s, bmap, isl_dim_out, v);
-		if (!bmap)
-			goto error;
-	} else {
-		bmap = isl_basic_map_reverse(bmap);
-		if (tok)
-			isl_stream_push_token(s, tok);
-	}
-	tok = isl_stream_next_token(s);
-	if (!tok) {
-		isl_stream_error(s, NULL, "unexpected EOF");
-		goto error;
-	}
-	map = isl_map_from_basic_map(isl_basic_map_copy(bmap));
-	if (tok->type == ':') {
-		isl_token_free(tok);
-		map = isl_map_intersect(map,
-			    read_disjuncts(s, v, isl_basic_map_get_dim(bmap)));
-		tok = isl_stream_next_token(s);
-	}
 	if (tok && tok->type == '}') {
 		isl_token_free(tok);
 	} else {
