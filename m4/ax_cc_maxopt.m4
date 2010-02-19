@@ -149,6 +149,16 @@ if test "$ac_test_CFLAGS" != "set"; then
      AX_CHECK_COMPILER_FLAGS(-ffast-math, CFLAGS="$CFLAGS -ffast-math")
 
      AX_GCC_ARCHFLAG($acx_maxopt_portable)
+
+     # drop to -O1 for gcc 4.2
+     $CC --version |
+	sed -e 's/.* \(@<:@0-9@:>@@<:@0-9@:>@*\)\.\(@<:@0-9@:>@@<:@0-9@:>@*\).*/\1 \2/' |
+	(read major minor
+	    if test $major -eq 4 -a $minor -eq 2; then
+				exit 0
+	    fi
+	    exit 1
+	) && CFLAGS="-O1"
      ;;
   esac
 
