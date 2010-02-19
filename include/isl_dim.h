@@ -37,7 +37,7 @@ enum isl_dim_type {
 	isl_dim_out,
 	isl_dim_set = isl_dim_out,
 	isl_dim_div,
-	isl_dim_all,
+	isl_dim_all
 };
 
 __isl_give isl_dim *isl_dim_alloc(isl_ctx *ctx,

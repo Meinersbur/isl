@@ -21,7 +21,7 @@ enum isl_arg_type {
 	isl_arg_end,
 	isl_arg_choice,
 	isl_arg_bool,
-	isl_arg_child,
+	isl_arg_child
 };
 
 struct isl_arg {
