@@ -20,7 +20,8 @@ enum isl_token_type { ISL_TOKEN_UNKNOWN = 256, ISL_TOKEN_VALUE,
 			ISL_TOKEN_IDENT, ISL_TOKEN_GE,
 			ISL_TOKEN_LE, ISL_TOKEN_GT, ISL_TOKEN_LT,
 			ISL_TOKEN_TO, ISL_TOKEN_AND,
-			ISL_TOKEN_OR, ISL_TOKEN_EXISTS };
+			ISL_TOKEN_OR, ISL_TOKEN_EXISTS,
+			ISL_TOKEN_DEF };
 
 struct isl_token {
 	enum isl_token_type  type;

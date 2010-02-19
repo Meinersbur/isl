@@ -188,7 +188,6 @@ static struct isl_token *next_token(struct isl_stream *s, int same_line)
 	    c == '^' ||
 	    c == '=' ||
 	    c == ',' ||
-	    c == ':' ||
 	    c == ';' ||
 	    c == '[' ||
 	    c == ']' ||
@@ -260,6 +259,20 @@ static struct isl_token *next_token(struct isl_stream *s, int same_line)
 			tok->type = ISL_TOKEN_IDENT;
 			tok->u.s = strdup(s->buffer);
 		}
+		return tok;
+	}
+	if (c == ':') {
+		int c;
+		tok = isl_token_new(s->ctx, line, col, old_line != line);
+		if (!tok)
+			return NULL;
+		if ((c = isl_stream_getc(s)) == '=') {
+			tok->type = ISL_TOKEN_DEF;
+			return tok;
+		}
+		if (c != -1)
+			isl_stream_ungetc(s, c);
+		tok->type = ':';
 		return tok;
 	}
 	if (c == '>') {
