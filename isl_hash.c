@@ -152,6 +152,21 @@ struct isl_hash_table_entry *isl_hash_table_find(struct isl_ctx *ctx,
 	return &table->entries[h];
 }
 
+int isl_hash_table_foreach(struct isl_ctx *ctx,
+				struct isl_hash_table *table,
+				int (*fn)(void *entry))
+{
+	size_t size;
+	uint32_t h;
+
+	size = 1 << table->bits;
+	for (h = 0; h < size; ++ h)
+		if (table->entries[h].data && fn(table->entries[h].data) < 0)
+			return -1;
+	
+	return 0;
+}
+
 void isl_hash_table_remove(struct isl_ctx *ctx,
 				struct isl_hash_table *table,
 				struct isl_hash_table_entry *entry)
