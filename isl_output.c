@@ -451,10 +451,29 @@ static void isl_basic_set_print_isl(__isl_keep isl_basic_set *bset, FILE *out,
 	fprintf(out, " }%s\n", suffix ? suffix : "");
 }
 
-static void isl_map_print_isl(__isl_keep isl_map *map, FILE *out, int indent)
+static void print_disjuncts(__isl_keep isl_map *map, FILE *out, int set)
 {
 	int i;
 
+	if (isl_map_fast_is_universe(map))
+		return;
+
+	fprintf(out, " : ");
+	if (map->n == 0)
+		fprintf(out, "1 = 0");
+	for (i = 0; i < map->n; ++i) {
+		if (i)
+			fprintf(out, " or ");
+		if (map->n > 1 && map->p[i]->n_eq + map->p[i]->n_ineq > 1)
+			fprintf(out, "(");
+		print_disjunct(map->p[i], map->dim, out, set);
+		if (map->n > 1 && map->p[i]->n_eq + map->p[i]->n_ineq > 1)
+			fprintf(out, ")");
+	}
+}
+
+static void isl_map_print_isl(__isl_keep isl_map *map, FILE *out, int indent)
+{
 	fprintf(out, "%*s", indent, "");
 	if (isl_map_dim(map, isl_dim_param) > 0) {
 		print_tuple(map->dim, out, isl_dim_param, 0);
@@ -464,18 +483,7 @@ static void isl_map_print_isl(__isl_keep isl_map *map, FILE *out, int indent)
 	print_tuple(map->dim, out, isl_dim_in, 0);
 	fprintf(out, " -> ");
 	print_tuple(map->dim, out, isl_dim_out, 0);
-	fprintf(out, " : ");
-	if (map->n == 0)
-		fprintf(out, "1 = 0");
-	for (i = 0; i < map->n; ++i) {
-		if (i)
-			fprintf(out, " or ");
-		if (map->n > 1 && map->p[i]->n_eq + map->p[i]->n_ineq > 1)
-			fprintf(out, "(");
-		print_disjunct(map->p[i], map->dim, out, 0);
-		if (map->n > 1 && map->p[i]->n_eq + map->p[i]->n_ineq > 1)
-			fprintf(out, ")");
-	}
+	print_disjuncts(map, out, 0);
 	fprintf(out, " }\n");
 }
 
@@ -490,14 +498,7 @@ static void isl_set_print_isl(__isl_keep isl_set *set, FILE *out, int indent)
 	}
 	fprintf(out, "{ ");
 	print_tuple(set->dim, out, isl_dim_set, 1);
-	fprintf(out, " : ");
-	if (set->n == 0)
-		fprintf(out, "1 = 0");
-	for (i = 0; i < set->n; ++i) {
-		if (i)
-			fprintf(out, " or ");
-		print_disjunct((isl_basic_map *)set->p[i], set->dim, out, 1);
-	}
+	print_disjuncts((isl_map *)set, out, 1);
 	fprintf(out, " }\n");
 }
 
