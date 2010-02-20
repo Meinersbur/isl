@@ -1876,6 +1876,11 @@ static __isl_give isl_map *map_intersect_add_constraint(
 	if (!map1->p[0])
 		goto error;
 
+	if (isl_basic_map_fast_is_empty(map1->p[0])) {
+		isl_basic_map_free(map1->p[0]);
+		map1->n = 0;
+	}
+
 	isl_map_free(map2);
 
 	return map1;
