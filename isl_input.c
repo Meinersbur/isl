@@ -170,6 +170,7 @@ static struct isl_vec *accept_affine(struct isl_stream *s, struct vars *v)
 				goto error;
 			if (pos >= n) {
 				isl_stream_error(s, tok, "unknown identifier");
+				isl_token_free(tok);
 				goto error;
 			}
 			if (sign > 0)
@@ -191,6 +192,7 @@ static struct isl_vec *accept_affine(struct isl_stream *s, struct vars *v)
 				if (pos >= n) {
 					isl_stream_error(s, tok2,
 						"unknown identifier");
+					isl_token_free(tok);
 					isl_token_free(tok2);
 					goto error;
 				}
