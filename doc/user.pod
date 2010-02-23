@@ -730,6 +730,7 @@ is already known to be empty.
 
 	int isl_basic_set_is_universe(__isl_keep isl_basic_set *bset);
 	int isl_basic_map_is_universe(__isl_keep isl_basic_map *bmap);
+	int isl_set_fast_is_universe(__isl_keep isl_set *set);
 
 =back
 
