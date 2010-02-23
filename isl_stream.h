@@ -63,8 +63,12 @@ void isl_stream_error(struct isl_stream *s, struct isl_token *tok, char *msg);
 
 struct isl_token *isl_stream_next_token(struct isl_stream *s);
 struct isl_token *isl_stream_next_token_on_same_line(struct isl_stream *s);
+int isl_stream_next_token_is(struct isl_stream *s, int type);
 void isl_stream_push_token(struct isl_stream *s, struct isl_token *tok);
+int isl_stream_eat_if_available(struct isl_stream *s, int type);
+char *isl_stream_read_ident_if_available(struct isl_stream *s);
 int isl_stream_eat(struct isl_stream *s, int type);
+int isl_stream_is_empty(struct isl_stream *s);
 
 #if defined(__cplusplus)
 }

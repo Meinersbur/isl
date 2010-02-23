@@ -342,6 +342,50 @@ struct isl_token *isl_stream_next_token_on_same_line(struct isl_stream *s)
 	return next_token(s, 1);
 }
 
+int isl_stream_eat_if_available(struct isl_stream *s, int type)
+{
+	struct isl_token *tok;
+
+	tok = isl_stream_next_token(s);
+	if (!tok)
+		return 0;
+	if (tok->type == type) {
+		isl_token_free(tok);
+		return 1;
+	}
+	isl_stream_push_token(s, tok);
+	return 0;
+}
+
+int isl_stream_next_token_is(struct isl_stream *s, int type)
+{
+	struct isl_token *tok;
+	int r;
+
+	tok = isl_stream_next_token(s);
+	if (!tok)
+		return 0;
+	r = tok->type == type;
+	isl_stream_push_token(s, tok);
+	return r;
+}
+
+char *isl_stream_read_ident_if_available(struct isl_stream *s)
+{
+	struct isl_token *tok;
+
+	tok = isl_stream_next_token(s);
+	if (!tok)
+		return NULL;
+	if (tok->type == ISL_TOKEN_IDENT) {
+		char *ident = strdup(tok->u.s);
+		isl_token_free(tok);
+		return ident;
+	}
+	isl_stream_push_token(s, tok);
+	return NULL;
+}
+
 int isl_stream_eat(struct isl_stream *s, int type)
 {
 	struct isl_token *tok;
@@ -356,6 +400,19 @@ int isl_stream_eat(struct isl_stream *s, int type)
 	isl_stream_error(s, tok, "expecting other token");
 	isl_stream_push_token(s, tok);
 	return -1;
+}
+
+int isl_stream_is_empty(struct isl_stream *s)
+{
+	struct isl_token *tok;
+
+	tok = isl_stream_next_token(s);
+
+	if (!tok)
+		return 1;
+
+	isl_stream_push_token(s, tok);
+	return 0;
 }
 
 void isl_stream_free(struct isl_stream *s)
