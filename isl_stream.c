@@ -13,6 +13,57 @@
 #include <isl_ctx.h>
 #include "isl_stream.h"
 
+struct isl_keyword {
+	char			*name;
+	enum isl_token_type	type;
+};
+
+static int same_name(const void *entry, const void *val)
+{
+	const struct isl_keyword *keyword = (const struct isl_keyword *)entry;
+
+	return !strcmp(keyword->name, val);
+}
+
+enum isl_token_type isl_stream_register_keyword(struct isl_stream *s,
+	const char *name)
+{
+	struct isl_hash_table_entry *entry;
+	struct isl_keyword *keyword;
+	uint32_t name_hash;
+
+	if (!s->keywords) {
+		s->keywords = isl_hash_table_alloc(s->ctx, 10);
+		if (!s->keywords)
+			return ISL_TOKEN_ERROR;
+		s->next_type = ISL_TOKEN_LAST;
+	}
+
+	name_hash = isl_hash_string(isl_hash_init(), name);
+
+	entry = isl_hash_table_find(s->ctx, s->keywords, name_hash,
+					same_name, name, 1);
+	if (!entry)
+		return ISL_TOKEN_ERROR;
+	if (entry->data) {
+		keyword = entry->data;
+		return keyword->type;
+	}
+
+	keyword = isl_calloc_type(s->ctx, struct isl_keyword);
+	if (!keyword)
+		return ISL_TOKEN_ERROR;
+	keyword->type = s->next_type++;
+	keyword->name = strdup(name);
+	if (!keyword->name) {
+		free(keyword);
+		return ISL_TOKEN_ERROR;
+	}
+	entry->data = keyword;
+
+	return keyword->type;
+}
+
 static struct isl_token *isl_token_new(struct isl_ctx *ctx,
 	int line, int col, unsigned on_new_line)
 {
@@ -71,6 +122,7 @@ static struct isl_stream* isl_stream_new(struct isl_ctx *ctx)
 	for (i = 0; i < 5; ++i)
 		s->tokens[i] = NULL;
 	s->n_token = 0;
+	s->keywords = NULL;
 	return s;
 error:
 	isl_stream_free(s);
@@ -143,6 +195,33 @@ void isl_stream_push_token(struct isl_stream *s, struct isl_token *tok)
 {
 	isl_assert(s->ctx, s->n_token < 5, return);
 	s->tokens[s->n_token++] = tok;
+}
+
+static enum isl_token_type check_keywords(struct isl_stream *s)
+{
+	struct isl_hash_table_entry *entry;
+	struct isl_keyword *keyword;
+	uint32_t name_hash;
+
+	if (!strcasecmp(s->buffer, "exists"))
+		return ISL_TOKEN_EXISTS;
+	if (!strcasecmp(s->buffer, "and"))
+		return ISL_TOKEN_AND;
+	if (!strcasecmp(s->buffer, "or"))
+		return ISL_TOKEN_OR;
+
+	if (!s->keywords)
+		return ISL_TOKEN_IDENT;
+
+	name_hash = isl_hash_string(isl_hash_init(), s->buffer);
+	entry = isl_hash_table_find(s->ctx, s->keywords, name_hash, same_name,
+					s->buffer, 0);
+	if (entry) {
+		keyword = entry->data;
+		return keyword->type;
+	}
+
+	return ISL_TOKEN_IDENT;
 }
 
 static struct isl_token *next_token(struct isl_stream *s, int same_line)
@@ -249,16 +328,9 @@ static struct isl_token *next_token(struct isl_stream *s, int same_line)
 		if (c != -1)
 			isl_stream_ungetc(s, c);
 		isl_stream_push_char(s, '\0');
-		if (!strcasecmp(s->buffer, "exists"))
-			tok->type = ISL_TOKEN_EXISTS;
-		else if (!strcasecmp(s->buffer, "and"))
-			tok->type = ISL_TOKEN_AND;
-		else if (!strcasecmp(s->buffer, "or"))
-			tok->type = ISL_TOKEN_OR;
-		else {
-			tok->type = ISL_TOKEN_IDENT;
+		tok->type = check_keywords(s);
+		if (tok->type == ISL_TOKEN_IDENT)
 			tok->u.s = strdup(s->buffer);
-		}
 		return tok;
 	}
 	if (c == ':') {
@@ -415,6 +487,16 @@ int isl_stream_is_empty(struct isl_stream *s)
 	return 0;
 }
 
+static int free_keyword(void *p)
+{
+	struct isl_keyword *keyword = p;
+
+	free(keyword->name);
+	free(keyword);
+
+	return 0;
+}
+
 void isl_stream_free(struct isl_stream *s)
 {
 	if (!s)
@@ -424,6 +506,10 @@ void isl_stream_free(struct isl_stream *s)
 		struct isl_token *tok = isl_stream_next_token(s);
 		isl_stream_error(s, tok, "unexpected token");
 		isl_token_free(tok);
+	}
+	if (s->keywords) {
+		isl_hash_table_foreach(s->ctx, s->keywords, free_keyword);
+		isl_hash_table_free(s->ctx, s->keywords);
 	}
 	isl_ctx_deref(s->ctx);
 	free(s);

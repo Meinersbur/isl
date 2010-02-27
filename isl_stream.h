@@ -11,17 +11,20 @@
 #define ISL_STREAM_H
 
 #include <stdio.h>
+#include <isl_hash.h>
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
-enum isl_token_type { ISL_TOKEN_UNKNOWN = 256, ISL_TOKEN_VALUE,
+enum isl_token_type { ISL_TOKEN_ERROR = -1,
+			ISL_TOKEN_UNKNOWN = 256, ISL_TOKEN_VALUE,
 			ISL_TOKEN_IDENT, ISL_TOKEN_GE,
 			ISL_TOKEN_LE, ISL_TOKEN_GT, ISL_TOKEN_LT,
 			ISL_TOKEN_TO, ISL_TOKEN_AND,
 			ISL_TOKEN_OR, ISL_TOKEN_EXISTS,
-			ISL_TOKEN_DEF };
+			ISL_TOKEN_DEF,
+			ISL_TOKEN_LAST };
 
 struct isl_token {
 	enum isl_token_type  type;
@@ -53,6 +56,9 @@ struct isl_stream {
 
 	struct isl_token	*tokens[5];
 	int	    	n_token;
+
+	struct isl_hash_table	*keywords;
+	enum isl_token_type	 next_type;
 };
 
 struct isl_stream* isl_stream_new_file(struct isl_ctx *ctx, FILE *file);
@@ -69,6 +75,9 @@ int isl_stream_eat_if_available(struct isl_stream *s, int type);
 char *isl_stream_read_ident_if_available(struct isl_stream *s);
 int isl_stream_eat(struct isl_stream *s, int type);
 int isl_stream_is_empty(struct isl_stream *s);
+
+enum isl_token_type isl_stream_register_keyword(struct isl_stream *s,
+	const char *name);
 
 #if defined(__cplusplus)
 }
