@@ -70,7 +70,6 @@ libisl_la_SOURCES = \
 	isl_scan.c \
 	isl_scan.h \
 	isl_stream.c \
-	isl_stream.h \
 	isl_seq.c \
 	isl_tab.c \
 	isl_tab.h \
@@ -159,6 +158,7 @@ pkginclude_HEADERS = \
 	include/isl_point.h \
 	include/isl_seq.h \
 	include/isl_set.h \
+	include/isl_stream.h \
 	include/isl_vec.h
 
 EXTRA_DIST = \
