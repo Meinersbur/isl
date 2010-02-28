@@ -667,6 +667,16 @@ The callback function C<fn> should return 0 if successful and
 -1 if an error occurs.  In the latter case, or if any other error
 occurs, the above functions will return -1.
 
+It should be noted that C<isl> does not guarantee that
+the basic sets or maps passed to C<fn> are disjoint.
+If this is required, then the user should call one of
+the following functions first.
+
+	__isl_give isl_set *isl_set_make_disjoint(
+		__isl_take isl_set *set);
+	__isl_give isl_map *isl_map_make_disjoint(
+		__isl_take isl_map *map);
+
 To iterate over the constraints of a basic set or map, use
 
 	#include <isl_constraint.h>
