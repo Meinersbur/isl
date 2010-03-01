@@ -707,3 +707,15 @@ __isl_give isl_set *isl_set_make_disjoint(__isl_take isl_set *set)
 {
 	return (struct isl_set *)isl_map_make_disjoint((struct isl_map *)set);
 }
+
+__isl_give isl_set *isl_set_complement(__isl_take isl_set *set)
+{
+	isl_set *universe;
+
+	if (!set)
+		return NULL;
+
+	universe = isl_set_universe(isl_set_get_dim(set));
+
+	return isl_set_subtract(universe, set);
+}
