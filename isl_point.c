@@ -248,6 +248,77 @@ error:
 	return -1;
 }
 
+/* Return 1 if "bmap" contains the point "point".
+ * "bmap" is assumed to have known divs.
+ * The point is first extended with the divs and then passed
+ * to basic_map_contains.
+ */
+int isl_basic_map_contains_point(__isl_keep isl_basic_map *bmap,
+	__isl_keep isl_point *point)
+{
+	int i;
+	struct isl_vec *vec;
+	unsigned dim;
+	int contains;
+
+	if (!bmap || !point)
+		return -1;
+	isl_assert(bmap->ctx, isl_dim_equal(bmap->dim, point->dim), return -1);
+	if (bmap->n_div == 0)
+		return isl_basic_map_contains(bmap, point->vec);
+
+	dim = isl_basic_map_total_dim(bmap) - bmap->n_div;
+	vec = isl_vec_alloc(bmap->ctx, 1 + dim + bmap->n_div);
+	if (!vec)
+		return -1;
+
+	isl_seq_cpy(vec->el, point->vec->el, point->vec->size);
+	for (i = 0; i < bmap->n_div; ++i) {
+		isl_seq_inner_product(bmap->div[i] + 1, vec->el,
+					1 + dim + i, &vec->el[1+dim+i]);
+		isl_int_fdiv_q(vec->el[1+dim+i], vec->el[1+dim+i],
+				bmap->div[i][0]);
+	}
+
+	contains = isl_basic_map_contains(bmap, vec);
+
+	isl_vec_free(vec);
+	return contains;
+}
+
+int isl_map_contains_point(__isl_keep isl_map *map, __isl_keep isl_point *point)
+{
+	int i;
+	int found = 0;
+
+	if (!map || !point)
+		return -1;
+
+	map = isl_map_copy(map);
+	map = isl_map_compute_divs(map);
+	if (!map)
+		return -1;
+
+	for (i = 0; i < map->n; ++i) {
+		found = isl_basic_map_contains_point(map->p[i], point);
+		if (found < 0)
+			goto error;
+		if (found)
+			break;
+	}
+	isl_map_free(map);
+
+	return found;
+error:
+	isl_map_free(map);
+	return -1;
+}
+
+int isl_set_contains_point(__isl_keep isl_set *set, __isl_keep isl_point *point)
+{
+	return isl_map_contains_point((isl_map *)set, point);
+}
+
 __isl_give isl_set *isl_set_box_from_points(__isl_take isl_point *pnt1,
 	__isl_take isl_point *pnt2)
 {

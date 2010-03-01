@@ -12,6 +12,7 @@
 #include "isl_map.h"
 #include "isl_map_private.h"
 #include "isl_tab.h"
+#include <isl_point_private.h>
 
 static void expand_constraint(isl_vec *v, unsigned dim,
 	isl_int *c, int *div_map, unsigned n_div)
@@ -613,9 +614,10 @@ int isl_map_is_singleton(__isl_keep isl_map *map)
 }
 
 /* Given a singleton basic map, extract the single element
- * as an isl_vec.
+ * as an isl_point.
  */
-static __isl_give isl_vec *singleton_extract_point(__isl_keep isl_basic_map *bmap)
+static __isl_give isl_point *singleton_extract_point(
+	__isl_keep isl_basic_map *bmap)
 {
 	int i, j;
 	unsigned dim;
@@ -658,48 +660,11 @@ static __isl_give isl_vec *singleton_extract_point(__isl_keep isl_basic_map *bma
 	}
 
 	isl_int_clear(m);
-	return point;
+	return isl_point_alloc(isl_basic_map_get_dim(bmap), point);
 error:
 	isl_int_clear(m);
 	isl_vec_free(point);
 	return NULL;
-}
-
-/* Return 1 if "bmap" contains the point "point".
- * "bmap" is assumed to have known divs.
- * The point is first extended with the divs and then passed
- * to basic_map_contains.
- */
-static int basic_map_contains_point(__isl_keep isl_basic_map *bmap,
-	__isl_keep isl_vec *point)
-{
-	int i;
-	struct isl_vec *vec;
-	unsigned dim;
-	int contains;
-
-	if (!bmap || !point)
-		return -1;
-	if (bmap->n_div == 0)
-		return isl_basic_map_contains(bmap, point);
-
-	dim = isl_basic_map_total_dim(bmap) - bmap->n_div;
-	vec = isl_vec_alloc(bmap->ctx, 1 + dim + bmap->n_div);
-	if (!vec)
-		return -1;
-
-	isl_seq_cpy(vec->el, point->el, point->size);
-	for (i = 0; i < bmap->n_div; ++i) {
-		isl_seq_inner_product(bmap->div[i] + 1, vec->el,
-					1 + dim + i, &vec->el[1+dim+i]);
-		isl_int_fdiv_q(vec->el[1+dim+i], vec->el[1+dim+i],
-				bmap->div[i][0]);
-	}
-
-	contains = isl_basic_map_contains(bmap, vec);
-
-	isl_vec_free(vec);
-	return contains;
 }
 
 /* Return 1 is the singleton map "map1" is a subset of "map2",
@@ -710,7 +675,7 @@ static int map_is_singleton_subset(__isl_keep isl_map *map1,
 {
 	int i;
 	int is_subset = 0;
-	struct isl_vec *point;
+	struct isl_point *point;
 
 	if (!map1 || !map2)
 		return -1;
@@ -722,12 +687,12 @@ static int map_is_singleton_subset(__isl_keep isl_map *map1,
 		return -1;
 
 	for (i = 0; i < map2->n; ++i) {
-		is_subset = basic_map_contains_point(map2->p[i], point);
+		is_subset = isl_basic_map_contains_point(map2->p[i], point);
 		if (is_subset)
 			break;
 	}
 
-	isl_vec_free(point);
+	isl_point_free(point);
 	return is_subset;
 }
 

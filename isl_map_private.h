@@ -150,3 +150,7 @@ struct isl_set *isl_set_preimage(struct isl_set *set, struct isl_mat *mat);
 
 isl_int *isl_set_wrap_facet(__isl_keep isl_set *set,
 	isl_int *facet, isl_int *ridge);
+
+int isl_basic_map_contains_point(__isl_keep isl_basic_map *bmap,
+	__isl_keep isl_point *point);
+int isl_set_contains_point(__isl_keep isl_set *set, __isl_keep isl_point *point);

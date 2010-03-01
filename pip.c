@@ -16,6 +16,7 @@
 #include "isl_scan.h"
 #include "isl_seq.h"
 #include "isl_ilp.h"
+#include <isl_point_private.h>
 
 /* The input of this program is the same as that of the "example" program
  * from the PipLib distribution, except that the "big parameter column"
@@ -215,11 +216,10 @@ static int scan_one(struct isl_scan_callback *callback,
 	assert(opt);
 
 	if (opt->size == 0) {
-		isl_set *sample_set;
-		sample_set = isl_set_from_basic_set(
-				isl_basic_set_from_vec(sample));
-		assert(isl_set_is_subset(sample_set, sp->empty));
-		isl_set_free(sample_set);
+		isl_point *sample_pnt;
+		sample_pnt = isl_point_alloc(isl_set_get_dim(sp->empty), sample);
+		assert(isl_set_contains_point(sp->empty, sample_pnt));
+		isl_point_free(sample_pnt);
 		isl_vec_free(opt);
 	} else {
 		isl_set *sol;
