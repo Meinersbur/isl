@@ -1094,6 +1094,17 @@ enumerating and return C<-1> as well.
 If the enumeration is performed successfully and to completion,
 then C<isl_set_foreach_point> returns C<0>.
 
+To obtain a single point of a set, use
+
+	__isl_give isl_point *isl_set_sample_point(
+		__isl_take isl_set *set);
+
+If C<set> does not contain any (integer) points, then the
+resulting point will be ``void'', a property that can be
+tested using
+
+	int isl_point_is_void(__isl_keep isl_point *pnt);
+
 =head2 Dependence Analysis
 
 C<isl> contains specialized functionality for performing

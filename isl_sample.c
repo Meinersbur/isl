@@ -16,6 +16,7 @@
 #include "isl_equalities.h"
 #include "isl_tab.h"
 #include "isl_basis_reduction.h"
+#include <isl_point_private.h>
 
 static struct isl_vec *empty_sample(struct isl_basic_set *bset)
 {
@@ -1245,4 +1246,42 @@ error:
 __isl_give isl_basic_set *isl_set_sample(__isl_take isl_set *set)
 {
 	return (isl_basic_set *) isl_map_sample((isl_map *)set);
+}
+
+__isl_give isl_point *isl_basic_set_sample_point(__isl_take isl_basic_set *bset)
+{
+	isl_vec *vec;
+	isl_dim *dim;
+
+	dim = isl_basic_set_get_dim(bset);
+	bset = isl_basic_set_underlying_set(bset);
+	vec = isl_basic_set_sample_vec(bset);
+
+	return isl_point_alloc(dim, vec);
+}
+
+__isl_give isl_point *isl_set_sample_point(__isl_take isl_set *set)
+{
+	int i;
+	isl_point *pnt;
+
+	if (!set)
+		return NULL;
+
+	for (i = 0; i < set->n; ++i) {
+		pnt = isl_basic_set_sample_point(isl_basic_set_copy(set->p[i]));
+		if (!pnt)
+			goto error;
+		if (!isl_point_is_void(pnt))
+			break;
+		isl_point_free(pnt);
+	}
+	if (i == set->n)
+		pnt = isl_point_void(isl_set_get_dim(set));
+
+	isl_set_free(set);
+	return pnt;
+error:
+	isl_set_free(set);
+	return NULL;
 }
