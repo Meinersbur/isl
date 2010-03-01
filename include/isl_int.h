@@ -58,6 +58,7 @@ typedef mpz_t	isl_int;
 #define isl_int_lcm(r,i,j)	mpz_lcm(r,i,j)
 #define isl_int_divexact(r,i,j)	mpz_divexact(r,i,j)
 #define isl_int_divexact_ui(r,i,j)	mpz_divexact_ui(r,i,j)
+#define isl_int_tdiv_q(r,i,j)	mpz_tdiv_q(r,i,j)
 #define isl_int_cdiv_q(r,i,j)	mpz_cdiv_q(r,i,j)
 #define isl_int_fdiv_q(r,i,j)	mpz_fdiv_q(r,i,j)
 #define isl_int_fdiv_r(r,i,j)	mpz_fdiv_r(r,i,j)
