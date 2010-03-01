@@ -64,7 +64,7 @@ struct isl_vec *isl_vec_cow(struct isl_vec *vec)
 		return vec;
 
 	vec2 = isl_vec_dup(vec);
-	isl_vec_free( vec);
+	isl_vec_free(vec);
 	return vec2;
 }
 
