@@ -91,6 +91,8 @@ int isl_basic_set_scan(struct isl_basic_set *bset,
 	tab = isl_tab_from_basic_set(bset);
 	if (!tab)
 		goto error;
+	if (isl_tab_extend_cons(tab, dim + 1) < 0)
+		goto error;
 
 	tab->basis = isl_mat_identity(bset->ctx, 1 + dim);
 	if (1)
