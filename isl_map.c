@@ -4932,6 +4932,25 @@ struct isl_basic_set *isl_basic_set_order_divs(struct isl_basic_set *bset)
 		isl_basic_map_order_divs((struct isl_basic_map *)bset);
 }
 
+__isl_give isl_map *isl_map_order_divs(__isl_take isl_map *map)
+{
+	int i;
+
+	if (!map)
+		return 0;
+
+	for (i = 0; i < map->n; ++i) {
+		map->p[i] = isl_basic_map_order_divs(map->p[i]);
+		if (!map->p[i])
+			goto error;
+	}
+
+	return map;
+error:
+	isl_map_free(map);
+	return NULL;
+}
+
 /* Look for a div in dst that corresponds to the div "div" in src.
  * The divs before "div" in src and dst are assumed to be the same.
  * 
