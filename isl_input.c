@@ -919,6 +919,13 @@ static __isl_give isl_basic_map *basic_map_read_polylib(struct isl_stream *s,
 	for (i = 0; i < n_row; ++i)
 		bmap = basic_map_read_polylib_constraint(s, bmap);
 
+	tok = isl_stream_next_token_on_same_line(s);
+	if (tok) {
+		isl_stream_error(s, tok, "unexpected extra token on line");
+		isl_stream_push_token(s, tok);
+		goto error;
+	}
+
 	bmap = isl_basic_map_simplify(bmap);
 	bmap = isl_basic_map_finalize(bmap);
 	return bmap;
@@ -939,18 +946,12 @@ static struct isl_map *map_read_polylib(struct isl_stream *s, int nparam)
 		isl_stream_error(s, NULL, "unexpected EOF");
 		return NULL;
 	}
-	tok2 = isl_stream_next_token(s);
-	if (!tok2) {
-		isl_token_free(tok);
-		isl_stream_error(s, NULL, "unexpected EOF");
-		return NULL;
-	}
-	if (!tok2->on_new_line) {
+	tok2 = isl_stream_next_token_on_same_line(s);
+	if (tok2) {
 		isl_stream_push_token(s, tok2);
 		isl_stream_push_token(s, tok);
 		return isl_map_from_basic_map(basic_map_read_polylib(s, nparam));
 	}
-	isl_stream_push_token(s, tok2);
 	n = isl_int_get_si(tok->u.v);
 	isl_token_free(tok);
 
