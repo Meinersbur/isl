@@ -158,6 +158,9 @@ static struct isl_token *next_token(struct isl_stream *s, int same_line)
 		return s->tokens[--s->n_token];
 	}
 
+	if (same_line && s->c == '\n')
+		return NULL;
+
 	s->len = 0;
 
 	/* skip spaces and comment lines */
