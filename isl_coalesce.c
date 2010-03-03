@@ -489,7 +489,7 @@ unbounded:
  * to have been restricted to this facet, so that the non-redundant
  * constraints in tab[j] are the ridges of the facet.
  * Note that for the purpose of wrapping, it does not matter whether
- * we wrap the ridges of i aronud the whole of j or just around
+ * we wrap the ridges of i around the whole of j or just around
  * the facet since all the other constraints are assumed to be valid for j.
  * In practice, we wrap to include the whole of j.
  *        ____			  _____
