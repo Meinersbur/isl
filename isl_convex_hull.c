@@ -473,6 +473,7 @@ isl_int *isl_set_wrap_facet(__isl_keep isl_set *set,
 	unsigned dim;
 
 	set = isl_set_copy(set);
+	set = isl_set_set_rational(set);
 
 	dim = 1 + isl_set_n_dim(set);
 	T = isl_mat_alloc(set->ctx, 3, dim);

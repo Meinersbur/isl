@@ -529,6 +529,7 @@ void test_gist(struct isl_ctx *ctx)
 void test_coalesce(struct isl_ctx *ctx)
 {
 	struct isl_set *set, *set2;
+	struct isl_map *map, *map2;
 
 	set = isl_set_read_from_str(ctx,
 		"{[x,y]: x >= 0 & x <= 10 & y >= 0 & y <= 10 or "
@@ -635,6 +636,49 @@ void test_coalesce(struct isl_ctx *ctx)
 	assert(isl_set_is_equal(set, set2));
 	isl_set_free(set);
 	isl_set_free(set2);
+
+	map = isl_map_read_from_str(ctx,
+		"[n] -> { [i0] -> [o0] : exists (e0 = [(i0)/4], e1 = [(o0)/4], "
+		"e2 = [(n)/2], e3 = [(-2 + i0)/4], e4 = [(-2 + o0)/4], "
+		"e5 = [(-2n + i0)/4]: 2e2 = n and 4e3 = -2 + i0 and "
+		"4e4 = -2 + o0 and i0 >= 8 + 2n and o0 >= 2 + i0 and "
+		"o0 <= 56 + 2n and o0 <= -12 + 4n and i0 <= 57 + 2n and "
+		"i0 <= -11 + 4n and o0 >= 6 + 2n and 4e0 <= i0 and "
+		"4e0 >= -3 + i0 and 4e1 <= o0 and 4e1 >= -3 + o0 and "
+		"4e5 <= -2n + i0 and 4e5 >= -3 - 2n + i0);"
+		"[i0] -> [o0] : exists (e0 = [(i0)/4], e1 = [(o0)/4], "
+		"e2 = [(n)/2], e3 = [(-2 + i0)/4], e4 = [(-2 + o0)/4], "
+		"e5 = [(-2n + i0)/4]: 2e2 = n and 4e3 = -2 + i0 and "
+		"4e4 = -2 + o0 and 2e0 >= 3 + n and e0 <= -4 + n and "
+		"2e0 <= 27 + n and e1 <= -4 + n and 2e1 <= 27 + n and "
+		"2e1 >= 2 + n and e1 >= 1 + e0 and i0 >= 7 + 2n and "
+		"i0 <= -11 + 4n and i0 <= 57 + 2n and 4e0 <= -2 + i0 and "
+		"4e0 >= -3 + i0 and o0 >= 6 + 2n and o0 <= -11 + 4n and "
+		"o0 <= 57 + 2n and 4e1 <= -2 + o0 and 4e1 >= -3 + o0 and "
+		"4e5 <= -2n + i0 and 4e5 >= -3 - 2n + i0 ) }", -1);
+	map = isl_map_coalesce(map);
+	map2 = isl_map_read_from_str(ctx,
+		"[n] -> { [i0] -> [o0] : exists (e0 = [(i0)/4], e1 = [(o0)/4], "
+		"e2 = [(n)/2], e3 = [(-2 + i0)/4], e4 = [(-2 + o0)/4], "
+		"e5 = [(-2n + i0)/4]: 2e2 = n and 4e3 = -2 + i0 and "
+		"4e4 = -2 + o0 and i0 >= 8 + 2n and o0 >= 2 + i0 and "
+		"o0 <= 56 + 2n and o0 <= -12 + 4n and i0 <= 57 + 2n and "
+		"i0 <= -11 + 4n and o0 >= 6 + 2n and 4e0 <= i0 and "
+		"4e0 >= -3 + i0 and 4e1 <= o0 and 4e1 >= -3 + o0 and "
+		"4e5 <= -2n + i0 and 4e5 >= -3 - 2n + i0);"
+		"[i0] -> [o0] : exists (e0 = [(i0)/4], e1 = [(o0)/4], "
+		"e2 = [(n)/2], e3 = [(-2 + i0)/4], e4 = [(-2 + o0)/4], "
+		"e5 = [(-2n + i0)/4]: 2e2 = n and 4e3 = -2 + i0 and "
+		"4e4 = -2 + o0 and 2e0 >= 3 + n and e0 <= -4 + n and "
+		"2e0 <= 27 + n and e1 <= -4 + n and 2e1 <= 27 + n and "
+		"2e1 >= 2 + n and e1 >= 1 + e0 and i0 >= 7 + 2n and "
+		"i0 <= -11 + 4n and i0 <= 57 + 2n and 4e0 <= -2 + i0 and "
+		"4e0 >= -3 + i0 and o0 >= 6 + 2n and o0 <= -11 + 4n and "
+		"o0 <= 57 + 2n and 4e1 <= -2 + o0 and 4e1 >= -3 + o0 and "
+		"4e5 <= -2n + i0 and 4e5 >= -3 - 2n + i0 ) }", -1);
+	assert(isl_map_is_equal(map, map2));
+	isl_map_free(map);
+	isl_map_free(map2);
 }
 
 void test_closure(struct isl_ctx *ctx)
