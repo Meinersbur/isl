@@ -209,6 +209,10 @@ static enum isl_token_type check_keywords(struct isl_stream *s)
 		return ISL_TOKEN_AND;
 	if (!strcasecmp(s->buffer, "or"))
 		return ISL_TOKEN_OR;
+	if (!strcasecmp(s->buffer, "infty"))
+		return ISL_TOKEN_INFTY;
+	if (!strcasecmp(s->buffer, "infinity"))
+		return ISL_TOKEN_INFTY;
 
 	if (!s->keywords)
 		return ISL_TOKEN_IDENT;
