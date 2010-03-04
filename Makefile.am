@@ -66,6 +66,8 @@ libisl_la_SOURCES = \
 	isl_piplib.h \
 	isl_point_private.h \
 	isl_point.c \
+	isl_polynomial_private.h \
+	isl_polynomial.c \
 	isl_sample.h \
 	isl_sample.c \
 	isl_scan.c \
@@ -157,6 +159,7 @@ pkginclude_HEADERS = \
 	include/isl_map.h \
 	include/isl_options.h \
 	include/isl_point.h \
+	include/isl_polynomial.h \
 	include/isl_seq.h \
 	include/isl_set.h \
 	include/isl_stream.h \

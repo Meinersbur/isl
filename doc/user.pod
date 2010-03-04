@@ -1105,6 +1105,129 @@ tested using
 
 	int isl_point_is_void(__isl_keep isl_point *pnt);
 
+=head2 Piecewise Quasipolynomials
+
+A piecewise quasipolynomial is a particular kind of function that maps
+a parametric point to a rational value.
+More specifically, a quasipolynomial is a polynomial expression in greatest
+integer parts of affine expressions of parameters and variables.
+A piecewise quasipolynomial is a subdivision of a given parametric
+domain into disjoint cells with a quasipolynomial associated to
+each cell.  The value of the piecewise quasipolynomial at a given
+point is the value of the quasipolynomial associated to the cell
+that contains the point.  Outside of the union of cells,
+the value is assumed to be zero.
+For example, the piecewise quasipolynomial
+
+	[n] -> { [x] -> ((1 + n) - x) : x <= n and x >= 0 }
+
+maps C<x> to C<1 + n - x> for values of C<x> between C<0> and C<n>.
+Piecewise quasipolynomials are mainly used by the C<barvinok>
+library for representing the number of elements in a parametric set or map.
+For example, the piecewise quasipolynomial above represents
+the number of point in the map
+
+	[n] -> { [x] -> [y] : x,y >= 0 and 0 <= x + y <= n }
+
+=head3 Printing (Piecewise) Quasipolynomials
+
+Quasipolynomials and piecewise quasipolynomials can be printed
+using the following functions.
+
+	void isl_qpolynomial_print(__isl_keep isl_qpolynomial *qp,
+		FILE *out, unsigned output_format);
+
+	void isl_pw_qpolynomial_print(
+		__isl_keep isl_pw_qpolynomial *pwqp, FILE *out,
+		unsigned output_format);
+
+=head3 Creating New (Piecewise) Quasipolynomials
+
+Some simple quasipolynomials can be created using the following functions.
+More complicated quasipolynomials can be created by applying
+operations such as addition and multiplication
+on the resulting quasipolynomials
+
+	__isl_give isl_qpolynomial *isl_qpolynomial_zero(
+		__isl_take isl_dim *dim);
+	__isl_give isl_qpolynomial *isl_qpolynomial_infty(
+		__isl_take isl_dim *dim);
+	__isl_give isl_qpolynomial *isl_qpolynomial_nan(
+		__isl_take isl_dim *dim);
+	__isl_give isl_qpolynomial *isl_qpolynomial_rat_cst(
+		__isl_take isl_dim *dim,
+		const isl_int n, const isl_int d);
+	__isl_give isl_qpolynomial *isl_qpolynomial_div(
+		__isl_take isl_div *div);
+	__isl_give isl_qpolynomial *isl_qpolynomial_var(
+		__isl_take isl_dim *dim,
+		enum isl_dim_type type, unsigned pos);
+
+The zero piecewise quasipolynomial or a piecewise quasipolynomial
+with a single cell can be created using the following functions.
+Multiple of these single cell piecewise quasipolynomials can
+be combined to create more complicated piecewise quasipolynomials.
+
+	__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_zero(
+		__isl_take isl_dim *dim);
+	__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_alloc(
+		__isl_take isl_set *set,
+		__isl_take isl_qpolynomial *qp);
+
+Quasipolynomials can be copied and freed again using the following
+functions.
+
+	__isl_give isl_qpolynomial *isl_qpolynomial_copy(
+		__isl_keep isl_qpolynomial *qp);
+	void isl_qpolynomial_free(__isl_take isl_qpolynomial *qp);
+
+	__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_copy(
+		__isl_keep isl_pw_qpolynomial *pwqp);
+	void isl_pw_qpolynomial_free(
+		__isl_take isl_pw_qpolynomial *pwqp);
+
+=head3 Properties of (Piecewise) Quasipolynomials
+
+To check whether a quasipolynomial is actually a constant,
+use the following function.
+
+	int isl_qpolynomial_is_cst(__isl_keep isl_qpolynomial *qp,
+		isl_int *n, isl_int *d);
+
+If C<qp> is a constant and if C<n> and C<d> are not C<NULL>
+then the numerator and denominator of the constant
+are returned in C<*n> and C<*d>, respectively.
+
+=head3 Operations on (Piecewise) Quasipolynomials
+
+	__isl_give isl_qpolynomial *isl_qpolynomial_neg(
+		__isl_take isl_qpolynomial *qp);
+	__isl_give isl_qpolynomial *isl_qpolynomial_add(
+		__isl_take isl_qpolynomial *qp1,
+		__isl_take isl_qpolynomial *qp2);
+	__isl_give isl_qpolynomial *isl_qpolynomial_mul(
+		__isl_take isl_qpolynomial *qp1,
+		__isl_take isl_qpolynomial *qp2);
+
+	__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_add(
+		__isl_take isl_pw_qpolynomial *pwqp1,
+		__isl_take isl_pw_qpolynomial *pwqp2);
+	__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_sub(
+		__isl_take isl_pw_qpolynomial *pwqp1,
+		__isl_take isl_pw_qpolynomial *pwqp2);
+	__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_add_disjoint(
+		__isl_take isl_pw_qpolynomial *pwqp1,
+		__isl_take isl_pw_qpolynomial *pwqp2);
+	__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_neg(
+		__isl_take isl_pw_qpolynomial *pwqp);
+	__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_mul(
+		__isl_take isl_pw_qpolynomial *pwqp1,
+		__isl_take isl_pw_qpolynomial *pwqp2);
+
+	__isl_give isl_qpolynomial *isl_pw_qpolynomial_eval(
+		__isl_take isl_pw_qpolynomial *pwqp,
+		__isl_take isl_point *pnt);
+
 =head2 Dependence Analysis
 
 C<isl> contains specialized functionality for performing

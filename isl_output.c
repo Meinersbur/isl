@@ -13,6 +13,7 @@
 #include <string.h>
 #include <isl_set.h>
 #include <isl_seq.h>
+#include <isl_polynomial_private.h>
 
 static void print_constraint_polylib(struct isl_basic_map *bmap,
 	int ineq, int n,
@@ -214,12 +215,11 @@ static void print_term(__isl_keep isl_dim *dim,
 	print_name(dim, out, type, pos, set);
 }
 
-static void print_affine(__isl_keep isl_basic_map *bmap,
-	__isl_keep isl_dim *dim, FILE *out, isl_int *c, int set)
+static void print_affine_of_len(__isl_keep isl_dim *dim, FILE *out,
+	isl_int *c, int len, int set)
 {
 	int i;
 	int first;
-	unsigned len = 1 + isl_basic_map_total_dim(bmap);
 
 	for (i = 0, first = 1; i < len; ++i) {
 		int flip = 0;
@@ -240,6 +240,13 @@ static void print_affine(__isl_keep isl_basic_map *bmap,
 	}
 	if (first)
 		fprintf(out, "0");
+}
+
+static void print_affine(__isl_keep isl_basic_map *bmap,
+	__isl_keep isl_dim *dim, FILE *out, isl_int *c, int set)
+{
+	unsigned len = 1 + isl_basic_map_total_dim(bmap);
+	print_affine_of_len(dim, out, c, len, set);
 }
 
 static void print_constraint(struct isl_basic_map *bmap,
@@ -560,4 +567,161 @@ void isl_map_print(__isl_keep isl_map *map, FILE *out, int indent,
 		isl_map_print_omega(map, out, indent);
 	else
 		isl_assert(map->ctx, 0, return);
+}
+
+static int upoly_rec_n_non_zero(__isl_keep struct isl_upoly_rec *rec)
+{
+	int i;
+	int n;
+
+	for (i = 0, n = 0; i < rec->n; ++i)
+		if (!isl_upoly_is_zero(rec->p[i]))
+			++n;
+
+	return n;
+}
+
+static void print_div(__isl_keep isl_dim *dim, __isl_keep isl_mat *div,
+	int pos, FILE *out)
+{
+	fprintf(out, "[(");
+	print_affine_of_len(dim, out, div->row[pos] + 1, div->n_col - 1, 1);
+	fprintf(out, ")/");
+	isl_int_print(out, div->row[pos][0], 0);
+	fprintf(out, "]");
+}
+
+static void upoly_print_cst(__isl_keep struct isl_upoly *up, FILE *out, int first)
+{
+	struct isl_upoly_cst *cst;
+	int neg;
+
+	cst = isl_upoly_as_cst(up);
+	if (!cst)
+		return;
+	neg = !first && isl_int_is_neg(cst->n);
+	if (!first)
+		fprintf(out, neg ? " - " :  " + ");
+	if (neg)
+		isl_int_neg(cst->n, cst->n);
+	if (isl_int_is_zero(cst->d)) {
+		int sgn = isl_int_sgn(cst->n);
+		fprintf(out, sgn < 0 ? "-infty" : sgn == 0 ? "NaN" : "infty");
+	} else
+		isl_int_print(out, cst->n, 0);
+	if (neg)
+		isl_int_neg(cst->n, cst->n);
+	if (!isl_int_is_zero(cst->d) && !isl_int_is_one(cst->d)) {
+		fprintf(out, "/");
+		isl_int_print(out, cst->d, 0);
+	}
+}
+
+static void upoly_print(__isl_keep struct isl_upoly *up,
+	__isl_keep isl_dim *dim, __isl_keep isl_mat *div, FILE *out)
+{
+	unsigned total;
+	int i, n, first;
+	struct isl_upoly_rec *rec;
+
+	if (!up || !dim || !div)
+		return;
+
+	if (isl_upoly_is_cst(up)) {
+		upoly_print_cst(up, out, 1);
+		return;
+	}
+
+	total = isl_dim_total(dim);
+	rec = isl_upoly_as_rec(up);
+	if (!rec)
+		return;
+	n = upoly_rec_n_non_zero(rec);
+	if (n > 1)
+		fprintf(out, "(");
+	for (i = 0, first = 1; i < rec->n; ++i) {
+		if (isl_upoly_is_zero(rec->p[i]))
+			continue;
+		if (isl_upoly_is_negone(rec->p[i])) {
+			if (!i)
+				fprintf(out, "-1");
+			else if (first)
+				fprintf(out, "-");
+			else
+				fprintf(out, " - ");
+		} else if (isl_upoly_is_cst(rec->p[i]) &&
+				!isl_upoly_is_one(rec->p[i]))
+			upoly_print_cst(rec->p[i], out, first);
+		else {
+			if (!first)
+				fprintf(out, " + ");
+			if (i == 0 || !isl_upoly_is_one(rec->p[i]))
+				upoly_print(rec->p[i], dim, div, out);
+		}
+		first = 0;
+		if (i == 0)
+			continue;
+		if (!isl_upoly_is_one(rec->p[i]) &&
+		    !isl_upoly_is_negone(rec->p[i]))
+			fprintf(out, " * ");
+		if (rec->up.var < total)
+			print_term(dim, up->ctx->one, 1 + rec->up.var, out, 1);
+		else
+			print_div(dim, div, rec->up.var - total, out);
+		if (i == 1)
+			continue;
+		fprintf(out, "^%d", i);
+	}
+	if (n > 1)
+		fprintf(out, ")");
+}
+
+static void qpolynomial_print(__isl_keep isl_qpolynomial *qp, FILE *out)
+{
+	if (!qp)
+		return;
+	upoly_print(qp->upoly, qp->dim, qp->div, out);
+}
+
+void isl_qpolynomial_print(__isl_keep isl_qpolynomial *qp, FILE *out,
+	unsigned output_format)
+{
+	if  (!qp)
+		return;
+	isl_assert(qp->dim->ctx, output_format == ISL_FORMAT_ISL, return);
+	qpolynomial_print(qp, out);
+	fprintf(out, "\n");
+}
+
+void isl_pw_qpolynomial_print(__isl_keep isl_pw_qpolynomial *pwqp, FILE *out,
+	unsigned output_format)
+{
+	int i = 0;
+
+	if (!pwqp)
+		return;
+	isl_assert(pwqp->dim->ctx, output_format == ISL_FORMAT_ISL, return);
+	if (isl_dim_size(pwqp->dim, isl_dim_param) > 0) {
+		print_tuple(pwqp->dim, out, isl_dim_param, 0);
+		fprintf(out, " -> ");
+	}
+	fprintf(out, "{ ");
+	if (pwqp->n == 0) {
+		if (isl_dim_size(pwqp->dim, isl_dim_set) > 0) {
+			print_tuple(pwqp->dim, out, isl_dim_set, 0);
+			fprintf(out, " -> ");
+		}
+		fprintf(out, "0");
+	}
+	for (i = 0; i < pwqp->n; ++i) {
+		if (i)
+			fprintf(out, "; ");
+		if (isl_dim_size(pwqp->p[i].set->dim, isl_dim_set) > 0) {
+			print_tuple(pwqp->p[i].set->dim, out, isl_dim_set, 0);
+			fprintf(out, " -> ");
+		}
+		qpolynomial_print(pwqp->p[i].qp, out);
+		print_disjuncts((isl_map *)pwqp->p[i].set, out, 1);
+	}
+	fprintf(out, " }\n");
 }
