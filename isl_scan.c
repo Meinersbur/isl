@@ -11,6 +11,35 @@
 #include "isl_scan.h"
 #include "isl_seq.h"
 #include "isl_tab.h"
+#include <isl_map_private.h>
+
+struct isl_counter {
+	struct isl_scan_callback callback;
+	isl_int count;
+};
+
+static int increment_counter(struct isl_scan_callback *cb,
+	__isl_take isl_vec *sample)
+{
+	struct isl_counter *cnt = (struct isl_counter *)cb;
+
+	isl_int_add_ui(cnt->count, cnt->count, 1);
+
+	isl_vec_free(sample);
+
+	return 0;
+}
+
+static int increment_range(struct isl_scan_callback *cb, isl_int min, isl_int max)
+{
+	struct isl_counter *cnt = (struct isl_counter *)cb;
+
+	isl_int_add(cnt->count, cnt->count, max);
+	isl_int_sub(cnt->count, cnt->count, min);
+	isl_int_add_ui(cnt->count, cnt->count, 1);
+
+	return 0;
+}
 
 /* Call callback->add with the current sample value of the tableau "tab".
  */
@@ -138,6 +167,17 @@ int isl_basic_set_scan(struct isl_basic_set *bset,
 					goto error;
 			continue;
 		}
+		if (level == dim - 1 && callback->add == increment_counter) {
+			if (increment_range(callback,
+					    min->el[level], max->el[level]))
+				goto error;
+			level--;
+			init = 0;
+			if (level >= 0)
+				if (isl_tab_rollback(tab, snap[level]) < 0)
+					goto error;
+			continue;
+		}
 		isl_int_neg(B->row[1 + level][0], min->el[level]);
 		tab = isl_tab_add_valid_eq(tab, B->row[1 + level]);
 		isl_int_set_si(B->row[1 + level][0], 0);
@@ -167,5 +207,40 @@ error:
 	isl_vec_free(max);
 	isl_basic_set_free(bset);
 	isl_mat_free(B);
+	return -1;
+}
+
+int isl_set_count(__isl_keep isl_set *set, isl_int *count)
+{
+	int i;
+	struct isl_counter cnt = { { &increment_counter } };
+
+	if (!set)
+		return -1;
+
+	isl_int_init(cnt.count);
+
+	set = isl_set_copy(set);
+	set = isl_set_cow(set);
+	set = isl_set_make_disjoint(set);
+	set = isl_set_compute_divs(set);
+	if (!set)
+		goto error;
+
+	isl_int_set_si(cnt.count, 0);
+	for (i = 0; i < set->n; ++i)
+		if (isl_basic_set_scan(isl_basic_set_copy(set->p[i]),
+					&cnt.callback) < 0)
+			goto error;
+
+	isl_int_set(*count, cnt.count);
+
+	isl_set_free(set);
+	isl_int_clear(cnt.count);
+
+	return 0;
+error:
+	isl_set_free(set);
+	isl_int_clear(cnt.count);
 	return -1;
 }
