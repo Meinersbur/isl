@@ -80,9 +80,8 @@ struct isl_context_op {
 	/* return index of a div that corresponds to "div" */
 	int (*get_div)(struct isl_context *context, struct isl_tab *tab,
 			struct isl_vec *div);
-	/* add div "div" to context and return index and non-negativity */
-	int (*add_div)(struct isl_context *context, struct isl_vec *div,
-			int *nonneg);
+	/* add div "div" to context and return non-negativity */
+	int (*add_div)(struct isl_context *context, struct isl_vec *div);
 	int (*detect_equalities)(struct isl_context *context,
 			struct isl_tab *tab);
 	/* return row index of "best" split */
@@ -1712,78 +1711,21 @@ static int tab_has_valid_sample(struct isl_tab *tab, isl_int *ineq, int eq)
 	return i < tab->n_sample;
 }
 
-/* For a div d = floor(f/m), add the constraints
- *
- *		f - m d >= 0
- *		-(f-(m-1)) + m d >= 0
- *
- * Note that the second constraint is the negation of
- *
- *		f - m d >= m
- */
-static void add_div_constraints(struct isl_context *context, unsigned div)
-{
-	unsigned total;
-	unsigned div_pos;
-	struct isl_vec *ineq;
-	struct isl_basic_set *bset;
-
-	bset = context->op->peek_basic_set(context);
-	if (!bset)
-		goto error;
-
-	total = isl_basic_set_total_dim(bset);
-	div_pos = 1 + total - bset->n_div + div;
-
-	ineq = ineq_for_div(bset, div);
-	if (!ineq)
-		goto error;
-
-	context->op->add_ineq(context, ineq->el, 0, 0);
-
-	isl_seq_neg(ineq->el, bset->div[div] + 1, 1 + total);
-	isl_int_set(ineq->el[div_pos], bset->div[div][0]);
-	isl_int_add(ineq->el[0], ineq->el[0], ineq->el[div_pos]);
-	isl_int_sub_ui(ineq->el[0], ineq->el[0], 1);
-
-	context->op->add_ineq(context, ineq->el, 0, 0);
-
-	isl_vec_free(ineq);
-
-	return;
-error:
-	context->op->invalidate(context);
-}
-
 /* Add a div specifed by "div" to the tableau "tab" and return
- * the index of the new div.  *nonneg is set to 1 if the div
- * is obviously non-negative.
+ * 1 if the div is obviously non-negative.
  */
 static int context_tab_add_div(struct isl_tab *tab, struct isl_vec *div,
-	int *nonneg)
+	int (*add_ineq)(void *user, isl_int *), void *user)
 {
 	int i;
 	int r;
-	int k;
 	struct isl_mat *samples;
+	int nonneg;
 
-	for (i = 0; i < tab->n_var; ++i) {
-		if (isl_int_is_zero(div->el[2 + i]))
-			continue;
-		if (!tab->var[i].is_nonneg)
-			break;
-	}
-	*nonneg = i == tab->n_var;
-
-	if (isl_tab_extend_cons(tab, 3) < 0)
-		return -1;
-	if (isl_tab_extend_vars(tab, 1) < 0)
-		return -1;
-	r = isl_tab_allocate_var(tab);
+	r = isl_tab_add_div(tab, div, add_ineq, user);
 	if (r < 0)
 		return -1;
-	if (*nonneg)
-		tab->var[r].is_nonneg = 1;
+	nonneg = tab->var[r].is_nonneg;
 	tab->var[r].frozen = 1;
 
 	samples = isl_mat_extend(tab->samples,
@@ -1798,16 +1740,7 @@ static int context_tab_add_div(struct isl_tab *tab, struct isl_vec *div,
 			       samples->row[i][samples->n_col - 1], div->el[0]);
 	}
 
-	tab->bmap = isl_basic_map_extend_dim(tab->bmap,
-		isl_basic_map_get_dim(tab->bmap), 1, 0, 2);
-	k = isl_basic_map_alloc_div(tab->bmap);
-	if (k < 0)
-		return -1;
-	isl_seq_cpy(tab->bmap->div[k], div->el, div->size);
-	if (isl_tab_push(tab, isl_tab_undo_bmap_div) < 0)
-		return -1;
-
-	return k;
+	return nonneg;
 }
 
 /* Add a div specified by "div" to both the main tableau and
@@ -1820,14 +1753,11 @@ static int add_div(struct isl_tab *tab, struct isl_context *context,
 	struct isl_vec *div)
 {
 	int r;
-	int k;
 	int nonneg;
 
-	k = context->op->add_div(context, div, &nonneg);
-	if (k < 0)
+	if ((nonneg = context->op->add_div(context, div)) < 0)
 		goto error;
 
-	add_div_constraints(context, k);
 	if (!context->op->is_ok(context))
 		goto error;
 
@@ -2229,6 +2159,13 @@ error:
 	clex->tab = NULL;
 }
 
+static int context_lex_add_ineq_wrap(void *user, isl_int *ineq)
+{
+	struct isl_context *context = (struct isl_context *)user;
+	context_lex_add_ineq(context, ineq, 0, 0);
+	return context->op->is_ok(context) ? 0 : -1;
+}
+
 /* Check which signs can be obtained by "ineq" on all the currently
  * active sample values.  See row_sign for more information.
  */
@@ -2310,11 +2247,11 @@ static int context_lex_get_div(struct isl_context *context, struct isl_tab *tab,
 	return get_div(tab, context, div);
 }
 
-static int context_lex_add_div(struct isl_context *context, struct isl_vec *div,
-	int *nonneg)
+static int context_lex_add_div(struct isl_context *context, struct isl_vec *div)
 {
 	struct isl_context_lex *clex = (struct isl_context_lex *)context;
-	return context_tab_add_div(clex->tab, div, nonneg);
+	return context_tab_add_div(clex->tab, div,
+					context_lex_add_ineq_wrap, context);
 }
 
 static int context_lex_detect_equalities(struct isl_context *context,
@@ -2859,6 +2796,13 @@ error:
 	cgbr->tab = NULL;
 }
 
+static int context_gbr_add_ineq_wrap(void *user, isl_int *ineq)
+{
+	struct isl_context *context = (struct isl_context *)user;
+	context_gbr_add_ineq(context, ineq, 0, 0);
+	return context->op->is_ok(context) ? 0 : -1;
+}
+
 static enum isl_tab_row_sign context_gbr_ineq_sign(struct isl_context *context,
 			isl_int *ineq, int strict)
 {
@@ -3047,8 +2991,7 @@ static int context_gbr_get_div(struct isl_context *context, struct isl_tab *tab,
 	return get_div(tab, context, div);
 }
 
-static int context_gbr_add_div(struct isl_context *context, struct isl_vec *div,
-	int *nonneg)
+static int context_gbr_add_div(struct isl_context *context, struct isl_vec *div)
 {
 	struct isl_context_gbr *cgbr = (struct isl_context_gbr *)context;
 	if (cgbr->cone) {
@@ -3070,7 +3013,8 @@ static int context_gbr_add_div(struct isl_context *context, struct isl_vec *div,
 		if (isl_tab_push(cgbr->cone, isl_tab_undo_bmap_div) < 0)
 			return -1;
 	}
-	return context_tab_add_div(cgbr->tab, div, nonneg);
+	return context_tab_add_div(cgbr->tab, div,
+					context_gbr_add_ineq_wrap, context);
 }
 
 static int context_gbr_best_split(struct isl_context *context,

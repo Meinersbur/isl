@@ -1935,6 +1935,150 @@ error:
 	return NULL;
 }
 
+/* Construct and return an inequality that expresses an upper bound
+ * on the given div.
+ * In particular, if the div is given by
+ *
+ *	d = floor(e/m)
+ *
+ * then the inequality expresses
+ *
+ *	m d <= e
+ */
+static struct isl_vec *ineq_for_div(struct isl_basic_map *bmap, unsigned div)
+{
+	unsigned total;
+	unsigned div_pos;
+	struct isl_vec *ineq;
+
+	if (!bmap)
+		return NULL;
+
+	total = isl_basic_map_total_dim(bmap);
+	div_pos = 1 + total - bmap->n_div + div;
+
+	ineq = isl_vec_alloc(bmap->ctx, 1 + total);
+	if (!ineq)
+		return NULL;
+
+	isl_seq_cpy(ineq->el, bmap->div[div] + 1, 1 + total);
+	isl_int_neg(ineq->el[div_pos], bmap->div[div][0]);
+	return ineq;
+}
+
+/* For a div d = floor(f/m), add the constraints
+ *
+ *		f - m d >= 0
+ *		-(f-(m-1)) + m d >= 0
+ *
+ * Note that the second constraint is the negation of
+ *
+ *		f - m d >= m
+ *
+ * If add_ineq is not NULL, then this function is used
+ * instead of isl_tab_add_ineq to effectively add the inequalities.
+ */
+static int add_div_constraints(struct isl_tab *tab, unsigned div,
+	int (*add_ineq)(void *user, isl_int *), void *user)
+{
+	unsigned total;
+	unsigned div_pos;
+	struct isl_vec *ineq;
+
+	total = isl_basic_map_total_dim(tab->bmap);
+	div_pos = 1 + total - tab->bmap->n_div + div;
+
+	ineq = ineq_for_div(tab->bmap, div);
+	if (!ineq)
+		goto error;
+
+	if (add_ineq) {
+		if (add_ineq(user, ineq->el) < 0)
+			goto error;
+	} else {
+		if (isl_tab_add_ineq(tab, ineq->el) < 0)
+			goto error;
+	}
+
+	isl_seq_neg(ineq->el, tab->bmap->div[div] + 1, 1 + total);
+	isl_int_set(ineq->el[div_pos], tab->bmap->div[div][0]);
+	isl_int_add(ineq->el[0], ineq->el[0], ineq->el[div_pos]);
+	isl_int_sub_ui(ineq->el[0], ineq->el[0], 1);
+
+	if (add_ineq) {
+		if (add_ineq(user, ineq->el) < 0)
+			goto error;
+	} else {
+		if (isl_tab_add_ineq(tab, ineq->el) < 0)
+			goto error;
+	}
+
+	isl_vec_free(ineq);
+
+	return 0;
+error:
+	isl_vec_free(ineq);
+	return -1;
+}
+
+/* Add an extra div, prescrived by "div" to the tableau and
+ * the associated bmap (which is assumed to be non-NULL).
+ *
+ * If add_ineq is not NULL, then this function is used instead
+ * of isl_tab_add_ineq to add the div constraints.
+ * This complication is needed because the code in isl_tab_pip
+ * wants to perform some extra processing when an inequality
+ * is added to the tableau.
+ */
+int isl_tab_add_div(struct isl_tab *tab, __isl_keep isl_vec *div,
+	int (*add_ineq)(void *user, isl_int *), void *user)
+{
+	int i;
+	int r;
+	int k;
+	int nonneg;
+
+	if (!tab || !div)
+		return -1;
+
+	isl_assert(tab->mat->ctx, tab->bmap, return -1);
+
+	for (i = 0; i < tab->n_var; ++i) {
+		if (isl_int_is_neg(div->el[2 + i]))
+			break;
+		if (isl_int_is_zero(div->el[2 + i]))
+			continue;
+		if (!tab->var[i].is_nonneg)
+			break;
+	}
+	nonneg = i == tab->n_var && !isl_int_is_neg(div->el[1]);
+
+	if (isl_tab_extend_cons(tab, 3) < 0)
+		return -1;
+	if (isl_tab_extend_vars(tab, 1) < 0)
+		return -1;
+	r = isl_tab_allocate_var(tab);
+	if (r < 0)
+		return -1;
+
+	if (nonneg)
+		tab->var[r].is_nonneg = 1;
+
+	tab->bmap = isl_basic_map_extend_dim(tab->bmap,
+		isl_basic_map_get_dim(tab->bmap), 1, 0, 2);
+	k = isl_basic_map_alloc_div(tab->bmap);
+	if (k < 0)
+		return -1;
+	isl_seq_cpy(tab->bmap->div[k], div->el, div->size);
+	if (isl_tab_push(tab, isl_tab_undo_bmap_div) < 0)
+		return -1;
+
+	if (add_div_constraints(tab, k, add_ineq, user) < 0)
+		return -1;
+
+	return r;
+}
+
 struct isl_tab *isl_tab_from_basic_map(struct isl_basic_map *bmap)
 {
 	int i;
