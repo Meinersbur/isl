@@ -1,0 +1,388 @@
+#include <isl_point_private.h>
+#include <isl_set.h>
+#include <isl_map_private.h>
+#include <isl_sample.h>
+#include <isl_scan.h>
+#include <isl_seq.h>
+
+__isl_give isl_point *isl_point_alloc(__isl_take isl_dim *dim,
+	__isl_take isl_vec *vec)
+{
+	struct isl_point *pnt;
+
+	if (!dim || !vec)
+		goto error;
+
+	pnt = isl_alloc_type(dim->ctx, struct isl_point);
+	if (!pnt)
+		goto error;
+
+	if (vec->size > 1 + isl_dim_total(dim)) {
+		vec = isl_vec_cow(vec);
+		if (!vec)
+			goto error;
+		vec->size = 1 + isl_dim_total(dim);
+	}
+
+	pnt->ref = 1;
+	pnt->dim = dim;
+	pnt->vec = vec;
+
+	return pnt;
+error:
+	isl_dim_free(dim);
+	isl_vec_free(vec);
+	return NULL;
+}
+
+__isl_give isl_point *isl_point_zero(__isl_take isl_dim *dim)
+{
+	isl_vec *vec;
+
+	if (!dim)
+		return NULL;
+	vec = isl_vec_alloc(dim->ctx, 1 + isl_dim_total(dim));
+	if (!vec)
+		goto error;
+	isl_int_set_si(vec->el[0], 1);
+	isl_seq_clr(vec->el + 1, vec->size - 1);
+	return isl_point_alloc(dim, vec);
+error:
+	isl_dim_free(dim);
+	return NULL;
+}
+
+__isl_give isl_point *isl_point_dup(__isl_keep isl_point *pnt)
+{
+	struct isl_point *pnt2;
+
+	if (!pnt)
+		return NULL;
+	pnt2 = isl_point_alloc(isl_dim_copy(pnt->dim), isl_vec_copy(pnt->vec));
+	return pnt2;
+}
+
+__isl_give isl_point *isl_point_cow(__isl_take isl_point *pnt)
+{
+	struct isl_point *pnt2;
+	if (!pnt)
+		return NULL;
+
+	if (pnt->ref == 1)
+		return pnt;
+
+	pnt2 = isl_point_dup(pnt);
+	isl_point_free(pnt);
+	return pnt2;
+}
+
+__isl_give isl_point *isl_point_copy(__isl_keep isl_point *pnt)
+{
+	if (!pnt)
+		return NULL;
+
+	pnt->ref++;
+	return pnt;
+}
+
+void isl_point_free(__isl_take isl_point *pnt)
+{
+	if (!pnt)
+		return;
+
+	if (--pnt->ref > 0)
+		return;
+
+	isl_dim_free(pnt->dim);
+	isl_vec_free(pnt->vec);
+	free(pnt);
+}
+
+__isl_give isl_point *isl_point_void(__isl_take isl_dim *dim)
+{
+	if (!dim)
+		return NULL;
+
+	return isl_point_alloc(dim, isl_vec_alloc(dim->ctx, 0));
+}
+
+int isl_point_is_void(__isl_keep isl_point *pnt)
+{
+	if (!pnt)
+		return -1;
+
+	return pnt->vec->size == 0;
+}
+
+void isl_point_get_coordinate(__isl_keep isl_point *pnt,
+	enum isl_dim_type type, int pos, isl_int *v)
+{
+	if (!pnt || isl_point_is_void(pnt))
+		return;
+	if (type == isl_dim_set)
+		pos += isl_dim_size(pnt->dim, isl_dim_param);
+	isl_int_set(*v, pnt->vec->el[1 + pos]);
+}
+
+__isl_give isl_point *isl_point_set_coordinate(__isl_take isl_point *pnt,
+	enum isl_dim_type type, int pos, isl_int v)
+{
+	if (!pnt || isl_point_is_void(pnt))
+		return pnt;
+
+	pnt = isl_point_cow(pnt);
+	if (!pnt)
+		return NULL;
+	pnt->vec = isl_vec_cow(pnt->vec);
+	if (!pnt->vec)
+		goto error;
+
+	if (type == isl_dim_set)
+		pos += isl_dim_size(pnt->dim, isl_dim_param);
+
+	isl_int_set(pnt->vec->el[1 + pos], v);
+
+	return pnt;
+error:
+	isl_point_free(pnt);
+	return NULL;
+}
+
+__isl_give isl_point *isl_point_add_ui(__isl_take isl_point *pnt,
+	enum isl_dim_type type, int pos, unsigned val)
+{
+	if (!pnt || isl_point_is_void(pnt))
+		return pnt;
+
+	pnt = isl_point_cow(pnt);
+	if (!pnt)
+		return NULL;
+	pnt->vec = isl_vec_cow(pnt->vec);
+	if (!pnt->vec)
+		goto error;
+
+	if (type == isl_dim_set)
+		pos += isl_dim_size(pnt->dim, isl_dim_param);
+
+	isl_int_add_ui(pnt->vec->el[1 + pos], pnt->vec->el[1 + pos], val);
+
+	return pnt;
+error:
+	isl_point_free(pnt);
+	return NULL;
+}
+
+__isl_give isl_point *isl_point_sub_ui(__isl_take isl_point *pnt,
+	enum isl_dim_type type, int pos, unsigned val)
+{
+	if (!pnt || isl_point_is_void(pnt))
+		return pnt;
+
+	pnt = isl_point_cow(pnt);
+	if (!pnt)
+		return NULL;
+	pnt->vec = isl_vec_cow(pnt->vec);
+	if (!pnt->vec)
+		goto error;
+
+	if (type == isl_dim_set)
+		pos += isl_dim_size(pnt->dim, isl_dim_param);
+
+	isl_int_sub_ui(pnt->vec->el[1 + pos], pnt->vec->el[1 + pos], val);
+
+	return pnt;
+error:
+	isl_point_free(pnt);
+	return NULL;
+}
+
+struct isl_foreach_point {
+	struct isl_scan_callback callback;
+	int (*fn)(__isl_take isl_point *pnt, void *user);
+	void *user;
+	isl_dim *dim;
+};
+
+static int foreach_point(struct isl_scan_callback *cb, __isl_take isl_vec *sample)
+{
+	struct isl_foreach_point *fp = (struct isl_foreach_point *)cb;
+	isl_point *pnt;
+
+	pnt = isl_point_alloc(isl_dim_copy(fp->dim), sample);
+
+	return fp->fn(pnt, fp->user);
+}
+
+int isl_set_foreach_point(__isl_keep isl_set *set,
+	int (*fn)(__isl_take isl_point *pnt, void *user), void *user)
+{
+	struct isl_foreach_point fp = { { &foreach_point }, fn, user };
+	int i;
+
+	if (!set)
+		return -1;
+
+	fp.dim = isl_set_get_dim(set);
+	if (!fp.dim)
+		return -1;
+
+	set = isl_set_copy(set);
+	set = isl_set_cow(set);
+	set = isl_set_make_disjoint(set);
+	set = isl_set_compute_divs(set);
+	if (!set)
+		goto error;
+
+	for (i = 0; i < set->n; ++i)
+		if (isl_basic_set_scan(isl_basic_set_copy(set->p[i]),
+					&fp.callback) < 0)
+			goto error;
+
+	isl_set_free(set);
+	isl_dim_free(fp.dim);
+
+	return 0;
+error:
+	isl_set_free(set);
+	isl_dim_free(fp.dim);
+	return -1;
+}
+
+__isl_give isl_set *isl_set_box_from_points(__isl_take isl_point *pnt1,
+	__isl_take isl_point *pnt2)
+{
+	isl_basic_set *bset;
+	unsigned total;
+	int i;
+	int k;
+	isl_int t;
+
+	isl_int_init(t);
+
+	if (!pnt1 || !pnt2)
+		goto error;
+
+	isl_assert(pnt1->dim->ctx,
+			isl_dim_equal(pnt1->dim, pnt2->dim), goto error);
+
+	if (isl_point_is_void(pnt1) && isl_point_is_void(pnt2)) {
+		isl_dim *dim = isl_dim_copy(pnt1->dim);
+		isl_point_free(pnt1);
+		isl_point_free(pnt2);
+		isl_int_clear(t);
+		return isl_set_empty(dim);
+	}
+	if (isl_point_is_void(pnt1)) {
+		isl_basic_set *model;
+		model = isl_basic_set_empty(isl_dim_copy(pnt2->dim));
+		bset = isl_basic_set_from_vec(isl_vec_copy(pnt2->vec));
+		bset = isl_basic_set_from_underlying_set(bset, model);
+		isl_point_free(pnt1);
+		isl_point_free(pnt2);
+		isl_int_clear(t);
+		return isl_set_from_basic_set(bset);
+	}
+	if (isl_point_is_void(pnt2)) {
+		isl_basic_set *model;
+		model = isl_basic_set_empty(isl_dim_copy(pnt1->dim));
+		bset = isl_basic_set_from_vec(isl_vec_copy(pnt1->vec));
+		bset = isl_basic_set_from_underlying_set(bset, model);
+		isl_point_free(pnt1);
+		isl_point_free(pnt2);
+		isl_int_clear(t);
+		return isl_set_from_basic_set(bset);
+	}
+
+	total = isl_dim_total(pnt1->dim);
+	bset = isl_basic_set_alloc_dim(isl_dim_copy(pnt1->dim), 0, 0, 2 * total);
+
+	for (i = 0; i < total; ++i) {
+		isl_int_mul(t, pnt1->vec->el[1 + i], pnt2->vec->el[0]);
+		isl_int_submul(t, pnt2->vec->el[1 + i], pnt1->vec->el[0]);
+
+		k = isl_basic_set_alloc_inequality(bset);
+		if (k < 0)
+			goto error;
+		isl_seq_clr(bset->ineq[k] + 1, total);
+		if (isl_int_is_pos(t)) {
+			isl_int_set_si(bset->ineq[k][1 + i], -1);
+			isl_int_set(bset->ineq[k][0], pnt1->vec->el[1 + i]);
+		} else {
+			isl_int_set_si(bset->ineq[k][1 + i], 1);
+			isl_int_neg(bset->ineq[k][0], pnt1->vec->el[1 + i]);
+		}
+		isl_int_fdiv_q(bset->ineq[k][0], bset->ineq[k][0], pnt1->vec->el[0]);
+
+		k = isl_basic_set_alloc_inequality(bset);
+		if (k < 0)
+			goto error;
+		isl_seq_clr(bset->ineq[k] + 1, total);
+		if (isl_int_is_pos(t)) {
+			isl_int_set_si(bset->ineq[k][1 + i], 1);
+			isl_int_neg(bset->ineq[k][0], pnt2->vec->el[1 + i]);
+		} else {
+			isl_int_set_si(bset->ineq[k][1 + i], -1);
+			isl_int_set(bset->ineq[k][0], pnt2->vec->el[1 + i]);
+		}
+		isl_int_fdiv_q(bset->ineq[k][0], bset->ineq[k][0], pnt2->vec->el[0]);
+	}
+
+	bset = isl_basic_set_finalize(bset);
+
+	isl_point_free(pnt1);
+	isl_point_free(pnt2);
+
+	isl_int_clear(t);
+
+	return isl_set_from_basic_set(bset);
+error:
+	isl_point_free(pnt1);
+	isl_point_free(pnt2);
+	isl_int_clear(t);
+	return NULL;
+}
+
+void isl_point_print(__isl_keep isl_point *pnt, FILE *out)
+{
+	int i;
+	unsigned nparam;
+	unsigned dim;
+
+	if (!pnt)
+		return;
+	if (isl_point_is_void(pnt)) {
+		fprintf(out, "void\n");
+		return;
+	}
+
+	nparam = isl_dim_size(pnt->dim, isl_dim_param);
+	dim = isl_dim_size(pnt->dim, isl_dim_set);
+	if (nparam > 0) {
+		fprintf(out, "[");
+		for (i = 0; i < nparam; ++i) {
+			const char *name;
+			if (i)
+				fprintf(out, ", ");
+			name = isl_dim_get_name(pnt->dim, isl_dim_param, i);
+			if (name)
+				fprintf(out, "%s = ", name);
+			isl_int_print(out, pnt->vec->el[1 + i], 0);
+			if (!isl_int_is_one(pnt->vec->el[0])) {
+				fprintf(out, "/");
+				isl_int_print(out, pnt->vec->el[0], 0);
+			}
+		}
+		fprintf(out, "] -> ");
+	}
+	fprintf(out, "[");
+	for (i = 0; i < dim; ++i) {
+		if (i)
+			fprintf(out, ", ");
+		isl_int_print(out, pnt->vec->el[1 + nparam + i], 0);
+		if (!isl_int_is_one(pnt->vec->el[0])) {
+			fprintf(out, "/");
+			isl_int_print(out, pnt->vec->el[0], 0);
+		}
+	}
+	fprintf(out, "]\n");
+}

@@ -1041,6 +1041,59 @@ of all elements associated to that element.
 	__isl_give isl_map *isl_map_lexmax(
 		__isl_take isl_map *map);
 
+=head2 Points
+
+Points are elements of a set.  They can be used to construct
+simple sets (boxes) or they can be used to represent the
+individual elements of a set.
+The zero point (the origin) can be created using
+
+	__isl_give isl_point *isl_point_zero(__isl_take isl_dim *dim);
+
+The coordinates of a point can be inspected, set and changed
+using
+
+	void isl_point_get_coordinate(__isl_keep isl_point *pnt,
+		enum isl_dim_type type, int pos, isl_int *v);
+	__isl_give isl_point *isl_point_set_coordinate(
+		__isl_take isl_point *pnt,
+		enum isl_dim_type type, int pos, isl_int v);
+
+	__isl_give isl_point *isl_point_add_ui(
+		__isl_take isl_point *pnt,
+		enum isl_dim_type type, int pos, unsigned val);
+	__isl_give isl_point *isl_point_sub_ui(
+		__isl_take isl_point *pnt,
+		enum isl_dim_type type, int pos, unsigned val);
+
+Points can be copied or freed using
+
+	__isl_give isl_point *isl_point_copy(
+		__isl_keep isl_point *pnt);
+	void isl_point_free(__isl_take isl_point *pnt);
+
+A box can be created from two opposite extremal points using
+
+	__isl_give isl_set *isl_set_box_from_points(
+		__isl_take isl_point *pnt1,
+		__isl_take isl_point *pnt2);
+
+All elements of a B<bounded> set can be enumerated using
+the following function.
+
+	int isl_set_foreach_point(__isl_keep isl_set *set,
+		int (*fn)(__isl_take isl_point *pnt, void *user),
+		void *user);
+
+The function C<fn> is called for each integer point in
+C<set> with as second argument the last argument of
+the C<isl_set_foreach_point> call.  The function C<fn>
+should return C<0> on success and C<-1> on failure.
+In the latter case, C<isl_set_foreach_point> will stop
+enumerating and return C<-1> as well.
+If the enumeration is performed successfully and to completion,
+then C<isl_set_foreach_point> returns C<0>.
+
 =head2 Dependence Analysis
 
 C<isl> contains specialized functionality for performing

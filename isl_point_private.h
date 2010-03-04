@@ -1,0 +1,12 @@
+#include <isl_dim.h>
+#include <isl_point.h>
+#include <isl_vec.h>
+
+struct isl_point {
+	int		ref;
+	struct isl_dim	*dim;
+	struct isl_vec	*vec;
+};
+
+__isl_give isl_point *isl_point_alloc(__isl_take isl_dim *dim,
+	__isl_take isl_vec *vec);

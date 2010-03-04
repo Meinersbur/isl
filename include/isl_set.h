@@ -12,6 +12,7 @@
 
 #include "isl_map.h"
 #include "isl_list.h"
+#include <isl_point.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -298,6 +299,12 @@ int isl_set_dim_is_unique(struct isl_set *set, unsigned dim);
 
 int isl_set_foreach_basic_set(__isl_keep isl_set *set,
 	int (*fn)(__isl_take isl_basic_set *bset, void *user), void *user);
+
+int isl_set_foreach_point(__isl_keep isl_set *set,
+	int (*fn)(__isl_take isl_point *pnt, void *user), void *user);
+
+__isl_give isl_set *isl_set_box_from_points(__isl_take isl_point *pnt1,
+	__isl_take isl_point *pnt2);
 
 int isl_set_size(__isl_keep isl_set *set);
 
