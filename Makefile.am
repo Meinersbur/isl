@@ -40,6 +40,7 @@ libisl_la_SOURCES = \
 	isl_constraint.c \
 	isl_convex_hull.c \
 	isl_ctx.c \
+	isl_dim_private.h \
 	isl_dim.c \
 	isl_div.c \
 	isl_equalities.c \

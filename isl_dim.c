@@ -7,7 +7,7 @@
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
  */
 
-#include "isl_dim.h"
+#include <isl_dim_private.h>
 #include "isl_name.h"
 
 struct isl_dim *isl_dim_alloc(struct isl_ctx *ctx,
@@ -342,6 +342,49 @@ struct isl_dim *isl_dim_add(struct isl_dim *dim, enum isl_dim_type type,
 					dim->nparam, dim->n_in, dim->n_out + n);
 	}
 	return dim;
+}
+
+__isl_give isl_dim *isl_dim_move(__isl_take isl_dim *dim,
+	enum isl_dim_type dst_type, unsigned dst_pos,
+	enum isl_dim_type src_type, unsigned src_pos, unsigned n)
+{
+	if (!dim)
+		return NULL;
+	if (n == 0)
+		return dim;
+
+	isl_assert(dim->ctx, src_pos + n <= isl_dim_size(dim, src_type),
+		goto error);
+
+	/* just the simple case for now */
+	isl_assert(dim->ctx,
+		offset(dim, dst_type) + dst_pos ==
+		offset(dim, src_type) + src_pos + ((src_type < dst_type) ? n : 0),
+		goto error);
+
+	if (dst_type == src_type)
+		return dim;
+
+	dim = isl_dim_cow(dim);
+	if (!dim)
+		return NULL;
+
+	switch (dst_type) {
+	case isl_dim_param:	dim->nparam += n; break;
+	case isl_dim_in:	dim->n_in += n; break;
+	case isl_dim_out:	dim->n_out += n; break;
+	}
+
+	switch (src_type) {
+	case isl_dim_param:	dim->nparam -= n; break;
+	case isl_dim_in:	dim->n_in -= n; break;
+	case isl_dim_out:	dim->n_out -= n; break;
+	}
+
+	return dim;
+error:
+	isl_dim_free(dim);
+	return NULL;
 }
 
 struct isl_dim *isl_dim_join(struct isl_dim *left, struct isl_dim *right)

@@ -26,6 +26,7 @@
 #include "isl_sample.h"
 #include "isl_tab.h"
 #include "isl_vec.h"
+#include <isl_dim_private.h>
 
 /* Maps dst positions to src positions */
 struct isl_dim_map {
@@ -2054,6 +2055,101 @@ __isl_give isl_set *isl_set_add(__isl_take isl_set *set,
 	return (isl_set *)isl_map_add((isl_map *)set, type, n);
 error:
 	isl_set_free(set);
+	return NULL;
+}
+
+__isl_give isl_basic_map *isl_basic_map_move(__isl_take isl_basic_map *bmap,
+	enum isl_dim_type dst_type, unsigned dst_pos,
+	enum isl_dim_type src_type, unsigned src_pos, unsigned n)
+{
+	int i;
+
+	if (!bmap)
+		return NULL;
+	if (n == 0)
+		return bmap;
+
+	isl_assert(bmap->ctx, src_pos + n <= isl_basic_map_dim(bmap, src_type),
+		goto error);
+
+	/* just the simple case for now */
+	isl_assert(bmap->ctx,
+	    pos(bmap->dim, dst_type) + dst_pos ==
+	    pos(bmap->dim, src_type) + src_pos + ((src_type < dst_type) ? n : 0),
+	    goto error);
+
+	if (dst_type == src_type)
+		return bmap;
+
+	bmap = isl_basic_map_cow(bmap);
+	if (!bmap)
+		return NULL;
+
+	bmap->dim = isl_dim_move(bmap->dim, dst_type, dst_pos, src_type, src_pos, n);
+	if (!bmap->dim)
+		goto error;
+
+	return bmap;
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+__isl_give isl_set *isl_set_move(__isl_take isl_set *set,
+	enum isl_dim_type dst_type, unsigned dst_pos,
+	enum isl_dim_type src_type, unsigned src_pos, unsigned n)
+{
+	if (!set)
+		return NULL;
+	isl_assert(set->ctx, dst_type != isl_dim_in, goto error);
+	return (isl_set *)isl_map_move((isl_map *)set, dst_type, dst_pos,
+					src_type, src_pos, n);
+error:
+	isl_set_free(set);
+	return NULL;
+}
+
+__isl_give isl_map *isl_map_move(__isl_take isl_map *map,
+	enum isl_dim_type dst_type, unsigned dst_pos,
+	enum isl_dim_type src_type, unsigned src_pos, unsigned n)
+{
+	int i;
+
+	if (!map)
+		return NULL;
+	if (n == 0)
+		return map;
+
+	isl_assert(map->ctx, src_pos + n <= isl_map_dim(map, src_type),
+		goto error);
+
+	/* just the simple case for now */
+	isl_assert(map->ctx,
+	    map_offset(map, dst_type) + dst_pos ==
+	    map_offset(map, src_type) + src_pos + ((src_type < dst_type) ? n : 0),
+	    goto error);
+
+	if (dst_type == src_type)
+		return map;
+
+	map = isl_map_cow(map);
+	if (!map)
+		return NULL;
+
+	map->dim = isl_dim_move(map->dim, dst_type, dst_pos, src_type, src_pos, n);
+	if (!map->dim)
+		goto error;
+
+	for (i = 0; i < map->n; ++i) {
+		map->p[i] = isl_basic_map_move(map->p[i], dst_type, dst_pos,
+						src_type, src_pos, n);
+		if (!map->p[i])
+			goto error;
+	}
+
+	return map;
+error:
+	isl_map_free(map);
 	return NULL;
 }
 
