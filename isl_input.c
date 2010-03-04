@@ -16,6 +16,7 @@
 #include <strings.h>
 #include <isl_set.h>
 #include <isl_seq.h>
+#include <isl_div.h>
 #include "isl_stream.h"
 #include "isl_map_private.h"
 #include "isl_obj.h"
@@ -970,29 +971,198 @@ static struct isl_map *map_read_polylib(struct isl_stream *s, int nparam)
 	return map;
 }
 
-static struct isl_obj obj_read_body(struct isl_stream *s,
-	__isl_take isl_basic_map *bmap, struct vars *v, isl_obj_type type)
+static int optional_power(struct isl_stream *s)
 {
-	struct isl_map *map = NULL;
+	int pow;
 	struct isl_token *tok;
-	struct isl_obj obj = { type, NULL };
-	int n = v->n;
 
-	bmap = read_tuple(s, bmap, isl_dim_in, v);
-	if (!bmap)
-		goto error;
 	tok = isl_stream_next_token(s);
-	if (tok && tok->type == ISL_TOKEN_TO) {
-		obj.type = isl_obj_map;
-		isl_token_free(tok);
-		bmap = read_tuple(s, bmap, isl_dim_out, v);
-		if (!bmap)
-			goto error;
-	} else {
-		bmap = isl_basic_map_reverse(bmap);
+	if (!tok)
+		return 1;
+	if (tok->type != '^') {
+		isl_stream_push_token(s, tok);
+		return 1;
+	}
+	isl_token_free(tok);
+	tok = isl_stream_next_token(s);
+	if (!tok || tok->type != ISL_TOKEN_VALUE) {
+		isl_stream_error(s, tok, "expecting exponent");
 		if (tok)
 			isl_stream_push_token(s, tok);
+		return 1;
 	}
+	pow = isl_int_get_si(tok->u.v);
+	isl_token_free(tok);
+	return pow;
+}
+
+static __isl_give isl_div *read_div(struct isl_stream *s,
+	__isl_keep isl_basic_map *bmap, struct vars *v)
+{
+	unsigned total = isl_basic_map_total_dim(bmap);
+	int k;
+
+	bmap = isl_basic_map_copy(bmap);
+	bmap = isl_basic_map_cow(bmap);
+	bmap = isl_basic_map_extend_dim(bmap, isl_dim_copy(bmap->dim),
+					1, 0, 2);
+
+	if ((k = isl_basic_map_alloc_div(bmap)) < 0)
+		goto error;
+	isl_seq_clr(bmap->div[k], 1 + 1 + total);
+	bmap = add_div_definition(s, v, bmap, k);
+
+	return isl_basic_map_div(bmap, k);
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+static __isl_give isl_qpolynomial *read_term(struct isl_stream *s,
+	__isl_keep isl_basic_map *bmap, struct vars *v);
+
+static __isl_give isl_qpolynomial *read_factor(struct isl_stream *s,
+	__isl_keep isl_basic_map *bmap, struct vars *v)
+{
+	struct isl_qpolynomial *qp;
+	struct isl_token *tok;
+
+	tok = isl_stream_next_token(s);
+	if (!tok) {
+		isl_stream_error(s, NULL, "unexpected EOF");
+		return NULL;
+	}
+	if (tok->type == '(') {
+		isl_token_free(tok);
+		qp = read_term(s, bmap, v);
+		if (!qp)
+			return NULL;
+		if (isl_stream_eat(s, ')'))
+			goto error;
+	} else if (tok->type == ISL_TOKEN_VALUE) {
+		struct isl_token *tok2;
+		tok2 = isl_stream_next_token(s);
+		if (tok2 && tok2->type == '/') {
+			isl_token_free(tok2);
+			tok2 = isl_stream_next_token(s);
+			if (!tok2 || tok2->type != ISL_TOKEN_VALUE) {
+				isl_stream_error(s, tok2, "expected denominator");
+				isl_token_free(tok);
+				isl_token_free(tok2);
+				return NULL;
+			}
+			qp = isl_qpolynomial_rat_cst(isl_basic_map_get_dim(bmap),
+						    tok->u.v, tok2->u.v);
+			isl_token_free(tok2);
+		} else {
+			isl_stream_push_token(s, tok2);
+			qp = isl_qpolynomial_cst(isl_basic_map_get_dim(bmap),
+						tok->u.v);
+		}
+		isl_token_free(tok);
+	} else if (tok->type == ISL_TOKEN_INFTY) {
+		isl_token_free(tok);
+		qp = isl_qpolynomial_infty(isl_basic_map_get_dim(bmap));
+	} else if (tok->type == ISL_TOKEN_NAN) {
+		isl_token_free(tok);
+		qp = isl_qpolynomial_nan(isl_basic_map_get_dim(bmap));
+	} else if (tok->type == ISL_TOKEN_IDENT) {
+		int n = v->n;
+		int pos = vars_pos(v, tok->u.s, -1);
+		int pow;
+		isl_token_free(tok);
+		if (pos < 0)
+			goto error;
+		if (pos >= n) {
+			isl_stream_error(s, tok, "unknown identifier");
+			return NULL;
+		}
+		pow = optional_power(s);
+		qp = isl_qpolynomial_pow(isl_basic_map_get_dim(bmap), pos, pow);
+	} else if (tok->type == '[') {
+		isl_div *div;
+		int pow;
+
+		isl_stream_push_token(s, tok);
+		div = read_div(s, bmap, v);
+		pow = optional_power(s);
+		qp = isl_qpolynomial_div_pow(div, pow);
+	} else if (tok->type == '-') {
+		struct isl_qpolynomial *qp2;
+
+		isl_token_free(tok);
+		qp = isl_qpolynomial_cst(isl_basic_map_get_dim(bmap),
+					    s->ctx->negone);
+		qp2 = read_factor(s, bmap, v);
+		qp = isl_qpolynomial_mul(qp, qp2);
+	} else {
+		isl_stream_error(s, tok, "unexpected isl_token");
+		isl_stream_push_token(s, tok);
+		return NULL;
+	}
+
+	if (isl_stream_eat_if_available(s, '*') ||
+	    isl_stream_next_token_is(s, ISL_TOKEN_IDENT)) {
+		struct isl_qpolynomial *qp2;
+
+		qp2 = read_factor(s, bmap, v);
+		qp = isl_qpolynomial_mul(qp, qp2);
+	}
+
+	return qp;
+error:
+	isl_qpolynomial_free(qp);
+	return NULL;
+}
+
+static __isl_give isl_qpolynomial *read_term(struct isl_stream *s,
+	__isl_keep isl_basic_map *bmap, struct vars *v)
+{
+	struct isl_token *tok;
+	struct isl_qpolynomial *qp;
+
+	qp = read_factor(s, bmap, v);
+
+	for (;;) {
+		tok = isl_stream_next_token(s);
+		if (!tok)
+			return qp;
+
+		if (tok->type == '+') {
+			struct isl_qpolynomial *qp2;
+
+			isl_token_free(tok);
+			qp2 = read_factor(s, bmap, v);
+			qp = isl_qpolynomial_add(qp, qp2);
+		} else if (tok->type == '-') {
+			struct isl_qpolynomial *qp2;
+
+			isl_token_free(tok);
+			qp2 = read_factor(s, bmap, v);
+			qp = isl_qpolynomial_sub(qp, qp2);
+		} else if (tok->type == ISL_TOKEN_VALUE &&
+			    isl_int_is_neg(tok->u.v)) {
+			struct isl_qpolynomial *qp2;
+
+			qp2 = isl_qpolynomial_cst(isl_basic_map_get_dim(bmap),
+							tok->u.v);
+			isl_token_free(tok);
+			qp = isl_qpolynomial_add(qp, qp2);
+		} else {
+			isl_stream_push_token(s, tok);
+			break;
+		}
+	}
+
+	return qp;
+}
+
+static __isl_give isl_map *read_optional_disjuncts(struct isl_stream *s,
+	__isl_take isl_basic_map *bmap, struct vars *v)
+{
+	struct isl_token *tok;
+	struct isl_map *map;
+
 	tok = isl_stream_next_token(s);
 	if (!tok) {
 		isl_stream_error(s, NULL, "unexpected EOF");
@@ -1006,9 +1176,74 @@ static struct isl_obj obj_read_body(struct isl_stream *s,
 	} else
 		isl_stream_push_token(s, tok);
 
+	isl_basic_map_free(bmap);
+
+	return map;
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+static struct isl_obj obj_read_poly(struct isl_stream *s,
+	__isl_take isl_basic_map *bmap, struct vars *v, int n)
+{
+	struct isl_obj obj = { isl_obj_pw_qpolynomial, NULL };
+	struct isl_pw_qpolynomial *pwqp;
+	struct isl_qpolynomial *qp;
+	struct isl_map *map;
+	struct isl_set *set;
+
+	bmap = isl_basic_map_reverse(bmap);
+
+	qp = read_term(s, bmap, v);
+	map = read_optional_disjuncts(s, bmap, v);
+	set = isl_set_from_map(map);
+
+	pwqp = isl_pw_qpolynomial_alloc(set, qp);
+
 	vars_drop(v, v->n - n);
 
-	isl_basic_map_free(bmap);
+	obj.v = pwqp;
+	return obj;
+}
+
+static struct isl_obj obj_read_body(struct isl_stream *s,
+	__isl_take isl_basic_map *bmap, struct vars *v, isl_obj_type type)
+{
+	struct isl_map *map = NULL;
+	struct isl_token *tok;
+	struct isl_obj obj = { type, NULL };
+	int n = v->n;
+
+	if (!isl_stream_next_token_is(s, '['))
+		return obj_read_poly(s, bmap, v, n);
+
+	bmap = read_tuple(s, bmap, isl_dim_in, v);
+	if (!bmap)
+		goto error;
+	tok = isl_stream_next_token(s);
+	if (tok && tok->type == ISL_TOKEN_TO) {
+		obj.type = isl_obj_map;
+		isl_token_free(tok);
+		tok = isl_stream_next_token(s);
+		if (tok && tok->type != '[') {
+			isl_stream_push_token(s, tok);
+			return obj_read_poly(s, bmap, v, n);
+		}
+		isl_stream_push_token(s, tok);
+		bmap = read_tuple(s, bmap, isl_dim_out, v);
+		if (!bmap)
+			goto error;
+	} else {
+		bmap = isl_basic_map_reverse(bmap);
+		if (tok)
+			isl_stream_push_token(s, tok);
+	}
+
+	map = read_optional_disjuncts(s, bmap, v);
+
+	vars_drop(v, v->n - n);
+
 	obj.v = map;
 	return obj;
 error:
