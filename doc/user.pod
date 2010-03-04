@@ -96,7 +96,7 @@ C<piplib> functionality is currently used by default.
 The C<--with-piplib> option can
 be used to specify which C<piplib>
 library to use, either an installed version (C<system>),
-an externally built version (C<build>), a bundled version (C<bundled>)
+an externally built version (C<build>)
 or no version (C<no>).  The option C<build> is mostly useful
 in C<configure> scripts of larger projects that bundle both C<isl>
 and C<piplib>.
@@ -117,9 +117,7 @@ Installation prefix for C<GMP> (architecture-dependent files).
 
 =item C<--with-piplib>
 
-Which copy of C<piplib> to use, either C<no> (default), C<system>, C<build>
-or C<bundled>.  Note that C<bundled> only works if you have obtained
-C<isl> and its submodules from the git repository.
+Which copy of C<piplib> to use, either C<no> (default), C<system> or C<build>.
 
 =item C<--with-piplib-prefix>
 
