@@ -1313,7 +1313,7 @@ C<isl_flow_free> to free all associated memory.
 Although C<isl> is mainly meant to be used as a library,
 it also contains some basic applications that use some
 of the functionality of C<isl>.
-The input may specified either in the L<isl format>
+The input may be specified in either the L<isl format>
 or the L<PolyLib format>.
 
 =head2 C<isl_polyhedron_sample>
