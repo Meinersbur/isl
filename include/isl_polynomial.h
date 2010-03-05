@@ -47,6 +47,9 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_copy(
 	__isl_keep isl_pw_qpolynomial *pwqp);
 void isl_pw_qpolynomial_free(__isl_take isl_pw_qpolynomial *pwqp);
 
+__isl_give isl_dim *isl_pw_qpolynomial_get_dim(
+	__isl_keep isl_pw_qpolynomial *pwqp);
+
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_add(
 	__isl_take isl_pw_qpolynomial *pwqp1,
 	__isl_take isl_pw_qpolynomial *pwqp2);

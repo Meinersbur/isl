@@ -1826,3 +1826,12 @@ error:
 	isl_pw_qpolynomial_free(pwqp);
 	return NULL;
 }
+
+__isl_give isl_dim *isl_pw_qpolynomial_get_dim(
+	__isl_keep isl_pw_qpolynomial *pwqp)
+{
+	if (!pwqp)
+		return NULL;
+
+	return isl_dim_copy(pwqp->dim);
+}
