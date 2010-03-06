@@ -33,6 +33,18 @@ struct isl_qpolynomial {
 	struct isl_upoly *upoly;
 };
 
+struct isl_term {
+	int ref;
+
+	isl_int n;
+	isl_int d;
+
+	struct isl_dim *dim;
+	struct isl_mat *div;
+
+	int pow[1];
+};
+
 struct isl_pw_qpolynomial_piece {
 	struct isl_set *set;
 	struct isl_qpolynomial *qp;

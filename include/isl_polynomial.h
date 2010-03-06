@@ -34,6 +34,23 @@ __isl_give isl_qpolynomial *isl_qpolynomial_add(__isl_take isl_qpolynomial *qp1,
 __isl_give isl_qpolynomial *isl_qpolynomial_mul(__isl_take isl_qpolynomial *qp1,
 	__isl_take isl_qpolynomial *qp2);
 
+struct isl_term;
+typedef struct isl_term isl_term;
+
+isl_ctx *isl_term_get_ctx(__isl_keep isl_term *term);
+
+void isl_term_free(__isl_take isl_term *term);
+
+unsigned isl_term_dim(__isl_keep isl_term *term, enum isl_dim_type type);
+void isl_term_get_num(__isl_keep isl_term *term, isl_int *n);
+void isl_term_get_den(__isl_keep isl_term *term, isl_int *d);
+int isl_term_get_exp(__isl_keep isl_term *term,
+	enum isl_dim_type type, unsigned pos);
+__isl_give isl_div *isl_term_get_div(__isl_keep isl_term *term, unsigned pos);
+
+int isl_qpolynomial_foreach_term(__isl_keep isl_qpolynomial *qp,
+	int (*fn)(__isl_take isl_term *term, void *user), void *user);
+
 void isl_qpolynomial_print(__isl_keep isl_qpolynomial *qp, FILE *out,
 	unsigned output_format);
 
@@ -72,6 +89,10 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_move(
 
 __isl_give isl_qpolynomial *isl_pw_qpolynomial_eval(
 	__isl_take isl_pw_qpolynomial *pwqp, __isl_take isl_point *pnt);
+
+int isl_pw_qpolynomial_foreach_piece(__isl_keep isl_pw_qpolynomial *pwqp,
+	int (*fn)(__isl_take isl_set *set, __isl_take isl_qpolynomial *qp,
+		    void *user), void *user);
 
 void isl_pw_qpolynomial_print(__isl_keep isl_pw_qpolynomial *pwqp, FILE *out,
 	unsigned output_format);

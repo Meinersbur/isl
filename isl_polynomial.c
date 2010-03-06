@@ -1835,3 +1835,260 @@ __isl_give isl_dim *isl_pw_qpolynomial_get_dim(
 
 	return isl_dim_copy(pwqp->dim);
 }
+
+__isl_give isl_term *isl_term_alloc(__isl_take isl_dim *dim,
+	__isl_take isl_mat *div)
+{
+	isl_term *term;
+	int n;
+
+	if (!dim || !div)
+		goto error;
+
+	n = isl_dim_total(dim) + div->n_row;
+
+	term = isl_calloc(dim->ctx, struct isl_term,
+			sizeof(struct isl_term) + (n - 1) * sizeof(int));
+	if (!term)
+		goto error;
+
+	term->ref = 1;
+	term->dim = dim;
+	term->div = div;
+	isl_int_init(term->n);
+	isl_int_init(term->d);
+	
+	return term;
+error:
+	isl_dim_free(dim);
+	isl_mat_free(div);
+	return NULL;
+}
+
+__isl_give isl_term *isl_term_copy(__isl_keep isl_term *term)
+{
+	if (!term)
+		return NULL;
+
+	term->ref++;
+	return term;
+}
+
+__isl_give isl_term *isl_term_dup(__isl_keep isl_term *term)
+{
+	int i;
+	isl_term *dup;
+	unsigned total;
+
+	if (term)
+		return NULL;
+
+	total = isl_dim_total(term->dim) + term->div->n_row;
+
+	dup = isl_term_alloc(isl_dim_copy(term->dim), isl_mat_copy(term->div));
+	if (!dup)
+		return NULL;
+
+	isl_int_set(dup->n, term->n);
+	isl_int_set(dup->d, term->d);
+
+	for (i = 0; i < total; ++i)
+		dup->pow[i] = term->pow[i];
+
+	return dup;
+}
+
+__isl_give isl_term *isl_term_cow(__isl_take isl_term *term)
+{
+	if (!term)
+		return NULL;
+
+	if (term->ref == 1)
+		return term;
+	term->ref--;
+	return isl_term_dup(term);
+}
+
+void isl_term_free(__isl_take isl_term *term)
+{
+	if (!term)
+		return;
+
+	if (--term->ref > 0)
+		return;
+
+	isl_dim_free(term->dim);
+	isl_mat_free(term->div);
+	isl_int_clear(term->n);
+	isl_int_clear(term->d);
+	free(term);
+}
+
+unsigned isl_term_dim(__isl_keep isl_term *term, enum isl_dim_type type)
+{
+	if (!term)
+		return 0;
+
+	switch (type) {
+	case isl_dim_param:
+	case isl_dim_in:
+	case isl_dim_out:	return isl_dim_size(term->dim, type);
+	case isl_dim_div:	return term->div->n_row;
+	case isl_dim_all:	return isl_dim_total(term->dim) + term->div->n_row;
+	}
+}
+
+isl_ctx *isl_term_get_ctx(__isl_keep isl_term *term)
+{
+	return term ? term->dim->ctx : NULL;
+}
+
+void isl_term_get_num(__isl_keep isl_term *term, isl_int *n)
+{
+	if (!term)
+		return;
+	isl_int_set(*n, term->n);
+}
+
+void isl_term_get_den(__isl_keep isl_term *term, isl_int *d)
+{
+	if (!term)
+		return;
+	isl_int_set(*d, term->d);
+}
+
+int isl_term_get_exp(__isl_keep isl_term *term,
+	enum isl_dim_type type, unsigned pos)
+{
+	if (!term)
+		return -1;
+
+	isl_assert(term->dim->ctx, pos < isl_term_dim(term, type), return -1);
+
+	if (type >= isl_dim_set)
+		pos += isl_dim_size(term->dim, isl_dim_param);
+	if (type >= isl_dim_div)
+		pos += isl_dim_size(term->dim, isl_dim_set);
+
+	return term->pow[pos];
+}
+
+__isl_give isl_div *isl_term_get_div(__isl_keep isl_term *term, unsigned pos)
+{
+	isl_basic_map *bmap;
+	unsigned total;
+	int k;
+
+	if (!term)
+		return NULL;
+
+	isl_assert(term->dim->ctx, pos < isl_term_dim(term, isl_dim_div),
+			return NULL);
+
+	total = term->div->n_col - term->div->n_row - 2;
+	/* No nested divs for now */
+	isl_assert(term->dim->ctx,
+		isl_seq_first_non_zero(term->div->row[pos] + 2 + total,
+					term->div->n_row) == -1,
+		return NULL);
+
+	bmap = isl_basic_map_alloc_dim(isl_dim_copy(term->dim), 1, 0, 0);
+	if ((k = isl_basic_map_alloc_div(bmap)) < 0)
+		goto error;
+
+	isl_seq_cpy(bmap->div[k], term->div->row[pos], 2 + total);
+
+	return isl_basic_map_div(bmap, k);
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+__isl_give isl_term *isl_upoly_foreach_term(__isl_keep struct isl_upoly *up,
+	int (*fn)(__isl_take isl_term *term, void *user),
+	__isl_take isl_term *term, void *user)
+{
+	int i;
+	struct isl_upoly_rec *rec;
+
+	if (!up || !term)
+		goto error;
+
+	if (isl_upoly_is_zero(up))
+		return term;
+
+	isl_assert(up->ctx, !isl_upoly_is_nan(up), goto error);
+	isl_assert(up->ctx, !isl_upoly_is_infty(up), goto error);
+	isl_assert(up->ctx, !isl_upoly_is_neginfty(up), goto error);
+
+	if (isl_upoly_is_cst(up)) {
+		struct isl_upoly_cst *cst;
+		cst = isl_upoly_as_cst(up);
+		if (!cst)
+			goto error;
+		term = isl_term_cow(term);
+		if (!term)
+			goto error;
+		isl_int_set(term->n, cst->n);
+		isl_int_set(term->d, cst->d);
+		if (fn(isl_term_copy(term), user) < 0)
+			goto error;
+		return term;
+	}
+
+	rec = isl_upoly_as_rec(up);
+	if (!rec)
+		goto error;
+
+	for (i = 0; i < rec->n; ++i) {
+		term = isl_term_cow(term);
+		if (!term)
+			goto error;
+		term->pow[up->var] = i;
+		term = isl_upoly_foreach_term(rec->p[i], fn, term, user);
+		if (!term)
+			goto error;
+	}
+	term->pow[up->var] = 0;
+
+	return term;
+error:
+	isl_term_free(term);
+	return NULL;
+}
+
+int isl_qpolynomial_foreach_term(__isl_keep isl_qpolynomial *qp,
+	int (*fn)(__isl_take isl_term *term, void *user), void *user)
+{
+	isl_term *term;
+
+	if (!qp)
+		return -1;
+
+	term = isl_term_alloc(isl_dim_copy(qp->dim), isl_mat_copy(qp->div));
+	if (!term)
+		return -1;
+
+	term = isl_upoly_foreach_term(qp->upoly, fn, term, user);
+
+	isl_term_free(term);
+
+	return term ? 0 : -1;
+}
+
+int isl_pw_qpolynomial_foreach_piece(__isl_keep isl_pw_qpolynomial *pwqp,
+	int (*fn)(__isl_take isl_set *set, __isl_take isl_qpolynomial *qp,
+		    void *user), void *user)
+{
+	int i;
+
+	if (!pwqp)
+		return -1;
+
+	for (i = 0; i < pwqp->n; ++i)
+		if (fn(isl_set_copy(pwqp->p[i].set),
+				isl_qpolynomial_copy(pwqp->p[i].qp), user) < 0)
+			return -1;
+
+	return 0;
+}
