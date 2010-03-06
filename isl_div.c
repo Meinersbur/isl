@@ -23,6 +23,11 @@ static unsigned n(struct isl_div *d, enum isl_dim_type type)
 	}
 }
 
+unsigned isl_div_dim(__isl_keep isl_div *div, enum isl_dim_type type)
+{
+	return n(div, type);
+}
+
 static unsigned offset(struct isl_div *d, enum isl_dim_type type)
 {
 	struct isl_dim *dim = d->bmap->dim;

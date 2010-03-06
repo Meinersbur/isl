@@ -40,6 +40,8 @@ void isl_div_set_denominator(struct isl_div *div, isl_int v);
 void isl_div_set_coefficient(struct isl_div *div,
 	enum isl_dim_type type, int pos, isl_int v);
 
+unsigned isl_div_dim(__isl_keep isl_div *div, enum isl_dim_type type);
+
 #if defined(__cplusplus)
 }
 #endif
