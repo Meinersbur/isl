@@ -187,6 +187,11 @@ static struct isl_vec *accept_affine(struct isl_stream *s, struct vars *v)
 			struct isl_token *tok2;
 			int n = v->n;
 			int pos = -1;
+			if (isl_stream_eat_if_available(s, '*') &&
+			    !isl_stream_next_token_is(s, ISL_TOKEN_IDENT)) {
+				isl_stream_error(s, NULL, "missing identifier");
+				goto error;
+			}
 			tok2 = isl_stream_next_token(s);
 			if (tok2 && tok2->type == ISL_TOKEN_IDENT) {
 				pos = vars_pos(v, tok2->u.s, -1);
