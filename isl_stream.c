@@ -272,6 +272,7 @@ static struct isl_token *next_token(struct isl_stream *s, int same_line)
 	    c == '*' ||
 	    c == '^' ||
 	    c == '=' ||
+	    c == '@' ||
 	    c == ',' ||
 	    c == ';' ||
 	    c == '[' ||
