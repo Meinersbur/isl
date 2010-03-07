@@ -1699,6 +1699,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_eval(
 {
 	isl_vec *ext;
 	struct isl_upoly *up;
+	isl_dim *dim;
 
 	if (!qp || !pnt)
 		goto error;
@@ -1726,10 +1727,11 @@ __isl_give isl_qpolynomial *isl_qpolynomial_eval(
 	if (!up)
 		goto error;
 
+	dim = isl_dim_copy(qp->dim);
 	isl_qpolynomial_free(qp);
 	isl_point_free(pnt);
 
-	qp = isl_qpolynomial_alloc(isl_dim_set_alloc(up->ctx, 0, 0), 0);
+	qp = isl_qpolynomial_alloc(dim, 0);
 	if (!qp)
 		isl_upoly_free(up);
 	else
