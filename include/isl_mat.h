@@ -81,6 +81,8 @@ struct isl_mat *isl_mat_drop_cols(struct isl_mat *mat,
 				unsigned col, unsigned n);
 struct isl_mat *isl_mat_drop_rows(struct isl_mat *mat,
 				unsigned row, unsigned n);
+__isl_give isl_mat *isl_mat_insert_cols(__isl_take isl_mat *mat,
+				unsigned col, unsigned n);
 
 void isl_mat_col_mul(struct isl_mat *mat, int dst_col, isl_int f, int src_col);
 void isl_mat_col_submul(struct isl_mat *mat,

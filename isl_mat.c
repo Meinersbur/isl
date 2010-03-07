@@ -1067,6 +1067,31 @@ struct isl_mat *isl_mat_drop_rows(struct isl_mat *mat, unsigned row, unsigned n)
 	return mat;
 }
 
+__isl_give isl_mat *isl_mat_insert_cols(__isl_take isl_mat *mat,
+				unsigned col, unsigned n)
+{
+	isl_mat *ext;
+
+	if (!mat)
+		return NULL;
+	if (n == 0)
+		return mat;
+
+	ext = isl_mat_alloc(mat->ctx, mat->n_row, mat->n_col + n);
+	if (!ext)
+		goto error;
+
+	isl_mat_sub_copy(mat->ctx, ext->row, mat->row, mat->n_row, 0, 0, col);
+	isl_mat_sub_copy(mat->ctx, ext->row, mat->row, mat->n_row,
+				col + n, col, mat->n_col - col);
+
+	isl_mat_free(mat);
+	return ext;
+error:
+	isl_mat_free(mat);
+	return NULL;
+}
+
 void isl_mat_col_submul(struct isl_mat *mat,
 			int dst_col, isl_int f, int src_col)
 {
