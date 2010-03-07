@@ -66,6 +66,8 @@ void isl_pw_qpolynomial_free(__isl_take isl_pw_qpolynomial *pwqp);
 
 __isl_give isl_dim *isl_pw_qpolynomial_get_dim(
 	__isl_keep isl_pw_qpolynomial *pwqp);
+unsigned isl_pw_qpolynomial_dim(__isl_keep isl_pw_qpolynomial *pwqp,
+	enum isl_dim_type type);
 
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_add(
 	__isl_take isl_pw_qpolynomial *pwqp1,
