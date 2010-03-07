@@ -308,6 +308,7 @@ int isl_set_foreach_point(__isl_keep isl_set *set,
 	int (*fn)(__isl_take isl_point *pnt, void *user), void *user);
 int isl_set_count(__isl_keep isl_set *set, isl_int *count);
 
+__isl_give isl_set *isl_set_from_point(__isl_take isl_point *pnt);
 __isl_give isl_set *isl_set_box_from_points(__isl_take isl_point *pnt1,
 	__isl_take isl_point *pnt2);
 

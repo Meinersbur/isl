@@ -319,6 +319,19 @@ int isl_set_contains_point(__isl_keep isl_set *set, __isl_keep isl_point *point)
 	return isl_map_contains_point((isl_map *)set, point);
 }
 
+__isl_give isl_set *isl_set_from_point(__isl_take isl_point *pnt)
+{
+	isl_basic_set *bset;
+	isl_basic_set *model;
+
+	model = isl_basic_set_empty(isl_dim_copy(pnt->dim));
+	bset = isl_basic_set_from_vec(isl_vec_copy(pnt->vec));
+	bset = isl_basic_set_from_underlying_set(bset, model);
+	isl_point_free(pnt);
+
+	return isl_set_from_basic_set(bset);
+}
+
 __isl_give isl_set *isl_set_box_from_points(__isl_take isl_point *pnt1,
 	__isl_take isl_point *pnt2)
 {
@@ -344,24 +357,14 @@ __isl_give isl_set *isl_set_box_from_points(__isl_take isl_point *pnt1,
 		return isl_set_empty(dim);
 	}
 	if (isl_point_is_void(pnt1)) {
-		isl_basic_set *model;
-		model = isl_basic_set_empty(isl_dim_copy(pnt2->dim));
-		bset = isl_basic_set_from_vec(isl_vec_copy(pnt2->vec));
-		bset = isl_basic_set_from_underlying_set(bset, model);
 		isl_point_free(pnt1);
-		isl_point_free(pnt2);
 		isl_int_clear(t);
-		return isl_set_from_basic_set(bset);
+		return isl_set_from_point(pnt2);
 	}
 	if (isl_point_is_void(pnt2)) {
-		isl_basic_set *model;
-		model = isl_basic_set_empty(isl_dim_copy(pnt1->dim));
-		bset = isl_basic_set_from_vec(isl_vec_copy(pnt1->vec));
-		bset = isl_basic_set_from_underlying_set(bset, model);
-		isl_point_free(pnt1);
 		isl_point_free(pnt2);
 		isl_int_clear(t);
-		return isl_set_from_basic_set(bset);
+		return isl_set_from_point(pnt1);
 	}
 
 	total = isl_dim_total(pnt1->dim);

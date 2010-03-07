@@ -1070,7 +1070,12 @@ Points can be copied or freed using
 		__isl_keep isl_point *pnt);
 	void isl_point_free(__isl_take isl_point *pnt);
 
-A box can be created from two opposite extremal points using
+A singleton set can be created from a point using
+
+	__isl_give isl_set *isl_set_from_point(
+		__isl_take isl_point *pnt);
+
+and a box can be created from two opposite extremal points using
 
 	__isl_give isl_set *isl_set_box_from_points(
 		__isl_take isl_point *pnt1,
