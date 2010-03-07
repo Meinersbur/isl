@@ -95,6 +95,9 @@ __isl_give isl_qpolynomial *isl_pw_qpolynomial_eval(
 int isl_pw_qpolynomial_foreach_piece(__isl_keep isl_pw_qpolynomial *pwqp,
 	int (*fn)(__isl_take isl_set *set, __isl_take isl_qpolynomial *qp,
 		    void *user), void *user);
+int isl_pw_qpolynomial_foreach_lifted_piece(__isl_keep isl_pw_qpolynomial *pwqp,
+	int (*fn)(__isl_take isl_set *set, __isl_take isl_qpolynomial *qp,
+		    void *user), void *user);
 
 void isl_pw_qpolynomial_print(__isl_keep isl_pw_qpolynomial *pwqp, FILE *out,
 	unsigned output_format);

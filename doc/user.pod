@@ -1192,16 +1192,31 @@ functions.
 =head3 Inspecting (Piecewise) Quasipolynomials
 
 To iterate over the cells in a piecewise quasipolynomial,
-use the following function
+use either of the following two functions
 
 	int isl_pw_qpolynomial_foreach_piece(
 		__isl_keep isl_pw_qpolynomial *pwqp,
 		int (*fn)(__isl_take isl_set *set,
 			  __isl_take isl_qpolynomial *qp,
 			  void *user), void *user);
+	int isl_pw_qpolynomial_foreach_lifted_piece(
+		__isl_keep isl_pw_qpolynomial *pwqp,
+		int (*fn)(__isl_take isl_set *set,
+			  __isl_take isl_qpolynomial *qp,
+			  void *user), void *user);
 
 As usual, the function C<fn> should return C<0> on success
-and C<-1> on failure.
+and C<-1> on failure.  The difference between
+C<isl_pw_qpolynomial_foreach_piece> and
+C<isl_pw_qpolynomial_foreach_lifted_piece> is that
+C<isl_pw_qpolynomial_foreach_lifted_piece> will first
+compute unique representations for all existentially quantified
+variables and then turn these existentially quantified variables
+into extra set variables, adapting the associated quasipolynomial
+accordingly.  This means that the C<set> passed to C<fn>
+will not have any existentially quantified variables, but that
+the dimensions of the sets may be different for different
+invocations of C<fn>.
 
 To iterate over all terms in a quasipolynomial,
 use
