@@ -6105,6 +6105,71 @@ int isl_set_foreach_basic_set(__isl_keep isl_set *set,
 	return 0;
 }
 
+__isl_give isl_basic_set *isl_basic_set_lift(__isl_take isl_basic_set *bset)
+{
+	struct isl_dim *dim;
+
+	if (!bset)
+		return NULL;
+
+	if (bset->n_div == 0)
+		return bset;
+
+	bset = isl_basic_set_cow(bset);
+	if (!bset)
+		return NULL;
+
+	dim = isl_basic_set_get_dim(bset);
+	dim = isl_dim_add(dim, isl_dim_set, bset->n_div);
+	if (!dim)
+		goto error;
+	isl_dim_free(bset->dim);
+	bset->dim = dim;
+	bset->n_div = 0;
+
+	return bset;
+error:
+	isl_basic_set_free(bset);
+	return NULL;
+}
+
+__isl_give isl_set *isl_set_lift(__isl_take isl_set *set)
+{
+	int i;
+	struct isl_dim *dim;
+	unsigned n_div;
+
+	set = isl_set_align_divs(set);
+
+	if (!set)
+		return NULL;
+	if (set->n == 0 || set->p[0]->n_div == 0)
+		return set;
+
+	set = isl_set_cow(set);
+	if (!set)
+		return NULL;
+
+	n_div = set->p[0]->n_div;
+	dim = isl_set_get_dim(set);
+	dim = isl_dim_add(dim, isl_dim_set, n_div);
+	if (!dim)
+		goto error;
+	isl_dim_free(set->dim);
+	set->dim = dim;
+
+	for (i = 0; i < set->n; ++i) {
+		set->p[i] = isl_basic_set_lift(set->p[i]);
+		if (!set->p[i])
+			goto error;
+	}
+
+	return set;
+error:
+	isl_set_free(set);
+	return NULL;
+}
+
 __isl_give isl_map *isl_set_lifting(__isl_take isl_set *set)
 {
 	struct isl_dim *dim;
