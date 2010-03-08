@@ -23,6 +23,8 @@ extern struct isl_obj_vtable isl_obj_map_vtable;
 #define isl_obj_map		(&isl_obj_map_vtable)
 extern struct isl_obj_vtable isl_obj_pw_qpolynomial_vtable;
 #define isl_obj_pw_qpolynomial	(&isl_obj_pw_qpolynomial_vtable)
+extern struct isl_obj_vtable isl_obj_pw_qpolynomial_fold_vtable;
+#define isl_obj_pw_qpolynomial_fold	(&isl_obj_pw_qpolynomial_fold_vtable)
 struct isl_obj {
 	isl_obj_type	type;
 	void		*v;

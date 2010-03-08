@@ -117,3 +117,32 @@ struct isl_obj_vtable isl_obj_pw_qpolynomial_vtable = {
 	isl_obj_pw_qp_print,
 	isl_obj_pw_qp_free
 };
+
+static void *isl_obj_pw_qpf_copy(void *v)
+{
+	return isl_pw_qpolynomial_fold_copy((struct isl_pw_qpolynomial_fold *)v);
+}
+
+static void isl_obj_pw_qpf_free(void *v)
+{
+	isl_pw_qpolynomial_fold_free((struct isl_pw_qpolynomial_fold *)v);
+}
+
+static void isl_obj_pw_qpf_print(void *v, FILE *out)
+{
+	isl_pw_qpolynomial_fold_print((struct isl_pw_qpolynomial_fold *)v, out,
+					ISL_FORMAT_ISL);
+}
+
+static void *isl_obj_pw_qpf_add(void *v1, void *v2)
+{
+	return isl_pw_qpolynomial_fold_add((struct isl_pw_qpolynomial_fold *)v1,
+					    (struct isl_pw_qpolynomial_fold *)v2);
+}
+
+struct isl_obj_vtable isl_obj_pw_qpolynomial_fold_vtable = {
+	isl_obj_pw_qpf_copy,
+	isl_obj_pw_qpf_add,
+	isl_obj_pw_qpf_print,
+	isl_obj_pw_qpf_free
+};
