@@ -693,6 +693,34 @@ void isl_qpolynomial_print(__isl_keep isl_qpolynomial *qp, FILE *out,
 	fprintf(out, "\n");
 }
 
+static void qpolynomial_fold_print(__isl_keep isl_qpolynomial_fold *fold,
+	FILE *out)
+{
+	int i;
+
+	if (fold->type == isl_fold_min)
+		fprintf(out, "min");
+	else if (fold->type == isl_fold_max)
+		fprintf(out, "max");
+	fprintf(out, "(");
+	for (i = 0; i < fold->n; ++i) {
+		if (i)
+			fprintf(out, ", ");
+		qpolynomial_print(fold->qp[i], out);
+	}
+	fprintf(out, ")");
+}
+
+void isl_qpolynomial_fold_print(__isl_keep isl_qpolynomial_fold *fold, FILE *out,
+	unsigned output_format)
+{
+	if  (!fold)
+		return;
+	isl_assert(fold->dim->ctx, output_format == ISL_FORMAT_ISL, return);
+	qpolynomial_fold_print(fold, out);
+	fprintf(out, "\n");
+}
+
 void isl_pw_qpolynomial_print(__isl_keep isl_pw_qpolynomial *pwqp, FILE *out,
 	unsigned output_format)
 {
@@ -722,6 +750,39 @@ void isl_pw_qpolynomial_print(__isl_keep isl_pw_qpolynomial *pwqp, FILE *out,
 		}
 		qpolynomial_print(pwqp->p[i].qp, out);
 		print_disjuncts((isl_map *)pwqp->p[i].set, out, 1);
+	}
+	fprintf(out, " }\n");
+}
+
+void isl_pw_qpolynomial_fold_print(__isl_keep isl_pw_qpolynomial_fold *pwf,
+	FILE *out, unsigned output_format)
+{
+	int i = 0;
+
+	if (!pwf)
+		return;
+	isl_assert(pwf->dim->ctx, output_format == ISL_FORMAT_ISL, return);
+	if (isl_dim_size(pwf->dim, isl_dim_param) > 0) {
+		print_tuple(pwf->dim, out, isl_dim_param, 0);
+		fprintf(out, " -> ");
+	}
+	fprintf(out, "{ ");
+	if (pwf->n == 0) {
+		if (isl_dim_size(pwf->dim, isl_dim_set) > 0) {
+			print_tuple(pwf->dim, out, isl_dim_set, 0);
+			fprintf(out, " -> ");
+		}
+		fprintf(out, "0");
+	}
+	for (i = 0; i < pwf->n; ++i) {
+		if (i)
+			fprintf(out, "; ");
+		if (isl_dim_size(pwf->p[i].set->dim, isl_dim_set) > 0) {
+			print_tuple(pwf->p[i].set->dim, out, isl_dim_set, 0);
+			fprintf(out, " -> ");
+		}
+		qpolynomial_fold_print(pwf->p[i].fold, out);
+		print_disjuncts((isl_map *)pwf->p[i].set, out, 1);
 	}
 	fprintf(out, " }\n");
 }

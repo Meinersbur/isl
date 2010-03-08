@@ -102,6 +102,57 @@ int isl_pw_qpolynomial_foreach_lifted_piece(__isl_keep isl_pw_qpolynomial *pwqp,
 void isl_pw_qpolynomial_print(__isl_keep isl_pw_qpolynomial *pwqp, FILE *out,
 	unsigned output_format);
 
+enum isl_fold {
+	isl_fold_min,
+	isl_fold_max,
+	isl_fold_list
+};
+
+struct isl_qpolynomial_fold;
+typedef struct isl_qpolynomial_fold isl_qpolynomial_fold;
+
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_empty(enum isl_fold type,
+	__isl_take isl_dim *dim);
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_alloc(
+	enum isl_fold type, __isl_take isl_qpolynomial *qp);
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_copy(
+	__isl_keep isl_qpolynomial_fold *fold);
+void isl_qpolynomial_fold_free(__isl_take isl_qpolynomial_fold *fold);
+
+int isl_qpolynomial_fold_is_empty(__isl_keep isl_qpolynomial_fold *fold);
+
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_fold(
+	__isl_take isl_qpolynomial_fold *fold1,
+	__isl_take isl_qpolynomial_fold *fold2);
+
+void isl_qpolynomial_fold_print(__isl_keep isl_qpolynomial_fold *fold, FILE *out,
+	unsigned output_format);
+
+struct isl_pw_qpolynomial_fold;
+typedef struct isl_pw_qpolynomial_fold isl_pw_qpolynomial_fold;
+
+__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_from_pw_qpolynomial(
+	enum isl_fold type, __isl_take isl_pw_qpolynomial *pwqp);
+
+__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_alloc(
+	__isl_take isl_set *set, __isl_take isl_qpolynomial_fold *fold);
+__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_copy(
+	__isl_keep isl_pw_qpolynomial_fold *pwf);
+void isl_pw_qpolynomial_fold_free(__isl_take isl_pw_qpolynomial_fold *pwf);
+
+__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_zero(
+	__isl_take isl_dim *dim);
+
+__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_add(
+	__isl_take isl_pw_qpolynomial_fold *pwf1,
+	__isl_take isl_pw_qpolynomial_fold *pwf2);
+__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_add_disjoint(
+	__isl_take isl_pw_qpolynomial_fold *pwf1,
+	__isl_take isl_pw_qpolynomial_fold *pwf2);
+
+void isl_pw_qpolynomial_fold_print(__isl_keep isl_pw_qpolynomial_fold *pwf,
+	FILE *out, unsigned output_format);
+
 #if defined(__cplusplus)
 }
 #endif

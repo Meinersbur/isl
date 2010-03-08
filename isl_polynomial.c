@@ -1279,87 +1279,31 @@ error:
 	return NULL;
 }
 
-static __isl_give isl_pw_qpolynomial *pw_qpolynomial_alloc(__isl_take isl_dim *dim,
-	int n)
-{
-	struct isl_pw_qpolynomial *pwqp;
+#undef PW
+#define PW isl_pw_qpolynomial
+#undef EL
+#define EL isl_qpolynomial
+#undef IS_ZERO
+#define IS_ZERO is_zero
+#undef FIELD
+#define FIELD qp
+#undef ADD
+#define ADD add
 
-	if (!dim)
-		return NULL;
-	isl_assert(dim->ctx, n >= 0, return NULL);
-	pwqp = isl_alloc(dim->ctx, struct isl_pw_qpolynomial,
-			sizeof(struct isl_pw_qpolynomial) +
-			(n - 1) * sizeof(struct isl_pw_qpolynomial_piece));
-	if (!pwqp)
-		goto error;
+#include <isl_pw_templ.c>
 
-	pwqp->ref = 1;
-	pwqp->size = n;
-	pwqp->n = 0;
-	pwqp->dim = dim;
-	return pwqp;
-error:
-	isl_dim_free(dim);
-	return NULL;
-}
+#undef PW
+#define PW isl_pw_qpolynomial_fold
+#undef EL
+#define EL isl_qpolynomial_fold
+#undef IS_ZERO
+#define IS_ZERO is_empty
+#undef FIELD
+#define FIELD fold
+#undef ADD
+#define ADD fold
 
-__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_add_piece(
-	__isl_take isl_pw_qpolynomial *pwqp,
-	__isl_take isl_set *set, __isl_take isl_qpolynomial *qp)
-{
-	if (!pwqp || !set || !qp)
-		goto error;
-
-	if (isl_set_fast_is_empty(set) || isl_qpolynomial_is_zero(qp)) {
-		isl_set_free(set);
-		isl_qpolynomial_free(qp);
-		return pwqp;
-	}
-
-	isl_assert(set->ctx, isl_dim_equal(pwqp->dim, qp->dim), goto error);
-	isl_assert(set->ctx, pwqp->n < pwqp->size, goto error);
-
-	pwqp->p[pwqp->n].set = set;
-	pwqp->p[pwqp->n].qp = qp;
-	pwqp->n++;
-	
-	return pwqp;
-error:
-	isl_pw_qpolynomial_free(pwqp);
-	isl_set_free(set);
-	isl_qpolynomial_free(qp);
-	return NULL;
-}
-
-__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_alloc(__isl_take isl_set *set,
-	__isl_take isl_qpolynomial *qp)
-{
-	struct isl_pw_qpolynomial *pwqp;
-
-	if (!set || !qp)
-		goto error;
-
-	pwqp = pw_qpolynomial_alloc(isl_set_get_dim(set), 1);
-
-	return isl_pw_qpolynomial_add_piece(pwqp, set, qp);
-error:
-	isl_set_free(set);
-	isl_qpolynomial_free(qp);
-	return NULL;
-}
-
-__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_zero(__isl_take isl_dim *dim)
-{
-	return pw_qpolynomial_alloc(dim, 0);
-}
-
-int isl_pw_qpolynomial_is_zero(__isl_keep isl_pw_qpolynomial *pwqp)
-{
-	if (!pwqp)
-		return -1;
-
-	return pwqp->n == 0;
-}
+#include <isl_pw_templ.c>
 
 int isl_pw_qpolynomial_is_one(__isl_keep isl_pw_qpolynomial *pwqp)
 {
@@ -1375,40 +1319,6 @@ int isl_pw_qpolynomial_is_one(__isl_keep isl_pw_qpolynomial *pwqp)
 	return isl_qpolynomial_is_one(pwqp->p[0].qp);
 }
 
-__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_copy(
-	__isl_keep isl_pw_qpolynomial *pwqp)
-{
-	if (!pwqp)
-		return;
-
-	pwqp->ref++;
-	return pwqp;
-}
-
-__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_dup(
-	__isl_keep isl_pw_qpolynomial *pwqp)
-{
-	int i;
-	struct isl_pw_qpolynomial *dup;
-
-	if (!pwqp)
-		return NULL;
-
-	dup = pw_qpolynomial_alloc(isl_dim_copy(pwqp->dim), pwqp->n);
-	if (!dup)
-		return NULL;
-
-	for (i = 0; i < pwqp->n; ++i)
-		dup = isl_pw_qpolynomial_add_piece(dup,
-					    isl_set_copy(pwqp->p[i].set),
-					    isl_qpolynomial_copy(pwqp->p[i].qp));
-
-	return dup;
-error:
-	isl_pw_qpolynomial_free(dup);
-	return NULL;
-}
-
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_cow(
 	__isl_take isl_pw_qpolynomial *pwqp)
 {
@@ -1419,138 +1329,6 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_cow(
 		return pwqp;
 	pwqp->ref--;
 	return isl_pw_qpolynomial_dup(pwqp);
-}
-
-void isl_pw_qpolynomial_free(__isl_take isl_pw_qpolynomial *pwqp)
-{
-	int i;
-
-	if (!pwqp)
-		return;
-	if (--pwqp->ref > 0)
-		return;
-
-	for (i = 0; i < pwqp->n; ++i) {
-		isl_set_free(pwqp->p[i].set);
-		isl_qpolynomial_free(pwqp->p[i].qp);
-	}
-	isl_dim_free(pwqp->dim);
-	free(pwqp);
-}
-
-__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_add(
-	__isl_take isl_pw_qpolynomial *pwqp1,
-	__isl_take isl_pw_qpolynomial *pwqp2)
-{
-	int i, j, n;
-	struct isl_pw_qpolynomial *res;
-	isl_set *set;
-
-	if (!pwqp1 || !pwqp2)
-		goto error;
-
-	isl_assert(pwqp1->dim->ctx, isl_dim_equal(pwqp1->dim, pwqp2->dim),
-			goto error);
-
-	if (isl_pw_qpolynomial_is_zero(pwqp1)) {
-		isl_pw_qpolynomial_free(pwqp1);
-		return pwqp2;
-	}
-
-	if (isl_pw_qpolynomial_is_zero(pwqp2)) {
-		isl_pw_qpolynomial_free(pwqp2);
-		return pwqp1;
-	}
-
-	n = (pwqp1->n + 1) * (pwqp2->n + 1);
-	res = pw_qpolynomial_alloc(isl_dim_copy(pwqp1->dim), n);
-
-	for (i = 0; i < pwqp1->n; ++i) {
-		set = isl_set_copy(pwqp1->p[i].set);
-		for (j = 0; j < pwqp2->n; ++j) {
-			struct isl_set *common;
-			struct isl_qpolynomial *sum;
-			set = isl_set_subtract(set,
-					isl_set_copy(pwqp2->p[j].set));
-			common = isl_set_intersect(isl_set_copy(pwqp1->p[i].set),
-						isl_set_copy(pwqp2->p[j].set));
-			if (isl_set_fast_is_empty(common)) {
-				isl_set_free(common);
-				continue;
-			}
-
-			sum = isl_qpolynomial_add(
-				isl_qpolynomial_copy(pwqp1->p[i].qp),
-				isl_qpolynomial_copy(pwqp2->p[j].qp));
-
-			res = isl_pw_qpolynomial_add_piece(res, common, sum);
-		}
-		res = isl_pw_qpolynomial_add_piece(res, set,
-			isl_qpolynomial_copy(pwqp1->p[i].qp));
-	}
-
-	for (j = 0; j < pwqp2->n; ++j) {
-		set = isl_set_copy(pwqp2->p[j].set);
-		for (i = 0; i < pwqp1->n; ++i)
-			set = isl_set_subtract(set,
-					isl_set_copy(pwqp1->p[i].set));
-		res = isl_pw_qpolynomial_add_piece(res, set,
-			isl_qpolynomial_copy(pwqp2->p[j].qp));
-	}
-
-	isl_pw_qpolynomial_free(pwqp1);
-	isl_pw_qpolynomial_free(pwqp2);
-
-	return res;
-error:
-	isl_pw_qpolynomial_free(pwqp1);
-	isl_pw_qpolynomial_free(pwqp2);
-	return NULL;
-}
-
-__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_add_disjoint(
-	__isl_take isl_pw_qpolynomial *pwqp1,
-	__isl_take isl_pw_qpolynomial *pwqp2)
-{
-	int i;
-	struct isl_pw_qpolynomial *res;
-
-	if (!pwqp1 || !pwqp2)
-		goto error;
-
-	isl_assert(pwqp1->dim->ctx, isl_dim_equal(pwqp1->dim, pwqp2->dim),
-			goto error);
-
-	if (isl_pw_qpolynomial_is_zero(pwqp1)) {
-		isl_pw_qpolynomial_free(pwqp1);
-		return pwqp2;
-	}
-
-	if (isl_pw_qpolynomial_is_zero(pwqp2)) {
-		isl_pw_qpolynomial_free(pwqp2);
-		return pwqp1;
-	}
-
-	res = pw_qpolynomial_alloc(isl_dim_copy(pwqp1->dim), pwqp1->n + pwqp2->n);
-
-	for (i = 0; i < pwqp1->n; ++i)
-		res = isl_pw_qpolynomial_add_piece(res,
-				isl_set_copy(pwqp1->p[i].set),
-				isl_qpolynomial_copy(pwqp1->p[i].qp));
-
-	for (i = 0; i < pwqp2->n; ++i)
-		res = isl_pw_qpolynomial_add_piece(res,
-				isl_set_copy(pwqp2->p[i].set),
-				isl_qpolynomial_copy(pwqp2->p[i].qp));
-
-	isl_pw_qpolynomial_free(pwqp1);
-	isl_pw_qpolynomial_free(pwqp2);
-
-	return res;
-error:
-	isl_pw_qpolynomial_free(pwqp1);
-	isl_pw_qpolynomial_free(pwqp2);
-	return NULL;
 }
 
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_mul(
@@ -1588,7 +1366,7 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_mul(
 	}
 
 	n = pwqp1->n * pwqp2->n;
-	res = pw_qpolynomial_alloc(isl_dim_copy(pwqp1->dim), n);
+	res = isl_pw_qpolynomial_alloc_(isl_dim_copy(pwqp1->dim), n);
 
 	for (i = 0; i < pwqp1->n; ++i) {
 		for (j = 0; j < pwqp2->n; ++j) {
@@ -2222,4 +2000,168 @@ int isl_pw_qpolynomial_foreach_lifted_piece(__isl_keep isl_pw_qpolynomial *pwqp,
 	}
 
 	return 0;
+}
+
+static __isl_give isl_qpolynomial_fold *qpolynomial_fold_alloc(
+	enum isl_fold type, __isl_take isl_dim *dim, int n)
+{
+	isl_qpolynomial_fold *fold;
+
+	if (!dim || !div)
+		goto error;
+
+	isl_assert(dim->ctx, n >= 0, goto error);
+	fold = isl_alloc(dim->ctx, struct isl_qpolynomial_fold,
+			sizeof(struct isl_qpolynomial_fold) +
+			(n - 1) * sizeof(struct isl_qpolynomial *));
+	if (!fold)
+		goto error;
+
+	fold->ref = 1;
+	fold->size = n;
+	fold->n = 0;
+	fold->type = type;
+	fold->dim = dim;
+
+	return fold;
+error:
+	isl_dim_free(dim);
+	return NULL;
+}
+
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_empty(enum isl_fold type,
+	__isl_take isl_dim *dim)
+{
+	return qpolynomial_fold_alloc(type, dim, 0);
+}
+
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_alloc(
+	enum isl_fold type, __isl_take isl_qpolynomial *qp)
+{
+	isl_qpolynomial_fold *fold;
+
+	if (!qp)
+		return NULL;
+
+	fold = qpolynomial_fold_alloc(type, isl_dim_copy(qp->dim), 1);
+	if (!fold)
+		goto error;
+
+	fold->qp[0] = qp;
+	fold->n++;
+
+	return fold;
+error:
+	isl_qpolynomial_fold_free(fold);
+	isl_qpolynomial_free(qp);
+	return NULL;
+}
+
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_copy(
+	__isl_keep isl_qpolynomial_fold *fold)
+{
+	if (!fold)
+		return NULL;
+
+	fold->ref++;
+	return fold;
+}
+
+void isl_qpolynomial_fold_free(__isl_take isl_qpolynomial_fold *fold)
+{
+	int i;
+
+	if (!fold)
+		return;
+	if (--fold->ref > 0)
+		return;
+
+	for (i = 0; i < fold->n; ++i)
+		isl_qpolynomial_free(fold->qp[i]);
+	isl_dim_free(fold->dim);
+	free(fold);
+}
+
+int isl_qpolynomial_fold_is_empty(__isl_keep isl_qpolynomial_fold *fold)
+{
+	if (!fold)
+		return -1;
+
+	return fold->n == 0;
+}
+
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_fold(
+	__isl_take isl_qpolynomial_fold *fold1,
+	__isl_take isl_qpolynomial_fold *fold2)
+{
+	int i;
+	struct isl_qpolynomial_fold *res = NULL;
+
+	if (!fold1 || !fold2)
+		goto error;
+
+	isl_assert(fold1->dim->ctx, fold1->type == fold2->type, goto error);
+	isl_assert(fold1->dim->ctx, isl_dim_equal(fold1->dim, fold2->dim),
+			goto error);
+
+	if (isl_qpolynomial_fold_is_empty(fold1)) {
+		isl_qpolynomial_fold_free(fold1);
+		return fold2;
+	}
+
+	if (isl_qpolynomial_fold_is_empty(fold2)) {
+		isl_qpolynomial_fold_free(fold2);
+		return fold1;
+	}
+
+	res = qpolynomial_fold_alloc(fold1->type, isl_dim_copy(fold1->dim),
+					fold1->n + fold2->n);
+	if (!res)
+		goto error;
+
+	for (i = 0; i < fold1->n; ++i) {
+		res->qp[res->n] = isl_qpolynomial_copy(fold1->qp[i]);
+		if (!res->qp[res->n])
+			goto error;
+		res->n++;
+	}
+
+	for (i = 0; i < fold2->n; ++i) {
+		res->qp[res->n] = isl_qpolynomial_copy(fold2->qp[i]);
+		if (!res->qp[res->n])
+			goto error;
+		res->n++;
+	}
+
+	isl_qpolynomial_fold_free(fold1);
+	isl_qpolynomial_fold_free(fold2);
+
+	return res;
+error:
+	isl_qpolynomial_fold_free(res);
+	isl_qpolynomial_fold_free(fold1);
+	isl_qpolynomial_fold_free(fold2);
+	return NULL;
+}
+
+__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_from_pw_qpolynomial(
+	enum isl_fold type, __isl_take isl_pw_qpolynomial *pwqp)
+{
+	int i;
+	isl_pw_qpolynomial_fold *pwf;
+
+	if (!pwqp)
+		return NULL;
+	
+	pwf = isl_pw_qpolynomial_fold_alloc_(isl_dim_copy(pwqp->dim), pwqp->n);
+
+	for (i = 0; i < pwqp->n; ++i)
+		pwf = isl_pw_qpolynomial_fold_add_piece(pwf,
+			isl_set_copy(pwqp->p[i].set),
+			isl_qpolynomial_fold_alloc(type,
+				isl_qpolynomial_copy(pwqp->p[i].qp)));
+
+	isl_pw_qpolynomial_free(pwqp);
+
+	return pwf;
 }

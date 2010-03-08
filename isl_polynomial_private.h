@@ -61,6 +61,34 @@ struct isl_pw_qpolynomial {
 	struct isl_pw_qpolynomial_piece p[1];
 };
 
+struct isl_qpolynomial_fold {
+	int ref;
+
+	enum isl_fold type;
+	struct isl_dim *dim;
+
+	int n;
+
+	size_t size;
+	struct isl_qpolynomial *qp[1];
+};
+
+struct isl_pw_qpolynomial_fold_piece {
+	struct isl_set *set;
+	struct isl_qpolynomial_fold *fold;
+};
+
+struct isl_pw_qpolynomial_fold {
+	int ref;
+
+	struct isl_dim *dim;
+
+	int n;
+
+	size_t size;
+	struct isl_pw_qpolynomial_fold_piece p[1];
+};
+
 __isl_give struct isl_upoly *isl_upoly_zero(struct isl_ctx *ctx);
 __isl_give struct isl_upoly *isl_upoly_copy(__isl_keep struct isl_upoly *up);
 __isl_give struct isl_upoly *isl_upoly_cow(__isl_take struct isl_upoly *up);
