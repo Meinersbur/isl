@@ -1522,34 +1522,108 @@ error:
 	return NULL;
 }
 
-__isl_give isl_qpolynomial *isl_pw_qpolynomial_eval(
-	__isl_take isl_pw_qpolynomial *pwqp, __isl_take isl_point *pnt)
+int isl_upoly_cmp(__isl_keep struct isl_upoly_cst *cst1,
+	__isl_keep struct isl_upoly_cst *cst2)
 {
-	int i;
-	int found;
+	int cmp;
+	isl_int t;
+	isl_int_init(t);
+	isl_int_mul(t, cst1->n, cst2->d);
+	isl_int_submul(t, cst2->n, cst1->d);
+	cmp = isl_int_sgn(t);
+	isl_int_clear(t);
+	return cmp;
+}
+
+static __isl_give isl_qpolynomial *qpolynomial_min(
+	__isl_take isl_qpolynomial *qp1, __isl_take isl_qpolynomial *qp2)
+{
+	struct isl_upoly_cst *cst1, *cst2;
+	int cmp;
+
+	if (!qp1 || !qp2)
+		goto error;
+	isl_assert(qp1->dim->ctx, isl_upoly_is_cst(qp1->upoly), goto error);
+	isl_assert(qp2->dim->ctx, isl_upoly_is_cst(qp2->upoly), goto error);
+	cst1 = isl_upoly_as_cst(qp1->upoly);
+	cst2 = isl_upoly_as_cst(qp2->upoly);
+	cmp = isl_upoly_cmp(cst1, cst2);
+
+	if (cmp <= 0) {
+		isl_qpolynomial_free(qp2);
+	} else {
+		isl_qpolynomial_free(qp1);
+		qp1 = qp2;
+	}
+	return qp1;
+error:
+	isl_qpolynomial_free(qp1);
+	isl_qpolynomial_free(qp2);
+	return NULL;
+}
+
+static __isl_give isl_qpolynomial *qpolynomial_max(
+	__isl_take isl_qpolynomial *qp1, __isl_take isl_qpolynomial *qp2)
+{
+	struct isl_upoly_cst *cst1, *cst2;
+	int cmp;
+
+	if (!qp1 || !qp2)
+		goto error;
+	isl_assert(qp1->dim->ctx, isl_upoly_is_cst(qp1->upoly), goto error);
+	isl_assert(qp2->dim->ctx, isl_upoly_is_cst(qp2->upoly), goto error);
+	cst1 = isl_upoly_as_cst(qp1->upoly);
+	cst2 = isl_upoly_as_cst(qp2->upoly);
+	cmp = isl_upoly_cmp(cst1, cst2);
+
+	if (cmp >= 0) {
+		isl_qpolynomial_free(qp2);
+	} else {
+		isl_qpolynomial_free(qp1);
+		qp1 = qp2;
+	}
+	return qp1;
+error:
+	isl_qpolynomial_free(qp1);
+	isl_qpolynomial_free(qp2);
+	return NULL;
+}
+
+__isl_give isl_qpolynomial *isl_qpolynomial_fold_eval(
+	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_point *pnt)
+{
 	isl_qpolynomial *qp;
 
-	if (!pwqp || !pnt)
+	if (!fold || !pnt)
 		goto error;
-	isl_assert(pnt->dim->ctx, isl_dim_equal(pnt->dim, pwqp->dim), goto error);
+	isl_assert(pnt->dim->ctx, isl_dim_equal(pnt->dim, fold->dim), goto error);
+	isl_assert(pnt->dim->ctx,
+		fold->type == isl_fold_max || fold->type == isl_fold_min,
+		goto error);
 
-	for (i = 0; i < pwqp->n; ++i) {
-		found = isl_set_contains_point(pwqp->p[i].set, pnt);
-		if (found < 0)
-			goto error;
-		if (found)
-			break;
-	}
-	if (found)
-		qp = isl_qpolynomial_eval(isl_qpolynomial_copy(pwqp->p[i].qp),
+	if (fold->n == 0)
+		qp = isl_qpolynomial_zero(isl_dim_copy(fold->dim));
+	else {
+		int i;
+		qp = isl_qpolynomial_eval(isl_qpolynomial_copy(fold->qp[0]),
+						isl_point_copy(pnt));
+		for (i = 1; i < fold->n; ++i) {
+			isl_qpolynomial *qp_i;
+			qp_i = isl_qpolynomial_eval(
+					    isl_qpolynomial_copy(fold->qp[i]),
 					    isl_point_copy(pnt));
-	else
-		qp = isl_qpolynomial_zero(isl_dim_copy(pwqp->dim));
-	isl_pw_qpolynomial_free(pwqp);
+			if (fold->type == isl_fold_max)
+				qp = qpolynomial_max(qp, qp_i);
+			else
+				qp = qpolynomial_min(qp, qp_i);
+		}
+	}
+	isl_qpolynomial_fold_free(fold);
 	isl_point_free(pnt);
+
 	return qp;
 error:
-	isl_pw_qpolynomial_free(pwqp);
+	isl_qpolynomial_fold_free(fold);
 	isl_point_free(pnt);
 	return NULL;
 }

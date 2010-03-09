@@ -234,3 +234,35 @@ error:
 	FN(PW,free)(pw2);
 	return NULL;
 }
+
+__isl_give isl_qpolynomial *FN(PW,eval)(__isl_take PW *pw,
+	__isl_take isl_point *pnt)
+{
+	int i;
+	int found;
+	isl_qpolynomial *qp;
+
+	if (!pw || !pnt)
+		goto error;
+	isl_assert(pnt->dim->ctx, isl_dim_equal(pnt->dim, pw->dim), goto error);
+
+	for (i = 0; i < pw->n; ++i) {
+		found = isl_set_contains_point(pw->p[i].set, pnt);
+		if (found < 0)
+			goto error;
+		if (found)
+			break;
+	}
+	if (found)
+		qp = FN(EL,eval)(FN(EL,copy)(pw->p[i].FIELD),
+					    isl_point_copy(pnt));
+	else
+		qp = isl_qpolynomial_zero(isl_dim_copy(pw->dim));
+	FN(PW,free)(pw);
+	isl_point_free(pnt);
+	return qp;
+error:
+	FN(PW,free)(pw);
+	isl_point_free(pnt);
+	return NULL;
+}
