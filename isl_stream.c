@@ -326,7 +326,8 @@ static struct isl_token *next_token(struct isl_stream *s, int same_line)
 		if (!tok)
 			return NULL;
 		isl_stream_push_char(s, c);
-		while ((c = isl_stream_getc(s)) != -1 && isalnum(c))
+		while ((c = isl_stream_getc(s)) != -1 &&
+				(isalnum(c) || c == '_'))
 			isl_stream_push_char(s, c);
 		if (c != -1)
 			isl_stream_ungetc(s, c);
