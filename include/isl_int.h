@@ -65,10 +65,11 @@ typedef mpz_t	isl_int;
 #define isl_int_fdiv_q_ui(r,i,j)	mpz_fdiv_q_ui(r,i,j)
 
 #define isl_int_read(r,s)	mpz_set_str(r,s,10)
+typedef void (*isl_int_print_gmp_free_t)(void *, size_t);
 #define isl_int_print(out,i,width)					\
 	do {								\
 		char *s;						\
-		void (*gmp_free) (void *, size_t);			\
+		isl_int_print_gmp_free_t gmp_free;			\
 		s = mpz_get_str(0, 10, i);				\
 		fprintf(out, "%*s", width, s);				\
 		mp_get_memory_functions(NULL, NULL, &gmp_free);		\
