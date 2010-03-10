@@ -8,7 +8,7 @@ noinst_PROGRAMS = isl_test isl_polyhedron_sample isl_pip \
 	isl_polyhedron_minimize isl_polytope_scan \
 	isl_polyhedron_detect_equalities isl_cat \
 	isl_closure
-TESTS = isl_test
+TESTS = isl_test pip_test.sh
 
 if HAVE_PIPLIB
 ISL_PIPLIB = \
@@ -173,6 +173,7 @@ EXTRA_DIST = \
 	doc/mypod2latex \
 	doc/manual.tex \
 	doc/user.pod \
+	pip_test.sh \
 	test_inputs
 
 dist-hook:
