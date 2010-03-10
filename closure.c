@@ -13,10 +13,12 @@ int main(int argc, char **argv)
 	if (!exact)
 		printf("# NOT exact\n");
 	isl_map_print(map, stdout, 0, ISL_FORMAT_ISL);
+	printf("\n");
 	map = isl_map_compute_divs(map);
 	map = isl_map_coalesce(map);
 	printf("# coalesced\n");
 	isl_map_print(map, stdout, 0, ISL_FORMAT_ISL);
+	printf("\n");
 	isl_map_free(map);
 
 	isl_ctx_free(ctx);

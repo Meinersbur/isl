@@ -35,6 +35,8 @@ int main(int argc, char **argv)
 
 	map = isl_map_read_from_file(ctx, stdin, -1);
 	isl_map_print(map, stdout, 0, options->format);
+	if (options->format == ISL_FORMAT_ISL)
+		printf("\n");
 	isl_map_free(map);
 
 	isl_ctx_free(ctx);

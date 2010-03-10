@@ -438,7 +438,7 @@ static void isl_basic_map_print_isl(__isl_keep isl_basic_map *bmap, FILE *out,
 	print_tuple(bmap->dim, out, isl_dim_out, 0);
 	fprintf(out, " : ");
 	print_disjunct(bmap, bmap->dim, out, 0);
-	fprintf(out, " }%s\n", suffix ? suffix : "");
+	fprintf(out, " }%s", suffix ? suffix : "");
 }
 
 static void isl_basic_set_print_isl(__isl_keep isl_basic_set *bset, FILE *out,
@@ -455,7 +455,7 @@ static void isl_basic_set_print_isl(__isl_keep isl_basic_set *bset, FILE *out,
 	print_tuple(bset->dim, out, isl_dim_set, 1);
 	fprintf(out, " : ");
 	print_disjunct((isl_basic_map *)bset, bset->dim, out, 1);
-	fprintf(out, " }%s\n", suffix ? suffix : "");
+	fprintf(out, " }%s", suffix ? suffix : "");
 }
 
 static void print_disjuncts(__isl_keep isl_map *map, FILE *out, int set)
@@ -491,7 +491,7 @@ static void isl_map_print_isl(__isl_keep isl_map *map, FILE *out, int indent)
 	fprintf(out, " -> ");
 	print_tuple(map->dim, out, isl_dim_out, 0);
 	print_disjuncts(map, out, 0);
-	fprintf(out, " }\n");
+	fprintf(out, " }");
 }
 
 static void isl_set_print_isl(__isl_keep isl_set *set, FILE *out, int indent)
@@ -506,7 +506,7 @@ static void isl_set_print_isl(__isl_keep isl_set *set, FILE *out, int indent)
 	fprintf(out, "{ ");
 	print_tuple(set->dim, out, isl_dim_set, 1);
 	print_disjuncts((isl_map *)set, out, 1);
-	fprintf(out, " }\n");
+	fprintf(out, " }");
 }
 
 void isl_basic_map_print(__isl_keep isl_basic_map *bmap, FILE *out, int indent,
@@ -690,7 +690,6 @@ void isl_qpolynomial_print(__isl_keep isl_qpolynomial *qp, FILE *out,
 		return;
 	isl_assert(qp->dim->ctx, output_format == ISL_FORMAT_ISL, return);
 	qpolynomial_print(qp, out);
-	fprintf(out, "\n");
 }
 
 static void qpolynomial_fold_print(__isl_keep isl_qpolynomial_fold *fold,
@@ -718,7 +717,6 @@ void isl_qpolynomial_fold_print(__isl_keep isl_qpolynomial_fold *fold, FILE *out
 		return;
 	isl_assert(fold->dim->ctx, output_format == ISL_FORMAT_ISL, return);
 	qpolynomial_fold_print(fold, out);
-	fprintf(out, "\n");
 }
 
 void isl_pw_qpolynomial_print(__isl_keep isl_pw_qpolynomial *pwqp, FILE *out,
@@ -751,7 +749,7 @@ void isl_pw_qpolynomial_print(__isl_keep isl_pw_qpolynomial *pwqp, FILE *out,
 		qpolynomial_print(pwqp->p[i].qp, out);
 		print_disjuncts((isl_map *)pwqp->p[i].set, out, 1);
 	}
-	fprintf(out, " }\n");
+	fprintf(out, " }");
 }
 
 void isl_pw_qpolynomial_fold_print(__isl_keep isl_pw_qpolynomial_fold *pwf,
@@ -784,5 +782,5 @@ void isl_pw_qpolynomial_fold_print(__isl_keep isl_pw_qpolynomial_fold *pwf,
 		qpolynomial_fold_print(pwf->p[i].fold, out);
 		print_disjuncts((isl_map *)pwf->p[i].set, out, 1);
 	}
-	fprintf(out, " }\n");
+	fprintf(out, " }");
 }
