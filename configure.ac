@@ -1,9 +1,9 @@
 AC_INIT
 AC_CONFIG_AUX_DIR([.])
 AC_CONFIG_MACRO_DIR([m4])
-AM_INIT_AUTOMAKE(isl, 0.01)
+AM_INIT_AUTOMAKE(isl, 0.02)
 AC_SUBST(versioninfo)
-versioninfo=1:0:0
+versioninfo=2:0:0
 
 AC_PROG_CC
 
