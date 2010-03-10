@@ -360,9 +360,11 @@ int main(int argc, char **argv)
 		assert(!rational);
 		check_solution(copy, context_copy, set, empty, max);
 	} else {
-		isl_set_dump(set, stdout, 0);
-		fprintf(stdout, "no solution:\n");
-		isl_set_dump(empty, stdout, 4);
+		isl_set_print(set, stdout, 0, ISL_FORMAT_ISL);
+		fprintf(stdout, "\n");
+		fprintf(stdout, "no solution: ");
+		isl_set_print(empty, stdout, 0, ISL_FORMAT_ISL);
+		fprintf(stdout, "\n");
 	}
 
 	isl_set_free(set);
