@@ -2081,7 +2081,7 @@ static __isl_give isl_qpolynomial_fold *qpolynomial_fold_alloc(
 {
 	isl_qpolynomial_fold *fold;
 
-	if (!dim || !div)
+	if (!dim)
 		goto error;
 
 	isl_assert(dim->ctx, n >= 0, goto error);
