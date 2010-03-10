@@ -98,7 +98,7 @@ error:
 __isl_give PW *FN(PW,copy)(__isl_keep PW *pw)
 {
 	if (!pw)
-		return;
+		return NULL;
 
 	pw->ref++;
 	return pw;
