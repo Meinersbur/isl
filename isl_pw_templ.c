@@ -266,3 +266,20 @@ error:
 	isl_point_free(pnt);
 	return NULL;
 }
+
+__isl_give isl_set *FN(PW,domain)(__isl_take PW *pw)
+{
+	int i;
+	isl_set *dom;
+
+	if (!pw)
+		return NULL;
+
+	dom = isl_set_empty(isl_dim_copy(pw->dim));
+	for (i = 0; i < pw->n; ++i)
+		dom = isl_set_union_disjoint(dom, isl_set_copy(pw->p[i].set));
+
+	FN(PW,free)(pw);
+
+	return dom;
+}
