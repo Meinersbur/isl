@@ -95,6 +95,17 @@ error:
 	return NULL;
 }
 
+__isl_give PW *FN(PW,cow)(__isl_take PW *pw)
+{
+	if (!pw)
+		return NULL;
+
+	if (pw->ref == 1)
+		return pw;
+	pw->ref--;
+	return FN(PW,dup)(pw);
+}
+
 __isl_give PW *FN(PW,copy)(__isl_keep PW *pw)
 {
 	if (!pw)
@@ -282,4 +293,34 @@ __isl_give isl_set *FN(PW,domain)(__isl_take PW *pw)
 	FN(PW,free)(pw);
 
 	return dom;
+}
+
+__isl_give PW *FN(PW,intersect_domain)(__isl_take PW *pw, __isl_take isl_set *set)
+{
+	int i;
+
+	if (!pw || !set)
+		goto error;
+
+	if (pw->n == 0) {
+		isl_set_free(set);
+		return pw;
+	}
+
+	pw = FN(PW,cow)(pw);
+	if (!pw)
+		goto error;
+
+	for (i = 0; i < pw->n; ++i) {
+		pw->p[i].set = isl_set_intersect(pw->p[i].set, isl_set_copy(set));
+		if (!pw->p[i].set)
+			goto error;
+	}
+	
+	isl_set_free(set);
+	return pw;
+error:
+	isl_set_free(set);
+	FN(PW,free)(pw);
+	return NULL;
 }

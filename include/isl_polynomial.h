@@ -73,6 +73,8 @@ unsigned isl_pw_qpolynomial_dim(__isl_keep isl_pw_qpolynomial *pwqp,
 	enum isl_dim_type type);
 
 __isl_give isl_set *isl_pw_qpolynomial_domain(__isl_take isl_pw_qpolynomial *pwqp);
+__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_intersect_domain(
+	__isl_take isl_pw_qpolynomial *pwpq, __isl_take isl_set *set);
 
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_add(
 	__isl_take isl_pw_qpolynomial *pwqp1,
@@ -153,6 +155,8 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_zero(
 
 __isl_give isl_set *isl_pw_qpolynomial_fold_domain(
 	__isl_take isl_pw_qpolynomial_fold *pwf);
+__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_intersect_domain(
+	__isl_take isl_pw_qpolynomial_fold *pwf, __isl_take isl_set *set);
 
 __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_add(
 	__isl_take isl_pw_qpolynomial_fold *pwf1,

@@ -1292,6 +1292,9 @@ are returned in C<*n> and C<*d>, respectively.
 
 	__isl_give isl_set *isl_pw_qpolynomial_domain(
 		__isl_take isl_pw_qpolynomial *pwqp);
+	__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_intersect_domain(
+		__isl_take isl_pw_qpolynomial *pwpq,
+		__isl_take isl_set *set);
 
 =head2 Dependence Analysis
 

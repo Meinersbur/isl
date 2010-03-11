@@ -1319,18 +1319,6 @@ int isl_pw_qpolynomial_is_one(__isl_keep isl_pw_qpolynomial *pwqp)
 	return isl_qpolynomial_is_one(pwqp->p[0].qp);
 }
 
-__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_cow(
-	__isl_take isl_pw_qpolynomial *pwqp)
-{
-	if (!pwqp)
-		return NULL;
-
-	if (pwqp->ref == 1)
-		return pwqp;
-	pwqp->ref--;
-	return isl_pw_qpolynomial_dup(pwqp);
-}
-
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_mul(
 	__isl_take isl_pw_qpolynomial *pwqp1,
 	__isl_take isl_pw_qpolynomial *pwqp2)
