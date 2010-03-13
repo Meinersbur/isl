@@ -716,31 +716,28 @@ error:
  *
  *	R_1 \circ R_2
  *
- * is non-empty and that moreover, it is non-empty on the set
- * of elements that do not get mapped to the same set of elements
- * by both "R_1 \circ R_2" and "R_2 \circ R_1".
- * For elements that do get mapped to the same elements by these
- * two compositions, R_1 and R_2 are commutative, so if these
- * elements are the only ones for which R_1 \circ R_2 is non-empty,
- * then you may just as well apply R_1 first.
+ * is a subset of
+ *
+ *	R_2 \circ R_1
+ *
+ * If so, then there is no reason for R_1 to immediately follow R_2
+ * in any path.
  */
 static int basic_map_follows(__isl_keep isl_basic_map *bmap1,
 	__isl_keep isl_basic_map *bmap2)
 {
 	struct isl_map *map12 = NULL;
 	struct isl_map *map21 = NULL;
-	struct isl_map *d = NULL;
-	struct isl_set *dom = NULL;
-	int empty;
+	int subset;
 
 	map21 = isl_map_from_basic_map(
 			isl_basic_map_apply_range(
 				isl_basic_map_copy(bmap2),
 				isl_basic_map_copy(bmap1)));
-	empty = isl_map_is_empty(map21);
-	if (empty < 0)
+	subset = isl_map_is_empty(map21);
+	if (subset < 0)
 		goto error;
-	if (empty) {
+	if (subset) {
 		isl_map_free(map21);
 		return 0;
 	}
@@ -749,18 +746,13 @@ static int basic_map_follows(__isl_keep isl_basic_map *bmap1,
 			isl_basic_map_apply_range(
 				isl_basic_map_copy(bmap1),
 				isl_basic_map_copy(bmap2)));
-	d = isl_map_subtract(isl_map_copy(map12), isl_map_copy(map21));
-	d = isl_map_union(d,
-		isl_map_subtract(isl_map_copy(map21), isl_map_copy(map12)));
-	dom = isl_map_domain(d);
 
-	map21 = isl_map_intersect_domain(map21, dom);
-	empty = isl_map_is_empty(map21);
+	subset = isl_map_is_subset(map21, map12);
 
 	isl_map_free(map12);
 	isl_map_free(map21);
 
-	return empty < 0 ? -1 : !empty;
+	return subset < 0 ? -1 : !subset;
 error:
 	isl_map_free(map21);
 	return -1;

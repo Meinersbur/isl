@@ -170,6 +170,10 @@ pkginclude_HEADERS = \
 EXTRA_DIST = \
 	basis_reduction_templ.c \
 	isl_pw_templ.c \
+	doc/chicago.bst \
+	doc/chicago.sty \
+	doc/implementation.tex \
+	doc/isl.bib \
 	doc/mypod2latex \
 	doc/manual.tex \
 	doc/user.pod \
