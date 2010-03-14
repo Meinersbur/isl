@@ -128,6 +128,11 @@ struct isl_basic_map *isl_basic_map_eliminate_vars(
 struct isl_basic_set *isl_basic_set_eliminate_vars(
 	struct isl_basic_set *bset, unsigned pos, unsigned n);
 
+__isl_give isl_map *isl_map_eliminate(__isl_take isl_map *map,
+	enum isl_dim_type type, unsigned first, unsigned n);
+__isl_give isl_set *isl_set_eliminate(__isl_take isl_set *set,
+	enum isl_dim_type type, unsigned first, unsigned n);
+
 int isl_basic_set_constraint_is_redundant(struct isl_basic_set **bset,
 	isl_int *c, isl_int *opt_n, isl_int *opt_d);
 

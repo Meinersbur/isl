@@ -1177,36 +1177,54 @@ void isl_basic_map_swap_div(struct isl_basic_map *bmap, int a, int b)
 }
 
 /* Eliminate the specified n dimensions starting at first from the
- * constraints using Fourier-Motzkin, The dimensions themselves
+ * constraints using Fourier-Motzkin.  The dimensions themselves
  * are not removed.
  */
-struct isl_set *isl_set_eliminate_dims(struct isl_set *set,
-	unsigned first, unsigned n)
+__isl_give isl_map *isl_map_eliminate(__isl_take isl_map *map,
+	enum isl_dim_type type, unsigned first, unsigned n)
 {
 	int i;
-	unsigned nparam;
 
-	if (!set)
+	if (!map)
 		return NULL;
 	if (n == 0)
-		return set;
+		return map;
 
-	set = isl_set_cow(set);
-	if (!set)
+	map = isl_map_cow(map);
+	if (!map)
 		return NULL;
-	isl_assert(set->ctx, first+n <= isl_set_n_dim(set), goto error);
-	nparam = isl_set_n_param(set);
+	isl_assert(map->ctx, first + n <= isl_map_dim(map, type), goto error);
+	first += pos(map->dim, type) - 1;
 	
-	for (i = 0; i < set->n; ++i) {
-		set->p[i] = isl_basic_set_eliminate_vars(set->p[i],
-							    nparam + first, n);
-		if (!set->p[i])
+	for (i = 0; i < map->n; ++i) {
+		map->p[i] = isl_basic_map_eliminate_vars(map->p[i], first, n);
+		if (!map->p[i])
 			goto error;
 	}
-	return set;
+	return map;
 error:
-	isl_set_free(set);
+	isl_map_free(map);
 	return NULL;
+}
+
+/* Eliminate the specified n dimensions starting at first from the
+ * constraints using Fourier-Motzkin.  The dimensions themselves
+ * are not removed.
+ */
+__isl_give isl_set *isl_set_eliminate(__isl_take isl_set *set,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	return (isl_set *)isl_map_eliminate((isl_map *)set, type, first, n);
+}
+
+/* Eliminate the specified n dimensions starting at first from the
+ * constraints using Fourier-Motzkin.  The dimensions themselves
+ * are not removed.
+ */
+__isl_give isl_set *isl_set_eliminate_dims(__isl_take isl_set *set,
+	unsigned first, unsigned n)
+{
+	return isl_set_eliminate(set, isl_dim_set, first, n);
 }
 
 /* Project out n dimensions starting at first using Fourier-Motzkin */
