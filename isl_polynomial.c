@@ -416,6 +416,27 @@ static __isl_give struct isl_upoly *replace_by_zero(
 	return isl_upoly_zero(ctx);
 }
 
+static __isl_give struct isl_upoly *replace_by_constant_term(
+	__isl_take struct isl_upoly *up)
+{
+	struct isl_upoly_rec *rec;
+	struct isl_upoly *cst;
+
+	if (!up)
+		return NULL;
+
+	rec = isl_upoly_as_rec(up);
+	if (!rec)
+		goto error;
+	isl_assert(up->ctx, rec->n == 1, goto error);
+	cst = isl_upoly_copy(rec->p[0]);
+	isl_upoly_free(up);
+	return cst;
+error:
+	isl_upoly_free(up);
+	return NULL;
+}
+
 __isl_give struct isl_upoly *isl_upoly_sum(__isl_take struct isl_upoly *up1,
 	__isl_take struct isl_upoly *up2)
 {
@@ -459,8 +480,8 @@ __isl_give struct isl_upoly *isl_upoly_sum(__isl_take struct isl_upoly *up1,
 		if (!rec)
 			goto error;
 		rec->p[0] = isl_upoly_sum(rec->p[0], up2);
-		if (rec->n == 1 && isl_upoly_is_zero(rec->p[0]))
-			up1 = replace_by_zero(up1);
+		if (rec->n == 1)
+			up1 = replace_by_constant_term(up1);
 		return up1;
 	}
 
@@ -493,6 +514,8 @@ __isl_give struct isl_upoly *isl_upoly_sum(__isl_take struct isl_upoly *up1,
 
 	if (rec1->n == 0)
 		up1 = replace_by_zero(up1);
+	else if (rec1->n == 1)
+		up1 = replace_by_constant_term(up1);
 
 	isl_upoly_free(up2);
 
