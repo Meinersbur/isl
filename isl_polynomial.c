@@ -2250,3 +2250,178 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_from_pw_qpolynomial(
 
 	return pwf;
 }
+
+static int up_set_active(__isl_keep struct isl_upoly *up, int *active, int d)
+{
+	struct isl_upoly_rec *rec;
+	int i;
+
+	if (!up)
+		return -1;
+
+	if (isl_upoly_is_cst(up))
+		return 0;
+
+	if (up->var < d)
+		active[up->var] = 1;
+
+	rec = isl_upoly_as_rec(up);
+	for (i = 0; i < rec->n; ++i)
+		if (up_set_active(rec->p[i], active, d) < 0)
+			return -1;
+
+	return 0;
+}
+
+static int set_active(__isl_keep isl_qpolynomial *qp, int *active)
+{
+	int i, j;
+	int d = isl_dim_total(qp->dim);
+
+	for (i = 0; i < d; ++i)
+		for (j = 0; j < qp->div->n_row; ++j) {
+			if (isl_int_is_zero(qp->div->row[j][2 + i]))
+				continue;
+			active[i] = 1;
+			break;
+		}
+
+	return up_set_active(qp->upoly, active, d);
+}
+
+/* For each parameter or variable that does not appear in qp,
+ * first eliminate the variable from all constraints and then set it to zero.
+ */
+static __isl_give isl_set *fix_inactive(__isl_take isl_set *set,
+	__isl_keep isl_qpolynomial *qp)
+{
+	int *active = NULL;
+	int i;
+	int d;
+	unsigned nparam;
+	unsigned nvar;
+
+	if (!set || !qp)
+		goto error;
+
+	d = isl_dim_total(set->dim);
+	active = isl_calloc_array(set->ctx, int, d);
+	if (set_active(qp, active) < 0)
+		goto error;
+
+	for (i = 0; i < d; ++i)
+		if (!active[i])
+			break;
+
+	if (i == d) {
+		free(active);
+		return set;
+	}
+
+	nparam = isl_dim_size(set->dim, isl_dim_param);
+	nvar = isl_dim_size(set->dim, isl_dim_set);
+	for (i = 0; i < nparam; ++i) {
+		if (active[i])
+			continue;
+		set = isl_set_eliminate(set, isl_dim_param, i, 1);
+		set = isl_set_fix_si(set, isl_dim_param, i, 0);
+	}
+	for (i = 0; i < nvar; ++i) {
+		if (active[i])
+			continue;
+		set = isl_set_eliminate(set, isl_dim_set, i, 1);
+		set = isl_set_fix_si(set, isl_dim_set, i, 0);
+	}
+
+	free(active);
+
+	return set;
+error:
+	free(active);
+	isl_set_free(set);
+	return NULL;
+}
+
+struct isl_max_data {
+	isl_qpolynomial *qp;
+	int first;
+	isl_qpolynomial *max;
+};
+
+static int max_fn(__isl_take isl_point *pnt, void *user)
+{
+	struct isl_max_data *data = (struct isl_max_data *)user;
+	isl_qpolynomial *val;
+
+	val = isl_qpolynomial_eval(isl_qpolynomial_copy(data->qp), pnt);
+	if (data->first) {
+		data->first = 0;
+		data->max = val;
+	} else {
+		data->max = qpolynomial_max(data->max, val);
+	}
+
+	return 0;
+}
+
+static __isl_give isl_qpolynomial *guarded_qpolynomial_max(
+	__isl_take isl_set *set, __isl_take isl_qpolynomial *qp)
+{
+	struct isl_max_data data = { NULL, 1, NULL };
+
+	if (!set || !qp)
+		goto error;
+
+	if (isl_upoly_is_cst(qp->upoly)) {
+		isl_set_free(set);
+		return qp;
+	}
+
+	set = fix_inactive(set, qp);
+
+	data.qp = qp;
+	if (isl_set_foreach_point(set, max_fn, &data) < 0)
+		goto error;
+
+	isl_set_free(set);
+	isl_qpolynomial_free(qp);
+	return data.max;
+error:
+	isl_set_free(set);
+	isl_qpolynomial_free(qp);
+	isl_qpolynomial_free(data.max);
+	return NULL;
+}
+
+/* Compute the maximal value attained by the piecewise quasipolynomial
+ * on its domain or zero if the domain is empty.
+ * In the worst case, the domain is scanned completely,
+ * so the domain is assumed to be bounded.
+ */
+__isl_give isl_qpolynomial *isl_pw_qpolynomial_max(
+	__isl_take isl_pw_qpolynomial *pwqp)
+{
+	int i;
+	isl_qpolynomial *max;
+
+	if (!pwqp)
+		return NULL;
+
+	if (pwqp->n == 0) {
+		isl_dim *dim = isl_dim_copy(pwqp->dim);
+		isl_pw_qpolynomial_free(pwqp);
+		return isl_qpolynomial_zero(dim);
+	}
+
+	max = guarded_qpolynomial_max(isl_set_copy(pwqp->p[0].set),
+					isl_qpolynomial_copy(pwqp->p[0].qp));
+	for (i = 1; i < pwqp->n; ++i) {
+		isl_qpolynomial *max_i;
+		max_i = guarded_qpolynomial_max(isl_set_copy(pwqp->p[i].set),
+					    isl_qpolynomial_copy(pwqp->p[i].qp));
+		max = qpolynomial_max(max, max_i);
+	}
+
+	isl_pw_qpolynomial_free(pwqp);
+	return max;
+}
