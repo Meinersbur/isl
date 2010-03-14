@@ -734,7 +734,7 @@ void isl_pw_qpolynomial_print(__isl_keep isl_pw_qpolynomial *pwqp, FILE *out,
 	fprintf(out, "{ ");
 	if (pwqp->n == 0) {
 		if (isl_dim_size(pwqp->dim, isl_dim_set) > 0) {
-			print_tuple(pwqp->dim, out, isl_dim_set, 0);
+			print_tuple(pwqp->dim, out, isl_dim_set, 1);
 			fprintf(out, " -> ");
 		}
 		fprintf(out, "0");
@@ -743,7 +743,7 @@ void isl_pw_qpolynomial_print(__isl_keep isl_pw_qpolynomial *pwqp, FILE *out,
 		if (i)
 			fprintf(out, "; ");
 		if (isl_dim_size(pwqp->p[i].set->dim, isl_dim_set) > 0) {
-			print_tuple(pwqp->p[i].set->dim, out, isl_dim_set, 0);
+			print_tuple(pwqp->p[i].set->dim, out, isl_dim_set, 1);
 			fprintf(out, " -> ");
 		}
 		qpolynomial_print(pwqp->p[i].qp, out);
