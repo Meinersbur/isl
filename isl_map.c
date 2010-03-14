@@ -3082,16 +3082,17 @@ struct isl_set *isl_map_range(struct isl_map *map)
 
 	if (!map)
 		goto error;
+	if (isl_map_dim(map, isl_dim_in) == 0)
+		return (isl_set *)map;
+
 	map = isl_map_cow(map);
 	if (!map)
 		goto error;
 
 	set = (struct isl_set *) map;
-	if (set->dim->n_in != 0) {
-		set->dim = isl_dim_drop_inputs(set->dim, 0, set->dim->n_in);
-		if (!set->dim)
-			goto error;
-	}
+	set->dim = isl_dim_drop_inputs(set->dim, 0, set->dim->n_in);
+	if (!set->dim)
+		goto error;
 	for (i = 0; i < map->n; ++i) {
 		set->p[i] = isl_basic_map_range(map->p[i]);
 		if (!set->p[i])
