@@ -344,6 +344,59 @@ struct isl_dim *isl_dim_add(struct isl_dim *dim, enum isl_dim_type type,
 	return dim;
 }
 
+__isl_give isl_dim *isl_dim_insert(__isl_take isl_dim *dim,
+	enum isl_dim_type type, unsigned pos, unsigned n)
+{
+	struct isl_name **names = NULL;
+
+	if (!dim)
+		return NULL;
+	if (n == 0)
+		return dim;
+
+	isl_assert(dim->ctx, pos <= isl_dim_size(dim, type), goto error);
+
+	dim = isl_dim_cow(dim);
+
+	if (dim->names) {
+		enum isl_dim_type t;
+		int off;
+		int size[3];
+		names = isl_calloc_array(dim->ctx, struct isl_name *,
+				     dim->nparam + dim->n_in + dim->n_out + n);
+		if (!names)
+			goto error;
+		off = 0;
+		size[isl_dim_param] = dim->nparam;
+		size[isl_dim_in] = dim->n_in;
+		size[isl_dim_out] = dim->n_out;
+		for (t = isl_dim_param; t <= isl_dim_out; ++t) {
+			if (t != type) {
+				get_names(dim, t, 0, size[t], names + off);
+				off += size[t];
+			} else {
+				get_names(dim, t, 0, pos, names + off);
+				off += pos + n;
+				get_names(dim, t, pos, size[t]-pos, names+off);
+				off += size[t] - pos;
+			}
+		}
+		free(dim->names);
+		dim->names = names;
+		dim->n_name = dim->nparam + dim->n_in + dim->n_out + n;
+	}
+	switch (type) {
+	case isl_dim_param:	dim->nparam += n; break;
+	case isl_dim_in:	dim->n_in += n; break;
+	case isl_dim_out:	dim->n_out += n; break;
+	}
+
+	return dim;
+error:
+	isl_dim_free(dim);
+	return NULL;
+}
+
 __isl_give isl_dim *isl_dim_move(__isl_take isl_dim *dim,
 	enum isl_dim_type dst_type, unsigned dst_pos,
 	enum isl_dim_type src_type, unsigned src_pos, unsigned n)
