@@ -324,3 +324,40 @@ error:
 	FN(PW,free)(pw);
 	return NULL;
 }
+
+__isl_give PW *FN(PW,gist)(__isl_take PW *pw, __isl_take isl_set *context)
+{
+	int i;
+	isl_basic_set *hull = NULL;
+
+	if (!pw || !context)
+		goto error;
+
+	if (pw->n == 0) {
+		isl_set_free(context);
+		return pw;
+	}
+
+	hull = isl_set_convex_hull(isl_set_copy(context));
+
+	pw = FN(PW,cow)(pw);
+	if (!pw)
+		goto error;
+
+	for (i = 0; i < pw->n; ++i) {
+		pw->p[i].set = isl_set_gist(pw->p[i].set,
+						isl_basic_set_copy(hull));
+		if (!pw->p[i].set)
+			goto error;
+	}
+
+	isl_basic_set_free(hull);
+	isl_set_free(context);
+
+	return pw;
+error:
+	FN(PW,free)(pw);
+	isl_basic_set_free(hull);
+	isl_set_free(context);
+	return NULL;
+}
