@@ -28,6 +28,7 @@ void isl_qpolynomial_free(__isl_take isl_qpolynomial *qp);
 
 int isl_qpolynomial_is_cst(__isl_keep isl_qpolynomial *qp,
 	isl_int *n, isl_int *d);
+void isl_qpolynomial_get_den(__isl_keep isl_qpolynomial *qp, isl_int *d);
 
 __isl_give isl_qpolynomial *isl_qpolynomial_neg(__isl_take isl_qpolynomial *qp);
 __isl_give isl_qpolynomial *isl_qpolynomial_add(__isl_take isl_qpolynomial *qp1,

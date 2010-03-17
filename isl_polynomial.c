@@ -1176,6 +1176,36 @@ int isl_qpolynomial_is_cst(__isl_keep isl_qpolynomial *qp,
 	return 1;
 }
 
+static void upoly_update_den(__isl_keep struct isl_upoly *up, isl_int *d)
+{
+	int i;
+	struct isl_upoly_rec *rec;
+
+	if (isl_upoly_is_cst(up)) {
+		struct isl_upoly_cst *cst;
+		cst = isl_upoly_as_cst(up);
+		if (!cst)
+			return;
+		isl_int_lcm(*d, *d, cst->d);
+		return;
+	}
+
+	rec = isl_upoly_as_rec(up);
+	if (!rec)
+		return;
+
+	for (i = 0; i < rec->n; ++i)
+		upoly_update_den(rec->p[i], d);
+}
+
+void isl_qpolynomial_get_den(__isl_keep isl_qpolynomial *qp, isl_int *d)
+{
+	isl_int_set_si(*d, 1);
+	if (!qp)
+		return;
+	upoly_update_den(qp->upoly, d);
+}
+
 __isl_give isl_qpolynomial *isl_qpolynomial_pow(__isl_take isl_dim *dim,
 	int pos, int power)
 {
