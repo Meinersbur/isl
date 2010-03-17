@@ -1168,6 +1168,9 @@ using the following functions.
 		__isl_take isl_printer *p,
 		__isl_keep isl_pw_qpolynomial *pwqp);
 
+The output format of the printer
+needs to be set to either C<ISL_FORMAT_ISL> or C<ISL_FORMAT_C>.
+
 =head3 Creating New (Piecewise) Quasipolynomials
 
 Some simple quasipolynomials can be created using the following functions.

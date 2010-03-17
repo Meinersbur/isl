@@ -24,6 +24,7 @@ __isl_give isl_printer *isl_printer_set_indent(__isl_take isl_printer *p,
 #define ISL_FORMAT_POLYLIB		1
 #define ISL_FORMAT_POLYLIB_CONSTRAINTS	2
 #define ISL_FORMAT_OMEGA		3
+#define ISL_FORMAT_C			4
 __isl_give isl_printer *isl_printer_set_output_format(__isl_take isl_printer *p,
 	int output_format);
 
