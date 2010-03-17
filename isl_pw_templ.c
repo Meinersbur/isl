@@ -361,3 +361,8 @@ error:
 	isl_set_free(context);
 	return NULL;
 }
+
+isl_ctx *FN(PW,get_ctx)(__isl_keep PW *pw)
+{
+	return pw ? pw->dim->ctx : NULL;
+}

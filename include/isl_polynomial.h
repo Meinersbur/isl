@@ -153,6 +153,8 @@ void isl_qpolynomial_fold_print(__isl_keep isl_qpolynomial_fold *fold, FILE *out
 struct isl_pw_qpolynomial_fold;
 typedef struct isl_pw_qpolynomial_fold isl_pw_qpolynomial_fold;
 
+isl_ctx *isl_pw_qpolynomial_fold_get_ctx(__isl_keep isl_pw_qpolynomial_fold *pwf);
+
 __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_from_pw_qpolynomial(
 	enum isl_fold type, __isl_take isl_pw_qpolynomial *pwqp);
 
