@@ -32,6 +32,45 @@ __isl_keep struct isl_upoly_rec *isl_upoly_as_rec(__isl_keep struct isl_upoly *u
 	return (struct isl_upoly_rec *)up;
 }
 
+int isl_upoly_is_equal(__isl_keep struct isl_upoly *up1,
+	__isl_keep struct isl_upoly *up2)
+{
+	int i;
+	struct isl_upoly_rec *rec1, *rec2;
+
+	if (!up1 || !up2)
+		return -1;
+	if (up1 == up2)
+		return 1;
+	if (up1->var != up2->var)
+		return 0;
+	if (isl_upoly_is_cst(up1)) {
+		struct isl_upoly_cst *cst1, *cst2;
+		cst1 = isl_upoly_as_cst(up1);
+		cst2 = isl_upoly_as_cst(up2);
+		if (!cst1 || !cst2)
+			return -1;
+		return isl_int_eq(cst1->n, cst2->n) &&
+		       isl_int_eq(cst1->d, cst2->d);
+	}
+
+	rec1 = isl_upoly_as_rec(up1);
+	rec2 = isl_upoly_as_rec(up2);
+	if (!rec1 || !rec2)
+		return -1;
+
+	if (rec1->n != rec2->n)
+		return 0;
+
+	for (i = 0; i < rec1->n; ++i) {
+		int eq = isl_upoly_is_equal(rec1->p[i], rec2->p[i]);
+		if (eq < 0 || !eq)
+			return eq;
+	}
+
+	return 1;
+}
+
 int isl_upoly_is_zero(__isl_keep struct isl_upoly *up)
 {
 	struct isl_upoly_cst *cst;
@@ -1176,6 +1215,15 @@ int isl_qpolynomial_is_cst(__isl_keep isl_qpolynomial *qp,
 	return 1;
 }
 
+int isl_qpolynomial_is_equal(__isl_keep isl_qpolynomial *qp1,
+	__isl_keep isl_qpolynomial *qp2)
+{
+	if (!qp1 || !qp2)
+		return -1;
+
+	return isl_upoly_is_equal(qp1->upoly, qp2->upoly);
+}
+
 static void upoly_update_den(__isl_keep struct isl_upoly *up, isl_int *d)
 {
 	int i;
@@ -1628,6 +1676,27 @@ error:
 	isl_qpolynomial_free(qp1);
 	isl_qpolynomial_free(qp2);
 	return NULL;
+}
+
+int isl_qpolynomial_fold_is_equal(__isl_keep isl_qpolynomial_fold *fold1,
+	__isl_keep isl_qpolynomial_fold *fold2)
+{
+	int i;
+
+	if (!fold1 || !fold2)
+		return -1;
+
+	if (fold1->n != fold2->n)
+		return 0;
+
+	/* We probably want to sort the qps first... */
+	for (i = 0; i < fold1->n; ++i) {
+		int eq = isl_qpolynomial_is_equal(fold1->qp[i], fold2->qp[i]);
+		if (eq < 0 || !eq)
+			return eq;
+	}
+
+	return 1;
 }
 
 __isl_give isl_qpolynomial *isl_qpolynomial_fold_eval(
