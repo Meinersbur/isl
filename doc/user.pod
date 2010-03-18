@@ -742,7 +742,7 @@ to C<isl_set_compute_divs> or C<isl_map_compute_divs>.
 
 =over
 
-=item Emptiness
+=item * Emptiness
 
 The following functions test whether the given set or relation
 contains any integer points.  The ``fast'' variants do not perform
