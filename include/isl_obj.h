@@ -4,6 +4,7 @@
 #include <isl_set.h>
 #include <isl_map.h>
 #include <isl_polynomial.h>
+#include <isl_printer.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -12,7 +13,7 @@ extern "C" {
 struct isl_obj_vtable {
 	void *(*copy)(void *v1);
 	void *(*add)(void *v1, void *v2);
-	void (*print)(void *v, FILE *out);
+	__isl_give isl_printer *(*print)(__isl_take isl_printer *p, void *v);
 	void (*free)(void *v);
 };
 typedef struct isl_obj_vtable *isl_obj_type;

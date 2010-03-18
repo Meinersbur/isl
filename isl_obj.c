@@ -20,9 +20,10 @@ static void isl_obj_map_free(void *v)
 	isl_map_free((struct isl_map *)v);
 }
 
-static void isl_obj_map_print(void *v, FILE *out)
+static __isl_give isl_printer *isl_obj_map_print(__isl_take isl_printer *p,
+	void *v)
 {
-	isl_map_print((struct isl_map *)v, out, 0, ISL_FORMAT_ISL);
+	return isl_printer_print_map(p, (struct isl_map *)v);
 }
 
 static void *isl_obj_map_add(void *v1, void *v2)
@@ -47,9 +48,10 @@ static void isl_obj_set_free(void *v)
 	isl_set_free((struct isl_set *)v);
 }
 
-static void isl_obj_set_print(void *v, FILE *out)
+static __isl_give isl_printer *isl_obj_set_print(__isl_take isl_printer *p,
+	void *v)
 {
-	isl_set_print((struct isl_set *)v, out, 0, ISL_FORMAT_ISL);
+	return isl_printer_print_set(p, (struct isl_set *)v);
 }
 
 static void *isl_obj_set_add(void *v1, void *v2)
@@ -73,8 +75,10 @@ static void isl_obj_none_free(void *v)
 {
 }
 
-static void isl_obj_none_print(void *v, FILE *out)
+static __isl_give isl_printer *isl_obj_none_print(__isl_take isl_printer *p,
+	void *v)
 {
+	return p;
 }
 
 static void *isl_obj_none_add(void *v1, void *v2)
@@ -99,10 +103,11 @@ static void isl_obj_pw_qp_free(void *v)
 	isl_pw_qpolynomial_free((struct isl_pw_qpolynomial *)v);
 }
 
-static void isl_obj_pw_qp_print(void *v, FILE *out)
+static __isl_give isl_printer *isl_obj_pw_qp_print(__isl_take isl_printer *p,
+	void *v)
 {
-	isl_pw_qpolynomial_print((struct isl_pw_qpolynomial *)v, out,
-					ISL_FORMAT_ISL);
+	return isl_printer_print_pw_qpolynomial(p,
+						(struct isl_pw_qpolynomial *)v);
 }
 
 static void *isl_obj_pw_qp_add(void *v1, void *v2)
@@ -128,10 +133,11 @@ static void isl_obj_pw_qpf_free(void *v)
 	isl_pw_qpolynomial_fold_free((struct isl_pw_qpolynomial_fold *)v);
 }
 
-static void isl_obj_pw_qpf_print(void *v, FILE *out)
+static __isl_give isl_printer *isl_obj_pw_qpf_print(__isl_take isl_printer *p,
+	void *v)
 {
-	isl_pw_qpolynomial_fold_print((struct isl_pw_qpolynomial_fold *)v, out,
-					ISL_FORMAT_ISL);
+	return isl_printer_print_pw_qpolynomial_fold(p,
+					(struct isl_pw_qpolynomial_fold *)v);
 }
 
 static void *isl_obj_pw_qpf_add(void *v1, void *v2)

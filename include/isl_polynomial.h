@@ -6,6 +6,7 @@
 #include <isl_div.h>
 #include <isl_set.h>
 #include <isl_point.h>
+#include <isl_printer.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -54,6 +55,8 @@ int isl_qpolynomial_foreach_term(__isl_keep isl_qpolynomial *qp,
 __isl_give isl_qpolynomial *isl_qpolynomial_eval(
 	__isl_take isl_qpolynomial *qp, __isl_take isl_point *pnt);
 
+__isl_give isl_printer *isl_printer_print_qpolynomial(
+	__isl_take isl_printer *p, __isl_keep isl_qpolynomial *qp);
 void isl_qpolynomial_print(__isl_keep isl_qpolynomial *qp, FILE *out,
 	unsigned output_format);
 
@@ -109,6 +112,8 @@ int isl_pw_qpolynomial_foreach_lifted_piece(__isl_keep isl_pw_qpolynomial *pwqp,
 	int (*fn)(__isl_take isl_set *set, __isl_take isl_qpolynomial *qp,
 		    void *user), void *user);
 
+__isl_give isl_printer *isl_printer_print_pw_qpolynomial(
+	__isl_take isl_printer *p, __isl_keep isl_pw_qpolynomial *pwqp);
 void isl_pw_qpolynomial_print(__isl_keep isl_pw_qpolynomial *pwqp, FILE *out,
 	unsigned output_format);
 
@@ -171,6 +176,8 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_add_disjoint(
 __isl_give isl_qpolynomial *isl_pw_qpolynomial_fold_eval(
 	__isl_take isl_pw_qpolynomial_fold *pwf, __isl_take isl_point *pnt);
 
+__isl_give isl_printer *isl_printer_print_pw_qpolynomial_fold(
+	__isl_take isl_printer *p, __isl_keep isl_pw_qpolynomial_fold *pwf);
 void isl_pw_qpolynomial_fold_print(__isl_keep isl_pw_qpolynomial_fold *pwf,
 	FILE *out, unsigned output_format);
 

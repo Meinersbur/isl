@@ -14,10 +14,10 @@
 #include <isl_set.h>
 #include <isl_seq.h>
 #include <isl_polynomial_private.h>
+#include <isl_printer_private.h>
 
-static void print_constraint_polylib(struct isl_basic_map *bmap,
-	int ineq, int n,
-	FILE *out, int indent, const char *prefix, const char *suffix)
+static __isl_give isl_printer *print_constraint_polylib(
+	struct isl_basic_map *bmap, int ineq, int n, __isl_take isl_printer *p)
 {
 	int i;
 	unsigned n_in = isl_basic_map_dim(bmap, isl_dim_in);
@@ -25,81 +25,89 @@ static void print_constraint_polylib(struct isl_basic_map *bmap,
 	unsigned nparam = isl_basic_map_dim(bmap, isl_dim_param);
 	isl_int *c = ineq ? bmap->ineq[n] : bmap->eq[n];
 
-	fprintf(out, "%*s%s", indent, "", prefix ? prefix : "");
-	fprintf(out, "%d", ineq);
+	p = isl_printer_start_line(p);
+	p = isl_printer_print_int(p, ineq);
 	for (i = 0; i < n_out; ++i) {
-		fprintf(out, " ");
-		isl_int_print(out, c[1+nparam+n_in+i], 5);
+		p = isl_printer_print_str(p, " ");
+		p = isl_printer_print_isl_int(p, c[1+nparam+n_in+i]);
 	}
 	for (i = 0; i < n_in; ++i) {
-		fprintf(out, " ");
-		isl_int_print(out, c[1+nparam+i], 5);
+		p = isl_printer_print_str(p, " ");
+		p = isl_printer_print_isl_int(p, c[1+nparam+i]);
 	}
 	for (i = 0; i < bmap->n_div; ++i) {
-		fprintf(out, " ");
-		isl_int_print(out, c[1+nparam+n_in+n_out+i], 5);
+		p = isl_printer_print_str(p, " ");
+		p = isl_printer_print_isl_int(p, c[1+nparam+n_in+n_out+i]);
 	}
 	for (i = 0; i < nparam; ++i) {
-		fprintf(out, " ");
-		isl_int_print(out, c[1+i], 5);
+		p = isl_printer_print_str(p, " ");
+		p = isl_printer_print_isl_int(p, c[1+i]);
 	}
-	fprintf(out, " ");
-	isl_int_print(out, c[0], 5);
-	fprintf(out, "%s\n", suffix ? suffix : "");
+	p = isl_printer_print_str(p, " ");
+	p = isl_printer_print_isl_int(p, c[0]);
+	p = isl_printer_end_line(p);
+	return p;
 }
 
-static void print_constraints_polylib(struct isl_basic_map *bmap,
-	FILE *out, int indent, const char *prefix, const char *suffix)
+static __isl_give isl_printer *print_constraints_polylib(
+	struct isl_basic_map *bmap, __isl_take isl_printer *p)
 {
 	int i;
+
+	p = isl_printer_set_isl_int_width(p, 5);
 
 	for (i = 0; i < bmap->n_eq; ++i)
-		print_constraint_polylib(bmap, 0, i, out,
-					indent, prefix, suffix);
+		p = print_constraint_polylib(bmap, 0, i, p);
 	for (i = 0; i < bmap->n_ineq; ++i)
-		print_constraint_polylib(bmap, 1, i, out,
-					indent, prefix, suffix);
+		p = print_constraint_polylib(bmap, 1, i, p);
+
+	return p;
 }
 
-static void bset_print_constraints_polylib(struct isl_basic_set *bset,
-	FILE *out, int indent, const char *prefix, const char *suffix)
+static __isl_give isl_printer *bset_print_constraints_polylib(
+	struct isl_basic_set *bset, __isl_take isl_printer *p)
 {
-	print_constraints_polylib((struct isl_basic_map *)bset,
-				 out, indent, prefix, suffix);
+	return print_constraints_polylib((struct isl_basic_map *)bset, p);
 }
 
-static void isl_basic_map_print_polylib(struct isl_basic_map *bmap, FILE *out,
-	int indent, const char *prefix, const char *suffix)
+static __isl_give isl_printer *isl_basic_map_print_polylib(
+	__isl_keep isl_basic_map *bmap, __isl_take isl_printer *p)
 {
 	unsigned total = isl_basic_map_total_dim(bmap);
-	fprintf(out, "%*s%s", indent, "", prefix ? prefix : "");
-	fprintf(out, "%d %d", bmap->n_eq + bmap->n_ineq, 1 + total + 1);
-	fprintf(out, "%s\n", suffix ? suffix : "");
-	print_constraints_polylib(bmap, out, indent, prefix, suffix);
+	p = isl_printer_start_line(p);
+	p = isl_printer_print_int(p, bmap->n_eq + bmap->n_ineq);
+	p = isl_printer_print_str(p, " ");
+	p = isl_printer_print_int(p, 1 + total + 1);
+	p = isl_printer_end_line(p);
+	return print_constraints_polylib(bmap, p);
 }
 
-static void isl_basic_set_print_polylib(struct isl_basic_set *bset, FILE *out,
-	int indent, const char *prefix, const char *suffix)
+static __isl_give isl_printer *isl_basic_set_print_polylib(
+	__isl_keep isl_basic_set *bset, __isl_take isl_printer *p)
 {
-	isl_basic_map_print_polylib((struct isl_basic_map *)bset, out,
-					indent, prefix, suffix);
+	return isl_basic_map_print_polylib((struct isl_basic_map *)bset, p);
 }
 
-static void isl_map_print_polylib(struct isl_map *map, FILE *out, int indent)
+static __isl_give isl_printer *isl_map_print_polylib(__isl_keep isl_map *map,
+	__isl_take isl_printer *p)
 {
 	int i;
 
-	fprintf(out, "%*s", indent, "");
-	fprintf(out, "%d\n", map->n);
+	p = isl_printer_start_line(p);
+	p = isl_printer_print_int(p, map->n);
+	p = isl_printer_end_line(p);
 	for (i = 0; i < map->n; ++i) {
-		fprintf(out, "\n");
-		isl_basic_map_print_polylib(map->p[i], out, indent, NULL, NULL);
+		p = isl_printer_start_line(p);
+		p = isl_printer_end_line(p);
+		p = isl_basic_map_print_polylib(map->p[i], p);
 	}
+	return p;
 }
 
-static void isl_set_print_polylib(struct isl_set *set, FILE *out, int indent)
+static __isl_give isl_printer *isl_set_print_polylib(__isl_keep isl_set *set,
+	__isl_take isl_printer *p)
 {
-	isl_map_print_polylib((struct isl_map *)set, out, indent);
+	return isl_map_print_polylib((struct isl_map *)set, p);
 }
 
 static int count_same_name(__isl_keep isl_dim *dim,
@@ -120,8 +128,8 @@ static int count_same_name(__isl_keep isl_dim *dim,
 	return count;
 }
 
-static void print_name(struct isl_dim *dim, FILE *out,
-	enum isl_dim_type type, unsigned pos, int set)
+static __isl_give isl_printer *print_name(__isl_keep isl_dim *dim,
+	__isl_take isl_printer *p, enum isl_dim_type type, unsigned pos, int set)
 {
 	const char *name;
 	char buffer[20];
@@ -144,61 +152,65 @@ static void print_name(struct isl_dim *dim, FILE *out,
 	}
 	primes = count_same_name(dim, name == buffer ? isl_dim_div : type,
 				 pos, name);
-	fprintf(out, "%s", name);
+	p = isl_printer_print_str(p, name);
 	while (primes-- > 0)
-		fputc('\'', out);
+		p = isl_printer_print_str(p, "'");
+	return p;
 }
 
-static void print_var_list(struct isl_dim *dim, FILE *out,
-	enum isl_dim_type type, int set)
+static __isl_give isl_printer *print_var_list(__isl_keep isl_dim *dim,
+	__isl_take isl_printer *p, enum isl_dim_type type, int set)
 {
 	int i;
 
 	for (i = 0; i < isl_dim_size(dim, type); ++i) {
 		if (i)
-			fprintf(out, ", ");
-		print_name(dim, out, type, i, set);
+			p = isl_printer_print_str(p, ", ");
+		p = print_name(dim, p, type, i, set);
 	}
+	return p;
 }
 
-static void print_tuple(__isl_keep isl_dim *dim, FILE *out,
-	enum isl_dim_type type, int set)
+static __isl_give isl_printer *print_tuple(__isl_keep isl_dim *dim,
+	__isl_take isl_printer *p, enum isl_dim_type type, int set)
 {
-	fprintf(out, "[");
-	print_var_list(dim, out, type, set);
-	fprintf(out, "]");
+	p = isl_printer_print_str(p, "[");
+	p = print_var_list(dim, p, type, set);
+	p = isl_printer_print_str(p, "]");
+	return p;
 }
 
-static void print_omega_parameters(struct isl_dim *dim, FILE *out,
-	int indent, const char *prefix, const char *suffix)
+static __isl_give isl_printer *print_omega_parameters(__isl_keep isl_dim *dim,
+	__isl_take isl_printer *p)
 {
 	if (isl_dim_size(dim, isl_dim_param) == 0)
-		return;
+		return p;
 
-	fprintf(out, "%*s%ssymbolic ", indent, "", prefix ? prefix : "");
-	print_var_list(dim, out, isl_dim_param, 0);
-	fprintf(out, ";%s\n", suffix ? suffix : "");
+	p = isl_printer_start_line(p);
+	p = isl_printer_print_str(p, "symbolic ");
+	p = print_var_list(dim, p, isl_dim_param, 0);
+	p = isl_printer_print_str(p, ";");
+	p = isl_printer_end_line(p);
+	return p;
 }
 
-static void print_term(__isl_keep isl_dim *dim,
-			isl_int c, int pos, FILE *out, int set)
+static __isl_give isl_printer *print_term(__isl_keep isl_dim *dim,
+			isl_int c, int pos, __isl_take isl_printer *p, int set)
 {
 	enum isl_dim_type type;
 	unsigned n_in = isl_dim_size(dim, isl_dim_in);
 	unsigned n_out = isl_dim_size(dim, isl_dim_out);
 	unsigned nparam = isl_dim_size(dim, isl_dim_param);
 
-	if (pos == 0) {
-		isl_int_print(out, c, 0);
-		return;
-	}
+	if (pos == 0)
+		return isl_printer_print_isl_int(p, c);
 
 	if (isl_int_is_one(c))
 		;
 	else if (isl_int_is_negone(c))
-		fprintf(out, "-");
+		p = isl_printer_print_str(p, "-");
 	else
-		isl_int_print(out, c, 0);
+		p = isl_printer_print_isl_int(p, c);
 	if (pos < 1 + nparam) {
 		type = isl_dim_param;
 		pos -= 1;
@@ -212,11 +224,12 @@ static void print_term(__isl_keep isl_dim *dim,
 		type = isl_dim_div;
 		pos -= 1 + nparam + n_in + n_out;
 	}
-	print_name(dim, out, type, pos, set);
+	p = print_name(dim, p, type, pos, set);
+	return p;
 }
 
-static void print_affine_of_len(__isl_keep isl_dim *dim, FILE *out,
-	isl_int *c, int len, int set)
+static __isl_give isl_printer *print_affine_of_len(__isl_keep isl_dim *dim,
+	__isl_take isl_printer *p, isl_int *c, int len, int set)
 {
 	int i;
 	int first;
@@ -229,45 +242,50 @@ static void print_affine_of_len(__isl_keep isl_dim *dim, FILE *out,
 			if (isl_int_is_neg(c[i])) {
 				flip = 1;
 				isl_int_neg(c[i], c[i]);
-				fprintf(out, " - ");
+				p = isl_printer_print_str(p, " - ");
 			} else 
-				fprintf(out, " + ");
+				p = isl_printer_print_str(p, " + ");
 		}
 		first = 0;
-		print_term(dim, c[i], i, out, set);
+		p = print_term(dim, c[i], i, p, set);
 		if (flip)
 			isl_int_neg(c[i], c[i]);
 	}
 	if (first)
-		fprintf(out, "0");
+		p = isl_printer_print_str(p, "0");
+	return p;
 }
 
-static void print_affine(__isl_keep isl_basic_map *bmap,
-	__isl_keep isl_dim *dim, FILE *out, isl_int *c, int set)
+static __isl_give isl_printer *print_affine(__isl_keep isl_basic_map *bmap,
+	__isl_keep isl_dim *dim, __isl_take isl_printer *p, isl_int *c, int set)
 {
 	unsigned len = 1 + isl_basic_map_total_dim(bmap);
-	print_affine_of_len(dim, out, c, len, set);
+	return print_affine_of_len(dim, p, c, len, set);
 }
 
-static void print_constraint(struct isl_basic_map *bmap,
-	__isl_keep isl_dim *dim, FILE *out,
+static __isl_give isl_printer *print_constraint(struct isl_basic_map *bmap,
+	__isl_keep isl_dim *dim, __isl_take isl_printer *p,
 	isl_int *c, int last, const char *op, int first_constraint, int set)
 {
 	if (!first_constraint)
-		fprintf(out, " and ");
+		p = isl_printer_print_str(p, " and ");
 
 	isl_int_abs(c[last], c[last]);
 
-	print_term(dim, c[last], last, out, set);
+	p = print_term(dim, c[last], last, p, set);
 
-	fprintf(out, " %s ", op);
+	p = isl_printer_print_str(p, " ");
+	p = isl_printer_print_str(p, op);
+	p = isl_printer_print_str(p, " ");
 
 	isl_int_set_si(c[last], 0);
-	print_affine(bmap, dim, out, c, set);
+	p = print_affine(bmap, dim, p, c, set);
+
+	return p;
 }
 
-static void print_constraints(__isl_keep isl_basic_map *bmap,
-	__isl_keep isl_dim *dim, FILE *out, int set)
+static __isl_give isl_printer *print_constraints(__isl_keep isl_basic_map *bmap,
+	__isl_keep isl_dim *dim, __isl_take isl_printer *p, int set)
 {
 	int i;
 	struct isl_vec *c;
@@ -275,298 +293,399 @@ static void print_constraints(__isl_keep isl_basic_map *bmap,
 
 	c = isl_vec_alloc(bmap->ctx, 1 + total);
 	if (!c)
-		return;
+		goto error;
 
 	for (i = bmap->n_eq - 1; i >= 0; --i) {
 		int l = isl_seq_last_non_zero(bmap->eq[i], 1 + total);
-		isl_assert(bmap->ctx, l >= 0, return);
+		isl_assert(bmap->ctx, l >= 0, goto error);
 		if (isl_int_is_neg(bmap->eq[i][l]))
 			isl_seq_cpy(c->el, bmap->eq[i], 1 + total);
 		else
 			isl_seq_neg(c->el, bmap->eq[i], 1 + total);
-		print_constraint(bmap, dim, out, c->el, l,
+		p = print_constraint(bmap, dim, p, c->el, l,
 				    "=", i == bmap->n_eq - 1, set);
 	}
 	for (i = 0; i < bmap->n_ineq; ++i) {
 		int l = isl_seq_last_non_zero(bmap->ineq[i], 1 + total);
 		int s;
-		isl_assert(bmap->ctx, l >= 0, return);
+		isl_assert(bmap->ctx, l >= 0, goto error);
 		s = isl_int_sgn(bmap->ineq[i][l]);
 		if (s < 0)
 			isl_seq_cpy(c->el, bmap->ineq[i], 1 + total);
 		else
 			isl_seq_neg(c->el, bmap->ineq[i], 1 + total);
-		print_constraint(bmap, dim, out, c->el, l,
+		p = print_constraint(bmap, dim, p, c->el, l,
 				    s < 0 ? "<=" : ">=", !bmap->n_eq && !i, set);
 	}
 
 	isl_vec_free(c);
+
+	return p;
+error:
+	isl_printer_free(p);
+	return NULL;
 }
 
-static void print_omega_constraints(__isl_keep isl_basic_map *bmap, FILE *out,
-	int set)
+static __isl_give isl_printer *print_omega_constraints(
+	__isl_keep isl_basic_map *bmap, __isl_take isl_printer *p, int set)
 {
 	if (bmap->n_eq + bmap->n_ineq == 0)
-		return;
+		return p;
 
-	fprintf(out, ": ");
+	p = isl_printer_print_str(p, ": ");
 	if (bmap->n_div > 0) {
 		int i;
-		fprintf(out, "exists (");
+		p = isl_printer_print_str(p, "exists (");
 		for (i = 0; i < bmap->n_div; ++i) {
 			if (i)
-				fprintf(out, ", ");
-			print_name(bmap->dim, out, isl_dim_div, i, 0);
+				p = isl_printer_print_str(p, ", ");
+			p = print_name(bmap->dim, p, isl_dim_div, i, 0);
 		}
-		fprintf(out, ": ");
+		p = isl_printer_print_str(p, ": ");
 	}
-	print_constraints(bmap, bmap->dim, out, set);
+	p = print_constraints(bmap, bmap->dim, p, set);
 	if (bmap->n_div > 0)
-		fprintf(out, ")");
+		p = isl_printer_print_str(p, ")");
+	return p;
 }
 
-static void basic_map_print_omega(struct isl_basic_map *bmap, FILE *out)
+static __isl_give isl_printer *basic_map_print_omega(
+	__isl_keep isl_basic_map *bmap, __isl_take isl_printer *p)
 {
-	fprintf(out, "{ [");
-	print_var_list(bmap->dim, out, isl_dim_in, 0);
-	fprintf(out, "] -> [");
-	print_var_list(bmap->dim, out, isl_dim_out, 0);
-	fprintf(out, "] ");
-	print_omega_constraints(bmap, out, 0);
-	fprintf(out, " }");
+	p = isl_printer_print_str(p, "{ [");
+	p = print_var_list(bmap->dim, p, isl_dim_in, 0);
+	p = isl_printer_print_str(p, "] -> [");
+	p = print_var_list(bmap->dim, p, isl_dim_out, 0);
+	p = isl_printer_print_str(p, "] ");
+	p = print_omega_constraints(bmap, p, 0);
+	p = isl_printer_print_str(p, " }");
+	return p;
 }
 
-static void isl_basic_map_print_omega(struct isl_basic_map *bmap, FILE *out,
-	int indent, const char *prefix, const char *suffix)
+static __isl_give isl_printer *isl_basic_map_print_omega(
+	__isl_keep isl_basic_map *bmap, __isl_take isl_printer *p)
 {
-	print_omega_parameters(bmap->dim, out, indent, prefix, suffix);
+	p = print_omega_parameters(bmap->dim, p);
 
-	fprintf(out, "%*s%s", indent, "", prefix ? prefix : "");
-	basic_map_print_omega(bmap, out);
-	fprintf(out, "%s\n", suffix ? suffix : "");
+	p = isl_printer_start_line(p);
+	p = basic_map_print_omega(bmap, p);
+	p = isl_printer_end_line(p);
+	return p;
 }
 
-static void basic_set_print_omega(struct isl_basic_set *bset, FILE *out)
+static __isl_give isl_printer *basic_set_print_omega(
+	__isl_keep isl_basic_set *bset, __isl_take isl_printer *p)
 {
-	fprintf(out, "{ [");
-	print_var_list(bset->dim, out, isl_dim_set, 1);
-	fprintf(out, "] ");
-	print_omega_constraints((isl_basic_map *)bset, out, 1);
-	fprintf(out, " }");
+	p = isl_printer_print_str(p, "{ [");
+	p = print_var_list(bset->dim, p, isl_dim_set, 1);
+	p = isl_printer_print_str(p, "] ");
+	p = print_omega_constraints((isl_basic_map *)bset, p, 1);
+	p = isl_printer_print_str(p, " }");
+	return p;
 }
 
-static void isl_basic_set_print_omega(struct isl_basic_set *bset, FILE *out,
-	int indent, const char *prefix, const char *suffix)
+static __isl_give isl_printer *isl_basic_set_print_omega(
+	__isl_keep isl_basic_set *bset, __isl_take isl_printer *p)
 {
-	print_omega_parameters(bset->dim, out, indent, prefix, suffix);
+	p = print_omega_parameters(bset->dim, p);
 
-	fprintf(out, "%*s%s", indent, "", prefix ? prefix : "");
-	basic_set_print_omega(bset, out);
-	fprintf(out, "%s\n", suffix ? suffix : "");
+	p = isl_printer_start_line(p);
+	p = basic_set_print_omega(bset, p);
+	p = isl_printer_end_line(p);
+	return p;
 }
 
-static void isl_map_print_omega(struct isl_map *map, FILE *out, int indent)
+static __isl_give isl_printer *isl_map_print_omega(__isl_keep isl_map *map,
+	__isl_take isl_printer *p)
 {
 	int i;
 
-	print_omega_parameters(map->dim, out, indent, "", "");
+	p = print_omega_parameters(map->dim, p);
 
-	fprintf(out, "%*s", indent, "");
+	p = isl_printer_start_line(p);
 	for (i = 0; i < map->n; ++i) {
 		if (i)
-			fprintf(out, " union ");
-		basic_map_print_omega(map->p[i], out);
+			p = isl_printer_print_str(p, " union ");
+		p = basic_map_print_omega(map->p[i], p);
 	}
-	fprintf(out, "\n");
+	p = isl_printer_end_line(p);
+	return p;
 }
 
-static void isl_set_print_omega(struct isl_set *set, FILE *out, int indent)
+static __isl_give isl_printer *isl_set_print_omega(__isl_keep isl_set *set,
+	__isl_take isl_printer *p)
 {
 	int i;
 
-	print_omega_parameters(set->dim, out, indent, "", "");
+	p = print_omega_parameters(set->dim, p);
 
-	fprintf(out, "%*s", indent, "");
+	p = isl_printer_start_line(p);
 	for (i = 0; i < set->n; ++i) {
 		if (i)
-			fprintf(out, " union ");
-		basic_set_print_omega(set->p[i], out);
+			p = isl_printer_print_str(p, " union ");
+		p = basic_set_print_omega(set->p[i], p);
 	}
-	fprintf(out, "\n");
+	p = isl_printer_end_line(p);
+	return p;
 }
 
-static void print_disjunct(__isl_keep isl_basic_map *bmap,
-	__isl_keep isl_dim *dim, FILE *out, int set)
+static __isl_give isl_printer *print_disjunct(__isl_keep isl_basic_map *bmap,
+	__isl_keep isl_dim *dim, __isl_take isl_printer *p, int set)
 {
 	if (bmap->n_div > 0) {
 		int i;
-		fprintf(out, "exists (");
+		p = isl_printer_print_str(p, "exists (");
 		for (i = 0; i < bmap->n_div; ++i) {
 			if (i)
-				fprintf(out, ", ");
-			print_name(dim, out, isl_dim_div, i, 0);
+				p = isl_printer_print_str(p, ", ");
+			p = print_name(dim, p, isl_dim_div, i, 0);
 			if (isl_int_is_zero(bmap->div[i][0]))
 				continue;
-			fprintf(out, " = [(");
-			print_affine(bmap, dim, out, bmap->div[i] + 1, set);
-			fprintf(out, ")/");
-			isl_int_print(out, bmap->div[i][0], 0);
-			fprintf(out, "]");
+			p = isl_printer_print_str(p, " = [(");
+			p = print_affine(bmap, dim, p, bmap->div[i] + 1, set);
+			p = isl_printer_print_str(p, ")/");
+			p = isl_printer_print_isl_int(p, bmap->div[i][0]);
+			p = isl_printer_print_str(p, "]");
 		}
-		fprintf(out, ": ");
+		p = isl_printer_print_str(p, ": ");
 	}
 
-	print_constraints(bmap, dim, out, set);
+	p = print_constraints(bmap, dim, p, set);
 
 	if (bmap->n_div > 0)
-		fprintf(out, ")");
+		p = isl_printer_print_str(p, ")");
+	return p;
 }
 
-static void isl_basic_map_print_isl(__isl_keep isl_basic_map *bmap, FILE *out,
-	int indent, const char *prefix, const char *suffix)
+static __isl_give isl_printer *isl_basic_map_print_isl(
+	__isl_keep isl_basic_map *bmap, __isl_take isl_printer *p)
 {
 	int i;
 
-	fprintf(out, "%*s%s", indent, "", prefix ? prefix : "");
+	p = isl_printer_start_line(p);
 	if (isl_basic_map_dim(bmap, isl_dim_param) > 0) {
-		print_tuple(bmap->dim, out, isl_dim_param, 0);
-		fprintf(out, " -> ");
+		p = print_tuple(bmap->dim, p, isl_dim_param, 0);
+		p = isl_printer_print_str(p, " -> ");
 	}
-	fprintf(out, "{ ");
-	print_tuple(bmap->dim, out, isl_dim_in, 0);
-	fprintf(out, " -> ");
-	print_tuple(bmap->dim, out, isl_dim_out, 0);
-	fprintf(out, " : ");
-	print_disjunct(bmap, bmap->dim, out, 0);
-	fprintf(out, " }%s", suffix ? suffix : "");
+	p = isl_printer_print_str(p, "{ ");
+	p = print_tuple(bmap->dim, p, isl_dim_in, 0);
+	p = isl_printer_print_str(p, " -> ");
+	p = print_tuple(bmap->dim, p, isl_dim_out, 0);
+	p = isl_printer_print_str(p, " : ");
+	p = print_disjunct(bmap, bmap->dim, p, 0);
+	p = isl_printer_end_line(p);
+	return p;
 }
 
-static void isl_basic_set_print_isl(__isl_keep isl_basic_set *bset, FILE *out,
-	int indent, const char *prefix, const char *suffix)
+static __isl_give isl_printer *isl_basic_set_print_isl(
+	__isl_keep isl_basic_set *bset, __isl_take isl_printer *p)
 {
 	int i;
 
-	fprintf(out, "%*s%s", indent, "", prefix ? prefix : "");
+	p = isl_printer_start_line(p);
 	if (isl_basic_set_dim(bset, isl_dim_param) > 0) {
-		print_tuple(bset->dim, out, isl_dim_param, 0);
-		fprintf(out, " -> ");
+		p = print_tuple(bset->dim, p, isl_dim_param, 0);
+		p = isl_printer_print_str(p, " -> ");
 	}
-	fprintf(out, "{ ");
-	print_tuple(bset->dim, out, isl_dim_set, 1);
-	fprintf(out, " : ");
-	print_disjunct((isl_basic_map *)bset, bset->dim, out, 1);
-	fprintf(out, " }%s", suffix ? suffix : "");
+	p = isl_printer_print_str(p, "{ ");
+	p = print_tuple(bset->dim, p, isl_dim_set, 1);
+	p = isl_printer_print_str(p, " : ");
+	p = print_disjunct((isl_basic_map *)bset, bset->dim, p, 1);
+	p = isl_printer_end_line(p);
+	return p;
 }
 
-static void print_disjuncts(__isl_keep isl_map *map, FILE *out, int set)
+static __isl_give isl_printer *print_disjuncts(__isl_keep isl_map *map,
+	__isl_take isl_printer *p, int set)
 {
 	int i;
 
 	if (isl_map_fast_is_universe(map))
-		return;
+		return p;
 
-	fprintf(out, " : ");
+	p = isl_printer_print_str(p, " : ");
 	if (map->n == 0)
-		fprintf(out, "1 = 0");
+		p = isl_printer_print_str(p, "1 = 0");
 	for (i = 0; i < map->n; ++i) {
 		if (i)
-			fprintf(out, " or ");
+			p = isl_printer_print_str(p, " or ");
 		if (map->n > 1 && map->p[i]->n_eq + map->p[i]->n_ineq > 1)
-			fprintf(out, "(");
-		print_disjunct(map->p[i], map->dim, out, set);
+			p = isl_printer_print_str(p, "(");
+		p = print_disjunct(map->p[i], map->dim, p, set);
 		if (map->n > 1 && map->p[i]->n_eq + map->p[i]->n_ineq > 1)
-			fprintf(out, ")");
+			p = isl_printer_print_str(p, ")");
 	}
+	return p;
 }
 
-static void isl_map_print_isl(__isl_keep isl_map *map, FILE *out, int indent)
+static __isl_give isl_printer *isl_map_print_isl(__isl_keep isl_map *map,
+	__isl_take isl_printer *p)
 {
-	fprintf(out, "%*s", indent, "");
 	if (isl_map_dim(map, isl_dim_param) > 0) {
-		print_tuple(map->dim, out, isl_dim_param, 0);
-		fprintf(out, " -> ");
+		p = print_tuple(map->dim, p, isl_dim_param, 0);
+		p = isl_printer_print_str(p, " -> ");
 	}
-	fprintf(out, "{ ");
-	print_tuple(map->dim, out, isl_dim_in, 0);
-	fprintf(out, " -> ");
-	print_tuple(map->dim, out, isl_dim_out, 0);
-	print_disjuncts(map, out, 0);
-	fprintf(out, " }");
+	p = isl_printer_print_str(p, "{ ");
+	p = print_tuple(map->dim, p, isl_dim_in, 0);
+	p = isl_printer_print_str(p, " -> ");
+	p = print_tuple(map->dim, p, isl_dim_out, 0);
+	p = print_disjuncts(map, p, 0);
+	p = isl_printer_print_str(p, " }");
+	return p;
 }
 
-static void isl_set_print_isl(__isl_keep isl_set *set, FILE *out, int indent)
+static __isl_give isl_printer *isl_set_print_isl(__isl_keep isl_set *set,
+	__isl_take isl_printer *p)
 {
 	int i;
 
-	fprintf(out, "%*s", indent, "");
 	if (isl_set_dim(set, isl_dim_param) > 0) {
-		print_tuple(set->dim, out, isl_dim_param, 0);
-		fprintf(out, " -> ");
+		p = print_tuple(set->dim, p, isl_dim_param, 0);
+		p = isl_printer_print_str(p, " -> ");
 	}
-	fprintf(out, "{ ");
-	print_tuple(set->dim, out, isl_dim_set, 1);
-	print_disjuncts((isl_map *)set, out, 1);
-	fprintf(out, " }");
+	p = isl_printer_print_str(p, "{ ");
+	p = print_tuple(set->dim, p, isl_dim_set, 1);
+	p = print_disjuncts((isl_map *)set, p, 1);
+	p = isl_printer_print_str(p, " }");
+	return p;
+}
+
+__isl_give isl_printer *isl_printer_print_basic_map(__isl_take isl_printer *p,
+	__isl_keep isl_basic_map *bmap)
+{
+	if (!p || !bmap)
+		goto error;
+	if (p->output_format == ISL_FORMAT_ISL)
+		return isl_basic_map_print_isl(bmap, p);
+	else if (p->output_format == ISL_FORMAT_OMEGA)
+		return isl_basic_map_print_omega(bmap, p);
+	isl_assert(bmap->ctx, 0, goto error);
+error:
+	isl_printer_free(p);
+	return NULL;
 }
 
 void isl_basic_map_print(__isl_keep isl_basic_map *bmap, FILE *out, int indent,
 	const char *prefix, const char *suffix, unsigned output_format)
 {
+	isl_printer *printer;
+
 	if (!bmap)
 		return;
-	if (output_format == ISL_FORMAT_ISL)
-		isl_basic_map_print_isl(bmap, out, indent, prefix, suffix);
-	else if (output_format == ISL_FORMAT_OMEGA)
-		isl_basic_map_print_omega(bmap, out, indent, prefix, suffix);
-	else
-		isl_assert(bmap->ctx, 0, return);
+
+	printer = isl_printer_to_file(bmap->ctx, out);
+	printer = isl_printer_set_indent(printer, indent);
+	printer = isl_printer_set_prefix(printer, prefix);
+	printer = isl_printer_set_suffix(printer, suffix);
+	printer = isl_printer_set_output_format(printer, output_format);
+	isl_printer_print_basic_map(printer, bmap);
+
+	isl_printer_free(printer);
+}
+
+__isl_give isl_printer *isl_printer_print_basic_set(__isl_take isl_printer *p,
+	__isl_keep isl_basic_set *bset)
+{
+	if (!p || !bset)
+		goto error;
+
+	if (p->output_format == ISL_FORMAT_ISL)
+		return isl_basic_set_print_isl(bset, p);
+	else if (p->output_format == ISL_FORMAT_POLYLIB)
+		return isl_basic_set_print_polylib(bset, p);
+	else if (p->output_format == ISL_FORMAT_POLYLIB_CONSTRAINTS)
+		return bset_print_constraints_polylib(bset, p);
+	else if (p->output_format == ISL_FORMAT_OMEGA)
+		return isl_basic_set_print_omega(bset, p);
+	isl_assert(p->ctx, 0, goto error);
+error:
+	isl_printer_free(p);
+	return NULL;
 }
 
 void isl_basic_set_print(struct isl_basic_set *bset, FILE *out, int indent,
 	const char *prefix, const char *suffix, unsigned output_format)
 {
+	isl_printer *printer;
+
 	if (!bset)
 		return;
-	if (output_format == ISL_FORMAT_ISL)
-		isl_basic_set_print_isl(bset, out, indent, prefix, suffix);
-	else if (output_format == ISL_FORMAT_POLYLIB)
-		isl_basic_set_print_polylib(bset, out, indent, prefix, suffix);
-	else if (output_format == ISL_FORMAT_POLYLIB_CONSTRAINTS)
-		bset_print_constraints_polylib(bset, out, indent, prefix, suffix);
-	else if (output_format == ISL_FORMAT_OMEGA)
-		isl_basic_set_print_omega(bset, out, indent, prefix, suffix);
-	else
-		isl_assert(bset->ctx, 0, return);
+
+	printer = isl_printer_to_file(bset->ctx, out);
+	printer = isl_printer_set_indent(printer, indent);
+	printer = isl_printer_set_prefix(printer, prefix);
+	printer = isl_printer_set_suffix(printer, suffix);
+	printer = isl_printer_set_output_format(printer, output_format);
+	isl_printer_print_basic_set(printer, bset);
+
+	isl_printer_free(printer);
+}
+
+__isl_give isl_printer *isl_printer_print_set(__isl_take isl_printer *p,
+	__isl_keep isl_set *set)
+{
+	if (!p || !set)
+		goto error;
+	if (p->output_format == ISL_FORMAT_ISL)
+		return isl_set_print_isl(set, p);
+	else if (p->output_format == ISL_FORMAT_POLYLIB)
+		return isl_set_print_polylib(set, p);
+	else if (p->output_format == ISL_FORMAT_OMEGA)
+		return isl_set_print_omega(set, p);
+	isl_assert(set->ctx, 0, goto error);
+error:
+	isl_printer_free(p);
+	return NULL;
 }
 
 void isl_set_print(struct isl_set *set, FILE *out, int indent,
 	unsigned output_format)
 {
+	isl_printer *printer;
+
 	if (!set)
 		return;
-	if (output_format == ISL_FORMAT_ISL)
-		isl_set_print_isl(set, out, indent);
-	else if (output_format == ISL_FORMAT_POLYLIB)
-		isl_set_print_polylib(set, out, indent);
-	else if (output_format == ISL_FORMAT_OMEGA)
-		isl_set_print_omega(set, out, indent);
-	else
-		isl_assert(set->ctx, 0, return);
+
+	printer = isl_printer_to_file(set->ctx, out);
+	printer = isl_printer_set_indent(printer, indent);
+	printer = isl_printer_set_output_format(printer, output_format);
+	printer = isl_printer_print_set(printer, set);
+
+	isl_printer_free(printer);
+}
+
+__isl_give isl_printer *isl_printer_print_map(__isl_take isl_printer *p,
+	__isl_keep isl_map *map)
+{
+	if (!p || !map)
+		goto error;
+
+	if (p->output_format == ISL_FORMAT_ISL)
+		return isl_map_print_isl(map, p);
+	else if (p->output_format == ISL_FORMAT_POLYLIB)
+		return isl_map_print_polylib(map, p);
+	else if (p->output_format == ISL_FORMAT_OMEGA)
+		return isl_map_print_omega(map, p);
+	isl_assert(map->ctx, 0, goto error);
+error:
+	isl_printer_free(p);
+	return NULL;
 }
 
 void isl_map_print(__isl_keep isl_map *map, FILE *out, int indent,
 	unsigned output_format)
 {
+	isl_printer *printer;
+
 	if (!map)
 		return;
-	if (output_format == ISL_FORMAT_ISL)
-		isl_map_print_isl(map, out, indent);
-	else if (output_format == ISL_FORMAT_POLYLIB)
-		isl_map_print_polylib(map, out, indent);
-	else if (output_format == ISL_FORMAT_OMEGA)
-		isl_map_print_omega(map, out, indent);
-	else
-		isl_assert(map->ctx, 0, return);
+
+	printer = isl_printer_to_file(map->ctx, out);
+	printer = isl_printer_set_indent(printer, indent);
+	printer = isl_printer_set_output_format(printer, output_format);
+	printer = isl_printer_print_map(printer, map);
+
+	isl_printer_free(printer);
 }
 
 static int upoly_rec_n_non_zero(__isl_keep struct isl_upoly_rec *rec)
@@ -581,206 +700,284 @@ static int upoly_rec_n_non_zero(__isl_keep struct isl_upoly_rec *rec)
 	return n;
 }
 
-static void print_div(__isl_keep isl_dim *dim, __isl_keep isl_mat *div,
-	int pos, FILE *out)
+static __isl_give isl_printer *print_div(__isl_keep isl_dim *dim,
+	__isl_keep isl_mat *div, int pos, __isl_take isl_printer *p)
 {
-	fprintf(out, "[(");
-	print_affine_of_len(dim, out, div->row[pos] + 1, div->n_col - 1, 1);
-	fprintf(out, ")/");
-	isl_int_print(out, div->row[pos][0], 0);
-	fprintf(out, "]");
+	p = isl_printer_print_str(p, "[(");
+	p = print_affine_of_len(dim, p, div->row[pos] + 1, div->n_col - 1, 1);
+	p = isl_printer_print_str(p, ")/");
+	p = isl_printer_print_isl_int(p, div->row[pos][0]);
+	p = isl_printer_print_str(p, "]");
+	return p;
 }
 
-static void upoly_print_cst(__isl_keep struct isl_upoly *up, FILE *out, int first)
+static __isl_give isl_printer *upoly_print_cst(__isl_keep struct isl_upoly *up,
+	__isl_take isl_printer *p, int first)
 {
 	struct isl_upoly_cst *cst;
 	int neg;
 
 	cst = isl_upoly_as_cst(up);
 	if (!cst)
-		return;
+		goto error;
 	neg = !first && isl_int_is_neg(cst->n);
 	if (!first)
-		fprintf(out, neg ? " - " :  " + ");
+		p = isl_printer_print_str(p, neg ? " - " :  " + ");
 	if (neg)
 		isl_int_neg(cst->n, cst->n);
 	if (isl_int_is_zero(cst->d)) {
 		int sgn = isl_int_sgn(cst->n);
-		fprintf(out, sgn < 0 ? "-infty" : sgn == 0 ? "NaN" : "infty");
+		p = isl_printer_print_str(p, sgn < 0 ? "-infty" :
+					    sgn == 0 ? "NaN" : "infty");
 	} else
-		isl_int_print(out, cst->n, 0);
+		p = isl_printer_print_isl_int(p, cst->n);
 	if (neg)
 		isl_int_neg(cst->n, cst->n);
 	if (!isl_int_is_zero(cst->d) && !isl_int_is_one(cst->d)) {
-		fprintf(out, "/");
-		isl_int_print(out, cst->d, 0);
+		p = isl_printer_print_str(p, "/");
+		p = isl_printer_print_isl_int(p, cst->d);
 	}
+	return p;
+error:
+	isl_printer_free(p);
+	return NULL;
 }
 
-static void upoly_print(__isl_keep struct isl_upoly *up,
-	__isl_keep isl_dim *dim, __isl_keep isl_mat *div, FILE *out)
+static __isl_give isl_printer *upoly_print(__isl_keep struct isl_upoly *up,
+	__isl_keep isl_dim *dim, __isl_keep isl_mat *div,
+	__isl_take isl_printer *p)
 {
 	unsigned total;
 	int i, n, first;
 	struct isl_upoly_rec *rec;
 
-	if (!up || !dim || !div)
-		return;
+	if (!p || !up || !dim || !div)
+		goto error;
 
-	if (isl_upoly_is_cst(up)) {
-		upoly_print_cst(up, out, 1);
-		return;
-	}
+	if (isl_upoly_is_cst(up))
+		return upoly_print_cst(up, p, 1);
 
 	total = isl_dim_total(dim);
 	rec = isl_upoly_as_rec(up);
 	if (!rec)
-		return;
+		goto error;
 	n = upoly_rec_n_non_zero(rec);
 	if (n > 1)
-		fprintf(out, "(");
+		p = isl_printer_print_str(p, "(");
 	for (i = 0, first = 1; i < rec->n; ++i) {
 		if (isl_upoly_is_zero(rec->p[i]))
 			continue;
 		if (isl_upoly_is_negone(rec->p[i])) {
 			if (!i)
-				fprintf(out, "-1");
+				p = isl_printer_print_str(p, "-1");
 			else if (first)
-				fprintf(out, "-");
+				p = isl_printer_print_str(p, "-");
 			else
-				fprintf(out, " - ");
+				p = isl_printer_print_str(p, " - ");
 		} else if (isl_upoly_is_cst(rec->p[i]) &&
 				!isl_upoly_is_one(rec->p[i]))
-			upoly_print_cst(rec->p[i], out, first);
+			p = upoly_print_cst(rec->p[i], p, first);
 		else {
 			if (!first)
-				fprintf(out, " + ");
+				p = isl_printer_print_str(p, " + ");
 			if (i == 0 || !isl_upoly_is_one(rec->p[i]))
-				upoly_print(rec->p[i], dim, div, out);
+				p = upoly_print(rec->p[i], dim, div, p);
 		}
 		first = 0;
 		if (i == 0)
 			continue;
 		if (!isl_upoly_is_one(rec->p[i]) &&
 		    !isl_upoly_is_negone(rec->p[i]))
-			fprintf(out, " * ");
+			p = isl_printer_print_str(p, " * ");
 		if (rec->up.var < total)
-			print_term(dim, up->ctx->one, 1 + rec->up.var, out, 1);
+			p = print_term(dim, up->ctx->one, 1 + rec->up.var, p, 1);
 		else
-			print_div(dim, div, rec->up.var - total, out);
+			p = print_div(dim, div, rec->up.var - total, p);
 		if (i == 1)
 			continue;
-		fprintf(out, "^%d", i);
+		p = isl_printer_print_str(p, "^");
+		p = isl_printer_print_int(p, i);
 	}
 	if (n > 1)
-		fprintf(out, ")");
+		p = isl_printer_print_str(p, ")");
+	return p;
+error:
+	isl_printer_free(p);
+	return NULL;
 }
 
-static void qpolynomial_print(__isl_keep isl_qpolynomial *qp, FILE *out)
+__isl_give isl_printer *isl_printer_print_qpolynomial(__isl_take isl_printer *p,
+	__isl_keep isl_qpolynomial *qp)
 {
-	if (!qp)
-		return;
-	upoly_print(qp->upoly, qp->dim, qp->div, out);
+	if (!p || !qp)
+		goto error;
+	p = upoly_print(qp->upoly, qp->dim, qp->div, p);
+	return p;
+error:
+	isl_printer_free(p);
+	return NULL;
 }
 
 void isl_qpolynomial_print(__isl_keep isl_qpolynomial *qp, FILE *out,
 	unsigned output_format)
 {
+	isl_printer *p;
+
 	if  (!qp)
 		return;
+
 	isl_assert(qp->dim->ctx, output_format == ISL_FORMAT_ISL, return);
-	qpolynomial_print(qp, out);
+	p = isl_printer_to_file(qp->dim->ctx, out);
+	p = isl_printer_print_qpolynomial(p, qp);
+	isl_printer_free(p);
 }
 
-static void qpolynomial_fold_print(__isl_keep isl_qpolynomial_fold *fold,
-	FILE *out)
+static __isl_give isl_printer *qpolynomial_fold_print(
+	__isl_keep isl_qpolynomial_fold *fold, __isl_take isl_printer *p)
 {
 	int i;
 
 	if (fold->type == isl_fold_min)
-		fprintf(out, "min");
+		p = isl_printer_print_str(p, "min");
 	else if (fold->type == isl_fold_max)
-		fprintf(out, "max");
-	fprintf(out, "(");
+		p = isl_printer_print_str(p, "max");
+	p = isl_printer_print_str(p, "(");
 	for (i = 0; i < fold->n; ++i) {
 		if (i)
-			fprintf(out, ", ");
-		qpolynomial_print(fold->qp[i], out);
+			p = isl_printer_print_str(p, ", ");
+		p = isl_printer_print_qpolynomial(p, fold->qp[i]);
 	}
-	fprintf(out, ")");
+	p = isl_printer_print_str(p, ")");
+	return p;
 }
 
-void isl_qpolynomial_fold_print(__isl_keep isl_qpolynomial_fold *fold, FILE *out,
-	unsigned output_format)
+__isl_give isl_printer *isl_printer_print_qpolynomial_fold(
+	__isl_take isl_printer *p, __isl_keep isl_qpolynomial_fold *fold)
 {
-	if  (!fold)
+	if  (!p || !fold)
+		goto error;
+	p = qpolynomial_fold_print(fold, p);
+	return p;
+error:
+	isl_printer_free(p);
+	return NULL;
+}
+
+void isl_qpolynomial_fold_print(__isl_keep isl_qpolynomial_fold *fold,
+	FILE *out, unsigned output_format)
+{
+	isl_printer *p;
+
+	if (!fold)
 		return;
+
 	isl_assert(fold->dim->ctx, output_format == ISL_FORMAT_ISL, return);
-	qpolynomial_fold_print(fold, out);
+
+	p = isl_printer_to_file(fold->dim->ctx, out);
+	p = isl_printer_print_qpolynomial_fold(p, fold);
+
+	isl_printer_free(p);
+}
+
+__isl_give isl_printer *isl_printer_print_pw_qpolynomial(
+	__isl_take isl_printer *p, __isl_keep isl_pw_qpolynomial *pwqp)
+{
+	int i = 0;
+
+	if (!p || !pwqp)
+		goto error;
+
+	if (isl_dim_size(pwqp->dim, isl_dim_param) > 0) {
+		p = print_tuple(pwqp->dim, p, isl_dim_param, 0);
+		p = isl_printer_print_str(p, " -> ");
+	}
+	p = isl_printer_print_str(p, "{ ");
+	if (pwqp->n == 0) {
+		if (isl_dim_size(pwqp->dim, isl_dim_set) > 0) {
+			p = print_tuple(pwqp->dim, p, isl_dim_set, 1);
+			p = isl_printer_print_str(p, " -> ");
+		}
+		p = isl_printer_print_str(p, "0");
+	}
+	for (i = 0; i < pwqp->n; ++i) {
+		if (i)
+			p = isl_printer_print_str(p, "; ");
+		if (isl_dim_size(pwqp->p[i].set->dim, isl_dim_set) > 0) {
+			p = print_tuple(pwqp->p[i].set->dim, p, isl_dim_set, 1);
+			p = isl_printer_print_str(p, " -> ");
+		}
+		p = isl_printer_print_qpolynomial(p, pwqp->p[i].qp);
+		p = print_disjuncts((isl_map *)pwqp->p[i].set, p, 1);
+	}
+	p = isl_printer_print_str(p, " }");
+	return p;
+error:
+	isl_printer_free(p);
+	return NULL;
 }
 
 void isl_pw_qpolynomial_print(__isl_keep isl_pw_qpolynomial *pwqp, FILE *out,
 	unsigned output_format)
 {
-	int i = 0;
+	isl_printer *p;
 
 	if (!pwqp)
 		return;
+
 	isl_assert(pwqp->dim->ctx, output_format == ISL_FORMAT_ISL, return);
-	if (isl_dim_size(pwqp->dim, isl_dim_param) > 0) {
-		print_tuple(pwqp->dim, out, isl_dim_param, 0);
-		fprintf(out, " -> ");
+
+	p = isl_printer_to_file(pwqp->dim->ctx, out);
+	p = isl_printer_print_pw_qpolynomial(p, pwqp);
+
+	isl_printer_free(p);
+}
+
+__isl_give isl_printer *isl_printer_print_pw_qpolynomial_fold(
+	__isl_take isl_printer *p, __isl_keep isl_pw_qpolynomial_fold *pwf)
+{
+	int i = 0;
+
+	if (!p || !pwf)
+		return;
+
+	if (isl_dim_size(pwf->dim, isl_dim_param) > 0) {
+		p = print_tuple(pwf->dim, p, isl_dim_param, 0);
+		p = isl_printer_print_str(p, " -> ");
 	}
-	fprintf(out, "{ ");
-	if (pwqp->n == 0) {
-		if (isl_dim_size(pwqp->dim, isl_dim_set) > 0) {
-			print_tuple(pwqp->dim, out, isl_dim_set, 1);
-			fprintf(out, " -> ");
+	p = isl_printer_print_str(p, "{ ");
+	if (pwf->n == 0) {
+		if (isl_dim_size(pwf->dim, isl_dim_set) > 0) {
+			p = print_tuple(pwf->dim, p, isl_dim_set, 0);
+			p = isl_printer_print_str(p, " -> ");
 		}
-		fprintf(out, "0");
+		p = isl_printer_print_str(p, "0");
 	}
-	for (i = 0; i < pwqp->n; ++i) {
+	for (i = 0; i < pwf->n; ++i) {
 		if (i)
-			fprintf(out, "; ");
-		if (isl_dim_size(pwqp->p[i].set->dim, isl_dim_set) > 0) {
-			print_tuple(pwqp->p[i].set->dim, out, isl_dim_set, 1);
-			fprintf(out, " -> ");
+			p = isl_printer_print_str(p, "; ");
+		if (isl_dim_size(pwf->p[i].set->dim, isl_dim_set) > 0) {
+			p = print_tuple(pwf->p[i].set->dim, p, isl_dim_set, 0);
+			p = isl_printer_print_str(p, " -> ");
 		}
-		qpolynomial_print(pwqp->p[i].qp, out);
-		print_disjuncts((isl_map *)pwqp->p[i].set, out, 1);
+		p = qpolynomial_fold_print(pwf->p[i].fold, p);
+		p = print_disjuncts((isl_map *)pwf->p[i].set, p, 1);
 	}
-	fprintf(out, " }");
+	p = isl_printer_print_str(p, " }");
+	return p;
 }
 
 void isl_pw_qpolynomial_fold_print(__isl_keep isl_pw_qpolynomial_fold *pwf,
 	FILE *out, unsigned output_format)
 {
-	int i = 0;
+	isl_printer *p;
 
 	if (!pwf)
 		return;
+
 	isl_assert(pwf->dim->ctx, output_format == ISL_FORMAT_ISL, return);
-	if (isl_dim_size(pwf->dim, isl_dim_param) > 0) {
-		print_tuple(pwf->dim, out, isl_dim_param, 0);
-		fprintf(out, " -> ");
-	}
-	fprintf(out, "{ ");
-	if (pwf->n == 0) {
-		if (isl_dim_size(pwf->dim, isl_dim_set) > 0) {
-			print_tuple(pwf->dim, out, isl_dim_set, 0);
-			fprintf(out, " -> ");
-		}
-		fprintf(out, "0");
-	}
-	for (i = 0; i < pwf->n; ++i) {
-		if (i)
-			fprintf(out, "; ");
-		if (isl_dim_size(pwf->p[i].set->dim, isl_dim_set) > 0) {
-			print_tuple(pwf->p[i].set->dim, out, isl_dim_set, 0);
-			fprintf(out, " -> ");
-		}
-		qpolynomial_fold_print(pwf->p[i].fold, out);
-		print_disjuncts((isl_map *)pwf->p[i].set, out, 1);
-	}
-	fprintf(out, " }");
+
+	p = isl_printer_to_file(pwf->dim->ctx, out);
+	p = isl_printer_print_pw_qpolynomial_fold(p, pwf);
+
+	isl_printer_free(p);
 }
