@@ -364,6 +364,8 @@ int isl_map_fast_is_fixed(struct isl_map *map,
 
 __isl_give isl_basic_map *isl_basic_map_gist(__isl_take isl_basic_map *bmap,
 	__isl_take isl_basic_map *context);
+__isl_give isl_map *isl_map_gist(__isl_take isl_map *map,
+	__isl_take isl_basic_map *context);
 
 __isl_give isl_map *isl_map_coalesce(__isl_take isl_map *map);
 
