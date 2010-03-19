@@ -77,6 +77,8 @@ __isl_give isl_dim *isl_pw_qpolynomial_get_dim(
 	__isl_keep isl_pw_qpolynomial *pwqp);
 unsigned isl_pw_qpolynomial_dim(__isl_keep isl_pw_qpolynomial *pwqp,
 	enum isl_dim_type type);
+int isl_pw_qpolynomial_involves_dims(__isl_keep isl_pw_qpolynomial *pwqp,
+	enum isl_dim_type type, unsigned first, unsigned n);
 
 __isl_give isl_set *isl_pw_qpolynomial_domain(__isl_take isl_pw_qpolynomial *pwqp);
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_intersect_domain(

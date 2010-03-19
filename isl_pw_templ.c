@@ -400,3 +400,21 @@ isl_ctx *FN(PW,get_ctx)(__isl_keep PW *pw)
 {
 	return pw ? pw->dim->ctx : NULL;
 }
+
+int FN(PW,involves_dims)(__isl_keep PW *pw, enum isl_dim_type type,
+	unsigned first, unsigned n)
+{
+	int i;
+
+	if (!pw)
+		return -1;
+	if (pw->n == 0 || n == 0)
+		return 0;
+	for (i = 0; i < pw->n; ++i) {
+		int involves = FN(EL,involves_dims)(pw->p[i].FIELD,
+							type, first, n);
+		if (involves < 0 || involves)
+			return involves;
+	}
+	return 0;
+}

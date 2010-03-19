@@ -1380,6 +1380,103 @@ error:
 	return NULL;
 }
 
+static int up_set_active(__isl_keep struct isl_upoly *up, int *active, int d)
+{
+	struct isl_upoly_rec *rec;
+	int i;
+
+	if (!up)
+		return -1;
+
+	if (isl_upoly_is_cst(up))
+		return 0;
+
+	if (up->var < d)
+		active[up->var] = 1;
+
+	rec = isl_upoly_as_rec(up);
+	for (i = 0; i < rec->n; ++i)
+		if (up_set_active(rec->p[i], active, d) < 0)
+			return -1;
+
+	return 0;
+}
+
+static int set_active(__isl_keep isl_qpolynomial *qp, int *active)
+{
+	int i, j;
+	int d = isl_dim_total(qp->dim);
+
+	if (!qp || !active)
+		return -1;
+
+	for (i = 0; i < d; ++i)
+		for (j = 0; j < qp->div->n_row; ++j) {
+			if (isl_int_is_zero(qp->div->row[j][2 + i]))
+				continue;
+			active[i] = 1;
+			break;
+		}
+
+	return up_set_active(qp->upoly, active, d);
+}
+
+int isl_qpolynomial_involves_dims(__isl_keep isl_qpolynomial *qp,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	int i;
+	int *active = NULL;
+	int involves = 0;
+
+	if (!qp)
+		return -1;
+	if (n == 0)
+		return 0;
+
+	isl_assert(qp->dim->ctx, first + n <= isl_dim_size(qp->dim, type),
+			return -1);
+	isl_assert(qp->dim->ctx, type == isl_dim_param ||
+				 type == isl_dim_set, return -1);
+
+	active = isl_calloc_array(set->ctx, int, isl_dim_total(qp->dim));
+	if (set_active(qp, active) < 0)
+		goto error;
+
+	if (type == isl_dim_set)
+		first += isl_dim_size(qp->dim, isl_dim_param);
+	for (i = 0; i < n; ++i)
+		if (active[first + i]) {
+			involves = 1;
+			break;
+		}
+
+	free(active);
+
+	return involves;
+error:
+	free(active);
+	return -1;
+}
+
+int isl_qpolynomial_fold_involves_dims(__isl_keep isl_qpolynomial_fold *fold,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	int i;
+
+	if (!fold)
+		return -1;
+	if (fold->n == 0 || n == 0)
+		return 0;
+
+	for (i = 0; i < fold->n; ++i) {
+		int involves = isl_qpolynomial_involves_dims(fold->qp[i],
+							    type, first, n);
+		if (involves < 0 || involves)
+			return involves;
+	}
+	return 0;
+}
+
 #undef PW
 #define PW isl_pw_qpolynomial
 #undef EL
@@ -2348,44 +2445,6 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_from_pw_qpolynomial(
 	isl_pw_qpolynomial_free(pwqp);
 
 	return pwf;
-}
-
-static int up_set_active(__isl_keep struct isl_upoly *up, int *active, int d)
-{
-	struct isl_upoly_rec *rec;
-	int i;
-
-	if (!up)
-		return -1;
-
-	if (isl_upoly_is_cst(up))
-		return 0;
-
-	if (up->var < d)
-		active[up->var] = 1;
-
-	rec = isl_upoly_as_rec(up);
-	for (i = 0; i < rec->n; ++i)
-		if (up_set_active(rec->p[i], active, d) < 0)
-			return -1;
-
-	return 0;
-}
-
-static int set_active(__isl_keep isl_qpolynomial *qp, int *active)
-{
-	int i, j;
-	int d = isl_dim_total(qp->dim);
-
-	for (i = 0; i < d; ++i)
-		for (j = 0; j < qp->div->n_row; ++j) {
-			if (isl_int_is_zero(qp->div->row[j][2 + i]))
-				continue;
-			active[i] = 1;
-			break;
-		}
-
-	return up_set_active(qp->upoly, active, d);
 }
 
 /* For each parameter or variable that does not appear in qp,
