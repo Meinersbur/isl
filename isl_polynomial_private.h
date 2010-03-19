@@ -134,5 +134,10 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_add_piece(
 int isl_pw_qpolynomial_is_zero(__isl_keep isl_pw_qpolynomial *pwqp);
 int isl_pw_qpolynomial_is_one(__isl_keep isl_pw_qpolynomial *pwqp);
 
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_cow(
+	__isl_take isl_qpolynomial_fold *fold);
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_dup(
+	__isl_keep isl_qpolynomial_fold *fold);
+
 __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_cow(
 	__isl_take isl_pw_qpolynomial_fold *pwf);

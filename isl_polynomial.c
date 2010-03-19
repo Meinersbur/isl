@@ -467,7 +467,6 @@ static __isl_give struct isl_upoly *replace_by_constant_term(
 	rec = isl_upoly_as_rec(up);
 	if (!rec)
 		goto error;
-	isl_assert(up->ctx, rec->n == 1, goto error);
 	cst = isl_upoly_copy(rec->p[0]);
 	isl_upoly_free(up);
 	return cst;
@@ -1477,6 +1476,110 @@ int isl_qpolynomial_fold_involves_dims(__isl_keep isl_qpolynomial_fold *fold,
 	return 0;
 }
 
+__isl_give struct isl_upoly *isl_upoly_drop(__isl_take struct isl_upoly *up,
+	unsigned first, unsigned n)
+{
+	int i;
+	struct isl_upoly_rec *rec;
+
+	if (!up)
+		return NULL;
+	if (n == 0 || up->var < 0 || up->var < first)
+		return up;
+	if (up->var < first + n) {
+		up = replace_by_constant_term(up);
+		return isl_upoly_drop(up, first, n);
+	}
+	up = isl_upoly_cow(up);
+	if (!up)
+		return NULL;
+	up->var -= n;
+	rec = isl_upoly_as_rec(up);
+	if (!rec)
+		goto error;
+
+	for (i = 0; i < rec->n; ++i) {
+		rec->p[i] = isl_upoly_drop(rec->p[i], first, n);
+		if (!rec->p[i])
+			goto error;
+	}
+
+	return up;
+error:
+	isl_upoly_free(up);
+	return NULL;
+}
+
+__isl_give isl_qpolynomial *isl_qpolynomial_drop_dims(
+	__isl_take isl_qpolynomial *qp,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	if (!qp)
+		return NULL;
+	if (n == 0)
+		return qp;
+
+	qp = isl_qpolynomial_cow(qp);
+	if (!qp)
+		return NULL;
+
+	isl_assert(qp->dim->ctx, first + n <= isl_dim_size(qp->dim, type),
+			goto error);
+	isl_assert(qp->dim->ctx, type == isl_dim_param ||
+				 type == isl_dim_set, goto error);
+
+	qp->dim = isl_dim_drop(qp->dim, type, first, n);
+	if (!qp->dim)
+		goto error;
+
+	if (type == isl_dim_set)
+		first += isl_dim_size(qp->dim, isl_dim_param);
+
+	qp->div = isl_mat_drop_cols(qp->div, 2 + first, n);
+	if (!qp->div)
+		goto error;
+
+	qp->upoly = isl_upoly_drop(qp->upoly, first, n);
+	if (!qp->upoly)
+		goto error;
+
+	return qp;
+error:
+	isl_qpolynomial_free(qp);
+	return NULL;
+}
+
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_drop_dims(
+	__isl_take isl_qpolynomial_fold *fold,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	int i;
+
+	if (!fold)
+		return NULL;
+	if (n == 0)
+		return fold;
+
+	fold = isl_qpolynomial_fold_cow(fold);
+	if (!fold)
+		return NULL;
+	fold->dim = isl_dim_drop(fold->dim, type, first, n);
+	if (!fold->dim)
+		goto error;
+
+	for (i = 0; i < fold->n; ++i) {
+		fold->qp[i] = isl_qpolynomial_drop_dims(fold->qp[i],
+							    type, first, n);
+		if (!fold->qp[i])
+			goto error;
+	}
+
+	return fold;
+error:
+	isl_qpolynomial_fold_free(fold);
+	return NULL;
+}
+
 #undef PW
 #define PW isl_pw_qpolynomial
 #undef EL
@@ -2346,6 +2449,43 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_copy(
 
 	fold->ref++;
 	return fold;
+}
+
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_dup(
+	__isl_keep isl_qpolynomial_fold *fold)
+{
+	int i;
+	isl_qpolynomial_fold *dup;
+
+	if (!fold)
+		return NULL;
+	dup = qpolynomial_fold_alloc(fold->type,
+					isl_dim_copy(fold->dim), fold->n);
+	if (!dup)
+		return NULL;
+	
+	for (i = 0; i < fold->n; ++i) {
+		dup->qp[i] = isl_qpolynomial_copy(fold->qp[i]);
+		if (!dup->qp[i])
+			goto error;
+	}
+
+	return dup;
+error:
+	isl_qpolynomial_fold_free(dup);
+	return NULL;
+}
+
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_cow(
+	__isl_take isl_qpolynomial_fold *fold)
+{
+	if (!fold)
+		return NULL;
+
+	if (fold->ref == 1)
+		return fold;
+	fold->ref--;
+	return isl_qpolynomial_fold_dup(fold);
 }
 
 void isl_qpolynomial_fold_free(__isl_take isl_qpolynomial_fold *fold)

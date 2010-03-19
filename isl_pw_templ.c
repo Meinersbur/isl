@@ -418,3 +418,34 @@ int FN(PW,involves_dims)(__isl_keep PW *pw, enum isl_dim_type type,
 	}
 	return 0;
 }
+
+__isl_give PW *FN(PW,drop_dims)(__isl_take PW *pw,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	int i;
+
+	if (!pw)
+		return NULL;
+	if (n == 0)
+		return pw;
+
+	pw = FN(PW,cow)(pw);
+	if (!pw)
+		return NULL;
+	pw->dim = isl_dim_drop(pw->dim, type, first, n);
+	if (!pw->dim)
+		goto error;
+	for (i = 0; i < pw->n; ++i) {
+		pw->p[i].set = isl_set_drop(pw->p[i].set, type, first, n);
+		if (!pw->p[i].set)
+			goto error;
+		pw->p[i].FIELD = FN(EL,drop_dims)(pw->p[i].FIELD, type, first, n);
+		if (!pw->p[i].FIELD)
+			goto error;
+	}
+
+	return pw;
+error:
+	FN(PW,free)(pw);
+	return NULL;
+}
