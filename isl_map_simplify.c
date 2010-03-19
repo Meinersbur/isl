@@ -242,6 +242,12 @@ error:
 	return NULL;
 }
 
+struct isl_set *isl_set_drop(struct isl_set *set,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	return (isl_set *)isl_map_drop((isl_map *)set, type, first, n);
+}
+
 struct isl_map *isl_map_drop_inputs(
 		struct isl_map *map, unsigned first, unsigned n)
 {

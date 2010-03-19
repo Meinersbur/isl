@@ -106,6 +106,8 @@ struct isl_basic_map *isl_basic_map_overlying_set(struct isl_basic_set *bset,
 	struct isl_basic_map *like);
 struct isl_basic_map *isl_basic_map_drop(struct isl_basic_map *bmap,
 	enum isl_dim_type type, unsigned first, unsigned n);
+struct isl_set *isl_set_drop(struct isl_set *set,
+	enum isl_dim_type type, unsigned first, unsigned n);
 struct isl_basic_set *isl_basic_set_drop_dims(
 		struct isl_basic_set *bset, unsigned first, unsigned n);
 struct isl_set *isl_set_drop_dims(
