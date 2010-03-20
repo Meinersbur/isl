@@ -1,8 +1,19 @@
+#include <stdlib.h>
 #include <isl_seq.h>
 #include <isl_polynomial_private.h>
 #include <isl_point_private.h>
 #include <isl_dim_private.h>
 #include <isl_map_private.h>
+#include <isl_map_private.h>
+
+static unsigned pos(__isl_keep isl_dim *dim, enum isl_dim_type type)
+{
+	switch (type) {
+	case isl_dim_param:	return 0;
+	case isl_dim_in:	return dim->nparam;
+	case isl_dim_out:	return dim->nparam + dim->n_in;
+	}
+}
 
 int isl_upoly_is_cst(__isl_keep struct isl_upoly *up)
 {
@@ -900,6 +911,66 @@ static int cmp_row(__isl_keep isl_mat *div, int i, int j)
 	return isl_seq_cmp(div->row[i], div->row[j], div->n_col);
 }
 
+struct isl_div_sort_info {
+	isl_mat	*div;
+	int	 row;
+};
+
+static int div_sort_cmp(const void *p1, const void *p2)
+{
+	const struct isl_div_sort_info *i1, *i2;
+	i1 = (const struct isl_div_sort_info *) p1;
+	i2 = (const struct isl_div_sort_info *) p2;
+
+	return cmp_row(i1->div, i1->row, i2->row);
+}
+
+static __isl_give isl_mat *sort_divs(__isl_take isl_mat *div)
+{
+	int i;
+	struct isl_div_sort_info *array = NULL;
+	int *pos = NULL;
+
+	if (!div)
+		return NULL;
+	if (div->n_row <= 1)
+		return div;
+
+	array = isl_alloc_array(div->ctx, struct isl_div_sort_info, div->n_row);
+	pos = isl_alloc_array(div->ctx, int, div->n_row);
+	if (!array || !pos)
+		goto error;
+
+	for (i = 0; i < div->n_row; ++i) {
+		array[i].div = div;
+		array[i].row = i;
+		pos[i] = i;
+	}
+
+	qsort(array, div->n_row, sizeof(struct isl_div_sort_info),
+		div_sort_cmp);
+
+	for (i = 0; i < div->n_row; ++i) {
+		int t;
+		if (pos[array[i].row] == i)
+			continue;
+		div = isl_mat_cow(div);
+		div = isl_mat_swap_rows(div, i, pos[array[i].row]);
+		t = pos[array[i].row];
+		pos[array[i].row] = pos[i];
+		pos[i] = t;
+	}
+
+	free(array);
+
+	return div;
+error:
+	free(pos);
+	free(array);
+	isl_mat_free(div);
+	return NULL;
+}
+
 static __isl_give isl_mat *merge_divs(__isl_keep isl_mat *div1,
 	__isl_keep isl_mat *div2, int *exp1, int *exp2)
 {
@@ -1253,13 +1324,35 @@ void isl_qpolynomial_get_den(__isl_keep isl_qpolynomial *qp, isl_int *d)
 	upoly_update_den(qp->upoly, d);
 }
 
+__isl_give struct isl_upoly *isl_upoly_pow(isl_ctx *ctx, int pos, int power)
+{
+	int i;
+	struct isl_upoly *up;
+	struct isl_upoly_rec *rec;
+	struct isl_upoly_cst *cst;
+
+	rec = isl_upoly_alloc_rec(ctx, pos, 1 + power);
+	if (!rec)
+		return NULL;
+	for (i = 0; i < 1 + power; ++i) {
+		rec->p[i] = isl_upoly_zero(ctx);
+		if (!rec->p[i])
+			goto error;
+		rec->n++;
+	}
+	cst = isl_upoly_as_cst(rec->p[power]);
+	isl_int_set_si(cst->n, 1);
+
+	return &rec->up;
+error:
+	isl_upoly_free(&rec->up);
+	return NULL;
+}
+
 __isl_give isl_qpolynomial *isl_qpolynomial_pow(__isl_take isl_dim *dim,
 	int pos, int power)
 {
-	int i;
 	struct isl_qpolynomial *qp;
-	struct isl_upoly_rec *rec;
-	struct isl_upoly_cst *cst;
 	struct isl_ctx *ctx;
 
 	if (!dim)
@@ -1271,18 +1364,9 @@ __isl_give isl_qpolynomial *isl_qpolynomial_pow(__isl_take isl_dim *dim,
 	if (!qp)
 		return NULL;
 
-	qp->upoly = &isl_upoly_alloc_rec(ctx, pos, 1 + power)->up;
+	qp->upoly = isl_upoly_pow(ctx, pos, power);
 	if (!qp->upoly)
 		goto error;
-	rec = isl_upoly_as_rec(qp->upoly);
-	for (i = 0; i < 1 + power; ++i) {
-		rec->p[i] = isl_upoly_zero(ctx);
-		if (!rec->p[i])
-			goto error;
-		rec->n++;
-	}
-	cst = isl_upoly_as_cst(rec->p[power]);
-	isl_int_set_si(cst->n, 1);
 
 	return qp;
 error:
@@ -1938,18 +2022,111 @@ error:
 	return NULL;
 }
 
+static int *reordering_move(isl_ctx *ctx,
+	unsigned len, unsigned dst, unsigned src, unsigned n)
+{
+	int i;
+	int *reordering;
+
+	reordering = isl_alloc_array(ctx, int, len);
+	if (!reordering)
+		return NULL;
+
+	if (dst <= src) {
+		for (i = 0; i < dst; ++i)
+			reordering[i] = i;
+		for (i = 0; i < n; ++i)
+			reordering[src + i] = dst + i;
+		for (i = 0; i < src - dst; ++i)
+			reordering[dst + i] = dst + n + i;
+		for (i = 0; i < len - src - n; ++i)
+			reordering[src + n + i] = src + n + i;
+	} else {
+		for (i = 0; i < src; ++i)
+			reordering[i] = i;
+		for (i = 0; i < n; ++i)
+			reordering[src + i] = dst + i;
+		for (i = 0; i < dst - src; ++i)
+			reordering[src + n + i] = src + i;
+		for (i = 0; i < len - dst - n; ++i)
+			reordering[dst + n + i] = dst + n + i;
+	}
+
+	return reordering;
+}
+
+static __isl_give struct isl_upoly *reorder(__isl_take struct isl_upoly *up,
+	int *r)
+{
+	int i;
+	struct isl_upoly_rec *rec;
+	struct isl_upoly *base;
+	struct isl_upoly *res;
+
+	if (isl_upoly_is_cst(up))
+		return up;
+
+	rec = isl_upoly_as_rec(up);
+	if (!rec)
+		goto error;
+
+	isl_assert(up->ctx, rec->n >= 1, goto error);
+
+	base = isl_upoly_pow(up->ctx, r[up->var], 1);
+	res = reorder(isl_upoly_copy(rec->p[rec->n - 1]), r);
+
+	for (i = rec->n - 2; i >= 0; --i) {
+		res = isl_upoly_mul(res, isl_upoly_copy(base));
+		res = isl_upoly_sum(res, reorder(isl_upoly_copy(rec->p[i]), r));
+	}
+
+	isl_upoly_free(base);
+	isl_upoly_free(up);
+
+	return res;
+error:
+	isl_upoly_free(up);
+	return NULL;
+}
+
 __isl_give isl_qpolynomial *isl_qpolynomial_move(__isl_take isl_qpolynomial *qp,
 	enum isl_dim_type dst_type, unsigned dst_pos,
 	enum isl_dim_type src_type, unsigned src_pos, unsigned n)
 {
+	unsigned g_dst_pos;
+	unsigned g_src_pos;
+	int *reordering;
+
+	qp = isl_qpolynomial_cow(qp);
 	if (!qp)
 		return NULL;
+
+	isl_assert(qp->dim->ctx, src_pos + n <= isl_dim_size(qp->dim, src_type),
+		goto error);
+
+	g_dst_pos = pos(qp->dim, dst_type) + dst_pos;
+	g_src_pos = pos(qp->dim, src_type) + src_pos;
+	if (dst_type > src_type)
+		g_dst_pos -= n;
+
+	qp->div = isl_mat_move_cols(qp->div, 2 + g_dst_pos, 2 + g_src_pos, n);
+	qp->div = sort_divs(qp->div);
+	if (!qp->div)
+		goto error;
+
+	reordering = reordering_move(qp->dim->ctx,
+				qp->div->n_col - 2, g_dst_pos, g_src_pos, n);
+	if (!reordering)
+		goto error;
+
+	qp->upoly = reorder(qp->upoly, reordering);
+	free(reordering);
+	if (!qp->upoly)
+		goto error;
 
 	qp->dim = isl_dim_move(qp->dim, dst_type, dst_pos, src_type, src_pos, n);
 	if (!qp->dim)
 		goto error;
-	
-	/* Do something to polynomials when needed; later */
 
 	return qp;
 error:
@@ -1964,6 +2141,7 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_move(
 {
 	int i;
 
+	pwqp = isl_pw_qpolynomial_cow(pwqp);
 	if (!pwqp)
 		return NULL;
 

@@ -2105,6 +2105,10 @@ __isl_give isl_basic_map *isl_basic_map_move(__isl_take isl_basic_map *bmap,
 	enum isl_dim_type src_type, unsigned src_pos, unsigned n)
 {
 	int i;
+	struct isl_dim_map *dim_map;
+	struct isl_basic_map *res;
+	enum isl_dim_type t;
+	unsigned total, off;
 
 	if (!bmap)
 		return NULL;
@@ -2114,20 +2118,62 @@ __isl_give isl_basic_map *isl_basic_map_move(__isl_take isl_basic_map *bmap,
 	isl_assert(bmap->ctx, src_pos + n <= isl_basic_map_dim(bmap, src_type),
 		goto error);
 
-	/* just the simple case for now */
-	isl_assert(bmap->ctx,
-	    pos(bmap->dim, dst_type) + dst_pos ==
-	    pos(bmap->dim, src_type) + src_pos + ((src_type < dst_type) ? n : 0),
-	    goto error);
-
-	if (dst_type == src_type)
+	if (dst_type == src_type && dst_pos == src_pos)
 		return bmap;
 
-	bmap = isl_basic_map_cow(bmap);
-	if (!bmap)
-		return NULL;
+	isl_assert(bmap->ctx, dst_type != src_type, goto error);
 
-	bmap->dim = isl_dim_move(bmap->dim, dst_type, dst_pos, src_type, src_pos, n);
+	if (pos(bmap->dim, dst_type) + dst_pos ==
+	    pos(bmap->dim, src_type) + src_pos +
+					    ((src_type < dst_type) ? n : 0)) {
+		bmap = isl_basic_map_cow(bmap);
+		if (!bmap)
+			return NULL;
+
+		bmap->dim = isl_dim_move(bmap->dim, dst_type, dst_pos,
+						src_type, src_pos, n);
+		if (!bmap->dim)
+			goto error;
+
+		return bmap;
+	}
+
+	total = isl_basic_map_total_dim(bmap);
+	dim_map = isl_dim_map_alloc(bmap->ctx, total);
+
+	off = 0;
+	for (t = isl_dim_param; t <= isl_dim_out; ++t) {
+		unsigned size = isl_dim_size(bmap->dim, t);
+		if (t == dst_type) {
+			isl_dim_map_dim_range(dim_map, bmap->dim, t,
+					    0, dst_pos, off);
+			off += dst_pos;
+			isl_dim_map_dim_range(dim_map, bmap->dim, src_type,
+					    src_pos, n, off);
+			off += n;
+			isl_dim_map_dim_range(dim_map, bmap->dim, t,
+					    dst_pos, size - dst_pos, off);
+			off += size - dst_pos;
+		} else if (t == src_type) {
+			isl_dim_map_dim_range(dim_map, bmap->dim, t,
+					    0, src_pos, off);
+			off += src_pos;
+			isl_dim_map_dim_range(dim_map, bmap->dim, t,
+					src_pos + n, size - src_pos - n, off);
+			off += size - src_pos - n;
+		} else {
+			isl_dim_map_dim(dim_map, bmap->dim, t, off);
+			off += size;
+		}
+	}
+	isl_dim_map_div(dim_map, bmap, off + n);
+
+	res = isl_basic_map_alloc_dim(isl_basic_map_get_dim(bmap),
+			bmap->n_div, bmap->n_eq, bmap->n_ineq);
+	bmap = add_constraints_dim_map(res, bmap, dim_map);
+
+	bmap->dim = isl_dim_move(bmap->dim, dst_type, dst_pos,
+					src_type, src_pos, n);
 	if (!bmap->dim)
 		goto error;
 
@@ -2165,14 +2211,10 @@ __isl_give isl_map *isl_map_move(__isl_take isl_map *map,
 	isl_assert(map->ctx, src_pos + n <= isl_map_dim(map, src_type),
 		goto error);
 
-	/* just the simple case for now */
-	isl_assert(map->ctx,
-	    map_offset(map, dst_type) + dst_pos ==
-	    map_offset(map, src_type) + src_pos + ((src_type < dst_type) ? n : 0),
-	    goto error);
-
-	if (dst_type == src_type)
+	if (dst_type == src_type && dst_pos == src_pos)
 		return map;
+
+	isl_assert(map->ctx, dst_type != src_type, goto error);
 
 	map = isl_map_cow(map);
 	if (!map)
