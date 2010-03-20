@@ -1215,3 +1215,46 @@ __isl_give isl_mat *isl_mat_vec_concat(__isl_take isl_mat *top,
 {
 	return isl_mat_concat(top, isl_mat_from_row_vec(bot));
 }
+
+__isl_give isl_mat *isl_mat_move_cols(__isl_take isl_mat *mat,
+	unsigned dst_col, unsigned src_col, unsigned n)
+{
+	isl_mat *res;
+
+	if (!mat)
+		return NULL;
+	if (n == 0 || dst_col == src_col)
+		return mat;
+
+	res = isl_mat_alloc(mat->ctx, mat->n_row, mat->n_col);
+	if (!res)
+		goto error;
+
+	if (dst_col < src_col) {
+		isl_mat_sub_copy(res->ctx, res->row, mat->row, mat->n_row,
+				 0, 0, dst_col);
+		isl_mat_sub_copy(res->ctx, res->row, mat->row, mat->n_row,
+				 dst_col, src_col, n);
+		isl_mat_sub_copy(res->ctx, res->row, mat->row, mat->n_row,
+				 dst_col + n, dst_col, src_col - dst_col);
+		isl_mat_sub_copy(res->ctx, res->row, mat->row, mat->n_row,
+				 src_col + n, src_col + n,
+				 res->n_col - src_col - n);
+	} else {
+		isl_mat_sub_copy(res->ctx, res->row, mat->row, mat->n_row,
+				 0, 0, src_col);
+		isl_mat_sub_copy(res->ctx, res->row, mat->row, mat->n_row,
+				 src_col, src_col + n, dst_col - src_col);
+		isl_mat_sub_copy(res->ctx, res->row, mat->row, mat->n_row,
+				 dst_col, src_col, n);
+		isl_mat_sub_copy(res->ctx, res->row, mat->row, mat->n_row,
+				 dst_col + n, dst_col + n,
+				 res->n_col - dst_col - n);
+	}
+	isl_mat_free(mat);
+
+	return res;
+error:
+	isl_mat_free(mat);
+	return NULL;
+}
