@@ -957,9 +957,8 @@ void isl_pw_qpolynomial_print(__isl_keep isl_pw_qpolynomial *pwqp, FILE *out,
 	if (!pwqp)
 		return;
 
-	isl_assert(pwqp->dim->ctx, output_format == ISL_FORMAT_ISL, return);
-
 	p = isl_printer_to_file(pwqp->dim->ctx, out);
+	p = isl_printer_set_output_format(p, output_format);
 	p = isl_printer_print_pw_qpolynomial(p, pwqp);
 
 	isl_printer_free(p);
@@ -1244,6 +1243,7 @@ void isl_pw_qpolynomial_fold_print(__isl_keep isl_pw_qpolynomial_fold *pwf,
 		return;
 
 	p = isl_printer_to_file(pwf->dim->ctx, out);
+	p = isl_printer_set_output_format(p, output_format);
 	p = isl_printer_print_pw_qpolynomial_fold(p, pwf);
 
 	isl_printer_free(p);
