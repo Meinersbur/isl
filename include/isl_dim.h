@@ -58,6 +58,9 @@ struct isl_dim *isl_dim_extend(struct isl_dim *dim,
 			unsigned nparam, unsigned n_in, unsigned n_out);
 struct isl_dim *isl_dim_add(struct isl_dim *dim, enum isl_dim_type type,
 		unsigned n);
+__isl_give isl_dim *isl_dim_move(__isl_take isl_dim *dim,
+	enum isl_dim_type dst_type, unsigned dst_pos,
+	enum isl_dim_type src_type, unsigned src_pos, unsigned n);
 __isl_give isl_dim *isl_dim_insert(__isl_take isl_dim *dim,
 	enum isl_dim_type type, unsigned pos, unsigned n);
 struct isl_dim *isl_dim_join(struct isl_dim *left, struct isl_dim *right);

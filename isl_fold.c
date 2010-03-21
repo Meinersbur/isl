@@ -10,7 +10,7 @@
 
 #include <isl_polynomial_private.h>
 #include <isl_point_private.h>
-#include <isl_dim_private.h>
+#include <isl_dim.h>
 #include <isl_map_private.h>
 #include <isl_lp.h>
 #include <isl_seq.h>

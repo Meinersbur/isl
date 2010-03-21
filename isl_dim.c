@@ -7,7 +7,7 @@
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
  */
 
-#include <isl_dim_private.h>
+#include <isl_dim.h>
 #include "isl_name.h"
 
 struct isl_dim *isl_dim_alloc(struct isl_ctx *ctx,

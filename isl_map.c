@@ -26,7 +26,6 @@
 #include "isl_sample.h"
 #include "isl_tab.h"
 #include "isl_vec.h"
-#include <isl_dim_private.h>
 
 /* Maps dst positions to src positions */
 struct isl_dim_map {
