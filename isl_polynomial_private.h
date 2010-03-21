@@ -109,7 +109,7 @@ __isl_give struct isl_upoly *isl_upoly_sum(__isl_take struct isl_upoly *up1,
 __isl_give struct isl_upoly *isl_upoly_neg(__isl_take struct isl_upoly *up);
 
 __isl_give isl_qpolynomial *isl_qpolynomial_alloc(__isl_take isl_dim *dim,
-	unsigned n_div);
+	unsigned n_div, __isl_take struct isl_upoly *up);
 __isl_give isl_qpolynomial *isl_qpolynomial_cow(__isl_take isl_qpolynomial *qp);
 __isl_give isl_qpolynomial *isl_qpolynomial_dup(__isl_keep isl_qpolynomial *qp);
 

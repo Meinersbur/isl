@@ -783,19 +783,19 @@ error:
 }
 
 __isl_give isl_qpolynomial *isl_qpolynomial_alloc(__isl_take isl_dim *dim,
-	unsigned n_div)
+	unsigned n_div, __isl_take struct isl_upoly *up)
 {
-	struct isl_qpolynomial *qp;
+	struct isl_qpolynomial *qp = NULL;
 	unsigned total;
 
-	if (!dim)
-		return NULL;
+	if (!dim || !up)
+		goto error;
 
 	total = isl_dim_total(dim);
 
 	qp = isl_calloc_type(dim->ctx, struct isl_qpolynomial);
 	if (!qp)
-		return NULL;
+		goto error;
 
 	qp->ref = 1;
 	qp->div = isl_mat_alloc(dim->ctx, n_div, 1 + 1 + total + n_div);
@@ -803,10 +803,12 @@ __isl_give isl_qpolynomial *isl_qpolynomial_alloc(__isl_take isl_dim *dim,
 		goto error;
 
 	qp->dim = dim;
+	qp->upoly = up;
 
 	return qp;
 error:
 	isl_dim_free(dim);
+	isl_upoly_free(up);
 	isl_qpolynomial_free(qp);
 	return NULL;
 }
@@ -827,15 +829,13 @@ __isl_give isl_qpolynomial *isl_qpolynomial_dup(__isl_keep isl_qpolynomial *qp)
 	if (!qp)
 		return NULL;
 
-	dup = isl_qpolynomial_alloc(isl_dim_copy(qp->dim), qp->div->n_row);
+	dup = isl_qpolynomial_alloc(isl_dim_copy(qp->dim), qp->div->n_row,
+				    isl_upoly_copy(qp->upoly));
 	if (!dup)
 		return NULL;
 	isl_mat_free(dup->div);
 	dup->div = isl_mat_copy(qp->div);
 	if (!dup->div)
-		goto error;
-	dup->upoly = isl_upoly_copy(qp->upoly);
-	if (!dup->upoly)
 		goto error;
 
 	return dup;
@@ -1194,59 +1194,17 @@ error:
 
 __isl_give isl_qpolynomial *isl_qpolynomial_zero(__isl_take isl_dim *dim)
 {
-	struct isl_qpolynomial *qp;
-	struct isl_upoly_cst *cst;
-
-	qp = isl_qpolynomial_alloc(dim, 0);
-	if (!qp)
-		return NULL;
-
-	qp->upoly = isl_upoly_zero(dim->ctx);
-	if (!qp->upoly)
-		goto error;
-
-	return qp;
-error:
-	isl_qpolynomial_free(qp);
-	return NULL;
+	return isl_qpolynomial_alloc(dim, 0, isl_upoly_zero(dim->ctx));
 }
 
 __isl_give isl_qpolynomial *isl_qpolynomial_infty(__isl_take isl_dim *dim)
 {
-	struct isl_qpolynomial *qp;
-	struct isl_upoly_cst *cst;
-
-	qp = isl_qpolynomial_alloc(dim, 0);
-	if (!qp)
-		return NULL;
-
-	qp->upoly = isl_upoly_infty(dim->ctx);
-	if (!qp->upoly)
-		goto error;
-
-	return qp;
-error:
-	isl_qpolynomial_free(qp);
-	return NULL;
+	return isl_qpolynomial_alloc(dim, 0, isl_upoly_infty(dim->ctx));
 }
 
 __isl_give isl_qpolynomial *isl_qpolynomial_nan(__isl_take isl_dim *dim)
 {
-	struct isl_qpolynomial *qp;
-	struct isl_upoly_cst *cst;
-
-	qp = isl_qpolynomial_alloc(dim, 0);
-	if (!qp)
-		return NULL;
-
-	qp->upoly = isl_upoly_nan(dim->ctx);
-	if (!qp->upoly)
-		goto error;
-
-	return qp;
-error:
-	isl_qpolynomial_free(qp);
-	return NULL;
+	return isl_qpolynomial_alloc(dim, 0, isl_upoly_nan(dim->ctx));
 }
 
 __isl_give isl_qpolynomial *isl_qpolynomial_cst(__isl_take isl_dim *dim,
@@ -1255,13 +1213,10 @@ __isl_give isl_qpolynomial *isl_qpolynomial_cst(__isl_take isl_dim *dim,
 	struct isl_qpolynomial *qp;
 	struct isl_upoly_cst *cst;
 
-	qp = isl_qpolynomial_alloc(dim, 0);
+	qp = isl_qpolynomial_alloc(dim, 0, isl_upoly_zero(dim->ctx));
 	if (!qp)
 		return NULL;
 
-	qp->upoly = isl_upoly_zero(dim->ctx);
-	if (!qp->upoly)
-		goto error;
 	cst = isl_upoly_as_cst(qp->upoly);
 	isl_int_set(cst->n, v);
 
@@ -1361,7 +1316,6 @@ error:
 __isl_give isl_qpolynomial *isl_qpolynomial_pow(__isl_take isl_dim *dim,
 	int pos, int power)
 {
-	struct isl_qpolynomial *qp;
 	struct isl_ctx *ctx;
 
 	if (!dim)
@@ -1369,18 +1323,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_pow(__isl_take isl_dim *dim,
 
 	ctx = dim->ctx;
 
-	qp = isl_qpolynomial_alloc(dim, 0);
-	if (!qp)
-		return NULL;
-
-	qp->upoly = isl_upoly_pow(ctx, pos, power);
-	if (!qp->upoly)
-		goto error;
-
-	return qp;
-error:
-	isl_qpolynomial_free(qp);
-	return NULL;
+	return isl_qpolynomial_alloc(dim, 0, isl_upoly_pow(ctx, pos, power));
 }
 
 __isl_give isl_qpolynomial *isl_qpolynomial_var(__isl_take isl_dim *dim,
@@ -1414,18 +1357,16 @@ __isl_give isl_qpolynomial *isl_qpolynomial_div_pow(__isl_take isl_div *div,
 		return NULL;
 	isl_assert(div->ctx, div->bmap->n_div == 1, goto error);
 
-	qp = isl_qpolynomial_alloc(isl_basic_map_get_dim(div->bmap), 1);
+	pos = isl_dim_total(div->bmap->dim);
+	rec = isl_upoly_alloc_rec(div->ctx, pos, 1 + power);
+	qp = isl_qpolynomial_alloc(isl_basic_map_get_dim(div->bmap), 1,
+				   &rec->up);
 	if (!qp)
 		goto error;
 
 	isl_seq_cpy(qp->div->row[0], div->line[0], qp->div->n_col - 1);
 	isl_int_set_si(qp->div->row[0][qp->div->n_col - 1], 0);
 
-	pos = isl_dim_total(qp->dim);
-	qp->upoly = &isl_upoly_alloc_rec(div->ctx, pos, 1 + power)->up;
-	if (!qp->upoly)
-		goto error;
-	rec = isl_upoly_as_rec(qp->upoly);
 	for (i = 0; i < 1 + power; ++i) {
 		rec->p[i] = isl_upoly_zero(div->ctx);
 		if (!rec->p[i])
@@ -1455,13 +1396,10 @@ __isl_give isl_qpolynomial *isl_qpolynomial_rat_cst(__isl_take isl_dim *dim,
 	struct isl_qpolynomial *qp;
 	struct isl_upoly_cst *cst;
 
-	qp = isl_qpolynomial_alloc(dim, 0);
+	qp = isl_qpolynomial_alloc(dim, 0, isl_upoly_zero(dim->ctx));
 	if (!qp)
 		return NULL;
 
-	qp->upoly = isl_upoly_zero(dim->ctx);
-	if (!qp->upoly)
-		goto error;
 	cst = isl_upoly_as_cst(qp->upoly);
 	isl_int_set(cst->n, n);
 	isl_int_set(cst->d, d);
@@ -1828,13 +1766,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_eval(
 	isl_qpolynomial_free(qp);
 	isl_point_free(pnt);
 
-	qp = isl_qpolynomial_alloc(dim, 0);
-	if (!qp)
-		isl_upoly_free(up);
-	else
-		qp->upoly = up;
-
-	return qp;
+	return isl_qpolynomial_alloc(dim, 0, up);
 error:
 	isl_qpolynomial_free(qp);
 	isl_point_free(pnt);
