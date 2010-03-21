@@ -124,11 +124,15 @@ __isl_give isl_qpolynomial *isl_qpolynomial_div_pow(__isl_take isl_div *div,
 	int power);
 int isl_qpolynomial_is_zero(__isl_keep isl_qpolynomial *qp);
 int isl_qpolynomial_is_one(__isl_keep isl_qpolynomial *qp);
+int isl_qpolynomial_is_affine(__isl_keep isl_qpolynomial *qp);
 
 __isl_give isl_qpolynomial *isl_qpolynomial_max_cst(
 	__isl_take isl_qpolynomial *qp1, __isl_take isl_qpolynomial *qp2);
 __isl_give isl_qpolynomial *isl_qpolynomial_min_cst(
 	__isl_take isl_qpolynomial *qp1, __isl_take isl_qpolynomial *qp2);
+
+__isl_give isl_vec *isl_qpolynomial_extract_affine(
+	__isl_keep isl_qpolynomial *qp);
 
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_cow(
 	__isl_take isl_pw_qpolynomial *pwqp);

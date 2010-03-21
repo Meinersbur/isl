@@ -178,8 +178,8 @@ __isl_give PW *FN(PW,add)(__isl_take PW *pw1, __isl_take PW *pw2)
 				continue;
 			}
 
-			sum = FN(EL,ADD)(FN(EL,copy)(pw1->p[i].FIELD),
-					 FN(EL,copy)(pw2->p[j].FIELD));
+			sum = ADD(common, FN(EL,copy)(pw1->p[i].FIELD),
+					  FN(EL,copy)(pw2->p[j].FIELD));
 
 			res = FN(PW,add_piece)(res, common, sum);
 		}

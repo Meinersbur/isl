@@ -1249,6 +1249,125 @@ int isl_qpolynomial_is_cst(__isl_keep isl_qpolynomial *qp,
 	return 1;
 }
 
+int isl_upoly_is_affine(__isl_keep struct isl_upoly *up)
+{
+	int is_cst;
+	struct isl_upoly_rec *rec;
+
+	if (!up)
+		return -1;
+
+	if (up->var < 0)
+		return 1;
+
+	rec = isl_upoly_as_rec(up);
+	if (!rec)
+		return -1;
+
+	if (rec->n > 2)
+		return 0;
+
+	isl_assert(up->ctx, rec->n > 1, return -1);
+
+	is_cst = isl_upoly_is_cst(rec->p[1]);
+	if (is_cst < 0)
+		return -1;
+	if (!is_cst)
+		return 0;
+
+	return isl_upoly_is_affine(rec->p[0]);
+}
+
+int isl_qpolynomial_is_affine(__isl_keep isl_qpolynomial *qp)
+{
+	if (!qp)
+		return -1;
+
+	if (qp->div->n_row > 0)
+		return 0;
+
+	return isl_upoly_is_affine(qp->upoly);
+}
+
+static void update_coeff(__isl_keep isl_vec *aff,
+	__isl_keep struct isl_upoly_cst *cst, int pos)
+{
+	isl_int gcd;
+	isl_int f;
+
+	if (isl_int_is_zero(cst->n))
+		return;
+
+	isl_int_init(gcd);
+	isl_int_init(f);
+	isl_int_gcd(gcd, cst->d, aff->el[0]);
+	isl_int_divexact(f, cst->d, gcd);
+	isl_int_divexact(gcd, aff->el[0], gcd);
+	isl_seq_scale(aff->el, aff->el, f, aff->size);
+	isl_int_mul(aff->el[1 + pos], gcd, cst->n);
+	isl_int_clear(gcd);
+	isl_int_clear(f);
+}
+
+int isl_upoly_update_affine(__isl_keep struct isl_upoly *up,
+	__isl_keep isl_vec *aff)
+{
+	struct isl_upoly_cst *cst;
+	struct isl_upoly_rec *rec;
+
+	if (!up || !aff)
+		return -1;
+
+	if (up->var < 0) {
+		struct isl_upoly_cst *cst;
+
+		cst = isl_upoly_as_cst(up);
+		if (!cst)
+			return -1;
+		update_coeff(aff, cst, 0);
+		return 0;
+	}
+
+	rec = isl_upoly_as_rec(up);
+	if (!rec)
+		return -1;
+	isl_assert(up->ctx, rec->n == 2, return -1);
+
+	cst = isl_upoly_as_cst(rec->p[1]);
+	if (!cst)
+		return -1;
+	update_coeff(aff, cst, 1 + up->var);
+
+	return isl_upoly_update_affine(rec->p[0], aff);
+}
+
+__isl_give isl_vec *isl_qpolynomial_extract_affine(
+	__isl_keep isl_qpolynomial *qp)
+{
+	isl_vec *aff;
+	unsigned d;
+
+	if (!qp)
+		return NULL;
+
+	isl_assert(qp->div->ctx, qp->div->n_row == 0, return NULL);
+	d = isl_dim_total(qp->dim);
+	aff = isl_vec_alloc(qp->div->ctx, 2 + d);
+	if (!aff)
+		return NULL;
+
+	isl_seq_clr(aff->el + 1, 1 + d);
+	isl_int_set_si(aff->el[0], 1);
+
+	if (isl_upoly_update_affine(qp->upoly, aff) < 0)
+		goto error;
+
+	return aff;
+error:
+	isl_vec_free(aff);
+	return NULL;
+}
+
 int isl_qpolynomial_is_equal(__isl_keep isl_qpolynomial *qp1,
 	__isl_keep isl_qpolynomial *qp2)
 {
@@ -1570,7 +1689,7 @@ error:
 #undef FIELD
 #define FIELD qp
 #undef ADD
-#define ADD add
+#define ADD(d,e1,e2)	isl_qpolynomial_add(e1,e2) 
 
 #include <isl_pw_templ.c>
 

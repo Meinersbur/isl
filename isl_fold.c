@@ -12,6 +12,35 @@
 #include <isl_point_private.h>
 #include <isl_dim_private.h>
 #include <isl_map_private.h>
+#include <isl_lp.h>
+#include <isl_seq.h>
+
+static __isl_give isl_qpolynomial_fold *qpolynomial_fold_alloc(
+	enum isl_fold type, __isl_take isl_dim *dim, int n)
+{
+	isl_qpolynomial_fold *fold;
+
+	if (!dim)
+		goto error;
+
+	isl_assert(dim->ctx, n >= 0, goto error);
+	fold = isl_alloc(dim->ctx, struct isl_qpolynomial_fold,
+			sizeof(struct isl_qpolynomial_fold) +
+			(n - 1) * sizeof(struct isl_qpolynomial *));
+	if (!fold)
+		goto error;
+
+	fold->ref = 1;
+	fold->size = n;
+	fold->n = 0;
+	fold->type = type;
+	fold->dim = dim;
+
+	return fold;
+error:
+	isl_dim_free(dim);
+	return NULL;
+}
 
 int isl_qpolynomial_fold_involves_dims(__isl_keep isl_qpolynomial_fold *fold,
 	enum isl_dim_type type, unsigned first, unsigned n)
@@ -63,6 +92,247 @@ error:
 	return NULL;
 }
 
+static int isl_qpolynomial_cst_sign(__isl_keep isl_qpolynomial *qp)
+{
+	struct isl_upoly_cst *cst;
+
+	cst = isl_upoly_as_cst(qp->upoly);
+	if (!cst)
+		return 0;
+
+	return isl_int_sgn(cst->n) < 0 ? -1 : 1;
+}
+
+static int isl_qpolynomial_aff_sign(__isl_keep isl_set *set,
+	__isl_keep isl_qpolynomial *qp)
+{
+	enum isl_lp_result res;
+	isl_vec *aff;
+	isl_int opt;
+	int sgn = 0;
+
+	aff = isl_qpolynomial_extract_affine(qp);
+	if (!aff)
+		return 0;
+
+	isl_int_init(opt);
+
+	res = isl_set_solve_lp(set, 0, aff->el + 1, aff->el[0],
+				&opt, NULL, NULL);
+	if (res == isl_lp_error)
+		goto done;
+	if (res == isl_lp_empty ||
+	    (res == isl_lp_ok && !isl_int_is_neg(opt))) {
+		sgn = 1;
+		goto done;
+	}
+
+	res = isl_set_solve_lp(set, 1, aff->el + 1, aff->el[0],
+				&opt, NULL, NULL);
+	if (res == isl_lp_ok && !isl_int_is_pos(opt))
+		sgn = -1;
+
+done:
+	isl_int_clear(opt);
+	isl_vec_free(aff);
+	return sgn;
+}
+
+/* Determine, if possible, the sign of the quasipolynomial "qp" on
+ * the domain "set".
+ *
+ * If qp is a constant, then the problem is trivial.
+ * If qp is linear, then we check if the minimum of the corresponding
+ * affine constraint is non-negative or if the maximum is non-positive.
+ *
+ * Otherwise, we check if the outermost variable "v" has a lower bound "l"
+ * in "set".  If so, we write qp(v,v') as
+ *
+ *	q(v,v') * (v - l) + r(v')
+ *
+ * if q(v,v') and r(v') have the same known sign, then the original
+ * quasipolynomial has the same sign as well.
+ *
+ * Return
+ *	-1 if qp <= 0
+ *	 1 if qp >= 0
+ *	 0 if unknown
+ */
+static int isl_qpolynomial_sign(__isl_keep isl_set *set,
+	__isl_keep isl_qpolynomial *qp)
+{
+	int d;
+	int i;
+	int is;
+	struct isl_upoly_rec *rec;
+	isl_vec *v;
+	isl_int l;
+	enum isl_lp_result res;
+	int sgn = 0;
+
+	is = isl_qpolynomial_is_cst(qp, NULL, NULL);
+	if (is < 0)
+		return 0;
+	if (is)
+		return isl_qpolynomial_cst_sign(qp);
+
+	is = isl_qpolynomial_is_affine(qp);
+	if (is < 0)
+		return 0;
+	if (is)
+		return isl_qpolynomial_aff_sign(set, qp);
+
+	if (qp->div->n_row > 0)
+		return 0;
+
+	rec = isl_upoly_as_rec(qp->upoly);
+	if (!rec)
+		return 0;
+
+	d = isl_dim_total(qp->dim);
+	v = isl_vec_alloc(set->ctx, 2 + d);
+	if (!v)
+		return 0;
+
+	isl_seq_clr(v->el + 1, 1 + d);
+	isl_int_set_si(v->el[0], 1);
+	isl_int_set_si(v->el[2 + qp->upoly->var], 1);
+
+	isl_int_init(l);
+
+	res = isl_set_solve_lp(set, 0, v->el + 1, v->el[0], &l, NULL, NULL);
+	if (res == isl_lp_ok) {
+		isl_qpolynomial *min;
+		isl_qpolynomial *base;
+		isl_qpolynomial *r, *q;
+		isl_qpolynomial *t;
+
+		min = isl_qpolynomial_cst(isl_dim_copy(qp->dim), l);
+		base = isl_qpolynomial_pow(isl_dim_copy(qp->dim),
+						qp->upoly->var, 1);
+
+		r = isl_qpolynomial_alloc(isl_dim_copy(qp->dim), 0,
+					  isl_upoly_copy(rec->p[rec->n - 1]));
+		q = isl_qpolynomial_copy(r);
+
+		for (i = rec->n - 2; i >= 0; --i) {
+			r = isl_qpolynomial_mul(r, isl_qpolynomial_copy(min));
+			t = isl_qpolynomial_alloc(isl_dim_copy(qp->dim), 0,
+						  isl_upoly_copy(rec->p[i]));
+			r = isl_qpolynomial_add(r, t);
+			if (i == 0)
+				break;
+			q = isl_qpolynomial_mul(q, isl_qpolynomial_copy(base));
+			q = isl_qpolynomial_add(q, isl_qpolynomial_copy(r));
+		}
+
+		if (isl_qpolynomial_is_zero(q))
+			sgn = isl_qpolynomial_sign(set, r);
+		else if (isl_qpolynomial_is_zero(r))
+			sgn = isl_qpolynomial_sign(set, q);
+		else {
+			int sgn_q, sgn_r;
+			sgn_r = isl_qpolynomial_sign(set, r);
+			sgn_q = isl_qpolynomial_sign(set, q);
+			if (sgn_r == sgn_q)
+				sgn = sgn_r;
+		}
+
+		isl_qpolynomial_free(min);
+		isl_qpolynomial_free(base);
+		isl_qpolynomial_free(q);
+		isl_qpolynomial_free(r);
+	}
+
+	isl_int_clear(l);
+
+	isl_vec_free(v);
+
+	return sgn;
+}
+
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_fold_on_domain(
+	__isl_keep isl_set *set,
+	__isl_take isl_qpolynomial_fold *fold1,
+	__isl_take isl_qpolynomial_fold *fold2)
+{
+	int i, j;
+	int n1;
+	struct isl_qpolynomial_fold *res = NULL;
+	int better;
+
+	if (!fold1 || !fold2)
+		goto error;
+
+	isl_assert(fold1->dim->ctx, fold1->type == fold2->type, goto error);
+	isl_assert(fold1->dim->ctx, isl_dim_equal(fold1->dim, fold2->dim),
+			goto error);
+
+	better = fold1->type == isl_fold_max ? -1 : 1;
+
+	if (isl_qpolynomial_fold_is_empty(fold1)) {
+		isl_qpolynomial_fold_free(fold1);
+		return fold2;
+	}
+
+	if (isl_qpolynomial_fold_is_empty(fold2)) {
+		isl_qpolynomial_fold_free(fold2);
+		return fold1;
+	}
+
+	res = qpolynomial_fold_alloc(fold1->type, isl_dim_copy(fold1->dim),
+					fold1->n + fold2->n);
+	if (!res)
+		goto error;
+
+	for (i = 0; i < fold1->n; ++i) {
+		res->qp[res->n] = isl_qpolynomial_copy(fold1->qp[i]);
+		if (!res->qp[res->n])
+			goto error;
+		res->n++;
+	}
+	n1 = res->n;
+
+	for (i = 0; i < fold2->n; ++i) {
+		for (j = n1 - 1; j >= 0; --j) {
+			isl_qpolynomial *d;
+			int sgn;
+			d = isl_qpolynomial_sub(
+				isl_qpolynomial_copy(res->qp[j]),
+				isl_qpolynomial_copy(fold2->qp[i]));
+			sgn = isl_qpolynomial_sign(set, d);
+			isl_qpolynomial_free(d);
+			if (sgn == 0)
+				continue;
+			if (sgn != better)
+				break;
+			isl_qpolynomial_free(res->qp[j]);
+			if (j != n1 - 1)
+				res->qp[j] = res->qp[n1 - 1];
+			n1--;
+			if (n1 != res->n - 1)
+				res->qp[n1] = res->qp[res->n - 1];
+			res->n--;
+		}
+		if (j >= 0)
+			continue;
+		res->qp[res->n] = isl_qpolynomial_copy(fold2->qp[i]);
+		if (!res->qp[res->n])
+			goto error;
+		res->n++;
+	}
+
+	isl_qpolynomial_fold_free(fold1);
+	isl_qpolynomial_fold_free(fold2);
+
+	return res;
+error:
+	isl_qpolynomial_fold_free(res);
+	isl_qpolynomial_fold_free(fold1);
+	isl_qpolynomial_fold_free(fold2);
+	return NULL;
+}
+
 #undef PW
 #define PW isl_pw_qpolynomial_fold
 #undef EL
@@ -72,36 +342,9 @@ error:
 #undef FIELD
 #define FIELD fold
 #undef ADD
-#define ADD fold
+#define ADD(d,e1,e2)	isl_qpolynomial_fold_fold_on_domain(d,e1,e2) 
 
 #include <isl_pw_templ.c>
-
-static __isl_give isl_qpolynomial_fold *qpolynomial_fold_alloc(
-	enum isl_fold type, __isl_take isl_dim *dim, int n)
-{
-	isl_qpolynomial_fold *fold;
-
-	if (!dim)
-		goto error;
-
-	isl_assert(dim->ctx, n >= 0, goto error);
-	fold = isl_alloc(dim->ctx, struct isl_qpolynomial_fold,
-			sizeof(struct isl_qpolynomial_fold) +
-			(n - 1) * sizeof(struct isl_qpolynomial *));
-	if (!fold)
-		goto error;
-
-	fold->ref = 1;
-	fold->size = n;
-	fold->n = 0;
-	fold->type = type;
-	fold->dim = dim;
-
-	return fold;
-error:
-	isl_dim_free(dim);
-	return NULL;
-}
 
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_empty(enum isl_fold type,
 	__isl_take isl_dim *dim)
