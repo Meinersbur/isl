@@ -1959,6 +1959,82 @@ error:
 	return NULL;
 }
 
+__isl_give isl_qpolynomial *isl_qpolynomial_add_dims(
+	__isl_take isl_qpolynomial *qp, enum isl_dim_type type, unsigned n)
+{
+	unsigned total;
+	unsigned g_pos;
+	int *exp;
+
+	if (n == 0)
+		return qp;
+
+	qp = isl_qpolynomial_cow(qp);
+	if (!qp)
+		return NULL;
+
+	g_pos = pos(qp->dim, type) + isl_dim_size(qp->dim, type);
+
+	qp->div = isl_mat_insert_cols(qp->div, 2 + g_pos, n);
+	if (!qp->div)
+		goto error;
+
+	total = qp->div->n_col - 2;
+	if (total > g_pos) {
+		int i;
+		exp = isl_alloc_array(qp->div->ctx, int, total - g_pos);
+		if (!exp)
+			goto error;
+		for (i = 0; i < total - g_pos; ++i)
+			exp[i] = i + n;
+		qp->upoly = expand(qp->upoly, exp, g_pos);
+		free(exp);
+		if (!qp->upoly)
+			goto error;
+	}
+
+	qp->dim = isl_dim_add(qp->dim, type, n);
+	if (!qp->dim)
+		goto error;
+
+	return qp;
+error:
+	isl_qpolynomial_free(qp);
+	return NULL;
+}
+
+__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_add_dims(
+	__isl_take isl_pw_qpolynomial *pwqp,
+	enum isl_dim_type type, unsigned n)
+{
+	int i;
+
+	if (n == 0)
+		return pwqp;
+
+	pwqp = isl_pw_qpolynomial_cow(pwqp);
+	if (!pwqp)
+		return NULL;
+
+	pwqp->dim = isl_dim_add(pwqp->dim, type, n);
+	if (!pwqp->dim)
+		goto error;
+
+	for (i = 0; i < pwqp->n; ++i) {
+		pwqp->p[i].set = isl_set_add(pwqp->p[i].set, type, n);
+		if (!pwqp->p[i].set)
+			goto error;
+		pwqp->p[i].qp = isl_qpolynomial_add_dims(pwqp->p[i].qp, type, n);
+		if (!pwqp->p[i].qp)
+			goto error;
+	}
+
+	return pwqp;
+error:
+	isl_pw_qpolynomial_free(pwqp);
+	return NULL;
+}
+
 static int *reordering_move(isl_ctx *ctx,
 	unsigned len, unsigned dst, unsigned src, unsigned n)
 {
