@@ -77,6 +77,8 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_copy(
 	__isl_keep isl_pw_qpolynomial *pwqp);
 void isl_pw_qpolynomial_free(__isl_take isl_pw_qpolynomial *pwqp);
 
+int isl_pw_qpolynomial_is_zero(__isl_keep isl_pw_qpolynomial *pwqp);
+
 __isl_give isl_dim *isl_pw_qpolynomial_get_dim(
 	__isl_keep isl_pw_qpolynomial *pwqp);
 unsigned isl_pw_qpolynomial_dim(__isl_keep isl_pw_qpolynomial *pwqp,
