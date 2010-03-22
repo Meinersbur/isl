@@ -115,6 +115,10 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_move(
 	enum isl_dim_type dst_type, unsigned dst_pos,
 	enum isl_dim_type src_type, unsigned src_pos, unsigned n);
 
+__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_fix_dim(
+	__isl_take isl_pw_qpolynomial *pwqp,
+	enum isl_dim_type type, unsigned n, isl_int v);
+
 __isl_give isl_qpolynomial *isl_pw_qpolynomial_eval(
 	__isl_take isl_pw_qpolynomial *pwqp, __isl_take isl_point *pnt);
 

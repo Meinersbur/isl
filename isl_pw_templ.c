@@ -449,3 +449,26 @@ error:
 	FN(PW,free)(pw);
 	return NULL;
 }
+
+__isl_give PW *FN(PW,fix_dim)(__isl_take PW *pw,
+	enum isl_dim_type type, unsigned pos, isl_int v)
+{
+	int i;
+
+	if (!pw)
+		return NULL;
+
+	pw = FN(PW,cow)(pw);
+	if (!pw)
+		return NULL;
+	for (i = 0; i < pw->n; ++i) {
+		pw->p[i].set = isl_set_fix(pw->p[i].set, type, pos, v);
+		if (!pw->p[i].set)
+			goto error;
+	}
+
+	return pw;
+error:
+	FN(PW,free)(pw);
+	return NULL;
+}
