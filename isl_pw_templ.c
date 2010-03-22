@@ -472,3 +472,8 @@ error:
 	FN(PW,free)(pw);
 	return NULL;
 }
+
+unsigned FN(PW,dim)(__isl_keep PW *pw, enum isl_dim_type type)
+{
+	return pw ? isl_dim_size(pw->dim, type) : 0;
+}

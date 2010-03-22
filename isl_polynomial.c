@@ -2189,12 +2189,6 @@ __isl_give isl_dim *isl_pw_qpolynomial_get_dim(
 	return isl_dim_copy(pwqp->dim);
 }
 
-unsigned isl_pw_qpolynomial_dim(__isl_keep isl_pw_qpolynomial *pwqp,
-	enum isl_dim_type type)
-{
-	return pwqp ? isl_dim_size(pwqp->dim, type) : 0;
-}
-
 __isl_give isl_term *isl_term_alloc(__isl_take isl_dim *dim,
 	__isl_take isl_mat *div)
 {
