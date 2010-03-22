@@ -124,6 +124,8 @@ __isl_give isl_qpolynomial *isl_pw_qpolynomial_eval(
 
 __isl_give isl_qpolynomial *isl_pw_qpolynomial_max(
 	__isl_take isl_pw_qpolynomial *pwqp);
+__isl_give isl_qpolynomial *isl_pw_qpolynomial_min(
+	__isl_take isl_pw_qpolynomial *pwqp);
 
 int isl_pw_qpolynomial_foreach_piece(__isl_keep isl_pw_qpolynomial *pwqp,
 	int (*fn)(__isl_take isl_set *set, __isl_take isl_qpolynomial *qp,

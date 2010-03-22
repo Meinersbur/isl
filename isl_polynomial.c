@@ -2630,32 +2630,35 @@ error:
 	return NULL;
 }
 
-struct isl_max_data {
+struct isl_opt_data {
 	isl_qpolynomial *qp;
 	int first;
-	isl_qpolynomial *max;
+	isl_qpolynomial *opt;
+	int max;
 };
 
-static int max_fn(__isl_take isl_point *pnt, void *user)
+static int opt_fn(__isl_take isl_point *pnt, void *user)
 {
-	struct isl_max_data *data = (struct isl_max_data *)user;
+	struct isl_opt_data *data = (struct isl_opt_data *)user;
 	isl_qpolynomial *val;
 
 	val = isl_qpolynomial_eval(isl_qpolynomial_copy(data->qp), pnt);
 	if (data->first) {
 		data->first = 0;
-		data->max = val;
+		data->opt = val;
+	} else if (data->max) {
+		data->opt = isl_qpolynomial_max_cst(data->opt, val);
 	} else {
-		data->max = isl_qpolynomial_max_cst(data->max, val);
+		data->opt = isl_qpolynomial_min_cst(data->opt, val);
 	}
 
 	return 0;
 }
 
-static __isl_give isl_qpolynomial *guarded_qpolynomial_max(
-	__isl_take isl_set *set, __isl_take isl_qpolynomial *qp)
+static __isl_give isl_qpolynomial *guarded_qpolynomial_opt(
+	__isl_take isl_set *set, __isl_take isl_qpolynomial *qp, int max)
 {
-	struct isl_max_data data = { NULL, 1, NULL };
+	struct isl_opt_data data = { NULL, 1, NULL, max };
 
 	if (!set || !qp)
 		goto error;
@@ -2668,16 +2671,16 @@ static __isl_give isl_qpolynomial *guarded_qpolynomial_max(
 	set = fix_inactive(set, qp);
 
 	data.qp = qp;
-	if (isl_set_foreach_point(set, max_fn, &data) < 0)
+	if (isl_set_foreach_point(set, opt_fn, &data) < 0)
 		goto error;
 
 	isl_set_free(set);
 	isl_qpolynomial_free(qp);
-	return data.max;
+	return data.opt;
 error:
 	isl_set_free(set);
 	isl_qpolynomial_free(qp);
-	isl_qpolynomial_free(data.max);
+	isl_qpolynomial_free(data.opt);
 	return NULL;
 }
 
@@ -2686,11 +2689,11 @@ error:
  * In the worst case, the domain is scanned completely,
  * so the domain is assumed to be bounded.
  */
-__isl_give isl_qpolynomial *isl_pw_qpolynomial_max(
-	__isl_take isl_pw_qpolynomial *pwqp)
+__isl_give isl_qpolynomial *isl_pw_qpolynomial_opt(
+	__isl_take isl_pw_qpolynomial *pwqp, int max)
 {
 	int i;
-	isl_qpolynomial *max;
+	isl_qpolynomial *opt;
 
 	if (!pwqp)
 		return NULL;
@@ -2701,15 +2704,30 @@ __isl_give isl_qpolynomial *isl_pw_qpolynomial_max(
 		return isl_qpolynomial_zero(dim);
 	}
 
-	max = guarded_qpolynomial_max(isl_set_copy(pwqp->p[0].set),
-					isl_qpolynomial_copy(pwqp->p[0].qp));
+	opt = guarded_qpolynomial_opt(isl_set_copy(pwqp->p[0].set),
+					isl_qpolynomial_copy(pwqp->p[0].qp), max);
 	for (i = 1; i < pwqp->n; ++i) {
-		isl_qpolynomial *max_i;
-		max_i = guarded_qpolynomial_max(isl_set_copy(pwqp->p[i].set),
-					    isl_qpolynomial_copy(pwqp->p[i].qp));
-		max = isl_qpolynomial_max_cst(max, max_i);
+		isl_qpolynomial *opt_i;
+		opt_i = guarded_qpolynomial_opt(isl_set_copy(pwqp->p[i].set),
+					isl_qpolynomial_copy(pwqp->p[i].qp), max);
+		if (max)
+			opt = isl_qpolynomial_max_cst(opt, opt_i);
+		else
+			opt = isl_qpolynomial_min_cst(opt, opt_i);
 	}
 
 	isl_pw_qpolynomial_free(pwqp);
-	return max;
+	return opt;
+}
+
+__isl_give isl_qpolynomial *isl_pw_qpolynomial_max(
+	__isl_take isl_pw_qpolynomial *pwqp)
+{
+	return isl_pw_qpolynomial_opt(pwqp, 1);
+}
+
+__isl_give isl_qpolynomial *isl_pw_qpolynomial_min(
+	__isl_take isl_pw_qpolynomial *pwqp)
+{
+	return isl_pw_qpolynomial_opt(pwqp, 0);
 }
