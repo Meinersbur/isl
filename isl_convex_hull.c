@@ -1086,7 +1086,7 @@ error:
  * (including the "positivity constraint" 1 >= 0) and \alpha_{ij}
  * strictly positive numbers.  For simplicity we impose \alpha_{ij} >= 1.
  * We first set up an LP with as variables the \alpha{ij}.
- * In this formulateion, for each polyhedron i,
+ * In this formulation, for each polyhedron i,
  * the first constraint is the positivity constraint, followed by pairs
  * of variables for the equalities, followed by variables for the inequalities.
  * We then simply pick a feasible solution and compute s using (*).
@@ -1137,7 +1137,7 @@ static struct isl_vec *valid_direction(
 				bset1->ctx->one, dir->block.data,
 				sample->block.data[n++], bset1->ineq[i], 1 + d);
 	isl_vec_free(sample);
-	isl_seq_normalize(bset1->ctx, dir->block.data + 1, dir->size - 1);
+	isl_seq_normalize(bset1->ctx, dir->el, dir->size);
 	isl_basic_set_free(bset1);
 	isl_basic_set_free(bset2);
 	return dir;
