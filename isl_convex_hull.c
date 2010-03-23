@@ -171,94 +171,6 @@ error:
 	return -1;
 }
 
-/* Check if "c" is a direction that is independent of the previously found "n"
- * bounds in "dirs".
- * If so, add it to the list, with the negative of the lower bound
- * in the constant position, i.e., such that c corresponds to a bounding
- * hyperplane (but not necessarily a facet).
- * Assumes set "set" is bounded.
- */
-static int is_independent_bound(struct isl_set *set, isl_int *c,
-	struct isl_mat *dirs, int n)
-{
-	int is_bound;
-	int i = 0;
-
-	isl_seq_cpy(dirs->row[n]+1, c+1, dirs->n_col-1);
-	if (n != 0) {
-		int pos = isl_seq_first_non_zero(dirs->row[n]+1, dirs->n_col-1);
-		if (pos < 0)
-			return 0;
-		for (i = 0; i < n; ++i) {
-			int pos_i;
-			pos_i = isl_seq_first_non_zero(dirs->row[i]+1, dirs->n_col-1);
-			if (pos_i < pos)
-				continue;
-			if (pos_i > pos)
-				break;
-			isl_seq_elim(dirs->row[n]+1, dirs->row[i]+1, pos,
-					dirs->n_col-1, NULL);
-			pos = isl_seq_first_non_zero(dirs->row[n]+1, dirs->n_col-1);
-			if (pos < 0)
-				return 0;
-		}
-	}
-
-	is_bound = uset_is_bound(set, dirs->row[n], dirs->n_col);
-	if (is_bound != 1)
-		return is_bound;
-	isl_seq_normalize(set->ctx, dirs->row[n], dirs->n_col);
-	if (i < n) {
-		int k;
-		isl_int *t = dirs->row[n];
-		for (k = n; k > i; --k)
-			dirs->row[k] = dirs->row[k-1];
-		dirs->row[i] = t;
-	}
-	return 1;
-}
-
-/* Compute and return a maximal set of linearly independent bounds
- * on the set "set", based on the constraints of the basic sets
- * in "set".
- */
-static struct isl_mat *independent_bounds(struct isl_set *set)
-{
-	int i, j, n;
-	struct isl_mat *dirs = NULL;
-	unsigned dim = isl_set_n_dim(set);
-
-	dirs = isl_mat_alloc(set->ctx, dim, 1+dim);
-	if (!dirs)
-		goto error;
-
-	n = 0;
-	for (i = 0; n < dim && i < set->n; ++i) {
-		int f;
-		struct isl_basic_set *bset = set->p[i];
-
-		for (j = 0; n < dim && j < bset->n_eq; ++j) {
-			f = is_independent_bound(set, bset->eq[j], dirs, n);
-			if (f < 0)
-				goto error;
-			if (f)
-				++n;
-		}
-		for (j = 0; n < dim && j < bset->n_ineq; ++j) {
-			f = is_independent_bound(set, bset->ineq[j], dirs, n);
-			if (f < 0)
-				goto error;
-			if (f)
-				++n;
-		}
-	}
-	dirs->n_row = n;
-	return dirs;
-error:
-	isl_mat_free(dirs);
-	return NULL;
-}
-
 struct isl_basic_set *isl_basic_set_set_rational(struct isl_basic_set *bset)
 {
 	if (!bset)
@@ -521,80 +433,42 @@ error:
 	return NULL;
 }
 
-/* Drop rows in "rows" that are redundant with respect to earlier rows,
- * assuming that "rows" is of full column rank.
+/* Compute the constraint of a facet of "set".
  *
- * We compute the column echelon form.  The non-redundant rows are
- * those that are the first to contain a non-zero entry in a column.
- * All the other rows can be removed.
+ * We first compute the intersection with a bounding constraint
+ * that is orthogonal to one of the coordinate axes.
+ * If the affine hull of this intersection has only one equality,
+ * we have found a facet.
+ * Otherwise, we wrap the current bounding constraint around
+ * one of the equalities of the face (one that is not equal to
+ * the current bounding constraint).
+ * This process continues until we have found a facet.
+ * The dimension of the intersection increases by at least
+ * one on each iteration, so termination is guaranteed.
  */
-static __isl_give isl_mat *drop_redundant_rows(__isl_take isl_mat *rows)
-{
-	struct isl_mat *H = NULL;
-	int col;
-	int row;
-	int last_row;
-
-	if (!rows)
-		return NULL;
-
-	isl_assert(rows->ctx, rows->n_row >= rows->n_col, goto error);
-
-	if (rows->n_row == rows->n_col)
-		return rows;
-
-	H = isl_mat_left_hermite(isl_mat_copy(rows), 0, NULL, NULL);
-	if (!H)
-		goto error;
-
-	last_row = rows->n_row;
-	for (col = rows->n_col - 1; col >= 0; --col) {
-		for (row = col; row < last_row; ++row)
-			if (!isl_int_is_zero(H->row[row][col]))
-				break;
-		isl_assert(rows->ctx, row < last_row, goto error);
-		if (row + 1 < last_row) {
-			rows = isl_mat_drop_rows(rows, row + 1, last_row - (row + 1));
-			if (rows->n_row == rows->n_col)
-				break;
-		}
-		last_row = row;
-	}
-
-	isl_mat_free(H);
-
-	return rows;
-error:
-	isl_mat_free(H);
-	isl_mat_free(rows);
-	return NULL;
-}
-
-/* Given a set of d linearly independent bounding constraints of the
- * convex hull of "set", compute the constraint of a facet of "set".
- *
- * We first compute the intersection with the first bounding hyperplane
- * and remove the component corresponding to this hyperplane from
- * other bounds (in homogeneous space).
- * We then wrap around one of the remaining bounding constraints
- * and continue the process until all bounding constraints have been
- * taken into account.
- * The resulting linear combination of the bounding constraints will
- * correspond to a facet of the convex hull.
- */
-static struct isl_mat *initial_facet_constraint(struct isl_set *set,
-	struct isl_mat *bounds)
+static __isl_give isl_mat *initial_facet_constraint(__isl_keep isl_set *set)
 {
 	struct isl_set *slice = NULL;
 	struct isl_basic_set *face = NULL;
 	struct isl_mat *m, *U, *Q;
 	int i;
 	unsigned dim = isl_set_n_dim(set);
+	int is_bound;
+	isl_mat *bounds;
 
 	isl_assert(set->ctx, set->n > 0, goto error);
-	isl_assert(set->ctx, bounds->n_row == dim, goto error);
+	bounds = isl_mat_alloc(set->ctx, 1, 1 + dim);
+	if (!bounds)
+		return NULL;
 
-	while (bounds->n_row > 1) {
+	isl_seq_clr(bounds->row[0], dim);
+	isl_int_set_si(bounds->row[0][1 + dim - 1], 1);
+	is_bound = uset_is_bound(set, bounds->row[0], 1 + dim);
+	isl_assert(set->ctx, is_bound == 1, goto error);
+	isl_seq_normalize(set->ctx, bounds->row[0], 1 + dim);
+	bounds->n_row = 1;
+
+	for (;;) {
 		slice = isl_set_copy(set);
 		slice = isl_set_add_basic_set_equality(slice, bounds->row[0]);
 		face = isl_set_affine_hull(slice);
@@ -604,29 +478,18 @@ static struct isl_mat *initial_facet_constraint(struct isl_set *set,
 			isl_basic_set_free(face);
 			break;
 		}
-		m = isl_mat_alloc(set->ctx, 1 + face->n_eq, 1 + dim);
-		if (!m)
-			goto error;
-		isl_int_set_si(m->row[0][0], 1);
-		isl_seq_clr(m->row[0]+1, dim);
 		for (i = 0; i < face->n_eq; ++i)
-			isl_seq_cpy(m->row[1 + i], face->eq[i], 1 + dim);
-		U = isl_mat_right_inverse(m);
-		Q = isl_mat_right_inverse(isl_mat_copy(U));
-		U = isl_mat_drop_cols(U, 1 + face->n_eq, dim - face->n_eq);
-		Q = isl_mat_drop_rows(Q, 1 + face->n_eq, dim - face->n_eq);
-		U = isl_mat_drop_cols(U, 0, 1);
-		Q = isl_mat_drop_rows(Q, 0, 1);
-		bounds = isl_mat_product(bounds, U);
-		bounds = drop_redundant_rows(bounds);
-		bounds = isl_mat_product(bounds, Q);
-		isl_assert(set->ctx, bounds->n_row > 1, goto error);
-		if (!isl_set_wrap_facet(set, bounds->row[0],
-					  bounds->row[bounds->n_row-1]))
+			if (!isl_seq_eq(bounds->row[0], face->eq[i], 1 + dim) &&
+			    !isl_seq_is_neg(bounds->row[0],
+						face->eq[i], 1 + dim))
+				break;
+		isl_assert(set->ctx, i < face->n_eq, goto error);
+		if (!isl_set_wrap_facet(set, bounds->row[0], face->eq[i]))
 			goto error;
+		isl_seq_normalize(set->ctx, bounds->row[0], bounds->n_col);
 		isl_basic_set_free(face);
-		bounds->n_row--;
 	}
+
 	return bounds;
 error:
 	isl_basic_set_free(face);
@@ -1576,13 +1439,8 @@ error:
 }
 
 /* Compute an initial hull for wrapping containing a single initial
- * facet by first computing bounds on the set and then using these
- * bounds to construct an initial facet.
- * This function is a remnant of an older implementation where the
- * bounds were also used to check whether the set was bounded.
- * Since this function will now only be called when we know the
- * set to be bounded, the initial facet should probably be constructed 
- * by simply using the coordinate directions instead.
+ * facet.
+ * This function assumes that the given set is bounded.
  */
 static struct isl_basic_set *initial_hull(struct isl_basic_set *hull,
 	struct isl_set *set)
@@ -1593,11 +1451,7 @@ static struct isl_basic_set *initial_hull(struct isl_basic_set *hull,
 
 	if (!hull)
 		goto error;
-	bounds = independent_bounds(set);
-	if (!bounds)
-		goto error;
-	isl_assert(set->ctx, bounds->n_row == isl_set_n_dim(set), goto error);
-	bounds = initial_facet_constraint(set, bounds);
+	bounds = initial_facet_constraint(set);
 	if (!bounds)
 		goto error;
 	k = isl_basic_set_alloc_inequality(hull);
