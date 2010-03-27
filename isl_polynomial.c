@@ -2609,7 +2609,7 @@ static __isl_give isl_set *fix_inactive(__isl_take isl_set *set,
 		set = isl_set_fix_si(set, isl_dim_param, i, 0);
 	}
 	for (i = 0; i < nvar; ++i) {
-		if (active[i])
+		if (active[nparam + i])
 			continue;
 		set = isl_set_eliminate(set, isl_dim_set, i, 1);
 		set = isl_set_fix_si(set, isl_dim_set, i, 0);
