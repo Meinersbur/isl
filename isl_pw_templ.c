@@ -477,3 +477,30 @@ unsigned FN(PW,dim)(__isl_keep PW *pw, enum isl_dim_type type)
 {
 	return pw ? isl_dim_size(pw->dim, type) : 0;
 }
+
+__isl_give PW *FN(PW,split_dims)(__isl_take PW *pw,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	int i;
+
+	if (!pw)
+		return NULL;
+	if (n == 0)
+		return pw;
+
+	pw = FN(PW,cow)(pw);
+	if (!pw)
+		return NULL;
+	if (!pw->dim)
+		goto error;
+	for (i = 0; i < pw->n; ++i) {
+		pw->p[i].set = isl_set_split_dims(pw->p[i].set, type, first, n);
+		if (!pw->p[i].set)
+			goto error;
+	}
+
+	return pw;
+error:
+	FN(PW,free)(pw);
+	return NULL;
+}

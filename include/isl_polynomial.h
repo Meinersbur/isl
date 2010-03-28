@@ -93,6 +93,9 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_intersect_domain(
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_drop_dims(
 	__isl_take isl_pw_qpolynomial *pwqp,
 	enum isl_dim_type type, unsigned first, unsigned n);
+__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_split_dims(
+	__isl_take isl_pw_qpolynomial *pwqp,
+	enum isl_dim_type type, unsigned first, unsigned n);
 
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_add(
 	__isl_take isl_pw_qpolynomial *pwqp1,
