@@ -579,3 +579,14 @@ error:
 	isl_point_free(pnt);
 	return NULL;
 }
+
+size_t isl_pw_qpolynomial_fold_size(__isl_keep isl_pw_qpolynomial_fold *pwf)
+{
+	int i;
+	size_t n = 0;
+
+	for (i = 0; i < pwf->n; ++i)
+		n += pwf->p[i].fold->n;
+
+	return n;
+}
