@@ -2771,10 +2771,14 @@ static int unrelax(struct isl_tab *tab, struct isl_tab_var *var)
 		if (to_row(tab, var, 1) < 0)
 			return -1;
 
-	if (var->is_row)
+	if (var->is_row) {
 		isl_int_sub(tab->mat->row[var->index][1],
 		    tab->mat->row[var->index][1], tab->mat->row[var->index][0]);
-	else {
+		if (var->is_nonneg) {
+			int sgn = restore_row(tab, var);
+			isl_assert(tab->mat->ctx, sgn >= 0, return -1);
+		}
+	} else {
 		int i;
 
 		for (i = 0; i < tab->n_row; ++i) {

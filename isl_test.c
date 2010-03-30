@@ -529,6 +529,7 @@ void test_gist(struct isl_ctx *ctx)
 
 void test_coalesce(struct isl_ctx *ctx)
 {
+	const char *str;
 	struct isl_set *set, *set2;
 	struct isl_map *map, *map2;
 
@@ -677,6 +678,17 @@ void test_coalesce(struct isl_ctx *ctx)
 		"4e0 >= -3 + i0 and o0 >= 6 + 2n and o0 <= -11 + 4n and "
 		"o0 <= 57 + 2n and 4e1 <= -2 + o0 and 4e1 >= -3 + o0 and "
 		"4e5 <= -2n + i0 and 4e5 >= -3 - 2n + i0 ) }", -1);
+	assert(isl_map_is_equal(map, map2));
+	isl_map_free(map);
+	isl_map_free(map2);
+
+	str = "[n, m] -> { [] -> [o0, o2, o3] : (o3 = 1 and o0 >= 1 + m and "
+	      "o0 <= n + m and o2 <= m and o0 >= 2 + n and o2 >= 3) or "
+	      "(o0 >= 2 + n and o0 >= 1 + m and o0 <= n + m and n >= 1 and "
+	      "o3 <= -1 + o2 and o3 >= 1 - m + o2 and o3 >= 2 and o3 <= n) }";
+	map = isl_map_read_from_str(ctx, str, -1);
+	map = isl_map_coalesce(map);
+	map2 = isl_map_read_from_str(ctx, str, -1);
 	assert(isl_map_is_equal(map, map2));
 	isl_map_free(map);
 	isl_map_free(map2);
