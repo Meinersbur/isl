@@ -696,6 +696,7 @@ void test_coalesce(struct isl_ctx *ctx)
 
 void test_closure(struct isl_ctx *ctx)
 {
+	const char *str;
 	isl_set *dom;
 	isl_map *up, *right;
 	isl_map *map, *map2;
@@ -876,6 +877,18 @@ void test_closure(struct isl_ctx *ctx)
 	assert(!exact);
 	map2 = isl_map_read_from_str(ctx,
 		"[n] -> { [x] -> [y] : 1 <= n <= 10 and y >= n + x }", -1);
+	assert(isl_map_is_equal(map, map2));
+	isl_map_free(map);
+	isl_map_free(map2);
+
+	str = "[n, m] -> { [i0, i1, i2, i3] -> [o0, o1, o2, o3] : "
+	    "i3 = 1 and o0 = i0 and o1 = -1 + i1 and o2 = -1 + i2 and "
+	    "o3 = -2 + i2 and i1 <= -1 + i0 and i1 >= 1 - m + i0 and "
+	    "i1 >= 2 and i1 <= n and i2 >= 3 and i2 <= 1 + n and i2 <= m }";
+	map = isl_map_read_from_str(ctx, str, -1);
+	map = isl_map_transitive_closure(map, &exact);
+	assert(exact);
+	map2 = isl_map_read_from_str(ctx, str, -1);
 	assert(isl_map_is_equal(map, map2));
 	isl_map_free(map);
 	isl_map_free(map2);

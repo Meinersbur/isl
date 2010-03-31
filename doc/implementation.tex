@@ -182,6 +182,12 @@ $$
 
 \subsection{Computing an Approximation of $R^k$}
 
+There are some special cases where the computation of $R^k$ is very easy.
+One such case is that where $R$ does not compose with itself,
+i.e., $R \circ R = \emptyset$ or $\domain R \cap \range R = \emptyset$.
+In this case, $R^k$ is only non-empty for $k=1$ where it is equal
+to $R$ itself.
+
 In general, it is impossible to construct a closed form
 of $R^k$ as a polyhedral relation.
 We will therefore need to make some approximations.
