@@ -102,6 +102,11 @@ $$
 $$
 \end{definition}
 
+\section{Coalescing}\label{s:coalescing}
+
+See \shortciteN{Verdoolaege2009isl}, for now.
+More details will be added later.
+
 \section{Transitive Closure}
 
 \subsection{Introduction}
@@ -265,6 +270,14 @@ when composing the $P_i'$s to allow for paths that do not contain
 any offsets from one or more $\Delta_i'$.
 The path that consists of only identity relations is removed
 by imposing the constraint $y_{d+1} - x_{d+1} > 0$.
+Taking the union with the identity relation means that
+that the relations we compose in \eqref{eq:transitive:decompose}
+each consist of two basic relations.  If there are $m$
+disjuncts in the input relation, then a direct application
+of the composition operation may therefore result in a relation
+with $2^m$ disjuncts, which is prohibitively expensive.
+It is therefore crucial to apply coalescing (\autoref{s:coalescing})
+after each composition.
 
 Let us now consider how to compute an overapproximation of $P_i'$.
 Those that correspond to singleton $\Delta_i$s are grouped together

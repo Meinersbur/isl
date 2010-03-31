@@ -556,6 +556,7 @@ static __isl_give isl_map *construct_extended_path(__isl_take isl_dim *dim,
 		if (j < d) {
 			path = isl_map_apply_range(path,
 				path_along_delta(isl_dim_copy(dim), delta));
+			path = isl_map_coalesce(path);
 		} else {
 			isl_basic_set_free(delta);
 			++n;
