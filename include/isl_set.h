@@ -283,6 +283,8 @@ int isl_basic_set_fast_dim_is_fixed(struct isl_basic_set *bset, unsigned dim,
 int isl_set_fast_dim_is_fixed(struct isl_set *set, unsigned dim, isl_int *val);
 int isl_set_fast_dim_has_fixed_lower_bound(struct isl_set *set,
 	unsigned dim, isl_int *val);
+int isl_set_dim_is_bounded(__isl_keep isl_set *set,
+	enum isl_dim_type type, unsigned pos);
 
 struct isl_basic_set *isl_basic_set_gist(struct isl_basic_set *bset,
 						struct isl_basic_set *context);

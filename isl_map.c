@@ -6386,3 +6386,59 @@ int isl_set_size(__isl_keep isl_set *set)
 
 	return size;
 }
+
+int isl_basic_map_dim_is_bounded(__isl_keep isl_basic_map *bmap,
+	enum isl_dim_type type, unsigned pos)
+{
+	int i;
+	int lower, upper;
+
+	if (!bmap)
+		return -1;
+
+	isl_assert(bmap->ctx, pos < isl_basic_map_dim(bmap, type), return -1);
+
+	pos += isl_basic_map_offset(bmap, type);
+
+	for (i = 0; i < bmap->n_eq; ++i)
+		if (!isl_int_is_zero(bmap->eq[i][pos]))
+			return 1;
+
+	lower = upper = 0;
+	for (i = 0; i < bmap->n_ineq; ++i) {
+		int sgn = isl_int_sgn(bmap->ineq[i][pos]);
+		if (sgn > 0)
+			lower = 1;
+		if (sgn < 0)
+			upper = 1;
+	}
+
+	return lower && upper;
+}
+
+int isl_map_dim_is_bounded(__isl_keep isl_map *map,
+	enum isl_dim_type type, unsigned pos)
+{
+	int i;
+
+	if (!map)
+		return -1;
+
+	for (i = 0; i < map->n; ++i) {
+		int bounded;
+		bounded = isl_basic_map_dim_is_bounded(map->p[i], type, pos);
+		if (bounded < 0 || !bounded)
+			return bounded;
+	}
+
+	return 1;
+}
+
+/* Return 1 if the specified dim is involved in both an upper bound
+ * and a lower bound.
+ */
+int isl_set_dim_is_bounded(__isl_keep isl_set *set,
+	enum isl_dim_type type, unsigned pos)
+{
+	return isl_map_dim_is_bounded((isl_map *)set, type, pos);
+}
