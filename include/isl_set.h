@@ -213,6 +213,7 @@ __isl_give isl_basic_set *isl_set_affine_hull(__isl_take isl_set *set);
 __isl_give isl_basic_set *isl_set_convex_hull(__isl_take isl_set *set);
 struct isl_basic_set *isl_set_simple_hull(struct isl_set *set);
 struct isl_basic_set *isl_set_bounded_simple_hull(struct isl_set *set);
+__isl_give isl_set *isl_set_recession_cone(__isl_take isl_set *set);
 
 struct isl_set *isl_set_union_disjoint(
 			struct isl_set *set1, struct isl_set *set2);
