@@ -259,6 +259,8 @@ __isl_give isl_set *isl_set_remove(__isl_take isl_set *bset,
 struct isl_set *isl_set_remove_dims(struct isl_set *set,
 		unsigned first, unsigned n);
 struct isl_set *isl_set_remove_divs(struct isl_set *set);
+__isl_give isl_set *isl_set_split_dims(__isl_take isl_set *set,
+	enum isl_dim_type type, unsigned first, unsigned n);
 
 void isl_set_dump(__isl_keep isl_set *set, FILE *out, int indent);
 struct isl_set *isl_set_swap_vars(struct isl_set *set, unsigned n);
