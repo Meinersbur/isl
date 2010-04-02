@@ -1084,8 +1084,11 @@ static int first_neg(struct isl_tab *tab)
 		for (row = tab->n_redundant; row < tab->n_row; ++row) {
 			if (!isl_tab_var_from_row(tab, row)->is_nonneg)
 				continue;
-			if (isl_int_is_neg(tab->mat->row[row][2]))
-				return row;
+			if (!isl_int_is_neg(tab->mat->row[row][2]))
+				continue;
+			if (tab->row_sign)
+				tab->row_sign[row] = isl_tab_row_neg;
+			return row;
 		}
 	for (row = tab->n_redundant; row < tab->n_row; ++row) {
 		if (!isl_tab_var_from_row(tab, row)->is_nonneg)
