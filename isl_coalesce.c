@@ -844,14 +844,15 @@ static struct isl_map *coalesce(struct isl_map *map, struct isl_tab **tabs)
 {
 	int i, j;
 
-	for (i = 0; i < map->n - 1; ++i)
+	for (i = map->n - 2; i >= 0; --i)
+restart:
 		for (j = i + 1; j < map->n; ++j) {
 			int changed;
 			changed = coalesce_pair(map, i, j, tabs);
 			if (changed < 0)
 				goto error;
 			if (changed)
-				return coalesce(map, tabs);
+				goto restart;
 		}
 	return map;
 error:
