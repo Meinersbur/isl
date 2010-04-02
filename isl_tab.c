@@ -1165,9 +1165,16 @@ static void check_table(struct isl_tab *tab)
 
 	if (tab->empty)
 		return;
-	for (i = 0; i < tab->n_row; ++i) {
-		if (!isl_tab_var_from_row(tab, i)->is_nonneg)
+	for (i = tab->n_redundant; i < tab->n_row; ++i) {
+		struct isl_tab_var *var;
+		var = isl_tab_var_from_row(tab, i);
+		if (!var->is_nonneg)
 			continue;
+		if (tab->M) {
+			assert(!isl_int_is_neg(tab->mat->row[i][2]));
+			if (isl_int_is_pos(tab->mat->row[i][2]))
+				continue;
+		}
 		assert(!isl_int_is_neg(tab->mat->row[i][1]));
 	}
 }
