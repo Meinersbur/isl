@@ -2402,6 +2402,14 @@ error:
  * If r is a column variable, then we need to modify each row that
  * refers to r = r' - 1 by substituting this equality, effectively
  * subtracting the coefficient of the column from the constant.
+ * We should only do this if the minimum is manifestly unbounded,
+ * however.  Otherwise, we may end up with negative sample values
+ * for non-negative variables.
+ * So, if r is a column variable with a minimum that is not
+ * manifestly unbounded, then we need to move it to a row.
+ * However, the sample value of this row may be negative,
+ * even after the relaxation, so we need to restore it.
+ * We therefore prefer to pivot a column up to a row, if possible.
  */
 struct isl_tab *isl_tab_relax(struct isl_tab *tab, int con)
 {
@@ -2416,11 +2424,16 @@ struct isl_tab *isl_tab_relax(struct isl_tab *tab, int con)
 	if (!var->is_row && !max_is_manifestly_unbounded(tab, var))
 		if (to_row(tab, var, 1) < 0)
 			goto error;
+	if (!var->is_row && !min_is_manifestly_unbounded(tab, var))
+		if (to_row(tab, var, -1) < 0)
+			goto error;
 
-	if (var->is_row)
+	if (var->is_row) {
 		isl_int_add(tab->mat->row[var->index][1],
 		    tab->mat->row[var->index][1], tab->mat->row[var->index][0]);
-	else {
+		if (restore_row(tab, var) < 0)
+			goto error;
+	} else {
 		int i;
 
 		for (i = 0; i < tab->n_row; ++i) {
