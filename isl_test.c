@@ -692,6 +692,28 @@ void test_coalesce(struct isl_ctx *ctx)
 	assert(isl_map_is_equal(map, map2));
 	isl_map_free(map);
 	isl_map_free(map2);
+
+	str = "[M, N] -> { [i0, i1, i2, i3, i4, i5, i6] -> "
+	  "[o0, o1, o2, o3, o4, o5, o6] : "
+	  "(o6 <= -4 + 2M - 2N + i0 + i1 - i2 + i6 - o0 - o1 + o2 and "
+	  "o3 <= -2 + i3 and o6 >= 2 + i0 + i3 + i6 - o0 - o3 and "
+	  "o6 >= 2 - M + N + i3 + i4 + i6 - o3 - o4 and o0 <= -1 + i0 and "
+	  "o4 >= 4 - 3M + 3N - i0 - i1 + i2 + 2i3 + i4 + o0 + o1 - o2 - 2o3 "
+	  "and o6 <= -3 + 2M - 2N + i3 + i4 - i5 + i6 - o3 - o4 + o5 and "
+	  "2o6 <= -5 + 5M - 5N + 2i0 + i1 - i2 - i5 + 2i6 - 2o0 - o1 + o2 + o5 "
+	  "and o6 >= 2i0 + i1 + i6 - 2o0 - o1 and "
+	  "3o6 <= -5 + 4M - 4N + 2i0 + i1 - i2 + 2i3 + i4 - i5 + 3i6 "
+	  "- 2o0 - o1 + o2 - 2o3 - o4 + o5) or "
+	  "(N >= 2 and o3 <= -1 + i3 and o0 <= -1 + i0 and "
+	  "o6 >= i3 + i6 - o3 and M >= 0 and "
+	  "2o6 >= 1 + i0 + i3 + 2i6 - o0 - o3 and "
+	  "o6 >= 1 - M + i0 + i6 - o0 and N >= 2M and o6 >= i0 + i6 - o0) }";
+	map = isl_map_read_from_str(ctx, str, -1);
+	map = isl_map_coalesce(map);
+	map2 = isl_map_read_from_str(ctx, str, -1);
+	assert(isl_map_is_equal(map, map2));
+	isl_map_free(map);
+	isl_map_free(map2);
 }
 
 void test_closure(struct isl_ctx *ctx)
