@@ -2206,15 +2206,6 @@ error:
 	return NULL;
 }
 
-__isl_give isl_dim *isl_pw_qpolynomial_get_dim(
-	__isl_keep isl_pw_qpolynomial *pwqp)
-{
-	if (!pwqp)
-		return NULL;
-
-	return isl_dim_copy(pwqp->dim);
-}
-
 __isl_give isl_term *isl_term_alloc(__isl_take isl_dim *dim,
 	__isl_take isl_mat *div)
 {

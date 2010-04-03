@@ -198,6 +198,8 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_copy(
 	__isl_keep isl_pw_qpolynomial_fold *pwf);
 void isl_pw_qpolynomial_fold_free(__isl_take isl_pw_qpolynomial_fold *pwf);
 
+__isl_give isl_dim *isl_pw_qpolynomial_fold_get_dim(
+	__isl_keep isl_pw_qpolynomial_fold *pwf);
 unsigned isl_pw_qpolynomial_fold_dim(__isl_keep isl_pw_qpolynomial_fold *pwf,
 	enum isl_dim_type type);
 

@@ -549,3 +549,8 @@ __isl_give isl_qpolynomial *FN(PW,min)(__isl_take PW *pw)
 {
 	return FN(PW,opt)(pw, 0);
 }
+
+__isl_give isl_dim *FN(PW,get_dim)(__isl_keep PW *pw)
+{
+	return pw ? isl_dim_copy(pw->dim) : NULL;
+}
