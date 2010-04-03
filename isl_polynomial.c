@@ -107,6 +107,22 @@ int isl_upoly_is_zero(__isl_keep struct isl_upoly *up)
 	return isl_int_is_zero(cst->n) && isl_int_is_pos(cst->d);
 }
 
+int isl_upoly_sgn(__isl_keep struct isl_upoly *up)
+{
+	struct isl_upoly_cst *cst;
+
+	if (!up)
+		return 0;
+	if (!isl_upoly_is_cst(up))
+		return 0;
+
+	cst = isl_upoly_as_cst(up);
+	if (!cst)
+		return 0;
+
+	return isl_int_sgn(cst->n);
+}
+
 int isl_upoly_is_nan(__isl_keep struct isl_upoly *up)
 {
 	struct isl_upoly_cst *cst;
@@ -292,22 +308,32 @@ error:
 
 int isl_qpolynomial_is_zero(__isl_keep isl_qpolynomial *qp)
 {
-	struct isl_upoly_cst *cst;
-
-	if (!qp)
-		return -1;
-
-	return isl_upoly_is_zero(qp->upoly);
+	return qp ? isl_upoly_is_zero(qp->upoly) : -1;
 }
 
 int isl_qpolynomial_is_one(__isl_keep isl_qpolynomial *qp)
 {
-	struct isl_upoly_cst *cst;
+	return qp ? isl_upoly_is_one(qp->upoly) : -1;
+}
 
-	if (!qp)
-		return -1;
+int isl_qpolynomial_is_nan(__isl_keep isl_qpolynomial *qp)
+{
+	return qp ? isl_upoly_is_nan(qp->upoly) : -1;
+}
 
-	return isl_upoly_is_one(qp->upoly);
+int isl_qpolynomial_is_infty(__isl_keep isl_qpolynomial *qp)
+{
+	return qp ? isl_upoly_is_infty(qp->upoly) : -1;
+}
+
+int isl_qpolynomial_is_neginfty(__isl_keep isl_qpolynomial *qp)
+{
+	return qp ? isl_upoly_is_neginfty(qp->upoly) : -1;
+}
+
+int isl_qpolynomial_sgn(__isl_keep isl_qpolynomial *qp)
+{
+	return qp ? isl_upoly_sgn(qp->upoly) : 0;
 }
 
 static void upoly_free_cst(__isl_take struct isl_upoly_cst *cst)

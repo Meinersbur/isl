@@ -28,6 +28,10 @@ void isl_qpolynomial_free(__isl_take isl_qpolynomial *qp);
 
 int isl_qpolynomial_is_equal(__isl_keep isl_qpolynomial *qp1,
 	__isl_keep isl_qpolynomial *qp2);
+int isl_qpolynomial_is_nan(__isl_keep isl_qpolynomial *qp);
+int isl_qpolynomial_is_infty(__isl_keep isl_qpolynomial *qp);
+int isl_qpolynomial_is_neginfty(__isl_keep isl_qpolynomial *qp);
+int isl_qpolynomial_sgn(__isl_keep isl_qpolynomial *qp);
 int isl_qpolynomial_is_cst(__isl_keep isl_qpolynomial *qp,
 	isl_int *n, isl_int *d);
 void isl_qpolynomial_get_den(__isl_keep isl_qpolynomial *qp, isl_int *d);
