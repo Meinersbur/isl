@@ -590,3 +590,42 @@ size_t isl_pw_qpolynomial_fold_size(__isl_keep isl_pw_qpolynomial_fold *pwf)
 
 	return n;
 }
+
+__isl_give isl_qpolynomial *isl_qpolynomial_fold_opt_on_domain(
+	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_set *set, int max)
+{
+	int i;
+	isl_qpolynomial *opt;
+
+	if (!set || !fold)
+		goto error;
+
+	if (fold->n == 0) {
+		isl_dim *dim = isl_dim_copy(fold->dim);
+		isl_set_free(set);
+		isl_qpolynomial_fold_free(fold);
+		return isl_qpolynomial_zero(dim);
+	}
+
+	opt = isl_qpolynomial_opt_on_domain(isl_qpolynomial_copy(fold->qp[i]),
+						isl_set_copy(set), max);
+	for (i = 1; i < fold->n; ++i) {
+		isl_qpolynomial *opt_i;
+		opt_i = isl_qpolynomial_opt_on_domain(
+				isl_qpolynomial_copy(fold->qp[i]),
+				isl_set_copy(set), max);
+		if (max)
+			opt = isl_qpolynomial_max_cst(opt, opt_i);
+		else
+			opt = isl_qpolynomial_min_cst(opt, opt_i);
+	}
+
+	isl_set_free(set);
+	isl_qpolynomial_fold_free(fold);
+
+	return opt;
+error:
+	isl_set_free(set);
+	isl_qpolynomial_fold_free(fold);
+	return NULL;
+}

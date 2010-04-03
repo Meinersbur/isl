@@ -2649,8 +2649,8 @@ static int opt_fn(__isl_take isl_point *pnt, void *user)
 	return 0;
 }
 
-static __isl_give isl_qpolynomial *guarded_qpolynomial_opt(
-	__isl_take isl_set *set, __isl_take isl_qpolynomial *qp, int max)
+__isl_give isl_qpolynomial *isl_qpolynomial_opt_on_domain(
+	__isl_take isl_qpolynomial *qp, __isl_take isl_set *set, int max)
 {
 	struct isl_opt_data data = { NULL, 1, NULL, max };
 
@@ -2676,52 +2676,4 @@ error:
 	isl_qpolynomial_free(qp);
 	isl_qpolynomial_free(data.opt);
 	return NULL;
-}
-
-/* Compute the maximal value attained by the piecewise quasipolynomial
- * on its domain or zero if the domain is empty.
- * In the worst case, the domain is scanned completely,
- * so the domain is assumed to be bounded.
- */
-__isl_give isl_qpolynomial *isl_pw_qpolynomial_opt(
-	__isl_take isl_pw_qpolynomial *pwqp, int max)
-{
-	int i;
-	isl_qpolynomial *opt;
-
-	if (!pwqp)
-		return NULL;
-
-	if (pwqp->n == 0) {
-		isl_dim *dim = isl_dim_copy(pwqp->dim);
-		isl_pw_qpolynomial_free(pwqp);
-		return isl_qpolynomial_zero(dim);
-	}
-
-	opt = guarded_qpolynomial_opt(isl_set_copy(pwqp->p[0].set),
-					isl_qpolynomial_copy(pwqp->p[0].qp), max);
-	for (i = 1; i < pwqp->n; ++i) {
-		isl_qpolynomial *opt_i;
-		opt_i = guarded_qpolynomial_opt(isl_set_copy(pwqp->p[i].set),
-					isl_qpolynomial_copy(pwqp->p[i].qp), max);
-		if (max)
-			opt = isl_qpolynomial_max_cst(opt, opt_i);
-		else
-			opt = isl_qpolynomial_min_cst(opt, opt_i);
-	}
-
-	isl_pw_qpolynomial_free(pwqp);
-	return opt;
-}
-
-__isl_give isl_qpolynomial *isl_pw_qpolynomial_max(
-	__isl_take isl_pw_qpolynomial *pwqp)
-{
-	return isl_pw_qpolynomial_opt(pwqp, 1);
-}
-
-__isl_give isl_qpolynomial *isl_pw_qpolynomial_min(
-	__isl_take isl_pw_qpolynomial *pwqp)
-{
-	return isl_pw_qpolynomial_opt(pwqp, 0);
 }

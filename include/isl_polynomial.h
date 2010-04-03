@@ -227,6 +227,11 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_coalesce(
 __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_gist(
 	__isl_take isl_pw_qpolynomial_fold *pwf, __isl_take isl_set *context);
 
+__isl_give isl_qpolynomial *isl_pw_qpolynomial_fold_max(
+	__isl_take isl_pw_qpolynomial_fold *pwf);
+__isl_give isl_qpolynomial *isl_pw_qpolynomial_fold_min(
+	__isl_take isl_pw_qpolynomial_fold *pwf);
+
 #if defined(__cplusplus)
 }
 #endif
