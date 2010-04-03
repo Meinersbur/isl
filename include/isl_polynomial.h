@@ -15,6 +15,8 @@ extern "C" {
 struct isl_qpolynomial;
 typedef struct isl_qpolynomial isl_qpolynomial;
 
+isl_ctx *isl_qpolynomial_get_ctx(__isl_keep isl_qpolynomial *qp);
+
 __isl_give isl_qpolynomial *isl_qpolynomial_zero(__isl_take isl_dim *dim);
 __isl_give isl_qpolynomial *isl_qpolynomial_infty(__isl_take isl_dim *dim);
 __isl_give isl_qpolynomial *isl_qpolynomial_nan(__isl_take isl_dim *dim);
