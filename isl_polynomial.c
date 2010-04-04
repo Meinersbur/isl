@@ -2133,7 +2133,8 @@ error:
 	return NULL;
 }
 
-__isl_give isl_qpolynomial *isl_qpolynomial_move(__isl_take isl_qpolynomial *qp,
+__isl_give isl_qpolynomial *isl_qpolynomial_move_dims(
+	__isl_take isl_qpolynomial *qp,
 	enum isl_dim_type dst_type, unsigned dst_pos,
 	enum isl_dim_type src_type, unsigned src_pos, unsigned n)
 {
@@ -2199,7 +2200,7 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_move(
 						src_type, src_pos, n);
 		if (!pwqp->p[i].set)
 			goto error;
-		pwqp->p[i].qp = isl_qpolynomial_move(pwqp->p[i].qp,
+		pwqp->p[i].qp = isl_qpolynomial_move_dims(pwqp->p[i].qp,
 					dst_type, dst_pos, src_type, src_pos, n);
 		if (!pwqp->p[i].qp)
 			goto error;
