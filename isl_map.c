@@ -1882,6 +1882,10 @@ static __isl_give isl_map *map_intersect_add_constraint(
 	map1 = isl_map_cow(map1);
 	if (!map1)
 		goto error;
+	if (isl_map_fast_is_empty(map1)) {
+		isl_map_free(map2);
+		return map1;
+	}
 	map1->p[0] = isl_basic_map_cow(map1->p[0]);
 	if (map2->p[0]->n_eq == 1)
 		map1->p[0] = isl_basic_map_add_eq(map1->p[0], map2->p[0]->eq[0]);
@@ -1916,6 +1920,15 @@ struct isl_map *isl_map_intersect(struct isl_map *map1, struct isl_map *map2)
 
 	if (!map1 || !map2)
 		goto error;
+
+	if (isl_map_fast_is_empty(map1)) {
+		isl_map_free(map2);
+		return map1;
+	}
+	if (isl_map_fast_is_empty(map2)) {
+		isl_map_free(map1);
+		return map2;
+	}
 
 	if (map1->n == 1 && map2->n == 1 &&
 	    map1->p[0]->n_div == 0 && map2->p[0]->n_div == 0 &&
