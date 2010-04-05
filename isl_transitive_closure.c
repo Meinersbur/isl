@@ -322,6 +322,47 @@ error:
 	return -1;
 }
 
+__isl_give isl_basic_map *add_delta_constraints(__isl_take isl_basic_map *path,
+	__isl_keep isl_basic_set *delta, unsigned off, unsigned nparam,
+	unsigned d, int eq)
+{
+	int i, k;
+	int n = eq ? delta->n_eq : delta->n_ineq;
+	isl_int **delta_c = eq ? delta->eq : delta->ineq;
+	isl_int **path_c = eq ? path->eq : path->ineq;
+
+	for (i = 0; i < n; ++i) {
+		int p = purity(delta, delta_c[i], eq);
+		if (p < 0)
+			goto error;
+		if (p == IMPURE)
+			continue;
+		if (eq)
+			k = isl_basic_map_alloc_equality(path);
+		else
+			k = isl_basic_map_alloc_inequality(path);
+		if (k < 0)
+			goto error;
+		isl_seq_clr(path_c[k], 1 + isl_basic_map_total_dim(path));
+		if (p == PURE_VAR) {
+			isl_seq_cpy(path_c[k] + off,
+				    delta_c[i] + 1 + nparam, d);
+			isl_int_set(path_c[k][off + d], delta_c[i][0]);
+		} else if (p == PURE_PARAM) {
+			isl_seq_cpy(path_c[k], delta_c[i], 1 + nparam);
+		} else {
+			isl_seq_cpy(path_c[k] + off,
+				    delta_c[i] + 1 + nparam, d);
+			isl_seq_cpy(path_c[k], delta_c[i], 1 + nparam);
+		}
+	}
+
+	return path;
+error:
+	isl_basic_map_free(path);
+	return NULL;
+}
+
 /* Given a set of offsets "delta", construct a relation of the
  * given dimension specification (Z^{n+1} -> Z^{n+1}) that
  * is an overapproximation of the relations that
@@ -400,46 +441,8 @@ static __isl_give isl_map *path_along_delta(__isl_take isl_dim *dim,
 		isl_int_set_si(path->eq[k][off + i], 1);
 	}
 
-	for (i = 0; i < delta->n_eq; ++i) {
-		int p = purity(delta, delta->eq[i], 1);
-		if (p < 0)
-			goto error;
-		if (p == IMPURE)
-			continue;
-		k = isl_basic_map_alloc_equality(path);
-		if (k < 0)
-			goto error;
-		isl_seq_clr(path->eq[k], 1 + isl_basic_map_total_dim(path));
-		if (p == PURE_VAR) {
-			isl_seq_cpy(path->eq[k] + off,
-				    delta->eq[i] + 1 + nparam, d);
-			isl_int_set(path->eq[k][off + d], delta->eq[i][0]);
-		} else
-			isl_seq_cpy(path->eq[k], delta->eq[i], 1 + nparam);
-	}
-
-	for (i = 0; i < delta->n_ineq; ++i) {
-		int p = purity(delta, delta->ineq[i], 0);
-		if (p < 0)
-			goto error;
-		if (p == IMPURE)
-			continue;
-		k = isl_basic_map_alloc_inequality(path);
-		if (k < 0)
-			goto error;
-		isl_seq_clr(path->ineq[k], 1 + isl_basic_map_total_dim(path));
-		if (p == PURE_VAR) {
-			isl_seq_cpy(path->ineq[k] + off,
-				    delta->ineq[i] + 1 + nparam, d);
-			isl_int_set(path->ineq[k][off + d], delta->ineq[i][0]);
-		} else if (p == PURE_PARAM) {
-			isl_seq_cpy(path->ineq[k], delta->ineq[i], 1 + nparam);
-		} else {
-			isl_seq_cpy(path->ineq[k] + off,
-				    delta->ineq[i] + 1 + nparam, d);
-			isl_seq_cpy(path->ineq[k], delta->ineq[i], 1 + nparam);
-		}
-	}
+	path = add_delta_constraints(path, delta, off, nparam, d, 1);
+	path = add_delta_constraints(path, delta, off, nparam, d, 0);
 
 	is_id = empty_path_is_identity(path, off + d);
 	if (is_id < 0)
