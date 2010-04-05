@@ -294,6 +294,34 @@ error:
 	return -1;
 }
 
+/* Given a path with the as yet unconstrained length at position "pos",
+ * check if setting the length to zero results in only the identity
+ * mapping.
+ */
+int empty_path_is_identity(__isl_keep isl_basic_map *path, unsigned pos)
+{
+	isl_basic_map *test = NULL;
+	isl_basic_map *id = NULL;
+	int k;
+	int is_id;
+
+	test = isl_basic_map_copy(path);
+	test = isl_basic_map_extend_constraints(test, 1, 0);
+	k = isl_basic_map_alloc_equality(test);
+	if (k < 0)
+		goto error;
+	isl_seq_clr(test->eq[k], 1 + isl_basic_map_total_dim(test));
+	isl_int_set_si(test->eq[k][pos], 1);
+	id = isl_basic_map_identity(isl_dim_domain(isl_basic_map_get_dim(path)));
+	is_id = isl_basic_map_is_subset(test, id);
+	isl_basic_map_free(test);
+	isl_basic_map_free(id);
+	return is_id;
+error:
+	isl_basic_map_free(test);
+	return -1;
+}
+
 /* Given a set of offsets "delta", construct a relation of the
  * given dimension specification (Z^{n+1} -> Z^{n+1}) that
  * is an overapproximation of the relations that
@@ -323,6 +351,15 @@ error:
  *			C f + C'p + c >= 0 and k >= 1 }
  *	union { [x] -> [x] }
  *
+ * If the zero-length paths happen to correspond exactly to the identity
+ * mapping, then we return
+ *
+ *	{ [x] -> [y] : exists [f, k] \in Z^{n+1} : y = x + f and
+ *			A f + k a >= 0 and B p + b >= 0 and
+ *			C f + C'p + c >= 0 and k >= 0 }
+ *
+ * instead.
+ *
  * Existentially quantified variables in \delta are currently ignored.
  * This is safe, but leads to an additional overapproximation.
  */
@@ -335,6 +372,7 @@ static __isl_give isl_map *path_along_delta(__isl_take isl_dim *dim,
 	unsigned nparam;
 	unsigned off;
 	int i, k;
+	int is_id;
 
 	if (!delta)
 		goto error;
@@ -403,15 +441,24 @@ static __isl_give isl_map *path_along_delta(__isl_take isl_dim *dim,
 		}
 	}
 
+	is_id = empty_path_is_identity(path, off + d);
+	if (is_id < 0)
+		goto error;
+
 	k = isl_basic_map_alloc_inequality(path);
 	if (k < 0)
 		goto error;
 	isl_seq_clr(path->ineq[k], 1 + isl_basic_map_total_dim(path));
-	isl_int_set_si(path->ineq[k][0], -1);
+	if (!is_id)
+		isl_int_set_si(path->ineq[k][0], -1);
 	isl_int_set_si(path->ineq[k][off + d], 1);
 			
 	isl_basic_set_free(delta);
 	path = isl_basic_map_finalize(path);
+	if (is_id) {
+		isl_dim_free(dim);
+		return isl_map_from_basic_map(path);
+	}
 	return isl_basic_map_union(path,
 				isl_basic_map_identity(isl_dim_domain(dim)));
 error:
