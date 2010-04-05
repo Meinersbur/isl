@@ -255,23 +255,33 @@ error:
  * 	can never attain positive values.
  * Return IMPURE otherwise.
  */
-static int purity(__isl_keep isl_basic_set *bset, isl_int *c, int eq)
+static int purity(__isl_keep isl_basic_set *bset, isl_int *c, int *div_purity,
+	int eq)
 {
 	unsigned d;
 	unsigned n_div;
 	unsigned nparam;
 	int k;
 	int empty;
+	int i;
+	int p = 0, v = 0;
 
 	n_div = isl_basic_set_dim(bset, isl_dim_div);
 	d = isl_basic_set_dim(bset, isl_dim_set);
 	nparam = isl_basic_set_dim(bset, isl_dim_param);
 
-	if (isl_seq_first_non_zero(c + 1 + nparam + d, n_div) != -1)
-		return IMPURE;
-	if (isl_seq_first_non_zero(c + 1, nparam) == -1)
+	for (i = 0; i < n_div; ++i) {
+		if (isl_int_is_zero(c[1 + nparam + d + i]))
+			continue;
+		switch (div_purity[i]) {
+		case PURE_PARAM: p = 1; break;
+		case PURE_VAR: v = 1; break;
+		default: return IMPURE;
+		}
+	}
+	if (!p && isl_seq_first_non_zero(c + 1, nparam) == -1)
 		return PURE_VAR;
-	if (isl_seq_first_non_zero(c + 1 + nparam, d) == -1)
+	if (!v && isl_seq_first_non_zero(c + 1 + nparam, d) == -1)
 		return PURE_PARAM;
 	if (eq)
 		return IMPURE;
@@ -284,6 +294,12 @@ static int purity(__isl_keep isl_basic_set *bset, isl_int *c, int eq)
 		goto error;
 	isl_seq_clr(bset->ineq[k], 1 + isl_basic_set_total_dim(bset));
 	isl_seq_cpy(bset->ineq[k], c, 1 + nparam);
+	for (i = 0; i < n_div; ++i) {
+		if (div_purity[i] != PURE_PARAM)
+			continue;
+		isl_int_set(bset->ineq[k][1 + nparam + d + i],
+			    c[1 + nparam + d + i]);
+	}
 	isl_int_sub_ui(bset->ineq[k][0], bset->ineq[k][0], 1);
 	empty = isl_basic_set_is_empty(bset);
 	isl_basic_set_free(bset);
@@ -292,6 +308,57 @@ static int purity(__isl_keep isl_basic_set *bset, isl_int *c, int eq)
 error:
 	isl_basic_set_free(bset);
 	return -1;
+}
+
+/* Return an array of integers indicating the type of each div in bset.
+ * If the div is (recursively) defined in terms of only the parameters,
+ * then the type is PURE_PARAM.
+ * If the div is (recursively) defined in terms of only the set variables,
+ * then the type is PURE_VAR.
+ * Otherwise, the type is IMPURE.
+ */
+static __isl_give int *get_div_purity(__isl_keep isl_basic_set *bset)
+{
+	int i, j;
+	int *div_purity;
+	unsigned d;
+	unsigned n_div;
+	unsigned nparam;
+
+	if (!bset)
+		return NULL;
+
+	n_div = isl_basic_set_dim(bset, isl_dim_div);
+	d = isl_basic_set_dim(bset, isl_dim_set);
+	nparam = isl_basic_set_dim(bset, isl_dim_param);
+
+	div_purity = isl_alloc_array(bset->ctx, int, n_div);
+	if (!div_purity)
+		return NULL;
+
+	for (i = 0; i < bset->n_div; ++i) {
+		int p = 0, v = 0;
+		if (isl_int_is_zero(bset->div[i][0])) {
+			div_purity[i] = IMPURE;
+			continue;
+		}
+		if (isl_seq_first_non_zero(bset->div[i] + 2, nparam) != -1)
+			p = 1;
+		if (isl_seq_first_non_zero(bset->div[i] + 2 + nparam, d) != -1)
+			v = 1;
+		for (j = 0; j < i; ++j) {
+			if (isl_int_is_zero(bset->div[i][2 + nparam + d + j]))
+				continue;
+			switch (div_purity[j]) {
+			case PURE_PARAM: p = 1; break;
+			case PURE_VAR: v = 1; break;
+			default: p = v = 1; break;
+			}
+		}
+		div_purity[i] = v ? p ? IMPURE : PURE_VAR : PURE_PARAM;
+	}
+
+	return div_purity;
 }
 
 /* Given a path with the as yet unconstrained length at position "pos",
@@ -324,15 +391,18 @@ error:
 
 __isl_give isl_basic_map *add_delta_constraints(__isl_take isl_basic_map *path,
 	__isl_keep isl_basic_set *delta, unsigned off, unsigned nparam,
-	unsigned d, int eq)
+	unsigned d, int *div_purity, int eq)
 {
 	int i, k;
 	int n = eq ? delta->n_eq : delta->n_ineq;
 	isl_int **delta_c = eq ? delta->eq : delta->ineq;
 	isl_int **path_c = eq ? path->eq : path->ineq;
+	unsigned n_div;
+
+	n_div = isl_basic_set_dim(delta, isl_dim_div);
 
 	for (i = 0; i < n; ++i) {
-		int p = purity(delta, delta_c[i], eq);
+		int p = purity(delta, delta_c[i], div_purity, eq);
 		if (p < 0)
 			goto error;
 		if (p == IMPURE)
@@ -355,6 +425,8 @@ __isl_give isl_basic_map *add_delta_constraints(__isl_take isl_basic_map *path,
 				    delta_c[i] + 1 + nparam, d);
 			isl_seq_cpy(path_c[k], delta_c[i], 1 + nparam);
 		}
+		isl_seq_cpy(path_c[k] + off - n_div,
+			    delta_c[i] + 1 + nparam + d, n_div);
 	}
 
 	return path;
@@ -401,7 +473,10 @@ error:
  *
  * instead.
  *
- * Existentially quantified variables in \delta are currently ignored.
+ * Existentially quantified variables in \delta are handled by
+ * classifying them as independent of the parameters, purely
+ * parameter dependent and others.  Constraints containing
+ * any of the other existentially quantified variables are removed.
  * This is safe, but leads to an additional overapproximation.
  */
 static __isl_give isl_map *path_along_delta(__isl_take isl_dim *dim,
@@ -414,6 +489,7 @@ static __isl_give isl_map *path_along_delta(__isl_take isl_dim *dim,
 	unsigned off;
 	int i, k;
 	int is_id;
+	int *div_purity = NULL;
 
 	if (!delta)
 		goto error;
@@ -441,8 +517,12 @@ static __isl_give isl_map *path_along_delta(__isl_take isl_dim *dim,
 		isl_int_set_si(path->eq[k][off + i], 1);
 	}
 
-	path = add_delta_constraints(path, delta, off, nparam, d, 1);
-	path = add_delta_constraints(path, delta, off, nparam, d, 0);
+	div_purity = get_div_purity(delta);
+	if (!div_purity)
+		goto error;
+
+	path = add_delta_constraints(path, delta, off, nparam, d, div_purity, 1);
+	path = add_delta_constraints(path, delta, off, nparam, d, div_purity, 0);
 
 	is_id = empty_path_is_identity(path, off + d);
 	if (is_id < 0)
@@ -456,6 +536,7 @@ static __isl_give isl_map *path_along_delta(__isl_take isl_dim *dim,
 		isl_int_set_si(path->ineq[k][0], -1);
 	isl_int_set_si(path->ineq[k][off + d], 1);
 			
+	free(div_purity);
 	isl_basic_set_free(delta);
 	path = isl_basic_map_finalize(path);
 	if (is_id) {
@@ -465,6 +546,7 @@ static __isl_give isl_map *path_along_delta(__isl_take isl_dim *dim,
 	return isl_basic_map_union(path,
 				isl_basic_map_identity(isl_dim_domain(dim)));
 error:
+	free(div_purity);
 	isl_dim_free(dim);
 	isl_basic_set_free(delta);
 	isl_basic_map_free(path);

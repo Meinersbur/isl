@@ -290,11 +290,10 @@ Those that correspond to singleton $\Delta_i$s are grouped together
 and handled as in \eqref{eq:transitive:singleton}.
 Note that this is just an optimization.  The procedure described
 below would produce results that are at least as accurate.
-For simplicity, we will assume that no constraint in $\Delta_i'$
-involves any existentially quantified variables.  Dropping such
-constraints results in a larger $\Delta_i'$.  An overapproximation
-of the paths corresponding to this larger set will also be an
-overapproximation of the paths corresponding to the original set.
+For simplicity, we first assume that no constraint in $\Delta_i'$
+involves any existentially quantified variables.
+We will return to existentially quantified variables at the end
+of this section.
 Without existentially quantified variables, we can classify
 the constraints of $\Delta_i'$ as follows
 \begin{enumerate}
@@ -396,14 +395,65 @@ A_1 & \vec c_1
 \right] \vec x' \,\}$ and therefore $\Delta'_i(\vec s)$ is
 a Hilbert basis of this cone \shortcite[Theorem~16.4]{Schrijver1986}.
 
-The accurateness of the above approach
-can be improved by also classifying the existentially
-quantified variables into variables that are uniquely
+Existentially quantified variables can be handled by
+classifying them into variables that are uniquely
 determined by the parameters, variables that are independent
 of the parameters and others.  The first set can be treated
 as parameters and the second as variables.  Constraints involving
-the other existentially quantified variables should continue to
-be removed.
+the other existentially quantified variables are removed.
+
+\begin{example}
+Consider the relation
+$$
+R =
+n \to \{\, x \to y \mid \exists \, \alpha_0, \alpha_1: 7\alpha_0 = -2 + n \wedge 5\alpha_1 = -1 - x + y \wedge y \ge 6 + x \,\}
+.
+$$
+The difference set of this relation is
+$$
+\Delta = \Delta \, R =
+n \to \{\, x \mid \exists \, \alpha_0, \alpha_1: 7\alpha_0 = -2 + n \wedge 5\alpha_1 = -1 + x \wedge x \ge 6 \,\}
+.
+$$
+The existentially quantified variables can be defined in terms
+of the parameters and variables as
+$$
+\alpha_0 = \floor{\frac{-2 + n}7}
+\qquad
+\text{and}
+\qquad
+\alpha_1 = \floor{\frac{-1 + x}5}
+.
+$$
+$\alpha_0$ can therefore be treated as a parameter,
+while $\alpha_1$ can be treated as a variable.
+This in turn means that $7\alpha_0 = -2 + n$ can be treated as
+a purely parametric constraint, while the other two constraints are
+non-parametric.
+The corresponding $Q$~\eqref{eq:transitive:Q} is therefore
+$$
+\begin{aligned}
+n \to \{\, (x,z) \to (y,w) \mid
+\exists\, \alpha_0, \alpha_1, k, f : {} &
+k \ge 1 \wedge
+y = x + f \wedge
+w = z + k \wedge {} \\
+&
+7\alpha_0 = -2 + n \wedge
+5\alpha_1 = -k + x \wedge
+x \ge 6 k
+\,\}
+.
+\end{aligned}
+$$
+Projecting out the final coordinates encoding the length of the paths,
+results in the exact transitive closure
+$$
+R^+ =
+n \to \{\, x \to y \mid \exists \, \alpha_0, \alpha_1: 7\alpha_1 = -2 + n \wedge 6\alpha_0 \ge -x + y \wedge 5\alpha_0 \le -1 - x + y \,\}
+.
+$$
+\end{example}
 
 \subsection{Checking Exactness}
 
