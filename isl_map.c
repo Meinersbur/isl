@@ -4685,6 +4685,7 @@ error:
  */
 struct isl_basic_set *isl_basic_map_deltas(struct isl_basic_map *bmap)
 {
+	isl_dim *dims;
 	struct isl_basic_set *bset;
 	unsigned dim;
 	unsigned nparam;
@@ -4697,7 +4698,9 @@ struct isl_basic_set *isl_basic_map_deltas(struct isl_basic_map *bmap)
 	isl_assert(bmap->ctx, dim == isl_basic_map_n_out(bmap), goto error);
 	bset = isl_basic_set_from_basic_map(bmap);
 	bset = isl_basic_set_cow(bset);
-	bset = isl_basic_set_extend(bset, nparam, 3*dim, 0, dim, 0);
+	dims = isl_basic_set_get_dim(bset);
+	dims = isl_dim_add(dims, isl_dim_set, dim);
+	bset = isl_basic_set_extend_dim(bset, dims, 0, dim, 0);
 	bset = isl_basic_set_swap_vars(bset, 2*dim);
 	for (i = 0; i < dim; ++i) {
 		int j = isl_basic_map_alloc_equality(
@@ -4721,14 +4724,16 @@ error:
 struct isl_set *isl_map_deltas(struct isl_map *map)
 {
 	int i;
+	isl_dim *dim;
 	struct isl_set *result;
 
 	if (!map)
 		return NULL;
 
 	isl_assert(map->ctx, isl_map_n_in(map) == isl_map_n_out(map), goto error);
-	result = isl_set_alloc(map->ctx, isl_map_n_param(map),
-					isl_map_n_in(map), map->n, map->flags);
+	dim = isl_map_get_dim(map);
+	dim = isl_dim_domain(dim);
+	result = isl_set_alloc_dim(dim, map->n, map->flags);
 	if (!result)
 		goto error;
 	for (i = 0; i < map->n; ++i)
