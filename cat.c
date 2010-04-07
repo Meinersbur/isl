@@ -4,6 +4,7 @@ struct isl_arg_choice cat_format[] = {
 	{"isl",		ISL_FORMAT_ISL},
 	{"omega",	ISL_FORMAT_OMEGA},
 	{"polylib",	ISL_FORMAT_POLYLIB},
+	{"latex",	ISL_FORMAT_LATEX},
 	{0}
 };
 
