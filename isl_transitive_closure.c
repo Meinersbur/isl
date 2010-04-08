@@ -11,6 +11,7 @@
 #include "isl_map.h"
 #include "isl_map_private.h"
 #include "isl_seq.h"
+#include <isl_lp.h>
  
 /* Given a map that represents a path with the length of the path
  * encoded as the difference between the last output coordindate
@@ -1137,6 +1138,411 @@ __isl_give isl_map *isl_map_power(__isl_take isl_map *map, unsigned param,
 	return map_power(map, param, exact, 0);
 }
 
+/* Check whether equality i of bset is a pure stride constraint
+ * on a single dimensions, i.e., of the form
+ *
+ *	v = k e
+ *
+ * with k a constant and e an existentially quantified variable.
+ */
+static int is_eq_stride(__isl_keep isl_basic_set *bset, int i)
+{
+	int k;
+	unsigned nparam;
+	unsigned d;
+	unsigned n_div;
+	int pos1;
+	int pos2;
+
+	if (!bset)
+		return -1;
+
+	if (!isl_int_is_zero(bset->eq[i][0]))
+		return 0;
+
+	nparam = isl_basic_set_dim(bset, isl_dim_param);
+	d = isl_basic_set_dim(bset, isl_dim_set);
+	n_div = isl_basic_set_dim(bset, isl_dim_div);
+
+	if (isl_seq_first_non_zero(bset->eq[i] + 1, nparam) != -1)
+		return 0;
+	pos1 = isl_seq_first_non_zero(bset->eq[i] + 1 + nparam, d);
+	if (pos1 == -1)
+		return 0;
+	if (isl_seq_first_non_zero(bset->eq[i] + 1 + nparam + pos1 + 1, 
+					d - pos1 - 1) != -1)
+		return 0;
+
+	pos2 = isl_seq_first_non_zero(bset->eq[i] + 1 + nparam + d, n_div);
+	if (pos2 == -1)
+		return 0;
+	if (isl_seq_first_non_zero(bset->eq[i] + 1 + nparam + d  + pos2 + 1,
+				   n_div - pos2 - 1) != -1)
+		return 0;
+	if (!isl_int_is_one(bset->eq[i][1 + nparam + pos1]) &&
+	    !isl_int_is_negone(bset->eq[i][1 + nparam + pos1]))
+		return 0;
+
+	return 1;
+}
+
+/* Given a map, compute the smallest superset of this map that is of the form
+ *
+ *	{ i -> j : L <= j - i <= U and exists a_p: j_p - i_p = M_p a_p }
+ *
+ * (where p ranges over the (non-parametric) dimensions),
+ * compute the transitive closure of this map, i.e.,
+ *
+ *	{ i -> j : exists k > 0:
+ *		k L <= j - i <= k U and exists a: j_p - i_p = M_p a_p }
+ *
+ * and intersect domain and range of this transitive closure with
+ * domain and range of the original map.
+ *
+ * If with_id is set, then try to include as much of the identity mapping
+ * as possible, by computing
+ *
+ *	{ i -> j : exists k >= 0:
+ *		k L <= j - i <= k U and exists a: j_p - i_p = M_p a_p }
+ *
+ * instead (i.e., allow k = 0) and by intersecting domain and range
+ * with the union of the domain and the range of the original map.
+ *
+ * In practice, we compute the difference set
+ *
+ *	delta  = { j - i | i -> j in map },
+ *
+ * look for stride constraint on the individual dimensions and compute
+ * (constant) lower and upper bounds for each individual dimension,
+ * adding a constraint for each bound not equal to infinity.
+ */
+static __isl_give isl_map *box_closure(__isl_take isl_map *map, int with_id)
+{
+	int i;
+	int k;
+	unsigned d;
+	unsigned nparam;
+	unsigned total;
+	isl_dim *dim;
+	isl_set *delta;
+	isl_set *domain = NULL;
+	isl_set *range = NULL;
+	isl_map *app = NULL;
+	isl_basic_set *aff = NULL;
+	isl_basic_map *bmap = NULL;
+	isl_vec *obj = NULL;
+	isl_int opt;
+
+	isl_int_init(opt);
+
+	delta = isl_map_deltas(isl_map_copy(map));
+
+	aff = isl_set_affine_hull(isl_set_copy(delta));
+	if (!aff)
+		goto error;
+	dim = isl_map_get_dim(map);
+	d = isl_dim_size(dim, isl_dim_in);
+	nparam = isl_dim_size(dim, isl_dim_param);
+	total = isl_dim_total(dim);
+	bmap = isl_basic_map_alloc_dim(dim,
+					aff->n_div + 1, aff->n_div, 2 * d + 1);
+	for (i = 0; i < aff->n_div + 1; ++i) {
+		k = isl_basic_map_alloc_div(bmap);
+		if (k < 0)
+			goto error;
+		isl_int_set_si(bmap->div[k][0], 0);
+	}
+	for (i = 0; i < aff->n_eq; ++i) {
+		if (!is_eq_stride(aff, i))
+			continue;
+		k = isl_basic_map_alloc_equality(bmap);
+		if (k < 0)
+			goto error;
+		isl_seq_clr(bmap->eq[k], 1 + nparam);
+		isl_seq_cpy(bmap->eq[k] + 1 + nparam + d,
+				aff->eq[i] + 1 + nparam, d);
+		isl_seq_neg(bmap->eq[k] + 1 + nparam,
+				aff->eq[i] + 1 + nparam, d);
+		isl_seq_cpy(bmap->eq[k] + 1 + nparam + 2 * d,
+				aff->eq[i] + 1 + nparam + d, aff->n_div);
+		isl_int_set_si(bmap->eq[k][1 + total + aff->n_div], 0);
+	}
+	obj = isl_vec_alloc(map->ctx, 1 + nparam + d);
+	if (!obj)
+		goto error;
+	isl_seq_clr(obj->el, 1 + nparam + d);
+	for (i = 0; i < d; ++ i) {
+		enum isl_lp_result res;
+
+		isl_int_set_si(obj->el[1 + nparam + i], 1);
+
+		res = isl_set_solve_lp(delta, 0, obj->el, map->ctx->one, &opt,
+					NULL, NULL);
+		if (res == isl_lp_error)
+			goto error;
+		if (res == isl_lp_ok) {
+			k = isl_basic_map_alloc_inequality(bmap);
+			if (k < 0)
+				goto error;
+			isl_seq_clr(bmap->ineq[k],
+					1 + nparam + 2 * d + bmap->n_div);
+			isl_int_set_si(bmap->ineq[k][1 + nparam + i], -1);
+			isl_int_set_si(bmap->ineq[k][1 + nparam + d + i], 1);
+			isl_int_neg(bmap->ineq[k][1 + nparam + 2 * d + aff->n_div], opt);
+		}
+
+		res = isl_set_solve_lp(delta, 1, obj->el, map->ctx->one, &opt,
+					NULL, NULL);
+		if (res == isl_lp_error)
+			goto error;
+		if (res == isl_lp_ok) {
+			k = isl_basic_map_alloc_inequality(bmap);
+			if (k < 0)
+				goto error;
+			isl_seq_clr(bmap->ineq[k],
+					1 + nparam + 2 * d + bmap->n_div);
+			isl_int_set_si(bmap->ineq[k][1 + nparam + i], 1);
+			isl_int_set_si(bmap->ineq[k][1 + nparam + d + i], -1);
+			isl_int_set(bmap->ineq[k][1 + nparam + 2 * d + aff->n_div], opt);
+		}
+
+		isl_int_set_si(obj->el[1 + nparam + i], 0);
+	}
+	k = isl_basic_map_alloc_inequality(bmap);
+	if (k < 0)
+		goto error;
+	isl_seq_clr(bmap->ineq[k],
+			1 + nparam + 2 * d + bmap->n_div);
+	if (!with_id)
+		isl_int_set_si(bmap->ineq[k][0], -1);
+	isl_int_set_si(bmap->ineq[k][1 + nparam + 2 * d + aff->n_div], 1);
+
+	domain = isl_map_domain(isl_map_copy(map));
+	domain = isl_set_coalesce(domain);
+	range = isl_map_range(isl_map_copy(map));
+	range = isl_set_coalesce(range);
+	if (with_id) {
+		domain = isl_set_union(domain, range);
+		domain = isl_set_coalesce(domain);
+		range = isl_set_copy(domain);
+	}
+	app = isl_map_from_domain_and_range(domain, range);
+
+	isl_vec_free(obj);
+	isl_basic_set_free(aff);
+	isl_map_free(map);
+	bmap = isl_basic_map_finalize(bmap);
+	isl_set_free(delta);
+	isl_int_clear(opt);
+
+	map = isl_map_from_basic_map(bmap);
+	map = isl_map_intersect(map, app);
+
+	return map;
+error:
+	isl_vec_free(obj);
+	isl_basic_map_free(bmap);
+	isl_basic_set_free(aff);
+	isl_map_free(map);
+	isl_set_free(delta);
+	isl_int_clear(opt);
+	return NULL;
+}
+
+/* Check whether app is the transitive closure of map.
+ * In particular, check that app is acyclic and, if so,
+ * check that
+ *
+ *	app \subset (map \cup (map \circ app))
+ */
+static int check_exactness_omega(__isl_keep isl_map *map,
+	__isl_keep isl_map *app)
+{
+	isl_set *delta;
+	int i;
+	int is_empty, is_exact;
+	unsigned d;
+	isl_map *test;
+
+	delta = isl_map_deltas(isl_map_copy(app));
+	d = isl_set_dim(delta, isl_dim_set);
+	for (i = 0; i < d; ++i)
+		delta = isl_set_fix_si(delta, isl_dim_set, i, 0);
+	is_empty = isl_set_is_empty(delta);
+	isl_set_free(delta);
+	if (is_empty < 0)
+		return -1;
+	if (!is_empty)
+		return 0;
+
+	test = isl_map_apply_range(isl_map_copy(app), isl_map_copy(map));
+	test = isl_map_union(test, isl_map_copy(map));
+	is_exact = isl_map_is_subset(app, test);
+	isl_map_free(test);
+
+	return is_exact;
+}
+
+/* Check if basic map M_i can be combined with all the other
+ * basic maps such that
+ *
+ *	(\cup_j M_j)^+
+ *
+ * can be computed as
+ *
+ *	M_i \cup (\cup_{j \ne i} M_i^* \circ M_j \circ M_i^*)^+
+ *
+ * In particular, check if we can compute a compact representation
+ * of
+ *
+ *		M_i^* \circ M_j \circ M_i^*
+ *
+ * for each j != i.
+ * Let M_i^? be an extension of M_i^+ that allows paths
+ * of length zero, i.e., the result of box_closure(., 1).
+ * The criterion, as proposed by Kelly et al., is that
+ * id = M_i^? - M_i^+ can be represented as a basic map
+ * and that
+ *
+ *	id \circ M_j \circ id = M_j
+ *
+ * for each j != i.
+ *
+ * If this function returns 1, then tc and qc are set to
+ * M_i^+ and M_i^?, respectively.
+ */
+static int can_be_split_off(__isl_keep isl_map *map, int i,
+	__isl_give isl_map **tc, __isl_give isl_map **qc)
+{
+	isl_map *map_i, *id;
+	int j = -1;
+
+	map_i = isl_map_from_basic_map(isl_basic_map_copy(map->p[i]));
+	*tc = box_closure(isl_map_copy(map_i), 0);
+	*qc = box_closure(map_i, 1);
+	id = isl_map_subtract(isl_map_copy(*qc), isl_map_copy(*tc));
+
+	if (!id || !*qc)
+		goto error;
+	if (id->n != 1 || (*qc)->n != 1)
+		goto done;
+
+	for (j = 0; j < map->n; ++j) {
+		isl_map *map_j, *test;
+		int is_ok;
+
+		if (i == j)
+			continue;
+		map_j = isl_map_from_basic_map(
+					isl_basic_map_copy(map->p[j]));
+		test = isl_map_apply_range(isl_map_copy(id),
+						isl_map_copy(map_j));
+		test = isl_map_apply_range(test, isl_map_copy(id));
+		is_ok = isl_map_is_equal(test, map_j);
+		isl_map_free(map_j);
+		isl_map_free(test);
+		if (is_ok < 0)
+			goto error;
+		if (!is_ok)
+			break;
+	}
+
+done:
+	isl_map_free(id);
+	if (j == map->n)
+		return 1;
+
+	isl_map_free(*qc);
+	isl_map_free(*tc);
+	*qc = NULL;
+	*tc = NULL;
+
+	return 0;
+error:
+	isl_map_free(id);
+	isl_map_free(*qc);
+	isl_map_free(*tc);
+	*qc = NULL;
+	*tc = NULL;
+	return -1;
+}
+
+/* Compute an overapproximation of the transitive closure of "map"
+ * using a variation of the algorithm from
+ * "Transitive Closure of Infinite Graphs and its Applications"
+ * by Kelly et al.
+ *
+ * We first check whether we can can split of any basic map M_i and
+ * compute
+ *
+ *	(\cup_j M_j)^+
+ *
+ * as
+ *
+ *	M_i \cup (\cup_{j \ne i} M_i^* \circ M_j \circ M_i^*)^+
+ *
+ * using a recursive call on the remaining map.
+ *
+ * If not, we simply call box_closure on the whole map.
+ */
+static __isl_give isl_map *compute_closure_omega(__isl_take isl_map *map)
+{
+	int i, j;
+
+	if (!map)
+		return NULL;
+	if (map->n == 1)
+		return box_closure(map, 0);
+
+	map = isl_map_cow(map);
+	if (!map)
+		goto error;
+
+	for (i = 0; i < map->n; ++i) {
+		int ok;
+		isl_map *qc, *tc;
+		ok = can_be_split_off(map, i, &tc, &qc);
+		if (ok < 0)
+			goto error;
+		if (!ok)
+			continue;
+
+		isl_basic_map_free(map->p[i]);
+		if (i != map->n - 1)
+			map->p[i] = map->p[map->n - 1];
+		map->n--;
+
+		map = isl_map_apply_range(isl_map_copy(qc), map);
+		map = isl_map_apply_range(map, qc);
+
+		return isl_map_union(tc, compute_closure_omega(map));
+	}
+
+	return box_closure(map, 0);
+error:
+	isl_map_free(map);
+	return NULL;
+}
+
+/* Compute an overapproximation of the transitive closure of "map"
+ * using a variation of the algorithm from
+ * "Transitive Closure of Infinite Graphs and its Applications"
+ * by Kelly et al. and check whether the result is definitely exact.
+ */
+static __isl_give isl_map *transitive_closure_omega(__isl_take isl_map *map,
+	int *exact)
+{
+	isl_map *app;
+
+	app = compute_closure_omega(isl_map_copy(map));
+
+	if (exact)
+		*exact = check_exactness_omega(map, app);
+
+	isl_map_free(map);
+	return app;
+}
+
 /* Compute the transitive closure  of "map", or an overapproximation.
  * If the result is exact, then *exact is set to 1.
  * Simply compute the powers of map and then project out the parameter
@@ -1149,6 +1555,9 @@ __isl_give isl_map *isl_map_transitive_closure(__isl_take isl_map *map,
 
 	if (!map)
 		goto error;
+
+	if (map->ctx->opt->closure == ISL_CLOSURE_OMEGA)
+		return transitive_closure_omega(map, exact);
 
 	param = isl_map_dim(map, isl_dim_param);
 	map = isl_map_add(map, isl_dim_param, 1);

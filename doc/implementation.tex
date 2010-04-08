@@ -181,6 +181,7 @@ $$
 \end{example}
 
 \subsection{Computing an Approximation of $R^k$}
+\label{s:power}
 
 There are some special cases where the computation of $R^k$ is very easy.
 One such case is that where $R$ does not compose with itself,
@@ -723,3 +724,112 @@ As explained by \shortciteN{Beletska2009}, applying the same formula
 to $R$ directly, without a decomposition, would result in
 an overapproximation of the power.
 \end{example}
+
+\subsection{An {\tt Omega}-like implementation}
+
+While the main algorithm of \shortciteN{Kelly1996closure} is
+designed to compute and underapproximation of the transitive closure,
+the authors mention that they could also compute overapproximations.
+In this section, we describe our implementation of an algorithm
+that is based on their ideas.
+
+The main tool is Equation~(2) of \shortciteN{Kelly1996closure}.
+The input relation $R$ is first overapproximated by a ``d-form'' relation
+$$
+\{\, \vec i \to \vec j \mid \exists \vec \alpha :
+\vec L \le \vec j - \vec i \le \vec U
+\wedge
+(\forall p : j_p - i_p = M_p \alpha_p)
+\,\}
+,
+$$
+where $p$ ranges over the dimensions and $\vec L$, $\vec U$ and
+$\vec M$ are constant integer vectors.  The elements of $\vec U$
+may be $\infty$, meaning that there is no upper bound corresponding
+to that element, and similarly for $\vec L$.
+Such an overapproximation can be obtained by computing strides,
+lower and upper bounds on the difference set $\Delta \, R$.
+The transitive closure of such a ``d-form'' relation is
+\begin{equation}
+\label{eq:omega}
+\{\, \vec i \to \vec j \mid \exists \vec \alpha, k :
+k \ge 1 \wedge
+k \, \vec L \le \vec j - \vec i \le k \, \vec U
+\wedge
+(\forall p : j_p - i_p = M_p \alpha_p)
+\,\}
+.
+\end{equation}
+The domain and range of this transitive closure are then
+intersected with those of the input relation.
+This is a special case of the algorithm in \autoref{s:power}.
+
+In their algorithm for computing lower bounds, the authors
+use the above algorithm as a substep on the disjuncts in the relation.
+At the end, they say
+\begin{quote}
+If an upper bound is required, it can be calculated in a manner
+similar to that of a single conjunct [sic] relation.
+\end{quote}
+Presumably, the authors mean that a ``d-form'' approximation
+of the whole input relation should be used.
+However, the accuracy can be improved by also using the following
+idea from the same paper.  If $R$ is a union of $m$ basic maps,
+$$
+R = \bigcup_i R_i
+,
+$$
+and if we can find an $R_i$ such that for all other $R_j$ we have
+that
+$$
+R_i^* \circ R_j \circ R_i^*
+$$
+can be represented as a single basic map, i.e., without a union,
+then we can compute $R^+$ as
+$$
+R^+ = R_i^+ \cup
+\left(
+\bigcup_{j \ne i}
+R_i^* \circ R_j \circ R_i^*
+\right)^+
+,
+$$
+reducing the number of disjuncts in the argument of the transitive
+closure by one.
+An overapproximation of $R_i^*$ can be obtained by
+allowing the value zero for $k$ in \eqref{eq:omega},
+i.e., by computing
+$$
+\{\, \vec i \to \vec j \mid \exists \vec \alpha, k :
+k \ge 0 \wedge
+k \, \vec L \le \vec j - \vec i \le k \, \vec U
+\wedge
+(\forall p : j_p - i_p = M_p \alpha_p)
+\,\}
+.
+$$
+However, when we intersect domain and range of this relation
+with those of the input relation, then the result only contains
+the idenity mapping on the intersection of domain and range.
+\shortciteN{Kelly1996closure} propose to intersect domain
+and range with then {\em union} of domain and range of the input
+relation instead and call the result $R_i^?$.
+Now, this union of domain and range of $R_i$ may not contain
+the domains and ranges of the whole of $R$.
+We can therefore not always replace
+$R_i^* \circ R_j \circ R_i^*$ by
+$R_i^? \circ R_j \circ R_i^?$.
+\shortciteN{Kelly1996closure} propose to check the following
+conditions to decide whether this replacement is justified:
+$R_i^? - R_i^+$ is not a union and for each $j \ne i$
+the condition
+$$
+\left(R_i^? - R_i^+\right)
+\circ
+R_j
+\circ
+\left(R_i^? - R_i^+\right)
+=
+R_j
+$$
+holds.

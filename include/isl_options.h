@@ -38,6 +38,10 @@ struct isl_options {
 	#define			ISL_GBR_ALWAYS	2
 	unsigned		gbr;
 	unsigned		gbr_only_first;
+
+	#define			ISL_CLOSURE_ISL		0
+	#define			ISL_CLOSURE_OMEGA	1
+	unsigned		closure;
 };
 
 ISL_ARG_DECL(isl_options, struct isl_options, isl_options_arg)

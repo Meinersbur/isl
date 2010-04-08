@@ -51,6 +51,12 @@ struct isl_arg_choice isl_gbr_choice[] = {
 	{0}
 };
 
+struct isl_arg_choice isl_closure_choice[] = {
+	{"isl",		ISL_CLOSURE_ISL},
+	{"omega",	ISL_CLOSURE_OMEGA},
+	{0}
+};
+
 struct isl_arg isl_options_arg[] = {
 ISL_ARG_CHOICE(struct isl_options, lp_solver, 0, "lp-solver", \
 	isl_lp_solver_choice,	ISL_LP_TAB)
@@ -62,6 +68,8 @@ ISL_ARG_CHOICE(struct isl_options, context, 0, "context", \
 	isl_pip_context_choice,	ISL_CONTEXT_GBR)
 ISL_ARG_CHOICE(struct isl_options, gbr, 0, "gbr", \
 	isl_gbr_choice,	ISL_GBR_ONCE)
+ISL_ARG_CHOICE(struct isl_options, closure, 0, "closure", \
+	isl_closure_choice,	ISL_CLOSURE_ISL)
 ISL_ARG_BOOL(struct isl_options, gbr_only_first, 0, "gbr-only-first", 0)
 ISL_ARG_END
 };
