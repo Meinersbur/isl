@@ -1,12 +1,18 @@
+#include <assert.h>
 #include <isl_map.h>
 
 int main(int argc, char **argv)
 {
 	struct isl_ctx *ctx;
 	struct isl_map *map;
+	struct isl_options *options;
 	int exact;
 
-	ctx = isl_ctx_alloc();
+	options = isl_options_new_with_defaults();
+	assert(options);
+	argc = isl_options_parse(options, argc, argv);
+
+	ctx = isl_ctx_alloc_with_options(options);
 
 	map = isl_map_read_from_file(ctx, stdin, -1);
 	map = isl_map_transitive_closure(map, &exact);
