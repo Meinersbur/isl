@@ -12,6 +12,10 @@
 
 #include <isl_arg.h>
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 struct isl_options {
 	#define			ISL_LP_TAB	0
 	#define			ISL_LP_PIP	1
@@ -39,5 +43,9 @@ struct isl_options {
 ISL_ARG_DECL(isl_options, struct isl_options, isl_options_arg)
 
 extern struct isl_arg isl_options_arg[];
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif
