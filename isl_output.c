@@ -340,7 +340,8 @@ static __isl_give isl_printer *print_constraints(__isl_keep isl_basic_map *bmap,
 		int l = isl_seq_last_non_zero(bmap->ineq[i], 1 + total);
 		int s;
 		const char *op;
-		isl_assert(bmap->ctx, l >= 0, goto error);
+		if (l < 0)
+			continue;
 		s = isl_int_sgn(bmap->ineq[i][l]);
 		if (s < 0)
 			isl_seq_cpy(c->el, bmap->ineq[i], 1 + total);
