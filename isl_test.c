@@ -720,6 +720,17 @@ void test_coalesce(struct isl_ctx *ctx)
 	assert(isl_map_is_equal(map, map2));
 	isl_map_free(map);
 	isl_map_free(map2);
+
+	str = "[M, N] -> { [] -> [o0] : (o0 = 0 and M >= 1 and N >= 2) or "
+		"(o0 = 0 and M >= 1 and N >= 2M and N >= 2 + M) or "
+		"(o0 = 0 and M >= 2 and N >= 3) or "
+		"(M = 0 and o0 = 0 and N >= 3) }";
+	map = isl_map_read_from_str(ctx, str, -1);
+	map = isl_map_coalesce(map);
+	map2 = isl_map_read_from_str(ctx, str, -1);
+	assert(isl_map_is_equal(map, map2));
+	isl_map_free(map);
+	isl_map_free(map2);
 }
 
 void test_closure(struct isl_ctx *ctx)

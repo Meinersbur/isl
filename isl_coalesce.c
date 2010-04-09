@@ -477,6 +477,27 @@ unbounded:
 	return 0;
 }
 
+/* Return a set that corresponds to the non-redudant constraints
+ * (as recorded in tab) of bmap.
+ *
+ * It's important to remove the redundant constraints as some
+ * of the other constraints may have been modified after the
+ * constraints were marked redundant.
+ * In particular, a constraint may have been relaxed.
+ * Redundant constraints are ignored when a constraint is relaxed
+ * and should therefore continue to be ignored ever after.
+ * Otherwise, the relaxation might be thwarted by some of
+ * these constraints.
+ */
+static __isl_give isl_set *set_from_updated_bmap(__isl_keep isl_basic_map *bmap,
+	struct isl_tab *tab)
+{
+	bmap = isl_basic_map_copy(bmap);
+	bmap = isl_basic_map_cow(bmap);
+	bmap = isl_basic_map_update_from_tab(bmap, tab);
+	return isl_set_from_basic_set(isl_basic_map_underlying_set(bmap));
+}
+
 /* Given a basic set i with a constraint k that is adjacent to either the
  * whole of basic set j or a facet of basic set j, check if we can wrap
  * both the facet corresponding to k and the facet of j (or the whole of j)
@@ -513,10 +534,8 @@ static int can_wrap_in_facet(struct isl_map *map, int i, int j, int k,
 
 	snap = isl_tab_snap(tabs[i]);
 
-	set_i = isl_set_from_basic_set(
-		    isl_basic_map_underlying_set(isl_basic_map_copy(map->p[i])));
-	set_j = isl_set_from_basic_set(
-		    isl_basic_map_underlying_set(isl_basic_map_copy(map->p[j])));
+	set_i = set_from_updated_bmap(map->p[i], tabs[i]);
+	set_j = set_from_updated_bmap(map->p[j], tabs[j]);
 	wraps = isl_mat_alloc(map->ctx, 2 * (map->p[i]->n_eq + map->p[j]->n_eq) +
 					map->p[i]->n_ineq + map->p[j]->n_ineq,
 					1 + total);
