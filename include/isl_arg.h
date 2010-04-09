@@ -12,6 +12,10 @@
 
 #include <stddef.h>
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 struct isl_arg_choice {
 	const char	*name;
 	unsigned	 value;
@@ -86,5 +90,9 @@ int prefix ## _parse(st *opt, int argc, char **argv)			\
 {									\
 	return isl_arg_parse(arg, argc, argv, opt);			\
 }
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif
