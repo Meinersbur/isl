@@ -1135,7 +1135,7 @@ struct isl_basic_map *isl_basic_map_set_to_empty(struct isl_basic_map *bmap)
 	if (bmap->n_eq > 0)
 		isl_basic_map_free_equality(bmap, bmap->n_eq-1);
 	else {
-		isl_basic_map_alloc_equality(bmap);
+		i = isl_basic_map_alloc_equality(bmap);
 		if (i < 0)
 			goto error;
 	}
