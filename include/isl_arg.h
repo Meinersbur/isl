@@ -70,12 +70,15 @@ struct isl_arg {
 },
 #define ISL_ARG_END	{ isl_arg_end }
 
+#define ISL_ARG_ALL	(1 << 0)
+
 void isl_arg_set_defaults(struct isl_arg *arg, void *opt);
-int isl_arg_parse(struct isl_arg *arg, int argc, char **argv, void *opt);
+int isl_arg_parse(struct isl_arg *arg, int argc, char **argv, void *opt,
+	unsigned flags);
 
 #define ISL_ARG_DECL(prefix,st,arg)					\
 st *prefix ## _new_with_defaults();					\
-int prefix ## _parse(st *opt, int argc, char **argv);
+int prefix ## _parse(st *opt, int argc, char **argv, unsigned flags);
 
 #define ISL_ARG_DEF(prefix,st,arg)					\
 st *prefix ## _new_with_defaults()					\
@@ -86,9 +89,9 @@ st *prefix ## _new_with_defaults()					\
 	return opt;							\
 }									\
 									\
-int prefix ## _parse(st *opt, int argc, char **argv)			\
+int prefix ## _parse(st *opt, int argc, char **argv, unsigned flags)	\
 {									\
-	return isl_arg_parse(arg, argc, argv, opt);			\
+	return isl_arg_parse(arg, argc, argv, opt, flags);		\
 }
 
 #if defined(__cplusplus)

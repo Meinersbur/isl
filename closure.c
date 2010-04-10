@@ -10,7 +10,7 @@ int main(int argc, char **argv)
 
 	options = isl_options_new_with_defaults();
 	assert(options);
-	argc = isl_options_parse(options, argc, argv);
+	argc = isl_options_parse(options, argc, argv, ISL_ARG_ALL);
 
 	ctx = isl_ctx_alloc_with_options(options);
 

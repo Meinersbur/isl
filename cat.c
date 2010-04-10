@@ -29,7 +29,7 @@ int main(int argc, char **argv)
 
 	options = cat_options_new_with_defaults();
 	assert(options);
-	argc = cat_options_parse(options, argc, argv);
+	argc = cat_options_parse(options, argc, argv, ISL_ARG_ALL);
 
 	ctx = isl_ctx_alloc_with_options(options->isl);
 	options->isl = NULL;

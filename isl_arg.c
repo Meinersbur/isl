@@ -12,6 +12,7 @@
 #include <string.h>
 
 #include "isl_arg.h"
+#include <isl_ctx.h>
 
 static void set_default_choice(struct isl_arg *arg, void *opt)
 {
@@ -217,7 +218,8 @@ static int drop_argument(int argc, char **argv, int drop)
 	return argc - 1;
 }
 
-int isl_arg_parse(struct isl_arg *arg, int argc, char **argv, void *opt)
+int isl_arg_parse(struct isl_arg *arg, int argc, char **argv, void *opt,
+	unsigned flags)
 {
 	int skip = 0;
 	int i;
@@ -230,11 +232,12 @@ int isl_arg_parse(struct isl_arg *arg, int argc, char **argv, void *opt)
 	while (argc > 1 + skip) {
 		if (parse_option(arg, argv[1 + skip], NULL, opt))
 			argc = drop_argument(argc, argv, 1 + skip);
-		else {
+		else if (ISL_FL_ISSET(flags, ISL_ARG_ALL)) {
 			fprintf(stderr, "unrecognized option: %s\n",
 					argv[1 + skip]);
 			exit(-1);
-		}
+		} else
+			++skip;
 	}
 
 	return argc;

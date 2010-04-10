@@ -313,7 +313,7 @@ int main(int argc, char **argv)
 
 	options = pip_options_new_with_defaults();
 	assert(options);
-	argc = pip_options_parse(options, argc, argv);
+	argc = pip_options_parse(options, argc, argv, ISL_ARG_ALL);
 
 	ctx = isl_ctx_alloc_with_options(options->isl);
 	options->isl = NULL;
