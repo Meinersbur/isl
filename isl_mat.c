@@ -935,6 +935,7 @@ struct isl_basic_set *isl_basic_set_preimage(struct isl_basic_set *bset,
 
 	isl_assert(ctx, bset->dim->nparam == 0, goto error);
 	isl_assert(ctx, 1+bset->dim->n_out == mat->n_row, goto error);
+	isl_assert(ctx, mat->n_col > 0, goto error);
 
 	if (mat->n_col > mat->n_row)
 		bset = isl_basic_set_extend(bset, 0, mat->n_col-1, 0,
