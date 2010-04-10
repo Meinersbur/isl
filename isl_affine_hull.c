@@ -932,6 +932,9 @@ struct isl_basic_map *isl_map_affine_hull(struct isl_map *map)
 	struct isl_basic_map *hull = NULL;
 	struct isl_set *set;
 
+	map = isl_map_detect_equalities(map);
+	map = isl_map_align_divs(map);
+
 	if (!map)
 		return NULL;
 
@@ -941,10 +944,6 @@ struct isl_basic_map *isl_map_affine_hull(struct isl_map *map)
 		return hull;
 	}
 
-	map = isl_map_detect_equalities(map);
-	map = isl_map_align_divs(map);
-	if (!map)
-		return NULL;
 	model = isl_basic_map_copy(map->p[0]);
 	set = isl_map_underlying_set(map);
 	set = isl_set_cow(set);
