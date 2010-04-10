@@ -400,7 +400,7 @@ error:
  *
  * If any of the c' is non-integer, then the original set has no
  * integer solutions (since the x' are a unimodular transformation
- * of the x).
+ * of the x) and a zero-column matrix is returned.
  * Otherwise, the transformation is given by
  *
  *		x = U1 H1^{-1} c + U2 x2'
