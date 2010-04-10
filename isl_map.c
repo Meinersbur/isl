@@ -4322,6 +4322,13 @@ static struct isl_set *parameter_compute_divs(struct isl_basic_set *bset)
 		0, 1 + nparam);
 	eq = isl_mat_cow(eq);
 	T = isl_mat_variable_compression(isl_mat_copy(eq), &T2);
+	if (T && T->n_col == 0) {
+		isl_mat_free(T);
+		isl_mat_free(T2);
+		isl_mat_free(eq);
+		bset = isl_basic_set_set_to_empty(bset);
+		return isl_set_from_basic_set(bset);
+	}
 	bset = basic_set_parameter_preimage(bset, T);
 
 	set = isl_basic_set_lexmin(bset);
