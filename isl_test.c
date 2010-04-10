@@ -933,6 +933,28 @@ void test_closure(struct isl_ctx *ctx)
 	isl_map_free(map2);
 }
 
+void test_lexmin(struct isl_ctx *ctx)
+{
+	const char *str;
+	isl_map *map;
+
+	str = "[p0, p1] -> { [] -> [] : "
+	    "exists (e0 = [(2p1)/3], e1, e2, e3 = [(3 - p1 + 3e0)/3], "
+	    "e4 = [(p1)/3], e5 = [(p1 + 3e4)/3]: "
+	    "3e0 >= -2 + 2p1 and 3e0 >= p1 and 3e3 >= 1 - p1 + 3e0 and "
+	    "3e0 <= 2p1 and 3e3 >= -2 + p1 and 3e3 <= -1 + p1 and p1 >= 3 and "
+	    "3e5 >= -2 + 2p1 and 3e5 >= p1 and 3e5 <= -1 + p1 + 3e4 and "
+	    "3e4 <= p1 and 3e4 >= -2 + p1 and e3 <= -1 + e0 and "
+	    "3e4 >= 6 - p1 + 3e1 and 3e1 >= p1 and 3e5 >= -2 + p1 + 3e4 and "
+	    "2e4 >= 3 - p1 + 2e1 and e4 <= e1 and 3e3 <= 2 - p1 + 3e0 and "
+	    "e5 >= 1 + e1 and 3e4 >= 6 - 2p1 + 3e1 and "
+	    "p0 >= 2 and p1 >= p0 and 3e2 >= p1 and 3e4 >= 6 - p1 + 3e2 and "
+	    "e2 <= e1 and e3 >= 1 and e4 <= e2) }";
+	map = isl_map_read_from_str(ctx, str, -1);
+	map = isl_map_lexmin(map);
+	isl_map_free(map);
+}
+
 int main()
 {
 	struct isl_ctx *ctx;
@@ -951,6 +973,7 @@ int main()
 	test_gist(ctx);
 	test_coalesce(ctx);
 	test_closure(ctx);
+	test_lexmin(ctx);
 	isl_ctx_free(ctx);
 	return 0;
 }

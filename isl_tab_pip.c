@@ -2620,10 +2620,9 @@ static struct isl_vec *gbr_get_sample(struct isl_context_gbr *cgbr)
 			if (cgbr->tab->basis->n_col != 1 + cgbr->tab->n_var) {
 				isl_mat_free(cgbr->tab->basis);
 				cgbr->tab->basis = NULL;
-			} else {
-				cgbr->tab->n_zero = 0;
-				cgbr->tab->n_unbounded = 0;
 			}
+			cgbr->tab->n_zero = 0;
+			cgbr->tab->n_unbounded = 0;
 		}
 
 		snap = isl_tab_snap(cgbr->tab);

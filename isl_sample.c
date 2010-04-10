@@ -325,7 +325,8 @@ static struct isl_mat *initial_basis(struct isl_tab *tab)
 	struct isl_mat *eq;
 	struct isl_mat *Q;
 
-	n_eq = tab->n_var - tab->n_col + tab->n_dead;
+	tab->n_unbounded = 0;
+	tab->n_zero = n_eq = tab->n_var - tab->n_col + tab->n_dead;
 	if (tab->empty || n_eq == 0 || n_eq == tab->n_var)
 		return isl_mat_identity(tab->mat->ctx, 1 + tab->n_var);
 
