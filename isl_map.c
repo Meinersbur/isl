@@ -2190,6 +2190,10 @@ __isl_give isl_basic_map *isl_basic_map_move_dims(
 	if (!bmap->dim)
 		goto error;
 
+	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
+	bmap = isl_basic_map_gauss(bmap, NULL);
+	bmap = isl_basic_map_finalize(bmap);
+
 	return bmap;
 error:
 	isl_basic_map_free(bmap);
