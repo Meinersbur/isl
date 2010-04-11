@@ -2112,7 +2112,8 @@ error:
 	return NULL;
 }
 
-__isl_give isl_basic_map *isl_basic_map_move(__isl_take isl_basic_map *bmap,
+__isl_give isl_basic_map *isl_basic_map_move_dims(
+	__isl_take isl_basic_map *bmap,
 	enum isl_dim_type dst_type, unsigned dst_pos,
 	enum isl_dim_type src_type, unsigned src_pos, unsigned n)
 {
@@ -2195,21 +2196,21 @@ error:
 	return NULL;
 }
 
-__isl_give isl_set *isl_set_move(__isl_take isl_set *set,
+__isl_give isl_set *isl_set_move_dims(__isl_take isl_set *set,
 	enum isl_dim_type dst_type, unsigned dst_pos,
 	enum isl_dim_type src_type, unsigned src_pos, unsigned n)
 {
 	if (!set)
 		return NULL;
 	isl_assert(set->ctx, dst_type != isl_dim_in, goto error);
-	return (isl_set *)isl_map_move((isl_map *)set, dst_type, dst_pos,
+	return (isl_set *)isl_map_move_dims((isl_map *)set, dst_type, dst_pos,
 					src_type, src_pos, n);
 error:
 	isl_set_free(set);
 	return NULL;
 }
 
-__isl_give isl_map *isl_map_move(__isl_take isl_map *map,
+__isl_give isl_map *isl_map_move_dims(__isl_take isl_map *map,
 	enum isl_dim_type dst_type, unsigned dst_pos,
 	enum isl_dim_type src_type, unsigned src_pos, unsigned n)
 {
@@ -2237,7 +2238,8 @@ __isl_give isl_map *isl_map_move(__isl_take isl_map *map,
 		goto error;
 
 	for (i = 0; i < map->n; ++i) {
-		map->p[i] = isl_basic_map_move(map->p[i], dst_type, dst_pos,
+		map->p[i] = isl_basic_map_move_dims(map->p[i],
+						dst_type, dst_pos,
 						src_type, src_pos, n);
 		if (!map->p[i])
 			goto error;

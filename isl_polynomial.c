@@ -2196,7 +2196,8 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_move(
 		goto error;
 
 	for (i = 0; i < pwqp->n; ++i) {
-		pwqp->p[i].set = isl_set_move(pwqp->p[i].set, dst_type, dst_pos,
+		pwqp->p[i].set = isl_set_move_dims(pwqp->p[i].set,
+						dst_type, dst_pos,
 						src_type, src_pos, n);
 		if (!pwqp->p[i].set)
 			goto error;
