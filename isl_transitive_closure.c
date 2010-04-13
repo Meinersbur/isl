@@ -756,12 +756,12 @@ static __isl_give isl_map *construct_component(__isl_take isl_dim *dim,
 		isl_set_free(domain);
 		isl_set_free(range);
 		isl_set_free(overlap);
-		isl_dim_free(dim);
 
 		map = isl_map_copy(map);
 		map = isl_map_add(map, isl_dim_in, 1);
 		map = isl_map_add(map, isl_dim_out, 1);
 		map = set_path_length(map, 1, 1);
+		map = isl_map_union(map, isl_map_identity(isl_dim_domain(dim)));
 		return map;
 	}
 	isl_set_free(overlap);

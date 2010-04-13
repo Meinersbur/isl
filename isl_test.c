@@ -931,6 +931,15 @@ void test_closure(struct isl_ctx *ctx)
 	assert(isl_map_is_equal(map, map2));
 	isl_map_free(map);
 	isl_map_free(map2);
+
+	str = "{[0] -> [1]; [2] -> [3]}";
+	map = isl_map_read_from_str(ctx, str, -1);
+	map = isl_map_transitive_closure(map, &exact);
+	assert(exact);
+	map2 = isl_map_read_from_str(ctx, str, -1);
+	assert(isl_map_is_equal(map, map2));
+	isl_map_free(map);
+	isl_map_free(map2);
 }
 
 void test_lexmin(struct isl_ctx *ctx)
