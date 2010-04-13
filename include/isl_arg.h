@@ -11,6 +11,7 @@
 #define ISL_ARG_H
 
 #include <stddef.h>
+#include <stdlib.h>
 
 #if defined(__cplusplus)
 extern "C" {
