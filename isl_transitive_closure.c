@@ -1106,7 +1106,7 @@ static __isl_give isl_map *map_power(__isl_take isl_map *map, unsigned param,
 	if (exact)
 		*exact = 1;
 
-	map = isl_map_remove_empty_parts(map);
+	map = isl_map_coalesce(map);
 	if (!map)
 		return NULL;
 
