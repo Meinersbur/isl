@@ -1740,7 +1740,8 @@ error:
 /*
  * Assumes context has no implicit divs.
  */
-struct isl_map *isl_map_gist(struct isl_map *map, struct isl_basic_map *context)
+__isl_give isl_map *isl_map_gist_basic_map(__isl_take isl_map *map,
+	__isl_take isl_basic_map *context)
 {
 	int i;
 
@@ -1781,6 +1782,12 @@ error:
 	return NULL;
 }
 
+__isl_give isl_map *isl_map_gist(__isl_take isl_map *map,
+	__isl_take isl_map *context)
+{
+	return isl_map_gist_basic_map(map, isl_map_convex_hull(context));
+}
+
 struct isl_basic_set *isl_basic_set_gist(struct isl_basic_set *bset,
 						struct isl_basic_set *context)
 {
@@ -1788,10 +1795,18 @@ struct isl_basic_set *isl_basic_set_gist(struct isl_basic_set *bset,
 		(struct isl_basic_map *)bset, (struct isl_basic_map *)context);
 }
 
-struct isl_set *isl_set_gist(struct isl_set *set, struct isl_basic_set *context)
+__isl_give isl_set *isl_set_gist_basic_set(__isl_take isl_set *set,
+	__isl_take isl_basic_set *context)
+{
+	return (struct isl_set *)isl_map_gist_basic_map((struct isl_map *)set,
+					(struct isl_basic_map *)context);
+}
+
+__isl_give isl_set *isl_set_gist(__isl_take isl_set *set,
+	__isl_take isl_set *context)
 {
 	return (struct isl_set *)isl_map_gist((struct isl_map *)set,
-					(struct isl_basic_map *)context);
+					(struct isl_map *)context);
 }
 
 /* Quick check to see if two basic maps are disjoint.

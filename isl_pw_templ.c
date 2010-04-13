@@ -345,7 +345,7 @@ __isl_give PW *FN(PW,gist)(__isl_take PW *pw, __isl_take isl_set *context)
 		goto error;
 
 	for (i = 0; i < pw->n; ++i) {
-		pw->p[i].set = isl_set_gist(pw->p[i].set,
+		pw->p[i].set = isl_set_gist_basic_set(pw->p[i].set,
 						isl_basic_set_copy(hull));
 		if (!pw->p[i].set)
 			goto error;
