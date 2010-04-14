@@ -1055,6 +1055,12 @@ error:
  *
  *	{ (x) -> (x + d) | \exists k_i >= 0, \delta_i \in \Delta_i :
  *				d = \sum_i k_i \delta_i and k = \sum_i k_i > 0 }
+ * or
+ *
+ *	{ (x) -> (x + d) | \exists k_i >= 0, \delta_i \in \Delta_i :
+ *				d = \sum_i k_i \delta_i and \sum_i k_i > 0 }
+ *
+ * if "project" is set.
  *
  * We first construct an extended mapping with an extra coordinate
  * that indicates the number of steps taken.  In particular,
@@ -1062,7 +1068,8 @@ error:
  * of steps taken to move from a domain element to the corresponding
  * image element(s).
  * In the final step, this difference is equated to the parameter "param"
- * and made positive.  The extra coordinates are subsequently projected out.
+ * and made positive (unless project is set).
+ * The extra coordinates are subsequently projected out.
  */
 static __isl_give isl_map *construct_power(__isl_keep isl_map *map,
 	unsigned param, int *exact, int project)
@@ -1084,8 +1091,13 @@ static __isl_give isl_map *construct_power(__isl_keep isl_map *map,
 	app = construct_power_components(isl_dim_copy(dim), map,
 					exact, project);
 
-	diff = equate_parameter_to_length(dim, param);
-	app = isl_map_intersect(app, diff);
+	if (project) {
+		isl_dim_free(dim);
+		app = set_path_length(app, 0, 1);
+	} else {
+		diff = equate_parameter_to_length(dim, param);
+		app = isl_map_intersect(app, diff);
+	}
 	app = isl_map_project_out(app, isl_dim_in, d, 1);
 	app = isl_map_project_out(app, isl_dim_out, d, 1);
 
@@ -1095,8 +1107,11 @@ static __isl_give isl_map *construct_power(__isl_keep isl_map *map,
 /* Compute the positive powers of "map", or an overapproximation.
  * The power is given by parameter "param".  If the result is exact,
  * then *exact is set to 1.
+ *
  * If project is set, then we are actually interested in the transitive
  * closure, so we can use a more relaxed exactness check.
+ * The lengths of the paths are also projected out instead of being
+ * equated to "param" (which is then ignored in this case).
  */
 static __isl_give isl_map *map_power(__isl_take isl_map *map, unsigned param,
 	int *exact, int project)
@@ -1113,7 +1128,8 @@ static __isl_give isl_map *map_power(__isl_take isl_map *map, unsigned param,
 	if (isl_map_fast_is_empty(map))
 		return map;
 
-	isl_assert(map->ctx, param < isl_map_dim(map, isl_dim_param), goto error);
+	isl_assert(map->ctx, project || param < isl_map_dim(map, isl_dim_param),
+		goto error);
 	isl_assert(map->ctx,
 		isl_map_dim(map, isl_dim_in) == isl_map_dim(map, isl_dim_out),
 		goto error);
@@ -1545,8 +1561,9 @@ static __isl_give isl_map *transitive_closure_omega(__isl_take isl_map *map,
 
 /* Compute the transitive closure  of "map", or an overapproximation.
  * If the result is exact, then *exact is set to 1.
- * Simply compute the powers of map and then project out the parameter
- * describing the power.
+ * Simply use map_power to compute the powers of map, but tell
+ * it to project out the lengths of the paths instead of equating
+ * the length to a parameter.
  */
 __isl_give isl_map *isl_map_transitive_closure(__isl_take isl_map *map,
 	int *exact)
@@ -1560,9 +1577,7 @@ __isl_give isl_map *isl_map_transitive_closure(__isl_take isl_map *map,
 		return transitive_closure_omega(map, exact);
 
 	param = isl_map_dim(map, isl_dim_param);
-	map = isl_map_add(map, isl_dim_param, 1);
 	map = map_power(map, param, exact, 1);
-	map = isl_map_project_out(map, isl_dim_param, param, 1);
 
 	return map;
 error:
