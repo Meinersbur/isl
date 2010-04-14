@@ -785,6 +785,28 @@ error:
 	return NULL;
 }
 
+/* Call construct_component and, if "project" is set, project out
+ * the final coordinates.
+ */
+static __isl_give isl_map *construct_projected_component(
+	__isl_take isl_dim *dim,
+	__isl_keep isl_map *map, int *exact, int project)
+{
+	isl_map *app;
+	unsigned d;
+
+	if (!dim)
+		return NULL;
+	d = isl_dim_size(dim, isl_dim_in);
+
+	app = construct_component(dim, map, exact, project);
+	if (project) {
+		app = isl_map_project_out(app, isl_dim_in, d - 1, 1);
+		app = isl_map_project_out(app, isl_dim_out, d - 1, 1);
+	}
+	return app;
+}
+
 /* Structure for representing the nodes in the graph being traversed
  * using Tarjan's algorithm.
  * index represents the order in which nodes are visited.
@@ -968,6 +990,8 @@ static int power_components_tarjan(struct basic_map_sort *s,
  * difference between them is a sum of differences between images
  * and pre-images in one of the R_i and such that the last coordinate
  * is equal to the number of steps taken.
+ * If "project" is set, then these final coordinates are not included,
+ * i.e., a relation of type Z^n -> Z^n is returned.
  * That is, let
  *
  *	\Delta_i = { y - x | (x, y) in R_i }
@@ -977,6 +1001,14 @@ static int power_components_tarjan(struct basic_map_sort *s,
  *	{ (x) -> (x + d) | \exists k_i >= 0, \delta_i \in \Delta_i :
  *				d = (\sum_i k_i \delta_i, \sum_i k_i) and
  *				x in dom R and x + d in ran R }
+ *
+ * or
+ *
+ *	{ (x) -> (x + d) | \exists k_i >= 0, \delta_i \in \Delta_i :
+ *				d = (\sum_i k_i \delta_i) and
+ *				x in dom R and x + d in ran R }
+ *
+ * if "project" is set.
  *
  * We first split the map into strongly connected components, perform
  * the above on each component and then join the results in the correct
@@ -993,7 +1025,7 @@ static __isl_give isl_map *construct_power_components(__isl_take isl_dim *dim,
 	if (!map)
 		goto error;
 	if (map->n <= 1)
-		return construct_component(dim, map, exact, project);
+		return construct_projected_component(dim, map, exact, project);
 
 	s = basic_map_sort_alloc(map->ctx, map->n);
 	if (!s)
@@ -1007,7 +1039,10 @@ static __isl_give isl_map *construct_power_components(__isl_take isl_dim *dim,
 
 	i = 0;
 	n = map->n;
-	path = isl_map_empty(isl_dim_copy(dim));
+	if (project)
+		path = isl_map_empty(isl_map_get_dim(map));
+	else
+		path = isl_map_empty(isl_dim_copy(dim));
 	while (n) {
 		struct isl_map *comp;
 		isl_map *path_comp, *path_comb;
@@ -1018,8 +1053,8 @@ static __isl_give isl_map *construct_power_components(__isl_take isl_dim *dim,
 			--n;
 			++i;
 		}
-		path_comp = construct_component(isl_dim_copy(dim), comp,
-						exact, project);
+		path_comp = construct_projected_component(isl_dim_copy(dim),
+						comp, exact, project);
 		path_comb = isl_map_apply_range(isl_map_copy(path),
 						isl_map_copy(path_comp));
 		path = isl_map_union(path, path_comp);
@@ -1060,14 +1095,14 @@ error:
  *
  * if "project" is set.
  *
- * We first construct an extended mapping with an extra coordinate
+ * If "project" is not set, then
+ * we first construct an extended mapping with an extra coordinate
  * that indicates the number of steps taken.  In particular,
  * the difference in the last coordinate is equal to the number
  * of steps taken to move from a domain element to the corresponding
  * image element(s).
  * In the final step, this difference is equated to the parameter "param"
- * and made positive (unless project is set).
- * The extra coordinates are subsequently projected out.
+ * and made positive.  The extra coordinates are subsequently projected out.
  */
 static __isl_give isl_map *construct_power(__isl_keep isl_map *map,
 	unsigned param, int *exact, int project)
@@ -1094,9 +1129,9 @@ static __isl_give isl_map *construct_power(__isl_keep isl_map *map,
 	} else {
 		diff = equate_parameter_to_length(dim, param);
 		app = isl_map_intersect(app, diff);
+		app = isl_map_project_out(app, isl_dim_in, d, 1);
+		app = isl_map_project_out(app, isl_dim_out, d, 1);
 	}
-	app = isl_map_project_out(app, isl_dim_in, d, 1);
-	app = isl_map_project_out(app, isl_dim_out, d, 1);
 
 	return app;
 }
