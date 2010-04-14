@@ -720,8 +720,7 @@ error:
 
 /* Given a union of basic maps R = \cup_i R_i \subseteq D \times D
  * and a dimension specification (Z^{n+1} -> Z^{n+1}),
- * construct a map that is the union of the identity map and
- * an overapproximation of the map
+ * construct a map that is an overapproximation of the map
  * that takes an element from the dom R \times Z to an
  * element from ran R \times Z, such that the first n coordinates of the
  * difference between them is a sum of differences between images
@@ -733,10 +732,9 @@ error:
  *
  * then the constructed map is an overapproximation of
  *
- *	{ (x) -> (x + d) | \exists k_i >= 0, \delta_i \in \Delta_i :
+ *	{ (x) -> (x + d) | \exists k_i >= 1, \delta_i \in \Delta_i :
  *				d = (\sum_i k_i \delta_i, \sum_i k_i) and
- *				x in dom R and x + d in ran R } union
- *	{ (x) -> (x) }
+ *				x in dom R and x + d in ran R }
  */
 static __isl_give isl_map *construct_component(__isl_take isl_dim *dim,
 	__isl_keep isl_map *map, int *exact, int project)
@@ -756,12 +754,12 @@ static __isl_give isl_map *construct_component(__isl_take isl_dim *dim,
 		isl_set_free(domain);
 		isl_set_free(range);
 		isl_set_free(overlap);
+		isl_dim_free(dim);
 
 		map = isl_map_copy(map);
 		map = isl_map_add(map, isl_dim_in, 1);
 		map = isl_map_add(map, isl_dim_out, 1);
 		map = set_path_length(map, 1, 1);
-		map = isl_map_union(map, isl_map_identity(isl_dim_domain(dim)));
 		return map;
 	}
 	isl_set_free(overlap);
@@ -778,7 +776,9 @@ static __isl_give isl_map *construct_component(__isl_take isl_dim *dim,
 				      project)) < 0)
 		goto error;
 
-	return isl_map_union(app, isl_map_identity(isl_dim_domain(dim)));
+	isl_dim_free(dim);
+	app = set_path_length(app, 0, 1);
+	return app;
 error:
 	isl_dim_free(dim);
 	isl_map_free(app);
@@ -962,8 +962,7 @@ static int power_components_tarjan(struct basic_map_sort *s,
 
 /* Given a union of basic maps R = \cup_i R_i \subseteq D \times D
  * and a dimension specification (Z^{n+1} -> Z^{n+1}),
- * construct a map that is the union of the identity map and
- * an overapproximation of the map
+ * construct a map that is an overapproximation of the map
  * that takes an element from the dom R \times Z to an
  * element from ran R \times Z, such that the first n coordinates of the
  * difference between them is a sum of differences between images
@@ -977,17 +976,12 @@ static int power_components_tarjan(struct basic_map_sort *s,
  *
  *	{ (x) -> (x + d) | \exists k_i >= 0, \delta_i \in \Delta_i :
  *				d = (\sum_i k_i \delta_i, \sum_i k_i) and
- *				x in dom R and x + d in ran R } union
- *	{ (x) -> (x) }
+ *				x in dom R and x + d in ran R }
  *
  * We first split the map into strongly connected components, perform
- * the above on each component and the join the results in the correct
- * order.  The power of each of the components needs to be extended
- * with the identity map because a path in the global result need
- * not go through every component.
- * The final result will then also contain the identity map, but
- * this part will be removed when the length of the path is forced
- * to be strictly positive.
+ * the above on each component and then join the results in the correct
+ * order, at each join also taking in the union of both arguments
+ * to allow for paths that do not go through one of the two arguments.
  */
 static __isl_give isl_map *construct_power_components(__isl_take isl_dim *dim,
 	__isl_keep isl_map *map, int *exact, int project)
@@ -1013,9 +1007,10 @@ static __isl_give isl_map *construct_power_components(__isl_take isl_dim *dim,
 
 	i = 0;
 	n = map->n;
-	path = isl_map_identity(isl_dim_domain(isl_dim_copy(dim)));
+	path = isl_map_empty(isl_dim_copy(dim));
 	while (n) {
 		struct isl_map *comp;
+		isl_map *path_comp, *path_comb;
 		comp = isl_map_alloc_dim(isl_map_get_dim(map), n, 0);
 		while (s->order[i] != -1) {
 			comp = isl_map_add_basic_map(comp,
@@ -1023,9 +1018,12 @@ static __isl_give isl_map *construct_power_components(__isl_take isl_dim *dim,
 			--n;
 			++i;
 		}
-		path = isl_map_apply_range(path,
-			    construct_component(isl_dim_copy(dim), comp,
-						exact, project));
+		path_comp = construct_component(isl_dim_copy(dim), comp,
+						exact, project);
+		path_comb = isl_map_apply_range(isl_map_copy(path),
+						isl_map_copy(path_comp));
+		path = isl_map_union(path, path_comp);
+		path = isl_map_union(path, path_comb);
 		isl_map_free(comp);
 		++i;
 	}
@@ -1093,7 +1091,6 @@ static __isl_give isl_map *construct_power(__isl_keep isl_map *map,
 
 	if (project) {
 		isl_dim_free(dim);
-		app = set_path_length(app, 0, 1);
 	} else {
 		diff = equate_parameter_to_length(dim, param);
 		app = isl_map_intersect(app, diff);
