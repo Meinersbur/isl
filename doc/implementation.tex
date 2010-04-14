@@ -725,6 +725,162 @@ to $R$ directly, without a decomposition, would result in
 an overapproximation of the power.
 \end{example}
 
+\subsection{Partitioning the domains and ranges of $R$}
+
+The algorithm of \autoref{s:power} assumes that the input relation $R$
+can be treated as a union of translations.
+This is a reasonable assumption if $R$ maps elements of a given
+abstract domain to the same domain.
+However, if $R$ is a union of relations that map between different
+domains, then this assumption no longer holds.
+In particular, when an entire dependence graph is encoded
+in a single relation, as is done by, e.g.,
+\shortciteN[Section~6.1]{Barthou2000MSE}, then it does not make
+sense to look at differences between iterations of different domains.
+Now, arguably, a modified Floyd-Warshall algorithm should
+be applied to the dependence graph, as advocated by
+\shortciteN{Kelly1996closure}, with the transitive closure operation
+only being applied to relations from a given domain to itself.
+However, it is also possible to detect disjoint domains and ranges
+and to apply Floyd-Warshall internally.
+
+\linesnumbered
+\begin{algorithm}
+\caption{The modified Floyd-Warshall algorithm of
+\protect\shortciteN{Kelly1996closure}}
+\label{a:Floyd}
+\SetKwInput{Input}{Input}
+\SetKwInput{Output}{Output}
+\Input{Relations $R_{pq}$, $0 \le p, q < n$}
+\Output{Updated relations $R_{pq}$ such that each relation
+$R_{pq}$ contains all indirect paths from $p$ to $q$ in the input graph}
+%
+\BlankLine
+\SetVline
+\dontprintsemicolon
+%
+\For{$r \in [0, n-1]$}{
+    $R_{rr} \coloneqq R_{rr}^+$ \nllabel{l:Floyd:closure}\;
+    \For{$p \in [0, n-1]$}{
+	\For{$q \in [0, n-1]$}{
+	    \If{$p \ne r$ or $q \ne r$}{
+		$R_{pq} \coloneqq R_{pq} \cup \left(R_{rq} \circ R_{pr}\right)
+			     \cup \left(R_{rq} \circ R_{rr} \circ R_{pr}\right)$
+	     \nllabel{l:Floyd:update}
+	     }
+	}
+    }
+}
+\end{algorithm}
+
+Let the input relation $R$ be a union of $m$ basic relations $R_i$.
+Let $D_{2i}$ be the domains of $R_i$ and $D_{2i+1}$ the ranges of $R_i$.
+The first step is to group overlapping $D_j$ until a partition is
+obtained.  If the resulting partition consists of a single part,
+then we continue with the algorithm of \autoref{s:power}.
+Otherwise, we apply Floyd-Warshall on the graph with as vertices
+the parts of the partition and as edges the $R_i$ attached to
+the appropriate pairs of vertices.
+In particular, let there be $n$ parts $P_k$ in the partition.
+We construct $n^2$ relations
+$$
+R_{pq} \coloneqq \bigcup_{i \text{ s.t. } \domain R_i \subseteq P_p \wedge
+				 \range R_i \subseteq P_q} R_i
+,
+$$
+apply \autoref{a:Floyd} and return the union of all resulting
+$R_{pq}$ as the transitive closure of $R$.
+Each iteration of the $r$-loop in \autoref{a:Floyd} updates
+all relations $R_{pq}$ to include paths that go from $p$ to $r$,
+possibly stay there for a while, and then go from $r$ to $q$.
+Note that paths that ``stay in $r$'' include all paths that
+pass through earlier vertices since $R_{rr}$ itself has been updated
+accordingly in previous iterations of the outer loop.
+In principle, it would be sufficient to use the $R_{pr}$
+and $R_{rq}$ computed in the previous iteration of the
+$r$-loop in Line~\ref{l:Floyd:update}.
+However, from an implementation perspective, it is easier
+to allow either or both of these to have been updated
+in the same iteration of the $r$-loop.
+This may result in duplicate paths, but these can usually
+be removed by coalescing (\autoref{s:coalescing}) the result of the union
+in Line~\ref{l:Floyd:update}, which should be done in any case.
+The transitive closure in Line~\ref{l:Floyd:closure}
+is performed using a recursive call.  This recursive call
+includes the partitioning step, but the resulting partition will
+usually be a singleton.
+The result of the recursive call will either be exact or an
+overapproximation.  The final result of Floyd-Warshall is therefore
+also exact or an overapproximation.
+
+\begin{figure}
+\begin{center}
+\begin{tikzpicture}[x=1cm,y=1cm,>=stealth,shorten >=3pt]
+\foreach \x/\y in {0/0,1/1,3/2} {
+    \fill (\x,\y) circle (2pt);
+}
+\foreach \x/\y in {0/1,2/2,3/3} {
+    \draw (\x,\y) circle (2pt);
+}
+\draw[->] (0,0) -- (0,1);
+\draw[->] (0,1) -- (1,1);
+\draw[->] (2,2) -- (3,2);
+\draw[->] (3,2) -- (3,3);
+\draw[->,dashed] (2,2) -- (3,3);
+\draw[->,dotted] (0,0) -- (1,1);
+\end{tikzpicture}
+\end{center}
+\caption{The relation (solid arrows) on the right of Figure~1 of
+\protect\shortciteN{Beletska2009} and its transitive closure}
+\label{f:COCOA:1}
+\end{figure}
+\begin{example}
+Consider the relation on the right of Figure~1 of
+\shortciteN{Beletska2009},
+reproduced in \autoref{f:COCOA:1}.
+This relation can be described as
+$$
+\begin{aligned}
+\{\, (x, y) \to (x_2, y_2) \mid {} & (3y = 2x \wedge x_2 = x \wedge 3y_2 = 3 + 2x \wedge x \ge 0 \wedge x \le 3) \vee {} \\
+& (x_2 = 1 + x \wedge y_2 = y \wedge x \ge 0 \wedge 3y \ge 2 + 2x \wedge x \le 2 \wedge 3y \le 3 + 2x) \,\}
+.
+\end{aligned}
+$$
+Note that the domain of the upward relation overlaps with the range
+of the rightward relation and vice versa, but that the domain
+of neither relation overlaps with its own range or the domain of
+the other relation.
+The domains and ranges can therefore be partitioned into two parts,
+$P_0$ and $P_1$, shown as the white and black dots in \autoref{f:COCOA:1},
+respectively.
+Initially, we have
+$$
+\begin{aligned}
+R_{00} & = \emptyset
+\\
+R_{01} & = 
+\{\, (x, y) \to (x+1, y) \mid 
+(x \ge 0 \wedge 3y \ge 2 + 2x \wedge x \le 2 \wedge 3y \le 3 + 2x) \,\}
+\\
+R_{10} & =
+\{\, (x, y) \to (x_2, y_2) \mid (3y = 2x \wedge x_2 = x \wedge 3y_2 = 3 + 2x \wedge x \ge 0 \wedge x \le 3) \,\}
+\\
+R_{11} & = \emptyset
+.
+\end{aligned}
+$$
+In the first iteration, $R_{00}$ remains the same ($\emptyset^+ = \emptyset$).
+$R_{01}$ and $R_{10}$ are therefore also unaffected, but
+$R_{11}$ is updated to include $R_{01} \circ R_{10}$, i.e.,
+the dashed arrow in the figure.
+This new $R_{11}$ is obviously transitively closed, so it is not
+changed in the second iteration and it does not have an effect
+on $R_{01}$ and $R_{10}$.  However, $R_{00}$ is updated to
+include $R_{10} \circ R_{01}$, i.e., the dotted arrow in the figure.
+The transitive closure of the original relation is then equal to
+$R_{00} \cup R_{01} \cup R_{10} \cup R_{11}$.
+\end{example}
+
 \subsection{An {\tt Omega}-like implementation}
 
 While the main algorithm of \shortciteN{Kelly1996closure} is

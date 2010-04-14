@@ -7,6 +7,7 @@
 \usepackage{aliascnt}
 \usepackage{tikz}
 \usepackage{calc}
+\usepackage[ruled]{algorithm2e}
 
 \def\vec#1{\mathchoice{\mbox{\boldmath$\displaystyle\bf#1$}}
 {\mbox{\boldmath$\textstyle\bf#1$}}
@@ -24,7 +25,9 @@
 \numberwithin{def}{section}
 \numberwithin{example}{section}
 
+\newcommand{\algocflineautorefname}{Algorithm}
 \newcommand{\exampleautorefname}{Example}
+\newcommand{\lstnumberautorefname}{Line}
 \renewcommand{\subsectionautorefname}{Section}
 
 \def\Z{\mathbb{Z}}

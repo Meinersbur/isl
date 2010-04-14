@@ -862,7 +862,12 @@ void test_closure(struct isl_ctx *ctx)
 	up = isl_map_intersect_range(up, dom);
 	map = isl_map_union(up, right);
 	map = isl_map_transitive_closure(map, &exact);
-	assert(!exact);
+	assert(exact);
+	map2 = isl_map_read_from_str(ctx,
+		"{ [0,0] -> [0,1]; [0,0] -> [1,1]; [0,1] -> [1,1]; "
+		"  [2,2] -> [3,2]; [2,2] -> [3,3]; [3,2] -> [3,3] }", -1);
+	assert(isl_map_is_equal(map, map2));
+	isl_map_free(map2);
 	isl_map_free(map);
 
 	/* COCOA Theorem 1 counter example */
