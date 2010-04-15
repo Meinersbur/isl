@@ -848,6 +848,7 @@ static int merge(isl_set **set, int *group, __isl_take isl_set *dom, int pos)
 			goto error;
 		set[group[pos]] = NULL;
 		group[group[pos]] = i;
+		group[pos] = i;
 	}
 
 	isl_set_free(dom);
