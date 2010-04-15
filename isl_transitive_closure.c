@@ -718,6 +718,18 @@ error:
 	return NULL;
 }
 
+static int isl_set_overlaps(__isl_keep isl_set *set1, __isl_keep isl_set *set2)
+{
+	isl_set *i;
+	int no_overlap;
+
+	i = isl_set_intersect(isl_set_copy(set1), isl_set_copy(set2));
+	no_overlap = isl_set_is_empty(i);
+	isl_set_free(i);
+
+	return no_overlap < 0 ? -1 : !no_overlap;
+}
+
 /* Given a union of basic maps R = \cup_i R_i \subseteq D \times D
  * and a dimension specification (Z^{n+1} -> Z^{n+1}),
  * construct a map that is an overapproximation of the map
@@ -741,7 +753,6 @@ static __isl_give isl_map *construct_component(__isl_take isl_dim *dim,
 {
 	struct isl_set *domain = NULL;
 	struct isl_set *range = NULL;
-	struct isl_set *overlap;
 	struct isl_map *app = NULL;
 	struct isl_map *path = NULL;
 
@@ -749,11 +760,9 @@ static __isl_give isl_map *construct_component(__isl_take isl_dim *dim,
 	domain = isl_set_coalesce(domain);
 	range = isl_map_range(isl_map_copy(map));
 	range = isl_set_coalesce(range);
-	overlap = isl_set_intersect(isl_set_copy(domain), isl_set_copy(range));
-	if (isl_set_is_empty(overlap) == 1) {
+	if (!isl_set_overlaps(domain, range)) {
 		isl_set_free(domain);
 		isl_set_free(range);
-		isl_set_free(overlap);
 		isl_dim_free(dim);
 
 		map = isl_map_copy(map);
@@ -762,7 +771,6 @@ static __isl_give isl_map *construct_component(__isl_take isl_dim *dim,
 		map = set_path_length(map, 1, 1);
 		return map;
 	}
-	isl_set_free(overlap);
 	app = isl_map_from_domain_and_range(domain, range);
 	app = isl_map_add(app, isl_dim_in, 1);
 	app = isl_map_add(app, isl_dim_out, 1);
