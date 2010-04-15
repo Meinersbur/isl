@@ -731,6 +731,17 @@ void test_coalesce(struct isl_ctx *ctx)
 	assert(isl_map_is_equal(map, map2));
 	isl_map_free(map);
 	isl_map_free(map2);
+
+	str = "{ [i0, i1, i2, i3] : (i1 = 10i0 and i0 >= 1 and 10i0 <= 100 and "
+		"i3 <= 9 + 10 i2 and i3 >= 1 + 10i2 and i3 >= 0) or "
+		"(i1 <= 9 + 10i0 and i1 >= 1 + 10i0 and i2 >= 0 and "
+		"i0 >= 0 and i1 <= 100 and i3 <= 9 + 10i2 and i3 >= 1 + 10i2) }";
+	map = isl_map_read_from_str(ctx, str, -1);
+	map = isl_map_coalesce(map);
+	map2 = isl_map_read_from_str(ctx, str, -1);
+	assert(isl_map_is_equal(map, map2));
+	isl_map_free(map);
+	isl_map_free(map2);
 }
 
 void test_closure(struct isl_ctx *ctx)

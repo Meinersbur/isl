@@ -477,6 +477,29 @@ unbounded:
 	return 0;
 }
 
+/* Check if the constraints in "wraps" from "first" until the last
+ * are all valid for the basic set represented by "tab".
+ * If not, wraps->n_row is set to zero.
+ */
+static int check_wraps(__isl_keep isl_mat *wraps, int first,
+	struct isl_tab *tab)
+{
+	int i;
+
+	for (i = first; i < wraps->n_row; ++i) {
+		enum isl_ineq_type type;
+		type = isl_tab_ineq_type(tab, wraps->row[i]);
+		if (type == isl_ineq_error)
+			return -1;
+		if (type == isl_ineq_redundant)
+			continue;
+		wraps->n_row = 0;
+		return 0;
+	}
+
+	return 0;
+}
+
 /* Return a set that corresponds to the non-redudant constraints
  * (as recorded in tab) of bmap.
  *
@@ -506,6 +529,9 @@ static __isl_give isl_set *set_from_updated_bmap(__isl_keep isl_basic_map *bmap,
  *
  * All constraints of i (except k) are assumed to be valid for j.
  *
+ * However, the constraints of j may not be valid for i and so
+ * we have to check that the wrapping constraints for j are valid for i.
+ *
  * In the case where j has a facet adjacent to i, tab[j] is assumed
  * to have been restricted to this facet, so that the non-redundant
  * constraints in tab[j] are the ridges of the facet.
@@ -531,8 +557,7 @@ static int can_wrap_in_facet(struct isl_map *map, int i, int j, int k,
 	struct isl_vec *bound = NULL;
 	unsigned total = isl_basic_map_total_dim(map->p[i]);
 	struct isl_tab_undo *snap;
-
-	snap = isl_tab_snap(tabs[i]);
+	int n;
 
 	set_i = set_from_updated_bmap(map->p[i], tabs[i]);
 	set_j = set_from_updated_bmap(map->p[j], tabs[j]);
@@ -554,25 +579,28 @@ static int can_wrap_in_facet(struct isl_map *map, int i, int j, int k,
 	if (!wraps->n_row)
 		goto unbounded;
 
+	snap = isl_tab_snap(tabs[i]);
+
 	tabs[i] = isl_tab_select_facet(tabs[i], map->p[i]->n_eq + k);
 	if (isl_tab_detect_redundant(tabs[i]) < 0)
 		goto error;
 
 	isl_seq_neg(bound->el, map->p[i]->ineq[k], 1 + total);
 
+	n = wraps->n_row;
 	if (add_wraps(wraps, map->p[i], tabs[i], bound->el, set_j) < 0)
+		goto error;
+
+	if (isl_tab_rollback(tabs[i], snap) < 0)
+		goto error;
+	if (check_wraps(wraps, n, tabs[i]) < 0)
 		goto error;
 	if (!wraps->n_row)
 		goto unbounded;
 
 	changed = fuse(map, i, j, tabs, eq_i, ineq_i, eq_j, ineq_j, wraps);
 
-	if (!changed) {
 unbounded:
-		if (isl_tab_rollback(tabs[i], snap) < 0)
-			goto error;
-	}
-
 	isl_mat_free(wraps);
 
 	isl_set_free(set_i);
