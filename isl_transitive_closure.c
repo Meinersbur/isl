@@ -744,9 +744,10 @@ static int isl_set_overlaps(__isl_keep isl_set *set1, __isl_keep isl_set *set2)
  *
  * then the constructed map is an overapproximation of
  *
- *	{ (x) -> (x + d) | \exists k_i >= 1, \delta_i \in \Delta_i :
+ *	{ (x) -> (x + d) | \exists k_i >= 0, \delta_i \in \Delta_i :
  *				d = (\sum_i k_i \delta_i, \sum_i k_i) and
- *				x in dom R and x + d in ran R }
+ *				x in dom R and x + d in ran R and
+ *				\sum_i k_i >= 1 }
  */
 static __isl_give isl_map *construct_component(__isl_take isl_dim *dim,
 	__isl_keep isl_map *map, int *exact, int project)
