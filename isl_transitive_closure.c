@@ -816,6 +816,490 @@ static __isl_give isl_map *construct_projected_component(
 	return app;
 }
 
+/* Compute an extended version, i.e., with path lengths, of
+ * an overapproximation of the transitive closure of "bmap"
+ * with path lengths greater than or equal to zero and with
+ * domain and range equal to "dom".
+ */
+static __isl_give isl_map *q_closure(__isl_take isl_dim *dim,
+	__isl_take isl_set *dom, __isl_keep isl_basic_map *bmap, int *exact)
+{
+	int project = 1;
+	isl_map *path;
+	isl_map *map;
+	isl_map *app;
+
+	dom = isl_set_add(dom, isl_dim_set, 1);
+	app = isl_map_from_domain_and_range(dom, isl_set_copy(dom));
+	map = isl_map_from_basic_map(isl_basic_map_copy(bmap));
+	path = construct_extended_path(dim, map, &project);
+	app = isl_map_intersect(app, path);
+
+	if ((*exact = check_exactness(map, isl_map_copy(app), project)) < 0)
+		goto error;
+
+	return app;
+error:
+	isl_map_free(app);
+	return NULL;
+}
+
+/* Check whether qc has any elements of length at least one
+ * with domain and/or range outside of dom and ran.
+ */
+static int has_spurious_elements(__isl_keep isl_map *qc,
+	__isl_keep isl_set *dom, __isl_keep isl_set *ran)
+{
+	isl_set *s;
+	int subset;
+	unsigned d;
+
+	if (!qc || !dom || !ran)
+		return -1;
+
+	d = isl_map_dim(qc, isl_dim_in);
+
+	qc = isl_map_copy(qc);
+	qc = set_path_length(qc, 0, 1);
+	qc = isl_map_project_out(qc, isl_dim_in, d - 1, 1);
+	qc = isl_map_project_out(qc, isl_dim_out, d - 1, 1);
+
+	s = isl_map_domain(isl_map_copy(qc));
+	subset = isl_set_is_subset(s, dom);
+	isl_set_free(s);
+	if (subset < 0)
+		goto error;
+	if (!subset) {
+		isl_map_free(qc);
+		return 1;
+	}
+
+	s = isl_map_range(qc);
+	subset = isl_set_is_subset(s, ran);
+	isl_set_free(s);
+
+	return subset < 0 ? -1 : !subset;
+error:
+	isl_map_free(qc);
+	return -1;
+}
+
+#define LEFT	2
+#define RIGHT	1
+
+/* For each basic map in "map", except i, check whether it combines
+ * with the transitive closure that is reflexive on C combines
+ * to the left and to the right.
+ *
+ * In particular, if
+ *
+ *	dom map_j \subseteq C
+ *
+ * then right[j] is set to 1.  Otherwise, if
+ *
+ *	ran map_i \cap dom map_j = \emptyset
+ *
+ * then right[j] is set to 0.  Otherwise, composing to the right
+ * is impossible.
+ *
+ * Similar, for composing to the left, we have if
+ *
+ *	ran map_j \subseteq C
+ *
+ * then left[j] is set to 1.  Otherwise, if
+ *
+ *	dom map_i \cap ran map_j = \emptyset
+ *
+ * then left[j] is set to 0.  Otherwise, composing to the left
+ * is impossible.
+ *
+ * The return value is or'd with LEFT if composing to the left
+ * is possible and with RIGHT if composing to the right is possible.
+ */
+static int composability(__isl_keep isl_set *C, int i,
+	isl_set **dom, isl_set **ran, int *left, int *right,
+	__isl_keep isl_map *map)
+{
+	int j;
+	int ok;
+
+	ok = LEFT | RIGHT;
+	for (j = 0; j < map->n && ok; ++j) {
+		int overlaps, subset;
+		if (j == i)
+			continue;
+
+		if (ok & RIGHT) {
+			if (!dom[j])
+				dom[j] = isl_set_from_basic_set(
+					isl_basic_map_domain(
+						isl_basic_map_copy(map->p[j])));
+			if (!dom[j])
+				return -1;
+			overlaps = isl_set_overlaps(ran[i], dom[j]);
+			if (overlaps < 0)
+				return -1;
+			if (!overlaps)
+				right[j] = 0;
+			else {
+				subset = isl_set_is_subset(dom[j], C);
+				if (subset < 0)
+					return -1;
+				if (subset)
+					right[j] = 1;
+				else
+					ok &= ~RIGHT;
+			}
+		}
+
+		if (ok & LEFT) {
+			if (!ran[j])
+				ran[j] = isl_set_from_basic_set(
+					isl_basic_map_range(
+						isl_basic_map_copy(map->p[j])));
+			if (!ran[j])
+				return -1;
+			overlaps = isl_set_overlaps(dom[i], ran[j]);
+			if (overlaps < 0)
+				return -1;
+			if (!overlaps)
+				left[j] = 0;
+			else {
+				subset = isl_set_is_subset(ran[j], C);
+				if (subset < 0)
+					return -1;
+				if (subset)
+					left[j] = 1;
+				else
+					ok &= ~LEFT;
+			}
+		}
+	}
+
+	return ok;
+}
+
+/* Return a map that is a union of the basic maps in "map", except i,
+ * composed to left and right with qc based on the entries of "left"
+ * and "right".
+ */
+static __isl_give isl_map *compose(__isl_keep isl_map *map, int i,
+	__isl_take isl_map *qc, int *left, int *right)
+{
+	int j;
+	isl_map *comp;
+
+	comp = isl_map_empty(isl_map_get_dim(map));
+	for (j = 0; j < map->n; ++j) {
+		isl_map *map_j;
+
+		if (j == i)
+			continue;
+
+		map_j = isl_map_from_basic_map(isl_basic_map_copy(map->p[j]));
+		if (left && left[j])
+			map_j = isl_map_apply_range(map_j, isl_map_copy(qc));
+		if (right && right[j])
+			map_j = isl_map_apply_range(isl_map_copy(qc), map_j);
+		comp = isl_map_union(comp, map_j);
+	}
+
+	comp = isl_map_compute_divs(comp);
+	comp = isl_map_coalesce(comp);
+
+	isl_map_free(qc);
+
+	return comp;
+}
+
+/* Compute the transitive closure of "map" incrementally by
+ * computing
+ *
+ *	map_i^+ \cup qc^+
+ *
+ * or
+ *
+ *	map_i^+ \cup ((id \cup map_i^) \circ qc^+)
+ *
+ * or
+ *
+ *	map_i^+ \cup (qc^+ \circ (id \cup map_i^))
+ *
+ * depending on whether left or right are NULL.
+ */
+static __isl_give isl_map *compute_incremental(
+	__isl_take isl_dim *dim, __isl_keep isl_map *map,
+	int i, __isl_take isl_map *qc, int *left, int *right, int *exact)
+{
+	isl_map *map_i;
+	isl_map *tc;
+	isl_map *rtc = NULL;
+
+	if (!map)
+		goto error;
+	isl_assert(map->ctx, left || right, goto error);
+
+	map_i = isl_map_from_basic_map(isl_basic_map_copy(map->p[i]));
+	tc = construct_projected_component(isl_dim_copy(dim), map_i,
+						exact, 1);
+	isl_map_free(map_i);
+
+	if (*exact)
+		qc = isl_map_transitive_closure(qc, exact);
+
+	if (!*exact) {
+		isl_dim_free(dim);
+		isl_map_free(tc);
+		isl_map_free(qc);
+		return isl_map_universe(isl_map_get_dim(map));
+	}
+
+	if (!left || !right)
+		rtc = isl_map_union(isl_map_copy(tc),
+			isl_map_identity(isl_dim_domain(isl_map_get_dim(tc))));
+	if (!right)
+		qc = isl_map_apply_range(rtc, qc);
+	if (!left)
+		qc = isl_map_apply_range(qc, rtc);
+	qc = isl_map_union(tc, qc);
+
+	isl_dim_free(dim);
+
+	return qc;
+error:
+	isl_dim_free(dim);
+	isl_map_free(qc);
+	return NULL;
+}
+
+/* Given a map "map", try to find a basic map such that
+ * map^+ can be computed as
+ *
+ * map^+ = map_i^+ \cup
+ *    \bigcup_j ((map_i^+ \cup Id_C)^+ \circ map_j \circ (map_i^+ \cup Id_C))^+
+ *
+ * with C the simple hull of the domain and range of the input map.
+ * map_i^ \cup Id_C is computed by allowing the path lengths to be zero
+ * and by intersecting domain and range with C.
+ * Of course, we need to check that this is actually equal to map_i^ \cup Id_C.
+ * Also, we only use the incremental computation if all the transitive
+ * closures are exact and if the number of basic maps in the union,
+ * after computing the integer divisions, is smaller than the number
+ * of basic maps in the input map.
+ */
+static int incemental_on_entire_domain(__isl_keep isl_dim *dim,
+	__isl_keep isl_map *map,
+	isl_set **dom, isl_set **ran, int *left, int *right,
+	__isl_give isl_map **res)
+{
+	int i;
+	isl_set *C;
+	unsigned d;
+
+	*res = NULL;
+
+	C = isl_set_union(isl_map_domain(isl_map_copy(map)),
+			  isl_map_range(isl_map_copy(map)));
+	C = isl_set_from_basic_set(isl_set_simple_hull(C));
+	if (!C)
+		return -1;
+	if (C->n != 1) {
+		isl_set_free(C);
+		return 0;
+	}
+
+	d = isl_map_dim(map, isl_dim_in);
+
+	for (i = 0; i < map->n; ++i) {
+		isl_map *qc;
+		int exact_i, spurious;
+		int j;
+		dom[i] = isl_set_from_basic_set(isl_basic_map_domain(
+					isl_basic_map_copy(map->p[i])));
+		ran[i] = isl_set_from_basic_set(isl_basic_map_range(
+					isl_basic_map_copy(map->p[i])));
+		qc = q_closure(isl_dim_copy(dim), isl_set_copy(C),
+				map->p[i], &exact_i);
+		if (!qc)
+			goto error;
+		if (!exact_i) {
+			isl_map_free(qc);
+			continue;
+		}
+		spurious = has_spurious_elements(qc, dom[i], ran[i]);
+		if (spurious) {
+			isl_map_free(qc);
+			if (spurious < 0)
+				goto error;
+			continue;
+		}
+		qc = isl_map_project_out(qc, isl_dim_in, d, 1);
+		qc = isl_map_project_out(qc, isl_dim_out, d, 1);
+		qc = isl_map_compute_divs(qc);
+		for (j = 0; j < map->n; ++j)
+			left[j] = right[j] = 1;
+		qc = compose(map, i, qc, left, right);
+		if (!qc)
+			goto error;
+		if (qc->n >= map->n) {
+			isl_map_free(qc);
+			continue;
+		}
+		*res = compute_incremental(isl_dim_copy(dim), map, i, qc,
+				left, right, &exact_i);
+		if (!*res)
+			goto error;
+		if (exact_i)
+			break;
+		isl_map_free(*res);
+		*res = NULL;
+	}
+
+	isl_set_free(C);
+
+	return *res != NULL;
+error:
+	isl_set_free(C);
+	return -1;
+}
+
+/* Try and compute the transitive closure of "map" as
+ *
+ * map^+ = map_i^+ \cup
+ *    \bigcup_j ((map_i^+ \cup Id_C)^+ \circ map_j \circ (map_i^+ \cup Id_C))^+
+ *
+ * with C either the simple hull of the domain and range of the entire
+ * map or the simple hull of domain and range of map_i.
+ */
+static __isl_give isl_map *incremental_closure(__isl_take isl_dim *dim,
+	__isl_keep isl_map *map, int *exact, int project)
+{
+	int i;
+	isl_set **dom = NULL;
+	isl_set **ran = NULL;
+	int *left = NULL;
+	int *right = NULL;
+	isl_set *C;
+	unsigned d;
+	isl_map *res = NULL;
+
+	if (!project)
+		return construct_projected_component(dim, map, exact, project);
+
+	if (!map)
+		goto error;
+	if (map->n <= 1)
+		return construct_projected_component(dim, map, exact, project);
+
+	d = isl_map_dim(map, isl_dim_in);
+
+	dom = isl_calloc_array(map->ctx, isl_set *, map->n);
+	ran = isl_calloc_array(map->ctx, isl_set *, map->n);
+	left = isl_calloc_array(map->ctx, int, map->n);
+	right = isl_calloc_array(map->ctx, int, map->n);
+	if (!ran || !dom || !left || !right)
+		goto error;
+
+	if (incemental_on_entire_domain(dim, map, dom, ran, left, right, &res) < 0)
+		goto error;
+
+	for (i = 0; !res && i < map->n; ++i) {
+		isl_map *qc;
+		int exact_i, spurious, comp;
+		if (!dom[i])
+			dom[i] = isl_set_from_basic_set(
+					isl_basic_map_domain(
+						isl_basic_map_copy(map->p[i])));
+		if (!dom[i])
+			goto error;
+		if (!ran[i])
+			ran[i] = isl_set_from_basic_set(
+					isl_basic_map_range(
+						isl_basic_map_copy(map->p[i])));
+		if (!ran[i])
+			goto error;
+		C = isl_set_union(isl_set_copy(dom[i]),
+				      isl_set_copy(ran[i]));
+		C = isl_set_from_basic_set(isl_set_simple_hull(C));
+		if (!C)
+			goto error;
+		if (C->n != 1) {
+			isl_set_free(C);
+			continue;
+		}
+		comp = composability(C, i, dom, ran, left, right, map);
+		if (!comp || comp < 0) {
+			isl_set_free(C);
+			if (comp < 0)
+				goto error;
+			continue;
+		}
+		qc = q_closure(isl_dim_copy(dim), C, map->p[i], &exact_i);
+		if (!qc)
+			goto error;
+		if (!exact_i) {
+			isl_map_free(qc);
+			continue;
+		}
+		spurious = has_spurious_elements(qc, dom[i], ran[i]);
+		if (spurious) {
+			isl_map_free(qc);
+			if (spurious < 0)
+				goto error;
+			continue;
+		}
+		qc = isl_map_project_out(qc, isl_dim_in, d, 1);
+		qc = isl_map_project_out(qc, isl_dim_out, d, 1);
+		qc = isl_map_compute_divs(qc);
+		qc = compose(map, i, qc, (comp & LEFT) ? left : NULL,
+				(comp & RIGHT) ? right : NULL);
+		if (!qc)
+			goto error;
+		if (qc->n >= map->n) {
+			isl_map_free(qc);
+			continue;
+		}
+		res = compute_incremental(isl_dim_copy(dim), map, i, qc,
+				(comp & LEFT) ? left : NULL,
+				(comp & RIGHT) ? right : NULL, &exact_i);
+		if (!res)
+			goto error;
+		if (exact_i)
+			break;
+		isl_map_free(res);
+		res = NULL;
+	}
+
+	for (i = 0; i < map->n; ++i) {
+		isl_set_free(dom[i]);
+		isl_set_free(ran[i]);
+	}
+	free(dom);
+	free(ran);
+	free(left);
+	free(right);
+
+	if (res) {
+		isl_dim_free(dim);
+		return res;
+	}
+
+	return construct_projected_component(dim, map, exact, project);
+error:
+	if (dom)
+		for (i = 0; i < map->n; ++i)
+			isl_set_free(dom[i]);
+	free(dom);
+	if (ran)
+		for (i = 0; i < map->n; ++i)
+			isl_set_free(ran[i]);
+	free(ran);
+	free(left);
+	free(right);
+	isl_dim_free(dim);
+	return NULL;
+}
+
 /* Given an array of sets "set", add "dom" at position "pos"
  * and search for elements at earlier positions that overlap with "dom".
  * If any can be found, then merge all of them, together with "dom", into
@@ -891,7 +1375,7 @@ static __isl_give isl_map *floyd_warshall_with_groups(__isl_take isl_dim *dim,
 
 	if (n == 1) {
 		free(group);
-		return construct_projected_component(dim, map, exact, project);
+		return incremental_closure(dim, map, exact, project);
 	}
 
 	grid = isl_calloc_array(map->ctx, isl_map **, n);
@@ -997,7 +1481,7 @@ static __isl_give isl_map *floyd_warshall(__isl_take isl_dim *dim,
 	if (!map)
 		goto error;
 	if (!project || map->n <= 1)
-		return construct_projected_component(dim, map, exact, project);
+		return incremental_closure(dim, map, exact, project);
 
 	set = isl_calloc_array(map->ctx, isl_set *, 2 * map->n);
 	group = isl_alloc_array(map->ctx, int, 2 * map->n);

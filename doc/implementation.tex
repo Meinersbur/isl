@@ -930,6 +930,171 @@ The transitive closure of the original relation is then equal to
 $R_{00} \cup R_{01} \cup R_{10} \cup R_{11}$.
 \end{example}
 
+\subsection{Incremental Computation}
+\label{s:incremental}
+
+In some cases it is possible and useful to compute the transitive closure
+of union of basic relations incrementally.  In particular,
+if $R$ is a union of $m$ basic maps,
+$$
+R = \bigcup_j R_j
+,
+$$
+then we can pick some $R_i$ and compute the transitive closure of $R$ as
+\begin{equation}
+\label{eq:transitive:incremental}
+R^+ = R_i^+ \cup
+\left(
+\bigcup_{j \ne i}
+R_i^* \circ R_j \circ R_i^*
+\right)^+
+.
+\end{equation}
+For this approach to be successful, it is crucial that each
+of the disjuncts in the argument of the second transitive
+closure in \eqref{eq:transitive:incremental} be representable
+as a single basic relation, i.e., without a union.
+If this condition holds, then by using \eqref{eq:transitive:incremental},
+the number of disjuncts in the argument of the transitive closure
+can be reduced by one.
+Now, $R_i^* = R_i^+ \cup \identity$, but in some cases it is possible
+to relax the constraints of $R_i^+$ to include part of the identity relation,
+say on domain $D$.  We will use the notation
+${\cal C}(R_i,D) = R_i^+ \cup \identity_D$ to represent
+this relaxed version of $R^+$.
+\shortciteN{Kelly1996closure} use the notation $R_i^?$.
+${\cal C}(R_i,D)$ can be computed by allowing $k$ to attain
+the value $0$ in \eqref{eq:transitive:Q} and by using
+$$
+P \cap \left(D \to D\right)
+$$
+instead of \eqref{eq:transitive:approx}.
+Typically, $D$ will be a strict superset of both $\domain R_i$
+and $\range R_i$.  We therefore need to check that domain
+and range of the transitive closure part of ${\cal C}(R_i,D)$,
+i.e., the part that results from the paths of positive length ($k \ge 1$),
+are equal to the domain and range of $R_i$.
+If not, then the incremental approach cannot be applied for
+the given choice of $R_i$ and $D$.
+
+In order to be able to replace $R^*$ by ${\cal C}(R_i,D)$
+in \eqref{eq:transitive:incremental}, $D$ should be chosen
+to include both $\domain R$ and $\range R$, i.e., such
+that $\identity_D \circ R_j \circ \identity_D = R_j$ for all $j\ne i$.
+\shortciteN{Kelly1996closure} say that they use
+$D = \domain R_i \cup \range R_i$, but presumably they mean that
+they use $D = \domain R \cup \range R$.
+Now, this expression of $D$ contains a union, so it not directly usable.
+\shortciteN{Kelly1996closure} do not explain how they avoid this union.
+Apparently, in their implementation,
+they are using the convex hull of $\domain R \cup \range R$
+or at least an approximation of this convex hull.
+We use the simple hull (\autoref{s:simple hull}) of $\domain R \cup \range R$.
+
+It is also possible to use a domain $D$ that does {\em not\/}
+include $\domain R \cup \range R$, but then we have to
+compose with ${\cal C}(R_i,D)$ more selectively.
+In particular, if we have
+\begin{equation}
+\label{eq:transitive:right}
+\text{for each $j \ne i$ either }
+\domain R_j \subseteq D \text{ or } \domain R_j \cap \range R_i = \emptyset
+\end{equation}
+and, similarly, either
+\begin{equation}
+\label{eq:transitive:left}
+\text{for each $j \ne i$ either }
+\range R_j \subseteq D \text{ or } \range R_j \cap \domain R_i = \emptyset
+\end{equation}
+then we can refine \eqref{eq:transitive:incremental} to
+$$
+R_i^+ \cup
+\left(
+\left(
+\bigcup_{\shortstack{$\scriptstyle\domain R_j \subseteq D $\\
+		     $\scriptstyle\range R_j \subseteq D$}}
+{\cal C} \circ R_j \circ {\cal C}
+\right)
+\cup
+\left(
+\bigcup_{\shortstack{$\scriptstyle\domain R_j \cap \range R_i = \emptyset$\\
+		     $\scriptstyle\range R_j \subseteq D$}}
+\!\!\!\!\!
+{\cal C} \circ R_j
+\right)
+\cup
+\left(
+\bigcup_{\shortstack{$\scriptstyle\domain R_j \subseteq D $\\
+		     $\scriptstyle\range R_j \cap \domain R_i = \emptyset$}}
+\!\!\!\!\!
+R_j \circ {\cal C}
+\right)
+\cup
+\left(
+\bigcup_{\shortstack{$\scriptstyle\domain R_j \cap \range R_i = \emptyset$\\
+		     $\scriptstyle\range R_j \cap \domain R_i = \emptyset$}}
+\!\!\!\!\!
+R_j
+\right)
+\right)^+
+.
+$$
+If only property~\eqref{eq:transitive:right} holds,
+we can use
+$$
+R_i^+ \cup
+\left(
+\left(
+R_i^+ \cup \identity
+\right)
+\circ
+\left(
+\left(
+\bigcup_{\shortstack{$\scriptstyle\domain R_j \subseteq D $}}
+R_j \circ {\cal C}
+\right)
+\cup
+\left(
+\bigcup_{\shortstack{$\scriptstyle\domain R_j \cap \range R_i = \emptyset$}}
+\!\!\!\!\!
+R_j
+\right)
+\right)^+
+\right)
+,
+$$
+while if only property~\eqref{eq:transitive:left} holds,
+we can use
+$$
+R_i^+ \cup
+\left(
+\left(
+\left(
+\bigcup_{\shortstack{$\scriptstyle\range R_j \subseteq D $}}
+{\cal C} \circ R_j
+\right)
+\cup
+\left(
+\bigcup_{\shortstack{$\scriptstyle\range R_j \cap \domain R_i = \emptyset$}}
+\!\!\!\!\!
+R_j
+\right)
+\right)^+
+\circ
+\left(
+R_i^+ \cup \identity
+\right)
+\right)
+.
+$$
+
+It should be noted that if we want the result of the incremental
+approach to be transitively closed, then we can only apply it
+if all of the transitive closure operations involved are exact.
+If, say, the second transitive closure in \eqref{eq:transitive:incremental}
+contains extra elements, then the result does not necessarily contain
+the composition of these extra elements with powers of $R_i$.
+
 \subsection{An {\tt Omega}-like implementation}
 
 While the main algorithm of \shortciteN{Kelly1996closure} is
@@ -980,30 +1145,10 @@ similar to that of a single conjunct [sic] relation.
 \end{quote}
 Presumably, the authors mean that a ``d-form'' approximation
 of the whole input relation should be used.
-However, the accuracy can be improved by also using the following
-idea from the same paper.  If $R$ is a union of $m$ basic maps,
-$$
-R = \bigcup_i R_i
-,
-$$
-and if we can find an $R_i$ such that for all other $R_j$ we have
-that
-$$
-R_i^* \circ R_j \circ R_i^*
-$$
-can be represented as a single basic map, i.e., without a union,
-then we can compute $R^+$ as
-$$
-R^+ = R_i^+ \cup
-\left(
-\bigcup_{j \ne i}
-R_i^* \circ R_j \circ R_i^*
-\right)^+
-,
-$$
-reducing the number of disjuncts in the argument of the transitive
-closure by one.
-An overapproximation of $R_i^*$ can be obtained by
+However, the accuracy can be improved by also trying to
+apply the incremental technique from the same paper,
+which is explained in more detail in \autoref{s:incremental}.
+In this case, ${\cal C}(R_i,D)$ can be obtained by
 allowing the value zero for $k$ in \eqref{eq:omega},
 i.e., by computing
 $$
@@ -1015,27 +1160,17 @@ k \, \vec L \le \vec j - \vec i \le k \, \vec U
 \,\}
 .
 $$
-However, when we intersect domain and range of this relation
-with those of the input relation, then the result only contains
-the identity mapping on the intersection of domain and range.
-\shortciteN{Kelly1996closure} propose to intersect domain
-and range with then {\em union} of domain and range of the input
-relation instead and call the result $R_i^?$.
-Now, this union of domain and range of $R_i$ may not contain
-the domains and ranges of the whole of $R$.
-We can therefore not always replace
-$R_i^* \circ R_j \circ R_i^*$ by
-$R_i^? \circ R_j \circ R_i^?$.
-\shortciteN{Kelly1996closure} propose to check the following
-conditions to decide whether this replacement is justified:
-$R_i^? - R_i^+$ is not a union and for each $j \ne i$
+To determine whether it is safe to use ${\cal C}(R_i,D)$,
+we check the following conditions, as proposed by
+\shortciteN{Kelly1996closure}:
+${\cal C}(R_i,D) - R_i^+$ is not a union and for each $j \ne i$
 the condition
 $$
-\left(R_i^? - R_i^+\right)
+\left({\cal C}(R_i,D) - R_i^+\right)
 \circ
 R_j
 \circ
-\left(R_i^? - R_i^+\right)
+\left({\cal C}(R_i,D) - R_i^+\right)
 =
 R_j
 $$
