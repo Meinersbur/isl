@@ -271,6 +271,10 @@ int isl_set_is_subset(__isl_keep isl_set *set1, __isl_keep isl_set *set2);
 int isl_set_is_strict_subset(__isl_keep isl_set *set1, __isl_keep isl_set *set2);
 int isl_set_is_equal(__isl_keep isl_set *set1, __isl_keep isl_set *set2);
 
+__isl_give isl_set *isl_set_sum(__isl_take isl_set *set1,
+	__isl_take isl_set *set2);
+__isl_give isl_set *isl_set_neg(__isl_take isl_set *set);
+
 __isl_give isl_set *isl_set_make_disjoint(__isl_take isl_set *set);
 struct isl_set *isl_basic_set_compute_divs(struct isl_basic_set *bset);
 __isl_give isl_set *isl_set_compute_divs(__isl_take isl_set *set);

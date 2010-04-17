@@ -2613,6 +2613,12 @@ error:
 	return NULL;
 }
 
+__isl_give isl_set *isl_set_sum(__isl_take isl_set *set1,
+	__isl_take isl_set *set2)
+{
+	return (isl_set *)isl_map_sum((isl_map *)set1, (isl_map *)set2);
+}
+
 /* Given a basic map A -> f(A), construct A -> -f(A).
  */
 struct isl_basic_map *isl_basic_map_neg(struct isl_basic_map *bmap)
@@ -2658,6 +2664,11 @@ struct isl_map *isl_map_neg(struct isl_map *map)
 error:
 	isl_map_free(map);
 	return NULL;
+}
+
+__isl_give isl_set *isl_set_neg(__isl_take isl_set *set)
+{
+	return (isl_set *)isl_map_neg((isl_map *)set);
 }
 
 /* Given a basic map A -> f(A) and an integer d, construct a basic map
