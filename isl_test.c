@@ -779,6 +779,23 @@ void test_coalesce(struct isl_ctx *ctx)
 	test_coalesce_set(ctx,
 		"{ [x, y] : (x >= 1 and y >= 1 and x <= 2 and y <= 2) or "
 		"(y = 3 and x = 1) }", 1);
+	test_coalesce_set(ctx,
+		"[M] -> { [i0, i1, i2, i3, i4] : (i1 >= 3 and i4 >= 2 + i2 and "
+		"i2 >= 2 and i0 >= 2 and i3 >= 1 + i2 and i0 <= M and "
+		"i1 <= M and i3 <= M and i4 <= M) or "
+		"(i1 >= 2 and i4 >= 1 + i2 and i2 >= 2 and i0 >= 2 and "
+		"i3 >= 1 + i2 and i0 <= M and i1 <= -1 + M and i3 <= M and "
+		"i4 <= -1 + M) }", 1);
+	test_coalesce_set(ctx,
+		"{ [x, y] : (x >= 0 and y >= 0 and x <= 10 and y <= 10) or "
+		"(x >= 1 and y >= 1 and x <= 11 and y <= 11) }", 1);
+	test_coalesce_set(ctx,
+		"{[x,y,z] : y + 2 >= 0 and x - y + 1 >= 0 and "
+			"-x - y + 1 >= 0 and -3 <= z <= 3;"
+		"[x,y,z] : -x+z + 20 >= 0 and -x-z + 20 >= 0 and "
+			"x-z + 20 >= 0 and x+z + 20 >= 0 and -10 <= y <= 0}", 1);
+	test_coalesce_set(ctx,
+		"{[x,y] : 0 <= x,y <= 10; [5,y]: 4 <=y <= 11}", 1);
 }
 
 void test_closure(struct isl_ctx *ctx)

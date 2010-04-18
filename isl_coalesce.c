@@ -617,58 +617,246 @@ error:
 	return -1;
 }
 
-/* Given two basic sets i and j such that i has exactly one cut constraint,
- * check if we can wrap the corresponding facet around its ridges to include
- * the other basic set (and nothing else).
+/* Set the is_redundant property of the "n" constraints in "cuts",
+ * except "k" to "v".
+ * This is a fairly tricky operation as it bypasses isl_tab.c.
+ * The reason we want to temporarily mark some constraints redundant
+ * is that we want to ignore them in add_wraps.
+ *
+ * Initially all cut constraints are non-redundant, but the
+ * selection of a facet right before the call to this function
+ * may have made some of them redundant.
+ * Likewise, the same constraints are marked non-redundant
+ * in the second call to this function, before they are officially
+ * made non-redundant again in the subsequent rollback.
+ */
+static void set_is_redundant(struct isl_tab *tab, unsigned n_eq,
+	int *cuts, int n, int k, int v)
+{
+	int l;
+
+	for (l = 0; l < n; ++l) {
+		if (l == k)
+			continue;
+		tab->con[n_eq + cuts[l]].is_redundant = v;
+	}
+}
+
+/* Given a pair of basic maps i and j such that j stick out
+ * of i at n cut constraints, each time by at most one,
+ * try to compute wrapping constraints and replace the two
+ * basic maps by a single basic map.
+ * The other constraints of i are assumed to be valid for j.
+ *
+ * The facets of i corresponding to the cut constraints are
+ * wrapped around their ridges, except those ridges determined
+ * by any of the other cut constraints.
+ * The intersections of cut constraints need to be ignored
+ * as the result of wrapping on cur constraint around another
+ * would result in a constraint cutting the union.
+ * In each case, the facets are wrapped to include the union
+ * of the two basic maps.
+ *
+ * The pieces of j that lie at an offset of exactly one from
+ * one of the cut constraints of i are wrapped around their edges.
+ * Here, there is no need to ignore intersections because we
+ * are wrapping around the union of the two basic maps.
+ *
+ * If any wrapping fails, i.e., if we cannot wrap to touch
+ * the union, then we give up.
+ * Otherwise, the pair of basic maps is replaced by their union.
+ */
+static int wrap_in_facets(struct isl_map *map, int i, int j,
+	int *cuts, int n, struct isl_tab **tabs,
+	int *eq_i, int *ineq_i, int *eq_j, int *ineq_j)
+{
+	int changed = 0;
+	isl_mat *wraps = NULL;
+	isl_set *set = NULL;
+	isl_vec *bound = NULL;
+	unsigned total = isl_basic_map_total_dim(map->p[i]);
+	int max_wrap;
+	int k;
+	struct isl_tab_undo *snap_i, *snap_j;
+
+	if (isl_tab_extend_cons(tabs[j], 1) < 0)
+		goto error;
+
+	max_wrap = 2 * (map->p[i]->n_eq + map->p[j]->n_eq) +
+		    map->p[i]->n_ineq + map->p[j]->n_ineq;
+	max_wrap *= n;
+
+	set = isl_set_union(set_from_updated_bmap(map->p[i], tabs[i]),
+			    set_from_updated_bmap(map->p[j], tabs[j]));
+	wraps = isl_mat_alloc(map->ctx, max_wrap, 1 + total);
+	bound = isl_vec_alloc(map->ctx, 1 + total);
+	if (!set || !wraps || !bound)
+		goto error;
+
+	snap_i = isl_tab_snap(tabs[i]);
+	snap_j = isl_tab_snap(tabs[j]);
+
+	wraps->n_row = 0;
+
+	for (k = 0; k < n; ++k) {
+		tabs[i] = isl_tab_select_facet(tabs[i],
+						map->p[i]->n_eq + cuts[k]);
+		if (isl_tab_detect_redundant(tabs[i]) < 0)
+			goto error;
+		set_is_redundant(tabs[i], map->p[i]->n_eq, cuts, n, k, 1);
+
+		isl_seq_neg(bound->el, map->p[i]->ineq[cuts[k]], 1 + total);
+		if (add_wraps(wraps, map->p[i], tabs[i], bound->el, set) < 0)
+			goto error;
+
+		set_is_redundant(tabs[i], map->p[i]->n_eq, cuts, n, k, 0);
+		if (isl_tab_rollback(tabs[i], snap_i) < 0)
+			goto error;
+
+		if (!wraps->n_row)
+			break;
+
+		isl_seq_cpy(bound->el, map->p[i]->ineq[cuts[k]], 1 + total);
+		isl_int_add_ui(bound->el[0], bound->el[0], 1);
+		tabs[j] = isl_tab_add_eq(tabs[j], bound->el);
+		if (isl_tab_detect_redundant(tabs[j]) < 0)
+			goto error;
+
+		if (!tabs[j]->empty &&
+		    add_wraps(wraps, map->p[j], tabs[j], bound->el, set) < 0)
+			goto error;
+
+		if (isl_tab_rollback(tabs[j], snap_j) < 0)
+			goto error;
+
+		if (!wraps->n_row)
+			break;
+	}
+
+	if (k == n)
+		changed = fuse(map, i, j, tabs,
+				eq_i, ineq_i, eq_j, ineq_j, wraps);
+
+	isl_vec_free(bound);
+	isl_mat_free(wraps);
+	isl_set_free(set);
+
+	return changed;
+error:
+	isl_vec_free(bound);
+	isl_mat_free(wraps);
+	isl_set_free(set);
+	return -1;
+}
+
+/* Given two basic sets i and j such that i has not cut equalities,
+ * check if relaxing all the cut inequalities of i by one turns
+ * them into valid constraint for j and check if we can wrap in
+ * the bits that are sticking out.
  * If so, replace the pair by their union.
  *
- * We first check if j has a facet adjacent to the cut constraint of i.
- * If so, we try to wrap in the facet.
+ * We first check if all relaxed cut inequalities of i are valid for j
+ * and then try to wrap in the intersections of the relaxed cut inequalities
+ * with j.
+ *
+ * During this wrapping, we consider the points of j that lie at a distance
+ * of exactly 1 from i.  In particular, we ignore the points that lie in
+ * between this lower-dimensional space and the basic map i.
+ * We can therefore only apply this to integer maps.
  *        ____			  _____
  *       / ___|_		 /     \
  *      / |    |  		/      |
  *      \ |    |   	=>	\      |
  *       \|____|		 \     |
  *        \___| 		  \____/
+ *
+ *	 _____			 ______
+ *	| ____|_		|      \
+ *	| |     |		|       |
+ *	| |	|	=>	|       |
+ *	|_|     |		|       |
+ *	  |_____|		 \______|
+ *
+ *	 _______
+ *	|       |
+ *	|  |\   |
+ *	|  | \  |
+ *	|  |  \ |
+ *	|  |   \|
+ *	|  |    \
+ *	|  |_____\
+ *	|       |
+ *	|_______|
+ *
+ * Wrapping can fail if the result of wrapping one of the facets
+ * around its edges does not produce any new facet constraint.
+ * In particular, this happens when we try to wrap in unbounded sets.
+ *
+ *	 _______________________________________________________________________
+ *	|
+ *	|  ___
+ *	| |   |
+ *	|_|   |_________________________________________________________________
+ *	  |___|
+ *
+ * The following is not an acceptable result of coalescing the above two
+ * sets as it includes extra integer points.
+ *	 _______________________________________________________________________
+ *	|
+ *	|     
+ *	|      
+ *	|
+ *	 \______________________________________________________________________
  */
 static int can_wrap_in_set(struct isl_map *map, int i, int j,
-	struct isl_tab **tabs, int *ineq_i, int *ineq_j)
+	struct isl_tab **tabs, int *eq_i, int *ineq_i, int *eq_j, int *ineq_j)
 {
 	int changed = 0;
-	int k, l;
+	int k, l, m;
 	unsigned total = isl_basic_map_total_dim(map->p[i]);
 	struct isl_tab_undo *snap;
+	int n;
+	int *cuts = NULL;
 
-	for (k = 0; k < map->p[i]->n_ineq; ++k)
-		if (ineq_i[k] == STATUS_CUT)
-			break;
-
-	isl_assert(map->ctx, k < map->p[i]->n_ineq, return -1);
-
-	isl_int_add_ui(map->p[i]->ineq[k][0], map->p[i]->ineq[k][0], 1);
-	for (l = 0; l < map->p[j]->n_ineq; ++l) {
-		if (isl_tab_is_redundant(tabs[j], map->p[j]->n_eq + l))
-			continue;
-		if (isl_seq_eq(map->p[i]->ineq[k],
-				map->p[j]->ineq[l], 1 + total))
-			break;
-	}
-	isl_int_sub_ui(map->p[i]->ineq[k][0], map->p[i]->ineq[k][0], 1);
-
-	if (l >= map->p[j]->n_ineq)
+	if (ISL_F_ISSET(map->p[i], ISL_BASIC_MAP_RATIONAL) ||
+	    ISL_F_ISSET(map->p[j], ISL_BASIC_MAP_RATIONAL))
 		return 0;
 
-	snap = isl_tab_snap(tabs[j]);
-	tabs[j] = isl_tab_select_facet(tabs[j], map->p[j]->n_eq + l);
-	if (isl_tab_detect_redundant(tabs[j]) < 0)
+	n = count(ineq_i, map->p[i]->n_ineq, STATUS_CUT);
+	if (n == 0)
+		return 0;
+
+	cuts = isl_alloc_array(map->ctx, int, n);
+	if (!cuts)
 		return -1;
 
-	changed = can_wrap_in_facet(map, i, j, k, tabs, NULL, ineq_i, NULL, ineq_j);
+	for (k = 0, m = 0; m < n; ++k) {
+		enum isl_ineq_type type;
 
-	if (!changed && isl_tab_rollback(tabs[j], snap) < 0)
-		return -1;
+		if (ineq_i[k] != STATUS_CUT)
+			continue;
+
+		isl_int_add_ui(map->p[i]->ineq[k][0], map->p[i]->ineq[k][0], 1);
+		type = isl_tab_ineq_type(tabs[j], map->p[i]->ineq[k]);
+		isl_int_sub_ui(map->p[i]->ineq[k][0], map->p[i]->ineq[k][0], 1);
+		if (type == isl_ineq_error)
+			goto error;
+		if (type != isl_ineq_redundant)
+			break;
+		cuts[m] = k;
+		++m;
+	}
+
+	if (m == n)
+		changed = wrap_in_facets(map, i, j, cuts, n, tabs,
+					 eq_i, ineq_i, eq_j, ineq_j);
+
+	free(cuts);
 
 	return changed;
+error:
+	free(cuts);
+	return -1;
 }
 
 /* Check if either i or j has a single cut constraint that can
@@ -676,17 +864,19 @@ static int can_wrap_in_set(struct isl_map *map, int i, int j,
  * if so, replace the pair by their union.
  */
 static int check_wrap(struct isl_map *map, int i, int j,
-	struct isl_tab **tabs, int *ineq_i, int *ineq_j)
+	struct isl_tab **tabs, int *eq_i, int *ineq_i, int *eq_j, int *ineq_j)
 {
 	int changed = 0;
 
-	if (count(ineq_i, map->p[i]->n_ineq, STATUS_CUT) == 1)
-		changed = can_wrap_in_set(map, i, j, tabs, ineq_i, ineq_j);
+	if (!any(eq_i, 2 * map->p[i]->n_eq, STATUS_CUT))
+		changed = can_wrap_in_set(map, i, j, tabs,
+					    eq_i, ineq_i, eq_j, ineq_j);
 	if (changed)
 		return changed;
 
-	if (count(ineq_j, map->p[j]->n_ineq, STATUS_CUT) == 1)
-		changed = can_wrap_in_set(map, j, i, tabs, ineq_j, ineq_i);
+	if (!any(eq_j, 2 * map->p[j]->n_eq, STATUS_CUT))
+		changed = can_wrap_in_set(map, j, i, tabs,
+					    eq_j, ineq_j, eq_i, ineq_i);
 	return changed;
 }
 
@@ -799,10 +989,11 @@ static int check_adj_eq(struct isl_map *map, int i, int j,
  *		   of the valid constraints in both basic maps together
  *		   with all wrapping constraints
  *
- *	6. one of the basic maps has a single cut constraint and
- *	   the other basic map has a constraint adjacent to this constraint.
- *	   Moreover, the facets corresponding to both constraints
- *	   can be wrapped around their ridges to include the other basic map
+ *	6. one of the basic maps extends beyond the other by at most one.
+ *	   Moreover, the facets corresponding to the cut constraints and
+ *	   the pieces of the other basic map at offset one from these cut
+ *	   constraints can be wrapped around their ridges to include
+ *	   the unione of the two basic maps
  *		=> the pair can be replaced by a basic map consisting
  *		   of the valid constraints in both basic maps together
  *		   with all wrapping constraints
@@ -859,20 +1050,23 @@ static int coalesce_pair(struct isl_map *map, int i, int j,
 		   any(eq_j, 2 * map->p[j]->n_eq, STATUS_ADJ_INEQ)) {
 		changed = check_adj_eq(map, i, j, tabs,
 					eq_i, ineq_i, eq_j, ineq_j);
-	} else if (any(eq_i, 2 * map->p[i]->n_eq, STATUS_CUT) ||
-		   any(eq_j, 2 * map->p[j]->n_eq, STATUS_CUT)) {
-		/* BAD CUT */
 	} else if (any(ineq_i, map->p[i]->n_ineq, STATUS_ADJ_EQ) ||
 		   any(ineq_j, map->p[j]->n_ineq, STATUS_ADJ_EQ)) {
 		/* Can't happen */
 		/* BAD ADJ INEQ */
 	} else if (any(ineq_i, map->p[i]->n_ineq, STATUS_ADJ_INEQ) ||
 		   any(ineq_j, map->p[j]->n_ineq, STATUS_ADJ_INEQ)) {
-		changed = check_adj_ineq(map, i, j, tabs, ineq_i, ineq_j);
+		if (!any(eq_i, 2 * map->p[i]->n_eq, STATUS_CUT) &&
+		    !any(eq_j, 2 * map->p[j]->n_eq, STATUS_CUT))
+			changed = check_adj_ineq(map, i, j, tabs,
+						 ineq_i, ineq_j);
 	} else {
-		changed = check_facets(map, i, j, tabs, ineq_i, ineq_j);
+		if (!any(eq_i, 2 * map->p[i]->n_eq, STATUS_CUT) &&
+		    !any(eq_j, 2 * map->p[j]->n_eq, STATUS_CUT))
+			changed = check_facets(map, i, j, tabs, ineq_i, ineq_j);
 		if (!changed)
-			changed = check_wrap(map, i, j, tabs, ineq_i, ineq_j);
+			changed = check_wrap(map, i, j, tabs,
+						eq_i, ineq_i, eq_j, ineq_j);
 	}
 
 done:
