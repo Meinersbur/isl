@@ -776,6 +776,9 @@ void test_coalesce(struct isl_ctx *ctx)
 				"(i1 = M and M >= 1) }", 0);
 	test_coalesce_set(ctx,
 		"{[x,y] : x,y >= 0; [x,y] : 10 <= x <= 20 and y >= -1 }", 0);
+	test_coalesce_set(ctx,
+		"{ [x, y] : (x >= 1 and y >= 1 and x <= 2 and y <= 2) or "
+		"(y = 3 and x = 1) }", 1);
 }
 
 void test_closure(struct isl_ctx *ctx)

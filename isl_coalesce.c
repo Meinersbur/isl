@@ -696,7 +696,7 @@ static int check_wrap(struct isl_map *map, int i, int j,
  * inequality adjacent to an equality.
  * We call the basic map that has the inequality "i" and the basic
  * map that has the equality "j".
- * If "i" has any "cut" inequality, then relaxing the inequality
+ * If "i" has any "cut" (in)equality, then relaxing the inequality
  * by one would not result in a basic map that contains the other
  * basic map.
  */
@@ -717,6 +717,8 @@ static int check_adj_eq(struct isl_map *map, int i, int j,
 
 	/* j has an equality adjacent to an inequality in i */
 
+	if (any(eq_i, 2 * map->p[i]->n_eq, STATUS_CUT))
+		return 0;
 	if (any(ineq_i, map->p[i]->n_ineq, STATUS_CUT))
 		/* ADJ EQ CUT */
 		return 0;
@@ -850,9 +852,6 @@ static int coalesce_pair(struct isl_map *map, int i, int j,
 		   all(ineq_j, map->p[j]->n_ineq, STATUS_VALID)) {
 		drop(map, i, tabs);
 		changed = 1;
-	} else if (any(eq_i, 2 * map->p[i]->n_eq, STATUS_CUT) ||
-		   any(eq_j, 2 * map->p[j]->n_eq, STATUS_CUT)) {
-		/* BAD CUT */
 	} else if (any(eq_i, 2 * map->p[i]->n_eq, STATUS_ADJ_EQ) ||
 		   any(eq_j, 2 * map->p[j]->n_eq, STATUS_ADJ_EQ)) {
 		/* ADJ EQ PAIR */
@@ -860,6 +859,9 @@ static int coalesce_pair(struct isl_map *map, int i, int j,
 		   any(eq_j, 2 * map->p[j]->n_eq, STATUS_ADJ_INEQ)) {
 		changed = check_adj_eq(map, i, j, tabs,
 					eq_i, ineq_i, eq_j, ineq_j);
+	} else if (any(eq_i, 2 * map->p[i]->n_eq, STATUS_CUT) ||
+		   any(eq_j, 2 * map->p[j]->n_eq, STATUS_CUT)) {
+		/* BAD CUT */
 	} else if (any(ineq_i, map->p[i]->n_ineq, STATUS_ADJ_EQ) ||
 		   any(ineq_j, map->p[j]->n_ineq, STATUS_ADJ_EQ)) {
 		/* Can't happen */
