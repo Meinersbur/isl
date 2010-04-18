@@ -85,13 +85,15 @@ error:
 static __isl_give isl_printer *str_start_line(__isl_take isl_printer *p)
 {
 	p = str_print_indent(p, p->indent);
-	p = str_print(p, p->prefix, strlen(p->prefix));
+	if (p->prefix)
+		p = str_print(p, p->prefix, strlen(p->prefix));
 	return p;
 }
 
 static __isl_give isl_printer *str_end_line(__isl_take isl_printer *p)
 {
-	p = str_print(p, p->suffix, strlen(p->suffix));
+	if (p->suffix)
+		p = str_print(p, p->suffix, strlen(p->suffix));
 	p = str_print(p, "\n", strlen("\n"));
 	return p;
 }
