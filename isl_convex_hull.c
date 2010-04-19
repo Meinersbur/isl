@@ -1279,8 +1279,14 @@ error:
 	return NULL;
 }
 
+static struct isl_basic_set *uset_convex_hull_wrap(struct isl_set *set);
+
 /* Compute the convex hull of a pair of basic sets without any parameters or
  * integer divisions.
+ *
+ * This function is called from uset_convex_hull_unbounded, which
+ * means that the complete convex hull is unbounded.  Some pairs
+ * of basic sets may still be bounded, though.
  *
  * If the convex hull of the two basic sets would have a non-trivial
  * lineality space, we first project out this lineality space.
@@ -1289,8 +1295,18 @@ static struct isl_basic_set *convex_hull_pair(struct isl_basic_set *bset1,
 	struct isl_basic_set *bset2)
 {
 	struct isl_basic_set *lin;
+	int bounded1, bounded2;
 
-	if (isl_basic_set_is_bounded(bset1) || isl_basic_set_is_bounded(bset2))
+	bounded1 = isl_basic_set_is_bounded(bset1);
+	bounded2 = isl_basic_set_is_bounded(bset2);
+
+	if (bounded1 < 0 || bounded2 < 0)
+		goto error;
+
+	if (bounded1 && bounded2)
+		uset_convex_hull_wrap(isl_basic_set_union(bset1, bset2));
+
+	if (bounded1 || bounded2)
 		return convex_hull_pair_pointed(bset1, bset2);
 
 	lin = induced_lineality_space(isl_basic_set_copy(bset1),
