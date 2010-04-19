@@ -387,6 +387,24 @@ specification of the original set or map.
 		__isl_keep isl_basic_map *bmap);
 	__isl_give isl_dim *isl_map_get_dim(__isl_keep isl_map *map);
 
+The names of the individual dimensions may be set or read off
+using the following functions.
+
+	#include <isl_dim.h>
+	__isl_give isl_dim *isl_dim_set_name(__isl_take isl_dim *dim,
+				 enum isl_dim_type type, unsigned pos,
+				 __isl_keep const char *name);
+	__isl_keep const char *isl_dim_get_name(__isl_keep isl_dim *dim,
+				 enum isl_dim_type type, unsigned pos);
+
+Note that C<isl_dim_get_name> returns a pointer to some internal
+data structure, so the result can only be used while the
+corresponding C<isl_dim> is alive.
+Also note that every function that operates on two sets or relations
+requires that both arguments have the same parameters.  This also
+means that if one of the arguments has named parameters, then the
+other needs to have named parameters too and the names need to match.
+
 =head2 Input and Output
 
 C<isl> supports its own input/output format, which is similar

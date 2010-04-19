@@ -48,10 +48,10 @@ __isl_give isl_dim *isl_dim_copy(__isl_keep isl_dim *dim);
 struct isl_dim *isl_dim_cow(struct isl_dim *dim);
 void isl_dim_free(__isl_take isl_dim *dim);
 
-struct isl_dim *isl_dim_set_name(struct isl_dim *dim,
+__isl_give isl_dim *isl_dim_set_name(__isl_take isl_dim *dim,
 				 enum isl_dim_type type, unsigned pos,
-				 const char *name);
-const char *isl_dim_get_name(struct isl_dim *dim,
+				 __isl_keep const char *name);
+__isl_keep const char *isl_dim_get_name(__isl_keep isl_dim *dim,
 				 enum isl_dim_type type, unsigned pos);
 
 struct isl_dim *isl_dim_extend(struct isl_dim *dim,
