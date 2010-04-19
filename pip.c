@@ -42,6 +42,7 @@ struct pip_options {
 struct isl_arg pip_options_arg[] = {
 ISL_ARG_CHILD(struct pip_options, isl, "isl", isl_options_arg)
 ISL_ARG_BOOL(struct pip_options, verify, 'T', "verify", 0)
+ISL_ARG_END
 };
 
 ISL_ARG_DEF(pip_options, struct pip_options, pip_options_arg)
