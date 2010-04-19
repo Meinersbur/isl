@@ -482,6 +482,9 @@ void test_convex_hull_case(struct isl_ctx *ctx, const char *name)
 
 void test_convex_hull(struct isl_ctx *ctx)
 {
+	const char *str1, *str2;
+	isl_set *set1, *set2;
+
 	test_convex_hull_case(ctx, "convex0");
 	test_convex_hull_case(ctx, "convex1");
 	test_convex_hull_case(ctx, "convex2");
@@ -498,6 +501,17 @@ void test_convex_hull(struct isl_ctx *ctx)
 	test_convex_hull_case(ctx, "convex13");
 	test_convex_hull_case(ctx, "convex14");
 	test_convex_hull_case(ctx, "convex15");
+
+	str1 = "{ [i0, i1, i2] : (i2 = 1 and i0 = 0 and i1 >= 0) or "
+	       "(i0 = 1 and i1 = 0 and i2 = 1) or "
+	       "(i0 = 0 and i1 = 0 and i2 = 0) }";
+	str2 = "{ [i0, i1, i2] : i0 >= 0 and i2 >= i0 and i2 <= 1 and i1 >= 0 }";
+	set1 = isl_set_read_from_str(ctx, str1, -1);
+	set2 = isl_set_read_from_str(ctx, str2, -1);
+	set1 = isl_set_from_basic_set(isl_set_convex_hull(set1));
+	assert(isl_set_is_equal(set1, set2));
+	isl_set_free(set1);
+	isl_set_free(set2);
 }
 
 void test_gist_case(struct isl_ctx *ctx, const char *name)
