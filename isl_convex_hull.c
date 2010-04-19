@@ -1806,7 +1806,7 @@ error:
  * convex hull of the transformed set and then add the equalities back
  * (after performing the inverse transformation.
  */
-static struct isl_basic_set *modulo_affine_hull(struct isl_ctx *ctx,
+static struct isl_basic_set *modulo_affine_hull(
 	struct isl_set *set, struct isl_basic_set *affine_hull)
 {
 	struct isl_mat *T;
@@ -1865,7 +1865,7 @@ struct isl_basic_map *isl_map_convex_hull(struct isl_map *map)
 	if (!affine_hull)
 		goto error;
 	if (affine_hull->n_eq != 0)
-		bset = modulo_affine_hull(ctx, set, affine_hull);
+		bset = modulo_affine_hull(set, affine_hull);
 	else {
 		isl_basic_set_free(affine_hull);
 		bset = uset_convex_hull(set);
