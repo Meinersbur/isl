@@ -1962,7 +1962,7 @@ static int is_eq_stride(__isl_keep isl_basic_set *bset, int i)
  *		k L <= j - i <= k U and exists a: j_p - i_p = M_p a_p }
  *
  * and intersect domain and range of this transitive closure with
- * domain and range of the original map.
+ * the given domain and range.
  *
  * If with_id is set, then try to include as much of the identity mapping
  * as possible, by computing
@@ -1970,8 +1970,7 @@ static int is_eq_stride(__isl_keep isl_basic_set *bset, int i)
  *	{ i -> j : exists k >= 0:
  *		k L <= j - i <= k U and exists a: j_p - i_p = M_p a_p }
  *
- * instead (i.e., allow k = 0) and by intersecting domain and range
- * with the union of the domain and the range of the original map.
+ * instead (i.e., allow k = 0).
  *
  * In practice, we compute the difference set
  *
@@ -1981,7 +1980,8 @@ static int is_eq_stride(__isl_keep isl_basic_set *bset, int i)
  * (constant) lower and upper bounds for each individual dimension,
  * adding a constraint for each bound not equal to infinity.
  */
-static __isl_give isl_map *box_closure(__isl_take isl_map *map, int with_id)
+static __isl_give isl_map *box_closure_on_domain(__isl_take isl_map *map,
+	__isl_take isl_set *dom, __isl_take isl_set *ran, int with_id)
 {
 	int i;
 	int k;
@@ -1990,8 +1990,6 @@ static __isl_give isl_map *box_closure(__isl_take isl_map *map, int with_id)
 	unsigned total;
 	isl_dim *dim;
 	isl_set *delta;
-	isl_set *domain = NULL;
-	isl_set *range = NULL;
 	isl_map *app = NULL;
 	isl_basic_set *aff = NULL;
 	isl_basic_map *bmap = NULL;
@@ -2082,16 +2080,7 @@ static __isl_give isl_map *box_closure(__isl_take isl_map *map, int with_id)
 		isl_int_set_si(bmap->ineq[k][0], -1);
 	isl_int_set_si(bmap->ineq[k][1 + nparam + 2 * d + aff->n_div], 1);
 
-	domain = isl_map_domain(isl_map_copy(map));
-	domain = isl_set_coalesce(domain);
-	range = isl_map_range(isl_map_copy(map));
-	range = isl_set_coalesce(range);
-	if (with_id) {
-		domain = isl_set_union(domain, range);
-		domain = isl_set_coalesce(domain);
-		range = isl_set_copy(domain);
-	}
-	app = isl_map_from_domain_and_range(domain, range);
+	app = isl_map_from_domain_and_range(dom, ran);
 
 	isl_vec_free(obj);
 	isl_basic_set_free(aff);
@@ -2108,10 +2097,57 @@ error:
 	isl_vec_free(obj);
 	isl_basic_map_free(bmap);
 	isl_basic_set_free(aff);
+	isl_set_free(dom);
+	isl_set_free(ran);
 	isl_map_free(map);
 	isl_set_free(delta);
 	isl_int_clear(opt);
 	return NULL;
+}
+
+/* Given a map, compute the smallest superset of this map that is of the form
+ *
+ *	{ i -> j : L <= j - i <= U and exists a_p: j_p - i_p = M_p a_p }
+ *
+ * (where p ranges over the (non-parametric) dimensions),
+ * compute the transitive closure of this map, i.e.,
+ *
+ *	{ i -> j : exists k > 0:
+ *		k L <= j - i <= k U and exists a: j_p - i_p = M_p a_p }
+ *
+ * and intersect domain and range of this transitive closure with
+ * domain and range of the original map.
+ */
+static __isl_give isl_map *box_closure(__isl_take isl_map *map)
+{
+	isl_set *domain;
+	isl_set *range;
+
+	domain = isl_map_domain(isl_map_copy(map));
+	domain = isl_set_coalesce(domain);
+	range = isl_map_range(isl_map_copy(map));
+	range = isl_set_coalesce(range);
+
+	return box_closure_on_domain(map, domain, range, 0);
+}
+
+/* Given a map, compute the smallest superset of this map that is of the form
+ *
+ *	{ i -> j : L <= j - i <= U and exists a_p: j_p - i_p = M_p a_p }
+ *
+ * (where p ranges over the (non-parametric) dimensions),
+ * compute the transitive and partially reflexive closure of this map, i.e.,
+ *
+ *	{ i -> j : exists k >= 0:
+ *		k L <= j - i <= k U and exists a: j_p - i_p = M_p a_p }
+ *
+ * and intersect domain and range of this transitive closure with
+ * the given domain.
+ */
+static __isl_give isl_map *box_closure_with_identity(__isl_take isl_map *map,
+	__isl_take isl_set *dom)
+{
+	return box_closure_on_domain(map, dom, isl_set_copy(dom), 1);
 }
 
 /* Check whether app is the transitive closure of map.
@@ -2179,12 +2215,22 @@ static int check_exactness_omega(__isl_keep isl_map *map,
 static int can_be_split_off(__isl_keep isl_map *map, int i,
 	__isl_give isl_map **tc, __isl_give isl_map **qc)
 {
-	isl_map *map_i, *id;
+	isl_map *map_i, *id = NULL;
 	int j = -1;
+	isl_set *C;
+
+	*tc = NULL;
+	*qc = NULL;
+
+	C = isl_set_union(isl_map_domain(isl_map_copy(map)),
+			  isl_map_range(isl_map_copy(map)));
+	C = isl_set_from_basic_set(isl_set_simple_hull(C));
+	if (!C)
+		goto error;
 
 	map_i = isl_map_from_basic_map(isl_basic_map_copy(map->p[i]));
-	*tc = box_closure(isl_map_copy(map_i), 0);
-	*qc = box_closure(map_i, 1);
+	*tc = box_closure(isl_map_copy(map_i));
+	*qc = box_closure_with_identity(map_i, C);
 	id = isl_map_subtract(isl_map_copy(*qc), isl_map_copy(*tc));
 
 	if (!id || !*qc)
@@ -2257,7 +2303,7 @@ static __isl_give isl_map *compute_closure_omega(__isl_take isl_map *map)
 	if (!map)
 		return NULL;
 	if (map->n == 1)
-		return box_closure(map, 0);
+		return box_closure(map);
 
 	map = isl_map_cow(map);
 	if (!map)
@@ -2283,7 +2329,7 @@ static __isl_give isl_map *compute_closure_omega(__isl_take isl_map *map)
 		return isl_map_union(tc, compute_closure_omega(map));
 	}
 
-	return box_closure(map, 0);
+	return box_closure(map);
 error:
 	isl_map_free(map);
 	return NULL;
