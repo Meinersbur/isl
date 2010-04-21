@@ -1089,7 +1089,7 @@ static __isl_give isl_printer *print_affine_c(__isl_take isl_printer *p,
 				p = isl_printer_print_str(p, " + ");
 		}
 		first = 0;
-		p = print_term(bset->dim, c[i], i, p, 1, 0);
+		p = print_term_c(p, bset, c[i], i);
 		if (flip)
 			isl_int_neg(c[i], c[i]);
 	}
