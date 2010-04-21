@@ -102,6 +102,55 @@ $$
 $$
 \end{definition}
 
+\section{Simple Hull}\label{s:simple hull}
+
+It is sometimes useful to have a single
+basic set or basic relation that contains a given set or relation.
+For rational sets, the obvious choice would be to compute the
+(rational) convex hull.  For integer sets, the obvious choice
+would be the integer hull.
+However, {\tt isl} currently does not support an integer hull operation
+and even if it did, it would be fairly expensive to compute.
+The convex hull operation is supported, but it is also fairly
+expensive to compute given only an implicit representation.
+
+Usually, it is not required to compute the exact integer hull,
+and an overapproximation of this hull is sufficient.
+The ``simple hull'' of a set is such an overapproximation
+and it is defined as the (inclusion-wise) smallest basic set
+that is described by constraints that are translates of
+the constraints in the input set.
+This means that the simple hull is relatively cheap to compute
+and that the number of constraints in the simple hull is no
+larger than the number of constraints in the input.
+\begin{definition}[Simple Hull of a Set]
+The {\em simple hull} of a set
+$S = \bigcup_{1 \le i \le v} S_i$, with
+$$
+S : \Z^n \to 2^{\Z^d} : \vec s \mapsto
+S(\vec s) =
+\left\{\, \vec x \in \Z^d \mid \exists \vec z \in \Z^e :
+\bigvee_{1 \le i \le v}
+A_i \vec x + B_i \vec s + D_i \vec z + \vec c_i \geq \vec 0 \,\right\}
+$$
+is the set
+$$
+H : \Z^n \to 2^{\Z^d} : \vec s \mapsto
+S(\vec s) =
+\left\{\, \vec x \in \Z^d \mid \exists \vec z \in \Z^e :
+\bigwedge_{1 \le i \le v}
+A_i \vec x + B_i \vec s + D_i \vec z + \vec c_i + \vec K_i \geq \vec 0
+\,\right\}
+,
+$$
+with $\vec K_i$ the (component-wise) smallest non-negative integer vectors
+such that $S \subseteq H$.
+\end{definition}
+The $\vec K_i$ can be obtained by solving a number of
+LP problems, one for each element of each $\vec K_i$.
+If any LP problem is unbounded, then the corresponding constraint
+is dropped.
+
 \section{Coalescing}\label{s:coalescing}
 
 See \shortciteN{Verdoolaege2009isl}, for now.

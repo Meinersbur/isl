@@ -893,6 +893,24 @@ basic set or relation.
 If the input set or relation has any existentially quantified
 variables, then the result of these operations is currently undefined.
 
+=item * Simple hull
+
+	__isl_give isl_basic_set *isl_set_simple_hull(
+		__isl_take isl_set *set);
+	__isl_give isl_basic_map *isl_map_simple_hull(
+		__isl_take isl_map *map);
+
+These functions compute a single basic set or relation
+that contains the whole input set or relation.
+In particular, the output is described by translates
+of the constraints describing the basic sets or relations in the input.
+
+=begin latex
+
+(See \autoref{s:simple hull}.)
+
+=end latex
+
 =item * Affine hull
 
 	__isl_give isl_basic_set *isl_basic_set_affine_hull(
