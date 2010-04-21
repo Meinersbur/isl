@@ -4264,6 +4264,9 @@ static struct isl_basic_set *basic_set_append_equalities(
 	}
 	isl_mat_free(eq);
 
+	bset = isl_basic_set_gauss(bset, NULL);
+	bset = isl_basic_set_finalize(bset);
+
 	return bset;
 error:
 	isl_mat_free(eq);
