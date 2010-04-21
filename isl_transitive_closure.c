@@ -381,7 +381,7 @@ int empty_path_is_identity(__isl_keep isl_basic_map *path, unsigned pos)
 	isl_seq_clr(test->eq[k], 1 + isl_basic_map_total_dim(test));
 	isl_int_set_si(test->eq[k][pos], 1);
 	id = isl_basic_map_identity(isl_dim_domain(isl_basic_map_get_dim(path)));
-	is_id = isl_basic_map_is_subset(test, id);
+	is_id = isl_basic_map_is_equal(test, id);
 	isl_basic_map_free(test);
 	isl_basic_map_free(id);
 	return is_id;
