@@ -5,7 +5,7 @@ A {\em polyhedral set}\index{polyhedral set} $S$ is a finite union of basic sets
 $S = \bigcup_i S_i$, each of which can be represented using affine
 constraints
 $$
-S_i : \Q^n \to 2^{\Q^d} : \vec s \mapsto
+S_i : \Z^n \to 2^{\Z^d} : \vec s \mapsto
 S_i(\vec s) =
 \{\, \vec x \in \Z^d \mid \exists \vec z \in \Z^e :
 A \vec x + B \vec s + D \vec z + \vec c \geq \vec 0 \,\}
@@ -18,7 +18,7 @@ and $\vec c \in \Z^m$.
 \end{definition}
 
 \begin{definition}[Parameter Domain of a Set]
-Let $S \in \Q^n \to 2^{\Q^d}$ be a set.
+Let $S \in \Z^n \to 2^{\Z^d}$ be a set.
 The {\em parameter domain} of $S$ is the set
 $$\pdom S \coloneqq \{\, \vec s \in \Z^n \mid S(\vec s) \ne \emptyset \,\}.$$
 \end{definition}
@@ -27,7 +27,7 @@ $$\pdom S \coloneqq \{\, \vec s \in \Z^n \mid S(\vec s) \ne \emptyset \,\}.$$
 A {\em polyhedral relation}\index{polyhedral relation}
 $R$ is a finite union of basic relations
 $R = \bigcup_i R_i$ of type
-$\Q^n \to 2^{\Q^{d_1+d_2}}$,
+$\Z^n \to 2^{\Z^{d_1+d_2}}$,
 each of which can be represented using affine
 constraints
 $$
@@ -45,13 +45,13 @@ and $\vec c \in \Z^m$.
 \end{definition}
 
 \begin{definition}[Parameter Domain of a Relation]
-Let $R \in \Q^n \to 2^{\Q^{d+d}}$ be a relation.
+Let $R \in \Z^n \to 2^{\Z^{d+d}}$ be a relation.
 The {\em parameter domain} of $R$ is the set
 $$\pdom R \coloneqq \{\, \vec s \in \Z^n \mid R(\vec s) \ne \emptyset \,\}.$$
 \end{definition}
 
 \begin{definition}[Domain of a Relation]
-Let $R \in \Q^n \to 2^{\Q^{d+d}}$ be a relation.
+Let $R \in \Z^n \to 2^{\Z^{d+d}}$ be a relation.
 The {\em domain} of $R$ is the polyhedral set
 $$\domain R \coloneqq \vec s \mapsto
 \{\, \vec x_1 \in \Z^{d_1} \mid \exists \vec x_2 \in \Z^{d_2} :
@@ -61,7 +61,7 @@ $$
 \end{definition}
 
 \begin{definition}[Range of a Relation]
-Let $R \in \Q^n \to 2^{\Q^{d+d}}$ be a relation.
+Let $R \in \Z^n \to 2^{\Z^{d+d}}$ be a relation.
 The {\em range} of $R$ is the polyhedral set
 $$
 \range R \coloneqq \vec s \mapsto
@@ -72,8 +72,8 @@ $$
 \end{definition}
 
 \begin{definition}[Composition of Relations]
-Let $R \in \Q^n \to 2^{\Q^{d_1+d_2}}$ and
-$S \in \Q^n \to 2^{\Q^{d_2+d_3}}$ be two relations,
+Let $R \in \Z^n \to 2^{\Z^{d_1+d_2}}$ and
+$S \in \Z^n \to 2^{\Z^{d_2+d_3}}$ be two relations,
 then the composition of
 $R$ and $S$ is defined as
 $$
@@ -89,7 +89,7 @@ $$
 \end{definition}
 
 \begin{definition}[Difference Set of a Relation]
-Let $R \in \Q^n \to 2^{\Q^{d+d}}$ be a relation.
+Let $R \in \Z^n \to 2^{\Z^{d+d}}$ be a relation.
 The difference set ($\Delta \, R$) of $R$ is the set
 of differences between image elements and the corresponding
 domain elements,
@@ -112,7 +112,7 @@ More details will be added later.
 \subsection{Introduction}
 
 \begin{definition}[Power of a Relation]
-Let $R \in \Q^n \to 2^{\Q^{d+d}}$ be a relation and
+Let $R \in \Z^n \to 2^{\Z^{d+d}}$ be a relation and
 $k \in \Z_{\ge 1}$
 a positive number, then power $k$ of relation $R$ is defined as
 \begin{equation}
@@ -128,7 +128,7 @@ R \circ R^{k-1} & \text{if $k \ge 2$}
 \end{definition}
 
 \begin{definition}[Transitive Closure of a Relation]
-Let $R \in \Q^n \to 2^{\Q^{d+d}}$ be a relation,
+Let $R \in \Z^n \to 2^{\Z^{d+d}}$ be a relation,
 then the transitive closure $R^+$ of $R$ is the union
 of all positive powers of $R$,
 $$
