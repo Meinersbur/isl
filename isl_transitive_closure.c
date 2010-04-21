@@ -2278,6 +2278,19 @@ error:
 	return -1;
 }
 
+static __isl_give isl_map *box_closure_with_check(__isl_take isl_map *map,
+	int *exact)
+{
+	isl_map *app;
+
+	app = box_closure(isl_map_copy(map));
+	if (exact)
+		*exact = check_exactness_omega(map, app);
+
+	isl_map_free(map);
+	return app;
+}
+
 /* Compute an overapproximation of the transitive closure of "map"
  * using a variation of the algorithm from
  * "Transitive Closure of Infinite Graphs and its Applications"
@@ -2296,18 +2309,17 @@ error:
  *
  * If not, we simply call box_closure on the whole map.
  */
-static __isl_give isl_map *compute_closure_omega(__isl_take isl_map *map)
+static __isl_give isl_map *transitive_closure_omega(__isl_take isl_map *map,
+	int *exact)
 {
 	int i, j;
+	int exact_i;
+	isl_map *app;
 
 	if (!map)
 		return NULL;
 	if (map->n == 1)
-		return box_closure(map);
-
-	map = isl_map_cow(map);
-	if (!map)
-		goto error;
+		return box_closure_with_check(map, exact);
 
 	for (i = 0; i < map->n; ++i) {
 		int ok;
@@ -2318,40 +2330,35 @@ static __isl_give isl_map *compute_closure_omega(__isl_take isl_map *map)
 		if (!ok)
 			continue;
 
-		isl_basic_map_free(map->p[i]);
-		if (i != map->n - 1)
-			map->p[i] = map->p[map->n - 1];
-		map->n--;
+		app = isl_map_alloc_dim(isl_map_get_dim(map), map->n - 1, 0);
 
-		map = isl_map_apply_range(isl_map_copy(qc), map);
-		map = isl_map_apply_range(map, qc);
+		for (j = 0; j < map->n; ++j) {
+			if (j == i)
+				continue;
+			app = isl_map_add_basic_map(app,
+						isl_basic_map_copy(map->p[j]));
+		}
 
-		return isl_map_union(tc, compute_closure_omega(map));
+		app = isl_map_apply_range(isl_map_copy(qc), app);
+		app = isl_map_apply_range(app, qc);
+
+		app = isl_map_union(tc, transitive_closure_omega(app, NULL));
+		exact_i = check_exactness_omega(map, app);
+		if (exact_i == 1) {
+			if (exact)
+				*exact = exact_i;
+			isl_map_free(map);
+			return app;
+		}
+		isl_map_free(app);
+		if (exact_i < 0)
+			goto error;
 	}
 
-	return box_closure(map);
+	return box_closure_with_check(map, exact);
 error:
 	isl_map_free(map);
 	return NULL;
-}
-
-/* Compute an overapproximation of the transitive closure of "map"
- * using a variation of the algorithm from
- * "Transitive Closure of Infinite Graphs and its Applications"
- * by Kelly et al. and check whether the result is definitely exact.
- */
-static __isl_give isl_map *transitive_closure_omega(__isl_take isl_map *map,
-	int *exact)
-{
-	isl_map *app;
-
-	app = compute_closure_omega(isl_map_copy(map));
-
-	if (exact)
-		*exact = check_exactness_omega(map, app);
-
-	isl_map_free(map);
-	return app;
 }
 
 /* Compute the transitive closure  of "map", or an overapproximation.
