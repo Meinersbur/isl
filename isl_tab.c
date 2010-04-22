@@ -2828,6 +2828,7 @@ static int perform_undo_var(struct isl_tab *tab, struct isl_tab_undo *undo)
 	case isl_tab_undo_redundant:
 		var->is_redundant = 0;
 		tab->n_redundant--;
+		restore_row(tab, isl_tab_var_from_row(tab, tab->n_redundant));
 		break;
 	case isl_tab_undo_freeze:
 		var->frozen = 0;
