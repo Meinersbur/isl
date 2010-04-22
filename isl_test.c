@@ -547,6 +547,20 @@ void test_gist(struct isl_ctx *ctx)
 	test_gist_case(ctx, "gist1");
 }
 
+void test_coalesce_set(isl_ctx *ctx, const char *str, int check_one)
+{
+	isl_set *set, *set2;
+
+	set = isl_set_read_from_str(ctx, str, -1);
+	set = isl_set_coalesce(set);
+	set2 = isl_set_read_from_str(ctx, str, -1);
+	assert(isl_set_is_equal(set, set2));
+	if (check_one)
+		assert(set && set->n == 1);
+	isl_set_free(set);
+	isl_set_free(set2);
+}
+
 void test_coalesce(struct isl_ctx *ctx)
 {
 	const char *str;
@@ -756,6 +770,12 @@ void test_coalesce(struct isl_ctx *ctx)
 	assert(isl_map_is_equal(map, map2));
 	isl_map_free(map);
 	isl_map_free(map2);
+
+	test_coalesce_set(ctx,
+		"[M] -> { [i1] : (i1 >= 2 and i1 <= M) or "
+				"(i1 = M and M >= 1) }", 0);
+	test_coalesce_set(ctx,
+		"{[x,y] : x,y >= 0; [x,y] : 10 <= x <= 20 and y >= -1 }", 0);
 }
 
 void test_closure(struct isl_ctx *ctx)
