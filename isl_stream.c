@@ -82,7 +82,7 @@ void isl_token_free(struct isl_token *tok)
 		return;
 	if (tok->type == ISL_TOKEN_VALUE)
 		isl_int_clear(tok->u.v);
-	else if (tok->type == ISL_TOKEN_IDENT)
+	else if (tok->type == ISL_TOKEN_IDENT || tok->type == ISL_TOKEN_STRING)
 		free(tok->u.s);
 	free(tok);
 }
@@ -341,6 +341,21 @@ static struct isl_token *next_token(struct isl_stream *s, int same_line)
 		tok->type = check_keywords(s);
 		if (tok->type == ISL_TOKEN_IDENT)
 			tok->u.s = strdup(s->buffer);
+		return tok;
+	}
+	if (c == '"') {
+		tok = isl_token_new(s->ctx, line, col, old_line != line);
+		if (!tok)
+			return NULL;
+		tok->type = ISL_TOKEN_STRING;
+		tok->u.s = NULL;
+		while ((c = isl_stream_getc(s)) != -1 && c != '"' && c != '\n')
+			isl_stream_push_char(s, c);
+		if (c != '"') {
+			isl_stream_error(s, NULL, "unterminated string");
+			goto error;
+		}
+		tok->u.s = strdup(s->buffer);
 		return tok;
 	}
 	if (c == ':') {
