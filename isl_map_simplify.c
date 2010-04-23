@@ -1389,6 +1389,11 @@ static struct isl_basic_set *isl_basic_set_reduce_using_equalities(
 	if (!bset || !context)
 		goto error;
 
+	if (context->n_eq == 0) {
+		isl_basic_set_free(context);
+		return bset;
+	}
+
 	bset = isl_basic_set_cow(bset);
 	if (!bset)
 		goto error;
@@ -1544,111 +1549,179 @@ static struct isl_basic_set *normalize_constraints_in_compressed_space(
 }
 
 /* Remove all information from bset that is redundant in the context
- * of context.  In particular, equalities that are linear combinations
- * of those in context are removed.  Then the inequalities that are
- * redundant in the context of the equalities and inequalities of
- * context are removed.
+ * of context.  Both bset and context are assumed to be full-dimensional.
  *
- * We first simplify the constraints of "bset" in the context of the
- * equalities of "context".
- * Then we simplify the inequalities of the context in the context
- * of the equalities of bset and remove the inequalities from "bset"
+ * We first * remove the inequalities from "bset"
  * that are obviously redundant with respect to some inequality in "context".
  *
  * If there are any inequalities left, we construct a tableau for
  * the context and then add the inequalities of "bset".
- * Before adding these equalities, we freeze all constraints such that
+ * Before adding these inequalities, we freeze all constraints such that
  * they won't be considered redundant in terms of the constraints of "bset".
- * Then we detect all equalities and redundant constraints (among the
- * constraints that weren't frozen) and update bset according to the results.
- * We have to be careful here because we don't want any of the context
- * constraints to remain and because we haven't added the equalities of "bset"
- * to the tableau so we temporarily have to pretend that there were no
- * equalities.
+ * Then we detect all redundant constraints (among the
+ * constraints that weren't frozen), first by checking for redundancy in the
+ * the tableau and then by checking if replacing a constraint by its negation
+ * would lead to an empty set.  This last step is fairly expensive
+ * and could be optimized by more reuse of the tableau.
+ * Finally, we update bset according to the results.
  */
-static struct isl_basic_set *uset_gist(struct isl_basic_set *bset,
-	struct isl_basic_set *context)
+static __isl_give isl_basic_set *uset_gist_full(__isl_take isl_basic_set *bset,
+	__isl_take isl_basic_set *context)
 {
-	int i;
-	struct isl_tab *tab;
+	int i, k;
+	isl_basic_set *combined = NULL;
+	struct isl_tab *tab = NULL;
 	unsigned context_ineq;
-	struct isl_basic_set *combined = NULL;
+	unsigned total;
 
-	if (!context || !bset)
+	if (!bset || !context)
 		goto error;
 
-	if (context->n_eq > 0)
-		bset = isl_basic_set_reduce_using_equalities(bset,
-					isl_basic_set_copy(context));
+	if (isl_basic_set_is_universe(bset)) {
+		isl_basic_set_free(context);
+		return bset;
+	}
+
+	if (isl_basic_set_is_universe(context)) {
+		isl_basic_set_free(context);
+		return bset;
+	}
+
+	bset = remove_shifted_constraints(bset, context);
 	if (!bset)
 		goto error;
-	if (isl_basic_set_fast_is_empty(bset))
-		goto done;
-	if (!bset->n_ineq)
+	if (bset->n_ineq == 0)
 		goto done;
 
-	if (bset->n_eq > 0) {
-		struct isl_basic_set *affine_hull;
-		affine_hull = isl_basic_set_copy(bset);
-		affine_hull = isl_basic_set_cow(affine_hull);
-		if (!affine_hull)
-			goto error;
-		isl_basic_set_free_inequality(affine_hull, affine_hull->n_ineq);
-		context = isl_basic_set_intersect(context, affine_hull);
-		context = isl_basic_set_gauss(context, NULL);
-		context = normalize_constraints_in_compressed_space(context);
-	}
-	if (!context)
-		goto error;
-	if (ISL_F_ISSET(context, ISL_BASIC_SET_EMPTY)) {
-		isl_basic_set_free(bset);
-		return context;
-	}
-	if (!context->n_ineq)
-		goto done;
-	bset = remove_shifted_constraints(bset, context);
-	if (!bset->n_ineq)
-		goto done;
 	context_ineq = context->n_ineq;
 	combined = isl_basic_set_cow(isl_basic_set_copy(context));
-	if (isl_basic_set_free_equality(combined, context->n_eq) < 0)
-		goto error;
-	combined = isl_basic_set_extend_constraints(combined,
-						    bset->n_eq, bset->n_ineq);
+	combined = isl_basic_set_extend_constraints(combined, 0, bset->n_ineq);
 	tab = isl_tab_from_basic_set(combined);
-	if (!tab)
-		goto error;
 	for (i = 0; i < context_ineq; ++i)
 		if (isl_tab_freeze_constraint(tab, i) < 0)
 			goto error;
 	tab = isl_tab_extend(tab, bset->n_ineq);
-	if (!tab)
-		goto error;
 	for (i = 0; i < bset->n_ineq; ++i)
 		if (isl_tab_add_ineq(tab, bset->ineq[i]) < 0)
 			goto error;
 	bset = isl_basic_set_add_constraints(combined, bset, 0);
-	tab = isl_tab_detect_implicit_equalities(tab);
-	if (isl_tab_detect_redundant(tab) < 0) {
-		isl_tab_free(tab);
-		goto error2;
-	}
-	for (i = 0; i < context_ineq; ++i) {
-		tab->con[i].is_zero = 0;
+	combined = NULL;
+	if (!bset)
+		goto error;
+	if (isl_tab_detect_redundant(tab) < 0)
+		goto error;
+	total = isl_basic_set_total_dim(bset);
+	for (i = context_ineq; i < bset->n_ineq; ++i) {
+		int is_empty;
+		if (tab->con[i].is_redundant)
+			continue;
 		tab->con[i].is_redundant = 1;
+		combined = isl_basic_set_dup(bset);
+		combined = isl_basic_set_update_from_tab(combined, tab);
+		combined = isl_basic_set_extend_constraints(combined, 0, 1);
+		k = isl_basic_set_alloc_inequality(combined);
+		if (k < 0)
+			goto error;
+		isl_seq_neg(combined->ineq[k], bset->ineq[i], 1 + total);
+		isl_int_sub_ui(combined->ineq[k][0], combined->ineq[k][0], 1);
+		is_empty = isl_basic_set_is_empty(combined);
+		if (is_empty < 0)
+			goto error;
+		isl_basic_set_free(combined);
+		combined = NULL;
+		if (!is_empty)
+			tab->con[i].is_redundant = 0;
 	}
+	for (i = 0; i < context_ineq; ++i)
+		tab->con[i].is_redundant = 1;
 	bset = isl_basic_set_update_from_tab(bset, tab);
+	if (bset) {
+		ISL_F_SET(bset, ISL_BASIC_SET_NO_IMPLICIT);
+		ISL_F_SET(bset, ISL_BASIC_SET_NO_REDUNDANT);
+	}
+
 	isl_tab_free(tab);
-	ISL_F_SET(bset, ISL_BASIC_SET_NO_IMPLICIT);
-	ISL_F_SET(bset, ISL_BASIC_SET_NO_REDUNDANT);
 done:
 	bset = isl_basic_set_simplify(bset);
 	bset = isl_basic_set_finalize(bset);
 	isl_basic_set_free(context);
 	return bset;
 error:
+	isl_tab_free(tab);
 	isl_basic_set_free(combined);
-error2:
+	isl_basic_set_free(context);
+	isl_basic_set_free(bset);
+	return NULL;
+}
+
+/* Remove all information from bset that is redundant in the context
+ * of context.  In particular, equalities that are linear combinations
+ * of those in context are removed.  Then the inequalities that are
+ * redundant in the context of the equalities and inequalities of
+ * context are removed.
+ *
+ * We first compute the integer affine hull of the intersection,
+ * compute the gist inside this affine hull and then add back
+ * those equalities that are not implied by the context.
+ */
+static __isl_give isl_basic_set *uset_gist(__isl_take isl_basic_set *bset,
+	__isl_take isl_basic_set *context)
+{
+	isl_mat *eq;
+	isl_mat *T, *T2;
+	isl_basic_set *aff;
+	isl_basic_set *aff_context;
+	unsigned total;
+
+	if (!bset || !context)
+		goto error;
+
+	bset = isl_basic_set_intersect(bset, isl_basic_set_copy(context));
+	if (isl_basic_set_fast_is_empty(bset)) {
+		isl_basic_set_free(context);
+		return bset;
+	}
+	aff = isl_basic_set_affine_hull(isl_basic_set_copy(bset));
+	if (!aff)
+		goto error;
+	if (isl_basic_set_fast_is_empty(aff)) {
+		isl_basic_set_free(aff);
+		isl_basic_set_free(context);
+		return bset;
+	}
+	if (aff->n_eq == 0) {
+		isl_basic_set_free(aff);
+		return uset_gist_full(bset, context);
+	}
+	total = isl_basic_set_total_dim(bset);
+	eq = isl_mat_sub_alloc(bset->ctx, aff->eq, 0, aff->n_eq, 0, 1 + total);
+	eq = isl_mat_cow(eq);
+	T = isl_mat_variable_compression(eq, &T2);
+	if (T && T->n_col == 0) {
+		isl_mat_free(T);
+		isl_mat_free(T2);
+		isl_basic_set_free(context);
+		isl_basic_set_free(aff);
+		return isl_basic_set_set_to_empty(bset);
+	}
+
+	aff_context = isl_basic_set_affine_hull(isl_basic_set_copy(context));
+
+	bset = isl_basic_set_preimage(bset, isl_mat_copy(T));
+	context = isl_basic_set_preimage(context, T);
+
+	bset = uset_gist_full(bset, context);
+	bset = isl_basic_set_preimage(bset, T2);
+	bset = isl_basic_set_intersect(bset, aff);
+	bset = isl_basic_set_reduce_using_equalities(bset, aff_context);
+
+	if (bset) {
+		ISL_F_SET(bset, ISL_BASIC_SET_NO_IMPLICIT);
+		ISL_F_SET(bset, ISL_BASIC_SET_NO_REDUNDANT);
+	}
+
+	return bset;
+error:
 	isl_basic_set_free(bset);
 	isl_basic_set_free(context);
 	return NULL;
