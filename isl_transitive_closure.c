@@ -249,6 +249,47 @@ error:
 #define PURE_VAR	2
 #define MIXED		3
 
+/* Check whether the parametric constant term of constraint c is never
+ * positive in "bset".
+ */
+static int parametric_constant_never_positive(__isl_keep isl_basic_set *bset,
+	isl_int *c, int *div_purity)
+{
+	unsigned d;
+	unsigned n_div;
+	unsigned nparam;
+	int i;
+	int k;
+	int empty;
+
+	n_div = isl_basic_set_dim(bset, isl_dim_div);
+	d = isl_basic_set_dim(bset, isl_dim_set);
+	nparam = isl_basic_set_dim(bset, isl_dim_param);
+
+	bset = isl_basic_set_copy(bset);
+	bset = isl_basic_set_cow(bset);
+	bset = isl_basic_set_extend_constraints(bset, 0, 1);
+	k = isl_basic_set_alloc_inequality(bset);
+	if (k < 0)
+		goto error;
+	isl_seq_clr(bset->ineq[k], 1 + isl_basic_set_total_dim(bset));
+	isl_seq_cpy(bset->ineq[k], c, 1 + nparam);
+	for (i = 0; i < n_div; ++i) {
+		if (div_purity[i] != PURE_PARAM)
+			continue;
+		isl_int_set(bset->ineq[k][1 + nparam + d + i],
+			    c[1 + nparam + d + i]);
+	}
+	isl_int_sub_ui(bset->ineq[k][0], bset->ineq[k][0], 1);
+	empty = isl_basic_set_is_empty(bset);
+	isl_basic_set_free(bset);
+
+	return empty;
+error:
+	isl_basic_set_free(bset);
+	return -1;
+}
+
 /* Return PURE_PARAM if only the coefficients of the parameters are non-zero.
  * Return PURE_VAR if only the coefficients of the set variables are non-zero.
  * Return MIXED if only the coefficients of the parameters and the set
@@ -262,7 +303,6 @@ static int purity(__isl_keep isl_basic_set *bset, isl_int *c, int *div_purity,
 	unsigned d;
 	unsigned n_div;
 	unsigned nparam;
-	int k;
 	int empty;
 	int i;
 	int p = 0, v = 0;
@@ -284,31 +324,14 @@ static int purity(__isl_keep isl_basic_set *bset, isl_int *c, int *div_purity,
 		return PURE_VAR;
 	if (!v && isl_seq_first_non_zero(c + 1 + nparam, d) == -1)
 		return PURE_PARAM;
-	if (eq)
-		return IMPURE;
 
-	bset = isl_basic_set_copy(bset);
-	bset = isl_basic_set_cow(bset);
-	bset = isl_basic_set_extend_constraints(bset, 0, 1);
-	k = isl_basic_set_alloc_inequality(bset);
-	if (k < 0)
-		goto error;
-	isl_seq_clr(bset->ineq[k], 1 + isl_basic_set_total_dim(bset));
-	isl_seq_cpy(bset->ineq[k], c, 1 + nparam);
-	for (i = 0; i < n_div; ++i) {
-		if (div_purity[i] != PURE_PARAM)
-			continue;
-		isl_int_set(bset->ineq[k][1 + nparam + d + i],
-			    c[1 + nparam + d + i]);
+	empty = parametric_constant_never_positive(bset, c, div_purity);
+	if (eq && empty >= 0 && !empty) {
+		isl_seq_neg(c, c, 1 + nparam + d + n_div);
+		empty = parametric_constant_never_positive(bset, c, div_purity);
 	}
-	isl_int_sub_ui(bset->ineq[k][0], bset->ineq[k][0], 1);
-	empty = isl_basic_set_is_empty(bset);
-	isl_basic_set_free(bset);
 
 	return empty < 0 ? -1 : empty ? MIXED : IMPURE;
-error:
-	isl_basic_set_free(bset);
-	return -1;
 }
 
 /* Return an array of integers indicating the type of each div in bset.
@@ -397,36 +420,39 @@ __isl_give isl_basic_map *add_delta_constraints(__isl_take isl_basic_map *path,
 	int i, k;
 	int n = eq ? delta->n_eq : delta->n_ineq;
 	isl_int **delta_c = eq ? delta->eq : delta->ineq;
-	isl_int **path_c = eq ? path->eq : path->ineq;
 	unsigned n_div;
 
 	n_div = isl_basic_set_dim(delta, isl_dim_div);
 
 	for (i = 0; i < n; ++i) {
+		isl_int *path_c;
 		int p = purity(delta, delta_c[i], div_purity, eq);
 		if (p < 0)
 			goto error;
 		if (p == IMPURE)
 			continue;
-		if (eq)
+		if (eq && p != MIXED) {
 			k = isl_basic_map_alloc_equality(path);
-		else
+			path_c = path->eq[k];
+		} else {
 			k = isl_basic_map_alloc_inequality(path);
+			path_c = path->ineq[k];
+		}
 		if (k < 0)
 			goto error;
-		isl_seq_clr(path_c[k], 1 + isl_basic_map_total_dim(path));
+		isl_seq_clr(path_c, 1 + isl_basic_map_total_dim(path));
 		if (p == PURE_VAR) {
-			isl_seq_cpy(path_c[k] + off,
+			isl_seq_cpy(path_c + off,
 				    delta_c[i] + 1 + nparam, d);
-			isl_int_set(path_c[k][off + d], delta_c[i][0]);
+			isl_int_set(path_c[off + d], delta_c[i][0]);
 		} else if (p == PURE_PARAM) {
-			isl_seq_cpy(path_c[k], delta_c[i], 1 + nparam);
+			isl_seq_cpy(path_c, delta_c[i], 1 + nparam);
 		} else {
-			isl_seq_cpy(path_c[k] + off,
+			isl_seq_cpy(path_c + off,
 				    delta_c[i] + 1 + nparam, d);
-			isl_seq_cpy(path_c[k], delta_c[i], 1 + nparam);
+			isl_seq_cpy(path_c, delta_c[i], 1 + nparam);
 		}
-		isl_seq_cpy(path_c[k] + off - n_div,
+		isl_seq_cpy(path_c + off - n_div,
 			    delta_c[i] + 1 + nparam + d, n_div);
 	}
 
@@ -498,7 +524,7 @@ static __isl_give isl_map *path_along_delta(__isl_take isl_dim *dim,
 	d = isl_basic_set_dim(delta, isl_dim_set);
 	nparam = isl_basic_set_dim(delta, isl_dim_param);
 	path = isl_basic_map_alloc_dim(isl_dim_copy(dim), n_div + d + 1,
-			d + 1 + delta->n_eq, delta->n_ineq + 1);
+			d + 1 + delta->n_eq, delta->n_eq + delta->n_ineq + 1);
 	off = 1 + nparam + 2 * (d + 1) + n_div;
 
 	for (i = 0; i < n_div + d + 1; ++i) {
