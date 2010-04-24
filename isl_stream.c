@@ -355,6 +355,7 @@ static struct isl_token *next_token(struct isl_stream *s, int same_line)
 			isl_stream_error(s, NULL, "unterminated string");
 			goto error;
 		}
+		isl_stream_push_char(s, '\0');
 		tok->u.s = strdup(s->buffer);
 		return tok;
 	}
