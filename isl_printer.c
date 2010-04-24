@@ -13,6 +13,12 @@ static __isl_give isl_printer *file_end_line(__isl_take isl_printer *p)
 	return p;
 }
 
+static __isl_give isl_printer *file_flush(__isl_take isl_printer *p)
+{
+	fflush(p->file);
+	return p;
+}
+
 static __isl_give isl_printer *file_print_str(__isl_take isl_printer *p,
 	const char *s)
 {
@@ -98,6 +104,12 @@ static __isl_give isl_printer *str_end_line(__isl_take isl_printer *p)
 	return p;
 }
 
+static __isl_give isl_printer *str_flush(__isl_take isl_printer *p)
+{
+	p->buf_n = 0;
+	return p;
+}
+
 static __isl_give isl_printer *str_print_str(__isl_take isl_printer *p,
 	const char *s)
 {
@@ -146,6 +158,7 @@ struct isl_printer_ops {
 						isl_int i);
 	__isl_give isl_printer *(*print_str)(__isl_take isl_printer *p,
 						const char *s);
+	__isl_give isl_printer *(*flush)(__isl_take isl_printer *p);
 };
 
 static struct isl_printer_ops file_ops = {
@@ -153,7 +166,8 @@ static struct isl_printer_ops file_ops = {
 	file_end_line,
 	file_print_int,
 	file_print_isl_int,
-	file_print_str
+	file_print_str,
+	file_flush
 };
 
 static struct isl_printer_ops str_ops = {
@@ -161,7 +175,8 @@ static struct isl_printer_ops str_ops = {
 	str_end_line,
 	str_print_int,
 	str_print_isl_int,
-	str_print_str
+	str_print_str,
+	str_flush
 };
 
 __isl_give isl_printer *isl_printer_to_file(isl_ctx *ctx, FILE *file)
@@ -307,4 +322,9 @@ char *isl_printer_get_str(__isl_keep isl_printer *printer)
 	if (!printer || !printer->buf)
 		return NULL;
 	return strdup(printer->buf);
+}
+
+__isl_give isl_printer *isl_printer_flush(__isl_take isl_printer *p)
+{
+	return p->ops->flush(p);
 }

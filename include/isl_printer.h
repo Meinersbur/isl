@@ -44,6 +44,8 @@ __isl_give isl_printer *isl_printer_print_isl_int(__isl_take isl_printer *p,
 __isl_give isl_printer *isl_printer_print_str(__isl_take isl_printer *p,
 	const char *s);
 
+__isl_give isl_printer *isl_printer_flush(__isl_take isl_printer *p);
+
 #if defined(__cplusplus)
 }
 #endif
