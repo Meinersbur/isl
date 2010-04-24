@@ -6609,3 +6609,79 @@ int isl_set_dim_is_bounded(__isl_keep isl_set *set,
 {
 	return isl_map_dim_is_bounded((isl_map *)set, type, pos);
 }
+
+/* For each of the "n" variables starting at "first", determine
+ * the sign of the variable and put the results in the first "n"
+ * elements of the array "signs".
+ * Sign
+ *	1 means that the variable is non-negative
+ *	-1 means that the variable is non-positive
+ *	0 means the variable attains both positive and negative values.
+ */
+int isl_basic_set_vars_get_sign(__isl_keep isl_basic_set *bset,
+	unsigned first, unsigned n, int *signs)
+{
+	isl_vec *bound = NULL;
+	struct isl_tab *tab = NULL;
+	struct isl_tab_undo *snap;
+	int i;
+
+	if (!bset || !signs)
+		return -1;
+
+	bound = isl_vec_alloc(bset->ctx, 1 + isl_basic_set_total_dim(bset));
+	tab = isl_tab_from_basic_set(bset);
+	if (!bound || !tab)
+		goto error;
+
+	isl_seq_clr(bound->el, bound->size);
+	isl_int_set_si(bound->el[0], -1);
+
+	snap = isl_tab_snap(tab);
+	for (i = 0; i < n; ++i) {
+		int empty;
+
+		isl_int_set_si(bound->el[1 + first + i], -1);
+		if (isl_tab_add_ineq(tab, bound->el) < 0)
+			goto error;
+		empty = tab->empty;
+		isl_int_set_si(bound->el[1 + first + i], 0);
+		if (isl_tab_rollback(tab, snap) < 0)
+			goto error;
+
+		if (empty) {
+			signs[i] = 1;
+			continue;
+		}
+
+		isl_int_set_si(bound->el[1 + first + i], 1);
+		if (isl_tab_add_ineq(tab, bound->el) < 0)
+			goto error;
+		empty = tab->empty;
+		isl_int_set_si(bound->el[1 + first + i], 0);
+		if (isl_tab_rollback(tab, snap) < 0)
+			goto error;
+
+		signs[i] = empty ? -1 : 0;
+	}
+
+	isl_tab_free(tab);
+	isl_vec_free(bound);
+	return 0;
+error:
+	isl_tab_free(tab);
+	isl_vec_free(bound);
+	return -1;
+}
+
+int isl_basic_set_dims_get_sign(__isl_keep isl_basic_set *bset,
+	enum isl_dim_type type, unsigned first, unsigned n, int *signs)
+{
+	if (!bset || !signs)
+		return -1;
+	isl_assert(bset->ctx, first + n <= isl_basic_set_dim(bset, type),
+		return -1);
+
+	first += pos(bset->dim, type) - 1;
+	return isl_basic_set_vars_get_sign(bset, first, n, signs);
+}

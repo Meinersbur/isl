@@ -163,3 +163,6 @@ isl_int *isl_set_wrap_facet(__isl_keep isl_set *set,
 int isl_basic_map_contains_point(__isl_keep isl_basic_map *bmap,
 	__isl_keep isl_point *point);
 int isl_set_contains_point(__isl_keep isl_set *set, __isl_keep isl_point *point);
+
+int isl_basic_set_vars_get_sign(__isl_keep isl_basic_set *bset,
+	unsigned first, unsigned n, int *signs);
