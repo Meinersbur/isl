@@ -2387,6 +2387,18 @@ error:
 	return NULL;
 }
 
+int isl_map_is_transitively_closed(__isl_keep isl_map *map)
+{
+	isl_map *map2;
+	int closed;
+
+	map2 = isl_map_apply_range(isl_map_copy(map), isl_map_copy(map));
+	closed = isl_map_is_subset(map2, map);
+	isl_map_free(map2);
+
+	return closed;
+}
+
 /* Compute the transitive closure  of "map", or an overapproximation.
  * If the result is exact, then *exact is set to 1.
  * Simply use map_power to compute the powers of map, but tell
@@ -2397,12 +2409,22 @@ __isl_give isl_map *isl_map_transitive_closure(__isl_take isl_map *map,
 	int *exact)
 {
 	unsigned param;
+	int closed;
 
 	if (!map)
 		goto error;
 
 	if (map->ctx->opt->closure == ISL_CLOSURE_OMEGA)
 		return transitive_closure_omega(map, exact);
+
+	closed = isl_map_is_transitively_closed(map);
+	if (closed < 0)
+		goto error;
+	if (closed) {
+		if (exact)
+			*exact = 1;
+		return map;
+	}
 
 	param = isl_map_dim(map, isl_dim_param);
 	map = map_power(map, param, exact, 1);
