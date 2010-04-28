@@ -2050,7 +2050,7 @@ static int is_bound(struct sh_data *data, struct isl_set *set, int j,
 
 	isl_int_clear(opt);
 
-	return res == isl_lp_ok ? 1 :
+	return (res == isl_lp_ok || res == isl_lp_empty) ? 1 :
 	       res == isl_lp_unbounded ? 0 : -1;
 }
 
