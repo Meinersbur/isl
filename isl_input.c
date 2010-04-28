@@ -1312,7 +1312,7 @@ static struct isl_obj obj_read(struct isl_stream *s, int nparam)
 		}
 		isl_token_free(tok);
 		tok = isl_stream_next_token(s);
-	} if (nparam > 0)
+	} else if (nparam > 0)
 		bmap = isl_basic_map_add(bmap, isl_dim_param, nparam);
 	if (!tok || tok->type != '{') {
 		isl_stream_error(s, tok, "expecting '{'");
