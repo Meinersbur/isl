@@ -1322,6 +1322,21 @@ static struct isl_obj obj_read(struct isl_stream *s, int nparam)
 	}
 	isl_token_free(tok);
 
+	tok = isl_stream_next_token(s);
+	if (!tok)
+		;
+	else if (tok->type == ISL_TOKEN_IDENT && !strcmp(tok->u.s, "Sym")) {
+		isl_token_free(tok);
+		if (isl_stream_eat(s, '='))
+			goto error;
+		bmap = read_tuple(s, bmap, isl_dim_param, v);
+		if (!bmap)
+			goto error;
+		if (nparam >= 0)
+			isl_assert(s->ctx, nparam == v->n, goto error);
+	} else
+		isl_stream_push_token(s, tok);
+
 	for (;;) {
 		struct isl_obj o;
 		tok = NULL;
