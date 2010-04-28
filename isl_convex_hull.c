@@ -2171,11 +2171,11 @@ static struct isl_basic_set *add_bounds(struct isl_basic_set *bset,
 	for (j = 0; j < set->p[i]->n_eq; ++j) {
 		for (k = 0; k < 2; ++k) {
 			isl_seq_neg(set->p[i]->eq[j], set->p[i]->eq[j], 1+dim);
-			add_bound(bset, data, set, i, set->p[i]->eq[j]);
+			bset = add_bound(bset, data, set, i, set->p[i]->eq[j]);
 		}
 	}
 	for (j = 0; j < set->p[i]->n_ineq; ++j)
-		add_bound(bset, data, set, i, set->p[i]->ineq[j]);
+		bset = add_bound(bset, data, set, i, set->p[i]->ineq[j]);
 	return bset;
 }
 
