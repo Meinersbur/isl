@@ -3096,25 +3096,41 @@ error:
  *
  *		f - m d >= n
  */
-int isl_basic_map_add_div_constraints(struct isl_basic_map *bmap, unsigned div)
+int isl_basic_map_add_div_constraints_var(__isl_keep isl_basic_map *bmap,
+	unsigned pos, isl_int *div)
 {
 	int i, j;
 	unsigned total = isl_basic_map_total_dim(bmap);
-	unsigned div_pos = 1 + total - bmap->n_div + div;
 
 	i = isl_basic_map_alloc_inequality(bmap);
 	if (i < 0)
 		return -1;
-	isl_seq_cpy(bmap->ineq[i], bmap->div[div]+1, 1+total);
-	isl_int_neg(bmap->ineq[i][div_pos], bmap->div[div][0]);
+	isl_seq_cpy(bmap->ineq[i], div + 1, 1 + total);
+	isl_int_neg(bmap->ineq[i][1 + pos], div[0]);
 
 	j = isl_basic_map_alloc_inequality(bmap);
 	if (j < 0)
 		return -1;
 	isl_seq_neg(bmap->ineq[j], bmap->ineq[i], 1 + total);
-	isl_int_add(bmap->ineq[j][0], bmap->ineq[j][0], bmap->ineq[j][div_pos]);
+	isl_int_add(bmap->ineq[j][0], bmap->ineq[j][0], bmap->ineq[j][1 + pos]);
 	isl_int_sub_ui(bmap->ineq[j][0], bmap->ineq[j][0], 1);
 	return j;
+}
+
+int isl_basic_set_add_div_constraints_var(__isl_keep isl_basic_set *bset,
+	unsigned pos, isl_int *div)
+{
+	return isl_basic_map_add_div_constraints_var((isl_basic_map *)bset,
+							pos, div);
+}
+
+int isl_basic_map_add_div_constraints(struct isl_basic_map *bmap, unsigned div)
+{
+	unsigned total = isl_basic_map_total_dim(bmap);
+	unsigned div_pos = total - bmap->n_div + div;
+
+	return isl_basic_map_add_div_constraints_var(bmap, div_pos,
+							bmap->div[div]);
 }
 
 struct isl_basic_set *isl_basic_map_underlying_set(

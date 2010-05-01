@@ -166,3 +166,6 @@ int isl_set_contains_point(__isl_keep isl_set *set, __isl_keep isl_point *point)
 
 int isl_basic_set_vars_get_sign(__isl_keep isl_basic_set *bset,
 	unsigned first, unsigned n, int *signs);
+
+int isl_basic_set_add_div_constraints_var(__isl_keep isl_basic_set *bset,
+	unsigned pos, isl_int *div);

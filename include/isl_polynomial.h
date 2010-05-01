@@ -61,6 +61,11 @@ __isl_give isl_qpolynomial *isl_qpolynomial_substitute(
 	enum isl_dim_type type, unsigned first, unsigned n,
 	__isl_keep isl_qpolynomial **subs);
 
+int isl_qpolynomial_as_polynomial_on_domain(__isl_keep isl_qpolynomial *qp,
+	__isl_keep isl_basic_set *bset,
+	int (*fn)(__isl_take isl_basic_set *bset,
+		  __isl_take isl_qpolynomial *poly, void *user), void *user);
+
 struct isl_term;
 typedef struct isl_term isl_term;
 

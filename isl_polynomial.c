@@ -2237,6 +2237,32 @@ error:
 	return NULL;
 }
 
+
+__isl_give struct isl_upoly *isl_upoly_from_affine(isl_ctx *ctx, isl_int *f,
+	isl_int denom, unsigned len)
+{
+	int i;
+	struct isl_upoly *up;
+
+	isl_assert(ctx, len >= 1, return NULL);
+
+	up = isl_upoly_rat_cst(ctx, f[0], denom);
+	for (i = 0; i < len - 1; ++i) {
+		struct isl_upoly *t;
+		struct isl_upoly *c;
+
+		if (isl_int_is_zero(f[1 + i]))
+			continue;
+
+		c = isl_upoly_rat_cst(ctx, f[1 + i], denom);
+		t = isl_upoly_pow(ctx, i, 1);
+		t = isl_upoly_mul(c, t);
+		up = isl_upoly_sum(up, t);
+	}
+
+	return up;
+}
+
 __isl_give struct isl_upoly *isl_upoly_subs(__isl_take struct isl_upoly *up,
 	unsigned first, unsigned n, __isl_keep struct isl_upoly **subs)
 {
@@ -2332,6 +2358,65 @@ __isl_give isl_qpolynomial *isl_qpolynomial_substitute(
 error:
 	isl_qpolynomial_free(qp);
 	return NULL;
+}
+
+__isl_give isl_basic_set *add_div_constraints(__isl_take isl_basic_set *bset,
+	__isl_take isl_mat *div)
+{
+	int i;
+	unsigned total;
+
+	if (!bset || !div)
+		goto error;
+
+	bset = isl_basic_set_extend_constraints(bset, 0, 2 * div->n_row);
+	if (!bset)
+		goto error;
+	total = isl_basic_set_total_dim(bset);
+	for (i = 0; i < div->n_row; ++i)
+		if (isl_basic_set_add_div_constraints_var(bset,
+				    total - div->n_row + i, div->row[i]) < 0)
+			goto error;
+
+	isl_mat_free(div);
+	return bset;
+error:
+	isl_mat_free(div);
+	isl_basic_set_free(bset);
+	return NULL;
+}
+
+/* Extend "bset" with extra set dimensions for each integer division
+ * in "qp" and then call "fn" with the extended bset and the polynomial
+ * that results from replacing each of the integer divisions by the
+ * corresponding extra set dimension.
+ */
+int isl_qpolynomial_as_polynomial_on_domain(__isl_keep isl_qpolynomial *qp,
+	__isl_keep isl_basic_set *bset,
+	int (*fn)(__isl_take isl_basic_set *bset,
+		  __isl_take isl_qpolynomial *poly, void *user), void *user)
+{
+	isl_dim *dim;
+	isl_mat *div;
+	isl_qpolynomial *poly;
+
+	if (!qp || !bset)
+		goto error;
+	if (qp->div->n_row == 0)
+		return fn(isl_basic_set_copy(bset), isl_qpolynomial_copy(qp),
+			  user);
+
+	div = isl_mat_copy(qp->div);
+	dim = isl_dim_copy(qp->dim);
+	dim = isl_dim_add(dim, isl_dim_set, qp->div->n_row);
+	poly = isl_qpolynomial_alloc(dim, 0, isl_upoly_copy(qp->upoly));
+	bset = isl_basic_set_copy(bset);
+	bset = isl_basic_set_add(bset, isl_dim_set, qp->div->n_row);
+	bset = add_div_constraints(bset, div);
+
+	return fn(bset, poly, user);
+error:
+	return -1;
 }
 
 __isl_give isl_term *isl_term_alloc(__isl_take isl_dim *dim,
