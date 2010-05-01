@@ -2793,6 +2793,29 @@ error:
 	return NULL;
 }
 
+/* Add a constraint to "bmap" expressing i_pos <= o_pos
+ */
+static __isl_give isl_basic_map *var_less_or_equal(
+	__isl_take isl_basic_map *bmap, unsigned pos)
+{
+	int i;
+	unsigned nparam;
+	unsigned n_in;
+
+	i = isl_basic_map_alloc_inequality(bmap);
+	if (i < 0)
+		goto error;
+	nparam = isl_basic_map_n_param(bmap);
+	n_in = isl_basic_map_n_in(bmap);
+	isl_seq_clr(bmap->ineq[i], 1 + isl_basic_map_total_dim(bmap));
+	isl_int_set_si(bmap->ineq[i][1+nparam+pos], -1);
+	isl_int_set_si(bmap->ineq[i][1+nparam+n_in+pos], 1);
+	return isl_basic_map_finalize(bmap);
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
 /* Add a constraints to "bmap" expressing i_pos > o_pos
  */
 static struct isl_basic_map *var_more(struct isl_basic_map *bmap, unsigned pos)
@@ -2816,6 +2839,29 @@ error:
 	return NULL;
 }
 
+/* Add a constraint to "bmap" expressing i_pos >= o_pos
+ */
+static __isl_give isl_basic_map *var_more_or_equal(
+	__isl_take isl_basic_map *bmap, unsigned pos)
+{
+	int i;
+	unsigned nparam;
+	unsigned n_in;
+
+	i = isl_basic_map_alloc_inequality(bmap);
+	if (i < 0)
+		goto error;
+	nparam = isl_basic_map_n_param(bmap);
+	n_in = isl_basic_map_n_in(bmap);
+	isl_seq_clr(bmap->ineq[i], 1 + isl_basic_map_total_dim(bmap));
+	isl_int_set_si(bmap->ineq[i][1+nparam+pos], 1);
+	isl_int_set_si(bmap->ineq[i][1+nparam+n_in+pos], -1);
+	return isl_basic_map_finalize(bmap);
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
 struct isl_basic_map *isl_basic_map_equal(struct isl_dim *dim, unsigned n_equal)
 {
 	int i;
@@ -2828,7 +2874,7 @@ struct isl_basic_map *isl_basic_map_equal(struct isl_dim *dim, unsigned n_equal)
 	return isl_basic_map_finalize(bmap);
 }
 
-/* Return a relation on pairs of sets of dimension "dim" expressing i_pos < o_pos
+/* Return a relation on of dimension "dim" expressing i_[0..pos] << o_[0..pos]
  */
 struct isl_basic_map *isl_basic_map_less_at(struct isl_dim *dim, unsigned pos)
 {
@@ -2841,6 +2887,21 @@ struct isl_basic_map *isl_basic_map_less_at(struct isl_dim *dim, unsigned pos)
 		bmap = var_equal(bmap, i);
 	if (bmap)
 		bmap = var_less(bmap, pos);
+	return isl_basic_map_finalize(bmap);
+}
+
+/* Return a relation on of dimension "dim" expressing i_[0..pos] <<= o_[0..pos]
+ */
+__isl_give isl_basic_map *isl_basic_map_less_or_equal_at(
+	__isl_take isl_dim *dim, unsigned pos)
+{
+	int i;
+	isl_basic_map *bmap;
+
+	bmap = isl_basic_map_alloc_dim(dim, 0, pos, 1);
+	for (i = 0; i < pos; ++i)
+		bmap = var_equal(bmap, i);
+	bmap = var_less_or_equal(bmap, pos);
 	return isl_basic_map_finalize(bmap);
 }
 
@@ -2860,6 +2921,21 @@ struct isl_basic_map *isl_basic_map_more_at(struct isl_dim *dim, unsigned pos)
 	return isl_basic_map_finalize(bmap);
 }
 
+/* Return a relation on of dimension "dim" expressing i_[0..pos] >>= o_[0..pos]
+ */
+__isl_give isl_basic_map *isl_basic_map_more_or_equal_at(
+	__isl_take isl_dim *dim, unsigned pos)
+{
+	int i;
+	isl_basic_map *bmap;
+
+	bmap = isl_basic_map_alloc_dim(dim, 0, pos, 1);
+	for (i = 0; i < pos; ++i)
+		bmap = var_equal(bmap, i);
+	bmap = var_more_or_equal(bmap, pos);
+	return isl_basic_map_finalize(bmap);
+}
+
 static __isl_give isl_map *map_lex_lte(__isl_take isl_dim *dims, int equal)
 {
 	struct isl_map *map;
@@ -2869,16 +2945,21 @@ static __isl_give isl_map *map_lex_lte(__isl_take isl_dim *dims, int equal)
 	if (!dims)
 		return NULL;
 	dim = dims->n_out;
-	map = isl_map_alloc_dim(isl_dim_copy(dims), dim + equal, ISL_MAP_DISJOINT);
+	map = isl_map_alloc_dim(isl_dim_copy(dims), dim, ISL_MAP_DISJOINT);
 
-	for (i = 0; i < dim; ++i)
+	for (i = 0; i + 1 < dim; ++i)
 		map = isl_map_add_basic_map(map,
 				  isl_basic_map_less_at(isl_dim_copy(dims), i));
-	if (equal)
-		map = isl_map_add_basic_map(map,
-				  isl_basic_map_equal(isl_dim_copy(dims), dim));
+	if (dim > 0) {
+		if (equal)
+			map = isl_map_add_basic_map(map,
+			      isl_basic_map_less_or_equal_at(dims, dim - 1));
+		else
+			map = isl_map_add_basic_map(map,
+			      isl_basic_map_less_at(dims, dim - 1));
+	} else
+		isl_dim_free(dims);
 
-	isl_dim_free(dims);
 	return map;
 }
 
@@ -2901,16 +2982,21 @@ static __isl_give isl_map *map_lex_gte(__isl_take isl_dim *dims, int equal)
 	if (!dims)
 		return NULL;
 	dim = dims->n_out;
-	map = isl_map_alloc_dim(isl_dim_copy(dims), dim + equal, ISL_MAP_DISJOINT);
+	map = isl_map_alloc_dim(isl_dim_copy(dims), dim, ISL_MAP_DISJOINT);
 
-	for (i = 0; i < dim; ++i)
+	for (i = 0; i + 1 < dim; ++i)
 		map = isl_map_add_basic_map(map,
 				  isl_basic_map_more_at(isl_dim_copy(dims), i));
-	if (equal)
-		map = isl_map_add_basic_map(map,
-				  isl_basic_map_equal(isl_dim_copy(dims), dim));
+	if (dim > 0) {
+		if (equal)
+			map = isl_map_add_basic_map(map,
+			      isl_basic_map_more_or_equal_at(dims, dim - 1));
+		else
+			map = isl_map_add_basic_map(map,
+			      isl_basic_map_more_at(dims, dim - 1));
+	} else
+		isl_dim_free(dims);
 
-	isl_dim_free(dims);
 	return map;
 }
 
