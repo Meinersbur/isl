@@ -381,10 +381,16 @@ static struct isl_token *next_token(struct isl_stream *s, int same_line)
 		if ((c = isl_stream_getc(s)) == '=') {
 			tok->type = ISL_TOKEN_GE;
 			return tok;
-		}
+		} else if (c == '>') {
+			if ((c = isl_stream_getc(s)) == '=') {
+				tok->type = ISL_TOKEN_LEX_GE;
+				return tok;
+			}
+			tok->type = ISL_TOKEN_LEX_GT;
+		} else
+			tok->type = ISL_TOKEN_GT;
 		if (c != -1)
 			isl_stream_ungetc(s, c);
-		tok->type = ISL_TOKEN_GT;
 		return tok;
 	}
 	if (c == '<') {
@@ -395,10 +401,16 @@ static struct isl_token *next_token(struct isl_stream *s, int same_line)
 		if ((c = isl_stream_getc(s)) == '=') {
 			tok->type = ISL_TOKEN_LE;
 			return tok;
-		}
+		} else if (c == '<') {
+			if ((c = isl_stream_getc(s)) == '=') {
+				tok->type = ISL_TOKEN_LEX_LE;
+				return tok;
+			}
+			tok->type = ISL_TOKEN_LEX_LT;
+		} else
+			tok->type = ISL_TOKEN_LT;
 		if (c != -1)
 			isl_stream_ungetc(s, c);
-		tok->type = ISL_TOKEN_LT;
 		return tok;
 	}
 	if (c == '&') {
