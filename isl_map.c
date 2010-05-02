@@ -2936,31 +2936,45 @@ __isl_give isl_basic_map *isl_basic_map_more_or_equal_at(
 	return isl_basic_map_finalize(bmap);
 }
 
-static __isl_give isl_map *map_lex_lte(__isl_take isl_dim *dims, int equal)
+static __isl_give isl_map *map_lex_lte_first(__isl_take isl_dim *dims,
+	unsigned n, int equal)
 {
 	struct isl_map *map;
-	unsigned dim;
 	int i;
 
-	if (!dims)
-		return NULL;
-	dim = dims->n_out;
-	map = isl_map_alloc_dim(isl_dim_copy(dims), dim, ISL_MAP_DISJOINT);
+	map = isl_map_alloc_dim(isl_dim_copy(dims), n, ISL_MAP_DISJOINT);
 
-	for (i = 0; i + 1 < dim; ++i)
+	for (i = 0; i + 1 < n; ++i)
 		map = isl_map_add_basic_map(map,
 				  isl_basic_map_less_at(isl_dim_copy(dims), i));
-	if (dim > 0) {
+	if (n > 0) {
 		if (equal)
 			map = isl_map_add_basic_map(map,
-			      isl_basic_map_less_or_equal_at(dims, dim - 1));
+			      isl_basic_map_less_or_equal_at(dims, n - 1));
 		else
 			map = isl_map_add_basic_map(map,
-			      isl_basic_map_less_at(dims, dim - 1));
+			      isl_basic_map_less_at(dims, n - 1));
 	} else
 		isl_dim_free(dims);
 
 	return map;
+}
+
+static __isl_give isl_map *map_lex_lte(__isl_take isl_dim *dims, int equal)
+{
+	if (!dims)
+		return NULL;
+	return map_lex_lte_first(dims, dims->n_out, equal);
+}
+
+__isl_give isl_map *isl_map_lex_lt_first(__isl_take isl_dim *dim, unsigned n)
+{
+	return map_lex_lte_first(dim, n, 0);
+}
+
+__isl_give isl_map *isl_map_lex_le_first(__isl_take isl_dim *dim, unsigned n)
+{
+	return map_lex_lte_first(dim, n, 1);
 }
 
 __isl_give isl_map *isl_map_lex_lt(__isl_take isl_dim *set_dim)
@@ -2973,31 +2987,45 @@ __isl_give isl_map *isl_map_lex_le(__isl_take isl_dim *set_dim)
 	return map_lex_lte(isl_dim_map(set_dim), 1);
 }
 
-static __isl_give isl_map *map_lex_gte(__isl_take isl_dim *dims, int equal)
+static __isl_give isl_map *map_lex_gte_first(__isl_take isl_dim *dims,
+	unsigned n, int equal)
 {
 	struct isl_map *map;
-	unsigned dim;
 	int i;
 
-	if (!dims)
-		return NULL;
-	dim = dims->n_out;
-	map = isl_map_alloc_dim(isl_dim_copy(dims), dim, ISL_MAP_DISJOINT);
+	map = isl_map_alloc_dim(isl_dim_copy(dims), n, ISL_MAP_DISJOINT);
 
-	for (i = 0; i + 1 < dim; ++i)
+	for (i = 0; i + 1 < n; ++i)
 		map = isl_map_add_basic_map(map,
 				  isl_basic_map_more_at(isl_dim_copy(dims), i));
-	if (dim > 0) {
+	if (n > 0) {
 		if (equal)
 			map = isl_map_add_basic_map(map,
-			      isl_basic_map_more_or_equal_at(dims, dim - 1));
+			      isl_basic_map_more_or_equal_at(dims, n - 1));
 		else
 			map = isl_map_add_basic_map(map,
-			      isl_basic_map_more_at(dims, dim - 1));
+			      isl_basic_map_more_at(dims, n - 1));
 	} else
 		isl_dim_free(dims);
 
 	return map;
+}
+
+static __isl_give isl_map *map_lex_gte(__isl_take isl_dim *dims, int equal)
+{
+	if (!dims)
+		return NULL;
+	return map_lex_gte_first(dims, dims->n_out, equal);
+}
+
+__isl_give isl_map *isl_map_lex_gt_first(__isl_take isl_dim *dim, unsigned n)
+{
+	return map_lex_gte_first(dim, n, 0);
+}
+
+__isl_give isl_map *isl_map_lex_ge_first(__isl_take isl_dim *dim, unsigned n)
+{
+	return map_lex_gte_first(dim, n, 1);
 }
 
 __isl_give isl_map *isl_map_lex_gt(__isl_take isl_dim *set_dim)

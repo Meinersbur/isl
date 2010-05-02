@@ -586,13 +586,27 @@ and return an identity relation between two such sets.
 		__isl_take isl_dim *set_dim);
 	__isl_give isl_map *isl_map_lex_ge(
 		__isl_take isl_dim *set_dim);
+	__isl_give isl_map *isl_map_lex_lt_first(
+		__isl_take isl_dim *dim, unsigned n);
+	__isl_give isl_map *isl_map_lex_le_first(
+		__isl_take isl_dim *dim, unsigned n);
+	__isl_give isl_map *isl_map_lex_gt_first(
+		__isl_take isl_dim *dim, unsigned n);
+	__isl_give isl_map *isl_map_lex_ge_first(
+		__isl_take isl_dim *dim, unsigned n);
 
-These functions take a dimension specification for a B<set>
+The first four functions take a dimension specification for a B<set>
 and return relations that express that the elements in the domain
 are lexicographically less
 (C<isl_map_lex_lt>), less or equal (C<isl_map_lex_le>),
 greater (C<isl_map_lex_gt>) or greater or equal (C<isl_map_lex_ge>)
 than the elements in the range.
+The last four functions take a dimension specification for a map
+and return relations that express that the first C<n> dimensions
+in the domain are lexicographically less
+(C<isl_map_lex_lt_first>), less or equal (C<isl_map_lex_le_first>),
+greater (C<isl_map_lex_gt_first>) or greater or equal (C<isl_map_lex_ge_first>)
+than the first C<n> dimensions in the range.
 
 =back
 
