@@ -113,9 +113,6 @@ __isl_give isl_qpolynomial *isl_qpolynomial_alloc(__isl_take isl_dim *dim,
 __isl_give isl_qpolynomial *isl_qpolynomial_cow(__isl_take isl_qpolynomial *qp);
 __isl_give isl_qpolynomial *isl_qpolynomial_dup(__isl_keep isl_qpolynomial *qp);
 
-__isl_give isl_qpolynomial *isl_qpolynomial_sub(__isl_take isl_qpolynomial *qp1,
-	__isl_take isl_qpolynomial *qp2);
-
 __isl_give isl_qpolynomial *isl_qpolynomial_cst(__isl_take isl_dim *dim,
 	isl_int v);
 __isl_give isl_qpolynomial *isl_qpolynomial_pow(__isl_take isl_dim *dim,
