@@ -2200,6 +2200,14 @@ error:
 	return NULL;
 }
 
+__isl_give isl_basic_set *isl_basic_set_move_dims(__isl_take isl_basic_set *bset,
+	enum isl_dim_type dst_type, unsigned dst_pos,
+	enum isl_dim_type src_type, unsigned src_pos, unsigned n)
+{
+	return (isl_basic_set *)isl_basic_map_move_dims(
+		(isl_basic_map *)bset, dst_type, dst_pos, src_type, src_pos, n);
+}
+
 __isl_give isl_set *isl_set_move_dims(__isl_take isl_set *set,
 	enum isl_dim_type dst_type, unsigned dst_pos,
 	enum isl_dim_type src_type, unsigned src_pos, unsigned n)
