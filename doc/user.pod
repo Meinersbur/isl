@@ -371,11 +371,12 @@ C<isl_dim_param>, C<isl_dim_in> (only for relations),
 C<isl_dim_out> (only for relations), C<isl_dim_set>
 (only for sets) or C<isl_dim_all>.
 
-It is often useful to create sets or maps that live in the
-same space as some other set or map.  This can be accomplished
-by creating the new sets or maps
-(see L<Creating New Sets and Relations>) based on the dimension
-specification of the original set or map.
+It is often useful to create objects that live in the
+same space as some other object.  This can be accomplished
+by creating the new objects
+(see L<Creating New Sets and Relations> or
+L<Creating New (Piecewise) Quasipolynomials>) based on the dimension
+specification of the original object.
 
 	#include <isl_set.h>
 	__isl_give isl_dim *isl_basic_set_get_dim(
@@ -386,6 +387,12 @@ specification of the original set or map.
 	__isl_give isl_dim *isl_basic_map_get_dim(
 		__isl_keep isl_basic_map *bmap);
 	__isl_give isl_dim *isl_map_get_dim(__isl_keep isl_map *map);
+
+	#include <isl_polynomial.h>
+	__isl_give isl_dim *isl_qpolynomial_get_dim(
+		__isl_keep isl_qpolynomial *qp);
+	__isl_give isl_dim *isl_pw_qpolynomial_get_dim(
+		__isl_keep isl_pw_qpolynomial *pwqp);
 
 The names of the individual dimensions may be set or read off
 using the following functions.

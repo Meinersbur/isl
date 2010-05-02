@@ -311,6 +311,11 @@ isl_ctx *isl_qpolynomial_get_ctx(__isl_keep isl_qpolynomial *qp)
 	return qp ? qp->dim->ctx : NULL;
 }
 
+__isl_give isl_dim *isl_qpolynomial_get_dim(__isl_keep isl_qpolynomial *qp)
+{
+	return qp ? isl_dim_copy(qp->dim) : NULL;
+}
+
 int isl_qpolynomial_is_zero(__isl_keep isl_qpolynomial *qp)
 {
 	return qp ? isl_upoly_is_zero(qp->upoly) : -1;
