@@ -67,6 +67,7 @@ struct isl_ctx {
 
 	struct isl_options	*opt;
 
+	isl_int			zero;
 	isl_int			one;
 	isl_int			negone;
 

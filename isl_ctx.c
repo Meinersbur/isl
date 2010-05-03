@@ -31,6 +31,9 @@ isl_ctx *isl_ctx_alloc_with_options(struct isl_options *opt)
 	ctx->opt = opt;
 	ctx->ref = 0;
 
+	isl_int_init(ctx->zero);
+	isl_int_set_si(ctx->zero, 0);
+
 	isl_int_init(ctx->one);
 	isl_int_set_si(ctx->one, 1);
 
@@ -74,6 +77,7 @@ void isl_ctx_free(struct isl_ctx *ctx)
 	isl_assert(ctx, ctx->ref == 0, return);
 	isl_hash_table_clear(&ctx->name_hash);
 	isl_blk_clear_cache(ctx);
+	isl_int_clear(ctx->zero);
 	isl_int_clear(ctx->one);
 	isl_int_clear(ctx->negone);
 	isl_int_clear(ctx->normalize_gcd);
