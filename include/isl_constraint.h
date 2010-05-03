@@ -47,6 +47,12 @@ int isl_basic_set_foreach_constraint(__isl_keep isl_basic_set *bset,
 int isl_constraint_is_equal(struct isl_constraint *constraint1,
 			    struct isl_constraint *constraint2);
 
+int isl_basic_set_foreach_bound_pair(__isl_keep isl_basic_set *bset,
+	enum isl_dim_type type, unsigned pos,
+	int (*fn)(__isl_take isl_constraint *lower,
+		  __isl_take isl_constraint *upper,
+		  __isl_take isl_basic_set *bset, void *user), void *user);
+
 __isl_give isl_basic_map *isl_basic_map_add_constraint(
 	__isl_take isl_basic_map *bmap, __isl_take isl_constraint *constraint);
 __isl_give isl_basic_set *isl_basic_set_add_constraint(

@@ -1,10 +1,13 @@
 /*
  * Copyright 2008-2009 Katholieke Universiteit Leuven
+ * Copyright 2010      INRIA Saclay
  *
  * Use of this software is governed by the GNU LGPLv2.1 license
  *
  * Written by Sven Verdoolaege, K.U.Leuven, Departement
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
+ * and INRIA Saclay - Ile-de-France, Parc Club Orsay Universite,
+ * ZAC des vignes, 4 rue Jacques Monod, 91893 Orsay, France 
  */
 
 #include <isl_constraint.h>
@@ -515,4 +518,348 @@ int isl_basic_set_has_defining_inequalities(
 	*upper = NULL;
 	isl_int_clear(m);
 	return 0;
+}
+
+/* Given two constraints "a" and "b" on the variable at position "abs_pos"
+ * (in "a" and "b"), add a constraint to "bset" that ensures that the
+ * bound implied by "a" is (strictly) larger than the bound implied by "b".
+ *
+ * If both constraints imply lower bounds, then this means that "a" is
+ * active in the result.
+ * If both constraints imply upper bounds, then this means that "b" is
+ * active in the result.
+ */
+static __isl_give isl_basic_set *add_larger_bound_constraint(
+	__isl_take isl_basic_set *bset, isl_int *a, isl_int *b,
+	unsigned abs_pos, int strict)
+{
+	int k;
+	isl_int t;
+	unsigned total;
+
+	k = isl_basic_set_alloc_inequality(bset);
+	if (k < 0)
+		goto error;
+
+	total = isl_basic_set_dim(bset, isl_dim_all);
+
+	isl_int_init(t);
+	isl_int_neg(t, b[1 + abs_pos]);
+
+	isl_seq_combine(bset->ineq[k], t, a, a[1 + abs_pos], b, 1 + abs_pos);
+	isl_seq_combine(bset->ineq[k] + 1 + abs_pos,
+		t, a + 1 + abs_pos + 1, a[1 + abs_pos], b + 1 + abs_pos + 1,
+		total - abs_pos);
+
+	if (strict)
+		isl_int_sub_ui(bset->ineq[k][0], bset->ineq[k][0], 1);
+
+	isl_int_clear(t);
+
+	return bset;
+error:
+	isl_basic_set_free(bset);
+	return NULL;
+}
+
+/* Add constraints to "context" that ensure that "u" is the smallest
+ * (and therefore active) upper bound on "abs_pos" in "bset" and return
+ * the resulting basic set.
+ */
+static __isl_give isl_basic_set *set_smallest_upper_bound(
+	__isl_keep isl_basic_set *context,
+	__isl_keep isl_basic_set *bset, unsigned abs_pos, int n_upper, int u)
+{
+	int j;
+
+	context = isl_basic_set_copy(context);
+	context = isl_basic_set_cow(context);
+
+	context = isl_basic_set_extend_constraints(context, 0, n_upper - 1);
+
+	for (j = 0; j < bset->n_ineq; ++j) {
+		if (j == u)
+			continue;
+		if (!isl_int_is_neg(bset->ineq[j][1 + abs_pos]))
+			continue;
+		context = add_larger_bound_constraint(context,
+			bset->ineq[j], bset->ineq[u], abs_pos, j > u);
+	}
+
+	context = isl_basic_set_simplify(context);
+	context = isl_basic_set_finalize(context);
+
+	return context;
+}
+
+/* Add constraints to "context" that ensure that "u" is the largest
+ * (and therefore active) upper bound on "abs_pos" in "bset" and return
+ * the resulting basic set.
+ */
+static __isl_give isl_basic_set *set_largest_lower_bound(
+	__isl_keep isl_basic_set *context,
+	__isl_keep isl_basic_set *bset, unsigned abs_pos, int n_lower, int l)
+{
+	int j;
+
+	context = isl_basic_set_copy(context);
+	context = isl_basic_set_cow(context);
+
+	context = isl_basic_set_extend_constraints(context, 0, n_lower - 1);
+
+	for (j = 0; j < bset->n_ineq; ++j) {
+		if (j == l)
+			continue;
+		if (!isl_int_is_pos(bset->ineq[j][1 + abs_pos]))
+			continue;
+		context = add_larger_bound_constraint(context,
+			bset->ineq[l], bset->ineq[j], abs_pos, j > l);
+	}
+
+	context = isl_basic_set_simplify(context);
+	context = isl_basic_set_finalize(context);
+
+	return context;
+}
+
+static int foreach_upper_bound(__isl_keep isl_basic_set *bset,
+	enum isl_dim_type type, unsigned abs_pos,
+	__isl_take isl_basic_set *context, int n_upper,
+	int (*fn)(__isl_take isl_constraint *lower,
+		  __isl_take isl_constraint *upper,
+		  __isl_take isl_basic_set *bset, void *user), void *user)
+{
+	isl_basic_set *context_i;
+	isl_constraint *upper = NULL;
+	int i;
+
+	for (i = 0; i < bset->n_ineq; ++i) {
+		if (isl_int_is_zero(bset->ineq[i][1 + abs_pos]))
+			continue;
+
+		context_i = set_smallest_upper_bound(context, bset,
+							abs_pos, n_upper, i);
+		if (isl_basic_set_is_empty(context_i)) {
+			isl_basic_set_free(context_i);
+			continue;
+		}
+		upper = isl_basic_set_constraint(isl_basic_set_copy(bset),
+						&bset->ineq[i]);
+		if (!upper || !context_i)
+			goto error;
+		if (fn(NULL, upper, context_i, user) < 0)
+			break;
+	}
+
+	isl_basic_set_free(context);
+
+	if (i < bset->n_ineq)
+		return -1;
+
+	return 0;
+error:
+	isl_constraint_free(upper);
+	isl_basic_set_free(context_i);
+	isl_basic_set_free(context);
+	return -1;
+}
+
+static int foreach_lower_bound(__isl_keep isl_basic_set *bset,
+	enum isl_dim_type type, unsigned abs_pos,
+	__isl_take isl_basic_set *context, int n_lower,
+	int (*fn)(__isl_take isl_constraint *lower,
+		  __isl_take isl_constraint *upper,
+		  __isl_take isl_basic_set *bset, void *user), void *user)
+{
+	isl_basic_set *context_i;
+	isl_constraint *lower = NULL;
+	int i;
+
+	for (i = 0; i < bset->n_ineq; ++i) {
+		if (isl_int_is_zero(bset->ineq[i][1 + abs_pos]))
+			continue;
+
+		context_i = set_largest_lower_bound(context, bset,
+							abs_pos, n_lower, i);
+		if (isl_basic_set_is_empty(context_i)) {
+			isl_basic_set_free(context_i);
+			continue;
+		}
+		lower = isl_basic_set_constraint(isl_basic_set_copy(bset),
+						&bset->ineq[i]);
+		if (!lower || !context_i)
+			goto error;
+		if (fn(lower, NULL, context_i, user) < 0)
+			break;
+	}
+
+	isl_basic_set_free(context);
+
+	if (i < bset->n_ineq)
+		return -1;
+
+	return 0;
+error:
+	isl_constraint_free(lower);
+	isl_basic_set_free(context_i);
+	isl_basic_set_free(context);
+	return -1;
+}
+
+static int foreach_bound_pair(__isl_keep isl_basic_set *bset,
+	enum isl_dim_type type, unsigned abs_pos,
+	__isl_take isl_basic_set *context, int n_lower, int n_upper,
+	int (*fn)(__isl_take isl_constraint *lower,
+		  __isl_take isl_constraint *upper,
+		  __isl_take isl_basic_set *bset, void *user), void *user)
+{
+	isl_basic_set *context_i, *context_j;
+	isl_constraint *lower = NULL;
+	isl_constraint *upper = NULL;
+	int i, j;
+
+	for (i = 0; i < bset->n_ineq; ++i) {
+		if (!isl_int_is_pos(bset->ineq[i][1 + abs_pos]))
+			continue;
+
+		context_i = set_largest_lower_bound(context, bset,
+							abs_pos, n_lower, i);
+		if (isl_basic_set_is_empty(context_i)) {
+			isl_basic_set_free(context_i);
+			continue;
+		}
+
+		for (j = 0; j < bset->n_ineq; ++j) {
+			if (!isl_int_is_neg(bset->ineq[j][1 + abs_pos]))
+				continue;
+
+			context_j = set_smallest_upper_bound(context_i, bset,
+							    abs_pos, n_upper, j);
+			context_j = isl_basic_set_extend_constraints(context_j,
+									0, 1);
+			context_j = add_larger_bound_constraint(context_j,
+				bset->ineq[i], bset->ineq[j], abs_pos, 0);
+			context_j = isl_basic_set_simplify(context_j);
+			context_j = isl_basic_set_finalize(context_j);
+			if (isl_basic_set_is_empty(context_j)) {
+				isl_basic_set_free(context_j);
+				continue;
+			}
+			lower = isl_basic_set_constraint(isl_basic_set_copy(bset),
+							&bset->ineq[i]);
+			upper = isl_basic_set_constraint(isl_basic_set_copy(bset),
+							&bset->ineq[j]);
+			if (!lower || !upper || !context_j)
+				goto error;
+			if (fn(lower, upper, context_j, user) < 0)
+				break;
+		}
+
+		isl_basic_set_free(context_i);
+
+		if (j < bset->n_ineq)
+			break;
+	}
+
+	isl_basic_set_free(context);
+
+	if (i < bset->n_ineq)
+		return -1;
+
+	return 0;
+error:
+	isl_constraint_free(lower);
+	isl_constraint_free(upper);
+	isl_basic_set_free(context_i);
+	isl_basic_set_free(context_j);
+	isl_basic_set_free(context);
+	return -1;
+}
+
+/* For each pair of lower and upper bounds on the variable "pos"
+ * of type "type", call "fn" with these lower and upper bounds and the
+ * set of constraints on the remaining variables where these bounds
+ * are active, i.e., (stricly) larger/smaller than the other lower/upper bounds.
+ *
+ * If the designated variable is equal to an affine combination of the
+ * other variables then fn is called with both lower and upper
+ * set to the corresponding equality.
+ *
+ * If there is no lower (or upper) bound, then NULL is passed
+ * as the corresponding bound.
+ *
+ * We first check if the variable is involved in any equality.
+ * If not, we count the number of lower and upper bounds and
+ * act accordingly.
+ */
+int isl_basic_set_foreach_bound_pair(__isl_keep isl_basic_set *bset,
+	enum isl_dim_type type, unsigned pos,
+	int (*fn)(__isl_take isl_constraint *lower,
+		  __isl_take isl_constraint *upper,
+		  __isl_take isl_basic_set *bset, void *user), void *user)
+{
+	int i;
+	isl_constraint *lower = NULL;
+	isl_constraint *upper = NULL;
+	isl_basic_set *context = NULL;
+	unsigned abs_pos;
+	int n_lower, n_upper;
+
+	if (!bset)
+		return -1;
+	isl_assert(bset->ctx, pos < isl_basic_set_dim(bset, type), return -1);
+	isl_assert(bset->ctx, type == isl_dim_param || type == isl_dim_set,
+		return -1);
+
+	abs_pos = pos;
+	if (type == isl_dim_set)
+		abs_pos += isl_basic_set_dim(bset, isl_dim_param);
+
+	for (i = 0; i < bset->n_eq; ++i) {
+		if (isl_int_is_zero(bset->eq[i][1 + abs_pos]))
+			continue;
+
+		lower = isl_basic_set_constraint(isl_basic_set_copy(bset),
+						&bset->eq[i]);
+		upper = isl_constraint_copy(lower);
+		context = isl_basic_set_remove(isl_basic_set_copy(bset),
+					type, pos, 1);
+		if (!lower || !upper || !context)
+			goto error;
+		return fn(lower, upper, context, user);
+	}
+
+	n_lower = 0;
+	n_upper = 0;
+	for (i = 0; i < bset->n_ineq; ++i) {
+		if (isl_int_is_pos(bset->ineq[i][1 + abs_pos]))
+			n_lower++;
+		else if (isl_int_is_neg(bset->ineq[i][1 + abs_pos]))
+			n_upper++;
+	}
+
+	context = isl_basic_set_copy(bset);
+	context = isl_basic_set_cow(context);
+	if (!context)
+		goto error;
+	for (i = context->n_ineq - 1; i >= 0; --i)
+		if (!isl_int_is_zero(context->ineq[i][1 + abs_pos]))
+			isl_basic_set_drop_inequality(context, i);
+
+	context = isl_basic_set_drop(context, type, pos, 1);
+	if (!n_lower && !n_upper)
+		return fn(NULL, NULL, context, user);
+	if (!n_lower)
+		return foreach_upper_bound(bset, type, abs_pos, context, n_upper,
+						fn, user);
+	if (!n_upper)
+		return foreach_lower_bound(bset, type, abs_pos, context, n_lower,
+						fn, user);
+	return foreach_bound_pair(bset, type, abs_pos, context, n_lower, n_upper,
+					fn, user);
+error:
+	isl_constraint_free(lower);
+	isl_constraint_free(upper);
+	isl_basic_set_free(context);
+	return -1;
 }
