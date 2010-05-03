@@ -250,7 +250,7 @@ __isl_give isl_qpolynomial *FN(PW,eval)(__isl_take PW *pw,
 	__isl_take isl_point *pnt)
 {
 	int i;
-	int found;
+	int found = 0;
 	isl_qpolynomial *qp;
 
 	if (!pw || !pnt)
