@@ -2694,6 +2694,41 @@ int isl_qpolynomial_foreach_term(__isl_keep isl_qpolynomial *qp,
 	return term ? 0 : -1;
 }
 
+__isl_give isl_qpolynomial *isl_qpolynomial_from_term(__isl_take isl_term *term)
+{
+	struct isl_upoly *up;
+	isl_qpolynomial *qp;
+	int i, n;
+
+	if (!term)
+		return NULL;
+
+	n = isl_dim_total(term->dim) + term->div->n_row;
+
+	up = isl_upoly_rat_cst(term->dim->ctx, term->n, term->d);
+	for (i = 0; i < n; ++i) {
+		if (!term->pow[i])
+			continue;
+		up = isl_upoly_mul(up,
+			isl_upoly_pow(term->dim->ctx, i, term->pow[i]));
+	}
+
+	qp = isl_qpolynomial_alloc(isl_dim_copy(term->dim), term->div->n_row, up);
+	if (!qp)
+		goto error;
+	isl_mat_free(qp->div);
+	qp->div = isl_mat_copy(term->div);
+	if (!qp->div)
+		goto error;
+
+	isl_term_free(term);
+	return qp;
+error:
+	isl_qpolynomial_free(qp);
+	isl_term_free(term);
+	return NULL;
+}
+
 int isl_pw_qpolynomial_foreach_piece(__isl_keep isl_pw_qpolynomial *pwqp,
 	int (*fn)(__isl_take isl_set *set, __isl_take isl_qpolynomial *qp,
 		    void *user), void *user)
