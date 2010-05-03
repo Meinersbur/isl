@@ -607,7 +607,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_fold_opt_on_domain(
 		return isl_qpolynomial_zero(dim);
 	}
 
-	opt = isl_qpolynomial_opt_on_domain(isl_qpolynomial_copy(fold->qp[i]),
+	opt = isl_qpolynomial_opt_on_domain(isl_qpolynomial_copy(fold->qp[0]),
 						isl_set_copy(set), max);
 	for (i = 1; i < fold->n; ++i) {
 		isl_qpolynomial *opt_i;
