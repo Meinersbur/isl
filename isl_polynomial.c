@@ -2263,6 +2263,41 @@ __isl_give struct isl_upoly *isl_upoly_from_affine(isl_ctx *ctx, isl_int *f,
 	return up;
 }
 
+__isl_give isl_qpolynomial *isl_qpolynomial_from_constraint(
+	__isl_take isl_constraint *c, enum isl_dim_type type, unsigned pos)
+{
+	isl_int denom;
+	isl_dim *dim;
+	struct isl_upoly *up;
+	isl_qpolynomial *qp;
+	int sgn;
+
+	if (!c)
+		return NULL;
+
+	isl_int_init(denom);
+
+	isl_constraint_get_coefficient(c, type, pos, &denom);
+	isl_constraint_set_coefficient(c, type, pos, c->ctx->zero);
+	sgn = isl_int_sgn(denom);
+	isl_int_abs(denom, denom);
+	up = isl_upoly_from_affine(c->ctx, c->line[0], denom,
+					1 + isl_constraint_dim(c, isl_dim_all));
+	if (sgn < 0)
+		isl_int_neg(denom, denom);
+	isl_constraint_set_coefficient(c, type, pos, denom);
+
+	dim = isl_dim_copy(c->bmap->dim);
+
+	isl_int_clear(denom);
+	isl_constraint_free(c);
+
+	qp = isl_qpolynomial_alloc(dim, 0, up);
+	if (sgn > 0)
+		qp = isl_qpolynomial_neg(qp);
+	return qp;
+}
+
 __isl_give struct isl_upoly *isl_upoly_subs(__isl_take struct isl_upoly *up,
 	unsigned first, unsigned n, __isl_keep struct isl_upoly **subs)
 {

@@ -2,6 +2,7 @@
 #define ISL_POLYNOMIAL_H
 
 #include <isl_ctx.h>
+#include <isl_constraint.h>
 #include <isl_dim.h>
 #include <isl_div.h>
 #include <isl_set.h>
@@ -85,6 +86,9 @@ int isl_qpolynomial_foreach_term(__isl_keep isl_qpolynomial *qp,
 
 __isl_give isl_qpolynomial *isl_qpolynomial_eval(
 	__isl_take isl_qpolynomial *qp, __isl_take isl_point *pnt);
+
+__isl_give isl_qpolynomial *isl_qpolynomial_from_constraint(
+	__isl_take isl_constraint *c, enum isl_dim_type type, unsigned pos);
 
 __isl_give isl_printer *isl_printer_print_qpolynomial(
 	__isl_take isl_printer *p, __isl_keep isl_qpolynomial *qp);
