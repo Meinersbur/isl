@@ -1268,6 +1268,8 @@ on the resulting quasipolynomials
 		__isl_take isl_dim *dim);
 	__isl_give isl_qpolynomial *isl_qpolynomial_infty(
 		__isl_take isl_dim *dim);
+	__isl_give isl_qpolynomial *isl_qpolynomial_neginfty(
+		__isl_take isl_dim *dim);
 	__isl_give isl_qpolynomial *isl_qpolynomial_nan(
 		__isl_take isl_dim *dim);
 	__isl_give isl_qpolynomial *isl_qpolynomial_rat_cst(

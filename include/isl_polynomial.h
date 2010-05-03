@@ -20,6 +20,7 @@ __isl_give isl_dim *isl_qpolynomial_get_dim(__isl_keep isl_qpolynomial *qp);
 
 __isl_give isl_qpolynomial *isl_qpolynomial_zero(__isl_take isl_dim *dim);
 __isl_give isl_qpolynomial *isl_qpolynomial_infty(__isl_take isl_dim *dim);
+__isl_give isl_qpolynomial *isl_qpolynomial_neginfty(__isl_take isl_dim *dim);
 __isl_give isl_qpolynomial *isl_qpolynomial_nan(__isl_take isl_dim *dim);
 __isl_give isl_qpolynomial *isl_qpolynomial_rat_cst(__isl_take isl_dim *dim,
 	const isl_int n, const isl_int d);
