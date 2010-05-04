@@ -1895,8 +1895,6 @@ static __isl_give isl_map *map_power(__isl_take isl_map *map, unsigned param,
 	if (exact)
 		*exact = 1;
 
-	map = isl_map_compute_divs(map);
-	map = isl_map_coalesce(map);
 	if (!map)
 		return NULL;
 
@@ -1926,6 +1924,8 @@ error:
 __isl_give isl_map *isl_map_power(__isl_take isl_map *map, unsigned param,
 	int *exact)
 {
+	map = isl_map_compute_divs(map);
+	map = isl_map_coalesce(map);
 	return map_power(map, param, exact, 0);
 }
 
@@ -2417,6 +2417,8 @@ __isl_give isl_map *isl_map_transitive_closure(__isl_take isl_map *map,
 	if (map->ctx->opt->closure == ISL_CLOSURE_OMEGA)
 		return transitive_closure_omega(map, exact);
 
+	map = isl_map_compute_divs(map);
+	map = isl_map_coalesce(map);
 	closed = isl_map_is_transitively_closed(map);
 	if (closed < 0)
 		goto error;
