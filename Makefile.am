@@ -74,6 +74,7 @@ libisl_la_SOURCES = \
 	isl_polynomial.c \
 	isl_printer_private.h \
 	isl_printer.c \
+	isl_range.c \
 	isl_sample.h \
 	isl_sample.c \
 	isl_scan.c \

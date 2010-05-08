@@ -263,6 +263,9 @@ __isl_give isl_qpolynomial *isl_pw_qpolynomial_fold_max(
 __isl_give isl_qpolynomial *isl_pw_qpolynomial_fold_min(
 	__isl_take isl_pw_qpolynomial_fold *pwf);
 
+__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_bound_range(
+	__isl_take isl_pw_qpolynomial *pwqp, enum isl_fold type, int *exact);
+
 #if defined(__cplusplus)
 }
 #endif
