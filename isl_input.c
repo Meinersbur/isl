@@ -1583,3 +1583,20 @@ struct isl_vec *isl_vec_read_from_file(struct isl_ctx *ctx,
 	else
 		isl_assert(ctx, 0, return NULL);
 }
+
+__isl_give isl_pw_qpolynomial *isl_stream_read_pw_qpolynomial(
+	struct isl_stream *s)
+{
+	struct isl_obj obj;
+	struct isl_pw_qpolynomial *pwqp;
+
+	obj = obj_read(s, -1);
+	if (obj.v)
+		isl_assert(s->ctx, obj.type == isl_obj_pw_qpolynomial,
+			   goto error);
+
+	return obj.v;
+error:
+	obj.type->free(obj.v);
+	return NULL;
+}
