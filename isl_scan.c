@@ -16,6 +16,7 @@
 struct isl_counter {
 	struct isl_scan_callback callback;
 	isl_int count;
+	isl_int max;
 };
 
 static int increment_counter(struct isl_scan_callback *cb,
@@ -27,7 +28,9 @@ static int increment_counter(struct isl_scan_callback *cb,
 
 	isl_vec_free(sample);
 
-	return 0;
+	if (isl_int_is_zero(cnt->max) || isl_int_lt(cnt->count, cnt->max))
+		return 0;
+	return -1;
 }
 
 static int increment_range(struct isl_scan_callback *cb, isl_int min, isl_int max)
@@ -38,7 +41,10 @@ static int increment_range(struct isl_scan_callback *cb, isl_int min, isl_int ma
 	isl_int_sub(cnt->count, cnt->count, min);
 	isl_int_add_ui(cnt->count, cnt->count, 1);
 
-	return 0;
+	if (isl_int_is_zero(cnt->max) || isl_int_lt(cnt->count, cnt->max))
+		return 0;
+	isl_int_set(cnt->count, cnt->max);
+	return -1;
 }
 
 /* Call callback->add with the current sample value of the tableau "tab".
@@ -235,7 +241,7 @@ error:
 	return -1;
 }
 
-int isl_set_count(__isl_keep isl_set *set, isl_int *count)
+int isl_set_count_upto(__isl_keep isl_set *set, isl_int max, isl_int *count)
 {
 	struct isl_counter cnt = { { &increment_counter } };
 
@@ -243,16 +249,27 @@ int isl_set_count(__isl_keep isl_set *set, isl_int *count)
 		return -1;
 
 	isl_int_init(cnt.count);
+	isl_int_init(cnt.max);
 
 	isl_int_set_si(cnt.count, 0);
-	if (isl_set_scan(isl_set_copy(set), &cnt.callback) < 0)
+	isl_int_set(cnt.max, max);
+	if (isl_set_scan(isl_set_copy(set), &cnt.callback) < 0 &&
+	    isl_int_lt(cnt.count, cnt.max))
 		goto error;
 
 	isl_int_set(*count, cnt.count);
+	isl_int_clear(cnt.max);
 	isl_int_clear(cnt.count);
 
 	return 0;
 error:
 	isl_int_clear(cnt.count);
 	return -1;
+}
+
+int isl_set_count(__isl_keep isl_set *set, isl_int *count)
+{
+	if (!set)
+		return -1;
+	return isl_set_count_upto(set, set->ctx->zero, count);
 }
