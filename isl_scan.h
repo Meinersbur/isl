@@ -19,5 +19,6 @@ struct isl_scan_callback {
 
 int isl_basic_set_scan(struct isl_basic_set *bset,
 	struct isl_scan_callback *callback);
+int isl_set_scan(__isl_take isl_set *set, struct isl_scan_callback *callback);
 
 #endif

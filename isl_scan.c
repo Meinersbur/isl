@@ -210,9 +210,33 @@ error:
 	return -1;
 }
 
-int isl_set_count(__isl_keep isl_set *set, isl_int *count)
+int isl_set_scan(__isl_take isl_set *set, struct isl_scan_callback *callback)
 {
 	int i;
+
+	if (!set || !callback)
+		goto error;
+
+	set = isl_set_cow(set);
+	set = isl_set_make_disjoint(set);
+	set = isl_set_compute_divs(set);
+	if (!set)
+		goto error;
+
+	for (i = 0; i < set->n; ++i)
+		if (isl_basic_set_scan(isl_basic_set_copy(set->p[i]),
+					callback) < 0)
+			goto error;
+
+	isl_set_free(set);
+	return 0;
+error:
+	isl_set_free(set);
+	return -1;
+}
+
+int isl_set_count(__isl_keep isl_set *set, isl_int *count)
+{
 	struct isl_counter cnt = { { &increment_counter } };
 
 	if (!set)
@@ -220,27 +244,15 @@ int isl_set_count(__isl_keep isl_set *set, isl_int *count)
 
 	isl_int_init(cnt.count);
 
-	set = isl_set_copy(set);
-	set = isl_set_cow(set);
-	set = isl_set_make_disjoint(set);
-	set = isl_set_compute_divs(set);
-	if (!set)
+	isl_int_set_si(cnt.count, 0);
+	if (isl_set_scan(isl_set_copy(set), &cnt.callback) < 0)
 		goto error;
 
-	isl_int_set_si(cnt.count, 0);
-	for (i = 0; i < set->n; ++i)
-		if (isl_basic_set_scan(isl_basic_set_copy(set->p[i]),
-					&cnt.callback) < 0)
-			goto error;
-
 	isl_int_set(*count, cnt.count);
-
-	isl_set_free(set);
 	isl_int_clear(cnt.count);
 
 	return 0;
 error:
-	isl_set_free(set);
 	isl_int_clear(cnt.count);
 	return -1;
 }
