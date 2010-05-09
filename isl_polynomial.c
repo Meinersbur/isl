@@ -1960,6 +1960,25 @@ int isl_upoly_cmp(__isl_keep struct isl_upoly_cst *cst1,
 	return cmp;
 }
 
+int isl_qpolynomial_le_cst(__isl_keep isl_qpolynomial *qp1,
+	__isl_keep isl_qpolynomial *qp2)
+{
+	struct isl_upoly_cst *cst1, *cst2;
+
+	if (!qp1 || !qp2)
+		return -1;
+	isl_assert(qp1->dim->ctx, isl_upoly_is_cst(qp1->upoly), return -1);
+	isl_assert(qp2->dim->ctx, isl_upoly_is_cst(qp2->upoly), return -1);
+	if (isl_qpolynomial_is_nan(qp1))
+		return -1;
+	if (isl_qpolynomial_is_nan(qp2))
+		return -1;
+	cst1 = isl_upoly_as_cst(qp1->upoly);
+	cst2 = isl_upoly_as_cst(qp2->upoly);
+
+	return isl_upoly_cmp(cst1, cst2) <= 0;
+}
+
 __isl_give isl_qpolynomial *isl_qpolynomial_min_cst(
 	__isl_take isl_qpolynomial *qp1, __isl_take isl_qpolynomial *qp2)
 {

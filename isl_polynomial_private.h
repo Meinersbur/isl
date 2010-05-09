@@ -123,6 +123,8 @@ int isl_qpolynomial_is_zero(__isl_keep isl_qpolynomial *qp);
 int isl_qpolynomial_is_one(__isl_keep isl_qpolynomial *qp);
 int isl_qpolynomial_is_affine(__isl_keep isl_qpolynomial *qp);
 
+int isl_qpolynomial_le_cst(__isl_keep isl_qpolynomial *qp1,
+	__isl_keep isl_qpolynomial *qp2);
 __isl_give isl_qpolynomial *isl_qpolynomial_max_cst(
 	__isl_take isl_qpolynomial *qp1, __isl_take isl_qpolynomial *qp2);
 __isl_give isl_qpolynomial *isl_qpolynomial_min_cst(
