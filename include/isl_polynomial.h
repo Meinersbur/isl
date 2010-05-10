@@ -56,6 +56,11 @@ __isl_give isl_qpolynomial *isl_qpolynomial_drop_dims(
 	__isl_take isl_qpolynomial *qp,
 	enum isl_dim_type type, unsigned first, unsigned n);
 
+__isl_give isl_qpolynomial *isl_qpolynomial_substitute(
+	__isl_take isl_qpolynomial *qp,
+	enum isl_dim_type type, unsigned first, unsigned n,
+	__isl_keep isl_qpolynomial **subs);
+
 struct isl_term;
 typedef struct isl_term isl_term;
 

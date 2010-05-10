@@ -2237,6 +2237,103 @@ error:
 	return NULL;
 }
 
+__isl_give struct isl_upoly *isl_upoly_subs(__isl_take struct isl_upoly *up,
+	unsigned first, unsigned n, __isl_keep struct isl_upoly **subs)
+{
+	int i;
+	struct isl_upoly_rec *rec;
+	struct isl_upoly *base, *res;
+
+	if (!up)
+		return NULL;
+
+	if (isl_upoly_is_cst(up))
+		return up;
+
+	if (up->var < first)
+		return up;
+
+	rec = isl_upoly_as_rec(up);
+	if (!rec)
+		goto error;
+
+	isl_assert(up->ctx, rec->n >= 1, goto error);
+
+	if (up->var >= first + n)
+		base = isl_upoly_pow(up->ctx, up->var, 1);
+	else
+		base = isl_upoly_copy(subs[up->var - first]);
+
+	res = isl_upoly_subs(isl_upoly_copy(rec->p[rec->n - 1]), first, n, subs);
+	for (i = rec->n - 2; i >= 0; --i) {
+		struct isl_upoly *t;
+		t = isl_upoly_subs(isl_upoly_copy(rec->p[i]), first, n, subs);
+		res = isl_upoly_mul(res, isl_upoly_copy(base));
+		res = isl_upoly_sum(res, t);
+	}
+
+	isl_upoly_free(base);
+	isl_upoly_free(up);
+				
+	return res;
+error:
+	isl_upoly_free(up);
+	return NULL;
+}	
+
+/* For each 0 <= i < "n", replace variable "first" + i of type "type"
+ * in "qp" by subs[i].
+ */
+__isl_give isl_qpolynomial *isl_qpolynomial_substitute(
+	__isl_take isl_qpolynomial *qp,
+	enum isl_dim_type type, unsigned first, unsigned n,
+	__isl_keep isl_qpolynomial **subs)
+{
+	int i;
+	struct isl_upoly **ups;
+
+	if (n == 0)
+		return qp;
+
+	qp = isl_qpolynomial_cow(qp);
+	if (!qp)
+		return NULL;
+	for (i = 0; i < n; ++i)
+		if (!subs[i])
+			goto error;
+
+	isl_assert(qp->dim->ctx, first + n <= isl_dim_size(qp->dim, type),
+			goto error);
+
+	for (i = 0; i < n; ++i)
+		isl_assert(qp->dim->ctx, isl_dim_equal(qp->dim, subs[i]->dim),
+				goto error);
+
+	isl_assert(qp->dim->ctx, qp->div->n_row == 0, goto error);
+	for (i = 0; i < n; ++i)
+		isl_assert(qp->dim->ctx, subs[i]->div->n_row == 0, goto error);
+
+	first += pos(qp->dim, type);
+
+	ups = isl_alloc_array(qp->dim->ctx, struct isl_upoly *, n);
+	if (!ups)
+		goto error;
+	for (i = 0; i < n; ++i)
+		ups[i] = subs[i]->upoly;
+
+	qp->upoly = isl_upoly_subs(qp->upoly, first, n, ups);
+
+	free(ups);
+
+	if (!qp->upoly)
+		goto error;
+
+	return qp;
+error:
+	isl_qpolynomial_free(qp);
+	return NULL;
+}
+
 __isl_give isl_term *isl_term_alloc(__isl_take isl_dim *dim,
 	__isl_take isl_mat *div)
 {
