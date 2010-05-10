@@ -7,8 +7,8 @@ lib_LTLIBRARIES = libisl.la
 noinst_PROGRAMS = isl_test isl_polyhedron_sample isl_pip \
 	isl_polyhedron_minimize isl_polytope_scan \
 	isl_polyhedron_detect_equalities isl_cat \
-	isl_closure
-TESTS = isl_test pip_test.sh
+	isl_closure isl_bound
+TESTS = isl_test pip_test.sh bound_test.sh
 
 if HAVE_PIPLIB
 ISL_PIPLIB = \
@@ -115,6 +115,12 @@ isl_pip_CPPFLAGS = -I$(srcdir)/include -Iinclude/ \
 isl_pip_LDADD = libisl.la
 isl_pip_SOURCES = \
 	pip.c
+
+isl_bound_CPPFLAGS = -I$(srcdir)/include -Iinclude/ \
+	@GMP_CPPFLAGS@
+isl_bound_LDADD = libisl.la
+isl_bound_SOURCES = \
+	bound.c
 
 isl_polyhedron_minimize_CPPFLAGS = -I$(srcdir)/include -Iinclude/ \
 	@GMP_CPPFLAGS@
