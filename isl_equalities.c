@@ -372,12 +372,12 @@ error:
  *
  *		M x - c = 0
  *
- * this function computes unimodular transformation from a lower-dimensional
+ * this function computes a unimodular transformation from a lower-dimensional
  * space to the original space that bijectively maps the integer points x'
  * in the lower-dimensional space to the integer points x in the original
  * space that satisfy the equalities.
  *
- * The input is given as a matrix B = [ -c M ] and the out is a
+ * The input is given as a matrix B = [ -c M ] and the output is a
  * matrix that maps [1 x'] to [1 x].
  * If T2 is not NULL, then *T2 is set to a matrix mapping [1 x] to [1 x'].
  *
