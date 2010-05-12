@@ -19,12 +19,15 @@ struct isl_name *isl_name_alloc(struct isl_ctx *ctx, const char *s)
 		return NULL;
 	name = isl_alloc_type(ctx, struct isl_name);
 	if (!name)
-		return NULL;
+		goto error;
 
 	name->ref = 1;
 	name->name = copy;
 
 	return name;
+error:
+	free((char *)copy);
+	return NULL;
 }
 
 static int isl_name_has_name(const void *entry, const void *val)
