@@ -249,7 +249,7 @@ error:
  * then we divide this row of A by the common factor, unless gcd(A_i) = 0.
  * In the later case, we simply drop the row (in both A and d).
  *
- * If there are no rows left in A, the G is the identity matrix. Otherwise,
+ * If there are no rows left in A, then G is the identity matrix. Otherwise,
  * for each row i, we now determine the lattice of integer vectors
  * that satisfies this row.  Let U_i be the unimodular extension of the
  * row A_i.  This unimodular extension exists because gcd(A_i) = 1.
