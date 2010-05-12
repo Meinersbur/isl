@@ -161,6 +161,13 @@ unsigned isl_dim_size(struct isl_dim *dim, enum isl_dim_type type)
 	return n(dim, type);
 }
 
+unsigned isl_dim_offset(__isl_keep isl_dim *dim, enum isl_dim_type type)
+{
+	if (!dim)
+		return 0;
+	return offset(dim, type);
+}
+
 static struct isl_dim *copy_names(struct isl_dim *dst,
 	enum isl_dim_type dst_type, unsigned offset, struct isl_dim *src,
 	enum isl_dim_type src_type)
