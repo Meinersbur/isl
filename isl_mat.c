@@ -1298,3 +1298,48 @@ error:
 	isl_mat_free(mat);
 	return NULL;
 }
+
+void isl_mat_gcd(__isl_keep isl_mat *mat, isl_int *gcd)
+{
+	int i;
+	isl_int g;
+
+	isl_int_set_si(*gcd, 0);
+	if (!mat)
+		return;
+
+	isl_int_init(g);
+	for (i = 0; i < mat->n_row; ++i) {
+		isl_seq_gcd(mat->row[i], mat->n_col, &g);
+		isl_int_gcd(*gcd, *gcd, g);
+	}
+	isl_int_clear(g);
+}
+
+__isl_give isl_mat *isl_mat_scale_down(__isl_take isl_mat *mat, isl_int m)
+{
+	int i;
+
+	if (!mat)
+		return NULL;
+
+	for (i = 0; i < mat->n_row; ++i)
+		isl_seq_scale_down(mat->row[i], mat->row[i], m, mat->n_col);
+
+	return mat;
+}
+
+__isl_give isl_mat *isl_mat_normalize(__isl_take isl_mat *mat)
+{
+	isl_int gcd;
+
+	if (!mat)
+		return NULL;
+
+	isl_int_init(gcd);
+	isl_mat_gcd(mat, &gcd);
+	mat = isl_mat_scale_down(mat, gcd);
+	isl_int_clear(gcd);
+
+	return mat;
+}

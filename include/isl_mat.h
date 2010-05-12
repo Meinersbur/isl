@@ -79,6 +79,8 @@ struct isl_mat *isl_mat_transpose(struct isl_mat *mat);
 struct isl_mat *isl_mat_right_inverse(struct isl_mat *mat);
 struct isl_mat *isl_mat_right_kernel(struct isl_mat *mat);
 
+__isl_give isl_mat *isl_mat_normalize(__isl_take isl_mat *mat);
+
 struct isl_mat *isl_mat_drop_cols(struct isl_mat *mat,
 				unsigned col, unsigned n);
 struct isl_mat *isl_mat_drop_rows(struct isl_mat *mat,
