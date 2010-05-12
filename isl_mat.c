@@ -537,6 +537,42 @@ error:
 	return NULL;
 }
 
+/* Given two matrices M1 and M2, return the block matrix
+ *
+ *	[ M1  0  ]
+ *	[ 0   M2 ]
+ */
+__isl_give isl_mat *isl_mat_diagonal(__isl_take isl_mat *mat1,
+	__isl_take isl_mat *mat2)
+{
+	int i;
+	isl_mat *mat;
+
+	if (!mat1 || !mat2)
+		goto error;
+
+	mat = isl_mat_alloc(mat1->ctx, mat1->n_row + mat2->n_row,
+				       mat1->n_col + mat2->n_col);
+	if (!mat)
+		goto error;
+	for (i = 0; i < mat1->n_row; ++i) {
+		isl_seq_cpy(mat->row[i], mat1->row[i], mat1->n_col);
+		isl_seq_clr(mat->row[i] + mat1->n_col, mat2->n_col);
+	}
+	for (i = 0; i < mat2->n_row; ++i) {
+		isl_seq_clr(mat->row[mat1->n_row + i], mat1->n_col);
+		isl_seq_cpy(mat->row[mat1->n_row + i] + mat1->n_col,
+						    mat2->row[i], mat2->n_col);
+	}
+	isl_mat_free(mat1);
+	isl_mat_free(mat2);
+	return mat;
+error:
+	isl_mat_free(mat1);
+	isl_mat_free(mat2);
+	return NULL;
+}
+
 static int row_first_non_zero(isl_int **row, unsigned n_row, unsigned col)
 {
 	int i;

@@ -67,6 +67,8 @@ __isl_give isl_vec *isl_mat_vec_inverse_product(__isl_take isl_mat *mat,
 						__isl_take isl_vec *vec);
 struct isl_mat *isl_mat_aff_direct_sum(struct isl_mat *left,
 					struct isl_mat *right);
+__isl_give isl_mat *isl_mat_diagonal(__isl_take isl_mat *mat1,
+	__isl_take isl_mat *mat2);
 struct isl_mat *isl_mat_left_hermite(struct isl_mat *M,
 	int neg, struct isl_mat **U, struct isl_mat **Q);
 struct isl_mat *isl_mat_lin_to_aff(struct isl_mat *mat);
