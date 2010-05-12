@@ -1132,6 +1132,31 @@ error:
 	return NULL;
 }
 
+__isl_give isl_mat *isl_mat_insert_rows(__isl_take isl_mat *mat,
+				unsigned row, unsigned n)
+{
+	isl_mat *ext;
+
+	if (!mat)
+		return NULL;
+	if (n == 0)
+		return mat;
+
+	ext = isl_mat_alloc(mat->ctx, mat->n_row + n, mat->n_col);
+	if (!ext)
+		goto error;
+
+	isl_mat_sub_copy(mat->ctx, ext->row, mat->row, row, 0, 0, mat->n_col);
+	isl_mat_sub_copy(mat->ctx, ext->row + row + n, mat->row + row,
+				mat->n_row - row, 0, 0, mat->n_col);
+
+	isl_mat_free(mat);
+	return ext;
+error:
+	isl_mat_free(mat);
+	return NULL;
+}
+
 void isl_mat_col_submul(struct isl_mat *mat,
 			int dst_col, isl_int f, int src_col)
 {
