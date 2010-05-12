@@ -523,7 +523,7 @@ struct isl_mat *isl_mat_lin_to_aff(struct isl_mat *mat)
 		return NULL;
 	mat2 = isl_mat_alloc(mat->ctx, 1+mat->n_row, 1+mat->n_col);
 	if (!mat2)
-		return NULL;
+		goto error;
 	isl_int_set_si(mat2->row[0][0], 1);
 	isl_seq_clr(mat2->row[0]+1, mat->n_col);
 	for (i = 0; i < mat->n_row; ++i) {
@@ -532,6 +532,9 @@ struct isl_mat *isl_mat_lin_to_aff(struct isl_mat *mat)
 	}
 	isl_mat_free(mat);
 	return mat2;
+error:
+	isl_mat_free(mat);
+	return NULL;
 }
 
 static int row_first_non_zero(isl_int **row, unsigned n_row, unsigned col)
