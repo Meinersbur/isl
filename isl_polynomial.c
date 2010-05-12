@@ -2987,6 +2987,9 @@ __isl_give isl_qpolynomial *isl_qpolynomial_opt_on_domain(
 	if (isl_set_foreach_point(set, opt_fn, &data) < 0)
 		goto error;
 
+	if (data.first)
+		data.opt = isl_qpolynomial_zero(isl_qpolynomial_get_dim(qp));
+
 	isl_set_free(set);
 	isl_qpolynomial_free(qp);
 	return data.opt;
