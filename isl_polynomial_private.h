@@ -2,6 +2,7 @@
 #include <isl_div.h>
 #include <isl_map.h>
 #include <isl_mat.h>
+#include <isl_morph.h>
 #include <isl_polynomial.h>
 
 struct isl_upoly {
@@ -157,3 +158,10 @@ __isl_give isl_qpolynomial *isl_qpolynomial_fold_opt_on_domain(
 
 int isl_pw_qpolynomial_fold_covers(__isl_keep isl_pw_qpolynomial_fold *pwf1,
 	__isl_keep isl_pw_qpolynomial_fold *pwf2);
+
+__isl_give isl_qpolynomial *isl_qpolynomial_morph(__isl_take isl_qpolynomial *qp,
+	__isl_take isl_morph *morph);
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_morph(
+	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_morph *morph);
+__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_morph(
+	__isl_take isl_pw_qpolynomial_fold *pwf, __isl_take isl_morph *morph);

@@ -2999,3 +2999,52 @@ error:
 	isl_qpolynomial_free(data.opt);
 	return NULL;
 }
+
+__isl_give isl_qpolynomial *isl_qpolynomial_morph(__isl_take isl_qpolynomial *qp,
+	__isl_take isl_morph *morph)
+{
+	int i;
+	isl_ctx *ctx;
+	struct isl_upoly *up;
+	unsigned n_div;
+	struct isl_upoly **subs;
+	isl_mat *mat;
+
+	qp = isl_qpolynomial_cow(qp);
+	if (!qp || !morph)
+		goto error;
+
+	ctx = qp->dim->ctx;
+	isl_assert(ctx, isl_dim_equal(qp->dim, morph->dom->dim), goto error);
+
+	subs = isl_calloc_array(ctx, struct isl_upoly *, morph->inv->n_row - 1);
+	if (!subs)
+		goto error;
+
+	for (i = 0; 1 + i < morph->inv->n_row; ++i)
+		subs[i] = isl_upoly_from_affine(ctx, morph->inv->row[1 + i],
+					morph->inv->row[0][0], morph->inv->n_col);
+
+	qp->upoly = isl_upoly_subs(qp->upoly, 0, morph->inv->n_row - 1, subs);
+
+	for (i = 0; 1 + i < morph->inv->n_row; ++i)
+		isl_upoly_free(subs[i]);
+	free(subs);
+
+	mat = isl_mat_diagonal(isl_mat_identity(ctx, 1), isl_mat_copy(morph->inv));
+	mat = isl_mat_diagonal(mat, isl_mat_identity(ctx, qp->div->n_row));
+	qp->div = isl_mat_product(qp->div, mat);
+	isl_dim_free(qp->dim);
+	qp->dim = isl_dim_copy(morph->ran->dim);
+
+	if (!qp->upoly || !qp->div || !qp->dim)
+		goto error;
+
+	isl_morph_free(morph);
+
+	return qp;
+error:
+	isl_qpolynomial_free(qp);
+	isl_morph_free(morph);
+	return NULL;
+}

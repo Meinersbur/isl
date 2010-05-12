@@ -554,3 +554,40 @@ __isl_give isl_dim *FN(PW,get_dim)(__isl_keep PW *pw)
 {
 	return pw ? isl_dim_copy(pw->dim) : NULL;
 }
+
+__isl_give PW *FN(PW,morph)(__isl_take PW *pw, __isl_take isl_morph *morph)
+{
+	int i;
+
+	if (!pw || !morph)
+		goto error;
+
+	isl_assert(pw->dim->ctx, isl_dim_equal(pw->dim, morph->dom->dim),
+		goto error);
+
+	pw = FN(PW,cow)(pw);
+	if (!pw)
+		goto error;
+	isl_dim_free(pw->dim);
+	pw->dim = isl_dim_copy(morph->ran->dim);
+	if (!pw->dim)
+		goto error;
+
+	for (i = 0; i < pw->n; ++i) {
+		pw->p[i].set = isl_morph_set(isl_morph_copy(morph), pw->p[i].set);
+		if (!pw->p[i].set)
+			goto error;
+		pw->p[i].FIELD = FN(EL,morph)(pw->p[i].FIELD,
+						isl_morph_copy(morph));
+		if (!pw->p[i].FIELD)
+			goto error;
+	}
+
+	isl_morph_free(morph);
+
+	return pw;
+error:
+	FN(PW,free)(pw);
+	isl_morph_free(morph);
+	return NULL;
+}

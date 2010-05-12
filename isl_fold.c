@@ -718,3 +718,40 @@ int isl_pw_qpolynomial_fold_covers(__isl_keep isl_pw_qpolynomial_fold *pwf1,
 
 	return 1;
 }
+
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_morph(
+	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_morph *morph)
+{
+	int i;
+	isl_ctx *ctx;
+
+	if (!fold || !morph)
+		goto error;
+
+	ctx = fold->dim->ctx;
+	isl_assert(ctx, isl_dim_equal(fold->dim, morph->dom->dim), goto error);
+
+	fold = isl_qpolynomial_fold_cow(fold);
+	if (!fold)
+		goto error;
+
+	isl_dim_free(fold->dim);
+	fold->dim = isl_dim_copy(morph->ran->dim);
+	if (!fold->dim)
+		goto error;
+
+	for (i = 0; i < fold->n; ++i) {
+		fold->qp[i] = isl_qpolynomial_morph(fold->qp[i],
+						isl_morph_copy(morph));
+		if (!fold->qp[i])
+			goto error;
+	}
+
+	isl_morph_free(morph);
+
+	return fold;
+error:
+	isl_qpolynomial_fold_free(fold);
+	isl_morph_free(morph);
+	return NULL;
+}
