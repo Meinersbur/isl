@@ -16,6 +16,13 @@ void isl_seq_clr(isl_int *p, unsigned len)
 		isl_int_set_si(p[i], 0);
 }
 
+void isl_seq_set(isl_int *p, isl_int v, unsigned len)
+{
+	int i;
+	for (i = 0; i < len; ++i)
+		isl_int_set(p[i], v);
+}
+
 void isl_seq_neg(isl_int *dst, isl_int *src, unsigned len)
 {
 	int i;

@@ -17,6 +17,7 @@
 /* Some common operations on sequences of isl_int's */
 
 void isl_seq_clr(isl_int *p, unsigned len);
+void isl_seq_set(isl_int *p, isl_int v, unsigned len);
 void isl_seq_neg(isl_int *dat, isl_int *src, unsigned len);
 void isl_seq_cpy(isl_int *dst, isl_int *src, unsigned len);
 void isl_seq_submul(isl_int *dst, isl_int f, isl_int *src, unsigned len);
