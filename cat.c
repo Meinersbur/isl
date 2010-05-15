@@ -14,9 +14,9 @@ struct cat_options {
 };
 
 struct isl_arg cat_options_arg[] = {
-ISL_ARG_CHILD(struct cat_options, isl, "isl", isl_options_arg)
+ISL_ARG_CHILD(struct cat_options, isl, "isl", isl_options_arg, "isl options")
 ISL_ARG_CHOICE(struct cat_options, format, 0, "format", \
-	cat_format,	ISL_FORMAT_ISL)
+	cat_format,	ISL_FORMAT_ISL, "output format")
 ISL_ARG_END
 };
 

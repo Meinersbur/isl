@@ -59,18 +59,22 @@ struct isl_arg_choice isl_closure_choice[] = {
 
 struct isl_arg isl_options_arg[] = {
 ISL_ARG_CHOICE(struct isl_options, lp_solver, 0, "lp-solver", \
-	isl_lp_solver_choice,	ISL_LP_TAB)
+	isl_lp_solver_choice,	ISL_LP_TAB, "lp solver to use")
 ISL_ARG_CHOICE(struct isl_options, ilp_solver, 0, "ilp-solver", \
-	isl_ilp_solver_choice,	ISL_ILP_GBR)
+	isl_ilp_solver_choice,	ISL_ILP_GBR, "ilp solver to use")
 ISL_ARG_CHOICE(struct isl_options, pip, 0, "pip", \
-	isl_pip_solver_choice,	ISL_PIP_TAB)
+	isl_pip_solver_choice,	ISL_PIP_TAB, "pip solver to use")
 ISL_ARG_CHOICE(struct isl_options, context, 0, "context", \
-	isl_pip_context_choice,	ISL_CONTEXT_GBR)
+	isl_pip_context_choice,	ISL_CONTEXT_GBR,
+	"how to handle the pip context tableau")
 ISL_ARG_CHOICE(struct isl_options, gbr, 0, "gbr", \
-	isl_gbr_choice,	ISL_GBR_ONCE)
+	isl_gbr_choice,	ISL_GBR_ONCE,
+	"how often to use generalized basis reduction")
 ISL_ARG_CHOICE(struct isl_options, closure, 0, "closure", \
-	isl_closure_choice,	ISL_CLOSURE_ISL)
-ISL_ARG_BOOL(struct isl_options, gbr_only_first, 0, "gbr-only-first", 0)
+	isl_closure_choice,	ISL_CLOSURE_ISL,
+	"closure operation to use")
+ISL_ARG_BOOL(struct isl_options, gbr_only_first, 0, "gbr-only-first", 0,
+	"only perform basis reduction in first direction")
 ISL_ARG_END
 };
 

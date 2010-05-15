@@ -53,36 +53,127 @@ void isl_arg_set_defaults(struct isl_arg *arg, void *opt)
 	}
 }
 
-static void print_arg_help(struct isl_arg *decl, const char *prefix)
+static int print_arg_help(struct isl_arg *decl, const char *prefix)
 {
+	int len = 0;
+
 	if (decl->short_name)
 		printf("  -%c, --", decl->short_name);
 	else
 		printf("      --");
-	if (prefix)
+	len += 8;
+
+	if (prefix) {
 		printf("%s-", prefix);
+		len += strlen(prefix) + 1;
+	}
 	printf("%s", decl->long_name);
+	len += strlen(decl->long_name);
+
+	return len;
+}
+
+const void *isl_memrchr(const void *s, int c, size_t n)
+{
+	const char *p = s;
+	while (n-- > 0)
+		if (p[n] == c)
+			return s + n;
+	return NULL;
+}
+
+static int print_help_msg(struct isl_arg *decl, int pos)
+{
+	int len;
+	const char *s;
+
+	if (!decl->help_msg)
+		return pos;
+
+	if (pos >= 29)
+		printf("\n%30s", "");
+	else
+		printf("%*s", 30 - pos, "");
+
+	s = decl->help_msg;
+	len = strlen(s);
+	while (len > 45) {
+		const char *space = isl_memrchr(s, ' ', 45);
+		int l;
+
+		if (!space)
+			space = strchr(s + 45, ' ');
+		if (!space)
+			break;
+		l = space - s;
+		printf("%.*s", l, s);
+		s = space + 1;
+		len -= l + 1;
+		printf("\n%30s", "");
+	}
+
+	printf("%s", s);
+	return len;
+}
+
+static void print_default_choice(struct isl_arg *decl, int pos)
+{
+	int i;
+	const char *default_prefix = "[default: ";
+	const char *default_suffix = "]";
+	const char *s = "none";
+	int len = strlen(default_prefix) + strlen(s) + strlen(default_suffix);
+
+	for (i = 0; decl->u.choice.choice[i].name; ++i)
+		if (decl->u.choice.choice[i].value == decl->u.choice.default_value) {
+			s = decl->u.choice.choice[i].name;
+			break;
+		}
+
+	if (!decl->help_msg) {
+		if (pos >= 29)
+			printf("\n%30s", "");
+		else
+			printf("%*s", 30 - pos, "");
+		pos = 0;
+	}
+
+	if (pos && pos + len >= 48)
+		printf("\n%30s", "");
+	else
+		printf(" ");
+	printf("%s%s%s", default_prefix, s, default_suffix);
 }
 
 static void print_choice_help(struct isl_arg *decl, const char *prefix)
 {
 	int i;
+	int pos;
 
-	print_arg_help(decl, prefix);
+	pos = print_arg_help(decl, prefix);
 	printf("=");
+	pos++;
 
 	for (i = 0; decl->u.choice.choice[i].name; ++i) {
-		if (i)
+		if (i) {
 			printf("|");
+			pos++;
+		}
 		printf("%s", decl->u.choice.choice[i].name);
+		pos += strlen(decl->u.choice.choice[i].name);
 	}
+
+	pos = print_help_msg(decl, pos);
+	print_default_choice(decl, pos);
 
 	printf("\n");
 }
 
 static void print_bool_help(struct isl_arg *decl, const char *prefix)
 {
-	print_arg_help(decl, prefix);
+	int pos;
+	pos = print_arg_help(decl, prefix);
+	print_help_msg(decl, pos);
 	printf("\n");
 }
 

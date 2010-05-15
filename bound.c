@@ -11,10 +11,10 @@ struct bound_options {
 };
 
 struct isl_arg bound_options_arg[] = {
-ISL_ARG_CHILD(struct bound_options, isl, "isl", isl_options_arg)
-ISL_ARG_BOOL(struct bound_options, verify, 'T', "verify", 0)
-ISL_ARG_BOOL(struct bound_options, print_all, 'A', "print-all", 0)
-ISL_ARG_BOOL(struct bound_options, continue_on_error, '\0', "continue-on-error", 0)
+ISL_ARG_CHILD(struct bound_options, isl, "isl", isl_options_arg, "isl options")
+ISL_ARG_BOOL(struct bound_options, verify, 'T', "verify", 0, NULL)
+ISL_ARG_BOOL(struct bound_options, print_all, 'A', "print-all", 0, NULL)
+ISL_ARG_BOOL(struct bound_options, continue_on_error, '\0', "continue-on-error", 0, NULL)
 ISL_ARG_END
 };
 
