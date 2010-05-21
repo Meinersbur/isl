@@ -10,12 +10,43 @@
 #include "isl_ctx.h"
 #include "isl_vec.h"
 
-isl_ctx *isl_ctx_alloc_with_options(struct isl_options *opt)
+static struct isl_options *find_nested_isl_options(struct isl_arg *arg,
+	void *opt)
+{
+	int i;
+	struct isl_options *options;
+
+	if (arg == isl_options_arg)
+		return opt;
+
+	for (i = 0; arg[i].type != isl_arg_end; ++i) {
+		if (arg[i].type != isl_arg_child)
+			continue;
+		options = find_nested_isl_options(arg[i].u.child.child,
+				    *(void **)(((char *)opt) + arg->offset));
+		if (options)
+			return options;
+	}
+
+	return NULL;
+}
+
+isl_ctx *isl_ctx_alloc_with_options(struct isl_arg *arg, void *user_opt)
 {
 	struct isl_ctx *ctx = NULL;
+	struct isl_options *opt = NULL;
+	int opt_allocated = 0;
 
-	if (!opt)
+	if (!user_opt)
 		return NULL;
+
+	opt = find_nested_isl_options(arg, user_opt);
+	if (!opt) {
+		opt = isl_options_new_with_defaults();
+		if (!opt)
+			goto error;
+		opt_allocated = 1;
+	}
 
 	ctx = isl_calloc_type(NULL, struct isl_ctx);
 	if (!ctx)
@@ -28,6 +59,9 @@ isl_ctx *isl_ctx_alloc_with_options(struct isl_options *opt)
 	if (!ctx->stats)
 		goto error;
 
+	ctx->user_arg = arg;
+	ctx->user_opt = user_opt;
+	ctx->opt_allocated = opt_allocated;
 	ctx->opt = opt;
 	ctx->ref = 0;
 
@@ -46,6 +80,9 @@ isl_ctx *isl_ctx_alloc_with_options(struct isl_options *opt)
 
 	return ctx;
 error:
+	isl_arg_free(arg, user_opt);
+	if (opt_allocated)
+		isl_options_free(opt);
 	free(ctx);
 	return NULL;
 }
@@ -56,7 +93,7 @@ struct isl_ctx *isl_ctx_alloc()
 
 	opt = isl_options_new_with_defaults();
 
-	return isl_ctx_alloc_with_options(opt);
+	return isl_ctx_alloc_with_options(isl_options_arg, opt);
 }
 
 void isl_ctx_ref(struct isl_ctx *ctx)
@@ -81,7 +118,9 @@ void isl_ctx_free(struct isl_ctx *ctx)
 	isl_int_clear(ctx->one);
 	isl_int_clear(ctx->negone);
 	isl_int_clear(ctx->normalize_gcd);
-	free(ctx->opt);
+	isl_arg_free(ctx->user_arg, ctx->user_opt);
+	if (ctx->opt_allocated)
+		free(ctx->opt);
 	free(ctx->stats);
 	free(ctx);
 }

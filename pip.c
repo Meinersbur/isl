@@ -316,8 +316,7 @@ int main(int argc, char **argv)
 	assert(options);
 	argc = pip_options_parse(options, argc, argv, ISL_ARG_ALL);
 
-	ctx = isl_ctx_alloc_with_options(options->isl);
-	options->isl = NULL;
+	ctx = isl_ctx_alloc_with_options(pip_options_arg, options);
 
 	context = isl_basic_set_read_from_file(ctx, stdin, 0);
 	assert(context);
@@ -371,7 +370,6 @@ int main(int argc, char **argv)
 	isl_set_free(set);
 	isl_set_free(empty);
 	isl_ctx_free(ctx);
-	free(options);
 
 	return 0;
 }

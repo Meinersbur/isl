@@ -65,7 +65,10 @@ struct isl_ctx {
 
 	struct isl_stats	*stats;
 
+	int			 opt_allocated;
 	struct isl_options	*opt;
+	void			*user_opt;
+	struct isl_arg		*user_arg;
 
 	isl_int			zero;
 	isl_int			one;
@@ -116,7 +119,7 @@ typedef struct isl_ctx isl_ctx;
 
 struct isl_options *isl_ctx_options(isl_ctx *ctx);
 
-isl_ctx *isl_ctx_alloc_with_options(struct isl_options *opt);
+isl_ctx *isl_ctx_alloc_with_options(struct isl_arg *arg, __isl_take void *opt);
 isl_ctx *isl_ctx_alloc();
 void isl_ctx_ref(struct isl_ctx *ctx);
 void isl_ctx_deref(struct isl_ctx *ctx);

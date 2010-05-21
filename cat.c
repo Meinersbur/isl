@@ -32,8 +32,7 @@ int main(int argc, char **argv)
 	assert(options);
 	argc = cat_options_parse(options, argc, argv, ISL_ARG_ALL);
 
-	ctx = isl_ctx_alloc_with_options(options->isl);
-	options->isl = NULL;
+	ctx = isl_ctx_alloc_with_options(cat_options_arg, options);
 
 	map = isl_map_read_from_file(ctx, stdin, -1);
 	isl_map_print(map, stdout, 0, options->format);
@@ -42,7 +41,6 @@ int main(int argc, char **argv)
 	isl_map_free(map);
 
 	isl_ctx_free(ctx);
-	free(options);
 
 	return 0;
 }

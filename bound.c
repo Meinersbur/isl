@@ -235,7 +235,7 @@ int main(int argc, char **argv)
 	assert(options);
 	argc = bound_options_parse(options, argc, argv, ISL_ARG_ALL);
 
-	ctx = isl_ctx_alloc_with_options(options->isl);
+	ctx = isl_ctx_alloc_with_options(bound_options_arg, options);
 	options->isl = NULL;
 
 	s = isl_stream_new_file(ctx, stdin);
@@ -260,7 +260,6 @@ int main(int argc, char **argv)
 	isl_stream_free(s);
 
 	isl_ctx_free(ctx);
-	free(options);
 
 	return r;
 }

@@ -12,7 +12,7 @@ int main(int argc, char **argv)
 	assert(options);
 	argc = isl_options_parse(options, argc, argv, ISL_ARG_ALL);
 
-	ctx = isl_ctx_alloc_with_options(options);
+	ctx = isl_ctx_alloc_with_options(isl_options_arg, options);
 
 	map = isl_map_read_from_file(ctx, stdin, -1);
 	map = isl_map_transitive_closure(map, &exact);
