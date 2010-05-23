@@ -863,7 +863,9 @@ error:
 	return NULL;
 }
 
-static int isl_basic_set_is_bounded(struct isl_basic_set *bset)
+/* Is the set bounded for each value of the parameters?
+ */
+int isl_basic_set_is_bounded(__isl_keep isl_basic_set *bset)
 {
 	struct isl_tab *tab;
 	int bounded;
@@ -873,15 +875,20 @@ static int isl_basic_set_is_bounded(struct isl_basic_set *bset)
 	if (isl_basic_set_fast_is_empty(bset))
 		return 1;
 
-	tab = isl_tab_from_recession_cone(bset);
+	tab = isl_tab_from_recession_cone(bset, 1);
 	bounded = isl_tab_cone_is_bounded(tab);
 	isl_tab_free(tab);
 	return bounded;
 }
 
+/* Is the set bounded for each value of the parameters?
+ */
 int isl_set_is_bounded(__isl_keep isl_set *set)
 {
 	int i;
+
+	if (!set)
+		return -1;
 
 	for (i = 0; i < set->n; ++i) {
 		int bounded = isl_basic_set_is_bounded(set->p[i]);

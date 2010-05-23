@@ -169,5 +169,3 @@ int isl_basic_set_vars_get_sign(__isl_keep isl_basic_set *bset,
 
 int isl_basic_set_add_div_constraints_var(__isl_keep isl_basic_set *bset,
 	unsigned pos, isl_int *div);
-
-int isl_set_is_bounded(__isl_keep isl_set *set);

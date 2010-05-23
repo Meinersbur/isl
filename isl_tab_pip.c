@@ -2603,7 +2603,7 @@ static struct isl_vec *gbr_get_sample(struct isl_context_gbr *cgbr)
 
 	if (!cgbr->cone) {
 		bset = isl_tab_peek_bset(cgbr->tab);
-		cgbr->cone = isl_tab_from_recession_cone(bset);
+		cgbr->cone = isl_tab_from_recession_cone(bset, 0);
 		if (!cgbr->cone)
 			return NULL;
 		if (isl_tab_track_bset(cgbr->cone, isl_basic_set_dup(bset)) < 0)
@@ -2968,7 +2968,7 @@ static int context_gbr_detect_equalities(struct isl_context *context,
 
 	if (!cgbr->cone) {
 		struct isl_basic_set *bset = isl_tab_peek_bset(cgbr->tab);
-		cgbr->cone = isl_tab_from_recession_cone(bset);
+		cgbr->cone = isl_tab_from_recession_cone(bset, 0);
 		if (!cgbr->cone)
 			goto error;
 		if (isl_tab_track_bset(cgbr->cone, isl_basic_set_dup(bset)) < 0)

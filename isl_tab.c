@@ -2134,16 +2134,20 @@ struct isl_tab *isl_tab_from_basic_set(struct isl_basic_set *bset)
 
 /* Construct a tableau corresponding to the recession cone of "bset".
  */
-struct isl_tab *isl_tab_from_recession_cone(struct isl_basic_set *bset)
+struct isl_tab *isl_tab_from_recession_cone(__isl_keep isl_basic_set *bset,
+	int parametric)
 {
 	isl_int cst;
 	int i;
 	struct isl_tab *tab;
+	unsigned offset = 0;
 
 	if (!bset)
 		return NULL;
+	if (parametric)
+		offset = isl_basic_set_dim(bset, isl_dim_param);
 	tab = isl_tab_alloc(bset->ctx, bset->n_eq + bset->n_ineq,
-				isl_basic_set_total_dim(bset), 0);
+				isl_basic_set_total_dim(bset) - offset, 0);
 	if (!tab)
 		return NULL;
 	tab->rational = ISL_F_ISSET(bset, ISL_BASIC_SET_RATIONAL);
@@ -2151,17 +2155,20 @@ struct isl_tab *isl_tab_from_recession_cone(struct isl_basic_set *bset)
 
 	isl_int_init(cst);
 	for (i = 0; i < bset->n_eq; ++i) {
-		isl_int_swap(bset->eq[i][0], cst);
-		tab = add_eq(tab, bset->eq[i]);
-		isl_int_swap(bset->eq[i][0], cst);
+		isl_int_swap(bset->eq[i][offset], cst);
+		if (offset > 0)
+			tab = isl_tab_add_eq(tab, bset->eq[i] + offset);
+		else
+			tab = add_eq(tab, bset->eq[i]);
+		isl_int_swap(bset->eq[i][offset], cst);
 		if (!tab)
 			goto done;
 	}
 	for (i = 0; i < bset->n_ineq; ++i) {
 		int r;
-		isl_int_swap(bset->ineq[i][0], cst);
-		r = isl_tab_add_row(tab, bset->ineq[i]);
-		isl_int_swap(bset->ineq[i][0], cst);
+		isl_int_swap(bset->ineq[i][offset], cst);
+		r = isl_tab_add_row(tab, bset->ineq[i] + offset);
+		isl_int_swap(bset->ineq[i][offset], cst);
 		if (r < 0)
 			goto error;
 		tab->con[r].is_nonneg = 1;

@@ -42,6 +42,27 @@ void test_read(struct isl_ctx *ctx)
 	fclose(input);
 }
 
+void test_bounded(struct isl_ctx *ctx)
+{
+	isl_set *set;
+	int bounded;
+
+	set = isl_set_read_from_str(ctx, "[n] -> {[i] : 0 <= i <= n }", -1);
+	bounded = isl_set_is_bounded(set);
+	assert(bounded);
+	isl_set_free(set);
+
+	set = isl_set_read_from_str(ctx, "{[n, i] : 0 <= i <= n }", -1);
+	bounded = isl_set_is_bounded(set);
+	assert(!bounded);
+	isl_set_free(set);
+
+	set = isl_set_read_from_str(ctx, "[n] -> {[i] : i <= n }", -1);
+	bounded = isl_set_is_bounded(set);
+	assert(!bounded);
+	isl_set_free(set);
+}
+
 /* Construct the basic set { [i] : 5 <= i <= N } */
 void test_construction(struct isl_ctx *ctx)
 {
@@ -1286,6 +1307,7 @@ int main()
 	test_sv(ctx);
 	test_dep(ctx);
 	test_read(ctx);
+	test_bounded(ctx);
 	test_construction(ctx);
 	test_dim(ctx);
 	test_div(ctx);
