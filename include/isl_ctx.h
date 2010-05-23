@@ -121,9 +121,19 @@ struct isl_options *isl_ctx_options(isl_ctx *ctx);
 
 isl_ctx *isl_ctx_alloc_with_options(struct isl_arg *arg, __isl_take void *opt);
 isl_ctx *isl_ctx_alloc();
+void *isl_ctx_peek_options(isl_ctx *ctx, struct isl_arg *arg);
 void isl_ctx_ref(struct isl_ctx *ctx);
 void isl_ctx_deref(struct isl_ctx *ctx);
 void isl_ctx_free(isl_ctx *ctx);
+
+#define ISL_ARG_CTX_DECL(prefix,st,arg)					\
+st *isl_ctx_peek_ ## prefix(isl_ctx *ctx);
+
+#define ISL_ARG_CTX_DEF(prefix,st,arg)					\
+st *isl_ctx_peek_ ## prefix(isl_ctx *ctx)				\
+{									\
+	return (st *)isl_ctx_peek_options(ctx, arg);			\
+}
 
 #if defined(__cplusplus)
 }

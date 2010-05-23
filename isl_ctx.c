@@ -10,25 +10,38 @@
 #include "isl_ctx.h"
 #include "isl_vec.h"
 
-static struct isl_options *find_nested_isl_options(struct isl_arg *arg,
-	void *opt)
+static struct isl_options *find_nested_options(struct isl_arg *arg,
+	void *opt, struct isl_arg *wanted)
 {
 	int i;
 	struct isl_options *options;
 
-	if (arg == isl_options_arg)
+	if (arg == wanted)
 		return opt;
 
 	for (i = 0; arg[i].type != isl_arg_end; ++i) {
 		if (arg[i].type != isl_arg_child)
 			continue;
-		options = find_nested_isl_options(arg[i].u.child.child,
-				    *(void **)(((char *)opt) + arg->offset));
+		options = find_nested_options(arg[i].u.child.child,
+				*(void **)(((char *)opt) + arg->offset), wanted);
 		if (options)
 			return options;
 	}
 
 	return NULL;
+}
+
+static struct isl_options *find_nested_isl_options(struct isl_arg *arg,
+	void *opt)
+{
+	return find_nested_options(arg, opt, isl_options_arg);
+}
+
+void *isl_ctx_peek_options(isl_ctx *ctx, struct isl_arg *arg)
+{
+	if (!ctx)
+		return NULL;
+	return find_nested_options(ctx->user_arg, ctx->user_opt, arg);
 }
 
 isl_ctx *isl_ctx_alloc_with_options(struct isl_arg *arg, void *user_opt)
