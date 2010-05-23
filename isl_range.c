@@ -241,7 +241,7 @@ error:
 	return NULL;
 }
 
-/* Helper function to add a guarder polynomial to either pwf_exact or pwf,
+/* Helper function to add a guarded polynomial to either pwf_exact or pwf,
  * depending on whether the result has been determined to be exact.
  */
 static int add_guarded_poly(__isl_take isl_basic_set *bset,
