@@ -2222,41 +2222,6 @@ error:
 	return NULL;
 }
 
-__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_move(
-	__isl_take isl_pw_qpolynomial *pwqp,
-	enum isl_dim_type dst_type, unsigned dst_pos,
-	enum isl_dim_type src_type, unsigned src_pos, unsigned n)
-{
-	int i;
-
-	pwqp = isl_pw_qpolynomial_cow(pwqp);
-	if (!pwqp)
-		return NULL;
-
-	pwqp->dim = isl_dim_move(pwqp->dim,
-				    dst_type, dst_pos, src_type, src_pos, n);
-	if (!pwqp->dim)
-		goto error;
-
-	for (i = 0; i < pwqp->n; ++i) {
-		pwqp->p[i].set = isl_set_move_dims(pwqp->p[i].set,
-						dst_type, dst_pos,
-						src_type, src_pos, n);
-		if (!pwqp->p[i].set)
-			goto error;
-		pwqp->p[i].qp = isl_qpolynomial_move_dims(pwqp->p[i].qp,
-					dst_type, dst_pos, src_type, src_pos, n);
-		if (!pwqp->p[i].qp)
-			goto error;
-	}
-
-	return pwqp;
-error:
-	isl_pw_qpolynomial_free(pwqp);
-	return NULL;
-}
-
-
 __isl_give struct isl_upoly *isl_upoly_from_affine(isl_ctx *ctx, isl_int *f,
 	isl_int denom, unsigned len)
 {

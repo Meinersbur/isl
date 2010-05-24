@@ -591,3 +591,35 @@ error:
 	isl_morph_free(morph);
 	return NULL;
 }
+
+__isl_give PW *FN(PW,move_dims)(__isl_take PW *pw,
+	enum isl_dim_type dst_type, unsigned dst_pos,
+	enum isl_dim_type src_type, unsigned src_pos, unsigned n)
+{
+	int i;
+
+	pw = FN(PW,cow)(pw);
+	if (!pw)
+		return NULL;
+
+	pw->dim = isl_dim_move(pw->dim, dst_type, dst_pos, src_type, src_pos, n);
+	if (!pw->dim)
+		goto error;
+
+	for (i = 0; i < pw->n; ++i) {
+		pw->p[i].set = isl_set_move_dims(pw->p[i].set,
+						dst_type, dst_pos,
+						src_type, src_pos, n);
+		if (!pw->p[i].set)
+			goto error;
+		pw->p[i].FIELD = FN(EL,move_dims)(pw->p[i].FIELD,
+					dst_type, dst_pos, src_type, src_pos, n);
+		if (!pw->p[i].FIELD)
+			goto error;
+	}
+
+	return pw;
+error:
+	FN(PW,free)(pw);
+	return NULL;
+}

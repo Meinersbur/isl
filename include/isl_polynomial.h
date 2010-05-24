@@ -144,7 +144,7 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_mul(
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_add_dims(
 	__isl_take isl_pw_qpolynomial *pwqp,
 	enum isl_dim_type type, unsigned n);
-__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_move(
+__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_move_dims(
 	__isl_take isl_pw_qpolynomial *pwqp,
 	enum isl_dim_type dst_type, unsigned dst_pos,
 	enum isl_dim_type src_type, unsigned src_pos, unsigned n);
@@ -203,6 +203,11 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_fold(
 	__isl_take isl_qpolynomial_fold *fold1,
 	__isl_take isl_qpolynomial_fold *fold2);
 
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_move_dims(
+	__isl_take isl_qpolynomial_fold *fold,
+	enum isl_dim_type dst_type, unsigned dst_pos,
+	enum isl_dim_type src_type, unsigned src_pos, unsigned n);
+
 __isl_give isl_qpolynomial *isl_qpolynomial_fold_eval(
 	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_point *pnt);
 
@@ -244,6 +249,11 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_add(
 __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_add_disjoint(
 	__isl_take isl_pw_qpolynomial_fold *pwf1,
 	__isl_take isl_pw_qpolynomial_fold *pwf2);
+
+__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_move_dims(
+	__isl_take isl_pw_qpolynomial_fold *pwf,
+	enum isl_dim_type dst_type, unsigned dst_pos,
+	enum isl_dim_type src_type, unsigned src_pos, unsigned n);
 
 __isl_give isl_qpolynomial *isl_pw_qpolynomial_fold_eval(
 	__isl_take isl_pw_qpolynomial_fold *pwf, __isl_take isl_point *pnt);

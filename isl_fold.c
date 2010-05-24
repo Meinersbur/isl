@@ -755,3 +755,35 @@ error:
 	isl_morph_free(morph);
 	return NULL;
 }
+
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_move_dims(
+	__isl_take isl_qpolynomial_fold *fold,
+	enum isl_dim_type dst_type, unsigned dst_pos,
+	enum isl_dim_type src_type, unsigned src_pos, unsigned n)
+{
+	int i;
+
+	if (n == 0)
+		return fold;
+
+	fold = isl_qpolynomial_fold_cow(fold);
+	if (!fold)
+		return NULL;
+
+	fold->dim = isl_dim_move(fold->dim, dst_type, dst_pos,
+						src_type, src_pos, n);
+	if (!fold->dim)
+		goto error;
+
+	for (i = 0; i < fold->n; ++i) {
+		fold->qp[i] = isl_qpolynomial_move_dims(fold->qp[i],
+				dst_type, dst_pos, src_type, src_pos, n);
+		if (!fold->qp[i])
+			goto error;
+	}
+
+	return fold;
+error:
+	isl_qpolynomial_fold_free(fold);
+	return NULL;
+}
