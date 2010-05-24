@@ -35,7 +35,11 @@ struct isl_morph {
 };
 typedef struct isl_morph isl_morph;
 
+__isl_give isl_morph *isl_morph_alloc(
+	__isl_take isl_basic_set *dom, __isl_take isl_basic_set *ran,
+	__isl_take isl_mat *map, __isl_take isl_mat *inv);
 __isl_give isl_morph *isl_morph_copy(__isl_keep isl_morph *morph);
+__isl_give isl_morph *isl_morph_identity(__isl_keep isl_basic_set *bset);
 void isl_morph_free(__isl_take isl_morph *morph);
 
 __isl_give isl_dim *isl_morph_get_ran_dim(__isl_keep isl_morph *morph);

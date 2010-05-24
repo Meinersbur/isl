@@ -14,7 +14,7 @@
 #include <isl_dim_private.h>
 #include <isl_equalities.h>
 
-static __isl_give isl_morph *isl_morph_alloc(
+__isl_give isl_morph *isl_morph_alloc(
 	__isl_take isl_basic_set *dom, __isl_take isl_basic_set *ran,
 	__isl_take isl_mat *map, __isl_take isl_mat *inv)
 {
