@@ -161,6 +161,8 @@ int isl_pw_qpolynomial_fold_covers(__isl_keep isl_pw_qpolynomial_fold *pwf1,
 
 __isl_give isl_qpolynomial *isl_qpolynomial_morph(__isl_take isl_qpolynomial *qp,
 	__isl_take isl_morph *morph);
+__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_morph(
+	__isl_take isl_pw_qpolynomial *pwqp, __isl_take isl_morph *morph);
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_morph(
 	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_morph *morph);
 __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_morph(
