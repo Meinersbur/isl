@@ -757,6 +757,13 @@ error:
 	return NULL;
 }
 
+enum isl_fold isl_qpolynomial_fold_get_type(__isl_keep isl_qpolynomial_fold *fold)
+{
+	if (!fold)
+		return isl_fold_list;
+	return fold->type;
+}
+
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_move_dims(
 	__isl_take isl_qpolynomial_fold *fold,
 	enum isl_dim_type dst_type, unsigned dst_pos,
