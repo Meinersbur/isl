@@ -803,6 +803,22 @@ error:
 	return NULL;
 }
 
+int isl_qpolynomial_fold_foreach_qpolynomial(
+	__isl_keep isl_qpolynomial_fold *fold,
+	int (*fn)(__isl_take isl_qpolynomial *qp, void *user), void *user)
+{
+	int i;
+
+	if (!fold)
+		return -1;
+
+	for (i = 0; i < fold->n; ++i)
+		if (fn(isl_qpolynomial_copy(fold->qp[i]), user) < 0)
+			return -1;
+
+	return 0;
+}
+
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_move_dims(
 	__isl_take isl_qpolynomial_fold *fold,
 	enum isl_dim_type dst_type, unsigned dst_pos,
