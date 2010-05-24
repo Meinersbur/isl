@@ -592,6 +592,80 @@ error:
 	return NULL;
 }
 
+static int any_divs(__isl_keep isl_set *set)
+{
+	int i;
+
+	if (!set)
+		return -1;
+
+	for (i = 0; i < set->n; ++i)
+		if (set->p[i]->n_div > 0)
+			return 1;
+
+	return 0;
+}
+
+static int foreach_lifted_subset(__isl_take isl_set *set, __isl_take EL *el,
+	int (*fn)(__isl_take isl_set *set, __isl_take EL *el,
+		    void *user), void *user)
+{
+	int i;
+
+	if (!set || !el)
+		goto error;
+
+	for (i = 0; i < set->n; ++i) {
+		isl_set *lift;
+		EL *copy;
+
+		lift = isl_set_from_basic_set(isl_basic_set_copy(set->p[i]));
+		lift = isl_set_lift(lift);
+
+		copy = FN(EL,copy)(el);
+		copy = FN(EL,lift)(copy, isl_set_get_dim(lift));
+
+		if (fn(lift, copy, user) < 0)
+			goto error;
+	}
+
+	isl_set_free(set);
+	FN(EL,free)(el);
+
+	return 0;
+error:
+	isl_set_free(set);
+	FN(EL,free)(el);
+	return -1;
+}
+
+int FN(PW,foreach_lifted_piece)(__isl_keep PW *pw,
+	int (*fn)(__isl_take isl_set *set, __isl_take EL *el,
+		    void *user), void *user)
+{
+	int i;
+
+	if (!pw)
+		return -1;
+
+	for (i = 0; i < pw->n; ++i) {
+		isl_set *set;
+		EL *el;
+
+		set = isl_set_copy(pw->p[i].set);
+		el = FN(EL,copy)(pw->p[i].FIELD);
+		if (!any_divs(set)) {
+			if (fn(set, el, user) < 0)
+				return -1;
+			continue;
+		}
+		if (foreach_lifted_subset(set, el, fn, user) < 0)
+			return -1;
+	}
+
+	return 0;
+}
+
 __isl_give PW *FN(PW,move_dims)(__isl_take PW *pw,
 	enum isl_dim_type dst_type, unsigned dst_pos,
 	enum isl_dim_type src_type, unsigned src_pos, unsigned n)

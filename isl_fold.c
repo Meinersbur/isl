@@ -764,6 +764,45 @@ enum isl_fold isl_qpolynomial_fold_get_type(__isl_keep isl_qpolynomial_fold *fol
 	return fold->type;
 }
 
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_lift(
+	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_dim *dim)
+{
+	int i;
+	isl_ctx *ctx;
+
+	if (!fold || !dim)
+		goto error;
+
+	if (isl_dim_equal(fold->dim, dim)) {
+		isl_dim_free(dim);
+		return fold;
+	}
+
+	fold = isl_qpolynomial_fold_cow(fold);
+	if (!fold)
+		goto error;
+
+	isl_dim_free(fold->dim);
+	fold->dim = isl_dim_copy(dim);
+	if (!fold->dim)
+		goto error;
+
+	for (i = 0; i < fold->n; ++i) {
+		fold->qp[i] = isl_qpolynomial_lift(fold->qp[i],
+						isl_dim_copy(dim));
+		if (!fold->qp[i])
+			goto error;
+	}
+
+	isl_dim_free(dim);
+
+	return fold;
+error:
+	isl_qpolynomial_fold_free(fold);
+	isl_dim_free(dim);
+	return NULL;
+}
+
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_move_dims(
 	__isl_take isl_qpolynomial_fold *fold,
 	enum isl_dim_type dst_type, unsigned dst_pos,

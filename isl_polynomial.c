@@ -2723,20 +2723,6 @@ int isl_pw_qpolynomial_foreach_piece(__isl_keep isl_pw_qpolynomial *pwqp,
 	return 0;
 }
 
-static int any_divs(__isl_keep isl_set *set)
-{
-	int i;
-
-	if (!set)
-		return -1;
-
-	for (i = 0; i < set->n; ++i)
-		if (set->p[i]->n_div > 0)
-			return 1;
-
-	return 0;
-}
-
 __isl_give isl_qpolynomial *isl_qpolynomial_lift(__isl_take isl_qpolynomial *qp,
 	__isl_take isl_dim *dim)
 {
@@ -2785,67 +2771,6 @@ error:
 	isl_dim_free(dim);
 	isl_qpolynomial_free(qp);
 	return NULL;
-}
-
-static int foreach_lifted_subset(__isl_take isl_set *set,
-	__isl_take isl_qpolynomial *qp,
-	int (*fn)(__isl_take isl_set *set, __isl_take isl_qpolynomial *qp,
-		    void *user), void *user)
-{
-	int i;
-
-	if (!set || !qp)
-		goto error;
-
-	for (i = 0; i < set->n; ++i) {
-		isl_set *lift;
-		isl_qpolynomial *copy;
-
-		lift = isl_set_from_basic_set(isl_basic_set_copy(set->p[i]));
-		lift = isl_set_lift(lift);
-
-		copy = isl_qpolynomial_copy(qp);
-		copy = isl_qpolynomial_lift(copy, isl_set_get_dim(lift));
-
-		if (fn(lift, copy, user) < 0)
-			goto error;
-	}
-
-	isl_set_free(set);
-	isl_qpolynomial_free(qp);
-
-	return 0;
-error:
-	isl_set_free(set);
-	isl_qpolynomial_free(qp);
-	return -1;
-}
-
-int isl_pw_qpolynomial_foreach_lifted_piece(__isl_keep isl_pw_qpolynomial *pwqp,
-	int (*fn)(__isl_take isl_set *set, __isl_take isl_qpolynomial *qp,
-		    void *user), void *user)
-{
-	int i;
-
-	if (!pwqp)
-		return -1;
-
-	for (i = 0; i < pwqp->n; ++i) {
-		isl_set *set;
-		isl_qpolynomial *qp;
-
-		set = isl_set_copy(pwqp->p[i].set);
-		qp = isl_qpolynomial_copy(pwqp->p[i].qp);
-		if (!any_divs(set)) {
-			if (fn(set, qp, user) < 0)
-				return -1;
-			continue;
-		}
-		if (foreach_lifted_subset(set, qp, fn, user) < 0)
-			return -1;
-	}
-
-	return 0;
 }
 
 /* For each parameter or variable that does not appear in qp,

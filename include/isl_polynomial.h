@@ -264,6 +264,11 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_move_dims(
 __isl_give isl_qpolynomial *isl_pw_qpolynomial_fold_eval(
 	__isl_take isl_pw_qpolynomial_fold *pwf, __isl_take isl_point *pnt);
 
+int isl_pw_qpolynomial_fold_foreach_lifted_piece(
+	__isl_keep isl_pw_qpolynomial_fold *pwf,
+	int (*fn)(__isl_take isl_set *set, __isl_take isl_qpolynomial_fold *fold,
+		    void *user), void *user);
+
 __isl_give isl_printer *isl_printer_print_pw_qpolynomial_fold(
 	__isl_take isl_printer *p, __isl_keep isl_pw_qpolynomial_fold *pwf);
 void isl_pw_qpolynomial_fold_print(__isl_keep isl_pw_qpolynomial_fold *pwf,
