@@ -2351,8 +2351,7 @@ struct isl_basic_set *isl_basic_set_update_from_tab(struct isl_basic_set *bset,
  * the resulting tableau is empty.
  * Otherwise, we know the value will be zero and we close the row.
  */
-static struct isl_tab *cut_to_hyperplane(struct isl_tab *tab,
-	struct isl_tab_var *var)
+static int cut_to_hyperplane(struct isl_tab *tab, struct isl_tab_var *var)
 {
 	unsigned r;
 	isl_int *row;
@@ -2360,12 +2359,12 @@ static struct isl_tab *cut_to_hyperplane(struct isl_tab *tab,
 	unsigned off = 2 + tab->M;
 
 	if (var->is_zero)
-		return tab;
-	isl_assert(tab->mat->ctx, !var->is_redundant, goto error);
-	isl_assert(tab->mat->ctx, var->is_nonneg, goto error);
+		return 0;
+	isl_assert(tab->mat->ctx, !var->is_redundant, return -1);
+	isl_assert(tab->mat->ctx, var->is_nonneg, return -1);
 
 	if (isl_tab_extend_cons(tab, 1) < 0)
-		goto error;
+		return -1;
 
 	r = tab->n_con;
 	tab->con[r].index = tab->n_row;
@@ -2391,27 +2390,24 @@ static struct isl_tab *cut_to_hyperplane(struct isl_tab *tab,
 	tab->n_row++;
 	tab->n_con++;
 	if (isl_tab_push_var(tab, isl_tab_undo_allocate, &tab->con[r]) < 0)
-		goto error;
+		return -1;
 
 	sgn = sign_of_max(tab, &tab->con[r]);
 	if (sgn < -1)
-		goto error;
+		return -1;
 	if (sgn < 0) {
 		if (isl_tab_mark_empty(tab) < 0)
-			goto error;
-		return tab;
+			return -1;
+		return 0;
 	}
 	tab->con[r].is_nonneg = 1;
 	if (isl_tab_push_var(tab, isl_tab_undo_nonneg, &tab->con[r]) < 0)
-		goto error;
+		return -1;
 	/* sgn == 0 */
 	if (close_row(tab, &tab->con[r]) < 0)
-		goto error;
+		return -1;
 
-	return tab;
-error:
-	isl_tab_free(tab);
-	return NULL;
+	return 0;
 }
 
 /* Given a tableau "tab" and an inequality constraint "con" of the tableau,
@@ -2474,10 +2470,10 @@ error:
 	return NULL;
 }
 
-struct isl_tab *isl_tab_select_facet(struct isl_tab *tab, int con)
+int isl_tab_select_facet(struct isl_tab *tab, int con)
 {
 	if (!tab)
-		return NULL;
+		return -1;
 
 	return cut_to_hyperplane(tab, &tab->con[con]);
 }
@@ -2560,7 +2556,8 @@ struct isl_tab *isl_tab_detect_implicit_equalities(struct isl_tab *tab)
 			if (close_row(tab, var) < 0)
 				goto error;
 		} else if (!tab->rational && !at_least_one(tab, var)) {
-			tab = cut_to_hyperplane(tab, var);
+			if (cut_to_hyperplane(tab, var) < 0)
+				goto error;
 			return isl_tab_detect_implicit_equalities(tab);
 		}
 		for (i = tab->n_redundant; i < tab->n_row; ++i) {

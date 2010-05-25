@@ -270,7 +270,8 @@ static int check_facets(struct isl_map *map, int i, int j,
 	for (k = 0; k < map->p[i]->n_ineq; ++k) {
 		if (ineq_i[k] != STATUS_CUT)
 			continue;
-		tabs[i] = isl_tab_select_facet(tabs[i], n_eq + k);
+		if (isl_tab_select_facet(tabs[i], n_eq + k) < 0)
+			return -1;
 		for (l = 0; l < map->p[j]->n_ineq; ++l) {
 			int stat;
 			if (ineq_j[l] != STATUS_CUT)
@@ -395,7 +396,8 @@ static int is_extension(struct isl_map *map, int i, int j, int k,
 	snap = isl_tab_snap(tabs[i]);
 	tabs[i] = isl_tab_relax(tabs[i], n_eq + k);
 	snap2 = isl_tab_snap(tabs[i]);
-	tabs[i] = isl_tab_select_facet(tabs[i], n_eq + k);
+	if (isl_tab_select_facet(tabs[i], n_eq + k) < 0)
+		return -1;
 	super = contains(map, j, ineq_j, tabs[i]);
 	if (super) {
 		if (isl_tab_rollback(tabs[i], snap2) < 0)
@@ -582,7 +584,8 @@ static int can_wrap_in_facet(struct isl_map *map, int i, int j, int k,
 
 	snap = isl_tab_snap(tabs[i]);
 
-	tabs[i] = isl_tab_select_facet(tabs[i], map->p[i]->n_eq + k);
+	if (isl_tab_select_facet(tabs[i], map->p[i]->n_eq + k) < 0)
+		goto error;
 	if (isl_tab_detect_redundant(tabs[i]) < 0)
 		goto error;
 
@@ -700,8 +703,8 @@ static int wrap_in_facets(struct isl_map *map, int i, int j,
 	wraps->n_row = 0;
 
 	for (k = 0; k < n; ++k) {
-		tabs[i] = isl_tab_select_facet(tabs[i],
-						map->p[i]->n_eq + cuts[k]);
+		if (isl_tab_select_facet(tabs[i], map->p[i]->n_eq + cuts[k]) < 0)
+			goto error;
 		if (isl_tab_detect_redundant(tabs[i]) < 0)
 			goto error;
 		set_is_redundant(tabs[i], map->p[i]->n_eq, cuts, n, k, 1);
