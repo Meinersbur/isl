@@ -244,6 +244,7 @@ int isl_tab_pivot(struct isl_tab *tab, int row, int col) WARN_UNUSED;
 int isl_tab_add_row(struct isl_tab *tab, isl_int *line) WARN_UNUSED;
 int isl_tab_row_is_redundant(struct isl_tab *tab, int row);
 int isl_tab_min_at_most_neg_one(struct isl_tab *tab, struct isl_tab_var *var);
+int isl_tab_sign_of_max(struct isl_tab *tab, int con);
 int isl_tab_kill_col(struct isl_tab *tab, int col) WARN_UNUSED;
 
 int isl_tab_push(struct isl_tab *tab, enum isl_tab_undo_type type) WARN_UNUSED;

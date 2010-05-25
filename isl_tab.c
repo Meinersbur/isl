@@ -1212,6 +1212,20 @@ static int sign_of_max(struct isl_tab *tab, struct isl_tab_var *var)
 	return 1;
 }
 
+int isl_tab_sign_of_max(struct isl_tab *tab, int con)
+{
+	struct isl_tab_var *var;
+
+	if (!tab)
+		return -2;
+
+	var = &tab->con[con];
+	isl_assert(tab->mat->ctx, !var->is_redundant, return -2);
+	isl_assert(tab->mat->ctx, !var->is_zero, return -2);
+
+	return sign_of_max(tab, var);
+}
+
 static int row_is_neg(struct isl_tab *tab, int row)
 {
 	if (!tab->M)
