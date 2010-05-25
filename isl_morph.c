@@ -717,3 +717,26 @@ __isl_give isl_morph *isl_morph_inverse(__isl_take isl_morph *morph)
 
 	return morph;
 }
+
+__isl_give isl_morph *isl_basic_set_full_compression(
+	__isl_keep isl_basic_set *bset)
+{
+	isl_morph *morph, *morph2;
+
+	bset = isl_basic_set_copy(bset);
+
+	morph = isl_basic_set_variable_compression(bset, isl_dim_param);
+	bset = isl_morph_basic_set(isl_morph_copy(morph), bset);
+
+	morph2 = isl_basic_set_parameter_compression(bset);
+	bset = isl_morph_basic_set(isl_morph_copy(morph2), bset);
+
+	morph = isl_morph_compose(morph2, morph);
+
+	morph2 = isl_basic_set_variable_compression(bset, isl_dim_set);
+	isl_basic_set_free(bset);
+
+	morph = isl_morph_compose(morph2, morph);
+
+	return morph;
+}

@@ -463,8 +463,8 @@ static int guarded_poly_bound(__isl_take isl_basic_set *bset,
 	isl_pw_qpolynomial_fold *top_pwf;
 	isl_pw_qpolynomial_fold *top_pwf_exact;
 	isl_dim *dim;
-	isl_morph *morph, *morph2;
-	unsigned orig_nvar;
+	isl_morph *morph;
+	unsigned orig_nvar, final_nvar;
 	int r;
 
 	bset = isl_basic_set_detect_equalities(bset);
@@ -477,19 +477,12 @@ static int guarded_poly_bound(__isl_take isl_basic_set *bset,
 
 	orig_nvar = isl_basic_set_dim(bset, isl_dim_set);
 
-	morph = isl_basic_set_variable_compression(bset, isl_dim_param);
+	morph = isl_basic_set_full_compression(bset);
+
 	bset = isl_morph_basic_set(isl_morph_copy(morph), bset);
+	poly = isl_qpolynomial_morph(poly, isl_morph_copy(morph));
 
-	morph2 = isl_basic_set_parameter_compression(bset);
-	bset = isl_morph_basic_set(isl_morph_copy(morph2), bset);
-
-	morph = isl_morph_compose(morph2, morph);
-
-	morph2 = isl_basic_set_variable_compression(bset, isl_dim_set);
-	bset = isl_morph_basic_set(isl_morph_copy(morph2), bset);
-
-	morph2 = isl_morph_compose(morph2, isl_morph_copy(morph));
-	poly = isl_qpolynomial_morph(poly, morph2);
+	final_nvar = isl_basic_set_dim(bset, isl_dim_set);
 
 	dim = isl_morph_get_ran_dim(morph);
 	dim = isl_dim_drop(dim, isl_dim_set, 0, isl_dim_size(dim, isl_dim_set));
@@ -503,7 +496,7 @@ static int guarded_poly_bound(__isl_take isl_basic_set *bset,
 	r = compressed_guarded_poly_bound(bset, poly, user);
 
 	morph = isl_morph_remove_dom_dims(morph, isl_dim_set, 0, orig_nvar);
-	morph = isl_morph_remove_ran_dims(morph, isl_dim_set, 0, orig_nvar);
+	morph = isl_morph_remove_ran_dims(morph, isl_dim_set, 0, final_nvar);
 	morph = isl_morph_inverse(morph);
 
 	data->pwf = isl_pw_qpolynomial_fold_morph(data->pwf,
