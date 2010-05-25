@@ -95,11 +95,10 @@ __isl_give isl_dim *isl_morph_get_ran_dim(__isl_keep isl_morph *morph)
 	return isl_dim_copy(morph->ran->dim);
 }
 
-__isl_give isl_morph *isl_morph_drop_dims(__isl_take isl_morph *morph,
+__isl_give isl_morph *isl_morph_remove_dom_dims(__isl_take isl_morph *morph,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
 	unsigned dom_offset;
-	unsigned ran_offset;
 
 	if (n == 0)
 		return morph;
@@ -109,16 +108,39 @@ __isl_give isl_morph *isl_morph_drop_dims(__isl_take isl_morph *morph,
 		return NULL;
 
 	dom_offset = 1 + isl_dim_offset(morph->dom->dim, type);
-	ran_offset = 1 + isl_dim_offset(morph->ran->dim, type);
 
-	morph->dom = isl_basic_set_drop(morph->dom, type, first, n);
-	morph->ran = isl_basic_set_drop(morph->ran, type, first, n);
+	morph->dom = isl_basic_set_remove(morph->dom, type, first, n);
 
 	morph->map = isl_mat_drop_cols(morph->map, dom_offset + first, n);
+
+	morph->inv = isl_mat_drop_rows(morph->inv, dom_offset + first, n);
+
+	if (morph->dom && morph->ran && morph->map && morph->inv)
+		return morph;
+
+	isl_morph_free(morph);
+	return NULL;
+}
+
+__isl_give isl_morph *isl_morph_remove_ran_dims(__isl_take isl_morph *morph,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	unsigned ran_offset;
+
+	if (n == 0)
+		return morph;
+
+	morph = isl_morph_cow(morph);
+	if (!morph)
+		return NULL;
+
+	ran_offset = 1 + isl_dim_offset(morph->ran->dim, type);
+
+	morph->ran = isl_basic_set_remove(morph->ran, type, first, n);
+
 	morph->map = isl_mat_drop_rows(morph->map, ran_offset + first, n);
 
 	morph->inv = isl_mat_drop_cols(morph->inv, ran_offset + first, n);
-	morph->inv = isl_mat_drop_rows(morph->inv, dom_offset + first, n);
 
 	if (morph->dom && morph->ran && morph->map && morph->inv)
 		return morph;

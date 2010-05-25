@@ -502,7 +502,8 @@ static int guarded_poly_bound(__isl_take isl_basic_set *bset,
 
 	r = compressed_guarded_poly_bound(bset, poly, user);
 
-	morph = isl_morph_drop_dims(morph, isl_dim_set, 0, orig_nvar);
+	morph = isl_morph_remove_dom_dims(morph, isl_dim_set, 0, orig_nvar);
+	morph = isl_morph_remove_ran_dims(morph, isl_dim_set, 0, orig_nvar);
 	morph = isl_morph_inverse(morph);
 
 	data->pwf = isl_pw_qpolynomial_fold_morph(data->pwf,
