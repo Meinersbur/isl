@@ -1426,6 +1426,14 @@ to access the same data element before the given iteration
 of the sink access.
 To compute standard flow dependences, the sink should be
 a read, while the sources should be writes.
+If any of the source accesses are marked as being I<may>
+accesses, then there will be a dependence to the last
+I<must> access B<and> to any I<may> access that follows
+this last I<must> access.
+In particular, if I<all> sources are I<may> accesses,
+then memory based dependence analysis is performed.
+If, on the other hand, all sources are I<must> accesses,
+then value based dependence analysis is performed.
 
 	#include <isl_flow.h>
 
@@ -1435,17 +1443,18 @@ a read, while the sources should be writes.
 		int max_source);
 	__isl_give isl_access_info *isl_access_info_add_source(
 		__isl_take isl_access_info *acc,
-		__isl_take isl_map *source, void *source_user);
+		__isl_take isl_map *source, int must,
+		void *source_user);
 
 	__isl_give isl_flow *isl_access_info_compute_flow(
 		__isl_take isl_access_info *acc);
 
 	int isl_flow_foreach(__isl_keep isl_flow *deps,
-		int (*fn)(__isl_take isl_map *dep, void *dep_user,
-			  void *user),
+		int (*fn)(__isl_take isl_map *dep, int must,
+			  void *dep_user, void *user),
 		void *user);
 	__isl_give isl_set *isl_flow_get_no_source(
-		__isl_keep isl_flow *deps);
+		__isl_keep isl_flow *deps, int must);
 	void isl_flow_free(__isl_take isl_flow *deps);
 
 The function C<isl_access_info_compute_flow> performs the actual
@@ -1469,6 +1478,10 @@ then the function should return I<2 * n + 1>; otherwise,
 it should return I<2 * n>.
 The sources can be added to the C<isl_access_info> by performing
 (at most) C<max_source> calls to C<isl_access_info_add_source>.
+C<must> indicates whether the source is a I<must> access
+or a I<may> access.  Note that a multi-valued access relation
+should only be marked I<must> if every iteration in the domain
+of the relation accesses I<all> elements in its image.
 The C<source_user> token is again used to identify
 the source access.  The range of the source access relation
 C<source> should have the same dimension as the range
@@ -1477,19 +1490,25 @@ of the sink access relation.
 The result of the dependence analysis is collected in an
 C<isl_flow>.  There may be elements in the domain of
 the sink access for which no preceding source access could be
-find.  The set of these elements can be obtained through
-a call to C<isl_flow_get_no_source>.
+found or for which all preceding sources are I<may> accesses.
+The sets of these elements can be obtained through
+calls to C<isl_flow_get_no_source>, the first with C<must> set
+and the second with C<must> unset.
 In the case of standard flow dependence analysis,
-this set corresponds to the reads from uninitialized
-array elements.
+with the sink a read and the sources I<must> writes,
+the first set corresponds to the reads from uninitialized
+array elements and the second set is empty.
 The actual flow dependences can be extracted using
 C<isl_flow_foreach>.  This function will call the user-specified
 callback function C<fn> for each B<non-empty> dependence between
 a source and the sink.  The callback function is called
-with three arguments, the actual flow dependence relation
-mapping source iterations to sink iterations, a token
+with four arguments, the actual flow dependence relation
+mapping source iterations to sink iterations, a boolean that
+indicates whether it is a I<must> or I<may> dependence, a token
 identifying the source and an additional C<void *> with value
 equal to the third argument of the C<isl_flow_foreach> call.
+A dependence is marked I<must> if it originates from a I<must>
+source and if it is not followed by any I<may> sources.
 
 After finishing with an C<isl_flow>, the user should call
 C<isl_flow_free> to free all associated memory.

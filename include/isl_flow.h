@@ -23,12 +23,12 @@ __isl_give isl_access_info *isl_access_info_alloc(__isl_take isl_map *sink,
 	void *sink_user, isl_access_level_before fn, int max_source);
 __isl_give isl_access_info *isl_access_info_add_source(
 	__isl_take isl_access_info *acc, __isl_take isl_map *source,
-	void *source_user);
+	int must, void *source_user);
 __isl_give isl_flow *isl_access_info_compute_flow(__isl_take isl_access_info *acc);
 int isl_flow_foreach(__isl_keep isl_flow *deps,
-	int (*fn)(__isl_take isl_map *dep, void *dep_user, void *user),
+	int (*fn)(__isl_take isl_map *dep, int must, void *dep_user, void *user),
 	void *user);
-__isl_give isl_set *isl_flow_get_no_source(__isl_keep isl_flow *deps);
+__isl_give isl_set *isl_flow_get_no_source(__isl_keep isl_flow *deps, int must);
 void isl_flow_free(__isl_take isl_flow *deps);
 
 #if defined(__cplusplus)

@@ -1035,15 +1035,20 @@ void test_lexmin(struct isl_ctx *ctx)
 	isl_map_free(map);
 }
 
-struct dep {
-	isl_map *dep;
+struct must_may {
+	isl_map *must;
+	isl_map *may;
 };
 
-static int collect_dep(__isl_take isl_map *dep, void *dep_user, void *user)
+static int collect_must_may(__isl_take isl_map *dep, int must,
+	void *dep_user, void *user)
 {
-	struct dep *d = (struct dep *)user;
+	struct must_may *mm = (struct must_may *)user;
 
-	d->dep = isl_map_union(d->dep, dep);
+	if (must)
+		mm->must = isl_map_union(mm->must, dep);
+	else
+		mm->may = isl_map_union(mm->may, dep);
 
 	return 0;
 }
@@ -1074,7 +1079,158 @@ void test_dep(struct isl_ctx *ctx)
 	isl_access_info *ai;
 	isl_flow *flow;
 	int depth;
-	struct dep dep;
+	struct must_may mm;
+
+	depth = 3;
+
+	str = "{ [2,i,0] -> [i] : 0 <= i <= 10 }";
+	map = isl_map_read_from_str(ctx, str, -1);
+	ai = isl_access_info_alloc(map, &depth, &common_space, 2);
+
+	str = "{ [0,i,0] -> [i] : 0 <= i <= 10 }";
+	map = isl_map_read_from_str(ctx, str, -1);
+	ai = isl_access_info_add_source(ai, map, 1, &depth);
+
+	str = "{ [1,i,0] -> [5] : 0 <= i <= 10 }";
+	map = isl_map_read_from_str(ctx, str, -1);
+	ai = isl_access_info_add_source(ai, map, 1, &depth);
+
+	flow = isl_access_info_compute_flow(ai);
+	dim = isl_dim_alloc(ctx, 0, 3, 3);
+	mm.must = isl_map_empty(isl_dim_copy(dim));
+	mm.may = isl_map_empty(dim);
+
+	isl_flow_foreach(flow, collect_must_may, &mm);
+
+	str = "{ [0,i,0] -> [2,i,0] : (0 <= i <= 4) or (6 <= i <= 10); "
+	      "  [1,10,0] -> [2,5,0] }";
+	assert(map_is_equal(mm.must, str));
+	str = "{ [i,j,k] -> [l,m,n] : 1 = 0 }";
+	assert(map_is_equal(mm.may, str));
+
+	isl_map_free(mm.must);
+	isl_map_free(mm.may);
+	isl_flow_free(flow);
+
+
+	str = "{ [2,i,0] -> [i] : 0 <= i <= 10 }";
+	map = isl_map_read_from_str(ctx, str, -1);
+	ai = isl_access_info_alloc(map, &depth, &common_space, 2);
+
+	str = "{ [0,i,0] -> [i] : 0 <= i <= 10 }";
+	map = isl_map_read_from_str(ctx, str, -1);
+	ai = isl_access_info_add_source(ai, map, 1, &depth);
+
+	str = "{ [1,i,0] -> [5] : 0 <= i <= 10 }";
+	map = isl_map_read_from_str(ctx, str, -1);
+	ai = isl_access_info_add_source(ai, map, 0, &depth);
+
+	flow = isl_access_info_compute_flow(ai);
+	dim = isl_dim_alloc(ctx, 0, 3, 3);
+	mm.must = isl_map_empty(isl_dim_copy(dim));
+	mm.may = isl_map_empty(dim);
+
+	isl_flow_foreach(flow, collect_must_may, &mm);
+
+	str = "{ [0,i,0] -> [2,i,0] : (0 <= i <= 4) or (6 <= i <= 10) }";
+	assert(map_is_equal(mm.must, str));
+	str = "{ [0,5,0] -> [2,5,0]; [1,i,0] -> [2,5,0] : 0 <= i <= 10 }";
+	assert(map_is_equal(mm.may, str));
+
+	isl_map_free(mm.must);
+	isl_map_free(mm.may);
+	isl_flow_free(flow);
+
+
+	str = "{ [2,i,0] -> [i] : 0 <= i <= 10 }";
+	map = isl_map_read_from_str(ctx, str, -1);
+	ai = isl_access_info_alloc(map, &depth, &common_space, 2);
+
+	str = "{ [0,i,0] -> [i] : 0 <= i <= 10 }";
+	map = isl_map_read_from_str(ctx, str, -1);
+	ai = isl_access_info_add_source(ai, map, 0, &depth);
+
+	str = "{ [1,i,0] -> [5] : 0 <= i <= 10 }";
+	map = isl_map_read_from_str(ctx, str, -1);
+	ai = isl_access_info_add_source(ai, map, 0, &depth);
+
+	flow = isl_access_info_compute_flow(ai);
+	dim = isl_dim_alloc(ctx, 0, 3, 3);
+	mm.must = isl_map_empty(isl_dim_copy(dim));
+	mm.may = isl_map_empty(dim);
+
+	isl_flow_foreach(flow, collect_must_may, &mm);
+
+	str = "{ [0,i,0] -> [2,i,0] : 0 <= i <= 10; "
+	      "  [1,i,0] -> [2,5,0] : 0 <= i <= 10 }";
+	assert(map_is_equal(mm.may, str));
+	str = "{ [i,j,k] -> [l,m,n] : 1 = 0 }";
+	assert(map_is_equal(mm.must, str));
+
+	isl_map_free(mm.must);
+	isl_map_free(mm.may);
+	isl_flow_free(flow);
+
+
+	str = "{ [0,i,2] -> [i] : 0 <= i <= 10 }";
+	map = isl_map_read_from_str(ctx, str, -1);
+	ai = isl_access_info_alloc(map, &depth, &common_space, 2);
+
+	str = "{ [0,i,0] -> [i] : 0 <= i <= 10 }";
+	map = isl_map_read_from_str(ctx, str, -1);
+	ai = isl_access_info_add_source(ai, map, 0, &depth);
+
+	str = "{ [0,i,1] -> [5] : 0 <= i <= 10 }";
+	map = isl_map_read_from_str(ctx, str, -1);
+	ai = isl_access_info_add_source(ai, map, 0, &depth);
+
+	flow = isl_access_info_compute_flow(ai);
+	dim = isl_dim_alloc(ctx, 0, 3, 3);
+	mm.must = isl_map_empty(isl_dim_copy(dim));
+	mm.may = isl_map_empty(dim);
+
+	isl_flow_foreach(flow, collect_must_may, &mm);
+
+	str = "{ [0,i,0] -> [0,i,2] : 0 <= i <= 10; "
+	      "  [0,i,1] -> [0,5,2] : 0 <= i <= 5 }";
+	assert(map_is_equal(mm.may, str));
+	str = "{ [i,j,k] -> [l,m,n] : 1 = 0 }";
+	assert(map_is_equal(mm.must, str));
+
+	isl_map_free(mm.must);
+	isl_map_free(mm.may);
+	isl_flow_free(flow);
+
+
+	str = "{ [0,i,1] -> [i] : 0 <= i <= 10 }";
+	map = isl_map_read_from_str(ctx, str, -1);
+	ai = isl_access_info_alloc(map, &depth, &common_space, 2);
+
+	str = "{ [0,i,0] -> [i] : 0 <= i <= 10 }";
+	map = isl_map_read_from_str(ctx, str, -1);
+	ai = isl_access_info_add_source(ai, map, 0, &depth);
+
+	str = "{ [0,i,2] -> [5] : 0 <= i <= 10 }";
+	map = isl_map_read_from_str(ctx, str, -1);
+	ai = isl_access_info_add_source(ai, map, 0, &depth);
+
+	flow = isl_access_info_compute_flow(ai);
+	dim = isl_dim_alloc(ctx, 0, 3, 3);
+	mm.must = isl_map_empty(isl_dim_copy(dim));
+	mm.may = isl_map_empty(dim);
+
+	isl_flow_foreach(flow, collect_must_may, &mm);
+
+	str = "{ [0,i,0] -> [0,i,1] : 0 <= i <= 10; "
+	      "  [0,i,2] -> [0,5,1] : 0 <= i <= 4 }";
+	assert(map_is_equal(mm.may, str));
+	str = "{ [i,j,k] -> [l,m,n] : 1 = 0 }";
+	assert(map_is_equal(mm.must, str));
+
+	isl_map_free(mm.must);
+	isl_map_free(mm.may);
+	isl_flow_free(flow);
+
 
 	depth = 5;
 
@@ -1084,18 +1240,22 @@ void test_dep(struct isl_ctx *ctx)
 
 	str = "{ [0,i,0,j,0] -> [i,j] : 0 <= i <= 10 and 0 <= j <= 10 }";
 	map = isl_map_read_from_str(ctx, str, -1);
-	ai = isl_access_info_add_source(ai, map, &depth);
+	ai = isl_access_info_add_source(ai, map, 1, &depth);
 
 	flow = isl_access_info_compute_flow(ai);
 	dim = isl_dim_alloc(ctx, 0, 5, 5);
-	dep.dep = isl_map_empty(dim);
+	mm.must = isl_map_empty(isl_dim_copy(dim));
+	mm.may = isl_map_empty(dim);
 
-	isl_flow_foreach(flow, collect_dep, &dep);
+	isl_flow_foreach(flow, collect_must_may, &mm);
 
 	str = "{ [0,i,0,j,0] -> [1,i,0,0,0] : 0 <= i,j <= 10 }";
-	assert(map_is_equal(dep.dep, str));
+	assert(map_is_equal(mm.must, str));
+	str = "{ [0,0,0,0,0] -> [0,0,0,0,0] : 1 = 0 }";
+	assert(map_is_equal(mm.may, str));
 
-	isl_map_free(dep.dep);
+	isl_map_free(mm.must);
+	isl_map_free(mm.may);
 	isl_flow_free(flow);
 }
 

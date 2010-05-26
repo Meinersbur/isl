@@ -16,32 +16,38 @@
 #include <isl_flow.h>
 
 /* A private structure to keep track of a mapping together with
- * a user-specified identifier.
+ * a user-specified identifier and a boolean indicating whether
+ * the map represents a must or may access/dependence.
  */
 struct isl_labeled_map {
 	struct isl_map	*map;
 	void		*data;
+	int		must;
 };
 
 /* A structure containing the input for dependence analysis:
  * - a sink
- * - n_source (<= max_source) sources
+ * - n_must + n_may (<= max_source) sources
  * - a function for determining the relative order of sources and sink
+ * The must sources are placed before the may sources.
  */
 struct isl_access_info {
 	struct isl_labeled_map	sink;
 	isl_access_level_before	level_before;
 	int		    	max_source;
-	int		    	n_source;
+	int		    	n_must;
+	int		    	n_may;
 	struct isl_labeled_map	source[1];
 };
 
 /* A structure containing the output of dependence analysis:
- * - n_source flow dependences
- * - a subset of the sink for which no source could be found
+ * - n_source dependences
+ * - a subset of the sink for which definitely no source could be found
+ * - a subset of the sink for which possibly no source could be found
  */
 struct isl_flow {
-	struct isl_set		*no_source;
+	isl_set			*must_no_source;
+	isl_set			*may_no_source;
 	int			n_source;
 	struct isl_labeled_map	*dep;
 };
@@ -69,7 +75,8 @@ __isl_give isl_access_info *isl_access_info_alloc(__isl_take isl_map *sink,
 	acc->sink.data = sink_user;
 	acc->level_before = fn;
 	acc->max_source = max_source;
-	acc->n_source = 0;
+	acc->n_must = 0;
+	acc->n_may = 0;
 
 	return acc;
 error:
@@ -89,27 +96,40 @@ static void isl_access_info_free(__isl_take isl_access_info *acc)
 	if (!acc)
 		return;
 	isl_map_free(acc->sink.map);
-	for (i = 0; i < acc->n_source; ++i)
+	for (i = 0; i < acc->n_must + acc->n_may; ++i)
 		isl_map_free(acc->source[i].map);
 	free(acc);
 }
 
-/* Add another source to an isl_access_info structure.
+/* Add another source to an isl_access_info structure, making
+ * sure the "must" sources are placed before the "may" sources.
  * This function may be called at most max_source times on a
  * given isl_access_info structure, with max_source as specified
  * in the call to isl_access_info_alloc that constructed the structure.
  */
 __isl_give isl_access_info *isl_access_info_add_source(
 	__isl_take isl_access_info *acc, __isl_take isl_map *source,
-	void *source_user)
+	int must, void *source_user)
 {
 	if (!acc)
 		return NULL;
-	isl_assert(acc->sink.map->ctx, acc->n_source < acc->max_source, goto error);
-
-	acc->source[acc->n_source].map = source;
-	acc->source[acc->n_source].data = source_user;
-	acc->n_source++;
+	isl_assert(acc->sink.map->ctx,
+		    acc->n_must + acc->n_may < acc->max_source, goto error);
+	
+	if (must) {
+		if (acc->n_may)
+			acc->source[acc->n_must + acc->n_may] =
+				acc->source[acc->n_must];
+		acc->source[acc->n_must].map = source;
+		acc->source[acc->n_must].data = source_user;
+		acc->source[acc->n_must].must = 1;
+		acc->n_must++;
+	} else {
+		acc->source[acc->n_must + acc->n_may].map = source;
+		acc->source[acc->n_must + acc->n_may].data = source_user;
+		acc->source[acc->n_must + acc->n_may].must = 0;
+		acc->n_may++;
+	}
 
 	return acc;
 error:
@@ -154,7 +174,7 @@ static int access_sort_cmp(const void *p1, const void *p2)
 	return (level1 % 2) ? -1 : 1;
 }
 
-/* Sort the source accesses in order of increasing number of shared
+/* Sort the must source accesses in order of increasing number of shared
  * levels with the sink access.
  * Source accesses with the same number of shared levels are sorted
  * in their textual order.
@@ -167,24 +187,24 @@ static __isl_give isl_access_info *isl_access_info_sort_sources(
 
 	if (!acc)
 		return NULL;
-	if (acc->n_source <= 1)
+	if (acc->n_must <= 1)
 		return acc;
 
 	array = isl_alloc_array(acc->sink.map->ctx,
-				struct isl_access_sort_info, acc->n_source);
+				struct isl_access_sort_info, acc->n_must);
 	if (!array)
 		goto error;
 
-	for (i = 0; i < acc->n_source; ++i) {
+	for (i = 0; i < acc->n_must; ++i) {
 		array[i].source_map = acc->source[i].map;
 		array[i].source_data = acc->source[i].data;
 		array[i].acc = acc;
 	}
 
-	qsort(array, acc->n_source, sizeof(struct isl_access_sort_info),
+	qsort(array, acc->n_must, sizeof(struct isl_access_sort_info),
 		access_sort_cmp);
 
-	for (i = 0; i < acc->n_source; ++i) {
+	for (i = 0; i < acc->n_must; ++i) {
 		acc->source[i].map = array[i].source_map;
 		acc->source[i].data = array[i].source_data;
 	}
@@ -199,6 +219,11 @@ error:
 
 /* Initialize an empty isl_flow structure corresponding to a given
  * isl_access_info structure.
+ * For each must access, two dependences are created (initialized
+ * to the empty relation), one for the resulting must dependences
+ * and one for the resulting may dependences.  May accesses can
+ * only lead to may dependences, so only one dependence is created
+ * for each of them.
  * This function is private as isl_flow structures are only supposed
  * to be created by isl_access_info_compute_flow.
  */
@@ -216,17 +241,30 @@ static __isl_give isl_flow *isl_flow_alloc(__isl_keep isl_access_info *acc)
 	if (!dep)
 		return NULL;
 
-	dep->dep = isl_alloc_array(ctx, struct isl_labeled_map, acc->n_source);
+	dep->dep = isl_alloc_array(ctx, struct isl_labeled_map,
+					2 * acc->n_must + acc->n_may);
 	if (!dep->dep)
 		goto error;
 
-	dep->n_source = acc->n_source;
-	for (i = 0; i < acc->n_source; ++i) {
+	dep->n_source = 2 * acc->n_must + acc->n_may;
+	for (i = 0; i < acc->n_must; ++i) {
 		struct isl_dim *dim;
 		dim = isl_dim_join(isl_dim_copy(acc->source[i].map->dim),
 			    isl_dim_reverse(isl_dim_copy(acc->sink.map->dim)));
-		dep->dep[i].map = isl_map_empty(dim);
-		dep->dep[i].data = acc->source[i].data;
+		dep->dep[2 * i].map = isl_map_empty(dim);
+		dep->dep[2 * i + 1].map = isl_map_copy(dep->dep[2 * i].map);
+		dep->dep[2 * i].data = acc->source[i].data;
+		dep->dep[2 * i + 1].data = acc->source[i].data;
+		dep->dep[2 * i].must = 1;
+		dep->dep[2 * i + 1].must = 0;
+	}
+	for (i = acc->n_must; i < acc->n_must + acc->n_may; ++i) {
+		struct isl_dim *dim;
+		dim = isl_dim_join(isl_dim_copy(acc->source[i].map->dim),
+			    isl_dim_reverse(isl_dim_copy(acc->sink.map->dim)));
+		dep->dep[acc->n_must + i].map = isl_map_empty(dim);
+		dep->dep[acc->n_must + i].data = acc->source[i].data;
+		dep->dep[acc->n_must + i].must = 0;
 	}
 
 	return dep;
@@ -242,7 +280,7 @@ error:
  * the isl_flow_foreach call.
  */
 int isl_flow_foreach(__isl_keep isl_flow *deps,
-	int (*fn)(__isl_take isl_map *dep, void *dep_user, void *user),
+	int (*fn)(__isl_take isl_map *dep, int must, void *dep_user, void *user),
 	void *user)
 {
 	int i;
@@ -253,7 +291,8 @@ int isl_flow_foreach(__isl_keep isl_flow *deps,
 	for (i = 0; i < deps->n_source; ++i) {
 		if (isl_map_fast_is_empty(deps->dep[i].map))
 			continue;
-		if (fn(isl_map_copy(deps->dep[i].map), deps->dep[i].data, user) < 0)
+		if (fn(isl_map_copy(deps->dep[i].map), deps->dep[i].must,
+				deps->dep[i].data, user) < 0)
 			return -1;
 	}
 
@@ -262,12 +301,15 @@ int isl_flow_foreach(__isl_keep isl_flow *deps,
 
 /* Return a copy of the subset of the sink for which no source could be found.
  */
-__isl_give isl_set *isl_flow_get_no_source(__isl_keep isl_flow *deps)
+__isl_give isl_set *isl_flow_get_no_source(__isl_keep isl_flow *deps, int must)
 {
 	if (!deps)
 		return NULL;
 	
-	return isl_set_copy(deps->no_source);
+	if (must)
+		return isl_set_copy(deps->must_no_source);
+	else
+		return isl_set_copy(deps->may_no_source);
 }
 
 void isl_flow_free(__isl_take isl_flow *deps)
@@ -276,7 +318,8 @@ void isl_flow_free(__isl_take isl_flow *deps)
 
 	if (!deps)
 		return;
-	isl_set_free(deps->no_source);
+	isl_set_free(deps->must_no_source);
+	isl_set_free(deps->may_no_source);
 	if (deps->dep) {
 		for (i = 0; i < deps->n_source; ++i)
 			isl_map_free(deps->dep[i].map);
@@ -307,8 +350,8 @@ static __isl_give isl_map *after_at_level(struct isl_dim *dim, int level)
 	return isl_map_from_basic_map(bmap);
 }
 
-/* Compute the last iteration of source j that precedes the sink at the given
- * level for sink iterations in set_C.
+/* Compute the last iteration of must source j that precedes the sink
+ * at the given level for sink iterations in set_C.
  * The subset of set_C for which no such iteration can be found is returned
  * in *empty.
  */
@@ -334,10 +377,10 @@ static struct isl_map *last_source(struct isl_access_info *acc,
 	return result;
 }
 
-/* For a given mapping between iterations of source j and iterations
- * of the sink, compute the last iteration of source k preceding
+/* For a given mapping between iterations of must source j and iterations
+ * of the sink, compute the last iteration of must source k preceding
  * the sink at level before_level for any of the sink iterations,
- * but following the corresponding iteration of source j at level
+ * but following the corresponding iteration of must source j at level
  * after_level.
  */
 static struct isl_map *last_later_source(struct isl_access_info *acc,
@@ -446,20 +489,180 @@ static int intermediate_sources(__isl_keep isl_access_info *acc,
 	return 0;
 }
 
-/* Given a "sink" access, a list of n "source" accesses,
- * compute for each iteration of the sink access
- * and for each element accessed by that iteration,
- * the source access in the list that last accessed the
- * element accessed by the sink access before this sink access.
- * Each access is given as a map from the loop iterators
- * to the array indices.
- * The result is a list of n relations between source and sink
- * iterations and a subset of the domain of the sink access,
- * corresponding to those iterations that access an element
- * not previously accessed.
+/* Compute all iterations of may source j that precedes the sink at the given
+ * level for sink iterations in set_C.
+ */
+static __isl_give isl_map *all_sources(__isl_keep isl_access_info *acc,
+				    __isl_take isl_set *set_C, int j, int level)
+{
+	isl_map *read_map;
+	isl_map *write_map;
+	isl_map *dep_map;
+	isl_map *after;
+
+	read_map = isl_map_copy(acc->sink.map);
+	read_map = isl_map_intersect_domain(read_map, set_C);
+	write_map = isl_map_copy(acc->source[acc->n_must + j].map);
+	write_map = isl_map_reverse(write_map);
+	dep_map = isl_map_apply_range(read_map, write_map);
+	after = after_at_level(isl_dim_copy(dep_map->dim), level);
+	dep_map = isl_map_intersect(dep_map, after);
+
+	return isl_map_reverse(dep_map);
+}
+
+/* For a given mapping between iterations of must source k and iterations
+ * of the sink, compute the all iteration of may source j preceding
+ * the sink at level before_level for any of the sink iterations,
+ * but following the corresponding iteration of must source k at level
+ * after_level.
+ */
+static __isl_give isl_map *all_later_sources(__isl_keep isl_access_info *acc,
+	__isl_keep isl_map *old_map,
+	int j, int before_level, int k, int after_level)
+{
+	isl_dim *dim;
+	isl_set *set_C;
+	isl_map *read_map;
+	isl_map *write_map;
+	isl_map *dep_map;
+	isl_map *after_write;
+	isl_map *before_read;
+
+	set_C = isl_map_range(isl_map_copy(old_map));
+	read_map = isl_map_copy(acc->sink.map);
+	read_map = isl_map_intersect_domain(read_map, set_C);
+	write_map = isl_map_copy(acc->source[acc->n_must + j].map);
+
+	write_map = isl_map_reverse(write_map);
+	dep_map = isl_map_apply_range(read_map, write_map);
+	dim = isl_dim_join(isl_dim_copy(acc->source[acc->n_must + j].map->dim),
+		    isl_dim_reverse(isl_dim_copy(acc->source[k].map->dim)));
+	after_write = after_at_level(dim, after_level);
+	after_write = isl_map_apply_range(after_write, old_map);
+	after_write = isl_map_reverse(after_write);
+	dep_map = isl_map_intersect(dep_map, after_write);
+	before_read = after_at_level(isl_dim_copy(dep_map->dim), before_level);
+	dep_map = isl_map_intersect(dep_map, before_read);
+	return isl_map_reverse(dep_map);
+}
+
+/* Given the must and may dependence relations for the must accesses
+ * for level sink_level, check if there are any accesses of may access j
+ * that occur in between and return their union.
+ * If some of these accesses are intermediate with respect to
+ * (previously thought to be) must dependences, then these
+ * must dependences are turned into may dependences.
+ */
+static __isl_give isl_map *all_intermediate_sources(
+	__isl_keep isl_access_info *acc, __isl_take isl_map *map,
+	struct isl_map **must_rel, struct isl_map **may_rel,
+	int j, int sink_level)
+{
+	int k, level;
+	int depth = 2 * isl_map_dim(acc->source[acc->n_must + j].map,
+					isl_dim_in) + 1;
+
+	for (k = 0; k < acc->n_must; ++k) {
+		int plevel;
+
+		if (isl_map_fast_is_empty(may_rel[k]) &&
+		    isl_map_fast_is_empty(must_rel[k]))
+			continue;
+
+		plevel = acc->level_before(acc->source[k].data,
+					acc->source[acc->n_must + j].data);
+
+		for (level = sink_level; level <= depth; ++level) {
+			isl_map *T;
+			isl_map *copy;
+			isl_set *ran;
+
+			if (!can_precede_at_level(plevel, level))
+				continue;
+
+			copy = isl_map_copy(may_rel[k]);
+			T = all_later_sources(acc, copy, j, sink_level, k, level);
+			map = isl_map_union(map, T);
+
+			copy = isl_map_copy(must_rel[k]);
+			T = all_later_sources(acc, copy, j, sink_level, k, level);
+			ran = isl_map_range(isl_map_copy(T));
+			map = isl_map_union(map, T);
+			may_rel[k] = isl_map_union_disjoint(may_rel[k],
+			    isl_map_intersect_range(isl_map_copy(must_rel[k]),
+						    isl_set_copy(ran)));
+			T = isl_map_from_domain_and_range(
+			    isl_set_universe(
+				isl_dim_domain(isl_map_get_dim(must_rel[k]))),
+			    ran);
+			must_rel[k] = isl_map_subtract(must_rel[k], T);
+		}
+	}
+
+	return map;
+}
+
+/* Compute dependences for the case where all accesses are "may"
+ * accesses, which boils down to computing memory based dependences.
+ * The generic algorithm would also work in this case, but it would
+ * be overkill to use it.
+ */
+static __isl_give isl_flow *compute_mem_based_dependences(
+	__isl_take isl_access_info *acc)
+{
+	int i;
+	isl_set *mustdo;
+	isl_set *maydo;
+	isl_flow *res;
+
+	res = isl_flow_alloc(acc);
+	if (!res)
+		goto error;
+
+	mustdo = isl_map_domain(isl_map_copy(acc->sink.map));
+	maydo = isl_set_copy(mustdo);
+
+	for (i = 0; i < acc->n_may; ++i) {
+		int plevel;
+		int is_before;
+		isl_dim *dim;
+		isl_map *before;
+		isl_map *dep;
+
+		plevel = acc->level_before(acc->source[i].data, acc->sink.data);
+		is_before = plevel & 1;
+		plevel >>= 1;
+
+		dim = isl_map_get_dim(res->dep[i].map);
+		if (is_before)
+			before = isl_map_lex_le_first(dim, plevel);
+		else
+			before = isl_map_lex_lt_first(dim, plevel);
+		dep = isl_map_apply_range(isl_map_copy(acc->source[i].map),
+			isl_map_reverse(isl_map_copy(acc->sink.map)));
+		dep = isl_map_intersect(dep, before);
+		mustdo = isl_set_subtract(mustdo,
+					    isl_map_range(isl_map_copy(dep)));
+		res->dep[i].map = isl_map_union(res->dep[i].map, dep);
+	}
+
+	res->may_no_source = isl_set_subtract(maydo, isl_set_copy(mustdo));
+	res->must_no_source = mustdo;
+
+	isl_access_info_free(acc);
+
+	return res;
+error:
+	isl_access_info_free(acc);
+	return NULL;
+}
+
+/* Compute dependences for the case where there is at least one
+ * "must" access.
  *
- * The algorithm considers all levels in which a source may precede the sink,
- * where a level may either be a statement level or a loop level.
+ * The core algorithm considers all levels in which a source may precede
+ * the sink, where a level may either be a statement level or a loop level.
  * The outermost statement level is 1, the first loop level is 2, etc...
  * The algorithm basically does the following:
  * for all levels l of the read access from innermost to outermost
@@ -477,52 +680,56 @@ static int intermediate_sources(__isl_keep isl_access_info *acc,
  *			and replace possible last accesses dep by the remainder
  *
  *
- * To deal with multi-valued sink access relations, the sink iteration
- * domain is first extended with dimensions that correspond to the data
- * space.  After the computation is finished, these extra dimensions are
- * projected out again.
+ * The above algorithm is applied to the must access.  During the course
+ * of the algorithm, we keep track of sink iterations that still
+ * need to be considered.  These iterations are split into those that
+ * haven't been matched to any source access (mustdo) and those that have only
+ * been matched to may accesses (maydo).
+ * At the end of each level, we also consider the may accesses.
+ * In particular, we consider may accesses that precede the remaining
+ * sink iterations, moving elements from mustdo to maydo when appropriate,
+ * and may accesses that occur between a must source and a sink of any 
+ * dependences found at the current level, turning must dependences into
+ * may dependences when appropriate.
+ * 
  */
-__isl_give isl_flow *isl_access_info_compute_flow(__isl_take isl_access_info *acc)
+static __isl_give isl_flow *compute_val_based_dependences(
+	__isl_take isl_access_info *acc)
 {
-	struct isl_ctx *ctx;
-	struct isl_set *todo;
+	isl_ctx *ctx;
+	isl_flow *res;
+	isl_set *mustdo;
+	isl_set *maydo;
 	int level, j;
 	int depth;
-	struct isl_map **temp_rel;
-	struct isl_flow *res;
-	isl_dim *dim;
-	isl_map *id;
-	unsigned n_sink;
-	unsigned n_data;
+	isl_map **must_rel;
+	isl_map **may_rel;
 
 	acc = isl_access_info_sort_sources(acc);
-
-	n_sink = isl_map_dim(acc->sink.map, isl_dim_in);
-	n_data = isl_map_dim(acc->sink.map, isl_dim_out);
-	dim = isl_dim_range(isl_map_get_dim(acc->sink.map));
-	id = isl_map_identity(dim);
-	id = isl_map_insert(id, isl_dim_in, 0, n_sink);
-	acc->sink.map = isl_map_insert(acc->sink.map, isl_dim_in,
-					n_sink, n_data);
-	acc->sink.map = isl_map_intersect(acc->sink.map, id);
+	if (!acc)
+		return NULL;
 
 	res = isl_flow_alloc(acc);
 	if (!res)
 		goto error;
 	ctx = acc->sink.map->ctx;
 
-	depth = 2 * n_sink + 1;
-	todo = isl_map_domain(isl_map_copy(acc->sink.map));
-	if (isl_set_fast_is_empty(todo))
+	depth = 2 * isl_map_dim(acc->sink.map, isl_dim_in) + 1;
+	mustdo = isl_map_domain(isl_map_copy(acc->sink.map));
+	maydo = isl_set_empty_like(mustdo);
+	if (isl_set_fast_is_empty(mustdo))
 		goto done;
 
-	temp_rel = isl_alloc_array(ctx, struct isl_map *, acc->n_source);
+	must_rel = isl_alloc_array(ctx, struct isl_map *, acc->n_must);
+	may_rel = isl_alloc_array(ctx, struct isl_map *, acc->n_must);
 
 	for (level = depth; level >= 1; --level) {
-		for (j = acc->n_source-1; j >=0; --j)
-			temp_rel[j] = isl_map_empty_like(res->dep[j].map);
+		for (j = acc->n_must-1; j >=0; --j) {
+			must_rel[j] = isl_map_empty_like(res->dep[j].map);
+			may_rel[j] = isl_map_copy(must_rel[j]);
+		}
 
-		for (j = acc->n_source - 1; j >= 0; --j) {
+		for (j = acc->n_must - 1; j >= 0; --j) {
 			struct isl_map *T;
 			struct isl_set *rest;
 			int plevel;
@@ -532,13 +739,20 @@ __isl_give isl_flow *isl_access_info_compute_flow(__isl_take isl_access_info *ac
 			if (!can_precede_at_level(plevel, level))
 				continue;
 
-			T = last_source(acc, todo, j, level, &rest);
-			temp_rel[j] = isl_map_union_disjoint(temp_rel[j], T);
-			todo = rest;
+			T = last_source(acc, mustdo, j, level, &rest);
+			must_rel[j] = isl_map_union_disjoint(must_rel[j], T);
+			mustdo = rest;
 
-			intermediate_sources(acc, temp_rel, j, level);
+			intermediate_sources(acc, must_rel, j, level);
 
-			if (isl_set_fast_is_empty(todo))
+			T = last_source(acc, maydo, j, level, &rest);
+			may_rel[j] = isl_map_union_disjoint(may_rel[j], T);
+			maydo = rest;
+
+			intermediate_sources(acc, may_rel, j, level);
+
+			if (isl_set_fast_is_empty(mustdo) &&
+			    isl_set_fast_is_empty(maydo))
 				break;
 		}
 		for (j = j - 1; j >= 0; --j) {
@@ -549,25 +763,110 @@ __isl_give isl_flow *isl_access_info_compute_flow(__isl_take isl_access_info *ac
 			if (!can_precede_at_level(plevel, level))
 				continue;
 
-			intermediate_sources(acc, temp_rel, j, level);
+			intermediate_sources(acc, must_rel, j, level);
+			intermediate_sources(acc, may_rel, j, level);
 		}
 
-		for (j = acc->n_source - 1; j >= 0; --j)
-			res->dep[j].map = isl_map_union_disjoint(res->dep[j].map,
-							     temp_rel[j]);
-		if (isl_set_fast_is_empty(todo))
+		for (j = 0; j < acc->n_may; ++j) {
+			int plevel;
+			isl_map *T;
+			isl_set *ran;
+
+			plevel = acc->level_before(acc->source[acc->n_must + j].data,
+						     acc->sink.data);
+			if (!can_precede_at_level(plevel, level))
+				continue;
+
+			T = all_sources(acc, isl_set_copy(maydo), j, level);
+			res->dep[2 * acc->n_must + j].map =
+			    isl_map_union(res->dep[2 * acc->n_must + j].map, T);
+			T = all_sources(acc, isl_set_copy(mustdo), j, level);
+			ran = isl_map_range(isl_map_copy(T));
+			res->dep[2 * acc->n_must + j].map =
+			    isl_map_union(res->dep[2 * acc->n_must + j].map, T);
+			mustdo = isl_set_subtract(mustdo, isl_set_copy(ran));
+			maydo = isl_set_union_disjoint(maydo, ran);
+
+			T = res->dep[2 * acc->n_must + j].map;
+			T = all_intermediate_sources(acc, T, must_rel, may_rel,
+							j, level);
+			res->dep[2 * acc->n_must + j].map = T;
+		}
+
+		for (j = acc->n_must - 1; j >= 0; --j) {
+			res->dep[2 * j].map =
+				isl_map_union_disjoint(res->dep[2 * j].map,
+							     must_rel[j]);
+			res->dep[2 * j + 1].map =
+				isl_map_union_disjoint(res->dep[2 * j + 1].map,
+							     may_rel[j]);
+		}
+
+		if (isl_set_fast_is_empty(mustdo) &&
+		    isl_set_fast_is_empty(maydo))
 			break;
 	}
 
-	free(temp_rel);
+	free(must_rel);
+	free(may_rel);
 done:
-	for (j = 0; j < res->n_source; ++j)
-		res->dep[j].map = isl_map_project_out(res->dep[j].map,
-					isl_dim_out, n_sink, n_data);
-	res->no_source = todo;
+	res->must_no_source = mustdo;
+	res->may_no_source = maydo;
 	isl_access_info_free(acc);
 	return res;
 error:
 	isl_access_info_free(acc);
 	return NULL;
+}
+
+/* Given a "sink" access, a list of n "source" accesses,
+ * compute for each iteration of the sink access
+ * and for each element accessed by that iteration,
+ * the source access in the list that last accessed the
+ * element accessed by the sink access before this sink access.
+ * Each access is given as a map from the loop iterators
+ * to the array indices.
+ * The result is a list of n relations between source and sink
+ * iterations and a subset of the domain of the sink access,
+ * corresponding to those iterations that access an element
+ * not previously accessed.
+ *
+ * To deal with multi-valued sink access relations, the sink iteration
+ * domain is first extended with dimensions that correspond to the data
+ * space.  After the computation is finished, these extra dimensions are
+ * projected out again.
+ */
+__isl_give isl_flow *isl_access_info_compute_flow(__isl_take isl_access_info *acc)
+{
+	int j;
+	struct isl_flow *res;
+	isl_dim *dim;
+	isl_map *id;
+	unsigned n_sink;
+	unsigned n_data;
+
+	if (!acc)
+		return NULL;
+
+	n_sink = isl_map_dim(acc->sink.map, isl_dim_in);
+	n_data = isl_map_dim(acc->sink.map, isl_dim_out);
+	dim = isl_dim_range(isl_map_get_dim(acc->sink.map));
+	id = isl_map_identity(dim);
+	id = isl_map_insert(id, isl_dim_in, 0, n_sink);
+	acc->sink.map = isl_map_insert(acc->sink.map, isl_dim_in,
+					n_sink, n_data);
+	acc->sink.map = isl_map_intersect(acc->sink.map, id);
+
+	if (acc->n_must == 0)
+		res = compute_mem_based_dependences(acc);
+	else
+		res = compute_val_based_dependences(acc);
+
+	for (j = 0; j < res->n_source; ++j)
+		res->dep[j].map = isl_map_project_out(res->dep[j].map,
+					isl_dim_out, n_sink, n_data);
+	res->must_no_source = isl_set_project_out(res->must_no_source, isl_dim_set, n_sink, n_data);
+	res->may_no_source = isl_set_project_out(res->may_no_source, isl_dim_set, n_sink, n_data);
+
+	return res;
 }
