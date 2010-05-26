@@ -447,9 +447,10 @@ static int intermediate_sources(__isl_keep isl_access_info *acc,
 }
 
 /* Given a "sink" access, a list of n "source" accesses,
- * compute for each iteration of the sink access,
+ * compute for each iteration of the sink access
+ * and for each element accessed by that iteration,
  * the source access in the list that last accessed the
- * same element accessed by the sink access before this sink access.
+ * element accessed by the sink access before this sink access.
  * Each access is given as a map from the loop iterators
  * to the array indices.
  * The result is a list of n relations between source and sink
@@ -474,6 +475,12 @@ static int intermediate_sources(__isl_keep isl_access_info *acc,
  *								of dep
  *			add result to possible last accesses at level l of write w2
  *			and replace possible last accesses dep by the remainder
+ *
+ *
+ * To deal with multi-valued sink access relations, the sink iteration
+ * domain is first extended with dimensions that correspond to the data
+ * space.  After the computation is finished, these extra dimensions are
+ * projected out again.
  */
 __isl_give isl_flow *isl_access_info_compute_flow(__isl_take isl_access_info *acc)
 {
@@ -483,15 +490,28 @@ __isl_give isl_flow *isl_access_info_compute_flow(__isl_take isl_access_info *ac
 	int depth;
 	struct isl_map **temp_rel;
 	struct isl_flow *res;
+	isl_dim *dim;
+	isl_map *id;
+	unsigned n_sink;
+	unsigned n_data;
 
 	acc = isl_access_info_sort_sources(acc);
+
+	n_sink = isl_map_dim(acc->sink.map, isl_dim_in);
+	n_data = isl_map_dim(acc->sink.map, isl_dim_out);
+	dim = isl_dim_range(isl_map_get_dim(acc->sink.map));
+	id = isl_map_identity(dim);
+	id = isl_map_insert(id, isl_dim_in, 0, n_sink);
+	acc->sink.map = isl_map_insert(acc->sink.map, isl_dim_in,
+					n_sink, n_data);
+	acc->sink.map = isl_map_intersect(acc->sink.map, id);
 
 	res = isl_flow_alloc(acc);
 	if (!res)
 		goto error;
 	ctx = acc->sink.map->ctx;
 
-	depth = 2 * isl_map_dim(acc->sink.map, isl_dim_in) + 1;
+	depth = 2 * n_sink + 1;
 	todo = isl_map_domain(isl_map_copy(acc->sink.map));
 	if (isl_set_fast_is_empty(todo))
 		goto done;
@@ -541,6 +561,9 @@ __isl_give isl_flow *isl_access_info_compute_flow(__isl_take isl_access_info *ac
 
 	free(temp_rel);
 done:
+	for (j = 0; j < res->n_source; ++j)
+		res->dep[j].map = isl_map_project_out(res->dep[j].map,
+					isl_dim_out, n_sink, n_data);
 	res->no_source = todo;
 	isl_access_info_free(acc);
 	return res;

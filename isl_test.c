@@ -12,6 +12,7 @@
 #include <limits.h>
 #include <isl_ctx.h>
 #include <isl_set.h>
+#include <isl_flow.h>
 #include <isl_constraint.h>
 
 static char *srcdir;
@@ -1034,6 +1035,70 @@ void test_lexmin(struct isl_ctx *ctx)
 	isl_map_free(map);
 }
 
+struct dep {
+	isl_map *dep;
+};
+
+static int collect_dep(__isl_take isl_map *dep, void *dep_user, void *user)
+{
+	struct dep *d = (struct dep *)user;
+
+	d->dep = isl_map_union(d->dep, dep);
+
+	return 0;
+}
+
+static int common_space(void *first, void *second)
+{
+	int depth = *(int *)first;
+	return 2 * depth;
+}
+
+int map_is_equal(__isl_keep isl_map *map, const char *str)
+{
+	isl_map *map2;
+	int equal;
+
+	map2 = isl_map_read_from_str(map->ctx, str, -1);
+	equal = isl_map_is_equal(map, map2);
+	isl_map_free(map2);
+
+	return equal;
+}
+
+void test_dep(struct isl_ctx *ctx)
+{
+	const char *str;
+	isl_dim *dim;
+	isl_map *map;
+	isl_access_info *ai;
+	isl_flow *flow;
+	int depth;
+	struct dep dep;
+
+	depth = 5;
+
+	str = "{ [1,i,0,0,0] -> [i,j] : 0 <= i <= 10 and 0 <= j <= 10 }";
+	map = isl_map_read_from_str(ctx, str, -1);
+	ai = isl_access_info_alloc(map, &depth, &common_space, 1);
+
+	str = "{ [0,i,0,j,0] -> [i,j] : 0 <= i <= 10 and 0 <= j <= 10 }";
+	map = isl_map_read_from_str(ctx, str, -1);
+	ai = isl_access_info_add_source(ai, map, &depth);
+
+	flow = isl_access_info_compute_flow(ai);
+	dim = isl_dim_alloc(ctx, 0, 5, 5);
+	dep.dep = isl_map_empty(dim);
+
+	isl_flow_foreach(flow, collect_dep, &dep);
+
+	str = "{ [0,i,0,j,0] -> [1,i,0,0,0] : 0 <= i,j <= 10 }";
+	assert(map_is_equal(dep.dep, str));
+
+	isl_map_free(dep.dep);
+	isl_flow_free(flow);
+}
+
 int main()
 {
 	struct isl_ctx *ctx;
@@ -1042,6 +1107,7 @@ int main()
 	assert(srcdir);
 
 	ctx = isl_ctx_alloc();
+	test_dep(ctx);
 	test_read(ctx);
 	test_construction(ctx);
 	test_dim(ctx);
