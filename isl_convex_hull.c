@@ -450,7 +450,6 @@ static __isl_give isl_mat *initial_facet_constraint(__isl_keep isl_set *set)
 {
 	struct isl_set *slice = NULL;
 	struct isl_basic_set *face = NULL;
-	struct isl_mat *m, *U, *Q;
 	int i;
 	unsigned dim = isl_set_n_dim(set);
 	int is_bound;

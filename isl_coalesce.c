@@ -813,9 +813,7 @@ static int can_wrap_in_set(struct isl_map *map, int i, int j,
 	struct isl_tab **tabs, int *eq_i, int *ineq_i, int *eq_j, int *ineq_j)
 {
 	int changed = 0;
-	int k, l, m;
-	unsigned total = isl_basic_map_total_dim(map->p[i]);
-	struct isl_tab_undo *snap;
+	int k, m;
 	int n;
 	int *cuts = NULL;
 

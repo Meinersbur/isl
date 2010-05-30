@@ -251,7 +251,6 @@ static struct isl_vec *outside_point(struct isl_tab *tab, isl_int *eq, int up)
 	struct isl_vec *sample = NULL;
 	struct isl_tab_undo *snap;
 	unsigned dim;
-	int k;
 
 	if (!tab)
 		return NULL;
@@ -356,7 +355,7 @@ error:
 static struct isl_basic_set *extend_affine_hull(struct isl_tab *tab,
 	struct isl_basic_set *hull)
 {
-	int i, j, k;
+	int i, j;
 	unsigned dim;
 
 	if (!tab || !hull)

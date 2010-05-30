@@ -69,7 +69,6 @@ static int cut_lp_to_hyperplane(struct tab_lp *lp, isl_int *row);
  */
 static struct isl_tab *gbr_tab(struct isl_tab *tab, struct isl_vec *row)
 {
-	int i, j;
 	unsigned dim;
 	struct isl_tab *prod;
 
