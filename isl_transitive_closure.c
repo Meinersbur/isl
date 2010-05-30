@@ -158,10 +158,6 @@ static int check_exactness(__isl_take isl_map *map, __isl_take isl_map *app,
 	isl_map_free(map);
 
 	return exact;
-error:
-	isl_map_free(app);
-	isl_map_free(map);
-	return -1;
 }
 
 /*

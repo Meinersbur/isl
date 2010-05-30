@@ -21,6 +21,7 @@ static unsigned pos(__isl_keep isl_dim *dim, enum isl_dim_type type)
 	case isl_dim_param:	return 0;
 	case isl_dim_in:	return dim->nparam;
 	case isl_dim_out:	return dim->nparam + dim->n_in;
+	default:		return 0;
 	}
 }
 
@@ -315,9 +316,6 @@ __isl_give struct isl_upoly_rec *isl_upoly_alloc_rec(struct isl_ctx *ctx,
 	rec->size = size;
 
 	return rec;
-error:
-	isl_upoly_free(&rec->up);
-	return NULL;
 }
 
 isl_ctx *isl_qpolynomial_get_ctx(__isl_keep isl_qpolynomial *qp)
@@ -1276,9 +1274,6 @@ __isl_give isl_qpolynomial *isl_qpolynomial_cst(__isl_take isl_dim *dim,
 	isl_int_set(cst->n, v);
 
 	return qp;
-error:
-	isl_qpolynomial_free(qp);
-	return NULL;
 }
 
 int isl_qpolynomial_is_cst(__isl_keep isl_qpolynomial *qp,
@@ -1579,9 +1574,6 @@ __isl_give isl_qpolynomial *isl_qpolynomial_rat_cst(__isl_take isl_dim *dim,
 	isl_int_set(cst->d, d);
 
 	return qp;
-error:
-	isl_qpolynomial_free(qp);
-	return NULL;
 }
 
 static int up_set_active(__isl_keep struct isl_upoly *up, int *active, int d)
@@ -2537,6 +2529,7 @@ unsigned isl_term_dim(__isl_keep isl_term *term, enum isl_dim_type type)
 	case isl_dim_out:	return isl_dim_size(term->dim, type);
 	case isl_dim_div:	return term->div->n_row;
 	case isl_dim_all:	return isl_dim_total(term->dim) + term->div->n_row;
+	default:		return 0;
 	}
 }
 

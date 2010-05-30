@@ -142,6 +142,7 @@ static unsigned offset(struct isl_dim *dim, enum isl_dim_type type)
 	case isl_dim_param:	return 0;
 	case isl_dim_in:	return dim->nparam;
 	case isl_dim_out:	return dim->nparam + dim->n_in;
+	default:		return 0;
 	}
 }
 
@@ -151,6 +152,7 @@ static unsigned n(struct isl_dim *dim, enum isl_dim_type type)
 	case isl_dim_param:	return dim->nparam;
 	case isl_dim_in:	return dim->n_in;
 	case isl_dim_out:	return dim->n_out;
+	default:		return 0;
 	}
 }
 

@@ -83,6 +83,7 @@ static __isl_give isl_printer *isl_obj_none_print(__isl_take isl_printer *p,
 
 static void *isl_obj_none_add(void *v1, void *v2)
 {
+	return NULL;
 }
 
 static struct isl_obj_vtable obj_none = {

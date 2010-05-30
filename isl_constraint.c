@@ -27,6 +27,7 @@ static unsigned offset(struct isl_constraint *c, enum isl_dim_type type)
 	case isl_dim_in:	return 1 + dim->nparam;
 	case isl_dim_out:	return 1 + dim->nparam + dim->n_in;
 	case isl_dim_div:	return 1 + dim->nparam + dim->n_in + dim->n_out;
+	default:		return 0;
 	}
 }
 
@@ -39,6 +40,7 @@ static unsigned basic_set_offset(struct isl_basic_set *bset,
 	case isl_dim_in:	return 1 + dim->nparam;
 	case isl_dim_out:	return 1 + dim->nparam + dim->n_in;
 	case isl_dim_div:	return 1 + dim->nparam + dim->n_in + dim->n_out;
+	default:		return 0;
 	}
 }
 

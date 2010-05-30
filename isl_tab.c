@@ -742,6 +742,8 @@ int isl_tab_row_is_redundant(struct isl_tab *tab, int row)
 static void swap_rows(struct isl_tab *tab, int row1, int row2)
 {
 	int t;
+	enum isl_tab_row_sign s;
+
 	t = tab->row_var[row1];
 	tab->row_var[row1] = tab->row_var[row2];
 	tab->row_var[row2] = t;
@@ -751,9 +753,9 @@ static void swap_rows(struct isl_tab *tab, int row1, int row2)
 
 	if (!tab->row_sign)
 		return;
-	t = tab->row_sign[row1];
+	s = tab->row_sign[row1];
 	tab->row_sign[row1] = tab->row_sign[row2];
-	tab->row_sign[row2] = t;
+	tab->row_sign[row2] = s;
 }
 
 static int push_union(struct isl_tab *tab,
@@ -1643,7 +1645,7 @@ int isl_tab_add_row(struct isl_tab *tab, isl_int *line)
 	isl_int_clear(b);
 
 	if (tab->row_sign)
-		tab->row_sign[tab->con[r].index] = 0;
+		tab->row_sign[tab->con[r].index] = isl_tab_row_unknown;
 
 	return r;
 }

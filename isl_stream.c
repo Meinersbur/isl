@@ -370,7 +370,7 @@ static struct isl_token *next_token(struct isl_stream *s, int same_line)
 		}
 		if (c != -1)
 			isl_stream_ungetc(s, c);
-		tok->type = ':';
+		tok->type = (enum isl_token_type) ':';
 		return tok;
 	}
 	if (c == '>') {

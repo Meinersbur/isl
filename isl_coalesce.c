@@ -26,6 +26,7 @@ static int status_in(isl_int *ineq, struct isl_tab *tab)
 {
 	enum isl_ineq_type type = isl_tab_ineq_type(tab, ineq);
 	switch (type) {
+	default:
 	case isl_ineq_error:		return STATUS_ERROR;
 	case isl_ineq_redundant:	return STATUS_VALID;
 	case isl_ineq_separate:		return STATUS_SEPARATE;

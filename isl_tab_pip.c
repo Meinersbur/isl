@@ -2178,10 +2178,11 @@ static enum isl_tab_row_sign tab_ineq_sign(struct isl_tab *tab, isl_int *ineq,
 	int i;
 	int sgn;
 	isl_int tmp;
-	int res = isl_tab_row_unknown;
+	enum isl_tab_row_sign res = isl_tab_row_unknown;
 
-	isl_assert(tab->mat->ctx, tab->samples, return 0);
-	isl_assert(tab->mat->ctx, tab->samples->n_col == 1 + tab->n_var, return 0);
+	isl_assert(tab->mat->ctx, tab->samples, return isl_tab_row_unknown);
+	isl_assert(tab->mat->ctx, tab->samples->n_col == 1 + tab->n_var,
+			return isl_tab_row_unknown);
 
 	isl_int_init(tmp);
 	for (i = tab->n_outside; i < tab->n_sample; ++i) {
@@ -3349,7 +3350,7 @@ static enum isl_tab_row_sign row_sign(struct isl_tab *tab,
 	struct isl_sol *sol, int row)
 {
 	struct isl_vec *ineq = NULL;
-	int res = isl_tab_row_unknown;
+	enum isl_tab_row_sign res = isl_tab_row_unknown;
 	int critical;
 	int strict;
 	int row2;
@@ -3413,7 +3414,7 @@ static enum isl_tab_row_sign row_sign(struct isl_tab *tab,
 	return res;
 error:
 	isl_vec_free(ineq);
-	return 0;
+	return isl_tab_row_unknown;
 }
 
 static void find_solutions(struct isl_sol *sol, struct isl_tab *tab);
@@ -3597,7 +3598,7 @@ static void find_solutions(struct isl_sol *sol, struct isl_tab *tab)
 	for (; tab && !tab->empty; tab = restore_lexmin(tab)) {
 		int flags;
 		int row;
-		int sgn;
+		enum isl_tab_row_sign sgn;
 		int split = -1;
 		int n_split = 0;
 

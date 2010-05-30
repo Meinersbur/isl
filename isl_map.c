@@ -55,6 +55,7 @@ static unsigned n(struct isl_dim *dim, enum isl_dim_type type)
 	case isl_dim_in:	return dim->n_in;
 	case isl_dim_out:	return dim->n_out;
 	case isl_dim_all:	return dim->nparam + dim->n_in + dim->n_out;
+	default:		return 0;
 	}
 }
 
@@ -64,6 +65,7 @@ static unsigned pos(struct isl_dim *dim, enum isl_dim_type type)
 	case isl_dim_param:	return 1;
 	case isl_dim_in:	return 1 + dim->nparam;
 	case isl_dim_out:	return 1 + dim->nparam + dim->n_in;
+	default:		return 0;
 	}
 }
 
@@ -120,6 +122,7 @@ unsigned isl_basic_map_dim(const struct isl_basic_map *bmap,
 	case isl_dim_out:	return isl_dim_size(bmap->dim, type);
 	case isl_dim_div:	return bmap->n_div;
 	case isl_dim_all:	return isl_basic_map_total_dim(bmap);
+	default:		return 0;
 	}
 }
 
@@ -142,6 +145,7 @@ unsigned isl_basic_map_offset(struct isl_basic_map *bmap,
 	case isl_dim_in:	return 1 + dim->nparam;
 	case isl_dim_out:	return 1 + dim->nparam + dim->n_in;
 	case isl_dim_div:	return 1 + dim->nparam + dim->n_in + dim->n_out;
+	default:		return 0;
 	}
 }
 
@@ -330,9 +334,6 @@ static struct isl_basic_map *basic_map_init(struct isl_ctx *ctx,
 	bmap->sample = NULL;
 
 	return bmap;
-error:
-	isl_basic_map_free(bmap);
-	return NULL;
 }
 
 struct isl_basic_set *isl_basic_set_alloc(struct isl_ctx *ctx,
