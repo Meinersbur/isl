@@ -466,7 +466,10 @@ struct isl_basic_map *isl_basic_map_copy(struct isl_basic_map *bmap)
 		bmap->ref++;
 		return bmap;
 	}
-	return isl_basic_map_dup(bmap);
+	bmap = isl_basic_map_dup(bmap);
+	if (bmap)
+		ISL_F_SET(bmap, ISL_BASIC_SET_FINAL);
+	return bmap;
 }
 
 struct isl_map *isl_map_copy(struct isl_map *map)
