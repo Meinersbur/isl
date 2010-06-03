@@ -422,6 +422,7 @@ __isl_give isl_basic_map *isl_basic_map_from_constraint(
 	total = isl_basic_map_total_dim(bmap);
 	isl_seq_cpy(c, constraint->line[0], 1 + total);
 	isl_constraint_free(constraint);
+	bmap = isl_basic_map_finalize(bmap);
 	return bmap;
 error:
 	isl_constraint_free(constraint);
