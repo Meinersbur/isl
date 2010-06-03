@@ -2149,6 +2149,8 @@ __isl_give isl_basic_map *isl_basic_map_move_dims(
 		if (!bmap->dim)
 			goto error;
 
+		bmap = isl_basic_map_finalize(bmap);
+
 		return bmap;
 	}
 
