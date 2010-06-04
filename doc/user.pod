@@ -824,6 +824,10 @@ is already known to be empty.
 	int isl_basic_map_is_universe(__isl_keep isl_basic_map *bmap);
 	int isl_set_fast_is_universe(__isl_keep isl_set *set);
 
+=item * Single-valuedness
+
+	int isl_map_is_single_valued(__isl_keep isl_map *map);
+
 =back
 
 =head3 Binary Properties

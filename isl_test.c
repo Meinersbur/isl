@@ -1259,6 +1259,22 @@ void test_dep(struct isl_ctx *ctx)
 	isl_flow_free(flow);
 }
 
+void test_sv(struct isl_ctx *ctx)
+{
+	const char *str;
+	isl_map *map;
+
+	str = "[N] -> { [i] -> [f] : 0 <= i <= N and 0 <= i - 10 f <= 9 }";
+	map = isl_map_read_from_str(ctx, str, -1);
+	assert(isl_map_is_single_valued(map));
+	isl_map_free(map);
+
+	str = "[N] -> { [i] -> [f] : 0 <= i <= N and 0 <= i - 10 f <= 10 }";
+	map = isl_map_read_from_str(ctx, str, -1);
+	assert(!isl_map_is_single_valued(map));
+	isl_map_free(map);
+}
+
 int main()
 {
 	struct isl_ctx *ctx;
@@ -1267,6 +1283,7 @@ int main()
 	assert(srcdir);
 
 	ctx = isl_ctx_alloc();
+	test_sv(ctx);
 	test_dep(ctx);
 	test_read(ctx);
 	test_construction(ctx);

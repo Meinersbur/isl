@@ -6709,3 +6709,29 @@ int isl_basic_set_dims_get_sign(__isl_keep isl_basic_set *bset,
 	first += pos(bset->dim, type) - 1;
 	return isl_basic_set_vars_get_sign(bset, first, n, signs);
 }
+
+/* Check if the given map is single-valued.
+ * We simply compute
+ *
+ *	M \circ M^-1
+ *
+ * and check if the result is a subset of the identity mapping.
+ */
+int isl_map_is_single_valued(__isl_keep isl_map *map)
+{
+	isl_map *test;
+	isl_map *id;
+	int sv;
+
+	test = isl_map_reverse(isl_map_copy(map));
+	test = isl_map_apply_range(test, isl_map_copy(map));
+
+	id = isl_map_identity(isl_dim_range(isl_map_get_dim(map)));
+
+	sv = isl_map_is_subset(test, id);
+
+	isl_map_free(test);
+	isl_map_free(id);
+
+	return sv;
+}
