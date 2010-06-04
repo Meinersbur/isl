@@ -85,7 +85,7 @@ struct isl_constraint *isl_constraint_add_div(struct isl_constraint *constraint,
 void isl_constraint_clear(struct isl_constraint *constraint);
 struct isl_constraint *isl_constraint_negate(struct isl_constraint *constraint);
 
-int isl_constraint_is_equality(struct isl_constraint *constraint);
+int isl_constraint_is_equality(__isl_keep isl_constraint *constraint);
 
 __isl_give isl_basic_map *isl_basic_map_from_constraint(
 	__isl_take isl_constraint *constraint);

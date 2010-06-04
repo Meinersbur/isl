@@ -772,6 +772,12 @@ To iterate over the constraints of a basic set or map, use
 Again, the callback function C<fn> should return 0 if successful and
 -1 if an error occurs.  In the latter case, or if any other error
 occurs, the above functions will return -1.
+The constraint C<c> represents either an equality or an inequality.
+Use the following function to find out whether a constraint
+represents an equality.  If not, it represents an inequality.
+
+	int isl_constraint_is_equality(
+		__isl_keep isl_constraint *constraint);
 
 The coefficients of the constraints can be inspected using
 the following functions.
