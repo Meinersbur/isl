@@ -203,6 +203,9 @@ int isl_basic_map_foreach_constraint(__isl_keep isl_basic_map *bmap,
 	if (!bmap)
 		return -1;
 
+	isl_assert(bmap->ctx, ISL_F_ISSET(bmap, ISL_BASIC_MAP_FINAL),
+			return -1);
+
 	for (i = 0; i < bmap->n_eq; ++i) {
 		c = isl_basic_map_constraint(isl_basic_map_copy(bmap),
 						&bmap->eq[i]);
