@@ -72,6 +72,7 @@ struct isl_ctx {
 
 	isl_int			zero;
 	isl_int			one;
+	isl_int			two;
 	isl_int			negone;
 
 	isl_int			normalize_gcd;

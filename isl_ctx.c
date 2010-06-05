@@ -84,6 +84,9 @@ isl_ctx *isl_ctx_alloc_with_options(struct isl_arg *arg, void *user_opt)
 	isl_int_init(ctx->one);
 	isl_int_set_si(ctx->one, 1);
 
+	isl_int_init(ctx->two);
+	isl_int_set_si(ctx->two, 2);
+
 	isl_int_init(ctx->negone);
 	isl_int_set_si(ctx->negone, -1);
 
@@ -129,6 +132,7 @@ void isl_ctx_free(struct isl_ctx *ctx)
 	isl_blk_clear_cache(ctx);
 	isl_int_clear(ctx->zero);
 	isl_int_clear(ctx->one);
+	isl_int_clear(ctx->two);
 	isl_int_clear(ctx->negone);
 	isl_int_clear(ctx->normalize_gcd);
 	isl_arg_free(ctx->user_arg, ctx->user_opt);
