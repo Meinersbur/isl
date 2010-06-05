@@ -2609,8 +2609,7 @@ static struct isl_vec *gbr_get_sample(struct isl_context_gbr *cgbr)
 		if (isl_tab_track_bset(cgbr->cone, isl_basic_set_dup(bset)) < 0)
 			return NULL;
 	}
-	cgbr->cone = isl_tab_detect_implicit_equalities(cgbr->cone);
-	if (!cgbr->cone)
+	if (isl_tab_detect_implicit_equalities(cgbr->cone) < 0)
 		return NULL;
 
 	if (cgbr->cone->n_dead == cgbr->cone->n_col) {
@@ -2974,7 +2973,8 @@ static int context_gbr_detect_equalities(struct isl_context *context,
 		if (isl_tab_track_bset(cgbr->cone, isl_basic_set_dup(bset)) < 0)
 			goto error;
 	}
-	cgbr->cone = isl_tab_detect_implicit_equalities(cgbr->cone);
+	if (isl_tab_detect_implicit_equalities(cgbr->cone) < 0)
+		goto error;
 
 	n_ineq = cgbr->tab->bmap->n_ineq;
 	cgbr->tab = isl_tab_detect_equalities(cgbr->tab, cgbr->cone);

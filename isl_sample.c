@@ -583,9 +583,8 @@ static struct isl_vec *sample_bounded(struct isl_basic_set *bset)
 	if (isl_tab_track_bset(tab, isl_basic_set_copy(bset)) < 0)
 		goto error;
 	if (!ISL_F_ISSET(bset, ISL_BASIC_SET_NO_IMPLICIT))
-		tab = isl_tab_detect_implicit_equalities(tab);
-	if (!tab)
-		goto error;
+		if (isl_tab_detect_implicit_equalities(tab) < 0)
+			goto error;
 
 	sample = isl_tab_sample(tab);
 	if (!sample)

@@ -2518,17 +2518,17 @@ static int may_be_equality(struct isl_tab *tab, int row)
  * tableau is integer), then we restrict the value to being zero
  * by adding an opposite non-negative variable.
  */
-struct isl_tab *isl_tab_detect_implicit_equalities(struct isl_tab *tab)
+int isl_tab_detect_implicit_equalities(struct isl_tab *tab)
 {
 	int i;
 	unsigned n_marked;
 
 	if (!tab)
-		return NULL;
+		return -1;
 	if (tab->empty)
-		return tab;
+		return 0;
 	if (tab->n_dead == tab->n_col)
-		return tab;
+		return 0;
 
 	n_marked = 0;
 	for (i = tab->n_redundant; i < tab->n_row; ++i) {
@@ -2565,13 +2565,13 @@ struct isl_tab *isl_tab_detect_implicit_equalities(struct isl_tab *tab)
 		n_marked--;
 		sgn = sign_of_max(tab, var);
 		if (sgn < 0)
-			goto error;
+			return -1;
 		if (sgn == 0) {
 			if (close_row(tab, var) < 0)
-				goto error;
+				return -1;
 		} else if (!tab->rational && !at_least_one(tab, var)) {
 			if (cut_to_hyperplane(tab, var) < 0)
-				goto error;
+				return -1;
 			return isl_tab_detect_implicit_equalities(tab);
 		}
 		for (i = tab->n_redundant; i < tab->n_row; ++i) {
@@ -2585,10 +2585,7 @@ struct isl_tab *isl_tab_detect_implicit_equalities(struct isl_tab *tab)
 		}
 	}
 
-	return tab;
-error:
-	isl_tab_free(tab);
-	return NULL;
+	return 0;
 }
 
 static int con_is_redundant(struct isl_tab *tab, struct isl_tab_var *var)

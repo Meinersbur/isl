@@ -34,12 +34,17 @@ struct isl_basic_map *isl_basic_map_implicit_equalities(
 		return bmap;
 
 	tab = isl_tab_from_basic_map(bmap);
-	tab = isl_tab_detect_implicit_equalities(tab);
+	if (isl_tab_detect_implicit_equalities(tab) < 0)
+		goto error;
 	bmap = isl_basic_map_update_from_tab(bmap, tab);
 	isl_tab_free(tab);
 	bmap = isl_basic_map_gauss(bmap, NULL);
 	ISL_F_SET(bmap, ISL_BASIC_MAP_NO_IMPLICIT);
 	return bmap;
+error:
+	isl_tab_free(tab);
+	isl_basic_map_free(bmap);
+	return NULL;
 }
 
 struct isl_basic_set *isl_basic_set_implicit_equalities(
