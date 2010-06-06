@@ -2512,6 +2512,86 @@ int isl_qpolynomial_degree(__isl_keep isl_qpolynomial *poly)
 	return isl_upoly_degree(poly->upoly, ovar, ovar + nvar);
 }
 
+__isl_give struct isl_upoly *isl_upoly_coeff(__isl_keep struct isl_upoly *up,
+	unsigned pos, int deg)
+{
+	int i;
+	struct isl_upoly_rec *rec;
+
+	if (!up)
+		return NULL;
+
+	if (isl_upoly_is_cst(up) || up->var < pos) {
+		if (deg == 0)
+			return isl_upoly_copy(up);
+		else
+			return isl_upoly_zero(up->ctx);
+	}
+
+	rec = isl_upoly_as_rec(up);
+	if (!rec)
+		return NULL;
+
+	if (up->var == pos) {
+		if (deg < rec->n)
+			return isl_upoly_copy(rec->p[deg]);
+		else
+			return isl_upoly_zero(up->ctx);
+	}
+
+	up = isl_upoly_copy(up);
+	up = isl_upoly_cow(up);
+	rec = isl_upoly_as_rec(up);
+	if (!rec)
+		goto error;
+
+	for (i = 0; i < rec->n; ++i) {
+		struct isl_upoly *t;
+		t = isl_upoly_coeff(rec->p[i], pos, deg);
+		if (!t)
+			goto error;
+		isl_upoly_free(rec->p[i]);
+		rec->p[i] = t;
+	}
+
+	return up;
+error:
+	isl_upoly_free(up);
+	return NULL;
+}
+
+/* Return coefficient of power "deg" of variable "t_pos" of type "type".
+ */
+__isl_give isl_qpolynomial *isl_qpolynomial_coeff(
+	__isl_keep isl_qpolynomial *qp,
+	enum isl_dim_type type, unsigned t_pos, int deg)
+{
+	unsigned g_pos;
+	struct isl_upoly *up;
+	isl_qpolynomial *c;
+
+	if (!qp)
+		return NULL;
+
+	isl_assert(qp->div->ctx, t_pos < isl_dim_size(qp->dim, type),
+			return NULL);
+
+	g_pos = pos(qp->dim, type) + t_pos;
+	up = isl_upoly_coeff(qp->upoly, g_pos, deg);
+
+	c = isl_qpolynomial_alloc(isl_dim_copy(qp->dim), qp->div->n_row, up);
+	if (!c)
+		return NULL;
+	isl_mat_free(c->div);
+	c->div = isl_mat_copy(qp->div);
+	if (!c->div)
+		goto error;
+	return c;
+error:
+	isl_qpolynomial_free(c);
+	return NULL;
+}
+
 /* Homogenize the polynomial in the variables first (inclusive) up to
  * last (exclusive) by inserting powers of variable first.
  * Variable first is assumed not to appear in the input.

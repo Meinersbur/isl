@@ -132,6 +132,9 @@ __isl_give isl_qpolynomial *isl_qpolynomial_min_cst(
 	__isl_take isl_qpolynomial *qp1, __isl_take isl_qpolynomial *qp2);
 
 int isl_qpolynomial_degree(__isl_keep isl_qpolynomial *poly);
+__isl_give isl_qpolynomial *isl_qpolynomial_coeff(
+	__isl_keep isl_qpolynomial *poly,
+	enum isl_dim_type type, unsigned pos, int deg);
 
 __isl_give isl_vec *isl_qpolynomial_extract_affine(
 	__isl_keep isl_qpolynomial *qp);
