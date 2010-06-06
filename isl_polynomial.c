@@ -2499,6 +2499,87 @@ int isl_qpolynomial_degree(__isl_keep isl_qpolynomial *poly)
 	return isl_upoly_degree(poly->upoly, ovar, ovar + nvar);
 }
 
+/* Homogenize the polynomial in the variables first (inclusive) up to
+ * last (exclusive) by inserting powers of variable first.
+ * Variable first is assumed not to appear in the input.
+ */
+__isl_give struct isl_upoly *isl_upoly_homogenize(
+	__isl_take struct isl_upoly *up, int deg, int target,
+	int first, int last)
+{
+	int i;
+	struct isl_upoly_rec *rec;
+
+	if (!up)
+		return NULL;
+	if (isl_upoly_is_zero(up))
+		return up;
+	if (deg == target)
+		return up;
+	if (isl_upoly_is_cst(up) || up->var < first) {
+		struct isl_upoly *hom;
+
+		hom = isl_upoly_pow(up->ctx, first, target - deg);
+		if (!hom)
+			goto error;
+		rec = isl_upoly_as_rec(hom);
+		rec->p[target - deg] = isl_upoly_mul(rec->p[target - deg], up);
+
+		return hom;
+	}
+
+	up = isl_upoly_cow(up);
+	rec = isl_upoly_as_rec(up);
+	if (!rec)
+		goto error;
+
+	for (i = 0; i < rec->n; ++i) {
+		if (isl_upoly_is_zero(rec->p[i]))
+			continue;
+		rec->p[i] = isl_upoly_homogenize(rec->p[i],
+				up->var < last ? deg + i : i, target,
+				first, last);
+		if (!rec->p[i])
+			goto error;
+	}
+
+	return up;
+error:
+	isl_upoly_free(up);
+	return NULL;
+}
+
+/* Homogenize the polynomial in the set variables by introducing
+ * powers of an extra set variable at position 0.
+ */
+__isl_give isl_qpolynomial *isl_qpolynomial_homogenize(
+	__isl_take isl_qpolynomial *poly)
+{
+	unsigned ovar;
+	unsigned nvar;
+	int deg = isl_qpolynomial_degree(poly);
+
+	if (deg < -1)
+		goto error;
+
+	poly = isl_qpolynomial_insert_dims(poly, isl_dim_set, 0, 1);
+	poly = isl_qpolynomial_cow(poly);
+	if (!poly)
+		goto error;
+
+	ovar = isl_dim_offset(poly->dim, isl_dim_set);
+	nvar = isl_dim_size(poly->dim, isl_dim_set);
+	poly->upoly = isl_upoly_homogenize(poly->upoly, 0, deg,
+						ovar, ovar + nvar);
+	if (!poly->upoly)
+		goto error;
+
+	return poly;
+error:
+	isl_qpolynomial_free(poly);
+	return NULL;
+}
+
 __isl_give isl_term *isl_term_alloc(__isl_take isl_dim *dim,
 	__isl_take isl_mat *div)
 {
