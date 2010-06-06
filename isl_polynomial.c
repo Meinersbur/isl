@@ -2450,6 +2450,55 @@ error:
 	return -1;
 }
 
+/* Return total degree in variables first (inclusive) up to last (exclusive).
+ */
+int isl_upoly_degree(__isl_keep struct isl_upoly *up, int first, int last)
+{
+	int deg = -1;
+	int i;
+	struct isl_upoly_rec *rec;
+
+	if (!up)
+		return -2;
+	if (isl_upoly_is_zero(up))
+		return -1;
+	if (isl_upoly_is_cst(up) || up->var < first)
+		return 0;
+
+	rec = isl_upoly_as_rec(up);
+	if (!rec)
+		return -2;
+
+	for (i = 0; i < rec->n; ++i) {
+		int d;
+
+		if (isl_upoly_is_zero(rec->p[i]))
+			continue;
+		d = isl_upoly_degree(rec->p[i], first, last);
+		if (up->var < last)
+			d += i;
+		if (d > deg)
+			deg = d;
+	}
+
+	return deg;
+}
+
+/* Return total degree in set variables.
+ */
+int isl_qpolynomial_degree(__isl_keep isl_qpolynomial *poly)
+{
+	unsigned ovar;
+	unsigned nvar;
+
+	if (!poly)
+		return -2;
+
+	ovar = isl_dim_offset(poly->dim, isl_dim_set);
+	nvar = isl_dim_size(poly->dim, isl_dim_set);
+	return isl_upoly_degree(poly->upoly, ovar, ovar + nvar);
+}
+
 __isl_give isl_term *isl_term_alloc(__isl_take isl_dim *dim,
 	__isl_take isl_mat *div)
 {
