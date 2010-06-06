@@ -328,6 +328,12 @@ __isl_give isl_dim *isl_qpolynomial_get_dim(__isl_keep isl_qpolynomial *qp)
 	return qp ? isl_dim_copy(qp->dim) : NULL;
 }
 
+unsigned isl_qpolynomial_dim(__isl_keep isl_qpolynomial *qp,
+	enum isl_dim_type type)
+{
+	return qp ? isl_dim_size(qp->dim, type) : 0;
+}
+
 int isl_qpolynomial_is_zero(__isl_keep isl_qpolynomial *qp)
 {
 	return qp ? isl_upoly_is_zero(qp->upoly) : -1;
