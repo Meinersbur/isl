@@ -2259,6 +2259,19 @@ __isl_give struct isl_upoly *isl_upoly_from_affine(isl_ctx *ctx, isl_int *f,
 	return up;
 }
 
+__isl_give isl_qpolynomial *isl_qpolynomial_from_affine(__isl_take isl_dim *dim,
+	isl_int *f, isl_int denom)
+{
+	struct isl_upoly *up;
+
+	if (!dim)
+		return NULL;
+
+	up = isl_upoly_from_affine(dim->ctx, f, denom, 1 + isl_dim_total(dim));
+
+	return isl_qpolynomial_alloc(dim, 0, up);
+}
+
 __isl_give isl_qpolynomial *isl_qpolynomial_from_constraint(
 	__isl_take isl_constraint *c, enum isl_dim_type type, unsigned pos)
 {
