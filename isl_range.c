@@ -2,17 +2,18 @@
 #include <isl_set.h>
 #include <isl_polynomial_private.h>
 #include <isl_morph.h>
+#include <isl_range.h>
 
 struct range_data {
+	struct isl_bound	*bound;
 	int 		    	*signs;
 	int			sign;
 	int			test_monotonicity;
 	int		    	monotonicity;
-	int			exact;
-	isl_qpolynomial	    	*qp;
+	int			tight;
 	isl_qpolynomial	    	*poly;
 	isl_pw_qpolynomial_fold *pwf;
-	isl_pw_qpolynomial_fold *pwf_exact;
+	isl_pw_qpolynomial_fold *pwf_tight;
 };
 
 static int propagate_on_domain(__isl_take isl_basic_set *bset,
@@ -51,8 +52,8 @@ static int has_sign(__isl_keep isl_basic_set *bset,
 	data_m.signs = signs;
 	data_m.pwf = isl_pw_qpolynomial_fold_zero(dim);
 	data_m.sign = -sign;
-	data_m.exact = 0;
-	data_m.pwf_exact = NULL;
+	data_m.tight = 0;
+	data_m.pwf_tight = NULL;
 
 	if (propagate_on_domain(bset, poly, &data_m) < 0)
 		goto error;
@@ -241,8 +242,8 @@ error:
 	return NULL;
 }
 
-/* Helper function to add a guarded polynomial to either pwf_exact or pwf,
- * depending on whether the result has been determined to be exact.
+/* Helper function to add a guarded polynomial to either pwf_tight or pwf,
+ * depending on whether the result has been determined to be tight.
  */
 static int add_guarded_poly(__isl_take isl_basic_set *bset,
 	__isl_take isl_qpolynomial *poly, struct range_data *data)
@@ -255,9 +256,9 @@ static int add_guarded_poly(__isl_take isl_basic_set *bset,
 	fold = isl_qpolynomial_fold_alloc(type, poly);
 	set = isl_set_from_basic_set(bset);
 	pwf = isl_pw_qpolynomial_fold_alloc(set, fold);
-	if (data->exact)
-		data->pwf_exact = isl_pw_qpolynomial_fold_add(
-						data->pwf_exact, pwf);
+	if (data->tight)
+		data->pwf_tight = isl_pw_qpolynomial_fold_add(
+						data->pwf_tight, pwf);
 	else
 		data->pwf = isl_pw_qpolynomial_fold_add(data->pwf, pwf);
 
@@ -269,9 +270,9 @@ static int add_guarded_poly(__isl_take isl_basic_set *bset,
  * eliminate the variable from data->poly based on these bounds.
  * If the polynomial has been determined to be monotonic
  * in the variable, then simply plug in the appropriate bound.
- * If the current polynomial is exact and if this bound is integer,
- * then the result is still exact.  In all other cases, the results
- * may be inexact.
+ * If the current polynomial is tight and if this bound is integer,
+ * then the result is still tight.  In all other cases, the results
+ * may not be tight.
  * Otherwise, plug in the largest bound (in absolute value) in
  * the positive terms (if an upper bound is wanted) or the negative terms
  * (if a lower bounded is wanted) and the other bound in the other terms.
@@ -284,7 +285,7 @@ static int propagate_on_bound_pair(__isl_take isl_constraint *lower,
 	void *user)
 {
 	struct range_data *data = (struct range_data *)user;
-	int save_exact = data->exact;
+	int save_tight = data->tight;
 	isl_qpolynomial *poly;
 	int r;
 	unsigned nvar;
@@ -295,13 +296,13 @@ static int propagate_on_bound_pair(__isl_take isl_constraint *lower,
 		isl_qpolynomial *sub;
 		isl_dim *dim = isl_qpolynomial_get_dim(data->poly);
 		if (data->monotonicity * data->sign > 0) {
-			if (data->exact)
-				data->exact = bound_is_integer(upper, nvar);
+			if (data->tight)
+				data->tight = bound_is_integer(upper, nvar);
 			sub = bound2poly(upper, dim, nvar, 1);
 			isl_constraint_free(lower);
 		} else {
-			if (data->exact)
-				data->exact = bound_is_integer(lower, nvar);
+			if (data->tight)
+				data->tight = bound_is_integer(lower, nvar);
 			sub = bound2poly(lower, dim, nvar, -1);
 			isl_constraint_free(upper);
 		}
@@ -317,7 +318,7 @@ static int propagate_on_bound_pair(__isl_take isl_constraint *lower,
 		unsigned nparam = isl_basic_set_dim(bset, isl_dim_param);
 		int sign = data->sign * data->signs[nparam + nvar];
 
-		data->exact = 0;
+		data->tight = 0;
 
 		u = bound2poly(upper, isl_dim_copy(dim), nvar, 1);
 		l = bound2poly(lower, dim, nvar, -1);
@@ -340,7 +341,7 @@ static int propagate_on_bound_pair(__isl_take isl_constraint *lower,
 	else
 		r = propagate_on_domain(bset, poly, data);
 
-	data->exact = save_exact;
+	data->tight = save_tight;
 
 	return r;
 }
@@ -423,10 +424,9 @@ error:
 	return -1;
 }
 
-static int compressed_guarded_poly_bound(__isl_take isl_basic_set *bset,
-	__isl_take isl_qpolynomial *poly, void *user)
+static int qpolynomial_bound_on_domain_range(__isl_take isl_basic_set *bset,
+	__isl_take isl_qpolynomial *poly, struct range_data *data)
 {
-	struct range_data *data = (struct range_data *)user;
 	unsigned nparam = isl_basic_set_dim(bset, isl_dim_param);
 	unsigned nvar = isl_basic_set_dim(bset, isl_dim_set);
 	isl_set *set;
@@ -443,6 +443,7 @@ static int compressed_guarded_poly_bound(__isl_take isl_basic_set *bset,
 
 	data->poly = poly;
 
+	data->test_monotonicity = 1;
 	if (isl_set_foreach_basic_set(set, &basic_guarded_poly_bound, data) < 0)
 		goto error;
 
@@ -456,170 +457,33 @@ error:
 	return -1;
 }
 
-static int guarded_poly_bound(__isl_take isl_basic_set *bset,
-	__isl_take isl_qpolynomial *poly, void *user)
+int isl_qpolynomial_bound_on_domain_range(__isl_take isl_basic_set *bset,
+	__isl_take isl_qpolynomial *poly, struct isl_bound *bound)
 {
-	struct range_data *data = (struct range_data *)user;
-	isl_pw_qpolynomial_fold *top_pwf;
-	isl_pw_qpolynomial_fold *top_pwf_exact;
-	isl_dim *dim;
-	isl_morph *morph;
-	unsigned orig_nvar, final_nvar;
+	struct range_data data;
 	int r;
 
-	bset = isl_basic_set_detect_equalities(bset);
+	data.pwf = bound->pwf;
+	data.pwf_tight = bound->pwf_tight;
+	data.tight = bound->check_tight;
+	if (bound->type == isl_fold_min)
+		data.sign = -1;
+	else
+		data.sign = 1;
 
-	if (!bset)
-		goto error;
+	r = qpolynomial_bound_on_domain_range(bset, poly, &data);
 
-	if (bset->n_eq == 0)
-		return compressed_guarded_poly_bound(bset, poly, user);
-
-	orig_nvar = isl_basic_set_dim(bset, isl_dim_set);
-
-	morph = isl_basic_set_full_compression(bset);
-
-	bset = isl_morph_basic_set(isl_morph_copy(morph), bset);
-	poly = isl_qpolynomial_morph(poly, isl_morph_copy(morph));
-
-	final_nvar = isl_basic_set_dim(bset, isl_dim_set);
-
-	dim = isl_morph_get_ran_dim(morph);
-	dim = isl_dim_drop(dim, isl_dim_set, 0, isl_dim_size(dim, isl_dim_set));
-
-	top_pwf = data->pwf;
-	top_pwf_exact = data->pwf_exact;
-
-	data->pwf = isl_pw_qpolynomial_fold_zero(isl_dim_copy(dim));
-	data->pwf_exact = isl_pw_qpolynomial_fold_zero(dim);
-
-	r = compressed_guarded_poly_bound(bset, poly, user);
-
-	morph = isl_morph_remove_dom_dims(morph, isl_dim_set, 0, orig_nvar);
-	morph = isl_morph_remove_ran_dims(morph, isl_dim_set, 0, final_nvar);
-	morph = isl_morph_inverse(morph);
-
-	data->pwf = isl_pw_qpolynomial_fold_morph(data->pwf,
-							isl_morph_copy(morph));
-	data->pwf_exact = isl_pw_qpolynomial_fold_morph(data->pwf_exact, morph);
-
-	data->pwf = isl_pw_qpolynomial_fold_add(top_pwf, data->pwf);
-	data->pwf_exact = isl_pw_qpolynomial_fold_add(top_pwf_exact,
-							data->pwf_exact);
+	bound->pwf = data.pwf;
+	bound->pwf_tight = data.pwf_tight;
 
 	return r;
-error:
-	isl_basic_set_free(bset);
-	isl_qpolynomial_free(poly);
-	return -1;
-}
-
-static int basic_guarded_bound(__isl_take isl_basic_set *bset, void *user)
-{
-	struct range_data *data = (struct range_data *)user;
-	int r;
-
-	r = isl_qpolynomial_as_polynomial_on_domain(data->qp, bset,
-						    &guarded_poly_bound, user);
-	isl_basic_set_free(bset);
-	return r;
-}
-
-static int guarded_bound(__isl_take isl_set *set,
-	__isl_take isl_qpolynomial *qp, void *user)
-{
-	struct range_data *data = (struct range_data *)user;
-
-	if (!set || !qp)
-		goto error;
-
-	set = isl_set_make_disjoint(set);
-
-	data->qp = qp;
-
-	if (isl_set_foreach_basic_set(set, &basic_guarded_bound, data) < 0)
-		goto error;
-
-	isl_set_free(set);
-	isl_qpolynomial_free(qp);
-
-	return 0;
-error:
-	isl_set_free(set);
-	isl_qpolynomial_free(qp);
-	return -1;
 }
 
 /* Compute a lower or upper bound (depending on "type") on the given
  * piecewise step-polynomial using range propagation.
  */
 __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_bound_range(
-	__isl_take isl_pw_qpolynomial *pwqp, enum isl_fold type, int *exact)
+	__isl_take isl_pw_qpolynomial *pwqp, enum isl_fold type, int *tight)
 {
-	isl_dim *dim;
-	isl_pw_qpolynomial_fold *pwf;
-	unsigned nvar;
-	unsigned nparam;
-	struct range_data data;
-	int covers;
-
-	if (!pwqp)
-		return NULL;
-
-	dim = isl_pw_qpolynomial_get_dim(pwqp);
-	nvar = isl_dim_size(dim, isl_dim_set);
-
-	if (isl_pw_qpolynomial_is_zero(pwqp)) {
-		isl_pw_qpolynomial_free(pwqp);
-		dim = isl_dim_drop(dim, isl_dim_set, 0, nvar);
-		if (exact)
-			*exact = 1;
-		return isl_pw_qpolynomial_fold_zero(dim);
-	}
-
-	if (nvar == 0) {
-		isl_dim_free(dim);
-		if (exact)
-			*exact = 1;
-		return isl_pw_qpolynomial_fold_from_pw_qpolynomial(type, pwqp);
-	}
-
-	dim = isl_dim_drop(dim, isl_dim_set, 0, nvar);
-
-	nparam = isl_dim_size(dim, isl_dim_param);
-	data.pwf = isl_pw_qpolynomial_fold_zero(isl_dim_copy(dim));
-	data.pwf_exact = isl_pw_qpolynomial_fold_zero(isl_dim_copy(dim));
-	if (type == isl_fold_min)
-		data.sign = -1;
-	else
-		data.sign = 1;
-	data.test_monotonicity = 1;
-	data.exact = !!exact;
-
-	if (isl_pw_qpolynomial_foreach_lifted_piece(pwqp, guarded_bound, &data))
-		goto error;
-
-	covers = isl_pw_qpolynomial_fold_covers(data.pwf_exact, data.pwf);
-	if (covers < 0)
-		goto error;
-
-	if (exact)
-		*exact = covers;
-
-	isl_dim_free(dim);
-	isl_pw_qpolynomial_free(pwqp);
-
-	if (covers) {
-		isl_pw_qpolynomial_fold_free(data.pwf);
-		return data.pwf_exact;
-	}
-
-	data.pwf = isl_pw_qpolynomial_fold_add(data.pwf, data.pwf_exact);
-
-	return data.pwf;
-error:
-	isl_pw_qpolynomial_fold_free(data.pwf);
-	isl_dim_free(dim);
-	isl_pw_qpolynomial_free(pwqp);
-	return NULL;
+	return isl_pw_qpolynomial_bound(pwqp, type, tight);
 }

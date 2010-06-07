@@ -36,6 +36,8 @@ libisl_la_SOURCES = \
 	isl_basis_reduction.h \
 	basis_reduction_tab.c \
 	isl_blk.c \
+	isl_bound.c \
+	isl_bound.h \
 	isl_coalesce.c \
 	isl_constraint.c \
 	isl_convex_hull.c \
@@ -77,6 +79,7 @@ libisl_la_SOURCES = \
 	isl_printer_private.h \
 	isl_printer.c \
 	isl_range.c \
+	isl_range.h \
 	isl_sample.h \
 	isl_sample.c \
 	isl_scan.c \
