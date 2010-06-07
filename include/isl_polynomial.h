@@ -268,6 +268,9 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_add_disjoint(
 	__isl_take isl_pw_qpolynomial_fold *pwf1,
 	__isl_take isl_pw_qpolynomial_fold *pwf2);
 
+__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_drop_dims(
+	__isl_take isl_pw_qpolynomial_fold *pwf,
+	enum isl_dim_type type, unsigned first, unsigned n);
 __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_move_dims(
 	__isl_take isl_pw_qpolynomial_fold *pwf,
 	enum isl_dim_type dst_type, unsigned dst_pos,
