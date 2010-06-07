@@ -24,7 +24,7 @@ static __isl_give isl_qpolynomial_fold *qpolynomial_fold_alloc(
 		goto error;
 
 	isl_assert(dim->ctx, n >= 0, goto error);
-	fold = isl_alloc(dim->ctx, struct isl_qpolynomial_fold,
+	fold = isl_calloc(dim->ctx, struct isl_qpolynomial_fold,
 			sizeof(struct isl_qpolynomial_fold) +
 			(n - 1) * sizeof(struct isl_qpolynomial *));
 	if (!fold)
@@ -397,6 +397,7 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_dup(
 	if (!dup)
 		return NULL;
 	
+	dup->n = fold->n;
 	for (i = 0; i < fold->n; ++i) {
 		dup->qp[i] = isl_qpolynomial_copy(fold->qp[i]);
 		if (!dup->qp[i])
