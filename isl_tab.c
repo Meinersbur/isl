@@ -64,6 +64,7 @@ struct isl_tab *isl_tab_alloc(struct isl_ctx *ctx,
 	tab->n_div = 0;
 	tab->n_dead = 0;
 	tab->n_redundant = 0;
+	tab->strict_redundant = 0;
 	tab->need_undo = 0;
 	tab->rational = 0;
 	tab->empty = 0;
@@ -266,6 +267,7 @@ struct isl_tab *isl_tab_dup(struct isl_tab *tab)
 	dup->n_redundant = tab->n_redundant;
 	dup->rational = tab->rational;
 	dup->empty = tab->empty;
+	dup->strict_redundant = 0;
 	dup->need_undo = 0;
 	dup->in_undo = 0;
 	dup->M = tab->M;
@@ -516,6 +518,7 @@ struct isl_tab *isl_tab_product(struct isl_tab *tab1, struct isl_tab *tab2)
 	prod->n_redundant = tab1->n_redundant + tab2->n_redundant;
 	prod->rational = tab1->rational;
 	prod->empty = tab1->empty || tab2->empty;
+	prod->strict_redundant = tab1->strict_redundant || tab2->strict_redundant;
 	prod->need_undo = 0;
 	prod->in_undo = 0;
 	prod->M = tab1->M;
@@ -722,6 +725,8 @@ int isl_tab_row_is_redundant(struct isl_tab *tab, int row)
 		return 0;
 
 	if (isl_int_is_neg(tab->mat->row[row][1]))
+		return 0;
+	if (tab->strict_redundant && isl_int_is_zero(tab->mat->row[row][1]))
 		return 0;
 	if (tab->M && isl_int_is_neg(tab->mat->row[row][2]))
 		return 0;

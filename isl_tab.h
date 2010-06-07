@@ -161,6 +161,7 @@ struct isl_tab {
 	int n_unbounded;
 	struct isl_mat *basis;
 
+	unsigned strict_redundant : 1;
 	unsigned need_undo : 1;
 	unsigned rational : 1;
 	unsigned empty : 1;
