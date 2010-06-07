@@ -90,7 +90,9 @@ libisl_la_SOURCES = \
 	isl_tab.h \
 	isl_tab_pip.c \
 	isl_transitive_closure.c \
-	isl_vec.c
+	isl_vec.c \
+	isl_vertices_private.h \
+	isl_vertices.c
 EXTRA_libisl_la_SOURCES = \
 	isl_lp_piplib.c \
 	isl_lp_no_piplib.c \
@@ -183,7 +185,8 @@ pkginclude_HEADERS = \
 	include/isl_seq.h \
 	include/isl_set.h \
 	include/isl_stream.h \
-	include/isl_vec.h
+	include/isl_vec.h \
+	include/isl_vertices.h
 
 EXTRA_DIST = \
 	basis_reduction_templ.c \
