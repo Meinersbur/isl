@@ -236,7 +236,6 @@ int main(int argc, char **argv)
 	argc = bound_options_parse(options, argc, argv, ISL_ARG_ALL);
 
 	ctx = isl_ctx_alloc_with_options(bound_options_arg, options);
-	options->isl = NULL;
 
 	s = isl_stream_new_file(ctx, stdin);
 	pwqp = isl_stream_read_pw_qpolynomial(s);
