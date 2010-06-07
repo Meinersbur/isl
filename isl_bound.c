@@ -77,58 +77,71 @@ error:
 	return -1;
 }
 
-static int basic_guarded_bound(__isl_take isl_basic_set *bset, void *user)
+static int guarded_qp(__isl_take isl_qpolynomial *qp, void *user)
 {
 	struct isl_bound *bound = (struct isl_bound *)user;
 	int r;
 
-	r = isl_qpolynomial_as_polynomial_on_domain(bound->qp, bset,
+	r = isl_qpolynomial_as_polynomial_on_domain(qp, bound->bset,
 						    &guarded_poly_bound, user);
+	isl_qpolynomial_free(qp);
+	return r;
+}
+
+static int basic_guarded_fold(__isl_take isl_basic_set *bset, void *user)
+{
+	struct isl_bound *bound = (struct isl_bound *)user;
+	int r;
+
+	bound->bset = bset;
+	r = isl_qpolynomial_fold_foreach_qpolynomial(bound->fold,
+							&guarded_qp, user);
 	isl_basic_set_free(bset);
 	return r;
 }
 
-static int guarded_bound(__isl_take isl_set *set,
-	__isl_take isl_qpolynomial *qp, void *user)
+static int guarded_fold(__isl_take isl_set *set,
+	__isl_take isl_qpolynomial_fold *fold, void *user)
 {
 	struct isl_bound *bound = (struct isl_bound *)user;
 
-	if (!set || !qp)
+	if (!set || !fold)
 		goto error;
 
 	set = isl_set_make_disjoint(set);
 
-	bound->qp = qp;
+	bound->fold = fold;
+	bound->type = isl_qpolynomial_fold_get_type(fold);
 
-	if (isl_set_foreach_basic_set(set, &basic_guarded_bound, bound) < 0)
+	if (isl_set_foreach_basic_set(set, &basic_guarded_fold, bound) < 0)
 		goto error;
 
 	isl_set_free(set);
-	isl_qpolynomial_free(qp);
+	isl_qpolynomial_fold_free(fold);
 
 	return 0;
 error:
 	isl_set_free(set);
-	isl_qpolynomial_free(qp);
+	isl_qpolynomial_fold_free(fold);
 	return -1;
 }
 
-__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_bound(
-	__isl_take isl_pw_qpolynomial *pwqp, enum isl_fold type, int *tight)
+__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_bound(
+	__isl_take isl_pw_qpolynomial_fold *pwf, int *tight)
 {
 	isl_dim *dim;
 	unsigned nvar;
 	struct isl_bound bound;
 	int covers;
 
-	if (!pwqp)
+	if (!pwf)
 		return NULL;
 
-	dim = isl_pw_qpolynomial_get_dim(pwqp);
+	dim = isl_pw_qpolynomial_fold_get_dim(pwf);
 	nvar = isl_dim_size(dim, isl_dim_set);
 
-	if (isl_pw_qpolynomial_is_zero(pwqp)) {
-		isl_pw_qpolynomial_free(pwqp);
+	if (isl_pw_qpolynomial_fold_is_zero(pwf)) {
+		isl_pw_qpolynomial_fold_free(pwf);
 		dim = isl_dim_drop(dim, isl_dim_set, 0, nvar);
 		if (tight)
 			*tight = 1;
@@ -139,17 +152,17 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_bound(
 		isl_dim_free(dim);
 		if (tight)
 			*tight = 1;
-		return isl_pw_qpolynomial_fold_from_pw_qpolynomial(type, pwqp);
+		return pwf;
 	}
 
 	dim = isl_dim_drop(dim, isl_dim_set, 0, nvar);
 
 	bound.pwf = isl_pw_qpolynomial_fold_zero(isl_dim_copy(dim));
 	bound.pwf_tight = isl_pw_qpolynomial_fold_zero(isl_dim_copy(dim));
-	bound.type = type;
 	bound.check_tight = !!tight;
 
-	if (isl_pw_qpolynomial_foreach_lifted_piece(pwqp, guarded_bound, &bound))
+	if (isl_pw_qpolynomial_fold_foreach_lifted_piece(pwf,
+							guarded_fold, &bound) < 0)
 		goto error;
 
 	covers = isl_pw_qpolynomial_fold_covers(bound.pwf_tight, bound.pwf);
@@ -160,7 +173,7 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_bound(
 		*tight = covers;
 
 	isl_dim_free(dim);
-	isl_pw_qpolynomial_free(pwqp);
+	isl_pw_qpolynomial_fold_free(pwf);
 
 	if (covers) {
 		isl_pw_qpolynomial_fold_free(bound.pwf);
@@ -173,7 +186,16 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_bound(
 error:
 	isl_pw_qpolynomial_fold_free(bound.pwf_tight);
 	isl_pw_qpolynomial_fold_free(bound.pwf);
+	isl_pw_qpolynomial_fold_free(pwf);
 	isl_dim_free(dim);
-	isl_pw_qpolynomial_free(pwqp);
 	return NULL;
+}
+
+__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_bound(
+	__isl_take isl_pw_qpolynomial *pwqp, enum isl_fold type, int *tight)
+{
+	isl_pw_qpolynomial_fold *pwf;
+
+	pwf = isl_pw_qpolynomial_fold_from_pw_qpolynomial(type, pwqp);
+	return isl_pw_qpolynomial_fold_bound(pwf, tight);
 }

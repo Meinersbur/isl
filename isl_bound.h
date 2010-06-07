@@ -7,7 +7,8 @@ struct isl_bound {
 	/* input */
 	int check_tight;
 	enum isl_fold type;
-	isl_qpolynomial *qp;
+	isl_basic_set *bset;
+	isl_qpolynomial_fold *fold;
 
 	/* output */
 	isl_pw_qpolynomial_fold *pwf;
