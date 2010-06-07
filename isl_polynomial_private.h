@@ -120,7 +120,6 @@ __isl_give isl_qpolynomial *isl_qpolynomial_pow(__isl_take isl_dim *dim,
 	int pos, int power);
 __isl_give isl_qpolynomial *isl_qpolynomial_div_pow(__isl_take isl_div *div,
 	int power);
-int isl_qpolynomial_is_zero(__isl_keep isl_qpolynomial *qp);
 int isl_qpolynomial_is_one(__isl_keep isl_qpolynomial *qp);
 int isl_qpolynomial_is_affine(__isl_keep isl_qpolynomial *qp);
 
