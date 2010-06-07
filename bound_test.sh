@@ -28,5 +28,6 @@ BOUND_TESTS="\
 
 for i in $BOUND_TESTS; do
 	echo $i;
-	./isl_bound$EXEEXT -T < $srcdir/test_inputs/$i || exit
+	./isl_bound$EXEEXT -T --bound=bernstein < $srcdir/test_inputs/$i || exit
+	./isl_bound$EXEEXT -T --bound=range < $srcdir/test_inputs/$i || exit
 done

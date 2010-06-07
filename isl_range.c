@@ -478,12 +478,3 @@ int isl_qpolynomial_bound_on_domain_range(__isl_take isl_basic_set *bset,
 
 	return r;
 }
-
-/* Compute a lower or upper bound (depending on "type") on the given
- * piecewise step-polynomial using range propagation.
- */
-__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_bound_range(
-	__isl_take isl_pw_qpolynomial *pwqp, enum isl_fold type, int *tight)
-{
-	return isl_pw_qpolynomial_bound(pwqp, type, tight);
-}

@@ -15,7 +15,4 @@ struct isl_bound {
 	isl_pw_qpolynomial_fold *pwf_tight;
 };
 
-__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_bound(
-	__isl_take isl_pw_qpolynomial *pwqp, enum isl_fold type, int *tight);
-
 #endif

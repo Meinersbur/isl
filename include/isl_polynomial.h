@@ -303,8 +303,10 @@ __isl_give isl_qpolynomial *isl_pw_qpolynomial_fold_max(
 __isl_give isl_qpolynomial *isl_pw_qpolynomial_fold_min(
 	__isl_take isl_pw_qpolynomial_fold *pwf);
 
-__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_bound_range(
-	__isl_take isl_pw_qpolynomial *pwqp, enum isl_fold type, int *exact);
+__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_bound(
+	__isl_take isl_pw_qpolynomial *pwqp, enum isl_fold type, int *tight);
+__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_bound(
+	__isl_take isl_pw_qpolynomial_fold *pwf, int *tight);
 
 #if defined(__cplusplus)
 }

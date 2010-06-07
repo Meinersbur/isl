@@ -42,6 +42,14 @@ struct isl_options {
 	#define			ISL_CLOSURE_ISL		0
 	#define			ISL_CLOSURE_OMEGA	1
 	unsigned		closure;
+
+	#define			ISL_BOUND_BERNSTEIN	0
+	#define			ISL_BOUND_RANGE		1
+	int			bound;
+
+	#define			ISL_BERNSTEIN_FACTORS	1
+	#define			ISL_BERNSTEIN_INTERVALS	2
+	int			bernstein_recurse;
 };
 
 ISL_ARG_DECL(isl_options, struct isl_options, isl_options_arg)

@@ -35,6 +35,8 @@ libisl_la_SOURCES = \
 	isl_arg.c \
 	isl_basis_reduction.h \
 	basis_reduction_tab.c \
+	isl_bernstein.c \
+	isl_bernstein.h \
 	isl_blk.c \
 	isl_bound.c \
 	isl_bound.h \

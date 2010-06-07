@@ -57,6 +57,23 @@ struct isl_arg_choice isl_closure_choice[] = {
 	{0}
 };
 
+static struct isl_arg_choice bound[] = {
+	{"bernstein",	ISL_BOUND_BERNSTEIN},
+	{"range",	ISL_BOUND_RANGE},
+	{0}
+};
+
+static struct isl_arg_flags bernstein_recurse[] = {
+	{"none",	ISL_BERNSTEIN_FACTORS | ISL_BERNSTEIN_INTERVALS, 0},
+	{"factors",	ISL_BERNSTEIN_FACTORS | ISL_BERNSTEIN_INTERVALS,
+			ISL_BERNSTEIN_FACTORS},
+	{"intervals",	ISL_BERNSTEIN_FACTORS | ISL_BERNSTEIN_INTERVALS,
+			ISL_BERNSTEIN_INTERVALS},
+	{"full",	ISL_BERNSTEIN_FACTORS | ISL_BERNSTEIN_INTERVALS,
+			ISL_BERNSTEIN_FACTORS | ISL_BERNSTEIN_INTERVALS},
+	{0}
+};
+
 struct isl_arg isl_options_arg[] = {
 ISL_ARG_CHOICE(struct isl_options, lp_solver, 0, "lp-solver", \
 	isl_lp_solver_choice,	ISL_LP_TAB, "lp solver to use")
@@ -75,6 +92,10 @@ ISL_ARG_CHOICE(struct isl_options, closure, 0, "closure", \
 	"closure operation to use")
 ISL_ARG_BOOL(struct isl_options, gbr_only_first, 0, "gbr-only-first", 0,
 	"only perform basis reduction in first direction")
+ISL_ARG_CHOICE(struct isl_options, bound, 0, "bound", bound,
+	ISL_BOUND_BERNSTEIN, "algorithm to use for computing bounds")
+ISL_ARG_FLAGS(struct isl_options, bernstein_recurse, 0,
+	"bernstein-recurse", bernstein_recurse, ISL_BERNSTEIN_FACTORS, NULL)
 ISL_ARG_END
 };
 

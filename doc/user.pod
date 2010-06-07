@@ -1452,6 +1452,97 @@ the cells in the domain of the input piecewise quasipolynomial.
 In future, the operation will also exploit the context
 to simplify the quasipolynomials associated to each cell.
 
+=head2 Bounds on Piecewise Quasipolynomials and Piecewise Quasipolynomial Reductions
+
+A piecewise quasipolynomial reduction is a piecewise
+reduction (or fold) of quasipolynomials.
+In particular, the reduction can be maximum or a minimum.
+The objects are mainly used to represent the result of
+an upper or lower bound on a quasipolynomial over its domain,
+i.e., as the result of the following function.
+
+	__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_bound(
+		__isl_take isl_pw_qpolynomial *pwqp,
+		enum isl_fold type, int *tight);
+
+The C<type> argument may be either C<isl_fold_min> or C<isl_fold_max>.
+If C<tight> is not C<NULL>, then C<*tight> is set to C<1>
+is the returned bound is known be tight, i.e., for each value
+of the parameters there is at least
+one element in the domain that reaches the bound.
+
+A (piecewise) quasipolynomial reduction can be copied or freed using the
+following functions.
+
+	__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_copy(
+		__isl_keep isl_qpolynomial_fold *fold);
+	__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_copy(
+		__isl_keep isl_pw_qpolynomial_fold *pwf);
+	void isl_qpolynomial_fold_free(
+		__isl_take isl_qpolynomial_fold *fold);
+	void isl_pw_qpolynomial_fold_free(
+		__isl_take isl_pw_qpolynomial_fold *pwf);
+
+=head3 Printing Piecewise Quasipolynomial Reductions
+
+Piecewise quasipolynomial reductions can be printed
+using the following function.
+
+	__isl_give isl_printer *isl_printer_print_pw_qpolynomial_fold(
+		__isl_take isl_printer *p,
+		__isl_keep isl_pw_qpolynomial_fold *pwf);
+
+The output format of the printer
+needs to be set to either C<ISL_FORMAT_ISL> or C<ISL_FORMAT_C>.
+
+=head3 Inspecting (Piecewise) Quasipolynomial Reductions
+
+To iterate over the cells in a piecewise quasipolynomial reduction,
+use either of the following two functions
+
+	int isl_pw_qpolynomial_fold_foreach_piece(
+		__isl_keep isl_pw_qpolynomial_fold *pwf,
+		int (*fn)(__isl_take isl_set *set,
+			  __isl_take isl_qpolynomial_fold *fold,
+			  void *user), void *user);
+	int isl_pw_qpolynomial_fold_foreach_lifted_piece(
+		__isl_keep isl_pw_qpolynomial_fold *pwf,
+		int (*fn)(__isl_take isl_set *set,
+			  __isl_take isl_qpolynomial_fold *fold,
+			  void *user), void *user);
+
+See L<Inspecting (Piecewise) Quasipolynomials> for an explanation
+of the difference between these two functions.
+
+To iterate over all quasipolynomials in a reduction, use
+
+	int isl_qpolynomial_fold_foreach_qpolynomial(
+		__isl_keep isl_qpolynomial_fold *fold,
+		int (*fn)(__isl_take isl_qpolynomial *qp,
+			  void *user), void *user);
+
+=head3 Operations on Piecewise Quasipolynomial Reductions
+
+	__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_add(
+		__isl_take isl_pw_qpolynomial_fold *pwf1,
+		__isl_take isl_pw_qpolynomial_fold *pwf2);
+
+	__isl_give isl_qpolynomial *isl_pw_qpolynomial_fold_eval(
+		__isl_take isl_pw_qpolynomial_fold *pwf,
+		__isl_take isl_point *pnt);
+
+	__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_coalesce(
+		__isl_take isl_pw_qpolynomial_fold *pwf);
+
+	__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_gist(
+		__isl_take isl_pw_qpolynomial_fold *pwf,
+		__isl_take isl_set *context);
+
+The gist operation applies the gist operation to each of
+the cells in the domain of the input piecewise quasipolynomial reduction.
+In future, the operation will also exploit the context
+to simplify the quasipolynomial reductions associated to each cell.
+
 =head2 Dependence Analysis
 
 C<isl> contains specialized functionality for performing

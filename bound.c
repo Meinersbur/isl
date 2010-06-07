@@ -243,7 +243,7 @@ int main(int argc, char **argv)
 	if (options->verify)
 		copy = isl_pw_qpolynomial_copy(pwqp);
 
-	pwf = isl_pw_qpolynomial_bound_range(pwqp, isl_fold_max, &exact);
+	pwf = isl_pw_qpolynomial_bound(pwqp, isl_fold_max, &exact);
 	pwf = isl_pw_qpolynomial_fold_coalesce(pwf);
 
 	if (options->verify) {
