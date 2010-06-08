@@ -5950,6 +5950,13 @@ error:
 	return NULL;
 }
 
+__isl_give isl_basic_set *isl_basic_set_sort_constraints(
+	__isl_take isl_basic_set *bset)
+{
+	return (struct isl_basic_set *)isl_basic_map_sort_constraints(
+						(struct isl_basic_map *)bset);
+}
+
 struct isl_basic_map *isl_basic_map_normalize(struct isl_basic_map *bmap)
 {
 	if (!bmap)
@@ -6018,6 +6025,13 @@ static int isl_basic_map_fast_is_equal(struct isl_basic_map *bmap1,
 	struct isl_basic_map *bmap2)
 {
 	return isl_basic_map_fast_cmp(bmap1, bmap2) == 0;
+}
+
+int isl_basic_set_fast_is_equal(__isl_keep isl_basic_set *bset1,
+	__isl_keep isl_basic_set *bset2)
+{
+	return isl_basic_map_fast_is_equal((isl_basic_map *)bset1,
+					    (isl_basic_map *)bset2);
 }
 
 static int qsort_bmap_cmp(const void *p1, const void *p2)
