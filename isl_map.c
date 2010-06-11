@@ -6815,6 +6815,22 @@ int isl_map_is_single_valued(__isl_keep isl_map *map)
 	return sv;
 }
 
+int isl_map_is_bijective(__isl_keep isl_map *map)
+{
+	int sv;
+
+	sv = isl_map_is_single_valued(map);
+	if (sv < 0 || !sv)
+		return sv;
+
+	map = isl_map_copy(map);
+	map = isl_map_reverse(map);
+	sv = isl_map_is_single_valued(map);
+	isl_map_free(map);
+
+	return sv;
+}
+
 int isl_set_is_singleton(__isl_keep isl_set *set)
 {
 	return isl_map_is_single_valued((isl_map *)set);

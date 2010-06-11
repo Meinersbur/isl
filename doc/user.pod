@@ -852,6 +852,10 @@ is already known to be empty.
 
 	int isl_map_is_single_valued(__isl_keep isl_map *map);
 
+=item * Bijectivity
+
+	int isl_map_is_bijective(__isl_keep isl_map *map);
+
 =back
 
 =head3 Binary Properties

@@ -1311,6 +1311,35 @@ void test_sv(struct isl_ctx *ctx)
 	isl_map_free(map);
 }
 
+void test_bijective_case(struct isl_ctx *ctx, const char *str, int bijective)
+{
+	isl_map *map;
+
+	map = isl_map_read_from_str(ctx, str, -1);
+	if (bijective)
+		assert(isl_map_is_bijective(map));
+	else
+		assert(!isl_map_is_bijective(map));
+	isl_map_free(map);
+}
+
+void test_bijective(struct isl_ctx *ctx)
+{
+	test_bijective_case(ctx, "[N,M]->{[i,j] -> [i]}", 0);
+	test_bijective_case(ctx, "[N,M]->{[i,j] -> [i] : j=i}", 1);
+	test_bijective_case(ctx, "[N,M]->{[i,j] -> [i] : j=0}", 1);
+	test_bijective_case(ctx, "[N,M]->{[i,j] -> [i] : j=N}", 1);
+	test_bijective_case(ctx, "[N,M]->{[i,j] -> [j,i]}", 1);
+	test_bijective_case(ctx, "[N,M]->{[i,j] -> [i+j]}", 0);
+	test_bijective_case(ctx, "[N,M]->{[i,j] -> []}", 0);
+	test_bijective_case(ctx, "[N,M]->{[i,j] -> [i,j,N]}", 1);
+	test_bijective_case(ctx, "[N,M]->{[i,j] -> [2i]}", 0);
+	test_bijective_case(ctx, "[N,M]->{[i,j] -> [i,i]}", 0);
+	test_bijective_case(ctx, "[N,M]->{[i,j] -> [2i,i]}", 0);
+	test_bijective_case(ctx, "[N,M]->{[i,j] -> [2i,j]}", 1);
+	test_bijective_case(ctx, "[N,M]->{[i,j] -> [x,y] : 2x=i & y =j}", 1);
+}
+
 int main()
 {
 	struct isl_ctx *ctx;
@@ -1320,6 +1349,7 @@ int main()
 
 	ctx = isl_ctx_alloc();
 	test_sv(ctx);
+	test_bijective(ctx);
 	test_dep(ctx);
 	test_read(ctx);
 	test_bounded(ctx);
