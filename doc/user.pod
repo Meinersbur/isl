@@ -1073,6 +1073,25 @@ the same (number of) parameters.
 		__isl_take isl_map *map1,
 		__isl_take isl_map *map2);
 
+=item * Simplification
+
+	__isl_give isl_basic_set *isl_basic_set_gist(
+		__isl_take isl_basic_set *bset,
+		__isl_take isl_basic_set *context);
+	__isl_give isl_set *isl_set_gist(__isl_take isl_set *set,
+		__isl_take isl_set *context);
+	__isl_give isl_basic_map *isl_basic_map_gist(
+		__isl_take isl_basic_map *bmap,
+		__isl_take isl_basic_map *context);
+	__isl_give isl_map *isl_map_gist(__isl_take isl_map *map,
+		__isl_take isl_map *context);
+
+The gist operation returns a set or relation that has the
+same intersection with the context as the input set or relation.
+Any implicit equality in the intersection is made explicit in the result,
+while all inequalities that are redundant with respect to the intersection
+are removed.
+
 =back
 
 =head3 Lexicographic Optimization
@@ -1423,6 +1442,15 @@ are returned in C<*n> and C<*d>, respectively.
 	__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_intersect_domain(
 		__isl_take isl_pw_qpolynomial *pwpq,
 		__isl_take isl_set *set);
+
+	__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_gist(
+		__isl_take isl_pw_qpolynomial *pwqp,
+		__isl_take isl_set *context);
+
+The gist operation applies the gist operation to each of
+the cells in the domain of the input piecewise quasipolynomial.
+In future, the operation will also exploit the context
+to simplify the quasipolynomials associated to each cell.
 
 =head2 Dependence Analysis
 

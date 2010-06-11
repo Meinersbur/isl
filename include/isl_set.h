@@ -299,8 +299,8 @@ int isl_set_fast_dim_has_fixed_lower_bound(struct isl_set *set,
 int isl_set_dim_is_bounded(__isl_keep isl_set *set,
 	enum isl_dim_type type, unsigned pos);
 
-struct isl_basic_set *isl_basic_set_gist(struct isl_basic_set *bset,
-						struct isl_basic_set *context);
+__isl_give isl_basic_set *isl_basic_set_gist(__isl_take isl_basic_set *bset,
+					    __isl_take isl_basic_set *context);
 __isl_give isl_set *isl_set_gist_basic_set(__isl_take isl_set *set,
 	__isl_take isl_basic_set *context);
 __isl_give isl_set *isl_set_gist(__isl_take isl_set *set,
