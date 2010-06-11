@@ -95,6 +95,22 @@ __isl_give isl_dim *isl_morph_get_ran_dim(__isl_keep isl_morph *morph)
 	return isl_dim_copy(morph->ran->dim);
 }
 
+unsigned isl_morph_dom_dim(__isl_keep isl_morph *morph, enum isl_dim_type type)
+{
+	if (!morph)
+		return 0;
+
+	return isl_basic_set_dim(morph->dom, type);
+}
+
+unsigned isl_morph_ran_dim(__isl_keep isl_morph *morph, enum isl_dim_type type)
+{
+	if (!morph)
+		return 0;
+
+	return isl_basic_set_dim(morph->ran, type);
+}
+
 __isl_give isl_morph *isl_morph_remove_dom_dims(__isl_take isl_morph *morph,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
