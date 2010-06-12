@@ -592,6 +592,23 @@ error:
 	return NULL;
 }
 
+int FN(PW,foreach_piece)(__isl_keep PW *pw,
+	int (*fn)(__isl_take isl_set *set, __isl_take EL *el, void *user),
+	void *user)
+{
+	int i;
+
+	if (!pw)
+		return -1;
+
+	for (i = 0; i < pw->n; ++i)
+		if (fn(isl_set_copy(pw->p[i].set),
+				FN(EL,copy)(pw->p[i].FIELD), user) < 0)
+			return -1;
+
+	return 0;
+}
+
 static int any_divs(__isl_keep isl_set *set)
 {
 	int i;

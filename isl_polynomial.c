@@ -2949,23 +2949,6 @@ error:
 	return NULL;
 }
 
-int isl_pw_qpolynomial_foreach_piece(__isl_keep isl_pw_qpolynomial *pwqp,
-	int (*fn)(__isl_take isl_set *set, __isl_take isl_qpolynomial *qp,
-		    void *user), void *user)
-{
-	int i;
-
-	if (!pwqp)
-		return -1;
-
-	for (i = 0; i < pwqp->n; ++i)
-		if (fn(isl_set_copy(pwqp->p[i].set),
-				isl_qpolynomial_copy(pwqp->p[i].qp), user) < 0)
-			return -1;
-
-	return 0;
-}
-
 __isl_give isl_qpolynomial *isl_qpolynomial_lift(__isl_take isl_qpolynomial *qp,
 	__isl_take isl_dim *dim)
 {
