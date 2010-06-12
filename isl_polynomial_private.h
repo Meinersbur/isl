@@ -159,6 +159,11 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_dup(
 __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_cow(
 	__isl_take isl_pw_qpolynomial_fold *pwf);
 
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_fold_on_domain(
+	__isl_keep isl_set *set,
+	__isl_take isl_qpolynomial_fold *fold1,
+	__isl_take isl_qpolynomial_fold *fold2);
+
 __isl_give isl_qpolynomial *isl_qpolynomial_fold_opt_on_domain(
 	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_set *set, int max);
 
