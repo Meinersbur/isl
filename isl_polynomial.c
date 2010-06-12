@@ -2952,6 +2952,10 @@ error:
 __isl_give isl_qpolynomial *isl_qpolynomial_lift(__isl_take isl_qpolynomial *qp,
 	__isl_take isl_dim *dim)
 {
+	int i;
+	int extra;
+	unsigned total;
+
 	if (!qp || !dim)
 		goto error;
 
@@ -2964,15 +2968,12 @@ __isl_give isl_qpolynomial *isl_qpolynomial_lift(__isl_take isl_qpolynomial *qp,
 	if (!qp)
 		goto error;
 
+	extra = isl_dim_size(dim, isl_dim_set) -
+			isl_dim_size(qp->dim, isl_dim_set);
+	total = isl_dim_total(qp->dim);
 	if (qp->div->n_row) {
-		int i;
-		int extra;
-		unsigned total;
 		int *exp;
 
-		extra = isl_dim_size(dim, isl_dim_set) -
-				isl_dim_size(qp->dim, isl_dim_set);
-		total = isl_dim_total(qp->dim);
 		exp = isl_alloc_array(qp->div->ctx, int, qp->div->n_row);
 		if (!exp)
 			goto error;
@@ -2982,12 +2983,12 @@ __isl_give isl_qpolynomial *isl_qpolynomial_lift(__isl_take isl_qpolynomial *qp,
 		free(exp);
 		if (!qp->upoly)
 			goto error;
-		qp->div = isl_mat_insert_cols(qp->div, 2 + total, extra);
-		if (!qp->div)
-			goto error;
-		for (i = 0; i < qp->div->n_row; ++i)
-			isl_seq_clr(qp->div->row[i] + 2 + total, extra);
 	}
+	qp->div = isl_mat_insert_cols(qp->div, 2 + total, extra);
+	if (!qp->div)
+		goto error;
+	for (i = 0; i < qp->div->n_row; ++i)
+		isl_seq_clr(qp->div->row[i] + 2 + total, extra);
 
 	isl_dim_free(qp->dim);
 	qp->dim = dim;
