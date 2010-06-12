@@ -572,11 +572,15 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_bound_range(
 	if (isl_pw_qpolynomial_is_zero(pwqp)) {
 		isl_pw_qpolynomial_free(pwqp);
 		dim = isl_dim_drop(dim, isl_dim_set, 0, nvar);
+		if (exact)
+			*exact = 1;
 		return isl_pw_qpolynomial_fold_zero(dim);
 	}
 
 	if (nvar == 0) {
 		isl_dim_free(dim);
+		if (exact)
+			*exact = 1;
 		return isl_pw_qpolynomial_fold_from_pw_qpolynomial(type, pwqp);
 	}
 
