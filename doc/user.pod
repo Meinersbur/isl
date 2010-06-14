@@ -1266,7 +1266,7 @@ maps C<x> to C<1 + n - x> for values of C<x> between C<0> and C<n>.
 Piecewise quasipolynomials are mainly used by the C<barvinok>
 library for representing the number of elements in a parametric set or map.
 For example, the piecewise quasipolynomial above represents
-the number of point in the map
+the number of points in the map
 
 	[n] -> { [x] -> [y] : x,y >= 0 and 0 <= x + y <= n }
 
