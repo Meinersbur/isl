@@ -1398,6 +1398,21 @@ error:
 	return NULL;
 }
 
+__isl_give isl_set *isl_stream_read_set(struct isl_stream *s, int nparam)
+{
+	struct isl_obj obj;
+	struct isl_set *set;
+
+	obj = obj_read(s, nparam);
+	if (obj.v)
+		isl_assert(s->ctx, obj.type == isl_obj_set, goto error);
+
+	return obj.v;
+error:
+	obj.type->free(obj.v);
+	return NULL;
+}
+
 static struct isl_basic_map *basic_map_read(struct isl_stream *s, int nparam)
 {
 	struct isl_obj obj;
