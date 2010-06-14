@@ -273,6 +273,59 @@ struct isl_dim *isl_set_get_dim(struct isl_set *set)
 	return isl_dim_copy(set->dim);
 }
 
+__isl_give isl_basic_map *isl_basic_map_set_dim_name(
+	__isl_take isl_basic_map *bmap,
+	enum isl_dim_type type, unsigned pos, const char *s)
+{
+	if (!bmap)
+		return NULL;
+	bmap->dim = isl_dim_set_name(bmap->dim, type, pos, s);
+	if (!bmap->dim)
+		goto error;
+	return bmap;
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+__isl_give isl_map *isl_map_set_dim_name(__isl_take isl_map *map,
+	enum isl_dim_type type, unsigned pos, const char *s)
+{
+	int i;
+
+	if (!map)
+		return NULL;
+
+	map->dim = isl_dim_set_name(map->dim, type, pos, s);
+	if (!map->dim)
+		goto error;
+
+	for (i = 0; i < map->n; ++i) {
+		map->p[i] = isl_basic_map_set_dim_name(map->p[i], type, pos, s);
+		if (!map->p[i])
+			goto error;
+	}
+
+	return map;
+error:
+	isl_map_free(map);
+	return NULL;
+}
+
+__isl_give isl_basic_set *isl_basic_set_set_dim_name(
+	__isl_take isl_basic_set *bset,
+	enum isl_dim_type type, unsigned pos, const char *s)
+{
+	return (isl_basic_set *)isl_basic_map_set_dim_name(
+		(isl_basic_map *)bset, type, pos, s);
+}
+
+__isl_give isl_set *isl_set_set_dim_name(__isl_take isl_set *set,
+	enum isl_dim_type type, unsigned pos, const char *s)
+{
+	return (isl_set *)isl_map_set_dim_name((isl_map *)set, type, pos, s);
+}
+
 int isl_basic_map_is_rational(__isl_keep isl_basic_map *bmap)
 {
 	if (!bmap)

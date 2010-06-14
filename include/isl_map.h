@@ -125,6 +125,12 @@ unsigned isl_map_dim(const struct isl_map *map, enum isl_dim_type type);
 __isl_give isl_dim *isl_basic_map_get_dim(__isl_keep isl_basic_map *bmap);
 __isl_give isl_dim *isl_map_get_dim(__isl_keep isl_map *map);
 
+__isl_give isl_basic_map *isl_basic_map_set_dim_name(
+	__isl_take isl_basic_map *bmap,
+	enum isl_dim_type type, unsigned pos, const char *s);
+__isl_give isl_map *isl_map_set_dim_name(__isl_take isl_map *map,
+	enum isl_dim_type type, unsigned pos, const char *s);
+
 int isl_basic_map_is_rational(__isl_keep isl_basic_map *bmap);
 
 struct isl_basic_map *isl_basic_map_alloc(struct isl_ctx *ctx,
