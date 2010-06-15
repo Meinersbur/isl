@@ -1038,6 +1038,8 @@ void test_lexmin(struct isl_ctx *ctx)
 {
 	const char *str;
 	isl_map *map;
+	isl_set *set;
+	isl_set *set2;
 
 	str = "[p0, p1] -> { [] -> [] : "
 	    "exists (e0 = [(2p1)/3], e1, e2, e3 = [(3 - p1 + 3e0)/3], "
@@ -1054,6 +1056,16 @@ void test_lexmin(struct isl_ctx *ctx)
 	map = isl_map_read_from_str(ctx, str, -1);
 	map = isl_map_lexmin(map);
 	isl_map_free(map);
+
+	str = "[C] -> { [obj,a,b,c] : obj <= 38 a + 7 b + 10 c and "
+	    "a + b <= 1 and c <= 10 b and c <= C and a,b,c,C >= 0 }";
+	set = isl_set_read_from_str(ctx, str, -1);
+	set = isl_set_lexmax(set);
+	str = "[C] -> { [obj,a,b,c] : C = 8 }";
+	set2 = isl_set_read_from_str(ctx, str, -1);
+	set = isl_set_intersect(set, set2);
+	assert(!isl_set_is_empty(set));
+	isl_set_free(set);
 }
 
 struct must_may {

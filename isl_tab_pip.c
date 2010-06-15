@@ -1788,7 +1788,7 @@ static int find_div(struct isl_tab *tab, isl_int *div, isl_int denom)
 	for (i = 0; i < tab->bmap->n_div; ++i) {
 		if (isl_int_ne(tab->bmap->div[i][0], denom))
 			continue;
-		if (!isl_seq_eq(tab->bmap->div[i] + 1, div, total))
+		if (!isl_seq_eq(tab->bmap->div[i] + 1, div, 1 + total))
 			continue;
 		return i;
 	}
