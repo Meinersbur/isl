@@ -918,6 +918,15 @@ is already known to be empty.
 	__isl_give isl_set *isl_map_range(
 		__isl_take isl_map *map);
 
+=item * Deltas
+
+	__isl_give isl_basic_set *isl_basic_map_deltas(
+		__isl_take isl_basic_map *bmap);
+	__isl_give isl_set *isl_map_deltas(__isl_take isl_map *map);
+
+These functions return a (basic) set containing the differences
+between image elements and corresponding domain elements in the input.
+
 =item * Coalescing
 
 Simplify the representation of a set or relation by trying
