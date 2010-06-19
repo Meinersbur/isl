@@ -13,16 +13,16 @@ __isl_give isl_point *isl_point_alloc(__isl_take isl_dim *dim,
 	if (!dim || !vec)
 		goto error;
 
-	pnt = isl_alloc_type(dim->ctx, struct isl_point);
-	if (!pnt)
-		goto error;
-
 	if (vec->size > 1 + isl_dim_total(dim)) {
 		vec = isl_vec_cow(vec);
 		if (!vec)
 			goto error;
 		vec->size = 1 + isl_dim_total(dim);
 	}
+
+	pnt = isl_alloc_type(dim->ctx, struct isl_point);
+	if (!pnt)
+		goto error;
 
 	pnt->ref = 1;
 	pnt->dim = dim;
