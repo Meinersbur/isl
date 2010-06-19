@@ -79,6 +79,7 @@ int isl_stream_eat_if_available(struct isl_stream *s, int type);
 char *isl_stream_read_ident_if_available(struct isl_stream *s);
 int isl_stream_eat(struct isl_stream *s, int type);
 int isl_stream_is_empty(struct isl_stream *s);
+int isl_stream_skip_line(struct isl_stream *s);
 
 enum isl_token_type isl_stream_register_keyword(struct isl_stream *s,
 	const char *name);

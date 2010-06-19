@@ -230,6 +230,17 @@ static enum isl_token_type check_keywords(struct isl_stream *s)
 	return ISL_TOKEN_IDENT;
 }
 
+int isl_stream_skip_line(struct isl_stream *s)
+{
+	int c;
+
+	while ((c = isl_stream_getc(s)) != -1 && c != '\n')
+		/* nothing */
+		;
+
+	return c == -1 ? -1 : 0;
+}
+
 static struct isl_token *next_token(struct isl_stream *s, int same_line)
 {
 	int c;
@@ -251,10 +262,10 @@ static struct isl_token *next_token(struct isl_stream *s, int same_line)
 	/* skip spaces and comment lines */
 	while ((c = isl_stream_getc(s)) != -1) {
 		if (c == '#') {
-			while ((c = isl_stream_getc(s)) != -1 && c != '\n')
-				/* nothing */
-				;
-			if (c == -1 || (same_line && c == '\n'))
+			if (isl_stream_skip_line(s) < 0)
+				break;
+			c = '\n';
+			if (same_line)
 				break;
 		} else if (!isspace(c) || (same_line && c == '\n'))
 			break;
