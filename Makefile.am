@@ -93,6 +93,7 @@ libisl_la_SOURCES = \
 	isl_tab_pip.c \
 	isl_transitive_closure.c \
 	isl_vec.c \
+	isl_version.c \
 	isl_vertices_private.h \
 	isl_vertices.c
 EXTRA_libisl_la_SOURCES = \
@@ -188,6 +189,7 @@ pkginclude_HEADERS = \
 	include/isl_set.h \
 	include/isl_stream.h \
 	include/isl_vec.h \
+	include/isl_version.h
 	include/isl_vertices.h
 
 EXTRA_DIST = \
@@ -205,8 +207,12 @@ EXTRA_DIST = \
 	test_inputs
 
 dist-hook:
+	echo @GIT_HEAD_VERSION@ > $(distdir)/GIT_HEAD_ID
 	(cd doc; make manual.pdf)
 	cp doc/manual.pdf $(distdir)/doc/
 
 pkgconfigdir=$(pkgconfig_libdir)
 pkgconfig_DATA = $(pkgconfig_libfile)
+
+gitversion.h: @GIT_HEAD@
+	echo '#define GIT_HEAD_ID "'@GIT_HEAD_VERSION@'"' > $@

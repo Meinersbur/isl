@@ -13,6 +13,7 @@
 
 #include "isl_ctx.h"
 #include "isl_options.h"
+#include <isl_version.h>
 
 struct isl_arg_choice isl_lp_solver_choice[] = {
 	{"tab",		ISL_LP_TAB},
@@ -74,6 +75,11 @@ static struct isl_arg_flags bernstein_recurse[] = {
 	{0}
 };
 
+static void print_version(void)
+{
+	printf("%s", isl_version());
+}
+
 struct isl_arg isl_options_arg[] = {
 ISL_ARG_CHOICE(struct isl_options, lp_solver, 0, "lp-solver", \
 	isl_lp_solver_choice,	ISL_LP_TAB, "lp solver to use")
@@ -96,6 +102,7 @@ ISL_ARG_CHOICE(struct isl_options, bound, 0, "bound", bound,
 	ISL_BOUND_BERNSTEIN, "algorithm to use for computing bounds")
 ISL_ARG_FLAGS(struct isl_options, bernstein_recurse, 0,
 	"bernstein-recurse", bernstein_recurse, ISL_BERNSTEIN_FACTORS, NULL)
+ISL_ARG_VERSION(print_version)
 ISL_ARG_END
 };
 
