@@ -75,6 +75,7 @@ struct isl_token *isl_stream_next_token(struct isl_stream *s);
 struct isl_token *isl_stream_next_token_on_same_line(struct isl_stream *s);
 int isl_stream_next_token_is(struct isl_stream *s, int type);
 void isl_stream_push_token(struct isl_stream *s, struct isl_token *tok);
+void isl_stream_flush_tokens(struct isl_stream *s);
 int isl_stream_eat_if_available(struct isl_stream *s, int type);
 char *isl_stream_read_ident_if_available(struct isl_stream *s);
 int isl_stream_eat(struct isl_stream *s, int type);

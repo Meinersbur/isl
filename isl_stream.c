@@ -546,6 +546,17 @@ static int free_keyword(void *p)
 	return 0;
 }
 
+void isl_stream_flush_tokens(struct isl_stream *s)
+{
+	int i;
+
+	if (!s)
+		return;
+	for (i = 0; i < s->n_token; ++i)
+		isl_token_free(s->tokens[i]);
+	s->n_token = 0;
+}
+
 void isl_stream_free(struct isl_stream *s)
 {
 	if (!s)
