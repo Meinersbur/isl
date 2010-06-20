@@ -12,6 +12,18 @@
 #include "isl_map_private.h"
 #include "isl_seq.h"
 #include <isl_lp.h>
+
+int isl_map_is_transitively_closed(__isl_keep isl_map *map)
+{
+	isl_map *map2;
+	int closed;
+
+	map2 = isl_map_apply_range(isl_map_copy(map), isl_map_copy(map));
+	closed = isl_map_is_subset(map2, map);
+	isl_map_free(map2);
+
+	return closed;
+}
  
 /* Given a map that represents a path with the length of the path
  * encoded as the difference between the last output coordindate
@@ -1565,6 +1577,9 @@ struct basic_map_sort_node {
  * index is the index of the last node visited
  * order contains the elements of the components separated by -1
  * op represents the current position in order
+ *
+ * check_closed is set if we may have used the fact that
+ * a pair of basic maps can be interchanged
  */
 struct basic_map_sort {
 	int len;
@@ -1574,6 +1589,7 @@ struct basic_map_sort {
 	int index;
 	int *order;
 	int op;
+	int check_closed;
 };
 
 static void basic_map_sort_free(struct basic_map_sort *s)
@@ -1611,6 +1627,8 @@ static struct basic_map_sort *basic_map_sort_alloc(struct isl_ctx *ctx, int len)
 	s->index = 0;
 	s->op = 0;
 
+	s->check_closed = 0;
+
 	return s;
 error:
 	basic_map_sort_free(s);
@@ -1631,9 +1649,12 @@ error:
  *
  * If so, then there is no reason for R_1 to immediately follow R_2
  * in any path.
+ *
+ * *check_closed is set if the subset relation holds while
+ * R_1 \circ R_2 is not empty.
  */
 static int basic_map_follows(__isl_keep isl_basic_map *bmap1,
-	__isl_keep isl_basic_map *bmap2)
+	__isl_keep isl_basic_map *bmap2, int *check_closed)
 {
 	struct isl_map *map12 = NULL;
 	struct isl_map *map21 = NULL;
@@ -1660,6 +1681,9 @@ static int basic_map_follows(__isl_keep isl_basic_map *bmap1,
 
 	isl_map_free(map12);
 	isl_map_free(map21);
+
+	if (subset)
+		*check_closed = 1;
 
 	return subset < 0 ? -1 : !subset;
 error:
@@ -1693,7 +1717,7 @@ static int power_components_tarjan(struct basic_map_sort *s,
 			 s->node[j].index > s->node[i].min_index))
 			continue;
 
-		f = basic_map_follows(map->p[i], map->p[j]);
+		f = basic_map_follows(map->p[i], map->p[j], &s->check_closed);
 		if (f < 0)
 			return -1;
 		if (!f)
@@ -1756,9 +1780,11 @@ static int power_components_tarjan(struct basic_map_sort *s,
 static __isl_give isl_map *construct_power_components(__isl_take isl_dim *dim,
 	__isl_keep isl_map *map, int *exact, int project)
 {
-	int i, n;
+	int i, n, c;
 	struct isl_map *path = NULL;
 	struct basic_map_sort *s = NULL;
+	int *orig_exact;
+	int local_exact;
 
 	if (!map)
 		goto error;
@@ -1775,6 +1801,11 @@ static __isl_give isl_map *construct_power_components(__isl_take isl_dim *dim,
 			goto error;
 	}
 
+	orig_exact = exact;
+	if (s->check_closed && !exact)
+		exact = &local_exact;
+
+	c = 0;
 	i = 0;
 	n = map->n;
 	if (project)
@@ -1799,6 +1830,20 @@ static __isl_give isl_map *construct_power_components(__isl_take isl_dim *dim,
 		path = isl_map_union(path, path_comb);
 		isl_map_free(comp);
 		++i;
+		++c;
+	}
+
+	if (c > 1 && s->check_closed && !*exact) {
+		int closed;
+
+		closed = isl_map_is_transitively_closed(path);
+		if (closed < 0)
+			goto error;
+		if (!closed) {
+			basic_map_sort_free(s);
+			isl_map_free(path);
+			return floyd_warshall(dim, map, orig_exact, project);
+		}
 	}
 
 	basic_map_sort_free(s);
@@ -1808,6 +1853,7 @@ static __isl_give isl_map *construct_power_components(__isl_take isl_dim *dim,
 error:
 	basic_map_sort_free(s);
 	isl_dim_free(dim);
+	isl_map_free(path);
 	return NULL;
 }
 
@@ -2381,18 +2427,6 @@ static __isl_give isl_map *transitive_closure_omega(__isl_take isl_map *map,
 error:
 	isl_map_free(map);
 	return NULL;
-}
-
-int isl_map_is_transitively_closed(__isl_keep isl_map *map)
-{
-	isl_map *map2;
-	int closed;
-
-	map2 = isl_map_apply_range(isl_map_copy(map), isl_map_copy(map));
-	closed = isl_map_is_subset(map2, map);
-	isl_map_free(map2);
-
-	return closed;
 }
 
 /* Compute the transitive closure  of "map", or an overapproximation.

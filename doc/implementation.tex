@@ -575,10 +575,11 @@ an approximation of each strongly connected components separately.
 For example, if $R = R_1 \cup R_2$ and $R_1 \circ R_2 = \emptyset$,
 then we know that any path that passes through $R_2$ cannot later
 pass through $R_1$, i.e.,
-$$
+\begin{equation}
+\label{eq:transitive:components}
 R^+ = R_1^+ \cup R_2^+ \cup \left(R_2^+ \circ R_1^+\right)
 .
-$$
+\end{equation}
 We can therefore compute (approximations of) transitive closures
 of $R_1$ and $R_2$ separately.
 Note, however, that the condition $R_1 \circ R_2 = \emptyset$
@@ -617,6 +618,22 @@ The exactness check is performed on each component separately.
 If the approximation turns out to be inexact for any of the components,
 then the entire result is marked inexact and the exactness check
 is skipped on the components that still need to be handled.
+
+It should be noted that \eqref{eq:transitive:components}
+is only valid for exact transitive closures.
+If overapproximations are computed in the right hand side, then the result will
+still be an overapproximation of the left hand side, but this result
+may not be transitively closed.  If we only separate components based
+on the condition $R_i \circ R_j = \emptyset$, then there is no problem,
+as this condition will still hold on the computed approximations
+of the transitive closures.  If, however, we have exploited
+\eqref{eq:transitive:edge} during the decomposition and if the
+result turns out not to be exact, then we check whether
+the result is transitively closed.  If not, we recompute
+the transitive closure, skipping the decomposition.
+Note that testing for transitive closedness on the result may
+be fairly expensive, so we may want to make this check
+configurable.
 
 \begin{figure}
 \begin{center}
