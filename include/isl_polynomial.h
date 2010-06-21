@@ -20,6 +20,8 @@ isl_ctx *isl_qpolynomial_get_ctx(__isl_keep isl_qpolynomial *qp);
 __isl_give isl_dim *isl_qpolynomial_get_dim(__isl_keep isl_qpolynomial *qp);
 unsigned isl_qpolynomial_dim(__isl_keep isl_qpolynomial *qp,
 	enum isl_dim_type type);
+int isl_qpolynomial_involves_dims(__isl_keep isl_qpolynomial *qp,
+	enum isl_dim_type type, unsigned first, unsigned n);
 
 __isl_give isl_qpolynomial *isl_qpolynomial_zero(__isl_take isl_dim *dim);
 __isl_give isl_qpolynomial *isl_qpolynomial_infty(__isl_take isl_dim *dim);
