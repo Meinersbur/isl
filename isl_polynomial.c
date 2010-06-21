@@ -12,7 +12,7 @@
 #include <isl_seq.h>
 #include <isl_polynomial_private.h>
 #include <isl_point_private.h>
-#include <isl_dim.h>
+#include <isl_dim_private.h>
 #include <isl_map_private.h>
 
 static unsigned pos(__isl_keep isl_dim *dim, enum isl_dim_type type)
