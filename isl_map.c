@@ -14,7 +14,7 @@
 #include <strings.h>
 #include "isl_ctx.h"
 #include "isl_blk.h"
-#include "isl_dim.h"
+#include "isl_dim_private.h"
 #include "isl_equalities.h"
 #include "isl_list.h"
 #include "isl_lp.h"
@@ -6825,4 +6825,65 @@ int isl_map_is_translation(__isl_keep isl_map *map)
 	isl_set_free(delta);
 
 	return ok;
+}
+
+static int unique(isl_int *p, unsigned pos, unsigned len)
+{
+	if (isl_seq_first_non_zero(p, pos) != -1)
+		return 0;
+	if (isl_seq_first_non_zero(p + pos + 1, len - pos - 1) != -1)
+		return 0;
+	return 1;
+}
+
+int isl_basic_set_is_box(__isl_keep isl_basic_set *bset)
+{
+	int i, j;
+	unsigned nvar;
+	unsigned ovar;
+
+	if (!bset)
+		return -1;
+
+	if (isl_basic_set_dim(bset, isl_dim_div) != 0)
+		return 0;
+
+	nvar = isl_basic_set_dim(bset, isl_dim_set);
+	ovar = isl_dim_offset(bset->dim, isl_dim_set);
+	for (j = 0; j < nvar; ++j) {
+		int lower = 0, upper = 0;
+		for (i = 0; i < bset->n_eq; ++i) {
+			if (isl_int_is_zero(bset->eq[i][1 + ovar + j]))
+				continue;
+			if (!unique(bset->eq[i] + 1 + ovar, j, nvar))
+				return 0;
+			break;
+		}
+		if (i < bset->n_eq)
+			continue;
+		for (i = 0; i < bset->n_ineq; ++i) {
+			if (isl_int_is_zero(bset->ineq[i][1 + ovar + j]))
+				continue;
+			if (!unique(bset->ineq[i] + 1 + ovar, j, nvar))
+				return 0;
+			if (isl_int_is_pos(bset->ineq[i][1 + ovar + j]))
+				lower = 1;
+			else
+				upper = 1;
+		}
+		if (!lower || !upper)
+			return 0;
+	}
+
+	return 1;
+}
+
+int isl_set_is_box(__isl_keep isl_set *set)
+{
+	if (!set)
+		return -1;
+	if (set->n != 1)
+		return 0;
+
+	return isl_basic_set_is_box(set->p[0]);
 }
