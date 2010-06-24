@@ -6809,3 +6809,20 @@ int isl_map_is_single_valued(__isl_keep isl_map *map)
 
 	return sv;
 }
+
+int isl_set_is_singleton(__isl_keep isl_set *set)
+{
+	return isl_map_is_single_valued((isl_map *)set);
+}
+
+int isl_map_is_translation(__isl_keep isl_map *map)
+{
+	int ok;
+	isl_set *delta;
+
+	delta = isl_map_deltas(isl_map_copy(map));
+	ok = isl_set_is_singleton(delta);
+	isl_set_free(delta);
+
+	return ok;
+}
