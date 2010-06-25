@@ -241,7 +241,7 @@ static __isl_give isl_flow *isl_flow_alloc(__isl_keep isl_access_info *acc)
 	if (!dep)
 		return NULL;
 
-	dep->dep = isl_alloc_array(ctx, struct isl_labeled_map,
+	dep->dep = isl_calloc_array(ctx, struct isl_labeled_map,
 					2 * acc->n_must + acc->n_may);
 	if (!dep->dep)
 		goto error;
@@ -257,6 +257,8 @@ static __isl_give isl_flow *isl_flow_alloc(__isl_keep isl_access_info *acc)
 		dep->dep[2 * i + 1].data = acc->source[i].data;
 		dep->dep[2 * i].must = 1;
 		dep->dep[2 * i + 1].must = 0;
+		if (!dep->dep[2 * i].map || !dep->dep[2 * i + 1].map)
+			goto error;
 	}
 	for (i = acc->n_must; i < acc->n_must + acc->n_may; ++i) {
 		struct isl_dim *dim;
@@ -265,6 +267,8 @@ static __isl_give isl_flow *isl_flow_alloc(__isl_keep isl_access_info *acc)
 		dep->dep[acc->n_must + i].map = isl_map_empty(dim);
 		dep->dep[acc->n_must + i].data = acc->source[i].data;
 		dep->dep[acc->n_must + i].must = 0;
+		if (!dep->dep[acc->n_must + i].map)
+			goto error;
 	}
 
 	return dep;
