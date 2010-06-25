@@ -43,6 +43,8 @@ void isl_vec_lcm(struct isl_vec *vec, isl_int *lcm);
 struct isl_vec *isl_vec_ceil(struct isl_vec *vec);
 struct isl_vec *isl_vec_normalize(struct isl_vec *vec);
 __isl_give isl_vec *isl_vec_scale(__isl_take isl_vec *vec, isl_int m);
+__isl_give isl_vec *isl_vec_add(__isl_take isl_vec *vec1,
+	__isl_take isl_vec *vec2);
 
 struct isl_vec *isl_vec_read_from_file(struct isl_ctx *ctx,
 		FILE *input, unsigned input_format);

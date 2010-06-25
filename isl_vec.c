@@ -138,3 +138,23 @@ __isl_give isl_vec *isl_vec_scale(__isl_take isl_vec *vec, isl_int m)
 	isl_seq_scale(vec->el, vec->el, m, vec->size);
 	return vec;
 }
+
+__isl_give isl_vec *isl_vec_add(__isl_take isl_vec *vec1,
+	__isl_take isl_vec *vec2)
+{
+	vec1 = isl_vec_cow(vec1);
+	if (!vec1 || !vec2)
+		goto error;
+
+	isl_assert(vec1->ctx, vec1->size == vec2->size, goto error);
+
+	isl_seq_combine(vec1->el, vec1->ctx->one, vec1->el,
+			vec1->ctx->one, vec2->el, vec1->size);
+	
+	isl_vec_free(vec2);
+	return vec1;
+error:
+	isl_vec_free(vec1);
+	isl_vec_free(vec2);
+	return NULL;
+}
