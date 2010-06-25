@@ -207,7 +207,7 @@ unsigned isl_basic_map_n_div(const struct isl_basic_map *bmap)
 
 unsigned isl_basic_map_total_dim(const struct isl_basic_map *bmap)
 {
-	return isl_dim_total(bmap->dim) + bmap->n_div;
+	return bmap ? isl_dim_total(bmap->dim) + bmap->n_div : 0;
 }
 
 unsigned isl_map_n_in(const struct isl_map *map)
