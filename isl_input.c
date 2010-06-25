@@ -149,6 +149,101 @@ error:
 	return NULL;
 }
 
+static int accept_cst_factor(struct isl_stream *s, isl_int *f)
+{
+	struct isl_token *tok;
+
+	tok = isl_stream_next_token(s);
+	if (!tok || tok->type != ISL_TOKEN_VALUE) {
+		isl_stream_error(s, tok, "expecting constant value");
+		goto error;
+	}
+
+	isl_int_mul(*f, *f, tok->u.v);
+
+	isl_token_free(tok);
+
+	if (isl_stream_eat_if_available(s, '*'))
+		return accept_cst_factor(s, f);
+
+	return 0;
+error:
+	isl_token_free(tok);
+	return -1;
+}
+
+static struct isl_vec *accept_affine(struct isl_stream *s, struct vars *v);
+
+static __isl_give isl_vec *accept_affine_factor(struct isl_stream *s,
+	struct vars *v)
+{
+	struct isl_token *tok = NULL;
+	isl_vec *aff = NULL;
+
+	tok = isl_stream_next_token(s);
+	if (!tok) {
+		isl_stream_error(s, NULL, "unexpected EOF");
+		goto error;
+	}
+	if (tok->type == ISL_TOKEN_IDENT) {
+		int n = v->n;
+		int pos = vars_pos(v, tok->u.s, -1);
+		if (pos < 0)
+			goto error;
+		if (pos >= n) {
+			isl_stream_error(s, tok, "unknown identifier");
+			goto error;
+		}
+
+		aff = isl_vec_alloc(v->ctx, 1 + v->n);
+		if (!aff)
+			goto error;
+		isl_seq_clr(aff->el, aff->size);
+		isl_int_set_si(aff->el[1 + pos], 1);
+		isl_token_free(tok);
+	} else if (tok->type == ISL_TOKEN_VALUE) {
+		if (isl_stream_eat_if_available(s, '*')) {
+			aff = accept_affine_factor(s, v);
+			aff = isl_vec_scale(aff, tok->u.v);
+		} else {
+			aff = isl_vec_alloc(v->ctx, 1 + v->n);
+			if (!aff)
+				goto error;
+			isl_seq_clr(aff->el, aff->size);
+			isl_int_set(aff->el[0], tok->u.v);
+		}
+		isl_token_free(tok);
+	} else if (tok->type == '(') {
+		isl_token_free(tok);
+		tok = NULL;
+		aff = accept_affine(s, v);
+		if (!aff)
+			goto error;
+		if (isl_stream_eat(s, ')'))
+			goto error;
+	} else {
+		isl_stream_error(s, tok, "expecting factor");
+		goto error;
+	}
+	if (isl_stream_eat_if_available(s, '*')) {
+		isl_int f;
+		isl_int_init(f);
+		isl_int_set_si(f, 1);
+		if (accept_cst_factor(s, &f) < 0) {
+			isl_int_clear(f);
+			goto error;
+		}
+		aff = isl_vec_scale(aff, f);
+		isl_int_clear(f);
+	}
+
+	return aff;
+error:
+	isl_token_free(tok);
+	isl_vec_free(aff);
+	return NULL;
+}
+
 static struct isl_vec *accept_affine(struct isl_stream *s, struct vars *v)
 {
 	struct isl_token *tok = NULL;
@@ -156,9 +251,9 @@ static struct isl_vec *accept_affine(struct isl_stream *s, struct vars *v)
 	int sign = 1;
 
 	aff = isl_vec_alloc(v->ctx, 1 + v->n);
-	isl_seq_clr(aff->el, aff->size);
 	if (!aff)
 		return NULL;
+	isl_seq_clr(aff->el, aff->size);
 
 	for (;;) {
 		tok = isl_stream_next_token(s);
@@ -166,65 +261,60 @@ static struct isl_vec *accept_affine(struct isl_stream *s, struct vars *v)
 			isl_stream_error(s, NULL, "unexpected EOF");
 			goto error;
 		}
-		if (tok->type == ISL_TOKEN_IDENT) {
-			int n = v->n;
-			int pos = vars_pos(v, tok->u.s, -1);
-			if (pos < 0)
+		if (tok->type == '-') {
+			sign = -sign;
+			isl_token_free(tok);
+			continue;
+		}
+		if (tok->type == '(' || tok->type == ISL_TOKEN_IDENT) {
+			isl_vec *aff2;
+			isl_stream_push_token(s, tok);
+			tok = NULL;
+			aff2 = accept_affine_factor(s, v);
+			if (sign < 0)
+				aff2 = isl_vec_scale(aff2, s->ctx->negone);
+			aff = isl_vec_add(aff, aff2);
+			if (!aff)
 				goto error;
-			if (pos >= n) {
-				isl_stream_error(s, tok, "unknown identifier");
-				isl_token_free(tok);
-				goto error;
-			}
-			if (sign > 0)
-				isl_int_add_ui(aff->el[1 + pos],
-					       aff->el[1 + pos], 1);
-			else
-				isl_int_sub_ui(aff->el[1 + pos],
-					       aff->el[1 + pos], 1);
 			sign = 1;
 		} else if (tok->type == ISL_TOKEN_VALUE) {
-			struct isl_token *tok2;
-			int n = v->n;
-			int pos = -1;
-			if (isl_stream_eat_if_available(s, '*') &&
-			    !isl_stream_next_token_is(s, ISL_TOKEN_IDENT)) {
-				isl_stream_error(s, NULL, "missing identifier");
-				goto error;
-			}
-			tok2 = isl_stream_next_token(s);
-			if (tok2 && tok2->type == ISL_TOKEN_IDENT) {
-				pos = vars_pos(v, tok2->u.s, -1);
-				if (pos < 0)
-					goto error;
-				if (pos >= n) {
-					isl_stream_error(s, tok2,
-						"unknown identifier");
-					isl_token_free(tok);
-					isl_token_free(tok2);
-					goto error;
-				}
-				isl_token_free(tok2);
-			} else if (tok2)
-				isl_stream_push_token(s, tok2);
 			if (sign < 0)
 				isl_int_neg(tok->u.v, tok->u.v);
-			isl_int_add(aff->el[1 + pos],
-					aff->el[1 + pos], tok->u.v);
+			if (isl_stream_eat_if_available(s, '*') ||
+			    isl_stream_next_token_is(s, ISL_TOKEN_IDENT)) {
+				isl_vec *aff2;
+				aff2 = accept_affine_factor(s, v);
+				aff2 = isl_vec_scale(aff2, tok->u.v);
+				aff = isl_vec_add(aff, aff2);
+				if (!aff)
+					goto error;
+			} else {
+				isl_int_add(aff->el[0], aff->el[0], tok->u.v);
+			}
 			sign = 1;
-		} else if (tok->type == '-') {
-			sign = -sign;
-		} else if (tok->type == '+') {
-			/* nothing */
-		} else {
-			isl_stream_push_token(s, tok);
-			break;
 		}
 		isl_token_free(tok);
+
+		tok = isl_stream_next_token(s);
+		if (tok && tok->type == '-') {
+			sign = -sign;
+			isl_token_free(tok);
+		} else if (tok && tok->type == '+') {
+			/* nothing */
+			isl_token_free(tok);
+		} else if (tok && tok->type == ISL_TOKEN_VALUE &&
+			   isl_int_is_neg(tok->u.v)) {
+			isl_stream_push_token(s, tok);
+		} else {
+			if (tok)
+				isl_stream_push_token(s, tok);
+			break;
+		}
 	}
 
 	return aff;
 error:
+	isl_token_free(tok);
 	isl_vec_free(aff);
 	return NULL;
 }
