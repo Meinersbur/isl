@@ -108,12 +108,8 @@ static struct isl_stream* isl_stream_new(struct isl_ctx *ctx)
 		return NULL;
 	s->ctx = ctx;
 	isl_ctx_ref(s->ctx);
-	s->size = 256;
 	s->file = NULL;
 	s->str = NULL;
-	s->buffer = isl_alloc_array(ctx, char, s->size);
-	if (!s->buffer)
-		goto error;
 	s->len = 0;
 	s->line = 1;
 	s->col = 0;
@@ -123,6 +119,10 @@ static struct isl_stream* isl_stream_new(struct isl_ctx *ctx)
 		s->tokens[i] = NULL;
 	s->n_token = 0;
 	s->keywords = NULL;
+	s->size = 256;
+	s->buffer = isl_alloc_array(ctx, char, s->size);
+	if (!s->buffer)
+		goto error;
 	return s;
 error:
 	isl_stream_free(s);
