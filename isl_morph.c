@@ -23,7 +23,7 @@ __isl_give isl_morph *isl_morph_alloc(
 	if (!dom || !ran || !map || !inv)
 		goto error;
 
-	morph = isl_alloc_type(in_dim->ctx, struct isl_morph);
+	morph = isl_alloc_type(dom->ctx, struct isl_morph);
 	if (!morph)
 		goto error;
 
