@@ -863,15 +863,25 @@ __isl_give isl_flow *isl_access_info_compute_flow(__isl_take isl_access_info *ac
 		res = compute_mem_based_dependences(acc);
 	else
 		res = compute_val_based_dependences(acc);
+	if (!res)
+		return NULL;
 
-	for (j = 0; j < res->n_source; ++j)
+	for (j = 0; j < res->n_source; ++j) {
 		res->dep[j].map = isl_map_project_out(res->dep[j].map,
 					isl_dim_out, n_sink, n_data);
+		if (!res->dep[j].map)
+			goto error2;
+	}
 	res->must_no_source = isl_set_project_out(res->must_no_source, isl_dim_set, n_sink, n_data);
 	res->may_no_source = isl_set_project_out(res->may_no_source, isl_dim_set, n_sink, n_data);
+	if (!res->must_no_source || !res->may_no_source)
+		goto error2;
 
 	return res;
 error:
 	isl_access_info_free(acc);
+	return NULL;
+error2:
+	isl_flow_free(res);
 	return NULL;
 }
