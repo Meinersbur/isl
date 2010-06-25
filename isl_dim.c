@@ -192,6 +192,8 @@ static struct isl_dim *copy_names(struct isl_dim *dst,
 struct isl_dim *isl_dim_dup(struct isl_dim *dim)
 {
 	struct isl_dim *dup;
+	if (!dim)
+		return NULL;
 	dup = isl_dim_alloc(dim->ctx, dim->nparam, dim->n_in, dim->n_out);
 	if (!dim->names)
 		return dup;
