@@ -550,7 +550,7 @@ static __isl_give isl_vertices *vertices_add_chambers(
 	int i;
 	struct isl_chamber_list *next;
 
-	vertices->c = isl_alloc_array(ctx, struct isl_chamber, n_chambers);
+	vertices->c = isl_alloc_array(vertices->ctx, struct isl_chamber, n_chambers);
 	if (!vertices->c)
 		goto error;
 	vertices->n_chambers = n_chambers;
@@ -1020,7 +1020,7 @@ static __isl_give isl_vertex *isl_vertex_alloc(__isl_take isl_vertices *vertices
 	if (!vertices)
 		return NULL;
 
-	vertex = isl_alloc_type(dom->ctx, isl_vertex);
+	vertex = isl_alloc_type(vertices->ctx, isl_vertex);
 	if (!vertex)
 		goto error;
 
