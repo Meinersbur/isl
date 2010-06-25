@@ -213,6 +213,9 @@ static struct isl_basic_set *isl_basic_set_add_equality(
 	int i;
 	unsigned dim;
 
+	if (!bset)
+		return NULL;
+
 	if (ISL_F_ISSET(bset, ISL_BASIC_SET_EMPTY))
 		return bset;
 
