@@ -127,3 +127,14 @@ struct isl_vec *isl_vec_normalize(struct isl_vec *vec)
 	isl_seq_normalize(vec->ctx, vec->el, vec->size);
 	return vec;
 }
+
+__isl_give isl_vec *isl_vec_scale(__isl_take isl_vec *vec, isl_int m)
+{
+	if (isl_int_is_one(m))
+		return vec;
+	vec = isl_vec_cow(vec);
+	if (!vec)
+		return NULL;
+	isl_seq_scale(vec->el, vec->el, m, vec->size);
+	return vec;
+}
