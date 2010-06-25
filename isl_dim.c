@@ -177,6 +177,9 @@ static struct isl_dim *copy_names(struct isl_dim *dst,
 	int i;
 	struct isl_name *name;
 
+	if (!dst)
+		return NULL;
+
 	for (i = 0; i < n(src, src_type); ++i) {
 		name = get_name(src, src_type, i);
 		if (!name)
