@@ -340,39 +340,28 @@ static struct isl_basic_map *basic_map_init(struct isl_ctx *ctx,
 	int i;
 	size_t row_size = 1 + isl_dim_total(bmap->dim) + extra;
 
+	bmap->ctx = ctx;
+	isl_ctx_ref(ctx);
+
 	bmap->block = isl_blk_alloc(ctx, (n_ineq + n_eq) * row_size);
-	if (isl_blk_is_error(bmap->block)) {
-		free(bmap);
-		return NULL;
-	}
+	if (isl_blk_is_error(bmap->block))
+		goto error;
 
 	bmap->ineq = isl_alloc_array(ctx, isl_int *, n_ineq + n_eq);
-	if (!bmap->ineq) {
-		isl_blk_free(ctx, bmap->block);
-		free(bmap);
-		return NULL;
-	}
+	if (!bmap->ineq)
+		goto error;
 
 	if (extra == 0) {
 		bmap->block2 = isl_blk_empty();
 		bmap->div = NULL;
 	} else {
 		bmap->block2 = isl_blk_alloc(ctx, extra * (1 + row_size));
-		if (isl_blk_is_error(bmap->block2)) {
-			free(bmap->ineq);
-			isl_blk_free(ctx, bmap->block);
-			free(bmap);
-			return NULL;
-		}
+		if (isl_blk_is_error(bmap->block2))
+			goto error;
 
 		bmap->div = isl_alloc_array(ctx, isl_int *, extra);
-		if (!bmap->div) {
-			isl_blk_free(ctx, bmap->block2);
-			free(bmap->ineq);
-			isl_blk_free(ctx, bmap->block);
-			free(bmap);
-			return NULL;
-		}
+		if (!bmap->div)
+			goto error;
 	}
 
 	for (i = 0; i < n_ineq + n_eq; ++i)
@@ -381,8 +370,6 @@ static struct isl_basic_map *basic_map_init(struct isl_ctx *ctx,
 	for (i = 0; i < extra; ++i)
 		bmap->div[i] = bmap->block2.data + i * (1 + row_size);
 
-	bmap->ctx = ctx;
-	isl_ctx_ref(ctx);
 	bmap->ref = 1;
 	bmap->flags = 0;
 	bmap->c_size = n_eq + n_ineq;
@@ -394,6 +381,9 @@ static struct isl_basic_map *basic_map_init(struct isl_ctx *ctx,
 	bmap->sample = NULL;
 
 	return bmap;
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
 }
 
 struct isl_basic_set *isl_basic_set_alloc(struct isl_ctx *ctx,
@@ -423,7 +413,7 @@ struct isl_basic_map *isl_basic_map_alloc_dim(struct isl_dim *dim,
 
 	if (!dim)
 		return NULL;
-	bmap = isl_alloc_type(dim->ctx, struct isl_basic_map);
+	bmap = isl_calloc_type(dim->ctx, struct isl_basic_map);
 	if (!bmap)
 		goto error;
 	bmap->dim = dim;
