@@ -500,7 +500,6 @@ static struct isl_basic_map *read_defined_var_list(struct isl_stream *s,
 			isl_stream_error(s, tok, "expecting unique identifier");
 			goto error;
 		}
-		isl_token_free(tok);
 
 		bmap = isl_basic_map_cow(bmap);
 		bmap = isl_basic_map_extend_dim(bmap, isl_dim_copy(bmap->dim),
@@ -510,6 +509,7 @@ static struct isl_basic_map *read_defined_var_list(struct isl_stream *s,
 			goto error;
 		isl_seq_clr(bmap->div[k], 1 + 1 + total);
 
+		isl_token_free(tok);
 		tok = isl_stream_next_token(s);
 		if (tok && tok->type == '=') {
 			isl_token_free(tok);
