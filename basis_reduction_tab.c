@@ -179,11 +179,13 @@ static int cut_lp_to_hyperplane(struct tab_lp *lp, isl_int *row)
 		return -1;
 
 	isl_int_neg(lp->row->el[0], lp->tmp);
-	lp->tab = isl_tab_add_eq(lp->tab, lp->row->el);
+	if (isl_tab_add_eq(lp->tab, lp->row->el) < 0)
+		return -1;
 
 	isl_seq_cpy(lp->row->el + 1 + lp->dim, row, lp->dim);
 	isl_seq_clr(lp->row->el + 1, lp->dim);
-	lp->tab = isl_tab_add_eq(lp->tab, lp->row->el);
+	if (isl_tab_add_eq(lp->tab, lp->row->el) < 0)
+		return -1;
 
 	lp->con_offset += 2;
 

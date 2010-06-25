@@ -722,7 +722,8 @@ static int wrap_in_facets(struct isl_map *map, int i, int j,
 
 		isl_seq_cpy(bound->el, map->p[i]->ineq[cuts[k]], 1 + total);
 		isl_int_add_ui(bound->el[0], bound->el[0], 1);
-		tabs[j] = isl_tab_add_eq(tabs[j], bound->el);
+		if (isl_tab_add_eq(tabs[j], bound->el) < 0)
+			goto error;
 		if (isl_tab_detect_redundant(tabs[j]) < 0)
 			goto error;
 

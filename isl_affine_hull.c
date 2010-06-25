@@ -388,8 +388,7 @@ static struct isl_basic_set *extend_affine_hull(struct isl_tab *tab,
 				break;
 			isl_vec_free(sample);
 
-			tab = isl_tab_add_eq(tab, hull->eq[j]);
-			if (!tab)
+			if (isl_tab_add_eq(tab, hull->eq[j]) < 0)
 				goto error;
 		}
 		if (j == hull->n_eq)
@@ -630,7 +629,8 @@ struct isl_tab *isl_tab_detect_equalities(struct isl_tab *tab,
 	if (hull->n_eq > tab->n_zero) {
 		for (j = 0; j < hull->n_eq; ++j) {
 			isl_seq_normalize(tab->mat->ctx, hull->eq[j], 1 + tab->n_var);
-			tab = isl_tab_add_eq(tab, hull->eq[j]);
+			if (isl_tab_add_eq(tab, hull->eq[j]) < 0)
+				goto error;
 		}
 	}
 

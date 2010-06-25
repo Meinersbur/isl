@@ -2690,7 +2690,8 @@ static struct isl_tab *add_gbr_eq(struct isl_tab *tab, isl_int *eq)
 	if (isl_tab_extend_cons(tab, 2) < 0)
 		goto error;
 
-	tab = isl_tab_add_eq(tab, eq);
+	if (isl_tab_add_eq(tab, eq) < 0)
+		goto error;
 
 	return tab;
 error:
@@ -2708,7 +2709,8 @@ static void context_gbr_add_eq(struct isl_context *context, isl_int *eq,
 	if (cgbr->cone && cgbr->cone->n_col != cgbr->cone->n_dead) {
 		if (isl_tab_extend_cons(cgbr->cone, 2) < 0)
 			goto error;
-		cgbr->cone = isl_tab_add_eq(cgbr->cone, eq);
+		if (isl_tab_add_eq(cgbr->cone, eq) < 0)
+			goto error;
 	}
 
 	if (check) {

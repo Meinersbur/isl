@@ -1882,7 +1882,7 @@ static int add_zero_row(struct isl_tab *tab)
 /* Add equality "eq" and check if it conflicts with the
  * previously added constraints or if it is obviously redundant.
  */
-struct isl_tab *isl_tab_add_eq(struct isl_tab *tab, isl_int *eq)
+int isl_tab_add_eq(struct isl_tab *tab, isl_int *eq)
 {
 	struct isl_tab_undo *snap = NULL;
 	struct isl_tab_var *var;
@@ -1892,8 +1892,8 @@ struct isl_tab *isl_tab_add_eq(struct isl_tab *tab, isl_int *eq)
 	isl_int cst;
 
 	if (!tab)
-		return NULL;
-	isl_assert(tab->mat->ctx, !tab->M, goto error);
+		return -1;
+	isl_assert(tab->mat->ctx, !tab->M, return -1);
 
 	if (tab->need_undo)
 		snap = isl_tab_snap(tab);
@@ -1908,32 +1908,32 @@ struct isl_tab *isl_tab_add_eq(struct isl_tab *tab, isl_int *eq)
 		isl_int_clear(cst);
 	}
 	if (r < 0)
-		goto error;
+		return -1;
 
 	var = &tab->con[r];
 	row = var->index;
 	if (row_is_manifestly_zero(tab, row)) {
 		if (snap) {
 			if (isl_tab_rollback(tab, snap) < 0)
-				goto error;
+				return -1;
 		} else
 			drop_row(tab, row);
-		return tab;
+		return 0;
 	}
 
 	if (tab->bmap) {
 		tab->bmap = isl_basic_map_add_ineq(tab->bmap, eq);
 		if (isl_tab_push(tab, isl_tab_undo_bmap_ineq) < 0)
-			goto error;
+			return -1;
 		isl_seq_neg(eq, eq, 1 + tab->n_var);
 		tab->bmap = isl_basic_map_add_ineq(tab->bmap, eq);
 		isl_seq_neg(eq, eq, 1 + tab->n_var);
 		if (isl_tab_push(tab, isl_tab_undo_bmap_ineq) < 0)
-			goto error;
+			return -1;
 		if (!tab->bmap)
-			goto error;
+			return -1;
 		if (add_zero_row(tab) < 0)
-			goto error;
+			return -1;
 	}
 
 	sgn = isl_int_sgn(tab->mat->row[row][1]);
@@ -1948,25 +1948,22 @@ struct isl_tab *isl_tab_add_eq(struct isl_tab *tab, isl_int *eq)
 	if (sgn < 0) {
 		sgn = sign_of_max(tab, var);
 		if (sgn < -1)
-			goto error;
+			return -1;
 		if (sgn < 0) {
 			if (isl_tab_mark_empty(tab) < 0)
-				goto error;
-			return tab;
+				return -1;
+			return 0;
 		}
 	}
 
 	var->is_nonneg = 1;
 	if (to_col(tab, var) < 0)
-		goto error;
+		return -1;
 	var->is_nonneg = 0;
 	if (isl_tab_kill_col(tab, var->index) < 0)
-		goto error;
+		return -1;
 
-	return tab;
-error:
-	isl_tab_free(tab);
-	return NULL;
+	return 0;
 }
 
 /* Construct and return an inequality that expresses an upper bound
@@ -2177,9 +2174,10 @@ struct isl_tab *isl_tab_from_recession_cone(__isl_keep isl_basic_set *bset,
 	isl_int_init(cst);
 	for (i = 0; i < bset->n_eq; ++i) {
 		isl_int_swap(bset->eq[i][offset], cst);
-		if (offset > 0)
-			tab = isl_tab_add_eq(tab, bset->eq[i] + offset);
-		else
+		if (offset > 0) {
+			if (isl_tab_add_eq(tab, bset->eq[i] + offset) < 0)
+				goto error;
+		} else
 			tab = add_eq(tab, bset->eq[i]);
 		isl_int_swap(bset->eq[i][offset], cst);
 		if (!tab)

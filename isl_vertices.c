@@ -1138,11 +1138,8 @@ static struct isl_tab *tab_for_shifted_cone(__isl_keep isl_basic_set *bset)
 	isl_int_set_si(c->el[0], 0);
 	for (i = 0; i < bset->n_eq; ++i) {
 		isl_seq_cpy(c->el + 1, bset->eq[i], c->size - 1);
-		tab = isl_tab_add_eq(tab, c->el);
-		if (!tab) {
-			isl_vec_free(c);
-			return tab;
-		}
+		if (isl_tab_add_eq(tab, c->el) < 0)
+			goto error;
 	}
 
 	isl_int_set_si(c->el[0], -1);
