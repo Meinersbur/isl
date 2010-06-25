@@ -2407,7 +2407,7 @@ __isl_give isl_basic_map *isl_basic_map_project_out(
 					(bmap->extra + n) * (1 + row_size));
 	if (!bmap->block2.data)
 		goto error;
-	new_div = isl_alloc_array(ctx, isl_int *, bmap->extra + n);
+	new_div = isl_alloc_array(bmap->ctx, isl_int *, bmap->extra + n);
 	if (!new_div)
 		goto error;
 	for (i = 0; i < n; ++i) {
