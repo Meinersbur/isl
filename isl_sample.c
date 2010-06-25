@@ -830,10 +830,10 @@ static struct isl_basic_set *drop_constraints_involving
 {
 	int i;
 
+	bset = isl_basic_set_cow(bset);
+
 	if (!bset)
 		return NULL;
-
-	bset = isl_basic_set_cow(bset);
 
 	for (i = bset->n_ineq - 1; i >= 0; --i) {
 		if (isl_seq_first_non_zero(bset->ineq[i] + 1 + first, n) == -1)
