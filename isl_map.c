@@ -5384,7 +5384,12 @@ struct isl_set *isl_basic_set_union(
 struct isl_basic_map *isl_basic_map_order_divs(struct isl_basic_map *bmap)
 {
 	int i;
-	unsigned off = isl_dim_total(bmap->dim);
+	unsigned off;
+
+	if (!bmap)
+		return NULL;
+
+	off = isl_dim_total(bmap->dim);
 
 	for (i = 0; i < bmap->n_div; ++i) {
 		int pos;
