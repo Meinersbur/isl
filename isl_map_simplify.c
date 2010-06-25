@@ -1405,7 +1405,7 @@ static struct isl_basic_set *isl_basic_set_reduce_using_equalities(
 	if (!bset)
 		goto error;
 
-	elim = isl_alloc_array(ctx, int, isl_basic_set_n_dim(bset));
+	elim = isl_alloc_array(bset->ctx, int, isl_basic_set_n_dim(bset));
 	if (!elim)
 		goto error;
 	set_compute_elimination_index(context, elim);
