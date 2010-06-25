@@ -1015,7 +1015,7 @@ static struct isl_basic_map *remove_duplicate_constraints(
 	unsigned total = isl_basic_map_total_dim(bmap);
 	isl_int sum;
 
-	if (bmap->n_ineq <= 1)
+	if (!bmap || bmap->n_ineq <= 1)
 		return bmap;
 
 	size = round_up(4 * (bmap->n_ineq+1) / 3 - 1);
