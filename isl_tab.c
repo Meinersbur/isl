@@ -1534,11 +1534,15 @@ static int close_row(struct isl_tab *tab, struct isl_tab_var *var)
 		if (isl_tab_push_var(tab, isl_tab_undo_zero, var) < 0)
 			return -1;
 	for (j = tab->n_dead; j < tab->n_col; ++j) {
+		int recheck;
 		if (isl_int_is_zero(mat->row[var->index][off + j]))
 			continue;
 		isl_assert(tab->mat->ctx,
 		    isl_int_is_neg(mat->row[var->index][off + j]), return -1);
-		if (isl_tab_kill_col(tab, j))
+		recheck = isl_tab_kill_col(tab, j);
+		if (recheck < 0)
+			return -1;
+		if (recheck)
 			--j;
 	}
 	if (isl_tab_mark_redundant(tab, var->index) < 0)
