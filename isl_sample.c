@@ -61,6 +61,10 @@ static struct isl_vec *interval_sample(struct isl_basic_set *bset)
 		return zero_sample(bset);
 
 	sample = isl_vec_alloc(bset->ctx, 2);
+	if (!sample)
+		goto error;
+	if (!bset)
+		return NULL;
 	isl_int_set_si(sample->block.data[0], 1);
 
 	if (bset->n_eq > 0) {
