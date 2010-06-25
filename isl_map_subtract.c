@@ -49,6 +49,8 @@ static int tab_add_constraints(struct isl_tab *tab,
 		return -1;
 
 	v = isl_vec_alloc(bmap->ctx, 1 + tab_total);
+	if (!v)
+		return -1;
 
 	for (i = 0; i < bmap->n_eq; ++i) {
 		expand_constraint(v, dim, bmap->eq[i], div_map, bmap->n_div);
