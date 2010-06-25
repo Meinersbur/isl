@@ -209,34 +209,34 @@ struct isl_tab *isl_tab_dup(struct isl_tab *tab)
 		return NULL;
 
 	off = 2 + tab->M;
-	dup = isl_calloc_type(tab->ctx, struct isl_tab);
+	dup = isl_calloc_type(tab->mat->ctx, struct isl_tab);
 	if (!dup)
 		return NULL;
 	dup->mat = isl_mat_dup(tab->mat);
 	if (!dup->mat)
 		goto error;
-	dup->var = isl_alloc_array(tab->ctx, struct isl_tab_var, tab->max_var);
+	dup->var = isl_alloc_array(tab->mat->ctx, struct isl_tab_var, tab->max_var);
 	if (!dup->var)
 		goto error;
 	for (i = 0; i < tab->n_var; ++i)
 		dup->var[i] = tab->var[i];
-	dup->con = isl_alloc_array(tab->ctx, struct isl_tab_var, tab->max_con);
+	dup->con = isl_alloc_array(tab->mat->ctx, struct isl_tab_var, tab->max_con);
 	if (!dup->con)
 		goto error;
 	for (i = 0; i < tab->n_con; ++i)
 		dup->con[i] = tab->con[i];
-	dup->col_var = isl_alloc_array(tab->ctx, int, tab->mat->n_col - off);
+	dup->col_var = isl_alloc_array(tab->mat->ctx, int, tab->mat->n_col - off);
 	if (!dup->col_var)
 		goto error;
 	for (i = 0; i < tab->n_col; ++i)
 		dup->col_var[i] = tab->col_var[i];
-	dup->row_var = isl_alloc_array(tab->ctx, int, tab->mat->n_row);
+	dup->row_var = isl_alloc_array(tab->mat->ctx, int, tab->mat->n_row);
 	if (!dup->row_var)
 		goto error;
 	for (i = 0; i < tab->n_row; ++i)
 		dup->row_var[i] = tab->row_var[i];
 	if (tab->row_sign) {
-		dup->row_sign = isl_alloc_array(tab->ctx, enum isl_tab_row_sign,
+		dup->row_sign = isl_alloc_array(tab->mat->ctx, enum isl_tab_row_sign,
 						tab->mat->n_row);
 		if (!dup->row_sign)
 			goto error;
