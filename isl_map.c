@@ -2469,7 +2469,7 @@ __isl_give isl_map *isl_map_project_out(__isl_take isl_map *map,
 	return map;
 error:
 	isl_map_free(map);
-	return map;
+	return NULL;
 }
 
 /* Turn the n dimensions of type type, starting at first
