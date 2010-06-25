@@ -494,7 +494,7 @@ error2:
 error:
 	isl_basic_set_free(bset);
 	isl_mat_free(mat);
-	sol_free(sol);
+	sol->error = 1;
 }
 
 struct isl_sol_map {
@@ -2278,7 +2278,7 @@ static int context_lex_best_split(struct isl_context *context,
 		return -1;
 	r = best_split(tab, clex->tab);
 
-	if (isl_tab_rollback(clex->tab, snap) < 0)
+	if (r >= 0 && isl_tab_rollback(clex->tab, snap) < 0)
 		return -1;
 
 	return r;
@@ -2386,6 +2386,9 @@ static struct isl_tab *context_lex_detect_nonnegative_parameters(
 	struct isl_context_lex *clex = (struct isl_context_lex *)context;
 	struct isl_tab_undo *snap;
 
+	if (!tab)
+		return NULL;
+
 	snap = isl_tab_snap(clex->tab);
 	if (isl_tab_push_basis(clex->tab) < 0)
 		goto error;
@@ -2490,6 +2493,8 @@ static struct isl_tab *context_gbr_detect_nonnegative_parameters(
 	struct isl_context *context, struct isl_tab *tab)
 {
 	struct isl_context_gbr *cgbr = (struct isl_context_gbr *)context;
+	if (!tab)
+		return NULL;
 	return tab_detect_nonnegative_parameters(tab, cgbr->tab);
 }
 
@@ -3034,7 +3039,7 @@ static int context_gbr_best_split(struct isl_context *context,
 	snap = isl_tab_snap(cgbr->tab);
 	r = best_split(tab, cgbr->tab);
 
-	if (isl_tab_rollback(cgbr->tab, snap) < 0)
+	if (r >= 0 && isl_tab_rollback(cgbr->tab, snap) < 0)
 		return -1;
 
 	return r;
@@ -3456,7 +3461,8 @@ static void find_in_pos(struct isl_sol *sol, struct isl_tab *tab, isl_int *ineq)
 
 	find_solutions(sol, tab);
 
-	sol->context->op->restore(sol->context, saved);
+	if (!sol->error)
+		sol->context->op->restore(sol->context, saved);
 	return;
 error:
 	sol->error = 1;
@@ -3648,7 +3654,8 @@ static void find_solutions(struct isl_sol *sol, struct isl_tab *tab)
 			row = split;
 			isl_seq_neg(ineq->el, ineq->el, ineq->size);
 			isl_int_sub_ui(ineq->el[0], ineq->el[0], 1);
-			context->op->add_ineq(context, ineq->el, 0, 1);
+			if (!sol->error)
+				context->op->add_ineq(context, ineq->el, 0, 1);
 			isl_vec_free(ineq);
 			if (sol->error)
 				goto error;
@@ -3678,6 +3685,8 @@ static void find_solutions(struct isl_sol *sol, struct isl_tab *tab)
 			if (d < 0)
 				goto error;
 			ineq = ineq_for_div(context->op->peek_basic_set(context), d);
+			if (!ineq)
+				goto error;
 			sol_inc_level(sol);
 			no_sol_in_strict(sol, tab, ineq);
 			isl_seq_neg(ineq->el, ineq->el, ineq->size);
@@ -3699,7 +3708,7 @@ done:
 	return;
 error:
 	isl_tab_free(tab);
-	sol_free(sol);
+	sol->error = 1;
 }
 
 /* Compute the lexicographic minimum of the set represented by the main
@@ -3716,6 +3725,9 @@ error:
 static void find_solutions_main(struct isl_sol *sol, struct isl_tab *tab)
 {
 	int row;
+
+	if (!tab)
+		goto error;
 
 	sol->level = 0;
 
@@ -3735,6 +3747,8 @@ static void find_solutions_main(struct isl_sol *sol, struct isl_tab *tab)
 				+ tab->n_param - (tab->n_var - tab->n_div);
 
 		eq = isl_vec_alloc(tab->mat->ctx, 1+tab->n_param+tab->n_div);
+		if (!eq)
+			goto error;
 		get_row_parameter_line(tab, row, eq->el);
 		isl_int_neg(eq->el[1 + p], tab->mat->row[row][0]);
 		eq = isl_vec_normalize(eq);
@@ -3768,7 +3782,7 @@ static void find_solutions_main(struct isl_sol *sol, struct isl_tab *tab)
 	return;
 error:
 	isl_tab_free(tab);
-	sol_free(sol);
+	sol->error = 1;
 }
 
 static void sol_map_find_solutions(struct isl_sol_map *sol_map,
