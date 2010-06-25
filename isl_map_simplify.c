@@ -317,6 +317,9 @@ struct isl_basic_map *isl_basic_map_normalize_constraints(
 	isl_int gcd;
 	unsigned total = isl_basic_map_total_dim(bmap);
 
+	if (!bmap)
+		return NULL;
+
 	isl_int_init(gcd);
 	for (i = bmap->n_eq - 1; i >= 0; --i) {
 		isl_seq_gcd(bmap->eq[i]+1, total, &gcd);
