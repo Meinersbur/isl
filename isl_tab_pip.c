@@ -505,6 +505,8 @@ struct isl_sol_map {
 
 static void sol_map_free(struct isl_sol_map *sol_map)
 {
+	if (!sol_map)
+		return;
 	if (sol_map->sol.context)
 		sol_map->sol.context->op->free(sol_map->sol.context);
 	isl_map_free(sol_map->map);
@@ -3210,7 +3212,10 @@ static struct isl_context *isl_context_alloc(struct isl_basic_set *dom)
 static struct isl_sol_map *sol_map_init(struct isl_basic_map *bmap,
 	struct isl_basic_set *dom, int track_empty, int max)
 {
-	struct isl_sol_map *sol_map;
+	struct isl_sol_map *sol_map = NULL;
+
+	if (!bmap)
+		goto error;
 
 	sol_map = isl_calloc_type(bmap->ctx, struct isl_sol_map);
 	if (!sol_map)
