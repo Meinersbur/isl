@@ -811,9 +811,10 @@ static struct isl_basic_set *equalities_in_underlying_set(
 	if (!T2)
 		return hull;
 
-	if (!hull)
+	if (!hull) {
 		isl_mat_free(T1);
-	else {
+		isl_mat_free(T2);
+	} else {
 		struct isl_vec *sample = isl_vec_copy(hull->sample);
 		if (sample && sample->size > 0)
 			sample = isl_mat_vec_product(T1, sample);
