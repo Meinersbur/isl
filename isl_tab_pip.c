@@ -3210,7 +3210,7 @@ static struct isl_sol_map *sol_map_init(struct isl_basic_map *bmap,
 {
 	struct isl_sol_map *sol_map;
 
-	sol_map = isl_calloc_type(bset->ctx, struct isl_sol_map);
+	sol_map = isl_calloc_type(bmap->ctx, struct isl_sol_map);
 	if (!sol_map)
 		goto error;
 
@@ -3988,7 +3988,7 @@ static struct isl_sol_for *sol_for_init(struct isl_basic_map *bmap, int max,
 	struct isl_dim *dom_dim;
 	struct isl_basic_set *dom = NULL;
 
-	sol_for = isl_calloc_type(bset->ctx, struct isl_sol_for);
+	sol_for = isl_calloc_type(bmap->ctx, struct isl_sol_for);
 	if (!sol_for)
 		goto error;
 
