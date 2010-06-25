@@ -206,6 +206,9 @@ static struct isl_basic_set *affine_hull(
 	int col;
 	int row;
 
+	if (!bset1 || !bset2)
+		goto error;
+
 	total = 1 + isl_basic_set_n_dim(bset1);
 
 	row = 0;
@@ -226,12 +229,13 @@ static struct isl_basic_set *affine_hull(
 				--row;
 		}
 	}
-	isl_basic_set_free(bset2);
 	isl_assert(bset1->ctx, row == bset1->n_eq, goto error);
+	isl_basic_set_free(bset2);
 	bset1 = isl_basic_set_normalize_constraints(bset1);
 	return bset1;
 error:
 	isl_basic_set_free(bset1);
+	isl_basic_set_free(bset2);
 	return NULL;
 }
 
