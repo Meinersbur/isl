@@ -1071,12 +1071,17 @@ static struct isl_vec *gbr_sample(struct isl_basic_set *bset)
 	dim = isl_basic_set_total_dim(bset);
 
 	cone = isl_basic_set_recession_cone(isl_basic_set_copy(bset));
+	if (!cone)
+		goto error;
 
 	if (cone->n_eq < dim)
 		return isl_basic_set_sample_with_cone(bset, cone);
 
 	isl_basic_set_free(cone);
 	return sample_bounded(bset);
+error:
+	isl_basic_set_free(bset);
+	return NULL;
 }
 
 static struct isl_vec *pip_sample(struct isl_basic_set *bset)
