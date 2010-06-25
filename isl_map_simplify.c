@@ -1287,6 +1287,8 @@ struct isl_basic_map *isl_basic_map_eliminate_vars(
 		}
 		bmap = isl_basic_map_extend_constraints(bmap,
 				0, n_lower * n_upper);
+		if (!bmap)
+			goto error;
 		for (i = bmap->n_ineq - 1; i >= 0; --i) {
 			int last;
 			if (isl_int_is_zero(bmap->ineq[i][1+d]))
