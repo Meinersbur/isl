@@ -249,8 +249,8 @@ static __isl_give isl_flow *isl_flow_alloc(__isl_keep isl_access_info *acc)
 	dep->n_source = 2 * acc->n_must + acc->n_may;
 	for (i = 0; i < acc->n_must; ++i) {
 		struct isl_dim *dim;
-		dim = isl_dim_join(isl_dim_copy(acc->source[i].map->dim),
-			    isl_dim_reverse(isl_dim_copy(acc->sink.map->dim)));
+		dim = isl_dim_join(isl_map_get_dim(acc->source[i].map),
+			    isl_dim_reverse(isl_map_get_dim(acc->sink.map)));
 		dep->dep[2 * i].map = isl_map_empty(dim);
 		dep->dep[2 * i + 1].map = isl_map_copy(dep->dep[2 * i].map);
 		dep->dep[2 * i].data = acc->source[i].data;
@@ -260,8 +260,8 @@ static __isl_give isl_flow *isl_flow_alloc(__isl_keep isl_access_info *acc)
 	}
 	for (i = acc->n_must; i < acc->n_must + acc->n_may; ++i) {
 		struct isl_dim *dim;
-		dim = isl_dim_join(isl_dim_copy(acc->source[i].map->dim),
-			    isl_dim_reverse(isl_dim_copy(acc->sink.map->dim)));
+		dim = isl_dim_join(isl_map_get_dim(acc->source[i].map),
+			    isl_dim_reverse(isl_map_get_dim(acc->sink.map)));
 		dep->dep[acc->n_must + i].map = isl_map_empty(dim);
 		dep->dep[acc->n_must + i].data = acc->source[i].data;
 		dep->dep[acc->n_must + i].must = 0;
@@ -369,7 +369,7 @@ static struct isl_map *last_source(struct isl_access_info *acc,
 	write_map = isl_map_copy(acc->source[j].map);
 	write_map = isl_map_reverse(write_map);
 	dep_map = isl_map_apply_range(read_map, write_map);
-	after = after_at_level(isl_dim_copy(dep_map->dim), level);
+	after = after_at_level(isl_map_get_dim(dep_map), level);
 	dep_map = isl_map_intersect(dep_map, after);
 	result = isl_map_partial_lexmax(dep_map, set_C, empty);
 	result = isl_map_reverse(result);
@@ -404,13 +404,13 @@ static struct isl_map *last_later_source(struct isl_access_info *acc,
 
 	write_map = isl_map_reverse(write_map);
 	dep_map = isl_map_apply_range(read_map, write_map);
-	dim = isl_dim_join(isl_dim_copy(acc->source[k].map->dim),
-		    isl_dim_reverse(isl_dim_copy(acc->source[j].map->dim)));
+	dim = isl_dim_join(isl_map_get_dim(acc->source[k].map),
+		    isl_dim_reverse(isl_map_get_dim(acc->source[j].map)));
 	after_write = after_at_level(dim, after_level);
 	after_write = isl_map_apply_range(after_write, old_map);
 	after_write = isl_map_reverse(after_write);
 	dep_map = isl_map_intersect(dep_map, after_write);
-	before_read = after_at_level(isl_dim_copy(dep_map->dim), before_level);
+	before_read = after_at_level(isl_map_get_dim(dep_map), before_level);
 	dep_map = isl_map_intersect(dep_map, before_read);
 	result = isl_map_partial_lexmax(dep_map, set_C, empty);
 	result = isl_map_reverse(result);
@@ -505,7 +505,7 @@ static __isl_give isl_map *all_sources(__isl_keep isl_access_info *acc,
 	write_map = isl_map_copy(acc->source[acc->n_must + j].map);
 	write_map = isl_map_reverse(write_map);
 	dep_map = isl_map_apply_range(read_map, write_map);
-	after = after_at_level(isl_dim_copy(dep_map->dim), level);
+	after = after_at_level(isl_map_get_dim(dep_map), level);
 	dep_map = isl_map_intersect(dep_map, after);
 
 	return isl_map_reverse(dep_map);
@@ -536,13 +536,13 @@ static __isl_give isl_map *all_later_sources(__isl_keep isl_access_info *acc,
 
 	write_map = isl_map_reverse(write_map);
 	dep_map = isl_map_apply_range(read_map, write_map);
-	dim = isl_dim_join(isl_dim_copy(acc->source[acc->n_must + j].map->dim),
-		    isl_dim_reverse(isl_dim_copy(acc->source[k].map->dim)));
+	dim = isl_dim_join(isl_map_get_dim(acc->source[acc->n_must + j].map),
+		    isl_dim_reverse(isl_map_get_dim(acc->source[k].map)));
 	after_write = after_at_level(dim, after_level);
 	after_write = isl_map_apply_range(after_write, old_map);
 	after_write = isl_map_reverse(after_write);
 	dep_map = isl_map_intersect(dep_map, after_write);
-	before_read = after_at_level(isl_dim_copy(dep_map->dim), before_level);
+	before_read = after_at_level(isl_map_get_dim(dep_map), before_level);
 	dep_map = isl_map_intersect(dep_map, before_read);
 	return isl_map_reverse(dep_map);
 }
