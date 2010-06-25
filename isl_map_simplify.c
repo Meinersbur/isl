@@ -527,7 +527,7 @@ static struct isl_basic_map *eliminate_divs_ineq(
 			continue;
 		*progress = 1;
 		bmap = isl_basic_map_eliminate_vars(bmap, (off-1)+d, 1);
-		if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
+		if (!bmap || ISL_F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
 			break;
 		bmap = isl_basic_map_drop_div(bmap, d);
 		if (!bmap)
