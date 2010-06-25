@@ -645,12 +645,15 @@ static struct isl_basic_map *remove_duplicate_divs(
 	int k, l, h;
 	int bits;
 	struct isl_blk eq;
-	unsigned total_var = isl_dim_total(bmap->dim);
-	unsigned total = total_var + bmap->n_div;
+	unsigned total_var;
+	unsigned total;
 	struct isl_ctx *ctx;
 
-	if (bmap->n_div <= 1)
+	if (!bmap || bmap->n_div <= 1)
 		return bmap;
+
+	total_var = isl_dim_total(bmap->dim);
+	total = total_var + bmap->n_div;
 
 	ctx = bmap->ctx;
 	for (k = bmap->n_div - 1; k >= 0; --k)
