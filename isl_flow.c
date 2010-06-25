@@ -702,12 +702,12 @@ static __isl_give isl_flow *compute_val_based_dependences(
 {
 	isl_ctx *ctx;
 	isl_flow *res;
-	isl_set *mustdo;
-	isl_set *maydo;
+	isl_set *mustdo = NULL;
+	isl_set *maydo = NULL;
 	int level, j;
 	int depth;
-	isl_map **must_rel;
-	isl_map **may_rel;
+	isl_map **must_rel = NULL;
+	isl_map **may_rel = NULL;
 
 	acc = isl_access_info_sort_sources(acc);
 	if (!acc)
@@ -721,11 +721,15 @@ static __isl_give isl_flow *compute_val_based_dependences(
 	depth = 2 * isl_map_dim(acc->sink.map, isl_dim_in) + 1;
 	mustdo = isl_map_domain(isl_map_copy(acc->sink.map));
 	maydo = isl_set_empty_like(mustdo);
+	if (!mustdo || !maydo)
+		goto error;
 	if (isl_set_fast_is_empty(mustdo))
 		goto done;
 
 	must_rel = isl_alloc_array(ctx, struct isl_map *, acc->n_must);
 	may_rel = isl_alloc_array(ctx, struct isl_map *, acc->n_must);
+	if (!must_rel || !may_rel)
+		goto error;
 
 	for (level = depth; level >= 1; --level) {
 		for (j = acc->n_must-1; j >=0; --j) {
@@ -820,6 +824,11 @@ done:
 	return res;
 error:
 	isl_access_info_free(acc);
+	isl_flow_free(res);
+	isl_set_free(mustdo);
+	isl_set_free(maydo);
+	free(must_rel);
+	free(may_rel);
 	return NULL;
 }
 
