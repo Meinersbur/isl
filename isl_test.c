@@ -152,7 +152,7 @@ void test_div(struct isl_ctx *ctx)
 	isl_constraint_set_coefficient(c, isl_dim_div, pos, v);
 	bset = isl_basic_set_add_constraint(bset, c);
 
-	assert(bset->n_div == 1);
+	assert(bset && bset->n_div == 1);
 	isl_basic_set_free(bset);
 
 	/* test 2 */
@@ -181,7 +181,7 @@ void test_div(struct isl_ctx *ctx)
 	isl_constraint_set_coefficient(c, isl_dim_div, pos, v);
 	bset = isl_basic_set_add_constraint(bset, c);
 
-	assert(bset->n_div == 1);
+	assert(bset && bset->n_div == 1);
 	isl_basic_set_free(bset);
 
 	/* test 3 */
@@ -210,7 +210,7 @@ void test_div(struct isl_ctx *ctx)
 	isl_constraint_set_coefficient(c, isl_dim_div, pos, v);
 	bset = isl_basic_set_add_constraint(bset, c);
 
-	assert(bset->n_div == 1);
+	assert(bset && bset->n_div == 1);
 	isl_basic_set_free(bset);
 
 	/* test 4 */
@@ -262,7 +262,7 @@ void test_div(struct isl_ctx *ctx)
 	isl_constraint_set_coefficient(c, isl_dim_set, 1, v);
 	bset = isl_basic_set_add_constraint(bset, c);
 
-	assert(bset->n_div == 0);
+	assert(bset && bset->n_div == 0);
 	isl_basic_set_free(bset);
 
 	/* test 6 */
@@ -285,7 +285,7 @@ void test_div(struct isl_ctx *ctx)
 	isl_constraint_set_coefficient(c, isl_dim_set, 1, v);
 	bset = isl_basic_set_add_constraint(bset, c);
 
-	assert(bset->n_div == 1);
+	assert(bset && bset->n_div == 1);
 	isl_basic_set_free(bset);
 
 	/* test 7 */
@@ -316,7 +316,7 @@ void test_div(struct isl_ctx *ctx)
 
 	/* Test disabled for now */
 	/*
-	assert(bset->n_div == 1);
+	assert(bset && bset->n_div == 1);
 	*/
 	isl_basic_set_free(bset);
 
@@ -348,7 +348,7 @@ void test_div(struct isl_ctx *ctx)
 
 	/* Test disabled for now */
 	/*
-	assert(bset->n_div == 1);
+	assert(bset && bset->n_div == 1);
 	*/
 	isl_basic_set_free(bset);
 
