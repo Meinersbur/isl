@@ -301,7 +301,7 @@ __isl_give struct isl_upoly_rec *isl_upoly_alloc_rec(struct isl_ctx *ctx,
 
 	isl_assert(ctx, var >= 0, return NULL);
 	isl_assert(ctx, size >= 0, return NULL);
-	rec = isl_calloc(dim->ctx, struct isl_upoly_rec,
+	rec = isl_calloc(ctx, struct isl_upoly_rec,
 			sizeof(struct isl_upoly_rec) +
 			(size - 1) * sizeof(struct isl_upoly *));
 	if (!rec)
