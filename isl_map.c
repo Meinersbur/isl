@@ -5197,12 +5197,12 @@ int isl_map_is_empty(struct isl_map *map)
 
 int isl_map_fast_is_empty(struct isl_map *map)
 {
-	return map->n == 0;
+	return map ? map->n == 0 : -1;
 }
 
 int isl_set_fast_is_empty(struct isl_set *set)
 {
-	return set->n == 0;
+	return set ? set->n == 0 : -1;
 }
 
 int isl_set_is_empty(struct isl_set *set)
