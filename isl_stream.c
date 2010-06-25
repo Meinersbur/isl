@@ -183,7 +183,7 @@ static int isl_stream_push_char(struct isl_stream *s, int c)
 {
 	if (s->len >= s->size) {
 		s->size = (3*s->size)/2;
-		s->buffer = isl_realloc_array(ctx, s->buffer, char, s->size);
+		s->buffer = isl_realloc_array(s->ctx, s->buffer, char, s->size);
 		if (!s->buffer)
 			return -1;
 	}
