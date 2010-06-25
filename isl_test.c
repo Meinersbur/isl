@@ -1092,10 +1092,13 @@ static int common_space(void *first, void *second)
 	return 2 * depth;
 }
 
-int map_is_equal(__isl_keep isl_map *map, const char *str)
+static int map_is_equal(__isl_keep isl_map *map, const char *str)
 {
 	isl_map *map2;
 	int equal;
+
+	if (!map)
+		return -1;
 
 	map2 = isl_map_read_from_str(map->ctx, str, -1);
 	equal = isl_map_is_equal(map, map2);
