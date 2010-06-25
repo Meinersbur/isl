@@ -1898,7 +1898,9 @@ struct isl_basic_map *isl_basic_map_intersect(
 			bmap2->n_div, bmap2->n_eq, bmap2->n_ineq);
 	bmap1 = add_constraints(bmap1, bmap2, 0, 0);
 
-	if (sample) {
+	if (!bmap1)
+		isl_vec_free(sample);
+	else if (sample) {
 		isl_vec_free(bmap1->sample);
 		bmap1->sample = sample;
 	}
