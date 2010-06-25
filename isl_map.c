@@ -1892,10 +1892,10 @@ struct isl_basic_map *isl_basic_map_intersect(
 		sample = isl_vec_copy(bmap2->sample);
 
 	bmap1 = isl_basic_map_cow(bmap1);
-	bmap1 = isl_basic_map_extend_dim(bmap1, isl_dim_copy(bmap1->dim),
-			bmap2->n_div, bmap2->n_eq, bmap2->n_ineq);
 	if (!bmap1)
 		goto error;
+	bmap1 = isl_basic_map_extend_dim(bmap1, isl_dim_copy(bmap1->dim),
+			bmap2->n_div, bmap2->n_eq, bmap2->n_ineq);
 	bmap1 = add_constraints(bmap1, bmap2, 0, 0);
 
 	if (sample) {
