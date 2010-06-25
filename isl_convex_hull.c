@@ -1901,6 +1901,8 @@ struct isl_basic_map *isl_map_convex_hull(struct isl_map *map)
 	}
 
 	convex_hull = isl_basic_map_overlying_set(bset, model);
+	if (!convex_hull)
+		return NULL;
 
 	ISL_F_SET(convex_hull, ISL_BASIC_MAP_NO_IMPLICIT);
 	ISL_F_SET(convex_hull, ISL_BASIC_MAP_ALL_EQUALITIES);
