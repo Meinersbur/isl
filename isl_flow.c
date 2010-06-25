@@ -856,6 +856,8 @@ __isl_give isl_flow *isl_access_info_compute_flow(__isl_take isl_access_info *ac
 	acc->sink.map = isl_map_insert(acc->sink.map, isl_dim_in,
 					n_sink, n_data);
 	acc->sink.map = isl_map_intersect(acc->sink.map, id);
+	if (!acc->sink.map)
+		goto error;
 
 	if (acc->n_must == 0)
 		res = compute_mem_based_dependences(acc);
@@ -869,4 +871,7 @@ __isl_give isl_flow *isl_access_info_compute_flow(__isl_take isl_access_info *ac
 	res->may_no_source = isl_set_project_out(res->may_no_source, isl_dim_set, n_sink, n_data);
 
 	return res;
+error:
+	isl_access_info_free(acc);
+	return NULL;
 }
