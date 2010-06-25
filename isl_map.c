@@ -1798,10 +1798,10 @@ struct isl_basic_map *isl_basic_map_intersect_range(
 		    isl_basic_map_compatible_range(bmap, bset), goto error);
 
 	bmap = isl_basic_map_cow(bmap);
-	bmap = isl_basic_map_extend_dim(bmap, isl_dim_copy(bmap->dim),
-			bset->n_div, bset->n_eq, bset->n_ineq);
 	if (!bmap)
 		goto error;
+	bmap = isl_basic_map_extend_dim(bmap, isl_dim_copy(bmap->dim),
+			bset->n_div, bset->n_eq, bset->n_ineq);
 	bmap_range = isl_basic_map_from_basic_set(bset, isl_dim_copy(bset->dim));
 	bmap = add_constraints(bmap, bmap_range, 0, 0);
 
