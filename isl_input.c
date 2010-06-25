@@ -1385,6 +1385,10 @@ static struct isl_obj obj_read(struct isl_stream *s, int nparam)
 		return obj;
 	}
 	v = vars_new(s->ctx);
+	if (!v) {
+		isl_stream_push_token(s, tok);
+		goto error;
+	}
 	bmap = isl_basic_map_alloc(s->ctx, 0, 0, 0, 0, 0, 0);
 	if (tok->type == '[') {
 		isl_stream_push_token(s, tok);
