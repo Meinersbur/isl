@@ -20,6 +20,21 @@ For bug reports, feature requests and questions,
 visit the the discussion group at
 L<http://groups.google.com/group/isl-development>.
 
+=head2 Backward Incompatible Changes
+
+=head3 Changes since isl-0.02
+
+=over
+
+=item * The old printing functions have been deprecated
+and replaced by C<isl_printer> functions, see L<Input and Output>.
+
+=item * Most functions related to dependence analysis have acquired
+an extra C<must> argument.  To obtain the old behavior, this argument
+should be given the value 1.  See L<Dependence Analysis>.
+
+=back
+
 =head1 Installation
 
 The source of C<isl> can be obtained either as a tarball
