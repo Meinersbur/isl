@@ -177,12 +177,12 @@ unsigned isl_basic_set_total_dim(const struct isl_basic_set *bset)
 
 unsigned isl_set_n_dim(const struct isl_set *set)
 {
-	return set->dim->n_out;
+	return isl_set_dim(set, isl_dim_set);
 }
 
 unsigned isl_set_n_param(const struct isl_set *set)
 {
-	return set->dim->nparam;
+	return isl_set_dim(set, isl_dim_param);
 }
 
 unsigned isl_basic_map_n_in(const struct isl_basic_map *bmap)
