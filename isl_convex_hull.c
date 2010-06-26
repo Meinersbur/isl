@@ -79,7 +79,7 @@ int isl_basic_set_constraint_is_redundant(struct isl_basic_set **bset,
 			(struct isl_basic_map **)bset, c, opt_n, opt_d);
 }
 
-/* Compute the convex hull of a basic map, by removing the redundant
+/* Remove redundant
  * constraints.  If the minimal value along the normal of a constraint
  * is the same if the constraint is removed, then the constraint is redundant.
  *
@@ -87,7 +87,8 @@ int isl_basic_set_constraint_is_redundant(struct isl_basic_set **bset,
  * corresponding equality and the checked if the dimension was that
  * of a facet.
  */
-struct isl_basic_map *isl_basic_map_convex_hull(struct isl_basic_map *bmap)
+__isl_give isl_basic_map *isl_basic_map_remove_redundancies(
+	__isl_take isl_basic_map *bmap)
 {
 	struct isl_tab *tab;
 
@@ -118,10 +119,11 @@ error:
 	return NULL;
 }
 
-struct isl_basic_set *isl_basic_set_convex_hull(struct isl_basic_set *bset)
+__isl_give isl_basic_set *isl_basic_set_remove_redundancies(
+	__isl_take isl_basic_set *bset)
 {
 	return (struct isl_basic_set *)
-		isl_basic_map_convex_hull((struct isl_basic_map *)bset);
+		isl_basic_map_remove_redundancies((struct isl_basic_map *)bset);
 }
 
 /* Check if the set set is bound in the direction of the affine
@@ -865,7 +867,7 @@ static struct isl_basic_set *convex_hull_pair_elim(struct isl_basic_set *bset1,
 	}
 	hull = isl_basic_set_set_rational(hull);
 	hull = isl_basic_set_remove_dims(hull, dim, 2*(1+dim));
-	hull = isl_basic_set_convex_hull(hull);
+	hull = isl_basic_set_remove_redundancies(hull);
 	isl_basic_set_free(bset1);
 	isl_basic_set_free(bset2);
 	return hull;
@@ -2285,7 +2287,7 @@ struct isl_basic_map *isl_map_simple_hull(struct isl_map *map)
 	hull = isl_basic_map_overlying_set(bset, model);
 
 	hull = isl_basic_map_intersect(hull, affine_hull);
-	hull = isl_basic_map_convex_hull(hull);
+	hull = isl_basic_map_remove_redundancies(hull);
 	ISL_F_SET(hull, ISL_BASIC_MAP_NO_IMPLICIT);
 	ISL_F_SET(hull, ISL_BASIC_MAP_ALL_EQUALITIES);
 

@@ -1321,7 +1321,7 @@ struct isl_basic_map *isl_basic_map_eliminate_vars(
 			bmap = isl_basic_map_normalize_constraints(bmap);
 			bmap = remove_duplicate_constraints(bmap, NULL);
 			bmap = isl_basic_map_gauss(bmap, NULL);
-			bmap = isl_basic_map_convex_hull(bmap);
+			bmap = isl_basic_map_remove_redundancies(bmap);
 			if (!bmap)
 				goto error;
 			if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
@@ -1808,8 +1808,8 @@ struct isl_basic_map *isl_basic_map_gist(struct isl_basic_map *bmap,
 		return bmap;
 	}
 
-	bmap = isl_basic_map_convex_hull(bmap);
-	context = isl_basic_map_convex_hull(context);
+	bmap = isl_basic_map_remove_redundancies(bmap);
+	context = isl_basic_map_remove_redundancies(context);
 
 	if (context->n_eq)
 		bmap = normalize_divs_in_context(bmap, context);
@@ -1849,7 +1849,7 @@ __isl_give isl_map *isl_map_gist_basic_map(__isl_take isl_map *map,
 		return isl_map_universe(dim);
 	}
 
-	context = isl_basic_map_convex_hull(context);
+	context = isl_basic_map_remove_redundancies(context);
 	map = isl_map_cow(map);
 	if (!map || !context)
 		goto error;;

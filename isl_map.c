@@ -5300,7 +5300,7 @@ int isl_basic_map_is_empty(struct isl_basic_map *bmap)
 
 	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL)) {
 		struct isl_basic_map *copy = isl_basic_map_copy(bmap);
-		copy = isl_basic_map_convex_hull(copy);
+		copy = isl_basic_map_remove_redundancies(copy);
 		empty = ISL_F_ISSET(copy, ISL_BASIC_MAP_EMPTY);
 		isl_basic_map_free(copy);
 		return empty;
@@ -6028,7 +6028,7 @@ struct isl_basic_map *isl_basic_map_normalize(struct isl_basic_map *bmap)
 		return NULL;
 	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_NORMALIZED))
 		return bmap;
-	bmap = isl_basic_map_convex_hull(bmap);
+	bmap = isl_basic_map_remove_redundancies(bmap);
 	bmap = isl_basic_map_sort_constraints(bmap);
 	ISL_F_SET(bmap, ISL_BASIC_MAP_NORMALIZED);
 	return bmap;
