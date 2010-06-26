@@ -1015,24 +1015,32 @@ static int coalesce_pair(struct isl_map *map, int i, int j,
 	int *ineq_j = NULL;
 
 	eq_i = eq_status_in(map, i, j, tabs);
+	if (!eq_i)
+		goto error;
 	if (any(eq_i, 2 * map->p[i]->n_eq, STATUS_ERROR))
 		goto error;
 	if (any(eq_i, 2 * map->p[i]->n_eq, STATUS_SEPARATE))
 		goto done;
 
 	eq_j = eq_status_in(map, j, i, tabs);
+	if (!eq_j)
+		goto error;
 	if (any(eq_j, 2 * map->p[j]->n_eq, STATUS_ERROR))
 		goto error;
 	if (any(eq_j, 2 * map->p[j]->n_eq, STATUS_SEPARATE))
 		goto done;
 
 	ineq_i = ineq_status_in(map, i, j, tabs);
+	if (!ineq_i)
+		goto error;
 	if (any(ineq_i, map->p[i]->n_ineq, STATUS_ERROR))
 		goto error;
 	if (any(ineq_i, map->p[i]->n_ineq, STATUS_SEPARATE))
 		goto done;
 
 	ineq_j = ineq_status_in(map, j, i, tabs);
+	if (!ineq_j)
+		goto error;
 	if (any(ineq_j, map->p[j]->n_ineq, STATUS_ERROR))
 		goto error;
 	if (any(ineq_j, map->p[j]->n_ineq, STATUS_SEPARATE))
