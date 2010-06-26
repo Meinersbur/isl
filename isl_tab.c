@@ -2728,6 +2728,9 @@ enum isl_lp_result isl_tab_min(struct isl_tab *tab,
 	struct isl_tab_var *var;
 	struct isl_tab_undo *snap;
 
+	if (!tab)
+		return isl_lp_error;
+
 	if (tab->empty)
 		return isl_lp_empty;
 
