@@ -1808,6 +1808,9 @@ static struct isl_basic_set *uset_convex_hull_wrap_bounded(struct isl_set *set)
 {
 	struct isl_basic_set *convex_hull = NULL;
 
+	if (!set)
+		goto error;
+
 	if (isl_set_n_dim(set) == 0) {
 		convex_hull = isl_basic_set_universe(isl_dim_copy(set->dim));
 		isl_set_free(set);
@@ -1816,9 +1819,6 @@ static struct isl_basic_set *uset_convex_hull_wrap_bounded(struct isl_set *set)
 	}
 
 	set = isl_set_set_rational(set);
-
-	if (!set)
-		goto error;
 	set = isl_set_coalesce(set);
 	if (!set)
 		goto error;
