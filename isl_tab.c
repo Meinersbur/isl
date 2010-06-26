@@ -312,6 +312,8 @@ static struct isl_mat *tab_mat_product(struct isl_mat *mat1,
 
 	prod = isl_mat_alloc(mat1->ctx, mat1->n_row + mat2->n_row,
 					off + col1 + col2);
+	if (!prod)
+		return NULL;
 
 	n = 0;
 	for (i = 0; i < r1; ++i) {
