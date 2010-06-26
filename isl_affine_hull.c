@@ -821,8 +821,11 @@ static struct isl_basic_set *equalities_in_underlying_set(
 		else
 			isl_mat_free(T1);
 		hull = isl_basic_set_preimage(hull, T2);
-		isl_vec_free(hull->sample);
-		hull->sample = sample;
+		if (hull) {
+			isl_vec_free(hull->sample);
+			hull->sample = sample;
+		} else
+			isl_vec_free(sample);
 	}
 
 	return hull;
