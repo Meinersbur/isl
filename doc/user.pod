@@ -16,6 +16,9 @@ Still, even in its current form, the library has been successfully
 used as a backend polyhedral library for the polyhedral
 scanner C<CLooG> and as part of an equivalence checker of
 static affine programs.
+For bug reports, feature requests and questions,
+visit the the discussion group at
+L<http://groups.google.com/group/isl-development>.
 
 =head1 Installation
 
