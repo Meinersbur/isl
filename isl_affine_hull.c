@@ -723,8 +723,11 @@ static struct isl_basic_set *affine_hull_with_cone(struct isl_basic_set *bset,
 		else
 			isl_mat_free(U);
 		hull = isl_basic_set_preimage(hull, Q);
-		isl_vec_free(hull->sample);
-		hull->sample = sample;
+		if (hull) {
+			isl_vec_free(hull->sample);
+			hull->sample = sample;
+		} else
+			isl_vec_free(sample);
 	}
 
 	isl_basic_set_free(cone);
