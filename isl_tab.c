@@ -87,10 +87,12 @@ error:
 
 int isl_tab_extend_cons(struct isl_tab *tab, unsigned n_new)
 {
-	unsigned off = 2 + tab->M;
+	unsigned off;
 
 	if (!tab)
 		return -1;
+
+	off = 2 + tab->M;
 
 	if (tab->max_con < tab->n_con + n_new) {
 		struct isl_tab_var *con;
