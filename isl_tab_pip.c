@@ -3477,7 +3477,7 @@ static void no_sol_in_strict(struct isl_sol *sol,
 	int empty;
 	void *saved;
 
-	if (!sol->context)
+	if (!sol->context || sol->error)
 		goto error;
 	saved = sol->context->op->save(sol->context);
 
