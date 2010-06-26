@@ -3030,6 +3030,7 @@ int isl_tab_rollback(struct isl_tab *tab, struct isl_tab_undo *snap)
 		if (undo == snap)
 			break;
 		if (perform_undo(tab, undo) < 0) {
+			tab->top = undo;
 			free_undo(tab);
 			tab->in_undo = 0;
 			return -1;
