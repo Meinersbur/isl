@@ -186,8 +186,12 @@ static struct isl_mat *parameter_compression_multi(
 	A = isl_mat_left_hermite(A, 0, NULL, NULL);
 	T = isl_mat_sub_alloc(A->ctx, A->row, 0, A->n_row, 0, A->n_row);
 	T = isl_mat_lin_to_aff(T);
+	if (!T)
+		goto error;
 	isl_int_set(T->row[0][0], D);
 	T = isl_mat_right_inverse(T);
+	if (!T)
+		goto error;
 	isl_assert(T->ctx, isl_int_is_one(T->row[0][0]), goto error);
 	T = isl_mat_transpose(T);
 	isl_mat_free(A);
