@@ -2396,6 +2396,8 @@ __isl_give isl_basic_map *isl_basic_map_project_out(
 
 	bmap = move_last(bmap, type, first, n);
 	bmap = isl_basic_map_cow(bmap);
+	if (!bmap)
+		return NULL;
 
 	row_size = 1 + isl_dim_total(bmap->dim) + bmap->extra;
 	old = bmap->block2.data;
