@@ -475,7 +475,9 @@ static __isl_give isl_mat *initial_facet_constraint(__isl_keep isl_set *set)
 	isl_seq_clr(bounds->row[0], dim);
 	isl_int_set_si(bounds->row[0][1 + dim - 1], 1);
 	is_bound = uset_is_bound(set, bounds->row[0], 1 + dim);
-	isl_assert(set->ctx, is_bound == 1, goto error);
+	if (is_bound < 0)
+		goto error;
+	isl_assert(set->ctx, is_bound, goto error);
 	isl_seq_normalize(set->ctx, bounds->row[0], 1 + dim);
 	bounds->n_row = 1;
 
