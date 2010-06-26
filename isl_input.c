@@ -68,7 +68,7 @@ static void vars_drop(struct vars *v, int n)
 {
 	struct variable *var;
 
-	if (!v)
+	if (!v || !v->v)
 		return;
 
 	v->n -= n;
