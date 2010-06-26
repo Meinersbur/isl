@@ -854,6 +854,8 @@ static struct isl_basic_map *normalize_divs(
 	}
 	isl_int_clear(v);
 	pos = isl_alloc_array(bmap->ctx, int, T->n_row);
+	if (!pos)
+		goto error;
 	/* We have to be careful because dropping equalities may reorder them */
 	dropped = 0;
 	for (j = bmap->n_div - 1; j >= 0; --j) {
