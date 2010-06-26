@@ -295,7 +295,7 @@ static struct isl_vec *outside_point(struct isl_tab *tab, isl_int *eq, int up)
 	if (!up)
 		isl_seq_neg(eq, eq, 1 + dim);
 
-	if (isl_tab_rollback(tab, snap) < 0)
+	if (sample && isl_tab_rollback(tab, snap) < 0)
 		goto error;
 
 	return sample;
