@@ -403,6 +403,8 @@ static struct isl_basic_set *extend_affine_hull(struct isl_tab *tab,
 			goto error;
 		point = isl_basic_set_from_vec(sample);
 		hull = affine_hull(hull, point);
+		if (!hull)
+			return NULL;
 	}
 
 	return hull;
