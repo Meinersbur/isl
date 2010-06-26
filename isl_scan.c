@@ -185,7 +185,8 @@ int isl_basic_set_scan(struct isl_basic_set *bset,
 			continue;
 		}
 		isl_int_neg(B->row[1 + level][0], min->el[level]);
-		tab = isl_tab_add_valid_eq(tab, B->row[1 + level]);
+		if (isl_tab_add_valid_eq(tab, B->row[1 + level]) < 0)
+			goto error;
 		isl_int_set_si(B->row[1 + level][0], 0);
 		if (level < dim - 1) {
 			++level;

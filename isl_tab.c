@@ -1829,24 +1829,24 @@ static int row_is_manifestly_zero(struct isl_tab *tab, int row)
 
 /* Add an equality that is known to be valid for the given tableau.
  */
-struct isl_tab *isl_tab_add_valid_eq(struct isl_tab *tab, isl_int *eq)
+int isl_tab_add_valid_eq(struct isl_tab *tab, isl_int *eq)
 {
 	struct isl_tab_var *var;
 	int r;
 
 	if (!tab)
-		return NULL;
+		return -1;
 	r = isl_tab_add_row(tab, eq);
 	if (r < 0)
-		goto error;
+		return -1;
 
 	var = &tab->con[r];
 	r = var->index;
 	if (row_is_manifestly_zero(tab, r)) {
 		var->is_zero = 1;
 		if (isl_tab_mark_redundant(tab, r) < 0)
-			goto error;
-		return tab;
+			return -1;
+		return 0;
 	}
 
 	if (isl_int_is_neg(tab->mat->row[r][1])) {
@@ -1856,15 +1856,12 @@ struct isl_tab *isl_tab_add_valid_eq(struct isl_tab *tab, isl_int *eq)
 	}
 	var->is_nonneg = 1;
 	if (to_col(tab, var) < 0)
-		goto error;
+		return -1;
 	var->is_nonneg = 0;
 	if (isl_tab_kill_col(tab, var->index) < 0)
-		goto error;
+		return -1;
 
-	return tab;
-error:
-	isl_tab_free(tab);
-	return NULL;
+	return 0;
 }
 
 static int add_zero_row(struct isl_tab *tab)

@@ -508,7 +508,8 @@ struct isl_vec *isl_tab_sample(struct isl_tab *tab)
 			continue;
 		}
 		isl_int_neg(tab->basis->row[1 + level][0], min->el[level]);
-		tab = isl_tab_add_valid_eq(tab, tab->basis->row[1 + level]);
+		if (isl_tab_add_valid_eq(tab, tab->basis->row[1 + level]) < 0)
+			goto error;
 		isl_int_set_si(tab->basis->row[1 + level][0], 0);
 		if (level + tab->n_unbounded < dim - 1) {
 			++level;

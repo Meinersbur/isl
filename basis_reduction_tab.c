@@ -222,7 +222,8 @@ static int add_lp_row(struct tab_lp *lp, isl_int *row, int dim)
 	isl_seq_cpy(lp->row->el + 1, row, lp->dim);
 	isl_seq_neg(lp->row->el + 1 + lp->dim, row, lp->dim);
 
-	lp->tab = isl_tab_add_valid_eq(lp->tab, lp->row->el);
+	if (isl_tab_add_valid_eq(lp->tab, lp->row->el) < 0)
+		return -1;
 
 	return lp->neq++;
 }
