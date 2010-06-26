@@ -116,6 +116,8 @@ static void isl_dim_map_dump(struct isl_dim_map *dim_map)
 unsigned isl_basic_map_dim(const struct isl_basic_map *bmap,
 				enum isl_dim_type type)
 {
+	if (!bmap)
+		return 0;
 	switch (type) {
 	case isl_dim_param:
 	case isl_dim_in:
@@ -162,12 +164,12 @@ unsigned isl_basic_set_dim(const struct isl_basic_set *bset,
 
 unsigned isl_basic_set_n_dim(const struct isl_basic_set *bset)
 {
-	return bset->dim->n_out;
+	return isl_basic_set_dim(bset, isl_dim_set);
 }
 
 unsigned isl_basic_set_n_param(const struct isl_basic_set *bset)
 {
-	return bset->dim->nparam;
+	return isl_basic_set_dim(bset, isl_dim_param);
 }
 
 unsigned isl_basic_set_total_dim(const struct isl_basic_set *bset)
