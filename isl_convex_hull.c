@@ -623,11 +623,13 @@ static struct isl_basic_set *extend(struct isl_basic_set *hull,
 		hull_facet = isl_basic_set_add_equality(hull_facet, hull->ineq[i]);
 		hull_facet = isl_basic_set_gauss(hull_facet, NULL);
 		hull_facet = isl_basic_set_normalize_constraints(hull_facet);
-		if (!facet)
+		if (!facet || !hull_facet)
 			goto error;
 		hull = isl_basic_set_cow(hull);
 		hull = isl_basic_set_extend_dim(hull,
 			isl_dim_copy(hull->dim), 0, 0, facet->n_ineq);
+		if (!hull)
+			goto error;
 		for (j = 0; j < facet->n_ineq; ++j) {
 			for (f = 0; f < hull_facet->n_ineq; ++f)
 				if (isl_seq_eq(facet->ineq[j],
