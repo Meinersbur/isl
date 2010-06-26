@@ -1040,10 +1040,13 @@ struct isl_basic_map *isl_basic_map_extend(struct isl_basic_map *base,
 		return NULL;
 	dim = isl_dim_alloc(base->ctx, nparam, n_in, n_out);
 	if (!dim)
-		return NULL;
+		goto error;
 
 	bmap = isl_basic_map_extend_dim(base, dim, extra, n_eq, n_ineq);
 	return bmap;
+error:
+	isl_basic_map_free(base);
+	return NULL;
 }
 
 struct isl_basic_set *isl_basic_set_extend(struct isl_basic_set *base,
