@@ -381,6 +381,7 @@ isl_int *isl_set_wrap_facet(__isl_keep isl_set *set,
 	isl_int *facet, isl_int *ridge)
 {
 	int i;
+	isl_ctx *ctx;
 	struct isl_mat *T = NULL;
 	struct isl_basic_set *lp = NULL;
 	struct isl_vec *obj;
@@ -388,11 +389,14 @@ isl_int *isl_set_wrap_facet(__isl_keep isl_set *set,
 	isl_int num, den;
 	unsigned dim;
 
+	if (!set)
+		return NULL;
+	ctx = set->ctx;
 	set = isl_set_copy(set);
 	set = isl_set_set_rational(set);
 
 	dim = 1 + isl_set_n_dim(set);
-	T = isl_mat_alloc(set->ctx, 3, dim);
+	T = isl_mat_alloc(ctx, 3, dim);
 	if (!T)
 		goto error;
 	isl_int_set_si(T->row[0][0], 1);
@@ -405,7 +409,7 @@ isl_int *isl_set_wrap_facet(__isl_keep isl_set *set,
 	if (!set)
 		goto error;
 	lp = wrap_constraints(set);
-	obj = isl_vec_alloc(set->ctx, 1 + dim*set->n);
+	obj = isl_vec_alloc(ctx, 1 + dim*set->n);
 	if (!obj)
 		goto error;
 	isl_int_set_si(obj->block.data[0], 0);
@@ -417,7 +421,7 @@ isl_int *isl_set_wrap_facet(__isl_keep isl_set *set,
 	isl_int_init(num);
 	isl_int_init(den);
 	res = isl_basic_set_solve_lp(lp, 0,
-			    obj->block.data, set->ctx->one, &num, &den, NULL);
+			    obj->block.data, ctx->one, &num, &den, NULL);
 	if (res == isl_lp_ok) {
 		isl_int_neg(num, num);
 		isl_seq_combine(facet, num, facet, den, ridge, dim);
@@ -427,7 +431,9 @@ isl_int *isl_set_wrap_facet(__isl_keep isl_set *set,
 	isl_vec_free(obj);
 	isl_basic_set_free(lp);
 	isl_set_free(set);
-	isl_assert(set->ctx, res == isl_lp_ok || res == isl_lp_unbounded, 
+	if (res == isl_lp_error)
+		return NULL;
+	isl_assert(ctx, res == isl_lp_ok || res == isl_lp_unbounded, 
 		   return NULL);
 	return facet;
 error:
