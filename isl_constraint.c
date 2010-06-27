@@ -389,6 +389,11 @@ int isl_constraint_is_equality(struct isl_constraint *constraint)
 	return constraint->line >= constraint->bmap->eq;
 }
 
+/* We manually set ISL_BASIC_SET_FINAL instead of calling
+ * isl_basic_map_finalize because we want to keep the position
+ * of the divs and we therefore do not want to throw away redundant divs.
+ * This is arguably a bit fragile.
+ */
 __isl_give isl_basic_map *isl_basic_map_from_constraint(
 	__isl_take isl_constraint *constraint)
 {
@@ -425,7 +430,8 @@ __isl_give isl_basic_map *isl_basic_map_from_constraint(
 	total = isl_basic_map_total_dim(bmap);
 	isl_seq_cpy(c, constraint->line[0], 1 + total);
 	isl_constraint_free(constraint);
-	bmap = isl_basic_map_finalize(bmap);
+	if (bmap)
+		ISL_F_SET(bmap, ISL_BASIC_SET_FINAL);
 	return bmap;
 error:
 	isl_constraint_free(constraint);
