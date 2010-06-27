@@ -389,6 +389,25 @@ int isl_constraint_is_equality(struct isl_constraint *constraint)
 	return constraint->line >= constraint->bmap->eq;
 }
 
+int isl_constraint_is_div_constraint(__isl_keep isl_constraint *constraint)
+{
+	int i;
+
+	if (!constraint)
+		return -1;
+	if (isl_constraint_is_equality(constraint))
+		return 0;
+	for (i = 0; i < constraint->bmap->n_div; ++i) {
+		if (isl_int_is_zero(constraint->bmap->div[i][0]))
+			continue;
+		if (isl_basic_map_is_div_constraint(constraint->bmap,
+					constraint->line[0], i))
+			return 1;
+	}
+
+	return 0;
+}
+
 /* We manually set ISL_BASIC_SET_FINAL instead of calling
  * isl_basic_map_finalize because we want to keep the position
  * of the divs and we therefore do not want to throw away redundant divs.
