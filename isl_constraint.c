@@ -284,7 +284,7 @@ struct isl_constraint *isl_constraint_add_div(struct isl_constraint *constraint,
 				isl_dim_copy(constraint->bmap->dim), 1, 0, 0);
 	if (!constraint->bmap)
 		goto error;
-	constraint->line = &constraint->bmap->eq[0];
+	constraint->line = &constraint->bmap->ineq[0];
 	*pos = isl_basic_map_alloc_div(constraint->bmap);
 	if (*pos < 0)
 		goto error;
