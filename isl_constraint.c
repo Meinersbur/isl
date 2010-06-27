@@ -400,7 +400,7 @@ __isl_give isl_basic_map *isl_basic_map_from_constraint(
 	if (!constraint)
 		return NULL;
 
-	if (constraint->bmap->n_eq + constraint->bmap->n_ineq == 1) {
+	if (constraint->bmap->n_eq == 1 && constraint->bmap->n_ineq == 0) {
 		bmap = isl_basic_map_copy(constraint->bmap);
 		isl_constraint_free(constraint);
 		return bmap;
