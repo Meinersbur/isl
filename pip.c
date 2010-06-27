@@ -34,18 +34,18 @@
  *	Urs_unknowns	don't assume unknowns are non-negative
  */
 
-struct pip_options {
+struct options {
 	struct isl_options	*isl;
 	unsigned		 verify;
 };
 
-struct isl_arg pip_options_arg[] = {
-ISL_ARG_CHILD(struct pip_options, isl, "isl", isl_options_arg, "isl options")
-ISL_ARG_BOOL(struct pip_options, verify, 'T', "verify", 0, NULL)
+struct isl_arg options_arg[] = {
+ISL_ARG_CHILD(struct options, isl, "isl", isl_options_arg, "isl options")
+ISL_ARG_BOOL(struct options, verify, 'T', "verify", 0, NULL)
 ISL_ARG_END
 };
 
-ISL_ARG_DEF(pip_options, struct pip_options, pip_options_arg)
+ISL_ARG_DEF(options, struct options, options_arg)
 
 static struct isl_basic_set *to_parameter_domain(struct isl_basic_set *context)
 {
@@ -310,13 +310,13 @@ int main(int argc, char **argv)
 	int max = 0;
 	int rational = 0;
 	int n;
-	struct pip_options *options;
+	struct options *options;
 
-	options = pip_options_new_with_defaults();
+	options = options_new_with_defaults();
 	assert(options);
-	argc = pip_options_parse(options, argc, argv, ISL_ARG_ALL);
+	argc = options_parse(options, argc, argv, ISL_ARG_ALL);
 
-	ctx = isl_ctx_alloc_with_options(pip_options_arg, options);
+	ctx = isl_ctx_alloc_with_options(options_arg, options);
 
 	context = isl_basic_set_read_from_file(ctx, stdin, 0);
 	assert(context);
