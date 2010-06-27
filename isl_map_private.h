@@ -173,3 +173,5 @@ int isl_basic_set_vars_get_sign(__isl_keep isl_basic_set *bset,
 
 int isl_basic_set_add_div_constraints_var(__isl_keep isl_basic_set *bset,
 	unsigned pos, isl_int *div);
+int isl_basic_map_is_div_constraint(__isl_keep isl_basic_map *bmap,
+	isl_int *constraint, unsigned div);

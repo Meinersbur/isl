@@ -1105,6 +1105,43 @@ struct isl_basic_set *isl_basic_set_simplify(struct isl_basic_set *bset)
 }
 
 
+int isl_basic_map_is_div_constraint(__isl_keep isl_basic_map *bmap,
+	isl_int *constraint, unsigned div)
+{
+	unsigned pos;
+
+	if (!bmap)
+		return -1;
+
+	pos = 1 + isl_dim_total(bmap->dim) + div;
+
+	if (isl_int_eq(constraint[pos], bmap->div[div][0])) {
+		int neg;
+		isl_int_sub(bmap->div[div][1],
+				bmap->div[div][1], bmap->div[div][0]);
+		isl_int_add_ui(bmap->div[div][1], bmap->div[div][1], 1);
+		neg = isl_seq_is_neg(constraint, bmap->div[div]+1, pos);
+		isl_int_sub_ui(bmap->div[div][1], bmap->div[div][1], 1);
+		isl_int_add(bmap->div[div][1],
+				bmap->div[div][1], bmap->div[div][0]);
+		if (!neg)
+			return 0;
+		if (isl_seq_first_non_zero(constraint+pos+1,
+					    bmap->n_div-div-1) != -1)
+			return 0;
+	} else if (isl_int_abs_eq(constraint[pos], bmap->div[div][0])) {
+		if (!isl_seq_eq(constraint, bmap->div[div]+1, pos))
+			return 0;
+		if (isl_seq_first_non_zero(constraint+pos+1,
+					    bmap->n_div-div-1) != -1)
+			return 0;
+	} else
+		return 0;
+
+	return 1;
+}
+
+
 /* If the only constraints a div d=floor(f/m)
  * appears in are its two defining constraints
  *
@@ -1125,27 +1162,7 @@ static int div_is_redundant(struct isl_basic_map *bmap, int div)
 	for (i = 0; i < bmap->n_ineq; ++i) {
 		if (isl_int_is_zero(bmap->ineq[i][pos]))
 			continue;
-		if (isl_int_eq(bmap->ineq[i][pos], bmap->div[div][0])) {
-			int neg;
-			isl_int_sub(bmap->div[div][1],
-					bmap->div[div][1], bmap->div[div][0]);
-			isl_int_add_ui(bmap->div[div][1], bmap->div[div][1], 1);
-			neg = isl_seq_is_neg(bmap->ineq[i], bmap->div[div]+1, pos);
-			isl_int_sub_ui(bmap->div[div][1], bmap->div[div][1], 1);
-			isl_int_add(bmap->div[div][1],
-					bmap->div[div][1], bmap->div[div][0]);
-			if (!neg)
-				return 0;
-			if (isl_seq_first_non_zero(bmap->ineq[i]+pos+1,
-						    bmap->n_div-div-1) != -1)
-				return 0;
-		} else if (isl_int_abs_eq(bmap->ineq[i][pos], bmap->div[div][0])) {
-			if (!isl_seq_eq(bmap->ineq[i], bmap->div[div]+1, pos))
-				return 0;
-			if (isl_seq_first_non_zero(bmap->ineq[i]+pos+1,
-						    bmap->n_div-div-1) != -1)
-				return 0;
-		} else
+		if (!isl_basic_map_is_div_constraint(bmap, bmap->ineq[i], div))
 			return 0;
 	}
 
