@@ -260,8 +260,8 @@ with
 \begin{equation}
 \label{eq:transitive:path}
 P = \vec s \mapsto \{\, \vec x \to \vec y \mid
-\exists k_i \in \Z_{\ge 0} :
-\vec y = \vec x + \sum_i k_i \, \Delta_i(\vec s)
+\exists k_i \in \Z_{\ge 0}, \vec\delta_i \in k_i \, \Delta_i(\vec s) :
+\vec y = \vec x + \sum_i \vec\delta_i
 \wedge
 \sum_i k_i = k > 0
 \,\}
@@ -315,8 +315,8 @@ P' = \left(
 with
 $$
 P_i' = \vec s \mapsto \{\, \vec x' \to \vec y' \mid
-\exists k \in \Z_{\ge 1} :
-\vec y' = \vec x' + k \, \Delta_i'(\vec s)
+\exists k \in \Z_{\ge 1}, \vec \delta \in k \, \Delta_i'(\vec s) :
+\vec y' = \vec x' + \vec \delta
 \,\}
 .
 $$
