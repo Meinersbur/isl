@@ -1,0 +1,11 @@
+version: 0.03
+date: Tue Jun 29 13:16:46 CEST 2010
+changes:
+	- new printing functions
+	- support for "may" accesses in dependence analysis
+	- improved coalescing
+	- improved transitive closure
+	- fix several hard to trigger bugs
+	- improved argument parsing
+	- support parametric vertex enumeration for barvinok
+	- optionally use Bernstein expansion to compute bounds
