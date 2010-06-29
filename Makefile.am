@@ -189,7 +189,7 @@ pkginclude_HEADERS = \
 	include/isl_set.h \
 	include/isl_stream.h \
 	include/isl_vec.h \
-	include/isl_version.h
+	include/isl_version.h \
 	include/isl_vertices.h
 
 EXTRA_DIST = \
