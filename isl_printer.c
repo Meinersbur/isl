@@ -140,7 +140,7 @@ static __isl_give isl_printer *str_print_isl_int(__isl_take isl_printer *p,
 	int len;
 	isl_int_print_gmp_free_t gmp_free;
 
-	s = mpz_get_str(0, 10, i);
+	s = isl_int_get_str(i);
 	len = strlen(s);
 	if (len < p->width)
 		p = str_print_indent(p, p->width - len);
