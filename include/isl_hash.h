@@ -10,6 +10,7 @@
 #ifndef ISL_HASH_H
 #define ISL_HASH_H
 
+#include <stdlib.h>
 #include <isl_stdint.h>
 
 #if defined(__cplusplus)
@@ -35,6 +36,9 @@ extern "C" {
 	      (((h) >> (bits)) ^ (h)) & (((uint32_t)1 << (bits)) - 1)
 
 uint32_t isl_hash_string(uint32_t hash, const char *s);
+uint32_t isl_hash_mem(uint32_t hash, const void *p, size_t len);
+
+#define isl_hash_builtin(h,l)	isl_hash_mem(h, &l, sizeof(l))
 
 struct isl_hash_table_entry
 {
