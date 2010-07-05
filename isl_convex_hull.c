@@ -1074,23 +1074,25 @@ static struct isl_basic_set *valid_direction_lp(
 		if (k < 0)
 			goto error;
 		n = 0;
-		isl_int_set_si(lp->eq[k][n++], 0);
+		isl_int_set_si(lp->eq[k][n], 0); n++;
 		/* positivity constraint 1 >= 0 */
-		isl_int_set_si(lp->eq[k][n++], i == 0);
+		isl_int_set_si(lp->eq[k][n], i == 0); n++;
 		for (j = 0; j < bset1->n_eq; ++j) {
-			isl_int_set(lp->eq[k][n++], bset1->eq[j][i]);
-			isl_int_neg(lp->eq[k][n++], bset1->eq[j][i]);
+			isl_int_set(lp->eq[k][n], bset1->eq[j][i]); n++;
+			isl_int_neg(lp->eq[k][n], bset1->eq[j][i]); n++;
 		}
-		for (j = 0; j < bset1->n_ineq; ++j)
-			isl_int_set(lp->eq[k][n++], bset1->ineq[j][i]);
+		for (j = 0; j < bset1->n_ineq; ++j) {
+			isl_int_set(lp->eq[k][n], bset1->ineq[j][i]); n++;
+		}
 		/* positivity constraint 1 >= 0 */
-		isl_int_set_si(lp->eq[k][n++], -(i == 0));
+		isl_int_set_si(lp->eq[k][n], -(i == 0)); n++;
 		for (j = 0; j < bset2->n_eq; ++j) {
-			isl_int_neg(lp->eq[k][n++], bset2->eq[j][i]);
-			isl_int_set(lp->eq[k][n++], bset2->eq[j][i]);
+			isl_int_neg(lp->eq[k][n], bset2->eq[j][i]); n++;
+			isl_int_set(lp->eq[k][n], bset2->eq[j][i]); n++;
 		}
-		for (j = 0; j < bset2->n_ineq; ++j)
-			isl_int_neg(lp->eq[k][n++], bset2->ineq[j][i]);
+		for (j = 0; j < bset2->n_ineq; ++j) {
+			isl_int_neg(lp->eq[k][n], bset2->ineq[j][i]); n++;
+		}
 	}
 	lp = isl_basic_set_gauss(lp, NULL);
 	isl_basic_set_free(bset1);
@@ -1150,7 +1152,7 @@ static struct isl_vec *valid_direction(
 	isl_seq_clr(dir->block.data + 1, dir->size - 1);
 	n = 1;
 	/* positivity constraint 1 >= 0 */
-	isl_int_set(dir->block.data[0], sample->block.data[n++]);
+	isl_int_set(dir->block.data[0], sample->block.data[n]); n++;
 	for (i = 0; i < bset1->n_eq; ++i) {
 		isl_int_sub(sample->block.data[n],
 			    sample->block.data[n], sample->block.data[n+1]);
