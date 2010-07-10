@@ -63,7 +63,7 @@ struct isl_stats {
 enum isl_error {
 	isl_error_none = 0,
 	isl_error_unknown,
-	isl_error_invalid,
+	isl_error_invalid
 };
 struct isl_ctx {
 	int			ref;
