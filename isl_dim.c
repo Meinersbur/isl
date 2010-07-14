@@ -7,6 +7,7 @@
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
  */
 
+#include <stdlib.h>
 #include <isl_dim.h>
 #include "isl_name.h"
 
@@ -249,8 +250,15 @@ struct isl_dim *isl_dim_set_name(struct isl_dim *dim,
 				 const char *s)
 {
 	struct isl_name *name;
+	char *p;
+	long dummy;
+
 	if (!dim)
 		return NULL;
+	dummy = strtol(s, &p, 0);
+	if (p != s)
+		isl_die(dim->ctx, isl_error_invalid, "name looks like a number",
+			goto error);
 	name = isl_name_get(dim->ctx, s);
 	if (!name)
 		goto error;
