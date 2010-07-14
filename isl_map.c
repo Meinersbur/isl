@@ -6040,8 +6040,8 @@ struct isl_basic_set *isl_basic_set_normalize(struct isl_basic_set *bset)
 						(struct isl_basic_map *)bset);
 }
 
-static int isl_basic_map_fast_cmp(const struct isl_basic_map *bmap1,
-	const struct isl_basic_map *bmap2)
+int isl_basic_map_fast_cmp(const __isl_keep isl_basic_map *bmap1,
+	const __isl_keep isl_basic_map *bmap2)
 {
 	int i, cmp;
 	unsigned total;
@@ -6086,8 +6086,8 @@ static int isl_basic_map_fast_cmp(const struct isl_basic_map *bmap1,
 	return 0;
 }
 
-static int isl_basic_map_fast_is_equal(struct isl_basic_map *bmap1,
-	struct isl_basic_map *bmap2)
+int isl_basic_map_fast_is_equal(__isl_keep isl_basic_map *bmap1,
+	__isl_keep isl_basic_map *bmap2)
 {
 	return isl_basic_map_fast_cmp(bmap1, bmap2) == 0;
 }
