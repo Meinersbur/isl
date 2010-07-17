@@ -3442,15 +3442,23 @@ __isl_give isl_set *isl_set_reset_dim(__isl_take isl_set *set,
 
 struct isl_basic_set *isl_basic_map_domain(struct isl_basic_map *bmap)
 {
+	isl_dim *dim;
 	struct isl_basic_set *domain;
 	unsigned n_in;
 	unsigned n_out;
+
 	if (!bmap)
 		return NULL;
+	dim = isl_dim_domain(isl_basic_map_get_dim(bmap));
+
 	n_in = isl_basic_map_n_in(bmap);
 	n_out = isl_basic_map_n_out(bmap);
 	domain = isl_basic_set_from_basic_map(bmap);
-	return isl_basic_set_project_out(domain, isl_dim_set, n_in, n_out);
+	domain = isl_basic_set_project_out(domain, isl_dim_set, n_in, n_out);
+
+	domain = isl_basic_set_reset_dim(domain, dim);
+
+	return domain;
 }
 
 struct isl_basic_set *isl_basic_map_range(struct isl_basic_map *bmap)
