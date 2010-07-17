@@ -319,6 +319,35 @@ error:
 	return NULL;
 }
 
+static __isl_give isl_basic_map *read_var_def(struct isl_stream *s,
+	__isl_take isl_basic_map *bmap, enum isl_dim_type type, struct vars *v)
+{
+	struct isl_vec *vec;
+	int k;
+
+	vec = accept_affine(s, v);
+	if (!vec)
+		goto error;
+	v->v = variable_new(v, "", 0, v->n);
+	if (!v->v)
+		goto error;
+	v->n++;
+	bmap = isl_basic_map_extend_constraints(bmap, 1, 0);
+	k = isl_basic_map_alloc_equality(bmap);
+	if (k >= 0) {
+		isl_seq_cpy(bmap->eq[k], vec->el, vec->size);
+		isl_int_set_si(bmap->eq[k][vec->size], -1);
+	}
+	isl_vec_free(vec);
+	if (k < 0)
+		goto error;
+
+	return bmap;
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
 static __isl_give isl_basic_map *read_var_list(struct isl_stream *s,
 	__isl_take isl_basic_map *bmap, enum isl_dim_type type, struct vars *v)
 {
@@ -342,8 +371,6 @@ static __isl_give isl_basic_map *read_var_list(struct isl_stream *s,
 			isl_token_free(tok);
 		} else if (tok->type == ISL_TOKEN_IDENT ||
 			   tok->type == ISL_TOKEN_VALUE) {
-			struct isl_vec *vec;
-			int k;
 			if (type == isl_dim_param) {
 				isl_stream_error(s, tok,
 						"expecting unique identifier");
@@ -351,23 +378,8 @@ static __isl_give isl_basic_map *read_var_list(struct isl_stream *s,
 			}
 			isl_stream_push_token(s, tok);
 			tok = NULL;
-			vec = accept_affine(s, v);
-			if (!vec)
-				goto error;
-			v->v = variable_new(v, "", 0, v->n);
-			if (!v->v)
-				goto error;
-			v->n++;
 			bmap = isl_basic_map_add(bmap, type, 1);
-			bmap = isl_basic_map_extend_constraints(bmap, 1, 0);
-			k = isl_basic_map_alloc_equality(bmap);
-			if (k >= 0) {
-				isl_seq_cpy(bmap->eq[k], vec->el, vec->size);
-				isl_int_set_si(bmap->eq[k][vec->size], -1);
-			}
-			isl_vec_free(vec);
-			if (k < 0)
-				goto error;
+			bmap = read_var_def(s, bmap, type, v);
 		} else
 			break;
 
