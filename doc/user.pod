@@ -430,6 +430,23 @@ requires that both arguments have the same parameters.  This also
 means that if one of the arguments has named parameters, then the
 other needs to have named parameters too and the names need to match.
 
+The names of entire spaces may be set or read off
+using the following functions.
+
+	#include <isl_dim.h>
+	__isl_give isl_dim *isl_dim_set_tuple_name(
+		__isl_take isl_dim *dim,
+		enum isl_dim_type type, const char *s);
+	const char *isl_dim_get_tuple_name(__isl_keep isl_dim *dim,
+		enum isl_dim_type type);
+
+The C<dim> argument needs to be one of C<isl_dim_in>, C<isl_dim_out>
+or C<isl_dim_set>.  As with C<isl_dim_get_name>,
+the C<isl_dim_get_tuple_name> function returns a pointer to some internal
+data structure.
+Binary operations require the corresponding spaces of their arguments
+to have the same name.
+
 =head2 Input and Output
 
 C<isl> supports its own input/output format, which is similar

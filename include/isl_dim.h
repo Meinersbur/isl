@@ -26,6 +26,8 @@ struct isl_dim {
 	unsigned n_in;		/* zero for sets */
 	unsigned n_out;		/* dim for sets */
 
+	struct isl_name *tuple_name[2];
+
 	unsigned n_name;
 	struct isl_name **names;
 };
@@ -47,6 +49,11 @@ __isl_give isl_dim *isl_dim_set_alloc(isl_ctx *ctx,
 __isl_give isl_dim *isl_dim_copy(__isl_keep isl_dim *dim);
 struct isl_dim *isl_dim_cow(struct isl_dim *dim);
 void isl_dim_free(__isl_take isl_dim *dim);
+
+__isl_give isl_dim *isl_dim_set_tuple_name(__isl_take isl_dim *dim,
+	enum isl_dim_type type, const char *s);
+const char *isl_dim_get_tuple_name(__isl_keep isl_dim *dim,
+				 enum isl_dim_type type);
 
 __isl_give isl_dim *isl_dim_set_name(__isl_take isl_dim *dim,
 				 enum isl_dim_type type, unsigned pos,

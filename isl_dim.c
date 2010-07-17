@@ -27,6 +27,9 @@ struct isl_dim *isl_dim_alloc(struct isl_ctx *ctx,
 	dim->n_in = n_in;
 	dim->n_out = n_out;
 
+	dim->tuple_name[0] = NULL;
+	dim->tuple_name[1] = NULL;
+
 	dim->n_name = 0;
 	dim->names = NULL;
 
@@ -199,12 +202,21 @@ struct isl_dim *isl_dim_dup(struct isl_dim *dim)
 	if (!dim)
 		return NULL;
 	dup = isl_dim_alloc(dim->ctx, dim->nparam, dim->n_in, dim->n_out);
+	if (dim->tuple_name[0] &&
+	    !(dup->tuple_name[0] = isl_name_copy(dim->ctx, dim->tuple_name[0])))
+		goto error;
+	if (dim->tuple_name[1] &&
+	    !(dup->tuple_name[1] = isl_name_copy(dim->ctx, dim->tuple_name[1])))
+		goto error;
 	if (!dim->names)
 		return dup;
 	dup = copy_names(dup, isl_dim_param, 0, dim, isl_dim_param);
 	dup = copy_names(dup, isl_dim_in, 0, dim, isl_dim_in);
 	dup = copy_names(dup, isl_dim_out, 0, dim, isl_dim_out);
 	return dup;
+error:
+	isl_dim_free(dup);
+	return NULL;
 }
 
 struct isl_dim *isl_dim_cow(struct isl_dim *dim)
@@ -237,6 +249,9 @@ void isl_dim_free(struct isl_dim *dim)
 	if (--dim->ref > 0)
 		return;
 
+	isl_name_free(dim->ctx, dim->tuple_name[0]);
+	isl_name_free(dim->ctx, dim->tuple_name[1]);
+
 	for (i = 0; i < dim->n_name; ++i)
 		isl_name_free(dim->ctx, dim->names[i]);
 	free(dim->names);
@@ -245,20 +260,68 @@ void isl_dim_free(struct isl_dim *dim)
 	free(dim);
 }
 
+static int name_ok(isl_ctx *ctx, const char *s)
+{
+	char *p;
+	long dummy;
+
+	dummy = strtol(s, &p, 0);
+	if (p != s)
+		isl_die(ctx, isl_error_invalid, "name looks like a number",
+			return 0);
+
+	return 1;
+}
+
+__isl_give isl_dim *isl_dim_set_tuple_name(__isl_take isl_dim *dim,
+	enum isl_dim_type type, const char *s)
+{
+	struct isl_name *name;
+
+	dim = isl_dim_cow(dim);
+	if (!dim)
+		return NULL;
+	if (type != isl_dim_in && type != isl_dim_out)
+		isl_die(dim->ctx, isl_error_invalid,
+			"only input, output and set tuples can have names",
+			goto error);
+	if (!name_ok(dim->ctx, s))
+		goto error;
+	name = isl_name_get(dim->ctx, s);
+	if (!name)
+		goto error;
+
+	isl_name_free(dim->ctx, dim->tuple_name[type - isl_dim_in]);
+	dim->tuple_name[type - isl_dim_in] = name;
+
+	return dim;
+error:
+	isl_dim_free(dim);
+	return NULL;
+}
+
+const char *isl_dim_get_tuple_name(__isl_keep isl_dim *dim,
+	 enum isl_dim_type type)
+{
+	struct isl_name *name;
+	if (!dim)
+		return NULL;
+	if (type != isl_dim_in && type != isl_dim_out)
+		return NULL;
+	name = dim->tuple_name[type - isl_dim_in];
+	return name ? name->name : NULL;
+}
+
 struct isl_dim *isl_dim_set_name(struct isl_dim *dim,
 				 enum isl_dim_type type, unsigned pos,
 				 const char *s)
 {
 	struct isl_name *name;
-	char *p;
-	long dummy;
 
 	if (!dim)
 		return NULL;
-	dummy = strtol(s, &p, 0);
-	if (p != s)
-		isl_die(dim->ctx, isl_error_invalid, "name looks like a number",
-			goto error);
+	if (!name_ok(dim->ctx, s))
+		goto error;
 	name = isl_name_get(dim->ctx, s);
 	if (!name)
 		goto error;
@@ -275,12 +338,40 @@ const char *isl_dim_get_name(struct isl_dim *dim,
 	return name ? name->name : NULL;
 }
 
+static struct isl_name *tuple_name(__isl_keep isl_dim *dim,
+	enum isl_dim_type type)
+{
+	if (!dim)
+		return NULL;
+	if (type == isl_dim_in)
+		return dim->tuple_name[0];
+	if (type == isl_dim_out)
+		return dim->tuple_name[1];
+	return NULL;
+}
+
+int isl_dim_tuple_match(__isl_keep isl_dim *dim1, enum isl_dim_type dim1_type,
+			__isl_keep isl_dim *dim2, enum isl_dim_type dim2_type)
+{
+	struct isl_name *name1, *name2;
+
+	if (n(dim1, dim1_type) != n(dim2, dim2_type))
+		return 0;
+	name1 = tuple_name(dim1, dim1_type);
+	name2 = tuple_name(dim2, dim2_type);
+	if (!name1 ^ !name2)
+		return 0;
+	if (name1 && name1->name != name2->name)
+		return 0;
+	return 1;
+}
+
 static int match(struct isl_dim *dim1, enum isl_dim_type dim1_type,
 		struct isl_dim *dim2, enum isl_dim_type dim2_type)
 {
 	int i;
 
-	if (n(dim1, dim1_type) != n(dim2, dim2_type))
+	if (!isl_dim_tuple_match(dim1, dim1_type, dim2, dim2_type))
 		return 0;
 
 	if (!dim1->names && !dim2->names)
@@ -352,6 +443,16 @@ error:
 struct isl_dim *isl_dim_add(struct isl_dim *dim, enum isl_dim_type type,
 	unsigned n)
 {
+	if (!dim)
+		return NULL;
+	if ((type == isl_dim_in || type == isl_dim_out) &&
+	    dim->tuple_name[type - isl_dim_in]) {
+		dim = isl_dim_cow(dim);
+		if (!dim)
+			return NULL;
+		isl_name_free(dim->ctx, dim->tuple_name[type - isl_dim_in]);
+		dim->tuple_name[type - isl_dim_in] = NULL;
+	}
 	switch (type) {
 	case isl_dim_param:
 		return isl_dim_extend(dim,
@@ -373,7 +474,7 @@ __isl_give isl_dim *isl_dim_insert(__isl_take isl_dim *dim,
 
 	if (!dim)
 		return NULL;
-	if (n == 0)
+	if (n == 0 && !isl_dim_get_tuple_name(dim, type))
 		return dim;
 
 	isl_assert(dim->ctx, pos <= isl_dim_size(dim, type), goto error);
@@ -413,6 +514,10 @@ __isl_give isl_dim *isl_dim_insert(__isl_take isl_dim *dim,
 	case isl_dim_param:	dim->nparam += n; break;
 	case isl_dim_in:	dim->n_in += n; break;
 	case isl_dim_out:	dim->n_out += n; break;
+	}
+	if (type == isl_dim_in || type == isl_dim_out) {
+		isl_name_free(dim->ctx, dim->tuple_name[type - isl_dim_in]);
+		dim->tuple_name[type - isl_dim_in] = NULL;
 	}
 
 	return dim;
@@ -507,8 +612,9 @@ struct isl_dim *isl_dim_join(struct isl_dim *left, struct isl_dim *right)
 
 	isl_assert(left->ctx, match(left, isl_dim_param, right, isl_dim_param),
 			goto error);
-	isl_assert(left->ctx, n(left, isl_dim_out) == n(right, isl_dim_in),
-			goto error);
+	isl_assert(left->ctx,
+		isl_dim_tuple_match(left, isl_dim_out, right, isl_dim_in),
+		goto error);
 
 	dim = isl_dim_alloc(left->ctx, left->nparam, left->n_in, right->n_out);
 	if (!dim)
@@ -517,6 +623,13 @@ struct isl_dim *isl_dim_join(struct isl_dim *left, struct isl_dim *right)
 	dim = copy_names(dim, isl_dim_param, 0, left, isl_dim_param);
 	dim = copy_names(dim, isl_dim_in, 0, left, isl_dim_in);
 	dim = copy_names(dim, isl_dim_out, 0, right, isl_dim_out);
+
+	if (dim && left->tuple_name[0] &&
+	    !(dim->tuple_name[0] = isl_name_copy(dim->ctx, left->tuple_name[0])))
+		goto error;
+	if (dim && right->tuple_name[1] &&
+	    !(dim->tuple_name[1] = isl_name_copy(dim->ctx, right->tuple_name[1])))
+		goto error;
 
 	isl_dim_free(left);
 	isl_dim_free(right);
@@ -566,7 +679,7 @@ struct isl_dim *isl_dim_map(struct isl_dim *dim)
 	if (!dim)
 		return NULL;
 	isl_assert(dim->ctx, dim->n_in == 0, goto error);
-	if (dim->n_out == 0)
+	if (dim->n_out == 0 && !dim->tuple_name[1])
 		return dim;
 	dim = isl_dim_cow(dim);
 	if (!dim)
@@ -586,6 +699,8 @@ struct isl_dim *isl_dim_map(struct isl_dim *dim)
 		dim->n_name = dim->nparam + dim->n_out + dim->n_out;
 		dim = copy_names(dim, isl_dim_out, 0, dim, isl_dim_in);
 	}
+	isl_name_free(dim->ctx, dim->tuple_name[0]);
+	dim->tuple_name[0] = isl_name_copy(dim->ctx, dim->tuple_name[1]);
 	return dim;
 error:
 	isl_dim_free(dim);
@@ -607,6 +722,7 @@ struct isl_dim *isl_dim_reverse(struct isl_dim *dim)
 {
 	unsigned t;
 	struct isl_name **names = NULL;
+	struct isl_name *name;
 
 	if (!dim)
 		return NULL;
@@ -616,6 +732,10 @@ struct isl_dim *isl_dim_reverse(struct isl_dim *dim)
 	dim = isl_dim_cow(dim);
 	if (!dim)
 		return NULL;
+
+	name = dim->tuple_name[0];
+	dim->tuple_name[0] = dim->tuple_name[1];
+	dim->tuple_name[1] = name;
 
 	if (dim->names) {
 		names = isl_alloc_array(dim->ctx, struct isl_name *,
@@ -683,6 +803,10 @@ struct isl_dim *isl_dim_drop(struct isl_dim *dim, enum isl_dim_type type,
 	case isl_dim_in:	dim->n_in -= num; break;
 	case isl_dim_out:	dim->n_out -= num; break;
 	}
+	if (type == isl_dim_in || type == isl_dim_out) {
+		isl_name_free(dim->ctx, dim->tuple_name[type - isl_dim_in]);
+		dim->tuple_name[type - isl_dim_in] = NULL;
+	}
 	return dim;
 error:
 	isl_dim_free(dim);
@@ -692,12 +816,16 @@ error:
 struct isl_dim *isl_dim_drop_inputs(struct isl_dim *dim,
 		unsigned first, unsigned n)
 {
+	if (!dim)
+		return NULL;
 	return isl_dim_drop(dim, isl_dim_in, first, n);
 }
 
 struct isl_dim *isl_dim_drop_outputs(struct isl_dim *dim,
 		unsigned first, unsigned n)
 {
+	if (!dim)
+		return NULL;
 	return isl_dim_drop(dim, isl_dim_out, first, n);
 }
 
@@ -716,6 +844,22 @@ struct isl_dim *isl_dim_range(struct isl_dim *dim)
 	return isl_dim_drop_inputs(dim, 0, dim->n_in);
 }
 
+__isl_give isl_dim *isl_dim_as_set_dim(__isl_take isl_dim *dim)
+{
+	dim = isl_dim_cow(dim);
+	if (!dim)
+		return NULL;
+
+	dim->n_out += dim->n_in;
+	dim->n_in = 0;
+	isl_name_free(dim->ctx, dim->tuple_name[0]);
+	isl_name_free(dim->ctx, dim->tuple_name[1]);
+	dim->tuple_name[0] = NULL;
+	dim->tuple_name[1] = NULL;
+
+	return dim;
+}
+
 struct isl_dim *isl_dim_underlying(struct isl_dim *dim, unsigned n_div)
 {
 	int i;
@@ -723,7 +867,8 @@ struct isl_dim *isl_dim_underlying(struct isl_dim *dim, unsigned n_div)
 	if (!dim)
 		return NULL;
 	if (n_div == 0 &&
-	    dim->nparam == 0 && dim->n_in == 0 && dim->n_name == 0)
+	    dim->nparam == 0 && dim->n_in == 0 && dim->n_name == 0 &&
+	    !dim->tuple_name[1])
 		return dim;
 	dim = isl_dim_cow(dim);
 	if (!dim)
@@ -735,6 +880,10 @@ struct isl_dim *isl_dim_underlying(struct isl_dim *dim, unsigned n_div)
 	for (i = 0; i < dim->n_name; ++i)
 		isl_name_free(dim->ctx, get_name(dim, isl_dim_out, i));
 	dim->n_name = 0;
+	isl_name_free(dim->ctx, dim->tuple_name[0]);
+	isl_name_free(dim->ctx, dim->tuple_name[1]);
+	dim->tuple_name[0] = NULL;
+	dim->tuple_name[1] = NULL;
 
 	return dim;
 }
@@ -747,8 +896,8 @@ unsigned isl_dim_total(struct isl_dim *dim)
 int isl_dim_equal(struct isl_dim *dim1, struct isl_dim *dim2)
 {
 	return match(dim1, isl_dim_param, dim2, isl_dim_param) &&
-	       n(dim1, isl_dim_in) == n(dim2, isl_dim_in) &&
-	       n(dim1, isl_dim_out) == n(dim2, isl_dim_out);
+	       isl_dim_tuple_match(dim1, isl_dim_in, dim2, isl_dim_in) &&
+	       isl_dim_tuple_match(dim1, isl_dim_out, dim2, isl_dim_out);
 }
 
 int isl_dim_compatible(struct isl_dim *dim1, struct isl_dim *dim2)

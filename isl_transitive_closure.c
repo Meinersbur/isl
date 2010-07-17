@@ -159,6 +159,8 @@ static int check_exactness(__isl_take isl_map *map, __isl_take isl_map *app,
 	app = isl_map_project_out(app, isl_dim_in, d, 1);
 	app = isl_map_project_out(app, isl_dim_out, d, 1);
 
+	app = isl_map_reset_dim(app, isl_map_get_dim(map));
+
 	test = isl_map_apply_range(isl_map_copy(map), isl_map_copy(app));
 	test = isl_map_union(test, isl_map_copy(map));
 
@@ -2008,6 +2010,7 @@ error:
 __isl_give isl_map *isl_map_power(__isl_take isl_map *map, unsigned param,
 	int *exact)
 {
+	isl_dim *target_dim;
 	isl_dim *dim;
 	isl_map *diff;
 	unsigned d;
@@ -2026,6 +2029,7 @@ __isl_give isl_map *isl_map_power(__isl_take isl_map *map, unsigned param,
 	if (isl_map_fast_is_empty(map))
 		return map;
 
+	target_dim = isl_map_get_dim(map);
 	map = map_power(map, exact, 0);
 
 	dim = isl_map_get_dim(map);
@@ -2033,6 +2037,8 @@ __isl_give isl_map *isl_map_power(__isl_take isl_map *map, unsigned param,
 	map = isl_map_intersect(map, diff);
 	map = isl_map_project_out(map, isl_dim_in, d, 1);
 	map = isl_map_project_out(map, isl_dim_out, d, 1);
+
+	map = isl_map_reset_dim(map, target_dim);
 
 	return map;
 error:
@@ -2555,6 +2561,7 @@ error:
 __isl_give isl_map *isl_map_transitive_closure(__isl_take isl_map *map,
 	int *exact)
 {
+	isl_dim *target_dim;
 	int closed;
 
 	if (!map)
@@ -2574,7 +2581,9 @@ __isl_give isl_map *isl_map_transitive_closure(__isl_take isl_map *map,
 		return map;
 	}
 
+	target_dim = isl_map_get_dim(map);
 	map = map_power(map, exact, 1);
+	map = isl_map_reset_dim(map, target_dim);
 
 	return map;
 error:

@@ -303,11 +303,17 @@ static __isl_give isl_printer *print_tuple(__isl_keep isl_dim *dim,
 	__isl_take isl_printer *p, enum isl_dim_type type, int set, int latex,
 	__isl_keep isl_basic_map *eq)
 {
+	const char *name = NULL;
 	unsigned n = isl_dim_size(dim, type);
-	if (!latex || n != 1)
+	if ((type == isl_dim_in || type == isl_dim_out)) {
+		name = isl_dim_get_tuple_name(dim, type);
+		if (name)
+			p = isl_printer_print_str(p, name);
+	}
+	if (!latex || n != 1 || name)
 		p = isl_printer_print_str(p, s_open_list[latex]);
 	p = print_var_list(dim, p, type, set, latex, eq);
-	if (!latex || n != 1)
+	if (!latex || n != 1 || name)
 		p = isl_printer_print_str(p, s_close_list[latex]);
 	return p;
 }
@@ -1203,7 +1209,8 @@ static __isl_give isl_printer *print_pw_qpolynomial_isl(
 	for (i = 0; i < pwqp->n; ++i) {
 		if (i)
 			p = isl_printer_print_str(p, "; ");
-		if (isl_dim_size(pwqp->p[i].set->dim, isl_dim_set) > 0) {
+		if (isl_dim_size(pwqp->p[i].set->dim, isl_dim_set) > 0 ||
+		    isl_dim_get_tuple_name(pwqp->p[i].set->dim, isl_dim_set)) {
 			p = print_tuple(pwqp->p[i].set->dim, p, isl_dim_set, 1, 0, NULL);
 			p = isl_printer_print_str(p, " -> ");
 		}

@@ -548,8 +548,16 @@ static __isl_give isl_basic_map *read_tuple(struct isl_stream *s,
 	__isl_take isl_basic_map *bmap, enum isl_dim_type type, struct vars *v)
 {
 	struct isl_token *tok;
+	char *name = NULL;
 
 	tok = isl_stream_next_token(s);
+	if (tok && tok->type == ISL_TOKEN_IDENT) {
+		name = strdup(tok->u.s);
+		if (!name)
+			goto error;
+		isl_token_free(tok);
+		tok = isl_stream_next_token(s);
+	}
 	if (!tok || tok->type != '[') {
 		isl_stream_error(s, tok, "expecting '['");
 		goto error;
@@ -562,6 +570,11 @@ static __isl_give isl_basic_map *read_tuple(struct isl_stream *s,
 		goto error;
 	}
 	isl_token_free(tok);
+
+	if (name) {
+		bmap = isl_basic_map_set_tuple_name(bmap, type, name);
+		free(name);
+	}
 
 	return bmap;
 error:
@@ -1304,7 +1317,7 @@ static struct isl_obj obj_read_poly(struct isl_stream *s,
 
 	qp = read_term(s, bmap, v);
 	map = read_optional_disjuncts(s, bmap, v);
-	set = isl_set_from_map(map);
+	set = isl_map_range(map);
 
 	pwqp = isl_pw_qpolynomial_alloc(set, qp);
 
@@ -1312,6 +1325,30 @@ static struct isl_obj obj_read_poly(struct isl_stream *s,
 
 	obj.v = pwqp;
 	return obj;
+}
+
+static int next_is_tuple(struct isl_stream *s)
+{
+	struct isl_token *tok;
+	int is_tuple;
+
+	tok = isl_stream_next_token(s);
+	if (!tok)
+		return 0;
+	if (tok->type == '[') {
+		isl_stream_push_token(s, tok);
+		return 1;
+	}
+	if (tok->type != ISL_TOKEN_IDENT) {
+		isl_stream_push_token(s, tok);
+		return 0;
+	}
+
+	is_tuple = isl_stream_next_token_is(s, '[');
+
+	isl_stream_push_token(s, tok);
+
+	return is_tuple;
 }
 
 static struct isl_obj obj_read_body(struct isl_stream *s,
@@ -1322,7 +1359,7 @@ static struct isl_obj obj_read_body(struct isl_stream *s,
 	struct isl_obj obj = { type, NULL };
 	int n = v->n;
 
-	if (!isl_stream_next_token_is(s, '['))
+	if (!next_is_tuple(s))
 		return obj_read_poly(s, bmap, v, n);
 
 	bmap = read_tuple(s, bmap, isl_dim_in, v);
@@ -1332,12 +1369,8 @@ static struct isl_obj obj_read_body(struct isl_stream *s,
 	if (tok && tok->type == ISL_TOKEN_TO) {
 		obj.type = isl_obj_map;
 		isl_token_free(tok);
-		tok = isl_stream_next_token(s);
-		if (tok && tok->type != '[') {
-			isl_stream_push_token(s, tok);
+		if (!next_is_tuple(s))
 			return obj_read_poly(s, bmap, v, n);
-		}
-		isl_stream_push_token(s, tok);
 		bmap = read_tuple(s, bmap, isl_dim_out, v);
 		if (!bmap)
 			goto error;

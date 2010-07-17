@@ -1700,7 +1700,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_drop_dims(
 {
 	if (!qp)
 		return NULL;
-	if (n == 0)
+	if (n == 0 && !isl_dim_get_tuple_name(qp->dim, type))
 		return qp;
 
 	qp = isl_qpolynomial_cow(qp);

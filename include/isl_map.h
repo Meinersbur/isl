@@ -126,6 +126,10 @@ isl_ctx *isl_map_get_ctx(__isl_keep isl_map *map);
 __isl_give isl_dim *isl_basic_map_get_dim(__isl_keep isl_basic_map *bmap);
 __isl_give isl_dim *isl_map_get_dim(__isl_keep isl_map *map);
 
+__isl_give isl_basic_map *isl_basic_map_set_tuple_name(
+	__isl_take isl_basic_map *bmap, enum isl_dim_type type, const char *s);
+__isl_give isl_map *isl_map_set_tuple_name(__isl_take isl_map *map,
+	enum isl_dim_type type, const char *s);
 __isl_give isl_basic_map *isl_basic_map_set_dim_name(
 	__isl_take isl_basic_map *bmap,
 	enum isl_dim_type type, unsigned pos, const char *s);

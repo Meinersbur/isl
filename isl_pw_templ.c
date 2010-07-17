@@ -426,7 +426,7 @@ __isl_give PW *FN(PW,drop_dims)(__isl_take PW *pw,
 
 	if (!pw)
 		return NULL;
-	if (n == 0)
+	if (n == 0 && !isl_dim_get_tuple_name(pw->dim, type))
 		return pw;
 
 	pw = FN(PW,cow)(pw);
