@@ -806,6 +806,29 @@ Or, alternatively,
 	bset = isl_basic_set_read_from_str(ctx,
 		"{[i] : exists (a : i = 2a and i >= 10 and i <= 42)}", -1);
 
+A basic set or relation can also be constructed from two matrices
+describing the equalities and the inequalities.
+
+	__isl_give isl_basic_set *isl_basic_set_from_constraint_matrices(
+		__isl_take isl_dim *dim,
+		__isl_take isl_mat *eq, __isl_take isl_mat *ineq,
+		enum isl_dim_type c1,
+		enum isl_dim_type c2, enum isl_dim_type c3,
+		enum isl_dim_type c4);
+	__isl_give isl_basic_map *isl_basic_map_from_constraint_matrices(
+		__isl_take isl_dim *dim,
+		__isl_take isl_mat *eq, __isl_take isl_mat *ineq,
+		enum isl_dim_type c1,
+		enum isl_dim_type c2, enum isl_dim_type c3,
+		enum isl_dim_type c4, enum isl_dim_type c5);
+
+The C<isl_dim_type> arguments indicate the order in which
+different kinds of variables appear in the input matrices
+and should be a permutation of C<isl_dim_cst>, C<isl_dim_param>,
+C<isl_dim_set> and C<isl_dim_div> for sets and
+of C<isl_dim_cst>, C<isl_dim_param>,
+C<isl_dim_in>, C<isl_dim_out> and C<isl_dim_div> for relations.
+
 =head2 Inspecting Sets and Relations
 
 Usually, the user should not have to care about the actual constraints

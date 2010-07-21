@@ -7555,3 +7555,88 @@ __isl_give isl_mat *isl_basic_map_inequalities_matrix(
 
 	return mat;
 }
+
+__isl_give isl_basic_map *isl_basic_map_from_constraint_matrices(
+	__isl_take isl_dim *dim,
+	__isl_take isl_mat *eq, __isl_take isl_mat *ineq, enum isl_dim_type c1,
+	enum isl_dim_type c2, enum isl_dim_type c3,
+	enum isl_dim_type c4, enum isl_dim_type c5)
+{
+	enum isl_dim_type c[5] = { c1, c2, c3, c4, c5 };
+	isl_basic_map *bmap;
+	unsigned total;
+	unsigned extra;
+	int i, j, k, l;
+	int pos;
+
+	if (!dim || !eq || !ineq)
+		goto error;
+
+	if (eq->n_col != ineq->n_col)
+		isl_die(dim->ctx, isl_error_invalid,
+			"equalities and inequalities matrices should have "
+			"same number of columns", goto error);
+
+	total = 1 + isl_dim_total(dim);
+
+	if (eq->n_col < total)
+		isl_die(dim->ctx, isl_error_invalid,
+			"number of columns too small", goto error);
+
+	extra = eq->n_col - total;
+
+	bmap = isl_basic_map_alloc_dim(isl_dim_copy(dim), extra,
+				       eq->n_row, ineq->n_row);
+	if (!bmap)
+		goto error;
+	for (i = 0; i < extra; ++i)
+		if (isl_basic_map_alloc_div(bmap) < 0)
+			goto error;
+	for (i = 0; i < eq->n_row; ++i) {
+		l = isl_basic_map_alloc_equality(bmap);
+		if (l < 0)
+			goto error;
+		for (j = 0, pos = 0; j < 5; ++j) {
+			int off = isl_basic_map_offset(bmap, c[j]);
+			for (k = 0; k < isl_basic_map_dim(bmap, c[j]); ++k) {
+				isl_int_set(bmap->eq[l][off + k], 
+					    eq->row[i][pos]);
+				++pos;
+			}
+		}
+	}
+	for (i = 0; i < ineq->n_row; ++i) {
+		l = isl_basic_map_alloc_inequality(bmap);
+		if (l < 0)
+			goto error;
+		for (j = 0, pos = 0; j < 5; ++j) {
+			int off = isl_basic_map_offset(bmap, c[j]);
+			for (k = 0; k < isl_basic_map_dim(bmap, c[j]); ++k) {
+				isl_int_set(bmap->ineq[l][off + k], 
+					    ineq->row[i][pos]);
+				++pos;
+			}
+		}
+	}
+
+	isl_dim_free(dim);
+	isl_mat_free(eq);
+	isl_mat_free(ineq);
+
+	return bmap;
+error:
+	isl_dim_free(dim);
+	isl_mat_free(eq);
+	isl_mat_free(ineq);
+	return NULL;
+}
+
+__isl_give isl_basic_set *isl_basic_set_from_constraint_matrices(
+	__isl_take isl_dim *dim,
+	__isl_take isl_mat *eq, __isl_take isl_mat *ineq, enum isl_dim_type c1,
+	enum isl_dim_type c2, enum isl_dim_type c3, enum isl_dim_type c4)
+{
+	return (isl_basic_set*)
+	    isl_basic_map_from_constraint_matrices(dim, eq, ineq,
+						   c1, c2, c3, c4, isl_dim_in);
+}

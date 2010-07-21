@@ -361,6 +361,11 @@ __isl_give isl_map *isl_set_lex_gt_set(__isl_take isl_set *set1,
 
 int isl_set_size(__isl_keep isl_set *set);
 
+__isl_give isl_basic_set *isl_basic_set_from_constraint_matrices(
+	__isl_take isl_dim *dim,
+	__isl_take isl_mat *eq, __isl_take isl_mat *ineq, enum isl_dim_type c1,
+	enum isl_dim_type c2, enum isl_dim_type c3, enum isl_dim_type c4);
+
 #if defined(__cplusplus)
 }
 #endif
