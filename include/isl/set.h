@@ -102,18 +102,22 @@ __isl_give isl_basic_set *isl_basic_set_positive_orthant(
 	__isl_take isl_space *space);
 void isl_basic_set_print_internal(__isl_keep isl_basic_set *bset,
 				FILE *out, int indent);
+__isl_export
 __isl_give isl_basic_set *isl_basic_set_intersect(
 		__isl_take isl_basic_set *bset1,
 		__isl_take isl_basic_set *bset2);
+__isl_export
 __isl_give isl_basic_set *isl_basic_set_apply(
 		__isl_take isl_basic_set *bset,
 		__isl_take isl_basic_map *bmap);
+__isl_export
 __isl_give isl_basic_set *isl_basic_set_affine_hull(
 		__isl_take isl_basic_set *bset);
 __isl_give isl_basic_set *isl_basic_set_remove_dims(
 	__isl_take isl_basic_set *bset,
 	enum isl_dim_type type, unsigned first, unsigned n);
 struct isl_basic_set *isl_basic_set_simplify(struct isl_basic_set *bset);
+__isl_export
 __isl_give isl_basic_set *isl_basic_set_detect_equalities(
 						__isl_take isl_basic_set *bset);
 __isl_give isl_basic_set *isl_basic_set_remove_redundancies(
@@ -124,9 +128,11 @@ __isl_give isl_basic_set *isl_basic_set_list_product(
 
 __isl_give isl_basic_set *isl_basic_set_read_from_file(isl_ctx *ctx,
 	FILE *input);
+__isl_constructor
 __isl_give isl_basic_set *isl_basic_set_read_from_str(isl_ctx *ctx,
 	const char *str);
 __isl_give isl_set *isl_set_read_from_file(isl_ctx *ctx, FILE *input);
+__isl_constructor
 __isl_give isl_set *isl_set_read_from_str(isl_ctx *ctx, const char *str);
 void isl_basic_set_dump(__isl_keep isl_basic_set *bset);
 void isl_set_dump(__isl_keep isl_set *set);
@@ -156,6 +162,7 @@ struct isl_set *isl_set_from_underlying_set(
 	struct isl_set *set, struct isl_basic_set *like);
 struct isl_set *isl_set_to_underlying_set(struct isl_set *set);
 
+__isl_export
 int isl_basic_set_is_equal(
 		struct isl_basic_set *bset1, struct isl_basic_set *bset2);
 
@@ -171,9 +178,13 @@ __isl_give isl_set *isl_set_partial_lexmin(
 __isl_give isl_set *isl_set_partial_lexmax(
 		__isl_take isl_set *set, __isl_take isl_set *dom,
 		__isl_give isl_set **empty);
+__isl_export
 __isl_give isl_set *isl_basic_set_lexmin(__isl_take isl_basic_set *bset);
+__isl_export
 __isl_give isl_set *isl_basic_set_lexmax(__isl_take isl_basic_set *bset);
+__isl_export
 __isl_give isl_set *isl_set_lexmin(__isl_take isl_set *set);
+__isl_export
 __isl_give isl_set *isl_set_lexmax(__isl_take isl_set *set);
 int isl_basic_set_foreach_lexmax(__isl_keep isl_basic_set *bset,
 	int (*fn)(__isl_take isl_basic_set *dom, __isl_take isl_aff_list *list,
@@ -186,6 +197,7 @@ __isl_give isl_pw_multi_aff *isl_basic_set_partial_lexmax_pw_multi_aff(
 	__isl_take isl_basic_set *bset, __isl_take isl_basic_set *dom,
 	__isl_give isl_set **empty);
 
+__isl_export
 __isl_give isl_set *isl_basic_set_union(
 		__isl_take isl_basic_set *bset1,
 		__isl_take isl_basic_set *bset2);
@@ -205,6 +217,7 @@ int isl_basic_set_dims_get_sign(__isl_keep isl_basic_set *bset,
 int isl_basic_set_is_universe(__isl_keep isl_basic_set *bset);
 int isl_basic_set_plain_is_empty(__isl_keep isl_basic_set *bset);
 int isl_basic_set_fast_is_empty(__isl_keep isl_basic_set *bset);
+__isl_export
 int isl_basic_set_is_empty(__isl_keep isl_basic_set *bset);
 int isl_basic_set_is_bounded(__isl_keep isl_basic_set *bset);
 
@@ -223,13 +236,17 @@ struct isl_set *isl_set_finalize(struct isl_set *set);
 __isl_give isl_set *isl_set_copy(__isl_keep isl_set *set);
 void isl_set_free(__isl_take isl_set *set);
 struct isl_set *isl_set_dup(struct isl_set *set);
+__isl_constructor
 __isl_give isl_set *isl_set_from_basic_set(__isl_take isl_basic_set *bset);
 __isl_give isl_basic_set *isl_set_sample(__isl_take isl_set *set);
 __isl_give isl_point *isl_basic_set_sample_point(__isl_take isl_basic_set *bset);
 __isl_give isl_point *isl_set_sample_point(__isl_take isl_set *set);
+__isl_export
 __isl_give isl_set *isl_set_detect_equalities(__isl_take isl_set *set);
+__isl_export
 __isl_give isl_basic_set *isl_set_affine_hull(__isl_take isl_set *set);
 __isl_give isl_basic_set *isl_set_convex_hull(__isl_take isl_set *set);
+__isl_export
 __isl_give isl_basic_set *isl_set_polyhedral_hull(__isl_take isl_set *set);
 __isl_give isl_basic_set *isl_set_simple_hull(__isl_take isl_set *set);
 struct isl_basic_set *isl_set_bounded_simple_hull(struct isl_set *set);
@@ -237,6 +254,7 @@ __isl_give isl_set *isl_set_recession_cone(__isl_take isl_set *set);
 
 struct isl_set *isl_set_union_disjoint(
 			struct isl_set *set1, struct isl_set *set2);
+__isl_export
 __isl_give isl_set *isl_set_union(
 		__isl_take isl_set *set1,
 		__isl_take isl_set *set2);
@@ -246,15 +264,20 @@ __isl_give isl_basic_set *isl_basic_set_flat_product(
 	__isl_take isl_basic_set *bset1, __isl_take isl_basic_set *bset2);
 __isl_give isl_set *isl_set_flat_product(__isl_take isl_set *set1,
 	__isl_take isl_set *set2);
+__isl_export
 __isl_give isl_set *isl_set_intersect(
 		__isl_take isl_set *set1,
 		__isl_take isl_set *set2);
+__isl_export
 __isl_give isl_set *isl_set_intersect_params(__isl_take isl_set *set,
 		__isl_take isl_set *params);
+__isl_export
 __isl_give isl_set *isl_set_subtract(
 		__isl_take isl_set *set1,
 		__isl_take isl_set *set2);
+__isl_export
 __isl_give isl_set *isl_set_complement(__isl_take isl_set *set);
+__isl_export
 __isl_give isl_set *isl_set_apply(
 		__isl_take isl_set *set,
 		__isl_take isl_map *map);
@@ -307,10 +330,14 @@ int isl_set_fast_is_empty(__isl_keep isl_set *set);
 int isl_set_plain_is_universe(__isl_keep isl_set *set);
 int isl_set_fast_is_universe(__isl_keep isl_set *set);
 int isl_set_is_params(__isl_keep isl_set *set);
+__isl_export
 int isl_set_is_empty(__isl_keep isl_set *set);
 int isl_set_is_bounded(__isl_keep isl_set *set);
+__isl_export
 int isl_set_is_subset(__isl_keep isl_set *set1, __isl_keep isl_set *set2);
+__isl_export
 int isl_set_is_strict_subset(__isl_keep isl_set *set1, __isl_keep isl_set *set2);
+__isl_export
 int isl_set_is_equal(__isl_keep isl_set *set1, __isl_keep isl_set *set2);
 int isl_set_is_singleton(__isl_keep isl_set *set);
 int isl_set_is_box(__isl_keep isl_set *set);
@@ -348,10 +375,12 @@ int isl_set_dim_has_lower_bound(__isl_keep isl_set *set,
 int isl_set_dim_has_upper_bound(__isl_keep isl_set *set,
 	enum isl_dim_type type, unsigned pos);
 
+__isl_export
 __isl_give isl_basic_set *isl_basic_set_gist(__isl_take isl_basic_set *bset,
 					    __isl_take isl_basic_set *context);
 __isl_give isl_set *isl_set_gist_basic_set(__isl_take isl_set *set,
 	__isl_take isl_basic_set *context);
+__isl_export
 __isl_give isl_set *isl_set_gist(__isl_take isl_set *set,
 	__isl_take isl_set *context);
 __isl_give isl_set *isl_set_gist_params(__isl_take isl_set *set,
@@ -361,6 +390,7 @@ int isl_basic_set_dim_residue_class(struct isl_basic_set *bset,
 int isl_set_dim_residue_class(struct isl_set *set,
 	int pos, isl_int *modulo, isl_int *residue);
 
+__isl_export
 __isl_give isl_set *isl_set_coalesce(__isl_take isl_set *set);
 
 int isl_set_plain_is_equal(__isl_keep isl_set *set1, __isl_keep isl_set *set2);
@@ -375,6 +405,7 @@ uint32_t isl_set_get_hash(struct isl_set *set);
 int isl_set_dim_is_unique(struct isl_set *set, unsigned dim);
 
 int isl_set_n_basic_set(__isl_keep isl_set *set);
+__isl_export
 int isl_set_foreach_basic_set(__isl_keep isl_set *set,
 	int (*fn)(__isl_take isl_basic_set *bset, void *user), void *user);
 

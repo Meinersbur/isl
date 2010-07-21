@@ -19,9 +19,24 @@
 #include <isl/hash.h>
 #include <isl/config.h>
 
+#ifndef __isl_give
 #define __isl_give
+#endif
+#ifndef __isl_take
 #define __isl_take
+#endif
+#ifndef __isl_keep
 #define __isl_keep
+#endif
+#ifndef __isl_export
+#define __isl_export
+#endif
+#ifndef __isl_constructor
+#define __isl_constructor
+#endif
+#ifndef __isl_subclass
+#define __isl_subclass(super)
+#endif
 
 #ifdef GCC_WARN_UNUSED_RESULT
 #define	WARN_UNUSED	GCC_WARN_UNUSED_RESULT

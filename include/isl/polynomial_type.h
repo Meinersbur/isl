@@ -7,6 +7,7 @@ typedef struct isl_qpolynomial isl_qpolynomial;
 struct isl_term;
 typedef struct isl_term isl_term;
 
+__isl_export
 struct isl_pw_qpolynomial;
 typedef struct isl_pw_qpolynomial isl_pw_qpolynomial;
 
@@ -22,6 +23,7 @@ typedef struct isl_qpolynomial_fold isl_qpolynomial_fold;
 struct isl_pw_qpolynomial_fold;
 typedef struct isl_pw_qpolynomial_fold isl_pw_qpolynomial_fold;
 
+__isl_export
 struct isl_union_pw_qpolynomial;
 typedef struct isl_union_pw_qpolynomial isl_union_pw_qpolynomial;
 
