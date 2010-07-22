@@ -2040,6 +2040,54 @@ error:
 	return NULL;
 }
 
+/* Compute a relation that maps each element in the range of the input
+ * relation to the lengths of all paths composed of edges in the input
+ * relation that end up in the given range element.
+ * The result may be an overapproximation, in which case *exact is set to 0.
+ * The resulting relation is very similar to the power relation.
+ * The difference are that the domain has been projected out, the
+ * range has become the domain and the exponent is the range instead
+ * of a parameter.
+ */
+__isl_give isl_map *isl_map_reaching_path_lengths(__isl_take isl_map *map,
+	int *exact)
+{
+	isl_dim *dim;
+	isl_map *diff;
+	unsigned d;
+	unsigned param;
+
+	if (!map)
+		return NULL;
+
+	d = isl_map_dim(map, isl_dim_in);
+	param = isl_map_dim(map, isl_dim_param);
+
+	map = isl_map_compute_divs(map);
+	map = isl_map_coalesce(map);
+
+	if (isl_map_fast_is_empty(map)) {
+		if (exact)
+			*exact = 1;
+		map = isl_map_project_out(map, isl_dim_out, 0, d);
+		map = isl_map_add(map, isl_dim_out, 1);
+		return map;
+	}
+
+	map = map_power(map, exact, 0);
+
+	map = isl_map_add(map, isl_dim_param, 1);
+	dim = isl_map_get_dim(map);
+	diff = equate_parameter_to_length(dim, param);
+	map = isl_map_intersect(map, diff);
+	map = isl_map_project_out(map, isl_dim_in, 0, d + 1);
+	map = isl_map_project_out(map, isl_dim_out, d, 1);
+	map = isl_map_reverse(map);
+	map = isl_map_move_dims(map, isl_dim_out, 0, isl_dim_param, param, 1);
+
+	return map;
+}
+
 /* Check whether equality i of bset is a pure stride constraint
  * on a single dimensions, i.e., of the form
  *

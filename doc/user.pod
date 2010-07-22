@@ -1020,6 +1020,25 @@ then C<*exact> is set to C<1>.
 The current implementation only produces exact results for particular
 cases of piecewise translations (i.e., piecewise uniform dependences).
 
+=item * Reaching path lengths
+
+	__isl_give isl_map *isl_map_reaching_path_lengths(
+		__isl_take isl_map *map, int *exact);
+
+Compute a relation that maps each element in the range of C<map>
+to the lengths of all paths composed of edges in C<map> that
+end up in the given element.
+The result may be an overapproximation.  If the result is known to be exact,
+then C<*exact> is set to C<1>.
+To compute the I<maximal> path length, the resulting relation
+should be postprocessed by C<isl_map_lexmax>.
+In particular, if the input relation is a dependence relation
+(mapping sources to sinks), then the maximal path length corresponds
+to the free schedule.
+Note, however, that C<isl_map_lexmax> expects the maximum to be
+finite, so if the path lengths are unbounded (possibly due to
+the overapproximation), then you will get an error message.
+
 =back
 
 =head2 Binary Operations
