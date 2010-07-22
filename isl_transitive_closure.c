@@ -1934,19 +1934,16 @@ error:
  * if "project" is set.
  *
  * If "project" is not set, then
- * we first construct an extended mapping with an extra coordinate
+ * we construct an extended mapping with an extra coordinate
  * that indicates the number of steps taken.  In particular,
  * the difference in the last coordinate is equal to the number
  * of steps taken to move from a domain element to the corresponding
  * image element(s).
- * In the final step, this difference is equated to the parameter "param"
- * and made positive.  The extra coordinates are subsequently projected out.
  */
 static __isl_give isl_map *construct_power(__isl_keep isl_map *map,
-	unsigned param, int *exact, int project)
+	int *exact, int project)
 {
 	struct isl_map *app = NULL;
-	struct isl_map *diff;
 	struct isl_dim *dim = NULL;
 	unsigned d;
 
@@ -1962,28 +1959,20 @@ static __isl_give isl_map *construct_power(__isl_keep isl_map *map,
 	app = construct_power_components(isl_dim_copy(dim), map,
 					exact, project);
 
-	if (project) {
-		isl_dim_free(dim);
-	} else {
-		diff = equate_parameter_to_length(dim, param);
-		app = isl_map_intersect(app, diff);
-		app = isl_map_project_out(app, isl_dim_in, d, 1);
-		app = isl_map_project_out(app, isl_dim_out, d, 1);
-	}
+	isl_dim_free(dim);
 
 	return app;
 }
 
 /* Compute the positive powers of "map", or an overapproximation.
- * The power is given by parameter "param".  If the result is exact,
- * then *exact is set to 1.
+ * If the result is exact, then *exact is set to 1.
  *
  * If project is set, then we are actually interested in the transitive
  * closure, so we can use a more relaxed exactness check.
  * The lengths of the paths are also projected out instead of being
- * equated to "param" (which is then ignored in this case).
+ * encoded as the difference between an extra pair of final coordinates.
  */
-static __isl_give isl_map *map_power(__isl_take isl_map *map, unsigned param,
+static __isl_give isl_map *map_power(__isl_take isl_map *map,
 	int *exact, int project)
 {
 	struct isl_map *app = NULL;
@@ -1994,16 +1983,11 @@ static __isl_give isl_map *map_power(__isl_take isl_map *map, unsigned param,
 	if (!map)
 		return NULL;
 
-	if (isl_map_fast_is_empty(map))
-		return map;
-
-	isl_assert(map->ctx, project || param < isl_map_dim(map, isl_dim_param),
-		goto error);
 	isl_assert(map->ctx,
 		isl_map_dim(map, isl_dim_in) == isl_map_dim(map, isl_dim_out),
 		goto error);
 
-	app = construct_power(map, param, exact, project);
+	app = construct_power(map, exact, project);
 
 	isl_map_free(map);
 	return app;
@@ -2016,13 +2000,44 @@ error:
 /* Compute the positive powers of "map", or an overapproximation.
  * The power is given by parameter "param".  If the result is exact,
  * then *exact is set to 1.
+ * map_power constructs an extended relation with the path lengths
+ * encoded as the difference between the final coordinates.
+ * In the final step, this difference is equated to the parameter "param"
+ * and made positive.  The extra coordinates are subsequently projected out.
  */
 __isl_give isl_map *isl_map_power(__isl_take isl_map *map, unsigned param,
 	int *exact)
 {
+	isl_dim *dim;
+	isl_map *diff;
+	unsigned d;
+
+	if (!map)
+		return NULL;
+
+	isl_assert(map->ctx, param < isl_map_dim(map, isl_dim_param),
+		goto error);
+
+	d = isl_map_dim(map, isl_dim_in);
+
 	map = isl_map_compute_divs(map);
 	map = isl_map_coalesce(map);
-	return map_power(map, param, exact, 0);
+
+	if (isl_map_fast_is_empty(map))
+		return map;
+
+	map = map_power(map, exact, 0);
+
+	dim = isl_map_get_dim(map);
+	diff = equate_parameter_to_length(dim, param);
+	map = isl_map_intersect(map, diff);
+	map = isl_map_project_out(map, isl_dim_in, d, 1);
+	map = isl_map_project_out(map, isl_dim_out, d, 1);
+
+	return map;
+error:
+	isl_map_free(map);
+	return NULL;
 }
 
 /* Check whether equality i of bset is a pure stride constraint
@@ -2492,7 +2507,6 @@ error:
 __isl_give isl_map *isl_map_transitive_closure(__isl_take isl_map *map,
 	int *exact)
 {
-	unsigned param;
 	int closed;
 
 	if (!map)
@@ -2512,8 +2526,7 @@ __isl_give isl_map *isl_map_transitive_closure(__isl_take isl_map *map,
 		return map;
 	}
 
-	param = isl_map_dim(map, isl_dim_param);
-	map = map_power(map, param, exact, 1);
+	map = map_power(map, exact, 1);
 
 	return map;
 error:
