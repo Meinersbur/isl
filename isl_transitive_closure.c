@@ -588,7 +588,7 @@ error:
 	return NULL;
 }
 
-/* Given a dimenion specification Z^{n+1} -> Z^{n+1} and a parameter "param",
+/* Given a dimension specification Z^{n+1} -> Z^{n+1} and a parameter "param",
  * construct a map that equates the parameter to the difference
  * in the final coordinates and imposes that this difference is positive.
  * That is, construct
