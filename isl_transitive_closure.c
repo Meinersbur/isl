@@ -1377,6 +1377,49 @@ error:
 	return -1;
 }
 
+/* Replace each entry in the n by n grid of maps by the cross product
+ * with the relation { [i] -> [i + 1] }.
+ */
+static int add_length(__isl_keep isl_map *map, isl_map ***grid, int n)
+{
+	int i, j, k;
+	isl_dim *dim;
+	isl_basic_map *bstep;
+	isl_map *step;
+	unsigned nparam;
+
+	if (!map)
+		return -1;
+
+	dim = isl_map_get_dim(map);
+	nparam = isl_dim_size(dim, isl_dim_param);
+	dim = isl_dim_drop(dim, isl_dim_in, 0, isl_dim_size(dim, isl_dim_in));
+	dim = isl_dim_drop(dim, isl_dim_out, 0, isl_dim_size(dim, isl_dim_out));
+	dim = isl_dim_add(dim, isl_dim_in, 1);
+	dim = isl_dim_add(dim, isl_dim_out, 1);
+	bstep = isl_basic_map_alloc_dim(dim, 0, 1, 0);
+	k = isl_basic_map_alloc_equality(bstep);
+	if (k < 0) {
+		isl_basic_map_free(bstep);
+		return -1;
+	}
+	isl_seq_clr(bstep->eq[k], 1 + isl_basic_map_total_dim(bstep));
+	isl_int_set_si(bstep->eq[k][0], 1);
+	isl_int_set_si(bstep->eq[k][1 + nparam], 1);
+	isl_int_set_si(bstep->eq[k][1 + nparam + 1], -1);
+	bstep = isl_basic_map_finalize(bstep);
+	step = isl_map_from_basic_map(bstep);
+
+	for (i = 0; i < n; ++i)
+		for (j = 0; j < n; ++j)
+			grid[i][j] = isl_map_product(grid[i][j],
+						     isl_map_copy(step));
+
+	isl_map_free(step);
+
+	return 0;
+}
+
 /* Given a partition of the domains and ranges of the basic maps in "map",
  * apply the Floyd-Warshall algorithm with the elements in the partition
  * as vertices.
@@ -1395,6 +1438,14 @@ error:
  * element corresponding to the current vertex is replaced by its
  * transitive closure to account for all indirect paths that stay
  * in the current vertex.
+ *
+ * If we are actually computing the power instead of the transitive closure,
+ * i.e., when "project" is not set, then the result should have the
+ * path lengths encoded as the difference between an extra pair of
+ * coordinates.  We therefore apply the nested transitive closures
+ * to relations that include these lengths.  In particular, we replace
+ * the input relation by the cross product with the unit length relation
+ * { [i] -> [i + 1] }.
  */
 static __isl_give isl_map *floyd_warshall_with_groups(__isl_take isl_dim *dim,
 	__isl_keep isl_map *map, int *exact, int project, int *group, int n)
@@ -1430,6 +1481,9 @@ static __isl_give isl_map *floyd_warshall_with_groups(__isl_take isl_dim *dim,
 				isl_map_from_basic_map(
 					isl_basic_map_copy(map->p[k])));
 	}
+
+	if (!project && add_length(map, grid, n) < 0)
+		goto error;
 
 	for (r = 0; r < n; ++r) {
 		int r_exact;
@@ -1487,11 +1541,11 @@ error:
 
 /* Check if the domains and ranges of the basic maps in "map" can
  * be partitioned, and if so, apply Floyd-Warshall on the elements
- * of the partition.  Note that we can only apply this algorithm
- * if we want to compute the transitive closure, i.e., when "project"
- * is set.  If we want to compute the power, we need to keep track
- * of the lengths and the recursive calls inside the Floyd-Warshall
- * would result in non-linear lengths.
+ * of the partition.  Note that we also apply this algorithm
+ * if we want to compute the power, i.e., when "project" is not set.
+ * However, the results are unlikely to be exact since the recursive
+ * calls inside the Floyd-Warshall algorithm typically result in
+ * non-linear path lengths quite quickly.
  *
  * To find the partition, we simply consider all of the domains
  * and ranges in turn and combine those that overlap.
@@ -1514,7 +1568,7 @@ static __isl_give isl_map *floyd_warshall(__isl_take isl_dim *dim,
 
 	if (!map)
 		goto error;
-	if (!project || map->n <= 1)
+	if (map->n <= 1)
 		return incremental_closure(dim, map, exact, project);
 
 	set = isl_calloc_array(map->ctx, isl_set *, 2 * map->n);
