@@ -3016,6 +3016,9 @@ static __isl_give isl_map *map_lex_lte_first(__isl_take isl_dim *dims,
 	struct isl_map *map;
 	int i;
 
+	if (n == 0 && equal)
+		return isl_map_universe(dims);
+
 	map = isl_map_alloc_dim(isl_dim_copy(dims), n, ISL_MAP_DISJOINT);
 
 	for (i = 0; i + 1 < n; ++i)
@@ -3066,6 +3069,9 @@ static __isl_give isl_map *map_lex_gte_first(__isl_take isl_dim *dims,
 {
 	struct isl_map *map;
 	int i;
+
+	if (n == 0 && equal)
+		return isl_map_universe(dims);
 
 	map = isl_map_alloc_dim(isl_dim_copy(dims), n, ISL_MAP_DISJOINT);
 

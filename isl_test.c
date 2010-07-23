@@ -1034,6 +1034,18 @@ void test_closure(struct isl_ctx *ctx)
 	isl_map_free(map2);
 }
 
+void test_lex(struct isl_ctx *ctx)
+{
+	isl_dim *dim;
+	isl_map *map;
+
+	dim = isl_dim_alloc(ctx, 0, 0, 0);
+	map = isl_map_lex_le(dim);
+	isl_map_print(map, stderr, 0, 0); fprintf(stderr, "\n");
+	assert(!isl_map_is_empty(map));
+	isl_map_free(map);
+}
+
 void test_lexmin(struct isl_ctx *ctx)
 {
 	const char *str;
@@ -1348,6 +1360,7 @@ int main()
 	assert(srcdir);
 
 	ctx = isl_ctx_alloc();
+	test_lex(ctx);
 	test_sv(ctx);
 	test_bijective(ctx);
 	test_dep(ctx);
