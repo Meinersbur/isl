@@ -2243,7 +2243,7 @@ __isl_give isl_basic_map *isl_basic_map_move_dims(
 			off += size;
 		}
 	}
-	isl_dim_map_div(dim_map, bmap, off + n);
+	isl_dim_map_div(dim_map, bmap, off);
 
 	res = isl_basic_map_alloc_dim(isl_basic_map_get_dim(bmap),
 			bmap->n_div, bmap->n_eq, bmap->n_ineq);

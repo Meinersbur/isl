@@ -97,6 +97,7 @@ void test_construction(struct isl_ctx *ctx)
 
 void test_dim(struct isl_ctx *ctx)
 {
+	const char *str;
 	isl_map *map1, *map2;
 
 	map1 = isl_map_read_from_str(ctx,
@@ -109,6 +110,16 @@ void test_dim(struct isl_ctx *ctx)
 
 	map1 = isl_map_project_out(map1, isl_dim_in, 0, 1);
 	map2 = isl_map_read_from_str(ctx, "[n] -> { [i] -> [j] : n >= 0 }", -1);
+	assert(isl_map_is_equal(map1, map2));
+
+	isl_map_free(map1);
+	isl_map_free(map2);
+
+	str = "[n] -> { [i] -> [] : exists a : 0 <= i <= n and i = 2 a }";
+	map1 = isl_map_read_from_str(ctx, str, -1);
+	str = "{ [i] -> [j] : exists a : 0 <= i <= j and i = 2 a }";
+	map2 = isl_map_read_from_str(ctx, str, -1);
+	map1 = isl_map_move_dims(map1, isl_dim_out, 0, isl_dim_param, 0, 1);
 	assert(isl_map_is_equal(map1, map2));
 
 	isl_map_free(map1);
