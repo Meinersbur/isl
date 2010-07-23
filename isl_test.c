@@ -1041,7 +1041,6 @@ void test_lex(struct isl_ctx *ctx)
 
 	dim = isl_dim_alloc(ctx, 0, 0, 0);
 	map = isl_map_lex_le(dim);
-	isl_map_print(map, stderr, 0, 0); fprintf(stderr, "\n");
 	assert(!isl_map_is_empty(map));
 	isl_map_free(map);
 }
