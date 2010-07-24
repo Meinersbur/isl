@@ -448,17 +448,17 @@ static void sol_add(struct isl_sol *sol, struct isl_tab *tab)
 
 		isl_seq_clr(mat->row[1 + row], mat->n_col);
 		if (!tab->var[i].is_row) {
-			/* no unbounded */
-			isl_assert(mat->ctx, !tab->M, goto error2);
+			if (tab->M)
+				isl_die(mat->ctx, isl_error_invalid,
+					"unbounded optimum", goto error2);
 			continue;
 		}
 
 		r = tab->var[i].index;
-		/* no unbounded */
-		if (tab->M)
-			isl_assert(mat->ctx, isl_int_eq(tab->mat->row[r][2],
-					                tab->mat->row[r][0]),
-				    goto error2);
+		if (tab->M &&
+		    isl_int_ne(tab->mat->row[r][2], tab->mat->row[r][0]))
+			isl_die(mat->ctx, isl_error_invalid,
+				"unbounded optimum", goto error2);
 		isl_int_gcd(m, mat->row[0][0], tab->mat->row[r][0]);
 		isl_int_divexact(m, tab->mat->row[r][0], m);
 		scale_rows(mat, m, 1 + row);
