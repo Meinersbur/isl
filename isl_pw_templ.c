@@ -579,6 +579,14 @@ error:
 	return NULL;
 }
 
+int FN(PW,has_equal_dim)(__isl_keep PW *pw1, __isl_keep PW *pw2)
+{
+	if (!pw1 || !pw2)
+		return -1;
+
+	return isl_dim_equal(pw1->dim, pw2->dim);
+}
+
 __isl_give PW *FN(PW,morph)(__isl_take PW *pw, __isl_take isl_morph *morph)
 {
 	int i;

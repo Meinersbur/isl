@@ -18,6 +18,7 @@
 #include <isl_printer_private.h>
 #include <isl_dim_private.h>
 #include <isl_map_private.h>
+#include <isl_union_map.h>
 
 static const char *s_to[2] = { " -> ", " \\to " };
 static const char *s_and[2] = { " and ", " \\wedge " };
@@ -307,8 +308,13 @@ static __isl_give isl_printer *print_tuple(__isl_keep isl_dim *dim,
 	unsigned n = isl_dim_size(dim, type);
 	if ((type == isl_dim_in || type == isl_dim_out)) {
 		name = isl_dim_get_tuple_name(dim, type);
-		if (name)
+		if (name) {
+			if (latex)
+				p = isl_printer_print_str(p, "\\mathrm{");
 			p = isl_printer_print_str(p, name);
+			if (latex)
+				p = isl_printer_print_str(p, "}");
+		}
 	}
 	if (!latex || n != 1 || name)
 		p = isl_printer_print_str(p, s_open_list[latex]);
@@ -755,18 +761,13 @@ static __isl_give isl_printer *print_split_map(__isl_take isl_printer *p,
 	return p;
 }
 
-static __isl_give isl_printer *isl_map_print_isl(__isl_keep isl_map *map,
+static __isl_give isl_printer *isl_map_print_isl_body(__isl_keep isl_map *map,
 	__isl_take isl_printer *p, int set)
 {
 	struct isl_aff_split *split = NULL;
 
 	if (map->n > 0)
 		split = split_aff(map);
-	if (isl_map_dim(map, isl_dim_param) > 0) {
-		p = print_tuple(map->dim, p, isl_dim_param, set, 0, NULL);
-		p = isl_printer_print_str(p, s_to[0]);
-	}
-	p = isl_printer_print_str(p, s_open_set[0]);
 	if (split) {
 		p = print_split_map(p, split, map->n, set);
 	} else {
@@ -779,8 +780,20 @@ static __isl_give isl_printer *isl_map_print_isl(__isl_keep isl_map *map,
 		}
 		p = print_disjuncts(map, p, set, 0);
 	}
-	p = isl_printer_print_str(p, s_close_set[0]);
 	free_split(split, map->n);
+	return p;
+}
+
+static __isl_give isl_printer *isl_map_print_isl(__isl_keep isl_map *map,
+	__isl_take isl_printer *p, int set)
+{
+	if (isl_map_dim(map, isl_dim_param) > 0) {
+		p = print_tuple(map->dim, p, isl_dim_param, set, 0, NULL);
+		p = isl_printer_print_str(p, s_to[0]);
+	}
+	p = isl_printer_print_str(p, s_open_set[0]);
+	p = isl_map_print_isl_body(map, p, set);
+	p = isl_printer_print_str(p, s_close_set[0]);
 	return p;
 }
 
@@ -950,6 +963,105 @@ __isl_give isl_printer *isl_printer_print_map(__isl_take isl_printer *p,
 	else if (p->output_format == ISL_FORMAT_LATEX)
 		return isl_map_print_latex(map, p, 0);
 	isl_assert(map->ctx, 0, goto error);
+error:
+	isl_printer_free(p);
+	return NULL;
+}
+
+struct isl_union_print_data {
+	isl_printer *p;
+	int set;
+	int first;
+};
+
+static int print_map_body(__isl_take isl_map *map, void *user)
+{
+	struct isl_union_print_data *data;
+	data = (struct isl_union_print_data *)user;
+
+	if (!data->first)
+		data->p = isl_printer_print_str(data->p, "; ");
+	data->first = 0;
+
+	data->p = isl_map_print_isl_body(map, data->p, data->set);
+	isl_map_free(map);
+
+	return 0;
+}
+
+static __isl_give isl_printer *isl_union_map_print_isl(
+	__isl_keep isl_union_map *umap, __isl_take isl_printer *p, int set)
+{
+	struct isl_union_print_data data = { p, set, 1 };
+	isl_dim *dim;
+	dim = isl_union_map_get_dim(umap);
+	if (isl_dim_size(dim, isl_dim_param) > 0) {
+		p = print_tuple(dim, p, isl_dim_param, set, 0, NULL);
+		p = isl_printer_print_str(p, s_to[0]);
+	}
+	isl_dim_free(dim);
+	p = isl_printer_print_str(p, s_open_set[0]);
+	isl_union_map_foreach_map(umap, &print_map_body, &data);
+	p = data.p;
+	p = isl_printer_print_str(p, s_close_set[0]);
+	return p;
+}
+
+static int print_latex_map_body(__isl_take isl_map *map, void *user)
+{
+	struct isl_union_print_data *data;
+	data = (struct isl_union_print_data *)user;
+
+	if (!data->first)
+		data->p = isl_printer_print_str(data->p, " \\cup ");
+	data->first = 0;
+
+	data->p = isl_map_print_latex(map, data->p, data->set);
+	isl_map_free(map);
+
+	return 0;
+}
+
+static __isl_give isl_printer *isl_union_map_print_latex(
+	__isl_keep isl_union_map *umap, __isl_take isl_printer *p, int set)
+{
+	struct isl_union_print_data data = { p, set, 1 };
+	isl_union_map_foreach_map(umap, &print_latex_map_body, &data);
+	p = data.p;
+	return p;
+}
+
+__isl_give isl_printer *isl_printer_print_union_map(__isl_take isl_printer *p,
+	__isl_keep isl_union_map *umap)
+{
+	if (!p || !umap)
+		goto error;
+
+	if (p->output_format == ISL_FORMAT_ISL)
+		return isl_union_map_print_isl(umap, p, 0);
+	if (p->output_format == ISL_FORMAT_LATEX)
+		return isl_union_map_print_latex(umap, p, 0);
+
+	isl_die(p->ctx, isl_error_invalid,
+		"invalid output format for isl_union_map", goto error);
+error:
+	isl_printer_free(p);
+	return NULL;
+}
+
+__isl_give isl_printer *isl_printer_print_union_set(__isl_take isl_printer *p,
+	__isl_keep isl_union_set *uset)
+{
+	if (!p || !uset)
+		goto error;
+
+	if (p->output_format == ISL_FORMAT_ISL)
+		return isl_union_map_print_isl((isl_union_map *)uset, p, 1);
+	if (p->output_format == ISL_FORMAT_LATEX)
+		return isl_union_map_print_latex((isl_union_map *)uset, p, 1);
+
+	isl_die(p->ctx, isl_error_invalid,
+		"invalid output format for isl_union_set", goto error);
 error:
 	isl_printer_free(p);
 	return NULL;
@@ -1186,11 +1298,29 @@ void isl_qpolynomial_fold_print(__isl_keep isl_qpolynomial_fold *fold,
 	isl_printer_free(p);
 }
 
-static __isl_give isl_printer *print_pw_qpolynomial_isl(
+static __isl_give isl_printer *isl_pwqp_print_isl_body(
 	__isl_take isl_printer *p, __isl_keep isl_pw_qpolynomial *pwqp)
 {
 	int i = 0;
 
+	for (i = 0; i < pwqp->n; ++i) {
+		if (i)
+			p = isl_printer_print_str(p, "; ");
+		if (isl_dim_size(pwqp->p[i].set->dim, isl_dim_set) > 0 ||
+		    isl_dim_get_tuple_name(pwqp->p[i].set->dim, isl_dim_set)) {
+			p = print_tuple(pwqp->p[i].set->dim, p, isl_dim_set, 1, 0, NULL);
+			p = isl_printer_print_str(p, " -> ");
+		}
+		p = isl_printer_print_qpolynomial(p, pwqp->p[i].qp);
+		p = print_disjuncts((isl_map *)pwqp->p[i].set, p, 1, 0);
+	}
+
+	return p;
+}
+
+static __isl_give isl_printer *print_pw_qpolynomial_isl(
+	__isl_take isl_printer *p, __isl_keep isl_pw_qpolynomial *pwqp)
+{
 	if (!p || !pwqp)
 		goto error;
 
@@ -1206,17 +1336,7 @@ static __isl_give isl_printer *print_pw_qpolynomial_isl(
 		}
 		p = isl_printer_print_str(p, "0");
 	}
-	for (i = 0; i < pwqp->n; ++i) {
-		if (i)
-			p = isl_printer_print_str(p, "; ");
-		if (isl_dim_size(pwqp->p[i].set->dim, isl_dim_set) > 0 ||
-		    isl_dim_get_tuple_name(pwqp->p[i].set->dim, isl_dim_set)) {
-			p = print_tuple(pwqp->p[i].set->dim, p, isl_dim_set, 1, 0, NULL);
-			p = isl_printer_print_str(p, " -> ");
-		}
-		p = isl_printer_print_qpolynomial(p, pwqp->p[i].qp);
-		p = print_disjuncts((isl_map *)pwqp->p[i].set, p, 1, 0);
-	}
+	p = isl_pwqp_print_isl_body(p, pwqp);
 	p = isl_printer_print_str(p, " }");
 	return p;
 error:
@@ -1239,11 +1359,28 @@ void isl_pw_qpolynomial_print(__isl_keep isl_pw_qpolynomial *pwqp, FILE *out,
 	isl_printer_free(p);
 }
 
-static __isl_give isl_printer *print_pw_qpolynomial_fold_isl(
+static __isl_give isl_printer *isl_pwf_print_isl_body(
 	__isl_take isl_printer *p, __isl_keep isl_pw_qpolynomial_fold *pwf)
 {
 	int i = 0;
 
+	for (i = 0; i < pwf->n; ++i) {
+		if (i)
+			p = isl_printer_print_str(p, "; ");
+		if (isl_dim_size(pwf->p[i].set->dim, isl_dim_set) > 0) {
+			p = print_tuple(pwf->p[i].set->dim, p, isl_dim_set, 0, 0, NULL);
+			p = isl_printer_print_str(p, " -> ");
+		}
+		p = qpolynomial_fold_print(pwf->p[i].fold, p);
+		p = print_disjuncts((isl_map *)pwf->p[i].set, p, 1, 0);
+	}
+
+	return p;
+}
+
+static __isl_give isl_printer *print_pw_qpolynomial_fold_isl(
+	__isl_take isl_printer *p, __isl_keep isl_pw_qpolynomial_fold *pwf)
+{
 	if (isl_dim_size(pwf->dim, isl_dim_param) > 0) {
 		p = print_tuple(pwf->dim, p, isl_dim_param, 0, 0, NULL);
 		p = isl_printer_print_str(p, " -> ");
@@ -1256,16 +1393,7 @@ static __isl_give isl_printer *print_pw_qpolynomial_fold_isl(
 		}
 		p = isl_printer_print_str(p, "0");
 	}
-	for (i = 0; i < pwf->n; ++i) {
-		if (i)
-			p = isl_printer_print_str(p, "; ");
-		if (isl_dim_size(pwf->p[i].set->dim, isl_dim_set) > 0) {
-			p = print_tuple(pwf->p[i].set->dim, p, isl_dim_set, 0, 0, NULL);
-			p = isl_printer_print_str(p, " -> ");
-		}
-		p = qpolynomial_fold_print(pwf->p[i].fold, p);
-		p = print_disjuncts((isl_map *)pwf->p[i].set, p, 1, 0);
-	}
+	p = isl_pwf_print_isl_body(p, pwf);
 	p = isl_printer_print_str(p, " }");
 	return p;
 }
@@ -1452,6 +1580,56 @@ error:
 	return NULL;
 }
 
+static int print_pwqp_body(__isl_take isl_pw_qpolynomial *pwqp, void *user)
+{
+	struct isl_union_print_data *data;
+	data = (struct isl_union_print_data *)user;
+
+	if (!data->first)
+		data->p = isl_printer_print_str(data->p, "; ");
+	data->first = 0;
+
+	data->p = isl_pwqp_print_isl_body(data->p, pwqp);
+	isl_pw_qpolynomial_free(pwqp);
+
+	return 0;
+}
+
+static __isl_give isl_printer *print_union_pw_qpolynomial_isl(
+	__isl_take isl_printer *p, __isl_keep isl_union_pw_qpolynomial *upwqp)
+{
+	struct isl_union_print_data data = { p, 1, 1 };
+	isl_dim *dim;
+	dim = isl_union_pw_qpolynomial_get_dim(upwqp);
+	if (isl_dim_size(dim, isl_dim_param) > 0) {
+		p = print_tuple(dim, p, isl_dim_param, 1, 0, NULL);
+		p = isl_printer_print_str(p, " -> ");
+	}
+	isl_dim_free(dim);
+	p = isl_printer_print_str(p, "{ ");
+	isl_union_pw_qpolynomial_foreach_pw_qpolynomial(upwqp, &print_pwqp_body,
+							&data);
+	p = data.p;
+	p = isl_printer_print_str(p, " }");
+	return p;
+}
+
+__isl_give isl_printer *isl_printer_print_union_pw_qpolynomial(
+	__isl_take isl_printer *p, __isl_keep isl_union_pw_qpolynomial *upwqp)
+{
+	if (!p || !upwqp)
+		goto error;
+
+	if (p->output_format == ISL_FORMAT_ISL)
+		return print_union_pw_qpolynomial_isl(p, upwqp);
+	isl_die(p->ctx, isl_error_invalid,
+		"invalid output format for isl_union_pw_qpolynomial",
+		goto error);
+error:
+	isl_printer_free(p);
+	return NULL;
+}
+
 static __isl_give isl_printer *print_qpolynomial_fold_c(
 	__isl_take isl_printer *p, __isl_keep isl_qpolynomial_fold *fold)
 {
@@ -1522,4 +1700,56 @@ void isl_pw_qpolynomial_fold_print(__isl_keep isl_pw_qpolynomial_fold *pwf,
 	p = isl_printer_print_pw_qpolynomial_fold(p, pwf);
 
 	isl_printer_free(p);
+}
+
+static int print_pwf_body(__isl_take isl_pw_qpolynomial_fold *pwf, void *user)
+{
+	struct isl_union_print_data *data;
+	data = (struct isl_union_print_data *)user;
+
+	if (!data->first)
+		data->p = isl_printer_print_str(data->p, "; ");
+	data->first = 0;
+
+	data->p = isl_pwf_print_isl_body(data->p, pwf);
+	isl_pw_qpolynomial_fold_free(pwf);
+
+	return 0;
+}
+
+static __isl_give isl_printer *print_union_pw_qpolynomial_fold_isl(
+	__isl_take isl_printer *p,
+	__isl_keep isl_union_pw_qpolynomial_fold *upwf)
+{
+	struct isl_union_print_data data = { p, 1, 1 };
+	isl_dim *dim;
+	dim = isl_union_pw_qpolynomial_fold_get_dim(upwf);
+	if (isl_dim_size(dim, isl_dim_param) > 0) {
+		p = print_tuple(dim, p, isl_dim_param, 1, 0, NULL);
+		p = isl_printer_print_str(p, " -> ");
+	}
+	isl_dim_free(dim);
+	p = isl_printer_print_str(p, "{ ");
+	isl_union_pw_qpolynomial_fold_foreach_pw_qpolynomial_fold(upwf,
+							&print_pwf_body, &data);
+	p = data.p;
+	p = isl_printer_print_str(p, " }");
+	return p;
+}
+
+__isl_give isl_printer *isl_printer_print_union_pw_qpolynomial_fold(
+	__isl_take isl_printer *p,
+	__isl_keep isl_union_pw_qpolynomial_fold *upwf)
+{
+	if (!p || !upwf)
+		goto error;
+
+	if (p->output_format == ISL_FORMAT_ISL)
+		return print_union_pw_qpolynomial_fold_isl(p, upwf);
+	isl_die(p->ctx, isl_error_invalid,
+		"invalid output format for isl_union_pw_qpolynomial_fold",
+		goto error);
+error:
+	isl_printer_free(p);
+	return NULL;
 }

@@ -10,6 +10,7 @@
 
 #include <stdlib.h>
 #include <isl_seq.h>
+#include <isl_union_map_private.h>
 #include <isl_polynomial_private.h>
 #include <isl_point_private.h>
 #include <isl_dim_private.h>
@@ -1746,6 +1747,15 @@ error:
 
 #include <isl_pw_templ.c>
 
+#undef UNION
+#define UNION isl_union_pw_qpolynomial
+#undef PART
+#define PART isl_pw_qpolynomial
+#undef PARTS
+#define PARTS pw_qpolynomial
+
+#include <isl_union_templ.c>
+
 int isl_pw_qpolynomial_is_one(__isl_keep isl_pw_qpolynomial *pwqp)
 {
 	if (!pwqp)
@@ -3157,4 +3167,79 @@ error:
 	isl_qpolynomial_free(qp);
 	isl_morph_free(morph);
 	return NULL;
+}
+
+static int neg_entry(void **entry, void *user)
+{
+	isl_pw_qpolynomial **pwqp = (isl_pw_qpolynomial **)entry;
+
+	*pwqp = isl_pw_qpolynomial_neg(*pwqp);
+
+	return *pwqp ? 0 : -1;
+}
+
+__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_neg(
+	__isl_take isl_union_pw_qpolynomial *upwqp)
+{
+	upwqp = isl_union_pw_qpolynomial_cow(upwqp);
+	if (!upwqp)
+		return NULL;
+
+	if (isl_hash_table_foreach(upwqp->dim->ctx, &upwqp->table,
+				   &neg_entry, NULL) < 0)
+		goto error;
+
+	return upwqp;
+error:
+	isl_union_pw_qpolynomial_free(upwqp);
+	return NULL;
+}
+
+__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_sub(
+	__isl_take isl_union_pw_qpolynomial *upwqp1,
+	__isl_take isl_union_pw_qpolynomial *upwqp2)
+{
+	return isl_union_pw_qpolynomial_add(upwqp1,
+					isl_union_pw_qpolynomial_neg(upwqp2));
+}
+
+static int mul_entry(void **entry, void *user)
+{
+	struct isl_union_pw_qpolynomial_match_bin_data *data = user;
+	uint32_t hash;
+	struct isl_hash_table_entry *entry2;
+	isl_pw_qpolynomial *pwpq = *entry;
+	int empty;
+
+	hash = isl_dim_get_hash(pwpq->dim);
+	entry2 = isl_hash_table_find(data->upwqp2->dim->ctx,
+				     &data->upwqp2->table,
+				     hash, &has_dim, pwpq->dim, 0);
+	if (!entry2)
+		return 0;
+
+	pwpq = isl_pw_qpolynomial_copy(pwpq);
+	pwpq = isl_pw_qpolynomial_mul(pwpq,
+				      isl_pw_qpolynomial_copy(entry2->data));
+
+	empty = isl_pw_qpolynomial_is_zero(pwpq);
+	if (empty < 0) {
+		isl_pw_qpolynomial_free(pwpq);
+		return -1;
+	}
+	if (empty) {
+		isl_pw_qpolynomial_free(pwpq);
+		return 0;
+	}
+
+	data->res = isl_union_pw_qpolynomial_add_pw_qpolynomial(data->res, pwpq);
+
+	return 0;
+}
+
+__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_mul(
+	__isl_take isl_union_pw_qpolynomial *upwqp1,
+	__isl_take isl_union_pw_qpolynomial *upwqp2)
+{
+	return match_bin_op(upwqp1, upwqp2, &mul_entry);
 }

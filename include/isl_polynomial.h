@@ -8,6 +8,7 @@
 #include <isl_set.h>
 #include <isl_point.h>
 #include <isl_printer.h>
+#include <isl_union_set.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -128,6 +129,8 @@ unsigned isl_pw_qpolynomial_dim(__isl_keep isl_pw_qpolynomial *pwqp,
 	enum isl_dim_type type);
 int isl_pw_qpolynomial_involves_dims(__isl_keep isl_pw_qpolynomial *pwqp,
 	enum isl_dim_type type, unsigned first, unsigned n);
+int isl_pw_qpolynomial_has_equal_dim(__isl_keep isl_pw_qpolynomial *pwqp1,
+	__isl_keep isl_pw_qpolynomial *pwqp2);
 
 __isl_give isl_set *isl_pw_qpolynomial_domain(__isl_take isl_pw_qpolynomial *pwqp);
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_intersect_domain(
@@ -256,6 +259,9 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_reset_dim(
 	__isl_take isl_pw_qpolynomial_fold *pwf, __isl_take isl_dim *dim);
 unsigned isl_pw_qpolynomial_fold_dim(__isl_keep isl_pw_qpolynomial_fold *pwf,
 	enum isl_dim_type type);
+int isl_pw_qpolynomial_fold_has_equal_dim(
+	__isl_keep isl_pw_qpolynomial_fold *pwf1,
+	__isl_keep isl_pw_qpolynomial_fold *pwf2);
 
 size_t isl_pw_qpolynomial_fold_size(__isl_keep isl_pw_qpolynomial_fold *pwf);
 
@@ -313,6 +319,110 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_bound(
 	__isl_take isl_pw_qpolynomial *pwqp, enum isl_fold type, int *tight);
 __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_bound(
 	__isl_take isl_pw_qpolynomial_fold *pwf, int *tight);
+
+struct isl_union_pw_qpolynomial;
+typedef struct isl_union_pw_qpolynomial isl_union_pw_qpolynomial;
+
+isl_ctx *isl_union_pw_qpolynomial_get_ctx(
+	__isl_keep isl_union_pw_qpolynomial *upwqp);
+
+__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_from_pw_qpolynomial(__isl_take isl_pw_qpolynomial *pwqp);
+__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_zero(
+	__isl_take isl_dim *dim);
+__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_add_pw_qpolynomial(
+	__isl_take isl_union_pw_qpolynomial *upwqp,
+	__isl_take isl_pw_qpolynomial *pwqp);
+__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_copy(
+	__isl_keep isl_union_pw_qpolynomial *upwqp);
+void isl_union_pw_qpolynomial_free(__isl_take isl_union_pw_qpolynomial *upwqp);
+
+__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_add(
+	__isl_take isl_union_pw_qpolynomial *upwqp1,
+	__isl_take isl_union_pw_qpolynomial *upwqp2);
+__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_sub(
+	__isl_take isl_union_pw_qpolynomial *upwqp1,
+	__isl_take isl_union_pw_qpolynomial *upwqp2);
+__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_mul(
+	__isl_take isl_union_pw_qpolynomial *upwqp1,
+	__isl_take isl_union_pw_qpolynomial *upwqp2);
+
+__isl_give isl_union_set *isl_union_pw_qpolynomial_domain(
+	__isl_take isl_union_pw_qpolynomial *upwqp);
+__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_intersect_domain(
+	__isl_take isl_union_pw_qpolynomial *upwpq,
+	__isl_take isl_union_set *uset);
+
+__isl_give isl_dim *isl_union_pw_qpolynomial_get_dim(
+	__isl_keep isl_union_pw_qpolynomial *upwqp);
+
+__isl_give isl_qpolynomial *isl_union_pw_qpolynomial_eval(
+	__isl_take isl_union_pw_qpolynomial *upwqp, __isl_take isl_point *pnt);
+
+__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_coalesce(
+	__isl_take isl_union_pw_qpolynomial *upwqp);
+__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_gist(
+	__isl_take isl_union_pw_qpolynomial *upwqp,
+	__isl_take isl_union_set *context);
+
+int isl_union_pw_qpolynomial_foreach_pw_qpolynomial(
+	__isl_keep isl_union_pw_qpolynomial *upwqp,
+	int (*fn)(__isl_take isl_pw_qpolynomial *pwqp, void *user), void *user);
+
+__isl_give isl_printer *isl_printer_print_union_pw_qpolynomial(
+	__isl_take isl_printer *p, __isl_keep isl_union_pw_qpolynomial *upwqp);
+
+struct isl_union_pw_qpolynomial_fold;
+typedef struct isl_union_pw_qpolynomial_fold isl_union_pw_qpolynomial_fold;
+
+isl_ctx *isl_union_pw_qpolynomial_fold_get_ctx(
+	__isl_keep isl_union_pw_qpolynomial_fold *upwf);
+
+__isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_fold_from_pw_qpolynomial_fold(__isl_take isl_pw_qpolynomial_fold *pwf);
+__isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_fold_zero(
+	__isl_take isl_dim *dim);
+__isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_fold_add_pw_qpolynomial_fold(
+	__isl_take isl_union_pw_qpolynomial_fold *upwqp,
+	__isl_take isl_pw_qpolynomial_fold *pwqp);
+void isl_union_pw_qpolynomial_fold_free(
+	__isl_take isl_union_pw_qpolynomial_fold *upwf);
+__isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_fold_copy(
+	__isl_keep isl_union_pw_qpolynomial_fold *upwf);
+
+__isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_fold_add(
+	__isl_take isl_union_pw_qpolynomial_fold *upwf1,
+	__isl_take isl_union_pw_qpolynomial_fold *upwf2);
+
+__isl_give isl_union_set *isl_union_pw_qpolynomial_fold_domain(
+	__isl_take isl_union_pw_qpolynomial_fold *upwf);
+__isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_fold_intersect_domain(
+	__isl_take isl_union_pw_qpolynomial_fold *upwf,
+	__isl_take isl_union_set *uset);
+
+__isl_give isl_dim *isl_union_pw_qpolynomial_fold_get_dim(
+	__isl_keep isl_union_pw_qpolynomial_fold *upwf);
+
+__isl_give isl_qpolynomial *isl_union_pw_qpolynomial_fold_eval(
+	__isl_take isl_union_pw_qpolynomial_fold *upwf,
+	__isl_take isl_point *pnt);
+
+__isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_fold_coalesce(
+	__isl_take isl_union_pw_qpolynomial_fold *upwf);
+__isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_fold_gist(
+	__isl_take isl_union_pw_qpolynomial_fold *upwf,
+	__isl_take isl_union_set *context);
+
+int isl_union_pw_qpolynomial_fold_foreach_pw_qpolynomial_fold(
+	__isl_keep isl_union_pw_qpolynomial_fold *upwf,
+	int (*fn)(__isl_take isl_pw_qpolynomial_fold *pwf,
+		    void *user), void *user);
+
+__isl_give isl_printer *isl_printer_print_union_pw_qpolynomial_fold(
+	__isl_take isl_printer *p,
+	__isl_keep isl_union_pw_qpolynomial_fold *upwf);
+
+__isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_bound(
+	__isl_take isl_union_pw_qpolynomial *upwqp,
+	enum isl_fold type, int *tight);
 
 #if defined(__cplusplus)
 }

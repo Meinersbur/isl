@@ -8,9 +8,10 @@
  * 91893 Orsay, France 
  */
 
+#include <isl_union_map_private.h>
 #include <isl_polynomial_private.h>
 #include <isl_point_private.h>
-#include <isl_dim.h>
+#include <isl_dim_private.h>
 #include <isl_map_private.h>
 #include <isl_lp.h>
 #include <isl_seq.h>
@@ -345,6 +346,15 @@ error:
 #define ADD(d,e1,e2)	isl_qpolynomial_fold_fold_on_domain(d,e1,e2) 
 
 #include <isl_pw_templ.c>
+
+#undef UNION
+#define UNION isl_union_pw_qpolynomial_fold
+#undef PART
+#define PART isl_pw_qpolynomial_fold
+#undef PARTS
+#define PARTS pw_qpolynomial_fold
+
+#include <isl_union_templ.c>
 
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_empty(enum isl_fold type,
 	__isl_take isl_dim *dim)

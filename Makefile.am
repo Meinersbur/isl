@@ -92,6 +92,8 @@ libisl_la_SOURCES = \
 	isl_tab.h \
 	isl_tab_pip.c \
 	isl_transitive_closure.c \
+	isl_union_map.c \
+	isl_union_map_private.h \
 	isl_vec.c \
 	isl_version.c \
 	isl_vertices_private.h \
@@ -188,6 +190,8 @@ pkginclude_HEADERS = \
 	include/isl_seq.h \
 	include/isl_set.h \
 	include/isl_stream.h \
+	include/isl_union_map.h \
+	include/isl_union_set.h \
 	include/isl_vec.h \
 	include/isl_version.h \
 	include/isl_vertices.h
@@ -195,6 +199,7 @@ pkginclude_HEADERS = \
 EXTRA_DIST = \
 	basis_reduction_templ.c \
 	isl_pw_templ.c \
+	isl_union_templ.c \
 	doc/chicago.bst \
 	doc/chicago.sty \
 	doc/implementation.tex \

@@ -300,12 +300,18 @@ after the last use.
 
 =head2 Sets and Relations
 
-C<isl> uses four types of objects for representing sets and relations,
-C<isl_basic_set>, C<isl_basic_map>, C<isl_set> and C<isl_map>.
+C<isl> uses six types of objects for representing sets and relations,
+C<isl_basic_set>, C<isl_basic_map>, C<isl_set>, C<isl_map>,
+C<isl_union_set> and C<isl_union_map>.
 C<isl_basic_set> and C<isl_basic_map> represent sets and relations that
 can be described as a conjunction of affine constraints, while
 C<isl_set> and C<isl_map> represent unions of
 C<isl_basic_set>s and C<isl_basic_map>s, respectively.
+However, all C<isl_basic_set>s or C<isl_basic_map>s in the union need
+to have the same dimension.  C<isl_union_set>s and C<isl_union_map>s
+represent unions of C<isl_set>s or C<isl_map>s of I<different> dimensions,
+where dimensions with different space names
+(see L<Dimension Specifications>) are considered different as well.
 The difference between sets and relations (maps) is that sets have
 one set of variables, while relations have two sets of variables,
 input variables and output variables.
@@ -401,16 +407,28 @@ specification of the original object.
 		__isl_keep isl_basic_set *bset);
 	__isl_give isl_dim *isl_set_get_dim(__isl_keep isl_set *set);
 
+	#include <isl_union_set.h>
+	__isl_give isl_dim *isl_union_set_get_dim(
+		__isl_keep isl_union_set *uset);
+
 	#include <isl_map.h>
 	__isl_give isl_dim *isl_basic_map_get_dim(
 		__isl_keep isl_basic_map *bmap);
 	__isl_give isl_dim *isl_map_get_dim(__isl_keep isl_map *map);
+
+	#include <isl_union_map.h>
+	__isl_give isl_dim *isl_union_map_get_dim(
+		__isl_keep isl_union_map *umap);
 
 	#include <isl_polynomial.h>
 	__isl_give isl_dim *isl_qpolynomial_get_dim(
 		__isl_keep isl_qpolynomial *qp);
 	__isl_give isl_dim *isl_pw_qpolynomial_get_dim(
 		__isl_keep isl_pw_qpolynomial *pwqp);
+	__isl_give isl_dim *isl_union_pw_qpolynomial_get_dim(
+		__isl_keep isl_union_pw_qpolynomial *upwqp);
+	__isl_give isl_dim *isl_union_pw_qpolynomial_fold_get_dim(
+		__isl_keep isl_union_pw_qpolynomial_fold *upwf);
 
 The names of the individual dimensions may be set or read off
 using the following functions.
@@ -574,6 +592,16 @@ To actually print something, use
 		__isl_take isl_printer *printer,
 		__isl_keep isl_map *map);
 
+	#include <isl_union_set.h>
+	__isl_give isl_printer *isl_printer_print_union_set(
+		__isl_take isl_printer *p,
+		__isl_keep isl_union_set *uset);
+
+	#include <isl_union_map.h>
+	__isl_give isl_printer *isl_printer_print_union_map(
+		__isl_take isl_printer *p,
+		__isl_keep isl_union_map *umap);
+
 When called on a file printer, the following function flushes
 the file.  When called on a string printer, the buffer is cleared.
 
@@ -596,6 +624,13 @@ C<isl> has functions for creating some standard sets and relations.
 		__isl_take isl_dim *dim);
 	__isl_give isl_map *isl_map_empty(
 		__isl_take isl_dim *dim);
+	__isl_give isl_union_set *isl_union_set_empty(
+		__isl_take isl_dim *dim);
+	__isl_give isl_union_map *isl_union_map_empty(
+		__isl_take isl_dim *dim);
+
+For C<isl_union_set>s and C<isl_union_map>s, the dimensions specification
+is only used to specify the parameters.
 
 =item * Universe sets and relations
 
@@ -660,19 +695,33 @@ using the following functions.
 	__isl_give isl_map *isl_map_from_basic_map(
 		__isl_take isl_basic_map *bmap);
 
+Sets and relations can be converted to union sets and relations
+using the following functions.
+
+	__isl_give isl_union_map *isl_union_map_from_map(
+		__isl_take isl_map *map);
+	__isl_give isl_union_set *isl_union_set_from_set(
+		__isl_take isl_set *set);
+
 Sets and relations can be copied and freed again using the following
 functions.
 
 	__isl_give isl_basic_set *isl_basic_set_copy(
 		__isl_keep isl_basic_set *bset);
 	__isl_give isl_set *isl_set_copy(__isl_keep isl_set *set);
+	__isl_give isl_union_set *isl_union_set_copy(
+		__isl_keep isl_union_set *uset);
 	__isl_give isl_basic_map *isl_basic_map_copy(
 		__isl_keep isl_basic_map *bmap);
 	__isl_give isl_map *isl_map_copy(__isl_keep isl_map *map);
+	__isl_give isl_union_map *isl_union_map_copy(
+		__isl_keep isl_union_map *umap);
 	void isl_basic_set_free(__isl_take isl_basic_set *bset);
 	void isl_set_free(__isl_take isl_set *set);
+	void isl_union_set_free(__isl_take isl_union_set *uset);
 	void isl_basic_map_free(__isl_take isl_basic_map *bmap);
 	void isl_map_free(__isl_take isl_map *map);
+	void isl_union_map_free(__isl_take isl_union_map *umap);
 
 Other sets and relations can be constructed by starting
 from a universe set or relation, adding equality and/or
@@ -755,6 +804,10 @@ an explicit representation of the existentially quantified variables.
 		__isl_take isl_set *set);
 	__isl_give isl_map *isl_map_compute_divs(
 		__isl_take isl_map *map);
+	__isl_give isl_union_set *isl_union_set_compute_divs(
+		__isl_take isl_union_set *uset);
+	__isl_give isl_union_map *isl_union_map_compute_divs(
+		__isl_take isl_union_map *umap);
 
 This explicit representation defines the existentially quantified
 variables as integer divisions of the other variables, possibly
@@ -770,6 +823,15 @@ either of the following functions.
 		__isl_take isl_set *set);
 	__isl_give isl_map *isl_map_align_divs(
 		__isl_take isl_map *map);
+
+To iterate over all the sets or maps in a union set or map, use
+
+	int isl_union_set_foreach_set(__isl_keep isl_union_set *uset,
+		int (*fn)(__isl_take isl_set *set, void *user),
+		void *user);
+	int isl_union_map_foreach_map(__isl_keep isl_union_map *umap,
+		int (*fn)(__isl_take isl_map *map, void *user),
+		void *user);
 
 To iterate over all the basic sets or maps in a set or map, use
 
@@ -854,10 +916,12 @@ is already known to be empty.
 	int isl_basic_set_fast_is_empty(__isl_keep isl_basic_set *bset);
 	int isl_basic_set_is_empty(__isl_keep isl_basic_set *bset);
 	int isl_set_is_empty(__isl_keep isl_set *set);
+	int isl_union_set_is_empty(__isl_keep isl_union_set *uset);
 	int isl_basic_map_fast_is_empty(__isl_keep isl_basic_map *bmap);
 	int isl_basic_map_is_empty(__isl_keep isl_basic_map *bmap);
 	int isl_map_fast_is_empty(__isl_keep isl_map *map);
 	int isl_map_is_empty(__isl_keep isl_map *map);
+	int isl_union_map_is_empty(__isl_keep isl_union_map *umap);
 
 =item * Universality
 
@@ -885,13 +949,16 @@ is already known to be empty.
 		__isl_keep isl_set *set2);
 	int isl_set_is_equal(__isl_keep isl_set *set1,
 		__isl_keep isl_set *set2);
+	int isl_basic_map_is_equal(
+		__isl_keep isl_basic_map *bmap1,
+		__isl_keep isl_basic_map *bmap2);
 	int isl_map_is_equal(__isl_keep isl_map *map1,
 		__isl_keep isl_map *map2);
 	int isl_map_fast_is_equal(__isl_keep isl_map *map1,
 		__isl_keep isl_map *map2);
-	int isl_basic_map_is_equal(
-		__isl_keep isl_basic_map *bmap1,
-		__isl_keep isl_basic_map *bmap2);
+	int isl_union_map_is_equal(
+		__isl_keep isl_union_map *umap1,
+		__isl_keep isl_union_map *umap2);
 
 =item * Disjointness
 
@@ -917,6 +984,12 @@ is already known to be empty.
 	int isl_map_is_strict_subset(
 		__isl_keep isl_map *map1,
 		__isl_keep isl_map *map2);
+	int isl_union_map_is_subset(
+		__isl_keep isl_union_map *umap1,
+		__isl_keep isl_union_map *umap2);
+	int isl_union_map_is_strict_subset(
+		__isl_keep isl_union_map *umap1,
+		__isl_keep isl_union_map *umap2);
 
 =back
 
@@ -935,6 +1008,8 @@ is already known to be empty.
 		__isl_take isl_basic_map *bmap);
 	__isl_give isl_map *isl_map_reverse(
 		__isl_take isl_map *map);
+	__isl_give isl_union_map *isl_union_map_reverse(
+		__isl_take isl_union_map *umap);
 
 =item * Projection
 
@@ -956,12 +1031,18 @@ is already known to be empty.
 		__isl_take isl_map *bmap);
 	__isl_give isl_set *isl_map_range(
 		__isl_take isl_map *map);
+	__isl_give isl_union_set *isl_union_map_domain(
+		__isl_take isl_union_map *umap);
+	__isl_give isl_union_set *isl_union_map_range(
+		__isl_take isl_union_map *umap);
 
 =item * Deltas
 
 	__isl_give isl_basic_set *isl_basic_map_deltas(
 		__isl_take isl_basic_map *bmap);
 	__isl_give isl_set *isl_map_deltas(__isl_take isl_map *map);
+	__isl_give isl_union_set *isl_union_map_deltas(
+		__isl_take isl_union_map *umap);
 
 These functions return a (basic) set containing the differences
 between image elements and corresponding domain elements in the input.
@@ -974,6 +1055,10 @@ basic set or relation.
 
 	__isl_give isl_set *isl_set_coalesce(__isl_take isl_set *set);
 	__isl_give isl_map *isl_map_coalesce(__isl_take isl_map *map);
+	__isl_give isl_union_set *isl_union_set_coalesce(
+		__isl_take isl_union_set *uset);
+	__isl_give isl_union_map *isl_union_map_coalesce(
+		__isl_take isl_union_map *umap);
 
 =item * Convex hull
 
@@ -1009,10 +1094,17 @@ of the constraints describing the basic sets or relations in the input.
 		__isl_take isl_basic_set *bset);
 	__isl_give isl_basic_set *isl_set_affine_hull(
 		__isl_take isl_set *set);
+	__isl_give isl_union_set *isl_union_set_affine_hull(
+		__isl_take isl_union_set *uset);
 	__isl_give isl_basic_map *isl_basic_map_affine_hull(
 		__isl_take isl_basic_map *bmap);
 	__isl_give isl_basic_map *isl_map_affine_hull(
 		__isl_take isl_map *map);
+	__isl_give isl_union_map *isl_union_map_affine_hull(
+		__isl_take isl_union_map *umap);
+
+In case of union sets and relations, the affine hull is computed
+per dimension.
 
 =item * Power
 
@@ -1030,6 +1122,8 @@ cases of piecewise translations (i.e., piecewise uniform dependences).
 
 	__isl_give isl_map *isl_map_transitive_closure(
 		__isl_take isl_map *map, int *exact);
+	__isl_give isl_union_map *isl_union_map_transitive_closure(
+		__isl_take isl_union_map *umap, int *exact);
 
 Compute the transitive closure of C<map>.
 The result may be an overapproximation.  If the result is known to be exact,
@@ -1076,6 +1170,9 @@ the same (number of) parameters.
 	__isl_give isl_set *isl_set_intersect(
 		__isl_take isl_set *set1,
 		__isl_take isl_set *set2);
+	__isl_give isl_union_set *isl_union_set_intersect(
+		__isl_take isl_union_set *uset1,
+		__isl_take isl_union_set *uset2);
 	__isl_give isl_basic_map *isl_basic_map_intersect_domain(
 		__isl_take isl_basic_map *bmap,
 		__isl_take isl_basic_set *bset);
@@ -1094,6 +1191,12 @@ the same (number of) parameters.
 	__isl_give isl_map *isl_map_intersect(
 		__isl_take isl_map *map1,
 		__isl_take isl_map *map2);
+	__isl_give isl_union_map *isl_union_map_intersect_domain(
+		__isl_take isl_union_map *umap,
+		__isl_take isl_union_set *uset);
+	__isl_give isl_union_map *isl_union_map_intersect(
+		__isl_take isl_union_map *umap1,
+		__isl_take isl_union_map *umap2);
 
 =item * Union
 
@@ -1109,6 +1212,12 @@ the same (number of) parameters.
 	__isl_give isl_map *isl_map_union(
 		__isl_take isl_map *map1,
 		__isl_take isl_map *map2);
+	__isl_give isl_union_set *isl_union_set_union(
+		__isl_take isl_union_set *uset1,
+		__isl_take isl_union_set *uset2);
+	__isl_give isl_union_map *isl_union_map_union(
+		__isl_take isl_union_map *umap1,
+		__isl_take isl_union_map *umap2);
 
 =item * Set difference
 
@@ -1118,6 +1227,12 @@ the same (number of) parameters.
 	__isl_give isl_map *isl_map_subtract(
 		__isl_take isl_map *map1,
 		__isl_take isl_map *map2);
+	__isl_give isl_union_set *isl_union_set_subtract(
+		__isl_take isl_union_set *uset1,
+		__isl_take isl_union_set *uset2);
+	__isl_give isl_union_map *isl_union_map_subtract(
+		__isl_take isl_union_map *umap1,
+		__isl_take isl_union_map *umap2);
 
 =item * Application
 
@@ -1127,6 +1242,9 @@ the same (number of) parameters.
 	__isl_give isl_set *isl_set_apply(
 		__isl_take isl_set *set,
 		__isl_take isl_map *map);
+	__isl_give isl_union_set *isl_union_set_apply(
+		__isl_take isl_union_set *uset,
+		__isl_take isl_union_map *umap);
 	__isl_give isl_basic_map *isl_basic_map_apply_domain(
 		__isl_take isl_basic_map *bmap1,
 		__isl_take isl_basic_map *bmap2);
@@ -1139,6 +1257,9 @@ the same (number of) parameters.
 	__isl_give isl_map *isl_map_apply_range(
 		__isl_take isl_map *map1,
 		__isl_take isl_map *map2);
+	__isl_give isl_union_map *isl_union_map_apply_range(
+		__isl_take isl_union_map *umap1,
+		__isl_take isl_union_map *umap2);
 
 =item * Simplification
 
@@ -1147,17 +1268,25 @@ the same (number of) parameters.
 		__isl_take isl_basic_set *context);
 	__isl_give isl_set *isl_set_gist(__isl_take isl_set *set,
 		__isl_take isl_set *context);
+	__isl_give isl_union_set *isl_union_set_gist(
+		__isl_take isl_union_set *uset,
+		__isl_take isl_union_set *context);
 	__isl_give isl_basic_map *isl_basic_map_gist(
 		__isl_take isl_basic_map *bmap,
 		__isl_take isl_basic_map *context);
 	__isl_give isl_map *isl_map_gist(__isl_take isl_map *map,
 		__isl_take isl_map *context);
+	__isl_give isl_union_map *isl_union_map_gist(
+		__isl_take isl_union_map *umap,
+		__isl_take isl_union_map *context);
 
 The gist operation returns a set or relation that has the
 same intersection with the context as the input set or relation.
 Any implicit equality in the intersection is made explicit in the result,
 while all inequalities that are redundant with respect to the intersection
 are removed.
+In case of union sets and relations, the gist operation is performed
+per dimension.
 
 =back
 
@@ -1193,6 +1322,7 @@ is equal to C<dom>.
 Given a (basic) set C<set> (or C<bset>), the following functions simply
 return a set containing the lexicographic minimum or maximum
 of the elements in C<set> (or C<bset>).
+In case of union sets, the optimum is computed per dimension.
 
 	__isl_give isl_set *isl_basic_set_lexmin(
 		__isl_take isl_basic_set *bset);
@@ -1202,6 +1332,10 @@ of the elements in C<set> (or C<bset>).
 		__isl_take isl_set *set);
 	__isl_give isl_set *isl_set_lexmax(
 		__isl_take isl_set *set);
+	__isl_give isl_union_set *isl_union_set_lexmin(
+		__isl_take isl_union_set *uset);
+	__isl_give isl_union_set *isl_union_set_lexmax(
+		__isl_take isl_union_set *uset);
 
 Given a (basic) relation C<map> (or C<bmap>) and a domain C<dom>,
 the following functions
@@ -1234,6 +1368,7 @@ Given a (basic) map C<map> (or C<bmap>), the following functions simply
 return a map mapping each element in the domain of
 C<map> (or C<bmap>) to the lexicographic minimum or maximum
 of all elements associated to that element.
+In case of union relations, the optimum is computed per dimension.
 
 	__isl_give isl_map *isl_basic_map_lexmin(
 		__isl_take isl_basic_map *bmap);
@@ -1243,6 +1378,10 @@ of all elements associated to that element.
 		__isl_take isl_map *map);
 	__isl_give isl_map *isl_map_lexmax(
 		__isl_take isl_map *map);
+	__isl_give isl_union_map *isl_union_map_lexmin(
+		__isl_take isl_union_map *umap);
+	__isl_give isl_union_map *isl_union_map_lexmax(
+		__isl_take isl_union_map *umap);
 
 =head2 Points
 
@@ -1286,10 +1425,13 @@ and a box can be created from two opposite extremal points using
 		__isl_take isl_point *pnt1,
 		__isl_take isl_point *pnt2);
 
-All elements of a B<bounded> set can be enumerated using
-the following function.
+All elements of a B<bounded> (union) set can be enumerated using
+the following functions.
 
 	int isl_set_foreach_point(__isl_keep isl_set *set,
+		int (*fn)(__isl_take isl_point *pnt, void *user),
+		void *user);
+	int isl_union_set_foreach_point(__isl_keep isl_union_set *uset,
 		int (*fn)(__isl_take isl_point *pnt, void *user),
 		void *user);
 
@@ -1330,6 +1472,9 @@ For example, the piecewise quasipolynomial
 	[n] -> { [x] -> ((1 + n) - x) : x <= n and x >= 0 }
 
 maps C<x> to C<1 + n - x> for values of C<x> between C<0> and C<n>.
+A given piecewise quasipolynomial has a fixed domain dimension.
+Union piecewise quasipolynomials are used to contain piecewise quasipolynomials
+defined over different domains.
 Piecewise quasipolynomials are mainly used by the C<barvinok>
 library for representing the number of elements in a parametric set or map.
 For example, the piecewise quasipolynomial above represents
@@ -1350,8 +1495,14 @@ using the following functions.
 		__isl_take isl_printer *p,
 		__isl_keep isl_pw_qpolynomial *pwqp);
 
+	__isl_give isl_printer *isl_printer_print_union_pw_qpolynomial(
+		__isl_take isl_printer *p,
+		__isl_keep isl_union_pw_qpolynomial *upwqp);
+
 The output format of the printer
 needs to be set to either C<ISL_FORMAT_ISL> or C<ISL_FORMAT_C>.
+For C<isl_printer_print_union_pw_qpolynomial>, only C<ISL_FORMAT_ISL>
+is supported.
 
 =head3 Creating New (Piecewise) Quasipolynomials
 
@@ -1388,6 +1539,14 @@ be combined to create more complicated piecewise quasipolynomials.
 		__isl_take isl_set *set,
 		__isl_take isl_qpolynomial *qp);
 
+	__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_zero(
+		__isl_take isl_dim *dim);
+	__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_from_pw_qpolynomial(
+		__isl_take isl_pw_qpolynomial *pwqp);
+	__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_add_pw_qpolynomial(
+		__isl_take isl_union_pw_qpolynomial *upwqp,
+		__isl_take isl_pw_qpolynomial *pwqp);
+
 Quasipolynomials can be copied and freed again using the following
 functions.
 
@@ -1400,7 +1559,20 @@ functions.
 	void isl_pw_qpolynomial_free(
 		__isl_take isl_pw_qpolynomial *pwqp);
 
+	__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_copy(
+		__isl_keep isl_union_pw_qpolynomial *upwqp);
+	void isl_union_pw_qpolynomial_free(
+		__isl_take isl_union_pw_qpolynomial *upwqp);
+
 =head3 Inspecting (Piecewise) Quasipolynomials
+
+To iterate over all piecewise quasipolynomials in a union
+piecewise quasipolynomial, use the following function
+
+	int isl_union_pw_qpolynomial_foreach_pw_qpolynomial(
+		__isl_keep isl_union_pw_qpolynomial *upwqp,
+		int (*fn)(__isl_take isl_pw_qpolynomial *pwqp, void *user),
+		void *user);
 
 To iterate over the cells in a piecewise quasipolynomial,
 use either of the following two functions
@@ -1500,8 +1672,22 @@ are returned in C<*n> and C<*d>, respectively.
 		__isl_take isl_pw_qpolynomial *pwqp1,
 		__isl_take isl_pw_qpolynomial *pwqp2);
 
+	__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_add(
+		__isl_take isl_union_pw_qpolynomial *upwqp1,
+		__isl_take isl_union_pw_qpolynomial *upwqp2);
+	__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_sub(
+		__isl_take isl_union_pw_qpolynomial *upwqp1,
+		__isl_take isl_union_pw_qpolynomial *upwqp2);
+	__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_mul(
+		__isl_take isl_union_pw_qpolynomial *upwqp1,
+		__isl_take isl_union_pw_qpolynomial *upwqp2);
+
 	__isl_give isl_qpolynomial *isl_pw_qpolynomial_eval(
 		__isl_take isl_pw_qpolynomial *pwqp,
+		__isl_take isl_point *pnt);
+
+	__isl_give isl_qpolynomial *isl_union_pw_qpolynomial_eval(
+		__isl_take isl_union_pw_qpolynomial *upwqp,
 		__isl_take isl_point *pnt);
 
 	__isl_give isl_set *isl_pw_qpolynomial_domain(
@@ -1510,9 +1696,22 @@ are returned in C<*n> and C<*d>, respectively.
 		__isl_take isl_pw_qpolynomial *pwpq,
 		__isl_take isl_set *set);
 
+	__isl_give isl_union_set *isl_union_pw_qpolynomial_domain(
+		__isl_take isl_union_pw_qpolynomial *upwqp);
+	__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_intersect_domain(
+		__isl_take isl_union_pw_qpolynomial *upwpq,
+		__isl_take isl_union_set *uset);
+
+	__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_coalesce(
+		__isl_take isl_union_pw_qpolynomial *upwqp);
+
 	__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_gist(
 		__isl_take isl_pw_qpolynomial *pwqp,
 		__isl_take isl_set *context);
+
+	__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_gist(
+		__isl_take isl_union_pw_qpolynomial *upwqp,
+		__isl_take isl_union_set *context);
 
 The gist operation applies the gist operation to each of
 the cells in the domain of the input piecewise quasipolynomial.
@@ -1532,6 +1731,10 @@ i.e., as the result of the following function.
 		__isl_take isl_pw_qpolynomial *pwqp,
 		enum isl_fold type, int *tight);
 
+	__isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_bound(
+		__isl_take isl_union_pw_qpolynomial *upwqp,
+		enum isl_fold type, int *tight);
+
 The C<type> argument may be either C<isl_fold_min> or C<isl_fold_max>.
 If C<tight> is not C<NULL>, then C<*tight> is set to C<1>
 is the returned bound is known be tight, i.e., for each value
@@ -1545,10 +1748,14 @@ following functions.
 		__isl_keep isl_qpolynomial_fold *fold);
 	__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_copy(
 		__isl_keep isl_pw_qpolynomial_fold *pwf);
+	__isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_fold_copy(
+		__isl_keep isl_union_pw_qpolynomial_fold *upwf);
 	void isl_qpolynomial_fold_free(
 		__isl_take isl_qpolynomial_fold *fold);
 	void isl_pw_qpolynomial_fold_free(
 		__isl_take isl_pw_qpolynomial_fold *pwf);
+	void isl_union_pw_qpolynomial_fold_free(
+		__isl_take isl_union_pw_qpolynomial_fold *upwf);
 
 =head3 Printing Piecewise Quasipolynomial Reductions
 
@@ -1558,11 +1765,26 @@ using the following function.
 	__isl_give isl_printer *isl_printer_print_pw_qpolynomial_fold(
 		__isl_take isl_printer *p,
 		__isl_keep isl_pw_qpolynomial_fold *pwf);
+	__isl_give isl_printer *isl_printer_print_union_pw_qpolynomial_fold(
+		__isl_take isl_printer *p,
+		__isl_keep isl_union_pw_qpolynomial_fold *upwf);
 
-The output format of the printer
+For C<isl_printer_print_pw_qpolynomial_fold>,
+output format of the printer
 needs to be set to either C<ISL_FORMAT_ISL> or C<ISL_FORMAT_C>.
+For C<isl_printer_print_union_pw_qpolynomial_fold>,
+output format of the printer
+needs to be set to either C<ISL_FORMAT_ISL>.
 
 =head3 Inspecting (Piecewise) Quasipolynomial Reductions
+
+To iterate over all piecewise quasipolynomial reductions in a union
+piecewise quasipolynomial reduction, use the following function
+
+	int isl_union_pw_qpolynomial_fold_foreach_pw_qpolynomial_fold(
+		__isl_keep isl_union_pw_qpolynomial_fold *upwf,
+		int (*fn)(__isl_take isl_pw_qpolynomial_fold *pwf,
+			    void *user), void *user);
 
 To iterate over the cells in a piecewise quasipolynomial reduction,
 use either of the following two functions
@@ -1594,16 +1816,37 @@ To iterate over all quasipolynomials in a reduction, use
 		__isl_take isl_pw_qpolynomial_fold *pwf1,
 		__isl_take isl_pw_qpolynomial_fold *pwf2);
 
+	__isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_fold_add(
+		__isl_take isl_union_pw_qpolynomial_fold *upwf1,
+		__isl_take isl_union_pw_qpolynomial_fold *upwf2);
+
 	__isl_give isl_qpolynomial *isl_pw_qpolynomial_fold_eval(
 		__isl_take isl_pw_qpolynomial_fold *pwf,
 		__isl_take isl_point *pnt);
 
+	__isl_give isl_qpolynomial *isl_union_pw_qpolynomial_fold_eval(
+		__isl_take isl_union_pw_qpolynomial_fold *upwf,
+		__isl_take isl_point *pnt);
+
+	__isl_give isl_union_set *isl_union_pw_qpolynomial_fold_domain(
+		__isl_take isl_union_pw_qpolynomial_fold *upwf);
+	__isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_fold_intersect_domain(
+		__isl_take isl_union_pw_qpolynomial_fold *upwf,
+		__isl_take isl_union_set *uset);
+
 	__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_coalesce(
 		__isl_take isl_pw_qpolynomial_fold *pwf);
+
+	__isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_fold_coalesce(
+		__isl_take isl_union_pw_qpolynomial_fold *upwf);
 
 	__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_gist(
 		__isl_take isl_pw_qpolynomial_fold *pwf,
 		__isl_take isl_set *context);
+
+	__isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_fold_gist(
+		__isl_take isl_union_pw_qpolynomial_fold *upwf,
+		__isl_take isl_union_set *context);
 
 The gist operation applies the gist operation to each of
 the cells in the domain of the input piecewise quasipolynomial reduction.

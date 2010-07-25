@@ -21,6 +21,7 @@
 #include "isl_map_private.h"
 #include "isl_obj.h"
 #include "isl_polynomial_private.h"
+#include <isl_union_map.h>
 
 struct variable {
 	char    	    	*name;
@@ -1352,11 +1353,11 @@ static int next_is_tuple(struct isl_stream *s)
 }
 
 static struct isl_obj obj_read_body(struct isl_stream *s,
-	__isl_take isl_basic_map *bmap, struct vars *v, isl_obj_type type)
+	__isl_take isl_basic_map *bmap, struct vars *v)
 {
 	struct isl_map *map = NULL;
 	struct isl_token *tok;
-	struct isl_obj obj = { type, NULL };
+	struct isl_obj obj = { isl_obj_set, NULL };
 	int n = v->n;
 
 	if (!next_is_tuple(s))
@@ -1392,10 +1393,71 @@ error:
 	return obj;
 }
 
+static struct isl_obj to_union(isl_ctx *ctx, struct isl_obj obj)
+{
+	if (obj.type == isl_obj_map) {
+		obj.v = isl_union_map_from_map(obj.v);
+		obj.type = isl_obj_union_map;
+	} else if (obj.type == isl_obj_set) {
+		obj.v = isl_union_set_from_set(obj.v);
+		obj.type = isl_obj_union_set;
+	} else if (obj.type == isl_obj_pw_qpolynomial) {
+		obj.v = isl_union_pw_qpolynomial_from_pw_qpolynomial(obj.v);
+		obj.type = isl_obj_union_pw_qpolynomial;
+	} else if (obj.type == isl_obj_pw_qpolynomial_fold) {
+		obj.v = isl_union_pw_qpolynomial_fold_from_pw_qpolynomial_fold(obj.v);
+		obj.type = isl_obj_union_pw_qpolynomial_fold;
+	} else
+		isl_assert(ctx, 0, goto error);
+	return obj;
+error:
+	obj.type->free(obj.v);
+	obj.type = isl_obj_none;
+	return obj;
+}
+
 static struct isl_obj obj_add(struct isl_ctx *ctx,
 	struct isl_obj obj1, struct isl_obj obj2)
 {
+	if (obj1.type == isl_obj_set && obj2.type == isl_obj_union_set)
+		obj1 = to_union(ctx, obj1);
+	if (obj1.type == isl_obj_union_set && obj2.type == isl_obj_set)
+		obj2 = to_union(ctx, obj2);
+	if (obj1.type == isl_obj_map && obj2.type == isl_obj_union_map)
+		obj1 = to_union(ctx, obj1);
+	if (obj1.type == isl_obj_union_map && obj2.type == isl_obj_map)
+		obj2 = to_union(ctx, obj2);
+	if (obj1.type == isl_obj_pw_qpolynomial &&
+	    obj2.type == isl_obj_union_pw_qpolynomial)
+		obj1 = to_union(ctx, obj1);
+	if (obj1.type == isl_obj_union_pw_qpolynomial &&
+	    obj2.type == isl_obj_pw_qpolynomial)
+		obj2 = to_union(ctx, obj2);
+	if (obj1.type == isl_obj_pw_qpolynomial_fold &&
+	    obj2.type == isl_obj_union_pw_qpolynomial_fold)
+		obj1 = to_union(ctx, obj1);
+	if (obj1.type == isl_obj_union_pw_qpolynomial_fold &&
+	    obj2.type == isl_obj_pw_qpolynomial_fold)
+		obj2 = to_union(ctx, obj2);
 	isl_assert(ctx, obj1.type == obj2.type, goto error);
+	if (obj1.type == isl_obj_map && !isl_map_has_equal_dim(obj1.v, obj2.v)) {
+		obj1 = to_union(ctx, obj1);
+		obj2 = to_union(ctx, obj2);
+	}
+	if (obj1.type == isl_obj_set && !isl_set_has_equal_dim(obj1.v, obj2.v)) {
+		obj1 = to_union(ctx, obj1);
+		obj2 = to_union(ctx, obj2);
+	}
+	if (obj1.type == isl_obj_pw_qpolynomial &&
+	    !isl_pw_qpolynomial_has_equal_dim(obj1.v, obj2.v)) {
+		obj1 = to_union(ctx, obj1);
+		obj2 = to_union(ctx, obj2);
+	}
+	if (obj1.type == isl_obj_pw_qpolynomial_fold &&
+	    !isl_pw_qpolynomial_fold_has_equal_dim(obj1.v, obj2.v)) {
+		obj1 = to_union(ctx, obj1);
+		obj2 = to_union(ctx, obj2);
+	}
 	obj1.v = obj1.type->add(obj1.v, obj2.v);
 	return obj1;
 error:
@@ -1473,13 +1535,18 @@ static struct isl_obj obj_read(struct isl_stream *s, int nparam)
 			goto error;
 		if (nparam >= 0)
 			isl_assert(s->ctx, nparam == v->n, goto error);
+	} else if (tok->type == '}') {
+		obj.type = isl_obj_union_set;
+		obj.v = isl_union_set_empty(isl_basic_map_get_dim(bmap));
+		isl_token_free(tok);
+		goto done;
 	} else
 		isl_stream_push_token(s, tok);
 
 	for (;;) {
 		struct isl_obj o;
 		tok = NULL;
-		o = obj_read_body(s, isl_basic_map_copy(bmap), v, obj.type);
+		o = obj_read_body(s, isl_basic_map_copy(bmap), v);
 		if (o.type == isl_obj_none)
 			break;
 		if (!obj.v)
@@ -1503,6 +1570,7 @@ static struct isl_obj obj_read(struct isl_stream *s, int nparam)
 			isl_token_free(tok);
 		goto error;
 	}
+done:
 	vars_free(v);
 	isl_basic_map_free(bmap);
 

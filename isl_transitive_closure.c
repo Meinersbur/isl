@@ -11,7 +11,9 @@
 #include "isl_map.h"
 #include "isl_map_private.h"
 #include "isl_seq.h"
+#include <isl_dim_private.h>
 #include <isl_lp.h>
+#include <isl_union_map.h>
 
 int isl_map_is_transitively_closed(__isl_keep isl_map *map)
 {
@@ -21,6 +23,19 @@ int isl_map_is_transitively_closed(__isl_keep isl_map *map)
 	map2 = isl_map_apply_range(isl_map_copy(map), isl_map_copy(map));
 	closed = isl_map_is_subset(map2, map);
 	isl_map_free(map2);
+
+	return closed;
+}
+
+int isl_union_map_is_transitively_closed(__isl_keep isl_union_map *umap)
+{
+	isl_union_map *umap2;
+	int closed;
+
+	umap2 = isl_union_map_apply_range(isl_union_map_copy(umap),
+					  isl_union_map_copy(umap));
+	closed = isl_union_map_is_subset(umap2, umap);
+	isl_union_map_free(umap2);
 
 	return closed;
 }
@@ -758,6 +773,9 @@ static int isl_set_overlaps(__isl_keep isl_set *set1, __isl_keep isl_set *set2)
 {
 	isl_set *i;
 	int no_overlap;
+
+	if (!isl_dim_tuple_match(set1->dim, isl_dim_set, set2->dim, isl_dim_set))
+		return 0;
 
 	i = isl_set_intersect(isl_set_copy(set1), isl_set_copy(set2));
 	no_overlap = isl_set_is_empty(i);
@@ -1749,6 +1767,9 @@ static int basic_map_follows(__isl_keep isl_basic_map *bmap1,
 	struct isl_map *map21 = NULL;
 	int subset;
 
+	if (!isl_dim_tuple_match(bmap1->dim, isl_dim_in, bmap2->dim, isl_dim_out))
+		return 0;
+
 	map21 = isl_map_from_basic_map(
 			isl_basic_map_apply_range(
 				isl_basic_map_copy(bmap2),
@@ -1759,6 +1780,12 @@ static int basic_map_follows(__isl_keep isl_basic_map *bmap1,
 	if (subset) {
 		isl_map_free(map21);
 		return 0;
+	}
+
+	if (!isl_dim_tuple_match(bmap1->dim, isl_dim_in, bmap1->dim, isl_dim_out) ||
+	    !isl_dim_tuple_match(bmap2->dim, isl_dim_in, bmap2->dim, isl_dim_out)) {
+		isl_map_free(map21);
+		return 1;
 	}
 
 	map12 = isl_map_from_basic_map(
@@ -2640,5 +2667,290 @@ __isl_give isl_map *isl_map_transitive_closure(__isl_take isl_map *map,
 	return map;
 error:
 	isl_map_free(map);
+	return NULL;
+}
+
+static int inc_count(__isl_take isl_map *map, void *user)
+{
+	int *n = user;
+
+	*n += map->n;
+
+	isl_map_free(map);
+
+	return 0;
+}
+
+static int collect_basic_map(__isl_take isl_map *map, void *user)
+{
+	int i;
+	isl_basic_map ***next = user;
+
+	for (i = 0; i < map->n; ++i) {
+		**next = isl_basic_map_copy(map->p[i]);
+		if (!**next)
+			goto error;
+		(*next)++;
+	}
+
+	isl_map_free(map);
+	return 0;
+error:
+	isl_map_free(map);
+	return -1;
+}
+
+/* Perform Floyd-Warshall on the given list of basic relations.
+ * The basic relations may live in different dimensions,
+ * but basic relations that get assigned to the diagonal of the
+ * grid have domains and ranges of the same dimension and so
+ * the standard algorithm can be used because the nested transitive
+ * closures are only applied to diagonal elements and because all
+ * compositions are peformed on relations with compatible domains and ranges.
+ */
+static __isl_give isl_union_map *union_floyd_warshall_on_list(isl_ctx *ctx,
+	__isl_keep isl_basic_map **list, int n, int *exact)
+{
+	int i, j, k;
+	int n_group;
+	int *group = NULL;
+	isl_set **set = NULL;
+	isl_map ***grid = NULL;
+	isl_union_map *app;
+
+	group = setup_groups(ctx, list, n, &set, &n_group);
+	if (!group)
+		goto error;
+
+	grid = isl_calloc_array(ctx, isl_map **, n_group);
+	if (!grid)
+		goto error;
+	for (i = 0; i < n_group; ++i) {
+		grid[i] = isl_calloc_array(map->ctx, isl_map *, n_group);
+		if (!grid[i])
+			goto error;
+		for (j = 0; j < n_group; ++j) {
+			isl_dim *dim1, *dim2, *dim;
+			dim1 = isl_dim_reverse(isl_set_get_dim(set[i]));
+			dim2 = isl_set_get_dim(set[j]);
+			dim = isl_dim_join(dim1, dim2);
+			grid[i][j] = isl_map_empty(dim);
+		}
+	}
+
+	for (k = 0; k < n; ++k) {
+		i = group[2 * k];
+		j = group[2 * k + 1];
+		grid[i][j] = isl_map_union(grid[i][j],
+				isl_map_from_basic_map(
+					isl_basic_map_copy(list[k])));
+	}
+	
+	floyd_warshall_iterate(grid, n_group, exact);
+
+	app = isl_union_map_empty(isl_map_get_dim(grid[0][0]));
+
+	for (i = 0; i < n_group; ++i) {
+		for (j = 0; j < n_group; ++j)
+			app = isl_union_map_add_map(app, grid[i][j]);
+		free(grid[i]);
+	}
+	free(grid);
+
+	for (i = 0; i < 2 * n; ++i)
+		isl_set_free(set[i]);
+	free(set);
+
+	free(group);
+	return app;
+error:
+	if (grid)
+		for (i = 0; i < n_group; ++i) {
+			if (!grid[i])
+				continue;
+			for (j = 0; j < n_group; ++j)
+				isl_map_free(grid[i][j]);
+			free(grid[i]);
+		}
+	free(grid);
+	if (set) {
+		for (i = 0; i < 2 * n; ++i)
+			isl_set_free(set[i]);
+		free(set);
+	}
+	free(group);
+	return NULL;
+}
+
+/* Perform Floyd-Warshall on the given union relation.
+ * The implementation is very similar to that for non-unions.
+ * The main difference is that it is applied unconditionally.
+ * We first extract a list of basic maps from the union map
+ * and then perform the algorithm on this list.
+ */
+static __isl_give isl_union_map *union_floyd_warshall(
+	__isl_take isl_union_map *umap, int *exact)
+{
+	int i, n;
+	isl_ctx *ctx;
+	isl_basic_map **list;
+	isl_basic_map **next;
+	isl_union_map *res;
+
+	n = 0;
+	if (isl_union_map_foreach_map(umap, inc_count, &n) < 0)
+		goto error;
+
+	ctx = isl_union_map_get_ctx(umap);
+	list = isl_calloc_array(ctx, isl_basic_map *, n);
+	if (!list)
+		goto error;
+
+	next = list;
+	if (isl_union_map_foreach_map(umap, collect_basic_map, &next) < 0)
+		goto error;
+
+	res = union_floyd_warshall_on_list(ctx, list, n, exact);
+
+	if (list) {
+		for (i = 0; i < n; ++i)
+			isl_basic_map_free(list[i]);
+		free(list);
+	}
+
+	isl_union_map_free(umap);
+	return res;
+error:
+	if (list) {
+		for (i = 0; i < n; ++i)
+			isl_basic_map_free(list[i]);
+		free(list);
+	}
+	isl_union_map_free(umap);
+	return NULL;
+}
+
+/* Decompose the give union relation into strongly connected components.
+ * The implementation is essentially the same as that of
+ * construct_power_components with the major difference that all
+ * operations are performed on union maps.
+ */
+static __isl_give isl_union_map *union_components(
+	__isl_take isl_union_map *umap, int *exact)
+{
+	int i;
+	int n;
+	isl_ctx *ctx;
+	isl_basic_map **list;
+	isl_basic_map **next;
+	isl_union_map *path = NULL;
+	struct basic_map_sort *s = NULL;
+	int c, l;
+	int recheck = 0;
+
+	n = 0;
+	if (isl_union_map_foreach_map(umap, inc_count, &n) < 0)
+		goto error;
+
+	if (n <= 1)
+		return union_floyd_warshall(umap, exact);
+
+	ctx = isl_union_map_get_ctx(umap);
+	list = isl_calloc_array(ctx, isl_basic_map *, n);
+	if (!list)
+		goto error;
+
+	next = list;
+	if (isl_union_map_foreach_map(umap, collect_basic_map, &next) < 0)
+		goto error;
+
+	s = basic_map_sort_init(ctx, n, list);
+	if (!s)
+		goto error;
+
+	c = 0;
+	i = 0;
+	l = n;
+	path = isl_union_map_empty(isl_union_map_get_dim(umap));
+	while (l) {
+		isl_union_map *comp;
+		isl_union_map *path_comp, *path_comb;
+		comp = isl_union_map_empty(isl_union_map_get_dim(umap));
+		while (s->order[i] != -1) {
+			comp = isl_union_map_add_map(comp,
+				    isl_map_from_basic_map(
+					isl_basic_map_copy(list[s->order[i]])));
+			--l;
+			++i;
+		}
+		path_comp = union_floyd_warshall(comp, exact);
+		path_comb = isl_union_map_apply_range(isl_union_map_copy(path),
+						isl_union_map_copy(path_comp));
+		path = isl_union_map_union(path, path_comp);
+		path = isl_union_map_union(path, path_comb);
+		++i;
+		++c;
+	}
+
+	if (c > 1 && s->check_closed && !*exact) {
+		int closed;
+
+		closed = isl_union_map_is_transitively_closed(path);
+		if (closed < 0)
+			goto error;
+		recheck = !closed;
+	}
+
+	basic_map_sort_free(s);
+
+	for (i = 0; i < n; ++i)
+		isl_basic_map_free(list[i]);
+	free(list);
+
+	if (recheck) {
+		isl_union_map_free(path);
+		return union_floyd_warshall(umap, exact);
+	}
+
+	isl_union_map_free(umap);
+
+	return path;
+error:
+	basic_map_sort_free(s);
+	if (list) {
+		for (i = 0; i < n; ++i)
+			isl_basic_map_free(list[i]);
+		free(list);
+	}
+	isl_union_map_free(umap);
+	isl_union_map_free(path);
+	return NULL;
+}
+
+/* Compute the transitive closure  of "umap", or an overapproximation.
+ * If the result is exact, then *exact is set to 1.
+ */
+__isl_give isl_union_map *isl_union_map_transitive_closure(
+	__isl_take isl_union_map *umap, int *exact)
+{
+	int closed;
+
+	if (!umap)
+		return NULL;
+
+	if (exact)
+		*exact = 1;
+
+	umap = isl_union_map_compute_divs(umap);
+	umap = isl_union_map_coalesce(umap);
+	closed = isl_union_map_is_transitively_closed(umap);
+	if (closed < 0)
+		goto error;
+	if (closed)
+		return umap;
+	umap = union_components(umap, exact);
+	return umap;
+error:
+	isl_union_map_free(umap);
 	return NULL;
 }
