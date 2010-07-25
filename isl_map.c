@@ -5280,10 +5280,18 @@ int isl_basic_set_is_universe(struct isl_basic_set *bset)
 
 int isl_map_fast_is_universe(__isl_keep isl_map *map)
 {
+	int i;
+
 	if (!map)
 		return -1;
 
-	return map->n == 1 && isl_basic_map_is_universe(map->p[0]);
+	for (i = 0; i < map->n; ++i) {
+		int r = isl_basic_map_is_universe(map->p[i]);
+		if (r < 0 || r)
+			return r;
+	}
+
+	return 0;
 }
 
 int isl_set_fast_is_universe(__isl_keep isl_set *set)
