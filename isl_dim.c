@@ -8,7 +8,7 @@
  */
 
 #include <stdlib.h>
-#include <isl_dim.h>
+#include <isl_dim_private.h>
 #include "isl_name.h"
 
 struct isl_dim *isl_dim_alloc(struct isl_ctx *ctx,
@@ -904,4 +904,31 @@ int isl_dim_compatible(struct isl_dim *dim1, struct isl_dim *dim2)
 {
 	return dim1->nparam == dim2->nparam &&
 	       dim1->n_in + dim1->n_out == dim2->n_in + dim2->n_out;
+}
+
+uint32_t isl_dim_get_hash(__isl_keep isl_dim *dim)
+{
+	int i;
+	uint32_t hash;
+	struct isl_name *name;
+
+	if (!dim)
+		return 0;
+	hash = isl_hash_init();
+
+	hash = isl_hash_builtin(hash, dim->nparam);
+	hash = isl_hash_builtin(hash, dim->n_in);
+	hash = isl_hash_builtin(hash, dim->n_out);
+
+	for (i = 0; i < dim->nparam; ++i) {
+		name = get_name(dim, isl_dim_param, i);
+		hash = isl_hash_builtin(hash, name);
+	}
+
+	name = tuple_name(dim, isl_dim_in);
+	hash = isl_hash_builtin(hash, name);
+	name = tuple_name(dim, isl_dim_out);
+	hash = isl_hash_builtin(hash, name);
+
+	return hash;
 }

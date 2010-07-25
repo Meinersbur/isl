@@ -1,4 +1,7 @@
 #include <isl_dim.h>
+#include <isl_hash.h>
+
+uint32_t isl_dim_get_hash(__isl_keep isl_dim *dim);
 
 __isl_give isl_dim *isl_dim_as_set_dim(__isl_take isl_dim *dim);
 
