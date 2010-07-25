@@ -538,7 +538,7 @@ int isl_stream_is_empty(struct isl_stream *s)
 	return 0;
 }
 
-static int free_keyword(void *p)
+static int free_keyword(void *p, void *user)
 {
 	struct isl_keyword *keyword = p;
 
@@ -570,7 +570,7 @@ void isl_stream_free(struct isl_stream *s)
 		isl_token_free(tok);
 	}
 	if (s->keywords) {
-		isl_hash_table_foreach(s->ctx, s->keywords, free_keyword);
+		isl_hash_table_foreach(s->ctx, s->keywords, &free_keyword, NULL);
 		isl_hash_table_free(s->ctx, s->keywords);
 	}
 	isl_ctx_deref(s->ctx);

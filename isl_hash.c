@@ -163,14 +163,15 @@ struct isl_hash_table_entry *isl_hash_table_find(struct isl_ctx *ctx,
 
 int isl_hash_table_foreach(struct isl_ctx *ctx,
 				struct isl_hash_table *table,
-				int (*fn)(void *entry))
+				int (*fn)(void *entry, void *user), void *user)
 {
 	size_t size;
 	uint32_t h;
 
 	size = 1 << table->bits;
 	for (h = 0; h < size; ++ h)
-		if (table->entries[h].data && fn(table->entries[h].data) < 0)
+		if (table->entries[h].data &&
+		    fn(table->entries[h].data, user) < 0)
 			return -1;
 	
 	return 0;
