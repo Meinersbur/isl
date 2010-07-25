@@ -86,13 +86,12 @@ static void *isl_obj_none_add(void *v1, void *v2)
 	return NULL;
 }
 
-static struct isl_obj_vtable obj_none = {
+struct isl_obj_vtable isl_obj_none_vtable = {
 	isl_obj_none_copy,
 	isl_obj_none_add,
 	isl_obj_none_print,
 	isl_obj_none_free
 };
-isl_obj_type isl_obj_none = &obj_none;
 
 static void *isl_obj_pw_qp_copy(void *v)
 {

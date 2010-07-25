@@ -17,7 +17,8 @@ struct isl_obj_vtable {
 	void (*free)(void *v);
 };
 typedef struct isl_obj_vtable *isl_obj_type;
-extern isl_obj_type isl_obj_none;
+extern struct isl_obj_vtable isl_obj_none_vtable;
+#define isl_obj_none		(&isl_obj_none_vtable)
 extern struct isl_obj_vtable isl_obj_set_vtable;
 #define isl_obj_set		(&isl_obj_set_vtable)
 extern struct isl_obj_vtable isl_obj_map_vtable;
