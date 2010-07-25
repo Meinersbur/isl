@@ -286,6 +286,7 @@ int isl_set_is_strict_subset(__isl_keep isl_set *set1, __isl_keep isl_set *set2)
 int isl_set_is_equal(__isl_keep isl_set *set1, __isl_keep isl_set *set2);
 int isl_set_is_singleton(__isl_keep isl_set *set);
 int isl_set_is_box(__isl_keep isl_set *set);
+int isl_set_has_equal_dim(__isl_keep isl_set *set1, __isl_keep isl_set *set2);
 
 __isl_give isl_set *isl_set_sum(__isl_take isl_set *set1,
 	__isl_take isl_set *set2);

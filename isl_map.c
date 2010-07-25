@@ -5314,6 +5314,22 @@ int isl_set_is_empty(struct isl_set *set)
 	return isl_map_is_empty((struct isl_map *)set);
 }
 
+int isl_map_has_equal_dim(__isl_keep isl_map *map1, __isl_keep isl_map *map2)
+{
+	if (!map1 || !map2)
+		return -1;
+
+	return isl_dim_equal(map1->dim, map2->dim);
+}
+
+int isl_set_has_equal_dim(__isl_keep isl_set *set1, __isl_keep isl_set *set2)
+{
+	if (!set1 || !set2)
+		return -1;
+
+	return isl_dim_equal(set1->dim, set2->dim);
+}
+
 int isl_map_is_equal(struct isl_map *map1, struct isl_map *map2)
 {
 	int is_subset;
