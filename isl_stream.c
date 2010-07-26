@@ -538,9 +538,9 @@ int isl_stream_is_empty(struct isl_stream *s)
 	return 0;
 }
 
-static int free_keyword(void *p, void *user)
+static int free_keyword(void **p, void *user)
 {
-	struct isl_keyword *keyword = p;
+	struct isl_keyword *keyword = *p;
 
 	free(keyword->name);
 	free(keyword);
