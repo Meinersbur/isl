@@ -1,5 +1,7 @@
 #include <assert.h>
-#include <isl_map.h>
+#include <isl_obj.h>
+#include <isl_printer.h>
+#include <isl_stream.h>
 
 struct isl_arg_choice cat_format[] = {
 	{"isl",		ISL_FORMAT_ISL},
@@ -26,8 +28,10 @@ ISL_ARG_DEF(cat_options, struct cat_options, cat_options_arg)
 int main(int argc, char **argv)
 {
 	struct isl_ctx *ctx;
-	struct isl_map *map;
+	struct isl_stream *s;
+	struct isl_obj obj;
 	struct cat_options *options;
+	isl_printer *p;
 
 	options = cat_options_new_with_defaults();
 	assert(options);
@@ -35,11 +39,17 @@ int main(int argc, char **argv)
 
 	ctx = isl_ctx_alloc_with_options(cat_options_arg, options);
 
-	map = isl_map_read_from_file(ctx, stdin, -1);
-	isl_map_print(map, stdout, 0, options->format);
-	if (options->format == ISL_FORMAT_ISL)
-		printf("\n");
-	isl_map_free(map);
+	s = isl_stream_new_file(ctx, stdin);
+	obj = isl_stream_read_obj(s);
+	isl_stream_free(s);
+
+	p = isl_printer_to_file(ctx, stdout);
+	p = isl_printer_set_output_format(p, options->format);
+	p = obj.type->print(p, obj.v);
+	p = isl_printer_end_line(p);
+	isl_printer_free(p);
+
+	obj.type->free(obj.v);
 
 	isl_ctx_free(ctx);
 
