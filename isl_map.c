@@ -3466,7 +3466,7 @@ struct isl_map *isl_map_from_range(struct isl_set *set)
 
 __isl_give isl_map *isl_map_from_domain(__isl_take isl_set *set)
 {
-	return isl_map_reverse(isl_map_from_range(set));;
+	return isl_map_reverse(isl_map_from_range(set));
 }
 
 __isl_give isl_map *isl_map_from_domain_and_range(__isl_take isl_set *domain,
