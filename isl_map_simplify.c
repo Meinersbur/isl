@@ -1892,7 +1892,7 @@ error:
 __isl_give isl_map *isl_map_gist(__isl_take isl_map *map,
 	__isl_take isl_map *context)
 {
-	return isl_map_gist_basic_map(map, isl_map_convex_hull(context));
+	return isl_map_gist_basic_map(map, isl_map_simple_hull(context));
 }
 
 struct isl_basic_set *isl_basic_set_gist(struct isl_basic_set *bset,
