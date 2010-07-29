@@ -122,6 +122,8 @@ int isl_pw_qpolynomial_is_zero(__isl_keep isl_pw_qpolynomial *pwqp);
 
 __isl_give isl_dim *isl_pw_qpolynomial_get_dim(
 	__isl_keep isl_pw_qpolynomial *pwqp);
+__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_reset_dim(
+	__isl_take isl_pw_qpolynomial *pwqp, __isl_take isl_dim *dim);
 unsigned isl_pw_qpolynomial_dim(__isl_keep isl_pw_qpolynomial *pwqp,
 	enum isl_dim_type type);
 int isl_pw_qpolynomial_involves_dims(__isl_keep isl_pw_qpolynomial *pwqp,
@@ -250,6 +252,8 @@ int isl_pw_qpolynomial_fold_is_zero(__isl_keep isl_pw_qpolynomial_fold *pwf);
 
 __isl_give isl_dim *isl_pw_qpolynomial_fold_get_dim(
 	__isl_keep isl_pw_qpolynomial_fold *pwf);
+__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_reset_dim(
+	__isl_take isl_pw_qpolynomial_fold *pwf, __isl_take isl_dim *dim);
 unsigned isl_pw_qpolynomial_fold_dim(__isl_keep isl_pw_qpolynomial_fold *pwf,
 	enum isl_dim_type type);
 

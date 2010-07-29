@@ -555,6 +555,30 @@ __isl_give isl_dim *FN(PW,get_dim)(__isl_keep PW *pw)
 	return pw ? isl_dim_copy(pw->dim) : NULL;
 }
 
+__isl_give PW *FN(PW,reset_dim)(__isl_take PW *pw, __isl_take isl_dim *dim)
+{
+	int i;
+
+	pw = FN(PW,cow)(pw);
+	if (!pw || !dim)
+		goto error;
+
+	for (i = 0; i < pw->n; ++i) {
+		pw->p[i].set = isl_set_reset_dim(pw->p[i].set,
+						 isl_dim_copy(dim));
+		if (!pw->p[i].set)
+			goto error;
+	}
+	isl_dim_free(pw->dim);
+	pw->dim = dim;
+
+	return pw;
+error:
+	isl_dim_free(dim);
+	FN(PW,free)(pw);
+	return NULL;
+}
+
 __isl_give PW *FN(PW,morph)(__isl_take PW *pw, __isl_take isl_morph *morph)
 {
 	int i;
