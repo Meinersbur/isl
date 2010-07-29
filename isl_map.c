@@ -3385,6 +3385,61 @@ struct isl_set *isl_set_to_underlying_set(struct isl_set *set)
 	return (struct isl_set *)isl_map_underlying_set((struct isl_map *)set);
 }
 
+static __isl_give isl_basic_map *isl_basic_map_reset_dim(
+	__isl_take isl_basic_map *bmap, __isl_take isl_dim *dim)
+{
+	bmap = isl_basic_map_cow(bmap);
+	if (!bmap || !dim)
+		goto error;
+
+	isl_dim_free(bmap->dim);
+	bmap->dim = dim;
+
+	return bmap;
+error:
+	isl_basic_map_free(bmap);
+	isl_dim_free(dim);
+	return NULL;
+}
+
+static __isl_give isl_basic_set *isl_basic_set_reset_dim(
+	__isl_take isl_basic_set *bset, __isl_take isl_dim *dim)
+{
+	return (isl_basic_set *)isl_basic_map_reset_dim((isl_basic_map *)bset,
+							dim);
+}
+
+__isl_give isl_map *isl_map_reset_dim(__isl_take isl_map *map,
+	__isl_take isl_dim *dim)
+{
+	int i;
+
+	map = isl_map_cow(map);
+	if (!map || !dim)
+		goto error;
+
+	for (i = 0; i < map->n; ++i) {
+		map->p[i] = isl_basic_map_reset_dim(map->p[i],
+						    isl_dim_copy(dim));
+		if (!map->p[i])
+			goto error;
+	}
+	isl_dim_free(map->dim);
+	map->dim = dim;
+
+	return map;
+error:
+	isl_map_free(map);
+	isl_dim_free(dim);
+	return NULL;
+}
+
+__isl_give isl_set *isl_set_reset_dim(__isl_take isl_set *set,
+	__isl_take isl_dim *dim)
+{
+	return (struct isl_set *) isl_map_reset_dim((struct isl_map *)set, dim);
+}
+
 struct isl_basic_set *isl_basic_map_domain(struct isl_basic_map *bmap)
 {
 	struct isl_basic_set *domain;
@@ -4346,34 +4401,6 @@ __isl_give isl_set *isl_set_lexmin(__isl_take isl_set *set)
 __isl_give isl_set *isl_set_lexmax(__isl_take isl_set *set)
 {
 	return (isl_set *)isl_map_lexmax((isl_map *)set);
-}
-
-static struct isl_map *isl_map_reset_dim(struct isl_map *map,
-	struct isl_dim *dim)
-{
-	int i;
-
-	if (!map || !dim)
-		goto error;
-
-	for (i = 0; i < map->n; ++i) {
-		isl_dim_free(map->p[i]->dim);
-		map->p[i]->dim = isl_dim_copy(dim);
-	}
-	isl_dim_free(map->dim);
-	map->dim = dim;
-
-	return map;
-error:
-	isl_map_free(map);
-	isl_dim_free(dim);
-	return NULL;
-}
-
-static struct isl_set *isl_set_reset_dim(struct isl_set *set,
-	struct isl_dim *dim)
-{
-	return (struct isl_set *) isl_map_reset_dim((struct isl_map *)set, dim);
 }
 
 /* Apply a preimage specified by "mat" on the parameters of "bset".

@@ -11,6 +11,11 @@
 #include "isl_map.h"
 #include "isl_vec.h"
 
+__isl_give isl_map *isl_map_reset_dim(__isl_take isl_map *map,
+	__isl_take isl_dim *dim);
+__isl_give isl_set *isl_set_reset_dim(__isl_take isl_set *set,
+	__isl_take isl_dim *dim);
+
 unsigned isl_basic_map_offset(struct isl_basic_map *bmap,
 					enum isl_dim_type type);
 
