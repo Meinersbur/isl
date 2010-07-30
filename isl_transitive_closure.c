@@ -1363,9 +1363,9 @@ static int merge(isl_set **set, int *group, __isl_take isl_set *dom, int pos)
 			continue;
 
 		set[i] = isl_set_union(set[i], set[group[pos]]);
+		set[group[pos]] = NULL;
 		if (!set[i])
 			goto error;
-		set[group[pos]] = NULL;
 		group[group[pos]] = i;
 		group[pos] = i;
 	}
