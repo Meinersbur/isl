@@ -1422,6 +1422,48 @@ static int add_length(__isl_keep isl_map *map, isl_map ***grid, int n)
 	return 0;
 }
 
+/* The core of the Floyd-Warshall algorithm.
+ * Updates the given n x x matrix of relations in place.
+ *
+ * The algorithm iterates over all vertices.  In each step, the whole
+ * matrix is updated to include all paths that go to the current vertex,
+ * possibly stay there a while (including passing through earlier vertices)
+ * and then come back.  At the start of each iteration, the diagonal
+ * element corresponding to the current vertex is replaced by its
+ * transitive closure to account for all indirect paths that stay
+ * in the current vertex.
+ */
+static void floyd_warshall_iterate(isl_map ***grid, int n, int *exact)
+{
+	int r, p, q;
+
+	for (r = 0; r < n; ++r) {
+		int r_exact;
+		grid[r][r] = isl_map_transitive_closure(grid[r][r],
+				(exact && *exact) ? &r_exact : NULL);
+		if (exact && *exact && !r_exact)
+			*exact = 0;
+
+		for (p = 0; p < n; ++p)
+			for (q = 0; q < n; ++q) {
+				isl_map *loop;
+				if (p == r && q == r)
+					continue;
+				loop = isl_map_apply_range(
+						isl_map_copy(grid[p][r]),
+						isl_map_copy(grid[r][q]));
+				grid[p][q] = isl_map_union(grid[p][q], loop);
+				loop = isl_map_apply_range(
+						isl_map_copy(grid[p][r]),
+					isl_map_apply_range(
+						isl_map_copy(grid[r][r]),
+						isl_map_copy(grid[r][q])));
+				grid[p][q] = isl_map_union(grid[p][q], loop);
+				grid[p][q] = isl_map_coalesce(grid[p][q]);
+			}
+	}
+}
+
 /* Given a partition of the domains and ranges of the basic maps in "map",
  * apply the Floyd-Warshall algorithm with the elements in the partition
  * as vertices.
@@ -1432,14 +1474,6 @@ static int add_length(__isl_keep isl_map *map, isl_map ***grid, int n)
  * We first construct a matrix of relations based on the partition information,
  * apply Floyd-Warshall on this matrix of relations and then take the
  * union of all entries in the matrix as the final result.
- *
- * The algorithm iterates over all vertices.  In each step, the whole
- * matrix is updated to include all paths that go to the current vertex,
- * possibly stay there a while (including passing through earlier vertices)
- * and then come back.  At the start of each iteration, the diagonal
- * element corresponding to the current vertex is replaced by its
- * transitive closure to account for all indirect paths that stay
- * in the current vertex.
  *
  * If we are actually computing the power instead of the transitive closure,
  * i.e., when "project" is not set, then the result should have the
@@ -1453,7 +1487,6 @@ static __isl_give isl_map *floyd_warshall_with_groups(__isl_take isl_dim *dim,
 	__isl_keep isl_map *map, int *exact, int project, int *group, int n)
 {
 	int i, j, k;
-	int r, p, q;
 	isl_map ***grid = NULL;
 	isl_map *app;
 
@@ -1487,31 +1520,7 @@ static __isl_give isl_map *floyd_warshall_with_groups(__isl_take isl_dim *dim,
 	if (!project && add_length(map, grid, n) < 0)
 		goto error;
 
-	for (r = 0; r < n; ++r) {
-		int r_exact;
-		grid[r][r] = isl_map_transitive_closure(grid[r][r],
-				(exact && *exact) ? &r_exact : NULL);
-		if (exact && *exact && !r_exact)
-			*exact = 0;
-
-		for (p = 0; p < n; ++p)
-			for (q = 0; q < n; ++q) {
-				isl_map *loop;
-				if (p == r && q == r)
-					continue;
-				loop = isl_map_apply_range(
-						isl_map_copy(grid[p][r]),
-						isl_map_copy(grid[r][q]));
-				grid[p][q] = isl_map_union(grid[p][q], loop);
-				loop = isl_map_apply_range(
-						isl_map_copy(grid[p][r]),
-					isl_map_apply_range(
-						isl_map_copy(grid[r][r]),
-						isl_map_copy(grid[r][q])));
-				grid[p][q] = isl_map_union(grid[p][q], loop);
-				grid[p][q] = isl_map_coalesce(grid[p][q]);
-			}
-	}
+	floyd_warshall_iterate(grid, n, exact);
 
 	app = isl_map_empty(isl_map_get_dim(map));
 
@@ -1541,13 +1550,8 @@ error:
 	return NULL;
 }
 
-/* Check if the domains and ranges of the basic maps in "map" can
- * be partitioned, and if so, apply Floyd-Warshall on the elements
- * of the partition.  Note that we also apply this algorithm
- * if we want to compute the power, i.e., when "project" is not set.
- * However, the results are unlikely to be exact since the recursive
- * calls inside the Floyd-Warshall algorithm typically result in
- * non-linear path lengths quite quickly.
+/* Partition the domains and ranges of the n basic relations in list
+ * into disjoint cells.
  *
  * To find the partition, we simply consider all of the domains
  * and ranges in turn and combine those that overlap.
@@ -1559,6 +1563,60 @@ error:
  * in which case set[k] contains the union of all the domains and
  * ranges in the corresponding group, or is equal to some l < k,
  * with l another domain or range in the same group.
+ */
+static int *setup_groups(isl_ctx *ctx, __isl_keep isl_basic_map **list, int n,
+	isl_set ***set, int *n_group)
+{
+	int i;
+	int *group = NULL;
+	int g;
+
+	*set = isl_calloc_array(ctx, isl_set *, 2 * n);
+	group = isl_alloc_array(ctx, int, 2 * n);
+
+	if (!*set || !group)
+		goto error;
+
+	for (i = 0; i < n; ++i) {
+		isl_set *dom;
+		dom = isl_set_from_basic_set(isl_basic_map_domain(
+				isl_basic_map_copy(list[i])));
+		if (merge(*set, group, dom, 2 * i) < 0)
+			goto error;
+		dom = isl_set_from_basic_set(isl_basic_map_range(
+				isl_basic_map_copy(list[i])));
+		if (merge(*set, group, dom, 2 * i + 1) < 0)
+			goto error;
+	}
+
+	g = 0;
+	for (i = 0; i < 2 * n; ++i)
+		if (group[i] == i)
+			group[i] = g++;
+		else
+			group[i] = group[group[i]];
+
+	*n_group = g;
+
+	return group;
+error:
+	if (*set) {
+		for (i = 0; i < 2 * n; ++i)
+			isl_set_free((*set)[i]);
+		free(*set);
+		*set = NULL;
+	}
+	free(group);
+	return NULL;
+}
+
+/* Check if the domains and ranges of the basic maps in "map" can
+ * be partitioned, and if so, apply Floyd-Warshall on the elements
+ * of the partition.  Note that we also apply this algorithm
+ * if we want to compute the power, i.e., when "project" is not set.
+ * However, the results are unlikely to be exact since the recursive
+ * calls inside the Floyd-Warshall algorithm typically result in
+ * non-linear path lengths quite quickly.
  */
 static __isl_give isl_map *floyd_warshall(__isl_take isl_dim *dim,
 	__isl_keep isl_map *map, int *exact, int project)
@@ -1573,30 +1631,9 @@ static __isl_give isl_map *floyd_warshall(__isl_take isl_dim *dim,
 	if (map->n <= 1)
 		return incremental_closure(dim, map, exact, project);
 
-	set = isl_calloc_array(map->ctx, isl_set *, 2 * map->n);
-	group = isl_alloc_array(map->ctx, int, 2 * map->n);
-
-	if (!set || !group)
+	group = setup_groups(map->ctx, map->p, map->n, &set, &n);
+	if (!group)
 		goto error;
-
-	for (i = 0; i < map->n; ++i) {
-		isl_set *dom;
-		dom = isl_set_from_basic_set(isl_basic_map_domain(
-				isl_basic_map_copy(map->p[i])));
-		if (merge(set, group, dom, 2 * i) < 0)
-			goto error;
-		dom = isl_set_from_basic_set(isl_basic_map_range(
-				isl_basic_map_copy(map->p[i])));
-		if (merge(set, group, dom, 2 * i + 1) < 0)
-			goto error;
-	}
-
-	n = 0;
-	for (i = 0; i < 2 * map->n; ++i)
-		if (group[i] == i)
-			group[i] = n++;
-		else
-			group[i] = group[group[i]];
 
 	for (i = 0; i < 2 * map->n; ++i)
 		isl_set_free(set[i]);
@@ -1605,10 +1642,6 @@ static __isl_give isl_map *floyd_warshall(__isl_take isl_dim *dim,
 
 	return floyd_warshall_with_groups(dim, map, exact, project, group, n);
 error:
-	for (i = 0; i < 2 * map->n; ++i)
-		isl_set_free(set[i]);
-	free(set);
-	free(group);
 	isl_dim_free(dim);
 	return NULL;
 }
@@ -1753,7 +1786,7 @@ error:
  * to be applied after the second.
  */
 static int power_components_tarjan(struct basic_map_sort *s,
-	__isl_keep isl_map *map, int i)
+	__isl_keep isl_basic_map **list, int i)
 {
 	int j;
 
@@ -1773,14 +1806,14 @@ static int power_components_tarjan(struct basic_map_sort *s,
 			 s->node[j].index > s->node[i].min_index))
 			continue;
 
-		f = basic_map_follows(map->p[i], map->p[j], &s->check_closed);
+		f = basic_map_follows(list[i], list[j], &s->check_closed);
 		if (f < 0)
 			return -1;
 		if (!f)
 			continue;
 
 		if (s->node[j].index < 0) {
-			power_components_tarjan(s, map, j);
+			power_components_tarjan(s, list, j);
 			if (s->node[j].min_index < s->node[i].min_index)
 				s->node[i].min_index = s->node[j].min_index;
 		} else if (s->node[j].index < s->node[i].min_index)
@@ -1798,6 +1831,31 @@ static int power_components_tarjan(struct basic_map_sort *s,
 	s->order[s->op++] = -1;
 
 	return 0;
+}
+
+/* Decompose the "len" basic relations in "list" into strongly connected
+ * components.
+ */
+static struct basic_map_sort *basic_map_sort_init(isl_ctx *ctx, int len,
+	__isl_keep isl_basic_map **list)
+{
+	int i;
+	struct basic_map_sort *s = NULL;
+
+	s = basic_map_sort_alloc(ctx, len);
+	if (!s)
+		return NULL;
+	for (i = len - 1; i >= 0; --i) {
+		if (s->node[i].index >= 0)
+			continue;
+		if (power_components_tarjan(s, list, i) < 0)
+			goto error;
+	}
+
+	return s;
+error:
+	basic_map_sort_free(s);
+	return NULL;
 }
 
 /* Given a union of basic maps R = \cup_i R_i \subseteq D \times D
@@ -1847,15 +1905,9 @@ static __isl_give isl_map *construct_power_components(__isl_take isl_dim *dim,
 	if (map->n <= 1)
 		return floyd_warshall(dim, map, exact, project);
 
-	s = basic_map_sort_alloc(map->ctx, map->n);
+	s = basic_map_sort_init(map->ctx, map->n, map->p);
 	if (!s)
 		goto error;
-	for (i = map->n - 1; i >= 0; --i) {
-		if (s->node[i].index >= 0)
-			continue;
-		if (power_components_tarjan(s, map, i) < 0)
-			goto error;
-	}
 
 	orig_exact = exact;
 	if (s->check_closed && !exact)
