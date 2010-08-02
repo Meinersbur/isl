@@ -16,21 +16,7 @@
 extern "C" {
 #endif
 
-struct isl_name;
-struct isl_dim {
-	int ref;
-
-	struct isl_ctx *ctx;
-
-	unsigned nparam;
-	unsigned n_in;		/* zero for sets */
-	unsigned n_out;		/* dim for sets */
-
-	struct isl_name *tuple_name[2];
-
-	unsigned n_name;
-	struct isl_name **names;
-};
+struct isl_dim;
 typedef struct isl_dim isl_dim;
 
 enum isl_dim_type {

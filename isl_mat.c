@@ -11,6 +11,7 @@
 #include "isl_seq.h"
 #include "isl_mat.h"
 #include "isl_map_private.h"
+#include <isl_dim_private.h>
 
 struct isl_mat *isl_mat_alloc(struct isl_ctx *ctx,
 	unsigned n_row, unsigned n_col)

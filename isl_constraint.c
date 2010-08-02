@@ -11,6 +11,7 @@
  */
 
 #include <isl_constraint.h>
+#include <isl_dim_private.h>
 #include "isl_seq.h"
 #include "isl_map_private.h"
 

@@ -4,6 +4,7 @@
 #include <isl_sample.h>
 #include <isl_scan.h>
 #include <isl_seq.h>
+#include <isl_dim_private.h>
 
 __isl_give isl_point *isl_point_alloc(__isl_take isl_dim *dim,
 	__isl_take isl_vec *vec)

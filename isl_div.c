@@ -9,6 +9,7 @@
 
 #include <isl_div.h>
 #include <isl_map.h>
+#include <isl_dim_private.h>
 #include "isl_map_private.h"
 #include "isl_seq.h"
 
