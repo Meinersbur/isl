@@ -3449,6 +3449,8 @@ static __isl_give isl_basic_map *isl_basic_map_reset_dim(
 	isl_dim_free(bmap->dim);
 	bmap->dim = dim;
 
+	bmap = isl_basic_map_finalize(bmap);
+
 	return bmap;
 error:
 	isl_basic_map_free(bmap);
