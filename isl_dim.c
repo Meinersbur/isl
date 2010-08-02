@@ -775,7 +775,7 @@ struct isl_dim *isl_dim_drop(struct isl_dim *dim, enum isl_dim_type type,
 	if (!dim)
 		return NULL;
 
-	if (n == 0)
+	if (n == 0 && !isl_dim_get_tuple_name(dim, type))
 		return dim;
 
 	isl_assert(dim->ctx, first + num <= n(dim, type), goto error);
