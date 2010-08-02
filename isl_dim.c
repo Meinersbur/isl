@@ -285,11 +285,15 @@ __isl_give isl_dim *isl_dim_set_tuple_name(__isl_take isl_dim *dim,
 		isl_die(dim->ctx, isl_error_invalid,
 			"only input, output and set tuples can have names",
 			goto error);
-	if (!name_ok(dim->ctx, s))
-		goto error;
-	name = isl_name_get(dim->ctx, s);
-	if (!name)
-		goto error;
+	if (!s) {
+		name = NULL;
+	} else {
+		if (!name_ok(dim->ctx, s))
+			goto error;
+		name = isl_name_get(dim->ctx, s);
+		if (!name)
+			goto error;
+	}
 
 	isl_name_free(dim->ctx, dim->tuple_name[type - isl_dim_in]);
 	dim->tuple_name[type - isl_dim_in] = name;
