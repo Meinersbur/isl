@@ -1609,9 +1609,13 @@ static int *setup_groups(isl_ctx *ctx, __isl_keep isl_basic_map **list, int n,
 
 	g = 0;
 	for (i = 0; i < 2 * n; ++i)
-		if (group[i] == i)
+		if (group[i] == i) {
+			if (g != i) {
+				(*set)[g] = (*set)[i];
+				(*set)[i] = NULL;
+			}
 			group[i] = g++;
-		else
+		} else
 			group[i] = group[group[i]];
 
 	*n_group = g;
