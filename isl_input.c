@@ -539,6 +539,48 @@ error:
 	return NULL;
 }
 
+static int next_is_tuple(struct isl_stream *s)
+{
+	struct isl_token *tok;
+	int is_tuple;
+
+	tok = isl_stream_next_token(s);
+	if (!tok)
+		return 0;
+	if (tok->type == '[') {
+		isl_stream_push_token(s, tok);
+		return 1;
+	}
+	if (tok->type != ISL_TOKEN_IDENT) {
+		isl_stream_push_token(s, tok);
+		return 0;
+	}
+
+	is_tuple = isl_stream_next_token_is(s, '[');
+
+	isl_stream_push_token(s, tok);
+
+	return is_tuple;
+}
+
+static __isl_give isl_dim *read_tuple(struct isl_stream *s,
+	__isl_take isl_dim *dim, enum isl_dim_type type, struct vars *v,
+	__isl_keep isl_mat **eq);
+
+static __isl_give isl_dim *read_nested_tuple(struct isl_stream *s,
+	__isl_take isl_dim *dim, struct vars *v, __isl_keep isl_mat **eq)
+{
+	dim = read_tuple(s, dim, isl_dim_in, v, eq);
+	if (isl_stream_eat(s, ISL_TOKEN_TO))
+		goto error;
+	dim = read_tuple(s, dim, isl_dim_out, v, eq);
+	dim = isl_dim_wrap(dim);
+	return dim;
+error:
+	isl_dim_free(dim);
+	return NULL;
+}
+
 static __isl_give isl_dim *read_tuple(struct isl_stream *s,
 	__isl_take isl_dim *dim, enum isl_dim_type type, struct vars *v,
 	__isl_keep isl_mat **eq)
@@ -559,7 +601,21 @@ static __isl_give isl_dim *read_tuple(struct isl_stream *s,
 		goto error;
 	}
 	isl_token_free(tok);
-	dim = read_var_list(s, dim, type, v, eq);
+	if (type != isl_dim_param && next_is_tuple(s)) {
+		isl_dim *nested = isl_dim_copy(dim);
+		nested = isl_dim_drop(nested, isl_dim_in, 0,
+					isl_dim_size(nested, isl_dim_in));
+		nested = isl_dim_drop(nested, isl_dim_out, 0,
+					isl_dim_size(nested, isl_dim_out));
+		nested = read_nested_tuple(s, nested, v, eq);
+		if (type == isl_dim_in) {
+			isl_dim_free(dim);
+			dim = isl_dim_reverse(nested);
+		} else {
+			dim = isl_dim_join(dim, nested);
+		}
+	} else
+		dim = read_var_list(s, dim, type, v, eq);
 	tok = isl_stream_next_token(s);
 	if (!tok || tok->type != ']') {
 		isl_stream_error(s, tok, "expecting ']'");
@@ -1321,30 +1377,6 @@ static struct isl_obj obj_read_poly(struct isl_stream *s,
 
 	obj.v = pwqp;
 	return obj;
-}
-
-static int next_is_tuple(struct isl_stream *s)
-{
-	struct isl_token *tok;
-	int is_tuple;
-
-	tok = isl_stream_next_token(s);
-	if (!tok)
-		return 0;
-	if (tok->type == '[') {
-		isl_stream_push_token(s, tok);
-		return 1;
-	}
-	if (tok->type != ISL_TOKEN_IDENT) {
-		isl_stream_push_token(s, tok);
-		return 0;
-	}
-
-	is_tuple = isl_stream_next_token_is(s, '[');
-
-	isl_stream_push_token(s, tok);
-
-	return is_tuple;
 }
 
 static __isl_give isl_basic_map *add_equalities(__isl_take isl_basic_map *bmap,

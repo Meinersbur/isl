@@ -356,6 +356,12 @@ struct isl_map *isl_map_remove(struct isl_map *map,
 struct isl_map *isl_map_remove_inputs(struct isl_map *map,
 	unsigned first, unsigned n);
 
+int isl_basic_set_is_wrapping(__isl_keep isl_basic_set *bset);
+int isl_set_is_wrapping(__isl_keep isl_set *set);
+__isl_give isl_basic_set *isl_basic_map_wrap(__isl_take isl_basic_map *bmap);
+__isl_give isl_set *isl_map_wrap(__isl_take isl_map *map);
+__isl_give isl_basic_map *isl_basic_set_unwrap(__isl_take isl_basic_set *bset);
+__isl_give isl_map *isl_set_unwrap(__isl_take isl_set *set);
 __isl_give isl_set *isl_map_domain(__isl_take isl_map *bmap);
 __isl_give isl_set *isl_map_range(__isl_take isl_map *map);
 __isl_give isl_map *isl_map_from_basic_map(__isl_take isl_basic_map *bmap);

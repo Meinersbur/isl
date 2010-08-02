@@ -7045,3 +7045,164 @@ int isl_set_is_box(__isl_keep isl_set *set)
 
 	return isl_basic_set_is_box(set->p[0]);
 }
+
+int isl_basic_set_is_wrapping(__isl_keep isl_basic_set *bset)
+{
+	if (!bset)
+		return -1;
+	
+	return isl_dim_is_wrapping(bset->dim);
+}
+
+int isl_set_is_wrapping(__isl_keep isl_set *set)
+{
+	if (!set)
+		return -1;
+	
+	return isl_dim_is_wrapping(set->dim);
+}
+
+__isl_give isl_basic_set *isl_basic_map_wrap(__isl_take isl_basic_map *bmap)
+{
+	bmap = isl_basic_map_cow(bmap);
+	if (!bmap)
+		return NULL;
+
+	bmap->dim = isl_dim_wrap(bmap->dim);
+	if (!bmap->dim)
+		goto error;
+
+	bmap = isl_basic_map_finalize(bmap);
+
+	return (isl_basic_set *)bmap;
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+__isl_give isl_set *isl_map_wrap(__isl_take isl_map *map)
+{
+	int i;
+
+	map = isl_map_cow(map);
+	if (!map)
+		return NULL;
+
+	for (i = 0; i < map->n; ++i) {
+		map->p[i] = (isl_basic_map *)isl_basic_map_wrap(map->p[i]);
+		if (!map->p[i])
+			goto error;
+	}
+	map->dim = isl_dim_wrap(map->dim);
+	if (!map->dim)
+		goto error;
+
+	return (isl_set *)map;
+error:
+	isl_map_free(map);
+	return NULL;
+}
+
+__isl_give isl_basic_map *isl_basic_set_unwrap(__isl_take isl_basic_set *bset)
+{
+	bset = isl_basic_set_cow(bset);
+	if (!bset)
+		return NULL;
+
+	bset->dim = isl_dim_unwrap(bset->dim);
+	if (!bset->dim)
+		goto error;
+
+	bset = isl_basic_set_finalize(bset);
+
+	return (isl_basic_map *)bset;
+error:
+	isl_basic_set_free(bset);
+	return NULL;
+}
+
+__isl_give isl_map *isl_set_unwrap(__isl_take isl_set *set)
+{
+	int i;
+
+	if (!set)
+		return NULL;
+
+	if (!isl_set_is_wrapping(set))
+		isl_die(set->ctx, isl_error_invalid, "not a wrapping set",
+			goto error);
+
+	set = isl_set_cow(set);
+	if (!set)
+		return NULL;
+
+	for (i = 0; i < set->n; ++i) {
+		set->p[i] = (isl_basic_set *)isl_basic_set_unwrap(set->p[i]);
+		if (!set->p[i])
+			goto error;
+	}
+
+	set->dim = isl_dim_unwrap(set->dim);
+	if (!set->dim)
+		goto error;
+
+	return (isl_map *)set;
+error:
+	isl_set_free(set);
+	return NULL;
+}
+
+__isl_give isl_basic_map *isl_basic_map_reset(__isl_take isl_basic_map *bmap,
+	enum isl_dim_type type)
+{
+	if (!bmap)
+		return NULL;
+
+	if (!isl_dim_is_named_or_nested(bmap->dim, type))
+		return bmap;
+
+	bmap = isl_basic_map_cow(bmap);
+	if (!bmap)
+		return NULL;
+
+	bmap->dim = isl_dim_reset(bmap->dim, type);
+	if (!bmap->dim)
+		goto error;
+
+	bmap = isl_basic_map_finalize(bmap);
+
+	return bmap;
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+__isl_give isl_map *isl_map_reset(__isl_take isl_map *map,
+	enum isl_dim_type type)
+{
+	int i;
+
+	if (!map)
+		return NULL;
+
+	if (!isl_dim_is_named_or_nested(map->dim, type))
+		return map;
+
+	map = isl_map_cow(map);
+	if (!map)
+		return NULL;
+
+	for (i = 0; i < map->n; ++i) {
+		map->p[i] = isl_basic_map_reset(map->p[i], type);
+		if (!map->p[i])
+			goto error;
+	}
+	map->dim = isl_dim_reset(map->dim, type);
+	if (!map->dim)
+		goto error;
+
+	return map;
+error:
+	isl_map_free(map);
+	return NULL;
+}

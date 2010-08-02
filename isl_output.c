@@ -259,7 +259,7 @@ static __isl_give isl_printer *print_affine(__isl_keep isl_basic_map *bmap,
 }
 
 static int defining_equality(__isl_keep isl_basic_map *eq,
-	enum isl_dim_type type, int pos)
+	__isl_keep isl_dim *dim, enum isl_dim_type type, int pos)
 {
 	int i;
 	unsigned total;
@@ -267,7 +267,7 @@ static int defining_equality(__isl_keep isl_basic_map *eq,
 	if (!eq)
 		return -1;
 
-	pos += isl_dim_offset(eq->dim, type);
+	pos += isl_dim_offset(dim, type);
 	total = isl_basic_map_total_dim(eq);
 
 	for (i = 0; i < eq->n_eq; ++i) {
@@ -281,33 +281,55 @@ static int defining_equality(__isl_keep isl_basic_map *eq,
 	return -1;
 }
 
-static __isl_give isl_printer *print_var_list(__isl_keep isl_dim *dim,
-	__isl_take isl_printer *p, enum isl_dim_type type, int set, int latex,
-	__isl_keep isl_basic_map *eq)
+/* offset is the offset of local_dim inside global_type of global_dim.
+ */
+static __isl_give isl_printer *print_nested_var_list(__isl_take isl_printer *p,
+	__isl_keep isl_dim *global_dim, enum isl_dim_type global_type,
+	__isl_keep isl_dim *local_dim, enum isl_dim_type local_type,
+	int set, int latex, __isl_keep isl_basic_map *eq, int offset)
 {
 	int i, j;
 
-	for (i = 0; i < isl_dim_size(dim, type); ++i) {
+	if (global_dim != local_dim && local_type == isl_dim_out)
+		offset += local_dim->n_in;
+
+	for (i = 0; i < isl_dim_size(local_dim, local_type); ++i) {
 		if (i)
 			p = isl_printer_print_str(p, ", ");
-		j = defining_equality(eq, type, i);
+		j = defining_equality(eq, global_dim, global_type, offset + i);
 		if (j >= 0) {
-			int pos = 1 + isl_dim_offset(dim, type) + i;
-			p = print_affine_of_len(dim, p, eq->eq[j], pos, set);
-		} else
-			p = print_name(dim, p, type, i, set, latex);
+			int pos = 1 + isl_dim_offset(global_dim, global_type)
+				    + offset + i;
+			p = print_affine_of_len(eq->dim, p, eq->eq[j], pos, set);
+		} else {
+			p = print_name(global_dim, p, global_type, offset + i,
+					set, latex);
+		}
 	}
 	return p;
 }
 
-static __isl_give isl_printer *print_tuple(__isl_keep isl_dim *dim,
-	__isl_take isl_printer *p, enum isl_dim_type type, int set, int latex,
-	__isl_keep isl_basic_map *eq)
+static __isl_give isl_printer *print_var_list(__isl_keep isl_dim *dim,
+	__isl_take isl_printer *p, enum isl_dim_type type,
+	int set, int latex, __isl_keep isl_basic_map *eq)
+{
+	return print_nested_var_list(p, dim, type, dim, type, set, latex, eq, 0);
+}
+
+static __isl_give isl_printer *print_nested_map_dim(__isl_take isl_printer *p,
+	__isl_keep isl_dim *global_dim, enum isl_dim_type global_type,
+	__isl_keep isl_dim *local_dim,
+	 int set, int latex, __isl_keep isl_basic_map *eq, int offset);
+
+static __isl_give isl_printer *print_nested_tuple(__isl_take isl_printer *p,
+	__isl_keep isl_dim *global_dim, enum isl_dim_type global_type,
+	__isl_keep isl_dim *local_dim, enum isl_dim_type local_type,
+	int set, int latex, __isl_keep isl_basic_map *eq, int offset)
 {
 	const char *name = NULL;
-	unsigned n = isl_dim_size(dim, type);
-	if ((type == isl_dim_in || type == isl_dim_out)) {
-		name = isl_dim_get_tuple_name(dim, type);
+	unsigned n = isl_dim_size(local_dim, local_type);
+	if ((local_type == isl_dim_in || local_type == isl_dim_out)) {
+		name = isl_dim_get_tuple_name(local_dim, local_type);
 		if (name) {
 			if (latex)
 				p = isl_printer_print_str(p, "\\mathrm{");
@@ -318,9 +340,39 @@ static __isl_give isl_printer *print_tuple(__isl_keep isl_dim *dim,
 	}
 	if (!latex || n != 1 || name)
 		p = isl_printer_print_str(p, s_open_list[latex]);
-	p = print_var_list(dim, p, type, set, latex, eq);
+	if ((local_type == isl_dim_in || local_type == isl_dim_out) &&
+	    local_dim->nested[local_type - isl_dim_in]) {
+		if (global_dim != local_dim && local_type == isl_dim_out)
+			offset += local_dim->n_in;
+		p = print_nested_map_dim(p, global_dim, global_type,
+				local_dim->nested[local_type - isl_dim_in],
+				set, latex, eq, offset);
+	} else
+		p = print_nested_var_list(p, global_dim, global_type,
+				 local_dim, local_type, set, latex, eq, offset);
 	if (!latex || n != 1 || name)
 		p = isl_printer_print_str(p, s_close_list[latex]);
+	return p;
+}
+
+static __isl_give isl_printer *print_tuple(__isl_keep isl_dim *dim,
+	__isl_take isl_printer *p, enum isl_dim_type type,
+	int set, int latex, __isl_keep isl_basic_map *eq)
+{
+	return print_nested_tuple(p, dim, type, dim, type, set, latex, eq, 0);
+}
+
+static __isl_give isl_printer *print_nested_map_dim(__isl_take isl_printer *p,
+	__isl_keep isl_dim *global_dim, enum isl_dim_type global_type,
+	__isl_keep isl_dim *local_dim,
+	 int set, int latex, __isl_keep isl_basic_map *eq, int offset)
+{
+	p = print_nested_tuple(p, global_dim, global_type,
+			local_dim, isl_dim_in, set, latex, eq, offset);
+	p = isl_printer_print_str(p, s_to[0]);
+	p = print_nested_tuple(p, global_dim, global_type,
+			local_dim, isl_dim_out, set, latex, eq, offset);
+
 	return p;
 }
 
@@ -328,9 +380,9 @@ static __isl_give isl_printer *print_dim(__isl_keep isl_dim *dim,
 	__isl_take isl_printer *p, int set, int latex,
 	__isl_keep isl_basic_map *eq)
 {
-	if (set) {
+	if (set)
 		p = print_tuple(dim, p, isl_dim_set, 1, latex, eq);
-	} else {
+	else {
 		p = print_tuple(dim, p, isl_dim_in, 0, latex, eq);
 		p = isl_printer_print_str(p, s_to[0]);
 		p = print_tuple(dim, p, isl_dim_out, 0, latex, eq);

@@ -449,6 +449,23 @@ data structure.
 Binary operations require the corresponding spaces of their arguments
 to have the same name.
 
+Spaces can be nested.  In particular, the domain of a set or
+the domain or range of a relation can be a nested relation.
+The following functions can be used to construct and deconstruct
+such nested dimension specifications.
+
+	#include <isl_dim.h>
+	int isl_dim_is_wrapping(__isl_keep isl_dim *dim);
+	__isl_give isl_dim *isl_dim_wrap(__isl_take isl_dim *dim);
+	__isl_give isl_dim *isl_dim_unwrap(__isl_take isl_dim *dim);
+
+The input to C<isl_dim_is_wrapping> and C<isl_dim_unwrap> should
+be the dimension specification of a set, while that of
+C<isl_dim_wrap> should be the dimension specification of a relation.
+Conversely, the output of C<isl_dim_unwrap> is the dimension specification
+of a relation, while that of C<isl_dim_wrap> is the dimension specification
+of a set.
+
 =head2 Input and Output
 
 C<isl> supports its own input/output format, which is similar
@@ -921,6 +938,15 @@ is already known to be empty.
 
 	int isl_map_is_bijective(__isl_keep isl_map *map);
 
+=item * Wrapping
+
+The followning functions check whether the domain of the given
+(basic) set is a wrapped relation.
+
+	int isl_basic_set_is_wrapping(
+		__isl_keep isl_basic_set *bset);
+	int isl_set_is_wrapping(__isl_keep isl_set *set);
+
 =back
 
 =head3 Binary Properties
@@ -1133,6 +1159,21 @@ to the free schedule.
 Note, however, that C<isl_map_lexmax> expects the maximum to be
 finite, so if the path lengths are unbounded (possibly due to
 the overapproximation), then you will get an error message.
+
+=item * Wrapping
+
+	__isl_give isl_basic_set *isl_basic_map_wrap(
+		__isl_take isl_basic_map *bmap);
+	__isl_give isl_set *isl_map_wrap(
+		__isl_take isl_map *map);
+	__isl_give isl_union_set *isl_union_map_wrap(
+		__isl_take isl_union_map *umap);
+	__isl_give isl_basic_map *isl_basic_set_unwrap(
+		__isl_take isl_basic_set *bset);
+	__isl_give isl_map *isl_set_unwrap(
+		__isl_take isl_set *set);
+	__isl_give isl_union_map *isl_union_set_unwrap(
+		__isl_take isl_union_set *uset);
 
 =back
 

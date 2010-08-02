@@ -1,10 +1,13 @@
 /*
  * Copyright 2008-2009 Katholieke Universiteit Leuven
+ * Copyright 2010      INRIA Saclay
  *
  * Use of this software is governed by the GNU LGPLv2.1 license
  *
  * Written by Sven Verdoolaege, K.U.Leuven, Departement
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
+ * and INRIA Saclay - Ile-de-France, Parc Club Orsay Universite,
+ * ZAC des vignes, 4 rue Jacques Monod, 91893 Orsay, France 
  */
 
 #include <stdlib.h>
@@ -34,6 +37,9 @@ struct isl_dim *isl_dim_alloc(struct isl_ctx *ctx,
 
 	dim->tuple_name[0] = NULL;
 	dim->tuple_name[1] = NULL;
+
+	dim->nested[0] = NULL;
+	dim->nested[1] = NULL;
 
 	dim->n_name = 0;
 	dim->names = NULL;
@@ -213,6 +219,10 @@ struct isl_dim *isl_dim_dup(struct isl_dim *dim)
 	if (dim->tuple_name[1] &&
 	    !(dup->tuple_name[1] = isl_name_copy(dim->ctx, dim->tuple_name[1])))
 		goto error;
+	if (dim->nested[0] && !(dup->nested[0] = isl_dim_copy(dim->nested[0])))
+		goto error;
+	if (dim->nested[1] && !(dup->nested[1] = isl_dim_copy(dim->nested[1])))
+		goto error;
 	if (!dim->names)
 		return dup;
 	dup = copy_names(dup, isl_dim_param, 0, dim, isl_dim_param);
@@ -256,6 +266,9 @@ void isl_dim_free(struct isl_dim *dim)
 
 	isl_name_free(dim->ctx, dim->tuple_name[0]);
 	isl_name_free(dim->ctx, dim->tuple_name[1]);
+
+	isl_dim_free(dim->nested[0]);
+	isl_dim_free(dim->nested[1]);
 
 	for (i = 0; i < dim->n_name; ++i)
 		isl_name_free(dim->ctx, dim->names[i]);
@@ -359,10 +372,23 @@ static struct isl_name *tuple_name(__isl_keep isl_dim *dim,
 	return NULL;
 }
 
+static __isl_keep isl_dim *nested(__isl_keep isl_dim *dim,
+	enum isl_dim_type type)
+{
+	if (!dim)
+		return NULL;
+	if (type == isl_dim_in)
+		return dim->nested[0];
+	if (type == isl_dim_out)
+		return dim->nested[1];
+	return NULL;
+}
+
 int isl_dim_tuple_match(__isl_keep isl_dim *dim1, enum isl_dim_type dim1_type,
 			__isl_keep isl_dim *dim2, enum isl_dim_type dim2_type)
 {
 	struct isl_name *name1, *name2;
+	isl_dim *nested1, *nested2;
 
 	if (n(dim1, dim1_type) != n(dim2, dim2_type))
 		return 0;
@@ -371,6 +397,12 @@ int isl_dim_tuple_match(__isl_keep isl_dim *dim1, enum isl_dim_type dim1_type,
 	if (!name1 ^ !name2)
 		return 0;
 	if (name1 && name1->name != name2->name)
+		return 0;
+	nested1 = nested(dim1, dim1_type);
+	nested2 = nested(dim2, dim2_type);
+	if (!nested1 ^ !nested2)
+		return 0;
+	if (nested1 && !isl_dim_equal(nested1, nested2))
 		return 0;
 	return 1;
 }
@@ -454,14 +486,7 @@ struct isl_dim *isl_dim_add(struct isl_dim *dim, enum isl_dim_type type,
 {
 	if (!dim)
 		return NULL;
-	if ((type == isl_dim_in || type == isl_dim_out) &&
-	    dim->tuple_name[type - isl_dim_in]) {
-		dim = isl_dim_cow(dim);
-		if (!dim)
-			return NULL;
-		isl_name_free(dim->ctx, dim->tuple_name[type - isl_dim_in]);
-		dim->tuple_name[type - isl_dim_in] = NULL;
-	}
+	dim = isl_dim_reset(dim, type);
 	switch (type) {
 	case isl_dim_param:
 		return isl_dim_extend(dim,
@@ -483,8 +508,8 @@ __isl_give isl_dim *isl_dim_insert(__isl_take isl_dim *dim,
 
 	if (!dim)
 		return NULL;
-	if (n == 0 && !isl_dim_get_tuple_name(dim, type))
-		return dim;
+	if (n == 0)
+		return isl_dim_reset(dim, type);
 
 	isl_assert(dim->ctx, pos <= isl_dim_size(dim, type), goto error);
 
@@ -524,10 +549,7 @@ __isl_give isl_dim *isl_dim_insert(__isl_take isl_dim *dim,
 	case isl_dim_in:	dim->n_in += n; break;
 	case isl_dim_out:	dim->n_out += n; break;
 	}
-	if (type == isl_dim_in || type == isl_dim_out) {
-		isl_name_free(dim->ctx, dim->tuple_name[type - isl_dim_in]);
-		dim->tuple_name[type - isl_dim_in] = NULL;
-	}
+	dim = isl_dim_reset(dim, type);
 
 	return dim;
 error:
@@ -551,6 +573,9 @@ __isl_give isl_dim *isl_dim_move(__isl_take isl_dim *dim,
 		return dim;
 
 	isl_assert(dim->ctx, dst_type != src_type, goto error);
+
+	dim = isl_dim_reset(dim, src_type);
+	dim = isl_dim_reset(dim, dst_type);
 
 	dim = isl_dim_cow(dim);
 	if (!dim)
@@ -639,6 +664,12 @@ struct isl_dim *isl_dim_join(struct isl_dim *left, struct isl_dim *right)
 	if (dim && right->tuple_name[1] &&
 	    !(dim->tuple_name[1] = isl_name_copy(dim->ctx, right->tuple_name[1])))
 		goto error;
+	if (dim && left->nested[0] &&
+	    !(dim->nested[0] = isl_dim_copy(left->nested[0])))
+		goto error;
+	if (dim && right->nested[1] &&
+	    !(dim->nested[1] = isl_dim_copy(right->nested[1])))
+		goto error;
 
 	isl_dim_free(left);
 	isl_dim_free(right);
@@ -688,7 +719,7 @@ struct isl_dim *isl_dim_map(struct isl_dim *dim)
 	if (!dim)
 		return NULL;
 	isl_assert(dim->ctx, dim->n_in == 0, goto error);
-	if (dim->n_out == 0 && !dim->tuple_name[1])
+	if (dim->n_out == 0 && !isl_dim_is_named_or_nested(dim, isl_dim_out))
 		return dim;
 	dim = isl_dim_cow(dim);
 	if (!dim)
@@ -710,6 +741,8 @@ struct isl_dim *isl_dim_map(struct isl_dim *dim)
 	}
 	isl_name_free(dim->ctx, dim->tuple_name[0]);
 	dim->tuple_name[0] = isl_name_copy(dim->ctx, dim->tuple_name[1]);
+	isl_dim_free(dim->nested[0]);
+	dim->nested[0] = isl_dim_copy(dim->nested[1]);
 	return dim;
 error:
 	isl_dim_free(dim);
@@ -730,6 +763,7 @@ static struct isl_dim *set_names(struct isl_dim *dim, enum isl_dim_type type,
 struct isl_dim *isl_dim_reverse(struct isl_dim *dim)
 {
 	unsigned t;
+	isl_dim *nested;
 	struct isl_name **names = NULL;
 	struct isl_name *name;
 
@@ -745,6 +779,10 @@ struct isl_dim *isl_dim_reverse(struct isl_dim *dim)
 	name = dim->tuple_name[0];
 	dim->tuple_name[0] = dim->tuple_name[1];
 	dim->tuple_name[1] = name;
+
+	nested = dim->nested[0];
+	dim->nested[0] = dim->nested[1];
+	dim->nested[1] = nested;
 
 	if (dim->names) {
 		names = isl_alloc_array(dim->ctx, struct isl_name *,
@@ -780,8 +818,8 @@ struct isl_dim *isl_dim_drop(struct isl_dim *dim, enum isl_dim_type type,
 	if (!dim)
 		return NULL;
 
-	if (n == 0 && !isl_dim_get_tuple_name(dim, type))
-		return dim;
+	if (n == 0)
+		return isl_dim_reset(dim, type);
 
 	isl_assert(dim->ctx, first + num <= n(dim, type), goto error);
 	dim = isl_dim_cow(dim);
@@ -812,10 +850,7 @@ struct isl_dim *isl_dim_drop(struct isl_dim *dim, enum isl_dim_type type,
 	case isl_dim_in:	dim->n_in -= num; break;
 	case isl_dim_out:	dim->n_out -= num; break;
 	}
-	if (type == isl_dim_in || type == isl_dim_out) {
-		isl_name_free(dim->ctx, dim->tuple_name[type - isl_dim_in]);
-		dim->tuple_name[type - isl_dim_in] = NULL;
-	}
+	dim = isl_dim_reset(dim, type);
 	return dim;
 error:
 	isl_dim_free(dim);
@@ -861,10 +896,8 @@ __isl_give isl_dim *isl_dim_as_set_dim(__isl_take isl_dim *dim)
 
 	dim->n_out += dim->n_in;
 	dim->n_in = 0;
-	isl_name_free(dim->ctx, dim->tuple_name[0]);
-	isl_name_free(dim->ctx, dim->tuple_name[1]);
-	dim->tuple_name[0] = NULL;
-	dim->tuple_name[1] = NULL;
+	dim = isl_dim_reset(dim, isl_dim_in);
+	dim = isl_dim_reset(dim, isl_dim_out);
 
 	return dim;
 }
@@ -876,9 +909,8 @@ struct isl_dim *isl_dim_underlying(struct isl_dim *dim, unsigned n_div)
 	if (!dim)
 		return NULL;
 	if (n_div == 0 &&
-	    dim->nparam == 0 && dim->n_in == 0 && dim->n_name == 0 &&
-	    !dim->tuple_name[1])
-		return dim;
+	    dim->nparam == 0 && dim->n_in == 0 && dim->n_name == 0)
+		return isl_dim_reset(isl_dim_reset(dim, isl_dim_in), isl_dim_out);
 	dim = isl_dim_cow(dim);
 	if (!dim)
 		return NULL;
@@ -889,10 +921,8 @@ struct isl_dim *isl_dim_underlying(struct isl_dim *dim, unsigned n_div)
 	for (i = 0; i < dim->n_name; ++i)
 		isl_name_free(dim->ctx, get_name(dim, isl_dim_out, i));
 	dim->n_name = 0;
-	isl_name_free(dim->ctx, dim->tuple_name[0]);
-	isl_name_free(dim->ctx, dim->tuple_name[1]);
-	dim->tuple_name[0] = NULL;
-	dim->tuple_name[1] = NULL;
+	dim = isl_dim_reset(dim, isl_dim_in);
+	dim = isl_dim_reset(dim, isl_dim_out);
 
 	return dim;
 }
@@ -915,15 +945,13 @@ int isl_dim_compatible(struct isl_dim *dim1, struct isl_dim *dim2)
 	       dim1->n_in + dim1->n_out == dim2->n_in + dim2->n_out;
 }
 
-uint32_t isl_dim_get_hash(__isl_keep isl_dim *dim)
+static uint32_t isl_hash_dim(uint32_t hash, __isl_keep isl_dim *dim)
 {
 	int i;
-	uint32_t hash;
 	struct isl_name *name;
 
 	if (!dim)
-		return 0;
-	hash = isl_hash_init();
+		return hash;
 
 	hash = isl_hash_builtin(hash, dim->nparam);
 	hash = isl_hash_builtin(hash, dim->n_in);
@@ -939,5 +967,107 @@ uint32_t isl_dim_get_hash(__isl_keep isl_dim *dim)
 	name = tuple_name(dim, isl_dim_out);
 	hash = isl_hash_builtin(hash, name);
 
+	hash = isl_hash_dim(hash, dim->nested[0]);
+	hash = isl_hash_dim(hash, dim->nested[1]);
+
 	return hash;
+}
+
+uint32_t isl_dim_get_hash(__isl_keep isl_dim *dim)
+{
+	uint32_t hash;
+
+	if (!dim)
+		return 0;
+
+	hash = isl_hash_init();
+	hash = isl_hash_dim(hash, dim);
+
+	return hash;
+}
+
+int isl_dim_is_wrapping(__isl_keep isl_dim *dim)
+{
+	if (!dim)
+		return -1;
+
+	if (dim->n_in != 0 || dim->tuple_name[0] || dim->nested[0])
+		return 0;
+
+	return dim->nested[1] != NULL;
+}
+
+__isl_give isl_dim *isl_dim_wrap(__isl_take isl_dim *dim)
+{
+	isl_dim *wrap;
+
+	if (!dim)
+		return NULL;
+
+	wrap = isl_dim_alloc(dim->ctx, dim->nparam, 0, dim->n_in + dim->n_out);
+
+	wrap = copy_names(wrap, isl_dim_param, 0, dim, isl_dim_param);
+	wrap = copy_names(wrap, isl_dim_set, 0, dim, isl_dim_in);
+	wrap = copy_names(wrap, isl_dim_set, dim->n_in, dim, isl_dim_out);
+
+	if (!wrap)
+		goto error;
+
+	wrap->nested[1] = dim;
+
+	return wrap;
+error:
+	isl_dim_free(dim);
+	return NULL;
+}
+
+__isl_give isl_dim *isl_dim_unwrap(__isl_take isl_dim *dim)
+{
+	isl_dim *unwrap;
+
+	if (!dim)
+		return NULL;
+
+	if (!isl_dim_is_wrapping(dim))
+		isl_die(dim->ctx, isl_error_invalid, "not a wrapping dim",
+			goto error);
+
+	unwrap = isl_dim_copy(dim->nested[1]);
+	isl_dim_free(dim);
+
+	return unwrap;
+error:
+	isl_dim_free(dim);
+	return NULL;
+}
+
+int isl_dim_is_named_or_nested(__isl_keep isl_dim *dim, enum isl_dim_type type)
+{
+	if (type != isl_dim_in && type != isl_dim_out)
+		return 0;
+	if (!dim)
+		return -1;
+	if (dim->tuple_name[type - isl_dim_in])
+		return 1;
+	if (dim->nested[type - isl_dim_in])
+		return 1;
+	return 0;
+}
+
+__isl_give isl_dim *isl_dim_reset(__isl_take isl_dim *dim,
+	enum isl_dim_type type)
+{
+	if (!isl_dim_is_named_or_nested(dim, type))
+		return dim;
+
+	dim = isl_dim_cow(dim);
+	if (!dim)
+		return NULL;
+
+	isl_name_free(dim->ctx, dim->tuple_name[type - isl_dim_in]);
+	dim->tuple_name[type - isl_dim_in] = NULL;
+	isl_dim_free(dim->nested[type - isl_dim_in]);
+	dim->nested[type - isl_dim_in] = NULL;
+
+	return dim;
 }

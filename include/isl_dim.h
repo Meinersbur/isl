@@ -71,6 +71,10 @@ struct isl_dim *isl_dim_domain(struct isl_dim *dim);
 struct isl_dim *isl_dim_range(struct isl_dim *dim);
 struct isl_dim *isl_dim_underlying(struct isl_dim *dim, unsigned n_div);
 
+int isl_dim_is_wrapping(__isl_keep isl_dim *dim);
+__isl_give isl_dim *isl_dim_wrap(__isl_take isl_dim *dim);
+__isl_give isl_dim *isl_dim_unwrap(__isl_take isl_dim *dim);
+
 int isl_dim_equal(struct isl_dim *dim1, struct isl_dim *dim2);
 int isl_dim_match(struct isl_dim *dim1, enum isl_dim_type dim1_type,
 		struct isl_dim *dim2, enum isl_dim_type dim2_type);

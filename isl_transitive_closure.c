@@ -1035,8 +1035,8 @@ static int composability(__isl_keep isl_set *C, int i,
 
 static __isl_give isl_map *anonymize(__isl_take isl_map *map)
 {
-	map = isl_map_set_tuple_name(map, isl_dim_in, NULL);
-	map = isl_map_set_tuple_name(map, isl_dim_out, NULL);
+	map = isl_map_reset(map, isl_dim_in);
+	map = isl_map_reset(map, isl_dim_out);
 	return map;
 }
 

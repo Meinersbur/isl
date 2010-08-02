@@ -790,7 +790,27 @@ __isl_give isl_union_set *isl_union_map_range(__isl_take isl_union_map *umap)
 	return un_op(umap, &range_entry, 1);
 }
 
-static  int deltas_entry(void **entry, void *user)
+static __isl_give isl_union_set *cond_un_op(__isl_take isl_union_map *umap,
+	int (*fn)(void **, void *))
+{
+	isl_union_set *res;
+
+	if (!umap)
+		return NULL;
+
+	res = isl_union_map_alloc(isl_dim_copy(umap->dim), umap->table.n);
+	if (isl_hash_table_foreach(umap->dim->ctx, &umap->table, fn, &res) < 0)
+		goto error;
+
+	isl_union_map_free(umap);
+	return res;
+error:
+	isl_union_map_free(umap);
+	isl_union_set_free(res);
+	return NULL;
+}
+
+static int deltas_entry(void **entry, void *user)
 {
 	isl_map *map = *entry;
 	isl_union_set **res = user;
@@ -805,22 +825,39 @@ static  int deltas_entry(void **entry, void *user)
 
 __isl_give isl_union_set *isl_union_map_deltas(__isl_take isl_union_map *umap)
 {
-	isl_union_set *res;
+	return cond_un_op(umap, &deltas_entry);
+}
 
-	if (!umap)
-		return NULL;
+static int unwrap_entry(void **entry, void *user)
+{
+	isl_set *set = *entry;
+	isl_union_set **res = user;
 
-	res = isl_union_map_alloc(isl_dim_copy(umap->dim), umap->table.n);
-	if (isl_hash_table_foreach(umap->dim->ctx, &umap->table,
-				   &deltas_entry, &res) < 0)
-		goto error;
+	if (!isl_set_is_wrapping(set))
+		return 0;
 
-	isl_union_map_free(umap);
-	return res;
-error:
-	isl_union_map_free(umap);
-	isl_union_set_free(res);
-	return NULL;
+	*res = isl_union_map_add_map(*res, isl_set_unwrap(isl_set_copy(set)));
+
+	return 0;
+}
+
+__isl_give isl_union_map *isl_union_set_unwrap(__isl_take isl_union_set *uset)
+{
+	return cond_un_op(uset, &unwrap_entry);
+}
+
+static int wrap_entry(void **entry, void *user)
+{
+	isl_map **map = (isl_map **)entry;
+
+	*map = (isl_map *)isl_map_wrap(*map);
+
+	return *map ? 0 : -1;
+}
+
+__isl_give isl_union_set *isl_union_map_wrap(__isl_take isl_union_map *umap)
+{
+	return un_op(umap, &wrap_entry, 1);
 }
 
 struct isl_union_map_is_subset_data {
