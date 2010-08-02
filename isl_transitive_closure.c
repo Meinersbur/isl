@@ -1033,6 +1033,13 @@ static int composability(__isl_keep isl_set *C, int i,
 	return ok;
 }
 
+static __isl_give isl_map *anonymize(__isl_take isl_map *map)
+{
+	map = isl_map_set_tuple_name(map, isl_dim_in, NULL);
+	map = isl_map_set_tuple_name(map, isl_dim_out, NULL);
+	return map;
+}
+
 /* Return a map that is a union of the basic maps in "map", except i,
  * composed to left and right with qc based on the entries of "left"
  * and "right".
@@ -1051,6 +1058,7 @@ static __isl_give isl_map *compose(__isl_keep isl_map *map, int i,
 			continue;
 
 		map_j = isl_map_from_basic_map(isl_basic_map_copy(map->p[j]));
+		map_j = anonymize(map_j);
 		if (left && left[j])
 			map_j = isl_map_apply_range(map_j, isl_map_copy(qc));
 		if (right && right[j])
@@ -1951,6 +1959,7 @@ static __isl_give isl_map *construct_power_components(__isl_take isl_dim *dim,
 		path = isl_map_empty(isl_map_get_dim(map));
 	else
 		path = isl_map_empty(isl_dim_copy(dim));
+	path = anonymize(path);
 	while (n) {
 		struct isl_map *comp;
 		isl_map *path_comp, *path_comb;
