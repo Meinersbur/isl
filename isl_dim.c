@@ -11,6 +11,11 @@
 #include <isl_dim_private.h>
 #include "isl_name.h"
 
+isl_ctx *isl_dim_get_ctx(__isl_keep isl_dim *dim)
+{
+	return dim ? dim->ctx : NULL;
+}
+
 struct isl_dim *isl_dim_alloc(struct isl_ctx *ctx,
 			unsigned nparam, unsigned n_in, unsigned n_out)
 {

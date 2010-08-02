@@ -42,6 +42,7 @@ enum isl_dim_type {
 	isl_dim_all
 };
 
+isl_ctx *isl_dim_get_ctx(__isl_keep isl_dim *dim);
 __isl_give isl_dim *isl_dim_alloc(isl_ctx *ctx,
 			unsigned nparam, unsigned n_in, unsigned n_out);
 __isl_give isl_dim *isl_dim_set_alloc(isl_ctx *ctx,
