@@ -1176,6 +1176,14 @@ error:
 	return NULL;
 }
 
+__isl_give isl_mat *isl_mat_add_rows(__isl_take isl_mat *mat, unsigned n)
+{
+	if (!mat)
+		return NULL;
+
+	return isl_mat_insert_rows(mat, mat->n_row, n);
+}
+
 void isl_mat_col_submul(struct isl_mat *mat,
 			int dst_col, isl_int f, int src_col)
 {
