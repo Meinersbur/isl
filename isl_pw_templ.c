@@ -568,6 +568,10 @@ __isl_give PW *FN(PW,reset_dim)(__isl_take PW *pw, __isl_take isl_dim *dim)
 						 isl_dim_copy(dim));
 		if (!pw->p[i].set)
 			goto error;
+		pw->p[i].FIELD = FN(EL,reset_dim)(pw->p[i].FIELD,
+						  isl_dim_copy(dim));
+		if (!pw->p[i].FIELD)
+			goto error;
 	}
 	isl_dim_free(pw->dim);
 	pw->dim = dim;

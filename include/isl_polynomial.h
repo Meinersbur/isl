@@ -19,6 +19,8 @@ typedef struct isl_qpolynomial isl_qpolynomial;
 
 isl_ctx *isl_qpolynomial_get_ctx(__isl_keep isl_qpolynomial *qp);
 __isl_give isl_dim *isl_qpolynomial_get_dim(__isl_keep isl_qpolynomial *qp);
+__isl_give isl_qpolynomial *isl_qpolynomial_reset_dim(
+	__isl_take isl_qpolynomial *qp, __isl_take isl_dim *dim);
 unsigned isl_qpolynomial_dim(__isl_keep isl_qpolynomial *qp,
 	enum isl_dim_type type);
 int isl_qpolynomial_involves_dims(__isl_keep isl_qpolynomial *qp,
@@ -213,6 +215,9 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_alloc(
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_copy(
 	__isl_keep isl_qpolynomial_fold *fold);
 void isl_qpolynomial_fold_free(__isl_take isl_qpolynomial_fold *fold);
+
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_reset_dim(
+	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_dim *dim);
 
 int isl_qpolynomial_fold_is_empty(__isl_keep isl_qpolynomial_fold *fold);
 int isl_qpolynomial_fold_is_equal(__isl_keep isl_qpolynomial_fold *fold1,

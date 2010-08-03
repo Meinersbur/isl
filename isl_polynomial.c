@@ -319,6 +319,22 @@ __isl_give struct isl_upoly_rec *isl_upoly_alloc_rec(struct isl_ctx *ctx,
 	return rec;
 }
 
+__isl_give isl_qpolynomial *isl_qpolynomial_reset_dim(
+	__isl_take isl_qpolynomial *qp, __isl_take isl_dim *dim)
+{
+	if (!qp || !dim)
+		goto error;
+
+	isl_dim_free(qp->dim);
+	qp->dim = dim;
+
+	return qp;
+error:
+	isl_qpolynomial_free(qp);
+	isl_dim_free(dim);
+	return NULL;
+}
+
 isl_ctx *isl_qpolynomial_get_ctx(__isl_keep isl_qpolynomial *qp)
 {
 	return qp ? qp->dim->ctx : NULL;

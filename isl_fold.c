@@ -43,6 +43,22 @@ error:
 	return NULL;
 }
 
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_reset_dim(
+	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_dim *dim)
+{
+	if (!fold || !dim)
+		goto error;
+
+	isl_dim_free(fold->dim);
+	fold->dim = dim;
+
+	return fold;
+error:
+	isl_qpolynomial_fold_free(fold);
+	isl_dim_free(dim);
+	return NULL;
+}
+
 int isl_qpolynomial_fold_involves_dims(__isl_keep isl_qpolynomial_fold *fold,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
