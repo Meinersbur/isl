@@ -6455,7 +6455,7 @@ error:
 	return NULL;
 }
 
-/* Given two maps A -> B and C -> D, construct a map (A, C) -> (B, D)
+/* Given two maps A -> B and C -> D, construct a map [A -> C] -> [B -> D]
  */
 struct isl_map *isl_map_product(struct isl_map *map1, struct isl_map *map2)
 {
@@ -6500,12 +6500,30 @@ error:
 	return NULL;
 }
 
+/* Given two maps A -> B and C -> D, construct a map (A, C) -> (B, D)
+ */
+__isl_give isl_map *isl_map_flat_product(__isl_take isl_map *map1,
+	__isl_take isl_map *map2)
+{
+	isl_map *prod;
+
+	prod = isl_map_product(map1, map2);
+	prod = isl_map_flatten(prod);
+	return prod;
+}
+
 /* Given two set A and B, construct its Cartesian product A x B.
  */
 struct isl_set *isl_set_product(struct isl_set *set1, struct isl_set *set2)
 {
 	return (struct isl_set *)isl_map_product((struct isl_map *)set1,
 						 (struct isl_map *)set2);
+}
+
+__isl_give isl_set *isl_set_flat_product(__isl_take isl_set *set1,
+	__isl_take isl_set *set2)
+{
+	return (isl_set *)isl_map_flat_product((isl_map *)set1, (isl_map *)set2);
 }
 
 uint32_t isl_basic_set_get_hash(struct isl_basic_set *bset)
@@ -7198,6 +7216,59 @@ __isl_give isl_map *isl_map_reset(__isl_take isl_map *map,
 			goto error;
 	}
 	map->dim = isl_dim_reset(map->dim, type);
+	if (!map->dim)
+		goto error;
+
+	return map;
+error:
+	isl_map_free(map);
+	return NULL;
+}
+
+__isl_give isl_basic_map *isl_basic_map_flatten(__isl_take isl_basic_map *bmap)
+{
+	if (!bmap)
+		return NULL;
+
+	if (!bmap->dim->nested[0] && !bmap->dim->nested[1])
+		return bmap;
+
+	bmap = isl_basic_map_cow(bmap);
+	if (!bmap)
+		return NULL;
+
+	bmap->dim = isl_dim_flatten(bmap->dim);
+	if (!bmap->dim)
+		goto error;
+
+	bmap = isl_basic_map_finalize(bmap);
+
+	return bmap;
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+__isl_give isl_map *isl_map_flatten(__isl_take isl_map *map)
+{
+	int i;
+
+	if (!map)
+		return NULL;
+
+	if (!map->dim->nested[0] && !map->dim->nested[1])
+		return map;
+
+	map = isl_map_cow(map);
+	if (!map)
+		return NULL;
+
+	for (i = 0; i < map->n; ++i) {
+		map->p[i] = isl_basic_map_flatten(map->p[i]);
+		if (!map->p[i])
+			goto error;
+	}
+	map->dim = isl_dim_flatten(map->dim);
 	if (!map->dim)
 		goto error;
 

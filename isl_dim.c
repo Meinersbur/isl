@@ -683,7 +683,7 @@ error:
 
 struct isl_dim *isl_dim_product(struct isl_dim *left, struct isl_dim *right)
 {
-	struct isl_dim *dim;
+	isl_dim *dom1, *dom2, *nest1, *nest2;
 
 	if (!left || !right)
 		goto error;
@@ -691,21 +691,15 @@ struct isl_dim *isl_dim_product(struct isl_dim *left, struct isl_dim *right)
 	isl_assert(left->ctx, match(left, isl_dim_param, right, isl_dim_param),
 			goto error);
 
-	dim = isl_dim_alloc(left->ctx, left->nparam,
-			left->n_in + right->n_in, left->n_out + right->n_out);
-	if (!dim)
-		goto error;
+	dom1 = isl_dim_domain(isl_dim_copy(left));
+	dom2 = isl_dim_domain(isl_dim_copy(right));
+	nest1 = isl_dim_wrap(isl_dim_join(isl_dim_reverse(dom1), dom2));
 
-	dim = copy_names(dim, isl_dim_param, 0, left, isl_dim_param);
-	dim = copy_names(dim, isl_dim_in, 0, left, isl_dim_in);
-	dim = copy_names(dim, isl_dim_in, left->n_in, right, isl_dim_in);
-	dim = copy_names(dim, isl_dim_out, 0, left, isl_dim_out);
-	dim = copy_names(dim, isl_dim_out, left->n_out, right, isl_dim_out);
+	dom1 = isl_dim_range(left);
+	dom2 = isl_dim_range(right);
+	nest2 = isl_dim_wrap(isl_dim_join(isl_dim_reverse(dom1), dom2));
 
-	isl_dim_free(left);
-	isl_dim_free(right);
-
-	return dim;
+	return isl_dim_join(isl_dim_reverse(nest1), nest2);
 error:
 	isl_dim_free(left);
 	isl_dim_free(right);
@@ -1068,6 +1062,21 @@ __isl_give isl_dim *isl_dim_reset(__isl_take isl_dim *dim,
 	dim->tuple_name[type - isl_dim_in] = NULL;
 	isl_dim_free(dim->nested[type - isl_dim_in]);
 	dim->nested[type - isl_dim_in] = NULL;
+
+	return dim;
+}
+
+__isl_give isl_dim *isl_dim_flatten(__isl_take isl_dim *dim)
+{
+	if (!dim)
+		return NULL;
+	if (!dim->nested[0] && !dim->nested[1])
+		return dim;
+
+	isl_dim_free(dim->nested[0]);
+	dim->nested[0] = NULL;
+	isl_dim_free(dim->nested[1]);
+	dim->nested[1] = NULL;
 
 	return dim;
 }
