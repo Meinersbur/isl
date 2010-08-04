@@ -74,6 +74,8 @@ struct isl_dim *isl_dim_underlying(struct isl_dim *dim, unsigned n_div);
 int isl_dim_equal(struct isl_dim *dim1, struct isl_dim *dim2);
 int isl_dim_match(struct isl_dim *dim1, enum isl_dim_type dim1_type,
 		struct isl_dim *dim2, enum isl_dim_type dim2_type);
+int isl_dim_tuple_match(__isl_keep isl_dim *dim1, enum isl_dim_type dim1_type,
+			__isl_keep isl_dim *dim2, enum isl_dim_type dim2_type);
 int isl_dim_compatible(struct isl_dim *dim1, struct isl_dim *dim2);
 unsigned isl_dim_size(__isl_keep isl_dim *dim, enum isl_dim_type type);
 unsigned isl_dim_total(struct isl_dim *dim);
