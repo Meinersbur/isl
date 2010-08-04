@@ -898,6 +898,25 @@ int isl_basic_set_is_bounded(__isl_keep isl_basic_set *bset)
 	return bounded;
 }
 
+/* Is the image bounded for each value of the parameters and
+ * the domain variables?
+ */
+int isl_basic_map_image_is_bounded(__isl_keep isl_basic_map *bmap)
+{
+	unsigned nparam = isl_basic_map_dim(bmap, isl_dim_param);
+	unsigned n_in = isl_basic_map_dim(bmap, isl_dim_in);
+	int bounded;
+
+	bmap = isl_basic_map_copy(bmap);
+	bmap = isl_basic_map_cow(bmap);
+	bmap = isl_basic_map_move_dims(bmap, isl_dim_param, nparam,
+					isl_dim_in, 0, n_in);
+	bounded = isl_basic_set_is_bounded((isl_basic_set *)bmap);
+	isl_basic_map_free(bmap);
+
+	return bounded;
+}
+
 /* Is the set bounded for each value of the parameters?
  */
 int isl_set_is_bounded(__isl_keep isl_set *set)

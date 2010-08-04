@@ -263,6 +263,7 @@ __isl_give isl_map *isl_map_drop_basic_map(__isl_take isl_map *map,
 int isl_basic_map_fast_is_fixed(struct isl_basic_map *bmap,
 	enum isl_dim_type type, unsigned pos, isl_int *val);
 
+int isl_basic_map_image_is_bounded(__isl_keep isl_basic_map *bmap);
 int isl_basic_map_is_universe(__isl_keep isl_basic_map *bmap);
 int isl_basic_map_fast_is_empty(__isl_keep isl_basic_map *bmap);
 int isl_basic_map_is_empty(__isl_keep isl_basic_map *bmap);
