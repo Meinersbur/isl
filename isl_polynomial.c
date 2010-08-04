@@ -2115,9 +2115,9 @@ __isl_give isl_qpolynomial *isl_qpolynomial_add_dims(
 	return isl_qpolynomial_insert_dims(qp, type, pos, n);
 }
 
-__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_add_dims(
-	__isl_take isl_pw_qpolynomial *pwqp,
-	enum isl_dim_type type, unsigned n)
+__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_insert_dims(
+	__isl_take isl_pw_qpolynomial *pwqp, enum isl_dim_type type,
+	unsigned first, unsigned n)
 {
 	int i;
 
@@ -2128,15 +2128,16 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_add_dims(
 	if (!pwqp)
 		return NULL;
 
-	pwqp->dim = isl_dim_add(pwqp->dim, type, n);
+	pwqp->dim = isl_dim_insert(pwqp->dim, type, first, n);
 	if (!pwqp->dim)
 		goto error;
 
 	for (i = 0; i < pwqp->n; ++i) {
-		pwqp->p[i].set = isl_set_add(pwqp->p[i].set, type, n);
+		pwqp->p[i].set = isl_set_insert(pwqp->p[i].set, type, first, n);
 		if (!pwqp->p[i].set)
 			goto error;
-		pwqp->p[i].qp = isl_qpolynomial_add_dims(pwqp->p[i].qp, type, n);
+		pwqp->p[i].qp = isl_qpolynomial_insert_dims(pwqp->p[i].qp,
+								type, first, n);
 		if (!pwqp->p[i].qp)
 			goto error;
 	}
@@ -2145,6 +2146,17 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_add_dims(
 error:
 	isl_pw_qpolynomial_free(pwqp);
 	return NULL;
+}
+
+__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_add_dims(
+	__isl_take isl_pw_qpolynomial *pwqp,
+	enum isl_dim_type type, unsigned n)
+{
+	unsigned pos;
+
+	pos = isl_pw_qpolynomial_dim(pwqp, type);
+
+	return isl_pw_qpolynomial_insert_dims(pwqp, type, pos, n);
 }
 
 static int *reordering_move(isl_ctx *ctx,

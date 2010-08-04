@@ -57,6 +57,9 @@ __isl_give isl_qpolynomial *isl_qpolynomial_sub(__isl_take isl_qpolynomial *qp1,
 __isl_give isl_qpolynomial *isl_qpolynomial_mul(__isl_take isl_qpolynomial *qp1,
 	__isl_take isl_qpolynomial *qp2);
 
+__isl_give isl_qpolynomial *isl_qpolynomial_insert_dims(
+	__isl_take isl_qpolynomial *qp, enum isl_dim_type type,
+	unsigned first, unsigned n);
 __isl_give isl_qpolynomial *isl_qpolynomial_add_dims(
 	__isl_take isl_qpolynomial *qp, enum isl_dim_type type, unsigned n);
 __isl_give isl_qpolynomial *isl_qpolynomial_move_dims(
@@ -160,6 +163,9 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_mul(
 	__isl_take isl_pw_qpolynomial *pwqp1,
 	__isl_take isl_pw_qpolynomial *pwqp2);
 
+__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_insert_dims(
+	__isl_take isl_pw_qpolynomial *pwqp, enum isl_dim_type type,
+	unsigned first, unsigned n);
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_add_dims(
 	__isl_take isl_pw_qpolynomial *pwqp,
 	enum isl_dim_type type, unsigned n);
