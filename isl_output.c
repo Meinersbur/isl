@@ -1368,7 +1368,7 @@ static __isl_give isl_printer *isl_pwf_print_isl_body(
 		if (i)
 			p = isl_printer_print_str(p, "; ");
 		if (isl_dim_size(pwf->p[i].set->dim, isl_dim_set) > 0) {
-			p = print_tuple(pwf->p[i].set->dim, p, isl_dim_set, 0, 0, NULL);
+			p = print_tuple(pwf->p[i].set->dim, p, isl_dim_set, 1, 0, NULL);
 			p = isl_printer_print_str(p, " -> ");
 		}
 		p = qpolynomial_fold_print(pwf->p[i].fold, p);
@@ -1388,7 +1388,7 @@ static __isl_give isl_printer *print_pw_qpolynomial_fold_isl(
 	p = isl_printer_print_str(p, "{ ");
 	if (pwf->n == 0) {
 		if (isl_dim_size(pwf->dim, isl_dim_set) > 0) {
-			p = print_tuple(pwf->dim, p, isl_dim_set, 0, 0, NULL);
+			p = print_tuple(pwf->dim, p, isl_dim_set, 1, 0, NULL);
 			p = isl_printer_print_str(p, " -> ");
 		}
 		p = isl_printer_print_str(p, "0");
