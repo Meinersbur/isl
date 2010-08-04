@@ -45,7 +45,7 @@ error:
 	return -1;
 }
 
-static int guarded_poly_bound(__isl_take isl_basic_set *bset,
+static int unwrapped_guarded_poly_bound(__isl_take isl_basic_set *bset,
 	__isl_take isl_qpolynomial *poly, void *user)
 {
 	struct isl_bound *bound = (struct isl_bound *)user;
@@ -101,6 +101,56 @@ error:
 	isl_basic_set_free(bset);
 	isl_qpolynomial_free(poly);
 	return -1;
+}
+
+static int guarded_poly_bound(__isl_take isl_basic_set *bset,
+	__isl_take isl_qpolynomial *poly, void *user)
+{
+	struct isl_bound *bound = (struct isl_bound *)user;
+	isl_dim *dim;
+	isl_dim *target_dim;
+	isl_pw_qpolynomial_fold *top_pwf;
+	isl_pw_qpolynomial_fold *top_pwf_tight;
+	int nparam;
+	int n_in;
+	int r;
+
+	if (!isl_basic_set_is_wrapping(bset))
+		return unwrapped_guarded_poly_bound(bset, poly, user);
+
+	target_dim = isl_basic_set_get_dim(bset);
+	target_dim = isl_dim_unwrap(target_dim);
+	target_dim = isl_dim_domain(target_dim);
+
+	nparam = isl_dim_size(target_dim, isl_dim_param);
+	n_in = isl_dim_size(target_dim, isl_dim_set);
+
+	bset = isl_basic_set_move_dims(bset, isl_dim_param, nparam,
+					isl_dim_set, 0, n_in);
+	poly = isl_qpolynomial_move_dims(poly, isl_dim_param, nparam,
+					isl_dim_set, 0, n_in);
+
+	dim = isl_basic_set_get_dim(bset);
+	dim = isl_dim_drop(dim, isl_dim_set, 0, isl_dim_size(dim, isl_dim_set));
+
+	top_pwf = bound->pwf;
+	top_pwf_tight = bound->pwf_tight;
+
+	bound->pwf = isl_pw_qpolynomial_fold_zero(isl_dim_copy(dim));
+	bound->pwf_tight = isl_pw_qpolynomial_fold_zero(dim);
+
+	r = unwrapped_guarded_poly_bound(bset, poly, user);
+
+	bound->pwf = isl_pw_qpolynomial_fold_reset_dim(bound->pwf,
+						    isl_dim_copy(target_dim));
+	bound->pwf_tight = isl_pw_qpolynomial_fold_reset_dim(bound->pwf_tight,
+						    target_dim);
+
+	bound->pwf = isl_pw_qpolynomial_fold_add(top_pwf, bound->pwf);
+	bound->pwf_tight = isl_pw_qpolynomial_fold_add(top_pwf_tight,
+							bound->pwf_tight);
+
+	return r;
 }
 
 static int guarded_qp(__isl_take isl_qpolynomial *qp, void *user)
@@ -181,7 +231,17 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_bound(
 		return pwf;
 	}
 
-	dim = isl_dim_drop(dim, isl_dim_set, 0, nvar);
+	if (isl_dim_is_wrapping(dim)) {
+		dim = isl_dim_unwrap(dim);
+		nvar = isl_dim_size(dim, isl_dim_out);
+		dim = isl_dim_domain(dim);
+		if (nvar == 0) {
+			if (tight)
+				*tight = 1;
+			return isl_pw_qpolynomial_fold_reset_dim(pwf, dim);
+		}
+	} else
+		dim = isl_dim_drop(dim, isl_dim_set, 0, nvar);
 
 	bound.pwf = isl_pw_qpolynomial_fold_zero(isl_dim_copy(dim));
 	bound.pwf_tight = isl_pw_qpolynomial_fold_zero(isl_dim_copy(dim));

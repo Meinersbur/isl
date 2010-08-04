@@ -1765,6 +1765,11 @@ If C<tight> is not C<NULL>, then C<*tight> is set to C<1>
 is the returned bound is known be tight, i.e., for each value
 of the parameters there is at least
 one element in the domain that reaches the bound.
+If the domain of C<pwqp> is not wrapping, then the bound is computed
+over all elements in that domain and the result has a purely parametric
+domain.  If the domain of C<pwqp> is wrapping, then the bound is
+computed over the range of the wrapped relation.  The domain of the
+wrapped relation becomes the domain of the result.
 
 A (piecewise) quasipolynomial reduction can be copied or freed using the
 following functions.
