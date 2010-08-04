@@ -189,22 +189,22 @@ unsigned isl_set_n_param(const struct isl_set *set)
 
 unsigned isl_basic_map_n_in(const struct isl_basic_map *bmap)
 {
-	return bmap->dim->n_in;
+	return bmap ? bmap->dim->n_in : 0;
 }
 
 unsigned isl_basic_map_n_out(const struct isl_basic_map *bmap)
 {
-	return bmap->dim->n_out;
+	return bmap ? bmap->dim->n_out : 0;
 }
 
 unsigned isl_basic_map_n_param(const struct isl_basic_map *bmap)
 {
-	return bmap->dim->nparam;
+	return bmap ? bmap->dim->nparam : 0;
 }
 
 unsigned isl_basic_map_n_div(const struct isl_basic_map *bmap)
 {
-	return bmap->n_div;
+	return bmap ? bmap->n_div : 0;
 }
 
 unsigned isl_basic_map_total_dim(const struct isl_basic_map *bmap)
