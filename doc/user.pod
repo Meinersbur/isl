@@ -2019,7 +2019,7 @@ then a vector of length zero is printed.
 
 C<isl_pip> takes the same input as the C<example> program
 from the C<piplib> distribution, i.e., a set of constraints
-on the parameters, a line contains only -1 and finally a set
+on the parameters, a line containing only -1 and finally a set
 of constraints on a parametric polyhedron.
 The coefficients of the parameters appear in the last columns
 (but before the final constant column).
