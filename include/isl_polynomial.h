@@ -238,6 +238,11 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_move_dims(
 	enum isl_dim_type dst_type, unsigned dst_pos,
 	enum isl_dim_type src_type, unsigned src_pos, unsigned n);
 
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_substitute(
+	__isl_take isl_qpolynomial_fold *fold,
+	enum isl_dim_type type, unsigned first, unsigned n,
+	__isl_keep isl_qpolynomial **subs);
+
 __isl_give isl_qpolynomial *isl_qpolynomial_fold_eval(
 	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_point *pnt);
 

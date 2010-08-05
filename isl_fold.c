@@ -876,3 +876,33 @@ error:
 	isl_qpolynomial_fold_free(fold);
 	return NULL;
 }
+
+/* For each 0 <= i < "n", replace variable "first" + i of type "type"
+ * in fold->qp[k] by subs[i].
+ */
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_substitute(
+	__isl_take isl_qpolynomial_fold *fold,
+	enum isl_dim_type type, unsigned first, unsigned n,
+	__isl_keep isl_qpolynomial **subs)
+{
+	int i;
+
+	if (n == 0)
+		return fold;
+
+	fold = isl_qpolynomial_fold_cow(fold);
+	if (!fold)
+		return NULL;
+
+	for (i = 0; i < fold->n; ++i) {
+		fold->qp[i] = isl_qpolynomial_substitute(fold->qp[i],
+				type, first, n, subs);
+		if (!fold->qp[i])
+			goto error;
+	}
+
+	return fold;
+error:
+	isl_qpolynomial_fold_free(fold);
+	return NULL;
+}
