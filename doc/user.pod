@@ -58,23 +58,7 @@ To obtain updates, you need to pull in the latest changes
 
 	git pull
 
-=item 2 Get submodule (optional)
-
-C<isl> can optionally use the C<piplib> library and provides
-this library as a submodule.  If you want to use it, then
-after you have cloned C<isl>, you need to grab the submodules
-
-	git submodule init
-	git submodule update
-
-To obtain updates, you only need
-
-	git submodule update
-
-Note that C<isl> currently does not use any C<piplib>
-functionality by default.
-
-=item 3 Generate C<configure>
+=item 2 Generate C<configure>
 
 	./autogen.sh
 
