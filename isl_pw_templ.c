@@ -312,9 +312,13 @@ __isl_give PW *FN(PW,intersect_domain)(__isl_take PW *pw, __isl_take isl_set *se
 		goto error;
 
 	for (i = pw->n - 1; i >= 0; --i) {
+		isl_basic_set *aff;
 		pw->p[i].set = isl_set_intersect(pw->p[i].set, isl_set_copy(set));
 		if (!pw->p[i].set)
 			goto error;
+		aff = isl_set_affine_hull(isl_set_copy(pw->p[i].set));
+		pw->p[i].FIELD = FN(EL,substitute_equalities)(pw->p[i].FIELD,
+								aff);
 		if (isl_set_fast_is_empty(pw->p[i].set)) {
 			isl_set_free(pw->p[i].set);
 			FN(EL,free)(pw->p[i].FIELD);

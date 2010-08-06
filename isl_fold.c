@@ -350,6 +350,33 @@ error:
 	return NULL;
 }
 
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_substitute_equalities(
+	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_basic_set *eq)
+{
+	int i;
+
+	if (!fold || !eq)
+		goto error;
+
+	fold = isl_qpolynomial_fold_cow(fold);
+	if (!fold)
+		return NULL;
+
+	for (i = 0; i < fold->n; ++i) {
+		fold->qp[i] = isl_qpolynomial_substitute_equalities(fold->qp[i],
+							isl_basic_set_copy(eq));
+		if (!fold->qp[i])
+			goto error;
+	}
+
+	isl_basic_set_free(eq);
+	return fold;
+error:
+	isl_basic_set_free(eq);
+	isl_qpolynomial_fold_free(fold);
+	return NULL;
+}
+
 #undef PW
 #define PW isl_pw_qpolynomial_fold
 #undef EL

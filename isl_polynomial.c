@@ -1806,6 +1806,139 @@ error:
 	return NULL;
 }
 
+__isl_give struct isl_upoly *isl_upoly_subs(__isl_take struct isl_upoly *up,
+	unsigned first, unsigned n, __isl_keep struct isl_upoly **subs)
+{
+	int i;
+	struct isl_upoly_rec *rec;
+	struct isl_upoly *base, *res;
+
+	if (!up)
+		return NULL;
+
+	if (isl_upoly_is_cst(up))
+		return up;
+
+	if (up->var < first)
+		return up;
+
+	rec = isl_upoly_as_rec(up);
+	if (!rec)
+		goto error;
+
+	isl_assert(up->ctx, rec->n >= 1, goto error);
+
+	if (up->var >= first + n)
+		base = isl_upoly_pow(up->ctx, up->var, 1);
+	else
+		base = isl_upoly_copy(subs[up->var - first]);
+
+	res = isl_upoly_subs(isl_upoly_copy(rec->p[rec->n - 1]), first, n, subs);
+	for (i = rec->n - 2; i >= 0; --i) {
+		struct isl_upoly *t;
+		t = isl_upoly_subs(isl_upoly_copy(rec->p[i]), first, n, subs);
+		res = isl_upoly_mul(res, isl_upoly_copy(base));
+		res = isl_upoly_sum(res, t);
+	}
+
+	isl_upoly_free(base);
+	isl_upoly_free(up);
+				
+	return res;
+error:
+	isl_upoly_free(up);
+	return NULL;
+}	
+
+__isl_give struct isl_upoly *isl_upoly_from_affine(isl_ctx *ctx, isl_int *f,
+	isl_int denom, unsigned len)
+{
+	int i;
+	struct isl_upoly *up;
+
+	isl_assert(ctx, len >= 1, return NULL);
+
+	up = isl_upoly_rat_cst(ctx, f[0], denom);
+	for (i = 0; i < len - 1; ++i) {
+		struct isl_upoly *t;
+		struct isl_upoly *c;
+
+		if (isl_int_is_zero(f[1 + i]))
+			continue;
+
+		c = isl_upoly_rat_cst(ctx, f[1 + i], denom);
+		t = isl_upoly_pow(ctx, i, 1);
+		t = isl_upoly_mul(c, t);
+		up = isl_upoly_sum(up, t);
+	}
+
+	return up;
+}
+
+__isl_give isl_qpolynomial *isl_qpolynomial_substitute_equalities(
+	__isl_take isl_qpolynomial *qp, __isl_take isl_basic_set *eq)
+{
+	int i, j, k;
+	isl_int denom;
+	unsigned total;
+	struct isl_upoly *up;
+
+	if (!eq)
+		goto error;
+	if (eq->n_eq == 0) {
+		isl_basic_set_free(eq);
+		return qp;
+	}
+
+	qp = isl_qpolynomial_cow(qp);
+	if (!qp)
+		goto error;
+	qp->div = isl_mat_cow(qp->div);
+	if (!qp->div)
+		goto error;
+
+	total = 1 + isl_dim_total(eq->dim);
+	isl_int_init(denom);
+	for (i = 0; i < eq->n_eq; ++i) {
+		j = isl_seq_last_non_zero(eq->eq[i], total);
+		if (j < 0 || j == 0)
+			continue;
+
+		for (k = 0; k < qp->div->n_row; ++k) {
+			if (isl_int_is_zero(qp->div->row[k][1 + j]))
+				continue;
+			isl_seq_elim(qp->div->row[k] + 1, eq->eq[i], j, total,
+					&qp->div->row[k][0]);
+			isl_seq_normalize(qp->div->ctx,
+					  qp->div->row[k], 1 + total);
+		}
+
+		if (isl_int_is_pos(eq->eq[i][j]))
+			isl_seq_neg(eq->eq[i], eq->eq[i], total);
+		isl_int_abs(denom, eq->eq[i][j]);
+		isl_int_set_si(eq->eq[i][j], 0);
+
+		up = isl_upoly_from_affine(qp->dim->ctx,
+						   eq->eq[i], denom, total);
+		qp->upoly = isl_upoly_subs(qp->upoly, j - 1, 1, &up);
+		isl_upoly_free(up);
+	}
+	isl_int_clear(denom);
+
+	if (!qp->upoly)
+		goto error;
+
+	isl_basic_set_free(eq);
+
+	qp = sort_divs(qp);
+
+	return qp;
+error:
+	isl_basic_set_free(eq);
+	isl_qpolynomial_free(qp);
+	return NULL;
+}
+
 #undef PW
 #define PW isl_pw_qpolynomial
 #undef EL
@@ -2296,31 +2429,6 @@ error:
 	return NULL;
 }
 
-__isl_give struct isl_upoly *isl_upoly_from_affine(isl_ctx *ctx, isl_int *f,
-	isl_int denom, unsigned len)
-{
-	int i;
-	struct isl_upoly *up;
-
-	isl_assert(ctx, len >= 1, return NULL);
-
-	up = isl_upoly_rat_cst(ctx, f[0], denom);
-	for (i = 0; i < len - 1; ++i) {
-		struct isl_upoly *t;
-		struct isl_upoly *c;
-
-		if (isl_int_is_zero(f[1 + i]))
-			continue;
-
-		c = isl_upoly_rat_cst(ctx, f[1 + i], denom);
-		t = isl_upoly_pow(ctx, i, 1);
-		t = isl_upoly_mul(c, t);
-		up = isl_upoly_sum(up, t);
-	}
-
-	return up;
-}
-
 __isl_give isl_qpolynomial *isl_qpolynomial_from_affine(__isl_take isl_dim *dim,
 	isl_int *f, isl_int denom)
 {
@@ -2368,50 +2476,6 @@ __isl_give isl_qpolynomial *isl_qpolynomial_from_constraint(
 		qp = isl_qpolynomial_neg(qp);
 	return qp;
 }
-
-__isl_give struct isl_upoly *isl_upoly_subs(__isl_take struct isl_upoly *up,
-	unsigned first, unsigned n, __isl_keep struct isl_upoly **subs)
-{
-	int i;
-	struct isl_upoly_rec *rec;
-	struct isl_upoly *base, *res;
-
-	if (!up)
-		return NULL;
-
-	if (isl_upoly_is_cst(up))
-		return up;
-
-	if (up->var < first)
-		return up;
-
-	rec = isl_upoly_as_rec(up);
-	if (!rec)
-		goto error;
-
-	isl_assert(up->ctx, rec->n >= 1, goto error);
-
-	if (up->var >= first + n)
-		base = isl_upoly_pow(up->ctx, up->var, 1);
-	else
-		base = isl_upoly_copy(subs[up->var - first]);
-
-	res = isl_upoly_subs(isl_upoly_copy(rec->p[rec->n - 1]), first, n, subs);
-	for (i = rec->n - 2; i >= 0; --i) {
-		struct isl_upoly *t;
-		t = isl_upoly_subs(isl_upoly_copy(rec->p[i]), first, n, subs);
-		res = isl_upoly_mul(res, isl_upoly_copy(base));
-		res = isl_upoly_sum(res, t);
-	}
-
-	isl_upoly_free(base);
-	isl_upoly_free(up);
-				
-	return res;
-error:
-	isl_upoly_free(up);
-	return NULL;
-}	
 
 /* For each 0 <= i < "n", replace variable "first" + i of type "type"
  * in "qp" by subs[i].
