@@ -646,7 +646,7 @@ static void set_is_redundant(struct isl_tab *tab, unsigned n_eq,
 	}
 }
 
-/* Given a pair of basic maps i and j such that j stick out
+/* Given a pair of basic maps i and j such that j sticks out
  * of i at n cut constraints, each time by at most one,
  * try to compute wrapping constraints and replace the two
  * basic maps by a single basic map.
