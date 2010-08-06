@@ -14,6 +14,7 @@
 #include <isl_set.h>
 #include <isl_flow.h>
 #include <isl_constraint.h>
+#include <isl_polynomial.h>
 
 static char *srcdir;
 
@@ -1362,6 +1363,27 @@ void test_bijective(struct isl_ctx *ctx)
 	test_bijective_case(ctx, "[N,M]->{[i,j] -> [x,y] : 2x=i & y =j}", 1);
 }
 
+void test_pwqp(struct isl_ctx *ctx)
+{
+	const char *str;
+	isl_pw_qpolynomial *pwqp1, *pwqp2;
+
+	str = "{ [i,j,k] -> 1 + 9 * [i/5] + 7 * [j/11] + 4 * [k/13] }";
+	pwqp1 = isl_pw_qpolynomial_read_from_str(ctx, str);
+
+	pwqp1 = isl_pw_qpolynomial_move_dims(pwqp1, isl_dim_param, 0,
+						isl_dim_set, 1, 1);
+
+	str = "[j] -> { [i,k] -> 1 + 9 * [i/5] + 7 * [j/11] + 4 * [k/13] }";
+	pwqp2 = isl_pw_qpolynomial_read_from_str(ctx, str);
+
+	pwqp1 = isl_pw_qpolynomial_sub(pwqp1, pwqp2);
+
+	assert(isl_pw_qpolynomial_is_zero(pwqp1));
+
+	isl_pw_qpolynomial_free(pwqp1);
+}
+
 int main()
 {
 	struct isl_ctx *ctx;
@@ -1370,6 +1392,7 @@ int main()
 	assert(srcdir);
 
 	ctx = isl_ctx_alloc();
+	test_pwqp(ctx);
 	test_lex(ctx);
 	test_sv(ctx);
 	test_bijective(ctx);
