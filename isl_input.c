@@ -1889,3 +1889,15 @@ error:
 	obj.type->free(obj.v);
 	return NULL;
 }
+
+__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_read_from_str(isl_ctx *ctx,
+		const char *str)
+{
+	isl_pw_qpolynomial *pwqp;
+	struct isl_stream *s = isl_stream_new_str(ctx, str);
+	if (!s)
+		return NULL;
+	pwqp = isl_stream_read_pw_qpolynomial(s);
+	isl_stream_free(s);
+	return pwqp;
+}
