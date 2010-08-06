@@ -427,6 +427,7 @@ isl_int *isl_set_wrap_facet(__isl_keep isl_set *set,
 	if (res == isl_lp_ok) {
 		isl_int_neg(num, num);
 		isl_seq_combine(facet, num, facet, den, ridge, dim);
+		isl_seq_normalize(ctx, facet, dim);
 	}
 	isl_int_clear(num);
 	isl_int_clear(den);
