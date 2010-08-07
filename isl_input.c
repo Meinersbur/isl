@@ -1368,8 +1368,6 @@ static struct isl_obj obj_read_poly(struct isl_stream *s,
 	struct isl_map *map;
 	struct isl_set *set;
 
-	bmap = isl_basic_map_reverse(bmap);
-
 	qp = read_term(s, bmap, v);
 	map = read_optional_disjuncts(s, bmap, v);
 	set = isl_map_range(map);
@@ -1379,6 +1377,51 @@ static struct isl_obj obj_read_poly(struct isl_stream *s,
 	vars_drop(v, v->n - n);
 
 	obj.v = pwqp;
+	return obj;
+}
+
+static struct isl_obj obj_read_poly_or_fold(struct isl_stream *s,
+	__isl_take isl_basic_map *bmap, struct vars *v, int n)
+{
+	struct isl_obj obj = { isl_obj_pw_qpolynomial_fold, NULL };
+	struct isl_obj obj_p;
+	isl_qpolynomial *qp;
+	isl_qpolynomial_fold *fold = NULL;
+	isl_pw_qpolynomial_fold *pwf;
+	isl_map *map;
+	isl_set *set;
+
+	if (!isl_stream_eat_if_available(s, ISL_TOKEN_MAX))
+		return obj_read_poly(s, bmap, v, n);
+
+	if (isl_stream_eat(s, '('))
+		goto error;
+
+	qp = read_term(s, bmap, v);
+	fold = isl_qpolynomial_fold_alloc(isl_fold_max, qp);
+
+	while (isl_stream_eat_if_available(s, ',')) {
+		isl_qpolynomial_fold *fold_i;
+		qp = read_term(s, bmap, v);
+		fold_i = isl_qpolynomial_fold_alloc(isl_fold_max, qp);
+		fold = isl_qpolynomial_fold_fold(fold, fold_i);
+	}
+
+	if (isl_stream_eat(s, ')'))
+		goto error;
+
+	map = read_optional_disjuncts(s, bmap, v);
+	set = isl_map_range(map);
+	pwf = isl_pw_qpolynomial_fold_alloc(set, fold);
+
+	vars_drop(v, v->n - n);
+
+	obj.v = pwf;
+	return obj;
+error:
+	isl_basic_map_free(bmap);
+	isl_qpolynomial_fold_free(fold);
+	obj.type = isl_obj_none;
 	return obj;
 }
 
@@ -1421,7 +1464,7 @@ static struct isl_obj obj_read_body(struct isl_stream *s,
 
 	if (!next_is_tuple(s)) {
 		bmap = isl_basic_map_alloc_dim(dim, 0, 0, 0);
-		return obj_read_poly(s, bmap, v, n);
+		return obj_read_poly_or_fold(s, bmap, v, n);
 	}
 
 	eq = isl_mat_alloc(s->ctx, 0, 1 + n);
@@ -1436,7 +1479,8 @@ static struct isl_obj obj_read_body(struct isl_stream *s,
 		if (!next_is_tuple(s)) {
 			bmap = isl_basic_map_alloc_dim(dim, 0, 0, 0);
 			bmap = add_equalities(bmap, eq);
-			return obj_read_poly(s, bmap, v, n);
+			bmap = isl_basic_map_reverse(bmap);
+			return obj_read_poly_or_fold(s, bmap, v, n);
 		}
 		dim = read_tuple(s, dim, isl_dim_out, v, &eq);
 		if (!dim)
