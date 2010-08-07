@@ -108,9 +108,17 @@ __isl_give UNION *FN(FN(UNION,add),PARTS)(__isl_take UNION *u,
 	uint32_t hash;
 	struct isl_hash_table_entry *entry;
 
+	if (!part)
+		goto error;
+
+	if (FN(PART,is_zero)(part)) {
+		FN(PART,free)(part);
+		return u;
+	}
+
 	u = FN(UNION,cow)(u);
 
-	if (!part || !u)
+	if (!u)
 		goto error;
 
 	isl_assert(u->dim->ctx, isl_dim_match(part->dim, isl_dim_param, u->dim,
