@@ -95,6 +95,8 @@ void isl_stream_error(struct isl_stream *s, struct isl_token *tok, char *msg)
 	if (tok) {
 		if (tok->type < 256)
 			fprintf(stderr, "got '%c'\n", tok->type);
+		else if (tok->type == ISL_TOKEN_IDENT)
+			fprintf(stderr, "got ident '%s'\n", tok->u.s);
 		else
 			fprintf(stderr, "got token type %d\n", tok->type);
 	}
