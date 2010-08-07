@@ -369,7 +369,7 @@ static __isl_give isl_printer *print_nested_map_dim(__isl_take isl_printer *p,
 {
 	p = print_nested_tuple(p, global_dim, global_type,
 			local_dim, isl_dim_in, set, latex, eq, offset);
-	p = isl_printer_print_str(p, s_to[0]);
+	p = isl_printer_print_str(p, s_to[latex]);
 	p = print_nested_tuple(p, global_dim, global_type,
 			local_dim, isl_dim_out, set, latex, eq, offset);
 
@@ -384,7 +384,7 @@ static __isl_give isl_printer *print_dim(__isl_keep isl_dim *dim,
 		p = print_tuple(dim, p, isl_dim_set, 1, latex, eq);
 	else {
 		p = print_tuple(dim, p, isl_dim_in, 0, latex, eq);
-		p = isl_printer_print_str(p, s_to[0]);
+		p = isl_printer_print_str(p, s_to[latex]);
 		p = print_tuple(dim, p, isl_dim_out, 0, latex, eq);
 	}
 
