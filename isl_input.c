@@ -1242,13 +1242,16 @@ static __isl_give isl_qpolynomial *read_factor(struct isl_stream *s,
 		int n = v->n;
 		int pos = vars_pos(v, tok->u.s, -1);
 		int pow;
-		isl_token_free(tok);
-		if (pos < 0)
-			goto error;
-		if (pos >= n) {
-			isl_stream_error(s, tok, "unknown identifier");
+		if (pos < 0) {
+			isl_token_free(tok);
 			return NULL;
 		}
+		if (pos >= n) {
+			isl_stream_error(s, tok, "unknown identifier");
+			isl_token_free(tok);
+			return NULL;
+		}
+		isl_token_free(tok);
 		pow = optional_power(s);
 		qp = isl_qpolynomial_pow(isl_basic_map_get_dim(bmap), pos, pow);
 	} else if (tok->type == '[') {
