@@ -32,6 +32,13 @@ static unsigned offset(struct isl_constraint *c, enum isl_dim_type type)
 	}
 }
 
+static unsigned basic_map_offset(__isl_keep isl_basic_map *bmap,
+							enum isl_dim_type type)
+{
+	return type == isl_dim_div ? 1 + isl_dim_total(bmap->dim)
+				   : 1 + isl_dim_offset(bmap->dim, type);
+}
+
 static unsigned basic_set_offset(struct isl_basic_set *bset,
 							enum isl_dim_type type)
 {
@@ -472,28 +479,36 @@ error:
 	return NULL;
 }
 
-int isl_basic_set_has_defining_equality(
-	struct isl_basic_set *bset, enum isl_dim_type type, int pos,
-	struct isl_constraint **c)
+int isl_basic_map_has_defining_equality(
+	__isl_keep isl_basic_map *bmap, enum isl_dim_type type, int pos,
+	__isl_give isl_constraint **c)
 {
 	int i;
 	unsigned offset;
 	unsigned total;
 
-	if (!bset)
+	if (!bmap)
 		return -1;
-	offset = basic_set_offset(bset, type);
-	total = isl_basic_set_total_dim(bset);
-	isl_assert(bset->ctx, pos < isl_basic_set_dim(bset, type), return -1);
-	for (i = 0; i < bset->n_eq; ++i)
-		if (!isl_int_is_zero(bset->eq[i][offset + pos]) &&
-		    isl_seq_first_non_zero(bset->eq[i]+offset+pos+1,
+	offset = basic_map_offset(bmap, type);
+	total = isl_basic_map_total_dim(bmap);
+	isl_assert(bmap->ctx, pos < isl_basic_map_dim(bmap, type), return -1);
+	for (i = 0; i < bmap->n_eq; ++i)
+		if (!isl_int_is_zero(bmap->eq[i][offset + pos]) &&
+		    isl_seq_first_non_zero(bmap->eq[i]+offset+pos+1,
 					   1+total-offset-pos-1) == -1) {
-			*c= isl_basic_set_constraint(isl_basic_set_copy(bset),
-								&bset->eq[i]);
+			*c = isl_basic_map_constraint(isl_basic_map_copy(bmap),
+								&bmap->eq[i]);
 			return 1;
 		}
 	return 0;
+}
+
+int isl_basic_set_has_defining_equality(
+	__isl_keep isl_basic_set *bset, enum isl_dim_type type, int pos,
+	__isl_give isl_constraint **c)
+{
+	return isl_basic_map_has_defining_equality((isl_basic_map *)bset,
+						    type, pos, c);
 }
 
 int isl_basic_set_has_defining_inequalities(
