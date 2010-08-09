@@ -267,6 +267,11 @@ isl_ctx *isl_map_get_ctx(__isl_keep isl_map *map)
 	return map ? map->ctx : NULL;
 }
 
+isl_ctx *isl_set_get_ctx(__isl_keep isl_set *set)
+{
+	return set ? set->ctx : NULL;
+}
+
 struct isl_dim *isl_basic_map_get_dim(struct isl_basic_map *bmap)
 {
 	if (!bmap)
