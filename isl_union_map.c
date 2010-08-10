@@ -992,7 +992,7 @@ __isl_give int isl_union_map_is_empty(__isl_keep isl_union_map *umap)
 		return -1;
 
 	if (isl_hash_table_foreach(umap->dim->ctx, &umap->table,
-				   &sample_entry, &empty) < 0 && empty)
+				   &empty_entry, &empty) < 0 && empty)
 		return -1;
 
 	return empty;
