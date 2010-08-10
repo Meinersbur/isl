@@ -630,15 +630,6 @@ __isl_give isl_union_map *isl_union_map_from_domain_and_range(
 				         isl_union_map_from_range(range));
 }
 
-static int reverse_entry(void **entry, void *user)
-{
-	isl_map **map = (isl_map **)entry;
-
-	*map = isl_map_reverse(*map);
-
-	return *map ? 0 : -1;
-}
-
 static __isl_give isl_union_map *un_op(__isl_take isl_union_map *umap,
 	int (*fn)(void **, void *), int cow)
 {
@@ -654,11 +645,6 @@ static __isl_give isl_union_map *un_op(__isl_take isl_union_map *umap,
 error:
 	isl_union_map_free(umap);
 	return NULL;
-}
-
-__isl_give isl_union_map *isl_union_map_reverse(__isl_take isl_union_map *umap)
-{
-	return un_op(umap, &reverse_entry, 1);
 }
 
 static int affine_entry(void **entry, void *user)
@@ -766,30 +752,6 @@ __isl_give isl_union_set *isl_union_set_lexmax(
 	return isl_union_map_lexmax(uset);
 }
 
-static int domain_entry(void **entry, void *user)
-{
-	*entry = isl_map_domain(*entry);
-
-	return *entry ? 0 : -1;
-}
-
-__isl_give isl_union_set *isl_union_map_domain(__isl_take isl_union_map *umap)
-{
-	return un_op(umap, &domain_entry, 1);
-}
-
-static int range_entry(void **entry, void *user)
-{
-	*entry = isl_map_range(*entry);
-
-	return *entry ? 0 : -1;
-}
-
-__isl_give isl_union_set *isl_union_map_range(__isl_take isl_union_map *umap)
-{
-	return un_op(umap, &range_entry, 1);
-}
-
 static __isl_give isl_union_set *cond_un_op(__isl_take isl_union_map *umap,
 	int (*fn)(void **, void *))
 {
@@ -808,6 +770,51 @@ error:
 	isl_union_map_free(umap);
 	isl_union_set_free(res);
 	return NULL;
+}
+
+static int reverse_entry(void **entry, void *user)
+{
+	isl_map *map = *entry;
+	isl_union_map **res = user;
+
+	*res = isl_union_map_add_map(*res, isl_map_reverse(isl_map_copy(map)));
+
+	return 0;
+}
+
+__isl_give isl_union_map *isl_union_map_reverse(__isl_take isl_union_map *umap)
+{
+	return cond_un_op(umap, &reverse_entry);
+}
+
+static int domain_entry(void **entry, void *user)
+{
+	isl_map *map = *entry;
+	isl_union_set **res = user;
+
+	*res = isl_union_set_add_set(*res, isl_map_domain(isl_map_copy(map)));
+
+	return 0;
+}
+
+__isl_give isl_union_set *isl_union_map_domain(__isl_take isl_union_map *umap)
+{
+	return cond_un_op(umap, &domain_entry);
+}
+
+static int range_entry(void **entry, void *user)
+{
+	isl_map *map = *entry;
+	isl_union_set **res = user;
+
+	*res = isl_union_set_add_set(*res, isl_map_range(isl_map_copy(map)));
+
+	return 0;
+}
+
+__isl_give isl_union_set *isl_union_map_range(__isl_take isl_union_map *umap)
+{
+	return cond_un_op(umap, &range_entry);
 }
 
 static int deltas_entry(void **entry, void *user)
@@ -848,16 +855,17 @@ __isl_give isl_union_map *isl_union_set_unwrap(__isl_take isl_union_set *uset)
 
 static int wrap_entry(void **entry, void *user)
 {
-	isl_map **map = (isl_map **)entry;
+	isl_map *map = *entry;
+	isl_union_set **res = user;
 
-	*map = (isl_map *)isl_map_wrap(*map);
+	*res = isl_union_set_add_set(*res, isl_map_wrap(isl_map_copy(map)));
 
-	return *map ? 0 : -1;
+	return 0;
 }
 
 __isl_give isl_union_set *isl_union_map_wrap(__isl_take isl_union_map *umap)
 {
-	return un_op(umap, &wrap_entry, 1);
+	return cond_un_op(umap, &wrap_entry);
 }
 
 struct isl_union_map_is_subset_data {
