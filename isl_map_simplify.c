@@ -1807,10 +1807,6 @@ struct isl_basic_map *isl_basic_map_gist(struct isl_basic_map *bmap,
 	if (!bmap || !context)
 		goto error;
 
-	if (isl_basic_map_is_universe(context)) {
-		isl_basic_map_free(context);
-		return bmap;
-	}
 	if (isl_basic_map_is_universe(bmap)) {
 		isl_basic_map_free(context);
 		return bmap;
@@ -1856,10 +1852,6 @@ __isl_give isl_map *isl_map_gist_basic_map(__isl_take isl_map *map,
 	if (!map || !context)
 		goto error;;
 
-	if (isl_basic_map_is_universe(context)) {
-		isl_basic_map_free(context);
-		return map;
-	}
 	if (isl_basic_map_fast_is_empty(context)) {
 		struct isl_dim *dim = isl_dim_copy(map->dim);
 		isl_basic_map_free(context);
