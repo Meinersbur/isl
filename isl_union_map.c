@@ -55,6 +55,11 @@ isl_ctx *isl_union_map_get_ctx(__isl_keep isl_union_map *umap)
 	return umap ? umap->dim->ctx : NULL;
 }
 
+isl_ctx *isl_union_set_get_ctx(__isl_keep isl_union_set *uset)
+{
+	return uset ? uset->dim->ctx : NULL;
+}
+
 __isl_give isl_dim *isl_union_map_get_dim(__isl_keep isl_union_map *umap)
 {
 	if (!umap)
