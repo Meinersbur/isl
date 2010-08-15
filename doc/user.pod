@@ -1114,7 +1114,7 @@ of the constraints describing the basic sets or relations in the input.
 		__isl_take isl_union_map *umap);
 
 In case of union sets and relations, the affine hull is computed
-per dimension.
+per space.
 
 =item * Power
 
@@ -1311,7 +1311,7 @@ Any implicit equality in the intersection is made explicit in the result,
 while all inequalities that are redundant with respect to the intersection
 are removed.
 In case of union sets and relations, the gist operation is performed
-per dimension.
+per space.
 
 =back
 
@@ -1347,7 +1347,7 @@ is equal to C<dom>.
 Given a (basic) set C<set> (or C<bset>), the following functions simply
 return a set containing the lexicographic minimum or maximum
 of the elements in C<set> (or C<bset>).
-In case of union sets, the optimum is computed per dimension.
+In case of union sets, the optimum is computed per space.
 
 	__isl_give isl_set *isl_basic_set_lexmin(
 		__isl_take isl_basic_set *bset);
@@ -1393,7 +1393,7 @@ Given a (basic) map C<map> (or C<bmap>), the following functions simply
 return a map mapping each element in the domain of
 C<map> (or C<bmap>) to the lexicographic minimum or maximum
 of all elements associated to that element.
-In case of union relations, the optimum is computed per dimension.
+In case of union relations, the optimum is computed per space.
 
 	__isl_give isl_map *isl_basic_map_lexmin(
 		__isl_take isl_basic_map *bmap);
