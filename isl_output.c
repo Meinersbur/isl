@@ -18,6 +18,7 @@
 #include <isl_printer_private.h>
 #include <isl_dim_private.h>
 #include <isl_map_private.h>
+#include <isl_mat_private.h>
 #include <isl_union_map.h>
 
 static const char *s_to[2] = { " -> ", " \\to " };

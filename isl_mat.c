@@ -9,7 +9,7 @@
 
 #include "isl_dim.h"
 #include "isl_seq.h"
-#include "isl_mat.h"
+#include <isl_mat_private.h>
 #include "isl_map_private.h"
 #include <isl_dim_private.h>
 
@@ -200,6 +200,49 @@ void isl_mat_free(struct isl_mat *mat)
 	isl_ctx_deref(mat->ctx);
 	free(mat->row);
 	free(mat);
+}
+
+int isl_mat_rows(__isl_keep isl_mat *mat)
+{
+	return mat ? mat->n_row : -1;
+}
+
+int isl_mat_cols(__isl_keep isl_mat *mat)
+{
+	return mat ? mat->n_col : -1;
+}
+
+int isl_mat_get_element(__isl_keep isl_mat *mat, int row, int col, isl_int *v)
+{
+	if (!mat)
+		return -1;
+	if (row < 0 || row >= mat->n_row)
+		isl_die(mat->ctx, isl_error_invalid, "row out of range",
+			return -1);
+	if (col < 0 || col >= mat->n_col)
+		isl_die(mat->ctx, isl_error_invalid, "column out of range",
+			return -1);
+	isl_int_set(*v, mat->row[row][col]);
+	return 0;
+}
+
+__isl_give isl_mat *isl_mat_set_element(__isl_take isl_mat *mat,
+	int row, int col, isl_int v)
+{
+	mat = isl_mat_cow(mat);
+	if (!mat)
+		return NULL;
+	if (row < 0 || row >= mat->n_row)
+		isl_die(mat->ctx, isl_error_invalid, "row out of range",
+			goto error);
+	if (col < 0 || col >= mat->n_col)
+		isl_die(mat->ctx, isl_error_invalid, "column out of range",
+			goto error);
+	isl_int_set(mat->row[row][col], v);
+	return mat;
+error:
+	isl_mat_free(mat);
+	return NULL;
 }
 
 struct isl_mat *isl_mat_identity(struct isl_ctx *ctx, unsigned n_row)

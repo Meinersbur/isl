@@ -14,6 +14,7 @@
 #include <isl_dim_private.h>
 #include <isl_lp.h>
 #include <isl_union_map.h>
+#include <isl_mat_private.h>
 
 int isl_map_is_transitively_closed(__isl_keep isl_map *map)
 {

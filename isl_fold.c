@@ -15,6 +15,7 @@
 #include <isl_map_private.h>
 #include <isl_lp.h>
 #include <isl_seq.h>
+#include <isl_mat_private.h>
 
 static __isl_give isl_qpolynomial_fold *qpolynomial_fold_alloc(
 	enum isl_fold type, __isl_take isl_dim *dim, int n)

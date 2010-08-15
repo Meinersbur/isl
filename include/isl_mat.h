@@ -21,35 +21,24 @@
 extern "C" {
 #endif
 
-struct isl_mat {
-	int ref;
-
-	struct isl_ctx *ctx;
-
-#define ISL_MAT_BORROWED		(1 << 0)
-	unsigned flags;
-
-	unsigned n_row;
-	unsigned n_col;
-
-	isl_int **row;
-
-	/* actual size of the rows in memory; n_col <= max_col */
-	unsigned max_col;
-
-	struct isl_blk block;
-};
+struct isl_mat;
 typedef struct isl_mat	isl_mat;
 
-struct isl_mat *isl_mat_alloc(struct isl_ctx *ctx,
+__isl_give isl_mat *isl_mat_alloc(struct isl_ctx *ctx,
 	unsigned n_row, unsigned n_col);
 struct isl_mat *isl_mat_dup(struct isl_mat *mat);
 struct isl_mat *isl_mat_extend(struct isl_mat *mat,
 	unsigned n_row, unsigned n_col);
 struct isl_mat *isl_mat_identity(struct isl_ctx *ctx, unsigned n_row);
-struct isl_mat *isl_mat_copy(struct isl_mat *mat);
+__isl_give isl_mat *isl_mat_copy(__isl_keep isl_mat *mat);
 struct isl_mat *isl_mat_cow(struct isl_mat *mat);
-void isl_mat_free(struct isl_mat *mat);
+void isl_mat_free(__isl_take isl_mat *mat);
+
+int isl_mat_rows(__isl_keep isl_mat *mat);
+int isl_mat_cols(__isl_keep isl_mat *mat);
+int isl_mat_get_element(__isl_keep isl_mat *mat, int row, int col, isl_int *v);
+__isl_give isl_mat *isl_mat_set_element(__isl_take isl_mat *mat,
+	int row, int col, isl_int v);
 
 struct isl_mat *isl_mat_sub_alloc(struct isl_ctx *ctx, isl_int **row,
 	unsigned first_row, unsigned n_row, unsigned first_col, unsigned n_col);
@@ -76,8 +65,8 @@ struct isl_mat *isl_mat_inverse_product(struct isl_mat *left,
 	struct isl_mat *right);
 struct isl_mat *isl_mat_product(struct isl_mat *left, struct isl_mat *right);
 struct isl_mat *isl_mat_transpose(struct isl_mat *mat);
-struct isl_mat *isl_mat_right_inverse(struct isl_mat *mat);
-struct isl_mat *isl_mat_right_kernel(struct isl_mat *mat);
+__isl_give isl_mat *isl_mat_right_inverse(__isl_take isl_mat *mat);
+__isl_give isl_mat *isl_mat_right_kernel(__isl_take isl_mat *mat);
 
 __isl_give isl_mat *isl_mat_normalize(__isl_take isl_mat *mat);
 

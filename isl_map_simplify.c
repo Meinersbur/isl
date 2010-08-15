@@ -13,6 +13,7 @@
 #include "isl_seq.h"
 #include "isl_tab.h"
 #include <isl_dim_private.h>
+#include <isl_mat_private.h>
 
 static void swap_equality(struct isl_basic_map *bmap, int a, int b)
 {

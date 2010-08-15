@@ -66,6 +66,7 @@ libisl_la_SOURCES = \
 	isl_map_private.h \
 	isl_map_piplib.h \
 	isl_mat.c \
+	isl_mat_private.h \
 	isl_morph.c \
 	isl_morph.h \
 	isl_name.c \

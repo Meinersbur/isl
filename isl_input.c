@@ -22,6 +22,7 @@
 #include "isl_obj.h"
 #include "isl_polynomial_private.h"
 #include <isl_union_map.h>
+#include <isl_mat_private.h>
 
 struct variable {
 	char    	    	*name;

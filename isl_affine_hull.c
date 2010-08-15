@@ -16,6 +16,7 @@
 #include "isl_equalities.h"
 #include "isl_sample.h"
 #include "isl_tab.h"
+#include <isl_mat_private.h>
 
 struct isl_basic_map *isl_basic_map_implicit_equalities(
 						struct isl_basic_map *bmap)

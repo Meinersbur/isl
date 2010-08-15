@@ -11,7 +11,7 @@
 #define ISL_BASIS_REDUCTION_H
 
 #include "isl_set.h"
-#include "isl_mat.h"
+#include <isl_mat_private.h>
 #include "isl_tab.h"
 
 #if defined(__cplusplus)

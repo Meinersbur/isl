@@ -11,6 +11,7 @@
 #include "isl_equalities.h"
 #include "isl_seq.h"
 #include "isl_scan.h"
+#include <isl_mat_private.h>
 
 /* The input of this program is the same as that of the "polytope_scan"
  * program from the barvinok distribution.

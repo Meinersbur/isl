@@ -11,6 +11,7 @@
 #include "isl_seq.h"
 #include "isl_tab.h"
 #include "isl_sample.h"
+#include <isl_mat_private.h>
 
 /*
  * The implementation of parametric integer linear programming in this file

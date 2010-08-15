@@ -13,6 +13,7 @@
 #include "isl_map_private.h"
 #include "isl_seq.h"
 #include "isl_tab.h"
+#include <isl_mat_private.h>
 
 #define STATUS_ERROR		-1
 #define STATUS_REDUNDANT	 1

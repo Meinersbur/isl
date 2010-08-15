@@ -15,6 +15,7 @@
 #include <isl_dim_private.h>
 #include <isl_morph.h>
 #include <isl_vertices_private.h>
+#include <isl_mat_private.h>
 
 #define SELECTED	1
 #define DESELECTED	-1
