@@ -1319,9 +1319,8 @@ static __isl_give isl_qpolynomial *read_term(struct isl_stream *s,
 			    isl_int_is_neg(tok->u.v)) {
 			struct isl_qpolynomial *qp2;
 
-			qp2 = isl_qpolynomial_cst(isl_basic_map_get_dim(bmap),
-							tok->u.v);
-			isl_token_free(tok);
+			isl_stream_push_token(s, tok);
+			qp2 = read_factor(s, bmap, v);
 			qp = isl_qpolynomial_add(qp, qp2);
 		} else {
 			isl_stream_push_token(s, tok);
