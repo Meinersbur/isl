@@ -15,6 +15,9 @@
 
 struct UNION {
 	int ref;
+#ifdef HAS_TYPE
+	enum isl_fold type;
+#endif
 	isl_dim *dim;
 
 	struct isl_hash_table	table;
@@ -34,7 +37,12 @@ __isl_give isl_dim *FN(UNION,get_dim)(__isl_keep UNION *u)
 	return isl_dim_copy(u->dim);
 }
 
+#ifdef HAS_TYPE
+static __isl_give UNION *FN(UNION,alloc)(__isl_take isl_dim *dim,
+	enum isl_fold type, int size)
+#else
 static __isl_give UNION *FN(UNION,alloc)(__isl_take isl_dim *dim, int size)
+#endif
 {
 	UNION *u;
 
@@ -43,6 +51,9 @@ static __isl_give UNION *FN(UNION,alloc)(__isl_take isl_dim *dim, int size)
 		return NULL;
 
 	u->ref = 1;
+#ifdef HAS_TYPE
+	u->type = type;
+#endif
 	u->dim = dim;
 	if (isl_hash_table_init(dim->ctx, &u->table, size) < 0)
 		goto error;
@@ -54,10 +65,17 @@ error:
 	return NULL;
 }
 
+#ifdef HAS_TYPE
+__isl_give UNION *FN(UNION,zero)(__isl_take isl_dim *dim, enum isl_fold type)
+{
+	return FN(UNION,alloc)(dim, type, 16);
+}
+#else
 __isl_give UNION *FN(UNION,zero)(__isl_take isl_dim *dim)
 {
 	return FN(UNION,alloc)(dim, 16);
 }
+#endif
 
 __isl_give UNION *FN(UNION,copy)(__isl_keep UNION *u)
 {
@@ -166,7 +184,11 @@ __isl_give UNION *FN(UNION,dup)(__isl_keep UNION *u)
 	if (!u)
 		return NULL;
 
+#ifdef HAS_TYPE
+	dup = FN(UNION,zero)(isl_dim_copy(u->dim), u->type);
+#else
 	dup = FN(UNION,zero)(isl_dim_copy(u->dim));
+#endif
 	if (FN(FN(UNION,foreach),PARTS)(u, &add_part, &dup) < 0)
 		goto error;
 	return dup;
@@ -237,7 +259,11 @@ __isl_give UNION *FN(FN(UNION,from),PARTS)(__isl_take PART *part)
 	dim = FN(PART,get_dim)(part);
 	dim = isl_dim_drop(dim, isl_dim_in, 0, isl_dim_size(dim, isl_dim_in));
 	dim = isl_dim_drop(dim, isl_dim_out, 0, isl_dim_size(dim, isl_dim_out));
+#ifdef HAS_TYPE
+	u = FN(UNION,zero)(dim, part->type);
+#else
 	u = FN(UNION,zero)(dim);
+#endif
 	u = FN(FN(UNION,add),PARTS)(u, part);
 
 	return u;
@@ -256,7 +282,11 @@ static __isl_give UNION *match_bin_op(__isl_take UNION *u1,
 	if (!u1 || !u2)
 		goto error;
 
+#ifdef HAS_TYPE
+	data.res = FN(UNION,alloc)(isl_dim_copy(u1->dim), u1->type, u1->table.n);
+#else
 	data.res = FN(UNION,alloc)(isl_dim_copy(u1->dim), u1->table.n);
+#endif
 	if (isl_hash_table_foreach(u1->dim->ctx, &u1->table, fn, &data) < 0)
 		goto error;
 
@@ -326,7 +356,11 @@ static __isl_give UNION *match_set_op(__isl_take UNION *u,
 	if (!u || !uset)
 		goto error;
 
+#ifdef HAS_TYPE
+	data.res = FN(UNION,alloc)(isl_dim_copy(u->dim), u->type, u->table.n);
+#else
 	data.res = FN(UNION,alloc)(isl_dim_copy(u->dim), u->table.n);
+#endif
 	if (isl_hash_table_foreach(u->dim->ctx, &u->table,
 				   &match_set_entry, &data) < 0)
 		goto error;

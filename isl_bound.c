@@ -79,8 +79,9 @@ static int unwrapped_guarded_poly_bound(__isl_take isl_basic_set *bset,
 	top_pwf = bound->pwf;
 	top_pwf_tight = bound->pwf_tight;
 
-	bound->pwf = isl_pw_qpolynomial_fold_zero(isl_dim_copy(dim));
-	bound->pwf_tight = isl_pw_qpolynomial_fold_zero(dim);
+	bound->pwf = isl_pw_qpolynomial_fold_zero(isl_dim_copy(dim),
+						  bound->type);
+	bound->pwf_tight = isl_pw_qpolynomial_fold_zero(dim, bound->type);
 
 	r = compressed_guarded_poly_bound(bset, poly, user);
 
@@ -136,8 +137,9 @@ static int guarded_poly_bound(__isl_take isl_basic_set *bset,
 	top_pwf = bound->pwf;
 	top_pwf_tight = bound->pwf_tight;
 
-	bound->pwf = isl_pw_qpolynomial_fold_zero(isl_dim_copy(dim));
-	bound->pwf_tight = isl_pw_qpolynomial_fold_zero(dim);
+	bound->pwf = isl_pw_qpolynomial_fold_zero(isl_dim_copy(dim),
+						  bound->type);
+	bound->pwf_tight = isl_pw_qpolynomial_fold_zero(dim, bound->type);
 
 	r = unwrapped_guarded_poly_bound(bset, poly, user);
 
@@ -221,7 +223,7 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_bound(
 		dim = isl_dim_drop(dim, isl_dim_set, 0, nvar);
 		if (tight)
 			*tight = 1;
-		return isl_pw_qpolynomial_fold_zero(dim);
+		return isl_pw_qpolynomial_fold_zero(dim, pwf->type);
 	}
 
 	if (nvar == 0) {
@@ -243,8 +245,9 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_bound(
 	} else
 		dim = isl_dim_drop(dim, isl_dim_set, 0, nvar);
 
-	bound.pwf = isl_pw_qpolynomial_fold_zero(isl_dim_copy(dim));
-	bound.pwf_tight = isl_pw_qpolynomial_fold_zero(isl_dim_copy(dim));
+	bound.pwf = isl_pw_qpolynomial_fold_zero(isl_dim_copy(dim), pwf->type);
+	bound.pwf_tight = isl_pw_qpolynomial_fold_zero(isl_dim_copy(dim),
+							pwf->type);
 	bound.check_tight = !!tight;
 
 	if (isl_pw_qpolynomial_fold_foreach_lifted_piece(pwf,
@@ -319,7 +322,7 @@ __isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_bound(
 		data.tight = 0;
 
 	dim = isl_union_pw_qpolynomial_get_dim(upwqp);
-	data.res = isl_union_pw_qpolynomial_fold_zero(dim);
+	data.res = isl_union_pw_qpolynomial_fold_zero(dim, type);
 	if (isl_union_pw_qpolynomial_foreach_pw_qpolynomial(upwqp,
 						    &bound_pw, &data) < 0)
 		goto error;

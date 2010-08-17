@@ -3,7 +3,12 @@
 #define xS(TYPE,NAME) struct TYPE ## _ ## NAME
 #define S(TYPE,NAME) xS(TYPE,NAME)
 
+#ifdef HAS_TYPE
+static __isl_give PW *FN(PW,alloc_)(__isl_take isl_dim *dim,
+	enum isl_fold type, int n)
+#else
 static __isl_give PW *FN(PW,alloc_)(__isl_take isl_dim *dim, int n)
+#endif
 {
 	struct PW *pw;
 
@@ -16,6 +21,9 @@ static __isl_give PW *FN(PW,alloc_)(__isl_take isl_dim *dim, int n)
 		goto error;
 
 	pw->ref = 1;
+#ifdef HAS_TYPE
+	pw->type = type;
+#endif
 	pw->size = n;
 	pw->n = 0;
 	pw->dim = dim;
@@ -25,10 +33,17 @@ error:
 	return NULL;
 }
 
+#ifdef HAS_TYPE
+__isl_give PW *FN(PW,zero)(__isl_take isl_dim *dim, enum isl_fold type)
+{
+	return FN(PW,alloc_)(dim, type, 0);
+}
+#else
 __isl_give PW *FN(PW,zero)(__isl_take isl_dim *dim)
 {
 	return FN(PW,alloc_)(dim, 0);
 }
+#endif
 
 __isl_give PW *FN(PW,add_piece)(__isl_take PW *pw,
 	__isl_take isl_set *set, __isl_take EL *el)
@@ -42,6 +57,11 @@ __isl_give PW *FN(PW,add_piece)(__isl_take PW *pw,
 		return pw;
 	}
 
+#ifdef HAS_TYPE
+	if (pw->type != el->type)
+		isl_die(set->ctx, isl_error_invalid, "fold types don't match",
+			goto error);
+#endif
 	isl_assert(set->ctx, isl_dim_equal(pw->dim, el->dim), goto error);
 	isl_assert(set->ctx, pw->n < pw->size, goto error);
 
@@ -57,14 +77,23 @@ error:
 	return NULL;
 }
 
+#ifdef HAS_TYPE
+__isl_give PW *FN(PW,alloc)(enum isl_fold type,
+	__isl_take isl_set *set, __isl_take EL *el)
+#else
 __isl_give PW *FN(PW,alloc)(__isl_take isl_set *set, __isl_take EL *el)
+#endif
 {
 	PW *pw;
 
 	if (!set || !el)
 		goto error;
 
+#ifdef HAS_TYPE
+	pw = FN(PW,alloc_)(isl_set_get_dim(set), type, 1);
+#else
 	pw = FN(PW,alloc_)(isl_set_get_dim(set), 1);
+#endif
 
 	return FN(PW,add_piece)(pw, set, el);
 error:
@@ -81,7 +110,11 @@ __isl_give PW *FN(PW,dup)(__isl_keep PW *pw)
 	if (!pw)
 		return NULL;
 
+#ifdef HAS_TYPE
+	dup = FN(PW,alloc_)(isl_dim_copy(pw->dim), pw->type, pw->n);
+#else
 	dup = FN(PW,alloc_)(isl_dim_copy(pw->dim), pw->n);
+#endif
 	if (!dup)
 		return NULL;
 
@@ -149,6 +182,11 @@ __isl_give PW *FN(PW,add)(__isl_take PW *pw1, __isl_take PW *pw2)
 	if (!pw1 || !pw2)
 		goto error;
 
+#ifdef HAS_TYPE
+	if (pw1->type != pw2->type)
+		isl_die(pw1->dim->ctx, isl_error_invalid,
+			"fold types don't match", goto error);
+#endif
 	isl_assert(pw1->dim->ctx, isl_dim_equal(pw1->dim, pw2->dim), goto error);
 
 	if (FN(PW,is_zero)(pw1)) {
@@ -162,7 +200,11 @@ __isl_give PW *FN(PW,add)(__isl_take PW *pw1, __isl_take PW *pw2)
 	}
 
 	n = (pw1->n + 1) * (pw2->n + 1);
+#ifdef HAS_TYPE
+	res = FN(PW,alloc_)(isl_dim_copy(pw1->dim), pw1->type, n);
+#else
 	res = FN(PW,alloc_)(isl_dim_copy(pw1->dim), n);
+#endif
 
 	for (i = 0; i < pw1->n; ++i) {
 		set = isl_set_copy(pw1->p[i].set);
@@ -213,6 +255,11 @@ __isl_give PW *FN(PW,add_disjoint)(__isl_take PW *pw1, __isl_take PW *pw2)
 	if (!pw1 || !pw2)
 		goto error;
 
+#ifdef HAS_TYPE
+	if (pw1->type != pw2->type)
+		isl_die(pw1->dim->ctx, isl_error_invalid,
+			"fold types don't match", goto error);
+#endif
 	isl_assert(pw1->dim->ctx, isl_dim_equal(pw1->dim, pw2->dim), goto error);
 
 	if (FN(PW,is_zero)(pw1)) {
@@ -225,7 +272,11 @@ __isl_give PW *FN(PW,add_disjoint)(__isl_take PW *pw1, __isl_take PW *pw2)
 		return pw1;
 	}
 
+#ifdef HAS_TYPE
+	res = FN(PW,alloc_)(isl_dim_copy(pw1->dim), pw1->type, pw1->n + pw2->n);
+#else
 	res = FN(PW,alloc_)(isl_dim_copy(pw1->dim), pw1->n + pw2->n);
+#endif
 
 	for (i = 0; i < pw1->n; ++i)
 		res = FN(PW,add_piece)(res,

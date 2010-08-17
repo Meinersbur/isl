@@ -33,6 +33,7 @@ static int has_sign(__isl_keep isl_basic_set *bset,
 	isl_dim *dim;
 	isl_qpolynomial *opt;
 	int r;
+	enum isl_fold type;
 
 	nparam = isl_basic_set_dim(bset, isl_dim_param);
 	nvar = isl_basic_set_dim(bset, isl_dim_set);
@@ -50,8 +51,9 @@ static int has_sign(__isl_keep isl_basic_set *bset,
 
 	data_m.test_monotonicity = 0;
 	data_m.signs = signs;
-	data_m.pwf = isl_pw_qpolynomial_fold_zero(dim);
 	data_m.sign = -sign;
+	type = data_m.sign < 0 ? isl_fold_min : isl_fold_max;
+	data_m.pwf = isl_pw_qpolynomial_fold_zero(dim, type);
 	data_m.tight = 0;
 	data_m.pwf_tight = NULL;
 
@@ -255,7 +257,7 @@ static int add_guarded_poly(__isl_take isl_basic_set *bset,
 
 	fold = isl_qpolynomial_fold_alloc(type, poly);
 	set = isl_set_from_basic_set(bset);
-	pwf = isl_pw_qpolynomial_fold_alloc(set, fold);
+	pwf = isl_pw_qpolynomial_fold_alloc(type, set, fold);
 	if (data->tight)
 		data->pwf_tight = isl_pw_qpolynomial_fold_fold(
 						data->pwf_tight, pwf);

@@ -82,6 +82,7 @@ struct isl_pw_qpolynomial_fold_piece {
 struct isl_pw_qpolynomial_fold {
 	int ref;
 
+	enum isl_fold type;
 	struct isl_dim *dim;
 
 	int n;

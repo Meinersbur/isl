@@ -472,6 +472,8 @@ error:
 	return NULL;
 }
 
+#define HAS_TYPE
+
 #undef PW
 #define PW isl_pw_qpolynomial_fold
 #undef EL
@@ -668,8 +670,13 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_fold(
 		return pw1;
 	}
 
+	if (pw1->type != pw2->type)
+		isl_die(set->ctx, isl_error_invalid, "fold types don't match",
+			goto error);
+
 	n = (pw1->n + 1) * (pw2->n + 1);
-	res = isl_pw_qpolynomial_fold_alloc_(isl_dim_copy(pw1->dim), n);
+	res = isl_pw_qpolynomial_fold_alloc_(isl_dim_copy(pw1->dim),
+						pw1->type, n);
 
 	for (i = 0; i < pw1->n; ++i) {
 		set = isl_set_copy(pw1->p[i].set);
@@ -792,7 +799,8 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_from_pw_qpolynomial(
 	if (!pwqp)
 		return NULL;
 	
-	pwf = isl_pw_qpolynomial_fold_alloc_(isl_dim_copy(pwqp->dim), pwqp->n);
+	pwf = isl_pw_qpolynomial_fold_alloc_(isl_dim_copy(pwqp->dim), type,
+						pwqp->n);
 
 	for (i = 0; i < pwqp->n; ++i)
 		pwf = isl_pw_qpolynomial_fold_add_piece(pwf,

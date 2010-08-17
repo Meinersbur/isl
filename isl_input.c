@@ -1411,7 +1411,7 @@ static struct isl_obj obj_read_poly_or_fold(struct isl_stream *s,
 
 	map = read_optional_disjuncts(s, bmap, v);
 	set = isl_map_range(map);
-	pwf = isl_pw_qpolynomial_fold_alloc(set, fold);
+	pwf = isl_pw_qpolynomial_fold_alloc(isl_fold_max, set, fold);
 
 	vars_drop(v, v->n - n);
 
