@@ -46,8 +46,18 @@ error:
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_reset_dim(
 	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_dim *dim)
 {
+	int i;
+
+	fold = isl_qpolynomial_fold_cow(fold);
 	if (!fold || !dim)
 		goto error;
+
+	for (i = 0; i < fold->n; ++i) {
+		fold->qp[i] = isl_qpolynomial_reset_dim(fold->qp[i],
+							isl_dim_copy(dim));
+		if (!fold->qp[i])
+			goto error;
+	}
 
 	isl_dim_free(fold->dim);
 	fold->dim = dim;

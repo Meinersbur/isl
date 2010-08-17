@@ -322,6 +322,7 @@ __isl_give struct isl_upoly_rec *isl_upoly_alloc_rec(struct isl_ctx *ctx,
 __isl_give isl_qpolynomial *isl_qpolynomial_reset_dim(
 	__isl_take isl_qpolynomial *qp, __isl_take isl_dim *dim)
 {
+	qp = isl_qpolynomial_cow(qp);
 	if (!qp || !dim)
 		goto error;
 
