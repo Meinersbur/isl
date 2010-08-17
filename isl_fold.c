@@ -1172,3 +1172,60 @@ error:
 	isl_qpolynomial_fold_free(fold);
 	return NULL;
 }
+
+static int add_pwqp(__isl_take isl_pw_qpolynomial *pwqp, void *user)
+{
+	isl_ctx *ctx;
+	isl_pw_qpolynomial_fold *pwf;
+	isl_union_pw_qpolynomial_fold **upwf;
+	uint32_t hash;
+	struct isl_hash_table_entry *entry;
+
+	upwf = (isl_union_pw_qpolynomial_fold **)user;
+
+	ctx = pwqp->dim->ctx;
+	hash = isl_dim_get_hash(pwqp->dim);
+	entry = isl_hash_table_find(ctx, &(*upwf)->table,
+				     hash, &has_dim, pwqp->dim, 1);
+	if (!entry)
+		goto error;
+
+	pwf = isl_pw_qpolynomial_fold_from_pw_qpolynomial((*upwf)->type, pwqp);
+	if (!entry->data)
+		entry->data = pwf;
+	else {
+		entry->data = isl_pw_qpolynomial_fold_add(entry->data, pwf);
+		if (!entry->data)
+			return -1;
+		if (isl_pw_qpolynomial_fold_is_zero(entry->data)) {
+			isl_pw_qpolynomial_fold_free(entry->data);
+			isl_hash_table_remove(ctx, &(*upwf)->table, entry);
+		}
+	}
+
+	return 0;
+error:
+	isl_pw_qpolynomial_free(pwqp);
+	return -1;
+}
+
+__isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_fold_add_union_pw_qpolynomial(
+	__isl_take isl_union_pw_qpolynomial_fold *upwf,
+	__isl_take isl_union_pw_qpolynomial *upwqp)
+{
+	upwf = isl_union_pw_qpolynomial_fold_cow(upwf);
+	if (!upwf || !upwqp)
+		goto error;
+
+	if (isl_union_pw_qpolynomial_foreach_pw_qpolynomial(upwqp, &add_pwqp,
+							 &upwf) < 0)
+		goto error;
+
+	isl_union_pw_qpolynomial_free(upwqp);
+
+	return upwf;
+error:
+	isl_union_pw_qpolynomial_fold_free(upwf);
+	isl_union_pw_qpolynomial_free(upwqp);
+	return NULL;
+}

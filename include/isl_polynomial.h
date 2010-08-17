@@ -410,6 +410,9 @@ __isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_fold_copy(
 __isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_fold_fold(
 	__isl_take isl_union_pw_qpolynomial_fold *upwf1,
 	__isl_take isl_union_pw_qpolynomial_fold *upwf2);
+__isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_fold_add_union_pw_qpolynomial(
+	__isl_take isl_union_pw_qpolynomial_fold *upwf,
+	__isl_take isl_union_pw_qpolynomial *upwqp);
 
 __isl_give isl_union_set *isl_union_pw_qpolynomial_fold_domain(
 	__isl_take isl_union_pw_qpolynomial_fold *upwf);
