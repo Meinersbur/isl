@@ -119,6 +119,37 @@ error:
 	return NULL;
 }
 
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_insert_dims(
+	__isl_take isl_qpolynomial_fold *fold,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	int i;
+
+	if (!fold)
+		return NULL;
+	if (n == 0 && !isl_dim_is_named_or_nested(fold->dim, type))
+		return fold;
+
+	fold = isl_qpolynomial_fold_cow(fold);
+	if (!fold)
+		return NULL;
+	fold->dim = isl_dim_insert(fold->dim, type, first, n);
+	if (!fold->dim)
+		goto error;
+
+	for (i = 0; i < fold->n; ++i) {
+		fold->qp[i] = isl_qpolynomial_insert_dims(fold->qp[i],
+							    type, first, n);
+		if (!fold->qp[i])
+			goto error;
+	}
+
+	return fold;
+error:
+	isl_qpolynomial_fold_free(fold);
+	return NULL;
+}
+
 static int isl_qpolynomial_cst_sign(__isl_keep isl_qpolynomial *qp)
 {
 	struct isl_upoly_cst *cst;
