@@ -1268,3 +1268,136 @@ error:
 	isl_union_pw_qpolynomial_free(upwqp);
 	return NULL;
 }
+
+static int compatible_range(__isl_keep isl_dim *dim1, __isl_keep isl_dim *dim2)
+{
+	int m;
+	m = isl_dim_match(dim1, isl_dim_param, dim2, isl_dim_param);
+	if (m < 0 || !m)
+		return m;
+	return isl_dim_tuple_match(dim1, isl_dim_out, dim2, isl_dim_set);
+}
+
+/* Compute the intersection of the range of the map and the domain
+ * of the piecewise quasipolynomial reduction and then compute a bound
+ * on the associated quasipolynomial reduction over all elements
+ * in this intersection.
+ *
+ * We first introduce some unconstrained dimensions in the
+ * piecewise quasipolynomial, intersect the resulting domain
+ * with the wrapped map and the compute the sum.
+ */
+__isl_give isl_pw_qpolynomial_fold *isl_map_apply_pw_qpolynomial_fold(
+	__isl_take isl_map *map, __isl_take isl_pw_qpolynomial_fold *pwf,
+	int *tight)
+{
+	isl_ctx *ctx;
+	isl_set *dom;
+	isl_dim *map_dim;
+	isl_dim *pwf_dim;
+	unsigned n_in;
+	int ok;
+
+	ctx = isl_map_get_ctx(map);
+	if (!ctx)
+		goto error;
+
+	map_dim = isl_map_get_dim(map);
+	pwf_dim = isl_pw_qpolynomial_fold_get_dim(pwf);
+	ok = compatible_range(map_dim, pwf_dim);
+	isl_dim_free(map_dim);
+	isl_dim_free(pwf_dim);
+	if (!ok)
+		isl_die(ctx, isl_error_invalid, "incompatible dimensions",
+			goto error);
+
+	n_in = isl_map_dim(map, isl_dim_in);
+	pwf = isl_pw_qpolynomial_fold_insert_dims(pwf, isl_dim_set, 0, n_in);
+
+	dom = isl_map_wrap(map);
+	pwf = isl_pw_qpolynomial_fold_reset_dim(pwf, isl_set_get_dim(dom));
+
+	pwf = isl_pw_qpolynomial_fold_intersect_domain(pwf, dom);
+	pwf = isl_pw_qpolynomial_fold_bound(pwf, tight);
+	
+	return pwf;
+error:
+	isl_map_free(map);
+	isl_pw_qpolynomial_fold_free(pwf);
+	return NULL;
+}
+
+struct isl_apply_fold_data {
+	isl_union_pw_qpolynomial_fold *upwf;
+	isl_union_pw_qpolynomial_fold *res;
+	isl_map *map;
+	int tight;
+};
+
+static int pw_qpolynomial_fold_apply(__isl_take isl_pw_qpolynomial_fold *pwf,
+	void *user)
+{
+	isl_dim *map_dim;
+	isl_dim *pwf_dim;
+	struct isl_apply_fold_data *data = user;
+	int ok;
+
+	map_dim = isl_map_get_dim(data->map);
+	pwf_dim = isl_pw_qpolynomial_fold_get_dim(pwf);
+	ok = compatible_range(map_dim, pwf_dim);
+	isl_dim_free(map_dim);
+	isl_dim_free(pwf_dim);
+
+	if (ok) {
+		pwf = isl_map_apply_pw_qpolynomial_fold(isl_map_copy(data->map),
+				    pwf, data->tight ? &data->tight : NULL);
+		data->res = isl_union_pw_qpolynomial_fold_fold_pw_qpolynomial_fold(
+							data->res, pwf);
+	} else
+		isl_pw_qpolynomial_fold_free(pwf);
+
+	return 0;
+}
+
+static int map_apply(__isl_take isl_map *map, void *user)
+{
+	struct isl_apply_fold_data *data = user;
+	int r;
+
+	data->map = map;
+	r = isl_union_pw_qpolynomial_fold_foreach_pw_qpolynomial_fold(
+				data->upwf, &pw_qpolynomial_fold_apply, data);
+
+	isl_map_free(map);
+	return r;
+}
+
+__isl_give isl_union_pw_qpolynomial_fold *isl_union_map_apply_union_pw_qpolynomial_fold(
+	__isl_take isl_union_map *umap,
+	__isl_take isl_union_pw_qpolynomial_fold *upwf, int *tight)
+{
+	isl_dim *dim;
+	enum isl_fold type;
+	struct isl_apply_fold_data data;
+
+	data.upwf = upwf;
+	data.tight = tight ? 1 : 0;
+	dim = isl_union_pw_qpolynomial_fold_get_dim(upwf);
+	type = isl_union_pw_qpolynomial_fold_get_type(upwf);
+	data.res = isl_union_pw_qpolynomial_fold_zero(dim, type);
+	if (isl_union_map_foreach_map(umap, &map_apply, &data) < 0)
+		goto error;
+
+	isl_union_map_free(umap);
+	isl_union_pw_qpolynomial_fold_free(upwf);
+
+	if (tight)
+		*tight = data.tight;
+
+	return data.res;
+error:
+	isl_union_map_free(umap);
+	isl_union_pw_qpolynomial_fold_free(upwf);
+	isl_union_pw_qpolynomial_fold_free(data.res);
+	return NULL;
+}
