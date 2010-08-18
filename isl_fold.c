@@ -1087,6 +1087,14 @@ enum isl_fold isl_qpolynomial_fold_get_type(__isl_keep isl_qpolynomial_fold *fol
 	return fold->type;
 }
 
+enum isl_fold isl_union_pw_qpolynomial_fold_get_type(
+	__isl_keep isl_union_pw_qpolynomial_fold *upwf)
+{
+	if (!upwf)
+		return isl_fold_list;
+	return upwf->type;
+}
+
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_lift(
 	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_dim *dim)
 {

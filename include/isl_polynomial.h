@@ -420,6 +420,8 @@ __isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_fold_intersec
 	__isl_take isl_union_pw_qpolynomial_fold *upwf,
 	__isl_take isl_union_set *uset);
 
+enum isl_fold isl_union_pw_qpolynomial_fold_get_type(
+	__isl_keep isl_union_pw_qpolynomial_fold *upwf);
 __isl_give isl_dim *isl_union_pw_qpolynomial_fold_get_dim(
 	__isl_keep isl_union_pw_qpolynomial_fold *upwf);
 
