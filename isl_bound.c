@@ -92,8 +92,8 @@ static int unwrapped_guarded_poly_bound(__isl_take isl_basic_set *bset,
 							isl_morph_copy(morph));
 	bound->pwf_tight = isl_pw_qpolynomial_fold_morph(bound->pwf_tight, morph);
 
-	bound->pwf = isl_pw_qpolynomial_fold_add(top_pwf, bound->pwf);
-	bound->pwf_tight = isl_pw_qpolynomial_fold_add(top_pwf_tight,
+	bound->pwf = isl_pw_qpolynomial_fold_fold(top_pwf, bound->pwf);
+	bound->pwf_tight = isl_pw_qpolynomial_fold_fold(top_pwf_tight,
 							bound->pwf_tight);
 
 	return r;
@@ -146,8 +146,8 @@ static int guarded_poly_bound(__isl_take isl_basic_set *bset,
 	bound->pwf_tight = isl_pw_qpolynomial_fold_reset_dim(bound->pwf_tight,
 						    target_dim);
 
-	bound->pwf = isl_pw_qpolynomial_fold_add(top_pwf, bound->pwf);
-	bound->pwf_tight = isl_pw_qpolynomial_fold_add(top_pwf_tight,
+	bound->pwf = isl_pw_qpolynomial_fold_fold(top_pwf, bound->pwf);
+	bound->pwf_tight = isl_pw_qpolynomial_fold_fold(top_pwf_tight,
 							bound->pwf_tight);
 
 	return r;
@@ -266,7 +266,7 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_bound(
 		return bound.pwf_tight;
 	}
 
-	bound.pwf = isl_pw_qpolynomial_fold_add(bound.pwf, bound.pwf_tight);
+	bound.pwf = isl_pw_qpolynomial_fold_fold(bound.pwf, bound.pwf_tight);
 
 	return bound.pwf;
 error:
@@ -299,7 +299,7 @@ static int bound_pw(__isl_take isl_pw_qpolynomial *pwqp, void *user)
 
 	pwf = isl_pw_qpolynomial_bound(pwqp, data->type,
 					data->tight ? &data->tight : NULL);
-	data->res = isl_union_pw_qpolynomial_fold_add_pw_qpolynomial_fold(
+	data->res = isl_union_pw_qpolynomial_fold_fold_pw_qpolynomial_fold(
 								data->res, pwf);
 
 	return 0;

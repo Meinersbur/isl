@@ -123,6 +123,11 @@ __isl_give isl_qpolynomial *isl_qpolynomial_div_pow(__isl_take isl_div *div,
 int isl_qpolynomial_is_one(__isl_keep isl_qpolynomial *qp);
 int isl_qpolynomial_is_affine(__isl_keep isl_qpolynomial *qp);
 
+__isl_give isl_qpolynomial *isl_qpolynomial_add_on_domain(
+	__isl_keep isl_set *dom,
+	__isl_take isl_qpolynomial *qp1,
+	__isl_take isl_qpolynomial *qp2);
+
 int isl_qpolynomial_le_cst(__isl_keep isl_qpolynomial *qp1,
 	__isl_keep isl_qpolynomial *qp2);
 __isl_give isl_qpolynomial *isl_qpolynomial_max_cst(
@@ -159,6 +164,10 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_dup(
 __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_cow(
 	__isl_take isl_pw_qpolynomial_fold *pwf);
 
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_add_on_domain(
+	__isl_keep isl_set *set,
+	__isl_take isl_qpolynomial_fold *fold1,
+	__isl_take isl_qpolynomial_fold *fold2);
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_fold_on_domain(
 	__isl_keep isl_set *set,
 	__isl_take isl_qpolynomial_fold *fold1,

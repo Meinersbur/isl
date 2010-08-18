@@ -298,9 +298,9 @@ static int bernstein_coefficients_cell(__isl_take isl_cell *cell, void *user)
 	extract_coefficients(poly, dom, data);
 
 	pwf = isl_pw_qpolynomial_fold_alloc(isl_set_copy(dom), data->fold);
-	data->pwf = isl_pw_qpolynomial_fold_add(data->pwf, pwf);
+	data->pwf = isl_pw_qpolynomial_fold_fold(data->pwf, pwf);
 	pwf = isl_pw_qpolynomial_fold_alloc(dom, data->fold_tight);
-	data->pwf_tight = isl_pw_qpolynomial_fold_add(data->pwf_tight, pwf);
+	data->pwf_tight = isl_pw_qpolynomial_fold_fold(data->pwf_tight, pwf);
 
 	isl_qpolynomial_free(poly);
 	isl_cell_free(cell);
@@ -378,7 +378,7 @@ static __isl_give isl_pw_qpolynomial_fold *bernstein_coefficients_base(
 		return data->pwf_tight;
 	}
 
-	data->pwf = isl_pw_qpolynomial_fold_add(data->pwf, data->pwf_tight);
+	data->pwf = isl_pw_qpolynomial_fold_fold(data->pwf, data->pwf_tight);
 
 	return data->pwf;
 error:
@@ -528,9 +528,9 @@ int isl_qpolynomial_bound_on_domain_bernstein(__isl_take isl_basic_set *bset,
 		pwf = bernstein_coefficients_base(bset, poly, &data, tp);
 
 	if (tight)
-		bound->pwf_tight = isl_pw_qpolynomial_fold_add(bound->pwf_tight, pwf);
+		bound->pwf_tight = isl_pw_qpolynomial_fold_fold(bound->pwf_tight, pwf);
 	else
-		bound->pwf = isl_pw_qpolynomial_fold_add(bound->pwf, pwf);
+		bound->pwf = isl_pw_qpolynomial_fold_fold(bound->pwf, pwf);
 
 	return 0;
 error:

@@ -350,6 +350,91 @@ error:
 	return NULL;
 }
 
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_add_qpolynomial(
+	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_qpolynomial *qp)
+{
+	int i;
+
+	if (!fold || !qp)
+		goto error;
+
+	if (isl_qpolynomial_is_zero(qp)) {
+		isl_qpolynomial_free(qp);
+		return fold;
+	}
+
+	fold = isl_qpolynomial_fold_cow(fold);
+	if (!fold)
+		goto error;
+
+	for (i = 0; i < fold->n; ++i) {
+		fold->qp[i] = isl_qpolynomial_add(fold->qp[i],
+						isl_qpolynomial_copy(qp));
+		if (!fold->qp[i])
+			goto error;
+	}
+
+	isl_qpolynomial_free(qp);
+	return fold;
+error:
+	isl_qpolynomial_fold_free(fold);
+	isl_qpolynomial_free(qp);
+	return NULL;
+}
+
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_add_on_domain(
+	__isl_keep isl_set *dom,
+	__isl_take isl_qpolynomial_fold *fold1,
+	__isl_take isl_qpolynomial_fold *fold2)
+{
+	int i;
+	isl_qpolynomial_fold *res = NULL;
+
+	if (!fold1 || !fold2)
+		goto error;
+
+	if (isl_qpolynomial_fold_is_empty(fold1)) {
+		isl_qpolynomial_fold_free(fold1);
+		return fold2;
+	}
+
+	if (isl_qpolynomial_fold_is_empty(fold2)) {
+		isl_qpolynomial_fold_free(fold2);
+		return fold1;
+	}
+
+	if (fold1->n == 1 && fold2->n != 1)
+		return isl_qpolynomial_fold_add_on_domain(dom, fold2, fold1);
+
+	if (fold2->n == 1) {
+		res = isl_qpolynomial_fold_add_qpolynomial(fold1,
+					isl_qpolynomial_copy(fold2->qp[0]));
+		isl_qpolynomial_fold_free(fold2);
+		return res;
+	}
+
+	res = isl_qpolynomial_fold_add_qpolynomial(
+				isl_qpolynomial_fold_copy(fold1),
+				isl_qpolynomial_copy(fold2->qp[0]));
+
+	for (i = 1; i < fold2->n; ++i) {
+		isl_qpolynomial_fold *res_i;
+		res_i = isl_qpolynomial_fold_add_qpolynomial(
+					isl_qpolynomial_fold_copy(fold1),
+					isl_qpolynomial_copy(fold2->qp[i]));
+		res = isl_qpolynomial_fold_fold_on_domain(dom, res, res_i);
+	}
+
+	isl_qpolynomial_fold_free(fold1);
+	isl_qpolynomial_fold_free(fold2);
+	return res;
+error:
+	isl_qpolynomial_fold_free(res);
+	isl_qpolynomial_fold_free(fold1);
+	isl_qpolynomial_fold_free(fold2);
+	return NULL;
+}
+
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_substitute_equalities(
 	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_basic_set *eq)
 {
@@ -385,8 +470,6 @@ error:
 #define IS_ZERO is_empty
 #undef FIELD
 #define FIELD fold
-#undef ADD
-#define ADD(d,e1,e2)	isl_qpolynomial_fold_fold_on_domain(d,e1,e2) 
 
 #include <isl_pw_templ.c>
 
@@ -549,6 +632,144 @@ error:
 	isl_qpolynomial_fold_free(res);
 	isl_qpolynomial_fold_free(fold1);
 	isl_qpolynomial_fold_free(fold2);
+	return NULL;
+}
+
+__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_fold(
+	__isl_take isl_pw_qpolynomial_fold *pw1,
+	__isl_take isl_pw_qpolynomial_fold *pw2)
+{
+	int i, j, n;
+	struct isl_pw_qpolynomial_fold *res;
+	isl_set *set;
+
+	if (!pw1 || !pw2)
+		goto error;
+
+	isl_assert(pw1->dim->ctx, isl_dim_equal(pw1->dim, pw2->dim), goto error);
+
+	if (isl_pw_qpolynomial_fold_is_zero(pw1)) {
+		isl_pw_qpolynomial_fold_free(pw1);
+		return pw2;
+	}
+
+	if (isl_pw_qpolynomial_fold_is_zero(pw2)) {
+		isl_pw_qpolynomial_fold_free(pw2);
+		return pw1;
+	}
+
+	n = (pw1->n + 1) * (pw2->n + 1);
+	res = isl_pw_qpolynomial_fold_alloc_(isl_dim_copy(pw1->dim), n);
+
+	for (i = 0; i < pw1->n; ++i) {
+		set = isl_set_copy(pw1->p[i].set);
+		for (j = 0; j < pw2->n; ++j) {
+			struct isl_set *common;
+			isl_qpolynomial_fold *sum;
+			set = isl_set_subtract(set,
+					isl_set_copy(pw2->p[j].set));
+			common = isl_set_intersect(isl_set_copy(pw1->p[i].set),
+						isl_set_copy(pw2->p[j].set));
+			if (isl_set_fast_is_empty(common)) {
+				isl_set_free(common);
+				continue;
+			}
+
+			sum = isl_qpolynomial_fold_fold_on_domain(common,
+			       isl_qpolynomial_fold_copy(pw1->p[i].fold),
+			       isl_qpolynomial_fold_copy(pw2->p[j].fold));
+
+			res = isl_pw_qpolynomial_fold_add_piece(res, common, sum);
+		}
+		res = isl_pw_qpolynomial_fold_add_piece(res, set,
+			isl_qpolynomial_fold_copy(pw1->p[i].fold));
+	}
+
+	for (j = 0; j < pw2->n; ++j) {
+		set = isl_set_copy(pw2->p[j].set);
+		for (i = 0; i < pw1->n; ++i)
+			set = isl_set_subtract(set, isl_set_copy(pw1->p[i].set));
+		res = isl_pw_qpolynomial_fold_add_piece(res, set,
+				    isl_qpolynomial_fold_copy(pw2->p[j].fold));
+	}
+
+	isl_pw_qpolynomial_fold_free(pw1);
+	isl_pw_qpolynomial_fold_free(pw2);
+
+	return res;
+error:
+	isl_pw_qpolynomial_fold_free(pw1);
+	isl_pw_qpolynomial_fold_free(pw2);
+	return NULL;
+}
+
+__isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_fold_fold_pw_qpolynomial_fold(
+	__isl_take isl_union_pw_qpolynomial_fold *u,
+	__isl_take isl_pw_qpolynomial_fold *part)
+{
+	uint32_t hash;
+	struct isl_hash_table_entry *entry;
+
+	u = isl_union_pw_qpolynomial_fold_cow(u);
+
+	if (!part || !u)
+		goto error;
+
+	isl_assert(u->dim->ctx, isl_dim_match(part->dim, isl_dim_param, u->dim,
+					      isl_dim_param), goto error);
+
+	hash = isl_dim_get_hash(part->dim);
+	entry = isl_hash_table_find(u->dim->ctx, &u->table, hash,
+				    &has_dim, part->dim, 1);
+	if (!entry)
+		goto error;
+
+	if (!entry->data)
+		entry->data = part;
+	else {
+		entry->data = isl_pw_qpolynomial_fold_fold(entry->data,
+					    isl_pw_qpolynomial_fold_copy(part));
+		if (!entry->data)
+			goto error;
+		isl_pw_qpolynomial_fold_free(part);
+	}
+
+	return u;
+error:
+	isl_pw_qpolynomial_fold_free(part);
+	isl_union_pw_qpolynomial_fold_free(u);
+	return NULL;
+}
+
+static int fold_part(__isl_take isl_pw_qpolynomial_fold *part, void *user)
+{
+	isl_union_pw_qpolynomial_fold **u;
+	u = (isl_union_pw_qpolynomial_fold **)user;
+
+	*u = isl_union_pw_qpolynomial_fold_fold_pw_qpolynomial_fold(*u, part);
+
+	return 0;
+}
+
+__isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_fold_fold(
+	__isl_take isl_union_pw_qpolynomial_fold *u1,
+	__isl_take isl_union_pw_qpolynomial_fold *u2)
+{
+	u1 = isl_union_pw_qpolynomial_fold_cow(u1);
+
+	if (!u1 || !u2)
+		goto error;
+
+	if (isl_union_pw_qpolynomial_fold_foreach_pw_qpolynomial_fold(u2,
+							&fold_part, &u1) < 0)
+		goto error;
+
+	isl_union_pw_qpolynomial_fold_free(u2);
+
+	return u1;
+error:
+	isl_union_pw_qpolynomial_fold_free(u1);
+	isl_union_pw_qpolynomial_fold_free(u2);
 	return NULL;
 }
 

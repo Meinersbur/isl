@@ -35,6 +35,17 @@ should be given the value 1.  See L<Dependence Analysis>.
 
 =back
 
+=head3 Changes since isl-0.03
+
+=over
+
+=item * The function C<isl_pw_qpolynomial_fold_add> has been
+renamed to C<isl_pw_qpolynomial_fold_fold>.
+Similarly, C<isl_union_pw_qpolynomial_fold_add> has been
+renamed to C<isl_union_pw_qpolynomial_fold_fold>.
+
+=back
+
 =head1 Installation
 
 The source of C<isl> can be obtained either as a tarball
@@ -1842,11 +1853,11 @@ To iterate over all quasipolynomials in a reduction, use
 
 =head3 Operations on Piecewise Quasipolynomial Reductions
 
-	__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_add(
+	__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_fold(
 		__isl_take isl_pw_qpolynomial_fold *pwf1,
 		__isl_take isl_pw_qpolynomial_fold *pwf2);
 
-	__isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_fold_add(
+	__isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_fold_fold(
 		__isl_take isl_union_pw_qpolynomial_fold *upwf1,
 		__isl_take isl_union_pw_qpolynomial_fold *upwf2);
 

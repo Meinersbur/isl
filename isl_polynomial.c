@@ -1293,6 +1293,14 @@ error:
 	return NULL;
 }
 
+__isl_give isl_qpolynomial *isl_qpolynomial_add_on_domain(
+	__isl_keep isl_set *dom,
+	__isl_take isl_qpolynomial *qp1,
+	__isl_take isl_qpolynomial *qp2)
+{
+	return isl_qpolynomial_add(qp1, qp2);
+}
+
 __isl_give isl_qpolynomial *isl_qpolynomial_sub(__isl_take isl_qpolynomial *qp1,
 	__isl_take isl_qpolynomial *qp2)
 {
@@ -1947,8 +1955,6 @@ error:
 #define IS_ZERO is_zero
 #undef FIELD
 #define FIELD qp
-#undef ADD
-#define ADD(d,e1,e2)	isl_qpolynomial_add(e1,e2) 
 
 #include <isl_pw_templ.c>
 

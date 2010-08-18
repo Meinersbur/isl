@@ -229,7 +229,7 @@ static __isl_give isl_printer *isl_obj_pw_qpf_print(__isl_take isl_printer *p,
 
 static void *isl_obj_pw_qpf_add(void *v1, void *v2)
 {
-	return isl_pw_qpolynomial_fold_add((struct isl_pw_qpolynomial_fold *)v1,
+	return isl_pw_qpolynomial_fold_fold((struct isl_pw_qpolynomial_fold *)v1,
 					    (struct isl_pw_qpolynomial_fold *)v2);
 }
 
@@ -259,7 +259,7 @@ static __isl_give isl_printer *isl_obj_union_pw_qpf_print(
 
 static void *isl_obj_union_pw_qpf_add(void *v1, void *v2)
 {
-	return isl_union_pw_qpolynomial_fold_add(
+	return isl_union_pw_qpolynomial_fold_fold(
 				    (struct isl_union_pw_qpolynomial_fold *)v1,
 				    (struct isl_union_pw_qpolynomial_fold *)v2);
 }

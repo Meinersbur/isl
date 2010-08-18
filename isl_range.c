@@ -257,10 +257,10 @@ static int add_guarded_poly(__isl_take isl_basic_set *bset,
 	set = isl_set_from_basic_set(bset);
 	pwf = isl_pw_qpolynomial_fold_alloc(set, fold);
 	if (data->tight)
-		data->pwf_tight = isl_pw_qpolynomial_fold_add(
+		data->pwf_tight = isl_pw_qpolynomial_fold_fold(
 						data->pwf_tight, pwf);
 	else
-		data->pwf = isl_pw_qpolynomial_fold_add(data->pwf, pwf);
+		data->pwf = isl_pw_qpolynomial_fold_fold(data->pwf, pwf);
 
 	return 0;
 }
