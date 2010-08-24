@@ -364,7 +364,8 @@ static __isl_give isl_dim *read_var_list(struct isl_stream *s,
 			dim = set_name(dim, type, i, v->v->name);
 			isl_token_free(tok);
 		} else if (tok->type == ISL_TOKEN_IDENT ||
-			   tok->type == ISL_TOKEN_VALUE) {
+			   tok->type == ISL_TOKEN_VALUE ||
+			   tok->type == '-') {
 			if (type == isl_dim_param) {
 				isl_stream_error(s, tok,
 						"expecting unique identifier");

@@ -18,6 +18,17 @@
 
 static char *srcdir;
 
+void test_parse(struct isl_ctx *ctx)
+{
+	isl_map *map;
+	const char *str;
+
+	str = "{ [i] -> [-i] }";
+	map = isl_map_read_from_str(ctx, str, -1);
+	assert(map);
+	isl_map_free(map);
+}
+
 void test_read(struct isl_ctx *ctx)
 {
 	char filename[PATH_MAX];
@@ -1392,6 +1403,7 @@ int main()
 	assert(srcdir);
 
 	ctx = isl_ctx_alloc();
+	test_parse(ctx);
 	test_pwqp(ctx);
 	test_lex(ctx);
 	test_sv(ctx);
