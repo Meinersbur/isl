@@ -1080,3 +1080,21 @@ __isl_give isl_dim *isl_dim_flatten(__isl_take isl_dim *dim)
 
 	return dim;
 }
+
+/* Replace the dimensions of the given type of dst by those of src.
+ */
+__isl_give isl_dim *isl_dim_replace(__isl_take isl_dim *dst,
+	enum isl_dim_type type, __isl_keep isl_dim *src)
+{
+	if (!dst || !src)
+		goto error;
+
+	dst = isl_dim_drop(dst, type, 0, isl_dim_size(dst, type));
+	dst = isl_dim_add(dst, type, isl_dim_size(src, type));
+	dst = copy_names(dst, type, 0, src, type);
+
+	return dst;
+error:
+	isl_dim_free(dst);
+	return NULL;
+}
