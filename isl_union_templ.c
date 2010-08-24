@@ -229,8 +229,69 @@ void FN(UNION,free)(__isl_take UNION *u)
 	free(u);
 }
 
+S(UNION,align) {
+	isl_reordering *exp;
+	UNION *res;
+};
+
+static int align_entry(__isl_take PART *part, void *user)
+{
+	isl_reordering *exp;
+	S(UNION,align) *data = user;
+
+	exp = isl_reordering_extend_dim(isl_reordering_copy(data->exp),
+				    FN(PART,get_dim)(part));
+
+	data->res = FN(FN(UNION,add),PARTS)(data->res,
+					    FN(PART,realign)(part, exp));
+
+	return 0;
+}
+
+__isl_give UNION *FN(UNION,align_params)(__isl_take UNION *u,
+	__isl_take isl_dim *model)
+{
+	int i, j;
+	S(UNION,align) data = { NULL, NULL };
+
+	if (!u || !model)
+		goto error;
+
+	if (isl_dim_match(u->dim, isl_dim_param, model, isl_dim_param)) {
+		isl_dim_free(model);
+		return u;
+	}
+
+	data.exp = isl_parameter_alignment_reordering(u->dim, model);
+	if (!data.exp)
+		goto error;
+
+#ifdef HAS_TYPE
+	data.res = FN(UNION,alloc)(isl_dim_copy(data.exp->dim),
+						u->type, u->table.n);
+#else
+	data.res = FN(UNION,alloc)(isl_dim_copy(data.exp->dim), u->table.n);
+#endif
+	if (FN(FN(UNION,foreach),PARTS)(u, &align_entry, &data) < 0)
+		goto error;
+
+	isl_reordering_free(data.exp);
+	FN(UNION,free)(u);
+	isl_dim_free(model);
+	return data.res;
+error:
+	isl_reordering_free(data.exp);
+	FN(UNION,free)(u);
+	FN(UNION,free)(data.res);
+	isl_dim_free(model);
+	return NULL;
+}
+
 __isl_give UNION *FN(UNION,add)(__isl_take UNION *u1, __isl_take UNION *u2)
 {
+	u1 = FN(UNION,align_params)(u1, FN(UNION,get_dim)(u2));
+	u2 = FN(UNION,align_params)(u2, FN(UNION,get_dim)(u1));
+
 	u1 = FN(UNION,cow)(u1);
 
 	if (!u1 || !u2)
@@ -277,11 +338,15 @@ S(UNION,match_bin_data) {
 static __isl_give UNION *match_bin_op(__isl_take UNION *u1,
 	__isl_take UNION *u2, int (*fn)(void **, void *))
 {
-	S(UNION,match_bin_data) data = { u2, NULL };
+	S(UNION,match_bin_data) data = { NULL, NULL };
+
+	u1 = FN(UNION,align_params)(u1, FN(UNION,get_dim)(u2));
+	u2 = FN(UNION,align_params)(u2, FN(UNION,get_dim)(u1));
 
 	if (!u1 || !u2)
 		goto error;
 
+	data.u2 = u2;
 #ifdef HAS_TYPE
 	data.res = FN(UNION,alloc)(isl_dim_copy(u1->dim), u1->type, u1->table.n);
 #else
@@ -351,11 +416,15 @@ static __isl_give UNION *match_set_op(__isl_take UNION *u,
 	__isl_take isl_union_set *uset,
 	__isl_give PW *(*fn)(__isl_take PW*, __isl_take isl_set*))
 {
-	S(UNION,match_set_data) data = { uset, NULL, fn };
+	S(UNION,match_set_data) data = { NULL, NULL, fn };
+
+	u = FN(UNION,align_params)(u, isl_union_set_get_dim(uset));
+	uset = isl_union_set_align_params(uset, FN(UNION,get_dim)(u));
 
 	if (!u || !uset)
 		goto error;
 
+	data.uset = uset;
 #ifdef HAS_TYPE
 	data.res = FN(UNION,alloc)(isl_dim_copy(u->dim), u->type, u->table.n);
 #else

@@ -442,6 +442,10 @@ Also note that every function that operates on two sets or relations
 requires that both arguments have the same parameters.  This also
 means that if one of the arguments has named parameters, then the
 other needs to have named parameters too and the names need to match.
+Pairs of C<isl_union_set> and/or C<isl_union_map> arguments may
+have different parameters (as long as they are named), in which case
+the result will have as parameters the union of the parameters of
+the arguments.
 
 The names of entire spaces may be set or read off
 using the following functions.

@@ -847,3 +847,32 @@ error:
 	FN(PW,free)(pw);
 	return NULL;
 }
+
+__isl_give PW *FN(PW,realign)(__isl_take PW *pw, __isl_take isl_reordering *exp)
+{
+	int i;
+
+	pw = FN(PW,cow)(pw);
+	if (!pw || !exp)
+		return NULL;
+
+	for (i = 0; i < pw->n; ++i) {
+		pw->p[i].set = isl_set_realign(pw->p[i].set,
+						    isl_reordering_copy(exp));
+		if (!pw->p[i].set)
+			goto error;
+		pw->p[i].FIELD = FN(EL,realign)(pw->p[i].FIELD,
+						    isl_reordering_copy(exp));
+		if (!pw->p[i].FIELD)
+			goto error;
+	}
+
+	pw = FN(PW,reset_dim)(pw, isl_dim_copy(exp->dim));
+
+	isl_reordering_free(exp);
+	return pw;
+error:
+	isl_reordering_free(exp);
+	FN(PW,free)(pw);
+	return NULL;
+}

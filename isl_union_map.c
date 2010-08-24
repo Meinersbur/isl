@@ -13,6 +13,7 @@
 #include <isl_map.h>
 #include <isl_set.h>
 #include <isl_dim_private.h>
+#include <isl_map_private.h>
 #include <isl_union_map_private.h>
 #include <isl_union_set.h>
 
@@ -115,9 +116,78 @@ __isl_give isl_union_map *isl_union_map_cow(__isl_take isl_union_map *umap)
 	return isl_union_map_dup(umap);
 }
 
+struct isl_union_align {
+	isl_reordering *exp;
+	isl_union_map *res;
+};
+
+static int align_entry(void **entry, void *user)
+{
+	isl_map *map = *entry;
+	isl_reordering *exp;
+	struct isl_union_align *data = user;
+
+	exp = isl_reordering_extend_dim(isl_reordering_copy(data->exp),
+				    isl_map_get_dim(map));
+
+	data->res = isl_union_map_add_map(data->res,
+					isl_map_realign(isl_map_copy(map), exp));
+
+	return 0;
+}
+
+/* Align the parameters of umap along those of model.
+ * The result has the parameters of model first, in the same order
+ * as they appear in model, followed by any remaining parameters of
+ * umap that do not appear in model.
+ */
+__isl_give isl_union_map *isl_union_map_align_params(
+	__isl_take isl_union_map *umap, __isl_take isl_dim *model)
+{
+	struct isl_union_align data = { NULL, NULL };
+
+	if (!umap || !model)
+		goto error;
+
+	if (isl_dim_match(umap->dim, isl_dim_param, model, isl_dim_param)) {
+		isl_dim_free(model);
+		return umap;
+	}
+
+	data.exp = isl_parameter_alignment_reordering(umap->dim, model);
+	if (!data.exp)
+		goto error;
+
+	data.res = isl_union_map_alloc(isl_dim_copy(data.exp->dim),
+					umap->table.n);
+	if (isl_hash_table_foreach(umap->dim->ctx, &umap->table,
+					&align_entry, &data) < 0)
+		goto error;
+
+	isl_reordering_free(data.exp);
+	isl_union_map_free(umap);
+	isl_dim_free(model);
+	return data.res;
+error:
+	isl_reordering_free(data.exp);
+	isl_union_map_free(umap);
+	isl_union_map_free(data.res);
+	isl_dim_free(model);
+	return NULL;
+}
+
+__isl_give isl_union_set *isl_union_set_align_params(
+	__isl_take isl_union_set *uset, __isl_take isl_dim *model)
+{
+	return isl_union_map_align_params(uset, model);
+}
+
 __isl_give isl_union_map *isl_union_map_union(__isl_take isl_union_map *umap1,
 	__isl_take isl_union_map *umap2)
 {
+	umap1 = isl_union_map_align_params(umap1, isl_union_map_get_dim(umap2));
+	umap2 = isl_union_map_align_params(umap2, isl_union_map_get_dim(umap1));
+
 	umap1 = isl_union_map_cow(umap1);
 
 	if (!umap1 || !umap2)
@@ -347,11 +417,15 @@ static int subtract_entry(void **entry, void *user)
 static __isl_give isl_union_map *gen_bin_op(__isl_take isl_union_map *umap1,
 	__isl_take isl_union_map *umap2, int (*fn)(void **, void *))
 {
-	struct isl_union_map_gen_bin_data data = { umap2, NULL };
+	struct isl_union_map_gen_bin_data data = { NULL, NULL };
+
+	umap1 = isl_union_map_align_params(umap1, isl_union_map_get_dim(umap2));
+	umap2 = isl_union_map_align_params(umap2, isl_union_map_get_dim(umap1));
 
 	if (!umap1 || !umap2)
 		goto error;
 
+	data.umap2 = umap2;
 	data.res = isl_union_map_alloc(isl_dim_copy(umap1->dim),
 				       umap1->table.n);
 	if (isl_hash_table_foreach(umap1->dim->ctx, &umap1->table,
@@ -422,11 +496,15 @@ static __isl_give isl_union_map *match_bin_op(__isl_take isl_union_map *umap1,
 	__isl_take isl_union_map *umap2,
 	__isl_give isl_map *(*fn)(__isl_take isl_map*, __isl_take isl_map*))
 {
-	struct isl_union_map_match_bin_data data = { umap2, NULL, fn };
+	struct isl_union_map_match_bin_data data = { NULL, NULL, fn };
+
+	umap1 = isl_union_map_align_params(umap1, isl_union_map_get_dim(umap2));
+	umap2 = isl_union_map_align_params(umap2, isl_union_map_get_dim(umap1));
 
 	if (!umap1 || !umap2)
 		goto error;
 
+	data.umap2 = umap2;
 	data.res = isl_union_map_alloc(isl_dim_copy(umap1->dim),
 				       umap1->table.n);
 	if (isl_hash_table_foreach(umap1->dim->ctx, &umap1->table,
@@ -559,11 +637,15 @@ static int bin_entry(void **entry, void *user)
 static __isl_give isl_union_map *bin_op(__isl_take isl_union_map *umap1,
 	__isl_take isl_union_map *umap2, int (*fn)(void **entry, void *user))
 {
-	struct isl_union_map_bin_data data = { umap2, NULL, NULL, fn };
+	struct isl_union_map_bin_data data = { NULL, NULL, NULL, fn };
+
+	umap1 = isl_union_map_align_params(umap1, isl_union_map_get_dim(umap2));
+	umap2 = isl_union_map_align_params(umap2, isl_union_map_get_dim(umap1));
 
 	if (!umap1 || !umap2)
 		goto error;
 
+	data.umap2 = umap2;
 	data.res = isl_union_map_alloc(isl_dim_copy(umap1->dim),
 				       umap1->table.n);
 	if (isl_hash_table_foreach(umap1->dim->ctx, &umap1->table,
@@ -903,17 +985,30 @@ static int is_subset_entry(void **entry, void *user)
 int isl_union_map_is_subset(__isl_keep isl_union_map *umap1,
 	__isl_keep isl_union_map *umap2)
 {
-	struct isl_union_map_is_subset_data data = { umap2, 1 };
+	struct isl_union_map_is_subset_data data = { NULL, 1 };
+
+	umap1 = isl_union_map_copy(umap1);
+	umap2 = isl_union_map_copy(umap2);
+	umap1 = isl_union_map_align_params(umap1, isl_union_map_get_dim(umap2));
+	umap2 = isl_union_map_align_params(umap2, isl_union_map_get_dim(umap1));
 
 	if (!umap1 || !umap2)
-		return -1;
+		goto error;
 
+	data.umap2 = umap2;
 	if (isl_hash_table_foreach(umap1->dim->ctx, &umap1->table,
 				   &is_subset_entry, &data) < 0 &&
 	    data.is_subset)
-		return -1;
+		goto error;
+
+	isl_union_map_free(umap1);
+	isl_union_map_free(umap2);
 
 	return data.is_subset;
+error:
+	isl_union_map_free(umap1);
+	isl_union_map_free(umap2);
+	return -1;
 }
 
 int isl_union_map_is_equal(__isl_keep isl_union_map *umap1,

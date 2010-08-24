@@ -82,6 +82,8 @@ libisl_la_SOURCES = \
 	isl_printer.c \
 	isl_range.c \
 	isl_range.h \
+	isl_reordering.c \
+	isl_reordering.h \
 	isl_sample.h \
 	isl_sample.c \
 	isl_scan.c \

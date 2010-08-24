@@ -4,6 +4,7 @@
 #include <isl_mat.h>
 #include <isl_morph.h>
 #include <isl_polynomial.h>
+#include <isl_reordering.h>
 
 struct isl_upoly {
 	int ref;
@@ -198,3 +199,12 @@ __isl_give isl_qpolynomial *isl_qpolynomial_substitute_equalities(
 	__isl_take isl_qpolynomial *qp, __isl_take isl_basic_set *eq);
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_substitute_equalities(
 	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_basic_set *eq);
+
+__isl_give isl_qpolynomial *isl_qpolynomial_realign(
+	__isl_take isl_qpolynomial *qp, __isl_take isl_reordering *r);
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_realign(
+	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_reordering *r);
+__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_realign(
+	__isl_take isl_pw_qpolynomial *pwqp, __isl_take isl_reordering *r);
+__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_realign(
+	__isl_take isl_pw_qpolynomial_fold *pwf, __isl_take isl_reordering *r);

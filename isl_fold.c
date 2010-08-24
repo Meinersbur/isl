@@ -1252,6 +1252,11 @@ __isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_fold_add_unio
 	__isl_take isl_union_pw_qpolynomial_fold *upwf,
 	__isl_take isl_union_pw_qpolynomial *upwqp)
 {
+	upwf = isl_union_pw_qpolynomial_fold_align_params(upwf,
+				isl_union_pw_qpolynomial_get_dim(upwqp));
+	upwqp = isl_union_pw_qpolynomial_align_params(upwqp,
+				isl_union_pw_qpolynomial_fold_get_dim(upwf));
+
 	upwf = isl_union_pw_qpolynomial_fold_cow(upwf);
 	if (!upwf || !upwqp)
 		goto error;
@@ -1380,6 +1385,11 @@ __isl_give isl_union_pw_qpolynomial_fold *isl_union_map_apply_union_pw_qpolynomi
 	enum isl_fold type;
 	struct isl_apply_fold_data data;
 
+	upwf = isl_union_pw_qpolynomial_fold_align_params(upwf,
+				isl_union_map_get_dim(umap));
+	umap = isl_union_map_align_params(umap,
+				isl_union_pw_qpolynomial_fold_get_dim(upwf));
+
 	data.upwf = upwf;
 	data.tight = tight ? 1 : 0;
 	dim = isl_union_pw_qpolynomial_fold_get_dim(upwf);
@@ -1399,5 +1409,34 @@ error:
 	isl_union_map_free(umap);
 	isl_union_pw_qpolynomial_fold_free(upwf);
 	isl_union_pw_qpolynomial_fold_free(data.res);
+	return NULL;
+}
+
+/* Reorder the dimension of "fold" according to the given reordering.
+ */
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_realign(
+	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_reordering *r)
+{
+	int i;
+
+	fold = isl_qpolynomial_fold_cow(fold);
+	if (!fold || !r)
+		goto error;
+
+	for (i = 0; i < fold->n; ++i) {
+		fold->qp[i] = isl_qpolynomial_realign(fold->qp[i],
+						    isl_reordering_copy(r));
+		if (!fold->qp[i])
+			goto error;
+	}
+
+	fold = isl_qpolynomial_fold_reset_dim(fold, isl_dim_copy(r->dim));
+
+	isl_reordering_free(r);
+
+	return fold;
+error:
+	isl_qpolynomial_fold_free(fold);
+	isl_reordering_free(r);
 	return NULL;
 }

@@ -7,9 +7,18 @@
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
  */
 
+#ifndef ISL_MAP_PRIVATE_H
+#define ISL_MAP_PRIVATE_H
+
 #include "isl_set.h"
 #include "isl_map.h"
+#include <isl_reordering.h>
 #include "isl_vec.h"
+
+__isl_give isl_map *isl_map_realign(__isl_take isl_map *map,
+	__isl_take isl_reordering *r);
+__isl_give isl_set *isl_set_realign(__isl_take isl_set *set,
+	__isl_take isl_reordering *r);
 
 __isl_give isl_map *isl_map_reset(__isl_take isl_map *map,
 	enum isl_dim_type type);
@@ -187,3 +196,5 @@ int isl_basic_set_add_div_constraints_var(__isl_keep isl_basic_set *bset,
 	unsigned pos, isl_int *div);
 int isl_basic_map_is_div_constraint(__isl_keep isl_basic_map *bmap,
 	isl_int *constraint, unsigned div);
+
+#endif

@@ -23,6 +23,7 @@
 #include "isl_map.h"
 #include "isl_map_private.h"
 #include "isl_map_piplib.h"
+#include <isl_reordering.h>
 #include "isl_sample.h"
 #include "isl_tab.h"
 #include "isl_vec.h"
@@ -7291,4 +7292,118 @@ __isl_give isl_map *isl_map_flatten(__isl_take isl_map *map)
 error:
 	isl_map_free(map);
 	return NULL;
+}
+
+/* Extend the given dim_map with mappings for the divs in bmap.
+ */
+static __isl_give struct isl_dim_map *extend_dim_map(
+	__isl_keep struct isl_dim_map *dim_map,
+	__isl_keep isl_basic_map *bmap)
+{
+	int i;
+	struct isl_dim_map *res;
+	int offset;
+
+	offset = isl_basic_map_offset(bmap, isl_dim_div);
+
+	res = isl_dim_map_alloc(bmap->ctx, dim_map->len - 1 + bmap->n_div);
+	if (!res)
+		return NULL;
+
+	for (i = 0; i < dim_map->len; ++i)
+		res->pos[i] = dim_map->pos[i];
+	for (i = 0; i < bmap->n_div; ++i)
+		res->pos[dim_map->len + i] = offset + i;
+
+	return res;
+}
+
+/* Extract a dim_map from a reordering.
+ * We essentially need to reverse the mapping, and add an offset
+ * of 1 for the constant term.
+ */
+__isl_give struct isl_dim_map *isl_dim_map_from_reordering(
+	__isl_keep isl_reordering *exp)
+{
+	int i;
+	struct isl_dim_map *dim_map;
+
+	if (!exp)
+		return NULL;
+
+	dim_map = isl_dim_map_alloc(exp->dim->ctx, isl_dim_total(exp->dim));
+	if (!dim_map)
+		return NULL;
+
+	for (i = 0; i < exp->len; ++i)
+		dim_map->pos[1 + exp->pos[i]] = 1 + i;
+
+	return dim_map;
+}
+
+/* Reorder the dimensions of "bmap" according to the given dim_map
+ * and set the dimension specification to "dim".
+ */
+__isl_give isl_basic_map *isl_basic_map_realign(__isl_take isl_basic_map *bmap,
+	__isl_take isl_dim *dim, __isl_take struct isl_dim_map *dim_map)
+{
+	isl_basic_map *res;
+
+	bmap = isl_basic_map_cow(bmap);
+	if (!bmap || !dim || !dim_map)
+		goto error;
+
+	res = isl_basic_map_alloc_dim(dim,
+			bmap->n_div, bmap->n_eq, bmap->n_ineq);
+	res = add_constraints_dim_map(res, bmap, dim_map);
+	res = isl_basic_map_finalize(res);
+	return res;
+error:
+	free(dim_map);
+	isl_basic_map_free(bmap);
+	isl_dim_free(dim);
+	return NULL;
+}
+
+/* Reorder the dimensions of "map" according to given reordering.
+ */
+__isl_give isl_map *isl_map_realign(__isl_take isl_map *map,
+	__isl_take isl_reordering *r)
+{
+	int i;
+	struct isl_dim_map *dim_map;
+
+	map = isl_map_cow(map);
+	dim_map = isl_dim_map_from_reordering(r);
+	if (!map || !r || !dim_map)
+		goto error;
+
+	for (i = 0; i < map->n; ++i) {
+		struct isl_dim_map *dim_map_i;
+
+		dim_map_i = extend_dim_map(dim_map, map->p[i]);
+
+		map->p[i] = isl_basic_map_realign(map->p[i],
+					    isl_dim_copy(r->dim), dim_map_i);
+
+		if (!map->p[i])
+			goto error;
+	}
+
+	map = isl_map_reset_dim(map, isl_dim_copy(r->dim));
+
+	isl_reordering_free(r);
+	free(dim_map);
+	return map;
+error:
+	free(dim_map);
+	isl_map_free(map);
+	isl_reordering_free(r);
+	return NULL;
+}
+
+__isl_give isl_set *isl_set_realign(__isl_take isl_set *set,
+	__isl_take isl_reordering *r)
+{
+	return (isl_set *)isl_map_realign((isl_map *)set, r);
 }
