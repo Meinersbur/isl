@@ -1130,6 +1130,51 @@ void isl_map_print(__isl_keep isl_map *map, FILE *out, int indent,
 	isl_printer_free(printer);
 }
 
+void isl_union_map_dump(__isl_keep isl_union_map *umap)
+{
+	isl_printer *printer;
+
+	if (!umap)
+		return;
+
+	printer = isl_printer_to_file(isl_union_map_get_ctx(umap), stderr);
+	printer = isl_printer_print_union_map(printer, umap);
+	printer = isl_printer_end_line(printer);
+
+	isl_printer_free(printer);
+}
+
+void isl_union_pw_qpolynomial_dump(__isl_keep isl_union_pw_qpolynomial *upwqp)
+{
+	isl_printer *printer;
+
+	if (!upwqp)
+		return;
+
+	printer = isl_printer_to_file(isl_union_pw_qpolynomial_get_ctx(upwqp),
+					stderr);
+	printer = isl_printer_print_union_pw_qpolynomial(printer, upwqp);
+	printer = isl_printer_end_line(printer);
+
+	isl_printer_free(printer);
+}
+
+void isl_union_pw_qpolynomial_fold_dump(
+	__isl_keep isl_union_pw_qpolynomial_fold *upwf)
+{
+	isl_printer *printer;
+
+	if (!upwf)
+		return;
+
+	printer = isl_printer_to_file(
+			isl_union_pw_qpolynomial_fold_get_ctx(upwf), stderr);
+	printer = isl_printer_print_union_pw_qpolynomial_fold(printer, upwf);
+	printer = isl_printer_end_line(printer);
+
+	isl_printer_free(printer);
+}
+
 static int upoly_rec_n_non_zero(__isl_keep struct isl_upoly_rec *rec)
 {
 	int i;
