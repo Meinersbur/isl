@@ -262,6 +262,16 @@ int isl_basic_map_compatible_range(struct isl_basic_map *bmap,
 	return isl_dim_tuple_match(bmap->dim, isl_dim_out, bset->dim, isl_dim_set);
 }
 
+isl_ctx *isl_basic_map_get_ctx(__isl_keep isl_basic_map *bmap)
+{
+	return bmap ? bmap->ctx : NULL;
+}
+
+isl_ctx *isl_basic_set_get_ctx(__isl_keep isl_basic_set *bset)
+{
+	return bset ? bset->ctx : NULL;
+}
+
 isl_ctx *isl_map_get_ctx(__isl_keep isl_map *map)
 {
 	return map ? map->ctx : NULL;
