@@ -1133,14 +1133,13 @@ error:
 	return NULL;
 }
 
-__isl_give isl_mat *isl_mat_add_zero_cols(__isl_take isl_mat *mat, unsigned n)
+__isl_give isl_mat *isl_mat_insert_zero_cols(__isl_take isl_mat *mat,
+	unsigned first, unsigned n)
 {
 	int i;
-	int first;
 
 	if (!mat)
 		return NULL;
-	first = mat->n_col;
 	mat = isl_mat_insert_cols(mat, first, n);
 	if (!mat)
 		return NULL;
@@ -1149,6 +1148,14 @@ __isl_give isl_mat *isl_mat_add_zero_cols(__isl_take isl_mat *mat, unsigned n)
 		isl_seq_clr(mat->row[i] + first, n);
 
 	return mat;
+}
+
+__isl_give isl_mat *isl_mat_add_zero_cols(__isl_take isl_mat *mat, unsigned n)
+{
+	if (!mat)
+		return NULL;
+
+	return isl_mat_insert_zero_cols(mat, mat->n_col, n);
 }
 
 __isl_give isl_mat *isl_mat_insert_rows(__isl_take isl_mat *mat,

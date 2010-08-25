@@ -92,6 +92,8 @@ __isl_give isl_mat *isl_mat_insert_rows(__isl_take isl_mat *mat,
 __isl_give isl_mat *isl_mat_move_cols(__isl_take isl_mat *mat,
 	unsigned dst_col, unsigned src_col, unsigned n);
 __isl_give isl_mat *isl_mat_add_rows(__isl_take isl_mat *mat, unsigned n);
+__isl_give isl_mat *isl_mat_insert_zero_cols(__isl_take isl_mat *mat,
+	unsigned first, unsigned n);
 __isl_give isl_mat *isl_mat_add_zero_cols(__isl_take isl_mat *mat, unsigned n);
 
 void isl_mat_col_mul(struct isl_mat *mat, int dst_col, isl_int f, int src_col);
