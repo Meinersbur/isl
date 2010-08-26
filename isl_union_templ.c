@@ -270,7 +270,7 @@ __isl_give UNION *FN(FN(UNION,from),PARTS)(__isl_take PART *part)
 }
 
 S(UNION,match_bin_data) {
-	UNION *upwqp2;
+	UNION *u2;
 	UNION *res;
 };
 

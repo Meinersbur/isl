@@ -3302,8 +3302,7 @@ static int mul_entry(void **entry, void *user)
 	int empty;
 
 	hash = isl_dim_get_hash(pwpq->dim);
-	entry2 = isl_hash_table_find(data->upwqp2->dim->ctx,
-				     &data->upwqp2->table,
+	entry2 = isl_hash_table_find(data->u2->dim->ctx, &data->u2->table,
 				     hash, &has_dim, pwpq->dim, 0);
 	if (!entry2)
 		return 0;
