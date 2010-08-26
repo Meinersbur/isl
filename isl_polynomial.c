@@ -2051,9 +2051,7 @@ error:
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_neg(
 	__isl_take isl_pw_qpolynomial *pwqp)
 {
-	int i, j, n;
-	struct isl_pw_qpolynomial *res;
-	isl_set *set;
+	int i;
 
 	if (!pwqp)
 		return NULL;
@@ -2062,6 +2060,8 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_neg(
 		return pwqp;
 
 	pwqp = isl_pw_qpolynomial_cow(pwqp);
+	if (!pwqp)
+		return NULL;
 
 	for (i = 0; i < pwqp->n; ++i) {
 		pwqp->p[i].qp = isl_qpolynomial_neg(pwqp->p[i].qp);
