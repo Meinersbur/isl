@@ -54,6 +54,7 @@ struct isl_arg {
 		struct isl_arg_choice	*choice;
 		unsigned	 	 default_value;
 		unsigned	 	 default_selected;
+		int (*set)(void *opt, unsigned val);
 	} choice;
 	struct {
 		struct isl_arg_flags	*flags;
@@ -100,7 +101,7 @@ struct isl_arg {
 	.offset = offsetof(st, f),					\
 	.help_msg = h,							\
 	.u = { .choice = { .choice = c, .default_value = d,		\
-					.default_selected = d } }	\
+			    .default_selected = d, .set = NULL } }	\
 },
 #define ISL_ARG_OPT_CHOICE(st,f,s,l,c,d,ds,h)	{			\
 	.type = isl_arg_choice,						\
@@ -109,7 +110,16 @@ struct isl_arg {
 	.offset = offsetof(st, f),					\
 	.help_msg = h,							\
 	.u = { .choice = { .choice = c, .default_value = d,		\
-					.default_selected = ds } }	\
+			    .default_selected = ds, .set = NULL } }	\
+},
+#define ISL_ARG_USER_OPT_CHOICE(st,f,s,l,c,setter,d,ds,h)	{	\
+	.type = isl_arg_choice,						\
+	.short_name = s,						\
+	.long_name = l,							\
+	.offset = offsetof(st, f),					\
+	.help_msg = h,							\
+	.u = { .choice = { .choice = c, .default_value = d,		\
+			    .default_selected = ds, .set = setter } }	\
 },
 #define ISL_ARG_BOOL(st,f,s,l,d,h)	{				\
 	.type = isl_arg_bool,						\
