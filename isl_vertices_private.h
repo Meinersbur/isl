@@ -1,3 +1,6 @@
+#ifndef ISL_VERTICES_PRIVATE_H
+#define ISL_VERTICES_PRIVATE_H
+
 #include <isl/set.h>
 #include <isl/vertices.h>
 
@@ -63,4 +66,6 @@ __isl_give isl_vertices *isl_morph_vertices(__isl_take struct isl_morph *morph,
 
 #if defined(__cplusplus)
 }
+#endif
+
 #endif
