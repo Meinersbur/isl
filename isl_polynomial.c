@@ -1067,9 +1067,13 @@ static int div_sort_cmp(const void *p1, const void *p2)
 	return cmp_row(i1->div, i1->row, i2->row);
 }
 
+/* Sort divs and remove duplicates.
+ */
 static __isl_give isl_qpolynomial *sort_divs(__isl_take isl_qpolynomial *qp)
 {
 	int i;
+	int skip;
+	int len;
 	struct isl_div_sort_info *array = NULL;
 	int *pos = NULL, *at = NULL;
 	int *reordering = NULL;
@@ -1086,7 +1090,8 @@ static __isl_give isl_qpolynomial *sort_divs(__isl_take isl_qpolynomial *qp)
 				qp->div->n_row);
 	pos = isl_alloc_array(qp->div->ctx, int, qp->div->n_row);
 	at = isl_alloc_array(qp->div->ctx, int, qp->div->n_row);
-	reordering = isl_alloc_array(qp->div->ctx, int, qp->div->n_col - 2);
+	len = qp->div->n_col - 2;
+	reordering = isl_alloc_array(qp->div->ctx, int, len);
 	if (!array || !pos || !at || !reordering)
 		goto error;
 
@@ -1103,9 +1108,6 @@ static __isl_give isl_qpolynomial *sort_divs(__isl_take isl_qpolynomial *qp)
 	for (i = 0; i < div_pos; ++i)
 		reordering[i] = i;
 
-	for (i = 0; i < qp->div->n_row; ++i)
-		reordering[div_pos + array[i].row] = div_pos + i;
-
 	for (i = 0; i < qp->div->n_row; ++i) {
 		if (pos[array[i].row] == i)
 			continue;
@@ -1114,6 +1116,19 @@ static __isl_give isl_qpolynomial *sort_divs(__isl_take isl_qpolynomial *qp)
 		at[pos[array[i].row]] = at[i];
 		at[i] = array[i].row;
 		pos[array[i].row] = i;
+	}
+
+	skip = 0;
+	for (i = 0; i < len - div_pos; ++i) {
+		if (i > 0 &&
+		    isl_seq_eq(qp->div->row[i - skip - 1],
+			       qp->div->row[i - skip], qp->div->n_col)) {
+			qp->div = isl_mat_drop_rows(qp->div, i - skip, 1);
+			qp->div = isl_mat_drop_cols(qp->div,
+						    2 + div_pos + i - skip, 1);
+			skip++;
+		}
+		reordering[div_pos + array[i].row] = div_pos + i - skip;
 	}
 
 	qp->upoly = reorder(qp->upoly, reordering);
