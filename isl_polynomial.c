@@ -1071,7 +1071,7 @@ static __isl_give isl_qpolynomial *sort_divs(__isl_take isl_qpolynomial *qp)
 {
 	int i;
 	struct isl_div_sort_info *array = NULL;
-	int *pos = NULL;
+	int *pos = NULL, *at = NULL;
 	int *reordering = NULL;
 	unsigned div_pos;
 
@@ -1085,14 +1085,16 @@ static __isl_give isl_qpolynomial *sort_divs(__isl_take isl_qpolynomial *qp)
 	array = isl_alloc_array(qp->div->ctx, struct isl_div_sort_info,
 				qp->div->n_row);
 	pos = isl_alloc_array(qp->div->ctx, int, qp->div->n_row);
+	at = isl_alloc_array(qp->div->ctx, int, qp->div->n_row);
 	reordering = isl_alloc_array(qp->div->ctx, int, qp->div->n_col - 2);
-	if (!array || !pos || !reordering)
+	if (!array || !pos || !at || !reordering)
 		goto error;
 
 	for (i = 0; i < qp->div->n_row; ++i) {
 		array[i].div = qp->div;
 		array[i].row = i;
 		pos[i] = i;
+		at[i] = i;
 	}
 
 	qsort(array, qp->div->n_row, sizeof(struct isl_div_sort_info),
@@ -1105,14 +1107,13 @@ static __isl_give isl_qpolynomial *sort_divs(__isl_take isl_qpolynomial *qp)
 		reordering[div_pos + array[i].row] = div_pos + i;
 
 	for (i = 0; i < qp->div->n_row; ++i) {
-		int t;
 		if (pos[array[i].row] == i)
 			continue;
-		qp->div = isl_mat_cow(qp->div);
 		qp->div = isl_mat_swap_rows(qp->div, i, pos[array[i].row]);
-		t = pos[array[i].row];
-		pos[array[i].row] = pos[i];
-		pos[i] = t;
+		pos[at[i]] = pos[array[i].row];
+		at[pos[array[i].row]] = at[i];
+		at[i] = array[i].row;
+		pos[array[i].row] = i;
 	}
 
 	qp->upoly = reorder(qp->upoly, reordering);
@@ -1120,12 +1121,14 @@ static __isl_give isl_qpolynomial *sort_divs(__isl_take isl_qpolynomial *qp)
 	if (!qp->upoly || !qp->div)
 		goto error;
 
+	free(at);
 	free(pos);
 	free(array);
 	free(reordering);
 
 	return qp;
 error:
+	free(at);
 	free(pos);
 	free(array);
 	free(reordering);
