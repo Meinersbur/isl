@@ -1395,6 +1395,22 @@ void test_pwqp(struct isl_ctx *ctx)
 	isl_pw_qpolynomial_free(pwqp1);
 }
 
+void test_split_periods(isl_ctx *ctx)
+{
+	const char *str;
+	isl_pw_qpolynomial *pwqp;
+
+	str = "{ [U,V] -> 1/3 * U + 2/3 * V - [(U + 2V)/3] + [U/2] : "
+		"U + 2V + 3 >= 0 and - U -2V  >= 0 and - U + 10 >= 0 and "
+		"U  >= 0; [U,V] -> U^2 : U >= 100 }";
+	pwqp = isl_pw_qpolynomial_read_from_str(ctx, str);
+
+	pwqp = isl_pw_qpolynomial_split_periods(pwqp, 2);
+	assert(pwqp);
+
+	isl_pw_qpolynomial_free(pwqp);
+}
+
 int main()
 {
 	struct isl_ctx *ctx;
@@ -1403,6 +1419,7 @@ int main()
 	assert(srcdir);
 
 	ctx = isl_ctx_alloc();
+	test_split_periods(ctx);
 	test_parse(ctx);
 	test_pwqp(ctx);
 	test_lex(ctx);

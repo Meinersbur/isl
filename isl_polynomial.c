@@ -9,6 +9,7 @@
  */
 
 #include <stdlib.h>
+#include <isl_lp.h>
 #include <isl_seq.h>
 #include <isl_union_map_private.h>
 #include <isl_polynomial_private.h>
@@ -3414,5 +3415,238 @@ __isl_give isl_qpolynomial *isl_qpolynomial_realign(
 error:
 	isl_qpolynomial_free(qp);
 	isl_reordering_free(r);
+	return NULL;
+}
+
+struct isl_split_periods_data {
+	int max_periods;
+	isl_pw_qpolynomial *res;
+};
+
+/* Create a slice where the integer division "div" has the fixed value "v".
+ * In particular, if "div" refers to floor(f/m), then create a slice
+ *
+ *	m v <= f <= m v + (m - 1)
+ *
+ * or
+ *
+ *	f - m v >= 0
+ *	-f + m v + (m - 1) >= 0
+ */
+static __isl_give isl_set *set_div_slice(__isl_take isl_dim *dim,
+	__isl_keep isl_qpolynomial *qp, int div, isl_int v)
+{
+	int total;
+	isl_basic_set *bset = NULL;
+	int k;
+
+	if (!dim || !qp)
+		goto error;
+
+	total = isl_dim_total(dim);
+	bset = isl_basic_set_alloc_dim(isl_dim_copy(dim), 0, 0, 2);
+
+	k = isl_basic_set_alloc_inequality(bset);
+	if (k < 0)
+		goto error;
+	isl_seq_cpy(bset->ineq[k], qp->div->row[div] + 1, 1 + total);
+	isl_int_submul(bset->ineq[k][0], v, qp->div->row[div][0]);
+
+	k = isl_basic_set_alloc_inequality(bset);
+	if (k < 0)
+		goto error;
+	isl_seq_neg(bset->ineq[k], qp->div->row[div] + 1, 1 + total);
+	isl_int_addmul(bset->ineq[k][0], v, qp->div->row[div][0]);
+	isl_int_add(bset->ineq[k][0], bset->ineq[k][0], qp->div->row[div][0]);
+	isl_int_sub_ui(bset->ineq[k][0], bset->ineq[k][0], 1);
+
+	isl_dim_free(dim);
+	return isl_set_from_basic_set(bset);
+error:
+	isl_basic_set_free(bset);
+	isl_dim_free(dim);
+	return NULL;
+}
+
+static int split_periods(__isl_take isl_set *set,
+	__isl_take isl_qpolynomial *qp, void *user);
+
+/* Create a slice of the domain "set" such that integer division "div"
+ * has the fixed value "v" and add the results to data->res,
+ * replacing the integer division by "v" in "qp".
+ */
+static int set_div(__isl_take isl_set *set,
+	__isl_take isl_qpolynomial *qp, int div, isl_int v,
+	struct isl_split_periods_data *data)
+{
+	int i;
+	int *reordering;
+	isl_set *slice;
+	struct isl_upoly *cst;
+	int total;
+
+	slice = set_div_slice(isl_set_get_dim(set), qp, div, v);
+	set = isl_set_intersect(set, slice);
+
+	qp = isl_qpolynomial_cow(qp);
+	if (!qp)
+		goto error;
+
+	cst = isl_upoly_rat_cst(qp->dim->ctx, v, qp->dim->ctx->one);
+	if (!cst)
+		goto error;
+	total = isl_dim_total(qp->dim);
+	qp->upoly = isl_upoly_subs(qp->upoly, total + div, 1, &cst);
+	isl_upoly_free(cst);
+	if (!qp->upoly)
+		goto error;
+
+	reordering = isl_alloc_array(qp->dim->ctx, int, total + qp->div->n_row);
+	if (!reordering)
+		goto error;
+	for (i = 0; i < total + div; ++i)
+		reordering[i] = i;
+	for (i = total + div + 1; i < total + qp->div->n_row; ++i)
+		reordering[i] = i - 1;
+	qp->div = isl_mat_drop_rows(qp->div, div, 1);
+	qp->div = isl_mat_drop_cols(qp->div, 2 + total + div, 1);
+	qp->upoly = reorder(qp->upoly, reordering);
+	free(reordering);
+
+	if (!qp->upoly || !qp->div)
+		goto error;
+
+	return split_periods(set, qp, data);
+error:
+	isl_set_free(set);
+	isl_qpolynomial_free(qp);
+	return -1;
+}
+
+/* Split the domain "set" such that integer division "div"
+ * has a fixed value (ranging from "min" to "max") on each slice
+ * and add the results to data->res.
+ */
+static int split_div(__isl_take isl_set *set,
+	__isl_take isl_qpolynomial *qp, int div, isl_int min, isl_int max,
+	struct isl_split_periods_data *data)
+{
+	for (; isl_int_le(min, max); isl_int_add_ui(min, min, 1)) {
+		isl_set *set_i = isl_set_copy(set);
+		isl_qpolynomial *qp_i = isl_qpolynomial_copy(qp);
+
+		if (set_div(set_i, qp_i, div, min, data) < 0)
+			goto error;
+	}
+	isl_set_free(set);
+	isl_qpolynomial_free(qp);
+	return 0;
+error:
+	isl_set_free(set);
+	isl_qpolynomial_free(qp);
+	return -1;
+}
+
+/* If "qp" refers to any integer division
+ * that can only attain "max_periods" distinct values on "set"
+ * then split the domain along those distinct values.
+ * Add the results (or the original if no splitting occurs)
+ * to data->res.
+ */
+static int split_periods(__isl_take isl_set *set,
+	__isl_take isl_qpolynomial *qp, void *user)
+{
+	int i;
+	isl_pw_qpolynomial *pwqp;
+	struct isl_split_periods_data *data;
+	isl_int min, max;
+	int total;
+	int r = 0;
+
+	data = (struct isl_split_periods_data *)user;
+
+	if (!set || !qp)
+		goto error;
+
+	if (qp->div->n_row == 0) {
+		pwqp = isl_pw_qpolynomial_alloc(set, qp);
+		data->res = isl_pw_qpolynomial_add_disjoint(data->res, pwqp);
+		return 0;
+	}
+
+	isl_int_init(min);
+	isl_int_init(max);
+	total = isl_dim_total(qp->dim);
+	for (i = 0; i < qp->div->n_row; ++i) {
+		enum isl_lp_result lp_res;
+
+		if (isl_seq_first_non_zero(qp->div->row[i] + 2 + total,
+						qp->div->n_row) != -1)
+			continue;
+
+		lp_res = isl_set_solve_lp(set, 0, qp->div->row[i] + 1,
+					  set->ctx->one, &min, NULL, NULL);
+		if (lp_res == isl_lp_error)
+			goto error2;
+		if (lp_res == isl_lp_unbounded || lp_res == isl_lp_empty)
+			continue;
+		isl_int_fdiv_q(min, min, qp->div->row[i][0]);
+
+		lp_res = isl_set_solve_lp(set, 1, qp->div->row[i] + 1,
+					  set->ctx->one, &max, NULL, NULL);
+		if (lp_res == isl_lp_error)
+			goto error2;
+		if (lp_res == isl_lp_unbounded || lp_res == isl_lp_empty)
+			continue;
+		isl_int_fdiv_q(max, max, qp->div->row[i][0]);
+
+		isl_int_sub(max, max, min);
+		if (isl_int_cmp_si(max, data->max_periods) < 0) {
+			isl_int_add(max, max, min);
+			break;
+		}
+	}
+
+	if (i < qp->div->n_row) {
+		r = split_div(set, qp, i, min, max, data);
+	} else {
+		pwqp = isl_pw_qpolynomial_alloc(set, qp);
+		data->res = isl_pw_qpolynomial_add_disjoint(data->res, pwqp);
+	}
+
+	isl_int_clear(max);
+	isl_int_clear(min);
+
+	return r;
+error2:
+	isl_int_clear(max);
+	isl_int_clear(min);
+error:
+	isl_set_free(set);
+	isl_qpolynomial_free(qp);
+	return -1;
+}
+
+/* If any quasi-polynomial in pwqp refers to any integer division
+ * that can only attain "max_periods" distinct values on its domain
+ * then split the domain along those distinct values.
+ */
+__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_split_periods(
+	__isl_take isl_pw_qpolynomial *pwqp, int max_periods)
+{
+	struct isl_split_periods_data data;
+
+	data.max_periods = max_periods;
+	data.res = isl_pw_qpolynomial_zero(isl_pw_qpolynomial_get_dim(pwqp));
+
+	if (isl_pw_qpolynomial_foreach_piece(pwqp, &split_periods, &data) < 0)
+		goto error;
+
+	isl_pw_qpolynomial_free(pwqp);
+
+	return data.res;
+error:
+	isl_pw_qpolynomial_free(data.res);
+	isl_pw_qpolynomial_free(pwqp);
 	return NULL;
 }
