@@ -72,6 +72,9 @@ static struct isl_mat *isl_basic_set_samples(struct isl_basic_set *bset)
 	struct isl_mat *T;
 	struct isl_mat *samples;
 
+	if (!bset)
+		return NULL;
+
 	if (bset->n_eq == 0)
 		return isl_basic_set_scan_samples(bset);
 
