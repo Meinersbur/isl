@@ -656,7 +656,7 @@ static void set_is_redundant(struct isl_tab *tab, unsigned n_eq,
  * wrapped around their ridges, except those ridges determined
  * by any of the other cut constraints.
  * The intersections of cut constraints need to be ignored
- * as the result of wrapping on cur constraint around another
+ * as the result of wrapping one cut constraint around another
  * would result in a constraint cutting the union.
  * In each case, the facets are wrapped to include the union
  * of the two basic maps.
@@ -754,7 +754,7 @@ error:
 	return -1;
 }
 
-/* Given two basic sets i and j such that i has not cut equalities,
+/* Given two basic sets i and j such that i has no cut equalities,
  * check if relaxing all the cut inequalities of i by one turns
  * them into valid constraint for j and check if we can wrap in
  * the bits that are sticking out.
@@ -996,7 +996,7 @@ static int check_adj_eq(struct isl_map *map, int i, int j,
  *	   Moreover, the facets corresponding to the cut constraints and
  *	   the pieces of the other basic map at offset one from these cut
  *	   constraints can be wrapped around their ridges to include
- *	   the unione of the two basic maps
+ *	   the union of the two basic maps
  *		=> the pair can be replaced by a basic map consisting
  *		   of the valid constraints in both basic maps together
  *		   with all wrapping constraints
