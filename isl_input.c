@@ -1446,6 +1446,8 @@ static __isl_give isl_basic_map *add_equalities(__isl_take isl_basic_map *bmap,
 	}
 
 	isl_mat_free(eq);
+	bmap = isl_basic_map_gauss(bmap, NULL);
+	bmap = isl_basic_map_finalize(bmap);
 	return bmap;
 error:
 	isl_mat_free(eq);
