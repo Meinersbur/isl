@@ -423,6 +423,15 @@ __isl_give isl_map *isl_map_reaching_path_lengths(__isl_take isl_map *map,
 __isl_give isl_map *isl_map_transitive_closure(__isl_take isl_map *map,
 	int *exact);
 
+__isl_give isl_map *isl_map_lex_le_map(__isl_take isl_map *map1,
+	__isl_take isl_map *map2);
+__isl_give isl_map *isl_map_lex_lt_map(__isl_take isl_map *map1,
+	__isl_take isl_map *map2);
+__isl_give isl_map *isl_map_lex_ge_map(__isl_take isl_map *map1,
+	__isl_take isl_map *map2);
+__isl_give isl_map *isl_map_lex_gt_map(__isl_take isl_map *map1,
+	__isl_take isl_map *map2);
+
 #if defined(__cplusplus)
 }
 #endif

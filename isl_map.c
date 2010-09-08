@@ -3201,6 +3201,86 @@ __isl_give isl_map *isl_map_lex_ge(__isl_take isl_dim *set_dim)
 	return map_lex_gte(isl_dim_map(set_dim), 1);
 }
 
+__isl_give isl_map *isl_set_lex_le_set(__isl_take isl_set *set1,
+	__isl_take isl_set *set2)
+{
+	isl_map *map;
+	map = isl_map_lex_le(isl_set_get_dim(set1));
+	map = isl_map_intersect_domain(map, set1);
+	map = isl_map_intersect_range(map, set2);
+	return map;
+}
+
+__isl_give isl_map *isl_set_lex_lt_set(__isl_take isl_set *set1,
+	__isl_take isl_set *set2)
+{
+	isl_map *map;
+	map = isl_map_lex_lt(isl_set_get_dim(set1));
+	map = isl_map_intersect_domain(map, set1);
+	map = isl_map_intersect_range(map, set2);
+	return map;
+}
+
+__isl_give isl_map *isl_set_lex_ge_set(__isl_take isl_set *set1,
+	__isl_take isl_set *set2)
+{
+	isl_map *map;
+	map = isl_map_lex_ge(isl_set_get_dim(set1));
+	map = isl_map_intersect_domain(map, set1);
+	map = isl_map_intersect_range(map, set2);
+	return map;
+}
+
+__isl_give isl_map *isl_set_lex_gt_set(__isl_take isl_set *set1,
+	__isl_take isl_set *set2)
+{
+	isl_map *map;
+	map = isl_map_lex_gt(isl_set_get_dim(set1));
+	map = isl_map_intersect_domain(map, set1);
+	map = isl_map_intersect_range(map, set2);
+	return map;
+}
+
+__isl_give isl_map *isl_map_lex_le_map(__isl_take isl_map *map1,
+	__isl_take isl_map *map2)
+{
+	isl_map *map;
+	map = isl_map_lex_le(isl_dim_range(isl_map_get_dim(map1)));
+	map = isl_map_apply_domain(map, isl_map_reverse(map1));
+	map = isl_map_apply_range(map, isl_map_reverse(map2));
+	return map;
+}
+
+__isl_give isl_map *isl_map_lex_lt_map(__isl_take isl_map *map1,
+	__isl_take isl_map *map2)
+{
+	isl_map *map;
+	map = isl_map_lex_lt(isl_dim_range(isl_map_get_dim(map1)));
+	map = isl_map_apply_domain(map, isl_map_reverse(map1));
+	map = isl_map_apply_range(map, isl_map_reverse(map2));
+	return map;
+}
+
+__isl_give isl_map *isl_map_lex_ge_map(__isl_take isl_map *map1,
+	__isl_take isl_map *map2)
+{
+	isl_map *map;
+	map = isl_map_lex_ge(isl_dim_range(isl_map_get_dim(map1)));
+	map = isl_map_apply_domain(map, isl_map_reverse(map1));
+	map = isl_map_apply_range(map, isl_map_reverse(map2));
+	return map;
+}
+
+__isl_give isl_map *isl_map_lex_gt_map(__isl_take isl_map *map1,
+	__isl_take isl_map *map2)
+{
+	isl_map *map;
+	map = isl_map_lex_gt(isl_dim_range(isl_map_get_dim(map1)));
+	map = isl_map_apply_domain(map, isl_map_reverse(map1));
+	map = isl_map_apply_range(map, isl_map_reverse(map2));
+	return map;
+}
+
 struct isl_basic_map *isl_basic_map_from_basic_set(
 		struct isl_basic_set *bset, struct isl_dim *dim)
 {

@@ -545,6 +545,54 @@ __isl_give isl_union_set *isl_union_set_gist(__isl_take isl_union_set *uset,
 	return isl_union_map_gist(uset, context);
 }
 
+static __isl_give isl_map *lex_le_set(__isl_take isl_map *set1,
+	__isl_take isl_map *set2)
+{
+	return isl_set_lex_le_set((isl_set *)set1, (isl_set *)set2);
+}
+
+static __isl_give isl_map *lex_lt_set(__isl_take isl_map *set1,
+	__isl_take isl_map *set2)
+{
+	return isl_set_lex_lt_set((isl_set *)set1, (isl_set *)set2);
+}
+
+__isl_give isl_union_set *isl_union_set_lex_lt_union_set(
+	__isl_take isl_union_set *uset1, __isl_take isl_union_set *uset2)
+{
+	return match_bin_op(uset1, uset2, &lex_lt_set);
+}
+
+__isl_give isl_union_set *isl_union_set_lex_le_union_set(
+	__isl_take isl_union_set *uset1, __isl_take isl_union_set *uset2)
+{
+	return match_bin_op(uset1, uset2, &lex_le_set);
+}
+
+__isl_give isl_union_set *isl_union_set_lex_gt_union_set(
+	__isl_take isl_union_set *uset1, __isl_take isl_union_set *uset2)
+{
+	return isl_union_set_lex_lt_union_set(uset2, uset1);
+}
+
+__isl_give isl_union_set *isl_union_set_lex_ge_union_set(
+	__isl_take isl_union_set *uset1, __isl_take isl_union_set *uset2)
+{
+	return isl_union_set_lex_le_union_set(uset2, uset1);
+}
+
+__isl_give isl_union_map *isl_union_map_lex_gt_union_map(
+	__isl_take isl_union_map *umap1, __isl_take isl_union_map *umap2)
+{
+	return isl_union_map_lex_lt_union_map(umap2, umap1);
+}
+
+__isl_give isl_union_map *isl_union_map_lex_ge_union_map(
+	__isl_take isl_union_map *umap1, __isl_take isl_union_map *umap2)
+{
+	return isl_union_map_lex_le_union_map(umap2, umap1);
+}
+
 static int intersect_domain_entry(void **entry, void *user)
 {
 	struct isl_union_map_gen_bin_data *data = user;
@@ -672,6 +720,50 @@ __isl_give isl_union_set *isl_union_set_apply(
 	__isl_take isl_union_set *uset, __isl_take isl_union_map *umap)
 {
 	return isl_union_map_apply_range(uset, umap);
+}
+
+static int map_lex_lt_entry(void **entry, void *user)
+{
+	struct isl_union_map_bin_data *data = user;
+	isl_map *map2 = *entry;
+
+	if (!isl_dim_tuple_match(data->map->dim, isl_dim_out,
+				 map2->dim, isl_dim_out))
+		return 0;
+
+	map2 = isl_map_lex_lt_map(isl_map_copy(data->map), isl_map_copy(map2));
+
+	data->res = isl_union_map_add_map(data->res, map2);
+
+	return 0;
+}
+
+__isl_give isl_union_map *isl_union_map_lex_lt_union_map(
+	__isl_take isl_union_map *umap1, __isl_take isl_union_map *umap2)
+{
+	return bin_op(umap1, umap2, &map_lex_lt_entry);
+}
+
+static int map_lex_le_entry(void **entry, void *user)
+{
+	struct isl_union_map_bin_data *data = user;
+	isl_map *map2 = *entry;
+
+	if (!isl_dim_tuple_match(data->map->dim, isl_dim_out,
+				 map2->dim, isl_dim_out))
+		return 0;
+
+	map2 = isl_map_lex_le_map(isl_map_copy(data->map), isl_map_copy(map2));
+
+	data->res = isl_union_map_add_map(data->res, map2);
+
+	return 0;
+}
+
+__isl_give isl_union_map *isl_union_map_lex_le_union_map(
+	__isl_take isl_union_map *umap1, __isl_take isl_union_map *umap2)
+{
+	return bin_op(umap1, umap2, &map_lex_le_entry);
 }
 
 static int product_entry(void **entry, void *user)

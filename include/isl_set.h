@@ -350,6 +350,15 @@ __isl_give isl_set *isl_set_box_from_points(__isl_take isl_point *pnt1,
 
 __isl_give isl_set *isl_set_lift(__isl_take isl_set *set);
 
+__isl_give isl_map *isl_set_lex_le_set(__isl_take isl_set *set1,
+	__isl_take isl_set *set2);
+__isl_give isl_map *isl_set_lex_lt_set(__isl_take isl_set *set1,
+	__isl_take isl_set *set2);
+__isl_give isl_map *isl_set_lex_ge_set(__isl_take isl_set *set1,
+	__isl_take isl_set *set2);
+__isl_give isl_map *isl_set_lex_gt_set(__isl_take isl_set *set1,
+	__isl_take isl_set *set2);
+
 int isl_set_size(__isl_keep isl_set *set);
 
 #if defined(__cplusplus)
