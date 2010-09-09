@@ -1089,6 +1089,18 @@ __isl_give isl_dim *isl_dim_replace(__isl_take isl_dim *dst,
 	if (!dst || !src)
 		goto error;
 
+	if (type == isl_dim_param) {
+		int i;
+		for (i = 0; i <= 1; ++i) {
+			if (!dst->nested[i])
+				continue;
+			dst->nested[i] = isl_dim_replace(dst->nested[i],
+							 type, src);
+			if (!dst->nested[i])
+				goto error;
+		}
+	}
+
 	dst = isl_dim_drop(dst, type, 0, isl_dim_size(dst, type));
 	dst = isl_dim_add(dst, type, isl_dim_size(src, type));
 	dst = copy_names(dst, type, 0, src, type);
