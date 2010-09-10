@@ -1,3 +1,12 @@
+version: 0.04
+date: Fri Sep 10 12:57:50 CEST 2010
+changes:
+	- rename isl_pw_qpolynomial_fold_add
+	- add isl_map_apply_pw_qpolynomial_fold
+	- support named and nested spaces
+	- support union sets and maps
+	- add public API for matrices
+---
 version: 0.03
 date: Tue Jun 29 13:16:46 CEST 2010
 changes:
