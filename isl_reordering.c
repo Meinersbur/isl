@@ -11,7 +11,7 @@
 #include <isl_dim_private.h>
 #include <isl_reordering.h>
 
-__isl_give isl_reordering *isl_reordering_alloc(isl_ctx *ctx, unsigned len)
+__isl_give isl_reordering *isl_reordering_alloc(isl_ctx *ctx, int len)
 {
 	isl_reordering *exp;
 
