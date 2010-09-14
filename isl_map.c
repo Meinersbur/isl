@@ -3681,6 +3681,12 @@ error:
 	return NULL;
 }
 
+__isl_give isl_basic_map *isl_basic_map_from_range(
+	__isl_take isl_basic_set *bset)
+{
+	return (isl_basic_map *)bset;
+}
+
 struct isl_map *isl_map_from_range(struct isl_set *set)
 {
 	return (struct isl_map *)set;
