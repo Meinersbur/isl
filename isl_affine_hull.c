@@ -417,15 +417,18 @@ error:
 /* Drop all constraints in bset that involve any of the dimensions
  * first to first+n-1.
  */
-static struct isl_basic_set *drop_constraints_involving
-	(struct isl_basic_set *bset, unsigned first, unsigned n)
+__isl_give isl_basic_set *isl_basic_set_drop_constraints_involving(
+	__isl_take isl_basic_set *bset, unsigned first, unsigned n)
 {
 	int i;
 
-	if (!bset)
-		return NULL;
+	if (n == 0)
+		return bset;
 
 	bset = isl_basic_set_cow(bset);
+
+	if (!bset)
+		return NULL;
 
 	for (i = bset->n_eq - 1; i >= 0; --i) {
 		if (isl_seq_first_non_zero(bset->eq[i] + 1 + first, n) == -1)
@@ -703,7 +706,8 @@ static struct isl_basic_set *affine_hull_with_cone(struct isl_basic_set *bset,
 	U = isl_mat_lin_to_aff(U);
 	bset = isl_basic_set_preimage(bset, isl_mat_copy(U));
 
-	bset = drop_constraints_involving(bset, total - cone_dim, cone_dim);
+	bset = isl_basic_set_drop_constraints_involving(bset, total - cone_dim,
+							cone_dim);
 	bset = isl_basic_set_drop_dims(bset, total - cone_dim, cone_dim);
 
 	Q = isl_mat_lin_to_aff(Q);

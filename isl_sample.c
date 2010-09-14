@@ -827,28 +827,6 @@ error:
 	return NULL;
 }
 
-/* Drop all constraints in bset that involve any of the dimensions
- * first to first+n-1.
- */
-static struct isl_basic_set *drop_constraints_involving
-	(struct isl_basic_set *bset, unsigned first, unsigned n)
-{
-	int i;
-
-	bset = isl_basic_set_cow(bset);
-
-	if (!bset)
-		return NULL;
-
-	for (i = bset->n_ineq - 1; i >= 0; --i) {
-		if (isl_seq_first_non_zero(bset->ineq[i] + 1 + first, n) == -1)
-			continue;
-		isl_basic_set_drop_inequality(bset, i);
-	}
-
-	return bset;
-}
-
 /* Give a basic set "bset" with recession cone "cone", compute and
  * return an integer point in bset, if any.
  *
@@ -914,7 +892,8 @@ __isl_give isl_vec *isl_basic_set_sample_with_cone(
 	bset = isl_basic_set_preimage(bset, isl_mat_copy(U));
 
 	bounded = isl_basic_set_copy(bset);
-	bounded = drop_constraints_involving(bounded, total - cone_dim, cone_dim);
+	bounded = isl_basic_set_drop_constraints_involving(bounded,
+						   total - cone_dim, cone_dim);
 	bounded = isl_basic_set_drop_dims(bounded, total - cone_dim, cone_dim);
 	sample = sample_bounded(bounded);
 	if (!sample || sample->size == 0) {
