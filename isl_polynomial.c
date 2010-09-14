@@ -9,6 +9,7 @@
  */
 
 #include <stdlib.h>
+#include <isl_factorization.h>
 #include <isl_lp.h>
 #include <isl_seq.h>
 #include <isl_union_map_private.h>
@@ -3668,5 +3669,153 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_split_periods(
 error:
 	isl_pw_qpolynomial_free(data.res);
 	isl_pw_qpolynomial_free(pwqp);
+	return NULL;
+}
+
+/* Construct a piecewise quasipolynomial that is constant on the given
+ * domain.  In particular, it is
+ *	0	if cst == 0
+ *	1	if cst == 1
+ *  infinity	if cst == -1
+ */
+static __isl_give isl_pw_qpolynomial *constant_on_domain(
+	__isl_take isl_basic_set *bset, int cst)
+{
+	isl_dim *dim;
+	isl_qpolynomial *qp;
+
+	if (!bset)
+		return NULL;
+
+	bset = isl_basic_map_domain(isl_basic_map_from_range(bset));
+	dim = isl_basic_set_get_dim(bset);
+	if (cst < 0)
+		qp = isl_qpolynomial_infty(dim);
+	else if (cst == 0)
+		qp = isl_qpolynomial_zero(dim);
+	else
+		qp = isl_qpolynomial_one(dim);
+	return isl_pw_qpolynomial_alloc(isl_set_from_basic_set(bset), qp);
+}
+
+/* Factor bset, call fn on each of the factors and return the product.
+ *
+ * If no factors can be found, simply call fn on the input.
+ * Otherwise, construct the factors based on the factorizer,
+ * call fn on each factor and compute the product.
+ */
+static __isl_give isl_pw_qpolynomial *compressed_multiplicative_call(
+	__isl_take isl_basic_set *bset,
+	__isl_give isl_pw_qpolynomial *(*fn)(__isl_take isl_basic_set *bset))
+{
+	int i, n;
+	isl_dim *dim;
+	isl_set *set;
+	isl_factorizer *f;
+	isl_qpolynomial *qp;
+	isl_pw_qpolynomial *pwqp;
+	unsigned nparam;
+	unsigned nvar;
+
+	f = isl_basic_set_factorizer(bset);
+	if (!f)
+		goto error;
+	if (f->n_group == 0) {
+		isl_factorizer_free(f);
+		return fn(bset);
+	}
+
+	nparam = isl_basic_set_dim(bset, isl_dim_param);
+	nvar = isl_basic_set_dim(bset, isl_dim_set);
+
+	dim = isl_basic_set_get_dim(bset);
+	dim = isl_dim_domain(dim);
+	set = isl_set_universe(isl_dim_copy(dim));
+	qp = isl_qpolynomial_one(dim);
+	pwqp = isl_pw_qpolynomial_alloc(set, qp);
+
+	bset = isl_morph_basic_set(isl_morph_copy(f->morph), bset);
+
+	for (i = 0, n = 0; i < f->n_group; ++i) {
+		isl_basic_set *bset_i;
+		isl_pw_qpolynomial *pwqp_i;
+
+		bset_i = isl_basic_set_copy(bset);
+		bset_i = isl_basic_set_drop_constraints_involving(bset_i,
+			    nparam + n + f->len[i], nvar - n - f->len[i]);
+		bset_i = isl_basic_set_drop_constraints_involving(bset_i,
+			    nparam, n);
+		bset_i = isl_basic_set_drop_dims(bset_i,
+			    nparam + n + f->len[i], nvar - n - f->len[i]);
+		bset_i = isl_basic_set_drop_dims(bset_i, nparam, n);
+
+		pwqp_i = fn(bset_i);
+		pwqp = isl_pw_qpolynomial_mul(pwqp, pwqp_i);
+
+		n += f->len[i];
+	}
+
+	isl_basic_set_free(bset);
+	isl_factorizer_free(f);
+
+	return pwqp;
+error:
+	isl_basic_set_free(bset);
+	return NULL;
+}
+
+/* Factor bset, call fn on each of the factors and return the product.
+ * The function is assumed to evaluate to zero on empty domains,
+ * to one on zero-dimensional domains and to infinity on unbounded domains
+ * and will not be called explicitly on zero-dimensional or unbounded domains.
+ *
+ * We first check for some special cases and remove all equalities.
+ * Then we hand over control to compressed_multiplicative_call.
+ */
+__isl_give isl_pw_qpolynomial *isl_basic_set_multiplicative_call(
+	__isl_take isl_basic_set *bset,
+	__isl_give isl_pw_qpolynomial *(*fn)(__isl_take isl_basic_set *bset))
+{
+	int bounded;
+	isl_morph *morph;
+	isl_pw_qpolynomial *pwqp;
+	unsigned orig_nvar, final_nvar;
+
+	if (!bset)
+		return NULL;
+
+	if (isl_basic_set_fast_is_empty(bset))
+		return constant_on_domain(bset, 0);
+
+	orig_nvar = isl_basic_set_dim(bset, isl_dim_set);
+
+	if (orig_nvar == 0)
+		return constant_on_domain(bset, 1);
+
+	bounded = isl_basic_set_is_bounded(bset);
+	if (bounded < 0)
+		goto error;
+	if (!bounded)
+		return constant_on_domain(bset, -1);
+
+	if (bset->n_eq == 0)
+		return compressed_multiplicative_call(bset, fn);
+
+	morph = isl_basic_set_full_compression(bset);
+	bset = isl_morph_basic_set(isl_morph_copy(morph), bset);
+
+	final_nvar = isl_basic_set_dim(bset, isl_dim_set);
+
+	pwqp = compressed_multiplicative_call(bset, fn);
+
+	morph = isl_morph_remove_dom_dims(morph, isl_dim_set, 0, orig_nvar);
+	morph = isl_morph_remove_ran_dims(morph, isl_dim_set, 0, final_nvar);
+	morph = isl_morph_inverse(morph);
+
+	pwqp = isl_pw_qpolynomial_morph(pwqp, morph);
+
+	return pwqp;
+error:
+	isl_basic_set_free(bset);
 	return NULL;
 }
