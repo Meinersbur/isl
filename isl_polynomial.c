@@ -240,6 +240,20 @@ __isl_give struct isl_upoly *isl_upoly_zero(struct isl_ctx *ctx)
 	return &cst->up;
 }
 
+__isl_give struct isl_upoly *isl_upoly_one(struct isl_ctx *ctx)
+{
+	struct isl_upoly_cst *cst;
+
+	cst = isl_upoly_cst_alloc(ctx);
+	if (!cst)
+		return NULL;
+
+	isl_int_set_si(cst->n, 1);
+	isl_int_set_si(cst->d, 1);
+
+	return &cst->up;
+}
+
 __isl_give struct isl_upoly *isl_upoly_infty(struct isl_ctx *ctx)
 {
 	struct isl_upoly_cst *cst;
@@ -1376,6 +1390,11 @@ error:
 __isl_give isl_qpolynomial *isl_qpolynomial_zero(__isl_take isl_dim *dim)
 {
 	return isl_qpolynomial_alloc(dim, 0, isl_upoly_zero(dim->ctx));
+}
+
+__isl_give isl_qpolynomial *isl_qpolynomial_one(__isl_take isl_dim *dim)
+{
+	return isl_qpolynomial_alloc(dim, 0, isl_upoly_one(dim->ctx));
 }
 
 __isl_give isl_qpolynomial *isl_qpolynomial_infty(__isl_take isl_dim *dim)

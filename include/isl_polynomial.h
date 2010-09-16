@@ -27,6 +27,7 @@ int isl_qpolynomial_involves_dims(__isl_keep isl_qpolynomial *qp,
 	enum isl_dim_type type, unsigned first, unsigned n);
 
 __isl_give isl_qpolynomial *isl_qpolynomial_zero(__isl_take isl_dim *dim);
+__isl_give isl_qpolynomial *isl_qpolynomial_one(__isl_take isl_dim *dim);
 __isl_give isl_qpolynomial *isl_qpolynomial_infty(__isl_take isl_dim *dim);
 __isl_give isl_qpolynomial *isl_qpolynomial_neginfty(__isl_take isl_dim *dim);
 __isl_give isl_qpolynomial *isl_qpolynomial_nan(__isl_take isl_dim *dim);
