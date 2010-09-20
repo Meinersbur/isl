@@ -34,6 +34,53 @@ error:
 	return NULL;
 }
 
+__isl_give isl_vec *isl_vec_extend(__isl_take isl_vec *vec, unsigned size)
+{
+	if (!vec)
+		return NULL;
+	if (size <= vec->size)
+		return vec;
+
+	vec = isl_vec_cow(vec);
+	if (!vec)
+		return NULL;
+
+	vec->block = isl_blk_extend(vec->ctx, vec->block, size);
+	if (!vec->block.data)
+		goto error;
+
+	vec->size = size;
+	vec->el = vec->block.data;
+
+	return vec;
+error:
+	isl_vec_free(vec);
+	return NULL;
+}
+
+__isl_give isl_vec *isl_vec_zero_extend(__isl_take isl_vec *vec, unsigned size)
+{
+	int extra;
+
+	if (!vec)
+		return NULL;
+	if (size <= vec->size)
+		return vec;
+
+	vec = isl_vec_cow(vec);
+	if (!vec)
+		return NULL;
+
+	extra = size - vec->size;
+	vec = isl_vec_extend(vec, size);
+	if (!vec)
+		return NULL;
+
+	isl_seq_clr(vec->el + size - extra, extra);
+
+	return vec;
+}
+
 struct isl_vec *isl_vec_copy(struct isl_vec *vec)
 {
 	if (!vec)
