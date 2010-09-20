@@ -27,6 +27,7 @@
 struct variable {
 	char    	    	*name;
 	int	     		 pos;
+	isl_vec			*def;
 	struct variable		*next;
 };
 
@@ -52,6 +53,7 @@ static void variable_free(struct variable *var)
 {
 	while (var) {
 		struct variable *next = var->next;
+		isl_vec_free(var->def);
 		free(var->name);
 		free(var);
 		var = next;
@@ -78,6 +80,7 @@ static void vars_drop(struct vars *v, int n)
 	var = v->v;
 	while (--n >= 0) {
 		struct variable *next = var->next;
+		isl_vec_free(var->def);
 		free(var->name);
 		free(var);
 		var = next;
@@ -95,6 +98,7 @@ static struct variable *variable_new(struct vars *v, const char *name, int len,
 	var->name = strdup(name);
 	var->name[len] = '\0';
 	var->pos = pos;
+	var->def = NULL;
 	var->next = v->v;
 	return var;
 error:
@@ -123,6 +127,17 @@ static int vars_pos(struct vars *v, const char *s, int len)
 		v->n++;
 	}
 	return pos;
+}
+
+static int vars_add_anon(struct vars *v)
+{
+	v->v = variable_new(v, "", 0, v->n);
+
+	if (!v->v)
+		return -1;
+	v->n++;
+
+	return 0;
 }
 
 static __isl_give isl_dim *set_name(__isl_take isl_dim *dim,
@@ -323,10 +338,8 @@ static __isl_give isl_mat *read_var_def(struct isl_stream *s,
 	vec = accept_affine(s, v);
 	if (!vec)
 		goto error;
-	v->v = variable_new(v, "", 0, v->n);
-	if (!v->v)
+	if (vars_add_anon(v) < 0)
 		goto error;
-	v->n++;
 	eq = isl_mat_add_rows(eq, 1);
 	if (eq) {
 		isl_seq_cpy(eq->row[eq->n_row - 1], vec->el, vec->size);
@@ -433,19 +446,22 @@ error:
 	return NULL;
 }
 
-static struct isl_basic_map *add_div_definition(struct isl_stream *s,
-	struct vars *v, struct isl_basic_map *bmap, int k)
+static int read_div_definition(struct isl_stream *s, struct vars *v)
 {
 	struct isl_token *tok;
 	int seen_paren = 0;
 	struct isl_vec *aff;
 
+	v->v->def = isl_vec_alloc(s->ctx, 2 + v->n);
+	if (!v->v->def)
+		return -1;
+
 	if (isl_stream_eat(s, '['))
-		goto error;
+		return -1;
 
 	tok = isl_stream_next_token(s);
 	if (!tok)
-		goto error;
+		return -1;
 	if (tok->type == '(') {
 		seen_paren = 1;
 		isl_token_free(tok);
@@ -454,30 +470,41 @@ static struct isl_basic_map *add_div_definition(struct isl_stream *s,
 
 	aff = accept_affine(s, v);
 	if (!aff)
-		goto error;
+		return -1;
 
-	isl_seq_cpy(bmap->div[k] + 1, aff->el, aff->size);
+	isl_seq_cpy(v->v->def->el + 1, aff->el, aff->size);
 
 	isl_vec_free(aff);
 
 	if (seen_paren && isl_stream_eat(s, ')'))
-		goto error;
+		return -1;
 	if (isl_stream_eat(s, '/'))
-		goto error;
+		return -1;
 
 	tok = isl_stream_next_token(s);
 	if (!tok)
-		goto error;
+		return -1;
 	if (tok->type != ISL_TOKEN_VALUE) {
 		isl_stream_error(s, tok, "expected denominator");
 		isl_stream_push_token(s, tok);
-		goto error;
+		return -1;
 	}
-	isl_int_set(bmap->div[k][0], tok->u.v);
+	isl_int_set(v->v->def->el[0], tok->u.v);
 	isl_token_free(tok);
 
 	if (isl_stream_eat(s, ']'))
+		return -1;
+
+	return 0;
+}
+
+static struct isl_basic_map *add_div_definition(struct isl_stream *s,
+	struct vars *v, struct isl_basic_map *bmap, int k)
+{
+	if (read_div_definition(s, v) < 0)
 		goto error;
+
+	isl_seq_cpy(bmap->div[k], v->v->def->el, 2 + v->n);
 
 	if (isl_basic_map_add_div_constraints(bmap, k) < 0)
 		goto error;
@@ -1184,7 +1211,11 @@ static __isl_give isl_div *read_div(struct isl_stream *s,
 	if ((k = isl_basic_map_alloc_div(bmap)) < 0)
 		goto error;
 	isl_seq_clr(bmap->div[k], 1 + 1 + total);
+
+	if (vars_add_anon(v) < 0)
+		goto error;
 	bmap = add_div_definition(s, v, bmap, k);
+	vars_drop(v, 1);
 
 	return isl_basic_map_div(bmap, k);
 error:
