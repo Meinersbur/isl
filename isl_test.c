@@ -27,6 +27,11 @@ void test_parse(struct isl_ctx *ctx)
 	map = isl_map_read_from_str(ctx, str, -1);
 	assert(map);
 	isl_map_free(map);
+
+	str = "{ A[i] -> L[([i/3])] }";
+	map = isl_map_read_from_str(ctx, str, -1);
+	assert(map);
+	isl_map_free(map);
 }
 
 void test_read(struct isl_ctx *ctx)

@@ -184,6 +184,7 @@ error:
 }
 
 static struct isl_vec *accept_affine(struct isl_stream *s, struct vars *v);
+static int read_div_definition(struct isl_stream *s, struct vars *v);
 
 static __isl_give isl_vec *accept_affine_factor(struct isl_stream *s,
 	struct vars *v)
@@ -232,6 +233,18 @@ static __isl_give isl_vec *accept_affine_factor(struct isl_stream *s,
 			goto error;
 		if (isl_stream_eat(s, ')'))
 			goto error;
+	} else if (tok->type == '[') {
+		if (vars_add_anon(v) < 0)
+			goto error;
+		aff = isl_vec_alloc(v->ctx, 1 + v->n);
+		if (!aff)
+			goto error;
+		isl_seq_clr(aff->el, aff->size);
+		isl_int_set_si(aff->el[1 + v->n - 1], 1);
+		isl_stream_push_token(s, tok);
+		tok = NULL;
+		if (read_div_definition(s, v) < 0)
+			goto error;
 	} else {
 		isl_stream_error(s, tok, "expecting factor");
 		goto error;
@@ -277,13 +290,15 @@ static struct isl_vec *accept_affine(struct isl_stream *s, struct vars *v)
 			isl_token_free(tok);
 			continue;
 		}
-		if (tok->type == '(' || tok->type == ISL_TOKEN_IDENT) {
+		if (tok->type == '(' || tok->type == '[' ||
+		    tok->type == ISL_TOKEN_IDENT) {
 			isl_vec *aff2;
 			isl_stream_push_token(s, tok);
 			tok = NULL;
 			aff2 = accept_affine_factor(s, v);
 			if (sign < 0)
 				aff2 = isl_vec_scale(aff2, s->ctx->negone);
+			aff = isl_vec_zero_extend(aff, 1 + v->n);
 			aff = isl_vec_add(aff, aff2);
 			if (!aff)
 				goto error;
@@ -296,6 +311,7 @@ static struct isl_vec *accept_affine(struct isl_stream *s, struct vars *v)
 				isl_vec *aff2;
 				aff2 = accept_affine_factor(s, v);
 				aff2 = isl_vec_scale(aff2, tok->u.v);
+				aff = isl_vec_zero_extend(aff, 1 + v->n);
 				aff = isl_vec_add(aff, aff2);
 				if (!aff)
 					goto error;
@@ -303,6 +319,11 @@ static struct isl_vec *accept_affine(struct isl_stream *s, struct vars *v)
 				isl_int_add(aff->el[0], aff->el[0], tok->u.v);
 			}
 			sign = 1;
+		} else {
+			isl_stream_error(s, tok, "unexpected isl_token");
+			isl_stream_push_token(s, tok);
+			isl_vec_free(aff);
+			return NULL;
 		}
 		isl_token_free(tok);
 
@@ -330,26 +351,71 @@ error:
 	return NULL;
 }
 
+/* Add any variables in the variable list "v" that are not already in "bmap"
+ * as existentially quantified variables in "bmap".
+ */
+static __isl_give isl_basic_map *add_divs(__isl_take isl_basic_map *bmap,
+	struct vars *v)
+{
+	int i;
+	int extra;
+	struct variable *var;
+
+	extra = v->n - isl_basic_map_total_dim(bmap);
+
+	if (extra == 0)
+		return bmap;
+
+	bmap = isl_basic_map_extend_dim(bmap, isl_basic_map_get_dim(bmap),
+					extra, 0, 2 * extra);
+
+	for (i = 0; i < extra; ++i)
+		if (isl_basic_map_alloc_div(bmap) < 0)
+			goto error;
+
+	for (i = 0, var = v->v; i < extra; ++i, var = var->next) {
+		int k = bmap->n_div - 1 - i;
+
+		isl_seq_cpy(bmap->div[k], var->def->el, 2 + var->pos);
+		isl_seq_clr(bmap->div[k] + 2 + var->pos, v->n - var->pos);
+
+		if (isl_basic_map_add_div_constraints(bmap, k) < 0)
+			goto error;
+	}
+
+	return bmap;
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
 static __isl_give isl_basic_map *read_var_def(struct isl_stream *s,
 	__isl_take isl_basic_map *bmap, enum isl_dim_type type, struct vars *v)
 {
 	struct isl_vec *vec;
 	int k;
+	int n;
+
+	if (vars_add_anon(v) < 0)
+		goto error;
+	n = v->n;
 
 	vec = accept_affine(s, v);
 	if (!vec)
 		goto error;
-	if (vars_add_anon(v) < 0)
-		goto error;
+
+	bmap = add_divs(bmap, v);
 	bmap = isl_basic_map_extend_constraints(bmap, 1, 0);
 	k = isl_basic_map_alloc_equality(bmap);
 	if (k >= 0) {
 		isl_seq_cpy(bmap->eq[k], vec->el, vec->size);
-		isl_int_set_si(bmap->eq[k][vec->size], -1);
+		isl_int_set_si(bmap->eq[k][1 + n - 1], -1);
 	}
 	isl_vec_free(vec);
 	if (k < 0)
 		goto error;
+
+	vars_drop(v, v->n - n);
 
 	return bmap;
 error:
@@ -380,7 +446,8 @@ static __isl_give isl_basic_map *read_var_list(struct isl_stream *s,
 			isl_token_free(tok);
 		} else if (tok->type == ISL_TOKEN_IDENT ||
 			   tok->type == ISL_TOKEN_VALUE ||
-			   tok->type == '-') {
+			   tok->type == '-' ||
+			   tok->type == '(') {
 			if (type == isl_dim_param) {
 				isl_stream_error(s, tok,
 						"expecting unique identifier");
@@ -435,6 +502,7 @@ static __isl_give isl_mat *accept_affine_list(struct isl_stream *s,
 		isl_token_free(tok);
 
 		vec = accept_affine(s, v);
+		mat = isl_mat_add_zero_cols(mat, 1 + v->n - isl_mat_cols(mat));
 		mat = isl_mat_vec_concat(mat, vec);
 		if (!mat)
 			return NULL;
@@ -451,10 +519,7 @@ static int read_div_definition(struct isl_stream *s, struct vars *v)
 	struct isl_token *tok;
 	int seen_paren = 0;
 	struct isl_vec *aff;
-
-	v->v->def = isl_vec_alloc(s->ctx, 2 + v->n);
-	if (!v->v->def)
-		return -1;
+	struct variable *var;
 
 	if (isl_stream_eat(s, '['))
 		return -1;
@@ -468,11 +533,19 @@ static int read_div_definition(struct isl_stream *s, struct vars *v)
 	} else
 		isl_stream_push_token(s, tok);
 
+	var = v->v;
+
 	aff = accept_affine(s, v);
 	if (!aff)
 		return -1;
 
-	isl_seq_cpy(v->v->def->el + 1, aff->el, aff->size);
+	var->def = isl_vec_alloc(s->ctx, 2 + v->n);
+	if (!var->def) {
+		isl_vec_free(aff);
+		return -1;
+	}
+
+	isl_seq_cpy(var->def->el + 1, aff->el, aff->size);
 
 	isl_vec_free(aff);
 
@@ -489,7 +562,7 @@ static int read_div_definition(struct isl_stream *s, struct vars *v)
 		isl_stream_push_token(s, tok);
 		return -1;
 	}
-	isl_int_set(v->v->def->el[0], tok->u.v);
+	isl_int_set(var->def->el[0], tok->u.v);
 	isl_token_free(tok);
 
 	if (isl_stream_eat(s, ']'))
@@ -501,10 +574,12 @@ static int read_div_definition(struct isl_stream *s, struct vars *v)
 static struct isl_basic_map *add_div_definition(struct isl_stream *s,
 	struct vars *v, struct isl_basic_map *bmap, int k)
 {
+	struct variable *var = v->v;
+
 	if (read_div_definition(s, v) < 0)
 		goto error;
 
-	isl_seq_cpy(bmap->div[k], v->v->def->el, 2 + v->n);
+	isl_seq_cpy(bmap->div[k], var->def->el, 2 + v->n);
 
 	if (isl_basic_map_add_div_constraints(bmap, k) < 0)
 		goto error;
@@ -770,7 +845,6 @@ static struct isl_basic_map *add_constraint(struct isl_stream *s,
 	struct vars *v, struct isl_basic_map *bmap)
 {
 	int i, j;
-	unsigned total = isl_basic_map_total_dim(bmap);
 	struct isl_token *tok = NULL;
 	struct isl_mat *aff1 = NULL, *aff2 = NULL;
 
@@ -797,13 +871,15 @@ static struct isl_basic_map *add_constraint(struct isl_stream *s,
 		tok = NULL;
 		goto error;
 	}
-	isl_assert(aff1->ctx, aff1->n_col == 1 + total, goto error);
 	for (;;) {
 		aff2 = accept_affine_list(s, v);
 		if (!aff2)
 			goto error;
-		isl_assert(aff2->ctx, aff2->n_col == 1 + total, goto error);
 
+		aff1 = isl_mat_add_zero_cols(aff1, aff2->n_col - aff1->n_col);
+		if (!aff1)
+			goto error;
+		bmap = add_divs(bmap, v);
 		bmap = isl_basic_map_extend_constraints(bmap, 0,
 						aff1->n_row * aff2->n_row);
 		for (i = 0; i < aff1->n_row; ++i)
