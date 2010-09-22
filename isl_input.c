@@ -1695,14 +1695,14 @@ static struct isl_obj obj_read(struct isl_stream *s, int nparam)
 		struct isl_obj o;
 		tok = NULL;
 		o = obj_read_body(s, isl_dim_copy(dim), v);
-		if (o.type == isl_obj_none)
-			break;
+		if (o.type == isl_obj_none || !o.v)
+			goto error;
 		if (!obj.v)
 			obj = o;
 		else {
 			obj = obj_add(s->ctx, obj, o);
-			if (obj.type == isl_obj_none)
-				break;
+			if (obj.type == isl_obj_none || !obj.v)
+				goto error;
 		}
 		tok = isl_stream_next_token(s);
 		if (!tok || tok->type != ';')
