@@ -354,6 +354,12 @@ error:
 	return NULL;
 }
 
+__isl_give isl_set *isl_set_set_tuple_name(__isl_take isl_set *set,
+	const char *s)
+{
+	return (isl_set *)isl_map_set_tuple_name((isl_map *)set, isl_dim_set, s);
+}
+
 __isl_give isl_basic_map *isl_basic_map_set_dim_name(
 	__isl_take isl_basic_map *bmap,
 	enum isl_dim_type type, unsigned pos, const char *s)
