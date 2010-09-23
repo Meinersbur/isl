@@ -877,11 +877,21 @@ struct isl_dim *isl_dim_domain(struct isl_dim *dim)
 	return isl_dim_reverse(dim);
 }
 
+__isl_give isl_dim *isl_dim_from_domain(__isl_take isl_dim *dim)
+{
+	return isl_dim_reverse(dim);
+}
+
 struct isl_dim *isl_dim_range(struct isl_dim *dim)
 {
 	if (!dim)
 		return NULL;
 	return isl_dim_drop_inputs(dim, 0, dim->n_in);
+}
+
+__isl_give isl_dim *isl_dim_from_range(__isl_take isl_dim *dim)
+{
+	return dim;
 }
 
 __isl_give isl_dim *isl_dim_as_set_dim(__isl_take isl_dim *dim)

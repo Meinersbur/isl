@@ -70,7 +70,9 @@ struct isl_dim *isl_dim_drop_inputs(struct isl_dim *dim,
 struct isl_dim *isl_dim_drop_outputs(struct isl_dim *dim,
 		unsigned first, unsigned n);
 __isl_give isl_dim *isl_dim_domain(__isl_take isl_dim *dim);
+__isl_give isl_dim *isl_dim_from_domain(__isl_take isl_dim *dim);
 __isl_give isl_dim *isl_dim_range(__isl_take isl_dim *dim);
+__isl_give isl_dim *isl_dim_from_range(__isl_take isl_dim *dim);
 struct isl_dim *isl_dim_underlying(struct isl_dim *dim, unsigned n_div);
 
 int isl_dim_is_wrapping(__isl_keep isl_dim *dim);
