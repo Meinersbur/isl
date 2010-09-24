@@ -3634,6 +3634,84 @@ struct isl_basic_set *isl_basic_map_range(struct isl_basic_map *bmap)
 	return isl_basic_map_domain(isl_basic_map_reverse(bmap));
 }
 
+__isl_give isl_basic_map *isl_basic_map_domain_map(
+	__isl_take isl_basic_map *bmap)
+{
+	int i, k;
+	isl_dim *dim;
+	isl_basic_map *domain;
+	isl_basic_set *bset;
+	int nparam, n_in, n_out;
+	unsigned total;
+
+	nparam = isl_basic_map_dim(bmap, isl_dim_param);
+	n_in = isl_basic_map_dim(bmap, isl_dim_in);
+	n_out = isl_basic_map_dim(bmap, isl_dim_out);
+
+	dim = isl_dim_from_range(isl_dim_domain(isl_basic_map_get_dim(bmap)));
+	domain = isl_basic_map_universe(dim);
+
+	bmap = isl_basic_map_from_domain(isl_basic_map_wrap(bmap));
+	bmap = isl_basic_map_apply_range(bmap, domain);
+	bmap = isl_basic_map_extend_constraints(bmap, n_in, 0);
+
+	total = isl_basic_map_total_dim(bmap);
+
+	for (i = 0; i < n_in; ++i) {
+		k = isl_basic_map_alloc_equality(bmap);
+		if (k < 0)
+			goto error;
+		isl_seq_clr(bmap->eq[k], 1 + total);
+		isl_int_set_si(bmap->eq[k][1 + nparam + i], -1);
+		isl_int_set_si(bmap->eq[k][1 + nparam + n_in + n_out + i], 1);
+	}
+
+	bmap = isl_basic_map_gauss(bmap, NULL);
+	return isl_basic_map_finalize(bmap);
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+__isl_give isl_basic_map *isl_basic_map_range_map(
+	__isl_take isl_basic_map *bmap)
+{
+	int i, k;
+	isl_dim *dim;
+	isl_basic_map *range;
+	isl_basic_set *bset;
+	int nparam, n_in, n_out;
+	unsigned total;
+
+	nparam = isl_basic_map_dim(bmap, isl_dim_param);
+	n_in = isl_basic_map_dim(bmap, isl_dim_in);
+	n_out = isl_basic_map_dim(bmap, isl_dim_out);
+
+	dim = isl_dim_from_range(isl_dim_range(isl_basic_map_get_dim(bmap)));
+	range = isl_basic_map_universe(dim);
+
+	bmap = isl_basic_map_from_domain(isl_basic_map_wrap(bmap));
+	bmap = isl_basic_map_apply_range(bmap, range);
+	bmap = isl_basic_map_extend_constraints(bmap, n_out, 0);
+
+	total = isl_basic_map_total_dim(bmap);
+
+	for (i = 0; i < n_out; ++i) {
+		k = isl_basic_map_alloc_equality(bmap);
+		if (k < 0)
+			goto error;
+		isl_seq_clr(bmap->eq[k], 1 + total);
+		isl_int_set_si(bmap->eq[k][1 + nparam + n_in + i], -1);
+		isl_int_set_si(bmap->eq[k][1 + nparam + n_in + n_out + i], 1);
+	}
+
+	bmap = isl_basic_map_gauss(bmap, NULL);
+	return isl_basic_map_finalize(bmap);
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
 struct isl_set *isl_map_range(struct isl_map *map)
 {
 	int i;
@@ -3660,6 +3738,60 @@ struct isl_set *isl_map_range(struct isl_map *map)
 	ISL_F_CLR(set, ISL_MAP_DISJOINT);
 	ISL_F_CLR(set, ISL_SET_NORMALIZED);
 	return set;
+error:
+	isl_map_free(map);
+	return NULL;
+}
+
+__isl_give isl_map *isl_map_domain_map(__isl_take isl_map *map)
+{
+	int i;
+	isl_dim *domain_dim;
+
+	map = isl_map_cow(map);
+	if (!map)
+		return NULL;
+
+	domain_dim = isl_dim_from_range(isl_dim_domain(isl_map_get_dim(map)));
+	map->dim = isl_dim_from_domain(isl_dim_wrap(map->dim));
+	map->dim = isl_dim_join(map->dim, domain_dim);
+	if (!map->dim)
+		goto error;
+	for (i = 0; i < map->n; ++i) {
+		map->p[i] = isl_basic_map_domain_map(map->p[i]);
+		if (!map->p[i])
+			goto error;
+	}
+	ISL_F_CLR(map, ISL_MAP_DISJOINT);
+	ISL_F_CLR(map, ISL_MAP_NORMALIZED);
+	return map;
+error:
+	isl_map_free(map);
+	return NULL;
+}
+
+__isl_give isl_map *isl_map_range_map(__isl_take isl_map *map)
+{
+	int i;
+	isl_dim *range_dim;
+
+	map = isl_map_cow(map);
+	if (!map)
+		return NULL;
+
+	range_dim = isl_dim_range(isl_map_get_dim(map));
+	map->dim = isl_dim_from_domain(isl_dim_wrap(map->dim));
+	map->dim = isl_dim_join(map->dim, range_dim);
+	if (!map->dim)
+		goto error;
+	for (i = 0; i < map->n; ++i) {
+		map->p[i] = isl_basic_map_range_map(map->p[i]);
+		if (!map->p[i])
+			goto error;
+	}
+	ISL_F_CLR(map, ISL_MAP_DISJOINT);
+	ISL_F_CLR(map, ISL_MAP_NORMALIZED);
+	return map;
 error:
 	isl_map_free(map);
 	return NULL;

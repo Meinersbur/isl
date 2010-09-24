@@ -189,6 +189,10 @@ __isl_give isl_basic_map *isl_basic_map_affine_hull(
 __isl_give isl_basic_map *isl_basic_map_reverse(__isl_take isl_basic_map *bmap);
 __isl_give isl_basic_set *isl_basic_map_domain(__isl_take isl_basic_map *bmap);
 __isl_give isl_basic_set *isl_basic_map_range(__isl_take isl_basic_map *bmap);
+__isl_give isl_basic_map *isl_basic_map_domain_map(
+	__isl_take isl_basic_map *bmap);
+__isl_give isl_basic_map *isl_basic_map_range_map(
+	__isl_take isl_basic_map *bmap);
 struct isl_basic_map *isl_basic_map_remove(struct isl_basic_map *bmap,
 	enum isl_dim_type type, unsigned first, unsigned n);
 struct isl_basic_map *isl_basic_map_from_basic_set(struct isl_basic_set *bset,
@@ -368,6 +372,8 @@ __isl_give isl_map *isl_set_unwrap(__isl_take isl_set *set);
 __isl_give isl_map *isl_map_flatten(__isl_take isl_map *map);
 __isl_give isl_set *isl_map_domain(__isl_take isl_map *bmap);
 __isl_give isl_set *isl_map_range(__isl_take isl_map *map);
+__isl_give isl_map *isl_map_domain_map(__isl_take isl_map *map);
+__isl_give isl_map *isl_map_range_map(__isl_take isl_map *map);
 __isl_give isl_map *isl_map_from_basic_map(__isl_take isl_basic_map *bmap);
 __isl_give isl_map *isl_map_from_domain(__isl_take isl_set *set);
 __isl_give isl_basic_map *isl_basic_map_from_domain(

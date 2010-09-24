@@ -1004,6 +1004,40 @@ __isl_give isl_union_set *isl_union_map_range(__isl_take isl_union_map *umap)
 	return cond_un_op(umap, &range_entry);
 }
 
+static int domain_map_entry(void **entry, void *user)
+{
+	isl_map *map = *entry;
+	isl_union_set **res = user;
+
+	*res = isl_union_map_add_map(*res,
+					isl_map_domain_map(isl_map_copy(map)));
+
+	return 0;
+}
+
+__isl_give isl_union_map *isl_union_map_domain_map(
+	__isl_take isl_union_map *umap)
+{
+	return cond_un_op(umap, &domain_map_entry);
+}
+
+static int range_map_entry(void **entry, void *user)
+{
+	isl_map *map = *entry;
+	isl_union_set **res = user;
+
+	*res = isl_union_map_add_map(*res,
+					isl_map_range_map(isl_map_copy(map)));
+
+	return 0;
+}
+
+__isl_give isl_union_map *isl_union_map_range_map(
+	__isl_take isl_union_map *umap)
+{
+	return cond_un_op(umap, &range_map_entry);
+}
+
 static int deltas_entry(void **entry, void *user)
 {
 	isl_map *map = *entry;
