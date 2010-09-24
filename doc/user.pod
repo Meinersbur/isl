@@ -2056,6 +2056,8 @@ then value based dependence analysis is performed.
 
 	#include <isl_flow.h>
 
+	typedef int (*isl_access_level_before)(void *first, void *second);
+
 	__isl_give isl_access_info *isl_access_info_alloc(
 		__isl_take isl_map *sink,
 		void *sink_user, isl_access_level_before fn,
