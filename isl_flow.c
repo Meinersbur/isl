@@ -853,22 +853,13 @@ __isl_give isl_flow *isl_access_info_compute_flow(__isl_take isl_access_info *ac
 {
 	int j;
 	struct isl_flow *res;
-	isl_dim *dim;
-	isl_map *id;
-	unsigned n_sink;
-	unsigned n_data;
+	isl_map *domain_map = NULL;
 
 	if (!acc)
 		return NULL;
 
-	n_sink = isl_map_dim(acc->sink.map, isl_dim_in);
-	n_data = isl_map_dim(acc->sink.map, isl_dim_out);
-	dim = isl_dim_range(isl_map_get_dim(acc->sink.map));
-	id = isl_map_identity(dim);
-	id = isl_map_insert(id, isl_dim_in, 0, n_sink);
-	acc->sink.map = isl_map_insert(acc->sink.map, isl_dim_in,
-					n_sink, n_data);
-	acc->sink.map = isl_map_intersect(acc->sink.map, id);
+	domain_map = isl_map_domain_map(isl_map_copy(acc->sink.map));
+	acc->sink.map = isl_map_range_map(acc->sink.map);
 	if (!acc->sink.map)
 		goto error;
 
@@ -880,21 +871,26 @@ __isl_give isl_flow *isl_access_info_compute_flow(__isl_take isl_access_info *ac
 		return NULL;
 
 	for (j = 0; j < res->n_source; ++j) {
-		res->dep[j].map = isl_map_project_out(res->dep[j].map,
-					isl_dim_out, n_sink, n_data);
+		res->dep[j].map = isl_map_apply_range(res->dep[j].map,
+					isl_map_copy(domain_map));
 		if (!res->dep[j].map)
 			goto error2;
 	}
-	res->must_no_source = isl_set_project_out(res->must_no_source, isl_dim_set, n_sink, n_data);
-	res->may_no_source = isl_set_project_out(res->may_no_source, isl_dim_set, n_sink, n_data);
+	res->must_no_source = isl_set_apply(res->must_no_source,
+					isl_map_copy(domain_map));
+	res->may_no_source = isl_set_apply(res->may_no_source,
+					isl_map_copy(domain_map));
 	if (!res->must_no_source || !res->may_no_source)
 		goto error2;
 
+	isl_map_free(domain_map);
 	return res;
 error:
+	isl_map_free(domain_map);
 	isl_access_info_free(acc);
 	return NULL;
 error2:
+	isl_map_free(domain_map);
 	isl_flow_free(res);
 	return NULL;
 }
