@@ -1381,14 +1381,22 @@ struct isl_set *isl_set_remove_dims(struct isl_set *set,
 	return set;
 }
 
-struct isl_basic_set *isl_basic_set_remove_divs(struct isl_basic_set *bset)
+__isl_give isl_basic_map *isl_basic_map_remove_divs(
+	__isl_take isl_basic_map *bmap)
 {
-	bset = isl_basic_set_eliminate_vars(bset, isl_dim_total(bset->dim),
-						bset->n_div);
-	if (!bset)
+	bmap = isl_basic_map_eliminate_vars(bmap, isl_dim_total(bmap->dim),
+						bmap->n_div);
+	if (!bmap)
 		return NULL;
-	bset->n_div = 0;
-	return bset;
+	bmap->n_div = 0;
+	return bmap;
+}
+
+__isl_give isl_basic_set *isl_basic_set_remove_divs(
+	__isl_take isl_basic_set *bset)
+{
+	return (struct isl_basic_set *)isl_basic_map_remove_divs(
+			(struct isl_basic_map *)bset);
 }
 
 struct isl_set *isl_set_remove_divs(struct isl_set *set)

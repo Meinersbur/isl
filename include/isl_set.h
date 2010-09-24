@@ -272,14 +272,15 @@ __isl_give isl_set *isl_set_project_out(__isl_take isl_set *set,
 		enum isl_dim_type type, unsigned first, unsigned n);
 struct isl_basic_set *isl_basic_set_remove_dims(struct isl_basic_set *bset,
 		unsigned first, unsigned n);
-struct isl_basic_set *isl_basic_set_remove_divs(struct isl_basic_set *bset);
+__isl_give isl_basic_set *isl_basic_set_remove_divs(
+	__isl_take isl_basic_set *bset);
 struct isl_set *isl_set_eliminate_dims(struct isl_set *set,
 		unsigned first, unsigned n);
 __isl_give isl_set *isl_set_remove(__isl_take isl_set *bset,
 	enum isl_dim_type type, unsigned first, unsigned n);
 struct isl_set *isl_set_remove_dims(struct isl_set *set,
 		unsigned first, unsigned n);
-struct isl_set *isl_set_remove_divs(struct isl_set *set);
+__isl_give isl_set *isl_set_remove_divs(__isl_take isl_set *set);
 __isl_give isl_set *isl_set_split_dims(__isl_take isl_set *set,
 	enum isl_dim_type type, unsigned first, unsigned n);
 
