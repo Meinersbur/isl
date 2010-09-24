@@ -716,6 +716,14 @@ __isl_give isl_union_map *isl_union_map_apply_range(
 	return bin_op(umap1, umap2, &apply_range_entry);
 }
 
+__isl_give isl_union_map *isl_union_map_apply_domain(
+	__isl_take isl_union_map *umap1, __isl_take isl_union_map *umap2)
+{
+	umap1 = isl_union_map_reverse(umap1);
+	umap1 = isl_union_map_apply_range(umap1, umap2);
+	return isl_union_map_reverse(umap1);
+}
+
 __isl_give isl_union_set *isl_union_set_apply(
 	__isl_take isl_union_set *uset, __isl_take isl_union_map *umap)
 {
