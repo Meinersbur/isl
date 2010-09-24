@@ -3,6 +3,8 @@
 
 #include <isl_set.h>
 #include <isl_map.h>
+#include <isl_union_set.h>
+#include <isl_union_map.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -30,6 +32,14 @@ int isl_flow_foreach(__isl_keep isl_flow *deps,
 	void *user);
 __isl_give isl_set *isl_flow_get_no_source(__isl_keep isl_flow *deps, int must);
 void isl_flow_free(__isl_take isl_flow *deps);
+
+int isl_union_map_compute_flow(__isl_take isl_union_map *sink,
+	__isl_take isl_union_map *must_source,
+	__isl_take isl_union_map *may_source,
+	__isl_take isl_union_map *schedule,
+	__isl_give isl_union_map **must_dep, __isl_give isl_union_map **may_dep,
+	__isl_give isl_union_set **must_no_source,
+	__isl_give isl_union_set **may_no_source);
 
 #if defined(__cplusplus)
 }

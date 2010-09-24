@@ -894,3 +894,297 @@ error2:
 	isl_flow_free(res);
 	return NULL;
 }
+
+
+struct isl_compute_flow_data {
+	isl_union_map *must_source;
+	isl_union_map *may_source;
+	isl_union_map *must_dep;
+	isl_union_map *may_dep;
+	isl_union_set *must_no_source;
+	isl_union_set *may_no_source;
+
+	int count;
+	int must;
+	isl_dim *dim;
+	isl_dim *sink_dim;
+	isl_dim **source_dim;
+	isl_access_info *accesses;
+};
+
+static int count_matching_array(__isl_take isl_map *map, void *user)
+{
+	int eq;
+	isl_dim *dim;
+	struct isl_compute_flow_data *data;
+
+	data = (struct isl_compute_flow_data *)user;
+
+	dim = isl_dim_range(isl_map_get_dim(map));
+
+	eq = isl_dim_equal(dim, data->dim);
+
+	isl_dim_free(dim);
+	isl_map_free(map);
+
+	if (eq < 0)
+		return -1;
+	if (eq)
+		data->count++;
+
+	return 0;
+}
+
+static int collect_matching_array(__isl_take isl_map *map, void *user)
+{
+	int eq;
+	isl_dim *dim;
+	struct isl_compute_flow_data *data;
+
+	data = (struct isl_compute_flow_data *)user;
+
+	dim = isl_dim_range(isl_map_get_dim(map));
+
+	eq = isl_dim_equal(dim, data->dim);
+
+	isl_dim_free(dim);
+
+	if (eq < 0)
+		goto error;
+	if (!eq) {
+		isl_map_free(map);
+		return 0;
+	}
+
+	dim = isl_dim_unwrap(isl_dim_domain(isl_map_get_dim(map)));
+	data->source_dim[data->count] = dim;
+
+	data->accesses = isl_access_info_add_source(data->accesses,
+						    map, data->must, dim);
+
+	data->count++;
+
+	return 0;
+error:
+	isl_map_free(map);
+	return -1;
+}
+
+static int before(void *first, void *second)
+{
+	isl_dim *dim1 = first;
+	isl_dim *dim2 = second;
+	int n1, n2;
+
+	n1 = isl_dim_size(dim1, isl_dim_in);
+	n2 = isl_dim_size(dim2, isl_dim_in);
+
+	if (n2 < n1)
+		n1 = n2;
+
+	return 2 * n1 + (dim1 < dim2);
+}
+
+/* Given a sink access, look for all the source accesses that access
+ * the same array and perform dataflow analysis on them using
+ * isl_access_info_compute_flow.
+ */
+static int compute_flow(__isl_take isl_map *map, void *user)
+{
+	int i;
+	isl_ctx *ctx;
+	struct isl_compute_flow_data *data;
+	isl_flow *flow;
+
+	data = (struct isl_compute_flow_data *)user;
+
+	ctx = isl_map_get_ctx(map);
+
+	data->accesses = NULL;
+	data->sink_dim = NULL;
+	data->source_dim = NULL;
+	data->count = 0;
+	data->dim = isl_dim_range(isl_map_get_dim(map));
+
+	if (isl_union_map_foreach_map(data->must_source,
+					&count_matching_array, data) < 0)
+		goto error;
+	if (isl_union_map_foreach_map(data->may_source,
+					&count_matching_array, data) < 0)
+		goto error;
+
+	data->sink_dim = isl_dim_unwrap(isl_dim_domain(isl_map_get_dim(map)));
+	data->source_dim = isl_calloc_array(ctx, isl_dim *, data->count);
+
+	data->accesses = isl_access_info_alloc(isl_map_copy(map),
+				data->sink_dim, &before, data->count);
+	data->count = 0;
+	data->must = 1;
+	if (isl_union_map_foreach_map(data->must_source,
+					&collect_matching_array, data) < 0)
+		goto error;
+	data->must = 0;
+	if (isl_union_map_foreach_map(data->may_source,
+					&collect_matching_array, data) < 0)
+		goto error;
+
+	flow = isl_access_info_compute_flow(data->accesses);
+	data->accesses = NULL;
+
+	if (!flow)
+		goto error;
+
+	data->must_no_source = isl_union_set_union(data->must_no_source,
+		    isl_union_set_from_set(isl_set_copy(flow->must_no_source)));
+	data->may_no_source = isl_union_set_union(data->may_no_source,
+		    isl_union_set_from_set(isl_set_copy(flow->may_no_source)));
+
+	for (i = 0; i < flow->n_source; ++i) {
+		isl_union_map *dep;
+		dep = isl_union_map_from_map(isl_map_copy(flow->dep[i].map));
+		if (flow->dep[i].must)
+			data->must_dep = isl_union_map_union(data->must_dep, dep);
+		else
+			data->may_dep = isl_union_map_union(data->may_dep, dep);
+	}
+
+	isl_flow_free(flow);
+
+	isl_dim_free(data->sink_dim);
+	if (data->source_dim) {
+		for (i = 0; i < data->count; ++i)
+			isl_dim_free(data->source_dim[i]);
+		free(data->source_dim);
+	}
+	isl_dim_free(data->dim);
+	isl_map_free(map);
+
+	return 0;
+error:
+	isl_access_info_free(data->accesses);
+	isl_dim_free(data->sink_dim);
+	if (data->source_dim) {
+		for (i = 0; i < data->count; ++i)
+			isl_dim_free(data->source_dim[i]);
+		free(data->source_dim);
+	}
+	isl_dim_free(data->dim);
+	isl_map_free(map);
+
+	return -1;
+}
+
+/* Given a collection of "sink" and "source" accesses,
+ * compute for each iteration of a sink access
+ * and for each element accessed by that iteration,
+ * the source access in the list that last accessed the
+ * element accessed by the sink access before this sink access.
+ * Each access is given as a map from the loop iterators
+ * to the array indices.
+ * The result is a relations between source and sink
+ * iterations and a subset of the domain of the sink accesses,
+ * corresponding to those iterations that access an element
+ * not previously accessed.
+ *
+ * We first prepend the schedule dimensions to the domain
+ * of the accesses so that we can easily compare their relative order.
+ * Then we consider each sink access individually in compute_flow.
+ */
+int isl_union_map_compute_flow(__isl_take isl_union_map *sink,
+	__isl_take isl_union_map *must_source,
+	__isl_take isl_union_map *may_source,
+	__isl_take isl_union_map *schedule,
+	__isl_give isl_union_map **must_dep, __isl_give isl_union_map **may_dep,
+	__isl_give isl_union_set **must_no_source,
+	__isl_give isl_union_set **may_no_source)
+{
+	isl_dim *dim;
+	isl_union_map *range_map = NULL;
+	struct isl_compute_flow_data data;
+
+	sink = isl_union_map_align_params(sink,
+					    isl_union_map_get_dim(must_source));
+	sink = isl_union_map_align_params(sink,
+					    isl_union_map_get_dim(may_source));
+	sink = isl_union_map_align_params(sink,
+					    isl_union_map_get_dim(schedule));
+	dim = isl_union_map_get_dim(sink);
+	must_source = isl_union_map_align_params(must_source, isl_dim_copy(dim));
+	may_source = isl_union_map_align_params(may_source, isl_dim_copy(dim));
+	schedule = isl_union_map_align_params(schedule, isl_dim_copy(dim));
+
+	schedule = isl_union_map_reverse(schedule);
+	range_map = isl_union_map_range_map(schedule);
+	schedule = isl_union_map_reverse(isl_union_map_copy(range_map));
+	sink = isl_union_map_apply_domain(sink, isl_union_map_copy(schedule));
+	must_source = isl_union_map_apply_domain(must_source,
+						isl_union_map_copy(schedule));
+	may_source = isl_union_map_apply_domain(may_source, schedule);
+
+	data.must_source = must_source;
+	data.may_source = may_source;
+	data.must_dep = must_dep ?
+		isl_union_map_empty(isl_dim_copy(dim)) : NULL;
+	data.may_dep = may_dep ? isl_union_map_empty(isl_dim_copy(dim)) : NULL;
+	data.must_no_source = must_no_source ?
+		isl_union_set_empty(isl_dim_copy(dim)) : NULL;
+	data.may_no_source = may_no_source ?
+		isl_union_set_empty(isl_dim_copy(dim)) : NULL;
+
+	isl_dim_free(dim);
+
+	if (isl_union_map_foreach_map(sink, &compute_flow, &data) < 0)
+		goto error;
+
+	isl_union_map_free(sink);
+	isl_union_map_free(must_source);
+	isl_union_map_free(may_source);
+
+	if (must_dep) {
+		data.must_dep = isl_union_map_apply_domain(data.must_dep,
+					isl_union_map_copy(range_map));
+		data.must_dep = isl_union_map_apply_range(data.must_dep,
+					isl_union_map_copy(range_map));
+		*must_dep = data.must_dep;
+	}
+	if (may_dep) {
+		data.may_dep = isl_union_map_apply_domain(data.may_dep,
+					isl_union_map_copy(range_map));
+		data.may_dep = isl_union_map_apply_range(data.may_dep,
+					isl_union_map_copy(range_map));
+		*may_dep = data.may_dep;
+	}
+	if (must_no_source) {
+		data.must_no_source = isl_union_set_apply(data.must_no_source,
+					isl_union_map_copy(range_map));
+		*must_no_source = data.must_no_source;
+	}
+	if (may_no_source) {
+		data.may_no_source = isl_union_set_apply(data.may_no_source,
+					isl_union_map_copy(range_map));
+		*may_no_source = data.may_no_source;
+	}
+
+	isl_union_map_free(range_map);
+
+	return 0;
+error:
+	isl_union_map_free(range_map);
+	isl_union_map_free(sink);
+	isl_union_map_free(must_source);
+	isl_union_map_free(may_source);
+	isl_union_map_free(data.must_dep);
+	isl_union_map_free(data.may_dep);
+	isl_union_set_free(data.must_no_source);
+	isl_union_set_free(data.may_no_source);
+
+	if (must_dep)
+		*must_dep = NULL;
+	if (may_dep)
+		*may_dep = NULL;
+	if (must_no_source)
+		*must_no_source = NULL;
+	if (may_no_source)
+		*may_no_source = NULL;
+	return -1;
+}
