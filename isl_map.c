@@ -3690,6 +3690,12 @@ error:
 	return NULL;
 }
 
+__isl_give isl_basic_map *isl_basic_map_from_domain(
+	__isl_take isl_basic_set *bset)
+{
+	return isl_basic_map_reverse(isl_basic_map_from_range(bset));
+}
+
 __isl_give isl_basic_map *isl_basic_map_from_range(
 	__isl_take isl_basic_set *bset)
 {
