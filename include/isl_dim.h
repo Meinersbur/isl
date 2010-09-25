@@ -51,25 +51,26 @@ __isl_keep const char *isl_dim_get_name(__isl_keep isl_dim *dim,
 
 struct isl_dim *isl_dim_extend(struct isl_dim *dim,
 			unsigned nparam, unsigned n_in, unsigned n_out);
-struct isl_dim *isl_dim_add(struct isl_dim *dim, enum isl_dim_type type,
+__isl_give isl_dim *isl_dim_add(__isl_take isl_dim *dim, enum isl_dim_type type,
 		unsigned n);
 __isl_give isl_dim *isl_dim_move(__isl_take isl_dim *dim,
 	enum isl_dim_type dst_type, unsigned dst_pos,
 	enum isl_dim_type src_type, unsigned src_pos, unsigned n);
 __isl_give isl_dim *isl_dim_insert(__isl_take isl_dim *dim,
 	enum isl_dim_type type, unsigned pos, unsigned n);
-struct isl_dim *isl_dim_join(struct isl_dim *left, struct isl_dim *right);
+__isl_give isl_dim *isl_dim_join(__isl_take isl_dim *left,
+	__isl_take isl_dim *right);
 struct isl_dim *isl_dim_product(struct isl_dim *left, struct isl_dim *right);
 struct isl_dim *isl_dim_map(struct isl_dim *dim);
-struct isl_dim *isl_dim_reverse(struct isl_dim *dim);
-struct isl_dim *isl_dim_drop(struct isl_dim *dim, enum isl_dim_type type,
-		unsigned first, unsigned num);
+__isl_give isl_dim *isl_dim_reverse(__isl_take isl_dim *dim);
+__isl_give isl_dim *isl_dim_drop(__isl_take isl_dim *dim,
+	enum isl_dim_type type, unsigned first, unsigned num);
 struct isl_dim *isl_dim_drop_inputs(struct isl_dim *dim,
 		unsigned first, unsigned n);
 struct isl_dim *isl_dim_drop_outputs(struct isl_dim *dim,
 		unsigned first, unsigned n);
-struct isl_dim *isl_dim_domain(struct isl_dim *dim);
-struct isl_dim *isl_dim_range(struct isl_dim *dim);
+__isl_give isl_dim *isl_dim_domain(__isl_take isl_dim *dim);
+__isl_give isl_dim *isl_dim_range(__isl_take isl_dim *dim);
 struct isl_dim *isl_dim_underlying(struct isl_dim *dim, unsigned n_div);
 
 int isl_dim_is_wrapping(__isl_keep isl_dim *dim);

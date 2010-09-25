@@ -481,6 +481,24 @@ Conversely, the output of C<isl_dim_unwrap> is the dimension specification
 of a relation, while that of C<isl_dim_wrap> is the dimension specification
 of a set.
 
+Dimension specifications can be created from other dimension
+specifications using the following functions.
+
+	__isl_give isl_dim *isl_dim_domain(__isl_take isl_dim *dim);
+	__isl_give isl_dim *isl_dim_range(__isl_take isl_dim *dim);
+	__isl_give isl_dim *isl_dim_reverse(__isl_take isl_dim *dim);
+	__isl_give isl_dim *isl_dim_join(__isl_take isl_dim *left,
+		__isl_take isl_dim *right);
+	__isl_give isl_dim *isl_dim_insert(__isl_take isl_dim *dim,
+		enum isl_dim_type type, unsigned pos, unsigned n);
+	__isl_give isl_dim *isl_dim_add(__isl_take isl_dim *dim,
+		enum isl_dim_type type, unsigned n);
+	__isl_give isl_dim *isl_dim_drop(__isl_take isl_dim *dim,
+		enum isl_dim_type type, unsigned first, unsigned n);
+
+Note that if dimensions are added or removed from a space, then
+the name and the internal structure are lost.
+
 =head2 Input and Output
 
 C<isl> supports its own input/output format, which is similar
