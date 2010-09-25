@@ -26,6 +26,7 @@ __isl_give isl_access_info *isl_access_info_alloc(__isl_take isl_map *sink,
 __isl_give isl_access_info *isl_access_info_add_source(
 	__isl_take isl_access_info *acc, __isl_take isl_map *source,
 	int must, void *source_user);
+void isl_access_info_free(__isl_take isl_access_info *acc);
 __isl_give isl_flow *isl_access_info_compute_flow(__isl_take isl_access_info *acc);
 int isl_flow_foreach(__isl_keep isl_flow *deps,
 	int (*fn)(__isl_take isl_map *dep, int must, void *dep_user, void *user),

@@ -2086,6 +2086,7 @@ then value based dependence analysis is performed.
 		__isl_take isl_access_info *acc,
 		__isl_take isl_map *source, int must,
 		void *source_user);
+	void isl_access_info_free(__isl_take isl_access_info *acc);
 
 	__isl_give isl_flow *isl_access_info_compute_flow(
 		__isl_take isl_access_info *acc);
@@ -2127,6 +2128,9 @@ The C<source_user> token is again used to identify
 the source access.  The range of the source access relation
 C<source> should have the same dimension as the range
 of the sink access relation.
+The C<isl_access_info_free> function should usually not be
+called explicitly, because it is called implicitly by
+C<isl_access_info_compute_flow>.
 
 The result of the dependence analysis is collected in an
 C<isl_flow>.  There may be elements in the domain of
