@@ -393,6 +393,7 @@ static void eliminate_var_using_equality(struct isl_basic_map *bmap,
 		if (progress)
 			*progress = 1;
 		isl_seq_elim(bmap->eq[k], eq, 1+pos, 1+total, NULL);
+		isl_seq_normalize(bmap->ctx, bmap->eq[k], 1 + total);
 	}
 
 	for (k = 0; k < bmap->n_ineq; ++k) {
@@ -401,6 +402,7 @@ static void eliminate_var_using_equality(struct isl_basic_map *bmap,
 		if (progress)
 			*progress = 1;
 		isl_seq_elim(bmap->ineq[k], eq, 1+pos, 1+total, NULL);
+		isl_seq_normalize(bmap->ctx, bmap->ineq[k], 1 + total);
 		ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
 	}
 
