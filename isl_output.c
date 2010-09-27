@@ -1145,6 +1145,20 @@ void isl_union_map_dump(__isl_keep isl_union_map *umap)
 	isl_printer_free(printer);
 }
 
+void isl_union_set_dump(__isl_keep isl_union_set *uset)
+{
+	isl_printer *printer;
+
+	if (!uset)
+		return;
+
+	printer = isl_printer_to_file(isl_union_set_get_ctx(uset), stderr);
+	printer = isl_printer_print_union_set(printer, uset);
+	printer = isl_printer_end_line(printer);
+
+	isl_printer_free(printer);
+}
+
 void isl_union_pw_qpolynomial_dump(__isl_keep isl_union_pw_qpolynomial *upwqp)
 {
 	isl_printer *printer;
