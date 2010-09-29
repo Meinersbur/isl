@@ -988,11 +988,16 @@ different kinds of variables appear in the resulting matrix
 and should be a permutation of C<isl_dim_cst>, C<isl_dim_param>,
 C<isl_dim_in>, C<isl_dim_out> and C<isl_dim_div>.
 
-The names of the domain and range spaces of a relation can be
-read off using the following function.
+The names of the domain and range spaces of a set or relation can be
+read off using the following functions.
 
+	const char *isl_set_get_tuple_name(
+		__isl_keep isl_set *set);
 	const char *isl_basic_map_get_tuple_name(
 		__isl_keep isl_basic_map *bmap,
+		enum isl_dim_type type);
+	const char *isl_map_get_tuple_name(
+		__isl_keep isl_map *map,
 		enum isl_dim_type type);
 
 As with C<isl_dim_get_tuple_name>, the value returned points to

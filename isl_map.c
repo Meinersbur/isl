@@ -360,10 +360,21 @@ error:
 	return NULL;
 }
 
+const char *isl_map_get_tuple_name(__isl_keep isl_map *map,
+	enum isl_dim_type type)
+{
+	return map ? isl_dim_get_tuple_name(map->dim, type) : NULL;
+}
+
 __isl_give isl_set *isl_set_set_tuple_name(__isl_take isl_set *set,
 	const char *s)
 {
 	return (isl_set *)isl_map_set_tuple_name((isl_map *)set, isl_dim_set, s);
+}
+
+const char *isl_set_get_tuple_name(__isl_keep isl_set *set)
+{
+	return set ? isl_dim_get_tuple_name(set->dim, isl_dim_set) : NULL;
 }
 
 __isl_give isl_basic_map *isl_basic_map_set_dim_name(
