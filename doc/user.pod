@@ -1002,6 +1002,18 @@ read off using the following functions.
 
 As with C<isl_dim_get_tuple_name>, the value returned points to
 an internal data structure.
+The names of individual dimensions can be read off using
+the following functions.
+
+	const char *isl_set_get_dim_name(
+		__isl_keep isl_set *set,
+		enum isl_dim_type type, unsigned pos);
+	const char *isl_map_get_dim_name(
+		__isl_keep isl_map *map,
+		enum isl_dim_type type, unsigned pos);
+
+These functions are mostly useful to obtain the names
+of the parameters.
 
 =head2 Properties
 

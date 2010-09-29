@@ -135,6 +135,8 @@ const char *isl_map_get_tuple_name(__isl_keep isl_map *map,
 	enum isl_dim_type type);
 __isl_give isl_map *isl_map_set_tuple_name(__isl_take isl_map *map,
 	enum isl_dim_type type, const char *s);
+const char *isl_map_get_dim_name(__isl_keep isl_map *map,
+	enum isl_dim_type type, unsigned pos);
 __isl_give isl_basic_map *isl_basic_map_set_dim_name(
 	__isl_take isl_basic_map *bmap,
 	enum isl_dim_type type, unsigned pos, const char *s);
