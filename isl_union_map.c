@@ -337,6 +337,16 @@ static int call_on_copy(void **entry, void *user)
 	return data->fn(isl_map_copy(map), data->user);
 }
 
+int isl_union_map_n_map(__isl_keep isl_union_map *umap)
+{
+	return umap ? umap->table.n : 0;
+}
+
+int isl_union_set_n_set(__isl_keep isl_union_set *uset)
+{
+	return uset ? uset->table.n : 0;
+}
+
 int isl_union_map_foreach_map(__isl_keep isl_union_map *umap,
 	int (*fn)(__isl_take isl_map *map, void *user), void *user)
 {

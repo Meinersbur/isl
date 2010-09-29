@@ -43,6 +43,7 @@ __isl_give isl_union_set *isl_union_set_apply(
 
 int isl_union_set_is_empty(__isl_keep isl_union_set *uset);
 
+int isl_union_set_n_set(__isl_keep isl_union_set *uset);
 int isl_union_set_foreach_set(__isl_keep isl_union_set *uset,
 	int (*fn)(__isl_take isl_set *set, void *user), void *user);
 int isl_union_set_foreach_point(__isl_keep isl_union_set *uset,
