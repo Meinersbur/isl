@@ -120,6 +120,31 @@ static int has_dim(const void *entry, const void *val)
 	return isl_dim_equal(part->dim, dim);
 }
 
+__isl_give PART *FN(FN(UNION,extract),PARTS)(__isl_keep UNION *u,
+	__isl_take isl_dim *dim)
+{
+	uint32_t hash;
+	struct isl_hash_table_entry *entry;
+
+	if (!u || !dim)
+		goto error;
+
+	hash = isl_dim_get_hash(dim);
+	entry = isl_hash_table_find(u->dim->ctx, &u->table, hash,
+				    &has_dim, dim, 0);
+	if (!entry)
+#ifdef HAS_TYPE
+		return FN(PART,zero)(dim, u->type);
+#else
+		return FN(PART,zero)(dim);
+#endif
+	isl_dim_free(dim);
+	return FN(PART,copy)(entry->data);
+error:
+	isl_dim_free(dim);
+	return NULL;
+}
+
 __isl_give UNION *FN(FN(UNION,add),PARTS)(__isl_take UNION *u,
 	__isl_take PART *part)
 {

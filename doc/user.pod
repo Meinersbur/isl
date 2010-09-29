@@ -1798,6 +1798,14 @@ piecewise quasipolynomial, use the following function
 		int (*fn)(__isl_take isl_pw_qpolynomial *pwqp, void *user),
 		void *user);
 
+To extract the piecewise quasipolynomial from a union with a given dimension
+specification, use
+
+	__isl_give isl_pw_qpolynomial *
+	isl_union_pw_qpolynomial_extract_pw_qpolynomial(
+		__isl_keep isl_union_pw_qpolynomial *upwqp,
+		__isl_take isl_dim *dim);
+
 To iterate over the cells in a piecewise quasipolynomial,
 use either of the following two functions
 
