@@ -26,6 +26,10 @@ unsigned isl_qpolynomial_dim(__isl_keep isl_qpolynomial *qp,
 int isl_qpolynomial_involves_dims(__isl_keep isl_qpolynomial *qp,
 	enum isl_dim_type type, unsigned first, unsigned n);
 
+__isl_give isl_qpolynomial *isl_qpolynomial_set_dim_name(
+	__isl_take isl_qpolynomial *qp,
+	enum isl_dim_type type, unsigned pos, const char *s);
+
 __isl_give isl_qpolynomial *isl_qpolynomial_zero(__isl_take isl_dim *dim);
 __isl_give isl_qpolynomial *isl_qpolynomial_one(__isl_take isl_dim *dim);
 __isl_give isl_qpolynomial *isl_qpolynomial_infty(__isl_take isl_dim *dim);
@@ -137,6 +141,10 @@ int isl_pw_qpolynomial_involves_dims(__isl_keep isl_pw_qpolynomial *pwqp,
 	enum isl_dim_type type, unsigned first, unsigned n);
 int isl_pw_qpolynomial_has_equal_dim(__isl_keep isl_pw_qpolynomial *pwqp1,
 	__isl_keep isl_pw_qpolynomial *pwqp2);
+
+__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_set_dim_name(
+	__isl_take isl_pw_qpolynomial *pwqp,
+	enum isl_dim_type type, unsigned pos, const char *s);
 
 __isl_give isl_set *isl_pw_qpolynomial_domain(__isl_take isl_pw_qpolynomial *pwqp);
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_intersect_domain(

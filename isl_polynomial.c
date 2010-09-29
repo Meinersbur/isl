@@ -1816,6 +1816,22 @@ error:
 	return NULL;
 }
 
+__isl_give isl_qpolynomial *isl_qpolynomial_set_dim_name(
+	__isl_take isl_qpolynomial *qp,
+	enum isl_dim_type type, unsigned pos, const char *s)
+{
+	qp = isl_qpolynomial_cow(qp);
+	if (!qp)
+		return NULL;
+	qp->dim = isl_dim_set_name(qp->dim, type, pos, s);
+	if (!qp->dim)
+		goto error;
+	return qp;
+error:
+	isl_qpolynomial_free(qp);
+	return NULL;
+}
+
 __isl_give isl_qpolynomial *isl_qpolynomial_drop_dims(
 	__isl_take isl_qpolynomial *qp,
 	enum isl_dim_type type, unsigned first, unsigned n)

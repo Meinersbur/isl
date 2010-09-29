@@ -482,6 +482,34 @@ int FN(PW,involves_dims)(__isl_keep PW *pw, enum isl_dim_type type,
 	return 0;
 }
 
+__isl_give PW *FN(PW,set_dim_name)(__isl_take PW *pw,
+	enum isl_dim_type type, unsigned pos, const char *s)
+{
+	int i;
+
+	pw = FN(PW,cow)(pw);
+	if (!pw)
+		return NULL;
+
+	pw->dim = isl_dim_set_name(pw->dim, type, pos, s);
+	if (!pw->dim)
+		goto error;
+
+	for (i = 0; i < pw->n; ++i) {
+		pw->p[i].set = isl_set_set_dim_name(pw->p[i].set, type, pos, s);
+		if (!pw->p[i].set)
+			goto error;
+		pw->p[i].FIELD = FN(EL,set_dim_name)(pw->p[i].FIELD, type, pos, s);
+		if (!pw->p[i].FIELD)
+			goto error;
+	}
+
+	return pw;
+error:
+	FN(PW,free)(pw);
+	return NULL;
+}
+
 __isl_give PW *FN(PW,drop_dims)(__isl_take PW *pw,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {

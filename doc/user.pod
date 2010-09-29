@@ -1725,6 +1725,18 @@ The output format of the printer
 needs to be set to either C<ISL_FORMAT_ISL> or C<ISL_FORMAT_C>.
 For C<isl_printer_print_union_pw_qpolynomial>, only C<ISL_FORMAT_ISL>
 is supported.
+In case of printing in C<ISL_FORMAT_C>, the user may want
+to set the names of all dimensions
+
+	__isl_give isl_qpolynomial *isl_qpolynomial_set_dim_name(
+		__isl_take isl_qpolynomial *qp,
+		enum isl_dim_type type, unsigned pos,
+		const char *s);
+	__isl_give isl_pw_qpolynomial *
+	isl_pw_qpolynomial_set_dim_name(
+		__isl_take isl_pw_qpolynomial *pwqp,
+		enum isl_dim_type type, unsigned pos,
+		const char *s);
 
 =head3 Creating New (Piecewise) Quasipolynomials
 

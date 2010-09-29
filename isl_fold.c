@@ -89,6 +89,32 @@ int isl_qpolynomial_fold_involves_dims(__isl_keep isl_qpolynomial_fold *fold,
 	return 0;
 }
 
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_set_dim_name(
+	__isl_take isl_qpolynomial_fold *fold,
+	enum isl_dim_type type, unsigned pos, const char *s)
+{
+	int i;
+
+	fold = isl_qpolynomial_fold_cow(fold);
+	if (!fold)
+		return NULL;
+	fold->dim = isl_dim_set_name(fold->dim, type, pos, s);
+	if (!fold->dim)
+		goto error;
+
+	for (i = 0; i < fold->n; ++i) {
+		fold->qp[i] = isl_qpolynomial_set_dim_name(fold->qp[i],
+							    type, pos, s);
+		if (!fold->qp[i])
+			goto error;
+	}
+
+	return fold;
+error:
+	isl_qpolynomial_fold_free(fold);
+	return NULL;
+}
+
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_drop_dims(
 	__isl_take isl_qpolynomial_fold *fold,
 	enum isl_dim_type type, unsigned first, unsigned n)
