@@ -359,6 +359,33 @@ int isl_union_map_foreach_map(__isl_keep isl_union_map *umap,
 				      &call_on_copy, &data);
 }
 
+__isl_give isl_map *isl_union_map_extract_map(__isl_keep isl_union_map *umap,
+	__isl_take isl_dim *dim)
+{
+	uint32_t hash;
+	struct isl_hash_table_entry *entry;
+
+	if (!umap || !dim)
+		goto error;
+
+	hash = isl_dim_get_hash(dim);
+	entry = isl_hash_table_find(umap->dim->ctx, &umap->table, hash,
+				    &has_dim, dim, 0);
+	if (!entry)
+		return isl_map_empty(dim);
+	isl_dim_free(dim);
+	return isl_map_copy(entry->data);
+error:
+	isl_dim_free(dim);
+	return NULL;
+}
+
+__isl_give isl_set *isl_union_set_extract_set(__isl_keep isl_union_set *uset,
+	__isl_take isl_dim *dim)
+{
+	return (isl_set *)isl_union_map_extract_map(uset, dim);
+}
+
 int isl_union_set_foreach_set(__isl_keep isl_union_set *uset,
 	int (*fn)(__isl_take isl_set *set, void *user), void *user)
 {

@@ -78,6 +78,8 @@ int isl_union_map_is_strict_subset(__isl_keep isl_union_map *umap1,
 int isl_union_map_n_map(__isl_keep isl_union_map *umap);
 int isl_union_map_foreach_map(__isl_keep isl_union_map *umap,
 	int (*fn)(__isl_take isl_map *map, void *user), void *user);
+__isl_give isl_map *isl_union_map_extract_map(__isl_keep isl_union_map *umap,
+	__isl_take isl_dim *dim);
 
 __isl_give isl_basic_map *isl_union_map_sample(__isl_take isl_union_map *umap);
 
