@@ -377,6 +377,12 @@ const char *isl_set_get_tuple_name(__isl_keep isl_set *set)
 	return set ? isl_dim_get_tuple_name(set->dim, isl_dim_set) : NULL;
 }
 
+const char *isl_basic_map_get_dim_name(__isl_keep isl_basic_map *bmap,
+	enum isl_dim_type type, unsigned pos)
+{
+	return bmap ? isl_dim_get_name(bmap->dim, type, pos) : NULL;
+}
+
 const char *isl_map_get_dim_name(__isl_keep isl_map *map,
 	enum isl_dim_type type, unsigned pos)
 {

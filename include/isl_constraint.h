@@ -72,6 +72,8 @@ int isl_basic_set_has_defining_inequalities(
 int isl_constraint_dim(struct isl_constraint *constraint,
 	enum isl_dim_type type);
 
+const char *isl_constraint_get_dim_name(__isl_keep isl_constraint *constraint,
+	enum isl_dim_type type, unsigned pos);
 void isl_constraint_get_constant(__isl_keep isl_constraint *constraint,
 	isl_int *v);
 void isl_constraint_get_coefficient(__isl_keep isl_constraint *constraint,

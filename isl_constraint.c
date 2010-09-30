@@ -314,6 +314,13 @@ int isl_constraint_dim(struct isl_constraint *constraint,
 	return n(constraint, type);
 }
 
+const char *isl_constraint_get_dim_name(__isl_keep isl_constraint *constraint,
+	enum isl_dim_type type, unsigned pos)
+{
+	return constraint ?
+	    isl_basic_map_get_dim_name(constraint->bmap, type, pos) : NULL;
+}
+
 void isl_constraint_get_constant(struct isl_constraint *constraint, isl_int *v)
 {
 	if (!constraint)
