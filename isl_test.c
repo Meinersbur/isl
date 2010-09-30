@@ -119,7 +119,7 @@ void test_dim(struct isl_ctx *ctx)
 
 	map1 = isl_map_read_from_str(ctx,
 	    "[n] -> { [i] -> [j] : exists (a = [i/10] : i - 10a <= n ) }", -1);
-	map1 = isl_map_add(map1, isl_dim_in, 1);
+	map1 = isl_map_add_dims(map1, isl_dim_in, 1);
 	map2 = isl_map_read_from_str(ctx,
 	    "[n] -> { [i,k] -> [j] : exists (a = [i/10] : i - 10a <= n ) }", -1);
 	assert(isl_map_is_equal(map1, map2));

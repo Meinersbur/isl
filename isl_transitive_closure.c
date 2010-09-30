@@ -112,8 +112,8 @@ static int check_power_exactness(__isl_take isl_map *map,
 	isl_map *app_1;
 	isl_map *app_2;
 
-	map = isl_map_add(map, isl_dim_in, 1);
-	map = isl_map_add(map, isl_dim_out, 1);
+	map = isl_map_add_dims(map, isl_dim_in, 1);
+	map = isl_map_add_dims(map, isl_dim_out, 1);
 	map = set_path_length(map, 1, 1);
 
 	app_1 = set_path_length(isl_map_copy(app), 1, 1);
@@ -822,14 +822,14 @@ static __isl_give isl_map *construct_component(__isl_take isl_dim *dim,
 		isl_dim_free(dim);
 
 		map = isl_map_copy(map);
-		map = isl_map_add(map, isl_dim_in, 1);
-		map = isl_map_add(map, isl_dim_out, 1);
+		map = isl_map_add_dims(map, isl_dim_in, 1);
+		map = isl_map_add_dims(map, isl_dim_out, 1);
 		map = set_path_length(map, 1, 1);
 		return map;
 	}
 	app = isl_map_from_domain_and_range(domain, range);
-	app = isl_map_add(app, isl_dim_in, 1);
-	app = isl_map_add(app, isl_dim_out, 1);
+	app = isl_map_add_dims(app, isl_dim_in, 1);
+	app = isl_map_add_dims(app, isl_dim_out, 1);
 
 	path = construct_extended_path(isl_dim_copy(dim), map,
 					exact && *exact ? &project : NULL);
@@ -884,7 +884,7 @@ static __isl_give isl_map *q_closure(__isl_take isl_dim *dim,
 	isl_map *map;
 	isl_map *app;
 
-	dom = isl_set_add(dom, isl_dim_set, 1);
+	dom = isl_set_add_dims(dom, isl_dim_set, 1);
 	app = isl_map_from_domain_and_range(dom, isl_set_copy(dom));
 	map = isl_map_from_basic_map(isl_basic_map_copy(bmap));
 	path = construct_extended_path(dim, map, &project);
@@ -2169,13 +2169,13 @@ __isl_give isl_map *isl_map_reaching_path_lengths(__isl_take isl_map *map,
 		if (exact)
 			*exact = 1;
 		map = isl_map_project_out(map, isl_dim_out, 0, d);
-		map = isl_map_add(map, isl_dim_out, 1);
+		map = isl_map_add_dims(map, isl_dim_out, 1);
 		return map;
 	}
 
 	map = map_power(map, exact, 0);
 
-	map = isl_map_add(map, isl_dim_param, 1);
+	map = isl_map_add_dims(map, isl_dim_param, 1);
 	dim = isl_map_get_dim(map);
 	diff = equate_parameter_to_length(dim, param);
 	map = isl_map_intersect(map, diff);

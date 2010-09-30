@@ -2260,7 +2260,7 @@ __isl_give isl_set *isl_set_insert(__isl_take isl_set *set,
 	return (isl_set *)isl_map_insert((isl_map *)set, type, pos, n);
 }
 
-__isl_give isl_map *isl_map_add(__isl_take isl_map *map,
+__isl_give isl_map *isl_map_add_dims(__isl_take isl_map *map,
 		enum isl_dim_type type, unsigned n)
 {
 	if (!map)
@@ -2268,13 +2268,13 @@ __isl_give isl_map *isl_map_add(__isl_take isl_map *map,
 	return isl_map_insert(map, type, isl_map_dim(map, type), n);
 }
 
-__isl_give isl_set *isl_set_add(__isl_take isl_set *set,
+__isl_give isl_set *isl_set_add_dims(__isl_take isl_set *set,
 		enum isl_dim_type type, unsigned n)
 {
 	if (!set)
 		return NULL;
 	isl_assert(set->ctx, type != isl_dim_in, goto error);
-	return (isl_set *)isl_map_add((isl_map *)set, type, n);
+	return (isl_set *)isl_map_add_dims((isl_map *)set, type, n);
 error:
 	isl_set_free(set);
 	return NULL;
