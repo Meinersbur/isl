@@ -557,25 +557,25 @@ static __isl_give isl_map *lex_lt_set(__isl_take isl_map *set1,
 	return isl_set_lex_lt_set((isl_set *)set1, (isl_set *)set2);
 }
 
-__isl_give isl_union_set *isl_union_set_lex_lt_union_set(
+__isl_give isl_union_map *isl_union_set_lex_lt_union_set(
 	__isl_take isl_union_set *uset1, __isl_take isl_union_set *uset2)
 {
 	return match_bin_op(uset1, uset2, &lex_lt_set);
 }
 
-__isl_give isl_union_set *isl_union_set_lex_le_union_set(
+__isl_give isl_union_map *isl_union_set_lex_le_union_set(
 	__isl_take isl_union_set *uset1, __isl_take isl_union_set *uset2)
 {
 	return match_bin_op(uset1, uset2, &lex_le_set);
 }
 
-__isl_give isl_union_set *isl_union_set_lex_gt_union_set(
+__isl_give isl_union_map *isl_union_set_lex_gt_union_set(
 	__isl_take isl_union_set *uset1, __isl_take isl_union_set *uset2)
 {
 	return isl_union_set_lex_lt_union_set(uset2, uset1);
 }
 
-__isl_give isl_union_set *isl_union_set_lex_ge_union_set(
+__isl_give isl_union_map *isl_union_set_lex_ge_union_set(
 	__isl_take isl_union_set *uset1, __isl_take isl_union_set *uset2)
 {
 	return isl_union_set_lex_le_union_set(uset2, uset1);
