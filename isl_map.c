@@ -6913,6 +6913,11 @@ int isl_set_dim_is_unique(struct isl_set *set, unsigned dim)
 	return 1;
 }
 
+int isl_set_n_basic_set(__isl_keep isl_set *set)
+{
+	return set ? set->n : 0;
+}
+
 int isl_map_foreach_basic_map(__isl_keep isl_map *map,
 	int (*fn)(__isl_take isl_basic_map *bmap, void *user), void *user)
 {

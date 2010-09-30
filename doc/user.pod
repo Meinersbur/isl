@@ -941,6 +941,11 @@ the following functions first.
 	__isl_give isl_map *isl_map_make_disjoint(
 		__isl_take isl_map *map);
 
+The number of basic sets in a set can be obtained
+from
+
+	int isl_set_n_basic_set(__isl_keep isl_set *set);
+
 To iterate over the constraints of a basic set or map, use
 
 	#include <isl_constraint.h>
