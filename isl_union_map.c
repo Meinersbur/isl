@@ -672,6 +672,48 @@ __isl_give isl_union_map *isl_union_map_intersect_domain(
 	return gen_bin_op(umap, uset, &intersect_domain_entry);
 }
 
+static int intersect_range_entry(void **entry, void *user)
+{
+	struct isl_union_map_gen_bin_data *data = user;
+	uint32_t hash;
+	struct isl_hash_table_entry *entry2;
+	isl_dim *dim;
+	isl_map *map = *entry;
+	int empty;
+
+	dim = isl_map_get_dim(map);
+	dim = isl_dim_range(dim);
+	hash = isl_dim_get_hash(dim);
+	entry2 = isl_hash_table_find(data->umap2->dim->ctx, &data->umap2->table,
+				     hash, &has_dim, dim, 0);
+	isl_dim_free(dim);
+	if (!entry2)
+		return 0;
+
+	map = isl_map_copy(map);
+	map = isl_map_intersect_range(map, isl_set_copy(entry2->data));
+
+	empty = isl_map_is_empty(map);
+	if (empty < 0) {
+		isl_map_free(map);
+		return -1;
+	}
+	if (empty) {
+		isl_map_free(map);
+		return 0;
+	}
+
+	data->res = isl_union_map_add_map(data->res, map);
+
+	return 0;
+}
+
+__isl_give isl_union_map *isl_union_map_intersect_range(
+	__isl_take isl_union_map *umap, __isl_take isl_union_set *uset)
+{
+	return gen_bin_op(umap, uset, &intersect_range_entry);
+}
+
 struct isl_union_map_bin_data {
 	isl_union_map *umap2;
 	isl_union_map *res;

@@ -55,6 +55,8 @@ __isl_give isl_union_map *isl_union_map_gist(__isl_take isl_union_map *umap,
 
 __isl_give isl_union_map *isl_union_map_intersect_domain(
 	__isl_take isl_union_map *umap, __isl_take isl_union_set *uset);
+__isl_give isl_union_map *isl_union_map_intersect_range(
+	__isl_take isl_union_map *umap, __isl_take isl_union_set *uset);
 
 __isl_give isl_union_map *isl_union_map_apply_domain(
 	__isl_take isl_union_map *umap1, __isl_take isl_union_map *umap2);
