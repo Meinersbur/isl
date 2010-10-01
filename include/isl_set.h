@@ -355,6 +355,7 @@ __isl_give isl_set *isl_set_from_point(__isl_take isl_point *pnt);
 __isl_give isl_set *isl_set_box_from_points(__isl_take isl_point *pnt1,
 	__isl_take isl_point *pnt2);
 
+__isl_give isl_basic_set *isl_basic_set_lift(__isl_take isl_basic_set *bset);
 __isl_give isl_set *isl_set_lift(__isl_take isl_set *set);
 
 __isl_give isl_map *isl_set_lex_le_set(__isl_take isl_set *set1,
