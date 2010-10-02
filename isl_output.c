@@ -1551,12 +1551,11 @@ static __isl_give isl_printer *print_term_c(__isl_take isl_printer *p,
 	return p;
 }
 
-static __isl_give isl_printer *print_affine_c(__isl_take isl_printer *p,
-	__isl_keep isl_basic_set *bset, isl_int *c)
+static __isl_give isl_printer *print_partial_affine_c(__isl_take isl_printer *p,
+	__isl_keep isl_basic_set *bset, isl_int *c, unsigned len)
 {
 	int i;
 	int first;
-	unsigned len = 1 + isl_basic_set_total_dim(bset);
 
 	for (i = 0, first = 1; i < len; ++i) {
 		int flip = 0;
@@ -1580,6 +1579,13 @@ static __isl_give isl_printer *print_affine_c(__isl_take isl_printer *p,
 	return p;
 }
 
+static __isl_give isl_printer *print_affine_c(__isl_take isl_printer *p,
+	__isl_keep isl_basic_set *bset, isl_int *c)
+{
+	unsigned len = 1 + isl_basic_set_total_dim(bset);
+	return print_partial_affine_c(p, bset, c, len);
+}
+
 static __isl_give isl_printer *print_constraint_c(__isl_take isl_printer *p,
 	__isl_keep isl_basic_set *bset, isl_int *c, const char *op, int first)
 {
@@ -1596,10 +1602,26 @@ static __isl_give isl_printer *print_constraint_c(__isl_take isl_printer *p,
 static __isl_give isl_printer *print_basic_set_c(__isl_take isl_printer *p,
 	__isl_keep isl_basic_set *bset)
 {
-	int i;
+	int i, j;
+	unsigned n_div = isl_basic_set_dim(bset, isl_dim_div);
+	unsigned total = isl_basic_set_total_dim(bset) - n_div;
 
-	for (i = 0; i < bset->n_eq; ++i)
-		p = print_constraint_c(p, bset, bset->eq[i], "==", !i);
+	for (i = 0; i < bset->n_eq; ++i) {
+		j = isl_seq_last_non_zero(bset->eq[i] + 1 + total, n_div);
+		if (j < 0)
+			p = print_constraint_c(p, bset, bset->eq[i], "==", !i);
+		else {
+			if (i)
+				p = isl_printer_print_str(p, " && ");
+			p = isl_printer_print_str(p, "(");
+			p = print_partial_affine_c(p, bset, bset->eq[i],
+						   1 + total + j);
+			p = isl_printer_print_str(p, ") % ");
+			p = isl_printer_print_isl_int(p,
+						bset->eq[i][1 + total + j]);
+			p = isl_printer_print_str(p, " == 0");
+		}
+	}
 	for (i = 0; i < bset->n_ineq; ++i)
 		p = print_constraint_c(p, bset, bset->ineq[i], ">=",
 					!bset->n_eq && !i);
