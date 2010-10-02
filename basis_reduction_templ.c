@@ -302,15 +302,46 @@ error:
 	return tab;
 }
 
+/* Compute an affine form of a reduced basis of the given basic
+ * non-parametric set, which is assumed to be bounded and not
+ * include any integer divisions.
+ * The first column and the first row correspond to the constant term.
+ *
+ * If the input contains any equalities, we first create an initial
+ * basis with the equalities first.  Otherwise, we start off with
+ * the identity matrix.
+ */
 struct isl_mat *isl_basic_set_reduced_basis(struct isl_basic_set *bset)
 {
 	struct isl_mat *basis;
 	struct isl_tab *tab;
 
-	isl_assert(bset->ctx, bset->n_eq == 0, return NULL);
+	if (!bset)
+		return NULL;
+
+	if (isl_basic_set_dim(bset, isl_dim_div) != 0)
+		isl_die(bset->ctx, isl_error_invalid,
+			"no integer division allowed", return NULL);
+	if (isl_basic_set_dim(bset, isl_dim_param) != 0)
+		isl_die(bset->ctx, isl_error_invalid,
+			"no parameters allowed", return NULL);
 
 	tab = isl_tab_from_basic_set(bset);
-	tab->basis = isl_mat_identity(bset->ctx, 1 + tab->n_var);
+	if (!tab)
+		return NULL;
+
+	if (bset->n_eq == 0)
+		tab->basis = isl_mat_identity(bset->ctx, 1 + tab->n_var);
+	else {
+		isl_mat *eq;
+		unsigned nvar = isl_basic_set_total_dim(bset);
+		eq = isl_mat_sub_alloc(bset->ctx, bset->eq, 0, bset->n_eq,
+					1, nvar);
+		eq = isl_mat_left_hermite(eq, 0, NULL, &tab->basis);
+		tab->basis = isl_mat_lin_to_aff(tab->basis);
+		tab->n_zero = bset->n_eq;
+		isl_mat_free(eq);
+	}
 	tab = isl_tab_compute_reduced_basis(tab);
 	if (!tab)
 		return NULL;
