@@ -38,7 +38,9 @@ typedef mpz_t	isl_int;
 #define isl_int_clear(i)	mpz_clear(i)
 
 #define isl_int_set(r,i)	mpz_set(r,i)
+#define isl_int_set_gmp(r,i)	mpz_set(r,i)
 #define isl_int_set_si(r,i)	mpz_set_si(r,i)
+#define isl_int_get_gmp(i,g)	mpz_set(g,i)
 #define isl_int_get_si(r)	mpz_get_si(r)
 #define isl_int_get_d(r)	mpz_get_d(r)
 #define isl_int_get_str(r)	mpz_get_str(0, 10, r)

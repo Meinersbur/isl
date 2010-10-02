@@ -205,6 +205,10 @@ after the last use.
 
 =item isl_int_set_si(r,i)
 
+=item isl_int_set_gmp(r,g)
+
+=item isl_int_get_gmp(i,g)
+
 =item isl_int_abs(r,i)
 
 =item isl_int_neg(r,i)
