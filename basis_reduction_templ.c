@@ -22,7 +22,7 @@ static void save_alpha(GBR_LP *lp, int first, int n, GBR_type *alpha)
 }
 
 /* Compute a reduced basis for the set represented by the tableau "tab".
- * tab->basis, must be initialized by the calling function to an affine
+ * tab->basis, which must be initialized by the calling function to an affine
  * unimodular basis, is updated to reflect the reduced basis.
  * The first tab->n_zero rows of the basis (ignoring the constant row)
  * are assumed to correspond to equalities and are left untouched.
