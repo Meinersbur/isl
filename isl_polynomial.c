@@ -3745,9 +3745,9 @@ static __isl_give isl_pw_qpolynomial *compressed_multiplicative_call(
 			    nparam + n + f->len[i], nvar - n - f->len[i]);
 		bset_i = isl_basic_set_drop_constraints_involving(bset_i,
 			    nparam, n);
-		bset_i = isl_basic_set_drop_dims(bset_i,
-			    nparam + n + f->len[i], nvar - n - f->len[i]);
-		bset_i = isl_basic_set_drop_dims(bset_i, nparam, n);
+		bset_i = isl_basic_set_drop(bset_i, isl_dim_set,
+			    n + f->len[i], nvar - n - f->len[i]);
+		bset_i = isl_basic_set_drop(bset_i, isl_dim_set, 0, n);
 
 		pwqp_i = fn(bset_i);
 		pwqp = isl_pw_qpolynomial_mul(pwqp, pwqp_i);
