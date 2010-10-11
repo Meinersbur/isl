@@ -46,6 +46,9 @@ static __isl_give UNION *FN(UNION,alloc)(__isl_take isl_dim *dim, int size)
 {
 	UNION *u;
 
+	if (!dim)
+		return NULL;
+
 	u = isl_calloc_type(ctx, UNION);
 	if (!u)
 		return NULL;
