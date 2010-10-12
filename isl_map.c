@@ -7576,6 +7576,11 @@ error:
 	return NULL;
 }
 
+__isl_give isl_set *isl_set_flatten(__isl_take isl_set *set)
+{
+	return (isl_set *)isl_map_flatten((isl_map *)set);
+}
+
 /* Extend the given dim_map with mappings for the divs in bmap.
  */
 static __isl_give struct isl_dim_map *extend_dim_map(
