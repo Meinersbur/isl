@@ -846,6 +846,10 @@ void test_coalesce(struct isl_ctx *ctx)
 			"x-z + 20 >= 0 and x+z + 20 >= 0 and -10 <= y <= 0}", 1);
 	test_coalesce_set(ctx,
 		"{[x,y] : 0 <= x,y <= 10; [5,y]: 4 <=y <= 11}", 1);
+	test_coalesce_set(ctx, "{[x,0] : x >= 0; [x,1] : x <= 20}", 0);
+	test_coalesce_set(ctx,
+		"{[x,0,0] : -5 <= x <= 5; [0,y,1] : -5 <= y <= 5 }", 1);
+	test_coalesce_set(ctx, "{ [x, 1 - x] : 0 <= x <= 1; [0,0] }", 1);
 }
 
 void test_closure(struct isl_ctx *ctx)

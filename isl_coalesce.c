@@ -937,6 +937,100 @@ static int check_adj_eq(struct isl_map *map, int i, int j,
 	return changed;
 }
 
+/* The two basic maps lie on adjacent hyperplanes.  In particular,
+ * basic map "i" has an equality that lies parallel to basic map "j".
+ * Check if we can wrap the facets around the parallel hyperplanes
+ * to include the other set.
+ *
+ * We perform basically the same operations as can_wrap_in_facet,
+ * except that we don't need to select a facet of one of the sets.
+ *				_
+ *	\\			\\
+ *	 \\		=>	 \\
+ *	  \			  \|
+ *
+ * We only allow one equality of "i" to be adjacent to an equality of "j"
+ * to avoid coalescing
+ *
+ *	[m, n] -> { [x, y] -> [x, 1 + y] : x >= 1 and y >= 1 and
+ *					    x <= 10 and y <= 10;
+ *		    [x, y] -> [1 + x, y] : x >= 1 and x <= 20 and
+ *					    y >= 5 and y <= 15 }
+ *
+ * to
+ *
+ *	[m, n] -> { [x, y] -> [x2, y2] : x >= 1 and 10y2 <= 20 - x + 10y and
+ *					4y2 >= 5 + 3y and 5y2 <= 15 + 4y and
+ *					y2 <= 1 + x + y - x2 and y2 >= y and
+ *					y2 >= 1 + x + y - x2 }
+ */
+static int check_eq_adj_eq(struct isl_map *map, int i, int j,
+	struct isl_tab **tabs, int *eq_i, int *ineq_i, int *eq_j, int *ineq_j)
+{
+	int k;
+	int changed = 0;
+	struct isl_mat *wraps = NULL;
+	struct isl_set *set_i = NULL;
+	struct isl_set *set_j = NULL;
+	struct isl_vec *bound = NULL;
+	unsigned total = isl_basic_map_total_dim(map->p[i]);
+
+	if (count(eq_i, 2 * map->p[i]->n_eq, STATUS_ADJ_EQ) != 1)
+		return 0;
+
+	for (k = 0; k < 2 * map->p[i]->n_eq ; ++k)
+		if (eq_i[k] == STATUS_ADJ_EQ)
+			break;
+
+	set_i = set_from_updated_bmap(map->p[i], tabs[i]);
+	set_j = set_from_updated_bmap(map->p[j], tabs[j]);
+	wraps = isl_mat_alloc(map->ctx, 2 * (map->p[i]->n_eq + map->p[j]->n_eq) +
+					map->p[i]->n_ineq + map->p[j]->n_ineq,
+					1 + total);
+	bound = isl_vec_alloc(map->ctx, 1 + total);
+	if (!set_i || !set_j || !wraps || !bound)
+		goto error;
+
+	if (k % 2 == 0)
+		isl_seq_neg(bound->el, map->p[i]->eq[k / 2], 1 + total);
+	else
+		isl_seq_cpy(bound->el, map->p[i]->eq[k / 2], 1 + total);
+	isl_int_add_ui(bound->el[0], bound->el[0], 1);
+
+	isl_seq_cpy(wraps->row[0], bound->el, 1 + total);
+	wraps->n_row = 1;
+
+	if (add_wraps(wraps, map->p[j], tabs[j], bound->el, set_i) < 0)
+		goto error;
+	if (!wraps->n_row)
+		goto unbounded;
+
+	isl_int_sub_ui(bound->el[0], bound->el[0], 1);
+	isl_seq_neg(bound->el, bound->el, 1 + total);
+
+	isl_seq_cpy(wraps->row[wraps->n_row], bound->el, 1 + total);
+	wraps->n_row++;
+
+	if (add_wraps(wraps, map->p[i], tabs[i], bound->el, set_j) < 0)
+		goto error;
+	if (!wraps->n_row)
+		goto unbounded;
+
+	changed = fuse(map, i, j, tabs, eq_i, ineq_i, eq_j, ineq_j, wraps);
+
+	if (0) {
+error:		changed = -1;
+	}
+unbounded:
+
+	isl_mat_free(wraps);
+	isl_set_free(set_i);
+	isl_set_free(set_j);
+	isl_vec_free(bound);
+
+	return changed;
+}
+
 /* Check if the union of the given pair of basic maps
  * can be represented by a single basic map.
  * If so, replace the pair by the single basic map and return 1.
@@ -959,7 +1053,7 @@ static int check_adj_eq(struct isl_map *map, int i, int j,
  *	adj_ineq	the given constraint is adjacent (on the outside)
  *			to an inequality of the other basic map
  *
- * We consider six cases in which we can replace the pair by a single
+ * We consider seven cases in which we can replace the pair by a single
  * basic map.  We ignore all "redundant" constraints.
  *
  *	1. all constraints of one basic map are valid
@@ -1001,6 +1095,10 @@ static int check_adj_eq(struct isl_map *map, int i, int j,
  *		=> the pair can be replaced by a basic map consisting
  *		   of the valid constraints in both basic maps together
  *		   with all wrapping constraints
+ *
+ *	7. the two basic maps live in adjacent hyperplanes.  In principle
+ *	   such sets can always be combined through wrapping, but we impose
+ *	   that there is only one such pair, to avoid overeager coalescing.
  *
  * Throughout the computation, we maintain a collection of tableaus
  * corresponding to the basic maps.  When the basic maps are dropped
@@ -1055,9 +1153,12 @@ static int coalesce_pair(struct isl_map *map, int i, int j,
 		   all(ineq_j, map->p[j]->n_ineq, STATUS_VALID)) {
 		drop(map, i, tabs);
 		changed = 1;
-	} else if (any(eq_i, 2 * map->p[i]->n_eq, STATUS_ADJ_EQ) ||
-		   any(eq_j, 2 * map->p[j]->n_eq, STATUS_ADJ_EQ)) {
-		/* ADJ EQ PAIR */
+	} else if (any(eq_i, 2 * map->p[i]->n_eq, STATUS_ADJ_EQ)) {
+		changed = check_eq_adj_eq(map, i, j, tabs,
+					eq_i, ineq_i, eq_j, ineq_j);
+	} else if (any(eq_j, 2 * map->p[j]->n_eq, STATUS_ADJ_EQ)) {
+		changed = check_eq_adj_eq(map, j, i, tabs,
+					eq_j, ineq_j, eq_i, ineq_i);
 	} else if (any(eq_i, 2 * map->p[i]->n_eq, STATUS_ADJ_INEQ) ||
 		   any(eq_j, 2 * map->p[j]->n_eq, STATUS_ADJ_INEQ)) {
 		changed = check_adj_eq(map, i, j, tabs,
