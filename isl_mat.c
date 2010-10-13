@@ -856,6 +856,7 @@ struct isl_mat *isl_mat_right_inverse(struct isl_mat *mat)
 	return inv;
 error:
 	isl_mat_free(mat);
+	isl_mat_free(inv);
 	return NULL;
 }
 
