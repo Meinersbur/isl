@@ -401,6 +401,7 @@ __isl_give PW *FN(PW,gist)(__isl_take PW *pw, __isl_take isl_set *context)
 		return pw;
 	}
 
+	context = isl_set_compute_divs(context);
 	hull = isl_set_simple_hull(isl_set_copy(context));
 
 	pw = FN(PW,cow)(pw);
