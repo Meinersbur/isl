@@ -5462,6 +5462,14 @@ struct isl_map *isl_map_identity_like_basic_map(struct isl_basic_map *model)
 	return map_identity(isl_dim_copy(model->dim));
 }
 
+__isl_give isl_map *isl_set_identity(__isl_take isl_set *set)
+{
+	isl_dim *dim = isl_set_get_dim(set);
+	isl_map *id;
+	id = isl_map_identity(dim);
+	return isl_map_intersect_range(id, set);
+}
+
 /* Construct a basic set with all set dimensions having only non-negative
  * values.
  */

@@ -1205,6 +1205,15 @@ The followning functions check whether the domain of the given
 The functions above construct a (basic, regular or union) relation
 that maps (a wrapped version of) the input relation to its domain or range.
 
+=item * Identity
+
+	__isl_give isl_map *isl_set_identity(
+		__isl_take isl_set *set);
+	__isl_give isl_union_map *isl_union_set_identity(
+		__isl_take isl_union_set *uset);
+
+Construct an identity relation on the given (union) set.
+
 =item * Deltas
 
 	__isl_give isl_basic_set *isl_basic_map_deltas(

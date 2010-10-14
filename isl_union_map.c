@@ -1135,6 +1135,21 @@ __isl_give isl_union_set *isl_union_map_deltas(__isl_take isl_union_map *umap)
 	return cond_un_op(umap, &deltas_entry);
 }
 
+static int identity_entry(void **entry, void *user)
+{
+	isl_set *set = *entry;
+	isl_union_map **res = user;
+
+	*res = isl_union_map_add_map(*res, isl_set_identity(isl_set_copy(set)));
+
+	return 0;
+}
+
+__isl_give isl_union_map *isl_union_set_identity(__isl_take isl_union_set *uset)
+{
+	return cond_un_op(uset, &identity_entry);
+}
+
 static int unwrap_entry(void **entry, void *user)
 {
 	isl_set *set = *entry;

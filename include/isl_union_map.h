@@ -67,6 +67,7 @@ __isl_give isl_union_map *isl_union_map_from_domain_and_range(
 	__isl_take isl_union_set *domain, __isl_take isl_union_set *range);
 
 __isl_give isl_union_set *isl_union_map_deltas(__isl_take isl_union_map *umap);
+__isl_give isl_union_map *isl_union_set_identity(__isl_take isl_union_set *uset);
 
 int isl_union_map_is_empty(__isl_keep isl_union_map *umap);
 
