@@ -93,25 +93,39 @@ static __isl_give isl_printer *bset_print_constraints_polylib(
 }
 
 static __isl_give isl_printer *isl_basic_map_print_polylib(
-	__isl_keep isl_basic_map *bmap, __isl_take isl_printer *p)
+	__isl_keep isl_basic_map *bmap, __isl_take isl_printer *p, int ext)
 {
 	unsigned total = isl_basic_map_total_dim(bmap);
 	p = isl_printer_start_line(p);
 	p = isl_printer_print_int(p, bmap->n_eq + bmap->n_ineq);
 	p = isl_printer_print_str(p, " ");
 	p = isl_printer_print_int(p, 1 + total + 1);
+	if (ext) {
+		p = isl_printer_print_str(p, " ");
+		p = isl_printer_print_int(p,
+				    isl_basic_map_dim(bmap, isl_dim_out));
+		p = isl_printer_print_str(p, " ");
+		p = isl_printer_print_int(p,
+				    isl_basic_map_dim(bmap, isl_dim_in));
+		p = isl_printer_print_str(p, " ");
+		p = isl_printer_print_int(p,
+				    isl_basic_map_dim(bmap, isl_dim_div));
+		p = isl_printer_print_str(p, " ");
+		p = isl_printer_print_int(p,
+				    isl_basic_map_dim(bmap, isl_dim_param));
+	}
 	p = isl_printer_end_line(p);
 	return print_constraints_polylib(bmap, p);
 }
 
 static __isl_give isl_printer *isl_basic_set_print_polylib(
-	__isl_keep isl_basic_set *bset, __isl_take isl_printer *p)
+	__isl_keep isl_basic_set *bset, __isl_take isl_printer *p, int ext)
 {
-	return isl_basic_map_print_polylib((struct isl_basic_map *)bset, p);
+	return isl_basic_map_print_polylib((struct isl_basic_map *)bset, p, ext);
 }
 
 static __isl_give isl_printer *isl_map_print_polylib(__isl_keep isl_map *map,
-	__isl_take isl_printer *p)
+	__isl_take isl_printer *p, int ext)
 {
 	int i;
 
@@ -121,15 +135,15 @@ static __isl_give isl_printer *isl_map_print_polylib(__isl_keep isl_map *map,
 	for (i = 0; i < map->n; ++i) {
 		p = isl_printer_start_line(p);
 		p = isl_printer_end_line(p);
-		p = isl_basic_map_print_polylib(map->p[i], p);
+		p = isl_basic_map_print_polylib(map->p[i], p, ext);
 	}
 	return p;
 }
 
 static __isl_give isl_printer *isl_set_print_polylib(__isl_keep isl_set *set,
-	__isl_take isl_printer *p)
+	__isl_take isl_printer *p, int ext)
 {
-	return isl_map_print_polylib((struct isl_map *)set, p);
+	return isl_map_print_polylib((struct isl_map *)set, p, ext);
 }
 
 static int count_same_name(__isl_keep isl_dim *dim,
@@ -932,7 +946,9 @@ __isl_give isl_printer *isl_printer_print_basic_set(__isl_take isl_printer *p,
 	if (p->output_format == ISL_FORMAT_ISL)
 		return isl_basic_set_print_isl(bset, p, 0);
 	else if (p->output_format == ISL_FORMAT_POLYLIB)
-		return isl_basic_set_print_polylib(bset, p);
+		return isl_basic_set_print_polylib(bset, p, 0);
+	else if (p->output_format == ISL_FORMAT_EXT_POLYLIB)
+		return isl_basic_set_print_polylib(bset, p, 1);
 	else if (p->output_format == ISL_FORMAT_POLYLIB_CONSTRAINTS)
 		return bset_print_constraints_polylib(bset, p);
 	else if (p->output_format == ISL_FORMAT_OMEGA)
@@ -969,7 +985,9 @@ __isl_give isl_printer *isl_printer_print_set(__isl_take isl_printer *p,
 	if (p->output_format == ISL_FORMAT_ISL)
 		return isl_map_print_isl((isl_map *)set, p, 1);
 	else if (p->output_format == ISL_FORMAT_POLYLIB)
-		return isl_set_print_polylib(set, p);
+		return isl_set_print_polylib(set, p, 0);
+	else if (p->output_format == ISL_FORMAT_EXT_POLYLIB)
+		return isl_set_print_polylib(set, p, 1);
 	else if (p->output_format == ISL_FORMAT_OMEGA)
 		return isl_set_print_omega(set, p);
 	else if (p->output_format == ISL_FORMAT_LATEX)
@@ -1005,7 +1023,9 @@ __isl_give isl_printer *isl_printer_print_map(__isl_take isl_printer *p,
 	if (p->output_format == ISL_FORMAT_ISL)
 		return isl_map_print_isl(map, p, 0);
 	else if (p->output_format == ISL_FORMAT_POLYLIB)
-		return isl_map_print_polylib(map, p);
+		return isl_map_print_polylib(map, p, 0);
+	else if (p->output_format == ISL_FORMAT_EXT_POLYLIB)
+		return isl_map_print_polylib(map, p, 1);
 	else if (p->output_format == ISL_FORMAT_OMEGA)
 		return isl_map_print_omega(map, p);
 	else if (p->output_format == ISL_FORMAT_LATEX)

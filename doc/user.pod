@@ -550,6 +550,19 @@ appear in the last columns before the constant column.
 The coefficients of any existentially quantified variables appear
 between those of the set variables and those of the parameters.
 
+=head3 Extended C<PolyLib> format
+
+The extended C<PolyLib> format is nearly identical to the
+C<PolyLib> format.  The only difference is that the line
+containing the number of rows and columns of a constraint matrix
+also contains four additional numbers:
+the number of output dimensions, the number of input dimensions,
+the number of local dimensions (i.e., the number of existentially
+quantified variables) and the number of parameters.
+For sets, the number of ``output'' dimensions is equal
+to the number of set dimensions, while the number of ``input''
+dimensions is zero.
+
 =head3 Input
 
 	#include <isl_set.h>
@@ -606,7 +619,8 @@ The behavior of the printer can be modified in various ways
 		__isl_take isl_printer *p, const char *suffix);
 
 The C<output_format> may be either C<ISL_FORMAT_ISL>, C<ISL_FORMAT_OMEGA>,
-C<ISL_FORMAT_POLYLIB> or C<ISL_FORMAT_LATEX> and defaults to C<ISL_FORMAT_ISL>.
+C<ISL_FORMAT_POLYLIB>, C<ISL_FORMAT_EXT_POLYLIB> or C<ISL_FORMAT_LATEX>
+and defaults to C<ISL_FORMAT_ISL>.
 Each line in the output is indented by C<indent> spaces
 (default: 0), prefixed by C<prefix> and suffixed by C<suffix>.
 In the C<PolyLib> format output,
