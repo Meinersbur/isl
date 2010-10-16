@@ -847,6 +847,16 @@ struct isl_dim *isl_dim_drop(struct isl_dim *dim, enum isl_dim_type type,
 	case isl_dim_out:	dim->n_out -= num; break;
 	}
 	dim = isl_dim_reset(dim, type);
+	if (type == isl_dim_param) {
+		if (dim && dim->nested[0] &&
+		    !(dim->nested[0] = isl_dim_drop(dim->nested[0],
+						    isl_dim_param, first, num)))
+			goto error;
+		if (dim && dim->nested[1] &&
+		    !(dim->nested[1] = isl_dim_drop(dim->nested[1],
+						    isl_dim_param, first, num)))
+			goto error;
+	}
 	return dim;
 error:
 	isl_dim_free(dim);
