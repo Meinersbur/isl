@@ -3594,7 +3594,7 @@ struct isl_set *isl_set_to_underlying_set(struct isl_set *set)
 	return (struct isl_set *)isl_map_underlying_set((struct isl_map *)set);
 }
 
-static __isl_give isl_basic_map *isl_basic_map_reset_dim(
+__isl_give isl_basic_map *isl_basic_map_reset_dim(
 	__isl_take isl_basic_map *bmap, __isl_take isl_dim *dim)
 {
 	bmap = isl_basic_map_cow(bmap);
