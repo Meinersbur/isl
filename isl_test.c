@@ -18,6 +18,15 @@
 
 static char *srcdir;
 
+void test_parse_map(isl_ctx *ctx, const char *str)
+{
+	isl_map *map;
+
+	map = isl_map_read_from_str(ctx, str, -1);
+	assert(map);
+	isl_map_free(map);
+}
+
 void test_parse(struct isl_ctx *ctx)
 {
 	isl_map *map;
@@ -32,6 +41,8 @@ void test_parse(struct isl_ctx *ctx)
 	map = isl_map_read_from_str(ctx, str, -1);
 	assert(map);
 	isl_map_free(map);
+
+	test_parse_map(ctx, "{[[s] -> A[i]] -> [[s+1] -> A[i]]}");
 }
 
 void test_read(struct isl_ctx *ctx)

@@ -705,18 +705,25 @@ static __isl_give isl_basic_map *read_tuple(struct isl_stream *s,
 	isl_token_free(tok);
 	if (type != isl_dim_param && next_is_tuple(s)) {
 		isl_dim *dim = isl_basic_map_get_dim(bmap);
+		int nparam = isl_dim_size(dim, isl_dim_param);
+		int n_in = isl_dim_size(dim, isl_dim_in);
 		isl_basic_map *nested;
-		dim = isl_dim_drop(dim, isl_dim_in, 0,
-					isl_dim_size(dim, isl_dim_in));
-		dim = isl_dim_drop(dim, isl_dim_out, 0,
-					isl_dim_size(dim, isl_dim_out));
+		if (type == isl_dim_out)
+			dim = isl_dim_move(dim, isl_dim_param, nparam,
+						isl_dim_in, 0, n_in);
 		nested = isl_basic_map_alloc_dim(dim, 0, 0, 0);
 		nested = read_nested_tuple(s, nested, v);
 		if (type == isl_dim_in) {
-			isl_basic_map_free(bmap);
-			bmap = isl_basic_map_reverse(nested);
+			nested = isl_basic_map_reverse(nested);
+			bmap = isl_basic_map_intersect(nested, bmap);
 		} else {
-			bmap = isl_basic_map_apply_range(bmap, nested);
+			isl_basic_set *bset;
+			dim = isl_dim_range(isl_basic_map_get_dim(nested));
+			dim = isl_dim_drop(dim, isl_dim_param, nparam, n_in);
+			dim = isl_dim_join(isl_basic_map_get_dim(bmap), dim);
+			bset = isl_basic_map_domain(bmap);
+			nested = isl_basic_map_reset_dim(nested, dim);
+			bmap = isl_basic_map_intersect_domain(nested, bset);
 		}
 	} else
 		bmap = read_var_list(s, bmap, type, v);
