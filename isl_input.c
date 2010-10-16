@@ -1203,6 +1203,7 @@ static __isl_give isl_basic_map *basic_map_read_polylib(struct isl_stream *s,
 		int k = isl_basic_map_alloc_div(bmap);
 		if (k < 0)
 			goto error;
+		isl_seq_clr(bmap->div[k], 1 + 1 + nparam + in + out + local);
 	}
 
 	for (i = 0; i < n_row; ++i)
