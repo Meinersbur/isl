@@ -1095,10 +1095,10 @@ __isl_give isl_dim *isl_dim_flatten(__isl_take isl_dim *dim)
 	if (!dim->nested[0] && !dim->nested[1])
 		return dim;
 
-	isl_dim_free(dim->nested[0]);
-	dim->nested[0] = NULL;
-	isl_dim_free(dim->nested[1]);
-	dim->nested[1] = NULL;
+	if (dim->nested[0])
+		dim = isl_dim_reset(dim, isl_dim_in);
+	if (dim && dim->nested[1])
+		dim = isl_dim_reset(dim, isl_dim_out);
 
 	return dim;
 }
