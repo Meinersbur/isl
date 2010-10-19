@@ -340,7 +340,7 @@ static struct isl_token *next_token(struct isl_stream *s, int same_line)
 		isl_int_read(tok->u.v, s->buffer);
 		return tok;
 	}
-	if (isalpha(c)) {
+	if (isalpha(c) || c == '_') {
 		tok = isl_token_new(s->ctx, line, col, old_line != line);
 		if (!tok)
 			return NULL;
