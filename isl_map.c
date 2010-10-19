@@ -7574,6 +7574,19 @@ __isl_give isl_set *isl_set_flatten(__isl_take isl_set *set)
 	return (isl_set *)isl_map_flatten((isl_map *)set);
 }
 
+__isl_give isl_map *isl_set_flatten_map(__isl_take isl_set *set)
+{
+	isl_dim *dim, *flat_dim;
+	isl_map *map;
+
+	dim = isl_set_get_dim(set);
+	flat_dim = isl_dim_flatten(isl_dim_copy(dim));
+	map = map_identity(isl_dim_join(isl_dim_reverse(dim), flat_dim));
+	map = isl_map_intersect_domain(map, set);
+
+	return map;
+}
+
 /* Extend the given dim_map with mappings for the divs in bmap.
  */
 static __isl_give struct isl_dim_map *extend_dim_map(

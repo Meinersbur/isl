@@ -1368,6 +1368,12 @@ then the name of the space is also removed.
 	__isl_give isl_map *isl_map_flatten(
 		__isl_take isl_map *map);
 
+	__isl_give isl_map *isl_set_flatten_map(
+		__isl_take isl_set *set);
+
+The function above constructs a relation
+that maps the input set to a flattened version of the set.
+
 =item * Dimension manipulation
 
 	__isl_give isl_set *isl_set_add_dims(
