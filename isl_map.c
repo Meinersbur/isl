@@ -523,9 +523,12 @@ struct isl_basic_set *isl_basic_set_alloc_dim(struct isl_dim *dim,
 	struct isl_basic_map *bmap;
 	if (!dim)
 		return NULL;
-	isl_assert(dim->ctx, dim->n_in == 0, return NULL);
+	isl_assert(dim->ctx, dim->n_in == 0, goto error);
 	bmap = isl_basic_map_alloc_dim(dim, extra, n_eq, n_ineq);
 	return (struct isl_basic_set *)bmap;
+error:
+	isl_dim_free(dim);
+	return NULL;
 }
 
 struct isl_basic_map *isl_basic_map_alloc_dim(struct isl_dim *dim,
@@ -1701,8 +1704,8 @@ struct isl_set *isl_set_alloc_dim(struct isl_dim *dim, int n, unsigned flags)
 
 	if (!dim)
 		return NULL;
-	isl_assert(dim->ctx, dim->n_in == 0, return NULL);
-	isl_assert(dim->ctx, n >= 0, return NULL);
+	isl_assert(dim->ctx, dim->n_in == 0, goto error);
+	isl_assert(dim->ctx, n >= 0, goto error);
 	set = isl_alloc(dim->ctx, struct isl_set,
 			sizeof(struct isl_set) +
 			(n - 1) * sizeof(struct isl_basic_set *));
