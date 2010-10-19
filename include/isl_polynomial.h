@@ -303,6 +303,10 @@ size_t isl_pw_qpolynomial_fold_size(__isl_keep isl_pw_qpolynomial_fold *pwf);
 __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_zero(
 	__isl_take isl_dim *dim, enum isl_fold type);
 
+__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_set_dim_name(
+	__isl_take isl_pw_qpolynomial_fold *pwf,
+	enum isl_dim_type type, unsigned pos, const char *s);
+
 __isl_give isl_set *isl_pw_qpolynomial_fold_domain(
 	__isl_take isl_pw_qpolynomial_fold *pwf);
 __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_intersect_domain(
