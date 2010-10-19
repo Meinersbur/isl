@@ -308,6 +308,9 @@ __isl_give isl_set *isl_pw_qpolynomial_fold_domain(
 __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_intersect_domain(
 	__isl_take isl_pw_qpolynomial_fold *pwf, __isl_take isl_set *set);
 
+__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_add(
+	__isl_take isl_pw_qpolynomial_fold *pwf1,
+	__isl_take isl_pw_qpolynomial_fold *pwf2);
 __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_fold(
 	__isl_take isl_pw_qpolynomial_fold *pwf1,
 	__isl_take isl_pw_qpolynomial_fold *pwf2);

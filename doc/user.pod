@@ -2121,6 +2121,10 @@ To iterate over all quasipolynomials in a reduction, use
 
 =head3 Operations on Piecewise Quasipolynomial Reductions
 
+	__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_add(
+		__isl_take isl_pw_qpolynomial_fold *pwf1,
+		__isl_take isl_pw_qpolynomial_fold *pwf2);
+
 	__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_fold(
 		__isl_take isl_pw_qpolynomial_fold *pwf1,
 		__isl_take isl_pw_qpolynomial_fold *pwf2);
