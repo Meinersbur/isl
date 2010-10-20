@@ -489,8 +489,17 @@ struct isl_dim *isl_dim_add(struct isl_dim *dim, enum isl_dim_type type,
 	dim = isl_dim_reset(dim, type);
 	switch (type) {
 	case isl_dim_param:
-		return isl_dim_extend(dim,
+		dim = isl_dim_extend(dim,
 					dim->nparam + n, dim->n_in, dim->n_out);
+		if (dim && dim->nested[0] &&
+		    !(dim->nested[0] = isl_dim_add(dim->nested[0],
+						    isl_dim_param, n)))
+			goto error;
+		if (dim && dim->nested[1] &&
+		    !(dim->nested[1] = isl_dim_add(dim->nested[1],
+						    isl_dim_param, n)))
+			goto error;
+		return dim;
 	case isl_dim_in:
 		return isl_dim_extend(dim,
 					dim->nparam, dim->n_in + n, dim->n_out);
@@ -499,6 +508,9 @@ struct isl_dim *isl_dim_add(struct isl_dim *dim, enum isl_dim_type type,
 					dim->nparam, dim->n_in, dim->n_out + n);
 	}
 	return dim;
+error:
+	isl_dim_free(dim);
+	return NULL;
 }
 
 __isl_give isl_dim *isl_dim_insert(__isl_take isl_dim *dim,
@@ -1113,7 +1125,11 @@ __isl_give isl_dim *isl_dim_replace(__isl_take isl_dim *dst,
 	if (!dst || !src)
 		goto error;
 
-	if (type == isl_dim_param) {
+	dst = isl_dim_drop(dst, type, 0, isl_dim_size(dst, type));
+	dst = isl_dim_add(dst, type, isl_dim_size(src, type));
+	dst = copy_names(dst, type, 0, src, type);
+
+	if (dst && type == isl_dim_param) {
 		int i;
 		for (i = 0; i <= 1; ++i) {
 			if (!dst->nested[i])
@@ -1124,10 +1140,6 @@ __isl_give isl_dim *isl_dim_replace(__isl_take isl_dim *dst,
 				goto error;
 		}
 	}
-
-	dst = isl_dim_drop(dst, type, 0, isl_dim_size(dst, type));
-	dst = isl_dim_add(dst, type, isl_dim_size(src, type));
-	dst = copy_names(dst, type, 0, src, type);
 
 	return dst;
 error:
