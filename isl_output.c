@@ -231,8 +231,11 @@ static __isl_give isl_printer *print_term(__isl_keep isl_dim *dim,
 		;
 	else if (isl_int_is_negone(c))
 		p = isl_printer_print_str(p, "-");
-	else
+	else {
 		p = isl_printer_print_isl_int(p, c);
+		if (p->output_format == ISL_FORMAT_C)
+			p = isl_printer_print_str(p, "*");
+	}
 	type = pos2type(dim, &pos);
 	p = print_name(dim, p, type, pos, set, latex);
 	return p;
