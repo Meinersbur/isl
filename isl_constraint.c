@@ -876,7 +876,7 @@ int isl_basic_set_foreach_bound_pair(__isl_keep isl_basic_set *bset,
 		lower = isl_basic_set_constraint(isl_basic_set_copy(bset),
 						&bset->eq[i]);
 		upper = isl_constraint_copy(lower);
-		context = isl_basic_set_remove(isl_basic_set_copy(bset),
+		context = isl_basic_set_remove_dims(isl_basic_set_copy(bset),
 					type, pos, 1);
 		if (!lower || !upper || !context)
 			goto error;

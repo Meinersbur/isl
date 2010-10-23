@@ -790,7 +790,7 @@ error:
 static struct isl_set *set_project_out(struct isl_ctx *ctx,
 	struct isl_set *set, unsigned n)
 {
-	return isl_set_remove_dims(set, isl_set_n_dim(set) - n, n);
+	return isl_set_remove_dims(set, isl_dim_set, isl_set_n_dim(set) - n, n);
 }
 
 static struct isl_basic_set *convex_hull_0d(struct isl_set *set)
@@ -869,7 +869,7 @@ static struct isl_basic_set *convex_hull_pair_elim(struct isl_basic_set *bset1,
 		isl_int_set_si(hull->eq[k][2*(1+dim)+j], 1);
 	}
 	hull = isl_basic_set_set_rational(hull);
-	hull = isl_basic_set_remove_dims(hull, dim, 2*(1+dim));
+	hull = isl_basic_set_remove_dims(hull, isl_dim_set, dim, 2*(1+dim));
 	hull = isl_basic_set_remove_redundancies(hull);
 	isl_basic_set_free(bset1);
 	isl_basic_set_free(bset2);
@@ -1043,7 +1043,7 @@ static struct isl_basic_set *modulo_lineality(struct isl_set *set,
 	Q = isl_mat_lin_to_aff(Q);
 
 	set = isl_set_preimage(set, U);
-	set = isl_set_remove_dims(set, total - lin_dim, lin_dim);
+	set = isl_set_remove_dims(set, isl_dim_set, total - lin_dim, lin_dim);
 	hull = uset_convex_hull(set);
 	hull = isl_basic_set_preimage(hull, Q);
 

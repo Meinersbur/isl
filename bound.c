@@ -171,7 +171,7 @@ static int check_solution(__isl_take isl_pw_qpolynomial *pwqp,
 	int i, r, n;
 
 	dom = isl_pw_qpolynomial_domain(isl_pw_qpolynomial_copy(pwqp));
-	context = isl_set_remove(isl_set_copy(dom), isl_dim_set,
+	context = isl_set_remove_dims(isl_set_copy(dom), isl_dim_set,
 					0, isl_set_dim(dom, isl_dim_set));
 	context = isl_set_remove_divs(context);
 	context = set_bounds(context);

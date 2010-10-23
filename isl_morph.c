@@ -126,7 +126,7 @@ __isl_give isl_morph *isl_morph_remove_dom_dims(__isl_take isl_morph *morph,
 
 	dom_offset = 1 + isl_dim_offset(morph->dom->dim, type);
 
-	morph->dom = isl_basic_set_remove(morph->dom, type, first, n);
+	morph->dom = isl_basic_set_remove_dims(morph->dom, type, first, n);
 
 	morph->map = isl_mat_drop_cols(morph->map, dom_offset + first, n);
 
@@ -153,7 +153,7 @@ __isl_give isl_morph *isl_morph_remove_ran_dims(__isl_take isl_morph *morph,
 
 	ran_offset = 1 + isl_dim_offset(morph->ran->dim, type);
 
-	morph->ran = isl_basic_set_remove(morph->ran, type, first, n);
+	morph->ran = isl_basic_set_remove_dims(morph->ran, type, first, n);
 
 	morph->map = isl_mat_drop_rows(morph->map, ran_offset + first, n);
 

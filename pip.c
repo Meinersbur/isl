@@ -111,7 +111,8 @@ isl_basic_set *plug_in_parameters(isl_basic_set *bset, struct isl_vec *params)
 		bset = isl_basic_set_fix(bset,
 					 isl_dim_param, i, params->el[1 + i]);
 
-	bset = isl_basic_set_remove(bset, isl_dim_param, 0, params->size - 1);
+	bset = isl_basic_set_remove_dims(bset,
+					 isl_dim_param, 0, params->size - 1);
 
 	isl_vec_free(params);
 
@@ -125,7 +126,7 @@ isl_set *set_plug_in_parameters(isl_set *set, struct isl_vec *params)
 	for (i = 0; i < params->size - 1; ++i)
 		set = isl_set_fix(set, isl_dim_param, i, params->el[1 + i]);
 
-	set = isl_set_remove(set, isl_dim_param, 0, params->size - 1);
+	set = isl_set_remove_dims(set, isl_dim_param, 0, params->size - 1);
 
 	isl_vec_free(params);
 

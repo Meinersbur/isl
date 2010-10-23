@@ -782,7 +782,8 @@ static struct isl_vec *round_up_in_cone(struct isl_vec *vec,
 
 	total = isl_basic_set_total_dim(cone);
 	cone = isl_basic_set_preimage(cone, U);
-	cone = isl_basic_set_remove_dims(cone, 0, total - (vec->size - 1));
+	cone = isl_basic_set_remove_dims(cone, isl_dim_set,
+					 0, total - (vec->size - 1));
 
 	cone = shift_cone(cone, vec);
 

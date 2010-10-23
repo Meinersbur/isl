@@ -2258,7 +2258,7 @@ static struct isl_basic_map *drop_more_redundant_divs(
 	if (remove < 0)
 		return bmap;
 
-	bmap = isl_basic_map_remove(bmap, isl_dim_div, remove, 1);
+	bmap = isl_basic_map_remove_dims(bmap, isl_dim_div, remove, 1);
 	return isl_basic_map_drop_redundant_divs(bmap);
 error:
 	free(pairs);

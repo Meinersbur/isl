@@ -1410,15 +1410,6 @@ __isl_give isl_set *isl_set_eliminate_dims(__isl_take isl_set *set,
 	return isl_set_eliminate(set, isl_dim_set, first, n);
 }
 
-/* Project out n dimensions starting at first using Fourier-Motzkin */
-struct isl_set *isl_set_remove_dims(struct isl_set *set,
-	unsigned first, unsigned n)
-{
-	set = isl_set_eliminate_dims(set, first, n);
-	set = isl_set_drop_dims(set, first, n);
-	return set;
-}
-
 __isl_give isl_basic_map *isl_basic_map_remove_divs(
 	__isl_take isl_basic_map *bmap)
 {
@@ -1461,7 +1452,7 @@ error:
 	return NULL;
 }
 
-struct isl_basic_map *isl_basic_map_remove(struct isl_basic_map *bmap,
+struct isl_basic_map *isl_basic_map_remove_dims(struct isl_basic_map *bmap,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
 	if (!bmap)
@@ -1483,14 +1474,15 @@ error:
 	return NULL;
 }
 
-__isl_give isl_basic_set *isl_basic_set_remove(__isl_take isl_basic_set *bset,
+__isl_give isl_basic_set *isl_basic_set_remove_dims(
+	__isl_take isl_basic_set *bset,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
 	return (isl_basic_set *)
-		isl_basic_map_remove((isl_basic_map *)bset, type, first, n);
+	    isl_basic_map_remove_dims((isl_basic_map *)bset, type, first, n);
 }
 
-struct isl_map *isl_map_remove(struct isl_map *map,
+struct isl_map *isl_map_remove_dims(struct isl_map *map,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
 	int i;
@@ -1516,27 +1508,17 @@ error:
 	return NULL;
 }
 
-__isl_give isl_set *isl_set_remove(__isl_take isl_set *bset,
+__isl_give isl_set *isl_set_remove_dims(__isl_take isl_set *bset,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
-	return (isl_set *)isl_map_remove((isl_map *)bset, type, first, n);
+	return (isl_set *)isl_map_remove_dims((isl_map *)bset, type, first, n);
 }
 
 /* Project out n inputs starting at first using Fourier-Motzkin */
 struct isl_map *isl_map_remove_inputs(struct isl_map *map,
 	unsigned first, unsigned n)
 {
-	return isl_map_remove(map, isl_dim_in, first, n);
-}
-
-/* Project out n dimensions starting at first using Fourier-Motzkin */
-struct isl_basic_set *isl_basic_set_remove_dims(struct isl_basic_set *bset,
-	unsigned first, unsigned n)
-{
-	unsigned nparam = isl_basic_set_n_param(bset);
-	bset = isl_basic_set_eliminate_vars(bset, nparam + first, n);
-	bset = isl_basic_set_drop_dims(bset, first, n);
-	return bset;
+	return isl_map_remove_dims(map, isl_dim_in, first, n);
 }
 
 static void dump_term(struct isl_basic_map *bmap,
@@ -2529,7 +2511,7 @@ __isl_give isl_basic_map *isl_basic_map_project_out(
 		return NULL;
 
 	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL))
-		return isl_basic_map_remove(bmap, type, first, n);
+		return isl_basic_map_remove_dims(bmap, type, first, n);
 
 	isl_assert(bmap->ctx, first + n <= isl_basic_map_dim(bmap, type),
 			goto error);
