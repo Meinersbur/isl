@@ -72,6 +72,16 @@ struct isl_div *isl_basic_set_div(struct isl_basic_set *bset, int pos)
 	return isl_basic_map_div((struct isl_basic_map *)bset, pos);
 }
 
+__isl_give isl_div *isl_div_div(__isl_take isl_div *div, int pos)
+{
+	isl_basic_map *bmap;
+	if (!div)
+		return NULL;
+	bmap = isl_basic_map_copy(div->bmap);
+	isl_div_free(div);
+	return isl_basic_map_div(bmap, pos);
+}
+
 struct isl_div *isl_div_alloc(struct isl_dim *dim)
 {
 	struct isl_basic_map *bmap;

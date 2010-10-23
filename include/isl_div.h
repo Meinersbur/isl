@@ -42,6 +42,7 @@ void isl_div_set_coefficient(struct isl_div *div,
 	enum isl_dim_type type, int pos, isl_int v);
 
 unsigned isl_div_dim(__isl_keep isl_div *div, enum isl_dim_type type);
+__isl_give isl_div *isl_div_div(__isl_take isl_div *div, int pos);
 
 #if defined(__cplusplus)
 }
