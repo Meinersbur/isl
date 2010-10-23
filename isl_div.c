@@ -88,6 +88,15 @@ struct isl_div *isl_div_alloc(struct isl_dim *dim)
 	return isl_basic_map_div(bmap, 0);
 }
 
+__isl_give isl_div *isl_div_copy(__isl_keep isl_div *div)
+{
+	if (!div)
+		return NULL;
+
+	div->ref++;
+	return div;
+}
+
 void isl_div_free(struct isl_div *c)
 {
 	if (!c)
