@@ -408,11 +408,18 @@ __isl_give PW *FN(PW,gist)(__isl_take PW *pw, __isl_take isl_set *context)
 	if (!pw)
 		goto error;
 
-	for (i = 0; i < pw->n; ++i) {
+	for (i = pw->n - 1; i >= 0; --i) {
 		pw->p[i].set = isl_set_gist_basic_set(pw->p[i].set,
 						isl_basic_set_copy(hull));
 		if (!pw->p[i].set)
 			goto error;
+		if (isl_set_fast_is_empty(pw->p[i].set)) {
+			isl_set_free(pw->p[i].set);
+			FN(EL,free)(pw->p[i].FIELD);
+			if (i != pw->n - 1)
+				pw->p[i] = pw->p[pw->n - 1];
+			pw->n--;
+		}
 	}
 
 	isl_basic_set_free(hull);
