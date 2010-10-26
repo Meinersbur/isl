@@ -2083,7 +2083,7 @@ output format of the printer
 needs to be set to either C<ISL_FORMAT_ISL> or C<ISL_FORMAT_C>.
 For C<isl_printer_print_union_pw_qpolynomial_fold>,
 output format of the printer
-needs to be set to either C<ISL_FORMAT_ISL>.
+needs to be set to C<ISL_FORMAT_ISL>.
 
 =head3 Inspecting (Piecewise) Quasipolynomial Reductions
 
