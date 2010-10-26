@@ -470,6 +470,8 @@ static __isl_give isl_basic_map *read_var_list(struct isl_stream *s,
 	if (tok)
 		isl_stream_push_token(s, tok);
 
+	bmap = isl_basic_map_simplify(bmap);
+	bmap = isl_basic_map_finalize(bmap);
 	return bmap;
 error:
 	isl_token_free(tok);
