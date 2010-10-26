@@ -15,6 +15,7 @@
 #include <isl_flow.h>
 #include <isl_constraint.h>
 #include <isl_polynomial.h>
+#include <isl_union_map.h>
 
 static char *srcdir;
 
@@ -1431,6 +1432,24 @@ void test_split_periods(isl_ctx *ctx)
 	isl_pw_qpolynomial_free(pwqp);
 }
 
+void test_union(isl_ctx *ctx)
+{
+	const char *str;
+	isl_union_set *uset;
+	isl_union_map *umap1, *umap2;
+
+	str = "{ [i] : 0 <= i <= 1 }";
+	uset = isl_union_set_from_set(isl_set_read_from_str(ctx, str, -1));
+	str = "{ [1] -> [0] }";
+	umap1 = isl_union_map_from_map(isl_map_read_from_str(ctx, str, -1));
+
+	umap2 = isl_union_set_lex_gt_union_set(isl_union_set_copy(uset), uset);
+	assert(isl_union_map_is_equal(umap1, umap2));
+
+	isl_union_map_free(umap1);
+	isl_union_map_free(umap2);
+}
+
 int main()
 {
 	struct isl_ctx *ctx;
@@ -1439,6 +1458,7 @@ int main()
 	assert(srcdir);
 
 	ctx = isl_ctx_alloc();
+	test_union(ctx);
 	test_split_periods(ctx);
 	test_parse(ctx);
 	test_pwqp(ctx);

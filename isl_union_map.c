@@ -609,25 +609,25 @@ __isl_give isl_union_map *isl_union_set_lex_le_union_set(
 __isl_give isl_union_map *isl_union_set_lex_gt_union_set(
 	__isl_take isl_union_set *uset1, __isl_take isl_union_set *uset2)
 {
-	return isl_union_set_lex_lt_union_set(uset2, uset1);
+	return isl_union_map_reverse(isl_union_set_lex_lt_union_set(uset2, uset1));
 }
 
 __isl_give isl_union_map *isl_union_set_lex_ge_union_set(
 	__isl_take isl_union_set *uset1, __isl_take isl_union_set *uset2)
 {
-	return isl_union_set_lex_le_union_set(uset2, uset1);
+	return isl_union_map_reverse(isl_union_set_lex_le_union_set(uset2, uset1));
 }
 
 __isl_give isl_union_map *isl_union_map_lex_gt_union_map(
 	__isl_take isl_union_map *umap1, __isl_take isl_union_map *umap2)
 {
-	return isl_union_map_lex_lt_union_map(umap2, umap1);
+	return isl_union_map_reverse(isl_union_map_lex_lt_union_map(umap2, umap1));
 }
 
 __isl_give isl_union_map *isl_union_map_lex_ge_union_map(
 	__isl_take isl_union_map *umap1, __isl_take isl_union_map *umap2)
 {
-	return isl_union_map_lex_le_union_map(umap2, umap1);
+	return isl_union_map_reverse(isl_union_map_lex_le_union_map(umap2, umap1));
 }
 
 static int intersect_domain_entry(void **entry, void *user)
