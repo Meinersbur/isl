@@ -1474,6 +1474,90 @@ error:
 	return NULL;
 }
 
+/* Return true if the definition of the given div (recursively) involves
+ * any of the given variables.
+ */
+static int div_involves_vars(__isl_keep isl_basic_map *bmap, int div,
+	unsigned first, unsigned n)
+{
+	int i;
+	unsigned div_offset = isl_basic_map_offset(bmap, isl_dim_div);
+
+	if (isl_int_is_zero(bmap->div[div][0]))
+		return 0;
+	if (isl_seq_first_non_zero(bmap->div[div] + 1 + first, n) >= 0)
+		return 1;
+
+	for (i = bmap->n_div - 1; i >= 0; --i) {
+		if (isl_int_is_zero(bmap->div[div][1 + div_offset + i]))
+			continue;
+		if (div_involves_vars(bmap, i, first, n))
+			return 1;
+	}
+
+	return 0;
+}
+
+/* Remove all divs (recursively) involving any of the given dimensions
+ * in their definitions.
+ */
+__isl_give isl_basic_map *isl_basic_map_remove_divs_involving_dims(
+	__isl_take isl_basic_map *bmap,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	int i;
+
+	if (!bmap)
+		return NULL;
+	isl_assert(bmap->ctx, first + n <= isl_basic_map_dim(bmap, type),
+			goto error);
+	first += isl_basic_map_offset(bmap, type);
+
+	for (i = bmap->n_div - 1; i >= 0; --i) {
+		if (!div_involves_vars(bmap, i, first, n))
+			continue;
+		bmap = isl_basic_map_remove_dims(bmap, isl_dim_div, i, 1);
+	}
+
+	return bmap;
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+__isl_give isl_map *isl_map_remove_divs_involving_dims(__isl_take isl_map *map,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	int i;
+
+	if (!map)
+		return NULL;
+	if (map->n == 0)
+		return map;
+
+	map = isl_map_cow(map);
+	if (!map)
+		return NULL;
+
+	for (i = 0; i < map->n; ++i) {
+		map->p[i] = isl_basic_map_remove_divs_involving_dims(map->p[i],
+								type, first, n);
+		if (!map->p[i])
+			goto error;
+	}
+	return map;
+error:
+	isl_map_free(map);
+	return NULL;
+}
+
+__isl_give isl_set *isl_set_remove_divs_involving_dims(__isl_take isl_set *set,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	return (isl_set *)isl_map_remove_divs_involving_dims((isl_map *)set,
+							      type, first, n);
+}
+
 __isl_give isl_basic_set *isl_basic_set_remove_dims(
 	__isl_take isl_basic_set *bset,
 	enum isl_dim_type type, unsigned first, unsigned n)
