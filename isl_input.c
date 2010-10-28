@@ -392,6 +392,8 @@ error:
 static __isl_give isl_basic_map *read_var_def(struct isl_stream *s,
 	__isl_take isl_basic_map *bmap, enum isl_dim_type type, struct vars *v)
 {
+	isl_dim *dim;
+	isl_basic_map *def = NULL;
 	struct isl_vec *vec;
 	int k;
 	int n;
@@ -404,12 +406,14 @@ static __isl_give isl_basic_map *read_var_def(struct isl_stream *s,
 	if (!vec)
 		goto error;
 
-	bmap = add_divs(bmap, v);
-	bmap = isl_basic_map_extend_constraints(bmap, 1, 0);
-	k = isl_basic_map_alloc_equality(bmap);
+	dim = isl_basic_map_get_dim(bmap);
+	def = isl_basic_map_universe(dim);
+	def = add_divs(def, v);
+	def = isl_basic_map_extend_constraints(def, 1, 0);
+	k = isl_basic_map_alloc_equality(def);
 	if (k >= 0) {
-		isl_seq_cpy(bmap->eq[k], vec->el, vec->size);
-		isl_int_set_si(bmap->eq[k][1 + n - 1], -1);
+		isl_seq_cpy(def->eq[k], vec->el, vec->size);
+		isl_int_set_si(def->eq[k][1 + n - 1], -1);
 	}
 	isl_vec_free(vec);
 	if (k < 0)
@@ -417,9 +421,13 @@ static __isl_give isl_basic_map *read_var_def(struct isl_stream *s,
 
 	vars_drop(v, v->n - n);
 
+	def = isl_basic_map_simplify(def);
+	def = isl_basic_map_finalize(def);
+	bmap = isl_basic_map_intersect(bmap, def);
 	return bmap;
 error:
 	isl_basic_map_free(bmap);
+	isl_basic_map_free(def);
 	return NULL;
 }
 
@@ -470,8 +478,6 @@ static __isl_give isl_basic_map *read_var_list(struct isl_stream *s,
 	if (tok)
 		isl_stream_push_token(s, tok);
 
-	bmap = isl_basic_map_simplify(bmap);
-	bmap = isl_basic_map_finalize(bmap);
 	return bmap;
 error:
 	isl_token_free(tok);

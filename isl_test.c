@@ -30,7 +30,7 @@ void test_parse_map(isl_ctx *ctx, const char *str)
 
 void test_parse(struct isl_ctx *ctx)
 {
-	isl_map *map;
+	isl_map *map, *map2;
 	const char *str;
 
 	str = "{ [i] -> [-i] }";
@@ -44,6 +44,17 @@ void test_parse(struct isl_ctx *ctx)
 	isl_map_free(map);
 
 	test_parse_map(ctx, "{[[s] -> A[i]] -> [[s+1] -> A[i]]}");
+
+	str = "{[new,old] -> [new+1-2*[(new+1)/2],old+1-2*[(old+1)/2]]}";
+	map = isl_map_read_from_str(ctx, str, -1);
+	str = "{ [new, old] -> [o0, o1] : "
+	       "exists (e0 = [(-1 - new + o0)/2], e1 = [(-1 - old + o1)/2]: "
+	       "2e0 = -1 - new + o0 and 2e1 = -1 - old + o1 and o0 >= 0 and "
+	       "o0 <= 1 and o1 >= 0 and o1 <= 1) }";
+	map2 = isl_map_read_from_str(ctx, str, -1);
+	assert(isl_map_is_equal(map, map2));
+	isl_map_free(map);
+	isl_map_free(map2);
 }
 
 void test_read(struct isl_ctx *ctx)
