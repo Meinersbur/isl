@@ -3270,6 +3270,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_morph(__isl_take isl_qpolynomial *qp
 	__isl_take isl_morph *morph)
 {
 	int i;
+	int n_sub;
 	isl_ctx *ctx;
 	struct isl_upoly *up;
 	unsigned n_div;
@@ -3283,17 +3284,24 @@ __isl_give isl_qpolynomial *isl_qpolynomial_morph(__isl_take isl_qpolynomial *qp
 	ctx = qp->dim->ctx;
 	isl_assert(ctx, isl_dim_equal(qp->dim, morph->dom->dim), goto error);
 
-	subs = isl_calloc_array(ctx, struct isl_upoly *, morph->inv->n_row - 1);
+	n_sub = morph->inv->n_row - 1;
+	if (morph->inv->n_row != morph->inv->n_col)
+		n_sub += qp->div->n_row;
+	subs = isl_calloc_array(ctx, struct isl_upoly *, n_sub);
 	if (!subs)
 		goto error;
 
 	for (i = 0; 1 + i < morph->inv->n_row; ++i)
 		subs[i] = isl_upoly_from_affine(ctx, morph->inv->row[1 + i],
 					morph->inv->row[0][0], morph->inv->n_col);
+	if (morph->inv->n_row != morph->inv->n_col)
+		for (i = 0; i < qp->div->n_row; ++i)
+			subs[morph->inv->n_row - 1 + i] =
+				isl_upoly_pow(ctx, morph->inv->n_col - 1 + i, 1);
 
-	qp->upoly = isl_upoly_subs(qp->upoly, 0, morph->inv->n_row - 1, subs);
+	qp->upoly = isl_upoly_subs(qp->upoly, 0, n_sub, subs);
 
-	for (i = 0; 1 + i < morph->inv->n_row; ++i)
+	for (i = 0; i < n_sub; ++i)
 		isl_upoly_free(subs[i]);
 	free(subs);
 
