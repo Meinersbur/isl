@@ -3493,7 +3493,9 @@ struct isl_basic_set *isl_basic_map_underlying_set(
 	if (!bmap)
 		goto error;
 	if (bmap->dim->nparam == 0 && bmap->dim->n_in == 0 &&
-	    bmap->n_div == 0 && !isl_dim_get_tuple_name(bmap->dim, isl_dim_out))
+	    bmap->n_div == 0 &&
+	    !isl_dim_is_named_or_nested(bmap->dim, isl_dim_in) &&
+	    !isl_dim_is_named_or_nested(bmap->dim, isl_dim_out))
 		return (struct isl_basic_set *)bmap;
 	bmap = isl_basic_map_cow(bmap);
 	if (!bmap)
