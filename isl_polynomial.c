@@ -1962,6 +1962,89 @@ static void normalize_div(__isl_keep isl_qpolynomial *qp, int div)
 			    ctx->normalize_gcd);
 }
 
+/* Replace the integer division identified by "div" by the polynomial "s".
+ * The integer division is assumed not to appear in the definition
+ * of any other integer divisions.
+ */
+static __isl_give isl_qpolynomial *substitute_div(
+	__isl_take isl_qpolynomial *qp,
+	int div, __isl_take struct isl_upoly *s)
+{
+	int i;
+	int total;
+	int *reordering;
+
+	if (!qp || !s)
+		goto error;
+
+	qp = isl_qpolynomial_cow(qp);
+	if (!qp)
+		goto error;
+
+	total = isl_dim_total(qp->dim);
+	qp->upoly = isl_upoly_subs(qp->upoly, total + div, 1, &s);
+	if (!qp->upoly)
+		goto error;
+
+	reordering = isl_alloc_array(qp->dim->ctx, int, total + qp->div->n_row);
+	if (!reordering)
+		goto error;
+	for (i = 0; i < total + div; ++i)
+		reordering[i] = i;
+	for (i = total + div + 1; i < total + qp->div->n_row; ++i)
+		reordering[i] = i - 1;
+	qp->div = isl_mat_drop_rows(qp->div, div, 1);
+	qp->div = isl_mat_drop_cols(qp->div, 2 + total + div, 1);
+	qp->upoly = reorder(qp->upoly, reordering);
+	free(reordering);
+
+	if (!qp->upoly || !qp->div)
+		goto error;
+
+	isl_upoly_free(s);
+	return qp;
+error:
+	isl_qpolynomial_free(qp);
+	isl_upoly_free(s);
+	return NULL;
+}
+
+/* Replace all integer divisions [e/d] that turn out to not actually be integer
+ * divisions because d is equal to 1 by their definition, i.e., e.
+ */
+static __isl_give isl_qpolynomial *substitute_non_divs(
+	__isl_take isl_qpolynomial *qp)
+{
+	int i, j;
+	int total;
+	struct isl_upoly *s;
+
+	if (!qp)
+		return NULL;
+
+	total = isl_dim_total(qp->dim);
+	for (i = 0; qp && i < qp->div->n_row; ++i) {
+		if (!isl_int_is_one(qp->div->row[i][0]))
+			continue;
+		for (j = i + 1; j < qp->div->n_row; ++j) {
+			if (isl_int_is_zero(qp->div->row[j][2 + total + i]))
+				continue;
+			isl_seq_combine(qp->div->row[j] + 1,
+				qp->div->ctx->one, qp->div->row[j] + 1,
+				qp->div->row[j][2 + total + i],
+				qp->div->row[i] + 1, 1 + total + i);
+			isl_int_set_si(qp->div->row[j][2 + total + i], 0);
+			normalize_div(qp, j);
+		}
+		s = isl_upoly_from_affine(qp->dim->ctx, qp->div->row[i] + 1,
+					qp->div->row[i][0], qp->div->n_col - 1);
+		qp = substitute_div(qp, i, s);
+		--i;
+	}
+
+	return qp;
+}
+
 __isl_give isl_qpolynomial *isl_qpolynomial_substitute_equalities(
 	__isl_take isl_qpolynomial *qp, __isl_take isl_basic_set *eq)
 {
@@ -2018,6 +2101,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_substitute_equalities(
 
 	isl_basic_set_free(eq);
 
+	qp = substitute_non_divs(qp);
 	qp = sort_divs(qp);
 
 	return qp;
@@ -3548,41 +3632,28 @@ static int set_div(__isl_take isl_set *set,
 	struct isl_split_periods_data *data)
 {
 	int i;
-	int *reordering;
+	int total;
 	isl_set *slice;
 	struct isl_upoly *cst;
-	int total;
 
 	slice = set_div_slice(isl_set_get_dim(set), qp, div, v);
 	set = isl_set_intersect(set, slice);
 
-	qp = isl_qpolynomial_cow(qp);
 	if (!qp)
 		goto error;
 
-	cst = isl_upoly_rat_cst(qp->dim->ctx, v, qp->dim->ctx->one);
-	if (!cst)
-		goto error;
 	total = isl_dim_total(qp->dim);
-	qp->upoly = isl_upoly_subs(qp->upoly, total + div, 1, &cst);
-	isl_upoly_free(cst);
-	if (!qp->upoly)
-		goto error;
 
-	reordering = isl_alloc_array(qp->dim->ctx, int, total + qp->div->n_row);
-	if (!reordering)
-		goto error;
-	for (i = 0; i < total + div; ++i)
-		reordering[i] = i;
-	for (i = total + div + 1; i < total + qp->div->n_row; ++i)
-		reordering[i] = i - 1;
-	qp->div = isl_mat_drop_rows(qp->div, div, 1);
-	qp->div = isl_mat_drop_cols(qp->div, 2 + total + div, 1);
-	qp->upoly = reorder(qp->upoly, reordering);
-	free(reordering);
+	for (i = div + 1; i < qp->div->n_row; ++i) {
+		if (isl_int_is_zero(qp->div->row[i][2 + total + div]))
+			continue;
+		isl_int_addmul(qp->div->row[i][1],
+				qp->div->row[i][2 + total + div], v);
+		isl_int_set_si(qp->div->row[i][2 + total + div], 0);
+	}
 
-	if (!qp->upoly || !qp->div)
-		goto error;
+	cst = isl_upoly_rat_cst(qp->dim->ctx, v, qp->dim->ctx->one);
+	qp = substitute_div(qp, div, cst);
 
 	return split_periods(set, qp, data);
 error:
