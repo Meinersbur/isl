@@ -1940,6 +1940,27 @@ __isl_give struct isl_upoly *isl_upoly_from_affine(isl_ctx *ctx, isl_int *f,
 	return up;
 }
 
+/* Remove common factor of non-constant terms and denominator.
+ */
+static void normalize_div(__isl_keep isl_qpolynomial *qp, int div)
+{
+	isl_ctx *ctx = qp->div->ctx;
+	unsigned total = qp->div->n_col - 2;
+
+	isl_seq_gcd(qp->div->row[div] + 2, total, &ctx->normalize_gcd);
+	isl_int_gcd(ctx->normalize_gcd,
+		    ctx->normalize_gcd, qp->div->row[div][0]);
+	if (isl_int_is_one(ctx->normalize_gcd))
+		return;
+
+	isl_seq_scale_down(qp->div->row[div] + 2, qp->div->row[div] + 2,
+			    ctx->normalize_gcd, total);
+	isl_int_divexact(qp->div->row[div][0], qp->div->row[div][0],
+			    ctx->normalize_gcd);
+	isl_int_fdiv_q(qp->div->row[div][1], qp->div->row[div][1],
+			    ctx->normalize_gcd);
+}
+
 __isl_give isl_qpolynomial *isl_qpolynomial_substitute_equalities(
 	__isl_take isl_qpolynomial *qp, __isl_take isl_basic_set *eq)
 {
@@ -1976,8 +1997,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_substitute_equalities(
 				continue;
 			isl_seq_elim(qp->div->row[k] + 1, eq->eq[i], j, total,
 					&qp->div->row[k][0]);
-			isl_seq_normalize(qp->div->ctx,
-					  qp->div->row[k], 1 + total);
+			normalize_div(qp, k);
 		}
 
 		if (isl_int_is_pos(eq->eq[i][j]))
