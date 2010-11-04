@@ -219,13 +219,22 @@ static enum isl_dim_type pos2type(__isl_keep isl_dim *dim, unsigned *pos)
 	return type;
 }
 
+static __isl_give isl_printer *print_div(__isl_keep isl_dim *dim,
+	__isl_keep isl_mat *div, int pos, __isl_take isl_printer *p);
+
 static __isl_give isl_printer *print_term(__isl_keep isl_dim *dim,
+	__isl_keep isl_mat *div,
 	isl_int c, unsigned pos, __isl_take isl_printer *p, int set, int latex)
 {
 	enum isl_dim_type type;
+	int print_div_def;
 
 	if (pos == 0)
 		return isl_printer_print_isl_int(p, c);
+
+	type = pos2type(dim, &pos);
+	print_div_def = type == isl_dim_div && div &&
+			!isl_int_is_zero(div->row[pos][0]);
 
 	if (isl_int_is_one(c))
 		;
@@ -233,15 +242,18 @@ static __isl_give isl_printer *print_term(__isl_keep isl_dim *dim,
 		p = isl_printer_print_str(p, "-");
 	else {
 		p = isl_printer_print_isl_int(p, c);
-		if (p->output_format == ISL_FORMAT_C)
+		if (p->output_format == ISL_FORMAT_C || print_div_def)
 			p = isl_printer_print_str(p, "*");
 	}
-	type = pos2type(dim, &pos);
-	p = print_name(dim, p, type, pos, set, latex);
+	if (print_div_def)
+		p = print_div(dim, div, pos, p);
+	else
+		p = print_name(dim, p, type, pos, set, latex);
 	return p;
 }
 
 static __isl_give isl_printer *print_affine_of_len(__isl_keep isl_dim *dim,
+	__isl_keep isl_mat *div,
 	__isl_take isl_printer *p, isl_int *c, int len, int set)
 {
 	int i;
@@ -260,7 +272,7 @@ static __isl_give isl_printer *print_affine_of_len(__isl_keep isl_dim *dim,
 				p = isl_printer_print_str(p, " + ");
 		}
 		first = 0;
-		p = print_term(dim, c[i], i, p, set, 0);
+		p = print_term(dim, div, c[i], i, p, set, 0);
 		if (flip)
 			isl_int_neg(c[i], c[i]);
 	}
@@ -273,7 +285,7 @@ static __isl_give isl_printer *print_affine(__isl_keep isl_basic_map *bmap,
 	__isl_keep isl_dim *dim, __isl_take isl_printer *p, isl_int *c, int set)
 {
 	unsigned len = 1 + isl_basic_map_total_dim(bmap);
-	return print_affine_of_len(dim, p, c, len, set);
+	return print_affine_of_len(dim, NULL, p, c, len, set);
 }
 
 static int defining_equality(__isl_keep isl_basic_map *eq,
@@ -318,7 +330,8 @@ static __isl_give isl_printer *print_nested_var_list(__isl_take isl_printer *p,
 		if (j >= 0) {
 			int pos = 1 + isl_dim_offset(global_dim, global_type)
 				    + offset + i;
-			p = print_affine_of_len(eq->dim, p, eq->eq[j], pos, set);
+			p = print_affine_of_len(eq->dim, NULL,
+						p, eq->eq[j], pos, set);
 		} else {
 			p = print_name(global_dim, p, global_type, offset + i,
 					set, latex);
@@ -433,7 +446,7 @@ static __isl_give isl_printer *print_constraint(struct isl_basic_map *bmap,
 
 	isl_int_abs(c[last], c[last]);
 
-	p = print_term(dim, c[last], last, p, set, latex);
+	p = print_term(dim, NULL, c[last], last, p, set, latex);
 
 	p = isl_printer_print_str(p, " ");
 	p = isl_printer_print_str(p, op);
@@ -1230,7 +1243,8 @@ static __isl_give isl_printer *print_div(__isl_keep isl_dim *dim,
 {
 	int c = p->output_format == ISL_FORMAT_C;
 	p = isl_printer_print_str(p, c ? "floord(" : "[(");
-	p = print_affine_of_len(dim, p, div->row[pos] + 1, div->n_col - 1, 1);
+	p = print_affine_of_len(dim, div, p,
+				div->row[pos] + 1, div->n_col - 1, 1);
 	p = isl_printer_print_str(p, c ? ", " : ")/");
 	p = isl_printer_print_isl_int(p, div->row[pos][0]);
 	p = isl_printer_print_str(p, c ? ")" : "]");
@@ -1276,7 +1290,7 @@ static __isl_give isl_printer *print_base(__isl_take isl_printer *p,
 
 	total = isl_dim_total(dim);
 	if (var < total)
-		p = print_term(dim, dim->ctx->one, 1 + var, p, 1, 0);
+		p = print_term(dim, NULL, dim->ctx->one, 1 + var, p, 1, 0);
 	else
 		p = print_div(dim, div, var - total, p);
 	return p;
