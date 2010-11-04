@@ -1946,6 +1946,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_substitute_equalities(
 	int i, j, k;
 	isl_int denom;
 	unsigned total;
+	unsigned n_div;
 	struct isl_upoly *up;
 
 	if (!eq)
@@ -1963,10 +1964,11 @@ __isl_give isl_qpolynomial *isl_qpolynomial_substitute_equalities(
 		goto error;
 
 	total = 1 + isl_dim_total(eq->dim);
+	n_div = eq->n_div;
 	isl_int_init(denom);
 	for (i = 0; i < eq->n_eq; ++i) {
-		j = isl_seq_last_non_zero(eq->eq[i], total);
-		if (j < 0 || j == 0)
+		j = isl_seq_last_non_zero(eq->eq[i], total + n_div);
+		if (j < 0 || j == 0 || j >= total)
 			continue;
 
 		for (k = 0; k < qp->div->n_row; ++k) {

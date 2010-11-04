@@ -1409,6 +1409,7 @@ void test_bijective(struct isl_ctx *ctx)
 void test_pwqp(struct isl_ctx *ctx)
 {
 	const char *str;
+	isl_set *set;
 	isl_pw_qpolynomial *pwqp1, *pwqp2;
 
 	str = "{ [i,j,k] -> 1 + 9 * [i/5] + 7 * [j/11] + 4 * [k/13] }";
@@ -1418,6 +1419,20 @@ void test_pwqp(struct isl_ctx *ctx)
 						isl_dim_set, 1, 1);
 
 	str = "[j] -> { [i,k] -> 1 + 9 * [i/5] + 7 * [j/11] + 4 * [k/13] }";
+	pwqp2 = isl_pw_qpolynomial_read_from_str(ctx, str);
+
+	pwqp1 = isl_pw_qpolynomial_sub(pwqp1, pwqp2);
+
+	assert(isl_pw_qpolynomial_is_zero(pwqp1));
+
+	isl_pw_qpolynomial_free(pwqp1);
+
+	str = "{ [i] -> i }";
+	pwqp1 = isl_pw_qpolynomial_read_from_str(ctx, str);
+	str = "{ [k] : exists a : k = 2a }";
+	set = isl_set_read_from_str(ctx, str, 0);
+	pwqp1 = isl_pw_qpolynomial_gist(pwqp1, set);
+	str = "{ [i] -> i }";
 	pwqp2 = isl_pw_qpolynomial_read_from_str(ctx, str);
 
 	pwqp1 = isl_pw_qpolynomial_sub(pwqp1, pwqp2);
