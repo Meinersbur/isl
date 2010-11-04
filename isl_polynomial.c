@@ -1647,22 +1647,23 @@ __isl_give isl_qpolynomial *isl_qpolynomial_div_pow(__isl_take isl_div *div,
 	struct isl_qpolynomial *qp = NULL;
 	struct isl_upoly_rec *rec;
 	struct isl_upoly_cst *cst;
-	int i;
+	int i, d;
 	int pos;
 
 	if (!div)
 		return NULL;
-	isl_assert(div->ctx, div->bmap->n_div == 1, goto error);
 
-	pos = isl_dim_total(div->bmap->dim);
+	d = div->line - div->bmap->div;
+
+	pos = isl_dim_total(div->bmap->dim) + d;
 	rec = isl_upoly_alloc_rec(div->ctx, pos, 1 + power);
-	qp = isl_qpolynomial_alloc(isl_basic_map_get_dim(div->bmap), 1,
-				   &rec->up);
+	qp = isl_qpolynomial_alloc(isl_basic_map_get_dim(div->bmap),
+				   div->bmap->n_div, &rec->up);
 	if (!qp)
 		goto error;
 
-	isl_seq_cpy(qp->div->row[0], div->line[0], qp->div->n_col - 1);
-	isl_int_set_si(qp->div->row[0][qp->div->n_col - 1], 0);
+	for (i = 0; i < div->bmap->n_div; ++i)
+		isl_seq_cpy(qp->div->row[i], div->bmap->div[i], qp->div->n_col);
 
 	for (i = 0; i < 1 + power; ++i) {
 		rec->p[i] = isl_upoly_zero(div->ctx);
