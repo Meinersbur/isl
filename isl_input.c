@@ -376,8 +376,9 @@ static __isl_give isl_basic_map *add_divs(__isl_take isl_basic_map *bmap,
 	for (i = 0, var = v->v; i < extra; ++i, var = var->next) {
 		int k = bmap->n_div - 1 - i;
 
-		isl_seq_cpy(bmap->div[k], var->def->el, 2 + var->pos);
-		isl_seq_clr(bmap->div[k] + 2 + var->pos, v->n - var->pos);
+		isl_seq_cpy(bmap->div[k], var->def->el, var->def->size);
+		isl_seq_clr(bmap->div[k] + var->def->size,
+			    2 + v->n - var->def->size);
 
 		if (isl_basic_map_add_div_constraints(bmap, k) < 0)
 			goto error;
@@ -1290,26 +1291,25 @@ static int optional_power(struct isl_stream *s)
 }
 
 static __isl_give isl_div *read_div(struct isl_stream *s,
-	__isl_keep isl_basic_map *bmap, struct vars *v)
+	__isl_take isl_dim *dim, struct vars *v)
 {
-	unsigned total = isl_basic_map_total_dim(bmap);
-	int k;
+	int n;
+	isl_basic_map *bmap;
 
-	bmap = isl_basic_map_copy(bmap);
-	bmap = isl_basic_map_cow(bmap);
-	bmap = isl_basic_map_extend_dim(bmap, isl_dim_copy(bmap->dim),
-					1, 0, 2);
-
-	if ((k = isl_basic_map_alloc_div(bmap)) < 0)
-		goto error;
-	isl_seq_clr(bmap->div[k], 1 + 1 + total);
+	n = v->n;
+	bmap = isl_basic_map_universe(dim);
 
 	if (vars_add_anon(v) < 0)
 		goto error;
-	bmap = add_div_definition(s, v, bmap, k);
-	vars_drop(v, 1);
+	if (read_div_definition(s, v) < 0)
+		goto error;
+	bmap = add_divs(bmap, v);
+	bmap = isl_basic_map_order_divs(bmap);
+	if (!bmap)
+		goto error;
+	vars_drop(v, v->n - n);
 
-	return isl_basic_map_div(bmap, k);
+	return isl_basic_map_div(bmap, bmap->n_div - 1);
 error:
 	isl_basic_map_free(bmap);
 	return NULL;
@@ -1384,7 +1384,7 @@ static __isl_give isl_qpolynomial *read_factor(struct isl_stream *s,
 		int pow;
 
 		isl_stream_push_token(s, tok);
-		div = read_div(s, bmap, v);
+		div = read_div(s, isl_basic_map_get_dim(bmap), v);
 		pow = optional_power(s);
 		qp = isl_qpolynomial_div_pow(div, pow);
 	} else if (tok->type == '-') {

@@ -28,6 +28,15 @@ void test_parse_map(isl_ctx *ctx, const char *str)
 	isl_map_free(map);
 }
 
+void test_parse_pwqp(isl_ctx *ctx, const char *str)
+{
+	isl_pw_qpolynomial *pwqp;
+
+	pwqp = isl_pw_qpolynomial_read_from_str(ctx, str);
+	assert(pwqp);
+	isl_pw_qpolynomial_free(pwqp);
+}
+
 void test_parse(struct isl_ctx *ctx)
 {
 	isl_map *map, *map2;
@@ -55,6 +64,8 @@ void test_parse(struct isl_ctx *ctx)
 	assert(isl_map_is_equal(map, map2));
 	isl_map_free(map);
 	isl_map_free(map2);
+
+	test_parse_pwqp(ctx, "{ [i] -> i + [ (i + [i/3])/2 ] }");
 }
 
 void test_read(struct isl_ctx *ctx)
