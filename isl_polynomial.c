@@ -2667,8 +2667,8 @@ error:
 	return NULL;
 }
 
-__isl_give isl_basic_set *add_div_constraints(__isl_take isl_basic_set *bset,
-	__isl_take isl_mat *div)
+static __isl_give isl_basic_set *add_div_constraints(
+	__isl_take isl_basic_set *bset, __isl_take isl_mat *div)
 {
 	int i;
 	unsigned total;

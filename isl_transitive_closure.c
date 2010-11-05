@@ -415,7 +415,7 @@ static __isl_give int *get_div_purity(__isl_keep isl_basic_set *bset)
  * check if setting the length to zero results in only the identity
  * mapping.
  */
-int empty_path_is_identity(__isl_keep isl_basic_map *path, unsigned pos)
+static int empty_path_is_identity(__isl_keep isl_basic_map *path, unsigned pos)
 {
 	isl_basic_map *test = NULL;
 	isl_basic_map *id = NULL;
@@ -439,7 +439,8 @@ error:
 	return -1;
 }
 
-__isl_give isl_basic_map *add_delta_constraints(__isl_take isl_basic_map *path,
+static __isl_give isl_basic_map *add_delta_constraints(
+	__isl_take isl_basic_map *path,
 	__isl_keep isl_basic_set *delta, unsigned off, unsigned nparam,
 	unsigned d, int *div_purity, int eq)
 {
