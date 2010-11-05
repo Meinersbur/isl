@@ -530,6 +530,33 @@ error:
 	return NULL;
 }
 
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_gist(
+	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_set *context)
+{
+	int i;
+
+	if (!fold || !context)
+		goto error;
+
+	fold = isl_qpolynomial_fold_cow(fold);
+	if (!fold)
+		return NULL;
+
+	for (i = 0; i < fold->n; ++i) {
+		fold->qp[i] = isl_qpolynomial_gist(fold->qp[i],
+							isl_set_copy(context));
+		if (!fold->qp[i])
+			goto error;
+	}
+
+	isl_set_free(context);
+	return fold;
+error:
+	isl_set_free(context);
+	isl_qpolynomial_fold_free(fold);
+	return NULL;
+}
+
 #define HAS_TYPE
 
 #undef PW

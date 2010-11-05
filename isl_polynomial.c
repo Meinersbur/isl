@@ -2111,6 +2111,62 @@ error:
 	return NULL;
 }
 
+static __isl_give isl_basic_set *add_div_constraints(
+	__isl_take isl_basic_set *bset, __isl_take isl_mat *div)
+{
+	int i;
+	unsigned total;
+
+	if (!bset || !div)
+		goto error;
+
+	bset = isl_basic_set_extend_constraints(bset, 0, 2 * div->n_row);
+	if (!bset)
+		goto error;
+	total = isl_basic_set_total_dim(bset);
+	for (i = 0; i < div->n_row; ++i)
+		if (isl_basic_set_add_div_constraints_var(bset,
+				    total - div->n_row + i, div->row[i]) < 0)
+			goto error;
+
+	isl_mat_free(div);
+	return bset;
+error:
+	isl_mat_free(div);
+	isl_basic_set_free(bset);
+	return NULL;
+}
+
+/* Look for equalities among the variables shared by context and qp
+ * and the integer divisions of qp, if any.
+ * The equalities are then used to eliminate variables and/or integer
+ * divisions from qp.
+ */
+__isl_give isl_qpolynomial *isl_qpolynomial_gist(
+	__isl_take isl_qpolynomial *qp, __isl_take isl_set *context)
+{
+	isl_basic_set *aff;
+
+	if (!qp)
+		goto error;
+	if (qp->div->n_row > 0) {
+		isl_basic_set *bset;
+		context = isl_set_add_dims(context, isl_dim_set,
+					    qp->div->n_row);
+		bset = isl_basic_set_universe(isl_set_get_dim(context));
+		bset = add_div_constraints(bset, isl_mat_copy(qp->div));
+		context = isl_set_intersect(context,
+					    isl_set_from_basic_set(bset));
+	}
+
+	aff = isl_set_affine_hull(context);
+	return isl_qpolynomial_substitute_equalities(qp, aff);
+error:
+	isl_qpolynomial_free(qp);
+	isl_set_free(context);
+	return NULL;
+}
+
 #undef PW
 #define PW isl_pw_qpolynomial
 #undef EL
@@ -2664,32 +2720,6 @@ __isl_give isl_qpolynomial *isl_qpolynomial_substitute(
 	return qp;
 error:
 	isl_qpolynomial_free(qp);
-	return NULL;
-}
-
-static __isl_give isl_basic_set *add_div_constraints(
-	__isl_take isl_basic_set *bset, __isl_take isl_mat *div)
-{
-	int i;
-	unsigned total;
-
-	if (!bset || !div)
-		goto error;
-
-	bset = isl_basic_set_extend_constraints(bset, 0, 2 * div->n_row);
-	if (!bset)
-		goto error;
-	total = isl_basic_set_total_dim(bset);
-	for (i = 0; i < div->n_row; ++i)
-		if (isl_basic_set_add_div_constraints_var(bset,
-				    total - div->n_row + i, div->row[i]) < 0)
-			goto error;
-
-	isl_mat_free(div);
-	return bset;
-error:
-	isl_mat_free(div);
-	isl_basic_set_free(bset);
 	return NULL;
 }
 
