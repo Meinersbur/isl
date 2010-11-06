@@ -1298,6 +1298,23 @@ of the constraints describing the basic sets or relations in the input.
 In case of union sets and relations, the affine hull is computed
 per space.
 
+=item * Polyhedral hull
+
+	__isl_give isl_basic_set *isl_set_polyhedral_hull(
+		__isl_take isl_set *set);
+	__isl_give isl_basic_map *isl_map_polyhedral_hull(
+		__isl_take isl_map *map);
+	__isl_give isl_union_set *isl_union_set_polyhedral_hull(
+		__isl_take isl_union_set *uset);
+	__isl_give isl_union_map *isl_union_map_polyhedral_hull(
+		__isl_take isl_union_map *umap);
+
+These functions compute a single basic set or relation
+not involving any existentially quantified variables
+that contains the whole input set or relation.
+In case of union sets and relations, the polyhedral hull is computed
+per space.
+
 =item * Power
 
 	__isl_give isl_map *isl_map_power(__isl_take isl_map *map,

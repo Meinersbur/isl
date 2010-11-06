@@ -33,6 +33,8 @@ __isl_give isl_union_map *isl_union_map_range_map(
 
 __isl_give isl_union_map *isl_union_map_affine_hull(
 	__isl_take isl_union_map *umap);
+__isl_give isl_union_map *isl_union_map_polyhedral_hull(
+	__isl_take isl_union_map *umap);
 __isl_give isl_union_map *isl_union_map_coalesce(
 	__isl_take isl_union_map *umap);
 __isl_give isl_union_map *isl_union_map_compute_divs(

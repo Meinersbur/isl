@@ -934,6 +934,27 @@ __isl_give isl_union_set *isl_union_set_affine_hull(
 	return isl_union_map_affine_hull(uset);
 }
 
+static int polyhedral_entry(void **entry, void *user)
+{
+	isl_map **map = (isl_map **)entry;
+
+	*map = isl_map_from_basic_map(isl_map_polyhedral_hull(*map));
+
+	return *map ? 0 : -1;
+}
+
+__isl_give isl_union_map *isl_union_map_polyhedral_hull(
+	__isl_take isl_union_map *umap)
+{
+	return un_op(umap, &polyhedral_entry, 1);
+}
+
+__isl_give isl_union_set *isl_union_set_polyhedral_hull(
+	__isl_take isl_union_set *uset)
+{
+	return isl_union_map_polyhedral_hull(uset);
+}
+
 static int coalesce_entry(void **entry, void *user)
 {
 	isl_map **map = (isl_map **)entry;

@@ -1956,6 +1956,19 @@ struct isl_basic_set *isl_set_convex_hull(struct isl_set *set)
 		isl_map_convex_hull((struct isl_map *)set);
 }
 
+__isl_give isl_basic_map *isl_map_polyhedral_hull(__isl_take isl_map *map)
+{
+	isl_basic_map *hull;
+
+	hull = isl_map_convex_hull(map);
+	return isl_basic_map_remove_divs(hull);
+}
+
+__isl_give isl_basic_set *isl_set_polyhedral_hull(__isl_take isl_set *set)
+{
+	return (isl_basic_set *)isl_map_polyhedral_hull((isl_map *)set);
+}
+
 struct sh_data_entry {
 	struct isl_hash_table	*table;
 	struct isl_tab		*tab;

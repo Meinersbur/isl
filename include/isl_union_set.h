@@ -18,6 +18,8 @@ __isl_give isl_dim *isl_union_set_get_dim(__isl_keep isl_union_set *uset);
 
 __isl_give isl_union_set *isl_union_set_affine_hull(
 	__isl_take isl_union_set *uset);
+__isl_give isl_union_set *isl_union_set_polyhedral_hull(
+	__isl_take isl_union_set *uset);
 __isl_give isl_union_set *isl_union_set_coalesce(
 	__isl_take isl_union_set *uset);
 __isl_give isl_union_set *isl_union_set_compute_divs(
