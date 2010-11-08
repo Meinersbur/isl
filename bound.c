@@ -225,10 +225,10 @@ static int check_solution(__isl_take isl_pw_qpolynomial_fold *pwf,
 int main(int argc, char **argv)
 {
 	isl_ctx *ctx;
-	isl_pw_qpolynomial *pwqp;
 	isl_pw_qpolynomial_fold *copy;
 	isl_pw_qpolynomial_fold *pwf;
 	struct isl_stream *s;
+	struct isl_obj obj;
 	struct bound_options *options;
 	int exact;
 	int r = 0;
@@ -240,8 +240,16 @@ int main(int argc, char **argv)
 	ctx = isl_ctx_alloc_with_options(bound_options_arg, options);
 
 	s = isl_stream_new_file(ctx, stdin);
-	pwqp = isl_stream_read_pw_qpolynomial(s);
-	pwf = isl_pw_qpolynomial_fold_from_pw_qpolynomial(isl_fold_max, pwqp);
+	obj = isl_stream_read_obj(s);
+	if (obj.type == isl_obj_pw_qpolynomial)
+		pwf = isl_pw_qpolynomial_fold_from_pw_qpolynomial(isl_fold_max,
+								  obj.v);
+	else if (obj.type == isl_obj_pw_qpolynomial_fold)
+		pwf = obj.v;
+	else {
+		obj.type->free(obj.v);
+		isl_die(ctx, isl_error_invalid, "invalid input", goto error);
+	}
 
 	if (options->verify)
 		copy = isl_pw_qpolynomial_fold_copy(pwf);
@@ -259,6 +267,7 @@ int main(int argc, char **argv)
 		isl_pw_qpolynomial_fold_free(pwf);
 	}
 
+error:
 	isl_stream_free(s);
 
 	isl_ctx_free(ctx);
