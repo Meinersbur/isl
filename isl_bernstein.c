@@ -100,7 +100,7 @@ static int is_tight(int *k, int n, int d, isl_cell *cell)
 				return 0;
 			continue;
 		}
-		v = cell->vertices->c[cell->id].vertices[n - 1 - i];
+		v = cell->ids[n - 1 - i];
 		return vertex_is_integral(cell->vertices->v[v].vertex);
 	}
 
@@ -253,7 +253,7 @@ static int bernstein_coefficients_cell(__isl_take isl_cell *cell, void *user)
 	isl_set *dom;
 
 	nvar = isl_qpolynomial_dim(poly, isl_dim_set) - 1;
-	n_vertices = cell->vertices->c[cell->id].n_vertices;
+	n_vertices = cell->n_vertices;
 
 	subs = isl_alloc_array(data->poly->dim->ctx, isl_qpolynomial *,
 				1 + nvar);
@@ -272,7 +272,7 @@ static int bernstein_coefficients_cell(__isl_take isl_cell *cell, void *user)
 		c = isl_qpolynomial_var(isl_dim_copy(dim_dst), isl_dim_set,
 					1 + nvar + i);
 		for (j = 0; j < nvar; ++j) {
-			int k = cell->vertices->c[cell->id].vertices[i];
+			int k = cell->ids[i];
 			isl_qpolynomial *v;
 			v = vertex_coordinate(cell->vertices->v[k].vertex, j,
 						isl_dim_copy(dim_param));

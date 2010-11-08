@@ -38,9 +38,10 @@ struct isl_vertices {
 };
 
 struct isl_cell {
+	int n_vertices;
+	int *ids;
 	isl_vertices *vertices;
 	isl_basic_set *dom;
-	int id;
 };
 
 struct isl_external_vertex {

@@ -1066,34 +1066,34 @@ isl_ctx *isl_cell_get_ctx(__isl_keep isl_cell *cell)
 
 __isl_give isl_basic_set *isl_cell_get_domain(__isl_keep isl_cell *cell)
 {
-	struct isl_chamber *c;
-
-	if (!cell)
-		return NULL;
-
-	c = &cell->vertices->c[cell->id];
-
-	return isl_basic_set_copy(c->dom);
+	return cell ? isl_basic_set_copy(cell->dom) : NULL;
 }
 
 static __isl_give isl_cell *isl_cell_alloc(__isl_take isl_vertices *vertices,
 	__isl_take isl_basic_set *dom, int id)
 {
-	isl_cell *cell;
+	int i;
+	isl_cell *cell = NULL;
 
 	if (!vertices || !dom)
 		goto error;
 
-	cell = isl_alloc_type(dom->ctx, isl_cell);
+	cell = isl_calloc_type(dom->ctx, isl_cell);
 	if (!cell)
 		goto error;
 
+	cell->n_vertices = vertices->c[id].n_vertices;
+	cell->ids = isl_alloc_array(dom->ctx, int, cell->n_vertices);
+	if (!cell->ids)
+		goto error;
+	for (i = 0; i < cell->n_vertices; ++i)
+		cell->ids[i] = vertices->c[id].vertices[i];
 	cell->vertices = vertices;
 	cell->dom = dom;
-	cell->id = id;
 
 	return cell;
 error:
+	isl_cell_free(cell);
 	isl_vertices_free(vertices);
 	isl_basic_set_free(dom);
 	return NULL;
@@ -1105,6 +1105,7 @@ void isl_cell_free(__isl_take isl_cell *cell)
 		return;
 
 	isl_vertices_free(cell->vertices);
+	free(cell->ids);
 	isl_basic_set_free(cell->dom);
 	free(cell);
 }
@@ -1315,21 +1316,18 @@ int isl_cell_foreach_vertex(__isl_keep isl_cell *cell,
 {
 	int i;
 	isl_vertex *vertex;
-	struct isl_chamber *c;
 
 	if (!cell)
 		return -1;
 
-	c = &cell->vertices->c[cell->id];
-
-	if (c->n_vertices == 0)
+	if (cell->n_vertices == 0)
 		return 0;
 
-	for (i = 0; i < c->n_vertices; ++i) {
+	for (i = 0; i < cell->n_vertices; ++i) {
 		int r;
 
 		vertex = isl_vertex_alloc(isl_vertices_copy(cell->vertices),
-						c->vertices[i]);
+					  cell->ids[i]);
 		if (!vertex)
 			return -1;
 
