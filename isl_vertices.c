@@ -1388,3 +1388,176 @@ error:
 	isl_vertices_free(vertices);
 	return NULL;
 }
+
+/* Construct a simplex isl_cell spanned by the vertices with indices in
+ * "simplex_ids" and "other_ids" and call "fn" on this isl_cell.
+ */
+static int call_on_simplex(__isl_keep isl_cell *cell,
+	int *simplex_ids, int n_simplex, int *other_ids, int n_other,
+	int (*fn)(__isl_take isl_cell *simplex, void *user), void *user)
+{
+	int i;
+	isl_ctx *ctx;
+	struct isl_cell *simplex;
+
+	ctx = isl_cell_get_ctx(cell);
+
+	simplex = isl_calloc_type(ctx, struct isl_cell);
+	if (!simplex)
+		return -1;
+	simplex->vertices = isl_vertices_copy(cell->vertices);
+	if (!simplex->vertices)
+		goto error;
+	simplex->dom = isl_basic_set_copy(cell->dom);
+	if (!simplex->dom)
+		goto error;
+	simplex->n_vertices = n_simplex + n_other;
+	simplex->ids = isl_alloc_array(ctx, int, simplex->n_vertices);
+	if (!simplex->ids)
+		goto error;
+
+	for (i = 0; i < n_simplex; ++i)
+		simplex->ids[i] = simplex_ids[i];
+	for (i = 0; i < n_other; ++i)
+		simplex->ids[n_simplex + i] = other_ids[i];
+
+	return fn(simplex, user);
+error:
+	isl_cell_free(simplex);
+	return -1;
+}
+
+/* Check whether the parametric vertex described by "vertex"
+ * lies on the facet corresponding to constraint "facet" of "bset".
+ * The isl_vec "v" is a temporary vector than can be used by this function.
+ *
+ * We eliminate the variables from the facet constraint using the
+ * equalities defining the vertex and check if the result is identical
+ * to zero.
+ *
+ * It would probably be better to keep track of the constraints defining
+ * a vertex during the vertex construction so that we could simply look
+ * it up here.
+ */
+static int vertex_on_facet(__isl_keep isl_basic_set *vertex,
+	__isl_keep isl_basic_set *bset, int facet, __isl_keep isl_vec *v)
+{
+	int i;
+	isl_int m;
+
+	isl_seq_cpy(v->el, bset->ineq[facet], v->size);
+
+	isl_int_init(m);
+	for (i = 0; i < vertex->n_eq; ++i) {
+		int k = isl_seq_last_non_zero(vertex->eq[i], v->size);
+		isl_seq_elim(v->el, vertex->eq[i], k, v->size, &m);
+	}
+	isl_int_clear(m);
+
+	return isl_seq_first_non_zero(v->el, v->size) == -1;
+}
+
+/* Triangulate the polytope spanned by the vertices with ids
+ * in "simplex_ids" and "other_ids" and call "fn" on each of
+ * the resulting simplices.
+ * If the input polytope is already a simplex, we simply call "fn".
+ * Otherwise, we pick a point from "other_ids" and add it to "simplex_ids".
+ * Then we consider each facet of "bset" that does not contain the point
+ * we just picked, but does contain some of the other points in "other_ids"
+ * and call ourselves recursively on the polytope spanned by the new
+ * "simplex_ids" and those points in "other_ids" that lie on the facet.
+ */
+static int triangulate(__isl_keep isl_cell *cell, __isl_keep isl_vec *v,
+	int *simplex_ids, int n_simplex, int *other_ids, int n_other,
+	int (*fn)(__isl_take isl_cell *simplex, void *user), void *user)
+{
+	int i, j, k;
+	int d, nparam;
+	int *ids;
+	isl_basic_set *vertex;
+	isl_basic_set *bset;
+
+	d = isl_basic_set_dim(cell->vertices->bset, isl_dim_set);
+	nparam = isl_basic_set_dim(cell->vertices->bset, isl_dim_param);
+
+	if (n_simplex + n_other == d + 1)
+		return call_on_simplex(cell, simplex_ids, n_simplex,
+				       other_ids, n_other, fn, user);
+
+	simplex_ids[n_simplex] = other_ids[0];
+	vertex = cell->vertices->v[other_ids[0]].vertex;
+	bset = cell->vertices->bset;
+
+	ids = isl_alloc_array(ctx, int, n_other - 1);
+	for (i = 0; i < bset->n_ineq; ++i) {
+		if (isl_seq_first_non_zero(bset->ineq[i] + 1 + nparam, d) == -1)
+			continue;
+		if (vertex_on_facet(vertex, bset, i, v))
+			continue;
+
+		for (j = 1, k = 0; j < n_other; ++j) {
+			isl_basic_set *ov;
+			ov = cell->vertices->v[other_ids[j]].vertex;
+			if (vertex_on_facet(ov, bset, i, v))
+				ids[k++] = other_ids[j];
+		}
+		if (k == 0)
+			continue;
+
+		if (triangulate(cell, v, simplex_ids, n_simplex + 1,
+				ids, k, fn, user) < 0)
+			goto error;
+	}
+	free(ids);
+
+	return 0;
+error:
+	free(ids);
+	return -1;
+}
+
+/* Triangulate the given cell and call "fn" on each of the resulting
+ * simplices.
+ */
+int isl_cell_foreach_simplex(__isl_take isl_cell *cell,
+	int (*fn)(__isl_take isl_cell *simplex, void *user), void *user)
+{
+	int d, total;
+	int r;
+	isl_ctx *ctx;
+	isl_vec *v = NULL;
+	int *simplex_ids = NULL;
+
+	if (!cell)
+		return -1;
+
+	d = isl_basic_set_dim(cell->vertices->bset, isl_dim_set);
+	total = isl_basic_set_total_dim(cell->vertices->bset);
+
+	if (cell->n_vertices == d + 1)
+		return fn(cell, user);
+
+	ctx = isl_cell_get_ctx(cell);
+	simplex_ids = isl_alloc_array(ctx, int, d + 1);
+	if (!simplex_ids)
+		goto error;
+
+	v = isl_vec_alloc(ctx, 1 + total);
+	if (!v)
+		goto error;
+
+	r = triangulate(cell, v, simplex_ids, 0,
+			cell->ids, cell->n_vertices, fn, user);
+
+	isl_vec_free(v);
+	free(simplex_ids);
+
+	isl_cell_free(cell);
+
+	return r;
+error:
+	free(simplex_ids);
+	isl_vec_free(v);
+	isl_cell_free(cell);
+	return -1;
+}

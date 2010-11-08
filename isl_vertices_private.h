@@ -53,6 +53,8 @@ struct isl_external_vertex {
 
 int isl_vertices_foreach_disjoint_cell(__isl_keep isl_vertices *vertices,
 	int (*fn)(__isl_take isl_cell *cell, void *user), void *user);
+int isl_cell_foreach_simplex(__isl_take isl_cell *cell,
+	int (*fn)(__isl_take isl_cell *simplex, void *user), void *user);
 
 __isl_give isl_vertices *isl_morph_vertices(__isl_take struct isl_morph *morph,
 	__isl_take isl_vertices *vertices);
