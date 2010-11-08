@@ -55,7 +55,7 @@ void isl_vertices_free(__isl_take isl_vertices *vertices)
 	}
 	free(vertices->c);
 
-	isl_ctx_deref(vertices->ctx);
+	isl_basic_set_free(vertices->bset);
 	free(vertices);
 }
 
@@ -86,9 +86,8 @@ static __isl_give isl_vertices *vertices_from_list(__isl_keep isl_basic_set *bse
 	vertices = isl_calloc_type(bset->ctx, isl_vertices);
 	if (!vertices)
 		goto error;
-	vertices->ctx = bset->ctx;
-	isl_ctx_ref(bset->ctx);
 	vertices->ref = 1;
+	vertices->bset = isl_basic_set_copy(bset);
 	vertices->v = isl_alloc_array(bset->ctx, struct isl_vertex, n_vertices);
 	if (!vertices->v)
 		goto error;
@@ -164,8 +163,7 @@ static __isl_give isl_vertices *vertices_empty(__isl_keep isl_basic_set *bset)
 	vertices = isl_calloc_type(bset->ctx, isl_vertices);
 	if (!vertices)
 		return NULL;
-	vertices->ctx = bset->ctx;
-	isl_ctx_ref(bset->ctx);
+	vertices->bset = isl_basic_set_copy(bset);
 	vertices->ref = 1;
 
 	vertices->n_vertices = 0;
@@ -193,9 +191,8 @@ static __isl_give isl_vertices *vertices_0D(__isl_keep isl_basic_set *bset)
 	vertices = isl_calloc_type(bset->ctx, isl_vertices);
 	if (!vertices)
 		return NULL;
-	vertices->ctx = bset->ctx;
-	isl_ctx_ref(bset->ctx);
 	vertices->ref = 1;
+	vertices->bset = isl_basic_set_copy(bset);
 
 	vertices->v = isl_calloc_array(bset->ctx, struct isl_vertex, 1);
 	if (!vertices->v)
@@ -975,7 +972,7 @@ error:
 
 isl_ctx *isl_vertex_get_ctx(__isl_keep isl_vertex *vertex)
 {
-	return vertex ? vertex->vertices->ctx : NULL;
+	return vertex ? isl_vertices_get_ctx(vertex->vertices) : NULL;
 }
 
 int isl_vertex_get_id(__isl_keep isl_vertex *vertex)
@@ -1061,7 +1058,7 @@ __isl_give isl_basic_set *isl_basic_set_set_integral(__isl_take isl_basic_set *b
 
 isl_ctx *isl_cell_get_ctx(__isl_keep isl_cell *cell)
 {
-	return cell ? cell->vertices->ctx : NULL;
+	return cell ? cell->dom->ctx : NULL;
 }
 
 __isl_give isl_basic_set *isl_cell_get_domain(__isl_keep isl_cell *cell)
@@ -1341,7 +1338,7 @@ int isl_cell_foreach_vertex(__isl_keep isl_cell *cell,
 
 isl_ctx *isl_vertices_get_ctx(__isl_keep isl_vertices *vertices)
 {
-	return vertices ? vertices->ctx : NULL;
+	return vertices ? vertices->bset->ctx : NULL;
 }
 
 int isl_vertices_get_n_vertices(__isl_keep isl_vertices *vertices)
@@ -1358,7 +1355,7 @@ __isl_give isl_vertices *isl_morph_vertices(__isl_take isl_morph *morph,
 	if (!morph || !vertices)
 		goto error;
 
-	isl_assert(vertices->ctx, vertices->ref == 1, goto error);
+	isl_assert(vertices->bset->ctx, vertices->ref == 1, goto error);
 
 	param_morph = isl_morph_copy(morph);
 	param_morph = isl_morph_remove_dom_dims(param_morph, isl_dim_set,

@@ -27,8 +27,10 @@ struct isl_chamber {
 };
 
 struct isl_vertices {
-	isl_ctx *ctx;
 	int ref;
+
+	/* The rational basic set spanned by the vertices. */
+	isl_basic_set *bset;
 
 	int n_vertices;
 	struct isl_vertex *v;
