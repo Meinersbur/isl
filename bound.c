@@ -50,8 +50,8 @@ struct verify_point_bound {
 	int exact;
 	int error;
 
-	isl_pw_qpolynomial *pwqp;
 	isl_pw_qpolynomial_fold *pwf;
+	isl_pw_qpolynomial_fold *bound;
 };
 
 static int verify_point(__isl_take isl_point *pnt, void *user)
@@ -60,7 +60,7 @@ static int verify_point(__isl_take isl_point *pnt, void *user)
 	unsigned nparam;
 	struct verify_point_bound *vpb = (struct verify_point_bound *) user;
 	isl_int t;
-	isl_pw_qpolynomial *pwqp;
+	isl_pw_qpolynomial_fold *pwf;
 	isl_qpolynomial *bound = NULL;
 	isl_qpolynomial *opt = NULL;
 	isl_set *dom = NULL;
@@ -83,30 +83,32 @@ static int verify_point(__isl_take isl_point *pnt, void *user)
 
 	isl_int_init(t);
 
-	pwqp = isl_pw_qpolynomial_copy(vpb->pwqp);
+	pwf = isl_pw_qpolynomial_fold_copy(vpb->pwf);
 
-	nparam = isl_pw_qpolynomial_dim(pwqp, isl_dim_param);
+	nparam = isl_pw_qpolynomial_fold_dim(pwf, isl_dim_param);
 	for (i = 0; i < nparam; ++i) {
 		isl_point_get_coordinate(pnt, isl_dim_param, i, &t);
-		pwqp = isl_pw_qpolynomial_fix_dim(pwqp, isl_dim_param, i, t);
+		pwf = isl_pw_qpolynomial_fold_fix_dim(pwf, isl_dim_param, i, t);
 	}
 
-	bound = isl_pw_qpolynomial_fold_eval(isl_pw_qpolynomial_fold_copy(vpb->pwf),
-						isl_point_copy(pnt));
+	bound = isl_pw_qpolynomial_fold_eval(
+				    isl_pw_qpolynomial_fold_copy(vpb->bound),
+				    isl_point_copy(pnt));
 
-	dom = isl_pw_qpolynomial_domain(isl_pw_qpolynomial_copy(pwqp));
+	dom = isl_pw_qpolynomial_fold_domain(isl_pw_qpolynomial_fold_copy(pwf));
 	bounded = isl_set_is_bounded(dom);
 
 	if (bounded < 0)
 		goto error;
 
 	if (!bounded)
-		opt = isl_pw_qpolynomial_eval(isl_pw_qpolynomial_copy(pwqp),
+		opt = isl_pw_qpolynomial_fold_eval(
+				    isl_pw_qpolynomial_fold_copy(pwf),
 				    isl_set_sample_point(isl_set_copy(dom)));
 	else if (sign > 0)
-		opt = isl_pw_qpolynomial_max(isl_pw_qpolynomial_copy(pwqp));
+		opt = isl_pw_qpolynomial_fold_max(isl_pw_qpolynomial_fold_copy(pwf));
 	else
-		opt = isl_pw_qpolynomial_min(isl_pw_qpolynomial_copy(pwqp));
+		opt = isl_pw_qpolynomial_fold_min(isl_pw_qpolynomial_fold_copy(pwf));
 
 	if (vpb->exact && bounded)
 		ok = isl_qpolynomial_is_equal(opt, bound);
@@ -143,7 +145,7 @@ error:
 		ok = 0;
 	}
 
-	isl_pw_qpolynomial_free(pwqp);
+	isl_pw_qpolynomial_fold_free(pwf);
 	isl_qpolynomial_free(bound);
 	isl_qpolynomial_free(opt);
 	isl_point_free(pnt);
@@ -160,8 +162,8 @@ error:
 	return (vpb->n >= 1 && ok) ? 0 : -1;
 }
 
-static int check_solution(__isl_take isl_pw_qpolynomial *pwqp,
-	__isl_take isl_pw_qpolynomial_fold *pwf, int exact,
+static int check_solution(__isl_take isl_pw_qpolynomial_fold *pwf,
+	__isl_take isl_pw_qpolynomial_fold *bound, int exact,
 	struct bound_options *options)
 {
 	struct verify_point_bound vpb;
@@ -170,7 +172,7 @@ static int check_solution(__isl_take isl_pw_qpolynomial *pwqp,
 	isl_set *context;
 	int i, r, n;
 
-	dom = isl_pw_qpolynomial_domain(isl_pw_qpolynomial_copy(pwqp));
+	dom = isl_pw_qpolynomial_fold_domain(isl_pw_qpolynomial_fold_copy(pwf));
 	context = isl_set_remove_dims(isl_set_copy(dom), isl_dim_set,
 					0, isl_set_dim(dom, isl_dim_set));
 	context = isl_set_remove_divs(context);
@@ -188,8 +190,8 @@ static int check_solution(__isl_take isl_pw_qpolynomial *pwqp,
 	isl_int_clear(count);
 
 	vpb.options = options;
-	vpb.pwqp = pwqp;
 	vpb.pwf = pwf;
+	vpb.bound = bound;
 	vpb.n = n;
 	vpb.stride = n > 70 ? 1 + (n + 1)/70 : 1;
 	vpb.error = 0;
@@ -206,8 +208,8 @@ static int check_solution(__isl_take isl_pw_qpolynomial *pwqp,
 
 	isl_set_free(context);
 	isl_set_free(dom);
-	isl_pw_qpolynomial_free(pwqp);
 	isl_pw_qpolynomial_fold_free(pwf);
+	isl_pw_qpolynomial_fold_free(bound);
 
 	if (!options->print_all)
 		printf("\n");
@@ -224,7 +226,7 @@ int main(int argc, char **argv)
 {
 	isl_ctx *ctx;
 	isl_pw_qpolynomial *pwqp;
-	isl_pw_qpolynomial *copy;
+	isl_pw_qpolynomial_fold *copy;
 	isl_pw_qpolynomial_fold *pwf;
 	struct isl_stream *s;
 	struct bound_options *options;
@@ -239,11 +241,12 @@ int main(int argc, char **argv)
 
 	s = isl_stream_new_file(ctx, stdin);
 	pwqp = isl_stream_read_pw_qpolynomial(s);
+	pwf = isl_pw_qpolynomial_fold_from_pw_qpolynomial(isl_fold_max, pwqp);
 
 	if (options->verify)
-		copy = isl_pw_qpolynomial_copy(pwqp);
+		copy = isl_pw_qpolynomial_fold_copy(pwf);
 
-	pwf = isl_pw_qpolynomial_bound(pwqp, isl_fold_max, &exact);
+	pwf = isl_pw_qpolynomial_fold_bound(pwf, &exact);
 	pwf = isl_pw_qpolynomial_fold_coalesce(pwf);
 
 	if (options->verify) {
