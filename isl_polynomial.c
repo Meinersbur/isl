@@ -1641,6 +1641,27 @@ error:
 	return NULL;
 }
 
+/* Remove common factor of non-constant terms and denominator.
+ */
+static void normalize_div(__isl_keep isl_qpolynomial *qp, int div)
+{
+	isl_ctx *ctx = qp->div->ctx;
+	unsigned total = qp->div->n_col - 2;
+
+	isl_seq_gcd(qp->div->row[div] + 2, total, &ctx->normalize_gcd);
+	isl_int_gcd(ctx->normalize_gcd,
+		    ctx->normalize_gcd, qp->div->row[div][0]);
+	if (isl_int_is_one(ctx->normalize_gcd))
+		return;
+
+	isl_seq_scale_down(qp->div->row[div] + 2, qp->div->row[div] + 2,
+			    ctx->normalize_gcd, total);
+	isl_int_divexact(qp->div->row[div][0], qp->div->row[div][0],
+			    ctx->normalize_gcd);
+	isl_int_fdiv_q(qp->div->row[div][1], qp->div->row[div][1],
+			    ctx->normalize_gcd);
+}
+
 __isl_give isl_qpolynomial *isl_qpolynomial_div_pow(__isl_take isl_div *div,
 	int power)
 {
@@ -1662,8 +1683,10 @@ __isl_give isl_qpolynomial *isl_qpolynomial_div_pow(__isl_take isl_div *div,
 	if (!qp)
 		goto error;
 
-	for (i = 0; i < div->bmap->n_div; ++i)
+	for (i = 0; i < div->bmap->n_div; ++i) {
 		isl_seq_cpy(qp->div->row[i], div->bmap->div[i], qp->div->n_col);
+		normalize_div(qp, i);
+	}
 
 	for (i = 0; i < 1 + power; ++i) {
 		rec->p[i] = isl_upoly_zero(div->ctx);
@@ -1939,27 +1962,6 @@ __isl_give struct isl_upoly *isl_upoly_from_affine(isl_ctx *ctx, isl_int *f,
 	}
 
 	return up;
-}
-
-/* Remove common factor of non-constant terms and denominator.
- */
-static void normalize_div(__isl_keep isl_qpolynomial *qp, int div)
-{
-	isl_ctx *ctx = qp->div->ctx;
-	unsigned total = qp->div->n_col - 2;
-
-	isl_seq_gcd(qp->div->row[div] + 2, total, &ctx->normalize_gcd);
-	isl_int_gcd(ctx->normalize_gcd,
-		    ctx->normalize_gcd, qp->div->row[div][0]);
-	if (isl_int_is_one(ctx->normalize_gcd))
-		return;
-
-	isl_seq_scale_down(qp->div->row[div] + 2, qp->div->row[div] + 2,
-			    ctx->normalize_gcd, total);
-	isl_int_divexact(qp->div->row[div][0], qp->div->row[div][0],
-			    ctx->normalize_gcd);
-	isl_int_fdiv_q(qp->div->row[div][1], qp->div->row[div][1],
-			    ctx->normalize_gcd);
 }
 
 /* Replace the integer division identified by "div" by the polynomial "s".
