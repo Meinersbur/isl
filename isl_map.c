@@ -5571,12 +5571,54 @@ error:
 	return NULL;
 }
 
+/* Construct the half-space x_pos >= 0.
+ */
+static __isl_give isl_basic_set *nonneg_halfspace(__isl_take isl_dim *dim,
+	int pos)
+{
+	int k;
+	isl_basic_set *nonneg;
+
+	nonneg = isl_basic_set_alloc_dim(dim, 0, 0, 1);
+	k = isl_basic_set_alloc_inequality(nonneg);
+	if (k < 0)
+		goto error;
+	isl_seq_clr(nonneg->ineq[k], 1 + isl_basic_set_total_dim(nonneg));
+	isl_int_set_si(nonneg->ineq[k][pos], 1);
+
+	return isl_basic_set_finalize(nonneg);
+error:
+	isl_basic_set_free(nonneg);
+	return NULL;
+}
+
+/* Construct the half-space x_pos <= -1.
+ */
+static __isl_give isl_basic_set *neg_halfspace(__isl_take isl_dim *dim, int pos)
+{
+	int k;
+	isl_basic_set *neg;
+
+	neg = isl_basic_set_alloc_dim(dim, 0, 0, 1);
+	k = isl_basic_set_alloc_inequality(neg);
+	if (k < 0)
+		goto error;
+	isl_seq_clr(neg->ineq[k], 1 + isl_basic_set_total_dim(neg));
+	isl_int_set_si(neg->ineq[k][0], -1);
+	isl_int_set_si(neg->ineq[k][pos], -1);
+
+	return isl_basic_set_finalize(neg);
+error:
+	isl_basic_set_free(neg);
+	return NULL;
+}
+
 __isl_give isl_set *isl_set_split_dims(__isl_take isl_set *set,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
 	int i;
-	isl_basic_set *nonneg = NULL;
-	isl_basic_set *neg = NULL;
+	isl_basic_set *nonneg;
+	isl_basic_set *neg;
 
 	if (!set)
 		return NULL;
@@ -5586,31 +5628,16 @@ __isl_give isl_set *isl_set_split_dims(__isl_take isl_set *set,
 	isl_assert(set->ctx, first + n <= isl_set_dim(set, type), goto error);
 
 	for (i = 0; i < n; ++i) {
-		int k;
-
-		neg = NULL;
-		nonneg = isl_basic_set_alloc_dim(isl_set_get_dim(set), 0, 0, 1);
-		k = isl_basic_set_alloc_inequality(nonneg);
-		if (k < 0)
-			goto error;
-		isl_seq_clr(nonneg->ineq[k], 1 + isl_basic_set_total_dim(nonneg));
-		isl_int_set_si(nonneg->ineq[k][pos(set->dim, type) + first + i], 1);
-
-		neg = isl_basic_set_alloc_dim(isl_set_get_dim(set), 0, 0, 1);
-		k = isl_basic_set_alloc_inequality(neg);
-		if (k < 0)
-			goto error;
-		isl_seq_clr(neg->ineq[k], 1 + isl_basic_set_total_dim(neg));
-		isl_int_set_si(neg->ineq[k][0], -1);
-		isl_int_set_si(neg->ineq[k][pos(set->dim, type) + first + i], -1);
+		nonneg = nonneg_halfspace(isl_set_get_dim(set),
+					  pos(set->dim, type) + first + i);
+		neg = neg_halfspace(isl_set_get_dim(set),
+					  pos(set->dim, type) + first + i);
 
 		set = isl_set_intersect(set, isl_basic_set_union(nonneg, neg));
 	}
 
 	return set;
 error:
-	isl_basic_set_free(nonneg);
-	isl_basic_set_free(neg);
 	isl_set_free(set);
 	return NULL;
 }
