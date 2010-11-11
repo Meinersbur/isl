@@ -2039,6 +2039,17 @@ the cells in the domain of the input piecewise quasipolynomial.
 The context is also exploited
 to simplify the quasipolynomials associated to each cell.
 
+	__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_to_polynomial(
+		__isl_take isl_pw_qpolynomial *pwqp, int sign);
+	__isl_give isl_union_pw_qpolynomial *
+	isl_union_pw_qpolynomial_to_polynomial(
+		__isl_take isl_union_pw_qpolynomial *upwqp, int sign);
+
+Approximate each quasipolynomial by a polynomial.  If C<sign> is positive,
+the polynomial will be an overapproximation.  If C<sign> is negative,
+it will be an underapproximation.  If C<sign> is zero, the approximation
+will lie somewhere in between.
+
 =head2 Bounds on Piecewise Quasipolynomials and Piecewise Quasipolynomial Reductions
 
 A piecewise quasipolynomial reduction is a piecewise

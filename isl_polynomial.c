@@ -18,6 +18,7 @@
 #include <isl_dim_private.h>
 #include <isl_map_private.h>
 #include <isl_mat_private.h>
+#include <isl_range.h>
 
 static unsigned pos(__isl_keep isl_dim *dim, enum isl_dim_type type)
 {
@@ -3967,5 +3968,271 @@ __isl_give isl_pw_qpolynomial *isl_basic_set_multiplicative_call(
 	return pwqp;
 error:
 	isl_basic_set_free(bset);
+	return NULL;
+}
+
+/* Drop all floors in "qp", turning each integer division [a/m] into
+ * a rational division a/m.  If "down" is set, then the integer division
+ * is replaces by (a-(m-1))/m instead.
+ */
+static __isl_give isl_qpolynomial *qp_drop_floors(
+	__isl_take isl_qpolynomial *qp, int down)
+{
+	int i;
+	struct isl_upoly *s;
+
+	if (!qp)
+		return NULL;
+	if (qp->div->n_row == 0)
+		return qp;
+
+	qp = isl_qpolynomial_cow(qp);
+	if (!qp)
+		return NULL;
+
+	for (i = qp->div->n_row - 1; i >= 0; --i) {
+		if (down) {
+			isl_int_sub(qp->div->row[i][1],
+				    qp->div->row[i][1], qp->div->row[i][0]);
+			isl_int_add_ui(qp->div->row[i][1],
+				       qp->div->row[i][1], 1);
+		}
+		s = isl_upoly_from_affine(qp->dim->ctx, qp->div->row[i] + 1,
+					qp->div->row[i][0], qp->div->n_col - 1);
+		qp = substitute_div(qp, i, s);
+		if (!qp)
+			return NULL;
+	}
+
+	return qp;
+}
+
+/* Drop all floors in "pwqp", turning each integer division [a/m] into
+ * a rational division a/m.
+ */
+static __isl_give isl_pw_qpolynomial *pwqp_drop_floors(
+	__isl_take isl_pw_qpolynomial *pwqp)
+{
+	int i;
+
+	if (!pwqp)
+		return NULL;
+
+	if (isl_pw_qpolynomial_is_zero(pwqp))
+		return pwqp;
+
+	pwqp = isl_pw_qpolynomial_cow(pwqp);
+	if (!pwqp)
+		return NULL;
+
+	for (i = 0; i < pwqp->n; ++i) {
+		pwqp->p[i].qp = qp_drop_floors(pwqp->p[i].qp, 0);
+		if (!pwqp->p[i].qp)
+			goto error;
+	}
+
+	return pwqp;
+error:
+	isl_pw_qpolynomial_free(pwqp);
+	return NULL;
+}
+
+/* Adjust all the integer divisions in "qp" such that they are at least
+ * one over the given orthant (identified by "signs").  This ensures
+ * that they will still be non-negative even after subtracting (m-1)/m.
+ *
+ * In particular, f is replaced by f' + v, changing f = [a/m]
+ * to f' = [(a - m v)/m].
+ * If the constant term k in a is smaller than m,
+ * the constant term of v is set to floor(k/m) - 1.
+ * For any other term, if the coefficient c and the variable x have
+ * the same sign, then no changes are needed.
+ * Otherwise, if the variable is positive (and c is negative),
+ * then the coefficient of x in v is set to floor(c/m).
+ * If the variable is negative (and c is positive),
+ * then the coefficient of x in v is set to ceil(c/m).
+ */
+static __isl_give isl_qpolynomial *make_divs_pos(__isl_take isl_qpolynomial *qp,
+	int *signs)
+{
+	int i, j;
+	int total;
+	isl_vec *v = NULL;
+	struct isl_upoly *s;
+
+	qp = isl_qpolynomial_cow(qp);
+	if (!qp)
+		return NULL;
+	qp->div = isl_mat_cow(qp->div);
+	if (!qp->div)
+		goto error;
+
+	total = isl_dim_total(qp->dim);
+	v = isl_vec_alloc(qp->div->ctx, qp->div->n_col - 1);
+
+	for (i = 0; i < qp->div->n_row; ++i) {
+		isl_int *row = qp->div->row[i];
+		v = isl_vec_clr(v);
+		if (!v)
+			goto error;
+		if (isl_int_lt(row[1], row[0])) {
+			isl_int_fdiv_q(v->el[0], row[1], row[0]);
+			isl_int_sub_ui(v->el[0], v->el[0], 1);
+			isl_int_submul(row[1], row[0], v->el[0]);
+		}
+		for (j = 0; j < total; ++j) {
+			if (isl_int_sgn(row[2 + j]) * signs[j] >= 0)
+				continue;
+			if (signs[j] < 0)
+				isl_int_cdiv_q(v->el[1 + j], row[2 + j], row[0]);
+			else
+				isl_int_fdiv_q(v->el[1 + j], row[2 + j], row[0]);
+			isl_int_submul(row[2 + j], row[0], v->el[1 + j]);
+		}
+		for (j = 0; j < i; ++j) {
+			if (isl_int_sgn(row[2 + total + j]) >= 0)
+				continue;
+			isl_int_fdiv_q(v->el[1 + total + j],
+					row[2 + total + j], row[0]);
+			isl_int_submul(row[2 + total + j],
+					row[0], v->el[1 + total + j]);
+		}
+		for (j = i + 1; j < qp->div->n_row; ++j) {
+			if (isl_int_is_zero(qp->div->row[j][2 + total + i]))
+				continue;
+			isl_seq_combine(qp->div->row[j] + 1,
+				qp->div->ctx->one, qp->div->row[j] + 1,
+				qp->div->row[j][2 + total + i], v->el, v->size);
+		}
+		isl_int_set_si(v->el[1 + total + i], 1);
+		s = isl_upoly_from_affine(qp->dim->ctx, v->el,
+					qp->div->ctx->one, v->size);
+		qp->upoly = isl_upoly_subs(qp->upoly, total + i, 1, &s);
+		isl_upoly_free(s);
+		if (!qp->upoly)
+			goto error;
+	}
+
+	isl_vec_free(v);
+	return qp;
+error:
+	isl_vec_free(v);
+	isl_qpolynomial_free(qp);
+	return NULL;
+}
+
+struct isl_to_poly_data {
+	int sign;
+	isl_pw_qpolynomial *res;
+	isl_qpolynomial *qp;
+};
+
+/* Appoximate data->qp by a polynomial on the orthant identified by "signs".
+ * We first make all integer divisions positive and then split the
+ * quasipolynomials into terms with sign data->sign (the direction
+ * of the requested approximation) and terms with the opposite sign.
+ * In the first set of terms, each integer division [a/m] is
+ * overapproximated by a/m, while in the second it is underapproximated
+ * by (a-(m-1))/m.
+ */
+static int to_polynomial_on_orthant(__isl_take isl_set *orthant, int *signs,
+	void *user)
+{
+	struct isl_to_poly_data *data = user;
+	isl_pw_qpolynomial *t;
+	isl_qpolynomial *qp, *up, *down;
+
+	qp = isl_qpolynomial_copy(data->qp);
+	qp = make_divs_pos(qp, signs);
+
+	up = isl_qpolynomial_terms_of_sign(qp, signs, data->sign);
+	up = qp_drop_floors(up, 0);
+	down = isl_qpolynomial_terms_of_sign(qp, signs, -data->sign);
+	down = qp_drop_floors(down, 1);
+
+	isl_qpolynomial_free(qp);
+	qp = isl_qpolynomial_add(up, down);
+
+	t = isl_pw_qpolynomial_alloc(orthant, qp);
+	data->res = isl_pw_qpolynomial_add_disjoint(data->res, t);
+
+	return 0;
+}
+
+/* Approximate each quasipolynomial by a polynomial.  If "sign" is positive,
+ * the polynomial will be an overapproximation.  If "sign" is negative,
+ * it will be an underapproximation.  If "sign" is zero, the approximation
+ * will lie somewhere in between.
+ *
+ * In particular, is sign == 0, we simply drop the floors, turning
+ * the integer divisions into rational divisions.
+ * Otherwise, we split the domains into orthants, make all integer divisions
+ * positive and then approximate each [a/m] by either a/m or (a-(m-1))/m,
+ * depending on the requested sign and the sign of the term in which
+ * the integer division appears.
+ */
+__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_to_polynomial(
+	__isl_take isl_pw_qpolynomial *pwqp, int sign)
+{
+	int i;
+	struct isl_to_poly_data data;
+
+	if (sign == 0)
+		return pwqp_drop_floors(pwqp);
+
+	if (!pwqp)
+		return NULL;
+
+	data.sign = sign;
+	data.res = isl_pw_qpolynomial_zero(isl_pw_qpolynomial_get_dim(pwqp));
+
+	for (i = 0; i < pwqp->n; ++i) {
+		if (pwqp->p[i].qp->div->n_row == 0) {
+			isl_pw_qpolynomial *t;
+			t = isl_pw_qpolynomial_alloc(
+					isl_set_copy(pwqp->p[i].set),
+					isl_qpolynomial_copy(pwqp->p[i].qp));
+			data.res = isl_pw_qpolynomial_add_disjoint(data.res, t);
+			continue;
+		}
+		data.qp = pwqp->p[i].qp;
+		if (isl_set_foreach_orthant(pwqp->p[i].set,
+					&to_polynomial_on_orthant, &data) < 0)
+			goto error;
+	}
+
+	isl_pw_qpolynomial_free(pwqp);
+
+	return data.res;
+error:
+	isl_pw_qpolynomial_free(pwqp);
+	isl_pw_qpolynomial_free(data.res);
+	return NULL;
+}
+
+static int poly_entry(void **entry, void *user)
+{
+	int *sign = user;
+	isl_pw_qpolynomial **pwqp = (isl_pw_qpolynomial **)entry;
+
+	*pwqp = isl_pw_qpolynomial_to_polynomial(*pwqp, *sign);
+
+	return *pwqp ? 0 : -1;
+}
+
+__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_to_polynomial(
+	__isl_take isl_union_pw_qpolynomial *upwqp, int sign)
+{
+	upwqp = isl_union_pw_qpolynomial_cow(upwqp);
+	if (!upwqp)
+		return NULL;
+
+	if (isl_hash_table_foreach(upwqp->dim->ctx, &upwqp->table,
+				   &poly_entry, &sign) < 0)
+		goto error;
+
+	return upwqp;
+error:
+	isl_union_pw_qpolynomial_free(upwqp);
 	return NULL;
 }
