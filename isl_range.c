@@ -173,7 +173,8 @@ struct isl_fixed_sign_data {
 
 /* Add term "term" to data->poly if it has sign data->sign.
  * The sign is determined based on the signs of the parameters
- * and variables in data->signs.
+ * and variables in data->signs.  The integer divisions, if
+ * any, are assumed to be non-negative.
  */
 static int collect_fixed_sign_terms(__isl_take isl_term *term, void *user)
 {
@@ -189,9 +190,6 @@ static int collect_fixed_sign_terms(__isl_take isl_term *term, void *user)
 
 	nparam = isl_term_dim(term, isl_dim_param);
 	nvar = isl_term_dim(term, isl_dim_set);
-
-	isl_assert(isl_term_get_ctx(term), isl_term_dim(term, isl_dim_div) == 0,
-			return -1);
 
 	isl_int_init(n);
 
@@ -224,9 +222,10 @@ static int collect_fixed_sign_terms(__isl_take isl_term *term, void *user)
 }
 
 /* Construct and return a polynomial that consists of the terms
- * in "poly" that have sign "sign".
+ * in "poly" that have sign "sign".  The integer divisions, if
+ * any, are assumed to be non-negative.
  */
-static __isl_give isl_qpolynomial *fixed_sign_terms(
+__isl_give isl_qpolynomial *isl_qpolynomial_terms_of_sign(
 	__isl_keep isl_qpolynomial *poly, int *signs, int sign)
 {
 	struct isl_fixed_sign_data data = { signs, sign };
@@ -322,8 +321,8 @@ static int propagate_on_bound_pair(__isl_take isl_constraint *lower,
 		u = bound2poly(upper, isl_dim_copy(dim), nvar, 1);
 		l = bound2poly(lower, dim, nvar, -1);
 
-		pos = fixed_sign_terms(data->poly, data->signs, sign);
-		neg = fixed_sign_terms(data->poly, data->signs, -sign);
+		pos = isl_qpolynomial_terms_of_sign(data->poly, data->signs, sign);
+		neg = isl_qpolynomial_terms_of_sign(data->poly, data->signs, -sign);
 
 		pos = isl_qpolynomial_substitute(pos, isl_dim_set, nvar, 1, &u);
 		neg = isl_qpolynomial_substitute(neg, isl_dim_set, nvar, 1, &l);
