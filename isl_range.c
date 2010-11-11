@@ -178,7 +178,7 @@ struct isl_fixed_sign_data {
 static int collect_fixed_sign_terms(__isl_take isl_term *term, void *user)
 {
 	struct isl_fixed_sign_data *data = (struct isl_fixed_sign_data *)user;
-	isl_int n, d;
+	isl_int n;
 	int i;
 	int sign;
 	unsigned nparam;
@@ -194,10 +194,8 @@ static int collect_fixed_sign_terms(__isl_take isl_term *term, void *user)
 			return -1);
 
 	isl_int_init(n);
-	isl_int_init(d);
 
 	isl_term_get_num(term, &n);
-	isl_term_get_den(term, &d);
 
 	sign = isl_int_sgn(n);
 	for (i = 0; i < nparam; ++i) {
@@ -221,7 +219,6 @@ static int collect_fixed_sign_terms(__isl_take isl_term *term, void *user)
 		isl_term_free(term);
 
 	isl_int_clear(n);
-	isl_int_clear(d);
 
 	return 0;
 }
