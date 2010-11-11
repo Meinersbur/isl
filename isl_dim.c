@@ -957,7 +957,7 @@ struct isl_dim *isl_dim_underlying(struct isl_dim *dim, unsigned n_div)
 
 unsigned isl_dim_total(struct isl_dim *dim)
 {
-	return dim->nparam + dim->n_in + dim->n_out;
+	return dim ? dim->nparam + dim->n_in + dim->n_out : 0;
 }
 
 int isl_dim_equal(struct isl_dim *dim1, struct isl_dim *dim2)
