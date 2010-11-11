@@ -5642,6 +5642,70 @@ error:
 	return NULL;
 }
 
+static int foreach_orthant(__isl_take isl_set *set, int *signs, int first,
+	int len, int (*fn)(__isl_take isl_set *orthant, int *signs, void *user),
+	void *user)
+{
+	isl_set *half;
+
+	if (!set)
+		return -1;
+	if (isl_set_fast_is_empty(set)) {
+		isl_set_free(set);
+		return 0;
+	}
+	if (first == len)
+		return fn(set, signs, user);
+
+	signs[first] = 1;
+	half = isl_set_from_basic_set(nonneg_halfspace(isl_set_get_dim(set),
+							1 + first));
+	half = isl_set_intersect(half, isl_set_copy(set));
+	if (foreach_orthant(half, signs, first + 1, len, fn, user) < 0)
+		goto error;
+
+	signs[first] = -1;
+	half = isl_set_from_basic_set(neg_halfspace(isl_set_get_dim(set),
+							1 + first));
+	half = isl_set_intersect(half, set);
+	return foreach_orthant(half, signs, first + 1, len, fn, user);
+error:
+	isl_set_free(set);
+	return -1;
+}
+
+/* Call "fn" on the intersections of "set" with each of the orthants
+ * (except for obviously empty intersections).  The orthant is identified
+ * by the signs array, with each entry having value 1 or -1 according
+ * to the sign of the corresponding variable.
+ */
+int isl_set_foreach_orthant(__isl_keep isl_set *set,
+	int (*fn)(__isl_take isl_set *orthant, int *signs, void *user),
+	void *user)
+{
+	unsigned nparam;
+	unsigned nvar;
+	int *signs;
+	int r;
+
+	if (!set)
+		return -1;
+	if (isl_set_fast_is_empty(set))
+		return 0;
+
+	nparam = isl_set_dim(set, isl_dim_param);
+	nvar = isl_set_dim(set, isl_dim_set);
+
+	signs = isl_alloc_array(set->ctx, int, nparam + nvar);
+
+	r = foreach_orthant(isl_set_copy(set), signs, 0, nparam + nvar,
+			    fn, user);
+
+	free(signs);
+
+	return r;
+}
+
 int isl_set_is_equal(struct isl_set *set1, struct isl_set *set2)
 {
 	return isl_map_is_equal((struct isl_map *)set1, (struct isl_map *)set2);
