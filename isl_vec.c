@@ -146,6 +146,15 @@ void isl_vec_dump(struct isl_vec *vec, FILE *out, int indent)
 	fprintf(out, "]\n");
 }
 
+__isl_give isl_vec *isl_vec_clr(__isl_take isl_vec *vec)
+{
+	vec = isl_vec_cow(vec);
+	if (!vec)
+		return NULL;
+	isl_seq_clr(vec->el, vec->size);
+	return vec;
+}
+
 void isl_vec_lcm(struct isl_vec *vec, isl_int *lcm)
 {
 	isl_seq_lcm(vec->block.data, vec->size, lcm);
