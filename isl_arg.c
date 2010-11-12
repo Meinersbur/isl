@@ -599,9 +599,22 @@ static int parse_bool_option(struct isl_arg *decl, const char *arg,
 		return 1;
 	}
 
-	if (strncmp(arg, "--no-", 5))
+	if (strncmp(arg, "--", 2))
 		return 0;
-	arg += 5;
+	arg += 2;
+
+	if (prefix) {
+		size_t prefix_len = strlen(prefix);
+		if (strncmp(arg, prefix, prefix_len) == 0 &&
+		    arg[prefix_len] == '-') {
+			arg += prefix_len + 1;
+			prefix = NULL;
+		}
+	}
+
+	if (strncmp(arg, "no-", 3))
+		return 0;
+	arg += 3;
 
 	if (prefix) {
 		size_t prefix_len = strlen(prefix);
