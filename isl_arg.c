@@ -51,6 +51,11 @@ static void set_default_user(struct isl_arg *arg, void *opt)
 	arg->u.user.init(((char *)opt) + arg->offset);
 }
 
+static void set_default_int(struct isl_arg *arg, void *opt)
+{
+	*(int *)(((char *)opt) + arg->offset) = arg->u.i.default_value;
+}
+
 static void set_default_long(struct isl_arg *arg, void *opt)
 {
 	*(long *)(((char *)opt) + arg->offset) = arg->u.l.default_value;
@@ -89,6 +94,9 @@ void isl_arg_set_defaults(struct isl_arg *arg, void *opt)
 			break;
 		case isl_arg_user:
 			set_default_user(&arg[i], opt);
+			break;
+		case isl_arg_int:
+			set_default_int(&arg[i], opt);
 			break;
 		case isl_arg_long:
 			set_default_long(&arg[i], opt);
@@ -133,6 +141,7 @@ void isl_arg_free(struct isl_arg *arg, void *opt)
 		case isl_arg_bool:
 		case isl_arg_choice:
 		case isl_arg_flags:
+		case isl_arg_int:
 		case isl_arg_long:
 		case isl_arg_ulong:
 		case isl_arg_version:
@@ -382,6 +391,18 @@ static int print_argument_name(struct isl_arg *decl, const char *name, int pos)
 	return pos + 3 + strlen(name);
 }
 
+static void print_int_help(struct isl_arg *decl, const char *prefix)
+{
+	int pos;
+	char val[20];
+	pos = print_arg_help(decl, prefix, 0);
+	pos = print_argument_name(decl, decl->argument_name, pos);
+	pos = print_help_msg(decl, pos);
+	snprintf(val, sizeof(val), "%d", decl->u.i.default_value);
+	print_default(decl, val, pos);
+	printf("\n");
+}
+
 static void print_long_help(struct isl_arg *decl, const char *prefix)
 {
 	int pos;
@@ -438,6 +459,9 @@ static void print_help(struct isl_arg *arg, const char *prefix)
 			break;
 		case isl_arg_bool:
 			print_bool_help(&arg[i], prefix);
+			break;
+		case isl_arg_int:
+			print_int_help(&arg[i], prefix);
 			break;
 		case isl_arg_long:
 			print_long_help(&arg[i], prefix);
@@ -772,6 +796,34 @@ static int parse_str_option(struct isl_arg *decl, char **arg,
 	return 0;
 }
 
+static int parse_int_option(struct isl_arg *decl, char **arg,
+	const char *prefix, void *opt)
+{
+	int has_argument;
+	const char *val;
+	char *endptr;
+	int *p = (int *)(((char *)opt) + decl->offset);
+
+	val = skip_name(decl, arg[0], prefix, 0, &has_argument);
+	if (!val)
+		return 0;
+
+	if (has_argument) {
+		*p = atoi(val);
+		return 1;
+	}
+
+	if (arg[1]) {
+		int i = strtol(arg[1], &endptr, 0);
+		if (*endptr == '\0') {
+			*p = i;
+			return 2;
+		}
+	}
+
+	return 0;
+}
+
 static int parse_long_option(struct isl_arg *decl, char **arg,
 	const char *prefix, void *opt)
 {
@@ -865,6 +917,9 @@ static int parse_option(struct isl_arg *decl, char **arg,
 			break;
 		case isl_arg_flags:
 			parsed = parse_flags_option(&decl[i], arg, prefix, opt);
+			break;
+		case isl_arg_int:
+			parsed = parse_int_option(&decl[i], arg, prefix, opt);
 			break;
 		case isl_arg_long:
 			parsed = parse_long_option(&decl[i], arg, prefix, opt);

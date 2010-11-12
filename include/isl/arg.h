@@ -36,6 +36,7 @@ enum isl_arg_type {
 	isl_arg_child,
 	isl_arg_choice,
 	isl_arg_flags,
+	isl_arg_int,
 	isl_arg_user,
 	isl_arg_long,
 	isl_arg_ulong,
@@ -69,6 +70,9 @@ struct isl_arg {
 		unsigned		 default_value;
 		int (*set)(void *opt, unsigned val);
 	} b;
+	struct {
+		int			default_value;
+	} i;
 	struct {
 		long		 	default_value;
 		long		 	default_selected;
@@ -148,6 +152,18 @@ struct isl_arg {
 	_ISL_ARG_BOOL_F(-1,s,l,setter,0,h,fl)
 #define ISL_ARG_PHANTOM_BOOL(s,l,setter,h)				\
 	ISL_ARG_PHANTOM_BOOL_F(s,l,setter,h,0)
+#define ISL_ARG_INT_F(st,f,s,l,a,d,h,fl)	{			\
+	.type = isl_arg_int,						\
+	.short_name = s,						\
+	.long_name = l,							\
+	.argument_name = a,						\
+	.offset = offsetof(st, f),					\
+	.help_msg = h,							\
+	.flags = fl,							\
+	.u = { .ul = { .default_value = d } }				\
+},
+#define ISL_ARG_INT(st,f,s,l,a,d,h)					\
+	ISL_ARG_INT_F(st,f,s,l,a,d,h,0)
 #define ISL_ARG_LONG(st,f,s,lo,d,h)	{				\
 	.type = isl_arg_long,						\
 	.short_name = s,						\
