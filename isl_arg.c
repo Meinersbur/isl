@@ -207,20 +207,14 @@ static int print_help_msg(struct isl_arg *decl, int pos)
 	return len;
 }
 
-static void print_default_choice(struct isl_arg *decl, int pos)
+static void print_default(struct isl_arg *decl, const char *def, int pos)
 {
 	int i;
 	const char *default_prefix = "[default: ";
 	const char *default_suffix = "]";
-	const char *s = "none";
 	int len;
 
-	for (i = 0; decl->u.choice.choice[i].name; ++i)
-		if (decl->u.choice.choice[i].value == decl->u.choice.default_value) {
-			s = decl->u.choice.choice[i].name;
-			break;
-		}
-	len = strlen(default_prefix) + strlen(s) + strlen(default_suffix);
+	len = strlen(default_prefix) + strlen(def) + strlen(default_suffix);
 
 	if (!decl->help_msg) {
 		if (pos >= 29)
@@ -234,7 +228,21 @@ static void print_default_choice(struct isl_arg *decl, int pos)
 		else
 			printf(" ");
 	}
-	printf("%s%s%s", default_prefix, s, default_suffix);
+	printf("%s%s%s", default_prefix, def, default_suffix);
+}
+
+static void print_default_choice(struct isl_arg *decl, int pos)
+{
+	int i;
+	const char *s = "none";
+
+	for (i = 0; decl->u.choice.choice[i].name; ++i)
+		if (decl->u.choice.choice[i].value == decl->u.choice.default_value) {
+			s = decl->u.choice.choice[i].name;
+			break;
+		}
+
+	print_default(decl, s, pos);
 }
 
 static void print_choice_help(struct isl_arg *decl, const char *prefix)
@@ -337,7 +345,8 @@ static void print_bool_help(struct isl_arg *decl, const char *prefix)
 	int pos;
 	int no = decl->u.b.default_value == 1;
 	pos = print_arg_help(decl, prefix, no);
-	print_help_msg(decl, pos);
+	pos = print_help_msg(decl, pos);
+	print_default(decl, no ? "yes" : "no", pos);
 	printf("\n");
 }
 
