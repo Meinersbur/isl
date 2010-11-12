@@ -2036,7 +2036,7 @@ are returned in C<*n> and C<*d>, respectively.
 
 The gist operation applies the gist operation to each of
 the cells in the domain of the input piecewise quasipolynomial.
-In future, the operation will also exploit the context
+The context is also exploited
 to simplify the quasipolynomials associated to each cell.
 
 =head2 Bounds on Piecewise Quasipolynomials and Piecewise Quasipolynomial Reductions
