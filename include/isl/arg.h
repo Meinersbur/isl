@@ -30,6 +30,7 @@ struct isl_arg_flags {
 
 enum isl_arg_type {
 	isl_arg_end,
+	isl_arg_alias,
 	isl_arg_arg,
 	isl_arg_bool,
 	isl_arg_child,
@@ -90,6 +91,10 @@ struct isl_arg {
 	} u;
 };
 
+#define ISL_ARG_ALIAS(l)	{					\
+	.type = isl_arg_alias,						\
+	.long_name = l,							\
+},
 #define ISL_ARG_ARG(st,f,a,d)	{					\
 	.type = isl_arg_arg,						\
 	.argument_name = a,						\

@@ -100,6 +100,7 @@ void isl_arg_set_defaults(struct isl_arg *arg, void *opt)
 		case isl_arg_str:
 			set_default_str(&arg[i], opt);
 			break;
+		case isl_arg_alias:
 		case isl_arg_version:
 		case isl_arg_end:
 			break;
@@ -128,6 +129,7 @@ void isl_arg_free(struct isl_arg *arg, void *opt)
 			if (arg[i].u.user.clear)
 				arg[i].u.user.clear(((char *)opt) + arg[i].offset);
 			break;
+		case isl_arg_alias:
 		case isl_arg_bool:
 		case isl_arg_choice:
 		case isl_arg_flags:
@@ -167,6 +169,17 @@ static int print_arg_help(struct isl_arg *decl, const char *prefix, int no)
 	}
 	printf("%s", decl->long_name);
 	len += strlen(decl->long_name);
+
+	while ((++decl)->type == isl_arg_alias) {
+		printf(", --");
+		len += 4;
+		if (no) {
+			printf("no-");
+			len += 3;
+		}
+		printf("%s", decl->long_name);
+		len += strlen(decl->long_name);
+	}
 
 	return len;
 }
@@ -428,6 +441,7 @@ static void print_help(struct isl_arg *arg, const char *prefix)
 		case isl_arg_str:
 			print_str_help(&arg[i], prefix);
 			break;
+		case isl_arg_alias:
 		case isl_arg_version:
 		case isl_arg_arg:
 		case isl_arg_child:
@@ -502,6 +516,18 @@ static void print_help_and_exit(struct isl_arg *arg, const char *prog)
 	exit(0);
 }
 
+static int match_long_name(struct isl_arg *decl,
+	const char *start, const char *end)
+{
+	do {
+		if (end - start == strlen(decl->long_name) &&
+		    !strncmp(start, decl->long_name, end - start))
+			return 1;
+	} while ((++decl)->type == isl_arg_alias);
+
+	return 0;
+}
+
 static const char *skip_name(struct isl_arg *decl, const char *arg,
 	const char *prefix, int need_argument, int *has_argument)
 {
@@ -538,8 +564,7 @@ static const char *skip_name(struct isl_arg *decl, const char *arg,
 			name += prefix_len + 1;
 	}
 
-	if (end - name != strlen(decl->long_name) ||
-	    strncmp(name, decl->long_name, end - name))
+	if (!match_long_name(decl, name, end))
 		return NULL;
 
 	return equal ? equal + 1 : end;
@@ -679,7 +704,7 @@ static int parse_bool_option(struct isl_arg *decl, const char *arg,
 			arg += prefix_len + 1;
 	}
 
-	if (!strcmp(arg, decl->long_name)) {
+	if (match_long_name(decl, arg, arg + strlen(arg))) {
 		if (decl->u.b.set)
 			decl->u.b.set(opt, 0);
 		else if (decl->offset != (size_t) -1)
@@ -826,6 +851,7 @@ static int parse_option(struct isl_arg *decl, char **arg,
 		case isl_arg_child:
 			parsed = parse_child_option(&decl[i], arg, opt);
 			break;
+		case isl_arg_alias:
 		case isl_arg_arg:
 		case isl_arg_user:
 		case isl_arg_version:
