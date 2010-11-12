@@ -102,6 +102,9 @@ ISL_ARG_CHOICE(struct isl_options, bound, 0, "bound", bound,
 	ISL_BOUND_BERNSTEIN, "algorithm to use for computing bounds")
 ISL_ARG_FLAGS(struct isl_options, bernstein_recurse, 0,
 	"bernstein-recurse", bernstein_recurse, ISL_BERNSTEIN_FACTORS, NULL)
+ISL_ARG_BOOL(struct isl_options, bernstein_triangulate, 0,
+	"bernstein-triangulate", 1,
+	"triangulate domains during Bernstein expansion")
 ISL_ARG_VERSION(print_version)
 ISL_ARG_END
 };

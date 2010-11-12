@@ -50,6 +50,8 @@ struct isl_options {
 	#define			ISL_BERNSTEIN_FACTORS	1
 	#define			ISL_BERNSTEIN_INTERVALS	2
 	int			bernstein_recurse;
+
+	int			bernstein_triangulate;
 };
 
 ISL_ARG_DECL(isl_options, struct isl_options, isl_options_arg)

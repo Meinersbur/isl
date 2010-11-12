@@ -251,9 +251,15 @@ static int bernstein_coefficients_cell(__isl_take isl_cell *cell, void *user)
 	isl_qpolynomial **subs;
 	isl_pw_qpolynomial_fold *pwf;
 	isl_set *dom;
+	isl_ctx *ctx;
 
 	nvar = isl_qpolynomial_dim(poly, isl_dim_set) - 1;
 	n_vertices = cell->n_vertices;
+
+	ctx = isl_qpolynomial_get_ctx(poly);
+	if (n_vertices > nvar + 1 && ctx->opt->bernstein_triangulate)
+		return isl_cell_foreach_simplex(cell,
+					    &bernstein_coefficients_cell, user);
 
 	subs = isl_alloc_array(data->poly->dim->ctx, isl_qpolynomial *,
 				1 + nvar);
