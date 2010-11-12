@@ -1544,21 +1544,22 @@ static __isl_give isl_printer *print_pw_qpolynomial_fold_isl(
 }
 
 static __isl_give isl_printer *print_affine_c(__isl_take isl_printer *p,
-	__isl_keep isl_basic_set *bset, isl_int *c);
+	__isl_keep isl_dim *dim, __isl_keep isl_basic_set *bset, isl_int *c);
 
 static __isl_give isl_printer *print_name_c(__isl_take isl_printer *p,
+	__isl_keep isl_dim *dim,
 	__isl_keep isl_basic_set *bset, enum isl_dim_type type, unsigned pos)
 {
 	if (type == isl_dim_div) {
 		p = isl_printer_print_str(p, "floord(");
-		p = print_affine_c(p, bset, bset->div[pos] + 1);
+		p = print_affine_c(p, dim, bset, bset->div[pos] + 1);
 		p = isl_printer_print_str(p, ", ");
 		p = isl_printer_print_isl_int(p, bset->div[pos][0]);
 		p = isl_printer_print_str(p, ")");
 	} else {
 		const char *name;
 
-		name = isl_dim_get_name(bset->dim, type, pos);
+		name = isl_dim_get_name(dim, type, pos);
 		if (!name)
 			name = "UNNAMED";
 		p = isl_printer_print_str(p, name);
@@ -1567,6 +1568,7 @@ static __isl_give isl_printer *print_name_c(__isl_take isl_printer *p,
 }
 
 static __isl_give isl_printer *print_term_c(__isl_take isl_printer *p,
+	__isl_keep isl_dim *dim,
 	__isl_keep isl_basic_set *bset, isl_int c, unsigned pos)
 {
 	enum isl_dim_type type;
@@ -1583,12 +1585,13 @@ static __isl_give isl_printer *print_term_c(__isl_take isl_printer *p,
 		p = isl_printer_print_isl_int(p, c);
 		p = isl_printer_print_str(p, "*");
 	}
-	type = pos2type(bset->dim, &pos);
-	p = print_name_c(p, bset, type, pos);
+	type = pos2type(dim, &pos);
+	p = print_name_c(p, dim, bset, type, pos);
 	return p;
 }
 
 static __isl_give isl_printer *print_partial_affine_c(__isl_take isl_printer *p,
+	__isl_keep isl_dim *dim,
 	__isl_keep isl_basic_set *bset, isl_int *c, unsigned len)
 {
 	int i;
@@ -1607,7 +1610,7 @@ static __isl_give isl_printer *print_partial_affine_c(__isl_take isl_printer *p,
 				p = isl_printer_print_str(p, " + ");
 		}
 		first = 0;
-		p = print_term_c(p, bset, c[i], i);
+		p = print_term_c(p, dim, bset, c[i], i);
 		if (flip)
 			isl_int_neg(c[i], c[i]);
 	}
@@ -1617,19 +1620,20 @@ static __isl_give isl_printer *print_partial_affine_c(__isl_take isl_printer *p,
 }
 
 static __isl_give isl_printer *print_affine_c(__isl_take isl_printer *p,
-	__isl_keep isl_basic_set *bset, isl_int *c)
+	__isl_keep isl_dim *dim, __isl_keep isl_basic_set *bset, isl_int *c)
 {
 	unsigned len = 1 + isl_basic_set_total_dim(bset);
-	return print_partial_affine_c(p, bset, c, len);
+	return print_partial_affine_c(p, dim, bset, c, len);
 }
 
 static __isl_give isl_printer *print_constraint_c(__isl_take isl_printer *p,
+	__isl_keep isl_dim *dim,
 	__isl_keep isl_basic_set *bset, isl_int *c, const char *op, int first)
 {
 	if (!first)
 		p = isl_printer_print_str(p, " && ");
 
-	p = print_affine_c(p, bset, c);
+	p = print_affine_c(p, dim, bset, c);
 	p = isl_printer_print_str(p, " ");
 	p = isl_printer_print_str(p, op);
 	p = isl_printer_print_str(p, " 0");
@@ -1637,7 +1641,7 @@ static __isl_give isl_printer *print_constraint_c(__isl_take isl_printer *p,
 }
 
 static __isl_give isl_printer *print_basic_set_c(__isl_take isl_printer *p,
-	__isl_keep isl_basic_set *bset)
+	__isl_keep isl_dim *dim, __isl_keep isl_basic_set *bset)
 {
 	int i, j;
 	unsigned n_div = isl_basic_set_dim(bset, isl_dim_div);
@@ -1646,12 +1650,13 @@ static __isl_give isl_printer *print_basic_set_c(__isl_take isl_printer *p,
 	for (i = 0; i < bset->n_eq; ++i) {
 		j = isl_seq_last_non_zero(bset->eq[i] + 1 + total, n_div);
 		if (j < 0)
-			p = print_constraint_c(p, bset, bset->eq[i], "==", !i);
+			p = print_constraint_c(p, dim, bset,
+						bset->eq[i], "==", !i);
 		else {
 			if (i)
 				p = isl_printer_print_str(p, " && ");
 			p = isl_printer_print_str(p, "(");
-			p = print_partial_affine_c(p, bset, bset->eq[i],
+			p = print_partial_affine_c(p, dim, bset, bset->eq[i],
 						   1 + total + j);
 			p = isl_printer_print_str(p, ") % ");
 			p = isl_printer_print_isl_int(p,
@@ -1660,13 +1665,13 @@ static __isl_give isl_printer *print_basic_set_c(__isl_take isl_printer *p,
 		}
 	}
 	for (i = 0; i < bset->n_ineq; ++i)
-		p = print_constraint_c(p, bset, bset->ineq[i], ">=",
+		p = print_constraint_c(p, dim, bset, bset->ineq[i], ">=",
 					!bset->n_eq && !i);
 	return p;
 }
 
 static __isl_give isl_printer *print_set_c(__isl_take isl_printer *p,
-	__isl_keep isl_set *set)
+	__isl_keep isl_dim *dim, __isl_keep isl_set *set)
 {
 	int i;
 
@@ -1678,7 +1683,7 @@ static __isl_give isl_printer *print_set_c(__isl_take isl_printer *p,
 			p = isl_printer_print_str(p, " || ");
 		if (set->n > 1)
 			p = isl_printer_print_str(p, "(");
-		p = print_basic_set_c(p, set->p[i]);
+		p = print_basic_set_c(p, dim, set->p[i]);
 		if (set->n > 1)
 			p = isl_printer_print_str(p, ")");
 	}
@@ -1686,7 +1691,7 @@ static __isl_give isl_printer *print_set_c(__isl_take isl_printer *p,
 }
 
 static __isl_give isl_printer *print_qpolynomial_c(__isl_take isl_printer *p,
-	__isl_keep isl_qpolynomial *qp)
+	__isl_keep isl_dim *dim, __isl_keep isl_qpolynomial *qp)
 {
 	isl_int den;
 
@@ -1701,7 +1706,7 @@ static __isl_give isl_printer *print_qpolynomial_c(__isl_take isl_printer *p,
 		qp = isl_qpolynomial_mul(qp, f);
 	}
 	if (qp)
-		p = upoly_print(qp->upoly, qp->dim, qp->div, p, 0);
+		p = upoly_print(qp->upoly, dim, qp->div, p, 0);
 	if (!isl_int_is_one(den)) {
 		p = isl_printer_print_str(p, ")/");
 		p = isl_printer_print_isl_int(p, den);
@@ -1712,18 +1717,18 @@ static __isl_give isl_printer *print_qpolynomial_c(__isl_take isl_printer *p,
 }
 
 static __isl_give isl_printer *print_pw_qpolynomial_c(
-	__isl_take isl_printer *p, __isl_keep isl_pw_qpolynomial *pwpq)
+	__isl_take isl_printer *p, __isl_keep isl_pw_qpolynomial *pwqp)
 {
 	int i;
 
-	if (pwpq->n == 1 && isl_set_fast_is_universe(pwpq->p[0].set))
-		return print_qpolynomial_c(p, pwpq->p[0].qp);
+	if (pwqp->n == 1 && isl_set_fast_is_universe(pwqp->p[0].set))
+		return print_qpolynomial_c(p, pwqp->dim, pwqp->p[0].qp);
 
-	for (i = 0; i < pwpq->n; ++i) {
+	for (i = 0; i < pwqp->n; ++i) {
 		p = isl_printer_print_str(p, "(");
-		p = print_set_c(p, pwpq->p[i].set);
+		p = print_set_c(p, pwqp->dim, pwqp->p[i].set);
 		p = isl_printer_print_str(p, ") ? (");
-		p = print_qpolynomial_c(p, pwpq->p[i].qp);
+		p = print_qpolynomial_c(p, pwqp->dim, pwqp->p[i].qp);
 		p = isl_printer_print_str(p, ") : ");
 	}
 
@@ -1798,7 +1803,8 @@ error:
 }
 
 static __isl_give isl_printer *print_qpolynomial_fold_c(
-	__isl_take isl_printer *p, __isl_keep isl_qpolynomial_fold *fold)
+	__isl_take isl_printer *p, __isl_keep isl_dim *dim,
+	__isl_keep isl_qpolynomial_fold *fold)
 {
 	int i;
 
@@ -1811,7 +1817,7 @@ static __isl_give isl_printer *print_qpolynomial_fold_c(
 	for (i = 0; i < fold->n; ++i) {
 		if (i)
 			p = isl_printer_print_str(p, ", ");
-		p = print_qpolynomial_c(p, fold->qp[i]);
+		p = print_qpolynomial_c(p, dim, fold->qp[i]);
 		if (i)
 			p = isl_printer_print_str(p, ")");
 	}
@@ -1824,13 +1830,13 @@ static __isl_give isl_printer *print_pw_qpolynomial_fold_c(
 	int i;
 
 	if (pwf->n == 1 && isl_set_fast_is_universe(pwf->p[0].set))
-		return print_qpolynomial_fold_c(p, pwf->p[0].fold);
+		return print_qpolynomial_fold_c(p, pwf->dim, pwf->p[0].fold);
 
 	for (i = 0; i < pwf->n; ++i) {
 		p = isl_printer_print_str(p, "(");
-		p = print_set_c(p, pwf->p[i].set);
+		p = print_set_c(p, pwf->dim, pwf->p[i].set);
 		p = isl_printer_print_str(p, ") ? (");
-		p = print_qpolynomial_fold_c(p, pwf->p[i].fold);
+		p = print_qpolynomial_fold_c(p, pwf->dim, pwf->p[i].fold);
 		p = isl_printer_print_str(p, ") : ");
 	}
 
