@@ -50,6 +50,7 @@ struct isl_arg {
 	const char		*argument_name;
 	size_t			 offset;
 	const char		*help_msg;
+#define ISL_ARG_SINGLE_DASH	(1 << 0)
 	unsigned		 flags;
 	union {
 	struct {

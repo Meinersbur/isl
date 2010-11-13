@@ -153,11 +153,16 @@ static int print_arg_help(struct isl_arg *decl, const char *prefix, int no)
 		return 4;
 	}
 
-	if (decl->short_name)
+	if (decl->short_name) {
 		printf("  -%c, --", decl->short_name);
-	else
+		len += 8;
+	} else if (decl->flags & ISL_ARG_SINGLE_DASH) {
+		printf("  -");
+		len += 3;
+	} else {
 		printf("      --");
-	len += 8;
+		len += 8;
+	}
 
 	if (prefix) {
 		printf("%s-", prefix);
@@ -528,6 +533,15 @@ static int match_long_name(struct isl_arg *decl,
 	return 0;
 }
 
+static const char *skip_dash_dash(struct isl_arg *decl, const char *arg)
+{
+	if (!strncmp(arg, "--", 2))
+		return arg + 2;
+	if ((decl->flags & ISL_ARG_SINGLE_DASH) && arg[0] == '-')
+		return arg + 1;
+	return NULL;
+}
+
 static const char *skip_name(struct isl_arg *decl, const char *arg,
 	const char *prefix, int need_argument, int *has_argument)
 {
@@ -545,10 +559,10 @@ static const char *skip_name(struct isl_arg *decl, const char *arg,
 	if (!decl->long_name)
 		return NULL;
 
-	if (strncmp(arg, "--", 2))
+	name = skip_dash_dash(decl, arg);
+	if (!name)
 		return NULL;
 
-	name = arg + 2;
 	equal = strchr(name, '=');
 	if (need_argument && !equal)
 		return NULL;
@@ -680,9 +694,9 @@ static int parse_bool_option(struct isl_arg *decl, const char *arg,
 	if (!decl->long_name)
 		return 0;
 
-	if (strncmp(arg, "--", 2))
+	arg = skip_dash_dash(decl, arg);
+	if (!arg)
 		return 0;
-	arg += 2;
 
 	if (prefix) {
 		size_t prefix_len = strlen(prefix);
