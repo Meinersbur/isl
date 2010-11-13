@@ -51,6 +51,7 @@ struct isl_arg {
 	size_t			 offset;
 	const char		*help_msg;
 #define ISL_ARG_SINGLE_DASH	(1 << 0)
+#define ISL_ARG_BOOL_ARG	(1 << 1)
 	unsigned		 flags;
 	union {
 	struct {

@@ -677,12 +677,24 @@ static int parse_flags_option(struct isl_arg *decl, char **arg,
 	return has_argument ? 1 : 2;
 }
 
-static int parse_bool_option(struct isl_arg *decl, const char *arg,
+static int parse_bool_option(struct isl_arg *decl, char **arg,
 	const char *prefix, void *opt)
 {
+	const char *name;
 	unsigned *p = (unsigned *)(((char *)opt) + decl->offset);
 
-	if (skip_name(decl, arg, prefix, 0, NULL)) {
+	if (skip_name(decl, arg[0], prefix, 0, NULL)) {
+		if ((decl->flags && ISL_ARG_BOOL_ARG) && arg[1]) {
+			char *endptr;
+			int val = strtol(arg[1], &endptr, 0);
+			if (*endptr == '\0' && (val == 0 || val == 1)) {
+				if (decl->u.b.set)
+					decl->u.b.set(opt, val);
+				else if (decl->offset != (size_t) -1)
+					*p = val;
+				return 2;
+			}
+		}
 		if (decl->u.b.set)
 			decl->u.b.set(opt, 1);
 		else if (decl->offset != (size_t) -1)
@@ -694,31 +706,31 @@ static int parse_bool_option(struct isl_arg *decl, const char *arg,
 	if (!decl->long_name)
 		return 0;
 
-	arg = skip_dash_dash(decl, arg);
-	if (!arg)
+	name = skip_dash_dash(decl, arg[0]);
+	if (!name)
 		return 0;
 
 	if (prefix) {
 		size_t prefix_len = strlen(prefix);
-		if (strncmp(arg, prefix, prefix_len) == 0 &&
-		    arg[prefix_len] == '-') {
-			arg += prefix_len + 1;
+		if (strncmp(name, prefix, prefix_len) == 0 &&
+		    name[prefix_len] == '-') {
+			name += prefix_len + 1;
 			prefix = NULL;
 		}
 	}
 
-	if (strncmp(arg, "no-", 3))
+	if (strncmp(name, "no-", 3))
 		return 0;
-	arg += 3;
+	name += 3;
 
 	if (prefix) {
 		size_t prefix_len = strlen(prefix);
-		if (strncmp(arg, prefix, prefix_len) == 0 &&
-		    arg[prefix_len] == '-')
-			arg += prefix_len + 1;
+		if (strncmp(name, prefix, prefix_len) == 0 &&
+		    name[prefix_len] == '-')
+			name += prefix_len + 1;
 	}
 
-	if (match_long_name(decl, arg, arg + strlen(arg))) {
+	if (match_long_name(decl, name, name + strlen(name))) {
 		if (decl->u.b.set)
 			decl->u.b.set(opt, 0);
 		else if (decl->offset != (size_t) -1)
@@ -857,7 +869,7 @@ static int parse_option(struct isl_arg *decl, char **arg,
 			parsed = parse_ulong_option(&decl[i], arg, prefix, opt);
 			break;
 		case isl_arg_bool:
-			parsed = parse_bool_option(&decl[i], *arg, prefix, opt);
+			parsed = parse_bool_option(&decl[i], arg, prefix, opt);
 			break;
 		case isl_arg_str:
 			parsed = parse_str_option(&decl[i], arg, prefix, opt);
