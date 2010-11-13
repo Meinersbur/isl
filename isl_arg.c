@@ -479,6 +479,8 @@ static const char *skip_name(struct isl_arg *decl, const char *arg,
 			*has_argument = arg[2] != '\0';
 		return arg + 2;
 	}
+	if (!decl->long_name)
+		return NULL;
 
 	if (strncmp(arg, "--", 2))
 		return NULL;
@@ -607,6 +609,9 @@ static int parse_bool_option(struct isl_arg *decl, const char *arg,
 
 		return 1;
 	}
+
+	if (!decl->long_name)
+		return 0;
 
 	if (strncmp(arg, "--", 2))
 		return 0;
