@@ -1451,8 +1451,8 @@ static __isl_give isl_printer *isl_pwqp_print_isl_body(
 	for (i = 0; i < pwqp->n; ++i) {
 		if (i)
 			p = isl_printer_print_str(p, "; ");
-		if (isl_dim_size(pwqp->p[i].set->dim, isl_dim_set) > 0 ||
-		    isl_dim_get_tuple_name(pwqp->p[i].set->dim, isl_dim_set)) {
+		if (isl_dim_size(pwqp->dim, isl_dim_set) > 0 ||
+		    isl_dim_is_named_or_nested(pwqp->dim, isl_dim_set)) {
 			p = print_dim(pwqp->p[i].set->dim, p, 1, 0, NULL);
 			p = isl_printer_print_str(p, " -> ");
 		}
@@ -1475,7 +1475,8 @@ static __isl_give isl_printer *print_pw_qpolynomial_isl(
 	}
 	p = isl_printer_print_str(p, "{ ");
 	if (pwqp->n == 0) {
-		if (isl_dim_size(pwqp->dim, isl_dim_set) > 0) {
+		if (isl_dim_size(pwqp->dim, isl_dim_set) > 0 ||
+		    isl_dim_is_named_or_nested(pwqp->dim, isl_dim_set)) {
 			p = print_dim(pwqp->dim, p, 1, 0, NULL);
 			p = isl_printer_print_str(p, " -> ");
 		}
@@ -1512,7 +1513,8 @@ static __isl_give isl_printer *isl_pwf_print_isl_body(
 	for (i = 0; i < pwf->n; ++i) {
 		if (i)
 			p = isl_printer_print_str(p, "; ");
-		if (isl_dim_size(pwf->p[i].set->dim, isl_dim_set) > 0) {
+		if (isl_dim_size(pwf->dim, isl_dim_set) > 0 ||
+		    isl_dim_is_named_or_nested(pwf->dim, isl_dim_set)) {
 			p = print_dim(pwf->p[i].set->dim, p, 1, 0, NULL);
 			p = isl_printer_print_str(p, " -> ");
 		}
@@ -1532,7 +1534,8 @@ static __isl_give isl_printer *print_pw_qpolynomial_fold_isl(
 	}
 	p = isl_printer_print_str(p, "{ ");
 	if (pwf->n == 0) {
-		if (isl_dim_size(pwf->dim, isl_dim_set) > 0) {
+		if (isl_dim_size(pwf->dim, isl_dim_set) > 0 ||
+		    isl_dim_is_named_or_nested(pwf->dim, isl_dim_set)) {
 			p = print_dim(pwf->dim, p, 1, 0, NULL);
 			p = isl_printer_print_str(p, " -> ");
 		}
