@@ -118,7 +118,8 @@ static struct isl_dim *set_name(struct isl_dim *dim,
 		goto error;
 
 	pos = global_pos(dim, type, pos);
-	isl_assert(ctx, pos != isl_dim_total(dim), goto error);
+	if (pos == isl_dim_total(dim))
+		goto error;
 
 	if (pos >= dim->n_name) {
 		if (!name)
