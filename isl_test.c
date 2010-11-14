@@ -1515,6 +1515,19 @@ void test_union(isl_ctx *ctx)
 	isl_union_map_free(umap2);
 }
 
+void test_bound(isl_ctx *ctx)
+{
+	const char *str;
+	isl_pw_qpolynomial *pwqp;
+	isl_pw_qpolynomial_fold *pwf;
+
+	str = "{ [[a, b, c, d] -> [e]] -> 0 }";
+	pwqp = isl_pw_qpolynomial_read_from_str(ctx, str);
+	pwf = isl_pw_qpolynomial_bound(pwqp, isl_fold_max, NULL);
+	assert(isl_pw_qpolynomial_fold_dim(pwf, isl_dim_set) == 4);
+	isl_pw_qpolynomial_fold_free(pwf);
+}
+
 int main()
 {
 	struct isl_ctx *ctx;
@@ -1523,6 +1536,7 @@ int main()
 	assert(srcdir);
 
 	ctx = isl_ctx_alloc();
+	test_bound(ctx);
 	test_union(ctx);
 	test_split_periods(ctx);
 	test_parse(ctx);
