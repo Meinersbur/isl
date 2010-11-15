@@ -26,6 +26,8 @@ static void set_default_flags(struct isl_arg *arg, void *opt)
 
 static void set_default_bool(struct isl_arg *arg, void *opt)
 {
+	if (arg->offset == (size_t) -1)
+		return;
 	*(unsigned *)(((char *)opt) + arg->offset) = arg->u.b.default_value;
 }
 
@@ -346,7 +348,8 @@ static void print_bool_help(struct isl_arg *decl, const char *prefix)
 	int no = decl->u.b.default_value == 1;
 	pos = print_arg_help(decl, prefix, no);
 	pos = print_help_msg(decl, pos);
-	print_default(decl, no ? "yes" : "no", pos);
+	if (decl->offset != (size_t) -1)
+		print_default(decl, no ? "yes" : "no", pos);
 	printf("\n");
 }
 
@@ -633,8 +636,13 @@ static int parse_flags_option(struct isl_arg *decl, char **arg,
 static int parse_bool_option(struct isl_arg *decl, const char *arg,
 	const char *prefix, void *opt)
 {
+	unsigned *p = (unsigned *)(((char *)opt) + decl->offset);
+
 	if (skip_name(decl, arg, prefix, 0, NULL)) {
-		*(unsigned *)(((char *)opt) + decl->offset) = 1;
+		if (decl->u.b.set)
+			decl->u.b.set(opt, 1);
+		else if (decl->offset != (size_t) -1)
+			*p = 1;
 
 		return 1;
 	}
@@ -667,7 +675,10 @@ static int parse_bool_option(struct isl_arg *decl, const char *arg,
 	}
 
 	if (!strcmp(arg, decl->long_name)) {
-		*(unsigned *)(((char *)opt) + decl->offset) = 0;
+		if (decl->u.b.set)
+			decl->u.b.set(opt, 0);
+		else if (decl->offset != (size_t) -1)
+			*p = 0;
 
 		return 1;
 	}

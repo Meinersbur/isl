@@ -49,6 +49,7 @@ struct isl_arg {
 	const char		*argument_name;
 	size_t			 offset;
 	const char		*help_msg;
+	unsigned		 flags;
 	union {
 	struct {
 		struct isl_arg_choice	*choice;
@@ -62,6 +63,7 @@ struct isl_arg {
 	} flags;
 	struct {
 		unsigned		 default_value;
+		int (*set)(void *opt, unsigned val);
 	} b;
 	struct {
 		long		 	default_value;
@@ -121,14 +123,23 @@ struct isl_arg {
 	.u = { .choice = { .choice = c, .default_value = d,		\
 			    .default_selected = ds, .set = setter } }	\
 },
-#define ISL_ARG_BOOL(st,f,s,l,d,h)	{				\
+#define _ISL_ARG_BOOL_F(o,s,l,setter,d,h,fl)	{			\
 	.type = isl_arg_bool,						\
 	.short_name = s,						\
 	.long_name = l,							\
-	.offset = offsetof(st, f),					\
+	.offset = o,							\
 	.help_msg = h,							\
-	.u = { .b = { .default_value = d } }				\
+	.flags = fl,							\
+	.u = { .b = { .default_value = d, .set = setter } }		\
 },
+#define ISL_ARG_BOOL_F(st,f,s,l,d,h,fl)					\
+	_ISL_ARG_BOOL_F(offsetof(st, f),s,l,NULL,d,h,fl)
+#define ISL_ARG_BOOL(st,f,s,l,d,h)					\
+	ISL_ARG_BOOL_F(st,f,s,l,d,h,0)
+#define ISL_ARG_PHANTOM_BOOL_F(s,l,setter,h,fl)				\
+	_ISL_ARG_BOOL_F(-1,s,l,setter,0,h,fl)
+#define ISL_ARG_PHANTOM_BOOL(s,l,setter,h)				\
+	ISL_ARG_PHANTOM_BOOL_F(s,l,setter,h,0)
 #define ISL_ARG_LONG(st,f,s,lo,d,h)	{				\
 	.type = isl_arg_long,						\
 	.short_name = s,						\
