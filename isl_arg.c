@@ -459,6 +459,7 @@ static void print_str_help(struct isl_arg *decl, const char *prefix)
 static void print_help(struct isl_arg *arg, const char *prefix)
 {
 	int i;
+	int any = 0;
 
 	for (i = 0; arg[i].type != isl_arg_end; ++i) {
 		if (arg[i].flags & ISL_ARG_HIDDEN)
@@ -466,24 +467,31 @@ static void print_help(struct isl_arg *arg, const char *prefix)
 		switch (arg[i].type) {
 		case isl_arg_flags:
 			print_flags_help(&arg[i], prefix);
+			any = 1;
 			break;
 		case isl_arg_choice:
 			print_choice_help(&arg[i], prefix);
+			any = 1;
 			break;
 		case isl_arg_bool:
 			print_bool_help(&arg[i], prefix);
+			any = 1;
 			break;
 		case isl_arg_int:
 			print_int_help(&arg[i], prefix);
+			any = 1;
 			break;
 		case isl_arg_long:
 			print_long_help(&arg[i], prefix);
+			any = 1;
 			break;
 		case isl_arg_ulong:
 			print_ulong_help(&arg[i], prefix);
+			any = 1;
 			break;
 		case isl_arg_str:
 			print_str_help(&arg[i], prefix);
+			any = 1;
 			break;
 		case isl_arg_alias:
 		case isl_arg_version:
@@ -501,10 +509,12 @@ static void print_help(struct isl_arg *arg, const char *prefix)
 		if (arg[i].flags & ISL_ARG_HIDDEN)
 			continue;
 
-		printf("\n");
+		if (any)
+			printf("\n");
 		if (arg[i].help_msg)
 			printf(" %s\n", arg[i].help_msg);
 		print_help(arg[i].u.child.child, arg[i].long_name);
+		any = 1;
 	}
 }
 
