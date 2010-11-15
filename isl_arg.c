@@ -14,6 +14,11 @@
 #include <isl/arg.h>
 #include <isl/ctx.h>
 
+static struct isl_arg help_arg[] = {
+ISL_ARG_PHANTOM_BOOL('h', "help", NULL, "print this help, then exit")
+ISL_ARG_END
+};
+
 static void set_default_choice(struct isl_arg *arg, void *opt)
 {
 	*(unsigned *)(((char *)opt) + arg->offset) = arg->u.choice.default_value;
@@ -489,10 +494,10 @@ static void print_help_and_exit(struct isl_arg *arg, const char *prog)
 	printf("\n\n");
 
 	print_help(arg, NULL);
-	if (any_version(arg)) {
-		printf("\n");
+	printf("\n");
+	if (any_version(arg))
 		printf("  -V, --version\n");
-	}
+	print_bool_help(help_arg, NULL);
 
 	exit(0);
 }
