@@ -208,13 +208,20 @@ struct isl_arg {
 	.help_msg = h,							\
 	.u = { .str = { .default_value = d } }				\
 },
-#define ISL_ARG_CHILD(st,f,l,c,h)	{				\
+#define _ISL_ARG_CHILD(o,sz,l,c,h,fl)	{				\
 	.type = isl_arg_child,						\
 	.long_name = l,							\
-	.offset = offsetof(st, f),					\
+	.offset = o,							\
 	.help_msg = h,							\
-	.u = { .child = { .child = c, .size = sizeof(*((st *)NULL)->f) } }\
+	.flags = fl,							\
+	.u = { .child = { .child = c, .size = sz } }			\
 },
+#define ISL_ARG_CHILD(st,f,l,c,h)					\
+	_ISL_ARG_CHILD(offsetof(st, f),sizeof(*((st *)NULL)->f),l,c,h,0)
+#define ISL_ARG_GROUP_F(c,h,fl)						\
+	_ISL_ARG_CHILD(-1,0,NULL,c,h,fl)
+#define ISL_ARG_GROUP(c,h)						\
+	ISL_ARG_GROUP_F(c,h,0)
 #define ISL_ARG_FLAGS(st,f,s,l,c,d,h)	{				\
 	.type = isl_arg_flags,						\
 	.short_name = s,						\

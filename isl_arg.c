@@ -38,12 +38,17 @@ static void set_default_bool(struct isl_arg *arg, void *opt)
 
 static void set_default_child(struct isl_arg *arg, void *opt)
 {
-	void *child = calloc(1, arg->u.child.size);
+	void *child;
+
+	if (arg->offset == (size_t) -1)
+		child = opt;
+	else {
+		child = calloc(1, arg->u.child.size);
+		*(void **)(((char *)opt) + arg->offset) = child;
+	}
 
 	if (child)
 		isl_arg_set_defaults(arg->u.child.child, child);
-
-	*(void **)(((char *)opt) + arg->offset) = child;
 }
 
 static void set_default_user(struct isl_arg *arg, void *opt)
@@ -116,18 +121,18 @@ void isl_arg_set_defaults(struct isl_arg *arg, void *opt)
 	}
 }
 
-void isl_arg_free(struct isl_arg *arg, void *opt)
+static void free_args(struct isl_arg *arg, void *opt)
 {
 	int i;
-
-	if (!opt)
-		return;
 
 	for (i = 0; arg[i].type != isl_arg_end; ++i) {
 		switch (arg[i].type) {
 		case isl_arg_child:
-			isl_arg_free(arg[i].u.child.child,
-				*(void **)(((char *)opt) + arg[i].offset));
+			if (arg[i].offset == (size_t) -1)
+				free_args(arg[i].u.child.child, opt);
+			else
+				isl_arg_free(arg[i].u.child.child,
+				    *(void **)(((char *)opt) + arg[i].offset));
 			break;
 		case isl_arg_arg:
 		case isl_arg_str:
@@ -149,6 +154,14 @@ void isl_arg_free(struct isl_arg *arg, void *opt)
 			break;
 		}
 	}
+}
+
+void isl_arg_free(struct isl_arg *arg, void *opt)
+{
+	if (!opt)
+		return;
+
+	free_args(arg, opt);
 
 	free(opt);
 }
@@ -898,10 +911,18 @@ static int parse_ulong_option(struct isl_arg *decl, char **arg,
 static int parse_option(struct isl_arg *decl, char **arg,
 	const char *prefix, void *opt);
 
-static int parse_child_option(struct isl_arg *decl, char **arg, void *opt)
+static int parse_child_option(struct isl_arg *decl, char **arg,
+	const char *prefix, void *opt)
 {
-	return parse_option(decl->u.child.child, arg, decl->long_name,
-				*(void **)(((char *)opt) + decl->offset));
+	void *child;
+
+	if (decl->offset == (size_t) -1)
+		child = opt;
+	else {
+		child = *(void **)(((char *)opt) + decl->offset);
+		prefix = decl->long_name;
+	}
+	return parse_option(decl->u.child.child, arg, prefix, child);
 }
 
 static int parse_option(struct isl_arg *decl, char **arg,
@@ -934,7 +955,7 @@ static int parse_option(struct isl_arg *decl, char **arg,
 			parsed = parse_str_option(&decl[i], arg, prefix, opt);
 			break;
 		case isl_arg_child:
-			parsed = parse_child_option(&decl[i], arg, opt);
+			parsed = parse_child_option(&decl[i], arg, prefix, opt);
 			break;
 		case isl_arg_alias:
 		case isl_arg_arg:
