@@ -421,8 +421,6 @@ static void print_help(struct isl_arg *arg, const char *prefix)
 			print_str_help(&arg[i], prefix);
 			break;
 		case isl_arg_version:
-			printf("  -V, --version\n");
-			break;
 		case isl_arg_arg:
 		case isl_arg_child:
 		case isl_arg_user:
@@ -455,6 +453,26 @@ static const char *prog_name(const char *prog)
 	return prog;
 }
 
+static int any_version(struct isl_arg *decl)
+{
+	int i;
+
+	for (i = 0; decl[i].type != isl_arg_end; ++i) {
+		switch (decl[i].type) {
+		case isl_arg_version:
+			return 1;
+		case isl_arg_child:
+			if (any_version(decl[i].u.child.child))
+				return 1;
+			break;
+		default:
+			break;
+		}
+	}
+
+	return 0;
+}
+
 static void print_help_and_exit(struct isl_arg *arg, const char *prog)
 {
 	int i;
@@ -468,6 +486,10 @@ static void print_help_and_exit(struct isl_arg *arg, const char *prog)
 	printf("\n\n");
 
 	print_help(arg, NULL);
+	if (any_version(arg)) {
+		printf("\n");
+		printf("  -V, --version\n");
+	}
 
 	exit(0);
 }
@@ -794,26 +816,6 @@ static int parse_option(struct isl_arg *decl, char **arg,
 		}
 		if (parsed)
 			return parsed;
-	}
-
-	return 0;
-}
-
-static int any_version(struct isl_arg *decl)
-{
-	int i;
-
-	for (i = 0; decl[i].type != isl_arg_end; ++i) {
-		switch (decl[i].type) {
-		case isl_arg_version:
-			return 1;
-		case isl_arg_child:
-			if (any_version(decl[i].u.child.child))
-				return 1;
-			break;
-		default:
-			break;
-		}
 	}
 
 	return 0;
