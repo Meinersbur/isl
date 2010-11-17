@@ -1500,19 +1500,31 @@ void test_split_periods(isl_ctx *ctx)
 void test_union(isl_ctx *ctx)
 {
 	const char *str;
-	isl_union_set *uset;
+	isl_union_set *uset1, *uset2;
 	isl_union_map *umap1, *umap2;
 
 	str = "{ [i] : 0 <= i <= 1 }";
-	uset = isl_union_set_read_from_str(ctx, str);
+	uset1 = isl_union_set_read_from_str(ctx, str);
 	str = "{ [1] -> [0] }";
 	umap1 = isl_union_map_read_from_str(ctx, str);
 
-	umap2 = isl_union_set_lex_gt_union_set(isl_union_set_copy(uset), uset);
+	umap2 = isl_union_set_lex_gt_union_set(isl_union_set_copy(uset1), uset1);
 	assert(isl_union_map_is_equal(umap1, umap2));
 
 	isl_union_map_free(umap1);
 	isl_union_map_free(umap2);
+
+	str = "{ A[i] -> B[i]; B[i] -> C[i]; A[0] -> C[1] }";
+	umap1 = isl_union_map_read_from_str(ctx, str);
+	str = "{ A[i]; B[i] }";
+	uset1 = isl_union_set_read_from_str(ctx, str);
+
+	uset2 = isl_union_map_domain(umap1);
+
+	assert(isl_union_set_is_equal(uset1, uset2));
+
+	isl_union_set_free(uset1);
+	isl_union_set_free(uset2);
 }
 
 void test_bound(isl_ctx *ctx)

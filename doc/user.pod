@@ -1126,6 +1126,9 @@ The followning functions check whether the domain of the given
 		__isl_keep isl_set *set2);
 	int isl_set_is_equal(__isl_keep isl_set *set1,
 		__isl_keep isl_set *set2);
+	int isl_union_set_is_equal(
+		__isl_keep isl_union_set *uset1,
+		__isl_keep isl_union_set *uset2);
 	int isl_basic_map_is_equal(
 		__isl_keep isl_basic_map *bmap1,
 		__isl_keep isl_basic_map *bmap2);
@@ -1149,6 +1152,12 @@ The followning functions check whether the domain of the given
 	int isl_set_is_strict_subset(
 		__isl_keep isl_set *set1,
 		__isl_keep isl_set *set2);
+	int isl_union_set_is_subset(
+		__isl_keep isl_union_set *uset1,
+		__isl_keep isl_union_set *uset2);
+	int isl_union_set_is_strict_subset(
+		__isl_keep isl_union_set *uset1,
+		__isl_keep isl_union_set *uset2);
 	int isl_basic_map_is_subset(
 		__isl_keep isl_basic_map *bmap1,
 		__isl_keep isl_basic_map *bmap2);

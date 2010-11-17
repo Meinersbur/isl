@@ -1260,6 +1260,12 @@ error:
 	return -1;
 }
 
+int isl_union_set_is_subset(__isl_keep isl_union_set *uset1,
+	__isl_keep isl_union_set *uset2)
+{
+	return isl_union_map_is_subset(uset1, uset2);
+}
+
 int isl_union_map_is_equal(__isl_keep isl_union_map *umap1,
 	__isl_keep isl_union_map *umap2)
 {
@@ -1272,6 +1278,12 @@ int isl_union_map_is_equal(__isl_keep isl_union_map *umap1,
 		return is_subset;
 	is_subset = isl_union_map_is_subset(umap2, umap1);
 	return is_subset;
+}
+
+int isl_union_set_is_equal(__isl_keep isl_union_set *uset1,
+	__isl_keep isl_union_set *uset2)
+{
+	return isl_union_map_is_equal(uset1, uset2);
 }
 
 int isl_union_map_is_strict_subset(__isl_keep isl_union_map *umap1,
@@ -1288,6 +1300,12 @@ int isl_union_map_is_strict_subset(__isl_keep isl_union_map *umap1,
 	if (is_subset == -1)
 		return is_subset;
 	return !is_subset;
+}
+
+int isl_union_set_is_strict_subset(__isl_keep isl_union_set *uset1,
+	__isl_keep isl_union_set *uset2)
+{
+	return isl_union_map_is_strict_subset(uset1, uset2);
 }
 
 static int sample_entry(void **entry, void *user)
