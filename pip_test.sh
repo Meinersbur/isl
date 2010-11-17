@@ -13,7 +13,8 @@ PIP_TESTS="\
 	small.pip \
 	sor1d.pip \
 	square.pip \
-	sven.pip"
+	sven.pip \
+	tobi.pip"
 
 for i in $PIP_TESTS; do
 	echo $i;

@@ -1223,8 +1223,6 @@ static struct isl_tab *add_lexmin_valid_eq(struct isl_tab *tab, isl_int *eq)
 		if (isl_tab_kill_col(tab, i) < 0)
 			goto error;
 		tab->n_eq++;
-
-		tab = restore_lexmin(tab);
 	}
 
 	return tab;
@@ -1991,6 +1989,8 @@ static struct isl_tab *tab_for_lexmin(struct isl_basic_map *bmap,
 		if (!tab || tab->empty)
 			return tab;
 	}
+	if (bmap->n_eq)
+		tab = restore_lexmin(tab);
 	for (i = 0; i < bmap->n_ineq; ++i) {
 		if (max)
 			isl_seq_neg(bmap->ineq[i] + 1 + tab->n_param,
