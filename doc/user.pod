@@ -585,6 +585,14 @@ dimensions is zero.
 	__isl_give isl_map *isl_map_read_from_str(isl_ctx *ctx,
 		const char *str, int nparam);
 
+	#include <isl_union_set.h>
+	__isl_give isl_union_set *isl_union_set_read_from_str(
+		struct isl_ctx *ctx, const char *str);
+
+	#include <isl_union_map.h>
+	__isl_give isl_union_map *isl_union_map_read_from_str(
+		struct isl_ctx *ctx, const char *str);
+
 The input format is autodetected and may be either the C<PolyLib> format
 or the C<isl> format.
 C<nparam> specifies how many of the final columns in

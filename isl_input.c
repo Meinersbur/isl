@@ -1819,6 +1819,49 @@ error:
 	return NULL;
 }
 
+__isl_give isl_union_map *isl_stream_read_union_map(struct isl_stream *s)
+{
+	struct isl_obj obj;
+	isl_union_map *umap;
+
+	obj = obj_read(s, -1);
+	if (obj.type == isl_obj_map) {
+		obj.type = isl_obj_union_map;
+		obj.v = isl_union_map_from_map(obj.v);
+	}
+	if (obj.type == isl_obj_set) {
+		obj.type = isl_obj_union_set;
+		obj.v = isl_union_set_from_set(obj.v);
+	}
+	if (obj.v)
+		isl_assert(s->ctx, obj.type == isl_obj_union_map ||
+				   obj.type == isl_obj_union_set, goto error);
+
+	return obj.v;
+error:
+	obj.type->free(obj.v);
+	return NULL;
+}
+
+__isl_give isl_union_set *isl_stream_read_union_set(struct isl_stream *s)
+{
+	struct isl_obj obj;
+	isl_union_set *uset;
+
+	obj = obj_read(s, -1);
+	if (obj.type == isl_obj_set) {
+		obj.type = isl_obj_union_set;
+		obj.v = isl_union_set_from_set(obj.v);
+	}
+	if (obj.v)
+		isl_assert(s->ctx, obj.type == isl_obj_union_set, goto error);
+
+	return obj.v;
+error:
+	obj.type->free(obj.v);
+	return NULL;
+}
+
 static struct isl_basic_map *basic_map_read(struct isl_stream *s, int nparam)
 {
 	struct isl_obj obj;
@@ -1947,6 +1990,30 @@ struct isl_set *isl_set_read_from_str(struct isl_ctx *ctx,
 error:
 	isl_map_free(map);
 	return NULL;
+}
+
+__isl_give isl_union_map *isl_union_map_read_from_str(struct isl_ctx *ctx,
+		const char *str)
+{
+	isl_union_map *umap;
+	struct isl_stream *s = isl_stream_new_str(ctx, str);
+	if (!s)
+		return NULL;
+	umap = isl_stream_read_union_map(s);
+	isl_stream_free(s);
+	return umap;
+}
+
+__isl_give isl_union_set *isl_union_set_read_from_str(struct isl_ctx *ctx,
+		const char *str)
+{
+	isl_union_set *uset;
+	struct isl_stream *s = isl_stream_new_str(ctx, str);
+	if (!s)
+		return NULL;
+	uset = isl_stream_read_union_set(s);
+	isl_stream_free(s);
+	return uset;
 }
 
 static char *next_line(FILE *input, char *line, unsigned len)

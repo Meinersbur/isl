@@ -1504,9 +1504,9 @@ void test_union(isl_ctx *ctx)
 	isl_union_map *umap1, *umap2;
 
 	str = "{ [i] : 0 <= i <= 1 }";
-	uset = isl_union_set_from_set(isl_set_read_from_str(ctx, str, -1));
+	uset = isl_union_set_read_from_str(ctx, str);
 	str = "{ [1] -> [0] }";
-	umap1 = isl_union_map_from_map(isl_map_read_from_str(ctx, str, -1));
+	umap1 = isl_union_map_read_from_str(ctx, str);
 
 	umap2 = isl_union_set_lex_gt_union_set(isl_union_set_copy(uset), uset);
 	assert(isl_union_map_is_equal(umap1, umap2));
