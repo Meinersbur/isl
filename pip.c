@@ -47,6 +47,29 @@ ISL_ARG_END
 
 ISL_ARG_DEF(options, struct options, options_arg)
 
+static __isl_give isl_basic_set *set_bounds(__isl_take isl_basic_set *bset)
+{
+	unsigned nparam;
+	int i, r;
+	isl_point *pt, *pt2;
+	isl_basic_set *box;
+
+	nparam = isl_basic_set_dim(bset, isl_dim_param);
+	r = nparam >= 8 ? 4 : nparam >= 5 ? 6 : 30;
+
+	pt = isl_basic_set_sample_point(isl_basic_set_copy(bset));
+	pt2 = isl_point_copy(pt);
+
+	for (i = 0; i < nparam; ++i) {
+		pt = isl_point_add_ui(pt, isl_dim_param, i, r);
+		pt2 = isl_point_sub_ui(pt2, isl_dim_param, i, r);
+	}
+
+	box = isl_basic_set_box_from_points(pt, pt2);
+
+	return isl_basic_set_intersect(bset, box);
+}
+
 static struct isl_basic_set *to_parameter_domain(struct isl_basic_set *context)
 {
 	struct isl_dim *param_dim;
@@ -58,49 +81,6 @@ static struct isl_basic_set *to_parameter_domain(struct isl_basic_set *context)
 	context = isl_basic_set_from_underlying_set(context, model);
 
 	return context;
-}
-
-static isl_basic_set *construct_cube(isl_basic_set *context)
-{
-	int i;
-	unsigned dim;
-	int range;
-	isl_int m, M;
-	struct isl_basic_set *cube;
-	struct isl_basic_set *interval;
-	struct isl_basic_set_list *list;
-
-	dim = isl_basic_set_total_dim(context);
-	if (dim == 0) {
-		struct isl_dim *dims;
-		dims = isl_dim_set_alloc(context->ctx, 0, 0);
-		return isl_basic_set_universe(dims);
-	}
-
-	if (dim >= 8)
-		range = 4;
-	else if (dim >= 5)
-		range = 6;
-	else
-		range = 30;
-
-	isl_int_init(m);
-	isl_int_init(M);
-
-	isl_int_set_si(m, -range);
-	isl_int_set_si(M, range);
-
-	interval = isl_basic_set_interval(context->ctx, m, M);
-	list = isl_basic_set_list_alloc(context->ctx, dim);
-	for (i = 0; i < dim; ++i)
-		list = isl_basic_set_list_add(list, isl_basic_set_copy(interval));
-	isl_basic_set_free(interval);
-	cube = isl_basic_set_product(list);
-
-	isl_int_clear(m);
-	isl_int_clear(M);
-
-	return cube;
 }
 
 isl_basic_set *plug_in_parameters(isl_basic_set *bset, struct isl_vec *params)
@@ -260,16 +240,13 @@ static int count_one(struct isl_scan_callback *callback,
 static void check_solution(isl_basic_set *bset, isl_basic_set *context,
 	isl_set *sol, isl_set *empty, int max)
 {
-	isl_basic_set *cube;
 	struct isl_scan_count sc;
 	struct isl_scan_pip sp;
 	int i;
 	int r;
 
+	context = set_bounds(context);
 	context = isl_basic_set_underlying_set(context);
-
-	cube = construct_cube(context);
-	context = isl_basic_set_intersect(context, cube);
 
 	sc.callback.add = count_one;
 	sc.n = 0;
