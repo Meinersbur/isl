@@ -320,7 +320,7 @@ int isl_set_contains_point(__isl_keep isl_set *set, __isl_keep isl_point *point)
 	return isl_map_contains_point((isl_map *)set, point);
 }
 
-__isl_give isl_set *isl_set_from_point(__isl_take isl_point *pnt)
+__isl_give isl_basic_set *isl_basic_set_from_point(__isl_take isl_point *pnt)
 {
 	isl_basic_set *bset;
 	isl_basic_set *model;
@@ -330,11 +330,18 @@ __isl_give isl_set *isl_set_from_point(__isl_take isl_point *pnt)
 	bset = isl_basic_set_from_underlying_set(bset, model);
 	isl_point_free(pnt);
 
+	return bset;
+}
+
+__isl_give isl_set *isl_set_from_point(__isl_take isl_point *pnt)
+{
+	isl_basic_set *bset;
+	bset = isl_basic_set_from_point(pnt);
 	return isl_set_from_basic_set(bset);
 }
 
-__isl_give isl_set *isl_set_box_from_points(__isl_take isl_point *pnt1,
-	__isl_take isl_point *pnt2)
+__isl_give isl_basic_set *isl_basic_set_box_from_points(
+	__isl_take isl_point *pnt1, __isl_take isl_point *pnt2)
 {
 	isl_basic_set *bset;
 	unsigned total;
@@ -355,17 +362,17 @@ __isl_give isl_set *isl_set_box_from_points(__isl_take isl_point *pnt1,
 		isl_point_free(pnt1);
 		isl_point_free(pnt2);
 		isl_int_clear(t);
-		return isl_set_empty(dim);
+		return isl_basic_set_empty(dim);
 	}
 	if (isl_point_is_void(pnt1)) {
 		isl_point_free(pnt1);
 		isl_int_clear(t);
-		return isl_set_from_point(pnt2);
+		return isl_basic_set_from_point(pnt2);
 	}
 	if (isl_point_is_void(pnt2)) {
 		isl_point_free(pnt2);
 		isl_int_clear(t);
-		return isl_set_from_point(pnt1);
+		return isl_basic_set_from_point(pnt1);
 	}
 
 	total = isl_dim_total(pnt1->dim);
@@ -409,12 +416,20 @@ __isl_give isl_set *isl_set_box_from_points(__isl_take isl_point *pnt1,
 
 	isl_int_clear(t);
 
-	return isl_set_from_basic_set(bset);
+	return bset;
 error:
 	isl_point_free(pnt1);
 	isl_point_free(pnt2);
 	isl_int_clear(t);
 	return NULL;
+}
+
+__isl_give isl_set *isl_set_box_from_points(__isl_take isl_point *pnt1,
+	__isl_take isl_point *pnt2)
+{
+	isl_basic_set *bset;
+	bset = isl_basic_set_box_from_points(pnt1, pnt2);
+	return isl_set_from_basic_set(bset);
 }
 
 void isl_point_print(__isl_keep isl_point *pnt, FILE *out)
