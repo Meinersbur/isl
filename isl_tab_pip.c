@@ -3896,7 +3896,7 @@ struct isl_map *isl_tab_basic_map_partial_lexopt(
 	if (empty)
 		*empty = NULL;
 	if (!bmap || !dom)
-		goto error;
+		goto error2;
 
 	isl_assert(bmap->ctx,
 	    isl_basic_map_compatible_domain(bmap, dom), goto error);
@@ -3935,6 +3935,8 @@ struct isl_map *isl_tab_basic_map_partial_lexopt(
 	sol_free(&sol_map->sol);
 	isl_basic_map_free(bmap);
 	return result;
+error2:
+	isl_basic_set_free(dom);
 error:
 	sol_free(&sol_map->sol);
 	isl_basic_map_free(bmap);
