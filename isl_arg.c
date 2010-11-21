@@ -866,9 +866,19 @@ static int n_arg(struct isl_arg *arg)
 	return n_arg;
 }
 
+static int next_arg(struct isl_arg *arg, int a)
+{
+	for (++a; arg[a].type != isl_arg_end; ++a)
+		if (arg[a].type == isl_arg_arg)
+			return a;
+
+	return -1;
+}
+
 int isl_arg_parse(struct isl_arg *arg, int argc, char **argv, void *opt,
 	unsigned flags)
 {
+	int a = -1;
 	int skip = 0;
 	int i;
 	int n;
@@ -888,8 +898,22 @@ int isl_arg_parse(struct isl_arg *arg, int argc, char **argv, void *opt,
 
 	while (argc > 1 + skip) {
 		int parsed;
-		if (argv[1 + skip][0] != '-')
-			break;
+		if (argv[1 + skip][0] != '-') {
+			a = next_arg(arg, a);
+			if (a >= 0) {
+				const char **p;
+				p = (const char **)(((char *)opt)+arg[a].offset);
+				*p = strdup(argv[1 + skip]);
+				argc = drop_argument(argc, argv, 1 + skip, 1);
+				--n;
+			} else if (ISL_FL_ISSET(flags, ISL_ARG_ALL)) {
+				fprintf(stderr, "%s: extra argument: %s\n",
+					    prog_name(argv[0]), argv[1 + skip]);
+				exit(-1);
+			} else
+				++skip;
+			continue;
+		}
 		parsed = parse_option(arg, &argv[1 + skip], NULL, opt);
 		if (parsed)
 			argc = drop_argument(argc, argv, 1 + skip, parsed);
@@ -901,20 +925,10 @@ int isl_arg_parse(struct isl_arg *arg, int argc, char **argv, void *opt,
 			++skip;
 	}
 
-	if (ISL_FL_ISSET(flags, ISL_ARG_ALL) ? argc != 1 + n
-					     : argc < 1 + skip + n) {
-		fprintf(stderr, "%s: expecting %d arguments\n",
+	if (n > 0) {
+		fprintf(stderr, "%s: expecting %d more argument(s)\n",
 				prog_name(argv[0]), n);
 		exit(-1);
-	}
-
-	for (i = 0; arg[i].type != isl_arg_end; ++i) {
-		const char *str;
-		if (arg[i].type != isl_arg_arg)
-			continue;
-		str = strdup(argv[1 + skip]);
-		*(const char **)(((char *)opt) + arg[i].offset) = str;
-		argc = drop_argument(argc, argv, 1 + skip, 1);
 	}
 
 	return argc;
