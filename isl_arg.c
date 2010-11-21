@@ -427,6 +427,8 @@ static void print_help(struct isl_arg *arg, const char *prefix)
 	int i;
 
 	for (i = 0; arg[i].type != isl_arg_end; ++i) {
+		if (arg[i].flags & ISL_ARG_HIDDEN)
+			continue;
 		switch (arg[i].type) {
 		case isl_arg_flags:
 			print_flags_help(&arg[i], prefix);
@@ -458,6 +460,8 @@ static void print_help(struct isl_arg *arg, const char *prefix)
 
 	for (i = 0; arg[i].type != isl_arg_end; ++i) {
 		if (arg[i].type != isl_arg_child)
+			continue;
+		if (arg[i].flags & ISL_ARG_HIDDEN)
 			continue;
 
 		printf("\n");
