@@ -36,6 +36,7 @@ enum isl_arg_type {
 	isl_arg_child,
 	isl_arg_choice,
 	isl_arg_flags,
+	isl_arg_footer,
 	isl_arg_int,
 	isl_arg_user,
 	isl_arg_long,
@@ -107,6 +108,10 @@ struct isl_arg {
 	.argument_name = a,						\
 	.offset = offsetof(st, f),					\
 	.u = { .str = { .default_value = d } }				\
+},
+#define ISL_ARG_FOOTER(h)	{					\
+	.type = isl_arg_footer,						\
+	.help_msg = h,							\
 },
 #define ISL_ARG_CHOICE(st,f,s,l,c,d,h)	{				\
 	.type = isl_arg_choice,						\

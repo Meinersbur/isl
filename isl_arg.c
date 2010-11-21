@@ -114,6 +114,7 @@ void isl_arg_set_defaults(struct isl_arg *arg, void *opt)
 			set_default_str(&arg[i], opt);
 			break;
 		case isl_arg_alias:
+		case isl_arg_footer:
 		case isl_arg_version:
 		case isl_arg_end:
 			break;
@@ -150,6 +151,7 @@ static void free_args(struct isl_arg *arg, void *opt)
 		case isl_arg_long:
 		case isl_arg_ulong:
 		case isl_arg_version:
+		case isl_arg_footer:
 		case isl_arg_end:
 			break;
 		}
@@ -220,38 +222,42 @@ const void *isl_memrchr(const void *s, int c, size_t n)
 	return NULL;
 }
 
-static int print_help_msg(struct isl_arg *decl, int pos)
+static int wrap_msg(const char *s, int indent, int pos)
 {
 	int len;
-	const char *s;
+	int wrap_len = 75 - indent;
 
-	if (!decl->help_msg)
-		return pos;
-
-	if (pos >= 29)
-		printf("\n%30s", "");
+	if (pos + 1 >= indent)
+		printf("\n%*s", indent, "");
 	else
-		printf("%*s", 30 - pos, "");
+		printf("%*s", indent - pos, "");
 
-	s = decl->help_msg;
 	len = strlen(s);
-	while (len > 45) {
-		const char *space = isl_memrchr(s, ' ', 45);
+	while (len > wrap_len) {
+		const char *space = isl_memrchr(s, ' ', wrap_len);
 		int l;
 
 		if (!space)
-			space = strchr(s + 45, ' ');
+			space = strchr(s + wrap_len, ' ');
 		if (!space)
 			break;
 		l = space - s;
 		printf("%.*s", l, s);
 		s = space + 1;
 		len -= l + 1;
-		printf("\n%30s", "");
+		printf("\n%*s", indent, "");
 	}
 
 	printf("%s", s);
 	return len;
+}
+
+static int print_help_msg(struct isl_arg *decl, int pos)
+{
+	if (!decl->help_msg)
+		return pos;
+
+	return wrap_msg(decl->help_msg, 30, pos);
 }
 
 static void print_default(struct isl_arg *decl, const char *def, int pos)
@@ -496,6 +502,7 @@ static void print_help(struct isl_arg *arg, const char *prefix)
 		case isl_arg_alias:
 		case isl_arg_version:
 		case isl_arg_arg:
+		case isl_arg_footer:
 		case isl_arg_child:
 		case isl_arg_user:
 		case isl_arg_end:
@@ -568,6 +575,13 @@ static void print_help_and_exit(struct isl_arg *arg, const char *prog)
 	if (any_version(arg))
 		printf("  -V, --version\n");
 	print_bool_help(help_arg, NULL);
+
+	for (i = 0; arg[i].type != isl_arg_end; ++i) {
+		if (arg[i].type != isl_arg_footer)
+			continue;
+		wrap_msg(arg[i].help_msg, 0, 0);
+		printf("\n");
+	}
 
 	exit(0);
 }
@@ -969,6 +983,7 @@ static int parse_option(struct isl_arg *decl, char **arg,
 			break;
 		case isl_arg_alias:
 		case isl_arg_arg:
+		case isl_arg_footer:
 		case isl_arg_user:
 		case isl_arg_version:
 		case isl_arg_end:
