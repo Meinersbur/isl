@@ -687,11 +687,13 @@ static int parse_str_option(struct isl_arg *decl, char **arg,
 		return 0;
 
 	if (has_argument) {
+		free(*p);
 		*p = strdup(s);
 		return 1;
 	}
 
 	if (arg[1]) {
+		free(*p);
 		*p = strdup(arg[1]);
 		return 2;
 	}
@@ -901,8 +903,9 @@ int isl_arg_parse(struct isl_arg *arg, int argc, char **argv, void *opt,
 		if (argv[1 + skip][0] != '-') {
 			a = next_arg(arg, a);
 			if (a >= 0) {
-				const char **p;
-				p = (const char **)(((char *)opt)+arg[a].offset);
+				char **p;
+				p = (char **)(((char *)opt)+arg[a].offset);
+				free(*p);
 				*p = strdup(argv[1 + skip]);
 				argc = drop_argument(argc, argv, 1 + skip, 1);
 				--n;
