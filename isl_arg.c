@@ -350,6 +350,12 @@ static void print_bool_help(struct isl_arg *decl, const char *prefix)
 	printf("\n");
 }
 
+static int print_argument_name(struct isl_arg *decl, const char *name, int pos)
+{
+	printf("%c<%s>", decl->long_name ? '=' : ' ', name);
+	return pos + 3 + strlen(name);
+}
+
 static void print_long_help(struct isl_arg *decl, const char *prefix)
 {
 	int pos;
@@ -383,8 +389,7 @@ static void print_str_help(struct isl_arg *decl, const char *prefix)
 	int pos;
 	const char *a = decl->argument_name ? decl->argument_name : "string";
 	pos = print_arg_help(decl, prefix, 0);
-	printf("=%s", a);
-	pos += 1 + strlen(a);
+	pos = print_argument_name(decl, a, pos);
 	print_help_msg(decl, pos);
 	printf("\n");
 }
