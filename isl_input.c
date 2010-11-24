@@ -2016,60 +2016,59 @@ __isl_give isl_union_set *isl_union_set_read_from_str(struct isl_ctx *ctx,
 	return uset;
 }
 
-static char *next_line(FILE *input, char *line, unsigned len)
-{
-	char *p;
-
-	do {
-		if (!(p = fgets(line, len, input)))
-			return NULL;
-		while (isspace(*p) && *p != '\n')
-			++p;
-	} while (*p == '#' || *p == '\n');
-
-	return p;
-}
-
-static struct isl_vec *isl_vec_read_from_file_polylib(struct isl_ctx *ctx,
-		FILE *input)
+static __isl_give isl_vec *isl_vec_read_polylib(struct isl_stream *s)
 {
 	struct isl_vec *vec = NULL;
-	char line[1024];
-	char val[1024];
-	char *p;
+	struct isl_token *tok;
 	unsigned size;
 	int j;
-	int n;
-	int offset;
 
-	isl_assert(ctx, next_line(input, line, sizeof(line)), return NULL);
-	isl_assert(ctx, sscanf(line, "%u", &size) == 1, return NULL);
+	tok = isl_stream_next_token(s);
+	if (!tok || tok->type != ISL_TOKEN_VALUE) {
+		isl_stream_error(s, tok, "expecting vector length");
+		goto error;
+	}
 
-	vec = isl_vec_alloc(ctx, size);
+	size = isl_int_get_si(tok->u.v);
+	isl_token_free(tok);
 
-	p = next_line(input, line, sizeof(line));
-	isl_assert(ctx, p, goto error);
+	vec = isl_vec_alloc(s->ctx, size);
 
 	for (j = 0; j < size; ++j) {
-		n = sscanf(p, "%s%n", val, &offset);
-		isl_assert(ctx, n != 0, goto error);
-		isl_int_read(vec->el[j], val);
-		p += offset;
+		tok = isl_stream_next_token(s);
+		if (!tok || tok->type != ISL_TOKEN_VALUE) {
+			isl_stream_error(s, tok, "expecting constant value");
+			goto error;
+		}
+		isl_int_set(vec->el[j], tok->u.v);
+		isl_token_free(tok);
 	}
 
 	return vec;
 error:
+	isl_token_free(tok);
 	isl_vec_free(vec);
 	return NULL;
+}
+
+static __isl_give isl_vec *vec_read(struct isl_stream *s,
+	unsigned input_format)
+{
+	if (input_format == ISL_FORMAT_POLYLIB)
+		return isl_vec_read_polylib(s);
+	isl_assert(s->ctx, 0, return NULL);
 }
 
 struct isl_vec *isl_vec_read_from_file(struct isl_ctx *ctx,
 		FILE *input, unsigned input_format)
 {
-	if (input_format == ISL_FORMAT_POLYLIB)
-		return isl_vec_read_from_file_polylib(ctx, input);
-	else
-		isl_assert(ctx, 0, return NULL);
+	isl_vec *v;
+	struct isl_stream *s = isl_stream_new_file(ctx, input);
+	if (!s)
+		return NULL;
+	v = vec_read(s, input_format);
+	isl_stream_free(s);
+	return v;
 }
 
 __isl_give isl_pw_qpolynomial *isl_stream_read_pw_qpolynomial(
