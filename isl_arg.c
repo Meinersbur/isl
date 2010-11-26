@@ -390,7 +390,9 @@ static void print_str_help(struct isl_arg *decl, const char *prefix)
 	const char *a = decl->argument_name ? decl->argument_name : "string";
 	pos = print_arg_help(decl, prefix, 0);
 	pos = print_argument_name(decl, a, pos);
-	print_help_msg(decl, pos);
+	pos = print_help_msg(decl, pos);
+	if (decl->u.str.default_value)
+		print_default(decl, decl->u.str.default_value, pos);
 	printf("\n");
 }
 
