@@ -8011,6 +8011,22 @@ error:
 	return NULL;
 }
 
+__isl_give isl_mat *isl_basic_set_equalities_matrix(
+	__isl_keep isl_basic_set *bset, enum isl_dim_type c1,
+	enum isl_dim_type c2, enum isl_dim_type c3, enum isl_dim_type c4)
+{
+	return isl_basic_map_equalities_matrix((isl_basic_map *)bset,
+						c1, c2, c3, c4, isl_dim_in);
+}
+
+__isl_give isl_mat *isl_basic_set_inequalities_matrix(
+	__isl_keep isl_basic_set *bset, enum isl_dim_type c1,
+	enum isl_dim_type c2, enum isl_dim_type c3, enum isl_dim_type c4)
+{
+	return isl_basic_map_inequalities_matrix((isl_basic_map *)bset,
+						 c1, c2, c3, c4, isl_dim_in);
+}
+
 __isl_give isl_basic_set *isl_basic_set_from_constraint_matrices(
 	__isl_take isl_dim *dim,
 	__isl_take isl_mat *eq, __isl_take isl_mat *ineq, enum isl_dim_type c1,
