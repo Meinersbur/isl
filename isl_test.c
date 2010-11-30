@@ -16,6 +16,7 @@
 #include <isl/constraint.h>
 #include <isl/polynomial.h>
 #include <isl/union_map.h>
+#include <isl_map_private.h>
 
 static char *srcdir;
 

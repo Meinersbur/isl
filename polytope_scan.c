@@ -12,6 +12,7 @@
 #include <isl/seq.h>
 #include "isl_scan.h"
 #include <isl_mat_private.h>
+#include <isl_map_private.h>
 
 /* The input of this program is the same as that of the "polytope_scan"
  * program from the barvinok distribution.
@@ -48,12 +49,14 @@ error:
 
 static struct isl_mat *isl_basic_set_scan_samples(struct isl_basic_set *bset)
 {
+	isl_ctx *ctx;
 	unsigned dim;
 	struct scan_samples ss;
 
+	ctx = isl_basic_set_get_ctx(bset);
 	dim = isl_basic_set_total_dim(bset);
 	ss.callback.add = scan_samples_add_sample;
-	ss.samples = isl_mat_alloc(bset->ctx, 0, 1 + dim);
+	ss.samples = isl_mat_alloc(ctx, 0, 1 + dim);
 	if (!ss.samples)
 		goto error;
 

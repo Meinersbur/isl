@@ -16,6 +16,7 @@
 #include <isl_factorization.h>
 #include <isl_dim_private.h>
 #include <isl_mat_private.h>
+#include <isl_map_private.h>
 
 static __isl_give isl_factorizer *isl_factorizer_alloc(
 	__isl_take isl_morph *morph, int n_group)

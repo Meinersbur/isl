@@ -18,43 +18,6 @@
 extern "C" {
 #endif
 
-/* A "basic set" is a basic map with a zero-dimensional
- * domain.
- */
-struct isl_basic_set {
-	int ref;
-#define ISL_BASIC_SET_FINAL		(1 << 0)
-#define ISL_BASIC_SET_EMPTY		(1 << 1)
-#define ISL_BASIC_SET_NO_IMPLICIT	(1 << 2)
-#define ISL_BASIC_SET_NO_REDUNDANT	(1 << 3)
-#define ISL_BASIC_SET_RATIONAL		(1 << 4)
-#define ISL_BASIC_SET_NORMALIZED	(1 << 5)
-#define ISL_BASIC_SET_NORMALIZED_DIVS	(1 << 6)
-#define ISL_BASIC_SET_ALL_EQUALITIES	(1 << 7)
-	unsigned flags;
-
-	struct isl_ctx *ctx;
-
-	struct isl_dim *dim;
-	unsigned extra;
-
-	unsigned n_eq;
-	unsigned n_ineq;
-
-	size_t c_size;
-	isl_int **eq;
-	isl_int **ineq;
-
-	unsigned n_div;
-
-	isl_int **div;
-
-	struct isl_vec *sample;
-
-	struct isl_blk block;
-	struct isl_blk block2;
-};
-
 /* A "set" is a (possibly disjoint) union of basic sets.
  *
  * See the documentation of isl_map.

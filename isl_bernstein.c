@@ -20,6 +20,7 @@
 #include <isl_vertices_private.h>
 #include <isl_polynomial_private.h>
 #include <isl_bernstein.h>
+#include <isl_map_private.h>
 
 struct bernstein_data {
 	enum isl_fold type;
