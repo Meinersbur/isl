@@ -38,48 +38,7 @@ extern "C" {
  * reference to the old structure(s), use the appropriate _copy function.
  */
 
-/* A "basic map" is a relation between two sets of variables,
- * called the "in" and "out" variables.
- *
- * It is implemented as a set with two extra fields:
- * n_in is the number of in variables
- * n_out is the number of out variables
- * n_in + n_out should be equal to set.dim
- */
-struct isl_dim;
-struct isl_basic_map {
-	int ref;
-#define ISL_BASIC_MAP_FINAL		(1 << 0)
-#define ISL_BASIC_MAP_EMPTY		(1 << 1)
-#define ISL_BASIC_MAP_NO_IMPLICIT	(1 << 2)
-#define ISL_BASIC_MAP_NO_REDUNDANT	(1 << 3)
-#define ISL_BASIC_MAP_RATIONAL		(1 << 4)
-#define ISL_BASIC_MAP_NORMALIZED	(1 << 5)
-#define ISL_BASIC_MAP_NORMALIZED_DIVS	(1 << 6)
-#define ISL_BASIC_MAP_ALL_EQUALITIES	(1 << 7)
-	unsigned flags;
-
-	struct isl_ctx *ctx;
-
-	struct isl_dim *dim;
-	unsigned extra;
-
-	unsigned n_eq;
-	unsigned n_ineq;
-
-	size_t c_size;
-	isl_int **eq;
-	isl_int **ineq;
-
-	unsigned n_div;
-
-	isl_int **div;
-
-	struct isl_vec *sample;
-
-	struct isl_blk block;
-	struct isl_blk block2;
-};
+struct isl_basic_map;
 typedef struct isl_basic_map isl_basic_map;
 struct isl_basic_set;
 typedef struct isl_basic_set isl_basic_set;
