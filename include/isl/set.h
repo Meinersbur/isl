@@ -18,26 +18,6 @@
 extern "C" {
 #endif
 
-/* A "set" is a (possibly disjoint) union of basic sets.
- *
- * See the documentation of isl_map.
- */
-struct isl_set {
-	int ref;
-#define ISL_SET_DISJOINT		(1 << 0)
-#define ISL_SET_NORMALIZED		(1 << 1)
-	unsigned flags;
-
-	struct isl_ctx *ctx;
-
-	struct isl_dim *dim;
-
-	int n;
-
-	size_t size;
-	struct isl_basic_set *p[1];
-};
-
 unsigned isl_basic_set_n_dim(const struct isl_basic_set *bset);
 unsigned isl_basic_set_n_param(const struct isl_basic_set *bset);
 unsigned isl_basic_set_total_dim(const struct isl_basic_set *bset);

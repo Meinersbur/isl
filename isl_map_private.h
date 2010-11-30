@@ -94,6 +94,26 @@ struct isl_basic_set {
 	struct isl_blk block2;
 };
 
+/* A "set" is a (possibly disjoint) union of basic sets.
+ *
+ * See the documentation of isl_map.
+ */
+struct isl_set {
+	int ref;
+#define ISL_SET_DISJOINT		(1 << 0)
+#define ISL_SET_NORMALIZED		(1 << 1)
+	unsigned flags;
+
+	struct isl_ctx *ctx;
+
+	struct isl_dim *dim;
+
+	int n;
+
+	size_t size;
+	struct isl_basic_set *p[1];
+};
+
 __isl_give isl_map *isl_map_realign(__isl_take isl_map *map,
 	__isl_take isl_reordering *r);
 __isl_give isl_set *isl_set_realign(__isl_take isl_set *set,
