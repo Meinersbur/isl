@@ -42,28 +42,7 @@ struct isl_basic_map;
 typedef struct isl_basic_map isl_basic_map;
 struct isl_basic_set;
 typedef struct isl_basic_set isl_basic_set;
-
-/* A "map" is a (disjoint) union of basic maps.
- *
- * Currently, the isl_set structure is identical to the isl_map structure
- * and the library depends on this correspondence internally.
- * However, users should not depend on this correspondence.
- */
-struct isl_map {
-	int ref;
-#define ISL_MAP_DISJOINT		(1 << 0)
-#define ISL_MAP_NORMALIZED		(1 << 1)
-	unsigned flags;
-
-	struct isl_ctx *ctx;
-
-	struct isl_dim *dim;
-
-	int n;
-
-	size_t size;
-	struct isl_basic_map *p[1];
-};
+struct isl_map;
 typedef struct isl_map isl_map;
 struct isl_set;
 typedef struct isl_set isl_set;

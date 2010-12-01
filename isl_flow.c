@@ -58,14 +58,16 @@ struct isl_flow {
 __isl_give isl_access_info *isl_access_info_alloc(__isl_take isl_map *sink,
 	void *sink_user, isl_access_level_before fn, int max_source)
 {
+	isl_ctx *ctx;
 	struct isl_access_info *acc;
 
 	if (!sink)
 		return NULL;
 
-	isl_assert(sink->ctx, max_source >= 0, goto error);
+	ctx = isl_map_get_ctx(sink);
+	isl_assert(ctx, max_source >= 0, goto error);
 
-	acc = isl_alloc(sink->ctx, struct isl_access_info,
+	acc = isl_alloc(ctx, struct isl_access_info,
 			sizeof(struct isl_access_info) +
 			(max_source - 1) * sizeof(struct isl_labeled_map));
 	if (!acc)
@@ -108,10 +110,12 @@ __isl_give isl_access_info *isl_access_info_add_source(
 	__isl_take isl_access_info *acc, __isl_take isl_map *source,
 	int must, void *source_user)
 {
+	isl_ctx *ctx;
+
 	if (!acc)
 		return NULL;
-	isl_assert(acc->sink.map->ctx,
-		    acc->n_must + acc->n_may < acc->max_source, goto error);
+	ctx = isl_map_get_ctx(acc->sink.map);
+	isl_assert(ctx, acc->n_must + acc->n_may < acc->max_source, goto error);
 	
 	if (must) {
 		if (acc->n_may)
@@ -180,6 +184,7 @@ static __isl_give isl_access_info *isl_access_info_sort_sources(
 	__isl_take isl_access_info *acc)
 {
 	int i;
+	isl_ctx *ctx;
 	struct isl_access_sort_info *array;
 
 	if (!acc)
@@ -187,8 +192,8 @@ static __isl_give isl_access_info *isl_access_info_sort_sources(
 	if (acc->n_must <= 1)
 		return acc;
 
-	array = isl_alloc_array(acc->sink.map->ctx,
-				struct isl_access_sort_info, acc->n_must);
+	ctx = isl_map_get_ctx(acc->sink.map);
+	array = isl_alloc_array(ctx, struct isl_access_sort_info, acc->n_must);
 	if (!array)
 		goto error;
 
@@ -233,7 +238,7 @@ static __isl_give isl_flow *isl_flow_alloc(__isl_keep isl_access_info *acc)
 	if (!acc)
 		return NULL;
 
-	ctx = acc->sink.map->ctx;
+	ctx = isl_map_get_ctx(acc->sink.map);
 	dep = isl_calloc_type(ctx, struct isl_flow);
 	if (!dep)
 		return NULL;
@@ -713,7 +718,7 @@ static __isl_give isl_flow *compute_val_based_dependences(
 	res = isl_flow_alloc(acc);
 	if (!res)
 		goto error;
-	ctx = acc->sink.map->ctx;
+	ctx = isl_map_get_ctx(acc->sink.map);
 
 	depth = 2 * isl_map_dim(acc->sink.map, isl_dim_in) + 1;
 	mustdo = isl_map_domain(isl_map_copy(acc->sink.map));
