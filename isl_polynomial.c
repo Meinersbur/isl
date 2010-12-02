@@ -1142,6 +1142,8 @@ static __isl_give isl_qpolynomial *sort_divs(__isl_take isl_qpolynomial *qp)
 		    isl_seq_eq(qp->div->row[i - skip - 1],
 			       qp->div->row[i - skip], qp->div->n_col)) {
 			qp->div = isl_mat_drop_rows(qp->div, i - skip, 1);
+			isl_mat_col_add(qp->div, 2 + div_pos + i - skip - 1,
+						 2 + div_pos + i - skip);
 			qp->div = isl_mat_drop_cols(qp->div,
 						    2 + div_pos + i - skip, 1);
 			skip++;
@@ -1699,6 +1701,8 @@ __isl_give isl_qpolynomial *isl_qpolynomial_div_pow(__isl_take isl_div *div,
 	isl_int_set_si(cst->n, 1);
 
 	isl_div_free(div);
+
+	qp = sort_divs(qp);
 
 	return qp;
 error:
