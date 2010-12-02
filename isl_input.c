@@ -1330,12 +1330,16 @@ static __isl_give isl_qpolynomial *read_factor(struct isl_stream *s,
 		return NULL;
 	}
 	if (tok->type == '(') {
+		int pow;
+
 		isl_token_free(tok);
 		qp = read_term(s, bmap, v);
 		if (!qp)
 			return NULL;
 		if (isl_stream_eat(s, ')'))
 			goto error;
+		pow = optional_power(s);
+		qp = isl_qpolynomial_pow(qp, pow);
 	} else if (tok->type == ISL_TOKEN_VALUE) {
 		struct isl_token *tok2;
 		tok2 = isl_stream_next_token(s);
