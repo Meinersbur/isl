@@ -1687,6 +1687,75 @@ error:
 	return NULL;
 }
 
+__isl_give struct isl_upoly *isl_upoly_subs(__isl_take struct isl_upoly *up,
+	unsigned first, unsigned n, __isl_keep struct isl_upoly **subs)
+{
+	int i;
+	struct isl_upoly_rec *rec;
+	struct isl_upoly *base, *res;
+
+	if (!up)
+		return NULL;
+
+	if (isl_upoly_is_cst(up))
+		return up;
+
+	if (up->var < first)
+		return up;
+
+	rec = isl_upoly_as_rec(up);
+	if (!rec)
+		goto error;
+
+	isl_assert(up->ctx, rec->n >= 1, goto error);
+
+	if (up->var >= first + n)
+		base = isl_upoly_var_pow(up->ctx, up->var, 1);
+	else
+		base = isl_upoly_copy(subs[up->var - first]);
+
+	res = isl_upoly_subs(isl_upoly_copy(rec->p[rec->n - 1]), first, n, subs);
+	for (i = rec->n - 2; i >= 0; --i) {
+		struct isl_upoly *t;
+		t = isl_upoly_subs(isl_upoly_copy(rec->p[i]), first, n, subs);
+		res = isl_upoly_mul(res, isl_upoly_copy(base));
+		res = isl_upoly_sum(res, t);
+	}
+
+	isl_upoly_free(base);
+	isl_upoly_free(up);
+				
+	return res;
+error:
+	isl_upoly_free(up);
+	return NULL;
+}	
+
+__isl_give struct isl_upoly *isl_upoly_from_affine(isl_ctx *ctx, isl_int *f,
+	isl_int denom, unsigned len)
+{
+	int i;
+	struct isl_upoly *up;
+
+	isl_assert(ctx, len >= 1, return NULL);
+
+	up = isl_upoly_rat_cst(ctx, f[0], denom);
+	for (i = 0; i < len - 1; ++i) {
+		struct isl_upoly *t;
+		struct isl_upoly *c;
+
+		if (isl_int_is_zero(f[1 + i]))
+			continue;
+
+		c = isl_upoly_rat_cst(ctx, f[1 + i], denom);
+		t = isl_upoly_var_pow(ctx, i, 1);
+		t = isl_upoly_mul(c, t);
+		up = isl_upoly_sum(up, t);
+	}
+
+	return up;
+}
+
 /* Remove common factor of non-constant terms and denominator.
  */
 static void normalize_div(__isl_keep isl_qpolynomial *qp, int div)
@@ -1708,6 +1777,233 @@ static void normalize_div(__isl_keep isl_qpolynomial *qp, int div)
 			    ctx->normalize_gcd);
 }
 
+/* Replace the integer division identified by "div" by the polynomial "s".
+ * The integer division is assumed not to appear in the definition
+ * of any other integer divisions.
+ */
+static __isl_give isl_qpolynomial *substitute_div(
+	__isl_take isl_qpolynomial *qp,
+	int div, __isl_take struct isl_upoly *s)
+{
+	int i;
+	int total;
+	int *reordering;
+
+	if (!qp || !s)
+		goto error;
+
+	qp = isl_qpolynomial_cow(qp);
+	if (!qp)
+		goto error;
+
+	total = isl_dim_total(qp->dim);
+	qp->upoly = isl_upoly_subs(qp->upoly, total + div, 1, &s);
+	if (!qp->upoly)
+		goto error;
+
+	reordering = isl_alloc_array(qp->dim->ctx, int, total + qp->div->n_row);
+	if (!reordering)
+		goto error;
+	for (i = 0; i < total + div; ++i)
+		reordering[i] = i;
+	for (i = total + div + 1; i < total + qp->div->n_row; ++i)
+		reordering[i] = i - 1;
+	qp->div = isl_mat_drop_rows(qp->div, div, 1);
+	qp->div = isl_mat_drop_cols(qp->div, 2 + total + div, 1);
+	qp->upoly = reorder(qp->upoly, reordering);
+	free(reordering);
+
+	if (!qp->upoly || !qp->div)
+		goto error;
+
+	isl_upoly_free(s);
+	return qp;
+error:
+	isl_qpolynomial_free(qp);
+	isl_upoly_free(s);
+	return NULL;
+}
+
+/* Replace all integer divisions [e/d] that turn out to not actually be integer
+ * divisions because d is equal to 1 by their definition, i.e., e.
+ */
+static __isl_give isl_qpolynomial *substitute_non_divs(
+	__isl_take isl_qpolynomial *qp)
+{
+	int i, j;
+	int total;
+	struct isl_upoly *s;
+
+	if (!qp)
+		return NULL;
+
+	total = isl_dim_total(qp->dim);
+	for (i = 0; qp && i < qp->div->n_row; ++i) {
+		if (!isl_int_is_one(qp->div->row[i][0]))
+			continue;
+		for (j = i + 1; j < qp->div->n_row; ++j) {
+			if (isl_int_is_zero(qp->div->row[j][2 + total + i]))
+				continue;
+			isl_seq_combine(qp->div->row[j] + 1,
+				qp->div->ctx->one, qp->div->row[j] + 1,
+				qp->div->row[j][2 + total + i],
+				qp->div->row[i] + 1, 1 + total + i);
+			isl_int_set_si(qp->div->row[j][2 + total + i], 0);
+			normalize_div(qp, j);
+		}
+		s = isl_upoly_from_affine(qp->dim->ctx, qp->div->row[i] + 1,
+					qp->div->row[i][0], qp->div->n_col - 1);
+		qp = substitute_div(qp, i, s);
+		--i;
+	}
+
+	return qp;
+}
+
+/* Reduce the coefficients of div "div" to lie in the interval [0, d-1],
+ * with d the denominator.  When replacing the coefficient e of x by
+ * d * frac(e/d) = e - d * floor(e/d), we are subtracting d * floor(e/d) * x
+ * inside the division, so we need to add floor(e/d) * x outside.
+ * That is, we replace q by q' + floor(e/d) * x and we therefore need
+ * to adjust the coefficient of x in each later div that depends on the
+ * current div "div" and also in the affine expression "aff"
+ * (if it too depends on "div").
+ */
+static void reduce_div(__isl_keep isl_qpolynomial *qp, int div,
+	__isl_keep isl_vec *aff)
+{
+	int i, j;
+	isl_int v;
+	unsigned total = qp->div->n_col - qp->div->n_row - 2;
+
+	isl_int_init(v);
+	for (i = 0; i < 1 + total + div; ++i) {
+		if (isl_int_is_nonneg(qp->div->row[div][1 + i]) &&
+		    isl_int_lt(qp->div->row[div][1 + i], qp->div->row[div][0]))
+			continue;
+		isl_int_fdiv_q(v, qp->div->row[div][1 + i], qp->div->row[div][0]);
+		isl_int_fdiv_r(qp->div->row[div][1 + i],
+				qp->div->row[div][1 + i], qp->div->row[div][0]);
+		if (!isl_int_is_zero(aff->el[1 + total + div]))
+			isl_int_addmul(aff->el[i], v, aff->el[1 + total + div]);
+		for (j = div + 1; j < qp->div->n_row; ++j) {
+			if (isl_int_is_zero(qp->div->row[j][2 + total + div]))
+				continue;
+			isl_int_addmul(qp->div->row[j][1 + i],
+					v, qp->div->row[j][2 + total + div]);
+		}
+	}
+	isl_int_clear(v);
+}
+
+/* Check if the last non-zero coefficient is bigger that half of the
+ * denominator.  If so, we will invert the div to further reduce the number
+ * of distinct divs that may appear.
+ * If the last non-zero coefficient is exactly half the denominator,
+ * then we continue looking for earlier coefficients that are bigger
+ * than half the denominator.
+ */
+static int needs_invert(__isl_keep isl_mat *div, int row)
+{
+	int i;
+	int cmp;
+
+	for (i = div->n_col - 1; i >= 1; --i) {
+		if (isl_int_is_zero(div->row[row][i]))
+			continue;
+		isl_int_mul_ui(div->row[row][i], div->row[row][i], 2);
+		cmp = isl_int_cmp(div->row[row][i], div->row[row][0]);
+		isl_int_divexact_ui(div->row[row][i], div->row[row][i], 2);
+		if (cmp)
+			return cmp > 0;
+		if (i == 1)
+			return 1;
+	}
+
+	return 0;
+}
+
+/* Replace div "div" q = [e/d] by -[(-e+(d-1))/d].
+ * We only invert the coefficients of e (and the coefficient of q in
+ * later divs and in "aff").  After calling this function, the
+ * coefficients of e should be reduced again.
+ */
+static void invert_div(__isl_keep isl_qpolynomial *qp, int div,
+	__isl_keep isl_vec *aff)
+{
+	unsigned total = qp->div->n_col - qp->div->n_row - 2;
+
+	isl_seq_neg(qp->div->row[div] + 1,
+		    qp->div->row[div] + 1, qp->div->n_col - 1);
+	isl_int_sub_ui(qp->div->row[div][1], qp->div->row[div][1], 1);
+	isl_int_add(qp->div->row[div][1],
+		    qp->div->row[div][1], qp->div->row[div][0]);
+	if (!isl_int_is_zero(aff->el[1 + total + div]))
+		isl_int_neg(aff->el[1 + total + div], aff->el[1 + total + div]);
+	isl_mat_col_mul(qp->div, 2 + total + div,
+			qp->div->ctx->negone, 2 + total + div);
+}
+
+/* Assuming "qp" is a monomial, reduce all its divs to have coefficients
+ * in the interval [0, d-1], with d the denominator and such that the
+ * last non-zero coefficient that is not equal to d/2 is smaller than d/2.
+ *
+ * After the reduction, some divs may have become redundant or identical,
+ * so we call substitute_non_divs and sort_divs.  If these functions
+ * eliminate divs of merge * two or more divs into one, the coefficients
+ * of the enclosing divs may have to be reduced again, so we call
+ * ourselves recursively if the number of divs decreases.
+ */
+static __isl_give isl_qpolynomial *reduce_divs(__isl_take isl_qpolynomial *qp)
+{
+	int i, j;
+	isl_vec *aff = NULL;
+	struct isl_upoly *s;
+	unsigned n_div;
+
+	if (!qp)
+		return NULL;
+
+	aff = isl_vec_alloc(qp->div->ctx, qp->div->n_col - 1);
+	aff = isl_vec_clr(aff);
+	if (!aff)
+		goto error;
+
+	isl_int_set_si(aff->el[1 + qp->upoly->var], 1);
+
+	for (i = 0; i < qp->div->n_row; ++i) {
+		normalize_div(qp, i);
+		reduce_div(qp, i, aff);
+		if (needs_invert(qp->div, i)) {
+			invert_div(qp, i, aff);
+			reduce_div(qp, i, aff);
+		}
+	}
+
+	s = isl_upoly_from_affine(qp->div->ctx, aff->el,
+				  qp->div->ctx->one, aff->size);
+	qp->upoly = isl_upoly_subs(qp->upoly, qp->upoly->var, 1, &s);
+	isl_upoly_free(s);
+	if (!qp->upoly)
+		goto error;
+
+	isl_vec_free(aff);
+
+	n_div = qp->div->n_row;
+	qp = substitute_non_divs(qp);
+	qp = sort_divs(qp);
+	if (qp && qp->div->n_row < n_div)
+		return reduce_divs(qp);
+
+	return qp;
+error:
+	isl_qpolynomial_free(qp);
+	isl_vec_free(aff);
+	return NULL;
+}
+
+/* Assumes each div only depends on earlier divs.
+ */
 __isl_give isl_qpolynomial *isl_qpolynomial_div_pow(__isl_take isl_div *div,
 	int power)
 {
@@ -1729,10 +2025,8 @@ __isl_give isl_qpolynomial *isl_qpolynomial_div_pow(__isl_take isl_div *div,
 	if (!qp)
 		goto error;
 
-	for (i = 0; i < div->bmap->n_div; ++i) {
+	for (i = 0; i < div->bmap->n_div; ++i)
 		isl_seq_cpy(qp->div->row[i], div->bmap->div[i], qp->div->n_col);
-		normalize_div(qp, i);
-	}
 
 	for (i = 0; i < 1 + power; ++i) {
 		rec->p[i] = isl_upoly_zero(div->ctx);
@@ -1745,7 +2039,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_div_pow(__isl_take isl_div *div,
 
 	isl_div_free(div);
 
-	qp = sort_divs(qp);
+	qp = reduce_divs(qp);
 
 	return qp;
 error:
@@ -1941,158 +2235,6 @@ __isl_give isl_qpolynomial *isl_qpolynomial_drop_dims(
 error:
 	isl_qpolynomial_free(qp);
 	return NULL;
-}
-
-__isl_give struct isl_upoly *isl_upoly_subs(__isl_take struct isl_upoly *up,
-	unsigned first, unsigned n, __isl_keep struct isl_upoly **subs)
-{
-	int i;
-	struct isl_upoly_rec *rec;
-	struct isl_upoly *base, *res;
-
-	if (!up)
-		return NULL;
-
-	if (isl_upoly_is_cst(up))
-		return up;
-
-	if (up->var < first)
-		return up;
-
-	rec = isl_upoly_as_rec(up);
-	if (!rec)
-		goto error;
-
-	isl_assert(up->ctx, rec->n >= 1, goto error);
-
-	if (up->var >= first + n)
-		base = isl_upoly_var_pow(up->ctx, up->var, 1);
-	else
-		base = isl_upoly_copy(subs[up->var - first]);
-
-	res = isl_upoly_subs(isl_upoly_copy(rec->p[rec->n - 1]), first, n, subs);
-	for (i = rec->n - 2; i >= 0; --i) {
-		struct isl_upoly *t;
-		t = isl_upoly_subs(isl_upoly_copy(rec->p[i]), first, n, subs);
-		res = isl_upoly_mul(res, isl_upoly_copy(base));
-		res = isl_upoly_sum(res, t);
-	}
-
-	isl_upoly_free(base);
-	isl_upoly_free(up);
-				
-	return res;
-error:
-	isl_upoly_free(up);
-	return NULL;
-}	
-
-__isl_give struct isl_upoly *isl_upoly_from_affine(isl_ctx *ctx, isl_int *f,
-	isl_int denom, unsigned len)
-{
-	int i;
-	struct isl_upoly *up;
-
-	isl_assert(ctx, len >= 1, return NULL);
-
-	up = isl_upoly_rat_cst(ctx, f[0], denom);
-	for (i = 0; i < len - 1; ++i) {
-		struct isl_upoly *t;
-		struct isl_upoly *c;
-
-		if (isl_int_is_zero(f[1 + i]))
-			continue;
-
-		c = isl_upoly_rat_cst(ctx, f[1 + i], denom);
-		t = isl_upoly_var_pow(ctx, i, 1);
-		t = isl_upoly_mul(c, t);
-		up = isl_upoly_sum(up, t);
-	}
-
-	return up;
-}
-
-/* Replace the integer division identified by "div" by the polynomial "s".
- * The integer division is assumed not to appear in the definition
- * of any other integer divisions.
- */
-static __isl_give isl_qpolynomial *substitute_div(
-	__isl_take isl_qpolynomial *qp,
-	int div, __isl_take struct isl_upoly *s)
-{
-	int i;
-	int total;
-	int *reordering;
-
-	if (!qp || !s)
-		goto error;
-
-	qp = isl_qpolynomial_cow(qp);
-	if (!qp)
-		goto error;
-
-	total = isl_dim_total(qp->dim);
-	qp->upoly = isl_upoly_subs(qp->upoly, total + div, 1, &s);
-	if (!qp->upoly)
-		goto error;
-
-	reordering = isl_alloc_array(qp->dim->ctx, int, total + qp->div->n_row);
-	if (!reordering)
-		goto error;
-	for (i = 0; i < total + div; ++i)
-		reordering[i] = i;
-	for (i = total + div + 1; i < total + qp->div->n_row; ++i)
-		reordering[i] = i - 1;
-	qp->div = isl_mat_drop_rows(qp->div, div, 1);
-	qp->div = isl_mat_drop_cols(qp->div, 2 + total + div, 1);
-	qp->upoly = reorder(qp->upoly, reordering);
-	free(reordering);
-
-	if (!qp->upoly || !qp->div)
-		goto error;
-
-	isl_upoly_free(s);
-	return qp;
-error:
-	isl_qpolynomial_free(qp);
-	isl_upoly_free(s);
-	return NULL;
-}
-
-/* Replace all integer divisions [e/d] that turn out to not actually be integer
- * divisions because d is equal to 1 by their definition, i.e., e.
- */
-static __isl_give isl_qpolynomial *substitute_non_divs(
-	__isl_take isl_qpolynomial *qp)
-{
-	int i, j;
-	int total;
-	struct isl_upoly *s;
-
-	if (!qp)
-		return NULL;
-
-	total = isl_dim_total(qp->dim);
-	for (i = 0; qp && i < qp->div->n_row; ++i) {
-		if (!isl_int_is_one(qp->div->row[i][0]))
-			continue;
-		for (j = i + 1; j < qp->div->n_row; ++j) {
-			if (isl_int_is_zero(qp->div->row[j][2 + total + i]))
-				continue;
-			isl_seq_combine(qp->div->row[j] + 1,
-				qp->div->ctx->one, qp->div->row[j] + 1,
-				qp->div->row[j][2 + total + i],
-				qp->div->row[i] + 1, 1 + total + i);
-			isl_int_set_si(qp->div->row[j][2 + total + i], 0);
-			normalize_div(qp, j);
-		}
-		s = isl_upoly_from_affine(qp->dim->ctx, qp->div->row[i] + 1,
-					qp->div->row[i][0], qp->div->n_col - 1);
-		qp = substitute_div(qp, i, s);
-		--i;
-	}
-
-	return qp;
 }
 
 __isl_give isl_qpolynomial *isl_qpolynomial_substitute_equalities(
