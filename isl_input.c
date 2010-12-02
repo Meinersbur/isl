@@ -1378,7 +1378,7 @@ static __isl_give isl_qpolynomial *read_factor(struct isl_stream *s,
 		}
 		isl_token_free(tok);
 		pow = optional_power(s);
-		qp = isl_qpolynomial_pow(isl_basic_map_get_dim(bmap), pos, pow);
+		qp = isl_qpolynomial_var_pow(isl_basic_map_get_dim(bmap), pos, pow);
 	} else if (tok->type == '[') {
 		isl_div *div;
 		int pow;

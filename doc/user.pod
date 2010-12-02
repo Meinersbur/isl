@@ -2016,6 +2016,8 @@ are returned in C<*n> and C<*d>, respectively.
 	__isl_give isl_qpolynomial *isl_qpolynomial_mul(
 		__isl_take isl_qpolynomial *qp1,
 		__isl_take isl_qpolynomial *qp2);
+	__isl_give isl_qpolynomial *isl_qpolynomial_pow(
+		__isl_take isl_qpolynomial *qp, unsigned exponent);
 
 	__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_add(
 		__isl_take isl_pw_qpolynomial *pwqp1,

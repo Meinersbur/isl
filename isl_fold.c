@@ -293,7 +293,7 @@ static int isl_qpolynomial_sign(__isl_keep isl_set *set,
 		isl_qpolynomial *t;
 
 		min = isl_qpolynomial_cst(isl_dim_copy(qp->dim), l);
-		base = isl_qpolynomial_pow(isl_dim_copy(qp->dim),
+		base = isl_qpolynomial_var_pow(isl_dim_copy(qp->dim),
 						qp->upoly->var, 1);
 
 		r = isl_qpolynomial_alloc(isl_dim_copy(qp->dim), 0,
