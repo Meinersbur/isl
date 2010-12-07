@@ -24,9 +24,9 @@ struct isl_vec *isl_pip_basic_set_sample(struct isl_basic_set *bset)
 
 	if (!bset)
 		goto error;
-	ctx = bset->ctx;
+	ctx = isl_basic_set_get_ctx(bset);
 	isl_assert(ctx, isl_basic_set_n_param(bset) == 0, goto error);
-	isl_assert(ctx, bset->n_div == 0, goto error);
+	isl_assert(ctx, isl_basic_set_dim(bset, isl_dim_div) == 0, goto error);
 	dim = isl_basic_set_n_dim(bset);
 	domain = isl_basic_map_to_pip((struct isl_basic_map *)bset, 0, 0, 0);
 	if (!domain)

@@ -84,8 +84,10 @@ enum isl_lp_result isl_pip_solve_lp(struct isl_basic_map *bmap, int maximize,
 	if (!sol)
 		goto error;
 
-	if (vec)
-		*vec = isl_vec_alloc(bmap->ctx, 1 + total);
+	if (vec) {
+		isl_ctx *ctx = isl_basic_map_get_ctx(bmap);
+		*vec = isl_vec_alloc(ctx, 1 + total);
+	}
 	if (vec && !*vec)
 		res = isl_lp_error;
 	else if (!sol->list)
