@@ -1563,6 +1563,20 @@ void test_bound(isl_ctx *ctx)
 	isl_pw_qpolynomial_fold_free(pwf);
 }
 
+void test_lift(isl_ctx *ctx)
+{
+	const char *str;
+	isl_basic_map *bmap;
+	isl_basic_set *bset;
+
+	str = "{ [i0] : exists e0 : i0 = 4e0 }";
+	bset = isl_basic_set_read_from_str(ctx, str, 0);
+	bset = isl_basic_set_lift(bset);
+	bmap = isl_basic_map_from_range(bset);
+	bset = isl_basic_map_domain(bmap);
+	isl_basic_set_free(bset);
+}
+
 int main()
 {
 	struct isl_ctx *ctx;
@@ -1571,6 +1585,7 @@ int main()
 	assert(srcdir);
 
 	ctx = isl_ctx_alloc();
+	test_lift(ctx);
 	test_bound(ctx);
 	test_union(ctx);
 	test_split_periods(ctx);

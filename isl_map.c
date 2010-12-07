@@ -7144,6 +7144,7 @@ __isl_give isl_basic_set *isl_basic_set_lift(__isl_take isl_basic_set *bset)
 		goto error;
 	isl_dim_free(bset->dim);
 	bset->dim = dim;
+	bset->extra -= bset->n_div;
 	bset->n_div = 0;
 
 	bset = isl_basic_set_finalize(bset);
