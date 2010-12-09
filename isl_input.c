@@ -1146,6 +1146,13 @@ static __isl_give isl_basic_map *basic_map_read_polylib(struct isl_stream *s,
 		isl_stream_error(s, NULL, "unexpected EOF");
 		return NULL;
 	}
+	if (tok->type != ISL_TOKEN_VALUE || tok2->type != ISL_TOKEN_VALUE) {
+		isl_stream_push_token(s, tok2);
+		isl_stream_push_token(s, tok);
+		isl_stream_error(s, NULL,
+				 "expecting constraint matrix dimensions");
+		return NULL;
+	}
 	n_row = isl_int_get_si(tok->u.v);
 	n_col = isl_int_get_si(tok2->u.v);
 	on_new_line = tok2->on_new_line;
@@ -1246,10 +1253,16 @@ static struct isl_map *map_read_polylib(struct isl_stream *s, int nparam)
 		return NULL;
 	}
 	tok2 = isl_stream_next_token_on_same_line(s);
-	if (tok2) {
+	if (tok2 && tok2->type == ISL_TOKEN_VALUE) {
 		isl_stream_push_token(s, tok2);
 		isl_stream_push_token(s, tok);
 		return isl_map_from_basic_map(basic_map_read_polylib(s, nparam));
+	}
+	if (tok2) {
+		isl_stream_error(s, tok2, "unexpected token");
+		isl_stream_push_token(s, tok2);
+		isl_stream_push_token(s, tok);
+		return NULL;
 	}
 	n = isl_int_get_si(tok->u.v);
 	isl_token_free(tok);
@@ -1258,7 +1271,7 @@ static struct isl_map *map_read_polylib(struct isl_stream *s, int nparam)
 
 	map = isl_map_from_basic_map(basic_map_read_polylib(s, nparam));
 
-	for (i = 1; i < n; ++i)
+	for (i = 1; map && i < n; ++i)
 		map = isl_map_union(map,
 			isl_map_from_basic_map(basic_map_read_polylib(s, nparam)));
 
