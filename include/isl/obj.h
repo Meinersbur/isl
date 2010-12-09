@@ -21,6 +21,8 @@ struct isl_obj_vtable {
 typedef struct isl_obj_vtable *isl_obj_type;
 extern struct isl_obj_vtable isl_obj_none_vtable;
 #define isl_obj_none		(&isl_obj_none_vtable)
+extern struct isl_obj_vtable isl_obj_int_vtable;
+#define isl_obj_int		(&isl_obj_int_vtable)
 extern struct isl_obj_vtable isl_obj_set_vtable;
 #define isl_obj_set		(&isl_obj_set_vtable)
 extern struct isl_obj_vtable isl_obj_union_set_vtable;
@@ -41,6 +43,18 @@ struct isl_obj {
 	isl_obj_type	type;
 	void		*v;
 };
+
+struct isl_int_obj;
+typedef struct isl_int_obj isl_int_obj;
+
+__isl_give isl_int_obj *isl_int_obj_alloc(isl_ctx *ctx, isl_int v);
+__isl_give isl_int_obj *isl_int_obj_add(__isl_take isl_int_obj *i1,
+	__isl_take isl_int_obj *i2);
+__isl_give isl_int_obj *isl_int_obj_sub(__isl_take isl_int_obj *i1,
+	__isl_take isl_int_obj *i2);
+__isl_give isl_int_obj *isl_int_obj_mul(__isl_take isl_int_obj *i1,
+	__isl_take isl_int_obj *i2);
+void isl_int_obj_get_int(__isl_keep isl_int_obj *i, isl_int *v);
 
 #if defined(__cplusplus)
 }
