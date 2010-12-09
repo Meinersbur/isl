@@ -1749,7 +1749,20 @@ static struct isl_obj obj_read(struct isl_stream *s, int nparam)
 		goto error;
 	}
 	if (tok->type == ISL_TOKEN_VALUE) {
+		struct isl_token *tok2;
 		struct isl_map *map;
+
+		tok2 = isl_stream_next_token(s);
+		if (!tok2 || tok2->type != ISL_TOKEN_VALUE ||
+		    isl_int_is_neg(tok2->u.v)) {
+			if (tok2)
+				isl_stream_push_token(s, tok2);
+			obj.type = isl_obj_int;
+			obj.v = isl_int_obj_alloc(s->ctx, tok->u.v);
+			isl_token_free(tok);
+			return obj;
+		}
+		isl_stream_push_token(s, tok2);
 		isl_stream_push_token(s, tok);
 		map = map_read_polylib(s, nparam);
 		if (!map)
