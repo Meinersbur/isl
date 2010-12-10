@@ -17,6 +17,18 @@
 #include <isl/seq.h>
 #include <isl_mat_private.h>
 
+enum isl_fold isl_fold_type_negate(enum isl_fold type)
+{
+	switch (type) {
+	case isl_fold_min:
+		return isl_fold_max;
+	case isl_fold_max:
+		return isl_fold_min;
+	case isl_fold_list:
+		return isl_fold_list;
+	}
+}
+
 static __isl_give isl_qpolynomial_fold *qpolynomial_fold_alloc(
 	enum isl_fold type, __isl_take isl_dim *dim, int n)
 {
@@ -1514,5 +1526,38 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_realign(
 error:
 	isl_qpolynomial_fold_free(fold);
 	isl_reordering_free(r);
+	return NULL;
+}
+
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_mul_isl_int(
+	__isl_take isl_qpolynomial_fold *fold, isl_int v)
+{
+	int i;
+
+	if (isl_int_is_one(v))
+		return fold;
+	if (fold && isl_int_is_zero(v)) {
+		isl_qpolynomial_fold *zero;
+		isl_dim *dim = isl_dim_copy(fold->dim);
+		zero = isl_qpolynomial_fold_empty(fold->type, dim);
+		isl_qpolynomial_fold_free(fold);
+		return zero;
+	}
+
+	fold = isl_qpolynomial_fold_cow(fold);
+	if (!fold)
+		return NULL;
+
+	if (isl_int_is_neg(v))
+		fold->type = isl_fold_type_negate(fold->type);
+	for (i = 0; i < fold->n; ++i) {
+		fold->qp[i] = isl_qpolynomial_mul_isl_int(fold->qp[i], v);
+		if (!fold->qp[i])
+			goto error;
+	}
+
+	return fold;
+error:
+	isl_qpolynomial_fold_free(fold);
 	return NULL;
 }

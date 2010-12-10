@@ -562,3 +562,49 @@ error:
 	FN(UNION,free)(u);
 	return NULL;
 }
+
+static int mul_isl_int(void **entry, void *user)
+{
+	PW **pw = (PW **)entry;
+	isl_int *v = user;
+
+	*pw = FN(PW,mul_isl_int)(*pw, *v);
+	if (!*pw)
+		return -1;
+
+	return 0;
+}
+
+__isl_give UNION *FN(UNION,mul_isl_int)(__isl_take UNION *u, isl_int v)
+{
+	if (isl_int_is_one(v))
+		return u;
+
+	if (u && isl_int_is_zero(v)) {
+		UNION *zero;
+		isl_dim *dim = FN(UNION,get_dim)(u);
+#ifdef HAS_TYPE
+		zero = FN(UNION,zero)(dim, u->type);
+#else
+		zero = FN(UNION,zero)(dim);
+#endif
+		FN(UNION,free)(u);
+		return zero;
+	}
+
+	u = FN(UNION,cow)(u);
+	if (!u)
+		return NULL;
+
+#ifdef HAS_TYPE
+	if (isl_int_is_neg(v))
+		u->type = isl_fold_type_negate(u->type);
+#endif
+	if (isl_hash_table_foreach(u->dim->ctx, &u->table, &mul_isl_int, v) < 0)
+		goto error;
+
+	return u;
+error:
+	FN(UNION,free)(u);
+	return NULL;
+}

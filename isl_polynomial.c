@@ -716,7 +716,8 @@ error:
 	return NULL;
 }
 
-__isl_give struct isl_upoly *isl_upoly_neg_cst(__isl_take struct isl_upoly *up)
+__isl_give struct isl_upoly *isl_upoly_cst_mul_isl_int(
+	__isl_take struct isl_upoly *up, isl_int v)
 {
 	struct isl_upoly_cst *cst;
 
@@ -729,12 +730,13 @@ __isl_give struct isl_upoly *isl_upoly_neg_cst(__isl_take struct isl_upoly *up)
 
 	cst = isl_upoly_as_cst(up);
 
-	isl_int_neg(cst->n, cst->n);
+	isl_int_mul(cst->n, cst->n, v);
 
 	return up;
 }
 
-__isl_give struct isl_upoly *isl_upoly_neg(__isl_take struct isl_upoly *up)
+__isl_give struct isl_upoly *isl_upoly_mul_isl_int(
+	__isl_take struct isl_upoly *up, isl_int v)
 {
 	int i;
 	struct isl_upoly_rec *rec;
@@ -743,7 +745,7 @@ __isl_give struct isl_upoly *isl_upoly_neg(__isl_take struct isl_upoly *up)
 		return NULL;
 
 	if (isl_upoly_is_cst(up))
-		return isl_upoly_neg_cst(up);
+		return isl_upoly_cst_mul_isl_int(up, v);
 
 	up = isl_upoly_cow(up);
 	rec = isl_upoly_as_rec(up);
@@ -751,7 +753,7 @@ __isl_give struct isl_upoly *isl_upoly_neg(__isl_take struct isl_upoly *up)
 		goto error;
 
 	for (i = 0; i < rec->n; ++i) {
-		rec->p[i] = isl_upoly_neg(rec->p[i]);
+		rec->p[i] = isl_upoly_mul_isl_int(rec->p[i], v);
 		if (!rec->p[i])
 			goto error;
 	}
@@ -1438,12 +1440,30 @@ error:
 
 __isl_give isl_qpolynomial *isl_qpolynomial_neg(__isl_take isl_qpolynomial *qp)
 {
-	qp = isl_qpolynomial_cow(qp);
-
 	if (!qp)
 		return NULL;
 
-	qp->upoly = isl_upoly_neg(qp->upoly);
+	return isl_qpolynomial_mul_isl_int(qp, qp->dim->ctx->negone);
+}
+
+__isl_give isl_qpolynomial *isl_qpolynomial_mul_isl_int(
+	__isl_take isl_qpolynomial *qp, isl_int v)
+{
+	if (isl_int_is_one(v))
+		return qp;
+
+	if (qp && isl_int_is_zero(v)) {
+		isl_qpolynomial *zero;
+		zero = isl_qpolynomial_zero(isl_dim_copy(qp->dim));
+		isl_qpolynomial_free(qp);
+		return zero;
+	}
+	
+	qp = isl_qpolynomial_cow(qp);
+	if (!qp)
+		return NULL;
+
+	qp->upoly = isl_upoly_mul_isl_int(qp->upoly, v);
 	if (!qp->upoly)
 		goto error;
 

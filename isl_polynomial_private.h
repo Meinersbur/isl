@@ -109,7 +109,8 @@ __isl_keep struct isl_upoly_rec *isl_upoly_as_rec(__isl_keep struct isl_upoly *u
 
 __isl_give struct isl_upoly *isl_upoly_sum(__isl_take struct isl_upoly *up1,
 	__isl_take struct isl_upoly *up2);
-__isl_give struct isl_upoly *isl_upoly_neg(__isl_take struct isl_upoly *up);
+__isl_give struct isl_upoly *isl_upoly_mul_isl_int(
+	__isl_take struct isl_upoly *up, isl_int v);
 
 __isl_give isl_qpolynomial *isl_qpolynomial_alloc(__isl_take isl_dim *dim,
 	unsigned n_div, __isl_take struct isl_upoly *up);
@@ -157,6 +158,8 @@ int isl_pw_qpolynomial_is_one(__isl_keep isl_pw_qpolynomial *pwqp);
 
 __isl_give isl_qpolynomial *isl_qpolynomial_opt_on_domain(
 	__isl_take isl_qpolynomial *qp, __isl_take isl_set *set, int max);
+
+enum isl_fold isl_fold_type_negate(enum isl_fold type);
 
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_cow(
 	__isl_take isl_qpolynomial_fold *fold);

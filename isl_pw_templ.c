@@ -918,3 +918,42 @@ error:
 	FN(PW,free)(pw);
 	return NULL;
 }
+
+__isl_give PW *FN(PW,mul_isl_int)(__isl_take PW *pw, isl_int v)
+{
+	int i;
+
+	if (isl_int_is_one(v))
+		return pw;
+	if (pw && isl_int_is_zero(v)) {
+		PW *zero;
+		isl_dim *dim = FN(PW,get_dim)(pw);
+#ifdef HAS_TYPE
+		zero = FN(PW,zero)(dim, pw->type);
+#else
+		zero = FN(PW,zero)(dim);
+#endif
+		FN(PW,free)(pw);
+		return zero;
+	}
+	pw = FN(PW,cow)(pw);
+	if (!pw)
+		return NULL;
+	if (pw->n == 0)
+		return pw;
+
+#ifdef HAS_TYPE
+	if (isl_int_is_neg(v))
+		pw->type = isl_fold_type_negate(pw->type);
+#endif
+	for (i = 0; i < pw->n; ++i) {
+		pw->p[i].FIELD = FN(EL,mul_isl_int)(pw->p[i].FIELD, v);
+		if (!pw->p[i].FIELD)
+			goto error;
+	}
+
+	return pw;
+error:
+	FN(PW,free)(pw);
+	return NULL;
+}
