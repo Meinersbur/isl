@@ -233,10 +233,11 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_bound(
 	}
 
 	if (isl_pw_qpolynomial_fold_is_zero(pwf)) {
+		enum isl_fold type = pwf->type;
 		isl_pw_qpolynomial_fold_free(pwf);
 		if (tight)
 			*tight = 1;
-		return isl_pw_qpolynomial_fold_zero(dim, pwf->type);
+		return isl_pw_qpolynomial_fold_zero(dim, type);
 	}
 
 	bound.pwf = isl_pw_qpolynomial_fold_zero(isl_dim_copy(dim), pwf->type);
