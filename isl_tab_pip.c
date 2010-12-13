@@ -3899,7 +3899,7 @@ struct isl_map *isl_tab_basic_map_partial_lexopt(
 		goto error2;
 
 	isl_assert(bmap->ctx,
-	    isl_basic_map_compatible_domain(bmap, dom), goto error);
+	    isl_basic_map_compatible_domain(bmap, dom), goto error2);
 
 	eq = isl_basic_map_copy(bmap);
 	eq = isl_basic_map_intersect_domain(eq, isl_basic_set_copy(dom));
