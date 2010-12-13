@@ -52,6 +52,8 @@ struct isl_options {
 	int			bernstein_recurse;
 
 	int			bernstein_triangulate;
+
+	int			pip_symmetry;
 };
 
 ISL_ARG_DECL(isl_options, struct isl_options, isl_options_arg)

@@ -1,10 +1,13 @@
 /*
  * Copyright 2008-2009 Katholieke Universiteit Leuven
+ * Copyright 2010      INRIA Saclay
  *
  * Use of this software is governed by the GNU LGPLv2.1 license
  *
  * Written by Sven Verdoolaege, K.U.Leuven, Departement
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
+ * and INRIA Saclay - Ile-de-France, Parc Club Orsay Universite,
+ * ZAC des vignes, 4 rue Jacques Monod, 91893 Orsay, France 
  */
 
 #include "isl_map_private.h"
@@ -3868,43 +3871,21 @@ error:
 	return NULL;
 }
 
-/* Compute the lexicographic minimum (or maximum if "max" is set)
- * of "bmap" over the domain "dom" and return the result as a map.
- * If "empty" is not NULL, then *empty is assigned a set that
- * contains those parts of the domain where there is no solution.
- * If "bmap" is marked as rational (ISL_BASIC_MAP_RATIONAL),
- * then we compute the rational optimum.  Otherwise, we compute
- * the integral optimum.
+/* Base case of isl_tab_basic_map_partial_lexopt, after removing
+ * some obvious symmetries.
  *
- * We perform some preprocessing.  As the PILP solver does not
- * handle implicit equalities very well, we first make sure all
- * the equalities are explicitly available.
- * We also make sure the divs in the domain are properly order,
+ * We make sure the divs in the domain are properly ordered,
  * because they will be added one by one in the given order
  * during the construction of the solution map.
  */
-struct isl_map *isl_tab_basic_map_partial_lexopt(
-		struct isl_basic_map *bmap, struct isl_basic_set *dom,
-		struct isl_set **empty, int max)
+static __isl_give isl_map *basic_map_partial_lexopt_base(
+	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
+	__isl_give isl_set **empty, int max)
 {
+	isl_map *result = NULL;
 	struct isl_tab *tab;
-	struct isl_map *result = NULL;
 	struct isl_sol_map *sol_map = NULL;
 	struct isl_context *context;
-	struct isl_basic_map *eq;
-
-	if (empty)
-		*empty = NULL;
-	if (!bmap || !dom)
-		goto error2;
-
-	isl_assert(bmap->ctx,
-	    isl_basic_map_compatible_domain(bmap, dom), goto error2);
-
-	eq = isl_basic_map_copy(bmap);
-	eq = isl_basic_map_intersect_domain(eq, isl_basic_set_copy(dom));
-	eq = isl_basic_map_affine_hull(eq);
-	bmap = isl_basic_map_intersect(bmap, eq);
 
 	if (dom->n_div) {
 		dom = isl_basic_set_order_divs(dom);
@@ -3935,10 +3916,505 @@ struct isl_map *isl_tab_basic_map_partial_lexopt(
 	sol_free(&sol_map->sol);
 	isl_basic_map_free(bmap);
 	return result;
-error2:
-	isl_basic_set_free(dom);
 error:
 	sol_free(&sol_map->sol);
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+/* Structure used during detection of parallel constraints.
+ * n_in: number of "input" variables: isl_dim_param + isl_dim_in
+ * n_out: number of "output" variables: isl_dim_out + isl_dim_div
+ * val: the coefficients of the output variables
+ */
+struct isl_constraint_equal_info {
+	isl_basic_map *bmap;
+	unsigned n_in;
+	unsigned n_out;
+	isl_int *val;
+};
+
+/* Check whether the coefficients of the output variables
+ * of the constraint in "entry" are equal to info->val.
+ */
+static int constraint_equal(const void *entry, const void *val)
+{
+	isl_int **row = (isl_int **)entry;
+	const struct isl_constraint_equal_info *info = val;
+
+	return isl_seq_eq((*row) + 1 + info->n_in, info->val, info->n_out);
+}
+
+/* Check whether "bmap" has a pair of constraints that have
+ * the same coefficients for the "output" variables, i.e.,
+ * the isl_dim_out and isl_dim_div dimensions.
+ * If so, return 1 and return the row indices of the two constraints
+ * in *first and *second.
+ */
+static int parallel_constraints(__isl_keep isl_basic_map *bmap,
+	int *first, int *second)
+{
+	int i;
+	isl_ctx *ctx = isl_basic_map_get_ctx(bmap);
+	struct isl_hash_table *table = NULL;
+	struct isl_hash_table_entry *entry;
+	struct isl_constraint_equal_info info;
+
+	ctx = isl_basic_map_get_ctx(bmap);
+	table = isl_hash_table_alloc(ctx, bmap->n_ineq);
+	if (!table)
+		goto error;
+
+	info.n_in = isl_basic_map_dim(bmap, isl_dim_param) +
+		    isl_basic_map_dim(bmap, isl_dim_in);
+	info.bmap = bmap;
+	info.n_out = isl_basic_map_dim(bmap, isl_dim_all) - info.n_in;
+	for (i = 0; i < bmap->n_ineq; ++i) {
+		uint32_t hash;
+
+		info.val = bmap->ineq[i] + 1 + info.n_in;
+		if (isl_seq_first_non_zero(info.val, info.n_out) < 0)
+			continue;
+		hash = isl_seq_get_hash(info.val, info.n_out);
+		entry = isl_hash_table_find(ctx, table, hash,
+					    constraint_equal, &info, 1);
+		if (!entry)
+			goto error;
+		if (entry->data)
+			break;
+		entry->data = &bmap->ineq[i];
+	}
+
+	if (i < bmap->n_ineq) {
+		*first = ((isl_int **)entry->data) - bmap->ineq; 
+		*second = i;
+	}
+
+	isl_hash_table_free(ctx, table);
+
+	return i < bmap->n_ineq;
+error:
+	isl_hash_table_free(ctx, table);
+	return -1;
+}
+
+/* Given a set of upper bounds on the last "input" variable m,
+ * construct a set that assigns the minimal upper bound to m, i.e.,
+ * construct a set that divides the space into cells where one
+ * of the upper bounds is smaller than all the others and assign
+ * this upper bound to m.
+ *
+ * In particular, if there are n bounds b_i, then the result
+ * consists of n basic sets, each one of the form
+ *
+ *	m = b_i
+ *	b_i <= b_j	for j > i
+ *	b_i <  b_j	for j < i
+ */
+static __isl_give isl_set *set_minimum(__isl_take isl_dim *dim,
+	__isl_take isl_mat *var)
+{
+	int i, j, k;
+	isl_basic_set *bset = NULL;
+	isl_ctx *ctx;
+	isl_set *set = NULL;
+
+	if (!dim || !var)
+		goto error;
+
+	ctx = isl_dim_get_ctx(dim);
+	set = isl_set_alloc_dim(isl_dim_copy(dim),
+				var->n_row, ISL_SET_DISJOINT);
+
+	for (i = 0; i < var->n_row; ++i) {
+		bset = isl_basic_set_alloc_dim(isl_dim_copy(dim), 0,
+					       1, var->n_row - 1);
+		k = isl_basic_set_alloc_equality(bset);
+		if (k < 0)
+			goto error;
+		isl_seq_cpy(bset->eq[k], var->row[i], var->n_col);
+		isl_int_set_si(bset->eq[k][var->n_col], -1);
+		for (j = 0; j < var->n_row; ++j) {
+			if (j == i)
+				continue;
+			k = isl_basic_set_alloc_inequality(bset);
+			if (k < 0)
+				goto error;
+			isl_seq_combine(bset->ineq[k], ctx->one, var->row[j],
+					ctx->negone, var->row[i],
+					var->n_col);
+			isl_int_set_si(bset->ineq[k][var->n_col], 0);
+			if (j < i)
+				isl_int_sub_ui(bset->ineq[k][0],
+					       bset->ineq[k][0], 1);
+		}
+		bset = isl_basic_set_finalize(bset);
+		set = isl_set_add_basic_set(set, bset);
+	}
+
+	isl_dim_free(dim);
+	isl_mat_free(var);
+	return set;
+error:
+	isl_basic_set_free(bset);
+	isl_set_free(set);
+	isl_dim_free(dim);
+	isl_mat_free(var);
+	return NULL;
+}
+
+/* Given that the last input variable of "bmap" represents the minimum
+ * of the bounds in "cst", check whether we need to split the domain
+ * based on which bound attains the minimum.
+ *
+ * A split is needed when the minimum appears in an integer division
+ * or in an equality.  Otherwise, it is only needed if it appears in
+ * an upper bound that is different from the upper bounds on which it
+ * is defined.
+ */
+static int need_split_map(__isl_keep isl_basic_map *bmap,
+	__isl_keep isl_mat *cst)
+{
+	int i, j;
+	unsigned total;
+	unsigned pos;
+
+	pos = cst->n_col - 1;
+	total = isl_basic_map_dim(bmap, isl_dim_all);
+
+	for (i = 0; i < bmap->n_div; ++i)
+		if (!isl_int_is_zero(bmap->div[i][2 + pos]))
+			return 1;
+
+	for (i = 0; i < bmap->n_eq; ++i)
+		if (!isl_int_is_zero(bmap->eq[i][1 + pos]))
+			return 1;
+
+	for (i = 0; i < bmap->n_ineq; ++i) {
+		if (isl_int_is_nonneg(bmap->ineq[i][1 + pos]))
+			continue;
+		if (!isl_int_is_negone(bmap->ineq[i][1 + pos]))
+			return 1;
+		if (isl_seq_first_non_zero(bmap->ineq[i] + 1 + pos + 1,
+					   total - pos - 1) >= 0)
+			return 1;
+
+		for (j = 0; j < cst->n_row; ++j)
+			if (isl_seq_eq(bmap->ineq[i], cst->row[j], cst->n_col))
+				break;
+		if (j >= cst->n_row)
+			return 1;
+	}
+
+	return 0;
+}
+
+static int need_split_set(__isl_keep isl_basic_set *bset,
+	__isl_keep isl_mat *cst)
+{
+	return need_split_map((isl_basic_map *)bset, cst);
+}
+
+/* Given a set of which the last set variable is the minimum
+ * of the bounds in "cst", split each basic set in the set
+ * in pieces where one of the bounds is (strictly) smaller than the others.
+ * This subdivision is given in "min_expr".
+ * The variable is subsequently projected out.
+ *
+ * We only do the split when it is needed.
+ * For example if the last input variable m = min(a,b) and the only
+ * constraints in the given basic set are lower bounds on m,
+ * i.e., l <= m = min(a,b), then we can simply project out m
+ * to obtain l <= a and l <= b, without having to split on whether
+ * m is equal to a or b.
+ */
+static __isl_give isl_set *split(__isl_take isl_set *empty,
+	__isl_take isl_set *min_expr, __isl_take isl_mat *cst)
+{
+	int n_in;
+	int i;
+	isl_dim *dim;
+	isl_set *res;
+
+	if (!empty || !min_expr || !cst)
+		goto error;
+
+	n_in = isl_set_dim(empty, isl_dim_set);
+	dim = isl_set_get_dim(empty);
+	dim = isl_dim_drop(dim, isl_dim_set, n_in - 1, 1);
+	res = isl_set_empty(dim);
+
+	for (i = 0; i < empty->n; ++i) {
+		isl_set *set;
+
+		set = isl_set_from_basic_set(isl_basic_set_copy(empty->p[i]));
+		if (need_split_set(empty->p[i], cst))
+			set = isl_set_intersect(set, isl_set_copy(min_expr));
+		set = isl_set_remove_dims(set, isl_dim_set, n_in - 1, 1);
+
+		res = isl_set_union_disjoint(res, set);
+	}
+
+	isl_set_free(empty);
+	isl_set_free(min_expr);
+	isl_mat_free(cst);
+	return res;
+error:
+	isl_set_free(empty);
+	isl_set_free(min_expr);
+	isl_mat_free(cst);
+	return NULL;
+}
+
+/* Given a map of which the last input variable is the minimum
+ * of the bounds in "cst", split each basic set in the set
+ * in pieces where one of the bounds is (strictly) smaller than the others.
+ * This subdivision is given in "min_expr".
+ * The variable is subsequently projected out.
+ *
+ * The implementation is essentially the same as that of "split".
+ */
+static __isl_give isl_map *split_domain(__isl_take isl_map *opt,
+	__isl_take isl_set *min_expr, __isl_take isl_mat *cst)
+{
+	int n_in;
+	int i;
+	isl_dim *dim;
+	isl_map *res;
+
+	if (!opt || !min_expr || !cst)
+		goto error;
+
+	n_in = isl_map_dim(opt, isl_dim_in);
+	dim = isl_map_get_dim(opt);
+	dim = isl_dim_drop(dim, isl_dim_in, n_in - 1, 1);
+	res = isl_map_empty(dim);
+
+	for (i = 0; i < opt->n; ++i) {
+		isl_map *map;
+
+		map = isl_map_from_basic_map(isl_basic_map_copy(opt->p[i]));
+		if (need_split_map(opt->p[i], cst))
+			map = isl_map_intersect_domain(map,
+						       isl_set_copy(min_expr));
+		map = isl_map_remove_dims(map, isl_dim_in, n_in - 1, 1);
+
+		res = isl_map_union_disjoint(res, map);
+	}
+
+	isl_map_free(opt);
+	isl_set_free(min_expr);
+	isl_mat_free(cst);
+	return res;
+error:
+	isl_map_free(opt);
+	isl_set_free(min_expr);
+	isl_mat_free(cst);
+	return NULL;
+}
+
+static __isl_give isl_map *basic_map_partial_lexopt(
+	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
+	__isl_give isl_set **empty, int max);
+
+/* Given a basic map with at least two parallel constraints (as found
+ * by the function parallel_constraints), first look for more constraints
+ * parallel to the two constraint and replace the found list of parallel
+ * constraints by a single constraint with as "input" part the minimum
+ * of the input parts of the list of constraints.  Then, recursively call
+ * basic_map_partial_lexopt (possibly finding more parallel constraints)
+ * and plug in the definition of the minimum in the result.
+ *
+ * More specifically, given a set of constraints
+ *
+ *	a x + b_i(p) >= 0
+ *
+ * Replace this set by a single constraint
+ *
+ *	a x + u >= 0
+ *
+ * with u a new parameter with constraints
+ *
+ *	u <= b_i(p)
+ *
+ * Any solution to the new system is also a solution for the original system
+ * since
+ *
+ *	a x >= -u >= -b_i(p)
+ *
+ * Moreover, m = min_i(b_i(p)) satisfied the constraints on u and can
+ * therefore be plugged into the solution.
+ */
+static __isl_give isl_map *basic_map_partial_lexopt_symm(
+	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
+	__isl_give isl_set **empty, int max, int first, int second)
+{
+	int i, n, k;
+	int *list = NULL;
+	unsigned n_in, n_out, n_div;
+	isl_ctx *ctx;
+	isl_vec *var = NULL;
+	isl_mat *cst = NULL;
+	isl_map *opt;
+	isl_set *min_expr;
+	isl_dim *map_dim, *set_dim;
+
+	map_dim = isl_basic_map_get_dim(bmap);
+	set_dim = empty ? isl_basic_set_get_dim(dom) : NULL;
+
+	n_in = isl_basic_map_dim(bmap, isl_dim_param) +
+	       isl_basic_map_dim(bmap, isl_dim_in);
+	n_out = isl_basic_map_dim(bmap, isl_dim_all) - n_in;
+
+	ctx = isl_basic_map_get_ctx(bmap);
+	list = isl_alloc_array(ctx, int, bmap->n_ineq);
+	var = isl_vec_alloc(ctx, n_out);
+	if (!list || !var)
+		goto error;
+
+	list[0] = first;
+	list[1] = second;
+	isl_seq_cpy(var->el, bmap->ineq[first] + 1 + n_in, n_out);
+	for (i = second + 1, n = 2; i < bmap->n_ineq; ++i) {
+		if (isl_seq_eq(var->el, bmap->ineq[i] + 1 + n_in, n_out))
+			list[n++] = i;
+	}
+
+	cst = isl_mat_alloc(ctx, n, 1 + n_in);
+	if (!cst)
+		goto error;
+
+	for (i = 0; i < n; ++i)
+		isl_seq_cpy(cst->row[i], bmap->ineq[list[i]], 1 + n_in);
+
+	bmap = isl_basic_map_cow(bmap);
+	if (!bmap)
+		goto error;
+	for (i = n - 1; i >= 0; --i)
+		if (isl_basic_map_drop_inequality(bmap, list[i]) < 0)
+			goto error;
+
+	bmap = isl_basic_map_add(bmap, isl_dim_in, 1);
+	bmap = isl_basic_map_extend_constraints(bmap, 0, 1);
+	k = isl_basic_map_alloc_inequality(bmap);
+	if (k < 0)
+		goto error;
+	isl_seq_clr(bmap->ineq[k], 1 + n_in);
+	isl_int_set_si(bmap->ineq[k][1 + n_in], 1);
+	isl_seq_cpy(bmap->ineq[k] + 1 + n_in + 1, var->el, n_out);
+	bmap = isl_basic_map_finalize(bmap);
+
+	n_div = isl_basic_set_dim(dom, isl_dim_div);
+	dom = isl_basic_set_add(dom, isl_dim_set, 1);
+	dom = isl_basic_set_extend_constraints(dom, 0, n);
+	for (i = 0; i < n; ++i) {
+		k = isl_basic_set_alloc_inequality(dom);
+		if (k < 0)
+			goto error;
+		isl_seq_cpy(dom->ineq[k], cst->row[i], 1 + n_in);
+		isl_int_set_si(dom->ineq[k][1 + n_in], -1);
+		isl_seq_clr(dom->ineq[k] + 1 + n_in + 1, n_div);
+	}
+
+	min_expr = set_minimum(isl_basic_set_get_dim(dom), isl_mat_copy(cst));
+
+	isl_vec_free(var);
+	free(list);
+
+	opt = basic_map_partial_lexopt(bmap, dom, empty, max);
+
+	if (empty) {
+		*empty = split(*empty,
+			       isl_set_copy(min_expr), isl_mat_copy(cst));
+		*empty = isl_set_reset_dim(*empty, set_dim);
+	}
+
+	opt = split_domain(opt, min_expr, cst);
+	opt = isl_map_reset_dim(opt, map_dim);
+
+	return opt;
+error:
+	isl_dim_free(map_dim);
+	isl_dim_free(set_dim);
+	isl_mat_free(cst);
+	isl_vec_free(var);
+	free(list);
+	isl_basic_set_free(dom);
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+/* Recursive part of isl_tab_basic_map_partial_lexopt, after detecting
+ * equalities and removing redundant constraints.
+ *
+ * We first check if there are any parallel constraints (left).
+ * If not, we are in the base case.
+ * If there are parallel constraints, we replace them by a single
+ * constraint in basic_map_partial_lexopt_symm and then call
+ * this function recursively to look for more parallel constraints.
+ */
+static __isl_give isl_map *basic_map_partial_lexopt(
+	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
+	__isl_give isl_set **empty, int max)
+{
+	int par = 0;
+	int first, second;
+
+	if (!bmap)
+		goto error;
+
+	if (bmap->ctx->opt->pip_symmetry)
+		par = parallel_constraints(bmap, &first, &second);
+	if (par < 0)
+		goto error;
+	if (!par)
+		return basic_map_partial_lexopt_base(bmap, dom, empty, max);
+	
+	return basic_map_partial_lexopt_symm(bmap, dom, empty, max,
+					     first, second);
+error:
+	isl_basic_set_free(dom);
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+/* Compute the lexicographic minimum (or maximum if "max" is set)
+ * of "bmap" over the domain "dom" and return the result as a map.
+ * If "empty" is not NULL, then *empty is assigned a set that
+ * contains those parts of the domain where there is no solution.
+ * If "bmap" is marked as rational (ISL_BASIC_MAP_RATIONAL),
+ * then we compute the rational optimum.  Otherwise, we compute
+ * the integral optimum.
+ *
+ * We perform some preprocessing.  As the PILP solver does not
+ * handle implicit equalities very well, we first make sure all
+ * the equalities are explicitly available.
+ *
+ * We also add context constraints to the basic map and remove
+ * redundant constraints.  This is only needed because of the
+ * way we handle simple symmetries.  In particular, we currently look
+ * for symmetries on the constraints, before we set up the main tableau.
+ * It is then no good to look for symmetries on possibly redundant constraints.
+ */
+struct isl_map *isl_tab_basic_map_partial_lexopt(
+		struct isl_basic_map *bmap, struct isl_basic_set *dom,
+		struct isl_set **empty, int max)
+{
+	if (empty)
+		*empty = NULL;
+	if (!bmap || !dom)
+		goto error;
+
+	isl_assert(bmap->ctx,
+	    isl_basic_map_compatible_domain(bmap, dom), goto error);
+
+	bmap = isl_basic_map_intersect_domain(bmap, isl_basic_set_copy(dom));
+	bmap = isl_basic_map_detect_equalities(bmap);
+	bmap = isl_basic_map_remove_redundancies(bmap);
+
+	return basic_map_partial_lexopt(bmap, dom, empty, max);
+error:
+	isl_basic_set_free(dom);
 	isl_basic_map_free(bmap);
 	return NULL;
 }

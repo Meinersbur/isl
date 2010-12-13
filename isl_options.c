@@ -105,6 +105,8 @@ ISL_ARG_FLAGS(struct isl_options, bernstein_recurse, 0,
 ISL_ARG_BOOL(struct isl_options, bernstein_triangulate, 0,
 	"bernstein-triangulate", 1,
 	"triangulate domains during Bernstein expansion")
+ISL_ARG_BOOL(struct isl_options, pip_symmetry, 0, "pip-symmetry", 1,
+	"detect simple symmetries in PIP input")
 ISL_ARG_VERSION(print_version)
 ISL_ARG_END
 };
