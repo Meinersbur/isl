@@ -72,15 +72,8 @@ static __isl_give isl_basic_set *set_bounds(__isl_take isl_basic_set *bset)
 
 static struct isl_basic_set *to_parameter_domain(struct isl_basic_set *context)
 {
-	struct isl_dim *param_dim;
-	struct isl_basic_set *model;
-
-	param_dim = isl_dim_set_alloc(context->ctx,
-					isl_basic_set_n_dim(context), 0);
-	model = isl_basic_set_empty(param_dim);
-	context = isl_basic_set_from_underlying_set(context, model);
-
-	return context;
+	return isl_basic_set_move_dims(context, isl_dim_param, 0, isl_dim_set, 0,
+				       isl_basic_set_dim(context, isl_dim_set));
 }
 
 isl_basic_set *plug_in_parameters(isl_basic_set *bset, struct isl_vec *params)
