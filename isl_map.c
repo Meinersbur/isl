@@ -6989,66 +6989,76 @@ __isl_give isl_set *isl_set_flat_product(__isl_take isl_set *set1,
 	return (isl_set *)isl_map_flat_product((isl_map *)set1, (isl_map *)set2);
 }
 
-uint32_t isl_basic_set_get_hash(struct isl_basic_set *bset)
+uint32_t isl_basic_map_get_hash(__isl_keep isl_basic_map *bmap)
 {
 	int i;
 	uint32_t hash = isl_hash_init();
 	unsigned total;
 
-	if (!bset)
+	if (!bmap)
 		return 0;
-	bset = isl_basic_set_copy(bset);
-	bset = isl_basic_set_normalize(bset);
-	if (!bset)
+	bmap = isl_basic_map_copy(bmap);
+	bmap = isl_basic_map_normalize(bmap);
+	if (!bmap)
 		return 0;
-	total = isl_basic_set_total_dim(bset);
-	isl_hash_byte(hash, bset->n_eq & 0xFF);
-	for (i = 0; i < bset->n_eq; ++i) {
+	total = isl_basic_map_total_dim(bmap);
+	isl_hash_byte(hash, bmap->n_eq & 0xFF);
+	for (i = 0; i < bmap->n_eq; ++i) {
 		uint32_t c_hash;
-		c_hash = isl_seq_get_hash(bset->eq[i], 1 + total);
+		c_hash = isl_seq_get_hash(bmap->eq[i], 1 + total);
 		isl_hash_hash(hash, c_hash);
 	}
-	isl_hash_byte(hash, bset->n_ineq & 0xFF);
-	for (i = 0; i < bset->n_ineq; ++i) {
+	isl_hash_byte(hash, bmap->n_ineq & 0xFF);
+	for (i = 0; i < bmap->n_ineq; ++i) {
 		uint32_t c_hash;
-		c_hash = isl_seq_get_hash(bset->ineq[i], 1 + total);
+		c_hash = isl_seq_get_hash(bmap->ineq[i], 1 + total);
 		isl_hash_hash(hash, c_hash);
 	}
-	isl_hash_byte(hash, bset->n_div & 0xFF);
-	for (i = 0; i < bset->n_div; ++i) {
+	isl_hash_byte(hash, bmap->n_div & 0xFF);
+	for (i = 0; i < bmap->n_div; ++i) {
 		uint32_t c_hash;
-		if (isl_int_is_zero(bset->div[i][0]))
+		if (isl_int_is_zero(bmap->div[i][0]))
 			continue;
 		isl_hash_byte(hash, i & 0xFF);
-		c_hash = isl_seq_get_hash(bset->div[i], 1 + 1 + total);
+		c_hash = isl_seq_get_hash(bmap->div[i], 1 + 1 + total);
 		isl_hash_hash(hash, c_hash);
 	}
-	isl_basic_set_free(bset);
+	isl_basic_map_free(bmap);
 	return hash;
 }
 
-uint32_t isl_set_get_hash(struct isl_set *set)
+uint32_t isl_basic_set_get_hash(__isl_keep isl_basic_set *bset)
+{
+	return isl_basic_map_get_hash((isl_basic_map *)bset);
+}
+
+uint32_t isl_map_get_hash(__isl_keep isl_map *map)
 {
 	int i;
 	uint32_t hash;
 
-	if (!set)
+	if (!map)
 		return 0;
-	set = isl_set_copy(set);
-	set = isl_set_normalize(set);
-	if (!set)
+	map = isl_map_copy(map);
+	map = isl_map_normalize(map);
+	if (!map)
 		return 0;
 
 	hash = isl_hash_init();
-	for (i = 0; i < set->n; ++i) {
-		uint32_t bset_hash;
-		bset_hash = isl_basic_set_get_hash(set->p[i]);
-		isl_hash_hash(hash, bset_hash);
+	for (i = 0; i < map->n; ++i) {
+		uint32_t bmap_hash;
+		bmap_hash = isl_basic_map_get_hash(map->p[i]);
+		isl_hash_hash(hash, bmap_hash);
 	}
 		
-	isl_set_free(set);
+	isl_map_free(map);
 
 	return hash;
+}
+
+uint32_t isl_set_get_hash(__isl_keep isl_set *set)
+{
+	return isl_map_get_hash((isl_map *)set);
 }
 
 /* Check if the value for dimension dim is completely determined
