@@ -156,11 +156,19 @@ struct isl_access_sort_info {
  * sorted first.
  * If they both share no levels, then the order is irrelevant.
  * Otherwise, if p1 appears before p2, then it should be sorted first.
+ * For more generic initial schedules, it is possible that neither
+ * p1 nor p2 appears before the other, or at least not in any obvious way.
+ * We therefore also check if p2 appears before p1, in which case p2
+ * should be sorted first.
+ * If not, we try to order the two statements based on the description
+ * of the iteration domains.  This results in an arbitrary, but fairly
+ * stable ordering.
  */
 static int access_sort_cmp(const void *p1, const void *p2)
 {
 	const struct isl_access_sort_info *i1, *i2;
 	int level1, level2;
+	uint32_t h1, h2;
 	i1 = (const struct isl_access_sort_info *) p1;
 	i2 = (const struct isl_access_sort_info *) p2;
 
@@ -171,8 +179,16 @@ static int access_sort_cmp(const void *p1, const void *p2)
 		return level1 - level2;
 
 	level1 = i1->acc->level_before(i1->source_data, i2->source_data);
+	if (level1 % 2)
+		return -1;
 
-	return (level1 % 2) ? -1 : 1;
+	level2 = i1->acc->level_before(i2->source_data, i1->source_data);
+	if (level2 % 2)
+		return 1;
+
+	h1 = isl_map_get_hash(i1->source_map);
+	h2 = isl_map_get_hash(i2->source_map);
+	return h1 - h2;
 }
 
 /* Sort the must source accesses in order of increasing number of shared
