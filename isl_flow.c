@@ -937,7 +937,7 @@ static void sched_info_free(__isl_take struct isl_sched_info *info)
  *
  *	[S -> D] -> A
  *
- * wiht S the schedule domain, D the iteration domain and A the data domain.
+ * with S the schedule domain, D the iteration domain and A the data domain.
  */
 static __isl_give struct isl_sched_info *sched_info_alloc(
 	__isl_keep isl_map *map)
@@ -1059,7 +1059,7 @@ error:
  * value and if moreover those values are different, then the previous
  * dimension is the last shared nesting level and the textual order
  * is determined based on the order of the fixed values.
- * If no such fixed values can be found, then we seet the shared
+ * If no such fixed values can be found, then we set the shared
  * nesting level to the minimal schedule dimension, with no textual ordering.
  */
 static int before(void *first, void *second)
