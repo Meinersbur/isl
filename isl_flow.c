@@ -1000,7 +1000,7 @@ static int before(void *first, void *second)
 	if (n2 < n1)
 		n1 = n2;
 
-	return 2 * n1 + (dim1 < dim2);
+	return 2 * n1;
 }
 
 /* Given a sink access, look for all the source accesses that access
