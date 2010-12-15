@@ -914,6 +914,67 @@ error2:
 }
 
 
+/* Keep track of some information about a schedule for a given
+ * access.  In particular, keep track of which dimensions
+ * have a constant value and of the actual constant values.
+ */
+struct isl_sched_info {
+	int *is_cst;
+	isl_vec *cst;
+};
+
+static void sched_info_free(__isl_take struct isl_sched_info *info)
+{
+	if (!info)
+		return;
+	isl_vec_free(info->cst);
+	free(info->is_cst);
+	free(info);
+}
+
+/* Extract information on the constant dimensions of the schedule
+ * for a given access.  The "map" is of the form
+ *
+ *	[S -> D] -> A
+ *
+ * wiht S the schedule domain, D the iteration domain and A the data domain.
+ */
+static __isl_give struct isl_sched_info *sched_info_alloc(
+	__isl_keep isl_map *map)
+{
+	isl_ctx *ctx;
+	isl_dim *dim;
+	struct isl_sched_info *info;
+	int i, n;
+
+	if (!map)
+		return NULL;
+
+	dim = isl_dim_unwrap(isl_dim_domain(isl_map_get_dim(map)));
+	if (!dim)
+		return NULL;
+	n = isl_dim_size(dim, isl_dim_in);
+	isl_dim_free(dim);
+
+	ctx = isl_map_get_ctx(map);
+	info = isl_alloc_type(ctx, struct isl_sched_info);
+	if (!info)
+		return NULL;
+	info->is_cst = isl_alloc_array(ctx, int, n);
+	info->cst = isl_vec_alloc(ctx, n);
+	if (!info->is_cst || !info->cst)
+		goto error;
+
+	for (i = 0; i < n; ++i)
+		info->is_cst[i] = isl_map_fast_is_fixed(map, isl_dim_in, i,
+							&info->cst->el[i]);
+
+	return info;
+error:
+	sched_info_free(info);
+	return NULL;
+}
+
 struct isl_compute_flow_data {
 	isl_union_map *must_source;
 	isl_union_map *may_source;
@@ -925,8 +986,8 @@ struct isl_compute_flow_data {
 	int count;
 	int must;
 	isl_dim *dim;
-	isl_dim *sink_dim;
-	isl_dim **source_dim;
+	struct isl_sched_info *sink_info;
+	struct isl_sched_info **source_info;
 	isl_access_info *accesses;
 };
 
@@ -957,6 +1018,7 @@ static int collect_matching_array(__isl_take isl_map *map, void *user)
 {
 	int eq;
 	isl_dim *dim;
+	struct isl_sched_info *info;
 	struct isl_compute_flow_data *data;
 
 	data = (struct isl_compute_flow_data *)user;
@@ -974,11 +1036,11 @@ static int collect_matching_array(__isl_take isl_map *map, void *user)
 		return 0;
 	}
 
-	dim = isl_dim_unwrap(isl_dim_domain(isl_map_get_dim(map)));
-	data->source_dim[data->count] = dim;
+	info = sched_info_alloc(map);
+	data->source_info[data->count] = info;
 
 	data->accesses = isl_access_info_add_source(data->accesses,
-						    map, data->must, dim);
+						    map, data->must, info);
 
 	data->count++;
 
@@ -988,17 +1050,40 @@ error:
 	return -1;
 }
 
+/* Determine the shared nesting level and the "textual order" of
+ * the given accesses.
+ *
+ * We first determine the minimal schedule dimension for both accesses.
+ *
+ * If among those dimensions, we can find one where both have a fixed
+ * value and if moreover those values are different, then the previous
+ * dimension is the last shared nesting level and the textual order
+ * is determined based on the order of the fixed values.
+ * If no such fixed values can be found, then we seet the shared
+ * nesting level to the minimal schedule dimension, with no textual ordering.
+ */
 static int before(void *first, void *second)
 {
-	isl_dim *dim1 = first;
-	isl_dim *dim2 = second;
+	struct isl_sched_info *info1 = first;
+	struct isl_sched_info *info2 = second;
 	int n1, n2;
+	int i;
 
-	n1 = isl_dim_size(dim1, isl_dim_in);
-	n2 = isl_dim_size(dim2, isl_dim_in);
+	n1 = info1->cst->size;
+	n2 = info2->cst->size;
 
 	if (n2 < n1)
 		n1 = n2;
+
+	for (i = 0; i < n1; ++i) {
+		if (!info1->is_cst[i])
+			continue;
+		if (!info2->is_cst[i])
+			continue;
+		if (isl_int_eq(info1->cst->el[i], info2->cst->el[i]))
+			continue;
+		return 2 * i + isl_int_lt(info1->cst->el[i], info2->cst->el[i]);
+	}
 
 	return 2 * n1;
 }
@@ -1019,8 +1104,8 @@ static int compute_flow(__isl_take isl_map *map, void *user)
 	ctx = isl_map_get_ctx(map);
 
 	data->accesses = NULL;
-	data->sink_dim = NULL;
-	data->source_dim = NULL;
+	data->sink_info = NULL;
+	data->source_info = NULL;
 	data->count = 0;
 	data->dim = isl_dim_range(isl_map_get_dim(map));
 
@@ -1031,11 +1116,14 @@ static int compute_flow(__isl_take isl_map *map, void *user)
 					&count_matching_array, data) < 0)
 		goto error;
 
-	data->sink_dim = isl_dim_unwrap(isl_dim_domain(isl_map_get_dim(map)));
-	data->source_dim = isl_calloc_array(ctx, isl_dim *, data->count);
+	data->sink_info = sched_info_alloc(map);
+	data->source_info = isl_calloc_array(ctx, struct isl_sched_info *,
+					     data->count);
 
 	data->accesses = isl_access_info_alloc(isl_map_copy(map),
-				data->sink_dim, &before, data->count);
+				data->sink_info, &before, data->count);
+	if (!data->sink_info || !data->source_info || !data->accesses)
+		goto error;
 	data->count = 0;
 	data->must = 1;
 	if (isl_union_map_foreach_map(data->must_source,
@@ -1068,11 +1156,11 @@ static int compute_flow(__isl_take isl_map *map, void *user)
 
 	isl_flow_free(flow);
 
-	isl_dim_free(data->sink_dim);
-	if (data->source_dim) {
+	sched_info_free(data->sink_info);
+	if (data->source_info) {
 		for (i = 0; i < data->count; ++i)
-			isl_dim_free(data->source_dim[i]);
-		free(data->source_dim);
+			sched_info_free(data->source_info[i]);
+		free(data->source_info);
 	}
 	isl_dim_free(data->dim);
 	isl_map_free(map);
@@ -1080,11 +1168,11 @@ static int compute_flow(__isl_take isl_map *map, void *user)
 	return 0;
 error:
 	isl_access_info_free(data->accesses);
-	isl_dim_free(data->sink_dim);
-	if (data->source_dim) {
+	sched_info_free(data->sink_info);
+	if (data->source_info) {
 		for (i = 0; i < data->count; ++i)
-			isl_dim_free(data->source_dim[i]);
-		free(data->source_dim);
+			sched_info_free(data->source_info[i]);
+		free(data->source_info);
 	}
 	isl_dim_free(data->dim);
 	isl_map_free(map);
