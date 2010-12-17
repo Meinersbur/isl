@@ -78,7 +78,7 @@ static int scan_0D(struct isl_basic_set *bset,
 	return callback->add(callback, sample);
 }
 
-/* Look for all integer points in "bset", which is assumed to be unbounded,
+/* Look for all integer points in "bset", which is assumed to be bounded,
  * and call callback->add on each of them.
  *
  * We first compute a reduced basis for the set and then scan
