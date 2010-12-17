@@ -187,6 +187,8 @@ static int scan_one(struct isl_scan_callback *callback,
 	struct isl_scan_pip *sp = (struct isl_scan_pip *)callback;
 	struct isl_vec *opt;
 
+	sp->n--;
+
 	opt = opt_at(isl_basic_set_copy(sp->bset), isl_vec_copy(sample), sp->max);
 	assert(opt);
 
@@ -206,62 +208,50 @@ static int scan_one(struct isl_scan_callback *callback,
 		isl_set_free(opt_set);
 	}
 
-	if (!(sp->n++ % sp->stride)) {
+	if (!(sp->n % sp->stride)) {
 		printf("o");
 		fflush(stdout);
 	}
 
-	return 0;
-}
-
-struct isl_scan_count {
-	struct isl_scan_callback callback;
-	int n;
-};
-
-static int count_one(struct isl_scan_callback *callback,
-	__isl_take isl_vec *sample)
-{
-	struct isl_scan_count *sc = (struct isl_scan_count *)callback;
-	isl_vec_free(sample);
-
-	sc->n++;
-
-	return 0;
+	return sp->n >= 1 ? 0 : -1;
 }
 
 static void check_solution(isl_basic_set *bset, isl_basic_set *context,
 	isl_set *sol, isl_set *empty, int max)
 {
-	struct isl_scan_count sc;
 	struct isl_scan_pip sp;
-	int i;
+	isl_int count, count_max;
+	int i, n;
 	int r;
 
 	context = set_bounds(context);
 	context = isl_basic_set_underlying_set(context);
 
-	sc.callback.add = count_one;
-	sc.n = 0;
+	isl_int_init(count);
+	isl_int_init(count_max);
 
-	r = isl_basic_set_scan(isl_basic_set_copy(context), &sc.callback);
-	assert (r == 0);
+	isl_int_set_si(count_max, 2000);
+	r = isl_basic_set_count_upto(context, count_max, &count);
+	assert(r >= 0);
+	n = isl_int_get_si(count);
+
+	isl_int_clear(count_max);
+	isl_int_clear(count);
 
 	sp.callback.add = scan_one;
 	sp.bset = bset;
 	sp.sol = sol;
 	sp.empty = empty;
-	sp.n = 0;
-	sp.stride = sc.n > 70 ? 1 + (sc.n + 1)/70 : 1;
+	sp.n = n;
+	sp.stride = n > 70 ? 1 + (n + 1)/70 : 1;
 	sp.max = max;
 
-	for (i = 0; i < sc.n; i += sp.stride)
+	for (i = 0; i < n; i += sp.stride)
 		printf(".");
 	printf("\r");
 	fflush(stdout);
 
-	r = isl_basic_set_scan(context, &sp.callback);
-	assert(r == 0);
+	isl_basic_set_scan(context, &sp.callback);
 
 	printf("\n");
 
