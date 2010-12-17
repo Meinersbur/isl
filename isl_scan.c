@@ -242,6 +242,33 @@ error:
 	return -1;
 }
 
+int isl_basic_set_count_upto(__isl_keep isl_basic_set *bset,
+	isl_int max, isl_int *count)
+{
+	struct isl_counter cnt = { { &increment_counter } };
+
+	if (!bset)
+		return -1;
+
+	isl_int_init(cnt.count);
+	isl_int_init(cnt.max);
+
+	isl_int_set_si(cnt.count, 0);
+	isl_int_set(cnt.max, max);
+	if (isl_basic_set_scan(isl_basic_set_copy(bset), &cnt.callback) < 0 &&
+	    isl_int_lt(cnt.count, cnt.max))
+		goto error;
+
+	isl_int_set(*count, cnt.count);
+	isl_int_clear(cnt.max);
+	isl_int_clear(cnt.count);
+
+	return 0;
+error:
+	isl_int_clear(cnt.count);
+	return -1;
+}
+
 int isl_set_count_upto(__isl_keep isl_set *set, isl_int max, isl_int *count)
 {
 	struct isl_counter cnt = { { &increment_counter } };
