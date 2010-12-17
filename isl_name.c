@@ -24,6 +24,9 @@ struct isl_name *isl_name_alloc(struct isl_ctx *ctx, const char *s)
 	name->ref = 1;
 	name->name = copy;
 
+	name->hash = isl_hash_init();
+	name->hash = isl_hash_string(name->hash, s);
+
 	return name;
 error:
 	free((char *)copy);
@@ -68,6 +71,14 @@ struct isl_name *isl_name_copy(struct isl_ctx *ctx, struct isl_name *name)
 static int isl_name_eq(const void *entry, const void *name)
 {
 	return entry == name;
+}
+
+uint32_t isl_hash_name(uint32_t hash, struct isl_name *name)
+{
+	if (name)
+		isl_hash_hash(hash, name->hash);
+
+	return hash;
 }
 
 void isl_name_free(struct isl_ctx *ctx, struct isl_name *name)

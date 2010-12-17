@@ -20,11 +20,13 @@ struct isl_name {
 	int ref;
 
 	const char *name;
+	uint32_t hash;
 };
 
 struct isl_name *isl_name_alloc(struct isl_ctx *ctx, const char *name);
 struct isl_name *isl_name_get(struct isl_ctx *ctx, const char *name);
 struct isl_name *isl_name_copy(struct isl_ctx *ctx, struct isl_name *name);
+uint32_t isl_hash_name(uint32_t hash, struct isl_name *name);
 void isl_name_free(struct isl_ctx *ctx, struct isl_name *name);
 
 #if defined(__cplusplus)

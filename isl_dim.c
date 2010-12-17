@@ -988,13 +988,13 @@ static uint32_t isl_hash_dim(uint32_t hash, __isl_keep isl_dim *dim)
 
 	for (i = 0; i < dim->nparam; ++i) {
 		name = get_name(dim, isl_dim_param, i);
-		hash = isl_hash_builtin(hash, name);
+		hash = isl_hash_name(hash, name);
 	}
 
 	name = tuple_name(dim, isl_dim_in);
-	hash = isl_hash_builtin(hash, name);
+	hash = isl_hash_name(hash, name);
 	name = tuple_name(dim, isl_dim_out);
-	hash = isl_hash_builtin(hash, name);
+	hash = isl_hash_name(hash, name);
 
 	hash = isl_hash_dim(hash, dim->nested[0]);
 	hash = isl_hash_dim(hash, dim->nested[1]);
