@@ -39,7 +39,7 @@
  * used in the tableau, but instead it its represented by another
  * variable x' = M + x, where M is an arbitrarily large (positive)
  * value.  x' is therefore always non-negative, whatever the value of x.
- * Taking as initial smaple value x' = 0 corresponds to x = -M,
+ * Taking as initial sample value x' = 0 corresponds to x = -M,
  * which is always smaller than any possible value of x.
  *
  * The big parameter trick is used in the main tableau and
@@ -1073,7 +1073,7 @@ error:
 }
 
 /* Return the first known violated constraint, i.e., a non-negative
- * contraint that currently has an either obviously negative value
+ * constraint that currently has an either obviously negative value
  * or a previously determined to be negative value.
  *
  * If any constraint has a negative coefficient for the big parameter,
@@ -1111,7 +1111,7 @@ static int first_neg(struct isl_tab *tab)
 
 /* Resolve all known or obviously violated constraints through pivoting.
  * In particular, as long as we can find any violated constraint, we
- * look for a pivoting column that would result in the lexicographicallly
+ * look for a pivoting column that would result in the lexicographically
  * smallest increment in the sample point.  If there is no such column
  * then the tableau is infeasible.
  */
@@ -1715,7 +1715,7 @@ static int tab_has_valid_sample(struct isl_tab *tab, isl_int *ineq, int eq)
 	return i < tab->n_sample;
 }
 
-/* Add a div specifed by "div" to the tableau "tab" and return
+/* Add a div specified by "div" to the tableau "tab" and return
  * 1 if the div is obviously non-negative.
  */
 static int context_tab_add_div(struct isl_tab *tab, struct isl_vec *div,
@@ -3575,7 +3575,7 @@ error:
  * coefficient are integral, then there is nothing that can be done
  * and the tableau has no integral solution.
  * If, on the other hand, one or more of the other columns have rational
- * coeffcients, but the parameter coefficients are all integral, then
+ * coefficients, but the parameter coefficients are all integral, then
  * we can perform a regular (non-parametric) cut.
  * Finally, if there is any parameter coefficient that is non-integral,
  * then we need to involve the context tableau.  There are two cases here.
@@ -3968,7 +3968,7 @@ static void sol_for_free_wrap(struct isl_sol *sol)
  *
  * Instead of constructing a basic map, this function calls a user
  * defined function with the current context as a basic set and
- * an affine matrix reprenting the relation between the input and output.
+ * an affine matrix representing the relation between the input and output.
  * The number of rows in this matrix is equal to one plus the number
  * of output variables.  The number of columns is equal to one plus
  * the total dimension of the context, i.e., the number of parameters,
