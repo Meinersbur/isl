@@ -1189,3 +1189,27 @@ error:
 	isl_dim_free(dst);
 	return NULL;
 }
+
+/* Given a dimension specification "dim" of a set, create a dimension
+ * specification for the lift of the set.  In particular, the result
+ * is of the form [dim -> local[..]], with n_local variables in the
+ * range of the wrapped map.
+ */
+__isl_give isl_dim *isl_dim_lift(__isl_take isl_dim *dim, unsigned n_local)
+{
+	isl_dim *local_dim;
+
+	if (!dim)
+		return NULL;
+
+	local_dim = isl_dim_dup(dim);
+	local_dim = isl_dim_drop(local_dim, isl_dim_set, 0, dim->n_out);
+	local_dim = isl_dim_add(local_dim, isl_dim_set, n_local);
+	local_dim = isl_dim_set_tuple_name(local_dim, isl_dim_set, "local");
+	dim = isl_dim_join(isl_dim_from_domain(dim),
+			    isl_dim_from_range(local_dim));
+	dim = isl_dim_wrap(dim);
+	dim = isl_dim_set_tuple_name(dim, isl_dim_set, "lifted");
+
+	return dim;
+}

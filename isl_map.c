@@ -7390,15 +7390,12 @@ __isl_give isl_basic_set *isl_basic_set_lift(__isl_take isl_basic_set *bset)
 	if (!bset)
 		return NULL;
 
-	if (bset->n_div == 0)
-		return bset;
-
 	bset = isl_basic_set_cow(bset);
 	if (!bset)
 		return NULL;
 
 	dim = isl_basic_set_get_dim(bset);
-	dim = isl_dim_add(dim, isl_dim_set, bset->n_div);
+	dim = isl_dim_lift(dim, bset->n_div);
 	if (!dim)
 		goto error;
 	isl_dim_free(bset->dim);
@@ -7424,8 +7421,6 @@ __isl_give isl_set *isl_set_lift(__isl_take isl_set *set)
 
 	if (!set)
 		return NULL;
-	if (set->n == 0 || set->p[0]->n_div == 0)
-		return set;
 
 	set = isl_set_cow(set);
 	if (!set)
@@ -7433,7 +7428,7 @@ __isl_give isl_set *isl_set_lift(__isl_take isl_set *set)
 
 	n_div = set->p[0]->n_div;
 	dim = isl_set_get_dim(set);
-	dim = isl_dim_add(dim, isl_dim_set, n_div);
+	dim = isl_dim_lift(dim, n_div);
 	if (!dim)
 		goto error;
 	isl_dim_free(set->dim);
