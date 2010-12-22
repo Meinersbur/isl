@@ -1521,6 +1521,21 @@ then the name of the space is also removed.
 The function above constructs a relation
 that maps the input set to a flattened version of the set.
 
+=item * Lifting
+
+Lift the input set to a space with extra dimensions corresponding
+to the existentially quantified variables in the input.
+In particular, the result lives in a wrapped map where the domain
+is the original space and the range corresponds to the original
+existentially quantified variables.
+
+	__isl_give isl_basic_set *isl_basic_set_lift(
+		__isl_take isl_basic_set *bset);
+	__isl_give isl_set *isl_set_lift(
+		__isl_take isl_set *set);
+	__isl_give isl_union_set *isl_union_set_lift(
+		__isl_take isl_union_set *uset);
+
 =item * Internal Product
 
 	__isl_give isl_basic_map *isl_basic_map_zip(

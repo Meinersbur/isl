@@ -1484,3 +1484,18 @@ __isl_give isl_union_map *isl_union_map_zip(__isl_take isl_union_map *umap)
 {
 	return cond_un_op(umap, &zip_entry);
 }
+
+static int lift_entry(void **entry, void *user)
+{
+	isl_set *set = *entry;
+	isl_union_set **res = user;
+
+	*res = isl_union_set_add_set(*res, isl_set_lift(isl_set_copy(set)));
+
+	return 0;
+}
+
+__isl_give isl_union_set *isl_union_set_lift(__isl_take isl_union_set *uset)
+{
+	return cond_un_op(uset, &lift_entry);
+}

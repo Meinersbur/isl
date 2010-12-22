@@ -66,6 +66,8 @@ int isl_union_set_foreach_point(__isl_keep isl_union_set *uset,
 
 __isl_give isl_basic_set *isl_union_set_sample(__isl_take isl_union_set *uset);
 
+__isl_give isl_union_set *isl_union_set_lift(__isl_take isl_union_set *uset);
+
 __isl_give isl_union_map *isl_union_set_lex_lt_union_set(
 	__isl_take isl_union_set *uset1, __isl_take isl_union_set *uset2);
 __isl_give isl_union_map *isl_union_set_lex_le_union_set(
