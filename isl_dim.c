@@ -345,6 +345,7 @@ struct isl_dim *isl_dim_set_name(struct isl_dim *dim,
 		return NULL;
 	if (!name_ok(dim->ctx, s))
 		goto error;
+	isl_name_free(dim->ctx, get_name(dim, type, pos));
 	name = isl_name_get(dim->ctx, s);
 	if (!name)
 		goto error;
