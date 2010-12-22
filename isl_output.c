@@ -499,6 +499,7 @@ static __isl_give isl_printer *print_constraints(__isl_keep isl_basic_map *bmap,
 
 	return p;
 error:
+	isl_vec_free(c);
 	isl_printer_free(p);
 	return NULL;
 }
