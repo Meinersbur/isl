@@ -1442,6 +1442,32 @@ that contains the whole input set or relation.
 In case of union sets and relations, the polyhedral hull is computed
 per space.
 
+=item * Dual
+
+The following functions compute either the set of (rational) coefficient
+values of valid constraints for the given set or the set of (rational)
+values satisfying the constraints with coefficients from the given set.
+Internally, these two sets of functions perform essentially the
+same operations, except that the set of coefficients is assumed to
+be a cone, while the set of values may be any polyhedron.
+The current implementation is based on the Farkas lemma and
+Fourier-Motzkin elimination, but this may change or be made optional
+in future.  In particular, future implementations may use different
+dualization algorithms or skip the elimination step.
+
+	__isl_give isl_basic_set *isl_basic_set_coefficients(
+		__isl_take isl_basic_set *bset);
+	__isl_give isl_basic_set *isl_set_coefficients(
+		__isl_take isl_set *set);
+	__isl_give isl_union_set *isl_union_set_coefficients(
+		__isl_take isl_union_set *bset);
+	__isl_give isl_basic_set *isl_basic_set_solutions(
+		__isl_take isl_basic_set *bset);
+	__isl_give isl_basic_set *isl_set_solutions(
+		__isl_take isl_set *set);
+	__isl_give isl_union_set *isl_union_set_solutions(
+		__isl_take isl_union_set *bset);
+
 =item * Power
 
 	__isl_give isl_map *isl_map_power(__isl_take isl_map *map,

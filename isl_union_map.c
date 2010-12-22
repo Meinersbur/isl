@@ -1499,3 +1499,86 @@ __isl_give isl_union_set *isl_union_set_lift(__isl_take isl_union_set *uset)
 {
 	return cond_un_op(uset, &lift_entry);
 }
+
+static int coefficients_entry(void **entry, void *user)
+{
+	isl_set *set = *entry;
+	isl_union_set **res = user;
+
+	set = isl_set_copy(set);
+	set = isl_set_from_basic_set(isl_set_coefficients(set));
+	*res = isl_union_set_add_set(*res, set);
+
+	return 0;
+}
+
+__isl_give isl_union_set *isl_union_set_coefficients(
+	__isl_take isl_union_set *uset)
+{
+	isl_ctx *ctx;
+	isl_dim *dim;
+	isl_union_set *res;
+
+	if (!uset)
+		return NULL;
+
+	ctx = isl_union_set_get_ctx(uset);
+	dim = isl_dim_set_alloc(ctx, 0, 0);
+	res = isl_union_map_alloc(dim, uset->table.n);
+	if (isl_hash_table_foreach(uset->dim->ctx, &uset->table,
+				   &coefficients_entry, &res) < 0)
+		goto error;
+
+	isl_union_set_free(uset);
+	return res;
+error:
+	isl_union_set_free(uset);
+	isl_union_set_free(res);
+	return NULL;
+}
+
+static int solutions_entry(void **entry, void *user)
+{
+	isl_set *set = *entry;
+	isl_union_set **res = user;
+
+	set = isl_set_copy(set);
+	set = isl_set_from_basic_set(isl_set_solutions(set));
+	if (!*res)
+		*res = isl_union_set_from_set(set);
+	else
+		*res = isl_union_set_add_set(*res, set);
+
+	if (!*res)
+		return -1;
+
+	return 0;
+}
+
+__isl_give isl_union_set *isl_union_set_solutions(
+	__isl_take isl_union_set *uset)
+{
+	isl_ctx *ctx;
+	isl_dim *dim;
+	isl_union_set *res = NULL;
+
+	if (!uset)
+		return NULL;
+
+	if (uset->table.n == 0) {
+		res = isl_union_set_empty(isl_union_set_get_dim(uset));
+		isl_union_set_free(uset);
+		return res;
+	}
+
+	if (isl_hash_table_foreach(uset->dim->ctx, &uset->table,
+				   &solutions_entry, &res) < 0)
+		goto error;
+
+	isl_union_set_free(uset);
+	return res;
+error:
+	isl_union_set_free(uset);
+	isl_union_set_free(res);
+	return NULL;
+}
