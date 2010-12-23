@@ -664,7 +664,7 @@ static int next_is_tuple(struct isl_stream *s)
 		isl_stream_push_token(s, tok);
 		return 1;
 	}
-	if (tok->type != ISL_TOKEN_IDENT) {
+	if (tok->type != ISL_TOKEN_IDENT && !tok->is_keyword) {
 		isl_stream_push_token(s, tok);
 		return 0;
 	}
@@ -700,7 +700,7 @@ static __isl_give isl_basic_map *read_tuple(struct isl_stream *s,
 	char *name = NULL;
 
 	tok = isl_stream_next_token(s);
-	if (tok && tok->type == ISL_TOKEN_IDENT) {
+	if (tok && (tok->type == ISL_TOKEN_IDENT || tok->is_keyword)) {
 		name = strdup(tok->u.s);
 		if (!name)
 			goto error;
