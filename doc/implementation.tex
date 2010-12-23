@@ -1108,6 +1108,113 @@ A_1 & \vec c_1
 \right] \vec x' \,\}$ and therefore $\Delta'_i(\vec s)$ is
 a Hilbert basis of this cone \shortcite[Theorem~16.4]{Schrijver1986}.
 
+Note however that, as pointed out by \shortciteN{DeSmet2010personal},
+if there \emph{are} any mixed constraints, then the above procedure may
+not compute the most accurate affine approximation of
+$k \, \Delta_i(\vec s)$ with $k \ge 1$.
+In particular, we only consider the negative mixed constraints that
+happen to appear in the description of $\Delta_i(\vec s)$, while we
+should instead consider \emph{all} valid such constraints.
+It is also sufficient to consider those constraints because any
+constraint that is valid for $k \, \Delta_i(\vec s)$ is also
+valid for $1 \, \Delta_i(\vec s) = \Delta_i(\vec s)$.
+Take therefore any constraint
+$\spv a x + \spv b s + c \ge 0$ valid for $\Delta_i(\vec s)$.
+This constraint is also valid for $k \, \Delta_i(\vec s)$ iff
+$k \, \spv a x + \spv b s + c \ge 0$.
+If $\spv b s + c$ can attain any positive value, then $\spv a x$
+may be negative for some elements of $\Delta_i(\vec s)$.
+We then have $k \, \spv a x < \spv a x$ for $k > 1$ and so the constraint
+is not valid for $k \, \Delta_i(\vec s)$.
+We therefore need to impose $\spv b s + c \le 0$ for all values
+of $\vec s$ such that $\Delta_i(\vec s)$ is non-empty, i.e.,
+$\vec b$ and $c$ need to be such that $- \spv b s - c \ge 0$ is a valid
+constraint of $\Delta_i(\vec s)$.  That is, $(\vec b, c)$ are the opposites
+of the coefficients of a valid constraint of $\Delta_i(\vec s)$.
+The approximation of $k \, \Delta_i(\vec s)$ can therefore be obtained
+using three applications of Farkas' lemma.  The first obtains the coefficients
+of constraints valid for $\Delta_i(\vec s)$.  The second obtains
+the coefficients of constraints valid for the projection of $\Delta_i(\vec s)$
+onto the parameters.  The opposite of the second set is then computed
+and intersected with the first set.  The result is the set of coefficients
+of constraints valid for $k \, \Delta_i(\vec s)$.  A final application
+of Farkas' lemma is needed to obtain the approximation of
+$k \, \Delta_i(\vec s)$ itself.
+
+\begin{example}
+Consider the relation
+$$
+n \to \{\, (x, y) \to (1 + x, 1 - n + y) \mid n \ge 2 \,\}
+.
+$$
+The difference set of this relation is
+$$
+\Delta = n \to \{\, (1, 1 - n) \mid n \ge 2 \,\}
+.
+$$
+Using our approach, we would only consider the mixed constraint
+$y - 1 + n \ge 0$, leading to the following approximation of the
+transitive closure:
+$$
+n \to \{\, (x, y) \to (o_0, o_1) \mid n \ge 2 \wedge o_1 \le 1 - n + y \wedge o_0 \ge 1 + x \,\}
+.
+$$
+If, instead, we apply Farkas's lemma to $\Delta$, i.e.,
+\begin{verbatim}
+D := [n] -> { [1, 1 - n] : n >= 2 };
+CD := coefficients D;
+CD;
+\end{verbatim}
+we obtain
+\begin{verbatim}
+{ rat: coefficients[[c_cst, c_n] -> [i2, i3]] : i3 <= c_n and
+  i3 <= c_cst + 2c_n + i2 }
+\end{verbatim}
+The pure-parametric constraints valid for $\Delta$,
+\begin{verbatim}
+P := { [a,b] -> [] }(D);
+CP := coefficients P;
+CP;
+\end{verbatim}
+are
+\begin{verbatim}
+{ rat: coefficients[[c_cst, c_n] -> []] : c_n >= 0 and 2c_n >= -c_cst }
+\end{verbatim}
+Negating these coefficients and intersecting with \verb+CD+,
+\begin{verbatim}
+NCP := { rat: coefficients[[a,b] -> []]
+              -> coefficients[[-a,-b] -> []] }(CP);
+CK := wrap((unwrap CD) * (dom (unwrap NCP)));
+CK;
+\end{verbatim}
+we obtain
+\begin{verbatim}
+{ rat: [[c_cst, c_n] -> [i2, i3]] : i3 <= c_n and
+  i3 <= c_cst + 2c_n + i2 and c_n <= 0 and 2c_n <= -c_cst }
+\end{verbatim}
+The approximation for $k\,\Delta$,
+\begin{verbatim}
+K := solutions CK;
+K;
+\end{verbatim}
+is then
+\begin{verbatim}
+[n] -> { rat: [i0, i1] : i1 <= -i0 and i0 >= 1 and i1 <= 2 - n - i0 }
+\end{verbatim}
+Finally, the computed approximation for $R^+$,
+\begin{verbatim}
+T := unwrap({ [dx,dy] -> [[x,y] -> [x+dx,y+dy]] }(K));
+R := [n] -> { [x,y] -> [x+1,y+1-n] : n >= 2 };
+T := T * ((dom R) -> (ran R));
+T;
+\end{verbatim}
+is
+\begin{verbatim}
+[n] -> { [x, y] -> [o0, o1] : o1 <= x + y - o0 and
+         o0 >= 1 + x and o1 <= 2 - n + x + y - o0 and n >= 2 }
+\end{verbatim}
+\end{example}
+
 Existentially quantified variables can be handled by
 classifying them into variables that are uniquely
 determined by the parameters, variables that are independent
