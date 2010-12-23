@@ -1,3 +1,15 @@
+version: 0.05
+date: Thu Dec 23 17:03:14 CET 2010
+changes:
+	- rename header files from isl_header.h to isl/header.h
+	- add higher level interface for dependence analysis
+	- improved argument parsing
+	- optionally triangulate domains during Bernstein expansion
+	- support extended PolyLib format
+	- hide internal structure of some data types
+	- improved coalescing
+	- add simple symmetry detection in parametric integer programming
+---
 version: 0.04
 date: Fri Sep 10 12:57:50 CEST 2010
 changes:
