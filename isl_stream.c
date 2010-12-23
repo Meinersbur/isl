@@ -73,6 +73,7 @@ static struct isl_token *isl_token_new(struct isl_ctx *ctx,
 	tok->line = line;
 	tok->col = col;
 	tok->on_new_line = on_new_line;
+	tok->is_keyword = 0;
 	return tok;
 }
 
@@ -97,6 +98,8 @@ void isl_stream_error(struct isl_stream *s, struct isl_token *tok, char *msg)
 			fprintf(stderr, "got '%c'\n", tok->type);
 		else if (tok->type == ISL_TOKEN_IDENT)
 			fprintf(stderr, "got ident '%s'\n", tok->u.s);
+		else if (tok->is_keyword)
+			fprintf(stderr, "got keyword '%s'\n", tok->u.s);
 		else
 			fprintf(stderr, "got token type %d\n", tok->type);
 	}
@@ -356,8 +359,11 @@ static struct isl_token *next_token(struct isl_stream *s, int same_line)
 			isl_stream_ungetc(s, c);
 		isl_stream_push_char(s, '\0');
 		tok->type = check_keywords(s);
-		if (tok->type == ISL_TOKEN_IDENT)
-			tok->u.s = strdup(s->buffer);
+		if (tok->type != ISL_TOKEN_IDENT)
+			tok->is_keyword = 1;
+		tok->u.s = strdup(s->buffer);
+		if (!tok->u.s)
+			goto error;
 		return tok;
 	}
 	if (c == '"') {

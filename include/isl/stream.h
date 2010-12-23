@@ -35,6 +35,7 @@ struct isl_token {
 	enum isl_token_type  type;
 
 	unsigned int on_new_line : 1;
+	unsigned is_keyword : 1;
 	int line;
 	int col;
 
