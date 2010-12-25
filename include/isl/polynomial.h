@@ -117,6 +117,8 @@ __isl_give isl_qpolynomial *isl_qpolynomial_eval(
 __isl_give isl_qpolynomial *isl_qpolynomial_from_constraint(
 	__isl_take isl_constraint *c, enum isl_dim_type type, unsigned pos);
 __isl_give isl_qpolynomial *isl_qpolynomial_from_term(__isl_take isl_term *term);
+__isl_give isl_basic_map *isl_basic_map_from_qpolynomial(
+	__isl_take isl_qpolynomial *qp);
 
 __isl_give isl_printer *isl_printer_print_qpolynomial(
 	__isl_take isl_printer *p, __isl_keep isl_qpolynomial *qp);

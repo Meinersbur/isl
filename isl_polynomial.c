@@ -1684,13 +1684,12 @@ __isl_give isl_vec *isl_qpolynomial_extract_affine(
 	if (!qp)
 		return NULL;
 
-	isl_assert(qp->div->ctx, qp->div->n_row == 0, return NULL);
 	d = isl_dim_total(qp->dim);
-	aff = isl_vec_alloc(qp->div->ctx, 2 + d);
+	aff = isl_vec_alloc(qp->div->ctx, 2 + d + qp->div->n_row);
 	if (!aff)
 		return NULL;
 
-	isl_seq_clr(aff->el + 1, 1 + d);
+	isl_seq_clr(aff->el + 1, 1 + d + qp->div->n_row);
 	isl_int_set_si(aff->el[0], 1);
 
 	if (isl_upoly_update_affine(qp->upoly, aff) < 0)
@@ -4508,5 +4507,57 @@ __isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_to_polynomial(
 	return upwqp;
 error:
 	isl_union_pw_qpolynomial_free(upwqp);
+	return NULL;
+}
+
+__isl_give isl_basic_map *isl_basic_map_from_qpolynomial(
+	__isl_take isl_qpolynomial *qp)
+{
+	int i, k;
+	isl_dim *dim;
+	isl_vec *aff = NULL;
+	isl_basic_map *bmap = NULL;
+	unsigned pos;
+	unsigned n_div;
+
+	if (!qp)
+		return NULL;
+	if (!isl_upoly_is_affine(qp->upoly))
+		isl_die(qp->dim->ctx, isl_error_invalid,
+			"input quasi-polynomial not affine", goto error);
+	aff = isl_qpolynomial_extract_affine(qp);
+	if (!aff)
+		goto error;
+	dim = isl_qpolynomial_get_dim(qp);
+	dim = isl_dim_from_domain(dim);
+	pos = 1 + isl_dim_offset(dim, isl_dim_out);
+	dim = isl_dim_add(dim, isl_dim_out, 1);
+	n_div = qp->div->n_row;
+	bmap = isl_basic_map_alloc_dim(dim, n_div, 1, 2 * n_div);
+
+	for (i = 0; i < n_div; ++i) {
+		k = isl_basic_map_alloc_div(bmap);
+		if (k < 0)
+			goto error;
+		isl_seq_cpy(bmap->div[k], qp->div->row[i], qp->div->n_col);
+		isl_int_set_si(bmap->div[k][qp->div->n_col], 0);
+		if (isl_basic_map_add_div_constraints(bmap, k) < 0)
+			goto error;
+	}
+	k = isl_basic_map_alloc_equality(bmap);
+	if (k < 0)
+		goto error;
+	isl_int_neg(bmap->eq[k][pos], aff->el[0]);
+	isl_seq_cpy(bmap->eq[k], aff->el + 1, pos);
+	isl_seq_cpy(bmap->eq[k] + pos + 1, aff->el + 1 + pos, n_div);
+
+	isl_vec_free(aff);
+	isl_qpolynomial_free(qp);
+	bmap = isl_basic_map_finalize(bmap);
+	return bmap;
+error:
+	isl_vec_free(aff);
+	isl_qpolynomial_free(qp);
+	isl_basic_map_free(bmap);
 	return NULL;
 }
