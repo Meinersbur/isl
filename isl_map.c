@@ -6933,7 +6933,8 @@ error:
 
 /* Return the Cartesian product of the basic sets in list (in the given order).
  */
-struct isl_basic_set *isl_basic_set_product(struct isl_basic_set_list *list)
+__isl_give isl_basic_set *isl_basic_set_list_product(
+	__isl_take struct isl_basic_set_list *list)
 {
 	int i;
 	unsigned dim;

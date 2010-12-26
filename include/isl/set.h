@@ -85,7 +85,8 @@ __isl_give isl_basic_set *isl_basic_set_remove_dims(
 struct isl_basic_set *isl_basic_set_simplify(struct isl_basic_set *bset);
 __isl_give isl_basic_set *isl_basic_set_detect_equalities(
 						__isl_take isl_basic_set *bset);
-struct isl_basic_set *isl_basic_set_product(struct isl_basic_set_list *list);
+__isl_give isl_basic_set *isl_basic_set_list_product(
+	__isl_take struct isl_basic_set_list *list);
 
 __isl_give isl_basic_set *isl_basic_set_read_from_file(isl_ctx *ctx,
 		FILE *input, int nparam);
