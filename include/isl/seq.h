@@ -14,6 +14,10 @@
 #include <isl/int.h>
 #include <isl/ctx.h>
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 /* Some common operations on sequences of isl_int's */
 
 void isl_seq_clr(isl_int *p, unsigned len);
@@ -45,5 +49,9 @@ int isl_seq_is_neg(isl_int *p1, isl_int *p2, unsigned len);
 
 uint32_t isl_seq_get_hash(isl_int *p, unsigned len);
 uint32_t isl_seq_get_hash_bits(isl_int *p, unsigned len, unsigned bits);
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif
