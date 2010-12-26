@@ -58,6 +58,8 @@ __isl_give isl_union_map *isl_union_map_intersect(
 	__isl_take isl_union_map *umap1, __isl_take isl_union_map *umap2);
 __isl_give isl_union_map *isl_union_map_product(__isl_take isl_union_map *umap1,
 	__isl_take isl_union_map *umap2);
+__isl_give isl_union_map *isl_union_map_range_product(
+	__isl_take isl_union_map *umap1, __isl_take isl_union_map *umap2);
 __isl_give isl_union_map *isl_union_map_gist(__isl_take isl_union_map *umap,
 	__isl_take isl_union_map *context);
 

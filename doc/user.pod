@@ -1599,6 +1599,15 @@ the same (number of) parameters.
 	__isl_give isl_union_set *isl_union_set_product(
 		__isl_take isl_union_set *uset1,
 		__isl_take isl_union_set *uset2);
+	__isl_give isl_basic_map *isl_basic_map_range_product(
+		__isl_take isl_basic_map *bmap1,
+		__isl_take isl_basic_map *bmap2);
+	__isl_give isl_map *isl_map_range_product(
+		__isl_take isl_map *map1,
+		__isl_take isl_map *map2);
+	__isl_give isl_union_map *isl_union_map_range_product(
+		__isl_take isl_union_map *umap1,
+		__isl_take isl_union_map *umap2);
 	__isl_give isl_map *isl_map_product(
 		__isl_take isl_map *map1,
 		__isl_take isl_map *map2);

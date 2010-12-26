@@ -7028,9 +7028,57 @@ error:
 	return NULL;
 }
 
-/* Given two maps A -> B and C -> D, construct a map [A -> C] -> [B -> D]
- */
-struct isl_map *isl_map_product(struct isl_map *map1, struct isl_map *map2)
+__isl_give isl_basic_map *isl_basic_map_range_product(
+	__isl_take isl_basic_map *bmap1, __isl_take isl_basic_map *bmap2)
+{
+	isl_dim *dim_result = NULL;
+	isl_basic_map *bmap;
+	unsigned in, out1, out2, nparam, total, pos;
+	struct isl_dim_map *dim_map1, *dim_map2;
+
+	if (!bmap1 || !bmap2)
+		goto error;
+
+	dim_result = isl_dim_range_product(isl_dim_copy(bmap1->dim),
+					   isl_dim_copy(bmap2->dim));
+
+	in = isl_basic_map_dim(bmap1, isl_dim_in);
+	out1 = isl_basic_map_n_out(bmap1);
+	out2 = isl_basic_map_n_out(bmap2);
+	nparam = isl_basic_map_n_param(bmap1);
+
+	total = nparam + in + out1 + out2 + bmap1->n_div + bmap2->n_div;
+	dim_map1 = isl_dim_map_alloc(bmap1->ctx, total);
+	dim_map2 = isl_dim_map_alloc(bmap1->ctx, total);
+	isl_dim_map_dim(dim_map1, bmap1->dim, isl_dim_param, pos = 0);
+	isl_dim_map_dim(dim_map2, bmap2->dim, isl_dim_param, pos = 0);
+	isl_dim_map_dim(dim_map1, bmap1->dim, isl_dim_in, pos += nparam);
+	isl_dim_map_dim(dim_map2, bmap2->dim, isl_dim_in, pos);
+	isl_dim_map_dim(dim_map1, bmap1->dim, isl_dim_out, pos += in);
+	isl_dim_map_dim(dim_map2, bmap2->dim, isl_dim_out, pos += out1);
+	isl_dim_map_div(dim_map1, bmap1, pos += out2);
+	isl_dim_map_div(dim_map2, bmap2, pos += bmap1->n_div);
+
+	bmap = isl_basic_map_alloc_dim(dim_result,
+			bmap1->n_div + bmap2->n_div,
+			bmap1->n_eq + bmap2->n_eq,
+			bmap1->n_ineq + bmap2->n_ineq);
+	bmap = add_constraints_dim_map(bmap, bmap1, dim_map1);
+	bmap = add_constraints_dim_map(bmap, bmap2, dim_map2);
+	bmap = isl_basic_map_simplify(bmap);
+	return isl_basic_map_finalize(bmap);
+error:
+	isl_basic_map_free(bmap1);
+	isl_basic_map_free(bmap2);
+	return NULL;
+}
+
+static __isl_give isl_map *map_product(__isl_take isl_map *map1,
+	__isl_take isl_map *map2,
+	__isl_give isl_dim *(*dim_product)(__isl_take isl_dim *left,
+					   __isl_take isl_dim *right),
+	__isl_give isl_basic_map *(*basic_map_product)(
+		__isl_take isl_basic_map *left, __isl_take isl_basic_map *right))
 {
 	unsigned flags = 0;
 	struct isl_map *result;
@@ -7046,17 +7094,16 @@ struct isl_map *isl_map_product(struct isl_map *map1, struct isl_map *map2)
 	    ISL_F_ISSET(map2, ISL_MAP_DISJOINT))
 		ISL_FL_SET(flags, ISL_MAP_DISJOINT);
 
-	result = isl_map_alloc_dim(isl_dim_product(isl_dim_copy(map1->dim),
-						   isl_dim_copy(map2->dim)),
+	result = isl_map_alloc_dim(dim_product(isl_dim_copy(map1->dim),
+					       isl_dim_copy(map2->dim)),
 				map1->n * map2->n, flags);
 	if (!result)
 		goto error;
 	for (i = 0; i < map1->n; ++i)
 		for (j = 0; j < map2->n; ++j) {
 			struct isl_basic_map *part;
-			part = isl_basic_map_product(
-				    isl_basic_map_copy(map1->p[i]),
-				    isl_basic_map_copy(map2->p[j]));
+			part = basic_map_product(isl_basic_map_copy(map1->p[i]),
+						 isl_basic_map_copy(map2->p[j]));
 			if (isl_basic_map_is_empty(part))
 				isl_basic_map_free(part);
 			else
@@ -7071,6 +7118,13 @@ error:
 	isl_map_free(map1);
 	isl_map_free(map2);
 	return NULL;
+}
+
+/* Given two maps A -> B and C -> D, construct a map [A -> C] -> [B -> D]
+ */
+struct isl_map *isl_map_product(struct isl_map *map1, struct isl_map *map2)
+{
+	return map_product(map1, map2, &isl_dim_product, &isl_basic_map_product);
 }
 
 /* Given two maps A -> B and C -> D, construct a map (A, C) -> (B, D)
@@ -7097,6 +7151,15 @@ __isl_give isl_set *isl_set_flat_product(__isl_take isl_set *set1,
 	__isl_take isl_set *set2)
 {
 	return (isl_set *)isl_map_flat_product((isl_map *)set1, (isl_map *)set2);
+}
+
+/* Given two maps A -> B and C -> D, construct a map (A * C) -> [B -> D]
+ */
+__isl_give isl_map *isl_map_range_product(__isl_take isl_map *map1,
+	__isl_take isl_map *map2)
+{
+	return map_product(map1, map2, &isl_dim_range_product,
+				&isl_basic_map_range_product);
 }
 
 uint32_t isl_basic_map_get_hash(__isl_keep isl_basic_map *bmap)

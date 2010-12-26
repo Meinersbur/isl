@@ -722,6 +722,33 @@ error:
 	return NULL;
 }
 
+__isl_give isl_dim *isl_dim_range_product(__isl_take isl_dim *left,
+	__isl_take isl_dim *right)
+{
+	isl_dim *dom, *ran1, *ran2, *nest;
+
+	if (!left || !right)
+		goto error;
+
+	isl_assert(left->ctx, match(left, isl_dim_param, right, isl_dim_param),
+			goto error);
+	if (!isl_dim_match(left, isl_dim_in, right, isl_dim_in))
+		isl_die(left->ctx, isl_error_invalid,
+			"domains need to match", goto error);
+
+	dom = isl_dim_domain(isl_dim_copy(left));
+
+	ran1 = isl_dim_range(left);
+	ran2 = isl_dim_range(right);
+	nest = isl_dim_wrap(isl_dim_join(isl_dim_reverse(ran1), ran2));
+
+	return isl_dim_join(isl_dim_reverse(dom), nest);
+error:
+	isl_dim_free(left);
+	isl_dim_free(right);
+	return NULL;
+}
+
 struct isl_dim *isl_dim_map(struct isl_dim *dim)
 {
 	struct isl_name **names = NULL;
