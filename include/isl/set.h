@@ -95,6 +95,7 @@ __isl_give isl_set *isl_set_read_from_file(isl_ctx *ctx,
 		FILE *input, int nparam);
 __isl_give isl_set *isl_set_read_from_str(isl_ctx *ctx,
 		const char *str, int nparam);
+void isl_basic_set_dump(__isl_keep isl_basic_set *bset);
 __isl_give isl_printer *isl_printer_print_basic_set(
 	__isl_take isl_printer *printer, __isl_keep isl_basic_set *bset);
 __isl_give isl_printer *isl_printer_print_set(__isl_take isl_printer *printer,

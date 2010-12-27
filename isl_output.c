@@ -1166,6 +1166,34 @@ void isl_map_print(__isl_keep isl_map *map, FILE *out, int indent,
 	isl_printer_free(printer);
 }
 
+void isl_basic_map_dump(__isl_keep isl_basic_map *bmap)
+{
+	isl_printer *printer;
+
+	if (!bmap)
+		return;
+
+	printer = isl_printer_to_file(isl_basic_map_get_ctx(bmap), stderr);
+	printer = isl_printer_print_basic_map(printer, bmap);
+	printer = isl_printer_end_line(printer);
+
+	isl_printer_free(printer);
+}
+
+void isl_basic_set_dump(__isl_keep isl_basic_set *bset)
+{
+	isl_printer *printer;
+
+	if (!bset)
+		return;
+
+	printer = isl_printer_to_file(isl_basic_set_get_ctx(bset), stderr);
+	printer = isl_printer_print_basic_set(printer, bset);
+	printer = isl_printer_end_line(printer);
+
+	isl_printer_free(printer);
+}
+
 void isl_union_map_dump(__isl_keep isl_union_map *umap)
 {
 	isl_printer *printer;
