@@ -206,7 +206,8 @@ int isl_basic_map_foreach_lexmin(__isl_keep isl_basic_map *bmap,
 		  void *user),
 	void *user);
 
-void isl_basic_map_dump(__isl_keep isl_basic_map *bmap, FILE *out, int indent);
+void isl_basic_map_print_internal(__isl_keep isl_basic_map *bmap,
+	FILE *out, int indent);
 
 struct isl_basic_map *isl_map_copy_basic_map(struct isl_map *map);
 __isl_give isl_map *isl_map_drop_basic_map(__isl_take isl_map *map,
@@ -357,7 +358,7 @@ __isl_give isl_map *isl_basic_map_compute_divs(__isl_take isl_basic_map *bmap);
 __isl_give isl_map *isl_map_compute_divs(__isl_take isl_map *map);
 __isl_give isl_map *isl_map_align_divs(__isl_take isl_map *map);
 
-void isl_map_dump(__isl_keep isl_map *map, FILE *out, int indent);
+void isl_map_print_internal(__isl_keep isl_map *map, FILE *out, int indent);
 
 int isl_map_fast_input_is_fixed(struct isl_map *map,
 		unsigned in, isl_int *val);

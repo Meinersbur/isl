@@ -1721,7 +1721,8 @@ static void dump(struct isl_basic_map *bmap, FILE *out, int indent)
 	}
 }
 
-void isl_basic_set_dump(struct isl_basic_set *bset, FILE *out, int indent)
+void isl_basic_set_print_internal(struct isl_basic_set *bset,
+	FILE *out, int indent)
 {
 	if (!bset) {
 		fprintf(out, "null basic set\n");
@@ -1735,7 +1736,8 @@ void isl_basic_set_dump(struct isl_basic_set *bset, FILE *out, int indent)
 	dump((struct isl_basic_map *)bset, out, indent);
 }
 
-void isl_basic_map_dump(struct isl_basic_map *bmap, FILE *out, int indent)
+void isl_basic_map_print_internal(struct isl_basic_map *bmap,
+	FILE *out, int indent)
 {
 	if (!bmap) {
 		fprintf(out, "null basic map\n");
@@ -1911,7 +1913,7 @@ void isl_set_free(struct isl_set *set)
 	free(set);
 }
 
-void isl_set_dump(struct isl_set *set, FILE *out, int indent)
+void isl_set_print_internal(struct isl_set *set, FILE *out, int indent)
 {
 	int i;
 
@@ -1927,11 +1929,11 @@ void isl_set_dump(struct isl_set *set, FILE *out, int indent)
 	for (i = 0; i < set->n; ++i) {
 		fprintf(out, "%*s", indent, "");
 		fprintf(out, "basic set %d:\n", i);
-		isl_basic_set_dump(set->p[i], out, indent+4);
+		isl_basic_set_print_internal(set->p[i], out, indent+4);
 	}
 }
 
-void isl_map_dump(struct isl_map *map, FILE *out, int indent)
+void isl_map_print_internal(struct isl_map *map, FILE *out, int indent)
 {
 	int i;
 
@@ -1948,7 +1950,7 @@ void isl_map_dump(struct isl_map *map, FILE *out, int indent)
 	for (i = 0; i < map->n; ++i) {
 		fprintf(out, "%*s", indent, "");
 		fprintf(out, "basic map %d:\n", i);
-		isl_basic_map_dump(map->p[i], out, indent+4);
+		isl_basic_map_print_internal(map->p[i], out, indent+4);
 	}
 }
 

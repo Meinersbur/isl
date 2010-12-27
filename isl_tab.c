@@ -3243,5 +3243,5 @@ void isl_tab_dump(struct isl_tab *tab, FILE *out, int indent)
 	tab->mat->n_row = r;
 	tab->mat->n_col = c;
 	if (tab->bmap)
-		isl_basic_map_dump(tab->bmap, out, indent);
+		isl_basic_map_print_internal(tab->bmap, out, indent);
 }
