@@ -2,6 +2,7 @@
 #define ISL_POINT_H
 
 #include <stdio.h>
+#include <isl/dim.h>
 
 #if defined(__cplusplus)
 extern "C" {
