@@ -674,6 +674,48 @@ error:
 	return NULL;
 }
 
+__isl_give struct isl_upoly *isl_upoly_cst_add_isl_int(
+	__isl_take struct isl_upoly *up, isl_int v)
+{
+	struct isl_upoly_cst *cst;
+
+	up = isl_upoly_cow(up);
+	if (!up)
+		return NULL;
+
+	cst = isl_upoly_as_cst(up);
+
+	isl_int_addmul(cst->n, cst->d, v);
+
+	return up;
+}
+
+__isl_give struct isl_upoly *isl_upoly_add_isl_int(
+	__isl_take struct isl_upoly *up, isl_int v)
+{
+	struct isl_upoly_rec *rec;
+
+	if (!up)
+		return NULL;
+
+	if (isl_upoly_is_cst(up))
+		return isl_upoly_cst_add_isl_int(up, v);
+
+	up = isl_upoly_cow(up);
+	rec = isl_upoly_as_rec(up);
+	if (!rec)
+		goto error;
+
+	rec->p[0] = isl_upoly_add_isl_int(rec->p[0], v);
+	if (!rec->p[0])
+		goto error;
+
+	return up;
+error:
+	isl_upoly_free(up);
+	return NULL;
+}
+
 __isl_give struct isl_upoly *isl_upoly_neg_cst(__isl_take struct isl_upoly *up)
 {
 	struct isl_upoly_cst *cst;
@@ -1369,6 +1411,27 @@ __isl_give isl_qpolynomial *isl_qpolynomial_sub(__isl_take isl_qpolynomial *qp1,
 	__isl_take isl_qpolynomial *qp2)
 {
 	return isl_qpolynomial_add(qp1, isl_qpolynomial_neg(qp2));
+}
+
+__isl_give isl_qpolynomial *isl_qpolynomial_add_isl_int(
+	__isl_take isl_qpolynomial *qp, isl_int v)
+{
+	if (isl_int_is_zero(v))
+		return qp;
+
+	qp = isl_qpolynomial_cow(qp);
+	if (!qp)
+		return NULL;
+
+	qp->upoly = isl_upoly_add_isl_int(qp->upoly, v);
+	if (!qp->upoly)
+		goto error;
+
+	return qp;
+error:
+	isl_qpolynomial_free(qp);
+	return NULL;
+
 }
 
 __isl_give isl_qpolynomial *isl_qpolynomial_neg(__isl_take isl_qpolynomial *qp)
