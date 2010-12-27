@@ -275,6 +275,7 @@ __isl_give isl_printer *isl_printer_print_qpolynomial_fold(
 	__isl_take isl_printer *p, __isl_keep isl_qpolynomial_fold *fold);
 void isl_qpolynomial_fold_print(__isl_keep isl_qpolynomial_fold *fold, FILE *out,
 	unsigned output_format);
+void isl_qpolynomial_fold_dump(__isl_keep isl_qpolynomial_fold *fold);
 
 struct isl_pw_qpolynomial_fold;
 typedef struct isl_pw_qpolynomial_fold isl_pw_qpolynomial_fold;
