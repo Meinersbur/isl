@@ -650,7 +650,6 @@ static __isl_give isl_printer *isl_basic_map_print_isl(
 	p = isl_printer_print_str(p, " : ");
 	p = print_disjunct(bmap, bmap->dim, p, 0, latex);
 	p = isl_printer_print_str(p, " }");
-	p = isl_printer_end_line(p);
 	return p;
 }
 
@@ -669,7 +668,6 @@ static __isl_give isl_printer *isl_basic_set_print_isl(
 	p = isl_printer_print_str(p, " : ");
 	p = print_disjunct((isl_basic_map *)bset, bset->dim, p, 1, latex);
 	p = isl_printer_print_str(p, " }");
-	p = isl_printer_end_line(p);
 	return p;
 }
 

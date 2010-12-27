@@ -55,6 +55,15 @@ to C<isl/header.h>.
 
 =back
 
+=head3 Changes since isl-0.05
+
+=over
+
+=item * The functions C<isl_printer_print_basic_set> and
+C<isl_printer_print_basic_map> no longer print a newline.
+
+=back
+
 =head1 Installation
 
 The source of C<isl> can be obtained either as a tarball
