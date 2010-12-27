@@ -232,6 +232,7 @@ enum isl_fold {
 struct isl_qpolynomial_fold;
 typedef struct isl_qpolynomial_fold isl_qpolynomial_fold;
 
+isl_ctx *isl_qpolynomial_fold_get_ctx(__isl_keep isl_qpolynomial_fold *fold);
 enum isl_fold isl_qpolynomial_fold_get_type(__isl_keep isl_qpolynomial_fold *fold);
 
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_empty(enum isl_fold type,
