@@ -1470,18 +1470,6 @@ static __isl_give isl_printer *qpolynomial_fold_print(
 	return p;
 }
 
-__isl_give isl_printer *isl_printer_print_qpolynomial_fold(
-	__isl_take isl_printer *p, __isl_keep isl_qpolynomial_fold *fold)
-{
-	if  (!p || !fold)
-		goto error;
-	p = qpolynomial_fold_print(fold, p);
-	return p;
-error:
-	isl_printer_free(p);
-	return NULL;
-}
-
 void isl_qpolynomial_fold_print(__isl_keep isl_qpolynomial_fold *fold,
 	FILE *out, unsigned output_format)
 {
@@ -1880,6 +1868,22 @@ static __isl_give isl_printer *print_qpolynomial_fold_c(
 			p = isl_printer_print_str(p, ")");
 	}
 	return p;
+}
+
+__isl_give isl_printer *isl_printer_print_qpolynomial_fold(
+	__isl_take isl_printer *p, __isl_keep isl_qpolynomial_fold *fold)
+{
+	if  (!p || !fold)
+		goto error;
+	if (p->output_format == ISL_FORMAT_ISL)
+		return qpolynomial_fold_print(fold, p);
+	else if (p->output_format == ISL_FORMAT_C)
+		return print_qpolynomial_fold_c(p, fold->dim, fold);
+	isl_die(p->ctx, isl_error_unsupported, "unsupported output format",
+		goto error);
+error:
+	isl_printer_free(p);
+	return NULL;
 }
 
 static __isl_give isl_printer *print_pw_qpolynomial_fold_c(
