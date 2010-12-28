@@ -1404,7 +1404,9 @@ __isl_give isl_qpolynomial *isl_qpolynomial_add_on_domain(
 	__isl_take isl_qpolynomial *qp1,
 	__isl_take isl_qpolynomial *qp2)
 {
-	return isl_qpolynomial_add(qp1, qp2);
+	qp1 = isl_qpolynomial_add(qp1, qp2);
+	qp1 = isl_qpolynomial_gist(qp1, isl_set_copy(dom));
+	return qp1;
 }
 
 __isl_give isl_qpolynomial *isl_qpolynomial_sub(__isl_take isl_qpolynomial *qp1,
