@@ -160,6 +160,7 @@ __isl_give isl_map *isl_map_read_from_str(isl_ctx *ctx,
 void isl_basic_map_dump(__isl_keep isl_basic_map *bmap);
 void isl_basic_map_print(__isl_keep isl_basic_map *bmap, FILE *out, int indent,
 	const char *prefix, const char *suffix, unsigned output_format);
+void isl_map_dump(__isl_keep isl_map *map);
 void isl_map_print(__isl_keep isl_map *map, FILE *out, int indent,
 	unsigned output_format);
 __isl_give isl_printer *isl_printer_print_basic_map(
