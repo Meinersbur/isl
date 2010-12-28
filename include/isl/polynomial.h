@@ -210,6 +210,7 @@ __isl_give isl_printer *isl_printer_print_pw_qpolynomial(
 	__isl_take isl_printer *p, __isl_keep isl_pw_qpolynomial *pwqp);
 void isl_pw_qpolynomial_print(__isl_keep isl_pw_qpolynomial *pwqp, FILE *out,
 	unsigned output_format);
+void isl_pw_qpolynomial_dump(__isl_keep isl_pw_qpolynomial *pwqp);
 
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_coalesce(
 	__isl_take isl_pw_qpolynomial *pwqp);
