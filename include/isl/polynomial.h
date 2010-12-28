@@ -357,6 +357,7 @@ __isl_give isl_printer *isl_printer_print_pw_qpolynomial_fold(
 	__isl_take isl_printer *p, __isl_keep isl_pw_qpolynomial_fold *pwf);
 void isl_pw_qpolynomial_fold_print(__isl_keep isl_pw_qpolynomial_fold *pwf,
 	FILE *out, unsigned output_format);
+void isl_pw_qpolynomial_fold_dump(__isl_keep isl_pw_qpolynomial_fold *pwf);
 
 __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_coalesce(
 	__isl_take isl_pw_qpolynomial_fold *pwf);
