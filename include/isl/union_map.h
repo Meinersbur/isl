@@ -104,6 +104,7 @@ __isl_give isl_union_map *isl_union_map_read_from_str(struct isl_ctx *ctx,
 	const char *str);
 __isl_give isl_printer *isl_printer_print_union_map(__isl_take isl_printer *p,
 	__isl_keep isl_union_map *umap);
+void isl_union_map_dump(__isl_keep isl_union_map *umap);
 
 __isl_give isl_union_set *isl_union_map_wrap(__isl_take isl_union_map *umap);
 __isl_give isl_union_map *isl_union_set_unwrap(__isl_take isl_union_set *uset);
