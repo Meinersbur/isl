@@ -4656,16 +4656,46 @@ error:
  *
  * Let res^k and todo^k be the results after k steps and let i = k + 1.
  * Assume we are computing the lexicographical maximum.
- * We first intersect basic map i with a relation that maps elements
- * to elements that are lexicographically larger than the image elements
- * in res^k and the compute the maximum image element of this intersection.
- * The result ("better") corresponds to those image elements in basic map i
- * that are better than what we had before.  The remainder ("keep") are the
- * domain elements for which the image element in res_k was better.
- * We also compute the lexicographical maximum of basic map i in todo^k.
- * res^i is the result of the operation + better + those elements in
- *		res^k that we should keep
- * todo^i is the remainder of the maximum operation on todo^k.
+ * We first compute the lexicographically maximal element in basic map i.
+ * This results in a partial solution res_i and a subset todo_i.
+ * Then we combine these results with those obtain for the first k basic maps
+ * to obtain a result that is valid for the first k+1 basic maps.
+ * In particular, the set where there is no solution is the set where
+ * there is no solution for the first k basic maps and also no solution
+ * for the ith basic map, i.e.,
+ *
+ *	todo^i = todo^k * todo_i
+ *
+ * On dom(res^k) * dom(res_i), we need to pick the larger of the two
+ * solutions, arbitrarily breaking ties in favor of res^k.
+ * That is, when res^k(a) >= res_i(a), we pick res^k and
+ * when res^k(a) < res_i(a), we pick res_i.  (Here, ">=" and "<" denote
+ * the lexicographic order.)
+ * In practice, we compute
+ *
+ *	res^k * (res_i . "<=")
+ *
+ * and
+ *
+ *	res_i * (res^k . "<")
+ *
+ * Finally, we consider the symmetric difference of dom(res^k) and dom(res_i),
+ * where only one of res^k and res_i provides a solution and we simply pick
+ * that one, i.e.,
+ *
+ *	res^k * todo_i
+ * and
+ *	res_i * todo^k
+ *
+ * Note that we only compute these intersections when dom(res^k) intersects
+ * dom(res_i).  Otherwise, the only effect of these intersections is to
+ * potentially break up res^k and res_i into smaller pieces.
+ * We want to avoid such splintering as much as possible.
+ * In fact, an earlier implementation of this function would look for
+ * better results in the domain of res^k and for extra results in todo^k,
+ * but this would always result in a splintering according to todo^k,
+ * even when the domain of basic map i is disjoint from the domains of
+ * the previous basic maps.
  */
 static __isl_give isl_map *isl_map_partial_lexopt(
 		__isl_take isl_map *map, __isl_take isl_set *dom,
@@ -4690,32 +4720,38 @@ static __isl_give isl_map *isl_map_partial_lexopt(
 					isl_set_copy(dom), &todo, max);
 
 	for (i = 1; i < map->n; ++i) {
-		struct isl_map *lt;
-		struct isl_map *better;
-		struct isl_set *keep;
-		struct isl_map *res_i;
-		struct isl_set *todo_i;
-		struct isl_dim *dim = isl_map_get_dim(res);
-
-		dim = isl_dim_range(dim);
-		if (max)
-			lt = isl_map_lex_lt(dim);
-		else
-			lt = isl_map_lex_gt(dim);
-		lt = isl_map_apply_range(isl_map_copy(res), lt);
-		lt = isl_map_intersect(lt,
-			isl_map_from_basic_map(isl_basic_map_copy(map->p[i])));
-		better = isl_map_partial_lexopt(lt,
-			isl_map_domain(isl_map_copy(res)),
-			&keep, max);
+		isl_map *lt, *le;
+		isl_map *res_i;
+		isl_set *todo_i;
+		isl_dim *dim = isl_dim_range(isl_map_get_dim(res));
 
 		res_i = basic_map_partial_lexopt(isl_basic_map_copy(map->p[i]),
-						todo, &todo_i, max);
+					isl_set_copy(dom), &todo_i, max);
 
-		res = isl_map_intersect_domain(res, keep);
+		if (max) {
+			lt = isl_map_lex_lt(isl_dim_copy(dim));
+			le = isl_map_lex_le(dim);
+		} else {
+			lt = isl_map_lex_gt(isl_dim_copy(dim));
+			le = isl_map_lex_ge(dim);
+		}
+		lt = isl_map_apply_range(isl_map_copy(res), lt);
+		lt = isl_map_intersect(lt, isl_map_copy(res_i));
+		le = isl_map_apply_range(isl_map_copy(res_i), le);
+		le = isl_map_intersect(le, isl_map_copy(res));
+
+		if (!isl_map_is_empty(lt) || !isl_map_is_empty(le)) {
+			res = isl_map_intersect_domain(res,
+							isl_set_copy(todo_i));
+			res_i = isl_map_intersect_domain(res_i,
+							isl_set_copy(todo));
+		}
+
 		res = isl_map_union_disjoint(res, res_i);
-		res = isl_map_union_disjoint(res, better);
-		todo = todo_i;
+		res = isl_map_union_disjoint(res, lt);
+		res = isl_map_union_disjoint(res, le);
+
+		todo = isl_set_intersect(todo, todo_i);
 	}
 
 	isl_set_free(dom);
