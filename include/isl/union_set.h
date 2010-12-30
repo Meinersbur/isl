@@ -75,6 +75,7 @@ __isl_give isl_union_set *isl_union_set_read_from_str(struct isl_ctx *ctx,
 	const char *str);
 __isl_give isl_printer *isl_printer_print_union_set(__isl_take isl_printer *p,
 	__isl_keep isl_union_set *uset);
+void isl_union_set_dump(__isl_keep isl_union_set *uset);
 
 #if defined(__cplusplus)
 }
