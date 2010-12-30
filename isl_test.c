@@ -1115,7 +1115,7 @@ void test_lex(struct isl_ctx *ctx)
 void test_lexmin(struct isl_ctx *ctx)
 {
 	const char *str;
-	isl_map *map;
+	isl_map *map, *map2;
 	isl_set *set;
 	isl_set *set2;
 
@@ -1144,6 +1144,36 @@ void test_lexmin(struct isl_ctx *ctx)
 	set = isl_set_intersect(set, set2);
 	assert(!isl_set_is_empty(set));
 	isl_set_free(set);
+
+	str = "{ [x] -> [y] : x <= y <= 10; [x] -> [5] : -8 <= x <= 8 }";
+	map = isl_map_read_from_str(ctx, str, -1);
+	map = isl_map_lexmin(map);
+	str = "{ [x] -> [5] : 6 <= x <= 8; "
+		"[x] -> [x] : x <= 5 or (9 <= x <= 10) }";
+	map2 = isl_map_read_from_str(ctx, str, -1);
+	assert(isl_map_is_equal(map, map2));
+	isl_map_free(map);
+	isl_map_free(map2);
+
+	str = "{ [x] -> [y] : 4y = x or 4y = -1 + x or 4y = -2 + x }";
+	map = isl_map_read_from_str(ctx, str, -1);
+	map2 = isl_map_copy(map);
+	map = isl_map_lexmin(map);
+	assert(isl_map_is_equal(map, map2));
+	isl_map_free(map);
+	isl_map_free(map2);
+
+	str = "{ [x] -> [y] : x = 4y; [x] -> [y] : x = 2y }";
+	map = isl_map_read_from_str(ctx, str, -1);
+	map = isl_map_lexmin(map);
+	str = "{ [x] -> [y] : (4y = x and x >= 0) or "
+		"(exists (e0 = [(x)/4], e1 = [(-2 + x)/4]: 2y = x and "
+		"4e1 = -2 + x and 4e0 <= -1 + x and 4e0 >= -3 + x)) or "
+		"(exists (e0 = [(x)/4]: 2y = x and 4e0 = x and x <= -4)) }";
+	map2 = isl_map_read_from_str(ctx, str, -1);
+	assert(isl_map_is_equal(map, map2));
+	isl_map_free(map);
+	isl_map_free(map2);
 }
 
 struct must_may {
