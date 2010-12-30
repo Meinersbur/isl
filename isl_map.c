@@ -4592,7 +4592,7 @@ struct isl_set *isl_basic_set_partial_lexmax(
 			dom, empty);
 }
 
-/* Given a basic map "bmap", compute the lexicograhically minimal
+/* Given a basic map "bmap", compute the lexicographically minimal
  * (or maximal) image element for each domain element in dom.
  * Set *empty to those elements in dom that do not have an image element.
  *
@@ -4644,7 +4644,7 @@ error:
 	return NULL;
 }
 
-/* Given a map "map", compute the lexicograhically minimal
+/* Given a map "map", compute the lexicographically minimal
  * (or maximal) image element for each domain element in dom.
  * Set *empty to those elements in dom that do not have an image element.
  *
