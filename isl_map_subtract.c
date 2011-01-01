@@ -248,7 +248,7 @@ struct isl_diff_collector {
  * a negative value is treated as an error, but the calling
  * function can interpret the results based on the state of dc.
  *
- * Assumes that both bmap and map have known divs.
+ * Assumes that map has known divs.
  *
  * The difference is computed by a backtracking algorithm.
  * Each level corresponds to a basic map in "map".
@@ -671,6 +671,7 @@ error:
 
 /* Return 1 is the singleton map "map1" is a subset of "map2",
  * i.e., if the single element of "map1" is also an element of "map2".
+ * Assumes "map2" has known divs.
  */
 static int map_is_singleton_subset(__isl_keep isl_map *map1,
 	__isl_keep isl_map *map2)
@@ -715,16 +716,13 @@ int isl_map_is_subset(struct isl_map *map1, struct isl_map *map2)
 	if (isl_map_fast_is_universe(map2))
 		return 1;
 
-	map1 = isl_map_compute_divs(isl_map_copy(map1));
 	map2 = isl_map_compute_divs(isl_map_copy(map2));
 	if (isl_map_fast_is_singleton(map1)) {
 		is_subset = map_is_singleton_subset(map1, map2);
-		isl_map_free(map1);
 		isl_map_free(map2);
 		return is_subset;
 	}
 	is_subset = map_diff_is_empty(map1, map2);
-	isl_map_free(map1);
 	isl_map_free(map2);
 
 	return is_subset;
