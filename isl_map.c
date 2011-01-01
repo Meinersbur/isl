@@ -7463,6 +7463,56 @@ int isl_basic_set_dims_get_sign(__isl_keep isl_basic_set *bset,
 	return isl_basic_set_vars_get_sign(bset, first, n, signs);
 }
 
+/* Check if the given basic map is obviously single-valued.
+ * In particular, for each output dimension, check that there is
+ * an equality that defines the output dimension in terms of
+ * earlier dimensions.
+ */
+int isl_basic_map_fast_is_single_valued(__isl_keep isl_basic_map *bmap)
+{
+	int i, j;
+	unsigned total;
+	unsigned n_out;
+	unsigned o_out;
+
+	if (!bmap)
+		return -1;
+
+	total = 1 + isl_basic_map_total_dim(bmap);
+	n_out = isl_basic_map_dim(bmap, isl_dim_out);
+	o_out = isl_basic_map_offset(bmap, isl_dim_out);
+
+	for (i = 0; i < n_out; ++i) {
+		for (j = 0; j < bmap->n_eq; ++j) {
+			if (isl_int_is_zero(bmap->eq[j][o_out + i]))
+				continue;
+			if (isl_seq_first_non_zero(bmap->eq[j] + o_out + i + 1,
+						total - (o_out + i + 1)) == -1)
+				break;
+		}
+		if (j >= bmap->n_eq)
+			return 0;
+	}
+
+	return 1;
+}
+
+/* Check if the given map is obviously single-valued.
+ */
+int isl_map_fast_is_single_valued(__isl_keep isl_map *map)
+{
+	int sv;
+
+	if (!map)
+		return -1;
+	if (map->n == 0)
+		return 1;
+	if (map->n >= 2)
+		return 0;
+
+	return isl_basic_map_fast_is_single_valued(map->p[0]);
+}
+
 /* Check if the given map is single-valued.
  * We simply compute
  *
@@ -7475,6 +7525,10 @@ int isl_map_is_single_valued(__isl_keep isl_map *map)
 	isl_map *test;
 	isl_map *id;
 	int sv;
+
+	sv = isl_map_fast_is_single_valued(map);
+	if (sv < 0 || sv)
+		return sv;
 
 	test = isl_map_reverse(isl_map_copy(map));
 	test = isl_map_apply_range(test, isl_map_copy(map));
