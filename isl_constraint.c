@@ -357,6 +357,14 @@ void isl_constraint_set_constant(struct isl_constraint *constraint, isl_int v)
 	isl_int_set(constraint->line[0][0], v);
 }
 
+void isl_constraint_set_constant_si(__isl_keep isl_constraint *constraint,
+	int v)
+{
+	if (!constraint)
+		return;
+	isl_int_set_si(constraint->line[0][0], v);
+}
+
 void isl_constraint_set_coefficient(struct isl_constraint *constraint,
 	enum isl_dim_type type, int pos, isl_int v)
 {
@@ -365,6 +373,16 @@ void isl_constraint_set_coefficient(struct isl_constraint *constraint,
 
 	isl_assert(constraint->ctx, pos < n(constraint, type), return);
 	isl_int_set(constraint->line[0][offset(constraint, type) + pos], v);
+}
+
+void isl_constraint_set_coefficient_si(__isl_keep isl_constraint *constraint,
+	enum isl_dim_type type, int pos, int v)
+{
+	if (!constraint)
+		return;
+
+	isl_assert(constraint->ctx, pos < n(constraint, type), return);
+	isl_int_set_si(constraint->line[0][offset(constraint, type) + pos], v);
 }
 
 void isl_constraint_clear(struct isl_constraint *constraint)

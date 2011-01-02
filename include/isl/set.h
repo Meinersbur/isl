@@ -231,6 +231,7 @@ __isl_give isl_set *isl_set_remove_dims(__isl_take isl_set *bset,
 	enum isl_dim_type type, unsigned first, unsigned n);
 __isl_give isl_set *isl_set_remove_divs_involving_dims(__isl_take isl_set *set,
 	enum isl_dim_type type, unsigned first, unsigned n);
+__isl_give isl_set *isl_set_remove_unknown_divs(__isl_take isl_set *set);
 __isl_give isl_set *isl_set_remove_divs(__isl_take isl_set *set);
 __isl_give isl_set *isl_set_split_dims(__isl_take isl_set *set,
 	enum isl_dim_type type, unsigned first, unsigned n);

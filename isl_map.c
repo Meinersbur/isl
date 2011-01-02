@@ -1558,6 +1558,78 @@ __isl_give isl_set *isl_set_remove_divs_involving_dims(__isl_take isl_set *set,
 							      type, first, n);
 }
 
+/* Return true if the definition of the given div is unknown or depends
+ * on unknown divs.
+ */
+static int div_is_unknown(__isl_keep isl_basic_map *bmap, int div)
+{
+	int i;
+	unsigned div_offset = isl_basic_map_offset(bmap, isl_dim_div);
+
+	if (isl_int_is_zero(bmap->div[div][0]))
+		return 1;
+
+	for (i = bmap->n_div - 1; i >= 0; --i) {
+		if (isl_int_is_zero(bmap->div[div][1 + div_offset + i]))
+			continue;
+		if (div_is_unknown(bmap, i))
+			return 1;
+	}
+
+	return 0;
+}
+
+/* Remove all divs that are unknown or defined in terms of unknown divs.
+ */
+__isl_give isl_basic_map *isl_basic_map_remove_unknown_divs(
+	__isl_take isl_basic_map *bmap)
+{
+	int i;
+
+	if (!bmap)
+		return NULL;
+
+	for (i = bmap->n_div - 1; i >= 0; --i) {
+		if (!div_is_unknown(bmap, i))
+			continue;
+		bmap = isl_basic_map_remove_dims(bmap, isl_dim_div, i, 1);
+	}
+
+	return bmap;
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+__isl_give isl_map *isl_map_remove_unknown_divs(__isl_take isl_map *map)
+{
+	int i;
+
+	if (!map)
+		return NULL;
+	if (map->n == 0)
+		return map;
+
+	map = isl_map_cow(map);
+	if (!map)
+		return NULL;
+
+	for (i = 0; i < map->n; ++i) {
+		map->p[i] = isl_basic_map_remove_unknown_divs(map->p[i]);
+		if (!map->p[i])
+			goto error;
+	}
+	return map;
+error:
+	isl_map_free(map);
+	return NULL;
+}
+
+__isl_give isl_set *isl_set_remove_unknown_divs(__isl_take isl_set *set)
+{
+	return (isl_set *)isl_map_remove_unknown_divs((isl_map *)set);
+}
+
 __isl_give isl_basic_set *isl_basic_set_remove_dims(
 	__isl_take isl_basic_set *bset,
 	enum isl_dim_type type, unsigned first, unsigned n)
