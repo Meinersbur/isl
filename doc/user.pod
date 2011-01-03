@@ -1315,6 +1315,8 @@ variables, then the result of these operations is currently undefined.
 		__isl_take isl_set *set);
 	__isl_give isl_basic_map *isl_map_simple_hull(
 		__isl_take isl_map *map);
+	__isl_give isl_union_map *isl_union_map_simple_hull(
+		__isl_take isl_union_map *umap);
 
 These functions compute a single basic set or relation
 that contains the whole input set or relation.
