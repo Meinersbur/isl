@@ -7894,6 +7894,11 @@ error:
 	return NULL;
 }
 
+__isl_give isl_basic_set *isl_basic_set_flatten(__isl_take isl_basic_set *bset)
+{
+	return (isl_basic_set *)isl_basic_map_flatten((isl_basic_map *)bset);
+}
+
 __isl_give isl_map *isl_map_flatten(__isl_take isl_map *map)
 {
 	int i;
