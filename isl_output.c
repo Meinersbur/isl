@@ -1265,6 +1265,20 @@ void isl_union_pw_qpolynomial_dump(__isl_keep isl_union_pw_qpolynomial *upwqp)
 	isl_printer_free(printer);
 }
 
+void isl_qpolynomial_dump(__isl_keep isl_qpolynomial *qp)
+{
+	isl_printer *printer;
+
+	if (!qp)
+		return;
+
+	printer = isl_printer_to_file(isl_qpolynomial_get_ctx(qp), stderr);
+	printer = isl_printer_print_qpolynomial(printer, qp);
+	printer = isl_printer_end_line(printer);
+
+	isl_printer_free(printer);
+}
+
 void isl_qpolynomial_fold_dump(__isl_keep isl_qpolynomial_fold *fold)
 {
 	isl_printer *printer;

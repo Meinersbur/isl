@@ -120,6 +120,7 @@ __isl_give isl_printer *isl_printer_print_qpolynomial(
 	__isl_take isl_printer *p, __isl_keep isl_qpolynomial *qp);
 void isl_qpolynomial_print(__isl_keep isl_qpolynomial *qp, FILE *out,
 	unsigned output_format);
+void isl_qpolynomial_dump(__isl_keep isl_qpolynomial *qp);
 
 struct isl_pw_qpolynomial;
 typedef struct isl_pw_qpolynomial isl_pw_qpolynomial;
