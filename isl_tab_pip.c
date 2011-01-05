@@ -3946,7 +3946,10 @@ static int constraint_equal(const void *entry, const void *val)
 }
 
 /* Check whether "bmap" has a pair of constraints that have
- * the same coefficients for the "output" variables, i.e.,
+ * the same coefficients for the output variables.
+ * Note that the coefficients of the existentially quantified
+ * variables need to be zero since the existentially quantified
+ * of the result are usually not the same as those of the input.
  * the isl_dim_out and isl_dim_div dimensions.
  * If so, return 1 and return the row indices of the two constraints
  * in *first and *second.
@@ -3959,6 +3962,8 @@ static int parallel_constraints(__isl_keep isl_basic_map *bmap,
 	struct isl_hash_table *table = NULL;
 	struct isl_hash_table_entry *entry;
 	struct isl_constraint_equal_info info;
+	unsigned n_out;
+	unsigned n_div;
 
 	ctx = isl_basic_map_get_ctx(bmap);
 	table = isl_hash_table_alloc(ctx, bmap->n_ineq);
@@ -3968,12 +3973,16 @@ static int parallel_constraints(__isl_keep isl_basic_map *bmap,
 	info.n_in = isl_basic_map_dim(bmap, isl_dim_param) +
 		    isl_basic_map_dim(bmap, isl_dim_in);
 	info.bmap = bmap;
-	info.n_out = isl_basic_map_dim(bmap, isl_dim_all) - info.n_in;
+	n_out = isl_basic_map_dim(bmap, isl_dim_out);
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	info.n_out = n_out + n_div;
 	for (i = 0; i < bmap->n_ineq; ++i) {
 		uint32_t hash;
 
 		info.val = bmap->ineq[i] + 1 + info.n_in;
-		if (isl_seq_first_non_zero(info.val, info.n_out) < 0)
+		if (isl_seq_first_non_zero(info.val, n_out) < 0)
+			continue;
+		if (isl_seq_first_non_zero(info.val + n_out, n_div) >= 0)
 			continue;
 		hash = isl_seq_get_hash(info.val, info.n_out);
 		entry = isl_hash_table_find(ctx, table, hash,
