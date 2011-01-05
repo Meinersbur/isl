@@ -1,3 +1,8 @@
+version: 0.05.1
+date: Wed Jan  5 10:21:42 CET 2011
+changes:
+	- fix simple symmetry detection in parametric integer programming
+---
 version: 0.05
 date: Thu Dec 23 17:03:14 CET 2010
 changes:

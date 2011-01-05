@@ -1607,6 +1607,22 @@ void test_lift(isl_ctx *ctx)
 	isl_basic_set_free(bset);
 }
 
+void test_subset(isl_ctx *ctx)
+{
+	const char *str;
+	isl_set *set1, *set2;
+
+	str = "{ [112, 0] }";
+	set1 = isl_set_read_from_str(ctx, str, 0);
+	str = "{ [i0, i1] : exists (e0 = [(i0 - i1)/16], e1: "
+		"16e0 <= i0 - i1 and 16e0 >= -15 + i0 - i1 and "
+		"16e1 <= i1 and 16e0 >= -i1 and 16e1 >= -i0 + i1) }";
+	set2 = isl_set_read_from_str(ctx, str, 0);
+	assert(isl_set_is_subset(set1, set2));
+	isl_set_free(set1);
+	isl_set_free(set2);
+}
+
 int main()
 {
 	struct isl_ctx *ctx;
@@ -1615,6 +1631,7 @@ int main()
 	assert(srcdir);
 
 	ctx = isl_ctx_alloc();
+	test_subset(ctx);
 	test_lift(ctx);
 	test_bound(ctx);
 	test_union(ctx);

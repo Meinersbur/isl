@@ -4083,6 +4083,7 @@ struct isl_basic_map *isl_basic_map_universe(struct isl_dim *dim)
 {
 	struct isl_basic_map *bmap;
 	bmap = isl_basic_map_alloc_dim(dim, 0, 0, 0);
+	bmap = isl_basic_map_finalize(bmap);
 	return bmap;
 }
 
@@ -4090,6 +4091,7 @@ struct isl_basic_set *isl_basic_set_universe(struct isl_dim *dim)
 {
 	struct isl_basic_set *bset;
 	bset = isl_basic_set_alloc_dim(dim, 0, 0, 0);
+	bset = isl_basic_set_finalize(bset);
 	return bset;
 }
 
