@@ -1299,6 +1299,24 @@ basic set or relation.
 	__isl_give isl_union_map *isl_union_map_coalesce(
 		__isl_take isl_union_map *umap);
 
+=item * Detecting equalities
+
+	__isl_give isl_basic_set *isl_basic_set_detect_equalities(
+                __isl_take isl_basic_set *bset);
+	__isl_give isl_basic_map *isl_basic_map_detect_equalities(
+                __isl_take isl_basic_map *bmap);
+	__isl_give isl_set *isl_set_detect_equalities(
+		__isl_take isl_set *set);
+	__isl_give isl_map *isl_map_detect_equalities(
+		__isl_take isl_map *map);
+	__isl_give isl_union_set *isl_union_set_detect_equalities(
+		__isl_take isl_union_set *uset);
+	__isl_give isl_union_map *isl_union_map_detect_equalities(
+		__isl_take isl_union_map *umap);
+
+Simplify the representation of a set or relation by detecting implicit
+equalities.
+
 =item * Convex hull
 
 	__isl_give isl_basic_set *isl_set_convex_hull(

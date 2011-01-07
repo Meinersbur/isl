@@ -1019,6 +1019,18 @@ __isl_give isl_union_set *isl_union_set_coalesce(
 	return isl_union_map_coalesce(uset);
 }
 
+__isl_give isl_union_map *isl_union_map_detect_equalities(
+	__isl_take isl_union_map *umap)
+{
+	return inplace(umap, &isl_map_detect_equalities);
+}
+
+__isl_give isl_union_set *isl_union_set_detect_equalities(
+	__isl_take isl_union_set *uset)
+{
+	return isl_union_map_detect_equalities(uset);
+}
+
 __isl_give isl_union_map *isl_union_map_compute_divs(
 	__isl_take isl_union_map *umap)
 {
