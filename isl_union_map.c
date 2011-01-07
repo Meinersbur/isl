@@ -897,10 +897,9 @@ __isl_give isl_union_map *isl_union_map_from_domain_and_range(
 }
 
 static __isl_give isl_union_map *un_op(__isl_take isl_union_map *umap,
-	int (*fn)(void **, void *), int cow)
+	int (*fn)(void **, void *))
 {
-	if (cow)
-		umap = isl_union_map_cow(umap);
+	umap = isl_union_map_cow(umap);
 	if (!umap)
 		return NULL;
 
@@ -925,7 +924,7 @@ static int affine_entry(void **entry, void *user)
 __isl_give isl_union_map *isl_union_map_affine_hull(
 	__isl_take isl_union_map *umap)
 {
-	return un_op(umap, &affine_entry, 1);
+	return un_op(umap, &affine_entry);
 }
 
 __isl_give isl_union_set *isl_union_set_affine_hull(
@@ -946,7 +945,7 @@ static int polyhedral_entry(void **entry, void *user)
 __isl_give isl_union_map *isl_union_map_polyhedral_hull(
 	__isl_take isl_union_map *umap)
 {
-	return un_op(umap, &polyhedral_entry, 1);
+	return un_op(umap, &polyhedral_entry);
 }
 
 __isl_give isl_union_set *isl_union_set_polyhedral_hull(
@@ -955,19 +954,42 @@ __isl_give isl_union_set *isl_union_set_polyhedral_hull(
 	return isl_union_map_polyhedral_hull(uset);
 }
 
-static int coalesce_entry(void **entry, void *user)
+static int inplace_entry(void **entry, void *user)
 {
+	__isl_give isl_map *(*fn)(__isl_take isl_map *) = user;
 	isl_map **map = (isl_map **)entry;
+	isl_map *copy;
 
-	*map = isl_map_coalesce(*map);
+	copy = fn(isl_map_copy(*map));
+	if (!copy)
+		return -1;
 
-	return *map ? 0 : -1;
+	isl_map_free(*map);
+	*map = copy;
+
+	return 0;
+}
+
+static __isl_give isl_union_map *inplace(__isl_take isl_union_map *umap,
+	__isl_give isl_map *(*fn)(__isl_take isl_map *))
+{
+	if (!umap)
+		return NULL;
+
+	if (isl_hash_table_foreach(umap->dim->ctx, &umap->table,
+				    &inplace_entry, fn) < 0)
+		goto error;
+
+	return umap;
+error:
+	isl_union_map_free(umap);
+	return NULL;
 }
 
 __isl_give isl_union_map *isl_union_map_coalesce(
 	__isl_take isl_union_map *umap)
 {
-	return un_op(umap, &coalesce_entry, 0);
+	return inplace(umap, &isl_map_coalesce);
 }
 
 __isl_give isl_union_set *isl_union_set_coalesce(
@@ -976,19 +998,10 @@ __isl_give isl_union_set *isl_union_set_coalesce(
 	return isl_union_map_coalesce(uset);
 }
 
-static int compute_divs_entry(void **entry, void *user)
-{
-	isl_map **map = (isl_map **)entry;
-
-	*map = isl_map_compute_divs(*map);
-
-	return *map ? 0 : -1;
-}
-
 __isl_give isl_union_map *isl_union_map_compute_divs(
 	__isl_take isl_union_map *umap)
 {
-	return un_op(umap, &compute_divs_entry, 0);
+	return inplace(umap, &isl_map_compute_divs);
 }
 
 __isl_give isl_union_set *isl_union_set_compute_divs(
@@ -1009,7 +1022,7 @@ static int lexmin_entry(void **entry, void *user)
 __isl_give isl_union_map *isl_union_map_lexmin(
 	__isl_take isl_union_map *umap)
 {
-	return un_op(umap, &lexmin_entry, 1);
+	return un_op(umap, &lexmin_entry);
 }
 
 __isl_give isl_union_set *isl_union_set_lexmin(
@@ -1030,7 +1043,7 @@ static int lexmax_entry(void **entry, void *user)
 __isl_give isl_union_map *isl_union_map_lexmax(
 	__isl_take isl_union_map *umap)
 {
-	return un_op(umap, &lexmax_entry, 1);
+	return un_op(umap, &lexmax_entry);
 }
 
 __isl_give isl_union_set *isl_union_set_lexmax(
