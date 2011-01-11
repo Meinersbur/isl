@@ -255,7 +255,7 @@ static __isl_give isl_vec *accept_affine_factor(struct isl_stream *s,
 		isl_int_set_si(f, 1);
 		if (accept_cst_factor(s, &f) < 0) {
 			isl_int_clear(f);
-			goto error;
+			goto error2;
 		}
 		aff = isl_vec_scale(aff, f);
 		isl_int_clear(f);
@@ -264,6 +264,7 @@ static __isl_give isl_vec *accept_affine_factor(struct isl_stream *s,
 	return aff;
 error:
 	isl_token_free(tok);
+error2:
 	isl_vec_free(aff);
 	return NULL;
 }
