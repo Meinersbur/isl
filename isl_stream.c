@@ -83,7 +83,9 @@ void isl_token_free(struct isl_token *tok)
 		return;
 	if (tok->type == ISL_TOKEN_VALUE)
 		isl_int_clear(tok->u.v);
-	else if (tok->type == ISL_TOKEN_IDENT || tok->type == ISL_TOKEN_STRING)
+	else if (tok->type == ISL_TOKEN_IDENT ||
+		 tok->type == ISL_TOKEN_STRING ||
+		 tok->is_keyword)
 		free(tok->u.s);
 	free(tok);
 }
