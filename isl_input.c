@@ -1390,6 +1390,7 @@ static __isl_give isl_qpolynomial *read_factor(struct isl_stream *s,
 			return NULL;
 		}
 		if (pos >= n) {
+			vars_drop(v, v->n - n);
 			isl_stream_error(s, tok, "unknown identifier");
 			isl_token_free(tok);
 			return NULL;
