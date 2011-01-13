@@ -183,6 +183,54 @@ error:
 	return -1;
 }
 
+/* Given an affine expression aff, return an affine expression
+ * for aff % d, with d the next token on the stream, which is
+ * assumed to be a constant.
+ *
+ * We introduce an integer division q = [aff/d] and the result
+ * is set to aff - d q.
+ */
+static __isl_give isl_vec *affine_mod(struct isl_stream *s,
+	struct vars *v, __isl_take isl_vec *aff)
+{
+	struct isl_token *tok;
+	struct variable *var;
+	isl_vec *mod;
+
+	tok = isl_stream_next_token(s);
+	if (!tok || tok->type != ISL_TOKEN_VALUE) {
+		isl_stream_error(s, tok, "expecting constant value");
+		goto error;
+	}
+
+	if (vars_add_anon(v) < 0)
+		goto error;
+
+	var = v->v;
+
+	var->def = isl_vec_alloc(s->ctx, 2 + v->n);
+	if (!var->def)
+		goto error;
+	isl_seq_cpy(var->def->el + 1, aff->el, aff->size);
+	isl_int_set_si(var->def->el[1 + aff->size], 0);
+	isl_int_set(var->def->el[0], tok->u.v);
+
+	mod = isl_vec_alloc(v->ctx, 1 + v->n);
+	if (!mod)
+		goto error;
+
+	isl_seq_cpy(mod->el, aff->el, aff->size);
+	isl_int_neg(mod->el[aff->size], tok->u.v);
+
+	isl_vec_free(aff);
+	isl_token_free(tok);
+	return mod;
+error:
+	isl_vec_free(aff);
+	isl_token_free(tok);
+	return NULL;
+}
+
 static struct isl_vec *accept_affine(struct isl_stream *s, struct vars *v);
 static int read_div_definition(struct isl_stream *s, struct vars *v);
 
@@ -249,6 +297,8 @@ static __isl_give isl_vec *accept_affine_factor(struct isl_stream *s,
 		isl_stream_error(s, tok, "expecting factor");
 		goto error;
 	}
+	if (isl_stream_eat_if_available(s, '%'))
+		return affine_mod(s, v, aff);
 	if (isl_stream_eat_if_available(s, '*')) {
 		isl_int f;
 		isl_int_init(f);

@@ -66,6 +66,14 @@ void test_parse(struct isl_ctx *ctx)
 	isl_map_free(map);
 	isl_map_free(map2);
 
+	str = "{[new,old] -> [new+1-2*[(new+1)/2],old+1-2*[(old+1)/2]]}";
+	map = isl_map_read_from_str(ctx, str, -1);
+	str = "{[new,old] -> [(new+1)%2,(old+1)%2]}";
+	map2 = isl_map_read_from_str(ctx, str, -1);
+	assert(isl_map_is_equal(map, map2));
+	isl_map_free(map);
+	isl_map_free(map2);
+
 	test_parse_pwqp(ctx, "{ [i] -> i + [ (i + [i/3])/2 ] }");
 }
 
