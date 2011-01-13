@@ -2373,7 +2373,6 @@ __isl_give isl_basic_map *isl_basic_map_insert(__isl_take isl_basic_map *bmap,
 	res = isl_basic_map_alloc_dim(res_dim,
 			bmap->n_div, bmap->n_eq, bmap->n_ineq);
 	res = add_constraints_dim_map(res, bmap, dim_map);
-	res = isl_basic_map_simplify(res);
 	return isl_basic_map_finalize(res);
 }
 
