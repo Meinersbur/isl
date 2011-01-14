@@ -2030,7 +2030,6 @@ struct isl_basic_map *isl_basic_map_intersect_domain(
 		struct isl_basic_map *bmap, struct isl_basic_set *bset)
 {
 	struct isl_basic_map *bmap_domain;
-	struct isl_dim *dim;
 
 	if (!bmap || !bset)
 		goto error;
@@ -2047,8 +2046,7 @@ struct isl_basic_map *isl_basic_map_intersect_domain(
 		goto error;
 	bmap = isl_basic_map_extend_dim(bmap, isl_dim_copy(bmap->dim),
 			bset->n_div, bset->n_eq, bset->n_ineq);
-	dim = isl_dim_reverse(isl_dim_copy(bset->dim));
-	bmap_domain = isl_basic_map_from_basic_set(bset, dim);
+	bmap_domain = isl_basic_map_from_domain(bset);
 	bmap = add_constraints(bmap, bmap_domain, 0, 0);
 
 	bmap = isl_basic_map_simplify(bmap);
