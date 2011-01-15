@@ -1391,6 +1391,16 @@ error:
 	return NULL;
 }
 
+__isl_give isl_pw_qpolynomial_fold *isl_set_apply_pw_qpolynomial_fold(
+	__isl_take isl_set *set, __isl_take isl_pw_qpolynomial_fold *pwf,
+	int *tight)
+{
+	isl_map *map;
+
+	map = isl_map_from_range(set);
+	return isl_map_apply_pw_qpolynomial_fold(map, pwf, tight);
+}
+
 struct isl_apply_fold_data {
 	isl_union_pw_qpolynomial_fold *upwf;
 	isl_union_pw_qpolynomial_fold *res;
@@ -1469,6 +1479,13 @@ error:
 	isl_union_pw_qpolynomial_fold_free(upwf);
 	isl_union_pw_qpolynomial_fold_free(data.res);
 	return NULL;
+}
+
+__isl_give isl_union_pw_qpolynomial_fold *isl_union_set_apply_union_pw_qpolynomial_fold(
+	__isl_take isl_union_set *uset,
+	__isl_take isl_union_pw_qpolynomial_fold *upwf, int *tight)
+{
+	return isl_union_map_apply_union_pw_qpolynomial_fold(uset, upwf, tight);
 }
 
 /* Reorder the dimension of "fold" according to the given reordering.

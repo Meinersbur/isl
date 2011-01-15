@@ -2279,9 +2279,19 @@ In future, the operation will also exploit the context
 to simplify the quasipolynomial reductions associated to each cell.
 
 	__isl_give isl_pw_qpolynomial_fold *
+	isl_set_apply_pw_qpolynomial_fold(
+		__isl_take isl_set *set,
+		__isl_take isl_pw_qpolynomial_fold *pwf,
+		int *tight);
+	__isl_give isl_pw_qpolynomial_fold *
 	isl_map_apply_pw_qpolynomial_fold(
 		__isl_take isl_map *map,
 		__isl_take isl_pw_qpolynomial_fold *pwf,
+		int *tight);
+	__isl_give isl_union_pw_qpolynomial_fold *
+	isl_union_set_apply_union_pw_qpolynomial_fold(
+		__isl_take isl_union_set *uset,
+		__isl_take isl_union_pw_qpolynomial_fold *upwf,
 		int *tight);
 	__isl_give isl_union_pw_qpolynomial_fold *
 	isl_union_map_apply_union_pw_qpolynomial_fold(
@@ -2289,12 +2299,15 @@ to simplify the quasipolynomial reductions associated to each cell.
 		__isl_take isl_union_pw_qpolynomial_fold *upwf,
 		int *tight);
 
-These functions
+The functions taking a map
 compose the given map with the given piecewise quasipolynomial reduction.
 That is, compute a bound (of the same type as C<pwf> or C<upwf> itself)
 over all elements in the intersection of the range of the map
 and the domain of the piecewise quasipolynomial reduction
 as a function of an element in the domain of the map.
+The functions taking a set compute a bound over all elements in the
+intersection of the set and the domain of the
+piecewise quasipolynomial reduction.
 
 =head2 Dependence Analysis
 
