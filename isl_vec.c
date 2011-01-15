@@ -128,22 +128,41 @@ void isl_vec_free(struct isl_vec *vec)
 	free(vec);
 }
 
-void isl_vec_dump(struct isl_vec *vec, FILE *out, int indent)
+__isl_give isl_printer *isl_printer_print_vec(__isl_take isl_printer *printer,
+	__isl_keep isl_vec *vec)
 {
 	int i;
 
-	if (!vec) {
-		fprintf(out, "%*snull vec\n", indent, "");
-		return;
-	}
+	if (!printer || !vec)
+		goto error;
 
-	fprintf(out, "%*s[", indent, "");
+	printer = isl_printer_print_str(printer, "[");
 	for (i = 0; i < vec->size; ++i) {
 		if (i)
-		    fprintf(out, ",");
-		isl_int_print(out, vec->el[i], 0);
+			printer = isl_printer_print_str(printer, ",");
+		printer = isl_printer_print_isl_int(printer, vec->el[i]);
 	}
-	fprintf(out, "]\n");
+	printer = isl_printer_print_str(printer, "]");
+
+	return printer;
+error:
+	isl_printer_free(printer);
+	return NULL;
+}
+
+void isl_vec_dump(struct isl_vec *vec, FILE *out, int indent)
+{
+	isl_printer *printer;
+
+	if (!vec)
+		return;
+
+	printer = isl_printer_to_file(vec->ctx, out);
+	printer = isl_printer_set_indent(printer, indent);
+	printer = isl_printer_print_vec(printer, vec);
+	printer = isl_printer_end_line(printer);
+
+	isl_printer_free(printer);
 }
 
 __isl_give isl_vec *isl_vec_clr(__isl_take isl_vec *vec)

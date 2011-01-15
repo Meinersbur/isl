@@ -15,6 +15,7 @@
 #include <isl/int.h>
 #include <isl/ctx.h>
 #include <isl/blk.h>
+#include <isl/printer.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -38,6 +39,8 @@ struct isl_vec *isl_vec_cow(struct isl_vec *vec);
 void isl_vec_free(struct isl_vec *vec);
 
 void isl_vec_dump(struct isl_vec *vec, FILE *out, int indent);
+__isl_give isl_printer *isl_printer_print_vec(__isl_take isl_printer *printer,
+	__isl_keep isl_vec *vec);
 
 void isl_vec_lcm(struct isl_vec *vec, isl_int *lcm);
 struct isl_vec *isl_vec_ceil(struct isl_vec *vec);

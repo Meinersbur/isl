@@ -62,6 +62,7 @@ int main(int argc, char **argv)
 	isl_int opt;
 	unsigned dim;
 	enum isl_lp_result res;
+	isl_printer *p;
 
 	isl_int_init(opt);
 	bset = isl_basic_set_read_from_file(ctx, stdin, 0);
@@ -86,9 +87,12 @@ int main(int argc, char **argv)
 		fprintf(stdout, "unbounded\n");
 		break;
 	case isl_lp_ok:
-		isl_vec_dump(sol, stdout, 0);
-		isl_int_print(stdout, opt, 0);
-		fprintf(stdout, "\n");
+		p = isl_printer_to_file(ctx, stdout);
+		p = isl_printer_print_vec(p, sol);
+		p = isl_printer_end_line(p);
+		p = isl_printer_print_isl_int(p, opt);
+		p = isl_printer_end_line(p);
+		isl_printer_free(p);
 	}
 	isl_basic_set_free(bset);
 	isl_vec_free(obj);

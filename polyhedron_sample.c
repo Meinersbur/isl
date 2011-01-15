@@ -17,10 +17,14 @@ int main(int argc, char **argv)
 	struct isl_ctx *ctx = isl_ctx_alloc();
 	struct isl_basic_set *bset;
 	struct isl_vec *sample;
+	isl_printer *p;
 
 	bset = isl_basic_set_read_from_file(ctx, stdin, 0);
 	sample = isl_basic_set_sample_vec(isl_basic_set_copy(bset));
-	isl_vec_dump(sample, stdout, 0);
+	p = isl_printer_to_file(ctx, stdout);
+	p = isl_printer_print_vec(p, sample);
+	p = isl_printer_end_line(p);
+	isl_printer_free(p);
 	assert(sample);
 	if (sample->size > 0)
 		assert(isl_basic_set_contains(bset, sample));
