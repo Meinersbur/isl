@@ -16,6 +16,7 @@
 #include "isl_equalities.h"
 #include "isl_tab.h"
 #include "isl_basis_reduction.h"
+#include <isl_factorization.h>
 #include <isl_point_private.h>
 
 static struct isl_vec *empty_sample(struct isl_basic_set *bset)
@@ -546,6 +547,76 @@ error:
 	return NULL;
 }
 
+static struct isl_vec *sample_bounded(struct isl_basic_set *bset);
+
+/* Compute a sample point of the given basic set, based on the given,
+ * non-trivial factorization.
+ */
+static __isl_give isl_vec *factored_sample(__isl_take isl_basic_set *bset,
+	__isl_take isl_factorizer *f)
+{
+	int i, n;
+	isl_vec *sample = NULL;
+	isl_ctx *ctx;
+	unsigned nparam;
+	unsigned nvar;
+
+	ctx = isl_basic_set_get_ctx(bset);
+	if (!ctx)
+		goto error;
+
+	nparam = isl_basic_set_dim(bset, isl_dim_param);
+	nvar = isl_basic_set_dim(bset, isl_dim_set);
+
+	sample = isl_vec_alloc(ctx, 1 + isl_basic_set_total_dim(bset));
+	if (!sample)
+		goto error;
+	isl_int_set_si(sample->el[0], 1);
+
+	bset = isl_morph_basic_set(isl_morph_copy(f->morph), bset);
+
+	for (i = 0, n = 0; i < f->n_group; ++i) {
+		isl_basic_set *bset_i;
+		isl_vec *sample_i;
+
+		bset_i = isl_basic_set_copy(bset);
+		bset_i = isl_basic_set_drop_constraints_involving(bset_i,
+			    nparam + n + f->len[i], nvar - n - f->len[i]);
+		bset_i = isl_basic_set_drop_constraints_involving(bset_i,
+			    nparam, n);
+		bset_i = isl_basic_set_drop(bset_i, isl_dim_set,
+			    n + f->len[i], nvar - n - f->len[i]);
+		bset_i = isl_basic_set_drop(bset_i, isl_dim_set, 0, n);
+
+		sample_i = sample_bounded(bset_i);
+		if (!sample_i)
+			goto error;
+		if (sample_i->size == 0) {
+			isl_basic_set_free(bset);
+			isl_factorizer_free(f);
+			isl_vec_free(sample);
+			return sample_i;
+		}
+		isl_seq_cpy(sample->el + 1 + nparam + n,
+			    sample_i->el + 1, f->len[i]);
+		isl_vec_free(sample_i);
+
+		n += f->len[i];
+	}
+
+	f->morph = isl_morph_inverse(f->morph);
+	sample = isl_morph_vec(isl_morph_copy(f->morph), sample);
+
+	isl_basic_set_free(bset);
+	isl_factorizer_free(f);
+	return sample;
+error:
+	isl_basic_set_free(bset);
+	isl_factorizer_free(f);
+	isl_vec_free(sample);
+	return NULL;
+}
+
 /* Given a basic set that is known to be bounded, find and return
  * an integer point in the basic set, if there is any.
  *
@@ -559,6 +630,7 @@ static struct isl_vec *sample_bounded(struct isl_basic_set *bset)
 	struct isl_ctx *ctx;
 	struct isl_vec *sample;
 	struct isl_tab *tab = NULL;
+	isl_factorizer *f;
 
 	if (!bset)
 		return NULL;
@@ -574,6 +646,13 @@ static struct isl_vec *sample_bounded(struct isl_basic_set *bset)
 	if (bset->n_eq > 0)
 		return sample_eq(bset, sample_bounded);
 
+	f = isl_basic_set_factorizer(bset);
+	if (!f)
+		goto error;
+	if (f->n_group != 0)
+		return factored_sample(bset, f);
+	isl_factorizer_free(f);
+		
 	ctx = bset->ctx;
 
 	tab = isl_tab_from_basic_set(bset);
