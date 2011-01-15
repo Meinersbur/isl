@@ -150,15 +150,14 @@ error:
 	return NULL;
 }
 
-void isl_vec_dump(struct isl_vec *vec, FILE *out, int indent)
+void isl_vec_dump(struct isl_vec *vec)
 {
 	isl_printer *printer;
 
 	if (!vec)
 		return;
 
-	printer = isl_printer_to_file(vec->ctx, out);
-	printer = isl_printer_set_indent(printer, indent);
+	printer = isl_printer_to_file(vec->ctx, stderr);
 	printer = isl_printer_print_vec(printer, vec);
 	printer = isl_printer_end_line(printer);
 

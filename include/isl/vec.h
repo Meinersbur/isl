@@ -38,7 +38,7 @@ struct isl_vec *isl_vec_copy(struct isl_vec *vec);
 struct isl_vec *isl_vec_cow(struct isl_vec *vec);
 void isl_vec_free(struct isl_vec *vec);
 
-void isl_vec_dump(struct isl_vec *vec, FILE *out, int indent);
+void isl_vec_dump(__isl_keep isl_vec *vec);
 __isl_give isl_printer *isl_printer_print_vec(__isl_take isl_printer *printer,
 	__isl_keep isl_vec *vec);
 
