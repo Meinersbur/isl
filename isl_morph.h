@@ -68,6 +68,8 @@ __isl_give isl_basic_set *isl_morph_basic_set(__isl_take isl_morph *morph,
 	__isl_take isl_basic_set *bset);
 __isl_give isl_set *isl_morph_set(__isl_take isl_morph *morph,
 	__isl_take isl_set *set);
+__isl_give isl_vec *isl_morph_vec(__isl_take isl_morph *morph,
+	__isl_take isl_vec *vec);
 
 #if defined(__cplusplus)
 }

@@ -757,3 +757,19 @@ __isl_give isl_morph *isl_basic_set_full_compression(
 
 	return morph;
 }
+
+__isl_give isl_vec *isl_morph_vec(__isl_take isl_morph *morph,
+	__isl_take isl_vec *vec)
+{
+	if (!morph)
+		goto error;
+
+	vec = isl_mat_vec_product(isl_mat_copy(morph->map), vec);
+
+	isl_morph_free(morph);
+	return vec;
+error:
+	isl_morph_free(morph);
+	isl_vec_free(vec);
+	return NULL;
+}
