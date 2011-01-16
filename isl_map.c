@@ -8151,9 +8151,12 @@ __isl_give isl_basic_map *isl_basic_map_from_constraint_matrices(
 				       eq->n_row, ineq->n_row);
 	if (!bmap)
 		goto error;
-	for (i = 0; i < extra; ++i)
-		if (isl_basic_map_alloc_div(bmap) < 0)
+	for (i = 0; i < extra; ++i) {
+		k = isl_basic_map_alloc_div(bmap);
+		if (k < 0)
 			goto error;
+		isl_int_set_si(bmap->div[k][0], 0);
+	}
 	for (i = 0; i < eq->n_row; ++i) {
 		l = isl_basic_map_alloc_equality(bmap);
 		if (l < 0)
