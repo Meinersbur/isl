@@ -573,10 +573,12 @@ void test_convex_hull_case(struct isl_ctx *ctx, const char *name)
 	fclose(input);
 }
 
-void test_convex_hull(struct isl_ctx *ctx)
+void test_convex_hull_algo(struct isl_ctx *ctx, int convex)
 {
 	const char *str1, *str2;
 	isl_set *set1, *set2;
+	int orig_convex = ctx->opt->convex;
+	ctx->opt->convex = convex;
 
 	test_convex_hull_case(ctx, "convex0");
 	test_convex_hull_case(ctx, "convex1");
@@ -605,6 +607,14 @@ void test_convex_hull(struct isl_ctx *ctx)
 	assert(isl_set_is_equal(set1, set2));
 	isl_set_free(set1);
 	isl_set_free(set2);
+
+	ctx->opt->convex = orig_convex;
+}
+
+void test_convex_hull(struct isl_ctx *ctx)
+{
+	test_convex_hull_algo(ctx, ISL_CONVEX_HULL_FM);
+	test_convex_hull_algo(ctx, ISL_CONVEX_HULL_WRAP);
 }
 
 void test_gist_case(struct isl_ctx *ctx, const char *name)

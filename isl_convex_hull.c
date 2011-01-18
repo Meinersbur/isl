@@ -1352,6 +1352,9 @@ static struct isl_basic_set *convex_hull_pair(struct isl_basic_set *bset1,
 	isl_basic_set *lin, *aff;
 	int bounded1, bounded2;
 
+	if (bset1->ctx->opt->convex == ISL_CONVEX_HULL_FM)
+		return convex_hull_pair_elim(bset1, bset2);
+
 	aff = isl_set_affine_hull(isl_basic_set_union(isl_basic_set_copy(bset1),
 						    isl_basic_set_copy(bset2)));
 	if (!aff)
@@ -1807,7 +1810,8 @@ static struct isl_basic_set *uset_convex_hull(struct isl_set *set)
 	if (isl_set_n_dim(set) == 1)
 		return convex_hull_1d(set);
 
-	if (isl_set_is_bounded(set))
+	if (isl_set_is_bounded(set) &&
+	    set->ctx->opt->convex == ISL_CONVEX_HULL_WRAP)
 		return uset_convex_hull_wrap(set);
 
 	lin = uset_combined_lineality_space(isl_set_copy(set));

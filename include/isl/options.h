@@ -54,6 +54,10 @@ struct isl_options {
 	int			bernstein_triangulate;
 
 	int			pip_symmetry;
+
+	#define			ISL_CONVEX_HULL_WRAP	0
+	#define			ISL_CONVEX_HULL_FM	1
+	int			convex;
 };
 
 ISL_ARG_DECL(isl_options, struct isl_options, isl_options_arg)
