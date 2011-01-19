@@ -271,7 +271,8 @@ __isl_give isl_map *isl_map_apply_domain(
 __isl_give isl_map *isl_map_apply_range(
 		__isl_take isl_map *map1,
 		__isl_take isl_map *map2);
-struct isl_map *isl_map_product(struct isl_map *map1, struct isl_map *map2);
+__isl_give isl_map *isl_map_product(__isl_take isl_map *map1,
+	__isl_take isl_map *map2);
 __isl_give isl_map *isl_map_flat_product(__isl_take isl_map *map1,
 	__isl_take isl_map *map2);
 __isl_give isl_map *isl_map_intersect(__isl_take isl_map *map1,

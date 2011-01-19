@@ -1591,6 +1591,34 @@ the same (number of) parameters.
 		__isl_take isl_union_map *umap1,
 		__isl_take isl_union_map *umap2);
 
+=item * Cartesian Product
+
+	__isl_give isl_set *isl_set_product(
+		__isl_take isl_set *set1,
+		__isl_take isl_set *set2);
+	__isl_give isl_union_set *isl_union_set_product(
+		__isl_take isl_union_set *uset1,
+		__isl_take isl_union_set *uset2);
+	__isl_give isl_map *isl_map_product(
+		__isl_take isl_map *map1,
+		__isl_take isl_map *map2);
+	__isl_give isl_union_map *isl_union_map_product(
+		__isl_take isl_union_map *umap1,
+		__isl_take isl_union_map *umap2);
+
+The above functions compute the cross product of the given
+sets or relations.  The domains and ranges of the results
+are wrapped maps between domains and ranges of the inputs.
+To obtain a ``flat'' product, use the following functions
+instead.
+
+	__isl_give isl_set *isl_set_flat_product(
+		__isl_take isl_set *set1,
+		__isl_take isl_set *set2);
+	__isl_give isl_map *isl_map_flat_product(
+		__isl_take isl_map *map1,
+		__isl_take isl_map *map2);
+
 =item * Simplification
 
 	__isl_give isl_basic_set *isl_basic_set_gist(

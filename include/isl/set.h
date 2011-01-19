@@ -188,7 +188,8 @@ struct isl_set *isl_set_union_disjoint(
 __isl_give isl_set *isl_set_union(
 		__isl_take isl_set *set1,
 		__isl_take isl_set *set2);
-struct isl_set *isl_set_product(struct isl_set *set1, struct isl_set *set2);
+__isl_give isl_set *isl_set_product(__isl_take isl_set *set1,
+	__isl_take isl_set *set2);
 __isl_give isl_set *isl_set_flat_product(__isl_take isl_set *set1,
 	__isl_take isl_set *set2);
 __isl_give isl_set *isl_set_intersect(
