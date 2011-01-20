@@ -1100,6 +1100,31 @@ void test_closure(struct isl_ctx *ctx)
 	assert(isl_map_is_equal(map, map2));
 	isl_map_free(map);
 	isl_map_free(map2);
+
+	str = "[n] -> { [[i0, i1, 1, 0, i0] -> [i5, 1]] -> "
+	    "[[i0, -1 + i1, 2, 0, i0] -> [-1 + i5, 2]] : "
+	    "exists (e0 = [(3 - n)/3]: i5 >= 2 and i1 >= 2 and "
+	    "3i0 <= -1 + n and i1 <= -1 + n and i5 <= -1 + n and "
+	    "3e0 >= 1 - n and 3e0 <= 2 - n and 3i0 >= -2 + n); "
+	    "[[i0, i1, 2, 0, i0] -> [i5, 1]] -> "
+	    "[[i0, i1, 1, 0, i0] -> [-1 + i5, 2]] : "
+	    "exists (e0 = [(3 - n)/3]: i5 >= 2 and i1 >= 1 and "
+	    "3i0 <= -1 + n and i1 <= -1 + n and i5 <= -1 + n and "
+	    "3e0 >= 1 - n and 3e0 <= 2 - n and 3i0 >= -2 + n); "
+	    "[[i0, i1, 1, 0, i0] -> [i5, 2]] -> "
+	    "[[i0, -1 + i1, 2, 0, i0] -> [i5, 1]] : "
+	    "exists (e0 = [(3 - n)/3]: i1 >= 2 and i5 >= 1 and "
+	    "3i0 <= -1 + n and i1 <= -1 + n and i5 <= -1 + n and "
+	    "3e0 >= 1 - n and 3e0 <= 2 - n and 3i0 >= -2 + n); "
+	    "[[i0, i1, 2, 0, i0] -> [i5, 2]] -> "
+	    "[[i0, i1, 1, 0, i0] -> [i5, 1]] : "
+	    "exists (e0 = [(3 - n)/3]: i5 >= 1 and i1 >= 1 and "
+	    "3i0 <= -1 + n and i1 <= -1 + n and i5 <= -1 + n and "
+	    "3e0 >= 1 - n and 3e0 <= 2 - n and 3i0 >= -2 + n) }";
+	map = isl_map_read_from_str(ctx, str, -1);
+	map = isl_map_transitive_closure(map, NULL);
+	assert(map);
+	isl_map_free(map);
 }
 
 void test_lex(struct isl_ctx *ctx)
