@@ -1068,6 +1068,8 @@ C<isl_dim_in>, C<isl_dim_out> and C<isl_dim_div>.
 The names of the domain and range spaces of a set or relation can be
 read off using the following functions.
 
+	const char *isl_basic_set_get_tuple_name(
+		__isl_keep isl_basic_set *bset);
 	const char *isl_set_get_tuple_name(
 		__isl_keep isl_set *set);
 	const char *isl_basic_map_get_tuple_name(

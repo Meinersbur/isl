@@ -373,6 +373,11 @@ __isl_give isl_set *isl_set_set_tuple_name(__isl_take isl_set *set,
 	return (isl_set *)isl_map_set_tuple_name((isl_map *)set, isl_dim_set, s);
 }
 
+const char *isl_basic_set_get_tuple_name(__isl_keep isl_basic_set *bset)
+{
+	return bset ? isl_dim_get_tuple_name(bset->dim, isl_dim_set) : NULL;
+}
+
 const char *isl_set_get_tuple_name(__isl_keep isl_set *set)
 {
 	return set ? isl_dim_get_tuple_name(set->dim, isl_dim_set) : NULL;
