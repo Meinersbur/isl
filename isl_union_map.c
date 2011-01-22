@@ -1346,6 +1346,9 @@ __isl_give isl_basic_map *isl_union_map_sample(__isl_take isl_union_map *umap)
 	    !sample)
 		goto error;
 
+	if (!sample)
+		sample = isl_basic_map_empty(isl_union_map_get_dim(umap));
+
 	isl_union_map_free(umap);
 
 	return sample;
