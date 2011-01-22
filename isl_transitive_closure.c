@@ -1974,6 +1974,7 @@ static __isl_give isl_map *construct_power_components(__isl_take isl_dim *dim,
 		}
 		path_comp = floyd_warshall(isl_dim_copy(dim),
 						comp, exact, project);
+		path_comp = anonymize(path_comp);
 		path_comb = isl_map_apply_range(isl_map_copy(path),
 						isl_map_copy(path_comp));
 		path = isl_map_union(path, path_comp);

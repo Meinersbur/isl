@@ -229,6 +229,8 @@ static int update_groups(struct isl_factor_groups *g, __isl_keep isl_mat *H)
 				return -1;
 		}
 	}
+	for (i = 1; i < H->n_col; ++i)
+		update_group(g, i);
 
 	return 0;
 }
@@ -303,6 +305,9 @@ __isl_give isl_factorizer *isl_basic_set_factorizer(
 			for (j = done + g.cnt[group]; j < nvar; ++j)
 				if (g.group[j] == group)
 					break;
+			if (j == nvar)
+				isl_die(bset->ctx, isl_error_internal,
+					"internal error", goto error);
 			g.group[j] = g.group[done + i];
 			Q = isl_mat_swap_rows(Q, done + i, j);
 			U = isl_mat_swap_cols(U, done + i, j);

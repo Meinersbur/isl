@@ -17,6 +17,7 @@
 #include <isl/polynomial.h>
 #include <isl/union_map.h>
 #include <isl_map_private.h>
+#include <isl_factorization.h>
 
 static char *srcdir;
 
@@ -1117,6 +1118,31 @@ void test_closure(struct isl_ctx *ctx)
 	assert(isl_map_is_equal(map, map2));
 	isl_map_free(map);
 	isl_map_free(map2);
+
+	str = "[n] -> { [[i0, i1, 1, 0, i0] -> [i5, 1]] -> "
+	    "[[i0, -1 + i1, 2, 0, i0] -> [-1 + i5, 2]] : "
+	    "exists (e0 = [(3 - n)/3]: i5 >= 2 and i1 >= 2 and "
+	    "3i0 <= -1 + n and i1 <= -1 + n and i5 <= -1 + n and "
+	    "3e0 >= 1 - n and 3e0 <= 2 - n and 3i0 >= -2 + n); "
+	    "[[i0, i1, 2, 0, i0] -> [i5, 1]] -> "
+	    "[[i0, i1, 1, 0, i0] -> [-1 + i5, 2]] : "
+	    "exists (e0 = [(3 - n)/3]: i5 >= 2 and i1 >= 1 and "
+	    "3i0 <= -1 + n and i1 <= -1 + n and i5 <= -1 + n and "
+	    "3e0 >= 1 - n and 3e0 <= 2 - n and 3i0 >= -2 + n); "
+	    "[[i0, i1, 1, 0, i0] -> [i5, 2]] -> "
+	    "[[i0, -1 + i1, 2, 0, i0] -> [i5, 1]] : "
+	    "exists (e0 = [(3 - n)/3]: i1 >= 2 and i5 >= 1 and "
+	    "3i0 <= -1 + n and i1 <= -1 + n and i5 <= -1 + n and "
+	    "3e0 >= 1 - n and 3e0 <= 2 - n and 3i0 >= -2 + n); "
+	    "[[i0, i1, 2, 0, i0] -> [i5, 2]] -> "
+	    "[[i0, i1, 1, 0, i0] -> [i5, 1]] : "
+	    "exists (e0 = [(3 - n)/3]: i5 >= 1 and i1 >= 1 and "
+	    "3i0 <= -1 + n and i1 <= -1 + n and i5 <= -1 + n and "
+	    "3e0 >= 1 - n and 3e0 <= 2 - n and 3i0 >= -2 + n) }";
+	map = isl_map_read_from_str(ctx, str, -1);
+	map = isl_map_transitive_closure(map, NULL);
+	assert(map);
+	isl_map_free(map);
 }
 
 void test_lex(struct isl_ctx *ctx)
@@ -1641,6 +1667,42 @@ void test_subset(isl_ctx *ctx)
 	isl_set_free(set2);
 }
 
+void test_factorize(isl_ctx *ctx)
+{
+	const char *str;
+	isl_basic_set *bset;
+	isl_factorizer *f;
+
+	str = "{ [i0, i1, i2, i3, i4, i5, i6, i7] : 3i5 <= 2 - 2i0 and "
+	    "i0 >= -2 and i6 >= 1 + i3 and i7 >= 0 and 3i5 >= -2i0 and "
+	    "2i4 <= i2 and i6 >= 1 + 2i0 + 3i1 and i4 <= -1 and "
+	    "i6 >= 1 + 2i0 + 3i5 and i6 <= 2 + 2i0 + 3i5 and "
+	    "3i5 <= 2 - 2i0 - i2 + 3i4 and i6 <= 2 + 2i0 + 3i1 and "
+	    "i0 <= -1 and i7 <= i2 + i3 - 3i4 - i6 and "
+	    "3i5 >= -2i0 - i2 + 3i4 }";
+	bset = isl_basic_set_read_from_str(ctx, str, 0);
+	f = isl_basic_set_factorizer(bset);
+	assert(f);
+	isl_basic_set_free(bset);
+	isl_factorizer_free(f);
+
+	str = "{ [i0, i1, i2, i3, i4, i5, i6, i7, i8, i9, i10, i11, i12] : "
+	    "i12 <= 2 + i0 - i11 and 2i8 >= -i4 and i11 >= i1 and "
+	    "3i5 <= -i2 and 2i11 >= -i4 - 2i7 and i11 <= 3 + i0 + 3i9 and "
+	    "i11 <= -i4 - 2i7 and i12 >= -i10 and i2 >= -2 and "
+	    "i11 >= i1 + 3i10 and i11 >= 1 + i0 + 3i9 and "
+	    "i11 <= 1 - i4 - 2i8 and 6i6 <= 6 - i2 and 3i6 >= 1 - i2 and "
+	    "i11 <= 2 + i1 and i12 <= i4 + i11 and i12 >= i0 - i11 and "
+	    "3i5 >= -2 - i2 and i12 >= -1 + i4 + i11 and 3i3 <= 3 - i2 and "
+	    "9i6 <= 11 - i2 + 6i5 and 3i3 >= 1 - i2 and "
+	    "9i6 <= 5 - i2 + 6i3 and i12 <= -1 and i2 <= 0 }";
+	bset = isl_basic_set_read_from_str(ctx, str, 0);
+	f = isl_basic_set_factorizer(bset);
+	assert(f);
+	isl_basic_set_free(bset);
+	isl_factorizer_free(f);
+}
+
 int main()
 {
 	struct isl_ctx *ctx;
@@ -1649,6 +1711,7 @@ int main()
 	assert(srcdir);
 
 	ctx = isl_ctx_alloc();
+	test_factorize(ctx);
 	test_subset(ctx);
 	test_lift(ctx);
 	test_bound(ctx);

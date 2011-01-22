@@ -323,6 +323,7 @@ __isl_give isl_basic_map *isl_basic_map_set_tuple_name(
 	bmap->dim = isl_dim_set_tuple_name(bmap->dim, type, s);
 	if (!bmap->dim)
 		goto error;
+	bmap = isl_basic_map_finalize(bmap);
 	return bmap;
 error:
 	isl_basic_map_free(bmap);
