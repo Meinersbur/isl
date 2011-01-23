@@ -48,6 +48,7 @@ struct isl_int_obj;
 typedef struct isl_int_obj isl_int_obj;
 
 __isl_give isl_int_obj *isl_int_obj_alloc(isl_ctx *ctx, isl_int v);
+void isl_int_obj_free(__isl_take isl_int_obj *i);
 __isl_give isl_int_obj *isl_int_obj_add(__isl_take isl_int_obj *i1,
 	__isl_take isl_int_obj *i2);
 __isl_give isl_int_obj *isl_int_obj_sub(__isl_take isl_int_obj *i1,
