@@ -546,9 +546,11 @@ static __isl_give isl_vertices *vertices_add_chambers(
 	struct isl_chamber_list *list)
 {
 	int i;
+	isl_ctx *ctx;
 	struct isl_chamber_list *next;
 
-	vertices->c = isl_alloc_array(vertices->ctx, struct isl_chamber, n_chambers);
+	ctx = isl_vertices_get_ctx(vertices);
+	vertices->c = isl_alloc_array(ctx, struct isl_chamber, n_chambers);
 	if (!vertices->c)
 		goto error;
 	vertices->n_chambers = n_chambers;
@@ -855,6 +857,7 @@ static __isl_give isl_vertices *compute_chambers(__isl_take isl_basic_set *bset,
 	__isl_take isl_vertices *vertices)
 {
 	int i;
+	isl_ctx *ctx;
 	isl_vec *sample = NULL;
 	struct isl_tab *tab = NULL;
 	struct isl_tab_undo *snap;
@@ -867,7 +870,8 @@ static __isl_give isl_vertices *compute_chambers(__isl_take isl_basic_set *bset,
 	if (!bset || !vertices)
 		goto error;
 
-	selection = isl_alloc_array(vertices->ctx, int, vertices->n_vertices);
+	ctx = isl_vertices_get_ctx(vertices);
+	selection = isl_alloc_array(ctx, int, vertices->n_vertices);
 	if (!selection)
 		goto error;
 
@@ -1013,12 +1017,14 @@ __isl_give isl_basic_set *isl_vertex_get_expr(__isl_keep isl_vertex *vertex)
 static __isl_give isl_vertex *isl_vertex_alloc(__isl_take isl_vertices *vertices,
 	int id)
 {
+	isl_ctx *ctx;
 	isl_vertex *vertex;
 
 	if (!vertices)
 		return NULL;
 
-	vertex = isl_alloc_type(vertices->ctx, isl_vertex);
+	ctx = isl_vertices_get_ctx(vertices);
+	vertex = isl_alloc_type(ctx, isl_vertex);
 	if (!vertex)
 		goto error;
 
@@ -1474,9 +1480,11 @@ static int triangulate(__isl_keep isl_cell *cell, __isl_keep isl_vec *v,
 	int i, j, k;
 	int d, nparam;
 	int *ids;
+	isl_ctx *ctx;
 	isl_basic_set *vertex;
 	isl_basic_set *bset;
 
+	ctx = isl_cell_get_ctx(cell);
 	d = isl_basic_set_dim(cell->vertices->bset, isl_dim_set);
 	nparam = isl_basic_set_dim(cell->vertices->bset, isl_dim_param);
 
