@@ -262,8 +262,7 @@ static int bernstein_coefficients_cell(__isl_take isl_cell *cell, void *user)
 		return isl_cell_foreach_simplex(cell,
 					    &bernstein_coefficients_cell, user);
 
-	subs = isl_alloc_array(data->poly->dim->ctx, isl_qpolynomial *,
-				1 + nvar);
+	subs = isl_alloc_array(ctx, isl_qpolynomial *, 1 + nvar);
 	if (!subs)
 		goto error;
 
