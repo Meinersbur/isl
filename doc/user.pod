@@ -727,6 +727,19 @@ is only used to specify the parameters.
 	__isl_give isl_map *isl_map_universe(
 		__isl_take isl_dim *dim);
 
+The sets and relations constructed by the functions above
+contain all integer values, while those constructed by the
+functions below only contain non-negative values.
+
+	__isl_give isl_basic_set *isl_basic_set_nat_universe(
+		__isl_take isl_dim *dim);
+	__isl_give isl_basic_map *isl_basic_map_nat_universe(
+		__isl_take isl_dim *dim);
+	__isl_give isl_set *isl_set_nat_universe(
+		__isl_take isl_dim *dim);
+	__isl_give isl_map *isl_map_nat_universe(
+		__isl_take isl_dim *dim);
+
 =item * Identity relations
 
 	__isl_give isl_basic_map *isl_basic_map_identity(

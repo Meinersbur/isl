@@ -4156,6 +4156,41 @@ struct isl_basic_set *isl_basic_set_universe(struct isl_dim *dim)
 	return bset;
 }
 
+__isl_give isl_basic_map *isl_basic_map_nat_universe(__isl_take isl_dim *dim)
+{
+	int i;
+	unsigned total = isl_dim_total(dim);
+	isl_basic_map *bmap;
+
+	bmap= isl_basic_map_alloc_dim(dim, 0, 0, total);
+	for (i = 0; i < total; ++i) {
+		int k = isl_basic_map_alloc_inequality(bmap);
+		if (k < 0)
+			goto error;
+		isl_seq_clr(bmap->ineq[k], 1 + total);
+		isl_int_set_si(bmap->ineq[k][1 + i], 1);
+	}
+	return bmap;
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+__isl_give isl_basic_set *isl_basic_set_nat_universe(__isl_take isl_dim *dim)
+{
+	return isl_basic_map_nat_universe(dim);
+}
+
+__isl_give isl_map *isl_map_nat_universe(__isl_take isl_dim *dim)
+{
+	return isl_map_from_basic_map(isl_basic_map_nat_universe(dim));
+}
+
+__isl_give isl_set *isl_set_nat_universe(__isl_take isl_dim *dim)
+{
+	return isl_map_nat_universe(dim);
+}
+
 __isl_give isl_basic_map *isl_basic_map_universe_like(
 		__isl_keep isl_basic_map *model)
 {

@@ -62,6 +62,7 @@ struct isl_basic_set *isl_basic_set_dup(struct isl_basic_set *bset);
 __isl_give isl_basic_set *isl_basic_set_empty(__isl_take isl_dim *dim);
 struct isl_basic_set *isl_basic_set_empty_like(struct isl_basic_set *bset);
 __isl_give isl_basic_set *isl_basic_set_universe(__isl_take isl_dim *dim);
+__isl_give isl_basic_set *isl_basic_set_nat_universe(__isl_take isl_dim *dim);
 struct isl_basic_set *isl_basic_set_universe_like(struct isl_basic_set *bset);
 __isl_give isl_basic_set *isl_basic_set_universe_like_set(
 	__isl_keep isl_set *model);
@@ -165,6 +166,7 @@ struct isl_set *isl_set_extend(struct isl_set *base,
 __isl_give isl_set *isl_set_empty(__isl_take isl_dim *dim);
 struct isl_set *isl_set_empty_like(struct isl_set *set);
 __isl_give isl_set *isl_set_universe(__isl_take isl_dim *dim);
+__isl_give isl_set *isl_set_nat_universe(__isl_take isl_dim *dim);
 __isl_give isl_set *isl_set_universe_like(__isl_keep isl_set *model);
 __isl_give isl_set *isl_set_add_basic_set(__isl_take isl_set *set,
 						__isl_take isl_basic_set *bset);
