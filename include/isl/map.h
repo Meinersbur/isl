@@ -40,12 +40,16 @@ extern "C" {
 
 struct isl_basic_map;
 typedef struct isl_basic_map isl_basic_map;
+#ifndef isl_basic_set
 struct isl_basic_set;
 typedef struct isl_basic_set isl_basic_set;
+#endif
 struct isl_map;
 typedef struct isl_map isl_map;
+#ifndef isl_set
 struct isl_set;
 typedef struct isl_set isl_set;
+#endif
 
 unsigned isl_basic_map_n_in(const struct isl_basic_map *bmap);
 unsigned isl_basic_map_n_out(const struct isl_basic_map *bmap);

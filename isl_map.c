@@ -12,6 +12,7 @@
 
 #include <string.h>
 #include <strings.h>
+#include <isl_map_private.h>
 #include <isl/ctx.h>
 #include <isl/blk.h>
 #include "isl_dim_private.h"
@@ -21,7 +22,6 @@
 #include <isl/seq.h>
 #include <isl/set.h>
 #include <isl/map.h>
-#include "isl_map_private.h"
 #include "isl_map_piplib.h"
 #include <isl_reordering.h>
 #include "isl_sample.h"

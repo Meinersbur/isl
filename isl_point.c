@@ -1,6 +1,6 @@
+#include <isl_map_private.h>
 #include <isl_point_private.h>
 #include <isl/set.h>
-#include <isl_map_private.h>
 #include <isl_sample.h>
 #include <isl_scan.h>
 #include <isl/seq.h>

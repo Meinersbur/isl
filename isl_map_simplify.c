@@ -7,9 +7,9 @@
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
  */
 
+#include <isl_map_private.h>
 #include "isl_equalities.h"
 #include <isl/map.h>
-#include "isl_map_private.h"
 #include <isl/seq.h>
 #include "isl_tab.h"
 #include <isl_dim_private.h>

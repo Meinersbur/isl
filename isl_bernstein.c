@@ -13,6 +13,7 @@
  * ZAC des vignes, 4 rue Jacques Monod, 91893 Orsay, France
  */
 
+#include <isl_map_private.h>
 #include <isl/set.h>
 #include <isl/seq.h>
 #include <isl_morph.h>
@@ -20,7 +21,6 @@
 #include <isl_vertices_private.h>
 #include <isl_polynomial_private.h>
 #include <isl_bernstein.h>
-#include <isl_map_private.h>
 
 struct bernstein_data {
 	enum isl_fold type;

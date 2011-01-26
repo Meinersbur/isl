@@ -10,6 +10,8 @@
 #ifndef ISL_MAP_PRIVATE_H
 #define ISL_MAP_PRIVATE_H
 
+#define isl_basic_set	isl_basic_map
+#define isl_set		isl_map
 #include <isl/set.h>
 #include <isl/map.h>
 #include <isl_reordering.h>
@@ -17,6 +19,8 @@
 
 /* A "basic map" is a relation between two sets of variables,
  * called the "in" and "out" variables.
+ * A "basic set" is a basic map with a zero-dimensional
+ * domain.
  *
  * It is implemented as a set with two extra fields:
  * n_in is the number of in variables
@@ -33,35 +37,6 @@ struct isl_basic_map {
 #define ISL_BASIC_MAP_NORMALIZED	(1 << 5)
 #define ISL_BASIC_MAP_NORMALIZED_DIVS	(1 << 6)
 #define ISL_BASIC_MAP_ALL_EQUALITIES	(1 << 7)
-	unsigned flags;
-
-	struct isl_ctx *ctx;
-
-	struct isl_dim *dim;
-	unsigned extra;
-
-	unsigned n_eq;
-	unsigned n_ineq;
-
-	size_t c_size;
-	isl_int **eq;
-	isl_int **ineq;
-
-	unsigned n_div;
-
-	isl_int **div;
-
-	struct isl_vec *sample;
-
-	struct isl_blk block;
-	struct isl_blk block2;
-};
-
-/* A "basic set" is a basic map with a zero-dimensional
- * domain.
- */
-struct isl_basic_set {
-	int ref;
 #define ISL_BASIC_SET_FINAL		(1 << 0)
 #define ISL_BASIC_SET_EMPTY		(1 << 1)
 #define ISL_BASIC_SET_NO_IMPLICIT	(1 << 2)
@@ -94,7 +69,8 @@ struct isl_basic_set {
 	struct isl_blk block2;
 };
 
-/* A "map" is a (disjoint) union of basic maps.
+/* A "map" is a (possibly disjoint) union of basic maps.
+ * A "set" is a (possibly disjoint) union of basic sets.
  *
  * Currently, the isl_set structure is identical to the isl_map structure
  * and the library depends on this correspondence internally.
@@ -104,24 +80,6 @@ struct isl_map {
 	int ref;
 #define ISL_MAP_DISJOINT		(1 << 0)
 #define ISL_MAP_NORMALIZED		(1 << 1)
-	unsigned flags;
-
-	struct isl_ctx *ctx;
-
-	struct isl_dim *dim;
-
-	int n;
-
-	size_t size;
-	struct isl_basic_map *p[1];
-};
-
-/* A "set" is a (possibly disjoint) union of basic sets.
- *
- * See the documentation of isl_map.
- */
-struct isl_set {
-	int ref;
 #define ISL_SET_DISJOINT		(1 << 0)
 #define ISL_SET_NORMALIZED		(1 << 1)
 	unsigned flags;
@@ -133,7 +91,7 @@ struct isl_set {
 	int n;
 
 	size_t size;
-	struct isl_basic_set *p[1];
+	struct isl_basic_map *p[1];
 };
 
 __isl_give isl_map *isl_map_realign(__isl_take isl_map *map,

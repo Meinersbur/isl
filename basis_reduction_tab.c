@@ -8,6 +8,7 @@
  */
 
 #include <assert.h>
+#include <isl_map_private.h>
 #include <isl/seq.h>
 #include "isl_tab.h"
 

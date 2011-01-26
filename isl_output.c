@@ -12,12 +12,12 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <isl_map_private.h>
 #include <isl/set.h>
 #include <isl/seq.h>
 #include <isl_polynomial_private.h>
 #include <isl_printer_private.h>
 #include <isl_dim_private.h>
-#include <isl_map_private.h>
 #include <isl_mat_private.h>
 #include <isl/union_map.h>
 

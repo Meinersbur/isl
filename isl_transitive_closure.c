@@ -8,8 +8,8 @@
  * 91893 Orsay, France 
  */
 
+#include <isl_map_private.h>
 #include <isl/map.h>
-#include "isl_map_private.h"
 #include <isl/seq.h>
 #include <isl_dim_private.h>
 #include <isl/lp.h>

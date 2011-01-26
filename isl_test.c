@@ -10,13 +10,13 @@
 #include <assert.h>
 #include <stdio.h>
 #include <limits.h>
+#include <isl_map_private.h>
 #include <isl/ctx.h>
 #include <isl/set.h>
 #include <isl/flow.h>
 #include <isl/constraint.h>
 #include <isl/polynomial.h>
 #include <isl/union_map.h>
-#include <isl_map_private.h>
 #include <isl_factorization.h>
 
 static char *srcdir;

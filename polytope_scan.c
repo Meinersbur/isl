@@ -8,11 +8,11 @@
  */
 
 #include <assert.h>
+#include <isl_map_private.h>
 #include "isl_equalities.h"
 #include <isl/seq.h>
 #include "isl_scan.h"
 #include <isl_mat_private.h>
-#include <isl_map_private.h>
 
 /* The input of this program is the same as that of the "polytope_scan"
  * program from the barvinok distribution.

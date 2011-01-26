@@ -7,12 +7,12 @@
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
  */
 
+#include <isl_map_private.h>
 #include <isl/ctx.h>
 #include <isl/lp.h>
 #include "isl_lp_piplib.h"
 #include <isl/seq.h>
 #include "isl_tab.h"
-#include "isl_map_private.h"
 
 enum isl_lp_result isl_tab_solve_lp(struct isl_basic_map *bmap, int maximize,
 				      isl_int *f, isl_int denom, isl_int *opt,

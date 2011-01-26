@@ -7,10 +7,10 @@
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
  */
 
+#include <isl_map_private.h>
 #include <isl/div.h>
 #include <isl/map.h>
 #include <isl_dim_private.h>
-#include "isl_map_private.h"
 #include <isl/seq.h>
 
 static unsigned n(struct isl_div *d, enum isl_dim_type type)

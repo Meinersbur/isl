@@ -7,11 +7,11 @@
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
  */
 
+#include <isl_map_private.h>
 #include "isl_basis_reduction.h"
 #include "isl_scan.h"
 #include <isl/seq.h>
 #include "isl_tab.h"
-#include <isl_map_private.h>
 
 struct isl_counter {
 	struct isl_scan_callback callback;

@@ -11,8 +11,8 @@
  */
 
 #include <stdlib.h>
+#include <isl_map_private.h>
 #include "isl_basis_reduction.h"
-#include "isl_map_private.h"
 
 static void save_alpha(GBR_LP *lp, int first, int n, GBR_type *alpha)
 {

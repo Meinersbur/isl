@@ -10,10 +10,10 @@
  * ZAC des vignes, 4 rue Jacques Monod, 91893 Orsay, France 
  */
 
+#include <isl_map_private.h>
 #include <isl/constraint.h>
 #include <isl_dim_private.h>
 #include <isl/seq.h>
-#include "isl_map_private.h"
 
 static unsigned n(struct isl_constraint *c, enum isl_dim_type type)
 {

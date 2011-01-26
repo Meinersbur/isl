@@ -1,6 +1,5 @@
 #include <isl/constraint.h>
 #include <isl/set.h>
-#include <isl_map_private.h>
 #include <isl_polynomial_private.h>
 #include <isl_morph.h>
 #include <isl_range.h>
@@ -351,6 +350,7 @@ static int propagate_on_bound_pair(__isl_take isl_constraint *lower,
 static int propagate_on_domain(__isl_take isl_basic_set *bset,
 	__isl_take isl_qpolynomial *poly, struct range_data *data)
 {
+	isl_ctx *ctx;
 	isl_qpolynomial *save_poly = data->poly;
 	int save_monotonicity = data->monotonicity;
 	unsigned d;
@@ -358,8 +358,9 @@ static int propagate_on_domain(__isl_take isl_basic_set *bset,
 	if (!bset || !poly)
 		goto error;
 
+	ctx = isl_basic_set_get_ctx(bset);
 	d = isl_basic_set_dim(bset, isl_dim_set);
-	isl_assert(bset->ctx, d >= 1, goto error);
+	isl_assert(ctx, d >= 1, goto error);
 
 	if (isl_qpolynomial_is_cst(poly, NULL, NULL)) {
 		bset = isl_basic_set_project_out(bset, isl_dim_set, 0, d);
@@ -396,13 +397,15 @@ error:
 static int basic_guarded_poly_bound(__isl_take isl_basic_set *bset, void *user)
 {
 	struct range_data *data = (struct range_data *)user;
+	isl_ctx *ctx;
 	unsigned nparam = isl_basic_set_dim(bset, isl_dim_param);
 	unsigned dim = isl_basic_set_dim(bset, isl_dim_set);
 	int r;
 
 	data->signs = NULL;
 
-	data->signs = isl_alloc_array(bset->ctx, int,
+	ctx = isl_basic_set_get_ctx(bset);
+	data->signs = isl_alloc_array(ctx, int,
 					isl_basic_set_dim(bset, isl_dim_all));
 
 	if (isl_basic_set_dims_get_sign(bset, isl_dim_set, 0, dim,
