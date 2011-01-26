@@ -40,7 +40,7 @@ struct isl_options {
 	unsigned		gbr_only_first;
 
 	#define			ISL_CLOSURE_ISL		0
-	#define			ISL_CLOSURE_OMEGA	1
+	#define			ISL_CLOSURE_BOX		1
 	unsigned		closure;
 
 	#define			ISL_BOUND_BERNSTEIN	0

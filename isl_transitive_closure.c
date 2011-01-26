@@ -2662,7 +2662,7 @@ __isl_give isl_map *isl_map_transitive_closure(__isl_take isl_map *map,
 	if (!map)
 		goto error;
 
-	if (map->ctx->opt->closure == ISL_CLOSURE_OMEGA)
+	if (map->ctx->opt->closure == ISL_CLOSURE_BOX)
 		return transitive_closure_omega(map, exact);
 
 	map = isl_map_compute_divs(map);

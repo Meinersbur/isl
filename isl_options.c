@@ -54,7 +54,7 @@ struct isl_arg_choice isl_gbr_choice[] = {
 
 struct isl_arg_choice isl_closure_choice[] = {
 	{"isl",		ISL_CLOSURE_ISL},
-	{"omega",	ISL_CLOSURE_OMEGA},
+	{"box",		ISL_CLOSURE_BOX},
 	{0}
 };
 
