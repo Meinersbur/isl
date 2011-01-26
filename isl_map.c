@@ -1939,17 +1939,7 @@ struct isl_set *isl_set_dup(struct isl_set *set)
 
 struct isl_set *isl_set_from_basic_set(struct isl_basic_set *bset)
 {
-	struct isl_set *set;
-
-	if (!bset)
-		return NULL;
-
-	set = isl_set_alloc_dim(isl_dim_copy(bset->dim), 1, ISL_MAP_DISJOINT);
-	if (!set) {
-		isl_basic_set_free(bset);
-		return NULL;
-	}
-	return isl_set_add_basic_set(set, bset);
+	return isl_map_from_basic_map(bset);
 }
 
 struct isl_map *isl_map_from_basic_map(struct isl_basic_map *bmap)
@@ -1960,10 +1950,6 @@ struct isl_map *isl_map_from_basic_map(struct isl_basic_map *bmap)
 		return NULL;
 
 	map = isl_map_alloc_dim(isl_dim_copy(bmap->dim), 1, ISL_MAP_DISJOINT);
-	if (!map) {
-		isl_basic_map_free(bmap);
-		return NULL;
-	}
 	return isl_map_add_basic_map(map, bmap);
 }
 
