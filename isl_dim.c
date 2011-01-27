@@ -576,6 +576,8 @@ __isl_give isl_dim *isl_dim_move(__isl_take isl_dim *dim,
 	enum isl_dim_type dst_type, unsigned dst_pos,
 	enum isl_dim_type src_type, unsigned src_pos, unsigned n)
 {
+	int i;
+
 	if (!dim)
 		return NULL;
 	if (n == 0)
@@ -645,6 +647,18 @@ __isl_give isl_dim *isl_dim_move(__isl_take isl_dim *dim,
 	case isl_dim_param:	dim->nparam -= n; break;
 	case isl_dim_in:	dim->n_in -= n; break;
 	case isl_dim_out:	dim->n_out -= n; break;
+	}
+
+	if (dst_type != isl_dim_param && src_type != isl_dim_param)
+		return dim;
+
+	for (i = 0; i < 2; ++i) {
+		if (!dim->nested[i])
+			continue;
+		dim->nested[i] = isl_dim_replace(dim->nested[i],
+						 isl_dim_param, dim);
+		if (!dim->nested[i])
+			goto error;
 	}
 
 	return dim;
