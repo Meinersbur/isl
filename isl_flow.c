@@ -42,8 +42,8 @@ struct isl_access_info {
 
 /* A structure containing the output of dependence analysis:
  * - n_source dependences
- * - a subset of the sink for which definitely no source could be found
- * - a subset of the sink for which possibly no source could be found
+ * - a wrapped subset of the sink for which definitely no source could be found
+ * - a wrapped subset of the sink for which possibly no source could be found
  */
 struct isl_flow {
 	isl_set			*must_no_source;
@@ -323,15 +323,15 @@ int isl_flow_foreach(__isl_keep isl_flow *deps,
 
 /* Return a copy of the subset of the sink for which no source could be found.
  */
-__isl_give isl_set *isl_flow_get_no_source(__isl_keep isl_flow *deps, int must)
+__isl_give isl_map *isl_flow_get_no_source(__isl_keep isl_flow *deps, int must)
 {
 	if (!deps)
 		return NULL;
 	
 	if (must)
-		return isl_set_copy(deps->must_no_source);
+		return isl_set_unwrap(isl_set_copy(deps->must_no_source));
 	else
-		return isl_set_copy(deps->may_no_source);
+		return isl_set_unwrap(isl_set_copy(deps->may_no_source));
 }
 
 void isl_flow_free(__isl_take isl_flow *deps)
@@ -894,10 +894,6 @@ __isl_give isl_flow *isl_access_info_compute_flow(__isl_take isl_access_info *ac
 		if (!res->dep[j].map)
 			goto error2;
 	}
-	res->must_no_source = isl_set_apply(res->must_no_source,
-					isl_map_copy(domain_map));
-	res->may_no_source = isl_set_apply(res->may_no_source,
-					isl_map_copy(domain_map));
 	if (!res->must_no_source || !res->may_no_source)
 		goto error2;
 
@@ -980,8 +976,8 @@ struct isl_compute_flow_data {
 	isl_union_map *may_source;
 	isl_union_map *must_dep;
 	isl_union_map *may_dep;
-	isl_union_set *must_no_source;
-	isl_union_set *may_no_source;
+	isl_union_map *must_no_source;
+	isl_union_map *may_no_source;
 
 	int count;
 	int must;
@@ -1140,10 +1136,10 @@ static int compute_flow(__isl_take isl_map *map, void *user)
 	if (!flow)
 		goto error;
 
-	data->must_no_source = isl_union_set_union(data->must_no_source,
-		    isl_union_set_from_set(isl_set_copy(flow->must_no_source)));
-	data->may_no_source = isl_union_set_union(data->may_no_source,
-		    isl_union_set_from_set(isl_set_copy(flow->may_no_source)));
+	data->must_no_source = isl_union_map_union(data->must_no_source,
+		    isl_union_map_from_map(isl_flow_get_no_source(flow, 1)));
+	data->may_no_source = isl_union_map_union(data->may_no_source,
+		    isl_union_map_from_map(isl_flow_get_no_source(flow, 0)));
 
 	for (i = 0; i < flow->n_source; ++i) {
 		isl_union_map *dep;
@@ -1201,8 +1197,8 @@ int isl_union_map_compute_flow(__isl_take isl_union_map *sink,
 	__isl_take isl_union_map *may_source,
 	__isl_take isl_union_map *schedule,
 	__isl_give isl_union_map **must_dep, __isl_give isl_union_map **may_dep,
-	__isl_give isl_union_set **must_no_source,
-	__isl_give isl_union_set **may_no_source)
+	__isl_give isl_union_map **must_no_source,
+	__isl_give isl_union_map **may_no_source)
 {
 	isl_dim *dim;
 	isl_union_map *range_map = NULL;
@@ -1233,9 +1229,9 @@ int isl_union_map_compute_flow(__isl_take isl_union_map *sink,
 		isl_union_map_empty(isl_dim_copy(dim)) : NULL;
 	data.may_dep = may_dep ? isl_union_map_empty(isl_dim_copy(dim)) : NULL;
 	data.must_no_source = must_no_source ?
-		isl_union_set_empty(isl_dim_copy(dim)) : NULL;
+		isl_union_map_empty(isl_dim_copy(dim)) : NULL;
 	data.may_no_source = may_no_source ?
-		isl_union_set_empty(isl_dim_copy(dim)) : NULL;
+		isl_union_map_empty(isl_dim_copy(dim)) : NULL;
 
 	isl_dim_free(dim);
 
@@ -1261,13 +1257,13 @@ int isl_union_map_compute_flow(__isl_take isl_union_map *sink,
 		*may_dep = data.may_dep;
 	}
 	if (must_no_source) {
-		data.must_no_source = isl_union_set_apply(data.must_no_source,
-					isl_union_map_copy(range_map));
+		data.must_no_source = isl_union_map_apply_domain(
+			data.must_no_source, isl_union_map_copy(range_map));
 		*must_no_source = data.must_no_source;
 	}
 	if (may_no_source) {
-		data.may_no_source = isl_union_set_apply(data.may_no_source,
-					isl_union_map_copy(range_map));
+		data.may_no_source = isl_union_map_apply_domain(
+			data.may_no_source, isl_union_map_copy(range_map));
 		*may_no_source = data.may_no_source;
 	}
 
@@ -1281,8 +1277,8 @@ error:
 	isl_union_map_free(may_source);
 	isl_union_map_free(data.must_dep);
 	isl_union_map_free(data.may_dep);
-	isl_union_set_free(data.must_no_source);
-	isl_union_set_free(data.may_no_source);
+	isl_union_map_free(data.must_no_source);
+	isl_union_map_free(data.may_no_source);
 
 	if (must_dep)
 		*must_dep = NULL;

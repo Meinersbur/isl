@@ -62,6 +62,11 @@ to C<isl/header.h>.
 =item * The functions C<isl_printer_print_basic_set> and
 C<isl_printer_print_basic_map> no longer print a newline.
 
+=item * The functions C<isl_flow_get_no_source>
+and C<isl_union_map_compute_flow> now return
+the accesses for which no source could be found instead of
+the iterations where those accesses occur.
+
 =back
 
 =head1 Installation
@@ -2403,7 +2408,7 @@ then value based dependence analysis is performed.
 		int (*fn)(__isl_take isl_map *dep, int must,
 			  void *dep_user, void *user),
 		void *user);
-	__isl_give isl_set *isl_flow_get_no_source(
+	__isl_give isl_map *isl_flow_get_no_source(
 		__isl_keep isl_flow *deps, int must);
 	void isl_flow_free(__isl_take isl_flow *deps);
 
@@ -2441,16 +2446,16 @@ called explicitly, because it is called implicitly by
 C<isl_access_info_compute_flow>.
 
 The result of the dependence analysis is collected in an
-C<isl_flow>.  There may be elements in the domain of
+C<isl_flow>.  There may be elements of
 the sink access for which no preceding source access could be
 found or for which all preceding sources are I<may> accesses.
-The sets of these elements can be obtained through
+The relations containing these elements can be obtained through
 calls to C<isl_flow_get_no_source>, the first with C<must> set
 and the second with C<must> unset.
 In the case of standard flow dependence analysis,
 with the sink a read and the sources I<must> writes,
-the first set corresponds to the reads from uninitialized
-array elements and the second set is empty.
+the first relation corresponds to the reads from uninitialized
+array elements and the second relation is empty.
 The actual flow dependences can be extracted using
 C<isl_flow_foreach>.  This function will call the user-specified
 callback function C<fn> for each B<non-empty> dependence between
@@ -2477,14 +2482,16 @@ by the following function.
 		__isl_take isl_union_map *schedule,
 		__isl_give isl_union_map **must_dep,
 		__isl_give isl_union_map **may_dep,
-		__isl_give isl_union_set **must_no_source,
-		__isl_give isl_union_set **may_no_source);
+		__isl_give isl_union_map **must_no_source,
+		__isl_give isl_union_map **may_no_source);
 
 The arrays are identified by the tuple names of the ranges
 of the accesses.  The iteration domains by the tuple names
 of the domains of the accesses and of the schedule.
 The relative order of the iteration domains is given by the
-schedule.  Any of C<must_dep>, C<may_dep>, C<must_no_source>
+schedule.  The relations returned through C<must_no_source>
+and C<may_no_source> are subsets of C<sink>.
+Any of C<must_dep>, C<may_dep>, C<must_no_source>
 or C<may_no_source> may be C<NULL>, but a C<NULL> value for
 any of the other arguments is treated as an error.
 

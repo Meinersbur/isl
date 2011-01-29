@@ -31,7 +31,7 @@ __isl_give isl_flow *isl_access_info_compute_flow(__isl_take isl_access_info *ac
 int isl_flow_foreach(__isl_keep isl_flow *deps,
 	int (*fn)(__isl_take isl_map *dep, int must, void *dep_user, void *user),
 	void *user);
-__isl_give isl_set *isl_flow_get_no_source(__isl_keep isl_flow *deps, int must);
+__isl_give isl_map *isl_flow_get_no_source(__isl_keep isl_flow *deps, int must);
 void isl_flow_free(__isl_take isl_flow *deps);
 
 int isl_union_map_compute_flow(__isl_take isl_union_map *sink,
@@ -39,8 +39,8 @@ int isl_union_map_compute_flow(__isl_take isl_union_map *sink,
 	__isl_take isl_union_map *may_source,
 	__isl_take isl_union_map *schedule,
 	__isl_give isl_union_map **must_dep, __isl_give isl_union_map **may_dep,
-	__isl_give isl_union_set **must_no_source,
-	__isl_give isl_union_set **may_no_source);
+	__isl_give isl_union_map **must_no_source,
+	__isl_give isl_union_map **may_no_source);
 
 #if defined(__cplusplus)
 }
