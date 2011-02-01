@@ -524,7 +524,7 @@ error:
 }
 
 /* Given an unbounded tableau and an integer point satisfying the tableau,
- * construct an intial affine hull containing the recession cone
+ * construct an initial affine hull containing the recession cone
  * shifted to the given point.
  *
  * The unbounded directions are taken from the last rows of the basis,
@@ -576,7 +576,7 @@ error:
  * isl_tab_set_initial_basis_with_cone will add some additional
  * constraints to the tableau that have to be removed again.
  * In this case, we therefore rollback to the state before
- * any constraints were added and then add the eqaulities back in.
+ * any constraints were added and then add the equalities back in.
  */
 struct isl_tab *isl_tab_detect_equalities(struct isl_tab *tab,
 	struct isl_tab *tab_cone)
