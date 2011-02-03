@@ -4251,7 +4251,7 @@ static __isl_give isl_map *basic_map_partial_lexopt(
  *
  *	a x >= -u >= -b_i(p)
  *
- * Moreover, m = min_i(b_i(p)) satisfied the constraints on u and can
+ * Moreover, m = min_i(b_i(p)) satisfies the constraints on u and can
  * therefore be plugged into the solution.
  */
 static __isl_give isl_map *basic_map_partial_lexopt_symm(
