@@ -206,7 +206,8 @@ static int tab_freeze_constraints(struct isl_tab *tab)
  * Put the indices of the redundant constraints in index
  * and return the number of redundant constraints.
  */
-static int n_non_redundant(struct isl_tab *tab, int offset, int **index)
+static int n_non_redundant(isl_ctx *ctx, struct isl_tab *tab,
+	int offset, int **index)
 {
 	int i, n;
 	int n_test = tab->n_con - offset;
@@ -215,7 +216,7 @@ static int n_non_redundant(struct isl_tab *tab, int offset, int **index)
 		return -1;
 
 	if (!*index)
-		*index = isl_alloc_array(tab->mat->ctx, int, n_test);
+		*index = isl_alloc_array(ctx, int, n_test);
 	if (!*index)
 		return -1;
 
@@ -278,6 +279,7 @@ static int basic_map_collect_diff(__isl_take isl_basic_map *bmap,
 	int level;
 	int init;
 	int empty;
+	isl_ctx *ctx;
 	struct isl_tab *tab = NULL;
 	struct isl_tab_undo **snap = NULL;
 	int *k = NULL;
@@ -298,6 +300,7 @@ static int basic_map_collect_diff(__isl_take isl_basic_map *bmap,
 	if (!bmap || !map)
 		goto error;
 
+	ctx = map->ctx;
 	snap = isl_alloc_array(map->ctx, struct isl_tab_undo *, map->n);
 	k = isl_alloc_array(map->ctx, int, map->n);
 	n = isl_alloc_array(map->ctx, int, map->n);
@@ -365,7 +368,8 @@ static int basic_map_collect_diff(__isl_take isl_basic_map *bmap,
 				continue;
 			}
 			modified = 1;
-			n[level] = n_non_redundant(tab, offset, &index[level]);
+			n[level] = n_non_redundant(ctx, tab, offset,
+						    &index[level]);
 			if (n[level] < 0)
 				goto error;
 			if (n[level] == 0) {

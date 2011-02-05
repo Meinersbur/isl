@@ -1424,7 +1424,7 @@ __isl_give isl_basic_map *isl_basic_map_remove_divs(
 	if (!bmap)
 		return NULL;
 	bmap->n_div = 0;
-	return bmap;
+	return isl_basic_map_finalize(bmap);
 }
 
 __isl_give isl_basic_set *isl_basic_set_remove_divs(

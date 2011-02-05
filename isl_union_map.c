@@ -996,10 +996,11 @@ __isl_give isl_union_set *isl_union_set_simple_hull(
 
 static int inplace_entry(void **entry, void *user)
 {
-	__isl_give isl_map *(*fn)(__isl_take isl_map *) = user;
+	__isl_give isl_map *(*fn)(__isl_take isl_map *);
 	isl_map **map = (isl_map **)entry;
 	isl_map *copy;
 
+	fn = *(__isl_give isl_map *(**)(__isl_take isl_map *)) user;
 	copy = fn(isl_map_copy(*map));
 	if (!copy)
 		return -1;
@@ -1017,7 +1018,7 @@ static __isl_give isl_union_map *inplace(__isl_take isl_union_map *umap,
 		return NULL;
 
 	if (isl_hash_table_foreach(umap->dim->ctx, &umap->table,
-				    &inplace_entry, fn) < 0)
+				    &inplace_entry, &fn) < 0)
 		goto error;
 
 	return umap;

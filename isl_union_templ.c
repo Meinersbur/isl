@@ -49,7 +49,7 @@ static __isl_give UNION *FN(UNION,alloc)(__isl_take isl_dim *dim, int size)
 	if (!dim)
 		return NULL;
 
-	u = isl_calloc_type(ctx, UNION);
+	u = isl_calloc_type(dim->ctx, UNION);
 	if (!u)
 		return NULL;
 
