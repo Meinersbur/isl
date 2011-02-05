@@ -2709,7 +2709,8 @@ int isl_tab_is_equality(struct isl_tab *tab, int con)
 
 	off = 2 + tab->M;
 	return isl_int_is_zero(tab->mat->row[row][1]) &&
-		isl_seq_first_non_zero(tab->mat->row[row] + 2 + tab->n_dead,
+		(!tab->M || isl_int_is_zero(tab->mat->row[row][2])) &&
+		isl_seq_first_non_zero(tab->mat->row[row] + off + tab->n_dead,
 					tab->n_col - tab->n_dead) == -1;
 }
 
