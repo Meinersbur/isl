@@ -10,6 +10,7 @@ PIP_TESTS="\
 	fimmel.pip \
 	max.pip \
 	negative.pip \
+	seghir-vd.pip \
 	small.pip \
 	sor1d.pip \
 	square.pip \
