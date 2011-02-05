@@ -2257,11 +2257,25 @@ static int context_lex_get_div(struct isl_context *context, struct isl_tab *tab,
 	return get_div(tab, context, div);
 }
 
+/* Add a div specified by "div" to the context tableau and return
+ * 1 if the div is obviously non-negative.
+ * context_tab_add_div will always return 1, because all variables
+ * in a isl_context_lex tableau are non-negative.
+ * However, if we are using a big parameter in the context, then this only
+ * reflects the non-negativity of the variable used to _encode_ the
+ * div, i.e., div' = M + div, so we can't draw any conclusions.
+ */
 static int context_lex_add_div(struct isl_context *context, struct isl_vec *div)
 {
 	struct isl_context_lex *clex = (struct isl_context_lex *)context;
-	return context_tab_add_div(clex->tab, div,
+	int nonneg;
+	nonneg = context_tab_add_div(clex->tab, div,
 					context_lex_add_ineq_wrap, context);
+	if (nonneg < 0)
+		return -1;
+	if (clex->tab->M)
+		return 0;
+	return nonneg;
 }
 
 static int context_lex_detect_equalities(struct isl_context *context,
