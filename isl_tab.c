@@ -2057,7 +2057,7 @@ error:
 	return -1;
 }
 
-/* Add an extra div, prescrived by "div" to the tableau and
+/* Add an extra div, prescribed by "div" to the tableau and
  * the associated bmap (which is assumed to be non-NULL).
  *
  * If add_ineq is not NULL, then this function is used instead
@@ -2713,12 +2713,12 @@ int isl_tab_is_equality(struct isl_tab *tab, int con)
 					tab->n_col - tab->n_dead) == -1;
 }
 
-/* Return the minimial value of the affine expression "f" with denominator
+/* Return the minimal value of the affine expression "f" with denominator
  * "denom" in *opt, *opt_denom, assuming the tableau is not empty and
  * the expression cannot attain arbitrarily small values.
  * If opt_denom is NULL, then *opt is rounded up to the nearest integer.
  * The return value reflects the nature of the result (empty, unbounded,
- * minmimal value returned in *opt).
+ * minimal value returned in *opt).
  */
 enum isl_lp_result isl_tab_min(struct isl_tab *tab,
 	isl_int *f, isl_int denom, isl_int *opt, isl_int *opt_denom,
