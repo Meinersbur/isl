@@ -18,5 +18,6 @@ PIP_TESTS="\
 
 for i in $PIP_TESTS; do
 	echo $i;
-	./isl_pip$EXEEXT -T < $srcdir/test_inputs/$i || exit
+	./isl_pip$EXEEXT --context=gbr -T < $srcdir/test_inputs/$i || exit
+	./isl_pip$EXEEXT --context=lexmin -T < $srcdir/test_inputs/$i || exit
 done
