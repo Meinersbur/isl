@@ -2057,6 +2057,34 @@ error:
 	return -1;
 }
 
+/* Check whether the div described by "div" is obviously non-negative.
+ * If we are using a big parameter, then we will encode the div
+ * as div' = M + div, which is always non-negative.
+ * Otherwise, we check whether div is a non-negative affine combination
+ * of non-negative variables.
+ */
+static int div_is_nonneg(struct isl_tab *tab, __isl_keep isl_vec *div)
+{
+	int i;
+
+	if (tab->M)
+		return 1;
+
+	if (isl_int_is_neg(div->el[1]))
+		return 0;
+
+	for (i = 0; i < tab->n_var; ++i) {
+		if (isl_int_is_neg(div->el[2 + i]))
+			return 0;
+		if (isl_int_is_zero(div->el[2 + i]))
+			continue;
+		if (!tab->var[i].is_nonneg)
+			return 0;
+	}
+
+	return 1;
+}
+
 /* Add an extra div, prescrived by "div" to the tableau and
  * the associated bmap (which is assumed to be non-NULL).
  *
@@ -2069,7 +2097,6 @@ error:
 int isl_tab_add_div(struct isl_tab *tab, __isl_keep isl_vec *div,
 	int (*add_ineq)(void *user, isl_int *), void *user)
 {
-	int i;
 	int r;
 	int k;
 	int nonneg;
@@ -2079,15 +2106,7 @@ int isl_tab_add_div(struct isl_tab *tab, __isl_keep isl_vec *div,
 
 	isl_assert(tab->mat->ctx, tab->bmap, return -1);
 
-	for (i = 0; i < tab->n_var; ++i) {
-		if (isl_int_is_neg(div->el[2 + i]))
-			break;
-		if (isl_int_is_zero(div->el[2 + i]))
-			continue;
-		if (!tab->var[i].is_nonneg)
-			break;
-	}
-	nonneg = i == tab->n_var && !isl_int_is_neg(div->el[1]);
+	nonneg = div_is_nonneg(tab, div);
 
 	if (isl_tab_extend_cons(tab, 3) < 0)
 		return -1;
