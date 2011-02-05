@@ -1630,6 +1630,9 @@ int isl_tab_allocate_var(struct isl_tab *tab)
  *		d_r   d_r        d_r d_x/g                m
  *
  *	with g the gcd of d_r and d_x and m the lcm of d_r and d_x.
+ *
+ * If tab->M is set, then, internally, each variable x is represented
+ * as x' - M.  We then also need no subtract k d_r from the coefficient of M.
  */
 int isl_tab_add_row(struct isl_tab *tab, isl_int *line)
 {
