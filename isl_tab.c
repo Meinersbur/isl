@@ -2763,8 +2763,6 @@ enum isl_lp_result isl_tab_min(struct isl_tab *tab,
 	if (r < 0)
 		return isl_lp_error;
 	var = &tab->con[r];
-	isl_int_mul(tab->mat->row[var->index][0],
-		    tab->mat->row[var->index][0], denom);
 	for (;;) {
 		int row, col;
 		find_pivot(tab, var, var, -1, &row, &col);
@@ -2777,6 +2775,8 @@ enum isl_lp_result isl_tab_min(struct isl_tab *tab,
 		if (isl_tab_pivot(tab, row, col) < 0)
 			return isl_lp_error;
 	}
+	isl_int_mul(tab->mat->row[var->index][0],
+		    tab->mat->row[var->index][0], denom);
 	if (ISL_FL_ISSET(flags, ISL_TAB_SAVE_DUAL)) {
 		int i;
 
