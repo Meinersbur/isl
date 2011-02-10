@@ -290,6 +290,7 @@ static struct isl_basic_set *wrap_constraints(struct isl_set *set)
 		n_ineq += set->p[i]->n_ineq;
 	}
 	lp = isl_basic_set_alloc(set->ctx, 0, dim * set->n, 0, n_eq, n_ineq);
+	lp = isl_basic_set_set_rational(lp);
 	if (!lp)
 		return NULL;
 	lp_dim = isl_basic_set_n_dim(lp);
