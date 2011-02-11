@@ -1067,40 +1067,21 @@ static __isl_give isl_map *read_conjuncts(struct isl_stream *s,
 static struct isl_map *read_disjuncts(struct isl_stream *s,
 	struct vars *v, __isl_take isl_dim *dim)
 {
-	struct isl_token *tok;
 	struct isl_map *map;
 
-	tok = isl_stream_next_token(s);
-	if (!tok) {
-		isl_stream_error(s, NULL, "unexpected EOF");
-		goto error;
-	}
-	if (tok->type == '}') {
-		isl_stream_push_token(s, tok);
+	if (isl_stream_next_token_is(s, '}'))
 		return isl_map_universe(dim);
-	}
-	isl_stream_push_token(s, tok);
 
-	map = isl_map_empty(isl_dim_copy(dim));
-	for (;;) {
+	map = read_conjuncts(s, v, isl_dim_copy(dim));
+	while (isl_stream_eat_if_available(s, ISL_TOKEN_OR)) {
 		isl_map *map_i;
 
 		map_i = read_conjuncts(s, v, isl_dim_copy(dim));
 		map = isl_map_union(map, map_i);
-
-		tok = isl_stream_next_token(s);
-		if (!tok || tok->type != ISL_TOKEN_OR)
-			break;
-		isl_token_free(tok);
 	}
-	if (tok)
-		isl_stream_push_token(s, tok);
 
 	isl_dim_free(dim);
 	return map;
-error:
-	isl_dim_free(dim);
-	return NULL;
 }
 
 static int polylib_pos_to_isl_pos(__isl_keep isl_basic_map *bmap, int pos)
