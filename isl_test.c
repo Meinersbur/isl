@@ -55,6 +55,8 @@ void test_parse(struct isl_ctx *ctx)
 	isl_map_free(map);
 
 	test_parse_map(ctx, "{[[s] -> A[i]] -> [[s+1] -> A[i]]}");
+	test_parse_map(ctx, "{ [p1, y1, y2] -> [2, y1, y2] : "
+				"p1 = 1 && (y1 <= y2 || y2 = 0) }");
 
 	str = "{[new,old] -> [new+1-2*[(new+1)/2],old+1-2*[(old+1)/2]]}";
 	map = isl_map_read_from_str(ctx, str, -1);
