@@ -1542,7 +1542,8 @@ static __isl_give isl_map *read_optional_disjuncts(struct isl_stream *s,
 		goto error;
 	}
 	map = isl_map_from_basic_map(isl_basic_map_copy(bmap));
-	if (tok->type == ':') {
+	if (tok->type == ':' ||
+	    (tok->type == ISL_TOKEN_OR && !strcmp(tok->u.s, "|"))) {
 		isl_token_free(tok);
 		map = isl_map_intersect(map,
 			    read_disjuncts(s, v, isl_basic_map_get_dim(bmap)));
