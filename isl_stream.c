@@ -74,6 +74,7 @@ static struct isl_token *isl_token_new(struct isl_ctx *ctx,
 	tok->col = col;
 	tok->on_new_line = on_new_line;
 	tok->is_keyword = 0;
+	tok->u.s = NULL;
 	return tok;
 }
 
@@ -83,9 +84,7 @@ void isl_token_free(struct isl_token *tok)
 		return;
 	if (tok->type == ISL_TOKEN_VALUE)
 		isl_int_clear(tok->u.v);
-	else if (tok->type == ISL_TOKEN_IDENT ||
-		 tok->type == ISL_TOKEN_STRING ||
-		 tok->is_keyword)
+	else
 		free(tok->u.s);
 	free(tok);
 }
@@ -102,6 +101,12 @@ void isl_stream_error(struct isl_stream *s, struct isl_token *tok, char *msg)
 			fprintf(stderr, "got ident '%s'\n", tok->u.s);
 		else if (tok->is_keyword)
 			fprintf(stderr, "got keyword '%s'\n", tok->u.s);
+		else if (tok->type == ISL_TOKEN_VALUE) {
+			fprintf(stderr, "got value '");
+			isl_int_print(stderr, tok->u.v, 0);
+			fprintf(stderr, "'\n");
+		} else if (tok->u.s)
+			fprintf(stderr, "got token '%s'\n", tok->u.s);
 		else
 			fprintf(stderr, "got token type %d\n", tok->type);
 	}
@@ -315,6 +320,7 @@ static struct isl_token *next_token(struct isl_stream *s, int same_line)
 			tok = isl_token_new(s->ctx, line, col, old_line != line);
 			if (!tok)
 				return NULL;
+			tok->u.s = strdup("->");
 			tok->type = ISL_TOKEN_TO;
 			return tok;
 		}
@@ -390,6 +396,7 @@ static struct isl_token *next_token(struct isl_stream *s, int same_line)
 		if (!tok)
 			return NULL;
 		if ((c = isl_stream_getc(s)) == '=') {
+			tok->u.s = strdup(":=");
 			tok->type = ISL_TOKEN_DEF;
 			return tok;
 		}
@@ -404,16 +411,21 @@ static struct isl_token *next_token(struct isl_stream *s, int same_line)
 		if (!tok)
 			return NULL;
 		if ((c = isl_stream_getc(s)) == '=') {
+			tok->u.s = strdup(">=");
 			tok->type = ISL_TOKEN_GE;
 			return tok;
 		} else if (c == '>') {
 			if ((c = isl_stream_getc(s)) == '=') {
+				tok->u.s = strdup(">>=");
 				tok->type = ISL_TOKEN_LEX_GE;
 				return tok;
 			}
+			tok->u.s = strdup(">>");
 			tok->type = ISL_TOKEN_LEX_GT;
-		} else
+		} else {
+			tok->u.s = strdup(">");
 			tok->type = ISL_TOKEN_GT;
+		}
 		if (c != -1)
 			isl_stream_ungetc(s, c);
 		return tok;
@@ -424,16 +436,21 @@ static struct isl_token *next_token(struct isl_stream *s, int same_line)
 		if (!tok)
 			return NULL;
 		if ((c = isl_stream_getc(s)) == '=') {
+			tok->u.s = strdup("<=");
 			tok->type = ISL_TOKEN_LE;
 			return tok;
 		} else if (c == '<') {
 			if ((c = isl_stream_getc(s)) == '=') {
+				tok->u.s = strdup("<<=");
 				tok->type = ISL_TOKEN_LEX_LE;
 				return tok;
 			}
+			tok->u.s = strdup("<<");
 			tok->type = ISL_TOKEN_LEX_LT;
-		} else
+		} else {
+			tok->u.s = strdup("<");
 			tok->type = ISL_TOKEN_LT;
+		}
 		if (c != -1)
 			isl_stream_ungetc(s, c);
 		return tok;
@@ -443,8 +460,11 @@ static struct isl_token *next_token(struct isl_stream *s, int same_line)
 		if (!tok)
 			return NULL;
 		tok->type = ISL_TOKEN_AND;
-		if ((c = isl_stream_getc(s)) != '&' && c != -1)
+		if ((c = isl_stream_getc(s)) != '&' && c != -1) {
+			tok->u.s = strdup("&");
 			isl_stream_ungetc(s, c);
+		} else
+			tok->u.s = strdup("&&");
 		return tok;
 	}
 	if (c == '|') {
@@ -452,8 +472,11 @@ static struct isl_token *next_token(struct isl_stream *s, int same_line)
 		if (!tok)
 			return NULL;
 		tok->type = ISL_TOKEN_OR;
-		if ((c = isl_stream_getc(s)) != '|' && c != -1)
+		if ((c = isl_stream_getc(s)) != '|' && c != -1) {
+			tok->u.s = strdup("|");
 			isl_stream_ungetc(s, c);
+		} else
+			tok->u.s = strdup("||");
 		return tok;
 	}
 
