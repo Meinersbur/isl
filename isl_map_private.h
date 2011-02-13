@@ -278,6 +278,8 @@ int isl_set_foreach_orthant(__isl_keep isl_set *set,
 	int (*fn)(__isl_take isl_set *orthant, int *signs, void *user),
 	void *user);
 
+int isl_basic_map_add_div_constraints_var(__isl_keep isl_basic_map *bmap,
+	unsigned pos, isl_int *div);
 int isl_basic_set_add_div_constraints_var(__isl_keep isl_basic_set *bset,
 	unsigned pos, isl_int *div);
 int isl_basic_map_is_div_constraint(__isl_keep isl_basic_map *bmap,
