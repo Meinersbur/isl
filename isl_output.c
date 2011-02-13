@@ -408,9 +408,11 @@ static __isl_give isl_printer *print_nested_map_dim(__isl_take isl_printer *p,
 }
 
 static __isl_give isl_printer *print_dim(__isl_keep isl_dim *dim,
-	__isl_take isl_printer *p, int set, int latex,
+	__isl_take isl_printer *p, int set, int latex, int rational,
 	__isl_keep isl_basic_map *eq)
 {
+	if (rational && !latex)
+		p = isl_printer_print_str(p, "rat: ");
 	if (set)
 		p = print_tuple(dim, p, isl_dim_set, 1, latex, eq);
 	else {
@@ -639,12 +641,13 @@ static __isl_give isl_printer *isl_basic_map_print_isl(
 	__isl_keep isl_basic_map *bmap, __isl_take isl_printer *p,
 	int set, int latex)
 {
+	int rational = ISL_F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL);
 	if (isl_basic_map_dim(bmap, isl_dim_param) > 0) {
 		p = print_tuple(bmap->dim, p, isl_dim_param, 0, latex, NULL);
 		p = isl_printer_print_str(p, " -> ");
 	}
 	p = isl_printer_print_str(p, "{ ");
-	p = print_dim(bmap->dim, p, set, latex, NULL);
+	p = print_dim(bmap->dim, p, set, latex, rational, NULL);
 	p = isl_printer_print_str(p, " : ");
 	p = print_disjunct(bmap, bmap->dim, p, set, latex);
 	p = isl_printer_print_str(p, " }");
@@ -814,6 +817,7 @@ static __isl_give isl_printer *print_split_map(__isl_take isl_printer *p,
 	struct isl_aff_split *split, int n, int set)
 {
 	int i;
+	int rational;
 
 	for (i = 0; i < n; ++i) {
 		isl_dim *dim;
@@ -821,9 +825,11 @@ static __isl_give isl_printer *print_split_map(__isl_take isl_printer *p,
 		if (!split[i].map)
 			break;
 		dim = split[i].map->dim;
+		rational = split[i].map->n > 0 &&
+		    ISL_F_ISSET(split[i].map->p[0], ISL_BASIC_MAP_RATIONAL);
 		if (i)
 			p = isl_printer_print_str(p, "; ");
-		p = print_dim(dim, p, set, 0, split[i].aff);
+		p = print_dim(dim, p, set, 0, rational, split[i].aff);
 		p = print_disjuncts(split[i].map, p, set, 0);
 	}
 
@@ -834,13 +840,16 @@ static __isl_give isl_printer *isl_map_print_isl_body(__isl_keep isl_map *map,
 	__isl_take isl_printer *p, int set)
 {
 	struct isl_aff_split *split = NULL;
+	int rational;
 
 	if (map->n > 0)
 		split = split_aff(map);
 	if (split) {
 		p = print_split_map(p, split, map->n, set);
 	} else {
-		p = print_dim(map->dim, p, set, 0, NULL);
+		rational = map->n > 0 &&
+		    ISL_F_ISSET(map->p[0], ISL_BASIC_MAP_RATIONAL);
+		p = print_dim(map->dim, p, set, 0, rational, NULL);
 		p = print_disjuncts(map, p, set, 0);
 	}
 	free_split(split, map->n);
@@ -868,7 +877,7 @@ static __isl_give isl_printer *print_latex_map(__isl_keep isl_map *map,
 		p = isl_printer_print_str(p, s_to[1]);
 	}
 	p = isl_printer_print_str(p, s_open_set[1]);
-	p = print_dim(map->dim, p, set, 1, aff);
+	p = print_dim(map->dim, p, set, 1, 0, aff);
 	p = print_disjuncts(map, p, set, 1);
 	p = isl_printer_print_str(p, s_close_set[1]);
 
@@ -1534,7 +1543,7 @@ static __isl_give isl_printer *isl_pwqp_print_isl_body(
 			p = isl_printer_print_str(p, "; ");
 		if (isl_dim_size(pwqp->dim, isl_dim_set) > 0 ||
 		    isl_dim_is_named_or_nested(pwqp->dim, isl_dim_set)) {
-			p = print_dim(pwqp->p[i].set->dim, p, 1, 0, NULL);
+			p = print_dim(pwqp->p[i].set->dim, p, 1, 0, 0, NULL);
 			p = isl_printer_print_str(p, " -> ");
 		}
 		p = isl_printer_print_qpolynomial(p, pwqp->p[i].qp);
@@ -1558,7 +1567,7 @@ static __isl_give isl_printer *print_pw_qpolynomial_isl(
 	if (pwqp->n == 0) {
 		if (isl_dim_size(pwqp->dim, isl_dim_set) > 0 ||
 		    isl_dim_is_named_or_nested(pwqp->dim, isl_dim_set)) {
-			p = print_dim(pwqp->dim, p, 1, 0, NULL);
+			p = print_dim(pwqp->dim, p, 1, 0, 0, NULL);
 			p = isl_printer_print_str(p, " -> ");
 		}
 		p = isl_printer_print_str(p, "0");
@@ -1596,7 +1605,7 @@ static __isl_give isl_printer *isl_pwf_print_isl_body(
 			p = isl_printer_print_str(p, "; ");
 		if (isl_dim_size(pwf->dim, isl_dim_set) > 0 ||
 		    isl_dim_is_named_or_nested(pwf->dim, isl_dim_set)) {
-			p = print_dim(pwf->p[i].set->dim, p, 1, 0, NULL);
+			p = print_dim(pwf->p[i].set->dim, p, 1, 0, 0, NULL);
 			p = isl_printer_print_str(p, " -> ");
 		}
 		p = qpolynomial_fold_print(pwf->p[i].fold, p);
@@ -1617,7 +1626,7 @@ static __isl_give isl_printer *print_pw_qpolynomial_fold_isl(
 	if (pwf->n == 0) {
 		if (isl_dim_size(pwf->dim, isl_dim_set) > 0 ||
 		    isl_dim_is_named_or_nested(pwf->dim, isl_dim_set)) {
-			p = print_dim(pwf->dim, p, 1, 0, NULL);
+			p = print_dim(pwf->dim, p, 1, 0, 0, NULL);
 			p = isl_printer_print_str(p, " -> ");
 		}
 		p = isl_printer_print_str(p, "0");
