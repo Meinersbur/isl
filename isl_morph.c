@@ -631,6 +631,9 @@ __isl_give isl_basic_set *isl_morph_basic_set(__isl_take isl_morph *morph,
 
 	res = add_strides(res, morph);
 
+	if (isl_basic_set_is_rational(bset))
+		res = isl_basic_set_set_rational(res);
+
 	res = isl_basic_set_simplify(res);
 	res = isl_basic_set_finalize(res);
 
