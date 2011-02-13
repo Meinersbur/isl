@@ -223,6 +223,8 @@ static enum isl_token_type check_keywords(struct isl_stream *s)
 		return ISL_TOKEN_AND;
 	if (!strcasecmp(s->buffer, "or"))
 		return ISL_TOKEN_OR;
+	if (!strcasecmp(s->buffer, "not"))
+		return ISL_TOKEN_NOT;
 	if (!strcasecmp(s->buffer, "infty"))
 		return ISL_TOKEN_INFTY;
 	if (!strcasecmp(s->buffer, "infinity"))
@@ -479,6 +481,14 @@ static struct isl_token *next_token(struct isl_stream *s, int same_line)
 			isl_stream_ungetc(s, c);
 		} else
 			tok->u.s = strdup("||");
+		return tok;
+	}
+	if (c == '!') {
+		tok = isl_token_new(s->ctx, line, col, old_line != line);
+		if (!tok)
+			return NULL;
+		tok->type = ISL_TOKEN_NOT;
+		tok->u.s = strdup("!");
 		return tok;
 	}
 

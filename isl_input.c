@@ -1001,13 +1001,25 @@ static __isl_give isl_map *read_conjuncts(struct isl_stream *s,
 	struct vars *v, __isl_take isl_basic_map *bmap)
 {
 	isl_map *map;
+	int negate;
 
+	negate = isl_stream_eat_if_available(s, ISL_TOKEN_NOT);
 	map = read_conjunct(s, v, isl_basic_map_copy(bmap));
+	if (negate) {
+		isl_map *t;
+		t = isl_map_from_basic_map(isl_basic_map_copy(bmap));
+		map = isl_map_subtract(t, map);
+	}
+
 	while (isl_stream_eat_if_available(s, ISL_TOKEN_AND)) {
 		isl_map *map_i;
 
+		negate = isl_stream_eat_if_available(s, ISL_TOKEN_NOT);
 		map_i = read_conjunct(s, v, isl_basic_map_copy(bmap));
-		map = isl_map_intersect(map, map_i);
+		if (negate)
+			map = isl_map_subtract(map, map_i);
+		else
+			map = isl_map_intersect(map, map_i);
 	}
 
 	isl_basic_map_free(bmap);
