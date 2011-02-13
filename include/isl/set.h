@@ -47,6 +47,8 @@ const char *isl_set_get_dim_name(__isl_keep isl_set *set,
 __isl_give isl_set *isl_set_set_dim_name(__isl_take isl_set *set,
 	enum isl_dim_type type, unsigned pos, const char *s);
 
+int isl_basic_set_is_rational(__isl_keep isl_basic_set *bset);
+
 struct isl_basic_set *isl_basic_set_alloc(struct isl_ctx *ctx,
 		unsigned nparam, unsigned dim, unsigned extra,
 		unsigned n_eq, unsigned n_ineq);

@@ -461,6 +461,11 @@ int isl_basic_map_is_rational(__isl_keep isl_basic_map *bmap)
 	return ISL_F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL);
 }
 
+int isl_basic_set_is_rational(__isl_keep isl_basic_set *bset)
+{
+	return isl_basic_map_is_rational(bset);
+}
+
 static struct isl_basic_map *basic_map_init(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap, unsigned extra,
 		unsigned n_eq, unsigned n_ineq)
