@@ -6784,6 +6784,9 @@ int isl_basic_map_fast_cmp(const __isl_keep isl_basic_map *bmap1,
 
 	if (bmap1 == bmap2)
 		return 0;
+	if (ISL_F_ISSET(bmap1, ISL_BASIC_MAP_RATIONAL) !=
+	    ISL_F_ISSET(bmap2, ISL_BASIC_MAP_RATIONAL))
+		return ISL_F_ISSET(bmap1, ISL_BASIC_MAP_RATIONAL) ? -1 : 1;
 	if (isl_basic_map_n_param(bmap1) != isl_basic_map_n_param(bmap2))
 		return isl_basic_map_n_param(bmap1) - isl_basic_map_n_param(bmap2);
 	if (isl_basic_map_n_in(bmap1) != isl_basic_map_n_in(bmap2))
