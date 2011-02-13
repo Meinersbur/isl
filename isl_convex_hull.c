@@ -174,21 +174,28 @@ error:
 	return -1;
 }
 
-struct isl_basic_set *isl_basic_set_set_rational(struct isl_basic_set *bset)
+__isl_give isl_basic_map *isl_basic_map_set_rational(
+	__isl_take isl_basic_set *bmap)
 {
-	if (!bset)
+	if (!bmap)
 		return NULL;
 
-	if (ISL_F_ISSET(bset, ISL_BASIC_MAP_RATIONAL))
-		return bset;
+	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL))
+		return bmap;
 
-	bset = isl_basic_set_cow(bset);
-	if (!bset)
+	bmap = isl_basic_map_cow(bmap);
+	if (!bmap)
 		return NULL;
 
-	ISL_F_SET(bset, ISL_BASIC_MAP_RATIONAL);
+	ISL_F_SET(bmap, ISL_BASIC_MAP_RATIONAL);
 
-	return isl_basic_set_finalize(bset);
+	return isl_basic_map_finalize(bmap);
+}
+
+__isl_give isl_basic_set *isl_basic_set_set_rational(
+	__isl_take isl_basic_set *bset)
+{
+	return isl_basic_map_set_rational(bset);
 }
 
 static struct isl_set *isl_set_set_rational(struct isl_set *set)
