@@ -636,35 +636,17 @@ static __isl_give isl_printer *print_disjunct(__isl_keep isl_basic_map *bmap,
 }
 
 static __isl_give isl_printer *isl_basic_map_print_isl(
-	__isl_keep isl_basic_map *bmap, __isl_take isl_printer *p, int latex)
+	__isl_keep isl_basic_map *bmap, __isl_take isl_printer *p,
+	int set, int latex)
 {
-	int i;
-
 	if (isl_basic_map_dim(bmap, isl_dim_param) > 0) {
 		p = print_tuple(bmap->dim, p, isl_dim_param, 0, latex, NULL);
 		p = isl_printer_print_str(p, " -> ");
 	}
 	p = isl_printer_print_str(p, "{ ");
-	p = print_dim(bmap->dim, p, 0, latex, NULL);
+	p = print_dim(bmap->dim, p, set, latex, NULL);
 	p = isl_printer_print_str(p, " : ");
-	p = print_disjunct(bmap, bmap->dim, p, 0, latex);
-	p = isl_printer_print_str(p, " }");
-	return p;
-}
-
-static __isl_give isl_printer *isl_basic_set_print_isl(
-	__isl_keep isl_basic_set *bset, __isl_take isl_printer *p, int latex)
-{
-	int i;
-
-	if (isl_basic_set_dim(bset, isl_dim_param) > 0) {
-		p = print_tuple(bset->dim, p, isl_dim_param, 0, latex, NULL);
-		p = isl_printer_print_str(p, " -> ");
-	}
-	p = isl_printer_print_str(p, "{ ");
-	p = print_dim(bset->dim, p, 1, latex, NULL);
-	p = isl_printer_print_str(p, " : ");
-	p = print_disjunct((isl_basic_map *)bset, bset->dim, p, 1, latex);
+	p = print_disjunct(bmap, bmap->dim, p, set, latex);
 	p = isl_printer_print_str(p, " }");
 	return p;
 }
@@ -923,7 +905,7 @@ __isl_give isl_printer *isl_printer_print_basic_map(__isl_take isl_printer *p,
 	if (!p || !bmap)
 		goto error;
 	if (p->output_format == ISL_FORMAT_ISL)
-		return isl_basic_map_print_isl(bmap, p, 0);
+		return isl_basic_map_print_isl(bmap, p, 0, 0);
 	else if (p->output_format == ISL_FORMAT_OMEGA)
 		return isl_basic_map_print_omega(bmap, p);
 	isl_assert(bmap->ctx, 0, goto error);
@@ -957,7 +939,7 @@ __isl_give isl_printer *isl_printer_print_basic_set(__isl_take isl_printer *p,
 		goto error;
 
 	if (p->output_format == ISL_FORMAT_ISL)
-		return isl_basic_set_print_isl(bset, p, 0);
+		return isl_basic_map_print_isl(bset, p, 1, 0);
 	else if (p->output_format == ISL_FORMAT_POLYLIB)
 		return isl_basic_set_print_polylib(bset, p, 0);
 	else if (p->output_format == ISL_FORMAT_EXT_POLYLIB)
