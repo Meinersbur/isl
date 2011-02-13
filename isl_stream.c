@@ -231,6 +231,8 @@ static enum isl_token_type check_keywords(struct isl_stream *s)
 		return ISL_TOKEN_NAN;
 	if (!strcasecmp(s->buffer, "max"))
 		return ISL_TOKEN_MAX;
+	if (!strcasecmp(s->buffer, "rat"))
+		return ISL_TOKEN_RAT;
 
 	if (!s->keywords)
 		return ISL_TOKEN_IDENT;

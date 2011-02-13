@@ -1005,12 +1005,10 @@ error:
 }
 
 static isl_map *read_constraint(struct isl_stream *s,
-	struct vars *v, __isl_take isl_dim *dim)
+	struct vars *v, __isl_take isl_basic_map *bmap)
 {
-	struct isl_basic_map *bmap;
 	int n = v->n;
 
-	bmap = isl_basic_map_alloc_dim(dim, 0, 0, 0);
 	if (!bmap)
 		return NULL;
 
@@ -1027,60 +1025,63 @@ error:
 }
 
 static struct isl_map *read_disjuncts(struct isl_stream *s,
-	struct vars *v, __isl_take isl_dim *dim);
+	struct vars *v, __isl_take isl_basic_map *bmap);
 
 static __isl_give isl_map *read_conjunct(struct isl_stream *s,
-	struct vars *v, __isl_take isl_dim *dim)
+	struct vars *v, __isl_take isl_basic_map *bmap)
 {
 	isl_map *map;
 
 	if (isl_stream_eat_if_available(s, '(')) {
-		map = read_disjuncts(s, v, dim);
+		map = read_disjuncts(s, v, bmap);
 		if (isl_stream_eat(s, ')'))
 			goto error;
 		return map;
 	}
 		
-	return read_constraint(s, v, dim);
+	return read_constraint(s, v, bmap);
 error:
 	isl_map_free(map);
 	return NULL;
 }
 
 static __isl_give isl_map *read_conjuncts(struct isl_stream *s,
-	struct vars *v, __isl_take isl_dim *dim)
+	struct vars *v, __isl_take isl_basic_map *bmap)
 {
 	isl_map *map;
 
-	map = read_conjunct(s, v, isl_dim_copy(dim));
+	map = read_conjunct(s, v, isl_basic_map_copy(bmap));
 	while (isl_stream_eat_if_available(s, ISL_TOKEN_AND)) {
 		isl_map *map_i;
 
-		map_i = read_conjunct(s, v, isl_dim_copy(dim));
+		map_i = read_conjunct(s, v, isl_basic_map_copy(bmap));
 		map = isl_map_intersect(map, map_i);
 	}
 
-	isl_dim_free(dim);
+	isl_basic_map_free(bmap);
 	return map;
 }
 
 static struct isl_map *read_disjuncts(struct isl_stream *s,
-	struct vars *v, __isl_take isl_dim *dim)
+	struct vars *v, __isl_take isl_basic_map *bmap)
 {
 	struct isl_map *map;
 
-	if (isl_stream_next_token_is(s, '}'))
+	if (isl_stream_next_token_is(s, '}')) {
+		isl_dim *dim = isl_basic_map_get_dim(bmap);
+		isl_basic_map_free(bmap);
 		return isl_map_universe(dim);
+	}
 
-	map = read_conjuncts(s, v, isl_dim_copy(dim));
+	map = read_conjuncts(s, v, isl_basic_map_copy(bmap));
 	while (isl_stream_eat_if_available(s, ISL_TOKEN_OR)) {
 		isl_map *map_i;
 
-		map_i = read_conjuncts(s, v, isl_dim_copy(dim));
+		map_i = read_conjuncts(s, v, isl_basic_map_copy(bmap));
 		map = isl_map_union(map, map_i);
 	}
 
-	isl_dim_free(dim);
+	isl_basic_map_free(bmap);
 	return map;
 }
 
@@ -1546,7 +1547,7 @@ static __isl_give isl_map *read_optional_disjuncts(struct isl_stream *s,
 	    (tok->type == ISL_TOKEN_OR && !strcmp(tok->u.s, "|"))) {
 		isl_token_free(tok);
 		map = isl_map_intersect(map,
-			    read_disjuncts(s, v, isl_basic_map_get_dim(bmap)));
+			    read_disjuncts(s, v, isl_basic_map_copy(bmap)));
 	} else
 		isl_stream_push_token(s, tok);
 
@@ -1624,6 +1625,24 @@ error:
 	return obj;
 }
 
+static int is_rational(struct isl_stream *s)
+{
+	struct isl_token *tok;
+
+	tok = isl_stream_next_token(s);
+	if (!tok)
+		return 0;
+	if (tok->type == ISL_TOKEN_RAT && isl_stream_next_token_is(s, ':')) {
+		isl_token_free(tok);
+		isl_stream_eat(s, ':');
+		return 1;
+	}
+
+	isl_stream_push_token(s, tok);
+
+	return 0;
+}
+
 static struct isl_obj obj_read_body(struct isl_stream *s,
 	__isl_take isl_basic_map *bmap, struct vars *v)
 {
@@ -1631,6 +1650,9 @@ static struct isl_obj obj_read_body(struct isl_stream *s,
 	struct isl_token *tok;
 	struct isl_obj obj = { isl_obj_set, NULL };
 	int n = v->n;
+
+	if (is_rational(s))
+		bmap = isl_basic_map_set_rational(bmap);
 
 	if (!next_is_tuple(s))
 		return obj_read_poly_or_fold(s, bmap, v, n);
