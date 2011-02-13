@@ -640,7 +640,6 @@ static __isl_give isl_printer *isl_basic_map_print_isl(
 {
 	int i;
 
-	p = isl_printer_start_line(p);
 	if (isl_basic_map_dim(bmap, isl_dim_param) > 0) {
 		p = print_tuple(bmap->dim, p, isl_dim_param, 0, latex, NULL);
 		p = isl_printer_print_str(p, " -> ");
@@ -658,7 +657,6 @@ static __isl_give isl_printer *isl_basic_set_print_isl(
 {
 	int i;
 
-	p = isl_printer_start_line(p);
 	if (isl_basic_set_dim(bset, isl_dim_param) > 0) {
 		p = print_tuple(bset->dim, p, isl_dim_param, 0, latex, NULL);
 		p = isl_printer_print_str(p, " -> ");
