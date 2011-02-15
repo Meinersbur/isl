@@ -1833,6 +1833,10 @@ static struct isl_obj obj_read(struct isl_stream *s, int nparam)
 		if (!tok || tok->type != ';')
 			break;
 		isl_token_free(tok);
+		if (isl_stream_next_token_is(s, '}')) {
+			tok = isl_stream_next_token(s);
+			break;
+		}
 	}
 
 	if (tok && tok->type == '}') {
