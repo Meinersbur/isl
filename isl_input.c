@@ -990,6 +990,15 @@ static __isl_give isl_map *read_conjunct(struct isl_stream *s,
 
 	if (isl_stream_eat_if_available(s, ISL_TOKEN_EXISTS))
 		return read_exists(s, v, bmap);
+
+	if (isl_stream_eat_if_available(s, ISL_TOKEN_TRUE))
+		return isl_map_from_basic_map(bmap);
+
+	if (isl_stream_eat_if_available(s, ISL_TOKEN_FALSE)) {
+		isl_dim *dim = isl_basic_map_get_dim(bmap);
+		isl_basic_map_free(bmap);
+		return isl_map_empty(dim);
+	}
 		
 	return read_constraint(s, v, bmap);
 error:
