@@ -613,10 +613,14 @@ dimensions is zero.
 		const char *str, int nparam);
 
 	#include <isl/union_set.h>
+	__isl_give isl_union_set *isl_union_set_read_from_file(
+		isl_ctx *ctx, FILE *input);
 	__isl_give isl_union_set *isl_union_set_read_from_str(
 		struct isl_ctx *ctx, const char *str);
 
 	#include <isl/union_map.h>
+	__isl_give isl_union_map *isl_union_map_read_from_file(
+		isl_ctx *ctx, FILE *input);
 	__isl_give isl_union_map *isl_union_map_read_from_str(
 		struct isl_ctx *ctx, const char *str);
 

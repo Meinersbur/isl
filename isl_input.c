@@ -2079,6 +2079,18 @@ error:
 	return NULL;
 }
 
+__isl_give isl_union_map *isl_union_map_read_from_file(isl_ctx *ctx,
+	FILE *input)
+{
+	isl_union_map *umap;
+	struct isl_stream *s = isl_stream_new_file(ctx, input);
+	if (!s)
+		return NULL;
+	umap = isl_stream_read_union_map(s);
+	isl_stream_free(s);
+	return umap;
+}
+
 __isl_give isl_union_map *isl_union_map_read_from_str(struct isl_ctx *ctx,
 		const char *str)
 {
@@ -2089,6 +2101,18 @@ __isl_give isl_union_map *isl_union_map_read_from_str(struct isl_ctx *ctx,
 	umap = isl_stream_read_union_map(s);
 	isl_stream_free(s);
 	return umap;
+}
+
+__isl_give isl_union_set *isl_union_set_read_from_file(isl_ctx *ctx,
+	FILE *input)
+{
+	isl_union_set *uset;
+	struct isl_stream *s = isl_stream_new_file(ctx, input);
+	if (!s)
+		return NULL;
+	uset = isl_stream_read_union_set(s);
+	isl_stream_free(s);
+	return uset;
 }
 
 __isl_give isl_union_set *isl_union_set_read_from_str(struct isl_ctx *ctx,
