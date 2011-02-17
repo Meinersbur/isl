@@ -4033,6 +4033,13 @@ __isl_give isl_map *isl_map_from_domain(__isl_take isl_set *set)
 	return isl_map_reverse(isl_map_from_range(set));
 }
 
+__isl_give isl_basic_map *isl_basic_map_from_domain_and_range(
+	__isl_take isl_basic_set *domain, __isl_take isl_basic_set *range)
+{
+	return isl_basic_map_apply_range(isl_basic_map_from_domain(domain),
+					 isl_basic_map_from_range(range));
+}
+
 __isl_give isl_map *isl_map_from_domain_and_range(__isl_take isl_set *domain,
 	__isl_take isl_set *range)
 {
