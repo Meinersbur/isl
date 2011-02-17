@@ -159,7 +159,7 @@ struct isl_stream* isl_stream_new_str(struct isl_ctx *ctx, const char *str)
 	return s;
 }
 
-static int isl_stream_getc(struct isl_stream *s)
+static int stream_getc(struct isl_stream *s)
 {
 	int c;
 	if (s->eof)
@@ -181,6 +181,20 @@ static int isl_stream_getc(struct isl_stream *s)
 			s->col++;
 	}
 	s->c = c;
+	return c;
+}
+
+static int isl_stream_getc(struct isl_stream *s)
+{
+	int c;
+
+	do {
+		c = stream_getc(s);
+		if (c != '\\')
+			break;
+		c = stream_getc(s);
+	} while (c == '\n');
+
 	return c;
 }
 
