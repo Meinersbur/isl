@@ -7065,6 +7065,22 @@ error:
 	return NULL;
 }
 
+__isl_give isl_basic_map *isl_basic_map_flat_product(
+	__isl_take isl_basic_map *bmap1, __isl_take isl_basic_map *bmap2)
+{
+	isl_basic_map *prod;
+
+	prod = isl_basic_map_product(bmap1, bmap2);
+	prod = isl_basic_map_flatten(prod);
+	return prod;
+}
+
+__isl_give isl_basic_set *isl_basic_set_flat_product(
+	__isl_take isl_basic_set *bset1, __isl_take isl_basic_set *bset2)
+{
+	return isl_basic_map_flat_product(bset1, bset2);
+}
+
 __isl_give isl_basic_map *isl_basic_map_range_product(
 	__isl_take isl_basic_map *bmap1, __isl_take isl_basic_map *bmap2)
 {
