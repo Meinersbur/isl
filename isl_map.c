@@ -2992,6 +2992,11 @@ struct isl_basic_map *isl_basic_map_neg(struct isl_basic_map *bmap)
 	return isl_basic_map_finalize(bmap);
 }
 
+__isl_give isl_basic_set *isl_basic_set_neg(__isl_take isl_basic_set *bset)
+{
+	return isl_basic_map_neg(bset);
+}
+
 /* Given a map A -> f(A), construct A -> -f(A).
  */
 struct isl_map *isl_map_neg(struct isl_map *map)
