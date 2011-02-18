@@ -1517,6 +1517,43 @@ int isl_tab_kill_col(struct isl_tab *tab, int col)
 	}
 }
 
+static int row_is_manifestly_non_integral(struct isl_tab *tab, int row)
+{
+	unsigned off = 2 + tab->M;
+
+	if (tab->M && !isl_int_eq(tab->mat->row[row][2],
+				  tab->mat->row[row][0]))
+		return 0;
+	if (isl_seq_first_non_zero(tab->mat->row[row] + off + tab->n_dead,
+				    tab->n_col - tab->n_dead) != -1)
+		return 0;
+
+	return !isl_int_is_divisible_by(tab->mat->row[row][1],
+					tab->mat->row[row][0]);
+}
+
+/* For integer tableaus, check if any of the coordinates are stuck
+ * at a non-integral value.
+ */
+static int tab_is_manifestly_empty(struct isl_tab *tab)
+{
+	int i;
+
+	if (tab->empty)
+		return 1;
+	if (tab->rational)
+		return 0;
+
+	for (i = 0; i < tab->n_var; ++i) {
+		if (!tab->var[i].is_row)
+			continue;
+		if (row_is_manifestly_non_integral(tab, tab->var[i].index))
+			return 1;
+	}
+
+	return 0;
+}
+
 /* Row variable "var" is non-negative and cannot attain any values
  * larger than zero.  This means that the coefficients of the unrestricted
  * column variables are zero and that the coefficients of the non-negative
@@ -1550,6 +1587,8 @@ static int close_row(struct isl_tab *tab, struct isl_tab_var *var)
 			--j;
 	}
 	if (isl_tab_mark_redundant(tab, var->index) < 0)
+		return -1;
+	if (tab_is_manifestly_empty(tab) && isl_tab_mark_empty(tab) < 0)
 		return -1;
 	return 0;
 }
