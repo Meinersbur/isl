@@ -6739,7 +6739,15 @@ static int qsort_constraint_cmp(const void *p1, const void *p2)
 {
 	const struct constraint *c1 = (const struct constraint *)p1;
 	const struct constraint *c2 = (const struct constraint *)p2;
+	int l1, l2;
 	unsigned size = isl_min(c1->size, c2->size);
+
+	l1 = isl_seq_last_non_zero(c1->c, size);
+	l2 = isl_seq_last_non_zero(c2->c, size);
+
+	if (l1 != l2)
+		return l1 - l2;
+
 	return isl_seq_cmp(c1->c, c2->c, size);
 }
 
