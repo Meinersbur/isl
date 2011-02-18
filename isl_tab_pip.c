@@ -39,7 +39,7 @@
  * then the initial sample value may be chosen equal to zero.
  * However, we will not make this assumption.  Instead, we apply
  * the "big parameter" trick.  Any variable x is then not directly
- * used in the tableau, but instead it its represented by another
+ * used in the tableau, but instead it is represented by another
  * variable x' = M + x, where M is an arbitrarily large (positive)
  * value.  x' is therefore always non-negative, whatever the value of x.
  * Taking as initial sample value x' = 0 corresponds to x = -M,
