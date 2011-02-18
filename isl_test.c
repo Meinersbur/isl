@@ -650,7 +650,33 @@ void test_gist_case(struct isl_ctx *ctx, const char *name)
 
 void test_gist(struct isl_ctx *ctx)
 {
+	const char *str;
+	isl_basic_set *bset1, *bset2;
+
 	test_gist_case(ctx, "gist1");
+
+	str = "[p0, p2, p3, p5, p6, p10] -> { [] : "
+	    "exists (e0 = [(15 + p0 + 15p6 + 15p10)/16], e1 = [(p5)/8], "
+	    "e2 = [(p6)/128], e3 = [(8p2 - p5)/128], "
+	    "e4 = [(128p3 - p6)/4096]: 8e1 = p5 and 128e2 = p6 and "
+	    "128e3 = 8p2 - p5 and 4096e4 = 128p3 - p6 and p2 >= 0 and "
+	    "16e0 >= 16 + 16p6 + 15p10 and  p2 <= 15 and p3 >= 0 and "
+	    "p3 <= 31 and  p6 >= 128p3 and p5 >= 8p2 and p10 >= 0 and "
+	    "16e0 <= 15 + p0 + 15p6 + 15p10 and 16e0 >= p0 + 15p6 + 15p10 and "
+	    "p10 <= 15 and p10 <= -1 + p0 - p6) }";
+	bset1 = isl_basic_set_read_from_str(ctx, str, -1);
+	str = "[p0, p2, p3, p5, p6, p10] -> { [] : exists (e0 = [(p5)/8], "
+	    "e1 = [(p6)/128], e2 = [(8p2 - p5)/128], "
+	    "e3 = [(128p3 - p6)/4096]: 8e0 = p5 and 128e1 = p6 and "
+	    "128e2 = 8p2 - p5 and 4096e3 = 128p3 - p6 and p5 >= -7 and "
+	    "p2 >= 0 and 8p2 <= -1 + p0 and p2 <= 15 and p3 >= 0 and "
+	    "p3 <= 31 and 128p3 <= -1 + p0 and p6 >= -127 and "
+	    "p5 <= -1 + p0 and p6 <= -1 + p0 and p6 >= 128p3 and "
+	    "p0 >= 1 and p5 >= 8p2 and p10 >= 0 and p10 <= 15 ) }";
+	bset2 = isl_basic_set_read_from_str(ctx, str, -1);
+	bset1 = isl_basic_set_gist(bset1, bset2);
+	assert(bset1 && bset1->n_div == 0);
+	isl_basic_set_free(bset1);
 }
 
 void test_coalesce_set(isl_ctx *ctx, const char *str, int check_one)

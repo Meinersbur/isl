@@ -1702,6 +1702,13 @@ error:
  * We first compute the integer affine hull of the intersection,
  * compute the gist inside this affine hull and then add back
  * those equalities that are not implied by the context.
+ *
+ * If two constraints are mutually redundant, then uset_gist_full
+ * will remove the second of those constraints.  We therefore first
+ * sort the constraints so that constraints not involving existentially
+ * quantified variables are given precedence over those that do.
+ * We have to perform this sorting before the variable compression,
+ * because that may effect the order of the variables.
  */
 static __isl_give isl_basic_set *uset_gist(__isl_take isl_basic_set *bset,
 	__isl_take isl_basic_set *context)
@@ -1720,6 +1727,7 @@ static __isl_give isl_basic_set *uset_gist(__isl_take isl_basic_set *bset,
 		isl_basic_set_free(context);
 		return bset;
 	}
+	bset = isl_basic_set_sort_constraints(bset);
 	aff = isl_basic_set_affine_hull(isl_basic_set_copy(bset));
 	if (!aff)
 		goto error;

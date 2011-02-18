@@ -6735,6 +6735,9 @@ struct constraint {
 	isl_int		*c;
 };
 
+/* uset_gist depends on constraints without existentially quantified
+ * variables sorting first.
+ */
 static int qsort_constraint_cmp(const void *p1, const void *p2)
 {
 	const struct constraint *c1 = (const struct constraint *)p1;
