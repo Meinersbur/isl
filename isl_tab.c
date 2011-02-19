@@ -3073,9 +3073,9 @@ int isl_tab_rollback(struct isl_tab *tab, struct isl_tab_undo *snap)
  * In particular, if the row has been reduced to the constant -1,
  * then we know the inequality is adjacent (but opposite) to
  * an equality in the tableau.
- * If the row has been reduced to r = -1 -r', with r' an inequality
- * of the tableau, then the inequality is adjacent (but opposite)
- * to the inequality r'.
+ * If the row has been reduced to r = c*(-1 -r'), with r' an inequality
+ * of the tableau and c a positive constant, then the inequality
+ * is adjacent (but opposite) to the inequality r'.
  */
 static enum isl_ineq_type separation_type(struct isl_tab *tab, unsigned row)
 {
@@ -3087,15 +3087,18 @@ static enum isl_ineq_type separation_type(struct isl_tab *tab, unsigned row)
 
 	if (!isl_int_is_one(tab->mat->row[row][0]))
 		return isl_ineq_separate;
-	if (!isl_int_is_negone(tab->mat->row[row][1]))
-		return isl_ineq_separate;
 
 	pos = isl_seq_first_non_zero(tab->mat->row[row] + off + tab->n_dead,
 					tab->n_col - tab->n_dead);
-	if (pos == -1)
-		return isl_ineq_adj_eq;
+	if (pos == -1) {
+		if (isl_int_is_negone(tab->mat->row[row][1]))
+			return isl_ineq_adj_eq;
+		else
+			return isl_ineq_separate;
+	}
 
-	if (!isl_int_is_negone(tab->mat->row[row][off + tab->n_dead + pos]))
+	if (!isl_int_eq(tab->mat->row[row][1],
+			tab->mat->row[row][off + tab->n_dead + pos]))
 		return isl_ineq_separate;
 
 	pos = isl_seq_first_non_zero(

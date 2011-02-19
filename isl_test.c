@@ -908,6 +908,10 @@ void test_coalesce(struct isl_ctx *ctx)
 	test_coalesce_set(ctx, "{ [x, 1 - x] : 0 <= x <= 1; [0,0] }", 1);
 	test_coalesce_set(ctx, "{ [0,0]; [i,i] : 1 <= i <= 10 }", 1);
 	test_coalesce_set(ctx, "{ [0,0]; [i,j] : 1 <= i,j <= 10 }", 0);
+	test_coalesce_set(ctx, "{ [0,0]; [i,2i] : 1 <= i <= 10 }", 1);
+	test_coalesce_set(ctx, "{ [0,0]; [i,2i] : 2 <= i <= 10 }", 0);
+	test_coalesce_set(ctx, "{ [1,0]; [i,2i] : 1 <= i <= 10 }", 0);
+	test_coalesce_set(ctx, "{ [0,1]; [i,2i] : 1 <= i <= 10 }", 0);
 }
 
 void test_closure(struct isl_ctx *ctx)
