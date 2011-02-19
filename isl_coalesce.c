@@ -916,8 +916,7 @@ static int check_adj_eq(struct isl_map *map, int i, int j,
 	if (any(ineq_i, map->p[i]->n_ineq, STATUS_CUT))
 		/* ADJ EQ CUT */
 		return 0;
-	if (count(eq_j, 2 * map->p[j]->n_eq, STATUS_ADJ_INEQ) != 1 ||
-	    count(ineq_i, map->p[i]->n_ineq, STATUS_ADJ_EQ) != 1 ||
+	if (count(ineq_i, map->p[i]->n_ineq, STATUS_ADJ_EQ) != 1 ||
 	    any(ineq_j, map->p[j]->n_ineq, STATUS_ADJ_EQ) ||
 	    any(ineq_i, map->p[i]->n_ineq, STATUS_ADJ_INEQ) ||
 	    any(ineq_j, map->p[j]->n_ineq, STATUS_ADJ_INEQ))
@@ -931,6 +930,9 @@ static int check_adj_eq(struct isl_map *map, int i, int j,
 	changed = is_extension(map, i, j, k, tabs, eq_i, ineq_i, eq_j, ineq_j);
 	if (changed)
 		return changed;
+
+	if (count(eq_j, 2 * map->p[j]->n_eq, STATUS_ADJ_INEQ) != 1)
+		return 0;
 
 	changed = can_wrap_in_facet(map, i, j, k, tabs, eq_i, ineq_i, eq_j, ineq_j);
 
