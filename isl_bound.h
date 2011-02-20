@@ -6,7 +6,9 @@
 struct isl_bound {
 	/* input */
 	int check_tight;
+	int wrapping;
 	enum isl_fold type;
+	isl_dim *dim;
 	isl_basic_set *bset;
 	isl_qpolynomial_fold *fold;
 

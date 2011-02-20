@@ -1669,6 +1669,12 @@ void test_bound(isl_ctx *ctx)
 	pwf = isl_pw_qpolynomial_bound(pwqp, isl_fold_max, NULL);
 	assert(isl_pw_qpolynomial_fold_dim(pwf, isl_dim_set) == 4);
 	isl_pw_qpolynomial_fold_free(pwf);
+
+	str = "{ [[x]->[x]] -> 1 : exists a : x = 2 a }";
+	pwqp = isl_pw_qpolynomial_read_from_str(ctx, str);
+	pwf = isl_pw_qpolynomial_bound(pwqp, isl_fold_max, NULL);
+	assert(isl_pw_qpolynomial_fold_dim(pwf, isl_dim_set) == 1);
+	isl_pw_qpolynomial_fold_free(pwf);
 }
 
 void test_lift(isl_ctx *ctx)
