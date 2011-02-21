@@ -3759,7 +3759,7 @@ error:
 	return NULL;
 }
 
-static __isl_give isl_basic_set *isl_basic_set_reset_dim(
+__isl_give isl_basic_set *isl_basic_set_reset_dim(
 	__isl_take isl_basic_set *bset, __isl_take isl_dim *dim)
 {
 	return (isl_basic_set *)isl_basic_map_reset_dim((isl_basic_map *)bset,
