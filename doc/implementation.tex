@@ -94,7 +94,7 @@ The difference set ($\Delta \, R$) of $R$ is the set
 of differences between image elements and the corresponding
 domain elements,
 $$
-\Delta \, R \coloneqq
+\diff R \coloneqq
 \vec s \mapsto
 \{\, \vec \delta \in \Z^{d} \mid \exists \vec x \to \vec y \in R :
 \vec \delta = \vec y - \vec x
@@ -501,6 +501,76 @@ results in the exact transitive closure
 $$
 R^+ =
 n \to \{\, x \to y \mid \exists \, \alpha_0, \alpha_1: 7\alpha_1 = -2 + n \wedge 6\alpha_0 \ge -x + y \wedge 5\alpha_0 \le -1 - x + y \,\}
+.
+$$
+\end{example}
+
+The fact that we ignore some impure constraints clearly leads
+to a loss of accuracy.  In some cases, some of this loss can be recovered
+by not considering the parameters in a special way.
+That is, instead of considering the set
+$$
+\Delta = \diff R =
+\vec s \mapsto
+\{\, \vec \delta \in \Z^{d} \mid \exists \vec x \to \vec y \in R :
+\vec \delta = \vec y - \vec x
+\,\}
+$$
+we consider the set
+$$
+\Delta' = \diff R' =
+\{\, \vec \delta \in \Z^{n+d} \mid \exists
+(\vec s, \vec x) \to (\vec s, \vec y) \in R' :
+\vec \delta = (\vec s - \vec s, \vec y - \vec x)
+\,\}
+.
+$$
+The first $n$ coordinates of every element in $\Delta'$ are zero.
+Projecting out these zero coordinates from $\Delta'$ is equivalent
+to projecting out the parameters in $\Delta$.
+The result is obviously a superset of $\Delta$, but all its constraints
+are of type \eqref{eq:transitive:non-parametric} and they can therefore
+all be used in the construction of $Q_i$.
+
+\begin{example}
+Consider the relation
+$$
+% [n] -> { [x, y] -> [1 + x, 1 - n + y] | n >= 2 }
+R = n \to \{\, (x, y) \to (1 + x, 1 - n + y) \mid n \ge 2 \,\}
+.
+$$
+We have
+$$
+\diff R = n \to \{\, (1, 1 - n) \mid n \ge 2 \,\}
+$$
+and so, by treating the parameters in a special way, we obtain
+the following approximation for $R^+$:
+$$
+n \to \{\, (x, y) \to (x', y') \mid n \ge 2 \wedge y' \le 1 - n + y \wedge x' \ge 1 + x \,\}
+.
+$$
+If we consider instead
+$$
+R' = \{\, (n, x, y) \to (n, 1 + x, 1 - n + y) \mid n \ge 2 \,\}
+$$
+then
+$$
+\diff R' = \{\, (0, 1, y) \mid y \le -1 \,\}
+$$
+and we obtain the approximation
+$$
+n \to \{\, (x, y) \to (x', y') \mid n \ge 2 \wedge x' \ge 1 + x \wedge y' \le x + y - x' \,\}
+.
+$$
+If we consider both $\diff R$ and $\diff R'$, then we obtain
+$$
+n \to \{\, (x, y) \to (x', y') \mid n \ge 2 \wedge y' \le 1 - n + y \wedge x' \ge 1 + x \wedge y' \le x + y - x' \,\}
+.
+$$
+Note, however, that this is not the most accurate affine approximation that
+can be obtained.  That would be
+$$
+n \to \{\, (x, y) \to (x', y') \mid y' \le 2 - n + x + y - x' \wedge n \ge 2 \wedge x' \ge 1 + x \,\}
 .
 $$
 \end{example}

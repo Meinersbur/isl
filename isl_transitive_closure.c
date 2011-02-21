@@ -322,6 +322,9 @@ error:
  * 	variables are non-zero and if moreover the parametric constant
  * 	can never attain positive values.
  * Return IMPURE otherwise.
+ *
+ * If div_purity is NULL then we are dealing with a non-parametric set
+ * and so the constraint is obviously PURE_VAR.
  */
 static int purity(__isl_keep isl_basic_set *bset, isl_int *c, int *div_purity,
 	int eq)
@@ -332,6 +335,9 @@ static int purity(__isl_keep isl_basic_set *bset, isl_int *c, int *div_purity,
 	int empty;
 	int i;
 	int p = 0, v = 0;
+
+	if (!div_purity)
+		return PURE_VAR;
 
 	n_div = isl_basic_set_dim(bset, isl_dim_div);
 	d = isl_basic_set_dim(bset, isl_dim_set);
@@ -439,10 +445,13 @@ error:
 	return -1;
 }
 
+/* If any of the constraints is found to be impure then this function
+ * sets *impurity to 1.
+ */
 static __isl_give isl_basic_map *add_delta_constraints(
 	__isl_take isl_basic_map *path,
 	__isl_keep isl_basic_set *delta, unsigned off, unsigned nparam,
-	unsigned d, int *div_purity, int eq)
+	unsigned d, int *div_purity, int eq, int *impurity)
 {
 	int i, k;
 	int n = eq ? delta->n_eq : delta->n_ineq;
@@ -456,6 +465,8 @@ static __isl_give isl_basic_map *add_delta_constraints(
 		int p = purity(delta, delta_c[i], div_purity, eq);
 		if (p < 0)
 			goto error;
+		if (p != PURE_VAR && p != PURE_PARAM && !*impurity)
+			*impurity = 1;
 		if (p == IMPURE)
 			continue;
 		if (eq && p != MIXED) {
@@ -505,7 +516,7 @@ error:
  *
  * In particular, let delta be defined as
  *
- *	\delta = [p] -> { [x] : A x + a >= and B p + b >= 0 and
+ *	\delta = [p] -> { [x] : A x + a >= 0 and B p + b >= 0 and
  *				C x + C'p + c >= 0 and
  *				D x + D'p + d >= 0 }
  *
@@ -532,6 +543,17 @@ error:
  * parameter dependent and others.  Constraints containing
  * any of the other existentially quantified variables are removed.
  * This is safe, but leads to an additional overapproximation.
+ *
+ * If there are any impure constraints, then we also eliminate
+ * the parameters from \delta, resulting in a set
+ *
+ *	\delta' = { [x] : E x + e >= 0 }
+ *
+ * and add the constraints
+ *
+ *			E f + k e >= 0
+ *
+ * to the constructed relation.
  */
 static __isl_give isl_map *path_along_delta(__isl_take isl_dim *dim,
 	__isl_take isl_basic_set *delta)
@@ -544,6 +566,7 @@ static __isl_give isl_map *path_along_delta(__isl_take isl_dim *dim,
 	int i, k;
 	int is_id;
 	int *div_purity = NULL;
+	int impurity = 0;
 
 	if (!delta)
 		goto error;
@@ -575,8 +598,26 @@ static __isl_give isl_map *path_along_delta(__isl_take isl_dim *dim,
 	if (!div_purity)
 		goto error;
 
-	path = add_delta_constraints(path, delta, off, nparam, d, div_purity, 1);
-	path = add_delta_constraints(path, delta, off, nparam, d, div_purity, 0);
+	path = add_delta_constraints(path, delta, off, nparam, d,
+				     div_purity, 1, &impurity);
+	path = add_delta_constraints(path, delta, off, nparam, d,
+				     div_purity, 0, &impurity);
+	if (impurity) {
+		isl_dim *dim = isl_basic_set_get_dim(delta);
+		delta = isl_basic_set_project_out(delta,
+						  isl_dim_param, 0, nparam);
+		delta = isl_basic_set_add(delta, isl_dim_param, nparam);
+		delta = isl_basic_set_reset_dim(delta, dim);
+		if (!delta)
+			goto error;
+		path = isl_basic_map_extend_constraints(path, delta->n_eq,
+							delta->n_ineq + 1);
+		path = add_delta_constraints(path, delta, off, nparam, d,
+					     NULL, 1, &impurity);
+		path = add_delta_constraints(path, delta, off, nparam, d,
+					     NULL, 0, &impurity);
+		path = isl_basic_map_gauss(path, NULL);
+	}
 
 	is_id = empty_path_is_identity(path, off + d);
 	if (is_id < 0)
