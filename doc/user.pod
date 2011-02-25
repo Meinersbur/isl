@@ -67,6 +67,12 @@ and C<isl_union_map_compute_flow> now return
 the accesses for which no source could be found instead of
 the iterations where those accesses occur.
 
+=item * The functions C<isl_basic_map_identity> and
+C<isl_map_identity> now take the dimension specification
+of a B<map> as input.  An old call
+C<isl_map_identity(dim)> can be rewritten to
+C<isl_map_identity(isl_dim_map_from_set(dim))>.
+
 =back
 
 =head1 Installation
@@ -754,12 +760,12 @@ functions below only contain non-negative values.
 =item * Identity relations
 
 	__isl_give isl_basic_map *isl_basic_map_identity(
-		__isl_take isl_dim *set_dim);
+		__isl_take isl_dim *dim);
 	__isl_give isl_map *isl_map_identity(
-		__isl_take isl_dim *set_dim);
+		__isl_take isl_dim *dim);
 
-These functions take a dimension specification for a B<set>
-and return an identity relation between two such sets.
+The number of input and output dimensions in C<dim> needs
+to be the same.
 
 =item * Lexicographic order
 

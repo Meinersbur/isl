@@ -5639,60 +5639,51 @@ error:
 	return NULL;
 }
 
-struct isl_basic_map *isl_basic_map_identity(struct isl_dim *set_dim)
+__isl_give isl_basic_map *isl_basic_map_identity(__isl_take isl_dim *dim)
 {
-	struct isl_dim *dim = isl_dim_map_from_set(set_dim);
 	if (!dim)
 		return NULL;
+	if (dim->n_in != dim->n_out)
+		isl_die(dim->ctx, isl_error_invalid,
+			"number of input and output dimensions needs to be "
+			"the same", goto error);
 	return basic_map_identity(dim);
+error:
+	isl_dim_free(dim);
+	return NULL;
 }
 
 struct isl_basic_map *isl_basic_map_identity_like(struct isl_basic_map *model)
 {
 	if (!model || !model->dim)
 		return NULL;
-	isl_assert(model->ctx,
-			model->dim->n_in == model->dim->n_out, return NULL);
-	return basic_map_identity(isl_dim_copy(model->dim));
+	return isl_basic_map_identity(isl_dim_copy(model->dim));
 }
 
-static struct isl_map *map_identity(struct isl_dim *dim)
+__isl_give isl_map *isl_map_identity(__isl_take isl_dim *dim)
 {
-	struct isl_map *map = isl_map_alloc_dim(dim, 1, ISL_MAP_DISJOINT);
-	return isl_map_add_basic_map(map, basic_map_identity(isl_dim_copy(dim)));
-}
-
-struct isl_map *isl_map_identity(struct isl_dim *set_dim)
-{
-	struct isl_dim *dim = isl_dim_map_from_set(set_dim);
-	if (!dim)
-		return NULL;
-	return map_identity(dim);
+	return isl_map_from_basic_map(isl_basic_map_identity(dim));
 }
 
 struct isl_map *isl_map_identity_like(struct isl_map *model)
 {
 	if (!model || !model->dim)
 		return NULL;
-	isl_assert(model->ctx,
-			model->dim->n_in == model->dim->n_out, return NULL);
-	return map_identity(isl_dim_copy(model->dim));
+	return isl_map_identity(isl_dim_copy(model->dim));
 }
 
 struct isl_map *isl_map_identity_like_basic_map(struct isl_basic_map *model)
 {
 	if (!model || !model->dim)
 		return NULL;
-	isl_assert(model->ctx,
-			model->dim->n_in == model->dim->n_out, return NULL);
-	return map_identity(isl_dim_copy(model->dim));
+	return isl_map_identity(isl_dim_copy(model->dim));
 }
 
 __isl_give isl_map *isl_set_identity(__isl_take isl_set *set)
 {
 	isl_dim *dim = isl_set_get_dim(set);
 	isl_map *id;
-	id = isl_map_identity(dim);
+	id = isl_map_identity(isl_dim_map_from_set(dim));
 	return isl_map_intersect_range(id, set);
 }
 
@@ -7464,7 +7455,7 @@ __isl_give isl_map *isl_set_lifting(__isl_take isl_set *set)
 	dim = isl_set_get_dim(set);
 	if (set->n == 0 || set->p[0]->n_div == 0) {
 		isl_set_free(set);
-		return isl_map_identity(dim);
+		return isl_map_identity(isl_dim_map_from_set(dim));
 	}
 
 	n_div = set->p[0]->n_div;
@@ -7726,6 +7717,7 @@ int isl_map_fast_is_single_valued(__isl_keep isl_map *map)
  */
 int isl_map_is_single_valued(__isl_keep isl_map *map)
 {
+	isl_dim *dim;
 	isl_map *test;
 	isl_map *id;
 	int sv;
@@ -7737,7 +7729,8 @@ int isl_map_is_single_valued(__isl_keep isl_map *map)
 	test = isl_map_reverse(isl_map_copy(map));
 	test = isl_map_apply_range(test, isl_map_copy(map));
 
-	id = isl_map_identity(isl_dim_range(isl_map_get_dim(map)));
+	dim = isl_dim_map_from_set(isl_dim_range(isl_map_get_dim(map)));
+	id = isl_map_identity(dim);
 
 	sv = isl_map_is_subset(test, id);
 
@@ -8072,7 +8065,7 @@ __isl_give isl_map *isl_set_flatten_map(__isl_take isl_set *set)
 
 	dim = isl_set_get_dim(set);
 	flat_dim = isl_dim_flatten(isl_dim_copy(dim));
-	map = map_identity(isl_dim_join(isl_dim_reverse(dim), flat_dim));
+	map = isl_map_identity(isl_dim_join(isl_dim_reverse(dim), flat_dim));
 	map = isl_map_intersect_domain(map, set);
 
 	return map;

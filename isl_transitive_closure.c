@@ -435,7 +435,7 @@ static int empty_path_is_identity(__isl_keep isl_basic_map *path, unsigned pos)
 		goto error;
 	isl_seq_clr(test->eq[k], 1 + isl_basic_map_total_dim(test));
 	isl_int_set_si(test->eq[k][pos], 1);
-	id = isl_basic_map_identity(isl_dim_domain(isl_basic_map_get_dim(path)));
+	id = isl_basic_map_identity(isl_basic_map_get_dim(path));
 	is_id = isl_basic_map_is_equal(test, id);
 	isl_basic_map_free(test);
 	isl_basic_map_free(id);
@@ -638,8 +638,7 @@ static __isl_give isl_map *path_along_delta(__isl_take isl_dim *dim,
 		isl_dim_free(dim);
 		return isl_map_from_basic_map(path);
 	}
-	return isl_basic_map_union(path,
-				isl_basic_map_identity(isl_dim_domain(dim)));
+	return isl_basic_map_union(path, isl_basic_map_identity(dim));
 error:
 	free(div_purity);
 	isl_dim_free(dim);
@@ -754,7 +753,7 @@ static __isl_give isl_map *construct_extended_path(__isl_take isl_dim *dim,
 
 	d = isl_map_dim(map, isl_dim_in);
 
-	path = isl_map_identity(isl_dim_domain(isl_dim_copy(dim)));
+	path = isl_map_identity(isl_dim_copy(dim));
 
 	steps = isl_mat_alloc(map->ctx, map->n, d);
 	if (!steps)
@@ -1161,7 +1160,7 @@ static __isl_give isl_map *compute_incremental(
 
 	if (!left || !right)
 		rtc = isl_map_union(isl_map_copy(tc),
-			isl_map_identity(isl_dim_domain(isl_map_get_dim(tc))));
+				    isl_map_identity(isl_map_get_dim(tc)));
 	if (!right)
 		qc = isl_map_apply_range(rtc, qc);
 	if (!left)
