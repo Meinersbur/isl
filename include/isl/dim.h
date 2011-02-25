@@ -63,7 +63,7 @@ __isl_give isl_dim *isl_dim_join(__isl_take isl_dim *left,
 struct isl_dim *isl_dim_product(struct isl_dim *left, struct isl_dim *right);
 __isl_give isl_dim *isl_dim_range_product(__isl_take isl_dim *left,
 	__isl_take isl_dim *right);
-struct isl_dim *isl_dim_map(struct isl_dim *dim);
+__isl_give isl_dim *isl_dim_map_from_set(__isl_take isl_dim *dim);
 __isl_give isl_dim *isl_dim_reverse(__isl_take isl_dim *dim);
 __isl_give isl_dim *isl_dim_drop(__isl_take isl_dim *dim,
 	enum isl_dim_type type, unsigned first, unsigned num);

@@ -3335,12 +3335,12 @@ __isl_give isl_map *isl_map_lex_le_first(__isl_take isl_dim *dim, unsigned n)
 
 __isl_give isl_map *isl_map_lex_lt(__isl_take isl_dim *set_dim)
 {
-	return map_lex_lte(isl_dim_map(set_dim), 0);
+	return map_lex_lte(isl_dim_map_from_set(set_dim), 0);
 }
 
 __isl_give isl_map *isl_map_lex_le(__isl_take isl_dim *set_dim)
 {
-	return map_lex_lte(isl_dim_map(set_dim), 1);
+	return map_lex_lte(isl_dim_map_from_set(set_dim), 1);
 }
 
 static __isl_give isl_map *map_lex_gte_first(__isl_take isl_dim *dims,
@@ -3389,12 +3389,12 @@ __isl_give isl_map *isl_map_lex_ge_first(__isl_take isl_dim *dim, unsigned n)
 
 __isl_give isl_map *isl_map_lex_gt(__isl_take isl_dim *set_dim)
 {
-	return map_lex_gte(isl_dim_map(set_dim), 0);
+	return map_lex_gte(isl_dim_map_from_set(set_dim), 0);
 }
 
 __isl_give isl_map *isl_map_lex_ge(__isl_take isl_dim *set_dim)
 {
-	return map_lex_gte(isl_dim_map(set_dim), 1);
+	return map_lex_gte(isl_dim_map_from_set(set_dim), 1);
 }
 
 __isl_give isl_map *isl_set_lex_le_set(__isl_take isl_set *set1,
@@ -5641,7 +5641,7 @@ error:
 
 struct isl_basic_map *isl_basic_map_identity(struct isl_dim *set_dim)
 {
-	struct isl_dim *dim = isl_dim_map(set_dim);
+	struct isl_dim *dim = isl_dim_map_from_set(set_dim);
 	if (!dim)
 		return NULL;
 	return basic_map_identity(dim);
@@ -5664,7 +5664,7 @@ static struct isl_map *map_identity(struct isl_dim *dim)
 
 struct isl_map *isl_map_identity(struct isl_dim *set_dim)
 {
-	struct isl_dim *dim = isl_dim_map(set_dim);
+	struct isl_dim *dim = isl_dim_map_from_set(set_dim);
 	if (!dim)
 		return NULL;
 	return map_identity(dim);
@@ -7468,7 +7468,7 @@ __isl_give isl_map *isl_set_lifting(__isl_take isl_set *set)
 	}
 
 	n_div = set->p[0]->n_div;
-	dim = isl_dim_map(dim);
+	dim = isl_dim_map_from_set(dim);
 	n_param = isl_dim_size(dim, isl_dim_param);
 	n_set = isl_dim_size(dim, isl_dim_in);
 	dim = isl_dim_extend(dim, n_param, n_set, n_set + n_div);

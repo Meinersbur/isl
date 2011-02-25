@@ -763,7 +763,7 @@ error:
 	return NULL;
 }
 
-struct isl_dim *isl_dim_map(struct isl_dim *dim)
+__isl_give isl_dim *isl_dim_map_from_set(__isl_take isl_dim *dim)
 {
 	struct isl_name **names = NULL;
 
