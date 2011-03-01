@@ -389,6 +389,12 @@ const char *isl_basic_map_get_dim_name(__isl_keep isl_basic_map *bmap,
 	return bmap ? isl_dim_get_name(bmap->dim, type, pos) : NULL;
 }
 
+const char *isl_basic_set_get_dim_name(__isl_keep isl_basic_set *bset,
+	enum isl_dim_type type, unsigned pos)
+{
+	return bset ? isl_dim_get_name(bset->dim, type, pos) : NULL;
+}
+
 const char *isl_map_get_dim_name(__isl_keep isl_map *map,
 	enum isl_dim_type type, unsigned pos)
 {
