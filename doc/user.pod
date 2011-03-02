@@ -357,7 +357,7 @@ will also release all the objects passed as arguments.
 If the user still wants to use one or more of these arguments
 after the function call, she should pass along a copy of the
 object rather than the object itself.
-The user is then responsible for make sure that the original
+The user is then responsible for making sure that the original
 object gets used somewhere else or is explicitly freed.
 
 The arguments and return values of all documents functions are
