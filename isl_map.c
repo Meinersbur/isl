@@ -7495,6 +7495,8 @@ __isl_give isl_map *isl_set_lifting(__isl_take isl_set *set)
 	}
 
 	isl_set_free(set);
+	bmap = isl_basic_map_simplify(bmap);
+	bmap = isl_basic_map_finalize(bmap);
 	return isl_map_from_basic_map(bmap);
 error:
 	isl_set_free(set);
