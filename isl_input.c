@@ -160,11 +160,40 @@ static __isl_give isl_basic_map *set_name(__isl_take isl_basic_map *bmap,
 	return bmap;
 }
 
+/* Obtain next token, with some preprocessing.
+ * In particular, evaluate expressions of the form x^y,
+ * with x and y values.
+ */
+static struct isl_token *next_token(struct isl_stream *s)
+{
+	struct isl_token *tok, *tok2;
+
+	tok = isl_stream_next_token(s);
+	if (!tok || tok->type != ISL_TOKEN_VALUE)
+		return tok;
+	if (!isl_stream_eat_if_available(s, '^'))
+		return tok;
+	tok2 = isl_stream_next_token(s);
+	if (!tok2 || tok2->type != ISL_TOKEN_VALUE) {
+		isl_stream_error(s, tok2, "expecting constant value");
+		goto error;
+	}
+
+	isl_int_pow_ui(tok->u.v, tok->u.v, isl_int_get_ui(tok2->u.v));
+
+	isl_token_free(tok2);
+	return tok;
+error:
+	isl_token_free(tok);
+	isl_token_free(tok2);
+	return NULL;
+}
+
 static int accept_cst_factor(struct isl_stream *s, isl_int *f)
 {
 	struct isl_token *tok;
 
-	tok = isl_stream_next_token(s);
+	tok = next_token(s);
 	if (!tok || tok->type != ISL_TOKEN_VALUE) {
 		isl_stream_error(s, tok, "expecting constant value");
 		goto error;
@@ -197,7 +226,7 @@ static __isl_give isl_vec *affine_mod(struct isl_stream *s,
 	struct variable *var;
 	isl_vec *mod;
 
-	tok = isl_stream_next_token(s);
+	tok = next_token(s);
 	if (!tok || tok->type != ISL_TOKEN_VALUE) {
 		isl_stream_error(s, tok, "expecting constant value");
 		goto error;
@@ -240,7 +269,7 @@ static __isl_give isl_vec *accept_affine_factor(struct isl_stream *s,
 	struct isl_token *tok = NULL;
 	isl_vec *aff = NULL;
 
-	tok = isl_stream_next_token(s);
+	tok = next_token(s);
 	if (!tok) {
 		isl_stream_error(s, NULL, "unexpected EOF");
 		goto error;
@@ -331,7 +360,7 @@ static struct isl_vec *accept_affine(struct isl_stream *s, struct vars *v)
 	isl_seq_clr(aff->el, aff->size);
 
 	for (;;) {
-		tok = isl_stream_next_token(s);
+		tok = next_token(s);
 		if (!tok) {
 			isl_stream_error(s, NULL, "unexpected EOF");
 			goto error;
@@ -378,7 +407,7 @@ static struct isl_vec *accept_affine(struct isl_stream *s, struct vars *v)
 		}
 		isl_token_free(tok);
 
-		tok = isl_stream_next_token(s);
+		tok = next_token(s);
 		if (tok && tok->type == '-') {
 			sign = -sign;
 			isl_token_free(tok);
@@ -489,7 +518,7 @@ static __isl_give isl_basic_map *read_var_list(struct isl_stream *s,
 	int i = 0;
 	struct isl_token *tok;
 
-	while ((tok = isl_stream_next_token(s)) != NULL) {
+	while ((tok = next_token(s)) != NULL) {
 		int new_name = 0;
 
 		if (tok->type == ISL_TOKEN_IDENT) {
@@ -614,7 +643,7 @@ static int read_div_definition(struct isl_stream *s, struct vars *v)
 	if (isl_stream_eat(s, '/'))
 		return -1;
 
-	tok = isl_stream_next_token(s);
+	tok = next_token(s);
 	if (!tok)
 		return -1;
 	if (tok->type != ISL_TOKEN_VALUE) {
@@ -1367,7 +1396,7 @@ static __isl_give isl_qpolynomial *read_factor(struct isl_stream *s,
 	struct isl_qpolynomial *qp;
 	struct isl_token *tok;
 
-	tok = isl_stream_next_token(s);
+	tok = next_token(s);
 	if (!tok) {
 		isl_stream_error(s, NULL, "unexpected EOF");
 		return NULL;
@@ -1388,7 +1417,7 @@ static __isl_give isl_qpolynomial *read_factor(struct isl_stream *s,
 		tok2 = isl_stream_next_token(s);
 		if (tok2 && tok2->type == '/') {
 			isl_token_free(tok2);
-			tok2 = isl_stream_next_token(s);
+			tok2 = next_token(s);
 			if (!tok2 || tok2->type != ISL_TOKEN_VALUE) {
 				isl_stream_error(s, tok2, "expected denominator");
 				isl_token_free(tok);
@@ -1472,7 +1501,7 @@ static __isl_give isl_qpolynomial *read_term(struct isl_stream *s,
 	qp = read_factor(s, bmap, v);
 
 	for (;;) {
-		tok = isl_stream_next_token(s);
+		tok = next_token(s);
 		if (!tok)
 			return qp;
 
@@ -1744,7 +1773,7 @@ static struct isl_obj obj_read(struct isl_stream *s, int nparam)
 	struct vars *v = NULL;
 	struct isl_obj obj = { isl_obj_set, NULL };
 
-	tok = isl_stream_next_token(s);
+	tok = next_token(s);
 	if (!tok) {
 		isl_stream_error(s, NULL, "unexpected EOF");
 		goto error;
