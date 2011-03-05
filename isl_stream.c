@@ -127,6 +127,7 @@ static struct isl_stream* isl_stream_new(struct isl_ctx *ctx)
 	s->col = 0;
 	s->eof = 0;
 	s->c = -1;
+	s->n_un = 0;
 	for (i = 0; i < 5; ++i)
 		s->tokens[i] = NULL;
 	s->n_token = 0;
@@ -164,6 +165,8 @@ static int stream_getc(struct isl_stream *s)
 	int c;
 	if (s->eof)
 		return -1;
+	if (s->n_un)
+		return s->c = s->un[--s->n_un];
 	if (s->file)
 		c = fgetc(s->file);
 	else {
@@ -200,10 +203,8 @@ static int isl_stream_getc(struct isl_stream *s)
 
 static void isl_stream_ungetc(struct isl_stream *s, int c)
 {
-	if (s->file)
-		ungetc(c, s->file);
-	else
-		--s->str;
+	isl_assert(s->ctx, s->n_un < 5, return);
+	s->un[s->n_un++] = c;
 	s->c = -1;
 }
 

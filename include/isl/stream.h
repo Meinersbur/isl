@@ -60,6 +60,8 @@ struct isl_stream {
 	size_t	    	size;
 	size_t	    	len;
 	int	    	c;
+	int		un[5];
+	int		n_un;
 
 	struct isl_token	*tokens[5];
 	int	    	n_token;
