@@ -950,11 +950,11 @@ void test_closure(struct isl_ctx *ctx)
 
 	/* COCOA example 1 */
 	map = isl_map_read_from_str(ctx,
-		"[n,k] -> { [i,j] -> [i2,j2] : i2 = i + 1 and j2 = j + 1 and "
+		"[n] -> { [i,j] -> [i2,j2] : i2 = i + 1 and j2 = j + 1 and "
 			"1 <= i and i < n and 1 <= j and j < n or "
 			"i2 = i + 1 and j2 = j - 1 and "
 			"1 <= i and i < n and 2 <= j and j <= n }", -1);
-	map = isl_map_power(map, 1, &exact);
+	map = isl_map_power(map, &exact);
 	assert(exact);
 	isl_map_free(map);
 
@@ -1020,14 +1020,14 @@ void test_closure(struct isl_ctx *ctx)
 
 	/* COCOA Fig.2 right */
 	map = isl_map_read_from_str(ctx,
-		"[n,k] -> { [i,j] -> [i2,j2] : i2 = i + 3 and j2 = j and "
+		"[n] -> { [i,j] -> [i2,j2] : i2 = i + 3 and j2 = j and "
 			"i <= 2 j - 4 and i <= n - 3 and j <= 2 i - 1 and "
 			"j <= n or "
 			"i2 = i and j2 = j + 3 and i <= 2 j - 1 and i <= n and "
 			"j <= 2 i - 4 and j <= n - 3 or "
 			"i2 = i + 1 and j2 = j + 1 and i <= 2 j - 1 and "
 			"i <= n - 1 and j <= 2 i - 1 and j <= n - 1 }", -1);
-	map = isl_map_power(map, 1, &exact);
+	map = isl_map_power(map, &exact);
 	assert(exact);
 	isl_map_free(map);
 

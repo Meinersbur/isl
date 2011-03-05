@@ -2135,50 +2135,57 @@ error:
 }
 
 /* Compute the positive powers of "map", or an overapproximation.
- * The power is given by parameter "param".  If the result is exact,
- * then *exact is set to 1.
+ * The result maps the exponent to a nested copy of the corresponding power.
+ * If the result is exact, then *exact is set to 1.
  * map_power constructs an extended relation with the path lengths
  * encoded as the difference between the final coordinates.
- * In the final step, this difference is equated to the parameter "param"
- * and made positive.  The extra coordinates are subsequently projected out.
+ * In the final step, this difference is equated to an extra parameter
+ * and made positive.  The extra coordinates are subsequently projected out
+ * and the parameter is turned into the domain of the result.
  */
-__isl_give isl_map *isl_map_power(__isl_take isl_map *map, unsigned param,
-	int *exact)
+__isl_give isl_map *isl_map_power(__isl_take isl_map *map, int *exact)
 {
 	isl_dim *target_dim;
 	isl_dim *dim;
 	isl_map *diff;
 	unsigned d;
+	unsigned param;
 
 	if (!map)
 		return NULL;
 
-	isl_assert(map->ctx, param < isl_map_dim(map, isl_dim_param),
-		goto error);
-
 	d = isl_map_dim(map, isl_dim_in);
+	param = isl_map_dim(map, isl_dim_param);
 
 	map = isl_map_compute_divs(map);
 	map = isl_map_coalesce(map);
 
-	if (isl_map_fast_is_empty(map))
+	if (isl_map_fast_is_empty(map)) {
+		map = isl_map_from_range(isl_map_wrap(map));
+		map = isl_map_add_dims(map, isl_dim_in, 1);
+		map = isl_map_set_dim_name(map, isl_dim_in, 0, "k");
 		return map;
+	}
 
 	target_dim = isl_map_get_dim(map);
+	target_dim = isl_dim_from_range(isl_dim_wrap(target_dim));
+	target_dim = isl_dim_add(target_dim, isl_dim_in, 1);
+	target_dim = isl_dim_set_name(target_dim, isl_dim_in, 0, "k");
+
 	map = map_power(map, exact, 0);
 
+	map = isl_map_add_dims(map, isl_dim_param, 1);
 	dim = isl_map_get_dim(map);
 	diff = equate_parameter_to_length(dim, param);
 	map = isl_map_intersect(map, diff);
 	map = isl_map_project_out(map, isl_dim_in, d, 1);
 	map = isl_map_project_out(map, isl_dim_out, d, 1);
+	map = isl_map_from_range(isl_map_wrap(map));
+	map = isl_map_move_dims(map, isl_dim_in, 0, isl_dim_param, param, 1);
 
 	map = isl_map_reset_dim(map, target_dim);
 
 	return map;
-error:
-	isl_map_free(map);
-	return NULL;
 }
 
 /* Compute a relation that maps each element in the range of the input

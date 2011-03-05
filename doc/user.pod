@@ -73,6 +73,10 @@ of a B<map> as input.  An old call
 C<isl_map_identity(dim)> can be rewritten to
 C<isl_map_identity(isl_dim_map_from_set(dim))>.
 
+=item * The function C<isl_map_power> no longer takes
+a parameter position as input.  Instead, the exponent
+is now expressed as the domain of the resulting relation.
+
 =back
 
 =head1 Installation
@@ -1441,10 +1445,11 @@ per space.
 =item * Power
 
 	__isl_give isl_map *isl_map_power(__isl_take isl_map *map,
-		unsigned param, int *exact);
+		int *exact);
 
 Compute a parametric representation for all positive powers I<k> of C<map>.
-The power I<k> is equated to the parameter at position C<param>.
+The result maps I<k> to a nested relation corresponding to the
+I<k>th power of C<map>.
 The result may be an overapproximation.  If the result is known to be exact,
 then C<*exact> is set to C<1>.
 

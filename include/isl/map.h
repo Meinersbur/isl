@@ -410,8 +410,7 @@ int isl_map_foreach_basic_map(__isl_keep isl_map *map,
 
 __isl_give isl_map *isl_set_lifting(__isl_take isl_set *set);
 
-__isl_give isl_map *isl_map_power(__isl_take isl_map *map, unsigned param,
-	int *exact);
+__isl_give isl_map *isl_map_power(__isl_take isl_map *map, int *exact);
 __isl_give isl_map *isl_map_reaching_path_lengths(__isl_take isl_map *map,
 	int *exact);
 __isl_give isl_map *isl_map_transitive_closure(__isl_take isl_map *map,
