@@ -187,6 +187,13 @@ static int stream_getc(struct isl_stream *s)
 	return c;
 }
 
+static void isl_stream_ungetc(struct isl_stream *s, int c)
+{
+	isl_assert(s->ctx, s->n_un < 5, return);
+	s->un[s->n_un++] = c;
+	s->c = -1;
+}
+
 static int isl_stream_getc(struct isl_stream *s)
 {
 	int c;
@@ -194,18 +201,13 @@ static int isl_stream_getc(struct isl_stream *s)
 	do {
 		c = stream_getc(s);
 		if (c != '\\')
-			break;
+			return c;
 		c = stream_getc(s);
 	} while (c == '\n');
 
-	return c;
-}
+	isl_stream_ungetc(s, c);
 
-static void isl_stream_ungetc(struct isl_stream *s, int c)
-{
-	isl_assert(s->ctx, s->n_un < 5, return);
-	s->un[s->n_un++] = c;
-	s->c = -1;
+	return '\\';
 }
 
 static int isl_stream_push_char(struct isl_stream *s, int c)
