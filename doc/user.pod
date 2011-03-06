@@ -1446,6 +1446,8 @@ per space.
 
 	__isl_give isl_map *isl_map_power(__isl_take isl_map *map,
 		int *exact);
+	__isl_give isl_union_map *isl_union_map_power(
+		__isl_take isl_union_map *umap, int *exact);
 
 Compute a parametric representation for all positive powers I<k> of C<map>.
 The result maps I<k> to a nested relation corresponding to the

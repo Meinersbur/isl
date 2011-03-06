@@ -3017,3 +3017,87 @@ error:
 	isl_union_map_free(umap);
 	return NULL;
 }
+
+struct isl_union_power {
+	isl_union_map *pow;
+	int *exact;
+};
+
+static int power(__isl_take isl_map *map, void *user)
+{
+	struct isl_union_power *up = user;
+
+	map = isl_map_power(map, up->exact);
+	up->pow = isl_union_map_from_map(map);
+
+	return -1;
+}
+
+/* Construct a map [x] -> [x+1], with parameters prescribed by "dim".
+ */
+static __isl_give isl_union_map *increment(__isl_take isl_dim *dim)
+{
+	int k;
+	isl_basic_map *bmap;
+
+	dim = isl_dim_add(dim, isl_dim_in, 1);
+	dim = isl_dim_add(dim, isl_dim_out, 1);
+	bmap = isl_basic_map_alloc_dim(dim, 0, 1, 0);
+	k = isl_basic_map_alloc_equality(bmap);
+	if (k < 0)
+		goto error;
+	isl_seq_clr(bmap->eq[k], isl_basic_map_total_dim(bmap));
+	isl_int_set_si(bmap->eq[k][0], 1);
+	isl_int_set_si(bmap->eq[k][isl_basic_map_offset(bmap, isl_dim_in)], 1);
+	isl_int_set_si(bmap->eq[k][isl_basic_map_offset(bmap, isl_dim_out)], -1);
+	return isl_union_map_from_map(isl_map_from_basic_map(bmap));
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+/* Construct a map [[x]->[y]] -> [y-x], with parameters prescribed by "dim".
+ */
+static __isl_give isl_union_map *deltas_map(__isl_take isl_dim *dim)
+{
+	isl_basic_map *bmap;
+
+	dim = isl_dim_add(dim, isl_dim_in, 1);
+	dim = isl_dim_add(dim, isl_dim_out, 1);
+	bmap = isl_basic_map_universe(dim);
+	bmap = isl_basic_map_deltas_map(bmap);
+
+	return isl_union_map_from_map(isl_map_from_basic_map(bmap));
+}
+
+/* Compute the positive powers of "map", or an overapproximation.
+ * The result maps the exponent to a nested copy of the corresponding power.
+ * If the result is exact, then *exact is set to 1.
+ */
+__isl_give isl_union_map *isl_union_map_power(__isl_take isl_union_map *umap,
+	int *exact)
+{
+	int n;
+	isl_union_map *inc;
+	isl_union_map *dm;
+
+	if (!umap)
+		return NULL;
+	n = isl_union_map_n_map(umap);
+	if (n == 0)
+		return umap;
+	if (n == 1) {
+		struct isl_union_power up = { NULL, exact };
+		isl_union_map_foreach_map(umap, &power, &up);
+		isl_union_map_free(umap);
+		return up.pow;
+	}
+	inc = increment(isl_union_map_get_dim(umap));
+	umap = isl_union_map_product(inc, umap);
+	umap = isl_union_map_transitive_closure(umap, exact);
+	umap = isl_union_map_zip(umap);
+	dm = deltas_map(isl_union_map_get_dim(umap));
+	umap = isl_union_map_apply_domain(umap, dm);
+	
+	return umap;
+}

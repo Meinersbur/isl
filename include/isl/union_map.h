@@ -100,6 +100,8 @@ __isl_give isl_map *isl_union_map_extract_map(__isl_keep isl_union_map *umap,
 
 __isl_give isl_basic_map *isl_union_map_sample(__isl_take isl_union_map *umap);
 
+__isl_give isl_union_map *isl_union_map_power(__isl_take isl_union_map *umap,
+	int *exact);
 __isl_give isl_union_map *isl_union_map_transitive_closure(
 	__isl_take isl_union_map *umap, int *exact);
 
