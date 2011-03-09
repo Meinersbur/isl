@@ -75,8 +75,6 @@ struct isl_basic_set *isl_basic_set_interval(struct isl_ctx *ctx,
 struct isl_basic_set *isl_basic_set_positive_orthant(struct isl_dim *dims);
 void isl_basic_set_print_internal(__isl_keep isl_basic_set *bset,
 				FILE *out, int indent);
-struct isl_basic_set *isl_basic_set_swap_vars(
-		struct isl_basic_set *bset, unsigned n);
 __isl_give isl_basic_set *isl_basic_set_intersect(
 		__isl_take isl_basic_set *bset1,
 		__isl_take isl_basic_set *bset2);
@@ -248,7 +246,6 @@ __isl_give isl_set *isl_set_split_dims(__isl_take isl_set *set,
 	enum isl_dim_type type, unsigned first, unsigned n);
 
 void isl_set_print_internal(__isl_keep isl_set *set, FILE *out, int indent);
-struct isl_set *isl_set_swap_vars(struct isl_set *set, unsigned n);
 int isl_set_fast_is_empty(__isl_keep isl_set *set);
 int isl_set_fast_is_universe(__isl_keep isl_set *set);
 int isl_set_is_empty(__isl_keep isl_set *set);

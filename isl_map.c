@@ -1258,55 +1258,69 @@ static void swap_vars(struct isl_blk blk, isl_int *a,
 	isl_seq_cpy(a, blk.data, b_len+a_len);
 }
 
-struct isl_basic_set *isl_basic_set_swap_vars(
-		struct isl_basic_set *bset, unsigned n)
+static __isl_give isl_basic_map *isl_basic_map_swap_vars(
+	__isl_take isl_basic_map *bmap, unsigned pos, unsigned n1, unsigned n2)
 {
 	int i;
 	struct isl_blk blk;
+
+	if (!bmap)
+		goto error;
+
+	isl_assert(bmap->ctx,
+		pos + n1 + n2 <= 1 + isl_basic_map_total_dim(bmap), goto error);
+
+	if (n1 == 0 || n2 == 0)
+		return bmap;
+
+	bmap = isl_basic_map_cow(bmap);
+	if (!bmap)
+		return NULL;
+
+	blk = isl_blk_alloc(bmap->ctx, n1 + n2);
+	if (isl_blk_is_error(blk))
+		goto error;
+
+	for (i = 0; i < bmap->n_eq; ++i)
+		swap_vars(blk,
+			  bmap->eq[i] + pos, n1, n2);
+
+	for (i = 0; i < bmap->n_ineq; ++i)
+		swap_vars(blk,
+			  bmap->ineq[i] + pos, n1, n2);
+
+	for (i = 0; i < bmap->n_div; ++i)
+		swap_vars(blk,
+			  bmap->div[i]+1 + pos, n1, n2);
+
+	isl_blk_free(bmap->ctx, blk);
+
+	ISL_F_CLR(bmap, ISL_BASIC_SET_NORMALIZED);
+	bmap = isl_basic_map_gauss(bmap, NULL);
+	return isl_basic_map_finalize(bmap);
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+static __isl_give isl_basic_set *isl_basic_set_swap_vars(
+	__isl_take isl_basic_set *bset, unsigned n)
+{
 	unsigned dim;
 	unsigned nparam;
-
-	if (!bset)
-		goto error;
 
 	nparam = isl_basic_set_n_param(bset);
 	dim = isl_basic_set_n_dim(bset);
 	isl_assert(bset->ctx, n <= dim, goto error);
 
-	if (n == dim)
-		return bset;
-
-	bset = isl_basic_set_cow(bset);
-	if (!bset)
-		return NULL;
-
-	blk = isl_blk_alloc(bset->ctx, dim);
-	if (isl_blk_is_error(blk))
-		goto error;
-
-	for (i = 0; i < bset->n_eq; ++i)
-		swap_vars(blk,
-			  bset->eq[i]+1+nparam, n, dim - n);
-
-	for (i = 0; i < bset->n_ineq; ++i)
-		swap_vars(blk,
-			  bset->ineq[i]+1+nparam, n, dim - n);
-
-	for (i = 0; i < bset->n_div; ++i)
-		swap_vars(blk,
-			  bset->div[i]+1+1+nparam, n, dim - n);
-
-	isl_blk_free(bset->ctx, blk);
-
-	ISL_F_CLR(bset, ISL_BASIC_SET_NORMALIZED);
-	bset = isl_basic_set_gauss(bset, NULL);
-	return isl_basic_set_finalize(bset);
+	return isl_basic_map_swap_vars(bset, 1 + nparam, n, dim - n);
 error:
 	isl_basic_set_free(bset);
 	return NULL;
 }
 
-struct isl_set *isl_set_swap_vars(struct isl_set *set, unsigned n)
+static __isl_give isl_set *isl_set_swap_vars(__isl_take isl_set *set,
+	unsigned n)
 {
 	int i;
 	set = isl_set_cow(set);
