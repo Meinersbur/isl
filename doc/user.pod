@@ -536,6 +536,7 @@ specifications using the following functions.
 		enum isl_dim_type type, unsigned first, unsigned n);
 	__isl_give isl_dim *isl_dim_map_from_set(
 		__isl_take isl_dim *dim);
+	__isl_give isl_dim *isl_dim_zip(__isl_take isl_dim *dim);
 
 Note that if dimensions are added or removed from a space, then
 the name and the internal structure are lost.
@@ -1179,6 +1180,16 @@ The followning functions check whether the domain of the given
 		__isl_keep isl_basic_set *bset);
 	int isl_set_is_wrapping(__isl_keep isl_set *set);
 
+=item * Internal Product
+
+	int isl_basic_map_can_zip(
+		__isl_keep isl_basic_map *bmap);
+	int isl_map_can_zip(__isl_keep isl_map *map);
+
+Check whether the product of domain and range of the given relation
+can be computed,
+i.e., whether both domain and range are nested relations.
+
 =back
 
 =head3 Binary Properties
@@ -1502,6 +1513,18 @@ then the name of the space is also removed.
 
 The function above constructs a relation
 that maps the input set to a flattened version of the set.
+
+=item * Internal Product
+
+	__isl_give isl_basic_map *isl_basic_map_zip(
+		__isl_take isl_basic_map *bmap);
+	__isl_give isl_map *isl_map_zip(
+		__isl_take isl_map *map);
+	__isl_give isl_union_map *isl_union_map_zip(
+		__isl_take isl_union_map *umap);
+
+Given a relation with nested relations for domain and range,
+interchange the range of the domain with the domain of the range.
 
 =item * Dimension manipulation
 

@@ -1466,3 +1466,21 @@ int isl_union_set_is_empty(__isl_keep isl_union_set *uset)
 {
 	return isl_union_map_is_empty(uset);
 }
+
+static int zip_entry(void **entry, void *user)
+{
+	isl_map *map = *entry;
+	isl_union_map **res = user;
+
+	if (!isl_map_can_zip(map))
+		return 0;
+
+	*res = isl_union_map_add_map(*res, isl_map_zip(isl_map_copy(map)));
+
+	return 0;
+}
+
+__isl_give isl_union_map *isl_union_map_zip(__isl_take isl_union_map *umap)
+{
+	return cond_un_op(umap, &zip_entry);
+}

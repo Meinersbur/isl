@@ -1213,3 +1213,39 @@ __isl_give isl_dim *isl_dim_lift(__isl_take isl_dim *dim, unsigned n_local)
 
 	return dim;
 }
+
+int isl_dim_can_zip(__isl_keep isl_dim *dim)
+{
+	if (!dim)
+		return -1;
+
+	return dim->nested[0] && dim->nested[1];
+}
+
+__isl_give isl_dim *isl_dim_zip(__isl_take isl_dim *dim)
+{
+	isl_dim *dom, *ran;
+	isl_dim *dom_dom, *dom_ran, *ran_dom, *ran_ran;
+
+	if (!isl_dim_can_zip(dim))
+		isl_die(dim->ctx, isl_error_invalid, "dim cannot be zipped",
+			goto error);
+
+	if (!dim)
+		return 0;
+	dom = isl_dim_unwrap(isl_dim_domain(isl_dim_copy(dim)));
+	ran = isl_dim_unwrap(isl_dim_range(dim));
+	dom_dom = isl_dim_domain(isl_dim_copy(dom));
+	dom_ran = isl_dim_range(dom);
+	ran_dom = isl_dim_domain(isl_dim_copy(ran));
+	ran_ran = isl_dim_range(ran);
+	dom = isl_dim_join(isl_dim_from_domain(dom_dom),
+			   isl_dim_from_range(ran_dom));
+	ran = isl_dim_join(isl_dim_from_domain(dom_ran),
+			   isl_dim_from_range(ran_ran));
+	return isl_dim_join(isl_dim_from_domain(isl_dim_wrap(dom)),
+			    isl_dim_from_range(isl_dim_wrap(ran)));
+error:
+	isl_dim_free(dim);
+	return NULL;
+}

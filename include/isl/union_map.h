@@ -123,6 +123,8 @@ void isl_union_map_dump(__isl_keep isl_union_map *umap);
 __isl_give isl_union_set *isl_union_map_wrap(__isl_take isl_union_map *umap);
 __isl_give isl_union_map *isl_union_set_unwrap(__isl_take isl_union_set *uset);
 
+__isl_give isl_union_map *isl_union_map_zip(__isl_take isl_union_map *umap);
+
 __isl_give isl_union_map *isl_union_map_align_params(
 	__isl_take isl_union_map *umap, __isl_take isl_dim *model);
 __isl_give isl_union_set *isl_union_set_align_params(

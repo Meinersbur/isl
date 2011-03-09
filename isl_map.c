@@ -8450,3 +8450,84 @@ __isl_give isl_basic_set *isl_basic_set_from_constraint_matrices(
 	    isl_basic_map_from_constraint_matrices(dim, eq, ineq,
 						   c1, c2, c3, c4, isl_dim_in);
 }
+
+int isl_basic_map_can_zip(__isl_keep isl_basic_map *bmap)
+{
+	if (!bmap)
+		return -1;
+	
+	return isl_dim_can_zip(bmap->dim);
+}
+
+int isl_map_can_zip(__isl_keep isl_map *map)
+{
+	if (!map)
+		return -1;
+	
+	return isl_dim_can_zip(map->dim);
+}
+
+/* Given a basic map (A -> B) -> (C -> D), return the corresponding basic map
+ * (A -> C) -> (B -> D).
+ */
+__isl_give isl_basic_map *isl_basic_map_zip(__isl_take isl_basic_map *bmap)
+{
+	unsigned pos;
+	unsigned n1;
+	unsigned n2;
+
+	if (!bmap)
+		return NULL;
+
+	if (!isl_basic_map_can_zip(bmap))
+		isl_die(bmap->ctx, isl_error_invalid,
+			"basic map cannot be zipped", goto error);
+	pos = isl_basic_map_offset(bmap, isl_dim_in) +
+		isl_dim_size(bmap->dim->nested[0], isl_dim_in);
+	n1 = isl_dim_size(bmap->dim->nested[0], isl_dim_out);
+	n2 = isl_dim_size(bmap->dim->nested[1], isl_dim_in);
+	bmap = isl_basic_map_swap_vars(bmap, pos, n1, n2);
+	if (!bmap)
+		return NULL;
+	bmap->dim = isl_dim_zip(bmap->dim);
+	if (!bmap->dim)
+		goto error;
+	return bmap;
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+/* Given a map (A -> B) -> (C -> D), return the corresponding map
+ * (A -> C) -> (B -> D).
+ */
+__isl_give isl_map *isl_map_zip(__isl_take isl_map *map)
+{
+	int i;
+
+	if (!map)
+		return NULL;
+
+	if (!isl_map_can_zip(map))
+		isl_die(map->ctx, isl_error_invalid, "map cannot be zipped",
+			goto error);
+
+	map = isl_map_cow(map);
+	if (!map)
+		return NULL;
+
+	for (i = 0; i < map->n; ++i) {
+		map->p[i] = isl_basic_map_zip(map->p[i]);
+		if (!map->p[i])
+			goto error;
+	}
+
+	map->dim = isl_dim_zip(map->dim);
+	if (!map->dim)
+		goto error;
+
+	return map;
+error:
+	isl_map_free(map);
+	return NULL;
+}

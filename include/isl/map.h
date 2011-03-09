@@ -375,6 +375,11 @@ int isl_map_is_bijective(__isl_keep isl_map *map);
 int isl_map_is_translation(__isl_keep isl_map *map);
 int isl_map_has_equal_dim(__isl_keep isl_map *map1, __isl_keep isl_map *map2);
 
+int isl_basic_map_can_zip(__isl_keep isl_basic_map *bmap);
+int isl_map_can_zip(__isl_keep isl_map *map);
+__isl_give isl_basic_map *isl_basic_map_zip(__isl_take isl_basic_map *bmap);
+__isl_give isl_map *isl_map_zip(__isl_take isl_map *map);
+
 __isl_give isl_map *isl_map_make_disjoint(__isl_take isl_map *map);
 __isl_give isl_map *isl_basic_map_compute_divs(__isl_take isl_basic_map *bmap);
 __isl_give isl_map *isl_map_compute_divs(__isl_take isl_map *map);
