@@ -5615,6 +5615,88 @@ error:
 	return NULL;
 }
 
+/*
+ * returns [domain -> range] -> range - domain
+ */
+__isl_give isl_basic_map *isl_basic_map_deltas_map(
+	__isl_take isl_basic_map *bmap)
+{
+	int i, k;
+	isl_dim *dim;
+	isl_basic_map *domain;
+	isl_basic_set *bset;
+	int nparam, n;
+	unsigned total;
+
+	if (!isl_dim_tuple_match(bmap->dim, isl_dim_in, bmap->dim, isl_dim_out))
+		isl_die(bmap->ctx, isl_error_invalid,
+			"domain and range don't match", goto error);
+
+	nparam = isl_basic_map_dim(bmap, isl_dim_param);
+	n = isl_basic_map_dim(bmap, isl_dim_in);
+
+	dim = isl_dim_from_range(isl_dim_domain(isl_basic_map_get_dim(bmap)));
+	domain = isl_basic_map_universe(dim);
+
+	bmap = isl_basic_map_from_domain(isl_basic_map_wrap(bmap));
+	bmap = isl_basic_map_apply_range(bmap, domain);
+	bmap = isl_basic_map_extend_constraints(bmap, n, 0);
+
+	total = isl_basic_map_total_dim(bmap);
+
+	for (i = 0; i < n; ++i) {
+		k = isl_basic_map_alloc_equality(bmap);
+		if (k < 0)
+			goto error;
+		isl_seq_clr(bmap->eq[k], 1 + total);
+		isl_int_set_si(bmap->eq[k][1 + nparam + i], 1);
+		isl_int_set_si(bmap->eq[k][1 + nparam + n + i], -1);
+		isl_int_set_si(bmap->eq[k][1 + nparam + n + n + i], 1);
+	}
+
+	bmap = isl_basic_map_gauss(bmap, NULL);
+	return isl_basic_map_finalize(bmap);
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+/*
+ * returns [domain -> range] -> range - domain
+ */
+__isl_give isl_map *isl_map_deltas_map(__isl_take isl_map *map)
+{
+	int i;
+	isl_dim *domain_dim;
+
+	if (!map)
+		return NULL;
+
+	if (!isl_dim_tuple_match(map->dim, isl_dim_in, map->dim, isl_dim_out))
+		isl_die(map->ctx, isl_error_invalid,
+			"domain and range don't match", goto error);
+
+	map = isl_map_cow(map);
+	if (!map)
+		return NULL;
+
+	domain_dim = isl_dim_from_range(isl_dim_domain(isl_map_get_dim(map)));
+	map->dim = isl_dim_from_domain(isl_dim_wrap(map->dim));
+	map->dim = isl_dim_join(map->dim, domain_dim);
+	if (!map->dim)
+		goto error;
+	for (i = 0; i < map->n; ++i) {
+		map->p[i] = isl_basic_map_deltas_map(map->p[i]);
+		if (!map->p[i])
+			goto error;
+	}
+	ISL_F_CLR(map, ISL_MAP_NORMALIZED);
+	return map;
+error:
+	isl_map_free(map);
+	return NULL;
+}
+
 static struct isl_basic_map *basic_map_identity(struct isl_dim *dims)
 {
 	struct isl_basic_map *bmap;

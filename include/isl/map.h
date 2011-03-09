@@ -300,6 +300,9 @@ __isl_give isl_map *isl_map_lower_bound_si(__isl_take isl_map *map,
 		enum isl_dim_type type, unsigned pos, int value);
 __isl_give isl_basic_set *isl_basic_map_deltas(__isl_take isl_basic_map *bmap);
 __isl_give isl_set *isl_map_deltas(__isl_take isl_map *map);
+__isl_give isl_basic_map *isl_basic_map_deltas_map(
+	__isl_take isl_basic_map *bmap);
+__isl_give isl_map *isl_map_deltas_map(__isl_take isl_map *map);
 struct isl_map *isl_map_detect_equalities(struct isl_map *map);
 __isl_give isl_basic_map *isl_map_affine_hull(__isl_take isl_map *map);
 __isl_give isl_basic_map *isl_map_convex_hull(__isl_take isl_map *map);

@@ -1321,6 +1321,16 @@ Construct an identity relation on the given (union) set.
 These functions return a (basic) set containing the differences
 between image elements and corresponding domain elements in the input.
 
+	__isl_give isl_basic_map *isl_basic_map_deltas_map(
+		__isl_take isl_basic_map *bmap);
+	__isl_give isl_map *isl_map_deltas_map(
+		__isl_take isl_map *map);
+	__isl_give isl_union_map *isl_union_map_deltas_map(
+		__isl_take isl_union_map *umap);
+
+The functions above construct a (basic, regular or union) relation
+that maps (a wrapped version of) the input relation to its delta set.
+
 =item * Coalescing
 
 Simplify the representation of a set or relation by trying
