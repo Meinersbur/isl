@@ -5444,7 +5444,7 @@ struct isl_set *isl_map_deltas(struct isl_map *map)
 		   goto error);
 	dim = isl_map_get_dim(map);
 	dim = isl_dim_domain(dim);
-	result = isl_set_alloc_dim(dim, map->n, map->flags);
+	result = isl_set_alloc_dim(dim, map->n, 0);
 	if (!result)
 		goto error;
 	for (i = 0; i < map->n; ++i)
