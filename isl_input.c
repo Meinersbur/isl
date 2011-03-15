@@ -969,9 +969,6 @@ static isl_map *read_constraint(struct isl_stream *s,
 	vars_drop(v, v->n - n);
 
 	return isl_map_from_basic_map(bmap);
-error:
-	isl_basic_map_free(bmap);
-	return NULL;
 }
 
 static struct isl_map *read_disjuncts(struct isl_stream *s,
