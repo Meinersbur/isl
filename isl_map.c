@@ -1627,9 +1627,6 @@ __isl_give isl_basic_map *isl_basic_map_remove_unknown_divs(
 	}
 
 	return bmap;
-error:
-	isl_basic_map_free(bmap);
-	return NULL;
 }
 
 __isl_give isl_map *isl_map_remove_unknown_divs(__isl_take isl_map *map)
