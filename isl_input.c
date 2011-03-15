@@ -2188,22 +2188,18 @@ error:
 	return NULL;
 }
 
-static __isl_give isl_vec *vec_read(struct isl_stream *s,
-	unsigned input_format)
+static __isl_give isl_vec *vec_read(struct isl_stream *s)
 {
-	if (input_format == ISL_FORMAT_POLYLIB)
-		return isl_vec_read_polylib(s);
-	isl_assert(s->ctx, 0, return NULL);
+	return isl_vec_read_polylib(s);
 }
 
-struct isl_vec *isl_vec_read_from_file(struct isl_ctx *ctx,
-		FILE *input, unsigned input_format)
+__isl_give isl_vec *isl_vec_read_from_file(isl_ctx *ctx, FILE *input)
 {
 	isl_vec *v;
 	struct isl_stream *s = isl_stream_new_file(ctx, input);
 	if (!s)
 		return NULL;
-	v = vec_read(s, input_format);
+	v = vec_read(s);
 	isl_stream_free(s);
 	return v;
 }

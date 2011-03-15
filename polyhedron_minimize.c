@@ -67,7 +67,7 @@ int main(int argc, char **argv)
 	isl_int_init(opt);
 	bset = isl_basic_set_read_from_file(ctx, stdin, 0);
 	assert(bset);
-	obj = isl_vec_read_from_file(ctx, stdin, ISL_FORMAT_POLYLIB);
+	obj = isl_vec_read_from_file(ctx, stdin);
 	assert(obj);
 	dim = isl_basic_set_total_dim(bset);
 	assert(obj->size >= dim && obj->size <= dim + 1);
