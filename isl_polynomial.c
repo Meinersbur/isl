@@ -9,6 +9,7 @@
  */
 
 #include <stdlib.h>
+#include <isl_ctx_private.h>
 #include <isl_map_private.h>
 #include <isl_factorization.h>
 #include <isl/lp.h>

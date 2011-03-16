@@ -10,8 +10,8 @@
 #include <assert.h>
 #include <stdio.h>
 #include <limits.h>
+#include <isl_ctx_private.h>
 #include <isl_map_private.h>
-#include <isl/ctx.h>
 #include <isl/set.h>
 #include <isl/flow.h>
 #include <isl/constraint.h>

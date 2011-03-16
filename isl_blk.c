@@ -8,7 +8,7 @@
  */
 
 #include <isl/blk.h>
-#include <isl/ctx.h>
+#include <isl_ctx_private.h>
 
 struct isl_blk isl_blk_empty()
 {

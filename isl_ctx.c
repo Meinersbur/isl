@@ -7,7 +7,7 @@
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
  */
 
-#include <isl/ctx.h>
+#include <isl_ctx_private.h>
 #include <isl/vec.h>
 
 static struct isl_options *find_nested_options(struct isl_arg *arg,
@@ -159,4 +159,10 @@ enum isl_error isl_ctx_last_error(isl_ctx *ctx)
 void isl_ctx_reset_error(isl_ctx *ctx)
 {
 	ctx->error = isl_error_none;
+}
+
+void isl_ctx_set_error(isl_ctx *ctx, enum isl_error error)
+{
+	if (ctx)
+		ctx->error = error;
 }

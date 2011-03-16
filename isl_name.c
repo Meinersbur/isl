@@ -8,6 +8,7 @@
  */
 
 #include <string.h>
+#include <isl_ctx_private.h>
 #include "isl_name.h"
 
 struct isl_name *isl_name_alloc(struct isl_ctx *ctx, const char *s)

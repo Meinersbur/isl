@@ -8,6 +8,7 @@
  * 91893 Orsay, France
  */
 
+#include <isl_ctx_private.h>
 #include <isl_dim_private.h>
 #include <isl_reordering.h>
 

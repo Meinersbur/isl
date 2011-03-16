@@ -67,29 +67,7 @@ enum isl_error {
 	isl_error_invalid,
 	isl_error_unsupported
 };
-struct isl_ctx {
-	int			ref;
-
-	struct isl_stats	*stats;
-
-	int			 opt_allocated;
-	struct isl_options	*opt;
-	void			*user_opt;
-	struct isl_arg		*user_arg;
-
-	isl_int			zero;
-	isl_int			one;
-	isl_int			two;
-	isl_int			negone;
-
-	isl_int			normalize_gcd;
-
-	int			n_cached;
-	struct isl_blk		cache[ISL_BLK_CACHE_SIZE];
-	struct isl_hash_table	name_hash;
-
-	enum isl_error		error;
-};
+struct isl_ctx;
 typedef struct isl_ctx isl_ctx;
 
 /* Some helper macros */
@@ -117,8 +95,7 @@ typedef struct isl_ctx isl_ctx;
 
 #define isl_die(ctx,errno,msg,code)					\
 	do {								\
-		if (ctx)						\
-			ctx->error = errno;				\
+		isl_ctx_set_error(ctx, errno);				\
 		fprintf(stderr, "%s:%d: %s\n", __FILE__, __LINE__, msg);	\
 		code;							\
 	} while (0)
@@ -155,6 +132,7 @@ st *isl_ctx_peek_ ## prefix(isl_ctx *ctx)				\
 
 enum isl_error isl_ctx_last_error(isl_ctx *ctx);
 void isl_ctx_reset_error(isl_ctx *ctx);
+void isl_ctx_set_error(isl_ctx *ctx, enum isl_error error);
 
 #if defined(__cplusplus)
 }

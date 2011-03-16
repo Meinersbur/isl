@@ -13,6 +13,7 @@
  * ZAC des vignes, 4 rue Jacques Monod, 91893 Orsay, France
  */
 
+#include <isl_ctx_private.h>
 #include <isl_map_private.h>
 #include <isl/set.h>
 #include <isl/seq.h>
