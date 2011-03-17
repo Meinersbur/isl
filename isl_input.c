@@ -897,6 +897,40 @@ static int is_comparator(struct isl_token *tok)
 	}
 }
 
+/* Add any variables in the variable list "v" that are not already in "bmap"
+ * as output variables in "bmap".
+ */
+static __isl_give isl_basic_map *add_lifted_divs(__isl_take isl_basic_map *bmap,
+	struct vars *v)
+{
+	int i;
+	int extra;
+	struct variable *var;
+
+	extra = v->n - isl_basic_map_total_dim(bmap);
+
+	if (extra == 0)
+		return bmap;
+
+	bmap = isl_basic_map_add(bmap, isl_dim_out, extra);
+	bmap = isl_basic_map_extend_dim(bmap, isl_basic_map_get_dim(bmap),
+					0, 0, 2 * extra);
+
+	for (i = 0, var = v->v; i < extra; ++i, var = var->next) {
+		var->def = isl_vec_zero_extend(var->def, 2 + v->n);
+		if (!var->def)
+			goto error;
+		if (isl_basic_map_add_div_constraints_var(bmap, var->pos,
+							  var->def->el) < 0)
+			goto error;
+	}
+
+	return bmap;
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
 static struct isl_basic_map *add_constraint(struct isl_stream *s,
 	struct vars *v, struct isl_basic_map *bmap)
 {
@@ -925,7 +959,7 @@ static struct isl_basic_map *add_constraint(struct isl_stream *s,
 		aff1 = isl_mat_add_zero_cols(aff1, aff2->n_col - aff1->n_col);
 		if (!aff1)
 			goto error;
-		bmap = add_divs(bmap, v);
+		bmap = add_lifted_divs(bmap, v);
 		bmap = isl_basic_map_extend_constraints(bmap, 0,
 						aff1->n_row * aff2->n_row);
 		for (i = 0; i < aff1->n_row; ++i)
@@ -963,9 +997,13 @@ static isl_map *read_constraint(struct isl_stream *s,
 	if (!bmap)
 		return NULL;
 
+	bmap = isl_basic_set_unwrap(isl_basic_set_lift(isl_basic_map_wrap(bmap)));
+
 	bmap = add_constraint(s, v, bmap);
 	bmap = isl_basic_map_simplify(bmap);
 	bmap = isl_basic_map_finalize(bmap);
+
+	bmap = isl_basic_set_unwrap(isl_basic_map_domain(bmap));
 
 	vars_drop(v, v->n - n);
 
