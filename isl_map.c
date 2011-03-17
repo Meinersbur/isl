@@ -3641,6 +3641,7 @@ struct isl_basic_map *isl_basic_map_overlying_set(
 	bmap->extra += like->n_div;
 	if (bmap->extra) {
 		unsigned ltotal;
+		isl_int **div;
 		ltotal = total - bmap->extra + like->extra;
 		if (ltotal > total)
 			ltotal = total;
@@ -3648,10 +3649,10 @@ struct isl_basic_map *isl_basic_map_overlying_set(
 					bmap->extra * (1 + 1 + total));
 		if (isl_blk_is_error(bmap->block2))
 			goto error;
-		bmap->div = isl_realloc_array(ctx, bmap->div, isl_int *,
-						bmap->extra);
-		if (!bmap->div)
+		div = isl_realloc_array(ctx, bmap->div, isl_int *, bmap->extra);
+		if (!div)
 			goto error;
+		bmap->div = div;
 		for (i = 0; i < bmap->extra; ++i)
 			bmap->div[i] = bmap->block2.data + i * (1 + 1 + total);
 		for (i = 0; i < like->n_div; ++i) {
