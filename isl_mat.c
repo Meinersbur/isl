@@ -55,6 +55,7 @@ struct isl_mat *isl_mat_extend(struct isl_mat *mat,
 {
 	int i;
 	isl_int *old;
+	isl_int **row;
 
 	if (!mat)
 		return NULL;
@@ -87,9 +88,10 @@ struct isl_mat *isl_mat_extend(struct isl_mat *mat,
 	mat->block = isl_blk_extend(mat->ctx, mat->block, n_row * mat->max_col);
 	if (isl_blk_is_error(mat->block))
 		goto error;
-	mat->row = isl_realloc_array(mat->ctx, mat->row, isl_int *, n_row);
-	if (!mat->row)
+	row = isl_realloc_array(mat->ctx, mat->row, isl_int *, n_row);
+	if (!row)
 		goto error;
+	mat->row = row;
 
 	for (i = 0; i < mat->n_row; ++i)
 		mat->row[i] = mat->block.data + (mat->row[i] - old);
