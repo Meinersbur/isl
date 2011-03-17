@@ -22,4 +22,6 @@ struct isl_ctx {
 	struct isl_hash_table	name_hash;
 
 	enum isl_error		error;
+
+	int			abort;
 };

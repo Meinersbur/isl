@@ -166,3 +166,20 @@ void isl_ctx_set_error(isl_ctx *ctx, enum isl_error error)
 	if (ctx)
 		ctx->error = error;
 }
+
+void isl_ctx_abort(isl_ctx *ctx)
+{
+	if (ctx)
+		ctx->abort = 1;
+}
+
+void isl_ctx_resume(isl_ctx *ctx)
+{
+	if (ctx)
+		ctx->abort = 0;
+}
+
+int isl_ctx_aborted(isl_ctx *ctx)
+{
+	return ctx ? ctx->abort : -1;
+}

@@ -7,6 +7,7 @@
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
  */
 
+#include <isl_ctx_private.h>
 #include <isl_mat_private.h>
 #include "isl_map_private.h"
 #include "isl_tab.h"
@@ -1082,6 +1083,11 @@ int isl_tab_pivot(struct isl_tab *tab, int row, int col)
 	struct isl_mat *mat = tab->mat;
 	struct isl_tab_var *var;
 	unsigned off = 2 + tab->M;
+
+	if (tab->mat->ctx->abort) {
+		isl_ctx_set_error(tab->mat->ctx, isl_error_abort);
+		return -1;
+	}
 
 	isl_int_swap(mat->row[row][0], mat->row[row][off + col]);
 	sgn = isl_int_sgn(mat->row[row][0]);

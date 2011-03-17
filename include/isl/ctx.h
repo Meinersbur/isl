@@ -62,6 +62,7 @@ struct isl_stats {
 };
 enum isl_error {
 	isl_error_none = 0,
+	isl_error_abort,
 	isl_error_unknown,
 	isl_error_internal,
 	isl_error_invalid,
@@ -120,6 +121,10 @@ void *isl_ctx_peek_options(isl_ctx *ctx, struct isl_arg *arg);
 void isl_ctx_ref(struct isl_ctx *ctx);
 void isl_ctx_deref(struct isl_ctx *ctx);
 void isl_ctx_free(isl_ctx *ctx);
+
+void isl_ctx_abort(isl_ctx *ctx);
+void isl_ctx_resume(isl_ctx *ctx);
+int isl_ctx_aborted(isl_ctx *ctx);
 
 #define ISL_ARG_CTX_DECL(prefix,st,arg)					\
 st *isl_ctx_peek_ ## prefix(isl_ctx *ctx);
