@@ -30,6 +30,17 @@ void test_parse_map(isl_ctx *ctx, const char *str)
 	isl_map_free(map);
 }
 
+void test_parse_map_equal(isl_ctx *ctx, const char *str, const char *str2)
+{
+	isl_map *map, *map2;
+
+	map = isl_map_read_from_str(ctx, str, -1);
+	map2 = isl_map_read_from_str(ctx, str2, -1);
+	assert(map && map2 && isl_map_is_equal(map, map2));
+	isl_map_free(map);
+	isl_map_free(map2);
+}
+
 void test_parse_pwqp(isl_ctx *ctx, const char *str)
 {
 	isl_pw_qpolynomial *pwqp;
@@ -42,7 +53,7 @@ void test_parse_pwqp(isl_ctx *ctx, const char *str)
 void test_parse(struct isl_ctx *ctx)
 {
 	isl_map *map, *map2;
-	const char *str;
+	const char *str, *str2;
 
 	str = "{ [i] -> [-i] }";
 	map = isl_map_read_from_str(ctx, str, -1);
@@ -57,6 +68,10 @@ void test_parse(struct isl_ctx *ctx)
 	test_parse_map(ctx, "{[[s] -> A[i]] -> [[s+1] -> A[i]]}");
 	test_parse_map(ctx, "{ [p1, y1, y2] -> [2, y1, y2] : "
 				"p1 = 1 && (y1 <= y2 || y2 = 0) }");
+
+	str = "{ [x,y]  : [([x/2]+y)/3] >= 1 }";
+	str2 = "{ [x, y] : 2y >= 6 - x }";
+	test_parse_map_equal(ctx, str, str2);
 
 	str = "{[new,old] -> [new+1-2*[(new+1)/2],old+1-2*[(old+1)/2]]}";
 	map = isl_map_read_from_str(ctx, str, -1);

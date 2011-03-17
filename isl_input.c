@@ -323,6 +323,7 @@ static __isl_give isl_vec *accept_affine_factor(struct isl_stream *s,
 		tok = NULL;
 		if (read_div_definition(s, v) < 0)
 			goto error;
+		aff = isl_vec_zero_extend(aff, 1 + v->n);
 	} else {
 		isl_stream_error(s, tok, "expecting factor");
 		goto error;
