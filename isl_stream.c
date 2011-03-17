@@ -213,10 +213,12 @@ static int isl_stream_getc(struct isl_stream *s)
 static int isl_stream_push_char(struct isl_stream *s, int c)
 {
 	if (s->len >= s->size) {
+		char *buffer;
 		s->size = (3*s->size)/2;
-		s->buffer = isl_realloc_array(s->ctx, s->buffer, char, s->size);
-		if (!s->buffer)
+		buffer = isl_realloc_array(s->ctx, s->buffer, char, s->size);
+		if (!buffer)
 			return -1;
+		s->buffer = buffer;
 	}
 	s->buffer[s->len++] = c;
 	return 0;
