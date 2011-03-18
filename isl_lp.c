@@ -45,7 +45,7 @@ enum isl_lp_result isl_tab_solve_lp(struct isl_basic_map *bmap, int maximize,
 }
 
 /* Given a basic map "bmap" and an affine combination of the variables "f"
- * with denominator "denom", set *opt/*opt_denom to the minimal
+ * with denominator "denom", set *opt / *opt_denom to the minimal
  * (or maximal if "maximize" is true) value attained by f/d over "bmap",
  * assuming the basic map is not empty and the expression cannot attain
  * arbitrarily small (or large) values.
