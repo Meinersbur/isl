@@ -1280,6 +1280,7 @@ error:
 		for (i = 0; i < n; ++i)
 			isl_tab_free(tabs[i]);
 	free(tabs);
+	isl_map_free(map);
 	return NULL;
 }
 
