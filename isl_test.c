@@ -73,6 +73,11 @@ void test_parse(struct isl_ctx *ctx)
 	str2 = "{ [x, y] : 2y >= 6 - x }";
 	test_parse_map_equal(ctx, str, str2);
 
+	test_parse_map_equal(ctx, "{ [x,y] : x <= min(y, 2*y+3) }",
+				  "{ [x,y] : x <= y, 2*y + 3 }");
+	str = "{ [x, y] : (y <= x and y >= -3) or (2y <= -3 + x and y <= -4) }";
+	test_parse_map_equal(ctx, "{ [x,y] : x >= min(y, 2*y+3) }", str);
+
 	str = "{[new,old] -> [new+1-2*[(new+1)/2],old+1-2*[(old+1)/2]]}";
 	map = isl_map_read_from_str(ctx, str, -1);
 	str = "{ [new, old] -> [o0, o1] : "

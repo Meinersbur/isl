@@ -250,6 +250,8 @@ static enum isl_token_type check_keywords(struct isl_stream *s)
 		return ISL_TOKEN_INFTY;
 	if (!strcasecmp(s->buffer, "NaN"))
 		return ISL_TOKEN_NAN;
+	if (!strcasecmp(s->buffer, "min"))
+		return ISL_TOKEN_MIN;
 	if (!strcasecmp(s->buffer, "max"))
 		return ISL_TOKEN_MAX;
 	if (!strcasecmp(s->buffer, "rat"))
