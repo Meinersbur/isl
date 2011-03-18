@@ -8,11 +8,20 @@
 \usepackage{tikz}
 \usepackage{calc}
 \usepackage[ruled]{algorithm2e}
+\usetikzlibrary{matrix,fit,backgrounds,decorations.pathmorphing,positioning}
+\usepackage{listings}
+
+\lstset{basicstyle=\tt,flexiblecolumns=false}
 
 \def\vec#1{\mathchoice{\mbox{\boldmath$\displaystyle\bf#1$}}
 {\mbox{\boldmath$\textstyle\bf#1$}}
 {\mbox{\boldmath$\scriptstyle\bf#1$}}
 {\mbox{\boldmath$\scriptscriptstyle\bf#1$}}}
+
+\providecommand{\fract}[1]{\left\{#1\right\}}
+\providecommand{\floor}[1]{\left\lfloor#1\right\rfloor}
+\providecommand{\ceil}[1]{\left\lceil#1\right\rceil}
+\def\sp#1#2{\langle #1, #2 \rangle}
 
 \newtheorem{theorem}{Theorem}
 \newaliascnt{example}{theorem}

@@ -151,6 +151,669 @@ LP problems, one for each element of each $\vec K_i$.
 If any LP problem is unbounded, then the corresponding constraint
 is dropped.
 
+\section{Parametric Integer Programming}
+
+\subsection{Introduction}\label{s:intro}
+
+Parametric integer programming \shortcite{Feautrier88parametric}
+is used to solve many problems within the context of the polyhedral model.
+Here, we are mainly interested in dependence analysis \shortcite{Fea91}
+and in computing a unique representation for existentially quantified
+variables.  The latter operation has been used for counting elements
+in sets involving such variables
+\shortcite{BouletRe98,Verdoolaege2005experiences} and lies at the core
+of the internal representation of {\tt isl}.
+
+Parametric integer programming was first implemented in \texttt{PipLib}.
+An alternative method for parametric integer programming
+was later implemented in {\tt barvinok} \cite{barvinok-0.22}.
+This method is not based on Feautrier's algorithm, but on rational
+generating functions \cite{Woods2003short} and was inspired by the
+``digging'' technique of \shortciteN{DeLoera2004Three} for solving
+non-parametric integer programming problems.
+
+In the following sections, we briefly recall the dual simplex
+method combined with Gomory cuts and describe some extensions
+and optimizations.  The main algorithm is applied to a matrix
+data structure known as a tableau.  In case of parametric problems,
+there are two tableaus, one for the main problem and one for
+the constraints on the parameters, known as the context tableau.
+The handling of the context tableau is described in \autoref{s:context}.
+
+\subsection{The Dual Simplex Method}
+
+Tableaus can be represented in several slightly different ways.
+In {\tt isl}, the dual simplex method uses the same representation
+as that used by its incremental LP solver based on the \emph{primal}
+simplex method.  The implementation of this LP solver is based
+on that of {\tt Simplify} \shortcite{Detlefs2005simplify}, which, in turn,
+was derived from the work of \shortciteN{Nelson1980phd}.
+In the original \shortcite{Nelson1980phd}, the tableau was implemented
+as a sparse matrix, but neither {\tt Simplify} nor the current
+implementation of {\tt isl} does so.
+
+Given some affine constraints on the variables,
+$A \vec x + \vec b \ge \vec 0$, the tableau represents the relationship
+between the variables $\vec x$ and non-negative variables
+$\vec y = A \vec x + \vec b$ corresponding to the constraints.
+The initial tableau contains $\begin{pmatrix}
+\vec b & A
+\end{pmatrix}$ and expresses the constraints $\vec y$ in the rows in terms
+of the variables $\vec x$ in the columns.  The main operation defined
+on a tableau exchanges a column and a row variable and is called a pivot.
+During this process, some coefficients may become rational.
+As in the \texttt{PipLib} implementation,
+{\tt isl} maintains a shared denominator per row.
+The sample value of a tableau is one where each column variable is assigned
+zero and each row variable is assigned the constant term of the row.
+This sample value represents a valid solution if each constraint variable
+is assigned a non-negative value, i.e., if the constant terms of
+rows corresponding to constraints are all non-negative.
+
+The dual simplex method starts from an initial sample value that
+may be invalid, but that is known to be (lexicographically) no
+greater than any solution, and gradually increments this sample value
+through pivoting until a valid solution is obtained.
+In particular, each pivot exchanges a row variable
+$r = -n + \sum_i a_i \, c_i$ with negative
+sample value $-n$ with a column variable $c_j$
+such that $a_j > 0$.  Since $c_j = (n + r - \sum_{i\ne j} a_i \, c_i)/a_j$,
+the new row variable will have a positive sample value $n$.
+If no such column can be found, then the problem is infeasible.
+By always choosing the column that leads to the (lexicographically)
+smallest increment in the variables $\vec x$,
+the first solution found is guaranteed to be the (lexicographically)
+minimal solution \cite{Feautrier88parametric}.
+In order to be able to determine the smallest increment, the tableau
+is (implicitly) extended with extra rows defining the original
+variables in terms of the column variables.
+If we assume that all variables are non-negative, then we know
+that the zero vector is no greater than the minimal solution and
+then the initial extended tableau looks as follows.
+$$
+\begin{tikzpicture}
+\matrix (m) [matrix of math nodes]
+{
+& {} & 1 & \vec c \\
+\vec x && |(top)| \vec 0 & I \\
+\vec r && \vec b & |(bottom)|A \\
+};
+\begin{pgfonlayer}{background}
+\node (core) [inner sep=0pt,fill=black!20,right delimiter=),left delimiter=(,fit=(top)(bottom)] {};
+\end{pgfonlayer}
+\end{tikzpicture}
+$$
+Each column in this extended tableau is lexicographically positive
+and will remain so because of the column choice explained above.
+It is then clear that the value of $\vec x$ will increase in each step.
+Note that there is no need to store the extra rows explicitly.
+If a given $x_i$ is a column variable, then the corresponding row
+is the unit vector $e_i$.  If, on the other hand, it is a row variable,
+then the row already appears somewhere else in the tableau.
+
+In case of parametric problems, the sign of the constant term
+may depend on the parameters.  Each time the constant term of a constraint row
+changes, we therefore need to check whether the new term can attain
+negative and/or positive values over the current set of possible
+parameter values, i.e., the context.
+If all these terms can only attain non-negative values, the current
+state of the tableau represents a solution.  If one of the terms
+can only attain non-positive values and is not identically zero,
+the corresponding row can be pivoted.
+Otherwise, we pick one of the terms that can attain both positive
+and negative values and split the context into a part where
+it only attains non-negative values and a part where it only attains
+negative values.
+
+\subsection{Gomory Cuts}
+
+The solution found by the dual simplex method may have
+non-integral coordinates.  If so, some rational solutions
+(including the current sample value), can be cut off by
+applying a (parametric) Gomory cut.
+Let $r = b(\vec p) + \sp {\vec a} {\vec c}$ be the row
+corresponding to the first non-integral coordinate of $\vec x$,
+with $b(\vec p)$ the constant term, an affine expression in the
+parameters $\vec p$, i.e., $b(\vec p) = \sp {\vec f} {\vec p} + g$.
+Note that only row variables can attain
+non-integral values as the sample value of the column variables is zero.
+Consider the expression
+$b(\vec p) - \ceil{b(\vec p)} + \sp {\fract{\vec a}} {\vec c}$,
+with $\ceil\cdot$ the ceiling function and $\fract\cdot$ the
+fractional part.  This expression is negative at the sample value
+since $\vec c = \vec 0$ and $r = b(\vec p)$ is fractional, i.e.,
+$\ceil{b(\vec p)} > b(\vec p)$.  On the other hand, for each integral
+value of $r$ and $\vec c \ge 0$, the expression is non-negative
+because $b(\vec p) - \ceil{b(\vec p)} > -1$.
+Imposing this expression to be non-negative therefore does not
+invalidate any integral solutions, while it does cut away the current
+fractional sample value.  To be able to formulate this constraint,
+a new variable $q = \floor{-b(\vec p)} = - \ceil{b(\vec p)}$ is added
+to the context.  This integral variable is uniquely defined by the constraints
+$0 \le -d \, b(\vec p) - d \, q \le d - 1$, with $d$ the common
+denominator of $\vec f$ and $g$.  In practice, the variable
+$q' = \floor{\sp {\fract{-f}} {\vec p} + \fract{-g}}$ is used instead
+and the coefficients of the new constraint are adjusted accordingly.
+The sign of the constant term of this new constraint need not be determined
+as it is non-positive by construction.
+When several of these extra context variables are added, it is important
+to avoid adding duplicates.
+Recent versions of {\tt PipLib} also check for such duplicates.
+
+\subsection{Negative Unknowns and Maximization}
+
+There are two places in the above algorithm where the unknowns $\vec x$
+are assumed to be non-negative: the initial tableau starts from
+sample value $\vec x = \vec 0$ and $\vec c$ is assumed to be non-negative
+during the construction of Gomory cuts.
+To deal with negative unknowns, \shortciteN[Appendix A.2]{Fea91}
+proposed to use a ``big parameter'', say $M$, that is taken to be
+an arbitrarily large positive number.  Instead of looking for the
+lexicographically minimal value of $\vec x$, we search instead
+for the lexicographically minimal value of $\vec x' = \vec M + \vec x$.
+The sample value $\vec x' = \vec 0$ of the initial tableau then
+corresponds to $\vec x = -\vec M$, which is clearly not greater than
+any potential solution.  The sign of the constant term of a row
+is determined lexicographically, with the coefficient of $M$ considered
+first.  That is, if the coefficient of $M$ is not zero, then its sign
+is the sign of the entire term.  Otherwise, the sign is determined
+by the remaining affine expression in the parameters.
+If the original problem has a bounded optimum, then the final sample
+value will be of the form $\vec M + \vec v$ and the optimal value
+of the original problem is then $\vec v$.
+Maximization problems can be handled in a similar way by computing
+the minimum of $\vec M - \vec x$.
+
+When the optimum is unbounded, the optimal value computed for
+the original problem will involve the big parameter.
+In the original implementation of {\tt PipLib}, the big parameter could
+even appear in some of the extra variables $\vec q$ created during
+the application of a Gomory cut.  The final result could then contain
+implicit conditions on the big parameter through conditions on such
+$\vec q$ variables.  This problem was resolved in later versions
+of {\tt PipLib} by taking $M$ to be divisible by any positive number.
+The big parameter can then never appear in any $\vec q$ because
+$\fract {\alpha M } = 0$.  It should be noted, though, that an unbounded
+problem usually (but not always)
+indicates an incorrect formulation of the problem.
+
+The original version of {\tt PipLib} required the user to ``manually''
+add a big parameter, perform the reformulation and interpret the result
+\shortcite{Feautrier02}.  Recent versions allow the user to simply
+specify that the unknowns may be negative or that the maximum should
+be computed and then these transformations are performed internally.
+Although there are some application, e.g.,
+that of \shortciteN{Feautrier92multi},
+where it is useful to have explicit control over the big parameter,
+negative unknowns and maximization are by far the most common applications
+of the big parameter and we believe that the user should not be bothered
+with such implementation issues.
+The current version of {\tt isl} therefore does not
+provide any interface for specifying big parameters.  Instead, the user
+can specify whether a maximum needs to be computed and no assumptions
+are made on the sign of the unknowns.  Instead, the sign of the unknowns
+is checked internally and a big parameter is automatically introduced when
+needed.  For compatibility with {\tt PipLib}, the {\tt isl\_pip} tool
+does explicitly add non-negativity constraints on the unknowns unless
+the \verb+Urs_unknowns+ option is specified.
+Currently, there is also no way in {\tt isl} of expressing a big
+parameter in the output.  Even though
+{\tt isl} makes the same divisibility assumption on the big parameter
+as recent versions of {\tt PipLib}, it will therefore eventually
+produce an error if the problem turns out to be unbounded.
+
+\subsection{Preprocessing}
+
+In this section, we describe some transformations that are
+or can be applied in advance to reduce the running time
+of the actual dual simplex method with Gomory cuts.
+
+\subsubsection{Feasibility Check and Detection of Equalities}
+
+Experience with the original {\tt PipLib} has shown that Gomory cuts
+do not perform very well on problems that are (non-obviously) empty,
+i.e., problems with rational solutions, but no integer solutions.
+In {\tt isl}, we therefore first perform a feasibility check on
+the original problem considered as a non-parametric problem
+over the combined space of unknowns and parameters.
+In fact, we do not simply check the feasibility, but we also
+check for implicit equalities among the integer points by computing
+the integer affine hull.  The algorithm used is the same as that
+described in \autoref{s:GBR} below.
+Computing the affine hull is fairly expensive, but it can
+bring huge benefits if any equalities can be found or if the problem
+turns out to be empty.
+
+\subsubsection{Constraint Simplification}
+
+If the coefficients of the unknown and parameters in a constraint
+have a common factor, then this factor should be removed, possibly
+rounding down the constant term.  For example, the constraint
+$2 x - 5 \ge 0$ should be simplified to $x - 3 \ge 0$.
+{\tt isl} performs such simplifications on all sets and relations.
+Recent versions of {\tt PipLib} also perform this simplification
+on the input.
+
+\subsubsection{Exploiting Equalities}\label{s:equalities}
+
+If there are any (explicit) equalities in the input description,
+{\tt PipLib} converts each into a pair of inequalities.
+It is also possible to write $r$ equalities as $r+1$ inequalities
+\shortcite{Feautrier02}, but it is even better to \emph{exploit} the
+equalities to reduce the dimensionality of the problem.
+Given an equality involving at least one unknown, we pivot
+the row corresponding to the equality with the column corresponding
+to the last unknown with non-zero coefficient.  The new column variable
+can then be removed completely because it is identically zero,
+thereby reducing the dimensionality of the problem by one.
+The last unknown is chosen to ensure that the columns of the initial
+tableau remain lexicographically positive.  In particular, if
+the equality is of the form $b + \sum_{i \le j} a_i \, x_i = 0$ with
+$a_j \ne 0$, then the (implicit) top rows of the initial tableau
+are changed as follows
+$$
+\begin{tikzpicture}
+\matrix [matrix of math nodes]
+{
+ & {} & |(top)| 0 & I_1 & |(j)| &  \\
+j && 0 & & 1 & \\
+  && 0 & & & |(bottom)|I_2 \\
+};
+\node[overlay,above=2mm of j,anchor=south]{j};
+\begin{pgfonlayer}{background}
+\node (m) [inner sep=0pt,fill=black!20,right delimiter=),left delimiter=(,fit=(top)(bottom)] {};
+\end{pgfonlayer}
+\begin{scope}[xshift=4cm]
+\matrix [matrix of math nodes]
+{
+ & {} & |(top)| 0 & I_1 &  \\
+j && |(left)| -b/a_j & -a_i/a_j & \\
+  && 0 & & |(bottom)|I_2 \\
+};
+\begin{pgfonlayer}{background}
+\node (m2) [inner sep=0pt,fill=black!20,right delimiter=),left delimiter=(,fit=(top)(bottom)(left)] {};
+\end{pgfonlayer}
+\end{scope}
+ \draw [shorten >=7mm,-to,thick,decorate,
+        decoration={snake,amplitude=.4mm,segment length=2mm,
+                    pre=moveto,pre length=5mm,post length=8mm}]
+   (m) -- (m2);
+\end{tikzpicture}
+$$
+Currently, {\tt isl} also eliminates equalities involving only parameters
+in a similar way, provided at least one of the coefficients is equal to one.
+The application of parameter compression (see below)
+would obviate the need for removing parametric equalities.
+
+\subsubsection{Offline Symmetry Detection}\label{s:offline}
+
+Some problems, notably those of \shortciteN{Bygde2010licentiate},
+have a collection of constraints, say
+$b_i(\vec p) + \sp {\vec a} {\vec x} \ge 0$,
+that only differ in their (parametric) constant terms.
+These constant terms will be non-negative on different parts
+of the context and this context may have to be split for each
+of the constraints.  In the worst case, the basic algorithm may
+have to consider all possible orderings of the constant terms.
+Instead, {\tt isl} introduces a new parameter, say $u$, and
+replaces the collection of constraints by the single
+constraint $u + \sp {\vec a} {\vec x} \ge 0$ along with
+context constraints $u \le b_i(\vec p)$.
+Any solution to the new system is also a solution
+to the original system since
+$\sp {\vec a} {\vec x} \ge -u \ge -b_i(\vec p)$.
+Conversely, $m = \min_i b_i(\vec p)$ satisfies the constraints
+on $u$ and therefore extends a solution to the new system.
+It can also be plugged into a new solution.
+See \autoref{s:post} for how this substitution is currently performed
+in {\tt isl}.
+The method described in this section can only detect symmetries
+that are explicitly available in the input.
+See \autoref{s:online} for the detection
+and exploitation of symmetries that appear during the course of
+the dual simplex method.
+
+\subsubsection{Parameter Compression}\label{s:compression}
+
+It may in some cases be apparent from the equalities in the problem
+description that there can only be a solution for a sublattice
+of the parameters.  In such cases ``parameter compression''
+\shortcite{Meister2004PhD,Meister2008} can be used to replace
+the parameters by alternative ``dense'' parameters.
+For example, if there is a constraint $2x = n$, then the system
+will only have solutions for even values of $n$ and $n$ can be replaced
+by $2n'$.  Similarly, the parameters $n$ and $m$ in a system with
+the constraint $2n = 3m$ can be replaced by a single parameter $n'$
+with $n=3n'$ and $m=2n'$.
+It is also possible to perform a similar compression on the unknowns,
+but it would be more complicated as the compression would have to
+preserve the lexicographical order.  Moreover, due to our handling
+of equalities described above there should be
+no need for such variable compression.
+Although parameter compression has been implemented in {\tt isl},
+it is currently not yet used during parametric integer programming.
+
+\subsection{Postprocessing}\label{s:post}
+
+The output of {\tt PipLib} is a quast (quasi-affine selection tree).
+Each internal node in this tree corresponds to a split of the context
+based on a parametric constant term in the main tableau with indeterminate
+sign.  Each of these nodes may introduce extra variables in the context
+corresponding to integer divisions.  Each leaf of the tree prescribes
+the solution in that part of the context that satisfies all the conditions
+on the path leading to the leaf.
+Such a quast is a very economical way of representing the solution, but
+it would not be suitable as the (only) internal representation of
+sets and relations in {\tt isl}.  Instead, {\tt isl} represents
+the constraints of a set or relation in disjunctive normal form.
+The result of a parametric integer programming problem is then also
+converted to this internal representation.  Unfortunately, the conversion
+to disjunctive normal form can lead to an explosion of the size
+of the representation.
+In some cases, this overhead would have to be paid anyway in subsequent
+operations, but in other cases, especially for outside users that just
+want to solve parametric integer programming problems, we would like
+to avoid this overhead in future.  That is, we are planning on introducing
+quasts or a related representation as one of several possible internal
+representations and on allowing the output of {\tt isl\_pip} to optionally
+be printed as a quast.
+
+Currently, {\tt isl} also does not have an internal representation
+for expressions such as $\min_i b_i(\vec p)$ from the offline
+symmetry detection of \autoref{s:offline}.
+Assume that one of these expressions has $n$ bounds $b_i(\vec p)$.
+If the expression
+does not appear in the affine expression describing the solution,
+but only in the constraints, and if moreover, the expression
+only appears with a positive coefficient, i.e.,
+$\min_i b_i(\vec p) \ge f_j(\vec p)$, then each of these constraints
+can simply be reduplicated $n$ times, once for each of the bounds.
+Otherwise, a conversion to disjunctive normal form
+leads to $n$ cases, each described as $u = b_i(\vec p)$ with constraints
+$b_i(\vec p) \le b_j(\vec p)$ for $j > i$
+and
+$b_i(\vec p)  < b_j(\vec p)$ for $j < i$.
+Note that even though this conversion leads to a size increase
+by a factor of $n$, not detecting the symmetry could lead to
+an increase by a factor of $n!$ if all possible orderings end up being
+considered.
+
+\subsection{Context Tableau}\label{s:context}
+
+The main operation that a context tableau needs to provide is a test
+on the sign of an affine expression over the elements of the context.
+This sign can be determined by solving two integer linear feasibility
+problems, one with a constraint added to the context that enforces
+the expression to be non-negative and one where the expression is
+negative.  As already mentioned by \shortciteN{Feautrier88parametric},
+any integer linear feasibility solver could be used, but the {\tt PipLib}
+implementation uses a recursive call to the dual simplex with Gomory
+cuts algorithm to determine the feasibility of a context.
+In {\tt isl}, two ways of handling the context have been implemented,
+one that performs the recursive call and one, used by default, that
+uses generalized basis reduction.
+We start with some optimizations that are shared between the two
+implementations and then discuss additional details of each of them.
+
+\subsubsection{Maintaining Witnesses}\label{s:witness}
+
+A common feature of both integer linear feasibility solvers is that
+they will not only say whether a set is empty or not, but if the set
+is non-empty, they will also provide a \emph{witness} for this result,
+i.e., a point that belongs to the set.  By maintaining a list of such
+witnesses, we can avoid many feasibility tests during the determination
+of the signs of affine expressions.  In particular, if the expression
+evaluates to a positive number on some of these points and to a negative
+number on some others, then no feasibility test needs to be performed.
+If all the evaluations are non-negative, we only need to check for the
+possibility of a negative value and similarly in case of all
+non-positive evaluations.  Finally, in the rare case that all points
+evaluate to zero or at the start, when no points have been collected yet,
+one or two feasibility tests need to be performed depending on the result
+of the first test.
+
+When a new constraint is added to the context, the points that
+violate the constraint are temporarily removed.  They are reconsidered
+when we backtrack over the addition of the constraint, as they will
+satisfy the negation of the constraint.  It is only when we backtrack
+over the addition of the points that they are finally removed completely.
+When an extra integer division is added to the context,
+the new coordinates of the
+witnesses can easily be computed by evaluating the integer division.
+The idea of keeping track of witnesses was first used in {\tt barvinok}.
+
+\subsubsection{Choice of Constant Term on which to Split}
+
+Recall that if there are no rows with a non-positive constant term,
+but there are rows with an indeterminate sign, then the context
+needs to be split along the constant term of one of these rows.
+If there is more than one such row, then we need to choose which row
+to split on first.  {\tt PipLib} uses a heuristic based on the (absolute)
+sizes of the coefficients.  In particular, it takes the largest coefficient
+of each row and then selects the row where this largest coefficient is smaller
+than those of the other rows.
+
+In {\tt isl}, we take that row for which non-negativity of its constant
+term implies non-negativity of as many of the constant terms of the other
+rows as possible.  The intuition behind this heuristic is that on the
+positive side, we will have fewer negative and indeterminate signs,
+while on the negative side, we need to perform a pivot, which may
+affect any number of rows meaning that the effect on the signs
+is difficult to predict.  This heuristic is of course much more
+expensive to evaluate than the heuristic used by {\tt PipLib}.
+More extensive tests are needed to evaluate whether the heuristic is worthwhile.
+
+\subsubsection{Dual Simplex + Gomory Cuts}
+
+When a new constraint is added to the context, the first steps
+of the dual simplex method applied to this new context will be the same
+or at least very similar to those taken on the original context, i.e.,
+before the constraint was added.  In {\tt isl}, we therefore apply
+the dual simplex method incrementally on the context and backtrack
+to a previous state when a constraint is removed again.
+An initial implementation that was never made public would also
+keep the Gomory cuts, but the current implementation backtracks
+to before the point where Gomory cuts are added before adding
+an extra constraint to the context.
+Keeping the Gomory cuts has the advantage that the sample value
+is always an integer point and that this point may also satisfy
+the new constraint.  However, due to the technique of maintaining
+witnesses explained above,
+we would not perform a feasibility test in such cases and then
+the previously added cuts may be redundant, possibly resulting
+in an accumulation of a large number of cuts.
+
+If the parameters may be negative, then the same big parameter trick
+used in the main tableau is applied to the context.  This big parameter
+is of course unrelated to the big parameter from the main tableau.
+Note that it is not a requirement for this parameter to be ``big'',
+but it does allow for some code reuse in {\tt isl}.
+In {\tt PipLib}, the extra parameter is not ``big'', but this may be because
+the big parameter of the main tableau also appears
+in the context tableau.
+
+Finally, it was reported by \shortciteN{Galea2009personal}, who
+worked on a parametric integer programming implementation
+in {\tt PPL} \shortcite{PPL},
+that it is beneficial to add cuts for \emph{all} rational coordinates
+in the context tableau.  Based on this report,
+the initial {\tt isl} implementation was adapted accordingly.
+
+\subsubsection{Generalized Basis Reduction}\label{s:GBR}
+
+The default algorithm used in {\tt isl} for feasibility checking
+is generalized basis reduction \shortcite{Cook1991implementation}.
+This algorithm is also used in the {\tt barvinok} implementation.
+The algorithm is fairly robust, but it has some overhead.
+We therefore try to avoid calling the algorithm in easy cases.
+In particular, we incrementally keep track of points for which
+the entire unit hypercube positioned at that point lies in the context.
+This set is described by translates of the constraints of the context
+and if (rationally) non-empty, any rational point
+in the set can be rounded up to yield an integer point in the context.
+
+A restriction of the algorithm is that it only works on bounded sets.
+The affine hull of the recession cone therefore needs to be projected
+out first.  As soon as the algorithm is invoked, we then also
+incrementally keep track of this recession cone.  The reduced basis
+found by one call of the algorithm is also reused as initial basis
+for the next call.
+
+Some problems lead to the
+introduction of many integer divisions.  Within a given context,
+some of these integer divisions may be equal to each other, even
+if the expressions are not identical, or they may be equal to some
+affine combination of other variables.
+To detect such cases, we compute the affine hull of the context
+each time a new integer division is added.  The algorithm used
+for computing this affine hull is that of \shortciteN{Karr1976affine},
+while the points used in this algorithm are obtained by performing
+integer feasibility checks on that part of the context outside
+the current approximation of the affine hull.
+The list of witnesses is used to construct an initial approximation
+of the hull, while any extra points found during the construction
+of the hull is added to this list.
+Any equality found in this way that expresses an integer division
+as an \emph{integer} affine combination of other variables is
+propagated to the main tableau, where it is used to eliminate that
+integer division.
+
+\subsection{Experiments}
+
+\autoref{t:comparison} compares the execution times of {\tt isl}
+(with both types of context tableau)
+on some more difficult instances to those of other tools,
+run on an Intel Xeon W3520 @ 2.66GHz.
+Easier problems such as the
+test cases distributed with {\tt Pip\-Lib} can be solved so quickly
+that we would only be measuring overhead such as input/output and conversions
+and not the running time of the actual algorithm.
+We compare the following versions:
+{\tt piplib-1.4.0-5-g0132fd9},
+{\tt barvinok-0.32.1-73-gc5d7751},
+{\tt isl-0.05.1-82-g3a37260}
+and {\tt PPL} version 0.11.2.
+
+The first test case is the following dependence analysis problem
+originating from the Phideo project \shortcite{Verhaegh1995PhD}
+that was communicated to us by Bart Kienhuis:
+\begin{lstlisting}[flexiblecolumns=true,breaklines=true]{}
+lexmax { [j1,j2] -> [i1,i2,i3,i4,i5,i6,i7,i8,i9,i10] : 1 <= i1,j1 <= 8 and 1 <= i2,i3,i4,i5,i6,i7,i8,i9,i10 <= 2 and 1 <= j2 <= 128 and i1-1 = j1-1 and i2-1+2*i3-2+4*i4-4+8*i5-8+16*i6-16+32*i7-32+64*i8-64+128*i9-128+256*i10-256=3*j2-3+66 };
+\end{lstlisting}
+This problem was the main inspiration
+for some of the optimizations in \autoref{s:GBR}.
+The second group of test cases are projections used during counting.
+The first nine of these come from \shortciteN{Seghir2006minimizing}.
+The remaining two come from \shortciteN{Verdoolaege2005experiences} and
+were used to drive the first, Gomory cuts based, implementation
+in {\tt isl}.
+The third and final group of test cases are borrowed from
+\shortciteN{Bygde2010licentiate} and inspired the offline symmetry detection
+of \autoref{s:offline}.  Without symmetry detection, the running times
+are 11s and 5.9s.
+All running times of {\tt barvinok} and {\tt isl} include a conversion
+to disjunctive normal form.  Without this conversion, the final two
+cases can be solved in 0.07s and 0.21s.
+The {\tt PipLib} implementation has some fixed limits and will
+sometimes report the problem to be too complex (TC), while on some other
+problems it will run out of memory (OOM).
+The {\tt barvinok} implementation does not support problems
+with a non-trivial lineality space (line) nor maximization problems (max).
+The Gomory cuts based {\tt isl} implementation was terminated after 1000
+minutes on the first problem.  The gbr version introduces some
+overhead on some of the easier problems, but is overall the clear winner.
+
+\begin{table}
+\begin{center}
+\begin{tabular}{lrrrrr}
+    & {\tt PipLib} & {\tt barvinok} & {\tt isl} cut & {\tt isl} gbr & {\tt PPL} \\
+\hline
+\hline
+% bart.pip
+Phideo & TC    & 793m   & $>$999m &   2.7s  & 372m \\
+\hline
+e1 & 0.33s & 3.5s & 0.08s & 0.11s & 0.18s \\
+e3 & 0.14s & 0.13s & 0.10s & 0.10s & 0.17s \\
+e4 & 0.24s & 9.1s & 0.09s & 0.11s & 0.70s \\
+e5 & 0.12s & 6.0s & 0.06s & 0.14s & 0.17s \\
+e6 & 0.10s & 6.8s & 0.17s & 0.08s & 0.21s \\
+e7 & 0.03s & 0.27s & 0.04s & 0.04s & 0.03s \\
+e8 & 0.03s & 0.18s & 0.03s & 0.04s & 0.01s \\
+e9 & OOM & 70m & 2.6s & 0.94s & 22s \\
+vd & 0.04s & 0.10s & 0.03s & 0.03s & 0.03s \\
+bouleti & 0.25s & line & 0.06s & 0.06s & 0.15s \\
+difficult & OOM & 1.3s & 1.7s & 0.33s & 1.4s \\
+\hline
+cnt/sum & TC & max & 2.2s & 2.2s & OOM \\
+jcomplex & TC & max & 3.7s & 3.9s & OOM \\
+\end{tabular}
+\caption{Comparison of Execution Times}
+\label{t:comparison}
+\end{center}
+\end{table}
+
+\subsection{Online Symmetry Detection}\label{s:online}
+
+Manual experiments on small instances of the problems of
+\shortciteN{Bygde2010licentiate} and an analysis of the results
+by the approximate MPA method developed by \shortciteN{Bygde2010licentiate}
+have revealed that these problems contain many more symmetries
+than can be detected using the offline method of \autoref{s:offline}.
+In this section, we present an online detection mechanism that has
+not been implemented yet, but that has shown promising results
+in manual applications.
+
+Let us first consider what happens when we do not perform offline
+symmetry detection.  At some point, one of the
+$b_i(\vec p) + \sp {\vec a} {\vec x} \ge 0$ constraints,
+say the $j$th constraint, appears as a column
+variable, say $c_1$, while the other constraints are represented
+as rows of the form $b_i(\vec p) - b_j(\vec p) + c$.
+The context is then split according to the relative order of
+$b_j(\vec p)$ and one of the remaining $b_i(\vec p)$.
+The offline method avoids this split by replacing all $b_i(\vec p)$
+by a single newly introduced parameter that represents the minimum
+of these $b_i(\vec p)$.
+In the online method the split is similarly avoided by the introduction
+of a new parameter.  In particular, a new parameter is introduced
+that represents
+$\left| b_j(\vec p) - b_i(\vec p) \right|_+ =
+\max(b_j(\vec p) - b_i(\vec p), 0)$.
+
+In general, let $r = b(\vec p) + \sp {\vec a} {\vec c}$ be a row
+of the tableau such that the sign of $b(\vec p)$ is indeterminate
+and such that exactly one of the elements of $\vec a$ is a $1$,
+while all remaining elements are non-positive.
+That is, $r = b(\vec p) + c_j - f$ with $f = -\sum_{i\ne j} a_i c_i \ge 0$.
+We introduce a new parameter $t$ with
+context constraints $t \ge -b(\vec p)$ and $t \ge 0$ and replace
+the column variable $c_j$ by $c' + t$.  The row $r$ is now equal
+to $b(\vec p) + t + c' - f$.  The constant term of this row is always
+non-negative because any negative value of $b(\vec p)$ is compensated
+by $t \ge -b(\vec p)$ while and non-negative value remains non-negative
+because $t \ge 0$.
+
+We need to show that this transformation does not eliminate any valid
+solutions and that it does not introduce any spurious solutions.
+Given a valid solution for the original problem, we need to find
+a non-negative value of $c'$ satisfying the constraints.
+If $b(\vec p) \ge 0$, we can take $t = 0$ so that
+$c' = c_j - t = c_j \ge 0$.
+If $b(\vec p) < 0$, we can take $t = -b(\vec p)$.
+Since $r = b(\vec p) + c_j - f \ge 0$ and $f \ge 0$, we have 
+$c' = c_j + b(\vec p) \ge 0$.
+Note that these choices amount to plugging in
+$t = \left|-b(\vec p)\right|_+ = \max(-b(\vec p), 0)$.
+Conversely, given a solution to the new problem, we need to find
+a non-negative value of $c_j$, but this is easy since $c_j = c' + t$
+and both of these are non-negative.
+
+Plugging in $t = \max(-b(\vec p), 0)$ can be performed as in
+\autoref{s:post}, but, as in the case of offline symmetry detection,
+it may be better to provide a direct representation for such
+expressions in the internal representation of sets and relations
+or at least in a quast-like output format.
+
 \section{Coalescing}\label{s:coalescing}
 
 See \shortciteN{Verdoolaege2009isl}, for now.
