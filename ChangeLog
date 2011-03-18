@@ -1,3 +1,10 @@
+version: 0.06
+date: Fri Mar 18 15:59:16 CET 2011
+changes:
+	- improved parsing
+	- consistency changes in API
+	- hide internal structure of isl_ctx
+---
 version: 0.05.1
 date: Wed Jan  5 10:21:42 CET 2011
 changes:
