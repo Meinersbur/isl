@@ -260,6 +260,10 @@ static enum isl_token_type check_keywords(struct isl_stream *s)
 		return ISL_TOKEN_TRUE;
 	if (!strcasecmp(s->buffer, "false"))
 		return ISL_TOKEN_FALSE;
+	if (!strcasecmp(s->buffer, "ceild"))
+		return ISL_TOKEN_CEILD;
+	if (!strcasecmp(s->buffer, "floord"))
+		return ISL_TOKEN_FLOORD;
 
 	if (!s->keywords)
 		return ISL_TOKEN_IDENT;

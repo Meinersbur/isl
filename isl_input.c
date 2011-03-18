@@ -317,18 +317,26 @@ static __isl_give isl_vec *accept_affine_factor(struct isl_stream *s,
 			goto error;
 		if (isl_stream_eat(s, ')'))
 			goto error;
-	} else if (tok->type == '[') {
+	} else if (tok->type == '[' ||
+		    tok->type == ISL_TOKEN_FLOORD ||
+		    tok->type == ISL_TOKEN_CEILD) {
+		int ceil = tok->type == ISL_TOKEN_CEILD;
+		struct variable *var;
 		if (vars_add_anon(v) < 0)
 			goto error;
+		var = v->v;
 		aff = isl_vec_alloc(v->ctx, 1 + v->n);
 		if (!aff)
 			goto error;
 		isl_seq_clr(aff->el, aff->size);
-		isl_int_set_si(aff->el[1 + v->n - 1], 1);
+		isl_int_set_si(aff->el[1 + v->n - 1], ceil ? -1 : 1);
 		isl_stream_push_token(s, tok);
 		tok = NULL;
 		if (read_div_definition(s, v) < 0)
 			goto error;
+		if (ceil)
+			isl_seq_neg(var->def->el + 1, var->def->el + 1,
+				    var->def->size - 1);
 		aff = isl_vec_zero_extend(aff, 1 + v->n);
 	} else if (tok->type == ISL_TOKEN_MIN || tok->type == ISL_TOKEN_MAX) {
 		if (vars_add_anon(v) < 0)
@@ -393,6 +401,8 @@ static struct isl_vec *accept_affine(struct isl_stream *s, struct vars *v)
 		}
 		if (tok->type == '(' || tok->type == '[' ||
 		    tok->type == ISL_TOKEN_MIN || tok->type == ISL_TOKEN_MAX ||
+		    tok->type == ISL_TOKEN_FLOORD ||
+		    tok->type == ISL_TOKEN_CEILD ||
 		    tok->type == ISL_TOKEN_IDENT) {
 			isl_vec *aff2;
 			isl_stream_push_token(s, tok);
@@ -657,18 +667,19 @@ static int read_div_definition(struct isl_stream *s, struct vars *v)
 	int seen_paren = 0;
 	struct isl_vec *aff;
 	struct variable *var;
+	int fc = 0;
 
-	if (isl_stream_eat(s, '['))
-		return -1;
-
-	tok = isl_stream_next_token(s);
-	if (!tok)
-		return -1;
-	if (tok->type == '(') {
-		seen_paren = 1;
-		isl_token_free(tok);
-	} else
-		isl_stream_push_token(s, tok);
+	if (isl_stream_eat_if_available(s, ISL_TOKEN_FLOORD) ||
+	    isl_stream_eat_if_available(s, ISL_TOKEN_CEILD)) {
+		fc = 1;
+		if (isl_stream_eat(s, '('))
+			return -1;
+	} else {
+		if (isl_stream_eat(s, '['))
+			return -1;
+		if (isl_stream_eat_if_available(s, '('))
+			seen_paren = 1;
+	}
 
 	var = v->v;
 
@@ -686,10 +697,15 @@ static int read_div_definition(struct isl_stream *s, struct vars *v)
 
 	isl_vec_free(aff);
 
-	if (seen_paren && isl_stream_eat(s, ')'))
-		return -1;
-	if (isl_stream_eat(s, '/'))
-		return -1;
+	if (fc) {
+		if (isl_stream_eat(s, ','))
+			return -1;
+	} else {
+		if (seen_paren && isl_stream_eat(s, ')'))
+			return -1;
+		if (isl_stream_eat(s, '/'))
+			return -1;
+	}
 
 	tok = next_token(s);
 	if (!tok)
@@ -702,8 +718,13 @@ static int read_div_definition(struct isl_stream *s, struct vars *v)
 	isl_int_set(var->def->el[0], tok->u.v);
 	isl_token_free(tok);
 
-	if (isl_stream_eat(s, ']'))
-		return -1;
+	if (fc) {
+		if (isl_stream_eat(s, ')'))
+			return -1;
+	} else {
+		if (isl_stream_eat(s, ']'))
+			return -1;
+	}
 
 	return 0;
 }

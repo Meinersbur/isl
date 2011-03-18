@@ -97,6 +97,10 @@ void test_parse(struct isl_ctx *ctx)
 	isl_map_free(map);
 	isl_map_free(map2);
 
+	str = "[n] -> { [c1] : c1>=0 and c1<=floord(n-4,3) }";
+	str2 = "[n] -> { [c1] : c1 >= 0 and 3c1 <= -4 + n }";
+	test_parse_map_equal(ctx, str, str2);
+
 	test_parse_pwqp(ctx, "{ [i] -> i + [ (i + [i/3])/2 ] }");
 }
 
