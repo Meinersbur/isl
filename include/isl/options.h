@@ -58,6 +58,8 @@ struct isl_options {
 	#define			ISL_CONVEX_HULL_WRAP	0
 	#define			ISL_CONVEX_HULL_FM	1
 	int			convex;
+
+	int			schedule_parametric;
 };
 
 ISL_ARG_DECL(isl_options, struct isl_options, isl_options_arg)

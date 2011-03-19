@@ -115,6 +115,8 @@ ISL_ARG_BOOL(struct isl_options, pip_symmetry, 0, "pip-symmetry", 1,
 	"detect simple symmetries in PIP input")
 ISL_ARG_CHOICE(struct isl_options, convex, 0, "convex-hull", \
 	convex,	ISL_CONVEX_HULL_WRAP, "convex hull algorithm to use")
+ISL_ARG_BOOL(struct isl_options, schedule_parametric, 0,
+	"schedule-parametric", 1, "construct possibly parametric schedules")
 ISL_ARG_VERSION(print_version)
 ISL_ARG_END
 };

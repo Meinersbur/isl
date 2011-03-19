@@ -18,6 +18,7 @@
 #include <isl/polynomial.h>
 #include <isl/union_map.h>
 #include <isl_factorization.h>
+#include <isl/schedule.h>
 
 static char *srcdir;
 
@@ -1802,6 +1803,334 @@ void test_factorize(isl_ctx *ctx)
 	isl_factorizer_free(f);
 }
 
+static int check_injective(__isl_take isl_map *map, void *user)
+{
+	int *injective = user;
+
+	*injective = isl_map_is_injective(map);
+	isl_map_free(map);
+
+	if (*injective < 0 || !*injective)
+		return -1;
+
+	return 0;
+}
+
+int test_one_schedule(isl_ctx *ctx, const char *d, const char *w,
+	const char *r, const char *s, int tilable, int parallel)
+{
+	int i;
+	isl_union_set *D;
+	isl_union_map *W, *R, *S;
+	isl_union_map *empty;
+	isl_union_map *dep_raw, *dep_war, *dep_waw, *dep;
+	isl_union_map *validity, *proximity;
+	isl_union_map *schedule;
+	isl_union_map *test;
+	isl_union_set *delta;
+	isl_union_set *domain;
+	isl_set *delta_set;
+	isl_set *slice;
+	isl_set *origin;
+	isl_schedule *sched;
+	int is_nonneg, is_parallel, is_tilable, is_injection, is_complete;
+
+	D = isl_union_set_read_from_str(ctx, d);
+	W = isl_union_map_read_from_str(ctx, w);
+	R = isl_union_map_read_from_str(ctx, r);
+	S = isl_union_map_read_from_str(ctx, s);
+
+	W = isl_union_map_intersect_domain(W, isl_union_set_copy(D));
+	R = isl_union_map_intersect_domain(R, isl_union_set_copy(D));
+
+	empty = isl_union_map_empty(isl_union_map_get_dim(S));
+        isl_union_map_compute_flow(isl_union_map_copy(R),
+				   isl_union_map_copy(W), empty,
+				   isl_union_map_copy(S),
+				   &dep_raw, NULL, NULL, NULL);
+        isl_union_map_compute_flow(isl_union_map_copy(W),
+				   isl_union_map_copy(W),
+				   isl_union_map_copy(R),
+				   isl_union_map_copy(S),
+				   &dep_waw, &dep_war, NULL, NULL);
+
+	dep = isl_union_map_union(dep_waw, dep_war);
+	dep = isl_union_map_union(dep, dep_raw);
+	validity = isl_union_map_copy(dep);
+	proximity = isl_union_map_copy(dep);
+
+	sched = isl_union_set_compute_schedule(isl_union_set_copy(D),
+					       validity, proximity);
+	schedule = isl_schedule_get_map(sched);
+	isl_schedule_free(sched);
+	isl_union_map_free(W);
+	isl_union_map_free(R);
+	isl_union_map_free(S);
+
+	is_injection = 1;
+	isl_union_map_foreach_map(schedule, &check_injective, &is_injection);
+
+	domain = isl_union_map_domain(isl_union_map_copy(schedule));
+	is_complete = isl_union_set_is_subset(D, domain);
+	isl_union_set_free(D);
+	isl_union_set_free(domain);
+
+	test = isl_union_map_reverse(isl_union_map_copy(schedule));
+	test = isl_union_map_apply_range(test, dep);
+	test = isl_union_map_apply_range(test, schedule);
+
+	delta = isl_union_map_deltas(test);
+	if (isl_union_set_n_set(delta) == 0) {
+		is_tilable = 1;
+		is_parallel = 1;
+		is_nonneg = 1;
+	} else {
+		delta_set = isl_union_set_copy_set(delta);
+
+		slice = isl_set_universe(isl_set_get_dim(delta_set));
+		for (i = 0; i < tilable; ++i)
+			slice = isl_set_lower_bound_si(slice, isl_dim_set, i, 0);
+		is_tilable = isl_set_is_subset(delta_set, slice);
+		isl_set_free(slice);
+
+		slice = isl_set_universe(isl_set_get_dim(delta_set));
+		for (i = 0; i < parallel; ++i)
+			slice = isl_set_fix_si(slice, isl_dim_set, i, 0);
+		is_parallel = isl_set_is_subset(delta_set, slice);
+		isl_set_free(slice);
+
+		origin = isl_set_universe(isl_set_get_dim(delta_set));
+		for (i = 0; i < isl_set_dim(origin, isl_dim_set); ++i)
+			origin = isl_set_fix_si(origin, isl_dim_set, i, 0);
+
+		delta_set = isl_set_union(delta_set, isl_set_copy(origin));
+		delta_set = isl_set_lexmin(delta_set);
+
+		is_nonneg = isl_set_is_equal(delta_set, origin);
+
+		isl_set_free(origin);
+		isl_set_free(delta_set);
+	}
+	isl_union_set_free(delta);
+
+	if (is_nonneg < 0 || is_parallel < 0 || is_tilable < 0 ||
+	    is_injection < 0 || is_complete < 0)
+		return -1;
+	if (!is_complete)
+		isl_die(ctx, isl_error_unknown,
+			"generated schedule incomplete", return -1);
+	if (!is_injection)
+		isl_die(ctx, isl_error_unknown,
+			"generated schedule not injective on each statement",
+			return -1);
+	if (!is_nonneg)
+		isl_die(ctx, isl_error_unknown,
+			"negative dependences in generated schedule",
+			return -1);
+	if (!is_tilable)
+		isl_die(ctx, isl_error_unknown,
+			"generated schedule not as tilable as expected",
+			return -1);
+	if (!is_parallel)
+		isl_die(ctx, isl_error_unknown,
+			"generated schedule not as parallel as expected",
+			return -1);
+
+	return 0;
+}
+
+int test_special_schedule(isl_ctx *ctx)
+{
+	const char *str;
+	isl_union_set *dom;
+	isl_union_map *empty;
+	isl_union_map *dep;
+	isl_union_map *sched1, *sched2;
+	isl_schedule *schedule;
+	int equal;
+
+	str = "{ S[i,j] : 0 <= i <= 10 }";
+	dom = isl_union_set_read_from_str(ctx, str);
+	str = "{ S[i,j] -> S[i+1,j] : 0 <= i,j <= 10 }";
+	dep = isl_union_map_read_from_str(ctx, str);
+	empty = isl_union_map_read_from_str(ctx, "{}");
+	schedule = isl_union_set_compute_schedule(dom, empty, dep);
+	sched1 = isl_schedule_get_map(schedule);
+	isl_schedule_free(schedule);
+
+	str = "{ S[i, j] -> [j, i] }";
+	sched2 = isl_union_map_read_from_str(ctx, str);
+
+	equal = isl_union_map_is_equal(sched1, sched2);
+	isl_union_map_free(sched1);
+	isl_union_map_free(sched2);
+
+	if (equal < 0)
+		return -1;
+	if (!equal)
+		isl_die(ctx, isl_error_unknown, "unexpected schedule",
+			return -1);
+
+	return 0;
+}
+
+int test_schedule(isl_ctx *ctx)
+{
+	const char *D, *W, *R, *S;
+
+	/* Jacobi */
+	D = "[T,N] -> { S1[t,i] : 1 <= t <= T and 2 <= i <= N - 1 }";
+	W = "{ S1[t,i] -> a[t,i] }";
+	R = "{ S1[t,i] -> a[t-1,i]; S1[t,i] -> a[t-1,i-1]; "
+	    	"S1[t,i] -> a[t-1,i+1] }";
+	S = "{ S1[t,i] -> [t,i] }";
+	if (test_one_schedule(ctx, D, W, R, S, 2, 0) < 0)
+		return -1;
+
+	/* Fig. 5 of CC2008 */
+	D = "[N] -> { S_0[i, j] : i >= 0 and i <= -1 + N and j >= 2 and "
+				"j <= -1 + N }";
+	W = "[N] -> { S_0[i, j] -> a[i, j] : i >= 0 and i <= -1 + N and "
+				"j >= 2 and j <= -1 + N }";
+	R = "[N] -> { S_0[i, j] -> a[j, i] : i >= 0 and i <= -1 + N and "
+				"j >= 2 and j <= -1 + N; "
+		    "S_0[i, j] -> a[i, -1 + j] : i >= 0 and i <= -1 + N and "
+				"j >= 2 and j <= -1 + N }";
+	S = "[N] -> { S_0[i, j] -> [0, i, 0, j, 0] }";
+	if (test_one_schedule(ctx, D, W, R, S, 2, 0) < 0)
+		return -1;
+
+	D = "{ S1[i] : 0 <= i <= 10; S2[i] : 0 <= i <= 9 }";
+	W = "{ S1[i] -> a[i] }";
+	R = "{ S2[i] -> a[i+1] }";
+	S = "{ S1[i] -> [0,i]; S2[i] -> [1,i] }";
+	if (test_one_schedule(ctx, D, W, R, S, 1, 1) < 0)
+		return -1;
+
+	D = "{ S1[i] : 0 <= i < 10; S2[i] : 0 <= i < 10 }";
+	W = "{ S1[i] -> a[i] }";
+	R = "{ S2[i] -> a[9-i] }";
+	S = "{ S1[i] -> [0,i]; S2[i] -> [1,i] }";
+	if (test_one_schedule(ctx, D, W, R, S, 1, 1) < 0)
+		return -1;
+
+	D = "[N] -> { S1[i] : 0 <= i < N; S2[i] : 0 <= i < N }";
+	W = "{ S1[i] -> a[i] }";
+	R = "[N] -> { S2[i] -> a[N-1-i] }";
+	S = "{ S1[i] -> [0,i]; S2[i] -> [1,i] }";
+	if (test_one_schedule(ctx, D, W, R, S, 1, 1) < 0)
+		return -1;
+	
+	D = "{ S1[i] : 0 < i < 10; S2[i] : 0 <= i < 10 }";
+	W = "{ S1[i] -> a[i]; S2[i] -> b[i] }";
+	R = "{ S2[i] -> a[i]; S1[i] -> b[i-1] }";
+	S = "{ S1[i] -> [i,0]; S2[i] -> [i,1] }";
+	if (test_one_schedule(ctx, D, W, R, S, 0, 0) < 0)
+		return -1;
+
+	D = "[N] -> { S1[i] : 1 <= i <= N; S2[i,j] : 1 <= i,j <= N }";
+	W = "{ S1[i] -> a[0,i]; S2[i,j] -> a[i,j] }";
+	R = "{ S2[i,j] -> a[i-1,j] }";
+	S = "{ S1[i] -> [0,i,0]; S2[i,j] -> [1,i,j] }";
+	if (test_one_schedule(ctx, D, W, R, S, 2, 1) < 0)
+		return -1;
+
+	D = "[N] -> { S1[i] : 1 <= i <= N; S2[i,j] : 1 <= i,j <= N }";
+	W = "{ S1[i] -> a[i,0]; S2[i,j] -> a[i,j] }";
+	R = "{ S2[i,j] -> a[i,j-1] }";
+	S = "{ S1[i] -> [0,i,0]; S2[i,j] -> [1,i,j] }";
+	if (test_one_schedule(ctx, D, W, R, S, 2, 1) < 0)
+		return -1;
+
+	D = "[N] -> { S_0[]; S_1[i] : i >= 0 and i <= -1 + N; S_2[] }";
+	W = "[N] -> { S_0[] -> a[0]; S_2[] -> b[0]; "
+		    "S_1[i] -> a[1 + i] : i >= 0 and i <= -1 + N }";
+	R = "[N] -> { S_2[] -> a[N]; S_1[i] -> a[i] : i >= 0 and i <= -1 + N }";
+	S = "[N] -> { S_1[i] -> [1, i, 0]; S_2[] -> [2, 0, 1]; "
+		    "S_0[] -> [0, 0, 0] }";
+	if (test_one_schedule(ctx, D, W, R, S, 1, 0) < 0)
+		return -1;
+	ctx->opt->schedule_parametric = 0;
+	if (test_one_schedule(ctx, D, W, R, S, 0, 0) < 0)
+		return -1;
+	ctx->opt->schedule_parametric = 1;
+
+	D = "[N] -> { S1[i] : 1 <= i <= N; S2[i] : 1 <= i <= N; "
+		    "S3[i,j] : 1 <= i,j <= N; S4[i] : 1 <= i <= N }";
+	W = "{ S1[i] -> a[i,0]; S2[i] -> a[0,i]; S3[i,j] -> a[i,j] }";
+	R = "[N] -> { S3[i,j] -> a[i-1,j]; S3[i,j] -> a[i,j-1]; "
+		    "S4[i] -> a[i,N] }";
+	S = "{ S1[i] -> [0,i,0]; S2[i] -> [1,i,0]; S3[i,j] -> [2,i,j]; "
+		"S4[i] -> [4,i,0] }";
+	if (test_one_schedule(ctx, D, W, R, S, 2, 0) < 0)
+		return -1;
+
+	D = "[N] -> { S_0[i, j] : i >= 1 and i <= N and j >= 1 and j <= N }";
+	W = "[N] -> { S_0[i, j] -> s[0] : i >= 1 and i <= N and j >= 1 and "
+					"j <= N }";
+	R = "[N] -> { S_0[i, j] -> s[0] : i >= 1 and i <= N and j >= 1 and "
+					"j <= N; "
+		    "S_0[i, j] -> a[i, j] : i >= 1 and i <= N and j >= 1 and "
+					"j <= N }";
+	S = "[N] -> { S_0[i, j] -> [0, i, 0, j, 0] }";
+	if (test_one_schedule(ctx, D, W, R, S, 0, 0) < 0)
+		return -1;
+
+	D = "[N] -> { S_0[t] : t >= 0 and t <= -1 + N; "
+		    " S_2[t] : t >= 0 and t <= -1 + N; "
+		    " S_1[t, i] : t >= 0 and t <= -1 + N and i >= 0 and "
+				"i <= -1 + N }";
+	W = "[N] -> { S_0[t] -> a[t, 0] : t >= 0 and t <= -1 + N; "
+		    " S_2[t] -> b[t] : t >= 0 and t <= -1 + N; "
+		    " S_1[t, i] -> a[t, 1 + i] : t >= 0 and t <= -1 + N and "
+						"i >= 0 and i <= -1 + N }";
+	R = "[N] -> { S_1[t, i] -> a[t, i] : t >= 0 and t <= -1 + N and "
+					    "i >= 0 and i <= -1 + N; "
+		    " S_2[t] -> a[t, N] : t >= 0 and t <= -1 + N }";
+	S = "[N] -> { S_2[t] -> [0, t, 2]; S_1[t, i] -> [0, t, 1, i, 0]; "
+		    " S_0[t] -> [0, t, 0] }";
+
+	if (test_one_schedule(ctx, D, W, R, S, 2, 1) < 0)
+		return -1;
+	ctx->opt->schedule_parametric = 0;
+	if (test_one_schedule(ctx, D, W, R, S, 0, 0) < 0)
+		return -1;
+	ctx->opt->schedule_parametric = 1;
+
+	D = "[N] -> { S1[i,j] : 0 <= i,j < N; S2[i,j] : 0 <= i,j < N }";
+	S = "{ S1[i,j] -> [0,i,j]; S2[i,j] -> [1,i,j] }";
+	if (test_one_schedule(ctx, D, "{}", "{}", S, 2, 2) < 0)
+		return -1;
+
+	D = "[M, N] -> { S_1[i] : i >= 0 and i <= -1 + M; "
+	    "S_0[i, j] : i >= 0 and i <= -1 + M and j >= 0 and j <= -1 + N }";
+	W = "[M, N] -> { S_0[i, j] -> a[j] : i >= 0 and i <= -1 + M and "
+					    "j >= 0 and j <= -1 + N; "
+			"S_1[i] -> b[0] : i >= 0 and i <= -1 + M }";
+	R = "[M, N] -> { S_0[i, j] -> a[0] : i >= 0 and i <= -1 + M and "
+					    "j >= 0 and j <= -1 + N; "
+			"S_1[i] -> b[0] : i >= 0 and i <= -1 + M }";
+	S = "[M, N] -> { S_1[i] -> [1, i, 0]; S_0[i, j] -> [0, i, 0, j, 0] }";
+	if (test_one_schedule(ctx, D, W, R, S, 0, 0) < 0)
+		return -1;
+
+	D = "{ S_0[i] : i >= 0 }";
+	W = "{ S_0[i] -> a[i] : i >= 0 }";
+	R = "{ S_0[i] -> a[0] : i >= 0 }";
+	S = "{ S_0[i] -> [0, i, 0] }";
+	if (test_one_schedule(ctx, D, W, R, S, 0, 0) < 0)
+		return -1;
+
+	D = "{ S_0[i] : i >= 0; S_1[i] : i >= 0 }";
+	W = "{ S_0[i] -> a[i] : i >= 0; S_1[i] -> b[i] : i >= 0 }";
+	R = "{ S_0[i] -> b[0] : i >= 0; S_1[i] -> a[i] : i >= 0 }";
+	S = "{ S_1[i] -> [0, i, 1]; S_0[i] -> [0, i, 0] }";
+	if (test_one_schedule(ctx, D, W, R, S, 0, 0) < 0)
+		return -1;
+
+	return test_special_schedule(ctx);
+}
+
 int main()
 {
 	struct isl_ctx *ctx;
@@ -1810,6 +2139,8 @@ int main()
 	assert(srcdir);
 
 	ctx = isl_ctx_alloc();
+	if (test_schedule(ctx) < 0)
+		goto error;
 	test_factorize(ctx);
 	test_subset(ctx);
 	test_lift(ctx);
