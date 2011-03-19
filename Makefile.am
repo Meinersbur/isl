@@ -219,7 +219,7 @@ pkgconfigdir=$(pkgconfig_libdir)
 pkgconfig_DATA = $(pkgconfig_libfile)
 
 gitversion.h: @GIT_HEAD@
-	echo '#define GIT_HEAD_ID "'@GIT_HEAD_VERSION@'"' > $@
+	$(AM_V_GEN)echo '#define GIT_HEAD_ID "'@GIT_HEAD_VERSION@'"' > $@
 
 install-data-local: $(srcdir)/isl.py
 	@libisl=`sed -ne "/^library_names=/{s/.*='//;s/'$$//;s/ .*//;p}" \
