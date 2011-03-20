@@ -1459,28 +1459,33 @@ __isl_give isl_basic_set *isl_basic_set_remove_divs(
 			(struct isl_basic_map *)bset);
 }
 
-struct isl_set *isl_set_remove_divs(struct isl_set *set)
+__isl_give isl_map *isl_map_remove_divs(__isl_take isl_map *map)
 {
 	int i;
 
-	if (!set)
+	if (!map)
 		return NULL;
-	if (set->n == 0)
-		return set;
+	if (map->n == 0)
+		return map;
 
-	set = isl_set_cow(set);
-	if (!set)
+	map = isl_map_cow(map);
+	if (!map)
 		return NULL;
 	
-	for (i = 0; i < set->n; ++i) {
-		set->p[i] = isl_basic_set_remove_divs(set->p[i]);
-		if (!set->p[i])
+	for (i = 0; i < map->n; ++i) {
+		map->p[i] = isl_basic_map_remove_divs(map->p[i]);
+		if (!map->p[i])
 			goto error;
 	}
-	return set;
+	return map;
 error:
-	isl_set_free(set);
+	isl_map_free(map);
 	return NULL;
+}
+
+__isl_give isl_set *isl_set_remove_divs(__isl_take isl_set *set)
+{
+	return isl_map_remove_divs(set);
 }
 
 struct isl_basic_map *isl_basic_map_remove_dims(struct isl_basic_map *bmap,
