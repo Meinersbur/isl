@@ -3250,7 +3250,8 @@ __isl_keep isl_basic_set *isl_tab_peek_bset(struct isl_tab *tab)
 	return (isl_basic_set *)tab->bmap;
 }
 
-void isl_tab_dump(struct isl_tab *tab, FILE *out, int indent)
+static void isl_tab_print_internal(__isl_keep struct isl_tab *tab,
+	FILE *out, int indent)
 {
 	unsigned r, c;
 	int i;
@@ -3324,4 +3325,9 @@ void isl_tab_dump(struct isl_tab *tab, FILE *out, int indent)
 	tab->mat->n_col = c;
 	if (tab->bmap)
 		isl_basic_map_print_internal(tab->bmap, out, indent);
+}
+
+void isl_tab_dump(__isl_keep struct isl_tab *tab)
+{
+	isl_tab_print_internal(tab, stderr, 0);
 }

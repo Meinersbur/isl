@@ -224,7 +224,7 @@ int isl_tab_rollback(struct isl_tab *tab, struct isl_tab_undo *snap) WARN_UNUSED
 struct isl_tab *isl_tab_relax(struct isl_tab *tab, int con) WARN_UNUSED;
 int isl_tab_select_facet(struct isl_tab *tab, int con) WARN_UNUSED;
 
-void isl_tab_dump(struct isl_tab *tab, FILE *out, int indent);
+void isl_tab_dump(__isl_keep struct isl_tab *tab);
 
 struct isl_map *isl_tab_basic_map_partial_lexopt(
 		struct isl_basic_map *bmap, struct isl_basic_set *dom,
