@@ -4432,6 +4432,9 @@ struct isl_map *isl_tab_basic_map_partial_lexopt(
 	isl_assert(bmap->ctx,
 	    isl_basic_map_compatible_domain(bmap, dom), goto error);
 
+	if (isl_basic_set_dim(dom, isl_dim_all) == 0)
+		return basic_map_partial_lexopt(bmap, dom, empty, max);
+
 	bmap = isl_basic_map_intersect_domain(bmap, isl_basic_set_copy(dom));
 	bmap = isl_basic_map_detect_equalities(bmap);
 	bmap = isl_basic_map_remove_redundancies(bmap);
