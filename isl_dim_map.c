@@ -15,10 +15,15 @@
 #include <isl_dim_map.h>
 #include <isl_reordering.h>
 
+struct isl_dim_map_entry {
+	int pos;
+	int sgn;
+};
+
 /* Maps dst positions to src positions */
 struct isl_dim_map {
 	unsigned len;
-	int pos[1];
+	struct isl_dim_map_entry m[1];
 };
 
 __isl_give isl_dim_map *isl_dim_map_alloc(isl_ctx *ctx, unsigned len)
@@ -26,13 +31,14 @@ __isl_give isl_dim_map *isl_dim_map_alloc(isl_ctx *ctx, unsigned len)
 	int i;
 	struct isl_dim_map *dim_map;
 	dim_map = isl_alloc(ctx, struct isl_dim_map,
-				sizeof(struct isl_dim_map) + len * sizeof(int));
+	    sizeof(struct isl_dim_map) + len * sizeof(struct isl_dim_map_entry));
 	if (!dim_map)
 		return NULL;
 	dim_map->len = 1 + len;
-	dim_map->pos[0] = 0;
+	dim_map->m[0].pos = 0;
+	dim_map->m[0].sgn = 1;
 	for (i = 0; i < len; ++i)
-		dim_map->pos[1 + i] = -1;
+		dim_map->m[1 + i].sgn = 0;
 	return dim_map;
 }
 
@@ -47,8 +53,10 @@ void isl_dim_map_dim_range(__isl_keep isl_dim_map *dim_map,
 		return;
 	
 	src_pos = 1 + isl_dim_offset(dim, type);
-	for (i = 0; i < n; ++i)
-		dim_map->pos[1 + dst_pos + i] = src_pos + first + i;
+	for (i = 0; i < n; ++i) {
+		dim_map->m[1 + dst_pos + i].pos = src_pos + first + i;
+		dim_map->m[1 + dst_pos + i].sgn = 1;
+	}
 }
 
 void isl_dim_map_dim(__isl_keep isl_dim_map *dim_map, __isl_keep isl_dim *dim,
@@ -68,8 +76,10 @@ void isl_dim_map_div(__isl_keep isl_dim_map *dim_map,
 		return;
 	
 	src_pos = 1 + isl_dim_total(bmap->dim);
-	for (i = 0; i < bmap->n_div; ++i)
-		dim_map->pos[1 + dst_pos + i] = src_pos + i;
+	for (i = 0; i < bmap->n_div; ++i) {
+		dim_map->m[1 + dst_pos + i].pos = src_pos + i;
+		dim_map->m[1 + dst_pos + i].sgn = 1;
+	}
 }
 
 void isl_dim_map_dump(struct isl_dim_map *dim_map)
@@ -77,7 +87,8 @@ void isl_dim_map_dump(struct isl_dim_map *dim_map)
 	int i;
 
 	for (i = 0; i < dim_map->len; ++i)
-		fprintf(stderr, "%d -> %d; ", i, dim_map->pos[i]);
+		fprintf(stderr, "%d -> %d * %d; ", i,
+			dim_map->m[i].sgn, dim_map->m[i].pos);
 	fprintf(stderr, "\n");
 }
 
@@ -87,10 +98,12 @@ static void copy_constraint_dim_map(isl_int *dst, isl_int *src,
 	int i;
 
 	for (i = 0; i < dim_map->len; ++i) {
-		if (dim_map->pos[i] < 0)
+		if (dim_map->m[i].sgn == 0)
 			isl_int_set_si(dst[i], 0);
+		else if (dim_map->m[i].sgn > 0)
+			isl_int_set(dst[i], src[dim_map->m[i].pos]);
 		else
-			isl_int_set(dst[i], src[dim_map->pos[i]]);
+			isl_int_neg(dst[i], src[dim_map->m[i].pos]);
 	}
 }
 
@@ -158,9 +171,11 @@ __isl_give isl_dim_map *isl_dim_map_extend(__isl_keep isl_dim_map *dim_map,
 		return NULL;
 
 	for (i = 0; i < dim_map->len; ++i)
-		res->pos[i] = dim_map->pos[i];
-	for (i = 0; i < bmap->n_div; ++i)
-		res->pos[dim_map->len + i] = offset + i;
+		res->m[i] = dim_map->m[i];
+	for (i = 0; i < bmap->n_div; ++i) {
+		res->m[dim_map->len + i].pos = offset + i;
+		res->m[dim_map->len + i].sgn = 1;
+	}
 
 	return res;
 }
@@ -184,8 +199,10 @@ __isl_give isl_dim_map *isl_dim_map_from_reordering(
 	if (!dim_map)
 		return NULL;
 
-	for (i = 0; i < exp->len; ++i)
-		dim_map->pos[1 + exp->pos[i]] = 1 + i;
+	for (i = 0; i < exp->len; ++i) {
+		dim_map->m[1 + exp->pos[i]].pos = 1 + i;
+		dim_map->m[1 + exp->pos[i]].sgn = 1;
+	}
 
 	return dim_map;
 }
