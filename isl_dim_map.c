@@ -1,6 +1,6 @@
 /*
  * Copyright 2008-2009 Katholieke Universiteit Leuven
- * Copyright 2010      INRIA Saclay
+ * Copyright 2010-2011 INRIA Saclay
  *
  * Use of this software is governed by the GNU LGPLv2.1 license
  *
@@ -40,6 +40,24 @@ __isl_give isl_dim_map *isl_dim_map_alloc(isl_ctx *ctx, unsigned len)
 	for (i = 0; i < len; ++i)
 		dim_map->m[1 + i].sgn = 0;
 	return dim_map;
+}
+
+void isl_dim_map_range(__isl_keep isl_dim_map *dim_map,
+	unsigned dst_pos, unsigned dst_stride,
+	unsigned src_pos, unsigned src_stride,
+	unsigned n, int sign)
+{
+	int i;
+
+	if (!dim_map)
+		return;
+
+	for (i = 0; i < n; ++i) {
+		unsigned d = 1 + dst_pos + dst_stride * i;
+		unsigned s = 1 + src_pos + src_stride * i;
+		dim_map->m[d].pos = s;
+		dim_map->m[d].sgn = sign;
+	}
 }
 
 void isl_dim_map_dim_range(__isl_keep isl_dim_map *dim_map,
