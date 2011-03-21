@@ -28,27 +28,7 @@
 #include "isl_tab.h"
 #include <isl/vec.h>
 #include <isl_mat_private.h>
-
-/* Maps dst positions to src positions */
-struct isl_dim_map {
-	unsigned len;
-	int pos[1];
-};
-
-static struct isl_dim_map *isl_dim_map_alloc(struct isl_ctx *ctx, unsigned len)
-{
-	int i;
-	struct isl_dim_map *dim_map;
-	dim_map = isl_alloc(ctx, struct isl_dim_map,
-				sizeof(struct isl_dim_map) + len * sizeof(int));
-	if (!dim_map)
-		return NULL;
-	dim_map->len = 1 + len;
-	dim_map->pos[0] = 0;
-	for (i = 0; i < len; ++i)
-		dim_map->pos[1 + i] = -1;
-	return dim_map;
-}
+#include <isl_dim_map.h>
 
 static unsigned n(struct isl_dim *dim, enum isl_dim_type type)
 {
@@ -69,50 +49,6 @@ static unsigned pos(struct isl_dim *dim, enum isl_dim_type type)
 	case isl_dim_out:	return 1 + dim->nparam + dim->n_in;
 	default:		return 0;
 	}
-}
-
-static void isl_dim_map_dim_range(struct isl_dim_map *dim_map,
-	struct isl_dim *dim, enum isl_dim_type type,
-	unsigned first, unsigned n, unsigned dst_pos)
-{
-	int i;
-	unsigned src_pos;
-
-	if (!dim_map || !dim)
-		return;
-	
-	src_pos = pos(dim, type);
-	for (i = 0; i < n; ++i)
-		dim_map->pos[1 + dst_pos + i] = src_pos + first + i;
-}
-
-static void isl_dim_map_dim(struct isl_dim_map *dim_map, struct isl_dim *dim,
-		enum isl_dim_type type, unsigned dst_pos)
-{
-	isl_dim_map_dim_range(dim_map, dim, type, 0, n(dim, type), dst_pos);
-}
-
-static void isl_dim_map_div(struct isl_dim_map *dim_map,
-		struct isl_basic_map *bmap, unsigned dst_pos)
-{
-	int i;
-	unsigned src_pos;
-
-	if (!dim_map || !bmap)
-		return;
-	
-	src_pos = 1 + isl_dim_total(bmap->dim);
-	for (i = 0; i < bmap->n_div; ++i)
-		dim_map->pos[1 + dst_pos + i] = src_pos + i;
-}
-
-static void isl_dim_map_dump(struct isl_dim_map *dim_map)
-{
-	int i;
-
-	for (i = 0; i < dim_map->len; ++i)
-		fprintf(stderr, "%d -> %d; ", i, dim_map->pos[i]);
-	fprintf(stderr, "\n");
 }
 
 unsigned isl_basic_map_dim(const struct isl_basic_map *bmap,
@@ -1030,66 +966,6 @@ static struct isl_basic_map *add_constraints(struct isl_basic_map *bmap1,
 error:
 	isl_basic_map_free(bmap1);
 	isl_basic_map_free(bmap2);
-	return NULL;
-}
-
-static void copy_constraint_dim_map(isl_int *dst, isl_int *src,
-					struct isl_dim_map *dim_map)
-{
-	int i;
-
-	for (i = 0; i < dim_map->len; ++i) {
-		if (dim_map->pos[i] < 0)
-			isl_int_set_si(dst[i], 0);
-		else
-			isl_int_set(dst[i], src[dim_map->pos[i]]);
-	}
-}
-
-static void copy_div_dim_map(isl_int *dst, isl_int *src,
-					struct isl_dim_map *dim_map)
-{
-	isl_int_set(dst[0], src[0]);
-	copy_constraint_dim_map(dst+1, src+1, dim_map);
-}
-
-static struct isl_basic_map *add_constraints_dim_map(struct isl_basic_map *dst,
-		struct isl_basic_map *src, struct isl_dim_map *dim_map)
-{
-	int i;
-
-	if (!src || !dst || !dim_map)
-		goto error;
-
-	for (i = 0; i < src->n_eq; ++i) {
-		int i1 = isl_basic_map_alloc_equality(dst);
-		if (i1 < 0)
-			goto error;
-		copy_constraint_dim_map(dst->eq[i1], src->eq[i], dim_map);
-	}
-
-	for (i = 0; i < src->n_ineq; ++i) {
-		int i1 = isl_basic_map_alloc_inequality(dst);
-		if (i1 < 0)
-			goto error;
-		copy_constraint_dim_map(dst->ineq[i1], src->ineq[i], dim_map);
-	}
-
-	for (i = 0; i < src->n_div; ++i) {
-		int i1 = isl_basic_map_alloc_div(dst);
-		if (i1 < 0)
-			goto error;
-		copy_div_dim_map(dst->div[i1], src->div[i], dim_map);
-	}
-
-	free(dim_map);
-	isl_basic_map_free(src);
-
-	return dst;
-error:
-	free(dim_map);
-	isl_basic_map_free(src);
-	isl_basic_map_free(dst);
 	return NULL;
 }
 
@@ -2391,7 +2267,7 @@ __isl_give isl_basic_map *isl_basic_map_insert(__isl_take isl_basic_map *bmap,
 			bmap->n_div, bmap->n_eq, bmap->n_ineq);
 	if (isl_basic_map_is_rational(bmap))
 		res = isl_basic_map_set_rational(res);
-	res = add_constraints_dim_map(res, bmap, dim_map);
+	res = isl_basic_map_add_constraints_dim_map(res, bmap, dim_map);
 	return isl_basic_map_finalize(res);
 }
 
@@ -2543,7 +2419,7 @@ __isl_give isl_basic_map *isl_basic_map_move_dims(
 
 	res = isl_basic_map_alloc_dim(isl_basic_map_get_dim(bmap),
 			bmap->n_div, bmap->n_eq, bmap->n_ineq);
-	bmap = add_constraints_dim_map(res, bmap, dim_map);
+	bmap = isl_basic_map_add_constraints_dim_map(res, bmap, dim_map);
 
 	bmap->dim = isl_dim_move(bmap->dim, dst_type, dst_pos,
 					src_type, src_pos, n);
@@ -2664,7 +2540,7 @@ static __isl_give isl_basic_map *move_last(__isl_take isl_basic_map *bmap,
 
 	res = isl_basic_map_alloc_dim(isl_basic_map_get_dim(bmap),
 			bmap->n_div, bmap->n_eq, bmap->n_ineq);
-	res = add_constraints_dim_map(res, bmap, dim_map);
+	res = isl_basic_map_add_constraints_dim_map(res, bmap, dim_map);
 	return res;
 }
 
@@ -2835,8 +2711,8 @@ struct isl_basic_map *isl_basic_map_apply_range(
 			bmap1->n_div + bmap2->n_div + n,
 			bmap1->n_eq + bmap2->n_eq,
 			bmap1->n_ineq + bmap2->n_ineq);
-	bmap = add_constraints_dim_map(bmap, bmap1, dim_map1);
-	bmap = add_constraints_dim_map(bmap, bmap2, dim_map2);
+	bmap = isl_basic_map_add_constraints_dim_map(bmap, bmap1, dim_map1);
+	bmap = isl_basic_map_add_constraints_dim_map(bmap, bmap2, dim_map2);
 	bmap = add_divs(bmap, n);
 	bmap = isl_basic_map_simplify(bmap);
 	bmap = isl_basic_map_drop_redundant_divs(bmap);
@@ -2931,8 +2807,8 @@ struct isl_basic_map *isl_basic_map_sum(
 		isl_int_set_si(bmap->eq[j][1+pos+i], 1);
 		isl_int_set_si(bmap->eq[j][1+pos-n_out+i], 1);
 	}
-	bmap = add_constraints_dim_map(bmap, bmap1, dim_map1);
-	bmap = add_constraints_dim_map(bmap, bmap2, dim_map2);
+	bmap = isl_basic_map_add_constraints_dim_map(bmap, bmap1, dim_map1);
+	bmap = isl_basic_map_add_constraints_dim_map(bmap, bmap2, dim_map2);
 	bmap = add_divs(bmap, 2 * n_out);
 
 	bmap = isl_basic_map_simplify(bmap);
@@ -3074,7 +2950,7 @@ struct isl_basic_map *isl_basic_map_floordiv(struct isl_basic_map *bmap,
 	result = isl_basic_map_alloc_dim(isl_dim_copy(bmap->dim),
 			bmap->n_div + n_out,
 			bmap->n_eq, bmap->n_ineq + 2 * n_out);
-	result = add_constraints_dim_map(result, bmap, dim_map);
+	result = isl_basic_map_add_constraints_dim_map(result, bmap, dim_map);
 	result = add_divs(result, n_out);
 	for (i = 0; i < n_out; ++i) {
 		int j;
@@ -7174,8 +7050,8 @@ struct isl_basic_map *isl_basic_map_product(
 			bmap1->n_div + bmap2->n_div,
 			bmap1->n_eq + bmap2->n_eq,
 			bmap1->n_ineq + bmap2->n_ineq);
-	bmap = add_constraints_dim_map(bmap, bmap1, dim_map1);
-	bmap = add_constraints_dim_map(bmap, bmap2, dim_map2);
+	bmap = isl_basic_map_add_constraints_dim_map(bmap, bmap1, dim_map1);
+	bmap = isl_basic_map_add_constraints_dim_map(bmap, bmap2, dim_map2);
 	bmap = isl_basic_map_simplify(bmap);
 	return isl_basic_map_finalize(bmap);
 error:
@@ -7235,8 +7111,8 @@ __isl_give isl_basic_map *isl_basic_map_range_product(
 			bmap1->n_div + bmap2->n_div,
 			bmap1->n_eq + bmap2->n_eq,
 			bmap1->n_ineq + bmap2->n_ineq);
-	bmap = add_constraints_dim_map(bmap, bmap1, dim_map1);
-	bmap = add_constraints_dim_map(bmap, bmap2, dim_map2);
+	bmap = isl_basic_map_add_constraints_dim_map(bmap, bmap1, dim_map1);
+	bmap = isl_basic_map_add_constraints_dim_map(bmap, bmap2, dim_map2);
 	bmap = isl_basic_map_simplify(bmap);
 	return isl_basic_map_finalize(bmap);
 error:
@@ -8178,53 +8054,6 @@ __isl_give isl_map *isl_set_flatten_map(__isl_take isl_set *set)
 	return map;
 }
 
-/* Extend the given dim_map with mappings for the divs in bmap.
- */
-static __isl_give struct isl_dim_map *extend_dim_map(
-	__isl_keep struct isl_dim_map *dim_map,
-	__isl_keep isl_basic_map *bmap)
-{
-	int i;
-	struct isl_dim_map *res;
-	int offset;
-
-	offset = isl_basic_map_offset(bmap, isl_dim_div);
-
-	res = isl_dim_map_alloc(bmap->ctx, dim_map->len - 1 + bmap->n_div);
-	if (!res)
-		return NULL;
-
-	for (i = 0; i < dim_map->len; ++i)
-		res->pos[i] = dim_map->pos[i];
-	for (i = 0; i < bmap->n_div; ++i)
-		res->pos[dim_map->len + i] = offset + i;
-
-	return res;
-}
-
-/* Extract a dim_map from a reordering.
- * We essentially need to reverse the mapping, and add an offset
- * of 1 for the constant term.
- */
-__isl_give struct isl_dim_map *isl_dim_map_from_reordering(
-	__isl_keep isl_reordering *exp)
-{
-	int i;
-	struct isl_dim_map *dim_map;
-
-	if (!exp)
-		return NULL;
-
-	dim_map = isl_dim_map_alloc(exp->dim->ctx, isl_dim_total(exp->dim));
-	if (!dim_map)
-		return NULL;
-
-	for (i = 0; i < exp->len; ++i)
-		dim_map->pos[1 + exp->pos[i]] = 1 + i;
-
-	return dim_map;
-}
-
 /* Reorder the dimensions of "bmap" according to the given dim_map
  * and set the dimension specification to "dim".
  */
@@ -8239,7 +8068,7 @@ __isl_give isl_basic_map *isl_basic_map_realign(__isl_take isl_basic_map *bmap,
 
 	res = isl_basic_map_alloc_dim(dim,
 			bmap->n_div, bmap->n_eq, bmap->n_ineq);
-	res = add_constraints_dim_map(res, bmap, dim_map);
+	res = isl_basic_map_add_constraints_dim_map(res, bmap, dim_map);
 	res = isl_basic_map_finalize(res);
 	return res;
 error:
@@ -8265,7 +8094,7 @@ __isl_give isl_map *isl_map_realign(__isl_take isl_map *map,
 	for (i = 0; i < map->n; ++i) {
 		struct isl_dim_map *dim_map_i;
 
-		dim_map_i = extend_dim_map(dim_map, map->p[i]);
+		dim_map_i = isl_dim_map_extend(dim_map, map->p[i]);
 
 		map->p[i] = isl_basic_map_realign(map->p[i],
 					    isl_dim_copy(r->dim), dim_map_i);
