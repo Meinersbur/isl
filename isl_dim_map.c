@@ -173,6 +173,13 @@ error:
 	return NULL;
 }
 
+__isl_give isl_basic_set *isl_basic_set_add_constraints_dim_map(
+	__isl_take isl_basic_set *dst, __isl_take isl_basic_set *src,
+	__isl_take isl_dim_map *dim_map)
+{
+	return isl_basic_map_add_constraints_dim_map(dst, src, dim_map);
+}
+
 /* Extend the given dim_map with mappings for the divs in bmap.
  */
 __isl_give isl_dim_map *isl_dim_map_extend(__isl_keep isl_dim_map *dim_map,
