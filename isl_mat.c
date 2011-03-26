@@ -1483,3 +1483,19 @@ __isl_give isl_mat *isl_mat_normalize(__isl_take isl_mat *mat)
 
 	return mat;
 }
+
+/* Number of initial non-zero columns.
+ */
+int isl_mat_initial_non_zero_cols(__isl_keep isl_mat *mat)
+{
+	int i;
+
+	if (!mat)
+		return -1;
+
+	for (i = 0; i < mat->n_col; ++i)
+		if (row_first_non_zero(mat->row, mat->n_row, i) < 0)
+			break;
+
+	return i;
+}

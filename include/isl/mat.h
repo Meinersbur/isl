@@ -102,6 +102,8 @@ __isl_give isl_mat *isl_mat_vec_concat(__isl_take isl_mat *top,
 
 int isl_mat_is_equal(__isl_keep isl_mat *mat1, __isl_keep isl_mat *mat2);
 
+int isl_mat_initial_non_zero_cols(__isl_keep isl_mat *mat);
+
 void isl_mat_dump(struct isl_mat *mat, FILE *out, int indent);
 
 #if defined(__cplusplus)
