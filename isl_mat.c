@@ -528,6 +528,7 @@ error:
 		isl_mat_free(*U);
 		*U = NULL;
 	}
+	isl_mat_free(M);
 	return NULL;
 }
 
