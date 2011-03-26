@@ -39,6 +39,8 @@ int isl_mat_cols(__isl_keep isl_mat *mat);
 int isl_mat_get_element(__isl_keep isl_mat *mat, int row, int col, isl_int *v);
 __isl_give isl_mat *isl_mat_set_element(__isl_take isl_mat *mat,
 	int row, int col, isl_int v);
+__isl_give isl_mat *isl_mat_set_element_si(__isl_take isl_mat *mat,
+	int row, int col, int v);
 
 struct isl_mat *isl_mat_sub_alloc(struct isl_ctx *ctx, isl_int **row,
 	unsigned first_row, unsigned n_row, unsigned first_col, unsigned n_col);

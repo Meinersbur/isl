@@ -248,6 +248,25 @@ error:
 	return NULL;
 }
 
+__isl_give isl_mat *isl_mat_set_element_si(__isl_take isl_mat *mat,
+	int row, int col, int v)
+{
+	mat = isl_mat_cow(mat);
+	if (!mat)
+		return NULL;
+	if (row < 0 || row >= mat->n_row)
+		isl_die(mat->ctx, isl_error_invalid, "row out of range",
+			goto error);
+	if (col < 0 || col >= mat->n_col)
+		isl_die(mat->ctx, isl_error_invalid, "column out of range",
+			goto error);
+	isl_int_set_si(mat->row[row][col], v);
+	return mat;
+error:
+	isl_mat_free(mat);
+	return NULL;
+}
+
 struct isl_mat *isl_mat_identity(struct isl_ctx *ctx, unsigned n_row)
 {
 	int i;
