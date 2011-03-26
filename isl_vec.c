@@ -11,6 +11,11 @@
 #include <isl/seq.h>
 #include <isl/vec.h>
 
+isl_ctx *isl_vec_get_ctx(__isl_keep isl_vec *vec)
+{
+	return vec ? vec->ctx : NULL;
+}
+
 struct isl_vec *isl_vec_alloc(struct isl_ctx *ctx, unsigned size)
 {
 	struct isl_vec *vec;
