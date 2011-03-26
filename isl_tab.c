@@ -172,13 +172,24 @@ struct isl_tab *isl_tab_extend(struct isl_tab *tab, unsigned n_new)
 	return NULL;
 }
 
+static void free_undo_record(struct isl_tab_undo *undo)
+{
+	switch (undo->type) {
+	case isl_tab_undo_saved_basis:
+		free(undo->u.col_var);
+		break;
+	default:;
+	}
+	free(undo);
+}
+
 static void free_undo(struct isl_tab *tab)
 {
 	struct isl_tab_undo *undo, *next;
 
 	for (undo = tab->top; undo && undo != &tab->bottom; undo = next) {
 		next = undo->next;
-		free(undo);
+		free_undo_record(undo);
 	}
 	tab->top = undo;
 }
@@ -3010,11 +3021,9 @@ static int restore_basis(struct isl_tab *tab, int *col_var)
 	}
 
 	free(extra);
-	free(col_var);
 	return 0;
 error:
 	free(extra);
-	free(col_var);
 	return -1;
 }
 
@@ -3103,7 +3112,7 @@ int isl_tab_rollback(struct isl_tab *tab, struct isl_tab_undo *snap)
 			tab->in_undo = 0;
 			return -1;
 		}
-		free(undo);
+		free_undo_record(undo);
 	}
 	tab->in_undo = 0;
 	tab->top = undo;
