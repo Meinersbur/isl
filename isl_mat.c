@@ -1125,6 +1125,73 @@ error:
 	return NULL;
 }
 
+/* Replace the variables x starting at pos in the rows q
+ * by x' with x = M x' with M the matrix mat.
+ * That is, replace the corresponding coefficients c by c M.
+ */
+static int transform(isl_ctx *ctx, isl_int **q, unsigned n,
+	unsigned pos, __isl_take isl_mat *mat)
+{
+	int i;
+	isl_mat *t;
+
+	t = isl_mat_sub_alloc6(ctx, q, 0, n, pos, mat->n_row);
+	t = isl_mat_product(t, mat);
+	if (!t)
+		return -1;
+	for (i = 0; i < n; ++i)
+		isl_seq_swp_or_cpy(q[i] + pos, t->row[i], t->n_col);
+	isl_mat_free(t);
+	return 0;
+}
+
+/* Replace the variables x of type "type" starting at "first" in "bset"
+ * by x' with x = M x' with M the matrix trans.
+ * That is, replace the corresponding coefficients c by c M.
+ *
+ * The transformation matrix should be a square matrix.
+ */
+__isl_give isl_basic_set *isl_basic_set_transform_dims(
+	__isl_take isl_basic_set *bset, enum isl_dim_type type, unsigned first,
+	__isl_take isl_mat *trans)
+{
+	isl_ctx *ctx;
+	unsigned pos;
+
+	bset = isl_basic_set_cow(bset);
+	if (!bset || !trans)
+		goto error;
+
+	ctx = isl_basic_set_get_ctx(bset);
+	if (trans->n_row != trans->n_col)
+		isl_die(trans->ctx, isl_error_invalid,
+			"expecting square transformation matrix", goto error);
+	if (first + trans->n_row > isl_basic_set_dim(bset, type))
+		isl_die(trans->ctx, isl_error_invalid,
+			"oversized transformation matrix", goto error);
+
+	pos = isl_basic_set_offset(bset, type) + first;
+
+	if (transform(ctx, bset->eq, bset->n_eq, pos, isl_mat_copy(trans)) < 0)
+		goto error;
+	if (transform(ctx, bset->ineq, bset->n_ineq, pos,
+		      isl_mat_copy(trans)) < 0)
+		goto error;
+	if (transform(ctx, bset->div, bset->n_div, 1 + pos,
+		      isl_mat_copy(trans)) < 0)
+		goto error;
+
+	ISL_F_CLR(bset, ISL_BASIC_SET_NORMALIZED);
+	ISL_F_CLR(bset, ISL_BASIC_SET_NORMALIZED_DIVS);
+
+	isl_mat_free(trans);
+	return bset;
+error:
+	isl_mat_free(trans);
+	isl_basic_set_free(bset);
+	return NULL;
+}
+
 void isl_mat_dump(struct isl_mat *mat, FILE *out, int indent)
 {
 	int i, j;
