@@ -697,7 +697,7 @@ static struct isl_basic_set *affine_hull_with_cone(struct isl_basic_set *bset,
 	total = isl_basic_set_total_dim(cone);
 	cone_dim = total - cone->n_eq;
 
-	M = isl_mat_sub_alloc(bset->ctx, cone->eq, 0, cone->n_eq, 1, total);
+	M = isl_mat_sub_alloc6(bset->ctx, cone->eq, 0, cone->n_eq, 1, total);
 	M = isl_mat_left_hermite(M, 0, &U, &Q);
 	if (!M)
 		goto error;

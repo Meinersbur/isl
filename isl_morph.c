@@ -354,7 +354,7 @@ __isl_give isl_morph *isl_basic_set_variable_compression(
 	if (n_eq == 0)
 		return isl_morph_identity(bset);
 
-	H = isl_mat_sub_alloc(bset->ctx, bset->eq, f_eq, n_eq, otype, ntype);
+	H = isl_mat_sub_alloc6(bset->ctx, bset->eq, f_eq, n_eq, otype, ntype);
 	H = isl_mat_left_hermite(H, 0, &U, &Q);
 	if (!H || !U || !Q)
 		goto error;
@@ -367,7 +367,7 @@ __isl_give isl_morph *isl_basic_set_variable_compression(
 	isl_int_set_si(C->row[0][0], 1);
 	isl_seq_clr(C->row[0] + 1, otype - 1);
 	isl_mat_sub_neg(C->ctx, C->row + 1, bset->eq + f_eq, n_eq, 0, 0, otype);
-	H1 = isl_mat_sub_alloc(H->ctx, H->row, 0, H->n_row, 0, H->n_row);
+	H1 = isl_mat_sub_alloc(H, 0, H->n_row, 0, H->n_row);
 	H1 = isl_mat_lin_to_aff(H1);
 	C = isl_mat_inverse_product(H1, C);
 	if (!C)
@@ -397,9 +397,9 @@ __isl_give isl_morph *isl_basic_set_variable_compression(
 		C = isl_mat_normalize(C);
 	}
 
-	U1 = isl_mat_sub_alloc(U->ctx, U->row, 0, U->n_row, 0, n_eq);
+	U1 = isl_mat_sub_alloc(U, 0, U->n_row, 0, n_eq);
 	U1 = isl_mat_lin_to_aff(U1);
-	U2 = isl_mat_sub_alloc(U->ctx, U->row, 0, U->n_row, n_eq, U->n_row - n_eq);
+	U2 = isl_mat_sub_alloc(U, 0, U->n_row, n_eq, U->n_row - n_eq);
 	U2 = isl_mat_lin_to_aff(U2);
 	isl_mat_free(U);
 
@@ -466,8 +466,8 @@ __isl_give isl_morph *isl_basic_set_parameter_compression(
 	isl_assert(bset->ctx, n_eq <= nvar, return NULL);
 
 	d = isl_vec_alloc(bset->ctx, n_eq);
-	B = isl_mat_sub_alloc(bset->ctx, bset->eq, 0, n_eq, 0, 1 + nparam);
-	H = isl_mat_sub_alloc(bset->ctx, bset->eq, 0, n_eq, 1 + nparam, nvar);
+	B = isl_mat_sub_alloc6(bset->ctx, bset->eq, 0, n_eq, 0, 1 + nparam);
+	H = isl_mat_sub_alloc6(bset->ctx, bset->eq, 0, n_eq, 1 + nparam, nvar);
 	H = isl_mat_left_hermite(H, 0, NULL, NULL);
 	H = isl_mat_drop_cols(H, n_eq, nvar - n_eq);
 	H = isl_mat_lin_to_aff(H);
@@ -583,7 +583,7 @@ __isl_give isl_basic_set *isl_morph_basic_set(__isl_take isl_morph *morph,
 		if (isl_basic_set_alloc_div(res) < 0)
 			goto error;
 
-	mat = isl_mat_sub_alloc(bset->ctx, bset->eq, 0, bset->n_eq,
+	mat = isl_mat_sub_alloc6(bset->ctx, bset->eq, 0, bset->n_eq,
 					0, morph->inv->n_row);
 	mat = isl_mat_product(mat, isl_mat_copy(morph->inv));
 	if (!mat)
@@ -598,7 +598,7 @@ __isl_give isl_basic_set *isl_morph_basic_set(__isl_take isl_morph *morph,
 	}
 	isl_mat_free(mat);
 
-	mat = isl_mat_sub_alloc(bset->ctx, bset->ineq, 0, bset->n_ineq,
+	mat = isl_mat_sub_alloc6(bset->ctx, bset->ineq, 0, bset->n_ineq,
 					0, morph->inv->n_row);
 	mat = isl_mat_product(mat, isl_mat_copy(morph->inv));
 	if (!mat)
@@ -614,7 +614,7 @@ __isl_give isl_basic_set *isl_morph_basic_set(__isl_take isl_morph *morph,
 	}
 	isl_mat_free(mat);
 
-	mat = isl_mat_sub_alloc(bset->ctx, bset->div, 0, bset->n_div,
+	mat = isl_mat_sub_alloc6(bset->ctx, bset->div, 0, bset->n_div,
 					1, morph->inv->n_row);
 	mat = isl_mat_product(mat, isl_mat_copy(morph->inv));
 	if (!mat)

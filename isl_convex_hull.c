@@ -1039,7 +1039,7 @@ static struct isl_basic_set *modulo_lineality(struct isl_set *set,
 	if (!set || !lin)
 		goto error;
 	lin_dim = total - lin->n_eq;
-	M = isl_mat_sub_alloc(set->ctx, lin->eq, 0, lin->n_eq, 1, total);
+	M = isl_mat_sub_alloc6(set->ctx, lin->eq, 0, lin->n_eq, 1, total);
 	M = isl_mat_left_hermite(M, 0, &U, &Q);
 	if (!M)
 		goto error;
@@ -1672,7 +1672,7 @@ static struct isl_basic_set *common_constraints(struct isl_basic_set *hull,
 
 	total = isl_dim_total(set->dim);
 	for (i = 0; i < set->p[best]->n_ineq; ++i) {
-		constraints[i].c = isl_mat_sub_alloc(hull->ctx,
+		constraints[i].c = isl_mat_sub_alloc6(hull->ctx,
 			set->p[best]->ineq + i, 0, 1, 0, 1 + total);
 		if (!constraints[i].c)
 			goto error;

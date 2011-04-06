@@ -5066,7 +5066,7 @@ static struct isl_set *parameter_compute_divs(struct isl_basic_set *bset)
 	if (i == bset->n_eq)
 		return isl_basic_set_lexmin(bset);
 
-	eq = isl_mat_sub_alloc(bset->ctx, bset->eq, i, bset->n_eq - i,
+	eq = isl_mat_sub_alloc6(bset->ctx, bset->eq, i, bset->n_eq - i,
 		0, 1 + nparam);
 	eq = isl_mat_cow(eq);
 	T = isl_mat_variable_compression(isl_mat_copy(eq), &T2);

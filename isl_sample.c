@@ -963,7 +963,7 @@ __isl_give isl_vec *isl_basic_set_sample_with_cone(
 	total = isl_basic_set_total_dim(cone);
 	cone_dim = total - cone->n_eq;
 
-	M = isl_mat_sub_alloc(bset->ctx, cone->eq, 0, cone->n_eq, 1, total);
+	M = isl_mat_sub_alloc6(bset->ctx, cone->eq, 0, cone->n_eq, 1, total);
 	M = isl_mat_left_hermite(M, 0, &U, NULL);
 	if (!M)
 		goto error;

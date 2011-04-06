@@ -813,7 +813,7 @@ static struct isl_basic_map *normalize_divs(
 		return bmap;
 
 	if (div_eq < bmap->n_eq) {
-		B = isl_mat_sub_alloc(bmap->ctx, bmap->eq, div_eq,
+		B = isl_mat_sub_alloc6(bmap->ctx, bmap->eq, div_eq,
 					bmap->n_eq - div_eq, 0, 1 + total);
 		C = isl_mat_variable_compression(B, &C2);
 		if (!C || !C2)
@@ -834,7 +834,7 @@ static struct isl_basic_map *normalize_divs(
 			--j;
 		isl_int_set(d->block.data[i], bmap->eq[i][1 + total + j]);
 	}
-	B = isl_mat_sub_alloc(bmap->ctx, bmap->eq, 0, div_eq, 0, 1 + total);
+	B = isl_mat_sub_alloc6(bmap->ctx, bmap->eq, 0, div_eq, 0, 1 + total);
 
 	if (C) {
 		B = isl_mat_product(B, C);
@@ -1559,7 +1559,7 @@ static struct isl_basic_set *normalize_constraints_in_compressed_space(
 		return NULL;
 
 	total = isl_basic_set_total_dim(bset);
-	B = isl_mat_sub_alloc(bset->ctx, bset->eq, 0, bset->n_eq, 0, 1 + total);
+	B = isl_mat_sub_alloc6(bset->ctx, bset->eq, 0, bset->n_eq, 0, 1 + total);
 	C = isl_mat_variable_compression(B, NULL);
 	if (!C)
 		return bset;
@@ -1567,7 +1567,7 @@ static struct isl_basic_set *normalize_constraints_in_compressed_space(
 		isl_mat_free(C);
 		return isl_basic_set_set_to_empty(bset);
 	}
-	B = isl_mat_sub_alloc(bset->ctx, bset->ineq,
+	B = isl_mat_sub_alloc6(bset->ctx, bset->ineq,
 						0, bset->n_ineq, 0, 1 + total);
 	C = isl_mat_product(B, C);
 	if (!C)
@@ -1742,7 +1742,7 @@ static __isl_give isl_basic_set *uset_gist(__isl_take isl_basic_set *bset,
 		return uset_gist_full(bset, context);
 	}
 	total = isl_basic_set_total_dim(bset);
-	eq = isl_mat_sub_alloc(bset->ctx, aff->eq, 0, aff->n_eq, 0, 1 + total);
+	eq = isl_mat_sub_alloc6(bset->ctx, aff->eq, 0, aff->n_eq, 0, 1 + total);
 	eq = isl_mat_cow(eq);
 	T = isl_mat_variable_compression(eq, &T2);
 	if (T && T->n_col == 0) {

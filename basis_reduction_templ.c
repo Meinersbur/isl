@@ -337,7 +337,7 @@ struct isl_mat *isl_basic_set_reduced_basis(struct isl_basic_set *bset)
 	else {
 		isl_mat *eq;
 		unsigned nvar = isl_basic_set_total_dim(bset);
-		eq = isl_mat_sub_alloc(bset->ctx, bset->eq, 0, bset->n_eq,
+		eq = isl_mat_sub_alloc6(bset->ctx, bset->eq, 0, bset->n_eq,
 					1, nvar);
 		eq = isl_mat_left_hermite(eq, 0, NULL, &tab->basis);
 		tab->basis = isl_mat_lin_to_aff(tab->basis);

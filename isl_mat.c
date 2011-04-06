@@ -107,7 +107,7 @@ error:
 	return NULL;
 }
 
-struct isl_mat *isl_mat_sub_alloc(struct isl_ctx *ctx, isl_int **row,
+__isl_give isl_mat *isl_mat_sub_alloc6(isl_ctx *ctx, isl_int **row,
 	unsigned first_row, unsigned n_row, unsigned first_col, unsigned n_col)
 {
 	int i;
@@ -132,6 +132,15 @@ struct isl_mat *isl_mat_sub_alloc(struct isl_ctx *ctx, isl_int **row,
 error:
 	free(mat);
 	return NULL;
+}
+
+__isl_give isl_mat *isl_mat_sub_alloc(__isl_keep isl_mat *mat,
+	unsigned first_row, unsigned n_row, unsigned first_col, unsigned n_col)
+{
+	if (!mat)
+		return NULL;
+	return isl_mat_sub_alloc6(mat->ctx, mat->row, first_row, n_row,
+				  first_col, n_col);
 }
 
 void isl_mat_sub_copy(struct isl_ctx *ctx, isl_int **dst, isl_int **src,
@@ -1004,7 +1013,7 @@ static int preimage(struct isl_ctx *ctx, isl_int **q, unsigned n,
 	if (has_div)
 		for (i = 0; i < n; ++i)
 			isl_int_mul(q[i][0], q[i][0], mat->row[0][0]);
-	t = isl_mat_sub_alloc(mat->ctx, q, 0, n, has_div, mat->n_row);
+	t = isl_mat_sub_alloc6(mat->ctx, q, 0, n, has_div, mat->n_row);
 	t = isl_mat_product(t, mat);
 	if (!t)
 		return -1;

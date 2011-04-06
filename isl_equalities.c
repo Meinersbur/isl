@@ -85,7 +85,7 @@ static struct isl_mat *particular_solution(struct isl_mat *B, struct isl_vec *d)
 	M = isl_mat_left_hermite(M, 0, &U, NULL);
 	if (!M || !U)
 		goto error;
-	H = isl_mat_sub_alloc(B->ctx, M->row, 0, B->n_row, 0, B->n_row);
+	H = isl_mat_sub_alloc(M, 0, B->n_row, 0, B->n_row);
 	H = isl_mat_lin_to_aff(H);
 	C = isl_mat_inverse_product(H, C);
 	if (!C)
@@ -98,8 +98,8 @@ static struct isl_mat *particular_solution(struct isl_mat *B, struct isl_vec *d)
 	if (i < B->n_row)
 		cst = isl_mat_alloc(B->ctx, B->n_row, 0);
 	else
-		cst = isl_mat_sub_alloc(C->ctx, C->row, 1, B->n_row, 0, 1);
-	T = isl_mat_sub_alloc(U->ctx, U->row, B->n_row, B->n_col - 1, 0, B->n_row);
+		cst = isl_mat_sub_alloc(C, 1, B->n_row, 0, 1);
+	T = isl_mat_sub_alloc(U, B->n_row, B->n_col - 1, 0, B->n_row);
 	cst = isl_mat_product(T, cst);
 	isl_mat_free(M);
 	isl_mat_free(C);
@@ -184,7 +184,7 @@ static struct isl_mat *parameter_compression_multi(
 						D, U->row[j][k]);
 	}
 	A = isl_mat_left_hermite(A, 0, NULL, NULL);
-	T = isl_mat_sub_alloc(A->ctx, A->row, 0, A->n_row, 0, A->n_row);
+	T = isl_mat_sub_alloc(A, 0, A->n_row, 0, A->n_row);
 	T = isl_mat_lin_to_aff(T);
 	if (!T)
 		goto error;
@@ -426,7 +426,7 @@ struct isl_mat *isl_mat_variable_compression(struct isl_mat *B,
 		goto error;
 
 	dim = B->n_col - 1;
-	H = isl_mat_sub_alloc(B->ctx, B->row, 0, B->n_row, 1, dim);
+	H = isl_mat_sub_alloc(B, 0, B->n_row, 1, dim);
 	H = isl_mat_left_hermite(H, 0, &U, T2);
 	if (!H || !U || (T2 && !*T2))
 		goto error;
@@ -441,7 +441,7 @@ struct isl_mat *isl_mat_variable_compression(struct isl_mat *B,
 		goto error;
 	isl_int_set_si(C->row[0][0], 1);
 	isl_mat_sub_neg(C->ctx, C->row+1, B->row, B->n_row, 0, 0, 1);
-	H1 = isl_mat_sub_alloc(H->ctx, H->row, 0, H->n_row, 0, H->n_row);
+	H1 = isl_mat_sub_alloc(H, 0, H->n_row, 0, H->n_row);
 	H1 = isl_mat_lin_to_aff(H1);
 	TC = isl_mat_inverse_product(H1, C);
 	if (!TC)
@@ -464,10 +464,9 @@ struct isl_mat *isl_mat_variable_compression(struct isl_mat *B,
 		}
 		isl_int_set_si(TC->row[0][0], 1);
 	}
-	U1 = isl_mat_sub_alloc(U->ctx, U->row, 0, U->n_row, 0, B->n_row);
+	U1 = isl_mat_sub_alloc(U, 0, U->n_row, 0, B->n_row);
 	U1 = isl_mat_lin_to_aff(U1);
-	U2 = isl_mat_sub_alloc(U->ctx, U->row, 0, U->n_row,
-				B->n_row, U->n_row - B->n_row);
+	U2 = isl_mat_sub_alloc(U, 0, U->n_row, B->n_row, U->n_row - B->n_row);
 	U2 = isl_mat_lin_to_aff(U2);
 	isl_mat_free(U);
 	TC = isl_mat_product(U1, TC);
@@ -513,7 +512,7 @@ static struct isl_basic_set *compress_variables(
 	if (bset->n_eq == 0)
 		return bset;
 
-	B = isl_mat_sub_alloc(bset->ctx, bset->eq, 0, bset->n_eq, 0, 1 + dim);
+	B = isl_mat_sub_alloc6(bset->ctx, bset->eq, 0, bset->n_eq, 0, 1 + dim);
 	TC = isl_mat_variable_compression(B, T2);
 	if (!TC)
 		goto error;
@@ -584,7 +583,7 @@ int isl_basic_set_dim_residue_class(struct isl_basic_set *bset,
 	ctx = bset->ctx;
 	total = isl_basic_set_total_dim(bset);
 	nparam = isl_basic_set_n_param(bset);
-	H = isl_mat_sub_alloc(bset->ctx, bset->eq, 0, bset->n_eq, 1, total);
+	H = isl_mat_sub_alloc6(bset->ctx, bset->eq, 0, bset->n_eq, 1, total);
 	H = isl_mat_left_hermite(H, 0, &U, NULL);
 	if (!H)
 		return -1;
@@ -605,11 +604,11 @@ int isl_basic_set_dim_residue_class(struct isl_basic_set *bset,
 		goto error;
 	isl_int_set_si(C->row[0][0], 1);
 	isl_mat_sub_neg(C->ctx, C->row+1, bset->eq, bset->n_eq, 0, 0, 1);
-	H1 = isl_mat_sub_alloc(H->ctx, H->row, 0, H->n_row, 0, H->n_row);
+	H1 = isl_mat_sub_alloc(H, 0, H->n_row, 0, H->n_row);
 	H1 = isl_mat_lin_to_aff(H1);
 	C = isl_mat_inverse_product(H1, C);
 	isl_mat_free(H);
-	U1 = isl_mat_sub_alloc(U->ctx, U->row, nparam+pos, 1, 0, bset->n_eq);
+	U1 = isl_mat_sub_alloc(U, nparam+pos, 1, 0, bset->n_eq);
 	U1 = isl_mat_lin_to_aff(U1);
 	isl_mat_free(U);
 	C = isl_mat_product(U1, C);
