@@ -937,6 +937,8 @@ struct isl_mat *isl_mat_product(struct isl_mat *left, struct isl_mat *right)
 	if (left->n_col == 0) {
 		for (i = 0; i < prod->n_row; ++i)
 			isl_seq_clr(prod->row[i], prod->n_col);
+		isl_mat_free(left);
+		isl_mat_free(right);
 		return prod;
 	}
 	for (i = 0; i < prod->n_row; ++i) {
