@@ -62,6 +62,8 @@ libisl_la_SOURCES = \
 	isl_fold.c \
 	isl_gmp.c \
 	isl_hash.c \
+	isl_hmap_map_basic_set.c \
+	isl_hmap_map_basic_set.h \
 	isl_ilp.c \
 	isl_input.c \
 	isl_list.c \
