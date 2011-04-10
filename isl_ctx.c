@@ -93,6 +93,7 @@ isl_ctx *isl_ctx_alloc_with_options(struct isl_arg *arg, void *user_opt)
 	isl_int_init(ctx->normalize_gcd);
 
 	ctx->n_cached = 0;
+	ctx->n_miss = 0;
 
 	ctx->error = isl_error_none;
 
