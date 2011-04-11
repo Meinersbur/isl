@@ -1254,11 +1254,16 @@ static isl_map *read_constraint(struct isl_stream *s,
 {
 	int n = v->n;
 	isl_map *map;
+	unsigned total;
 
 	if (!bmap)
 		return NULL;
 
 	bmap = isl_basic_set_unwrap(isl_basic_set_lift(isl_basic_map_wrap(bmap)));
+	total = isl_basic_map_total_dim(bmap);
+	while (v->n < total)
+		if (vars_add_anon(v) < 0)
+			goto error;
 
 	bmap = add_constraint(s, v, bmap);
 	bmap = isl_basic_map_simplify(bmap);
@@ -1273,6 +1278,9 @@ static isl_map *read_constraint(struct isl_stream *s,
 	vars_drop(v, v->n - n);
 
 	return map;
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
 }
 
 static struct isl_map *read_disjuncts(struct isl_stream *s,
