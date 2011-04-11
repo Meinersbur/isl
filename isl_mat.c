@@ -1336,6 +1336,29 @@ __isl_give isl_mat *isl_mat_add_rows(__isl_take isl_mat *mat, unsigned n)
 	return isl_mat_insert_rows(mat, mat->n_row, n);
 }
 
+__isl_give isl_mat *isl_mat_insert_zero_rows(__isl_take isl_mat *mat,
+	unsigned row, unsigned n)
+{
+	int i;
+
+	mat = isl_mat_insert_rows(mat, row, n);
+	if (!mat)
+		return NULL;
+	
+	for (i = 0; i < n; ++i)
+		isl_seq_clr(mat->row[row + i], mat->n_col);
+
+	return mat;
+}
+
+__isl_give isl_mat *isl_mat_add_zero_rows(__isl_take isl_mat *mat, unsigned n)
+{
+	if (!mat)
+		return NULL;
+
+	return isl_mat_insert_zero_rows(mat, mat->n_row, n);
+}
+
 void isl_mat_col_submul(struct isl_mat *mat,
 			int dst_col, isl_int f, int src_col)
 {
