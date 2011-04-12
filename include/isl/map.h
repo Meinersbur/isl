@@ -372,6 +372,7 @@ int isl_map_is_subset(__isl_keep isl_map *map1, __isl_keep isl_map *map2);
 int isl_map_is_strict_subset(__isl_keep isl_map *map1, __isl_keep isl_map *map2);
 int isl_map_is_equal(__isl_keep isl_map *map1, __isl_keep isl_map *map2);
 int isl_map_is_single_valued(__isl_keep isl_map *map);
+int isl_map_is_injective(__isl_keep isl_map *map);
 int isl_map_is_bijective(__isl_keep isl_map *map);
 int isl_map_is_translation(__isl_keep isl_map *map);
 int isl_map_has_equal_dim(__isl_keep isl_map *map1, __isl_keep isl_map *map2);

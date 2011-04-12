@@ -7729,6 +7729,18 @@ int isl_map_is_single_valued(__isl_keep isl_map *map)
 	return sv;
 }
 
+int isl_map_is_injective(__isl_keep isl_map *map)
+{
+	int in;
+
+	map = isl_map_copy(map);
+	map = isl_map_reverse(map);
+	in = isl_map_is_single_valued(map);
+	isl_map_free(map);
+
+	return in;
+}
+
 int isl_map_is_bijective(__isl_keep isl_map *map)
 {
 	int sv;
@@ -7737,12 +7749,7 @@ int isl_map_is_bijective(__isl_keep isl_map *map)
 	if (sv < 0 || !sv)
 		return sv;
 
-	map = isl_map_copy(map);
-	map = isl_map_reverse(map);
-	sv = isl_map_is_single_valued(map);
-	isl_map_free(map);
-
-	return sv;
+	return isl_map_is_injective(map);
 }
 
 int isl_set_is_singleton(__isl_keep isl_set *set)

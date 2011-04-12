@@ -1174,6 +1174,11 @@ is already known to be empty.
 	int isl_map_is_single_valued(__isl_keep isl_map *map);
 	int isl_union_map_is_single_valued(__isl_keep isl_union_map *umap);
 
+=item * Injectivity
+
+	int isl_map_is_injective(__isl_keep isl_map *map);
+	int isl_union_map_is_injective(__isl_keep isl_union_map *umap);
+
 =item * Bijectivity
 
 	int isl_map_is_bijective(__isl_keep isl_map *map);

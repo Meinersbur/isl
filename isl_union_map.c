@@ -1581,6 +1581,18 @@ int isl_union_map_is_single_valued(__isl_keep isl_union_map *umap)
 	return sv;
 }
 
+int isl_union_map_is_injective(__isl_keep isl_union_map *umap)
+{
+	int in;
+
+	umap = isl_union_map_copy(umap);
+	umap = isl_union_map_reverse(umap);
+	in = isl_union_map_is_single_valued(umap);
+	isl_union_map_free(umap);
+
+	return in;
+}
+
 int isl_union_map_is_bijective(__isl_keep isl_union_map *umap)
 {
 	int sv;
@@ -1589,12 +1601,7 @@ int isl_union_map_is_bijective(__isl_keep isl_union_map *umap)
 	if (sv < 0 || !sv)
 		return sv;
 
-	umap = isl_union_map_copy(umap);
-	umap = isl_union_map_reverse(umap);
-	sv = isl_union_map_is_single_valued(umap);
-	isl_union_map_free(umap);
-
-	return sv;
+	return isl_union_map_is_injective(umap);
 }
 
 static int zip_entry(void **entry, void *user)
