@@ -1506,20 +1506,54 @@ void test_dep(struct isl_ctx *ctx)
 	isl_flow_free(flow);
 }
 
-void test_sv(struct isl_ctx *ctx)
+int test_sv(isl_ctx *ctx)
 {
 	const char *str;
 	isl_map *map;
+	isl_union_map *umap;
+	int sv;
 
 	str = "[N] -> { [i] -> [f] : 0 <= i <= N and 0 <= i - 10 f <= 9 }";
 	map = isl_map_read_from_str(ctx, str, -1);
-	assert(isl_map_is_single_valued(map));
+	sv = isl_map_is_single_valued(map);
 	isl_map_free(map);
+	if (sv < 0)
+		return -1;
+	if (!sv)
+		isl_die(ctx, isl_error_internal,
+			"map not detected as single valued", return -1);
 
 	str = "[N] -> { [i] -> [f] : 0 <= i <= N and 0 <= i - 10 f <= 10 }";
 	map = isl_map_read_from_str(ctx, str, -1);
-	assert(!isl_map_is_single_valued(map));
+	sv = isl_map_is_single_valued(map);
 	isl_map_free(map);
+	if (sv < 0)
+		return -1;
+	if (sv)
+		isl_die(ctx, isl_error_internal,
+			"map detected as single valued", return -1);
+
+	str = "{ S1[i] -> [i] : 0 <= i <= 9; S2[i] -> [i] : 0 <= i <= 9 }";
+	umap = isl_union_map_read_from_str(ctx, str);
+	sv = isl_union_map_is_single_valued(umap);
+	isl_union_map_free(umap);
+	if (sv < 0)
+		return -1;
+	if (!sv)
+		isl_die(ctx, isl_error_internal,
+			"map not detected as single valued", return -1);
+
+	str = "{ [i] -> S1[i] : 0 <= i <= 9; [i] -> S2[i] : 0 <= i <= 9 }";
+	umap = isl_union_map_read_from_str(ctx, str);
+	sv = isl_union_map_is_single_valued(umap);
+	isl_union_map_free(umap);
+	if (sv < 0)
+		return -1;
+	if (sv)
+		isl_die(ctx, isl_error_internal,
+			"map detected as single valued", return -1);
+
+	return 0;
 }
 
 void test_bijective_case(struct isl_ctx *ctx, const char *str, int bijective)
@@ -1785,7 +1819,8 @@ int main()
 	test_parse(ctx);
 	test_pwqp(ctx);
 	test_lex(ctx);
-	test_sv(ctx);
+	if (test_sv(ctx) < 0)
+		goto error;
 	test_bijective(ctx);
 	test_dep(ctx);
 	test_read(ctx);
@@ -1802,4 +1837,7 @@ int main()
 	test_lexmin(ctx);
 	isl_ctx_free(ctx);
 	return 0;
+error:
+	isl_ctx_free(ctx);
+	return -1;
 }

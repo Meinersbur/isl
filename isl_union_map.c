@@ -1485,36 +1485,100 @@ __isl_give isl_basic_set *isl_union_set_sample(__isl_take isl_union_set *uset)
 	return (isl_basic_set *)isl_union_map_sample(uset);
 }
 
-static int empty_entry(void **entry, void *user)
+struct isl_forall_data {
+	int res;
+	int (*fn)(__isl_keep isl_map *map);
+};
+
+static int forall_entry(void **entry, void *user)
 {
-	int *empty = user;
+	struct isl_forall_data *data = user;
 	isl_map *map = *entry;
 
-	if (isl_map_is_empty(map))
-		return 0;
+	data->res = data->fn(map);
+	if (data->res < 0)
+		return -1;
 
-	*empty = 0;
+	if (!data->res)
+		return -1;
 
-	return -1;
+	return 0;
 }
 
-__isl_give int isl_union_map_is_empty(__isl_keep isl_union_map *umap)
+static int union_map_forall(__isl_keep isl_union_map *umap,
+	int (*fn)(__isl_keep isl_map *map))
 {
-	int empty = 1;
+	struct isl_forall_data data = { 1, fn };
 
 	if (!umap)
 		return -1;
 
 	if (isl_hash_table_foreach(umap->dim->ctx, &umap->table,
-				   &empty_entry, &empty) < 0 && empty)
+				   &forall_entry, &data) < 0 && data.res)
 		return -1;
 
-	return empty;
+	return data.res;
+}
+
+int isl_union_map_is_empty(__isl_keep isl_union_map *umap)
+{
+	return union_map_forall(umap, &isl_map_is_empty);
 }
 
 int isl_union_set_is_empty(__isl_keep isl_union_set *uset)
 {
 	return isl_union_map_is_empty(uset);
+}
+
+static int is_subset_of_identity(__isl_keep isl_map *map)
+{
+	int is_subset;
+	isl_dim *dim;
+	isl_map *id;
+
+	if (!map)
+		return -1;
+
+	if (!isl_dim_tuple_match(map->dim, isl_dim_in, map->dim, isl_dim_out))
+		return 0;
+
+	dim = isl_map_get_dim(map);
+	id = isl_map_identity(dim);
+
+	is_subset = isl_map_is_subset(map, id);
+
+	isl_map_free(id);
+
+	return is_subset;
+}
+
+/* Check if the given map is single-valued.
+ * We simply compute
+ *
+ *	M \circ M^-1
+ *
+ * and check if the result is a subset of the identity mapping.
+ */
+int isl_union_map_is_single_valued(__isl_keep isl_union_map *umap)
+{
+	isl_union_map *test;
+	int sv;
+
+	if (isl_union_map_n_map(umap) == 1) {
+		isl_map *map = isl_union_map_copy_map(umap);
+		sv = isl_map_is_single_valued(map);
+		isl_map_free(map);
+		return sv;
+	}
+
+	test = isl_union_map_reverse(isl_union_map_copy(umap));
+	test = isl_union_map_apply_range(test, isl_union_map_copy(umap));
+
+	sv = union_map_forall(test, &is_subset_of_identity);
+
+	isl_union_map_free(test);
+
+	return sv;
 }
 
 static int zip_entry(void **entry, void *user)

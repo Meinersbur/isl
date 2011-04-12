@@ -84,6 +84,7 @@ __isl_give isl_union_map *isl_union_map_deltas_map(
 __isl_give isl_union_map *isl_union_set_identity(__isl_take isl_union_set *uset);
 
 int isl_union_map_is_empty(__isl_keep isl_union_map *umap);
+int isl_union_map_is_single_valued(__isl_keep isl_union_map *umap);
 
 int isl_union_map_is_subset(__isl_keep isl_union_map *umap1,
 	__isl_keep isl_union_map *umap2);
