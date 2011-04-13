@@ -474,7 +474,12 @@ static __isl_give isl_printer *print_constraints(__isl_keep isl_basic_map *bmap,
 
 	for (i = bmap->n_eq - 1; i >= 0; --i) {
 		int l = isl_seq_last_non_zero(bmap->eq[i], 1 + total);
-		isl_assert(bmap->ctx, l >= 0, goto error);
+		if (l < 0) {
+			if (i != bmap->n_eq - 1)
+				p = isl_printer_print_str(p, s_and[latex]);
+			p = isl_printer_print_str(p, "0 = 0");
+			continue;
+		}
 		if (isl_int_is_neg(bmap->eq[i][l]))
 			isl_seq_cpy(c->el, bmap->eq[i], 1 + total);
 		else
