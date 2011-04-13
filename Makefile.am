@@ -83,6 +83,8 @@ libisl_la_SOURCES = \
 	isl_obj.c \
 	isl_options.c \
 	isl_output.c \
+	isl_qsort.c \
+	isl_qsort.h \
 	isl_piplib.h \
 	isl_point_private.h \
 	isl_point.c \
