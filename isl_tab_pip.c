@@ -1113,6 +1113,42 @@ static int first_neg(struct isl_tab *tab)
 	return -1;
 }
 
+/* Check whether the invariant that all columns are lexico-positive
+ * is satisfied.  This function is not called from the current code
+ * but is useful during debugging.
+ */
+static void check_lexpos(struct isl_tab *tab)
+{
+	unsigned off = 2 + tab->M;
+	int col;
+	int var;
+	int row;
+
+	for (col = tab->n_dead; col < tab->n_col; ++col) {
+		if (tab->col_var[col] >= 0 &&
+		    (tab->col_var[col] < tab->n_param ||
+		     tab->col_var[col] >= tab->n_var - tab->n_div))
+			continue;
+		for (var = tab->n_param; var < tab->n_var - tab->n_div; ++var) {
+			if (!tab->var[var].is_row) {
+				if (tab->var[var].index == col)
+					break;
+				else
+					continue;
+			}
+			row = tab->var[var].index;
+			if (isl_int_is_zero(tab->mat->row[row][off + col]))
+				continue;
+			if (isl_int_is_pos(tab->mat->row[row][off + col]))
+				break;
+			fprintf(stderr, "lexneg column %d (row %d)\n",
+				col, row);
+		}
+		if (var >= tab->n_var - tab->n_div)
+			fprintf(stderr, "zero column %d\n", col);
+	}
+}
+
 /* Resolve all known or obviously violated constraints through pivoting.
  * In particular, as long as we can find any violated constraint, we
  * look for a pivoting column that would result in the lexicographically
