@@ -26,7 +26,7 @@
  * The strategy used for obtaining a feasible solution is different
  * from the one used in isl_tab.c.  In particular, in isl_tab.c,
  * upon finding a constraint that is not yet satisfied, we pivot
- * in a row that increases the constant term of row holding the
+ * in a row that increases the constant term of the row holding the
  * constraint, making sure the sample solution remains feasible
  * for all the constraints it already satisfied.
  * Here, we always pivot in the row holding the constraint,
