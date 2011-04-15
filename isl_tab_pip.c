@@ -1307,18 +1307,6 @@ static struct isl_tab *add_lexmin_eq(struct isl_tab *tab, isl_int *eq)
 	} else if (!tab->con[r2].is_row) {
 		if (isl_tab_kill_col(tab, tab->con[r2].index) < 0)
 			goto error;
-	} else if (isl_int_is_zero(tab->mat->row[tab->con[r1].index][1])) {
-		unsigned off = 2 + tab->M;
-		int i;
-		int row = tab->con[r1].index;
-		i = isl_seq_first_non_zero(tab->mat->row[row]+off+tab->n_dead,
-						tab->n_col - tab->n_dead);
-		if (i != -1) {
-			if (isl_tab_pivot(tab, row, tab->n_dead + i) < 0)
-				goto error;
-			if (isl_tab_kill_col(tab, tab->n_dead + i) < 0)
-				goto error;
-		}
 	}
 
 	if (tab->bmap) {
