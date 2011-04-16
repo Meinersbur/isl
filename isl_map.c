@@ -29,6 +29,7 @@
 #include <isl/vec.h>
 #include <isl_mat_private.h>
 #include <isl_dim_map.h>
+#include <isl_local_space_private.h>
 
 static unsigned n(struct isl_dim *dim, enum isl_dim_type type)
 {
@@ -251,6 +252,72 @@ struct isl_dim *isl_basic_set_get_dim(struct isl_basic_set *bset)
 	if (!bset)
 		return NULL;
 	return isl_dim_copy(bset->dim);
+}
+
+__isl_give isl_local_space *isl_basic_map_get_local_space(
+	__isl_keep isl_basic_map *bmap)
+{
+	int i;
+	isl_local_space *ls;
+	unsigned total;
+
+	if (!bmap)
+		return NULL;
+
+	total = isl_basic_map_total_dim(bmap);
+	ls = isl_local_space_alloc(isl_dim_copy(bmap->dim), bmap->n_div);
+	if (!ls)
+		return NULL;
+
+	for (i = 0; i < bmap->n_div; ++i)
+		isl_seq_cpy(ls->div->row[i], bmap->div[i], 2 + total);
+
+	return ls;
+}
+
+__isl_give isl_local_space *isl_basic_set_get_local_space(
+	__isl_keep isl_basic_set *bset)
+{
+	return isl_basic_map_get_local_space(bset);
+}
+
+__isl_give isl_basic_map *isl_basic_map_from_local_space(
+	__isl_take isl_local_space *ls)
+{
+	int i;
+	int n_div;
+	isl_basic_map *bmap;
+
+	if (!ls)
+		return NULL;
+
+	n_div = isl_local_space_dim(ls, isl_dim_div);
+	bmap = isl_basic_map_alloc_dim(isl_local_space_get_dim(ls),
+					n_div, 0, 2 * n_div);
+
+	for (i = 0; i < n_div; ++i)
+		if (isl_basic_map_alloc_div(bmap) < 0)
+			goto error;
+
+	for (i = 0; i < n_div; ++i) {
+		isl_seq_cpy(bmap->div[i], ls->div->row[i], ls->div->n_col);
+		if (isl_basic_map_add_div_constraints(bmap, i) < 0)
+			goto error;
+	}
+					
+	isl_local_space_free(ls);
+	bmap = isl_basic_map_finalize(bmap);
+	return bmap;
+error:
+	isl_local_space_free(ls);
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+__isl_give isl_basic_set *isl_basic_set_from_local_space(
+	__isl_take isl_local_space *ls)
+{
+	return isl_basic_map_from_local_space(ls);
 }
 
 struct isl_dim *isl_map_get_dim(struct isl_map *map)

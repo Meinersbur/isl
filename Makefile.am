@@ -68,6 +68,8 @@ libisl_la_SOURCES = \
 	isl_ilp.c \
 	isl_input.c \
 	isl_list.c \
+	isl_local_space_private.h \
+	isl_local_space.c \
 	isl_lp.c \
 	isl_lp_piplib.h \
 	isl_map.c \
@@ -190,6 +192,7 @@ pkginclude_HEADERS = \
 	include/isl/int.h \
 	include/isl/hash.h \
 	include/isl/list.h \
+	include/isl/local_space.h \
 	include/isl/lp.h \
 	include/isl/mat.h \
 	include/isl/map.h \

@@ -20,6 +20,7 @@
 #include <isl/vec.h>
 #include <isl/mat.h>
 #include <isl/printer.h>
+#include <isl/local_space.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -71,6 +72,9 @@ __isl_give isl_dim *isl_basic_map_get_dim(__isl_keep isl_basic_map *bmap);
 __isl_give isl_dim *isl_map_get_dim(__isl_keep isl_map *map);
 
 struct isl_div *isl_basic_map_div(struct isl_basic_map *bmap, int pos);
+
+__isl_give isl_local_space *isl_basic_map_get_local_space(
+	__isl_keep isl_basic_map *bmap);
 
 __isl_give isl_basic_map *isl_basic_map_set_tuple_name(
 	__isl_take isl_basic_map *bmap, enum isl_dim_type type, const char *s);

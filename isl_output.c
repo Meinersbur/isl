@@ -22,6 +22,7 @@
 #include <isl_mat_private.h>
 #include <isl/union_map.h>
 #include <isl/constraint.h>
+#include <isl_local_space_private.h>
 
 static const char *s_to[2] = { " -> ", " \\to " };
 static const char *s_and[2] = { " and ", " \\wedge " };
@@ -2112,6 +2113,64 @@ void isl_constraint_dump(__isl_keep isl_constraint *c)
 
 	printer = isl_printer_to_file(isl_constraint_get_ctx(c), stderr);
 	printer = isl_printer_print_constraint(printer, c);
+	printer = isl_printer_end_line(printer);
+
+	isl_printer_free(printer);
+}
+
+__isl_give isl_printer *isl_printer_print_local_space(__isl_take isl_printer *p,
+	__isl_keep isl_local_space *ls)
+{
+	unsigned total;
+	unsigned n_div;
+
+	if (!ls)
+		goto error;
+
+	total = isl_local_space_dim(ls, isl_dim_all);
+	if (isl_local_space_dim(ls, isl_dim_param) > 0) {
+		p = print_tuple(ls->dim, p, isl_dim_param, 0, 0, NULL);
+		p = isl_printer_print_str(p, " -> ");
+	}
+	p = isl_printer_print_str(p, "{ ");
+	p = print_tuple(ls->dim, p, isl_dim_in, 0, 0, NULL);
+	p = isl_printer_print_str(p, " -> ");
+	p = print_tuple(ls->dim, p, isl_dim_out, 0, 0, NULL);
+	n_div = isl_local_space_dim(ls, isl_dim_div);
+	if (n_div > 0) {
+		int i;
+		p = isl_printer_print_str(p, " : ");
+		p = isl_printer_print_str(p, s_open_exists[0]);
+		for (i = 0; i < n_div; ++i) {
+			if (i)
+				p = isl_printer_print_str(p, ", ");
+			p = print_name(ls->dim, p, isl_dim_div, i, 0, 0);
+			if (isl_int_is_zero(ls->div->row[i][0]))
+				continue;
+			p = isl_printer_print_str(p, " = [(");
+			p = print_affine_of_len(ls->dim, ls->div, p,
+					    ls->div->row[i] + 1, 1 + total, 0);
+			p = isl_printer_print_str(p, ")/");
+			p = isl_printer_print_isl_int(p, ls->div->row[i][0]);
+			p = isl_printer_print_str(p, "]");
+		}
+	}
+	p = isl_printer_print_str(p, " }");
+	return p;
+error:
+	isl_printer_free(p);
+	return NULL;
+}
+
+void isl_local_space_dump(__isl_keep isl_local_space *ls)
+{
+	isl_printer *printer;
+
+	if (!ls)
+		return;
+
+	printer = isl_printer_to_file(isl_local_space_get_ctx(ls), stderr);
+	printer = isl_printer_print_local_space(printer, ls);
 	printer = isl_printer_end_line(printer);
 
 	isl_printer_free(printer);

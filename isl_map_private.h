@@ -293,4 +293,9 @@ int isl_basic_set_add_div_constraints_var(__isl_keep isl_basic_set *bset,
 int isl_basic_map_is_div_constraint(__isl_keep isl_basic_map *bmap,
 	isl_int *constraint, unsigned div);
 
+__isl_give isl_basic_set *isl_basic_set_from_local_space(
+	__isl_take isl_local_space *ls);
+__isl_give isl_basic_map *isl_basic_map_from_local_space(
+	__isl_take isl_local_space *ls);
+
 #endif
