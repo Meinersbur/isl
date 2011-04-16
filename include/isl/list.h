@@ -27,7 +27,9 @@ __isl_give isl_##EL##_list *isl_##EL##_list_copy(			\
 void isl_##EL##_list_free(__isl_take isl_##EL##_list *list);		\
 __isl_give isl_##EL##_list *isl_##EL##_list_add(			\
 	__isl_take isl_##EL##_list *list,				\
-	__isl_take struct isl_##EL *el);
+	__isl_take struct isl_##EL *el);				\
+int isl_##EL##_list_foreach(__isl_keep isl_##EL##_list *list,		\
+	int (*fn)(__isl_take struct isl_##EL *el, void *user), void *user);
 
 ISL_DECLARE_LIST(basic_set)
 ISL_DECLARE_LIST(set)

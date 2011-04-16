@@ -2025,6 +2025,9 @@ Lists can be inspected using the following functions.
 
 	#include <isl/list.h>
 	isl_ctx *isl_set_list_get_ctx(__isl_keep isl_set_list *list);
+	int isl_set_list_foreach(__isl_keep isl_set_list *list,
+		int (*fn)(__isl_take struct isl_set *el, void *user),
+		void *user);
 
 =head2 Matrices
 

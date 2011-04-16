@@ -84,3 +84,22 @@ void FN(LIST(EL),free)(__isl_take LIST(EL) *list)
 		FN(EL,free)(list->p[i]);
 	free(list);
 }
+
+int FN(LIST(EL),foreach)(__isl_keep LIST(EL) *list,
+	int (*fn)(__isl_take EL *el, void *user), void *user)
+{
+	int i;
+
+	if (!list)
+		return -1;
+
+	for (i = 0; i < list->n; ++i) {
+		EL *el = FN(EL,copy(list->p[i]));
+		if (!el)
+			return -1;
+		if (fn(el, user) < 0)
+			return -1;
+	}
+
+	return 0;
+}
