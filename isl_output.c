@@ -23,6 +23,7 @@
 #include <isl/union_map.h>
 #include <isl/constraint.h>
 #include <isl_local_space_private.h>
+#include <isl_aff_private.h>
 
 static const char *s_to[2] = { " -> ", " \\to " };
 static const char *s_and[2] = { " and ", " \\wedge " };
@@ -2171,6 +2172,51 @@ void isl_local_space_dump(__isl_keep isl_local_space *ls)
 
 	printer = isl_printer_to_file(isl_local_space_get_ctx(ls), stderr);
 	printer = isl_printer_print_local_space(printer, ls);
+	printer = isl_printer_end_line(printer);
+
+	isl_printer_free(printer);
+}
+
+__isl_give isl_printer *isl_printer_print_aff(__isl_take isl_printer *p,
+	__isl_keep isl_aff *aff)
+{
+	unsigned total;
+
+	if (!aff)
+		goto error;
+
+	total = isl_local_space_dim(aff->ls, isl_dim_all);
+	if (isl_local_space_dim(aff->ls, isl_dim_param) > 0) {
+		p = print_tuple(aff->ls->dim, p, isl_dim_param, 0, 0, NULL);
+		p = isl_printer_print_str(p, " -> ");
+	}
+	p = isl_printer_print_str(p, "{ ");
+	p = print_tuple(aff->ls->dim, p, isl_dim_set, 1, 0, NULL);
+	p = isl_printer_print_str(p, " -> [");
+	if (!isl_int_is_one(aff->v->el[0]))
+		p = isl_printer_print_str(p, "(");
+	p = print_affine_of_len(aff->ls->dim, aff->ls->div, p,
+				aff->v->el + 1, 1 + total, 1);
+	if (!isl_int_is_one(aff->v->el[0])) {
+		p = isl_printer_print_str(p, ")/");
+		p = isl_printer_print_isl_int(p, aff->v->el[0]);
+	}
+	p = isl_printer_print_str(p, "] }");
+	return p;
+error:
+	isl_printer_free(p);
+	return NULL;
+}
+
+void isl_aff_dump(__isl_keep isl_aff *aff)
+{
+	isl_printer *printer;
+
+	if (!aff)
+		return;
+
+	printer = isl_printer_to_file(isl_aff_get_ctx(aff), stderr);
+	printer = isl_printer_print_aff(printer, aff);
 	printer = isl_printer_end_line(printer);
 
 	isl_printer_free(printer);

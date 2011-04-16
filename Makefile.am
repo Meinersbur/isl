@@ -34,6 +34,8 @@ INCLUDES = -I. -I$(srcdir) -I$(srcdir)/include -Iinclude/
 libisl_la_SOURCES = \
 	$(ISL_PIPLIB) \
 	$(GET_MEMORY_FUNCTIONS) \
+	isl_aff.c \
+	isl_aff_private.h \
 	isl_affine_hull.c \
 	isl_arg.c \
 	isl_basis_reduction.h \
@@ -181,6 +183,7 @@ nodist_pkginclude_HEADERS = \
 	include/isl/config.h \
 	include/isl/stdint.h
 pkginclude_HEADERS = \
+	include/isl/aff.h \
 	include/isl/arg.h \
 	include/isl/blk.h \
 	include/isl/constraint.h \
