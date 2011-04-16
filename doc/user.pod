@@ -2001,6 +2001,23 @@ In case of union relations, the optimum is computed per space.
 	__isl_give isl_union_map *isl_union_map_lexmax(
 		__isl_take isl_union_map *umap);
 
+=head2 Lists
+
+Lists are defined over several element types, including
+C<isl_basic_set> and C<isl_set>.
+Here we take lists of C<isl_set>s as an example.
+
+	#include <isl/list.h>
+	__isl_give isl_set_list *isl_set_list_alloc(
+		isl_ctx *ctx, int n);
+	__isl_give isl_set_list *isl_set_list_add(
+		__isl_take isl_set_list *list,
+		__isl_take isl_set *el);
+	void isl_set_list_free(__isl_take isl_set_list *list);
+
+C<isl_set_list_alloc> creates an empty list with a capacity for
+C<n> elements.
+
 =head2 Matrices
 
 Matrices can be created, copied and freed using the following functions.

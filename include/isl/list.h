@@ -16,23 +16,18 @@
 extern "C" {
 #endif
 
-struct isl_basic_set;
+#define ISL_DECLARE_LIST(EL)						\
+struct isl_##EL;							\
+struct isl_##EL##_list;							\
+typedef struct isl_##EL##_list isl_##EL##_list;				\
+__isl_give isl_##EL##_list *isl_##EL##_list_alloc(isl_ctx *ctx, int n);	\
+void isl_##EL##_list_free(__isl_take isl_##EL##_list *list);		\
+__isl_give isl_##EL##_list *isl_##EL##_list_add(			\
+	__isl_take isl_##EL##_list *list,				\
+	__isl_take struct isl_##EL *el);
 
-struct isl_basic_set_list {
-	int ref;
-	struct isl_ctx *ctx;
-
-	int n;
-
-	size_t size;
-	struct isl_basic_set *p[1];
-};
-
-struct isl_basic_set_list *isl_basic_set_list_alloc(struct isl_ctx *ctx, int n);
-void isl_basic_set_list_free(struct isl_basic_set_list *list);
-struct isl_basic_set_list *isl_basic_set_list_add(
-	struct isl_basic_set_list *list,
-	struct isl_basic_set *bset);
+ISL_DECLARE_LIST(basic_set)
+ISL_DECLARE_LIST(set)
 
 #if defined(__cplusplus)
 }

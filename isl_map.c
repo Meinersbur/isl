@@ -17,7 +17,7 @@
 #include <isl/blk.h>
 #include "isl_dim_private.h"
 #include "isl_equalities.h"
-#include <isl/list.h>
+#include <isl_list_private.h>
 #include <isl/lp.h>
 #include <isl/seq.h>
 #include <isl/set.h>

@@ -12,6 +12,7 @@
 
 #define isl_basic_set	isl_basic_map
 #define isl_set		isl_map
+#define isl_basic_set_list	isl_basic_map_list
 #include <isl/set.h>
 #include <isl/map.h>
 #include <isl_reordering.h>

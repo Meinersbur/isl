@@ -70,6 +70,7 @@ libisl_la_SOURCES = \
 	isl_ilp.c \
 	isl_input.c \
 	isl_list.c \
+	isl_list_private.h \
 	isl_local_space_private.h \
 	isl_local_space.c \
 	isl_lp.c \
@@ -216,6 +217,8 @@ pkginclude_HEADERS = \
 
 EXTRA_DIST = \
 	basis_reduction_templ.c \
+	isl_list_templ.c \
+	isl_list_templ.h \
 	isl_pw_templ.c \
 	isl_union_templ.c \
 	isl.py \
