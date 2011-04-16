@@ -118,3 +118,37 @@ int FN(LIST(EL),foreach)(__isl_keep LIST(EL) *list,
 
 	return 0;
 }
+
+__isl_give isl_printer *CAT(isl_printer_print_,LIST(BASE))(
+	__isl_take isl_printer *p, __isl_keep LIST(EL) *list)
+{
+	int i;
+
+	if (!p || !list)
+		goto error;
+	p = isl_printer_print_str(p, "(");
+	for (i = 0; i < list->n; ++i) {
+		if (i)
+			p = isl_printer_print_str(p, ",");
+		p = CAT(isl_printer_print_,BASE)(p, list->p[i]);
+	}
+	p = isl_printer_print_str(p, ")");
+	return p;
+error:
+	isl_printer_free(p);
+	return NULL;
+}
+
+void FN(LIST(EL),dump)(__isl_keep LIST(EL) *list)
+{
+	isl_printer *printer;
+
+	if (!list)
+		return;
+
+	printer = isl_printer_to_file(FN(LIST(EL),get_ctx)(list), stderr);
+	printer = CAT(isl_printer_print_,LIST(BASE))(printer, list);
+	printer = isl_printer_end_line(printer);
+
+	isl_printer_free(printer);
+}
