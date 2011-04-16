@@ -20,6 +20,7 @@ extern "C" {
 struct isl_##EL;							\
 struct isl_##EL##_list;							\
 typedef struct isl_##EL##_list isl_##EL##_list;				\
+isl_ctx *isl_##EL##_list_get_ctx(__isl_keep isl_##EL##_list *list);	\
 __isl_give isl_##EL##_list *isl_##EL##_list_alloc(isl_ctx *ctx, int n);	\
 __isl_give isl_##EL##_list *isl_##EL##_list_copy(			\
 	__isl_keep isl_##EL##_list *list);				\

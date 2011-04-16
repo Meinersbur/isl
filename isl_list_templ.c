@@ -19,6 +19,11 @@
 #define xLIST(EL) EL ## _list
 #define LIST(EL) xLIST(EL)
 
+isl_ctx *FN(LIST(EL),get_ctx)(__isl_keep LIST(EL) *list)
+{
+	return list ? list->ctx : NULL;
+}
+
 __isl_give LIST(EL) *FN(LIST(EL),alloc)(isl_ctx *ctx, int n)
 {
 	LIST(EL) *list;
