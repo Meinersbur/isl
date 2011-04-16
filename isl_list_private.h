@@ -13,4 +13,9 @@
 
 #include <isl_list_templ.h>
 
+#undef EL
+#define EL isl_aff
+
+#include <isl_list_templ.h>
+
 #endif
