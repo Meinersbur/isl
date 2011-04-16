@@ -16,6 +16,7 @@
 #include "isl_tab.h"
 #include "isl_sample.h"
 #include <isl_mat_private.h>
+#include <isl_aff_private.h>
 #include <isl_config.h>
 
 /*
@@ -4507,7 +4508,7 @@ error:
 struct isl_sol_for {
 	struct isl_sol	sol;
 	int		(*fn)(__isl_take isl_basic_set *dom,
-				__isl_take isl_mat *map, void *user);
+				__isl_take isl_aff_list *list, void *user);
 	void		*user;
 };
 
@@ -4529,23 +4530,39 @@ static void sol_for_free_wrap(struct isl_sol *sol)
  *
  * Instead of constructing a basic map, this function calls a user
  * defined function with the current context as a basic set and
- * an affine matrix representing the relation between the input and output.
- * The number of rows in this matrix is equal to one plus the number
- * of output variables.  The number of columns is equal to one plus
- * the total dimension of the context, i.e., the number of parameters,
- * input variables and divs.  Since some of the columns in the matrix
- * may refer to the divs, the basic set is not simplified.
- * (Simplification may reorder or remove divs.)
+ * a list of affine expressions representing the relation between
+ * the input and output.  The space over which the affine expressions
+ * are defined is the same as that of the domain.  The number of
+ * affine expressions in the list is equal to the number of output variables.
  */
 static void sol_for_add(struct isl_sol_for *sol,
 	struct isl_basic_set *dom, struct isl_mat *M)
 {
+	int i;
+	isl_ctx *ctx;
+	isl_local_space *ls;
+	isl_aff *aff;
+	isl_aff_list *list;
+
 	if (sol->sol.error || !dom || !M)
 		goto error;
 
+	ctx = isl_basic_set_get_ctx(dom);
+	ls = isl_basic_set_get_local_space(dom);
+	list = isl_aff_list_alloc(ctx, M->n_row - 1);
+	for (i = 1; i < M->n_row; ++i) {
+		aff = isl_aff_alloc(isl_local_space_copy(ls));
+		if (aff) {
+			isl_int_set_si(aff->v->el[0], 1);
+			isl_seq_cpy(aff->v->el + 1, M->row[i], M->n_col);
+		}
+		list = isl_aff_list_add(list, aff);
+	}
+	isl_local_space_free(ls);
+
 	dom = isl_basic_set_finalize(dom);
 
-	if (sol->fn(isl_basic_set_copy(dom), isl_mat_copy(M), sol->user) < 0)
+	if (sol->fn(isl_basic_set_copy(dom), list, sol->user) < 0)
 		goto error;
 
 	isl_basic_set_free(dom);
@@ -4564,7 +4581,7 @@ static void sol_for_add_wrap(struct isl_sol *sol,
 }
 
 static struct isl_sol_for *sol_for_init(struct isl_basic_map *bmap, int max,
-	int (*fn)(__isl_take isl_basic_set *dom, __isl_take isl_mat *map,
+	int (*fn)(__isl_take isl_basic_set *dom, __isl_take isl_aff_list *list,
 		  void *user),
 	void *user)
 {
@@ -4609,7 +4626,7 @@ static void sol_for_find_solutions(struct isl_sol_for *sol_for,
 }
 
 int isl_basic_map_foreach_lexopt(__isl_keep isl_basic_map *bmap, int max,
-	int (*fn)(__isl_take isl_basic_set *dom, __isl_take isl_mat *map,
+	int (*fn)(__isl_take isl_basic_set *dom, __isl_take isl_aff_list *list,
 		  void *user),
 	void *user)
 {
@@ -4645,7 +4662,7 @@ error:
 }
 
 int isl_basic_map_foreach_lexmin(__isl_keep isl_basic_map *bmap,
-	int (*fn)(__isl_take isl_basic_set *dom, __isl_take isl_mat *map,
+	int (*fn)(__isl_take isl_basic_set *dom, __isl_take isl_aff_list *list,
 		  void *user),
 	void *user)
 {
@@ -4653,7 +4670,7 @@ int isl_basic_map_foreach_lexmin(__isl_keep isl_basic_map *bmap,
 }
 
 int isl_basic_map_foreach_lexmax(__isl_keep isl_basic_map *bmap,
-	int (*fn)(__isl_take isl_basic_set *dom, __isl_take isl_mat *map,
+	int (*fn)(__isl_take isl_basic_set *dom, __isl_take isl_aff_list *list,
 		  void *user),
 	void *user)
 {

@@ -218,7 +218,7 @@ __isl_give isl_map *isl_basic_map_lexmax(__isl_take isl_basic_map *bmap);
 __isl_give isl_map *isl_map_lexmin(__isl_take isl_map *map);
 __isl_give isl_map *isl_map_lexmax(__isl_take isl_map *map);
 int isl_basic_map_foreach_lexmin(__isl_keep isl_basic_map *bmap,
-	int (*fn)(__isl_take isl_basic_set *dom, __isl_take isl_mat *map,
+	int (*fn)(__isl_take isl_basic_set *dom, __isl_take isl_aff_list *list,
 		  void *user),
 	void *user);
 

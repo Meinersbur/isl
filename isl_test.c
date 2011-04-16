@@ -1228,9 +1228,26 @@ void test_lex(struct isl_ctx *ctx)
 	isl_map_free(map);
 }
 
+static int consume_lexmin(__isl_take isl_basic_set *dom,
+	__isl_take isl_aff_list *list, void *user)
+{
+	isl_dim *dim;
+	isl_basic_map *bmap;
+	isl_map **map = user;
+
+	dim = isl_basic_set_get_dim(dom);
+	bmap = isl_basic_map_from_aff_list(dim, list);
+	bmap = isl_basic_map_intersect_domain(bmap, dom);
+
+	*map = isl_map_union(*map, isl_map_from_basic_map(bmap));
+
+	return 0;
+}
+
 void test_lexmin(struct isl_ctx *ctx)
 {
 	const char *str;
+	isl_basic_map *bmap;
 	isl_map *map, *map2;
 	isl_set *set;
 	isl_set *set2;
@@ -1287,6 +1304,16 @@ void test_lexmin(struct isl_ctx *ctx)
 		"4e1 = -2 + x and 4e0 <= -1 + x and 4e0 >= -3 + x)) or "
 		"(exists (e0 = [(x)/4]: 2y = x and 4e0 = x and x <= -4)) }";
 	map2 = isl_map_read_from_str(ctx, str, -1);
+	assert(isl_map_is_equal(map, map2));
+	isl_map_free(map);
+	isl_map_free(map2);
+
+	str = "{ [i] -> [i', j] : j = i - 8i' and i' >= 0 and i' <= 7 and "
+				" 8i' <= i and 8i' >= -7 + i }";
+	bmap = isl_basic_map_read_from_str(ctx, str, -1);
+	map2 = isl_map_empty(isl_basic_map_get_dim(bmap));
+	isl_basic_map_foreach_lexmin(bmap, &consume_lexmin, &map2);
+	map = isl_map_from_basic_map(bmap);
 	assert(isl_map_is_equal(map, map2));
 	isl_map_free(map);
 	isl_map_free(map2);
