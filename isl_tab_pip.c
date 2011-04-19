@@ -4955,3 +4955,30 @@ error:
 	isl_vec_free(sol);
 	return NULL;
 }
+
+/* Return the lexicographically smallest rational point in "bset",
+ * assuming that all variables are non-negative.
+ * If "bset" is empty, then return a zero-length vector.
+ */
+ __isl_give isl_vec *isl_tab_basic_set_non_neg_lexmin(
+	__isl_take isl_basic_set *bset)
+{
+	struct isl_tab *tab;
+	isl_ctx *ctx = isl_basic_set_get_ctx(bset);
+	isl_vec *sol;
+
+	tab = tab_for_lexmin(isl_basic_map_from_range(bset), NULL, 0, 0);
+	if (!tab)
+		goto error;
+	if (tab->empty)
+		sol = isl_vec_alloc(ctx, 0);
+	else
+		sol = isl_tab_get_sample_value(tab);
+	isl_tab_free(tab);
+	isl_basic_set_free(bset);
+	return sol;
+error:
+	isl_tab_free(tab);
+	isl_basic_set_free(bset);
+	return NULL;
+}
