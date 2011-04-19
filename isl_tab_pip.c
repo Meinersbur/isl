@@ -1287,80 +1287,77 @@ static int is_constant(struct isl_tab *tab, int row)
  * In the end we try to use one of the two constraints to eliminate
  * a column.
  */
-static struct isl_tab *add_lexmin_eq(struct isl_tab *tab, isl_int *eq) WARN_UNUSED;
-static struct isl_tab *add_lexmin_eq(struct isl_tab *tab, isl_int *eq)
+static int add_lexmin_eq(struct isl_tab *tab, isl_int *eq) WARN_UNUSED;
+static int add_lexmin_eq(struct isl_tab *tab, isl_int *eq)
 {
 	int r1, r2;
 	int row;
 	struct isl_tab_undo *snap;
 
 	if (!tab)
-		return NULL;
+		return -1;
 	snap = isl_tab_snap(tab);
 	r1 = isl_tab_add_row(tab, eq);
 	if (r1 < 0)
-		goto error;
+		return -1;
 	tab->con[r1].is_nonneg = 1;
 	if (isl_tab_push_var(tab, isl_tab_undo_nonneg, &tab->con[r1]) < 0)
-		goto error;
+		return -1;
 
 	row = tab->con[r1].index;
 	if (is_constant(tab, row)) {
 		if (!isl_int_is_zero(tab->mat->row[row][1]) ||
 		    (tab->M && !isl_int_is_zero(tab->mat->row[row][2]))) {
 			if (isl_tab_mark_empty(tab) < 0)
-				goto error;
-			return tab;
+				return -1;
+			return 0;
 		}
 		if (isl_tab_rollback(tab, snap) < 0)
-			goto error;
-		return tab;
+			return -1;
+		return 0;
 	}
 
 	if (restore_lexmin(tab) < 0)
-		goto error;
+		return -1;
 	if (tab->empty)
-		return tab;
+		return 0;
 
 	isl_seq_neg(eq, eq, 1 + tab->n_var);
 
 	r2 = isl_tab_add_row(tab, eq);
 	if (r2 < 0)
-		goto error;
+		return -1;
 	tab->con[r2].is_nonneg = 1;
 	if (isl_tab_push_var(tab, isl_tab_undo_nonneg, &tab->con[r2]) < 0)
-		goto error;
+		return -1;
 
 	if (restore_lexmin(tab) < 0)
-		goto error;
+		return -1;
 	if (tab->empty)
-		return tab;
+		return 0;
 
 	if (!tab->con[r1].is_row) {
 		if (isl_tab_kill_col(tab, tab->con[r1].index) < 0)
-			goto error;
+			return -1;
 	} else if (!tab->con[r2].is_row) {
 		if (isl_tab_kill_col(tab, tab->con[r2].index) < 0)
-			goto error;
+			return -1;
 	}
 
 	if (tab->bmap) {
 		tab->bmap = isl_basic_map_add_ineq(tab->bmap, eq);
 		if (isl_tab_push(tab, isl_tab_undo_bmap_ineq) < 0)
-			goto error;
+			return -1;
 		isl_seq_neg(eq, eq, 1 + tab->n_var);
 		tab->bmap = isl_basic_map_add_ineq(tab->bmap, eq);
 		isl_seq_neg(eq, eq, 1 + tab->n_var);
 		if (isl_tab_push(tab, isl_tab_undo_bmap_ineq) < 0)
-			goto error;
+			return -1;
 		if (!tab->bmap)
-			goto error;
+			return -1;
 	}
 
-	return tab;
-error:
-	isl_tab_free(tab);
-	return NULL;
+	return 0;
 }
 
 /* Add an inequality to the tableau, resolving violations using
@@ -2156,7 +2153,8 @@ static void context_lex_add_eq(struct isl_context *context, isl_int *eq,
 	struct isl_context_lex *clex = (struct isl_context_lex *)context;
 	if (isl_tab_extend_cons(clex->tab, 2) < 0)
 		goto error;
-	clex->tab = add_lexmin_eq(clex->tab, eq);
+	if (add_lexmin_eq(clex->tab, eq) < 0)
+		goto error;
 	if (check) {
 		int v = tab_has_valid_sample(clex->tab, eq, 1);
 		if (v < 0)
