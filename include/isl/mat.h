@@ -42,13 +42,6 @@ __isl_give isl_mat *isl_mat_set_element(__isl_take isl_mat *mat,
 __isl_give isl_mat *isl_mat_set_element_si(__isl_take isl_mat *mat,
 	int row, int col, int v);
 
-struct isl_mat *isl_mat_sub_alloc(struct isl_ctx *ctx, isl_int **row,
-	unsigned first_row, unsigned n_row, unsigned first_col, unsigned n_col);
-void isl_mat_sub_copy(struct isl_ctx *ctx, isl_int **dst, isl_int **src,
-	unsigned n_row, unsigned dst_col, unsigned src_col, unsigned n_col);
-void isl_mat_sub_neg(struct isl_ctx *ctx, isl_int **dst, isl_int **src,
-	unsigned n_row, unsigned dst_col, unsigned src_col, unsigned n_col);
-
 struct isl_mat *isl_mat_swap_cols(struct isl_mat *mat, unsigned i, unsigned j);
 struct isl_mat *isl_mat_swap_rows(struct isl_mat *mat, unsigned i, unsigned j);
 
