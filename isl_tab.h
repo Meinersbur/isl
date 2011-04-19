@@ -161,6 +161,9 @@ struct isl_tab {
 	int n_unbounded;
 	struct isl_mat *basis;
 
+	int (*conflict)(int con, void *user);
+	void *conflict_user;
+
 	unsigned strict_redundant : 1;
 	unsigned need_undo : 1;
 	unsigned rational : 1;
@@ -229,6 +232,19 @@ void isl_tab_dump(__isl_keep struct isl_tab *tab);
 struct isl_map *isl_tab_basic_map_partial_lexopt(
 		struct isl_basic_map *bmap, struct isl_basic_set *dom,
 		struct isl_set **empty, int max);
+
+/* An isl_region represents a sequence of consecutive variables.
+ * pos is the location (starting at 0) of the first variable in the sequence.
+ */
+struct isl_region {
+	int pos;
+	int len;
+};
+
+__isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
+	__isl_take isl_basic_set *bset, int n_op, int n_region,
+	struct isl_region *region,
+	int (*conflict)(int con, void *user), void *user);
 
 /* private */
 

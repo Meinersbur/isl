@@ -1149,6 +1149,50 @@ static void check_lexpos(struct isl_tab *tab)
 	}
 }
 
+/* Report to the caller that the given constraint is part of an encountered
+ * conflict.
+ */
+static int report_conflicting_constraint(struct isl_tab *tab, int con)
+{
+	return tab->conflict(con, tab->conflict_user);
+}
+
+/* Given a conflicting row in the tableau, report all constraints
+ * involved in the row to the caller.  That is, the row itself
+ * (if represents a constraint) and all constraint columns with
+ * non-zero (and therefore negative) coefficient.
+ */
+static int report_conflict(struct isl_tab *tab, int row)
+{
+	int j;
+	isl_int *tr;
+
+	if (!tab->conflict)
+		return 0;
+
+	if (tab->row_var[row] < 0 &&
+	    report_conflicting_constraint(tab, ~tab->row_var[row]) < 0)
+		return -1;
+
+	tr = tab->mat->row[row] + 2 + tab->M;
+
+	for (j = tab->n_dead; j < tab->n_col; ++j) {
+		if (tab->col_var[j] >= 0 &&
+		    (tab->col_var[j] < tab->n_param  ||
+		    tab->col_var[j] >= tab->n_var - tab->n_div))
+			continue;
+
+		if (!isl_int_is_neg(tr[j]))
+			continue;
+
+		if (tab->col_var[j] < 0 &&
+		    report_conflicting_constraint(tab, ~tab->col_var[j]) < 0)
+			return -1;
+	}
+
+	return 0;
+}
+
 /* Resolve all known or obviously violated constraints through pivoting.
  * In particular, as long as we can find any violated constraint, we
  * look for a pivoting column that would result in the lexicographically
@@ -1167,6 +1211,8 @@ static int restore_lexmin(struct isl_tab *tab)
 	while ((row = first_neg(tab)) != -1) {
 		col = lexmin_pivot_col(tab, row);
 		if (col >= tab->n_col) {
+			if (report_conflict(tab, row) < 0)
+				return -1;
 			if (isl_tab_mark_empty(tab) < 0)
 				return -1;
 			return 0;
@@ -4629,4 +4675,283 @@ int isl_basic_map_foreach_lexmax(__isl_keep isl_basic_map *bmap,
 	void *user)
 {
 	return isl_basic_map_foreach_lexopt(bmap, 1, fn, user);
+}
+
+/* Check if the given sequence of len variables starting at pos
+ * represents a trivial (i.e., zero) solution.
+ * The variables are assumed to be non-negative and to come in pairs,
+ * with each pair representing a variable of unrestricted sign.
+ * The solution is trivial if each such pair in the sequence consists
+ * of two identical values, meaning that the variable being represented
+ * has value zero.
+ */
+static int region_is_trivial(struct isl_tab *tab, int pos, int len)
+{
+	int i;
+
+	if (len == 0)
+		return 0;
+
+	for (i = 0; i < len; i +=  2) {
+		int neg_row;
+		int pos_row;
+
+		neg_row = tab->var[pos + i].is_row ?
+				tab->var[pos + i].index : -1;
+		pos_row = tab->var[pos + i + 1].is_row ?
+				tab->var[pos + i + 1].index : -1;
+
+		if ((neg_row < 0 ||
+		     isl_int_is_zero(tab->mat->row[neg_row][1])) &&
+		    (pos_row < 0 ||
+		     isl_int_is_zero(tab->mat->row[pos_row][1])))
+			continue;
+
+		if (neg_row < 0 || pos_row < 0)
+			return 0;
+		if (isl_int_ne(tab->mat->row[neg_row][1],
+			       tab->mat->row[pos_row][1]))
+			return 0;
+	}
+
+	return 1;
+}
+
+/* Return the index of the first trivial region or -1 if all regions
+ * are non-trivial.
+ */
+static int first_trivial_region(struct isl_tab *tab,
+	int n_region, struct isl_region *region)
+{
+	int i;
+
+	for (i = 0; i < n_region; ++i) {
+		if (region_is_trivial(tab, region[i].pos, region[i].len))
+			return i;
+	}
+
+	return -1;
+}
+
+/* Check if the solution is optimal, i.e., whether the first
+ * n_op entries are zero.
+ */
+static int is_optimal(__isl_keep isl_vec *sol, int n_op)
+{
+	int i;
+
+	for (i = 0; i < n_op; ++i)
+		if (!isl_int_is_zero(sol->el[1 + i]))
+			return 0;
+	return 1;
+}
+
+/* Add constraints to "tab" that ensure that any solution is significantly
+ * better that that represented by "sol".  That is, find the first
+ * relevant (within first n_op) non-zero coefficient and force it (along
+ * with all previous coefficients) to be zero.
+ * If the solution is already optimal (all relevant coefficients are zero),
+ * then just mark the table as empty.
+ */
+static int force_better_solution(struct isl_tab *tab,
+	__isl_keep isl_vec *sol, int n_op)
+{
+	int i;
+	isl_ctx *ctx;
+	isl_vec *v = NULL;
+
+	if (!sol)
+		return -1;
+
+	for (i = 0; i < n_op; ++i)
+		if (!isl_int_is_zero(sol->el[1 + i]))
+			break;
+
+	if (i == n_op) {
+		if (isl_tab_mark_empty(tab) < 0)
+			return -1;
+		return 0;
+	}
+
+	ctx = isl_vec_get_ctx(sol);
+	v = isl_vec_alloc(ctx, 1 + tab->n_var);
+	if (!v)
+		return -1;
+
+	for (; i >= 0; --i) {
+		v = isl_vec_clr(v);
+		isl_int_set_si(v->el[1 + i], -1);
+		if (add_lexmin_eq(tab, v->el) < 0)
+			goto error;
+	}
+
+	isl_vec_free(v);
+	return 0;
+error:
+	isl_vec_free(v);
+	return -1;
+}
+
+struct isl_trivial {
+	int update;
+	int region;
+	int side;
+	struct isl_tab_undo *snap;
+};
+
+/* Return the lexicographically smallest non-trivial solution of the
+ * given ILP problem.
+ *
+ * All variables are assumed to be non-negative.
+ *
+ * n_op is the number of initial coordinates to optimize.
+ * That is, once a solution has been found, we will only continue looking
+ * for solution that result in significantly better values for those
+ * initial coordinates.  That is, we only continue looking for solutions
+ * that increase the number of initial zeros in this sequence.
+ *
+ * A solution is non-trivial, if it is non-trivial on each of the
+ * specified regions.  Each region represents a sequence of pairs
+ * of variables.  A solution is non-trivial on such a region if
+ * at least one of these pairs consists of different values, i.e.,
+ * such that the non-negative variable represented by the pair is non-zero.
+ *
+ * Whenever a conflict is encountered, all constraints involved are
+ * reported to the caller through a call to "conflict".
+ *
+ * We perform a simple branch-and-bound backtracking search.
+ * Each level in the search represents initially trivial region that is forced
+ * to be non-trivial.
+ * At each level we consider n cases, where n is the length of the region.
+ * In terms of the n/2 variables of unrestricted signs being encoded by
+ * the region, we consider the cases
+ *	x_0 >= 1
+ *	x_0 <= -1
+ *	x_0 = 0 and x_1 >= 1
+ *	x_0 = 0 and x_1 <= -1
+ *	x_0 = 0 and x_1 = 0 and x_2 >= 1
+ *	x_0 = 0 and x_1 = 0 and x_2 <= -1
+ *	...
+ * The cases are considered in this order, assuming that each pair
+ * x_i_a x_i_b represents the value x_i_b - x_i_a.
+ * That is, x_0 >= 1 is enforced by adding the constraint
+ *	x_0_b - x_0_a >= 1
+ */
+__isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
+	__isl_take isl_basic_set *bset, int n_op, int n_region,
+	struct isl_region *region,
+	int (*conflict)(int con, void *user), void *user)
+{
+	int i, j;
+	int need_update = 0;
+	int r;
+	isl_ctx *ctx = isl_basic_set_get_ctx(bset);
+	isl_vec *v = NULL;
+	isl_vec *sol = isl_vec_alloc(ctx, 0);
+	struct isl_tab *tab;
+	struct isl_trivial *triv = NULL;
+	int level, init;
+
+	tab = tab_for_lexmin(isl_basic_map_from_range(bset), NULL, 0, 0);
+	if (!tab)
+		goto error;
+	tab->conflict = conflict;
+	tab->conflict_user = user;
+
+	v = isl_vec_alloc(ctx, 1 + tab->n_var);
+	triv = isl_calloc_array(ctx, struct isl_trivial, n_region);
+	if (!v || !triv)
+		goto error;
+
+	level = 0;
+	init = 1;
+
+	while (level >= 0) {
+		int side, base;
+
+		if (init) {
+			tab = cut_to_integer_lexmin(tab);
+			if (!tab)
+				goto error;
+			if (tab->empty)
+				goto backtrack;
+			r = first_trivial_region(tab, n_region, region);
+			if (r < 0) {
+				for (i = 0; i < level; ++i)
+					triv[i].update = 1;
+				isl_vec_free(sol);
+				sol = isl_tab_get_sample_value(tab);
+				if (!sol)
+					goto error;
+				if (is_optimal(sol, n_op))
+					break;
+				goto backtrack;
+			}
+			if (level >= n_region)
+				isl_die(ctx, isl_error_internal,
+					"nesting level too deep", goto error);
+			if (isl_tab_extend_cons(tab,
+					    2 * region[r].len + 2 * n_op) < 0)
+				goto error;
+			triv[level].region = r;
+			triv[level].side = 0;
+		}
+
+		r = triv[level].region;
+		side = triv[level].side;
+		base = 2 * (side/2);
+
+		if (side >= region[r].len) {
+backtrack:
+			level--;
+			init = 0;
+			if (level >= 0)
+				if (isl_tab_rollback(tab, triv[level].snap) < 0)
+					goto error;
+			continue;
+		}
+
+		if (triv[level].update) {
+			if (force_better_solution(tab, sol, n_op) < 0)
+				goto error;
+			triv[level].update = 0;
+		}
+
+		if (side == base && base >= 2) {
+			for (j = base - 2; j < base; ++j) {
+				v = isl_vec_clr(v);
+				isl_int_set_si(v->el[1 + region[r].pos + j], 1);
+				if (add_lexmin_eq(tab, v->el) < 0)
+					goto error;
+			}
+		}
+
+		triv[level].snap = isl_tab_snap(tab);
+		if (isl_tab_push_basis(tab) < 0)
+			goto error;
+
+		v = isl_vec_clr(v);
+		isl_int_set_si(v->el[0], -1);
+		isl_int_set_si(v->el[1 + region[r].pos + side], -1);
+		isl_int_set_si(v->el[1 + region[r].pos + (side ^ 1)], 1);
+		tab = add_lexmin_ineq(tab, v->el);
+
+		triv[level].side++;
+		level++;
+		init = 1;
+	}
+
+	free(triv);
+	isl_vec_free(v);
+	isl_tab_free(tab);
+	isl_basic_set_free(bset);
+
+	return sol;
+error:
+	free(triv);
+	isl_vec_free(v);
+	isl_tab_free(tab);
+	isl_basic_set_free(bset);
+	isl_vec_free(sol);
+	return NULL;
 }
