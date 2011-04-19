@@ -228,4 +228,5 @@ install-data-local: $(srcdir)/isl.py
 	'') echo Cannot find isl library name. GDB bindings not installed.;; \
 	*) echo $(INSTALL_DATA) $(srcdir)/isl.py \
 		$(DESTDIR)$(libdir)/$$libisl-gdb.py; \
+	test -z "$(libdir)" || $(MKDIR_P) "$(DESTDIR)$(libdir)"; \
 	$(INSTALL_DATA) $(srcdir)/isl.py $(DESTDIR)$(libdir)/$$libisl-gdb.py; esac
