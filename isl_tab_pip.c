@@ -1155,31 +1155,28 @@ static void check_lexpos(struct isl_tab *tab)
  * smallest increment in the sample point.  If there is no such column
  * then the tableau is infeasible.
  */
-static struct isl_tab *restore_lexmin(struct isl_tab *tab) WARN_UNUSED;
-static struct isl_tab *restore_lexmin(struct isl_tab *tab)
+static int restore_lexmin(struct isl_tab *tab) WARN_UNUSED;
+static int restore_lexmin(struct isl_tab *tab)
 {
 	int row, col;
 
 	if (!tab)
-		return NULL;
+		return -1;
 	if (tab->empty)
-		return tab;
+		return 0;
 	while ((row = first_neg(tab)) != -1) {
 		col = lexmin_pivot_col(tab, row);
 		if (col >= tab->n_col) {
 			if (isl_tab_mark_empty(tab) < 0)
-				goto error;
-			return tab;
+				return -1;
+			return 0;
 		}
 		if (col < 0)
-			goto error;
+			return -1;
 		if (isl_tab_pivot(tab, row, col) < 0)
-			goto error;
+			return -1;
 	}
-	return tab;
-error:
-	isl_tab_free(tab);
-	return NULL;
+	return 0;
 }
 
 /* Given a row that represents an equality, look for an appropriate
@@ -1320,8 +1317,9 @@ static struct isl_tab *add_lexmin_eq(struct isl_tab *tab, isl_int *eq)
 		return tab;
 	}
 
-	tab = restore_lexmin(tab);
-	if (!tab || tab->empty)
+	if (restore_lexmin(tab) < 0)
+		goto error;
+	if (tab->empty)
 		return tab;
 
 	isl_seq_neg(eq, eq, 1 + tab->n_var);
@@ -1333,8 +1331,9 @@ static struct isl_tab *add_lexmin_eq(struct isl_tab *tab, isl_int *eq)
 	if (isl_tab_push_var(tab, isl_tab_undo_nonneg, &tab->con[r2]) < 0)
 		goto error;
 
-	tab = restore_lexmin(tab);
-	if (!tab || tab->empty)
+	if (restore_lexmin(tab) < 0)
+		goto error;
+	if (tab->empty)
 		return tab;
 
 	if (!tab->con[r1].is_row) {
@@ -1392,8 +1391,9 @@ static struct isl_tab *add_lexmin_ineq(struct isl_tab *tab, isl_int *ineq)
 		return tab;
 	}
 
-	tab = restore_lexmin(tab);
-	if (tab && !tab->empty && tab->con[r].is_row &&
+	if (restore_lexmin(tab) < 0)
+		goto error;
+	if (!tab->empty && tab->con[r].is_row &&
 		 isl_tab_row_is_redundant(tab, tab->con[r].index))
 		if (isl_tab_mark_redundant(tab, tab->con[r].index) < 0)
 			goto error;
@@ -1604,8 +1604,9 @@ static struct isl_tab *cut_to_integer_lexmin(struct isl_tab *tab)
 			if (row < 0)
 				goto error;
 		} while ((var = next_non_integer_var(tab, var, &flags)) != -1);
-		tab = restore_lexmin(tab);
-		if (!tab || tab->empty)
+		if (restore_lexmin(tab) < 0)
+			goto error;
+		if (tab->empty)
 			break;
 	}
 	return tab;
@@ -2017,8 +2018,8 @@ static struct isl_tab *tab_for_lexmin(struct isl_basic_map *bmap,
 		if (!tab || tab->empty)
 			return tab;
 	}
-	if (bmap->n_eq)
-		tab = restore_lexmin(tab);
+	if (bmap->n_eq && restore_lexmin(tab) < 0)
+		goto error;
 	for (i = 0; i < bmap->n_ineq; ++i) {
 		if (max)
 			isl_seq_neg(bmap->ineq[i] + 1 + tab->n_param,
@@ -2514,7 +2515,8 @@ static struct isl_context *isl_context_lex_alloc(struct isl_basic_set *dom)
 	clex->context.op = &isl_context_lex_op;
 
 	clex->tab = context_tab_for_lexmin(isl_basic_set_copy(dom));
-	clex->tab = restore_lexmin(clex->tab);
+	if (restore_lexmin(clex->tab) < 0)
+		goto error;
 	clex->tab = check_integer_feasible(clex->tab);
 	if (!clex->tab)
 		goto error;
@@ -2994,7 +2996,8 @@ static void propagate_equalities(struct isl_context_gbr *cgbr,
 		if (isl_tab_kill_col(tab, j) < 0)
 			goto error;
 
-		tab = restore_lexmin(tab);
+		if (restore_lexmin(tab) < 0)
+			goto error;
 	}
 
 	isl_vec_free(eq);
@@ -3640,6 +3643,7 @@ error:
 static void find_solutions(struct isl_sol *sol, struct isl_tab *tab)
 {
 	struct isl_context *context;
+	int r;
 
 	if (!tab || sol->error)
 		goto error;
@@ -3651,7 +3655,7 @@ static void find_solutions(struct isl_sol *sol, struct isl_tab *tab)
 	if (context->op->is_empty(context))
 		goto done;
 
-	for (; tab && !tab->empty; tab = restore_lexmin(tab)) {
+	for (r = 0; r >= 0 && tab && !tab->empty; r = restore_lexmin(tab)) {
 		int flags;
 		int row;
 		enum isl_tab_row_sign sgn;
@@ -3745,6 +3749,8 @@ static void find_solutions(struct isl_sol *sol, struct isl_tab *tab)
 		if (row < 0)
 			goto error;
 	}
+	if (r < 0)
+		goto error;
 done:
 	sol_add(sol, tab);
 	isl_tab_free(tab);
