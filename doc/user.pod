@@ -1177,7 +1177,7 @@ is already known to be empty.
 
 =item * Wrapping
 
-The followning functions check whether the domain of the given
+The following functions check whether the domain of the given
 (basic) set is a wrapped relation.
 
 	int isl_basic_set_is_wrapping(
