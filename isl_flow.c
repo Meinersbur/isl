@@ -188,7 +188,7 @@ static int access_sort_cmp(const void *p1, const void *p2)
 
 	h1 = isl_map_get_hash(i1->source_map);
 	h2 = isl_map_get_hash(i2->source_map);
-	return h1 - h2;
+	return h1 > h2 ? 1 : h1 < h2 ? -1 : 0;
 }
 
 /* Sort the must source accesses in order of increasing number of shared
