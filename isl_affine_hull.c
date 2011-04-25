@@ -939,6 +939,7 @@ struct isl_basic_map *isl_basic_map_affine_hull(struct isl_basic_map *bmap)
 	bmap = isl_basic_map_cow(bmap);
 	if (bmap)
 		isl_basic_map_free_inequality(bmap, bmap->n_ineq);
+	bmap = isl_basic_map_finalize(bmap);
 	return bmap;
 }
 
