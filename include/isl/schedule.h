@@ -4,6 +4,10 @@
 #include <isl/union_set.h>
 #include <isl/union_map.h>
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 struct isl_schedule;
 typedef struct isl_schedule isl_schedule;
 
@@ -17,5 +21,9 @@ __isl_give isl_union_map *isl_schedule_get_map(__isl_keep isl_schedule *sched);
 int isl_schedule_n_band(__isl_keep isl_schedule *sched);
 __isl_give isl_union_map *isl_schedule_get_band(__isl_keep isl_schedule *sched,
 	unsigned band);
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif
