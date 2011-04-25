@@ -306,6 +306,12 @@ error:
 	return NULL;
 }
 
+__isl_give isl_dim *isl_constraint_get_dim(
+	__isl_keep isl_constraint *constraint)
+{
+	return constraint ? isl_basic_map_get_dim(constraint->bmap) : NULL;
+}
+
 int isl_constraint_dim(struct isl_constraint *constraint,
 	enum isl_dim_type type)
 {

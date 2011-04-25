@@ -456,6 +456,10 @@ specification of the original object.
 	__isl_give isl_dim *isl_union_map_get_dim(
 		__isl_keep isl_union_map *umap);
 
+	#include <isl/constraint.h>
+	__isl_give isl_dim *isl_constraint_get_dim(
+		__isl_keep isl_constraint *constraint);
+
 	#include <isl/polynomial.h>
 	__isl_give isl_dim *isl_qpolynomial_get_dim(
 		__isl_keep isl_qpolynomial *qp);
