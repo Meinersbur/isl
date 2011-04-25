@@ -386,7 +386,6 @@ static void graph_free(isl_ctx *ctx, struct isl_sched_graph *graph)
  */
 static int extract_node(__isl_take isl_set *set, void *user)
 {
-	int i;
 	int nvar, nparam;
 	isl_ctx *ctx;
 	isl_dim *dim;
@@ -823,7 +822,6 @@ static int add_intra_proximity_constraints(struct isl_sched_graph *graph,
 	isl_ctx *ctx = isl_map_get_ctx(map);
 	isl_dim *dim;
 	isl_dim_map *dim_map;
-	isl_set *delta;
 	isl_basic_set *coef;
 	struct isl_sched_node *node = edge->src;
 
