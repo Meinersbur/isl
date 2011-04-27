@@ -101,6 +101,7 @@ int isl_mat_is_equal(__isl_keep isl_mat *mat1, __isl_keep isl_mat *mat2);
 int isl_mat_initial_non_zero_cols(__isl_keep isl_mat *mat);
 
 void isl_mat_print_internal(__isl_keep isl_mat *mat, FILE *out, int indent);
+void isl_mat_dump(__isl_keep isl_mat *mat);
 
 #if defined(__cplusplus)
 }

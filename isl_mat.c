@@ -1221,6 +1221,11 @@ void isl_mat_print_internal(__isl_keep isl_mat *mat, FILE *out, int indent)
 	}
 }
 
+void isl_mat_dump(__isl_keep isl_mat *mat)
+{
+	isl_mat_print_internal(mat, stderr, 0);
+}
+
 struct isl_mat *isl_mat_drop_cols(struct isl_mat *mat, unsigned col, unsigned n)
 {
 	int r;
