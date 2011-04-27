@@ -95,7 +95,7 @@ int main(int argc, char **argv)
 
 	bset = isl_basic_set_read_from_file(ctx, stdin, 0);
 	samples = isl_basic_set_samples(bset);
-	isl_mat_dump(samples, stdout, 0);
+	isl_mat_print_internal(samples, stdout, 0);
 	isl_mat_free(samples);
 	isl_ctx_free(ctx);
 

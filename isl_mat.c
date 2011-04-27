@@ -1192,7 +1192,7 @@ error:
 	return NULL;
 }
 
-void isl_mat_dump(struct isl_mat *mat, FILE *out, int indent)
+void isl_mat_print_internal(__isl_keep isl_mat *mat, FILE *out, int indent)
 {
 	int i, j;
 

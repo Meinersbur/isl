@@ -3320,7 +3320,7 @@ static void isl_tab_print_internal(__isl_keep struct isl_tab *tab,
 	tab->mat->n_row = tab->n_row;
 	c = tab->mat->n_col;
 	tab->mat->n_col = 2 + tab->M + tab->n_col;
-	isl_mat_dump(tab->mat, out, indent);
+	isl_mat_print_internal(tab->mat, out, indent);
 	tab->mat->n_row = r;
 	tab->mat->n_col = c;
 	if (tab->bmap)
