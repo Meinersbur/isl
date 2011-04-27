@@ -85,6 +85,11 @@ void FN(LIST(EL),free)(__isl_take LIST(EL) *list)
 	free(list);
 }
 
+int FN(FN(LIST(EL),n),BASE)(__isl_keep LIST(EL) *list)
+{
+	return list ? list->n : 0;
+}
+
 int FN(LIST(EL),foreach)(__isl_keep LIST(EL) *list,
 	int (*fn)(__isl_take EL *el, void *user), void *user)
 {
