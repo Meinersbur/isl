@@ -40,6 +40,15 @@ __isl_give LIST(EL) *FN(LIST(EL),alloc)(isl_ctx *ctx, int n)
 	return list;
 }
 
+__isl_give LIST(EL) *FN(LIST(EL),copy)(__isl_keep LIST(EL) *list)
+{
+	if (!list)
+		return NULL;
+
+	list->ref++;
+	return list;
+}
+
 __isl_give LIST(EL) *FN(LIST(EL),add)(__isl_take LIST(EL) *list,
 	__isl_take struct EL *el)
 {
