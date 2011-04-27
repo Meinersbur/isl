@@ -90,6 +90,16 @@ int FN(FN(LIST(EL),n),BASE)(__isl_keep LIST(EL) *list)
 	return list ? list->n : 0;
 }
 
+__isl_give EL *FN(FN(LIST(EL),get),BASE)(__isl_keep LIST(EL) *list, int index)
+{
+	if (!list)
+		return NULL;
+	if (index < 0 || index >= list->n)
+		isl_die(list->ctx, isl_error_invalid,
+			"index out of bounds", return NULL);
+	return FN(EL,copy)(list->p[index]);
+}
+
 int FN(LIST(EL),foreach)(__isl_keep LIST(EL) *list,
 	int (*fn)(__isl_take EL *el, void *user), void *user)
 {
