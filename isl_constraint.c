@@ -15,6 +15,11 @@
 #include <isl_dim_private.h>
 #include <isl/seq.h>
 
+isl_ctx *isl_constraint_get_ctx(__isl_keep isl_constraint *c)
+{
+	return c ? c->ctx : NULL;
+}
+
 static unsigned n(struct isl_constraint *c, enum isl_dim_type type)
 {
 	return isl_basic_map_dim(c->bmap, type);
