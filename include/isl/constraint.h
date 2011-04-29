@@ -12,6 +12,7 @@
 
 #include <isl/div.h>
 #include <isl/set.h>
+#include <isl/printer.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -105,6 +106,10 @@ __isl_give isl_basic_map *isl_basic_map_from_constraint(
 	__isl_take isl_constraint *constraint);
 struct isl_basic_set *isl_basic_set_from_constraint(
 	struct isl_constraint *constraint);
+
+__isl_give isl_printer *isl_printer_print_constraint(__isl_take isl_printer *p,
+	__isl_keep isl_constraint *c);
+void isl_constraint_dump(__isl_keep isl_constraint *c);
 
 #if defined(__cplusplus)
 }

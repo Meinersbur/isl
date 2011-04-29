@@ -21,6 +21,7 @@
 #include <isl_dim_private.h>
 #include <isl_mat_private.h>
 #include <isl/union_map.h>
+#include <isl/constraint.h>
 
 static const char *s_to[2] = { " -> ", " \\to " };
 static const char *s_and[2] = { " and ", " \\wedge " };
@@ -2040,4 +2041,35 @@ __isl_give isl_printer *isl_printer_print_union_pw_qpolynomial_fold(
 error:
 	isl_printer_free(p);
 	return NULL;
+}
+
+__isl_give isl_printer *isl_printer_print_constraint(__isl_take isl_printer *p,
+	__isl_keep isl_constraint *c)
+{
+	isl_basic_map *bmap;
+
+	if (!p || !c)
+		goto error;
+
+	bmap = isl_basic_map_from_constraint(isl_constraint_copy(c));
+	p = isl_printer_print_basic_map(p, bmap);
+	isl_basic_map_free(bmap);
+	return p;
+error:
+	isl_printer_free(p);
+	return NULL;
+}
+
+void isl_constraint_dump(__isl_keep isl_constraint *c)
+{
+	isl_printer *printer;
+
+	if (!c)
+		return;
+
+	printer = isl_printer_to_file(isl_constraint_get_ctx(c), stderr);
+	printer = isl_printer_print_constraint(printer, c);
+	printer = isl_printer_end_line(printer);
+
+	isl_printer_free(printer);
 }
