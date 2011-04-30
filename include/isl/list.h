@@ -12,6 +12,10 @@
 
 #include <isl/ctx.h>
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 struct isl_basic_set;
 
 struct isl_basic_set_list {
@@ -29,5 +33,9 @@ void isl_basic_set_list_free(struct isl_basic_set_list *list);
 struct isl_basic_set_list *isl_basic_set_list_add(
 	struct isl_basic_set_list *list,
 	struct isl_basic_set *bset);
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif
