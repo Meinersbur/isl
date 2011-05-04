@@ -3926,7 +3926,8 @@ struct isl_set *isl_map_range(struct isl_map *map)
 
 	if (!map)
 		goto error;
-	if (isl_map_dim(map, isl_dim_in) == 0)
+	if (isl_map_dim(map, isl_dim_in) == 0 &&
+	    !isl_dim_is_named_or_nested(map->dim, isl_dim_in))
 		return (isl_set *)map;
 
 	map = isl_map_cow(map);
