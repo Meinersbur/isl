@@ -35,7 +35,7 @@ static int has_key(const void *entry, const void *key)
 	const struct isl_map_basic_set_pair *pair = entry;
 	isl_map *map = (isl_map *)key;
 
-	return isl_map_fast_is_equal(pair->key, map);
+	return isl_map_plain_is_equal(pair->key, map);
 }
 
 int isl_hmap_map_basic_set_has(isl_ctx *ctx,

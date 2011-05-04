@@ -259,7 +259,7 @@ __isl_give isl_union_map *isl_union_map_add_map(__isl_take isl_union_map *umap,
 	uint32_t hash;
 	struct isl_hash_table_entry *entry;
 
-	if (isl_map_fast_is_empty(map)) {
+	if (isl_map_plain_is_empty(map)) {
 		isl_map_free(map);
 		return umap;
 	}
@@ -1452,7 +1452,7 @@ static int sample_entry(void **entry, void *user)
 	*sample = isl_map_sample(isl_map_copy(map));
 	if (!*sample)
 		return -1;
-	if (!isl_basic_map_fast_is_empty(*sample))
+	if (!isl_basic_map_plain_is_empty(*sample))
 		return -1;
 	return 0;
 }

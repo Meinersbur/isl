@@ -789,7 +789,7 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_fold(
 					isl_set_copy(pw2->p[j].set));
 			common = isl_set_intersect(isl_set_copy(pw1->p[i].set),
 						isl_set_copy(pw2->p[j].set));
-			if (isl_set_fast_is_empty(common)) {
+			if (isl_set_plain_is_empty(common)) {
 				isl_set_free(common);
 				continue;
 			}

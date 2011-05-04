@@ -2115,7 +2115,7 @@ static __isl_give isl_map *map_intersect_add_constraint(
 	map1 = isl_map_cow(map1);
 	if (!map1)
 		goto error;
-	if (isl_map_fast_is_empty(map1)) {
+	if (isl_map_plain_is_empty(map1)) {
 		isl_map_free(map2);
 		return map1;
 	}
@@ -2131,7 +2131,7 @@ static __isl_give isl_map *map_intersect_add_constraint(
 	if (!map1->p[0])
 		goto error;
 
-	if (isl_basic_map_fast_is_empty(map1->p[0])) {
+	if (isl_basic_map_plain_is_empty(map1->p[0])) {
 		isl_basic_map_free(map1->p[0]);
 		map1->n = 0;
 	}
@@ -2154,11 +2154,11 @@ struct isl_map *isl_map_intersect(struct isl_map *map1, struct isl_map *map2)
 	if (!map1 || !map2)
 		goto error;
 
-	if (isl_map_fast_is_empty(map1)) {
+	if (isl_map_plain_is_empty(map1)) {
 		isl_map_free(map2);
 		return map1;
 	}
-	if (isl_map_fast_is_empty(map2)) {
+	if (isl_map_plain_is_empty(map2)) {
 		isl_map_free(map1);
 		return map2;
 	}
@@ -4215,7 +4215,7 @@ __isl_give isl_map *isl_map_add_basic_map(__isl_take isl_map *map,
 {
 	if (!bmap || !map)
 		goto error;
-	if (isl_basic_map_fast_is_empty(bmap)) {
+	if (isl_basic_map_plain_is_empty(bmap)) {
 		isl_basic_map_free(bmap);
 		return map;
 	}
@@ -4635,7 +4635,7 @@ static __isl_give isl_map *basic_map_partial_lexopt(
 	if (!dom)
 		goto error;
 
-	if (isl_set_fast_is_empty(dom)) {
+	if (isl_set_plain_is_empty(dom)) {
 		res = isl_map_empty_like_basic_map(bmap);
 		*empty = isl_set_empty_like(dom);
 		isl_set_free(dom);
@@ -4731,7 +4731,7 @@ static __isl_give isl_map *isl_map_partial_lexopt(
 	if (!map || !dom)
 		goto error;
 
-	if (isl_map_fast_is_empty(map)) {
+	if (isl_map_plain_is_empty(map)) {
 		if (empty)
 			*empty = dom;
 		else
@@ -5784,7 +5784,7 @@ static int foreach_orthant(__isl_take isl_set *set, int *signs, int first,
 
 	if (!set)
 		return -1;
-	if (isl_set_fast_is_empty(set)) {
+	if (isl_set_plain_is_empty(set)) {
 		isl_set_free(set);
 		return 0;
 	}
@@ -5824,7 +5824,7 @@ int isl_set_foreach_orthant(__isl_keep isl_set *set,
 
 	if (!set)
 		return -1;
-	if (isl_set_fast_is_empty(set))
+	if (isl_set_plain_is_empty(set))
 		return 0;
 
 	nparam = isl_set_dim(set, isl_dim_param);
@@ -5904,14 +5904,24 @@ int isl_map_is_empty(struct isl_map *map)
 	return 1;
 }
 
-int isl_map_fast_is_empty(struct isl_map *map)
+int isl_map_plain_is_empty(__isl_keep isl_map *map)
 {
 	return map ? map->n == 0 : -1;
 }
 
-int isl_set_fast_is_empty(struct isl_set *set)
+int isl_map_fast_is_empty(__isl_keep isl_map *map)
+{
+	return isl_map_plain_is_empty(map);
+}
+
+int isl_set_plain_is_empty(struct isl_set *set)
 {
 	return set ? set->n == 0 : -1;
+}
+
+int isl_set_fast_is_empty(__isl_keep isl_set *set)
+{
+	return isl_set_plain_is_empty(set);
 }
 
 int isl_set_is_empty(struct isl_set *set)
@@ -5998,7 +6008,7 @@ int isl_basic_set_is_universe(struct isl_basic_set *bset)
 	return bset->n_eq == 0 && bset->n_ineq == 0;
 }
 
-int isl_map_fast_is_universe(__isl_keep isl_map *map)
+int isl_map_plain_is_universe(__isl_keep isl_map *map)
 {
 	int i;
 
@@ -6014,9 +6024,14 @@ int isl_map_fast_is_universe(__isl_keep isl_map *map)
 	return 0;
 }
 
+int isl_set_plain_is_universe(__isl_keep isl_set *set)
+{
+	return isl_map_plain_is_universe((isl_map *) set);
+}
+
 int isl_set_fast_is_universe(__isl_keep isl_set *set)
 {
-	return isl_map_fast_is_universe((isl_map *) set);
+	return isl_set_plain_is_universe(set);
 }
 
 int isl_basic_map_is_empty(struct isl_basic_map *bmap)
@@ -6065,18 +6080,28 @@ int isl_basic_map_is_empty(struct isl_basic_map *bmap)
 	return empty;
 }
 
-int isl_basic_map_fast_is_empty(struct isl_basic_map *bmap)
+int isl_basic_map_plain_is_empty(__isl_keep isl_basic_map *bmap)
 {
 	if (!bmap)
 		return -1;
 	return ISL_F_ISSET(bmap, ISL_BASIC_MAP_EMPTY);
 }
 
-int isl_basic_set_fast_is_empty(struct isl_basic_set *bset)
+int isl_basic_map_fast_is_empty(__isl_keep isl_basic_map *bmap)
+{
+	return isl_basic_map_plain_is_empty(bmap);
+}
+
+int isl_basic_set_plain_is_empty(__isl_keep isl_basic_set *bset)
 {
 	if (!bset)
 		return -1;
 	return ISL_F_ISSET(bset, ISL_BASIC_SET_EMPTY);
+}
+
+int isl_basic_set_fast_is_empty(__isl_keep isl_basic_set *bset)
+{
+	return isl_basic_set_plain_is_empty(bset);
 }
 
 int isl_basic_set_is_empty(struct isl_basic_set *bset)
@@ -6517,7 +6542,7 @@ int isl_set_follows_at(__isl_keep isl_set *set1,
 	return follows;
 }
 
-static int isl_basic_map_fast_has_fixed_var(struct isl_basic_map *bmap,
+static int isl_basic_map_plain_has_fixed_var(__isl_keep isl_basic_map *bmap,
 	unsigned pos, isl_int *val)
 {
 	int i;
@@ -6546,7 +6571,7 @@ static int isl_basic_map_fast_has_fixed_var(struct isl_basic_map *bmap,
 	return 0;
 }
 
-static int isl_map_fast_has_fixed_var(struct isl_map *map,
+static int isl_map_plain_has_fixed_var(__isl_keep isl_map *map,
 	unsigned pos, isl_int *val)
 {
 	int i;
@@ -6559,12 +6584,12 @@ static int isl_map_fast_has_fixed_var(struct isl_map *map,
 	if (map->n == 0)
 		return 0;
 	if (map->n == 1)
-		return isl_basic_map_fast_has_fixed_var(map->p[0], pos, val); 
+		return isl_basic_map_plain_has_fixed_var(map->p[0], pos, val); 
 	isl_int_init(v);
 	isl_int_init(tmp);
-	fixed = isl_basic_map_fast_has_fixed_var(map->p[0], pos, &v); 
+	fixed = isl_basic_map_plain_has_fixed_var(map->p[0], pos, &v); 
 	for (i = 1; fixed == 1 && i < map->n; ++i) {
-		fixed = isl_basic_map_fast_has_fixed_var(map->p[i], pos, &tmp); 
+		fixed = isl_basic_map_plain_has_fixed_var(map->p[i], pos, &tmp); 
 		if (fixed == 1 && isl_int_ne(tmp, v))
 			fixed = 0;
 	}
@@ -6575,68 +6600,82 @@ static int isl_map_fast_has_fixed_var(struct isl_map *map,
 	return fixed;
 }
 
-static int isl_basic_set_fast_has_fixed_var(struct isl_basic_set *bset,
+static int isl_basic_set_plain_has_fixed_var(__isl_keep isl_basic_set *bset,
 	unsigned pos, isl_int *val)
 {
-	return isl_basic_map_fast_has_fixed_var((struct isl_basic_map *)bset,
+	return isl_basic_map_plain_has_fixed_var((struct isl_basic_map *)bset,
 						pos, val);
 }
 
-static int isl_set_fast_has_fixed_var(struct isl_set *set, unsigned pos,
+static int isl_set_plain_has_fixed_var(__isl_keep isl_set *set, unsigned pos,
 	isl_int *val)
 {
-	return isl_map_fast_has_fixed_var((struct isl_map *)set, pos, val);
+	return isl_map_plain_has_fixed_var((struct isl_map *)set, pos, val);
 }
 
-int isl_basic_map_fast_is_fixed(struct isl_basic_map *bmap,
+int isl_basic_map_plain_is_fixed(__isl_keep isl_basic_map *bmap,
 	enum isl_dim_type type, unsigned pos, isl_int *val)
 {
 	if (pos >= isl_basic_map_dim(bmap, type))
 		return -1;
-	return isl_basic_map_fast_has_fixed_var(bmap,
+	return isl_basic_map_plain_has_fixed_var(bmap,
 		isl_basic_map_offset(bmap, type) - 1 + pos, val);
 }
 
-int isl_map_fast_is_fixed(struct isl_map *map,
+int isl_map_plain_is_fixed(__isl_keep isl_map *map,
 	enum isl_dim_type type, unsigned pos, isl_int *val)
 {
 	if (pos >= isl_map_dim(map, type))
 		return -1;
-	return isl_map_fast_has_fixed_var(map,
+	return isl_map_plain_has_fixed_var(map,
 		map_offset(map, type) - 1 + pos, val);
+}
+
+int isl_map_fast_is_fixed(__isl_keep isl_map *map,
+	enum isl_dim_type type, unsigned pos, isl_int *val)
+{
+	return isl_map_plain_is_fixed(map, type, pos, val);
 }
 
 /* Check if dimension dim has fixed value and if so and if val is not NULL,
  * then return this fixed value in *val.
  */
-int isl_basic_set_fast_dim_is_fixed(struct isl_basic_set *bset, unsigned dim,
-	isl_int *val)
+int isl_basic_set_plain_dim_is_fixed(__isl_keep isl_basic_set *bset,
+	unsigned dim, isl_int *val)
 {
-	return isl_basic_set_fast_has_fixed_var(bset,
+	return isl_basic_set_plain_has_fixed_var(bset,
 					isl_basic_set_n_param(bset) + dim, val);
 }
 
 /* Check if dimension dim has fixed value and if so and if val is not NULL,
  * then return this fixed value in *val.
  */
-int isl_set_fast_dim_is_fixed(struct isl_set *set, unsigned dim, isl_int *val)
+int isl_set_plain_dim_is_fixed(__isl_keep isl_set *set,
+	unsigned dim, isl_int *val)
 {
-	return isl_set_fast_has_fixed_var(set, isl_set_n_param(set) + dim, val);
+	return isl_set_plain_has_fixed_var(set, isl_set_n_param(set) + dim, val);
+}
+
+int isl_set_fast_dim_is_fixed(__isl_keep isl_set *set,
+	unsigned dim, isl_int *val)
+{
+	return isl_set_plain_dim_is_fixed(set, dim, val);
 }
 
 /* Check if input variable in has fixed value and if so and if val is not NULL,
  * then return this fixed value in *val.
  */
-int isl_map_fast_input_is_fixed(struct isl_map *map, unsigned in, isl_int *val)
+int isl_map_plain_input_is_fixed(__isl_keep isl_map *map,
+	unsigned in, isl_int *val)
 {
-	return isl_map_fast_has_fixed_var(map, isl_map_n_param(map) + in, val);
+	return isl_map_plain_has_fixed_var(map, isl_map_n_param(map) + in, val);
 }
 
 /* Check if dimension dim has an (obvious) fixed lower bound and if so
  * and if val is not NULL, then return this lower bound in *val.
  */
-int isl_basic_set_fast_dim_has_fixed_lower_bound(struct isl_basic_set *bset,
-	unsigned dim, isl_int *val)
+int isl_basic_set_plain_dim_has_fixed_lower_bound(
+	__isl_keep isl_basic_set *bset, unsigned dim, isl_int *val)
 {
 	int i, i_eq = -1, i_ineq = -1;
 	isl_int *c;
@@ -6677,7 +6716,7 @@ int isl_basic_set_fast_dim_has_fixed_lower_bound(struct isl_basic_set *bset,
 	return 1;
 }
 
-int isl_set_fast_dim_has_fixed_lower_bound(struct isl_set *set,
+int isl_set_plain_dim_has_fixed_lower_bound(__isl_keep isl_set *set,
 	unsigned dim, isl_int *val)
 {
 	int i;
@@ -6690,14 +6729,14 @@ int isl_set_fast_dim_has_fixed_lower_bound(struct isl_set *set,
 	if (set->n == 0)
 		return 0;
 	if (set->n == 1)
-		return isl_basic_set_fast_dim_has_fixed_lower_bound(set->p[0],
+		return isl_basic_set_plain_dim_has_fixed_lower_bound(set->p[0],
 								dim, val);
 	isl_int_init(v);
 	isl_int_init(tmp);
-	fixed = isl_basic_set_fast_dim_has_fixed_lower_bound(set->p[0],
+	fixed = isl_basic_set_plain_dim_has_fixed_lower_bound(set->p[0],
 								dim, &v);
 	for (i = 1; fixed == 1 && i < set->n; ++i) {
-		fixed = isl_basic_set_fast_dim_has_fixed_lower_bound(set->p[i],
+		fixed = isl_basic_set_plain_dim_has_fixed_lower_bound(set->p[i],
 								dim, &tmp);
 		if (fixed == 1 && isl_int_ne(tmp, v))
 			fixed = 0;
@@ -6785,7 +6824,7 @@ struct isl_basic_set *isl_basic_set_normalize(struct isl_basic_set *bset)
 						(struct isl_basic_map *)bset);
 }
 
-int isl_basic_map_fast_cmp(const __isl_keep isl_basic_map *bmap1,
+int isl_basic_map_plain_cmp(const __isl_keep isl_basic_map *bmap1,
 	const __isl_keep isl_basic_map *bmap2)
 {
 	int i, cmp;
@@ -6834,16 +6873,16 @@ int isl_basic_map_fast_cmp(const __isl_keep isl_basic_map *bmap1,
 	return 0;
 }
 
-int isl_basic_map_fast_is_equal(__isl_keep isl_basic_map *bmap1,
+int isl_basic_map_plain_is_equal(__isl_keep isl_basic_map *bmap1,
 	__isl_keep isl_basic_map *bmap2)
 {
-	return isl_basic_map_fast_cmp(bmap1, bmap2) == 0;
+	return isl_basic_map_plain_cmp(bmap1, bmap2) == 0;
 }
 
-int isl_basic_set_fast_is_equal(__isl_keep isl_basic_set *bset1,
+int isl_basic_set_plain_is_equal(__isl_keep isl_basic_set *bset1,
 	__isl_keep isl_basic_set *bset2)
 {
-	return isl_basic_map_fast_is_equal((isl_basic_map *)bset1,
+	return isl_basic_map_plain_is_equal((isl_basic_map *)bset1,
 					    (isl_basic_map *)bset2);
 }
 
@@ -6852,7 +6891,7 @@ static int qsort_bmap_cmp(const void *p1, const void *p2)
 	const struct isl_basic_map *bmap1 = *(const struct isl_basic_map **)p1;
 	const struct isl_basic_map *bmap2 = *(const struct isl_basic_map **)p2;
 
-	return isl_basic_map_fast_cmp(bmap1, bmap2);
+	return isl_basic_map_plain_cmp(bmap1, bmap2);
 }
 
 /* We normalize in place, but if anything goes wrong we need
@@ -6881,7 +6920,7 @@ struct isl_map *isl_map_normalize(struct isl_map *map)
 	if (!map)
 		return NULL;
 	for (i = map->n - 1; i >= 1; --i) {
-		if (!isl_basic_map_fast_is_equal(map->p[i-1], map->p[i]))
+		if (!isl_basic_map_plain_is_equal(map->p[i-1], map->p[i]))
 			continue;
 		isl_basic_map_free(map->p[i-1]);
 		for (j = i; j < map->n; ++j)
@@ -6900,7 +6939,7 @@ struct isl_set *isl_set_normalize(struct isl_set *set)
 	return (struct isl_set *)isl_map_normalize((struct isl_map *)set);
 }
 
-int isl_map_fast_is_equal(struct isl_map *map1, struct isl_map *map2)
+int isl_map_plain_is_equal(__isl_keep isl_map *map1, __isl_keep isl_map *map2)
 {
 	int i;
 	int equal;
@@ -6921,7 +6960,7 @@ int isl_map_fast_is_equal(struct isl_map *map1, struct isl_map *map2)
 		goto error;
 	equal = map1->n == map2->n;
 	for (i = 0; equal && i < map1->n; ++i) {
-		equal = isl_basic_map_fast_is_equal(map1->p[i], map2->p[i]);
+		equal = isl_basic_map_plain_is_equal(map1->p[i], map2->p[i]);
 		if (equal < 0)
 			goto error;
 	}
@@ -6934,10 +6973,20 @@ error:
 	return -1;
 }
 
-int isl_set_fast_is_equal(struct isl_set *set1, struct isl_set *set2)
+int isl_map_fast_is_equal(__isl_keep isl_map *map1, __isl_keep isl_map *map2)
 {
-	return isl_map_fast_is_equal((struct isl_map *)set1,
+	return isl_map_plain_is_equal(map1, map2);
+}
+
+int isl_set_plain_is_equal(__isl_keep isl_set *set1, __isl_keep isl_set *set2)
+{
+	return isl_map_plain_is_equal((struct isl_map *)set1,
 						(struct isl_map *)set2);
+}
+
+int isl_set_fast_is_equal(__isl_keep isl_set *set1, __isl_keep isl_set *set2)
+{
+	return isl_set_plain_is_equal(set1, set2);
 }
 
 /* Return an interval that ranges from min to max (inclusive)
@@ -7653,7 +7702,7 @@ int isl_basic_set_dims_get_sign(__isl_keep isl_basic_set *bset,
  * an equality that defines the output dimension in terms of
  * earlier dimensions.
  */
-int isl_basic_map_fast_is_single_valued(__isl_keep isl_basic_map *bmap)
+int isl_basic_map_plain_is_single_valued(__isl_keep isl_basic_map *bmap)
 {
 	int i, j;
 	unsigned total;
@@ -7684,7 +7733,7 @@ int isl_basic_map_fast_is_single_valued(__isl_keep isl_basic_map *bmap)
 
 /* Check if the given map is obviously single-valued.
  */
-int isl_map_fast_is_single_valued(__isl_keep isl_map *map)
+int isl_map_plain_is_single_valued(__isl_keep isl_map *map)
 {
 	int sv;
 
@@ -7695,7 +7744,7 @@ int isl_map_fast_is_single_valued(__isl_keep isl_map *map)
 	if (map->n >= 2)
 		return 0;
 
-	return isl_basic_map_fast_is_single_valued(map->p[0]);
+	return isl_basic_map_plain_is_single_valued(map->p[0]);
 }
 
 /* Check if the given map is single-valued.
@@ -7712,7 +7761,7 @@ int isl_map_is_single_valued(__isl_keep isl_map *map)
 	isl_map *id;
 	int sv;
 
-	sv = isl_map_fast_is_single_valued(map);
+	sv = isl_map_plain_is_single_valued(map);
 	if (sv < 0 || sv)
 		return sv;
 

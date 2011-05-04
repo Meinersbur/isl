@@ -461,7 +461,7 @@ static struct isl_basic_set *uset_affine_hull_bounded(struct isl_basic_set *bset
 	struct isl_tab *tab = NULL;
 	unsigned dim;
 
-	if (isl_basic_set_fast_is_empty(bset))
+	if (isl_basic_set_plain_is_empty(bset))
 		return bset;
 
 	dim = isl_basic_set_n_dim(bset);
@@ -764,7 +764,7 @@ static struct isl_basic_set *uset_affine_hull(struct isl_basic_set *bset)
 {
 	struct isl_basic_set *cone;
 
-	if (isl_basic_set_fast_is_empty(bset))
+	if (isl_basic_set_plain_is_empty(bset))
 		return bset;
 
 	cone = isl_basic_set_recession_cone(isl_basic_set_copy(bset));

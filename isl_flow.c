@@ -311,7 +311,7 @@ int isl_flow_foreach(__isl_keep isl_flow *deps,
 		return -1;
 
 	for (i = 0; i < deps->n_source; ++i) {
-		if (isl_map_fast_is_empty(deps->dep[i].map))
+		if (isl_map_plain_is_empty(deps->dep[i].map))
 			continue;
 		if (fn(isl_map_copy(deps->dep[i].map), deps->dep[i].must,
 				deps->dep[i].data, user) < 0)
@@ -475,7 +475,7 @@ static int intermediate_sources(__isl_keep isl_access_info *acc,
 	int k, level;
 	int depth = 2 * isl_map_dim(acc->source[j].map, isl_dim_in) + 1;
 
-	if (isl_map_fast_is_empty(temp_rel[j]))
+	if (isl_map_plain_is_empty(temp_rel[j]))
 		return 0;
 
 	for (k = j - 1; k >= 0; --k) {
@@ -498,7 +498,7 @@ static int intermediate_sources(__isl_keep isl_access_info *acc,
 			copy = isl_map_copy(temp_rel[j]);
 			T = last_later_source(acc, copy, j, sink_level, k,
 					      level, &trest);
-			if (isl_map_fast_is_empty(T)) {
+			if (isl_map_plain_is_empty(T)) {
 				isl_set_free(trest);
 				isl_map_free(T);
 				continue;
@@ -588,8 +588,8 @@ static __isl_give isl_map *all_intermediate_sources(
 	for (k = 0; k < acc->n_must; ++k) {
 		int plevel;
 
-		if (isl_map_fast_is_empty(may_rel[k]) &&
-		    isl_map_fast_is_empty(must_rel[k]))
+		if (isl_map_plain_is_empty(may_rel[k]) &&
+		    isl_map_plain_is_empty(must_rel[k]))
 			continue;
 
 		plevel = acc->level_before(acc->source[k].data,
@@ -741,7 +741,7 @@ static __isl_give isl_flow *compute_val_based_dependences(
 	maydo = isl_set_empty_like(mustdo);
 	if (!mustdo || !maydo)
 		goto error;
-	if (isl_set_fast_is_empty(mustdo))
+	if (isl_set_plain_is_empty(mustdo))
 		goto done;
 
 	must_rel = isl_alloc_array(ctx, struct isl_map *, acc->n_must);
@@ -777,8 +777,8 @@ static __isl_give isl_flow *compute_val_based_dependences(
 
 			intermediate_sources(acc, may_rel, j, level);
 
-			if (isl_set_fast_is_empty(mustdo) &&
-			    isl_set_fast_is_empty(maydo))
+			if (isl_set_plain_is_empty(mustdo) &&
+			    isl_set_plain_is_empty(maydo))
 				break;
 		}
 		for (j = j - 1; j >= 0; --j) {
@@ -828,8 +828,8 @@ static __isl_give isl_flow *compute_val_based_dependences(
 							     may_rel[j]);
 		}
 
-		if (isl_set_fast_is_empty(mustdo) &&
-		    isl_set_fast_is_empty(maydo))
+		if (isl_set_plain_is_empty(mustdo) &&
+		    isl_set_plain_is_empty(maydo))
 			break;
 	}
 
@@ -962,7 +962,7 @@ static __isl_give struct isl_sched_info *sched_info_alloc(
 		goto error;
 
 	for (i = 0; i < n; ++i)
-		info->is_cst[i] = isl_map_fast_is_fixed(map, isl_dim_in, i,
+		info->is_cst[i] = isl_map_plain_is_fixed(map, isl_dim_in, i,
 							&info->cst->el[i]);
 
 	return info;

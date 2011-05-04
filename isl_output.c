@@ -666,7 +666,7 @@ static __isl_give isl_printer *print_disjuncts(__isl_keep isl_map *map,
 {
 	int i;
 
-	if (isl_map_fast_is_universe(map))
+	if (isl_map_plain_is_universe(map))
 		return p;
 
 	p = isl_printer_print_str(p, s_such_that[latex]);
@@ -743,7 +743,7 @@ static int aff_split_cmp(const void *p1, const void *p2)
 	s1 = (const struct isl_aff_split *) p1;
 	s2 = (const struct isl_aff_split *) p2;
 
-	return isl_basic_map_fast_cmp(s1->aff, s2->aff);
+	return isl_basic_map_plain_cmp(s1->aff, s2->aff);
 }
 
 static __isl_give isl_basic_map *drop_aff(__isl_take isl_basic_map *bmap,
@@ -801,7 +801,7 @@ static __isl_give struct isl_aff_split *split_aff(__isl_keep isl_map *map)
 
 	n = map->n;
 	for (i = n - 1; i >= 1; --i) {
-		if (!isl_basic_map_fast_is_equal(split[i - 1].aff,
+		if (!isl_basic_map_plain_is_equal(split[i - 1].aff,
 						 split[i].aff))
 			continue;
 		isl_basic_map_free(split[i].aff);
@@ -1821,7 +1821,7 @@ static __isl_give isl_printer *print_pw_qpolynomial_c(
 {
 	int i;
 
-	if (pwqp->n == 1 && isl_set_fast_is_universe(pwqp->p[0].set))
+	if (pwqp->n == 1 && isl_set_plain_is_universe(pwqp->p[0].set))
 		return print_qpolynomial_c(p, pwqp->dim, pwqp->p[0].qp);
 
 	for (i = 0; i < pwqp->n; ++i) {
@@ -1945,7 +1945,7 @@ static __isl_give isl_printer *print_pw_qpolynomial_fold_c(
 {
 	int i;
 
-	if (pwf->n == 1 && isl_set_fast_is_universe(pwf->p[0].set))
+	if (pwf->n == 1 && isl_set_plain_is_universe(pwf->p[0].set))
 		return print_qpolynomial_fold_c(p, pwf->dim, pwf->p[0].fold);
 
 	for (i = 0; i < pwf->n; ++i) {

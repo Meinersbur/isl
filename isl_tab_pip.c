@@ -3985,9 +3985,9 @@ static __isl_give isl_map *basic_map_partial_lexopt_base(
 		goto error;
 
 	context = sol_map->sol.context;
-	if (isl_basic_set_fast_is_empty(context->op->peek_basic_set(context)))
+	if (isl_basic_set_plain_is_empty(context->op->peek_basic_set(context)))
 		/* nothing */;
-	else if (isl_basic_map_fast_is_empty(bmap))
+	else if (isl_basic_map_plain_is_empty(bmap))
 		sol_map_add_empty_if_needed(sol_map,
 		    isl_basic_set_copy(context->op->peek_basic_set(context)));
 	else {
@@ -4638,7 +4638,7 @@ int isl_basic_map_foreach_lexopt(__isl_keep isl_basic_map *bmap, int max,
 	bmap = isl_basic_map_detect_equalities(bmap);
 	sol_for = sol_for_init(bmap, max, fn, user);
 
-	if (isl_basic_map_fast_is_empty(bmap))
+	if (isl_basic_map_plain_is_empty(bmap))
 		/* nothing */;
 	else {
 		struct isl_tab *tab;

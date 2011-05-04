@@ -575,7 +575,7 @@ int isl_basic_set_dim_residue_class(struct isl_basic_set *bset,
 	if (!bset || !modulo || !residue)
 		return -1;
 
-	if (isl_basic_set_fast_dim_is_fixed(bset, pos, residue)) {
+	if (isl_basic_set_plain_dim_is_fixed(bset, pos, residue)) {
 		isl_int_set_si(*modulo, 0);
 		return 0;
 	}

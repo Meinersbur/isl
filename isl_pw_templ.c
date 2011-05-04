@@ -51,7 +51,7 @@ __isl_give PW *FN(PW,add_piece)(__isl_take PW *pw,
 	if (!pw || !set || !el)
 		goto error;
 
-	if (isl_set_fast_is_empty(set) || FN(EL,IS_ZERO)(el)) {
+	if (isl_set_plain_is_empty(set) || FN(EL,IS_ZERO)(el)) {
 		isl_set_free(set);
 		FN(EL,free)(el);
 		return pw;
@@ -215,7 +215,7 @@ __isl_give PW *FN(PW,add)(__isl_take PW *pw1, __isl_take PW *pw2)
 					isl_set_copy(pw2->p[j].set));
 			common = isl_set_intersect(isl_set_copy(pw1->p[i].set),
 						isl_set_copy(pw2->p[j].set));
-			if (isl_set_fast_is_empty(common)) {
+			if (isl_set_plain_is_empty(common)) {
 				isl_set_free(common);
 				continue;
 			}
@@ -371,7 +371,7 @@ __isl_give PW *FN(PW,intersect_domain)(__isl_take PW *pw, __isl_take isl_set *se
 		aff = isl_set_affine_hull(isl_set_copy(pw->p[i].set));
 		pw->p[i].FIELD = FN(EL,substitute_equalities)(pw->p[i].FIELD,
 								aff);
-		if (isl_set_fast_is_empty(pw->p[i].set)) {
+		if (isl_set_plain_is_empty(pw->p[i].set)) {
 			isl_set_free(pw->p[i].set);
 			FN(EL,free)(pw->p[i].FIELD);
 			if (i != pw->n - 1)
@@ -419,7 +419,7 @@ __isl_give PW *FN(PW,gist)(__isl_take PW *pw, __isl_take isl_set *context)
 						isl_basic_set_copy(hull));
 		if (!pw->p[i].set)
 			goto error;
-		if (isl_set_fast_is_empty(pw->p[i].set)) {
+		if (isl_set_plain_is_empty(pw->p[i].set)) {
 			isl_set_free(pw->p[i].set);
 			FN(EL,free)(pw->p[i].FIELD);
 			if (i != pw->n - 1)

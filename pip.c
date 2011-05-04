@@ -122,7 +122,7 @@ struct isl_vec *opt_at(struct isl_basic_set *bset,
 
 	bset = plug_in_parameters(bset, params);
 
-	if (isl_basic_set_fast_is_empty(bset)) {
+	if (isl_basic_set_plain_is_empty(bset)) {
 		opt = isl_vec_alloc(bset->ctx, 0);
 		isl_basic_set_free(bset);
 		return opt;

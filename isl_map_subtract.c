@@ -560,7 +560,7 @@ static int basic_map_diff_is_empty(__isl_keep isl_basic_map *bmap,
 	int r;
 	struct isl_is_empty_diff_collector edc;
 
-	r = isl_basic_map_fast_is_empty(bmap);
+	r = isl_basic_map_plain_is_empty(bmap);
 	if (r)
 		return r;
 
@@ -596,7 +596,7 @@ static int map_diff_is_empty(__isl_keep isl_map *map1, __isl_keep isl_map *map2)
 
 /* Return 1 if "bmap" contains a single element.
  */
-int isl_basic_map_fast_is_singleton(__isl_keep isl_basic_map *bmap)
+int isl_basic_map_plain_is_singleton(__isl_keep isl_basic_map *bmap)
 {
 	if (!bmap)
 		return -1;
@@ -609,14 +609,14 @@ int isl_basic_map_fast_is_singleton(__isl_keep isl_basic_map *bmap)
 
 /* Return 1 if "map" contains a single element.
  */
-int isl_map_fast_is_singleton(__isl_keep isl_map *map)
+int isl_map_plain_is_singleton(__isl_keep isl_map *map)
 {
 	if (!map)
 		return -1;
 	if (map->n != 1)
 		return 0;
 
-	return isl_basic_map_fast_is_singleton(map->p[0]);
+	return isl_basic_map_plain_is_singleton(map->p[0]);
 }
 
 /* Given a singleton basic map, extract the single element
@@ -717,11 +717,11 @@ int isl_map_is_subset(struct isl_map *map1, struct isl_map *map2)
 	if (isl_map_is_empty(map2))
 		return 0;
 
-	if (isl_map_fast_is_universe(map2))
+	if (isl_map_plain_is_universe(map2))
 		return 1;
 
 	map2 = isl_map_compute_divs(isl_map_copy(map2));
-	if (isl_map_fast_is_singleton(map1)) {
+	if (isl_map_plain_is_singleton(map1)) {
 		is_subset = map_is_singleton_subset(map1, map2);
 		isl_map_free(map2);
 		return is_subset;

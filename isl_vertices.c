@@ -403,7 +403,7 @@ __isl_give isl_vertices *isl_basic_set_compute_vertices(
 	if (!bset)
 		return NULL;
 
-	if (isl_basic_set_fast_is_empty(bset))
+	if (isl_basic_set_plain_is_empty(bset))
 		return vertices_empty(bset);
 
 	if (bset->n_eq != 0)
@@ -771,7 +771,7 @@ static int has_opposite(struct isl_facet_todo *todo,
 {
 	for (; *list; list = &(*list)->next) {
 		int eq;
-		eq = isl_basic_set_fast_is_equal(todo->bset, (*list)->bset);
+		eq = isl_basic_set_plain_is_equal(todo->bset, (*list)->bset);
 		if (eq < 0)
 			return -1;
 		if (!eq)

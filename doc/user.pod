@@ -1153,17 +1153,18 @@ of the parameters.
 =item * Emptiness
 
 The following functions test whether the given set or relation
-contains any integer points.  The ``fast'' variants do not perform
+contains any integer points.  The ``plain'' variants do not perform
 any computations, but simply check if the given set or relation
 is already known to be empty.
 
-	int isl_basic_set_fast_is_empty(__isl_keep isl_basic_set *bset);
+	int isl_basic_set_plain_is_empty(__isl_keep isl_basic_set *bset);
 	int isl_basic_set_is_empty(__isl_keep isl_basic_set *bset);
+	int isl_set_plain_is_empty(__isl_keep isl_set *set);
 	int isl_set_is_empty(__isl_keep isl_set *set);
 	int isl_union_set_is_empty(__isl_keep isl_union_set *uset);
-	int isl_basic_map_fast_is_empty(__isl_keep isl_basic_map *bmap);
+	int isl_basic_map_plain_is_empty(__isl_keep isl_basic_map *bmap);
 	int isl_basic_map_is_empty(__isl_keep isl_basic_map *bmap);
-	int isl_map_fast_is_empty(__isl_keep isl_map *map);
+	int isl_map_plain_is_empty(__isl_keep isl_map *map);
 	int isl_map_is_empty(__isl_keep isl_map *map);
 	int isl_union_map_is_empty(__isl_keep isl_union_map *umap);
 
@@ -1171,7 +1172,7 @@ is already known to be empty.
 
 	int isl_basic_set_is_universe(__isl_keep isl_basic_set *bset);
 	int isl_basic_map_is_universe(__isl_keep isl_basic_map *bmap);
-	int isl_set_fast_is_universe(__isl_keep isl_set *set);
+	int isl_set_plain_is_universe(__isl_keep isl_set *set);
 
 =item * Single-valuedness
 
@@ -1215,7 +1216,7 @@ i.e., whether both domain and range are nested relations.
 
 =item * Equality
 
-	int isl_set_fast_is_equal(__isl_keep isl_set *set1,
+	int isl_set_plain_is_equal(__isl_keep isl_set *set1,
 		__isl_keep isl_set *set2);
 	int isl_set_is_equal(__isl_keep isl_set *set1,
 		__isl_keep isl_set *set2);
@@ -1227,7 +1228,7 @@ i.e., whether both domain and range are nested relations.
 		__isl_keep isl_basic_map *bmap2);
 	int isl_map_is_equal(__isl_keep isl_map *map1,
 		__isl_keep isl_map *map2);
-	int isl_map_fast_is_equal(__isl_keep isl_map *map1,
+	int isl_map_plain_is_equal(__isl_keep isl_map *map1,
 		__isl_keep isl_map *map2);
 	int isl_union_map_is_equal(
 		__isl_keep isl_union_map *umap1,
@@ -1235,7 +1236,7 @@ i.e., whether both domain and range are nested relations.
 
 =item * Disjointness
 
-	int isl_set_fast_is_disjoint(__isl_keep isl_set *set1,
+	int isl_set_plain_is_disjoint(__isl_keep isl_set *set1,
 		__isl_keep isl_set *set2);
 
 =item * Subset

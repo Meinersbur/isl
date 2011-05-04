@@ -321,7 +321,7 @@ static int graph_has_edge(struct isl_sched_graph *graph,
 		return 0;
 
 	edge = entry->data;
-	empty = isl_map_fast_is_empty(edge->map);
+	empty = isl_map_plain_is_empty(edge->map);
 	if (empty < 0)
 		return -1;
 
@@ -466,7 +466,7 @@ static int extract_edge(__isl_take isl_map *map, void *user)
 		if (!entry)
 			return 0;
 		edge = entry->data;
-		is_equal = isl_map_fast_is_equal(map, edge->map);
+		is_equal = isl_map_plain_is_equal(map, edge->map);
 		if (is_equal < 0)
 			return -1;
 		if (!is_equal)
@@ -1424,7 +1424,7 @@ static int update_edges(isl_ctx *ctx, struct isl_sched_graph *graph)
 		if (!edge->map)
 			return -1;
 
-		if (isl_map_fast_is_empty(edge->map)) {
+		if (isl_map_plain_is_empty(edge->map)) {
 			reset_table = 1;
 			isl_map_free(edge->map);
 			if (i != graph->n_edge - 1)
@@ -1588,7 +1588,7 @@ static int copy_edges(isl_ctx *ctx, struct isl_sched_graph *dst,
 		if (!edge_pred(edge, data))
 			continue;
 
-		if (isl_map_fast_is_empty(edge->map))
+		if (isl_map_plain_is_empty(edge->map))
 			continue;
 
 		map = isl_map_copy(edge->map);

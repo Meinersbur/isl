@@ -335,7 +335,7 @@ __isl_give isl_morph *isl_basic_set_variable_compression(
 	if (!bset)
 		return NULL;
 
-	if (isl_basic_set_fast_is_empty(bset))
+	if (isl_basic_set_plain_is_empty(bset))
 		return isl_morph_empty(bset);
 
 	isl_assert(bset->ctx, bset->n_div == 0, return NULL);
@@ -452,7 +452,7 @@ __isl_give isl_morph *isl_basic_set_parameter_compression(
 	if (!bset)
 		return NULL;
 
-	if (isl_basic_set_fast_is_empty(bset))
+	if (isl_basic_set_plain_is_empty(bset))
 		return isl_morph_empty(bset);
 	if (bset->n_eq == 0)
 		return isl_morph_identity(bset);

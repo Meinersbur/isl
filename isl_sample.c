@@ -57,7 +57,7 @@ static struct isl_vec *interval_sample(struct isl_basic_set *bset)
 	bset = isl_basic_set_simplify(bset);
 	if (!bset)
 		return NULL;
-	if (isl_basic_set_fast_is_empty(bset))
+	if (isl_basic_set_plain_is_empty(bset))
 		return empty_sample(bset);
 	if (bset->n_eq == 0 && bset->n_ineq == 0)
 		return zero_sample(bset);
@@ -636,7 +636,7 @@ static struct isl_vec *sample_bounded(struct isl_basic_set *bset)
 	if (!bset)
 		return NULL;
 
-	if (isl_basic_set_fast_is_empty(bset))
+	if (isl_basic_set_plain_is_empty(bset))
 		return empty_sample(bset);
 
 	dim = isl_basic_set_total_dim(bset);
@@ -1178,7 +1178,7 @@ static struct isl_vec *basic_set_sample(struct isl_basic_set *bset, int bounded)
 		return NULL;
 
 	ctx = bset->ctx;
-	if (isl_basic_set_fast_is_empty(bset))
+	if (isl_basic_set_plain_is_empty(bset))
 		return empty_sample(bset);
 
 	dim = isl_basic_set_n_dim(bset);

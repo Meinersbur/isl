@@ -899,7 +899,7 @@ int isl_basic_set_is_bounded(__isl_keep isl_basic_set *bset)
 
 	if (!bset)
 		return -1;
-	if (isl_basic_set_fast_is_empty(bset))
+	if (isl_basic_set_plain_is_empty(bset))
 		return 1;
 
 	tab = isl_tab_from_recession_cone(bset, 1);

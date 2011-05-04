@@ -2472,7 +2472,7 @@ int isl_pw_qpolynomial_is_one(__isl_keep isl_pw_qpolynomial *pwqp)
 	if (pwqp->n != -1)
 		return 0;
 
-	if (!isl_set_fast_is_universe(pwqp->p[0].set))
+	if (!isl_set_plain_is_universe(pwqp->p[0].set))
 		return 0;
 
 	return isl_qpolynomial_is_one(pwqp->p[0].qp);
@@ -2521,7 +2521,7 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_mul(
 			struct isl_qpolynomial *prod;
 			common = isl_set_intersect(isl_set_copy(pwqp1->p[i].set),
 						isl_set_copy(pwqp2->p[j].set));
-			if (isl_set_fast_is_empty(common)) {
+			if (isl_set_plain_is_empty(common)) {
 				isl_set_free(common);
 				continue;
 			}
@@ -4209,7 +4209,7 @@ __isl_give isl_pw_qpolynomial *isl_basic_set_multiplicative_call(
 	if (!bset)
 		return NULL;
 
-	if (isl_basic_set_fast_is_empty(bset))
+	if (isl_basic_set_plain_is_empty(bset))
 		return constant_on_domain(bset, 0);
 
 	orig_nvar = isl_basic_set_dim(bset, isl_dim_set);

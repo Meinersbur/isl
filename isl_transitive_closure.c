@@ -769,7 +769,7 @@ static __isl_give isl_map *construct_extended_path(__isl_take isl_dim *dim,
 		for (j = 0; j < d; ++j) {
 			int fixed;
 
-			fixed = isl_basic_set_fast_dim_is_fixed(delta, j,
+			fixed = isl_basic_set_plain_dim_is_fixed(delta, j,
 							    &steps->row[n][j]);
 			if (fixed < 0) {
 				isl_basic_set_free(delta);
@@ -2161,7 +2161,7 @@ __isl_give isl_map *isl_map_power(__isl_take isl_map *map, int *exact)
 	map = isl_map_compute_divs(map);
 	map = isl_map_coalesce(map);
 
-	if (isl_map_fast_is_empty(map)) {
+	if (isl_map_plain_is_empty(map)) {
 		map = isl_map_from_range(isl_map_wrap(map));
 		map = isl_map_add_dims(map, isl_dim_in, 1);
 		map = isl_map_set_dim_name(map, isl_dim_in, 0, "k");
@@ -2215,7 +2215,7 @@ __isl_give isl_map *isl_map_reaching_path_lengths(__isl_take isl_map *map,
 	map = isl_map_compute_divs(map);
 	map = isl_map_coalesce(map);
 
-	if (isl_map_fast_is_empty(map)) {
+	if (isl_map_plain_is_empty(map)) {
 		if (exact)
 			*exact = 1;
 		map = isl_map_project_out(map, isl_dim_out, 0, d);

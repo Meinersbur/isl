@@ -1724,7 +1724,7 @@ static __isl_give isl_basic_set *uset_gist(__isl_take isl_basic_set *bset,
 		goto error;
 
 	bset = isl_basic_set_intersect(bset, isl_basic_set_copy(context));
-	if (isl_basic_set_fast_is_empty(bset)) {
+	if (isl_basic_set_plain_is_empty(bset)) {
 		isl_basic_set_free(context);
 		return bset;
 	}
@@ -1732,7 +1732,7 @@ static __isl_give isl_basic_set *uset_gist(__isl_take isl_basic_set *bset,
 	aff = isl_basic_set_affine_hull(isl_basic_set_copy(bset));
 	if (!aff)
 		goto error;
-	if (isl_basic_set_fast_is_empty(aff)) {
+	if (isl_basic_set_plain_is_empty(aff)) {
 		isl_basic_set_free(aff);
 		isl_basic_set_free(context);
 		return bset;
@@ -1824,13 +1824,13 @@ struct isl_basic_map *isl_basic_map_gist(struct isl_basic_map *bmap,
 		isl_basic_map_free(context);
 		return bmap;
 	}
-	if (isl_basic_map_fast_is_empty(context)) {
+	if (isl_basic_map_plain_is_empty(context)) {
 		struct isl_dim *dim = isl_dim_copy(bmap->dim);
 		isl_basic_map_free(context);
 		isl_basic_map_free(bmap);
 		return isl_basic_map_universe(dim);
 	}
-	if (isl_basic_map_fast_is_empty(bmap)) {
+	if (isl_basic_map_plain_is_empty(bmap)) {
 		isl_basic_map_free(context);
 		return bmap;
 	}
@@ -1865,7 +1865,7 @@ __isl_give isl_map *isl_map_gist_basic_map(__isl_take isl_map *map,
 	if (!map || !context)
 		goto error;;
 
-	if (isl_basic_map_fast_is_empty(context)) {
+	if (isl_basic_map_plain_is_empty(context)) {
 		struct isl_dim *dim = isl_dim_copy(map->dim);
 		isl_basic_map_free(context);
 		isl_map_free(map);
@@ -1885,7 +1885,7 @@ __isl_give isl_map *isl_map_gist_basic_map(__isl_take isl_map *map,
 						isl_basic_map_copy(context));
 		if (!map->p[i])
 			goto error;
-		if (isl_basic_map_fast_is_empty(map->p[i])) {
+		if (isl_basic_map_plain_is_empty(map->p[i])) {
 			isl_basic_map_free(map->p[i]);
 			if (i != map->n - 1)
 				map->p[i] = map->p[map->n - 1];
@@ -1934,8 +1934,8 @@ __isl_give isl_set *isl_set_gist(__isl_take isl_set *set,
  * one basic map in the context of the equalities of the other
  * basic map and check if we get a contradiction.
  */
-int isl_basic_map_fast_is_disjoint(struct isl_basic_map *bmap1,
-	struct isl_basic_map *bmap2)
+int isl_basic_map_plain_is_disjoint(__isl_keep isl_basic_map *bmap1,
+	__isl_keep isl_basic_map *bmap2)
 {
 	struct isl_vec *v = NULL;
 	int *elim = NULL;
@@ -1999,26 +1999,27 @@ error:
 	return -1;
 }
 
-int isl_basic_set_fast_is_disjoint(struct isl_basic_set *bset1,
-	struct isl_basic_set *bset2)
+int isl_basic_set_plain_is_disjoint(__isl_keep isl_basic_set *bset1,
+	__isl_keep isl_basic_set *bset2)
 {
-	return isl_basic_map_fast_is_disjoint((struct isl_basic_map *)bset1,
+	return isl_basic_map_plain_is_disjoint((struct isl_basic_map *)bset1,
 					      (struct isl_basic_map *)bset2);
 }
 
-int isl_map_fast_is_disjoint(struct isl_map *map1, struct isl_map *map2)
+int isl_map_plain_is_disjoint(__isl_keep isl_map *map1,
+	__isl_keep isl_map *map2)
 {
 	int i, j;
 
 	if (!map1 || !map2)
 		return -1;
 
-	if (isl_map_fast_is_equal(map1, map2))
+	if (isl_map_plain_is_equal(map1, map2))
 		return 0;
 
 	for (i = 0; i < map1->n; ++i) {
 		for (j = 0; j < map2->n; ++j) {
-			int d = isl_basic_map_fast_is_disjoint(map1->p[i],
+			int d = isl_basic_map_plain_is_disjoint(map1->p[i],
 							       map2->p[j]);
 			if (d != 1)
 				return d;
@@ -2027,10 +2028,16 @@ int isl_map_fast_is_disjoint(struct isl_map *map1, struct isl_map *map2)
 	return 1;
 }
 
-int isl_set_fast_is_disjoint(struct isl_set *set1, struct isl_set *set2)
+int isl_set_plain_is_disjoint(__isl_keep isl_set *set1,
+	__isl_keep isl_set *set2)
 {
-	return isl_map_fast_is_disjoint((struct isl_map *)set1,
+	return isl_map_plain_is_disjoint((struct isl_map *)set1,
 					(struct isl_map *)set2);
+}
+
+int isl_set_fast_is_disjoint(__isl_keep isl_set *set1, __isl_keep isl_set *set2)
+{
+	return isl_set_plain_is_disjoint(set1, set2);
 }
 
 /* Check if we can combine a given div with lower bound l and upper
