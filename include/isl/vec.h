@@ -54,6 +54,8 @@ __isl_give isl_vec *isl_vec_add(__isl_take isl_vec *vec1,
 __isl_give isl_vec *isl_vec_extend(__isl_take isl_vec *vec, unsigned size);
 __isl_give isl_vec *isl_vec_zero_extend(__isl_take isl_vec *vec, unsigned size);
 
+__isl_give isl_vec *isl_vec_sort(__isl_take isl_vec *vec);
+
 __isl_give isl_vec *isl_vec_read_from_file(isl_ctx *ctx, FILE *input);
 
 #if defined(__cplusplus)

@@ -238,3 +238,21 @@ error:
 	isl_vec_free(vec2);
 	return NULL;
 }
+
+static int qsort_int_cmp(const void *p1, const void *p2)
+{
+	const isl_int *i1 = (const isl_int *) p1;
+	const isl_int *i2 = (const isl_int *) p2;
+
+	return isl_int_cmp(*i1, *i2);
+}
+
+__isl_give isl_vec *isl_vec_sort(__isl_take isl_vec *vec)
+{
+	if (!vec)
+		return NULL;
+	
+	qsort(vec->el, vec->size, sizeof(*vec->el), &qsort_int_cmp);
+
+	return vec;
+}
