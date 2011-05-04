@@ -196,6 +196,17 @@ int isl_basic_map_compatible_domain(struct isl_basic_map *bmap,
 	return isl_dim_tuple_match(bmap->dim, isl_dim_in, bset->dim, isl_dim_set);
 }
 
+int isl_map_compatible_range(__isl_keep isl_map *map, __isl_keep isl_set *set)
+{
+	int m;
+	if (!map || !set)
+		return -1;
+	m = isl_dim_match(map->dim, isl_dim_param, set->dim, isl_dim_param);
+	if (m < 0 || !m)
+		return m;
+	return isl_dim_tuple_match(map->dim, isl_dim_out, set->dim, isl_dim_set);
+}
+
 int isl_basic_map_compatible_range(struct isl_basic_map *bmap,
 		struct isl_basic_set *bset)
 {
@@ -1972,6 +1983,11 @@ struct isl_basic_map *isl_basic_map_intersect_range(
 	if (isl_dim_size(bset->dim, isl_dim_set) != 0)
 		isl_assert(bset->ctx,
 		    isl_basic_map_compatible_range(bmap, bset), goto error);
+
+	if (isl_basic_set_is_universe(bset)) {
+		isl_basic_set_free(bset);
+		return bmap;
+	}
 
 	bmap = isl_basic_map_cow(bmap);
 	if (!bmap)
@@ -5358,6 +5374,20 @@ struct isl_map *isl_map_intersect_range(
 
 	if (!map || !set)
 		goto error;
+
+	if (!isl_dim_match(map->dim, isl_dim_param, set->dim, isl_dim_param))
+		isl_die(set->ctx, isl_error_invalid,
+			"parameters don't match", goto error);
+
+	if (isl_dim_size(set->dim, isl_dim_set) != 0 &&
+	    !isl_map_compatible_range(map, set))
+		isl_die(set->ctx, isl_error_invalid,
+			"incompatible spaces", goto error);
+
+	if (isl_set_plain_is_universe(set)) {
+		isl_set_free(set);
+		return map;
+	}
 
 	if (ISL_F_ISSET(map, ISL_MAP_DISJOINT) &&
 	    ISL_F_ISSET(set, ISL_MAP_DISJOINT))
