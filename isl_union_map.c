@@ -1175,6 +1175,27 @@ error:
 	return NULL;
 }
 
+static int universe_entry(void **entry, void *user)
+{
+	isl_map *map = *entry;
+	isl_union_map **res = user;
+
+	map = isl_map_universe(isl_map_get_dim(map));
+	*res = isl_union_map_add_map(*res, map);
+
+	return 0;
+}
+
+__isl_give isl_union_map *isl_union_map_universe(__isl_take isl_union_map *umap)
+{
+	return cond_un_op(umap, &universe_entry);
+}
+
+__isl_give isl_union_set *isl_union_set_universe(__isl_take isl_union_set *uset)
+{
+	return isl_union_map_universe(uset);
+}
+
 static int reverse_entry(void **entry, void *user)
 {
 	isl_map *map = *entry;

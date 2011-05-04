@@ -16,6 +16,9 @@ void isl_union_set_free(__isl_take isl_union_set *uset);
 isl_ctx *isl_union_set_get_ctx(__isl_keep isl_union_set *uset);
 __isl_give isl_dim *isl_union_set_get_dim(__isl_keep isl_union_set *uset);
 
+__isl_give isl_union_set *isl_union_set_universe(
+	__isl_take isl_union_set *uset);
+
 __isl_give isl_union_set *isl_union_set_detect_equalities(
 	__isl_take isl_union_set *uset);
 __isl_give isl_union_set *isl_union_set_affine_hull(

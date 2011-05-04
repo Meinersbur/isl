@@ -752,6 +752,10 @@ is only used to specify the parameters.
 		__isl_take isl_dim *dim);
 	__isl_give isl_map *isl_map_universe(
 		__isl_take isl_dim *dim);
+	__isl_give isl_union_set *isl_union_set_universe(
+		__isl_take isl_union_set *uset);
+	__isl_give isl_union_map *isl_union_map_universe(
+		__isl_take isl_union_map *umap);
 
 The sets and relations constructed by the functions above
 contain all integer values, while those constructed by the
