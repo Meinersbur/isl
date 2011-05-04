@@ -7821,6 +7821,20 @@ int isl_map_is_injective(__isl_keep isl_map *map)
 	return in;
 }
 
+/* Check if the given map is obviously injective.
+ */
+int isl_map_plain_is_injective(__isl_keep isl_map *map)
+{
+	int in;
+
+	map = isl_map_copy(map);
+	map = isl_map_reverse(map);
+	in = isl_map_plain_is_single_valued(map);
+	isl_map_free(map);
+
+	return in;
+}
+
 int isl_map_is_bijective(__isl_keep isl_map *map)
 {
 	int sv;

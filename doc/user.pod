@@ -1185,8 +1185,12 @@ is already known to be empty.
 
 =item * Injectivity
 
+	int isl_map_plain_is_injective(__isl_keep isl_map *map);
 	int isl_map_is_injective(__isl_keep isl_map *map);
-	int isl_union_map_is_injective(__isl_keep isl_union_map *umap);
+	int isl_union_map_plain_is_injective(
+		__isl_keep isl_union_map *umap);
+	int isl_union_map_is_injective(
+		__isl_keep isl_union_map *umap);
 
 =item * Bijectivity
 

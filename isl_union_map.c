@@ -1,5 +1,5 @@
 /*
- * Copyright 2010      INRIA Saclay
+ * Copyright 2010-2011 INRIA Saclay
  *
  * Use of this software is governed by the GNU LGPLv2.1 license
  *
@@ -1541,6 +1541,44 @@ static int union_map_forall(__isl_keep isl_union_map *umap,
 	return data.res;
 }
 
+struct isl_forall_user_data {
+	int res;
+	int (*fn)(__isl_keep isl_map *map, void *user);
+	void *user;
+};
+
+static int forall_user_entry(void **entry, void *user)
+{
+	struct isl_forall_user_data *data = user;
+	isl_map *map = *entry;
+
+	data->res = data->fn(map, data->user);
+	if (data->res < 0)
+		return -1;
+
+	if (!data->res)
+		return -1;
+
+	return 0;
+}
+
+/* Check if fn(map, user) returns true for all maps "map" in umap.
+ */
+static int union_map_forall_user(__isl_keep isl_union_map *umap,
+	int (*fn)(__isl_keep isl_map *map, void *user), void *user)
+{
+	struct isl_forall_user_data data = { 1, fn, user };
+
+	if (!umap)
+		return -1;
+
+	if (isl_hash_table_foreach(umap->dim->ctx, &umap->table,
+				   &forall_user_entry, &data) < 0 && data.res)
+		return -1;
+
+	return data.res;
+}
+
 int isl_union_map_is_empty(__isl_keep isl_union_map *umap)
 {
 	return union_map_forall(umap, &isl_map_is_empty);
@@ -1610,6 +1648,232 @@ int isl_union_map_is_injective(__isl_keep isl_union_map *umap)
 	umap = isl_union_map_reverse(umap);
 	in = isl_union_map_is_single_valued(umap);
 	isl_union_map_free(umap);
+
+	return in;
+}
+
+/* Represents a map that has a fixed value (v) for one of its
+ * range dimensions.
+ * The map in this structure is not reference counted, so it
+ * is only valid while the isl_union_map from which it was
+ * obtained is still alive.
+ */
+struct isl_fixed_map {
+	isl_int v;
+	isl_map *map;
+};
+
+static struct isl_fixed_map *alloc_isl_fixed_map_array(isl_ctx *ctx,
+	int n)
+{
+	int i;
+	struct isl_fixed_map *v;
+
+	v = isl_calloc_array(ctx, struct isl_fixed_map, n);
+	if (!v)
+		return NULL;
+	for (i = 0; i < n; ++i)
+		isl_int_init(v[i].v);
+	return v;
+}
+
+static void free_isl_fixed_map_array(struct isl_fixed_map *v, int n)
+{
+	int i;
+
+	if (!v)
+		return;
+	for (i = 0; i < n; ++i)
+		isl_int_clear(v[i].v);
+	free(v);
+}
+
+/* Compare the "v" field of two isl_fixed_map structs.
+ */
+static int qsort_fixed_map_cmp(const void *p1, const void *p2)
+{
+	const struct isl_fixed_map *e1 = (const struct isl_fixed_map *) p1;
+	const struct isl_fixed_map *e2 = (const struct isl_fixed_map *) p2;
+
+	return isl_int_cmp(e1->v, e2->v);
+}
+
+/* Internal data structure used while checking whether all maps
+ * in a union_map have a fixed value for a given output dimension.
+ * v is the list of maps, with the fixed value for the dimension
+ * n is the number of maps considered so far
+ * pos is the output dimension under investigation
+ */
+struct isl_fixed_dim_data {
+	struct isl_fixed_map *v;
+	int n;
+	int pos;
+};
+
+static int fixed_at_pos(__isl_keep isl_map *map, void *user)
+{
+	struct isl_fixed_dim_data *data = user;
+
+	data->v[data->n].map = map;
+	return isl_map_plain_is_fixed(map, isl_dim_out, data->pos,
+				      &data->v[data->n++].v);
+}
+
+static int plain_injective_on_range(__isl_take isl_union_map *umap,
+	int first, int n_range);
+
+/* Given a list of the maps, with their fixed values at output dimension "pos",
+ * check whether the ranges of the maps form an obvious partition.
+ *
+ * We first sort the maps according to their fixed values.
+ * If all maps have a different value, then we know the ranges form
+ * a partition.
+ * Otherwise, we collect the maps with the same fixed value and
+ * check whether each such collection is obviously injective
+ * based on later dimensions.
+ */
+static int separates(struct isl_fixed_map *v, int n,
+	__isl_take isl_dim *dim, int pos, int n_range)
+{
+	int i;
+
+	if (!v)
+		goto error;
+
+	qsort(v, n, sizeof(*v), &qsort_fixed_map_cmp);
+
+	for (i = 0; i + 1 < n; ++i) {
+		int j, k;
+		isl_union_map *part;
+		int injective;
+
+		for (j = i + 1; j < n; ++j)
+			if (isl_int_ne(v[i].v, v[j].v))
+				break;
+
+		if (j == i + 1)
+			continue;
+
+		part = isl_union_map_alloc(isl_dim_copy(dim), j - i);
+		for (k = i; k < j; ++k)
+			part = isl_union_map_add_map(part,
+						     isl_map_copy(v[k].map));
+
+		injective = plain_injective_on_range(part, pos + 1, n_range);
+		if (injective < 0)
+			goto error;
+		if (!injective)
+			break;
+
+		i = j - 1;
+	}
+
+	isl_dim_free(dim);
+	free_isl_fixed_map_array(v, n);
+	return i + 1 >= n;
+error:
+	isl_dim_free(dim);
+	free_isl_fixed_map_array(v, n);
+	return -1;
+}
+
+/* Check whether the maps in umap have obviously distinct ranges.
+ * In particular, check for an output dimension in the range
+ * [first,n_range) for which all maps have a fixed value
+ * and then check if these values, possibly along with fixed values
+ * at later dimensions, entail distinct ranges.
+ */
+static int plain_injective_on_range(__isl_take isl_union_map *umap,
+	int first, int n_range)
+{
+	isl_ctx *ctx;
+	int n;
+	struct isl_fixed_dim_data data = { NULL };
+
+	ctx = isl_union_map_get_ctx(umap);
+
+	if (!umap)
+		goto error;
+
+	n = isl_union_map_n_map(umap);
+	if (n <= 1) {
+		isl_union_map_free(umap);
+		return 1;
+	}
+
+	if (first >= n_range) {
+		isl_union_map_free(umap);
+		return 0;
+	}
+
+	data.v = alloc_isl_fixed_map_array(ctx, n);
+	if (!data.v)
+		goto error;
+
+	for (data.pos = first; data.pos < n_range; ++data.pos) {
+		int fixed;
+		int injective;
+		isl_dim *dim;
+
+		data.n = 0;
+		fixed = union_map_forall_user(umap, &fixed_at_pos, &data);
+		if (fixed < 0)
+			goto error;
+		if (!fixed)
+			continue;
+		dim = isl_union_map_get_dim(umap);
+		injective = separates(data.v, n, dim, data.pos, n_range);
+		isl_union_map_free(umap);
+		return injective;
+	}
+
+	free_isl_fixed_map_array(data.v, n);
+	isl_union_map_free(umap);
+
+	return 0;
+error:
+	free_isl_fixed_map_array(data.v, n);
+	isl_union_map_free(umap);
+	return -1;
+}
+
+/* Check whether the maps in umap that map to subsets of "ran"
+ * have obviously distinct ranges.
+ */
+static int plain_injective_on_range_wrap(__isl_keep isl_set *ran, void *user)
+{
+	isl_union_map *umap = user;
+
+	umap = isl_union_map_copy(umap);
+	umap = isl_union_map_intersect_range(umap,
+			isl_union_set_from_set(isl_set_copy(ran)));
+	return plain_injective_on_range(umap, 0, isl_set_dim(ran, isl_dim_set));
+}
+
+/* Check if the given union_map is obviously injective.
+ *
+ * In particular, we first check if all individual maps are obviously
+ * injective and then check if all the ranges of these maps are
+ * obviously disjoint.
+ */
+int isl_union_map_plain_is_injective(__isl_keep isl_union_map *umap)
+{
+	int in;
+	isl_union_map *univ;
+	isl_union_set *ran;
+
+	in = union_map_forall(umap, &isl_map_plain_is_injective);
+	if (in < 0)
+		return -1;
+	if (!in)
+		return 0;
+
+	univ = isl_union_map_universe(isl_union_map_copy(umap));
+	ran = isl_union_map_range(univ);
+
+	in = union_map_forall_user(ran, &plain_injective_on_range_wrap, umap);
+
+	isl_union_set_free(ran);
 
 	return in;
 }
