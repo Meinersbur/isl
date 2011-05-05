@@ -4559,7 +4559,6 @@ static void sol_for_add(struct isl_sol_for *sol,
 	if (sol->sol.error || !dom || !M)
 		goto error;
 
-	dom = isl_basic_set_simplify(dom);
 	dom = isl_basic_set_finalize(dom);
 
 	if (sol->fn(isl_basic_set_copy(dom), isl_mat_copy(M), sol->user) < 0)
