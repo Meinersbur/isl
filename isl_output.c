@@ -1479,13 +1479,82 @@ error:
 	return NULL;
 }
 
-__isl_give isl_printer *isl_printer_print_qpolynomial(__isl_take isl_printer *p,
+static __isl_give isl_printer *print_qpolynomial(__isl_take isl_printer *p,
 	__isl_keep isl_qpolynomial *qp)
 {
 	if (!p || !qp)
 		goto error;
 	p = upoly_print(qp->upoly, qp->dim, qp->div, p, 1);
 	return p;
+error:
+	isl_printer_free(p);
+	return NULL;
+}
+
+static __isl_give isl_printer *print_qpolynomial_isl(__isl_take isl_printer *p,
+	__isl_keep isl_qpolynomial *qp)
+{
+	if (!p || !qp)
+		goto error;
+
+	if (isl_dim_size(qp->dim, isl_dim_param) > 0) {
+		p = print_tuple(qp->dim, p, isl_dim_param, 0, 0, NULL);
+		p = isl_printer_print_str(p, " -> ");
+	}
+	p = isl_printer_print_str(p, "{ ");
+	if (isl_dim_size(qp->dim, isl_dim_set) > 0 ||
+	    isl_dim_is_named_or_nested(qp->dim, isl_dim_set)) {
+		p = print_dim(qp->dim, p, 1, 0, 0, NULL);
+		p = isl_printer_print_str(p, " -> ");
+	}
+	p = print_qpolynomial(p, qp);
+	p = isl_printer_print_str(p, " }");
+	return p;
+error:
+	isl_printer_free(p);
+	return NULL;
+}
+
+static __isl_give isl_printer *print_qpolynomial_c(__isl_take isl_printer *p,
+	__isl_keep isl_dim *dim, __isl_keep isl_qpolynomial *qp)
+{
+	isl_int den;
+
+	isl_int_init(den);
+	isl_qpolynomial_get_den(qp, &den);
+	if (!isl_int_is_one(den)) {
+		isl_qpolynomial *f;
+		p = isl_printer_print_str(p, "(");
+		qp = isl_qpolynomial_copy(qp);
+		f = isl_qpolynomial_rat_cst(isl_dim_copy(qp->dim),
+						den, qp->dim->ctx->one);
+		qp = isl_qpolynomial_mul(qp, f);
+	}
+	if (qp)
+		p = upoly_print(qp->upoly, dim, qp->div, p, 0);
+	if (!isl_int_is_one(den)) {
+		p = isl_printer_print_str(p, ")/");
+		p = isl_printer_print_isl_int(p, den);
+		isl_qpolynomial_free(qp);
+	}
+	isl_int_clear(den);
+	return p;
+}
+
+__isl_give isl_printer *isl_printer_print_qpolynomial(
+	__isl_take isl_printer *p, __isl_keep isl_qpolynomial *qp)
+{
+	if (!p || !qp)
+		goto error;
+
+	if (p->output_format == ISL_FORMAT_ISL)
+		return print_qpolynomial_isl(p, qp);
+	else if (p->output_format == ISL_FORMAT_C)
+		return print_qpolynomial_c(p, qp->dim, qp);
+	else
+		isl_die(qp->dim->ctx, isl_error_unsupported,
+			"output format not supported for isl_qpolynomials",
+			goto error);
 error:
 	isl_printer_free(p);
 	return NULL;
@@ -1518,7 +1587,7 @@ static __isl_give isl_printer *qpolynomial_fold_print(
 	for (i = 0; i < fold->n; ++i) {
 		if (i)
 			p = isl_printer_print_str(p, ", ");
-		p = isl_printer_print_qpolynomial(p, fold->qp[i]);
+		p = print_qpolynomial(p, fold->qp[i]);
 	}
 	p = isl_printer_print_str(p, ")");
 	return p;
@@ -1553,7 +1622,7 @@ static __isl_give isl_printer *isl_pwqp_print_isl_body(
 			p = print_dim(pwqp->p[i].set->dim, p, 1, 0, 0, NULL);
 			p = isl_printer_print_str(p, " -> ");
 		}
-		p = isl_printer_print_qpolynomial(p, pwqp->p[i].qp);
+		p = print_qpolynomial(p, pwqp->p[i].qp);
 		p = print_disjuncts((isl_map *)pwqp->p[i].set, p, 1, 0);
 	}
 
@@ -1787,32 +1856,6 @@ static __isl_give isl_printer *print_set_c(__isl_take isl_printer *p,
 		if (set->n > 1)
 			p = isl_printer_print_str(p, ")");
 	}
-	return p;
-}
-
-static __isl_give isl_printer *print_qpolynomial_c(__isl_take isl_printer *p,
-	__isl_keep isl_dim *dim, __isl_keep isl_qpolynomial *qp)
-{
-	isl_int den;
-
-	isl_int_init(den);
-	isl_qpolynomial_get_den(qp, &den);
-	if (!isl_int_is_one(den)) {
-		isl_qpolynomial *f;
-		p = isl_printer_print_str(p, "(");
-		qp = isl_qpolynomial_copy(qp);
-		f = isl_qpolynomial_rat_cst(isl_dim_copy(qp->dim),
-						den, qp->dim->ctx->one);
-		qp = isl_qpolynomial_mul(qp, f);
-	}
-	if (qp)
-		p = upoly_print(qp->upoly, dim, qp->div, p, 0);
-	if (!isl_int_is_one(den)) {
-		p = isl_printer_print_str(p, ")/");
-		p = isl_printer_print_isl_int(p, den);
-		isl_qpolynomial_free(qp);
-	}
-	isl_int_clear(den);
 	return p;
 }
 

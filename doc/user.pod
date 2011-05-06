@@ -79,6 +79,16 @@ is now expressed as the domain of the resulting relation.
 
 =back
 
+=head3 Changes since isl-0.06
+
+=over
+
+=item * The format of C<isl_printer_print_qpolynomial>'s
+C<ISL_FORMAT_ISL> output has changed.
+Use C<ISL_FORMAT_C> to obtain the old output.
+
+=back
+
 =head1 Installation
 
 The source of C<isl> can be obtained either as a tarball
