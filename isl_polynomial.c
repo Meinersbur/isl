@@ -3878,6 +3878,33 @@ error:
 	return NULL;
 }
 
+__isl_give isl_qpolynomial *isl_qpolynomial_align_params(
+	__isl_take isl_qpolynomial *qp, __isl_take isl_dim *model)
+{
+	if (!qp || !model)
+		goto error;
+
+	if (!isl_dim_match(qp->dim, isl_dim_param, model, isl_dim_param)) {
+		isl_reordering *exp;
+
+		model = isl_dim_drop(model, isl_dim_in,
+					0, isl_dim_size(model, isl_dim_in));
+		model = isl_dim_drop(model, isl_dim_out,
+					0, isl_dim_size(model, isl_dim_out));
+		exp = isl_parameter_alignment_reordering(qp->dim, model);
+		exp = isl_reordering_extend_dim(exp,
+						isl_qpolynomial_get_dim(qp));
+		qp = isl_qpolynomial_realign(qp, exp);
+	}
+
+	isl_dim_free(model);
+	return qp;
+error:
+	isl_dim_free(model);
+	isl_qpolynomial_free(qp);
+	return NULL;
+}
+
 struct isl_split_periods_data {
 	int max_periods;
 	isl_pw_qpolynomial *res;

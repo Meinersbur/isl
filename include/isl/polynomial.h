@@ -94,6 +94,9 @@ int isl_qpolynomial_as_polynomial_on_domain(__isl_keep isl_qpolynomial *qp,
 __isl_give isl_qpolynomial *isl_qpolynomial_homogenize(
 	__isl_take isl_qpolynomial *poly);
 
+__isl_give isl_qpolynomial *isl_qpolynomial_align_params(
+	__isl_take isl_qpolynomial *qp, __isl_take isl_dim *model);
+
 struct isl_term;
 typedef struct isl_term isl_term;
 
