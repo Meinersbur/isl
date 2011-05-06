@@ -8273,6 +8273,47 @@ __isl_give isl_set *isl_set_realign(__isl_take isl_set *set,
 	return (isl_set *)isl_map_realign((isl_map *)set, r);
 }
 
+__isl_give isl_map *isl_map_align_params(__isl_take isl_map *map,
+	__isl_take isl_dim *model)
+{
+	isl_ctx *ctx;
+
+	if (!map || !model)
+		goto error;
+
+	ctx = isl_dim_get_ctx(model);
+	if (!isl_dim_has_named_params(model))
+		isl_die(ctx, isl_error_invalid,
+			"model has unnamed parameters", goto error);
+	if (!isl_dim_has_named_params(map->dim))
+		isl_die(ctx, isl_error_invalid,
+			"relation has unnamed parameters", goto error);
+	if (!isl_dim_match(map->dim, isl_dim_param, model, isl_dim_param)) {
+		isl_reordering *exp;
+
+		model = isl_dim_drop(model, isl_dim_in,
+					0, isl_dim_size(model, isl_dim_in));
+		model = isl_dim_drop(model, isl_dim_out,
+					0, isl_dim_size(model, isl_dim_out));
+		exp = isl_parameter_alignment_reordering(map->dim, model);
+		exp = isl_reordering_extend_dim(exp, isl_map_get_dim(map));
+		map = isl_map_realign(map, exp);
+	}
+
+	isl_dim_free(model);
+	return map;
+error:
+	isl_dim_free(model);
+	isl_map_free(map);
+	return NULL;
+}
+
+__isl_give isl_set *isl_set_align_params(__isl_take isl_set *set,
+	__isl_take isl_dim *model)
+{
+	return isl_map_align_params(set, model);
+}
+
 __isl_give isl_mat *isl_basic_map_equalities_matrix(
 		__isl_keep isl_basic_map *bmap, enum isl_dim_type c1,
 		enum isl_dim_type c2, enum isl_dim_type c3,

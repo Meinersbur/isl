@@ -1249,3 +1249,21 @@ error:
 	isl_dim_free(dim);
 	return NULL;
 }
+
+int isl_dim_has_named_params(__isl_keep isl_dim *dim)
+{
+	int i;
+	unsigned off;
+
+	if (!dim)
+		return -1;
+	if (dim->nparam == 0)
+		return 1;
+	off = isl_dim_offset(dim, isl_dim_param);
+	if (off + dim->nparam > dim->n_name)
+		return 0;
+	for (i = 0; i < dim->nparam; ++i)
+		if (!dim->names[off + i])
+			return 0;
+	return 1;
+}

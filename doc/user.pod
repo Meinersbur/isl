@@ -1613,6 +1613,20 @@ existentially quantified variables.
 Given a relation with nested relations for domain and range,
 interchange the range of the domain with the domain of the range.
 
+=item * Aligning parameters
+
+	__isl_give isl_set *isl_set_align_params(
+		__isl_take isl_set *set,
+		__isl_take isl_dim *model);
+	__isl_give isl_map *isl_map_align_params(
+		__isl_take isl_map *map,
+		__isl_take isl_dim *model);
+
+Change the order of the parameters of the given set or relation
+such that the first parameters match those of C<model>.
+This may involve the introduction of extra parameters.
+All parameters need to be named.
+
 =item * Dimension manipulation
 
 	__isl_give isl_set *isl_set_add_dims(
@@ -1625,7 +1639,9 @@ interchange the range of the domain with the domain of the range.
 It is usually not advisable to directly change the (input or output)
 space of a set or a relation as this removes the name and the internal
 structure of the space.  However, the above functions can be useful
-to add new parameters.
+to add new parameters, assuming
+C<isl_set_align_params> and C<isl_map_align_params>
+are not sufficient.
 
 =back
 

@@ -25,6 +25,7 @@ __isl_give isl_dim *isl_dim_as_set_dim(__isl_take isl_dim *dim);
 unsigned isl_dim_offset(__isl_keep isl_dim *dim, enum isl_dim_type type);
 
 int isl_dim_is_named_or_nested(__isl_keep isl_dim *dim, enum isl_dim_type type);
+int isl_dim_has_named_params(__isl_keep isl_dim *dim);
 __isl_give isl_dim *isl_dim_reset(__isl_take isl_dim *dim,
 	enum isl_dim_type type);
 __isl_give isl_dim *isl_dim_flatten(__isl_take isl_dim *dim);

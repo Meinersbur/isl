@@ -353,6 +353,9 @@ __isl_give isl_map *isl_set_lex_gt_set(__isl_take isl_set *set1,
 
 int isl_set_size(__isl_keep isl_set *set);
 
+__isl_give isl_set *isl_set_align_params(__isl_take isl_set *set,
+	__isl_take isl_dim *model);
+
 __isl_give isl_mat *isl_basic_set_equalities_matrix(
 	__isl_keep isl_basic_set *bset, enum isl_dim_type c1,
 	enum isl_dim_type c2, enum isl_dim_type c3, enum isl_dim_type c4);
