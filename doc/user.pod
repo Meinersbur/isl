@@ -1339,6 +1339,15 @@ i.e., whether both domain and range are nested relations.
 The functions above construct a (basic, regular or union) relation
 that maps (a wrapped version of) the input relation to its domain or range.
 
+=item * Elimination
+
+	__isl_give isl_set *isl_set_eliminate(
+		__isl_take isl_set *set, enum isl_dim_type type,
+		unsigned first, unsigned n);
+
+Eliminate the coefficients for the given dimensions from the constraints,
+without removing the dimensions.
+
 =item * Identity
 
 	__isl_give isl_map *isl_set_identity(
