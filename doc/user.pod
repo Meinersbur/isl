@@ -2294,6 +2294,10 @@ are returned in C<*n> and C<*d>, respectively.
 	__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_coalesce(
 		__isl_take isl_union_pw_qpolynomial *upwqp);
 
+	__isl_give isl_qpolynomial *isl_qpolynomial_gist(
+		__isl_take isl_qpolynomial *qp,
+		__isl_take isl_set *context);
+
 	__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_gist(
 		__isl_take isl_pw_qpolynomial *pwqp,
 		__isl_take isl_set *context);

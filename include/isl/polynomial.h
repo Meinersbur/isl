@@ -114,6 +114,9 @@ int isl_qpolynomial_foreach_term(__isl_keep isl_qpolynomial *qp,
 __isl_give isl_qpolynomial *isl_qpolynomial_eval(
 	__isl_take isl_qpolynomial *qp, __isl_take isl_point *pnt);
 
+__isl_give isl_qpolynomial *isl_qpolynomial_gist(
+	__isl_take isl_qpolynomial *qp, __isl_take isl_set *context);
+
 __isl_give isl_qpolynomial *isl_qpolynomial_from_constraint(
 	__isl_take isl_constraint *c, enum isl_dim_type type, unsigned pos);
 __isl_give isl_qpolynomial *isl_qpolynomial_from_term(__isl_take isl_term *term);

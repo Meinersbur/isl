@@ -202,8 +202,6 @@ __isl_give isl_qpolynomial *isl_qpolynomial_substitute_equalities(
 	__isl_take isl_qpolynomial *qp, __isl_take isl_basic_set *eq);
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_substitute_equalities(
 	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_basic_set *eq);
-__isl_give isl_qpolynomial *isl_qpolynomial_gist(
-	__isl_take isl_qpolynomial *qp, __isl_take isl_set *context);
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_gist(
 	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_set *context);
 
