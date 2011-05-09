@@ -492,6 +492,9 @@ int FN(PW,involves_dims)(__isl_keep PW *pw, enum isl_dim_type type,
 							type, first, n);
 		if (involves < 0 || involves)
 			return involves;
+		involves = isl_set_involves_dims(pw->p[i].set, type, first, n);
+		if (involves < 0 || involves)
+			return involves;
 	}
 	return 0;
 }

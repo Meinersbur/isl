@@ -246,6 +246,11 @@ __isl_give isl_set *isl_set_remove_divs(__isl_take isl_set *set);
 __isl_give isl_set *isl_set_split_dims(__isl_take isl_set *set,
 	enum isl_dim_type type, unsigned first, unsigned n);
 
+int isl_basic_set_involves_dims(__isl_keep isl_basic_set *bset,
+	enum isl_dim_type type, unsigned first, unsigned n);
+int isl_set_involves_dims(__isl_keep isl_set *set,
+	enum isl_dim_type type, unsigned first, unsigned n);
+
 void isl_set_print_internal(__isl_keep isl_set *set, FILE *out, int indent);
 int isl_set_plain_is_empty(__isl_keep isl_set *set);
 int isl_set_fast_is_empty(__isl_keep isl_set *set);
