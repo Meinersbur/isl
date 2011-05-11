@@ -91,6 +91,8 @@ __isl_give isl_basic_set *isl_basic_set_remove_dims(
 struct isl_basic_set *isl_basic_set_simplify(struct isl_basic_set *bset);
 __isl_give isl_basic_set *isl_basic_set_detect_equalities(
 						__isl_take isl_basic_set *bset);
+__isl_give isl_basic_set *isl_basic_set_remove_redundancies(
+	__isl_take isl_basic_set *bset);
 __isl_give isl_basic_set *isl_basic_set_list_product(
 	__isl_take struct isl_basic_set_list *list);
 

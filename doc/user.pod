@@ -1409,6 +1409,13 @@ basic set or relation.
 Simplify the representation of a set or relation by detecting implicit
 equalities.
 
+=item * Removing redundant constraints
+
+	__isl_give isl_basic_set *isl_basic_set_remove_redundancies(
+		__isl_take isl_basic_set *bset);
+	__isl_give isl_basic_map *isl_basic_map_remove_redundancies(
+		__isl_take isl_basic_map *bmap);
+
 =item * Convex hull
 
 	__isl_give isl_basic_set *isl_set_convex_hull(
