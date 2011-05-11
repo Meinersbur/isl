@@ -3851,8 +3851,19 @@ struct isl_basic_set *isl_basic_map_domain(struct isl_basic_map *bmap)
 	return domain;
 }
 
+int isl_basic_map_may_be_set(__isl_keep isl_basic_map *bmap)
+{
+	if (!bmap)
+		return -1;
+	return isl_dim_may_be_set(bmap->dim);
+}
+
 struct isl_basic_set *isl_basic_map_range(struct isl_basic_map *bmap)
 {
+	if (!bmap)
+		return NULL;
+	if (isl_basic_map_may_be_set(bmap))
+		return bmap;
 	return isl_basic_map_domain(isl_basic_map_reverse(bmap));
 }
 
@@ -3934,6 +3945,13 @@ error:
 	return NULL;
 }
 
+int isl_map_may_be_set(__isl_keep isl_map *map)
+{
+	if (!map)
+		return -1;
+	return isl_dim_may_be_set(map->dim);
+}
+
 struct isl_set *isl_map_range(struct isl_map *map)
 {
 	int i;
@@ -3941,8 +3959,7 @@ struct isl_set *isl_map_range(struct isl_map *map)
 
 	if (!map)
 		goto error;
-	if (isl_map_dim(map, isl_dim_in) == 0 &&
-	    !isl_dim_is_named_or_nested(map->dim, isl_dim_in))
+	if (isl_map_may_be_set(map))
 		return (isl_set *)map;
 
 	map = isl_map_cow(map);

@@ -1126,6 +1126,17 @@ int isl_dim_is_named_or_nested(__isl_keep isl_dim *dim, enum isl_dim_type type)
 	return 0;
 }
 
+int isl_dim_may_be_set(__isl_keep isl_dim *dim)
+{
+	if (!dim)
+		return -1;
+	if (isl_dim_size(dim, isl_dim_in) != 0)
+		return 0;
+	if (isl_dim_is_named_or_nested(dim, isl_dim_in))
+		return 0;
+	return 1;
+}
+
 __isl_give isl_dim *isl_dim_reset(__isl_take isl_dim *dim,
 	enum isl_dim_type type)
 {

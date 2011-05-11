@@ -114,6 +114,8 @@ unsigned isl_basic_map_offset(struct isl_basic_map *bmap,
 unsigned isl_basic_set_offset(struct isl_basic_set *bset,
 					enum isl_dim_type type);
 
+int isl_basic_map_may_be_set(__isl_keep isl_basic_map *bmap);
+int isl_map_may_be_set(__isl_keep isl_map *map);
 int isl_map_compatible_domain(struct isl_map *map, struct isl_set *set);
 int isl_basic_map_compatible_domain(struct isl_basic_map *bmap,
 		struct isl_basic_set *bset);
