@@ -326,6 +326,24 @@ int isl_constraint_dim(struct isl_constraint *constraint,
 	return n(constraint, type);
 }
 
+int isl_constraint_involves_dims(__isl_keep isl_constraint *constraint,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	if (!constraint)
+		return -1;
+
+	if (first + n > isl_basic_set_dim(constraint->bmap, type))
+		isl_die(constraint->ctx, isl_error_invalid,
+			"index out of bounds", return -1);
+
+	first += isl_basic_map_offset(constraint->bmap, type);
+
+	if (isl_seq_first_non_zero(constraint->line[0] + first, n) >= 0)
+		return 1;
+
+	return 0;
+}
+
 const char *isl_constraint_get_dim_name(__isl_keep isl_constraint *constraint,
 	enum isl_dim_type type, unsigned pos)
 {

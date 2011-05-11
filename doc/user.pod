@@ -1077,6 +1077,9 @@ the following functions.
 	void isl_constraint_get_coefficient(
 		__isl_keep isl_constraint *constraint,
 		enum isl_dim_type type, int pos, isl_int *v);
+	int isl_constraint_involves_dims(
+		__isl_keep isl_constraint *constraint,
+		enum isl_dim_type type, unsigned first, unsigned n);
 
 The explicit representations of the existentially quantified
 variables can be inspected using the following functions.

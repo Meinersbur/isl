@@ -77,6 +77,9 @@ __isl_give isl_dim *isl_constraint_get_dim(
 int isl_constraint_dim(struct isl_constraint *constraint,
 	enum isl_dim_type type);
 
+int isl_constraint_involves_dims(__isl_keep isl_constraint *constraint,
+	enum isl_dim_type type, unsigned first, unsigned n);
+
 const char *isl_constraint_get_dim_name(__isl_keep isl_constraint *constraint,
 	enum isl_dim_type type, unsigned pos);
 void isl_constraint_get_constant(__isl_keep isl_constraint *constraint,
