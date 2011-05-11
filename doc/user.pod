@@ -2029,6 +2029,15 @@ Quasi affine expressions can be copied and free using
 	__isl_give isl_aff *isl_aff_copy(__isl_keep isl_aff *aff);
 	void *isl_aff_free(__isl_take isl_aff *aff);
 
+A (rational) bound on a dimension can be extracted from an C<isl_constraint>
+using the following function.  The constraint is required to have
+a non-zero coefficient for the specified dimension.
+
+	#include <isl/constraint.h>
+	__isl_give isl_aff *isl_constraint_get_bound(
+		__isl_keep isl_constraint *constraint,
+		enum isl_dim_type type, int pos);
+
 The expression can be inspected using
 
 	#include <isl/aff.h>

@@ -15,6 +15,7 @@
 #include <isl_dim_private.h>
 #include <isl_div_private.h>
 #include <isl/seq.h>
+#include <isl_aff_private.h>
 
 isl_ctx *isl_constraint_get_ctx(__isl_keep isl_constraint *c)
 {
@@ -964,4 +965,42 @@ error:
 	isl_constraint_free(upper);
 	isl_basic_set_free(context);
 	return -1;
+}
+
+__isl_give isl_aff *isl_constraint_get_bound(
+	__isl_keep isl_constraint *constraint, enum isl_dim_type type, int pos)
+{
+	isl_aff *aff;
+	isl_local_space *ls;
+
+	if (!constraint)
+		return NULL;
+	if (pos >= isl_basic_set_dim(constraint->bmap, type))
+		isl_die(constraint->ctx, isl_error_invalid,
+			"index out of bounds", return NULL);
+	if (!isl_basic_map_may_be_set(constraint->bmap))
+		isl_die(constraint->ctx, isl_error_invalid,
+			"not a set constraint", return NULL);
+
+	pos += offset(constraint, type);
+	if (isl_int_is_zero(constraint->line[0][pos]))
+		isl_die(constraint->ctx, isl_error_invalid,
+			"constraint does not define a bound on given dimension",
+			return NULL);
+
+	ls = isl_basic_set_get_local_space(constraint->bmap);
+	aff = isl_aff_alloc(ls);
+	if (!aff)
+		return NULL;
+
+	if (isl_int_is_neg(constraint->line[0][pos]))
+		isl_seq_cpy(aff->v->el + 1, constraint->line[0],
+			    aff->v->size - 1);
+	else
+		isl_seq_neg(aff->v->el + 1, constraint->line[0],
+			    aff->v->size - 1);
+	isl_int_set_si(aff->v->el[1 + pos], 0);
+	isl_int_abs(aff->v->el[0], constraint->line[0][pos]);
+
+	return aff;
 }
