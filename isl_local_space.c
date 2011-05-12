@@ -218,3 +218,92 @@ error:
 	isl_local_space_free(ls);
 	return NULL;
 }
+
+/* Copy row "s" of "src" to row "d" of "dst", applying the expansion
+ * defined by "exp".
+ */
+static void expand_row(__isl_keep isl_mat *dst, int d,
+	__isl_keep isl_mat *src, int s, int *exp)
+{
+	int i;
+	unsigned c = src->n_col - src->n_row;
+
+	isl_seq_cpy(dst->row[d], src->row[s], c);
+	isl_seq_clr(dst->row[d] + c, dst->n_col - c);
+
+	for (i = 0; i < s; ++i)
+		isl_int_set(dst->row[d][c + exp[i]], src->row[s][c + i]);
+}
+
+/* Compare (known) divs.
+ * Return non-zero if at least one of the two divs is unknown.
+ */
+static int cmp_row(__isl_keep isl_mat *div, int i, int j)
+{
+	int li, lj;
+
+	if (isl_int_is_zero(div->row[j][0]))
+		return -1;
+	if (isl_int_is_zero(div->row[i][0]))
+		return 1;
+
+	li = isl_seq_last_non_zero(div->row[i], div->n_col);
+	lj = isl_seq_last_non_zero(div->row[j], div->n_col);
+
+	if (li != lj)
+		return li - lj;
+
+	return isl_seq_cmp(div->row[i], div->row[j], div->n_col);
+}
+
+/* Combine the two lists of divs into a single list.
+ * For each row i in div1, exp1[i] is set to the position of the corresponding
+ * row in the result.  Similarly for div2 and exp2.
+ * This function guarantees
+ *	exp1[i] >= i
+ *	exp1[i+1] > exp1[i]
+ * For optimal merging, the two input list should have been sorted.
+ */
+__isl_give isl_mat *isl_merge_divs(__isl_keep isl_mat *div1,
+	__isl_keep isl_mat *div2, int *exp1, int *exp2)
+{
+	int i, j, k;
+	isl_mat *div = NULL;
+	unsigned d = div1->n_col - div1->n_row;
+
+	div = isl_mat_alloc(div1->ctx, 1 + div1->n_row + div2->n_row,
+				d + div1->n_row + div2->n_row);
+	if (!div)
+		return NULL;
+
+	for (i = 0, j = 0, k = 0; i < div1->n_row && j < div2->n_row; ++k) {
+		int cmp;
+
+		expand_row(div, k, div1, i, exp1);
+		expand_row(div, k + 1, div2, j, exp2);
+
+		cmp = cmp_row(div, k, k + 1);
+		if (cmp == 0) {
+			exp1[i++] = k;
+			exp2[j++] = k;
+		} else if (cmp < 0) {
+			exp1[i++] = k;
+		} else {
+			exp2[j++] = k;
+			isl_seq_cpy(div->row[k], div->row[k + 1], div->n_col);
+		}
+	}
+	for (; i < div1->n_row; ++i, ++k) {
+		expand_row(div, k, div1, i, exp1);
+		exp1[i] = k;
+	}
+	for (; j < div2->n_row; ++j, ++k) {
+		expand_row(div, k, div2, j, exp2);
+		exp2[j] = k;
+	}
+
+	div->n_row = k;
+	div->n_col = d + k;
+
+	return div;
+}
