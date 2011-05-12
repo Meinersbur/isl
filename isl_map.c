@@ -6330,6 +6330,54 @@ error:
 	return NULL;
 }
 
+/* Apply the expansion computed by isl_merge_divs.
+ * The expansion itself is given by "exp" while the resulting
+ * list of divs is given by "div".
+ */
+__isl_give isl_basic_set *isl_basic_set_expand_divs(
+	__isl_take isl_basic_set *bset, __isl_take isl_mat *div, int *exp)
+{
+	int i, j;
+	int n_div;
+
+	bset = isl_basic_set_cow(bset);
+	if (!bset || !div)
+		goto error;
+
+	if (div->n_row < bset->n_div)
+		isl_die(isl_mat_get_ctx(div), isl_error_invalid,
+			"not an expansion", goto error);
+
+	bset = isl_basic_map_extend_dim(bset, isl_dim_copy(bset->dim),
+					div->n_row - bset->n_div, 0,
+					2 * (div->n_row - bset->n_div));
+
+	n_div = bset->n_div;
+	for (i = n_div; i < div->n_row; ++i)
+		if (isl_basic_set_alloc_div(bset) < 0)
+			goto error;
+
+	j = n_div - 1;
+	for (i = div->n_row - 1; i >= 0; --i) {
+		if (j >= 0 && exp[j] == i) {
+			if (i != j)
+				isl_basic_map_swap_div(bset, i, j);
+			j--;
+		} else {
+			isl_seq_cpy(bset->div[i], div->row[i], div->n_col);
+			if (isl_basic_map_add_div_constraints(bset, i) < 0)
+				goto error;
+		}
+	}
+
+	isl_mat_free(div);
+	return bset;
+error:
+	isl_basic_set_free(bset);
+	isl_mat_free(div);
+	return NULL;
+}
+
 /* Look for a div in dst that corresponds to the div "div" in src.
  * The divs before "div" in src and dst are assumed to be the same.
  * 
