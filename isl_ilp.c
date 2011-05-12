@@ -13,6 +13,9 @@
 #include "isl_sample.h"
 #include <isl/seq.h>
 #include "isl_equalities.h"
+#include <isl_aff_private.h>
+#include <isl_local_space_private.h>
+#include <isl_mat_private.h>
 
 /* Given a basic set "bset", construct a basic set U such that for
  * each element x in U, the whole unit box positioned at x is inside
@@ -330,4 +333,141 @@ enum isl_lp_result isl_basic_set_solve_ilp(struct isl_basic_set *bset, int max,
 error:
 	isl_basic_set_free(bset);
 	return isl_lp_error;
+}
+
+static enum isl_lp_result basic_set_opt(__isl_keep isl_basic_set *bset, int max,
+	__isl_keep isl_aff *obj, isl_int *opt)
+{
+	enum isl_lp_result res;
+
+	if (!obj)
+		return isl_lp_error;
+	bset = isl_basic_set_copy(bset);
+	bset = isl_basic_set_underlying_set(bset);
+	res = isl_basic_set_solve_ilp(bset, max, obj->v->el + 1, opt, NULL);
+	isl_basic_set_free(bset);
+	return res;
+}
+
+static __isl_give isl_mat *extract_divs(__isl_keep isl_basic_set *bset)
+{
+	int i;
+	isl_ctx *ctx = isl_basic_set_get_ctx(bset);
+	isl_mat *div;
+
+	div = isl_mat_alloc(ctx, bset->n_div,
+			    1 + 1 + isl_basic_set_total_dim(bset));
+	if (!div)
+		return NULL;
+
+	for (i = 0; i < bset->n_div; ++i)
+		isl_seq_cpy(div->row[i], bset->div[i], div->n_col);
+
+	return div;
+}
+
+enum isl_lp_result isl_basic_set_opt(__isl_keep isl_basic_set *bset, int max,
+	__isl_keep isl_aff *obj, isl_int *opt)
+{
+	int *exp1 = NULL;
+	int *exp2 = NULL;
+	isl_ctx *ctx;
+	isl_mat *bset_div = NULL;
+	isl_mat *div = NULL;
+	enum isl_lp_result res;
+
+	if (!bset || !obj)
+		return isl_lp_error;
+
+	ctx = isl_aff_get_ctx(obj);
+	if (!isl_dim_equal(bset->dim, obj->ls->dim))
+		isl_die(ctx, isl_error_invalid,
+			"spaces don't match", return isl_lp_error);
+	if (!isl_int_is_one(obj->v->el[0]))
+		isl_die(ctx, isl_error_unsupported,
+			"expecting integer affine expression",
+			return isl_lp_error);
+
+	if (bset->n_div == 0 && obj->ls->div->n_row == 0)
+		return basic_set_opt(bset, max, obj, opt);
+
+	bset = isl_basic_set_copy(bset);
+	obj = isl_aff_copy(obj);
+
+	bset_div = extract_divs(bset);
+	exp1 = isl_alloc_array(ctx, int, bset_div->n_row);
+	exp2 = isl_alloc_array(ctx, int, obj->ls->div->n_row);
+	if (!bset_div || !exp1 || !exp2)
+		goto error;
+
+	div = isl_merge_divs(bset_div, obj->ls->div, exp1, exp2);
+
+	bset = isl_basic_set_expand_divs(bset, isl_mat_copy(div), exp1);
+	obj = isl_aff_expand_divs(obj, isl_mat_copy(div), exp2);
+
+	res = basic_set_opt(bset, max, obj, opt);
+
+	isl_mat_free(bset_div);
+	isl_mat_free(div);
+	free(exp1);
+	free(exp2);
+	isl_basic_set_free(bset);
+	isl_aff_free(obj);
+
+	return res;
+error:
+	isl_mat_free(div);
+	isl_mat_free(bset_div);
+	free(exp1);
+	free(exp2);
+	isl_basic_set_free(bset);
+	isl_aff_free(obj);
+	return isl_lp_error;
+}
+
+/* Compute the minimum (maximum if max is set) of the integer affine
+ * expression obj over the points in set and put the result in *opt.
+ */
+enum isl_lp_result isl_set_opt(__isl_keep isl_set *set, int max,
+	__isl_keep isl_aff *obj, isl_int *opt)
+{
+	int i;
+	enum isl_lp_result res;
+	int empty = 1;
+	isl_int opt_i;
+
+	if (!set || !obj)
+		return isl_lp_error;
+	if (set->n == 0)
+		return isl_lp_empty;
+
+	res = isl_basic_set_opt(set->p[0], max, obj, opt);
+	if (res == isl_lp_error || res == isl_lp_unbounded)
+		return res;
+	if (set->n == 1)
+		return res;
+	if (res == isl_lp_ok)
+		empty = 0;
+
+	isl_int_init(opt_i);
+	for (i = 1; i < set->n; ++i) {
+		res = isl_basic_set_opt(set->p[i], max, obj, &opt_i);
+		if (res == isl_lp_error || res == isl_lp_unbounded) {
+			isl_int_clear(opt_i);
+			return res;
+		}
+		if (res == isl_lp_ok)
+			empty = 0;
+		if (isl_int_gt(opt_i, *opt))
+			isl_int_set(*opt, opt_i);
+	}
+	isl_int_clear(opt_i);
+
+	return empty ? isl_lp_empty : isl_lp_ok;
+}
+
+enum isl_lp_result isl_set_max(__isl_keep isl_set *set,
+	__isl_keep isl_aff *obj, isl_int *opt)
+{
+	return isl_set_opt(set, 1, obj, opt);
 }
