@@ -283,6 +283,23 @@ struct isl_basic_set *isl_basic_set_add_constraint(
 						constraint);
 }
 
+__isl_give isl_map *isl_map_add_constraint(__isl_take isl_map *map,
+	__isl_take isl_constraint *constraint)
+{
+	isl_basic_map *bmap;
+
+	bmap = isl_basic_map_from_constraint(constraint);
+	map = isl_map_intersect(map, isl_map_from_basic_map(bmap));
+
+	return map;
+}
+
+__isl_give isl_set *isl_set_add_constraint(__isl_take isl_set *set,
+	__isl_take isl_constraint *constraint)
+{
+	return isl_map_add_constraint(set, constraint);
+}
+
 struct isl_constraint *isl_constraint_add_div(struct isl_constraint *constraint,
 	struct isl_div *div, int *pos)
 {

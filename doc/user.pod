@@ -904,7 +904,7 @@ from a universe set or relation, adding equality and/or
 inequality constraints and then projecting out the
 existentially quantified variables, if any.
 Constraints can be constructed, manipulated and
-added to basic sets and relations using the following functions.
+added to (basic) sets and relations using the following functions.
 
 	#include <isl/constraint.h>
 	__isl_give isl_constraint *isl_equality_alloc(
@@ -921,6 +921,12 @@ added to basic sets and relations using the following functions.
 		__isl_take isl_constraint *constraint);
 	__isl_give isl_basic_set *isl_basic_set_add_constraint(
 		__isl_take isl_basic_set *bset,
+		__isl_take isl_constraint *constraint);
+	__isl_give isl_map *isl_map_add_constraint(
+		__isl_take isl_map *map,
+		__isl_take isl_constraint *constraint);
+	__isl_give isl_set *isl_set_add_constraint(
+		__isl_take isl_set *set,
 		__isl_take isl_constraint *constraint);
 
 For example, to create a set containing the even integers
