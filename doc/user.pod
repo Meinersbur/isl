@@ -1905,6 +1905,7 @@ Matrices can be created, copied and freed using the following functions.
 Note that the elements of a newly created matrix may have arbitrary values.
 The elements can be changed and inspected using the following functions.
 
+	isl_ctx *isl_mat_get_ctx(__isl_keep isl_mat *mat);
 	int isl_mat_rows(__isl_keep isl_mat *mat);
 	int isl_mat_cols(__isl_keep isl_mat *mat);
 	int isl_mat_get_element(__isl_keep isl_mat *mat,

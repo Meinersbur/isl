@@ -14,6 +14,11 @@
 #include "isl_map_private.h"
 #include <isl_dim_private.h>
 
+isl_ctx *isl_mat_get_ctx(__isl_keep isl_mat *mat)
+{
+	return mat ? mat->ctx : NULL;
+}
+
 struct isl_mat *isl_mat_alloc(struct isl_ctx *ctx,
 	unsigned n_row, unsigned n_col)
 {
