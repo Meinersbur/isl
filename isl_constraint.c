@@ -1004,3 +1004,30 @@ __isl_give isl_aff *isl_constraint_get_bound(
 
 	return aff;
 }
+
+/* Construct an equality constraint equating the given affine expression
+ * to zero.
+ */
+__isl_give isl_constraint *isl_equality_from_aff(__isl_take isl_aff *aff)
+{
+	int k;
+	isl_basic_set *bset;
+
+	if (!aff)
+		return NULL;
+
+	bset = isl_basic_set_from_local_space(isl_aff_get_local_space(aff));
+	bset = isl_basic_set_extend_constraints(bset, 1, 0);
+	k = isl_basic_set_alloc_equality(bset);
+	if (k < 0)
+		goto error;
+
+	isl_seq_cpy(bset->eq[k], aff->v->el + 1, aff->v->size - 1);
+	isl_aff_free(aff);
+
+	return isl_basic_set_constraint(bset, &bset->eq[k]);
+error:
+	isl_aff_free(aff);
+	isl_basic_set_free(bset);
+	return NULL;
+}

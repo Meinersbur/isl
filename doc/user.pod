@@ -2049,6 +2049,12 @@ a non-zero coefficient for the specified dimension.
 		__isl_keep isl_constraint *constraint,
 		enum isl_dim_type type, int pos);
 
+Conversely, an equality constraint can be constructed, equating
+the affine expression to zero, using
+
+	__isl_give isl_constraint *isl_equality_from_aff(
+		__isl_take isl_aff *aff);
+
 The expression can be inspected using
 
 	#include <isl/aff.h>
