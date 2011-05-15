@@ -128,7 +128,8 @@ libisl_la_LDFLAGS = -version-info @versioninfo@ \
 libisl_la_CPPFLAGS = $(INCLUDES) @PIPLIB_CPPFLAGS@ @GMP_CPPFLAGS@
 
 isl_test_CPPFLAGS = $(INCLUDES) @GMP_CPPFLAGS@
-isl_test_LDADD = libisl.la
+isl_test_LDFLAGS = @GMP_LDFLAGS@
+isl_test_LDADD = libisl.la -lgmp
 
 isl_polyhedron_sample_CPPFLAGS = $(INCLUDES) @GMP_CPPFLAGS@
 isl_polyhedron_sample_LDADD = libisl.la
@@ -136,17 +137,20 @@ isl_polyhedron_sample_SOURCES = \
 	polyhedron_sample.c
 
 isl_pip_CPPFLAGS = $(INCLUDES) @GMP_CPPFLAGS@
-isl_pip_LDADD = libisl.la
+isl_pip_LDFLAGS = @GMP_LDFLAGS@
+isl_pip_LDADD = libisl.la -lgmp
 isl_pip_SOURCES = \
 	pip.c
 
 isl_bound_CPPFLAGS = $(INCLUDES) @GMP_CPPFLAGS@
-isl_bound_LDADD = libisl.la
+isl_bound_LDFLAGS = @GMP_LDFLAGS@
+isl_bound_LDADD = libisl.la -lgmp
 isl_bound_SOURCES = \
 	bound.c
 
 isl_polyhedron_minimize_CPPFLAGS = $(INCLUDES) @GMP_CPPFLAGS@
-isl_polyhedron_minimize_LDADD = libisl.la
+isl_polyhedron_minimize_LDFLAGS = @GMP_LDFLAGS@
+isl_polyhedron_minimize_LDADD = libisl.la -lgmp
 isl_polyhedron_minimize_SOURCES = \
 	polyhedron_minimize.c
 
