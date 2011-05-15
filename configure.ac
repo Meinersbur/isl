@@ -82,6 +82,9 @@ if test "$with_piplib" != "no"; then
 fi
 AM_CONDITIONAL(HAVE_PIPLIB, test x$have_piplib = xtrue)
 
+PACKAGE_CFLAGS="$GMP_CPPFLAGS"
+PACKAGE_LDFLAGS="$GMP_LDFLAGS"
+PACKAGE_LIBS="-lisl -lgmp"
 AX_CREATE_PKGCONFIG_INFO
 
 AX_DETECT_GIT_HEAD
