@@ -16,6 +16,7 @@
 #include <isl/ctx.h>
 #include <isl/blk.h>
 #include <isl/dim.h>
+#include <isl/div.h>
 #include <isl/vec.h>
 #include <isl/mat.h>
 #include <isl/printer.h>
@@ -68,6 +69,8 @@ isl_ctx *isl_basic_map_get_ctx(__isl_keep isl_basic_map *bmap);
 isl_ctx *isl_map_get_ctx(__isl_keep isl_map *map);
 __isl_give isl_dim *isl_basic_map_get_dim(__isl_keep isl_basic_map *bmap);
 __isl_give isl_dim *isl_map_get_dim(__isl_keep isl_map *map);
+
+struct isl_div *isl_basic_map_div(struct isl_basic_map *bmap, int pos);
 
 __isl_give isl_basic_map *isl_basic_map_set_tuple_name(
 	__isl_take isl_basic_map *bmap, enum isl_dim_type type, const char *s);

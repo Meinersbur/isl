@@ -35,6 +35,8 @@ __isl_give isl_dim *isl_set_get_dim(__isl_keep isl_set *set);
 __isl_give isl_set *isl_set_reset_dim(__isl_take isl_set *set,
 	__isl_take isl_dim *dim);
 
+struct isl_div *isl_basic_set_div(struct isl_basic_set *bset, int pos);
+
 const char *isl_basic_set_get_tuple_name(__isl_keep isl_basic_set *bset);
 const char *isl_set_get_tuple_name(__isl_keep isl_set *set);
 __isl_give isl_set *isl_set_set_tuple_name(__isl_take isl_set *set,

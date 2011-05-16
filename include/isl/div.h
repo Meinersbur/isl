@@ -11,7 +11,6 @@
 #define ISL_DIV_H
 
 #include <isl/dim.h>
-#include <isl/set.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -23,8 +22,6 @@ typedef struct isl_div isl_div;
 isl_ctx *isl_div_get_ctx(__isl_keep isl_div *div);
 
 struct isl_div *isl_div_alloc(struct isl_dim *dim);
-struct isl_div *isl_basic_map_div(struct isl_basic_map *bmap, int pos);
-struct isl_div *isl_basic_set_div(struct isl_basic_set *bset, int pos);
 __isl_give isl_div *isl_div_copy(__isl_keep isl_div *div);
 void isl_div_free(struct isl_div *c);
 
