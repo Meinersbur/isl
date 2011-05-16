@@ -13,6 +13,11 @@
 #include <isl_dim_private.h>
 #include <isl/seq.h>
 
+isl_ctx *isl_div_get_ctx(__isl_keep isl_div *div)
+{
+	return div ? div->ctx : NULL;
+}
+
 static unsigned n(struct isl_div *d, enum isl_dim_type type)
 {
 	struct isl_dim *dim = d->bmap->dim;

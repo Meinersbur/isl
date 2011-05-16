@@ -1076,6 +1076,7 @@ to C<isl_set_compute_divs> or C<isl_map_compute_divs>.
 
 	__isl_give isl_div *isl_constraint_div(
 		__isl_keep isl_constraint *constraint, int pos);
+	isl_ctx *isl_div_get_ctx(__isl_keep isl_div *div);
 	void isl_div_get_constant(__isl_keep isl_div *div,
 		isl_int *v);
 	void isl_div_get_denominator(__isl_keep isl_div *div,
