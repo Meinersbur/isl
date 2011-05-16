@@ -2766,27 +2766,3 @@ is given, then the constant should appear in the last column.
 
 Given a polytope, C<isl_polytope_scan> prints
 all integer points in the polytope.
-
-=head1 C<isl-polylib>
-
-The C<isl-polylib> library provides the following functions for converting
-between C<isl> objects and C<PolyLib> objects.
-The library is distributed separately for licensing reasons.
-
-	#include <isl_set_polylib.h>
-	__isl_give isl_basic_set *isl_basic_set_new_from_polylib(
-		Polyhedron *P, __isl_take isl_dim *dim);
-	Polyhedron *isl_basic_set_to_polylib(
-		__isl_keep isl_basic_set *bset);
-	__isl_give isl_set *isl_set_new_from_polylib(Polyhedron *D,
-		__isl_take isl_dim *dim);
-	Polyhedron *isl_set_to_polylib(__isl_keep isl_set *set);
-
-	#include <isl_map_polylib.h>
-	__isl_give isl_basic_map *isl_basic_map_new_from_polylib(
-		Polyhedron *P, __isl_take isl_dim *dim);
-	__isl_give isl_map *isl_map_new_from_polylib(Polyhedron *D,
-		__isl_take isl_dim *dim);
-	Polyhedron *isl_basic_map_to_polylib(
-		__isl_keep isl_basic_map *bmap);
-	Polyhedron *isl_map_to_polylib(__isl_keep isl_map *map);
