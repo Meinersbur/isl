@@ -18,6 +18,7 @@
 #include <isl_polynomial_private.h>
 #include <isl_point_private.h>
 #include <isl_dim_private.h>
+#include <isl_div_private.h>
 #include <isl_mat_private.h>
 #include <isl_range.h>
 

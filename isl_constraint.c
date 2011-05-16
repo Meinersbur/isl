@@ -13,6 +13,7 @@
 #include <isl_map_private.h>
 #include <isl/constraint.h>
 #include <isl_dim_private.h>
+#include <isl_div_private.h>
 #include <isl/seq.h>
 
 isl_ctx *isl_constraint_get_ctx(__isl_keep isl_constraint *c)

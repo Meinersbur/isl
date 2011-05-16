@@ -17,13 +17,7 @@
 extern "C" {
 #endif
 
-struct isl_div {
-	int ref;
-	struct isl_ctx *ctx;
-
-	struct isl_basic_map	*bmap;
-	isl_int			**line;
-};
+struct isl_div;
 typedef struct isl_div isl_div;
 
 isl_ctx *isl_div_get_ctx(__isl_keep isl_div *div);

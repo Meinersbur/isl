@@ -53,6 +53,7 @@ libisl_la_SOURCES = \
 	isl_dim_map.h \
 	isl_dim_map.c \
 	isl_div.c \
+	isl_div_private.h \
 	isl_equalities.c \
 	isl_equalities.h \
 	isl_factorization.c \

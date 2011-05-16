@@ -8,7 +8,7 @@
  */
 
 #include <isl_map_private.h>
-#include <isl/div.h>
+#include <isl_div_private.h>
 #include <isl/map.h>
 #include <isl_dim_private.h>
 #include <isl/seq.h>
