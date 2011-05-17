@@ -306,7 +306,6 @@ __isl_give isl_basic_map *isl_basic_map_from_local_space(
 	}
 					
 	isl_local_space_free(ls);
-	bmap = isl_basic_map_finalize(bmap);
 	return bmap;
 error:
 	isl_local_space_free(ls);
