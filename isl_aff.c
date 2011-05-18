@@ -119,6 +119,11 @@ int isl_aff_dim(__isl_keep isl_aff *aff, enum isl_dim_type type)
 	return aff ? isl_local_space_dim(aff->ls, type) : 0;
 }
 
+__isl_give isl_dim *isl_aff_get_dim(__isl_keep isl_aff *aff)
+{
+	return aff ? isl_local_space_get_dim(aff->ls) : NULL;
+}
+
 __isl_give isl_local_space *isl_aff_get_local_space(__isl_keep isl_aff *aff)
 {
 	return aff ? isl_local_space_copy(aff->ls) : NULL;

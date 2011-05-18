@@ -21,6 +21,7 @@ isl_ctx *isl_aff_get_ctx(__isl_keep isl_aff *aff);
 
 int isl_aff_dim(__isl_keep isl_aff *aff, enum isl_dim_type type);
 
+__isl_give isl_dim *isl_aff_get_dim(__isl_keep isl_aff *aff);
 __isl_give isl_local_space *isl_aff_get_local_space(__isl_keep isl_aff *aff);
 
 const char *isl_aff_get_dim_name(__isl_keep isl_aff *aff,

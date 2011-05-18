@@ -480,6 +480,10 @@ specification of the original object.
 	__isl_give isl_dim *isl_union_pw_qpolynomial_fold_get_dim(
 		__isl_keep isl_union_pw_qpolynomial_fold *upwf);
 
+	#include <isl/aff.h>
+	__isl_give isl_dim *isl_aff_get_dim(
+		__isl_keep isl_aff *aff);
+
 The names of the individual dimensions may be set or read off
 using the following functions.
 
