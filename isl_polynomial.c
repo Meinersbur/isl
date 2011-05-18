@@ -2158,7 +2158,7 @@ int isl_qpolynomial_involves_dims(__isl_keep isl_qpolynomial *qp,
 	isl_assert(qp->dim->ctx, type == isl_dim_param ||
 				 type == isl_dim_set, return -1);
 
-	active = isl_calloc_array(set->ctx, int, isl_dim_total(qp->dim));
+	active = isl_calloc_array(qp->dim->ctx, int, isl_dim_total(qp->dim));
 	if (set_active(qp, active) < 0)
 		goto error;
 
