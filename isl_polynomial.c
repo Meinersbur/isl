@@ -1980,7 +1980,7 @@ static void invert_div(__isl_keep isl_qpolynomial *qp, int div,
  *
  * After the reduction, some divs may have become redundant or identical,
  * so we call substitute_non_divs and sort_divs.  If these functions
- * eliminate divs of merge * two or more divs into one, the coefficients
+ * eliminate divs or merge two or more divs into one, the coefficients
  * of the enclosing divs may have to be reduced again, so we call
  * ourselves recursively if the number of divs decreases.
  */
