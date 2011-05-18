@@ -22,6 +22,7 @@
 #include <isl_mat_private.h>
 #include <isl_range.h>
 #include <isl_local_space_private.h>
+#include <isl_aff_private.h>
 
 static unsigned pos(__isl_keep isl_dim *dim, enum isl_dim_type type)
 {
@@ -2178,6 +2179,88 @@ error:
 	return -1;
 }
 
+/* Remove divs that do not appear in the quasi-polynomial, nor in any
+ * of the divs that do appear in the quasi-polynomial.
+ */
+static __isl_give isl_qpolynomial *remove_redundant_divs(
+	__isl_take isl_qpolynomial *qp)
+{
+	int i, j;
+	int d;
+	int len;
+	int skip;
+	int *active = NULL;
+	int *reordering = NULL;
+	int redundant = 0;
+	int n_div;
+
+	if (!qp)
+		return NULL;
+	if (qp->div->n_row == 0)
+		return qp;
+
+	d = isl_dim_total(qp->dim);
+	len = qp->div->n_col - 2;
+	active = isl_calloc_array(qp->ctx, int, len);
+	if (!active)
+		goto error;
+
+	if (up_set_active(qp->upoly, active, len) < 0)
+		goto error;
+
+	for (i = qp->div->n_row - 1; i >= 0; --i) {
+		if (!active[d + i]) {
+			redundant = 1;
+			continue;
+		}
+		for (j = 0; j < i; ++j) {
+			if (isl_int_is_zero(qp->div->row[i][2 + d + j]))
+				continue;
+			active[d + j] = 1;
+			break;
+		}
+	}
+
+	if (!redundant) {
+		free(active);
+		return qp;
+	}
+
+	reordering = isl_alloc_array(qp->div->ctx, int, len);
+	if (!reordering)
+		goto error;
+
+	for (i = 0; i < d; ++i)
+		reordering[i] = i;
+
+	skip = 0;
+	n_div = qp->div->n_row;
+	for (i = 0; i < n_div; ++i) {
+		if (!active[d + i]) {
+			qp->div = isl_mat_drop_rows(qp->div, i - skip, 1);
+			qp->div = isl_mat_drop_cols(qp->div,
+						    2 + d + i - skip, 1);
+			skip++;
+		}
+		reordering[d + i] = d + i - skip;
+	}
+
+	qp->upoly = reorder(qp->upoly, reordering);
+
+	if (!qp->upoly || !qp->div)
+		goto error;
+
+	free(active);
+	free(reordering);
+
+	return qp;
+error:
+	free(active);
+	free(reordering);
+	isl_qpolynomial_free(qp);
+	return NULL;
+}
+
 __isl_give struct isl_upoly *isl_upoly_drop(__isl_take struct isl_upoly *up,
 	unsigned first, unsigned n)
 {
@@ -2855,6 +2938,38 @@ __isl_give isl_qpolynomial *isl_qpolynomial_from_affine(__isl_take isl_dim *dim,
 	up = isl_upoly_from_affine(dim->ctx, f, denom, 1 + isl_dim_total(dim));
 
 	return isl_qpolynomial_alloc(dim, 0, up);
+}
+
+__isl_give isl_qpolynomial *isl_qpolynomial_from_aff(__isl_take isl_aff *aff)
+{
+	isl_ctx *ctx;
+	struct isl_upoly *up;
+	isl_qpolynomial *qp;
+
+	if (!aff)
+		return NULL;
+
+	ctx = isl_aff_get_ctx(aff);
+	up = isl_upoly_from_affine(ctx, aff->v->el + 1, aff->v->el[0],
+				    aff->v->size - 1);
+
+	qp = isl_qpolynomial_alloc(isl_aff_get_dim(aff),
+				    aff->ls->div->n_row, up);
+	if (!qp)
+		goto error;
+
+	isl_mat_free(qp->div);
+	qp->div = isl_mat_copy(aff->ls->div);
+	if (!qp->div)
+		goto error;
+
+	isl_aff_free(aff);
+	qp = reduce_divs(qp);
+	qp = remove_redundant_divs(qp);
+	return qp;
+error:
+	isl_aff_free(aff);
+	return NULL;
 }
 
 __isl_give isl_qpolynomial *isl_qpolynomial_from_constraint(

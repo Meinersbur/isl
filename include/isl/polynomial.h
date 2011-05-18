@@ -9,6 +9,7 @@
 #include <isl/point.h>
 #include <isl/printer.h>
 #include <isl/union_set.h>
+#include <isl/aff.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -123,6 +124,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_gist(
 __isl_give isl_qpolynomial *isl_qpolynomial_from_constraint(
 	__isl_take isl_constraint *c, enum isl_dim_type type, unsigned pos);
 __isl_give isl_qpolynomial *isl_qpolynomial_from_term(__isl_take isl_term *term);
+__isl_give isl_qpolynomial *isl_qpolynomial_from_aff(__isl_take isl_aff *aff);
 __isl_give isl_basic_map *isl_basic_map_from_qpolynomial(
 	__isl_take isl_qpolynomial *qp);
 
