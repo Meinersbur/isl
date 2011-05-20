@@ -28,6 +28,8 @@ enum isl_fold isl_fold_type_negate(enum isl_fold type)
 	case isl_fold_list:
 		return isl_fold_list;
 	}
+
+	isl_die(NULL, isl_error_internal, "unhandled isl_fold type", abort());
 }
 
 static __isl_give isl_qpolynomial_fold *qpolynomial_fold_alloc(
