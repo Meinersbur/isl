@@ -1170,7 +1170,6 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_lift(
 	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_dim *dim)
 {
 	int i;
-	isl_ctx *ctx;
 
 	if (!fold || !dim)
 		goto error;
