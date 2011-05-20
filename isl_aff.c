@@ -45,9 +45,16 @@ __isl_give isl_aff *isl_aff_alloc(__isl_take isl_local_space *ls)
 		return NULL;
 
 	ctx = isl_local_space_get_ctx(ls);
+	if (!isl_local_space_divs_known(ls))
+		isl_die(ctx, isl_error_invalid, "local space has unknown divs",
+			goto error);
+
 	total = isl_local_space_dim(ls, isl_dim_all);
 	v = isl_vec_alloc(ctx, 1 + 1 + total);
 	return isl_aff_alloc_vec(ls, v);
+error:
+	isl_local_space_free(ls);
+	return NULL;
 }
 
 __isl_give isl_aff *isl_aff_zero(__isl_take isl_local_space *ls)
