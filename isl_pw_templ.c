@@ -123,9 +123,6 @@ __isl_give PW *FN(PW,dup)(__isl_keep PW *pw)
 					    FN(EL,copy)(pw->p[i].FIELD));
 
 	return dup;
-error:
-	FN(PW,free)(dup);
-	return NULL;
 }
 
 __isl_give PW *FN(PW,cow)(__isl_take PW *pw)
