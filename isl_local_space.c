@@ -307,3 +307,17 @@ __isl_give isl_mat *isl_merge_divs(__isl_keep isl_mat *div1,
 
 	return div;
 }
+
+int isl_local_space_divs_known(__isl_keep isl_local_space *ls)
+{
+	int i;
+
+	if (!ls)
+		return -1;
+
+	for (i = 0; i < ls->div->n_row; ++i)
+		if (isl_int_is_zero(ls->div->row[i][0]))
+			return 0;
+
+	return 1;
+}
