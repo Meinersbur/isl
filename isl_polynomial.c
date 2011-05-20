@@ -2973,6 +2973,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_from_aff(__isl_take isl_aff *aff)
 
 	isl_mat_free(qp->div);
 	qp->div = isl_mat_copy(aff->ls->div);
+	qp->div = isl_mat_cow(qp->div);
 	if (!qp->div)
 		goto error;
 
