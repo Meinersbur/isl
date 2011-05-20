@@ -77,8 +77,6 @@ __isl_give isl_local_space *isl_local_space_copy(__isl_keep isl_local_space *ls)
 
 __isl_give isl_local_space *isl_local_space_dup(__isl_keep isl_local_space *ls)
 {
-	isl_local_space *dup;
-
 	if (!ls)
 		return NULL;
 
