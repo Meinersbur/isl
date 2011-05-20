@@ -279,7 +279,6 @@ static int align_entry(__isl_take PART *part, void *user)
 __isl_give UNION *FN(UNION,align_params)(__isl_take UNION *u,
 	__isl_take isl_dim *model)
 {
-	int i, j;
 	S(UNION,align) data = { NULL, NULL };
 
 	if (!u || !model)
@@ -412,7 +411,6 @@ static int match_set_entry(void **entry, void *user)
 	S(UNION,match_set_data) *data = user;
 	uint32_t hash;
 	struct isl_hash_table_entry *entry2;
-	isl_dim *dim;
 	PW *pw = *entry;
 	int empty;
 
