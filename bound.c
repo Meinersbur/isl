@@ -68,7 +68,6 @@ static int verify_point(__isl_take isl_point *pnt, void *user)
 	int bounded;
 	int sign;
 	int ok;
-	int cst;
 	FILE *out = vpb->options->print_all ? stdout : stderr;
 
 	vpb->n--;
