@@ -1522,26 +1522,36 @@ error:
 
 __isl_give isl_qpolynomial *isl_qpolynomial_zero(__isl_take isl_dim *dim)
 {
+	if (!dim)
+		return NULL;
 	return isl_qpolynomial_alloc(dim, 0, isl_upoly_zero(dim->ctx));
 }
 
 __isl_give isl_qpolynomial *isl_qpolynomial_one(__isl_take isl_dim *dim)
 {
+	if (!dim)
+		return NULL;
 	return isl_qpolynomial_alloc(dim, 0, isl_upoly_one(dim->ctx));
 }
 
 __isl_give isl_qpolynomial *isl_qpolynomial_infty(__isl_take isl_dim *dim)
 {
+	if (!dim)
+		return NULL;
 	return isl_qpolynomial_alloc(dim, 0, isl_upoly_infty(dim->ctx));
 }
 
 __isl_give isl_qpolynomial *isl_qpolynomial_neginfty(__isl_take isl_dim *dim)
 {
+	if (!dim)
+		return NULL;
 	return isl_qpolynomial_alloc(dim, 0, isl_upoly_neginfty(dim->ctx));
 }
 
 __isl_give isl_qpolynomial *isl_qpolynomial_nan(__isl_take isl_dim *dim)
 {
+	if (!dim)
+		return NULL;
 	return isl_qpolynomial_alloc(dim, 0, isl_upoly_nan(dim->ctx));
 }
 
@@ -1550,6 +1560,9 @@ __isl_give isl_qpolynomial *isl_qpolynomial_cst(__isl_take isl_dim *dim,
 {
 	struct isl_qpolynomial *qp;
 	struct isl_upoly_cst *cst;
+
+	if (!dim)
+		return NULL;
 
 	qp = isl_qpolynomial_alloc(dim, 0, isl_upoly_zero(dim->ctx));
 	if (!qp)
