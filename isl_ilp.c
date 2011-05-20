@@ -466,6 +466,12 @@ enum isl_lp_result isl_set_opt(__isl_keep isl_set *set, int max,
 	return empty ? isl_lp_empty : isl_lp_ok;
 }
 
+enum isl_lp_result isl_basic_set_max(__isl_keep isl_basic_set *bset,
+	__isl_keep isl_aff *obj, isl_int *opt)
+{
+	return isl_basic_set_opt(bset, 1, obj, opt);
+}
+
 enum isl_lp_result isl_set_max(__isl_keep isl_set *set,
 	__isl_keep isl_aff *obj, isl_int *opt)
 {
