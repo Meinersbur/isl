@@ -419,7 +419,7 @@ __isl_give isl_aff *isl_aff_expand_divs( __isl_take isl_aff *aff,
 					     aff->v->el[offset + j]);
 			j--;
 		} else
-			isl_int_set_si(aff->v->el[offset + j], 0);
+			isl_int_set_si(aff->v->el[offset + i], 0);
 	}
 
 	aff->ls = isl_local_space_replace_divs(aff->ls, isl_mat_copy(div));
