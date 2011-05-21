@@ -870,7 +870,7 @@ struct isl_dim *isl_dim_drop(struct isl_dim *dim, enum isl_dim_type type,
 	if (!dim)
 		return NULL;
 
-	if (n == 0)
+	if (num == 0)
 		return isl_dim_reset(dim, type);
 
 	isl_assert(dim->ctx, first + num <= n(dim, type), goto error);
