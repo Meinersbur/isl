@@ -1232,7 +1232,6 @@ error:
 static __isl_give isl_map *add_minmax(__isl_take isl_map *map,
 	struct vars *v, int n)
 {
-	int i;
 	struct variable *var;
 
 	while (n < v->n) {
@@ -1895,7 +1894,6 @@ static struct isl_obj obj_read_poly_or_fold(struct isl_stream *s,
 	__isl_take isl_basic_map *bmap, struct vars *v, int n)
 {
 	struct isl_obj obj = { isl_obj_pw_qpolynomial_fold, NULL };
-	struct isl_obj obj_p;
 	isl_qpolynomial *qp;
 	isl_qpolynomial_fold *fold = NULL;
 	isl_pw_qpolynomial_fold *pwf;
@@ -2216,7 +2214,6 @@ struct isl_obj isl_stream_read_obj(struct isl_stream *s)
 __isl_give isl_map *isl_stream_read_map(struct isl_stream *s, int nparam)
 {
 	struct isl_obj obj;
-	struct isl_map *map;
 
 	obj = obj_read(s, nparam);
 	if (obj.v)
@@ -2232,7 +2229,6 @@ error:
 __isl_give isl_set *isl_stream_read_set(struct isl_stream *s, int nparam)
 {
 	struct isl_obj obj;
-	struct isl_set *set;
 
 	obj = obj_read(s, nparam);
 	if (obj.v)
@@ -2247,7 +2243,6 @@ error:
 __isl_give isl_union_map *isl_stream_read_union_map(struct isl_stream *s)
 {
 	struct isl_obj obj;
-	isl_union_map *umap;
 
 	obj = obj_read(s, -1);
 	if (obj.type == isl_obj_map) {
@@ -2271,7 +2266,6 @@ error:
 __isl_give isl_union_set *isl_stream_read_union_set(struct isl_stream *s)
 {
 	struct isl_obj obj;
-	isl_union_set *uset;
 
 	obj = obj_read(s, -1);
 	if (obj.type == isl_obj_set) {
@@ -2520,7 +2514,6 @@ __isl_give isl_pw_qpolynomial *isl_stream_read_pw_qpolynomial(
 	struct isl_stream *s)
 {
 	struct isl_obj obj;
-	struct isl_pw_qpolynomial *pwqp;
 
 	obj = obj_read(s, -1);
 	if (obj.v)
