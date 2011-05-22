@@ -625,7 +625,7 @@ int isl_map_plain_is_singleton(__isl_keep isl_map *map)
 static __isl_give isl_point *singleton_extract_point(
 	__isl_keep isl_basic_map *bmap)
 {
-	int i, j;
+	int j;
 	unsigned dim;
 	struct isl_vec *point;
 	isl_int m;
@@ -643,7 +643,6 @@ static __isl_give isl_point *singleton_extract_point(
 
 	isl_int_set_si(point->el[0], 1);
 	for (j = 0; j < bmap->n_eq; ++j) {
-		int s;
 		int i = dim - 1 - j;
 		isl_assert(bmap->ctx,
 		    isl_seq_first_non_zero(bmap->eq[j] + 1, i) == -1,
@@ -706,7 +705,6 @@ static int map_is_singleton_subset(__isl_keep isl_map *map1,
 int isl_map_is_subset(struct isl_map *map1, struct isl_map *map2)
 {
 	int is_subset = 0;
-	struct isl_map *diff;
 
 	if (!map1 || !map2)
 		return -1;
