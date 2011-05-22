@@ -326,7 +326,6 @@ __isl_give isl_morph *isl_basic_set_variable_compression(
 	unsigned ntype;
 	unsigned orest;
 	unsigned nrest;
-	unsigned total;
 	int f_eq, n_eq;
 	isl_dim *dim;
 	isl_mat *H, *U, *Q, *C = NULL, *H1, *U1, *U2;
