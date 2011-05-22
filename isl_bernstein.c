@@ -93,7 +93,7 @@ error:
  */
 static int is_tight(int *k, int n, int d, isl_cell *cell)
 {
-	int i, j;
+	int i;
 
 	for (i = 0; i < n; ++i) {
 		int v;
