@@ -509,11 +509,25 @@ struct isl_dim *isl_dim_add(struct isl_dim *dim, enum isl_dim_type type,
 	case isl_dim_out:
 		return isl_dim_extend(dim,
 					dim->nparam, dim->n_in, dim->n_out + n);
+	default:
+		isl_die(dim->ctx, isl_error_invalid,
+			"cannot add dimensions of specified type", goto error);
 	}
-	return dim;
 error:
 	isl_dim_free(dim);
 	return NULL;
+}
+
+static int valid_dim_type(enum isl_dim_type type)
+{
+	switch (type) {
+	case isl_dim_param:
+	case isl_dim_in:
+	case isl_dim_out:
+		return 1;
+	default:
+		return 0;
+	}
 }
 
 __isl_give isl_dim *isl_dim_insert(__isl_take isl_dim *dim,
@@ -525,6 +539,11 @@ __isl_give isl_dim *isl_dim_insert(__isl_take isl_dim *dim,
 		return NULL;
 	if (n == 0)
 		return isl_dim_reset(dim, type);
+
+	if (!valid_dim_type(type))
+		isl_die(dim->ctx, isl_error_invalid,
+			"cannot insert dimensions of specified type",
+			goto error);
 
 	isl_assert(dim->ctx, pos <= isl_dim_size(dim, type), goto error);
 
@@ -564,6 +583,7 @@ __isl_give isl_dim *isl_dim_insert(__isl_take isl_dim *dim,
 	case isl_dim_param:	dim->nparam += n; break;
 	case isl_dim_in:	dim->n_in += n; break;
 	case isl_dim_out:	dim->n_out += n; break;
+	default:		;
 	}
 	dim = isl_dim_reset(dim, type);
 
@@ -642,12 +662,14 @@ __isl_give isl_dim *isl_dim_move(__isl_take isl_dim *dim,
 	case isl_dim_param:	dim->nparam += n; break;
 	case isl_dim_in:	dim->n_in += n; break;
 	case isl_dim_out:	dim->n_out += n; break;
+	default:		;
 	}
 
 	switch (src_type) {
 	case isl_dim_param:	dim->nparam -= n; break;
 	case isl_dim_in:	dim->n_in -= n; break;
 	case isl_dim_out:	dim->n_out -= n; break;
+	default:		;
 	}
 
 	if (dst_type != isl_dim_param && src_type != isl_dim_param)
@@ -873,6 +895,10 @@ struct isl_dim *isl_dim_drop(struct isl_dim *dim, enum isl_dim_type type,
 	if (num == 0)
 		return isl_dim_reset(dim, type);
 
+	if (!valid_dim_type(type))
+		isl_die(dim->ctx, isl_error_invalid,
+			"cannot drop dimensions of specified type", goto error);
+
 	isl_assert(dim->ctx, first + num <= n(dim, type), goto error);
 	dim = isl_dim_cow(dim);
 	if (!dim)
@@ -892,7 +918,7 @@ struct isl_dim *isl_dim_drop(struct isl_dim *dim, enum isl_dim_type type,
 		case isl_dim_in:
 			get_names(dim, isl_dim_out, 0, dim->n_out,
 				dim->names + offset(dim, isl_dim_out) - num);
-		case isl_dim_out:
+		default:
 			;
 		}
 		dim->n_name -= num;
@@ -901,6 +927,7 @@ struct isl_dim *isl_dim_drop(struct isl_dim *dim, enum isl_dim_type type,
 	case isl_dim_param:	dim->nparam -= num; break;
 	case isl_dim_in:	dim->n_in -= num; break;
 	case isl_dim_out:	dim->n_out -= num; break;
+	default:		;
 	}
 	dim = isl_dim_reset(dim, type);
 	if (type == isl_dim_param) {
