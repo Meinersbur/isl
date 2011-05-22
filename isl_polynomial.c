@@ -474,8 +474,6 @@ error:
 
 __isl_give struct isl_upoly *isl_upoly_dup(__isl_keep struct isl_upoly *up)
 {
-	struct isl_upoly *dup;
-
 	if (!up)
 		return NULL;
 
@@ -1036,7 +1034,6 @@ void isl_qpolynomial_free(__isl_take isl_qpolynomial *qp)
 __isl_give struct isl_upoly *isl_upoly_var_pow(isl_ctx *ctx, int pos, int power)
 {
 	int i;
-	struct isl_upoly *up;
 	struct isl_upoly_rec *rec;
 	struct isl_upoly_cst *cst;
 
@@ -2000,7 +1997,7 @@ static void invert_div(__isl_keep isl_qpolynomial *qp, int div,
  */
 static __isl_give isl_qpolynomial *reduce_divs(__isl_take isl_qpolynomial *qp)
 {
-	int i, j;
+	int i;
 	isl_vec *aff = NULL;
 	struct isl_upoly *s;
 	unsigned n_div;
@@ -2525,7 +2522,6 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_mul(
 {
 	int i, j, n;
 	struct isl_pw_qpolynomial *res;
-	isl_set *set;
 
 	if (!pwqp1 || !pwqp2)
 		goto error;
@@ -3760,8 +3756,6 @@ __isl_give isl_qpolynomial *isl_qpolynomial_morph(__isl_take isl_qpolynomial *qp
 	int i;
 	int n_sub;
 	isl_ctx *ctx;
-	struct isl_upoly *up;
-	unsigned n_div;
 	struct isl_upoly **subs;
 	isl_mat *mat;
 
