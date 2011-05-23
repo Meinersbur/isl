@@ -132,9 +132,7 @@ error:
 __isl_give isl_reordering *isl_reordering_extend_dim(
 	__isl_take isl_reordering *exp, __isl_take isl_dim *dim)
 {
-	int i;
 	isl_reordering *res;
-	int offset;
 
 	if (!exp || !dim)
 		goto error;
