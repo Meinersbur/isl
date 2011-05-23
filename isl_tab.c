@@ -2927,7 +2927,7 @@ static int perform_undo_var(struct isl_tab *tab, struct isl_tab_undo *undo) WARN
 static int perform_undo_var(struct isl_tab *tab, struct isl_tab_undo *undo)
 {
 	struct isl_tab_var *var = var_from_index(tab, undo->u.var_index);
-	switch(undo->type) {
+	switch (undo->type) {
 	case isl_tab_undo_nonneg:
 		var->is_nonneg = 0;
 		break;
@@ -2965,6 +2965,10 @@ static int perform_undo_var(struct isl_tab *tab, struct isl_tab_undo *undo)
 		break;
 	case isl_tab_undo_relax:
 		return unrelax(tab, var);
+	default:
+		isl_die(tab->mat->ctx, isl_error_internal,
+			"perform_undo_var called on invalid undo record",
+			return -1);
 	}
 
 	return 0;
