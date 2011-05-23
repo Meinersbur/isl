@@ -2180,17 +2180,6 @@ static struct isl_tab *context_lex_peek_tab(struct isl_context *context)
 	return clex->tab;
 }
 
-static void context_lex_extend(struct isl_context *context, int n)
-{
-	struct isl_context_lex *clex = (struct isl_context_lex *)context;
-	if (!clex->tab)
-		return;
-	if (isl_tab_extend_cons(clex->tab, n) >= 0)
-		return;
-	isl_tab_free(clex->tab);
-	clex->tab = NULL;
-}
-
 static void context_lex_add_eq(struct isl_context *context, isl_int *eq,
 		int check, int update)
 {
