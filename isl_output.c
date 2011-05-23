@@ -1743,7 +1743,6 @@ static __isl_give isl_printer *print_term_c(__isl_take isl_printer *p,
 	__isl_keep isl_basic_set *bset, isl_int c, unsigned pos)
 {
 	enum isl_dim_type type;
-	unsigned nparam = isl_basic_set_dim(bset, isl_dim_param);
 
 	if (pos == 0)
 		return isl_printer_print_isl_int(p, c);
