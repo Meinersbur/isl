@@ -748,7 +748,7 @@ static int parse_bool_option(struct isl_arg *decl, char **arg,
 	unsigned *p = (unsigned *)(((char *)opt) + decl->offset);
 
 	if (skip_name(decl, arg[0], prefix, 0, NULL)) {
-		if ((decl->flags && ISL_ARG_BOOL_ARG) && arg[1]) {
+		if ((decl->flags & ISL_ARG_BOOL_ARG) && arg[1]) {
 			char *endptr;
 			int val = strtol(arg[1], &endptr, 0);
 			if (*endptr == '\0' && (val == 0 || val == 1)) {
