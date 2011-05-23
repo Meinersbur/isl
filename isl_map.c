@@ -1278,25 +1278,6 @@ error:
 	return NULL;
 }
 
-static __isl_give isl_set *isl_set_swap_vars(__isl_take isl_set *set,
-	unsigned n)
-{
-	int i;
-	set = isl_set_cow(set);
-	if (!set)
-		return NULL;
-
-	for (i = 0; i < set->n; ++i) {
-		set->p[i] = isl_basic_set_swap_vars(set->p[i], n);
-		if (!set->p[i]) {
-			isl_set_free(set);
-			return NULL;
-		}
-	}
-	ISL_F_CLR(set, ISL_SET_NORMALIZED);
-	return set;
-}
-
 struct isl_basic_map *isl_basic_map_set_to_empty(struct isl_basic_map *bmap)
 {
 	int i = 0;
