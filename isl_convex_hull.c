@@ -784,13 +784,6 @@ error:
 	return NULL;
 }
 
-/* Project out final n dimensions using Fourier-Motzkin */
-static struct isl_set *set_project_out(struct isl_ctx *ctx,
-	struct isl_set *set, unsigned n)
-{
-	return isl_set_remove_dims(set, isl_dim_set, isl_set_n_dim(set) - n, n);
-}
-
 static struct isl_basic_set *convex_hull_0d(struct isl_set *set)
 {
 	struct isl_basic_set *convex_hull;
