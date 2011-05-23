@@ -2225,9 +2225,6 @@ struct isl_basic_set *isl_basic_set_intersect(
 static __isl_give isl_map *map_intersect_add_constraint(
 	__isl_take isl_map *map1, __isl_take isl_map *map2)
 {
-	struct isl_basic_map *bmap1;
-	struct isl_basic_map *bmap2;
-
 	isl_assert(map1->ctx, map1->n == 1, goto error);
 	isl_assert(map2->ctx, map1->n == 1, goto error);
 	isl_assert(map1->ctx, map1->p[0]->n_div == 0, goto error);
@@ -2484,7 +2481,6 @@ __isl_give isl_basic_map *isl_basic_map_move_dims(
 	enum isl_dim_type dst_type, unsigned dst_pos,
 	enum isl_dim_type src_type, unsigned src_pos, unsigned n)
 {
-	int i;
 	struct isl_dim_map *dim_map;
 	struct isl_basic_map *res;
 	enum isl_dim_type t;
@@ -3872,7 +3868,6 @@ __isl_give isl_basic_map *isl_basic_map_domain_map(
 	int i, k;
 	isl_dim *dim;
 	isl_basic_map *domain;
-	isl_basic_set *bset;
 	int nparam, n_in, n_out;
 	unsigned total;
 
@@ -3911,7 +3906,6 @@ __isl_give isl_basic_map *isl_basic_map_range_map(
 	int i, k;
 	isl_dim *dim;
 	isl_basic_map *range;
-	isl_basic_set *bset;
 	int nparam, n_in, n_out;
 	unsigned total;
 
@@ -5319,7 +5313,6 @@ static int map_divs_known(__isl_keep isl_map *map)
  */
 struct isl_map *isl_basic_map_compute_divs(struct isl_basic_map *bmap)
 {
-	int i;
 	int known;
 	struct isl_map *map;
 
@@ -5682,7 +5675,6 @@ __isl_give isl_basic_map *isl_basic_map_deltas_map(
 	int i, k;
 	isl_dim *dim;
 	isl_basic_map *domain;
-	isl_basic_set *bset;
 	int nparam, n;
 	unsigned total;
 
@@ -7941,8 +7933,6 @@ int isl_basic_map_plain_is_single_valued(__isl_keep isl_basic_map *bmap)
  */
 int isl_map_plain_is_single_valued(__isl_keep isl_map *map)
 {
-	int sv;
-
 	if (!map)
 		return -1;
 	if (map->n == 0)
