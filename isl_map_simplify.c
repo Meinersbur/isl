@@ -32,11 +32,6 @@ static void swap_inequality(struct isl_basic_map *bmap, int a, int b)
 	}
 }
 
-static void set_swap_inequality(struct isl_basic_set *bset, int a, int b)
-{
-	swap_inequality((struct isl_basic_map *)bset, a, b);
-}
-
 static void constraint_drop_vars(isl_int *c, unsigned n, unsigned rem)
 {
 	isl_seq_cpy(c, c + n, rem);
