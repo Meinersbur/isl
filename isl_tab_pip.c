@@ -420,7 +420,7 @@ static void sol_add(struct isl_sol *sol, struct isl_tab *tab)
 	struct isl_basic_set *bset = NULL;
 	struct isl_mat *mat = NULL;
 	unsigned off;
-	int row, i;
+	int row;
 	isl_int m;
 
 	if (sol->error || !tab)
@@ -585,7 +585,6 @@ static void sol_map_add(struct isl_sol_map *sol,
 {
 	int i;
 	struct isl_basic_map *bmap = NULL;
-	isl_basic_set *context_bset;
 	unsigned n_eq;
 	unsigned n_ineq;
 	unsigned nparam;
@@ -1728,7 +1727,6 @@ static int sample_is_finite(struct isl_tab *tab)
 static struct isl_tab *check_integer_feasible(struct isl_tab *tab)
 {
 	struct isl_tab_undo *snap;
-	int feasible;
 
 	if (!tab)
 		return NULL;
@@ -2778,8 +2776,6 @@ error:
 
 static struct isl_tab *add_gbr_eq(struct isl_tab *tab, isl_int *eq)
 {
-	int r;
-
 	if (!tab)
 		return NULL;
 
@@ -2966,7 +2962,6 @@ static int last_non_zero_var_col(struct isl_tab *tab, isl_int *p)
 {
 	int i;
 	int col;
-	unsigned dim = tab->n_var - tab->n_param - tab->n_div;
 
 	if (tab->n_var == 0)
 		return -1;
@@ -3058,8 +3053,6 @@ static int context_gbr_detect_equalities(struct isl_context *context,
 {
 	struct isl_context_gbr *cgbr = (struct isl_context_gbr *)context;
 	struct isl_ctx *ctx;
-	int i;
-	enum isl_lp_result res;
 	unsigned n_ineq;
 
 	ctx = cgbr->tab->mat->ctx;
@@ -4842,7 +4835,6 @@ __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 	int (*conflict)(int con, void *user), void *user)
 {
 	int i, j;
-	int need_update = 0;
 	int r;
 	isl_ctx *ctx = isl_basic_set_get_ctx(bset);
 	isl_vec *v = NULL;
