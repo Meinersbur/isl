@@ -19,17 +19,6 @@
 
 static struct isl_basic_set *uset_convex_hull_wrap_bounded(struct isl_set *set);
 
-static void swap_ineq(struct isl_basic_map *bmap, unsigned i, unsigned j)
-{
-	isl_int *t;
-
-	if (i != j) {
-		t = bmap->ineq[i];
-		bmap->ineq[i] = bmap->ineq[j];
-		bmap->ineq[j] = t;
-	}
-}
-
 /* Return 1 if constraint c is redundant with respect to the constraints
  * in bmap.  If c is a lower [upper] bound in some variable and bmap
  * does not have a lower [upper] bound in that variable, then c cannot
