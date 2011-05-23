@@ -2246,7 +2246,6 @@ __isl_give isl_map *isl_map_reaching_path_lengths(__isl_take isl_map *map,
  */
 static int is_eq_stride(__isl_keep isl_basic_set *bset, int i)
 {
-	int k;
 	unsigned nparam;
 	unsigned d;
 	unsigned n_div;
