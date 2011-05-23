@@ -262,7 +262,6 @@ static int print_help_msg(struct isl_arg *decl, int pos)
 
 static void print_default(struct isl_arg *decl, const char *def, int pos)
 {
-	int i;
 	const char *default_prefix = "[default: ";
 	const char *default_suffix = "]";
 	int len;
