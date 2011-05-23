@@ -1980,8 +1980,6 @@ static int solutions_entry(void **entry, void *user)
 __isl_give isl_union_set *isl_union_set_solutions(
 	__isl_take isl_union_set *uset)
 {
-	isl_ctx *ctx;
-	isl_dim *dim;
 	isl_union_set *res = NULL;
 
 	if (!uset)
