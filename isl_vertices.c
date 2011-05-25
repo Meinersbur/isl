@@ -392,10 +392,10 @@ __isl_give isl_vertices *isl_basic_set_compute_vertices(
 	int level;
 	int init;
 	unsigned nvar;
-	int *selection;
+	int *selection = NULL;
 	int selected;
-	struct isl_tab_undo **snap;
-	isl_mat *facets;
+	struct isl_tab_undo **snap = NULL;
+	isl_mat *facets = NULL;
 	struct isl_vertex_list *list = NULL;
 	int n_vertices = 0;
 	isl_vertices *vertices;
