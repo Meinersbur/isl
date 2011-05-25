@@ -798,7 +798,7 @@ __isl_give struct isl_upoly *isl_upoly_mul_rec(__isl_take struct isl_upoly *up1,
 {
 	struct isl_upoly_rec *rec1;
 	struct isl_upoly_rec *rec2;
-	struct isl_upoly_rec *res;
+	struct isl_upoly_rec *res = NULL;
 	int i, j;
 	int size;
 
