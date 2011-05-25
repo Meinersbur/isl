@@ -24,7 +24,7 @@ struct isl_upoly_rec {
 	int n;
 
 	size_t size;
-	struct isl_upoly *p[1];
+	struct isl_upoly *p[];
 };
 
 struct isl_qpolynomial {
