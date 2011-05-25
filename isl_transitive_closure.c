@@ -2856,7 +2856,7 @@ static __isl_give isl_union_map *union_floyd_warshall(
 {
 	int i, n;
 	isl_ctx *ctx;
-	isl_basic_map **list;
+	isl_basic_map **list = NULL;
 	isl_basic_map **next;
 	isl_union_map *res;
 
