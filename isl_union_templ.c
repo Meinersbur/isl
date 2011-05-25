@@ -362,6 +362,12 @@ S(UNION,match_bin_data) {
 	UNION *res;
 };
 
+/* This function is currently only used from isl_polynomial.c
+ * and not from isl_fold.c.
+ */
+static __isl_give UNION *match_bin_op(__isl_take UNION *u1,
+	__isl_take UNION *u2,
+	int (*fn)(void **, void *)) __attribute__ ((unused));
 static __isl_give UNION *match_bin_op(__isl_take UNION *u1,
 	__isl_take UNION *u2, int (*fn)(void **, void *))
 {

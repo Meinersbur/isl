@@ -12,6 +12,7 @@
 #include "isl_map_private.h"
 #include "isl_tab.h"
 #include <isl/seq.h>
+#include <isl_config.h>
 
 /*
  * The implementation of tableaus in this file was inspired by Section 8
@@ -1187,6 +1188,11 @@ static int to_row(struct isl_tab *tab, struct isl_tab_var *var, int sign)
 	return isl_tab_pivot(tab, r, var->index);
 }
 
+/* Check whether all variables that are marked as non-negative
+ * also have a non-negative sample value.  This function is not
+ * called from the current code but is useful during debugging.
+ */
+static void check_table(struct isl_tab *tab) __attribute__ ((unused));
 static void check_table(struct isl_tab *tab)
 {
 	int i;

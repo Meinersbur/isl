@@ -23,6 +23,7 @@
 #include <isl_range.h>
 #include <isl_local_space_private.h>
 #include <isl_aff_private.h>
+#include <isl_config.h>
 
 static unsigned pos(__isl_keep isl_dim *dim, enum isl_dim_type type)
 {

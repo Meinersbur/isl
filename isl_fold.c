@@ -16,6 +16,7 @@
 #include <isl/lp.h>
 #include <isl/seq.h>
 #include <isl_mat_private.h>
+#include <isl_config.h>
 
 enum isl_fold isl_fold_type_negate(enum isl_fold type)
 {

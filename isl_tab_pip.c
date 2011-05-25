@@ -16,6 +16,7 @@
 #include "isl_tab.h"
 #include "isl_sample.h"
 #include <isl_mat_private.h>
+#include <isl_config.h>
 
 /*
  * The implementation of parametric integer linear programming in this file
@@ -1116,6 +1117,7 @@ static int first_neg(struct isl_tab *tab)
  * is satisfied.  This function is not called from the current code
  * but is useful during debugging.
  */
+static void check_lexpos(struct isl_tab *tab) __attribute__ ((unused));
 static void check_lexpos(struct isl_tab *tab)
 {
 	unsigned off = 2 + tab->M;
