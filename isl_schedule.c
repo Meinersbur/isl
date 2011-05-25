@@ -1100,8 +1100,12 @@ static int count_constraints(struct isl_sched_graph *graph,
  *
  * The constraints are those from the edges plus two or three equalities
  * to express the sums.
+ *
+ * If force_parallel is set, then we add equalities to ensure that
+ * the sum of the m_n coefficients and m_0 are both zero.
  */
-static int setup_lp(isl_ctx *ctx, struct isl_sched_graph *graph)
+static int setup_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
+	int force_parallel)
 {
 	int i, j;
 	int k;
@@ -1129,16 +1133,25 @@ static int setup_lp(isl_ctx *ctx, struct isl_sched_graph *graph)
 
 	dim = isl_dim_set_alloc(ctx, 0, total);
 	isl_basic_set_free(graph->lp);
-	n_eq += 2 + parametric;
+	n_eq += 2 + parametric + force_parallel;
 	graph->lp = isl_basic_set_alloc_dim(dim, 0, n_eq, n_ineq);
 
 	k = isl_basic_set_alloc_equality(graph->lp);
 	if (k < 0)
 		return -1;
 	isl_seq_clr(graph->lp->eq[k], 1 +  total);
-	isl_int_set_si(graph->lp->eq[k][1], -1);
+	if (!force_parallel)
+		isl_int_set_si(graph->lp->eq[k][1], -1);
 	for (i = 0; i < 2 * nparam; ++i)
 		isl_int_set_si(graph->lp->eq[k][1 + param_pos + i], 1);
+
+	if (force_parallel) {
+		k = isl_basic_set_alloc_equality(graph->lp);
+		if (k < 0)
+			return -1;
+		isl_seq_clr(graph->lp->eq[k], 1 +  total);
+		isl_int_set_si(graph->lp->eq[k][2], -1);
+	}
 
 	if (parametric) {
 		k = isl_basic_set_alloc_equality(graph->lp);
@@ -2163,9 +2176,16 @@ static int carry_dependences(isl_ctx *ctx, struct isl_sched_graph *graph)
  *
  * If we manage to complete the schedule, we finish off by topologically
  * sorting the statements based on the remaining dependences.
+ *
+ * If ctx->opt->schedule_outer_parallelism is set, then we force the
+ * outermost dimension in the current band to be parallel.  If this
+ * turns out to be impossible, we fall back on the general scheme above
+ * and try to carry as many dependences as possible.
  */
 static int compute_schedule_wcc(isl_ctx *ctx, struct isl_sched_graph *graph)
 {
+	int force_parallel = 0;
+
 	if (detect_sccs(graph) < 0)
 		return -1;
 	sort_sccs(graph);
@@ -2173,13 +2193,16 @@ static int compute_schedule_wcc(isl_ctx *ctx, struct isl_sched_graph *graph)
 	if (compute_maxvar(graph) < 0)
 		return -1;
 
+	if (ctx->opt->schedule_outer_parallelism)
+		force_parallel = 1;
+
 	while (graph->n_row < graph->maxvar) {
 		isl_vec *sol;
 
 		graph->src_scc = -1;
 		graph->dst_scc = -1;
 
-		if (setup_lp(ctx, graph) < 0)
+		if (setup_lp(ctx, graph, force_parallel) < 0)
 			return -1;
 		sol = solve_lp(graph);
 		if (!sol)
@@ -2194,6 +2217,7 @@ static int compute_schedule_wcc(isl_ctx *ctx, struct isl_sched_graph *graph)
 		}
 		if (update_schedule(graph, sol, 1, 1) < 0)
 			return -1;
+		force_parallel = 0;
 	}
 
 	if (graph->n_total_row > graph->band_start)

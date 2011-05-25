@@ -60,6 +60,7 @@ struct isl_options {
 	int			convex;
 
 	int			schedule_parametric;
+	int			schedule_outer_parallelism;
 };
 
 ISL_ARG_DECL(isl_options, struct isl_options, isl_options_arg)
