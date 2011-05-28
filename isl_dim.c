@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <isl_dim_private.h>
 #include "isl_name.h"
+#include <isl_reordering.h>
 
 isl_ctx *isl_dim_get_ctx(__isl_keep isl_dim *dim)
 {
@@ -1305,4 +1306,30 @@ int isl_dim_has_named_params(__isl_keep isl_dim *dim)
 		if (!dim->names[off + i])
 			return 0;
 	return 1;
+}
+
+/* Align the initial parameters of dim1 to match the order in dim2.
+ */
+__isl_give isl_dim *isl_dim_align_params(__isl_take isl_dim *dim1,
+	__isl_take isl_dim *dim2)
+{
+	isl_reordering *exp;
+
+	if (!isl_dim_has_named_params(dim1) || !isl_dim_has_named_params(dim2))
+		isl_die(isl_dim_get_ctx(dim1), isl_error_invalid,
+			"parameter alignment requires named parameters",
+			goto error);
+
+	exp = isl_parameter_alignment_reordering(dim1, dim2);
+	isl_dim_free(dim1);
+	isl_dim_free(dim2);
+	if (!exp)
+		return NULL;
+	dim1 = isl_dim_copy(exp->dim);
+	isl_reordering_free(exp);
+	return dim1;
+error:
+	isl_dim_free(dim1);
+	isl_dim_free(dim2);
+	return NULL;
 }

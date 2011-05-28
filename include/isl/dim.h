@@ -77,6 +77,9 @@ __isl_give isl_dim *isl_dim_range(__isl_take isl_dim *dim);
 __isl_give isl_dim *isl_dim_from_range(__isl_take isl_dim *dim);
 struct isl_dim *isl_dim_underlying(struct isl_dim *dim, unsigned n_div);
 
+__isl_give isl_dim *isl_dim_align_params(__isl_take isl_dim *dim1,
+	__isl_take isl_dim *dim2);
+
 int isl_dim_is_wrapping(__isl_keep isl_dim *dim);
 __isl_give isl_dim *isl_dim_wrap(__isl_take isl_dim *dim);
 __isl_give isl_dim *isl_dim_unwrap(__isl_take isl_dim *dim);
