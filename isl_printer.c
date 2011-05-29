@@ -257,6 +257,19 @@ __isl_give isl_printer *isl_printer_set_indent(__isl_take isl_printer *p,
 	return p;
 }
 
+__isl_give isl_printer *isl_printer_indent(__isl_take isl_printer *p,
+	int indent)
+{
+	if (!p)
+		return NULL;
+
+	p->indent += indent;
+	if (p->indent < 0)
+		p->indent = 0;
+
+	return p;
+}
+
 __isl_give isl_printer *isl_printer_set_prefix(__isl_take isl_printer *p,
 	const char *prefix)
 {
