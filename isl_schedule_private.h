@@ -3,16 +3,20 @@
 
 #include <isl/schedule.h>
 
-/* The schedule for an individual domain, plus information about the bands.
+/* The schedule for an individual domain, plus information about the bands
+ * and scheduling dimensions.
  * In particular, we keep track of the number of bands and for each
  * band, the starting position of the next band.  The first band starts at
  * position 0.
+ * For each scheduling dimension, we keep track of whether it is parallel
+ * (within its band) with respect to the proximity edges.
  */
 struct isl_schedule_node {
 	isl_map *sched;
 	int	 n_band;
 	int	*band_end;
 	int	*band_id;
+	int	*parallel;
 };
 
 /* Information about the computed schedule.

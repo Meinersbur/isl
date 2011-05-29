@@ -51,6 +51,9 @@
  * scc is the index of SCC (or WCC) this node belongs to
  *
  * band contains the band index for each of the rows of the schedule
+ * parallel contains a boolean for each of the rows of the schedule,
+ * indicating whether the corresponding scheduling dimension is parallel
+ * within its band and with respect to the proximity edges.
  *
  * index, min_index and on_stack are used during the SCC detection
  * index represents the order in which nodes are visited.
@@ -70,6 +73,7 @@ struct isl_sched_node {
 	int	 scc;
 
 	int	*band;
+	int	*parallel;
 
 	/* scc detection */
 	int	 index;
@@ -342,8 +346,10 @@ static void graph_free(isl_ctx *ctx, struct isl_sched_graph *graph)
 		isl_mat_free(graph->node[i].sched);
 		isl_map_free(graph->node[i].sched_map);
 		isl_mat_free(graph->node[i].cmap);
-		if (graph->root)
+		if (graph->root) {
 			free(graph->node[i].band);
+			free(graph->node[i].parallel);
+		}
 	}
 	free(graph->node);
 	free(graph->sorted);
@@ -366,7 +372,7 @@ static int extract_node(__isl_take isl_set *set, void *user)
 	isl_dim *dim;
 	isl_mat *sched;
 	struct isl_sched_graph *graph = user;
-	int *band;
+	int *band, *parallel;
 
 	ctx = isl_set_get_ctx(set);
 	dim = isl_set_get_dim(set);
@@ -383,9 +389,11 @@ static int extract_node(__isl_take isl_set *set, void *user)
 	graph->node[graph->n].sched_map = NULL;
 	band = isl_alloc_array(ctx, int, graph->n_edge + nvar);
 	graph->node[graph->n].band = band;
+	parallel = isl_calloc_array(ctx, int, graph->n_edge + nvar);
+	graph->node[graph->n].parallel = parallel;
 	graph->n++;
 
-	if (!sched || !band)
+	if (!sched || !band || !parallel)
 		return -1;
 
 	return 0;
@@ -1250,11 +1258,17 @@ static __isl_give isl_vec *solve_lp(struct isl_sched_graph *graph)
  * t_i_x such that c_i_x = Q t_i_x and Q is equal to node->cmap.
  * In this case, we then also need to perform this multiplication
  * to obtain the values of c_i_x.
+ *
+ * If check_parallel is set, then the first two coordinates of sol are
+ * assumed to correspond to the dependence distance.  If these two
+ * coordinates are zero, then the corresponding scheduling dimension
+ * is marked as being parallel.
  */
 static int update_schedule(struct isl_sched_graph *graph,
-	__isl_take isl_vec *sol, int use_cmap)
+	__isl_take isl_vec *sol, int use_cmap, int check_parallel)
 {
 	int i, j;
+	int parallel = 0;
 	isl_vec *csol = NULL;
 
 	if (!sol)
@@ -1262,6 +1276,10 @@ static int update_schedule(struct isl_sched_graph *graph,
 	if (sol->size == 0)
 		isl_die(sol->ctx, isl_error_internal,
 			"no solution found", goto error);
+
+	if (check_parallel)
+		parallel = isl_int_is_zero(sol->el[1]) &&
+			   isl_int_is_zero(sol->el[2]);
 
 	for (i = 0; i < graph->n; ++i) {
 		struct isl_sched_node *node = &graph->node[i];
@@ -1299,6 +1317,7 @@ static int update_schedule(struct isl_sched_graph *graph,
 			node->sched = isl_mat_set_element(node->sched,
 					row, 1 + node->nparam + j, csol->el[j]);
 		node->band[graph->n_total_row] = graph->n_band;
+		node->parallel[graph->n_total_row] = parallel;
 	}
 	isl_vec_free(sol);
 	isl_vec_free(csol);
@@ -1492,14 +1511,18 @@ static __isl_give isl_schedule *extract_schedule(struct isl_sched_graph *graph,
 
 	for (i = 0; i < sched->n; ++i) {
 		int r, b;
-		int *band_end;
+		int *band_end, *parallel;
 
 		band_end = isl_alloc_array(ctx, int, graph->n_band);
-		if (!band_end)
-			goto error;
+		parallel = isl_alloc_array(ctx, int, graph->n_total_row);
 		sched->node[i].sched = node_extract_schedule(&graph->node[i]);
 		sched->node[i].band_end = band_end;
+		sched->node[i].parallel = parallel;
+		if (!band_end || !parallel)
+			goto error;
 
+		for (r = 0; r < graph->n_total_row; ++r)
+			parallel[r] = graph->node[i].parallel[r];
 		for (r = b = 0; r < graph->n_total_row; ++r) {
 			if (graph->node[i].band[r] == b)
 				continue;
@@ -1540,6 +1563,7 @@ static int copy_nodes(struct isl_sched_graph *dst, struct isl_sched_graph *src,
 		dst->node[dst->n].sched_map =
 			isl_map_copy(src->node[i].sched_map);
 		dst->node[dst->n].band = src->node[i].band;
+		dst->node[dst->n].parallel = src->node[i].parallel;
 		dst->n++;
 	}
 
@@ -2094,7 +2118,7 @@ static int carry_dependences(isl_ctx *ctx, struct isl_sched_graph *graph)
 			"unable to carry dependences", return -1);
 	}
 
-	if (update_schedule(graph, sol, 0) < 0)
+	if (update_schedule(graph, sol, 0, 0) < 0)
 		return -1;
 
 	return compute_next_band(ctx, graph);
@@ -2143,7 +2167,7 @@ static int compute_schedule_wcc(isl_ctx *ctx, struct isl_sched_graph *graph)
 				return compute_next_band(ctx, graph);
 			return carry_dependences(ctx, graph);
 		}
-		if (update_schedule(graph, sol, 1) < 0)
+		if (update_schedule(graph, sol, 1, 1) < 0)
 			return -1;
 	}
 
@@ -2283,6 +2307,7 @@ void *isl_schedule_free(__isl_take isl_schedule *sched)
 	for (i = 0; i < sched->n; ++i) {
 		isl_map_free(sched->node[i].sched);
 		free(sched->node[i].band_end);
+		free(sched->node[i].parallel);
 	}
 	isl_dim_free(sched->dim);
 	free(sched);
