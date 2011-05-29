@@ -38,6 +38,8 @@ libisl_la_SOURCES = \
 	isl_aff_private.h \
 	isl_affine_hull.c \
 	isl_arg.c \
+	isl_band.c \
+	isl_band_private.h \
 	isl_basis_reduction.h \
 	basis_reduction_tab.c \
 	isl_bernstein.c \
@@ -187,6 +189,7 @@ nodist_pkginclude_HEADERS = \
 pkginclude_HEADERS = \
 	include/isl/aff.h \
 	include/isl/arg.h \
+	include/isl/band.h \
 	include/isl/blk.h \
 	include/isl/constraint.h \
 	include/isl/ctx.h \

@@ -10,6 +10,7 @@
 #include <isl_list_private.h>
 #include <isl/set.h>
 #include <isl/aff.h>
+#include <isl/band.h>
 
 #undef BASE
 #define BASE basic_set
@@ -23,5 +24,10 @@
 
 #undef BASE
 #define BASE aff
+
+#include <isl_list_templ.c>
+
+#undef BASE
+#define BASE band
 
 #include <isl_list_templ.c>

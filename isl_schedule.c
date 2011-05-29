@@ -22,6 +22,7 @@
 #include <isl_hmap_map_basic_set.h>
 #include <isl_qsort.h>
 #include <isl_schedule_private.h>
+#include <isl_band_private.h>
 
 /*
  * The scheduling algorithm implemented in this file was inspired by
@@ -50,7 +51,10 @@
  *
  * scc is the index of SCC (or WCC) this node belongs to
  *
- * band contains the band index for each of the rows of the schedule
+ * band contains the band index for each of the rows of the schedule.
+ * band_id is used to differentiate between separate bands at the same
+ * level within the same parent band, i.e., bands that are separated
+ * by the parent band or bands that are independent of each other.
  * parallel contains a boolean for each of the rows of the schedule,
  * indicating whether the corresponding scheduling dimension is parallel
  * within its band and with respect to the proximity edges.
@@ -73,6 +77,7 @@ struct isl_sched_node {
 	int	 scc;
 
 	int	*band;
+	int	*band_id;
 	int	*parallel;
 
 	/* scc detection */
@@ -348,6 +353,7 @@ static void graph_free(isl_ctx *ctx, struct isl_sched_graph *graph)
 		isl_mat_free(graph->node[i].cmap);
 		if (graph->root) {
 			free(graph->node[i].band);
+			free(graph->node[i].band_id);
 			free(graph->node[i].parallel);
 		}
 	}
@@ -372,7 +378,7 @@ static int extract_node(__isl_take isl_set *set, void *user)
 	isl_dim *dim;
 	isl_mat *sched;
 	struct isl_sched_graph *graph = user;
-	int *band, *parallel;
+	int *band, *band_id, *parallel;
 
 	ctx = isl_set_get_ctx(set);
 	dim = isl_set_get_dim(set);
@@ -389,11 +395,13 @@ static int extract_node(__isl_take isl_set *set, void *user)
 	graph->node[graph->n].sched_map = NULL;
 	band = isl_alloc_array(ctx, int, graph->n_edge + nvar);
 	graph->node[graph->n].band = band;
+	band_id = isl_calloc_array(ctx, int, graph->n_edge + nvar);
+	graph->node[graph->n].band_id = band_id;
 	parallel = isl_calloc_array(ctx, int, graph->n_edge + nvar);
 	graph->node[graph->n].parallel = parallel;
 	graph->n++;
 
-	if (!sched || !band || !parallel)
+	if (!sched || !band || !band_id || !parallel)
 		return -1;
 
 	return 0;
@@ -1505,20 +1513,23 @@ static __isl_give isl_schedule *extract_schedule(struct isl_sched_graph *graph,
 	if (!sched)
 		goto error;
 
+	sched->ref = 1;
 	sched->n = graph->n;
 	sched->n_band = graph->n_band;
 	sched->n_total_row = graph->n_total_row;
 
 	for (i = 0; i < sched->n; ++i) {
 		int r, b;
-		int *band_end, *parallel;
+		int *band_end, *band_id, *parallel;
 
 		band_end = isl_alloc_array(ctx, int, graph->n_band);
+		band_id = isl_alloc_array(ctx, int, graph->n_band);
 		parallel = isl_alloc_array(ctx, int, graph->n_total_row);
 		sched->node[i].sched = node_extract_schedule(&graph->node[i]);
 		sched->node[i].band_end = band_end;
+		sched->node[i].band_id = band_id;
 		sched->node[i].parallel = parallel;
-		if (!band_end || !parallel)
+		if (!band_end || !band_id || !parallel)
 			goto error;
 
 		for (r = 0; r < graph->n_total_row; ++r)
@@ -1533,6 +1544,8 @@ static __isl_give isl_schedule *extract_schedule(struct isl_sched_graph *graph,
 		if (r == graph->n_total_row)
 			band_end[b++] = r;
 		sched->node[i].n_band = b;
+		for (--b; b >= 0; --b)
+			band_id[b] = graph->node[i].band_id[b];
 	}
 
 	sched->dim = dim;
@@ -1563,6 +1576,7 @@ static int copy_nodes(struct isl_sched_graph *dst, struct isl_sched_graph *src,
 		dst->node[dst->n].sched_map =
 			isl_map_copy(src->node[i].sched_map);
 		dst->node[dst->n].band = src->node[i].band;
+		dst->node[dst->n].band_id = src->node[i].band_id;
 		dst->node[dst->n].parallel = src->node[i].parallel;
 		dst->n++;
 	}
@@ -1776,6 +1790,11 @@ static int pad_schedule(struct isl_sched_graph *graph)
  * It would be possible to reuse them as the first rows in the next
  * band, but recomputing them may result in better rows as we are looking
  * at a smaller part of the dependence graph.
+ *
+ * The band_id of the second group is set to n, where n is the number
+ * of nodes in the first group.  This ensures that the band_ids over
+ * the two groups remain disjoint, even if either or both of the two
+ * groups contain independent components.
  */
 static int compute_split_schedule(isl_ctx *ctx, struct isl_sched_graph *graph)
 {
@@ -1823,6 +1842,12 @@ static int compute_split_schedule(isl_ctx *ctx, struct isl_sched_graph *graph)
 
 	graph->n_total_row++;
 	next_band(graph);
+
+	for (i = 0; i < graph->n; ++i) {
+		struct isl_sched_node *node = &graph->node[i];
+		if (node->scc > graph->src_scc)
+			node->band_id[graph->n_band] = n;
+	}
 
 	orig_total_row = graph->n_total_row;
 	orig_band = graph->n_band;
@@ -2178,6 +2203,10 @@ static int compute_schedule_wcc(isl_ctx *ctx, struct isl_sched_graph *graph)
 
 /* Compute a schedule for each component (identified by node->scc)
  * of the dependence graph separately and then combine the results.
+ *
+ * The band_id is adjusted such that each component has a separate id.
+ * Note that the band_id may have already been set to a value different
+ * from zero by compute_split_schedule.
  */
 static int compute_component_schedule(isl_ctx *ctx,
 	struct isl_sched_graph *graph)
@@ -2191,6 +2220,8 @@ static int compute_component_schedule(isl_ctx *ctx,
 	orig_total_row = graph->n_total_row;
 	n_band = 0;
 	orig_band = graph->n_band;
+	for (i = 0; i < graph->n; ++i)
+		graph->node[i].band_id[graph->n_band] += graph->node[i].scc;
 	for (wcc = 0; wcc < graph->scc; ++wcc) {
 		n = 0;
 		for (i = 0; i < graph->n; ++i)
@@ -2304,14 +2335,25 @@ void *isl_schedule_free(__isl_take isl_schedule *sched)
 	int i;
 	if (!sched)
 		return NULL;
+
+	if (--sched->ref > 0)
+		return NULL;
+
 	for (i = 0; i < sched->n; ++i) {
 		isl_map_free(sched->node[i].sched);
 		free(sched->node[i].band_end);
+		free(sched->node[i].band_id);
 		free(sched->node[i].parallel);
 	}
 	isl_dim_free(sched->dim);
+	isl_band_list_free(sched->band_forest);
 	free(sched);
 	return NULL;
+}
+
+isl_ctx *isl_schedule_get_ctx(__isl_keep isl_schedule *schedule)
+{
+	return schedule ? isl_dim_get_ctx(schedule->dim) : NULL;
 }
 
 __isl_give isl_union_map *isl_schedule_get_map(__isl_keep isl_schedule *sched)
@@ -2369,4 +2411,213 @@ __isl_give isl_union_map *isl_schedule_get_band(__isl_keep isl_schedule *sched,
 	}
 
 	return umap;
+}
+
+static __isl_give isl_band_list *construct_band_list(
+	__isl_keep isl_schedule *schedule, __isl_keep isl_band *parent,
+	int band_nr, int *parent_active, int n_active);
+
+/* Construct an isl_band structure for the band in the given schedule
+ * with sequence number band_nr for the n_active nodes marked by active.
+ * If the nodes don't have a band with the given sequence number,
+ * then a band without members is created.
+ *
+ * Because of the way the schedule is constructed, we know that
+ * the position of the band inside the schedule of a node is the same
+ * for all active nodes.
+ */
+static __isl_give isl_band *construct_band(__isl_keep isl_schedule *schedule,
+	__isl_keep isl_band *parent,
+	int band_nr, int *active, int n_active)
+{
+	int i, j;
+	isl_ctx *ctx = isl_schedule_get_ctx(schedule);
+	isl_band *band;
+	unsigned start, end;
+
+	band = isl_calloc_type(ctx, isl_band);
+	if (!band)
+		return NULL;
+
+	band->ref = 1;
+	band->schedule = schedule;
+	band->parent = parent;
+
+	for (i = 0; i < schedule->n; ++i)
+		if (active[i] && schedule->node[i].n_band > band_nr + 1)
+			break;
+
+	if (i < schedule->n) {
+		band->children = construct_band_list(schedule, band,
+						band_nr + 1, active, n_active);
+		if (!band->children)
+			goto error;
+	}
+
+	for (i = 0; i < schedule->n; ++i)
+		if (active[i])
+			break;
+
+	if (i >= schedule->n)
+		isl_die(ctx, isl_error_internal,
+			"band without active statements", goto error);
+
+	start = band_nr ? schedule->node[i].band_end[band_nr - 1] : 0;
+	end = band_nr < schedule->node[i].n_band ?
+		schedule->node[i].band_end[band_nr] : start;
+	band->n = end - start;
+
+	band->parallel = isl_alloc_array(ctx, int, band->n);
+	if (!band->parallel)
+		goto error;
+
+	for (j = 0; j < band->n; ++j)
+		band->parallel[j] = schedule->node[i].parallel[start + j];
+
+	band->map = isl_union_map_empty(isl_dim_copy(schedule->dim));
+	for (i = 0; i < schedule->n; ++i) {
+		isl_map *map;
+		unsigned n_out;
+
+		if (!active[i])
+			continue;
+
+		map = isl_map_copy(schedule->node[i].sched);
+		n_out = isl_map_dim(map, isl_dim_out);
+		map = isl_map_project_out(map, isl_dim_out, end, n_out - end);
+		map = isl_map_project_out(map, isl_dim_out, 0, start);
+		band->map = isl_union_map_union(band->map,
+						isl_union_map_from_map(map));
+	}
+	if (!band->map)
+		goto error;
+
+	return band;
+error:
+	isl_band_free(band);
+	return NULL;
+}
+
+/* Construct a list of bands that start at the same position (with
+ * sequence number band_nr) in the schedules of the nodes that
+ * were active in the parent band.
+ *
+ * A separate isl_band structure is created for each band_id
+ * and for each node that does not have a band with sequence
+ * number band_nr.  In the latter case, a band without members
+ * is created.
+ * This ensures that if a band has any children, then each node
+ * that was active in the band is active in exactly one of the children.
+ */
+static __isl_give isl_band_list *construct_band_list(
+	__isl_keep isl_schedule *schedule, __isl_keep isl_band *parent,
+	int band_nr, int *parent_active, int n_active)
+{
+	int i, j;
+	isl_ctx *ctx = isl_schedule_get_ctx(schedule);
+	int *active;
+	int n_band;
+	isl_band_list *list;
+
+	n_band = 0;
+	for (i = 0; i < n_active; ++i) {
+		for (j = 0; j < schedule->n; ++j) {
+			if (!parent_active[j])
+				continue;
+			if (schedule->node[j].n_band <= band_nr)
+				continue;
+			if (schedule->node[j].band_id[band_nr] == i) {
+				n_band++;
+				break;
+			}
+		}
+	}
+	for (j = 0; j < schedule->n; ++j)
+		if (schedule->node[j].n_band <= band_nr)
+			n_band++;
+
+	if (n_band == 1) {
+		isl_band *band;
+		list = isl_band_list_alloc(ctx, n_band);
+		band = construct_band(schedule, parent, band_nr,
+					parent_active, n_active);
+		return isl_band_list_add(list, band);
+	}
+
+	active = isl_alloc_array(ctx, int, schedule->n);
+	if (!active)
+		return NULL;
+
+	list = isl_band_list_alloc(ctx, n_band);
+
+	for (i = 0; i < n_active; ++i) {
+		int n = 0;
+		isl_band *band;
+
+		for (j = 0; j < schedule->n; ++j) {
+			active[j] = parent_active[j] &&
+					schedule->node[j].n_band > band_nr &&
+					schedule->node[j].band_id[band_nr] == i;
+			if (active[j])
+				n++;
+		}
+		if (n == 0)
+			continue;
+
+		band = construct_band(schedule, parent, band_nr, active, n);
+
+		list = isl_band_list_add(list, band);
+	}
+	for (i = 0; i < schedule->n; ++i) {
+		isl_band *band;
+		if (!parent_active[i])
+			continue;
+		if (schedule->node[i].n_band > band_nr)
+			continue;
+		for (j = 0; j < schedule->n; ++j)
+			active[j] = j == i;
+		band = construct_band(schedule, parent, band_nr, active, 1);
+		list = isl_band_list_add(list, band);
+	}
+
+	free(active);
+
+	return list;
+}
+
+/* Construct a band forest representation of the schedule and
+ * return the list of roots.
+ */
+static __isl_give isl_band_list *construct_forest(
+	__isl_keep isl_schedule *schedule)
+{
+	int i;
+	isl_ctx *ctx = isl_schedule_get_ctx(schedule);
+	isl_band_list *forest;
+	int *active;
+
+	active = isl_alloc_array(ctx, int, schedule->n);
+	if (!active)
+		return NULL;
+
+	for (i = 0; i < schedule->n; ++i)
+		active[i] = 1;
+
+	forest = construct_band_list(schedule, NULL, 0, active, schedule->n);
+
+	free(active);
+
+	return forest;
+}
+
+/* Return the roots of a band forest representation of the schedule.
+ */
+__isl_give isl_band_list *isl_schedule_get_band_forest(
+	__isl_keep isl_schedule *schedule)
+{
+	if (!schedule)
+		return NULL;
+	if (!schedule->band_forest)
+		schedule->band_forest = construct_forest(schedule);
+	return isl_band_list_copy(schedule->band_forest);
 }

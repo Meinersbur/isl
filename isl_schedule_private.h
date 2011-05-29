@@ -24,6 +24,8 @@ struct isl_schedule_node {
  * n_band is the maximal number of bands.
  * n_total_row is the number of coordinates of the schedule.
  * dim contains a description of the parameters.
+ * band_forest points to a band forest representation of the schedule
+ * and may be NULL if the forest hasn't been created yet.
  */
 struct isl_schedule {
 	int ref;
@@ -32,6 +34,8 @@ struct isl_schedule {
 	int n_band;
 	int n_total_row;
 	isl_dim *dim;
+
+	isl_band_list *band_forest;
 
 	struct isl_schedule_node node[1];
 };
