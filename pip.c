@@ -9,6 +9,7 @@
 
 #include <assert.h>
 #include <string.h>
+#include <strings.h>
 #include <isl_map_private.h>
 #include <isl/set.h>
 #include "isl_tab.h"
