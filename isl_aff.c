@@ -513,3 +513,52 @@ __isl_give isl_aff *isl_aff_sub(__isl_take isl_aff *aff1,
 {
 	return isl_aff_add(aff1, isl_aff_neg(aff2));
 }
+
+__isl_give isl_aff *isl_aff_scale(__isl_take isl_aff *aff, isl_int f)
+{
+	isl_int gcd;
+
+	if (isl_int_is_one(f))
+		return aff;
+
+	aff = isl_aff_cow(aff);
+	if (!aff)
+		return NULL;
+	aff->v = isl_vec_cow(aff->v);
+	if (!aff->v)
+		return isl_aff_free(aff);
+
+	isl_int_init(gcd);
+	isl_int_gcd(gcd, aff->v->el[0], f);
+	isl_int_divexact(aff->v->el[0], aff->v->el[0], gcd);
+	isl_int_divexact(gcd, f, gcd);
+	isl_seq_scale(aff->v->el + 1, aff->v->el + 1, gcd, aff->v->size - 1);
+	isl_int_clear(gcd);
+
+	return aff;
+}
+
+__isl_give isl_aff *isl_aff_scale_down(__isl_take isl_aff *aff, isl_int f)
+{
+	isl_int gcd;
+
+	if (isl_int_is_one(f))
+		return aff;
+
+	aff = isl_aff_cow(aff);
+	if (!aff)
+		return NULL;
+	aff->v = isl_vec_cow(aff->v);
+	if (!aff->v)
+		return isl_aff_free(aff);
+
+	isl_int_init(gcd);
+	isl_seq_gcd(aff->v->el + 1, aff->v->size - 1, &gcd);
+	isl_int_gcd(gcd, gcd, f);
+	isl_seq_scale_down(aff->v->el + 1, aff->v->el + 1, gcd, aff->v->size - 1);
+	isl_int_divexact(gcd, f, gcd);
+	isl_int_mul(aff->v->el[0], aff->v->el[0], gcd);
+	isl_int_clear(gcd);
+
+	return aff;
+}

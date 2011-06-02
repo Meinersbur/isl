@@ -2126,6 +2126,10 @@ Operations include
 		__isl_take isl_aff *aff2);
 	__isl_give isl_aff *isl_aff_neg(__isl_take isl_aff *aff);
 	__isl_give isl_aff *isl_aff_ceil(__isl_take isl_aff *aff);
+	__isl_give isl_aff *isl_aff_scale(__isl_take isl_aff *aff,
+		isl_int f);
+	__isl_give isl_aff *isl_aff_scale_down(__isl_take isl_aff *aff,
+		isl_int f);
 
 An expression can be printed using
 
