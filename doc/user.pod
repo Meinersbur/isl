@@ -2120,6 +2120,10 @@ the possibly rational constant or coefficient.
 Operations include
 
 	#include <isl/aff.h>
+	__isl_give isl_aff *isl_aff_add(__isl_take isl_aff *aff1,
+		__isl_take isl_aff *aff2);
+	__isl_give isl_aff *isl_aff_sub(__isl_take isl_aff *aff1,
+		__isl_take isl_aff *aff2);
 	__isl_give isl_aff *isl_aff_neg(__isl_take isl_aff *aff);
 	__isl_give isl_aff *isl_aff_ceil(__isl_take isl_aff *aff);
 

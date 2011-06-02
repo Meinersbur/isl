@@ -46,6 +46,11 @@ __isl_give isl_div *isl_aff_get_div(__isl_keep isl_aff *aff, int pos);
 __isl_give isl_aff *isl_aff_neg(__isl_take isl_aff *aff);
 __isl_give isl_aff *isl_aff_ceil(__isl_take isl_aff *aff);
 
+__isl_give isl_aff *isl_aff_add(__isl_take isl_aff *aff1,
+	__isl_take isl_aff *aff2);
+__isl_give isl_aff *isl_aff_sub(__isl_take isl_aff *aff1,
+	__isl_take isl_aff *aff2);
+
 __isl_give isl_printer *isl_printer_print_aff(__isl_take isl_printer *p,
 	__isl_keep isl_aff *aff);
 void isl_aff_dump(__isl_keep isl_aff *aff);

@@ -10,6 +10,7 @@
 
 #include <isl_aff_private.h>
 #include <isl_local_space_private.h>
+#include <isl_mat_private.h>
 #include <isl/seq.h>
 
 __isl_give isl_aff *isl_aff_alloc_vec(__isl_take isl_local_space *ls,
@@ -431,4 +432,84 @@ error:
 	isl_aff_free(aff);
 	isl_mat_free(div);
 	return NULL;
+}
+
+/* Add two affine expressions that live in the same local space.
+ */
+static __isl_give isl_aff *add_expanded(__isl_take isl_aff *aff1,
+	__isl_take isl_aff *aff2)
+{
+	isl_int gcd, f;
+
+	aff1 = isl_aff_cow(aff1);
+	if (!aff1 || !aff2)
+		goto error;
+
+	aff1->v = isl_vec_cow(aff1->v);
+	if (!aff1->v)
+		goto error;
+
+	isl_int_init(gcd);
+	isl_int_init(f);
+	isl_int_gcd(gcd, aff1->v->el[0], aff2->v->el[0]);
+	isl_int_divexact(f, aff2->v->el[0], gcd);
+	isl_seq_scale(aff1->v->el + 1, aff1->v->el + 1, f, aff1->v->size - 1);
+	isl_int_divexact(f, aff1->v->el[0], gcd);
+	isl_seq_addmul(aff1->v->el + 1, f, aff2->v->el + 1, aff1->v->size - 1);
+	isl_int_divexact(f, aff2->v->el[0], gcd);
+	isl_int_mul(aff1->v->el[0], aff1->v->el[0], f);
+	isl_int_clear(f);
+	isl_int_clear(gcd);
+
+	isl_aff_free(aff2);
+	return aff1;
+error:
+	isl_aff_free(aff1);
+	isl_aff_free(aff2);
+	return NULL;
+}
+
+__isl_give isl_aff *isl_aff_add(__isl_take isl_aff *aff1,
+	__isl_take isl_aff *aff2)
+{
+	isl_ctx *ctx;
+	int *exp1 = NULL;
+	int *exp2 = NULL;
+	isl_mat *div;
+
+	if (!aff1 || !aff2)
+		goto error;
+
+	ctx = isl_aff_get_ctx(aff1);
+	if (!isl_dim_equal(aff1->ls->dim, aff2->ls->dim))
+		isl_die(ctx, isl_error_invalid,
+			"spaces don't match", goto error);
+
+	if (aff1->ls->div->n_row == 0 && aff2->ls->div->n_row == 0)
+		return add_expanded(aff1, aff2);
+
+	exp1 = isl_alloc_array(ctx, int, aff1->ls->div->n_row);
+	exp2 = isl_alloc_array(ctx, int, aff2->ls->div->n_row);
+	if (!exp1 || !exp2)
+		goto error;
+
+	div = isl_merge_divs(aff1->ls->div, aff2->ls->div, exp1, exp2);
+	aff1 = isl_aff_expand_divs(aff1, isl_mat_copy(div), exp1);
+	aff2 = isl_aff_expand_divs(aff2, div, exp2);
+	free(exp1);
+	free(exp2);
+
+	return add_expanded(aff1, aff2);
+error:
+	free(exp1);
+	free(exp2);
+	isl_aff_free(aff1);
+	isl_aff_free(aff2);
+	return NULL;
+}
+
+__isl_give isl_aff *isl_aff_sub(__isl_take isl_aff *aff1,
+	__isl_take isl_aff *aff2)
+{
+	return isl_aff_add(aff1, isl_aff_neg(aff2));
 }
