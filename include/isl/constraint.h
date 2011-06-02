@@ -118,6 +118,7 @@ struct isl_basic_set *isl_basic_set_from_constraint(
 __isl_give isl_aff *isl_constraint_get_bound(
 	__isl_keep isl_constraint *constraint, enum isl_dim_type type, int pos);
 __isl_give isl_constraint *isl_equality_from_aff(__isl_take isl_aff *aff);
+__isl_give isl_constraint *isl_inequality_from_aff(__isl_take isl_aff *aff);
 
 __isl_give isl_printer *isl_printer_print_constraint(__isl_take isl_printer *p,
 	__isl_keep isl_constraint *c);
