@@ -83,6 +83,10 @@ if test "$with_piplib" != "no"; then
 fi
 AM_CONDITIONAL(HAVE_PIPLIB, test x$have_piplib = xtrue)
 
+AX_SET_WARNING_FLAGS
+
+AC_SUBST(WARNING_FLAGS)
+
 PACKAGE_CFLAGS="$GMP_CPPFLAGS"
 PACKAGE_LDFLAGS="$GMP_LDFLAGS"
 PACKAGE_LIBS="-lisl -lgmp"

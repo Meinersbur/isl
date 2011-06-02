@@ -30,6 +30,7 @@ GET_MEMORY_FUNCTIONS=mp_get_memory_functions.c
 endif
 
 INCLUDES = -I. -I$(srcdir) -I$(srcdir)/include -Iinclude/ 
+AM_CFLAGS = @WARNING_FLAGS@
 
 libisl_la_SOURCES = \
 	$(ISL_PIPLIB) \
