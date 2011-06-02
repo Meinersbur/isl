@@ -45,6 +45,13 @@ void isl_seq_submul(isl_int *dst, isl_int f, isl_int *src, unsigned len)
 		isl_int_submul(dst[i], f, src[i]);
 }
 
+void isl_seq_addmul(isl_int *dst, isl_int f, isl_int *src, unsigned len)
+{
+	int i;
+	for (i = 0; i < len; ++i)
+		isl_int_addmul(dst[i], f, src[i]);
+}
+
 void isl_seq_swp_or_cpy(isl_int *dst, isl_int *src, unsigned len)
 {
 	int i;
