@@ -22,6 +22,23 @@
 
 static char *srcdir;
 
+static char *get_filename(isl_ctx *ctx, const char *name, const char *suffix) {
+	char *filename;
+	int length;
+	char *pattern = "%s/test_inputs/%s.%s";
+
+	length = strlen(pattern) - 6 + strlen(srcdir) + strlen(name)
+		+ strlen(suffix) + 1;
+	filename = isl_alloc_array(ctx, char, length);
+
+	if (!filename)
+		return NULL;
+
+	sprintf(filename, pattern, srcdir, name, suffix);
+
+	return filename;
+}
+
 void test_parse_map(isl_ctx *ctx, const char *str)
 {
 	isl_map *map;
@@ -108,15 +125,13 @@ void test_parse(struct isl_ctx *ctx)
 
 void test_read(struct isl_ctx *ctx)
 {
-	char filename[PATH_MAX];
+	char *filename;
 	FILE *input;
-	int n;
 	struct isl_basic_set *bset1, *bset2;
 	const char *str = "{[y]: Exists ( alpha : 2alpha = y)}";
 
-	n = snprintf(filename, sizeof(filename),
-			"%s/test_inputs/set.omega", srcdir);
-	assert(n < sizeof(filename));
+	filename = get_filename(ctx, "set", "omega");
+	assert(filename);
 	input = fopen(filename, "r");
 	assert(input);
 
@@ -127,6 +142,7 @@ void test_read(struct isl_ctx *ctx)
 
 	isl_basic_set_free(bset1);
 	isl_basic_set_free(bset2);
+	free(filename);
 
 	fclose(input);
 }
@@ -506,15 +522,13 @@ void test_div(struct isl_ctx *ctx)
 
 void test_application_case(struct isl_ctx *ctx, const char *name)
 {
-	char filename[PATH_MAX];
+	char *filename;
 	FILE *input;
-	int n;
 	struct isl_basic_set *bset1, *bset2;
 	struct isl_basic_map *bmap;
 
-	n = snprintf(filename, sizeof(filename),
-			"%s/test_inputs/%s.omega", srcdir, name);
-	assert(n < sizeof(filename));
+	filename = get_filename(ctx, name, "omega");
+	assert(filename);
 	input = fopen(filename, "r");
 	assert(input);
 
@@ -529,6 +543,7 @@ void test_application_case(struct isl_ctx *ctx, const char *name)
 
 	isl_basic_set_free(bset1);
 	isl_basic_set_free(bset2);
+	free(filename);
 
 	fclose(input);
 }
@@ -541,14 +556,12 @@ void test_application(struct isl_ctx *ctx)
 
 void test_affine_hull_case(struct isl_ctx *ctx, const char *name)
 {
-	char filename[PATH_MAX];
+	char *filename;
 	FILE *input;
-	int n;
 	struct isl_basic_set *bset1, *bset2;
 
-	n = snprintf(filename, sizeof(filename),
-			"%s/test_inputs/%s.polylib", srcdir, name);
-	assert(n < sizeof(filename));
+	filename = get_filename(ctx, name, "polylib");
+	assert(filename);
 	input = fopen(filename, "r");
 	assert(input);
 
@@ -561,6 +574,7 @@ void test_affine_hull_case(struct isl_ctx *ctx, const char *name)
 
 	isl_basic_set_free(bset1);
 	isl_basic_set_free(bset2);
+	free(filename);
 
 	fclose(input);
 }
@@ -574,15 +588,13 @@ void test_affine_hull(struct isl_ctx *ctx)
 
 void test_convex_hull_case(struct isl_ctx *ctx, const char *name)
 {
-	char filename[PATH_MAX];
+	char *filename;
 	FILE *input;
-	int n;
 	struct isl_basic_set *bset1, *bset2;
 	struct isl_set *set;
 
-	n = snprintf(filename, sizeof(filename),
-			"%s/test_inputs/%s.polylib", srcdir, name);
-	assert(n < sizeof(filename));
+	filename = get_filename(ctx, name, "polylib");
+	assert(filename);
 	input = fopen(filename, "r");
 	assert(input);
 
@@ -598,6 +610,7 @@ void test_convex_hull_case(struct isl_ctx *ctx, const char *name)
 
 	isl_basic_set_free(bset1);
 	isl_basic_set_free(bset2);
+	free(filename);
 
 	fclose(input);
 }
@@ -648,14 +661,12 @@ void test_convex_hull(struct isl_ctx *ctx)
 
 void test_gist_case(struct isl_ctx *ctx, const char *name)
 {
-	char filename[PATH_MAX];
+	char *filename;
 	FILE *input;
-	int n;
 	struct isl_basic_set *bset1, *bset2;
 
-	n = snprintf(filename, sizeof(filename),
-			"%s/test_inputs/%s.polylib", srcdir, name);
-	assert(n < sizeof(filename));
+	filename = get_filename(ctx, name, "polylib");
+	assert(filename);
 	input = fopen(filename, "r");
 	assert(input);
 
@@ -670,6 +681,7 @@ void test_gist_case(struct isl_ctx *ctx, const char *name)
 
 	isl_basic_set_free(bset1);
 	isl_basic_set_free(bset2);
+	free(filename);
 
 	fclose(input);
 }
