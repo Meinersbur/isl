@@ -2128,6 +2128,65 @@ static int setup_carry_lp(isl_ctx *ctx, struct isl_sched_graph *graph)
 	return 0;
 }
 
+/* If the schedule_split_parallel option is set and if the linear
+ * parts of the scheduling rows for all nodes in the graphs are the same,
+ * then split off the constant term from the linear part.
+ * The constant term is then placed in a separate band and
+ * the linear part is simplified.
+ */
+static int split_parallel(isl_ctx *ctx, struct isl_sched_graph *graph)
+{
+	int i;
+	int equal = 1;
+	int row, cols;
+	struct isl_sched_node *node0;
+
+	if (!ctx->opt->schedule_split_parallel)
+		return 0;
+	if (graph->n <= 1)
+		return 0;
+
+	node0 = &graph->node[0];
+	row = isl_mat_rows(node0->sched) - 1;
+	cols = isl_mat_cols(node0->sched);
+	for (i = 1; i < graph->n; ++i) {
+		struct isl_sched_node *node = &graph->node[i];
+
+		if (!isl_seq_eq(node0->sched->row[row] + 1,
+				node->sched->row[row] + 1, cols - 1))
+			return 0;
+		if (equal &&
+		    isl_int_ne(node0->sched->row[row][0],
+			       node->sched->row[row][0]))
+			equal = 0;
+	}
+	if (equal)
+		return 0;
+
+	next_band(graph);
+
+	for (i = 0; i < graph->n; ++i) {
+		struct isl_sched_node *node = &graph->node[i];
+
+		isl_map_free(node->sched_map);
+		node->sched_map = NULL;
+		node->sched = isl_mat_add_zero_rows(node->sched, 1);
+		if (!node->sched)
+			return -1;
+		isl_int_set(node->sched->row[row + 1][0],
+			    node->sched->row[row][0]);
+		isl_int_set_si(node->sched->row[row][0], 0);
+		node->sched = isl_mat_normalize_row(node->sched, row);
+		if (!node->sched)
+			return -1;
+		node->band[graph->n_total_row] = graph->n_band;
+	}
+
+	graph->n_total_row++;
+
+	return 0;
+}
+
 /* Construct a schedule row for each node such that as many dependences
  * as possible are carried and then continue with the next band.
  */
@@ -2157,6 +2216,9 @@ static int carry_dependences(isl_ctx *ctx, struct isl_sched_graph *graph)
 	}
 
 	if (update_schedule(graph, sol, 0, 0) < 0)
+		return -1;
+
+	if (split_parallel(ctx, graph) < 0)
 		return -1;
 
 	return compute_next_band(ctx, graph);

@@ -61,6 +61,7 @@ struct isl_options {
 
 	int			schedule_parametric;
 	int			schedule_outer_parallelism;
+	int			schedule_split_parallel;
 };
 
 ISL_ARG_DECL(isl_options, struct isl_options, isl_options_arg)

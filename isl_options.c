@@ -120,6 +120,9 @@ ISL_ARG_BOOL(struct isl_options, schedule_parametric, 0,
 ISL_ARG_BOOL(struct isl_options, schedule_outer_parallelism, 0,
 	"schedule-outer-parallelism", 0,
 	"try to construct schedules with outer parallelism")
+ISL_ARG_BOOL(struct isl_options, schedule_split_parallel, 0,
+	"schedule-split-parallel", 1,
+	"split non-tilable bands with parallel schedules")
 ISL_ARG_VERSION(print_version)
 ISL_ARG_END
 };
