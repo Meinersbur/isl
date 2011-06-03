@@ -1658,6 +1658,8 @@ then the name of the space is also removed.
 		__isl_take isl_basic_set *bset);
 	__isl_give isl_set *isl_set_flatten(
 		__isl_take isl_set *set);
+	__isl_give isl_map *isl_map_flatten_range(
+		__isl_take isl_map *map);
 	__isl_give isl_basic_map *isl_basic_map_flatten(
 		__isl_take isl_basic_map *bmap);
 	__isl_give isl_map *isl_map_flatten(
@@ -1879,6 +1881,12 @@ instead.
 	__isl_give isl_set *isl_set_flat_product(
 		__isl_take isl_set *set1,
 		__isl_take isl_set *set2);
+	__isl_give isl_map *isl_map_flat_range_product(
+		__isl_take isl_map *map1,
+		__isl_take isl_map *map2);
+	__isl_give isl_union_map *isl_union_map_flat_range_product(
+		__isl_take isl_union_map *umap1,
+		__isl_take isl_union_map *umap2);
 	__isl_give isl_basic_map *isl_basic_map_flat_product(
 		__isl_take isl_basic_map *bmap1,
 		__isl_take isl_basic_map *bmap2);

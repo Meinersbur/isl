@@ -1198,6 +1198,16 @@ __isl_give isl_dim *isl_dim_flatten(__isl_take isl_dim *dim)
 	return dim;
 }
 
+__isl_give isl_dim *isl_dim_flatten_range(__isl_take isl_dim *dim)
+{
+	if (!dim)
+		return NULL;
+	if (!dim->nested[1])
+		return dim;
+
+	return isl_dim_reset(dim, isl_dim_out);
+}
+
 /* Replace the dimensions of the given type of dst by those of src.
  */
 __isl_give isl_dim *isl_dim_replace(__isl_take isl_dim *dst,

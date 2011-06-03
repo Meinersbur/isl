@@ -7445,6 +7445,18 @@ __isl_give isl_map *isl_map_range_product(__isl_take isl_map *map1,
 				&isl_basic_map_range_product);
 }
 
+/* Given two maps A -> B and C -> D, construct a map (A * C) -> (B, D)
+ */
+__isl_give isl_map *isl_map_flat_range_product(__isl_take isl_map *map1,
+	__isl_take isl_map *map2)
+{
+	isl_map *prod;
+
+	prod = isl_map_range_product(map1, map2);
+	prod = isl_map_flatten_range(prod);
+	return prod;
+}
+
 uint32_t isl_basic_map_get_hash(__isl_keep isl_basic_map *bmap)
 {
 	int i;
@@ -8261,6 +8273,31 @@ __isl_give isl_basic_set *isl_basic_set_flatten(__isl_take isl_basic_set *bset)
 	return (isl_basic_set *)isl_basic_map_flatten((isl_basic_map *)bset);
 }
 
+__isl_give isl_basic_map *isl_basic_map_flatten_range(
+	__isl_take isl_basic_map *bmap)
+{
+	if (!bmap)
+		return NULL;
+
+	if (!bmap->dim->nested[1])
+		return bmap;
+
+	bmap = isl_basic_map_cow(bmap);
+	if (!bmap)
+		return NULL;
+
+	bmap->dim = isl_dim_flatten_range(bmap->dim);
+	if (!bmap->dim)
+		goto error;
+
+	bmap = isl_basic_map_finalize(bmap);
+
+	return bmap;
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
 __isl_give isl_map *isl_map_flatten(__isl_take isl_map *map)
 {
 	int i;
@@ -8306,6 +8343,35 @@ __isl_give isl_map *isl_set_flatten_map(__isl_take isl_set *set)
 	map = isl_map_intersect_domain(map, set);
 
 	return map;
+}
+
+__isl_give isl_map *isl_map_flatten_range(__isl_take isl_map *map)
+{
+	int i;
+
+	if (!map)
+		return NULL;
+
+	if (!map->dim->nested[1])
+		return map;
+
+	map = isl_map_cow(map);
+	if (!map)
+		return NULL;
+
+	for (i = 0; i < map->n; ++i) {
+		map->p[i] = isl_basic_map_flatten_range(map->p[i]);
+		if (!map->p[i])
+			goto error;
+	}
+	map->dim = isl_dim_flatten_range(map->dim);
+	if (!map->dim)
+		goto error;
+
+	return map;
+error:
+	isl_map_free(map);
+	return NULL;
 }
 
 /* Reorder the dimensions of "bmap" according to the given dim_map
