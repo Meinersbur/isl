@@ -1597,6 +1597,17 @@ __isl_give isl_mat *isl_mat_normalize(__isl_take isl_mat *mat)
 	return mat;
 }
 
+__isl_give isl_mat *isl_mat_normalize_row(__isl_take isl_mat *mat, int row)
+{
+	mat = isl_mat_cow(mat);
+	if (!mat)
+		return NULL;
+
+	isl_seq_normalize(mat->ctx, mat->row[row], mat->n_col);
+
+	return mat;
+}
+
 /* Number of initial non-zero columns.
  */
 int isl_mat_initial_non_zero_cols(__isl_keep isl_mat *mat)

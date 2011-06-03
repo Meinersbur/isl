@@ -66,6 +66,7 @@ __isl_give isl_mat *isl_mat_right_inverse(__isl_take isl_mat *mat);
 __isl_give isl_mat *isl_mat_right_kernel(__isl_take isl_mat *mat);
 
 __isl_give isl_mat *isl_mat_normalize(__isl_take isl_mat *mat);
+__isl_give isl_mat *isl_mat_normalize_row(__isl_take isl_mat *mat, int row);
 
 struct isl_mat *isl_mat_drop_cols(struct isl_mat *mat,
 				unsigned col, unsigned n);
