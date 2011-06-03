@@ -882,6 +882,10 @@ static int range_product_entry(void **entry, void *user)
 	struct isl_union_map_bin_data *data = user;
 	isl_map *map2 = *entry;
 
+	if (!isl_dim_tuple_match(data->map->dim, isl_dim_in,
+				 map2->dim, isl_dim_in))
+		return 0;
+
 	map2 = isl_map_range_product(isl_map_copy(data->map),
 				     isl_map_copy(map2));
 
