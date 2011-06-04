@@ -26,6 +26,10 @@ int isl_schedule_n_band(__isl_keep isl_schedule *sched);
 __isl_give isl_union_map *isl_schedule_get_band(__isl_keep isl_schedule *sched,
 	unsigned band);
 
+__isl_give isl_printer *isl_printer_print_schedule(__isl_take isl_printer *p,
+	__isl_keep isl_schedule *schedule);
+void isl_schedule_dump(__isl_keep isl_schedule *schedule);
+
 #if defined(__cplusplus)
 }
 #endif

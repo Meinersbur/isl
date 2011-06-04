@@ -2621,3 +2621,72 @@ __isl_give isl_band_list *isl_schedule_get_band_forest(
 		schedule->band_forest = construct_forest(schedule);
 	return isl_band_list_copy(schedule->band_forest);
 }
+
+static __isl_give isl_printer *print_band_list(__isl_take isl_printer *p,
+	__isl_keep isl_band_list *list);
+
+static __isl_give isl_printer *print_band(__isl_take isl_printer *p,
+	__isl_keep isl_band *band)
+{
+	isl_band_list *children;
+
+	p = isl_printer_start_line(p);
+	p = isl_printer_print_union_map(p, band->map);
+	p = isl_printer_end_line(p);
+
+	if (!isl_band_has_children(band))
+		return p;
+
+	children = isl_band_get_children(band);
+
+	p = isl_printer_indent(p, 4);
+	p = print_band_list(p, children);
+	p = isl_printer_indent(p, -4);
+
+	isl_band_list_free(children);
+
+	return p;
+}
+
+static __isl_give isl_printer *print_band_list(__isl_take isl_printer *p,
+	__isl_keep isl_band_list *list)
+{
+	int i, n;
+
+	n = isl_band_list_n_band(list);
+	for (i = 0; i < n; ++i) {
+		isl_band *band;
+		band = isl_band_list_get_band(list, i);
+		p = print_band(p, band);
+		isl_band_free(band);
+	}
+
+	return p;
+}
+
+__isl_give isl_printer *isl_printer_print_schedule(__isl_take isl_printer *p,
+	__isl_keep isl_schedule *schedule)
+{
+	isl_band_list *forest;
+
+	forest = isl_schedule_get_band_forest(schedule);
+
+	p = print_band_list(p, forest);
+
+	isl_band_list_free(forest);
+
+	return p;
+}
+
+void isl_schedule_dump(__isl_keep isl_schedule *schedule)
+{
+	isl_printer *printer;
+
+	if (!schedule)
+		return;
+
+	printer = isl_printer_to_file(isl_schedule_get_ctx(schedule), stderr);
+	printer = isl_printer_print_schedule(printer, schedule);
+
+	isl_printer_free(printer);
+}
