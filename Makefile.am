@@ -107,6 +107,7 @@ libisl_la_SOURCES = \
 	isl_scan.c \
 	isl_scan.h \
 	isl_schedule.c \
+	isl_schedule_private.h \
 	isl_stream.c \
 	isl_seq.c \
 	isl_tab.c \

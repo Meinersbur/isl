@@ -21,6 +21,7 @@
 #include <isl_dim_map.h>
 #include <isl_hmap_map_basic_set.h>
 #include <isl_qsort.h>
+#include <isl_schedule_private.h>
 
 /*
  * The scheduling algorithm implemented in this file was inspired by
@@ -28,32 +29,6 @@
  * Parallelization and Locality Optimization in the Polyhedral Model".
  */
 
-
-/* The schedule for an individual domain, plus information about the bands.
- * In particular, we keep track of the number of bands and for each
- * band, the starting position of the next band.  The first band starts at
- * position 0.
- */
-struct isl_schedule_node {
-	isl_map *sched;
-	int	 n_band;
-	int	*band_end;
-};
-
-/* Information about the computed schedule.
- * n is the number of nodes/domains/statements.
- * n_band is the maximal number of bands.
- * n_total_row is the number of coordinates of the schedule.
- * dim contains a description of the parameters.
- */
-struct isl_schedule {
-	int n;
-	int n_band;
-	int n_total_row;
-	isl_dim *dim;
-
-	struct isl_schedule_node node[1];
-};
 
 /* Internal information about a node that is used during the construction
  * of a schedule.
