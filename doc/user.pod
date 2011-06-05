@@ -1417,6 +1417,29 @@ that maps (a wrapped version of) the input relation to its domain or range.
 Eliminate the coefficients for the given dimensions from the constraints,
 without removing the dimensions.
 
+=item * Slicing
+
+	__isl_give isl_basic_set *isl_basic_set_fix(
+		__isl_take isl_basic_set *bset,
+		enum isl_dim_type type, unsigned pos,
+		isl_int value);
+	__isl_give isl_basic_set *isl_basic_set_fix_si(
+		__isl_take isl_basic_set *bset,
+		enum isl_dim_type type, unsigned pos, int value);
+	__isl_give isl_set *isl_set_fix(__isl_take isl_set *set,
+		enum isl_dim_type type, unsigned pos,
+		isl_int value);
+	__isl_give isl_set *isl_set_fix_si(__isl_take isl_set *set,
+		enum isl_dim_type type, unsigned pos, int value);
+	__isl_give isl_basic_map *isl_basic_map_fix_si(
+		__isl_take isl_basic_map *bmap,
+		enum isl_dim_type type, unsigned pos, int value);
+	__isl_give isl_map *isl_map_fix_si(__isl_take isl_map *map,
+		enum isl_dim_type type, unsigned pos, int value);
+
+Intersect the set or relation with the hyperplane where the given
+dimension has the fixed given value.
+
 =item * Identity
 
 	__isl_give isl_map *isl_set_identity(

@@ -179,7 +179,7 @@ __isl_give isl_printer *isl_printer_print_basic_map(
 	__isl_take isl_printer *printer, __isl_keep isl_basic_map *bmap);
 __isl_give isl_printer *isl_printer_print_map(__isl_take isl_printer *printer,
 	__isl_keep isl_map *map);
-struct isl_basic_map *isl_basic_map_fix_si(struct isl_basic_map *bmap,
+__isl_give isl_basic_map *isl_basic_map_fix_si(__isl_take isl_basic_map *bmap,
 		enum isl_dim_type type, unsigned pos, int value);
 __isl_give isl_basic_map *isl_basic_map_lower_bound_si(
 		__isl_take isl_basic_map *bmap,
@@ -304,7 +304,7 @@ __isl_give isl_map *isl_map_subtract(
 		__isl_take isl_map *map2);
 struct isl_map *isl_map_fix_input_si(struct isl_map *map,
 		unsigned input, int value);
-struct isl_map *isl_map_fix_si(struct isl_map *map,
+__isl_give isl_map *isl_map_fix_si(__isl_take isl_map *map,
 		enum isl_dim_type type, unsigned pos, int value);
 __isl_give isl_map *isl_map_lower_bound_si(__isl_take isl_map *map,
 		enum isl_dim_type type, unsigned pos, int value);
