@@ -2204,6 +2204,7 @@ static __isl_give isl_qpolynomial *remove_redundant_divs(
 	int *reordering = NULL;
 	int redundant = 0;
 	int n_div;
+	isl_ctx *ctx;
 
 	if (!qp)
 		return NULL;
@@ -2212,7 +2213,8 @@ static __isl_give isl_qpolynomial *remove_redundant_divs(
 
 	d = isl_dim_total(qp->dim);
 	len = qp->div->n_col - 2;
-	active = isl_calloc_array(qp->ctx, int, len);
+	ctx = isl_qpolynomial_get_ctx(qp);
+	active = isl_calloc_array(ctx, int, len);
 	if (!active)
 		goto error;
 

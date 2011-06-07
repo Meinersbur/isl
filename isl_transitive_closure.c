@@ -2789,7 +2789,7 @@ static __isl_give isl_union_map *union_floyd_warshall_on_list(isl_ctx *ctx,
 	if (!grid)
 		goto error;
 	for (i = 0; i < n_group; ++i) {
-		grid[i] = isl_calloc_array(map->ctx, isl_map *, n_group);
+		grid[i] = isl_calloc_array(ctx, isl_map *, n_group);
 		if (!grid[i])
 			goto error;
 		for (j = 0; j < n_group; ++j) {

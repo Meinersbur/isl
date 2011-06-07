@@ -783,11 +783,13 @@ static __isl_give struct isl_aff_split *split_aff(__isl_keep isl_map *map)
 {
 	int i, n;
 	struct isl_aff_split *split;
+	isl_ctx *ctx;
 
-	split = isl_calloc_array(map->isl, struct isl_aff_split, map->n);
+	ctx = isl_map_get_ctx(map);
+	split = isl_calloc_array(ctx, struct isl_aff_split, map->n);
 	if (!split)
 		return NULL;
-	
+
 	for (i = 0; i < map->n; ++i) {
 		isl_basic_map *bmap;
 		split[i].aff = get_aff(isl_basic_map_copy(map->p[i]));
