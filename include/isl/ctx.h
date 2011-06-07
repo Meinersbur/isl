@@ -55,7 +55,7 @@ extern "C" {
  * a NULL argument as a failure, resulting in the function freeing
  * the remaining structures (if any) and returning NULL itself
  * (in case of pointer return type).
- * The only exception is the isl_ctx argument, which shoud never be NULL.
+ * The only exception is the isl_ctx argument, which should never be NULL.
  */
 struct isl_stats {
 	long	gbr_solved_lps;
