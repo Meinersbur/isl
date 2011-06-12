@@ -29,6 +29,7 @@
 #include <isl_mat_private.h>
 #include <isl_dim_map.h>
 #include <isl_local_space_private.h>
+#include <isl_aff_private.h>
 
 static unsigned n(struct isl_dim *dim, enum isl_dim_type type)
 {
@@ -8732,4 +8733,75 @@ __isl_give isl_map *isl_map_zip(__isl_take isl_map *map)
 error:
 	isl_map_free(map);
 	return NULL;
+}
+
+/* Construct a basic map mapping the domain of the affine expression
+ * to a one-dimensional range prescribed by the affine expression.
+ */
+__isl_give isl_basic_map *isl_basic_map_from_aff(__isl_take isl_aff *aff)
+{
+	int k;
+	int pos;
+	isl_local_space *ls;
+	isl_basic_map *bmap;
+
+	if (!aff)
+		return NULL;
+
+	ls = isl_aff_get_local_space(aff);
+	ls = isl_local_space_from_domain(ls);
+	ls = isl_local_space_add_dim(ls, isl_dim_out, 1);
+	bmap = isl_basic_map_from_local_space(ls);
+	bmap = isl_basic_map_extend_constraints(bmap, 1, 0);
+	k = isl_basic_map_alloc_equality(bmap);
+	if (k < 0)
+		goto error;
+
+	pos = isl_basic_map_offset(bmap, isl_dim_out);
+	isl_seq_cpy(bmap->eq[k], aff->v->el + 1, pos);
+	isl_int_neg(bmap->eq[k][pos], aff->v->el[0]);
+	isl_seq_cpy(bmap->eq[k] + pos + 1, aff->v->el + 1 + pos,
+		    aff->v->size - (pos + 1));
+
+	isl_aff_free(aff);
+	bmap = isl_basic_map_finalize(bmap);
+	return bmap;
+error:
+	isl_aff_free(aff);
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+/* Construct a basic map mapping a domain in the given space to
+ * to an n-dimensional range, with n the number of elements in the list,
+ * where each coordinate in the range is prescribed by the
+ * corresponding affine expression.
+ * The domains of all affine expressions in the list are assumed to match
+ * domain_dim.
+ */
+__isl_give isl_basic_map *isl_basic_map_from_aff_list(
+	__isl_take isl_dim *domain_dim, __isl_take isl_aff_list *list)
+{
+	int i;
+	isl_dim *dim;
+	isl_basic_map *bmap;
+
+	if (!list)
+		return NULL;
+
+	dim = isl_dim_from_domain(domain_dim);
+	bmap = isl_basic_map_universe(dim);
+
+	for (i = 0; i < list->n; ++i) {
+		isl_aff *aff;
+		isl_basic_map *bmap_i;
+
+		aff = isl_aff_copy(list->p[i]);
+		bmap_i = isl_basic_map_from_aff(aff);
+
+		bmap = isl_basic_map_flat_range_product(bmap, bmap_i);
+	}
+
+	isl_aff_list_free(list);
+	return bmap;
 }

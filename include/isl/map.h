@@ -21,6 +21,8 @@
 #include <isl/mat.h>
 #include <isl/printer.h>
 #include <isl/local_space.h>
+#include <isl/aff.h>
+#include <isl/list.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -465,6 +467,10 @@ __isl_give isl_basic_map *isl_basic_map_from_constraint_matrices(
 	__isl_take isl_mat *eq, __isl_take isl_mat *ineq, enum isl_dim_type c1,
 	enum isl_dim_type c2, enum isl_dim_type c3,
 	enum isl_dim_type c4, enum isl_dim_type c5);
+
+__isl_give isl_basic_map *isl_basic_map_from_aff(__isl_take isl_aff *aff);
+__isl_give isl_basic_map *isl_basic_map_from_aff_list(
+	__isl_take isl_dim *domain_dim, __isl_take isl_aff_list *list);
 
 #if defined(__cplusplus)
 }
