@@ -334,3 +334,34 @@ __isl_give isl_local_space *isl_local_space_from_domain(
 		return isl_local_space_free(ls);
 	return ls;
 }
+
+__isl_give isl_local_space *isl_local_space_add_dim(
+	__isl_take isl_local_space *ls, enum isl_dim_type type, unsigned n)
+{
+	int pos;
+
+	if (n == 0)
+		return ls;
+
+	ls = isl_local_space_cow(ls);
+	if (!ls)
+		return NULL;
+
+	pos = isl_local_space_offset(ls, type);
+	pos += isl_local_space_dim(ls, type);
+
+	ls->div = isl_mat_insert_zero_cols(ls->div, 1 + pos, n);
+
+	if (type == isl_dim_div) {
+		ls->div = isl_mat_add_zero_rows(ls->div, n);
+	} else {
+		ls->dim = isl_dim_add(ls->dim, type, n);
+		if (!ls->dim)
+			return isl_local_space_free(ls);
+	}
+
+	if (!ls->div)
+		return isl_local_space_free(ls);
+
+	return ls;
+}
