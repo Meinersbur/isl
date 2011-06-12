@@ -7355,6 +7355,16 @@ error:
 	return NULL;
 }
 
+__isl_give isl_basic_map *isl_basic_map_flat_range_product(
+	__isl_take isl_basic_map *bmap1, __isl_take isl_basic_map *bmap2)
+{
+	isl_basic_map *prod;
+
+	prod = isl_basic_map_range_product(bmap1, bmap2);
+	prod = isl_basic_map_flatten_range(prod);
+	return prod;
+}
+
 static __isl_give isl_map *map_product(__isl_take isl_map *map1,
 	__isl_take isl_map *map2,
 	__isl_give isl_dim *(*dim_product)(__isl_take isl_dim *left,
