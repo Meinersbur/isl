@@ -27,6 +27,9 @@ __isl_give isl_dim *isl_local_space_get_dim(__isl_keep isl_local_space *ls);
 __isl_give isl_div *isl_local_space_get_div(__isl_keep isl_local_space *ls,
 	int pos);
 
+__isl_give isl_local_space *isl_local_space_from_domain(
+	__isl_take isl_local_space *ls);
+
 __isl_give isl_printer *isl_printer_print_local_space(__isl_take isl_printer *p,
 	__isl_keep isl_local_space *ls);
 void isl_local_space_dump(__isl_keep isl_local_space *ls);

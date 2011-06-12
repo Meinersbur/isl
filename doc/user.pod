@@ -604,6 +604,12 @@ They can be inspected, copied and freed using the following functions.
 		__isl_keep isl_local_space *ls);
 	void *isl_local_space_free(__isl_take isl_local_space *ls);
 
+Local spaces can be created from other local spaces
+using the following function.
+
+	__isl_give isl_local_space *isl_local_space_from_domain(
+		__isl_take isl_local_space *ls);
+
 =head2 Input and Output
 
 C<isl> supports its own input/output format, which is similar
