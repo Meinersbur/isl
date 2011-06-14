@@ -3018,11 +3018,15 @@ The properties of a band can be inspected using the following functions.
 		__isl_keep isl_band *band);
 
 	int isl_band_n_member(__isl_keep isl_band *band);
-	int isl_band_member_is_parallel(__isl_keep isl_band *band,
-		int pos);
+	int isl_band_member_is_zero_distance(
+		__isl_keep isl_band *band, int pos);
 
-Note that a scheduling dimension is considered parallel if it
-does not carry any proximity dependences.
+Note that a scheduling dimension is considered to be ``zero
+distance'' if it does not carry any proximity dependences
+within its band.
+That is, if the dependence distances of the proximity
+dependences are all zero in that direction (for fixed
+iterations of outer bands).
 
 A representation of the band can be printed using
 

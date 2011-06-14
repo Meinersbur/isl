@@ -29,7 +29,7 @@ __isl_give isl_union_map *isl_band_get_suffix_schedule(
 	__isl_keep isl_band *band);
 
 int isl_band_n_member(__isl_keep isl_band *band);
-int isl_band_member_is_parallel(__isl_keep isl_band *band, int pos);
+int isl_band_member_is_zero_distance(__isl_keep isl_band *band, int pos);
 
 __isl_give isl_printer *isl_printer_print_band(__isl_take isl_printer *p,
 	__isl_keep isl_band *band);

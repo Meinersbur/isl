@@ -47,7 +47,7 @@ void *isl_band_free(__isl_take isl_band *band)
 
 	isl_union_map_free(band->map);
 	isl_band_list_free(band->children);
-	free(band->parallel);
+	free(band->zero);
 	free(band);
 
 	return NULL;
@@ -77,10 +77,10 @@ int isl_band_n_member(__isl_keep isl_band *band)
 	return band ? band->n : 0;
 }
 
-/* Is the given scheduling dimension parallel within the band and
+/* Is the given scheduling dimension zero distance within the band and
  * with respect to the proximity dependences.
  */
-int isl_band_member_is_parallel(__isl_keep isl_band *band, int pos)
+int isl_band_member_is_zero_distance(__isl_keep isl_band *band, int pos)
 {
 	if (!band)
 		return -1;
@@ -89,7 +89,7 @@ int isl_band_member_is_parallel(__isl_keep isl_band *band, int pos)
 		isl_die(isl_band_get_ctx(band), isl_error_invalid,
 			"invalid member position", return -1);
 
-	return band->parallel[pos];
+	return band->zero[pos];
 }
 
 /* Return the schedule that leads up to this band.

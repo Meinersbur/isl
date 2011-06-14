@@ -117,9 +117,10 @@ ISL_ARG_CHOICE(struct isl_options, convex, 0, "convex-hull", \
 	convex,	ISL_CONVEX_HULL_WRAP, "convex hull algorithm to use")
 ISL_ARG_BOOL(struct isl_options, schedule_parametric, 0,
 	"schedule-parametric", 1, "construct possibly parametric schedules")
-ISL_ARG_BOOL(struct isl_options, schedule_outer_parallelism, 0,
-	"schedule-outer-parallelism", 0,
-	"try to construct schedules with outer parallelism")
+ISL_ARG_BOOL(struct isl_options, schedule_outer_zero_distance, 0,
+	"schedule-outer-zero-distance", 0,
+	"try to construct schedules with outer zero distances over "
+	"proximity dependences")
 ISL_ARG_BOOL(struct isl_options, schedule_split_parallel, 0,
 	"schedule-split-parallel", 1,
 	"split non-tilable bands with parallel schedules")

@@ -9,8 +9,8 @@
 /* Information about a band within a schedule.
  *
  * n is the number of scheduling dimensions within the band.
- * parallel is an array of length n, indicating whether a scheduling dimension
- *	is parallel.
+ * zero is an array of length n, indicating whether a scheduling dimension
+ *	results in zero dependence distances for the proximity dependences.
  * map is the partial map corresponding to this band.
  * schedule is the schedule that contains this band.
  * parent is the parent of this band (or NULL if the band is a root).
@@ -25,7 +25,7 @@ struct isl_band {
 	int ref;
 
 	int n;
-	int *parallel;
+	int *zero;
 
 	isl_union_map *map;
 	isl_schedule *schedule;
