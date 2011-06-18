@@ -1548,6 +1548,9 @@ __isl_give isl_basic_map *isl_basic_map_remove_divs_involving_dims(
 		if (!div_involves_vars(bmap, i, first, n))
 			continue;
 		bmap = isl_basic_map_remove_dims(bmap, isl_dim_div, i, 1);
+		if (!bmap)
+			return NULL;
+		i = bmap->n_div;
 	}
 
 	return bmap;
