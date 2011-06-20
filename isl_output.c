@@ -2120,6 +2120,43 @@ void isl_constraint_dump(__isl_keep isl_constraint *c)
 	isl_printer_free(printer);
 }
 
+__isl_give isl_printer *isl_printer_print_dim(__isl_take isl_printer *p,
+	__isl_keep isl_dim *dim)
+{
+	if (!dim)
+		goto error;
+
+	if (isl_dim_size(dim, isl_dim_param) > 0) {
+		p = print_tuple(dim, p, isl_dim_param, 0, 0, NULL);
+		p = isl_printer_print_str(p, " -> ");
+	}
+
+	p = isl_printer_print_str(p, "{ ");
+	p = print_tuple(dim, p, isl_dim_in, 0, 0, NULL);
+	p = isl_printer_print_str(p, " -> ");
+	p = print_tuple(dim, p, isl_dim_out, 0, 0, NULL);
+	p = isl_printer_print_str(p, " }");
+
+	return p;
+error:
+	isl_printer_free(p);
+	return NULL;
+}
+
+void isl_dim_dump(__isl_keep isl_dim *dim)
+{
+	isl_printer *printer;
+
+	if (!dim)
+		return;
+
+	printer = isl_printer_to_file(isl_dim_get_ctx(dim), stderr);
+	printer = isl_printer_print_dim(printer, dim);
+	printer = isl_printer_end_line(printer);
+
+	isl_printer_free(printer);
+}
+
 __isl_give isl_printer *isl_printer_print_local_space(__isl_take isl_printer *p,
 	__isl_keep isl_local_space *ls)
 {

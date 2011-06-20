@@ -11,6 +11,7 @@
 #define ISL_DIM_H
 
 #include <isl/ctx.h>
+#include <isl/printer.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -95,6 +96,10 @@ int isl_dim_tuple_match(__isl_keep isl_dim *dim1, enum isl_dim_type dim1_type,
 int isl_dim_compatible(struct isl_dim *dim1, struct isl_dim *dim2);
 unsigned isl_dim_size(__isl_keep isl_dim *dim, enum isl_dim_type type);
 unsigned isl_dim_total(struct isl_dim *dim);
+
+__isl_give isl_printer *isl_printer_print_dim(__isl_take isl_printer *p,
+	__isl_keep isl_dim *dim);
+void isl_dim_dump(__isl_keep isl_dim *dim);
 
 #if defined(__cplusplus)
 }
