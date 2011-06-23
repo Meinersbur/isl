@@ -610,6 +610,11 @@ They can be inspected, copied and freed using the following functions.
 		__isl_keep isl_local_space *ls);
 	void *isl_local_space_free(__isl_take isl_local_space *ls);
 
+Two local spaces can be compared using
+
+	int isl_local_space_is_equal(__isl_keep isl_local_space *ls1,
+		__isl_keep isl_local_space *ls2);
+
 Local spaces can be created from other local spaces
 using the following functions.
 

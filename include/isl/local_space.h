@@ -32,6 +32,9 @@ __isl_give isl_local_space *isl_local_space_from_domain(
 __isl_give isl_local_space *isl_local_space_add_dim(
 	__isl_take isl_local_space *ls, enum isl_dim_type type, unsigned n);
 
+int isl_local_space_is_equal(__isl_keep isl_local_space *ls1,
+	__isl_keep isl_local_space *ls2);
+
 __isl_give isl_printer *isl_printer_print_local_space(__isl_take isl_printer *p,
 	__isl_keep isl_local_space *ls);
 void isl_local_space_dump(__isl_keep isl_local_space *ls);

@@ -112,6 +112,24 @@ void *isl_local_space_free(__isl_take isl_local_space *ls)
 	return NULL;
 }
 
+/* Return true if the two local spaces are identical, with identical
+ * expressions for the integer divisions.
+ */
+int isl_local_space_is_equal(__isl_keep isl_local_space *ls1,
+	__isl_keep isl_local_space *ls2)
+{
+	int equal;
+
+	if (!ls1 || !ls2)
+		return -1;
+
+	equal = isl_dim_equal(ls1->dim, ls2->dim);
+	if (equal < 0 || !equal)
+		return equal;
+
+	return isl_mat_is_equal(ls1->div, ls2->div);
+}
+
 int isl_local_space_dim(__isl_keep isl_local_space *ls,
 	enum isl_dim_type type)
 {
