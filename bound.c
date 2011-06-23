@@ -57,6 +57,7 @@ struct verify_point_bound {
 static int verify_point(__isl_take isl_point *pnt, void *user)
 {
 	int i;
+	unsigned nvar;
 	unsigned nparam;
 	struct verify_point_bound *vpb = (struct verify_point_bound *) user;
 	isl_int t;
@@ -110,6 +111,8 @@ static int verify_point(__isl_take isl_point *pnt, void *user)
 	else
 		opt = isl_pw_qpolynomial_fold_min(isl_pw_qpolynomial_fold_copy(pwf));
 
+	nvar = isl_set_dim(dom, isl_dim_set);
+	opt = isl_qpolynomial_drop_dims(opt, isl_dim_set, 0, nvar);
 	if (vpb->exact && bounded)
 		ok = isl_qpolynomial_is_equal(opt, bound);
 	else if (sign > 0)
