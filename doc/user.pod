@@ -2267,6 +2267,10 @@ using
 		__isl_take isl_point *pnt,
 		enum isl_dim_type type, int pos, unsigned val);
 
+Other properties can be obtained using
+
+	isl_ctx *isl_point_get_ctx(__isl_keep isl_point *pnt);
+
 Points can be copied or freed using
 
 	__isl_give isl_point *isl_point_copy(

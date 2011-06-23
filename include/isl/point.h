@@ -11,6 +11,8 @@ extern "C" {
 struct isl_point;
 typedef struct isl_point isl_point;
 
+isl_ctx *isl_point_get_ctx(__isl_keep isl_point *pnt);
+
 __isl_give isl_point *isl_point_zero(__isl_take isl_dim *dim);
 __isl_give isl_point *isl_point_copy(__isl_keep isl_point *pnt);
 void isl_point_free(__isl_take isl_point *pnt);
