@@ -64,6 +64,12 @@ isl_ctx *isl_qpolynomial_fold_get_ctx(__isl_keep isl_qpolynomial_fold *fold)
 	return fold ? fold->dim->ctx : NULL;
 }
 
+__isl_give isl_dim *isl_qpolynomial_fold_get_dim(
+	__isl_keep isl_qpolynomial_fold *fold)
+{
+	return fold ? isl_dim_copy(fold->dim) : NULL;
+}
+
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_reset_dim(
 	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_dim *dim)
 {
