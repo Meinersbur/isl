@@ -447,7 +447,8 @@ __isl_give PW *FN(PW,coalesce)(__isl_take PW *pw)
 
 	for (i = pw->n - 1; i >= 0; --i) {
 		for (j = i - 1; j >= 0; --j) {
-			if (!FN(EL,is_equal)(pw->p[i].FIELD, pw->p[j].FIELD))
+			if (!FN(EL,plain_is_equal)(pw->p[i].FIELD,
+							pw->p[j].FIELD))
 				continue;
 			pw->p[j].set = isl_set_union(pw->p[j].set,
 							pw->p[i].set);

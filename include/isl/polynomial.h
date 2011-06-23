@@ -44,7 +44,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_var(__isl_take isl_dim *dim,
 __isl_give isl_qpolynomial *isl_qpolynomial_copy(__isl_keep isl_qpolynomial *qp);
 void isl_qpolynomial_free(__isl_take isl_qpolynomial *qp);
 
-int isl_qpolynomial_is_equal(__isl_keep isl_qpolynomial *qp1,
+int isl_qpolynomial_plain_is_equal(__isl_keep isl_qpolynomial *qp1,
 	__isl_keep isl_qpolynomial *qp2);
 int isl_qpolynomial_is_zero(__isl_keep isl_qpolynomial *qp);
 int isl_qpolynomial_is_nan(__isl_keep isl_qpolynomial *qp);
@@ -265,7 +265,7 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_reset_dim(
 	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_dim *dim);
 
 int isl_qpolynomial_fold_is_empty(__isl_keep isl_qpolynomial_fold *fold);
-int isl_qpolynomial_fold_is_equal(__isl_keep isl_qpolynomial_fold *fold1,
+int isl_qpolynomial_fold_plain_is_equal(__isl_keep isl_qpolynomial_fold *fold1,
 	__isl_keep isl_qpolynomial_fold *fold2);
 
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_fold(

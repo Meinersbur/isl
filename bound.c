@@ -113,7 +113,7 @@ static int verify_point(__isl_take isl_point *pnt, void *user)
 	nvar = isl_set_dim(dom, isl_dim_set);
 	opt = isl_qpolynomial_drop_dims(opt, isl_dim_set, 0, nvar);
 	if (vpb->exact && bounded)
-		ok = isl_qpolynomial_is_equal(opt, bound);
+		ok = isl_qpolynomial_plain_is_equal(opt, bound);
 	else if (sign > 0)
 		ok = isl_qpolynomial_le_cst(opt, bound);
 	else

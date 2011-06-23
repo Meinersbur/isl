@@ -1659,7 +1659,7 @@ error:
 	return NULL;
 }
 
-int isl_qpolynomial_is_equal(__isl_keep isl_qpolynomial *qp1,
+int isl_qpolynomial_plain_is_equal(__isl_keep isl_qpolynomial *qp1,
 	__isl_keep isl_qpolynomial *qp2)
 {
 	int equal;
