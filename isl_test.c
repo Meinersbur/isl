@@ -1709,6 +1709,14 @@ void test_pwqp(struct isl_ctx *ctx)
 	assert(isl_pw_qpolynomial_is_zero(pwqp1));
 
 	isl_pw_qpolynomial_free(pwqp1);
+
+	str = "{ [i] -> ([i/2]) : i >= 0; [i] -> ([i/3]) : i < 0 }";
+	pwqp1 = isl_pw_qpolynomial_read_from_str(ctx, str);
+	pwqp2 = isl_pw_qpolynomial_read_from_str(ctx, str);
+	pwqp1 = isl_pw_qpolynomial_coalesce(pwqp1);
+	pwqp1 = isl_pw_qpolynomial_sub(pwqp1, pwqp2);
+	assert(isl_pw_qpolynomial_is_zero(pwqp1));
+	isl_pw_qpolynomial_free(pwqp1);
 }
 
 void test_split_periods(isl_ctx *ctx)
