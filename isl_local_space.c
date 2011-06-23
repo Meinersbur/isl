@@ -191,6 +191,20 @@ __isl_give isl_dim *isl_local_space_get_dim(__isl_keep isl_local_space *ls)
 	return isl_dim_copy(ls->dim);
 }
 
+__isl_give isl_local_space *isl_local_space_set_dim_name(
+	__isl_take isl_local_space *ls,
+	enum isl_dim_type type, unsigned pos, const char *s)
+{
+	ls = isl_local_space_cow(ls);
+	if (!ls)
+		return NULL;
+	ls->dim = isl_dim_set_name(ls->dim, type, pos, s);
+	if (!ls->dim)
+		return isl_local_space_free(ls);
+
+	return ls;
+}
+
 __isl_give isl_local_space *isl_local_space_add_div(
 	__isl_take isl_local_space *ls, __isl_take isl_vec *div)
 {
