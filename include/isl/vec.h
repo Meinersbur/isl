@@ -40,6 +40,8 @@ void isl_vec_free(struct isl_vec *vec);
 
 isl_ctx *isl_vec_get_ctx(__isl_keep isl_vec *vec);
 
+int isl_vec_is_equal(__isl_keep isl_vec *vec1, __isl_keep isl_vec *vec2);
+
 void isl_vec_dump(__isl_keep isl_vec *vec);
 __isl_give isl_printer *isl_printer_print_vec(__isl_take isl_printer *printer,
 	__isl_keep isl_vec *vec);
