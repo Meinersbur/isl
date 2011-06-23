@@ -10,12 +10,14 @@ static __isl_give PW *FN(PW,alloc_)(__isl_take isl_dim *dim,
 static __isl_give PW *FN(PW,alloc_)(__isl_take isl_dim *dim, int n)
 #endif
 {
+	isl_ctx *ctx;
 	struct PW *pw;
 
 	if (!dim)
 		return NULL;
-	isl_assert(dim->ctx, n >= 0, goto error);
-	pw = isl_alloc(dim->ctx, struct PW,
+	ctx = isl_dim_get_ctx(dim);
+	isl_assert(ctx, n >= 0, goto error);
+	pw = isl_alloc(ctx, struct PW,
 			sizeof(struct PW) + (n - 1) * sizeof(S(PW,piece)));
 	if (!pw)
 		goto error;
@@ -48,6 +50,9 @@ __isl_give PW *FN(PW,zero)(__isl_take isl_dim *dim)
 __isl_give PW *FN(PW,add_piece)(__isl_take PW *pw,
 	__isl_take isl_set *set, __isl_take EL *el)
 {
+	isl_ctx *ctx;
+	isl_dim *el_dim = NULL;
+
 	if (!pw || !set || !el)
 		goto error;
 
@@ -57,20 +62,24 @@ __isl_give PW *FN(PW,add_piece)(__isl_take PW *pw,
 		return pw;
 	}
 
+	ctx = isl_set_get_ctx(set);
 #ifdef HAS_TYPE
 	if (pw->type != el->type)
-		isl_die(set->ctx, isl_error_invalid, "fold types don't match",
+		isl_die(ctx, isl_error_invalid, "fold types don't match",
 			goto error);
 #endif
-	isl_assert(set->ctx, isl_dim_equal(pw->dim, el->dim), goto error);
-	isl_assert(set->ctx, pw->n < pw->size, goto error);
+	el_dim = FN(EL,get_dim(el));
+	isl_assert(ctx, isl_dim_equal(pw->dim, el_dim), goto error);
+	isl_assert(ctx, pw->n < pw->size, goto error);
 
 	pw->p[pw->n].set = set;
 	pw->p[pw->n].FIELD = el;
 	pw->n++;
 	
+	isl_dim_free(el_dim);
 	return pw;
 error:
+	isl_dim_free(el_dim);
 	FN(PW,free)(pw);
 	isl_set_free(set);
 	FN(EL,free)(el);
@@ -174,17 +183,19 @@ __isl_give PW *FN(PW,add)(__isl_take PW *pw1, __isl_take PW *pw2)
 {
 	int i, j, n;
 	struct PW *res;
+	isl_ctx *ctx;
 	isl_set *set;
 
 	if (!pw1 || !pw2)
 		goto error;
 
+	ctx = isl_dim_get_ctx(pw1->dim);
 #ifdef HAS_TYPE
 	if (pw1->type != pw2->type)
-		isl_die(pw1->dim->ctx, isl_error_invalid,
+		isl_die(ctx, isl_error_invalid,
 			"fold types don't match", goto error);
 #endif
-	isl_assert(pw1->dim->ctx, isl_dim_equal(pw1->dim, pw2->dim), goto error);
+	isl_assert(ctx, isl_dim_equal(pw1->dim, pw2->dim), goto error);
 
 	if (FN(PW,is_zero)(pw1)) {
 		FN(PW,free)(pw1);
@@ -247,17 +258,19 @@ error:
 __isl_give PW *FN(PW,add_disjoint)(__isl_take PW *pw1, __isl_take PW *pw2)
 {
 	int i;
+	isl_ctx *ctx;
 	PW *res;
 
 	if (!pw1 || !pw2)
 		goto error;
 
+	ctx = isl_dim_get_ctx(pw1->dim);
 #ifdef HAS_TYPE
 	if (pw1->type != pw2->type)
-		isl_die(pw1->dim->ctx, isl_error_invalid,
+		isl_die(ctx, isl_error_invalid,
 			"fold types don't match", goto error);
 #endif
-	isl_assert(pw1->dim->ctx, isl_dim_equal(pw1->dim, pw2->dim), goto error);
+	isl_assert(ctx, isl_dim_equal(pw1->dim, pw2->dim), goto error);
 
 	if (FN(PW,is_zero)(pw1)) {
 		FN(PW,free)(pw1);
@@ -300,11 +313,15 @@ __isl_give isl_qpolynomial *FN(PW,eval)(__isl_take PW *pw,
 {
 	int i;
 	int found = 0;
+	isl_ctx *ctx;
+	isl_dim *pnt_dim = NULL;
 	isl_qpolynomial *qp;
 
 	if (!pw || !pnt)
 		goto error;
-	isl_assert(pnt->dim->ctx, isl_dim_equal(pnt->dim, pw->dim), goto error);
+	ctx = isl_point_get_ctx(pnt);
+	pnt_dim = isl_point_get_dim(pnt);
+	isl_assert(ctx, isl_dim_equal(pnt_dim, pw->dim), goto error);
 
 	for (i = 0; i < pw->n; ++i) {
 		found = isl_set_contains_point(pw->p[i].set, pnt);
@@ -319,10 +336,12 @@ __isl_give isl_qpolynomial *FN(PW,eval)(__isl_take PW *pw,
 	else
 		qp = isl_qpolynomial_zero(isl_dim_copy(pw->dim));
 	FN(PW,free)(pw);
+	isl_dim_free(pnt_dim);
 	isl_point_free(pnt);
 	return qp;
 error:
 	FN(PW,free)(pw);
+	isl_dim_free(pnt_dim);
 	isl_point_free(pnt);
 	return NULL;
 }
@@ -473,7 +492,7 @@ error:
 
 isl_ctx *FN(PW,get_ctx)(__isl_keep PW *pw)
 {
-	return pw ? pw->dim->ctx : NULL;
+	return pw ? isl_dim_get_ctx(pw->dim) : NULL;
 }
 
 int FN(PW,involves_dims)(__isl_keep PW *pw, enum isl_dim_type type,
@@ -734,11 +753,13 @@ int FN(PW,has_equal_dim)(__isl_keep PW *pw1, __isl_keep PW *pw2)
 __isl_give PW *FN(PW,morph)(__isl_take PW *pw, __isl_take isl_morph *morph)
 {
 	int i;
+	isl_ctx *ctx;
 
 	if (!pw || !morph)
 		goto error;
 
-	isl_assert(pw->dim->ctx, isl_dim_equal(pw->dim, morph->dom->dim),
+	ctx = isl_dim_get_ctx(pw->dim);
+	isl_assert(ctx, isl_dim_equal(pw->dim, morph->dom->dim),
 		goto error);
 
 	pw = FN(PW,cow)(pw);
