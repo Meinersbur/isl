@@ -1718,8 +1718,18 @@ error:
 int isl_qpolynomial_is_equal(__isl_keep isl_qpolynomial *qp1,
 	__isl_keep isl_qpolynomial *qp2)
 {
+	int equal;
+
 	if (!qp1 || !qp2)
 		return -1;
+
+	equal = isl_dim_equal(qp1->dim, qp2->dim);
+	if (equal < 0 || !equal)
+		return equal;
+
+	equal = isl_mat_is_equal(qp1->div, qp2->div);
+	if (equal < 0 || !equal)
+		return equal;
 
 	return isl_upoly_is_equal(qp1->upoly, qp2->upoly);
 }
