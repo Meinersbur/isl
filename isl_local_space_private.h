@@ -3,6 +3,7 @@
 
 #include <isl/div.h>
 #include <isl/mat.h>
+#include <isl/set.h>
 #include <isl/local_space.h>
 
 struct isl_local_space {
@@ -27,5 +28,8 @@ unsigned isl_local_space_offset(__isl_keep isl_local_space *ls,
 __isl_give isl_local_space *isl_local_space_replace_divs(
 	__isl_take isl_local_space *ls, __isl_take isl_mat *div);
 int isl_local_space_divs_known(__isl_keep isl_local_space *ls);
+
+__isl_give isl_local_space *isl_local_space_substitute_equalities(
+	__isl_take isl_local_space *ls, __isl_take isl_basic_set *eq);
 
 #endif

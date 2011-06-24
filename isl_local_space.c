@@ -8,6 +8,7 @@
  * 91893 Orsay, France
  */
 
+#include <isl_ctx_private.h>
 #include <isl_map_private.h>
 #include <isl_local_space_private.h>
 #include <isl_dim_private.h>
@@ -396,4 +397,69 @@ __isl_give isl_local_space *isl_local_space_add_dim(
 		return isl_local_space_free(ls);
 
 	return ls;
+}
+
+/* Remove common factor of non-constant terms and denominator.
+ */
+static void normalize_div(__isl_keep isl_local_space *ls, int div)
+{
+	isl_ctx *ctx = ls->div->ctx;
+	unsigned total = ls->div->n_col - 2;
+
+	isl_seq_gcd(ls->div->row[div] + 2, total, &ctx->normalize_gcd);
+	isl_int_gcd(ctx->normalize_gcd,
+		    ctx->normalize_gcd, ls->div->row[div][0]);
+	if (isl_int_is_one(ctx->normalize_gcd))
+		return;
+
+	isl_seq_scale_down(ls->div->row[div] + 2, ls->div->row[div] + 2,
+			    ctx->normalize_gcd, total);
+	isl_int_divexact(ls->div->row[div][0], ls->div->row[div][0],
+			    ctx->normalize_gcd);
+	isl_int_fdiv_q(ls->div->row[div][1], ls->div->row[div][1],
+			    ctx->normalize_gcd);
+}
+
+/* Exploit the equalities in "eq" to simplify the expressions of
+ * the integer divisions in "ls".
+ * The integer divisions in "ls" are assumed to appear as regular
+ * dimensions in "eq".
+ */
+__isl_give isl_local_space *isl_local_space_substitute_equalities(
+	__isl_take isl_local_space *ls, __isl_take isl_basic_set *eq)
+{
+	int i, j, k;
+	unsigned total;
+	unsigned n_div;
+
+	ls = isl_local_space_cow(ls);
+	if (!ls || !eq)
+		goto error;
+
+	total = isl_dim_total(eq->dim);
+	if (isl_local_space_dim(ls, isl_dim_all) != total)
+		isl_die(isl_local_space_get_ctx(ls), isl_error_invalid,
+			"dimensions don't match", goto error);
+	total++;
+	n_div = eq->n_div;
+	for (i = 0; i < eq->n_eq; ++i) {
+		j = isl_seq_last_non_zero(eq->eq[i], total + n_div);
+		if (j < 0 || j == 0 || j >= total)
+			continue;
+
+		for (k = 0; k < ls->div->n_row; ++k) {
+			if (isl_int_is_zero(ls->div->row[k][1 + j]))
+				continue;
+			isl_seq_elim(ls->div->row[k] + 1, eq->eq[i], j, total,
+					&ls->div->row[k][0]);
+			normalize_div(ls, k);
+		}
+	}
+
+	isl_basic_set_free(eq);
+	return ls;
+error:
+	isl_basic_set_free(eq);
+	isl_local_space_free(ls);
+	return NULL;
 }
