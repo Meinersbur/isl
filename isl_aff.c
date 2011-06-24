@@ -357,11 +357,11 @@ __isl_give isl_aff *isl_aff_neg(__isl_take isl_aff *aff)
 	return aff;
 }
 
-/* Given f, return ceil(f).
+/* Given f, return floor(f).
  * If f is an integer expression, then just return f.
- * Otherwise, create a new div d = [-f] and return the expression -d.
+ * Otherwise, create a new div d = [f] and return the expression d.
  */
-__isl_give isl_aff *isl_aff_ceil(__isl_take isl_aff *aff)
+__isl_give isl_aff *isl_aff_floor(__isl_take isl_aff *aff)
 {
 	int size;
 	isl_ctx *ctx;
@@ -376,10 +376,9 @@ __isl_give isl_aff *isl_aff_ceil(__isl_take isl_aff *aff)
 	if (!aff)
 		return NULL;
 
-	isl_seq_neg(aff->v->el + 1, aff->v->el + 1, aff->v->size - 1);
 	aff->ls = isl_local_space_add_div(aff->ls, isl_vec_copy(aff->v));
 	if (!aff->ls)
-		goto error;
+		return isl_aff_free(aff);
 
 	ctx = isl_aff_get_ctx(aff);
 	size = aff->v->size;
@@ -387,14 +386,30 @@ __isl_give isl_aff *isl_aff_ceil(__isl_take isl_aff *aff)
 	aff->v = isl_vec_alloc(ctx, size + 1);
 	aff->v = isl_vec_clr(aff->v);
 	if (!aff->v)
-		goto error;
+		return isl_aff_free(aff);
 	isl_int_set_si(aff->v->el[0], 1);
-	isl_int_set_si(aff->v->el[size], -1);
+	isl_int_set_si(aff->v->el[size], 1);
 
 	return aff;
-error:
-	isl_aff_free(aff);
-	return NULL;
+}
+
+/* Given f, return ceil(f).
+ * If f is an integer expression, then just return f.
+ * Otherwise, create a new div d = [-f] and return the expression -d.
+ */
+__isl_give isl_aff *isl_aff_ceil(__isl_take isl_aff *aff)
+{
+	if (!aff)
+		return NULL;
+
+	if (isl_int_is_one(aff->v->el[0]))
+		return aff;
+
+	aff = isl_aff_neg(aff);
+	aff = isl_aff_floor(aff);
+	aff = isl_aff_neg(aff);
+
+	return aff;
 }
 
 /* Apply the expansion computed by isl_merge_divs.
