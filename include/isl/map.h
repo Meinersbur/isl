@@ -209,6 +209,10 @@ int isl_basic_map_foreach_lexmin(__isl_keep isl_basic_map *bmap,
 	int (*fn)(__isl_take isl_basic_set *dom, __isl_take isl_aff_list *list,
 		  void *user),
 	void *user);
+int isl_basic_map_foreach_lexmax(__isl_keep isl_basic_map *bmap,
+	int (*fn)(__isl_take isl_basic_set *dom, __isl_take isl_aff_list *list,
+		  void *user),
+	void *user);
 
 void isl_basic_map_print_internal(__isl_keep isl_basic_map *bmap,
 	FILE *out, int indent);
