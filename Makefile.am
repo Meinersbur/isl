@@ -221,6 +221,7 @@ pkginclude_HEADERS = \
 	include/isl/vertices.h
 
 EXTRA_DIST = \
+	isl_config_post.h \
 	basis_reduction_templ.c \
 	isl_list_templ.c \
 	isl_list_templ.h \
