@@ -2266,6 +2266,88 @@ int test_aff(isl_ctx *ctx)
 	return 0;
 }
 
+int test_dim_max(isl_ctx *ctx)
+{
+	int equal;
+	const char *str;
+	isl_map *map, *map2;
+	isl_set *set;
+	isl_pw_aff *pwaff;
+
+	str = "[N] -> { [i] : 0 <= i <= min(N,10) }";
+	set = isl_set_read_from_str(ctx, str, -1);
+	pwaff = isl_set_dim_max(set, 0);
+	map = isl_map_from_pw_aff(pwaff);
+	str = "[N] -> { [] -> [10] : N >= 10; [] -> [N] : N <= 9 and N >= 0 }";
+	map2 = isl_map_read_from_str(ctx, str, -1);
+	equal = isl_map_is_equal(map, map2);
+	isl_map_free(map);
+	isl_map_free(map2);
+	if (equal < 0)
+		return -1;
+	if (!equal)
+		isl_die(ctx, isl_error_unknown, "unexpected result", return -1);
+
+	str = "[N] -> { [i] : 0 <= i <= max(2N,N+6) }";
+	set = isl_set_read_from_str(ctx, str, -1);
+	pwaff = isl_set_dim_max(set, 0);
+	map = isl_map_from_pw_aff(pwaff);
+	str = "[N] -> { [] -> [6 + N] : -6 <= N <= 5; [] -> [2N] : N >= 6 }";
+	map2 = isl_map_read_from_str(ctx, str, -1);
+	equal = isl_map_is_equal(map, map2);
+	isl_map_free(map);
+	isl_map_free(map2);
+	if (equal < 0)
+		return -1;
+	if (!equal)
+		isl_die(ctx, isl_error_unknown, "unexpected result", return -1);
+
+	str = "[N] -> { [i] : 0 <= i <= 2N or 0 <= i <= N+6 }";
+	set = isl_set_read_from_str(ctx, str, -1);
+	pwaff = isl_set_dim_max(set, 0);
+	map = isl_map_from_pw_aff(pwaff);
+	str = "[N] -> { [] -> [6 + N] : -6 <= N <= 5; [] -> [2N] : N >= 6 }";
+	map2 = isl_map_read_from_str(ctx, str, -1);
+	equal = isl_map_is_equal(map, map2);
+	isl_map_free(map);
+	isl_map_free(map2);
+	if (equal < 0)
+		return -1;
+	if (!equal)
+		isl_die(ctx, isl_error_unknown, "unexpected result", return -1);
+
+	str = "[N,M] -> { [i,j] -> [([i/16]), i%16, ([j/16]), j%16] : "
+			"0 <= i < N and 0 <= j < M }";
+	map = isl_map_read_from_str(ctx, str, -1);
+	set = isl_map_range(map);
+
+	pwaff = isl_set_dim_max(isl_set_copy(set), 0);
+	map = isl_map_from_pw_aff(pwaff);
+	str = "[N,M] -> { [] -> [([(N-1)/16])] : M,N > 0 }";
+	map2 = isl_map_read_from_str(ctx, str, -1);
+	equal = isl_map_is_equal(map, map2);
+	isl_map_free(map);
+	isl_map_free(map2);
+
+	pwaff = isl_set_dim_max(isl_set_copy(set), 3);
+	map = isl_map_from_pw_aff(pwaff);
+	str = "[N,M] -> { [] -> [t] : t = min(M-1,15) and M,N > 0 }";
+	map2 = isl_map_read_from_str(ctx, str, -1);
+	if (equal >= 0 && equal)
+		equal = isl_map_is_equal(map, map2);
+	isl_map_free(map);
+	isl_map_free(map2);
+
+	isl_set_free(set);
+
+	if (equal < 0)
+		return -1;
+	if (!equal)
+		isl_die(ctx, isl_error_unknown, "unexpected result", return -1);
+
+	return 0;
+}
+
 int main()
 {
 	struct isl_ctx *ctx;
@@ -2274,6 +2356,8 @@ int main()
 	assert(srcdir);
 
 	ctx = isl_ctx_alloc();
+	if (test_dim_max(ctx) < 0)
+		goto error;
 	if (test_aff(ctx) < 0)
 		goto error;
 	if (test_injective(ctx) < 0)

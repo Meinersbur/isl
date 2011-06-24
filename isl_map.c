@@ -5018,6 +5018,126 @@ __isl_give isl_set *isl_set_lexmax(__isl_take isl_set *set)
 	return (isl_set *)isl_map_lexmax((isl_map *)set);
 }
 
+/* Construct a map that equates the two given dimensions in the given space.
+ */
+static __isl_give isl_map *equate(__isl_take isl_dim *dim,
+	enum isl_dim_type src_type, int src_pos,
+	enum isl_dim_type dst_type, int dst_pos)
+{
+	isl_basic_map *bmap;
+	int k;
+
+	bmap = isl_basic_map_alloc_dim(dim, 0, 1, 0);
+	k = isl_basic_map_alloc_equality(bmap);
+	if (k < 0)
+		goto error;
+	isl_seq_clr(bmap->eq[k], 1 + isl_basic_map_total_dim(bmap));
+	src_pos += isl_basic_map_offset(bmap, src_type);
+	dst_pos += isl_basic_map_offset(bmap, dst_type);
+	isl_int_set_si(bmap->eq[k][src_pos], 1);
+	isl_int_set_si(bmap->eq[k][dst_pos], -1);
+
+	return isl_map_from_basic_map(bmap);
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+/* Extract the first and only affine expression from list
+ * and then add it to *pwaff with the given dom.
+ * This domain is known to be disjoint from other domains
+ * because of the way isl_basic_set_foreach_lexmax works.
+ */
+static int update_dim_max(__isl_take isl_basic_set *dom,
+	__isl_take isl_aff_list *list, void *user)
+{
+	isl_ctx *ctx = isl_basic_set_get_ctx(dom);
+	isl_aff *aff;
+	isl_pw_aff **pwaff = user;
+	isl_pw_aff *pwaff_i;
+
+	if (isl_aff_list_n_aff(list) != 1)
+		isl_die(ctx, isl_error_internal,
+			"expecting single element list", goto error);
+
+	aff = isl_aff_list_get_aff(list, 0);
+	pwaff_i = isl_pw_aff_alloc(isl_set_from_basic_set(dom), aff);
+
+	*pwaff = isl_pw_aff_add_disjoint(*pwaff, pwaff_i);
+
+	isl_aff_list_free(list);
+
+	return 0;
+error:
+	isl_basic_set_free(dom);
+	isl_aff_list_free(list);
+	return -1;
+}
+
+/* Given a one-dimensional basic set, compute the maximum of that
+ * dimension as an isl_pw_aff.
+ *
+ * The isl_pw_aff is constructed by having isl_basic_set_foreach_lexmax
+ * call update_dim_max on each leaf of the result.
+ */
+static __isl_give isl_pw_aff *basic_set_dim_max(__isl_keep isl_basic_set *bset)
+{
+	isl_dim *dim = isl_basic_set_get_dim(bset);
+	isl_pw_aff *pwaff;
+	int r;
+
+	dim = isl_dim_domain(isl_dim_from_range(dim));
+	pwaff = isl_pw_aff_empty(dim);
+
+	r = isl_basic_set_foreach_lexmax(bset, &update_dim_max, &pwaff);
+	if (r < 0)
+		return isl_pw_aff_free(pwaff);
+
+	return pwaff;
+}
+
+/* Compute the maximum of the given set dimension as a function of the
+ * parameters, but independently of the other set dimensions.
+ *
+ * We first project the set onto the given dimension and then compute
+ * the "lexicographic" maximum in each basic set, combining the results
+ * using isl_pw_aff_max.
+ */
+__isl_give isl_pw_aff *isl_set_dim_max(__isl_take isl_set *set, int pos)
+{
+	int i;
+	isl_map *map;
+	isl_pw_aff *pwaff;
+
+	map = isl_map_from_domain(set);
+	map = isl_map_add_dims(map, isl_dim_out, 1);
+	map = isl_map_intersect(map,
+		equate(isl_map_get_dim(map), isl_dim_in, pos,
+					     isl_dim_out, 0));
+	set = isl_map_range(map);
+	if (!set)
+		return NULL;
+
+	if (set->n == 0) {
+		isl_dim *dim = isl_set_get_dim(set);
+		dim = isl_dim_domain(isl_dim_from_range(dim));
+		isl_set_free(set);
+		return isl_pw_aff_empty(dim);
+	}
+
+	pwaff = basic_set_dim_max(set->p[0]);
+	for (i = 1; i < set->n; ++i) {
+		isl_pw_aff *pwaff_i;
+
+		pwaff_i = basic_set_dim_max(set->p[i]);
+		pwaff = isl_pw_aff_max(pwaff, pwaff_i);
+	}
+
+	isl_set_free(set);
+
+	return pwaff;
+}
+
 /* Apply a preimage specified by "mat" on the parameters of "bset".
  * bset is assumed to have only parameters and divs.
  */

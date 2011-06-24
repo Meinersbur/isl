@@ -387,6 +387,8 @@ __isl_give isl_basic_set *isl_basic_set_solutions(
 	__isl_take isl_basic_set *bset);
 __isl_give isl_basic_set *isl_set_solutions(__isl_take isl_set *set);
 
+__isl_give isl_pw_aff *isl_set_dim_max(__isl_take isl_set *set, int pos);
+
 #if defined(__cplusplus)
 }
 #endif

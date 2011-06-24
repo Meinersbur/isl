@@ -1625,6 +1625,15 @@ over the points in C<set>, returning the result in C<opt>.
 The return value may be one of C<isl_lp_error>,
 C<isl_lp_ok>, C<isl_lp_unbounded> or C<isl_lp_empty>.
 
+=item * Parametric optimization
+
+	__isl_give isl_pw_aff *isl_set_dim_max(
+		__isl_take isl_set *set, int pos);
+
+Compute the maximum of the given set dimension as a function of the
+parameters, but independently of the other set dimensions.
+For lexicographic optimization, see L<"Lexicographic Optimization">.
+
 =item * Dual
 
 The following functions compute either the set of (rational) coefficient
