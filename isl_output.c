@@ -2270,7 +2270,7 @@ void isl_aff_dump(__isl_keep isl_aff *aff)
 	isl_printer_free(printer);
 }
 
-__isl_give isl_printer *isl_printer_print_pw_aff(__isl_take isl_printer *p,
+static __isl_give isl_printer *print_pw_aff_isl(__isl_take isl_printer *p,
 	__isl_keep isl_pw_aff *pwaff)
 {
 	int i;
@@ -2291,6 +2291,143 @@ __isl_give isl_printer *isl_printer_print_pw_aff(__isl_take isl_printer *p,
 	}
 	p = isl_printer_print_str(p, " }");
 	return p;
+error:
+	isl_printer_free(p);
+	return NULL;
+}
+
+static __isl_give isl_printer *print_ls_affine_c(__isl_take isl_printer *p,
+	__isl_keep isl_local_space *ls, isl_int *c);
+
+static __isl_give isl_printer *print_ls_name_c(__isl_take isl_printer *p,
+	__isl_keep isl_local_space *ls, enum isl_dim_type type, unsigned pos)
+{
+	if (type == isl_dim_div) {
+		p = isl_printer_print_str(p, "floord(");
+		p = print_ls_affine_c(p, ls, ls->div->row[pos] + 1);
+		p = isl_printer_print_str(p, ", ");
+		p = isl_printer_print_isl_int(p, ls->div->row[pos][0]);
+		p = isl_printer_print_str(p, ")");
+	} else {
+		const char *name;
+
+		name = isl_dim_get_name(ls->dim, type, pos);
+		if (!name)
+			name = "UNNAMED";
+		p = isl_printer_print_str(p, name);
+	}
+	return p;
+}
+
+static __isl_give isl_printer *print_ls_term_c(__isl_take isl_printer *p,
+	__isl_keep isl_local_space *ls, isl_int c, unsigned pos)
+{
+	enum isl_dim_type type;
+
+	if (pos == 0)
+		return isl_printer_print_isl_int(p, c);
+
+	if (isl_int_is_one(c))
+		;
+	else if (isl_int_is_negone(c))
+		p = isl_printer_print_str(p, "-");
+	else {
+		p = isl_printer_print_isl_int(p, c);
+		p = isl_printer_print_str(p, "*");
+	}
+	type = pos2type(ls->dim, &pos);
+	p = print_ls_name_c(p, ls, type, pos);
+	return p;
+}
+
+static __isl_give isl_printer *print_ls_partial_affine_c(
+	__isl_take isl_printer *p, __isl_keep isl_local_space *ls,
+	isl_int *c, unsigned len)
+{
+	int i;
+	int first;
+
+	for (i = 0, first = 1; i < len; ++i) {
+		int flip = 0;
+		if (isl_int_is_zero(c[i]))
+			continue;
+		if (!first) {
+			if (isl_int_is_neg(c[i])) {
+				flip = 1;
+				isl_int_neg(c[i], c[i]);
+				p = isl_printer_print_str(p, " - ");
+			} else 
+				p = isl_printer_print_str(p, " + ");
+		}
+		first = 0;
+		p = print_ls_term_c(p, ls, c[i], i);
+		if (flip)
+			isl_int_neg(c[i], c[i]);
+	}
+	if (first)
+		p = isl_printer_print_str(p, "0");
+	return p;
+}
+
+static __isl_give isl_printer *print_ls_affine_c(__isl_take isl_printer *p,
+	__isl_keep isl_local_space *ls, isl_int *c)
+{
+	unsigned len = 1 + isl_local_space_dim(ls, isl_dim_all);
+	return print_ls_partial_affine_c(p, ls, c, len);
+}
+
+static __isl_give isl_printer *print_aff_c(__isl_take isl_printer *p,
+	__isl_keep isl_aff *aff)
+{
+	unsigned total;
+
+	total = isl_local_space_dim(aff->ls, isl_dim_all);
+	p = isl_printer_print_str(p, "(");
+	p = print_ls_partial_affine_c(p, aff->ls, aff->v->el + 1, 1 + total);
+	if (isl_int_is_one(aff->v->el[0]))
+		p = isl_printer_print_str(p, ")");
+	else {
+		p = isl_printer_print_str(p, ")/");
+		p = isl_printer_print_isl_int(p, aff->v->el[0]);
+	}
+	return p;
+}
+
+static __isl_give isl_printer *print_pw_aff_c(__isl_take isl_printer *p,
+	__isl_keep isl_pw_aff *pwaff)
+{
+	int i;
+
+	if (pwaff->n < 1)
+		isl_die(p->ctx, isl_error_unsupported,
+			"cannot print empty isl_pw_aff in C format", goto error);
+
+	for (i = 0; i < pwaff->n - 1; ++i) {
+		p = isl_printer_print_str(p, "(");
+		p = print_set_c(p, pwaff->dim, pwaff->p[i].set);
+		p = isl_printer_print_str(p, ") ? (");
+		p = print_aff_c(p, pwaff->p[i].aff);
+		p = isl_printer_print_str(p, ") : ");
+	}
+
+	return print_aff_c(p, pwaff->p[pwaff->n - 1].aff);
+error:
+	isl_printer_free(p);
+	return NULL;
+}
+
+__isl_give isl_printer *isl_printer_print_pw_aff(__isl_take isl_printer *p,
+	__isl_keep isl_pw_aff *pwaff)
+{
+	if (!p || !pwaff)
+		goto error;
+
+	if (p->output_format == ISL_FORMAT_ISL)
+		return print_pw_aff_isl(p, pwaff);
+	else if (p->output_format == ISL_FORMAT_C)
+		return print_pw_aff_c(p, pwaff);
+	isl_die(p->ctx, isl_error_unsupported, "unsupported output format",
+		goto error);
 error:
 	isl_printer_free(p);
 	return NULL;
