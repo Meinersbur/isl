@@ -626,3 +626,16 @@ __isl_give isl_aff *isl_aff_scale_down_ui(__isl_take isl_aff *aff, unsigned f)
 
 	return aff;
 }
+
+__isl_give isl_aff *isl_aff_set_dim_name(__isl_take isl_aff *aff,
+	enum isl_dim_type type, unsigned pos, const char *s)
+{
+	aff = isl_aff_cow(aff);
+	if (!aff)
+		return NULL;
+	aff->ls = isl_local_space_set_dim_name(aff->ls, type, pos, s);
+	if (!aff->ls)
+		return isl_aff_free(aff);
+
+	return aff;
+}
