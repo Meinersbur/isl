@@ -589,3 +589,18 @@ __isl_give isl_aff *isl_aff_scale_down(__isl_take isl_aff *aff, isl_int f)
 
 	return aff;
 }
+
+__isl_give isl_aff *isl_aff_scale_down_ui(__isl_take isl_aff *aff, unsigned f)
+{
+	isl_int v;
+
+	if (f == 1)
+		return aff;
+
+	isl_int_init(v);
+	isl_int_set_ui(v, f);
+	aff = isl_aff_scale_down(aff, v);
+	isl_int_clear(v);
+
+	return aff;
+}
