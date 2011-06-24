@@ -12,7 +12,9 @@
 #include <isl_aff_private.h>
 #include <isl_local_space_private.h>
 #include <isl_mat_private.h>
+#include <isl/constraint.h>
 #include <isl/seq.h>
+#include <isl/set.h>
 
 __isl_give isl_aff *isl_aff_alloc_vec(__isl_take isl_local_space *ls,
 	__isl_take isl_vec *v)
@@ -719,4 +721,18 @@ error:
 	isl_aff_free(aff);
 	isl_set_free(context);
 	return NULL;
+}
+
+/* Return a basic set containing those elements in the shared space
+ * of aff1 and aff2 where aff1 is greater than or equal to aff2.
+ */
+__isl_give isl_basic_set *isl_aff_ge_basic_set(__isl_take isl_aff *aff1,
+	__isl_take isl_aff *aff2)
+{
+	isl_constraint *ineq;
+
+	aff1 = isl_aff_sub(aff1, aff2);
+	ineq = isl_inequality_from_aff(aff1);
+
+	return isl_basic_set_from_constraint(ineq);
 }

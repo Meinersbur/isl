@@ -2267,6 +2267,13 @@ Operations include
 	__isl_give isl_aff *isl_aff_gist(__isl_take isl_aff *aff,
 		__isl_take isl_set *context);
 
+	__isl_give isl_basic_set *isl_aff_ge_basic_set(
+		__isl_take isl_aff *aff1, __isl_take isl_aff *aff2);
+
+The function C<isl_aff_ge_basic_set> returns a basic set
+containing those elements in the shared space
+of C<aff1> and C<aff2> where C<aff1> is greater than or equal to C<aff2>.
+
 An expression can be printed using
 
 	#include <isl/aff.h>

@@ -67,6 +67,9 @@ __isl_give isl_aff *isl_aff_scale_down_ui(__isl_take isl_aff *aff, unsigned f);
 __isl_give isl_aff *isl_aff_gist(__isl_take isl_aff *aff,
 	__isl_take isl_set *context);
 
+__isl_give isl_basic_set *isl_aff_ge_basic_set(__isl_take isl_aff *aff1,
+	__isl_take isl_aff *aff2);
+
 __isl_give isl_printer *isl_printer_print_aff(__isl_take isl_printer *p,
 	__isl_keep isl_aff *aff);
 void isl_aff_dump(__isl_keep isl_aff *aff);
