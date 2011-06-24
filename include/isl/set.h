@@ -10,8 +10,10 @@
 #ifndef ISL_SET_H
 #define ISL_SET_H
 
-#include <isl/map.h>
+#include <isl/map_type.h>
+#include <isl/aff.h>
 #include <isl/list.h>
+#include <isl/mat.h>
 #include <isl/point.h>
 #include <isl/local_space.h>
 

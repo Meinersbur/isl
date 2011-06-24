@@ -8,6 +8,8 @@
  * 91893 Orsay, France 
  */
 
+#include <isl/set.h>
+#include <isl/map.h>
 #include <isl/obj.h>
 
 struct isl_int_obj {

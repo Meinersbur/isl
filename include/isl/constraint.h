@@ -12,7 +12,7 @@
 
 #include <isl/aff.h>
 #include <isl/div.h>
-#include <isl/set.h>
+#include <isl/set_type.h>
 #include <isl/printer.h>
 
 #if defined(__cplusplus)

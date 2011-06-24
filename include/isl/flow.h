@@ -1,8 +1,8 @@
 #ifndef ISL_FLOW_H
 #define ISL_FLOW_H
 
-#include <isl/set.h>
-#include <isl/map.h>
+#include <isl/set_type.h>
+#include <isl/map_type.h>
 #include <isl/union_set.h>
 #include <isl/union_map.h>
 

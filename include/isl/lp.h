@@ -10,8 +10,10 @@
 #ifndef ISL_LP_H
 #define ISL_LP_H
 
-#include <isl/map.h>
-#include <isl/set.h>
+#include <isl/int.h>
+#include <isl/vec.h>
+#include <isl/map_type.h>
+#include <isl/set_type.h>
 
 enum isl_lp_result {
 	isl_lp_error = -1,

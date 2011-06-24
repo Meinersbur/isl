@@ -23,6 +23,7 @@
 #include <isl/local_space.h>
 #include <isl/aff.h>
 #include <isl/list.h>
+#include <isl/map_type.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -41,19 +42,6 @@ extern "C" {
  * never be used after the function call.  If you want to keep a
  * reference to the old structure(s), use the appropriate _copy function.
  */
-
-struct isl_basic_map;
-typedef struct isl_basic_map isl_basic_map;
-#ifndef isl_basic_set
-struct isl_basic_set;
-typedef struct isl_basic_set isl_basic_set;
-#endif
-struct isl_map;
-typedef struct isl_map isl_map;
-#ifndef isl_set
-struct isl_set;
-typedef struct isl_set isl_set;
-#endif
 
 unsigned isl_basic_map_n_in(const struct isl_basic_map *bmap);
 unsigned isl_basic_map_n_out(const struct isl_basic_map *bmap);

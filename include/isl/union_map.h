@@ -2,7 +2,7 @@
 #define ISL_UNION_MAP_H
 
 #include <isl/dim.h>
-#include <isl/map.h>
+#include <isl/map_type.h>
 #include <isl/printer.h>
 
 #if defined(__cplusplus)

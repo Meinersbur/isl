@@ -5,7 +5,7 @@
 #include <isl/constraint.h>
 #include <isl/dim.h>
 #include <isl/div.h>
-#include <isl/set.h>
+#include <isl/set_type.h>
 #include <isl/point.h>
 #include <isl/printer.h>
 #include <isl/union_set.h>

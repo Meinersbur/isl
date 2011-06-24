@@ -205,6 +205,7 @@ pkginclude_HEADERS = \
 	include/isl/lp.h \
 	include/isl/mat.h \
 	include/isl/map.h \
+	include/isl/map_type.h \
 	include/isl/obj.h \
 	include/isl/options.h \
 	include/isl/point.h \
@@ -213,6 +214,7 @@ pkginclude_HEADERS = \
 	include/isl/schedule.h \
 	include/isl/seq.h \
 	include/isl/set.h \
+	include/isl/set_type.h \
 	include/isl/stream.h \
 	include/isl/union_map.h \
 	include/isl/union_set.h \
