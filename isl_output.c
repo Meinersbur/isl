@@ -2237,7 +2237,7 @@ static __isl_give isl_printer *print_aff(__isl_take isl_printer *p,
 	return p;
 }
 
-__isl_give isl_printer *isl_printer_print_aff(__isl_take isl_printer *p,
+static __isl_give isl_printer *print_aff_isl(__isl_take isl_printer *p,
 	__isl_keep isl_aff *aff)
 {
 	if (!aff)
@@ -2411,6 +2411,23 @@ static __isl_give isl_printer *print_pw_aff_c(__isl_take isl_printer *p,
 	}
 
 	return print_aff_c(p, pwaff->p[pwaff->n - 1].aff);
+error:
+	isl_printer_free(p);
+	return NULL;
+}
+
+__isl_give isl_printer *isl_printer_print_aff(__isl_take isl_printer *p,
+	__isl_keep isl_aff *aff)
+{
+	if (!p || !aff)
+		goto error;
+
+	if (p->output_format == ISL_FORMAT_ISL)
+		return print_aff_isl(p, aff);
+	else if (p->output_format == ISL_FORMAT_C)
+		return print_aff_c(p, aff);
+	isl_die(p->ctx, isl_error_unsupported, "unsupported output format",
+		goto error);
 error:
 	isl_printer_free(p);
 	return NULL;
