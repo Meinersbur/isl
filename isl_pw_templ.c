@@ -154,14 +154,14 @@ __isl_give PW *FN(PW,copy)(__isl_keep PW *pw)
 	return pw;
 }
 
-void FN(PW,free)(__isl_take PW *pw)
+void *FN(PW,free)(__isl_take PW *pw)
 {
 	int i;
 
 	if (!pw)
-		return;
+		return NULL;
 	if (--pw->ref > 0)
-		return;
+		return NULL;
 
 	for (i = 0; i < pw->n; ++i) {
 		isl_set_free(pw->p[i].set);
@@ -169,6 +169,8 @@ void FN(PW,free)(__isl_take PW *pw)
 	}
 	isl_dim_free(pw->dim);
 	free(pw);
+
+	return NULL;
 }
 
 int FN(PW,is_zero)(__isl_keep PW *pw)

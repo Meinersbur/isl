@@ -2480,7 +2480,7 @@ functions.
 
 	__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_copy(
 		__isl_keep isl_pw_qpolynomial *pwqp);
-	void isl_pw_qpolynomial_free(
+	void *isl_pw_qpolynomial_free(
 		__isl_take isl_pw_qpolynomial *pwqp);
 
 	__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_copy(
@@ -2712,7 +2712,7 @@ following functions.
 		__isl_keep isl_union_pw_qpolynomial_fold *upwf);
 	void isl_qpolynomial_fold_free(
 		__isl_take isl_qpolynomial_fold *fold);
-	void isl_pw_qpolynomial_fold_free(
+	void *isl_pw_qpolynomial_fold_free(
 		__isl_take isl_pw_qpolynomial_fold *pwf);
 	void isl_union_pw_qpolynomial_fold_free(
 		__isl_take isl_union_pw_qpolynomial_fold *upwf);
