@@ -8,6 +8,7 @@
  * 91893 Orsay, France
  */
 
+#include <isl_map_private.h>
 #include <isl_aff_private.h>
 #include <isl_local_space_private.h>
 #include <isl_mat_private.h>
@@ -638,4 +639,84 @@ __isl_give isl_aff *isl_aff_set_dim_name(__isl_take isl_aff *aff,
 		return isl_aff_free(aff);
 
 	return aff;
+}
+
+/* Exploit the equalities in "eq" to simplify the affine expression
+ * and the expressions of the integer divisions in the local space.
+ * The integer divisions in this local space are assumed to appear
+ * as regular dimensions in "eq".
+ */
+static __isl_give isl_aff *isl_aff_substitute_equalities(
+	__isl_take isl_aff *aff, __isl_take isl_basic_set *eq)
+{
+	int i, j;
+	unsigned total;
+	unsigned n_div;
+
+	if (!eq)
+		goto error;
+	if (eq->n_eq == 0) {
+		isl_basic_set_free(eq);
+		return aff;
+	}
+
+	aff = isl_aff_cow(aff);
+	if (!aff)
+		goto error;
+
+	aff->ls = isl_local_space_substitute_equalities(aff->ls,
+							isl_basic_set_copy(eq));
+	if (!aff->ls)
+		goto error;
+
+	total = 1 + isl_dim_total(eq->dim);
+	n_div = eq->n_div;
+	for (i = 0; i < eq->n_eq; ++i) {
+		j = isl_seq_last_non_zero(eq->eq[i], total + n_div);
+		if (j < 0 || j == 0 || j >= total)
+			continue;
+
+		isl_seq_elim(aff->v->el + 1, eq->eq[i], j, total,
+				&aff->v->el[0]);
+	}
+
+	isl_basic_set_free(eq);
+	return aff;
+error:
+	isl_basic_set_free(eq);
+	isl_aff_free(aff);
+	return NULL;
+}
+
+/* Look for equalities among the variables shared by context and aff
+ * and the integer divisions of aff, if any.
+ * The equalities are then used to eliminate coefficients and/or integer
+ * divisions from aff.
+ */
+__isl_give isl_aff *isl_aff_gist(__isl_take isl_aff *aff,
+	__isl_take isl_set *context)
+{
+	isl_basic_set *hull;
+	int n_div;
+
+	if (!aff)
+		goto error;
+	n_div = isl_local_space_dim(aff->ls, isl_dim_div);
+	if (n_div > 0) {
+		isl_basic_set *bset;
+		context = isl_set_add_dims(context, isl_dim_set, n_div);
+		bset = isl_basic_set_from_local_space(
+					    isl_aff_get_local_space(aff));
+		bset = isl_basic_set_lift(bset);
+		bset = isl_basic_set_flatten(bset);
+		context = isl_set_intersect(context,
+					    isl_set_from_basic_set(bset));
+	}
+
+	hull = isl_set_affine_hull(context);
+	return isl_aff_substitute_equalities(aff, hull);
+error:
+	isl_aff_free(aff);
+	isl_set_free(context);
+	return NULL;
 }

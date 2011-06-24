@@ -2229,6 +2229,43 @@ int test_injective(isl_ctx *ctx)
 	return 0;
 }
 
+int test_aff(isl_ctx *ctx)
+{
+	const char *str;
+	isl_set *set;
+	isl_dim *dim;
+	isl_local_space *ls;
+	isl_aff *aff;
+	int zero;
+
+	dim = isl_dim_set_alloc(ctx, 0, 1);
+	ls = isl_local_space_from_dim(dim);
+	aff = isl_aff_zero(ls);
+
+	aff = isl_aff_add_coefficient_si(aff, isl_dim_set, 0, 1);
+	aff = isl_aff_scale_down_ui(aff, 3);
+	aff = isl_aff_floor(aff);
+	aff = isl_aff_add_coefficient_si(aff, isl_dim_set, 0, 1);
+	aff = isl_aff_scale_down_ui(aff, 2);
+	aff = isl_aff_floor(aff);
+	aff = isl_aff_add_coefficient_si(aff, isl_dim_set, 0, 1);
+
+	str = "{ [10] }";
+	set = isl_set_read_from_str(ctx, str, 0);
+	aff = isl_aff_gist(aff, set);
+
+	aff = isl_aff_add_constant_si(aff, -16);
+	zero = isl_aff_plain_is_zero(aff);
+	isl_aff_free(aff);
+
+	if (zero < 0)
+		return -1;
+	if (!zero)
+		isl_die(ctx, isl_error_unknown, "unexpected result", return -1);
+
+	return 0;
+}
+
 int main()
 {
 	struct isl_ctx *ctx;
@@ -2237,6 +2274,8 @@ int main()
 	assert(srcdir);
 
 	ctx = isl_ctx_alloc();
+	if (test_aff(ctx) < 0)
+		goto error;
 	if (test_injective(ctx) < 0)
 		goto error;
 	if (test_schedule(ctx) < 0)
