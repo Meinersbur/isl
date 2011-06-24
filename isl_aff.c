@@ -858,3 +858,36 @@ error:
 	isl_pw_aff_free(pwaff2);
 	return NULL;
 }
+
+/* Construct a map with as domain the domain of pwaff and
+ * one-dimensional range corresponding to the affine expressions.
+ */
+__isl_give isl_map *isl_map_from_pw_aff(__isl_take isl_pw_aff *pwaff)
+{
+	int i;
+	isl_dim *dim;
+	isl_map *map;
+
+	if (!pwaff)
+		return NULL;
+
+	dim = isl_pw_aff_get_dim(pwaff);
+	dim = isl_dim_from_domain(dim);
+	dim = isl_dim_add(dim, isl_dim_out, 1);
+	map = isl_map_empty(dim);
+
+	for (i = 0; i < pwaff->n; ++i) {
+		isl_basic_map *bmap;
+		isl_map *map_i;
+
+		bmap = isl_basic_map_from_aff(isl_aff_copy(pwaff->p[i].aff));
+		map_i = isl_map_from_basic_map(bmap);
+		map_i = isl_map_intersect_domain(map_i,
+						isl_set_copy(pwaff->p[i].set));
+		map = isl_map_union_disjoint(map, map_i);
+	}
+
+	isl_pw_aff_free(pwaff);
+
+	return map;
+}
