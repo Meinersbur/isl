@@ -40,6 +40,7 @@ typedef mpz_t	isl_int;
 #define isl_int_set(r,i)	mpz_set(r,i)
 #define isl_int_set_gmp(r,i)	mpz_set(r,i)
 #define isl_int_set_si(r,i)	mpz_set_si(r,i)
+#define isl_int_set_ui(r,i)	mpz_set_ui(r,i)
 #define isl_int_get_gmp(i,g)	mpz_set(g,i)
 #define isl_int_get_si(r)	mpz_get_si(r)
 #define isl_int_get_ui(r)	mpz_get_ui(r)
