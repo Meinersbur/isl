@@ -143,6 +143,14 @@ const char *isl_aff_get_dim_name(__isl_keep isl_aff *aff,
 	return aff ? isl_local_space_get_dim_name(aff->ls, type, pos) : 0;
 }
 
+int isl_aff_plain_is_zero(__isl_keep isl_aff *aff)
+{
+	if (!aff)
+		return -1;
+
+	return isl_seq_first_non_zero(aff->v->el + 1, aff->v->size - 1) < 0;
+}
+
 int isl_aff_get_denominator(__isl_keep isl_aff *aff, isl_int *v)
 {
 	if (!aff)
