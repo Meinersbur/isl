@@ -2231,11 +2231,12 @@ __isl_give isl_printer *isl_printer_print_aff(__isl_take isl_printer *p,
 	p = isl_printer_print_str(p, "{ ");
 	p = print_tuple(aff->ls->dim, p, isl_dim_set, 1, 0, NULL);
 	p = isl_printer_print_str(p, " -> [");
-	if (!isl_int_is_one(aff->v->el[0]))
-		p = isl_printer_print_str(p, "(");
+	p = isl_printer_print_str(p, "(");
 	p = print_affine_of_len(aff->ls->dim, aff->ls->div, p,
 				aff->v->el + 1, 1 + total, 1);
-	if (!isl_int_is_one(aff->v->el[0])) {
+	if (isl_int_is_one(aff->v->el[0]))
+		p = isl_printer_print_str(p, ")");
+	else {
 		p = isl_printer_print_str(p, ")/");
 		p = isl_printer_print_isl_int(p, aff->v->el[0]);
 	}
