@@ -42,6 +42,7 @@ __isl_give isl_aff *isl_aff_add_constant_si(__isl_take isl_aff *aff, int v);
 __isl_give isl_aff *isl_aff_add_coefficient_si(__isl_take isl_aff *aff,
 	enum isl_dim_type type, int pos, int v);
 
+int isl_aff_plain_is_equal(__isl_keep isl_aff *aff1, __isl_keep isl_aff *aff2);
 int isl_aff_plain_is_zero(__isl_keep isl_aff *aff);
 
 __isl_give isl_div *isl_aff_get_div(__isl_keep isl_aff *aff, int pos);

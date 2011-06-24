@@ -2236,10 +2236,13 @@ set the I<numerator> of the constant or coefficient, while
 C<add_constant> and C<add_coefficient> add an integer value to
 the possibly rational constant or coefficient.
 
-To check whether an affine expressions is obviously zero, use
+To check whether an affine expressions is obviously zero
+or obviously equal to some other affine expression, use
 
 	#include <isl/aff.h>
 	int isl_aff_plain_is_zero(__isl_keep isl_aff *aff);
+	int isl_aff_plain_is_equal(__isl_keep isl_aff *aff1,
+		__isl_keep isl_aff *aff2);
 
 Operations include
 

@@ -151,6 +151,20 @@ int isl_aff_plain_is_zero(__isl_keep isl_aff *aff)
 	return isl_seq_first_non_zero(aff->v->el + 1, aff->v->size - 1) < 0;
 }
 
+int isl_aff_plain_is_equal(__isl_keep isl_aff *aff1, __isl_keep isl_aff *aff2)
+{
+	int equal;
+
+	if (!aff1 || !aff2)
+		return -1;
+
+	equal = isl_local_space_is_equal(aff1->ls, aff2->ls);
+	if (equal < 0 || !equal)
+		return equal;
+
+	return isl_vec_is_equal(aff1->v, aff2->v);
+}
+
 int isl_aff_get_denominator(__isl_keep isl_aff *aff, isl_int *v)
 {
 	if (!aff)
