@@ -223,6 +223,18 @@ __isl_give isl_aff *isl_aff_add_constant(__isl_take isl_aff *aff, isl_int v)
 	return aff;
 }
 
+__isl_give isl_aff *isl_aff_add_constant_si(__isl_take isl_aff *aff, int v)
+{
+	isl_int t;
+
+	isl_int_init(t);
+	isl_int_set_si(t, v);
+	aff = isl_aff_add_constant(aff, t);
+	isl_int_clear(t);
+
+	return aff;
+}
+
 __isl_give isl_aff *isl_aff_set_constant_si(__isl_take isl_aff *aff, int v)
 {
 	aff = isl_aff_cow(aff);
