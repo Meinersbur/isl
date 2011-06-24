@@ -778,3 +778,83 @@ int isl_aff_is_empty(__isl_keep isl_aff *aff)
 #define NO_RESET_DIM
 
 #include <isl_pw_templ.c>
+
+/* Compute a piecewise quasi-affine expression with a domain that
+ * is the union of those of pwaff1 and pwaff2 and such that on each
+ * cell, the quasi-affine expression is the maximum of those of pwaff1
+ * and pwaff2.  If only one of pwaff1 or pwaff2 is defined on a given
+ * cell, then the associated expression is the defined one.
+ */
+__isl_give isl_pw_aff *isl_pw_aff_max(__isl_take isl_pw_aff *pwaff1,
+	__isl_take isl_pw_aff *pwaff2)
+{
+	int i, j, n;
+	isl_pw_aff *res;
+	isl_ctx *ctx;
+	isl_set *set;
+
+	if (!pwaff1 || !pwaff2)
+		goto error;
+
+	ctx = isl_dim_get_ctx(pwaff1->dim);
+	if (!isl_dim_equal(pwaff1->dim, pwaff2->dim))
+		isl_die(ctx, isl_error_invalid,
+			"arguments should live in same space", goto error);
+
+	if (isl_pw_aff_is_empty(pwaff1)) {
+		isl_pw_aff_free(pwaff1);
+		return pwaff2;
+	}
+
+	if (isl_pw_aff_is_empty(pwaff2)) {
+		isl_pw_aff_free(pwaff2);
+		return pwaff1;
+	}
+
+	n = 2 * (pwaff1->n + 1) * (pwaff2->n + 1);
+	res = isl_pw_aff_alloc_(isl_dim_copy(pwaff1->dim), n);
+
+	for (i = 0; i < pwaff1->n; ++i) {
+		set = isl_set_copy(pwaff1->p[i].set);
+		for (j = 0; j < pwaff2->n; ++j) {
+			struct isl_set *common;
+			isl_set *ge;
+
+			common = isl_set_intersect(
+					isl_set_copy(pwaff1->p[i].set),
+					isl_set_copy(pwaff2->p[j].set));
+			ge = isl_set_from_basic_set(isl_aff_ge_basic_set(
+					isl_aff_copy(pwaff2->p[j].aff),
+					isl_aff_copy(pwaff1->p[i].aff)));
+			ge = isl_set_intersect(common, ge);
+			if (isl_set_plain_is_empty(ge)) {
+				isl_set_free(ge);
+				continue;
+			}
+			set = isl_set_subtract(set, isl_set_copy(ge));
+
+			res = isl_pw_aff_add_piece(res, ge,
+						isl_aff_copy(pwaff2->p[j].aff));
+		}
+		res = isl_pw_aff_add_piece(res, set,
+						isl_aff_copy(pwaff1->p[i].aff));
+	}
+
+	for (j = 0; j < pwaff2->n; ++j) {
+		set = isl_set_copy(pwaff2->p[j].set);
+		for (i = 0; i < pwaff1->n; ++i)
+			set = isl_set_subtract(set,
+					isl_set_copy(pwaff1->p[i].set));
+		res = isl_pw_aff_add_piece(res, set,
+						isl_aff_copy(pwaff2->p[j].aff));
+	}
+
+	isl_pw_aff_free(pwaff1);
+	isl_pw_aff_free(pwaff2);
+
+	return res;
+error:
+	isl_pw_aff_free(pwaff1);
+	isl_pw_aff_free(pwaff2);
+	return NULL;
+}

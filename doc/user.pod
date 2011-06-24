@@ -2291,6 +2291,18 @@ The function C<isl_aff_ge_basic_set> returns a basic set
 containing those elements in the shared space
 of C<aff1> and C<aff2> where C<aff1> is greater than or equal to C<aff2>.
 
+	#include <isl/aff.h>
+	__isl_give isl_pw_aff *isl_pw_aff_max(
+		__isl_take isl_pw_aff *pwaff1,
+		__isl_take isl_pw_aff *pwaff2);
+
+The function C<isl_pw_aff_max> computes a piecewise quasi-affine
+expression with a domain that is the union of those of C<pwaff1> and
+C<pwaff2> and such that on each cell, the quasi-affine expression is
+the maximum of those of C<pwaff1> and C<pwaff2>.  If only one of
+C<pwaff1> or C<pwaff2> is defined on a given cell, then the
+associated expression is the defined one.
+
 An expression can be printed using
 
 	#include <isl/aff.h>
