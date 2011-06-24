@@ -1569,3 +1569,9 @@ error:
 	isl_qpolynomial_fold_free(fold);
 	return NULL;
 }
+
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_scale(
+	__isl_take isl_qpolynomial_fold *fold, isl_int v)
+{
+	return isl_qpolynomial_fold_mul_isl_int(fold, v);
+}

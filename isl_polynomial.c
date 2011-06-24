@@ -1418,6 +1418,12 @@ error:
 	return NULL;
 }
 
+__isl_give isl_qpolynomial *isl_qpolynomial_scale(
+	__isl_take isl_qpolynomial *qp, isl_int v)
+{
+	return isl_qpolynomial_mul_isl_int(qp, v);
+}
+
 __isl_give isl_qpolynomial *isl_qpolynomial_mul(__isl_take isl_qpolynomial *qp1,
 	__isl_take isl_qpolynomial *qp2)
 {

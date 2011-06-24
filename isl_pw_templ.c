@@ -969,7 +969,7 @@ __isl_give PW *FN(PW,mul_isl_int)(__isl_take PW *pw, isl_int v)
 		pw->type = isl_fold_type_negate(pw->type);
 #endif
 	for (i = 0; i < pw->n; ++i) {
-		pw->p[i].FIELD = FN(EL,mul_isl_int)(pw->p[i].FIELD, v);
+		pw->p[i].FIELD = FN(EL,scale)(pw->p[i].FIELD, v);
 		if (!pw->p[i].FIELD)
 			goto error;
 	}

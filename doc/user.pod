@@ -2577,6 +2577,8 @@ are returned in C<*n> and C<*d>, respectively.
 
 =head3 Operations on (Piecewise) Quasipolynomials
 
+	__isl_give isl_qpolynomial *isl_qpolynomial_scale(
+		__isl_take isl_qpolynomial *qp, isl_int v);
 	__isl_give isl_qpolynomial *isl_qpolynomial_neg(
 		__isl_take isl_qpolynomial *qp);
 	__isl_give isl_qpolynomial *isl_qpolynomial_add(
@@ -2777,6 +2779,9 @@ To iterate over all quasipolynomials in a reduction, use
 			  void *user), void *user);
 
 =head3 Operations on Piecewise Quasipolynomial Reductions
+
+	__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_scale(
+		__isl_take isl_qpolynomial_fold *fold, isl_int v);
 
 	__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_add(
 		__isl_take isl_pw_qpolynomial_fold *pwf1,

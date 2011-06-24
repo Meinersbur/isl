@@ -68,6 +68,8 @@ __isl_give isl_qpolynomial *isl_qpolynomial_add_isl_int(
 	__isl_take isl_qpolynomial *qp, isl_int v);
 __isl_give isl_qpolynomial *isl_qpolynomial_mul_isl_int(
 	__isl_take isl_qpolynomial *qp, isl_int v);
+__isl_give isl_qpolynomial *isl_qpolynomial_scale(
+	__isl_take isl_qpolynomial *qp, isl_int v);
 
 __isl_give isl_qpolynomial *isl_qpolynomial_insert_dims(
 	__isl_take isl_qpolynomial *qp, enum isl_dim_type type,
@@ -276,6 +278,8 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_fold(
 	__isl_take isl_qpolynomial_fold *fold2);
 
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_mul_isl_int(
+	__isl_take isl_qpolynomial_fold *fold, isl_int v);
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_scale(
 	__isl_take isl_qpolynomial_fold *fold, isl_int v);
 
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_move_dims(
