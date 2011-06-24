@@ -36,12 +36,12 @@ error:
 }
 
 #ifdef HAS_TYPE
-__isl_give PW *FN(PW,zero)(__isl_take isl_dim *dim, enum isl_fold type)
+__isl_give PW *FN(PW,ZERO)(__isl_take isl_dim *dim, enum isl_fold type)
 {
 	return FN(PW,alloc_)(dim, type, 0);
 }
 #else
-__isl_give PW *FN(PW,zero)(__isl_take isl_dim *dim)
+__isl_give PW *FN(PW,ZERO)(__isl_take isl_dim *dim)
 {
 	return FN(PW,alloc_)(dim, 0);
 }
@@ -56,7 +56,7 @@ __isl_give PW *FN(PW,add_piece)(__isl_take PW *pw,
 	if (!pw || !set || !el)
 		goto error;
 
-	if (isl_set_plain_is_empty(set) || FN(EL,IS_ZERO)(el)) {
+	if (isl_set_plain_is_empty(set) || FN(EL,EL_IS_ZERO)(el)) {
 		isl_set_free(set);
 		FN(EL,free)(el);
 		return pw;
@@ -173,7 +173,7 @@ void *FN(PW,free)(__isl_take PW *pw)
 	return NULL;
 }
 
-int FN(PW,is_zero)(__isl_keep PW *pw)
+int FN(PW,IS_ZERO)(__isl_keep PW *pw)
 {
 	if (!pw)
 		return -1;
@@ -199,12 +199,12 @@ __isl_give PW *FN(PW,add)(__isl_take PW *pw1, __isl_take PW *pw2)
 #endif
 	isl_assert(ctx, isl_dim_equal(pw1->dim, pw2->dim), goto error);
 
-	if (FN(PW,is_zero)(pw1)) {
+	if (FN(PW,IS_ZERO)(pw1)) {
 		FN(PW,free)(pw1);
 		return pw2;
 	}
 
-	if (FN(PW,is_zero)(pw2)) {
+	if (FN(PW,IS_ZERO)(pw2)) {
 		FN(PW,free)(pw2);
 		return pw1;
 	}
@@ -274,12 +274,12 @@ __isl_give PW *FN(PW,add_disjoint)(__isl_take PW *pw1, __isl_take PW *pw2)
 #endif
 	isl_assert(ctx, isl_dim_equal(pw1->dim, pw2->dim), goto error);
 
-	if (FN(PW,is_zero)(pw1)) {
+	if (FN(PW,IS_ZERO)(pw1)) {
 		FN(PW,free)(pw1);
 		return pw2;
 	}
 
-	if (FN(PW,is_zero)(pw2)) {
+	if (FN(PW,IS_ZERO)(pw2)) {
 		FN(PW,free)(pw2);
 		return pw1;
 	}
@@ -310,6 +310,7 @@ error:
 	return NULL;
 }
 
+#ifndef NO_EVAL
 __isl_give isl_qpolynomial *FN(PW,eval)(__isl_take PW *pw,
 	__isl_take isl_point *pnt)
 {
@@ -347,6 +348,7 @@ error:
 	isl_point_free(pnt);
 	return NULL;
 }
+#endif
 
 __isl_give isl_set *FN(PW,domain)(__isl_take PW *pw)
 {
@@ -497,6 +499,7 @@ isl_ctx *FN(PW,get_ctx)(__isl_keep PW *pw)
 	return pw ? isl_dim_get_ctx(pw->dim) : NULL;
 }
 
+#ifndef NO_INVOLVES_DIMS
 int FN(PW,involves_dims)(__isl_keep PW *pw, enum isl_dim_type type,
 	unsigned first, unsigned n)
 {
@@ -517,6 +520,7 @@ int FN(PW,involves_dims)(__isl_keep PW *pw, enum isl_dim_type type,
 	}
 	return 0;
 }
+#endif
 
 __isl_give PW *FN(PW,set_dim_name)(__isl_take PW *pw,
 	enum isl_dim_type type, unsigned pos, const char *s)
@@ -546,6 +550,7 @@ error:
 	return NULL;
 }
 
+#ifndef NO_DROP_DIMS
 __isl_give PW *FN(PW,drop_dims)(__isl_take PW *pw,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
@@ -576,7 +581,9 @@ error:
 	FN(PW,free)(pw);
 	return NULL;
 }
+#endif
 
+#ifndef NO_INSERT_DIMS
 __isl_give PW *FN(PW,insert_dims)(__isl_take PW *pw, enum isl_dim_type type,
 	unsigned first, unsigned n)
 {
@@ -610,6 +617,7 @@ error:
 	FN(PW,free)(pw);
 	return NULL;
 }
+#endif
 
 __isl_give PW *FN(PW,fix_dim)(__isl_take PW *pw,
 	enum isl_dim_type type, unsigned pos, isl_int v)
@@ -666,6 +674,7 @@ error:
 	return NULL;
 }
 
+#ifndef NO_OPT
 /* Compute the maximal value attained by the piecewise quasipolynomial
  * on its domain or zero if the domain is empty.
  * In the worst case, the domain is scanned completely,
@@ -710,12 +719,14 @@ __isl_give isl_qpolynomial *FN(PW,min)(__isl_take PW *pw)
 {
 	return FN(PW,opt)(pw, 0);
 }
+#endif
 
 __isl_give isl_dim *FN(PW,get_dim)(__isl_keep PW *pw)
 {
 	return pw ? isl_dim_copy(pw->dim) : NULL;
 }
 
+#ifndef NO_RESET_DIM
 __isl_give PW *FN(PW,reset_dim)(__isl_take PW *pw, __isl_take isl_dim *dim)
 {
 	int i;
@@ -743,6 +754,7 @@ error:
 	FN(PW,free)(pw);
 	return NULL;
 }
+#endif
 
 int FN(PW,has_equal_dim)(__isl_keep PW *pw1, __isl_keep PW *pw2)
 {
@@ -752,6 +764,7 @@ int FN(PW,has_equal_dim)(__isl_keep PW *pw1, __isl_keep PW *pw2)
 	return isl_dim_equal(pw1->dim, pw2->dim);
 }
 
+#ifndef NO_MORPH
 __isl_give PW *FN(PW,morph)(__isl_take PW *pw, __isl_take isl_morph *morph)
 {
 	int i;
@@ -790,6 +803,7 @@ error:
 	isl_morph_free(morph);
 	return NULL;
 }
+#endif
 
 int FN(PW,foreach_piece)(__isl_keep PW *pw,
 	int (*fn)(__isl_take isl_set *set, __isl_take EL *el, void *user),
@@ -808,6 +822,7 @@ int FN(PW,foreach_piece)(__isl_keep PW *pw,
 	return 0;
 }
 
+#ifndef NO_LIFT
 static int any_divs(__isl_keep isl_set *set)
 {
 	int i;
@@ -881,7 +896,9 @@ int FN(PW,foreach_lifted_piece)(__isl_keep PW *pw,
 
 	return 0;
 }
+#endif
 
+#ifndef NO_MOVE_DIMS
 __isl_give PW *FN(PW,move_dims)(__isl_take PW *pw,
 	enum isl_dim_type dst_type, unsigned dst_pos,
 	enum isl_dim_type src_type, unsigned src_pos, unsigned n)
@@ -913,7 +930,9 @@ error:
 	FN(PW,free)(pw);
 	return NULL;
 }
+#endif
 
+#ifndef NO_REALIGN
 __isl_give PW *FN(PW,realign)(__isl_take PW *pw, __isl_take isl_reordering *exp)
 {
 	int i;
@@ -942,6 +961,7 @@ error:
 	FN(PW,free)(pw);
 	return NULL;
 }
+#endif
 
 __isl_give PW *FN(PW,mul_isl_int)(__isl_take PW *pw, isl_int v)
 {
@@ -953,9 +973,9 @@ __isl_give PW *FN(PW,mul_isl_int)(__isl_take PW *pw, isl_int v)
 		PW *zero;
 		isl_dim *dim = FN(PW,get_dim)(pw);
 #ifdef HAS_TYPE
-		zero = FN(PW,zero)(dim, pw->type);
+		zero = FN(PW,ZERO)(dim, pw->type);
 #else
-		zero = FN(PW,zero)(dim);
+		zero = FN(PW,ZERO)(dim);
 #endif
 		FN(PW,free)(pw);
 		return zero;

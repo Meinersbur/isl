@@ -589,8 +589,12 @@ error:
 #define PW isl_pw_qpolynomial_fold
 #undef EL
 #define EL isl_qpolynomial_fold
+#undef EL_IS_ZERO
+#define EL_IS_ZERO is_empty
+#undef ZERO
+#define ZERO zero
 #undef IS_ZERO
-#define IS_ZERO is_empty
+#define IS_ZERO is_zero
 #undef FIELD
 #define FIELD fold
 

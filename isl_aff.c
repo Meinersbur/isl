@@ -736,3 +736,45 @@ __isl_give isl_basic_set *isl_aff_ge_basic_set(__isl_take isl_aff *aff1,
 
 	return isl_basic_set_from_constraint(ineq);
 }
+
+__isl_give isl_aff *isl_aff_add_on_domain(__isl_keep isl_set *dom,
+	__isl_take isl_aff *aff1, __isl_take isl_aff *aff2)
+{
+	aff1 = isl_aff_add(aff1, aff2);
+	aff1 = isl_aff_gist(aff1, isl_set_copy(dom));
+	return aff1;
+}
+
+int isl_aff_is_empty(__isl_keep isl_aff *aff)
+{
+	if (!aff)
+		return -1;
+
+	return 0;
+}
+
+#undef PW
+#define PW isl_pw_aff
+#undef EL
+#define EL isl_aff
+#undef EL_IS_ZERO
+#define EL_IS_ZERO is_empty
+#undef ZERO
+#define ZERO empty
+#undef IS_ZERO
+#define IS_ZERO is_empty
+#undef FIELD
+#define FIELD aff
+
+#define NO_EVAL
+#define NO_OPT
+#define NO_INVOLVES_DIMS
+#define NO_MOVE_DIMS
+#define NO_DROP_DIMS
+#define NO_INSERT_DIMS
+#define NO_REALIGN
+#define NO_LIFT
+#define NO_MORPH
+#define NO_RESET_DIM
+
+#include <isl_pw_templ.c>

@@ -74,6 +74,24 @@ __isl_give isl_printer *isl_printer_print_aff(__isl_take isl_printer *p,
 	__isl_keep isl_aff *aff);
 void isl_aff_dump(__isl_keep isl_aff *aff);
 
+struct isl_pw_aff;
+typedef struct isl_pw_aff isl_pw_aff;
+
+isl_ctx *isl_pw_aff_get_ctx(__isl_keep isl_pw_aff *pwaff);
+
+__isl_give isl_pw_aff *isl_pw_aff_empty(__isl_take isl_dim *dim);
+__isl_give isl_pw_aff *isl_pw_aff_alloc(__isl_take isl_set *set,
+	__isl_take isl_aff *aff);
+
+int isl_pw_aff_is_empty(__isl_keep isl_pw_aff *pwaff);
+
+__isl_give isl_pw_aff *isl_pw_aff_copy(__isl_keep isl_pw_aff *pwaff);
+void *isl_pw_aff_free(__isl_take isl_pw_aff *pwaff);
+
+__isl_give isl_printer *isl_printer_print_pw_aff(__isl_take isl_printer *p,
+	__isl_keep isl_pw_aff *pwaff);
+void isl_pw_aff_dump(__isl_keep isl_pw_aff *pwaff);
+
 #if defined(__cplusplus)
 }
 #endif

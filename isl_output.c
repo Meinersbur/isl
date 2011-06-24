@@ -2215,20 +2215,12 @@ void isl_local_space_dump(__isl_keep isl_local_space *ls)
 	isl_printer_free(printer);
 }
 
-__isl_give isl_printer *isl_printer_print_aff(__isl_take isl_printer *p,
+static __isl_give isl_printer *print_aff(__isl_take isl_printer *p,
 	__isl_keep isl_aff *aff)
 {
 	unsigned total;
 
-	if (!aff)
-		goto error;
-
 	total = isl_local_space_dim(aff->ls, isl_dim_all);
-	if (isl_local_space_dim(aff->ls, isl_dim_param) > 0) {
-		p = print_tuple(aff->ls->dim, p, isl_dim_param, 0, 0, NULL);
-		p = isl_printer_print_str(p, " -> ");
-	}
-	p = isl_printer_print_str(p, "{ ");
 	p = print_tuple(aff->ls->dim, p, isl_dim_set, 1, 0, NULL);
 	p = isl_printer_print_str(p, " -> [");
 	p = isl_printer_print_str(p, "(");
@@ -2240,7 +2232,24 @@ __isl_give isl_printer *isl_printer_print_aff(__isl_take isl_printer *p,
 		p = isl_printer_print_str(p, ")/");
 		p = isl_printer_print_isl_int(p, aff->v->el[0]);
 	}
-	p = isl_printer_print_str(p, "] }");
+	p = isl_printer_print_str(p, "]");
+
+	return p;
+}
+
+__isl_give isl_printer *isl_printer_print_aff(__isl_take isl_printer *p,
+	__isl_keep isl_aff *aff)
+{
+	if (!aff)
+		goto error;
+
+	if (isl_local_space_dim(aff->ls, isl_dim_param) > 0) {
+		p = print_tuple(aff->ls->dim, p, isl_dim_param, 0, 0, NULL);
+		p = isl_printer_print_str(p, " -> ");
+	}
+	p = isl_printer_print_str(p, "{ ");
+	p = print_aff(p, aff);
+	p = isl_printer_print_str(p, " }");
 	return p;
 error:
 	isl_printer_free(p);
@@ -2256,6 +2265,46 @@ void isl_aff_dump(__isl_keep isl_aff *aff)
 
 	printer = isl_printer_to_file(isl_aff_get_ctx(aff), stderr);
 	printer = isl_printer_print_aff(printer, aff);
+	printer = isl_printer_end_line(printer);
+
+	isl_printer_free(printer);
+}
+
+__isl_give isl_printer *isl_printer_print_pw_aff(__isl_take isl_printer *p,
+	__isl_keep isl_pw_aff *pwaff)
+{
+	int i;
+
+	if (!pwaff)
+		goto error;
+
+	if (isl_dim_size(pwaff->dim, isl_dim_param) > 0) {
+		p = print_tuple(pwaff->dim, p, isl_dim_param, 0, 0, NULL);
+		p = isl_printer_print_str(p, " -> ");
+	}
+	p = isl_printer_print_str(p, "{ ");
+	for (i = 0; i < pwaff->n; ++i) {
+		if (i)
+			p = isl_printer_print_str(p, "; ");
+		p = print_aff(p, pwaff->p[i].aff);
+		p = print_disjuncts((isl_map *)pwaff->p[i].set, p, 1, 0);
+	}
+	p = isl_printer_print_str(p, " }");
+	return p;
+error:
+	isl_printer_free(p);
+	return NULL;
+}
+
+void isl_pw_aff_dump(__isl_keep isl_pw_aff *pwaff)
+{
+	isl_printer *printer;
+
+	if (!pwaff)
+		return;
+
+	printer = isl_printer_to_file(isl_pw_aff_get_ctx(pwaff), stderr);
+	printer = isl_printer_print_pw_aff(printer, pwaff);
 	printer = isl_printer_end_line(printer);
 
 	isl_printer_free(printer);

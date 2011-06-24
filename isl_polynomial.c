@@ -2505,6 +2505,10 @@ error:
 #define PW isl_pw_qpolynomial
 #undef EL
 #define EL isl_qpolynomial
+#undef EL_IS_ZERO
+#define EL_IS_ZERO is_zero
+#undef ZERO
+#define ZERO zero
 #undef IS_ZERO
 #define IS_ZERO is_zero
 #undef FIELD

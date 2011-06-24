@@ -1030,7 +1030,7 @@ of C<isl_dim_cst>, C<isl_dim_param>,
 C<isl_dim_in>, C<isl_dim_out> and C<isl_dim_div> for relations.
 
 A basic relation can also be constructed from an affine expression
-or a list of affine expressions (See L<"Quasi Affine Expressions">).
+or a list of affine expressions (See L<"Piecewise Quasi Affine Expressions">).
 
 	__isl_give isl_basic_map *isl_basic_map_from_aff(
 		__isl_take isl_aff *aff);
@@ -2157,18 +2157,32 @@ the original and the kernel (in that order) is the zero matrix.
 
 	__isl_give isl_mat *isl_mat_right_kernel(__isl_take isl_mat *mat);
 
-=head2 Quasi Affine Expressions
+=head2 Piecewise Quasi Affine Expressions
 
 The zero quasi affine expression can be created using
 
 	__isl_give isl_aff *isl_aff_zero(
 		__isl_take isl_local_space *ls);
 
+An empty piecewise quasi affine expression (one with no cells)
+or a piecewise quasi affine expression with a single cell can
+be created using the following functions.
+
+	#include <isl/aff.h>
+	__isl_give isl_pw_aff *isl_pw_aff_empty(
+		__isl_take isl_dim *dim);
+	__isl_give isl_pw_aff *isl_pw_aff_alloc(
+		__isl_take isl_set *set, __isl_take isl_aff *aff);
+
 Quasi affine expressions can be copied and free using
 
 	#include <isl/aff.h>
 	__isl_give isl_aff *isl_aff_copy(__isl_keep isl_aff *aff);
 	void *isl_aff_free(__isl_take isl_aff *aff);
+
+	__isl_give isl_pw_aff *isl_pw_aff_copy(
+		__isl_keep isl_pw_aff *pwaff);
+	void *isl_pw_aff_free(__isl_take isl_pw_aff *pwaff);
 
 A (rational) bound on a dimension can be extracted from an C<isl_constraint>
 using the following function.  The constraint is required to have
@@ -2206,6 +2220,9 @@ The expression can be inspected using
 		isl_int *v);
 	__isl_give isl_div *isl_aff_get_div(
 		__isl_keep isl_aff *aff, int pos);
+
+	isl_ctx *isl_pw_aff_get_ctx(__isl_keep isl_pw_aff *pwaff);
+	int isl_pw_aff_is_empty(__isl_keep isl_pw_aff *pwaff);
 
 It can be modified using
 
@@ -2279,6 +2296,10 @@ An expression can be printed using
 	#include <isl/aff.h>
 	__isl_give isl_printer *isl_printer_print_aff(
 		__isl_take isl_printer *p, __isl_keep isl_aff *aff);
+
+	__isl_give isl_printer *isl_printer_print_pw_aff(
+		__isl_take isl_printer *p,
+		__isl_keep isl_pw_aff *pwaff);
 
 =head2 Points
 
