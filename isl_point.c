@@ -11,6 +11,11 @@ isl_ctx *isl_point_get_ctx(__isl_keep isl_point *pnt)
 	return pnt ? isl_dim_get_ctx(pnt->dim) : NULL;
 }
 
+__isl_give isl_dim *isl_point_get_dim(__isl_keep isl_point *pnt)
+{
+	return pnt ? isl_dim_copy(pnt->dim) : NULL;
+}
+
 __isl_give isl_point *isl_point_alloc(__isl_take isl_dim *dim,
 	__isl_take isl_vec *vec)
 {
