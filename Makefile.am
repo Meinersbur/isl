@@ -50,6 +50,7 @@ libisl_la_SOURCES = \
 	isl_bound.h \
 	isl_coalesce.c \
 	isl_constraint.c \
+	isl_constraint_private.h \
 	isl_convex_hull.c \
 	isl_ctx.c \
 	isl_ctx_private.h \

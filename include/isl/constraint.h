@@ -19,21 +19,13 @@
 extern "C" {
 #endif
 
-struct isl_constraint {
-	int ref;
-	struct isl_ctx *ctx;
-
-	struct isl_basic_map	*bmap;
-	isl_int			**line;
-};
+struct isl_constraint;
 typedef struct isl_constraint isl_constraint;
 
 isl_ctx *isl_constraint_get_ctx(__isl_keep isl_constraint *c);
 
 __isl_give isl_constraint *isl_equality_alloc(__isl_take isl_dim *dim);
 __isl_give isl_constraint *isl_inequality_alloc(__isl_take isl_dim *dim);
-struct isl_constraint *isl_basic_set_constraint(struct isl_basic_set *bset,
-	isl_int **line);
 
 struct isl_constraint *isl_constraint_cow(struct isl_constraint *c);
 struct isl_constraint *isl_constraint_copy(struct isl_constraint *c);

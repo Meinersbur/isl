@@ -15,6 +15,7 @@
 #include <isl/lp.h>
 #include <isl/seq.h>
 #include <isl_union_map_private.h>
+#include <isl_constraint_private.h>
 #include <isl_polynomial_private.h>
 #include <isl_point_private.h>
 #include <isl_dim_private.h>
