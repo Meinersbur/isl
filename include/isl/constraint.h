@@ -31,11 +31,6 @@ struct isl_constraint *isl_constraint_cow(struct isl_constraint *c);
 struct isl_constraint *isl_constraint_copy(struct isl_constraint *c);
 void isl_constraint_free(struct isl_constraint *c);
 
-__isl_give isl_constraint *isl_basic_map_first_constraint(
-	__isl_take isl_basic_map *bmap);
-__isl_give isl_constraint *isl_basic_set_first_constraint(
-	__isl_take isl_basic_set *bset);
-struct isl_constraint *isl_constraint_next(struct isl_constraint *c);
 int isl_basic_map_foreach_constraint(__isl_keep isl_basic_map *bmap,
 	int (*fn)(__isl_take isl_constraint *c, void *user), void *user);
 int isl_basic_set_foreach_constraint(__isl_keep isl_basic_set *bset,
