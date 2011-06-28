@@ -2246,6 +2246,11 @@ The expression can be inspected using
 	__isl_give isl_div *isl_aff_get_div(
 		__isl_keep isl_aff *aff, int pos);
 
+	int isl_aff_involves_dims(__isl_keep isl_aff *aff,
+		enum isl_dim_type type, unsigned first, unsigned n);
+	int isl_pw_aff_involves_dims(__isl_keep isl_pw_aff *pwaff,
+		enum isl_dim_type type, unsigned first, unsigned n);
+
 	isl_ctx *isl_pw_aff_get_ctx(__isl_keep isl_pw_aff *pwaff);
 	unsigned isl_pw_aff_dim(__isl_keep isl_pw_aff *pwaff,
 		enum isl_dim_type type);

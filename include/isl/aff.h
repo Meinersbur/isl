@@ -21,6 +21,8 @@ void *isl_aff_free(__isl_take isl_aff *aff);
 isl_ctx *isl_aff_get_ctx(__isl_keep isl_aff *aff);
 
 int isl_aff_dim(__isl_keep isl_aff *aff, enum isl_dim_type type);
+int isl_aff_involves_dims(__isl_keep isl_aff *aff,
+	enum isl_dim_type type, unsigned first, unsigned n);
 
 __isl_give isl_dim *isl_aff_get_dim(__isl_keep isl_aff *aff);
 __isl_give isl_local_space *isl_aff_get_local_space(__isl_keep isl_aff *aff);
@@ -95,6 +97,8 @@ __isl_give isl_pw_aff *isl_pw_aff_copy(__isl_keep isl_pw_aff *pwaff);
 void *isl_pw_aff_free(__isl_take isl_pw_aff *pwaff);
 
 unsigned isl_pw_aff_dim(__isl_keep isl_pw_aff *pwaff, enum isl_dim_type type);
+int isl_pw_aff_involves_dims(__isl_keep isl_pw_aff *pwaff,
+	enum isl_dim_type type, unsigned first, unsigned n);
 
 __isl_give isl_set *isl_pw_aff_domain(__isl_take isl_pw_aff *pwaff);
 
