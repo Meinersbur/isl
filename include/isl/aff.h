@@ -68,6 +68,10 @@ __isl_give isl_aff *isl_aff_scale(__isl_take isl_aff *aff, isl_int f);
 __isl_give isl_aff *isl_aff_scale_down(__isl_take isl_aff *aff, isl_int f);
 __isl_give isl_aff *isl_aff_scale_down_ui(__isl_take isl_aff *aff, unsigned f);
 
+__isl_give isl_aff *isl_aff_insert_dims(__isl_take isl_aff *aff,
+	enum isl_dim_type type, unsigned first, unsigned n);
+__isl_give isl_aff *isl_aff_add_dims(__isl_take isl_aff *aff,
+	enum isl_dim_type type, unsigned n);
 __isl_give isl_aff *isl_aff_drop_dims(__isl_take isl_aff *aff,
 	enum isl_dim_type type, unsigned first, unsigned n);
 
@@ -108,6 +112,10 @@ __isl_give isl_set *isl_pw_aff_domain(__isl_take isl_pw_aff *pwaff);
 __isl_give isl_pw_aff *isl_pw_aff_add(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2);
 
+__isl_give isl_pw_aff *isl_pw_aff_insert_dims(__isl_take isl_pw_aff *pwaff,
+	enum isl_dim_type type, unsigned first, unsigned n);
+__isl_give isl_pw_aff *isl_pw_aff_add_dims(__isl_take isl_pw_aff *pwaff,
+	enum isl_dim_type type, unsigned n);
 __isl_give isl_pw_aff *isl_pw_aff_drop_dims(__isl_take isl_pw_aff *pwaff,
 	enum isl_dim_type type, unsigned first, unsigned n);
 

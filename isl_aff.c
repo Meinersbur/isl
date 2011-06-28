@@ -10,6 +10,7 @@
 
 #include <isl_map_private.h>
 #include <isl_aff_private.h>
+#include <isl_dim_private.h>
 #include <isl_local_space_private.h>
 #include <isl_mat_private.h>
 #include <isl/constraint.h>
@@ -855,6 +856,57 @@ __isl_give isl_aff *isl_aff_drop_dims(__isl_take isl_aff *aff,
 	return aff;
 }
 
+__isl_give isl_aff *isl_aff_insert_dims(__isl_take isl_aff *aff,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	isl_ctx *ctx;
+
+	if (!aff)
+		return NULL;
+	if (n == 0 && !isl_local_space_is_named_or_nested(aff->ls, type))
+		return aff;
+
+	ctx = isl_aff_get_ctx(aff);
+	if (first > isl_aff_dim(aff, type))
+		isl_die(ctx, isl_error_invalid, "position out of bounds",
+			return isl_aff_free(aff));
+
+	aff = isl_aff_cow(aff);
+	if (!aff)
+		return NULL;
+
+	aff->ls = isl_local_space_insert_dims(aff->ls, type, first, n);
+	if (!aff->ls)
+		return isl_aff_free(aff);
+
+	first += 1 + isl_local_space_offset(aff->ls, type);
+	aff->v = isl_vec_insert_zero_els(aff->v, first, n);
+	if (!aff->v)
+		return isl_aff_free(aff);
+
+	return aff;
+}
+
+__isl_give isl_aff *isl_aff_add_dims(__isl_take isl_aff *aff,
+	enum isl_dim_type type, unsigned n)
+{
+	unsigned pos;
+
+	pos = isl_aff_dim(aff, type);
+
+	return isl_aff_insert_dims(aff, type, pos, n);
+}
+
+__isl_give isl_pw_aff *isl_pw_aff_add_dims(__isl_take isl_pw_aff *pwaff,
+	enum isl_dim_type type, unsigned n)
+{
+	unsigned pos;
+
+	pos = isl_pw_aff_dim(pwaff, type);
+
+	return isl_pw_aff_insert_dims(pwaff, type, pos, n);
+}
+
 #undef PW
 #define PW isl_pw_aff
 #undef EL
@@ -871,7 +923,6 @@ __isl_give isl_aff *isl_aff_drop_dims(__isl_take isl_aff *aff,
 #define NO_EVAL
 #define NO_OPT
 #define NO_MOVE_DIMS
-#define NO_INSERT_DIMS
 #define NO_REALIGN
 #define NO_LIFT
 #define NO_MORPH
