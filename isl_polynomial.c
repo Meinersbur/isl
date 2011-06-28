@@ -2792,7 +2792,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_insert_dims(
 
 	g_pos = pos(qp->dim, type) + first;
 
-	qp->div = isl_mat_insert_cols(qp->div, 2 + g_pos, n);
+	qp->div = isl_mat_insert_zero_cols(qp->div, 2 + g_pos, n);
 	if (!qp->div)
 		goto error;
 
