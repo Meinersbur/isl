@@ -463,3 +463,11 @@ error:
 	isl_local_space_free(ls);
 	return NULL;
 }
+
+int isl_local_space_is_named_or_nested(__isl_keep isl_local_space *ls,
+	enum isl_dim_type type)
+{
+	if (!ls)
+		return -1;
+	return isl_dim_is_named_or_nested(ls->dim, type);
+}
