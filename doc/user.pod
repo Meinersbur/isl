@@ -2286,6 +2286,13 @@ It can be modified using
 		__isl_take isl_aff *aff,
 		enum isl_dim_type type, int pos, int v);
 
+	__isl_give isl_aff *isl_aff_drop_dims(
+		__isl_take isl_aff *aff,
+		enum isl_dim_type type, unsigned first, unsigned n);
+	__isl_give isl_pw_aff *isl_pw_aff_drop_dims(
+		__isl_take isl_pw_aff *pwaff,
+		enum isl_dim_type type, unsigned first, unsigned n);
+
 Note that the C<set_constant> and C<set_coefficient> functions
 set the I<numerator> of the constant or coefficient, while
 C<add_constant> and C<add_coefficient> add an integer value to

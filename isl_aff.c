@@ -824,6 +824,37 @@ error:
 	return -1;
 }
 
+__isl_give isl_aff *isl_aff_drop_dims(__isl_take isl_aff *aff,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	isl_ctx *ctx;
+
+	if (!aff)
+		return NULL;
+	if (n == 0 && !isl_local_space_is_named_or_nested(aff->ls, type))
+		return aff;
+
+	ctx = isl_aff_get_ctx(aff);
+	if (first + n > isl_aff_dim(aff, type))
+		isl_die(ctx, isl_error_invalid, "range out of bounds",
+			return isl_aff_free(aff));
+
+	aff = isl_aff_cow(aff);
+	if (!aff)
+		return NULL;
+
+	aff->ls = isl_local_space_drop_dims(aff->ls, type, first, n);
+	if (!aff->ls)
+		return isl_aff_free(aff);
+
+	first += 1 + isl_local_space_offset(aff->ls, type);
+	aff->v = isl_vec_drop_els(aff->v, first, n);
+	if (!aff->v)
+		return isl_aff_free(aff);
+
+	return aff;
+}
+
 #undef PW
 #define PW isl_pw_aff
 #undef EL
@@ -840,7 +871,6 @@ error:
 #define NO_EVAL
 #define NO_OPT
 #define NO_MOVE_DIMS
-#define NO_DROP_DIMS
 #define NO_INSERT_DIMS
 #define NO_REALIGN
 #define NO_LIFT
