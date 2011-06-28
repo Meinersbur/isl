@@ -901,7 +901,8 @@ __isl_give isl_basic_set *isl_basic_set_detect_equalities(
 		isl_basic_map_detect_equalities((isl_basic_map *)bset);
 }
 
-struct isl_map *isl_map_detect_equalities(struct isl_map *map)
+__isl_give isl_map *isl_map_inline_foreach_basic_map(__isl_take isl_map *map,
+	__isl_give isl_basic_map *(*fn)(__isl_take isl_basic_map *bmap))
 {
 	struct isl_basic_map *bmap;
 	int i;
@@ -911,7 +912,7 @@ struct isl_map *isl_map_detect_equalities(struct isl_map *map)
 
 	for (i = 0; i < map->n; ++i) {
 		bmap = isl_basic_map_copy(map->p[i]);
-		bmap = isl_basic_map_detect_equalities(bmap);
+		bmap = fn(bmap);
 		if (!bmap)
 			goto error;
 		isl_basic_map_free(map->p[i]);
@@ -922,6 +923,12 @@ struct isl_map *isl_map_detect_equalities(struct isl_map *map)
 error:
 	isl_map_free(map);
 	return NULL;
+}
+
+__isl_give isl_map *isl_map_detect_equalities(__isl_take isl_map *map)
+{
+	return isl_map_inline_foreach_basic_map(map,
+					    &isl_basic_map_detect_equalities);
 }
 
 __isl_give isl_set *isl_set_detect_equalities(__isl_take isl_set *set)

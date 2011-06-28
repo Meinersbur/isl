@@ -116,6 +116,19 @@ __isl_give isl_basic_set *isl_basic_set_remove_redundancies(
 		isl_basic_map_remove_redundancies((struct isl_basic_map *)bset);
 }
 
+/* Remove redundant constraints in each of the basic maps.
+ */
+__isl_give isl_map *isl_map_remove_redundancies(__isl_take isl_map *map)
+{
+	return isl_map_inline_foreach_basic_map(map,
+					    &isl_basic_map_remove_redundancies);
+}
+
+__isl_give isl_set *isl_set_remove_redundancies(__isl_take isl_set *set)
+{
+	return isl_map_remove_redundancies(set);
+}
+
 /* Check if the set set is bound in the direction of the affine
  * constraint c and if so, set the constant term such that the
  * resulting constraint is a bounding constraint for the set.

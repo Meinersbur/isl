@@ -1543,8 +1543,12 @@ equalities.
 
 	__isl_give isl_basic_set *isl_basic_set_remove_redundancies(
 		__isl_take isl_basic_set *bset);
+	__isl_give isl_set *isl_set_remove_redundancies(
+		__isl_take isl_set *set);
 	__isl_give isl_basic_map *isl_basic_map_remove_redundancies(
 		__isl_take isl_basic_map *bmap);
+	__isl_give isl_map *isl_map_remove_redundancies(
+		__isl_take isl_map *map);
 
 =item * Convex hull
 
