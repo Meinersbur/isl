@@ -373,30 +373,10 @@ __isl_give isl_local_space *isl_local_space_add_dims(
 {
 	int pos;
 
-	if (n == 0)
-		return ls;
-
-	ls = isl_local_space_cow(ls);
 	if (!ls)
 		return NULL;
-
-	pos = isl_local_space_offset(ls, type);
-	pos += isl_local_space_dim(ls, type);
-
-	ls->div = isl_mat_insert_zero_cols(ls->div, 1 + pos, n);
-
-	if (type == isl_dim_div) {
-		ls->div = isl_mat_add_zero_rows(ls->div, n);
-	} else {
-		ls->dim = isl_dim_add(ls->dim, type, n);
-		if (!ls->dim)
-			return isl_local_space_free(ls);
-	}
-
-	if (!ls->div)
-		return isl_local_space_free(ls);
-
-	return ls;
+	pos = isl_local_space_dim(ls, type);
+	return isl_local_space_insert_dims(ls, type, pos, n);
 }
 
 /* Remove common factor of non-constant terms and denominator.
@@ -502,6 +482,42 @@ __isl_give isl_local_space *isl_local_space_drop_dims(
 
 	first += 1 + isl_local_space_offset(ls, type);
 	ls->div = isl_mat_drop_cols(ls->div, first, n);
+	if (!ls->div)
+		return isl_local_space_free(ls);
+
+	return ls;
+}
+
+__isl_give isl_local_space *isl_local_space_insert_dims(
+	__isl_take isl_local_space *ls,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	isl_ctx *ctx;
+
+	if (!ls)
+		return NULL;
+	if (n == 0 && !isl_local_space_is_named_or_nested(ls, type))
+		return ls;
+
+	ctx = isl_local_space_get_ctx(ls);
+	if (first > isl_local_space_dim(ls, type))
+		isl_die(ctx, isl_error_invalid, "position out of bounds",
+			return isl_local_space_free(ls));
+
+	ls = isl_local_space_cow(ls);
+	if (!ls)
+		return NULL;
+
+	if (type == isl_dim_div) {
+		ls->div = isl_mat_insert_zero_rows(ls->div, first, n);
+	} else {
+		ls->dim = isl_dim_insert(ls->dim, type, first, n);
+		if (!ls->dim)
+			return isl_local_space_free(ls);
+	}
+
+	first += 1 + isl_local_space_offset(ls, type);
+	ls->div = isl_mat_insert_zero_cols(ls->div, first, n);
 	if (!ls->div)
 		return isl_local_space_free(ls);
 
