@@ -2780,7 +2780,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_insert_dims(
 	unsigned g_pos;
 	int *exp;
 
-	if (n == 0)
+	if (n == 0 && !isl_dim_is_named_or_nested(qp->dim, type))
 		return qp;
 
 	qp = isl_qpolynomial_cow(qp);
