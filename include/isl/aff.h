@@ -91,6 +91,8 @@ __isl_give isl_pw_aff *isl_pw_aff_max(__isl_take isl_pw_aff *pwaff1,
 __isl_give isl_pw_aff *isl_pw_aff_copy(__isl_keep isl_pw_aff *pwaff);
 void *isl_pw_aff_free(__isl_take isl_pw_aff *pwaff);
 
+unsigned isl_pw_aff_dim(__isl_keep isl_pw_aff *pwaff, enum isl_dim_type type);
+
 __isl_give isl_map *isl_map_from_pw_aff(__isl_take isl_pw_aff *pwaff);
 
 __isl_give isl_printer *isl_printer_print_pw_aff(__isl_take isl_printer *p,

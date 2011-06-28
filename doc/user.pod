@@ -2245,6 +2245,8 @@ The expression can be inspected using
 		__isl_keep isl_aff *aff, int pos);
 
 	isl_ctx *isl_pw_aff_get_ctx(__isl_keep isl_pw_aff *pwaff);
+	unsigned isl_pw_aff_dim(__isl_keep isl_pw_aff *pwaff,
+		enum isl_dim_type type);
 	int isl_pw_aff_is_empty(__isl_keep isl_pw_aff *pwaff);
 
 It can be modified using
