@@ -45,6 +45,8 @@ __isl_give isl_local_space *isl_basic_set_get_local_space(
 
 const char *isl_basic_set_get_tuple_name(__isl_keep isl_basic_set *bset);
 const char *isl_set_get_tuple_name(__isl_keep isl_set *set);
+__isl_give isl_basic_set *isl_basic_set_set_tuple_name(
+	__isl_take isl_basic_set *set, const char *s);
 __isl_give isl_set *isl_set_set_tuple_name(__isl_take isl_set *set,
 	const char *s);
 const char *isl_basic_set_get_dim_name(__isl_keep isl_basic_set *bset,
