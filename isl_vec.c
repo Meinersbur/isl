@@ -292,3 +292,44 @@ error:
 	isl_vec_free(vec);
 	return NULL;
 }
+
+__isl_give isl_vec *isl_vec_insert_els(__isl_take isl_vec *vec,
+	unsigned pos, unsigned n)
+{
+	isl_vec *ext = NULL;
+
+	if (n == 0)
+		return vec;
+	if (!vec)
+		return NULL;
+
+	if (pos > vec->size)
+		isl_die(vec->ctx, isl_error_invalid,
+			"position out of bounds", goto error);
+
+	ext =  isl_vec_alloc(vec->ctx, vec->size + n);
+	if (!ext)
+		goto error;
+
+	isl_seq_cpy(ext->el, vec->el, pos);
+	isl_seq_cpy(ext->el + pos + n, vec->el + pos, vec->size - pos);
+
+	isl_vec_free(vec);
+	return ext;
+error:
+	isl_vec_free(vec);
+	isl_vec_free(ext);
+	return NULL;
+}
+
+__isl_give isl_vec *isl_vec_insert_zero_els(__isl_take isl_vec *vec,
+	unsigned pos, unsigned n)
+{
+	vec = isl_vec_insert_els(vec, pos, n);
+	if (!vec)
+		return NULL;
+
+	isl_seq_clr(vec->el + pos, n);
+
+	return vec;
+}
