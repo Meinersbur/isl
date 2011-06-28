@@ -8879,7 +8879,7 @@ __isl_give isl_basic_map *isl_basic_map_from_aff(__isl_take isl_aff *aff)
 
 	ls = isl_aff_get_local_space(aff);
 	ls = isl_local_space_from_domain(ls);
-	ls = isl_local_space_add_dim(ls, isl_dim_out, 1);
+	ls = isl_local_space_add_dims(ls, isl_dim_out, 1);
 	bmap = isl_basic_map_from_local_space(ls);
 	bmap = isl_basic_map_extend_constraints(bmap, 1, 0);
 	k = isl_basic_map_alloc_equality(bmap);

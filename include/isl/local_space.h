@@ -32,7 +32,7 @@ __isl_give isl_div *isl_local_space_get_div(__isl_keep isl_local_space *ls,
 
 __isl_give isl_local_space *isl_local_space_from_domain(
 	__isl_take isl_local_space *ls);
-__isl_give isl_local_space *isl_local_space_add_dim(
+__isl_give isl_local_space *isl_local_space_add_dims(
 	__isl_take isl_local_space *ls, enum isl_dim_type type, unsigned n);
 
 int isl_local_space_is_equal(__isl_keep isl_local_space *ls1,

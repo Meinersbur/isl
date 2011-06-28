@@ -368,7 +368,7 @@ __isl_give isl_local_space *isl_local_space_from_domain(
 	return ls;
 }
 
-__isl_give isl_local_space *isl_local_space_add_dim(
+__isl_give isl_local_space *isl_local_space_add_dims(
 	__isl_take isl_local_space *ls, enum isl_dim_type type, unsigned n)
 {
 	int pos;
