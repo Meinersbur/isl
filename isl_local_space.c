@@ -471,3 +471,39 @@ int isl_local_space_is_named_or_nested(__isl_keep isl_local_space *ls,
 		return -1;
 	return isl_dim_is_named_or_nested(ls->dim, type);
 }
+
+__isl_give isl_local_space *isl_local_space_drop_dims(
+	__isl_take isl_local_space *ls,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	isl_ctx *ctx;
+
+	if (!ls)
+		return NULL;
+	if (n == 0 && !isl_local_space_is_named_or_nested(ls, type))
+		return ls;
+
+	ctx = isl_local_space_get_ctx(ls);
+	if (first + n > isl_local_space_dim(ls, type))
+		isl_die(ctx, isl_error_invalid, "range out of bounds",
+			return isl_local_space_free(ls));
+
+	ls = isl_local_space_cow(ls);
+	if (!ls)
+		return NULL;
+
+	if (type == isl_dim_div) {
+		ls->div = isl_mat_drop_rows(ls->div, first, n);
+	} else {
+		ls->dim = isl_dim_drop(ls->dim, type, first, n);
+		if (!ls->dim)
+			return isl_local_space_free(ls);
+	}
+
+	first += 1 + isl_local_space_offset(ls, type);
+	ls->div = isl_mat_drop_cols(ls->div, first, n);
+	if (!ls->div)
+		return isl_local_space_free(ls);
+
+	return ls;
+}
