@@ -60,6 +60,9 @@ __isl_give isl_vec *isl_vec_sort(__isl_take isl_vec *vec);
 
 __isl_give isl_vec *isl_vec_read_from_file(isl_ctx *ctx, FILE *input);
 
+__isl_give isl_vec *isl_vec_drop_els(__isl_take isl_vec *vec,
+	unsigned pos, unsigned n);
+
 #if defined(__cplusplus)
 }
 #endif

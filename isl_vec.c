@@ -267,3 +267,28 @@ __isl_give isl_vec *isl_vec_sort(__isl_take isl_vec *vec)
 
 	return vec;
 }
+
+__isl_give isl_vec *isl_vec_drop_els(__isl_take isl_vec *vec,
+	unsigned pos, unsigned n)
+{
+	if (n == 0)
+		return vec;
+	vec = isl_vec_cow(vec);
+	if (!vec)
+		return NULL;
+
+	if (pos + n > vec->size)
+		isl_die(vec->ctx, isl_error_invalid,
+			"range out of bounds", goto error);
+
+	if (pos + n != vec->size)
+		isl_seq_cpy(vec->el + pos, vec->el + pos + n,
+			    vec->size - pos - n);
+
+	vec->size -= n;
+	
+	return vec;
+error:
+	isl_vec_free(vec);
+	return NULL;
+}
