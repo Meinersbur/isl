@@ -598,6 +598,8 @@ error:
 #undef FIELD
 #define FIELD fold
 
+#define NO_NEG
+
 #include <isl_pw_templ.c>
 
 #undef UNION

@@ -2604,33 +2604,6 @@ error:
 	return NULL;
 }
 
-__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_neg(
-	__isl_take isl_pw_qpolynomial *pwqp)
-{
-	int i;
-
-	if (!pwqp)
-		return NULL;
-
-	if (isl_pw_qpolynomial_is_zero(pwqp))
-		return pwqp;
-
-	pwqp = isl_pw_qpolynomial_cow(pwqp);
-	if (!pwqp)
-		return NULL;
-
-	for (i = 0; i < pwqp->n; ++i) {
-		pwqp->p[i].qp = isl_qpolynomial_neg(pwqp->p[i].qp);
-		if (!pwqp->p[i].qp)
-			goto error;
-	}
-
-	return pwqp;
-error:
-	isl_pw_qpolynomial_free(pwqp);
-	return NULL;
-}
-
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_sub(
 	__isl_take isl_pw_qpolynomial *pwqp1,
 	__isl_take isl_pw_qpolynomial *pwqp2)

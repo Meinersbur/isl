@@ -111,6 +111,7 @@ __isl_give isl_set *isl_pw_aff_domain(__isl_take isl_pw_aff *pwaff);
 
 __isl_give isl_pw_aff *isl_pw_aff_add(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2);
+__isl_give isl_pw_aff *isl_pw_aff_neg(__isl_take isl_pw_aff *pwaff);
 
 __isl_give isl_pw_aff *isl_pw_aff_insert_dims(__isl_take isl_pw_aff *pwaff,
 	enum isl_dim_type type, unsigned first, unsigned n);
