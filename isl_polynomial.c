@@ -2346,7 +2346,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_drop_dims(
 {
 	if (!qp)
 		return NULL;
-	if (n == 0 && !isl_dim_get_tuple_name(qp->dim, type))
+	if (n == 0 && !isl_dim_is_named_or_nested(qp->dim, type))
 		return qp;
 
 	qp = isl_qpolynomial_cow(qp);
@@ -2817,7 +2817,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_insert_dims(
 	unsigned g_pos;
 	int *exp;
 
-	if (n == 0)
+	if (n == 0 && !isl_dim_is_named_or_nested(qp->dim, type))
 		return qp;
 
 	qp = isl_qpolynomial_cow(qp);
@@ -2829,7 +2829,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_insert_dims(
 
 	g_pos = pos(qp->dim, type) + first;
 
-	qp->div = isl_mat_insert_cols(qp->div, 2 + g_pos, n);
+	qp->div = isl_mat_insert_zero_cols(qp->div, 2 + g_pos, n);
 	if (!qp->div)
 		goto error;
 
