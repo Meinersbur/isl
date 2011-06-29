@@ -724,18 +724,27 @@ error:
 	return NULL;
 }
 
+/* Return a basic set containing those elements in the space
+ * of aff where it is non-negative.
+ */
+__isl_give isl_basic_set *isl_aff_nonneg_basic_set(__isl_take isl_aff *aff)
+{
+	isl_constraint *ineq;
+
+	ineq = isl_inequality_from_aff(aff);
+
+	return isl_basic_set_from_constraint(ineq);
+}
+
 /* Return a basic set containing those elements in the shared space
  * of aff1 and aff2 where aff1 is greater than or equal to aff2.
  */
 __isl_give isl_basic_set *isl_aff_ge_basic_set(__isl_take isl_aff *aff1,
 	__isl_take isl_aff *aff2)
 {
-	isl_constraint *ineq;
-
 	aff1 = isl_aff_sub(aff1, aff2);
-	ineq = isl_inequality_from_aff(aff1);
 
-	return isl_basic_set_from_constraint(ineq);
+	return isl_aff_nonneg_basic_set(aff1);
 }
 
 __isl_give isl_aff *isl_aff_add_on_domain(__isl_keep isl_set *dom,
@@ -1041,4 +1050,50 @@ __isl_give isl_map *isl_map_from_pw_aff(__isl_take isl_pw_aff *pwaff)
 	isl_pw_aff_free(pwaff);
 
 	return map;
+}
+
+/* Return a set containing those elements in the domain
+ * of pwaff where it is non-negative.
+ */
+__isl_give isl_set *isl_pw_aff_nonneg_set(__isl_take isl_pw_aff *pwaff)
+{
+	int i;
+	isl_set *set;
+
+	if (!pwaff)
+		return NULL;
+
+	set = isl_set_empty(isl_pw_aff_get_dim(pwaff));
+
+	for (i = 0; i < pwaff->n; ++i) {
+		isl_basic_set *bset;
+		isl_set *set_i;
+
+		bset = isl_aff_nonneg_basic_set(isl_aff_copy(pwaff->p[i].aff));
+		set_i = isl_set_from_basic_set(bset);
+		set_i = isl_set_intersect(set_i, isl_set_copy(pwaff->p[i].set));
+		set = isl_set_union_disjoint(set, set_i);
+	}
+
+	isl_pw_aff_free(pwaff);
+
+	return set;
+}
+
+/* Return a set containing those elements in the shared domain
+ * of pwaff1 and pwaff2 where pwaff1 is greater than or equal to pwaff2.
+ */
+__isl_give isl_set *isl_pw_aff_ge_set(__isl_take isl_pw_aff *pwaff1,
+	__isl_take isl_pw_aff *pwaff2)
+{
+	isl_set *set1, *set2;
+
+	set1 = isl_pw_aff_domain(isl_pw_aff_copy(pwaff1));
+	set2 = isl_pw_aff_domain(isl_pw_aff_copy(pwaff2));
+	set1 = isl_set_intersect(set1, set2);
+	pwaff1 = isl_pw_aff_intersect_domain(pwaff1, isl_set_copy(set1));
+	pwaff2 = isl_pw_aff_intersect_domain(pwaff2, set1);
+	pwaff1 = isl_pw_aff_add(pwaff1, isl_pw_aff_neg(pwaff2));
+
+	return isl_pw_aff_nonneg_set(pwaff1);
 }
