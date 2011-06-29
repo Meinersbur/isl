@@ -93,6 +93,8 @@ void *isl_pw_aff_free(__isl_take isl_pw_aff *pwaff);
 
 unsigned isl_pw_aff_dim(__isl_keep isl_pw_aff *pwaff, enum isl_dim_type type);
 
+__isl_give isl_set *isl_pw_aff_domain(__isl_take isl_pw_aff *pwaff);
+
 __isl_give isl_pw_aff *isl_pw_aff_coalesce(__isl_take isl_pw_aff *pwqp);
 __isl_give isl_pw_aff *isl_pw_aff_gist(__isl_take isl_pw_aff *pwaff,
 	__isl_take isl_set *context);
