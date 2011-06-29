@@ -485,6 +485,8 @@ specification of the original object.
 	#include <isl/aff.h>
 	__isl_give isl_dim *isl_aff_get_dim(
 		__isl_keep isl_aff *aff);
+	__isl_give isl_dim *isl_pw_aff_get_dim(
+		__isl_keep isl_pw_aff *pwaff);
 
 	#include <isl/point.h>
 	__isl_give isl_dim *isl_point_get_dim(
