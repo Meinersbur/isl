@@ -443,6 +443,80 @@ void isl_constraint_clear(struct isl_constraint *constraint)
 	isl_seq_clr(constraint->line[0], 1 + total);
 }
 
+/* Check whether the two basic maps have identical divs in the same order.
+ */
+static int equal_divs(__isl_keep isl_basic_map *bmap1,
+	__isl_keep isl_basic_map *bmap2)
+{
+	int i;
+	unsigned total;
+
+	if (!isl_basic_map_divs_known(bmap1))
+		return 0;
+	if (!isl_basic_map_divs_known(bmap2))
+		return 0;
+	if (bmap1->n_div != bmap2->n_div)
+		return 0;
+
+	total = isl_basic_map_total_dim(bmap1);
+	for (i = 0; i < bmap1->n_div; ++i)
+		if (!isl_seq_eq(bmap1->div[i], bmap2->div[i], 2 + total))
+			return 0;
+
+	return 1;
+}
+
+/* Drop any constraint from "bset" that is identical to "constraint".
+ * In particular, this means that the local spaces of "bset" and
+ * "constraint" need to be the same.
+ *
+ * Since the given constraint may actually be a pointer into the bset,
+ * we have to be careful not to reorder the constraints as the user
+ * may be holding on to other constraints from the same bset.
+ * This should be cleaned up when the internal representation of
+ * isl_constraint is changed to use isl_aff.
+ */
+__isl_give isl_basic_set *isl_basic_set_drop_constraint(
+	__isl_take isl_basic_set *bset, __isl_take isl_constraint *constraint)
+{
+	int i;
+	unsigned n;
+	isl_int **row;
+	unsigned total;
+
+	if (!bset || !constraint)
+		goto error;
+
+	if (!isl_dim_equal(bset->dim, constraint->bmap->dim))
+		isl_die(bset->ctx, isl_error_invalid,
+			"spaces don't match", goto error);
+
+	if (bset != constraint->bmap && !equal_divs(bset, constraint->bmap)) {
+		isl_constraint_free(constraint);
+		return bset;
+	}
+
+	if (isl_constraint_is_equality(constraint)) {
+		n = bset->n_eq;
+		row = bset->eq;
+	} else {
+		n = bset->n_ineq;
+		row = bset->ineq;
+	}
+
+	total = isl_basic_map_total_dim(constraint->bmap);
+	for (i = 0; i < n; ++i)
+		if (isl_seq_eq(row[i], constraint->line[0], 1 + total))
+			isl_seq_clr(row[i], 1 + total);
+			
+	isl_constraint_free(constraint);
+	return bset;
+error:
+	isl_constraint_free(constraint);
+	isl_basic_set_free(bset);
+	return NULL;
+}
+
 struct isl_constraint *isl_constraint_negate(struct isl_constraint *constraint)
 {
 	unsigned total;
