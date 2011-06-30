@@ -91,7 +91,6 @@ __isl_give isl_div *isl_constraint_div(__isl_keep isl_constraint *constraint,
 struct isl_constraint *isl_constraint_add_div(struct isl_constraint *constraint,
 	struct isl_div *div, int *pos);
 
-void isl_constraint_clear(struct isl_constraint *constraint);
 struct isl_constraint *isl_constraint_negate(struct isl_constraint *constraint);
 
 int isl_constraint_is_equality(__isl_keep isl_constraint *constraint);

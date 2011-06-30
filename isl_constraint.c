@@ -395,15 +395,6 @@ void isl_constraint_set_coefficient_si(__isl_keep isl_constraint *constraint,
 	isl_int_set_si(constraint->line[0][offset(constraint, type) + pos], v);
 }
 
-void isl_constraint_clear(struct isl_constraint *constraint)
-{
-	unsigned total;
-
-	if (!constraint)
-		return;
-	total = isl_basic_map_total_dim(constraint->bmap);
-	isl_seq_clr(constraint->line[0], 1 + total);
-}
 
 /* Check whether the two basic maps have identical divs in the same order.
  */
