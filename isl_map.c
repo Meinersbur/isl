@@ -5382,7 +5382,7 @@ error:
 	return NULL;
 }
 
-static int basic_map_divs_known(__isl_keep isl_basic_map *bmap)
+int isl_basic_map_divs_known(__isl_keep isl_basic_map *bmap)
 {
 	int i;
 	unsigned off;
@@ -5408,7 +5408,7 @@ static int map_divs_known(__isl_keep isl_map *map)
 		return -1;
 
 	for (i = 0; i < map->n; ++i) {
-		int known = basic_map_divs_known(map->p[i]);
+		int known = isl_basic_map_divs_known(map->p[i]);
 		if (known <= 0)
 			return known;
 	}
@@ -5426,7 +5426,7 @@ struct isl_map *isl_basic_map_compute_divs(struct isl_basic_map *bmap)
 	int known;
 	struct isl_map *map;
 
-	known = basic_map_divs_known(bmap);
+	known = isl_basic_map_divs_known(bmap);
 	if (known < 0)
 		goto error;
 	if (known)
@@ -5434,7 +5434,7 @@ struct isl_map *isl_basic_map_compute_divs(struct isl_basic_map *bmap)
 
 	bmap = isl_basic_map_drop_redundant_divs(bmap);
 
-	known = basic_map_divs_known(bmap);
+	known = isl_basic_map_divs_known(bmap);
 	if (known < 0)
 		goto error;
 	if (known)

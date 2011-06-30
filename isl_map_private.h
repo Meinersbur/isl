@@ -303,6 +303,8 @@ __isl_give isl_basic_map *isl_basic_map_from_local_space(
 __isl_give isl_basic_set *isl_basic_set_expand_divs(
 	__isl_take isl_basic_set *bset, __isl_take isl_mat *div, int *exp);
 
+int isl_basic_map_divs_known(__isl_keep isl_basic_map *bmap);
+
 __isl_give isl_map *isl_map_inline_foreach_basic_map(__isl_take isl_map *map,
 	__isl_give isl_basic_map *(*fn)(__isl_take isl_basic_map *bmap));
 
