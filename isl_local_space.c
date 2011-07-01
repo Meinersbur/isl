@@ -610,3 +610,51 @@ __isl_give isl_local_space *isl_local_space_insert_dims(
 
 	return ls;
 }
+
+/* Check if the constraints pointed to by "constraint" is a div
+ * constraint corresponding to div "div" in "ls".
+ *
+ * That is, if div = floor(f/m), then check if the constraint is
+ *
+ *		f - m d >= 0
+ * or
+ *		-(f-(m-1)) + m d >= 0
+ */
+int isl_local_space_is_div_constraint(__isl_keep isl_local_space *ls,
+	isl_int *constraint, unsigned div)
+{
+	unsigned pos;
+
+	if (!ls)
+		return -1;
+
+	if (isl_int_is_zero(ls->div->row[div][0]))
+		return 0;
+
+	pos = isl_local_space_offset(ls, isl_dim_div) + div;
+
+	if (isl_int_eq(constraint[pos], ls->div->row[div][0])) {
+		int neg;
+		isl_int_sub(ls->div->row[div][1],
+				ls->div->row[div][1], ls->div->row[div][0]);
+		isl_int_add_ui(ls->div->row[div][1], ls->div->row[div][1], 1);
+		neg = isl_seq_is_neg(constraint, ls->div->row[div]+1, pos);
+		isl_int_sub_ui(ls->div->row[div][1], ls->div->row[div][1], 1);
+		isl_int_add(ls->div->row[div][1],
+				ls->div->row[div][1], ls->div->row[div][0]);
+		if (!neg)
+			return 0;
+		if (isl_seq_first_non_zero(constraint+pos+1,
+					    ls->div->n_row-div-1) != -1)
+			return 0;
+	} else if (isl_int_abs_eq(constraint[pos], ls->div->row[div][0])) {
+		if (!isl_seq_eq(constraint, ls->div->row[div]+1, pos))
+			return 0;
+		if (isl_seq_first_non_zero(constraint+pos+1,
+					    ls->div->n_row-div-1) != -1)
+			return 0;
+	} else
+		return 0;
+
+	return 1;
+}
