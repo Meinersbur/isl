@@ -12,6 +12,7 @@
 #include <limits.h>
 #include <isl_ctx_private.h>
 #include <isl_map_private.h>
+#include <isl/aff.h>
 #include <isl/set.h>
 #include <isl/flow.h>
 #include <isl/constraint.h>

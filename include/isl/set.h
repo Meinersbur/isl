@@ -11,7 +11,7 @@
 #define ISL_SET_H
 
 #include <isl/map_type.h>
-#include <isl/aff.h>
+#include <isl/aff_type.h>
 #include <isl/list.h>
 #include <isl/mat.h>
 #include <isl/point.h>

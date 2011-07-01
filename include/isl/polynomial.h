@@ -9,7 +9,7 @@
 #include <isl/point.h>
 #include <isl/printer.h>
 #include <isl/union_set.h>
-#include <isl/aff.h>
+#include <isl/aff_type.h>
 
 #if defined(__cplusplus)
 extern "C" {

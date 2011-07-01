@@ -10,7 +10,7 @@
 #ifndef ISL_CONSTRAINT_H
 #define ISL_CONSTRAINT_H
 
-#include <isl/aff.h>
+#include <isl/aff_type.h>
 #include <isl/div.h>
 #include <isl/set_type.h>
 #include <isl/printer.h>

@@ -189,6 +189,7 @@ nodist_pkginclude_HEADERS = \
 	include/isl/stdint.h
 pkginclude_HEADERS = \
 	include/isl/aff.h \
+	include/isl/aff_type.h \
 	include/isl/arg.h \
 	include/isl/band.h \
 	include/isl/blk.h \

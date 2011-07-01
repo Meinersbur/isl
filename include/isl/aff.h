@@ -5,13 +5,11 @@
 #include <isl/local_space.h>
 #include <isl/printer.h>
 #include <isl/set_type.h>
+#include <isl/aff_type.h>
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
-
-struct isl_aff;
-typedef struct isl_aff isl_aff;
 
 __isl_give isl_aff *isl_aff_zero(__isl_take isl_local_space *ls);
 
@@ -84,9 +82,6 @@ __isl_give isl_basic_set *isl_aff_ge_basic_set(__isl_take isl_aff *aff1,
 __isl_give isl_printer *isl_printer_print_aff(__isl_take isl_printer *p,
 	__isl_keep isl_aff *aff);
 void isl_aff_dump(__isl_keep isl_aff *aff);
-
-struct isl_pw_aff;
-typedef struct isl_pw_aff isl_pw_aff;
 
 isl_ctx *isl_pw_aff_get_ctx(__isl_keep isl_pw_aff *pwaff);
 __isl_give isl_dim *isl_pw_aff_get_dim(__isl_keep isl_pw_aff *pwaff);

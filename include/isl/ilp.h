@@ -10,7 +10,7 @@
 #ifndef ISL_ILP_H
 #define ISL_ILP_H
 
-#include <isl/aff.h>
+#include <isl/aff_type.h>
 #include <isl/lp.h>
 
 #if defined(__cplusplus)
