@@ -128,6 +128,11 @@ int isl_local_space_is_equal(__isl_keep isl_local_space *ls1,
 	if (equal < 0 || !equal)
 		return equal;
 
+	if (!isl_local_space_divs_known(ls1))
+		return 0;
+	if (!isl_local_space_divs_known(ls2))
+		return 0;
+
 	return isl_mat_is_equal(ls1->div, ls2->div);
 }
 
