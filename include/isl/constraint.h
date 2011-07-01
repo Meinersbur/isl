@@ -88,8 +88,6 @@ void isl_constraint_set_coefficient_si(__isl_keep isl_constraint *constraint,
 
 __isl_give isl_div *isl_constraint_div(__isl_keep isl_constraint *constraint,
 	int pos);
-struct isl_constraint *isl_constraint_add_div(struct isl_constraint *constraint,
-	struct isl_div *div, int *pos);
 
 struct isl_constraint *isl_constraint_negate(struct isl_constraint *constraint);
 

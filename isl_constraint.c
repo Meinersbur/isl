@@ -262,36 +262,6 @@ __isl_give isl_set *isl_set_add_constraint(__isl_take isl_set *set,
 	return isl_map_add_constraint(set, constraint);
 }
 
-struct isl_constraint *isl_constraint_add_div(struct isl_constraint *constraint,
-	struct isl_div *div, int *pos)
-{
-	if (!constraint || !div)
-		goto error;
-
-	isl_assert(constraint->ctx,
-	    isl_dim_equal(div->bmap->dim, constraint->bmap->dim), goto error);
-	isl_assert(constraint->ctx,
-	    constraint->bmap->n_eq + constraint->bmap->n_ineq == 1, goto error);
-
-	constraint->bmap = isl_basic_map_cow(constraint->bmap);
-	constraint->bmap = isl_basic_map_extend_dim(constraint->bmap,
-				isl_dim_copy(constraint->bmap->dim), 1, 0, 0);
-	if (!constraint->bmap)
-		goto error;
-	constraint->line = &constraint->bmap->ineq[0];
-	*pos = isl_basic_map_alloc_div(constraint->bmap);
-	if (*pos < 0)
-		goto error;
-	isl_seq_cpy(constraint->bmap->div[*pos], div->line[0],
-			1 + 1 + isl_basic_map_total_dim(constraint->bmap));
-	isl_div_free(div);
-	return constraint;
-error:
-	isl_constraint_free(constraint);
-	isl_div_free(div);
-	return NULL;
-}
-
 __isl_give isl_dim *isl_constraint_get_dim(
 	__isl_keep isl_constraint *constraint)
 {
