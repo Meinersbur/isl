@@ -1023,11 +1023,16 @@ using the following functions.
 		__isl_take isl_dim *dim);
 	__isl_give isl_constraint *isl_inequality_alloc(
 		__isl_take isl_dim *dim);
-	void isl_constraint_set_constant(
-		__isl_keep isl_constraint *constraint, isl_int v);
-	void isl_constraint_set_coefficient(
-		__isl_keep isl_constraint *constraint,
+	__isl_give isl_constraint *isl_constraint_set_constant(
+		__isl_take isl_constraint *constraint, isl_int v);
+	__isl_give isl_constraint *isl_constraint_set_constant_si(
+		__isl_take isl_constraint *constraint, int v);
+	__isl_give isl_constraint *isl_constraint_set_coefficient(
+		__isl_take isl_constraint *constraint,
 		enum isl_dim_type type, int pos, isl_int v);
+	__isl_give isl_constraint *isl_constraint_set_coefficient_si(
+		__isl_take isl_constraint *constraint,
+		enum isl_dim_type type, int pos, int v);
 	__isl_give isl_basic_map *isl_basic_map_add_constraint(
 		__isl_take isl_basic_map *bmap,
 		__isl_take isl_constraint *constraint);

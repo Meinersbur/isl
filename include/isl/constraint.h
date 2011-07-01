@@ -29,7 +29,7 @@ __isl_give isl_constraint *isl_inequality_alloc(__isl_take isl_dim *dim);
 
 struct isl_constraint *isl_constraint_cow(struct isl_constraint *c);
 struct isl_constraint *isl_constraint_copy(struct isl_constraint *c);
-void isl_constraint_free(struct isl_constraint *c);
+void *isl_constraint_free(struct isl_constraint *c);
 
 int isl_basic_map_foreach_constraint(__isl_keep isl_basic_map *bmap,
 	int (*fn)(__isl_take isl_constraint *c, void *user), void *user);
@@ -78,12 +78,15 @@ void isl_constraint_get_constant(__isl_keep isl_constraint *constraint,
 	isl_int *v);
 void isl_constraint_get_coefficient(__isl_keep isl_constraint *constraint,
 	enum isl_dim_type type, int pos, isl_int *v);
-void isl_constraint_set_constant(__isl_keep isl_constraint *constraint, isl_int v);
-void isl_constraint_set_constant_si(__isl_keep isl_constraint *constraint,
-	int v);
-void isl_constraint_set_coefficient(__isl_keep isl_constraint *constraint,
+__isl_give isl_constraint *isl_constraint_set_constant(
+	__isl_take isl_constraint *constraint, isl_int v);
+__isl_give isl_constraint *isl_constraint_set_constant_si(
+	__isl_take isl_constraint *constraint, int v);
+__isl_give isl_constraint *isl_constraint_set_coefficient(
+	__isl_take isl_constraint *constraint,
 	enum isl_dim_type type, int pos, isl_int v);
-void isl_constraint_set_coefficient_si(__isl_keep isl_constraint *constraint,
+__isl_give isl_constraint *isl_constraint_set_coefficient_si(
+	__isl_take isl_constraint *constraint,
 	enum isl_dim_type type, int pos, int v);
 
 __isl_give isl_div *isl_constraint_div(__isl_keep isl_constraint *constraint,
