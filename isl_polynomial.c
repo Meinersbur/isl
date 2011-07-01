@@ -2981,36 +2981,11 @@ error:
 __isl_give isl_qpolynomial *isl_qpolynomial_from_constraint(
 	__isl_take isl_constraint *c, enum isl_dim_type type, unsigned pos)
 {
-	isl_int denom;
-	isl_dim *dim;
-	struct isl_upoly *up;
-	isl_qpolynomial *qp;
-	int sgn;
+	isl_aff *aff;
 
-	if (!c)
-		return NULL;
-
-	isl_int_init(denom);
-
-	isl_constraint_get_coefficient(c, type, pos, &denom);
-	isl_constraint_set_coefficient(c, type, pos, c->ctx->zero);
-	sgn = isl_int_sgn(denom);
-	isl_int_abs(denom, denom);
-	up = isl_upoly_from_affine(c->ctx, c->line[0], denom,
-					1 + isl_constraint_dim(c, isl_dim_all));
-	if (sgn < 0)
-		isl_int_neg(denom, denom);
-	isl_constraint_set_coefficient(c, type, pos, denom);
-
-	dim = isl_dim_copy(c->bmap->dim);
-
-	isl_int_clear(denom);
+	aff = isl_constraint_get_bound(c, type, pos);
 	isl_constraint_free(c);
-
-	qp = isl_qpolynomial_alloc(dim, 0, up);
-	if (sgn > 0)
-		qp = isl_qpolynomial_neg(qp);
-	return qp;
+	return isl_qpolynomial_from_aff(aff);
 }
 
 /* For each 0 <= i < "n", replace variable "first" + i of type "type"
