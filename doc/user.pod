@@ -2189,6 +2189,11 @@ The zero quasi affine expression can be created using
 	__isl_give isl_aff *isl_aff_zero(
 		__isl_take isl_local_space *ls);
 
+A quasi affine expression can also be initialized from an C<isl_div>:
+
+	#include <isl/div.h>
+	__isl_give isl_aff *isl_aff_from_div(__isl_take isl_div *div);
+
 An empty piecewise quasi affine expression (one with no cells)
 or a piecewise quasi affine expression with a single cell can
 be created using the following functions.

@@ -12,6 +12,7 @@
 #include <isl/map.h>
 #include <isl_dim_private.h>
 #include <isl/seq.h>
+#include <isl/aff.h>
 
 isl_ctx *isl_div_get_ctx(__isl_keep isl_div *div)
 {
@@ -171,4 +172,20 @@ void isl_div_set_coefficient(struct isl_div *div,
 
 	isl_assert(div->ctx, pos < n(div, type), return);
 	isl_int_set(div->line[0][offset(div, type) + pos], v);
+}
+
+__isl_give isl_aff *isl_aff_from_div(__isl_take isl_div *div)
+{
+	isl_aff *aff;
+	int pos;
+
+	if (!div)
+		return NULL;
+
+	pos = div->line - div->bmap->div;
+	aff = isl_aff_zero(isl_basic_map_get_local_space(div->bmap));
+	aff = isl_aff_set_coefficient_si(aff, isl_dim_div, pos, 1);
+
+	isl_div_free(div);
+	return aff;
 }

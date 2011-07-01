@@ -11,6 +11,7 @@
 #define ISL_DIV_H
 
 #include <isl/dim.h>
+#include <isl/aff_type.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -36,6 +37,8 @@ void isl_div_set_coefficient(struct isl_div *div,
 
 unsigned isl_div_dim(__isl_keep isl_div *div, enum isl_dim_type type);
 __isl_give isl_div *isl_div_div(__isl_take isl_div *div, int pos);
+
+__isl_give isl_aff *isl_aff_from_div(__isl_take isl_div *div);
 
 #if defined(__cplusplus)
 }
