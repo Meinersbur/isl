@@ -1022,6 +1022,36 @@ __isl_give isl_aff *isl_constraint_get_bound(
 	return aff;
 }
 
+/* For an inequality constraint
+ *
+ *	f >= 0
+ *
+ * or an equality constraint
+ *
+ *	f = 0
+ *
+ * return the affine expression f.
+ */
+__isl_give isl_aff *isl_constraint_get_aff(
+	__isl_keep isl_constraint *constraint)
+{
+	isl_aff *aff;
+	isl_local_space *ls;
+
+	if (!constraint)
+		return NULL;
+
+	ls = isl_basic_set_get_local_space(constraint->bmap);
+	aff = isl_aff_alloc(ls);
+	if (!aff)
+		return NULL;
+
+	isl_seq_cpy(aff->v->el + 1, constraint->line[0], aff->v->size - 1);
+	isl_int_set_si(aff->v->el[0], 1);
+
+	return aff;
+}
+
 /* Construct an equality constraint equating the given affine expression
  * to zero.
  */

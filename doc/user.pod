@@ -2218,6 +2218,13 @@ a non-zero coefficient for the specified dimension.
 		__isl_keep isl_constraint *constraint,
 		enum isl_dim_type type, int pos);
 
+The entire affine expression of the constraint can also be extracted
+using the following function.
+
+	#include <isl/constraint.h>
+	__isl_give isl_aff *isl_constraint_get_aff(
+		__isl_keep isl_constraint *constraint);
+
 Conversely, an equality constraint equating
 the affine expression to zero or an inequality constraint enforcing
 the affine expression to be non-negative, can be constructed using
