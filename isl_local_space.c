@@ -180,6 +180,10 @@ __isl_give isl_div *isl_local_space_get_div(__isl_keep isl_local_space *ls,
 		isl_die(isl_local_space_get_ctx(ls), isl_error_invalid,
 			"index out of bounds", return NULL);
 
+	if (isl_int_is_zero(ls->div->row[pos][0]))
+		isl_die(isl_local_space_get_ctx(ls), isl_error_invalid,
+			"expression of div unknown", return NULL);
+
 	bmap = isl_basic_map_from_local_space(isl_local_space_copy(ls));
 	return isl_basic_map_div(bmap, pos);
 }
