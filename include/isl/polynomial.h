@@ -225,6 +225,8 @@ int isl_pw_qpolynomial_foreach_lifted_piece(__isl_keep isl_pw_qpolynomial *pwqp,
 
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_read_from_str(isl_ctx *ctx,
 		const char *str);
+__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_read_from_file(isl_ctx *ctx,
+		FILE *input);
 __isl_give isl_printer *isl_printer_print_pw_qpolynomial(
 	__isl_take isl_printer *p, __isl_keep isl_pw_qpolynomial *pwqp);
 void isl_pw_qpolynomial_print(__isl_keep isl_pw_qpolynomial *pwqp, FILE *out,
