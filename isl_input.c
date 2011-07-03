@@ -581,7 +581,11 @@ static __isl_give isl_basic_map *read_var_list(struct isl_stream *s,
 			break;
 
 		tok = isl_stream_next_token(s);
-		if (!tok || tok->type != ',')
+		if (tok && tok->type == ']' &&
+		    isl_stream_next_token_is(s, '[')) {
+			isl_token_free(tok);
+			tok = isl_stream_next_token(s);
+		} else if (!tok || tok->type != ',')
 			break;
 
 		isl_token_free(tok);
