@@ -10,6 +10,7 @@
 
 #include <isl_band_private.h>
 #include <isl_schedule_private.h>
+#include <isl_list_private.h>
 
 isl_ctx *isl_band_get_ctx(__isl_keep isl_band *band)
 {
@@ -69,7 +70,7 @@ __isl_give isl_band_list *isl_band_get_children(
 	if (!band->children)
 		isl_die(isl_band_get_ctx(band), isl_error_invalid,
 			"band has no children", return NULL);
-	return isl_band_list_copy(band->children);
+	return isl_band_list_dup(band->children);
 }
 
 int isl_band_n_member(__isl_keep isl_band *band)

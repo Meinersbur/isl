@@ -23,6 +23,7 @@
 #include <isl_qsort.h>
 #include <isl_schedule_private.h>
 #include <isl_band_private.h>
+#include <isl_list_private.h>
 
 /*
  * The scheduling algorithm implemented in this file was inspired by
@@ -2706,7 +2707,7 @@ __isl_give isl_band_list *isl_schedule_get_band_forest(
 		return NULL;
 	if (!schedule->band_forest)
 		schedule->band_forest = construct_forest(schedule);
-	return isl_band_list_copy(schedule->band_forest);
+	return isl_band_list_dup(schedule->band_forest);
 }
 
 static __isl_give isl_printer *print_band_list(__isl_take isl_printer *p,
