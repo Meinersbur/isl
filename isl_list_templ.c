@@ -54,6 +54,22 @@ __isl_give LIST(EL) *FN(LIST(EL),copy)(__isl_keep LIST(EL) *list)
 	return list;
 }
 
+__isl_give LIST(EL) *FN(LIST(EL),dup)(__isl_keep LIST(EL) *list)
+{
+	int i;
+	LIST(EL) *dup;
+
+	if (!list)
+		return NULL;
+
+	dup = FN(LIST(EL),alloc)(FN(LIST(EL),get_ctx)(list), list->n);
+	if (!dup)
+		return NULL;
+	for (i = 0; i < list->n; ++i)
+		dup = FN(LIST(EL),add)(dup, FN(EL,copy)(list->p[i]));
+	return dup;
+}
+
 __isl_give LIST(EL) *FN(LIST(EL),add)(__isl_take LIST(EL) *list,
 	__isl_take struct EL *el)
 {

@@ -12,3 +12,12 @@ struct LIST(EL) {
 	size_t size;
 	struct EL *p[1];
 };
+
+#define ISL_DECLARE_LIST_PRIVATE(EL)					\
+__isl_give isl_##EL##_list *isl_##EL##_list_dup(			\
+	__isl_keep isl_##EL##_list *list);
+
+ISL_DECLARE_LIST_PRIVATE(basic_set)
+ISL_DECLARE_LIST_PRIVATE(set)
+ISL_DECLARE_LIST_PRIVATE(aff)
+ISL_DECLARE_LIST_PRIVATE(band)
