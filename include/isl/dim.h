@@ -11,6 +11,7 @@
 #define ISL_DIM_H
 
 #include <isl/ctx.h>
+#include <isl/id.h>
 #include <isl/printer.h>
 
 #if defined(__cplusplus)
@@ -43,6 +44,20 @@ __isl_give isl_dim *isl_dim_set_tuple_name(__isl_take isl_dim *dim,
 	enum isl_dim_type type, const char *s);
 const char *isl_dim_get_tuple_name(__isl_keep isl_dim *dim,
 				 enum isl_dim_type type);
+__isl_give isl_dim *isl_dim_set_tuple_id(__isl_take isl_dim *dim,
+	enum isl_dim_type type, __isl_take isl_id *id);
+__isl_give isl_dim *isl_dim_reset_tuple_id(__isl_take isl_dim *dim,
+	enum isl_dim_type type);
+__isl_give isl_id *isl_dim_get_tuple_id(__isl_keep isl_dim *dim,
+	enum isl_dim_type type);
+
+__isl_give isl_dim *isl_dim_set_dim_id(__isl_take isl_dim *dim,
+	enum isl_dim_type type, unsigned pos, __isl_take isl_id *id);
+__isl_give isl_id *isl_dim_get_dim_id(__isl_keep isl_dim *dim,
+	enum isl_dim_type type, unsigned pos);
+
+int isl_dim_find_dim_by_id(__isl_keep isl_dim *dim, enum isl_dim_type type,
+	__isl_keep isl_id *id);
 
 __isl_give isl_dim *isl_dim_set_name(__isl_take isl_dim *dim,
 				 enum isl_dim_type type, unsigned pos,

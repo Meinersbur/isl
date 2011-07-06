@@ -20,7 +20,7 @@ struct isl_ctx {
 	int			n_cached;
 	int			n_miss;
 	struct isl_blk		cache[ISL_BLK_CACHE_SIZE];
-	struct isl_hash_table	name_hash;
+	struct isl_hash_table	id_table;
 
 	enum isl_error		error;
 

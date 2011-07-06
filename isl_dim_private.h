@@ -1,5 +1,6 @@
 #include <isl/dim.h>
 #include <isl/hash.h>
+#include <isl/id.h>
 
 struct isl_name;
 struct isl_dim {
@@ -11,11 +12,11 @@ struct isl_dim {
 	unsigned n_in;		/* zero for sets */
 	unsigned n_out;		/* dim for sets */
 
-	struct isl_name *tuple_name[2];
+	isl_id *tuple_id[2];
 	struct isl_dim *nested[2];
 
-	unsigned n_name;
-	struct isl_name **names;
+	unsigned n_id;
+	isl_id **ids;
 };
 
 uint32_t isl_dim_get_hash(__isl_keep isl_dim *dim);

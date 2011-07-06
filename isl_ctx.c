@@ -65,7 +65,7 @@ isl_ctx *isl_ctx_alloc_with_options(struct isl_arg *arg, void *user_opt)
 	if (!ctx)
 		goto error;
 
-	if (isl_hash_table_init(ctx, &ctx->name_hash, 0))
+	if (isl_hash_table_init(ctx, &ctx->id_table, 0))
 		goto error;
 
 	ctx->stats = isl_calloc_type(ctx, struct isl_stats);
@@ -131,7 +131,7 @@ void isl_ctx_free(struct isl_ctx *ctx)
 	if (!ctx)
 		return;
 	isl_assert(ctx, ctx->ref == 0, return);
-	isl_hash_table_clear(&ctx->name_hash);
+	isl_hash_table_clear(&ctx->id_table);
 	isl_blk_clear_cache(ctx);
 	isl_int_clear(ctx->zero);
 	isl_int_clear(ctx->one);

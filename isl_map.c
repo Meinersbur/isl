@@ -398,6 +398,47 @@ __isl_give isl_set *isl_set_set_tuple_name(__isl_take isl_set *set,
 	return (isl_set *)isl_map_set_tuple_name((isl_map *)set, isl_dim_set, s);
 }
 
+__isl_give isl_map *isl_map_set_tuple_id(__isl_take isl_map *map,
+	enum isl_dim_type type, __isl_take isl_id *id)
+{
+	map = isl_map_cow(map);
+	if (!map)
+		return isl_id_free(id);
+
+	map->dim = isl_dim_set_tuple_id(map->dim, type, id);
+
+	return isl_map_reset_dim(map, isl_dim_copy(map->dim));
+}
+
+__isl_give isl_set *isl_set_set_tuple_id(__isl_take isl_set *set,
+	__isl_take isl_id *id)
+{
+	return isl_map_set_tuple_id(set, isl_dim_set, id);
+}
+
+__isl_give isl_map *isl_map_reset_tuple_id(__isl_take isl_map *map,
+	enum isl_dim_type type)
+{
+	map = isl_map_cow(map);
+	if (!map)
+		return NULL;
+
+	map->dim = isl_dim_reset_tuple_id(map->dim, type);
+
+	return isl_map_reset_dim(map, isl_dim_copy(map->dim));
+}
+
+__isl_give isl_id *isl_map_get_tuple_id(__isl_keep isl_map *map,
+	enum isl_dim_type type)
+{
+	return map ? isl_dim_get_tuple_id(map->dim, type) : NULL;
+}
+
+__isl_give isl_id *isl_set_get_tuple_id(__isl_keep isl_set *set)
+{
+	return isl_map_get_tuple_id(set, isl_dim_set);
+}
+
 const char *isl_basic_set_get_tuple_name(__isl_keep isl_basic_set *bset)
 {
 	return bset ? isl_dim_get_tuple_name(bset->dim, isl_dim_set) : NULL;
@@ -483,6 +524,50 @@ __isl_give isl_set *isl_set_set_dim_name(__isl_take isl_set *set,
 	enum isl_dim_type type, unsigned pos, const char *s)
 {
 	return (isl_set *)isl_map_set_dim_name((isl_map *)set, type, pos, s);
+}
+
+__isl_give isl_id *isl_map_get_dim_id(__isl_keep isl_map *map,
+	enum isl_dim_type type, unsigned pos)
+{
+	return map ? isl_dim_get_dim_id(map->dim, type, pos) : NULL;
+}
+
+__isl_give isl_id *isl_set_get_dim_id(__isl_keep isl_set *set,
+	enum isl_dim_type type, unsigned pos)
+{
+	return isl_map_get_dim_id(set, type, pos);
+}
+
+__isl_give isl_map *isl_map_set_dim_id(__isl_take isl_map *map,
+	enum isl_dim_type type, unsigned pos, __isl_take isl_id *id)
+{
+	map = isl_map_cow(map);
+	if (!map)
+		return isl_id_free(id);
+
+	map->dim = isl_dim_set_dim_id(map->dim, type, pos, id);
+
+	return isl_map_reset_dim(map, isl_dim_copy(map->dim));
+}
+
+__isl_give isl_set *isl_set_set_dim_id(__isl_take isl_set *set,
+	enum isl_dim_type type, unsigned pos, __isl_take isl_id *id)
+{
+	return isl_map_set_dim_id(set, type, pos, id);
+}
+
+int isl_map_find_dim_by_id(__isl_keep isl_map *map, enum isl_dim_type type,
+	__isl_keep isl_id *id)
+{
+	if (!map)
+		return -1;
+	return isl_dim_find_dim_by_id(map->dim, type, id);
+}
+
+int isl_set_find_dim_by_id(__isl_keep isl_set *set, enum isl_dim_type type,
+	__isl_keep isl_id *id)
+{
+	return isl_map_find_dim_by_id(set, type, id);
 }
 
 int isl_basic_map_is_rational(__isl_keep isl_basic_map *bmap)
@@ -1860,7 +1945,7 @@ void isl_basic_map_print_internal(struct isl_basic_map *bmap,
 			"flags: %x, n_name: %d\n",
 		bmap->ref,
 		bmap->dim->nparam, bmap->dim->n_in, bmap->dim->n_out,
-		bmap->extra, bmap->flags, bmap->dim->n_name);
+		bmap->extra, bmap->flags, bmap->dim->n_id);
 	dump(bmap, out, indent);
 }
 
@@ -2043,7 +2128,7 @@ void isl_map_print_internal(struct isl_map *map, FILE *out, int indent)
 	fprintf(out, "ref: %d, n: %d, nparam: %d, in: %d, out: %d, "
 		     "flags: %x, n_name: %d\n",
 			map->ref, map->n, map->dim->nparam, map->dim->n_in,
-			map->dim->n_out, map->flags, map->dim->n_name);
+			map->dim->n_out, map->flags, map->dim->n_id);
 	for (i = 0; i < map->n; ++i) {
 		fprintf(out, "%*s", indent, "");
 		fprintf(out, "basic map %d:\n", i);

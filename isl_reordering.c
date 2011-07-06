@@ -103,25 +103,27 @@ __isl_give isl_reordering *isl_parameter_alignment_reordering(
 	exp->dim = isl_dim_copy(aligner);
 
 	for (i = 0; i < alignee->nparam; ++i) {
-		const char *name_i;
-		name_i = isl_dim_get_name(alignee, isl_dim_param, i);
-		if (!name_i)
+		isl_id *id_i;
+		id_i = isl_dim_get_dim_id(alignee, isl_dim_param, i);
+		if (!id_i)
 			isl_die(alignee->ctx, isl_error_invalid,
 				"cannot align unnamed parameters", goto error);
 		for (j = 0; j < aligner->nparam; ++j) {
-			const char *name_j;
-			name_j = isl_dim_get_name(aligner, isl_dim_param, j);
-			if (name_i == name_j)
+			isl_id *id_j;
+			id_j = isl_dim_get_dim_id(aligner, isl_dim_param, j);
+			isl_id_free(id_j);
+			if (id_i == id_j)
 				break;
 		}
-		if (j < aligner->nparam)
+		if (j < aligner->nparam) {
 			exp->pos[i] = j;
-		else {
+			isl_id_free(id_i);
+		} else {
 			int pos;
 			pos = isl_dim_size(exp->dim, isl_dim_param);
 			exp->dim = isl_dim_add(exp->dim, isl_dim_param, 1);
-			exp->dim = isl_dim_set_name(exp->dim,
-						isl_dim_param, pos, name_i);
+			exp->dim = isl_dim_set_dim_id(exp->dim,
+						isl_dim_param, pos, id_i);
 			exp->pos[i] = pos;
 		}
 	}

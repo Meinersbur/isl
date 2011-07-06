@@ -88,8 +88,8 @@ libisl_la_SOURCES = \
 	isl_mat_private.h \
 	isl_morph.c \
 	isl_morph.h \
-	isl_name.c \
-	isl_name.h \
+	isl_id.c \
+	isl_id_private.h \
 	isl_obj.c \
 	isl_options.c \
 	isl_output.c \
@@ -199,6 +199,7 @@ pkginclude_HEADERS = \
 	include/isl/dim.h \
 	include/isl/div.h \
 	include/isl/flow.h \
+	include/isl/id.h \
 	include/isl/ilp.h \
 	include/isl/int.h \
 	include/isl/hash.h \

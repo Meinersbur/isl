@@ -428,6 +428,32 @@ a C<NULL> value for an C<__isl_take> argument.
 
 =back
 
+=head2 Identifiers
+
+Identifiers are used to identify both individual dimensions
+and tuples of dimensions.  They consist of a name and an optional
+pointer.  Identifiers with the same name but different pointer values
+are considered to be distinct.
+Identifiers can be constructed, copied, freed, inspected and printed
+using the following functions.
+
+	#include <isl/id.h>
+	__isl_give isl_id *isl_id_alloc(isl_ctx *ctx,
+		__isl_keep const char *name, void *user);
+	__isl_give isl_id *isl_id_copy(isl_id *id);
+	void *isl_id_free(__isl_take isl_id *id);
+
+	isl_ctx *isl_id_get_ctx(__isl_keep isl_id *id);
+	void *isl_id_get_user(__isl_keep isl_id *id);
+	__isl_keep const char *isl_id_get_name(__isl_keep isl_id *id);
+
+	__isl_give isl_printer *isl_printer_print_id(
+		__isl_take isl_printer *p, __isl_keep isl_id *id);
+
+Note that C<isl_id_get_name> returns a pointer to some internal
+data structure, so the result can only be used while the
+corresponding C<isl_id> is alive.
+
 =head2 Dimension Specifications
 
 Whenever a new set or relation is created from scratch,
@@ -505,10 +531,17 @@ specification of the original object.
 	__isl_give isl_dim *isl_point_get_dim(
 		__isl_keep isl_point *pnt);
 
-The names of the individual dimensions may be set or read off
+The identifiers or names of the individual dimensions may be set or read off
 using the following functions.
 
 	#include <isl/dim.h>
+	__isl_give isl_dim *isl_dim_set_dim_id(
+		__isl_take isl_dim *dim,
+		enum isl_dim_type type, unsigned pos,
+		__isl_take isl_id *id);
+	__isl_give isl_id *isl_dim_get_dim_id(
+		__isl_keep isl_dim *dim,
+		enum isl_dim_type type, unsigned pos);
 	__isl_give isl_dim *isl_dim_set_name(__isl_take isl_dim *dim,
 				 enum isl_dim_type type, unsigned pos,
 				 __isl_keep const char *name);
@@ -527,10 +560,24 @@ have different parameters (as long as they are named), in which case
 the result will have as parameters the union of the parameters of
 the arguments.
 
-The names of entire spaces may be set or read off
+Given the identifier of a dimension (typically a parameter),
+its position can be obtained from the following function.
+
+	#include <isl/dim.h>
+	int isl_dim_find_dim_by_id(__isl_keep isl_dim *dim,
+		enum isl_dim_type type, __isl_keep isl_id *id);
+
+The identifiers or names of entire spaces may be set or read off
 using the following functions.
 
 	#include <isl/dim.h>
+	__isl_give isl_dim *isl_dim_set_tuple_id(
+		__isl_take isl_dim *dim,
+		enum isl_dim_type type, __isl_take isl_id *id);
+	__isl_give isl_dim *isl_dim_reset_tuple_id(
+		__isl_take isl_dim *dim, enum isl_dim_type type);
+	__isl_give isl_id *isl_dim_get_tuple_id(
+		__isl_keep isl_dim *dim, enum isl_dim_type type);
 	__isl_give isl_dim *isl_dim_set_tuple_name(
 		__isl_take isl_dim *dim,
 		enum isl_dim_type type, const char *s);
@@ -1267,8 +1314,20 @@ constraints.  Instead the following functions can be used.
 	int isl_map_involves_dims(__isl_keep isl_map *map,
 		enum isl_dim_type type, unsigned first, unsigned n);
 
-The names of the domain and range spaces of a set or relation can be
-read off or set using the following functions.
+The identifiers or names of the domain and range spaces of a set
+or relation can be read off or set using the following functions.
+
+	__isl_give isl_set *isl_set_set_tuple_id(
+		__isl_take isl_set *set, __isl_take isl_id *id);
+	__isl_give isl_id *isl_set_get_tuple_id(
+		__isl_keep isl_set *set);
+	__isl_give isl_map *isl_map_set_tuple_id(
+		__isl_take isl_map *map, enum isl_dim_type type,
+		__isl_take isl_id *id);
+	__isl_give isl_map *isl_map_reset_tuple_id(
+		__isl_take isl_map *map, enum isl_dim_type type);
+	__isl_give isl_id *isl_map_get_tuple_id(
+		__isl_keep isl_map *map, enum isl_dim_type type);
 
 	const char *isl_basic_set_get_tuple_name(
 		__isl_keep isl_basic_set *bset);
@@ -1285,8 +1344,26 @@ read off or set using the following functions.
 
 As with C<isl_dim_get_tuple_name>, the value returned points to
 an internal data structure.
-The names of individual dimensions can be read off using
-the following functions.
+The identifiers, positions or names of individual dimensions can be
+read off using the following functions.
+
+	__isl_give isl_set *isl_set_set_dim_id(
+		__isl_take isl_set *set, enum isl_dim_type type,
+		unsigned pos, __isl_take isl_id *id);
+	__isl_give isl_id *isl_set_get_dim_id(
+		__isl_keep isl_set *set, enum isl_dim_type type,
+		unsigned pos);
+	__isl_give isl_map *isl_map_set_dim_id(
+		__isl_take isl_map *map, enum isl_dim_type type,
+		unsigned pos, __isl_take isl_id *id);
+	__isl_give isl_id *isl_map_get_dim_id(
+		__isl_keep isl_map *map, enum isl_dim_type type,
+		unsigned pos);
+
+	int isl_set_find_dim_by_id(__isl_keep isl_set *set,
+		enum isl_dim_type type, __isl_keep isl_id *id);
+	int isl_map_find_dim_by_id(__isl_keep isl_map *map,
+		enum isl_dim_type type, __isl_keep isl_id *id);
 
 	const char *isl_constraint_get_dim_name(
 		__isl_keep isl_constraint *constraint,
@@ -1304,8 +1381,8 @@ the following functions.
 		__isl_keep isl_map *map,
 		enum isl_dim_type type, unsigned pos);
 
-These functions are mostly useful to obtain the names
-of the parameters.
+These functions are mostly useful to obtain the identifiers, positions
+or names of the parameters.
 
 =head2 Properties
 
@@ -2340,6 +2417,9 @@ The expression can be inspected using
 It can be modified using
 
 	#include <isl/aff.h>
+	__isl_give isl_pw_aff *isl_pw_aff_set_tuple_id(
+		__isl_take isl_pw_aff *pwaff,
+		__isl_take isl_id *id);
 	__isl_give isl_aff *isl_aff_set_dim_name(
 		__isl_take isl_aff *aff, enum isl_dim_type type,
 		unsigned pos, const char *s);

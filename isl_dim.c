@@ -12,7 +12,7 @@
 
 #include <stdlib.h>
 #include <isl_dim_private.h>
-#include "isl_name.h"
+#include <isl_id_private.h>
 #include <isl_reordering.h>
 
 isl_ctx *isl_dim_get_ctx(__isl_keep isl_dim *dim)
@@ -36,14 +36,14 @@ struct isl_dim *isl_dim_alloc(struct isl_ctx *ctx,
 	dim->n_in = n_in;
 	dim->n_out = n_out;
 
-	dim->tuple_name[0] = NULL;
-	dim->tuple_name[1] = NULL;
+	dim->tuple_id[0] = NULL;
+	dim->tuple_id[1] = NULL;
 
 	dim->nested[0] = NULL;
 	dim->nested[1] = NULL;
 
-	dim->n_name = 0;
-	dim->names = NULL;
+	dim->n_id = 0;
+	dim->ids = NULL;
 
 	return dim;
 }
@@ -75,32 +75,32 @@ static unsigned global_pos(struct isl_dim *dim,
 	return isl_dim_total(dim);
 }
 
-/* Extend length of names array to the total number of dimensions.
+/* Extend length of ids array to the total number of dimensions.
  */
-static __isl_give isl_dim *extend_names(__isl_take isl_dim *dim)
+static __isl_give isl_dim *extend_ids(__isl_take isl_dim *dim)
 {
-	struct isl_name **names;
+	isl_id **ids;
 	int i;
 
-	if (isl_dim_total(dim) <= dim->n_name)
+	if (isl_dim_total(dim) <= dim->n_id)
 		return dim;
 
-	if (!dim->names) {
-		dim->names = isl_calloc_array(dim->ctx,
-				struct isl_name *, isl_dim_total(dim));
-		if (!dim->names)
+	if (!dim->ids) {
+		dim->ids = isl_calloc_array(dim->ctx,
+				isl_id *, isl_dim_total(dim));
+		if (!dim->ids)
 			goto error;
 	} else {
-		names = isl_realloc_array(dim->ctx, dim->names,
-				struct isl_name *, isl_dim_total(dim));
-		if (!names)
+		ids = isl_realloc_array(dim->ctx, dim->ids,
+				isl_id *, isl_dim_total(dim));
+		if (!ids)
 			goto error;
-		dim->names = names;
-		for (i = dim->n_name; i < isl_dim_total(dim); ++i)
-			dim->names[i] = NULL;
+		dim->ids = ids;
+		for (i = dim->n_id; i < isl_dim_total(dim); ++i)
+			dim->ids[i] = NULL;
 	}
 
-	dim->n_name = isl_dim_total(dim);
+	dim->n_id = isl_dim_total(dim);
 
 	return dim;
 error:
@@ -108,11 +108,9 @@ error:
 	return NULL;
 }
 
-static struct isl_dim *set_name(struct isl_dim *dim,
-				 enum isl_dim_type type, unsigned pos,
-				 struct isl_name *name)
+static __isl_give isl_dim *set_id(__isl_take isl_dim *dim,
+	enum isl_dim_type type, unsigned pos, __isl_take isl_id *id)
 {
-	struct isl_ctx *ctx = dim->ctx;
 	dim = isl_dim_cow(dim);
 
 	if (!dim)
@@ -122,24 +120,24 @@ static struct isl_dim *set_name(struct isl_dim *dim,
 	if (pos == isl_dim_total(dim))
 		goto error;
 
-	if (pos >= dim->n_name) {
-		if (!name)
+	if (pos >= dim->n_id) {
+		if (!id)
 			return dim;
-		dim = extend_names(dim);
+		dim = extend_ids(dim);
 		if (!dim)
 			goto error;
 	}
 
-	dim->names[pos] = name;
+	dim->ids[pos] = id;
 
 	return dim;
 error:
-	isl_name_free(ctx, name);
+	isl_id_free(id);
 	isl_dim_free(dim);
 	return NULL;
 }
 
-static struct isl_name *get_name(struct isl_dim *dim,
+static __isl_keep isl_id *get_id(__isl_keep isl_dim *dim,
 				 enum isl_dim_type type, unsigned pos)
 {
 	if (!dim)
@@ -148,9 +146,9 @@ static struct isl_name *get_name(struct isl_dim *dim,
 	pos = global_pos(dim, type, pos);
 	if (pos == isl_dim_total(dim))
 		return NULL;
-	if (pos >= dim->n_name)
+	if (pos >= dim->n_id)
 		return NULL;
-	return dim->names[pos];
+	return dim->ids[pos];
 }
 
 static unsigned offset(struct isl_dim *dim, enum isl_dim_type type)
@@ -188,22 +186,21 @@ unsigned isl_dim_offset(__isl_keep isl_dim *dim, enum isl_dim_type type)
 	return offset(dim, type);
 }
 
-static struct isl_dim *copy_names(struct isl_dim *dst,
-	enum isl_dim_type dst_type, unsigned offset, struct isl_dim *src,
+static __isl_give isl_dim *copy_ids(__isl_take isl_dim *dst,
+	enum isl_dim_type dst_type, unsigned offset, __isl_keep isl_dim *src,
 	enum isl_dim_type src_type)
 {
 	int i;
-	struct isl_name *name;
+	isl_id *id;
 
 	if (!dst)
 		return NULL;
 
 	for (i = 0; i < n(src, src_type); ++i) {
-		name = get_name(src, src_type, i);
-		if (!name)
+		id = get_id(src, src_type, i);
+		if (!id)
 			continue;
-		dst = set_name(dst, dst_type, offset + i,
-					isl_name_copy(dst->ctx, name));
+		dst = set_id(dst, dst_type, offset + i, isl_id_copy(id));
 		if (!dst)
 			return NULL;
 	}
@@ -216,21 +213,21 @@ struct isl_dim *isl_dim_dup(struct isl_dim *dim)
 	if (!dim)
 		return NULL;
 	dup = isl_dim_alloc(dim->ctx, dim->nparam, dim->n_in, dim->n_out);
-	if (dim->tuple_name[0] &&
-	    !(dup->tuple_name[0] = isl_name_copy(dim->ctx, dim->tuple_name[0])))
+	if (dim->tuple_id[0] &&
+	    !(dup->tuple_id[0] = isl_id_copy(dim->tuple_id[0])))
 		goto error;
-	if (dim->tuple_name[1] &&
-	    !(dup->tuple_name[1] = isl_name_copy(dim->ctx, dim->tuple_name[1])))
+	if (dim->tuple_id[1] &&
+	    !(dup->tuple_id[1] = isl_id_copy(dim->tuple_id[1])))
 		goto error;
 	if (dim->nested[0] && !(dup->nested[0] = isl_dim_copy(dim->nested[0])))
 		goto error;
 	if (dim->nested[1] && !(dup->nested[1] = isl_dim_copy(dim->nested[1])))
 		goto error;
-	if (!dim->names)
+	if (!dim->ids)
 		return dup;
-	dup = copy_names(dup, isl_dim_param, 0, dim, isl_dim_param);
-	dup = copy_names(dup, isl_dim_in, 0, dim, isl_dim_in);
-	dup = copy_names(dup, isl_dim_out, 0, dim, isl_dim_out);
+	dup = copy_ids(dup, isl_dim_param, 0, dim, isl_dim_param);
+	dup = copy_ids(dup, isl_dim_in, 0, dim, isl_dim_in);
+	dup = copy_ids(dup, isl_dim_out, 0, dim, isl_dim_out);
 	return dup;
 error:
 	isl_dim_free(dup);
@@ -267,15 +264,15 @@ void isl_dim_free(struct isl_dim *dim)
 	if (--dim->ref > 0)
 		return;
 
-	isl_name_free(dim->ctx, dim->tuple_name[0]);
-	isl_name_free(dim->ctx, dim->tuple_name[1]);
+	isl_id_free(dim->tuple_id[0]);
+	isl_id_free(dim->tuple_id[1]);
 
 	isl_dim_free(dim->nested[0]);
 	isl_dim_free(dim->nested[1]);
 
-	for (i = 0; i < dim->n_name; ++i)
-		isl_name_free(dim->ctx, dim->names[i]);
-	free(dim->names);
+	for (i = 0; i < dim->n_id; ++i)
+		isl_id_free(dim->ids[i]);
+	free(dim->ids);
 	isl_ctx_deref(dim->ctx);
 	
 	free(dim);
@@ -294,11 +291,40 @@ static int name_ok(isl_ctx *ctx, const char *s)
 	return 1;
 }
 
-__isl_give isl_dim *isl_dim_set_tuple_name(__isl_take isl_dim *dim,
-	enum isl_dim_type type, const char *s)
+__isl_give isl_id *isl_dim_get_tuple_id(__isl_keep isl_dim *dim,
+	enum isl_dim_type type)
 {
-	struct isl_name *name;
+	if (!dim)
+		return NULL;
+	if (type != isl_dim_in && type != isl_dim_out)
+		return NULL;
+	return isl_id_copy(dim->tuple_id[type - isl_dim_in]);
+}
 
+__isl_give isl_dim *isl_dim_set_tuple_id(__isl_take isl_dim *dim,
+	enum isl_dim_type type, __isl_take isl_id *id)
+{
+	dim = isl_dim_cow(dim);
+	if (!dim || !id)
+		goto error;
+	if (type != isl_dim_in && type != isl_dim_out)
+		isl_die(dim->ctx, isl_error_invalid,
+			"only input, output and set tuples can have names",
+			goto error);
+
+	isl_id_free(dim->tuple_id[type - isl_dim_in]);
+	dim->tuple_id[type - isl_dim_in] = id;
+
+	return dim;
+error:
+	isl_id_free(id);
+	isl_dim_free(dim);
+	return NULL;
+}
+
+__isl_give isl_dim *isl_dim_reset_tuple_id(__isl_take isl_dim *dim,
+	enum isl_dim_type type)
+{
 	dim = isl_dim_cow(dim);
 	if (!dim)
 		return NULL;
@@ -306,20 +332,52 @@ __isl_give isl_dim *isl_dim_set_tuple_name(__isl_take isl_dim *dim,
 		isl_die(dim->ctx, isl_error_invalid,
 			"only input, output and set tuples can have names",
 			goto error);
-	if (!s) {
-		name = NULL;
-	} else {
-		if (!name_ok(dim->ctx, s))
-			goto error;
-		name = isl_name_get(dim->ctx, s);
-		if (!name)
-			goto error;
-	}
 
-	isl_name_free(dim->ctx, dim->tuple_name[type - isl_dim_in]);
-	dim->tuple_name[type - isl_dim_in] = name;
+	isl_id_free(dim->tuple_id[type - isl_dim_in]);
+	dim->tuple_id[type - isl_dim_in] = NULL;
 
 	return dim;
+error:
+	isl_dim_free(dim);
+	return NULL;
+}
+
+__isl_give isl_dim *isl_dim_set_dim_id(__isl_take isl_dim *dim,
+	enum isl_dim_type type, unsigned pos, __isl_take isl_id *id)
+{
+	dim = isl_dim_cow(dim);
+	if (!dim || !id)
+		goto error;
+	isl_id_free(get_id(dim, type, pos));
+	return set_id(dim, type, pos, id);
+error:
+	isl_id_free(id);
+	isl_dim_free(dim);
+	return NULL;
+}
+
+__isl_give isl_id *isl_dim_get_dim_id(__isl_keep isl_dim *dim,
+	enum isl_dim_type type, unsigned pos)
+{
+	return isl_id_copy(get_id(dim, type, pos));
+}
+
+__isl_give isl_dim *isl_dim_set_tuple_name(__isl_take isl_dim *dim,
+	enum isl_dim_type type, const char *s)
+{
+	isl_id *id;
+
+	if (!dim)
+		return NULL;
+
+	if (!s)
+		return isl_dim_reset_tuple_id(dim, type);
+
+	if (!name_ok(dim->ctx, s))
+		goto error;
+
+	id = isl_id_alloc(dim->ctx, s, NULL);
+	return isl_dim_set_tuple_id(dim, type, id);
 error:
 	isl_dim_free(dim);
 	return NULL;
@@ -328,30 +386,27 @@ error:
 const char *isl_dim_get_tuple_name(__isl_keep isl_dim *dim,
 	 enum isl_dim_type type)
 {
-	struct isl_name *name;
+	isl_id *id;
 	if (!dim)
 		return NULL;
 	if (type != isl_dim_in && type != isl_dim_out)
 		return NULL;
-	name = dim->tuple_name[type - isl_dim_in];
-	return name ? name->name : NULL;
+	id = dim->tuple_id[type - isl_dim_in];
+	return id ? id->name : NULL;
 }
 
 struct isl_dim *isl_dim_set_name(struct isl_dim *dim,
 				 enum isl_dim_type type, unsigned pos,
 				 const char *s)
 {
-	struct isl_name *name;
+	isl_id *id;
 
 	if (!dim)
 		return NULL;
 	if (!name_ok(dim->ctx, s))
 		goto error;
-	isl_name_free(dim->ctx, get_name(dim, type, pos));
-	name = isl_name_get(dim->ctx, s);
-	if (!name)
-		goto error;
-	return set_name(dim, type, pos, name);
+	id = isl_id_alloc(dim->ctx, s, NULL);
+	return isl_dim_set_dim_id(dim, type, pos, id);
 error:
 	isl_dim_free(dim);
 	return NULL;
@@ -360,19 +415,38 @@ error:
 const char *isl_dim_get_name(struct isl_dim *dim,
 				 enum isl_dim_type type, unsigned pos)
 {
-	struct isl_name *name = get_name(dim, type, pos);
-	return name ? name->name : NULL;
+	isl_id *id = get_id(dim, type, pos);
+	return id ? id->name : NULL;
 }
 
-static struct isl_name *tuple_name(__isl_keep isl_dim *dim,
+int isl_dim_find_dim_by_id(__isl_keep isl_dim *dim, enum isl_dim_type type,
+	__isl_keep isl_id *id)
+{
+	int i;
+	int offset;
+	int n;
+
+	if (!dim || !id)
+		return -1;
+
+	offset = isl_dim_offset(dim, type);
+	n = isl_dim_size(dim, type);
+	for (i = 0; i < n && offset + i < dim->n_id; ++i)
+		if (dim->ids[offset + i] == id)
+			return i;
+
+	return -1;
+}
+
+static __isl_keep isl_id *tuple_id(__isl_keep isl_dim *dim,
 	enum isl_dim_type type)
 {
 	if (!dim)
 		return NULL;
 	if (type == isl_dim_in)
-		return dim->tuple_name[0];
+		return dim->tuple_id[0];
 	if (type == isl_dim_out)
-		return dim->tuple_name[1];
+		return dim->tuple_id[1];
 	return NULL;
 }
 
@@ -391,16 +465,16 @@ static __isl_keep isl_dim *nested(__isl_keep isl_dim *dim,
 int isl_dim_tuple_match(__isl_keep isl_dim *dim1, enum isl_dim_type dim1_type,
 			__isl_keep isl_dim *dim2, enum isl_dim_type dim2_type)
 {
-	struct isl_name *name1, *name2;
+	isl_id *id1, *id2;
 	isl_dim *nested1, *nested2;
 
 	if (n(dim1, dim1_type) != n(dim2, dim2_type))
 		return 0;
-	name1 = tuple_name(dim1, dim1_type);
-	name2 = tuple_name(dim2, dim2_type);
-	if (!name1 ^ !name2)
+	id1 = tuple_id(dim1, dim1_type);
+	id2 = tuple_id(dim2, dim2_type);
+	if (!id1 ^ !id2)
 		return 0;
-	if (name1 && name1->name != name2->name)
+	if (id1 && id1 != id2)
 		return 0;
 	nested1 = nested(dim1, dim1_type);
 	nested2 = nested(dim2, dim2_type);
@@ -419,12 +493,11 @@ static int match(struct isl_dim *dim1, enum isl_dim_type dim1_type,
 	if (!isl_dim_tuple_match(dim1, dim1_type, dim2, dim2_type))
 		return 0;
 
-	if (!dim1->names && !dim2->names)
+	if (!dim1->ids && !dim2->ids)
 		return 1;
 
 	for (i = 0; i < n(dim1, dim1_type); ++i) {
-		if (get_name(dim1, dim1_type, i) !=
-		    get_name(dim2, dim2_type, i))
+		if (get_id(dim1, dim1_type, i) != get_id(dim2, dim2_type, i))
 			return 0;
 	}
 	return 1;
@@ -436,19 +509,19 @@ int isl_dim_match(struct isl_dim *dim1, enum isl_dim_type dim1_type,
 	return match(dim1, dim1_type, dim2, dim2_type);
 }
 
-static void get_names(struct isl_dim *dim, enum isl_dim_type type,
-	unsigned first, unsigned n, struct isl_name **names)
+static void get_ids(struct isl_dim *dim, enum isl_dim_type type,
+	unsigned first, unsigned n, __isl_keep isl_id **ids)
 {
 	int i;
 
 	for (i = 0; i < n ; ++i)
-		names[i] = get_name(dim, type, first+i);
+		ids[i] = get_id(dim, type, first + i);
 }
 
 struct isl_dim *isl_dim_extend(struct isl_dim *dim,
 			unsigned nparam, unsigned n_in, unsigned n_out)
 {
-	struct isl_name **names = NULL;
+	isl_id **ids = NULL;
 
 	if (!dim)
 		return NULL;
@@ -461,18 +534,17 @@ struct isl_dim *isl_dim_extend(struct isl_dim *dim,
 
 	dim = isl_dim_cow(dim);
 
-	if (dim->names) {
-		names = isl_calloc_array(dim->ctx, struct isl_name *,
+	if (dim->ids) {
+		ids = isl_calloc_array(dim->ctx, isl_id *,
 					 nparam + n_in + n_out);
-		if (!names)
+		if (!ids)
 			goto error;
-		get_names(dim, isl_dim_param, 0, dim->nparam, names);
-		get_names(dim, isl_dim_in, 0, dim->n_in, names + nparam);
-		get_names(dim, isl_dim_out, 0, dim->n_out,
-				names + nparam + n_in);
-		free(dim->names);
-		dim->names = names;
-		dim->n_name = nparam + n_in + n_out;
+		get_ids(dim, isl_dim_param, 0, dim->nparam, ids);
+		get_ids(dim, isl_dim_in, 0, dim->n_in, ids + nparam);
+		get_ids(dim, isl_dim_out, 0, dim->n_out, ids + nparam + n_in);
+		free(dim->ids);
+		dim->ids = ids;
+		dim->n_id = nparam + n_in + n_out;
 	}
 	dim->nparam = nparam;
 	dim->n_in = n_in;
@@ -480,7 +552,7 @@ struct isl_dim *isl_dim_extend(struct isl_dim *dim,
 
 	return dim;
 error:
-	free(names);
+	free(ids);
 	isl_dim_free(dim);
 	return NULL;
 }
@@ -534,7 +606,7 @@ static int valid_dim_type(enum isl_dim_type type)
 __isl_give isl_dim *isl_dim_insert(__isl_take isl_dim *dim,
 	enum isl_dim_type type, unsigned pos, unsigned n)
 {
-	struct isl_name **names = NULL;
+	isl_id **ids = NULL;
 
 	if (!dim)
 		return NULL;
@@ -552,14 +624,14 @@ __isl_give isl_dim *isl_dim_insert(__isl_take isl_dim *dim,
 	if (!dim)
 		return NULL;
 
-	if (dim->names) {
+	if (dim->ids) {
 		enum isl_dim_type t;
 		int off;
 		int s[3];
 		int *size = s - isl_dim_param;
-		names = isl_calloc_array(dim->ctx, struct isl_name *,
+		ids = isl_calloc_array(dim->ctx, isl_id *,
 				     dim->nparam + dim->n_in + dim->n_out + n);
-		if (!names)
+		if (!ids)
 			goto error;
 		off = 0;
 		size[isl_dim_param] = dim->nparam;
@@ -567,18 +639,18 @@ __isl_give isl_dim *isl_dim_insert(__isl_take isl_dim *dim,
 		size[isl_dim_out] = dim->n_out;
 		for (t = isl_dim_param; t <= isl_dim_out; ++t) {
 			if (t != type) {
-				get_names(dim, t, 0, size[t], names + off);
+				get_ids(dim, t, 0, size[t], ids + off);
 				off += size[t];
 			} else {
-				get_names(dim, t, 0, pos, names + off);
+				get_ids(dim, t, 0, pos, ids + off);
 				off += pos + n;
-				get_names(dim, t, pos, size[t]-pos, names+off);
+				get_ids(dim, t, pos, size[t] - pos, ids + off);
 				off += size[t] - pos;
 			}
 		}
-		free(dim->names);
-		dim->names = names;
-		dim->n_name = dim->nparam + dim->n_in + dim->n_out + n;
+		free(dim->ids);
+		dim->ids = ids;
+		dim->n_id = dim->nparam + dim->n_in + dim->n_out + n;
 	}
 	switch (type) {
 	case isl_dim_param:	dim->nparam += n; break;
@@ -620,15 +692,15 @@ __isl_give isl_dim *isl_dim_move(__isl_take isl_dim *dim,
 	if (!dim)
 		return NULL;
 
-	if (dim->names) {
-		struct isl_name **names;
+	if (dim->ids) {
+		isl_id **ids;
 		enum isl_dim_type t;
 		int off;
 		int s[3];
 		int *size = s - isl_dim_param;
-		names = isl_calloc_array(dim->ctx, struct isl_name *,
+		ids = isl_calloc_array(dim->ctx, isl_id *,
 					 dim->nparam + dim->n_in + dim->n_out);
-		if (!names)
+		if (!ids)
 			goto error;
 		off = 0;
 		size[isl_dim_param] = dim->nparam;
@@ -636,27 +708,27 @@ __isl_give isl_dim *isl_dim_move(__isl_take isl_dim *dim,
 		size[isl_dim_out] = dim->n_out;
 		for (t = isl_dim_param; t <= isl_dim_out; ++t) {
 			if (t == dst_type) {
-				get_names(dim, t, 0, dst_pos, names + off);
+				get_ids(dim, t, 0, dst_pos, ids + off);
 				off += dst_pos;
-				get_names(dim, src_type, src_pos, n, names+off);
+				get_ids(dim, src_type, src_pos, n, ids + off);
 				off += n;
-				get_names(dim, t, dst_pos, size[t] - dst_pos,
-						names + off);
+				get_ids(dim, t, dst_pos, size[t] - dst_pos,
+						ids + off);
 				off += size[t] - dst_pos;
 			} else if (t == src_type) {
-				get_names(dim, t, 0, src_pos, names + off);
+				get_ids(dim, t, 0, src_pos, ids + off);
 				off += src_pos;
-				get_names(dim, t, src_pos + n,
-					    size[t] - src_pos - n, names + off);
+				get_ids(dim, t, src_pos + n,
+					    size[t] - src_pos - n, ids + off);
 				off += size[t] - src_pos - n;
 			} else {
-				get_names(dim, t, 0, size[t], names + off);
+				get_ids(dim, t, 0, size[t], ids + off);
 				off += size[t];
 			}
 		}
-		free(dim->names);
-		dim->names = names;
-		dim->n_name = dim->nparam + dim->n_in + dim->n_out;
+		free(dim->ids);
+		dim->ids = ids;
+		dim->n_id = dim->nparam + dim->n_in + dim->n_out;
 	}
 
 	switch (dst_type) {
@@ -708,15 +780,15 @@ struct isl_dim *isl_dim_join(struct isl_dim *left, struct isl_dim *right)
 	if (!dim)
 		goto error;
 
-	dim = copy_names(dim, isl_dim_param, 0, left, isl_dim_param);
-	dim = copy_names(dim, isl_dim_in, 0, left, isl_dim_in);
-	dim = copy_names(dim, isl_dim_out, 0, right, isl_dim_out);
+	dim = copy_ids(dim, isl_dim_param, 0, left, isl_dim_param);
+	dim = copy_ids(dim, isl_dim_in, 0, left, isl_dim_in);
+	dim = copy_ids(dim, isl_dim_out, 0, right, isl_dim_out);
 
-	if (dim && left->tuple_name[0] &&
-	    !(dim->tuple_name[0] = isl_name_copy(dim->ctx, left->tuple_name[0])))
+	if (dim && left->tuple_id[0] &&
+	    !(dim->tuple_id[0] = isl_id_copy(left->tuple_id[0])))
 		goto error;
-	if (dim && right->tuple_name[1] &&
-	    !(dim->tuple_name[1] = isl_name_copy(dim->ctx, right->tuple_name[1])))
+	if (dim && right->tuple_id[1] &&
+	    !(dim->tuple_id[1] = isl_id_copy(right->tuple_id[1])))
 		goto error;
 	if (dim && left->nested[0] &&
 	    !(dim->nested[0] = isl_dim_copy(left->nested[0])))
@@ -789,7 +861,7 @@ error:
 
 __isl_give isl_dim *isl_dim_map_from_set(__isl_take isl_dim *dim)
 {
-	struct isl_name **names = NULL;
+	isl_id **ids = NULL;
 
 	if (!dim)
 		return NULL;
@@ -799,23 +871,23 @@ __isl_give isl_dim *isl_dim_map_from_set(__isl_take isl_dim *dim)
 	dim = isl_dim_cow(dim);
 	if (!dim)
 		return NULL;
-	if (dim->names) {
-		names = isl_calloc_array(dim->ctx, struct isl_name *,
+	if (dim->ids) {
+		ids = isl_calloc_array(dim->ctx, isl_id *,
 					dim->nparam + dim->n_out + dim->n_out);
-		if (!names)
+		if (!ids)
 			goto error;
-		get_names(dim, isl_dim_param, 0, dim->nparam, names);
-		get_names(dim, isl_dim_out, 0, dim->n_out, names + dim->nparam);
+		get_ids(dim, isl_dim_param, 0, dim->nparam, ids);
+		get_ids(dim, isl_dim_out, 0, dim->n_out, ids + dim->nparam);
 	}
 	dim->n_in = dim->n_out;
-	if (names) {
-		free(dim->names);
-		dim->names = names;
-		dim->n_name = dim->nparam + dim->n_out + dim->n_out;
-		dim = copy_names(dim, isl_dim_out, 0, dim, isl_dim_in);
+	if (ids) {
+		free(dim->ids);
+		dim->ids = ids;
+		dim->n_id = dim->nparam + dim->n_out + dim->n_out;
+		dim = copy_ids(dim, isl_dim_out, 0, dim, isl_dim_in);
 	}
-	isl_name_free(dim->ctx, dim->tuple_name[0]);
-	dim->tuple_name[0] = isl_name_copy(dim->ctx, dim->tuple_name[1]);
+	isl_id_free(dim->tuple_id[0]);
+	dim->tuple_id[0] = isl_id_copy(dim->tuple_id[1]);
 	isl_dim_free(dim->nested[0]);
 	dim->nested[0] = isl_dim_copy(dim->nested[1]);
 	return dim;
@@ -824,13 +896,13 @@ error:
 	return NULL;
 }
 
-static struct isl_dim *set_names(struct isl_dim *dim, enum isl_dim_type type,
-	unsigned first, unsigned n, struct isl_name **names)
+static __isl_give isl_dim *set_ids(struct isl_dim *dim, enum isl_dim_type type,
+	unsigned first, unsigned n, __isl_take isl_id **ids)
 {
 	int i;
 
 	for (i = 0; i < n ; ++i)
-		dim = set_name(dim, type, first+i, names[i]);
+		dim = set_id(dim, type, first + i, ids[i]);
 
 	return dim;
 }
@@ -839,8 +911,8 @@ struct isl_dim *isl_dim_reverse(struct isl_dim *dim)
 {
 	unsigned t;
 	isl_dim *nested;
-	struct isl_name **names = NULL;
-	struct isl_name *name;
+	isl_id **ids = NULL;
+	isl_id *id;
 
 	if (!dim)
 		return NULL;
@@ -851,36 +923,36 @@ struct isl_dim *isl_dim_reverse(struct isl_dim *dim)
 	if (!dim)
 		return NULL;
 
-	name = dim->tuple_name[0];
-	dim->tuple_name[0] = dim->tuple_name[1];
-	dim->tuple_name[1] = name;
+	id = dim->tuple_id[0];
+	dim->tuple_id[0] = dim->tuple_id[1];
+	dim->tuple_id[1] = id;
 
 	nested = dim->nested[0];
 	dim->nested[0] = dim->nested[1];
 	dim->nested[1] = nested;
 
-	if (dim->names) {
-		names = isl_alloc_array(dim->ctx, struct isl_name *,
+	if (dim->ids) {
+		ids = isl_alloc_array(dim->ctx, isl_id *,
 					dim->n_in + dim->n_out);
-		if (!names)
+		if (!ids)
 			goto error;
-		get_names(dim, isl_dim_in, 0, dim->n_in, names);
-		get_names(dim, isl_dim_out, 0, dim->n_out, names + dim->n_in);
+		get_ids(dim, isl_dim_in, 0, dim->n_in, ids);
+		get_ids(dim, isl_dim_out, 0, dim->n_out, ids + dim->n_in);
 	}
 
 	t = dim->n_in;
 	dim->n_in = dim->n_out;
 	dim->n_out = t;
 
-	if (dim->names) {
-		dim = set_names(dim, isl_dim_out, 0, dim->n_out, names);
-		dim = set_names(dim, isl_dim_in, 0, dim->n_in, names + dim->n_out);
-		free(names);
+	if (dim->ids) {
+		dim = set_ids(dim, isl_dim_out, 0, dim->n_out, ids);
+		dim = set_ids(dim, isl_dim_in, 0, dim->n_in, ids + dim->n_out);
+		free(ids);
 	}
 
 	return dim;
 error:
-	free(names);
+	free(ids);
 	isl_dim_free(dim);
 	return NULL;
 }
@@ -904,25 +976,25 @@ struct isl_dim *isl_dim_drop(struct isl_dim *dim, enum isl_dim_type type,
 	dim = isl_dim_cow(dim);
 	if (!dim)
 		goto error;
-	if (dim->names) {
-		dim = extend_names(dim);
+	if (dim->ids) {
+		dim = extend_ids(dim);
 		if (!dim)
 			goto error;
 		for (i = 0; i < num; ++i)
-			isl_name_free(dim->ctx, get_name(dim, type, first+i));
+			isl_id_free(get_id(dim, type, first + i));
 		for (i = first+num; i < n(dim, type); ++i)
-			set_name(dim, type, i - num, get_name(dim, type, i));
+			set_id(dim, type, i - num, get_id(dim, type, i));
 		switch (type) {
 		case isl_dim_param:
-			get_names(dim, isl_dim_in, 0, dim->n_in,
-				dim->names + offset(dim, isl_dim_in) - num);
+			get_ids(dim, isl_dim_in, 0, dim->n_in,
+				dim->ids + offset(dim, isl_dim_in) - num);
 		case isl_dim_in:
-			get_names(dim, isl_dim_out, 0, dim->n_out,
-				dim->names + offset(dim, isl_dim_out) - num);
+			get_ids(dim, isl_dim_out, 0, dim->n_out,
+				dim->ids + offset(dim, isl_dim_out) - num);
 		default:
 			;
 		}
-		dim->n_name -= num;
+		dim->n_id -= num;
 	}
 	switch (type) {
 	case isl_dim_param:	dim->nparam -= num; break;
@@ -1009,7 +1081,7 @@ struct isl_dim *isl_dim_underlying(struct isl_dim *dim, unsigned n_div)
 	if (!dim)
 		return NULL;
 	if (n_div == 0 &&
-	    dim->nparam == 0 && dim->n_in == 0 && dim->n_name == 0)
+	    dim->nparam == 0 && dim->n_in == 0 && dim->n_id == 0)
 		return isl_dim_reset(isl_dim_reset(dim, isl_dim_in), isl_dim_out);
 	dim = isl_dim_cow(dim);
 	if (!dim)
@@ -1018,9 +1090,9 @@ struct isl_dim *isl_dim_underlying(struct isl_dim *dim, unsigned n_div)
 	dim->nparam = 0;
 	dim->n_in = 0;
 
-	for (i = 0; i < dim->n_name; ++i)
-		isl_name_free(dim->ctx, get_name(dim, isl_dim_out, i));
-	dim->n_name = 0;
+	for (i = 0; i < dim->n_id; ++i)
+		isl_id_free(get_id(dim, isl_dim_out, i));
+	dim->n_id = 0;
 	dim = isl_dim_reset(dim, isl_dim_in);
 	dim = isl_dim_reset(dim, isl_dim_out);
 
@@ -1048,7 +1120,7 @@ int isl_dim_compatible(struct isl_dim *dim1, struct isl_dim *dim2)
 static uint32_t isl_hash_dim(uint32_t hash, __isl_keep isl_dim *dim)
 {
 	int i;
-	struct isl_name *name;
+	isl_id *id;
 
 	if (!dim)
 		return hash;
@@ -1058,14 +1130,14 @@ static uint32_t isl_hash_dim(uint32_t hash, __isl_keep isl_dim *dim)
 	hash = isl_hash_builtin(hash, dim->n_out);
 
 	for (i = 0; i < dim->nparam; ++i) {
-		name = get_name(dim, isl_dim_param, i);
-		hash = isl_hash_name(hash, name);
+		id = get_id(dim, isl_dim_param, i);
+		hash = isl_hash_id(hash, id);
 	}
 
-	name = tuple_name(dim, isl_dim_in);
-	hash = isl_hash_name(hash, name);
-	name = tuple_name(dim, isl_dim_out);
-	hash = isl_hash_name(hash, name);
+	id = tuple_id(dim, isl_dim_in);
+	hash = isl_hash_id(hash, id);
+	id = tuple_id(dim, isl_dim_out);
+	hash = isl_hash_id(hash, id);
 
 	hash = isl_hash_dim(hash, dim->nested[0]);
 	hash = isl_hash_dim(hash, dim->nested[1]);
@@ -1091,7 +1163,7 @@ int isl_dim_is_wrapping(__isl_keep isl_dim *dim)
 	if (!dim)
 		return -1;
 
-	if (dim->n_in != 0 || dim->tuple_name[0] || dim->nested[0])
+	if (dim->n_in != 0 || dim->tuple_id[0] || dim->nested[0])
 		return 0;
 
 	return dim->nested[1] != NULL;
@@ -1106,9 +1178,9 @@ __isl_give isl_dim *isl_dim_wrap(__isl_take isl_dim *dim)
 
 	wrap = isl_dim_alloc(dim->ctx, dim->nparam, 0, dim->n_in + dim->n_out);
 
-	wrap = copy_names(wrap, isl_dim_param, 0, dim, isl_dim_param);
-	wrap = copy_names(wrap, isl_dim_set, 0, dim, isl_dim_in);
-	wrap = copy_names(wrap, isl_dim_set, dim->n_in, dim, isl_dim_out);
+	wrap = copy_ids(wrap, isl_dim_param, 0, dim, isl_dim_param);
+	wrap = copy_ids(wrap, isl_dim_set, 0, dim, isl_dim_in);
+	wrap = copy_ids(wrap, isl_dim_set, dim->n_in, dim, isl_dim_out);
 
 	if (!wrap)
 		goto error;
@@ -1147,7 +1219,7 @@ int isl_dim_is_named_or_nested(__isl_keep isl_dim *dim, enum isl_dim_type type)
 		return 0;
 	if (!dim)
 		return -1;
-	if (dim->tuple_name[type - isl_dim_in])
+	if (dim->tuple_id[type - isl_dim_in])
 		return 1;
 	if (dim->nested[type - isl_dim_in])
 		return 1;
@@ -1175,8 +1247,8 @@ __isl_give isl_dim *isl_dim_reset(__isl_take isl_dim *dim,
 	if (!dim)
 		return NULL;
 
-	isl_name_free(dim->ctx, dim->tuple_name[type - isl_dim_in]);
-	dim->tuple_name[type - isl_dim_in] = NULL;
+	isl_id_free(dim->tuple_id[type - isl_dim_in]);
+	dim->tuple_id[type - isl_dim_in] = NULL;
 	isl_dim_free(dim->nested[type - isl_dim_in]);
 	dim->nested[type - isl_dim_in] = NULL;
 
@@ -1220,7 +1292,7 @@ __isl_give isl_dim *isl_dim_replace(__isl_take isl_dim *dst,
 
 	dst = isl_dim_drop(dst, type, 0, isl_dim_size(dst, type));
 	dst = isl_dim_add(dst, type, isl_dim_size(src, type));
-	dst = copy_names(dst, type, 0, src, type);
+	dst = copy_ids(dst, type, 0, src, type);
 
 	if (dst && type == isl_dim_param) {
 		int i;
@@ -1310,10 +1382,10 @@ int isl_dim_has_named_params(__isl_keep isl_dim *dim)
 	if (dim->nparam == 0)
 		return 1;
 	off = isl_dim_offset(dim, isl_dim_param);
-	if (off + dim->nparam > dim->n_name)
+	if (off + dim->nparam > dim->n_id)
 		return 0;
 	for (i = 0; i < dim->nparam; ++i)
-		if (!dim->names[off + i])
+		if (!dim->ids[off + i])
 			return 0;
 	return 1;
 }
