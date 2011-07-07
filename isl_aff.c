@@ -1,11 +1,14 @@
 /*
  * Copyright 2011      INRIA Saclay
+ * Copyright 2011      Universiteit Leiden
  *
  * Use of this software is governed by the GNU LGPLv2.1 license
  *
  * Written by Sven Verdoolaege, INRIA Saclay - Ile-de-France,
  * Parc Club Orsay Universite, ZAC des vignes, 4 rue Jacques Monod,
  * 91893 Orsay, France
+ * and Leiden Institute of Advanced Computer Science,
+ * Universiteit Leiden, Niels Bohrweg 1, 2333 CA Leiden, The Netherlands
  */
 
 #include <isl_map_private.h>
@@ -1081,10 +1084,14 @@ __isl_give isl_set *isl_pw_aff_nonneg_set(__isl_take isl_pw_aff *pwaff)
 }
 
 /* Return a set containing those elements in the shared domain
- * of pwaff1 and pwaff2 where pwaff1 is greater than or equal to pwaff2.
+ * of pwaff1 and pwaff2 where pwaff1 is greater than (or equal) to pwaff2.
+ *
+ * We compute the difference on the shared domain and then construct
+ * the set of values where this difference is non-negative.
+ * If strict is set, we first subtract 1 from the difference.
  */
-__isl_give isl_set *isl_pw_aff_ge_set(__isl_take isl_pw_aff *pwaff1,
-	__isl_take isl_pw_aff *pwaff2)
+static __isl_give isl_set *pw_aff_gte_set(__isl_take isl_pw_aff *pwaff1,
+	__isl_take isl_pw_aff *pwaff2, int strict)
 {
 	isl_set *set1, *set2;
 
@@ -1092,8 +1099,41 @@ __isl_give isl_set *isl_pw_aff_ge_set(__isl_take isl_pw_aff *pwaff1,
 	set2 = isl_pw_aff_domain(isl_pw_aff_copy(pwaff2));
 	set1 = isl_set_intersect(set1, set2);
 	pwaff1 = isl_pw_aff_intersect_domain(pwaff1, isl_set_copy(set1));
-	pwaff2 = isl_pw_aff_intersect_domain(pwaff2, set1);
+	pwaff2 = isl_pw_aff_intersect_domain(pwaff2, isl_set_copy(set1));
 	pwaff1 = isl_pw_aff_add(pwaff1, isl_pw_aff_neg(pwaff2));
 
+	if (strict) {
+		isl_dim *dim = isl_set_get_dim(set1);
+		isl_aff *aff;
+		aff = isl_aff_zero(isl_local_space_from_dim(dim));
+		aff = isl_aff_add_constant_si(aff, -1);
+		pwaff1 = isl_pw_aff_add(pwaff1, isl_pw_aff_alloc(set1, aff));
+	} else
+		isl_set_free(set1);
+
 	return isl_pw_aff_nonneg_set(pwaff1);
+}
+
+/* Return a set containing those elements in the shared domain
+ * of pwaff1 and pwaff2 where pwaff1 is greater than or equal to pwaff2.
+ */
+__isl_give isl_set *isl_pw_aff_ge_set(__isl_take isl_pw_aff *pwaff1,
+	__isl_take isl_pw_aff *pwaff2)
+{
+	return pw_aff_gte_set(pwaff1, pwaff2, 0);
+}
+
+/* Return a set containing those elements in the shared domain
+ * of pwaff1 and pwaff2 where pwaff1 is strictly greater than pwaff2.
+ */
+__isl_give isl_set *isl_pw_aff_gt_set(__isl_take isl_pw_aff *pwaff1,
+	__isl_take isl_pw_aff *pwaff2)
+{
+	return pw_aff_gte_set(pwaff1, pwaff2, 1);
+}
+
+__isl_give isl_set *isl_pw_aff_lt_set(__isl_take isl_pw_aff *pwaff1,
+	__isl_take isl_pw_aff *pwaff2)
+{
+	return isl_pw_aff_gt_set(pwaff2, pwaff1);
 }
