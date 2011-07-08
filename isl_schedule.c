@@ -2460,47 +2460,6 @@ __isl_give isl_union_map *isl_schedule_get_map(__isl_keep isl_schedule *sched)
 	return umap;
 }
 
-int isl_schedule_n_band(__isl_keep isl_schedule *sched)
-{
-	return sched ? sched->n_band : 0;
-}
-
-/* Construct a mapping that maps each domain to the band in its schedule
- * with the specified band index.  Note that bands with the same index
- * but for different domains do not need to be related.
- */
-__isl_give isl_union_map *isl_schedule_get_band(__isl_keep isl_schedule *sched,
-	unsigned band)
-{
-	int i;
-	isl_union_map *umap;
-
-	if (!sched)
-		return NULL;
-
-	umap = isl_union_map_empty(isl_dim_copy(sched->dim));
-	for (i = 0; i < sched->n; ++i) {
-		int start, end;
-		isl_map *map;
-
-		if (band >= sched->node[i].n_band)
-			continue;
-
-		start = band > 0 ? sched->node[i].band_end[band - 1] : 0;
-		end = sched->node[i].band_end[band];
-
-		map = isl_map_copy(sched->node[i].sched);
-
-		map = isl_map_project_out(map, isl_dim_out, end,
-					  sched->n_total_row - end);
-		map = isl_map_project_out(map, isl_dim_out, 0, start);
-
-		umap = isl_union_map_add_map(umap, map);
-	}
-
-	return umap;
-}
-
 static __isl_give isl_band_list *construct_band_list(
 	__isl_keep isl_schedule *schedule, __isl_keep isl_band *parent,
 	int band_nr, int *parent_active, int n_active);
