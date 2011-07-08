@@ -37,5 +37,7 @@ int isl_local_space_is_named_or_nested(__isl_keep isl_local_space *ls,
 
 __isl_give isl_local_space *isl_local_space_reset_dim(
 	__isl_take isl_local_space *ls, __isl_take isl_dim *dim);
+__isl_give isl_local_space *isl_local_space_realign(
+	__isl_take isl_local_space *ls, __isl_take isl_reordering *r);
 
 #endif

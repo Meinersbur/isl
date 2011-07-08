@@ -232,6 +232,67 @@ error:
 	return NULL;
 }
 
+/* Reorder the columns of the given div definitions according to the
+ * given reordering.
+ * The order of the divs themselves is assumed not to change.
+ */
+static __isl_give isl_mat *reorder_divs(__isl_take isl_mat *div,
+	__isl_take isl_reordering *r)
+{
+	int i, j;
+	isl_mat *mat;
+	int extra;
+
+	if (!div || !r)
+		goto error;
+
+	extra = isl_dim_total(r->dim) + div->n_row - r->len;
+	mat = isl_mat_alloc(div->ctx, div->n_row, div->n_col + extra);
+	if (!mat)
+		goto error;
+
+	for (i = 0; i < div->n_row; ++i) {
+		isl_seq_cpy(mat->row[i], div->row[i], 2);
+		isl_seq_clr(mat->row[i] + 2, mat->n_col - 2);
+		for (j = 0; j < r->len; ++j)
+			isl_int_set(mat->row[i][2 + r->pos[j]],
+				    div->row[i][2 + j]);
+	}
+
+	isl_reordering_free(r);
+	isl_mat_free(div);
+	return mat;
+error:
+	isl_reordering_free(r);
+	isl_mat_free(div);
+	return NULL;
+}
+
+/* Reorder the dimensions of "ls" according to the given reordering.
+ * The reordering r is assumed to have been extended with the local
+ * variables, leaving them in the same order.
+ */
+__isl_give isl_local_space *isl_local_space_realign(
+	__isl_take isl_local_space *ls, __isl_take isl_reordering *r)
+{
+	ls = isl_local_space_cow(ls);
+	if (!ls || !r)
+		goto error;
+
+	ls->div = reorder_divs(ls->div, isl_reordering_copy(r));
+	if (!ls->div)
+		goto error;
+
+	ls = isl_local_space_reset_dim(ls, isl_dim_copy(r->dim));
+
+	isl_reordering_free(r);
+	return ls;
+error:
+	isl_local_space_free(ls);
+	isl_reordering_free(r);
+	return NULL;
+}
+
 __isl_give isl_local_space *isl_local_space_add_div(
 	__isl_take isl_local_space *ls, __isl_take isl_vec *div)
 {
