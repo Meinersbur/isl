@@ -37,16 +37,49 @@ __isl_give isl_reordering *isl_reordering_copy(__isl_keep isl_reordering *exp)
 	return exp;
 }
 
-void isl_reordering_free(__isl_take isl_reordering *exp)
+__isl_give isl_reordering *isl_reordering_dup(__isl_keep isl_reordering *r)
+{
+	int i;
+	isl_reordering *dup;
+
+	if (!r)
+		return NULL;
+
+	dup = isl_reordering_alloc(r->dim->ctx, r->len);
+	if (!dup)
+		return NULL;
+
+	dup->dim = isl_dim_copy(r->dim);
+	if (!dup->dim)
+		return isl_reordering_free(dup);
+	for (i = 0; i < dup->len; ++i)
+		dup->pos[i] = r->pos[i];
+
+	return dup;
+}
+
+__isl_give isl_reordering *isl_reordering_cow(__isl_take isl_reordering *r)
+{
+	if (!r)
+		return NULL;
+
+	if (r->ref == 1)
+		return r;
+	r->ref--;
+	return isl_reordering_dup(r);
+}
+
+void *isl_reordering_free(__isl_take isl_reordering *exp)
 {
 	if (!exp)
-		return;
+		return NULL;
 
 	if (--exp->ref > 0)
-		return;
+		return NULL;
 
 	isl_dim_free(exp->dim);
 	free(exp);
+	return NULL;
 }
 
 /* Construct a reordering that maps the parameters of "alignee"
@@ -141,6 +174,7 @@ __isl_give isl_reordering *isl_reordering_extend_dim(
 
 	res = isl_reordering_extend(isl_reordering_copy(exp),
 					    isl_dim_total(dim) - exp->len);
+	res = isl_reordering_cow(res);
 	if (!res)
 		goto error;
 	isl_dim_free(res->dim);
