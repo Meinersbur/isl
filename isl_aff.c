@@ -150,6 +150,77 @@ const char *isl_aff_get_dim_name(__isl_keep isl_aff *aff,
 	return aff ? isl_local_space_get_dim_name(aff->ls, type, pos) : 0;
 }
 
+__isl_give isl_aff *isl_aff_reset_dim(__isl_take isl_aff *aff,
+	__isl_take isl_dim *dim)
+{
+	aff = isl_aff_cow(aff);
+	if (!aff || !dim)
+		goto error;
+
+	aff->ls = isl_local_space_reset_dim(aff->ls, dim);
+	if (!aff->ls)
+		return isl_aff_free(aff);
+
+	return aff;
+error:
+	isl_aff_free(aff);
+	isl_dim_free(dim);
+	return NULL;
+}
+
+/* Reorder the coefficients of the affine expression based
+ * on the given reodering.
+ * The reordering r is assumed to have been extended with the local
+ * variables.
+ */
+static __isl_give isl_vec *vec_reorder(__isl_take isl_vec *vec,
+	__isl_take isl_reordering *r, int n_div)
+{
+	isl_vec *res;
+	int i;
+
+	if (!vec || !r)
+		goto error;
+
+	res = isl_vec_alloc(vec->ctx, 2 + isl_dim_total(r->dim) + n_div);
+	isl_seq_cpy(res->el, vec->el, 2);
+	isl_seq_clr(res->el + 2, res->size - 2);
+	for (i = 0; i < r->len; ++i)
+		isl_int_set(res->el[2 + r->pos[i]], vec->el[2 + i]);
+
+	isl_reordering_free(r);
+	isl_vec_free(vec);
+	return res;
+error:
+	isl_vec_free(vec);
+	isl_reordering_free(r);
+	return NULL;
+}
+
+/* Reorder the dimensions of "aff" according to the given reordering.
+ */
+__isl_give isl_aff *isl_aff_realign(__isl_take isl_aff *aff,
+	__isl_take isl_reordering *r)
+{
+	aff = isl_aff_cow(aff);
+	if (!aff)
+		goto error;
+
+	r = isl_reordering_extend(r, aff->ls->div->n_row);
+	aff->v = vec_reorder(aff->v, isl_reordering_copy(r),
+				aff->ls->div->n_row);
+	aff->ls = isl_local_space_realign(aff->ls, r);
+
+	if (!aff->v || !aff->ls)
+		return isl_aff_free(aff);
+
+	return aff;
+error:
+	isl_aff_free(aff);
+	isl_reordering_free(r);
+	return NULL;
+}
+
 int isl_aff_plain_is_zero(__isl_keep isl_aff *aff)
 {
 	if (!aff)
@@ -935,10 +1006,8 @@ __isl_give isl_pw_aff *isl_pw_aff_add_dims(__isl_take isl_pw_aff *pwaff,
 #define NO_EVAL
 #define NO_OPT
 #define NO_MOVE_DIMS
-#define NO_REALIGN
 #define NO_LIFT
 #define NO_MORPH
-#define NO_RESET_DIM
 
 #include <isl_pw_templ.c>
 

@@ -986,6 +986,42 @@ error:
 	FN(PW,free)(pw);
 	return NULL;
 }
+
+/* Align the parameters of "pw" to those of "model".
+ */
+__isl_give PW *FN(PW,align_params)(__isl_take PW *pw, __isl_take isl_dim *model)
+{
+	isl_ctx *ctx;
+
+	if (!pw || !model)
+		goto error;
+
+	ctx = isl_dim_get_ctx(model);
+	if (!isl_dim_has_named_params(model))
+		isl_die(ctx, isl_error_invalid,
+			"model has unnamed parameters", goto error);
+	if (!isl_dim_has_named_params(pw->dim))
+		isl_die(ctx, isl_error_invalid,
+			"input has unnamed parameters", goto error);
+	if (!isl_dim_match(pw->dim, isl_dim_param, model, isl_dim_param)) {
+		isl_reordering *exp;
+
+		model = isl_dim_drop(model, isl_dim_in,
+					0, isl_dim_size(model, isl_dim_in));
+		model = isl_dim_drop(model, isl_dim_out,
+					0, isl_dim_size(model, isl_dim_out));
+		exp = isl_parameter_alignment_reordering(pw->dim, model);
+		exp = isl_reordering_extend_dim(exp, FN(PW,get_dim)(pw));
+		pw = FN(PW,realign)(pw, exp);
+	}
+
+	isl_dim_free(model);
+	return pw;
+error:
+	isl_dim_free(model);
+	FN(PW,free)(pw);
+	return NULL;
+}
 #endif
 
 __isl_give PW *FN(PW,mul_isl_int)(__isl_take PW *pw, isl_int v)

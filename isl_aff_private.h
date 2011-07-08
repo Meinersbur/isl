@@ -31,6 +31,11 @@ struct isl_pw_aff {
 
 __isl_give isl_aff *isl_aff_alloc(__isl_take isl_local_space *ls);
 
+__isl_give isl_aff *isl_aff_reset_dim(__isl_take isl_aff *aff,
+	__isl_take isl_dim *dim);
+__isl_give isl_aff *isl_aff_realign(__isl_take isl_aff *aff,
+	__isl_take isl_reordering *r);
+
 __isl_give isl_aff *isl_aff_expand_divs( __isl_take isl_aff *aff,
 	__isl_take isl_mat *div, int *exp);
 
