@@ -35,4 +35,7 @@ __isl_give isl_local_space *isl_local_space_substitute_equalities(
 int isl_local_space_is_named_or_nested(__isl_keep isl_local_space *ls,
 	enum isl_dim_type type);
 
+__isl_give isl_local_space *isl_local_space_reset_dim(
+	__isl_take isl_local_space *ls, __isl_take isl_dim *dim);
+
 #endif
