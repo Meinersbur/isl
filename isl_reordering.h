@@ -22,7 +22,7 @@ typedef struct isl_reordering isl_reordering;
 __isl_give isl_reordering *isl_parameter_alignment_reordering(
 	__isl_keep isl_dim *alignee, __isl_keep isl_dim *aligner);
 __isl_give isl_reordering *isl_reordering_copy(__isl_keep isl_reordering *exp);
-void isl_reordering_free(__isl_take isl_reordering *exp);
+void *isl_reordering_free(__isl_take isl_reordering *exp);
 __isl_give isl_reordering *isl_reordering_extend_dim(
 	__isl_take isl_reordering *exp, __isl_take isl_dim *dim);
 __isl_give isl_reordering *isl_reordering_extend(__isl_take isl_reordering *exp,
