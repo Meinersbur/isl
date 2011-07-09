@@ -810,6 +810,18 @@ __isl_give isl_basic_set *isl_aff_nonneg_basic_set(__isl_take isl_aff *aff)
 	return isl_basic_set_from_constraint(ineq);
 }
 
+/* Return a basic set containing those elements in the space
+ * of aff where it is zero.
+ */
+__isl_give isl_basic_set *isl_aff_zero_basic_set(__isl_take isl_aff *aff)
+{
+	isl_constraint *ineq;
+
+	ineq = isl_equality_from_aff(aff);
+
+	return isl_basic_set_from_constraint(ineq);
+}
+
 /* Return a basic set containing those elements in the shared space
  * of aff1 and aff2 where aff1 is greater than or equal to aff2.
  */
@@ -1152,15 +1164,45 @@ __isl_give isl_set *isl_pw_aff_nonneg_set(__isl_take isl_pw_aff *pwaff)
 	return set;
 }
 
+/* Return a set containing those elements in the domain
+ * of pwaff where it is zero.
+ */
+__isl_give isl_set *isl_pw_aff_zero_set(__isl_take isl_pw_aff *pwaff)
+{
+	int i;
+	isl_set *set;
+
+	if (!pwaff)
+		return NULL;
+
+	set = isl_set_empty(isl_pw_aff_get_dim(pwaff));
+
+	for (i = 0; i < pwaff->n; ++i) {
+		isl_basic_set *bset;
+		isl_set *set_i;
+
+		bset = isl_aff_zero_basic_set(isl_aff_copy(pwaff->p[i].aff));
+		set_i = isl_set_from_basic_set(bset);
+		set_i = isl_set_intersect(set_i, isl_set_copy(pwaff->p[i].set));
+		set = isl_set_union_disjoint(set, set_i);
+	}
+
+	isl_pw_aff_free(pwaff);
+
+	return set;
+}
+
 /* Return a set containing those elements in the shared domain
  * of pwaff1 and pwaff2 where pwaff1 is greater than (or equal) to pwaff2.
  *
  * We compute the difference on the shared domain and then construct
  * the set of values where this difference is non-negative.
  * If strict is set, we first subtract 1 from the difference.
+ * If equal is set, we only return the elements where pwaff1 and pwaff2
+ * are equal.
  */
 static __isl_give isl_set *pw_aff_gte_set(__isl_take isl_pw_aff *pwaff1,
-	__isl_take isl_pw_aff *pwaff2, int strict)
+	__isl_take isl_pw_aff *pwaff2, int strict, int equal)
 {
 	isl_set *set1, *set2;
 
@@ -1180,7 +1222,18 @@ static __isl_give isl_set *pw_aff_gte_set(__isl_take isl_pw_aff *pwaff1,
 	} else
 		isl_set_free(set1);
 
+	if (equal)
+		return isl_pw_aff_zero_set(pwaff1);
 	return isl_pw_aff_nonneg_set(pwaff1);
+}
+
+/* Return a set containing those elements in the shared domain
+ * of pwaff1 and pwaff2 where pwaff1 is equal to pwaff2.
+ */
+__isl_give isl_set *isl_pw_aff_eq_set(__isl_take isl_pw_aff *pwaff1,
+	__isl_take isl_pw_aff *pwaff2)
+{
+	return pw_aff_gte_set(pwaff1, pwaff2, 0, 1);
 }
 
 /* Return a set containing those elements in the shared domain
@@ -1189,7 +1242,7 @@ static __isl_give isl_set *pw_aff_gte_set(__isl_take isl_pw_aff *pwaff1,
 __isl_give isl_set *isl_pw_aff_ge_set(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
-	return pw_aff_gte_set(pwaff1, pwaff2, 0);
+	return pw_aff_gte_set(pwaff1, pwaff2, 0, 0);
 }
 
 /* Return a set containing those elements in the shared domain
@@ -1198,7 +1251,7 @@ __isl_give isl_set *isl_pw_aff_ge_set(__isl_take isl_pw_aff *pwaff1,
 __isl_give isl_set *isl_pw_aff_gt_set(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
-	return pw_aff_gte_set(pwaff1, pwaff2, 1);
+	return pw_aff_gte_set(pwaff1, pwaff2, 1, 0);
 }
 
 __isl_give isl_set *isl_pw_aff_lt_set(__isl_take isl_pw_aff *pwaff1,
