@@ -2605,13 +2605,6 @@ error:
 	return NULL;
 }
 
-__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_sub(
-	__isl_take isl_pw_qpolynomial *pwqp1,
-	__isl_take isl_pw_qpolynomial *pwqp2)
-{
-	return isl_pw_qpolynomial_add(pwqp1, isl_pw_qpolynomial_neg(pwqp2));
-}
-
 __isl_give struct isl_upoly *isl_upoly_eval(
 	__isl_take struct isl_upoly *up, __isl_take isl_vec *vec)
 {
