@@ -1067,3 +1067,8 @@ error:
 	FN(PW,free)(pw);
 	return NULL;
 }
+
+__isl_give PW *FN(PW,scale)(__isl_take PW *pw, isl_int v)
+{
+	return FN(PW,mul_isl_int)(pw, v);
+}
