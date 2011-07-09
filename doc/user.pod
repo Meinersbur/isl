@@ -2208,7 +2208,7 @@ be created using the following functions.
 	__isl_give isl_pw_aff *isl_pw_aff_alloc(
 		__isl_take isl_set *set, __isl_take isl_aff *aff);
 
-Quasi affine expressions can be copied and free using
+Quasi affine expressions can be copied and freed using
 
 	#include <isl/aff.h>
 	__isl_give isl_aff *isl_aff_copy(__isl_keep isl_aff *aff);
