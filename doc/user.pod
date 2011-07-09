@@ -87,6 +87,10 @@ is now expressed as the domain of the resulting relation.
 C<ISL_FORMAT_ISL> output has changed.
 Use C<ISL_FORMAT_C> to obtain the old output.
 
+=item * The C<*_fast_*> functions have been renamed to C<*_plain_*>.
+Some of the old names have been kept for backward compatibility,
+but they will be removed in the future.
+
 =back
 
 =head1 Installation
