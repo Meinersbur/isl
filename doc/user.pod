@@ -2400,6 +2400,14 @@ containing those elements in the shared domain
 of C<pwaff1> and C<pwaff2> where C<pwaff1> is greater than or equal to C<pwaff2>.
 
 	#include <isl/aff.h>
+	__isl_give isl_set *isl_pw_aff_nonneg_set(
+		__isl_take isl_pw_aff *pwaff);
+
+The function C<isl_pw_aff_nonneg_set> returns a set
+containing those elements in the domain
+of C<pwaff> where C<pwaff> is non-negative.
+
+	#include <isl/aff.h>
 	__isl_give isl_pw_aff *isl_pw_aff_max(
 		__isl_take isl_pw_aff *pwaff1,
 		__isl_take isl_pw_aff *pwaff2);
