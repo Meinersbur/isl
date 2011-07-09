@@ -113,6 +113,9 @@ __isl_give isl_pw_aff *isl_pw_aff_neg(__isl_take isl_pw_aff *pwaff);
 __isl_give isl_pw_aff *isl_pw_aff_ceil(__isl_take isl_pw_aff *pwaff);
 __isl_give isl_pw_aff *isl_pw_aff_floor(__isl_take isl_pw_aff *pwaff);
 
+__isl_give isl_pw_aff *isl_pw_aff_cond(__isl_take isl_set *cond,
+	__isl_take isl_pw_aff *pwaff_true, __isl_take isl_pw_aff *pwaff_false);
+
 __isl_give isl_pw_aff *isl_pw_aff_scale_down(__isl_take isl_pw_aff *pwaff,
 	isl_int f);
 

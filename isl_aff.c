@@ -1270,3 +1270,19 @@ __isl_give isl_pw_aff *isl_pw_aff_ceil(__isl_take isl_pw_aff *pwaff)
 
 	return pwaff;
 }
+
+/* Return an affine expression that is equal to pwaff_true for elements
+ * in "cond" and to pwaff_false for elements not in "cond".
+ * That is, return cond ? pwaff_true : pwaff_false;
+ */
+__isl_give isl_pw_aff *isl_pw_aff_cond(__isl_take isl_set *cond,
+	__isl_take isl_pw_aff *pwaff_true, __isl_take isl_pw_aff *pwaff_false)
+{
+	isl_set *comp;
+
+	comp = isl_set_complement(isl_set_copy(cond));
+	pwaff_true = isl_pw_aff_intersect_domain(pwaff_true, cond);
+	pwaff_false = isl_pw_aff_intersect_domain(pwaff_false, comp);
+
+	return isl_pw_aff_add_disjoint(pwaff_true, pwaff_false);
+}
