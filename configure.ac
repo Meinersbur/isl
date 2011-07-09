@@ -100,6 +100,8 @@ AC_CONFIG_HEADERS(isl_config.h)
 AC_CONFIG_HEADERS(include/isl/config.h)
 AC_CONFIG_FILES(Makefile)
 AC_CONFIG_FILES(doc/Makefile)
+AC_CONFIG_FILES([bound_test.sh], [chmod +x bound_test.sh])
+AC_CONFIG_FILES([pip_test.sh], [chmod +x pip_test.sh])
 AC_CONFIG_COMMANDS_POST([
 	dnl pass on arguments to subdir configures, but don't
 	dnl add them to config.status

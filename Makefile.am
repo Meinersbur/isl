@@ -239,8 +239,6 @@ EXTRA_DIST = \
 	doc/mypod2latex \
 	doc/manual.tex \
 	doc/user.pod \
-	bound_test.sh \
-	pip_test.sh \
 	test_inputs
 
 dist-hook:

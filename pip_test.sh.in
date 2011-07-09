@@ -1,5 +1,7 @@
 #!/bin/sh
 
+EXEEXT=@EXEEXT@
+
 PIP_TESTS="\
 	boulet.pip \
 	brisebarre.pip \
