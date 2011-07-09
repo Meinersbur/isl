@@ -1206,3 +1206,29 @@ __isl_give isl_set *isl_pw_aff_lt_set(__isl_take isl_pw_aff *pwaff1,
 {
 	return isl_pw_aff_gt_set(pwaff2, pwaff1);
 }
+
+__isl_give isl_pw_aff *isl_pw_aff_scale_down(__isl_take isl_pw_aff *pwaff,
+	isl_int v)
+{
+	int i;
+
+	if (isl_int_is_one(v))
+		return pwaff;
+	if (!isl_int_is_pos(v))
+		isl_die(isl_pw_aff_get_ctx(pwaff), isl_error_invalid,
+			"factor needs to be positive",
+			return isl_pw_aff_free(pwaff));
+	pwaff = isl_pw_aff_cow(pwaff);
+	if (!pwaff)
+		return NULL;
+	if (pwaff->n == 0)
+		return pwaff;
+
+	for (i = 0; i < pwaff->n; ++i) {
+		pwaff->p[i].aff = isl_aff_scale_down(pwaff->p[i].aff, v);
+		if (!pwaff->p[i].aff)
+			return isl_pw_aff_free(pwaff);
+	}
+
+	return pwaff;
+}

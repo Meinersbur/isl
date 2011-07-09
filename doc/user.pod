@@ -2361,6 +2361,8 @@ Operations include
 		isl_int f);
 	__isl_give isl_aff *isl_aff_scale_down_ui(
 		__isl_take isl_aff *aff, unsigned f);
+	__isl_give isl_pw_aff *isl_pw_aff_scale_down(
+		__isl_take isl_pw_aff *pwaff, isl_int f);
 
 	__isl_give isl_pw_aff *isl_pw_aff_coalesce(
 		__isl_take isl_pw_aff *pwqp);
