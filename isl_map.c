@@ -2331,6 +2331,21 @@ struct isl_set *isl_set_intersect(struct isl_set *set1, struct isl_set *set2)
 				  (struct isl_map *)set2);
 }
 
+/* The current implementation of isl_map_intersect accepts intersections
+ * with parameter domains, so we can just call that for now.
+ */
+__isl_give isl_map *isl_map_intersect_params(__isl_take isl_map *map,
+		__isl_take isl_set *params)
+{
+	return isl_map_intersect(map, params);
+}
+
+__isl_give isl_set *isl_set_intersect_params(__isl_take isl_set *set,
+		__isl_take isl_set *params)
+{
+	return isl_map_intersect_params(set, params);
+}
+
 struct isl_basic_map *isl_basic_map_reverse(struct isl_basic_map *bmap)
 {
 	struct isl_dim *dim;

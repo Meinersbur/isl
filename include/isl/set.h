@@ -221,6 +221,8 @@ __isl_give isl_set *isl_set_flat_product(__isl_take isl_set *set1,
 __isl_give isl_set *isl_set_intersect(
 		__isl_take isl_set *set1,
 		__isl_take isl_set *set2);
+__isl_give isl_set *isl_set_intersect_params(__isl_take isl_set *set,
+		__isl_take isl_set *params);
 __isl_give isl_set *isl_set_subtract(
 		__isl_take isl_set *set1,
 		__isl_take isl_set *set2);

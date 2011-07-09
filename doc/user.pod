@@ -1835,6 +1835,9 @@ the same (number of) parameters.
 	__isl_give isl_basic_set *isl_basic_set_intersect(
 		__isl_take isl_basic_set *bset1,
 		__isl_take isl_basic_set *bset2);
+	__isl_give isl_set *isl_set_intersect_params(
+		__isl_take isl_set *set,
+		__isl_take isl_set *params);
 	__isl_give isl_set *isl_set_intersect(
 		__isl_take isl_set *set1,
 		__isl_take isl_set *set2);
@@ -1850,6 +1853,9 @@ the same (number of) parameters.
 	__isl_give isl_basic_map *isl_basic_map_intersect(
 		__isl_take isl_basic_map *bmap1,
 		__isl_take isl_basic_map *bmap2);
+	__isl_give isl_map *isl_map_intersect_params(
+		__isl_take isl_map *map,
+		__isl_take isl_set *params);
 	__isl_give isl_map *isl_map_intersect_domain(
 		__isl_take isl_map *map,
 		__isl_take isl_set *set);
