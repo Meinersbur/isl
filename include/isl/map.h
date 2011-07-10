@@ -405,8 +405,6 @@ void isl_map_print_internal(__isl_keep isl_map *map, FILE *out, int indent);
 
 int isl_map_plain_input_is_fixed(__isl_keep isl_map *map,
 		unsigned in, isl_int *val);
-int isl_map_fast_is_fixed(__isl_keep isl_map *map,
-	enum isl_dim_type type, unsigned pos, isl_int *val);
 int isl_map_plain_is_fixed(struct isl_map *map,
 	enum isl_dim_type type, unsigned pos, isl_int *val);
 int isl_map_fast_is_fixed(__isl_keep isl_map *map,
