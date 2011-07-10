@@ -23,6 +23,7 @@ gitversion.h
 include/isl/config.h
 include/isl/stdint.h
 include/stamp-h2
+include/isl/stamp-h2
 install-sh
 isl-uninstalled.pc
 isl-uninstalled.sh
@@ -46,3 +47,6 @@ m4/ltversion.m4
 m4/lt~obsolete.m4
 missing
 stamp-h1
+
+bound_test.sh
+pip_test.sh
