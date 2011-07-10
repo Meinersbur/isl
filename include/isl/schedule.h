@@ -19,6 +19,8 @@ __isl_give isl_schedule *isl_union_set_compute_schedule(
 void *isl_schedule_free(__isl_take isl_schedule *sched);
 __isl_give isl_union_map *isl_schedule_get_map(__isl_keep isl_schedule *sched);
 
+isl_ctx *isl_schedule_get_ctx(__isl_keep isl_schedule *sched);
+
 __isl_give isl_band_list *isl_schedule_get_band_forest(
 	__isl_keep isl_schedule *schedule);
 
