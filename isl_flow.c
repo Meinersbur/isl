@@ -102,6 +102,11 @@ void isl_access_info_free(__isl_take isl_access_info *acc)
 	free(acc);
 }
 
+isl_ctx *isl_access_info_get_ctx(__isl_keep isl_access_info *acc)
+{
+	return acc ? isl_map_get_ctx(acc->sink.map) : NULL;
+}
+
 /* Add another source to an isl_access_info structure, making
  * sure the "must" sources are placed before the "may" sources.
  * This function may be called at most max_source times on a
@@ -350,6 +355,11 @@ void isl_flow_free(__isl_take isl_flow *deps)
 		free(deps->dep);
 	}
 	free(deps);
+}
+
+isl_ctx *isl_flow_get_ctx(__isl_keep isl_flow *deps)
+{
+	return deps ? isl_set_get_ctx(deps->must_no_source) : NULL;
 }
 
 /* Return a map that enforces that the domain iteration occurs after
