@@ -121,6 +121,9 @@ ISL_ARG_BOOL(struct isl_options, schedule_outer_zero_distance, 0,
 	"schedule-outer-zero-distance", 0,
 	"try to construct schedules with outer zero distances over "
 	"proximity dependences")
+ISL_ARG_BOOL(struct isl_options, schedule_maximize_band_depth, 0,
+	"schedule-maximize-band-depth", 0,
+	"maximize the number of scheduling dimensions in a band")
 ISL_ARG_BOOL(struct isl_options, schedule_split_parallel, 0,
 	"schedule-split-parallel", 1,
 	"split non-tilable bands with parallel schedules")

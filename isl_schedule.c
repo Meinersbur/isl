@@ -2273,6 +2273,9 @@ static int compute_schedule_wcc(isl_ctx *ctx, struct isl_sched_graph *graph)
 			return -1;
 		if (sol->size == 0) {
 			isl_vec_free(sol);
+			if (!ctx->opt->schedule_maximize_band_depth &&
+			    graph->n_total_row > graph->band_start)
+				return compute_next_band(ctx, graph);
 			if (graph->src_scc >= 0)
 				return compute_split_schedule(ctx, graph);
 			if (graph->n_total_row > graph->band_start)
