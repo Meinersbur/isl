@@ -387,6 +387,31 @@ __isl_give isl_set *isl_union_set_copy_set(__isl_keep isl_union_set *uset)
 	return isl_union_map_copy_map(uset);
 }
 
+__isl_give isl_map *isl_map_from_union_map(__isl_take isl_union_map *umap)
+{
+	isl_ctx *ctx;
+	isl_map *map = NULL;
+
+	if (!umap)
+		return NULL;
+	ctx = isl_union_map_get_ctx(umap);
+	if (umap->table.n != 1)
+		isl_die(ctx, isl_error_invalid,
+			"union map needs to contain elements in exactly "
+			"one space", return isl_union_map_free(umap));
+
+	isl_hash_table_foreach(ctx, &umap->table, &copy_map, &map);
+
+	isl_union_map_free(umap);
+
+	return map;
+}
+
+__isl_give isl_set *isl_set_from_union_set(__isl_take isl_union_set *uset)
+{
+	return isl_map_from_union_map(uset);
+}
+
 __isl_give isl_map *isl_union_map_extract_map(__isl_keep isl_union_map *umap,
 	__isl_take isl_dim *dim)
 {

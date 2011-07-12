@@ -925,6 +925,15 @@ using the following functions.
 	__isl_give isl_union_set *isl_union_set_from_set(
 		__isl_take isl_set *set);
 
+The inverse conversions below can only be used if the input
+union set or relation is known to contain elements in exactly one
+space.
+
+	__isl_give isl_set *isl_set_from_union_set(
+		__isl_take isl_union_set *uset);
+	__isl_give isl_map *isl_map_from_union_map(
+		__isl_take isl_union_map *umap);
+
 Sets and relations can be copied and freed again using the following
 functions.
 
