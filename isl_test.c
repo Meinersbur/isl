@@ -1920,8 +1920,9 @@ int test_one_schedule(isl_ctx *ctx, const char *d, const char *w,
 		is_tilable = 1;
 		is_parallel = 1;
 		is_nonneg = 1;
+		isl_union_set_free(delta);
 	} else {
-		delta_set = isl_union_set_copy_set(delta);
+		delta_set = isl_set_from_union_set(delta);
 
 		slice = isl_set_universe(isl_set_get_dim(delta_set));
 		for (i = 0; i < tilable; ++i)
@@ -1947,7 +1948,6 @@ int test_one_schedule(isl_ctx *ctx, const char *d, const char *w,
 		isl_set_free(origin);
 		isl_set_free(delta_set);
 	}
-	isl_union_set_free(delta);
 
 	if (is_nonneg < 0 || is_parallel < 0 || is_tilable < 0 ||
 	    is_injection < 0 || is_complete < 0)

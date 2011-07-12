@@ -370,23 +370,6 @@ static int copy_map(void **entry, void *user)
 	return -1;
 }
 
-__isl_give isl_map *isl_union_map_copy_map(__isl_keep isl_union_map *umap)
-{
-	isl_map *map = NULL;
-
-	if (!umap || umap->table.n == 0)
-		return NULL;
-
-	isl_hash_table_foreach(umap->dim->ctx, &umap->table, &copy_map, &map);
-
-	return map;
-}
-
-__isl_give isl_set *isl_union_set_copy_set(__isl_keep isl_union_set *uset)
-{
-	return isl_union_map_copy_map(uset);
-}
-
 __isl_give isl_map *isl_map_from_union_map(__isl_take isl_union_map *umap)
 {
 	isl_ctx *ctx;
@@ -1677,7 +1660,9 @@ int isl_union_map_is_single_valued(__isl_keep isl_union_map *umap)
 	int sv;
 
 	if (isl_union_map_n_map(umap) == 1) {
-		isl_map *map = isl_union_map_copy_map(umap);
+		isl_map *map;
+		umap = isl_union_map_copy(umap);
+		map = isl_map_from_union_map(umap);
 		sv = isl_map_is_single_valued(map);
 		isl_map_free(map);
 		return sv;

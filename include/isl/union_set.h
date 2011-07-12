@@ -66,7 +66,6 @@ __isl_give int isl_union_set_contains(__isl_keep isl_union_set *uset,
 	__isl_keep isl_dim *dim);
 __isl_give isl_set *isl_union_set_extract_set(__isl_keep isl_union_set *uset,
 	__isl_take isl_dim *dim);
-__isl_give isl_set *isl_union_set_copy_set(__isl_keep isl_union_set *uset);
 __isl_give isl_set *isl_set_from_union_set(__isl_take isl_union_set *uset);
 int isl_union_set_foreach_point(__isl_keep isl_union_set *uset,
 	int (*fn)(__isl_take isl_point *pnt, void *user), void *user);
