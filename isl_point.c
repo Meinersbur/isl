@@ -442,47 +442,52 @@ __isl_give isl_set *isl_set_box_from_points(__isl_take isl_point *pnt1,
 	return isl_set_from_basic_set(bset);
 }
 
-void isl_point_print(__isl_keep isl_point *pnt, FILE *out)
+__isl_give isl_printer *isl_printer_print_point(
+	__isl_take isl_printer *p, __isl_keep isl_point *pnt)
 {
 	int i;
 	unsigned nparam;
 	unsigned dim;
 
 	if (!pnt)
-		return;
+		return p;
 	if (isl_point_is_void(pnt)) {
-		fprintf(out, "void\n");
-		return;
+		p = isl_printer_print_str(p, "void");
+		return p;
 	}
 
 	nparam = isl_dim_size(pnt->dim, isl_dim_param);
 	dim = isl_dim_size(pnt->dim, isl_dim_set);
 	if (nparam > 0) {
-		fprintf(out, "[");
+		p = isl_printer_print_str(p, "[");
 		for (i = 0; i < nparam; ++i) {
 			const char *name;
 			if (i)
-				fprintf(out, ", ");
+				p = isl_printer_print_str(p, ", ");
 			name = isl_dim_get_name(pnt->dim, isl_dim_param, i);
-			if (name)
-				fprintf(out, "%s = ", name);
-			isl_int_print(out, pnt->vec->el[1 + i], 0);
+			if (name) {
+				p = isl_printer_print_str(p, name);
+				p = isl_printer_print_str(p, " = ");
+			}
+			p = isl_printer_print_isl_int(p, pnt->vec->el[1 + i]);
 			if (!isl_int_is_one(pnt->vec->el[0])) {
-				fprintf(out, "/");
-				isl_int_print(out, pnt->vec->el[0], 0);
+				p = isl_printer_print_str(p, "/");
+				p = isl_printer_print_isl_int(p, pnt->vec->el[0]);
 			}
 		}
-		fprintf(out, "] -> ");
+		p = isl_printer_print_str(p, "]");
+		p = isl_printer_print_str(p, " -> ");
 	}
-	fprintf(out, "[");
+	p = isl_printer_print_str(p, "[");
 	for (i = 0; i < dim; ++i) {
 		if (i)
-			fprintf(out, ", ");
-		isl_int_print(out, pnt->vec->el[1 + nparam + i], 0);
+			p = isl_printer_print_str(p, ", ");
+		p = isl_printer_print_isl_int(p, pnt->vec->el[1 + nparam + i]);
 		if (!isl_int_is_one(pnt->vec->el[0])) {
-			fprintf(out, "/");
-			isl_int_print(out, pnt->vec->el[0], 0);
+			p = isl_printer_print_str(p, "/");
+			p = isl_printer_print_isl_int(p, pnt->vec->el[0]);
 		}
 	}
-	fprintf(out, "]\n");
+	p = isl_printer_print_str(p, "]");
+	return p;
 }

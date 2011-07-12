@@ -31,7 +31,8 @@ __isl_give isl_point *isl_point_sub_ui(__isl_take isl_point *pnt,
 __isl_give isl_point *isl_point_void(__isl_take isl_dim *dim);
 int isl_point_is_void(__isl_keep isl_point *pnt);
 
-void isl_point_print(__isl_keep isl_point *pnt, FILE *out);
+__isl_give isl_printer *isl_printer_print_point(
+	__isl_take isl_printer *printer, __isl_keep isl_point *pnt);
 
 #if defined(__cplusplus)
 }
