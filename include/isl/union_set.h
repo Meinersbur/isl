@@ -11,7 +11,7 @@ extern "C" {
 __isl_give isl_union_set *isl_union_set_from_set(__isl_take isl_set *set);
 __isl_give isl_union_set *isl_union_set_empty(__isl_take isl_dim *dim);
 __isl_give isl_union_set *isl_union_set_copy(__isl_keep isl_union_set *uset);
-void isl_union_set_free(__isl_take isl_union_set *uset);
+void *isl_union_set_free(__isl_take isl_union_set *uset);
 
 isl_ctx *isl_union_set_get_ctx(__isl_keep isl_union_set *uset);
 __isl_give isl_dim *isl_union_set_get_dim(__isl_keep isl_union_set *uset);

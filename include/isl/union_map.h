@@ -19,7 +19,7 @@ typedef struct isl_union_set isl_union_set;
 __isl_give isl_union_map *isl_union_map_from_map(__isl_take isl_map *map);
 __isl_give isl_union_map *isl_union_map_empty(__isl_take isl_dim *dim);
 __isl_give isl_union_map *isl_union_map_copy(__isl_keep isl_union_map *umap);
-void isl_union_map_free(__isl_take isl_union_map *umap);
+void *isl_union_map_free(__isl_take isl_union_map *umap);
 
 isl_ctx *isl_union_map_get_ctx(__isl_keep isl_union_map *umap);
 __isl_give isl_dim *isl_union_map_get_dim(__isl_keep isl_union_map *umap);

@@ -225,24 +225,25 @@ __isl_give isl_union_set *isl_union_set_copy(__isl_keep isl_union_set *uset)
 	return isl_union_map_copy(uset);
 }
 
-void isl_union_map_free(__isl_take isl_union_map *umap)
+void *isl_union_map_free(__isl_take isl_union_map *umap)
 {
 	if (!umap)
-		return;
+		return NULL;
 
 	if (--umap->ref > 0)
-		return;
+		return NULL;
 
 	isl_hash_table_foreach(umap->dim->ctx, &umap->table,
 			       &free_umap_entry, NULL);
 	isl_hash_table_clear(&umap->table);
 	isl_dim_free(umap->dim);
 	free(umap);
+	return NULL;
 }
 
-void isl_union_set_free(__isl_take isl_union_set *uset)
+void *isl_union_set_free(__isl_take isl_union_set *uset)
 {
-	isl_union_map_free(uset);
+	return isl_union_map_free(uset);
 }
 
 static int has_dim(const void *entry, const void *val)
