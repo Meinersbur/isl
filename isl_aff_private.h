@@ -39,6 +39,8 @@ __isl_give isl_aff *isl_aff_realign(__isl_take isl_aff *aff,
 __isl_give isl_aff *isl_aff_expand_divs( __isl_take isl_aff *aff,
 	__isl_take isl_mat *div, int *exp);
 
+__isl_give isl_pw_aff *isl_pw_aff_reset_dim(__isl_take isl_pw_aff *pwaff,
+	__isl_take isl_dim *dim);
 __isl_give isl_pw_aff *isl_pw_aff_add_disjoint(
 	__isl_take isl_pw_aff *pwaff1, __isl_take isl_pw_aff *pwaff2);
 
