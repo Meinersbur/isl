@@ -2380,7 +2380,7 @@ error:
 	return NULL;
 }
 
-__isl_give isl_qpolynomial *isl_qpolynomial_substitute_equalities(
+static __isl_give isl_qpolynomial *isl_qpolynomial_substitute_equalities_lifted(
 	__isl_take isl_qpolynomial *qp, __isl_take isl_basic_set *eq)
 {
 	int i, j, k;
@@ -2446,6 +2446,22 @@ error:
 	return NULL;
 }
 
+/* Exploit the equalities in "eq" to simplify the quasi-polynomial.
+ */
+__isl_give isl_qpolynomial *isl_qpolynomial_substitute_equalities(
+	__isl_take isl_qpolynomial *qp, __isl_take isl_basic_set *eq)
+{
+	if (!qp || !eq)
+		goto error;
+	if (qp->div->n_row > 0)
+		eq = isl_basic_set_add(eq, isl_dim_set, qp->div->n_row);
+	return isl_qpolynomial_substitute_equalities_lifted(qp, eq);
+error:
+	isl_basic_set_free(eq);
+	isl_qpolynomial_free(qp);
+	return NULL;
+}
+
 static __isl_give isl_basic_set *add_div_constraints(
 	__isl_take isl_basic_set *bset, __isl_take isl_mat *div)
 {
@@ -2495,7 +2511,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_gist(
 	}
 
 	aff = isl_set_affine_hull(context);
-	return isl_qpolynomial_substitute_equalities(qp, aff);
+	return isl_qpolynomial_substitute_equalities_lifted(qp, aff);
 error:
 	isl_qpolynomial_free(qp);
 	isl_set_free(context);
