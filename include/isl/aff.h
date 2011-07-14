@@ -59,6 +59,8 @@ __isl_give isl_aff *isl_aff_neg(__isl_take isl_aff *aff);
 __isl_give isl_aff *isl_aff_ceil(__isl_take isl_aff *aff);
 __isl_give isl_aff *isl_aff_floor(__isl_take isl_aff *aff);
 
+__isl_give isl_aff *isl_aff_mul(__isl_take isl_aff *aff1,
+	__isl_take isl_aff *aff2);
 __isl_give isl_aff *isl_aff_add(__isl_take isl_aff *aff1,
 	__isl_take isl_aff *aff2);
 __isl_give isl_aff *isl_aff_sub(__isl_take isl_aff *aff1,
@@ -111,6 +113,8 @@ __isl_give isl_pw_aff *isl_pw_aff_align_params(__isl_take isl_pw_aff *pwaff,
 
 __isl_give isl_set *isl_pw_aff_domain(__isl_take isl_pw_aff *pwaff);
 
+__isl_give isl_pw_aff *isl_pw_aff_mul(__isl_take isl_pw_aff *pwaff1,
+	__isl_take isl_pw_aff *pwaff2);
 __isl_give isl_pw_aff *isl_pw_aff_add(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2);
 __isl_give isl_pw_aff *isl_pw_aff_sub(__isl_take isl_pw_aff *pwaff1,

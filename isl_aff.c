@@ -1405,3 +1405,69 @@ int isl_pw_aff_is_cst(__isl_keep isl_pw_aff *pwaff)
 
 	return 1;
 }
+
+__isl_give isl_aff *isl_aff_mul(__isl_take isl_aff *aff1,
+	__isl_take isl_aff *aff2)
+{
+	if (!isl_aff_is_cst(aff2) && isl_aff_is_cst(aff1))
+		return isl_aff_mul(aff2, aff1);
+
+	if (!isl_aff_is_cst(aff2))
+		isl_die(isl_aff_get_ctx(aff1), isl_error_invalid,
+			"at least one affine expression should be constant",
+			goto error);
+
+	aff1 = isl_aff_cow(aff1);
+	if (!aff1 || !aff2)
+		goto error;
+
+	aff1 = isl_aff_scale(aff1, aff2->v->el[1]);
+	aff1 = isl_aff_scale_down(aff1, aff2->v->el[0]);
+
+	isl_aff_free(aff2);
+	return aff1;
+error:
+	isl_aff_free(aff1);
+	isl_aff_free(aff2);
+	return NULL;
+}
+
+__isl_give isl_pw_aff *isl_pw_aff_mul(__isl_take isl_pw_aff *pwaff1,
+	__isl_take isl_pw_aff *pwaff2)
+{
+	int i, j, n;
+	isl_pw_aff *res;
+
+	if (!pwaff1 || !pwaff2)
+		goto error;
+
+	n = pwaff1->n * pwaff2->n;
+	res = isl_pw_aff_alloc_(isl_dim_copy(pwaff1->dim), n);
+
+	for (i = 0; i < pwaff1->n; ++i) {
+		for (j = 0; j < pwaff2->n; ++j) {
+			isl_set *common;
+			isl_aff *prod;
+			common = isl_set_intersect(
+					isl_set_copy(pwaff1->p[i].set),
+					isl_set_copy(pwaff2->p[j].set));
+			if (isl_set_plain_is_empty(common)) {
+				isl_set_free(common);
+				continue;
+			}
+
+			prod = isl_aff_mul(isl_aff_copy(pwaff1->p[i].aff),
+					    isl_aff_copy(pwaff2->p[j].aff));
+
+			res = isl_pw_aff_add_piece(res, common, prod);
+		}
+	}
+
+	isl_pw_aff_free(pwaff1);
+	isl_pw_aff_free(pwaff2);
+	return res;
+error:
+	isl_pw_aff_free(pwaff1);
+	isl_pw_aff_free(pwaff2);
+	return NULL;
+}
