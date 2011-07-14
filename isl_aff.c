@@ -1471,3 +1471,23 @@ error:
 	isl_pw_aff_free(pwaff2);
 	return NULL;
 }
+
+__isl_give isl_pw_aff *isl_pw_aff_min(__isl_take isl_pw_aff *pwaff1,
+	__isl_take isl_pw_aff *pwaff2)
+{
+	isl_set *le;
+
+	le = isl_pw_aff_le_set(isl_pw_aff_copy(pwaff1),
+				isl_pw_aff_copy(pwaff2));
+	return isl_pw_aff_cond(le, pwaff1, pwaff2);
+}
+
+__isl_give isl_pw_aff *isl_pw_aff_max(__isl_take isl_pw_aff *pwaff1,
+	__isl_take isl_pw_aff *pwaff2)
+{
+	isl_set *le;
+
+	le = isl_pw_aff_ge_set(isl_pw_aff_copy(pwaff1),
+				isl_pw_aff_copy(pwaff2));
+	return isl_pw_aff_cond(le, pwaff1, pwaff2);
+}
