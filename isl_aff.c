@@ -723,7 +723,7 @@ __isl_give isl_aff *isl_aff_set_dim_name(__isl_take isl_aff *aff,
  * The integer divisions in this local space are assumed to appear
  * as regular dimensions in "eq".
  */
-static __isl_give isl_aff *isl_aff_substitute_equalities(
+static __isl_give isl_aff *isl_aff_substitute_equalities_lifted(
 	__isl_take isl_aff *aff, __isl_take isl_basic_set *eq)
 {
 	int i, j;
@@ -765,6 +765,26 @@ error:
 	return NULL;
 }
 
+/* Exploit the equalities in "eq" to simplify the affine expression
+ * and the expressions of the integer divisions in the local space.
+ */
+static __isl_give isl_aff *isl_aff_substitute_equalities(
+	__isl_take isl_aff *aff, __isl_take isl_basic_set *eq)
+{
+	int n_div;
+
+	if (!aff || !eq)
+		goto error;
+	n_div = isl_local_space_dim(aff->ls, isl_dim_div);
+	if (n_div > 0)
+		eq = isl_basic_set_add(eq, isl_dim_set, n_div);
+	return isl_aff_substitute_equalities_lifted(aff, eq);
+error:
+	isl_basic_set_free(eq);
+	isl_aff_free(aff);
+	return NULL;
+}
+
 /* Look for equalities among the variables shared by context and aff
  * and the integer divisions of aff, if any.
  * The equalities are then used to eliminate coefficients and/or integer
@@ -791,7 +811,7 @@ __isl_give isl_aff *isl_aff_gist(__isl_take isl_aff *aff,
 	}
 
 	hull = isl_set_affine_hull(context);
-	return isl_aff_substitute_equalities(aff, hull);
+	return isl_aff_substitute_equalities_lifted(aff, hull);
 error:
 	isl_aff_free(aff);
 	isl_set_free(context);
