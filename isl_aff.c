@@ -1379,3 +1379,29 @@ __isl_give isl_pw_aff *isl_pw_aff_cond(__isl_take isl_set *cond,
 
 	return isl_pw_aff_add_disjoint(pwaff_true, pwaff_false);
 }
+
+int isl_aff_is_cst(__isl_keep isl_aff *aff)
+{
+	if (!aff)
+		return -1;
+
+	return isl_seq_first_non_zero(aff->v->el + 2, aff->v->size - 2) == -1;
+}
+
+/* Check whether pwaff is a piecewise constant.
+ */
+int isl_pw_aff_is_cst(__isl_keep isl_pw_aff *pwaff)
+{
+	int i;
+
+	if (!pwaff)
+		return -1;
+
+	for (i = 0; i < pwaff->n; ++i) {
+		int is_cst = isl_aff_is_cst(pwaff->p[i].aff);
+		if (is_cst < 0 || !is_cst)
+			return is_cst;
+	}
+
+	return 1;
+}

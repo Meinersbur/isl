@@ -45,6 +45,8 @@ __isl_give isl_aff *isl_aff_add_coefficient(__isl_take isl_aff *aff,
 __isl_give isl_aff *isl_aff_add_coefficient_si(__isl_take isl_aff *aff,
 	enum isl_dim_type type, int pos, int v);
 
+int isl_aff_is_cst(__isl_keep isl_aff *aff);
+
 __isl_give isl_aff *isl_aff_set_dim_name(__isl_take isl_aff *aff,
 	enum isl_dim_type type, unsigned pos, const char *s);
 
@@ -101,6 +103,8 @@ void *isl_pw_aff_free(__isl_take isl_pw_aff *pwaff);
 unsigned isl_pw_aff_dim(__isl_keep isl_pw_aff *pwaff, enum isl_dim_type type);
 int isl_pw_aff_involves_dims(__isl_keep isl_pw_aff *pwaff,
 	enum isl_dim_type type, unsigned first, unsigned n);
+
+int isl_pw_aff_is_cst(__isl_keep isl_pw_aff *pwaff);
 
 __isl_give isl_pw_aff *isl_pw_aff_align_params(__isl_take isl_pw_aff *pwaff,
 	__isl_take isl_dim *model);
