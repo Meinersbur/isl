@@ -105,6 +105,7 @@ typedef struct isl_term isl_term;
 
 isl_ctx *isl_term_get_ctx(__isl_keep isl_term *term);
 
+__isl_give isl_term *isl_term_copy(__isl_keep isl_term *term);
 void isl_term_free(__isl_take isl_term *term);
 
 unsigned isl_term_dim(__isl_keep isl_term *term, enum isl_dim_type type);
