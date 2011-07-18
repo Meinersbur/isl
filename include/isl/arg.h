@@ -204,15 +204,18 @@ struct isl_arg {
 	.help_msg = h,							\
 	.u = { .ul = { .default_value = d } }				\
 },
-#define ISL_ARG_STR(st,f,s,l,a,d,h)	{				\
+#define ISL_ARG_STR_F(st,f,s,l,a,d,h,fl)	{			\
 	.type = isl_arg_str,						\
 	.short_name = s,						\
 	.long_name = l,							\
 	.argument_name = a,						\
 	.offset = offsetof(st, f),					\
 	.help_msg = h,							\
+	.flags = fl,							\
 	.u = { .str = { .default_value = d } }				\
 },
+#define ISL_ARG_STR(st,f,s,l,a,d,h)					\
+	ISL_ARG_STR_F(st,f,s,l,a,d,h,0)
 #define _ISL_ARG_CHILD(o,sz,l,c,h,fl)	{				\
 	.type = isl_arg_child,						\
 	.long_name = l,							\
