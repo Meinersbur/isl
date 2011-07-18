@@ -1543,49 +1543,61 @@ __isl_give isl_set *isl_set_remove_divs_involving_dims(__isl_take isl_set *set,
 							      type, first, n);
 }
 
-int isl_basic_set_involves_dims(__isl_keep isl_basic_set *bset,
+int isl_basic_map_involves_dims(__isl_keep isl_basic_map *bmap,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
 	int i;
 
-	if (!bset)
+	if (!bmap)
 		return -1;
 
-	if (first + n > isl_basic_set_dim(bset, type))
-		isl_die(bset->ctx, isl_error_invalid,
+	if (first + n > isl_basic_map_dim(bmap, type))
+		isl_die(bmap->ctx, isl_error_invalid,
 			"index out of bounds", return -1);
 
-	first += isl_basic_set_offset(bset, type);
-	for (i = 0; i < bset->n_eq; ++i)
-		if (isl_seq_first_non_zero(bset->eq[i] + first, n) >= 0)
+	first += isl_basic_map_offset(bmap, type);
+	for (i = 0; i < bmap->n_eq; ++i)
+		if (isl_seq_first_non_zero(bmap->eq[i] + first, n) >= 0)
 			return 1;
-	for (i = 0; i < bset->n_ineq; ++i)
-		if (isl_seq_first_non_zero(bset->ineq[i] + first, n) >= 0)
+	for (i = 0; i < bmap->n_ineq; ++i)
+		if (isl_seq_first_non_zero(bmap->ineq[i] + first, n) >= 0)
 			return 1;
 
 	return 0;
 }
 
-int isl_set_involves_dims(__isl_keep isl_set *set,
+int isl_map_involves_dims(__isl_keep isl_map *map,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
 	int i;
 
-	if (!set)
+	if (!map)
 		return -1;
 
-	if (first + n > isl_set_dim(set, type))
-		isl_die(set->ctx, isl_error_invalid,
+	if (first + n > isl_map_dim(map, type))
+		isl_die(map->ctx, isl_error_invalid,
 			"index out of bounds", return -1);
 
-	for (i = 0; i < set->n; ++i) {
-		int involves = isl_basic_set_involves_dims(set->p[i],
+	for (i = 0; i < map->n; ++i) {
+		int involves = isl_basic_map_involves_dims(map->p[i],
 							    type, first, n);
 		if (involves < 0 || !involves)
 			return involves;
 	}
 
 	return 1;
+}
+
+int isl_basic_set_involves_dims(__isl_keep isl_basic_set *bset,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	return isl_basic_map_involves_dims(bset, type, first, n);
+}
+
+int isl_set_involves_dims(__isl_keep isl_set *set,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	return isl_map_involves_dims(set, type, first, n);
 }
 
 /* Return true if the definition of the given div is unknown or depends

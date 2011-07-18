@@ -401,6 +401,11 @@ __isl_give isl_map *isl_basic_map_compute_divs(__isl_take isl_basic_map *bmap);
 __isl_give isl_map *isl_map_compute_divs(__isl_take isl_map *map);
 __isl_give isl_map *isl_map_align_divs(__isl_take isl_map *map);
 
+int isl_basic_map_involves_dims(__isl_keep isl_basic_map *bmap,
+	enum isl_dim_type type, unsigned first, unsigned n);
+int isl_map_involves_dims(__isl_keep isl_map *map,
+	enum isl_dim_type type, unsigned first, unsigned n);
+
 void isl_map_print_internal(__isl_keep isl_map *map, FILE *out, int indent);
 
 int isl_map_plain_input_is_fixed(__isl_keep isl_map *map,
