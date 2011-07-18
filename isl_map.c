@@ -161,17 +161,17 @@ unsigned isl_basic_map_total_dim(const struct isl_basic_map *bmap)
 
 unsigned isl_map_n_in(const struct isl_map *map)
 {
-	return map->dim->n_in;
+	return map ? map->dim->n_in : 0;
 }
 
 unsigned isl_map_n_out(const struct isl_map *map)
 {
-	return map->dim->n_out;
+	return map ? map->dim->n_out : 0;
 }
 
 unsigned isl_map_n_param(const struct isl_map *map)
 {
-	return map->dim->nparam;
+	return map ? map->dim->nparam : 0;
 }
 
 int isl_map_compatible_domain(struct isl_map *map, struct isl_set *set)
