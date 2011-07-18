@@ -1520,6 +1520,16 @@ without removing the dimensions.
 Intersect the set or relation with the hyperplane where the given
 dimension has the fixed given value.
 
+	__isl_give isl_set *isl_set_equate(__isl_take isl_set *set,
+		enum isl_dim_type type1, int pos1,
+		enum isl_dim_type type2, int pos2);
+	__isl_give isl_map *isl_map_equate(__isl_take isl_map *map,
+		enum isl_dim_type type1, int pos1,
+		enum isl_dim_type type2, int pos2);
+
+Intersect the set or relation with the hyperplane where the given
+dimensions are equal to each other.
+
 =item * Identity
 
 	__isl_give isl_map *isl_set_identity(

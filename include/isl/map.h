@@ -342,6 +342,9 @@ __isl_give isl_map *isl_map_remove_dims(__isl_take isl_map *map,
 struct isl_map *isl_map_remove_inputs(struct isl_map *map,
 	unsigned first, unsigned n);
 
+__isl_give isl_map *isl_map_equate(__isl_take isl_map *map,
+	enum isl_dim_type type1, int pos1, enum isl_dim_type type2, int pos2);
+
 __isl_give isl_map *isl_set_identity(__isl_take isl_set *set);
 
 int isl_basic_set_is_wrapping(__isl_keep isl_basic_set *bset);
