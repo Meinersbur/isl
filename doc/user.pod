@@ -1648,10 +1648,12 @@ per space.
 	enum isl_lp_result isl_basic_set_max(
 		__isl_keep isl_basic_set *bset,
 		__isl_keep isl_aff *obj, isl_int *opt)
+	enum isl_lp_result isl_set_min(__isl_keep isl_set *set,
+		__isl_keep isl_aff *obj, isl_int *opt);
 	enum isl_lp_result isl_set_max(__isl_keep isl_set *set,
 		__isl_keep isl_aff *obj, isl_int *opt);
 
-Compute the maximum of the integer affine expression C<obj>
+Compute the minimum or maximum of the integer affine expression C<obj>
 over the points in C<set>, returning the result in C<opt>.
 The return value may be one of C<isl_lp_error>,
 C<isl_lp_ok>, C<isl_lp_unbounded> or C<isl_lp_empty>.
