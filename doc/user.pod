@@ -1530,6 +1530,13 @@ dimension has the fixed given value.
 Intersect the set or relation with the hyperplane where the given
 dimensions are equal to each other.
 
+	__isl_give isl_map *isl_map_oppose(__isl_take isl_map *map,
+		enum isl_dim_type type1, int pos1,
+		enum isl_dim_type type2, int pos2);
+
+Intersect the relation with the hyperplane where the given
+dimensions have opposite values.
+
 =item * Identity
 
 	__isl_give isl_map *isl_set_identity(
