@@ -1054,13 +1054,36 @@ __isl_give isl_pw_aff *isl_pw_aff_set_tuple_id(__isl_take isl_pw_aff *pwaff,
 
 #include <isl_pw_templ.c>
 
+static __isl_give isl_set *align_params_pw_pw_set_and(
+	__isl_take isl_pw_aff *pwaff1, __isl_take isl_pw_aff *pwaff2,
+	__isl_give isl_set *(*fn)(__isl_take isl_pw_aff *pwaff1,
+				    __isl_take isl_pw_aff *pwaff2))
+{
+	if (!pwaff1 || !pwaff2)
+		goto error;
+	if (isl_dim_match(pwaff1->dim, isl_dim_param,
+			  pwaff2->dim, isl_dim_param))
+		return fn(pwaff1, pwaff2);
+	if (!isl_dim_has_named_params(pwaff1->dim) ||
+	    !isl_dim_has_named_params(pwaff2->dim))
+		isl_die(isl_pw_aff_get_ctx(pwaff1), isl_error_invalid,
+			"unaligned unnamed parameters", goto error);
+	pwaff1 = isl_pw_aff_align_params(pwaff1, isl_pw_aff_get_dim(pwaff2));
+	pwaff2 = isl_pw_aff_align_params(pwaff2, isl_pw_aff_get_dim(pwaff1));
+	return fn(pwaff1, pwaff2);
+error:
+	isl_pw_aff_free(pwaff1);
+	isl_pw_aff_free(pwaff2);
+	return NULL;
+}
+
 /* Compute a piecewise quasi-affine expression with a domain that
  * is the union of those of pwaff1 and pwaff2 and such that on each
  * cell, the quasi-affine expression is the maximum of those of pwaff1
  * and pwaff2.  If only one of pwaff1 or pwaff2 is defined on a given
  * cell, then the associated expression is the defined one.
  */
-__isl_give isl_pw_aff *isl_pw_aff_union_max(__isl_take isl_pw_aff *pwaff1,
+static __isl_give isl_pw_aff *pw_aff_union_max(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
 	int i, j, n;
@@ -1132,6 +1155,12 @@ error:
 	isl_pw_aff_free(pwaff1);
 	isl_pw_aff_free(pwaff2);
 	return NULL;
+}
+
+__isl_give isl_pw_aff *isl_pw_aff_union_max(__isl_take isl_pw_aff *pwaff1,
+	__isl_take isl_pw_aff *pwaff2)
+{
+	return align_params_pw_pw_and(pwaff1, pwaff2, &pw_aff_union_max);
 }
 
 /* Construct a map with as domain the domain of pwaff and
@@ -1261,28 +1290,46 @@ static __isl_give isl_set *pw_aff_gte_set(__isl_take isl_pw_aff *pwaff1,
 /* Return a set containing those elements in the shared domain
  * of pwaff1 and pwaff2 where pwaff1 is equal to pwaff2.
  */
-__isl_give isl_set *isl_pw_aff_eq_set(__isl_take isl_pw_aff *pwaff1,
+static __isl_give isl_set *pw_aff_eq_set(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
 	return pw_aff_gte_set(pwaff1, pwaff2, 0, 1);
 }
 
+__isl_give isl_set *isl_pw_aff_eq_set(__isl_take isl_pw_aff *pwaff1,
+	__isl_take isl_pw_aff *pwaff2)
+{
+	return align_params_pw_pw_set_and(pwaff1, pwaff2, &pw_aff_eq_set);
+}
+
 /* Return a set containing those elements in the shared domain
  * of pwaff1 and pwaff2 where pwaff1 is greater than or equal to pwaff2.
  */
-__isl_give isl_set *isl_pw_aff_ge_set(__isl_take isl_pw_aff *pwaff1,
+static __isl_give isl_set *pw_aff_ge_set(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
 	return pw_aff_gte_set(pwaff1, pwaff2, 0, 0);
 }
 
+__isl_give isl_set *isl_pw_aff_ge_set(__isl_take isl_pw_aff *pwaff1,
+	__isl_take isl_pw_aff *pwaff2)
+{
+	return align_params_pw_pw_set_and(pwaff1, pwaff2, &pw_aff_ge_set);
+}
+
 /* Return a set containing those elements in the shared domain
  * of pwaff1 and pwaff2 where pwaff1 is strictly greater than pwaff2.
  */
-__isl_give isl_set *isl_pw_aff_gt_set(__isl_take isl_pw_aff *pwaff1,
+static __isl_give isl_set *pw_aff_gt_set(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
 	return pw_aff_gte_set(pwaff1, pwaff2, 1, 0);
+}
+
+__isl_give isl_set *isl_pw_aff_gt_set(__isl_take isl_pw_aff *pwaff1,
+	__isl_take isl_pw_aff *pwaff2)
+{
+	return align_params_pw_pw_set_and(pwaff1, pwaff2, &pw_aff_gt_set);
 }
 
 __isl_give isl_set *isl_pw_aff_le_set(__isl_take isl_pw_aff *pwaff1,
@@ -1300,7 +1347,7 @@ __isl_give isl_set *isl_pw_aff_lt_set(__isl_take isl_pw_aff *pwaff1,
 /* Return a set containing those elements in the shared domain
  * of pwaff1 and pwaff2 where pwaff1 is not equal to pwaff2.
  */
-__isl_give isl_set *isl_pw_aff_ne_set(__isl_take isl_pw_aff *pwaff1,
+static __isl_give isl_set *pw_aff_ne_set(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
 	isl_set *set_lt, *set_gt;
@@ -1309,6 +1356,12 @@ __isl_give isl_set *isl_pw_aff_ne_set(__isl_take isl_pw_aff *pwaff1,
 				   isl_pw_aff_copy(pwaff2));
 	set_gt = isl_pw_aff_gt_set(pwaff1, pwaff2);
 	return isl_set_union_disjoint(set_lt, set_gt);
+}
+
+__isl_give isl_set *isl_pw_aff_ne_set(__isl_take isl_pw_aff *pwaff1,
+	__isl_take isl_pw_aff *pwaff2)
+{
+	return align_params_pw_pw_set_and(pwaff1, pwaff2, &pw_aff_ne_set);
 }
 
 __isl_give isl_pw_aff *isl_pw_aff_scale_down(__isl_take isl_pw_aff *pwaff,
@@ -1443,7 +1496,7 @@ error:
 	return NULL;
 }
 
-__isl_give isl_pw_aff *isl_pw_aff_mul(__isl_take isl_pw_aff *pwaff1,
+static __isl_give isl_pw_aff *pw_aff_mul(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
 	int i, j, n;
@@ -1483,7 +1536,13 @@ error:
 	return NULL;
 }
 
-__isl_give isl_pw_aff *isl_pw_aff_min(__isl_take isl_pw_aff *pwaff1,
+__isl_give isl_pw_aff *isl_pw_aff_mul(__isl_take isl_pw_aff *pwaff1,
+	__isl_take isl_pw_aff *pwaff2)
+{
+	return align_params_pw_pw_and(pwaff1, pwaff2, &pw_aff_mul);
+}
+
+static __isl_give isl_pw_aff *pw_aff_min(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
 	isl_set *le;
@@ -1493,7 +1552,13 @@ __isl_give isl_pw_aff *isl_pw_aff_min(__isl_take isl_pw_aff *pwaff1,
 	return isl_pw_aff_cond(le, pwaff1, pwaff2);
 }
 
-__isl_give isl_pw_aff *isl_pw_aff_max(__isl_take isl_pw_aff *pwaff1,
+__isl_give isl_pw_aff *isl_pw_aff_min(__isl_take isl_pw_aff *pwaff1,
+	__isl_take isl_pw_aff *pwaff2)
+{
+	return align_params_pw_pw_and(pwaff1, pwaff2, &pw_aff_min);
+}
+
+static __isl_give isl_pw_aff *pw_aff_max(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
 	isl_set *le;
@@ -1501,4 +1566,10 @@ __isl_give isl_pw_aff *isl_pw_aff_max(__isl_take isl_pw_aff *pwaff1,
 	le = isl_pw_aff_ge_set(isl_pw_aff_copy(pwaff1),
 				isl_pw_aff_copy(pwaff2));
 	return isl_pw_aff_cond(le, pwaff1, pwaff2);
+}
+
+__isl_give isl_pw_aff *isl_pw_aff_max(__isl_take isl_pw_aff *pwaff1,
+	__isl_take isl_pw_aff *pwaff2)
+{
+	return align_params_pw_pw_and(pwaff1, pwaff2, &pw_aff_max);
 }

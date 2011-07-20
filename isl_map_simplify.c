@@ -1813,11 +1813,17 @@ error:
 	return NULL;
 }
 
-__isl_give isl_map *isl_map_gist(__isl_take isl_map *map,
+static __isl_give isl_map *map_gist(__isl_take isl_map *map,
 	__isl_take isl_map *context)
 {
 	context = isl_map_compute_divs(context);
 	return isl_map_gist_basic_map(map, isl_map_simple_hull(context));
+}
+
+__isl_give isl_map *isl_map_gist(__isl_take isl_map *map,
+	__isl_take isl_map *context)
+{
+	return isl_map_align_params_map_map_and(map, context, &map_gist);
 }
 
 struct isl_basic_set *isl_basic_set_gist(struct isl_basic_set *bset,

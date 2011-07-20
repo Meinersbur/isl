@@ -478,7 +478,8 @@ static __isl_give isl_map *basic_map_subtract(__isl_take isl_basic_map *bmap,
 /* Return the set difference between map1 and map2.
  * (U_i A_i) \ (U_j B_j) is computed as U_i (A_i \ (U_j B_j))
  */
-struct isl_map *isl_map_subtract(struct isl_map *map1, struct isl_map *map2)
+static __isl_give isl_map *map_subtract( __isl_take isl_map *map1,
+	__isl_take isl_map *map2)
 {
 	int i;
 	struct isl_map *diff;
@@ -520,6 +521,12 @@ error:
 	isl_map_free(map1);
 	isl_map_free(map2);
 	return NULL;
+}
+
+__isl_give isl_map *isl_map_subtract( __isl_take isl_map *map1,
+	__isl_take isl_map *map2)
+{
+	return isl_map_align_params_map_map_and(map1, map2, &map_subtract);
 }
 
 struct isl_set *isl_set_subtract(struct isl_set *set1, struct isl_set *set2)
