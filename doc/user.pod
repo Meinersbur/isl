@@ -93,6 +93,15 @@ but they will be removed in the future.
 
 =back
 
+=head3 Changes since isl-0.07
+
+=over
+
+=item * The function C<isl_pw_aff_max> has been renamed to
+C<isl_pw_aff_union_max>.
+
+=back
+
 =head1 Installation
 
 The source of C<isl> can be obtained either as a tarball
@@ -2497,11 +2506,11 @@ for elements in C<cond> and equal to C<pwaff_false> for elements
 not in C<cond>.
 
 	#include <isl/aff.h>
-	__isl_give isl_pw_aff *isl_pw_aff_max(
+	__isl_give isl_pw_aff *isl_pw_aff_union_max(
 		__isl_take isl_pw_aff *pwaff1,
 		__isl_take isl_pw_aff *pwaff2);
 
-The function C<isl_pw_aff_max> computes a piecewise quasi-affine
+The function C<isl_pw_aff_union_max> computes a piecewise quasi-affine
 expression with a domain that is the union of those of C<pwaff1> and
 C<pwaff2> and such that on each cell, the quasi-affine expression is
 the maximum of those of C<pwaff1> and C<pwaff2>.  If only one of

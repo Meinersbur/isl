@@ -5134,7 +5134,7 @@ static __isl_give isl_pw_aff *basic_set_dim_max(__isl_keep isl_basic_set *bset)
  *
  * We first project the set onto the given dimension and then compute
  * the "lexicographic" maximum in each basic set, combining the results
- * using isl_pw_aff_max.
+ * using isl_pw_aff_union_max.
  */
 __isl_give isl_pw_aff *isl_set_dim_max(__isl_take isl_set *set, int pos)
 {
@@ -5163,7 +5163,7 @@ __isl_give isl_pw_aff *isl_set_dim_max(__isl_take isl_set *set, int pos)
 		isl_pw_aff *pwaff_i;
 
 		pwaff_i = basic_set_dim_max(set->p[i]);
-		pwaff = isl_pw_aff_max(pwaff, pwaff_i);
+		pwaff = isl_pw_aff_union_max(pwaff, pwaff_i);
 	}
 
 	isl_set_free(set);

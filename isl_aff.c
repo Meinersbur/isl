@@ -1049,7 +1049,7 @@ __isl_give isl_pw_aff *isl_pw_aff_add_dims(__isl_take isl_pw_aff *pwaff,
  * and pwaff2.  If only one of pwaff1 or pwaff2 is defined on a given
  * cell, then the associated expression is the defined one.
  */
-__isl_give isl_pw_aff *isl_pw_aff_max(__isl_take isl_pw_aff *pwaff1,
+__isl_give isl_pw_aff *isl_pw_aff_union_max(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
 	int i, j, n;
