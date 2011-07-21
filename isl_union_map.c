@@ -154,6 +154,11 @@ __isl_give isl_union_map *isl_union_map_align_params(
 		return umap;
 	}
 
+	model = isl_dim_drop(model, isl_dim_in,
+				0, isl_dim_size(model, isl_dim_in));
+	model = isl_dim_drop(model, isl_dim_out,
+				0, isl_dim_size(model, isl_dim_out));
+
 	data.exp = isl_parameter_alignment_reordering(umap->dim, model);
 	if (!data.exp)
 		goto error;
@@ -260,18 +265,23 @@ __isl_give isl_union_map *isl_union_map_add_map(__isl_take isl_union_map *umap,
 	uint32_t hash;
 	struct isl_hash_table_entry *entry;
 
+	if (!map || !umap)
+		goto error;
+
 	if (isl_map_plain_is_empty(map)) {
 		isl_map_free(map);
 		return umap;
+	}
+
+	if (!isl_dim_match(map->dim, isl_dim_param, umap->dim, isl_dim_param)) {
+		umap = isl_union_map_align_params(umap, isl_map_get_dim(map));
+		map = isl_map_align_params(map, isl_union_map_get_dim(umap));
 	}
 
 	umap = isl_union_map_cow(umap);
 
 	if (!map || !umap)
 		goto error;
-
-	isl_assert(map->ctx, isl_dim_match(map->dim, isl_dim_param, umap->dim,
-					   isl_dim_param), goto error);
 
 	hash = isl_dim_get_hash(map->dim);
 	entry = isl_hash_table_find(umap->dim->ctx, &umap->table, hash,
