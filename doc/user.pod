@@ -2351,6 +2351,8 @@ be created using the following functions.
 		__isl_take isl_dim *dim);
 	__isl_give isl_pw_aff *isl_pw_aff_alloc(
 		__isl_take isl_set *set, __isl_take isl_aff *aff);
+	__isl_give isl_pw_aff *isl_pw_aff_from_aff(
+		__isl_take isl_aff *aff);
 
 Quasi affine expressions can be copied and freed using
 

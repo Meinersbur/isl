@@ -1033,6 +1033,12 @@ __isl_give isl_pw_aff *isl_pw_aff_set_tuple_id(__isl_take isl_pw_aff *pwaff,
 	return isl_pw_aff_reset_dim(pwaff, dim);
 }
 
+__isl_give isl_pw_aff *isl_pw_aff_from_aff(__isl_take isl_aff *aff)
+{
+	isl_set *dom = isl_set_universe(isl_aff_get_dim(aff));
+	return isl_pw_aff_alloc(dom, aff);
+}
+
 #undef PW
 #define PW isl_pw_aff
 #undef EL
