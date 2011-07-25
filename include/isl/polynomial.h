@@ -195,6 +195,8 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_mul(
 	__isl_take isl_pw_qpolynomial *pwqp2);
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_mul_isl_int(
 	__isl_take isl_pw_qpolynomial *pwqp, isl_int v);
+__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_pow(
+	__isl_take isl_pw_qpolynomial *pwqp, unsigned exponent);
 
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_insert_dims(
 	__isl_take isl_pw_qpolynomial *pwqp, enum isl_dim_type type,

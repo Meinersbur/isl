@@ -1471,6 +1471,27 @@ error:
 	return NULL;
 }
 
+__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_pow(
+	__isl_take isl_pw_qpolynomial *pwqp, unsigned power)
+{
+	int i;
+
+	if (power == 1)
+		return pwqp;
+
+	pwqp = isl_pw_qpolynomial_cow(pwqp);
+	if (!pwqp)
+		return NULL;
+
+	for (i = 0; i < pwqp->n; ++i) {
+		pwqp->p[i].qp = isl_qpolynomial_pow(pwqp->p[i].qp, power);
+		if (!pwqp->p[i].qp)
+			return isl_pw_qpolynomial_free(pwqp);
+	}
+
+	return pwqp;
+}
+
 __isl_give isl_qpolynomial *isl_qpolynomial_zero(__isl_take isl_dim *dim)
 {
 	if (!dim)
