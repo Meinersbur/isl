@@ -2268,11 +2268,13 @@ struct isl_map *isl_map_intersect(struct isl_map *map1, struct isl_map *map2)
 	if (!map1 || !map2)
 		goto error;
 
-	if (isl_map_plain_is_empty(map1)) {
+	if (isl_map_plain_is_empty(map1) &&
+	    isl_dim_equal(map1->dim, map2->dim)) {
 		isl_map_free(map2);
 		return map1;
 	}
-	if (isl_map_plain_is_empty(map2)) {
+	if (isl_map_plain_is_empty(map2) &&
+	    isl_dim_equal(map1->dim, map2->dim)) {
 		isl_map_free(map1);
 		return map2;
 	}
