@@ -566,6 +566,9 @@ static __isl_give isl_map *read_var_list(struct isl_stream *s,
 	int i = 0;
 	struct isl_token *tok;
 
+	if (isl_stream_next_token_is(s, ']'))
+		return map;
+
 	while ((tok = next_token(s)) != NULL) {
 		int new_name = 0;
 
@@ -581,10 +584,7 @@ static __isl_give isl_map *read_var_list(struct isl_stream *s,
 			map = isl_map_add_dims(map, type, 1);
 			map = set_name(map, type, i, v->v->name);
 			isl_token_free(tok);
-		} else if (tok->type == ISL_TOKEN_IDENT ||
-			   tok->type == ISL_TOKEN_VALUE ||
-			   tok->type == '-' ||
-			   tok->type == '(') {
+		} else {
 			if (type == isl_dim_param) {
 				isl_stream_error(s, tok,
 						"expecting unique identifier");
@@ -596,8 +596,7 @@ static __isl_give isl_map *read_var_list(struct isl_stream *s,
 				goto error;
 			map = isl_map_add_dims(map, type, 1);
 			map = read_var_def(s, map, type, v);
-		} else
-			break;
+		}
 
 		tok = isl_stream_next_token(s);
 		if (tok && tok->type == ']' &&

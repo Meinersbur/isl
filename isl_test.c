@@ -120,6 +120,10 @@ void test_parse(struct isl_ctx *ctx)
 	str2 = "[n] -> { [c1] : c1 >= 0 and 3c1 <= -4 + n }";
 	test_parse_map_equal(ctx, str, str2);
 
+	str = "{ [i,j] -> [i] : i < j; [i,j] -> [j] : j <= i }";
+	str2 = "{ [i,j] -> [min(i,j)] }";
+	test_parse_map_equal(ctx, str, str2);
+
 	test_parse_pwqp(ctx, "{ [i] -> i + [ (i + [i/3])/2 ] }");
 	test_parse_map(ctx, "{ S1[i] -> [([i/10]),i%10] : 0 <= i <= 45 }");
 }
