@@ -152,6 +152,7 @@ __isl_give isl_pw_aff *isl_pw_aff_gist(__isl_take isl_pw_aff *pwaff,
 __isl_give isl_map *isl_map_from_pw_aff(__isl_take isl_pw_aff *pwaff);
 
 __isl_give isl_set *isl_pw_aff_nonneg_set(__isl_take isl_pw_aff *pwaff);
+__isl_give isl_set *isl_pw_aff_zero_set(__isl_take isl_pw_aff *pwaff);
 
 __isl_give isl_set *isl_pw_aff_eq_set(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2);
