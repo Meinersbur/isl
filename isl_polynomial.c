@@ -3026,6 +3026,30 @@ error:
 	return NULL;
 }
 
+__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_from_pw_aff(
+	__isl_take isl_pw_aff *pwaff)
+{
+	int i;
+	isl_pw_qpolynomial *pwqp;
+
+	if (!pwaff)
+		return NULL;
+
+	pwqp = isl_pw_qpolynomial_alloc_(isl_pw_aff_get_dim(pwaff), pwaff->n);
+
+	for (i = 0; i < pwaff->n; ++i) {
+		isl_set *dom;
+		isl_qpolynomial *qp;
+
+		dom = isl_set_copy(pwaff->p[i].set);
+		qp = isl_qpolynomial_from_aff(isl_aff_copy(pwaff->p[i].aff));
+		pwqp = isl_pw_qpolynomial_add_piece(pwqp,  dom, qp);
+	}
+
+	isl_pw_aff_free(pwaff);
+	return pwqp;
+}
+
 __isl_give isl_qpolynomial *isl_qpolynomial_from_constraint(
 	__isl_take isl_constraint *c, enum isl_dim_type type, unsigned pos)
 {

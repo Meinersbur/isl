@@ -2814,6 +2814,8 @@ be combined to create more complicated piecewise quasipolynomials.
 		__isl_take isl_qpolynomial *qp);
 	__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_from_qpolynomial(
 		__isl_take isl_qpolynomial *qp);
+	__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_from_pw_aff(
+		__isl_take isl_pw_aff *pwaff);
 
 	__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_zero(
 		__isl_take isl_dim *dim);

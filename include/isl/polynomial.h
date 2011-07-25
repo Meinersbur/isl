@@ -228,6 +228,9 @@ int isl_pw_qpolynomial_foreach_lifted_piece(__isl_keep isl_pw_qpolynomial *pwqp,
 	int (*fn)(__isl_take isl_set *set, __isl_take isl_qpolynomial *qp,
 		    void *user), void *user);
 
+__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_from_pw_aff(
+	__isl_take isl_pw_aff *pwaff);
+
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_read_from_str(isl_ctx *ctx,
 		const char *str);
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_read_from_file(isl_ctx *ctx,
