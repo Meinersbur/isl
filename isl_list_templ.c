@@ -155,6 +155,32 @@ error:
 	return NULL;
 }
 
+__isl_give LIST(EL) *FN(LIST(EL),concat)(__isl_take LIST(EL) *list1,
+	__isl_take LIST(EL) *list2)
+{
+	int i;
+	isl_ctx *ctx;
+	LIST(EL) *res;
+
+	if (!list1 || !list2)
+		goto error;
+
+	ctx = FN(LIST(EL),get_ctx)(list1);
+	res = FN(LIST(EL),alloc)(ctx, list1->n + list2->n);
+	for (i = 0; i < list1->n; ++i)
+		res = FN(LIST(EL),add)(res, FN(EL,copy)(list1->p[i]));
+	for (i = 0; i < list2->n; ++i)
+		res = FN(LIST(EL),add)(res, FN(EL,copy)(list2->p[i]));
+
+	FN(LIST(EL),free)(list1);
+	FN(LIST(EL),free)(list2);
+	return res;
+error:
+	FN(LIST(EL),free)(list1);
+	FN(LIST(EL),free)(list2);
+	return NULL;
+}
+
 __isl_give isl_printer *CAT(isl_printer_print_,LIST(BASE))(
 	__isl_take isl_printer *p, __isl_keep LIST(EL) *list)
 {
