@@ -19,6 +19,11 @@
 #include <isl_list_templ.h>
 
 #undef EL
+#define EL isl_pw_aff
+
+#include <isl_list_templ.h>
+
+#undef EL
 #define EL isl_band
 
 #include <isl_list_templ.h>

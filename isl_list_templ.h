@@ -20,4 +20,5 @@ __isl_give isl_##EL##_list *isl_##EL##_list_dup(			\
 ISL_DECLARE_LIST_PRIVATE(basic_set)
 ISL_DECLARE_LIST_PRIVATE(set)
 ISL_DECLARE_LIST_PRIVATE(aff)
+ISL_DECLARE_LIST_PRIVATE(pw_aff)
 ISL_DECLARE_LIST_PRIVATE(band)

@@ -28,6 +28,11 @@
 #include <isl_list_templ.c>
 
 #undef BASE
+#define BASE pw_aff
+
+#include <isl_list_templ.c>
+
+#undef BASE
 #define BASE band
 
 #include <isl_list_templ.c>

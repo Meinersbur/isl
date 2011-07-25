@@ -47,6 +47,7 @@ void isl_##EL##_list_dump(__isl_keep isl_##EL##_list *list);
 ISL_DECLARE_LIST(basic_set)
 ISL_DECLARE_LIST(set)
 ISL_DECLARE_LIST(aff)
+ISL_DECLARE_LIST(pw_aff)
 ISL_DECLARE_LIST(band)
 
 #if defined(__cplusplus)
