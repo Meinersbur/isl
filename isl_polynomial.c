@@ -2518,6 +2518,23 @@ error:
 	return NULL;
 }
 
+__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_from_qpolynomial(
+	__isl_take isl_qpolynomial *qp)
+{
+	isl_set *dom;
+
+	if (!qp)
+		return NULL;
+	if (isl_qpolynomial_is_zero(qp)) {
+		isl_dim *dim = isl_qpolynomial_get_dim(qp);
+		isl_qpolynomial_free(qp);
+		return isl_pw_qpolynomial_zero(dim);
+	}
+
+	dom = isl_set_universe(isl_qpolynomial_get_dim(qp));
+	return isl_pw_qpolynomial_alloc(dom, qp);
+}
+
 #undef PW
 #define PW isl_pw_qpolynomial
 #undef EL

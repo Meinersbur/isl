@@ -145,6 +145,8 @@ isl_ctx *isl_pw_qpolynomial_get_ctx(__isl_keep isl_pw_qpolynomial *pwqp);
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_zero(__isl_take isl_dim *dim);
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_alloc(__isl_take isl_set *set,
 	__isl_take isl_qpolynomial *qp);
+__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_from_qpolynomial(
+	__isl_take isl_qpolynomial *qp);
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_copy(
 	__isl_keep isl_pw_qpolynomial *pwqp);
 void *isl_pw_qpolynomial_free(__isl_take isl_pw_qpolynomial *pwqp);
