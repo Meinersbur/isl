@@ -411,7 +411,8 @@ static __isl_give isl_pw_aff *accept_affine_factor(struct isl_stream *s,
 		isl_stream_error(s, tok, "expecting factor");
 		goto error;
 	}
-	if (isl_stream_eat_if_available(s, '%')) {
+	if (isl_stream_eat_if_available(s, '%') ||
+	    isl_stream_eat_if_available(s, ISL_TOKEN_MOD)) {
 		isl_dim_free(dim);
 		return affine_mod(s, v, res);
 	}
