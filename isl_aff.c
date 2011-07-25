@@ -16,6 +16,7 @@
 #include <isl_dim_private.h>
 #include <isl_local_space_private.h>
 #include <isl_mat_private.h>
+#include <isl_list_private.h>
 #include <isl/constraint.h>
 #include <isl/seq.h>
 #include <isl/set.h>
@@ -1357,6 +1358,91 @@ __isl_give isl_set *isl_pw_aff_lt_set(__isl_take isl_pw_aff *pwaff1,
 {
 	return isl_pw_aff_gt_set(pwaff2, pwaff1);
 }
+
+/* Return a set containing those elements in the shared domain
+ * of the elements of list1 and list2 where each element in list1
+ * has the relation specified by "fn" with each element in list2.
+ */
+static __isl_give isl_set *pw_aff_list_set(__isl_take isl_pw_aff_list *list1,
+	__isl_take isl_pw_aff_list *list2,
+	__isl_give isl_set *(*fn)(__isl_take isl_pw_aff *pwaff1,
+				    __isl_take isl_pw_aff *pwaff2))
+{
+	int i, j;
+	isl_ctx *ctx;
+	isl_set *set;
+
+	if (!list1 || !list2)
+		goto error;
+
+	ctx = isl_pw_aff_list_get_ctx(list1);
+	if (list1->n < 1 || list2->n < 1)
+		isl_die(ctx, isl_error_invalid,
+			"list should contain at least one element", goto error);
+
+	set = isl_set_universe(isl_pw_aff_get_dim(list1->p[0]));
+	for (i = 0; i < list1->n; ++i)
+		for (j = 0; j < list2->n; ++j) {
+			isl_set *set_ij;
+
+			set_ij = fn(isl_pw_aff_copy(list1->p[i]),
+				    isl_pw_aff_copy(list2->p[j]));
+			set = isl_set_intersect(set, set_ij);
+		}
+
+	isl_pw_aff_list_free(list1);
+	isl_pw_aff_list_free(list2);
+	return set;
+error:
+	isl_pw_aff_list_free(list1);
+	isl_pw_aff_list_free(list2);
+	return NULL;
+}
+
+/* Return a set containing those elements in the shared domain
+ * of the elements of list1 and list2 where each element in list1
+ * is equal to each element in list2.
+ */
+__isl_give isl_set *isl_pw_aff_list_eq_set(__isl_take isl_pw_aff_list *list1,
+	__isl_take isl_pw_aff_list *list2)
+{
+	return pw_aff_list_set(list1, list2, &isl_pw_aff_eq_set);
+}
+
+__isl_give isl_set *isl_pw_aff_list_ne_set(__isl_take isl_pw_aff_list *list1,
+	__isl_take isl_pw_aff_list *list2)
+{
+	return pw_aff_list_set(list1, list2, &isl_pw_aff_ne_set);
+}
+
+/* Return a set containing those elements in the shared domain
+ * of the elements of list1 and list2 where each element in list1
+ * is less than or equal to each element in list2.
+ */
+__isl_give isl_set *isl_pw_aff_list_le_set(__isl_take isl_pw_aff_list *list1,
+	__isl_take isl_pw_aff_list *list2)
+{
+	return pw_aff_list_set(list1, list2, &isl_pw_aff_le_set);
+}
+
+__isl_give isl_set *isl_pw_aff_list_lt_set(__isl_take isl_pw_aff_list *list1,
+	__isl_take isl_pw_aff_list *list2)
+{
+	return pw_aff_list_set(list1, list2, &isl_pw_aff_lt_set);
+}
+
+__isl_give isl_set *isl_pw_aff_list_ge_set(__isl_take isl_pw_aff_list *list1,
+	__isl_take isl_pw_aff_list *list2)
+{
+	return pw_aff_list_set(list1, list2, &isl_pw_aff_ge_set);
+}
+
+__isl_give isl_set *isl_pw_aff_list_gt_set(__isl_take isl_pw_aff_list *list1,
+	__isl_take isl_pw_aff_list *list2)
+{
+	return pw_aff_list_set(list1, list2, &isl_pw_aff_gt_set);
+}
+
 
 /* Return a set containing those elements in the shared domain
  * of pwaff1 and pwaff2 where pwaff1 is not equal to pwaff2.

@@ -6,6 +6,7 @@
 #include <isl/printer.h>
 #include <isl/set_type.h>
 #include <isl/aff_type.h>
+#include <isl/list.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -172,6 +173,19 @@ __isl_give isl_set *isl_pw_aff_gt_set(__isl_take isl_pw_aff *pwaff1,
 __isl_give isl_printer *isl_printer_print_pw_aff(__isl_take isl_printer *p,
 	__isl_keep isl_pw_aff *pwaff);
 void isl_pw_aff_dump(__isl_keep isl_pw_aff *pwaff);
+
+__isl_give isl_set *isl_pw_aff_list_eq_set(__isl_take isl_pw_aff_list *list1,
+	__isl_take isl_pw_aff_list *list2);
+__isl_give isl_set *isl_pw_aff_list_ne_set(__isl_take isl_pw_aff_list *list1,
+	__isl_take isl_pw_aff_list *list2);
+__isl_give isl_set *isl_pw_aff_list_le_set(__isl_take isl_pw_aff_list *list1,
+	__isl_take isl_pw_aff_list *list2);
+__isl_give isl_set *isl_pw_aff_list_lt_set(__isl_take isl_pw_aff_list *list1,
+	__isl_take isl_pw_aff_list *list2);
+__isl_give isl_set *isl_pw_aff_list_ge_set(__isl_take isl_pw_aff_list *list1,
+	__isl_take isl_pw_aff_list *list2);
+__isl_give isl_set *isl_pw_aff_list_gt_set(__isl_take isl_pw_aff_list *list1,
+	__isl_take isl_pw_aff_list *list2);
 
 #if defined(__cplusplus)
 }

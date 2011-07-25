@@ -2578,12 +2578,33 @@ to be a constant.
 		__isl_take isl_pw_aff *pwaff1,
 		__isl_take isl_pw_aff *pwaff2);
 
+	__isl_give isl_set *isl_pw_aff_list_eq_set(
+		__isl_take isl_pw_aff_list *list1,
+		__isl_take isl_pw_aff_list *list2);
+	__isl_give isl_set *isl_pw_aff_list_ne_set(
+		__isl_take isl_pw_aff_list *list1,
+		__isl_take isl_pw_aff_list *list2);
+	__isl_give isl_set *isl_pw_aff_list_le_set(
+		__isl_take isl_pw_aff_list *list1,
+		__isl_take isl_pw_aff_list *list2);
+	__isl_give isl_set *isl_pw_aff_list_lt_set(
+		__isl_take isl_pw_aff_list *list1,
+		__isl_take isl_pw_aff_list *list2);
+	__isl_give isl_set *isl_pw_aff_list_ge_set(
+		__isl_take isl_pw_aff_list *list1,
+		__isl_take isl_pw_aff_list *list2);
+	__isl_give isl_set *isl_pw_aff_list_gt_set(
+		__isl_take isl_pw_aff_list *list1,
+		__isl_take isl_pw_aff_list *list2);
+
 The function C<isl_aff_ge_basic_set> returns a basic set
 containing those elements in the shared space
 of C<aff1> and C<aff2> where C<aff1> is greater than or equal to C<aff2>.
 The function C<isl_aff_ge_set> returns a set
 containing those elements in the shared domain
 of C<pwaff1> and C<pwaff2> where C<pwaff1> is greater than or equal to C<pwaff2>.
+The functions operating on C<isl_pw_aff_list> apply the corresponding
+C<isl_pw_aff> function to each pair of elements in the two lists.
 
 	#include <isl/aff.h>
 	__isl_give isl_set *isl_pw_aff_nonneg_set(
