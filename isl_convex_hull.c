@@ -201,22 +201,27 @@ __isl_give isl_basic_set *isl_basic_set_set_rational(
 	return isl_basic_map_set_rational(bset);
 }
 
-static struct isl_set *isl_set_set_rational(struct isl_set *set)
+__isl_give isl_map *isl_map_set_rational(__isl_take isl_map *map)
 {
 	int i;
 
-	set = isl_set_cow(set);
-	if (!set)
+	map = isl_map_cow(map);
+	if (!map)
 		return NULL;
-	for (i = 0; i < set->n; ++i) {
-		set->p[i] = isl_basic_set_set_rational(set->p[i]);
-		if (!set->p[i])
+	for (i = 0; i < map->n; ++i) {
+		map->p[i] = isl_basic_map_set_rational(map->p[i]);
+		if (!map->p[i])
 			goto error;
 	}
-	return set;
+	return map;
 error:
-	isl_set_free(set);
+	isl_map_free(map);
 	return NULL;
+}
+
+__isl_give isl_set *isl_set_set_rational(__isl_take isl_set *set)
+{
+	return isl_map_set_rational(set);
 }
 
 static struct isl_basic_set *isl_basic_set_add_equality(
