@@ -1673,3 +1673,47 @@ __isl_give isl_pw_aff *isl_pw_aff_max(__isl_take isl_pw_aff *pwaff1,
 {
 	return align_params_pw_pw_and(pwaff1, pwaff2, &pw_aff_max);
 }
+
+static __isl_give isl_pw_aff *pw_aff_list_reduce(
+	__isl_take isl_pw_aff_list *list,
+	__isl_give isl_pw_aff *(*fn)(__isl_take isl_pw_aff *pwaff1,
+					__isl_take isl_pw_aff *pwaff2))
+{
+	int i;
+	isl_ctx *ctx;
+	isl_pw_aff *res;
+
+	if (!list)
+		return NULL;
+
+	ctx = isl_pw_aff_list_get_ctx(list);
+	if (list->n < 1)
+		isl_die(ctx, isl_error_invalid,
+			"list should contain at least one element",
+			return isl_pw_aff_list_free(list));
+
+	res = isl_pw_aff_copy(list->p[0]);
+	for (i = 1; i < list->n; ++i)
+		res = fn(res, isl_pw_aff_copy(list->p[i]));
+
+	isl_pw_aff_list_free(list);
+	return res;
+}
+
+/* Return an isl_pw_aff that maps each element in the intersection of the
+ * domains of the elements of list to the minimal corresponding affine
+ * expression.
+ */
+__isl_give isl_pw_aff *isl_pw_aff_list_min(__isl_take isl_pw_aff_list *list)
+{
+	return pw_aff_list_reduce(list, &isl_pw_aff_min);
+}
+
+/* Return an isl_pw_aff that maps each element in the intersection of the
+ * domains of the elements of list to the maximal corresponding affine
+ * expression.
+ */
+__isl_give isl_pw_aff *isl_pw_aff_list_max(__isl_take isl_pw_aff_list *list)
+{
+	return pw_aff_list_reduce(list, &isl_pw_aff_max);
+}
