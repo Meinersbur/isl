@@ -826,6 +826,9 @@ static __isl_give isl_set *construct_constraints(
 	else if (type == ISL_TOKEN_GT)
 		cond = isl_pw_aff_list_gt_set(isl_pw_aff_list_copy(left),
 					      isl_pw_aff_list_copy(right));
+	else if (type == ISL_TOKEN_NE)
+		cond = isl_pw_aff_list_ne_set(isl_pw_aff_list_copy(left),
+					      isl_pw_aff_list_copy(right));
 	else
 		cond = isl_pw_aff_list_eq_set(isl_pw_aff_list_copy(left),
 					      isl_pw_aff_list_copy(right));
@@ -843,6 +846,7 @@ static int is_comparator(struct isl_token *tok)
 	case ISL_TOKEN_GT:
 	case ISL_TOKEN_LE:
 	case ISL_TOKEN_GE:
+	case ISL_TOKEN_NE:
 	case '=':
 		return 1;
 	default:

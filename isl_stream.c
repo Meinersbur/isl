@@ -544,8 +544,16 @@ static struct isl_token *next_token(struct isl_stream *s, int same_line)
 		tok = isl_token_new(s->ctx, line, col, old_line != line);
 		if (!tok)
 			return NULL;
-		tok->type = ISL_TOKEN_NOT;
-		tok->u.s = strdup("!");
+		if ((c = isl_stream_getc(s)) == '=') {
+			tok->u.s = strdup("!=");
+			tok->type = ISL_TOKEN_NE;
+			return tok;
+		} else {
+			tok->type = ISL_TOKEN_NOT;
+			tok->u.s = strdup("!");
+		}
+		if (c != -1)
+			isl_stream_ungetc(s, c);
 		return tok;
 	}
 
