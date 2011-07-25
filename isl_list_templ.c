@@ -137,6 +137,24 @@ int FN(LIST(EL),foreach)(__isl_keep LIST(EL) *list,
 	return 0;
 }
 
+__isl_give LIST(EL) *FN(FN(LIST(EL),from),BASE)(__isl_take EL *el)
+{
+	isl_ctx *ctx;
+	LIST(EL) *list;
+
+	if (!el)
+		return NULL;
+	ctx = FN(EL,get_ctx)(el);
+	list = FN(LIST(EL),alloc)(ctx, 1);
+	if (!list)
+		goto error;
+	list = FN(LIST(EL),add)(list, el);
+	return list;
+error:
+	FN(EL,free)(el);
+	return NULL;
+}
+
 __isl_give isl_printer *CAT(isl_printer_print_,LIST(BASE))(
 	__isl_take isl_printer *p, __isl_keep LIST(EL) *list)
 {
