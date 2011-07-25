@@ -2582,6 +2582,8 @@ of C<pwaff1> and C<pwaff2> where C<pwaff1> is greater than or equal to C<pwaff2>
 		__isl_take isl_pw_aff *pwaff);
 	__isl_give isl_set *isl_pw_aff_zero_set(
 		__isl_take isl_pw_aff *pwaff);
+	__isl_give isl_set *isl_pw_aff_non_zero_set(
+		__isl_take isl_pw_aff *pwaff);
 
 The function C<isl_pw_aff_nonneg_set> returns a set
 containing those elements in the domain

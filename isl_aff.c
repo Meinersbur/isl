@@ -1252,6 +1252,14 @@ __isl_give isl_set *isl_pw_aff_zero_set(__isl_take isl_pw_aff *pwaff)
 	return set;
 }
 
+/* Return a set containing those elements in the domain
+ * of pwaff where it is not zero.
+ */
+__isl_give isl_set *isl_pw_aff_non_zero_set(__isl_take isl_pw_aff *pwaff)
+{
+	return isl_set_complement(isl_pw_aff_zero_set(pwaff));
+}
+
 /* Return a set containing those elements in the shared domain
  * of pwaff1 and pwaff2 where pwaff1 is greater than (or equal) to pwaff2.
  *
