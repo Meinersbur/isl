@@ -85,20 +85,22 @@ error:
 	return NULL;
 }
 
-void FN(LIST(EL),free)(__isl_take LIST(EL) *list)
+void *FN(LIST(EL),free)(__isl_take LIST(EL) *list)
 {
 	int i;
 
 	if (!list)
-		return;
+		return NULL;
 
 	if (--list->ref > 0)
-		return;
+		return NULL;
 
 	isl_ctx_deref(list->ctx);
 	for (i = 0; i < list->n; ++i)
 		FN(EL,free)(list->p[i]);
 	free(list);
+
+	return NULL;
 }
 
 int FN(FN(LIST(EL),n),BASE)(__isl_keep LIST(EL) *list)

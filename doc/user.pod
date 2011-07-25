@@ -2268,7 +2268,7 @@ Lists can be created, copied and freed using the following functions.
 	__isl_give isl_set_list *isl_set_list_add(
 		__isl_take isl_set_list *list,
 		__isl_take isl_set *el);
-	void isl_set_list_free(__isl_take isl_set_list *list);
+	void *isl_set_list_free(__isl_take isl_set_list *list);
 
 C<isl_set_list_alloc> creates an empty list with a capacity for
 C<n> elements.

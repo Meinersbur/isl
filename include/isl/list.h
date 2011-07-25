@@ -25,7 +25,7 @@ isl_ctx *isl_##EL##_list_get_ctx(__isl_keep isl_##EL##_list *list);	\
 __isl_give isl_##EL##_list *isl_##EL##_list_alloc(isl_ctx *ctx, int n);	\
 __isl_give isl_##EL##_list *isl_##EL##_list_copy(			\
 	__isl_keep isl_##EL##_list *list);				\
-void isl_##EL##_list_free(__isl_take isl_##EL##_list *list);		\
+void *isl_##EL##_list_free(__isl_take isl_##EL##_list *list);		\
 __isl_give isl_##EL##_list *isl_##EL##_list_add(			\
 	__isl_take isl_##EL##_list *list,				\
 	__isl_take struct isl_##EL *el);				\
