@@ -658,14 +658,19 @@ static __isl_give isl_map *read_var_def(struct isl_stream *s,
 	int pos;
 	isl_map *def_map;
 
-	pos = isl_map_dim(map, isl_dim_in);
-	if (type == isl_dim_out)
-		pos += isl_map_dim(map, isl_dim_out);
+	if (type == isl_dim_param)
+		pos = isl_map_dim(map, isl_dim_param);
+	else {
+		pos = isl_map_dim(map, isl_dim_in);
+		if (type == isl_dim_out)
+			pos += isl_map_dim(map, isl_dim_out);
+		type = isl_dim_in;
+	}
 	--pos;
 
 	def = accept_extended_affine(s, isl_dim_wrap(isl_map_get_dim(map)), v);
 	def_map = isl_map_from_pw_aff(def);
-	def_map = isl_map_equate(def_map, isl_dim_in, pos, isl_dim_out, 0);
+	def_map = isl_map_equate(def_map, type, pos, isl_dim_out, 0);
 	def_map = isl_set_unwrap(isl_map_domain(def_map));
 
 	map = isl_map_intersect(map, def_map);
@@ -697,6 +702,8 @@ static __isl_give isl_map *read_var_list(struct isl_stream *s,
 			map = isl_map_add_dims(map, type, 1);
 			map = set_name(map, type, i, v->v->name);
 			isl_token_free(tok);
+			if (isl_stream_eat_if_available(s, '='))
+				map = read_var_def(s, map, type, v);
 		} else {
 			if (type == isl_dim_param) {
 				isl_stream_error(s, tok,
