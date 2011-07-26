@@ -18,7 +18,7 @@
 #include <isl/set.h>
 #include <isl/seq.h>
 #include <isl/div.h>
-#include <isl/stream.h>
+#include <isl_stream_private.h>
 #include <isl/obj.h>
 #include "isl_polynomial_private.h"
 #include <isl/union_map.h>
@@ -358,7 +358,11 @@ static __isl_give isl_pw_aff *accept_affine_factor(struct isl_stream *s,
 		isl_stream_error(s, NULL, "unexpected EOF");
 		goto error;
 	}
-	if (tok->type == ISL_TOKEN_IDENT) {
+
+	if (tok->type == ISL_TOKEN_AFF) {
+		res = isl_pw_aff_copy(tok->u.pwaff);
+		isl_token_free(tok);
+	} else if (tok->type == ISL_TOKEN_IDENT) {
 		int n = v->n;
 		int pos = vars_pos(v, tok->u.s, -1);
 		isl_aff *aff;
@@ -476,7 +480,8 @@ static __isl_give isl_pw_aff *accept_affine(struct isl_stream *s,
 		    tok->type == ISL_TOKEN_MIN || tok->type == ISL_TOKEN_MAX ||
 		    tok->type == ISL_TOKEN_FLOORD ||
 		    tok->type == ISL_TOKEN_CEILD ||
-		    tok->type == ISL_TOKEN_IDENT) {
+		    tok->type == ISL_TOKEN_IDENT ||
+		    tok->type == ISL_TOKEN_AFF) {
 			isl_pw_aff *term;
 			isl_stream_push_token(s, tok);
 			tok = NULL;
@@ -930,13 +935,102 @@ error:
 	return NULL;
 }
 
-static __isl_give isl_map *read_conjunct(struct isl_stream *s,
+/* Parse an expression between parentheses and push the result
+ * back on the stream.
+ *
+ * The parsed expression may be either an affine expression
+ * or a condition.  The first type is pushed onto the stream
+ * as an isl_pw_aff, while the second is pushed as an isl_map.
+ *
+ * If the initial token indicates the start of a condition,
+ * we parse it as such.
+ * Otherwise, we first parse an affine expression and push
+ * that onto the stream.  If the affine expression covers the
+ * entire expression between parentheses, we return.
+ * Otherwise, we assume that the affine expression is the
+ * start of a condition and continue parsing.
+ */
+static int resolve_paren_expr(struct isl_stream *s,
 	struct vars *v, __isl_take isl_map *map)
 {
-	if (isl_stream_eat_if_available(s, '(')) {
+	struct isl_token *tok, *tok2;
+	int line, col;
+	isl_pw_aff *pwaff;
+
+	tok = isl_stream_next_token(s);
+	if (!tok || tok->type != '(')
+		goto error;
+
+	if (isl_stream_next_token_is(s, ISL_TOKEN_EXISTS) ||
+	    isl_stream_next_token_is(s, ISL_TOKEN_TRUE) ||
+	    isl_stream_next_token_is(s, ISL_TOKEN_FALSE)) {
 		map = read_disjuncts(s, v, map);
 		if (isl_stream_eat(s, ')'))
 			goto error;
+		tok->type = ISL_TOKEN_MAP;
+		tok->u.map = map;
+		isl_stream_push_token(s, tok);
+		return 0;
+	}
+
+	tok2 = isl_stream_next_token(s);
+	if (!tok2)
+		goto error;
+	line = tok2->line;
+	col = tok2->col;
+	isl_stream_push_token(s, tok2);
+
+	pwaff = accept_affine(s, isl_dim_wrap(isl_map_get_dim(map)), v);
+	if (!pwaff)
+		goto error;
+
+	tok2 = isl_token_new(s->ctx, line, col, 0);
+	if (!tok2)
+		goto error2;
+	tok2->type = ISL_TOKEN_AFF;
+	tok2->u.pwaff = pwaff;
+
+	if (isl_stream_eat_if_available(s, ')')) {
+		isl_stream_push_token(s, tok2);
+		isl_token_free(tok);
+		isl_map_free(map);
+		return 0;
+	}
+
+	isl_stream_push_token(s, tok2);
+
+	map = read_disjuncts(s, v, map);
+	if (isl_stream_eat(s, ')'))
+		goto error;
+
+	tok->type = ISL_TOKEN_MAP;
+	tok->u.map = map;
+	isl_stream_push_token(s, tok);
+
+	return 0;
+error2:
+	isl_pw_aff_free(pwaff);
+error:
+	isl_token_free(tok);
+	isl_map_free(map);
+	return -1;
+}
+
+static __isl_give isl_map *read_conjunct(struct isl_stream *s,
+	struct vars *v, __isl_take isl_map *map)
+{
+	if (isl_stream_next_token_is(s, '('))
+		if (resolve_paren_expr(s, v, isl_map_copy(map)))
+			goto error;
+
+	if (isl_stream_next_token_is(s, ISL_TOKEN_MAP)) {
+		struct isl_token *tok;
+		tok = isl_stream_next_token(s);
+		if (!tok)
+			goto error;
+		isl_map_free(map);
+		map = isl_map_copy(tok->u.map);
+		isl_token_free(tok);
 		return map;
 	}
 
