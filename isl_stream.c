@@ -12,6 +12,8 @@
 #include <strings.h>
 #include <isl/ctx.h>
 #include <isl_stream_private.h>
+#include <isl/map.h>
+#include <isl/aff.h>
 
 struct isl_keyword {
 	char			*name;
@@ -84,6 +86,10 @@ void isl_token_free(struct isl_token *tok)
 		return;
 	if (tok->type == ISL_TOKEN_VALUE)
 		isl_int_clear(tok->u.v);
+	else if (tok->type == ISL_TOKEN_MAP)
+		isl_map_free(tok->u.map);
+	else if (tok->type == ISL_TOKEN_AFF)
+		isl_pw_aff_free(tok->u.pwaff);
 	else
 		free(tok->u.s);
 	free(tok);
@@ -104,6 +110,20 @@ void isl_stream_error(struct isl_stream *s, struct isl_token *tok, char *msg)
 		else if (tok->type == ISL_TOKEN_VALUE) {
 			fprintf(stderr, "got value '");
 			isl_int_print(stderr, tok->u.v, 0);
+			fprintf(stderr, "'\n");
+		} else if (tok->type == ISL_TOKEN_MAP) {
+			isl_printer *p;
+			fprintf(stderr, "got map '");
+			p = isl_printer_to_file(s->ctx, stderr);
+			p = isl_printer_print_map(p, tok->u.map);
+			isl_printer_free(p);
+			fprintf(stderr, "'\n");
+		} else if (tok->type == ISL_TOKEN_AFF) {
+			isl_printer *p;
+			fprintf(stderr, "got affine expression '");
+			p = isl_printer_to_file(s->ctx, stderr);
+			p = isl_printer_print_pw_aff(p, tok->u.pwaff);
+			isl_printer_free(p);
 			fprintf(stderr, "'\n");
 		} else if (tok->u.s)
 			fprintf(stderr, "got token '%s'\n", tok->u.s);

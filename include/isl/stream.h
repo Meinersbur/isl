@@ -32,6 +32,7 @@ enum isl_token_type { ISL_TOKEN_ERROR = -1,
 			ISL_TOKEN_TRUE, ISL_TOKEN_FALSE,
 			ISL_TOKEN_CEILD, ISL_TOKEN_FLOORD, ISL_TOKEN_MOD,
 			ISL_TOKEN_STRING,
+			ISL_TOKEN_MAP, ISL_TOKEN_AFF,
 			ISL_TOKEN_LAST };
 
 struct isl_token {
@@ -45,6 +46,8 @@ struct isl_token {
 	union {
 		isl_int	v;
 		char	*s;
+		isl_map *map;
+		isl_pw_aff *pwaff;
 	} u;
 };
 
