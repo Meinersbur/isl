@@ -132,6 +132,10 @@ void test_parse(struct isl_ctx *ctx)
 	str2 = "{ [i, j] : j <= 2 + 2i }";
 	test_parse_map_equal(ctx, str, str2);
 
+	str = "{ [i] -> [i > 0 ? 4 : 5] }";
+	str2 = "{ [i] -> [5] : i <= 0; [i] -> [4] : i >= 1 }";
+	test_parse_map_equal(ctx, str, str2);
+
 	test_parse_pwqp(ctx, "{ [i] -> i + [ (i + [i/3])/2 ] }");
 	test_parse_map(ctx, "{ S1[i] -> [([i/10]),i%10] : 0 <= i <= 45 }");
 }

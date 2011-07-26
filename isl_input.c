@@ -544,6 +544,113 @@ error:
 	return NULL;
 }
 
+static int is_comparator(struct isl_token *tok)
+{
+	if (!tok)
+		return 0;
+
+	switch (tok->type) {
+	case ISL_TOKEN_LT:
+	case ISL_TOKEN_GT:
+	case ISL_TOKEN_LE:
+	case ISL_TOKEN_GE:
+	case ISL_TOKEN_NE:
+	case '=':
+		return 1;
+	default:
+		return 0;
+	}
+}
+
+static struct isl_map *read_disjuncts(struct isl_stream *s,
+	struct vars *v, __isl_take isl_map *map);
+static __isl_give isl_pw_aff *accept_extended_affine(struct isl_stream *s,
+	__isl_take isl_dim *dim, struct vars *v);
+
+/* Accept a ternary operator, given the first argument.
+ */
+static __isl_give isl_pw_aff *accept_ternary(struct isl_stream *s,
+	__isl_take isl_map *cond, struct vars *v)
+{
+	isl_dim *dim;
+	isl_pw_aff *pwaff1 = NULL, *pwaff2 = NULL;
+
+	if (!cond)
+		return NULL;
+
+	if (isl_stream_eat(s, '?'))
+		goto error;
+
+	dim = isl_dim_wrap(isl_map_get_dim(cond));
+	pwaff1 = accept_extended_affine(s, dim, v);
+	if (!pwaff1)
+		goto error;
+
+	if (isl_stream_eat(s, ':'))
+		goto error;
+
+	pwaff2 = accept_extended_affine(s, isl_pw_aff_get_dim(pwaff1), v);
+	if (!pwaff1)
+		goto error;
+
+	return isl_pw_aff_cond(isl_map_wrap(cond), pwaff1, pwaff2);
+error:
+	isl_map_free(cond);
+	isl_pw_aff_free(pwaff1);
+	isl_pw_aff_free(pwaff2);
+	return NULL;
+}
+
+/* Accept an affine expression that may involve ternary operators.
+ * We first read an affine expression.
+ * If it is not followed by a comparison operator, we simply return it.
+ * Otherwise, we assume the affine epxression is part of the first
+ * argument of a ternary operator and try to parse that.
+ */
+static __isl_give isl_pw_aff *accept_extended_affine(struct isl_stream *s,
+	__isl_take isl_dim *dim, struct vars *v)
+{
+	isl_map *cond;
+	isl_pw_aff *pwaff;
+	struct isl_token *tok;
+	int line = -1, col = -1;
+	int is_comp;
+
+	tok = isl_stream_next_token(s);
+	if (tok) {
+		line = tok->line;
+		col = tok->col;
+		isl_stream_push_token(s, tok);
+	}
+
+	pwaff = accept_affine(s, dim, v);
+	if (!pwaff)
+		return NULL;
+
+	tok = isl_stream_next_token(s);
+	if (!tok)
+		return isl_pw_aff_free(pwaff);
+
+	is_comp = is_comparator(tok);
+	isl_stream_push_token(s, tok);
+	if (!is_comp)
+		return pwaff;
+
+	tok = isl_token_new(s->ctx, line, col, 0);
+	if (!tok)
+		return isl_pw_aff_free(pwaff);
+	tok->type = ISL_TOKEN_AFF;
+	tok->u.pwaff = pwaff;
+
+	cond = isl_map_universe(isl_dim_unwrap(isl_pw_aff_get_dim(pwaff)));
+
+	isl_stream_push_token(s, tok);
+
+	cond = read_disjuncts(s, v, cond);
+
+	return accept_ternary(s, cond, v);
+}
+
 static __isl_give isl_map *read_var_def(struct isl_stream *s,
 	__isl_take isl_map *map, enum isl_dim_type type, struct vars *v)
 {
@@ -556,7 +663,7 @@ static __isl_give isl_map *read_var_def(struct isl_stream *s,
 		pos += isl_map_dim(map, isl_dim_out);
 	--pos;
 
-	def = accept_affine(s, isl_dim_wrap(isl_map_get_dim(map)), v);
+	def = accept_extended_affine(s, isl_dim_wrap(isl_map_get_dim(map)), v);
 	def_map = isl_map_from_pw_aff(def);
 	def_map = isl_map_equate(def_map, isl_dim_in, pos, isl_dim_out, 0);
 	def_map = isl_set_unwrap(isl_map_domain(def_map));
@@ -841,24 +948,6 @@ static __isl_give isl_set *construct_constraints(
 	return isl_set_intersect(set, cond);
 }
 
-static int is_comparator(struct isl_token *tok)
-{
-	if (!tok)
-		return 0;
-
-	switch (tok->type) {
-	case ISL_TOKEN_LT:
-	case ISL_TOKEN_GT:
-	case ISL_TOKEN_LE:
-	case ISL_TOKEN_GE:
-	case ISL_TOKEN_NE:
-	case '=':
-		return 1;
-	default:
-		return 0;
-	}
-}
-
 static __isl_give isl_map *add_constraint(struct isl_stream *s,
 	struct vars *v, __isl_take isl_map *map)
 {
@@ -906,9 +995,6 @@ error:
 	isl_set_free(set);
 	return NULL;
 }
-
-static struct isl_map *read_disjuncts(struct isl_stream *s,
-	struct vars *v, __isl_take isl_map *map);
 
 static __isl_give isl_map *read_exists(struct isl_stream *s,
 	struct vars *v, __isl_take isl_map *map)
