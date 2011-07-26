@@ -11,7 +11,7 @@
 #include <string.h>
 #include <strings.h>
 #include <isl/ctx.h>
-#include <isl/stream.h>
+#include <isl_stream_private.h>
 
 struct isl_keyword {
 	char			*name;
@@ -64,7 +64,7 @@ enum isl_token_type isl_stream_register_keyword(struct isl_stream *s,
 	return keyword->type;
 }
 
-static struct isl_token *isl_token_new(struct isl_ctx *ctx,
+struct isl_token *isl_token_new(isl_ctx *ctx,
 	int line, int col, unsigned on_new_line)
 {
 	struct isl_token *tok = isl_alloc_type(ctx, struct isl_token);
