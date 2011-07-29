@@ -151,6 +151,10 @@ __isl_give isl_pw_aff *isl_pw_aff_coalesce(__isl_take isl_pw_aff *pwqp);
 __isl_give isl_pw_aff *isl_pw_aff_gist(__isl_take isl_pw_aff *pwaff,
 	__isl_take isl_set *context);
 
+int isl_pw_aff_foreach_piece(__isl_keep isl_pw_aff *pwaff,
+	int (*fn)(__isl_take isl_set *set, __isl_take isl_aff *aff,
+		    void *user), void *user);
+
 __isl_give isl_map *isl_map_from_pw_aff(__isl_take isl_pw_aff *pwaff);
 
 __isl_give isl_set *isl_pw_aff_nonneg_set(__isl_take isl_pw_aff *pwaff);

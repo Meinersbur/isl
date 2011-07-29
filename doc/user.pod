@@ -2422,6 +2422,11 @@ The expression can be inspected using
 	__isl_give isl_div *isl_aff_get_div(
 		__isl_keep isl_aff *aff, int pos);
 
+	int isl_pw_aff_foreach_piece(__isl_keep isl_pw_aff *pwaff,
+		int (*fn)(__isl_take isl_set *set,
+			  __isl_take isl_aff *aff,
+			  void *user), void *user);
+
 	int isl_aff_is_cst(__isl_keep isl_aff *aff);
 	int isl_pw_aff_is_cst(__isl_keep isl_pw_aff *pwaff);
 
