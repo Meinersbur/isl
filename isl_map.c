@@ -8116,11 +8116,13 @@ int isl_set_size(__isl_keep isl_set *set)
 	return size;
 }
 
-int isl_basic_map_dim_is_bounded(__isl_keep isl_basic_map *bmap,
-	enum isl_dim_type type, unsigned pos)
+/* Check if there is any lower bound (if lower == 0) and/or upper
+ * bound (if upper == 0) on the specified dim.
+ */
+static int basic_map_dim_is_bounded(__isl_keep isl_basic_map *bmap,
+	enum isl_dim_type type, unsigned pos, int lower, int upper)
 {
 	int i;
-	int lower, upper;
 
 	if (!bmap)
 		return -1;
@@ -8129,11 +8131,17 @@ int isl_basic_map_dim_is_bounded(__isl_keep isl_basic_map *bmap,
 
 	pos += isl_basic_map_offset(bmap, type);
 
+	for (i = 0; i < bmap->n_div; ++i) {
+		if (isl_int_is_zero(bmap->div[i][0]))
+			continue;
+		if (!isl_int_is_zero(bmap->div[i][1 + pos]))
+			return 1;
+	}
+
 	for (i = 0; i < bmap->n_eq; ++i)
 		if (!isl_int_is_zero(bmap->eq[i][pos]))
 			return 1;
 
-	lower = upper = 0;
 	for (i = 0; i < bmap->n_ineq; ++i) {
 		int sgn = isl_int_sgn(bmap->ineq[i][pos]);
 		if (sgn > 0)
@@ -8143,6 +8151,24 @@ int isl_basic_map_dim_is_bounded(__isl_keep isl_basic_map *bmap,
 	}
 
 	return lower && upper;
+}
+
+int isl_basic_map_dim_is_bounded(__isl_keep isl_basic_map *bmap,
+	enum isl_dim_type type, unsigned pos)
+{
+	return basic_map_dim_is_bounded(bmap, type, pos, 0, 0);
+}
+
+int isl_basic_map_dim_has_lower_bound(__isl_keep isl_basic_map *bmap,
+	enum isl_dim_type type, unsigned pos)
+{
+	return basic_map_dim_is_bounded(bmap, type, pos, 0, 1);
+}
+
+int isl_basic_map_dim_has_upper_bound(__isl_keep isl_basic_map *bmap,
+	enum isl_dim_type type, unsigned pos)
+{
+	return basic_map_dim_is_bounded(bmap, type, pos, 1, 0);
 }
 
 int isl_map_dim_is_bounded(__isl_keep isl_map *map,
@@ -8170,6 +8196,42 @@ int isl_set_dim_is_bounded(__isl_keep isl_set *set,
 	enum isl_dim_type type, unsigned pos)
 {
 	return isl_map_dim_is_bounded((isl_map *)set, type, pos);
+}
+
+static int has_bound(__isl_keep isl_map *map,
+	enum isl_dim_type type, unsigned pos,
+	int (*fn)(__isl_keep isl_basic_map *bmap,
+		  enum isl_dim_type type, unsigned pos))
+{
+	int i;
+
+	if (!map)
+		return -1;
+
+	for (i = 0; i < map->n; ++i) {
+		int bounded;
+		bounded = fn(map->p[i], type, pos);
+		if (bounded < 0 || bounded)
+			return bounded;
+	}
+
+	return 0;
+}
+
+/* Return 1 if the specified dim is involved in any lower bound.
+ */
+int isl_set_dim_has_lower_bound(__isl_keep isl_set *set,
+	enum isl_dim_type type, unsigned pos)
+{
+	return has_bound(set, type, pos, &isl_basic_map_dim_has_lower_bound);
+}
+
+/* Return 1 if the specified dim is involved in any upper bound.
+ */
+int isl_set_dim_has_upper_bound(__isl_keep isl_set *set,
+	enum isl_dim_type type, unsigned pos)
+{
+	return has_bound(set, type, pos, &isl_basic_map_dim_has_upper_bound);
 }
 
 /* For each of the "n" variables starting at "first", determine

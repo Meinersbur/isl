@@ -1319,6 +1319,14 @@ constraints.  Instead the following functions can be used.
 	int isl_map_involves_dims(__isl_keep isl_map *map,
 		enum isl_dim_type type, unsigned first, unsigned n);
 
+Similarly, the following functions can be used to check whether
+a given dimension is involved in any lower or upper bound.
+
+	int isl_set_dim_has_lower_bound(__isl_keep isl_set *set,
+		enum isl_dim_type type, unsigned pos);
+	int isl_set_dim_has_upper_bound(__isl_keep isl_set *set,
+		enum isl_dim_type type, unsigned pos);
+
 The identifiers or names of the domain and range spaces of a set
 or relation can be read off or set using the following functions.
 
