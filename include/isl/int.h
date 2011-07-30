@@ -56,6 +56,7 @@ typedef mpz_t	isl_int;
 #define isl_int_add(r,i,j)	mpz_add(r,i,j)
 #define isl_int_sub(r,i,j)	mpz_sub(r,i,j)
 #define isl_int_mul(r,i,j)	mpz_mul(r,i,j)
+#define isl_int_mul_2exp(r,i,j)	mpz_mul_2exp(r,i,j)
 #define isl_int_mul_ui(r,i,j)	mpz_mul_ui(r,i,j)
 #define isl_int_pow_ui(r,i,j)	mpz_pow_ui(r,i,j)
 #define isl_int_addmul(r,i,j)	mpz_addmul(r,i,j)
