@@ -494,6 +494,40 @@ __isl_give isl_aff *isl_aff_floor(__isl_take isl_aff *aff)
 	return aff;
 }
 
+/* Compute
+ *
+ *	aff mod m = aff - m * floor(aff/m)
+ */
+__isl_give isl_aff *isl_aff_mod(__isl_take isl_aff *aff, isl_int m)
+{
+	isl_aff *res;
+
+	res = isl_aff_copy(aff);
+	aff = isl_aff_scale_down(aff, m);
+	aff = isl_aff_floor(aff);
+	aff = isl_aff_scale(aff, m);
+	res = isl_aff_sub(res, aff);
+
+	return res;
+}
+
+/* Compute
+ *
+ *	pwaff mod m = pwaff - m * floor(pwaff/m)
+ */
+__isl_give isl_pw_aff *isl_pw_aff_mod(__isl_take isl_pw_aff *pwaff, isl_int m)
+{
+	isl_pw_aff *res;
+
+	res = isl_pw_aff_copy(pwaff);
+	pwaff = isl_pw_aff_scale_down(pwaff, m);
+	pwaff = isl_pw_aff_floor(pwaff);
+	pwaff = isl_pw_aff_scale(pwaff, m);
+	res = isl_pw_aff_sub(res, pwaff);
+
+	return res;
+}
+
 /* Given f, return ceil(f).
  * If f is an integer expression, then just return f.
  * Otherwise, create a new div d = [-f] and return the expression -d.
