@@ -11,6 +11,7 @@
  * Universiteit Leiden, Niels Bohrweg 1, 2333 CA Leiden, The Netherlands
  */
 
+#include <isl_ctx_private.h>
 #include <isl_map_private.h>
 #include <isl_aff_private.h>
 #include <isl_dim_private.h>
@@ -460,12 +461,16 @@ __isl_give isl_aff *isl_aff_neg(__isl_take isl_aff *aff)
 
 /* Given f, return floor(f).
  * If f is an integer expression, then just return f.
- * Otherwise, create a new div d = [f] and return the expression d.
+ * Otherwise, if f = g/m, write g = q m + r,
+ * create a new div d = [r/m] and return the expression q + d.
+ * The coefficients in r are taken to lie between -m/2 and m/2.
  */
 __isl_give isl_aff *isl_aff_floor(__isl_take isl_aff *aff)
 {
+	int i;
 	int size;
 	isl_ctx *ctx;
+	isl_vec *div;
 
 	if (!aff)
 		return NULL;
@@ -477,15 +482,29 @@ __isl_give isl_aff *isl_aff_floor(__isl_take isl_aff *aff)
 	if (!aff)
 		return NULL;
 
-	aff->ls = isl_local_space_add_div(aff->ls, isl_vec_copy(aff->v));
-	if (!aff->ls)
+	aff->v = isl_vec_cow(aff->v);
+	div = isl_vec_copy(aff->v);
+	div = isl_vec_cow(div);
+	if (!div)
 		return isl_aff_free(aff);
 
 	ctx = isl_aff_get_ctx(aff);
+	isl_int_fdiv_q(aff->v->el[0], aff->v->el[0], ctx->two);
+	for (i = 1; i < aff->v->size; ++i) {
+		isl_int_fdiv_r(div->el[i], div->el[i], div->el[0]);
+		isl_int_fdiv_q(aff->v->el[i], aff->v->el[i], div->el[0]);
+		if (isl_int_gt(div->el[i], aff->v->el[0])) {
+			isl_int_sub(div->el[i], div->el[i], div->el[0]);
+			isl_int_add_ui(aff->v->el[i], aff->v->el[i], 1);
+		}
+	}
+
+	aff->ls = isl_local_space_add_div(aff->ls, div);
+	if (!aff->ls)
+		return isl_aff_free(aff);
+
 	size = aff->v->size;
-	isl_vec_free(aff->v);
-	aff->v = isl_vec_alloc(ctx, size + 1);
-	aff->v = isl_vec_clr(aff->v);
+	aff->v = isl_vec_extend(aff->v, size + 1);
 	if (!aff->v)
 		return isl_aff_free(aff);
 	isl_int_set_si(aff->v->el[0], 1);
