@@ -7,6 +7,7 @@ AC_SUBST(versioninfo)
 versioninfo=7:0:0
 
 AC_PROG_CC
+AC_PROG_CXX
 
 AX_CC_MAXOPT
 AX_GCC_WARN_UNUSED_RESULT
@@ -83,6 +84,46 @@ if test "$with_piplib" != "no"; then
 fi
 AM_CONDITIONAL(HAVE_PIPLIB, test x$have_piplib = xtrue)
 
+AC_SUBST(CLANG_CXXFLAGS)
+AC_SUBST(CLANG_LDFLAGS)
+AC_SUBST(CLANG_LIBS)
+AX_SUBMODULE(clang,system|no,no)
+case "$with_clang" in
+system)
+	llvm_config="llvm-config"
+	AC_CHECK_PROG([llvm_config_found], ["$llvm_config"], [yes])
+	if test "x$with_clang_prefix" != "x"; then
+		llvm_config="$with_clang_prefix/bin/llvm-config"
+		if test -x "$llvm_config"; then
+			llvm_config_found=yes
+		fi
+	fi
+	if test "$llvm_config_found" != yes; then
+		AC_MSG_ERROR([llvm-config not found])
+	fi
+	CLANG_CXXFLAGS=`$llvm_config --cxxflags`
+	CLANG_LDFLAGS=`$llvm_config --ldflags`
+	CLANG_LIBS=`$llvm_config --libs`
+	CLANG_PREFIX=`$llvm_config --prefix`
+	AC_DEFINE_UNQUOTED(CLANG_PREFIX, ["$CLANG_PREFIX"],
+				[Clang installation prefix])
+
+	SAVE_CPPFLAGS="$CPPFLAGS"
+	CPPFLAGS="$CLANG_CXXFLAGS $CPPFLAGS"
+	AC_LANG_PUSH(C++)
+	AC_CHECK_HEADER([clang/Basic/SourceLocation.h], [],
+		[AC_ERROR([clang header file not found])])
+	AC_EGREP_HEADER([getExpansionLineNumber],
+		[clang/Basic/SourceLocation.h], [],
+		[AC_DEFINE([getExpansionLineNumber],
+			[getInstantiationLineNumber],
+	    [Define to getInstantiationLineNumber for older versions of clang])])
+	AC_LANG_POP
+	CPPFLAGS="$SAVE_CPPFLAGS"
+	;;
+esac
+AM_CONDITIONAL(HAVE_CLANG, test $with_clang = system)
+
 AX_SET_WARNING_FLAGS
 
 AC_SUBST(WARNING_FLAGS)
@@ -100,6 +141,7 @@ AC_CONFIG_HEADERS(isl_config.h)
 AC_CONFIG_HEADERS(include/isl/config.h)
 AC_CONFIG_FILES(Makefile)
 AC_CONFIG_FILES(doc/Makefile)
+AC_CONFIG_FILES(interface/Makefile)
 AC_CONFIG_FILES([bound_test.sh], [chmod +x bound_test.sh])
 AC_CONFIG_FILES([pip_test.sh], [chmod +x pip_test.sh])
 AC_CONFIG_COMMANDS_POST([
