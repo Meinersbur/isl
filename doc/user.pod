@@ -1332,6 +1332,8 @@ or relation can be read off or set using the following functions.
 
 	__isl_give isl_set *isl_set_set_tuple_id(
 		__isl_take isl_set *set, __isl_take isl_id *id);
+	__isl_give isl_set *isl_set_reset_tuple_id(
+		__isl_take isl_set *set);
 	__isl_give isl_id *isl_set_get_tuple_id(
 		__isl_keep isl_set *set);
 	__isl_give isl_map *isl_map_set_tuple_id(

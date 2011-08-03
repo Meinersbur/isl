@@ -428,6 +428,11 @@ __isl_give isl_map *isl_map_reset_tuple_id(__isl_take isl_map *map,
 	return isl_map_reset_dim(map, isl_dim_copy(map->dim));
 }
 
+__isl_give isl_set *isl_set_reset_tuple_id(__isl_take isl_set *set)
+{
+	return isl_map_reset_tuple_id(set, isl_dim_set);
+}
+
 __isl_give isl_id *isl_map_get_tuple_id(__isl_keep isl_map *map,
 	enum isl_dim_type type)
 {
