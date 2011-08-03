@@ -127,7 +127,7 @@ __isl_give isl_union_map *isl_union_map_lex_ge_union_map(
 
 __isl_give isl_union_map *isl_union_map_read_from_file(isl_ctx *ctx,
 	FILE *input);
-__isl_give isl_union_map *isl_union_map_read_from_str(struct isl_ctx *ctx,
+__isl_give isl_union_map *isl_union_map_read_from_str(isl_ctx *ctx,
 	const char *str);
 __isl_give isl_printer *isl_printer_print_union_map(__isl_take isl_printer *p,
 	__isl_keep isl_union_map *umap);

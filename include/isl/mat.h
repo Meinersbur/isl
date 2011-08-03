@@ -26,7 +26,7 @@ typedef struct isl_mat	isl_mat;
 
 isl_ctx *isl_mat_get_ctx(__isl_keep isl_mat *mat);
 
-__isl_give isl_mat *isl_mat_alloc(struct isl_ctx *ctx,
+__isl_give isl_mat *isl_mat_alloc(isl_ctx *ctx,
 	unsigned n_row, unsigned n_col);
 struct isl_mat *isl_mat_dup(struct isl_mat *mat);
 struct isl_mat *isl_mat_extend(struct isl_mat *mat,
