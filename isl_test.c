@@ -2184,6 +2184,21 @@ int test_schedule(isl_ctx *ctx)
 	if (test_one_schedule(ctx, D, W, R, S, 0, 0) < 0)
 		return -1;
 
+	D = "[n] -> { S_0[j, k] : j <= -1 + n and j >= 0 and "
+				"k <= -1 + n and k >= 0 }";
+	W = "[n] -> { S_0[j, k] -> B[j] : j <= -1 + n and j >= 0 and "							"k <= -1 + n and k >= 0 }";
+	R = "[n] -> { S_0[j, k] -> B[j] : j <= -1 + n and j >= 0 and "
+					"k <= -1 + n and k >= 0; "
+		    "S_0[j, k] -> B[k] : j <= -1 + n and j >= 0 and "
+					"k <= -1 + n and k >= 0; "
+		    "S_0[j, k] -> A[k] : j <= -1 + n and j >= 0 and "
+					"k <= -1 + n and k >= 0 }";
+	S = "[n] -> { S_0[j, k] -> [2, j, k] }";
+	ctx->opt->schedule_outer_zero_distance = 1;
+	if (test_one_schedule(ctx, D, W, R, S, 0, 0) < 0)
+		return -1;
+	ctx->opt->schedule_outer_zero_distance = 0;
+
 	return test_special_schedule(ctx);
 }
 

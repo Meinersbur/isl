@@ -1040,7 +1040,36 @@ static int node_update_cmap(struct isl_sched_node *node)
 }
 
 /* Count the number of equality and inequality constraints
- * that will be added.  If once is set, then we count
+ * that will be added for the given map.
+ * If once is set, then we count
+ * each edge exactly once.  Otherwise, we count as follows
+ * validity		-> 1 (>= 0)
+ * validity+proximity	-> 2 (>= 0 and upper bound)
+ * proximity		-> 2 (lower and upper bound)
+ */
+static int count_map_constraints(struct isl_sched_graph *graph,
+	struct isl_sched_edge *edge, __isl_take isl_map *map,
+	int *n_eq, int *n_ineq, int once)
+{
+	isl_basic_set *coef;
+	int f = once ? 1 : edge->proximity ? 2 : 1;
+
+	if (edge->src == edge->dst)
+		coef = intra_coefficients(graph, map);
+	else
+		coef = inter_coefficients(graph, map);
+	if (!coef)
+		return -1;
+	*n_eq += f * coef->n_eq;
+	*n_ineq += f * coef->n_ineq;
+	isl_basic_set_free(coef);
+
+	return 0;
+}
+
+/* Count the number of equality and inequality constraints
+ * that will be added to the main lp problem.
+ * If once is set, then we count
  * each edge exactly once.  Otherwise, we count as follows
  * validity		-> 1 (>= 0)
  * validity+proximity	-> 2 (>= 0 and upper bound)
@@ -1050,23 +1079,15 @@ static int count_constraints(struct isl_sched_graph *graph,
 	int *n_eq, int *n_ineq, int once)
 {
 	int i;
-	isl_basic_set *coef;
 
 	*n_eq = *n_ineq = 0;
 	for (i = 0; i < graph->n_edge; ++i) {
 		struct isl_sched_edge *edge= &graph->edge[i];
 		isl_map *map = isl_map_copy(edge->map);
-		int f = once ? 1 : edge->proximity ? 2 : 1;
 
-		if (edge->src == edge->dst)
-			coef = intra_coefficients(graph, map);
-		else
-			coef = inter_coefficients(graph, map);
-		if (!coef)
+		if (count_map_constraints(graph, edge, map,
+					  n_eq, n_ineq, once) < 0)
 			return -1;
-		*n_eq += f * coef->n_eq;
-		*n_ineq += f * coef->n_ineq;
-		isl_basic_set_free(coef);
 	}
 
 	return 0;
@@ -1898,9 +1919,10 @@ static int compute_next_band(isl_ctx *ctx, struct isl_sched_graph *graph)
 	return compute_schedule(ctx, graph);
 }
 
-/* Add constraints to graph->lp that force the dependence of edge i
- * to be respected and attempt to carry it, where edge i is one from
- * a node j to itself.
+/* Add constraints to graph->lp that force the dependence "map" (which
+ * is part of the dependence relation of "edge")
+ * to be respected and attempt to carry it, where the edge is one from
+ * a node j to itself.  "pos" is the sequence number of the given map.
  * That is, add constraints that enforce
  *
  *	(c_j_0 + c_j_n n + c_j_x y) - (c_j_0 + c_j_n n + c_j_x x)
@@ -1912,11 +1934,10 @@ static int compute_next_band(isl_ctx *ctx, struct isl_sched_graph *graph)
  * with each coefficient in c_j_x represented as a pair of non-negative
  * coefficients.
  */
-static int add_intra_constraints(struct isl_sched_graph *graph, int i)
+static int add_intra_constraints(struct isl_sched_graph *graph,
+	struct isl_sched_edge *edge, __isl_take isl_map *map, int pos)
 {
 	unsigned total;
-	struct isl_sched_edge *edge= &graph->edge[i];
-	isl_map *map = isl_map_copy(edge->map);
 	isl_ctx *ctx = isl_map_get_ctx(map);
 	isl_dim *dim;
 	isl_dim_map *dim_map;
@@ -1929,7 +1950,7 @@ static int add_intra_constraints(struct isl_sched_graph *graph, int i)
 
 	total = isl_basic_set_total_dim(graph->lp);
 	dim_map = isl_dim_map_alloc(ctx, total);
-	isl_dim_map_range(dim_map, 3 + i, 0, 0, 0, 1, -1);
+	isl_dim_map_range(dim_map, 3 + pos, 0, 0, 0, 1, -1);
 	isl_dim_map_range(dim_map, node->start + 2 * node->nparam + 1, 2,
 			  isl_dim_size(dim, isl_dim_set), 1,
 			  node->nvar, -1);
@@ -1945,9 +1966,10 @@ static int add_intra_constraints(struct isl_sched_graph *graph, int i)
 	return 0;
 }
 
-/* Add constraints to graph->lp that force the dependence of edge i
- * to be respected and attempt to carry it, where edge i is one from
- * node j to node k.
+/* Add constraints to graph->lp that force the dependence "map" (which
+ * is part of the dependence relation of "edge")
+ * to be respected and attempt to carry it, where the edge is one from
+ * node j to node k.  "pos" is the sequence number of the given map.
  * That is, add constraints that enforce
  *
  *	(c_k_0 + c_k_n n + c_k_x y) - (c_j_0 + c_j_n n + c_j_x x) >= e_i
@@ -1959,11 +1981,10 @@ static int add_intra_constraints(struct isl_sched_graph *graph, int i)
  * with each coefficient (except e_i, c_k_0 and c_j_0)
  * represented as a pair of non-negative coefficients.
  */
-static int add_inter_constraints(struct isl_sched_graph *graph, int i)
+static int add_inter_constraints(struct isl_sched_graph *graph,
+	struct isl_sched_edge *edge, __isl_take isl_map *map, int pos)
 {
 	unsigned total;
-	struct isl_sched_edge *edge= &graph->edge[i];
-	isl_map *map = isl_map_copy(edge->map);
 	isl_ctx *ctx = isl_map_get_ctx(map);
 	isl_dim *dim;
 	isl_dim_map *dim_map;
@@ -1978,7 +1999,7 @@ static int add_inter_constraints(struct isl_sched_graph *graph, int i)
 	total = isl_basic_set_total_dim(graph->lp);
 	dim_map = isl_dim_map_alloc(ctx, total);
 
-	isl_dim_map_range(dim_map, 3 + i, 0, 0, 0, 1, -1);
+	isl_dim_map_range(dim_map, 3 + pos, 0, 0, 0, 1, -1);
 
 	isl_dim_map_range(dim_map, dst->start, 0, 0, 0, 1, 1);
 	isl_dim_map_range(dim_map, dst->start + 1, 2, 1, 1, dst->nparam, -1);
@@ -2014,16 +2035,59 @@ static int add_inter_constraints(struct isl_sched_graph *graph, int i)
  */
 static int add_all_constraints(struct isl_sched_graph *graph)
 {
-	int i;
+	int i, j;
+	int pos;
 
+	pos = 0;
 	for (i = 0; i < graph->n_edge; ++i) {
 		struct isl_sched_edge *edge= &graph->edge[i];
-		if (edge->src == edge->dst &&
-		    add_intra_constraints(graph, i) < 0)
-			return -1;
-		if (edge->src != edge->dst &&
-		    add_inter_constraints(graph, i) < 0)
-			return -1;
+		for (j = 0; j < edge->map->n; ++j) {
+			isl_basic_map *bmap;
+			isl_map *map;
+
+			bmap = isl_basic_map_copy(edge->map->p[j]);
+			map = isl_map_from_basic_map(bmap);
+
+			if (edge->src == edge->dst &&
+			    add_intra_constraints(graph, edge, map, pos) < 0)
+				return -1;
+			if (edge->src != edge->dst &&
+			    add_inter_constraints(graph, edge, map, pos) < 0)
+				return -1;
+			++pos;
+		}
+	}
+
+	return 0;
+}
+
+/* Count the number of equality and inequality constraints
+ * that will be added to the carry_lp problem.
+ * If once is set, then we count
+ * each edge exactly once.  Otherwise, we count as follows
+ * validity		-> 1 (>= 0)
+ * validity+proximity	-> 2 (>= 0 and upper bound)
+ * proximity		-> 2 (lower and upper bound)
+ */
+static int count_all_constraints(struct isl_sched_graph *graph,
+	int *n_eq, int *n_ineq, int once)
+{
+	int i, j;
+
+	*n_eq = *n_ineq = 0;
+	for (i = 0; i < graph->n_edge; ++i) {
+		struct isl_sched_edge *edge= &graph->edge[i];
+		for (j = 0; j < edge->map->n; ++j) {
+			isl_basic_map *bmap;
+			isl_map *map;
+
+			bmap = isl_basic_map_copy(edge->map->p[j]);
+			map = isl_map_from_basic_map(bmap);
+
+			if (count_map_constraints(graph, edge, map,
+						  n_eq, n_ineq, once) < 0)
+				    return -1;
+		}
 	}
 
 	return 0;
@@ -2035,6 +2099,11 @@ static int add_all_constraints(struct isl_sched_graph *graph)
  * from below by e_i, with 0 <= e_i <= 1 and then maximize the sum
  * of all e_i's.  Dependence with e_i = 0 in the solution are simply
  * respected, while those with e_i > 0 (in practice e_i = 1) are carried.
+ * Note that if the dependence relation is a union of basic maps,
+ * then we have to consider each basic map individually as it may only
+ * be possible to carry the dependences expressed by some of those
+ * basic maps and not all off them.
+ * Below, we consider each of those basic maps as a separate "edge".
  *
  * All variables of the LP are non-negative.  The actual coefficients
  * may be negative, so each coefficient is represented as the difference
@@ -2063,21 +2132,26 @@ static int setup_carry_lp(isl_ctx *ctx, struct isl_sched_graph *graph)
 	isl_dim *dim;
 	unsigned total;
 	int n_eq, n_ineq;
+	int n_edge;
 
-	total = 3 + graph->n_edge;
+	n_edge = 0;
+	for (i = 0; i < graph->n_edge; ++i)
+		n_edge += graph->edge[i].map->n;
+
+	total = 3 + n_edge;
 	for (i = 0; i < graph->n; ++i) {
 		struct isl_sched_node *node = &graph->node[graph->sorted[i]];
 		node->start = total;
 		total += 1 + 2 * (node->nparam + node->nvar);
 	}
 
-	if (count_constraints(graph, &n_eq, &n_ineq, 1) < 0)
+	if (count_all_constraints(graph, &n_eq, &n_ineq, 1) < 0)
 		return -1;
 
 	dim = isl_dim_set_alloc(ctx, 0, total);
 	isl_basic_set_free(graph->lp);
 	n_eq += 3;
-	n_ineq += graph->n_edge;
+	n_ineq += n_edge;
 	graph->lp = isl_basic_set_alloc_dim(dim, 0, n_eq, n_ineq);
 	graph->lp = isl_basic_set_set_rational(graph->lp);
 
@@ -2085,9 +2159,9 @@ static int setup_carry_lp(isl_ctx *ctx, struct isl_sched_graph *graph)
 	if (k < 0)
 		return -1;
 	isl_seq_clr(graph->lp->eq[k], 1 +  total);
-	isl_int_set_si(graph->lp->eq[k][0], -graph->n_edge);
+	isl_int_set_si(graph->lp->eq[k][0], -n_edge);
 	isl_int_set_si(graph->lp->eq[k][1], 1);
-	for (i = 0; i < graph->n_edge; ++i)
+	for (i = 0; i < n_edge; ++i)
 		isl_int_set_si(graph->lp->eq[k][4 + i], 1);
 
 	k = isl_basic_set_alloc_equality(graph->lp);
@@ -2115,7 +2189,7 @@ static int setup_carry_lp(isl_ctx *ctx, struct isl_sched_graph *graph)
 			isl_int_set_si(graph->lp->eq[k][pos + j], 1);
 	}
 
-	for (i = 0; i < graph->n_edge; ++i) {
+	for (i = 0; i < n_edge; ++i) {
 		k = isl_basic_set_alloc_inequality(graph->lp);
 		if (k < 0)
 			return -1;
@@ -2194,8 +2268,14 @@ static int split_parallel(isl_ctx *ctx, struct isl_sched_graph *graph)
  */
 static int carry_dependences(isl_ctx *ctx, struct isl_sched_graph *graph)
 {
+	int i;
+	int n_edge;
 	isl_vec *sol;
 	isl_basic_set *lp;
+
+	n_edge = 0;
+	for (i = 0; i < graph->n_edge; ++i)
+		n_edge += graph->edge[i].map->n;
 
 	if (setup_carry_lp(ctx, graph) < 0)
 		return -1;
@@ -2211,7 +2291,7 @@ static int carry_dependences(isl_ctx *ctx, struct isl_sched_graph *graph)
 			"error in schedule construction", return -1);
 	}
 
-	if (isl_int_cmp_si(sol->el[1], graph->n_edge) >= 0) {
+	if (isl_int_cmp_si(sol->el[1], n_edge) >= 0) {
 		isl_vec_free(sol);
 		isl_die(ctx, isl_error_unknown,
 			"unable to carry dependences", return -1);
