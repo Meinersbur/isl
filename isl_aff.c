@@ -1,14 +1,12 @@
 /*
  * Copyright 2011      INRIA Saclay
- * Copyright 2011      Universiteit Leiden
+ * Copyright 2011      Sven Verdoolaege
  *
  * Use of this software is governed by the GNU LGPLv2.1 license
  *
  * Written by Sven Verdoolaege, INRIA Saclay - Ile-de-France,
  * Parc Club Orsay Universite, ZAC des vignes, 4 rue Jacques Monod,
  * 91893 Orsay, France
- * and Leiden Institute of Advanced Computer Science,
- * Universiteit Leiden, Niels Bohrweg 1, 2333 CA Leiden, The Netherlands
  */
 
 #include <isl_ctx_private.h>
