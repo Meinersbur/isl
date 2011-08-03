@@ -387,7 +387,7 @@ object rather than the object itself.
 The user is then responsible for making sure that the original
 object gets used somewhere else or is explicitly freed.
 
-The arguments and return values of all documents functions are
+The arguments and return values of all documented functions are
 annotated to make clear which arguments are released and which
 arguments are preserved.  In particular, the following annotations
 are used
@@ -415,7 +415,7 @@ returning an C<__isl_give> pointer.
 If the user passes in a C<NULL> value, then this will
 be treated as an error in the sense that the function will
 not perform its usual operation.  However, it will still
-make sure that all the the other C<__isl_take> arguments
+make sure that all the other C<__isl_take> arguments
 are released.
 
 =item C<__isl_keep>
