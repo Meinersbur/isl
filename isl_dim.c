@@ -770,7 +770,7 @@ __isl_give isl_dim *isl_dim_range_product(__isl_take isl_dim *left,
 
 	isl_assert(left->ctx, match(left, isl_dim_param, right, isl_dim_param),
 			goto error);
-	if (!isl_dim_match(left, isl_dim_in, right, isl_dim_in))
+	if (!isl_dim_tuple_match(left, isl_dim_in, right, isl_dim_in))
 		isl_die(left->ctx, isl_error_invalid,
 			"domains need to match", goto error);
 
