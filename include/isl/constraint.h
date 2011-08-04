@@ -29,7 +29,7 @@ __isl_give isl_constraint *isl_inequality_alloc(__isl_take isl_dim *dim);
 
 struct isl_constraint *isl_constraint_cow(struct isl_constraint *c);
 struct isl_constraint *isl_constraint_copy(struct isl_constraint *c);
-void *isl_constraint_free(struct isl_constraint *c);
+void *isl_constraint_free(__isl_take isl_constraint *c);
 
 int isl_basic_map_foreach_constraint(__isl_keep isl_basic_map *bmap,
 	int (*fn)(__isl_take isl_constraint *c, void *user), void *user);

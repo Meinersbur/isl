@@ -1237,7 +1237,7 @@ To iterate over the constraints of a basic set or map, use
 		__isl_keep isl_basic_map *bmap,
 		int (*fn)(__isl_take isl_constraint *c, void *user),
 		void *user);
-	void isl_constraint_free(struct isl_constraint *c);
+	void *isl_constraint_free(__isl_take isl_constraint *c);
 
 Again, the callback function C<fn> should return 0 if successful and
 -1 if an error occurs.  In the latter case, or if any other error
