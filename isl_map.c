@@ -1390,6 +1390,8 @@ __isl_give isl_set *isl_set_eliminate_dims(__isl_take isl_set *set,
 __isl_give isl_basic_map *isl_basic_map_remove_divs(
 	__isl_take isl_basic_map *bmap)
 {
+	if (!bmap)
+		return NULL;
 	bmap = isl_basic_map_eliminate_vars(bmap, isl_dim_total(bmap->dim),
 						bmap->n_div);
 	if (!bmap)
