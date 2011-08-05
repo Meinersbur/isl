@@ -1443,7 +1443,7 @@ struct isl_basic_map *isl_basic_map_remove_dims(struct isl_basic_map *bmap,
 		return NULL;
 	isl_assert(bmap->ctx, first + n <= isl_basic_map_dim(bmap, type),
 			goto error);
-	if (n == 0)
+	if (n == 0 && !isl_dim_is_named_or_nested(bmap->dim, type))
 		return bmap;
 	bmap = isl_basic_map_eliminate_vars(bmap,
 			isl_basic_map_offset(bmap, type) - 1 + first, n);
