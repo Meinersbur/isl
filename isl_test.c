@@ -2337,6 +2337,25 @@ int test_dim_max(isl_ctx *ctx)
 	return 0;
 }
 
+int test_product(isl_ctx *ctx)
+{
+	const char *str;
+	isl_set *set;
+	int ok;
+
+	str = "{ A[i] }";
+	set = isl_set_read_from_str(ctx, str, -1);
+	set = isl_set_product(set, isl_set_copy(set));
+	ok = isl_set_is_wrapping(set);
+	isl_set_free(set);
+	if (ok < 0)
+		return -1;
+	if (!ok)
+		isl_die(ctx, isl_error_unknown, "unexpected result", return -1);
+
+	return 0;
+}
+
 int main()
 {
 	struct isl_ctx *ctx;
@@ -2345,6 +2364,8 @@ int main()
 	assert(srcdir);
 
 	ctx = isl_ctx_alloc();
+	if (test_product(ctx) < 0)
+		goto error;
 	if (test_dim_max(ctx) < 0)
 		goto error;
 	if (test_aff(ctx) < 0)

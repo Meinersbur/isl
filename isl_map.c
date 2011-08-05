@@ -7584,8 +7584,7 @@ __isl_give isl_map *isl_map_flat_product(__isl_take isl_map *map1,
  */
 struct isl_set *isl_set_product(struct isl_set *set1, struct isl_set *set2)
 {
-	return (struct isl_set *)isl_map_product((struct isl_map *)set1,
-						 (struct isl_map *)set2);
+	return isl_map_range_product(set1, set2);
 }
 
 __isl_give isl_set *isl_set_flat_product(__isl_take isl_set *set1,
