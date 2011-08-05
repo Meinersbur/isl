@@ -898,7 +898,7 @@ __isl_give isl_flow *isl_access_info_compute_flow(__isl_take isl_access_info *ac
 	else
 		res = compute_val_based_dependences(acc);
 	if (!res)
-		return NULL;
+		goto error2;
 
 	for (j = 0; j < res->n_source; ++j) {
 		res->dep[j].map = isl_map_apply_range(res->dep[j].map,

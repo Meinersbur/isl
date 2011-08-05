@@ -167,7 +167,7 @@ struct isl_basic_map *isl_basic_map_drop(struct isl_basic_map *bmap,
 	dim = isl_basic_map_dim(bmap, type);
 	isl_assert(bmap->ctx, first + n <= dim, goto error);
 
-	if (n == 0 && !isl_dim_get_tuple_name(bmap->dim, type))
+	if (n == 0 && !isl_dim_is_named_or_nested(bmap->dim, type))
 		return bmap;
 
 	bmap = isl_basic_map_cow(bmap);

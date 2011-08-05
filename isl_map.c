@@ -1526,6 +1526,8 @@ __isl_give isl_set *isl_set_eliminate_dims(__isl_take isl_set *set,
 __isl_give isl_basic_map *isl_basic_map_remove_divs(
 	__isl_take isl_basic_map *bmap)
 {
+	if (!bmap)
+		return NULL;
 	bmap = isl_basic_map_eliminate_vars(bmap, isl_dim_total(bmap->dim),
 						bmap->n_div);
 	if (!bmap)
@@ -1577,7 +1579,7 @@ struct isl_basic_map *isl_basic_map_remove_dims(struct isl_basic_map *bmap,
 		return NULL;
 	isl_assert(bmap->ctx, first + n <= isl_basic_map_dim(bmap, type),
 			goto error);
-	if (n == 0)
+	if (n == 0 && !isl_dim_is_named_or_nested(bmap->dim, type))
 		return bmap;
 	bmap = isl_basic_map_eliminate_vars(bmap,
 			isl_basic_map_offset(bmap, type) - 1 + first, n);
@@ -7784,8 +7786,7 @@ __isl_give isl_map *isl_map_flat_product(__isl_take isl_map *map1,
  */
 struct isl_set *isl_set_product(struct isl_set *set1, struct isl_set *set2)
 {
-	return (struct isl_set *)isl_map_product((struct isl_map *)set1,
-						 (struct isl_map *)set2);
+	return isl_map_range_product(set1, set2);
 }
 
 __isl_give isl_set *isl_set_flat_product(__isl_take isl_set *set1,
