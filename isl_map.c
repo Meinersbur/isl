@@ -7457,7 +7457,7 @@ __isl_give isl_basic_map *isl_basic_map_flat_product(
 __isl_give isl_basic_set *isl_basic_set_flat_product(
 	__isl_take isl_basic_set *bset1, __isl_take isl_basic_set *bset2)
 {
-	return isl_basic_map_flat_product(bset1, bset2);
+	return isl_basic_map_flat_range_product(bset1, bset2);
 }
 
 __isl_give isl_basic_map *isl_basic_map_range_product(
@@ -7591,7 +7591,7 @@ struct isl_set *isl_set_product(struct isl_set *set1, struct isl_set *set2)
 __isl_give isl_set *isl_set_flat_product(__isl_take isl_set *set1,
 	__isl_take isl_set *set2)
 {
-	return (isl_set *)isl_map_flat_product((isl_map *)set1, (isl_map *)set2);
+	return isl_map_flat_range_product(set1, set2);
 }
 
 /* Given two maps A -> B and C -> D, construct a map (A * C) -> [B -> D]
