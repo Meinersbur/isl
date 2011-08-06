@@ -1448,6 +1448,19 @@ is already known to be empty.
 	int isl_map_is_bijective(__isl_keep isl_map *map);
 	int isl_union_map_is_bijective(__isl_keep isl_union_map *umap);
 
+=item * Position
+
+	int isl_basic_map_plain_is_fixed(
+		__isl_keep isl_basic_map *bmap,
+		enum isl_dim_type type, unsigned pos,
+		isl_int *val);
+	int isl_map_plain_is_fixed(__isl_keep isl_map *map,
+		enum isl_dim_type type, unsigned pos,
+		isl_int *val);
+
+Check if the relation obviously lies on a hyperplane where the given dimension
+has a fixed value and if so, return that value in C<*val>.
+
 =item * Wrapping
 
 The following functions check whether the domain of the given

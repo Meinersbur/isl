@@ -236,7 +236,7 @@ struct isl_basic_map *isl_map_copy_basic_map(struct isl_map *map);
 __isl_give isl_map *isl_map_drop_basic_map(__isl_take isl_map *map,
 						__isl_keep isl_basic_map *bmap);
 
-int isl_basic_map_plain_is_fixed(struct isl_basic_map *bmap,
+int isl_basic_map_plain_is_fixed(__isl_keep isl_basic_map *bmap,
 	enum isl_dim_type type, unsigned pos, isl_int *val);
 
 int isl_basic_map_image_is_bounded(__isl_keep isl_basic_map *bmap);
@@ -429,7 +429,7 @@ void isl_map_print_internal(__isl_keep isl_map *map, FILE *out, int indent);
 
 int isl_map_plain_input_is_fixed(__isl_keep isl_map *map,
 		unsigned in, isl_int *val);
-int isl_map_plain_is_fixed(struct isl_map *map,
+int isl_map_plain_is_fixed(__isl_keep isl_map *map,
 	enum isl_dim_type type, unsigned pos, isl_int *val);
 int isl_map_fast_is_fixed(__isl_keep isl_map *map,
 	enum isl_dim_type type, unsigned pos, isl_int *val);
