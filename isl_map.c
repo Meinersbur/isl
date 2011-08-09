@@ -7763,6 +7763,51 @@ __isl_give isl_basic_set *isl_basic_set_flat_product(
 	return isl_basic_map_flat_range_product(bset1, bset2);
 }
 
+__isl_give isl_basic_map *isl_basic_map_domain_product(
+	__isl_take isl_basic_map *bmap1, __isl_take isl_basic_map *bmap2)
+{
+	isl_space *space_result = NULL;
+	isl_basic_map *bmap;
+	unsigned in1, in2, out, nparam, total, pos;
+	struct isl_dim_map *dim_map1, *dim_map2;
+
+	if (!bmap1 || !bmap2)
+		goto error;
+
+	space_result = isl_space_domain_product(isl_space_copy(bmap1->dim),
+						isl_space_copy(bmap2->dim));
+
+	in1 = isl_basic_map_dim(bmap1, isl_dim_in);
+	in2 = isl_basic_map_dim(bmap2, isl_dim_in);
+	out = isl_basic_map_dim(bmap1, isl_dim_out);
+	nparam = isl_basic_map_dim(bmap1, isl_dim_param);
+
+	total = nparam + in1 + in2 + out + bmap1->n_div + bmap2->n_div;
+	dim_map1 = isl_dim_map_alloc(bmap1->ctx, total);
+	dim_map2 = isl_dim_map_alloc(bmap1->ctx, total);
+	isl_dim_map_dim(dim_map1, bmap1->dim, isl_dim_param, pos = 0);
+	isl_dim_map_dim(dim_map2, bmap2->dim, isl_dim_param, pos = 0);
+	isl_dim_map_dim(dim_map1, bmap1->dim, isl_dim_in, pos += nparam);
+	isl_dim_map_dim(dim_map2, bmap2->dim, isl_dim_in, pos += in1);
+	isl_dim_map_dim(dim_map1, bmap1->dim, isl_dim_out, pos += in2);
+	isl_dim_map_dim(dim_map2, bmap2->dim, isl_dim_out, pos);
+	isl_dim_map_div(dim_map1, bmap1, pos += out);
+	isl_dim_map_div(dim_map2, bmap2, pos += bmap1->n_div);
+
+	bmap = isl_basic_map_alloc_space(space_result,
+			bmap1->n_div + bmap2->n_div,
+			bmap1->n_eq + bmap2->n_eq,
+			bmap1->n_ineq + bmap2->n_ineq);
+	bmap = isl_basic_map_add_constraints_dim_map(bmap, bmap1, dim_map1);
+	bmap = isl_basic_map_add_constraints_dim_map(bmap, bmap2, dim_map2);
+	bmap = isl_basic_map_simplify(bmap);
+	return isl_basic_map_finalize(bmap);
+error:
+	isl_basic_map_free(bmap1);
+	isl_basic_map_free(bmap2);
+	return NULL;
+}
+
 __isl_give isl_basic_map *isl_basic_map_range_product(
 	__isl_take isl_basic_map *bmap1, __isl_take isl_basic_map *bmap2)
 {
@@ -7904,6 +7949,15 @@ __isl_give isl_set *isl_set_flat_product(__isl_take isl_set *set1,
 	return isl_map_flat_range_product(set1, set2);
 }
 
+/* Given two maps A -> B and C -> D, construct a map [A -> C] -> (B * D)
+ */
+static __isl_give isl_map *map_domain_product_aligned(__isl_take isl_map *map1,
+	__isl_take isl_map *map2)
+{
+	return map_product(map1, map2, &isl_space_domain_product,
+				&isl_basic_map_domain_product);
+}
+
 /* Given two maps A -> B and C -> D, construct a map (A * C) -> [B -> D]
  */
 static __isl_give isl_map *map_range_product_aligned(__isl_take isl_map *map1,
@@ -7913,11 +7967,30 @@ static __isl_give isl_map *map_range_product_aligned(__isl_take isl_map *map1,
 				&isl_basic_map_range_product);
 }
 
+__isl_give isl_map *isl_map_domain_product(__isl_take isl_map *map1,
+	__isl_take isl_map *map2)
+{
+	return isl_map_align_params_map_map_and(map1, map2,
+						&map_domain_product_aligned);
+}
+
 __isl_give isl_map *isl_map_range_product(__isl_take isl_map *map1,
 	__isl_take isl_map *map2)
 {
 	return isl_map_align_params_map_map_and(map1, map2,
 						&map_range_product_aligned);
+}
+
+/* Given two maps A -> B and C -> D, construct a map (A, C) -> (B * D)
+ */
+__isl_give isl_map *isl_map_flat_domain_product(__isl_take isl_map *map1,
+	__isl_take isl_map *map2)
+{
+	isl_map *prod;
+
+	prod = isl_map_domain_product(map1, map2);
+	prod = isl_map_flatten_domain(prod);
+	return prod;
 }
 
 /* Given two maps A -> B and C -> D, construct a map (A * C) -> (B, D)
@@ -8810,6 +8883,31 @@ __isl_give isl_basic_set *isl_basic_set_flatten(__isl_take isl_basic_set *bset)
 	return (isl_basic_set *)isl_basic_map_flatten((isl_basic_map *)bset);
 }
 
+__isl_give isl_basic_map *isl_basic_map_flatten_domain(
+	__isl_take isl_basic_map *bmap)
+{
+	if (!bmap)
+		return NULL;
+
+	if (!bmap->dim->nested[0])
+		return bmap;
+
+	bmap = isl_basic_map_cow(bmap);
+	if (!bmap)
+		return NULL;
+
+	bmap->dim = isl_space_flatten_domain(bmap->dim);
+	if (!bmap->dim)
+		goto error;
+
+	bmap = isl_basic_map_finalize(bmap);
+
+	return bmap;
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
 __isl_give isl_basic_map *isl_basic_map_flatten_range(
 	__isl_take isl_basic_map *bmap)
 {
@@ -8880,6 +8978,35 @@ __isl_give isl_map *isl_set_flatten_map(__isl_take isl_set *set)
 	map = isl_map_intersect_domain(map, set);
 
 	return map;
+}
+
+__isl_give isl_map *isl_map_flatten_domain(__isl_take isl_map *map)
+{
+	int i;
+
+	if (!map)
+		return NULL;
+
+	if (!map->dim->nested[0])
+		return map;
+
+	map = isl_map_cow(map);
+	if (!map)
+		return NULL;
+
+	for (i = 0; i < map->n; ++i) {
+		map->p[i] = isl_basic_map_flatten_domain(map->p[i]);
+		if (!map->p[i])
+			goto error;
+	}
+	map->dim = isl_space_flatten_domain(map->dim);
+	if (!map->dim)
+		goto error;
+
+	return map;
+error:
+	isl_map_free(map);
+	return NULL;
 }
 
 __isl_give isl_map *isl_map_flatten_range(__isl_take isl_map *map)

@@ -869,6 +869,37 @@ error:
 	return NULL;
 }
 
+/* Given two spaces { A -> C } and { B -> C }, construct the space
+ * { [A -> B] -> C }
+ */
+__isl_give isl_space *isl_space_domain_product(__isl_take isl_space *left,
+	__isl_take isl_space *right)
+{
+	isl_space *ran, *dom1, *dom2, *nest;
+
+	if (!left || !right)
+		goto error;
+
+	if (!match(left, isl_dim_param, right, isl_dim_param))
+		isl_die(left->ctx, isl_error_invalid,
+			"parameters need to match", goto error);
+	if (!isl_space_tuple_match(left, isl_dim_out, right, isl_dim_out))
+		isl_die(left->ctx, isl_error_invalid,
+			"ranges need to match", goto error);
+
+	ran = isl_space_range(isl_space_copy(left));
+
+	dom1 = isl_space_domain(left);
+	dom2 = isl_space_domain(right);
+	nest = isl_space_wrap(isl_space_join(isl_space_reverse(dom1), dom2));
+
+	return isl_space_join(isl_space_reverse(nest), ran);
+error:
+	isl_space_free(left);
+	isl_space_free(right);
+	return NULL;
+}
+
 __isl_give isl_space *isl_space_range_product(__isl_take isl_space *left,
 	__isl_take isl_space *right)
 {
@@ -1314,6 +1345,16 @@ __isl_give isl_space *isl_space_flatten(__isl_take isl_space *dim)
 		dim = isl_space_reset(dim, isl_dim_out);
 
 	return dim;
+}
+
+__isl_give isl_space *isl_space_flatten_domain(__isl_take isl_space *dim)
+{
+	if (!dim)
+		return NULL;
+	if (!dim->nested[0])
+		return dim;
+
+	return isl_space_reset(dim, isl_dim_in);
 }
 
 __isl_give isl_space *isl_space_flatten_range(__isl_take isl_space *dim)
