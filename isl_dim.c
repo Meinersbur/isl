@@ -308,7 +308,12 @@ __isl_give isl_id *isl_dim_get_tuple_id(__isl_keep isl_dim *dim,
 	if (!dim)
 		return NULL;
 	if (type != isl_dim_in && type != isl_dim_out)
-		return NULL;
+		isl_die(dim->ctx, isl_error_invalid,
+			"only input, output and set tuples can have ids",
+			return NULL);
+	if (!dim->tuple_id[type - isl_dim_in])
+		isl_die(dim->ctx, isl_error_invalid,
+			"tuple has no id", return NULL);
 	return isl_id_copy(dim->tuple_id[type - isl_dim_in]);
 }
 
