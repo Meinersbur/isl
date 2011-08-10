@@ -709,6 +709,9 @@ int isl_map_is_subset(struct isl_map *map1, struct isl_map *map2)
 	if (!map1 || !map2)
 		return -1;
 
+	if (!isl_map_has_equal_dim(map1, map2))
+		return 0;
+
 	if (isl_map_is_empty(map1))
 		return 1;
 
