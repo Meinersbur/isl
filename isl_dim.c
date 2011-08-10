@@ -394,6 +394,9 @@ int isl_dim_tuple_match(__isl_keep isl_dim *dim1, enum isl_dim_type dim1_type,
 	struct isl_name *name1, *name2;
 	isl_dim *nested1, *nested2;
 
+	if (!dim1 || !dim2)
+		return -1;
+
 	if (n(dim1, dim1_type) != n(dim2, dim2_type))
 		return 0;
 	name1 = tuple_name(dim1, dim1_type);
