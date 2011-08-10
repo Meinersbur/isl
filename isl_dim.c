@@ -1037,6 +1037,8 @@ unsigned isl_dim_total(struct isl_dim *dim)
 
 int isl_dim_equal(struct isl_dim *dim1, struct isl_dim *dim2)
 {
+	if (!dim1 || !dim2)
+		return -1;
 	return match(dim1, isl_dim_param, dim2, isl_dim_param) &&
 	       isl_dim_tuple_match(dim1, isl_dim_in, dim2, isl_dim_in) &&
 	       isl_dim_tuple_match(dim1, isl_dim_out, dim2, isl_dim_out);
