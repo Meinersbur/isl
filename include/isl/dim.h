@@ -53,6 +53,8 @@ __isl_give isl_id *isl_dim_get_tuple_id(__isl_keep isl_dim *dim,
 
 __isl_give isl_dim *isl_dim_set_dim_id(__isl_take isl_dim *dim,
 	enum isl_dim_type type, unsigned pos, __isl_take isl_id *id);
+int isl_dim_has_dim_id(__isl_keep isl_dim *dim,
+	enum isl_dim_type type, unsigned pos);
 __isl_give isl_id *isl_dim_get_dim_id(__isl_keep isl_dim *dim,
 	enum isl_dim_type type, unsigned pos);
 

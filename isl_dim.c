@@ -356,6 +356,14 @@ error:
 	return NULL;
 }
 
+int isl_dim_has_dim_id(__isl_keep isl_dim *dim,
+	enum isl_dim_type type, unsigned pos)
+{
+	if (!dim)
+		return -1;
+	return get_id(dim, type, pos) != NULL;
+}
+
 __isl_give isl_id *isl_dim_get_dim_id(__isl_keep isl_dim *dim,
 	enum isl_dim_type type, unsigned pos)
 {

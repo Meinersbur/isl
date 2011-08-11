@@ -531,10 +531,22 @@ __isl_give isl_set *isl_set_set_dim_name(__isl_take isl_set *set,
 	return (isl_set *)isl_map_set_dim_name((isl_map *)set, type, pos, s);
 }
 
+int isl_map_has_dim_id(__isl_keep isl_map *map,
+	enum isl_dim_type type, unsigned pos)
+{
+	return map ? isl_dim_has_dim_id(map->dim, type, pos) : -1;
+}
+
 __isl_give isl_id *isl_map_get_dim_id(__isl_keep isl_map *map,
 	enum isl_dim_type type, unsigned pos)
 {
 	return map ? isl_dim_get_dim_id(map->dim, type, pos) : NULL;
+}
+
+int isl_set_has_dim_id(__isl_keep isl_set *set,
+	enum isl_dim_type type, unsigned pos)
+{
+	return isl_map_has_dim_id(set, type, pos);
 }
 
 __isl_give isl_id *isl_set_get_dim_id(__isl_keep isl_set *set,
