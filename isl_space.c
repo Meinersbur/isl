@@ -1448,8 +1448,9 @@ __isl_give isl_space *isl_space_align_params(__isl_take isl_space *dim1,
 			"parameter alignment requires named parameters",
 			goto error);
 
+	dim2 = isl_space_params(dim2);
 	exp = isl_parameter_alignment_reordering(dim1, dim2);
-	isl_space_free(dim1);
+	exp = isl_reordering_extend_space(exp, dim1);
 	isl_space_free(dim2);
 	if (!exp)
 		return NULL;
