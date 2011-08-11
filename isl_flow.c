@@ -242,6 +242,20 @@ error:
 	return NULL;
 }
 
+/* Align the parameters of the two spaces if needed and then call
+ * isl_space_join.
+ */
+static __isl_give isl_space *space_align_and_join(__isl_take isl_space *left,
+	__isl_take isl_space *right)
+{
+	if (isl_space_match(left, isl_dim_param, right, isl_dim_param))
+		return isl_space_join(left, right);
+
+	left = isl_space_align_params(left, isl_space_copy(right));
+	right = isl_space_align_params(right, isl_space_copy(left));
+	return isl_space_join(left, right);
+}
+
 /* Initialize an empty isl_flow structure corresponding to a given
  * isl_access_info structure.
  * For each must access, two dependences are created (initialized
@@ -274,8 +288,9 @@ static __isl_give isl_flow *isl_flow_alloc(__isl_keep isl_access_info *acc)
 	dep->n_source = 2 * acc->n_must + acc->n_may;
 	for (i = 0; i < acc->n_must; ++i) {
 		isl_space *dim;
-		dim = isl_space_join(isl_map_get_space(acc->source[i].map),
-			    isl_space_reverse(isl_map_get_space(acc->sink.map)));
+		dim = space_align_and_join(
+			isl_map_get_space(acc->source[i].map),
+			isl_space_reverse(isl_map_get_space(acc->sink.map)));
 		dep->dep[2 * i].map = isl_map_empty(dim);
 		dep->dep[2 * i + 1].map = isl_map_copy(dep->dep[2 * i].map);
 		dep->dep[2 * i].data = acc->source[i].data;
@@ -438,7 +453,7 @@ static struct isl_map *last_later_source(struct isl_access_info *acc,
 
 	write_map = isl_map_reverse(write_map);
 	dep_map = isl_map_apply_range(read_map, write_map);
-	dim = isl_space_join(isl_map_get_space(acc->source[k].map),
+	dim = space_align_and_join(isl_map_get_space(acc->source[k].map),
 		    isl_space_reverse(isl_map_get_space(acc->source[j].map)));
 	after_write = after_at_level(dim, after_level);
 	after_write = isl_map_apply_range(after_write, old_map);
