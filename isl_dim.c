@@ -468,6 +468,9 @@ int isl_dim_tuple_match(__isl_keep isl_dim *dim1, enum isl_dim_type dim1_type,
 	isl_id *id1, *id2;
 	isl_dim *nested1, *nested2;
 
+	if (!dim1 || !dim2)
+		return -1;
+
 	if (n(dim1, dim1_type) != n(dim2, dim2_type))
 		return 0;
 	id1 = tuple_id(dim1, dim1_type);
@@ -1106,6 +1109,8 @@ unsigned isl_dim_total(struct isl_dim *dim)
 
 int isl_dim_equal(struct isl_dim *dim1, struct isl_dim *dim2)
 {
+	if (!dim1 || !dim2)
+		return -1;
 	return match(dim1, isl_dim_param, dim2, isl_dim_param) &&
 	       isl_dim_tuple_match(dim1, isl_dim_in, dim2, isl_dim_in) &&
 	       isl_dim_tuple_match(dim1, isl_dim_out, dim2, isl_dim_out);

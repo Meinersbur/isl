@@ -2391,6 +2391,27 @@ int test_product(isl_ctx *ctx)
 	return 0;
 }
 
+int test_equal(isl_ctx *ctx)
+{
+	const char *str;
+	isl_set *set, *set2;
+	int equal;
+
+	str = "{ S_6[i] }";
+	set = isl_set_read_from_str(ctx, str, -1);
+	str = "{ S_7[i] }";
+	set2 = isl_set_read_from_str(ctx, str, -1);
+	equal = isl_set_is_equal(set, set2);
+	isl_set_free(set);
+	isl_set_free(set2);
+	if (equal < 0)
+		return -1;
+	if (equal)
+		isl_die(ctx, isl_error_unknown, "unexpected result", return -1);
+
+	return 0;
+}
+
 int main()
 {
 	struct isl_ctx *ctx;
@@ -2399,6 +2420,8 @@ int main()
 	assert(srcdir);
 
 	ctx = isl_ctx_alloc();
+	if (test_equal(ctx) < 0)
+		goto error;
 	if (test_product(ctx) < 0)
 		goto error;
 	if (test_dim_max(ctx) < 0)
