@@ -378,6 +378,11 @@ int isl_dim_has_dim_id(__isl_keep isl_dim *dim,
 __isl_give isl_id *isl_dim_get_dim_id(__isl_keep isl_dim *dim,
 	enum isl_dim_type type, unsigned pos)
 {
+	if (!dim)
+		return NULL;
+	if (!get_id(dim, type, pos))
+		isl_die(dim->ctx, isl_error_invalid,
+			"dim has no id", return NULL);
 	return isl_id_copy(get_id(dim, type, pos));
 }
 
