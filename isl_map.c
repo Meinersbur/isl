@@ -5086,7 +5086,7 @@ error:
  * even when the domain of basic map i is disjoint from the domains of
  * the previous basic maps.
  */
-static __isl_give isl_map *isl_map_partial_lexopt(
+static __isl_give isl_map *isl_map_partial_lexopt_aligned(
 		__isl_take isl_map *map, __isl_take isl_set *dom,
 		__isl_give isl_set **empty, int max)
 {
@@ -5152,6 +5152,35 @@ static __isl_give isl_map *isl_map_partial_lexopt(
 		isl_set_free(todo);
 
 	return res;
+error:
+	if (empty)
+		*empty = NULL;
+	isl_set_free(dom);
+	isl_map_free(map);
+	return NULL;
+}
+
+/* Given a map "map", compute the lexicographically minimal
+ * (or maximal) image element for each domain element in dom.
+ * Set *empty to those elements in dom that do not have an image element.
+ *
+ * Align parameters if needed and then call isl_map_partial_lexopt_aligned.
+ */
+static __isl_give isl_map *isl_map_partial_lexopt(
+		__isl_take isl_map *map, __isl_take isl_set *dom,
+		__isl_give isl_set **empty, int max)
+{
+	if (!map || !dom)
+		goto error;
+	if (isl_space_match(map->dim, isl_dim_param, dom->dim, isl_dim_param))
+		return isl_map_partial_lexopt_aligned(map, dom, empty, max);
+	if (!isl_space_has_named_params(map->dim) ||
+	    !isl_space_has_named_params(dom->dim))
+		isl_die(map->ctx, isl_error_invalid,
+			"unaligned unnamed parameters", goto error);
+	map = isl_map_align_params(map, isl_map_get_space(dom));
+	dom = isl_map_align_params(dom, isl_map_get_space(map));
+	return isl_map_partial_lexopt_aligned(map, dom, empty, max);
 error:
 	if (empty)
 		*empty = NULL;
