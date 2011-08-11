@@ -21,15 +21,15 @@
 extern "C" {
 #endif
 
-unsigned isl_basic_set_n_dim(const struct isl_basic_set *bset);
-unsigned isl_basic_set_n_param(const struct isl_basic_set *bset);
+unsigned isl_basic_set_n_dim(__isl_keep isl_basic_set *bset);
+unsigned isl_basic_set_n_param(__isl_keep isl_basic_set *bset);
 unsigned isl_basic_set_total_dim(const struct isl_basic_set *bset);
-unsigned isl_basic_set_dim(const struct isl_basic_set *bset,
+unsigned isl_basic_set_dim(__isl_keep isl_basic_set *bset,
 				enum isl_dim_type type);
 
-unsigned isl_set_n_dim(const struct isl_set *set);
-unsigned isl_set_n_param(const struct isl_set *set);
-unsigned isl_set_dim(const struct isl_set *set, enum isl_dim_type type);
+unsigned isl_set_n_dim(__isl_keep isl_set *set);
+unsigned isl_set_n_param(__isl_keep isl_set *set);
+unsigned isl_set_dim(__isl_keep isl_set *set, enum isl_dim_type type);
 
 isl_ctx *isl_basic_set_get_ctx(__isl_keep isl_basic_set *bset);
 isl_ctx *isl_set_get_ctx(__isl_keep isl_set *set);
