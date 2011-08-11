@@ -334,7 +334,7 @@ __isl_give isl_basic_map *isl_basic_map_add(__isl_take isl_basic_map *bmap,
 		enum isl_dim_type type, unsigned n);
 __isl_give isl_map *isl_map_add_dims(__isl_take isl_map *map,
 		enum isl_dim_type type, unsigned n);
-__isl_give isl_map *isl_map_insert(__isl_take isl_map *map,
+__isl_give isl_map *isl_map_insert_dims(__isl_take isl_map *map,
 		enum isl_dim_type type, unsigned pos, unsigned n);
 __isl_give isl_basic_map *isl_basic_map_move_dims(
 	__isl_take isl_basic_map *bmap,

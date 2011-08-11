@@ -2590,7 +2590,7 @@ error:
 	return NULL;
 }
 
-__isl_give isl_map *isl_map_insert(__isl_take isl_map *map,
+__isl_give isl_map *isl_map_insert_dims(__isl_take isl_map *map,
 		enum isl_dim_type type, unsigned pos, unsigned n)
 {
 	int i;
@@ -2618,10 +2618,10 @@ error:
 	return NULL;
 }
 
-__isl_give isl_set *isl_set_insert(__isl_take isl_set *set,
+__isl_give isl_set *isl_set_insert_dims(__isl_take isl_set *set,
 		enum isl_dim_type type, unsigned pos, unsigned n)
 {
-	return (isl_set *)isl_map_insert((isl_map *)set, type, pos, n);
+	return isl_map_insert_dims(set, type, pos, n);
 }
 
 __isl_give isl_map *isl_map_add_dims(__isl_take isl_map *map,
@@ -2629,7 +2629,7 @@ __isl_give isl_map *isl_map_add_dims(__isl_take isl_map *map,
 {
 	if (!map)
 		return NULL;
-	return isl_map_insert(map, type, isl_map_dim(map, type), n);
+	return isl_map_insert_dims(map, type, isl_map_dim(map, type), n);
 }
 
 __isl_give isl_set *isl_set_add_dims(__isl_take isl_set *set,

@@ -779,7 +779,8 @@ __isl_give PW *FN(PW,insert_dims)(__isl_take PW *pw, enum isl_dim_type type,
 		goto error;
 
 	for (i = 0; i < pw->n; ++i) {
-		pw->p[i].set = isl_set_insert(pw->p[i].set, type, first, n);
+		pw->p[i].set = isl_set_insert_dims(pw->p[i].set,
+								type, first, n);
 		if (!pw->p[i].set)
 			goto error;
 		pw->p[i].FIELD = FN(EL,insert_dims)(pw->p[i].FIELD,
