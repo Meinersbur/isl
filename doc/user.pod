@@ -1409,7 +1409,9 @@ read off using the following functions.
 		enum isl_dim_type type, unsigned pos);
 
 These functions are mostly useful to obtain the identifiers, positions
-or names of the parameters.
+or names of the parameters.  Identifiers of individual dimensions are
+essentially only useful for printing.  They are ignored by all other
+operations and may not be preserved across those operations.
 
 =head2 Properties
 
