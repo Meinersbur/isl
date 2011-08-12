@@ -433,10 +433,20 @@ __isl_give isl_set *isl_set_reset_tuple_id(__isl_take isl_set *set)
 	return isl_map_reset_tuple_id(set, isl_dim_set);
 }
 
+int isl_map_has_tuple_id(__isl_keep isl_map *map, enum isl_dim_type type)
+{
+	return map ? isl_dim_has_tuple_id(map->dim, type) : -1;
+}
+
 __isl_give isl_id *isl_map_get_tuple_id(__isl_keep isl_map *map,
 	enum isl_dim_type type)
 {
 	return map ? isl_dim_get_tuple_id(map->dim, type) : NULL;
+}
+
+int isl_set_has_tuple_id(__isl_keep isl_set *set)
+{
+	return isl_map_has_tuple_id(set, isl_dim_set);
 }
 
 __isl_give isl_id *isl_set_get_tuple_id(__isl_keep isl_set *set)

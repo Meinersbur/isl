@@ -578,6 +578,8 @@ using the following functions.
 		enum isl_dim_type type, __isl_take isl_id *id);
 	__isl_give isl_dim *isl_dim_reset_tuple_id(
 		__isl_take isl_dim *dim, enum isl_dim_type type);
+	int isl_dim_has_tuple_id(__isl_keep isl_dim *dim,
+		enum isl_dim_type type);
 	__isl_give isl_id *isl_dim_get_tuple_id(
 		__isl_keep isl_dim *dim, enum isl_dim_type type);
 	__isl_give isl_dim *isl_dim_set_tuple_name(
@@ -1348,6 +1350,7 @@ or relation can be read off or set using the following functions.
 		__isl_take isl_set *set, __isl_take isl_id *id);
 	__isl_give isl_set *isl_set_reset_tuple_id(
 		__isl_take isl_set *set);
+	int isl_set_has_tuple_id(__isl_keep isl_set *set);
 	__isl_give isl_id *isl_set_get_tuple_id(
 		__isl_keep isl_set *set);
 	__isl_give isl_map *isl_map_set_tuple_id(
@@ -1355,6 +1358,8 @@ or relation can be read off or set using the following functions.
 		__isl_take isl_id *id);
 	__isl_give isl_map *isl_map_reset_tuple_id(
 		__isl_take isl_map *map, enum isl_dim_type type);
+	int isl_map_has_tuple_id(__isl_keep isl_map *map,
+		enum isl_dim_type type);
 	__isl_give isl_id *isl_map_get_tuple_id(
 		__isl_keep isl_map *map, enum isl_dim_type type);
 

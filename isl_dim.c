@@ -291,6 +291,17 @@ static int name_ok(isl_ctx *ctx, const char *s)
 	return 1;
 }
 
+int isl_dim_has_tuple_id(__isl_keep isl_dim *dim, enum isl_dim_type type)
+{
+	if (!dim)
+		return -1;
+	if (type != isl_dim_in && type != isl_dim_out)
+		isl_die(dim->ctx, isl_error_invalid,
+			"only input, output and set tuples can have ids",
+			return -1);
+	return dim->tuple_id[type - isl_dim_in] != NULL;
+}
+
 __isl_give isl_id *isl_dim_get_tuple_id(__isl_keep isl_dim *dim,
 	enum isl_dim_type type)
 {
