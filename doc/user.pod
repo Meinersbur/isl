@@ -2465,6 +2465,33 @@ In case of union relations, the optimum is computed per space.
 	__isl_give isl_union_map *isl_union_map_lexmax(
 		__isl_take isl_union_map *umap);
 
+The following functions return their result in the form of
+a piecewise multi-affine expression
+(See L<"Piecewise Multiple Quasi Affine Expressions">),
+but are otherwise equivalent to the corresponding functions
+returning a basic set or relation.
+
+	__isl_give isl_pw_multi_aff *
+	isl_basic_set_partial_lexmin_pw_multi_aff(
+		__isl_take isl_basic_set *bset,
+		__isl_take isl_basic_set *dom,
+		__isl_give isl_set **empty);
+	__isl_give isl_pw_multi_aff *
+	isl_basic_set_partial_lexmax_pw_multi_aff(
+		__isl_take isl_basic_set *bset,
+		__isl_take isl_basic_set *dom,
+		__isl_give isl_set **empty);
+	__isl_give isl_pw_multi_aff *
+	isl_basic_map_partial_lexmin_pw_multi_aff(
+		__isl_take isl_basic_map *bmap,
+		__isl_take isl_basic_set *dom,
+		__isl_give isl_set **empty);
+	__isl_give isl_pw_multi_aff *
+	isl_basic_map_partial_lexmax_pw_multi_aff(
+		__isl_take isl_basic_map *bmap,
+		__isl_take isl_basic_set *dom,
+		__isl_give isl_set **empty);
+
 =head2 Lists
 
 Lists are defined over several element types, including

@@ -232,6 +232,9 @@ void isl_tab_dump(__isl_keep struct isl_tab *tab);
 struct isl_map *isl_tab_basic_map_partial_lexopt(
 		struct isl_basic_map *bmap, struct isl_basic_set *dom,
 		struct isl_set **empty, int max);
+__isl_give isl_pw_multi_aff *isl_basic_map_partial_lexopt_pw_multi_aff(
+	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
+	__isl_give isl_set **empty, int max);
 
 /* An isl_region represents a sequence of consecutive variables.
  * pos is the location (starting at 0) of the first variable in the sequence.

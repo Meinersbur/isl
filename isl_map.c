@@ -5125,6 +5125,34 @@ struct isl_set *isl_basic_set_partial_lexmax(
 			dom, empty);
 }
 
+__isl_give isl_pw_multi_aff *isl_basic_map_partial_lexmin_pw_multi_aff(
+	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
+	__isl_give isl_set **empty)
+{
+	return isl_basic_map_partial_lexopt_pw_multi_aff(bmap, dom, empty, 0);
+}
+
+__isl_give isl_pw_multi_aff *isl_basic_map_partial_lexmax_pw_multi_aff(
+	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
+	__isl_give isl_set **empty)
+{
+	return isl_basic_map_partial_lexopt_pw_multi_aff(bmap, dom, empty, 1);
+}
+
+__isl_give isl_pw_multi_aff *isl_basic_set_partial_lexmin_pw_multi_aff(
+	__isl_take isl_basic_set *bset, __isl_take isl_basic_set *dom,
+	__isl_give isl_set **empty)
+{
+	return isl_basic_map_partial_lexmin_pw_multi_aff(bset, dom, empty);
+}
+
+__isl_give isl_pw_multi_aff *isl_basic_set_partial_lexmax_pw_multi_aff(
+	__isl_take isl_basic_set *bset, __isl_take isl_basic_set *dom,
+	__isl_give isl_set **empty)
+{
+	return isl_basic_map_partial_lexmax_pw_multi_aff(bset, dom, empty);
+}
+
 /* Given a basic map "bmap", compute the lexicographically minimal
  * (or maximal) image element for each domain element in dom.
  * Set *empty to those elements in dom that do not have an image element.
