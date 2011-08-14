@@ -377,15 +377,56 @@ __isl_give PW *FN(PW,add)(__isl_take PW *pw1, __isl_take PW *pw2)
 	return align_params_pw_pw_and(pw1, pw2, &FN(PW,add_aligned));
 }
 
-static __isl_give PW *FN(PW,add_disjoint_aligned)(__isl_take PW *pw1,
-	__isl_take PW *pw2)
+/* Make sure "pw" has room for at least "n" more pieces.
+ *
+ * If there is only one reference to pw, we extend it in place.
+ * Otherwise, we create a new PW and copy the pieces.
+ */
+static __isl_give PW *FN(PW,grow)(__isl_take PW *pw, int n)
 {
 	int i;
 	isl_ctx *ctx;
 	PW *res;
 
+	if (!pw)
+		return NULL;
+	if (pw->n + n <= pw->size)
+		return pw;
+	ctx = FN(PW,get_ctx)(pw);
+	n += pw->n;
+	if (pw->ref == 1) {
+		res = isl_realloc(ctx, pw, struct PW,
+			    sizeof(struct PW) + (n - 1) * sizeof(S(PW,piece)));
+		if (!res)
+			return FN(PW,free)(pw);
+		res->size = n;
+		return res;
+	}
+#ifdef HAS_TYPE
+	res = FN(PW,alloc_)(isl_space_copy(pw->dim), pw->type, n);
+#else
+	res = FN(PW,alloc_)(isl_space_copy(pw->dim), n);
+#endif
+	if (!res)
+		return FN(PW,free)(pw);
+	for (i = 0; i < pw->n; ++i)
+		res = FN(PW,add_piece)(res, isl_set_copy(pw->p[i].set),
+					    FN(EL,copy)(pw->p[i].FIELD));
+	FN(PW,free)(pw);
+	return res;
+}
+
+static __isl_give PW *FN(PW,add_disjoint_aligned)(__isl_take PW *pw1,
+	__isl_take PW *pw2)
+{
+	int i;
+	isl_ctx *ctx;
+
 	if (!pw1 || !pw2)
 		goto error;
+
+	if (pw1->size < pw1->n + pw2->n && pw1->n < pw2->n)
+		return FN(PW,add_disjoint_aligned)(pw2, pw1);
 
 	ctx = isl_space_get_ctx(pw1->dim);
 #ifdef HAS_TYPE
@@ -405,26 +446,18 @@ static __isl_give PW *FN(PW,add_disjoint_aligned)(__isl_take PW *pw1,
 		return pw1;
 	}
 
-#ifdef HAS_TYPE
-	res = FN(PW,alloc_)(isl_space_copy(pw1->dim), pw1->type, pw1->n + pw2->n);
-#else
-	res = FN(PW,alloc_)(isl_space_copy(pw1->dim), pw1->n + pw2->n);
-#endif
-
-	for (i = 0; i < pw1->n; ++i)
-		res = FN(PW,add_piece)(res,
-				isl_set_copy(pw1->p[i].set),
-				FN(EL,copy)(pw1->p[i].FIELD));
+	pw1 = FN(PW,grow)(pw1, pw2->n);
+	if (!pw1)
+		goto error;
 
 	for (i = 0; i < pw2->n; ++i)
-		res = FN(PW,add_piece)(res,
+		pw1 = FN(PW,add_piece)(pw1,
 				isl_set_copy(pw2->p[i].set),
 				FN(EL,copy)(pw2->p[i].FIELD));
 
-	FN(PW,free)(pw1);
 	FN(PW,free)(pw2);
 
-	return res;
+	return pw1;
 error:
 	FN(PW,free)(pw1);
 	FN(PW,free)(pw2);
