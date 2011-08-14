@@ -503,6 +503,9 @@ int isl_space_tuple_match(__isl_keep isl_space *dim1, enum isl_dim_type dim1_typ
 	if (!dim1 || !dim2)
 		return -1;
 
+	if (dim1 == dim2 && dim1_type == dim2_type)
+		return 1;
+
 	if (n(dim1, dim1_type) != n(dim2, dim2_type))
 		return 0;
 	id1 = tuple_id(dim1, dim1_type);
@@ -525,6 +528,9 @@ static int match(__isl_keep isl_space *dim1, enum isl_dim_type dim1_type,
 {
 	int i;
 
+	if (dim1 == dim2 && dim1_type == dim2_type)
+		return 1;
+
 	if (!isl_space_tuple_match(dim1, dim1_type, dim2, dim2_type))
 		return 0;
 
@@ -541,6 +547,9 @@ static int match(__isl_keep isl_space *dim1, enum isl_dim_type dim1_type,
 int isl_space_match(__isl_keep isl_space *dim1, enum isl_dim_type dim1_type,
 	__isl_keep isl_space *dim2, enum isl_dim_type dim2_type)
 {
+	if (!dim1 || !dim2)
+		return -1;
+
 	return match(dim1, dim1_type, dim2, dim2_type);
 }
 
@@ -1182,6 +1191,8 @@ int isl_space_is_equal(__isl_keep isl_space *dim1, __isl_keep isl_space *dim2)
 {
 	if (!dim1 || !dim2)
 		return -1;
+	if (dim1 == dim2)
+		return 1;
 	return match(dim1, isl_dim_param, dim2, isl_dim_param) &&
 	       isl_space_tuple_match(dim1, isl_dim_in, dim2, isl_dim_in) &&
 	       isl_space_tuple_match(dim1, isl_dim_out, dim2, isl_dim_out);
