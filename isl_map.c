@@ -5153,6 +5153,28 @@ __isl_give isl_pw_multi_aff *isl_basic_set_partial_lexmax_pw_multi_aff(
 	return isl_basic_map_partial_lexmax_pw_multi_aff(bset, dom, empty);
 }
 
+__isl_give isl_pw_multi_aff *isl_basic_map_lexopt_pw_multi_aff(
+	__isl_take isl_basic_map *bmap, int max)
+{
+	isl_basic_set *dom = NULL;
+	isl_space *dom_space;
+
+	if (!bmap)
+		goto error;
+	dom_space = isl_space_domain(isl_space_copy(bmap->dim));
+	dom = isl_basic_set_universe(dom_space);
+	return isl_basic_map_partial_lexopt_pw_multi_aff(bmap, dom, NULL, max);
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+__isl_give isl_pw_multi_aff *isl_basic_map_lexmin_pw_multi_aff(
+	__isl_take isl_basic_map *bmap)
+{
+	return isl_basic_map_lexopt_pw_multi_aff(bmap, 0);
+}
+
 /* Given a basic map "bmap", compute the lexicographically minimal
  * (or maximal) image element for each domain element in dom.
  * Set *empty to those elements in dom that do not have an image element.

@@ -2472,6 +2472,9 @@ but are otherwise equivalent to the corresponding functions
 returning a basic set or relation.
 
 	__isl_give isl_pw_multi_aff *
+	isl_basic_map_lexmin_pw_multi_aff(
+		__isl_take isl_basic_map *bmap);
+	__isl_give isl_pw_multi_aff *
 	isl_basic_set_partial_lexmin_pw_multi_aff(
 		__isl_take isl_basic_set *bset,
 		__isl_take isl_basic_set *dom,
