@@ -9769,3 +9769,122 @@ __isl_give isl_aff *isl_basic_set_get_div(__isl_keep isl_basic_set *bset,
 {
 	return isl_basic_map_get_div(bset, pos);
 }
+
+/* Plug in "subs" for dimension "type", "pos" of "bset".
+ *
+ * Let i be the dimension to replace and let "subs" be of the form
+ *
+ *	f/d
+ *
+ * Any integer division with a non-zero coefficient for i,
+ *
+ *	floor((a i + g)/m)
+ *
+ * is replaced by
+ *
+ *	floor((a f + d g)/(m d))
+ *
+ * Constraints of the form
+ *
+ *	a i + g
+ *
+ * are replaced by
+ *
+ *	a f + d g
+ */
+__isl_give isl_basic_set *isl_basic_set_substitute(
+	__isl_take isl_basic_set *bset,
+	enum isl_dim_type type, unsigned pos, __isl_keep isl_aff *subs)
+{
+	int i;
+	isl_int v;
+	isl_ctx *ctx;
+
+	if (bset && isl_basic_set_plain_is_empty(bset))
+		return bset;
+
+	bset = isl_basic_set_cow(bset);
+	if (!bset || !subs)
+		goto error;
+
+	ctx = isl_basic_set_get_ctx(bset);
+	if (!isl_space_is_equal(bset->dim, subs->ls->dim))
+		isl_die(ctx, isl_error_invalid,
+			"spaces don't match", goto error);
+	if (isl_local_space_dim(subs->ls, isl_dim_div) != 0)
+		isl_die(ctx, isl_error_unsupported,
+			"cannot handle divs yet", goto error);
+
+	pos += isl_basic_set_offset(bset, type);
+
+	isl_int_init(v);
+
+	for (i = 0; i < bset->n_eq; ++i) {
+		if (isl_int_is_zero(bset->eq[i][pos]))
+			continue;
+		isl_int_set(v, bset->eq[i][pos]);
+		isl_int_set_si(bset->eq[i][pos], 0);
+		isl_seq_combine(bset->eq[i], subs->v->el[0], bset->eq[i],
+				v, subs->v->el + 1, subs->v->size - 1);
+	}
+
+	for (i = 0; i < bset->n_ineq; ++i) {
+		if (isl_int_is_zero(bset->ineq[i][pos]))
+			continue;
+		isl_int_set(v, bset->ineq[i][pos]);
+		isl_int_set_si(bset->ineq[i][pos], 0);
+		isl_seq_combine(bset->ineq[i], subs->v->el[0], bset->ineq[i],
+				v, subs->v->el + 1, subs->v->size - 1);
+	}
+
+	for (i = 0; i < bset->n_div; ++i) {
+		if (isl_int_is_zero(bset->div[i][1 + pos]))
+			continue;
+		isl_int_set(v, bset->div[i][1 + pos]);
+		isl_int_set_si(bset->div[i][1 + pos], 0);
+		isl_seq_combine(bset->div[i] + 1,
+				subs->v->el[0], bset->div[i] + 1,
+				v, subs->v->el + 1, subs->v->size - 1);
+		isl_int_mul(bset->div[i][0], bset->div[i][0], subs->v->el[0]);
+	}
+
+	isl_int_clear(v);
+
+	bset = isl_basic_set_simplify(bset);
+	return isl_basic_set_finalize(bset);
+error:
+	isl_basic_set_free(bset);
+	return NULL;
+}
+
+/* Plug in "subs" for dimension "type", "pos" of "set".
+ */
+__isl_give isl_set *isl_set_substitute(__isl_take isl_set *set,
+	enum isl_dim_type type, unsigned pos, __isl_keep isl_aff *subs)
+{
+	int i;
+
+	if (set && isl_set_plain_is_empty(set))
+		return set;
+
+	set = isl_set_cow(set);
+	if (!set || !subs)
+		goto error;
+
+	for (i = set->n - 1; i >= 0; --i) {
+		set->p[i] = isl_basic_set_substitute(set->p[i], type, pos, subs);
+		if (!set->p[i])
+			goto error;
+		if (isl_basic_set_plain_is_empty(set->p[i])) {
+			isl_basic_set_free(set->p[i]);
+			if (i != set->n - 1)
+				set->p[i] = set->p[set->n - 1];
+			set->n--;
+		}
+	}
+
+	return set;
+error:
+	isl_set_free(set);
+	return NULL;
+}

@@ -327,4 +327,7 @@ int isl_basic_set_foreach_lexopt(__isl_keep isl_basic_set *bset, int max,
 		  void *user),
 	void *user);
 
+__isl_give isl_set *isl_set_substitute(__isl_take isl_set *set,
+	enum isl_dim_type type, unsigned pos, __isl_keep isl_aff *subs);
+
 #endif
