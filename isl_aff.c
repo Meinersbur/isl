@@ -2159,6 +2159,54 @@ __isl_give isl_set *isl_set_from_pw_multi_aff(__isl_take isl_pw_multi_aff *pma)
 	return isl_map_from_pw_multi_aff(pma);
 }
 
+/* Try and create an isl_pw_multi_aff that is equivalent to the given isl_map.
+ * This obivously only works if the input "map" is single-valued.
+ * If so, we compute the lexicographic minimum of the image in the form
+ * of an isl_pw_multi_aff.  Since the image is unique, it is equal
+ * to its lexicographic minimum.
+ * If the input is not single-valued, we produce an error.
+ */
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_map(__isl_take isl_map *map)
+{
+	int i;
+	int sv;
+	isl_pw_multi_aff *pma;
+
+	if (!map)
+		return NULL;
+
+	sv = isl_map_is_single_valued(map);
+	if (sv < 0)
+		goto error;
+	if (!sv)
+		isl_die(isl_map_get_ctx(map), isl_error_invalid,
+			"map is not single-valued", goto error);
+	map = isl_map_make_disjoint(map);
+	if (!map)
+		return NULL;
+
+	pma = isl_pw_multi_aff_empty(isl_map_get_space(map));
+
+	for (i = 0; i < map->n; ++i) {
+		isl_pw_multi_aff *pma_i;
+		isl_basic_map *bmap;
+		bmap = isl_basic_map_copy(map->p[i]);
+		pma_i = isl_basic_map_lexmin_pw_multi_aff(bmap);
+		pma = isl_pw_multi_aff_add_disjoint(pma, pma_i);
+	}
+
+	isl_map_free(map);
+	return pma;
+error:
+	isl_map_free(map);
+	return NULL;
+}
+
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_set(__isl_take isl_set *set)
+{
+	return isl_pw_multi_aff_from_map(set);
+}
+
 /* Plug in "subs" for dimension "type", "pos" of "aff".
  *
  * Let i be the dimension to replace and let "subs" be of the form

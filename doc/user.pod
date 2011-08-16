@@ -2955,6 +2955,15 @@ be created using the following functions.
 		__isl_take isl_set *set,
 		__isl_take isl_multi_aff *maff);
 
+A piecewise multiple quasi affine expression can also be initialized
+from an C<isl_set> or C<isl_map>, provided the C<isl_set> is a singleton
+and the C<isl_map> is single-valued.
+
+	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_set(
+		__isl_take isl_set *set);
+	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_map(
+		__isl_take isl_map *map);
+
 Multiple quasi affine expressions can be copied and freed using
 
 	#include <isl/aff.h>
