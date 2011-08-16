@@ -156,6 +156,10 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_add_piece(
 	__isl_take isl_set *set, __isl_take isl_qpolynomial *qp);
 int isl_pw_qpolynomial_is_one(__isl_keep isl_pw_qpolynomial *pwqp);
 
+__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_project_out(
+	__isl_take isl_pw_qpolynomial *pwqp,
+	enum isl_dim_type type, unsigned first, unsigned n);
+
 __isl_give isl_qpolynomial *isl_qpolynomial_opt_on_domain(
 	__isl_take isl_qpolynomial *qp, __isl_take isl_set *set, int max);
 
