@@ -793,7 +793,7 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_fold(
 			"fold types don't match", goto error);
 
 	n = (pw1->n + 1) * (pw2->n + 1);
-	res = isl_pw_qpolynomial_fold_alloc_(isl_space_copy(pw1->dim),
+	res = isl_pw_qpolynomial_fold_alloc_size(isl_space_copy(pw1->dim),
 						pw1->type, n);
 
 	for (i = 0; i < pw1->n; ++i) {
@@ -917,8 +917,8 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_from_pw_qpolynomial(
 	if (!pwqp)
 		return NULL;
 	
-	pwf = isl_pw_qpolynomial_fold_alloc_(isl_space_copy(pwqp->dim), type,
-						pwqp->n);
+	pwf = isl_pw_qpolynomial_fold_alloc_size(isl_space_copy(pwqp->dim),
+						type, pwqp->n);
 
 	for (i = 0; i < pwqp->n; ++i)
 		pwf = isl_pw_qpolynomial_fold_add_piece(pwf,

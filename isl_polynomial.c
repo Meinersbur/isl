@@ -2634,7 +2634,7 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_mul(
 	}
 
 	n = pwqp1->n * pwqp2->n;
-	res = isl_pw_qpolynomial_alloc_(isl_space_copy(pwqp1->dim), n);
+	res = isl_pw_qpolynomial_alloc_size(isl_space_copy(pwqp1->dim), n);
 
 	for (i = 0; i < pwqp1->n; ++i) {
 		for (j = 0; j < pwqp2->n; ++j) {
@@ -3042,7 +3042,8 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_from_pw_aff(
 	if (!pwaff)
 		return NULL;
 
-	pwqp = isl_pw_qpolynomial_alloc_(isl_pw_aff_get_space(pwaff), pwaff->n);
+	pwqp = isl_pw_qpolynomial_alloc_size(isl_pw_aff_get_space(pwaff),
+						pwaff->n);
 
 	for (i = 0; i < pwaff->n; ++i) {
 		isl_set *dom;

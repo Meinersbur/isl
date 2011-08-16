@@ -4,10 +4,10 @@
 #define S(TYPE,NAME) xS(TYPE,NAME)
 
 #ifdef HAS_TYPE
-static __isl_give PW *FN(PW,alloc_)(__isl_take isl_space *dim,
+__isl_give PW *FN(PW,alloc_size)(__isl_take isl_space *dim,
 	enum isl_fold type, int n)
 #else
-static __isl_give PW *FN(PW,alloc_)(__isl_take isl_space *dim, int n)
+__isl_give PW *FN(PW,alloc_size)(__isl_take isl_space *dim, int n)
 #endif
 {
 	isl_ctx *ctx;
@@ -38,12 +38,12 @@ error:
 #ifdef HAS_TYPE
 __isl_give PW *FN(PW,ZERO)(__isl_take isl_space *dim, enum isl_fold type)
 {
-	return FN(PW,alloc_)(dim, type, 0);
+	return FN(PW,alloc_size)(dim, type, 0);
 }
 #else
 __isl_give PW *FN(PW,ZERO)(__isl_take isl_space *dim)
 {
-	return FN(PW,alloc_)(dim, 0);
+	return FN(PW,alloc_size)(dim, 0);
 }
 #endif
 
@@ -99,9 +99,9 @@ __isl_give PW *FN(PW,alloc)(__isl_take isl_set *set, __isl_take EL *el)
 		goto error;
 
 #ifdef HAS_TYPE
-	pw = FN(PW,alloc_)(isl_set_get_space(set), type, 1);
+	pw = FN(PW,alloc_size)(isl_set_get_space(set), type, 1);
 #else
-	pw = FN(PW,alloc_)(isl_set_get_space(set), 1);
+	pw = FN(PW,alloc_size)(isl_set_get_space(set), 1);
 #endif
 
 	return FN(PW,add_piece)(pw, set, el);
@@ -120,9 +120,9 @@ __isl_give PW *FN(PW,dup)(__isl_keep PW *pw)
 		return NULL;
 
 #ifdef HAS_TYPE
-	dup = FN(PW,alloc_)(isl_space_copy(pw->dim), pw->type, pw->n);
+	dup = FN(PW,alloc_size)(isl_space_copy(pw->dim), pw->type, pw->n);
 #else
-	dup = FN(PW,alloc_)(isl_space_copy(pw->dim), pw->n);
+	dup = FN(PW,alloc_size)(isl_space_copy(pw->dim), pw->n);
 #endif
 	if (!dup)
 		return NULL;
@@ -326,9 +326,9 @@ static __isl_give PW *FN(PW,add_aligned)(__isl_take PW *pw1, __isl_take PW *pw2)
 
 	n = (pw1->n + 1) * (pw2->n + 1);
 #ifdef HAS_TYPE
-	res = FN(PW,alloc_)(isl_space_copy(pw1->dim), pw1->type, n);
+	res = FN(PW,alloc_size)(isl_space_copy(pw1->dim), pw1->type, n);
 #else
-	res = FN(PW,alloc_)(isl_space_copy(pw1->dim), n);
+	res = FN(PW,alloc_size)(isl_space_copy(pw1->dim), n);
 #endif
 
 	for (i = 0; i < pw1->n; ++i) {
@@ -403,9 +403,9 @@ static __isl_give PW *FN(PW,grow)(__isl_take PW *pw, int n)
 		return res;
 	}
 #ifdef HAS_TYPE
-	res = FN(PW,alloc_)(isl_space_copy(pw->dim), pw->type, n);
+	res = FN(PW,alloc_size)(isl_space_copy(pw->dim), pw->type, n);
 #else
-	res = FN(PW,alloc_)(isl_space_copy(pw->dim), n);
+	res = FN(PW,alloc_size)(isl_space_copy(pw->dim), n);
 #endif
 	if (!res)
 		return FN(PW,free)(pw);

@@ -1181,7 +1181,7 @@ static __isl_give isl_pw_aff *pw_aff_union_opt(__isl_take isl_pw_aff *pwaff1,
 	}
 
 	n = 2 * (pwaff1->n + 1) * (pwaff2->n + 1);
-	res = isl_pw_aff_alloc_(isl_space_copy(pwaff1->dim), n);
+	res = isl_pw_aff_alloc_size(isl_space_copy(pwaff1->dim), n);
 
 	for (i = 0; i < pwaff1->n; ++i) {
 		set = isl_set_copy(pwaff1->p[i].set);
@@ -1709,7 +1709,7 @@ static __isl_give isl_pw_aff *pw_aff_mul(__isl_take isl_pw_aff *pwaff1,
 		goto error;
 
 	n = pwaff1->n * pwaff2->n;
-	res = isl_pw_aff_alloc_(isl_space_copy(pwaff1->dim), n);
+	res = isl_pw_aff_alloc_size(isl_space_copy(pwaff1->dim), n);
 
 	for (i = 0; i < pwaff1->n; ++i) {
 		for (j = 0; j < pwaff2->n; ++j) {
