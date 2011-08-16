@@ -95,4 +95,8 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_project_out(
 	__isl_take isl_pw_multi_aff *pma,
 	enum isl_dim_type type, unsigned first, unsigned n);
 
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_substitute(
+	__isl_take isl_pw_multi_aff *pma, enum isl_dim_type type, unsigned pos,
+	__isl_keep isl_pw_aff *subs);
+
 #endif

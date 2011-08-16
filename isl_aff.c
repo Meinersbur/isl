@@ -2158,3 +2158,141 @@ __isl_give isl_set *isl_set_from_pw_multi_aff(__isl_take isl_pw_multi_aff *pma)
 
 	return isl_map_from_pw_multi_aff(pma);
 }
+
+/* Plug in "subs" for dimension "type", "pos" of "aff".
+ *
+ * Let i be the dimension to replace and let "subs" be of the form
+ *
+ *	f/d
+ *
+ * and "aff" of the form
+ *
+ *	(a i + g)/m
+ *
+ * The result is
+ *
+ *	floor((a f + d g')/(m d))
+ *
+ * where g' is the result of plugging in "subs" in each of the integer
+ * divisions in g.
+ */
+__isl_give isl_aff *isl_aff_substitute(__isl_take isl_aff *aff,
+	enum isl_dim_type type, unsigned pos, __isl_keep isl_aff *subs)
+{
+	isl_ctx *ctx;
+	isl_int v;
+
+	aff = isl_aff_cow(aff);
+	if (!aff || !subs)
+		return isl_aff_free(aff);
+
+	ctx = isl_aff_get_ctx(aff);
+	if (!isl_space_is_equal(aff->ls->dim, subs->ls->dim))
+		isl_die(ctx, isl_error_invalid,
+			"spaces don't match", return isl_aff_free(aff));
+	if (isl_local_space_dim(subs->ls, isl_dim_div) != 0)
+		isl_die(ctx, isl_error_unsupported,
+			"cannot handle divs yet", return isl_aff_free(aff));
+
+	aff->ls = isl_local_space_substitute(aff->ls, type, pos, subs);
+	if (!aff->ls)
+		return isl_aff_free(aff);
+
+	aff->v = isl_vec_cow(aff->v);
+	if (!aff->v)
+		return isl_aff_free(aff);
+
+	pos += isl_local_space_offset(aff->ls, type);
+
+	isl_int_init(v);
+	isl_int_set(v, aff->v->el[1 + pos]);
+	isl_int_set_si(aff->v->el[1 + pos], 0);
+	isl_seq_combine(aff->v->el + 1, subs->v->el[0], aff->v->el + 1,
+			v, subs->v->el + 1, subs->v->size - 1);
+	isl_int_mul(aff->v->el[0], aff->v->el[0], subs->v->el[0]);
+	isl_int_clear(v);
+
+	return aff;
+}
+
+/* Plug in "subs" for dimension "type", "pos" in each of the affine
+ * expressions in "maff".
+ */
+__isl_give isl_multi_aff *isl_multi_aff_substitute(
+	__isl_take isl_multi_aff *maff, enum isl_dim_type type, unsigned pos,
+	__isl_keep isl_aff *subs)
+{
+	int i;
+
+	maff = isl_multi_aff_cow(maff);
+	if (!maff || !subs)
+		return isl_multi_aff_free(maff);
+
+	if (type == isl_dim_in)
+		type = isl_dim_set;
+
+	for (i = 0; i < maff->n; ++i) {
+		maff->p[i] = isl_aff_substitute(maff->p[i], type, pos, subs);
+		if (!maff->p[i])
+			return isl_multi_aff_free(maff);
+	}
+
+	return maff;
+}
+
+/* Plug in "subs" for dimension "type", "pos" of "pma".
+ *
+ * pma is of the form
+ *
+ *	A_i(v) -> M_i(v)
+ *
+ * while subs is of the form
+ *
+ *	v' = B_j(v) -> S_j
+ *
+ * Each pair i,j such that C_ij = A_i \cap B_i is non-empty
+ * has a contribution in the result, in particular
+ *
+ *	C_ij(S_j) -> M_i(S_j)
+ *
+ * Note that plugging in S_j in C_ij may also result in an empty set
+ * and this contribution should simply be discarded.
+ */
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_substitute(
+	__isl_take isl_pw_multi_aff *pma, enum isl_dim_type type, unsigned pos,
+	__isl_keep isl_pw_aff *subs)
+{
+	int i, j, n;
+	isl_pw_multi_aff *res;
+
+	if (!pma || !subs)
+		return isl_pw_multi_aff_free(pma);
+
+	n = pma->n * subs->n;
+	res = isl_pw_multi_aff_alloc_size(isl_space_copy(pma->dim), n);
+
+	for (i = 0; i < pma->n; ++i) {
+		for (j = 0; j < subs->n; ++j) {
+			isl_set *common;
+			isl_multi_aff *res_ij;
+			common = isl_set_intersect(
+					isl_set_copy(pma->p[i].set),
+					isl_set_copy(subs->p[j].set));
+			common = isl_set_substitute(common,
+					type, pos, subs->p[j].aff);
+			if (isl_set_plain_is_empty(common)) {
+				isl_set_free(common);
+				continue;
+			}
+
+			res_ij = isl_multi_aff_substitute(
+					isl_multi_aff_copy(pma->p[i].maff),
+					type, pos, subs->p[j].aff);
+
+			res = isl_pw_multi_aff_add_piece(res, common, res_ij);
+		}
+	}
+
+	isl_pw_multi_aff_free(pma);
+	return res;
+}
