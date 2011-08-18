@@ -1098,6 +1098,15 @@ __isl_give isl_space *isl_space_from_range(__isl_take isl_space *dim)
 	return dim;
 }
 
+__isl_give isl_space *isl_space_params(__isl_take isl_space *space)
+{
+	space = isl_space_drop_dims(space,
+			    isl_dim_in, 0, isl_space_dim(space, isl_dim_in));
+	space = isl_space_drop_dims(space,
+			    isl_dim_out, 0, isl_space_dim(space, isl_dim_out));
+	return space;
+}
+
 __isl_give isl_space *isl_space_as_set_space(__isl_take isl_space *dim)
 {
 	dim = isl_space_cow(dim);
