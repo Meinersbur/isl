@@ -186,17 +186,3 @@ __isl_give isl_printer *isl_printer_print_band(__isl_take isl_printer *p,
 
 	return p;
 }
-
-void isl_band_dump(__isl_keep isl_band *band)
-{
-	isl_printer *printer;
-
-	if (!band)
-		return;
-
-	printer = isl_printer_to_file(isl_band_get_ctx(band), stderr);
-	printer = isl_printer_print_band(printer, band);
-	printer = isl_printer_end_line(printer);
-
-	isl_printer_free(printer);
-}

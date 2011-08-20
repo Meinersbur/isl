@@ -102,6 +102,7 @@ libisl_la_SOURCES = \
 	isl_polynomial.c \
 	isl_printer_private.h \
 	isl_printer.c \
+	print.c \
 	isl_range.c \
 	isl_range.h \
 	isl_reordering.c \
@@ -231,6 +232,7 @@ EXTRA_DIST = \
 	basis_reduction_templ.c \
 	isl_list_templ.c \
 	isl_list_templ.h \
+	print_templ.c \
 	isl_pw_templ.c \
 	isl_union_templ.c \
 	isl.py \

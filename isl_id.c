@@ -150,17 +150,3 @@ error:
 	isl_printer_free(p);
 	return NULL;
 }
-
-void isl_id_dump(__isl_keep isl_id *id)
-{
-	isl_printer *printer;
-
-	if (!id)
-		return;
-
-	printer = isl_printer_to_file(isl_id_get_ctx(id), stderr);
-	printer = isl_printer_print_id(printer, id);
-	printer = isl_printer_end_line(printer);
-
-	isl_printer_free(printer);
-}

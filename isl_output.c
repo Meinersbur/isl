@@ -1166,179 +1166,6 @@ void isl_map_print(__isl_keep isl_map *map, FILE *out, int indent,
 	isl_printer_free(printer);
 }
 
-void isl_basic_map_dump(__isl_keep isl_basic_map *bmap)
-{
-	isl_printer *printer;
-
-	if (!bmap)
-		return;
-
-	printer = isl_printer_to_file(isl_basic_map_get_ctx(bmap), stderr);
-	printer = isl_printer_print_basic_map(printer, bmap);
-	printer = isl_printer_end_line(printer);
-
-	isl_printer_free(printer);
-}
-
-void isl_basic_set_dump(__isl_keep isl_basic_set *bset)
-{
-	isl_printer *printer;
-
-	if (!bset)
-		return;
-
-	printer = isl_printer_to_file(isl_basic_set_get_ctx(bset), stderr);
-	printer = isl_printer_print_basic_set(printer, bset);
-	printer = isl_printer_end_line(printer);
-
-	isl_printer_free(printer);
-}
-
-void isl_map_dump(__isl_keep isl_map *map)
-{
-	isl_printer *printer;
-
-	if (!map)
-		return;
-
-	printer = isl_printer_to_file(isl_map_get_ctx(map), stderr);
-	printer = isl_printer_print_map(printer, map);
-	printer = isl_printer_end_line(printer);
-
-	isl_printer_free(printer);
-}
-
-void isl_set_dump(__isl_keep isl_set *set)
-{
-	isl_printer *printer;
-
-	if (!set)
-		return;
-
-	printer = isl_printer_to_file(isl_set_get_ctx(set), stderr);
-	printer = isl_printer_print_set(printer, set);
-	printer = isl_printer_end_line(printer);
-
-	isl_printer_free(printer);
-}
-
-void isl_union_map_dump(__isl_keep isl_union_map *umap)
-{
-	isl_printer *printer;
-
-	if (!umap)
-		return;
-
-	printer = isl_printer_to_file(isl_union_map_get_ctx(umap), stderr);
-	printer = isl_printer_print_union_map(printer, umap);
-	printer = isl_printer_end_line(printer);
-
-	isl_printer_free(printer);
-}
-
-void isl_union_set_dump(__isl_keep isl_union_set *uset)
-{
-	isl_printer *printer;
-
-	if (!uset)
-		return;
-
-	printer = isl_printer_to_file(isl_union_set_get_ctx(uset), stderr);
-	printer = isl_printer_print_union_set(printer, uset);
-	printer = isl_printer_end_line(printer);
-
-	isl_printer_free(printer);
-}
-
-void isl_union_pw_qpolynomial_dump(__isl_keep isl_union_pw_qpolynomial *upwqp)
-{
-	isl_printer *printer;
-
-	if (!upwqp)
-		return;
-
-	printer = isl_printer_to_file(isl_union_pw_qpolynomial_get_ctx(upwqp),
-					stderr);
-	printer = isl_printer_print_union_pw_qpolynomial(printer, upwqp);
-	printer = isl_printer_end_line(printer);
-
-	isl_printer_free(printer);
-}
-
-void isl_qpolynomial_dump(__isl_keep isl_qpolynomial *qp)
-{
-	isl_printer *printer;
-
-	if (!qp)
-		return;
-
-	printer = isl_printer_to_file(isl_qpolynomial_get_ctx(qp), stderr);
-	printer = isl_printer_print_qpolynomial(printer, qp);
-	printer = isl_printer_end_line(printer);
-
-	isl_printer_free(printer);
-}
-
-void isl_qpolynomial_fold_dump(__isl_keep isl_qpolynomial_fold *fold)
-{
-	isl_printer *printer;
-
-	if (!fold)
-		return;
-
-	printer = isl_printer_to_file(isl_qpolynomial_fold_get_ctx(fold),
-					stderr);
-	printer = isl_printer_print_qpolynomial_fold(printer, fold);
-	printer = isl_printer_end_line(printer);
-
-	isl_printer_free(printer);
-}
-
-void isl_pw_qpolynomial_dump(__isl_keep isl_pw_qpolynomial *pwqp)
-{
-	isl_printer *printer;
-
-	if (!pwqp)
-		return;
-
-	printer = isl_printer_to_file(isl_pw_qpolynomial_get_ctx(pwqp), stderr);
-	printer = isl_printer_print_pw_qpolynomial(printer, pwqp);
-	printer = isl_printer_end_line(printer);
-
-	isl_printer_free(printer);
-}
-
-void isl_pw_qpolynomial_fold_dump(__isl_keep isl_pw_qpolynomial_fold *pwf)
-{
-	isl_printer *printer;
-
-	if (!pwf)
-		return;
-
-	printer = isl_printer_to_file(
-			isl_pw_qpolynomial_fold_get_ctx(pwf), stderr);
-	printer = isl_printer_print_pw_qpolynomial_fold(printer, pwf);
-	printer = isl_printer_end_line(printer);
-
-	isl_printer_free(printer);
-}
-
-void isl_union_pw_qpolynomial_fold_dump(
-	__isl_keep isl_union_pw_qpolynomial_fold *upwf)
-{
-	isl_printer *printer;
-
-	if (!upwf)
-		return;
-
-	printer = isl_printer_to_file(
-			isl_union_pw_qpolynomial_fold_get_ctx(upwf), stderr);
-	printer = isl_printer_print_union_pw_qpolynomial_fold(printer, upwf);
-	printer = isl_printer_end_line(printer);
-
-	isl_printer_free(printer);
-}
-
 static int upoly_rec_n_non_zero(__isl_keep struct isl_upoly_rec *rec)
 {
 	int i;
@@ -2106,20 +1933,6 @@ error:
 	return NULL;
 }
 
-void isl_constraint_dump(__isl_keep isl_constraint *c)
-{
-	isl_printer *printer;
-
-	if (!c)
-		return;
-
-	printer = isl_printer_to_file(isl_constraint_get_ctx(c), stderr);
-	printer = isl_printer_print_constraint(printer, c);
-	printer = isl_printer_end_line(printer);
-
-	isl_printer_free(printer);
-}
-
 __isl_give isl_printer *isl_printer_print_dim(__isl_take isl_printer *p,
 	__isl_keep isl_dim *dim)
 {
@@ -2141,20 +1954,6 @@ __isl_give isl_printer *isl_printer_print_dim(__isl_take isl_printer *p,
 error:
 	isl_printer_free(p);
 	return NULL;
-}
-
-void isl_dim_dump(__isl_keep isl_dim *dim)
-{
-	isl_printer *printer;
-
-	if (!dim)
-		return;
-
-	printer = isl_printer_to_file(isl_dim_get_ctx(dim), stderr);
-	printer = isl_printer_print_dim(printer, dim);
-	printer = isl_printer_end_line(printer);
-
-	isl_printer_free(printer);
 }
 
 __isl_give isl_printer *isl_printer_print_local_space(__isl_take isl_printer *p,
@@ -2201,20 +2000,6 @@ error:
 	return NULL;
 }
 
-void isl_local_space_dump(__isl_keep isl_local_space *ls)
-{
-	isl_printer *printer;
-
-	if (!ls)
-		return;
-
-	printer = isl_printer_to_file(isl_local_space_get_ctx(ls), stderr);
-	printer = isl_printer_print_local_space(printer, ls);
-	printer = isl_printer_end_line(printer);
-
-	isl_printer_free(printer);
-}
-
 static __isl_give isl_printer *print_aff(__isl_take isl_printer *p,
 	__isl_keep isl_aff *aff)
 {
@@ -2254,20 +2039,6 @@ static __isl_give isl_printer *print_aff_isl(__isl_take isl_printer *p,
 error:
 	isl_printer_free(p);
 	return NULL;
-}
-
-void isl_aff_dump(__isl_keep isl_aff *aff)
-{
-	isl_printer *printer;
-
-	if (!aff)
-		return;
-
-	printer = isl_printer_to_file(isl_aff_get_ctx(aff), stderr);
-	printer = isl_printer_print_aff(printer, aff);
-	printer = isl_printer_end_line(printer);
-
-	isl_printer_free(printer);
 }
 
 static __isl_give isl_printer *print_pw_aff_isl(__isl_take isl_printer *p,
@@ -2448,18 +2219,4 @@ __isl_give isl_printer *isl_printer_print_pw_aff(__isl_take isl_printer *p,
 error:
 	isl_printer_free(p);
 	return NULL;
-}
-
-void isl_pw_aff_dump(__isl_keep isl_pw_aff *pwaff)
-{
-	isl_printer *printer;
-
-	if (!pwaff)
-		return;
-
-	printer = isl_printer_to_file(isl_pw_aff_get_ctx(pwaff), stderr);
-	printer = isl_printer_print_pw_aff(printer, pwaff);
-	printer = isl_printer_end_line(printer);
-
-	isl_printer_free(printer);
 }
