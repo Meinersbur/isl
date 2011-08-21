@@ -2184,8 +2184,8 @@ int isl_tab_add_div(struct isl_tab *tab, __isl_keep isl_vec *div,
 	if (nonneg)
 		tab->var[r].is_nonneg = 1;
 
-	tab->bmap = isl_basic_map_extend_dim(tab->bmap,
-		isl_basic_map_get_dim(tab->bmap), 1, 0, 2);
+	tab->bmap = isl_basic_map_extend_space(tab->bmap,
+		isl_basic_map_get_space(tab->bmap), 1, 0, 2);
 	k = isl_basic_map_alloc_div(tab->bmap);
 	if (k < 0)
 		return -1;

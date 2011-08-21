@@ -1,6 +1,6 @@
 #include <isl/ctx.h>
 #include <isl/id.h>
-#include <isl/dim.h>
+#include <isl/space.h>
 #include <isl/local_space.h>
 #include <isl/set.h>
 #include <isl/map.h>
@@ -16,7 +16,7 @@
 #define BASE id
 #include <print_templ.c>
 #undef BASE
-#define BASE dim
+#define BASE space
 #include <print_templ.c>
 #undef BASE
 #define BASE local_space

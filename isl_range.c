@@ -31,7 +31,7 @@ static int has_sign(__isl_keep isl_basic_set *bset,
 	struct range_data data_m;
 	unsigned nvar;
 	unsigned nparam;
-	isl_dim *dim;
+	isl_space *dim;
 	isl_qpolynomial *opt;
 	int r;
 	enum isl_fold type;
@@ -47,8 +47,8 @@ static int has_sign(__isl_keep isl_basic_set *bset,
 	poly = isl_qpolynomial_move_dims(poly, isl_dim_set, 0,
 					isl_dim_param, 0, nparam);
 
-	dim = isl_qpolynomial_get_dim(poly);
-	dim = isl_dim_drop(dim, isl_dim_set, 0, isl_dim_size(dim, isl_dim_set));
+	dim = isl_qpolynomial_get_space(poly);
+	dim = isl_space_drop_dims(dim, isl_dim_set, 0, isl_space_dim(dim, isl_dim_set));
 
 	data_m.test_monotonicity = 0;
 	data_m.signs = signs;
@@ -94,7 +94,7 @@ static int monotonicity(__isl_keep isl_basic_set *bset,
 	__isl_keep isl_qpolynomial *poly, struct range_data *data)
 {
 	isl_ctx *ctx;
-	isl_dim *dim;
+	isl_space *dim;
 	isl_qpolynomial *sub = NULL;
 	isl_qpolynomial *diff = NULL;
 	int result = 0;
@@ -102,11 +102,11 @@ static int monotonicity(__isl_keep isl_basic_set *bset,
 	unsigned nvar;
 
 	ctx = isl_qpolynomial_get_ctx(poly);
-	dim = isl_qpolynomial_get_dim(poly);
+	dim = isl_qpolynomial_get_space(poly);
 
 	nvar = isl_basic_set_dim(bset, isl_dim_set);
 
-	sub = isl_qpolynomial_var(isl_dim_copy(dim), isl_dim_set, nvar - 1);
+	sub = isl_qpolynomial_var(isl_space_copy(dim), isl_dim_set, nvar - 1);
 	sub = isl_qpolynomial_add(sub,
 		isl_qpolynomial_rat_cst(dim, ctx->one, ctx->one));
 
@@ -138,7 +138,7 @@ error:
 }
 
 static __isl_give isl_qpolynomial *bound2poly(__isl_take isl_constraint *bound,
-	__isl_take isl_dim *dim, unsigned pos, int sign)
+	__isl_take isl_space *dim, unsigned pos, int sign)
 {
 	if (!bound) {
 		if (sign > 0)
@@ -146,7 +146,7 @@ static __isl_give isl_qpolynomial *bound2poly(__isl_take isl_constraint *bound,
 		else
 			return isl_qpolynomial_neginfty(dim);
 	}
-	isl_dim_free(dim);
+	isl_space_free(dim);
 	return isl_qpolynomial_from_constraint(bound, isl_dim_set, pos);
 }
 
@@ -230,7 +230,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_terms_of_sign(
 	__isl_keep isl_qpolynomial *poly, int *signs, int sign)
 {
 	struct isl_fixed_sign_data data = { signs, sign };
-	data.poly = isl_qpolynomial_zero(isl_qpolynomial_get_dim(poly));
+	data.poly = isl_qpolynomial_zero(isl_qpolynomial_get_space(poly));
 
 	if (isl_qpolynomial_foreach_term(poly, collect_fixed_sign_terms, &data) < 0)
 		goto error;
@@ -293,7 +293,7 @@ static int propagate_on_bound_pair(__isl_take isl_constraint *lower,
 
 	if (data->monotonicity) {
 		isl_qpolynomial *sub;
-		isl_dim *dim = isl_qpolynomial_get_dim(data->poly);
+		isl_space *dim = isl_qpolynomial_get_space(data->poly);
 		if (data->monotonicity * data->sign > 0) {
 			if (data->tight)
 				data->tight = bound_is_integer(upper, nvar);
@@ -313,13 +313,13 @@ static int propagate_on_bound_pair(__isl_take isl_constraint *lower,
 	} else {
 		isl_qpolynomial *l, *u;
 		isl_qpolynomial *pos, *neg;
-		isl_dim *dim = isl_qpolynomial_get_dim(data->poly);
+		isl_space *dim = isl_qpolynomial_get_space(data->poly);
 		unsigned nparam = isl_basic_set_dim(bset, isl_dim_param);
 		int sign = data->sign * data->signs[nparam + nvar];
 
 		data->tight = 0;
 
-		u = bound2poly(upper, isl_dim_copy(dim), nvar, 1);
+		u = bound2poly(upper, isl_space_copy(dim), nvar, 1);
 		l = bound2poly(lower, dim, nvar, -1);
 
 		pos = isl_qpolynomial_terms_of_sign(data->poly, data->signs, sign);

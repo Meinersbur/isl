@@ -10,7 +10,7 @@
 #ifndef ISL_DIV_H
 #define ISL_DIV_H
 
-#include <isl/dim.h>
+#include <isl/space.h>
 #include <isl/aff_type.h>
 
 #if defined(__cplusplus)
@@ -22,7 +22,7 @@ typedef struct isl_div isl_div;
 
 isl_ctx *isl_div_get_ctx(__isl_keep isl_div *div);
 
-struct isl_div *isl_div_alloc(struct isl_dim *dim);
+__isl_give isl_div *isl_div_alloc(__isl_take isl_space *dim);
 __isl_give isl_div *isl_div_copy(__isl_keep isl_div *div);
 void isl_div_free(struct isl_div *c);
 

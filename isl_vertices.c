@@ -12,7 +12,7 @@
 #include <isl/set.h>
 #include <isl/seq.h>
 #include <isl_tab.h>
-#include <isl_dim_private.h>
+#include <isl_space_private.h>
 #include <isl_morph.h>
 #include <isl_vertices_private.h>
 #include <isl_mat_private.h>
@@ -288,7 +288,7 @@ static int can_select(__isl_keep isl_basic_set *bset, int level,
 	if (isl_tab_is_redundant(tab, level))
 		return 0;
 
-	ovar = isl_dim_offset(bset->dim, isl_dim_set);
+	ovar = isl_space_offset(bset->dim, isl_dim_set);
 
 	indep = is_independent(facets, selected, bset->ineq[level] + 1 + ovar);
 	if (indep < 0)

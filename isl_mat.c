@@ -8,11 +8,11 @@
  */
 
 #include <isl_ctx_private.h>
-#include <isl/dim.h>
+#include <isl/space.h>
 #include <isl/seq.h>
 #include <isl_mat_private.h>
 #include "isl_map_private.h"
-#include <isl_dim_private.h>
+#include <isl_space_private.h>
 
 isl_ctx *isl_mat_get_ctx(__isl_keep isl_mat *mat)
 {
@@ -1064,7 +1064,7 @@ struct isl_basic_set *isl_basic_set_preimage(struct isl_basic_set *bset,
 		if (!bset)
 			goto error;
 	} else if (mat->n_col < mat->n_row) {
-		bset->dim = isl_dim_cow(bset->dim);
+		bset->dim = isl_space_cow(bset->dim);
 		if (!bset->dim)
 			goto error;
 		bset->dim->n_out -= mat->n_row - mat->n_col;
@@ -1115,7 +1115,7 @@ struct isl_set *isl_set_preimage(struct isl_set *set, struct isl_mat *mat)
 			goto error;
 	}
 	if (mat->n_col != mat->n_row) {
-		set->dim = isl_dim_cow(set->dim);
+		set->dim = isl_space_cow(set->dim);
 		if (!set->dim)
 			goto error;
 		set->dim->n_out += mat->n_col;

@@ -245,12 +245,12 @@ error:
 }
 
 static __isl_give isl_pw_aff *accept_affine(struct isl_stream *s,
-	__isl_take isl_dim *dim, struct vars *v);
+	__isl_take isl_space *dim, struct vars *v);
 static __isl_give isl_pw_aff_list *accept_affine_list(struct isl_stream *s,
-	__isl_take isl_dim *dim, struct vars *v);
+	__isl_take isl_space *dim, struct vars *v);
 
 static __isl_give isl_pw_aff *accept_minmax(struct isl_stream *s,
-	__isl_take isl_dim *dim, struct vars *v)
+	__isl_take isl_space *dim, struct vars *v)
 {
 	struct isl_token *tok;
 	isl_pw_aff_list *list = NULL;
@@ -265,23 +265,23 @@ static __isl_give isl_pw_aff *accept_minmax(struct isl_stream *s,
 	if (isl_stream_eat(s, '('))
 		goto error;
 
-	list = accept_affine_list(s, isl_dim_copy(dim), v);
+	list = accept_affine_list(s, isl_space_copy(dim), v);
 	if (!list)
 		goto error;
 
 	if (isl_stream_eat(s, ')'))
 		goto error;
 
-	isl_dim_free(dim);
+	isl_space_free(dim);
 	return min ? isl_pw_aff_list_min(list) : isl_pw_aff_list_max(list);
 error:
-	isl_dim_free(dim);
+	isl_space_free(dim);
 	isl_pw_aff_list_free(list);
 	return NULL;
 }
 
 static __isl_give isl_pw_aff *accept_div(struct isl_stream *s,
-	__isl_take isl_dim *dim, struct vars *v)
+	__isl_take isl_space *dim, struct vars *v)
 {
 	struct isl_token *tok;
 	int seen_paren = 0;
@@ -303,7 +303,7 @@ static __isl_give isl_pw_aff *accept_div(struct isl_stream *s,
 			seen_paren = 1;
 	}
 
-	pwaff = accept_affine(s, isl_dim_copy(dim), v);
+	pwaff = accept_affine(s, isl_space_copy(dim), v);
 
 	if (f || c) {
 		if (isl_stream_eat(s, ','))
@@ -339,16 +339,16 @@ static __isl_give isl_pw_aff *accept_div(struct isl_stream *s,
 			goto error;
 	}
 
-	isl_dim_free(dim);
+	isl_space_free(dim);
 	return pwaff;
 error:
-	isl_dim_free(dim);
+	isl_space_free(dim);
 	isl_pw_aff_free(pwaff);
 	return NULL;
 }
 
 static __isl_give isl_pw_aff *accept_affine_factor(struct isl_stream *s,
-	__isl_take isl_dim *dim, struct vars *v)
+	__isl_take isl_space *dim, struct vars *v)
 {
 	struct isl_token *tok = NULL;
 	isl_pw_aff *res = NULL;
@@ -374,7 +374,7 @@ static __isl_give isl_pw_aff *accept_affine_factor(struct isl_stream *s,
 			goto error;
 		}
 
-		aff = isl_aff_zero(isl_local_space_from_dim(isl_dim_copy(dim)));
+		aff = isl_aff_zero(isl_local_space_from_space(isl_space_copy(dim)));
 		if (!aff)
 			goto error;
 		isl_int_set_si(aff->v->el[2 + pos], 1);
@@ -382,12 +382,12 @@ static __isl_give isl_pw_aff *accept_affine_factor(struct isl_stream *s,
 		isl_token_free(tok);
 	} else if (tok->type == ISL_TOKEN_VALUE) {
 		if (isl_stream_eat_if_available(s, '*')) {
-			res = accept_affine_factor(s, isl_dim_copy(dim), v);
+			res = accept_affine_factor(s, isl_space_copy(dim), v);
 			res = isl_pw_aff_scale(res, tok->u.v);
 		} else {
 			isl_local_space *ls;
 			isl_aff *aff;
-			ls = isl_local_space_from_dim(isl_dim_copy(dim));
+			ls = isl_local_space_from_space(isl_space_copy(dim));
 			aff = isl_aff_zero(ls);
 			aff = isl_aff_add_constant(aff, tok->u.v);
 			res = isl_pw_aff_from_aff(aff);
@@ -396,7 +396,7 @@ static __isl_give isl_pw_aff *accept_affine_factor(struct isl_stream *s,
 	} else if (tok->type == '(') {
 		isl_token_free(tok);
 		tok = NULL;
-		res = accept_affine(s, isl_dim_copy(dim), v);
+		res = accept_affine(s, isl_space_copy(dim), v);
 		if (!res)
 			goto error;
 		if (isl_stream_eat(s, ')'))
@@ -406,18 +406,18 @@ static __isl_give isl_pw_aff *accept_affine_factor(struct isl_stream *s,
 		    tok->type == ISL_TOKEN_CEILD) {
 		isl_stream_push_token(s, tok);
 		tok = NULL;
-		res = accept_div(s, isl_dim_copy(dim), v);
+		res = accept_div(s, isl_space_copy(dim), v);
 	} else if (tok->type == ISL_TOKEN_MIN || tok->type == ISL_TOKEN_MAX) {
 		isl_stream_push_token(s, tok);
 		tok = NULL;
-		res = accept_minmax(s, isl_dim_copy(dim), v);
+		res = accept_minmax(s, isl_space_copy(dim), v);
 	} else {
 		isl_stream_error(s, tok, "expecting factor");
 		goto error;
 	}
 	if (isl_stream_eat_if_available(s, '%') ||
 	    isl_stream_eat_if_available(s, ISL_TOKEN_MOD)) {
-		isl_dim_free(dim);
+		isl_space_free(dim);
 		return affine_mod(s, v, res);
 	}
 	if (isl_stream_eat_if_available(s, '*')) {
@@ -432,13 +432,13 @@ static __isl_give isl_pw_aff *accept_affine_factor(struct isl_stream *s,
 		isl_int_clear(f);
 	}
 
-	isl_dim_free(dim);
+	isl_space_free(dim);
 	return res;
 error:
 	isl_token_free(tok);
 error2:
 	isl_pw_aff_free(res);
-	isl_dim_free(dim);
+	isl_space_free(dim);
 	return NULL;
 }
 
@@ -446,21 +446,21 @@ static __isl_give isl_pw_aff *add_cst(__isl_take isl_pw_aff *pwaff, isl_int v)
 {
 	isl_aff *aff;
 
-	aff = isl_aff_zero(isl_local_space_from_dim(isl_pw_aff_get_dim(pwaff)));
+	aff = isl_aff_zero(isl_local_space_from_space(isl_pw_aff_get_space(pwaff)));
 	aff = isl_aff_add_constant(aff, v);
 
 	return isl_pw_aff_add(pwaff, isl_pw_aff_from_aff(aff));
 }
 
 static __isl_give isl_pw_aff *accept_affine(struct isl_stream *s,
-	__isl_take isl_dim *dim, struct vars *v)
+	__isl_take isl_space *dim, struct vars *v)
 {
 	struct isl_token *tok = NULL;
 	isl_local_space *ls;
 	isl_pw_aff *res;
 	int sign = 1;
 
-	ls = isl_local_space_from_dim(isl_dim_copy(dim));
+	ls = isl_local_space_from_space(isl_space_copy(dim));
 	res = isl_pw_aff_from_aff(isl_aff_zero(ls));
 	if (!res)
 		goto error;
@@ -485,7 +485,7 @@ static __isl_give isl_pw_aff *accept_affine(struct isl_stream *s,
 			isl_pw_aff *term;
 			isl_stream_push_token(s, tok);
 			tok = NULL;
-			term = accept_affine_factor(s, isl_dim_copy(dim), v);
+			term = accept_affine_factor(s, isl_space_copy(dim), v);
 			if (sign < 0)
 				res = isl_pw_aff_sub(res, term);
 			else
@@ -500,7 +500,7 @@ static __isl_give isl_pw_aff *accept_affine(struct isl_stream *s,
 			    isl_stream_next_token_is(s, ISL_TOKEN_IDENT)) {
 				isl_pw_aff *term;
 				term = accept_affine_factor(s,
-							isl_dim_copy(dim), v);
+							isl_space_copy(dim), v);
 				term = isl_pw_aff_scale(term, tok->u.v);
 				res = isl_pw_aff_add(res, term);
 				if (!res)
@@ -513,7 +513,7 @@ static __isl_give isl_pw_aff *accept_affine(struct isl_stream *s,
 			isl_stream_error(s, tok, "unexpected isl_token");
 			isl_stream_push_token(s, tok);
 			isl_pw_aff_free(res);
-			isl_dim_free(dim);
+			isl_space_free(dim);
 			return NULL;
 		}
 		isl_token_free(tok);
@@ -535,10 +535,10 @@ static __isl_give isl_pw_aff *accept_affine(struct isl_stream *s,
 		}
 	}
 
-	isl_dim_free(dim);
+	isl_space_free(dim);
 	return res;
 error:
-	isl_dim_free(dim);
+	isl_space_free(dim);
 	isl_token_free(tok);
 	isl_pw_aff_free(res);
 	return NULL;
@@ -565,14 +565,14 @@ static int is_comparator(struct isl_token *tok)
 static struct isl_map *read_disjuncts(struct isl_stream *s,
 	struct vars *v, __isl_take isl_map *map);
 static __isl_give isl_pw_aff *accept_extended_affine(struct isl_stream *s,
-	__isl_take isl_dim *dim, struct vars *v);
+	__isl_take isl_space *dim, struct vars *v);
 
 /* Accept a ternary operator, given the first argument.
  */
 static __isl_give isl_pw_aff *accept_ternary(struct isl_stream *s,
 	__isl_take isl_map *cond, struct vars *v)
 {
-	isl_dim *dim;
+	isl_space *dim;
 	isl_pw_aff *pwaff1 = NULL, *pwaff2 = NULL;
 
 	if (!cond)
@@ -581,7 +581,7 @@ static __isl_give isl_pw_aff *accept_ternary(struct isl_stream *s,
 	if (isl_stream_eat(s, '?'))
 		goto error;
 
-	dim = isl_dim_wrap(isl_map_get_dim(cond));
+	dim = isl_space_wrap(isl_map_get_space(cond));
 	pwaff1 = accept_extended_affine(s, dim, v);
 	if (!pwaff1)
 		goto error;
@@ -589,7 +589,7 @@ static __isl_give isl_pw_aff *accept_ternary(struct isl_stream *s,
 	if (isl_stream_eat(s, ':'))
 		goto error;
 
-	pwaff2 = accept_extended_affine(s, isl_pw_aff_get_dim(pwaff1), v);
+	pwaff2 = accept_extended_affine(s, isl_pw_aff_get_space(pwaff1), v);
 	if (!pwaff1)
 		goto error;
 
@@ -608,7 +608,7 @@ error:
  * argument of a ternary operator and try to parse that.
  */
 static __isl_give isl_pw_aff *accept_extended_affine(struct isl_stream *s,
-	__isl_take isl_dim *dim, struct vars *v)
+	__isl_take isl_space *dim, struct vars *v)
 {
 	isl_map *cond;
 	isl_pw_aff *pwaff;
@@ -642,7 +642,7 @@ static __isl_give isl_pw_aff *accept_extended_affine(struct isl_stream *s,
 	tok->type = ISL_TOKEN_AFF;
 	tok->u.pwaff = pwaff;
 
-	cond = isl_map_universe(isl_dim_unwrap(isl_pw_aff_get_dim(pwaff)));
+	cond = isl_map_universe(isl_space_unwrap(isl_pw_aff_get_space(pwaff)));
 
 	isl_stream_push_token(s, tok);
 
@@ -668,7 +668,7 @@ static __isl_give isl_map *read_var_def(struct isl_stream *s,
 	}
 	--pos;
 
-	def = accept_extended_affine(s, isl_dim_wrap(isl_map_get_dim(map)), v);
+	def = accept_extended_affine(s, isl_space_wrap(isl_map_get_space(map)), v);
 	def_map = isl_map_from_pw_aff(def);
 	def_map = isl_map_equate(def_map, type, pos, isl_dim_out, 0);
 	def_map = isl_set_unwrap(isl_map_domain(def_map));
@@ -740,13 +740,13 @@ error:
 }
 
 static __isl_give isl_pw_aff_list *accept_affine_list(struct isl_stream *s,
-	__isl_take isl_dim *dim, struct vars *v)
+	__isl_take isl_space *dim, struct vars *v)
 {
 	isl_pw_aff *pwaff;
 	isl_pw_aff_list *list;
 	struct isl_token *tok = NULL;
 
-	pwaff = accept_affine(s, isl_dim_copy(dim), v);
+	pwaff = accept_affine(s, isl_space_copy(dim), v);
 	list = isl_pw_aff_list_from_pw_aff(pwaff);
 	if (!list)
 		goto error;
@@ -763,17 +763,17 @@ static __isl_give isl_pw_aff_list *accept_affine_list(struct isl_stream *s,
 		}
 		isl_token_free(tok);
 
-		pwaff = accept_affine(s, isl_dim_copy(dim), v);
+		pwaff = accept_affine(s, isl_space_copy(dim), v);
 		list = isl_pw_aff_list_concat(list,
 				isl_pw_aff_list_from_pw_aff(pwaff));
 		if (!list)
 			return NULL;
 	}
 
-	isl_dim_free(dim);
+	isl_space_free(dim);
 	return list;
 error:
-	isl_dim_free(dim);
+	isl_space_free(dim);
 	isl_pw_aff_list_free(list);
 	return NULL;
 }
@@ -884,12 +884,12 @@ static __isl_give isl_map *read_tuple(struct isl_stream *s,
 	}
 	isl_token_free(tok);
 	if (type != isl_dim_param && next_is_tuple(s)) {
-		isl_dim *dim = isl_map_get_dim(map);
-		int nparam = isl_dim_size(dim, isl_dim_param);
-		int n_in = isl_dim_size(dim, isl_dim_in);
+		isl_space *dim = isl_map_get_space(map);
+		int nparam = isl_space_dim(dim, isl_dim_param);
+		int n_in = isl_space_dim(dim, isl_dim_in);
 		isl_map *nested;
 		if (type == isl_dim_out)
-			dim = isl_dim_move(dim, isl_dim_param, nparam,
+			dim = isl_space_move_dims(dim, isl_dim_param, nparam,
 						isl_dim_in, 0, n_in);
 		nested = isl_map_universe(dim);
 		nested = read_nested_tuple(s, nested, v);
@@ -898,11 +898,11 @@ static __isl_give isl_map *read_tuple(struct isl_stream *s,
 			map = isl_map_intersect(nested, map);
 		} else {
 			isl_set *set;
-			dim = isl_dim_range(isl_map_get_dim(nested));
-			dim = isl_dim_drop(dim, isl_dim_param, nparam, n_in);
-			dim = isl_dim_join(isl_map_get_dim(map), dim);
+			dim = isl_space_range(isl_map_get_space(nested));
+			dim = isl_space_drop_dims(dim, isl_dim_param, nparam, n_in);
+			dim = isl_space_join(isl_map_get_space(map), dim);
 			set = isl_map_domain(map);
-			nested = isl_map_reset_dim(nested, dim);
+			nested = isl_map_reset_space(nested, dim);
 			map = isl_map_intersect_domain(nested, set);
 		}
 	} else
@@ -963,7 +963,7 @@ static __isl_give isl_map *add_constraint(struct isl_stream *s,
 	isl_set *set;
 
 	set = isl_map_wrap(map);
-	list1 = accept_affine_list(s, isl_set_get_dim(set), v);
+	list1 = accept_affine_list(s, isl_set_get_space(set), v);
 	if (!list1)
 		goto error;
 	tok = isl_stream_next_token(s);
@@ -975,7 +975,7 @@ static __isl_give isl_map *add_constraint(struct isl_stream *s,
 		goto error;
 	}
 	for (;;) {
-		list2 = accept_affine_list(s, isl_set_get_dim(set), v);
+		list2 = accept_affine_list(s, isl_set_get_space(set), v);
 		if (!list2)
 			goto error;
 
@@ -1073,7 +1073,7 @@ static int resolve_paren_expr(struct isl_stream *s,
 	col = tok2->col;
 	isl_stream_push_token(s, tok2);
 
-	pwaff = accept_affine(s, isl_dim_wrap(isl_map_get_dim(map)), v);
+	pwaff = accept_affine(s, isl_space_wrap(isl_map_get_space(map)), v);
 	if (!pwaff)
 		goto error;
 
@@ -1134,7 +1134,7 @@ static __isl_give isl_map *read_conjunct(struct isl_stream *s,
 		return map;
 
 	if (isl_stream_eat_if_available(s, ISL_TOKEN_FALSE)) {
-		isl_dim *dim = isl_map_get_dim(map);
+		isl_space *dim = isl_map_get_space(map);
 		isl_map_free(map);
 		return isl_map_empty(dim);
 	}
@@ -1177,7 +1177,7 @@ static struct isl_map *read_disjuncts(struct isl_stream *s,
 	isl_map *res;
 
 	if (isl_stream_next_token_is(s, '}')) {
-		isl_dim *dim = isl_map_get_dim(map);
+		isl_space *dim = isl_map_get_space(map);
 		isl_map_free(map);
 		return isl_map_universe(dim);
 	}
@@ -1507,12 +1507,12 @@ static __isl_give isl_pw_qpolynomial *read_factor(struct isl_stream *s,
 				isl_token_free(tok2);
 				return NULL;
 			}
-			qp = isl_qpolynomial_rat_cst(isl_map_get_dim(map),
+			qp = isl_qpolynomial_rat_cst(isl_map_get_space(map),
 						    tok->u.v, tok2->u.v);
 			isl_token_free(tok2);
 		} else {
 			isl_stream_push_token(s, tok2);
-			qp = isl_qpolynomial_cst(isl_map_get_dim(map),
+			qp = isl_qpolynomial_cst(isl_map_get_space(map),
 						tok->u.v);
 		}
 		isl_token_free(tok);
@@ -1520,12 +1520,12 @@ static __isl_give isl_pw_qpolynomial *read_factor(struct isl_stream *s,
 	} else if (tok->type == ISL_TOKEN_INFTY) {
 		isl_qpolynomial *qp;
 		isl_token_free(tok);
-		qp = isl_qpolynomial_infty(isl_map_get_dim(map));
+		qp = isl_qpolynomial_infty(isl_map_get_space(map));
 		pwqp = isl_pw_qpolynomial_from_qpolynomial(qp);
 	} else if (tok->type == ISL_TOKEN_NAN) {
 		isl_qpolynomial *qp;
 		isl_token_free(tok);
-		qp = isl_qpolynomial_nan(isl_map_get_dim(map));
+		qp = isl_qpolynomial_nan(isl_map_get_space(map));
 		pwqp = isl_pw_qpolynomial_from_qpolynomial(qp);
 	} else if (tok->type == ISL_TOKEN_IDENT) {
 		int n = v->n;
@@ -1544,14 +1544,14 @@ static __isl_give isl_pw_qpolynomial *read_factor(struct isl_stream *s,
 		}
 		isl_token_free(tok);
 		pow = optional_power(s);
-		qp = isl_qpolynomial_var_pow(isl_map_get_dim(map), pos, pow);
+		qp = isl_qpolynomial_var_pow(isl_map_get_space(map), pos, pow);
 		pwqp = isl_pw_qpolynomial_from_qpolynomial(qp);
 	} else if (tok->type == '[') {
 		isl_pw_aff *pwaff;
 		int pow;
 
 		isl_stream_push_token(s, tok);
-		pwaff = accept_affine(s, isl_map_get_dim(map), v);
+		pwaff = accept_affine(s, isl_map_get_space(map), v);
 		pow = optional_power(s);
 		pwqp = isl_pw_qpolynomial_from_pw_aff(pwaff);
 		pwqp = isl_pw_qpolynomial_pow(pwqp, pow);
@@ -1815,21 +1815,21 @@ static struct isl_obj obj_add(struct isl_ctx *ctx,
 	    obj2.type == isl_obj_pw_qpolynomial_fold)
 		obj2 = to_union(ctx, obj2);
 	isl_assert(ctx, obj1.type == obj2.type, goto error);
-	if (obj1.type == isl_obj_map && !isl_map_has_equal_dim(obj1.v, obj2.v)) {
+	if (obj1.type == isl_obj_map && !isl_map_has_equal_space(obj1.v, obj2.v)) {
 		obj1 = to_union(ctx, obj1);
 		obj2 = to_union(ctx, obj2);
 	}
-	if (obj1.type == isl_obj_set && !isl_set_has_equal_dim(obj1.v, obj2.v)) {
+	if (obj1.type == isl_obj_set && !isl_set_has_equal_space(obj1.v, obj2.v)) {
 		obj1 = to_union(ctx, obj1);
 		obj2 = to_union(ctx, obj2);
 	}
 	if (obj1.type == isl_obj_pw_qpolynomial &&
-	    !isl_pw_qpolynomial_has_equal_dim(obj1.v, obj2.v)) {
+	    !isl_pw_qpolynomial_has_equal_space(obj1.v, obj2.v)) {
 		obj1 = to_union(ctx, obj1);
 		obj2 = to_union(ctx, obj2);
 	}
 	if (obj1.type == isl_obj_pw_qpolynomial_fold &&
-	    !isl_pw_qpolynomial_fold_has_equal_dim(obj1.v, obj2.v)) {
+	    !isl_pw_qpolynomial_fold_has_equal_space(obj1.v, obj2.v)) {
 		obj1 = to_union(ctx, obj1);
 		obj2 = to_union(ctx, obj2);
 	}
@@ -1884,7 +1884,7 @@ static struct isl_obj obj_read(struct isl_stream *s, int nparam)
 		isl_stream_push_token(s, tok);
 		goto error;
 	}
-	map = isl_map_universe(isl_dim_alloc(s->ctx, 0, 0, 0));
+	map = isl_map_universe(isl_space_alloc(s->ctx, 0, 0, 0));
 	if (tok->type == '[') {
 		isl_stream_push_token(s, tok);
 		map = read_tuple(s, map, isl_dim_param, v);
@@ -1925,7 +1925,7 @@ static struct isl_obj obj_read(struct isl_stream *s, int nparam)
 			isl_assert(s->ctx, nparam == v->n, goto error);
 	} else if (tok->type == '}') {
 		obj.type = isl_obj_union_set;
-		obj.v = isl_union_set_empty(isl_map_get_dim(map));
+		obj.v = isl_union_set_empty(isl_map_get_space(map));
 		isl_token_free(tok);
 		goto done;
 	} else

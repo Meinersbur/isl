@@ -158,7 +158,7 @@ static int fuse(struct isl_map *map, int i, int j,
 	unsigned total = isl_basic_map_total_dim(map->p[i]);
 	unsigned extra_rows = extra ? extra->n_row : 0;
 
-	fused = isl_basic_map_alloc_dim(isl_dim_copy(map->p[i]->dim),
+	fused = isl_basic_map_alloc_space(isl_space_copy(map->p[i]->dim),
 			map->p[i]->n_div,
 			map->p[i]->n_eq + map->p[j]->n_eq,
 			map->p[i]->n_ineq + map->p[j]->n_ineq + extra_rows);

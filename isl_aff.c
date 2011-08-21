@@ -12,7 +12,7 @@
 #include <isl_ctx_private.h>
 #include <isl_map_private.h>
 #include <isl_aff_private.h>
-#include <isl_dim_private.h>
+#include <isl_space_private.h>
 #include <isl_local_space_private.h>
 #include <isl_mat_private.h>
 #include <isl_list_private.h>
@@ -134,9 +134,9 @@ int isl_aff_dim(__isl_keep isl_aff *aff, enum isl_dim_type type)
 	return aff ? isl_local_space_dim(aff->ls, type) : 0;
 }
 
-__isl_give isl_dim *isl_aff_get_dim(__isl_keep isl_aff *aff)
+__isl_give isl_space *isl_aff_get_space(__isl_keep isl_aff *aff)
 {
-	return aff ? isl_local_space_get_dim(aff->ls) : NULL;
+	return aff ? isl_local_space_get_space(aff->ls) : NULL;
 }
 
 __isl_give isl_local_space *isl_aff_get_local_space(__isl_keep isl_aff *aff)
@@ -150,21 +150,21 @@ const char *isl_aff_get_dim_name(__isl_keep isl_aff *aff,
 	return aff ? isl_local_space_get_dim_name(aff->ls, type, pos) : 0;
 }
 
-__isl_give isl_aff *isl_aff_reset_dim(__isl_take isl_aff *aff,
-	__isl_take isl_dim *dim)
+__isl_give isl_aff *isl_aff_reset_space(__isl_take isl_aff *aff,
+	__isl_take isl_space *dim)
 {
 	aff = isl_aff_cow(aff);
 	if (!aff || !dim)
 		goto error;
 
-	aff->ls = isl_local_space_reset_dim(aff->ls, dim);
+	aff->ls = isl_local_space_reset_space(aff->ls, dim);
 	if (!aff->ls)
 		return isl_aff_free(aff);
 
 	return aff;
 error:
 	isl_aff_free(aff);
-	isl_dim_free(dim);
+	isl_space_free(dim);
 	return NULL;
 }
 
@@ -182,7 +182,8 @@ static __isl_give isl_vec *vec_reorder(__isl_take isl_vec *vec,
 	if (!vec || !r)
 		goto error;
 
-	res = isl_vec_alloc(vec->ctx, 2 + isl_dim_total(r->dim) + n_div);
+	res = isl_vec_alloc(vec->ctx,
+			    2 + isl_space_dim(r->dim, isl_dim_all) + n_div);
 	isl_seq_cpy(res->el, vec->el, 2);
 	isl_seq_clr(res->el + 2, res->size - 2);
 	for (i = 0; i < r->len; ++i)
@@ -660,7 +661,7 @@ __isl_give isl_aff *isl_aff_add(__isl_take isl_aff *aff1,
 		goto error;
 
 	ctx = isl_aff_get_ctx(aff1);
-	if (!isl_dim_equal(aff1->ls->dim, aff2->ls->dim))
+	if (!isl_space_is_equal(aff1->ls->dim, aff2->ls->dim))
 		isl_die(ctx, isl_error_invalid,
 			"spaces don't match", goto error);
 
@@ -798,7 +799,7 @@ static __isl_give isl_aff *isl_aff_substitute_equalities_lifted(
 	if (!aff->ls)
 		goto error;
 
-	total = 1 + isl_dim_total(eq->dim);
+	total = 1 + isl_space_dim(eq->dim, isl_dim_all);
 	n_div = eq->n_div;
 	for (i = 0; i < eq->n_eq; ++i) {
 		j = isl_seq_last_non_zero(eq->eq[i], total + n_div);
@@ -1086,17 +1087,17 @@ __isl_give isl_pw_aff *isl_pw_aff_add_dims(__isl_take isl_pw_aff *pwaff,
 __isl_give isl_pw_aff *isl_pw_aff_set_tuple_id(__isl_take isl_pw_aff *pwaff,
 	__isl_take isl_id *id)
 {
-	isl_dim *dim;
+	isl_space *dim;
 
-	dim = isl_pw_aff_get_dim(pwaff);
-	dim = isl_dim_set_tuple_id(dim, isl_dim_set, id);
+	dim = isl_pw_aff_get_space(pwaff);
+	dim = isl_space_set_tuple_id(dim, isl_dim_set, id);
 
-	return isl_pw_aff_reset_dim(pwaff, dim);
+	return isl_pw_aff_reset_space(pwaff, dim);
 }
 
 __isl_give isl_pw_aff *isl_pw_aff_from_aff(__isl_take isl_aff *aff)
 {
-	isl_set *dom = isl_set_universe(isl_aff_get_dim(aff));
+	isl_set *dom = isl_set_universe(isl_aff_get_space(aff));
 	return isl_pw_aff_alloc(dom, aff);
 }
 
@@ -1128,15 +1129,15 @@ static __isl_give isl_set *align_params_pw_pw_set_and(
 {
 	if (!pwaff1 || !pwaff2)
 		goto error;
-	if (isl_dim_match(pwaff1->dim, isl_dim_param,
+	if (isl_space_match(pwaff1->dim, isl_dim_param,
 			  pwaff2->dim, isl_dim_param))
 		return fn(pwaff1, pwaff2);
-	if (!isl_dim_has_named_params(pwaff1->dim) ||
-	    !isl_dim_has_named_params(pwaff2->dim))
+	if (!isl_space_has_named_params(pwaff1->dim) ||
+	    !isl_space_has_named_params(pwaff2->dim))
 		isl_die(isl_pw_aff_get_ctx(pwaff1), isl_error_invalid,
 			"unaligned unnamed parameters", goto error);
-	pwaff1 = isl_pw_aff_align_params(pwaff1, isl_pw_aff_get_dim(pwaff2));
-	pwaff2 = isl_pw_aff_align_params(pwaff2, isl_pw_aff_get_dim(pwaff1));
+	pwaff1 = isl_pw_aff_align_params(pwaff1, isl_pw_aff_get_space(pwaff2));
+	pwaff2 = isl_pw_aff_align_params(pwaff2, isl_pw_aff_get_space(pwaff1));
 	return fn(pwaff1, pwaff2);
 error:
 	isl_pw_aff_free(pwaff1);
@@ -1164,8 +1165,8 @@ static __isl_give isl_pw_aff *pw_aff_union_opt(__isl_take isl_pw_aff *pwaff1,
 	if (!pwaff1 || !pwaff2)
 		goto error;
 
-	ctx = isl_dim_get_ctx(pwaff1->dim);
-	if (!isl_dim_equal(pwaff1->dim, pwaff2->dim))
+	ctx = isl_space_get_ctx(pwaff1->dim);
+	if (!isl_space_is_equal(pwaff1->dim, pwaff2->dim))
 		isl_die(ctx, isl_error_invalid,
 			"arguments should live in same space", goto error);
 
@@ -1180,7 +1181,7 @@ static __isl_give isl_pw_aff *pw_aff_union_opt(__isl_take isl_pw_aff *pwaff1,
 	}
 
 	n = 2 * (pwaff1->n + 1) * (pwaff2->n + 1);
-	res = isl_pw_aff_alloc_(isl_dim_copy(pwaff1->dim), n);
+	res = isl_pw_aff_alloc_(isl_space_copy(pwaff1->dim), n);
 
 	for (i = 0; i < pwaff1->n; ++i) {
 		set = isl_set_copy(pwaff1->p[i].set);
@@ -1278,15 +1279,15 @@ __isl_give isl_pw_aff *isl_pw_aff_union_opt(__isl_take isl_pw_aff *pwaff1,
 __isl_give isl_map *isl_map_from_pw_aff(__isl_take isl_pw_aff *pwaff)
 {
 	int i;
-	isl_dim *dim;
+	isl_space *dim;
 	isl_map *map;
 
 	if (!pwaff)
 		return NULL;
 
-	dim = isl_pw_aff_get_dim(pwaff);
-	dim = isl_dim_from_domain(dim);
-	dim = isl_dim_add(dim, isl_dim_out, 1);
+	dim = isl_pw_aff_get_space(pwaff);
+	dim = isl_space_from_domain(dim);
+	dim = isl_space_add_dims(dim, isl_dim_out, 1);
 	map = isl_map_empty(dim);
 
 	for (i = 0; i < pwaff->n; ++i) {
@@ -1316,7 +1317,7 @@ __isl_give isl_set *isl_pw_aff_nonneg_set(__isl_take isl_pw_aff *pwaff)
 	if (!pwaff)
 		return NULL;
 
-	set = isl_set_empty(isl_pw_aff_get_dim(pwaff));
+	set = isl_set_empty(isl_pw_aff_get_space(pwaff));
 
 	for (i = 0; i < pwaff->n; ++i) {
 		isl_basic_set *bset;
@@ -1344,7 +1345,7 @@ __isl_give isl_set *isl_pw_aff_zero_set(__isl_take isl_pw_aff *pwaff)
 	if (!pwaff)
 		return NULL;
 
-	set = isl_set_empty(isl_pw_aff_get_dim(pwaff));
+	set = isl_set_empty(isl_pw_aff_get_space(pwaff));
 
 	for (i = 0; i < pwaff->n; ++i) {
 		isl_basic_set *bset;
@@ -1391,9 +1392,9 @@ static __isl_give isl_set *pw_aff_gte_set(__isl_take isl_pw_aff *pwaff1,
 	pwaff1 = isl_pw_aff_add(pwaff1, isl_pw_aff_neg(pwaff2));
 
 	if (strict) {
-		isl_dim *dim = isl_set_get_dim(set1);
+		isl_space *dim = isl_set_get_space(set1);
 		isl_aff *aff;
-		aff = isl_aff_zero(isl_local_space_from_dim(dim));
+		aff = isl_aff_zero(isl_local_space_from_space(dim));
 		aff = isl_aff_add_constant_si(aff, -1);
 		pwaff1 = isl_pw_aff_add(pwaff1, isl_pw_aff_alloc(set1, aff));
 	} else
@@ -1482,7 +1483,7 @@ static __isl_give isl_set *pw_aff_list_set(__isl_take isl_pw_aff_list *list1,
 		isl_die(ctx, isl_error_invalid,
 			"list should contain at least one element", goto error);
 
-	set = isl_set_universe(isl_pw_aff_get_dim(list1->p[0]));
+	set = isl_set_universe(isl_pw_aff_get_space(list1->p[0]));
 	for (i = 0; i < list1->n; ++i)
 		for (j = 0; j < list2->n; ++j) {
 			isl_set *set_ij;
@@ -1708,7 +1709,7 @@ static __isl_give isl_pw_aff *pw_aff_mul(__isl_take isl_pw_aff *pwaff1,
 		goto error;
 
 	n = pwaff1->n * pwaff2->n;
-	res = isl_pw_aff_alloc_(isl_dim_copy(pwaff1->dim), n);
+	res = isl_pw_aff_alloc_(isl_space_copy(pwaff1->dim), n);
 
 	for (i = 0; i < pwaff1->n; ++i) {
 		for (j = 0; j < pwaff2->n; ++j) {

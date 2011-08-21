@@ -10,7 +10,7 @@
 
 #include <isl_ctx_private.h>
 #include <isl_map_private.h>
-#include <isl_dim_private.h>
+#include <isl_space_private.h>
 #include <isl/hash.h>
 #include <isl/constraint.h>
 #include <isl/schedule.h>
@@ -67,7 +67,7 @@
  * on_stack indicates whether the node is currently on the stack.
  */
 struct isl_sched_node {
-	isl_dim *dim;
+	isl_space *dim;
 	isl_mat *sched;
 	isl_map *sched_map;
 	int	 rank;
@@ -91,9 +91,9 @@ struct isl_sched_node {
 static int node_has_dim(const void *entry, const void *val)
 {
 	struct isl_sched_node *node = (struct isl_sched_node *)entry;
-	isl_dim *dim = (isl_dim *)val;
+	isl_space *dim = (isl_space *)val;
 
-	return isl_dim_equal(node->dim, dim);
+	return isl_space_is_equal(node->dim, dim);
 }
 
 /* An edge in the dependence graph.  An edge may be used to
@@ -217,7 +217,7 @@ static int graph_init_table(isl_ctx *ctx, struct isl_sched_graph *graph)
 		struct isl_hash_table_entry *entry;
 		uint32_t hash;
 
-		hash = isl_dim_get_hash(graph->node[i].dim);
+		hash = isl_space_get_hash(graph->node[i].dim);
 		entry = isl_hash_table_find(ctx, graph->node_table, hash,
 					    &node_has_dim,
 					    graph->node[i].dim, 1);
@@ -233,12 +233,12 @@ static int graph_init_table(isl_ctx *ctx, struct isl_sched_graph *graph)
  * or NULL if there is no such node.
  */
 static struct isl_sched_node *graph_find_node(isl_ctx *ctx,
-	struct isl_sched_graph *graph, __isl_keep isl_dim *dim)
+	struct isl_sched_graph *graph, __isl_keep isl_space *dim)
 {
 	struct isl_hash_table_entry *entry;
 	uint32_t hash;
 
-	hash = isl_dim_get_hash(dim);
+	hash = isl_space_get_hash(dim);
 	entry = isl_hash_table_find(ctx, graph->node_table, hash,
 				    &node_has_dim, dim, 0);
 
@@ -291,7 +291,7 @@ static int graph_init_edge_table(isl_ctx *ctx, struct isl_sched_graph *graph)
 static int graph_has_edge(struct isl_sched_graph *graph,
 	struct isl_sched_node *src, struct isl_sched_node *dst)
 {
-	isl_ctx *ctx = isl_dim_get_ctx(src->dim);
+	isl_ctx *ctx = isl_space_get_ctx(src->dim);
 	struct isl_hash_table_entry *entry;
 	uint32_t hash;
 	struct isl_sched_edge temp = { .src = src, .dst = dst };
@@ -349,7 +349,7 @@ static void graph_free(isl_ctx *ctx, struct isl_sched_graph *graph)
 	isl_hmap_map_basic_set_free(ctx, graph->inter_hmap);
 
 	for (i = 0; i < graph->n; ++i) {
-		isl_dim_free(graph->node[i].dim);
+		isl_space_free(graph->node[i].dim);
 		isl_mat_free(graph->node[i].sched);
 		isl_map_free(graph->node[i].sched_map);
 		isl_mat_free(graph->node[i].cmap);
@@ -377,16 +377,16 @@ static int extract_node(__isl_take isl_set *set, void *user)
 {
 	int nvar, nparam;
 	isl_ctx *ctx;
-	isl_dim *dim;
+	isl_space *dim;
 	isl_mat *sched;
 	struct isl_sched_graph *graph = user;
 	int *band, *band_id, *zero;
 
 	ctx = isl_set_get_ctx(set);
-	dim = isl_set_get_dim(set);
+	dim = isl_set_get_space(set);
 	isl_set_free(set);
-	nvar = isl_dim_size(dim, isl_dim_set);
-	nparam = isl_dim_size(dim, isl_dim_param);
+	nvar = isl_space_dim(dim, isl_dim_set);
+	nparam = isl_space_dim(dim, isl_dim_param);
 	if (!ctx->opt->schedule_parametric)
 		nparam = 0;
 	sched = isl_mat_alloc(ctx, 0, 1 + nparam + nvar);
@@ -423,14 +423,14 @@ static int extract_edge(__isl_take isl_map *map, void *user)
 	isl_ctx *ctx = isl_map_get_ctx(map);
 	struct isl_sched_graph *graph = user;
 	struct isl_sched_node *src, *dst;
-	isl_dim *dim;
+	isl_space *dim;
 
-	dim = isl_dim_domain(isl_map_get_dim(map));
+	dim = isl_space_domain(isl_map_get_space(map));
 	src = graph_find_node(ctx, graph, dim);
-	isl_dim_free(dim);
-	dim = isl_dim_range(isl_map_get_dim(map));
+	isl_space_free(dim);
+	dim = isl_space_range(isl_map_get_space(map));
 	dst = graph_find_node(ctx, graph, dim);
-	isl_dim_free(dim);
+	isl_space_free(dim);
 
 	if (!src || !dst) {
 		isl_map_free(map);
@@ -674,31 +674,31 @@ static int add_intra_validity_constraints(struct isl_sched_graph *graph,
 	unsigned total;
 	isl_map *map = isl_map_copy(edge->map);
 	isl_ctx *ctx = isl_map_get_ctx(map);
-	isl_dim *dim;
+	isl_space *dim;
 	isl_dim_map *dim_map;
 	isl_basic_set *coef;
 	struct isl_sched_node *node = edge->src;
 
 	coef = intra_coefficients(graph, map);
 
-	dim = isl_dim_domain(isl_dim_unwrap(isl_basic_set_get_dim(coef)));
+	dim = isl_space_domain(isl_space_unwrap(isl_basic_set_get_space(coef)));
 
 	coef = isl_basic_set_transform_dims(coef, isl_dim_set,
-		    isl_dim_size(dim, isl_dim_set), isl_mat_copy(node->cmap));
+		    isl_space_dim(dim, isl_dim_set), isl_mat_copy(node->cmap));
 
 	total = isl_basic_set_total_dim(graph->lp);
 	dim_map = isl_dim_map_alloc(ctx, total);
 	isl_dim_map_range(dim_map, node->start + 2 * node->nparam + 1, 2,
-			  isl_dim_size(dim, isl_dim_set), 1,
+			  isl_space_dim(dim, isl_dim_set), 1,
 			  node->nvar, -1);
 	isl_dim_map_range(dim_map, node->start + 2 * node->nparam + 2, 2,
-			  isl_dim_size(dim, isl_dim_set), 1,
+			  isl_space_dim(dim, isl_dim_set), 1,
 			  node->nvar, 1);
 	graph->lp = isl_basic_set_extend_constraints(graph->lp,
 			coef->n_eq, coef->n_ineq);
 	graph->lp = isl_basic_set_add_constraints_dim_map(graph->lp,
 							   coef, dim_map);
-	isl_dim_free(dim);
+	isl_space_free(dim);
 
 	return 0;
 }
@@ -727,7 +727,7 @@ static int add_inter_validity_constraints(struct isl_sched_graph *graph,
 	unsigned total;
 	isl_map *map = isl_map_copy(edge->map);
 	isl_ctx *ctx = isl_map_get_ctx(map);
-	isl_dim *dim;
+	isl_space *dim;
 	isl_dim_map *dim_map;
 	isl_basic_set *coef;
 	struct isl_sched_node *src = edge->src;
@@ -735,12 +735,12 @@ static int add_inter_validity_constraints(struct isl_sched_graph *graph,
 
 	coef = inter_coefficients(graph, map);
 
-	dim = isl_dim_domain(isl_dim_unwrap(isl_basic_set_get_dim(coef)));
+	dim = isl_space_domain(isl_space_unwrap(isl_basic_set_get_space(coef)));
 
 	coef = isl_basic_set_transform_dims(coef, isl_dim_set,
-		    isl_dim_size(dim, isl_dim_set), isl_mat_copy(src->cmap));
+		    isl_space_dim(dim, isl_dim_set), isl_mat_copy(src->cmap));
 	coef = isl_basic_set_transform_dims(coef, isl_dim_set,
-		    isl_dim_size(dim, isl_dim_set) + src->nvar,
+		    isl_space_dim(dim, isl_dim_set) + src->nvar,
 		    isl_mat_copy(dst->cmap));
 
 	total = isl_basic_set_total_dim(graph->lp);
@@ -750,20 +750,20 @@ static int add_inter_validity_constraints(struct isl_sched_graph *graph,
 	isl_dim_map_range(dim_map, dst->start + 1, 2, 1, 1, dst->nparam, -1);
 	isl_dim_map_range(dim_map, dst->start + 2, 2, 1, 1, dst->nparam, 1);
 	isl_dim_map_range(dim_map, dst->start + 2 * dst->nparam + 1, 2,
-			  isl_dim_size(dim, isl_dim_set) + src->nvar, 1,
+			  isl_space_dim(dim, isl_dim_set) + src->nvar, 1,
 			  dst->nvar, -1);
 	isl_dim_map_range(dim_map, dst->start + 2 * dst->nparam + 2, 2,
-			  isl_dim_size(dim, isl_dim_set) + src->nvar, 1,
+			  isl_space_dim(dim, isl_dim_set) + src->nvar, 1,
 			  dst->nvar, 1);
 
 	isl_dim_map_range(dim_map, src->start, 0, 0, 0, 1, -1);
 	isl_dim_map_range(dim_map, src->start + 1, 2, 1, 1, src->nparam, 1);
 	isl_dim_map_range(dim_map, src->start + 2, 2, 1, 1, src->nparam, -1);
 	isl_dim_map_range(dim_map, src->start + 2 * src->nparam + 1, 2,
-			  isl_dim_size(dim, isl_dim_set), 1,
+			  isl_space_dim(dim, isl_dim_set), 1,
 			  src->nvar, 1);
 	isl_dim_map_range(dim_map, src->start + 2 * src->nparam + 2, 2,
-			  isl_dim_size(dim, isl_dim_set), 1,
+			  isl_space_dim(dim, isl_dim_set), 1,
 			  src->nvar, -1);
 
 	edge->start = graph->lp->n_ineq;
@@ -771,7 +771,7 @@ static int add_inter_validity_constraints(struct isl_sched_graph *graph,
 			coef->n_eq, coef->n_ineq);
 	graph->lp = isl_basic_set_add_constraints_dim_map(graph->lp,
 							   coef, dim_map);
-	isl_dim_free(dim);
+	isl_space_free(dim);
 	edge->end = graph->lp->n_ineq;
 
 	return 0;
@@ -813,35 +813,35 @@ static int add_intra_proximity_constraints(struct isl_sched_graph *graph,
 	unsigned nparam;
 	isl_map *map = isl_map_copy(edge->map);
 	isl_ctx *ctx = isl_map_get_ctx(map);
-	isl_dim *dim;
+	isl_space *dim;
 	isl_dim_map *dim_map;
 	isl_basic_set *coef;
 	struct isl_sched_node *node = edge->src;
 
 	coef = intra_coefficients(graph, map);
 
-	dim = isl_dim_domain(isl_dim_unwrap(isl_basic_set_get_dim(coef)));
+	dim = isl_space_domain(isl_space_unwrap(isl_basic_set_get_space(coef)));
 
 	coef = isl_basic_set_transform_dims(coef, isl_dim_set,
-		    isl_dim_size(dim, isl_dim_set), isl_mat_copy(node->cmap));
+		    isl_space_dim(dim, isl_dim_set), isl_mat_copy(node->cmap));
 
-	nparam = isl_dim_size(node->dim, isl_dim_param);
+	nparam = isl_space_dim(node->dim, isl_dim_param);
 	total = isl_basic_set_total_dim(graph->lp);
 	dim_map = isl_dim_map_alloc(ctx, total);
 	isl_dim_map_range(dim_map, 1, 0, 0, 0, 1, 1);
 	isl_dim_map_range(dim_map, 4, 2, 1, 1, nparam, -1);
 	isl_dim_map_range(dim_map, 5, 2, 1, 1, nparam, 1);
 	isl_dim_map_range(dim_map, node->start + 2 * node->nparam + 1, 2,
-			  isl_dim_size(dim, isl_dim_set), 1,
+			  isl_space_dim(dim, isl_dim_set), 1,
 			  node->nvar, s);
 	isl_dim_map_range(dim_map, node->start + 2 * node->nparam + 2, 2,
-			  isl_dim_size(dim, isl_dim_set), 1,
+			  isl_space_dim(dim, isl_dim_set), 1,
 			  node->nvar, -s);
 	graph->lp = isl_basic_set_extend_constraints(graph->lp,
 			coef->n_eq, coef->n_ineq);
 	graph->lp = isl_basic_set_add_constraints_dim_map(graph->lp,
 							   coef, dim_map);
-	isl_dim_free(dim);
+	isl_space_free(dim);
 
 	return 0;
 }
@@ -888,7 +888,7 @@ static int add_inter_proximity_constraints(struct isl_sched_graph *graph,
 	unsigned nparam;
 	isl_map *map = isl_map_copy(edge->map);
 	isl_ctx *ctx = isl_map_get_ctx(map);
-	isl_dim *dim;
+	isl_space *dim;
 	isl_dim_map *dim_map;
 	isl_basic_set *coef;
 	struct isl_sched_node *src = edge->src;
@@ -896,15 +896,15 @@ static int add_inter_proximity_constraints(struct isl_sched_graph *graph,
 
 	coef = inter_coefficients(graph, map);
 
-	dim = isl_dim_domain(isl_dim_unwrap(isl_basic_set_get_dim(coef)));
+	dim = isl_space_domain(isl_space_unwrap(isl_basic_set_get_space(coef)));
 
 	coef = isl_basic_set_transform_dims(coef, isl_dim_set,
-		    isl_dim_size(dim, isl_dim_set), isl_mat_copy(src->cmap));
+		    isl_space_dim(dim, isl_dim_set), isl_mat_copy(src->cmap));
 	coef = isl_basic_set_transform_dims(coef, isl_dim_set,
-		    isl_dim_size(dim, isl_dim_set) + src->nvar,
+		    isl_space_dim(dim, isl_dim_set) + src->nvar,
 		    isl_mat_copy(dst->cmap));
 
-	nparam = isl_dim_size(src->dim, isl_dim_param);
+	nparam = isl_space_dim(src->dim, isl_dim_param);
 	total = isl_basic_set_total_dim(graph->lp);
 	dim_map = isl_dim_map_alloc(ctx, total);
 
@@ -916,27 +916,27 @@ static int add_inter_proximity_constraints(struct isl_sched_graph *graph,
 	isl_dim_map_range(dim_map, dst->start + 1, 2, 1, 1, dst->nparam, s);
 	isl_dim_map_range(dim_map, dst->start + 2, 2, 1, 1, dst->nparam, -s);
 	isl_dim_map_range(dim_map, dst->start + 2 * dst->nparam + 1, 2,
-			  isl_dim_size(dim, isl_dim_set) + src->nvar, 1,
+			  isl_space_dim(dim, isl_dim_set) + src->nvar, 1,
 			  dst->nvar, s);
 	isl_dim_map_range(dim_map, dst->start + 2 * dst->nparam + 2, 2,
-			  isl_dim_size(dim, isl_dim_set) + src->nvar, 1,
+			  isl_space_dim(dim, isl_dim_set) + src->nvar, 1,
 			  dst->nvar, -s);
 
 	isl_dim_map_range(dim_map, src->start, 0, 0, 0, 1, s);
 	isl_dim_map_range(dim_map, src->start + 1, 2, 1, 1, src->nparam, -s);
 	isl_dim_map_range(dim_map, src->start + 2, 2, 1, 1, src->nparam, s);
 	isl_dim_map_range(dim_map, src->start + 2 * src->nparam + 1, 2,
-			  isl_dim_size(dim, isl_dim_set), 1,
+			  isl_space_dim(dim, isl_dim_set), 1,
 			  src->nvar, -s);
 	isl_dim_map_range(dim_map, src->start + 2 * src->nparam + 2, 2,
-			  isl_dim_size(dim, isl_dim_set), 1,
+			  isl_space_dim(dim, isl_dim_set), 1,
 			  src->nvar, s);
 
 	graph->lp = isl_basic_set_extend_constraints(graph->lp,
 			coef->n_eq, coef->n_ineq);
 	graph->lp = isl_basic_set_add_constraints_dim_map(graph->lp,
 							   coef, dim_map);
-	isl_dim_free(dim);
+	isl_space_free(dim);
 
 	return 0;
 }
@@ -1134,13 +1134,13 @@ static int setup_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
 	int k;
 	unsigned nparam;
 	unsigned total;
-	isl_dim *dim;
+	isl_space *dim;
 	int parametric;
 	int param_pos;
 	int n_eq, n_ineq;
 
 	parametric = ctx->opt->schedule_parametric;
-	nparam = isl_dim_size(graph->node[0].dim, isl_dim_param);
+	nparam = isl_space_dim(graph->node[0].dim, isl_dim_param);
 	param_pos = 4;
 	total = param_pos + 2 * nparam;
 	for (i = 0; i < graph->n; ++i) {
@@ -1154,10 +1154,10 @@ static int setup_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
 	if (count_constraints(graph, &n_eq, &n_ineq, 0) < 0)
 		return -1;
 
-	dim = isl_dim_set_alloc(ctx, 0, total);
+	dim = isl_space_set_alloc(ctx, 0, total);
 	isl_basic_set_free(graph->lp);
 	n_eq += 2 + parametric + force_zero;
-	graph->lp = isl_basic_set_alloc_dim(dim, 0, n_eq, n_ineq);
+	graph->lp = isl_basic_set_alloc_space(dim, 0, n_eq, n_ineq);
 
 	k = isl_basic_set_alloc_equality(graph->lp);
 	if (k < 0)
@@ -1387,7 +1387,7 @@ error:
 static __isl_give isl_map *node_extract_schedule(struct isl_sched_node *node)
 {
 	int i, j;
-	isl_dim *dim;
+	isl_space *dim;
 	isl_basic_map *bmap;
 	isl_constraint *c;
 	int nrow, ncol;
@@ -1398,14 +1398,14 @@ static __isl_give isl_map *node_extract_schedule(struct isl_sched_node *node)
 
 	nrow = isl_mat_rows(node->sched);
 	ncol = isl_mat_cols(node->sched) - 1;
-	dim = isl_dim_from_domain(isl_dim_copy(node->dim));
-	dim = isl_dim_add(dim, isl_dim_out, nrow);
-	bmap = isl_basic_map_universe(isl_dim_copy(dim));
+	dim = isl_space_from_domain(isl_space_copy(node->dim));
+	dim = isl_space_add_dims(dim, isl_dim_out, nrow);
+	bmap = isl_basic_map_universe(isl_space_copy(dim));
 
 	isl_int_init(v);
 
 	for (i = 0; i < nrow; ++i) {
-		c = isl_equality_alloc(isl_dim_copy(dim));
+		c = isl_equality_alloc(isl_space_copy(dim));
 		isl_constraint_set_coefficient_si(c, isl_dim_out, i, -1);
 		isl_mat_get_element(node->sched, i, 0, &v);
 		isl_constraint_set_constant(c, v);
@@ -1423,7 +1423,7 @@ static __isl_give isl_map *node_extract_schedule(struct isl_sched_node *node)
 
 	isl_int_clear(v);
 
-	isl_dim_free(dim);
+	isl_space_free(dim);
 
 	node->sched_map = isl_map_from_basic_map(bmap);
 	return isl_map_copy(node->sched_map);
@@ -1533,7 +1533,7 @@ static int sort_statements(isl_ctx *ctx, struct isl_sched_graph *graph)
  * in graph and with parameters specified by dim.
  */
 static __isl_give isl_schedule *extract_schedule(struct isl_sched_graph *graph,
-	__isl_take isl_dim *dim)
+	__isl_take isl_space *dim)
 {
 	int i;
 	isl_ctx *ctx;
@@ -1542,7 +1542,7 @@ static __isl_give isl_schedule *extract_schedule(struct isl_sched_graph *graph,
 	if (!dim)
 		return NULL;
 
-	ctx = isl_dim_get_ctx(dim);
+	ctx = isl_space_get_ctx(dim);
 	sched = isl_calloc(ctx, struct isl_schedule,
 			   sizeof(struct isl_schedule) +
 			   (graph->n - 1) * sizeof(struct isl_schedule_node));
@@ -1588,7 +1588,7 @@ static __isl_give isl_schedule *extract_schedule(struct isl_sched_graph *graph,
 
 	return sched;
 error:
-	isl_dim_free(dim);
+	isl_space_free(dim);
 	isl_schedule_free(sched);
 	return NULL;
 }
@@ -1605,7 +1605,7 @@ static int copy_nodes(struct isl_sched_graph *dst, struct isl_sched_graph *src,
 	for (i = 0; i < src->n; ++i) {
 		if (!node_pred(&src->node[i], data))
 			continue;
-		dst->node[dst->n].dim = isl_dim_copy(src->node[i].dim);
+		dst->node[dst->n].dim = isl_space_copy(src->node[i].dim);
 		dst->node[dst->n].nvar = src->node[i].nvar;
 		dst->node[dst->n].nparam = src->node[i].nparam;
 		dst->node[dst->n].sched = isl_mat_copy(src->node[i].sched);
@@ -1939,29 +1939,29 @@ static int add_intra_constraints(struct isl_sched_graph *graph,
 {
 	unsigned total;
 	isl_ctx *ctx = isl_map_get_ctx(map);
-	isl_dim *dim;
+	isl_space *dim;
 	isl_dim_map *dim_map;
 	isl_basic_set *coef;
 	struct isl_sched_node *node = edge->src;
 
 	coef = intra_coefficients(graph, map);
 
-	dim = isl_dim_domain(isl_dim_unwrap(isl_basic_set_get_dim(coef)));
+	dim = isl_space_domain(isl_space_unwrap(isl_basic_set_get_space(coef)));
 
 	total = isl_basic_set_total_dim(graph->lp);
 	dim_map = isl_dim_map_alloc(ctx, total);
 	isl_dim_map_range(dim_map, 3 + pos, 0, 0, 0, 1, -1);
 	isl_dim_map_range(dim_map, node->start + 2 * node->nparam + 1, 2,
-			  isl_dim_size(dim, isl_dim_set), 1,
+			  isl_space_dim(dim, isl_dim_set), 1,
 			  node->nvar, -1);
 	isl_dim_map_range(dim_map, node->start + 2 * node->nparam + 2, 2,
-			  isl_dim_size(dim, isl_dim_set), 1,
+			  isl_space_dim(dim, isl_dim_set), 1,
 			  node->nvar, 1);
 	graph->lp = isl_basic_set_extend_constraints(graph->lp,
 			coef->n_eq, coef->n_ineq);
 	graph->lp = isl_basic_set_add_constraints_dim_map(graph->lp,
 							   coef, dim_map);
-	isl_dim_free(dim);
+	isl_space_free(dim);
 
 	return 0;
 }
@@ -1986,7 +1986,7 @@ static int add_inter_constraints(struct isl_sched_graph *graph,
 {
 	unsigned total;
 	isl_ctx *ctx = isl_map_get_ctx(map);
-	isl_dim *dim;
+	isl_space *dim;
 	isl_dim_map *dim_map;
 	isl_basic_set *coef;
 	struct isl_sched_node *src = edge->src;
@@ -1994,7 +1994,7 @@ static int add_inter_constraints(struct isl_sched_graph *graph,
 
 	coef = inter_coefficients(graph, map);
 
-	dim = isl_dim_domain(isl_dim_unwrap(isl_basic_set_get_dim(coef)));
+	dim = isl_space_domain(isl_space_unwrap(isl_basic_set_get_space(coef)));
 
 	total = isl_basic_set_total_dim(graph->lp);
 	dim_map = isl_dim_map_alloc(ctx, total);
@@ -2005,27 +2005,27 @@ static int add_inter_constraints(struct isl_sched_graph *graph,
 	isl_dim_map_range(dim_map, dst->start + 1, 2, 1, 1, dst->nparam, -1);
 	isl_dim_map_range(dim_map, dst->start + 2, 2, 1, 1, dst->nparam, 1);
 	isl_dim_map_range(dim_map, dst->start + 2 * dst->nparam + 1, 2,
-			  isl_dim_size(dim, isl_dim_set) + src->nvar, 1,
+			  isl_space_dim(dim, isl_dim_set) + src->nvar, 1,
 			  dst->nvar, -1);
 	isl_dim_map_range(dim_map, dst->start + 2 * dst->nparam + 2, 2,
-			  isl_dim_size(dim, isl_dim_set) + src->nvar, 1,
+			  isl_space_dim(dim, isl_dim_set) + src->nvar, 1,
 			  dst->nvar, 1);
 
 	isl_dim_map_range(dim_map, src->start, 0, 0, 0, 1, -1);
 	isl_dim_map_range(dim_map, src->start + 1, 2, 1, 1, src->nparam, 1);
 	isl_dim_map_range(dim_map, src->start + 2, 2, 1, 1, src->nparam, -1);
 	isl_dim_map_range(dim_map, src->start + 2 * src->nparam + 1, 2,
-			  isl_dim_size(dim, isl_dim_set), 1,
+			  isl_space_dim(dim, isl_dim_set), 1,
 			  src->nvar, 1);
 	isl_dim_map_range(dim_map, src->start + 2 * src->nparam + 2, 2,
-			  isl_dim_size(dim, isl_dim_set), 1,
+			  isl_space_dim(dim, isl_dim_set), 1,
 			  src->nvar, -1);
 
 	graph->lp = isl_basic_set_extend_constraints(graph->lp,
 			coef->n_eq, coef->n_ineq);
 	graph->lp = isl_basic_set_add_constraints_dim_map(graph->lp,
 							   coef, dim_map);
-	isl_dim_free(dim);
+	isl_space_free(dim);
 
 	return 0;
 }
@@ -2129,7 +2129,7 @@ static int setup_carry_lp(isl_ctx *ctx, struct isl_sched_graph *graph)
 {
 	int i, j;
 	int k;
-	isl_dim *dim;
+	isl_space *dim;
 	unsigned total;
 	int n_eq, n_ineq;
 	int n_edge;
@@ -2148,11 +2148,11 @@ static int setup_carry_lp(isl_ctx *ctx, struct isl_sched_graph *graph)
 	if (count_all_constraints(graph, &n_eq, &n_ineq, 1) < 0)
 		return -1;
 
-	dim = isl_dim_set_alloc(ctx, 0, total);
+	dim = isl_space_set_alloc(ctx, 0, total);
 	isl_basic_set_free(graph->lp);
 	n_eq += 3;
 	n_ineq += n_edge;
-	graph->lp = isl_basic_set_alloc_dim(dim, 0, n_eq, n_ineq);
+	graph->lp = isl_basic_set_alloc_space(dim, 0, n_eq, n_ineq);
 	graph->lp = isl_basic_set_set_rational(graph->lp);
 
 	k = isl_basic_set_alloc_equality(graph->lp);
@@ -2446,16 +2446,16 @@ __isl_give isl_schedule *isl_union_set_compute_schedule(
 	__isl_take isl_union_map *proximity)
 {
 	isl_ctx *ctx = isl_union_set_get_ctx(domain);
-	isl_dim *dim;
+	isl_space *dim;
 	struct isl_sched_graph graph = { 0 };
 	isl_schedule *sched;
 
 	domain = isl_union_set_align_params(domain,
-					    isl_union_map_get_dim(validity));
+					    isl_union_map_get_space(validity));
 	domain = isl_union_set_align_params(domain,
-					    isl_union_map_get_dim(proximity));
-	dim = isl_union_set_get_dim(domain);
-	validity = isl_union_map_align_params(validity, isl_dim_copy(dim));
+					    isl_union_map_get_space(proximity));
+	dim = isl_union_set_get_space(domain);
+	validity = isl_union_map_align_params(validity, isl_space_copy(dim));
 	proximity = isl_union_map_align_params(proximity, dim);
 
 	if (!domain)
@@ -2485,7 +2485,7 @@ __isl_give isl_schedule *isl_union_set_compute_schedule(
 		goto error;
 
 empty:
-	sched = extract_schedule(&graph, isl_union_set_get_dim(domain));
+	sched = extract_schedule(&graph, isl_union_set_get_space(domain));
 
 	graph_free(ctx, &graph);
 	isl_union_set_free(domain);
@@ -2516,7 +2516,7 @@ void *isl_schedule_free(__isl_take isl_schedule *sched)
 		free(sched->node[i].band_id);
 		free(sched->node[i].zero);
 	}
-	isl_dim_free(sched->dim);
+	isl_space_free(sched->dim);
 	isl_band_list_free(sched->band_forest);
 	free(sched);
 	return NULL;
@@ -2524,7 +2524,7 @@ void *isl_schedule_free(__isl_take isl_schedule *sched)
 
 isl_ctx *isl_schedule_get_ctx(__isl_keep isl_schedule *schedule)
 {
-	return schedule ? isl_dim_get_ctx(schedule->dim) : NULL;
+	return schedule ? isl_space_get_ctx(schedule->dim) : NULL;
 }
 
 __isl_give isl_union_map *isl_schedule_get_map(__isl_keep isl_schedule *sched)
@@ -2535,7 +2535,7 @@ __isl_give isl_union_map *isl_schedule_get_map(__isl_keep isl_schedule *sched)
 	if (!sched)
 		return NULL;
 
-	umap = isl_union_map_empty(isl_dim_copy(sched->dim));
+	umap = isl_union_map_empty(isl_space_copy(sched->dim));
 	for (i = 0; i < sched->n; ++i)
 		umap = isl_union_map_add_map(umap,
 					    isl_map_copy(sched->node[i].sched));
@@ -2604,7 +2604,7 @@ static __isl_give isl_band *construct_band(__isl_keep isl_schedule *schedule,
 	for (j = 0; j < band->n; ++j)
 		band->zero[j] = schedule->node[i].zero[start + j];
 
-	band->map = isl_union_map_empty(isl_dim_copy(schedule->dim));
+	band->map = isl_union_map_empty(isl_space_copy(schedule->dim));
 	for (i = 0; i < schedule->n; ++i) {
 		isl_map *map;
 		unsigned n_out;

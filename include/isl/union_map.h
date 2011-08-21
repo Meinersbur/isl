@@ -1,7 +1,7 @@
 #ifndef ISL_UNION_MAP_H
 #define ISL_UNION_MAP_H
 
-#include <isl/dim.h>
+#include <isl/space.h>
 #include <isl/map_type.h>
 #include <isl/printer.h>
 
@@ -17,12 +17,12 @@ typedef struct isl_union_set isl_union_set;
 #endif
 
 __isl_give isl_union_map *isl_union_map_from_map(__isl_take isl_map *map);
-__isl_give isl_union_map *isl_union_map_empty(__isl_take isl_dim *dim);
+__isl_give isl_union_map *isl_union_map_empty(__isl_take isl_space *dim);
 __isl_give isl_union_map *isl_union_map_copy(__isl_keep isl_union_map *umap);
 void *isl_union_map_free(__isl_take isl_union_map *umap);
 
 isl_ctx *isl_union_map_get_ctx(__isl_keep isl_union_map *umap);
-__isl_give isl_dim *isl_union_map_get_dim(__isl_keep isl_union_map *umap);
+__isl_give isl_space *isl_union_map_get_space(__isl_keep isl_union_map *umap);
 
 __isl_give isl_union_map *isl_union_map_universe(
 	__isl_take isl_union_map *umap);
@@ -104,9 +104,9 @@ int isl_union_map_n_map(__isl_keep isl_union_map *umap);
 int isl_union_map_foreach_map(__isl_keep isl_union_map *umap,
 	int (*fn)(__isl_take isl_map *map, void *user), void *user);
 __isl_give int isl_union_map_contains(__isl_keep isl_union_map *umap,
-	__isl_keep isl_dim *dim);
+	__isl_keep isl_space *dim);
 __isl_give isl_map *isl_union_map_extract_map(__isl_keep isl_union_map *umap,
-	__isl_take isl_dim *dim);
+	__isl_take isl_space *dim);
 __isl_give isl_map *isl_map_from_union_map(__isl_take isl_union_map *umap);
 
 __isl_give isl_basic_map *isl_union_map_sample(__isl_take isl_union_map *umap);
@@ -139,12 +139,14 @@ __isl_give isl_union_map *isl_union_set_unwrap(__isl_take isl_union_set *uset);
 __isl_give isl_union_map *isl_union_map_zip(__isl_take isl_union_map *umap);
 
 __isl_give isl_union_map *isl_union_map_align_params(
-	__isl_take isl_union_map *umap, __isl_take isl_dim *model);
+	__isl_take isl_union_map *umap, __isl_take isl_space *model);
 __isl_give isl_union_set *isl_union_set_align_params(
-	__isl_take isl_union_set *uset, __isl_take isl_dim *model);
+	__isl_take isl_union_set *uset, __isl_take isl_space *model);
 
 #if defined(__cplusplus)
 }
 #endif
+
+#include <isl/dim.h>
 
 #endif

@@ -802,7 +802,7 @@ static struct isl_basic_set *shift_cone(struct isl_basic_set *cone,
 
 	total = isl_basic_set_total_dim(cone);
 
-	shift = isl_basic_set_alloc_dim(isl_basic_set_get_dim(cone),
+	shift = isl_basic_set_alloc_space(isl_basic_set_get_space(cone),
 					0, 0, cone->n_ineq);
 
 	for (i = 0; i < cone->n_ineq; ++i) {
@@ -1321,9 +1321,9 @@ __isl_give isl_basic_set *isl_set_sample(__isl_take isl_set *set)
 __isl_give isl_point *isl_basic_set_sample_point(__isl_take isl_basic_set *bset)
 {
 	isl_vec *vec;
-	isl_dim *dim;
+	isl_space *dim;
 
-	dim = isl_basic_set_get_dim(bset);
+	dim = isl_basic_set_get_space(bset);
 	bset = isl_basic_set_underlying_set(bset);
 	vec = isl_basic_set_sample_vec(bset);
 
@@ -1347,7 +1347,7 @@ __isl_give isl_point *isl_set_sample_point(__isl_take isl_set *set)
 		isl_point_free(pnt);
 	}
 	if (i == set->n)
-		pnt = isl_point_void(isl_set_get_dim(set));
+		pnt = isl_point_void(isl_set_get_space(set));
 
 	isl_set_free(set);
 	return pnt;

@@ -68,10 +68,9 @@ the accesses for which no source could be found instead of
 the iterations where those accesses occur.
 
 =item * The functions C<isl_basic_map_identity> and
-C<isl_map_identity> now take the dimension specification
-of a B<map> as input.  An old call
-C<isl_map_identity(dim)> can be rewritten to
-C<isl_map_identity(isl_dim_map_from_set(dim))>.
+C<isl_map_identity> now take a B<map> space as input.  An old call
+C<isl_map_identity(space)> can be rewritten to
+C<isl_map_identity(isl_space_map_from_set(space))>.
 
 =item * The function C<isl_map_power> no longer takes
 a parameter position as input.  Instead, the exponent
@@ -99,6 +98,11 @@ but they will be removed in the future.
 
 =item * The function C<isl_pw_aff_max> has been renamed to
 C<isl_pw_aff_union_max>.
+
+=item * The C<isl_dim> type has been renamed to C<isl_space>
+along with the associated functions.
+Some of the old names have been kept for backward compatibility,
+but they will be removed in the future.
 
 =back
 
@@ -367,10 +371,10 @@ can be described as a conjunction of affine constraints, while
 C<isl_set> and C<isl_map> represent unions of
 C<isl_basic_set>s and C<isl_basic_map>s, respectively.
 However, all C<isl_basic_set>s or C<isl_basic_map>s in the union need
-to have the same dimension.  C<isl_union_set>s and C<isl_union_map>s
-represent unions of C<isl_set>s or C<isl_map>s of I<different> dimensions,
-where dimensions with different space names
-(see L<Dimension Specifications>) are considered different as well.
+to live in the same space.  C<isl_union_set>s and C<isl_union_map>s
+represent unions of C<isl_set>s or C<isl_map>s in I<different> spaces,
+where spaces are considered different if they have a different number
+of dimensions and/or different names (see L<"Spaces">).
 The difference between sets and relations (maps) is that sets have
 one set of variables, while relations have two sets of variables,
 input variables and output variables.
@@ -454,28 +458,28 @@ Note that C<isl_id_get_name> returns a pointer to some internal
 data structure, so the result can only be used while the
 corresponding C<isl_id> is alive.
 
-=head2 Dimension Specifications
+=head2 Spaces
 
 Whenever a new set or relation is created from scratch,
-its dimension needs to be specified using an C<isl_dim>.
+the space in which it lives needs to be specified using an C<isl_space>.
 
-	#include <isl/dim.h>
-	__isl_give isl_dim *isl_dim_alloc(isl_ctx *ctx,
+	#include <isl/space.h>
+	__isl_give isl_space *isl_space_alloc(isl_ctx *ctx,
 		unsigned nparam, unsigned n_in, unsigned n_out);
-	__isl_give isl_dim *isl_dim_set_alloc(isl_ctx *ctx,
+	__isl_give isl_space *isl_space_set_alloc(isl_ctx *ctx,
 		unsigned nparam, unsigned dim);
-	__isl_give isl_dim *isl_dim_copy(__isl_keep isl_dim *dim);
-	void isl_dim_free(__isl_take isl_dim *dim);
-	unsigned isl_dim_size(__isl_keep isl_dim *dim,
+	__isl_give isl_space *isl_space_copy(__isl_keep isl_space *space);
+	void isl_space_free(__isl_take isl_space *space);
+	unsigned isl_space_dim(__isl_keep isl_space *space,
 		enum isl_dim_type type);
 
-The dimension specification used for creating a set
-needs to be created using C<isl_dim_set_alloc>, while
+The space used for creating a set
+needs to be created using C<isl_space_set_alloc>, while
 that for creating a relation
-needs to be created using C<isl_dim_alloc>.
-C<isl_dim_size> can be used
+needs to be created using C<isl_space_alloc>.
+C<isl_space_dim> can be used
 to find out the number of dimensions of each type in
-a dimension specification, where type may be
+a space, where type may be
 C<isl_dim_param>, C<isl_dim_in> (only for relations),
 C<isl_dim_out> (only for relations), C<isl_dim_set>
 (only for sets) or C<isl_dim_all>.
@@ -484,75 +488,75 @@ It is often useful to create objects that live in the
 same space as some other object.  This can be accomplished
 by creating the new objects
 (see L<Creating New Sets and Relations> or
-L<Creating New (Piecewise) Quasipolynomials>) based on the dimension
-specification of the original object.
+L<Creating New (Piecewise) Quasipolynomials>) based on the space
+of the original object.
 
 	#include <isl/set.h>
-	__isl_give isl_dim *isl_basic_set_get_dim(
+	__isl_give isl_space *isl_basic_set_get_space(
 		__isl_keep isl_basic_set *bset);
-	__isl_give isl_dim *isl_set_get_dim(__isl_keep isl_set *set);
+	__isl_give isl_space *isl_set_get_space(__isl_keep isl_set *set);
 
 	#include <isl/union_set.h>
-	__isl_give isl_dim *isl_union_set_get_dim(
+	__isl_give isl_space *isl_union_set_get_space(
 		__isl_keep isl_union_set *uset);
 
 	#include <isl/map.h>
-	__isl_give isl_dim *isl_basic_map_get_dim(
+	__isl_give isl_space *isl_basic_map_get_space(
 		__isl_keep isl_basic_map *bmap);
-	__isl_give isl_dim *isl_map_get_dim(__isl_keep isl_map *map);
+	__isl_give isl_space *isl_map_get_space(__isl_keep isl_map *map);
 
 	#include <isl/union_map.h>
-	__isl_give isl_dim *isl_union_map_get_dim(
+	__isl_give isl_space *isl_union_map_get_space(
 		__isl_keep isl_union_map *umap);
 
 	#include <isl/constraint.h>
-	__isl_give isl_dim *isl_constraint_get_dim(
+	__isl_give isl_space *isl_constraint_get_space(
 		__isl_keep isl_constraint *constraint);
 
 	#include <isl/polynomial.h>
-	__isl_give isl_dim *isl_qpolynomial_get_dim(
+	__isl_give isl_space *isl_qpolynomial_get_space(
 		__isl_keep isl_qpolynomial *qp);
-	__isl_give isl_dim *isl_qpolynomial_fold_get_dim(
+	__isl_give isl_space *isl_qpolynomial_fold_get_space(
 		__isl_keep isl_qpolynomial_fold *fold);
-	__isl_give isl_dim *isl_pw_qpolynomial_get_dim(
+	__isl_give isl_space *isl_pw_qpolynomial_get_space(
 		__isl_keep isl_pw_qpolynomial *pwqp);
-	__isl_give isl_dim *isl_union_pw_qpolynomial_get_dim(
+	__isl_give isl_space *isl_union_pw_qpolynomial_get_space(
 		__isl_keep isl_union_pw_qpolynomial *upwqp);
-	__isl_give isl_dim *isl_union_pw_qpolynomial_fold_get_dim(
+	__isl_give isl_space *isl_union_pw_qpolynomial_fold_get_space(
 		__isl_keep isl_union_pw_qpolynomial_fold *upwf);
 
 	#include <isl/aff.h>
-	__isl_give isl_dim *isl_aff_get_dim(
+	__isl_give isl_space *isl_aff_get_space(
 		__isl_keep isl_aff *aff);
-	__isl_give isl_dim *isl_pw_aff_get_dim(
+	__isl_give isl_space *isl_pw_aff_get_space(
 		__isl_keep isl_pw_aff *pwaff);
 
 	#include <isl/point.h>
-	__isl_give isl_dim *isl_point_get_dim(
+	__isl_give isl_space *isl_point_get_space(
 		__isl_keep isl_point *pnt);
 
 The identifiers or names of the individual dimensions may be set or read off
 using the following functions.
 
-	#include <isl/dim.h>
-	__isl_give isl_dim *isl_dim_set_dim_id(
-		__isl_take isl_dim *dim,
+	#include <isl/space.h>
+	__isl_give isl_space *isl_space_set_dim_id(
+		__isl_take isl_space *space,
 		enum isl_dim_type type, unsigned pos,
 		__isl_take isl_id *id);
-	int isl_dim_has_dim_id(__isl_keep isl_dim *dim,
+	int isl_space_has_dim_id(__isl_keep isl_space *space,
 		enum isl_dim_type type, unsigned pos);
-	__isl_give isl_id *isl_dim_get_dim_id(
-		__isl_keep isl_dim *dim,
+	__isl_give isl_id *isl_space_get_dim_id(
+		__isl_keep isl_space *space,
 		enum isl_dim_type type, unsigned pos);
-	__isl_give isl_dim *isl_dim_set_name(__isl_take isl_dim *dim,
+	__isl_give isl_space *isl_space_set_dim_name(__isl_take isl_space *space,
 				 enum isl_dim_type type, unsigned pos,
 				 __isl_keep const char *name);
-	__isl_keep const char *isl_dim_get_name(__isl_keep isl_dim *dim,
+	__isl_keep const char *isl_space_get_dim_name(__isl_keep isl_space *space,
 				 enum isl_dim_type type, unsigned pos);
 
-Note that C<isl_dim_get_name> returns a pointer to some internal
+Note that C<isl_space_get_name> returns a pointer to some internal
 data structure, so the result can only be used while the
-corresponding C<isl_dim> is alive.
+corresponding C<isl_space> is alive.
 Also note that every function that operates on two sets or relations
 requires that both arguments have the same parameters.  This also
 means that if one of the arguments has named parameters, then the
@@ -565,32 +569,32 @@ the arguments.
 Given the identifier of a dimension (typically a parameter),
 its position can be obtained from the following function.
 
-	#include <isl/dim.h>
-	int isl_dim_find_dim_by_id(__isl_keep isl_dim *dim,
+	#include <isl/space.h>
+	int isl_space_find_dim_by_id(__isl_keep isl_space *space,
 		enum isl_dim_type type, __isl_keep isl_id *id);
 
 The identifiers or names of entire spaces may be set or read off
 using the following functions.
 
-	#include <isl/dim.h>
-	__isl_give isl_dim *isl_dim_set_tuple_id(
-		__isl_take isl_dim *dim,
+	#include <isl/space.h>
+	__isl_give isl_space *isl_space_set_tuple_id(
+		__isl_take isl_space *space,
 		enum isl_dim_type type, __isl_take isl_id *id);
-	__isl_give isl_dim *isl_dim_reset_tuple_id(
-		__isl_take isl_dim *dim, enum isl_dim_type type);
-	int isl_dim_has_tuple_id(__isl_keep isl_dim *dim,
+	__isl_give isl_space *isl_space_reset_tuple_id(
+		__isl_take isl_space *space, enum isl_dim_type type);
+	int isl_space_has_tuple_id(__isl_keep isl_space *space,
 		enum isl_dim_type type);
-	__isl_give isl_id *isl_dim_get_tuple_id(
-		__isl_keep isl_dim *dim, enum isl_dim_type type);
-	__isl_give isl_dim *isl_dim_set_tuple_name(
-		__isl_take isl_dim *dim,
+	__isl_give isl_id *isl_space_get_tuple_id(
+		__isl_keep isl_space *space, enum isl_dim_type type);
+	__isl_give isl_space *isl_space_set_tuple_name(
+		__isl_take isl_space *space,
 		enum isl_dim_type type, const char *s);
-	const char *isl_dim_get_tuple_name(__isl_keep isl_dim *dim,
+	const char *isl_space_get_tuple_name(__isl_keep isl_space *space,
 		enum isl_dim_type type);
 
 The C<dim> argument needs to be one of C<isl_dim_in>, C<isl_dim_out>
-or C<isl_dim_set>.  As with C<isl_dim_get_name>,
-the C<isl_dim_get_tuple_name> function returns a pointer to some internal
+or C<isl_dim_set>.  As with C<isl_space_get_name>,
+the C<isl_space_get_tuple_name> function returns a pointer to some internal
 data structure.
 Binary operations require the corresponding spaces of their arguments
 to have the same name.
@@ -598,52 +602,51 @@ to have the same name.
 Spaces can be nested.  In particular, the domain of a set or
 the domain or range of a relation can be a nested relation.
 The following functions can be used to construct and deconstruct
-such nested dimension specifications.
+such nested spaces.
 
-	#include <isl/dim.h>
-	int isl_dim_is_wrapping(__isl_keep isl_dim *dim);
-	__isl_give isl_dim *isl_dim_wrap(__isl_take isl_dim *dim);
-	__isl_give isl_dim *isl_dim_unwrap(__isl_take isl_dim *dim);
+	#include <isl/space.h>
+	int isl_space_is_wrapping(__isl_keep isl_space *space);
+	__isl_give isl_space *isl_space_wrap(__isl_take isl_space *space);
+	__isl_give isl_space *isl_space_unwrap(__isl_take isl_space *space);
 
-The input to C<isl_dim_is_wrapping> and C<isl_dim_unwrap> should
-be the dimension specification of a set, while that of
-C<isl_dim_wrap> should be the dimension specification of a relation.
-Conversely, the output of C<isl_dim_unwrap> is the dimension specification
-of a relation, while that of C<isl_dim_wrap> is the dimension specification
-of a set.
+The input to C<isl_space_is_wrapping> and C<isl_space_unwrap> should
+be the space of a set, while that of
+C<isl_space_wrap> should be the space of a relation.
+Conversely, the output of C<isl_space_unwrap> is the space
+of a relation, while that of C<isl_space_wrap> is the space of a set.
 
-Dimension specifications can be created from other dimension
-specifications using the following functions.
+Spaces can be created from other spaces
+using the following functions.
 
-	__isl_give isl_dim *isl_dim_domain(__isl_take isl_dim *dim);
-	__isl_give isl_dim *isl_dim_from_domain(__isl_take isl_dim *dim);
-	__isl_give isl_dim *isl_dim_range(__isl_take isl_dim *dim);
-	__isl_give isl_dim *isl_dim_from_range(__isl_take isl_dim *dim);
-	__isl_give isl_dim *isl_dim_reverse(__isl_take isl_dim *dim);
-	__isl_give isl_dim *isl_dim_join(__isl_take isl_dim *left,
-		__isl_take isl_dim *right);
-	__isl_give isl_dim *isl_dim_align_params(
-		__isl_take isl_dim *dim1, __isl_take isl_dim *dim2)
-	__isl_give isl_dim *isl_dim_insert(__isl_take isl_dim *dim,
+	__isl_give isl_space *isl_space_domain(__isl_take isl_space *space);
+	__isl_give isl_space *isl_space_from_domain(__isl_take isl_space *space);
+	__isl_give isl_space *isl_space_range(__isl_take isl_space *space);
+	__isl_give isl_space *isl_space_from_range(__isl_take isl_space *space);
+	__isl_give isl_space *isl_space_reverse(__isl_take isl_space *space);
+	__isl_give isl_space *isl_space_join(__isl_take isl_space *left,
+		__isl_take isl_space *right);
+	__isl_give isl_space *isl_space_align_params(
+		__isl_take isl_space *space1, __isl_take isl_space *space2)
+	__isl_give isl_space *isl_space_insert_dims(__isl_take isl_space *space,
 		enum isl_dim_type type, unsigned pos, unsigned n);
-	__isl_give isl_dim *isl_dim_add(__isl_take isl_dim *dim,
+	__isl_give isl_space *isl_space_add_dims(__isl_take isl_space *space,
 		enum isl_dim_type type, unsigned n);
-	__isl_give isl_dim *isl_dim_drop(__isl_take isl_dim *dim,
+	__isl_give isl_space *isl_space_drop_dims(__isl_take isl_space *space,
 		enum isl_dim_type type, unsigned first, unsigned n);
-	__isl_give isl_dim *isl_dim_move(__isl_take isl_dim *dim,
+	__isl_give isl_space *isl_space_move_dims(__isl_take isl_space *space,
 		enum isl_dim_type dst_type, unsigned dst_pos,
 		enum isl_dim_type src_type, unsigned src_pos,
 		unsigned n);
-	__isl_give isl_dim *isl_dim_map_from_set(
-		__isl_take isl_dim *dim);
-	__isl_give isl_dim *isl_dim_zip(__isl_take isl_dim *dim);
+	__isl_give isl_space *isl_space_map_from_set(
+		__isl_take isl_space *space);
+	__isl_give isl_space *isl_space_zip(__isl_take isl_space *space);
 
 Note that if dimensions are added or removed from a space, then
 the name and the internal structure are lost.
 
 =head2 Local Spaces
 
-A local space is essentially a dimension specification with
+A local space is essentially a space with
 zero or more existentially quantified variables.
 The local space of a basic set or relation can be obtained
 using the following functions.
@@ -656,11 +659,11 @@ using the following functions.
 	__isl_give isl_local_space *isl_basic_map_get_local_space(
 		__isl_keep isl_basic_map *bmap);
 
-A new local space can be created from a dimension specification using
+A new local space can be created from a space using
 
 	#include <isl/local_space.h>
-	__isl_give isl_local_space *isl_local_space_from_dim(
-		__isl_take isl_dim *dim);
+	__isl_give isl_local_space *isl_local_space_from_space(
+		__isl_take isl_space *space);
 
 They can be inspected, copied and freed using the following functions.
 
@@ -675,7 +678,7 @@ They can be inspected, copied and freed using the following functions.
 	__isl_give isl_local_space *isl_local_space_set_dim_name(
 		__isl_take isl_local_space *ls,
 		enum isl_dim_type type, unsigned pos, const char *s);
-	__isl_give isl_dim *isl_local_space_get_dim(
+	__isl_give isl_space *isl_local_space_get_space(
 		__isl_keep isl_local_space *ls);
 	__isl_give isl_div *isl_local_space_get_div(
 		__isl_keep isl_local_space *ls, int pos);
@@ -886,31 +889,31 @@ C<isl> has functions for creating some standard sets and relations.
 =item * Empty sets and relations
 
 	__isl_give isl_basic_set *isl_basic_set_empty(
-		__isl_take isl_dim *dim);
+		__isl_take isl_space *space);
 	__isl_give isl_basic_map *isl_basic_map_empty(
-		__isl_take isl_dim *dim);
+		__isl_take isl_space *space);
 	__isl_give isl_set *isl_set_empty(
-		__isl_take isl_dim *dim);
+		__isl_take isl_space *space);
 	__isl_give isl_map *isl_map_empty(
-		__isl_take isl_dim *dim);
+		__isl_take isl_space *space);
 	__isl_give isl_union_set *isl_union_set_empty(
-		__isl_take isl_dim *dim);
+		__isl_take isl_space *space);
 	__isl_give isl_union_map *isl_union_map_empty(
-		__isl_take isl_dim *dim);
+		__isl_take isl_space *space);
 
-For C<isl_union_set>s and C<isl_union_map>s, the dimensions specification
+For C<isl_union_set>s and C<isl_union_map>s, the space
 is only used to specify the parameters.
 
 =item * Universe sets and relations
 
 	__isl_give isl_basic_set *isl_basic_set_universe(
-		__isl_take isl_dim *dim);
+		__isl_take isl_space *space);
 	__isl_give isl_basic_map *isl_basic_map_universe(
-		__isl_take isl_dim *dim);
+		__isl_take isl_space *space);
 	__isl_give isl_set *isl_set_universe(
-		__isl_take isl_dim *dim);
+		__isl_take isl_space *space);
 	__isl_give isl_map *isl_map_universe(
-		__isl_take isl_dim *dim);
+		__isl_take isl_space *space);
 	__isl_give isl_union_set *isl_union_set_universe(
 		__isl_take isl_union_set *uset);
 	__isl_give isl_union_map *isl_union_map_universe(
@@ -921,50 +924,50 @@ contain all integer values, while those constructed by the
 functions below only contain non-negative values.
 
 	__isl_give isl_basic_set *isl_basic_set_nat_universe(
-		__isl_take isl_dim *dim);
+		__isl_take isl_space *space);
 	__isl_give isl_basic_map *isl_basic_map_nat_universe(
-		__isl_take isl_dim *dim);
+		__isl_take isl_space *space);
 	__isl_give isl_set *isl_set_nat_universe(
-		__isl_take isl_dim *dim);
+		__isl_take isl_space *space);
 	__isl_give isl_map *isl_map_nat_universe(
-		__isl_take isl_dim *dim);
+		__isl_take isl_space *space);
 
 =item * Identity relations
 
 	__isl_give isl_basic_map *isl_basic_map_identity(
-		__isl_take isl_dim *dim);
+		__isl_take isl_space *space);
 	__isl_give isl_map *isl_map_identity(
-		__isl_take isl_dim *dim);
+		__isl_take isl_space *space);
 
-The number of input and output dimensions in C<dim> needs
+The number of input and output dimensions in C<space> needs
 to be the same.
 
 =item * Lexicographic order
 
 	__isl_give isl_map *isl_map_lex_lt(
-		__isl_take isl_dim *set_dim);
+		__isl_take isl_space *set_space);
 	__isl_give isl_map *isl_map_lex_le(
-		__isl_take isl_dim *set_dim);
+		__isl_take isl_space *set_space);
 	__isl_give isl_map *isl_map_lex_gt(
-		__isl_take isl_dim *set_dim);
+		__isl_take isl_space *set_space);
 	__isl_give isl_map *isl_map_lex_ge(
-		__isl_take isl_dim *set_dim);
+		__isl_take isl_space *set_space);
 	__isl_give isl_map *isl_map_lex_lt_first(
-		__isl_take isl_dim *dim, unsigned n);
+		__isl_take isl_space *space, unsigned n);
 	__isl_give isl_map *isl_map_lex_le_first(
-		__isl_take isl_dim *dim, unsigned n);
+		__isl_take isl_space *space, unsigned n);
 	__isl_give isl_map *isl_map_lex_gt_first(
-		__isl_take isl_dim *dim, unsigned n);
+		__isl_take isl_space *space, unsigned n);
 	__isl_give isl_map *isl_map_lex_ge_first(
-		__isl_take isl_dim *dim, unsigned n);
+		__isl_take isl_space *space, unsigned n);
 
-The first four functions take a dimension specification for a B<set>
+The first four functions take a space for a B<set>
 and return relations that express that the elements in the domain
 are lexicographically less
 (C<isl_map_lex_lt>), less or equal (C<isl_map_lex_le>),
 greater (C<isl_map_lex_gt>) or greater or equal (C<isl_map_lex_ge>)
 than the elements in the range.
-The last four functions take a dimension specification for a map
+The last four functions take a space for a map
 and return relations that express that the first C<n> dimensions
 in the domain are lexicographically less
 (C<isl_map_lex_lt_first>), less or equal (C<isl_map_lex_le_first>),
@@ -1028,9 +1031,9 @@ using the following functions.
 
 	#include <isl/constraint.h>
 	__isl_give isl_constraint *isl_equality_alloc(
-		__isl_take isl_dim *dim);
+		__isl_take isl_space *space);
 	__isl_give isl_constraint *isl_inequality_alloc(
-		__isl_take isl_dim *dim);
+		__isl_take isl_space *space);
 	__isl_give isl_constraint *isl_constraint_set_constant(
 		__isl_take isl_constraint *constraint, isl_int v);
 	__isl_give isl_constraint *isl_constraint_set_constant_si(
@@ -1061,29 +1064,29 @@ For example, to create a set containing the even integers
 between 10 and 42, you would use the following code.
 
 	isl_int v;
-	isl_dim *dim;
+	isl_space *space;
 	isl_constraint *c;
 	isl_basic_set *bset;
 
 	isl_int_init(v);
-	dim = isl_dim_set_alloc(ctx, 0, 2);
-	bset = isl_basic_set_universe(isl_dim_copy(dim));
+	space = isl_space_set_alloc(ctx, 0, 2);
+	bset = isl_basic_set_universe(isl_space_copy(space));
 
-	c = isl_equality_alloc(isl_dim_copy(dim));
+	c = isl_equality_alloc(isl_space_copy(space));
 	isl_int_set_si(v, -1);
 	isl_constraint_set_coefficient(c, isl_dim_set, 0, v);
 	isl_int_set_si(v, 2);
 	isl_constraint_set_coefficient(c, isl_dim_set, 1, v);
 	bset = isl_basic_set_add_constraint(bset, c);
 
-	c = isl_inequality_alloc(isl_dim_copy(dim));
+	c = isl_inequality_alloc(isl_space_copy(space));
 	isl_int_set_si(v, -10);
 	isl_constraint_set_constant(c, v);
 	isl_int_set_si(v, 1);
 	isl_constraint_set_coefficient(c, isl_dim_set, 0, v);
 	bset = isl_basic_set_add_constraint(bset, c);
 
-	c = isl_inequality_alloc(dim);
+	c = isl_inequality_alloc(space);
 	isl_int_set_si(v, 42);
 	isl_constraint_set_constant(c, v);
 	isl_int_set_si(v, -1);
@@ -1104,13 +1107,13 @@ A basic set or relation can also be constructed from two matrices
 describing the equalities and the inequalities.
 
 	__isl_give isl_basic_set *isl_basic_set_from_constraint_matrices(
-		__isl_take isl_dim *dim,
+		__isl_take isl_space *space,
 		__isl_take isl_mat *eq, __isl_take isl_mat *ineq,
 		enum isl_dim_type c1,
 		enum isl_dim_type c2, enum isl_dim_type c3,
 		enum isl_dim_type c4);
 	__isl_give isl_basic_map *isl_basic_map_from_constraint_matrices(
-		__isl_take isl_dim *dim,
+		__isl_take isl_space *space,
 		__isl_take isl_mat *eq, __isl_take isl_mat *ineq,
 		enum isl_dim_type c1,
 		enum isl_dim_type c2, enum isl_dim_type c3,
@@ -1131,7 +1134,7 @@ or a list of affine expressions (See L<"Piecewise Quasi Affine Expressions">).
 	__isl_give isl_map *isl_map_from_pw_aff(
 		__isl_take isl_pw_aff *pwaff);
 	__isl_give isl_basic_map *isl_basic_map_from_aff_list(
-		__isl_take isl_dim *domain_dim,
+		__isl_take isl_space *domain_space,
 		__isl_take isl_aff_list *list);
 
 The C<domain_dim> argument describes the domain of the resulting
@@ -1199,15 +1202,14 @@ from
 	int isl_union_set_n_set(__isl_keep isl_union_set *uset);
 	int isl_union_map_n_map(__isl_keep isl_union_map *umap);
 
-To extract the set or map from a union with a given dimension
-specification, use
+To extract the set or map in a given space from a union, use
 
 	__isl_give isl_set *isl_union_set_extract_set(
 		__isl_keep isl_union_set *uset,
-		__isl_take isl_dim *dim);
+		__isl_take isl_space *space);
 	__isl_give isl_map *isl_union_map_extract_map(
 		__isl_keep isl_union_map *umap,
-		__isl_take isl_dim *dim);
+		__isl_take isl_space *space);
 
 To iterate over all the basic sets or maps in a set or map, use
 
@@ -1380,7 +1382,7 @@ or relation can be read off or set using the following functions.
 		__isl_keep isl_map *map,
 		enum isl_dim_type type);
 
-As with C<isl_dim_get_tuple_name>, the value returned points to
+As with C<isl_space_get_tuple_name>, the value returned points to
 an internal data structure.
 The identifiers, positions or names of individual dimensions can be
 read off using the following functions.
@@ -1984,10 +1986,10 @@ interchange the range of the domain with the domain of the range.
 
 	__isl_give isl_set *isl_set_align_params(
 		__isl_take isl_set *set,
-		__isl_take isl_dim *model);
+		__isl_take isl_space *model);
 	__isl_give isl_map *isl_map_align_params(
 		__isl_take isl_map *map,
-		__isl_take isl_dim *model);
+		__isl_take isl_space *model);
 
 Change the order of the parameters of the given set or relation
 such that the first parameters match those of C<model>.
@@ -2414,7 +2416,7 @@ be created using the following functions.
 
 	#include <isl/aff.h>
 	__isl_give isl_pw_aff *isl_pw_aff_empty(
-		__isl_take isl_dim *dim);
+		__isl_take isl_space *space);
 	__isl_give isl_pw_aff *isl_pw_aff_alloc(
 		__isl_take isl_set *set, __isl_take isl_aff *aff);
 	__isl_give isl_pw_aff *isl_pw_aff_from_aff(
@@ -2610,7 +2612,7 @@ Operations include
 
 	__isl_give isl_pw_aff *isl_pw_aff_align_params(
 		__isl_take isl_pw_aff *pwaff,
-		__isl_take isl_dim *model);
+		__isl_take isl_space *model);
 
 	__isl_give isl_aff *isl_aff_gist(__isl_take isl_aff *aff,
 		__isl_take isl_set *context);
@@ -2737,7 +2739,7 @@ simple sets (boxes) or they can be used to represent the
 individual elements of a set.
 The zero point (the origin) can be created using
 
-	__isl_give isl_point *isl_point_zero(__isl_take isl_dim *dim);
+	__isl_give isl_point *isl_point_zero(__isl_take isl_space *space);
 
 The coordinates of a point can be inspected, set and changed
 using
@@ -2882,22 +2884,22 @@ operations such as addition and multiplication
 on the resulting quasipolynomials
 
 	__isl_give isl_qpolynomial *isl_qpolynomial_zero(
-		__isl_take isl_dim *dim);
+		__isl_take isl_space *dim);
 	__isl_give isl_qpolynomial *isl_qpolynomial_one(
-		__isl_take isl_dim *dim);
+		__isl_take isl_space *dim);
 	__isl_give isl_qpolynomial *isl_qpolynomial_infty(
-		__isl_take isl_dim *dim);
+		__isl_take isl_space *dim);
 	__isl_give isl_qpolynomial *isl_qpolynomial_neginfty(
-		__isl_take isl_dim *dim);
+		__isl_take isl_space *dim);
 	__isl_give isl_qpolynomial *isl_qpolynomial_nan(
-		__isl_take isl_dim *dim);
+		__isl_take isl_space *dim);
 	__isl_give isl_qpolynomial *isl_qpolynomial_rat_cst(
-		__isl_take isl_dim *dim,
+		__isl_take isl_space *dim,
 		const isl_int n, const isl_int d);
 	__isl_give isl_qpolynomial *isl_qpolynomial_div(
 		__isl_take isl_div *div);
 	__isl_give isl_qpolynomial *isl_qpolynomial_var(
-		__isl_take isl_dim *dim,
+		__isl_take isl_space *dim,
 		enum isl_dim_type type, unsigned pos);
 	__isl_give isl_qpolynomial *isl_qpolynomial_from_aff(
 		__isl_take isl_aff *aff);
@@ -2908,7 +2910,7 @@ Multiple of these single cell piecewise quasipolynomials can
 be combined to create more complicated piecewise quasipolynomials.
 
 	__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_zero(
-		__isl_take isl_dim *dim);
+		__isl_take isl_space *space);
 	__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_alloc(
 		__isl_take isl_set *set,
 		__isl_take isl_qpolynomial *qp);
@@ -2918,7 +2920,7 @@ be combined to create more complicated piecewise quasipolynomials.
 		__isl_take isl_pw_aff *pwaff);
 
 	__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_zero(
-		__isl_take isl_dim *dim);
+		__isl_take isl_space *space);
 	__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_from_pw_qpolynomial(
 		__isl_take isl_pw_qpolynomial *pwqp);
 	__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_add_pw_qpolynomial(
@@ -2952,13 +2954,12 @@ piecewise quasipolynomial, use the following function
 		int (*fn)(__isl_take isl_pw_qpolynomial *pwqp, void *user),
 		void *user);
 
-To extract the piecewise quasipolynomial from a union with a given dimension
-specification, use
+To extract the piecewise quasipolynomial in a given space from a union, use
 
 	__isl_give isl_pw_qpolynomial *
 	isl_union_pw_qpolynomial_extract_pw_qpolynomial(
 		__isl_keep isl_union_pw_qpolynomial *upwqp,
-		__isl_take isl_dim *dim);
+		__isl_take isl_space *space);
 
 To iterate over the cells in a piecewise quasipolynomial,
 use either of the following two functions
@@ -3096,7 +3097,7 @@ are returned in C<*n> and C<*d>, respectively.
 
 	__isl_give isl_qpolynomial *isl_qpolynomial_align_params(
 		__isl_take isl_qpolynomial *qp,
-		__isl_take isl_dim *model);
+		__isl_take isl_space *model);
 
 	__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_coalesce(
 		__isl_take isl_union_pw_qpolynomial *upwqp);

@@ -12,7 +12,7 @@
 
 #include <isl_map_private.h>
 #include <isl_constraint_private.h>
-#include <isl_dim_private.h>
+#include <isl_space_private.h>
 #include <isl_div_private.h>
 #include <isl/seq.h>
 #include <isl_aff_private.h>
@@ -36,14 +36,14 @@ static unsigned offset(struct isl_constraint *c, enum isl_dim_type type)
 static unsigned basic_map_offset(__isl_keep isl_basic_map *bmap,
 							enum isl_dim_type type)
 {
-	return type == isl_dim_div ? 1 + isl_dim_total(bmap->dim)
-				   : 1 + isl_dim_offset(bmap->dim, type);
+	return type == isl_dim_div ? 1 + isl_space_dim(bmap->dim, isl_dim_all)
+				   : 1 + isl_space_offset(bmap->dim, type);
 }
 
 static unsigned basic_set_offset(struct isl_basic_set *bset,
 							enum isl_dim_type type)
 {
-	struct isl_dim *dim = bset->dim;
+	isl_space *dim = bset->dim;
 	switch (type) {
 	case isl_dim_param:	return 1;
 	case isl_dim_in:	return 1 + dim->nparam;
@@ -108,14 +108,14 @@ struct isl_constraint *isl_basic_set_constraint(struct isl_basic_set *bset,
 	return isl_basic_map_constraint((struct isl_basic_map *)bset, line);
 }
 
-struct isl_constraint *isl_equality_alloc(struct isl_dim *dim)
+struct isl_constraint *isl_equality_alloc(__isl_take isl_space *dim)
 {
 	struct isl_basic_map *bmap;
 
 	if (!dim)
 		return NULL;
 
-	bmap = isl_basic_map_alloc_dim(dim, 0, 1, 0);
+	bmap = isl_basic_map_alloc_space(dim, 0, 1, 0);
 	if (!bmap)
 		return NULL;
 
@@ -124,14 +124,14 @@ struct isl_constraint *isl_equality_alloc(struct isl_dim *dim)
 	return isl_basic_map_constraint(bmap, &bmap->eq[0]);
 }
 
-struct isl_constraint *isl_inequality_alloc(struct isl_dim *dim)
+struct isl_constraint *isl_inequality_alloc(__isl_take isl_space *dim)
 {
 	struct isl_basic_map *bmap;
 
 	if (!dim)
 		return NULL;
 
-	bmap = isl_basic_map_alloc_dim(dim, 0, 0, 1);
+	bmap = isl_basic_map_alloc_space(dim, 0, 0, 1);
 	if (!bmap)
 		return NULL;
 
@@ -234,17 +234,17 @@ struct isl_basic_map *isl_basic_map_add_constraint(
 	struct isl_basic_map *bmap, struct isl_constraint *constraint)
 {
 	isl_ctx *ctx;
-	isl_dim *dim;
-	int equal_dim;
+	isl_space *dim;
+	int equal_space;
 
 	if (!bmap || !constraint)
 		goto error;
 
 	ctx = isl_constraint_get_ctx(constraint);
-	dim = isl_constraint_get_dim(constraint);
-	equal_dim = isl_dim_equal(bmap->dim, dim);
-	isl_dim_free(dim);
-	isl_assert(ctx, equal_dim, goto error);
+	dim = isl_constraint_get_space(constraint);
+	equal_space = isl_space_is_equal(bmap->dim, dim);
+	isl_space_free(dim);
+	isl_assert(ctx, equal_space, goto error);
 
 	bmap = isl_basic_map_intersect(bmap,
 				isl_basic_map_from_constraint(constraint));
@@ -280,10 +280,10 @@ __isl_give isl_set *isl_set_add_constraint(__isl_take isl_set *set,
 	return isl_map_add_constraint(set, constraint);
 }
 
-__isl_give isl_dim *isl_constraint_get_dim(
+__isl_give isl_space *isl_constraint_get_space(
 	__isl_keep isl_constraint *constraint)
 {
-	return constraint ? isl_aff_get_dim(constraint->aff) : NULL;
+	return constraint ? isl_aff_get_space(constraint->aff) : NULL;
 }
 
 int isl_constraint_dim(struct isl_constraint *constraint,

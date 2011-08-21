@@ -13,7 +13,7 @@ typedef struct isl_local_space isl_local_space;
 
 isl_ctx *isl_local_space_get_ctx(__isl_keep isl_local_space *ls);
 
-__isl_give isl_local_space *isl_local_space_from_dim(__isl_take isl_dim *dim);
+__isl_give isl_local_space *isl_local_space_from_space(__isl_take isl_space *dim);
 
 __isl_give isl_local_space *isl_local_space_copy(
 	__isl_keep isl_local_space *ls);
@@ -26,7 +26,7 @@ const char *isl_local_space_get_dim_name(__isl_keep isl_local_space *ls,
 __isl_give isl_local_space *isl_local_space_set_dim_name(
 	__isl_take isl_local_space *ls,
 	enum isl_dim_type type, unsigned pos, const char *s);
-__isl_give isl_dim *isl_local_space_get_dim(__isl_keep isl_local_space *ls);
+__isl_give isl_space *isl_local_space_get_space(__isl_keep isl_local_space *ls);
 __isl_give isl_div *isl_local_space_get_div(__isl_keep isl_local_space *ls,
 	int pos);
 

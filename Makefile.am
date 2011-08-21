@@ -55,7 +55,6 @@ libisl_la_SOURCES = \
 	isl_ctx.c \
 	isl_ctx_private.h \
 	isl_dim.c \
-	isl_dim_private.h \
 	isl_dim_map.h \
 	isl_dim_map.c \
 	isl_div.c \
@@ -113,6 +112,8 @@ libisl_la_SOURCES = \
 	isl_scan.h \
 	isl_schedule.c \
 	isl_schedule_private.h \
+	isl_space.c \
+	isl_space_private.h \
 	isl_stream.c \
 	isl_stream_private.h \
 	isl_seq.c \
@@ -221,6 +222,7 @@ pkginclude_HEADERS = \
 	include/isl/seq.h \
 	include/isl/set.h \
 	include/isl/set_type.h \
+	include/isl/space.h \
 	include/isl/stream.h \
 	include/isl/union_map.h \
 	include/isl/union_set.h \

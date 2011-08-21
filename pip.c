@@ -195,7 +195,7 @@ static int scan_one(struct isl_scan_callback *callback,
 
 	if (opt->size == 0) {
 		isl_point *sample_pnt;
-		sample_pnt = isl_point_alloc(isl_set_get_dim(sp->empty), sample);
+		sample_pnt = isl_point_alloc(isl_set_get_space(sp->empty), sample);
 		assert(isl_set_contains_point(sp->empty, sample_pnt));
 		isl_point_free(sample_pnt);
 		isl_vec_free(opt);
@@ -302,11 +302,11 @@ int main(int argc, char **argv)
 	}
 	if (!urs_parms)
 		context = isl_basic_set_intersect(context,
-		isl_basic_set_positive_orthant(isl_basic_set_get_dim(context)));
+		isl_basic_set_positive_orthant(isl_basic_set_get_space(context)));
 	context = to_parameter_domain(context);
 	if (!urs_unknowns)
 		bset = isl_basic_set_intersect(bset,
-		isl_basic_set_positive_orthant(isl_basic_set_get_dim(bset)));
+		isl_basic_set_positive_orthant(isl_basic_set_get_space(bset)));
 
 	if (options->verify) {
 		copy = isl_basic_set_copy(bset);

@@ -12,7 +12,7 @@
 #include <isl_morph.h>
 #include <isl/seq.h>
 #include <isl_mat_private.h>
-#include <isl_dim_private.h>
+#include <isl_space_private.h>
 #include <isl_equalities.h>
 
 __isl_give isl_morph *isl_morph_alloc(
@@ -88,12 +88,12 @@ void isl_morph_free(__isl_take isl_morph *morph)
 	free(morph);
 }
 
-__isl_give isl_dim *isl_morph_get_ran_dim(__isl_keep isl_morph *morph)
+__isl_give isl_space *isl_morph_get_ran_space(__isl_keep isl_morph *morph)
 {
 	if (!morph)
 		return NULL;
 	
-	return isl_dim_copy(morph->ran->dim);
+	return isl_space_copy(morph->ran->dim);
 }
 
 unsigned isl_morph_dom_dim(__isl_keep isl_morph *morph, enum isl_dim_type type)
@@ -124,7 +124,7 @@ __isl_give isl_morph *isl_morph_remove_dom_dims(__isl_take isl_morph *morph,
 	if (!morph)
 		return NULL;
 
-	dom_offset = 1 + isl_dim_offset(morph->dom->dim, type);
+	dom_offset = 1 + isl_space_offset(morph->dom->dim, type);
 
 	morph->dom = isl_basic_set_remove_dims(morph->dom, type, first, n);
 
@@ -151,7 +151,7 @@ __isl_give isl_morph *isl_morph_remove_ran_dims(__isl_take isl_morph *morph,
 	if (!morph)
 		return NULL;
 
-	ran_offset = 1 + isl_dim_offset(morph->ran->dim, type);
+	ran_offset = 1 + isl_space_offset(morph->ran->dim, type);
 
 	morph->ran = isl_basic_set_remove_dims(morph->ran, type, first, n);
 
@@ -188,7 +188,7 @@ __isl_give isl_morph *isl_morph_identity(__isl_keep isl_basic_set *bset)
 
 	total = isl_basic_set_total_dim(bset);
 	id = isl_mat_identity(bset->ctx, 1 + total);
-	universe = isl_basic_set_universe(isl_dim_copy(bset->dim));
+	universe = isl_basic_set_universe(isl_space_copy(bset->dim));
 
 	return isl_morph_alloc(universe, isl_basic_set_copy(universe),
 		id, isl_mat_copy(id));
@@ -208,7 +208,7 @@ __isl_give isl_morph *isl_morph_empty(__isl_keep isl_basic_set *bset)
 
 	total = isl_basic_set_total_dim(bset);
 	id = isl_mat_identity(bset->ctx, 1 + total);
-	empty = isl_basic_set_empty(isl_dim_copy(bset->dim));
+	empty = isl_basic_set_empty(isl_space_copy(bset->dim));
 
 	return isl_morph_alloc(empty, isl_basic_set_copy(empty),
 		id, isl_mat_copy(id));
@@ -253,7 +253,7 @@ static __isl_give isl_basic_set *copy_equalities(__isl_keep isl_basic_set *bset,
 	isl_assert(bset->ctx, bset->n_div == 0, return NULL);
 
 	total = isl_basic_set_total_dim(bset);
-	eq = isl_basic_set_alloc_dim(isl_dim_copy(bset->dim), 0, n, 0);
+	eq = isl_basic_set_alloc_space(isl_space_copy(bset->dim), 0, n, 0);
 	if (!eq)
 		return NULL;
 	for (i = 0; i < n; ++i) {
@@ -327,7 +327,7 @@ __isl_give isl_morph *isl_basic_set_variable_compression(
 	unsigned orest;
 	unsigned nrest;
 	int f_eq, n_eq;
-	isl_dim *dim;
+	isl_space *dim;
 	isl_mat *H, *U, *Q, *C = NULL, *H1, *U1, *U2;
 	isl_basic_set *dom, *ran;
 
@@ -339,7 +339,7 @@ __isl_give isl_morph *isl_basic_set_variable_compression(
 
 	isl_assert(bset->ctx, bset->n_div == 0, return NULL);
 
-	otype = 1 + isl_dim_offset(bset->dim, type);
+	otype = 1 + isl_space_offset(bset->dim, type);
 	ntype = isl_basic_set_dim(bset, type);
 	orest = otype + ntype;
 	nrest = isl_basic_set_total_dim(bset) - (orest - 1);
@@ -407,9 +407,9 @@ __isl_give isl_morph *isl_basic_set_variable_compression(
 	C = insert_parameter_rows(C, otype - 1);
 	C = isl_mat_diagonal(C, isl_mat_identity(bset->ctx, nrest));
 
-	dim = isl_dim_copy(bset->dim);
-	dim = isl_dim_drop(dim, type, 0, ntype);
-	dim = isl_dim_add(dim, type, ntype - n_eq);
+	dim = isl_space_copy(bset->dim);
+	dim = isl_space_drop_dims(dim, type, 0, ntype);
+	dim = isl_space_add_dims(dim, type, ntype - n_eq);
 	ran = isl_basic_set_universe(dim);
 	dom = copy_equalities(bset, f_eq, n_eq);
 
@@ -481,8 +481,8 @@ __isl_give isl_morph *isl_basic_set_parameter_compression(
 	inv = isl_mat_diagonal(inv, isl_mat_identity(bset->ctx, nvar));
 	map = isl_mat_right_inverse(isl_mat_copy(inv));
 
-	dom = isl_basic_set_universe(isl_dim_copy(bset->dim));
-	ran = isl_basic_set_universe(isl_dim_copy(bset->dim));
+	dom = isl_basic_set_universe(isl_space_copy(bset->dim));
+	ran = isl_basic_set_universe(isl_space_copy(bset->dim));
 
 	return isl_morph_alloc(dom, ran, map, inv);
 error:
@@ -569,13 +569,13 @@ __isl_give isl_basic_set *isl_morph_basic_set(__isl_take isl_morph *morph,
 	if (!morph || !bset)
 		goto error;
 
-	isl_assert(bset->ctx, isl_dim_equal(bset->dim, morph->dom->dim),
+	isl_assert(bset->ctx, isl_space_is_equal(bset->dim, morph->dom->dim),
 		    goto error);
 
 	max_stride = morph->inv->n_row - 1;
 	if (isl_int_is_one(morph->inv->row[0][0]))
 		max_stride = 0;
-	res = isl_basic_set_alloc_dim(isl_dim_copy(morph->ran->dim),
+	res = isl_basic_set_alloc_space(isl_space_copy(morph->ran->dim),
 		bset->n_div + max_stride, bset->n_eq + max_stride, bset->n_ineq);
 
 	for (i = 0; i < bset->n_div; ++i)
@@ -659,14 +659,14 @@ __isl_give isl_set *isl_morph_set(__isl_take isl_morph *morph,
 	if (!morph || !set)
 		goto error;
 
-	isl_assert(set->ctx, isl_dim_equal(set->dim, morph->dom->dim), goto error);
+	isl_assert(set->ctx, isl_space_is_equal(set->dim, morph->dom->dim), goto error);
 
 	set = isl_set_cow(set);
 	if (!set)
 		goto error;
 
-	isl_dim_free(set->dim);
-	set->dim = isl_dim_copy(morph->ran->dim);
+	isl_space_free(set->dim);
+	set->dim = isl_space_copy(morph->ran->dim);
 	if (!set->dim)
 		goto error;
 

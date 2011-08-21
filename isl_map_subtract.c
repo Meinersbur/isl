@@ -43,7 +43,7 @@ static int tab_add_constraints(struct isl_tab *tab,
 
 	tab_total = isl_basic_map_total_dim(tab->bmap);
 	bmap_total = isl_basic_map_total_dim(bmap);
-	dim = isl_dim_total(tab->bmap->dim);
+	dim = isl_space_dim(tab->bmap->dim, isl_dim_all);
 
 	if (isl_tab_extend_cons(tab, 2 * bmap->n_eq + bmap->n_ineq) < 0)
 		return -1;
@@ -99,7 +99,7 @@ static int tab_add_constraint(struct isl_tab *tab,
 
 	tab_total = isl_basic_map_total_dim(tab->bmap);
 	bmap_total = isl_basic_map_total_dim(bmap);
-	dim = isl_dim_total(tab->bmap->dim);
+	dim = isl_space_dim(tab->bmap->dim, isl_dim_all);
 
 	v = isl_vec_alloc(bmap->ctx, 1 + tab_total);
 	if (!v)
@@ -487,7 +487,7 @@ static __isl_give isl_map *map_subtract( __isl_take isl_map *map1,
 	if (!map1 || !map2)
 		goto error;
 
-	isl_assert(map1->ctx, isl_dim_equal(map1->dim, map2->dim), goto error);
+	isl_assert(map1->ctx, isl_space_is_equal(map1->dim, map2->dim), goto error);
 
 	if (isl_map_is_empty(map2)) {
 		isl_map_free(map2);
@@ -672,7 +672,7 @@ static __isl_give isl_point *singleton_extract_point(
 	}
 
 	isl_int_clear(m);
-	return isl_point_alloc(isl_basic_map_get_dim(bmap), point);
+	return isl_point_alloc(isl_basic_map_get_space(bmap), point);
 error:
 	isl_int_clear(m);
 	isl_vec_free(point);
@@ -716,7 +716,7 @@ int isl_map_is_subset(struct isl_map *map1, struct isl_map *map2)
 	if (!map1 || !map2)
 		return -1;
 
-	if (!isl_map_has_equal_dim(map1, map2))
+	if (!isl_map_has_equal_space(map1, map2))
 		return 0;
 
 	if (isl_map_is_empty(map1))
@@ -794,7 +794,7 @@ __isl_give isl_set *isl_set_complement(__isl_take isl_set *set)
 	if (!set)
 		return NULL;
 
-	universe = isl_set_universe(isl_set_get_dim(set));
+	universe = isl_set_universe(isl_set_get_space(set));
 
 	return isl_set_subtract(universe, set);
 }

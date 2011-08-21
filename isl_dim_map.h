@@ -2,7 +2,7 @@
 #define ISL_DIM_MAP_H
 
 #include <isl/ctx.h>
-#include <isl/dim.h>
+#include <isl/space.h>
 #include <isl/map.h>
 
 struct isl_dim_map;
@@ -14,9 +14,9 @@ void isl_dim_map_range(__isl_keep isl_dim_map *dim_map,
 	unsigned src_pos, unsigned src_stride,
 	unsigned n, int sign);
 void isl_dim_map_dim_range(__isl_keep isl_dim_map *dim_map,
-	struct isl_dim *dim, enum isl_dim_type type,
+	isl_space *dim, enum isl_dim_type type,
 	unsigned first, unsigned n, unsigned dst_pos);
-void isl_dim_map_dim(__isl_keep isl_dim_map *dim_map, __isl_keep isl_dim *dim,
+void isl_dim_map_dim(__isl_keep isl_dim_map *dim_map, __isl_keep isl_space *dim,
 	enum isl_dim_type type, unsigned dst_pos);
 void isl_dim_map_div(__isl_keep isl_dim_map *dim_map,
 	__isl_keep isl_basic_map *bmap, unsigned dst_pos);

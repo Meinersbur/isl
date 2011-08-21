@@ -8,7 +8,7 @@ struct isl_bound {
 	int check_tight;
 	int wrapping;
 	enum isl_fold type;
-	isl_dim *dim;
+	isl_space *dim;
 	isl_basic_set *bset;
 	isl_qpolynomial_fold *fold;
 

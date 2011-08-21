@@ -4,10 +4,10 @@
 #define S(TYPE,NAME) xS(TYPE,NAME)
 
 #ifdef HAS_TYPE
-static __isl_give PW *FN(PW,alloc_)(__isl_take isl_dim *dim,
+static __isl_give PW *FN(PW,alloc_)(__isl_take isl_space *dim,
 	enum isl_fold type, int n)
 #else
-static __isl_give PW *FN(PW,alloc_)(__isl_take isl_dim *dim, int n)
+static __isl_give PW *FN(PW,alloc_)(__isl_take isl_space *dim, int n)
 #endif
 {
 	isl_ctx *ctx;
@@ -15,7 +15,7 @@ static __isl_give PW *FN(PW,alloc_)(__isl_take isl_dim *dim, int n)
 
 	if (!dim)
 		return NULL;
-	ctx = isl_dim_get_ctx(dim);
+	ctx = isl_space_get_ctx(dim);
 	isl_assert(ctx, n >= 0, goto error);
 	pw = isl_alloc(ctx, struct PW,
 			sizeof(struct PW) + (n - 1) * sizeof(S(PW,piece)));
@@ -31,17 +31,17 @@ static __isl_give PW *FN(PW,alloc_)(__isl_take isl_dim *dim, int n)
 	pw->dim = dim;
 	return pw;
 error:
-	isl_dim_free(dim);
+	isl_space_free(dim);
 	return NULL;
 }
 
 #ifdef HAS_TYPE
-__isl_give PW *FN(PW,ZERO)(__isl_take isl_dim *dim, enum isl_fold type)
+__isl_give PW *FN(PW,ZERO)(__isl_take isl_space *dim, enum isl_fold type)
 {
 	return FN(PW,alloc_)(dim, type, 0);
 }
 #else
-__isl_give PW *FN(PW,ZERO)(__isl_take isl_dim *dim)
+__isl_give PW *FN(PW,ZERO)(__isl_take isl_space *dim)
 {
 	return FN(PW,alloc_)(dim, 0);
 }
@@ -51,7 +51,7 @@ __isl_give PW *FN(PW,add_piece)(__isl_take PW *pw,
 	__isl_take isl_set *set, __isl_take EL *el)
 {
 	isl_ctx *ctx;
-	isl_dim *el_dim = NULL;
+	isl_space *el_dim = NULL;
 
 	if (!pw || !set || !el)
 		goto error;
@@ -68,18 +68,18 @@ __isl_give PW *FN(PW,add_piece)(__isl_take PW *pw,
 		isl_die(ctx, isl_error_invalid, "fold types don't match",
 			goto error);
 #endif
-	el_dim = FN(EL,get_dim(el));
-	isl_assert(ctx, isl_dim_equal(pw->dim, el_dim), goto error);
+	el_dim = FN(EL,get_space(el));
+	isl_assert(ctx, isl_space_is_equal(pw->dim, el_dim), goto error);
 	isl_assert(ctx, pw->n < pw->size, goto error);
 
 	pw->p[pw->n].set = set;
 	pw->p[pw->n].FIELD = el;
 	pw->n++;
 	
-	isl_dim_free(el_dim);
+	isl_space_free(el_dim);
 	return pw;
 error:
-	isl_dim_free(el_dim);
+	isl_space_free(el_dim);
 	FN(PW,free)(pw);
 	isl_set_free(set);
 	FN(EL,free)(el);
@@ -99,9 +99,9 @@ __isl_give PW *FN(PW,alloc)(__isl_take isl_set *set, __isl_take EL *el)
 		goto error;
 
 #ifdef HAS_TYPE
-	pw = FN(PW,alloc_)(isl_set_get_dim(set), type, 1);
+	pw = FN(PW,alloc_)(isl_set_get_space(set), type, 1);
 #else
-	pw = FN(PW,alloc_)(isl_set_get_dim(set), 1);
+	pw = FN(PW,alloc_)(isl_set_get_space(set), 1);
 #endif
 
 	return FN(PW,add_piece)(pw, set, el);
@@ -120,9 +120,9 @@ __isl_give PW *FN(PW,dup)(__isl_keep PW *pw)
 		return NULL;
 
 #ifdef HAS_TYPE
-	dup = FN(PW,alloc_)(isl_dim_copy(pw->dim), pw->type, pw->n);
+	dup = FN(PW,alloc_)(isl_space_copy(pw->dim), pw->type, pw->n);
 #else
-	dup = FN(PW,alloc_)(isl_dim_copy(pw->dim), pw->n);
+	dup = FN(PW,alloc_)(isl_space_copy(pw->dim), pw->n);
 #endif
 	if (!dup)
 		return NULL;
@@ -167,7 +167,7 @@ void *FN(PW,free)(__isl_take PW *pw)
 		isl_set_free(pw->p[i].set);
 		FN(EL,free)(pw->p[i].FIELD);
 	}
-	isl_dim_free(pw->dim);
+	isl_space_free(pw->dim);
 	free(pw);
 
 	return NULL;
@@ -201,7 +201,7 @@ __isl_give PW *FN(PW,realign)(__isl_take PW *pw, __isl_take isl_reordering *exp)
 			goto error;
 	}
 
-	pw = FN(PW,reset_dim)(pw, isl_dim_copy(exp->dim));
+	pw = FN(PW,reset_space)(pw, isl_space_copy(exp->dim));
 
 	isl_reordering_free(exp);
 	return pw;
@@ -213,36 +213,36 @@ error:
 
 /* Align the parameters of "pw" to those of "model".
  */
-__isl_give PW *FN(PW,align_params)(__isl_take PW *pw, __isl_take isl_dim *model)
+__isl_give PW *FN(PW,align_params)(__isl_take PW *pw, __isl_take isl_space *model)
 {
 	isl_ctx *ctx;
 
 	if (!pw || !model)
 		goto error;
 
-	ctx = isl_dim_get_ctx(model);
-	if (!isl_dim_has_named_params(model))
+	ctx = isl_space_get_ctx(model);
+	if (!isl_space_has_named_params(model))
 		isl_die(ctx, isl_error_invalid,
 			"model has unnamed parameters", goto error);
-	if (!isl_dim_has_named_params(pw->dim))
+	if (!isl_space_has_named_params(pw->dim))
 		isl_die(ctx, isl_error_invalid,
 			"input has unnamed parameters", goto error);
-	if (!isl_dim_match(pw->dim, isl_dim_param, model, isl_dim_param)) {
+	if (!isl_space_match(pw->dim, isl_dim_param, model, isl_dim_param)) {
 		isl_reordering *exp;
 
-		model = isl_dim_drop(model, isl_dim_in,
-					0, isl_dim_size(model, isl_dim_in));
-		model = isl_dim_drop(model, isl_dim_out,
-					0, isl_dim_size(model, isl_dim_out));
+		model = isl_space_drop_dims(model, isl_dim_in,
+					0, isl_space_dim(model, isl_dim_in));
+		model = isl_space_drop_dims(model, isl_dim_out,
+					0, isl_space_dim(model, isl_dim_out));
 		exp = isl_parameter_alignment_reordering(pw->dim, model);
-		exp = isl_reordering_extend_dim(exp, FN(PW,get_dim)(pw));
+		exp = isl_reordering_extend_space(exp, FN(PW,get_space)(pw));
 		pw = FN(PW,realign)(pw, exp);
 	}
 
-	isl_dim_free(model);
+	isl_space_free(model);
 	return pw;
 error:
-	isl_dim_free(model);
+	isl_space_free(model);
 	FN(PW,free)(pw);
 	return NULL;
 }
@@ -255,15 +255,15 @@ static __isl_give PW *align_params_pw_pw_and(__isl_take PW *pw1,
 
 	if (!pw1 || !pw2)
 		goto error;
-	if (isl_dim_match(pw1->dim, isl_dim_param, pw2->dim, isl_dim_param))
+	if (isl_space_match(pw1->dim, isl_dim_param, pw2->dim, isl_dim_param))
 		return fn(pw1, pw2);
 	ctx = FN(PW,get_ctx)(pw1);
-	if (!isl_dim_has_named_params(pw1->dim) ||
-	    !isl_dim_has_named_params(pw2->dim))
+	if (!isl_space_has_named_params(pw1->dim) ||
+	    !isl_space_has_named_params(pw2->dim))
 		isl_die(ctx, isl_error_invalid,
 			"unaligned unnamed parameters", goto error);
-	pw1 = FN(PW,align_params)(pw1, FN(PW,get_dim)(pw2));
-	pw2 = FN(PW,align_params)(pw2, FN(PW,get_dim)(pw1));
+	pw1 = FN(PW,align_params)(pw1, FN(PW,get_space)(pw2));
+	pw2 = FN(PW,align_params)(pw2, FN(PW,get_space)(pw1));
 	return fn(pw1, pw2);
 error:
 	FN(PW,free)(pw1);
@@ -279,15 +279,15 @@ static __isl_give PW *align_params_pw_set_and(__isl_take PW *pw,
 
 	if (!pw || !set)
 		goto error;
-	if (isl_dim_match(pw->dim, isl_dim_param, set->dim, isl_dim_param))
+	if (isl_space_match(pw->dim, isl_dim_param, set->dim, isl_dim_param))
 		return fn(pw, set);
 	ctx = FN(PW,get_ctx)(pw);
-	if (!isl_dim_has_named_params(pw->dim) ||
-	    !isl_dim_has_named_params(set->dim))
+	if (!isl_space_has_named_params(pw->dim) ||
+	    !isl_space_has_named_params(set->dim))
 		isl_die(ctx, isl_error_invalid,
 			"unaligned unnamed parameters", goto error);
-	pw = FN(PW,align_params)(pw, isl_set_get_dim(set));
-	set = isl_set_align_params(set, FN(PW,get_dim)(pw));
+	pw = FN(PW,align_params)(pw, isl_set_get_space(set));
+	set = isl_set_align_params(set, FN(PW,get_space)(pw));
 	return fn(pw, set);
 error:
 	FN(PW,free)(pw);
@@ -306,13 +306,13 @@ static __isl_give PW *FN(PW,add_aligned)(__isl_take PW *pw1, __isl_take PW *pw2)
 	if (!pw1 || !pw2)
 		goto error;
 
-	ctx = isl_dim_get_ctx(pw1->dim);
+	ctx = isl_space_get_ctx(pw1->dim);
 #ifdef HAS_TYPE
 	if (pw1->type != pw2->type)
 		isl_die(ctx, isl_error_invalid,
 			"fold types don't match", goto error);
 #endif
-	isl_assert(ctx, isl_dim_equal(pw1->dim, pw2->dim), goto error);
+	isl_assert(ctx, isl_space_is_equal(pw1->dim, pw2->dim), goto error);
 
 	if (FN(PW,IS_ZERO)(pw1)) {
 		FN(PW,free)(pw1);
@@ -326,9 +326,9 @@ static __isl_give PW *FN(PW,add_aligned)(__isl_take PW *pw1, __isl_take PW *pw2)
 
 	n = (pw1->n + 1) * (pw2->n + 1);
 #ifdef HAS_TYPE
-	res = FN(PW,alloc_)(isl_dim_copy(pw1->dim), pw1->type, n);
+	res = FN(PW,alloc_)(isl_space_copy(pw1->dim), pw1->type, n);
 #else
-	res = FN(PW,alloc_)(isl_dim_copy(pw1->dim), n);
+	res = FN(PW,alloc_)(isl_space_copy(pw1->dim), n);
 #endif
 
 	for (i = 0; i < pw1->n; ++i) {
@@ -387,13 +387,13 @@ static __isl_give PW *FN(PW,add_disjoint_aligned)(__isl_take PW *pw1,
 	if (!pw1 || !pw2)
 		goto error;
 
-	ctx = isl_dim_get_ctx(pw1->dim);
+	ctx = isl_space_get_ctx(pw1->dim);
 #ifdef HAS_TYPE
 	if (pw1->type != pw2->type)
 		isl_die(ctx, isl_error_invalid,
 			"fold types don't match", goto error);
 #endif
-	isl_assert(ctx, isl_dim_equal(pw1->dim, pw2->dim), goto error);
+	isl_assert(ctx, isl_space_is_equal(pw1->dim, pw2->dim), goto error);
 
 	if (FN(PW,IS_ZERO)(pw1)) {
 		FN(PW,free)(pw1);
@@ -406,9 +406,9 @@ static __isl_give PW *FN(PW,add_disjoint_aligned)(__isl_take PW *pw1,
 	}
 
 #ifdef HAS_TYPE
-	res = FN(PW,alloc_)(isl_dim_copy(pw1->dim), pw1->type, pw1->n + pw2->n);
+	res = FN(PW,alloc_)(isl_space_copy(pw1->dim), pw1->type, pw1->n + pw2->n);
 #else
-	res = FN(PW,alloc_)(isl_dim_copy(pw1->dim), pw1->n + pw2->n);
+	res = FN(PW,alloc_)(isl_space_copy(pw1->dim), pw1->n + pw2->n);
 #endif
 
 	for (i = 0; i < pw1->n; ++i)
@@ -473,14 +473,14 @@ __isl_give isl_qpolynomial *FN(PW,eval)(__isl_take PW *pw,
 	int i;
 	int found = 0;
 	isl_ctx *ctx;
-	isl_dim *pnt_dim = NULL;
+	isl_space *pnt_dim = NULL;
 	isl_qpolynomial *qp;
 
 	if (!pw || !pnt)
 		goto error;
 	ctx = isl_point_get_ctx(pnt);
-	pnt_dim = isl_point_get_dim(pnt);
-	isl_assert(ctx, isl_dim_equal(pnt_dim, pw->dim), goto error);
+	pnt_dim = isl_point_get_space(pnt);
+	isl_assert(ctx, isl_space_is_equal(pnt_dim, pw->dim), goto error);
 
 	for (i = 0; i < pw->n; ++i) {
 		found = isl_set_contains_point(pw->p[i].set, pnt);
@@ -493,14 +493,14 @@ __isl_give isl_qpolynomial *FN(PW,eval)(__isl_take PW *pw,
 		qp = FN(EL,eval)(FN(EL,copy)(pw->p[i].FIELD),
 					    isl_point_copy(pnt));
 	else
-		qp = isl_qpolynomial_zero(isl_dim_copy(pw->dim));
+		qp = isl_qpolynomial_zero(isl_space_copy(pw->dim));
 	FN(PW,free)(pw);
-	isl_dim_free(pnt_dim);
+	isl_space_free(pnt_dim);
 	isl_point_free(pnt);
 	return qp;
 error:
 	FN(PW,free)(pw);
-	isl_dim_free(pnt_dim);
+	isl_space_free(pnt_dim);
 	isl_point_free(pnt);
 	return NULL;
 }
@@ -514,7 +514,7 @@ __isl_give isl_set *FN(PW,domain)(__isl_take PW *pw)
 	if (!pw)
 		return NULL;
 
-	dom = isl_set_empty(isl_dim_copy(pw->dim));
+	dom = isl_set_empty(isl_space_copy(pw->dim));
 	for (i = 0; i < pw->n; ++i)
 		dom = isl_set_union_disjoint(dom, isl_set_copy(pw->p[i].set));
 
@@ -586,10 +586,10 @@ static __isl_give PW *FN(PW,gist_aligned)(__isl_take PW *pw,
 		return pw;
 	}
 
-	if (!isl_dim_match(pw->dim, isl_dim_param,
+	if (!isl_space_match(pw->dim, isl_dim_param,
 				context->dim, isl_dim_param)) {
-		pw = FN(PW,align_params)(pw, isl_set_get_dim(context));
-		context = isl_set_align_params(context, FN(PW,get_dim)(pw));
+		pw = FN(PW,align_params)(pw, isl_set_get_space(context));
+		context = isl_set_align_params(context, FN(PW,get_space)(pw));
 	}
 
 	context = isl_set_compute_divs(context);
@@ -672,7 +672,7 @@ error:
 
 isl_ctx *FN(PW,get_ctx)(__isl_keep PW *pw)
 {
-	return pw ? isl_dim_get_ctx(pw->dim) : NULL;
+	return pw ? isl_space_get_ctx(pw->dim) : NULL;
 }
 
 #ifndef NO_INVOLVES_DIMS
@@ -707,7 +707,7 @@ __isl_give PW *FN(PW,set_dim_name)(__isl_take PW *pw,
 	if (!pw)
 		return NULL;
 
-	pw->dim = isl_dim_set_name(pw->dim, type, pos, s);
+	pw->dim = isl_space_set_dim_name(pw->dim, type, pos, s);
 	if (!pw->dim)
 		goto error;
 
@@ -734,13 +734,13 @@ __isl_give PW *FN(PW,drop_dims)(__isl_take PW *pw,
 
 	if (!pw)
 		return NULL;
-	if (n == 0 && !isl_dim_get_tuple_name(pw->dim, type))
+	if (n == 0 && !isl_space_get_tuple_name(pw->dim, type))
 		return pw;
 
 	pw = FN(PW,cow)(pw);
 	if (!pw)
 		return NULL;
-	pw->dim = isl_dim_drop(pw->dim, type, first, n);
+	pw->dim = isl_space_drop_dims(pw->dim, type, first, n);
 	if (!pw->dim)
 		goto error;
 	for (i = 0; i < pw->n; ++i) {
@@ -767,14 +767,14 @@ __isl_give PW *FN(PW,insert_dims)(__isl_take PW *pw, enum isl_dim_type type,
 
 	if (!pw)
 		return NULL;
-	if (n == 0 && !isl_dim_is_named_or_nested(pw->dim, type))
+	if (n == 0 && !isl_space_is_named_or_nested(pw->dim, type))
 		return pw;
 
 	pw = FN(PW,cow)(pw);
 	if (!pw)
 		return NULL;
 
-	pw->dim = isl_dim_insert(pw->dim, type, first, n);
+	pw->dim = isl_space_insert_dims(pw->dim, type, first, n);
 	if (!pw->dim)
 		goto error;
 
@@ -821,7 +821,7 @@ error:
 
 unsigned FN(PW,dim)(__isl_keep PW *pw, enum isl_dim_type type)
 {
-	return pw ? isl_dim_size(pw->dim, type) : 0;
+	return pw ? isl_space_dim(pw->dim, type) : 0;
 }
 
 __isl_give PW *FN(PW,split_dims)(__isl_take PW *pw,
@@ -866,7 +866,7 @@ __isl_give isl_qpolynomial *FN(PW,opt)(__isl_take PW *pw, int max)
 		return NULL;
 
 	if (pw->n == 0) {
-		isl_dim *dim = isl_dim_copy(pw->dim);
+		isl_space *dim = isl_space_copy(pw->dim);
 		FN(PW,free)(pw);
 		return isl_qpolynomial_zero(dim);
 	}
@@ -898,13 +898,13 @@ __isl_give isl_qpolynomial *FN(PW,min)(__isl_take PW *pw)
 }
 #endif
 
-__isl_give isl_dim *FN(PW,get_dim)(__isl_keep PW *pw)
+__isl_give isl_space *FN(PW,get_space)(__isl_keep PW *pw)
 {
-	return pw ? isl_dim_copy(pw->dim) : NULL;
+	return pw ? isl_space_copy(pw->dim) : NULL;
 }
 
 #ifndef NO_RESET_DIM
-__isl_give PW *FN(PW,reset_dim)(__isl_take PW *pw, __isl_take isl_dim *dim)
+__isl_give PW *FN(PW,reset_space)(__isl_take PW *pw, __isl_take isl_space *dim)
 {
 	int i;
 
@@ -913,32 +913,32 @@ __isl_give PW *FN(PW,reset_dim)(__isl_take PW *pw, __isl_take isl_dim *dim)
 		goto error;
 
 	for (i = 0; i < pw->n; ++i) {
-		pw->p[i].set = isl_set_reset_dim(pw->p[i].set,
-						 isl_dim_copy(dim));
+		pw->p[i].set = isl_set_reset_space(pw->p[i].set,
+						 isl_space_copy(dim));
 		if (!pw->p[i].set)
 			goto error;
-		pw->p[i].FIELD = FN(EL,reset_dim)(pw->p[i].FIELD,
-						  isl_dim_copy(dim));
+		pw->p[i].FIELD = FN(EL,reset_space)(pw->p[i].FIELD,
+						  isl_space_copy(dim));
 		if (!pw->p[i].FIELD)
 			goto error;
 	}
-	isl_dim_free(pw->dim);
+	isl_space_free(pw->dim);
 	pw->dim = dim;
 
 	return pw;
 error:
-	isl_dim_free(dim);
+	isl_space_free(dim);
 	FN(PW,free)(pw);
 	return NULL;
 }
 #endif
 
-int FN(PW,has_equal_dim)(__isl_keep PW *pw1, __isl_keep PW *pw2)
+int FN(PW,has_equal_space)(__isl_keep PW *pw1, __isl_keep PW *pw2)
 {
 	if (!pw1 || !pw2)
 		return -1;
 
-	return isl_dim_equal(pw1->dim, pw2->dim);
+	return isl_space_is_equal(pw1->dim, pw2->dim);
 }
 
 #ifndef NO_MORPH
@@ -950,15 +950,15 @@ __isl_give PW *FN(PW,morph)(__isl_take PW *pw, __isl_take isl_morph *morph)
 	if (!pw || !morph)
 		goto error;
 
-	ctx = isl_dim_get_ctx(pw->dim);
-	isl_assert(ctx, isl_dim_equal(pw->dim, morph->dom->dim),
+	ctx = isl_space_get_ctx(pw->dim);
+	isl_assert(ctx, isl_space_is_equal(pw->dim, morph->dom->dim),
 		goto error);
 
 	pw = FN(PW,cow)(pw);
 	if (!pw)
 		goto error;
-	isl_dim_free(pw->dim);
-	pw->dim = isl_dim_copy(morph->ran->dim);
+	isl_space_free(pw->dim);
+	pw->dim = isl_space_copy(morph->ran->dim);
 	if (!pw->dim)
 		goto error;
 
@@ -1031,7 +1031,7 @@ static int foreach_lifted_subset(__isl_take isl_set *set, __isl_take EL *el,
 		lift = isl_set_lift(lift);
 
 		copy = FN(EL,copy)(el);
-		copy = FN(EL,lift)(copy, isl_set_get_dim(lift));
+		copy = FN(EL,lift)(copy, isl_set_get_space(lift));
 
 		if (fn(lift, copy, user) < 0)
 			goto error;
@@ -1086,7 +1086,7 @@ __isl_give PW *FN(PW,move_dims)(__isl_take PW *pw,
 	if (!pw)
 		return NULL;
 
-	pw->dim = isl_dim_move(pw->dim, dst_type, dst_pos, src_type, src_pos, n);
+	pw->dim = isl_space_move_dims(pw->dim, dst_type, dst_pos, src_type, src_pos, n);
 	if (!pw->dim)
 		goto error;
 
@@ -1117,7 +1117,7 @@ __isl_give PW *FN(PW,mul_isl_int)(__isl_take PW *pw, isl_int v)
 		return pw;
 	if (pw && isl_int_is_zero(v)) {
 		PW *zero;
-		isl_dim *dim = FN(PW,get_dim)(pw);
+		isl_space *dim = FN(PW,get_space)(pw);
 #ifdef HAS_TYPE
 		zero = FN(PW,ZERO)(dim, pw->type);
 #else

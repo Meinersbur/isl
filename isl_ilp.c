@@ -42,7 +42,7 @@ static struct isl_basic_set *unit_box_base_points(struct isl_basic_set *bset)
 	}
 
 	total = isl_basic_set_total_dim(bset);
-	unit_box = isl_basic_set_alloc_dim(isl_basic_set_get_dim(bset),
+	unit_box = isl_basic_set_alloc_space(isl_basic_set_get_space(bset),
 					0, 0, bset->n_ineq);
 
 	for (i = 0; i < bset->n_ineq; ++i) {
@@ -380,7 +380,7 @@ enum isl_lp_result isl_basic_set_opt(__isl_keep isl_basic_set *bset, int max,
 		return isl_lp_error;
 
 	ctx = isl_aff_get_ctx(obj);
-	if (!isl_dim_equal(bset->dim, obj->ls->dim))
+	if (!isl_space_is_equal(bset->dim, obj->ls->dim))
 		isl_die(ctx, isl_error_invalid,
 			"spaces don't match", return isl_lp_error);
 	if (!isl_int_is_one(obj->v->el[0]))

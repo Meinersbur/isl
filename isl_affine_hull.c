@@ -873,7 +873,7 @@ struct isl_basic_map *isl_basic_map_detect_equalities(
 		isl_basic_set_free(hull);
 		return isl_basic_map_set_to_empty(bmap);
 	}
-	bmap = isl_basic_map_extend_dim(bmap, isl_dim_copy(bmap->dim), 0,
+	bmap = isl_basic_map_extend_space(bmap, isl_space_copy(bmap->dim), 0,
 					hull->n_eq, 0);
 	for (i = 0; i < hull->n_eq; ++i) {
 		j = isl_basic_map_alloc_equality(bmap);

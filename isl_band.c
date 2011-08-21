@@ -140,7 +140,7 @@ __isl_give isl_union_map *isl_band_get_suffix_schedule(
 		int i, n;
 		isl_band_list *children;
 
-		suffix = isl_union_map_empty(isl_union_map_get_dim(band->map));
+		suffix = isl_union_map_empty(isl_union_map_get_space(band->map));
 		children = isl_band_get_children(band);
 		n = isl_band_list_n_band(children);
 		for (i = 0; i < n; ++i) {

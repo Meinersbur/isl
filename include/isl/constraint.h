@@ -24,8 +24,8 @@ typedef struct isl_constraint isl_constraint;
 
 isl_ctx *isl_constraint_get_ctx(__isl_keep isl_constraint *c);
 
-__isl_give isl_constraint *isl_equality_alloc(__isl_take isl_dim *dim);
-__isl_give isl_constraint *isl_inequality_alloc(__isl_take isl_dim *dim);
+__isl_give isl_constraint *isl_equality_alloc(__isl_take isl_space *dim);
+__isl_give isl_constraint *isl_inequality_alloc(__isl_take isl_space *dim);
 
 struct isl_constraint *isl_constraint_cow(struct isl_constraint *c);
 struct isl_constraint *isl_constraint_copy(struct isl_constraint *c);
@@ -64,7 +64,7 @@ int isl_basic_set_has_defining_inequalities(
 	struct isl_constraint **lower,
 	struct isl_constraint **upper);
 
-__isl_give isl_dim *isl_constraint_get_dim(
+__isl_give isl_space *isl_constraint_get_space(
 	__isl_keep isl_constraint *constraint);
 int isl_constraint_dim(struct isl_constraint *constraint,
 	enum isl_dim_type type);
@@ -119,5 +119,7 @@ void isl_constraint_dump(__isl_keep isl_constraint *c);
 #if defined(__cplusplus)
 }
 #endif
+
+#include <isl/dim.h>
 
 #endif

@@ -11,7 +11,7 @@
  */
 
 #include <isl_map_private.h>
-#include <isl_dim_private.h>
+#include <isl_space_private.h>
 #include <isl_dim_map.h>
 #include <isl_reordering.h>
 
@@ -61,7 +61,7 @@ void isl_dim_map_range(__isl_keep isl_dim_map *dim_map,
 }
 
 void isl_dim_map_dim_range(__isl_keep isl_dim_map *dim_map,
-	struct isl_dim *dim, enum isl_dim_type type,
+	__isl_keep isl_space *dim, enum isl_dim_type type,
 	unsigned first, unsigned n, unsigned dst_pos)
 {
 	int i;
@@ -70,18 +70,18 @@ void isl_dim_map_dim_range(__isl_keep isl_dim_map *dim_map,
 	if (!dim_map || !dim)
 		return;
 	
-	src_pos = 1 + isl_dim_offset(dim, type);
+	src_pos = 1 + isl_space_offset(dim, type);
 	for (i = 0; i < n; ++i) {
 		dim_map->m[1 + dst_pos + i].pos = src_pos + first + i;
 		dim_map->m[1 + dst_pos + i].sgn = 1;
 	}
 }
 
-void isl_dim_map_dim(__isl_keep isl_dim_map *dim_map, __isl_keep isl_dim *dim,
+void isl_dim_map_dim(__isl_keep isl_dim_map *dim_map, __isl_keep isl_space *dim,
 	enum isl_dim_type type, unsigned dst_pos)
 {
 	isl_dim_map_dim_range(dim_map, dim, type,
-			      0, isl_dim_size(dim, type), dst_pos);
+			      0, isl_space_dim(dim, type), dst_pos);
 }
 
 void isl_dim_map_div(__isl_keep isl_dim_map *dim_map,
@@ -93,7 +93,7 @@ void isl_dim_map_div(__isl_keep isl_dim_map *dim_map,
 	if (!dim_map || !bmap)
 		return;
 	
-	src_pos = 1 + isl_dim_total(bmap->dim);
+	src_pos = 1 + isl_space_dim(bmap->dim, isl_dim_all);
 	for (i = 0; i < bmap->n_div; ++i) {
 		dim_map->m[1 + dst_pos + i].pos = src_pos + i;
 		dim_map->m[1 + dst_pos + i].sgn = 1;
@@ -219,8 +219,8 @@ __isl_give isl_dim_map *isl_dim_map_from_reordering(
 	if (!exp)
 		return NULL;
 
-	ctx = isl_dim_get_ctx(exp->dim);
-	dim_map = isl_dim_map_alloc(ctx, isl_dim_total(exp->dim));
+	ctx = isl_space_get_ctx(exp->dim);
+	dim_map = isl_dim_map_alloc(ctx, isl_space_dim(exp->dim, isl_dim_all));
 	if (!dim_map)
 		return NULL;
 

@@ -10,7 +10,7 @@
 
 #include <isl_map_private.h>
 #include <isl/set.h>
-#include <isl_dim_private.h>
+#include <isl_space_private.h>
 #include <isl/seq.h>
 
 /*
@@ -63,7 +63,7 @@
 
 /* Add the given prefix to all named isl_dim_set dimensions in "dim".
  */
-static __isl_give isl_dim *isl_dim_prefix(__isl_take isl_dim *dim,
+static __isl_give isl_space *isl_space_prefix(__isl_take isl_space *dim,
 	const char *prefix)
 {
 	int i;
@@ -74,14 +74,14 @@ static __isl_give isl_dim *isl_dim_prefix(__isl_take isl_dim *dim,
 	if (!dim)
 		return NULL;
 
-	ctx = isl_dim_get_ctx(dim);
-	nvar = isl_dim_size(dim, isl_dim_set);
+	ctx = isl_space_get_ctx(dim);
+	nvar = isl_space_dim(dim, isl_dim_set);
 
 	for (i = 0; i < nvar; ++i) {
 		const char *name;
 		char *prefix_name;
 
-		name = isl_dim_get_name(dim, isl_dim_set, i);
+		name = isl_space_get_dim_name(dim, isl_dim_set, i);
 		if (!name)
 			continue;
 
@@ -92,13 +92,13 @@ static __isl_give isl_dim *isl_dim_prefix(__isl_take isl_dim *dim,
 		memcpy(prefix_name, prefix, prefix_len);
 		strcpy(prefix_name + prefix_len, name);
 
-		dim = isl_dim_set_name(dim, isl_dim_set, i, prefix_name);
+		dim = isl_space_set_dim_name(dim, isl_dim_set, i, prefix_name);
 		free(prefix_name);
 	}
 
 	return dim;
 error:
-	isl_dim_free(dim);
+	isl_space_free(dim);
 	return NULL;
 }
 
@@ -115,52 +115,52 @@ error:
  *
  * and prefix each dimension name with "c_".
  */
-static __isl_give isl_dim *isl_dim_coefficients(__isl_take isl_dim *dim)
+static __isl_give isl_space *isl_space_coefficients(__isl_take isl_space *dim)
 {
-	isl_dim *dim_param;
+	isl_space *dim_param;
 	unsigned nvar;
 	unsigned nparam;
 
-	nvar = isl_dim_size(dim, isl_dim_set);
-	nparam = isl_dim_size(dim, isl_dim_param);
-	dim_param = isl_dim_copy(dim);
-	dim_param = isl_dim_drop(dim_param, isl_dim_set, 0, nvar);
-	dim_param = isl_dim_move(dim_param, isl_dim_set, 0,
+	nvar = isl_space_dim(dim, isl_dim_set);
+	nparam = isl_space_dim(dim, isl_dim_param);
+	dim_param = isl_space_copy(dim);
+	dim_param = isl_space_drop_dims(dim_param, isl_dim_set, 0, nvar);
+	dim_param = isl_space_move_dims(dim_param, isl_dim_set, 0,
 				 isl_dim_param, 0, nparam);
-	dim_param = isl_dim_prefix(dim_param, "c_");
-	dim_param = isl_dim_insert(dim_param, isl_dim_set, 0, 1);
-	dim_param = isl_dim_set_name(dim_param, isl_dim_set, 0, "c_cst");
-	dim = isl_dim_drop(dim, isl_dim_param, 0, nparam);
-	dim = isl_dim_prefix(dim, "c_");
-	dim = isl_dim_join(isl_dim_from_domain(dim_param),
-			   isl_dim_from_range(dim));
-	dim = isl_dim_wrap(dim);
-	dim = isl_dim_set_tuple_name(dim, isl_dim_set, "coefficients");
+	dim_param = isl_space_prefix(dim_param, "c_");
+	dim_param = isl_space_insert_dims(dim_param, isl_dim_set, 0, 1);
+	dim_param = isl_space_set_dim_name(dim_param, isl_dim_set, 0, "c_cst");
+	dim = isl_space_drop_dims(dim, isl_dim_param, 0, nparam);
+	dim = isl_space_prefix(dim, "c_");
+	dim = isl_space_join(isl_space_from_domain(dim_param),
+			   isl_space_from_range(dim));
+	dim = isl_space_wrap(dim);
+	dim = isl_space_set_tuple_name(dim, isl_dim_set, "coefficients");
 
 	return dim;
 }
 
 /* Drop the given prefix from all named dimensions of type "type" in "dim".
  */
-static __isl_give isl_dim *isl_dim_unprefix(__isl_take isl_dim *dim,
+static __isl_give isl_space *isl_space_unprefix(__isl_take isl_space *dim,
 	enum isl_dim_type type, const char *prefix)
 {
 	int i;
 	unsigned n;
 	size_t prefix_len = strlen(prefix);
 
-	n = isl_dim_size(dim, type);
+	n = isl_space_dim(dim, type);
 
 	for (i = 0; i < n; ++i) {
 		const char *name;
 
-		name = isl_dim_get_name(dim, type, i);
+		name = isl_space_get_dim_name(dim, type, i);
 		if (!name)
 			continue;
 		if (strncmp(name, prefix, prefix_len))
 			continue;
 
-		dim = isl_dim_set_name(dim, type, i, name + prefix_len);
+		dim = isl_space_set_dim_name(dim, type, i, name + prefix_len);
 	}
 
 	return dim;
@@ -179,17 +179,17 @@ static __isl_give isl_dim *isl_dim_unprefix(__isl_take isl_dim *dim,
  *
  * and drop the "c_" prefix from the dimension names.
  */
-static __isl_give isl_dim *isl_dim_solutions(__isl_take isl_dim *dim)
+static __isl_give isl_space *isl_space_solutions(__isl_take isl_space *dim)
 {
 	unsigned nparam;
 
-	dim = isl_dim_unwrap(dim);
-	dim = isl_dim_drop(dim, isl_dim_in, 0, 1);
-	dim = isl_dim_unprefix(dim, isl_dim_in, "c_");
-	dim = isl_dim_unprefix(dim, isl_dim_out, "c_");
-	nparam = isl_dim_size(dim, isl_dim_in);
-	dim = isl_dim_move(dim, isl_dim_param, 0, isl_dim_in, 0, nparam);
-	dim = isl_dim_range(dim);
+	dim = isl_space_unwrap(dim);
+	dim = isl_space_drop_dims(dim, isl_dim_in, 0, 1);
+	dim = isl_space_unprefix(dim, isl_dim_in, "c_");
+	dim = isl_space_unprefix(dim, isl_dim_out, "c_");
+	nparam = isl_space_dim(dim, isl_dim_in);
+	dim = isl_space_move_dims(dim, isl_dim_param, 0, isl_dim_in, 0, nparam);
+	dim = isl_space_range(dim);
 
 	return dim;
 }
@@ -201,7 +201,7 @@ static __isl_give isl_dim *isl_dim_solutions(__isl_take isl_dim *dim)
  * in the opposite direction (shift == -1).  "dim" is the space in which
  * the dual should be created.
  */
-static __isl_give isl_basic_set *farkas(__isl_take isl_dim *dim,
+static __isl_give isl_basic_set *farkas(__isl_take isl_space *dim,
 	__isl_take isl_basic_set *bset, int shift)
 {
 	int i, j, k;
@@ -210,7 +210,7 @@ static __isl_give isl_basic_set *farkas(__isl_take isl_dim *dim,
 
 	total = isl_basic_set_total_dim(bset);
 
-	dual = isl_basic_set_alloc_dim(dim, bset->n_eq + bset->n_ineq,
+	dual = isl_basic_set_alloc_space(dim, bset->n_eq + bset->n_ineq,
 					total, bset->n_ineq + (shift > 0));
 	dual = isl_basic_set_set_rational(dual);
 
@@ -276,7 +276,7 @@ error:
 __isl_give isl_basic_set *isl_basic_set_coefficients(
 	__isl_take isl_basic_set *bset)
 {
-	isl_dim *dim;
+	isl_space *dim;
 
 	if (!bset)
 		return NULL;
@@ -285,8 +285,8 @@ __isl_give isl_basic_set *isl_basic_set_coefficients(
 			"input set not allowed to have local variables",
 			goto error);
 
-	dim = isl_basic_set_get_dim(bset);
-	dim = isl_dim_coefficients(dim);
+	dim = isl_basic_set_get_space(bset);
+	dim = isl_space_coefficients(dim);
 
 	return farkas(dim, bset, 1);
 error:
@@ -301,7 +301,7 @@ error:
 __isl_give isl_basic_set *isl_basic_set_solutions(
 	__isl_take isl_basic_set *bset)
 {
-	isl_dim *dim;
+	isl_space *dim;
 
 	if (!bset)
 		return NULL;
@@ -310,8 +310,8 @@ __isl_give isl_basic_set *isl_basic_set_solutions(
 			"input set not allowed to have local variables",
 			goto error);
 
-	dim = isl_basic_set_get_dim(bset);
-	dim = isl_dim_solutions(dim);
+	dim = isl_basic_set_get_space(bset);
+	dim = isl_space_solutions(dim);
 
 	return farkas(dim, bset, -1);
 error:
@@ -330,8 +330,8 @@ __isl_give isl_basic_set *isl_set_coefficients(__isl_take isl_set *set)
 	if (!set)
 		return NULL;
 	if (set->n == 0) {
-		isl_dim *dim = isl_set_get_dim(set);
-		dim = isl_dim_coefficients(dim);
+		isl_space *dim = isl_set_get_space(set);
+		dim = isl_space_coefficients(dim);
 		coeff = isl_basic_set_universe(dim);
 		coeff = isl_basic_set_set_rational(coeff);
 		isl_set_free(set);
@@ -363,8 +363,8 @@ __isl_give isl_basic_set *isl_set_solutions(__isl_take isl_set *set)
 	if (!set)
 		return NULL;
 	if (set->n == 0) {
-		isl_dim *dim = isl_set_get_dim(set);
-		dim = isl_dim_solutions(dim);
+		isl_space *dim = isl_set_get_space(set);
+		dim = isl_space_solutions(dim);
 		sol = isl_basic_set_universe(dim);
 		sol = isl_basic_set_set_rational(sol);
 		isl_set_free(set);

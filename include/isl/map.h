@@ -15,7 +15,7 @@
 #include <isl/int.h>
 #include <isl/ctx.h>
 #include <isl/blk.h>
-#include <isl/dim.h>
+#include <isl/space.h>
 #include <isl/div.h>
 #include <isl/vec.h>
 #include <isl/mat.h>
@@ -58,8 +58,8 @@ unsigned isl_map_dim(__isl_keep isl_map *map, enum isl_dim_type type);
 
 isl_ctx *isl_basic_map_get_ctx(__isl_keep isl_basic_map *bmap);
 isl_ctx *isl_map_get_ctx(__isl_keep isl_map *map);
-__isl_give isl_dim *isl_basic_map_get_dim(__isl_keep isl_basic_map *bmap);
-__isl_give isl_dim *isl_map_get_dim(__isl_keep isl_map *map);
+__isl_give isl_space *isl_basic_map_get_space(__isl_keep isl_basic_map *bmap);
+__isl_give isl_space *isl_map_get_space(__isl_keep isl_map *map);
 
 struct isl_div *isl_basic_map_div(struct isl_basic_map *bmap, int pos);
 
@@ -106,7 +106,7 @@ int isl_basic_map_is_rational(__isl_keep isl_basic_map *bmap);
 struct isl_basic_map *isl_basic_map_alloc(struct isl_ctx *ctx,
 		unsigned nparam, unsigned in, unsigned out, unsigned extra,
 		unsigned n_eq, unsigned n_ineq);
-__isl_give isl_basic_map *isl_basic_map_identity(__isl_take isl_dim *dim);
+__isl_give isl_basic_map *isl_basic_map_identity(__isl_take isl_space *dim);
 struct isl_basic_map *isl_basic_map_identity_like(struct isl_basic_map *model);
 struct isl_basic_map *isl_basic_map_finalize(struct isl_basic_map *bmap);
 void isl_basic_map_free(__isl_take isl_basic_map *bmap);
@@ -116,15 +116,17 @@ struct isl_basic_map *isl_basic_map_extend(struct isl_basic_map *base,
 		unsigned n_eq, unsigned n_ineq);
 struct isl_basic_map *isl_basic_map_extend_constraints(
 		struct isl_basic_map *base, unsigned n_eq, unsigned n_ineq);
-struct isl_basic_map *isl_basic_map_equal(
-		struct isl_dim *dim, unsigned n_equal);
-struct isl_basic_map *isl_basic_map_less_at(struct isl_dim *dim, unsigned pos);
-struct isl_basic_map *isl_basic_map_more_at(struct isl_dim *dim, unsigned pos);
-__isl_give isl_basic_map *isl_basic_map_empty(__isl_take isl_dim *dim);
+__isl_give isl_basic_map *isl_basic_map_equal(
+	__isl_take isl_space *dim, unsigned n_equal);
+__isl_give isl_basic_map *isl_basic_map_less_at(__isl_take isl_space *dim,
+	unsigned pos);
+__isl_give isl_basic_map *isl_basic_map_more_at(__isl_take isl_space *dim,
+	unsigned pos);
+__isl_give isl_basic_map *isl_basic_map_empty(__isl_take isl_space *dim);
 struct isl_basic_map *isl_basic_map_empty_like(struct isl_basic_map *model);
 struct isl_basic_map *isl_basic_map_empty_like_map(struct isl_map *model);
-__isl_give isl_basic_map *isl_basic_map_universe(__isl_take isl_dim *dim);
-__isl_give isl_basic_map *isl_basic_map_nat_universe(__isl_take isl_dim *dim);
+__isl_give isl_basic_map *isl_basic_map_universe(__isl_take isl_space *dim);
+__isl_give isl_basic_map *isl_basic_map_nat_universe(__isl_take isl_space *dim);
 __isl_give isl_basic_map *isl_basic_map_universe_like(
 		__isl_keep isl_basic_map *bmap);
 __isl_give isl_basic_map *isl_basic_map_remove_redundancies(
@@ -162,8 +164,8 @@ __isl_give isl_basic_map *isl_basic_map_range_map(
 __isl_give isl_basic_map *isl_basic_map_remove_dims(
 	__isl_take isl_basic_map *bmap,
 	enum isl_dim_type type, unsigned first, unsigned n);
-struct isl_basic_map *isl_basic_map_from_basic_set(struct isl_basic_set *bset,
-		struct isl_dim *dim);
+__isl_give isl_basic_map *isl_basic_map_from_basic_set(
+	__isl_take isl_basic_set *bset, __isl_take isl_space *dim);
 struct isl_basic_set *isl_basic_set_from_basic_map(struct isl_basic_map *bmap);
 __isl_give isl_basic_map *isl_basic_map_sample(__isl_take isl_basic_map *bmap);
 struct isl_basic_map *isl_basic_map_simplify(struct isl_basic_map *bmap);
@@ -255,25 +257,25 @@ int isl_basic_map_is_strict_subset(__isl_keep isl_basic_map *bmap1,
 struct isl_map *isl_map_alloc(struct isl_ctx *ctx,
 		unsigned nparam, unsigned in, unsigned out, int n,
 		unsigned flags);
-__isl_give isl_map *isl_map_universe(__isl_take isl_dim *dim);
-__isl_give isl_map *isl_map_nat_universe(__isl_take isl_dim *dim);
-__isl_give isl_map *isl_map_empty(__isl_take isl_dim *dim);
+__isl_give isl_map *isl_map_universe(__isl_take isl_space *dim);
+__isl_give isl_map *isl_map_nat_universe(__isl_take isl_space *dim);
+__isl_give isl_map *isl_map_empty(__isl_take isl_space *dim);
 struct isl_map *isl_map_empty_like(struct isl_map *model);
 struct isl_map *isl_map_empty_like_basic_map(struct isl_basic_map *model);
 struct isl_map *isl_map_dup(struct isl_map *map);
 __isl_give isl_map *isl_map_add_basic_map(__isl_take isl_map *map,
 						__isl_take isl_basic_map *bmap);
-__isl_give isl_map *isl_map_identity(__isl_take isl_dim *dim);
+__isl_give isl_map *isl_map_identity(__isl_take isl_space *dim);
 struct isl_map *isl_map_identity_like(struct isl_map *model);
 struct isl_map *isl_map_identity_like_basic_map(struct isl_basic_map *model);
-__isl_give isl_map *isl_map_lex_lt_first(__isl_take isl_dim *dim, unsigned n);
-__isl_give isl_map *isl_map_lex_le_first(__isl_take isl_dim *dim, unsigned n);
-__isl_give isl_map *isl_map_lex_lt(__isl_take isl_dim *set_dim);
-__isl_give isl_map *isl_map_lex_le(__isl_take isl_dim *set_dim);
-__isl_give isl_map *isl_map_lex_gt_first(__isl_take isl_dim *dim, unsigned n);
-__isl_give isl_map *isl_map_lex_ge_first(__isl_take isl_dim *dim, unsigned n);
-__isl_give isl_map *isl_map_lex_gt(__isl_take isl_dim *set_dim);
-__isl_give isl_map *isl_map_lex_ge(__isl_take isl_dim *set_dim);
+__isl_give isl_map *isl_map_lex_lt_first(__isl_take isl_space *dim, unsigned n);
+__isl_give isl_map *isl_map_lex_le_first(__isl_take isl_space *dim, unsigned n);
+__isl_give isl_map *isl_map_lex_lt(__isl_take isl_space *set_dim);
+__isl_give isl_map *isl_map_lex_le(__isl_take isl_space *set_dim);
+__isl_give isl_map *isl_map_lex_gt_first(__isl_take isl_space *dim, unsigned n);
+__isl_give isl_map *isl_map_lex_ge_first(__isl_take isl_space *dim, unsigned n);
+__isl_give isl_map *isl_map_lex_gt(__isl_take isl_space *set_dim);
+__isl_give isl_map *isl_map_lex_ge(__isl_take isl_space *set_dim);
 struct isl_map *isl_map_finalize(struct isl_map *map);
 void isl_map_free(__isl_take isl_map *map);
 __isl_give isl_map *isl_map_copy(__isl_keep isl_map *map);
@@ -395,7 +397,8 @@ __isl_give isl_basic_map *isl_basic_map_from_domain_and_range(
 	__isl_take isl_basic_set *domain, __isl_take isl_basic_set *range);
 __isl_give isl_map *isl_map_from_domain_and_range(__isl_take isl_set *domain,
 	__isl_take isl_set *range);
-struct isl_map *isl_map_from_set(struct isl_set *set, struct isl_dim *dim);
+__isl_give isl_map *isl_map_from_set(__isl_take isl_set *set,
+	__isl_take isl_space *dim);
 struct isl_set *isl_set_from_map(struct isl_map *map);
 __isl_give isl_basic_map *isl_map_sample(__isl_take isl_map *map);
 
@@ -411,7 +414,7 @@ int isl_map_plain_is_injective(__isl_keep isl_map *map);
 int isl_map_is_injective(__isl_keep isl_map *map);
 int isl_map_is_bijective(__isl_keep isl_map *map);
 int isl_map_is_translation(__isl_keep isl_map *map);
-int isl_map_has_equal_dim(__isl_keep isl_map *map1, __isl_keep isl_map *map2);
+int isl_map_has_equal_space(__isl_keep isl_map *map1, __isl_keep isl_map *map2);
 
 int isl_basic_map_can_zip(__isl_keep isl_basic_map *bmap);
 int isl_map_can_zip(__isl_keep isl_map *map);
@@ -472,7 +475,7 @@ __isl_give isl_map *isl_map_lex_gt_map(__isl_take isl_map *map1,
 	__isl_take isl_map *map2);
 
 __isl_give isl_map *isl_map_align_params(__isl_take isl_map *map,
-	__isl_take isl_dim *model);
+	__isl_take isl_space *model);
 
 __isl_give isl_mat *isl_basic_map_equalities_matrix(
 		__isl_keep isl_basic_map *bmap, enum isl_dim_type c1,
@@ -483,17 +486,19 @@ __isl_give isl_mat *isl_basic_map_inequalities_matrix(
 		enum isl_dim_type c2, enum isl_dim_type c3,
 		enum isl_dim_type c4, enum isl_dim_type c5);
 __isl_give isl_basic_map *isl_basic_map_from_constraint_matrices(
-	__isl_take isl_dim *dim,
+	__isl_take isl_space *dim,
 	__isl_take isl_mat *eq, __isl_take isl_mat *ineq, enum isl_dim_type c1,
 	enum isl_dim_type c2, enum isl_dim_type c3,
 	enum isl_dim_type c4, enum isl_dim_type c5);
 
 __isl_give isl_basic_map *isl_basic_map_from_aff(__isl_take isl_aff *aff);
 __isl_give isl_basic_map *isl_basic_map_from_aff_list(
-	__isl_take isl_dim *domain_dim, __isl_take isl_aff_list *list);
+	__isl_take isl_space *domain_dim, __isl_take isl_aff_list *list);
 
 #if defined(__cplusplus)
 }
 #endif
+
+#include <isl/dim.h>
 
 #endif

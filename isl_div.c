@@ -10,7 +10,7 @@
 #include <isl_map_private.h>
 #include <isl_div_private.h>
 #include <isl/map.h>
-#include <isl_dim_private.h>
+#include <isl_space_private.h>
 #include <isl/seq.h>
 #include <isl/aff.h>
 
@@ -21,7 +21,7 @@ isl_ctx *isl_div_get_ctx(__isl_keep isl_div *div)
 
 static unsigned n(struct isl_div *d, enum isl_dim_type type)
 {
-	struct isl_dim *dim = d->bmap->dim;
+	isl_space *dim = d->bmap->dim;
 	switch (type) {
 	case isl_dim_param:	return dim->nparam;
 	case isl_dim_in:	return dim->n_in;
@@ -38,7 +38,7 @@ unsigned isl_div_dim(__isl_keep isl_div *div, enum isl_dim_type type)
 
 static unsigned offset(struct isl_div *d, enum isl_dim_type type)
 {
-	struct isl_dim *dim = d->bmap->dim;
+	isl_space *dim = d->bmap->dim;
 	switch (type) {
 	case isl_dim_param: return 1 + 1;
 	case isl_dim_in:    return 1 + 1 + dim->nparam;
@@ -88,14 +88,14 @@ __isl_give isl_div *isl_div_div(__isl_take isl_div *div, int pos)
 	return isl_basic_map_div(bmap, pos);
 }
 
-struct isl_div *isl_div_alloc(struct isl_dim *dim)
+__isl_give isl_div *isl_div_alloc(__isl_take isl_space *dim)
 {
 	struct isl_basic_map *bmap;
 
 	if (!dim)
 		return NULL;
 
-	bmap = isl_basic_map_alloc_dim(dim, 1, 0, 0);
+	bmap = isl_basic_map_alloc_space(dim, 1, 0, 0);
 	if (!bmap)
 		return NULL;
 

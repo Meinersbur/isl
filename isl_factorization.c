@@ -15,7 +15,7 @@
 
 #include <isl_map_private.h>
 #include <isl_factorization.h>
-#include <isl_dim_private.h>
+#include <isl_space_private.h>
 #include <isl_mat_private.h>
 
 static __isl_give isl_factorizer *isl_factorizer_alloc(
@@ -86,7 +86,7 @@ __isl_give isl_factorizer *isl_factorizer_groups(__isl_keep isl_basic_set *bset,
 	int i;
 	unsigned nvar;
 	unsigned ovar;
-	isl_dim *dim;
+	isl_space *dim;
 	isl_basic_set *dom;
 	isl_basic_set *ran;
 	isl_morph *morph;
@@ -96,16 +96,16 @@ __isl_give isl_factorizer *isl_factorizer_groups(__isl_keep isl_basic_set *bset,
 	if (!bset || !Q || !U)
 		goto error;
 
-	ovar = 1 + isl_dim_offset(bset->dim, isl_dim_set);
+	ovar = 1 + isl_space_offset(bset->dim, isl_dim_set);
 	id = isl_mat_identity(bset->ctx, ovar);
 	Q = isl_mat_diagonal(isl_mat_copy(id), Q);
 	U = isl_mat_diagonal(id, U);
 
 	nvar = isl_basic_set_dim(bset, isl_dim_set);
-	dim = isl_basic_set_get_dim(bset);
-	dom = isl_basic_set_universe(isl_dim_copy(dim));
-	dim = isl_dim_drop(dim, isl_dim_set, 0, nvar);
-	dim = isl_dim_add(dim, isl_dim_set, nvar);
+	dim = isl_basic_set_get_space(bset);
+	dom = isl_basic_set_universe(isl_space_copy(dim));
+	dim = isl_space_drop_dims(dim, isl_dim_set, 0, nvar);
+	dim = isl_space_add_dims(dim, isl_dim_set, nvar);
 	ran = isl_basic_set_universe(dim);
 	morph = isl_morph_alloc(dom, ran, Q, U);
 	f = isl_factorizer_alloc(morph, n);
@@ -276,9 +276,9 @@ __isl_give isl_factorizer *isl_basic_set_factorizer(
 	if (!H)
 		return NULL;
 	isl_mat_sub_copy(bset->ctx, H->row, bset->eq, bset->n_eq,
-		0, 1 + isl_dim_offset(bset->dim, isl_dim_set), nvar);
+		0, 1 + isl_space_offset(bset->dim, isl_dim_set), nvar);
 	isl_mat_sub_copy(bset->ctx, H->row + bset->n_eq, bset->ineq, bset->n_ineq,
-		0, 1 + isl_dim_offset(bset->dim, isl_dim_set), nvar);
+		0, 1 + isl_space_offset(bset->dim, isl_dim_set), nvar);
 	H = isl_mat_left_hermite(H, 0, &U, &Q);
 
 	if (init_groups(&g, H) < 0)

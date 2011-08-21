@@ -50,7 +50,7 @@ struct isl_basic_map {
 
 	struct isl_ctx *ctx;
 
-	struct isl_dim *dim;
+	isl_space *dim;
 	unsigned extra;
 
 	unsigned n_eq;
@@ -87,7 +87,7 @@ struct isl_map {
 
 	struct isl_ctx *ctx;
 
-	struct isl_dim *dim;
+	isl_space *dim;
 
 	int n;
 
@@ -103,12 +103,12 @@ __isl_give isl_set *isl_set_realign(__isl_take isl_set *set,
 __isl_give isl_map *isl_map_reset(__isl_take isl_map *map,
 	enum isl_dim_type type);
 
-__isl_give isl_basic_set *isl_basic_set_reset_dim(
-	__isl_take isl_basic_set *bset, __isl_take isl_dim *dim);
-__isl_give isl_basic_map *isl_basic_map_reset_dim(
-	__isl_take isl_basic_map *bmap, __isl_take isl_dim *dim);
-__isl_give isl_map *isl_map_reset_dim(__isl_take isl_map *map,
-	__isl_take isl_dim *dim);
+__isl_give isl_basic_set *isl_basic_set_reset_space(
+	__isl_take isl_basic_set *bset, __isl_take isl_space *dim);
+__isl_give isl_basic_map *isl_basic_map_reset_space(
+	__isl_take isl_basic_map *bmap, __isl_take isl_space *dim);
+__isl_give isl_map *isl_map_reset_space(__isl_take isl_map *map,
+	__isl_take isl_space *dim);
 
 unsigned isl_basic_map_offset(struct isl_basic_map *bmap,
 					enum isl_dim_type type);
@@ -123,11 +123,11 @@ int isl_basic_map_compatible_domain(struct isl_basic_map *bmap,
 int isl_basic_map_compatible_range(struct isl_basic_map *bmap,
 		struct isl_basic_set *bset);
 
-struct isl_basic_map *isl_basic_map_extend_dim(struct isl_basic_map *base,
-		struct isl_dim *dim, unsigned extra,
+struct isl_basic_map *isl_basic_map_extend_space(struct isl_basic_map *base,
+		__isl_take isl_space *dim, unsigned extra,
 		unsigned n_eq, unsigned n_ineq);
-struct isl_basic_set *isl_basic_set_extend_dim(struct isl_basic_set *base,
-		struct isl_dim *dim, unsigned extra,
+struct isl_basic_set *isl_basic_set_extend_space(struct isl_basic_set *base,
+		__isl_take isl_space *dim, unsigned extra,
 		unsigned n_eq, unsigned n_ineq);
 struct isl_basic_set *isl_basic_set_add_constraints(struct isl_basic_set *bset1,
 		struct isl_basic_set *bset2, unsigned pos);
@@ -138,12 +138,14 @@ struct isl_set *isl_set_grow(struct isl_set *set, int n);
 int isl_basic_set_contains(struct isl_basic_set *bset, struct isl_vec *vec);
 int isl_basic_map_contains(struct isl_basic_map *bmap, struct isl_vec *vec);
 
-struct isl_basic_set *isl_basic_set_alloc_dim(struct isl_dim *dim,
+__isl_give isl_basic_set *isl_basic_set_alloc_space(__isl_take isl_space *dim,
 		unsigned extra, unsigned n_eq, unsigned n_ineq);
-struct isl_set *isl_set_alloc_dim(struct isl_dim *dim, int n, unsigned flags);
-struct isl_basic_map *isl_basic_map_alloc_dim(struct isl_dim *dim,
+__isl_give isl_set *isl_set_alloc_space(__isl_take isl_space *dim, int n,
+	unsigned flags);
+__isl_give isl_basic_map *isl_basic_map_alloc_space(__isl_take isl_space *dim,
 		unsigned extra, unsigned n_eq, unsigned n_ineq);
-struct isl_map *isl_map_alloc_dim(struct isl_dim *dim, int n, unsigned flags);
+__isl_give isl_map *isl_map_alloc_space(__isl_take isl_space *dim, int n,
+	unsigned flags);
 
 unsigned isl_basic_map_total_dim(const struct isl_basic_map *bmap);
 

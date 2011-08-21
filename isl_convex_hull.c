@@ -647,8 +647,8 @@ static struct isl_basic_set *extend(struct isl_basic_set *hull,
 		if (!facet || !hull_facet)
 			goto error;
 		hull = isl_basic_set_cow(hull);
-		hull = isl_basic_set_extend_dim(hull,
-			isl_dim_copy(hull->dim), 0, 0, facet->n_ineq);
+		hull = isl_basic_set_extend_space(hull,
+			isl_space_copy(hull->dim), 0, 0, facet->n_ineq);
 		if (!hull)
 			goto error;
 		for (j = 0; j < facet->n_ineq; ++j) {
@@ -810,9 +810,9 @@ static struct isl_basic_set *convex_hull_0d(struct isl_set *set)
 		return NULL;
 
 	if (isl_set_is_empty(set))
-		convex_hull = isl_basic_set_empty(isl_dim_copy(set->dim));
+		convex_hull = isl_basic_set_empty(isl_space_copy(set->dim));
 	else
-		convex_hull = isl_basic_set_universe(isl_dim_copy(set->dim));
+		convex_hull = isl_basic_set_universe(isl_space_copy(set->dim));
 	isl_set_free(set);
 	return convex_hull;
 }
@@ -961,7 +961,7 @@ static struct isl_basic_set *induced_lineality_space(
 		goto error;
 
 	dim = isl_basic_set_total_dim(bset1);
-	lin = isl_basic_set_alloc_dim(isl_basic_set_get_dim(bset1), 0,
+	lin = isl_basic_set_alloc_space(isl_basic_set_get_space(bset1), 0,
 					bset1->n_eq + bset2->n_eq,
 					bset1->n_ineq + bset2->n_ineq);
 	lin = isl_basic_set_set_rational(lin);
@@ -1075,7 +1075,7 @@ error:
 static struct isl_basic_set *valid_direction_lp(
 	struct isl_basic_set *bset1, struct isl_basic_set *bset2)
 {
-	struct isl_dim *dim;
+	isl_space *dim;
 	struct isl_basic_set *lp;
 	unsigned d;
 	int n;
@@ -1086,8 +1086,8 @@ static struct isl_basic_set *valid_direction_lp(
 	d = 1 + isl_basic_set_total_dim(bset1);
 	n = 2 +
 	    2 * bset1->n_eq + bset1->n_ineq + 2 * bset2->n_eq + bset2->n_ineq;
-	dim = isl_dim_set_alloc(bset1->ctx, 0, n);
-	lp = isl_basic_set_alloc_dim(dim, 0, d, n);
+	dim = isl_space_set_alloc(bset1->ctx, 0, n);
+	lp = isl_basic_set_alloc_space(dim, 0, d, n);
 	if (!lp)
 		goto error;
 	for (i = 0; i < n; ++i) {
@@ -1322,7 +1322,7 @@ static struct isl_basic_set *convex_hull_pair_pointed(
 
 	bset1 = homogeneous_map(bset1, isl_mat_copy(T2));
 	bset2 = homogeneous_map(bset2, T2);
-	set = isl_set_alloc_dim(isl_basic_set_get_dim(bset1), 2, 0);
+	set = isl_set_alloc_space(isl_basic_set_get_space(bset1), 2, 0);
 	set = isl_set_add_basic_set(set, bset1);
 	set = isl_set_add_basic_set(set, bset2);
 	hull = uset_convex_hull(set);
@@ -1395,7 +1395,7 @@ static struct isl_basic_set *convex_hull_pair(struct isl_basic_set *bset1,
 	}
 	if (lin->n_eq < isl_basic_set_total_dim(lin)) {
 		struct isl_set *set;
-		set = isl_set_alloc_dim(isl_basic_set_get_dim(bset1), 2, 0);
+		set = isl_set_alloc_space(isl_basic_set_get_space(bset1), 2, 0);
 		set = isl_set_add_basic_set(set, bset1);
 		set = isl_set_add_basic_set(set, bset2);
 		return modulo_lineality(set, lin);
@@ -1425,7 +1425,7 @@ struct isl_basic_set *isl_basic_set_lineality_space(struct isl_basic_set *bset)
 	isl_assert(bset->ctx, bset->n_div == 0, goto error);
 	dim = isl_basic_set_total_dim(bset);
 
-	lin = isl_basic_set_alloc_dim(isl_basic_set_get_dim(bset), 0, dim, 0);
+	lin = isl_basic_set_alloc_space(isl_basic_set_get_space(bset), 0, dim, 0);
 	if (!lin)
 		goto error;
 	for (i = 0; i < bset->n_eq; ++i) {
@@ -1467,12 +1467,12 @@ static struct isl_basic_set *uset_combined_lineality_space(struct isl_set *set)
 	if (!set)
 		return NULL;
 	if (set->n == 0) {
-		struct isl_dim *dim = isl_set_get_dim(set);
+		isl_space *dim = isl_set_get_space(set);
 		isl_set_free(set);
 		return isl_basic_set_empty(dim);
 	}
 
-	lin = isl_set_alloc_dim(isl_set_get_dim(set), set->n, 0);
+	lin = isl_set_alloc_space(isl_set_get_space(set), set->n, 0);
 	for (i = 0; i < set->n; ++i)
 		lin = isl_set_add_basic_set(lin,
 		    isl_basic_set_lineality_space(isl_basic_set_copy(set->p[i])));
@@ -1670,7 +1670,7 @@ static struct isl_basic_set *common_constraints(struct isl_basic_set *hull,
 	if (isl_hash_table_init(hull->ctx, table, min_constraints))
 		goto error;
 
-	total = isl_dim_total(set->dim);
+	total = isl_space_dim(set->dim, isl_dim_all);
 	for (i = 0; i < set->p[best]->n_ineq; ++i) {
 		constraints[i].c = isl_mat_sub_alloc6(hull->ctx,
 			set->p[best]->ineq + i, 0, 1, 0, 1 + total);
@@ -1767,7 +1767,7 @@ static struct isl_basic_set *proto_hull(struct isl_set *set, int *is_hull)
 		n_ineq += set->p[i]->n_eq;
 		n_ineq += set->p[i]->n_ineq;
 	}
-	hull = isl_basic_set_alloc_dim(isl_dim_copy(set->dim), 0, 0, n_ineq);
+	hull = isl_basic_set_alloc_space(isl_space_copy(set->dim), 0, 0, n_ineq);
 	hull = isl_basic_set_set_rational(hull);
 	if (!hull)
 		return NULL;
@@ -1853,7 +1853,7 @@ static struct isl_basic_set *uset_convex_hull_wrap_bounded(struct isl_set *set)
 		goto error;
 
 	if (isl_set_n_dim(set) == 0) {
-		convex_hull = isl_basic_set_universe(isl_dim_copy(set->dim));
+		convex_hull = isl_basic_set_universe(isl_space_copy(set->dim));
 		isl_set_free(set);
 		convex_hull = isl_basic_set_set_rational(convex_hull);
 		return convex_hull;
@@ -2279,7 +2279,7 @@ static struct isl_basic_set *uset_simple_hull(struct isl_set *set)
 		n_ineq += 2 * set->p[i]->n_eq + set->p[i]->n_ineq;
 	}
 
-	hull = isl_basic_set_alloc_dim(isl_dim_copy(set->dim), 0, 0, n_ineq);
+	hull = isl_basic_set_alloc_space(isl_space_copy(set->dim), 0, 0, n_ineq);
 	if (!hull)
 		goto error;
 

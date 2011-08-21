@@ -8,11 +8,12 @@
  * 91893 Orsay, France 
  */
 
+#define ISL_DIM_H
 #include <isl_map_private.h>
 #include <isl_union_map_private.h>
 #include <isl_polynomial_private.h>
 #include <isl_point_private.h>
-#include <isl_dim_private.h>
+#include <isl_space_private.h>
 #include <isl/lp.h>
 #include <isl/seq.h>
 #include <isl_mat_private.h>
@@ -33,7 +34,7 @@ enum isl_fold isl_fold_type_negate(enum isl_fold type)
 }
 
 static __isl_give isl_qpolynomial_fold *qpolynomial_fold_alloc(
-	enum isl_fold type, __isl_take isl_dim *dim, int n)
+	enum isl_fold type, __isl_take isl_space *dim, int n)
 {
 	isl_qpolynomial_fold *fold;
 
@@ -55,7 +56,7 @@ static __isl_give isl_qpolynomial_fold *qpolynomial_fold_alloc(
 
 	return fold;
 error:
-	isl_dim_free(dim);
+	isl_space_free(dim);
 	return NULL;
 }
 
@@ -64,14 +65,14 @@ isl_ctx *isl_qpolynomial_fold_get_ctx(__isl_keep isl_qpolynomial_fold *fold)
 	return fold ? fold->dim->ctx : NULL;
 }
 
-__isl_give isl_dim *isl_qpolynomial_fold_get_dim(
+__isl_give isl_space *isl_qpolynomial_fold_get_space(
 	__isl_keep isl_qpolynomial_fold *fold)
 {
-	return fold ? isl_dim_copy(fold->dim) : NULL;
+	return fold ? isl_space_copy(fold->dim) : NULL;
 }
 
-__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_reset_dim(
-	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_dim *dim)
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_reset_space(
+	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_space *dim)
 {
 	int i;
 
@@ -80,19 +81,19 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_reset_dim(
 		goto error;
 
 	for (i = 0; i < fold->n; ++i) {
-		fold->qp[i] = isl_qpolynomial_reset_dim(fold->qp[i],
-							isl_dim_copy(dim));
+		fold->qp[i] = isl_qpolynomial_reset_space(fold->qp[i],
+							isl_space_copy(dim));
 		if (!fold->qp[i])
 			goto error;
 	}
 
-	isl_dim_free(fold->dim);
+	isl_space_free(fold->dim);
 	fold->dim = dim;
 
 	return fold;
 error:
 	isl_qpolynomial_fold_free(fold);
-	isl_dim_free(dim);
+	isl_space_free(dim);
 	return NULL;
 }
 
@@ -124,7 +125,7 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_set_dim_name(
 	fold = isl_qpolynomial_fold_cow(fold);
 	if (!fold)
 		return NULL;
-	fold->dim = isl_dim_set_name(fold->dim, type, pos, s);
+	fold->dim = isl_space_set_dim_name(fold->dim, type, pos, s);
 	if (!fold->dim)
 		goto error;
 
@@ -155,7 +156,7 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_drop_dims(
 	fold = isl_qpolynomial_fold_cow(fold);
 	if (!fold)
 		return NULL;
-	fold->dim = isl_dim_drop(fold->dim, type, first, n);
+	fold->dim = isl_space_drop_dims(fold->dim, type, first, n);
 	if (!fold->dim)
 		goto error;
 
@@ -180,13 +181,13 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_insert_dims(
 
 	if (!fold)
 		return NULL;
-	if (n == 0 && !isl_dim_is_named_or_nested(fold->dim, type))
+	if (n == 0 && !isl_space_is_named_or_nested(fold->dim, type))
 		return fold;
 
 	fold = isl_qpolynomial_fold_cow(fold);
 	if (!fold)
 		return NULL;
-	fold->dim = isl_dim_insert(fold->dim, type, first, n);
+	fold->dim = isl_space_insert_dims(fold->dim, type, first, n);
 	if (!fold->dim)
 		goto error;
 
@@ -300,7 +301,7 @@ static int isl_qpolynomial_sign(__isl_keep isl_set *set,
 	if (!rec)
 		return 0;
 
-	d = isl_dim_total(qp->dim);
+	d = isl_space_dim(qp->dim, isl_dim_all);
 	v = isl_vec_alloc(set->ctx, 2 + d);
 	if (!v)
 		return 0;
@@ -318,17 +319,17 @@ static int isl_qpolynomial_sign(__isl_keep isl_set *set,
 		isl_qpolynomial *r, *q;
 		isl_qpolynomial *t;
 
-		min = isl_qpolynomial_cst(isl_dim_copy(qp->dim), l);
-		base = isl_qpolynomial_var_pow(isl_dim_copy(qp->dim),
+		min = isl_qpolynomial_cst(isl_space_copy(qp->dim), l);
+		base = isl_qpolynomial_var_pow(isl_space_copy(qp->dim),
 						qp->upoly->var, 1);
 
-		r = isl_qpolynomial_alloc(isl_dim_copy(qp->dim), 0,
+		r = isl_qpolynomial_alloc(isl_space_copy(qp->dim), 0,
 					  isl_upoly_copy(rec->p[rec->n - 1]));
 		q = isl_qpolynomial_copy(r);
 
 		for (i = rec->n - 2; i >= 0; --i) {
 			r = isl_qpolynomial_mul(r, isl_qpolynomial_copy(min));
-			t = isl_qpolynomial_alloc(isl_dim_copy(qp->dim), 0,
+			t = isl_qpolynomial_alloc(isl_space_copy(qp->dim), 0,
 						  isl_upoly_copy(rec->p[i]));
 			r = isl_qpolynomial_add(r, t);
 			if (i == 0)
@@ -376,7 +377,7 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_fold_on_domain(
 		goto error;
 
 	isl_assert(fold1->dim->ctx, fold1->type == fold2->type, goto error);
-	isl_assert(fold1->dim->ctx, isl_dim_equal(fold1->dim, fold2->dim),
+	isl_assert(fold1->dim->ctx, isl_space_is_equal(fold1->dim, fold2->dim),
 			goto error);
 
 	better = fold1->type == isl_fold_max ? -1 : 1;
@@ -391,7 +392,7 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_fold_on_domain(
 		return fold1;
 	}
 
-	res = qpolynomial_fold_alloc(fold1->type, isl_dim_copy(fold1->dim),
+	res = qpolynomial_fold_alloc(fold1->type, isl_space_copy(fold1->dim),
 					fold1->n + fold2->n);
 	if (!res)
 		goto error;
@@ -612,7 +613,7 @@ error:
 #include <isl_union_templ.c>
 
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_empty(enum isl_fold type,
-	__isl_take isl_dim *dim)
+	__isl_take isl_space *dim)
 {
 	return qpolynomial_fold_alloc(type, dim, 0);
 }
@@ -625,7 +626,7 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_alloc(
 	if (!qp)
 		return NULL;
 
-	fold = qpolynomial_fold_alloc(type, isl_dim_copy(qp->dim), 1);
+	fold = qpolynomial_fold_alloc(type, isl_space_copy(qp->dim), 1);
 	if (!fold)
 		goto error;
 
@@ -658,7 +659,7 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_dup(
 	if (!fold)
 		return NULL;
 	dup = qpolynomial_fold_alloc(fold->type,
-					isl_dim_copy(fold->dim), fold->n);
+					isl_space_copy(fold->dim), fold->n);
 	if (!dup)
 		return NULL;
 	
@@ -698,7 +699,7 @@ void isl_qpolynomial_fold_free(__isl_take isl_qpolynomial_fold *fold)
 
 	for (i = 0; i < fold->n; ++i)
 		isl_qpolynomial_free(fold->qp[i]);
-	isl_dim_free(fold->dim);
+	isl_space_free(fold->dim);
 	free(fold);
 }
 
@@ -721,7 +722,7 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_fold(
 		goto error;
 
 	isl_assert(fold1->dim->ctx, fold1->type == fold2->type, goto error);
-	isl_assert(fold1->dim->ctx, isl_dim_equal(fold1->dim, fold2->dim),
+	isl_assert(fold1->dim->ctx, isl_space_is_equal(fold1->dim, fold2->dim),
 			goto error);
 
 	if (isl_qpolynomial_fold_is_empty(fold1)) {
@@ -734,7 +735,7 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_fold(
 		return fold1;
 	}
 
-	res = qpolynomial_fold_alloc(fold1->type, isl_dim_copy(fold1->dim),
+	res = qpolynomial_fold_alloc(fold1->type, isl_space_copy(fold1->dim),
 					fold1->n + fold2->n);
 	if (!res)
 		goto error;
@@ -775,7 +776,7 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_fold(
 	if (!pw1 || !pw2)
 		goto error;
 
-	isl_assert(pw1->dim->ctx, isl_dim_equal(pw1->dim, pw2->dim), goto error);
+	isl_assert(pw1->dim->ctx, isl_space_is_equal(pw1->dim, pw2->dim), goto error);
 
 	if (isl_pw_qpolynomial_fold_is_zero(pw1)) {
 		isl_pw_qpolynomial_fold_free(pw1);
@@ -792,7 +793,7 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_fold(
 			"fold types don't match", goto error);
 
 	n = (pw1->n + 1) * (pw2->n + 1);
-	res = isl_pw_qpolynomial_fold_alloc_(isl_dim_copy(pw1->dim),
+	res = isl_pw_qpolynomial_fold_alloc_(isl_space_copy(pw1->dim),
 						pw1->type, n);
 
 	for (i = 0; i < pw1->n; ++i) {
@@ -849,10 +850,10 @@ __isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_fold_fold_pw_
 	if (!part || !u)
 		goto error;
 
-	isl_assert(u->dim->ctx, isl_dim_match(part->dim, isl_dim_param, u->dim,
+	isl_assert(u->dim->ctx, isl_space_match(part->dim, isl_dim_param, u->dim,
 					      isl_dim_param), goto error);
 
-	hash = isl_dim_get_hash(part->dim);
+	hash = isl_space_get_hash(part->dim);
 	entry = isl_hash_table_find(u->dim->ctx, &u->table, hash,
 				    &has_dim, part->dim, 1);
 	if (!entry)
@@ -916,7 +917,7 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_from_pw_qpolynomial(
 	if (!pwqp)
 		return NULL;
 	
-	pwf = isl_pw_qpolynomial_fold_alloc_(isl_dim_copy(pwqp->dim), type,
+	pwf = isl_pw_qpolynomial_fold_alloc_(isl_space_copy(pwqp->dim), type,
 						pwqp->n);
 
 	for (i = 0; i < pwqp->n; ++i)
@@ -958,13 +959,13 @@ __isl_give isl_qpolynomial *isl_qpolynomial_fold_eval(
 
 	if (!fold || !pnt)
 		goto error;
-	isl_assert(pnt->dim->ctx, isl_dim_equal(pnt->dim, fold->dim), goto error);
+	isl_assert(pnt->dim->ctx, isl_space_is_equal(pnt->dim, fold->dim), goto error);
 	isl_assert(pnt->dim->ctx,
 		fold->type == isl_fold_max || fold->type == isl_fold_min,
 		goto error);
 
 	if (fold->n == 0)
-		qp = isl_qpolynomial_zero(isl_dim_copy(fold->dim));
+		qp = isl_qpolynomial_zero(isl_space_copy(fold->dim));
 	else {
 		int i;
 		qp = isl_qpolynomial_eval(isl_qpolynomial_copy(fold->qp[0]),
@@ -1011,7 +1012,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_fold_opt_on_domain(
 		goto error;
 
 	if (fold->n == 0) {
-		isl_dim *dim = isl_dim_copy(fold->dim);
+		isl_space *dim = isl_space_copy(fold->dim);
 		isl_set_free(set);
 		isl_qpolynomial_fold_free(fold);
 		return isl_qpolynomial_zero(dim);
@@ -1139,14 +1140,14 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_morph(
 		goto error;
 
 	ctx = fold->dim->ctx;
-	isl_assert(ctx, isl_dim_equal(fold->dim, morph->dom->dim), goto error);
+	isl_assert(ctx, isl_space_is_equal(fold->dim, morph->dom->dim), goto error);
 
 	fold = isl_qpolynomial_fold_cow(fold);
 	if (!fold)
 		goto error;
 
-	isl_dim_free(fold->dim);
-	fold->dim = isl_dim_copy(morph->ran->dim);
+	isl_space_free(fold->dim);
+	fold->dim = isl_space_copy(morph->ran->dim);
 	if (!fold->dim)
 		goto error;
 
@@ -1182,15 +1183,15 @@ enum isl_fold isl_union_pw_qpolynomial_fold_get_type(
 }
 
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_lift(
-	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_dim *dim)
+	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_space *dim)
 {
 	int i;
 
 	if (!fold || !dim)
 		goto error;
 
-	if (isl_dim_equal(fold->dim, dim)) {
-		isl_dim_free(dim);
+	if (isl_space_is_equal(fold->dim, dim)) {
+		isl_space_free(dim);
 		return fold;
 	}
 
@@ -1198,24 +1199,24 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_lift(
 	if (!fold)
 		goto error;
 
-	isl_dim_free(fold->dim);
-	fold->dim = isl_dim_copy(dim);
+	isl_space_free(fold->dim);
+	fold->dim = isl_space_copy(dim);
 	if (!fold->dim)
 		goto error;
 
 	for (i = 0; i < fold->n; ++i) {
 		fold->qp[i] = isl_qpolynomial_lift(fold->qp[i],
-						isl_dim_copy(dim));
+						isl_space_copy(dim));
 		if (!fold->qp[i])
 			goto error;
 	}
 
-	isl_dim_free(dim);
+	isl_space_free(dim);
 
 	return fold;
 error:
 	isl_qpolynomial_fold_free(fold);
-	isl_dim_free(dim);
+	isl_space_free(dim);
 	return NULL;
 }
 
@@ -1249,7 +1250,7 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_move_dims(
 	if (!fold)
 		return NULL;
 
-	fold->dim = isl_dim_move(fold->dim, dst_type, dst_pos,
+	fold->dim = isl_space_move_dims(fold->dim, dst_type, dst_pos,
 						src_type, src_pos, n);
 	if (!fold->dim)
 		goto error;
@@ -1308,7 +1309,7 @@ static int add_pwqp(__isl_take isl_pw_qpolynomial *pwqp, void *user)
 	upwf = (isl_union_pw_qpolynomial_fold **)user;
 
 	ctx = pwqp->dim->ctx;
-	hash = isl_dim_get_hash(pwqp->dim);
+	hash = isl_space_get_hash(pwqp->dim);
 	entry = isl_hash_table_find(ctx, &(*upwf)->table,
 				     hash, &has_dim, pwqp->dim, 1);
 	if (!entry)
@@ -1338,9 +1339,9 @@ __isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_fold_add_unio
 	__isl_take isl_union_pw_qpolynomial *upwqp)
 {
 	upwf = isl_union_pw_qpolynomial_fold_align_params(upwf,
-				isl_union_pw_qpolynomial_get_dim(upwqp));
+				isl_union_pw_qpolynomial_get_space(upwqp));
 	upwqp = isl_union_pw_qpolynomial_align_params(upwqp,
-				isl_union_pw_qpolynomial_fold_get_dim(upwf));
+				isl_union_pw_qpolynomial_fold_get_space(upwf));
 
 	upwf = isl_union_pw_qpolynomial_fold_cow(upwf);
 	if (!upwf || !upwqp)
@@ -1359,13 +1360,13 @@ error:
 	return NULL;
 }
 
-static int compatible_range(__isl_keep isl_dim *dim1, __isl_keep isl_dim *dim2)
+static int compatible_range(__isl_keep isl_space *dim1, __isl_keep isl_space *dim2)
 {
 	int m;
-	m = isl_dim_match(dim1, isl_dim_param, dim2, isl_dim_param);
+	m = isl_space_match(dim1, isl_dim_param, dim2, isl_dim_param);
 	if (m < 0 || !m)
 		return m;
-	return isl_dim_tuple_match(dim1, isl_dim_out, dim2, isl_dim_set);
+	return isl_space_tuple_match(dim1, isl_dim_out, dim2, isl_dim_set);
 }
 
 /* Compute the intersection of the range of the map and the domain
@@ -1383,8 +1384,8 @@ __isl_give isl_pw_qpolynomial_fold *isl_map_apply_pw_qpolynomial_fold(
 {
 	isl_ctx *ctx;
 	isl_set *dom;
-	isl_dim *map_dim;
-	isl_dim *pwf_dim;
+	isl_space *map_dim;
+	isl_space *pwf_dim;
 	unsigned n_in;
 	int ok;
 
@@ -1392,11 +1393,11 @@ __isl_give isl_pw_qpolynomial_fold *isl_map_apply_pw_qpolynomial_fold(
 	if (!ctx)
 		goto error;
 
-	map_dim = isl_map_get_dim(map);
-	pwf_dim = isl_pw_qpolynomial_fold_get_dim(pwf);
+	map_dim = isl_map_get_space(map);
+	pwf_dim = isl_pw_qpolynomial_fold_get_space(pwf);
 	ok = compatible_range(map_dim, pwf_dim);
-	isl_dim_free(map_dim);
-	isl_dim_free(pwf_dim);
+	isl_space_free(map_dim);
+	isl_space_free(pwf_dim);
 	if (!ok)
 		isl_die(ctx, isl_error_invalid, "incompatible dimensions",
 			goto error);
@@ -1405,7 +1406,7 @@ __isl_give isl_pw_qpolynomial_fold *isl_map_apply_pw_qpolynomial_fold(
 	pwf = isl_pw_qpolynomial_fold_insert_dims(pwf, isl_dim_set, 0, n_in);
 
 	dom = isl_map_wrap(map);
-	pwf = isl_pw_qpolynomial_fold_reset_dim(pwf, isl_set_get_dim(dom));
+	pwf = isl_pw_qpolynomial_fold_reset_space(pwf, isl_set_get_space(dom));
 
 	pwf = isl_pw_qpolynomial_fold_intersect_domain(pwf, dom);
 	pwf = isl_pw_qpolynomial_fold_bound(pwf, tight);
@@ -1437,16 +1438,16 @@ struct isl_apply_fold_data {
 static int pw_qpolynomial_fold_apply(__isl_take isl_pw_qpolynomial_fold *pwf,
 	void *user)
 {
-	isl_dim *map_dim;
-	isl_dim *pwf_dim;
+	isl_space *map_dim;
+	isl_space *pwf_dim;
 	struct isl_apply_fold_data *data = user;
 	int ok;
 
-	map_dim = isl_map_get_dim(data->map);
-	pwf_dim = isl_pw_qpolynomial_fold_get_dim(pwf);
+	map_dim = isl_map_get_space(data->map);
+	pwf_dim = isl_pw_qpolynomial_fold_get_space(pwf);
 	ok = compatible_range(map_dim, pwf_dim);
-	isl_dim_free(map_dim);
-	isl_dim_free(pwf_dim);
+	isl_space_free(map_dim);
+	isl_space_free(pwf_dim);
 
 	if (ok) {
 		pwf = isl_map_apply_pw_qpolynomial_fold(isl_map_copy(data->map),
@@ -1476,18 +1477,18 @@ __isl_give isl_union_pw_qpolynomial_fold *isl_union_map_apply_union_pw_qpolynomi
 	__isl_take isl_union_map *umap,
 	__isl_take isl_union_pw_qpolynomial_fold *upwf, int *tight)
 {
-	isl_dim *dim;
+	isl_space *dim;
 	enum isl_fold type;
 	struct isl_apply_fold_data data;
 
 	upwf = isl_union_pw_qpolynomial_fold_align_params(upwf,
-				isl_union_map_get_dim(umap));
+				isl_union_map_get_space(umap));
 	umap = isl_union_map_align_params(umap,
-				isl_union_pw_qpolynomial_fold_get_dim(upwf));
+				isl_union_pw_qpolynomial_fold_get_space(upwf));
 
 	data.upwf = upwf;
 	data.tight = tight ? 1 : 0;
-	dim = isl_union_pw_qpolynomial_fold_get_dim(upwf);
+	dim = isl_union_pw_qpolynomial_fold_get_space(upwf);
 	type = isl_union_pw_qpolynomial_fold_get_type(upwf);
 	data.res = isl_union_pw_qpolynomial_fold_zero(dim, type);
 	if (isl_union_map_foreach_map(umap, &map_apply, &data) < 0)
@@ -1532,7 +1533,7 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_realign(
 			goto error;
 	}
 
-	fold = isl_qpolynomial_fold_reset_dim(fold, isl_dim_copy(r->dim));
+	fold = isl_qpolynomial_fold_reset_space(fold, isl_space_copy(r->dim));
 
 	isl_reordering_free(r);
 
@@ -1552,7 +1553,7 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_mul_isl_int(
 		return fold;
 	if (fold && isl_int_is_zero(v)) {
 		isl_qpolynomial_fold *zero;
-		isl_dim *dim = isl_dim_copy(fold->dim);
+		isl_space *dim = isl_space_copy(fold->dim);
 		zero = isl_qpolynomial_fold_empty(fold->type, dim);
 		isl_qpolynomial_fold_free(fold);
 		return zero;

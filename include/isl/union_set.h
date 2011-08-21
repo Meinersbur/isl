@@ -9,12 +9,12 @@ extern "C" {
 #endif
 
 __isl_give isl_union_set *isl_union_set_from_set(__isl_take isl_set *set);
-__isl_give isl_union_set *isl_union_set_empty(__isl_take isl_dim *dim);
+__isl_give isl_union_set *isl_union_set_empty(__isl_take isl_space *dim);
 __isl_give isl_union_set *isl_union_set_copy(__isl_keep isl_union_set *uset);
 void *isl_union_set_free(__isl_take isl_union_set *uset);
 
 isl_ctx *isl_union_set_get_ctx(__isl_keep isl_union_set *uset);
-__isl_give isl_dim *isl_union_set_get_dim(__isl_keep isl_union_set *uset);
+__isl_give isl_space *isl_union_set_get_space(__isl_keep isl_union_set *uset);
 
 __isl_give isl_union_set *isl_union_set_universe(
 	__isl_take isl_union_set *uset);
@@ -63,9 +63,9 @@ int isl_union_set_n_set(__isl_keep isl_union_set *uset);
 int isl_union_set_foreach_set(__isl_keep isl_union_set *uset,
 	int (*fn)(__isl_take isl_set *set, void *user), void *user);
 __isl_give int isl_union_set_contains(__isl_keep isl_union_set *uset,
-	__isl_keep isl_dim *dim);
+	__isl_keep isl_space *dim);
 __isl_give isl_set *isl_union_set_extract_set(__isl_keep isl_union_set *uset,
-	__isl_take isl_dim *dim);
+	__isl_take isl_space *dim);
 __isl_give isl_set *isl_set_from_union_set(__isl_take isl_union_set *uset);
 int isl_union_set_foreach_point(__isl_keep isl_union_set *uset,
 	int (*fn)(__isl_take isl_point *pnt, void *user), void *user);
@@ -99,5 +99,7 @@ void isl_union_set_dump(__isl_keep isl_union_set *uset);
 #if defined(__cplusplus)
 }
 #endif
+
+#include <isl/dim.h>
 
 #endif

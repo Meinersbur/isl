@@ -34,7 +34,7 @@ struct isl_schedule {
 	int n;
 	int n_band;
 	int n_total_row;
-	isl_dim *dim;
+	isl_space *dim;
 
 	isl_band_list *band_forest;
 

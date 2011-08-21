@@ -23,7 +23,7 @@ int isl_aff_dim(__isl_keep isl_aff *aff, enum isl_dim_type type);
 int isl_aff_involves_dims(__isl_keep isl_aff *aff,
 	enum isl_dim_type type, unsigned first, unsigned n);
 
-__isl_give isl_dim *isl_aff_get_dim(__isl_keep isl_aff *aff);
+__isl_give isl_space *isl_aff_get_space(__isl_keep isl_aff *aff);
 __isl_give isl_local_space *isl_aff_get_local_space(__isl_keep isl_aff *aff);
 
 const char *isl_aff_get_dim_name(__isl_keep isl_aff *aff,
@@ -92,10 +92,10 @@ __isl_give isl_printer *isl_printer_print_aff(__isl_take isl_printer *p,
 void isl_aff_dump(__isl_keep isl_aff *aff);
 
 isl_ctx *isl_pw_aff_get_ctx(__isl_keep isl_pw_aff *pwaff);
-__isl_give isl_dim *isl_pw_aff_get_dim(__isl_keep isl_pw_aff *pwaff);
+__isl_give isl_space *isl_pw_aff_get_space(__isl_keep isl_pw_aff *pwaff);
 
 __isl_give isl_pw_aff *isl_pw_aff_from_aff(__isl_take isl_aff *aff);
-__isl_give isl_pw_aff *isl_pw_aff_empty(__isl_take isl_dim *dim);
+__isl_give isl_pw_aff *isl_pw_aff_empty(__isl_take isl_space *dim);
 __isl_give isl_pw_aff *isl_pw_aff_alloc(__isl_take isl_set *set,
 	__isl_take isl_aff *aff);
 
@@ -116,7 +116,7 @@ int isl_pw_aff_involves_dims(__isl_keep isl_pw_aff *pwaff,
 int isl_pw_aff_is_cst(__isl_keep isl_pw_aff *pwaff);
 
 __isl_give isl_pw_aff *isl_pw_aff_align_params(__isl_take isl_pw_aff *pwaff,
-	__isl_take isl_dim *model);
+	__isl_take isl_space *model);
 
 __isl_give isl_pw_aff *isl_pw_aff_set_tuple_id(__isl_take isl_pw_aff *pwaff,
 	__isl_take isl_id *id);
@@ -204,5 +204,7 @@ __isl_give isl_set *isl_pw_aff_list_gt_set(__isl_take isl_pw_aff_list *list1,
 #if defined(__cplusplus)
 }
 #endif
+
+#include <isl/dim.h>
 
 #endif
