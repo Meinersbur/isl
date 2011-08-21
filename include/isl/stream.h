@@ -12,6 +12,7 @@
 
 #include <stdio.h>
 #include <isl/hash.h>
+#include <isl/aff_type.h>
 #include <isl/obj.h>
 
 #if defined(__cplusplus)

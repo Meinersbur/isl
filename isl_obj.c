@@ -10,6 +10,7 @@
 
 #include <isl/set.h>
 #include <isl/map.h>
+#include <isl/polynomial.h>
 #include <isl/obj.h>
 
 struct isl_int_obj {

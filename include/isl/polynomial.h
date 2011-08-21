@@ -10,13 +10,11 @@
 #include <isl/printer.h>
 #include <isl/union_set.h>
 #include <isl/aff_type.h>
+#include <isl/polynomial_type.h>
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
-
-struct isl_qpolynomial;
-typedef struct isl_qpolynomial isl_qpolynomial;
 
 isl_ctx *isl_qpolynomial_get_ctx(__isl_keep isl_qpolynomial *qp);
 __isl_give isl_dim *isl_qpolynomial_get_dim(__isl_keep isl_qpolynomial *qp);
@@ -100,9 +98,6 @@ __isl_give isl_qpolynomial *isl_qpolynomial_homogenize(
 __isl_give isl_qpolynomial *isl_qpolynomial_align_params(
 	__isl_take isl_qpolynomial *qp, __isl_take isl_dim *model);
 
-struct isl_term;
-typedef struct isl_term isl_term;
-
 isl_ctx *isl_term_get_ctx(__isl_keep isl_term *term);
 
 __isl_give isl_term *isl_term_copy(__isl_keep isl_term *term);
@@ -136,9 +131,6 @@ __isl_give isl_printer *isl_printer_print_qpolynomial(
 void isl_qpolynomial_print(__isl_keep isl_qpolynomial *qp, FILE *out,
 	unsigned output_format);
 void isl_qpolynomial_dump(__isl_keep isl_qpolynomial *qp);
-
-struct isl_pw_qpolynomial;
-typedef struct isl_pw_qpolynomial isl_pw_qpolynomial;
 
 isl_ctx *isl_pw_qpolynomial_get_ctx(__isl_keep isl_pw_qpolynomial *pwqp);
 
@@ -253,15 +245,6 @@ __isl_give isl_pw_qpolynomial *isl_basic_set_multiplicative_call(
 	__isl_take isl_basic_set *bset,
 	__isl_give isl_pw_qpolynomial *(*fn)(__isl_take isl_basic_set *bset));
 
-enum isl_fold {
-	isl_fold_min,
-	isl_fold_max,
-	isl_fold_list
-};
-
-struct isl_qpolynomial_fold;
-typedef struct isl_qpolynomial_fold isl_qpolynomial_fold;
-
 isl_ctx *isl_qpolynomial_fold_get_ctx(__isl_keep isl_qpolynomial_fold *fold);
 enum isl_fold isl_qpolynomial_fold_get_type(__isl_keep isl_qpolynomial_fold *fold);
 
@@ -314,9 +297,6 @@ __isl_give isl_printer *isl_printer_print_qpolynomial_fold(
 void isl_qpolynomial_fold_print(__isl_keep isl_qpolynomial_fold *fold, FILE *out,
 	unsigned output_format);
 void isl_qpolynomial_fold_dump(__isl_keep isl_qpolynomial_fold *fold);
-
-struct isl_pw_qpolynomial_fold;
-typedef struct isl_pw_qpolynomial_fold isl_pw_qpolynomial_fold;
 
 isl_ctx *isl_pw_qpolynomial_fold_get_ctx(__isl_keep isl_pw_qpolynomial_fold *pwf);
 
@@ -422,9 +402,6 @@ __isl_give isl_pw_qpolynomial_fold *isl_map_apply_pw_qpolynomial_fold(
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_to_polynomial(
 	__isl_take isl_pw_qpolynomial *pwqp, int sign);
 
-struct isl_union_pw_qpolynomial;
-typedef struct isl_union_pw_qpolynomial isl_union_pw_qpolynomial;
-
 isl_ctx *isl_union_pw_qpolynomial_get_ctx(
 	__isl_keep isl_union_pw_qpolynomial *upwqp);
 
@@ -480,9 +457,6 @@ __isl_give isl_pw_qpolynomial *isl_union_pw_qpolynomial_extract_pw_qpolynomial(
 
 __isl_give isl_printer *isl_printer_print_union_pw_qpolynomial(
 	__isl_take isl_printer *p, __isl_keep isl_union_pw_qpolynomial *upwqp);
-
-struct isl_union_pw_qpolynomial_fold;
-typedef struct isl_union_pw_qpolynomial_fold isl_union_pw_qpolynomial_fold;
 
 isl_ctx *isl_union_pw_qpolynomial_fold_get_ctx(
 	__isl_keep isl_union_pw_qpolynomial_fold *upwf);

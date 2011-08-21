@@ -215,6 +215,7 @@ pkginclude_HEADERS = \
 	include/isl/options.h \
 	include/isl/point.h \
 	include/isl/polynomial.h \
+	include/isl/polynomial_type.h \
 	include/isl/printer.h \
 	include/isl/schedule.h \
 	include/isl/seq.h \
