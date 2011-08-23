@@ -3025,6 +3025,7 @@ struct isl_basic_map *isl_basic_map_neg(struct isl_basic_map *bmap)
 	for (i = 0; i < bmap->n_div; ++i)
 		for (j = 0; j < n; ++j)
 			isl_int_neg(bmap->div[i][1+off+j], bmap->div[i][1+off+j]);
+	bmap = isl_basic_map_gauss(bmap, NULL);
 	return isl_basic_map_finalize(bmap);
 }
 
