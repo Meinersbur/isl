@@ -2377,6 +2377,50 @@ int test_equal(isl_ctx *ctx)
 	return 0;
 }
 
+static int test_plain_fixed(isl_ctx *ctx, __isl_take isl_map *map,
+	enum isl_dim_type type, unsigned pos, int fixed)
+{
+	int test;
+
+	test = isl_map_plain_is_fixed(map, type, pos, NULL);
+	isl_map_free(map);
+	if (test < 0)
+		return -1;
+	if (test == fixed)
+		return 0;
+	if (fixed)
+		isl_die(ctx, isl_error_unknown,
+			"map not detected as fixed", return -1);
+	else
+		isl_die(ctx, isl_error_unknown,
+			"map detected as fixed", return -1);
+}
+
+int test_fixed(isl_ctx *ctx)
+{
+	const char *str;
+	isl_map *map;
+
+	str = "{ [i] -> [i] }";
+	map = isl_map_read_from_str(ctx, str, -1);
+	if (test_plain_fixed(ctx, map, isl_dim_out, 0, 0))
+		return -1;
+	str = "{ [i] -> [1] }";
+	map = isl_map_read_from_str(ctx, str, -1);
+	if (test_plain_fixed(ctx, map, isl_dim_out, 0, 1))
+		return -1;
+	str = "{ S_1[p1] -> [o0] : o0 = -2 and p1 >= 1 and p1 <= 7 }";
+	map = isl_map_read_from_str(ctx, str, -1);
+	if (test_plain_fixed(ctx, map, isl_dim_out, 0, 1))
+		return -1;
+	map = isl_map_read_from_str(ctx, str, -1);
+	map = isl_map_neg(map);
+	if (test_plain_fixed(ctx, map, isl_dim_out, 0, 1))
+		return -1;
+
+	return 0;
+}
+
 int main()
 {
 	struct isl_ctx *ctx;
@@ -2385,6 +2429,8 @@ int main()
 	assert(srcdir);
 
 	ctx = isl_ctx_alloc();
+	if (test_fixed(ctx) < 0)
+		goto error;
 	if (test_equal(ctx) < 0)
 		goto error;
 	if (test_product(ctx) < 0)
