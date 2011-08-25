@@ -48,10 +48,66 @@ __isl_give isl_space *isl_space_alloc(isl_ctx *ctx,
 	return dim;
 }
 
+/* Mark the space as being that of a set, by setting the domain tuple
+ * to isl_id_none.
+ */
+static __isl_give isl_space *mark_as_set(__isl_take isl_space *space)
+{
+	space = isl_space_cow(space);
+	if (!space)
+		return NULL;
+	space = isl_space_set_tuple_id(space, isl_dim_in, &isl_id_none);
+	return space;
+}
+
+/* Is the space that of a set?
+ */
+int isl_space_is_set(__isl_keep isl_space *space)
+{
+	if (!space)
+		return -1;
+	if (space->n_in != 0 || space->nested[0])
+		return 0;
+	if (space->tuple_id[0] != &isl_id_none)
+		return 0;
+	return 1;
+}
+
 __isl_give isl_space *isl_space_set_alloc(isl_ctx *ctx,
 			unsigned nparam, unsigned dim)
 {
-	return isl_space_alloc(ctx, nparam, 0, dim);
+	isl_space *space;
+	space = isl_space_alloc(ctx, nparam, 0, dim);
+	space = mark_as_set(space);
+	return space;
+}
+
+/* Mark the space as being that of a parameter domain, by setting
+ * both tuples to isl_id_none.
+ */
+static __isl_give isl_space *mark_as_params(isl_space *space)
+{
+	if (!space)
+		return NULL;
+	space = isl_space_set_tuple_id(space, isl_dim_in, &isl_id_none);
+	space = isl_space_set_tuple_id(space, isl_dim_out, &isl_id_none);
+	return space;
+}
+
+/* Is the space that of a parameter domain?
+ */
+int isl_space_is_params(__isl_keep isl_space *space)
+{
+	if (!space)
+		return -1;
+	if (space->n_in != 0 || space->nested[0] ||
+	    space->n_out != 0 || space->nested[1])
+		return 0;
+	if (space->tuple_id[0] != &isl_id_none)
+		return 0;
+	if (space->tuple_id[1] != &isl_id_none)
+		return 0;
+	return 1;
 }
 
 /* Create a space for a parameter domain.
@@ -60,6 +116,7 @@ __isl_give isl_space *isl_space_params_alloc(isl_ctx *ctx, unsigned nparam)
 {
 	isl_space *space;
 	space = isl_space_alloc(ctx, nparam, 0, 0);
+	space = mark_as_params(space);
 	return space;
 }
 
@@ -307,6 +364,12 @@ int isl_space_has_tuple_id(__isl_keep isl_space *dim, enum isl_dim_type type)
 {
 	if (!dim)
 		return -1;
+	if (isl_space_is_params(dim))
+		isl_die(dim->ctx, isl_error_invalid,
+			"parameter spaces don't have tuple ids", return -1);
+	if (isl_space_is_set(dim) && type != isl_dim_set)
+		isl_die(dim->ctx, isl_error_invalid,
+			"set spaces can only have a set id", return -1);
 	if (type != isl_dim_in && type != isl_dim_out)
 		isl_die(dim->ctx, isl_error_invalid,
 			"only input, output and set tuples can have ids",
@@ -317,13 +380,14 @@ int isl_space_has_tuple_id(__isl_keep isl_space *dim, enum isl_dim_type type)
 __isl_give isl_id *isl_space_get_tuple_id(__isl_keep isl_space *dim,
 	enum isl_dim_type type)
 {
+	int has_id;
+
 	if (!dim)
 		return NULL;
-	if (type != isl_dim_in && type != isl_dim_out)
-		isl_die(dim->ctx, isl_error_invalid,
-			"only input, output and set tuples can have ids",
-			return NULL);
-	if (!dim->tuple_id[type - isl_dim_in])
+	has_id = isl_space_has_tuple_id(dim, type);
+	if (has_id < 0)
+		return NULL;
+	if (!has_id)
 		isl_die(dim->ctx, isl_error_invalid,
 			"tuple has no id", return NULL);
 	return isl_id_copy(dim->tuple_id[type - isl_dim_in]);
@@ -947,13 +1011,14 @@ error:
 
 __isl_give isl_space *isl_space_map_from_set(__isl_take isl_space *dim)
 {
+	isl_ctx *ctx;
 	isl_id **ids = NULL;
 
 	if (!dim)
 		return NULL;
-	isl_assert(dim->ctx, dim->n_in == 0, goto error);
-	if (dim->n_out == 0 && !isl_space_is_named_or_nested(dim, isl_dim_out))
-		return dim;
+	ctx = isl_space_get_ctx(dim);
+	if (!isl_space_is_set(dim))
+		isl_die(ctx, isl_error_invalid, "not a set space", goto error);
 	dim = isl_space_cow(dim);
 	if (!dim)
 		return NULL;
@@ -1127,32 +1192,57 @@ __isl_give isl_space *isl_space_domain(__isl_take isl_space *dim)
 	if (!dim)
 		return NULL;
 	dim = isl_space_drop_outputs(dim, 0, dim->n_out);
-	return isl_space_reverse(dim);
+	dim = isl_space_reverse(dim);
+	dim = mark_as_set(dim);
+	return dim;
 }
 
 __isl_give isl_space *isl_space_from_domain(__isl_take isl_space *dim)
 {
-	return isl_space_reverse(dim);
+	if (!dim)
+		return NULL;
+	if (!isl_space_is_set(dim))
+		isl_die(isl_space_get_ctx(dim), isl_error_invalid,
+			"not a set space", goto error);
+	dim = isl_space_reverse(dim);
+	dim = isl_space_reset(dim, isl_dim_out);
+	return dim;
+error:
+	isl_space_free(dim);
+	return NULL;
 }
 
 __isl_give isl_space *isl_space_range(__isl_take isl_space *dim)
 {
 	if (!dim)
 		return NULL;
-	return isl_space_drop_inputs(dim, 0, dim->n_in);
+	dim = isl_space_drop_inputs(dim, 0, dim->n_in);
+	dim = mark_as_set(dim);
+	return dim;
 }
 
 __isl_give isl_space *isl_space_from_range(__isl_take isl_space *dim)
 {
-	return dim;
+	if (!dim)
+		return NULL;
+	if (!isl_space_is_set(dim))
+		isl_die(isl_space_get_ctx(dim), isl_error_invalid,
+			"not a set space", goto error);
+	return isl_space_reset(dim, isl_dim_in);
+error:
+	isl_space_free(dim);
+	return NULL;
 }
 
 __isl_give isl_space *isl_space_params(__isl_take isl_space *space)
 {
+	if (isl_space_is_params(space))
+		return space;
 	space = isl_space_drop_dims(space,
 			    isl_dim_in, 0, isl_space_dim(space, isl_dim_in));
 	space = isl_space_drop_dims(space,
 			    isl_dim_out, 0, isl_space_dim(space, isl_dim_out));
+	space = mark_as_params(space);
 	return space;
 }
 
@@ -1260,7 +1350,7 @@ int isl_space_is_wrapping(__isl_keep isl_space *dim)
 	if (!dim)
 		return -1;
 
-	if (dim->n_in != 0 || dim->tuple_id[0] || dim->nested[0])
+	if (!isl_space_is_set(dim))
 		return 0;
 
 	return dim->nested[1] != NULL;
@@ -1328,6 +1418,8 @@ int isl_space_may_be_set(__isl_keep isl_space *dim)
 {
 	if (!dim)
 		return -1;
+	if (isl_space_is_set(dim))
+		return 1;
 	if (isl_space_dim(dim, isl_dim_in) != 0)
 		return 0;
 	if (isl_space_is_named_or_nested(dim, isl_dim_in))

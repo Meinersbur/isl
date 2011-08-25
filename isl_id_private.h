@@ -23,4 +23,6 @@ struct isl_id {
 
 uint32_t isl_hash_id(uint32_t hash, __isl_keep isl_id *id);
 
+extern isl_id isl_id_none;
+
 #endif

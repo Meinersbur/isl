@@ -40,6 +40,9 @@ __isl_give isl_space *isl_space_params_alloc(isl_ctx *ctx, unsigned nparam);
 __isl_give isl_space *isl_space_copy(__isl_keep isl_space *dim);
 void isl_space_free(__isl_take isl_space *dim);
 
+int isl_space_is_params(__isl_keep isl_space *space);
+int isl_space_is_set(__isl_keep isl_space *space);
+
 __isl_give isl_space *isl_space_set_tuple_name(__isl_take isl_space *dim,
 	enum isl_dim_type type, const char *s);
 const char *isl_space_get_tuple_name(__isl_keep isl_space *dim,

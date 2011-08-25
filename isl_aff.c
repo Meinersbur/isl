@@ -1276,7 +1276,7 @@ __isl_give isl_pw_aff *isl_pw_aff_union_opt(__isl_take isl_pw_aff *pwaff1,
 /* Construct a map with as domain the domain of pwaff and
  * one-dimensional range corresponding to the affine expressions.
  */
-__isl_give isl_map *isl_map_from_pw_aff(__isl_take isl_pw_aff *pwaff)
+static __isl_give isl_map *map_from_pw_aff(__isl_take isl_pw_aff *pwaff)
 {
 	int i;
 	isl_space *dim;
@@ -1306,13 +1306,29 @@ __isl_give isl_map *isl_map_from_pw_aff(__isl_take isl_pw_aff *pwaff)
 	return map;
 }
 
+/* Construct a map with as domain the domain of pwaff and
+ * one-dimensional range corresponding to the affine expressions.
+ */
+__isl_give isl_map *isl_map_from_pw_aff(__isl_take isl_pw_aff *pwaff)
+{
+	if (isl_space_is_params(pwaff->dim))
+		isl_die(isl_pw_aff_get_ctx(pwaff), isl_error_invalid,
+			"space of input is not a map",
+			return isl_pw_aff_free(pwaff));
+	return map_from_pw_aff(pwaff);
+}
+
 /* Construct a one-dimensional set with as parameter domain
  * the domain of pwaff and the single set dimension
  * corresponding to the affine expressions.
  */
 __isl_give isl_set *isl_set_from_pw_aff(__isl_take isl_pw_aff *pwaff)
 {
-	return isl_map_from_pw_aff(pwaff);
+	if (!isl_space_is_params(pwaff->dim))
+		isl_die(isl_pw_aff_get_ctx(pwaff), isl_error_invalid,
+			"space of input is not a set",
+			return isl_pw_aff_free(pwaff));
+	return map_from_pw_aff(pwaff);
 }
 
 /* Return a set containing those elements in the domain

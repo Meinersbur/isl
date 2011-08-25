@@ -685,7 +685,7 @@ static __isl_give isl_map *read_var_list(struct isl_stream *s,
 	struct isl_token *tok;
 
 	if (isl_stream_next_token_is(s, ']'))
-		return map;
+		return isl_map_add_dims(map, type, 0);
 
 	while ((tok = next_token(s)) != NULL) {
 		int new_name = 0;

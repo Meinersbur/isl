@@ -417,7 +417,9 @@ static __isl_give isl_printer *print_space(__isl_keep isl_space *dim,
 {
 	if (rational && !latex)
 		p = isl_printer_print_str(p, "rat: ");
-	if (set)
+	if (isl_space_is_params(dim))
+		;
+	else if (isl_space_is_set(dim))
 		p = print_tuple(dim, p, isl_dim_set, 1, latex, eq);
 	else {
 		p = print_tuple(dim, p, isl_dim_in, 0, latex, eq);
@@ -686,6 +688,20 @@ static __isl_give isl_printer *print_disjuncts(__isl_keep isl_map *map,
 	return p;
 }
 
+/* Print the disjuncts of a map (or set).
+ * If the map turns out to be a universal parameter domain, then
+ * we need to print the colon.  Otherwise, the output looks identical
+ * to the empty set.
+ */
+static __isl_give isl_printer *print_disjuncts_map(__isl_keep isl_map *map,
+	__isl_take isl_printer *p, int set, int latex)
+{
+	if (isl_map_plain_is_universe(map) && isl_space_is_params(map->dim))
+		return isl_printer_print_str(p, s_such_that[latex]);
+	else
+		return print_disjuncts(map, p, set, latex);
+}
+
 struct isl_aff_split {
 	isl_basic_map *aff;
 	isl_map *map;
@@ -841,7 +857,7 @@ static __isl_give isl_printer *print_split_map(__isl_take isl_printer *p,
 		if (i)
 			p = isl_printer_print_str(p, "; ");
 		p = print_space(dim, p, set, 0, rational, split[i].aff);
-		p = print_disjuncts(split[i].map, p, set, 0);
+		p = print_disjuncts_map(split[i].map, p, set, 0);
 	}
 
 	return p;
@@ -861,7 +877,7 @@ static __isl_give isl_printer *isl_map_print_isl_body(__isl_keep isl_map *map,
 		rational = map->n > 0 &&
 		    ISL_F_ISSET(map->p[0], ISL_BASIC_MAP_RATIONAL);
 		p = print_space(map->dim, p, set, 0, rational, NULL);
-		p = print_disjuncts(map, p, set, 0);
+		p = print_disjuncts_map(map, p, set, 0);
 	}
 	free_split(split, map->n);
 	return p;
@@ -889,7 +905,7 @@ static __isl_give isl_printer *print_latex_map(__isl_keep isl_map *map,
 	}
 	p = isl_printer_print_str(p, s_open_set[1]);
 	p = print_space(map->dim, p, set, 1, 0, aff);
-	p = print_disjuncts(map, p, set, 1);
+	p = print_disjuncts_map(map, p, set, 1);
 	p = isl_printer_print_str(p, s_close_set[1]);
 
 	return p;
@@ -1334,8 +1350,7 @@ static __isl_give isl_printer *print_qpolynomial_isl(__isl_take isl_printer *p,
 		p = isl_printer_print_str(p, " -> ");
 	}
 	p = isl_printer_print_str(p, "{ ");
-	if (isl_space_dim(qp->dim, isl_dim_set) > 0 ||
-	    isl_space_is_named_or_nested(qp->dim, isl_dim_set)) {
+	if (!isl_space_is_params(qp->dim)) {
 		p = print_space(qp->dim, p, 1, 0, 0, NULL);
 		p = isl_printer_print_str(p, " -> ");
 	}
@@ -1449,8 +1464,7 @@ static __isl_give isl_printer *isl_pwqp_print_isl_body(
 	for (i = 0; i < pwqp->n; ++i) {
 		if (i)
 			p = isl_printer_print_str(p, "; ");
-		if (isl_space_dim(pwqp->dim, isl_dim_set) > 0 ||
-		    isl_space_is_named_or_nested(pwqp->dim, isl_dim_set)) {
+		if (!isl_space_is_params(pwqp->dim)) {
 			p = print_space(pwqp->p[i].set->dim, p, 1, 0, 0, NULL);
 			p = isl_printer_print_str(p, " -> ");
 		}
@@ -1473,8 +1487,7 @@ static __isl_give isl_printer *print_pw_qpolynomial_isl(
 	}
 	p = isl_printer_print_str(p, "{ ");
 	if (pwqp->n == 0) {
-		if (isl_space_dim(pwqp->dim, isl_dim_set) > 0 ||
-		    isl_space_is_named_or_nested(pwqp->dim, isl_dim_set)) {
+		if (!isl_space_is_params(pwqp->dim)) {
 			p = print_space(pwqp->dim, p, 1, 0, 0, NULL);
 			p = isl_printer_print_str(p, " -> ");
 		}
@@ -1511,8 +1524,7 @@ static __isl_give isl_printer *isl_pwf_print_isl_body(
 	for (i = 0; i < pwf->n; ++i) {
 		if (i)
 			p = isl_printer_print_str(p, "; ");
-		if (isl_space_dim(pwf->dim, isl_dim_set) > 0 ||
-		    isl_space_is_named_or_nested(pwf->dim, isl_dim_set)) {
+		if (!isl_space_is_params(pwf->dim)) {
 			p = print_space(pwf->p[i].set->dim, p, 1, 0, 0, NULL);
 			p = isl_printer_print_str(p, " -> ");
 		}
@@ -1532,8 +1544,7 @@ static __isl_give isl_printer *print_pw_qpolynomial_fold_isl(
 	}
 	p = isl_printer_print_str(p, "{ ");
 	if (pwf->n == 0) {
-		if (isl_space_dim(pwf->dim, isl_dim_set) > 0 ||
-		    isl_space_is_named_or_nested(pwf->dim, isl_dim_set)) {
+		if (!isl_space_is_params(pwf->dim)) {
 			p = print_space(pwf->dim, p, 1, 0, 0, NULL);
 			p = isl_printer_print_str(p, " -> ");
 		}
@@ -1946,9 +1957,10 @@ __isl_give isl_printer *isl_printer_print_space(__isl_take isl_printer *p,
 	}
 
 	p = isl_printer_print_str(p, "{ ");
-	p = print_tuple(dim, p, isl_dim_in, 0, 0, NULL);
-	p = isl_printer_print_str(p, " -> ");
-	p = print_tuple(dim, p, isl_dim_out, 0, 0, NULL);
+	if (isl_space_is_params(dim))
+		p = isl_printer_print_str(p, s_such_that[0]);
+	else
+		p = print_space(dim, p, 0, 0, 0, NULL);
 	p = isl_printer_print_str(p, " }");
 
 	return p;
@@ -1972,9 +1984,7 @@ __isl_give isl_printer *isl_printer_print_local_space(__isl_take isl_printer *p,
 		p = isl_printer_print_str(p, " -> ");
 	}
 	p = isl_printer_print_str(p, "{ ");
-	p = print_tuple(ls->dim, p, isl_dim_in, 0, 0, NULL);
-	p = isl_printer_print_str(p, " -> ");
-	p = print_tuple(ls->dim, p, isl_dim_out, 0, 0, NULL);
+	p = print_space(ls->dim, p, 0, 0, 0, NULL);
 	n_div = isl_local_space_dim(ls, isl_dim_div);
 	if (n_div > 0) {
 		int i;
@@ -1993,7 +2003,8 @@ __isl_give isl_printer *isl_printer_print_local_space(__isl_take isl_printer *p,
 			p = isl_printer_print_isl_int(p, ls->div->row[i][0]);
 			p = isl_printer_print_str(p, "]");
 		}
-	}
+	} else if (isl_space_is_params(ls->dim))
+		p = isl_printer_print_str(p, s_such_that[0]);
 	p = isl_printer_print_str(p, " }");
 	return p;
 error:
@@ -2007,8 +2018,13 @@ static __isl_give isl_printer *print_aff(__isl_take isl_printer *p,
 	unsigned total;
 
 	total = isl_local_space_dim(aff->ls, isl_dim_all);
-	p = print_tuple(aff->ls->dim, p, isl_dim_set, 1, 0, NULL);
-	p = isl_printer_print_str(p, " -> [");
+	if (isl_space_is_params(aff->ls->dim))
+		;
+	else {
+		p = print_tuple(aff->ls->dim, p, isl_dim_set, 1, 0, NULL);
+		p = isl_printer_print_str(p, " -> ");
+	}
+	p = isl_printer_print_str(p, "[");
 	p = isl_printer_print_str(p, "(");
 	p = print_affine_of_len(aff->ls->dim, aff->ls->div, p,
 				aff->v->el + 1, 1 + total, 1);

@@ -609,6 +609,24 @@ int isl_basic_set_is_rational(__isl_keep isl_basic_set *bset)
 	return isl_basic_map_is_rational(bset);
 }
 
+/* Is this basic set a parameter domain?
+ */
+int isl_basic_set_is_params(__isl_keep isl_basic_set *bset)
+{
+	if (!bset)
+		return -1;
+	return isl_space_is_params(bset->dim);
+}
+
+/* Is this set a parameter domain?
+ */
+int isl_set_is_params(__isl_keep isl_set *set)
+{
+	if (!set)
+		return -1;
+	return isl_space_is_params(set->dim);
+}
+
 static struct isl_basic_map *basic_map_init(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap, unsigned extra,
 		unsigned n_eq, unsigned n_ineq)
@@ -4064,6 +4082,9 @@ __isl_give isl_basic_set *isl_basic_set_params(__isl_take isl_basic_set *bset)
 	isl_space *space;
 	unsigned n;
 
+	if (isl_basic_set_is_params(bset))
+		return bset;
+
 	n = isl_basic_set_dim(bset, isl_dim_set);
 	bset = isl_basic_set_project_out(bset, isl_dim_set, 0, n);
 	space = isl_basic_set_get_space(bset);
@@ -4078,6 +4099,9 @@ __isl_give isl_set *isl_set_params(__isl_take isl_set *set)
 {
 	isl_space *space;
 	unsigned n;
+
+	if (isl_set_is_params(set))
+		return set;
 
 	n = isl_set_dim(set, isl_dim_set);
 	set = isl_set_project_out(set, isl_dim_set, 0, n);
@@ -4115,11 +4139,22 @@ int isl_basic_map_may_be_set(__isl_keep isl_basic_map *bmap)
 	return isl_space_may_be_set(bmap->dim);
 }
 
+/* Is this basic map actually a set?
+ * Users should never call this function.  Outside of isl,
+ * the type should indicate whether something is a set or a map.
+ */
+int isl_basic_map_is_set(__isl_keep isl_basic_map *bmap)
+{
+	if (!bmap)
+		return -1;
+	return isl_space_is_set(bmap->dim);
+}
+
 struct isl_basic_set *isl_basic_map_range(struct isl_basic_map *bmap)
 {
 	if (!bmap)
 		return NULL;
-	if (isl_basic_map_may_be_set(bmap))
+	if (isl_basic_map_is_set(bmap))
 		return bmap;
 	return isl_basic_map_domain(isl_basic_map_reverse(bmap));
 }
@@ -4207,6 +4242,17 @@ int isl_map_may_be_set(__isl_keep isl_map *map)
 	return isl_space_may_be_set(map->dim);
 }
 
+/* Is this map actually a set?
+ * Users should never call this function.  Outside of isl,
+ * the type should indicate whether something is a set or a map.
+ */
+int isl_map_is_set(__isl_keep isl_map *map)
+{
+	if (!map)
+		return -1;
+	return isl_space_is_set(map->dim);
+}
+
 struct isl_set *isl_map_range(struct isl_map *map)
 {
 	int i;
@@ -4214,7 +4260,7 @@ struct isl_set *isl_map_range(struct isl_map *map)
 
 	if (!map)
 		goto error;
-	if (isl_map_may_be_set(map))
+	if (isl_map_is_set(map))
 		return (isl_set *)map;
 
 	map = isl_map_cow(map);
@@ -4328,11 +4374,19 @@ __isl_give isl_basic_map *isl_basic_map_from_domain(
 __isl_give isl_basic_map *isl_basic_map_from_range(
 	__isl_take isl_basic_set *bset)
 {
+	isl_space *space;
+	space = isl_basic_set_get_space(bset);
+	space = isl_space_from_range(space);
+	bset = isl_basic_set_reset_space(bset, space);
 	return (isl_basic_map *)bset;
 }
 
 struct isl_map *isl_map_from_range(struct isl_set *set)
 {
+	isl_space *space;
+	space = isl_set_get_space(set);
+	space = isl_space_from_range(space);
+	set = isl_set_reset_space(set, space);
 	return (struct isl_map *)set;
 }
 

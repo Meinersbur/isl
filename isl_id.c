@@ -11,6 +11,17 @@
 #include <isl_ctx_private.h>
 #include <isl_id_private.h>
 
+/* A special, static isl_id to use as domains (and ranges)
+ * of sets and parameters domains.
+ * The user should never get a hold on this isl_id.
+ */
+isl_id isl_id_none = {
+	.ref = -1,
+	.ctx = NULL,
+	.name = "#none",
+	.user = NULL
+};
+
 isl_ctx *isl_id_get_ctx(__isl_keep isl_id *id)
 {
 	return id ? id->ctx : NULL;
