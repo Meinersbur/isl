@@ -85,10 +85,16 @@ __isl_give isl_id *isl_id_alloc(isl_ctx *ctx, const char *name, void *user)
 	return entry->data;
 }
 
+/* If the id has a negative refcount, then it is a static isl_id
+ * which should not be changed.
+ */
 __isl_give isl_id *isl_id_copy(isl_id *id)
 {
 	if (!id)
 		return NULL;
+
+	if (id->ref < 0)
+		return id;
 
 	id->ref++;
 	return id;
@@ -107,11 +113,17 @@ uint32_t isl_hash_id(uint32_t hash, __isl_keep isl_id *id)
 	return hash;
 }
 
+/* If the id has a negative refcount, then it is a static isl_id
+ * and should not be freed.
+ */
 void *isl_id_free(__isl_take isl_id *id)
 {
 	struct isl_hash_table_entry *entry;
 
 	if (!id)
+		return NULL;
+
+	if (id->ref < 0)
 		return NULL;
 
 	if (--id->ref > 0)
