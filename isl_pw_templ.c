@@ -173,6 +173,11 @@ void *FN(PW,free)(__isl_take PW *pw)
 	return NULL;
 }
 
+const char *FN(PW,get_tuple_name)(__isl_keep PW *pw, enum isl_dim_type type)
+{
+	return pw ? isl_space_get_tuple_name(pw->dim, type) : NULL;
+}
+
 int FN(PW,IS_ZERO)(__isl_keep PW *pw)
 {
 	if (!pw)
