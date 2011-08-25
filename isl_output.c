@@ -2323,6 +2323,54 @@ error:
 	return NULL;
 }
 
+static __isl_give isl_printer *print_unnamed_pw_multi_aff_c(
+	__isl_take isl_printer *p, __isl_keep isl_pw_multi_aff *pma)
+{
+	int i;
+
+	for (i = 0; i < pma->n - 1; ++i) {
+		p = isl_printer_print_str(p, "(");
+		p = print_set_c(p, pma->dim, pma->p[i].set);
+		p = isl_printer_print_str(p, ") ? (");
+		p = print_aff_c(p, pma->p[i].maff->p[0]);
+		p = isl_printer_print_str(p, ") : ");
+	}
+
+	return print_aff_c(p, pma->p[pma->n - 1].maff->p[0]);
+}
+
+static __isl_give isl_printer *print_pw_multi_aff_c(__isl_take isl_printer *p,
+	__isl_keep isl_pw_multi_aff *pma)
+{
+	int n;
+	const char *name;
+
+	if (!pma)
+		goto error;
+	if (pma->n < 1)
+		isl_die(p->ctx, isl_error_unsupported,
+			"cannot print empty isl_pw_multi_aff in C format",
+			goto error);
+	name = isl_pw_multi_aff_get_tuple_name(pma, isl_dim_out);
+	if (!name && isl_pw_multi_aff_dim(pma, isl_dim_out) == 1)
+		return print_unnamed_pw_multi_aff_c(p, pma);
+	if (!name)
+		isl_die(p->ctx, isl_error_unsupported,
+			"cannot print unnamed isl_pw_multi_aff in C format",
+			goto error);
+
+	p = isl_printer_print_str(p, name);
+	n = isl_pw_multi_aff_dim(pma, isl_dim_out);
+	if (n != 0)
+		isl_die(p->ctx, isl_error_unsupported,
+			"not supported yet", goto error);
+
+	return p;
+error:
+	isl_printer_free(p);
+	return NULL;
+}
+
 __isl_give isl_printer *isl_printer_print_pw_multi_aff(
 	__isl_take isl_printer *p, __isl_keep isl_pw_multi_aff *pma)
 {
@@ -2331,6 +2379,8 @@ __isl_give isl_printer *isl_printer_print_pw_multi_aff(
 
 	if (p->output_format == ISL_FORMAT_ISL)
 		return print_pw_multi_aff_isl(p, pma);
+	if (p->output_format == ISL_FORMAT_C)
+		return print_pw_multi_aff_c(p, pma);
 	isl_die(p->ctx, isl_error_unsupported, "unsupported output format",
 		goto error);
 error:
