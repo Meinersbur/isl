@@ -1733,6 +1733,12 @@ static struct isl_obj obj_read_body(struct isl_stream *s,
 	if (is_rational(s))
 		map = isl_map_set_rational(map);
 
+	if (isl_stream_next_token_is(s, ':')) {
+		obj.type = isl_obj_set;
+		obj.v = read_optional_disjuncts(s, map, v);
+		return obj;
+	}
+
 	if (!next_is_tuple(s))
 		return obj_read_poly_or_fold(s, map, v, n);
 
