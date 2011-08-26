@@ -3124,6 +3124,9 @@ are returned in C<*n> and C<*d>, respectively.
 		__isl_take isl_qpolynomial *qp,
 		__isl_take isl_space *model);
 
+	__isl_give isl_qpolynomial *isl_qpolynomial_project_domain_on_params(
+		__isl_take isl_qpolynomial *qp);
+
 	__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_coalesce(
 		__isl_take isl_union_pw_qpolynomial *upwqp);
 

@@ -2407,6 +2407,31 @@ error:
 	return NULL;
 }
 
+/* Project the domain of the quasi-polynomial onto its parameter space.
+ * The quasi-polynomial may not involve any of the domain dimensions.
+ */
+__isl_give isl_qpolynomial *isl_qpolynomial_project_domain_on_params(
+	__isl_take isl_qpolynomial *qp)
+{
+	isl_space *space;
+	unsigned n;
+	int involves;
+
+	n = isl_qpolynomial_dim(qp, isl_dim_set);
+	involves = isl_qpolynomial_involves_dims(qp, isl_dim_set, 0, n);
+	if (involves < 0)
+		return isl_qpolynomial_free(qp);
+	if (involves)
+		isl_die(isl_qpolynomial_get_ctx(qp), isl_error_invalid,
+			"polynomial involves some of the domain dimensions",
+			return isl_qpolynomial_free(qp));
+	qp = isl_qpolynomial_drop_dims(qp, isl_dim_set, 0, n);
+	space = isl_qpolynomial_get_space(qp);
+	space = isl_space_params(space);
+	qp = isl_qpolynomial_reset_space(qp, space);
+	return qp;
+}
+
 static __isl_give isl_qpolynomial *isl_qpolynomial_substitute_equalities_lifted(
 	__isl_take isl_qpolynomial *qp, __isl_take isl_basic_set *eq)
 {
