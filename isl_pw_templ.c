@@ -826,6 +826,21 @@ error:
 	FN(PW,free)(pw);
 	return NULL;
 }
+
+/* Project the domain of pw onto its parameter space.
+ */
+__isl_give PW *FN(PW,project_domain_on_params)(__isl_take PW *pw)
+{
+	isl_space *space;
+	unsigned n;
+
+	n = FN(PW,dim)(pw, isl_dim_set);
+	pw = FN(PW,project_out)(pw, isl_dim_set, 0, n);
+	space = FN(PW,get_space)(pw);
+	space = isl_space_params(space);
+	pw = FN(PW,reset_space)(pw, space);
+	return pw;
+}
 #endif
 
 #ifndef NO_INSERT_DIMS

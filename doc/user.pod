@@ -3126,6 +3126,8 @@ are returned in C<*n> and C<*d>, respectively.
 
 	__isl_give isl_qpolynomial *isl_qpolynomial_project_domain_on_params(
 		__isl_take isl_qpolynomial *qp);
+	__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_project_domain_on_params(
+		__isl_take isl_pw_qpolynomial *pwqp);
 
 	__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_coalesce(
 		__isl_take isl_union_pw_qpolynomial *upwqp);
@@ -3293,6 +3295,9 @@ To iterate over all quasipolynomials in a reduction, use
 	__isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_fold_intersect_domain(
 		__isl_take isl_union_pw_qpolynomial_fold *upwf,
 		__isl_take isl_union_set *uset);
+
+	__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_project_domain_on_params(
+		__isl_take isl_pw_qpolynomial_fold *pwf);
 
 	__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_coalesce(
 		__isl_take isl_pw_qpolynomial_fold *pwf);
