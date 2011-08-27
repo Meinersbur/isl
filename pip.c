@@ -73,8 +73,10 @@ static __isl_give isl_basic_set *set_bounds(__isl_take isl_basic_set *bset)
 
 static struct isl_basic_set *to_parameter_domain(struct isl_basic_set *context)
 {
-	return isl_basic_set_move_dims(context, isl_dim_param, 0, isl_dim_set, 0,
-				       isl_basic_set_dim(context, isl_dim_set));
+	context = isl_basic_set_move_dims(context, isl_dim_param, 0,
+		    isl_dim_set, 0, isl_basic_set_dim(context, isl_dim_set));
+	context = isl_basic_set_params(context);
+	return context;
 }
 
 isl_basic_set *plug_in_parameters(isl_basic_set *bset, struct isl_vec *params)
