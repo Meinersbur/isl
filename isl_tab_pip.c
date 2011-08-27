@@ -4975,7 +4975,7 @@ error:
  * assuming that all variables are non-negative.
  * If "bset" is empty, then return a zero-length vector.
  */
- __isl_give isl_vec *isl_tab_basic_set_non_neg_lexmin(
+__isl_give isl_vec *isl_tab_basic_set_non_neg_lexmin(
 	__isl_take isl_basic_set *bset)
 {
 	struct isl_tab *tab;
