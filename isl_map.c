@@ -4057,6 +4057,36 @@ __isl_give isl_set *isl_set_reset_space(__isl_take isl_set *set,
 	return (struct isl_set *) isl_map_reset_space((struct isl_map *)set, dim);
 }
 
+/* Compute the parameter domain of the given basic set.
+ */
+__isl_give isl_basic_set *isl_basic_set_params(__isl_take isl_basic_set *bset)
+{
+	isl_space *space;
+	unsigned n;
+
+	n = isl_basic_set_dim(bset, isl_dim_set);
+	bset = isl_basic_set_project_out(bset, isl_dim_set, 0, n);
+	space = isl_basic_set_get_space(bset);
+	space = isl_space_params(space);
+	bset = isl_basic_set_reset_space(bset, space);
+	return bset;
+}
+
+/* Compute the parameter domain of the given set.
+ */
+__isl_give isl_set *isl_set_params(__isl_take isl_set *set)
+{
+	isl_space *space;
+	unsigned n;
+
+	n = isl_set_dim(set, isl_dim_set);
+	set = isl_set_project_out(set, isl_dim_set, 0, n);
+	space = isl_set_get_space(set);
+	space = isl_space_params(space);
+	set = isl_set_reset_space(set, space);
+	return set;
+}
+
 struct isl_basic_set *isl_basic_map_domain(struct isl_basic_map *bmap)
 {
 	isl_space *dim;
