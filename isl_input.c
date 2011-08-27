@@ -1663,25 +1663,24 @@ static struct isl_obj obj_read_poly(struct isl_stream *s,
 }
 
 static struct isl_obj obj_read_poly_or_fold(struct isl_stream *s,
-	__isl_take isl_map *map, struct vars *v, int n)
+	__isl_take isl_set *set, struct vars *v, int n)
 {
 	struct isl_obj obj = { isl_obj_pw_qpolynomial_fold, NULL };
 	isl_pw_qpolynomial *pwqp;
 	isl_pw_qpolynomial_fold *pwf = NULL;
-	isl_set *set;
 
 	if (!isl_stream_eat_if_available(s, ISL_TOKEN_MAX))
-		return obj_read_poly(s, map, v, n);
+		return obj_read_poly(s, set, v, n);
 
 	if (isl_stream_eat(s, '('))
 		goto error;
 
-	pwqp = read_term(s, map, v);
+	pwqp = read_term(s, set, v);
 	pwf = isl_pw_qpolynomial_fold_from_pw_qpolynomial(isl_fold_max, pwqp);
 
 	while (isl_stream_eat_if_available(s, ',')) {
 		isl_pw_qpolynomial_fold *pwf_i;
-		pwqp = read_term(s, map, v);
+		pwqp = read_term(s, set, v);
 		pwf_i = isl_pw_qpolynomial_fold_from_pw_qpolynomial(isl_fold_max,
 									pwqp);
 		pwf = isl_pw_qpolynomial_fold_fold(pwf, pwf_i);
@@ -1690,8 +1689,7 @@ static struct isl_obj obj_read_poly_or_fold(struct isl_stream *s,
 	if (isl_stream_eat(s, ')'))
 		goto error;
 
-	map = read_optional_disjuncts(s, map, v);
-	set = isl_map_range(map);
+	set = read_optional_disjuncts(s, set, v);
 	pwf = isl_pw_qpolynomial_fold_intersect_domain(pwf, set);
 
 	vars_drop(v, v->n - n);
@@ -1699,7 +1697,7 @@ static struct isl_obj obj_read_poly_or_fold(struct isl_stream *s,
 	obj.v = pwf;
 	return obj;
 error:
-	isl_map_free(map);
+	isl_set_free(set);
 	isl_pw_qpolynomial_fold_free(pwf);
 	obj.type = isl_obj_none;
 	return obj;
@@ -1750,8 +1748,8 @@ static struct isl_obj obj_read_body(struct isl_stream *s,
 		obj.type = isl_obj_map;
 		isl_token_free(tok);
 		if (!next_is_tuple(s)) {
-			map = isl_map_reverse(map);
-			return obj_read_poly_or_fold(s, map, v, n);
+			isl_set *set = isl_map_domain(map);
+			return obj_read_poly_or_fold(s, set, v, n);
 		}
 		map = read_tuple(s, map, isl_dim_out, v);
 		if (!map)
