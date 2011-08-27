@@ -50,6 +50,8 @@ __isl_give isl_morph *isl_morph_remove_dom_dims(__isl_take isl_morph *morph,
 	enum isl_dim_type type, unsigned first, unsigned n);
 __isl_give isl_morph *isl_morph_remove_ran_dims(__isl_take isl_morph *morph,
 	enum isl_dim_type type, unsigned first, unsigned n);
+__isl_give isl_morph *isl_morph_dom_params(__isl_take isl_morph *morph);
+__isl_give isl_morph *isl_morph_ran_params(__isl_take isl_morph *morph);
 
 __isl_give isl_morph *isl_morph_compose(__isl_take isl_morph *morph1,
 	__isl_take isl_morph *morph2);

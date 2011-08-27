@@ -166,6 +166,46 @@ __isl_give isl_morph *isl_morph_remove_ran_dims(__isl_take isl_morph *morph,
 	return NULL;
 }
 
+/* Project domain of morph onto its parameter domain.
+ */
+__isl_give isl_morph *isl_morph_dom_params(__isl_take isl_morph *morph)
+{
+	unsigned n;
+
+	if (!morph)
+		return NULL;
+	n = isl_basic_set_dim(morph->dom, isl_dim_set);
+	morph = isl_morph_remove_dom_dims(morph, isl_dim_set, 0, n);
+	if (!morph)
+		return NULL;
+	morph->dom = isl_basic_set_params(morph->dom);
+	if (morph->dom)
+		return morph;
+
+	isl_morph_free(morph);
+	return NULL;
+}
+
+/* Project range of morph onto its parameter domain.
+ */
+__isl_give isl_morph *isl_morph_ran_params(__isl_take isl_morph *morph)
+{
+	unsigned n;
+
+	if (!morph)
+		return NULL;
+	n = isl_basic_set_dim(morph->ran, isl_dim_set);
+	morph = isl_morph_remove_ran_dims(morph, isl_dim_set, 0, n);
+	if (!morph)
+		return NULL;
+	morph->ran = isl_basic_set_params(morph->ran);
+	if (morph->ran)
+		return morph;
+
+	isl_morph_free(morph);
+	return NULL;
+}
+
 void isl_morph_dump(__isl_take isl_morph *morph, FILE *out)
 {
 	if (!morph)
