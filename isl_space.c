@@ -1264,7 +1264,8 @@ __isl_give isl_space *isl_space_wrap(__isl_take isl_space *dim)
 	if (!dim)
 		return NULL;
 
-	wrap = isl_space_alloc(dim->ctx, dim->nparam, 0, dim->n_in + dim->n_out);
+	wrap = isl_space_set_alloc(dim->ctx,
+				    dim->nparam, dim->n_in + dim->n_out);
 
 	wrap = copy_ids(wrap, isl_dim_param, 0, dim, isl_dim_param);
 	wrap = copy_ids(wrap, isl_dim_set, 0, dim, isl_dim_in);
