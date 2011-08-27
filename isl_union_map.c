@@ -988,10 +988,41 @@ __isl_give isl_union_map *isl_union_map_flat_range_product(
 	return bin_op(umap1, umap2, &flat_range_product_entry);
 }
 
+static __isl_give isl_union_set *cond_un_op(__isl_take isl_union_map *umap,
+	int (*fn)(void **, void *))
+{
+	isl_union_set *res;
+
+	if (!umap)
+		return NULL;
+
+	res = isl_union_map_alloc(isl_space_copy(umap->dim), umap->table.n);
+	if (isl_hash_table_foreach(umap->dim->ctx, &umap->table, fn, &res) < 0)
+		goto error;
+
+	isl_union_map_free(umap);
+	return res;
+error:
+	isl_union_map_free(umap);
+	isl_union_set_free(res);
+	return NULL;
+}
+
+static int from_range_entry(void **entry, void *user)
+{
+	isl_map *set = *entry;
+	isl_union_set **res = user;
+
+	*res = isl_union_map_add_map(*res,
+					isl_map_from_range(isl_set_copy(set)));
+
+	return 0;
+}
+
 __isl_give isl_union_map *isl_union_map_from_range(
 	__isl_take isl_union_set *uset)
 {
-	return uset;
+	return cond_un_op(uset, &from_range_entry);
 }
 
 __isl_give isl_union_map *isl_union_map_from_domain(
@@ -1195,26 +1226,6 @@ __isl_give isl_union_set *isl_union_set_lexmax(
 	__isl_take isl_union_set *uset)
 {
 	return isl_union_map_lexmax(uset);
-}
-
-static __isl_give isl_union_set *cond_un_op(__isl_take isl_union_map *umap,
-	int (*fn)(void **, void *))
-{
-	isl_union_set *res;
-
-	if (!umap)
-		return NULL;
-
-	res = isl_union_map_alloc(isl_space_copy(umap->dim), umap->table.n);
-	if (isl_hash_table_foreach(umap->dim->ctx, &umap->table, fn, &res) < 0)
-		goto error;
-
-	isl_union_map_free(umap);
-	return res;
-error:
-	isl_union_map_free(umap);
-	isl_union_set_free(res);
-	return NULL;
 }
 
 static int universe_entry(void **entry, void *user)
