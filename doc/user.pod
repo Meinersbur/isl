@@ -466,6 +466,8 @@ the space in which it lives needs to be specified using an C<isl_space>.
 	#include <isl/space.h>
 	__isl_give isl_space *isl_space_alloc(isl_ctx *ctx,
 		unsigned nparam, unsigned n_in, unsigned n_out);
+	__isl_give isl_space *isl_space_params_alloc(isl_ctx *ctx,
+		unsigned nparam);
 	__isl_give isl_space *isl_space_set_alloc(isl_ctx *ctx,
 		unsigned nparam, unsigned dim);
 	__isl_give isl_space *isl_space_copy(__isl_keep isl_space *space);
@@ -473,9 +475,11 @@ the space in which it lives needs to be specified using an C<isl_space>.
 	unsigned isl_space_dim(__isl_keep isl_space *space,
 		enum isl_dim_type type);
 
-The space used for creating a set
+The space used for creating a parameter domain
+needs to be created using C<isl_space_params_alloc>.
+For other sets, the space
 needs to be created using C<isl_space_set_alloc>, while
-that for creating a relation
+for a relation, the space
 needs to be created using C<isl_space_alloc>.
 C<isl_space_dim> can be used
 to find out the number of dimensions of each type in

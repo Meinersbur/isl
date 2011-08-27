@@ -54,6 +54,15 @@ __isl_give isl_space *isl_space_set_alloc(isl_ctx *ctx,
 	return isl_space_alloc(ctx, nparam, 0, dim);
 }
 
+/* Create a space for a parameter domain.
+ */
+__isl_give isl_space *isl_space_params_alloc(isl_ctx *ctx, unsigned nparam)
+{
+	isl_space *space;
+	space = isl_space_alloc(ctx, nparam, 0, 0);
+	return space;
+}
+
 static unsigned global_pos(__isl_keep isl_space *dim,
 				 enum isl_dim_type type, unsigned pos)
 {
