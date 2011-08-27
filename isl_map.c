@@ -4344,15 +4344,13 @@ __isl_give isl_map *isl_map_from_domain(__isl_take isl_set *set)
 __isl_give isl_basic_map *isl_basic_map_from_domain_and_range(
 	__isl_take isl_basic_set *domain, __isl_take isl_basic_set *range)
 {
-	return isl_basic_map_apply_range(isl_basic_map_from_domain(domain),
-					 isl_basic_map_from_range(range));
+	return isl_basic_map_apply_range(isl_basic_map_reverse(domain), range);
 }
 
 __isl_give isl_map *isl_map_from_domain_and_range(__isl_take isl_set *domain,
 	__isl_take isl_set *range)
 {
-	return isl_map_apply_range(isl_map_from_domain(domain),
-				   isl_map_from_range(range));
+	return isl_map_apply_range(isl_map_reverse(domain), range);
 }
 
 struct isl_set *isl_set_from_map(struct isl_map *map)
