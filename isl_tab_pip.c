@@ -4867,7 +4867,7 @@ __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 	struct isl_trivial *triv = NULL;
 	int level, init;
 
-	tab = tab_for_lexmin(isl_basic_map_from_range(bset), NULL, 0, 0);
+	tab = tab_for_lexmin(bset, NULL, 0, 0);
 	if (!tab)
 		goto error;
 	tab->conflict = conflict;
@@ -4982,7 +4982,7 @@ __isl_give isl_vec *isl_tab_basic_set_non_neg_lexmin(
 	isl_ctx *ctx = isl_basic_set_get_ctx(bset);
 	isl_vec *sol;
 
-	tab = tab_for_lexmin(isl_basic_map_from_range(bset), NULL, 0, 0);
+	tab = tab_for_lexmin(bset, NULL, 0, 0);
 	if (!tab)
 		goto error;
 	if (tab->empty)
