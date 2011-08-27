@@ -4284,7 +4284,7 @@ static __isl_give isl_pw_qpolynomial *constant_on_domain(
 	if (!bset)
 		return NULL;
 
-	bset = isl_basic_map_domain(isl_basic_map_from_range(bset));
+	bset = isl_basic_set_params(bset);
 	dim = isl_basic_set_get_space(bset);
 	if (cst < 0)
 		qp = isl_qpolynomial_infty(dim);
