@@ -1888,7 +1888,7 @@ static struct isl_obj obj_read(struct isl_stream *s, int nparam)
 		isl_stream_push_token(s, tok);
 		goto error;
 	}
-	map = isl_map_universe(isl_space_alloc(s->ctx, 0, 0, 0));
+	map = isl_map_universe(isl_space_params_alloc(s->ctx, 0));
 	if (tok->type == '[') {
 		isl_stream_push_token(s, tok);
 		map = read_tuple(s, map, isl_dim_param, v);
