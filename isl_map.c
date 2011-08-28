@@ -5397,7 +5397,7 @@ static __isl_give isl_pw_aff *basic_set_dim_opt(__isl_keep isl_basic_set *bset,
 	isl_pw_aff *pwaff;
 	int r;
 
-	dim = isl_space_domain(isl_space_from_range(dim));
+	dim = isl_space_params(dim);
 	pwaff = isl_pw_aff_empty(dim);
 
 	r = isl_basic_set_foreach_lexopt(bset, max, &update_dim_opt, &pwaff);
