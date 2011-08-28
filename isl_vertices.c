@@ -210,7 +210,7 @@ static __isl_give isl_vertices *vertices_0D(__isl_keep isl_basic_set *bset)
 	vertices->c[0].vertices = isl_calloc_array(bset->ctx, int, 1);
 	if (!vertices->c[0].vertices)
 		goto error;
-	vertices->c[0].dom = isl_basic_set_copy(bset);
+	vertices->c[0].dom = isl_basic_set_params(isl_basic_set_copy(bset));
 	if (!vertices->c[0].dom)
 		goto error;
 
@@ -861,7 +861,6 @@ static __isl_give isl_vertices *compute_chambers(__isl_take isl_basic_set *bset,
 	isl_vec *sample = NULL;
 	struct isl_tab *tab = NULL;
 	struct isl_tab_undo *snap;
-	unsigned nvar;
 	int *selection = NULL;
 	int n_chambers = 0;
 	struct isl_chamber_list *list = NULL;
@@ -875,8 +874,7 @@ static __isl_give isl_vertices *compute_chambers(__isl_take isl_basic_set *bset,
 	if (!selection)
 		goto error;
 
-	nvar = isl_basic_set_dim(bset, isl_dim_set);
-	bset = isl_basic_set_project_out(bset, isl_dim_set, 0, nvar);
+	bset = isl_basic_set_params(bset);
 
 	tab = isl_tab_from_basic_set(bset);
 	for (i = 0; i < bset->n_ineq; ++i)
