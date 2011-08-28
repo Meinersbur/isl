@@ -1878,9 +1878,12 @@ static struct isl_obj obj_read(struct isl_stream *s, int nparam)
 		map = map_read_polylib(s, nparam);
 		if (!map)
 			goto error;
-		if (isl_map_dim(map, isl_dim_in) > 0)
+		if (isl_map_may_be_set(map))
+			obj.v = isl_map_range(map);
+		else {
 			obj.type = isl_obj_map;
-		obj.v = map;
+			obj.v = map;
+		}
 		return obj;
 	}
 	v = vars_new(s->ctx);
