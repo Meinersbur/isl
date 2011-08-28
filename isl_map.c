@@ -667,7 +667,13 @@ struct isl_basic_set *isl_basic_set_alloc(struct isl_ctx *ctx,
 		unsigned n_eq, unsigned n_ineq)
 {
 	struct isl_basic_map *bmap;
-	bmap = isl_basic_map_alloc(ctx, nparam, 0, dim, extra, n_eq, n_ineq);
+	isl_space *space;
+
+	space = isl_space_set_alloc(ctx, nparam, dim);
+	if (!space)
+		return NULL;
+
+	bmap = isl_basic_map_alloc_space(space, extra, n_eq, n_ineq);
 	return (struct isl_basic_set *)bmap;
 }
 
