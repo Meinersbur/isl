@@ -180,8 +180,7 @@ static void extract_coefficients(isl_qpolynomial *poly,
 						multinom->el[i], j);
 				b = isl_qpolynomial_coeff(c[i - 1], isl_dim_set,
 					n - 1 - i, left[i - 1]);
-				b = isl_qpolynomial_drop_dims(b, isl_dim_set,
-								0, n);
+				b = isl_qpolynomial_project_domain_on_params(b);
 				dim = isl_qpolynomial_get_space(b);
 				f = isl_qpolynomial_rat_cst(dim, ctx->one,
 					multinom->el[i]);
@@ -344,11 +343,13 @@ static __isl_give isl_pw_qpolynomial_fold *bernstein_coefficients_base(
 	if (nvar == 0) {
 		isl_set *dom;
 		isl_qpolynomial_fold *fold;
+
 		fold = isl_qpolynomial_fold_alloc(data->type, poly);
 		dom = isl_set_from_basic_set(bset);
 		if (tight)
 			*tight = 1;
-		return isl_pw_qpolynomial_fold_alloc(data->type, dom, fold);
+		pwf = isl_pw_qpolynomial_fold_alloc(data->type, dom, fold);
+		return isl_pw_qpolynomial_fold_project_domain_on_params(pwf);
 	}
 
 	if (isl_qpolynomial_is_zero(poly)) {
@@ -359,12 +360,11 @@ static __isl_give isl_pw_qpolynomial_fold *bernstein_coefficients_base(
 		pwf = isl_pw_qpolynomial_fold_alloc(data->type, dom, fold);
 		if (tight)
 			*tight = 1;
-		return isl_pw_qpolynomial_fold_drop_dims(pwf,
-							    isl_dim_set, 0, nvar);
+		return isl_pw_qpolynomial_fold_project_domain_on_params(pwf);
 	}
 
 	dim = isl_basic_set_get_space(bset);
-	dim = isl_space_drop_dims(dim, isl_dim_set, 0, nvar);
+	dim = isl_space_params(dim);
 	data->pwf = isl_pw_qpolynomial_fold_zero(isl_space_copy(dim), data->type);
 	data->pwf_tight = isl_pw_qpolynomial_fold_zero(dim, data->type);
 	data->poly = isl_qpolynomial_homogenize(isl_qpolynomial_copy(poly));
