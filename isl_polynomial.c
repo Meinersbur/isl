@@ -4376,7 +4376,6 @@ __isl_give isl_pw_qpolynomial *isl_basic_set_multiplicative_call(
 	int bounded;
 	isl_morph *morph;
 	isl_pw_qpolynomial *pwqp;
-	unsigned orig_nvar, final_nvar;
 
 	if (!bset)
 		return NULL;
@@ -4384,9 +4383,7 @@ __isl_give isl_pw_qpolynomial *isl_basic_set_multiplicative_call(
 	if (isl_basic_set_plain_is_empty(bset))
 		return constant_on_domain(bset, 0);
 
-	orig_nvar = isl_basic_set_dim(bset, isl_dim_set);
-
-	if (orig_nvar == 0)
+	if (isl_basic_set_dim(bset, isl_dim_set) == 0)
 		return constant_on_domain(bset, 1);
 
 	bounded = isl_basic_set_is_bounded(bset);
@@ -4401,12 +4398,10 @@ __isl_give isl_pw_qpolynomial *isl_basic_set_multiplicative_call(
 	morph = isl_basic_set_full_compression(bset);
 	bset = isl_morph_basic_set(isl_morph_copy(morph), bset);
 
-	final_nvar = isl_basic_set_dim(bset, isl_dim_set);
-
 	pwqp = compressed_multiplicative_call(bset, fn);
 
-	morph = isl_morph_remove_dom_dims(morph, isl_dim_set, 0, orig_nvar);
-	morph = isl_morph_remove_ran_dims(morph, isl_dim_set, 0, final_nvar);
+	morph = isl_morph_dom_params(morph);
+	morph = isl_morph_ran_params(morph);
 	morph = isl_morph_inverse(morph);
 
 	pwqp = isl_pw_qpolynomial_morph(pwqp, morph);
