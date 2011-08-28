@@ -48,7 +48,7 @@ static int has_sign(__isl_keep isl_basic_set *bset,
 					isl_dim_param, 0, nparam);
 
 	dim = isl_qpolynomial_get_space(poly);
-	dim = isl_space_drop_dims(dim, isl_dim_set, 0, isl_space_dim(dim, isl_dim_set));
+	dim = isl_space_params(dim);
 
 	data_m.test_monotonicity = 0;
 	data_m.signs = signs;
@@ -251,6 +251,9 @@ static int add_guarded_poly(__isl_take isl_basic_set *bset,
 	isl_set *set;
 	isl_qpolynomial_fold *fold;
 	isl_pw_qpolynomial_fold *pwf;
+
+	bset = isl_basic_set_params(bset);
+	poly = isl_qpolynomial_project_domain_on_params(poly);
 
 	fold = isl_qpolynomial_fold_alloc(type, poly);
 	set = isl_set_from_basic_set(bset);
