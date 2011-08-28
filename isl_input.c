@@ -2335,6 +2335,145 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_read_from_file(isl_ctx *ctx,
 	return pwqp;
 }
 
+/* Read an affine expression from "s" with domain (space) "dom".
+ * We call accept_affine to parse a possibly piecewise affine expression
+ * and then check that the result is a single affine expression on
+ * a universe domain.
+ */
+static __isl_give isl_aff *read_aff_with_dom(struct isl_stream *s,
+	__isl_take isl_set *dom, struct vars *v)
+{
+	isl_aff *aff = NULL;
+	isl_pw_aff *pwaff = NULL;
+
+	if (!isl_set_plain_is_universe(dom))
+		isl_die(s->ctx, isl_error_invalid,
+			"expecting universe domain", goto error);
+
+	if (!isl_set_is_params(dom) && isl_stream_eat(s, ISL_TOKEN_TO))
+		goto error;
+
+	if (isl_stream_eat(s, '['))
+		goto error;
+
+	pwaff = accept_affine(s, isl_set_get_space(dom), v);
+
+	if (isl_stream_eat(s, ']'))
+		goto error;
+	if (isl_stream_eat(s, '}'))
+		goto error;
+
+	if (!pwaff)
+		goto error;
+
+	if (pwaff->n != 1)
+		isl_die(s->ctx, isl_error_invalid,
+			"expecting single affine expression", goto error);
+	if (!isl_set_plain_is_universe(pwaff->p[0].set))
+		isl_die(s->ctx, isl_error_invalid,
+			"expecting universe domain", goto error);
+
+	aff = isl_aff_copy(pwaff->p[0].aff);
+
+	vars_free(v);
+	isl_pw_aff_free(pwaff);
+	isl_set_free(dom);
+	return aff;
+error:
+	vars_free(v);
+	isl_pw_aff_free(pwaff);
+	isl_set_free(dom);
+	return NULL;
+}
+
+/* Is the next token an identifer not in "v"?
+ */
+static int next_is_fresh_ident(struct isl_stream *s, struct vars *v)
+{
+	int n = v->n;
+	int fresh;
+	struct isl_token *tok;
+
+	tok = isl_stream_next_token(s);
+	if (!tok)
+		return 0;
+	fresh = tok->type == ISL_TOKEN_IDENT && vars_pos(v, tok->u.s, -1) >= n;
+	isl_stream_push_token(s, tok);
+
+	vars_drop(v, v->n - n);
+
+	return fresh;
+}
+
+/* Read an affine expression from "s".
+ * We first read the domain of the affine expression, which may be
+ * a parameter space or a set, and then call read_aff_with_dom.
+ * The tricky part is that we don't know if the domain is a set or not,
+ * so when we are trying to read the domain, we may actually be reading
+ * the affine expression itself (defined on a parameter domains)
+ * If the tuple we are reading is named, we assume it's the domain.
+ * Also, if inside the tuple, the first thing we find is a nested tuple
+ * or a new identifier, we again assume it's the domain.
+ * Otherwise, we assume we are reading an affine expression.
+ */
+__isl_give isl_aff *isl_stream_read_aff(struct isl_stream *s)
+{
+	struct vars *v;
+	struct isl_token *tok;
+	isl_set *dom = NULL;
+
+	v = vars_new(s->ctx);
+	if (!v)
+		return NULL;
+
+	dom = isl_set_universe(isl_space_params_alloc(s->ctx, 0));
+	if (next_is_tuple(s)) {
+		dom = read_tuple(s, dom, isl_dim_param, v);
+		if (isl_stream_eat(s, ISL_TOKEN_TO))
+			goto error;
+	}
+	tok = isl_stream_next_token(s);
+	if (!tok || tok->type != '{') {
+		isl_stream_error(s, tok, "expecting '{'");
+		goto error;
+	}
+	isl_token_free(tok);
+	tok = isl_stream_next_token(s);
+	if (tok && (tok->type == ISL_TOKEN_IDENT || tok->is_keyword)) {
+		isl_stream_push_token(s, tok);
+		dom = read_tuple(s, dom, isl_dim_set, v);
+		return read_aff_with_dom(s, dom, v);
+	}
+	if (!tok || tok->type != '[') {
+		isl_stream_error(s, tok, "expecting '['");
+		goto error;
+	}
+	if (next_is_tuple(s) || next_is_fresh_ident(s, v)) {
+		isl_stream_push_token(s, tok);
+		dom = read_tuple(s, dom, isl_dim_set, v);
+	} else
+		isl_stream_push_token(s, tok);
+
+	return read_aff_with_dom(s, dom, v);
+error:
+	if (tok)
+		isl_stream_push_token(s, tok);
+	vars_free(v);
+	isl_set_free(dom);
+	return NULL;
+}
+
+__isl_give isl_aff *isl_aff_read_from_str(isl_ctx *ctx, const char *str)
+{
+	isl_aff *aff;
+	struct isl_stream *s = isl_stream_new_str(ctx, str);
+	if (!s)
+		return NULL;
+	aff = isl_stream_read_aff(s);
+	isl_stream_free(s);
+	return aff;
+}
+
 /* Read an isl_pw_multi_aff from "s".
  * We currently read a generic object and if it turns out to be a set or
  * a map, we convert that to an isl_pw_multi_aff.

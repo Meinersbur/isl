@@ -2921,6 +2921,12 @@ the maximum of those of C<pwaff1> and C<pwaff2>.  If only one of
 C<pwaff1> or C<pwaff2> is defined on a given cell, then the
 associated expression is the defined one.
 
+An expression can be read from input using
+
+	#include <isl/aff.h>
+	__isl_give isl_aff *isl_aff_read_from_str(
+		isl_ctx *ctx, const char *str);
+
 An expression can be printed using
 
 	#include <isl/aff.h>
