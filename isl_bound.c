@@ -212,15 +212,12 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_bound(
 		return NULL;
 
 	bound.dim = isl_pw_qpolynomial_fold_get_space(pwf);
-	nvar = isl_space_dim(bound.dim, isl_dim_set);
 
 	bound.wrapping = isl_space_is_wrapping(bound.dim);
-	if (bound.wrapping) {
+	if (bound.wrapping)
 		bound.dim = isl_space_unwrap(bound.dim);
-		nvar = isl_space_dim(bound.dim, isl_dim_out);
-		bound.dim = isl_space_domain(bound.dim);
-	} else
-		bound.dim = isl_space_drop_dims(bound.dim, isl_dim_set, 0, nvar);
+	nvar = isl_space_dim(bound.dim, isl_dim_out);
+	bound.dim = isl_space_domain(bound.dim);
 
 	if (nvar == 0) {
 		if (tight)
