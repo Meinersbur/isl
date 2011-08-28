@@ -4192,7 +4192,7 @@ struct isl_set *isl_map_range(struct isl_map *map)
 		goto error;
 
 	set = (struct isl_set *) map;
-	set->dim = isl_space_drop_inputs(set->dim, 0, set->dim->n_in);
+	set->dim = isl_space_range(set->dim);
 	if (!set->dim)
 		goto error;
 	for (i = 0; i < map->n; ++i) {
