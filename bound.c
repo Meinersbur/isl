@@ -111,7 +111,7 @@ static int verify_point(__isl_take isl_point *pnt, void *user)
 		opt = isl_pw_qpolynomial_fold_min(isl_pw_qpolynomial_fold_copy(pwf));
 
 	nvar = isl_set_dim(dom, isl_dim_set);
-	opt = isl_qpolynomial_drop_dims(opt, isl_dim_set, 0, nvar);
+	opt = isl_qpolynomial_project_domain_on_params(opt);
 	if (vpb->exact && bounded)
 		ok = isl_qpolynomial_plain_is_equal(opt, bound);
 	else if (sign > 0)
@@ -175,8 +175,7 @@ static int check_solution(__isl_take isl_pw_qpolynomial_fold *pwf,
 	int i, r, n;
 
 	dom = isl_pw_qpolynomial_fold_domain(isl_pw_qpolynomial_fold_copy(pwf));
-	context = isl_set_remove_dims(isl_set_copy(dom), isl_dim_set,
-					0, isl_set_dim(dom, isl_dim_set));
+	context = isl_set_params(isl_set_copy(dom));
 	context = isl_set_remove_divs(context);
 	context = set_bounds(context);
 
