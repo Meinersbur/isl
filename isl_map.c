@@ -4245,6 +4245,7 @@ __isl_give isl_map *isl_map_range_map(__isl_take isl_map *map)
 		return NULL;
 
 	range_dim = isl_space_range(isl_map_get_space(map));
+	range_dim = isl_space_from_range(range_dim);
 	map->dim = isl_space_from_domain(isl_space_wrap(map->dim));
 	map->dim = isl_space_join(map->dim, range_dim);
 	if (!map->dim)
