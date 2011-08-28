@@ -2609,3 +2609,40 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_read_from_str(isl_ctx *ctx,
 	isl_stream_free(s);
 	return pma;
 }
+
+/* Read a multi-affine expression from "s".
+ * We call isl_stream_read_pw_multi_aff to parse a possibly piecewise
+ * multi-affine expression and then check that the result is
+ * a single multi-affine expression on a universe domain.
+ */
+__isl_give isl_multi_aff *isl_stream_read_multi_aff(struct isl_stream *s)
+{
+	isl_pw_multi_aff *pma;
+	isl_multi_aff *maff;
+
+	pma = isl_stream_read_pw_multi_aff(s);
+	if (!pma)
+		return NULL;
+	if (pma->n != 1)
+		isl_die(s->ctx, isl_error_invalid,
+			"expecting single list of affine expressions",
+			return isl_pw_multi_aff_free(pma));
+	if (!isl_set_plain_is_universe(pma->p[0].set))
+		isl_die(s->ctx, isl_error_invalid, "expecting universe domain",
+			return isl_pw_multi_aff_free(pma));
+	maff = isl_multi_aff_copy(pma->p[0].maff);
+	isl_pw_multi_aff_free(pma);
+	return maff;
+}
+
+__isl_give isl_multi_aff *isl_multi_aff_read_from_str(isl_ctx *ctx,
+	const char *str)
+{
+	isl_multi_aff *maff;
+	struct isl_stream *s = isl_stream_new_str(ctx, str);
+	if (!s)
+		return NULL;
+	maff = isl_stream_read_multi_aff(s);
+	isl_stream_free(s);
+	return maff;
+}
