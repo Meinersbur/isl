@@ -2334,3 +2334,39 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_read_from_file(isl_ctx *ctx,
 	isl_stream_free(s);
 	return pwqp;
 }
+
+/* Read an isl_pw_multi_aff from "s".
+ * We currently read a generic object and if it turns out to be a set or
+ * a map, we convert that to an isl_pw_multi_aff.
+ * It would be more efficient if we were to construct the isl_pw_multi_aff
+ * directly.
+ */
+__isl_give isl_pw_multi_aff *isl_stream_read_pw_multi_aff(struct isl_stream *s)
+{
+	struct isl_obj obj;
+
+	obj = obj_read(s);
+	if (!obj.v)
+		return NULL;
+
+	if (obj.type == isl_obj_map)
+		return isl_pw_multi_aff_from_map(obj.v);
+	if (obj.type == isl_obj_set)
+		return isl_pw_multi_aff_from_set(obj.v);
+
+	obj.type->free(obj.v);
+	isl_die(s->ctx, isl_error_invalid, "unexpected object type",
+		return NULL);
+}
+
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_read_from_str(isl_ctx *ctx,
+	const char *str)
+{
+	isl_pw_multi_aff *pma;
+	struct isl_stream *s = isl_stream_new_str(ctx, str);
+	if (!s)
+		return NULL;
+	pma = isl_stream_read_pw_multi_aff(s);
+	isl_stream_free(s);
+	return pma;
+}
