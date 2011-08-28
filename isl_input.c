@@ -850,15 +850,14 @@ static int next_is_tuple(struct isl_stream *s)
 static __isl_give isl_map *read_tuple(struct isl_stream *s,
 	__isl_take isl_map *map, enum isl_dim_type type, struct vars *v);
 
-static __isl_give isl_map *read_nested_tuple(struct isl_stream *s,
+static __isl_give isl_set *read_nested_tuple(struct isl_stream *s,
 	__isl_take isl_map *map, struct vars *v)
 {
 	map = read_tuple(s, map, isl_dim_in, v);
 	if (isl_stream_eat(s, ISL_TOKEN_TO))
 		goto error;
 	map = read_tuple(s, map, isl_dim_out, v);
-	map = isl_map_from_range(isl_map_wrap(map));
-	return map;
+	return isl_map_wrap(map);
 error:
 	isl_map_free(map);
 	return NULL;
@@ -887,18 +886,19 @@ static __isl_give isl_map *read_tuple(struct isl_stream *s,
 		isl_space *dim = isl_map_get_space(map);
 		int nparam = isl_space_dim(dim, isl_dim_param);
 		int n_in = isl_space_dim(dim, isl_dim_in);
-		isl_map *nested;
-		if (type == isl_dim_out)
+		isl_set *nested;
+		if (type == isl_dim_out) {
 			dim = isl_space_move_dims(dim, isl_dim_param, nparam,
 						isl_dim_in, 0, n_in);
-		nested = isl_map_universe(dim);
-		nested = read_nested_tuple(s, nested, v);
+			dim = isl_space_params(dim);
+		}
+		nested = read_nested_tuple(s, isl_map_universe(dim), v);
 		if (type == isl_dim_in) {
 			nested = isl_map_reverse(nested);
 			map = isl_map_intersect(nested, map);
 		} else {
 			isl_set *set;
-			dim = isl_space_range(isl_map_get_space(nested));
+			dim = isl_set_get_space(nested);
 			dim = isl_space_drop_dims(dim, isl_dim_param, nparam, n_in);
 			dim = isl_space_join(isl_map_get_space(map), dim);
 			set = isl_map_domain(map);
