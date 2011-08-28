@@ -2008,8 +2008,13 @@ __isl_give isl_set *isl_stream_read_set(struct isl_stream *s, int nparam)
 	struct isl_obj obj;
 
 	obj = obj_read(s, nparam);
-	if (obj.v)
+	if (obj.v) {
+		if (obj.type == isl_obj_map && isl_map_may_be_set(obj.v)) {
+			obj.v = isl_map_range(obj.v);
+			obj.type = isl_obj_set;
+		}
 		isl_assert(s->ctx, obj.type == isl_obj_set, goto error);
+	}
 
 	return obj.v;
 error:
@@ -2084,6 +2089,22 @@ error:
 	return NULL;
 }
 
+static __isl_give isl_basic_set *basic_set_read(struct isl_stream *s,
+	int nparam)
+{
+	isl_basic_map *bmap;
+	bmap = basic_map_read(s, nparam);
+	if (!bmap)
+		return NULL;
+	if (!isl_basic_map_may_be_set(bmap))
+		isl_die(s->ctx, isl_error_invalid,
+			"input is not a set", goto error);
+	return isl_basic_map_range(bmap);
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
 __isl_give isl_basic_map *isl_basic_map_read_from_file(isl_ctx *ctx,
 		FILE *input, int nparam)
 {
@@ -2099,15 +2120,13 @@ __isl_give isl_basic_map *isl_basic_map_read_from_file(isl_ctx *ctx,
 __isl_give isl_basic_set *isl_basic_set_read_from_file(isl_ctx *ctx,
 		FILE *input, int nparam)
 {
-	struct isl_basic_map *bmap;
-	bmap = isl_basic_map_read_from_file(ctx, input, nparam);
-	if (!bmap)
+	isl_basic_set *bset;
+	struct isl_stream *s = isl_stream_new_file(ctx, input);
+	if (!s)
 		return NULL;
-	isl_assert(ctx, isl_basic_map_n_in(bmap) == 0, goto error);
-	return (struct isl_basic_set *)bmap;
-error:
-	isl_basic_map_free(bmap);
-	return NULL;
+	bset = basic_set_read(s, nparam);
+	isl_stream_free(s);
+	return bset;
 }
 
 struct isl_basic_map *isl_basic_map_read_from_str(struct isl_ctx *ctx,
@@ -2125,15 +2144,13 @@ struct isl_basic_map *isl_basic_map_read_from_str(struct isl_ctx *ctx,
 struct isl_basic_set *isl_basic_set_read_from_str(struct isl_ctx *ctx,
 		const char *str, int nparam)
 {
-	struct isl_basic_map *bmap;
-	bmap = isl_basic_map_read_from_str(ctx, str, nparam);
-	if (!bmap)
+	isl_basic_set *bset;
+	struct isl_stream *s = isl_stream_new_str(ctx, str);
+	if (!s)
 		return NULL;
-	isl_assert(ctx, isl_basic_map_n_in(bmap) == 0, goto error);
-	return (struct isl_basic_set *)bmap;
-error:
-	isl_basic_map_free(bmap);
-	return NULL;
+	bset = basic_set_read(s, nparam);
+	isl_stream_free(s);
+	return bset;
 }
 
 __isl_give isl_map *isl_map_read_from_file(struct isl_ctx *ctx,
@@ -2163,29 +2180,25 @@ __isl_give isl_map *isl_map_read_from_str(struct isl_ctx *ctx,
 __isl_give isl_set *isl_set_read_from_file(struct isl_ctx *ctx,
 		FILE *input, int nparam)
 {
-	struct isl_map *map;
-	map = isl_map_read_from_file(ctx, input, nparam);
-	if (!map)
+	isl_set *set;
+	struct isl_stream *s = isl_stream_new_file(ctx, input);
+	if (!s)
 		return NULL;
-	isl_assert(ctx, isl_map_n_in(map) == 0, goto error);
-	return (struct isl_set *)map;
-error:
-	isl_map_free(map);
-	return NULL;
+	set = isl_stream_read_set(s, nparam);
+	isl_stream_free(s);
+	return set;
 }
 
 struct isl_set *isl_set_read_from_str(struct isl_ctx *ctx,
 		const char *str, int nparam)
 {
-	struct isl_map *map;
-	map = isl_map_read_from_str(ctx, str, nparam);
-	if (!map)
+	isl_set *set;
+	struct isl_stream *s = isl_stream_new_str(ctx, str);
+	if (!s)
 		return NULL;
-	isl_assert(ctx, isl_map_n_in(map) == 0, goto error);
-	return (struct isl_set *)map;
-error:
-	isl_map_free(map);
-	return NULL;
+	set = isl_stream_read_set(s, nparam);
+	isl_stream_free(s);
+	return set;
 }
 
 __isl_give isl_union_map *isl_union_map_read_from_file(isl_ctx *ctx,
