@@ -8,7 +8,8 @@ struct isl_constraint {
 	int ref;
 
 	int eq;
-	isl_aff *aff;
+	isl_local_space	*ls;
+	isl_vec		*v;
 };
 
 struct isl_constraint *isl_basic_set_constraint(struct isl_basic_set *bset,
