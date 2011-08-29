@@ -931,34 +931,6 @@ int isl_aff_is_empty(__isl_keep isl_aff *aff)
 	return 0;
 }
 
-/* Set active[i] to 1 if the dimension at position i is involved
- * in the affine expression.
- */
-static int set_active(__isl_keep isl_aff *aff, int *active)
-{
-	int i, j;
-	unsigned total;
-	unsigned offset;
-
-	if (!aff || !active)
-		return -1;
-
-	total = aff->v->size - 2;
-	for (i = 0; i < total; ++i)
-		active[i] = !isl_int_is_zero(aff->v->el[2 + i]);
-
-	offset = isl_local_space_offset(aff->ls, isl_dim_div) - 1;
-	for (i = aff->ls->div->n_row - 1; i >= 0; --i) {
-		if (!active[offset + i])
-			continue;
-		for (j = 0; j < total; ++j)
-			active[j] |=
-				!isl_int_is_zero(aff->ls->div->row[i][2 + j]);
-	}
-
-	return 0;
-}
-
 /* Check whether the given affine expression has non-zero coefficient
  * for any dimension in the given range or if any of these dimensions
  * appear with non-zero coefficients in any of the integer divisions
@@ -982,9 +954,8 @@ int isl_aff_involves_dims(__isl_keep isl_aff *aff,
 		isl_die(ctx, isl_error_invalid,
 			"range out of bounds", return -1);
 
-	active = isl_calloc_array(ctx, int,
-				  isl_local_space_dim(aff->ls, isl_dim_all));
-	if (set_active(aff, active) < 0)
+	active = isl_local_space_get_active(aff->ls, aff->v->el + 2);
+	if (!active)
 		goto error;
 
 	first += isl_local_space_offset(aff->ls, type) - 1;

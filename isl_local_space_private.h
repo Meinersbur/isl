@@ -43,4 +43,6 @@ __isl_give isl_local_space *isl_local_space_realign(
 int isl_local_space_is_div_constraint(__isl_keep isl_local_space *ls,
 	isl_int *constraint, unsigned div);
 
+int *isl_local_space_get_active(__isl_keep isl_local_space *ls, isl_int *l);
+
 #endif
