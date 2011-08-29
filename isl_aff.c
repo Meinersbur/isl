@@ -1306,6 +1306,15 @@ __isl_give isl_map *isl_map_from_pw_aff(__isl_take isl_pw_aff *pwaff)
 	return map;
 }
 
+/* Construct a one-dimensional set with as parameter domain
+ * the domain of pwaff and the single set dimension
+ * corresponding to the affine expressions.
+ */
+__isl_give isl_set *isl_set_from_pw_aff(__isl_take isl_pw_aff *pwaff)
+{
+	return isl_map_from_pw_aff(pwaff);
+}
+
 /* Return a set containing those elements in the domain
  * of pwaff where it is non-negative.
  */

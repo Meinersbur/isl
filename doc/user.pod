@@ -1128,11 +1128,14 @@ C<isl_dim_set> and C<isl_dim_div> for sets and
 of C<isl_dim_cst>, C<isl_dim_param>,
 C<isl_dim_in>, C<isl_dim_out> and C<isl_dim_div> for relations.
 
-A (basic) relation can also be constructed from a (piecewise) affine expression
+A (basic) set or relation can also be constructed from a (piecewise)
+affine expression
 or a list of affine expressions (See L<"Piecewise Quasi Affine Expressions">).
 
 	__isl_give isl_basic_map *isl_basic_map_from_aff(
 		__isl_take isl_aff *aff);
+	__isl_give isl_set *isl_set_from_pw_aff(
+		__isl_take isl_pw_aff *pwaff);
 	__isl_give isl_map *isl_map_from_pw_aff(
 		__isl_take isl_pw_aff *pwaff);
 	__isl_give isl_basic_map *isl_basic_map_from_aff_list(

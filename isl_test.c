@@ -2294,19 +2294,20 @@ int test_dim_max(isl_ctx *ctx)
 {
 	int equal;
 	const char *str;
-	isl_map *map, *map2;
+	isl_set *set1, *set2;
 	isl_set *set;
+	isl_map *map;
 	isl_pw_aff *pwaff;
 
 	str = "[N] -> { [i] : 0 <= i <= min(N,10) }";
 	set = isl_set_read_from_str(ctx, str, -1);
 	pwaff = isl_set_dim_max(set, 0);
-	map = isl_map_from_pw_aff(pwaff);
-	str = "[N] -> { [] -> [10] : N >= 10; [] -> [N] : N <= 9 and N >= 0 }";
-	map2 = isl_map_read_from_str(ctx, str, -1);
-	equal = isl_map_is_equal(map, map2);
-	isl_map_free(map);
-	isl_map_free(map2);
+	set1 = isl_set_from_pw_aff(pwaff);
+	str = "[N] -> { [10] : N >= 10; [N] : N <= 9 and N >= 0 }";
+	set2 = isl_set_read_from_str(ctx, str, -1);
+	equal = isl_set_is_equal(set1, set2);
+	isl_set_free(set1);
+	isl_set_free(set2);
 	if (equal < 0)
 		return -1;
 	if (!equal)
@@ -2315,12 +2316,12 @@ int test_dim_max(isl_ctx *ctx)
 	str = "[N] -> { [i] : 0 <= i <= max(2N,N+6) }";
 	set = isl_set_read_from_str(ctx, str, -1);
 	pwaff = isl_set_dim_max(set, 0);
-	map = isl_map_from_pw_aff(pwaff);
-	str = "[N] -> { [] -> [6 + N] : -6 <= N <= 5; [] -> [2N] : N >= 6 }";
-	map2 = isl_map_read_from_str(ctx, str, -1);
-	equal = isl_map_is_equal(map, map2);
-	isl_map_free(map);
-	isl_map_free(map2);
+	set1 = isl_set_from_pw_aff(pwaff);
+	str = "[N] -> { [6 + N] : -6 <= N <= 5; [2N] : N >= 6 }";
+	set2 = isl_set_read_from_str(ctx, str, -1);
+	equal = isl_set_is_equal(set1, set2);
+	isl_set_free(set1);
+	isl_set_free(set2);
 	if (equal < 0)
 		return -1;
 	if (!equal)
@@ -2329,12 +2330,12 @@ int test_dim_max(isl_ctx *ctx)
 	str = "[N] -> { [i] : 0 <= i <= 2N or 0 <= i <= N+6 }";
 	set = isl_set_read_from_str(ctx, str, -1);
 	pwaff = isl_set_dim_max(set, 0);
-	map = isl_map_from_pw_aff(pwaff);
-	str = "[N] -> { [] -> [6 + N] : -6 <= N <= 5; [] -> [2N] : N >= 6 }";
-	map2 = isl_map_read_from_str(ctx, str, -1);
-	equal = isl_map_is_equal(map, map2);
-	isl_map_free(map);
-	isl_map_free(map2);
+	set1 = isl_set_from_pw_aff(pwaff);
+	str = "[N] -> { [6 + N] : -6 <= N <= 5; [2N] : N >= 6 }";
+	set2 = isl_set_read_from_str(ctx, str, -1);
+	equal = isl_set_is_equal(set1, set2);
+	isl_set_free(set1);
+	isl_set_free(set2);
 	if (equal < 0)
 		return -1;
 	if (!equal)
@@ -2346,21 +2347,21 @@ int test_dim_max(isl_ctx *ctx)
 	set = isl_map_range(map);
 
 	pwaff = isl_set_dim_max(isl_set_copy(set), 0);
-	map = isl_map_from_pw_aff(pwaff);
-	str = "[N,M] -> { [] -> [([(N-1)/16])] : M,N > 0 }";
-	map2 = isl_map_read_from_str(ctx, str, -1);
-	equal = isl_map_is_equal(map, map2);
-	isl_map_free(map);
-	isl_map_free(map2);
+	set1 = isl_set_from_pw_aff(pwaff);
+	str = "[N,M] -> { [([(N-1)/16])] : M,N > 0 }";
+	set2 = isl_set_read_from_str(ctx, str, -1);
+	equal = isl_set_is_equal(set1, set2);
+	isl_set_free(set1);
+	isl_set_free(set2);
 
 	pwaff = isl_set_dim_max(isl_set_copy(set), 3);
-	map = isl_map_from_pw_aff(pwaff);
-	str = "[N,M] -> { [] -> [t] : t = min(M-1,15) and M,N > 0 }";
-	map2 = isl_map_read_from_str(ctx, str, -1);
+	set1 = isl_set_from_pw_aff(pwaff);
+	str = "[N,M] -> { [t] : t = min(M-1,15) and M,N > 0 }";
+	set2 = isl_set_read_from_str(ctx, str, -1);
 	if (equal >= 0 && equal)
-		equal = isl_map_is_equal(map, map2);
-	isl_map_free(map);
-	isl_map_free(map2);
+		equal = isl_set_is_equal(set1, set2);
+	isl_set_free(set1);
+	isl_set_free(set2);
 
 	isl_set_free(set);
 
