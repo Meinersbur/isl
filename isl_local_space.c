@@ -440,6 +440,20 @@ int isl_local_space_divs_known(__isl_keep isl_local_space *ls)
 	return 1;
 }
 
+__isl_give isl_local_space *isl_local_space_domain(
+	__isl_take isl_local_space *ls)
+{
+	ls = isl_local_space_drop_dims(ls, isl_dim_out,
+					0, isl_local_space_dim(ls, isl_dim_out));
+	ls = isl_local_space_cow(ls);
+	if (!ls)
+		return NULL;
+	ls->dim = isl_space_domain(ls->dim);
+	if (!ls->dim)
+		return isl_local_space_free(ls);
+	return ls;
+}
+
 /* Construct a local space for a map that has the given local
  * space as domain and that has a zero-dimensional range.
  */

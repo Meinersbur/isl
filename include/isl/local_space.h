@@ -30,6 +30,8 @@ __isl_give isl_space *isl_local_space_get_space(__isl_keep isl_local_space *ls);
 __isl_give isl_div *isl_local_space_get_div(__isl_keep isl_local_space *ls,
 	int pos);
 
+__isl_give isl_local_space *isl_local_space_domain(
+	__isl_take isl_local_space *ls);
 __isl_give isl_local_space *isl_local_space_from_domain(
 	__isl_take isl_local_space *ls);
 __isl_give isl_local_space *isl_local_space_add_dims(
