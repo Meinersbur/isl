@@ -1629,3 +1629,21 @@ error:
 	isl_space_free(dim2);
 	return NULL;
 }
+
+/* Given the space of set (domain), construct a space for a map
+ * with as domain the given space and as range the range of "model".
+ */
+__isl_give isl_space *isl_space_extend_domain_with_range(
+	__isl_take isl_space *domain, __isl_take isl_space *model)
+{
+	isl_space *space;
+
+	space = isl_space_from_domain(domain);
+	space = isl_space_add_dims(space, isl_dim_out,
+				    isl_space_dim(model, isl_dim_out));
+	if (isl_space_has_tuple_id(model, isl_dim_out))
+		space = isl_space_set_tuple_id(space, isl_dim_out,
+				isl_space_get_tuple_id(model, isl_dim_out));
+	isl_space_free(model);
+	return space;
+}

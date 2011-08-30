@@ -46,3 +46,6 @@ __isl_give isl_space *isl_space_replace(__isl_take isl_space *dst,
 	enum isl_dim_type type, __isl_keep isl_space *src);
 
 __isl_give isl_space *isl_space_lift(__isl_take isl_space *dim, unsigned n_local);
+
+__isl_give isl_space *isl_space_extend_domain_with_range(
+	__isl_take isl_space *domain, __isl_take isl_space *model);
