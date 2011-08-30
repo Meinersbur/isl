@@ -2118,6 +2118,9 @@ __isl_give isl_qpolynomial *isl_qpolynomial_rat_cst(__isl_take isl_dim *dim,
 	struct isl_qpolynomial *qp;
 	struct isl_upoly_cst *cst;
 
+	if (!dim)
+		return NULL;
+
 	qp = isl_qpolynomial_alloc(dim, 0, isl_upoly_zero(dim->ctx));
 	if (!qp)
 		return NULL;
