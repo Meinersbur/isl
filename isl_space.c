@@ -1297,6 +1297,19 @@ int isl_space_is_equal(__isl_keep isl_space *dim1, __isl_keep isl_space *dim2)
 	       isl_space_tuple_match(dim1, isl_dim_out, dim2, isl_dim_out);
 }
 
+/* Is space1 equal to the domain of space2?
+ */
+int isl_space_is_domain(__isl_keep isl_space *space1,
+	__isl_keep isl_space *space2)
+{
+	if (!space1 || !space2)
+		return -1;
+	if (!isl_space_is_set(space1))
+		return 0;
+	return match(space1, isl_dim_param, space2, isl_dim_param) &&
+	       isl_space_tuple_match(space1, isl_dim_set, space2, isl_dim_in);
+}
+
 int isl_space_compatible(__isl_keep isl_space *dim1,
 	__isl_keep isl_space *dim2)
 {
