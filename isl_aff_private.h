@@ -6,6 +6,8 @@
 #include <isl/mat.h>
 #include <isl/local_space.h>
 
+/* ls represents the domain space.
+ */
 struct isl_aff {
 	int ref;
 
@@ -31,9 +33,11 @@ struct isl_pw_aff {
 
 __isl_give isl_aff *isl_aff_alloc(__isl_take isl_local_space *ls);
 
-__isl_give isl_aff *isl_aff_reset_space(__isl_take isl_aff *aff,
+__isl_give isl_aff *isl_aff_reset_space_and_domain(__isl_take isl_aff *aff,
+	__isl_take isl_space *space, __isl_take isl_space *domain);
+__isl_give isl_aff *isl_aff_reset_domain_space(__isl_take isl_aff *aff,
 	__isl_take isl_space *dim);
-__isl_give isl_aff *isl_aff_realign(__isl_take isl_aff *aff,
+__isl_give isl_aff *isl_aff_realign_domain(__isl_take isl_aff *aff,
 	__isl_take isl_reordering *r);
 
 __isl_give isl_aff *isl_aff_expand_divs( __isl_take isl_aff *aff,
@@ -41,6 +45,8 @@ __isl_give isl_aff *isl_aff_expand_divs( __isl_take isl_aff *aff,
 
 __isl_give isl_pw_aff *isl_pw_aff_reset_space(__isl_take isl_pw_aff *pwaff,
 	__isl_take isl_space *dim);
+__isl_give isl_pw_aff *isl_pw_aff_reset_domain_space(
+	__isl_take isl_pw_aff *pwaff, __isl_take isl_space *space);
 __isl_give isl_pw_aff *isl_pw_aff_add_disjoint(
 	__isl_take isl_pw_aff *pwaff1, __isl_take isl_pw_aff *pwaff2);
 

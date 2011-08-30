@@ -44,11 +44,13 @@ static int has_sign(__isl_keep isl_basic_set *bset,
 
 	bset = isl_basic_set_move_dims(bset, isl_dim_set, 0,
 					isl_dim_param, 0, nparam);
-	poly = isl_qpolynomial_move_dims(poly, isl_dim_set, 0,
+	poly = isl_qpolynomial_move_dims(poly, isl_dim_in, 0,
 					isl_dim_param, 0, nparam);
 
 	dim = isl_qpolynomial_get_space(poly);
 	dim = isl_space_params(dim);
+	dim = isl_space_from_domain(dim);
+	dim = isl_space_add_dims(dim, isl_dim_out, 1);
 
 	data_m.test_monotonicity = 0;
 	data_m.signs = signs;
@@ -102,16 +104,16 @@ static int monotonicity(__isl_keep isl_basic_set *bset,
 	unsigned nvar;
 
 	ctx = isl_qpolynomial_get_ctx(poly);
-	dim = isl_qpolynomial_get_space(poly);
+	dim = isl_qpolynomial_get_domain_space(poly);
 
 	nvar = isl_basic_set_dim(bset, isl_dim_set);
 
-	sub = isl_qpolynomial_var(isl_space_copy(dim), isl_dim_set, nvar - 1);
+	sub = isl_qpolynomial_var_on_domain(isl_space_copy(dim), isl_dim_set, nvar - 1);
 	sub = isl_qpolynomial_add(sub,
-		isl_qpolynomial_rat_cst(dim, ctx->one, ctx->one));
+		isl_qpolynomial_rat_cst_on_domain(dim, ctx->one, ctx->one));
 
 	diff = isl_qpolynomial_substitute(isl_qpolynomial_copy(poly),
-			isl_dim_set, nvar - 1, 1, &sub);
+			isl_dim_in, nvar - 1, 1, &sub);
 	diff = isl_qpolynomial_sub(diff, isl_qpolynomial_copy(poly));
 
 	s = has_sign(bset, diff, 1, data->signs);
@@ -142,9 +144,9 @@ static __isl_give isl_qpolynomial *bound2poly(__isl_take isl_constraint *bound,
 {
 	if (!bound) {
 		if (sign > 0)
-			return isl_qpolynomial_infty(dim);
+			return isl_qpolynomial_infty_on_domain(dim);
 		else
-			return isl_qpolynomial_neginfty(dim);
+			return isl_qpolynomial_neginfty_on_domain(dim);
 	}
 	isl_space_free(dim);
 	return isl_qpolynomial_from_constraint(bound, isl_dim_set, pos);
@@ -229,8 +231,11 @@ static int collect_fixed_sign_terms(__isl_take isl_term *term, void *user)
 __isl_give isl_qpolynomial *isl_qpolynomial_terms_of_sign(
 	__isl_keep isl_qpolynomial *poly, int *signs, int sign)
 {
+	isl_space *space;
 	struct isl_fixed_sign_data data = { signs, sign };
-	data.poly = isl_qpolynomial_zero(isl_qpolynomial_get_space(poly));
+
+	space = isl_qpolynomial_get_domain_space(poly);
+	data.poly = isl_qpolynomial_zero_on_domain(space);
 
 	if (isl_qpolynomial_foreach_term(poly, collect_fixed_sign_terms, &data) < 0)
 		goto error;
@@ -296,7 +301,7 @@ static int propagate_on_bound_pair(__isl_take isl_constraint *lower,
 
 	if (data->monotonicity) {
 		isl_qpolynomial *sub;
-		isl_space *dim = isl_qpolynomial_get_space(data->poly);
+		isl_space *dim = isl_qpolynomial_get_domain_space(data->poly);
 		if (data->monotonicity * data->sign > 0) {
 			if (data->tight)
 				data->tight = bound_is_integer(upper, nvar);
@@ -309,14 +314,14 @@ static int propagate_on_bound_pair(__isl_take isl_constraint *lower,
 			isl_constraint_free(upper);
 		}
 		poly = isl_qpolynomial_copy(data->poly);
-		poly = isl_qpolynomial_substitute(poly, isl_dim_set, nvar, 1, &sub);
-		poly = isl_qpolynomial_drop_dims(poly, isl_dim_set, nvar, 1);
+		poly = isl_qpolynomial_substitute(poly, isl_dim_in, nvar, 1, &sub);
+		poly = isl_qpolynomial_drop_dims(poly, isl_dim_in, nvar, 1);
 
 		isl_qpolynomial_free(sub);
 	} else {
 		isl_qpolynomial *l, *u;
 		isl_qpolynomial *pos, *neg;
-		isl_space *dim = isl_qpolynomial_get_space(data->poly);
+		isl_space *dim = isl_qpolynomial_get_domain_space(data->poly);
 		unsigned nparam = isl_basic_set_dim(bset, isl_dim_param);
 		int sign = data->sign * data->signs[nparam + nvar];
 
@@ -328,11 +333,11 @@ static int propagate_on_bound_pair(__isl_take isl_constraint *lower,
 		pos = isl_qpolynomial_terms_of_sign(data->poly, data->signs, sign);
 		neg = isl_qpolynomial_terms_of_sign(data->poly, data->signs, -sign);
 
-		pos = isl_qpolynomial_substitute(pos, isl_dim_set, nvar, 1, &u);
-		neg = isl_qpolynomial_substitute(neg, isl_dim_set, nvar, 1, &l);
+		pos = isl_qpolynomial_substitute(pos, isl_dim_in, nvar, 1, &u);
+		neg = isl_qpolynomial_substitute(neg, isl_dim_in, nvar, 1, &l);
 
 		poly = isl_qpolynomial_add(pos, neg);
-		poly = isl_qpolynomial_drop_dims(poly, isl_dim_set, nvar, 1);
+		poly = isl_qpolynomial_drop_dims(poly, isl_dim_in, nvar, 1);
 
 		isl_qpolynomial_free(u);
 		isl_qpolynomial_free(l);
@@ -368,7 +373,7 @@ static int propagate_on_domain(__isl_take isl_basic_set *bset,
 
 	if (isl_qpolynomial_is_cst(poly, NULL, NULL)) {
 		bset = isl_basic_set_project_out(bset, isl_dim_set, 0, d);
-		poly = isl_qpolynomial_drop_dims(poly, isl_dim_set, 0, d);
+		poly = isl_qpolynomial_drop_dims(poly, isl_dim_in, 0, d);
 		return add_guarded_poly(bset, poly, data);
 	}
 

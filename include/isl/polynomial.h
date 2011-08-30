@@ -17,9 +17,9 @@ extern "C" {
 #endif
 
 isl_ctx *isl_qpolynomial_get_ctx(__isl_keep isl_qpolynomial *qp);
+__isl_give isl_space *isl_qpolynomial_get_domain_space(
+	__isl_keep isl_qpolynomial *qp);
 __isl_give isl_space *isl_qpolynomial_get_space(__isl_keep isl_qpolynomial *qp);
-__isl_give isl_qpolynomial *isl_qpolynomial_reset_space(
-	__isl_take isl_qpolynomial *qp, __isl_take isl_space *dim);
 unsigned isl_qpolynomial_dim(__isl_keep isl_qpolynomial *qp,
 	enum isl_dim_type type);
 int isl_qpolynomial_involves_dims(__isl_keep isl_qpolynomial *qp,
@@ -29,15 +29,15 @@ __isl_give isl_qpolynomial *isl_qpolynomial_set_dim_name(
 	__isl_take isl_qpolynomial *qp,
 	enum isl_dim_type type, unsigned pos, const char *s);
 
-__isl_give isl_qpolynomial *isl_qpolynomial_zero(__isl_take isl_space *dim);
-__isl_give isl_qpolynomial *isl_qpolynomial_one(__isl_take isl_space *dim);
-__isl_give isl_qpolynomial *isl_qpolynomial_infty(__isl_take isl_space *dim);
-__isl_give isl_qpolynomial *isl_qpolynomial_neginfty(__isl_take isl_space *dim);
-__isl_give isl_qpolynomial *isl_qpolynomial_nan(__isl_take isl_space *dim);
-__isl_give isl_qpolynomial *isl_qpolynomial_rat_cst(__isl_take isl_space *dim,
+__isl_give isl_qpolynomial *isl_qpolynomial_zero_on_domain(__isl_take isl_space *dim);
+__isl_give isl_qpolynomial *isl_qpolynomial_one_on_domain(__isl_take isl_space *dim);
+__isl_give isl_qpolynomial *isl_qpolynomial_infty_on_domain(__isl_take isl_space *dim);
+__isl_give isl_qpolynomial *isl_qpolynomial_neginfty_on_domain(__isl_take isl_space *dim);
+__isl_give isl_qpolynomial *isl_qpolynomial_nan_on_domain(__isl_take isl_space *dim);
+__isl_give isl_qpolynomial *isl_qpolynomial_rat_cst_on_domain(__isl_take isl_space *dim,
 	const isl_int n, const isl_int d);
 __isl_give isl_qpolynomial *isl_qpolynomial_div(__isl_take isl_div *div);
-__isl_give isl_qpolynomial *isl_qpolynomial_var(__isl_take isl_space *dim,
+__isl_give isl_qpolynomial *isl_qpolynomial_var_on_domain(__isl_take isl_space *dim,
 	enum isl_dim_type type, unsigned pos);
 __isl_give isl_qpolynomial *isl_qpolynomial_copy(__isl_keep isl_qpolynomial *qp);
 void *isl_qpolynomial_free(__isl_take isl_qpolynomial *qp);
@@ -147,9 +147,11 @@ void *isl_pw_qpolynomial_free(__isl_take isl_pw_qpolynomial *pwqp);
 
 int isl_pw_qpolynomial_is_zero(__isl_keep isl_pw_qpolynomial *pwqp);
 
+__isl_give isl_space *isl_pw_qpolynomial_get_domain_space(
+	__isl_keep isl_pw_qpolynomial *pwqp);
 __isl_give isl_space *isl_pw_qpolynomial_get_space(
 	__isl_keep isl_pw_qpolynomial *pwqp);
-__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_reset_space(
+__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_reset_domain_space(
 	__isl_take isl_pw_qpolynomial *pwqp, __isl_take isl_space *dim);
 unsigned isl_pw_qpolynomial_dim(__isl_keep isl_pw_qpolynomial *pwqp,
 	enum isl_dim_type type);
@@ -260,9 +262,6 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_copy(
 	__isl_keep isl_qpolynomial_fold *fold);
 void isl_qpolynomial_fold_free(__isl_take isl_qpolynomial_fold *fold);
 
-__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_reset_space(
-	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_space *dim);
-
 int isl_qpolynomial_fold_is_empty(__isl_keep isl_qpolynomial_fold *fold);
 int isl_qpolynomial_fold_plain_is_equal(__isl_keep isl_qpolynomial_fold *fold1,
 	__isl_keep isl_qpolynomial_fold *fold2);
@@ -316,6 +315,8 @@ void *isl_pw_qpolynomial_fold_free(__isl_take isl_pw_qpolynomial_fold *pwf);
 
 int isl_pw_qpolynomial_fold_is_zero(__isl_keep isl_pw_qpolynomial_fold *pwf);
 
+__isl_give isl_space *isl_pw_qpolynomial_fold_get_domain_space(
+	__isl_keep isl_pw_qpolynomial_fold *pwf);
 __isl_give isl_space *isl_pw_qpolynomial_fold_get_space(
 	__isl_keep isl_pw_qpolynomial_fold *pwf);
 __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_reset_space(

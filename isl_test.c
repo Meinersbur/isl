@@ -1644,7 +1644,7 @@ void test_pwqp(struct isl_ctx *ctx)
 	pwqp1 = isl_pw_qpolynomial_read_from_str(ctx, str);
 
 	pwqp1 = isl_pw_qpolynomial_move_dims(pwqp1, isl_dim_param, 0,
-						isl_dim_set, 1, 1);
+						isl_dim_in, 1, 1);
 
 	str = "[j] -> { [i,k] -> 1 + 9 * [i/5] + 7 * [j/11] + 4 * [k/13] }";
 	pwqp2 = isl_pw_qpolynomial_read_from_str(ctx, str);
@@ -1783,13 +1783,13 @@ void test_bound(isl_ctx *ctx)
 	str = "{ [[a, b, c, d] -> [e]] -> 0 }";
 	pwqp = isl_pw_qpolynomial_read_from_str(ctx, str);
 	pwf = isl_pw_qpolynomial_bound(pwqp, isl_fold_max, NULL);
-	assert(isl_pw_qpolynomial_fold_dim(pwf, isl_dim_set) == 4);
+	assert(isl_pw_qpolynomial_fold_dim(pwf, isl_dim_in) == 4);
 	isl_pw_qpolynomial_fold_free(pwf);
 
 	str = "{ [[x]->[x]] -> 1 : exists a : x = 2 a }";
 	pwqp = isl_pw_qpolynomial_read_from_str(ctx, str);
 	pwf = isl_pw_qpolynomial_bound(pwqp, isl_fold_max, NULL);
-	assert(isl_pw_qpolynomial_fold_dim(pwf, isl_dim_set) == 1);
+	assert(isl_pw_qpolynomial_fold_dim(pwf, isl_dim_in) == 1);
 	isl_pw_qpolynomial_fold_free(pwf);
 }
 
@@ -2264,15 +2264,15 @@ int test_aff(isl_ctx *ctx)
 
 	dim = isl_space_set_alloc(ctx, 0, 1);
 	ls = isl_local_space_from_space(dim);
-	aff = isl_aff_zero(ls);
+	aff = isl_aff_zero_on_domain(ls);
 
-	aff = isl_aff_add_coefficient_si(aff, isl_dim_set, 0, 1);
+	aff = isl_aff_add_coefficient_si(aff, isl_dim_in, 0, 1);
 	aff = isl_aff_scale_down_ui(aff, 3);
 	aff = isl_aff_floor(aff);
-	aff = isl_aff_add_coefficient_si(aff, isl_dim_set, 0, 1);
+	aff = isl_aff_add_coefficient_si(aff, isl_dim_in, 0, 1);
 	aff = isl_aff_scale_down_ui(aff, 2);
 	aff = isl_aff_floor(aff);
-	aff = isl_aff_add_coefficient_si(aff, isl_dim_set, 0, 1);
+	aff = isl_aff_add_coefficient_si(aff, isl_dim_in, 0, 1);
 
 	str = "{ [10] }";
 	set = isl_set_read_from_str(ctx, str, 0);

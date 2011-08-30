@@ -68,7 +68,7 @@ static int unwrapped_guarded_poly_bound(__isl_take isl_basic_set *bset,
 	morph = isl_basic_set_full_compression(bset);
 
 	bset = isl_morph_basic_set(isl_morph_copy(morph), bset);
-	poly = isl_qpolynomial_morph(poly, isl_morph_copy(morph));
+	poly = isl_qpolynomial_morph_domain(poly, isl_morph_copy(morph));
 
 	dim = isl_morph_get_ran_space(morph);
 	dim = isl_space_params(dim);
@@ -76,6 +76,8 @@ static int unwrapped_guarded_poly_bound(__isl_take isl_basic_set *bset,
 	top_pwf = bound->pwf;
 	top_pwf_tight = bound->pwf_tight;
 
+	dim = isl_space_from_domain(dim);
+	dim = isl_space_add_dims(dim, isl_dim_out, 1);
 	bound->pwf = isl_pw_qpolynomial_fold_zero(isl_space_copy(dim),
 						  bound->type);
 	bound->pwf_tight = isl_pw_qpolynomial_fold_zero(dim, bound->type);
@@ -86,9 +88,10 @@ static int unwrapped_guarded_poly_bound(__isl_take isl_basic_set *bset,
 	morph = isl_morph_ran_params(morph);
 	morph = isl_morph_inverse(morph);
 
-	bound->pwf = isl_pw_qpolynomial_fold_morph(bound->pwf,
+	bound->pwf = isl_pw_qpolynomial_fold_morph_domain(bound->pwf,
 							isl_morph_copy(morph));
-	bound->pwf_tight = isl_pw_qpolynomial_fold_morph(bound->pwf_tight, morph);
+	bound->pwf_tight = isl_pw_qpolynomial_fold_morph_domain(
+						bound->pwf_tight, morph);
 
 	bound->pwf = isl_pw_qpolynomial_fold_fold(top_pwf, bound->pwf);
 	bound->pwf_tight = isl_pw_qpolynomial_fold_fold(top_pwf_tight,
@@ -116,12 +119,12 @@ static int guarded_poly_bound(__isl_take isl_basic_set *bset,
 		return unwrapped_guarded_poly_bound(bset, poly, user);
 
 	nparam = isl_space_dim(bound->dim, isl_dim_param);
-	n_in = isl_space_dim(bound->dim, isl_dim_set);
+	n_in = isl_space_dim(bound->dim, isl_dim_in);
 
 	bset = isl_basic_set_move_dims(bset, isl_dim_param, nparam,
 					isl_dim_set, 0, n_in);
 	poly = isl_qpolynomial_move_dims(poly, isl_dim_param, nparam,
-					isl_dim_set, 0, n_in);
+					isl_dim_in, 0, n_in);
 
 	dim = isl_basic_set_get_space(bset);
 	dim = isl_space_params(dim);
@@ -129,6 +132,8 @@ static int guarded_poly_bound(__isl_take isl_basic_set *bset,
 	top_pwf = bound->pwf;
 	top_pwf_tight = bound->pwf_tight;
 
+	dim = isl_space_from_domain(dim);
+	dim = isl_space_add_dims(dim, isl_dim_out, 1);
 	bound->pwf = isl_pw_qpolynomial_fold_zero(isl_space_copy(dim),
 						  bound->type);
 	bound->pwf_tight = isl_pw_qpolynomial_fold_zero(dim, bound->type);
@@ -206,13 +211,15 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_bound(
 	if (!pwf)
 		return NULL;
 
-	bound.dim = isl_pw_qpolynomial_fold_get_space(pwf);
+	bound.dim = isl_pw_qpolynomial_fold_get_domain_space(pwf);
 
 	bound.wrapping = isl_space_is_wrapping(bound.dim);
 	if (bound.wrapping)
 		bound.dim = isl_space_unwrap(bound.dim);
 	nvar = isl_space_dim(bound.dim, isl_dim_out);
 	bound.dim = isl_space_domain(bound.dim);
+	bound.dim = isl_space_from_domain(bound.dim);
+	bound.dim = isl_space_add_dims(bound.dim, isl_dim_out, 1);
 
 	if (nvar == 0) {
 		if (tight)

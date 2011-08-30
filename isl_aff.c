@@ -56,6 +56,10 @@ __isl_give isl_aff *isl_aff_alloc(__isl_take isl_local_space *ls)
 	if (!isl_local_space_divs_known(ls))
 		isl_die(ctx, isl_error_invalid, "local space has unknown divs",
 			goto error);
+	if (!isl_local_space_is_set(ls))
+		isl_die(ctx, isl_error_invalid,
+			"domain of affine expression should be a set",
+			goto error);
 
 	total = isl_local_space_dim(ls, isl_dim_all);
 	v = isl_vec_alloc(ctx, 1 + 1 + total);
@@ -65,7 +69,7 @@ error:
 	return NULL;
 }
 
-__isl_give isl_aff *isl_aff_zero(__isl_take isl_local_space *ls)
+__isl_give isl_aff *isl_aff_zero_on_domain(__isl_take isl_local_space *ls)
 {
 	isl_aff *aff;
 
@@ -129,28 +133,69 @@ isl_ctx *isl_aff_get_ctx(__isl_keep isl_aff *aff)
 	return aff ? isl_local_space_get_ctx(aff->ls) : NULL;
 }
 
+/* Externally, an isl_aff has a map space, but internally, the
+ * ls field corresponds to the domain of that space.
+ */
 int isl_aff_dim(__isl_keep isl_aff *aff, enum isl_dim_type type)
 {
-	return aff ? isl_local_space_dim(aff->ls, type) : 0;
+	if (!aff)
+		return 0;
+	if (type == isl_dim_out)
+		return 1;
+	if (type == isl_dim_in)
+		type = isl_dim_set;
+	return isl_local_space_dim(aff->ls, type);
 }
 
-__isl_give isl_space *isl_aff_get_space(__isl_keep isl_aff *aff)
+__isl_give isl_space *isl_aff_get_domain_space(__isl_keep isl_aff *aff)
 {
 	return aff ? isl_local_space_get_space(aff->ls) : NULL;
 }
 
-__isl_give isl_local_space *isl_aff_get_local_space(__isl_keep isl_aff *aff)
+__isl_give isl_space *isl_aff_get_space(__isl_keep isl_aff *aff)
+{
+	isl_space *space;
+	if (!aff)
+		return NULL;
+	space = isl_local_space_get_space(aff->ls);
+	space = isl_space_from_domain(space);
+	space = isl_space_add_dims(space, isl_dim_out, 1);
+	return space;
+}
+
+__isl_give isl_local_space *isl_aff_get_domain_local_space(
+	__isl_keep isl_aff *aff)
 {
 	return aff ? isl_local_space_copy(aff->ls) : NULL;
 }
 
+__isl_give isl_local_space *isl_aff_get_local_space(__isl_keep isl_aff *aff)
+{
+	isl_local_space *ls;
+	if (!aff)
+		return NULL;
+	ls = isl_local_space_copy(aff->ls);
+	ls = isl_local_space_from_domain(ls);
+	ls = isl_local_space_add_dims(ls, isl_dim_out, 1);
+	return ls;
+}
+
+/* Externally, an isl_aff has a map space, but internally, the
+ * ls field corresponds to the domain of that space.
+ */
 const char *isl_aff_get_dim_name(__isl_keep isl_aff *aff,
 	enum isl_dim_type type, unsigned pos)
 {
-	return aff ? isl_local_space_get_dim_name(aff->ls, type, pos) : 0;
+	if (!aff)
+		return NULL;
+	if (type == isl_dim_out)
+		return NULL;
+	if (type == isl_dim_in)
+		type = isl_dim_set;
+	return isl_local_space_get_dim_name(aff->ls, type, pos);
 }
 
-__isl_give isl_aff *isl_aff_reset_space(__isl_take isl_aff *aff,
+__isl_give isl_aff *isl_aff_reset_domain_space(__isl_take isl_aff *aff,
 	__isl_take isl_space *dim)
 {
 	aff = isl_aff_cow(aff);
@@ -166,6 +211,17 @@ error:
 	isl_aff_free(aff);
 	isl_space_free(dim);
 	return NULL;
+}
+
+/* Reset the space of "aff".  This function is called from isl_pw_templ.c
+ * and doesn't know if the space of an element object is represented
+ * directly or through its domain.  It therefore passes along both.
+ */
+__isl_give isl_aff *isl_aff_reset_space_and_domain(__isl_take isl_aff *aff,
+	__isl_take isl_space *space, __isl_take isl_space *domain)
+{
+	isl_space_free(space);
+	return isl_aff_reset_domain_space(aff, domain);
 }
 
 /* Reorder the coefficients of the affine expression based
@@ -198,9 +254,10 @@ error:
 	return NULL;
 }
 
-/* Reorder the dimensions of "aff" according to the given reordering.
+/* Reorder the dimensions of the domain of "aff" according
+ * to the given reordering.
  */
-__isl_give isl_aff *isl_aff_realign(__isl_take isl_aff *aff,
+__isl_give isl_aff *isl_aff_realign_domain(__isl_take isl_aff *aff,
 	__isl_take isl_reordering *r)
 {
 	aff = isl_aff_cow(aff);
@@ -265,6 +322,13 @@ int isl_aff_get_coefficient(__isl_keep isl_aff *aff,
 {
 	if (!aff)
 		return -1;
+
+	if (type == isl_dim_out)
+		isl_die(aff->v->ctx, isl_error_invalid,
+			"output/set dimension does not have a coefficient",
+			return -1);
+	if (type == isl_dim_in)
+		type = isl_dim_set;
 
 	if (pos >= isl_local_space_dim(aff->ls, type))
 		isl_die(aff->v->ctx, isl_error_invalid,
@@ -357,6 +421,13 @@ __isl_give isl_aff *isl_aff_set_coefficient(__isl_take isl_aff *aff,
 	if (!aff)
 		return NULL;
 
+	if (type == isl_dim_out)
+		isl_die(aff->v->ctx, isl_error_invalid,
+			"output/set dimension does not have a coefficient",
+			return isl_aff_free(aff));
+	if (type == isl_dim_in)
+		type = isl_dim_set;
+
 	if (pos >= isl_local_space_dim(aff->ls, type))
 		isl_die(aff->v->ctx, isl_error_invalid,
 			"position out of bounds", return isl_aff_free(aff));
@@ -381,6 +452,13 @@ __isl_give isl_aff *isl_aff_set_coefficient_si(__isl_take isl_aff *aff,
 	if (!aff)
 		return NULL;
 
+	if (type == isl_dim_out)
+		isl_die(aff->v->ctx, isl_error_invalid,
+			"output/set dimension does not have a coefficient",
+			return isl_aff_free(aff));
+	if (type == isl_dim_in)
+		type = isl_dim_set;
+
 	if (pos >= isl_local_space_dim(aff->ls, type))
 		isl_die(aff->v->ctx, isl_error_invalid,
 			"position out of bounds", return isl_aff_free(aff));
@@ -404,6 +482,13 @@ __isl_give isl_aff *isl_aff_add_coefficient(__isl_take isl_aff *aff,
 {
 	if (!aff)
 		return NULL;
+
+	if (type == isl_dim_out)
+		isl_die(aff->v->ctx, isl_error_invalid,
+			"output/set dimension does not have a coefficient",
+			return isl_aff_free(aff));
+	if (type == isl_dim_in)
+		type = isl_dim_set;
 
 	if (pos >= isl_local_space_dim(aff->ls, type))
 		isl_die(aff->v->ctx, isl_error_invalid,
@@ -764,6 +849,12 @@ __isl_give isl_aff *isl_aff_set_dim_name(__isl_take isl_aff *aff,
 	aff = isl_aff_cow(aff);
 	if (!aff)
 		return NULL;
+	if (type == isl_dim_out)
+		isl_die(aff->v->ctx, isl_error_invalid,
+			"cannot set name of output/set dimension",
+			return isl_aff_free(aff));
+	if (type == isl_dim_in)
+		type = isl_dim_set;
 	aff->ls = isl_local_space_set_dim_name(aff->ls, type, pos, s);
 	if (!aff->ls)
 		return isl_aff_free(aff);
@@ -854,9 +945,10 @@ __isl_give isl_aff *isl_aff_gist(__isl_take isl_aff *aff,
 	n_div = isl_local_space_dim(aff->ls, isl_dim_div);
 	if (n_div > 0) {
 		isl_basic_set *bset;
+		isl_local_space *ls;
 		context = isl_set_add_dims(context, isl_dim_set, n_div);
-		bset = isl_basic_set_from_local_space(
-					    isl_aff_get_local_space(aff));
+		ls = isl_aff_get_domain_local_space(aff);
+		bset = isl_basic_set_from_local_space(ls);
 		bset = isl_basic_set_lift(bset);
 		bset = isl_basic_set_flatten(bset);
 		context = isl_set_intersect(context,
@@ -980,11 +1072,17 @@ __isl_give isl_aff *isl_aff_drop_dims(__isl_take isl_aff *aff,
 
 	if (!aff)
 		return NULL;
+	if (type == isl_dim_out)
+		isl_die(aff->v->ctx, isl_error_invalid,
+			"cannot drop output/set dimension",
+			return isl_aff_free(aff));
+	if (type == isl_dim_in)
+		type = isl_dim_set;
 	if (n == 0 && !isl_local_space_is_named_or_nested(aff->ls, type))
 		return aff;
 
 	ctx = isl_aff_get_ctx(aff);
-	if (first + n > isl_aff_dim(aff, type))
+	if (first + n > isl_local_space_dim(aff->ls, type))
 		isl_die(ctx, isl_error_invalid, "range out of bounds",
 			return isl_aff_free(aff));
 
@@ -1011,11 +1109,17 @@ __isl_give isl_aff *isl_aff_insert_dims(__isl_take isl_aff *aff,
 
 	if (!aff)
 		return NULL;
+	if (type == isl_dim_out)
+		isl_die(aff->v->ctx, isl_error_invalid,
+			"cannot insert output/set dimensions",
+			return isl_aff_free(aff));
+	if (type == isl_dim_in)
+		type = isl_dim_set;
 	if (n == 0 && !isl_local_space_is_named_or_nested(aff->ls, type))
 		return aff;
 
 	ctx = isl_aff_get_ctx(aff);
-	if (first > isl_aff_dim(aff, type))
+	if (first > isl_local_space_dim(aff->ls, type))
 		isl_die(ctx, isl_error_invalid, "position out of bounds",
 			return isl_aff_free(aff));
 
@@ -1061,14 +1165,14 @@ __isl_give isl_pw_aff *isl_pw_aff_set_tuple_id(__isl_take isl_pw_aff *pwaff,
 	isl_space *dim;
 
 	dim = isl_pw_aff_get_space(pwaff);
-	dim = isl_space_set_tuple_id(dim, isl_dim_set, id);
+	dim = isl_space_set_tuple_id(dim, isl_dim_in, id);
 
 	return isl_pw_aff_reset_space(pwaff, dim);
 }
 
 __isl_give isl_pw_aff *isl_pw_aff_from_aff(__isl_take isl_aff *aff)
 {
-	isl_set *dom = isl_set_universe(isl_aff_get_space(aff));
+	isl_set *dom = isl_set_universe(isl_aff_get_domain_space(aff));
 	return isl_pw_aff_alloc(dom, aff);
 }
 
@@ -1257,8 +1361,6 @@ static __isl_give isl_map *map_from_pw_aff(__isl_take isl_pw_aff *pwaff)
 		return NULL;
 
 	dim = isl_pw_aff_get_space(pwaff);
-	dim = isl_space_from_domain(dim);
-	dim = isl_space_add_dims(dim, isl_dim_out, 1);
 	map = isl_map_empty(dim);
 
 	for (i = 0; i < pwaff->n; ++i) {
@@ -1282,7 +1384,7 @@ static __isl_give isl_map *map_from_pw_aff(__isl_take isl_pw_aff *pwaff)
  */
 __isl_give isl_map *isl_map_from_pw_aff(__isl_take isl_pw_aff *pwaff)
 {
-	if (isl_space_is_params(pwaff->dim))
+	if (isl_space_is_set(pwaff->dim))
 		isl_die(isl_pw_aff_get_ctx(pwaff), isl_error_invalid,
 			"space of input is not a map",
 			return isl_pw_aff_free(pwaff));
@@ -1295,7 +1397,7 @@ __isl_give isl_map *isl_map_from_pw_aff(__isl_take isl_pw_aff *pwaff)
  */
 __isl_give isl_set *isl_set_from_pw_aff(__isl_take isl_pw_aff *pwaff)
 {
-	if (!isl_space_is_params(pwaff->dim))
+	if (!isl_space_is_set(pwaff->dim))
 		isl_die(isl_pw_aff_get_ctx(pwaff), isl_error_invalid,
 			"space of input is not a set",
 			return isl_pw_aff_free(pwaff));
@@ -1313,7 +1415,7 @@ __isl_give isl_set *isl_pw_aff_nonneg_set(__isl_take isl_pw_aff *pwaff)
 	if (!pwaff)
 		return NULL;
 
-	set = isl_set_empty(isl_pw_aff_get_space(pwaff));
+	set = isl_set_empty(isl_pw_aff_get_domain_space(pwaff));
 
 	for (i = 0; i < pwaff->n; ++i) {
 		isl_basic_set *bset;
@@ -1341,7 +1443,7 @@ __isl_give isl_set *isl_pw_aff_zero_set(__isl_take isl_pw_aff *pwaff)
 	if (!pwaff)
 		return NULL;
 
-	set = isl_set_empty(isl_pw_aff_get_space(pwaff));
+	set = isl_set_empty(isl_pw_aff_get_domain_space(pwaff));
 
 	for (i = 0; i < pwaff->n; ++i) {
 		isl_basic_set *bset;
@@ -1390,7 +1492,7 @@ static __isl_give isl_set *pw_aff_gte_set(__isl_take isl_pw_aff *pwaff1,
 	if (strict) {
 		isl_space *dim = isl_set_get_space(set1);
 		isl_aff *aff;
-		aff = isl_aff_zero(isl_local_space_from_space(dim));
+		aff = isl_aff_zero_on_domain(isl_local_space_from_space(dim));
 		aff = isl_aff_add_constant_si(aff, -1);
 		pwaff1 = isl_pw_aff_add(pwaff1, isl_pw_aff_alloc(set1, aff));
 	} else
@@ -1479,7 +1581,7 @@ static __isl_give isl_set *pw_aff_list_set(__isl_take isl_pw_aff_list *list1,
 		isl_die(ctx, isl_error_invalid,
 			"list should contain at least one element", goto error);
 
-	set = isl_set_universe(isl_pw_aff_get_space(list1->p[0]));
+	set = isl_set_universe(isl_pw_aff_get_domain_space(list1->p[0]));
 	for (i = 0; i < list1->n; ++i)
 		for (j = 0; j < list2->n; ++j) {
 			isl_set *set_ij;

@@ -1124,12 +1124,14 @@ __isl_give isl_aff *isl_constraint_get_aff(
 __isl_give isl_constraint *isl_equality_from_aff(__isl_take isl_aff *aff)
 {
 	int k;
+	isl_local_space *ls;
 	isl_basic_set *bset;
 
 	if (!aff)
 		return NULL;
 
-	bset = isl_basic_set_from_local_space(isl_aff_get_local_space(aff));
+	ls = isl_aff_get_domain_local_space(aff);
+	bset = isl_basic_set_from_local_space(ls);
 	bset = isl_basic_set_extend_constraints(bset, 1, 0);
 	k = isl_basic_set_alloc_equality(bset);
 	if (k < 0)
@@ -1151,12 +1153,14 @@ error:
 __isl_give isl_constraint *isl_inequality_from_aff(__isl_take isl_aff *aff)
 {
 	int k;
+	isl_local_space *ls;
 	isl_basic_set *bset;
 
 	if (!aff)
 		return NULL;
 
-	bset = isl_basic_set_from_local_space(isl_aff_get_local_space(aff));
+	ls = isl_aff_get_domain_local_space(aff);
+	bset = isl_basic_set_from_local_space(ls);
 	bset = isl_basic_set_extend_constraints(bset, 0, 1);
 	k = isl_basic_set_alloc_inequality(bset);
 	if (k < 0)

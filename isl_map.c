@@ -5450,6 +5450,7 @@ static __isl_give isl_pw_aff *basic_set_dim_opt(__isl_keep isl_basic_set *bset,
 	int r;
 
 	dim = isl_space_params(dim);
+	dim = isl_space_add_dims(dim, isl_dim_set, 1);
 	pwaff = isl_pw_aff_empty(dim);
 
 	r = isl_basic_set_foreach_lexopt(bset, max, &update_dim_opt, &pwaff);
@@ -9492,8 +9493,6 @@ __isl_give isl_basic_map *isl_basic_map_from_aff(__isl_take isl_aff *aff)
 		return NULL;
 
 	ls = isl_aff_get_local_space(aff);
-	ls = isl_local_space_from_domain(ls);
-	ls = isl_local_space_add_dims(ls, isl_dim_out, 1);
 	bmap = isl_basic_map_from_local_space(ls);
 	bmap = isl_basic_map_extend_constraints(bmap, 1, 0);
 	k = isl_basic_map_alloc_equality(bmap);

@@ -112,6 +112,15 @@ of explicitly creating a parameter space.  These can now be created
 directly using C<isl_space_params_alloc> or from other spaces using
 C<isl_space_params>.
 
+=item * The space in which C<isl_aff>, C<isl_pw_aff>, C<isl_qpolynomial>,
+C<isl_pw_qpolynomial>, C<isl_qpolynomial_fold> and C<isl_pw_qpolynomial_fold>
+objects live is now a map space
+instead of a set space.  This means, for example, that the dimensions
+of the domain of an C<isl_aff> are now considered to be of type
+C<isl_dim_in> instead of C<isl_dim_set>.  Extra functions have been
+added to obtain the domain space.  Some of the constructors still
+take a domain space and have therefore been renamed.
+
 =back
 
 =head1 Installation
@@ -533,20 +542,32 @@ of the original object.
 		__isl_keep isl_constraint *constraint);
 
 	#include <isl/polynomial.h>
+	__isl_give isl_space *isl_qpolynomial_get_domain_space(
+		__isl_keep isl_qpolynomial *qp);
 	__isl_give isl_space *isl_qpolynomial_get_space(
 		__isl_keep isl_qpolynomial *qp);
 	__isl_give isl_space *isl_qpolynomial_fold_get_space(
 		__isl_keep isl_qpolynomial_fold *fold);
+	__isl_give isl_space *isl_pw_qpolynomial_get_domain_space(
+		__isl_keep isl_pw_qpolynomial *pwqp);
 	__isl_give isl_space *isl_pw_qpolynomial_get_space(
 		__isl_keep isl_pw_qpolynomial *pwqp);
+	__isl_give isl_space *isl_pw_qpolynomial_fold_get_domain_space(
+		__isl_keep isl_pw_qpolynomial_fold *pwf);
+	__isl_give isl_space *isl_pw_qpolynomial_fold_get_space(
+		__isl_keep isl_pw_qpolynomial_fold *pwf);
 	__isl_give isl_space *isl_union_pw_qpolynomial_get_space(
 		__isl_keep isl_union_pw_qpolynomial *upwqp);
 	__isl_give isl_space *isl_union_pw_qpolynomial_fold_get_space(
 		__isl_keep isl_union_pw_qpolynomial_fold *upwf);
 
 	#include <isl/aff.h>
+	__isl_give isl_space *isl_aff_get_domain_space(
+		__isl_keep isl_aff *aff);
 	__isl_give isl_space *isl_aff_get_space(
 		__isl_keep isl_aff *aff);
+	__isl_give isl_space *isl_pw_aff_get_domain_space(
+		__isl_keep isl_pw_aff *pwaff);
 	__isl_give isl_space *isl_pw_aff_get_space(
 		__isl_keep isl_pw_aff *pwaff);
 
@@ -2449,10 +2470,13 @@ the original and the kernel (in that order) is the zero matrix.
 
 =head2 Piecewise Quasi Affine Expressions
 
-The zero quasi affine expression can be created using
+The zero quasi affine expression on a given domain can be created using
 
-	__isl_give isl_aff *isl_aff_zero(
+	__isl_give isl_aff *isl_aff_zero_on_domain(
 		__isl_take isl_local_space *ls);
+
+Note that the space in which the resulting object lives is a map space
+with the given space as domain and a one-dimensional range.
 
 A quasi affine expression can also be initialized from an C<isl_div>:
 
@@ -2512,6 +2536,8 @@ The expression can be inspected using
 	isl_ctx *isl_aff_get_ctx(__isl_keep isl_aff *aff);
 	int isl_aff_dim(__isl_keep isl_aff *aff,
 		enum isl_dim_type type);
+	__isl_give isl_local_space *isl_aff_get_domain_local_space(
+		__isl_keep isl_aff *aff);
 	__isl_give isl_local_space *isl_aff_get_local_space(
 		__isl_keep isl_aff *aff);
 	const char *isl_aff_get_dim_name(__isl_keep isl_aff *aff,
@@ -2932,26 +2958,30 @@ More complicated quasipolynomials can be created by applying
 operations such as addition and multiplication
 on the resulting quasipolynomials
 
-	__isl_give isl_qpolynomial *isl_qpolynomial_zero(
-		__isl_take isl_space *dim);
-	__isl_give isl_qpolynomial *isl_qpolynomial_one(
-		__isl_take isl_space *dim);
-	__isl_give isl_qpolynomial *isl_qpolynomial_infty(
-		__isl_take isl_space *dim);
-	__isl_give isl_qpolynomial *isl_qpolynomial_neginfty(
-		__isl_take isl_space *dim);
-	__isl_give isl_qpolynomial *isl_qpolynomial_nan(
-		__isl_take isl_space *dim);
-	__isl_give isl_qpolynomial *isl_qpolynomial_rat_cst(
-		__isl_take isl_space *dim,
+	__isl_give isl_qpolynomial *isl_qpolynomial_zero_on_domain(
+		__isl_take isl_space *domain);
+	__isl_give isl_qpolynomial *isl_qpolynomial_one_on_domain(
+		__isl_take isl_space *domain);
+	__isl_give isl_qpolynomial *isl_qpolynomial_infty_on_domain(
+		__isl_take isl_space *domain);
+	__isl_give isl_qpolynomial *isl_qpolynomial_neginfty_on_domain(
+		__isl_take isl_space *domain);
+	__isl_give isl_qpolynomial *isl_qpolynomial_nan_on_domain(
+		__isl_take isl_space *domain);
+	__isl_give isl_qpolynomial *isl_qpolynomial_rat_cst_on_domain(
+		__isl_take isl_space *domain,
 		const isl_int n, const isl_int d);
 	__isl_give isl_qpolynomial *isl_qpolynomial_div(
 		__isl_take isl_div *div);
-	__isl_give isl_qpolynomial *isl_qpolynomial_var(
-		__isl_take isl_space *dim,
+	__isl_give isl_qpolynomial *isl_qpolynomial_var_on_domain(
+		__isl_take isl_space *domain,
 		enum isl_dim_type type, unsigned pos);
 	__isl_give isl_qpolynomial *isl_qpolynomial_from_aff(
 		__isl_take isl_aff *aff);
+
+Note that the space in which a quasipolynomial lives is a map space
+with a one-dimensional range.  The C<domain> argument in some of
+the functions above corresponds to the domain of this map space.
 
 The zero piecewise quasipolynomial or a piecewise quasipolynomial
 with a single cell can be created using the following functions.

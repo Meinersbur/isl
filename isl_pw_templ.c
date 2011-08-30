@@ -99,9 +99,9 @@ __isl_give PW *FN(PW,alloc)(__isl_take isl_set *set, __isl_take EL *el)
 		goto error;
 
 #ifdef HAS_TYPE
-	pw = FN(PW,alloc_size)(isl_set_get_space(set), type, 1);
+	pw = FN(PW,alloc_size)(FN(EL,get_space)(el), type, 1);
 #else
-	pw = FN(PW,alloc_size)(isl_set_get_space(set), 1);
+	pw = FN(PW,alloc_size)(FN(EL,get_space)(el), 1);
 #endif
 
 	return FN(PW,add_piece)(pw, set, el);
@@ -182,7 +182,8 @@ int FN(PW,IS_ZERO)(__isl_keep PW *pw)
 }
 
 #ifndef NO_REALIGN
-__isl_give PW *FN(PW,realign)(__isl_take PW *pw, __isl_take isl_reordering *exp)
+__isl_give PW *FN(PW,realign_domain)(__isl_take PW *pw,
+	__isl_take isl_reordering *exp)
 {
 	int i;
 
@@ -195,13 +196,13 @@ __isl_give PW *FN(PW,realign)(__isl_take PW *pw, __isl_take isl_reordering *exp)
 						    isl_reordering_copy(exp));
 		if (!pw->p[i].set)
 			goto error;
-		pw->p[i].FIELD = FN(EL,realign)(pw->p[i].FIELD,
+		pw->p[i].FIELD = FN(EL,realign_domain)(pw->p[i].FIELD,
 						    isl_reordering_copy(exp));
 		if (!pw->p[i].FIELD)
 			goto error;
 	}
 
-	pw = FN(PW,reset_space)(pw, isl_space_copy(exp->dim));
+	pw = FN(PW,reset_domain_space)(pw, isl_space_copy(exp->dim));
 
 	isl_reordering_free(exp);
 	return pw;
@@ -235,8 +236,9 @@ __isl_give PW *FN(PW,align_params)(__isl_take PW *pw, __isl_take isl_space *mode
 		model = isl_space_drop_dims(model, isl_dim_out,
 					0, isl_space_dim(model, isl_dim_out));
 		exp = isl_parameter_alignment_reordering(pw->dim, model);
-		exp = isl_reordering_extend_space(exp, FN(PW,get_space)(pw));
-		pw = FN(PW,realign)(pw, exp);
+		exp = isl_reordering_extend_space(exp,
+					FN(PW,get_domain_space)(pw));
+		pw = FN(PW,realign_domain)(pw, exp);
 	}
 
 	isl_space_free(model);
@@ -513,7 +515,7 @@ __isl_give isl_qpolynomial *FN(PW,eval)(__isl_take PW *pw,
 		goto error;
 	ctx = isl_point_get_ctx(pnt);
 	pnt_dim = isl_point_get_space(pnt);
-	isl_assert(ctx, isl_space_is_equal(pnt_dim, pw->dim), goto error);
+	isl_assert(ctx, isl_space_is_domain(pnt_dim, pw->dim), goto error);
 
 	for (i = 0; i < pw->n; ++i) {
 		found = isl_set_contains_point(pw->p[i].set, pnt);
@@ -526,7 +528,7 @@ __isl_give isl_qpolynomial *FN(PW,eval)(__isl_take PW *pw,
 		qp = FN(EL,eval)(FN(EL,copy)(pw->p[i].FIELD),
 					    isl_point_copy(pnt));
 	else
-		qp = isl_qpolynomial_zero(isl_space_copy(pw->dim));
+		qp = isl_qpolynomial_zero_on_domain(FN(PW,get_domain_space)(pw));
 	FN(PW,free)(pw);
 	isl_space_free(pnt_dim);
 	isl_point_free(pnt);
@@ -547,7 +549,7 @@ __isl_give isl_set *FN(PW,domain)(__isl_take PW *pw)
 	if (!pw)
 		return NULL;
 
-	dom = isl_set_empty(isl_space_copy(pw->dim));
+	dom = isl_set_empty(FN(PW,get_domain_space)(pw));
 	for (i = 0; i < pw->n; ++i)
 		dom = isl_set_union_disjoint(dom, isl_set_copy(pw->p[i].set));
 
@@ -713,17 +715,22 @@ int FN(PW,involves_dims)(__isl_keep PW *pw, enum isl_dim_type type,
 	unsigned first, unsigned n)
 {
 	int i;
+	enum isl_dim_type set_type;
 
 	if (!pw)
 		return -1;
 	if (pw->n == 0 || n == 0)
 		return 0;
+
+	set_type = type == isl_dim_in ? isl_dim_set : type;
+
 	for (i = 0; i < pw->n; ++i) {
 		int involves = FN(EL,involves_dims)(pw->p[i].FIELD,
 							type, first, n);
 		if (involves < 0 || involves)
 			return involves;
-		involves = isl_set_involves_dims(pw->p[i].set, type, first, n);
+		involves = isl_set_involves_dims(pw->p[i].set,
+							set_type, first, n);
 		if (involves < 0 || involves)
 			return involves;
 	}
@@ -735,17 +742,21 @@ __isl_give PW *FN(PW,set_dim_name)(__isl_take PW *pw,
 	enum isl_dim_type type, unsigned pos, const char *s)
 {
 	int i;
+	enum isl_dim_type set_type;
 
 	pw = FN(PW,cow)(pw);
 	if (!pw)
 		return NULL;
+
+	set_type = type == isl_dim_in ? isl_dim_set : type;
 
 	pw->dim = isl_space_set_dim_name(pw->dim, type, pos, s);
 	if (!pw->dim)
 		goto error;
 
 	for (i = 0; i < pw->n; ++i) {
-		pw->p[i].set = isl_set_set_dim_name(pw->p[i].set, type, pos, s);
+		pw->p[i].set = isl_set_set_dim_name(pw->p[i].set,
+							set_type, pos, s);
 		if (!pw->p[i].set)
 			goto error;
 		pw->p[i].FIELD = FN(EL,set_dim_name)(pw->p[i].FIELD, type, pos, s);
@@ -764,11 +775,14 @@ __isl_give PW *FN(PW,drop_dims)(__isl_take PW *pw,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
 	int i;
+	enum isl_dim_type set_type;
 
 	if (!pw)
 		return NULL;
 	if (n == 0 && !isl_space_get_tuple_name(pw->dim, type))
 		return pw;
+
+	set_type = type == isl_dim_in ? isl_dim_set : type;
 
 	pw = FN(PW,cow)(pw);
 	if (!pw)
@@ -777,7 +791,7 @@ __isl_give PW *FN(PW,drop_dims)(__isl_take PW *pw,
 	if (!pw->dim)
 		goto error;
 	for (i = 0; i < pw->n; ++i) {
-		pw->p[i].set = isl_set_drop(pw->p[i].set, type, first, n);
+		pw->p[i].set = isl_set_drop(pw->p[i].set, set_type, first, n);
 		if (!pw->p[i].set)
 			goto error;
 		pw->p[i].FIELD = FN(EL,drop_dims)(pw->p[i].FIELD, type, first, n);
@@ -800,11 +814,14 @@ __isl_give PW *FN(PW,project_out)(__isl_take PW *pw,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
 	int i;
+	enum isl_dim_type set_type;
 
 	if (!pw)
 		return NULL;
 	if (n == 0 && !isl_space_get_tuple_name(pw->dim, type))
 		return pw;
+
+	set_type = type == isl_dim_in ? isl_dim_set : type;
 
 	pw = FN(PW,cow)(pw);
 	if (!pw)
@@ -813,7 +830,8 @@ __isl_give PW *FN(PW,project_out)(__isl_take PW *pw,
 	if (!pw->dim)
 		goto error;
 	for (i = 0; i < pw->n; ++i) {
-		pw->p[i].set = isl_set_project_out(pw->p[i].set, type, first, n);
+		pw->p[i].set = isl_set_project_out(pw->p[i].set,
+							set_type, first, n);
 		if (!pw->p[i].set)
 			goto error;
 		pw->p[i].FIELD = FN(EL,drop_dims)(pw->p[i].FIELD, type, first, n);
@@ -834,11 +852,11 @@ __isl_give PW *FN(PW,project_domain_on_params)(__isl_take PW *pw)
 	isl_space *space;
 	unsigned n;
 
-	n = FN(PW,dim)(pw, isl_dim_set);
-	pw = FN(PW,project_out)(pw, isl_dim_set, 0, n);
-	space = FN(PW,get_space)(pw);
+	n = FN(PW,dim)(pw, isl_dim_in);
+	pw = FN(PW,project_out)(pw, isl_dim_in, 0, n);
+	space = FN(PW,get_domain_space)(pw);
 	space = isl_space_params(space);
-	pw = FN(PW,reset_space)(pw, space);
+	pw = FN(PW,reset_domain_space)(pw, space);
 	return pw;
 }
 #endif
@@ -848,11 +866,14 @@ __isl_give PW *FN(PW,insert_dims)(__isl_take PW *pw, enum isl_dim_type type,
 	unsigned first, unsigned n)
 {
 	int i;
+	enum isl_dim_type set_type;
 
 	if (!pw)
 		return NULL;
 	if (n == 0 && !isl_space_is_named_or_nested(pw->dim, type))
 		return pw;
+
+	set_type = type == isl_dim_in ? isl_dim_set : type;
 
 	pw = FN(PW,cow)(pw);
 	if (!pw)
@@ -864,7 +885,7 @@ __isl_give PW *FN(PW,insert_dims)(__isl_take PW *pw, enum isl_dim_type type,
 
 	for (i = 0; i < pw->n; ++i) {
 		pw->p[i].set = isl_set_insert_dims(pw->p[i].set,
-								type, first, n);
+							    set_type, first, n);
 		if (!pw->p[i].set)
 			goto error;
 		pw->p[i].FIELD = FN(EL,insert_dims)(pw->p[i].FIELD,
@@ -887,6 +908,9 @@ __isl_give PW *FN(PW,fix_dim)(__isl_take PW *pw,
 
 	if (!pw)
 		return NULL;
+
+	if (type == isl_dim_in)
+		type = isl_dim_set;
 
 	pw = FN(PW,cow)(pw);
 	if (!pw)
@@ -917,6 +941,9 @@ __isl_give PW *FN(PW,split_dims)(__isl_take PW *pw,
 		return NULL;
 	if (n == 0)
 		return pw;
+
+	if (type == isl_dim_in)
+		type = isl_dim_set;
 
 	pw = FN(PW,cow)(pw);
 	if (!pw)
@@ -952,7 +979,7 @@ __isl_give isl_qpolynomial *FN(PW,opt)(__isl_take PW *pw, int max)
 	if (pw->n == 0) {
 		isl_space *dim = isl_space_copy(pw->dim);
 		FN(PW,free)(pw);
-		return isl_qpolynomial_zero(dim);
+		return isl_qpolynomial_zero_on_domain(dim);
 	}
 
 	opt = FN(EL,opt_on_domain)(FN(EL,copy)(pw->p[0].FIELD),
@@ -987,33 +1014,65 @@ __isl_give isl_space *FN(PW,get_space)(__isl_keep PW *pw)
 	return pw ? isl_space_copy(pw->dim) : NULL;
 }
 
+__isl_give isl_space *FN(PW,get_domain_space)(__isl_keep PW *pw)
+{
+	return pw ? isl_space_domain(isl_space_copy(pw->dim)) : NULL;
+}
+
 #ifndef NO_RESET_DIM
-__isl_give PW *FN(PW,reset_space)(__isl_take PW *pw, __isl_take isl_space *dim)
+/* Reset the space of "pw".  Since we don't know if the elements
+ * represent the spaces themselves or their domains, we pass along
+ * both when we call their reset_space_and_domain.
+ */
+static __isl_give PW *FN(PW,reset_space_and_domain)(__isl_take PW *pw,
+	__isl_take isl_space *space, __isl_take isl_space *domain)
 {
 	int i;
 
 	pw = FN(PW,cow)(pw);
-	if (!pw || !dim)
+	if (!pw || !space || !domain)
 		goto error;
 
 	for (i = 0; i < pw->n; ++i) {
 		pw->p[i].set = isl_set_reset_space(pw->p[i].set,
-						 isl_space_copy(dim));
+						 isl_space_copy(domain));
 		if (!pw->p[i].set)
 			goto error;
-		pw->p[i].FIELD = FN(EL,reset_space)(pw->p[i].FIELD,
-						  isl_space_copy(dim));
+		pw->p[i].FIELD = FN(EL,reset_space_and_domain)(pw->p[i].FIELD,
+			      isl_space_copy(space), isl_space_copy(domain));
 		if (!pw->p[i].FIELD)
 			goto error;
 	}
+
+	isl_space_free(domain);
+
 	isl_space_free(pw->dim);
-	pw->dim = dim;
+	pw->dim = space;
 
 	return pw;
 error:
-	isl_space_free(dim);
+	isl_space_free(domain);
+	isl_space_free(space);
 	FN(PW,free)(pw);
 	return NULL;
+}
+
+__isl_give PW *FN(PW,reset_domain_space)(__isl_take PW *pw,
+	__isl_take isl_space *domain)
+{
+	isl_space *space;
+
+	space = isl_space_extend_domain_with_range(isl_space_copy(domain),
+						   FN(PW,get_space)(pw));
+	return FN(PW,reset_space_and_domain)(pw, space, domain);
+}
+
+__isl_give PW *FN(PW,reset_space)(__isl_take PW *pw, __isl_take isl_space *dim)
+{
+	isl_space *domain;
+
+	domain = isl_space_domain(isl_space_copy(dim));
+	return FN(PW,reset_space_and_domain)(pw, dim, domain);
 }
 #endif
 
@@ -1026,7 +1085,8 @@ int FN(PW,has_equal_space)(__isl_keep PW *pw1, __isl_keep PW *pw2)
 }
 
 #ifndef NO_MORPH
-__isl_give PW *FN(PW,morph)(__isl_take PW *pw, __isl_take isl_morph *morph)
+__isl_give PW *FN(PW,morph_domain)(__isl_take PW *pw,
+	__isl_take isl_morph *morph)
 {
 	int i;
 	isl_ctx *ctx;
@@ -1035,14 +1095,14 @@ __isl_give PW *FN(PW,morph)(__isl_take PW *pw, __isl_take isl_morph *morph)
 		goto error;
 
 	ctx = isl_space_get_ctx(pw->dim);
-	isl_assert(ctx, isl_space_is_equal(pw->dim, morph->dom->dim),
+	isl_assert(ctx, isl_space_is_domain(morph->dom->dim, pw->dim),
 		goto error);
 
 	pw = FN(PW,cow)(pw);
 	if (!pw)
 		goto error;
-	isl_space_free(pw->dim);
-	pw->dim = isl_space_copy(morph->ran->dim);
+	pw->dim = isl_space_extend_domain_with_range(
+			isl_space_copy(morph->ran->dim), pw->dim);
 	if (!pw->dim)
 		goto error;
 
@@ -1050,7 +1110,7 @@ __isl_give PW *FN(PW,morph)(__isl_take PW *pw, __isl_take isl_morph *morph)
 		pw->p[i].set = isl_morph_set(isl_morph_copy(morph), pw->p[i].set);
 		if (!pw->p[i].set)
 			goto error;
-		pw->p[i].FIELD = FN(EL,morph)(pw->p[i].FIELD,
+		pw->p[i].FIELD = FN(EL,morph_domain)(pw->p[i].FIELD,
 						isl_morph_copy(morph));
 		if (!pw->p[i].FIELD)
 			goto error;
@@ -1175,14 +1235,22 @@ __isl_give PW *FN(PW,move_dims)(__isl_take PW *pw,
 		goto error;
 
 	for (i = 0; i < pw->n; ++i) {
+		pw->p[i].FIELD = FN(EL,move_dims)(pw->p[i].FIELD,
+					dst_type, dst_pos, src_type, src_pos, n);
+		if (!pw->p[i].FIELD)
+			goto error;
+	}
+
+	if (dst_type == isl_dim_in)
+		dst_type = isl_dim_set;
+	if (src_type == isl_dim_in)
+		src_type = isl_dim_set;
+
+	for (i = 0; i < pw->n; ++i) {
 		pw->p[i].set = isl_set_move_dims(pw->p[i].set,
 						dst_type, dst_pos,
 						src_type, src_pos, n);
 		if (!pw->p[i].set)
-			goto error;
-		pw->p[i].FIELD = FN(EL,move_dims)(pw->p[i].FIELD,
-					dst_type, dst_pos, src_type, src_pos, n);
-		if (!pw->p[i].FIELD)
 			goto error;
 	}
 

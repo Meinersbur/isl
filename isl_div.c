@@ -183,7 +183,7 @@ __isl_give isl_aff *isl_aff_from_div(__isl_take isl_div *div)
 		return NULL;
 
 	pos = div->line - div->bmap->div;
-	aff = isl_aff_zero(isl_basic_map_get_local_space(div->bmap));
+	aff = isl_aff_zero_on_domain(isl_basic_map_get_local_space(div->bmap));
 	aff = isl_aff_set_coefficient_si(aff, isl_dim_div, pos, 1);
 
 	isl_div_free(div);

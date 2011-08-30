@@ -27,6 +27,8 @@ struct isl_upoly_rec {
 	struct isl_upoly *p[];
 };
 
+/* dim represents the domain space.
+ */
 struct isl_qpolynomial {
 	int ref;
 
@@ -63,6 +65,8 @@ struct isl_pw_qpolynomial {
 	struct isl_pw_qpolynomial_piece p[1];
 };
 
+/* dim represents the domain space.
+ */
 struct isl_qpolynomial_fold {
 	int ref;
 
@@ -117,9 +121,9 @@ __isl_give isl_qpolynomial *isl_qpolynomial_alloc(__isl_take isl_space *dim,
 __isl_give isl_qpolynomial *isl_qpolynomial_cow(__isl_take isl_qpolynomial *qp);
 __isl_give isl_qpolynomial *isl_qpolynomial_dup(__isl_keep isl_qpolynomial *qp);
 
-__isl_give isl_qpolynomial *isl_qpolynomial_cst(__isl_take isl_space *dim,
+__isl_give isl_qpolynomial *isl_qpolynomial_cst_on_domain(__isl_take isl_space *dim,
 	isl_int v);
-__isl_give isl_qpolynomial *isl_qpolynomial_var_pow(__isl_take isl_space *dim,
+__isl_give isl_qpolynomial *isl_qpolynomial_var_pow_on_domain(__isl_take isl_space *dim,
 	int pos, int power);
 __isl_give isl_qpolynomial *isl_qpolynomial_div_pow(__isl_take isl_div *div,
 	int power);
@@ -188,13 +192,13 @@ __isl_give isl_qpolynomial *isl_qpolynomial_fold_opt_on_domain(
 int isl_pw_qpolynomial_fold_covers(__isl_keep isl_pw_qpolynomial_fold *pwf1,
 	__isl_keep isl_pw_qpolynomial_fold *pwf2);
 
-__isl_give isl_qpolynomial *isl_qpolynomial_morph(__isl_take isl_qpolynomial *qp,
-	__isl_take isl_morph *morph);
-__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_morph(
+__isl_give isl_qpolynomial *isl_qpolynomial_morph_domain(
+	__isl_take isl_qpolynomial *qp, __isl_take isl_morph *morph);
+__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_morph_domain(
 	__isl_take isl_pw_qpolynomial *pwqp, __isl_take isl_morph *morph);
-__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_morph(
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_morph_domain(
 	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_morph *morph);
-__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_morph(
+__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_morph_domain(
 	__isl_take isl_pw_qpolynomial_fold *pwf, __isl_take isl_morph *morph);
 
 __isl_give isl_qpolynomial *isl_qpolynomial_lift(__isl_take isl_qpolynomial *qp,
@@ -209,11 +213,24 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_substitute_equalities(
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_gist(
 	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_set *context);
 
-__isl_give isl_qpolynomial *isl_qpolynomial_realign(
+__isl_give isl_qpolynomial *isl_qpolynomial_realign_domain(
 	__isl_take isl_qpolynomial *qp, __isl_take isl_reordering *r);
-__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_realign(
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_realign_domain(
 	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_reordering *r);
-__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_realign(
+__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_realign_domain(
 	__isl_take isl_pw_qpolynomial *pwqp, __isl_take isl_reordering *r);
-__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_realign(
+__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_realign_domain(
 	__isl_take isl_pw_qpolynomial_fold *pwf, __isl_take isl_reordering *r);
+
+__isl_give isl_qpolynomial *isl_qpolynomial_reset_domain_space(
+	__isl_take isl_qpolynomial *qp, __isl_take isl_space *dim);
+__isl_give isl_qpolynomial *isl_qpolynomial_reset_space_and_domain(
+	__isl_take isl_qpolynomial *qp, __isl_take isl_space *space,
+	__isl_take isl_space *domain);
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_reset_domain_space(
+	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_space *dim);
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_reset_space_and_domain(
+	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_space *space,
+	__isl_take isl_space *domain);
+__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_reset_domain_space(
+	__isl_take isl_pw_qpolynomial_fold *pwf, __isl_take isl_space *dim);

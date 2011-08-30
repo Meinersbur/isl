@@ -263,6 +263,21 @@ S(UNION,align) {
 	UNION *res;
 };
 
+#ifdef ALIGN_DOMAIN
+static int align_entry(__isl_take PART *part, void *user)
+{
+	isl_reordering *exp;
+	S(UNION,align) *data = user;
+
+	exp = isl_reordering_extend_space(isl_reordering_copy(data->exp),
+				    FN(PART,get_domain_space)(part));
+
+	data->res = FN(FN(UNION,add),PARTS)(data->res,
+					    FN(PART,realign_domain)(part, exp));
+
+	return 0;
+}
+#else
 static int align_entry(__isl_take PART *part, void *user)
 {
 	isl_reordering *exp;
@@ -276,6 +291,7 @@ static int align_entry(__isl_take PART *part, void *user)
 
 	return 0;
 }
+#endif
 
 __isl_give UNION *FN(UNION,align_params)(__isl_take UNION *u,
 	__isl_take isl_space *model)
@@ -494,16 +510,23 @@ __isl_give isl_qpolynomial *FN(UNION,eval)(__isl_take UNION *u,
 {
 	uint32_t hash;
 	struct isl_hash_table_entry *entry;
+	isl_space *space;
 	isl_qpolynomial *qp;
 
 	if (!u || !pnt)
 		goto error;
 
-	hash = isl_space_get_hash(pnt->dim);
+	space = isl_space_copy(pnt->dim);
+	space = isl_space_from_domain(space);
+	space = isl_space_add_dims(space, isl_dim_out, 1);
+	if (!space)
+		goto error;
+	hash = isl_space_get_hash(space);
 	entry = isl_hash_table_find(u->dim->ctx, &u->table,
-				    hash, &has_dim, pnt->dim, 0);
+				    hash, &has_dim, space, 0);
+	isl_space_free(space);
 	if (!entry) {
-		qp = isl_qpolynomial_zero(isl_space_copy(pnt->dim));
+		qp = isl_qpolynomial_zero_on_domain(isl_space_copy(pnt->dim));
 		isl_point_free(pnt);
 	} else {
 		qp = FN(PART,eval)(FN(PART,copy)(entry->data), pnt);

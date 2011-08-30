@@ -1371,7 +1371,7 @@ static __isl_give isl_printer *print_qpolynomial_c(__isl_take isl_printer *p,
 		isl_qpolynomial *f;
 		p = isl_printer_print_str(p, "(");
 		qp = isl_qpolynomial_copy(qp);
-		f = isl_qpolynomial_rat_cst(isl_space_copy(qp->dim),
+		f = isl_qpolynomial_rat_cst_on_domain(isl_space_copy(qp->dim),
 						den, qp->dim->ctx->one);
 		qp = isl_qpolynomial_mul(qp, f);
 	}
@@ -1462,7 +1462,7 @@ static __isl_give isl_printer *isl_pwqp_print_isl_body(
 	for (i = 0; i < pwqp->n; ++i) {
 		if (i)
 			p = isl_printer_print_str(p, "; ");
-		if (!isl_space_is_params(pwqp->dim)) {
+		if (!isl_space_is_params(pwqp->p[i].set->dim)) {
 			p = print_space(pwqp->p[i].set->dim, p, 0, 0, NULL);
 			p = isl_printer_print_str(p, " -> ");
 		}
@@ -1485,8 +1485,8 @@ static __isl_give isl_printer *print_pw_qpolynomial_isl(
 	}
 	p = isl_printer_print_str(p, "{ ");
 	if (pwqp->n == 0) {
-		if (!isl_space_is_params(pwqp->dim)) {
-			p = print_space(pwqp->dim, p, 0, 0, NULL);
+		if (!isl_space_is_set(pwqp->dim)) {
+			p = print_tuple(pwqp->dim, p, isl_dim_in, 0, NULL);
 			p = isl_printer_print_str(p, " -> ");
 		}
 		p = isl_printer_print_str(p, "0");
@@ -1522,7 +1522,7 @@ static __isl_give isl_printer *isl_pwf_print_isl_body(
 	for (i = 0; i < pwf->n; ++i) {
 		if (i)
 			p = isl_printer_print_str(p, "; ");
-		if (!isl_space_is_params(pwf->dim)) {
+		if (!isl_space_is_params(pwf->p[i].set->dim)) {
 			p = print_space(pwf->p[i].set->dim, p, 0, 0, NULL);
 			p = isl_printer_print_str(p, " -> ");
 		}
@@ -1542,8 +1542,8 @@ static __isl_give isl_printer *print_pw_qpolynomial_fold_isl(
 	}
 	p = isl_printer_print_str(p, "{ ");
 	if (pwf->n == 0) {
-		if (!isl_space_is_params(pwf->dim)) {
-			p = print_space(pwf->dim, p, 0, 0, NULL);
+		if (!isl_space_is_set(pwf->dim)) {
+			p = print_tuple(pwf->dim, p, isl_dim_in, 0, NULL);
 			p = isl_printer_print_str(p, " -> ");
 		}
 		p = isl_printer_print_str(p, "0");
