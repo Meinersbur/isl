@@ -19,6 +19,8 @@ __isl_give isl_local_space *isl_local_space_copy(
 	__isl_keep isl_local_space *ls);
 void *isl_local_space_free(__isl_take isl_local_space *ls);
 
+int isl_local_space_is_set(__isl_keep isl_local_space *ls);
+
 int isl_local_space_dim(__isl_keep isl_local_space *ls,
 	enum isl_dim_type type);
 const char *isl_local_space_get_dim_name(__isl_keep isl_local_space *ls,

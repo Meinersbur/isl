@@ -691,6 +691,7 @@ They can be inspected, copied and freed using the following functions.
 	#include <isl/local_space.h>
 	isl_ctx *isl_local_space_get_ctx(
 		__isl_keep isl_local_space *ls);
+	int isl_local_space_is_set(__isl_keep isl_local_space *ls);
 	int isl_local_space_dim(__isl_keep isl_local_space *ls,
 		enum isl_dim_type type);
 	const char *isl_local_space_get_dim_name(

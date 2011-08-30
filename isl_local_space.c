@@ -113,6 +113,13 @@ void *isl_local_space_free(__isl_take isl_local_space *ls)
 	return NULL;
 }
 
+/* Is the local space that of a set?
+ */
+int isl_local_space_is_set(__isl_keep isl_local_space *ls)
+{
+	return ls ? isl_space_is_set(ls->dim) : -1;
+}
+
 /* Return true if the two local spaces are identical, with identical
  * expressions for the integer divisions.
  */
