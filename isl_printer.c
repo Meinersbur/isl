@@ -213,6 +213,7 @@ __isl_give isl_printer *isl_printer_to_str(isl_ctx *ctx)
 	if (!p->buf)
 		goto error;
 	p->buf_n = 0;
+	p->buf[0] = '\0';
 	p->buf_size = 256;
 	p->indent = 0;
 	p->output_format = ISL_FORMAT_ISL;

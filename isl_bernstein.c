@@ -255,6 +255,9 @@ static int bernstein_coefficients_cell(__isl_take isl_cell *cell, void *user)
 	isl_set *dom;
 	isl_ctx *ctx;
 
+	if (!poly)
+		goto error;
+
 	nvar = isl_qpolynomial_dim(poly, isl_dim_set) - 1;
 	n_vertices = cell->n_vertices;
 
