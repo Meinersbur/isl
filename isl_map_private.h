@@ -314,4 +314,9 @@ __isl_give isl_map *isl_map_align_params_map_map_and(
 	__isl_give isl_map *(*fn)(__isl_take isl_map *map1,
 				    __isl_take isl_map *map2));
 
+int isl_basic_set_foreach_lexopt(__isl_keep isl_basic_set *bset, int max,
+	int (*fn)(__isl_take isl_basic_set *dom, __isl_take isl_aff_list *list,
+		  void *user),
+	void *user);
+
 #endif
