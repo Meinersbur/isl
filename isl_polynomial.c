@@ -1018,19 +1018,20 @@ __isl_give isl_qpolynomial *isl_qpolynomial_cow(__isl_take isl_qpolynomial *qp)
 	return isl_qpolynomial_dup(qp);
 }
 
-void isl_qpolynomial_free(__isl_take isl_qpolynomial *qp)
+void *isl_qpolynomial_free(__isl_take isl_qpolynomial *qp)
 {
 	if (!qp)
-		return;
+		return NULL;
 
 	if (--qp->ref > 0)
-		return;
+		return NULL;
 
 	isl_dim_free(qp->dim);
 	isl_mat_free(qp->div);
 	isl_upoly_free(qp->upoly);
 
 	free(qp);
+	return NULL;
 }
 
 __isl_give struct isl_upoly *isl_upoly_var_pow(isl_ctx *ctx, int pos, int power)

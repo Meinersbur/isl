@@ -42,7 +42,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_div(__isl_take isl_div *div);
 __isl_give isl_qpolynomial *isl_qpolynomial_var(__isl_take isl_dim *dim,
 	enum isl_dim_type type, unsigned pos);
 __isl_give isl_qpolynomial *isl_qpolynomial_copy(__isl_keep isl_qpolynomial *qp);
-void isl_qpolynomial_free(__isl_take isl_qpolynomial *qp);
+void *isl_qpolynomial_free(__isl_take isl_qpolynomial *qp);
 
 int isl_qpolynomial_plain_is_equal(__isl_keep isl_qpolynomial *qp1,
 	__isl_keep isl_qpolynomial *qp2);
