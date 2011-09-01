@@ -1260,8 +1260,16 @@ static __isl_give isl_pw_aff *pw_aff_union_min(__isl_take isl_pw_aff *pwaff1,
 __isl_give isl_pw_aff *isl_pw_aff_union_min(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
-	return isl_pw_aff_align_params_pw_pw_and(pwaff1, pwaff2,
-							&pw_aff_union_min);
+	return align_params_pw_pw_and(pwaff1, pwaff2, &pw_aff_union_min);
+}
+
+__isl_give isl_pw_aff *isl_pw_aff_union_opt(__isl_take isl_pw_aff *pwaff1,
+	__isl_take isl_pw_aff *pwaff2, int max)
+{
+	if (max)
+		return isl_pw_aff_union_max(pwaff1, pwaff2);
+	else
+		return isl_pw_aff_union_min(pwaff1, pwaff2);
 }
 
 /* Construct a map with as domain the domain of pwaff and
