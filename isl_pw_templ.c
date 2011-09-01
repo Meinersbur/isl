@@ -249,7 +249,7 @@ error:
 	return NULL;
 }
 
-static __isl_give PW *align_params_pw_pw_and(__isl_take PW *pw1,
+static __isl_give PW *FN(PW,align_params_pw_pw_and)(__isl_take PW *pw1,
 	__isl_take PW *pw2,
 	__isl_give PW *(*fn)(__isl_take PW *pw1, __isl_take PW *pw2))
 {
@@ -273,7 +273,7 @@ error:
 	return NULL;
 }
 
-static __isl_give PW *align_params_pw_set_and(__isl_take PW *pw,
+static __isl_give PW *FN(PW,align_params_pw_set_and)(__isl_take PW *pw,
 	__isl_take isl_set *set,
 	__isl_give PW *(*fn)(__isl_take PW *pw, __isl_take isl_set *set))
 {
@@ -376,7 +376,7 @@ error:
 
 __isl_give PW *FN(PW,add)(__isl_take PW *pw1, __isl_take PW *pw2)
 {
-	return align_params_pw_pw_and(pw1, pw2, &FN(PW,add_aligned));
+	return FN(PW,align_params_pw_pw_and)(pw1, pw2, &FN(PW,add_aligned));
 }
 
 /* Make sure "pw" has room for at least "n" more pieces.
@@ -468,7 +468,8 @@ error:
 
 __isl_give PW *FN(PW,add_disjoint)(__isl_take PW *pw1, __isl_take PW *pw2)
 {
-	return align_params_pw_pw_and(pw1, pw2, &FN(PW,add_disjoint_aligned));
+	return FN(PW,align_params_pw_pw_and)(pw1, pw2,
+						&FN(PW,add_disjoint_aligned));
 }
 
 #ifndef NO_NEG
@@ -603,7 +604,7 @@ error:
 __isl_give PW *FN(PW,intersect_domain)(__isl_take PW *pw,
 	__isl_take isl_set *context)
 {
-	return align_params_pw_set_and(pw, context,
+	return FN(PW,align_params_pw_set_and)(pw, context,
 					&FN(PW,intersect_domain_aligned));
 }
 
@@ -667,7 +668,7 @@ error:
 
 __isl_give PW *FN(PW,gist)(__isl_take PW *pw, __isl_take isl_set *context)
 {
-	return align_params_pw_set_and(pw, context, &FN(PW,gist_aligned));
+	return FN(PW,align_params_pw_set_and)(pw, context, &FN(PW,gist_aligned));
 }
 
 __isl_give PW *FN(PW,coalesce)(__isl_take PW *pw)

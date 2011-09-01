@@ -1330,7 +1330,8 @@ static __isl_give isl_pw_aff *pw_aff_union_max(__isl_take isl_pw_aff *pwaff1,
 __isl_give isl_pw_aff *isl_pw_aff_union_max(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
-	return align_params_pw_pw_and(pwaff1, pwaff2, &pw_aff_union_max);
+	return isl_pw_aff_align_params_pw_pw_and(pwaff1, pwaff2,
+							&pw_aff_union_max);
 }
 
 /* Compute a piecewise quasi-affine expression with a domain that
@@ -1348,7 +1349,8 @@ static __isl_give isl_pw_aff *pw_aff_union_min(__isl_take isl_pw_aff *pwaff1,
 __isl_give isl_pw_aff *isl_pw_aff_union_min(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
-	return align_params_pw_pw_and(pwaff1, pwaff2, &pw_aff_union_min);
+	return isl_pw_aff_align_params_pw_pw_and(pwaff1, pwaff2,
+							&pw_aff_union_min);
 }
 
 __isl_give isl_pw_aff *isl_pw_aff_union_opt(__isl_take isl_pw_aff *pwaff1,
@@ -1852,7 +1854,7 @@ error:
 __isl_give isl_pw_aff *isl_pw_aff_mul(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
-	return align_params_pw_pw_and(pwaff1, pwaff2, &pw_aff_mul);
+	return isl_pw_aff_align_params_pw_pw_and(pwaff1, pwaff2, &pw_aff_mul);
 }
 
 static __isl_give isl_pw_aff *pw_aff_min(__isl_take isl_pw_aff *pwaff1,
@@ -1868,7 +1870,7 @@ static __isl_give isl_pw_aff *pw_aff_min(__isl_take isl_pw_aff *pwaff1,
 __isl_give isl_pw_aff *isl_pw_aff_min(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
-	return align_params_pw_pw_and(pwaff1, pwaff2, &pw_aff_min);
+	return isl_pw_aff_align_params_pw_pw_and(pwaff1, pwaff2, &pw_aff_min);
 }
 
 static __isl_give isl_pw_aff *pw_aff_max(__isl_take isl_pw_aff *pwaff1,
@@ -1884,7 +1886,7 @@ static __isl_give isl_pw_aff *pw_aff_max(__isl_take isl_pw_aff *pwaff1,
 __isl_give isl_pw_aff *isl_pw_aff_max(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
-	return align_params_pw_pw_and(pwaff1, pwaff2, &pw_aff_max);
+	return isl_pw_aff_align_params_pw_pw_and(pwaff1, pwaff2, &pw_aff_max);
 }
 
 static __isl_give isl_pw_aff *pw_aff_list_reduce(
