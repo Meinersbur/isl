@@ -209,6 +209,7 @@ pkginclude_HEADERS = \
 	include/isl/mat.h \
 	include/isl/map.h \
 	include/isl/map_type.h \
+	include/isl/multi.h \
 	include/isl/obj.h \
 	include/isl/options.h \
 	include/isl/point.h \
@@ -232,6 +233,8 @@ EXTRA_DIST = \
 	basis_reduction_templ.c \
 	isl_list_templ.c \
 	isl_list_templ.h \
+	isl_multi_templ.c \
+	isl_multi_templ.h \
 	print_templ.c \
 	isl_pw_templ.c \
 	isl_union_templ.c \

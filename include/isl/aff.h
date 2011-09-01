@@ -6,6 +6,7 @@
 #include <isl/set_type.h>
 #include <isl/aff_type.h>
 #include <isl/list.h>
+#include <isl/multi.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -211,6 +212,37 @@ __isl_give isl_set *isl_pw_aff_list_ge_set(__isl_take isl_pw_aff_list *list1,
 	__isl_take isl_pw_aff_list *list2);
 __isl_give isl_set *isl_pw_aff_list_gt_set(__isl_take isl_pw_aff_list *list1,
 	__isl_take isl_pw_aff_list *list2);
+
+isl_ctx *isl_multi_aff_get_ctx(__isl_keep isl_multi_aff *maff);
+__isl_give isl_space *isl_multi_aff_get_space(__isl_keep isl_multi_aff *maff);
+__isl_give isl_multi_aff *isl_multi_aff_copy(__isl_keep isl_multi_aff *maff);
+void *isl_multi_aff_free(__isl_take isl_multi_aff *maff);
+
+unsigned isl_multi_aff_dim(__isl_keep isl_multi_aff *maff,
+	enum isl_dim_type type);
+__isl_give isl_aff *isl_multi_aff_get_aff(__isl_keep isl_multi_aff *multi,
+	int pos);
+
+__isl_give isl_multi_aff *isl_multi_aff_set_dim_name(
+	__isl_take isl_multi_aff *maff,
+	enum isl_dim_type type, unsigned pos, const char *s);
+
+int isl_multi_aff_plain_is_equal(__isl_keep isl_multi_aff *maff1,
+	__isl_keep isl_multi_aff *maff2);
+
+__isl_give isl_multi_aff *isl_multi_aff_add(__isl_take isl_multi_aff *maff1,
+	__isl_take isl_multi_aff *maff2);
+
+__isl_give isl_multi_aff *isl_multi_aff_scale(__isl_take isl_multi_aff *maff,
+	isl_int f);
+
+__isl_give isl_multi_aff *isl_multi_aff_gist(__isl_take isl_multi_aff *maff,
+	__isl_take isl_set *context);
+
+__isl_give isl_printer *isl_printer_print_multi_aff(__isl_take isl_printer *p,
+	__isl_keep isl_multi_aff *maff);
+
+void isl_multi_aff_dump(__isl_keep isl_multi_aff *maff);
 
 #if defined(__cplusplus)
 }

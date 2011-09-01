@@ -598,6 +598,8 @@ of the original object.
 		__isl_keep isl_pw_aff *pwaff);
 	__isl_give isl_space *isl_pw_aff_get_space(
 		__isl_keep isl_pw_aff *pwaff);
+	__isl_give isl_space *isl_multi_aff_get_space(
+		__isl_keep isl_multi_aff *maff);
 
 	#include <isl/point.h>
 	__isl_give isl_space *isl_point_get_space(
@@ -2876,6 +2878,72 @@ An expression can be printed using
 	__isl_give isl_printer *isl_printer_print_pw_aff(
 		__isl_take isl_printer *p,
 		__isl_keep isl_pw_aff *pwaff);
+
+=head2 Multiple Quasi Affine Expressions
+
+An C<isl_multi_aff> object represents a sequence of
+zero or more affine expressions, all defined on the same domain space.
+
+An C<isl_multi_aff> can be constructed from a C<isl_aff_list> using the
+following function.
+
+	#include <isl/aff.h>
+	__isl_give isl_multi_aff *isl_multi_aff_from_aff_list(
+		__isl_take isl_space *space,
+		__isl_take isl_aff_list *list);
+
+Multiple quasi affine expressions can be copied and freed using
+
+	#include <isl/aff.h>
+	__isl_give isl_multi_aff *isl_multi_aff_copy(
+		__isl_keep isl_multi_aff *maff);
+	void *isl_multi_aff_free(__isl_take isl_multi_aff *maff);
+
+The expression can be inspected using
+
+	#include <isl/aff.h>
+	isl_ctx *isl_multi_aff_get_ctx(
+		__isl_keep isl_multi_aff *maff);
+	unsigned isl_multi_aff_dim(__isl_keep isl_multi_aff *maff,
+		enum isl_dim_type type);
+	__isl_give isl_aff *isl_multi_aff_get_aff(
+		__isl_keep isl_multi_aff *multi, int pos);
+	const char *isl_multi_aff_get_tuple_name(
+		__isl_keep isl_multi_aff *multi,
+		enum isl_dim_type type);
+
+It can be modified using
+
+	#include <isl/aff.h>
+	__isl_give isl_multi_aff *isl_multi_aff_set_dim_name(
+		__isl_take isl_multi_aff *maff,
+		enum isl_dim_type type, unsigned pos, const char *s);
+
+To check whether two multiple affine expressions are
+obviously equal to each other, use
+
+	int isl_multi_aff_plain_is_equal(__isl_keep isl_multi_aff *maff1,
+		__isl_keep isl_multi_aff *maff2);
+
+Operations include
+
+	#include <isl/aff.h>
+	__isl_give isl_multi_aff *isl_multi_aff_add(
+		__isl_take isl_multi_aff *maff1,
+		__isl_take isl_multi_aff *maff2);
+	__isl_give isl_multi_aff *isl_multi_aff_scale(
+		__isl_take isl_multi_aff *maff,
+		isl_int f);
+	__isl_give isl_multi_aff *isl_multi_aff_gist(
+		__isl_take isl_multi_aff *maff,
+		__isl_take isl_set *context);
+
+An expression can be printed using
+
+	#include <isl/aff.h>
+	__isl_give isl_printer *isl_printer_print_multi_aff(
+		__isl_take isl_printer *p,
+		__isl_keep isl_multi_aff *maff);
 
 =head2 Points
 

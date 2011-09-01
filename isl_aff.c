@@ -1932,3 +1932,138 @@ __isl_give isl_pw_aff *isl_pw_aff_list_max(__isl_take isl_pw_aff_list *list)
 {
 	return pw_aff_list_reduce(list, &isl_pw_aff_max);
 }
+
+#undef BASE
+#define BASE aff
+
+#include <isl_multi_templ.c>
+
+__isl_give isl_multi_aff *isl_multi_aff_add(__isl_take isl_multi_aff *maff1,
+	__isl_take isl_multi_aff *maff2)
+{
+	int i;
+	isl_ctx *ctx;
+
+	maff1 = isl_multi_aff_cow(maff1);
+	if (!maff1 || !maff2)
+		goto error;
+
+	ctx = isl_multi_aff_get_ctx(maff1);
+	if (!isl_space_is_equal(maff1->space, maff2->space))
+		isl_die(ctx, isl_error_invalid,
+			"spaces don't match", goto error);
+
+	for (i = 0; i < maff1->n; ++i) {
+		maff1->p[i] = isl_aff_add(maff1->p[i],
+					    isl_aff_copy(maff2->p[i]));
+		if (!maff1->p[i])
+			goto error;
+	}
+
+	isl_multi_aff_free(maff2);
+	return maff1;
+error:
+	isl_multi_aff_free(maff1);
+	isl_multi_aff_free(maff2);
+	return NULL;
+}
+
+__isl_give isl_multi_aff *isl_multi_aff_scale(__isl_take isl_multi_aff *maff,
+	isl_int f)
+{
+	int i;
+
+	maff = isl_multi_aff_cow(maff);
+	if (!maff)
+		return NULL;
+
+	for (i = 0; i < maff->n; ++i) {
+		maff->p[i] = isl_aff_scale(maff->p[i], f);
+		if (!maff->p[i])
+			return isl_multi_aff_free(maff);
+	}
+
+	return maff;
+}
+
+__isl_give isl_multi_aff *isl_multi_aff_add_on_domain(__isl_keep isl_set *dom,
+	__isl_take isl_multi_aff *maff1, __isl_take isl_multi_aff *maff2)
+{
+	maff1 = isl_multi_aff_add(maff1, maff2);
+	maff1 = isl_multi_aff_gist(maff1, isl_set_copy(dom));
+	return maff1;
+}
+
+int isl_multi_aff_is_empty(__isl_keep isl_multi_aff *maff)
+{
+	if (!maff)
+		return -1;
+
+	return 0;
+}
+
+int isl_multi_aff_plain_is_equal(__isl_keep isl_multi_aff *maff1,
+	__isl_keep isl_multi_aff *maff2)
+{
+	int i;
+	int equal;
+
+	if (!maff1 || !maff2)
+		return -1;
+	if (maff1->n != maff2->n)
+		return 0;
+	equal = isl_space_is_equal(maff1->space, maff2->space);
+	if (equal < 0 || !equal)
+		return equal;
+
+	for (i = 0; i < maff1->n; ++i) {
+		equal = isl_aff_plain_is_equal(maff1->p[i], maff2->p[i]);
+		if (equal < 0 || !equal)
+			return equal;
+	}
+
+	return 1;
+}
+
+__isl_give isl_multi_aff *isl_multi_aff_set_dim_name(
+	__isl_take isl_multi_aff *maff,
+	enum isl_dim_type type, unsigned pos, const char *s)
+{
+	int i;
+
+	maff = isl_multi_aff_cow(maff);
+	if (!maff)
+		return NULL;
+
+	maff->space = isl_space_set_dim_name(maff->space, type, pos, s);
+	if (!maff->space)
+		return isl_multi_aff_free(maff);
+	for (i = 0; i < maff->n; ++i) {
+		maff->p[i] = isl_aff_set_dim_name(maff->p[i], type, pos, s);
+		if (!maff->p[i])
+			return isl_multi_aff_free(maff);
+	}
+
+	return maff;
+}
+
+__isl_give isl_multi_aff *isl_multi_aff_drop_dims(__isl_take isl_multi_aff *maff,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	int i;
+
+	maff = isl_multi_aff_cow(maff);
+	if (!maff)
+		return NULL;
+
+	maff->space = isl_space_drop_dims(maff->space, type, first, n);
+	if (!maff->space)
+		return isl_multi_aff_free(maff);
+	for (i = 0; i < maff->n; ++i) {
+		maff->p[i] = isl_aff_drop_dims(maff->p[i], type, first, n);
+		if (!maff->p[i])
+			return isl_multi_aff_free(maff);
+	}
+
+	return maff;
+}

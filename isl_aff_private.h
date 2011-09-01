@@ -53,4 +53,17 @@ __isl_give isl_pw_aff *isl_pw_aff_add_disjoint(
 __isl_give isl_pw_aff *isl_pw_aff_union_opt(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2, int max);
 
+#undef BASE
+#define BASE aff
+
+#include <isl_multi_templ.h>
+
+__isl_give isl_multi_aff *isl_multi_aff_dup(__isl_keep isl_multi_aff *multi);
+__isl_give isl_multi_aff *isl_multi_aff_align_params(
+	__isl_take isl_multi_aff *multi, __isl_take isl_space *model);
+
+__isl_give isl_multi_aff *isl_multi_aff_drop_dims(
+	__isl_take isl_multi_aff *maff,
+	enum isl_dim_type type, unsigned first, unsigned n);
+
 #endif
