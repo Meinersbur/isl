@@ -5283,7 +5283,7 @@ error:
  * This domain is known to be disjoint from other domains
  * because of the way isl_basic_set_foreach_lexmax works.
  */
-static int update_dim_max(__isl_take isl_basic_set *dom,
+static int update_dim_opt(__isl_take isl_basic_set *dom,
 	__isl_take isl_aff_list *list, void *user)
 {
 	isl_ctx *ctx = isl_basic_set_get_ctx(dom);
@@ -5309,13 +5309,14 @@ error:
 	return -1;
 }
 
-/* Given a one-dimensional basic set, compute the maximum of that
+/* Given a one-dimensional basic set, compute the minimum or maximum of that
  * dimension as an isl_pw_aff.
  *
- * The isl_pw_aff is constructed by having isl_basic_set_foreach_lexmax
- * call update_dim_max on each leaf of the result.
+ * The isl_pw_aff is constructed by having isl_basic_set_foreach_lexopt
+ * call update_dim_opt on each leaf of the result.
  */
-static __isl_give isl_pw_aff *basic_set_dim_max(__isl_keep isl_basic_set *bset)
+static __isl_give isl_pw_aff *basic_set_dim_opt(__isl_keep isl_basic_set *bset,
+	int max)
 {
 	isl_dim *dim = isl_basic_set_get_dim(bset);
 	isl_pw_aff *pwaff;
@@ -5324,21 +5325,23 @@ static __isl_give isl_pw_aff *basic_set_dim_max(__isl_keep isl_basic_set *bset)
 	dim = isl_dim_domain(isl_dim_from_range(dim));
 	pwaff = isl_pw_aff_empty(dim);
 
-	r = isl_basic_set_foreach_lexmax(bset, &update_dim_max, &pwaff);
+	r = isl_basic_set_foreach_lexopt(bset, max, &update_dim_opt, &pwaff);
 	if (r < 0)
 		return isl_pw_aff_free(pwaff);
 
 	return pwaff;
 }
 
-/* Compute the maximum of the given set dimension as a function of the
- * parameters, but independently of the other set dimensions.
+/* Compute the minimum or maximum of the given set dimension
+ * as a function of the parameters, but independently of
+ * the other set dimensions.
  *
  * We first project the set onto the given dimension and then compute
  * the "lexicographic" maximum in each basic set, combining the results
  * using isl_pw_aff_union_max.
  */
-__isl_give isl_pw_aff *isl_set_dim_max(__isl_take isl_set *set, int pos)
+static __isl_give isl_pw_aff *set_dim_opt(__isl_take isl_set *set, int pos,
+	int max)
 {
 	int i;
 	isl_map *map;
@@ -5360,17 +5363,33 @@ __isl_give isl_pw_aff *isl_set_dim_max(__isl_take isl_set *set, int pos)
 		return isl_pw_aff_empty(dim);
 	}
 
-	pwaff = basic_set_dim_max(set->p[0]);
+	pwaff = basic_set_dim_opt(set->p[0], max);
 	for (i = 1; i < set->n; ++i) {
 		isl_pw_aff *pwaff_i;
 
-		pwaff_i = basic_set_dim_max(set->p[i]);
-		pwaff = isl_pw_aff_union_max(pwaff, pwaff_i);
+		pwaff_i = basic_set_dim_opt(set->p[i], max);
+		pwaff = isl_pw_aff_union_opt(pwaff, pwaff_i, max);
 	}
 
 	isl_set_free(set);
 
 	return pwaff;
+}
+
+/* Compute the maximum of the given set dimension as a function of the
+ * parameters, but independently of the other set dimensions.
+ */
+__isl_give isl_pw_aff *isl_set_dim_max(__isl_take isl_set *set, int pos)
+{
+	return set_dim_opt(set, pos, 1);
+}
+
+/* Compute the minimum of the given set dimension as a function of the
+ * parameters, but independently of the other set dimensions.
+ */
+__isl_give isl_pw_aff *isl_set_dim_min(__isl_take isl_set *set, int pos)
+{
+	return set_dim_opt(set, pos, 0);
 }
 
 /* Apply a preimage specified by "mat" on the parameters of "bset".
