@@ -251,6 +251,62 @@ __isl_give isl_printer *isl_printer_print_multi_aff(__isl_take isl_printer *p,
 
 void isl_multi_aff_dump(__isl_keep isl_multi_aff *maff);
 
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_alloc(__isl_take isl_set *set,
+	__isl_take isl_multi_aff *maff);
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_copy(
+	__isl_keep isl_pw_multi_aff *pma);
+void *isl_pw_multi_aff_free(__isl_take isl_pw_multi_aff *pma);
+
+unsigned isl_pw_multi_aff_dim(__isl_keep isl_pw_multi_aff *pma,
+	enum isl_dim_type type);
+
+isl_ctx *isl_pw_multi_aff_get_ctx(__isl_keep isl_pw_multi_aff *pma);
+__isl_give isl_space *isl_pw_multi_aff_get_domain_space(
+	__isl_keep isl_pw_multi_aff *pma);
+__isl_give isl_space *isl_pw_multi_aff_get_space(
+	__isl_keep isl_pw_multi_aff *pma);
+const char *isl_pw_multi_aff_get_tuple_name(__isl_keep isl_pw_multi_aff *pma,
+	enum isl_dim_type type);
+__isl_give isl_id *isl_pw_multi_aff_get_tuple_id(
+	__isl_keep isl_pw_multi_aff *pma, enum isl_dim_type type);
+int isl_pw_multi_aff_has_tuple_id(__isl_keep isl_pw_multi_aff *pma,
+	enum isl_dim_type type);
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_set_tuple_id(
+	__isl_take isl_pw_multi_aff *pma,
+	enum isl_dim_type type, __isl_take isl_id *id);
+
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_empty(__isl_take isl_space *space);
+
+const char *isl_pw_multi_aff_get_dim_name(__isl_keep isl_pw_multi_aff *pma,
+	enum isl_dim_type type, unsigned pos);
+__isl_give isl_id *isl_pw_multi_aff_get_dim_id(
+	__isl_keep isl_pw_multi_aff *pma, enum isl_dim_type type,
+	unsigned pos);
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_set_dim_id(
+	__isl_take isl_pw_multi_aff *pma,
+	enum isl_dim_type type, unsigned pos, __isl_take isl_id *id);
+
+int isl_pw_multi_aff_plain_is_equal(__isl_keep isl_pw_multi_aff *pma1,
+	__isl_keep isl_pw_multi_aff *pma2);
+
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_add(
+	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2);
+
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_intersect_domain(
+	__isl_take isl_pw_multi_aff *pma, __isl_take isl_set *set);
+
+int isl_pw_multi_aff_foreach_piece(__isl_keep isl_pw_multi_aff *pma,
+	int (*fn)(__isl_take isl_set *set, __isl_take isl_multi_aff *maff,
+		    void *user), void *user);
+
+__isl_give isl_map *isl_map_from_pw_multi_aff(__isl_take isl_pw_multi_aff *pma);
+__isl_give isl_set *isl_set_from_pw_multi_aff(__isl_take isl_pw_multi_aff *pma);
+
+__isl_give isl_printer *isl_printer_print_pw_multi_aff(__isl_take isl_printer *p,
+	__isl_keep isl_pw_multi_aff *pma);
+
+void isl_pw_multi_aff_dump(__isl_keep isl_pw_multi_aff *pma);
+
 #if defined(__cplusplus)
 }
 #endif

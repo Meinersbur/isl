@@ -1968,6 +1968,32 @@ error:
 	return NULL;
 }
 
+/* Exploit the equalities in "eq" to simplify the affine expressions.
+ */
+static __isl_give isl_multi_aff *isl_multi_aff_substitute_equalities(
+	__isl_take isl_multi_aff *maff, __isl_take isl_basic_set *eq)
+{
+	int i;
+
+	maff = isl_multi_aff_cow(maff);
+	if (!maff || !eq)
+		goto error;
+
+	for (i = 0; i < maff->n; ++i) {
+		maff->p[i] = isl_aff_substitute_equalities(maff->p[i],
+						    isl_basic_set_copy(eq));
+		if (!maff->p[i])
+			goto error;
+	}
+
+	isl_basic_set_free(eq);
+	return maff;
+error:
+	isl_basic_set_free(eq);
+	isl_multi_aff_free(maff);
+	return NULL;
+}
+
 __isl_give isl_multi_aff *isl_multi_aff_scale(__isl_take isl_multi_aff *maff,
 	isl_int f)
 {
@@ -2066,4 +2092,69 @@ __isl_give isl_multi_aff *isl_multi_aff_drop_dims(__isl_take isl_multi_aff *maff
 	}
 
 	return maff;
+}
+
+#undef PW
+#define PW isl_pw_multi_aff
+#undef EL
+#define EL isl_multi_aff
+#undef EL_IS_ZERO
+#define EL_IS_ZERO is_empty
+#undef ZERO
+#define ZERO empty
+#undef IS_ZERO
+#define IS_ZERO is_empty
+#undef FIELD
+#define FIELD maff
+
+#define NO_NEG
+#define NO_EVAL
+#define NO_OPT
+#define NO_INVOLVES_DIMS
+#define NO_MOVE_DIMS
+#define NO_INSERT_DIMS
+#define NO_LIFT
+#define NO_MORPH
+
+#include <isl_pw_templ.c>
+
+/* Construct a map mapping the domain the piecewise multi-affine expression
+ * to its range, with each dimension in the range equated to the
+ * corresponding affine expression on its cell.
+ */
+__isl_give isl_map *isl_map_from_pw_multi_aff(__isl_take isl_pw_multi_aff *pma)
+{
+	int i;
+	isl_map *map;
+
+	if (!pma)
+		return NULL;
+
+	map = isl_map_empty(isl_pw_multi_aff_get_space(pma));
+
+	for (i = 0; i < pma->n; ++i) {
+		isl_multi_aff *maff;
+		isl_basic_map *bmap;
+		isl_map *map_i;
+
+		maff = isl_multi_aff_copy(pma->p[i].maff);
+		bmap = isl_basic_map_from_multi_aff(maff);
+		map_i = isl_map_from_basic_map(bmap);
+		map_i = isl_map_intersect_domain(map_i,
+						isl_set_copy(pma->p[i].set));
+		map = isl_map_union_disjoint(map, map_i);
+	}
+
+	isl_pw_multi_aff_free(pma);
+	return map;
+}
+
+__isl_give isl_set *isl_set_from_pw_multi_aff(__isl_take isl_pw_multi_aff *pma)
+{
+	if (!isl_space_is_set(pma->dim))
+		isl_die(isl_pw_multi_aff_get_ctx(pma), isl_error_invalid,
+			"isl_pw_multi_aff cannot be converted into an isl_set",
+			return isl_pw_multi_aff_free(pma));
+
+	return isl_map_from_pw_multi_aff(pma);
 }

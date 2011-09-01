@@ -2296,3 +2296,44 @@ error:
 	isl_printer_free(p);
 	return NULL;
 }
+
+static __isl_give isl_printer *print_pw_multi_aff_isl(__isl_take isl_printer *p,
+	__isl_keep isl_pw_multi_aff *pma)
+{
+	int i;
+
+	if (!pma)
+		goto error;
+
+	if (isl_space_dim(pma->dim, isl_dim_param) > 0) {
+		p = print_tuple(pma->dim, p, isl_dim_param, 0, NULL, NULL);
+		p = isl_printer_print_str(p, " -> ");
+	}
+	p = isl_printer_print_str(p, "{ ");
+	for (i = 0; i < pma->n; ++i) {
+		if (i)
+			p = isl_printer_print_str(p, "; ");
+		p = print_multi_aff(p, pma->p[i].maff);
+		p = print_disjuncts((isl_map *)pma->p[i].set, p, 0);
+	}
+	p = isl_printer_print_str(p, " }");
+	return p;
+error:
+	isl_printer_free(p);
+	return NULL;
+}
+
+__isl_give isl_printer *isl_printer_print_pw_multi_aff(
+	__isl_take isl_printer *p, __isl_keep isl_pw_multi_aff *pma)
+{
+	if (!p || !pma)
+		goto error;
+
+	if (p->output_format == ISL_FORMAT_ISL)
+		return print_pw_multi_aff_isl(p, pma);
+	isl_die(p->ctx, isl_error_unsupported, "unsupported output format",
+		goto error);
+error:
+	isl_printer_free(p);
+	return NULL;
+}

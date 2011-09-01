@@ -72,3 +72,6 @@
 #undef BASE
 #define BASE multi_aff
 #include <print_templ.c>
+#undef BASE
+#define BASE pw_multi_aff
+#include <print_templ.c>

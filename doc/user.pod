@@ -600,6 +600,10 @@ of the original object.
 		__isl_keep isl_pw_aff *pwaff);
 	__isl_give isl_space *isl_multi_aff_get_space(
 		__isl_keep isl_multi_aff *maff);
+	__isl_give isl_space *isl_pw_multi_aff_get_domain_space(
+		__isl_keep isl_pw_multi_aff *pma);
+	__isl_give isl_space *isl_pw_multi_aff_get_space(
+		__isl_keep isl_pw_multi_aff *pma);
 
 	#include <isl/point.h>
 	__isl_give isl_space *isl_point_get_space(
@@ -1204,7 +1208,7 @@ A (basic) set or relation can also be constructed from a (piecewise)
 (multiple) affine expression
 or a list of affine expressions
 (See L<"Piecewise Quasi Affine Expressions"> and
-L<"Multiple Quasi Affine Expressions">).
+L<"Piecewise Multiple Quasi Affine Expressions">).
 
 	__isl_give isl_basic_map *isl_basic_map_from_aff(
 		__isl_take isl_aff *aff);
@@ -1217,6 +1221,10 @@ L<"Multiple Quasi Affine Expressions">).
 		__isl_take isl_aff_list *list);
 	__isl_give isl_basic_map *isl_basic_map_from_multi_aff(
 		__isl_take isl_multi_aff *maff)
+	__isl_give isl_set *isl_set_from_pw_multi_aff(
+		__isl_take isl_pw_multi_aff *pma);
+	__isl_give isl_map *isl_map_from_pw_multi_aff(
+		__isl_take isl_pw_multi_aff *pma);
 
 The C<domain_dim> argument describes the domain of the resulting
 basic relation.  It is required because the C<list> may consist
@@ -2893,7 +2901,7 @@ An expression can be printed using
 		__isl_take isl_printer *p,
 		__isl_keep isl_pw_aff *pwaff);
 
-=head2 Multiple Quasi Affine Expressions
+=head2 Piecewise Multiple Quasi Affine Expressions
 
 An C<isl_multi_aff> object represents a sequence of
 zero or more affine expressions, all defined on the same domain space.
@@ -2906,6 +2914,17 @@ following function.
 		__isl_take isl_space *space,
 		__isl_take isl_aff_list *list);
 
+An empty piecewise multiple quasi affine expression (one with no cells) or
+a piecewise multiple quasi affine expression with a single cell can
+be created using the following functions.
+
+	#include <isl/aff.h>
+	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_empty(
+		__isl_take isl_space *space);
+	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_alloc(
+		__isl_take isl_set *set,
+		__isl_take isl_multi_aff *maff);
+
 Multiple quasi affine expressions can be copied and freed using
 
 	#include <isl/aff.h>
@@ -2913,18 +2932,49 @@ Multiple quasi affine expressions can be copied and freed using
 		__isl_keep isl_multi_aff *maff);
 	void *isl_multi_aff_free(__isl_take isl_multi_aff *maff);
 
+	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_copy(
+		__isl_keep isl_pw_multi_aff *pma);
+	void *isl_pw_multi_aff_free(
+		__isl_take isl_pw_multi_aff *pma);
+
 The expression can be inspected using
 
 	#include <isl/aff.h>
 	isl_ctx *isl_multi_aff_get_ctx(
 		__isl_keep isl_multi_aff *maff);
+	isl_ctx *isl_pw_multi_aff_get_ctx(
+		__isl_keep isl_pw_multi_aff *pma);
 	unsigned isl_multi_aff_dim(__isl_keep isl_multi_aff *maff,
+		enum isl_dim_type type);
+	unsigned isl_pw_multi_aff_dim(
+		__isl_keep isl_pw_multi_aff *pma,
 		enum isl_dim_type type);
 	__isl_give isl_aff *isl_multi_aff_get_aff(
 		__isl_keep isl_multi_aff *multi, int pos);
+	const char *isl_pw_multi_aff_get_dim_name(
+		__isl_keep isl_pw_multi_aff *pma,
+		enum isl_dim_type type, unsigned pos);
+	__isl_give isl_id *isl_pw_multi_aff_get_dim_id(
+		__isl_keep isl_pw_multi_aff *pma,
+		enum isl_dim_type type, unsigned pos);
 	const char *isl_multi_aff_get_tuple_name(
 		__isl_keep isl_multi_aff *multi,
 		enum isl_dim_type type);
+	const char *isl_pw_multi_aff_get_tuple_name(
+		__isl_keep isl_pw_multi_aff *pma,
+		enum isl_dim_type type);
+	int isl_pw_multi_aff_has_tuple_id(
+		__isl_keep isl_pw_multi_aff *pma,
+		enum isl_dim_type type);
+	__isl_give isl_id *isl_pw_multi_aff_get_tuple_id(
+		__isl_keep isl_pw_multi_aff *pma,
+		enum isl_dim_type type);
+
+	int isl_pw_multi_aff_foreach_piece(
+		__isl_keep isl_pw_multi_aff *pma,
+		int (*fn)(__isl_take isl_set *set,
+			    __isl_take isl_multi_aff *maff,
+			    void *user), void *user);
 
 It can be modified using
 
@@ -2932,12 +2982,18 @@ It can be modified using
 	__isl_give isl_multi_aff *isl_multi_aff_set_dim_name(
 		__isl_take isl_multi_aff *maff,
 		enum isl_dim_type type, unsigned pos, const char *s);
+	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_set_tuple_id(
+		__isl_take isl_pw_multi_aff *pma,
+		enum isl_dim_type type, __isl_take isl_id *id);
 
 To check whether two multiple affine expressions are
 obviously equal to each other, use
 
 	int isl_multi_aff_plain_is_equal(__isl_keep isl_multi_aff *maff1,
 		__isl_keep isl_multi_aff *maff2);
+	int isl_pw_multi_aff_plain_is_equal(
+		__isl_keep isl_pw_multi_aff *pma1,
+		__isl_keep isl_pw_multi_aff *pma2);
 
 Operations include
 
@@ -2945,9 +3001,15 @@ Operations include
 	__isl_give isl_multi_aff *isl_multi_aff_add(
 		__isl_take isl_multi_aff *maff1,
 		__isl_take isl_multi_aff *maff2);
+	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_add(
+		__isl_take isl_pw_multi_aff *pma1,
+		__isl_take isl_pw_multi_aff *pma2);
 	__isl_give isl_multi_aff *isl_multi_aff_scale(
 		__isl_take isl_multi_aff *maff,
 		isl_int f);
+	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_intersect_domain(
+		__isl_take isl_pw_multi_aff *pma,
+		__isl_take isl_set *set);
 	__isl_give isl_multi_aff *isl_multi_aff_gist(
 		__isl_take isl_multi_aff *maff,
 		__isl_take isl_set *context);
@@ -2958,6 +3020,9 @@ An expression can be printed using
 	__isl_give isl_printer *isl_printer_print_multi_aff(
 		__isl_take isl_printer *p,
 		__isl_keep isl_multi_aff *maff);
+	__isl_give isl_printer *isl_printer_print_pw_multi_aff(
+		__isl_take isl_printer *p,
+		__isl_keep isl_pw_multi_aff *pma);
 
 =head2 Points
 
