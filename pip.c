@@ -11,12 +11,14 @@
 #include <string.h>
 #include <strings.h>
 #include <isl_map_private.h>
+#include <isl/aff.h>
 #include <isl/set.h>
 #include "isl_tab.h"
 #include "isl_sample.h"
 #include "isl_scan.h"
 #include <isl/seq.h>
 #include <isl/ilp.h>
+#include <isl/printer.h>
 #include <isl_point_private.h>
 
 /* The input of this program is the same as that of the "example" program
@@ -38,11 +40,23 @@
 struct options {
 	struct isl_options	*isl;
 	unsigned		 verify;
+	unsigned		 format;
+};
+
+#define FORMAT_SET	0
+#define FORMAT_AFF	1
+
+struct isl_arg_choice pip_format[] = {
+	{"set",		FORMAT_SET},
+	{"affine",	FORMAT_AFF},
+	{0}
 };
 
 struct isl_arg options_arg[] = {
 ISL_ARG_CHILD(struct options, isl, "isl", isl_options_arg, "isl options")
 ISL_ARG_BOOL(struct options, verify, 'T', "verify", 0, NULL)
+ISL_ARG_CHOICE(struct options, format, 0, "format",
+	pip_format, FORMAT_SET, "output format")
 ISL_ARG_END
 };
 
@@ -265,8 +279,9 @@ int main(int argc, char **argv)
 {
 	struct isl_ctx *ctx;
 	struct isl_basic_set *context, *bset, *copy, *context_copy;
-	struct isl_set *set;
+	struct isl_set *set = NULL;
 	struct isl_set *empty;
+	isl_pw_multi_aff *pma = NULL;
 	int neg_one;
 	char s[1024];
 	int urs_parms = 0;
@@ -321,23 +336,44 @@ int main(int argc, char **argv)
 		context_copy = isl_basic_set_copy(context);
 	}
 
-	if (max)
-		set = isl_basic_set_partial_lexmax(bset, context, &empty);
-	else
-		set = isl_basic_set_partial_lexmin(bset, context, &empty);
+	if (options->format == FORMAT_AFF) {
+		if (max)
+			pma = isl_basic_set_partial_lexmax_pw_multi_aff(bset,
+								context, &empty);
+		else
+			pma = isl_basic_set_partial_lexmin_pw_multi_aff(bset,
+								context, &empty);
+	} else {
+		if (max)
+			set = isl_basic_set_partial_lexmax(bset,
+								context, &empty);
+		else
+			set = isl_basic_set_partial_lexmin(bset,
+								context, &empty);
+	}
 
 	if (options->verify) {
 		assert(!rational);
+		if (options->format == FORMAT_AFF)
+			set = isl_set_from_pw_multi_aff(pma);
 		check_solution(copy, context_copy, set, empty, max);
+		isl_set_free(set);
 	} else {
-		isl_set_print(set, stdout, 0, ISL_FORMAT_ISL);
-		fprintf(stdout, "\n");
-		fprintf(stdout, "no solution: ");
-		isl_set_print(empty, stdout, 0, ISL_FORMAT_ISL);
-		fprintf(stdout, "\n");
+		isl_printer *p;
+		p = isl_printer_to_file(ctx, stdout);
+		if (options->format == FORMAT_AFF)
+			p = isl_printer_print_pw_multi_aff(p, pma);
+		else
+			p = isl_printer_print_set(p, set);
+		p = isl_printer_end_line(p);
+		p = isl_printer_print_str(p, "no solution: ");
+		p = isl_printer_print_set(p, empty);
+		p = isl_printer_end_line(p);
+		isl_printer_free(p);
+		isl_set_free(set);
+		isl_pw_multi_aff_free(pma);
 	}
 
-	isl_set_free(set);
 	isl_set_free(empty);
 	isl_ctx_free(ctx);
 
