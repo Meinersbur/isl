@@ -2700,6 +2700,9 @@ for elements in C<cond> and equal to C<pwaff_false> for elements
 not in C<cond>.
 
 	#include <isl/aff.h>
+	__isl_give isl_pw_aff *isl_pw_aff_union_min(
+		__isl_take isl_pw_aff *pwaff1,
+		__isl_take isl_pw_aff *pwaff2);
 	__isl_give isl_pw_aff *isl_pw_aff_union_max(
 		__isl_take isl_pw_aff *pwaff1,
 		__isl_take isl_pw_aff *pwaff2);

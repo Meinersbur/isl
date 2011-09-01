@@ -1146,12 +1146,15 @@ error:
 
 /* Compute a piecewise quasi-affine expression with a domain that
  * is the union of those of pwaff1 and pwaff2 and such that on each
- * cell, the quasi-affine expression is the maximum of those of pwaff1
- * and pwaff2.  If only one of pwaff1 or pwaff2 is defined on a given
- * cell, then the associated expression is the defined one.
+ * cell, the quasi-affine expression is the better (according to cmp)
+ * of those of pwaff1 and pwaff2.  If only one of pwaff1 or pwaff2
+ * is defined on a given cell, then the associated expression
+ * is the defined one.
  */
-static __isl_give isl_pw_aff *pw_aff_union_max(__isl_take isl_pw_aff *pwaff1,
-	__isl_take isl_pw_aff *pwaff2)
+static __isl_give isl_pw_aff *pw_aff_union_opt(__isl_take isl_pw_aff *pwaff1,
+	__isl_take isl_pw_aff *pwaff2,
+	__isl_give isl_basic_set *(*cmp)(__isl_take isl_aff *aff1,
+					__isl_take isl_aff *aff2))
 {
 	int i, j, n;
 	isl_pw_aff *res;
@@ -1183,22 +1186,22 @@ static __isl_give isl_pw_aff *pw_aff_union_max(__isl_take isl_pw_aff *pwaff1,
 		set = isl_set_copy(pwaff1->p[i].set);
 		for (j = 0; j < pwaff2->n; ++j) {
 			struct isl_set *common;
-			isl_set *ge;
+			isl_set *better;
 
 			common = isl_set_intersect(
 					isl_set_copy(pwaff1->p[i].set),
 					isl_set_copy(pwaff2->p[j].set));
-			ge = isl_set_from_basic_set(isl_aff_ge_basic_set(
+			better = isl_set_from_basic_set(cmp(
 					isl_aff_copy(pwaff2->p[j].aff),
 					isl_aff_copy(pwaff1->p[i].aff)));
-			ge = isl_set_intersect(common, ge);
-			if (isl_set_plain_is_empty(ge)) {
-				isl_set_free(ge);
+			better = isl_set_intersect(common, better);
+			if (isl_set_plain_is_empty(better)) {
+				isl_set_free(better);
 				continue;
 			}
-			set = isl_set_subtract(set, isl_set_copy(ge));
+			set = isl_set_subtract(set, isl_set_copy(better));
 
-			res = isl_pw_aff_add_piece(res, ge,
+			res = isl_pw_aff_add_piece(res, better,
 						isl_aff_copy(pwaff2->p[j].aff));
 		}
 		res = isl_pw_aff_add_piece(res, set,
@@ -1224,10 +1227,41 @@ error:
 	return NULL;
 }
 
+/* Compute a piecewise quasi-affine expression with a domain that
+ * is the union of those of pwaff1 and pwaff2 and such that on each
+ * cell, the quasi-affine expression is the maximum of those of pwaff1
+ * and pwaff2.  If only one of pwaff1 or pwaff2 is defined on a given
+ * cell, then the associated expression is the defined one.
+ */
+static __isl_give isl_pw_aff *pw_aff_union_max(__isl_take isl_pw_aff *pwaff1,
+	__isl_take isl_pw_aff *pwaff2)
+{
+	return pw_aff_union_opt(pwaff1, pwaff2, &isl_aff_ge_basic_set);
+}
+
 __isl_give isl_pw_aff *isl_pw_aff_union_max(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
 	return align_params_pw_pw_and(pwaff1, pwaff2, &pw_aff_union_max);
+}
+
+/* Compute a piecewise quasi-affine expression with a domain that
+ * is the union of those of pwaff1 and pwaff2 and such that on each
+ * cell, the quasi-affine expression is the minimum of those of pwaff1
+ * and pwaff2.  If only one of pwaff1 or pwaff2 is defined on a given
+ * cell, then the associated expression is the defined one.
+ */
+static __isl_give isl_pw_aff *pw_aff_union_min(__isl_take isl_pw_aff *pwaff1,
+	__isl_take isl_pw_aff *pwaff2)
+{
+	return pw_aff_union_opt(pwaff1, pwaff2, &isl_aff_le_basic_set);
+}
+
+__isl_give isl_pw_aff *isl_pw_aff_union_min(__isl_take isl_pw_aff *pwaff1,
+	__isl_take isl_pw_aff *pwaff2)
+{
+	return isl_pw_aff_align_params_pw_pw_and(pwaff1, pwaff2,
+							&pw_aff_union_min);
 }
 
 /* Construct a map with as domain the domain of pwaff and
