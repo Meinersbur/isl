@@ -4553,7 +4553,7 @@ static void sol_for_add(struct isl_sol_for *sol,
 	for (i = 1; i < M->n_row; ++i) {
 		aff = isl_aff_alloc(isl_local_space_copy(ls));
 		if (aff) {
-			isl_int_set_si(aff->v->el[0], 1);
+			isl_int_set(aff->v->el[0], M->row[0][0]);
 			isl_seq_cpy(aff->v->el + 1, M->row[i], M->n_col);
 		}
 		list = isl_aff_list_add(list, aff);
