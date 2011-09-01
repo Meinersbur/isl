@@ -650,10 +650,10 @@ static void sol_map_add(struct isl_sol_map *sol,
 	bmap = isl_basic_map_finalize(bmap);
 	sol->map = isl_map_grow(sol->map, 1);
 	sol->map = isl_map_add_basic_map(sol->map, bmap);
-	if (!sol->map)
-		goto error;
 	isl_basic_set_free(dom);
 	isl_mat_free(M);
+	if (!sol->map)
+		sol->sol.error = 1;
 	return;
 error:
 	isl_basic_set_free(dom);
