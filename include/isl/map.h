@@ -509,6 +509,8 @@ __isl_give isl_basic_map *isl_basic_map_from_constraint_matrices(
 	enum isl_dim_type c4, enum isl_dim_type c5);
 
 __isl_give isl_basic_map *isl_basic_map_from_aff(__isl_take isl_aff *aff);
+__isl_give isl_basic_map *isl_basic_map_from_multi_aff(
+	__isl_take isl_multi_aff *maff);
 __isl_give isl_basic_map *isl_basic_map_from_aff_list(
 	__isl_take isl_space *domain_dim, __isl_take isl_aff_list *list);
 

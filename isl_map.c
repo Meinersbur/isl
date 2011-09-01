@@ -9591,6 +9591,43 @@ error:
 	return NULL;
 }
 
+/* Construct a basic map mapping the domain the multi-affine expression
+ * to its range, with each dimension in the range equated to the
+ * corresponding affine expression.
+ */
+__isl_give isl_basic_map *isl_basic_map_from_multi_aff(
+	__isl_take isl_multi_aff *maff)
+{
+	int i;
+	isl_space *space;
+	isl_basic_map *bmap;
+
+	if (!maff)
+		return NULL;
+
+	if (isl_space_dim(maff->space, isl_dim_out) != maff->n)
+		isl_die(isl_multi_aff_get_ctx(maff), isl_error_internal,
+			"invalid space", return isl_multi_aff_free(maff));
+
+	space = isl_space_domain(isl_multi_aff_get_space(maff));
+	bmap = isl_basic_map_universe(isl_space_from_domain(space));
+
+	for (i = 0; i < maff->n; ++i) {
+		isl_aff *aff;
+		isl_basic_map *bmap_i;
+
+		aff = isl_aff_copy(maff->p[i]);
+		bmap_i = isl_basic_map_from_aff(aff);
+
+		bmap = isl_basic_map_flat_range_product(bmap, bmap_i);
+	}
+
+	bmap = isl_basic_map_reset_space(bmap, isl_multi_aff_get_space(maff));
+
+	isl_multi_aff_free(maff);
+	return bmap;
+}
+
 /* Construct a basic map mapping a domain in the given space to
  * to an n-dimensional range, with n the number of elements in the list,
  * where each coordinate in the range is prescribed by the
