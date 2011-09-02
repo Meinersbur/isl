@@ -632,7 +632,7 @@ using the following functions.
 	const char *isl_space_get_tuple_name(__isl_keep isl_space *space,
 		enum isl_dim_type type);
 
-The C<dim> argument needs to be one of C<isl_dim_in>, C<isl_dim_out>
+The C<type> argument needs to be one of C<isl_dim_in>, C<isl_dim_out>
 or C<isl_dim_set>.  As with C<isl_space_get_name>,
 the C<isl_space_get_tuple_name> function returns a pointer to some internal
 data structure.
