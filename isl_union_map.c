@@ -155,11 +155,7 @@ __isl_give isl_union_map *isl_union_map_align_params(
 		return umap;
 	}
 
-	model = isl_space_drop_dims(model, isl_dim_in,
-				0, isl_space_dim(model, isl_dim_in));
-	model = isl_space_drop_dims(model, isl_dim_out,
-				0, isl_space_dim(model, isl_dim_out));
-
+	model = isl_space_params(model);
 	data.exp = isl_parameter_alignment_reordering(umap->dim, model);
 	if (!data.exp)
 		goto error;
