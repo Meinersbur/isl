@@ -317,8 +317,7 @@ __isl_give isl_union_map *isl_union_map_from_map(__isl_take isl_map *map)
 		return NULL;
 
 	dim = isl_map_get_space(map);
-	dim = isl_space_drop_dims(dim, isl_dim_in, 0, isl_space_dim(dim, isl_dim_in));
-	dim = isl_space_drop_dims(dim, isl_dim_out, 0, isl_space_dim(dim, isl_dim_out));
+	dim = isl_space_params(dim);
 	umap = isl_union_map_empty(dim);
 	umap = isl_union_map_add_map(umap, map);
 
