@@ -2646,3 +2646,35 @@ __isl_give isl_multi_aff *isl_multi_aff_read_from_str(isl_ctx *ctx,
 	isl_stream_free(s);
 	return maff;
 }
+
+__isl_give isl_union_pw_qpolynomial *isl_stream_read_union_pw_qpolynomial(
+	struct isl_stream *s)
+{
+	struct isl_obj obj;
+
+	obj = obj_read(s);
+	if (obj.type == isl_obj_pw_qpolynomial) {
+		obj.type = isl_obj_union_pw_qpolynomial;
+		obj.v = isl_union_pw_qpolynomial_from_pw_qpolynomial(obj.v);
+	}
+	if (obj.v)
+		isl_assert(s->ctx, obj.type == isl_obj_union_pw_qpolynomial,
+			   goto error);
+
+	return obj.v;
+error:
+	obj.type->free(obj.v);
+	return NULL;
+}
+
+__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_read_from_str(
+	isl_ctx *ctx, const char *str)
+{
+	isl_union_pw_qpolynomial *upwqp;
+	struct isl_stream *s = isl_stream_new_str(ctx, str);
+	if (!s)
+		return NULL;
+	upwqp = isl_stream_read_union_pw_qpolynomial(s);
+	isl_stream_free(s);
+	return upwqp;
+}

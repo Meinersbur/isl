@@ -431,6 +431,9 @@ __isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_copy(
 	__isl_keep isl_union_pw_qpolynomial *upwqp);
 void isl_union_pw_qpolynomial_free(__isl_take isl_union_pw_qpolynomial *upwqp);
 
+__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_read_from_str(
+	isl_ctx *ctx, const char *str);
+
 __isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_add(
 	__isl_take isl_union_pw_qpolynomial *upwqp1,
 	__isl_take isl_union_pw_qpolynomial *upwqp2);

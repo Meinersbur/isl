@@ -3208,7 +3208,13 @@ the number of points in the map
 
 	[n] -> { [x] -> [y] : x,y >= 0 and 0 <= x + y <= n }
 
-=head3 Printing (Piecewise) Quasipolynomials
+=head3 Input and Output
+
+Piecewise quasipolynomials can be read from input using
+
+	__isl_give isl_union_pw_qpolynomial *
+	isl_union_pw_qpolynomial_read_from_str(
+		isl_ctx *ctx, const char *str);
 
 Quasipolynomials and piecewise quasipolynomials can be printed
 using the following functions.
