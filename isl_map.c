@@ -7611,6 +7611,31 @@ int isl_basic_map_plain_cmp(const __isl_keep isl_basic_map *bmap1,
 	return 0;
 }
 
+int isl_basic_set_plain_cmp(const __isl_keep isl_basic_set *bset1,
+	const __isl_keep isl_basic_set *bset2)
+{
+	return isl_basic_map_plain_cmp(bset1, bset2);
+}
+
+int isl_set_plain_cmp(const __isl_keep isl_set *set1,
+	const __isl_keep isl_set *set2)
+{
+	int i, cmp;
+
+	if (set1 == set2)
+		return 0;
+	if (set1->n != set2->n)
+		return set1->n - set2->n;
+
+	for (i = 0; i < set1->n; ++i) {
+		cmp = isl_basic_set_plain_cmp(set1->p[i], set2->p[i]);
+		if (cmp)
+			return cmp;
+	}
+
+	return 0;
+}
+
 int isl_basic_map_plain_is_equal(__isl_keep isl_basic_map *bmap1,
 	__isl_keep isl_basic_map *bmap2)
 {

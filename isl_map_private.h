@@ -201,6 +201,8 @@ __isl_give isl_basic_set *isl_basic_set_sort_constraints(
 	__isl_take isl_basic_set *bset);
 int isl_basic_map_plain_cmp(const __isl_keep isl_basic_map *bmap1,
 	const __isl_keep isl_basic_map *bmap2);
+int isl_set_plain_cmp(const __isl_keep isl_set *set1,
+	const __isl_keep isl_set *set2);
 int isl_basic_set_plain_is_equal(__isl_keep isl_basic_set *bset1,
 	__isl_keep isl_basic_set *bset2);
 int isl_basic_map_plain_is_equal(__isl_keep isl_basic_map *bmap1,
