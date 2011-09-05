@@ -1304,3 +1304,96 @@ __isl_give PW *FN(PW,scale)(__isl_take PW *pw, isl_int v)
 {
 	return FN(PW,mul_isl_int)(pw, v);
 }
+
+static int FN(PW,qsort_set_cmp)(const void *p1, const void *p2)
+{
+	const isl_set *set1 = *(const isl_set **)p1;
+	const isl_set *set2 = *(const isl_set **)p2;
+
+	return isl_set_plain_cmp(set1, set2);
+}
+
+/* We normalize in place, but if anything goes wrong we need
+ * to return NULL, so we need to make sure we don't change the
+ * meaning of any possible other copies of map.
+ */
+__isl_give PW *FN(PW,normalize)(__isl_take PW *pw)
+{
+	int i, j;
+	isl_set *set;
+
+	if (!pw)
+		return NULL;
+	for (i = 0; i < pw->n; ++i) {
+		set = isl_set_normalize(isl_set_copy(pw->p[i].set));
+		if (!set)
+			return FN(PW,free)(pw);
+		isl_set_free(pw->p[i].set);
+		pw->p[i].set = set;
+	}
+	qsort(pw->p, pw->n, sizeof(pw->p[0]), &FN(PW,qsort_set_cmp));
+	for (i = pw->n - 1; i >= 1; --i) {
+		if (!isl_set_plain_is_equal(pw->p[i - 1].set, pw->p[i].set))
+			continue;
+		if (!FN(EL,plain_is_equal)(pw->p[i - 1].FIELD, pw->p[i].FIELD))
+			continue;
+		set = isl_set_union(isl_set_copy(pw->p[i - 1].set),
+				    isl_set_copy(pw->p[i].set));
+		if (!set)
+			return FN(PW,free)(pw);
+		isl_set_free(pw->p[i].set);
+		FN(EL,free)(pw->p[i].FIELD);
+		isl_set_free(pw->p[i - 1].set);
+		pw->p[i - 1].set = set;
+		for (j = i + 1; j < pw->n; ++j)
+			pw->p[j - 1] = pw->p[j];
+		pw->n--;
+	}
+
+	return pw;
+}
+
+/* Is pw1 obviously equal to pw2?
+ * That is, do they have obviously identical cells and obviously identical
+ * elements on each cell?
+ */
+int FN(PW,plain_is_equal)(__isl_keep PW *pw1, __isl_keep PW *pw2)
+{
+	int i;
+	int equal;
+
+	if (!pw1 || !pw2)
+		return -1;
+
+	if (pw1 == pw2)
+		return 1;
+	if (!isl_space_is_equal(pw1->dim, pw2->dim))
+		return 0;
+
+	pw1 = FN(PW,copy)(pw1);
+	pw2 = FN(PW,copy)(pw2);
+	pw1 = FN(PW,normalize)(pw1);
+	pw2 = FN(PW,normalize)(pw2);
+	if (!pw1 || !pw2)
+		goto error;
+
+	equal = pw1->n == pw2->n;
+	for (i = 0; equal && i < pw1->n; ++i) {
+		equal = isl_set_plain_is_equal(pw1->p[i].set, pw2->p[i].set);
+		if (equal < 0)
+			goto error;
+		if (!equal)
+			break;
+		equal = FN(EL,plain_is_equal)(pw1->p[i].FIELD, pw2->p[i].FIELD);
+		if (equal < 0)
+			goto error;
+	}
+
+	FN(PW,free)(pw1);
+	FN(PW,free)(pw2);
+	return equal;
+error:
+	FN(PW,free)(pw1);
+	FN(PW,free)(pw2);
+	return -1;
+}
