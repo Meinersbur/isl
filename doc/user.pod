@@ -2270,6 +2270,9 @@ instead.
 		__isl_take isl_basic_set *context);
 	__isl_give isl_set *isl_set_gist(__isl_take isl_set *set,
 		__isl_take isl_set *context);
+	__isl_give isl_set *isl_set_gist_params(
+		__isl_take isl_set *set,
+		__isl_take isl_set *context);
 	__isl_give isl_union_set *isl_union_set_gist(
 		__isl_take isl_union_set *uset,
 		__isl_take isl_union_set *context);
@@ -2278,6 +2281,9 @@ instead.
 		__isl_take isl_basic_map *context);
 	__isl_give isl_map *isl_map_gist(__isl_take isl_map *map,
 		__isl_take isl_map *context);
+	__isl_give isl_map *isl_map_gist_params(
+		__isl_take isl_map *map,
+		__isl_take isl_set *context);
 	__isl_give isl_union_map *isl_union_map_gist(
 		__isl_take isl_union_map *umap,
 		__isl_take isl_union_map *context);

@@ -1848,6 +1848,20 @@ __isl_give isl_set *isl_set_gist(__isl_take isl_set *set,
 					(struct isl_map *)context);
 }
 
+__isl_give isl_map *isl_map_gist_params(__isl_take isl_map *map,
+	__isl_take isl_set *context)
+{
+	isl_map *map_context = isl_map_universe(isl_map_get_space(map));
+	map_context = isl_map_intersect_params(map_context, context);
+	return isl_map_gist(map, map_context);
+}
+
+__isl_give isl_set *isl_set_gist_params(__isl_take isl_set *set,
+	__isl_take isl_set *context)
+{
+	return isl_map_gist_params(set, context);
+}
+
 /* Quick check to see if two basic maps are disjoint.
  * In particular, we reduce the equalities and inequalities of
  * one basic map in the context of the equalities of the other
