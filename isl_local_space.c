@@ -451,6 +451,59 @@ __isl_give isl_mat *isl_merge_divs(__isl_keep isl_mat *div1,
 	return div;
 }
 
+/* Construct a local space that contains all the divs in either
+ * "ls1" or "ls2".
+ */
+__isl_give isl_local_space *isl_local_space_intersect(
+	__isl_take isl_local_space *ls1, __isl_take isl_local_space *ls2)
+{
+	isl_ctx *ctx;
+	int *exp1 = NULL;
+	int *exp2 = NULL;
+	isl_mat *div;
+
+	if (!ls1 || !ls2)
+		goto error;
+
+	ctx = isl_local_space_get_ctx(ls1);
+	if (!isl_space_is_equal(ls1->dim, ls2->dim))
+		isl_die(ctx, isl_error_invalid,
+			"spaces should be identical", goto error);
+
+	if (ls2->div->n_row == 0) {
+		isl_local_space_free(ls2);
+		return ls1;
+	}
+
+	if (ls1->div->n_row == 0) {
+		isl_local_space_free(ls1);
+		return ls2;
+	}
+
+	exp1 = isl_alloc_array(ctx, int, ls1->div->n_row);
+	exp2 = isl_alloc_array(ctx, int, ls2->div->n_row);
+	if (!exp1 || !exp2)
+		goto error;
+
+	div = isl_merge_divs(ls1->div, ls2->div, exp1, exp2);
+	if (!div)
+		goto error;
+
+	free(exp1);
+	free(exp2);
+	isl_local_space_free(ls2);
+	isl_mat_free(ls1->div);
+	ls1->div = div;
+
+	return ls1;
+error:
+	free(exp1);
+	free(exp2);
+	isl_local_space_free(ls1);
+	isl_local_space_free(ls2);
+	return NULL;
+}
+
 int isl_local_space_divs_known(__isl_keep isl_local_space *ls)
 {
 	int i;
