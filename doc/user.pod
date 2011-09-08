@@ -2088,6 +2088,15 @@ existentially quantified variables.
 	__isl_give isl_union_set *isl_union_set_lift(
 		__isl_take isl_union_set *uset);
 
+Given a local space that contains the existentially quantified
+variables of a set, a basic relation that, when applied to
+a basic set, has essentially the same effect as C<isl_basic_set_lift>,
+can be constructed using the following function.
+
+	#include <isl/local_space.h>
+	__isl_give isl_basic_map *isl_local_space_lifting(
+		__isl_take isl_local_space *ls);
+
 =item * Internal Product
 
 	__isl_give isl_basic_map *isl_basic_map_zip(

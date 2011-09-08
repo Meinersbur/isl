@@ -856,3 +856,27 @@ __isl_give isl_local_space *isl_local_space_lift(
 
 	return ls;
 }
+
+/* Construct a basic map that maps a set living in local space "ls"
+ * to the corresponding lifted local space.
+ */
+__isl_give isl_basic_map *isl_local_space_lifting(
+	__isl_take isl_local_space *ls)
+{
+	isl_basic_map *lifting;
+	isl_basic_set *bset;
+
+	if (!ls)
+		return NULL;
+	if (!isl_local_space_is_set(ls))
+		isl_die(isl_local_space_get_ctx(ls), isl_error_invalid,
+			"lifting only defined on set spaces",
+			return isl_local_space_free(ls));
+
+	bset = isl_basic_set_from_local_space(ls);
+	lifting = isl_basic_set_unwrap(isl_basic_set_lift(bset));
+	lifting = isl_basic_map_domain_map(lifting);
+	lifting = isl_basic_map_reverse(lifting);
+
+	return lifting;
+}
