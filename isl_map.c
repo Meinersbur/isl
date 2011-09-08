@@ -4111,6 +4111,23 @@ __isl_give isl_set *isl_set_params(__isl_take isl_set *set)
 	return set;
 }
 
+/* Compute the parameter domain of the given map.
+ */
+__isl_give isl_set *isl_map_params(__isl_take isl_map *map)
+{
+	isl_space *space;
+	unsigned n;
+
+	n = isl_map_dim(map, isl_dim_in);
+	map = isl_map_project_out(map, isl_dim_in, 0, n);
+	n = isl_map_dim(map, isl_dim_out);
+	map = isl_map_project_out(map, isl_dim_out, 0, n);
+	space = isl_map_get_space(map);
+	space = isl_space_params(space);
+	map = isl_map_reset_space(map, space);
+	return map;
+}
+
 struct isl_basic_set *isl_basic_map_domain(struct isl_basic_map *bmap)
 {
 	isl_space *dim;

@@ -1677,6 +1677,7 @@ i.e., whether both domain and range are nested relations.
 	__isl_give isl_basic_set *isl_basic_map_range(
 		__isl_take isl_basic_map *bmap);
 	__isl_give isl_set *isl_set_params(__isl_take isl_set *set);
+	__isl_give isl_set *isl_map_params(__isl_take isl_map *map);
 	__isl_give isl_set *isl_map_domain(
 		__isl_take isl_map *bmap);
 	__isl_give isl_set *isl_map_range(
