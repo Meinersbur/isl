@@ -836,3 +836,23 @@ int *isl_local_space_get_active(__isl_keep isl_local_space *ls, isl_int *l)
 
 	return active;
 }
+
+/* Given a local space "ls" of a set, create a local space
+ * for the lift of the set.  In particular, the result
+ * is of the form [dim -> local[..]], with ls->div->n_row variables in the
+ * range of the wrapped map.
+ */
+__isl_give isl_local_space *isl_local_space_lift(
+	__isl_take isl_local_space *ls)
+{
+	ls = isl_local_space_cow(ls);
+	if (!ls)
+		return NULL;
+
+	ls->dim = isl_space_lift(ls->dim, ls->div->n_row);
+	ls->div = isl_mat_drop_rows(ls->div, 0, ls->div->n_row);
+	if (!ls->dim || !ls->div)
+		return isl_local_space_free(ls);
+
+	return ls;
+}

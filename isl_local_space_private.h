@@ -50,4 +50,7 @@ __isl_give isl_local_space *isl_local_space_substitute(
 	__isl_take isl_local_space *ls,
 	enum isl_dim_type type, unsigned pos, __isl_keep isl_aff *subs);
 
+__isl_give isl_local_space *isl_local_space_lift(
+	__isl_take isl_local_space *ls);
+
 #endif
