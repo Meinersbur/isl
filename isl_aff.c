@@ -2344,3 +2344,144 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_substitute(
 	isl_pw_multi_aff_free(pma);
 	return res;
 }
+
+/* Extend the local space of "dst" to include the divs
+ * in the local space of "src".
+ */
+__isl_give isl_aff *isl_aff_align_divs(__isl_take isl_aff *dst,
+	__isl_keep isl_aff *src)
+{
+	isl_ctx *ctx;
+	int *exp1 = NULL;
+	int *exp2 = NULL;
+	isl_mat *div;
+
+	if (!src || !dst)
+		return isl_aff_free(dst);
+
+	ctx = isl_aff_get_ctx(src);
+	if (!isl_space_is_equal(src->ls->dim, dst->ls->dim))
+		isl_die(ctx, isl_error_invalid,
+			"spaces don't match", goto error);
+
+	if (src->ls->div->n_row == 0)
+		return dst;
+
+	exp1 = isl_alloc_array(ctx, int, src->ls->div->n_row);
+	exp2 = isl_alloc_array(ctx, int, dst->ls->div->n_row);
+	if (!exp1 || !exp2)
+		goto error;
+
+	div = isl_merge_divs(src->ls->div, dst->ls->div, exp1, exp2);
+	dst = isl_aff_expand_divs(dst, div, exp2);
+	free(exp1);
+	free(exp2);
+
+	return dst;
+error:
+	free(exp1);
+	free(exp2);
+	return isl_aff_free(dst);
+}
+
+/* Adjust the local spaces of the affine expressions in "maff"
+ * such that they all have the save divs.
+ */
+__isl_give isl_multi_aff *isl_multi_aff_align_divs(
+	__isl_take isl_multi_aff *maff)
+{
+	int i;
+
+	if (!maff)
+		return NULL;
+	if (maff->n == 0)
+		return maff;
+	maff = isl_multi_aff_cow(maff);
+	if (!maff)
+		return NULL;
+
+	for (i = 1; i < maff->n; ++i)
+		maff->p[0] = isl_aff_align_divs(maff->p[0], maff->p[i]);
+	for (i = 1; i < maff->n; ++i) {
+		maff->p[i] = isl_aff_align_divs(maff->p[i], maff->p[0]);
+		if (!maff->p[i])
+			return isl_multi_aff_free(maff);
+	}
+
+	return maff;
+}
+
+__isl_give isl_aff *isl_aff_lift(__isl_take isl_aff *aff)
+{
+	aff = isl_aff_cow(aff);
+	if (!aff)
+		return NULL;
+
+	aff->ls = isl_local_space_lift(aff->ls);
+	if (!aff->ls)
+		return isl_aff_free(aff);
+
+	return aff;
+}
+
+/* Lift "maff" to a space with extra dimensions such that the result
+ * has no more existentially quantified variables.
+ * If "ls" is not NULL, then *ls is assigned the local space that lies
+ * at the basis of the lifting applied to "maff".
+ */
+__isl_give isl_multi_aff *isl_multi_aff_lift(__isl_take isl_multi_aff *maff,
+	__isl_give isl_local_space **ls)
+{
+	int i;
+	isl_space *space;
+	unsigned n_div;
+
+	if (ls)
+		*ls = NULL;
+
+	if (!maff)
+		return NULL;
+
+	if (maff->n == 0) {
+		if (ls) {
+			isl_space *space = isl_multi_aff_get_domain_space(maff);
+			*ls = isl_local_space_from_space(space);
+			if (!*ls)
+				return isl_multi_aff_free(maff);
+		}
+		return maff;
+	}
+
+	maff = isl_multi_aff_cow(maff);
+	maff = isl_multi_aff_align_divs(maff);
+	if (!maff)
+		return NULL;
+
+	n_div = isl_aff_dim(maff->p[0], isl_dim_div);
+	space = isl_multi_aff_get_space(maff);
+	space = isl_space_lift(isl_space_domain(space), n_div);
+	space = isl_space_extend_domain_with_range(space,
+						isl_multi_aff_get_space(maff));
+	if (!space)
+		return isl_multi_aff_free(maff);
+	isl_space_free(maff->space);
+	maff->space = space;
+
+	if (ls) {
+		*ls = isl_aff_get_domain_local_space(maff->p[0]);
+		if (!*ls)
+			return isl_multi_aff_free(maff);
+	}
+
+	for (i = 0; i < maff->n; ++i) {
+		maff->p[i] = isl_aff_lift(maff->p[i]);
+		if (!maff->p[i])
+			goto error;
+	}
+
+	return maff;
+error:
+	if (ls)
+		isl_local_space_free(*ls);
+	return isl_multi_aff_free(maff);
+}
