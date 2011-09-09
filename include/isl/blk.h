@@ -26,7 +26,7 @@ struct isl_blk {
 struct isl_ctx;
 
 struct isl_blk isl_blk_alloc(struct isl_ctx *ctx, size_t n);
-struct isl_blk isl_blk_empty();
+struct isl_blk isl_blk_empty(void);
 int isl_blk_is_error(struct isl_blk block);
 struct isl_blk isl_blk_extend(struct isl_ctx *ctx, struct isl_blk block,
 				size_t new_n);

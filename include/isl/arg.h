@@ -255,7 +255,7 @@ int isl_arg_parse(struct isl_arg *arg, int argc, char **argv, void *opt,
 
 #define ISL_ARG_DECL(prefix,st,arg)					\
 extern struct isl_arg arg[];						\
-st *prefix ## _new_with_defaults();					\
+st *prefix ## _new_with_defaults(void);					\
 void prefix ## _free(st *opt);						\
 int prefix ## _parse(st *opt, int argc, char **argv, unsigned flags);
 
