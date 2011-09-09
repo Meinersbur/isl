@@ -126,6 +126,22 @@ now take an C<isl_local_space> instead of an C<isl_space>.
 An C<isl_local_space> can be created from an C<isl_space>
 using C<isl_local_space_from_space>.
 
+=item * The C<isl_div> type has been removed.  Functions that used
+to return an C<isl_div> now return an C<isl_aff>.
+Note that the space of an C<isl_aff> is that of relation.
+When replacing a call to C<isl_div_get_coefficient> by a call to
+C<isl_aff_get_coefficient> any C<isl_dim_set> argument needs
+to be replaced by C<isl_dim_in>.
+A call to C<isl_aff_from_div> can be replaced by a call
+to C<isl_aff_floor>.
+A call to C<isl_qpolynomial_div(div)> call be replaced by
+the nested call
+
+	isl_qpolynomial_from_aff(isl_aff_floor(div))
+
+The function C<isl_constraint_div> has also been renamed
+to C<isl_constraint_get_div>.
+
 =back
 
 =head1 Installation
@@ -728,7 +744,7 @@ They can be inspected, copied and freed using the following functions.
 		enum isl_dim_type type, unsigned pos, const char *s);
 	__isl_give isl_space *isl_local_space_get_space(
 		__isl_keep isl_local_space *ls);
-	__isl_give isl_div *isl_local_space_get_div(
+	__isl_give isl_aff *isl_local_space_get_div(
 		__isl_keep isl_local_space *ls, int pos);
 	__isl_give isl_local_space *isl_local_space_copy(
 		__isl_keep isl_local_space *ls);
@@ -1317,20 +1333,17 @@ the following functions.
 		enum isl_dim_type type, unsigned first, unsigned n);
 
 The explicit representations of the existentially quantified
-variables can be inspected using the following functions.
-Note that the user is only allowed to use these functions
+variables can be inspected using the following function.
+Note that the user is only allowed to use this function
 if the inspected set or map is the result of a call
 to C<isl_set_compute_divs> or C<isl_map_compute_divs>.
+The existentially quantified variable is equal to the floor
+of the returned affine expression.  The affine expression
+itself can be inspected using the functions in
+L<"Piecewise Quasi Affine Expressions">.
 
-	__isl_give isl_div *isl_constraint_div(
+	__isl_give isl_aff *isl_constraint_get_div(
 		__isl_keep isl_constraint *constraint, int pos);
-	isl_ctx *isl_div_get_ctx(__isl_keep isl_div *div);
-	void isl_div_get_constant(__isl_keep isl_div *div,
-		isl_int *v);
-	void isl_div_get_denominator(__isl_keep isl_div *div,
-		isl_int *v);
-	void isl_div_get_coefficient(__isl_keep isl_div *div,
-		enum isl_dim_type type, int pos, isl_int *v);
 
 To obtain the constraints of a basic set or map in matrix
 form, use the following functions.
@@ -2481,11 +2494,6 @@ The zero quasi affine expression on a given domain can be created using
 Note that the space in which the resulting object lives is a map space
 with the given space as domain and a one-dimensional range.
 
-A quasi affine expression can also be initialized from an C<isl_div>:
-
-	#include <isl/div.h>
-	__isl_give isl_aff *isl_aff_from_div(__isl_take isl_div *div);
-
 An empty piecewise quasi affine expression (one with no cells)
 or a piecewise quasi affine expression with a single cell can
 be created using the following functions.
@@ -2551,7 +2559,7 @@ The expression can be inspected using
 		enum isl_dim_type type, int pos, isl_int *v);
 	int isl_aff_get_denominator(__isl_keep isl_aff *aff,
 		isl_int *v);
-	__isl_give isl_div *isl_aff_get_div(
+	__isl_give isl_aff *isl_aff_get_div(
 		__isl_keep isl_aff *aff, int pos);
 
 	int isl_pw_aff_foreach_piece(__isl_keep isl_pw_aff *pwaff,
@@ -2974,8 +2982,6 @@ on the resulting quasipolynomials
 	__isl_give isl_qpolynomial *isl_qpolynomial_rat_cst_on_domain(
 		__isl_take isl_space *domain,
 		const isl_int n, const isl_int d);
-	__isl_give isl_qpolynomial *isl_qpolynomial_div(
-		__isl_take isl_div *div);
 	__isl_give isl_qpolynomial *isl_qpolynomial_var_on_domain(
 		__isl_take isl_space *domain,
 		enum isl_dim_type type, unsigned pos);
@@ -3089,7 +3095,7 @@ these functions
 		isl_int *d);
 	int isl_term_get_exp(__isl_keep isl_term *term,
 		enum isl_dim_type type, unsigned pos);
-	__isl_give isl_div *isl_term_get_div(
+	__isl_give isl_aff *isl_term_get_div(
 		__isl_keep isl_term *term, unsigned pos);
 	void isl_term_free(__isl_take isl_term *term);
 

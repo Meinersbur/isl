@@ -521,7 +521,7 @@ __isl_give isl_aff *isl_aff_add_coefficient_si(__isl_take isl_aff *aff,
 	return aff;
 }
 
-__isl_give isl_div *isl_aff_get_div(__isl_keep isl_aff *aff, int pos)
+__isl_give isl_aff *isl_aff_get_div(__isl_keep isl_aff *aff, int pos)
 {
 	if (!aff)
 		return NULL;

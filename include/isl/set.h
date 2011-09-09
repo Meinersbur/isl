@@ -38,7 +38,8 @@ __isl_give isl_space *isl_set_get_space(__isl_keep isl_set *set);
 __isl_give isl_set *isl_set_reset_space(__isl_take isl_set *set,
 	__isl_take isl_space *dim);
 
-struct isl_div *isl_basic_set_div(struct isl_basic_set *bset, int pos);
+__isl_give isl_aff *isl_basic_set_get_div(__isl_keep isl_basic_set *bset,
+	int pos);
 
 __isl_give isl_local_space *isl_basic_set_get_local_space(
 	__isl_keep isl_basic_set *bset);

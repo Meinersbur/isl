@@ -57,8 +57,6 @@ libisl_la_SOURCES = \
 	isl_dim.c \
 	isl_dim_map.h \
 	isl_dim_map.c \
-	isl_div.c \
-	isl_div_private.h \
 	isl_equalities.c \
 	isl_equalities.h \
 	isl_factorization.c \
@@ -200,7 +198,6 @@ pkginclude_HEADERS = \
 	include/isl/constraint.h \
 	include/isl/ctx.h \
 	include/isl/dim.h \
-	include/isl/div.h \
 	include/isl/flow.h \
 	include/isl/id.h \
 	include/isl/ilp.h \

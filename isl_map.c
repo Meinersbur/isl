@@ -9629,3 +9629,29 @@ error:
 	isl_map_free(map);
 	return NULL;
 }
+
+__isl_give isl_aff *isl_basic_map_get_div(__isl_keep isl_basic_map *bmap,
+	int pos)
+{
+	isl_aff *div;
+	isl_local_space *ls;
+
+	if (!bmap)
+		return NULL;
+
+	if (!isl_basic_map_divs_known(bmap))
+		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
+			"some divs are unknown", return NULL);
+
+	ls = isl_basic_map_get_local_space(bmap);
+	div = isl_local_space_get_div(ls, pos);
+	isl_local_space_free(ls);
+
+	return div;
+}
+
+__isl_give isl_aff *isl_basic_set_get_div(__isl_keep isl_basic_set *bset,
+	int pos)
+{
+	return isl_basic_map_get_div(bset, pos);
+}

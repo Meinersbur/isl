@@ -4,7 +4,6 @@
 #include <isl/ctx.h>
 #include <isl/constraint.h>
 #include <isl/space.h>
-#include <isl/div.h>
 #include <isl/set_type.h>
 #include <isl/point.h>
 #include <isl/printer.h>
@@ -36,7 +35,6 @@ __isl_give isl_qpolynomial *isl_qpolynomial_neginfty_on_domain(__isl_take isl_sp
 __isl_give isl_qpolynomial *isl_qpolynomial_nan_on_domain(__isl_take isl_space *dim);
 __isl_give isl_qpolynomial *isl_qpolynomial_rat_cst_on_domain(__isl_take isl_space *dim,
 	const isl_int n, const isl_int d);
-__isl_give isl_qpolynomial *isl_qpolynomial_div(__isl_take isl_div *div);
 __isl_give isl_qpolynomial *isl_qpolynomial_var_on_domain(__isl_take isl_space *dim,
 	enum isl_dim_type type, unsigned pos);
 __isl_give isl_qpolynomial *isl_qpolynomial_copy(__isl_keep isl_qpolynomial *qp);
@@ -110,7 +108,7 @@ void isl_term_get_num(__isl_keep isl_term *term, isl_int *n);
 void isl_term_get_den(__isl_keep isl_term *term, isl_int *d);
 int isl_term_get_exp(__isl_keep isl_term *term,
 	enum isl_dim_type type, unsigned pos);
-__isl_give isl_div *isl_term_get_div(__isl_keep isl_term *term, unsigned pos);
+__isl_give isl_aff *isl_term_get_div(__isl_keep isl_term *term, unsigned pos);
 
 int isl_qpolynomial_foreach_term(__isl_keep isl_qpolynomial *qp,
 	int (*fn)(__isl_take isl_term *term, void *user), void *user);

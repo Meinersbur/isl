@@ -13,7 +13,6 @@
 #include <isl_map_private.h>
 #include <isl_constraint_private.h>
 #include <isl_space_private.h>
-#include <isl_div_private.h>
 #include <isl/seq.h>
 #include <isl_aff_private.h>
 #include <isl_local_space_private.h>
@@ -366,7 +365,8 @@ void isl_constraint_get_coefficient(struct isl_constraint *constraint,
 	isl_int_set(*v, constraint->v->el[pos]);
 }
 
-struct isl_div *isl_constraint_div(struct isl_constraint *constraint, int pos)
+__isl_give isl_aff *isl_constraint_get_div(__isl_keep isl_constraint *constraint,
+	int pos)
 {
 	if (!constraint)
 		return NULL;

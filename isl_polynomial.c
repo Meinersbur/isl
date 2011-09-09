@@ -20,7 +20,6 @@
 #include <isl_polynomial_private.h>
 #include <isl_point_private.h>
 #include <isl_space_private.h>
-#include <isl_div_private.h>
 #include <isl_mat_private.h>
 #include <isl_range.h>
 #include <isl_local_space_private.h>
@@ -2127,57 +2126,6 @@ error:
 	return NULL;
 }
 
-/* Assumes each div only depends on earlier divs.
- */
-__isl_give isl_qpolynomial *isl_qpolynomial_div_pow(__isl_take isl_div *div,
-	int power)
-{
-	struct isl_qpolynomial *qp = NULL;
-	struct isl_upoly_rec *rec;
-	struct isl_upoly_cst *cst;
-	int i, d;
-	int pos;
-
-	if (!div)
-		return NULL;
-
-	d = div->line - div->bmap->div;
-
-	pos = isl_space_dim(div->bmap->dim, isl_dim_all) + d;
-	rec = isl_upoly_alloc_rec(div->ctx, pos, 1 + power);
-	qp = isl_qpolynomial_alloc(isl_basic_map_get_space(div->bmap),
-				   div->bmap->n_div, &rec->up);
-	if (!qp)
-		goto error;
-
-	for (i = 0; i < div->bmap->n_div; ++i)
-		isl_seq_cpy(qp->div->row[i], div->bmap->div[i], qp->div->n_col);
-
-	for (i = 0; i < 1 + power; ++i) {
-		rec->p[i] = isl_upoly_zero(div->ctx);
-		if (!rec->p[i])
-			goto error;
-		rec->n++;
-	}
-	cst = isl_upoly_as_cst(rec->p[power]);
-	isl_int_set_si(cst->n, 1);
-
-	isl_div_free(div);
-
-	qp = reduce_divs(qp);
-
-	return qp;
-error:
-	isl_qpolynomial_free(qp);
-	isl_div_free(div);
-	return NULL;
-}
-
-__isl_give isl_qpolynomial *isl_qpolynomial_div(__isl_take isl_div *div)
-{
-	return isl_qpolynomial_div_pow(div, 1);
-}
-
 __isl_give isl_qpolynomial *isl_qpolynomial_rat_cst_on_domain(
 	__isl_take isl_space *dim, const isl_int n, const isl_int d)
 {
@@ -3611,11 +3559,11 @@ int isl_term_get_exp(__isl_keep isl_term *term,
 	return term->pow[pos];
 }
 
-__isl_give isl_div *isl_term_get_div(__isl_keep isl_term *term, unsigned pos)
+__isl_give isl_aff *isl_term_get_div(__isl_keep isl_term *term, unsigned pos)
 {
-	isl_basic_map *bmap;
+	isl_local_space *ls;
+	isl_aff *aff;
 	unsigned total;
-	int k;
 
 	if (!term)
 		return NULL;
@@ -3630,16 +3578,15 @@ __isl_give isl_div *isl_term_get_div(__isl_keep isl_term *term, unsigned pos)
 					term->div->n_row) == -1,
 		return NULL);
 
-	bmap = isl_basic_map_alloc_space(isl_space_copy(term->dim), 1, 0, 0);
-	if ((k = isl_basic_map_alloc_div(bmap)) < 0)
-		goto error;
+	ls = isl_local_space_alloc_div(isl_space_copy(term->dim),
+					isl_mat_copy(term->div));
+	aff = isl_aff_alloc(ls);
+	if (!aff)
+		return NULL;
 
-	isl_seq_cpy(bmap->div[k], term->div->row[pos], 2 + total);
+	isl_seq_cpy(aff->v->el, term->div->row[pos], aff->v->size);
 
-	return isl_basic_map_div(bmap, k);
-error:
-	isl_basic_map_free(bmap);
-	return NULL;
+	return aff;
 }
 
 __isl_give isl_term *isl_upoly_foreach_term(__isl_keep struct isl_upoly *up,

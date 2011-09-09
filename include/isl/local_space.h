@@ -1,7 +1,8 @@
 #ifndef ISL_LOCAL_SPACE_H
 #define ISL_LOCAL_SPACE_H
 
-#include <isl/div.h>
+#include <isl/aff_type.h>
+#include <isl/space.h>
 #include <isl/printer.h>
 
 #if defined(__cplusplus)
@@ -29,7 +30,7 @@ __isl_give isl_local_space *isl_local_space_set_dim_name(
 	__isl_take isl_local_space *ls,
 	enum isl_dim_type type, unsigned pos, const char *s);
 __isl_give isl_space *isl_local_space_get_space(__isl_keep isl_local_space *ls);
-__isl_give isl_div *isl_local_space_get_div(__isl_keep isl_local_space *ls,
+__isl_give isl_aff *isl_local_space_get_div(__isl_keep isl_local_space *ls,
 	int pos);
 
 __isl_give isl_local_space *isl_local_space_domain(

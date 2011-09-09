@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <isl/div.h>
 #include <isl/map.h>
 #include <isl/mat.h>
 #include <isl_morph.h>
@@ -125,8 +124,6 @@ __isl_give isl_qpolynomial *isl_qpolynomial_cst_on_domain(__isl_take isl_space *
 	isl_int v);
 __isl_give isl_qpolynomial *isl_qpolynomial_var_pow_on_domain(__isl_take isl_space *dim,
 	int pos, int power);
-__isl_give isl_qpolynomial *isl_qpolynomial_div_pow(__isl_take isl_div *div,
-	int power);
 int isl_qpolynomial_is_one(__isl_keep isl_qpolynomial *qp);
 int isl_qpolynomial_is_affine(__isl_keep isl_qpolynomial *qp);
 

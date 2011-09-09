@@ -13,6 +13,7 @@
 #include <isl_local_space_private.h>
 #include <isl_space_private.h>
 #include <isl_mat_private.h>
+#include <isl_aff_private.h>
 #include <isl/seq.h>
 
 isl_ctx *isl_local_space_get_ctx(__isl_keep isl_local_space *ls)
@@ -180,10 +181,10 @@ const char *isl_local_space_get_dim_name(__isl_keep isl_local_space *ls,
 	return ls ? isl_space_get_dim_name(ls->dim, type, pos) : NULL;
 }
 
-__isl_give isl_div *isl_local_space_get_div(__isl_keep isl_local_space *ls,
+__isl_give isl_aff *isl_local_space_get_div(__isl_keep isl_local_space *ls,
 	int pos)
 {
-	isl_basic_map *bmap;
+	isl_aff *aff;
 
 	if (!ls)
 		return NULL;
@@ -196,8 +197,11 @@ __isl_give isl_div *isl_local_space_get_div(__isl_keep isl_local_space *ls,
 		isl_die(isl_local_space_get_ctx(ls), isl_error_invalid,
 			"expression of div unknown", return NULL);
 
-	bmap = isl_basic_map_from_local_space(isl_local_space_copy(ls));
-	return isl_basic_map_div(bmap, pos);
+	aff = isl_aff_alloc(isl_local_space_copy(ls));
+	if (!aff)
+		return NULL;
+	isl_seq_cpy(aff->v->el, ls->div->row[pos], aff->v->size);
+	return aff;
 }
 
 __isl_give isl_space *isl_local_space_get_space(__isl_keep isl_local_space *ls)

@@ -11,8 +11,8 @@
 #define ISL_CONSTRAINT_H
 
 #include <isl/local_space.h>
+#include <isl/space.h>
 #include <isl/aff_type.h>
-#include <isl/div.h>
 #include <isl/set_type.h>
 #include <isl/printer.h>
 
@@ -90,7 +90,7 @@ __isl_give isl_constraint *isl_constraint_set_coefficient_si(
 	__isl_take isl_constraint *constraint,
 	enum isl_dim_type type, int pos, int v);
 
-__isl_give isl_div *isl_constraint_div(__isl_keep isl_constraint *constraint,
+__isl_give isl_aff *isl_constraint_get_div(__isl_keep isl_constraint *constraint,
 	int pos);
 
 struct isl_constraint *isl_constraint_negate(struct isl_constraint *constraint);

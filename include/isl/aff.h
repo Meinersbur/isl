@@ -1,7 +1,6 @@
 #ifndef ISL_AFF_H
 #define ISL_AFF_H
 
-#include <isl/div.h>
 #include <isl/local_space.h>
 #include <isl/printer.h>
 #include <isl/set_type.h>
@@ -57,7 +56,7 @@ __isl_give isl_aff *isl_aff_set_dim_name(__isl_take isl_aff *aff,
 int isl_aff_plain_is_equal(__isl_keep isl_aff *aff1, __isl_keep isl_aff *aff2);
 int isl_aff_plain_is_zero(__isl_keep isl_aff *aff);
 
-__isl_give isl_div *isl_aff_get_div(__isl_keep isl_aff *aff, int pos);
+__isl_give isl_aff *isl_aff_get_div(__isl_keep isl_aff *aff, int pos);
 
 __isl_give isl_aff *isl_aff_neg(__isl_take isl_aff *aff);
 __isl_give isl_aff *isl_aff_ceil(__isl_take isl_aff *aff);
