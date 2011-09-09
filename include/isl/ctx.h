@@ -125,7 +125,7 @@ typedef struct isl_ctx isl_ctx;
 struct isl_options *isl_ctx_options(isl_ctx *ctx);
 
 isl_ctx *isl_ctx_alloc_with_options(struct isl_arg *arg, __isl_take void *opt);
-isl_ctx *isl_ctx_alloc();
+isl_ctx *isl_ctx_alloc(void);
 void *isl_ctx_peek_options(isl_ctx *ctx, struct isl_arg *arg);
 void isl_ctx_ref(struct isl_ctx *ctx);
 void isl_ctx_deref(struct isl_ctx *ctx);
