@@ -53,7 +53,7 @@ static unsigned basic_set_offset(struct isl_basic_set *bset,
 	}
 }
 
-__isl_give isl_constraint *isl_constraint_alloc(int eq,
+__isl_give isl_constraint *isl_constraint_alloc_vec(int eq,
 	__isl_take isl_local_space *ls, __isl_take isl_vec *v)
 {
 	isl_constraint *constraint;
@@ -77,6 +77,21 @@ error:
 	return NULL;
 }
 
+__isl_give isl_constraint *isl_constraint_alloc(int eq,
+	__isl_take isl_local_space *ls)
+{
+	isl_ctx *ctx;
+	isl_vec *v;
+
+	if (!ls)
+		return NULL;
+
+	ctx = isl_local_space_get_ctx(ls);
+	v = isl_vec_alloc(ctx, 1 + isl_local_space_dim(ls, isl_dim_all));
+	v = isl_vec_clr(v);
+	return isl_constraint_alloc_vec(eq, ls, v);
+}
+
 struct isl_constraint *isl_basic_map_constraint(struct isl_basic_map *bmap,
 	isl_int **line)
 {
@@ -97,7 +112,7 @@ struct isl_constraint *isl_basic_map_constraint(struct isl_basic_map *bmap,
 	if (!v)
 		goto error;
 	isl_seq_cpy(v->el, line[0], v->size);
-	constraint = isl_constraint_alloc(eq, ls, v);
+	constraint = isl_constraint_alloc_vec(eq, ls, v);
 
 	isl_basic_map_free(bmap);
 	return constraint;
@@ -113,36 +128,14 @@ struct isl_constraint *isl_basic_set_constraint(struct isl_basic_set *bset,
 	return isl_basic_map_constraint((struct isl_basic_map *)bset, line);
 }
 
-struct isl_constraint *isl_equality_alloc(__isl_take isl_space *dim)
+__isl_give isl_constraint *isl_equality_alloc(__isl_take isl_local_space *ls)
 {
-	struct isl_basic_map *bmap;
-
-	if (!dim)
-		return NULL;
-
-	bmap = isl_basic_map_alloc_space(dim, 0, 1, 0);
-	if (!bmap)
-		return NULL;
-
-	isl_basic_map_alloc_equality(bmap);
-	isl_seq_clr(bmap->eq[0], 1 + isl_basic_map_total_dim(bmap));
-	return isl_basic_map_constraint(bmap, &bmap->eq[0]);
+	return isl_constraint_alloc(1, ls);
 }
 
-struct isl_constraint *isl_inequality_alloc(__isl_take isl_space *dim)
+__isl_give isl_constraint *isl_inequality_alloc(__isl_take isl_local_space *ls)
 {
-	struct isl_basic_map *bmap;
-
-	if (!dim)
-		return NULL;
-
-	bmap = isl_basic_map_alloc_space(dim, 0, 0, 1);
-	if (!bmap)
-		return NULL;
-
-	isl_basic_map_alloc_inequality(bmap);
-	isl_seq_clr(bmap->ineq[0], 1 + isl_basic_map_total_dim(bmap));
-	return isl_basic_map_constraint(bmap, &bmap->ineq[0]);
+	return isl_constraint_alloc(0, ls);
 }
 
 struct isl_constraint *isl_constraint_dup(struct isl_constraint *c)
@@ -150,7 +143,7 @@ struct isl_constraint *isl_constraint_dup(struct isl_constraint *c)
 	if (!c)
 		return NULL;
 
-	return isl_constraint_alloc(c->eq, isl_local_space_copy(c->ls),
+	return isl_constraint_alloc_vec(c->eq, isl_local_space_copy(c->ls),
 						isl_vec_copy(c->v));
 }
 

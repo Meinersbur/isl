@@ -10,6 +10,7 @@
 #ifndef ISL_CONSTRAINT_H
 #define ISL_CONSTRAINT_H
 
+#include <isl/local_space.h>
 #include <isl/aff_type.h>
 #include <isl/div.h>
 #include <isl/set_type.h>
@@ -24,8 +25,8 @@ typedef struct isl_constraint isl_constraint;
 
 isl_ctx *isl_constraint_get_ctx(__isl_keep isl_constraint *c);
 
-__isl_give isl_constraint *isl_equality_alloc(__isl_take isl_space *dim);
-__isl_give isl_constraint *isl_inequality_alloc(__isl_take isl_space *dim);
+__isl_give isl_constraint *isl_equality_alloc(__isl_take isl_local_space *ls);
+__isl_give isl_constraint *isl_inequality_alloc(__isl_take isl_local_space *ls);
 
 struct isl_constraint *isl_constraint_cow(struct isl_constraint *c);
 struct isl_constraint *isl_constraint_copy(struct isl_constraint *c);

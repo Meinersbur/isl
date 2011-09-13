@@ -1388,6 +1388,7 @@ static __isl_give isl_map *node_extract_schedule(struct isl_sched_node *node)
 {
 	int i, j;
 	isl_space *dim;
+	isl_local_space *ls;
 	isl_basic_map *bmap;
 	isl_constraint *c;
 	int nrow, ncol;
@@ -1401,11 +1402,12 @@ static __isl_give isl_map *node_extract_schedule(struct isl_sched_node *node)
 	dim = isl_space_from_domain(isl_space_copy(node->dim));
 	dim = isl_space_add_dims(dim, isl_dim_out, nrow);
 	bmap = isl_basic_map_universe(isl_space_copy(dim));
+	ls = isl_local_space_from_space(dim);
 
 	isl_int_init(v);
 
 	for (i = 0; i < nrow; ++i) {
-		c = isl_equality_alloc(isl_space_copy(dim));
+		c = isl_equality_alloc(isl_local_space_copy(ls));
 		isl_constraint_set_coefficient_si(c, isl_dim_out, i, -1);
 		isl_mat_get_element(node->sched, i, 0, &v);
 		isl_constraint_set_constant(c, v);
@@ -1423,7 +1425,7 @@ static __isl_give isl_map *node_extract_schedule(struct isl_sched_node *node)
 
 	isl_int_clear(v);
 
-	isl_space_free(dim);
+	isl_local_space_free(ls);
 
 	node->sched_map = isl_map_from_basic_map(bmap);
 	return isl_map_copy(node->sched_map);

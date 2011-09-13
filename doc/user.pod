@@ -121,6 +121,11 @@ C<isl_dim_in> instead of C<isl_dim_set>.  Extra functions have been
 added to obtain the domain space.  Some of the constructors still
 take a domain space and have therefore been renamed.
 
+=item * The functions C<isl_equality_alloc> and C<isl_inequality_alloc>
+now take an C<isl_local_space> instead of an C<isl_space>.
+An C<isl_local_space> can be created from an C<isl_space>
+using C<isl_local_space_from_space>.
+
 =back
 
 =head1 Installation
@@ -1076,9 +1081,9 @@ using the following functions.
 
 	#include <isl/constraint.h>
 	__isl_give isl_constraint *isl_equality_alloc(
-		__isl_take isl_space *space);
+		__isl_take isl_local_space *ls);
 	__isl_give isl_constraint *isl_inequality_alloc(
-		__isl_take isl_space *space);
+		__isl_take isl_local_space *ls);
 	__isl_give isl_constraint *isl_constraint_set_constant(
 		__isl_take isl_constraint *constraint, isl_int v);
 	__isl_give isl_constraint *isl_constraint_set_constant_si(
@@ -1109,23 +1114,25 @@ For example, to create a set containing the even integers
 between 10 and 42, you would use the following code.
 
 	isl_space *space;
+	isl_local_space *ls;
 	isl_constraint *c;
 	isl_basic_set *bset;
 
 	space = isl_space_set_alloc(ctx, 0, 2);
 	bset = isl_basic_set_universe(isl_space_copy(space));
+	ls = isl_local_space_from_space(space);
 
-	c = isl_equality_alloc(isl_space_copy(space));
+	c = isl_equality_alloc(isl_local_space_copy(ls));
 	c = isl_constraint_set_coefficient_si(c, isl_dim_set, 0, -1);
 	c = isl_constraint_set_coefficient_si(c, isl_dim_set, 1, 2);
 	bset = isl_basic_set_add_constraint(bset, c);
 
-	c = isl_inequality_alloc(isl_space_copy(space));
+	c = isl_inequality_alloc(isl_local_space_copy(ls));
 	c = isl_constraint_set_constant_si(c, -10);
 	c = isl_constraint_set_coefficient_si(c, isl_dim_set, 0, 1);
 	bset = isl_basic_set_add_constraint(bset, c);
 
-	c = isl_inequality_alloc(space);
+	c = isl_inequality_alloc(ls);
 	c = isl_constraint_set_constant_si(c, 42);
 	c = isl_constraint_set_coefficient_si(c, isl_dim_set, 0, -1);
 	bset = isl_basic_set_add_constraint(bset, c);
