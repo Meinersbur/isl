@@ -274,6 +274,7 @@ int main(int argc, char **argv)
 	int max = 0;
 	int rational = 0;
 	int n;
+	int nparam;
 	struct options *options;
 
 	options = options_new_with_defaults();
@@ -282,13 +283,12 @@ int main(int argc, char **argv)
 
 	ctx = isl_ctx_alloc_with_options(options_arg, options);
 
-	context = isl_basic_set_read_from_file(ctx, stdin, 0);
+	context = isl_basic_set_read_from_file(ctx, stdin);
 	assert(context);
 	n = fscanf(stdin, "%d", &neg_one);
 	assert(n == 1);
 	assert(neg_one == -1);
-	bset = isl_basic_set_read_from_file(ctx, stdin,
-		isl_basic_set_dim(context, isl_dim_set));
+	bset = isl_basic_set_read_from_file(ctx, stdin);
 
 	while (fgets(s, sizeof(s), stdin)) {
 		if (strncasecmp(s, "Maximize", 8) == 0)
@@ -306,6 +306,12 @@ int main(int argc, char **argv)
 		context = isl_basic_set_intersect(context,
 		isl_basic_set_positive_orthant(isl_basic_set_get_space(context)));
 	context = to_parameter_domain(context);
+	nparam = isl_basic_set_dim(context, isl_dim_param);
+	if (nparam != isl_basic_set_dim(bset, isl_dim_param)) {
+		int dim = isl_basic_set_dim(bset, isl_dim_set);
+		bset = isl_basic_set_move_dims(bset, isl_dim_param, 0,
+					    isl_dim_set, dim - nparam, nparam);
+	}
 	if (!urs_unknowns)
 		bset = isl_basic_set_intersect(bset,
 		isl_basic_set_positive_orthant(isl_basic_set_get_space(bset)));

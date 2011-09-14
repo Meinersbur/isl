@@ -65,7 +65,7 @@ int main(int argc, char **argv)
 	isl_printer *p;
 
 	isl_int_init(opt);
-	bset = isl_basic_set_read_from_file(ctx, stdin, 0);
+	bset = isl_basic_set_read_from_file(ctx, stdin);
 	assert(bset);
 	obj = isl_vec_read_from_file(ctx, stdin);
 	assert(obj);

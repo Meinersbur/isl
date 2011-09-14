@@ -123,13 +123,11 @@ __isl_give isl_basic_set *isl_basic_set_list_product(
 	__isl_take struct isl_basic_set_list *list);
 
 __isl_give isl_basic_set *isl_basic_set_read_from_file(isl_ctx *ctx,
-		FILE *input, int nparam);
+	FILE *input);
 __isl_give isl_basic_set *isl_basic_set_read_from_str(isl_ctx *ctx,
-		const char *str, int nparam);
-__isl_give isl_set *isl_set_read_from_file(isl_ctx *ctx,
-		FILE *input, int nparam);
-__isl_give isl_set *isl_set_read_from_str(isl_ctx *ctx,
-		const char *str, int nparam);
+	const char *str);
+__isl_give isl_set *isl_set_read_from_file(isl_ctx *ctx, FILE *input);
+__isl_give isl_set *isl_set_read_from_str(isl_ctx *ctx, const char *str);
 void isl_basic_set_dump(__isl_keep isl_basic_set *bset);
 void isl_set_dump(__isl_keep isl_set *set);
 __isl_give isl_printer *isl_printer_print_basic_set(

@@ -142,6 +142,13 @@ the nested call
 The function C<isl_constraint_div> has also been renamed
 to C<isl_constraint_get_div>.
 
+=item * The C<nparam> argument has been removed from
+C<isl_map_read_from_str> and similar functions.
+When reading input in the original PolyLib format,
+the result will have no parameters.
+If parameters are expected, the caller may want to perform
+dimension manipulation on the result.
+
 =back
 
 =head1 Installation
@@ -834,23 +841,23 @@ dimensions is zero.
 
 	#include <isl/set.h>
 	__isl_give isl_basic_set *isl_basic_set_read_from_file(
-		isl_ctx *ctx, FILE *input, int nparam);
+		isl_ctx *ctx, FILE *input);
 	__isl_give isl_basic_set *isl_basic_set_read_from_str(
-		isl_ctx *ctx, const char *str, int nparam);
+		isl_ctx *ctx, const char *str);
 	__isl_give isl_set *isl_set_read_from_file(isl_ctx *ctx,
-		FILE *input, int nparam);
+		FILE *input);
 	__isl_give isl_set *isl_set_read_from_str(isl_ctx *ctx,
-		const char *str, int nparam);
+		const char *str);
 
 	#include <isl/map.h>
 	__isl_give isl_basic_map *isl_basic_map_read_from_file(
-		isl_ctx *ctx, FILE *input, int nparam);
+		isl_ctx *ctx, FILE *input);
 	__isl_give isl_basic_map *isl_basic_map_read_from_str(
-		isl_ctx *ctx, const char *str, int nparam);
+		isl_ctx *ctx, const char *str);
 	__isl_give isl_map *isl_map_read_from_file(
-		isl_ctx *ctx, FILE *input, int nparam);
+		isl_ctx *ctx, FILE *input);
 	__isl_give isl_map *isl_map_read_from_str(isl_ctx *ctx,
-		const char *str, int nparam);
+		const char *str);
 
 	#include <isl/union_set.h>
 	__isl_give isl_union_set *isl_union_set_read_from_file(
@@ -866,13 +873,6 @@ dimensions is zero.
 
 The input format is autodetected and may be either the C<PolyLib> format
 or the C<isl> format.
-C<nparam> specifies how many of the final columns in
-the C<PolyLib> format correspond to parameters.
-If input is given in the C<isl> format, then the number
-of parameters needs to be equal to C<nparam>.
-If C<nparam> is negative, then any number of parameters
-is accepted in the C<isl> format and zero parameters
-are assumed in the C<PolyLib> format.
 
 =head3 Output
 
@@ -1159,7 +1159,7 @@ Or, alternatively,
 
 	isl_basic_set *bset;
 	bset = isl_basic_set_read_from_str(ctx,
-		"{[i] : exists (a : i = 2a and i >= 10 and i <= 42)}", -1);
+		"{[i] : exists (a : i = 2a and i >= 10 and i <= 42)}");
 
 A basic set or relation can also be constructed from two matrices
 describing the equalities and the inequalities.

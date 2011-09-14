@@ -1291,8 +1291,7 @@ error:
 	return NULL;
 }
 
-static __isl_give isl_basic_map *basic_map_read_polylib(struct isl_stream *s,
-	int nparam)
+static __isl_give isl_basic_map *basic_map_read_polylib(struct isl_stream *s)
 {
 	int i;
 	struct isl_token *tok;
@@ -1301,9 +1300,7 @@ static __isl_give isl_basic_map *basic_map_read_polylib(struct isl_stream *s,
 	int on_new_line;
 	unsigned in = 0, out, local = 0;
 	struct isl_basic_map *bmap = NULL;
-
-	if (nparam < 0)
-		nparam = 0;
+	int nparam = 0;
 
 	tok = isl_stream_next_token(s);
 	if (!tok) {
@@ -1410,7 +1407,7 @@ error:
 	return NULL;
 }
 
-static struct isl_map *map_read_polylib(struct isl_stream *s, int nparam)
+static struct isl_map *map_read_polylib(struct isl_stream *s)
 {
 	struct isl_token *tok;
 	struct isl_token *tok2;
@@ -1426,7 +1423,7 @@ static struct isl_map *map_read_polylib(struct isl_stream *s, int nparam)
 	if (tok2 && tok2->type == ISL_TOKEN_VALUE) {
 		isl_stream_push_token(s, tok2);
 		isl_stream_push_token(s, tok);
-		return isl_map_from_basic_map(basic_map_read_polylib(s, nparam));
+		return isl_map_from_basic_map(basic_map_read_polylib(s));
 	}
 	if (tok2) {
 		isl_stream_error(s, tok2, "unexpected token");
@@ -1439,11 +1436,11 @@ static struct isl_map *map_read_polylib(struct isl_stream *s, int nparam)
 
 	isl_assert(s->ctx, n >= 1, return NULL);
 
-	map = isl_map_from_basic_map(basic_map_read_polylib(s, nparam));
+	map = isl_map_from_basic_map(basic_map_read_polylib(s));
 
 	for (i = 1; map && i < n; ++i)
 		map = isl_map_union(map,
-			isl_map_from_basic_map(basic_map_read_polylib(s, nparam)));
+			isl_map_from_basic_map(basic_map_read_polylib(s)));
 
 	return map;
 }
@@ -1851,7 +1848,7 @@ error:
 	return obj1;
 }
 
-static struct isl_obj obj_read(struct isl_stream *s, int nparam)
+static struct isl_obj obj_read(struct isl_stream *s)
 {
 	isl_map *map = NULL;
 	struct isl_token *tok;
@@ -1879,7 +1876,7 @@ static struct isl_obj obj_read(struct isl_stream *s, int nparam)
 		}
 		isl_stream_push_token(s, tok2);
 		isl_stream_push_token(s, tok);
-		map = map_read_polylib(s, nparam);
+		map = map_read_polylib(s);
 		if (!map)
 			goto error;
 		if (isl_map_may_be_set(map))
@@ -1901,8 +1898,6 @@ static struct isl_obj obj_read(struct isl_stream *s, int nparam)
 		map = read_tuple(s, map, isl_dim_param, v);
 		if (!map)
 			goto error;
-		if (nparam >= 0)
-			isl_assert(s->ctx, nparam == v->n, goto error);
 		tok = isl_stream_next_token(s);
 		if (!tok || tok->type != ISL_TOKEN_TO) {
 			isl_stream_error(s, tok, "expecting '->'");
@@ -1912,8 +1907,7 @@ static struct isl_obj obj_read(struct isl_stream *s, int nparam)
 		}
 		isl_token_free(tok);
 		tok = isl_stream_next_token(s);
-	} else if (nparam > 0)
-		map = isl_map_add_dims(map, isl_dim_param, nparam);
+	}
 	if (!tok || tok->type != '{') {
 		isl_stream_error(s, tok, "expecting '{'");
 		if (tok)
@@ -1932,8 +1926,6 @@ static struct isl_obj obj_read(struct isl_stream *s, int nparam)
 		map = read_tuple(s, map, isl_dim_param, v);
 		if (!map)
 			goto error;
-		if (nparam >= 0)
-			isl_assert(s->ctx, nparam == v->n, goto error);
 	} else if (tok->type == '}') {
 		obj.type = isl_obj_union_set;
 		obj.v = isl_union_set_empty(isl_map_get_space(map));
@@ -1989,14 +1981,14 @@ error:
 
 struct isl_obj isl_stream_read_obj(struct isl_stream *s)
 {
-	return obj_read(s, -1);
+	return obj_read(s);
 }
 
-__isl_give isl_map *isl_stream_read_map(struct isl_stream *s, int nparam)
+__isl_give isl_map *isl_stream_read_map(struct isl_stream *s)
 {
 	struct isl_obj obj;
 
-	obj = obj_read(s, nparam);
+	obj = obj_read(s);
 	if (obj.v)
 		isl_assert(s->ctx, obj.type == isl_obj_map ||
 				   obj.type == isl_obj_set, goto error);
@@ -2007,11 +1999,11 @@ error:
 	return NULL;
 }
 
-__isl_give isl_set *isl_stream_read_set(struct isl_stream *s, int nparam)
+__isl_give isl_set *isl_stream_read_set(struct isl_stream *s)
 {
 	struct isl_obj obj;
 
-	obj = obj_read(s, nparam);
+	obj = obj_read(s);
 	if (obj.v) {
 		if (obj.type == isl_obj_map && isl_map_may_be_set(obj.v)) {
 			obj.v = isl_map_range(obj.v);
@@ -2030,7 +2022,7 @@ __isl_give isl_union_map *isl_stream_read_union_map(struct isl_stream *s)
 {
 	struct isl_obj obj;
 
-	obj = obj_read(s, -1);
+	obj = obj_read(s);
 	if (obj.type == isl_obj_map) {
 		obj.type = isl_obj_union_map;
 		obj.v = isl_union_map_from_map(obj.v);
@@ -2053,7 +2045,7 @@ __isl_give isl_union_set *isl_stream_read_union_set(struct isl_stream *s)
 {
 	struct isl_obj obj;
 
-	obj = obj_read(s, -1);
+	obj = obj_read(s);
 	if (obj.type == isl_obj_set) {
 		obj.type = isl_obj_union_set;
 		obj.v = isl_union_set_from_set(obj.v);
@@ -2067,13 +2059,13 @@ error:
 	return NULL;
 }
 
-static struct isl_basic_map *basic_map_read(struct isl_stream *s, int nparam)
+static __isl_give isl_basic_map *basic_map_read(struct isl_stream *s)
 {
 	struct isl_obj obj;
 	struct isl_map *map;
 	struct isl_basic_map *bmap;
 
-	obj = obj_read(s, nparam);
+	obj = obj_read(s);
 	map = obj.v;
 	if (!map)
 		return NULL;
@@ -2093,11 +2085,10 @@ error:
 	return NULL;
 }
 
-static __isl_give isl_basic_set *basic_set_read(struct isl_stream *s,
-	int nparam)
+static __isl_give isl_basic_set *basic_set_read(struct isl_stream *s)
 {
 	isl_basic_map *bmap;
-	bmap = basic_map_read(s, nparam);
+	bmap = basic_map_read(s);
 	if (!bmap)
 		return NULL;
 	if (!isl_basic_map_may_be_set(bmap))
@@ -2110,97 +2101,97 @@ error:
 }
 
 __isl_give isl_basic_map *isl_basic_map_read_from_file(isl_ctx *ctx,
-		FILE *input, int nparam)
+	FILE *input)
 {
 	struct isl_basic_map *bmap;
 	struct isl_stream *s = isl_stream_new_file(ctx, input);
 	if (!s)
 		return NULL;
-	bmap = basic_map_read(s, nparam);
+	bmap = basic_map_read(s);
 	isl_stream_free(s);
 	return bmap;
 }
 
 __isl_give isl_basic_set *isl_basic_set_read_from_file(isl_ctx *ctx,
-		FILE *input, int nparam)
+	FILE *input)
 {
 	isl_basic_set *bset;
 	struct isl_stream *s = isl_stream_new_file(ctx, input);
 	if (!s)
 		return NULL;
-	bset = basic_set_read(s, nparam);
+	bset = basic_set_read(s);
 	isl_stream_free(s);
 	return bset;
 }
 
 struct isl_basic_map *isl_basic_map_read_from_str(struct isl_ctx *ctx,
-		const char *str, int nparam)
+	const char *str)
 {
 	struct isl_basic_map *bmap;
 	struct isl_stream *s = isl_stream_new_str(ctx, str);
 	if (!s)
 		return NULL;
-	bmap = basic_map_read(s, nparam);
+	bmap = basic_map_read(s);
 	isl_stream_free(s);
 	return bmap;
 }
 
 struct isl_basic_set *isl_basic_set_read_from_str(struct isl_ctx *ctx,
-		const char *str, int nparam)
+	const char *str)
 {
 	isl_basic_set *bset;
 	struct isl_stream *s = isl_stream_new_str(ctx, str);
 	if (!s)
 		return NULL;
-	bset = basic_set_read(s, nparam);
+	bset = basic_set_read(s);
 	isl_stream_free(s);
 	return bset;
 }
 
 __isl_give isl_map *isl_map_read_from_file(struct isl_ctx *ctx,
-		FILE *input, int nparam)
+	FILE *input)
 {
 	struct isl_map *map;
 	struct isl_stream *s = isl_stream_new_file(ctx, input);
 	if (!s)
 		return NULL;
-	map = isl_stream_read_map(s, nparam);
+	map = isl_stream_read_map(s);
 	isl_stream_free(s);
 	return map;
 }
 
 __isl_give isl_map *isl_map_read_from_str(struct isl_ctx *ctx,
-		const char *str, int nparam)
+	const char *str)
 {
 	struct isl_map *map;
 	struct isl_stream *s = isl_stream_new_str(ctx, str);
 	if (!s)
 		return NULL;
-	map = isl_stream_read_map(s, nparam);
+	map = isl_stream_read_map(s);
 	isl_stream_free(s);
 	return map;
 }
 
 __isl_give isl_set *isl_set_read_from_file(struct isl_ctx *ctx,
-		FILE *input, int nparam)
+	FILE *input)
 {
 	isl_set *set;
 	struct isl_stream *s = isl_stream_new_file(ctx, input);
 	if (!s)
 		return NULL;
-	set = isl_stream_read_set(s, nparam);
+	set = isl_stream_read_set(s);
 	isl_stream_free(s);
 	return set;
 }
 
 struct isl_set *isl_set_read_from_str(struct isl_ctx *ctx,
-		const char *str, int nparam)
+	const char *str)
 {
 	isl_set *set;
 	struct isl_stream *s = isl_stream_new_str(ctx, str);
 	if (!s)
 		return NULL;
-	set = isl_stream_read_set(s, nparam);
+	set = isl_stream_read_set(s);
 	isl_stream_free(s);
 	return set;
 }
@@ -2309,7 +2300,7 @@ __isl_give isl_pw_qpolynomial *isl_stream_read_pw_qpolynomial(
 {
 	struct isl_obj obj;
 
-	obj = obj_read(s, -1);
+	obj = obj_read(s);
 	if (obj.v)
 		isl_assert(s->ctx, obj.type == isl_obj_pw_qpolynomial,
 			   goto error);

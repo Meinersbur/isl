@@ -172,13 +172,11 @@ struct isl_basic_map *isl_basic_map_simplify(struct isl_basic_map *bmap);
 struct isl_basic_map *isl_basic_map_detect_equalities(
 						struct isl_basic_map *bmap);
 __isl_give isl_basic_map *isl_basic_map_read_from_file(isl_ctx *ctx,
-		FILE *input, int nparam);
+	FILE *input);
 __isl_give isl_basic_map *isl_basic_map_read_from_str(isl_ctx *ctx,
-		const char *str, int nparam);
-__isl_give isl_map *isl_map_read_from_file(isl_ctx *ctx,
-		FILE *input, int nparam);
-__isl_give isl_map *isl_map_read_from_str(isl_ctx *ctx,
-		const char *str, int nparam);
+	const char *str);
+__isl_give isl_map *isl_map_read_from_file(isl_ctx *ctx, FILE *input);
+__isl_give isl_map *isl_map_read_from_str(isl_ctx *ctx, const char *str);
 void isl_basic_map_dump(__isl_keep isl_basic_map *bmap);
 void isl_basic_map_print(__isl_keep isl_basic_map *bmap, FILE *out, int indent,
 	const char *prefix, const char *suffix, unsigned output_format);
