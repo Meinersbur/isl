@@ -391,6 +391,7 @@ static struct isl_token *next_token(struct isl_stream *s, int same_line)
 		}
 	}
 	if (c == '-' || isdigit(c)) {
+		int minus = c == '-';
 		tok = isl_token_new(s->ctx, line, col, old_line != line);
 		if (!tok)
 			return NULL;
@@ -405,6 +406,15 @@ static struct isl_token *next_token(struct isl_stream *s, int same_line)
 			isl_stream_ungetc(s, c);
 		isl_stream_push_char(s, '\0');
 		isl_int_read(tok->u.v, s->buffer);
+		if (minus && isl_int_is_zero(tok->u.v)) {
+			tok->col++;
+			tok->on_new_line = 0;
+			isl_stream_push_token(s, tok);
+			tok = isl_token_new(s->ctx, line, col, old_line != line);
+			if (!tok)
+				return NULL;
+			tok->type = (enum isl_token_type) '-';
+		}
 		return tok;
 	}
 	if (isalpha(c) || c == '_') {
