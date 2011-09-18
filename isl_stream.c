@@ -354,7 +354,6 @@ static struct isl_token *next_token(struct isl_stream *s, int same_line)
 	    c == '%' ||
 	    c == '?' ||
 	    c == '^' ||
-	    c == '=' ||
 	    c == '@' ||
 	    c == '$' ||
 	    c == ',' ||
@@ -454,6 +453,21 @@ static struct isl_token *next_token(struct isl_stream *s, int same_line)
 		}
 		isl_stream_push_char(s, '\0');
 		tok->u.s = strdup(s->buffer);
+		return tok;
+	}
+	if (c == '=') {
+		int c;
+		tok = isl_token_new(s->ctx, line, col, old_line != line);
+		if (!tok)
+			return NULL;
+		if ((c = isl_stream_getc(s)) == '=') {
+			tok->u.s = strdup("==");
+			tok->type = ISL_TOKEN_EQ_EQ;
+			return tok;
+		}
+		if (c != -1)
+			isl_stream_ungetc(s, c);
+		tok->type = (enum isl_token_type) '=';
 		return tok;
 	}
 	if (c == ':') {
