@@ -3139,6 +3139,13 @@ If C<qp> is a constant and if C<n> and C<d> are not C<NULL>
 then the numerator and denominator of the constant
 are returned in C<*n> and C<*d>, respectively.
 
+To check whether two union piecewise quasipolynomials are
+obviously equal, use
+
+	int isl_union_pw_qpolynomial_plain_is_equal(
+		__isl_keep isl_union_pw_qpolynomial *upwqp1,
+		__isl_keep isl_union_pw_qpolynomial *upwqp2);
+
 =head3 Operations on (Piecewise) Quasipolynomials
 
 	__isl_give isl_qpolynomial *isl_qpolynomial_scale(
@@ -3348,6 +3355,15 @@ To iterate over all quasipolynomials in a reduction, use
 		__isl_keep isl_qpolynomial_fold *fold,
 		int (*fn)(__isl_take isl_qpolynomial *qp,
 			  void *user), void *user);
+
+=head3 Properties of Piecewise Quasipolynomial Reductions
+
+To check whether two union piecewise quasipolynomial reductions are
+obviously equal, use
+
+	int isl_union_pw_qpolynomial_fold_plain_is_equal(
+		__isl_keep isl_union_pw_qpolynomial_fold *upwf1,
+		__isl_keep isl_union_pw_qpolynomial_fold *upwf2);
 
 =head3 Operations on Piecewise Quasipolynomial Reductions
 

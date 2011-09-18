@@ -636,3 +636,65 @@ error:
 	FN(UNION,free)(u);
 	return NULL;
 }
+
+S(UNION,plain_is_equal_data)
+{
+	UNION *u2;
+	int is_equal;
+};
+
+static int plain_is_equal_entry(void **entry, void *user)
+{
+	S(UNION,plain_is_equal_data) *data = user;
+	uint32_t hash;
+	struct isl_hash_table_entry *entry2;
+	PW *pw = *entry;
+
+	hash = isl_space_get_hash(pw->dim);
+	entry2 = isl_hash_table_find(data->u2->dim->ctx, &data->u2->table,
+				     hash, &has_dim, pw->dim, 0);
+	if (!entry2) {
+		data->is_equal = 0;
+		return -1;
+	}
+
+	data->is_equal = FN(PW,plain_is_equal)(pw, entry2->data);
+	if (data->is_equal < 0 || !data->is_equal)
+		return -1;
+
+	return 0;
+}
+
+int FN(UNION,plain_is_equal)(__isl_keep UNION *u1, __isl_keep UNION *u2)
+{
+	S(UNION,plain_is_equal_data) data = { NULL, 1 };
+
+	if (!u1 || !u2)
+		return -1;
+	if (u1 == u2)
+		return 1;
+	if (u1->table.n != u2->table.n)
+		return 0;
+
+	u1 = FN(UNION,copy)(u1);
+	u2 = FN(UNION,copy)(u2);
+	u1 = FN(UNION,align_params)(u1, FN(UNION,get_space)(u2));
+	u2 = FN(UNION,align_params)(u2, FN(UNION,get_space)(u1));
+	if (!u1 || !u2)
+		goto error;
+
+	data.u2 = u2;
+	if (isl_hash_table_foreach(u1->dim->ctx, &u1->table,
+				   &plain_is_equal_entry, &data) < 0 &&
+	    data.is_equal)
+		goto error;
+
+	FN(UNION,free)(u1);
+	FN(UNION,free)(u2);
+
+	return data.is_equal;
+error:
+	FN(UNION,free)(u1);
+	FN(UNION,free)(u2);
+	return -1;
+}
