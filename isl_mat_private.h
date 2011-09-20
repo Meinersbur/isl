@@ -27,3 +27,4 @@ void isl_mat_sub_copy(struct isl_ctx *ctx, isl_int **dst, isl_int **src,
 	unsigned n_row, unsigned dst_col, unsigned src_col, unsigned n_col);
 void isl_mat_sub_neg(struct isl_ctx *ctx, isl_int **dst, isl_int **src,
 	unsigned n_row, unsigned dst_col, unsigned src_col, unsigned n_col);
+__isl_give isl_mat *isl_mat_diag(isl_ctx *ctx, unsigned n_row, isl_int d);
