@@ -3741,7 +3741,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_morph(__isl_take isl_qpolynomial *qp
 	int n_sub;
 	isl_ctx *ctx;
 	struct isl_upoly **subs;
-	isl_mat *mat;
+	isl_mat *mat, *diag;
 
 	qp = isl_qpolynomial_cow(qp);
 	if (!qp || !morph)
@@ -3771,8 +3771,10 @@ __isl_give isl_qpolynomial *isl_qpolynomial_morph(__isl_take isl_qpolynomial *qp
 		isl_upoly_free(subs[i]);
 	free(subs);
 
-	mat = isl_mat_diagonal(isl_mat_identity(ctx, 1), isl_mat_copy(morph->inv));
-	mat = isl_mat_diagonal(mat, isl_mat_identity(ctx, qp->div->n_row));
+	diag = isl_mat_diag(ctx, 1, morph->inv->row[0][0]);
+	mat = isl_mat_diagonal(diag, isl_mat_copy(morph->inv));
+	diag = isl_mat_diag(ctx, qp->div->n_row, morph->inv->row[0][0]);
+	mat = isl_mat_diagonal(mat, diag);
 	qp->div = isl_mat_product(qp->div, mat);
 	isl_dim_free(qp->dim);
 	qp->dim = isl_dim_copy(morph->ran->dim);
