@@ -103,6 +103,8 @@ __isl_give isl_pw_aff *isl_pw_aff_alloc(__isl_take isl_set *set,
 	__isl_take isl_aff *aff);
 
 int isl_pw_aff_is_empty(__isl_keep isl_pw_aff *pwaff);
+int isl_pw_aff_plain_is_equal(__isl_keep isl_pw_aff *pwaff1,
+	__isl_keep isl_pw_aff *pwaff2);
 
 __isl_give isl_pw_aff *isl_pw_aff_union_min(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2);

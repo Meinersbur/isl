@@ -2676,6 +2676,9 @@ or obviously equal to some other affine expression, use
 	int isl_aff_plain_is_zero(__isl_keep isl_aff *aff);
 	int isl_aff_plain_is_equal(__isl_keep isl_aff *aff1,
 		__isl_keep isl_aff *aff2);
+	int isl_pw_aff_plain_is_equal(
+		__isl_keep isl_pw_aff *pwaff1,
+		__isl_keep isl_pw_aff *pwaff2);
 
 Operations include
 
