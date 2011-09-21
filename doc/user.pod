@@ -2648,6 +2648,10 @@ It can be modified using
 	__isl_give isl_aff *isl_aff_set_dim_id(
 		__isl_take isl_aff *aff, enum isl_dim_type type,
 		unsigned pos, __isl_take isl_id *id);
+	__isl_give isl_pw_aff *isl_pw_aff_set_dim_id(
+		__isl_take isl_pw_aff *pma,
+		enum isl_dim_type type, unsigned pos,
+		__isl_take isl_id *id);
 	__isl_give isl_aff *isl_aff_set_constant(
 		__isl_take isl_aff *aff, isl_int v);
 	__isl_give isl_aff *isl_aff_set_constant_si(

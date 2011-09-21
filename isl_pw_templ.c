@@ -1100,6 +1100,16 @@ __isl_give PW *FN(PW,set_tuple_id)(__isl_keep PW *pw, enum isl_dim_type type,
 
 	return FN(PW,reset_space)(pw, space);
 }
+
+__isl_give PW *FN(PW,set_dim_id)(__isl_take PW *pw,
+	enum isl_dim_type type, unsigned pos, __isl_take isl_id *id)
+{
+	pw = FN(PW,cow)(pw);
+	if (!pw)
+		return isl_id_free(id);
+	pw->dim = isl_space_set_dim_id(pw->dim, type, pos, id);
+	return FN(PW,reset_space)(pw, isl_space_copy(pw->dim));
+}
 #endif
 
 int FN(PW,has_equal_space)(__isl_keep PW *pw1, __isl_keep PW *pw2)
