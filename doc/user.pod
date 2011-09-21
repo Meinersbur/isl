@@ -1935,9 +1935,12 @@ C<isl_lp_ok>, C<isl_lp_unbounded> or C<isl_lp_empty>.
 		__isl_take isl_set *set, int pos);
 	__isl_give isl_pw_aff *isl_set_dim_max(
 		__isl_take isl_set *set, int pos);
+	__isl_give isl_pw_aff *isl_map_dim_max(
+		__isl_take isl_map *map, int pos);
 
-Compute the minimum or maximum of the given set dimension as a function of the
-parameters, but independently of the other set dimensions.
+Compute the minimum or maximum of the given set or output dimension
+as a function of the parameters (and input dimensions), but independently
+of the other set or output dimensions.
 For lexicographic optimization, see L<"Lexicographic Optimization">.
 
 =item * Dual
