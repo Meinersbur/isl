@@ -69,6 +69,15 @@ void test_parse_pwqp(isl_ctx *ctx, const char *str)
 	isl_pw_qpolynomial_free(pwqp);
 }
 
+static void test_parse_pwaff(isl_ctx *ctx, const char *str)
+{
+	isl_pw_aff *pwaff;
+
+	pwaff = isl_pw_aff_read_from_str(ctx, str);
+	assert(pwaff);
+	isl_pw_aff_free(pwaff);
+}
+
 void test_parse(struct isl_ctx *ctx)
 {
 	isl_map *map, *map2;
@@ -146,6 +155,7 @@ void test_parse(struct isl_ctx *ctx)
 
 	test_parse_pwqp(ctx, "{ [i] -> i + [ (i + [i/3])/2 ] }");
 	test_parse_map(ctx, "{ S1[i] -> [([i/10]),i%10] : 0 <= i <= 45 }");
+	test_parse_pwaff(ctx, "{ [i] -> [i + 1] : i > 0; [a] -> [a] : a < 0 }");
 }
 
 void test_read(struct isl_ctx *ctx)

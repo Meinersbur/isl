@@ -2405,9 +2405,8 @@ static int next_is_fresh_ident(struct isl_stream *s, struct vars *v)
 	return fresh;
 }
 
-/* Read an affine expression from "s".
- * We first read the domain of the affine expression, which may be
- * a parameter space or a set, and then call read_aff_with_dom.
+/* First read the domain of the affine expression, which may be
+ * a parameter space or a set.
  * The tricky part is that we don't know if the domain is a set or not,
  * so when we are trying to read the domain, we may actually be reading
  * the affine expression itself (defined on a parameter domains)
@@ -2416,10 +2415,42 @@ static int next_is_fresh_ident(struct isl_stream *s, struct vars *v)
  * or a new identifier, we again assume it's the domain.
  * Otherwise, we assume we are reading an affine expression.
  */
+static __isl_give isl_set *read_aff_domain(struct isl_stream *s,
+	__isl_take isl_set *dom, struct vars *v)
+{
+	struct isl_token *tok;
+
+	tok = isl_stream_next_token(s);
+	if (tok && (tok->type == ISL_TOKEN_IDENT || tok->is_keyword)) {
+		isl_stream_push_token(s, tok);
+		return read_tuple(s, dom, isl_dim_set, v);
+	}
+	if (!tok || tok->type != '[') {
+		isl_stream_error(s, tok, "expecting '['");
+		goto error;
+	}
+	if (next_is_tuple(s) || next_is_fresh_ident(s, v)) {
+		isl_stream_push_token(s, tok);
+		dom = read_tuple(s, dom, isl_dim_set, v);
+	} else
+		isl_stream_push_token(s, tok);
+
+	return dom;
+error:
+	if (tok)
+		isl_stream_push_token(s, tok);
+	vars_free(v);
+	isl_set_free(dom);
+	return NULL;
+}
+
+/* Read an affine expression from "s".
+ * We first read the domain of the affine expression, which may be
+ * a parameter space or a set, and then call read_aff_with_dom.
+ */
 __isl_give isl_aff *isl_stream_read_aff(struct isl_stream *s)
 {
 	struct vars *v;
-	struct isl_token *tok;
 	isl_set *dom = NULL;
 
 	v = vars_new(s->ctx);
@@ -2432,34 +2463,92 @@ __isl_give isl_aff *isl_stream_read_aff(struct isl_stream *s)
 		if (isl_stream_eat(s, ISL_TOKEN_TO))
 			goto error;
 	}
-	tok = isl_stream_next_token(s);
-	if (!tok || tok->type != '{') {
-		isl_stream_error(s, tok, "expecting '{'");
+	if (isl_stream_eat(s, '{'))
 		goto error;
-	}
-	isl_token_free(tok);
-	tok = isl_stream_next_token(s);
-	if (tok && (tok->type == ISL_TOKEN_IDENT || tok->is_keyword)) {
-		isl_stream_push_token(s, tok);
-		dom = read_tuple(s, dom, isl_dim_set, v);
-		return read_aff_with_dom(s, dom, v);
-	}
-	if (!tok || tok->type != '[') {
-		isl_stream_error(s, tok, "expecting '['");
-		goto error;
-	}
-	if (next_is_tuple(s) || next_is_fresh_ident(s, v)) {
-		isl_stream_push_token(s, tok);
-		dom = read_tuple(s, dom, isl_dim_set, v);
-	} else
-		isl_stream_push_token(s, tok);
 
+	dom = read_aff_domain(s, dom, v);
 	return read_aff_with_dom(s, dom, v);
 error:
-	if (tok)
-		isl_stream_push_token(s, tok);
 	vars_free(v);
 	isl_set_free(dom);
+	return NULL;
+}
+
+/* Read a piecewise affine expression from "s" with domain (space) "dom".
+ */
+static __isl_give isl_pw_aff *read_pw_aff_with_dom(struct isl_stream *s,
+	__isl_take isl_set *dom, struct vars *v)
+{
+	isl_pw_aff *pwaff = NULL;
+
+	if (!isl_set_is_params(dom) && isl_stream_eat(s, ISL_TOKEN_TO))
+		goto error;
+
+	if (isl_stream_eat(s, '['))
+		goto error;
+
+	pwaff = accept_affine(s, isl_set_get_space(dom), v);
+
+	if (isl_stream_eat(s, ']'))
+		goto error;
+
+	dom = read_optional_disjuncts(s, dom, v);
+	pwaff = isl_pw_aff_intersect_domain(pwaff, dom);
+
+	return pwaff;
+error:
+	isl_set_free(dom);
+	isl_pw_aff_free(pwaff);
+	return NULL;
+}
+
+__isl_give isl_pw_aff *isl_stream_read_pw_aff(struct isl_stream *s)
+{
+	struct vars *v;
+	isl_set *dom = NULL;
+	isl_set *aff_dom;
+	isl_pw_aff *pa = NULL;
+	int n;
+
+	v = vars_new(s->ctx);
+	if (!v)
+		return NULL;
+
+	dom = isl_set_universe(isl_space_params_alloc(s->ctx, 0));
+	if (next_is_tuple(s)) {
+		dom = read_tuple(s, dom, isl_dim_param, v);
+		if (isl_stream_eat(s, ISL_TOKEN_TO))
+			goto error;
+	}
+	if (isl_stream_eat(s, '{'))
+		goto error;
+
+	n = v->n;
+	aff_dom = read_aff_domain(s, isl_set_copy(dom), v);
+	pa = read_pw_aff_with_dom(s, aff_dom, v);
+	vars_drop(v, v->n - n);
+
+	while (isl_stream_eat_if_available(s, ';')) {
+		isl_pw_aff *pa_i;
+
+		n = v->n;
+		aff_dom = read_aff_domain(s, isl_set_copy(dom), v);
+		pa_i = read_pw_aff_with_dom(s, aff_dom, v);
+		vars_drop(v, v->n - n);
+
+		pa = isl_pw_aff_add(pa, pa_i);
+	}
+
+	if (isl_stream_eat(s, '}'))
+		goto error;
+
+	vars_free(v);
+	isl_set_free(dom);
+	return pa;
+error:
+	vars_free(v);
+	isl_set_free(dom);
+	isl_pw_aff_free(pa);
 	return NULL;
 }
 
@@ -2472,6 +2561,17 @@ __isl_give isl_aff *isl_aff_read_from_str(isl_ctx *ctx, const char *str)
 	aff = isl_stream_read_aff(s);
 	isl_stream_free(s);
 	return aff;
+}
+
+__isl_give isl_pw_aff *isl_pw_aff_read_from_str(isl_ctx *ctx, const char *str)
+{
+	isl_pw_aff *pa;
+	struct isl_stream *s = isl_stream_new_str(ctx, str);
+	if (!s)
+		return NULL;
+	pa = isl_stream_read_pw_aff(s);
+	isl_stream_free(s);
+	return pa;
 }
 
 /* Read an isl_pw_multi_aff from "s".

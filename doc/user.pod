@@ -2926,6 +2926,8 @@ An expression can be read from input using
 	#include <isl/aff.h>
 	__isl_give isl_aff *isl_aff_read_from_str(
 		isl_ctx *ctx, const char *str);
+	__isl_give isl_pw_aff *isl_pw_aff_read_from_str(
+		isl_ctx *ctx, const char *str);
 
 An expression can be printed using
 
