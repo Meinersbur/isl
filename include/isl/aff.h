@@ -144,6 +144,9 @@ __isl_give isl_pw_aff *isl_pw_aff_floor(__isl_take isl_pw_aff *pwaff);
 __isl_give isl_pw_aff *isl_pw_aff_mod(__isl_take isl_pw_aff *pwaff,
 	isl_int mod);
 
+__isl_give isl_pw_aff *isl_pw_aff_intersect_domain(__isl_take isl_pw_aff *pa,
+	__isl_take isl_set *set);
+
 __isl_give isl_pw_aff *isl_pw_aff_cond(__isl_take isl_set *cond,
 	__isl_take isl_pw_aff *pwaff_true, __isl_take isl_pw_aff *pwaff_false);
 
