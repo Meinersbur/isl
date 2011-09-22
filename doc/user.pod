@@ -1069,6 +1069,12 @@ space.
 	__isl_give isl_map *isl_map_from_union_map(
 		__isl_take isl_union_map *umap);
 
+A zero-dimensional set can be constructed on a given parameter domain
+using the following function.
+
+	__isl_give isl_set *isl_set_from_params(
+		__isl_take isl_set *set);
+
 Sets and relations can be copied and freed again using the following
 functions.
 

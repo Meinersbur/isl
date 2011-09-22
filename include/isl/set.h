@@ -191,6 +191,7 @@ int isl_set_follows_at(__isl_keep isl_set *set1,
 
 __isl_give isl_basic_set *isl_basic_set_params(__isl_take isl_basic_set *bset);
 __isl_give isl_set *isl_set_params(__isl_take isl_set *set);
+__isl_give isl_set *isl_set_from_params(__isl_take isl_set *set);
 
 int isl_basic_set_dims_get_sign(__isl_keep isl_basic_set *bset,
 	enum isl_dim_type type, unsigned pos, unsigned n, int *signs);

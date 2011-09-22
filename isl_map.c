@@ -4111,6 +4111,17 @@ __isl_give isl_set *isl_set_params(__isl_take isl_set *set)
 	return set;
 }
 
+/* Construct a zero-dimensional set with the given parameter domain.
+ */
+__isl_give isl_set *isl_set_from_params(__isl_take isl_set *set)
+{
+	isl_space *space;
+	space = isl_set_get_space(set);
+	space = isl_space_set_from_params(space);
+	set = isl_set_reset_space(set, space);
+	return set;
+}
+
 /* Compute the parameter domain of the given map.
  */
 __isl_give isl_set *isl_map_params(__isl_take isl_map *map)
