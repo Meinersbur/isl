@@ -627,6 +627,17 @@ int isl_set_is_params(__isl_keep isl_set *set)
 	return isl_space_is_params(set->dim);
 }
 
+/* Is this map actually a parameter domain?
+ * Users should never call this function.  Outside of isl,
+ * a map can never be a parameter domain.
+ */
+int isl_map_is_params(__isl_keep isl_map *map)
+{
+	if (!map)
+		return -1;
+	return isl_space_is_params(map->dim);
+}
+
 static struct isl_basic_map *basic_map_init(struct isl_ctx *ctx,
 		struct isl_basic_map *bmap, unsigned extra,
 		unsigned n_eq, unsigned n_ineq)
@@ -2483,6 +2494,8 @@ static __isl_give isl_map *map_intersect(__isl_take isl_map *map1,
 	    (map1->p[0]->n_eq + map1->p[0]->n_ineq == 1 ||
 	     map2->p[0]->n_eq + map2->p[0]->n_ineq == 1))
 		return map_intersect_add_constraint(map1, map2);
+	if (isl_map_is_params(map1) && !isl_map_is_params(map2))
+		return isl_map_intersect(map2, map1);
 	if (isl_space_dim(map1->dim, isl_dim_all) ==
 				isl_space_dim(map1->dim, isl_dim_param) &&
 	    isl_space_dim(map2->dim, isl_dim_all) !=
