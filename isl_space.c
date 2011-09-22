@@ -1246,6 +1246,19 @@ __isl_give isl_space *isl_space_params(__isl_take isl_space *space)
 	return space;
 }
 
+__isl_give isl_space *isl_space_set_from_params(__isl_take isl_space *space)
+{
+	if (!space)
+		return NULL;
+	if (!isl_space_is_params(space))
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
+			"not a parameter space", goto error);
+	return isl_space_reset(space, isl_dim_set);
+error:
+	isl_space_free(space);
+	return NULL;
+}
+
 __isl_give isl_space *isl_space_as_set_space(__isl_take isl_space *dim)
 {
 	dim = isl_space_cow(dim);
