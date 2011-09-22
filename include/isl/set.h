@@ -327,6 +327,8 @@ struct isl_set *isl_set_drop_basic_set(struct isl_set *set,
 int isl_basic_set_plain_dim_is_fixed(__isl_keep isl_basic_set *bset,
 	unsigned dim, isl_int *val);
 
+int isl_set_plain_is_fixed(__isl_keep isl_set *set,
+	enum isl_dim_type type, unsigned pos, isl_int *val);
 int isl_set_plain_dim_is_fixed(__isl_keep isl_set *set,
 	unsigned dim, isl_int *val);
 int isl_set_fast_dim_is_fixed(__isl_keep isl_set *set,

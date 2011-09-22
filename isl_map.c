@@ -7380,6 +7380,12 @@ int isl_map_plain_is_fixed(__isl_keep isl_map *map,
 		map_offset(map, type) - 1 + pos, val);
 }
 
+int isl_set_plain_is_fixed(__isl_keep isl_set *set,
+	enum isl_dim_type type, unsigned pos, isl_int *val)
+{
+	return isl_map_plain_is_fixed(set, type, pos, val);
+}
+
 int isl_map_fast_is_fixed(__isl_keep isl_map *map,
 	enum isl_dim_type type, unsigned pos, isl_int *val)
 {
