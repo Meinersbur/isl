@@ -650,10 +650,10 @@ static void sol_map_add(struct isl_sol_map *sol,
 	bmap = isl_basic_map_finalize(bmap);
 	sol->map = isl_map_grow(sol->map, 1);
 	sol->map = isl_map_add_basic_map(sol->map, bmap);
-	if (!sol->map)
-		goto error;
 	isl_basic_set_free(dom);
 	isl_mat_free(M);
+	if (!sol->map)
+		sol->sol.error = 1;
 	return;
 error:
 	isl_basic_set_free(dom);
@@ -4553,7 +4553,7 @@ static void sol_for_add(struct isl_sol_for *sol,
 	for (i = 1; i < M->n_row; ++i) {
 		aff = isl_aff_alloc(isl_local_space_copy(ls));
 		if (aff) {
-			isl_int_set_si(aff->v->el[0], 1);
+			isl_int_set(aff->v->el[0], M->row[0][0]);
 			isl_seq_cpy(aff->v->el + 1, M->row[i], M->n_col);
 		}
 		list = isl_aff_list_add(list, aff);

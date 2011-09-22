@@ -281,7 +281,7 @@ error:
 	return NULL;
 }
 
-struct isl_mat *isl_mat_identity(struct isl_ctx *ctx, unsigned n_row)
+__isl_give isl_mat *isl_mat_diag(isl_ctx *ctx, unsigned n_row, isl_int d)
 {
 	int i;
 	struct isl_mat *mat;
@@ -291,11 +291,18 @@ struct isl_mat *isl_mat_identity(struct isl_ctx *ctx, unsigned n_row)
 		return NULL;
 	for (i = 0; i < n_row; ++i) {
 		isl_seq_clr(mat->row[i], i);
-		isl_int_set_si(mat->row[i][i], 1);
+		isl_int_set(mat->row[i][i], d);
 		isl_seq_clr(mat->row[i]+i+1, n_row-(i+1));
 	}
 
 	return mat;
+}
+
+__isl_give isl_mat *isl_mat_identity(isl_ctx *ctx, unsigned n_row)
+{
+	if (!ctx)
+		return NULL;
+	return isl_mat_diag(ctx, n_row, ctx->one);
 }
 
 struct isl_vec *isl_mat_vec_product(struct isl_mat *mat, struct isl_vec *vec)
