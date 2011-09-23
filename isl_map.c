@@ -1765,11 +1765,11 @@ int isl_map_involves_dims(__isl_keep isl_map *map,
 	for (i = 0; i < map->n; ++i) {
 		int involves = isl_basic_map_involves_dims(map->p[i],
 							    type, first, n);
-		if (involves < 0 || !involves)
+		if (involves < 0 || involves)
 			return involves;
 	}
 
-	return 1;
+	return 0;
 }
 
 int isl_basic_set_involves_dims(__isl_keep isl_basic_set *bset,
