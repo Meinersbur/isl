@@ -1583,11 +1583,11 @@ int isl_set_involves_dims(__isl_keep isl_set *set,
 	for (i = 0; i < set->n; ++i) {
 		int involves = isl_basic_set_involves_dims(set->p[i],
 							    type, first, n);
-		if (involves < 0 || !involves)
+		if (involves < 0 || involves)
 			return involves;
 	}
 
-	return 1;
+	return 0;
 }
 
 /* Return true if the definition of the given div is unknown or depends
