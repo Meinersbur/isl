@@ -302,8 +302,9 @@ static __isl_give isl_flow *isl_flow_alloc(__isl_keep isl_access_info *acc)
 	}
 	for (i = acc->n_must; i < acc->n_must + acc->n_may; ++i) {
 		isl_space *dim;
-		dim = isl_space_join(isl_map_get_space(acc->source[i].map),
-			    isl_space_reverse(isl_map_get_space(acc->sink.map)));
+		dim = space_align_and_join(
+			isl_map_get_space(acc->source[i].map),
+			isl_space_reverse(isl_map_get_space(acc->sink.map)));
 		dep->dep[acc->n_must + i].map = isl_map_empty(dim);
 		dep->dep[acc->n_must + i].data = acc->source[i].data;
 		dep->dep[acc->n_must + i].must = 0;
