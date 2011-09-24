@@ -597,6 +597,14 @@ int isl_set_find_dim_by_id(__isl_keep isl_set *set, enum isl_dim_type type,
 	return isl_map_find_dim_by_id(set, type, id);
 }
 
+int isl_map_find_dim_by_name(__isl_keep isl_map *map, enum isl_dim_type type,
+	const char *name)
+{
+	if (!map)
+		return -1;
+	return isl_space_find_dim_by_name(map->dim, type, name);
+}
+
 int isl_basic_map_is_rational(__isl_keep isl_basic_map *bmap)
 {
 	if (!bmap)
