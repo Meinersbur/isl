@@ -226,6 +226,20 @@ __isl_give isl_local_space *isl_local_space_set_dim_name(
 	return ls;
 }
 
+__isl_give isl_local_space *isl_local_space_set_dim_id(
+	__isl_take isl_local_space *ls,
+	enum isl_dim_type type, unsigned pos, __isl_take isl_id *id)
+{
+	ls = isl_local_space_cow(ls);
+	if (!ls)
+		return isl_id_free(id);
+	ls->dim = isl_space_set_dim_id(ls->dim, type, pos, id);
+	if (!ls->dim)
+		return isl_local_space_free(ls);
+
+	return ls;
+}
+
 __isl_give isl_local_space *isl_local_space_reset_space(
 	__isl_take isl_local_space *ls, __isl_take isl_space *dim)
 {
