@@ -543,6 +543,26 @@ int isl_space_find_dim_by_id(__isl_keep isl_space *dim, enum isl_dim_type type,
 	return -1;
 }
 
+int isl_space_find_dim_by_name(__isl_keep isl_space *space,
+	enum isl_dim_type type, const char *name)
+{
+	int i;
+	int offset;
+	int n;
+
+	if (!space || !name)
+		return -1;
+
+	offset = isl_space_offset(space, type);
+	n = isl_space_dim(space, type);
+	for (i = 0; i < n && offset + i < space->n_id; ++i)
+		if (space->ids[offset + i]->name &&
+		    !strcmp(space->ids[offset + i]->name, name))
+			return i;
+
+	return -1;
+}
+
 static __isl_keep isl_id *tuple_id(__isl_keep isl_space *dim,
 	enum isl_dim_type type)
 {
