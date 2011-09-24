@@ -862,6 +862,29 @@ __isl_give isl_aff *isl_aff_set_dim_name(__isl_take isl_aff *aff,
 	return aff;
 }
 
+__isl_give isl_aff *isl_aff_set_dim_id(__isl_take isl_aff *aff,
+	enum isl_dim_type type, unsigned pos, __isl_take isl_id *id)
+{
+	aff = isl_aff_cow(aff);
+	if (!aff)
+		return isl_id_free(id);
+	if (type == isl_dim_out)
+		isl_die(aff->v->ctx, isl_error_invalid,
+			"cannot set name of output/set dimension",
+			goto error);
+	if (type == isl_dim_in)
+		type = isl_dim_set;
+	aff->ls = isl_local_space_set_dim_id(aff->ls, type, pos, id);
+	if (!aff->ls)
+		return isl_aff_free(aff);
+
+	return aff;
+error:
+	isl_id_free(id);
+	isl_aff_free(aff);
+	return NULL;
+}
+
 /* Exploit the equalities in "eq" to simplify the affine expression
  * and the expressions of the integer divisions in the local space.
  * The integer divisions in this local space are assumed to appear
