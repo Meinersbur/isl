@@ -1074,6 +1074,21 @@ __isl_give PW *FN(PW,reset_space)(__isl_take PW *pw, __isl_take isl_space *dim)
 	domain = isl_space_domain(isl_space_copy(dim));
 	return FN(PW,reset_space_and_domain)(pw, dim, domain);
 }
+
+__isl_give PW *FN(PW,set_tuple_id)(__isl_keep PW *pw, enum isl_dim_type type,
+	__isl_take isl_id *id)
+{
+	isl_space *space;
+
+	pw = FN(PW,cow)(pw);
+	if (!pw)
+		return isl_id_free(id);
+
+	space = FN(PW,get_space)(pw);
+	space = isl_space_set_tuple_id(space, type, id);
+
+	return FN(PW,reset_space)(pw, space);
+}
 #endif
 
 int FN(PW,has_equal_space)(__isl_keep PW *pw1, __isl_keep PW *pw2)

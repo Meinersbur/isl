@@ -122,7 +122,7 @@ __isl_give isl_pw_aff *isl_pw_aff_align_params(__isl_take isl_pw_aff *pwaff,
 	__isl_take isl_space *model);
 
 __isl_give isl_pw_aff *isl_pw_aff_set_tuple_id(__isl_take isl_pw_aff *pwaff,
-	__isl_take isl_id *id);
+	enum isl_dim_type type, __isl_take isl_id *id);
 
 __isl_give isl_set *isl_pw_aff_domain(__isl_take isl_pw_aff *pwaff);
 

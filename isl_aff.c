@@ -1159,17 +1159,6 @@ __isl_give isl_pw_aff *isl_pw_aff_add_dims(__isl_take isl_pw_aff *pwaff,
 	return isl_pw_aff_insert_dims(pwaff, type, pos, n);
 }
 
-__isl_give isl_pw_aff *isl_pw_aff_set_tuple_id(__isl_take isl_pw_aff *pwaff,
-	__isl_take isl_id *id)
-{
-	isl_space *dim;
-
-	dim = isl_pw_aff_get_space(pwaff);
-	dim = isl_space_set_tuple_id(dim, isl_dim_in, id);
-
-	return isl_pw_aff_reset_space(pwaff, dim);
-}
-
 __isl_give isl_pw_aff *isl_pw_aff_from_aff(__isl_take isl_aff *aff)
 {
 	isl_set *dom = isl_set_universe(isl_aff_get_domain_space(aff));
