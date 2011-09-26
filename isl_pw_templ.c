@@ -179,6 +179,12 @@ const char *FN(PW,get_dim_name)(__isl_keep PW *pw, enum isl_dim_type type,
 	return pw ? isl_space_get_dim_name(pw->dim, type, pos) : NULL;
 }
 
+__isl_give isl_id *FN(PW,get_dim_id)(__isl_keep PW *pw, enum isl_dim_type type,
+	unsigned pos)
+{
+	return pw ? isl_space_get_dim_id(pw->dim, type, pos) : NULL;
+}
+
 const char *FN(PW,get_tuple_name)(__isl_keep PW *pw, enum isl_dim_type type)
 {
 	return pw ? isl_space_get_tuple_name(pw->dim, type) : NULL;
