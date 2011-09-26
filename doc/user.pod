@@ -2609,6 +2609,9 @@ The expression can be inspected using
 		__isl_keep isl_aff *aff);
 	const char *isl_aff_get_dim_name(__isl_keep isl_aff *aff,
 		enum isl_dim_type type, unsigned pos);
+	const char *isl_pw_aff_get_dim_name(
+		__isl_keep isl_pw_aff *pa,
+		enum isl_dim_type type, unsigned pos);
 	int isl_aff_get_constant(__isl_keep isl_aff *aff,
 		isl_int *v);
 	int isl_aff_get_coefficient(__isl_keep isl_aff *aff,
