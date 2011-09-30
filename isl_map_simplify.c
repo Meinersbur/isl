@@ -1369,6 +1369,30 @@ struct isl_basic_set *isl_basic_set_eliminate_vars(
 			(struct isl_basic_map *)bset, pos, n);
 }
 
+/* Eliminate the specified n dimensions starting at first from the
+ * constraints using Fourier-Motzkin.  The dimensions themselves
+ * are not removed.
+ */
+__isl_give isl_basic_map *isl_basic_map_eliminate(
+	__isl_take isl_basic_map *bmap,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	if (!bmap)
+		return NULL;
+	if (n == 0)
+		return bmap;
+
+	if (first + n > isl_basic_map_dim(bmap, type))
+		isl_die(bmap->ctx, isl_error_invalid,
+			"index out of bounds", goto error);
+
+	first += isl_basic_map_offset(bmap, type) - 1;
+	return isl_basic_map_eliminate_vars(bmap, first, n);
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
 /* Don't assume equalities are in order, because align_divs
  * may have changed the order of the divs.
  */

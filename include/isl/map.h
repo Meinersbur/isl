@@ -168,6 +168,9 @@ __isl_give isl_basic_map *isl_basic_map_range_map(
 __isl_give isl_basic_map *isl_basic_map_remove_dims(
 	__isl_take isl_basic_map *bmap,
 	enum isl_dim_type type, unsigned first, unsigned n);
+__isl_give isl_basic_map *isl_basic_map_eliminate(
+	__isl_take isl_basic_map *bmap,
+	enum isl_dim_type type, unsigned first, unsigned n);
 __isl_give isl_basic_map *isl_basic_map_from_basic_set(
 	__isl_take isl_basic_set *bset, __isl_take isl_space *dim);
 struct isl_basic_set *isl_basic_set_from_basic_map(struct isl_basic_map *bmap);

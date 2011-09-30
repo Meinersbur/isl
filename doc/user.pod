@@ -1728,6 +1728,10 @@ that maps (a wrapped version of) the input relation to its domain or range.
 	__isl_give isl_set *isl_set_eliminate(
 		__isl_take isl_set *set, enum isl_dim_type type,
 		unsigned first, unsigned n);
+	__isl_give isl_basic_map *isl_basic_map_eliminate(
+		__isl_take isl_basic_map *bmap,
+		enum isl_dim_type type,
+		unsigned first, unsigned n);
 
 Eliminate the coefficients for the given dimensions from the constraints,
 without removing the dimensions.
