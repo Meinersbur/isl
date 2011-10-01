@@ -1276,6 +1276,7 @@ struct isl_basic_map *isl_basic_map_eliminate_vars(
 	int d;
 	int i, j, k;
 	unsigned total;
+	int need_gauss = 0;
 
 	if (n == 0)
 		return bmap;
@@ -1299,6 +1300,7 @@ struct isl_basic_map *isl_basic_map_eliminate_vars(
 				continue;
 			eliminate_var_using_equality(bmap, d, bmap->eq[i], 0, NULL);
 			isl_basic_map_drop_equality(bmap, i);
+			need_gauss = 1;
 			break;
 		}
 		if (i < bmap->n_eq)
@@ -1343,6 +1345,7 @@ struct isl_basic_map *isl_basic_map_eliminate_vars(
 			bmap = remove_duplicate_constraints(bmap, NULL, 0);
 			bmap = isl_basic_map_gauss(bmap, NULL);
 			bmap = isl_basic_map_remove_redundancies(bmap);
+			need_gauss = 0;
 			if (!bmap)
 				goto error;
 			if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
@@ -1350,6 +1353,8 @@ struct isl_basic_map *isl_basic_map_eliminate_vars(
 		}
 	}
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
+	if (need_gauss)
+		bmap = isl_basic_map_gauss(bmap, NULL);
 	return bmap;
 error:
 	isl_basic_map_free(bmap);
