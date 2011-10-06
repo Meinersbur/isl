@@ -5154,6 +5154,7 @@ static void sol_pma_add(struct isl_sol_pma *sol,
 			isl_int_set(aff->v->el[0], M->row[0][0]);
 			isl_seq_cpy(aff->v->el + 1, M->row[i], M->n_col);
 		}
+		aff = isl_aff_normalize(aff);
 		maff = isl_multi_aff_set_aff(maff, i - 1, aff);
 	}
 	isl_local_space_free(ls);
