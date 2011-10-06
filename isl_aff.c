@@ -543,6 +543,16 @@ __isl_give isl_aff *isl_aff_neg(__isl_take isl_aff *aff)
 	return aff;
 }
 
+__isl_give isl_aff *isl_aff_normalize(__isl_take isl_aff *aff)
+{
+	if (!aff)
+		return NULL;
+	aff->v = isl_vec_normalize(aff->v);
+	if (!aff->v)
+		return isl_aff_free(aff);
+	return aff;
+}
+
 /* Given f, return floor(f).
  * If f is an integer expression, then just return f.
  * Otherwise, if f = g/m, write g = q m + r,

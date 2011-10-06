@@ -56,6 +56,8 @@ __isl_give isl_aff *isl_aff_reset_domain_space(__isl_take isl_aff *aff,
 __isl_give isl_aff *isl_aff_realign_domain(__isl_take isl_aff *aff,
 	__isl_take isl_reordering *r);
 
+__isl_give isl_aff *isl_aff_normalize(__isl_take isl_aff *aff);
+
 __isl_give isl_aff *isl_aff_expand_divs( __isl_take isl_aff *aff,
 	__isl_take isl_mat *div, int *exp);
 
