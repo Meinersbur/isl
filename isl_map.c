@@ -1560,11 +1560,9 @@ __isl_give isl_map *isl_map_eliminate(__isl_take isl_map *map,
 	map = isl_map_cow(map);
 	if (!map)
 		return NULL;
-	isl_assert(map->ctx, first + n <= isl_map_dim(map, type), goto error);
-	first += pos(map->dim, type) - 1;
-	
+
 	for (i = 0; i < map->n; ++i) {
-		map->p[i] = isl_basic_map_eliminate_vars(map->p[i], first, n);
+		map->p[i] = isl_basic_map_eliminate(map->p[i], type, first, n);
 		if (!map->p[i])
 			goto error;
 	}

@@ -1387,7 +1387,8 @@ __isl_give isl_basic_map *isl_basic_map_eliminate(
 			"index out of bounds", goto error);
 
 	first += isl_basic_map_offset(bmap, type) - 1;
-	return isl_basic_map_eliminate_vars(bmap, first, n);
+	bmap = isl_basic_map_eliminate_vars(bmap, first, n);
+	return isl_basic_map_finalize(bmap);
 error:
 	isl_basic_map_free(bmap);
 	return NULL;
