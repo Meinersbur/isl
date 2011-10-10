@@ -421,6 +421,8 @@ __isl_give PW *FN(PW,intersect_domain)(__isl_take PW *pw, __isl_take isl_set *se
 		aff = isl_set_affine_hull(isl_set_copy(pw->p[i].set));
 		pw->p[i].FIELD = FN(EL,substitute_equalities)(pw->p[i].FIELD,
 								aff);
+		if (!pw->p[i].FIELD)
+			goto error;
 		if (isl_set_plain_is_empty(pw->p[i].set)) {
 			isl_set_free(pw->p[i].set);
 			FN(EL,free)(pw->p[i].FIELD);
