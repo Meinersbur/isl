@@ -2479,7 +2479,10 @@ error:
 	return NULL;
 }
 
-static __isl_give isl_map *map_intersect(__isl_take isl_map *map1,
+/* map2 may be either a parameter domain or a map living in the same
+ * space as map1.
+ */
+static __isl_give isl_map *map_intersect_internal(__isl_take isl_map *map1,
 	__isl_take isl_map *map2)
 {
 	unsigned flags = 0;
@@ -2506,13 +2509,6 @@ static __isl_give isl_map *map_intersect(__isl_take isl_map *map1,
 	    (map1->p[0]->n_eq + map1->p[0]->n_ineq == 1 ||
 	     map2->p[0]->n_eq + map2->p[0]->n_ineq == 1))
 		return map_intersect_add_constraint(map1, map2);
-	if (isl_map_is_params(map1) && !isl_map_is_params(map2))
-		return isl_map_intersect(map2, map1);
-	if (isl_space_dim(map1->dim, isl_dim_all) ==
-				isl_space_dim(map1->dim, isl_dim_param) &&
-	    isl_space_dim(map2->dim, isl_dim_all) !=
-				isl_space_dim(map2->dim, isl_dim_param))
-		return isl_map_intersect(map2, map1);
 
 	if (isl_space_dim(map2->dim, isl_dim_all) !=
 				isl_space_dim(map2->dim, isl_dim_param))
@@ -2549,6 +2545,21 @@ error:
 	return NULL;
 }
 
+static __isl_give isl_map *map_intersect(__isl_take isl_map *map1,
+	__isl_take isl_map *map2)
+{
+	if (!map1 || !map2)
+		goto error;
+	if (!isl_space_is_equal(map1->dim, map2->dim))
+		isl_die(isl_map_get_ctx(map1), isl_error_invalid,
+			"spaces don't match", goto error);
+	return map_intersect_internal(map1, map2);
+error:
+	isl_map_free(map1);
+	isl_map_free(map2);
+	return NULL;
+}
+
 __isl_give isl_map *isl_map_intersect(__isl_take isl_map *map1,
 	__isl_take isl_map *map2)
 {
@@ -2562,13 +2573,13 @@ struct isl_set *isl_set_intersect(struct isl_set *set1, struct isl_set *set2)
 				  (struct isl_map *)set2);
 }
 
-/* The current implementation of isl_map_intersect accepts intersections
- * with parameter domains, so we can just call that for now.
+/* map_intersect_internal accepts intersections
+ * with parameter domains, so we can just call that function.
  */
 static __isl_give isl_map *map_intersect_params(__isl_take isl_map *map,
 		__isl_take isl_set *params)
 {
-	return isl_map_intersect(map, params);
+	return map_intersect_internal(map, params);
 }
 
 __isl_give isl_map *isl_map_intersect_params(__isl_take isl_map *map1,
