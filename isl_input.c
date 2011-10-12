@@ -899,7 +899,7 @@ static __isl_give isl_map *read_tuple(struct isl_stream *s,
 		nested = read_nested_tuple(s, isl_map_universe(dim), v);
 		if (type == isl_dim_in) {
 			nested = isl_map_reverse(nested);
-			map = isl_map_intersect(nested, map);
+			map = isl_map_intersect_params(nested, map);
 		} else {
 			isl_set *set;
 			dim = isl_set_get_space(nested);
