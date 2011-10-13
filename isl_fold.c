@@ -959,6 +959,13 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_from_pw_qpolynomial(
 	return pwf;
 }
 
+__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_add(
+	__isl_take isl_pw_qpolynomial_fold *pwf1,
+	__isl_take isl_pw_qpolynomial_fold *pwf2)
+{
+	return isl_pw_qpolynomial_fold_union_add_(pwf1, pwf2);
+}
+
 int isl_qpolynomial_fold_plain_is_equal(__isl_keep isl_qpolynomial_fold *fold1,
 	__isl_keep isl_qpolynomial_fold *fold2)
 {

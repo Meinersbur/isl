@@ -121,6 +121,8 @@ __isl_give isl_pw_aff *isl_pw_aff_union_min(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2);
 __isl_give isl_pw_aff *isl_pw_aff_union_max(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2);
+__isl_give isl_pw_aff *isl_pw_aff_union_add(__isl_take isl_pw_aff *pwaff1,
+	__isl_take isl_pw_aff *pwaff2);
 
 __isl_give isl_pw_aff *isl_pw_aff_copy(__isl_keep isl_pw_aff *pwaff);
 void *isl_pw_aff_free(__isl_take isl_pw_aff *pwaff);
@@ -295,6 +297,9 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_set_dim_id(
 
 int isl_pw_multi_aff_plain_is_equal(__isl_keep isl_pw_multi_aff *pma1,
 	__isl_keep isl_pw_multi_aff *pma2);
+
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_union_add(
+	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2);
 
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_add(
 	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2);

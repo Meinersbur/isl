@@ -1822,6 +1822,24 @@ error:
 	return NULL;
 }
 
+static __isl_give isl_pw_aff *pw_aff_add(__isl_take isl_pw_aff *pwaff1,
+	__isl_take isl_pw_aff *pwaff2)
+{
+	return isl_pw_aff_on_shared_domain(pwaff1, pwaff2, &isl_aff_add);
+}
+
+__isl_give isl_pw_aff *isl_pw_aff_add(__isl_take isl_pw_aff *pwaff1,
+	__isl_take isl_pw_aff *pwaff2)
+{
+	return isl_pw_aff_align_params_pw_pw_and(pwaff1, pwaff2, &pw_aff_add);
+}
+
+__isl_give isl_pw_aff *isl_pw_aff_union_add(__isl_take isl_pw_aff *pwaff1,
+	__isl_take isl_pw_aff *pwaff2)
+{
+	return isl_pw_aff_union_add_(pwaff1, pwaff2);
+}
+
 static __isl_give isl_pw_aff *pw_aff_mul(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
@@ -2094,6 +2112,26 @@ __isl_give isl_multi_aff *isl_multi_aff_drop_dims(__isl_take isl_multi_aff *maff
 #define NO_MORPH
 
 #include <isl_pw_templ.c>
+
+static __isl_give isl_pw_multi_aff *pw_multi_aff_add(
+	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2)
+{
+	return isl_pw_multi_aff_on_shared_domain(pma1, pma2,
+						&isl_multi_aff_add);
+}
+
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_add(
+	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2)
+{
+	return isl_pw_multi_aff_align_params_pw_pw_and(pma1, pma2,
+						&pw_multi_aff_add);
+}
+
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_union_add(
+	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2)
+{
+	return isl_pw_multi_aff_union_add_(pma1, pma2);
+}
 
 /* Construct a map mapping the domain the piecewise multi-affine expression
  * to its range, with each dimension in the range equated to the

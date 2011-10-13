@@ -325,7 +325,8 @@ error:
 }
 #endif
 
-static __isl_give PW *FN(PW,add_aligned)(__isl_take PW *pw1, __isl_take PW *pw2)
+static __isl_give PW *FN(PW,union_add_aligned)(__isl_take PW *pw1,
+	__isl_take PW *pw2)
 {
 	int i, j, n;
 	struct PW *res;
@@ -401,9 +402,13 @@ error:
 	return NULL;
 }
 
-__isl_give PW *FN(PW,add)(__isl_take PW *pw1, __isl_take PW *pw2)
+/* Private version of "union_add".  For isl_pw_qpolynomial and
+ * isl_pw_qpolynomial_fold, we prefer to simply call it "add".
+ */
+static __isl_give PW *FN(PW,union_add_)(__isl_take PW *pw1, __isl_take PW *pw2)
 {
-	return FN(PW,align_params_pw_pw_and)(pw1, pw2, &FN(PW,add_aligned));
+	return FN(PW,align_params_pw_pw_and)(pw1, pw2,
+						&FN(PW,union_add_aligned));
 }
 
 /* Make sure "pw" has room for at least "n" more pieces.

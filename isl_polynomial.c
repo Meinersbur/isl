@@ -2623,6 +2623,13 @@ int isl_pw_qpolynomial_is_one(__isl_keep isl_pw_qpolynomial *pwqp)
 	return isl_qpolynomial_is_one(pwqp->p[0].qp);
 }
 
+__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_add(
+	__isl_take isl_pw_qpolynomial *pwqp1,
+	__isl_take isl_pw_qpolynomial *pwqp2)
+{
+	return isl_pw_qpolynomial_union_add_(pwqp1, pwqp2);
+}
+
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_mul(
 	__isl_take isl_pw_qpolynomial *pwqp1,
 	__isl_take isl_pw_qpolynomial *pwqp2)
