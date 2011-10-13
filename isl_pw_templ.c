@@ -499,6 +499,60 @@ __isl_give PW *FN(PW,add_disjoint)(__isl_take PW *pw1, __isl_take PW *pw2)
 						&FN(PW,add_disjoint_aligned));
 }
 
+/* This function is currently only used from isl_aff.c
+ */
+static __isl_give PW *FN(PW,on_shared_domain)(__isl_take PW *pw1,
+	__isl_take PW *pw2,
+	__isl_give EL *(*fn)(__isl_take EL *el1, __isl_take EL *el2))
+	__attribute__ ((unused));
+
+/* Apply "fn" to pairs of elements from pw1 and pw2 on shared domains.
+ */
+static __isl_give PW *FN(PW,on_shared_domain)(__isl_take PW *pw1,
+	__isl_take PW *pw2,
+	__isl_give EL *(*fn)(__isl_take EL *el1, __isl_take EL *el2))
+{
+	int i, j, n;
+	PW *res;
+
+	if (!pw1 || !pw2)
+		goto error;
+
+	n = pw1->n * pw2->n;
+#ifdef HAS_TYPE
+	res = FN(PW,alloc_size)(isl_space_copy(pw1->dim), pw1->type, n);
+#else
+	res = FN(PW,alloc_size)(isl_space_copy(pw1->dim), n);
+#endif
+
+	for (i = 0; i < pw1->n; ++i) {
+		for (j = 0; j < pw2->n; ++j) {
+			isl_set *common;
+			EL *res_ij;
+			common = isl_set_intersect(
+					isl_set_copy(pw1->p[i].set),
+					isl_set_copy(pw2->p[j].set));
+			if (isl_set_plain_is_empty(common)) {
+				isl_set_free(common);
+				continue;
+			}
+
+			res_ij = fn(FN(EL,copy)(pw1->p[i].FIELD),
+				    FN(EL,copy)(pw2->p[j].FIELD));
+
+			res = FN(PW,add_piece)(res, common, res_ij);
+		}
+	}
+
+	FN(PW,free)(pw1);
+	FN(PW,free)(pw2);
+	return res;
+error:
+	FN(PW,free)(pw1);
+	FN(PW,free)(pw2);
+	return NULL;
+}
+
 #ifndef NO_NEG
 __isl_give PW *FN(PW,neg)(__isl_take PW *pw)
 {

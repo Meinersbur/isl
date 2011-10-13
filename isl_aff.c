@@ -19,6 +19,7 @@
 #include <isl/constraint.h>
 #include <isl/seq.h>
 #include <isl/set.h>
+#include <isl_config.h>
 
 __isl_give isl_aff *isl_aff_alloc_vec(__isl_take isl_local_space *ls,
 	__isl_take isl_vec *v)
@@ -1824,41 +1825,7 @@ error:
 static __isl_give isl_pw_aff *pw_aff_mul(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
-	int i, j, n;
-	isl_pw_aff *res;
-
-	if (!pwaff1 || !pwaff2)
-		goto error;
-
-	n = pwaff1->n * pwaff2->n;
-	res = isl_pw_aff_alloc_size(isl_space_copy(pwaff1->dim), n);
-
-	for (i = 0; i < pwaff1->n; ++i) {
-		for (j = 0; j < pwaff2->n; ++j) {
-			isl_set *common;
-			isl_aff *prod;
-			common = isl_set_intersect(
-					isl_set_copy(pwaff1->p[i].set),
-					isl_set_copy(pwaff2->p[j].set));
-			if (isl_set_plain_is_empty(common)) {
-				isl_set_free(common);
-				continue;
-			}
-
-			prod = isl_aff_mul(isl_aff_copy(pwaff1->p[i].aff),
-					    isl_aff_copy(pwaff2->p[j].aff));
-
-			res = isl_pw_aff_add_piece(res, common, prod);
-		}
-	}
-
-	isl_pw_aff_free(pwaff1);
-	isl_pw_aff_free(pwaff2);
-	return res;
-error:
-	isl_pw_aff_free(pwaff1);
-	isl_pw_aff_free(pwaff2);
-	return NULL;
+	return isl_pw_aff_on_shared_domain(pwaff1, pwaff2, &isl_aff_mul);
 }
 
 __isl_give isl_pw_aff *isl_pw_aff_mul(__isl_take isl_pw_aff *pwaff1,
