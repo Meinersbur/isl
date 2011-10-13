@@ -118,6 +118,11 @@ system)
 		[AC_DEFINE([getExpansionLineNumber],
 			[getInstantiationLineNumber],
 	    [Define to getInstantiationLineNumber for older versions of clang])])
+	AC_EGREP_HEADER([DiagnosticsEngine],
+		[clang/Basic/Diagnostic.h], [],
+		[AC_DEFINE([DiagnosticsEngine],
+			[Diagnostic],
+	    [Define to Diagnostic for older versions of clang])])
 	AC_LANG_POP
 	CPPFLAGS="$SAVE_CPPFLAGS"
 	;;

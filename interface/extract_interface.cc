@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
 	DiagnosticOptions DO;
 	Clang->createDiagnostics(0, NULL,
 				new TextDiagnosticPrinter(llvm::errs(), DO));
-	Diagnostic &Diags = Clang->getDiagnostics();
+	DiagnosticsEngine &Diags = Clang->getDiagnostics();
 	Diags.setSuppressSystemWarnings(true);
 	Clang->createFileManager();
 	Clang->createSourceManager(Clang->getFileManager());
