@@ -125,14 +125,21 @@ int isl_point_is_void(__isl_keep isl_point *pnt)
 	return pnt->vec->size == 0;
 }
 
-void isl_point_get_coordinate(__isl_keep isl_point *pnt,
+int isl_point_get_coordinate(__isl_keep isl_point *pnt,
 	enum isl_dim_type type, int pos, isl_int *v)
 {
 	if (!pnt || isl_point_is_void(pnt))
-		return;
+		return -1;
+
+	if (pos < 0 || pos >= isl_space_dim(pnt->dim, type))
+		isl_die(isl_point_get_ctx(pnt), isl_error_invalid,
+			"position out of bounds", return -1);
+
 	if (type == isl_dim_set)
 		pos += isl_space_dim(pnt->dim, isl_dim_param);
 	isl_int_set(*v, pnt->vec->el[1 + pos]);
+
+	return 0;
 }
 
 __isl_give isl_point *isl_point_set_coordinate(__isl_take isl_point *pnt,
