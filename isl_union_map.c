@@ -18,6 +18,24 @@
 #include <isl_union_map_private.h>
 #include <isl/union_set.h>
 
+/* Is this union set a parameter domain?
+ */
+int isl_union_set_is_params(__isl_keep isl_union_set *uset)
+{
+	isl_set *set;
+	int params;
+
+	if (!uset)
+		return -1;
+	if (uset->table.n != 1)
+		return 0;
+
+	set = isl_set_from_union_set(isl_union_set_copy(uset));
+	params = isl_set_is_params(set);
+	isl_set_free(set);
+	return params;
+}
+
 static __isl_give isl_union_map *isl_union_map_alloc(__isl_take isl_space *dim,
 	int size)
 {

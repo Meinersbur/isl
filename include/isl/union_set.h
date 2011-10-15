@@ -61,6 +61,7 @@ __isl_export
 __isl_give isl_union_set *isl_union_set_apply(
 	__isl_take isl_union_set *uset, __isl_take isl_union_map *umap);
 
+int isl_union_set_is_params(__isl_keep isl_union_set *uset);
 __isl_export
 int isl_union_set_is_empty(__isl_keep isl_union_set *uset);
 

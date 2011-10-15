@@ -1596,6 +1596,8 @@ has a fixed value and if so, return that value in C<*val>.
 To check whether a set is a parameter domain, use this function:
 
 	int isl_set_is_params(__isl_keep isl_set *set);
+	int isl_union_set_is_params(
+		__isl_keep isl_union_set *uset);
 
 =item * Wrapping
 
