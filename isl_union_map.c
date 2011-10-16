@@ -646,6 +646,12 @@ static __isl_give isl_union_map *union_map_intersect_params(
 						isl_set_from_union_set(uset));
 }
 
+static __isl_give isl_union_map *union_map_gist_params(
+	__isl_take isl_union_map *umap, __isl_take isl_union_set *uset)
+{
+	return isl_union_map_gist_params(umap, isl_set_from_union_set(uset));
+}
+
 struct isl_union_map_match_bin_data {
 	isl_union_map *umap2;
 	isl_union_map *res;
@@ -882,6 +888,50 @@ __isl_give isl_union_map *isl_union_map_intersect_domain(
 	if (isl_union_set_is_params(uset))
 		return union_map_intersect_params(umap, uset);
 	return gen_bin_op(umap, uset, &intersect_domain_entry);
+}
+
+static int gist_domain_entry(void **entry, void *user)
+{
+	struct isl_union_map_gen_bin_data *data = user;
+	uint32_t hash;
+	struct isl_hash_table_entry *entry2;
+	isl_space *dim;
+	isl_map *map = *entry;
+	int empty;
+
+	dim = isl_map_get_space(map);
+	dim = isl_space_domain(dim);
+	hash = isl_space_get_hash(dim);
+	entry2 = isl_hash_table_find(data->umap2->dim->ctx, &data->umap2->table,
+				     hash, &has_dim, dim, 0);
+	isl_space_free(dim);
+	if (!entry2)
+		return 0;
+
+	map = isl_map_copy(map);
+	map = isl_map_gist_domain(map, isl_set_copy(entry2->data));
+
+	empty = isl_map_is_empty(map);
+	if (empty < 0) {
+		isl_map_free(map);
+		return -1;
+	}
+
+	data->res = isl_union_map_add_map(data->res, map);
+
+	return 0;
+}
+
+/* Compute the gist of "umap" with respect to the domain "uset".
+ * If "uset" is a parameters domain, then compute the gist
+ * with respect to this parameter domain.
+ */
+__isl_give isl_union_map *isl_union_map_gist_domain(
+	__isl_take isl_union_map *umap, __isl_take isl_union_set *uset)
+{
+	if (isl_union_set_is_params(uset))
+		return union_map_gist_params(umap, uset);
+	return gen_bin_op(umap, uset, &gist_domain_entry);
 }
 
 static int intersect_range_entry(void **entry, void *user)
