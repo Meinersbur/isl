@@ -2192,6 +2192,12 @@ the same (number of) parameters.
 	__isl_give isl_set *isl_set_intersect(
 		__isl_take isl_set *set1,
 		__isl_take isl_set *set2);
+	__isl_give isl_union_set *isl_union_set_intersect_params(
+		__isl_take isl_union_set *uset,
+		__isl_take isl_set *set);
+	__isl_give isl_union_map *isl_union_map_intersect_params(
+		__isl_take isl_union_map *umap,
+		__isl_take isl_set *set);
 	__isl_give isl_union_set *isl_union_set_intersect(
 		__isl_take isl_union_set *uset1,
 		__isl_take isl_union_set *uset2);

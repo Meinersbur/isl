@@ -574,6 +574,71 @@ __isl_give isl_union_set *isl_union_set_subtract(
 	return isl_union_map_subtract(uset1, uset2);
 }
 
+struct isl_union_map_gen_bin_set_data {
+	isl_set *set;
+	isl_union_map *res;
+};
+
+static int intersect_params_entry(void **entry, void *user)
+{
+	struct isl_union_map_gen_bin_set_data *data = user;
+	isl_map *map = *entry;
+	int empty;
+
+	map = isl_map_copy(map);
+	map = isl_map_intersect_params(map, isl_set_copy(data->set));
+
+	empty = isl_map_is_empty(map);
+	if (empty < 0) {
+		isl_map_free(map);
+		return -1;
+	}
+
+	data->res = isl_union_map_add_map(data->res, map);
+
+	return 0;
+}
+
+static __isl_give isl_union_map *gen_bin_set_op(__isl_take isl_union_map *umap,
+	__isl_take isl_set *set, int (*fn)(void **, void *))
+{
+	struct isl_union_map_gen_bin_set_data data = { NULL, NULL };
+
+	umap = isl_union_map_align_params(umap, isl_set_get_space(set));
+	set = isl_set_align_params(set, isl_union_map_get_space(umap));
+
+	if (!umap || !set)
+		goto error;
+
+	data.set = set;
+	data.res = isl_union_map_alloc(isl_space_copy(umap->dim),
+				       umap->table.n);
+	if (isl_hash_table_foreach(umap->dim->ctx, &umap->table,
+				   fn, &data) < 0)
+		goto error;
+
+	isl_union_map_free(umap);
+	isl_set_free(set);
+	return data.res;
+error:
+	isl_union_map_free(umap);
+	isl_set_free(set);
+	isl_union_map_free(data.res);
+	return NULL;
+}
+
+__isl_give isl_union_map *isl_union_map_intersect_params(
+	__isl_take isl_union_map *umap, __isl_take isl_set *set)
+{
+	return gen_bin_set_op(umap, set, &intersect_params_entry);
+}
+
+__isl_give isl_union_set *isl_union_set_intersect_params(
+	__isl_take isl_union_set *uset, __isl_take isl_set *set)
+{
+	return isl_union_map_intersect_params(uset, set);
+}
+
 struct isl_union_map_match_bin_data {
 	isl_union_map *umap2;
 	isl_union_map *res;

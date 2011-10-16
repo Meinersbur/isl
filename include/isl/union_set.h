@@ -51,6 +51,9 @@ __isl_give isl_union_set *isl_union_set_subtract(
 __isl_export
 __isl_give isl_union_set *isl_union_set_intersect(
 	__isl_take isl_union_set *uset1, __isl_take isl_union_set *uset2);
+__isl_export
+__isl_give isl_union_set *isl_union_set_intersect_params(
+	__isl_take isl_union_set *uset, __isl_take isl_set *set);
 __isl_give isl_union_set *isl_union_set_product(__isl_take isl_union_set *uset1,
 	__isl_take isl_union_set *uset2);
 __isl_export
