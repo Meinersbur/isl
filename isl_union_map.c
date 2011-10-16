@@ -840,9 +840,15 @@ static int intersect_domain_entry(void **entry, void *user)
 	return 0;
 }
 
+/* Intersect the domain of "umap" with "uset".
+ * If "uset" is a parameters domain, then intersect the parameter
+ * domain of "umap" with this set.
+ */
 __isl_give isl_union_map *isl_union_map_intersect_domain(
 	__isl_take isl_union_map *umap, __isl_take isl_union_set *uset)
 {
+	if (isl_union_set_is_params(uset))
+		return union_map_intersect_params(umap, uset);
 	return gen_bin_op(umap, uset, &intersect_domain_entry);
 }
 
