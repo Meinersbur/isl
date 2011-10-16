@@ -744,6 +744,38 @@ error:
 	return NULL;
 }
 
+static int gist_params_entry(void **entry, void *user)
+{
+	struct isl_union_map_gen_bin_set_data *data = user;
+	isl_map *map = *entry;
+	int empty;
+
+	map = isl_map_copy(map);
+	map = isl_map_gist_params(map, isl_set_copy(data->set));
+
+	empty = isl_map_is_empty(map);
+	if (empty < 0) {
+		isl_map_free(map);
+		return -1;
+	}
+
+	data->res = isl_union_map_add_map(data->res, map);
+
+	return 0;
+}
+
+__isl_give isl_union_map *isl_union_map_gist_params(
+	__isl_take isl_union_map *umap, __isl_take isl_set *set)
+{
+	return gen_bin_set_op(umap, set, &gist_params_entry);
+}
+
+__isl_give isl_union_set *isl_union_set_gist_params(
+	__isl_take isl_union_set *uset, __isl_take isl_set *set)
+{
+	return isl_union_map_gist_params(uset, set);
+}
+
 __isl_give isl_union_map *isl_union_map_gist(__isl_take isl_union_map *umap,
 	__isl_take isl_union_map *context)
 {

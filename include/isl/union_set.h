@@ -59,6 +59,9 @@ __isl_give isl_union_set *isl_union_set_product(__isl_take isl_union_set *uset1,
 __isl_export
 __isl_give isl_union_set *isl_union_set_gist(__isl_take isl_union_set *uset,
 	__isl_take isl_union_set *context);
+__isl_export
+__isl_give isl_union_set *isl_union_set_gist_params(
+	__isl_take isl_union_set *uset, __isl_take isl_set *set);
 
 __isl_export
 __isl_give isl_union_set *isl_union_set_apply(

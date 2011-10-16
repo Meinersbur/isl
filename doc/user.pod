@@ -2372,6 +2372,9 @@ instead.
 	__isl_give isl_union_set *isl_union_set_gist(
 		__isl_take isl_union_set *uset,
 		__isl_take isl_union_set *context);
+	__isl_give isl_union_set *isl_union_set_gist_params(
+		__isl_take isl_union_set *uset,
+		__isl_take isl_set *set);
 	__isl_give isl_basic_map *isl_basic_map_gist(
 		__isl_take isl_basic_map *bmap,
 		__isl_take isl_basic_map *context);
@@ -2383,6 +2386,9 @@ instead.
 	__isl_give isl_union_map *isl_union_map_gist(
 		__isl_take isl_union_map *umap,
 		__isl_take isl_union_map *context);
+	__isl_give isl_union_map *isl_union_map_gist_params(
+		__isl_take isl_union_map *umap,
+		__isl_take isl_set *set);
 
 The gist operation returns a set or relation that has the
 same intersection with the context as the input set or relation.
