@@ -639,6 +639,13 @@ __isl_give isl_union_set *isl_union_set_intersect_params(
 	return isl_union_map_intersect_params(uset, set);
 }
 
+static __isl_give isl_union_map *union_map_intersect_params(
+	__isl_take isl_union_map *umap, __isl_take isl_union_set *uset)
+{
+	return isl_union_map_intersect_params(umap,
+						isl_set_from_union_set(uset));
+}
+
 struct isl_union_map_match_bin_data {
 	isl_union_map *umap2;
 	isl_union_map *res;
@@ -712,10 +719,29 @@ __isl_give isl_union_map *isl_union_map_intersect(
 	return match_bin_op(umap1, umap2, &isl_map_intersect);
 }
 
+/* Compute the intersection of the two union_sets.
+ * As a special case, if exactly one of the two union_sets
+ * is a parameter domain, then intersect the parameter domain
+ * of the other one with this set.
+ */
 __isl_give isl_union_set *isl_union_set_intersect(
 	__isl_take isl_union_set *uset1, __isl_take isl_union_set *uset2)
 {
+	int p1, p2;
+
+	p1 = isl_union_set_is_params(uset1);
+	p2 = isl_union_set_is_params(uset2);
+	if (p1 < 0 || p2 < 0)
+		goto error;
+	if (!p1 && p2)
+		return union_map_intersect_params(uset1, uset2);
+	if (p1 && !p2)
+		return union_map_intersect_params(uset2, uset1);
 	return isl_union_map_intersect(uset1, uset2);
+error:
+	isl_union_set_free(uset1);
+	isl_union_set_free(uset2);
+	return NULL;
 }
 
 __isl_give isl_union_map *isl_union_map_gist(__isl_take isl_union_map *umap,
