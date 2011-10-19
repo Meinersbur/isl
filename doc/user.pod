@@ -2287,6 +2287,9 @@ the same (number of) parameters.
 	__isl_give isl_map *isl_map_subtract(
 		__isl_take isl_map *map1,
 		__isl_take isl_map *map2);
+	__isl_give isl_map *isl_map_subtract_domain(
+		__isl_take isl_map *map,
+		__isl_take isl_set *dom);
 	__isl_give isl_union_set *isl_union_set_subtract(
 		__isl_take isl_union_set *uset1,
 		__isl_take isl_union_set *uset2);

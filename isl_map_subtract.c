@@ -536,6 +536,32 @@ struct isl_set *isl_set_subtract(struct isl_set *set1, struct isl_set *set2)
 			(struct isl_map *)set1, (struct isl_map *)set2);
 }
 
+/* Remove the elements of "dom" from the domain of "map".
+ */
+static __isl_give isl_map *map_subtract_domain(__isl_take isl_map *map,
+	__isl_take isl_set *dom)
+{
+	isl_map *ext_dom;
+
+	if (!isl_map_compatible_domain(map, dom))
+		isl_die(isl_set_get_ctx(dom), isl_error_invalid,
+			"incompatible spaces", goto error);
+	
+	ext_dom = isl_map_universe(isl_map_get_space(map));
+	ext_dom = isl_map_intersect_domain(ext_dom, dom);
+	return isl_map_subtract(map, ext_dom);
+error:
+	isl_map_free(map);
+	isl_set_free(dom);
+	return NULL;
+}
+
+__isl_give isl_map *isl_map_subtract_domain(__isl_take isl_map *map,
+	__isl_take isl_set *dom)
+{
+	return isl_map_align_params_map_map_and(map, dom, &map_subtract_domain);
+}
+
 /* A diff collector that aborts as soon as its add function is called,
  * setting empty to 0.
  */
