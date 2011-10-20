@@ -859,7 +859,8 @@ static struct isl_tab *set_row_cst_to_div(struct isl_tab *tab, int row, int div)
 	} else {
 		int dcol = tab->var[tab->n_var - tab->n_div + div].index;
 
-		isl_int_set_si(tab->mat->row[row][2 + tab->M + dcol], 1);
+		isl_int_add_ui(tab->mat->row[row][2 + tab->M + dcol],
+				tab->mat->row[row][2 + tab->M + dcol], 1);
 	}
 
 	return tab;

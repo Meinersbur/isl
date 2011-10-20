@@ -1353,6 +1353,15 @@ void test_lexmin(struct isl_ctx *ctx)
 	assert(isl_map_is_equal(map, map2));
 	isl_map_free(map);
 	isl_map_free(map2);
+
+	str = "{ T[a] -> S[b, c] : a = 4b-2c and c >= b }";
+	map = isl_map_read_from_str(ctx, str);
+	map = isl_map_lexmin(map);
+	str = "{ T[a] -> S[b, c] : 2b = a and 2c = a }";
+	map2 = isl_map_read_from_str(ctx, str);
+	assert(isl_map_is_equal(map, map2));
+	isl_map_free(map);
+	isl_map_free(map2);
 }
 
 struct must_may {
