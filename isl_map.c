@@ -4503,7 +4503,9 @@ __isl_give isl_map *isl_map_alloc_space(__isl_take isl_space *dim, int n,
 
 	if (!dim)
 		return NULL;
-	isl_assert(dim->ctx, n >= 0, return NULL);
+	if (n < 0)
+		isl_die(dim->ctx, isl_error_internal,
+			"negative number of basic maps", goto error);
 	map = isl_alloc(dim->ctx, struct isl_map,
 			sizeof(struct isl_map) +
 			(n - 1) * sizeof(struct isl_basic_map *));
