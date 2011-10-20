@@ -1,3 +1,16 @@
+version: 0.08
+date: Fri Oct 21 12:36:20 CEST 2011
+changes:
+	- improved parsing
+	- drop isl_div abstraction
+	- rename isl_dim to isl_space
+	- |-
+	  explicitly differentiate between spaces of maps,
+	  sets and parameter sets
+	- add support for identifiers
+	- add support for (piecewise) multi quasi-affine expressions
+	- preliminary Python bindings
+---
 version: 0.07
 date: Tue Jul 12 19:34:51 CEST 2011
 changes:
