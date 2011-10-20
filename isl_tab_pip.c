@@ -828,7 +828,7 @@ static struct isl_vec *ineq_for_div(struct isl_basic_set *bset, unsigned div)
 }
 
 /* Given a row in the tableau and a div that was created
- * using get_row_split_div and that been constrained to equality, i.e.,
+ * using get_row_split_div and that has been constrained to equality, i.e.,
  *
  *		d = floor(\sum_i {a_i} y_i) = \sum_i {a_i} y_i
  *
