@@ -16,7 +16,7 @@ extract_interface_SOURCES = \
 extract_interface_LDADD = \
 	-lclangFrontend -lclangSerialization -lclangParse -lclangSema \
 	-lclangAnalysis -lclangAST -lclangLex -lclangBasic -lclangDriver \
-	$(CLANG_LIBS)
+	$(CLANG_LIBS) $(CLANG_LDFLAGS)
 
 test: extract_interface
 	./extract_interface$(EXEEXT) $(INCLUDES) $(srcdir)/all.h
