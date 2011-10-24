@@ -3752,11 +3752,13 @@ for each iteration of the sink access, which iteration
 of which of the source access relations was the last
 to access the same data element before the given iteration
 of the sink access.
+The resulting dependence relations map source iterations
+to the corresponding sink iterations.
 To compute standard flow dependences, the sink should be
 a read, while the sources should be writes.
 If any of the source accesses are marked as being I<may>
-accesses, then there will be a dependence to the last
-I<must> access B<and> to any I<may> access that follows
+accesses, then there will be a dependence from the last
+I<must> access B<and> from any I<may> access that follows
 this last I<must> access.
 In particular, if I<all> sources are I<may> accesses,
 then memory based dependence analysis is performed.
