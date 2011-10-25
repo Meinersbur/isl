@@ -1068,7 +1068,7 @@ __isl_give isl_qpolynomial *FN(PW,opt)(__isl_take PW *pw, int max)
 	if (pw->n == 0) {
 		isl_space *dim = isl_space_copy(pw->dim);
 		FN(PW,free)(pw);
-		return isl_qpolynomial_zero_on_domain(dim);
+		return isl_qpolynomial_zero_on_domain(isl_space_domain(dim));
 	}
 
 	opt = FN(EL,opt_on_domain)(FN(EL,copy)(pw->p[0].FIELD),
