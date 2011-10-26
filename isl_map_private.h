@@ -317,6 +317,9 @@ __isl_give isl_map *isl_map_align_params_map_map_and(
 	__isl_take isl_map *map1, __isl_take isl_map *map2,
 	__isl_give isl_map *(*fn)(__isl_take isl_map *map1,
 				    __isl_take isl_map *map2));
+int isl_map_align_params_map_map_and_test(__isl_keep isl_map *map1,
+	__isl_keep isl_map *map2,
+	int (*fn)(__isl_keep isl_map *map1, __isl_keep isl_map *map2));
 
 int isl_basic_map_foreach_lexopt(__isl_keep isl_basic_map *bmap, int max,
 	int (*fn)(__isl_take isl_basic_set *dom, __isl_take isl_aff_list *list,

@@ -911,7 +911,7 @@ error:
 	return NULL;
 }
 
-static int align_params_map_map_and_test(__isl_keep isl_map *map1,
+int isl_map_align_params_map_map_and_test(__isl_keep isl_map *map1,
 	__isl_keep isl_map *map2,
 	int (*fn)(__isl_keep isl_map *map1, __isl_keep isl_map *map2))
 {
@@ -6730,7 +6730,7 @@ static int map_is_equal(__isl_keep isl_map *map1, __isl_keep isl_map *map2)
 
 int isl_map_is_equal(__isl_keep isl_map *map1, __isl_keep isl_map *map2)
 {
-	return align_params_map_map_and_test(map1, map2, &map_is_equal);
+	return isl_map_align_params_map_map_and_test(map1, map2, &map_is_equal);
 }
 
 int isl_basic_map_is_strict_subset(
