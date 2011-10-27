@@ -1895,6 +1895,14 @@ __isl_give isl_map *isl_map_gist_domain(__isl_take isl_map *map,
 	return isl_map_gist(map, map_context);
 }
 
+__isl_give isl_map *isl_map_gist_range(__isl_take isl_map *map,
+	__isl_take isl_set *context)
+{
+	isl_map *map_context = isl_map_universe(isl_map_get_space(map));
+	map_context = isl_map_intersect_range(map_context, context);
+	return isl_map_gist(map, map_context);
+}
+
 __isl_give isl_map *isl_map_gist_params(__isl_take isl_map *map,
 	__isl_take isl_set *context)
 {
