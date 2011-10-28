@@ -1768,10 +1768,8 @@ struct isl_basic_map *isl_basic_map_gist(struct isl_basic_map *bmap,
 		return bmap;
 	}
 	if (isl_basic_map_plain_is_empty(context)) {
-		isl_space *dim = isl_space_copy(bmap->dim);
-		isl_basic_map_free(context);
 		isl_basic_map_free(bmap);
-		return isl_basic_map_universe(dim);
+		return context;
 	}
 	if (isl_basic_map_plain_is_empty(bmap)) {
 		isl_basic_map_free(context);
@@ -1809,10 +1807,8 @@ __isl_give isl_map *isl_map_gist_basic_map(__isl_take isl_map *map,
 		goto error;;
 
 	if (isl_basic_map_plain_is_empty(context)) {
-		isl_space *dim = isl_space_copy(map->dim);
-		isl_basic_map_free(context);
 		isl_map_free(map);
-		return isl_map_universe(dim);
+		return isl_map_from_basic_map(context);
 	}
 
 	context = isl_basic_map_remove_redundancies(context);
