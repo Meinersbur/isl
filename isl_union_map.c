@@ -791,6 +791,8 @@ __isl_give isl_union_map *isl_union_map_gist(__isl_take isl_union_map *umap,
 __isl_give isl_union_set *isl_union_set_gist(__isl_take isl_union_set *uset,
 	__isl_take isl_union_set *context)
 {
+	if (isl_union_set_is_params(context))
+		return union_map_gist_params(uset, context);
 	return isl_union_map_gist(uset, context);
 }
 
