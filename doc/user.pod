@@ -1725,6 +1725,10 @@ i.e., whether both domain and range are nested relations.
 		__isl_take isl_map *bmap);
 	__isl_give isl_set *isl_map_range(
 		__isl_take isl_map *map);
+	__isl_give isl_set *isl_union_set_params(
+		__isl_take isl_union_set *uset);
+	__isl_give isl_set *isl_union_map_params(
+		__isl_take isl_union_map *umap);
 	__isl_give isl_union_set *isl_union_map_domain(
 		__isl_take isl_union_map *umap);
 	__isl_give isl_union_set *isl_union_map_range(

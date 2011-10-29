@@ -1463,6 +1463,37 @@ __isl_give isl_union_map *isl_union_map_reverse(__isl_take isl_union_map *umap)
 	return cond_un_op(umap, &reverse_entry);
 }
 
+static int params_entry(void **entry, void *user)
+{
+	isl_map *map = *entry;
+	isl_union_set **res = user;
+
+	*res = isl_union_set_add_set(*res, isl_map_params(isl_map_copy(map)));
+
+	return 0;
+}
+
+/* Compute the parameter domain of the given union map.
+ */
+__isl_give isl_set *isl_union_map_params(__isl_take isl_union_map *umap)
+{
+	int empty;
+
+	empty = isl_union_map_is_empty(umap);
+	if (empty < 0)
+		return isl_union_map_free(umap);
+	if (empty)
+		return isl_set_empty(isl_union_map_get_space(umap));
+	return isl_set_from_union_set(cond_un_op(umap, &params_entry));
+}
+
+/* Compute the parameter domain of the given union set.
+ */
+__isl_give isl_set *isl_union_set_params(__isl_take isl_union_set *uset)
+{
+	return isl_union_map_params(uset);
+}
+
 static int domain_entry(void **entry, void *user)
 {
 	isl_map *map = *entry;
