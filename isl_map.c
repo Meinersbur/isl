@@ -492,6 +492,7 @@ __isl_give isl_basic_map *isl_basic_map_set_dim_name(
 	__isl_take isl_basic_map *bmap,
 	enum isl_dim_type type, unsigned pos, const char *s)
 {
+	bmap = isl_basic_map_cow(bmap);
 	if (!bmap)
 		return NULL;
 	bmap->dim = isl_space_set_dim_name(bmap->dim, type, pos, s);
@@ -508,6 +509,7 @@ __isl_give isl_map *isl_map_set_dim_name(__isl_take isl_map *map,
 {
 	int i;
 
+	map = isl_map_cow(map);
 	if (!map)
 		return NULL;
 
