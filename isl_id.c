@@ -66,18 +66,29 @@ error:
 	return NULL;
 }
 
-static int isl_id_has_name(const void *entry, const void *val)
+struct isl_name_and_user {
+	const char *name;
+	void *user;
+};
+
+static int isl_id_has_name_and_user(const void *entry, const void *val)
 {
 	isl_id *id = (isl_id *)entry;
-	const char *s = (const char *)val;
+	struct isl_name_and_user *nu = (struct isl_name_and_user *) val;
 
-	return !strcmp(id->name, s);
+	if (id->user != nu->user)
+		return 0;
+	if (!id->name && !nu->name)
+		return 1;
+
+	return !strcmp(id->name, nu->name);
 }
 
 __isl_give isl_id *isl_id_alloc(isl_ctx *ctx, const char *name, void *user)
 {
 	struct isl_hash_table_entry *entry;
 	uint32_t id_hash;
+	struct isl_name_and_user nu = { name, user };
 
 	id_hash = isl_hash_init();
 	if (name)
@@ -85,7 +96,7 @@ __isl_give isl_id *isl_id_alloc(isl_ctx *ctx, const char *name, void *user)
 	else
 		id_hash = isl_hash_builtin(id_hash, user);
 	entry = isl_hash_table_find(ctx, &ctx->id_table, id_hash,
-					isl_id_has_name, name, 1);
+					isl_id_has_name_and_user, &nu, 1);
 	if (!entry)
 		return NULL;
 	if (entry->data)
