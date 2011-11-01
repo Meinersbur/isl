@@ -5137,6 +5137,7 @@ static void sol_pma_add(struct isl_sol_pma *sol,
 	isl_local_space_free(ls);
 	isl_mat_free(M);
 	dom = isl_basic_set_simplify(dom);
+	dom = isl_basic_set_finalize(dom);
 	pma = isl_pw_multi_aff_alloc(isl_set_from_basic_set(dom), maff);
 	sol->pma = isl_pw_multi_aff_add_disjoint(sol->pma, pma);
 	if (!sol->pma)
