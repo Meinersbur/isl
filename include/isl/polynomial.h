@@ -116,6 +116,8 @@ int isl_qpolynomial_foreach_term(__isl_keep isl_qpolynomial *qp,
 __isl_give isl_qpolynomial *isl_qpolynomial_eval(
 	__isl_take isl_qpolynomial *qp, __isl_take isl_point *pnt);
 
+__isl_give isl_qpolynomial *isl_qpolynomial_gist_params(
+	__isl_take isl_qpolynomial *qp, __isl_take isl_set *context);
 __isl_give isl_qpolynomial *isl_qpolynomial_gist(
 	__isl_take isl_qpolynomial *qp, __isl_take isl_set *context);
 

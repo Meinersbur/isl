@@ -2567,6 +2567,15 @@ error:
 	return NULL;
 }
 
+__isl_give isl_qpolynomial *isl_qpolynomial_gist_params(
+	__isl_take isl_qpolynomial *qp, __isl_take isl_set *context)
+{
+	isl_space *space = isl_qpolynomial_get_domain_space(qp);
+	isl_set *dom_context = isl_set_universe(space);
+	dom_context = isl_set_intersect_params(dom_context, context);
+	return isl_qpolynomial_gist(qp, dom_context);
+}
+
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_from_qpolynomial(
 	__isl_take isl_qpolynomial *qp)
 {
