@@ -611,6 +611,15 @@ error:
 	return NULL;
 }
 
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_gist_params(
+	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_set *context)
+{
+	isl_space *space = isl_qpolynomial_fold_get_domain_space(fold);
+	isl_set *dom_context = isl_set_universe(space);
+	dom_context = isl_set_intersect_params(dom_context, context);
+	return isl_qpolynomial_fold_gist(fold, dom_context);
+}
+
 #define HAS_TYPE
 
 #undef PW
