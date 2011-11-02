@@ -590,6 +590,8 @@ __isl_give UNION *FN(UNION,intersect_domain)(__isl_take UNION *u,
 __isl_give UNION *FN(UNION,gist)(__isl_take UNION *u,
 	__isl_take isl_union_set *uset)
 {
+	if (isl_union_set_is_params(uset))
+		return FN(UNION,gist_params)(u, isl_set_from_union_set(uset));
 	return match_set_op(u, uset, &FN(PW,gist));
 }
 
