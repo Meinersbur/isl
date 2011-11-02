@@ -107,6 +107,9 @@ __isl_give isl_basic_set *isl_basic_set_intersect(
 		__isl_take isl_basic_set *bset1,
 		__isl_take isl_basic_set *bset2);
 __isl_export
+__isl_give isl_basic_set *isl_basic_set_intersect_params(
+	__isl_take isl_basic_set *bset1, __isl_take isl_basic_set *bset2);
+__isl_export
 __isl_give isl_basic_set *isl_basic_set_apply(
 		__isl_take isl_basic_set *bset,
 		__isl_take isl_basic_map *bmap);

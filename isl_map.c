@@ -2429,6 +2429,12 @@ struct isl_basic_set *isl_basic_set_intersect(
 			(struct isl_basic_map *)bset2);
 }
 
+__isl_give isl_basic_set *isl_basic_set_intersect_params(
+	__isl_take isl_basic_set *bset1, __isl_take isl_basic_set *bset2)
+{
+	return isl_basic_set_intersect(bset1, bset2);
+}
+
 /* Special case of isl_map_intersect, where both map1 and map2
  * are convex, without any divs and such that either map1 or map2
  * contains a single constraint.  This constraint is then simply
