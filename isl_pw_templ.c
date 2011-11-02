@@ -645,8 +645,14 @@ __isl_give isl_set *FN(PW,domain)(__isl_take PW *pw)
 	return dom;
 }
 
-static __isl_give PW *FN(PW,intersect_domain_aligned)(__isl_take PW *pw,
-	__isl_take isl_set *set)
+/* Restrict the domain of "pw" by combining each cell
+ * with "set" through a call to "fn", where "fn" may be
+ * isl_set_intersect or isl_set_intersect_params.
+ */
+static __isl_give PW *FN(PW,intersect_aligned)(__isl_take PW *pw,
+	__isl_take isl_set *set,
+	__isl_give isl_set *(*fn)(__isl_take isl_set *set1,
+				    __isl_take isl_set *set2))
 {
 	int i;
 
@@ -664,7 +670,7 @@ static __isl_give PW *FN(PW,intersect_domain_aligned)(__isl_take PW *pw,
 
 	for (i = pw->n - 1; i >= 0; --i) {
 		isl_basic_set *aff;
-		pw->p[i].set = isl_set_intersect(pw->p[i].set, isl_set_copy(set));
+		pw->p[i].set = fn(pw->p[i].set, isl_set_copy(set));
 		if (!pw->p[i].set)
 			goto error;
 		aff = isl_set_affine_hull(isl_set_copy(pw->p[i].set));
@@ -689,11 +695,32 @@ error:
 	return NULL;
 }
 
+static __isl_give PW *FN(PW,intersect_domain_aligned)(__isl_take PW *pw,
+	__isl_take isl_set *set)
+{
+	return FN(PW,intersect_aligned)(pw, set, &isl_set_intersect);
+}
+
 __isl_give PW *FN(PW,intersect_domain)(__isl_take PW *pw,
 	__isl_take isl_set *context)
 {
 	return FN(PW,align_params_pw_set_and)(pw, context,
 					&FN(PW,intersect_domain_aligned));
+}
+
+static __isl_give PW *FN(PW,intersect_params_aligned)(__isl_take PW *pw,
+	__isl_take isl_set *set)
+{
+	return FN(PW,intersect_aligned)(pw, set, &isl_set_intersect_params);
+}
+
+/* Intersect the domain of "pw" with the parameter domain "context".
+ */
+__isl_give PW *FN(PW,intersect_params)(__isl_take PW *pw,
+	__isl_take isl_set *context)
+{
+	return FN(PW,align_params_pw_set_and)(pw, context,
+					&FN(PW,intersect_params_aligned));
 }
 
 static __isl_give PW *FN(PW,gist_aligned)(__isl_take PW *pw,
