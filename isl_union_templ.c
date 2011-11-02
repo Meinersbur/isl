@@ -487,6 +487,15 @@ __isl_give UNION *FN(UNION,intersect_params)(__isl_take UNION *u,
 	return any_set_op(u, set, &FN(PW,intersect_params));
 }
 
+/* Compute the gist of the domain of "u" with respect to
+ * the parameter domain "context".
+ */
+__isl_give UNION *FN(UNION,gist_params)(__isl_take UNION *u,
+	__isl_take isl_set *set)
+{
+	return any_set_op(u, set, &FN(PW,gist_params));
+}
+
 S(UNION,match_set_data) {
 	isl_union_set *uset;
 	UNION *res;

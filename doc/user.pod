@@ -3565,6 +3565,10 @@ obviously equal, use
 		__isl_take isl_pw_qpolynomial *pwqp,
 		__isl_take isl_set *context);
 
+	__isl_give isl_union_pw_qpolynomial *
+	isl_union_pw_qpolynomial_gist_params(
+		__isl_take isl_union_pw_qpolynomial *upwqp,
+		__isl_take isl_set *context);
 	__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_gist(
 		__isl_take isl_union_pw_qpolynomial *upwqp,
 		__isl_take isl_union_set *context);
@@ -3765,6 +3769,10 @@ obviously equal, use
 	__isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_fold_gist(
 		__isl_take isl_union_pw_qpolynomial_fold *upwf,
 		__isl_take isl_union_set *context);
+	__isl_give isl_union_pw_qpolynomial_fold *
+	isl_union_pw_qpolynomial_fold_gist_params(
+		__isl_take isl_union_pw_qpolynomial_fold *upwf,
+		__isl_take isl_set *context);
 
 The gist operation applies the gist operation to each of
 the cells in the domain of the input piecewise quasipolynomial reduction.
