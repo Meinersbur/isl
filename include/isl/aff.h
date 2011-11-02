@@ -315,6 +315,9 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_intersect_params(
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_intersect_domain(
 	__isl_take isl_pw_multi_aff *pma, __isl_take isl_set *set);
 
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_gist(
+	__isl_take isl_pw_multi_aff *pma, __isl_take isl_set *set);
+
 int isl_pw_multi_aff_foreach_piece(__isl_keep isl_pw_multi_aff *pma,
 	int (*fn)(__isl_take isl_set *set, __isl_take isl_multi_aff *maff,
 		    void *user), void *user);
