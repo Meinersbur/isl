@@ -724,7 +724,11 @@ __isl_give PW *FN(PW,intersect_params)(__isl_take PW *pw,
 }
 
 static __isl_give PW *FN(PW,gist_aligned)(__isl_take PW *pw,
-	__isl_take isl_set *context)
+	__isl_take isl_set *context,
+	__isl_give EL *(*fn_el)(__isl_take EL *el,
+				    __isl_take isl_set *set),
+	__isl_give isl_set *(*fn_dom)(__isl_take isl_set *set,
+				    __isl_take isl_basic_set *bset))
 {
 	int i;
 	isl_basic_set *hull = NULL;
@@ -755,10 +759,9 @@ static __isl_give PW *FN(PW,gist_aligned)(__isl_take PW *pw,
 						 isl_set_copy(context));
 		if (!pw->p[i].set)
 			goto error;
-		pw->p[i].FIELD = FN(EL,gist)(pw->p[i].FIELD,
+		pw->p[i].FIELD = fn_el(pw->p[i].FIELD,
 					     isl_set_copy(pw->p[i].set));
-		pw->p[i].set = isl_set_gist_basic_set(pw->p[i].set,
-						isl_basic_set_copy(hull));
+		pw->p[i].set = fn_dom(pw->p[i].set, isl_basic_set_copy(hull));
 		if (!pw->p[i].set)
 			goto error;
 		if (isl_set_plain_is_empty(pw->p[i].set)) {
@@ -781,9 +784,31 @@ error:
 	return NULL;
 }
 
+static __isl_give PW *FN(PW,gist_domain_aligned)(__isl_take PW *pw,
+	__isl_take isl_set *set)
+{
+	return FN(PW,gist_aligned)(pw, set, &FN(EL,gist),
+					&isl_set_gist_basic_set);
+}
+
 __isl_give PW *FN(PW,gist)(__isl_take PW *pw, __isl_take isl_set *context)
 {
-	return FN(PW,align_params_pw_set_and)(pw, context, &FN(PW,gist_aligned));
+	return FN(PW,align_params_pw_set_and)(pw, context,
+						&FN(PW,gist_domain_aligned));
+}
+
+static __isl_give PW *FN(PW,gist_params_aligned)(__isl_take PW *pw,
+	__isl_take isl_set *set)
+{
+	return FN(PW,gist_aligned)(pw, set, &FN(EL,gist_params),
+					&isl_set_gist_params_basic_set);
+}
+
+__isl_give PW *FN(PW,gist_params)(__isl_take PW *pw,
+	__isl_take isl_set *context)
+{
+	return FN(PW,align_params_pw_set_and)(pw, context,
+						&FN(PW,gist_params_aligned));
 }
 
 __isl_give PW *FN(PW,coalesce)(__isl_take PW *pw)

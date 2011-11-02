@@ -249,6 +249,8 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_coalesce(
 	__isl_take isl_pw_qpolynomial *pwqp);
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_gist(
 	__isl_take isl_pw_qpolynomial *pwqp, __isl_take isl_set *context);
+__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_gist_params(
+	__isl_take isl_pw_qpolynomial *pwqp, __isl_take isl_set *context);
 
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_split_periods(
 	__isl_take isl_pw_qpolynomial *pwqp, int max_periods);
@@ -405,6 +407,8 @@ void isl_pw_qpolynomial_fold_dump(__isl_keep isl_pw_qpolynomial_fold *pwf);
 __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_coalesce(
 	__isl_take isl_pw_qpolynomial_fold *pwf);
 __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_gist(
+	__isl_take isl_pw_qpolynomial_fold *pwf, __isl_take isl_set *context);
+__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_gist_params(
 	__isl_take isl_pw_qpolynomial_fold *pwf, __isl_take isl_set *context);
 
 __isl_give isl_qpolynomial *isl_pw_qpolynomial_fold_max(

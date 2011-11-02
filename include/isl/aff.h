@@ -182,6 +182,8 @@ __isl_give isl_pw_aff *isl_pw_aff_drop_dims(__isl_take isl_pw_aff *pwaff,
 __isl_give isl_pw_aff *isl_pw_aff_coalesce(__isl_take isl_pw_aff *pwqp);
 __isl_give isl_pw_aff *isl_pw_aff_gist(__isl_take isl_pw_aff *pwaff,
 	__isl_take isl_set *context);
+__isl_give isl_pw_aff *isl_pw_aff_gist_params(__isl_take isl_pw_aff *pwaff,
+	__isl_take isl_set *context);
 
 int isl_pw_aff_foreach_piece(__isl_keep isl_pw_aff *pwaff,
 	int (*fn)(__isl_take isl_set *set, __isl_take isl_aff *aff,
@@ -315,6 +317,8 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_intersect_params(
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_intersect_domain(
 	__isl_take isl_pw_multi_aff *pma, __isl_take isl_set *set);
 
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_gist_params(
+	__isl_take isl_pw_multi_aff *pma, __isl_take isl_set *set);
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_gist(
 	__isl_take isl_pw_multi_aff *pma, __isl_take isl_set *set);
 
