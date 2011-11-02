@@ -4975,9 +4975,9 @@ struct isl_set *isl_set_fix_dim_si(struct isl_set *set, unsigned dim, int value)
 		isl_map_fix_si((struct isl_map *)set, isl_dim_set, dim, value);
 }
 
-__isl_give isl_basic_map *isl_basic_map_lower_bound_si(
-		__isl_take isl_basic_map *bmap,
-		enum isl_dim_type type, unsigned pos, int value)
+static __isl_give isl_basic_map *basic_map_bound_si(
+	__isl_take isl_basic_map *bmap,
+	enum isl_dim_type type, unsigned pos, int value, int upper)
 {
 	int j;
 
@@ -4991,13 +4991,25 @@ __isl_give isl_basic_map *isl_basic_map_lower_bound_si(
 	if (j < 0)
 		goto error;
 	isl_seq_clr(bmap->ineq[j], 1 + isl_basic_map_total_dim(bmap));
-	isl_int_set_si(bmap->ineq[j][pos], 1);
-	isl_int_set_si(bmap->ineq[j][0], -value);
+	if (upper) {
+		isl_int_set_si(bmap->ineq[j][pos], -1);
+		isl_int_set_si(bmap->ineq[j][0], value);
+	} else {
+		isl_int_set_si(bmap->ineq[j][pos], 1);
+		isl_int_set_si(bmap->ineq[j][0], -value);
+	}
 	bmap = isl_basic_map_simplify(bmap);
 	return isl_basic_map_finalize(bmap);
 error:
 	isl_basic_map_free(bmap);
 	return NULL;
+}
+
+__isl_give isl_basic_map *isl_basic_map_lower_bound_si(
+	__isl_take isl_basic_map *bmap,
+	enum isl_dim_type type, unsigned pos, int value)
+{
+	return basic_map_bound_si(bmap, type, pos, value, 0);
 }
 
 struct isl_basic_set *isl_basic_set_lower_bound_dim(struct isl_basic_set *bset,
@@ -5020,8 +5032,8 @@ error:
 	return NULL;
 }
 
-__isl_give isl_map *isl_map_lower_bound_si(__isl_take isl_map *map,
-		enum isl_dim_type type, unsigned pos, int value)
+static __isl_give isl_map *map_bound_si(__isl_take isl_map *map,
+	enum isl_dim_type type, unsigned pos, int value, int upper)
 {
 	int i;
 
@@ -5031,8 +5043,8 @@ __isl_give isl_map *isl_map_lower_bound_si(__isl_take isl_map *map,
 
 	isl_assert(map->ctx, pos < isl_map_dim(map, type), goto error);
 	for (i = 0; i < map->n; ++i) {
-		map->p[i] = isl_basic_map_lower_bound_si(map->p[i],
-							 type, pos, value);
+		map->p[i] = basic_map_bound_si(map->p[i],
+						 type, pos, value, upper);
 		if (!map->p[i])
 			goto error;
 	}
@@ -5043,11 +5055,29 @@ error:
 	return NULL;
 }
 
+__isl_give isl_map *isl_map_lower_bound_si(__isl_take isl_map *map,
+	enum isl_dim_type type, unsigned pos, int value)
+{
+	return map_bound_si(map, type, pos, value, 0);
+}
+
+__isl_give isl_map *isl_map_upper_bound_si(__isl_take isl_map *map,
+	enum isl_dim_type type, unsigned pos, int value)
+{
+	return map_bound_si(map, type, pos, value, 1);
+}
+
 __isl_give isl_set *isl_set_lower_bound_si(__isl_take isl_set *set,
 		enum isl_dim_type type, unsigned pos, int value)
 {
 	return (struct isl_set *)
 		isl_map_lower_bound_si((struct isl_map *)set, type, pos, value);
+}
+
+__isl_give isl_set *isl_set_upper_bound_si(__isl_take isl_set *set,
+	enum isl_dim_type type, unsigned pos, int value)
+{
+	return isl_map_upper_bound_si(set, type, pos, value);
 }
 
 struct isl_set *isl_set_lower_bound_dim(struct isl_set *set, unsigned dim,

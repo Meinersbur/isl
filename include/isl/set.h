@@ -155,6 +155,8 @@ __isl_give isl_set *isl_set_fix_si(__isl_take isl_set *set,
 		enum isl_dim_type type, unsigned pos, int value);
 __isl_give isl_set *isl_set_lower_bound_si(__isl_take isl_set *set,
 		enum isl_dim_type type, unsigned pos, int value);
+__isl_give isl_set *isl_set_upper_bound_si(__isl_take isl_set *set,
+	enum isl_dim_type type, unsigned pos, int value);
 
 __isl_give isl_set *isl_set_equate(__isl_take isl_set *set,
 	enum isl_dim_type type1, int pos1, enum isl_dim_type type2, int pos2);
