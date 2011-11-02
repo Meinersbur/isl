@@ -997,6 +997,14 @@ error:
 	return NULL;
 }
 
+__isl_give isl_aff *isl_aff_gist_params(__isl_take isl_aff *aff,
+	__isl_take isl_set *context)
+{
+	isl_set *dom_context = isl_set_universe(isl_aff_get_domain_space(aff));
+	dom_context = isl_set_intersect_params(dom_context, context);
+	return isl_aff_gist(aff, dom_context);
+}
+
 /* Return a basic set containing those elements in the space
  * of aff where it is non-negative.
  */
