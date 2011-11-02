@@ -295,6 +295,9 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_substitute(
 __isl_give isl_qpolynomial *isl_qpolynomial_fold_eval(
 	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_point *pnt);
 
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_gist(
+	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_set *context);
+
 int isl_qpolynomial_fold_foreach_qpolynomial(
 	__isl_keep isl_qpolynomial_fold *fold,
 	int (*fn)(__isl_take isl_qpolynomial *qp, void *user), void *user);

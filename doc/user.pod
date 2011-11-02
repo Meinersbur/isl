@@ -3730,6 +3730,10 @@ obviously equal, use
 	__isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_fold_coalesce(
 		__isl_take isl_union_pw_qpolynomial_fold *upwf);
 
+	__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_gist(
+		__isl_take isl_qpolynomial_fold *fold,
+		__isl_take isl_set *context);
+
 	__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_gist(
 		__isl_take isl_pw_qpolynomial_fold *pwf,
 		__isl_take isl_set *context);
