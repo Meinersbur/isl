@@ -319,6 +319,15 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),gist)(__isl_take MULTI(BASE) *multi,
 						&FN(MULTI(BASE),gist_aligned));
 }
 
+__isl_give MULTI(BASE) *FN(MULTI(BASE),gist_params)(
+	__isl_take MULTI(BASE) *multi, __isl_take isl_set *context)
+{
+	isl_space *space = FN(MULTI(BASE),get_domain_space)(multi);
+	isl_set *dom_context = isl_set_universe(space);
+	dom_context = isl_set_intersect_params(dom_context, context);
+	return FN(MULTI(BASE),gist)(multi, dom_context);
+}
+
 __isl_give MULTI(BASE) *FN(FN(MULTI(BASE),from),LIST(BASE))(
 	__isl_take isl_space *space, __isl_take LIST(EL) *list)
 {

@@ -251,6 +251,8 @@ __isl_give isl_multi_aff *isl_multi_aff_add(__isl_take isl_multi_aff *maff1,
 __isl_give isl_multi_aff *isl_multi_aff_scale(__isl_take isl_multi_aff *maff,
 	isl_int f);
 
+__isl_give isl_multi_aff *isl_multi_aff_gist_params(
+	__isl_take isl_multi_aff *maff, __isl_take isl_set *context);
 __isl_give isl_multi_aff *isl_multi_aff_gist(__isl_take isl_multi_aff *maff,
 	__isl_take isl_set *context);
 
