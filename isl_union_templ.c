@@ -565,9 +565,16 @@ error:
 	return NULL;
 }
 
+/* Intersect the domain of "u" with "uset".
+ * If "uset" is a parameters domain, then intersect the parameter
+ * domain of "u" with this set.
+ */
 __isl_give UNION *FN(UNION,intersect_domain)(__isl_take UNION *u,
 	__isl_take isl_union_set *uset)
 {
+	if (isl_union_set_is_params(uset))
+		return FN(UNION,intersect_params)(u,
+						isl_set_from_union_set(uset));
 	return match_set_op(u, uset, &FN(PW,intersect_domain));
 }
 
