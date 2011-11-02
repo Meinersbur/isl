@@ -1871,6 +1871,15 @@ __isl_give isl_set *isl_set_gist_basic_set(__isl_take isl_set *set,
 					(struct isl_basic_map *)context);
 }
 
+__isl_give isl_set *isl_set_gist_params_basic_set(__isl_take isl_set *set,
+	__isl_take isl_basic_set *context)
+{
+	isl_space *space = isl_set_get_space(set);
+	isl_basic_set *dom_context = isl_basic_set_universe(space);
+	dom_context = isl_basic_set_intersect_params(dom_context, context);
+	return isl_set_gist_basic_set(set, dom_context);
+}
+
 __isl_give isl_set *isl_set_gist(__isl_take isl_set *set,
 	__isl_take isl_set *context)
 {
