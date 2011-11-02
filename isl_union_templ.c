@@ -415,6 +415,78 @@ error:
 	return NULL;
 }
 
+S(UNION,any_set_data) {
+	isl_set *set;
+	UNION *res;
+	__isl_give PW *(*fn)(__isl_take PW*, __isl_take isl_set*);
+};
+
+static int any_set_entry(void **entry, void *user)
+{
+	S(UNION,any_set_data) *data = user;
+	PW *pw = *entry;
+	int empty;
+
+	pw = FN(PW,copy)(pw);
+	pw = data->fn(pw, isl_set_copy(data->set));
+
+	empty = FN(PW,is_zero)(pw);
+	if (empty < 0) {
+		FN(PW,free)(pw);
+		return -1;
+	}
+	if (empty) {
+		FN(PW,free)(pw);
+		return 0;
+	}
+
+	data->res = FN(FN(UNION,add),PARTS)(data->res, pw);
+
+	return 0;
+}
+
+/* Update each element of "u" by calling "fn" on the element and "set".
+ */
+static __isl_give UNION *any_set_op(__isl_take UNION *u,
+	__isl_take isl_set *set,
+	__isl_give PW *(*fn)(__isl_take PW*, __isl_take isl_set*))
+{
+	S(UNION,any_set_data) data = { NULL, NULL, fn };
+
+	u = FN(UNION,align_params)(u, isl_set_get_space(set));
+	set = isl_set_align_params(set, FN(UNION,get_space)(u));
+
+	if (!u || !set)
+		goto error;
+
+	data.set = set;
+#ifdef HAS_TYPE
+	data.res = FN(UNION,alloc)(isl_space_copy(u->dim), u->type, u->table.n);
+#else
+	data.res = FN(UNION,alloc)(isl_space_copy(u->dim), u->table.n);
+#endif
+	if (isl_hash_table_foreach(u->dim->ctx, &u->table,
+				   &any_set_entry, &data) < 0)
+		goto error;
+
+	FN(UNION,free)(u);
+	isl_set_free(set);
+	return data.res;
+error:
+	FN(UNION,free)(u);
+	isl_set_free(set);
+	FN(UNION,free)(data.res);
+	return NULL;
+}
+
+/* Intersect the domain of "u" with the parameter domain "context".
+ */
+__isl_give UNION *FN(UNION,intersect_params)(__isl_take UNION *u,
+	__isl_take isl_set *set)
+{
+	return any_set_op(u, set, &FN(PW,intersect_params));
+}
+
 S(UNION,match_set_data) {
 	isl_union_set *uset;
 	UNION *res;
