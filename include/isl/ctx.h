@@ -139,9 +139,10 @@ typedef struct isl_ctx isl_ctx;
 
 struct isl_options *isl_ctx_options(isl_ctx *ctx);
 
-isl_ctx *isl_ctx_alloc_with_options(struct isl_arg *arg, __isl_take void *opt);
+isl_ctx *isl_ctx_alloc_with_options(struct isl_args *args,
+	__isl_take void *opt);
 isl_ctx *isl_ctx_alloc(void);
-void *isl_ctx_peek_options(isl_ctx *ctx, struct isl_arg *arg);
+void *isl_ctx_peek_options(isl_ctx *ctx, struct isl_args *args);
 int isl_ctx_parse_options(isl_ctx *ctx, int argc, char **argv, unsigned flags);
 void isl_ctx_ref(struct isl_ctx *ctx);
 void isl_ctx_deref(struct isl_ctx *ctx);
@@ -151,13 +152,13 @@ void isl_ctx_abort(isl_ctx *ctx);
 void isl_ctx_resume(isl_ctx *ctx);
 int isl_ctx_aborted(isl_ctx *ctx);
 
-#define ISL_ARG_CTX_DECL(prefix,st,arg)					\
+#define ISL_ARG_CTX_DECL(prefix,st,args)				\
 st *isl_ctx_peek_ ## prefix(isl_ctx *ctx);
 
-#define ISL_ARG_CTX_DEF(prefix,st,arg)					\
+#define ISL_ARG_CTX_DEF(prefix,st,args)					\
 st *isl_ctx_peek_ ## prefix(isl_ctx *ctx)				\
 {									\
-	return (st *)isl_ctx_peek_options(ctx, arg);			\
+	return (st *)isl_ctx_peek_options(ctx, &(args));		\
 }
 
 enum isl_error isl_ctx_last_error(isl_ctx *ctx);

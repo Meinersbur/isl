@@ -10,15 +10,15 @@ struct bound_options {
 	int			 continue_on_error;
 };
 
-struct isl_arg bound_options_arg[] = {
-ISL_ARG_CHILD(struct bound_options, isl, "isl", isl_options_arg, "isl options")
+ISL_ARGS_START(struct bound_options, bound_options_args)
+ISL_ARG_CHILD(struct bound_options, isl, "isl", &isl_options_args,
+	"isl options")
 ISL_ARG_BOOL(struct bound_options, verify, 'T', "verify", 0, NULL)
 ISL_ARG_BOOL(struct bound_options, print_all, 'A', "print-all", 0, NULL)
 ISL_ARG_BOOL(struct bound_options, continue_on_error, '\0', "continue-on-error", 0, NULL)
-ISL_ARG_END
-};
+ISL_ARGS_END
 
-ISL_ARG_DEF(bound_options, struct bound_options, bound_options_arg)
+ISL_ARG_DEF(bound_options, struct bound_options, bound_options_args)
 
 static __isl_give isl_set *set_bounds(__isl_take isl_set *set)
 {
@@ -238,7 +238,7 @@ int main(int argc, char **argv)
 	assert(options);
 	argc = bound_options_parse(options, argc, argv, ISL_ARG_ALL);
 
-	ctx = isl_ctx_alloc_with_options(bound_options_arg, options);
+	ctx = isl_ctx_alloc_with_options(&bound_options_args, options);
 
 	s = isl_stream_new_file(ctx, stdin);
 	obj = isl_stream_read_obj(s);

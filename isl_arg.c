@@ -16,7 +16,6 @@
 
 static struct isl_arg help_arg[] = {
 ISL_ARG_PHANTOM_BOOL('h', "help", NULL, "print this help, then exit")
-ISL_ARG_END
 };
 
 static void set_default_choice(struct isl_arg *arg, void *opt)
@@ -43,12 +42,12 @@ static void set_default_child(struct isl_arg *arg, void *opt)
 	if (arg->offset == (size_t) -1)
 		child = opt;
 	else {
-		child = calloc(1, arg->u.child.size);
+		child = calloc(1, arg->u.child.child->options_size);
 		*(void **)(((char *)opt) + arg->offset) = child;
 	}
 
 	if (child)
-		isl_arg_set_defaults(arg->u.child.child, child);
+		isl_args_set_defaults(arg->u.child.child, child);
 }
 
 static void set_default_user(struct isl_arg *arg, void *opt)
@@ -79,39 +78,39 @@ static void set_default_str(struct isl_arg *arg, void *opt)
 	*(const char **)(((char *)opt) + arg->offset) = str;
 }
 
-void isl_arg_set_defaults(struct isl_arg *arg, void *opt)
+void isl_args_set_defaults(struct isl_args *args, void *opt)
 {
 	int i;
 
-	for (i = 0; arg[i].type != isl_arg_end; ++i) {
-		switch (arg[i].type) {
+	for (i = 0; args->args[i].type != isl_arg_end; ++i) {
+		switch (args->args[i].type) {
 		case isl_arg_choice:
-			set_default_choice(&arg[i], opt);
+			set_default_choice(&args->args[i], opt);
 			break;
 		case isl_arg_flags:
-			set_default_flags(&arg[i], opt);
+			set_default_flags(&args->args[i], opt);
 			break;
 		case isl_arg_bool:
-			set_default_bool(&arg[i], opt);
+			set_default_bool(&args->args[i], opt);
 			break;
 		case isl_arg_child:
-			set_default_child(&arg[i], opt);
+			set_default_child(&args->args[i], opt);
 			break;
 		case isl_arg_user:
-			set_default_user(&arg[i], opt);
+			set_default_user(&args->args[i], opt);
 			break;
 		case isl_arg_int:
-			set_default_int(&arg[i], opt);
+			set_default_int(&args->args[i], opt);
 			break;
 		case isl_arg_long:
-			set_default_long(&arg[i], opt);
+			set_default_long(&args->args[i], opt);
 			break;
 		case isl_arg_ulong:
-			set_default_ulong(&arg[i], opt);
+			set_default_ulong(&args->args[i], opt);
 			break;
 		case isl_arg_arg:
 		case isl_arg_str:
-			set_default_str(&arg[i], opt);
+			set_default_str(&args->args[i], opt);
 			break;
 		case isl_arg_alias:
 		case isl_arg_footer:
@@ -130,9 +129,9 @@ static void free_args(struct isl_arg *arg, void *opt)
 		switch (arg[i].type) {
 		case isl_arg_child:
 			if (arg[i].offset == (size_t) -1)
-				free_args(arg[i].u.child.child, opt);
+				free_args(arg[i].u.child.child->args, opt);
 			else
-				isl_arg_free(arg[i].u.child.child,
+				isl_args_free(arg[i].u.child.child,
 				    *(void **)(((char *)opt) + arg[i].offset));
 			break;
 		case isl_arg_arg:
@@ -158,12 +157,12 @@ static void free_args(struct isl_arg *arg, void *opt)
 	}
 }
 
-void isl_arg_free(struct isl_arg *arg, void *opt)
+void isl_args_free(struct isl_args *args, void *opt)
 {
 	if (!opt)
 		return;
 
-	free_args(arg, opt);
+	free_args(args->args, opt);
 
 	free(opt);
 }
@@ -535,7 +534,7 @@ static void print_help(struct isl_arg *arg, const char *prefix, void *opt)
 			child = opt;
 		else
 			child = *(void **)(((char *) opt) + arg[i].offset);
-		print_help(arg[i].u.child.child, arg[i].long_name, child);
+		print_help(arg[i].u.child.child->args, arg[i].long_name, child);
 		any = 1;
 	}
 }
@@ -562,7 +561,7 @@ static int any_version(struct isl_arg *decl)
 		case isl_arg_version:
 			return 1;
 		case isl_arg_child:
-			if (any_version(decl[i].u.child.child))
+			if (any_version(decl[i].u.child.child->args))
 				return 1;
 			break;
 		default:
@@ -962,7 +961,7 @@ static int parse_child_option(struct isl_arg *decl, char **arg,
 		child = *(void **)(((char *)opt) + decl->offset);
 		prefix = decl->long_name;
 	}
-	return parse_option(decl->u.child.child, arg, prefix, child);
+	return parse_option(decl->u.child.child->args, arg, prefix, child);
 }
 
 static int parse_option(struct isl_arg *decl, char **arg,
@@ -1022,7 +1021,7 @@ static void print_version(struct isl_arg *decl)
 			decl[i].u.version.print_version();
 			break;
 		case isl_arg_child:
-			print_version(decl[i].u.child.child);
+			print_version(decl[i].u.child.child->args);
 			break;
 		default:
 			break;
@@ -1066,7 +1065,7 @@ static int next_arg(struct isl_arg *arg, int a)
 	return -1;
 }
 
-int isl_arg_parse(struct isl_arg *arg, int argc, char **argv, void *opt,
+int isl_args_parse(struct isl_args *args, int argc, char **argv, void *opt,
 	unsigned flags)
 {
 	int a = -1;
@@ -1074,26 +1073,26 @@ int isl_arg_parse(struct isl_arg *arg, int argc, char **argv, void *opt,
 	int i;
 	int n;
 
-	n = n_arg(arg);
+	n = n_arg(args->args);
 
 	for (i = 1; i < argc; ++i) {
 		if (strcmp(argv[i], "--help") == 0)
-			print_help_and_exit(arg, argv[0], opt);
+			print_help_and_exit(args->args, argv[0], opt);
 	}
 
 	for (i = 1; i < argc; ++i) {
 		if ((strcmp(argv[i], "--version") == 0 ||
-		     strcmp(argv[i], "-V") == 0) && any_version(arg))
-			print_version_and_exit(arg);
+		     strcmp(argv[i], "-V") == 0) && any_version(args->args))
+			print_version_and_exit(args->args);
 	}
 
 	while (argc > 1 + skip) {
 		int parsed;
 		if (argv[1 + skip][0] != '-') {
-			a = next_arg(arg, a);
+			a = next_arg(args->args, a);
 			if (a >= 0) {
 				char **p;
-				p = (char **)(((char *)opt)+arg[a].offset);
+				p = (char **)(((char *)opt)+args->args[a].offset);
 				free(*p);
 				*p = strdup(argv[1 + skip]);
 				argc = drop_argument(argc, argv, 1 + skip, 1);
@@ -1106,7 +1105,7 @@ int isl_arg_parse(struct isl_arg *arg, int argc, char **argv, void *opt,
 				++skip;
 			continue;
 		}
-		parsed = parse_option(arg, &argv[1 + skip], NULL, opt);
+		parsed = parse_option(args->args, &argv[1 + skip], NULL, opt);
 		if (parsed)
 			argc = drop_argument(argc, argv, 1 + skip, parsed);
 		else if (ISL_FL_ISSET(flags, ISL_ARG_ALL)) {

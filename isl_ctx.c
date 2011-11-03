@@ -10,20 +10,21 @@
 #include <isl_ctx_private.h>
 #include <isl/vec.h>
 
-static struct isl_options *find_nested_options(struct isl_arg *arg,
-	void *opt, struct isl_arg *wanted)
+static struct isl_options *find_nested_options(struct isl_args *args,
+	void *opt, struct isl_args *wanted)
 {
 	int i;
 	struct isl_options *options;
 
-	if (arg == wanted)
+	if (args == wanted)
 		return opt;
 
-	for (i = 0; arg[i].type != isl_arg_end; ++i) {
-		if (arg[i].type != isl_arg_child)
+	for (i = 0; args->args[i].type != isl_arg_end; ++i) {
+		if (args->args[i].type != isl_arg_child)
 			continue;
-		options = find_nested_options(arg[i].u.child.child,
-				*(void **)(((char *)opt) + arg->offset), wanted);
+		options = find_nested_options(args->args[i].u.child.child,
+			    *(void **)(((char *)opt) + args->args[i].offset),
+			    wanted);
 		if (options)
 			return options;
 	}
@@ -31,20 +32,20 @@ static struct isl_options *find_nested_options(struct isl_arg *arg,
 	return NULL;
 }
 
-static struct isl_options *find_nested_isl_options(struct isl_arg *arg,
+static struct isl_options *find_nested_isl_options(struct isl_args *args,
 	void *opt)
 {
-	return find_nested_options(arg, opt, isl_options_arg);
+	return find_nested_options(args, opt, &isl_options_args);
 }
 
-void *isl_ctx_peek_options(isl_ctx *ctx, struct isl_arg *arg)
+void *isl_ctx_peek_options(isl_ctx *ctx, struct isl_args *args)
 {
 	if (!ctx)
 		return NULL;
-	return find_nested_options(ctx->user_arg, ctx->user_opt, arg);
+	return find_nested_options(ctx->user_args, ctx->user_opt, args);
 }
 
-isl_ctx *isl_ctx_alloc_with_options(struct isl_arg *arg, void *user_opt)
+isl_ctx *isl_ctx_alloc_with_options(struct isl_args *args, void *user_opt)
 {
 	struct isl_ctx *ctx = NULL;
 	struct isl_options *opt = NULL;
@@ -53,7 +54,7 @@ isl_ctx *isl_ctx_alloc_with_options(struct isl_arg *arg, void *user_opt)
 	if (!user_opt)
 		return NULL;
 
-	opt = find_nested_isl_options(arg, user_opt);
+	opt = find_nested_isl_options(args, user_opt);
 	if (!opt) {
 		opt = isl_options_new_with_defaults();
 		if (!opt)
@@ -72,7 +73,7 @@ isl_ctx *isl_ctx_alloc_with_options(struct isl_arg *arg, void *user_opt)
 	if (!ctx->stats)
 		goto error;
 
-	ctx->user_arg = arg;
+	ctx->user_args = args;
 	ctx->user_opt = user_opt;
 	ctx->opt_allocated = opt_allocated;
 	ctx->opt = opt;
@@ -99,7 +100,7 @@ isl_ctx *isl_ctx_alloc_with_options(struct isl_arg *arg, void *user_opt)
 
 	return ctx;
 error:
-	isl_arg_free(arg, user_opt);
+	isl_args_free(args, user_opt);
 	if (opt_allocated)
 		isl_options_free(opt);
 	free(ctx);
@@ -112,7 +113,7 @@ struct isl_ctx *isl_ctx_alloc()
 
 	opt = isl_options_new_with_defaults();
 
-	return isl_ctx_alloc_with_options(isl_options_arg, opt);
+	return isl_ctx_alloc_with_options(&isl_options_args, opt);
 }
 
 void isl_ctx_ref(struct isl_ctx *ctx)
@@ -138,7 +139,7 @@ void isl_ctx_free(struct isl_ctx *ctx)
 	isl_int_clear(ctx->two);
 	isl_int_clear(ctx->negone);
 	isl_int_clear(ctx->normalize_gcd);
-	isl_arg_free(ctx->user_arg, ctx->user_opt);
+	isl_args_free(ctx->user_args, ctx->user_opt);
 	if (ctx->opt_allocated)
 		free(ctx->opt);
 	free(ctx->stats);
@@ -189,5 +190,5 @@ int isl_ctx_parse_options(isl_ctx *ctx, int argc, char **argv, unsigned flags)
 {
 	if (!ctx)
 		return -1;
-	return isl_arg_parse(ctx->user_arg, argc, argv, ctx->user_opt, flags);
+	return isl_args_parse(ctx->user_args, argc, argv, ctx->user_opt, flags);
 }

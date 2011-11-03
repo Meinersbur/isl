@@ -65,9 +65,7 @@ struct isl_options {
 	int			schedule_split_parallel;
 };
 
-ISL_ARG_DECL(isl_options, struct isl_options, isl_options_arg)
-
-extern struct isl_arg isl_options_arg[];
+ISL_ARG_DECL(isl_options, struct isl_options, isl_options_args)
 
 #if defined(__cplusplus)
 }

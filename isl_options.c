@@ -86,7 +86,7 @@ static void print_version(void)
 	printf("%s", isl_version());
 }
 
-struct isl_arg isl_options_arg[] = {
+ISL_ARGS_START(struct isl_options, isl_options_args)
 ISL_ARG_CHOICE(struct isl_options, lp_solver, 0, "lp-solver", \
 	isl_lp_solver_choice,	ISL_LP_TAB, "lp solver to use")
 ISL_ARG_CHOICE(struct isl_options, ilp_solver, 0, "ilp-solver", \
@@ -128,7 +128,6 @@ ISL_ARG_BOOL(struct isl_options, schedule_split_parallel, 0,
 	"schedule-split-parallel", 1,
 	"split non-tilable bands with parallel schedules")
 ISL_ARG_VERSION(print_version)
-ISL_ARG_END
-};
+ISL_ARGS_END
 
-ISL_ARG_DEF(isl_options, struct isl_options, isl_options_arg)
+ISL_ARG_DEF(isl_options, struct isl_options, isl_options_args)

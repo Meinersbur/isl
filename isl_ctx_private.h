@@ -8,7 +8,7 @@ struct isl_ctx {
 	int			 opt_allocated;
 	struct isl_options	*opt;
 	void			*user_opt;
-	struct isl_arg		*user_arg;
+	struct isl_args		*user_args;
 
 	isl_int			zero;
 	isl_int			one;

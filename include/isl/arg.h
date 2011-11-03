@@ -45,6 +45,8 @@ enum isl_arg_type {
 	isl_arg_version
 };
 
+struct isl_args;
+
 struct isl_arg {
 	enum isl_arg_type	 type;
 	char			 short_name;
@@ -86,8 +88,7 @@ struct isl_arg {
 		const char		*default_value;
 	} str;
 	struct {
-		struct isl_arg		*child;
-		size_t			 size;
+		struct isl_args		*child;
 	} child;
 	struct {
 		void (*print_version)(void);
@@ -98,6 +99,18 @@ struct isl_arg {
 	} user;
 	} u;
 };
+
+struct isl_args {
+	size_t			 options_size;
+	struct isl_arg		*args;
+};
+
+#define ISL_ARGS_START(s,name)						\
+	struct isl_arg name ## LIST[];					\
+	struct isl_args name = { sizeof(s), name ## LIST };		\
+	struct isl_arg name ## LIST[] = {
+#define ISL_ARGS_END							\
+	{ isl_arg_end } };
 
 #define ISL_ARG_ALIAS(l)	{					\
 	.type = isl_arg_alias,						\
@@ -216,18 +229,18 @@ struct isl_arg {
 },
 #define ISL_ARG_STR(st,f,s,l,a,d,h)					\
 	ISL_ARG_STR_F(st,f,s,l,a,d,h,0)
-#define _ISL_ARG_CHILD(o,sz,l,c,h,fl)	{				\
+#define _ISL_ARG_CHILD(o,l,c,h,fl)	{				\
 	.type = isl_arg_child,						\
 	.long_name = l,							\
 	.offset = o,							\
 	.help_msg = h,							\
 	.flags = fl,							\
-	.u = { .child = { .child = c, .size = sz } }			\
+	.u = { .child = { .child = c } }				\
 },
 #define ISL_ARG_CHILD(st,f,l,c,h)					\
-	_ISL_ARG_CHILD(offsetof(st, f),sizeof(*((st *)NULL)->f),l,c,h,0)
+	_ISL_ARG_CHILD(offsetof(st, f),l,c,h,0)
 #define ISL_ARG_GROUP_F(c,h,fl)						\
-	_ISL_ARG_CHILD(-1,0,NULL,c,h,fl)
+	_ISL_ARG_CHILD(-1,NULL,c,h,fl)
 #define ISL_ARG_GROUP(c,h)						\
 	ISL_ARG_GROUP_F(c,h,0)
 #define ISL_ARG_FLAGS(st,f,s,l,c,d,h)	{				\
@@ -247,38 +260,37 @@ struct isl_arg {
 	.type = isl_arg_version,					\
 	.u = { .version = { .print_version = print } }			\
 },
-#define ISL_ARG_END	{ isl_arg_end }
 
 #define ISL_ARG_ALL	(1 << 0)
 
-void isl_arg_set_defaults(struct isl_arg *arg, void *opt);
-void isl_arg_free(struct isl_arg *arg, void *opt);
-int isl_arg_parse(struct isl_arg *arg, int argc, char **argv, void *opt,
+void isl_args_set_defaults(struct isl_args *args, void *opt);
+void isl_args_free(struct isl_args *args, void *opt);
+int isl_args_parse(struct isl_args *args, int argc, char **argv, void *opt,
 	unsigned flags);
 
-#define ISL_ARG_DECL(prefix,st,arg)					\
-extern struct isl_arg arg[];						\
+#define ISL_ARG_DECL(prefix,st,args)					\
+extern struct isl_args args;						\
 st *prefix ## _new_with_defaults(void);					\
 void prefix ## _free(st *opt);						\
 int prefix ## _parse(st *opt, int argc, char **argv, unsigned flags);
 
-#define ISL_ARG_DEF(prefix,st,arg)					\
+#define ISL_ARG_DEF(prefix,st,args)					\
 st *prefix ## _new_with_defaults()					\
 {									\
 	st *opt = (st *)calloc(1, sizeof(st));				\
 	if (opt)							\
-		isl_arg_set_defaults(arg, opt);				\
+		isl_args_set_defaults(&(args), opt);			\
 	return opt;							\
 }									\
 									\
 void prefix ## _free(st *opt)						\
 {									\
-	isl_arg_free(arg, opt);						\
+	isl_args_free(&(args), opt);					\
 }									\
 									\
 int prefix ## _parse(st *opt, int argc, char **argv, unsigned flags)	\
 {									\
-	return isl_arg_parse(arg, argc, argv, opt, flags);		\
+	return isl_args_parse(&(args), argc, argv, opt, flags);		\
 }
 
 #if defined(__cplusplus)

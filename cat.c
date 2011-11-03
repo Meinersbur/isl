@@ -17,14 +17,13 @@ struct cat_options {
 	unsigned		 format;
 };
 
-struct isl_arg cat_options_arg[] = {
-ISL_ARG_CHILD(struct cat_options, isl, "isl", isl_options_arg, "isl options")
+ISL_ARGS_START(struct cat_options, cat_options_args)
+ISL_ARG_CHILD(struct cat_options, isl, "isl", &isl_options_args, "isl options")
 ISL_ARG_CHOICE(struct cat_options, format, 0, "format", \
 	cat_format,	ISL_FORMAT_ISL, "output format")
-ISL_ARG_END
-};
+ISL_ARGS_END
 
-ISL_ARG_DEF(cat_options, struct cat_options, cat_options_arg)
+ISL_ARG_DEF(cat_options, struct cat_options, cat_options_args)
 
 int main(int argc, char **argv)
 {
@@ -38,7 +37,7 @@ int main(int argc, char **argv)
 	assert(options);
 	argc = cat_options_parse(options, argc, argv, ISL_ARG_ALL);
 
-	ctx = isl_ctx_alloc_with_options(cat_options_arg, options);
+	ctx = isl_ctx_alloc_with_options(&cat_options_args, options);
 
 	s = isl_stream_new_file(ctx, stdin);
 	obj = isl_stream_read_obj(s);

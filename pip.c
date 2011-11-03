@@ -52,15 +52,14 @@ struct isl_arg_choice pip_format[] = {
 	{0}
 };
 
-struct isl_arg options_arg[] = {
-ISL_ARG_CHILD(struct options, isl, "isl", isl_options_arg, "isl options")
+ISL_ARGS_START(struct options, options_args)
+ISL_ARG_CHILD(struct options, isl, "isl", &isl_options_args, "isl options")
 ISL_ARG_BOOL(struct options, verify, 'T', "verify", 0, NULL)
 ISL_ARG_CHOICE(struct options, format, 0, "format",
 	pip_format, FORMAT_SET, "output format")
-ISL_ARG_END
-};
+ISL_ARGS_END
 
-ISL_ARG_DEF(options, struct options, options_arg)
+ISL_ARG_DEF(options, struct options, options_args)
 
 static __isl_give isl_basic_set *set_bounds(__isl_take isl_basic_set *bset)
 {
@@ -296,7 +295,7 @@ int main(int argc, char **argv)
 	assert(options);
 	argc = options_parse(options, argc, argv, ISL_ARG_ALL);
 
-	ctx = isl_ctx_alloc_with_options(options_arg, options);
+	ctx = isl_ctx_alloc_with_options(&options_args, options);
 
 	context = isl_basic_set_read_from_file(ctx, stdin);
 	assert(context);
