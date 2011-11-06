@@ -23,15 +23,25 @@ AM_CONDITIONAL(GENERATE_DOC, test -n "$PERL" -a -n "$PDFLATEX" -a -n "$POD2HTML"
 
 AX_CREATE_STDINT_H(include/isl/stdint.h)
 
-AX_SUBMODULE(gmp,system,system)
+AX_SUBMODULE(gmp,system|build,system)
 
 AC_SUBST(GMP_CPPFLAGS)
 AC_SUBST(GMP_LDFLAGS)
-if test "x$with_gmp_prefix" != "x"; then
-	isl_configure_args="$isl_configure_args --with-gmp=$with_gmp_prefix"
-	GMP_CPPFLAGS="-I$with_gmp_prefix/include"
-	GMP_LDFLAGS="-L$with_gmp_prefix/lib"
-fi
+AC_SUBST(GMP_LIBS)
+case "$with_gmp" in
+system)
+	if test "x$with_gmp_prefix" != "x"; then
+		isl_configure_args="$isl_configure_args --with-gmp=$with_gmp_prefix"
+		GMP_CPPFLAGS="-I$with_gmp_prefix/include"
+		GMP_LDFLAGS="-L$with_gmp_prefix/lib"
+	fi
+	GMP_LIBS=-lgmp
+	;;
+build)
+	GMP_CPPFLAGS="-I$gmp_srcdir -I$with_gmp_builddir"
+	GMP_LIBS="$with_gmp_builddir/libgmp.la"
+	;;
+esac
 SAVE_CPPFLAGS="$CPPFLAGS"
 CPPFLAGS="$GMP_CPPFLAGS $CPPFLAGS"
 need_get_memory_functions=false
