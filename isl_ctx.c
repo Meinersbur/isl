@@ -184,3 +184,10 @@ int isl_ctx_aborted(isl_ctx *ctx)
 {
 	return ctx ? ctx->abort : -1;
 }
+
+int isl_ctx_parse_options(isl_ctx *ctx, int argc, char **argv, unsigned flags)
+{
+	if (!ctx)
+		return -1;
+	return isl_arg_parse(ctx->user_arg, argc, argv, ctx->user_opt, flags);
+}
