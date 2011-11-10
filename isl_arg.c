@@ -283,13 +283,15 @@ static void print_default(struct isl_arg *decl, const char *def, int pos)
 	printf("%s%s%s", default_prefix, def, default_suffix);
 }
 
-static void print_default_choice(struct isl_arg *decl, int pos)
+static void print_default_choice(struct isl_arg *decl, void *opt, int pos)
 {
 	int i;
 	const char *s = "none";
+	unsigned *p;
 
+	p = (unsigned *)(((char *) opt) + decl->offset);
 	for (i = 0; decl->u.choice.choice[i].name; ++i)
-		if (decl->u.choice.choice[i].value == decl->u.choice.default_value) {
+		if (decl->u.choice.choice[i].value == *p) {
 			s = decl->u.choice.choice[i].name;
 			break;
 		}
@@ -297,7 +299,8 @@ static void print_default_choice(struct isl_arg *decl, int pos)
 	print_default(decl, s, pos);
 }
 
-static void print_choice_help(struct isl_arg *decl, const char *prefix)
+static void print_choice_help(struct isl_arg *decl, const char *prefix,
+	void *opt)
 {
 	int i;
 	int pos;
@@ -316,20 +319,22 @@ static void print_choice_help(struct isl_arg *decl, const char *prefix)
 	}
 
 	pos = print_help_msg(decl, pos);
-	print_default_choice(decl, pos);
+	print_default_choice(decl, opt, pos);
 
 	printf("\n");
 }
 
-static void print_default_flags(struct isl_arg *decl, int pos)
+static void print_default_flags(struct isl_arg *decl, void *opt, int pos)
 {
 	int i, first;
 	const char *default_prefix = "[default: ";
 	const char *default_suffix = "]";
 	int len = strlen(default_prefix) + strlen(default_suffix);
+	unsigned *p;
 
+	p = (unsigned *)(((char *) opt) + decl->offset);
 	for (i = 0; decl->u.flags.flags[i].name; ++i)
-		if ((decl->u.flags.default_value & decl->u.flags.flags[i].mask) ==
+		if ((*p & decl->u.flags.flags[i].mask) ==
 		     decl->u.flags.flags[i].value)
 			len += strlen(decl->u.flags.flags[i].name);
 
@@ -348,7 +353,7 @@ static void print_default_flags(struct isl_arg *decl, int pos)
 	printf("%s", default_prefix);
 
 	for (first = 1, i = 0; decl->u.flags.flags[i].name; ++i)
-		if ((decl->u.flags.default_value & decl->u.flags.flags[i].mask) ==
+		if ((*p & decl->u.flags.flags[i].mask) ==
 		     decl->u.flags.flags[i].value) {
 			if (!first)
 				printf(",");
@@ -359,7 +364,8 @@ static void print_default_flags(struct isl_arg *decl, int pos)
 	printf("%s", default_suffix);
 }
 
-static void print_flags_help(struct isl_arg *decl, const char *prefix)
+static void print_flags_help(struct isl_arg *decl, const char *prefix,
+	void *opt)
 {
 	int i, j;
 	int pos;
@@ -387,15 +393,16 @@ static void print_flags_help(struct isl_arg *decl, const char *prefix)
 	}
 
 	pos = print_help_msg(decl, pos);
-	print_default_flags(decl, pos);
+	print_default_flags(decl, opt, pos);
 
 	printf("\n");
 }
 
-static void print_bool_help(struct isl_arg *decl, const char *prefix)
+static void print_bool_help(struct isl_arg *decl, const char *prefix, void *opt)
 {
 	int pos;
-	int no = decl->u.b.default_value == 1;
+	unsigned *p = opt ? (unsigned *)(((char *) opt) + decl->offset) : NULL;
+	int no = p ? *p == 1 : 0;
 	pos = print_arg_help(decl, prefix, no);
 	pos = print_help_msg(decl, pos);
 	if (decl->offset != (size_t) -1)
@@ -409,29 +416,31 @@ static int print_argument_name(struct isl_arg *decl, const char *name, int pos)
 	return pos + 3 + strlen(name);
 }
 
-static void print_int_help(struct isl_arg *decl, const char *prefix)
+static void print_int_help(struct isl_arg *decl, const char *prefix, void *opt)
 {
 	int pos;
 	char val[20];
+	int *p = (int *)(((char *) opt) + decl->offset);
 	pos = print_arg_help(decl, prefix, 0);
 	pos = print_argument_name(decl, decl->argument_name, pos);
 	pos = print_help_msg(decl, pos);
-	snprintf(val, sizeof(val), "%d", decl->u.i.default_value);
+	snprintf(val, sizeof(val), "%d", *p);
 	print_default(decl, val, pos);
 	printf("\n");
 }
 
-static void print_long_help(struct isl_arg *decl, const char *prefix)
+static void print_long_help(struct isl_arg *decl, const char *prefix, void *opt)
 {
 	int pos;
+	long *p = (long *)(((char *) opt) + decl->offset);
 	pos = print_arg_help(decl, prefix, 0);
-	if (decl->u.l.default_value != decl->u.l.default_selected) {
+	if (*p != decl->u.l.default_selected) {
 		printf("[");
 		pos++;
 	}
 	printf("=long");
 	pos += 5;
-	if (decl->u.l.default_value != decl->u.l.default_selected) {
+	if (*p != decl->u.l.default_selected) {
 		printf("]");
 		pos++;
 	}
@@ -449,19 +458,20 @@ static void print_ulong_help(struct isl_arg *decl, const char *prefix)
 	printf("\n");
 }
 
-static void print_str_help(struct isl_arg *decl, const char *prefix)
+static void print_str_help(struct isl_arg *decl, const char *prefix, void *opt)
 {
 	int pos;
 	const char *a = decl->argument_name ? decl->argument_name : "string";
+	const char **p = (const char **)(((char *) opt) + decl->offset);
 	pos = print_arg_help(decl, prefix, 0);
 	pos = print_argument_name(decl, a, pos);
 	pos = print_help_msg(decl, pos);
-	if (decl->u.str.default_value)
-		print_default(decl, decl->u.str.default_value, pos);
+	if (*p)
+		print_default(decl, *p, pos);
 	printf("\n");
 }
 
-static void print_help(struct isl_arg *arg, const char *prefix)
+static void print_help(struct isl_arg *arg, const char *prefix, void *opt)
 {
 	int i;
 	int any = 0;
@@ -471,23 +481,23 @@ static void print_help(struct isl_arg *arg, const char *prefix)
 			continue;
 		switch (arg[i].type) {
 		case isl_arg_flags:
-			print_flags_help(&arg[i], prefix);
+			print_flags_help(&arg[i], prefix, opt);
 			any = 1;
 			break;
 		case isl_arg_choice:
-			print_choice_help(&arg[i], prefix);
+			print_choice_help(&arg[i], prefix, opt);
 			any = 1;
 			break;
 		case isl_arg_bool:
-			print_bool_help(&arg[i], prefix);
+			print_bool_help(&arg[i], prefix, opt);
 			any = 1;
 			break;
 		case isl_arg_int:
-			print_int_help(&arg[i], prefix);
+			print_int_help(&arg[i], prefix, opt);
 			any = 1;
 			break;
 		case isl_arg_long:
-			print_long_help(&arg[i], prefix);
+			print_long_help(&arg[i], prefix, opt);
 			any = 1;
 			break;
 		case isl_arg_ulong:
@@ -495,7 +505,7 @@ static void print_help(struct isl_arg *arg, const char *prefix)
 			any = 1;
 			break;
 		case isl_arg_str:
-			print_str_help(&arg[i], prefix);
+			print_str_help(&arg[i], prefix, opt);
 			any = 1;
 			break;
 		case isl_arg_alias:
@@ -510,6 +520,8 @@ static void print_help(struct isl_arg *arg, const char *prefix)
 	}
 
 	for (i = 0; arg[i].type != isl_arg_end; ++i) {
+		void *child;
+
 		if (arg[i].type != isl_arg_child)
 			continue;
 		if (arg[i].flags & ISL_ARG_HIDDEN)
@@ -519,7 +531,11 @@ static void print_help(struct isl_arg *arg, const char *prefix)
 			printf("\n");
 		if (arg[i].help_msg)
 			printf(" %s\n", arg[i].help_msg);
-		print_help(arg[i].u.child.child, arg[i].long_name);
+		if (arg[i].offset == (size_t) -1)
+			child = opt;
+		else
+			child = *(void **)(((char *) opt) + arg[i].offset);
+		print_help(arg[i].u.child.child, arg[i].long_name, child);
 		any = 1;
 	}
 }
@@ -557,7 +573,8 @@ static int any_version(struct isl_arg *decl)
 	return 0;
 }
 
-static void print_help_and_exit(struct isl_arg *arg, const char *prog)
+static void print_help_and_exit(struct isl_arg *arg, const char *prog,
+	void *opt)
 {
 	int i;
 
@@ -569,11 +586,11 @@ static void print_help_and_exit(struct isl_arg *arg, const char *prog)
 
 	printf("\n\n");
 
-	print_help(arg, NULL);
+	print_help(arg, NULL, opt);
 	printf("\n");
 	if (any_version(arg))
 		printf("  -V, --version\n");
-	print_bool_help(help_arg, NULL);
+	print_bool_help(help_arg, NULL, NULL);
 
 	for (i = 0; arg[i].type != isl_arg_end; ++i) {
 		if (arg[i].type != isl_arg_footer)
@@ -1061,7 +1078,7 @@ int isl_arg_parse(struct isl_arg *arg, int argc, char **argv, void *opt,
 
 	for (i = 1; i < argc; ++i) {
 		if (strcmp(argv[i], "--help") == 0)
-			print_help_and_exit(arg, argv[0]);
+			print_help_and_exit(arg, argv[0], opt);
 	}
 
 	for (i = 1; i < argc; ++i) {
