@@ -123,6 +123,9 @@ system)
 	AC_LANG_PUSH(C++)
 	AC_CHECK_HEADER([clang/Basic/SourceLocation.h], [],
 		[AC_ERROR([clang header file not found])])
+	AC_EGREP_HEADER([getDefaultTargetTriple], [llvm/Support/Host.h], [],
+		[AC_DEFINE([getDefaultTargetTriple], [getHostTriple],
+		[Define to getHostTriple for older versions of clang])])
 	AC_EGREP_HEADER([getExpansionLineNumber],
 		[clang/Basic/SourceLocation.h], [],
 		[AC_DEFINE([getExpansionLineNumber],

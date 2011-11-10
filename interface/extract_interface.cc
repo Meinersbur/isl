@@ -140,7 +140,7 @@ int main(int argc, char *argv[])
 	Clang->createFileManager();
 	Clang->createSourceManager(Clang->getFileManager());
 	TargetOptions TO;
-	TO.Triple = llvm::sys::getHostTriple();
+	TO.Triple = llvm::sys::getDefaultTargetTriple();
 	TargetInfo *target = TargetInfo::CreateTargetInfo(Diags, TO);
 	Clang->setTarget(target);
 	CompilerInvocation::setLangDefaults(Clang->getLangOpts(), IK_C,
