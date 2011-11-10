@@ -360,6 +360,8 @@ __isl_give isl_map *isl_map_subtract(
 		__isl_take isl_map *map2);
 __isl_give isl_map *isl_map_subtract_domain(__isl_take isl_map *map,
 	__isl_take isl_set *dom);
+__isl_give isl_map *isl_map_subtract_range(__isl_take isl_map *map,
+	__isl_take isl_set *dom);
 struct isl_map *isl_map_fix_input_si(struct isl_map *map,
 		unsigned input, int value);
 __isl_give isl_map *isl_map_fix_si(__isl_take isl_map *map,

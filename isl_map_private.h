@@ -336,4 +336,6 @@ __isl_give isl_set *isl_set_substitute(__isl_take isl_set *set,
 __isl_give isl_set *isl_set_gist_params_basic_set(__isl_take isl_set *set,
 	__isl_take isl_basic_set *context);
 
+int isl_map_compatible_range(__isl_keep isl_map *map, __isl_keep isl_set *set);
+
 #endif
