@@ -16,6 +16,7 @@
 #include <isl/lp.h>
 #include <isl/union_map.h>
 #include <isl_mat_private.h>
+#include <isl_options_private.h>
 
 int isl_map_is_transitively_closed(__isl_keep isl_map *map)
 {

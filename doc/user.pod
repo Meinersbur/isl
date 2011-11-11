@@ -4065,6 +4065,25 @@ A representation of the band can be printed using
 		__isl_take isl_printer *p,
 		__isl_keep isl_band *band);
 
+=head3 Options
+
+	#include <isl/schedule.h>
+	int isl_options_set_schedule_outer_zero_distance(
+		isl_ctx *ctx, int val);
+	int isl_options_get_schedule_outer_zero_distance(
+		isl_ctx *ctx);
+
+=over
+
+=item * schedule_outer_zero_distance
+
+It this option is set, then we try to construct schedules
+where the outermost scheduling dimension in each band
+results in a zero dependence distance over the proximity
+dependences.
+
+=back
+
 =head2 Parametric Vertex Enumeration
 
 The parametric vertex enumeration described in this section

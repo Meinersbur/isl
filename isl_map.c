@@ -30,6 +30,7 @@
 #include <isl_dim_map.h>
 #include <isl_local_space_private.h>
 #include <isl_aff_private.h>
+#include <isl_options_private.h>
 
 static unsigned n(__isl_keep isl_space *dim, enum isl_dim_type type)
 {

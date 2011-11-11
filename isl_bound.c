@@ -14,6 +14,7 @@
 #include <isl_bernstein.h>
 #include <isl_range.h>
 #include <isl_polynomial_private.h>
+#include <isl_options_private.h>
 
 /* Compute a bound on the polynomial defined over the parametric polytope
  * using either range propagation or bernstein expansion and

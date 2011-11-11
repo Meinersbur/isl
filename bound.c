@@ -2,6 +2,7 @@
 #include <isl/stream.h>
 #include <isl_polynomial_private.h>
 #include <isl_scan.h>
+#include <isl/options.h>
 
 struct bound_options {
 	struct isl_options	*isl;

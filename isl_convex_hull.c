@@ -14,6 +14,7 @@
 #include <isl_mat_private.h>
 #include <isl/set.h>
 #include <isl/seq.h>
+#include <isl_options_private.h>
 #include "isl_equalities.h"
 #include "isl_tab.h"
 

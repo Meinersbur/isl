@@ -14,8 +14,8 @@
 #include <stdlib.h>
 
 #include <isl/int.h>
-#include <isl/options.h>
 #include <isl/blk.h>
+#include <isl/arg.h>
 #include <isl/hash.h>
 #include <isl/config.h>
 
@@ -159,6 +159,56 @@ st *isl_ctx_peek_ ## prefix(isl_ctx *ctx);
 st *isl_ctx_peek_ ## prefix(isl_ctx *ctx)				\
 {									\
 	return (st *)isl_ctx_peek_options(ctx, &(args));		\
+}
+
+#define ISL_CTX_GET_BOOL_DEF(prefix,st,args,field)			\
+int prefix ## _get_ ## field(isl_ctx *ctx)				\
+{									\
+	st *options;							\
+	options = isl_ctx_peek_ ## prefix(ctx);				\
+	if (!options)							\
+		isl_die(ctx, isl_error_invalid,				\
+			"isl_ctx does not reference " #prefix,		\
+			return -1);					\
+	return options->field;						\
+}
+
+#define ISL_CTX_SET_BOOL_DEF(prefix,st,args,field)			\
+int prefix ## _set_ ## field(isl_ctx *ctx, int val)			\
+{									\
+	st *options;							\
+	options = isl_ctx_peek_ ## prefix(ctx);				\
+	if (!options)							\
+		isl_die(ctx, isl_error_invalid,				\
+			"isl_ctx does not reference " #prefix,		\
+			return -1);					\
+	options->field = val;						\
+	return 0;							\
+}
+
+#define ISL_CTX_GET_CHOICE_DEF(prefix,st,args,field)			\
+int prefix ## _get_ ## field(isl_ctx *ctx)				\
+{									\
+	st *options;							\
+	options = isl_ctx_peek_ ## prefix(ctx);				\
+	if (!options)							\
+		isl_die(ctx, isl_error_invalid,				\
+			"isl_ctx does not reference " #prefix,		\
+			return -1);					\
+	return options->field;						\
+}
+
+#define ISL_CTX_SET_CHOICE_DEF(prefix,st,args,field)			\
+int prefix ## _set_ ## field(isl_ctx *ctx, int val)			\
+{									\
+	st *options;							\
+	options = isl_ctx_peek_ ## prefix(ctx);				\
+	if (!options)							\
+		isl_die(ctx, isl_error_invalid,				\
+			"isl_ctx does not reference " #prefix,		\
+			return -1);					\
+	options->field = val;						\
+	return 0;							\
 }
 
 enum isl_error isl_ctx_last_error(isl_ctx *ctx);

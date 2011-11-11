@@ -9,6 +9,7 @@
 
 #include <isl_ctx_private.h>
 #include <isl/vec.h>
+#include <isl/options.h>
 
 static struct isl_options *find_nested_options(struct isl_args *args,
 	void *opt, struct isl_args *wanted)

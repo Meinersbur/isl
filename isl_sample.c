@@ -19,6 +19,7 @@
 #include "isl_basis_reduction.h"
 #include <isl_factorization.h>
 #include <isl_point_private.h>
+#include <isl_options_private.h>
 
 static struct isl_vec *empty_sample(struct isl_basic_set *bset)
 {

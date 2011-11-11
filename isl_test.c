@@ -20,6 +20,7 @@
 #include <isl/union_map.h>
 #include <isl_factorization.h>
 #include <isl/schedule.h>
+#include <isl_options_private.h>
 
 static char *srcdir;
 

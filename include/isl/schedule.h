@@ -12,6 +12,9 @@ extern "C" {
 struct isl_schedule;
 typedef struct isl_schedule isl_schedule;
 
+int isl_options_set_schedule_outer_zero_distance(isl_ctx *ctx, int val);
+int isl_options_get_schedule_outer_zero_distance(isl_ctx *ctx);
+
 __isl_give isl_schedule *isl_union_set_compute_schedule(
 	__isl_take isl_union_set *domain,
 	__isl_take isl_union_map *validity,

@@ -12,7 +12,7 @@
 #include <string.h>
 
 #include <isl/ctx.h>
-#include <isl/options.h>
+#include <isl_options_private.h>
 #include <isl/version.h>
 
 struct isl_arg_choice isl_lp_solver_choice[] = {
@@ -131,3 +131,18 @@ ISL_ARG_VERSION(print_version)
 ISL_ARGS_END
 
 ISL_ARG_DEF(isl_options, struct isl_options, isl_options_args)
+
+ISL_ARG_CTX_DEF(isl_options, struct isl_options, isl_options_args)
+
+ISL_CTX_SET_CHOICE_DEF(isl_options, struct isl_options, isl_options_args, bound)
+ISL_CTX_GET_CHOICE_DEF(isl_options, struct isl_options, isl_options_args, bound)
+
+ISL_CTX_SET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
+	gbr_only_first)
+ISL_CTX_GET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
+	gbr_only_first)
+
+ISL_CTX_SET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
+	schedule_outer_zero_distance)
+ISL_CTX_GET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
+	schedule_outer_zero_distance)

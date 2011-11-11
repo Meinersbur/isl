@@ -92,6 +92,7 @@ libisl_la_SOURCES = \
 	isl_id_private.h \
 	isl_obj.c \
 	isl_options.c \
+	isl_options_private.h \
 	isl_output.c \
 	isl_qsort.c \
 	isl_qsort.h \

@@ -24,6 +24,7 @@
 #include <isl_schedule_private.h>
 #include <isl_band_private.h>
 #include <isl_list_private.h>
+#include <isl_options_private.h>
 
 /*
  * The scheduling algorithm implemented in this file was inspired by
