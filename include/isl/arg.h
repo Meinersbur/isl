@@ -42,6 +42,7 @@ enum isl_arg_type {
 	isl_arg_long,
 	isl_arg_ulong,
 	isl_arg_str,
+	isl_arg_str_list,
 	isl_arg_version
 };
 
@@ -87,6 +88,9 @@ struct isl_arg {
 	struct {
 		const char		*default_value;
 	} str;
+	struct {
+		size_t			 offset_n;
+	} str_list;
 	struct {
 		struct isl_args		*child;
 	} child;
@@ -229,6 +233,15 @@ struct isl_args {
 },
 #define ISL_ARG_STR(st,f,s,l,a,d,h)					\
 	ISL_ARG_STR_F(st,f,s,l,a,d,h,0)
+#define ISL_ARG_STR_LIST(st,f_n,f_l,s,l,a,h)	{			\
+	.type = isl_arg_str_list,					\
+	.short_name = s,						\
+	.long_name = l,							\
+	.argument_name = a,						\
+	.offset = offsetof(st, f_l),					\
+	.help_msg = h,							\
+	.u = { .str_list = { .offset_n = offsetof(st, f_n) } }		\
+},
 #define _ISL_ARG_CHILD(o,l,c,h,fl)	{				\
 	.type = isl_arg_child,						\
 	.long_name = l,							\

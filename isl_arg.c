@@ -78,6 +78,12 @@ static void set_default_str(struct isl_arg *arg, void *opt)
 	*(const char **)(((char *)opt) + arg->offset) = str;
 }
 
+static void set_default_str_list(struct isl_arg *arg, void *opt)
+{
+	*(const char ***)(((char *) opt) + arg->offset) = NULL;
+	*(int *)(((char *) opt) + arg->u.str_list.offset_n) = 0;
+}
+
 void isl_args_set_defaults(struct isl_args *args, void *opt)
 {
 	int i;
@@ -112,6 +118,9 @@ void isl_args_set_defaults(struct isl_args *args, void *opt)
 		case isl_arg_str:
 			set_default_str(&args->args[i], opt);
 			break;
+		case isl_arg_str_list:
+			set_default_str_list(&args->args[i], opt);
+			break;
 		case isl_arg_alias:
 		case isl_arg_footer:
 		case isl_arg_version:
@@ -119,6 +128,17 @@ void isl_args_set_defaults(struct isl_args *args, void *opt)
 			break;
 		}
 	}
+}
+
+static void free_str_list(struct isl_arg *arg, void *opt)
+{
+	int i;
+	int n = *(int *)(((char *) opt) + arg->u.str_list.offset_n);
+	char **list = *(char ***)(((char *) opt) + arg->offset);
+
+	for (i = 0; i < n; ++i)
+		free(list[i]);
+	free(list);
 }
 
 static void free_args(struct isl_arg *arg, void *opt)
@@ -137,6 +157,9 @@ static void free_args(struct isl_arg *arg, void *opt)
 		case isl_arg_arg:
 		case isl_arg_str:
 			free(*(char **)(((char *)opt) + arg[i].offset));
+			break;
+		case isl_arg_str_list:
+			free_str_list(&arg[i], opt);
 			break;
 		case isl_arg_user:
 			if (arg[i].u.user.clear)
@@ -470,6 +493,16 @@ static void print_str_help(struct isl_arg *decl, const char *prefix, void *opt)
 	printf("\n");
 }
 
+static void print_str_list_help(struct isl_arg *decl, const char *prefix)
+{
+	int pos;
+	const char *a = decl->argument_name ? decl->argument_name : "string";
+	pos = print_arg_help(decl, prefix, 0);
+	pos = print_argument_name(decl, a, pos);
+	pos = print_help_msg(decl, pos);
+	printf("\n");
+}
+
 static void print_help(struct isl_arg *arg, const char *prefix, void *opt)
 {
 	int i;
@@ -505,6 +538,10 @@ static void print_help(struct isl_arg *arg, const char *prefix, void *opt)
 			break;
 		case isl_arg_str:
 			print_str_help(&arg[i], prefix, opt);
+			any = 1;
+			break;
+		case isl_arg_str_list:
+			print_str_list_help(&arg[i], prefix);
 			any = 1;
 			break;
 		case isl_arg_alias:
@@ -848,6 +885,44 @@ static int parse_str_option(struct isl_arg *decl, char **arg,
 	return 0;
 }
 
+static int isl_arg_str_list_append(struct isl_arg *decl, void *opt,
+	const char *s)
+{
+	int *n = (int *)(((char *) opt) + decl->u.str_list.offset_n);
+	char **list = *(char ***)(((char *) opt) + decl->offset);
+
+	list = realloc(list, (*n + 1) * sizeof(char *));
+	if (!list)
+		return -1;
+	*(char ***)(((char *) opt) + decl->offset) = list;
+	list[*n] = strdup(s);
+	(*n)++;
+	return 0;
+}
+
+static int parse_str_list_option(struct isl_arg *decl, char **arg,
+	const char *prefix, void *opt)
+{
+	int has_argument;
+	const char *s;
+
+	s = skip_name(decl, arg[0], prefix, 0, &has_argument);
+	if (!s)
+		return 0;
+
+	if (has_argument) {
+		isl_arg_str_list_append(decl, opt, s);
+		return 1;
+	}
+
+	if (arg[1]) {
+		isl_arg_str_list_append(decl, opt, arg[1]);
+		return 2;
+	}
+
+	return 0;
+}
+
 static int parse_int_option(struct isl_arg *decl, char **arg,
 	const char *prefix, void *opt)
 {
@@ -992,6 +1067,10 @@ static int parse_option(struct isl_arg *decl, char **arg,
 			break;
 		case isl_arg_str:
 			parsed = parse_str_option(&decl[i], arg, prefix, opt);
+			break;
+		case isl_arg_str_list:
+			parsed = parse_str_list_option(&decl[i], arg, prefix,
+							opt);
 			break;
 		case isl_arg_child:
 			parsed = parse_child_option(&decl[i], arg, prefix, opt);
