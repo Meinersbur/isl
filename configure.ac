@@ -136,6 +136,12 @@ system)
 		[AC_DEFINE([DiagnosticsEngine],
 			[Diagnostic],
 	    [Define to Diagnostic for older versions of clang])])
+	AC_EGREP_HEADER([ArrayRef], [clang/Driver/Driver.h],
+		[AC_DEFINE([USE_ARRAYREF], [],
+			[Define if Driver::BuildCompilation takes ArrayRef])])
+	AC_EGREP_HEADER([CXXIsProduction], [clang/Driver/Driver.h],
+		[AC_DEFINE([HAVE_CXXISPRODUCTION], [],
+		[Define if Driver constructor takes CXXIsProduction argument])])
 	AC_LANG_POP
 	CPPFLAGS="$SAVE_CPPFLAGS"
 	;;

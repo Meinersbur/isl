@@ -44,6 +44,9 @@
 #include <clang/Basic/TargetOptions.h>
 #include <clang/Basic/TargetInfo.h>
 #include <clang/Basic/Version.h>
+#include <clang/Driver/Compilation.h>
+#include <clang/Driver/Driver.h>
+#include <clang/Driver/Tool.h>
 #include <clang/Frontend/CompilerInstance.h>
 #include <clang/Frontend/CompilerInvocation.h>
 #include <clang/Frontend/DiagnosticOptions.h>
@@ -60,6 +63,7 @@
 
 using namespace std;
 using namespace clang;
+using namespace clang::driver;
 
 static llvm::cl::opt<string> InputFilename(llvm::cl::Positional,
 			llvm::cl::Required, llvm::cl::desc("<input file>"));
@@ -127,6 +131,62 @@ struct MyASTConsumer : public ASTConsumer {
 	}
 };
 
+#ifdef USE_ARRAYREF
+
+#ifdef HAVE_CXXISPRODUCTION
+static Driver *construct_driver(const char *binary, DiagnosticsEngine &Diags)
+{
+	return new Driver(binary, llvm::sys::getDefaultTargetTriple(),
+			    "", false, false, Diags);
+}
+#else
+static Driver *construct_driver(const char *binary, DiagnosticsEngine &Diags)
+{
+	return new Driver(binary, llvm::sys::getDefaultTargetTriple(),
+			    "", false, Diags);
+}
+#endif
+
+/* Create a CompilerInvocation object that stores the command line
+ * arguments constructed by the driver.
+ * The arguments are mainly useful for setting up the system include
+ * paths on newer clangs and on some platforms.
+ */
+static CompilerInvocation *construct_invocation(const char *filename,
+	DiagnosticsEngine &Diags)
+{
+	const char *binary = CLANG_PREFIX"/bin/clang";
+	const llvm::OwningPtr<Driver> driver(construct_driver(binary, Diags));
+	std::vector<const char *> Argv;
+	Argv.push_back(binary);
+	Argv.push_back(filename);
+	const llvm::OwningPtr<Compilation> compilation(
+		driver->BuildCompilation(ArrayRef<const char *>(Argv)));
+	JobList &Jobs = compilation->getJobs();
+
+	Command *cmd = cast<Command>(*Jobs.begin());
+	if (strcmp(cmd->getCreator().getName(), "clang"))
+		return NULL;
+
+	const ArgStringList *args = &cmd->getArguments();
+
+	CompilerInvocation *invocation = new CompilerInvocation;
+	CompilerInvocation::CreateFromArgs(*invocation, args->data() + 1,
+						args->data() + args->size(),
+						Diags);
+	return invocation;
+}
+
+#else
+
+static CompilerInvocation *construct_invocation(const char *filename,
+	DiagnosticsEngine &Diags)
+{
+	return NULL;
+}
+
+#endif
+
 int main(int argc, char *argv[])
 {
 	llvm::cl::ParseCommandLineOptions(argc, argv);
@@ -137,6 +197,10 @@ int main(int argc, char *argv[])
 				new TextDiagnosticPrinter(llvm::errs(), DO));
 	DiagnosticsEngine &Diags = Clang->getDiagnostics();
 	Diags.setSuppressSystemWarnings(true);
+	CompilerInvocation *invocation =
+		construct_invocation(InputFilename.c_str(), Diags);
+	if (invocation)
+		Clang->setInvocation(invocation);
 	Clang->createFileManager();
 	Clang->createSourceManager(Clang->getFileManager());
 	TargetOptions TO;
