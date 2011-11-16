@@ -12,6 +12,7 @@ autom4te.cache/
 config.guess
 isl_config.h
 isl_config.h.in
+isl_config.h.in~
 config.log
 config.status
 config.sub
