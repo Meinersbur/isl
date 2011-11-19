@@ -2696,7 +2696,7 @@ static __isl_give isl_map *map_space_reset(__isl_take isl_map *map,
 {
 	isl_space *space;
 
-	if (!isl_space_is_named_or_nested(map->dim, type))
+	if (!map || !isl_space_is_named_or_nested(map->dim, type))
 		return map;
 
 	space = isl_map_get_space(map);
