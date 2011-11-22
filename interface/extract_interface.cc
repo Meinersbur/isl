@@ -161,7 +161,7 @@ static CompilerInvocation *construct_invocation(const char *filename,
 	Argv.push_back(binary);
 	Argv.push_back(filename);
 	const llvm::OwningPtr<Compilation> compilation(
-		driver->BuildCompilation(ArrayRef<const char *>(Argv)));
+		driver->BuildCompilation(llvm::ArrayRef<const char *>(Argv)));
 	JobList &Jobs = compilation->getJobs();
 
 	Command *cmd = cast<Command>(*Jobs.begin());
