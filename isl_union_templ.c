@@ -496,7 +496,7 @@ __isl_give UNION *FN(UNION,gist_params)(__isl_take UNION *u,
 	return any_set_op(u, set, &FN(PW,gist_params));
 }
 
-S(UNION,match_set_data) {
+S(UNION,match_domain_data) {
 	isl_union_set *uset;
 	UNION *res;
 	__isl_give PW *(*fn)(__isl_take PW*, __isl_take isl_set*);
@@ -510,17 +510,24 @@ static int set_has_dim(const void *entry, const void *val)
 	return isl_space_is_equal(set->dim, dim);
 }
 
-static int match_set_entry(void **entry, void *user)
+/* Find the set in data->uset that live in the same space as the domain
+ * of *entry, apply data->fn to *entry and this set (if any), and add
+ * the result to data->res.
+ */
+static int match_domain_entry(void **entry, void *user)
 {
-	S(UNION,match_set_data) *data = user;
+	S(UNION,match_domain_data) *data = user;
 	uint32_t hash;
 	struct isl_hash_table_entry *entry2;
 	PW *pw = *entry;
+	isl_space *space;
 	int empty;
 
-	hash = isl_space_get_hash(pw->dim);
+	space = FN(PW,get_domain_space)(pw);
+	hash = isl_space_get_hash(space);
 	entry2 = isl_hash_table_find(data->uset->dim->ctx, &data->uset->table,
-				     hash, &set_has_dim, pw->dim, 0);
+				     hash, &set_has_dim, space, 0);
+	isl_space_free(space);
 	if (!entry2)
 		return 0;
 
@@ -542,11 +549,15 @@ static int match_set_entry(void **entry, void *user)
 	return 0;
 }
 
-static __isl_give UNION *match_set_op(__isl_take UNION *u,
+/* Apply fn to each pair of PW in u and set in uset such that
+ * the set lives in the same space as the domain of PW
+ * and collect the results.
+ */
+static __isl_give UNION *match_domain_op(__isl_take UNION *u,
 	__isl_take isl_union_set *uset,
 	__isl_give PW *(*fn)(__isl_take PW*, __isl_take isl_set*))
 {
-	S(UNION,match_set_data) data = { NULL, NULL, fn };
+	S(UNION,match_domain_data) data = { NULL, NULL, fn };
 
 	u = FN(UNION,align_params)(u, isl_union_set_get_space(uset));
 	uset = isl_union_set_align_params(uset, FN(UNION,get_space)(u));
@@ -561,7 +572,7 @@ static __isl_give UNION *match_set_op(__isl_take UNION *u,
 	data.res = FN(UNION,alloc)(isl_space_copy(u->dim), u->table.n);
 #endif
 	if (isl_hash_table_foreach(u->dim->ctx, &u->table,
-				   &match_set_entry, &data) < 0)
+				   &match_domain_entry, &data) < 0)
 		goto error;
 
 	FN(UNION,free)(u);
@@ -584,7 +595,7 @@ __isl_give UNION *FN(UNION,intersect_domain)(__isl_take UNION *u,
 	if (isl_union_set_is_params(uset))
 		return FN(UNION,intersect_params)(u,
 						isl_set_from_union_set(uset));
-	return match_set_op(u, uset, &FN(PW,intersect_domain));
+	return match_domain_op(u, uset, &FN(PW,intersect_domain));
 }
 
 __isl_give UNION *FN(UNION,gist)(__isl_take UNION *u,
@@ -592,7 +603,7 @@ __isl_give UNION *FN(UNION,gist)(__isl_take UNION *u,
 {
 	if (isl_union_set_is_params(uset))
 		return FN(UNION,gist_params)(u, isl_set_from_union_set(uset));
-	return match_set_op(u, uset, &FN(PW,gist));
+	return match_domain_op(u, uset, &FN(PW,gist));
 }
 
 __isl_give isl_qpolynomial *FN(UNION,eval)(__isl_take UNION *u,

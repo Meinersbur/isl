@@ -2494,6 +2494,30 @@ int test_fixed(isl_ctx *ctx)
 	return 0;
 }
 
+int test_union_pw(isl_ctx *ctx)
+{
+	int equal;
+	const char *str;
+	isl_union_set *uset;
+	isl_union_pw_qpolynomial *upwqp1, *upwqp2;
+
+	str = "{ [x] -> x^2 }";
+	upwqp1 = isl_union_pw_qpolynomial_read_from_str(ctx, str);
+	upwqp2 = isl_union_pw_qpolynomial_copy(upwqp1);
+	uset = isl_union_pw_qpolynomial_domain(upwqp1);
+	upwqp1 = isl_union_pw_qpolynomial_copy(upwqp2);
+	upwqp1 = isl_union_pw_qpolynomial_intersect_domain(upwqp1, uset);
+	equal = isl_union_pw_qpolynomial_plain_is_equal(upwqp1, upwqp2);
+	isl_union_pw_qpolynomial_free(upwqp1);
+	isl_union_pw_qpolynomial_free(upwqp2);
+	if (equal < 0)
+		return -1;
+	if (!equal)
+		isl_die(ctx, isl_error_unknown, "unexpected result", return -1);
+
+	return 0;
+}
+
 int main()
 {
 	struct isl_ctx *ctx;
@@ -2515,6 +2539,8 @@ int main()
 	if (test_injective(ctx) < 0)
 		goto error;
 	if (test_schedule(ctx) < 0)
+		goto error;
+	if (test_union_pw(ctx) < 0)
 		goto error;
 	test_factorize(ctx);
 	test_subset(ctx);
