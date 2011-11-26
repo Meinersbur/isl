@@ -24,6 +24,11 @@ int isl_options_get_schedule_outer_zero_distance(isl_ctx *ctx);
 int isl_options_set_schedule_split_parallel(isl_ctx *ctx, int val);
 int isl_options_get_schedule_split_parallel(isl_ctx *ctx);
 
+#define		ISL_SCHEDULE_FUSE_MAX			0
+#define		ISL_SCHEDULE_FUSE_MIN			1
+int isl_options_set_schedule_fuse(isl_ctx *ctx, int val);
+int isl_options_get_schedule_fuse(isl_ctx *ctx);
+
 __isl_give isl_schedule *isl_union_set_compute_schedule(
 	__isl_take isl_union_set *domain,
 	__isl_take isl_union_map *validity,

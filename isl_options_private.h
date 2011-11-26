@@ -51,6 +51,7 @@ struct isl_options {
 	int			schedule_maximize_band_depth;
 	int			schedule_split_parallel;
 	unsigned		schedule_algorithm;
+	int			schedule_fuse;
 };
 
 #endif

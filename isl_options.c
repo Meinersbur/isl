@@ -13,6 +13,7 @@
 
 #include <isl/ctx.h>
 #include <isl_options_private.h>
+#include <isl/schedule.h>
 #include <isl/version.h>
 
 struct isl_arg_choice isl_lp_solver_choice[] = {
@@ -94,6 +95,12 @@ static struct isl_arg_choice convex[] = {
 	{0}
 };
 
+static struct isl_arg_choice fuse[] = {
+	{"max",		ISL_SCHEDULE_FUSE_MAX},
+	{"min",		ISL_SCHEDULE_FUSE_MIN},
+	{0}
+};
+
 static void print_version(void)
 {
 	printf("%s", isl_version());
@@ -149,6 +156,8 @@ ISL_ARG_BOOL(struct isl_options, schedule_split_parallel, 0,
 ISL_ARG_CHOICE(struct isl_options, schedule_algorithm, 0,
 	"schedule-algorithm", isl_schedule_algorithm_choice,
 	ISL_SCHEDULE_ALGORITHM_ISL, "scheduling algorithm to use")
+ISL_ARG_CHOICE(struct isl_options, schedule_fuse, 0, "schedule-fuse", fuse,
+	ISL_SCHEDULE_FUSE_MAX, "level of fusion during scheduling")
 ISL_ARG_VERSION(print_version)
 ISL_ARGS_END
 
@@ -193,3 +202,8 @@ ISL_CTX_SET_CHOICE_DEF(isl_options, struct isl_options, isl_options_args,
 	schedule_algorithm)
 ISL_CTX_GET_CHOICE_DEF(isl_options, struct isl_options, isl_options_args,
 	schedule_algorithm)
+
+ISL_CTX_SET_CHOICE_DEF(isl_options, struct isl_options, isl_options_args,
+	schedule_fuse)
+ISL_CTX_GET_CHOICE_DEF(isl_options, struct isl_options, isl_options_args,
+	schedule_fuse)

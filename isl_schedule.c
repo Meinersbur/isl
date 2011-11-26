@@ -1794,9 +1794,9 @@ static int node_scc_at_least(struct isl_sched_node *node, int scc)
 	return node->scc >= scc;
 }
 
-static int edge_src_scc_exactly(struct isl_sched_edge *edge, int scc)
+static int edge_scc_exactly(struct isl_sched_edge *edge, int scc)
 {
-	return edge->src->scc == scc;
+	return edge->src->scc == scc && edge->dst->scc == scc;
 }
 
 static int edge_dst_scc_at_most(struct isl_sched_edge *edge, int scc)
@@ -2446,8 +2446,37 @@ static int compute_schedule_wcc(isl_ctx *ctx, struct isl_sched_graph *graph)
 	return sort_statements(ctx, graph);
 }
 
+/* Add a row to the schedules that separates the SCCs and move
+ * to the next band.
+ */
+static int split_on_scc(struct isl_sched_graph *graph)
+{
+	int i;
+
+	for (i = 0; i < graph->n; ++i) {
+		struct isl_sched_node *node = &graph->node[i];
+		int row = isl_mat_rows(node->sched);
+
+		isl_map_free(node->sched_map);
+		node->sched_map = NULL;
+		node->sched = isl_mat_add_zero_rows(node->sched, 1);
+		node->sched = isl_mat_set_element_si(node->sched, row, 0,
+						     node->scc);
+		if (!node->sched)
+			return -1;
+		node->band[graph->n_total_row] = graph->n_band;
+	}
+
+	graph->n_total_row++;
+	next_band(graph);
+
+	return 0;
+}
+
 /* Compute a schedule for each component (identified by node->scc)
  * of the dependence graph separately and then combine the results.
+ * Depending on the setting of schedule_fuse, a component may be
+ * either weakly or strongly connected.
  *
  * The band_id is adjusted such that each component has a separate id.
  * Note that the band_id may have already been set to a value different
@@ -2460,6 +2489,9 @@ static int compute_component_schedule(isl_ctx *ctx,
 	int n, n_edge;
 	int n_total_row, orig_total_row;
 	int n_band, orig_band;
+
+	if (ctx->opt->schedule_fuse == ISL_SCHEDULE_FUSE_MIN)
+		split_on_scc(graph);
 
 	n_total_row = 0;
 	orig_total_row = graph->n_total_row;
@@ -2474,12 +2506,13 @@ static int compute_component_schedule(isl_ctx *ctx,
 				n++;
 		n_edge = 0;
 		for (i = 0; i < graph->n_edge; ++i)
-			if (graph->edge[i].src->scc == wcc)
+			if (graph->edge[i].src->scc == wcc &&
+			    graph->edge[i].dst->scc == wcc)
 				n_edge++;
 
 		if (compute_sub_schedule(ctx, graph, n, n_edge,
 				    &node_scc_exactly,
-				    &edge_src_scc_exactly, wcc, 1) < 0)
+				    &edge_scc_exactly, wcc, 1) < 0)
 			return -1;
 		if (graph->n_total_row > n_total_row)
 			n_total_row = graph->n_total_row;
@@ -2498,11 +2531,19 @@ static int compute_component_schedule(isl_ctx *ctx,
 /* Compute a schedule for the given dependence graph.
  * We first check if the graph is connected (through validity dependences)
  * and, if not, compute a schedule for each component separately.
+ * If schedule_fuse is set to minimal fusion, then we check for strongly
+ * connected components instead and compute a separate schedule for
+ * each such strongly connected component.
  */
 static int compute_schedule(isl_ctx *ctx, struct isl_sched_graph *graph)
 {
-	if (detect_wccs(graph) < 0)
-		return -1;
+	if (ctx->opt->schedule_fuse == ISL_SCHEDULE_FUSE_MIN) {
+		if (detect_sccs(graph) < 0)
+			return -1;
+	} else {
+		if (detect_wccs(graph) < 0)
+			return -1;
+	}
 
 	if (graph->scc > 1)
 		return compute_component_schedule(ctx, graph);
