@@ -2426,7 +2426,7 @@ static int compute_component_schedule(isl_ctx *ctx,
 
 /* Compute a schedule for the given dependence graph.
  * We first check if the graph is connected (through validity dependences)
- * and if so compute a schedule for each component separately.
+ * and, if not, compute a schedule for each component separately.
  */
 static int compute_schedule(isl_ctx *ctx, struct isl_sched_graph *graph)
 {
