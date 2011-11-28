@@ -4029,6 +4029,49 @@ Any of C<must_dep>, C<may_dep>, C<must_no_source>
 or C<may_no_source> may be C<NULL>, but a C<NULL> value for
 any of the other arguments is treated as an error.
 
+=head3 Interaction with Dependence Analysis
+
+During the dependence analysis, we frequently need to perform
+the following operation.  Given a relation between sink iterations
+and potential soure iterations from a particular source domain,
+what is the last potential source iteration corresponding to each
+sink iteration.  It can sometimes be convenient to adjust
+the set of potential source iterations before each such operation.
+The prototypical example is fuzzy array dataflow analysis,
+where we need to analyze if, based on data-dependent constraints,
+the sink iteration can ever be executed without one or more of
+the corresponding potential source iterations being executed.
+If so, we can introduce extra parameters and select an unknown
+but fixed source iteration from the potential source iterations.
+To be able to perform such manipulations, C<isl> provides the following
+function.
+
+	#include <isl/flow.h>
+
+	typedef __isl_give isl_set *(*isl_access_restrict_sources)(
+		__isl_take isl_map *source_map,
+		void *sink_user, void *source_user);
+	__isl_give isl_access_info *
+	isl_access_info_set_restrict_sources(
+		__isl_take isl_access_info *acc,
+		isl_access_restrict_sources fn);
+
+The function C<isl_access_info_set_restrict_sources> should be called
+before C<isl_access_info_compute_flow> and registers a callback function
+that will be called any time C<isl> is about to compute the last
+potential source.  The first argument is the (reverse) proto-dependence,
+mapping sink iterations to potential source iterations.
+The other two arguments are the tokens corresponding to the sink
+and the source.  The callback is expected to return a set
+that restricts the source iterations.  The potential source iterations
+will be intersected with this set.  If no restrictions are required
+for a given C<source_map>, then the callback should return
+
+	isl_set_universe(
+	    isl_space_range(isl_map_get_space(source_map)));
+
+If any error occurs, the callback should return C<NULL>.
+
 =head2 Scheduling
 
 B<The functionality described in this section is fairly new

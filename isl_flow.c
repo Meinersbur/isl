@@ -35,15 +35,19 @@ struct isl_labeled_map {
  *
  * domain_map is an auxiliary map that maps the sink access relation
  * to the domain of this access relation.
+ *
+ * restrict_sources is a callback that (if not NULL) will be called
+ * right before any lexicographical maximization.
  */
 struct isl_access_info {
-	isl_map			*domain_map;
-	struct isl_labeled_map	sink;
-	isl_access_level_before	level_before;
-	int		    	max_source;
-	int		    	n_must;
-	int		    	n_may;
-	struct isl_labeled_map	source[1];
+	isl_map				*domain_map;
+	struct isl_labeled_map		sink;
+	isl_access_level_before		level_before;
+	isl_access_restrict_sources	restrict_sources;
+	int		    		max_source;
+	int		    		n_must;
+	int		    		n_may;
+	struct isl_labeled_map		source[1];
 };
 
 /* A structure containing the output of dependence analysis:
@@ -110,6 +114,15 @@ void isl_access_info_free(__isl_take isl_access_info *acc)
 isl_ctx *isl_access_info_get_ctx(__isl_keep isl_access_info *acc)
 {
 	return acc ? isl_map_get_ctx(acc->sink.map) : NULL;
+}
+
+__isl_give isl_access_info *isl_access_info_set_restrict_sources(
+	__isl_take isl_access_info *acc, isl_access_restrict_sources fn)
+{
+	if (!acc)
+		return NULL;
+	acc->restrict_sources = fn;
+	return acc;
 }
 
 /* Add another source to an isl_access_info structure, making
@@ -405,6 +418,32 @@ static __isl_give isl_map *after_at_level(__isl_take isl_space *dim, int level)
 	return isl_map_from_basic_map(bmap);
 }
 
+/* Check if the user has set acc->restrict_sources and if so
+ * intersect the range of "dep" with the result of a call to this function.
+ *
+ * Since the user expects a mapping from sink iterations to source iterations,
+ * whereas the domain of "dep" is a wrapped map, mapping sink iterations
+ * to accessed array elements, we first need to project out the accessed
+ * sink array elements by applying acc->domain_map.
+ */
+static __isl_give isl_map *restrict_sources(__isl_take isl_map *dep,
+	struct isl_access_info *acc, int source)
+{
+	isl_map *source_map;
+	isl_set *param;
+
+	if (!acc->restrict_sources)
+		return dep;
+
+	source_map = isl_map_copy(dep);
+	source_map = isl_map_apply_domain(source_map,
+					    isl_map_copy(acc->domain_map));
+	param = acc->restrict_sources(source_map, acc->sink.data,
+				    acc->source[source].data);
+	dep = isl_map_intersect_range(dep, param);
+	return dep;
+}
+
 /* Compute the last iteration of must source j that precedes the sink
  * at the given level for sink iterations in set_C.
  * The subset of set_C for which no such iteration can be found is returned
@@ -426,6 +465,7 @@ static struct isl_map *last_source(struct isl_access_info *acc,
 	dep_map = isl_map_apply_range(read_map, write_map);
 	after = after_at_level(isl_map_get_space(dep_map), level);
 	dep_map = isl_map_intersect(dep_map, after);
+	dep_map = restrict_sources(dep_map, acc, j);
 	result = isl_map_partial_lexmax(dep_map, set_C, empty);
 	result = isl_map_reverse(result);
 
@@ -467,6 +507,7 @@ static struct isl_map *last_later_source(struct isl_access_info *acc,
 	dep_map = isl_map_intersect(dep_map, after_write);
 	before_read = after_at_level(isl_map_get_space(dep_map), before_level);
 	dep_map = isl_map_intersect(dep_map, before_read);
+	dep_map = restrict_sources(dep_map, acc, k);
 	result = isl_map_partial_lexmax(dep_map, set_C, empty);
 	result = isl_map_reverse(result);
 

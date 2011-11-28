@@ -16,6 +16,9 @@ extern "C" {
  */
 typedef int (*isl_access_level_before)(void *first, void *second);
 
+typedef __isl_give isl_set *(*isl_access_restrict_sources)(
+	__isl_take isl_map *source_map, void *sink_user, void *source_user);
+
 struct isl_access_info;
 typedef struct isl_access_info isl_access_info;
 struct isl_flow;
@@ -23,6 +26,8 @@ typedef struct isl_flow isl_flow;
 
 __isl_give isl_access_info *isl_access_info_alloc(__isl_take isl_map *sink,
 	void *sink_user, isl_access_level_before fn, int max_source);
+__isl_give isl_access_info *isl_access_info_set_restrict_sources(
+	__isl_take isl_access_info *acc, isl_access_restrict_sources fn);
 __isl_give isl_access_info *isl_access_info_add_source(
 	__isl_take isl_access_info *acc, __isl_take isl_map *source,
 	int must, void *source_user);
