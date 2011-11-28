@@ -74,6 +74,8 @@ __isl_give isl_id *isl_set_get_tuple_id(__isl_keep isl_set *set);
 
 int isl_set_find_dim_by_id(__isl_keep isl_set *set, enum isl_dim_type type,
 	__isl_keep isl_id *id);
+int isl_set_find_dim_by_name(__isl_keep isl_set *set, enum isl_dim_type type,
+	const char *name);
 
 int isl_basic_set_is_rational(__isl_keep isl_basic_set *bset);
 
