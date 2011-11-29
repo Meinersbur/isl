@@ -1753,6 +1753,12 @@ __isl_give isl_set *isl_set_remove_divs_involving_dims(__isl_take isl_set *set,
 							      type, first, n);
 }
 
+/* Does the desciption of "bmap" depend on the specified dimensions?
+ * We also check whether the dimensions appear in any of the div definitions.
+ * In principle there is no need for this check.  If the dimensions appear
+ * in a div definition, they also appear in the defining constraints of that
+ * div.
+ */
 int isl_basic_map_involves_dims(__isl_keep isl_basic_map *bmap,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
@@ -1772,6 +1778,12 @@ int isl_basic_map_involves_dims(__isl_keep isl_basic_map *bmap,
 	for (i = 0; i < bmap->n_ineq; ++i)
 		if (isl_seq_first_non_zero(bmap->ineq[i] + first, n) >= 0)
 			return 1;
+	for (i = 0; i < bmap->n_div; ++i) {
+		if (isl_int_is_zero(bmap->div[i][0]))
+			continue;
+		if (isl_seq_first_non_zero(bmap->div[i] + 1 + first, n) >= 0)
+			return 1;
+	}
 
 	return 0;
 }
