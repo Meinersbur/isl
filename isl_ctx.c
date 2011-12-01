@@ -132,7 +132,11 @@ void isl_ctx_free(struct isl_ctx *ctx)
 {
 	if (!ctx)
 		return;
-	isl_assert(ctx, ctx->ref == 0, return);
+	if (ctx->ref != 0)
+		isl_die(ctx, isl_error_invalid,
+			"isl_ctx freed, but some objects still reference it",
+			return);
+
 	isl_hash_table_clear(&ctx->id_table);
 	isl_blk_clear_cache(ctx);
 	isl_int_clear(ctx->zero);
