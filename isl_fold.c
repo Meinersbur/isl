@@ -625,6 +625,8 @@ error:
 #define IS_ZERO is_zero
 #undef FIELD
 #define FIELD fold
+#undef DEFAULT_IS_ZERO
+#define DEFAULT_IS_ZERO 1
 
 #define NO_NEG
 

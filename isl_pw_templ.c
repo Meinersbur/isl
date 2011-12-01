@@ -1381,7 +1381,7 @@ __isl_give PW *FN(PW,mul_isl_int)(__isl_take PW *pw, isl_int v)
 
 	if (isl_int_is_one(v))
 		return pw;
-	if (pw && isl_int_is_zero(v)) {
+	if (pw && DEFAULT_IS_ZERO && isl_int_is_zero(v)) {
 		PW *zero;
 		isl_space *dim = FN(PW,get_space)(pw);
 #ifdef HAS_TYPE
