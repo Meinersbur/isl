@@ -634,6 +634,8 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_gist_params(
 #define IS_ZERO is_zero
 #undef FIELD
 #define FIELD fold
+#undef DEFAULT_IS_ZERO
+#define DEFAULT_IS_ZERO 1
 
 #define NO_NEG
 

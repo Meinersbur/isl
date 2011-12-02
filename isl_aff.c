@@ -1219,6 +1219,8 @@ __isl_give isl_pw_aff *isl_pw_aff_from_aff(__isl_take isl_aff *aff)
 #define IS_ZERO is_empty
 #undef FIELD
 #define FIELD aff
+#undef DEFAULT_IS_ZERO
+#define DEFAULT_IS_ZERO 0
 
 #define NO_EVAL
 #define NO_OPT
@@ -2111,6 +2113,8 @@ __isl_give isl_multi_aff *isl_multi_aff_drop_dims(__isl_take isl_multi_aff *maff
 #define IS_ZERO is_empty
 #undef FIELD
 #define FIELD maff
+#undef DEFAULT_IS_ZERO
+#define DEFAULT_IS_ZERO 0
 
 #define NO_NEG
 #define NO_EVAL

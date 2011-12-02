@@ -2605,6 +2605,8 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_from_qpolynomial(
 #define IS_ZERO is_zero
 #undef FIELD
 #define FIELD qp
+#undef DEFAULT_IS_ZERO
+#define DEFAULT_IS_ZERO 1
 
 #include <isl_pw_templ.c>
 

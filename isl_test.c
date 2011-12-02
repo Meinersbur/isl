@@ -158,6 +158,10 @@ void test_parse(struct isl_ctx *ctx)
 	str2 = "{ [i] : i >= 11 }";
 	test_parse_map_equal(ctx, str, str2);
 
+	str = "{ [i] -> [0] }";
+	str2 = "{ [i] -> [0 * i] }";
+	test_parse_map_equal(ctx, str, str2);
+
 	test_parse_pwqp(ctx, "{ [i] -> i + [ (i + [i/3])/2 ] }");
 	test_parse_map(ctx, "{ S1[i] -> [([i/10]),i%10] : 0 <= i <= 45 }");
 	test_parse_pwaff(ctx, "{ [i] -> [i + 1] : i > 0; [a] -> [a] : a < 0 }");
