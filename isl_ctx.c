@@ -11,6 +11,24 @@
 #include <isl/vec.h>
 #include <isl/options.h>
 
+void isl_handle_error(isl_ctx *ctx, int errno, const char *msg,
+	const char *file, int line)
+{
+	isl_ctx_set_error(ctx, errno);
+
+	switch (isl_options_get_on_error(ctx)) {
+	case ISL_ON_ERROR_WARN:
+		fprintf(stderr, "%s:%d: %s\n", file, line, msg);
+		return;
+	case ISL_ON_ERROR_CONTINUE:
+		return;
+	case ISL_ON_ERROR_ABORT:
+		fprintf(stderr, "%s:%d: %s\n", file, line, msg);
+		abort();
+		return;
+	}
+}
+
 static struct isl_options *find_nested_options(struct isl_args *args,
 	void *opt, struct isl_args *wanted)
 {

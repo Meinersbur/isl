@@ -479,6 +479,49 @@ a C<NULL> value for an C<__isl_take> argument.
 
 =back
 
+=head2 Error Handling
+
+C<isl> supports different ways to react in case a runtime error is triggered.
+Runtime errors arise, e.g., if a function such as C<isl_map_intersect> is called
+with two maps that have incompatible spaces. There are three possible ways
+to react on error: to warn, to continue or to abort.
+
+The default behavior is to warn. In this mode, C<isl> prints a warning, stores
+the last error in the corresponding C<isl_ctx> and the function in which the
+error was triggered returns C<NULL>. An error does not corrupt internal state,
+such that isl can continue to be used. C<isl> also provides functions to
+read the last error and to reset the memory that stores the last error. The
+last error is only stored for information purposes. Its presence does not
+change the behavior of C<isl>. Hence, resetting an error is not required to
+continue to use isl, but only to observe new errors.
+
+	#include <isl/ctx.h>
+	enum isl_error isl_ctx_last_error(isl_ctx *ctx);
+	void isl_ctx_reset_error(isl_ctx *ctx);
+
+Another option is to continue on error. This is similar to warn on error mode,
+except that C<isl> does not print any warning. This allows a program to
+implement its own error reporting.
+
+The last option is to directly abort the execution of the program from within
+the isl library. This makes it obviously impossible to recover from an error,
+but it allows to directly spot the error location. By aborting on error,
+debuggers break at the location the error occurred and can provide a stack
+trace. Other tools that automatically provide stack traces on abort or that do
+not want to continue execution after an error was triggered may also prefer to
+abort on error.
+
+The on error behavior of isl can be specified by calling
+C<isl_options_set_on_error> or by setting the command line option
+C<--isl-on-error>. Valid arguments for the function call are
+C<ISL_ON_ERROR_WARN>, C<ISL_ON_ERROR_CONTINUE> and C<ISL_ON_ERROR_ABORT>. The
+choices for the command line option are C<warn>, C<continue> and C<abort>.
+It is also possible to query the current error mode.
+
+	#include <isl/options.h>
+	int isl_options_set_on_error(isl_ctx *ctx, int val);
+	int isl_options_get_on_error(isl_ctx *ctx);
+
 =head2 Identifiers
 
 Identifiers are used to identify both individual dimensions

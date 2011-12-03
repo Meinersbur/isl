@@ -64,6 +64,13 @@ static struct isl_arg_choice bound[] = {
 	{0}
 };
 
+static struct isl_arg_choice on_error[] = {
+	{"warn",	ISL_ON_ERROR_WARN},
+	{"continue",	ISL_ON_ERROR_CONTINUE},
+	{"abort",	ISL_ON_ERROR_ABORT},
+	{0}
+};
+
 static struct isl_arg_flags bernstein_recurse[] = {
 	{"none",	ISL_BERNSTEIN_FACTORS | ISL_BERNSTEIN_INTERVALS, 0},
 	{"factors",	ISL_BERNSTEIN_FACTORS | ISL_BERNSTEIN_INTERVALS,
@@ -106,6 +113,8 @@ ISL_ARG_BOOL(struct isl_options, gbr_only_first, 0, "gbr-only-first", 0,
 	"only perform basis reduction in first direction")
 ISL_ARG_CHOICE(struct isl_options, bound, 0, "bound", bound,
 	ISL_BOUND_BERNSTEIN, "algorithm to use for computing bounds")
+ISL_ARG_CHOICE(struct isl_options, on_error, 0, "on-error", on_error,
+	ISL_ON_ERROR_WARN, "how to react if an error is detected")
 ISL_ARG_FLAGS(struct isl_options, bernstein_recurse, 0,
 	"bernstein-recurse", bernstein_recurse, ISL_BERNSTEIN_FACTORS, NULL)
 ISL_ARG_BOOL(struct isl_options, bernstein_triangulate, 0,
@@ -136,6 +145,11 @@ ISL_ARG_CTX_DEF(isl_options, struct isl_options, isl_options_args)
 
 ISL_CTX_SET_CHOICE_DEF(isl_options, struct isl_options, isl_options_args, bound)
 ISL_CTX_GET_CHOICE_DEF(isl_options, struct isl_options, isl_options_args, bound)
+
+ISL_CTX_SET_CHOICE_DEF(isl_options, struct isl_options, isl_options_args,
+	on_error)
+ISL_CTX_GET_CHOICE_DEF(isl_options, struct isl_options, isl_options_args,
+	on_error)
 
 ISL_CTX_SET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
 	gbr_only_first)

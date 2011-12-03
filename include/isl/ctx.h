@@ -120,10 +120,13 @@ typedef struct isl_ctx isl_ctx;
 
 #define isl_die(ctx,errno,msg,code)					\
 	do {								\
-		isl_ctx_set_error(ctx, errno);				\
-		fprintf(stderr, "%s:%d: %s\n", __FILE__, __LINE__, msg);	\
+		isl_handle_error(ctx, errno, msg, __FILE__, __LINE__);	\
 		code;							\
 	} while (0)
+
+void isl_handle_error(isl_ctx *ctx, int errno, const char *msg,
+	const char *file, int line);
+
 #define isl_assert4(ctx,test,code,errno)				\
 	do {								\
 		if (test)						\

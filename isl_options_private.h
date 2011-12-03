@@ -31,6 +31,7 @@ struct isl_options {
 	unsigned		closure;
 
 	int			bound;
+	unsigned		on_error;
 
 	#define			ISL_BERNSTEIN_FACTORS	1
 	#define			ISL_BERNSTEIN_INTERVALS	2
