@@ -1067,6 +1067,24 @@ error:
 	return NULL;
 }
 
+__isl_give isl_space *isl_space_map_from_domain_and_range(
+	__isl_take isl_space *domain, __isl_take isl_space *range)
+{
+	if (!domain || !range)
+		goto error;
+	if (!isl_space_is_set(domain))
+		isl_die(isl_space_get_ctx(domain), isl_error_invalid,
+			"domain is not a set space", goto error);
+	if (!isl_space_is_set(range))
+		isl_die(isl_space_get_ctx(range), isl_error_invalid,
+			"range is not a set space", goto error);
+	return isl_space_join(isl_space_reverse(domain), range);
+error:
+	isl_space_free(domain);
+	isl_space_free(range);
+	return NULL;
+}
+
 static __isl_give isl_space *set_ids(__isl_take isl_space *dim,
 	enum isl_dim_type type,
 	unsigned first, unsigned n, __isl_take isl_id **ids)
