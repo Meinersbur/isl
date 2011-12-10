@@ -1419,6 +1419,8 @@ static __isl_give isl_map *map_from_pw_aff(__isl_take isl_pw_aff *pwaff)
  */
 __isl_give isl_map *isl_map_from_pw_aff(__isl_take isl_pw_aff *pwaff)
 {
+	if (!pwaff)
+		return NULL;
 	if (isl_space_is_set(pwaff->dim))
 		isl_die(isl_pw_aff_get_ctx(pwaff), isl_error_invalid,
 			"space of input is not a map",
