@@ -3137,6 +3137,8 @@ The expression can be inspected using
 		enum isl_dim_type type);
 	__isl_give isl_aff *isl_multi_aff_get_aff(
 		__isl_keep isl_multi_aff *multi, int pos);
+	__isl_give isl_pw_aff *isl_pw_multi_aff_get_pw_aff(
+		__isl_keep isl_pw_multi_aff *pma, int pos);
 	const char *isl_pw_multi_aff_get_dim_name(
 		__isl_keep isl_pw_multi_aff *pma,
 		enum isl_dim_type type, unsigned pos);

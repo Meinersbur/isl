@@ -2516,3 +2516,37 @@ error:
 		isl_local_space_free(*ls);
 	return isl_multi_aff_free(maff);
 }
+
+
+/* Extract an isl_pw_aff corresponding to output dimension "pos" of "pma".
+ */
+__isl_give isl_pw_aff *isl_pw_multi_aff_get_pw_aff(
+	__isl_keep isl_pw_multi_aff *pma, int pos)
+{
+	int i;
+	int n_out;
+	isl_space *space;
+	isl_pw_aff *pa;
+
+	if (!pma)
+		return NULL;
+
+	n_out = isl_pw_multi_aff_dim(pma, isl_dim_out);
+	if (pos < 0 || pos >= n_out)
+		isl_die(isl_pw_multi_aff_get_ctx(pma), isl_error_invalid,
+			"index out of bounds", return NULL);
+
+	space = isl_pw_multi_aff_get_space(pma);
+	space = isl_space_drop_dims(space, isl_dim_out,
+				    pos + 1, n_out - pos - 1);
+	space = isl_space_drop_dims(space, isl_dim_out, 0, pos);
+
+	pa = isl_pw_aff_alloc_size(space, pma->n);
+	for (i = 0; i < pma->n; ++i) {
+		isl_aff *aff;
+		aff = isl_multi_aff_get_aff(pma->p[i].maff, pos);
+		pa = isl_pw_aff_add_piece(pa, isl_set_copy(pma->p[i].set), aff);
+	}
+
+	return pa;
+}
