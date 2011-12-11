@@ -4128,6 +4128,10 @@ A representation of the band can be printed using
 =head3 Options
 
 	#include <isl/schedule.h>
+	int isl_options_set_schedule_maximize_band_depth(
+		isl_ctx *ctx, int val);
+	int isl_options_get_schedule_maximize_band_depth(
+		isl_ctx *ctx);
 	int isl_options_set_schedule_outer_zero_distance(
 		isl_ctx *ctx, int val);
 	int isl_options_get_schedule_outer_zero_distance(
@@ -4139,6 +4143,14 @@ A representation of the band can be printed using
 
 
 =over
+
+=item * maximize_band_depth
+
+If this option is set, we do not split bands at the point
+where we detect splitting is necessary. Instead, we
+backtrack and split bands as early as possible. This
+reduces the number of splits and maximizes the width of
+the bands. Wider bands give more possibilities for tiling.
 
 =item * schedule_outer_zero_distance
 
