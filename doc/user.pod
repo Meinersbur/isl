@@ -4154,7 +4154,7 @@ the bands. Wider bands give more possibilities for tiling.
 
 =item * schedule_outer_zero_distance
 
-It this option is set, then we try to construct schedules
+If this option is set, then we try to construct schedules
 where the outermost scheduling dimension in each band
 results in a zero dependence distance over the proximity
 dependences.
