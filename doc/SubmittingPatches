@@ -36,6 +36,6 @@
 	- if your name is not writable in ASCII, make sure that
 	  you send off a message in the correct encoding.
 	- send the patch to the development mailing list
-	  (isl-development@googlegroups.co).  If you use
+	  (isl-development@googlegroups.com).  If you use
 	  git-send-email(1), please test it first by sending email
 	  to yourself.
