@@ -45,6 +45,7 @@ struct isl_options {
 	#define			ISL_CONVEX_HULL_FM	1
 	int			convex;
 
+	int			schedule_max_constant_term;
 	int			schedule_parametric;
 	int			schedule_outer_zero_distance;
 	int			schedule_maximize_band_depth;

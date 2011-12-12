@@ -4128,6 +4128,10 @@ A representation of the band can be printed using
 =head3 Options
 
 	#include <isl/schedule.h>
+	int isl_options_set_schedule_max_constant_term(
+		isl_ctx *ctx, int val);
+	int isl_options_get_schedule_max_constant_term(
+		isl_ctx *ctx);
 	int isl_options_set_schedule_maximize_band_depth(
 		isl_ctx *ctx, int val);
 	int isl_options_get_schedule_maximize_band_depth(
@@ -4143,6 +4147,14 @@ A representation of the band can be printed using
 
 
 =over
+
+=item * max_constant_term
+
+This option enforces that the constant coefficients in the calculated schedule
+are not larger than the maximal constant term. This option can significantly
+increase the speed of the scheduling calculation and may also prevent fusing of
+unrelated dimensions. A value of -1 means that this option does not introduce
+bounds on the constant coefficients.
 
 =item * maximize_band_depth
 

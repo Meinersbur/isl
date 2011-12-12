@@ -1139,6 +1139,9 @@ static int setup_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
 	int parametric;
 	int param_pos;
 	int n_eq, n_ineq;
+	int max_constant_term;
+
+	max_constant_term = ctx->opt->schedule_max_constant_term;
 
 	parametric = ctx->opt->schedule_parametric;
 	nparam = isl_space_dim(graph->node[0].dim, isl_dim_param);
@@ -1158,6 +1161,9 @@ static int setup_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
 	dim = isl_space_set_alloc(ctx, 0, total);
 	isl_basic_set_free(graph->lp);
 	n_eq += 2 + parametric + force_zero;
+	if (max_constant_term != -1)
+		n_ineq += graph->n;
+
 	graph->lp = isl_basic_set_alloc_space(dim, 0, n_eq, n_ineq);
 
 	k = isl_basic_set_alloc_equality(graph->lp);
@@ -1203,6 +1209,17 @@ static int setup_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
 		for (j = 0; j < 2 * node->nvar; ++j)
 			isl_int_set_si(graph->lp->eq[k][pos + j], 1);
 	}
+
+	if (max_constant_term != -1)
+		for (i = 0; i < graph->n; ++i) {
+			struct isl_sched_node *node = &graph->node[i];
+			k = isl_basic_set_alloc_inequality(graph->lp);
+			if (k < 0)
+				return -1;
+			isl_seq_clr(graph->lp->ineq[k], 1 +  total);
+			isl_int_set_si(graph->lp->ineq[k][1 + node->start], -1);
+			isl_int_set_si(graph->lp->ineq[k][0], max_constant_term);
+		}
 
 	if (add_all_validity_constraints(graph) < 0)
 		return -1;
