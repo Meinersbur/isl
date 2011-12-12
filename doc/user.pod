@@ -4132,6 +4132,11 @@ A representation of the band can be printed using
 		isl_ctx *ctx, int val);
 	int isl_options_get_schedule_outer_zero_distance(
 		isl_ctx *ctx);
+	int isl_options_set_schedule_split_parallel(
+		isl_ctx *ctx, int val);
+	int isl_options_get_schedule_split_parallel(
+		isl_ctx *ctx);
+
 
 =over
 
@@ -4141,6 +4146,14 @@ It this option is set, then we try to construct schedules
 where the outermost scheduling dimension in each band
 results in a zero dependence distance over the proximity
 dependences.
+
+=item * schedule_split_parallel
+
+If this option is set, then we try to construct schedules in which the
+constant term is split off from the linear part if the linear parts of
+the scheduling rows for all nodes in the graphs are the same.
+The constant term is then placed in a separate band and the linear
+part is simplified.
 
 =back
 

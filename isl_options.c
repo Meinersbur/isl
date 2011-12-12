@@ -157,6 +157,11 @@ ISL_CTX_GET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
 	gbr_only_first)
 
 ISL_CTX_SET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
+	schedule_split_parallel)
+ISL_CTX_GET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
+	schedule_split_parallel)
+
+ISL_CTX_SET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
 	schedule_outer_zero_distance)
 ISL_CTX_GET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
 	schedule_outer_zero_distance)
