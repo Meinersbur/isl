@@ -4035,16 +4035,22 @@ B<The functionality described in this section is fairly new
 and may be subject to change.>
 
 The following function can be used to compute a schedule
-for a union of domains.  The generated schedule respects
-all C<validity> dependences.  That is, all dependence distances
-over these dependences in the scheduled space are lexicographically
-positive.  The generated schedule schedule also tries to minimize
-the dependence distances over C<proximity> dependences.
+for a union of domains.
+By default, the algorithm used to construct the schedule is similar
+to that of C<Pluto>.
+Alternatively, Feautrier's multi-dimensional scheduling algorithm can
+be selected.
+The generated schedule respects all C<validity> dependences.
+That is, all dependence distances over these dependences in the
+scheduled space are lexicographically positive.
+The default algorithm tries to minimize the dependence distances over
+C<proximity> dependences.
 Moreover, it tries to obtain sequences (bands) of schedule dimensions
 for groups of domains where the dependence distances have only
 non-negative values.
-The algorithm used to construct the schedule is similar to that
-of C<Pluto>.
+When using Feautrier's algorithm, the C<proximity> dependence
+distances are only minimized during the extension to a
+full-dimensional schedule.
 
 	#include <isl/schedule.h>
 	__isl_give isl_schedule *isl_union_set_compute_schedule(
@@ -4144,6 +4150,10 @@ A representation of the band can be printed using
 		isl_ctx *ctx, int val);
 	int isl_options_get_schedule_split_parallel(
 		isl_ctx *ctx);
+	int isl_options_set_schedule_algorithm(
+		isl_ctx *ctx, int val);
+	int isl_options_get_schedule_algorithm(
+		isl_ctx *ctx);
 
 
 =over
@@ -4178,6 +4188,12 @@ constant term is split off from the linear part if the linear parts of
 the scheduling rows for all nodes in the graphs are the same.
 The constant term is then placed in a separate band and the linear
 part is simplified.
+
+=item * schedule_algorithm
+
+Selects the scheduling algorithm to be used.
+Available scheduling algorithms are C<ISL_SCHEDULE_ALGORITHM_ISL>
+and C<ISL_SCHEDULE_ALGORITHM_FEAUTRIER>.
 
 =back
 

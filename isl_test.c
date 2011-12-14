@@ -2036,27 +2036,24 @@ int test_one_schedule(isl_ctx *ctx, const char *d, const char *w,
 	return 0;
 }
 
-int test_special_schedule(isl_ctx *ctx)
+int test_special_schedule(isl_ctx *ctx, const char *domain,
+	const char *validity, const char *proximity, const char *expected_sched)
 {
-	const char *str;
 	isl_union_set *dom;
-	isl_union_map *empty;
 	isl_union_map *dep;
+	isl_union_map *prox;
 	isl_union_map *sched1, *sched2;
 	isl_schedule *schedule;
 	int equal;
 
-	str = "{ S[i,j] : 0 <= i <= 10 }";
-	dom = isl_union_set_read_from_str(ctx, str);
-	str = "{ S[i,j] -> S[i+1,j] : 0 <= i,j <= 10 }";
-	dep = isl_union_map_read_from_str(ctx, str);
-	empty = isl_union_map_read_from_str(ctx, "{}");
-	schedule = isl_union_set_compute_schedule(dom, empty, dep);
+	dom = isl_union_set_read_from_str(ctx, domain);
+	dep = isl_union_map_read_from_str(ctx, validity);
+	prox = isl_union_map_read_from_str(ctx, proximity);
+	schedule = isl_union_set_compute_schedule(dom, dep, prox);
 	sched1 = isl_schedule_get_map(schedule);
 	isl_schedule_free(schedule);
 
-	str = "{ S[i, j] -> [j, i] }";
-	sched2 = isl_union_map_read_from_str(ctx, str);
+	sched2 = isl_union_map_read_from_str(ctx, expected_sched);
 
 	equal = isl_union_map_is_equal(sched1, sched2);
 	isl_union_map_free(sched1);
@@ -2073,7 +2070,7 @@ int test_special_schedule(isl_ctx *ctx)
 
 int test_schedule(isl_ctx *ctx)
 {
-	const char *D, *W, *R, *S;
+	const char *D, *W, *R, *V, *P, *S;
 
 	/* Jacobi */
 	D = "[T,N] -> { S1[t,i] : 1 <= t <= T and 2 <= i <= N - 1 }";
@@ -2240,7 +2237,42 @@ int test_schedule(isl_ctx *ctx)
 		return -1;
 	ctx->opt->schedule_outer_zero_distance = 0;
 
-	return test_special_schedule(ctx);
+	D = "{ S_0[i, j] : i >= 1 and i <= 10 and j >= 1 and j <= 8 }";
+	V = "{ S_0[i, j] -> S_0[i, 1 + j] : i >= 1 and i <= 10 and "
+					   "j >= 1 and j <= 7;"
+		"S_0[i, j] -> S_0[1 + i, j] : i >= 1 and i <= 9 and "
+					     "j >= 1 and j <= 8 }";
+	P = "{ }";
+	S = "{ S_0[i, j] -> [i + j, j] }";
+	ctx->opt->schedule_algorithm = ISL_SCHEDULE_ALGORITHM_FEAUTRIER;
+	if (test_special_schedule(ctx, D, V, P, S) < 0)
+		return -1;
+	ctx->opt->schedule_algorithm = ISL_SCHEDULE_ALGORITHM_ISL;
+
+	/* Fig. 1 from Feautrier's "Some Efficient Solutions..." pt. 2, 1992 */
+	D = "[N] -> { S_0[i, j] : i >= 0 and i <= -1 + N and "
+				 "j >= 0 and j <= -1 + i }";
+	V = "[N] -> { S_0[i, j] -> S_0[i, 1 + j] : j <= -2 + i and "
+					"i <= -1 + N and j >= 0;"
+		     "S_0[i, -1 + i] -> S_0[1 + i, 0] : i >= 1 and "
+					"i <= -2 + N }";
+	P = "{ }";
+	S = "{ S_0[i, j] -> [i, j] }";
+	ctx->opt->schedule_algorithm = ISL_SCHEDULE_ALGORITHM_FEAUTRIER;
+	if (test_special_schedule(ctx, D, V, P, S) < 0)
+		return -1;
+	ctx->opt->schedule_algorithm = ISL_SCHEDULE_ALGORITHM_ISL;
+
+	/* Test both algorithms on a case with only proximity dependences. */
+	D = "{ S[i,j] : 0 <= i <= 10 }";
+	V = "{ }";
+	P = "{ S[i,j] -> S[i+1,j] : 0 <= i,j <= 10 }";
+	S = "{ S[i, j] -> [j, i] }";
+	ctx->opt->schedule_algorithm = ISL_SCHEDULE_ALGORITHM_FEAUTRIER;
+	if (test_special_schedule(ctx, D, V, P, S) < 0)
+		return -1;
+	ctx->opt->schedule_algorithm = ISL_SCHEDULE_ALGORITHM_ISL;
+	return test_special_schedule(ctx, D, V, P, S);
 }
 
 int test_plain_injective(isl_ctx *ctx, const char *str, int injective)

@@ -2326,6 +2326,47 @@ static int carry_dependences(isl_ctx *ctx, struct isl_sched_graph *graph)
 	return compute_next_band(ctx, graph);
 }
 
+/* Are there any validity edges in the graph?
+ */
+static int has_validity_edges(struct isl_sched_graph *graph)
+{
+	int i;
+
+	for (i = 0; i < graph->n_edge; ++i)
+		if (graph->edge[i].validity)
+			return 1;
+
+	return 0;
+}
+
+/* Should we apply a Feautrier step?
+ * That is, did the user request the Feautrier algorithm and are
+ * there any validity dependences (left)?
+ */
+static int need_feautrier_step(isl_ctx *ctx, struct isl_sched_graph *graph)
+{
+	if (ctx->opt->schedule_algorithm != ISL_SCHEDULE_ALGORITHM_FEAUTRIER)
+		return 0;
+
+	return has_validity_edges(graph);
+}
+
+/* Compute a schedule for a connected dependence graph using Feautrier's
+ * multi-dimensional scheduling algorithm.
+ * The original algorithm is described in [1].
+ * The main idea is to minimize the number of scheduling dimensions, by
+ * trying to satisfy as many dependences as possible per scheduling dimension.
+ *
+ * [1] P. Feautrier, Some Efficient Solutions to the Affine Scheduling
+ *     Problem, Part II: Multi-Dimensional Time.
+ *     In Intl. Journal of Parallel Programming, 1992.
+ */
+static int compute_schedule_wcc_feautrier(isl_ctx *ctx,
+	struct isl_sched_graph *graph)
+{
+	return carry_dependences(ctx, graph);
+}
+
 /* Compute a schedule for a connected dependence graph.
  * We try to find a sequence of as many schedule rows as possible that result
  * in non-negative dependence distances (independent of the previous rows
@@ -2337,6 +2378,10 @@ static int carry_dependences(isl_ctx *ctx, struct isl_sched_graph *graph)
  *	one row)
  * - try to carry as many dependences as possible and continue with the next
  *	band
+ *
+ * If Feautrier's algorithm is selected, we first recursively try to satisfy
+ * as many validity dependences as possible. When all validity dependences
+ * are satisfied we extend the schedule to a full-dimensional schedule.
  *
  * If we manage to complete the schedule, we finish off by topologically
  * sorting the statements based on the remaining dependences.
@@ -2356,6 +2401,9 @@ static int compute_schedule_wcc(isl_ctx *ctx, struct isl_sched_graph *graph)
 
 	if (compute_maxvar(graph) < 0)
 		return -1;
+
+	if (need_feautrier_step(ctx, graph))
+		return compute_schedule_wcc_feautrier(ctx, graph);
 
 	if (ctx->opt->schedule_outer_zero_distance)
 		force_zero = 1;
@@ -2457,8 +2505,12 @@ static int compute_schedule(isl_ctx *ctx, struct isl_sched_graph *graph)
 }
 
 /* Compute a schedule for the given union of domains that respects
- * all the validity dependences and tries to minimize the dependence
- * distances over the proximity dependences.
+ * all the validity dependences.
+ * If the default isl scheduling algorithm is used, it tries to minimize
+ * the dependence distances over the proximity dependences.
+ * If Feautrier's scheduling algorithm is used, the proximity dependence
+ * distances are only minimized during the extension to a full-dimensional
+ * schedule.
  */
 __isl_give isl_schedule *isl_union_set_compute_schedule(
 	__isl_take isl_union_set *domain,

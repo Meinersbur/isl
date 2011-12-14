@@ -71,6 +71,12 @@ static struct isl_arg_choice on_error[] = {
 	{0}
 };
 
+static struct isl_arg_choice isl_schedule_algorithm_choice[] = {
+	{"isl",		ISL_SCHEDULE_ALGORITHM_ISL},
+	{"feautrier",   ISL_SCHEDULE_ALGORITHM_FEAUTRIER},
+	{0}
+};
+
 static struct isl_arg_flags bernstein_recurse[] = {
 	{"none",	ISL_BERNSTEIN_FACTORS | ISL_BERNSTEIN_INTERVALS, 0},
 	{"factors",	ISL_BERNSTEIN_FACTORS | ISL_BERNSTEIN_INTERVALS,
@@ -140,6 +146,9 @@ ISL_ARG_BOOL(struct isl_options, schedule_maximize_band_depth, 0,
 ISL_ARG_BOOL(struct isl_options, schedule_split_parallel, 0,
 	"schedule-split-parallel", 1,
 	"split non-tilable bands with parallel schedules")
+ISL_ARG_CHOICE(struct isl_options, schedule_algorithm, 0,
+	"schedule-algorithm", isl_schedule_algorithm_choice,
+	ISL_SCHEDULE_ALGORITHM_ISL, "scheduling algorithm to use")
 ISL_ARG_VERSION(print_version)
 ISL_ARGS_END
 
@@ -179,3 +188,8 @@ ISL_CTX_SET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
 	schedule_outer_zero_distance)
 ISL_CTX_GET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
 	schedule_outer_zero_distance)
+
+ISL_CTX_SET_CHOICE_DEF(isl_options, struct isl_options, isl_options_args,
+	schedule_algorithm)
+ISL_CTX_GET_CHOICE_DEF(isl_options, struct isl_options, isl_options_args,
+	schedule_algorithm)
