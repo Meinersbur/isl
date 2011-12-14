@@ -4158,7 +4158,7 @@ A representation of the band can be printed using
 
 =over
 
-=item * max_constant_term
+=item * schedule_max_constant_term
 
 This option enforces that the constant coefficients in the calculated schedule
 are not larger than the maximal constant term. This option can significantly
@@ -4166,7 +4166,7 @@ increase the speed of the scheduling calculation and may also prevent fusing of
 unrelated dimensions. A value of -1 means that this option does not introduce
 bounds on the constant coefficients.
 
-=item * maximize_band_depth
+=item * schedule_maximize_band_depth
 
 If this option is set, we do not split bands at the point
 where we detect splitting is necessary. Instead, we
