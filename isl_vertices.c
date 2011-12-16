@@ -1362,10 +1362,8 @@ __isl_give isl_vertices *isl_morph_vertices(__isl_take isl_morph *morph,
 	isl_assert(vertices->bset->ctx, vertices->ref == 1, goto error);
 
 	param_morph = isl_morph_copy(morph);
-	param_morph = isl_morph_remove_dom_dims(param_morph, isl_dim_set,
-				    0, isl_morph_dom_dim(morph, isl_dim_set));
-	param_morph = isl_morph_remove_ran_dims(param_morph, isl_dim_set,
-				    0, isl_morph_ran_dim(morph, isl_dim_set));
+	param_morph = isl_morph_dom_params(param_morph);
+	param_morph = isl_morph_ran_params(param_morph);
 
 	for (i = 0; i < vertices->n_vertices; ++i) {
 		vertices->v[i].dom = isl_morph_basic_set(

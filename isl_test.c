@@ -21,6 +21,7 @@
 #include <isl_factorization.h>
 #include <isl/schedule.h>
 #include <isl_options_private.h>
+#include <isl/vertices.h>
 
 static char *srcdir;
 
@@ -2530,6 +2531,23 @@ int test_fixed(isl_ctx *ctx)
 	return 0;
 }
 
+int test_vertices(isl_ctx *ctx)
+{
+	const char *str;
+	isl_basic_set *bset;
+	isl_vertices *vertices;
+
+	str = "{ A[t, i] : t = 12 and i >= 4 and i <= 12 }";
+	bset = isl_basic_set_read_from_str(ctx, str);
+	vertices = isl_basic_set_compute_vertices(bset);
+	isl_basic_set_free(bset);
+	isl_vertices_free(vertices);
+	if (!vertices)
+		return -1;
+
+	return 0;
+}
+
 int test_union_pw(isl_ctx *ctx)
 {
 	int equal;
@@ -2562,6 +2580,8 @@ int main()
 	assert(srcdir);
 
 	ctx = isl_ctx_alloc();
+	if (test_vertices(ctx) < 0)
+		goto error;
 	if (test_fixed(ctx) < 0)
 		goto error;
 	if (test_equal(ctx) < 0)
