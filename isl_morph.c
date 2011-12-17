@@ -217,6 +217,11 @@ void isl_morph_print_internal(__isl_take isl_morph *morph, FILE *out)
 	isl_mat_print_internal(morph->inv, out, 4);
 }
 
+void isl_morph_dump(__isl_take isl_morph *morph)
+{
+	isl_morph_print_internal(morph, stderr);
+}
+
 __isl_give isl_morph *isl_morph_identity(__isl_keep isl_basic_set *bset)
 {
 	isl_mat *id;

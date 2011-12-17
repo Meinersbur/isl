@@ -58,6 +58,7 @@ __isl_give isl_morph *isl_morph_compose(__isl_take isl_morph *morph1,
 __isl_give isl_morph *isl_morph_inverse(__isl_take isl_morph *morph);
 
 void isl_morph_print_internal(__isl_take isl_morph *morph, FILE *out);
+void isl_morph_dump(__isl_take isl_morph *morph);
 
 __isl_give isl_morph *isl_basic_set_variable_compression(
 	__isl_keep isl_basic_set *bset, enum isl_dim_type type);
