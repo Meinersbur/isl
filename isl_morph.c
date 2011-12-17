@@ -206,7 +206,7 @@ __isl_give isl_morph *isl_morph_ran_params(__isl_take isl_morph *morph)
 	return NULL;
 }
 
-void isl_morph_dump(__isl_take isl_morph *morph, FILE *out)
+void isl_morph_print_internal(__isl_take isl_morph *morph, FILE *out)
 {
 	if (!morph)
 		return;

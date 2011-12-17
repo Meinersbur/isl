@@ -65,7 +65,7 @@ void isl_factorizer_dump(__isl_take isl_factorizer *f, FILE *out)
 	if (!f)
 		return;
 
-	isl_morph_dump(f->morph, out);
+	isl_morph_print_internal(f->morph, out);
 	fprintf(out, "[");
 	for (i = 0; i < f->n_group; ++i) {
 		if (i)
