@@ -1,3 +1,11 @@
+version: 0.09
+date: Sat Dec 17 18:19:26 CET 2011
+changes:
+	- improved argument parsing
+	- hide internal structure of isl_options
+	- improved support for parameter sets
+	- configurable scheduling
+---
 version: 0.08
 date: Fri Oct 21 12:36:20 CEST 2011
 changes:
