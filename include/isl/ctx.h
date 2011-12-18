@@ -124,7 +124,7 @@ typedef struct isl_ctx isl_ctx;
 		code;							\
 	} while (0)
 
-void isl_handle_error(isl_ctx *ctx, int errno, const char *msg,
+void isl_handle_error(isl_ctx *ctx, int error, const char *msg,
 	const char *file, int line);
 
 #define isl_assert4(ctx,test,code,errno)				\

@@ -11,10 +11,10 @@
 #include <isl/vec.h>
 #include <isl/options.h>
 
-void isl_handle_error(isl_ctx *ctx, int errno, const char *msg,
+void isl_handle_error(isl_ctx *ctx, int error, const char *msg,
 	const char *file, int line)
 {
-	isl_ctx_set_error(ctx, errno);
+	isl_ctx_set_error(ctx, error);
 
 	switch (isl_options_get_on_error(ctx)) {
 	case ISL_ON_ERROR_WARN:
