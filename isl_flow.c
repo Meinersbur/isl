@@ -659,7 +659,7 @@ static __isl_give isl_map *all_intermediate_sources(
  * be overkill to use it.
  */
 static __isl_give isl_flow *compute_mem_based_dependences(
-	__isl_take isl_access_info *acc)
+	__isl_keep isl_access_info *acc)
 {
 	int i;
 	isl_set *mustdo;
@@ -668,7 +668,7 @@ static __isl_give isl_flow *compute_mem_based_dependences(
 
 	res = isl_flow_alloc(acc);
 	if (!res)
-		goto error;
+		return NULL;
 
 	mustdo = isl_map_domain(isl_map_copy(acc->sink.map));
 	maydo = isl_set_copy(mustdo);
@@ -700,12 +700,7 @@ static __isl_give isl_flow *compute_mem_based_dependences(
 	res->may_no_source = isl_set_subtract(maydo, isl_set_copy(mustdo));
 	res->must_no_source = mustdo;
 
-	isl_access_info_free(acc);
-
 	return res;
-error:
-	isl_access_info_free(acc);
-	return NULL;
 }
 
 /* Compute dependences for the case where there is at least one
@@ -744,7 +739,7 @@ error:
  * 
  */
 static __isl_give isl_flow *compute_val_based_dependences(
-	__isl_take isl_access_info *acc)
+	__isl_keep isl_access_info *acc)
 {
 	isl_ctx *ctx;
 	isl_flow *res;
@@ -755,7 +750,6 @@ static __isl_give isl_flow *compute_val_based_dependences(
 	isl_map **must_rel = NULL;
 	isl_map **may_rel = NULL;
 
-	acc = isl_access_info_sort_sources(acc);
 	if (!acc)
 		return NULL;
 
@@ -866,10 +860,8 @@ static __isl_give isl_flow *compute_val_based_dependences(
 done:
 	res->must_no_source = mustdo;
 	res->may_no_source = maydo;
-	isl_access_info_free(acc);
 	return res;
 error:
-	isl_access_info_free(acc);
 	isl_flow_free(res);
 	isl_set_free(mustdo);
 	isl_set_free(maydo);
@@ -898,7 +890,7 @@ error:
 __isl_give isl_flow *isl_access_info_compute_flow(__isl_take isl_access_info *acc)
 {
 	int j;
-	struct isl_flow *res;
+	struct isl_flow *res = NULL;
 	isl_map *domain_map = NULL;
 
 	if (!acc)
@@ -911,28 +903,28 @@ __isl_give isl_flow *isl_access_info_compute_flow(__isl_take isl_access_info *ac
 
 	if (acc->n_must == 0)
 		res = compute_mem_based_dependences(acc);
-	else
+	else {
+		acc = isl_access_info_sort_sources(acc);
 		res = compute_val_based_dependences(acc);
+	}
 	if (!res)
-		goto error2;
+		goto error;
 
 	for (j = 0; j < res->n_source; ++j) {
 		res->dep[j].map = isl_map_apply_range(res->dep[j].map,
 					isl_map_copy(domain_map));
 		if (!res->dep[j].map)
-			goto error2;
+			goto error;
 	}
 	if (!res->must_no_source || !res->may_no_source)
-		goto error2;
+		goto error;
 
 	isl_map_free(domain_map);
+	isl_access_info_free(acc);
 	return res;
 error:
 	isl_map_free(domain_map);
 	isl_access_info_free(acc);
-	return NULL;
-error2:
-	isl_map_free(domain_map);
 	isl_flow_free(res);
 	return NULL;
 }
