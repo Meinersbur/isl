@@ -32,8 +32,12 @@ struct isl_labeled_map {
  * - n_must + n_may (<= max_source) sources
  * - a function for determining the relative order of sources and sink
  * The must sources are placed before the may sources.
+ *
+ * domain_map is an auxiliary map that maps the sink access relation
+ * to the domain of this access relation.
  */
 struct isl_access_info {
+	isl_map			*domain_map;
 	struct isl_labeled_map	sink;
 	isl_access_level_before	level_before;
 	int		    	max_source;
@@ -96,6 +100,7 @@ void isl_access_info_free(__isl_take isl_access_info *acc)
 
 	if (!acc)
 		return;
+	isl_map_free(acc->domain_map);
 	isl_map_free(acc->sink.map);
 	for (i = 0; i < acc->n_must + acc->n_may; ++i)
 		isl_map_free(acc->source[i].map);
@@ -891,12 +896,11 @@ __isl_give isl_flow *isl_access_info_compute_flow(__isl_take isl_access_info *ac
 {
 	int j;
 	struct isl_flow *res = NULL;
-	isl_map *domain_map = NULL;
 
 	if (!acc)
 		return NULL;
 
-	domain_map = isl_map_domain_map(isl_map_copy(acc->sink.map));
+	acc->domain_map = isl_map_domain_map(isl_map_copy(acc->sink.map));
 	acc->sink.map = isl_map_range_map(acc->sink.map);
 	if (!acc->sink.map)
 		goto error;
@@ -912,18 +916,16 @@ __isl_give isl_flow *isl_access_info_compute_flow(__isl_take isl_access_info *ac
 
 	for (j = 0; j < res->n_source; ++j) {
 		res->dep[j].map = isl_map_apply_range(res->dep[j].map,
-					isl_map_copy(domain_map));
+					isl_map_copy(acc->domain_map));
 		if (!res->dep[j].map)
 			goto error;
 	}
 	if (!res->must_no_source || !res->may_no_source)
 		goto error;
 
-	isl_map_free(domain_map);
 	isl_access_info_free(acc);
 	return res;
 error:
-	isl_map_free(domain_map);
 	isl_access_info_free(acc);
 	isl_flow_free(res);
 	return NULL;
