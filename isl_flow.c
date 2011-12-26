@@ -69,7 +69,7 @@ __isl_give isl_access_info *isl_access_info_alloc(__isl_take isl_map *sink,
 	ctx = isl_map_get_ctx(sink);
 	isl_assert(ctx, max_source >= 0, goto error);
 
-	acc = isl_alloc(ctx, struct isl_access_info,
+	acc = isl_calloc(ctx, struct isl_access_info,
 			sizeof(struct isl_access_info) +
 			(max_source - 1) * sizeof(struct isl_labeled_map));
 	if (!acc)
