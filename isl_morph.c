@@ -172,6 +172,7 @@ __isl_give isl_morph *isl_morph_dom_params(__isl_take isl_morph *morph)
 {
 	unsigned n;
 
+	morph = isl_morph_cow(morph);
 	if (!morph)
 		return NULL;
 	n = isl_basic_set_dim(morph->dom, isl_dim_set);
@@ -192,6 +193,7 @@ __isl_give isl_morph *isl_morph_ran_params(__isl_take isl_morph *morph)
 {
 	unsigned n;
 
+	morph = isl_morph_cow(morph);
 	if (!morph)
 		return NULL;
 	n = isl_basic_set_dim(morph->ran, isl_dim_set);
