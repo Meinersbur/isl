@@ -199,7 +199,8 @@ static __isl_give isl_vertices *vertices_0D(__isl_keep isl_basic_set *bset)
 		goto error;
 	vertices->n_vertices = 1;
 	vertices->v[0].vertex = isl_basic_set_copy(bset);
-	if (!vertices->v[0].vertex)
+	vertices->v[0].dom = isl_basic_set_params(isl_basic_set_copy(bset));
+	if (!vertices->v[0].vertex || !vertices->v[0].dom)
 		goto error;
 
 	vertices->c = isl_calloc_array(bset->ctx, struct isl_chamber, 1);
@@ -210,7 +211,7 @@ static __isl_give isl_vertices *vertices_0D(__isl_keep isl_basic_set *bset)
 	vertices->c[0].vertices = isl_calloc_array(bset->ctx, int, 1);
 	if (!vertices->c[0].vertices)
 		goto error;
-	vertices->c[0].dom = isl_basic_set_params(isl_basic_set_copy(bset));
+	vertices->c[0].dom = isl_basic_set_copy(vertices->v[0].dom);
 	if (!vertices->c[0].dom)
 		goto error;
 
