@@ -61,6 +61,8 @@ void *isl_ctx_peek_options(isl_ctx *ctx, struct isl_args *args)
 {
 	if (!ctx)
 		return NULL;
+	if (args == &isl_options_args)
+		return ctx->opt;
 	return find_nested_options(ctx->user_args, ctx->user_opt, args);
 }
 
