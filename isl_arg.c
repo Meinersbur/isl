@@ -779,7 +779,7 @@ static int parse_flags_option(struct isl_arg *decl, char **arg,
 	if (!has_argument)
 		flags = arg[1];
 
-	val = *(unsigned *)(((char *)opt) + decl->offset);
+	val = 0;
 
 	while ((comma = strchr(flags, ',')) != NULL) {
 		if (!set_flag(decl, &val, flags, comma - flags))
