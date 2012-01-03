@@ -936,6 +936,7 @@ static __isl_give isl_aff *isl_aff_substitute_equalities_lifted(
 	}
 
 	isl_basic_set_free(eq);
+	aff = isl_aff_normalize(aff);
 	return aff;
 error:
 	isl_basic_set_free(eq);
