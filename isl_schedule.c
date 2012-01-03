@@ -1846,6 +1846,9 @@ static int pad_schedule(struct isl_sched_graph *graph)
  * It would be possible to reuse them as the first rows in the next
  * band, but recomputing them may result in better rows as we are looking
  * at a smaller part of the dependence graph.
+ * compute_split_schedule is only called when no zero-distance schedule row
+ * could be found on the entire graph, so we wark the splitting row as
+ * non zero-distance.
  *
  * The band_id of the second group is set to n, where n is the number
  * of nodes in the first group.  This ensures that the band_ids over
@@ -1886,6 +1889,7 @@ static int compute_split_schedule(isl_ctx *ctx, struct isl_sched_graph *graph)
 			node->sched = isl_mat_set_element_si(node->sched,
 							     row, j, 0);
 		node->band[graph->n_total_row] = graph->n_band;
+		node->zero[graph->n_total_row] = 0;
 	}
 
 	e1 = e2 = 0;

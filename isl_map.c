@@ -2995,7 +2995,7 @@ __isl_give isl_basic_map *isl_basic_map_project_out(
 	isl_int *old;
 
 	if (n == 0)
-		return bmap;
+		return basic_map_space_reset(bmap, type);
 
 	if (!bmap)
 		return NULL;
@@ -3065,7 +3065,7 @@ __isl_give isl_map *isl_map_project_out(__isl_take isl_map *map,
 		return NULL;
 
 	if (n == 0)
-		return map;
+		return map_space_reset(map, type);
 
 	isl_assert(map->ctx, first + n <= isl_map_dim(map, type), goto error);
 
