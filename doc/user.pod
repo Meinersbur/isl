@@ -2933,6 +2933,9 @@ Operations include
 	__isl_give isl_pw_aff *isl_pw_aff_coalesce(
 		__isl_take isl_pw_aff *pwqp);
 
+	__isl_give isl_aff *isl_aff_align_params(
+		__isl_take isl_aff *aff,
+		__isl_take isl_space *model);
 	__isl_give isl_pw_aff *isl_pw_aff_align_params(
 		__isl_take isl_pw_aff *pwaff,
 		__isl_take isl_space *model);

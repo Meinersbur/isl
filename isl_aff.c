@@ -280,6 +280,34 @@ error:
 	return NULL;
 }
 
+__isl_give isl_aff *isl_aff_align_params(__isl_take isl_aff *aff,
+	__isl_take isl_space *model)
+{
+	if (!aff || !model)
+		goto error;
+
+	if (!isl_space_match(aff->ls->dim, isl_dim_param,
+			     model, isl_dim_param)) {
+		isl_reordering *exp;
+
+		model = isl_space_drop_dims(model, isl_dim_in,
+					0, isl_space_dim(model, isl_dim_in));
+		model = isl_space_drop_dims(model, isl_dim_out,
+					0, isl_space_dim(model, isl_dim_out));
+		exp = isl_parameter_alignment_reordering(aff->ls->dim, model);
+		exp = isl_reordering_extend_space(exp,
+					isl_aff_get_domain_space(aff));
+		aff = isl_aff_realign_domain(aff, exp);
+	}
+
+	isl_space_free(model);
+	return aff;
+error:
+	isl_space_free(model);
+	isl_aff_free(aff);
+	return NULL;
+}
+
 int isl_aff_plain_is_zero(__isl_keep isl_aff *aff)
 {
 	if (!aff)
