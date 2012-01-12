@@ -144,8 +144,13 @@ __isl_give EL *FN(FN(MULTI(BASE),get),BASE)(__isl_keep MULTI(BASE) *multi,
 __isl_give MULTI(BASE) *FN(FN(MULTI(BASE),set),BASE)(
 	__isl_take MULTI(BASE) *multi, int pos, __isl_take EL *el)
 {
+	multi = FN(MULTI(BASE),cow)(multi);
 	if (!multi || !el)
 		goto error;
+
+	if (pos < 0 || pos >= multi->n)
+		isl_die(FN(MULTI(BASE),get_ctx)(multi), isl_error_invalid,
+			"index out of bounds", goto error);
 
 	FN(EL,free)(multi->p[pos]);
 	multi->p[pos] = el;
