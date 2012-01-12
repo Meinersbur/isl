@@ -82,10 +82,6 @@ __isl_give isl_multi_aff *isl_multi_aff_dup(__isl_keep isl_multi_aff *multi);
 __isl_give isl_multi_aff *isl_multi_aff_align_params(
 	__isl_take isl_multi_aff *multi, __isl_take isl_space *model);
 
-__isl_give isl_multi_aff *isl_multi_aff_drop_dims(
-	__isl_take isl_multi_aff *maff,
-	enum isl_dim_type type, unsigned first, unsigned n);
-
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_reset_domain_space(
 	__isl_take isl_pw_multi_aff *pwmaff, __isl_take isl_space *space);
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_reset_space(
