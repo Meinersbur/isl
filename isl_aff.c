@@ -2147,6 +2147,16 @@ __isl_give isl_multi_aff *isl_multi_aff_drop_dims(__isl_take isl_multi_aff *maff
 	maff->space = isl_space_drop_dims(maff->space, type, first, n);
 	if (!maff->space)
 		return isl_multi_aff_free(maff);
+
+	if (type == isl_dim_out) {
+		for (i = 0; i < n; ++i)
+			isl_aff_free(maff->p[first + i]);
+		for (i = first; i + n < maff->n; ++i)
+			maff->p[i] = maff->p[i + n];
+		maff->n -= n;
+		return maff;
+	}
+
 	for (i = 0; i < maff->n; ++i) {
 		maff->p[i] = isl_aff_drop_dims(maff->p[i], type, first, n);
 		if (!maff->p[i])
