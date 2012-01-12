@@ -549,6 +549,7 @@ static __isl_give PW *FN(PW,on_shared_domain)(__isl_take PW *pw1,
 
 			res_ij = fn(FN(EL,copy)(pw1->p[i].FIELD),
 				    FN(EL,copy)(pw2->p[j].FIELD));
+			res_ij = FN(EL,gist)(res_ij, isl_set_copy(common));
 
 			res = FN(PW,add_piece)(res, common, res_ij);
 		}
