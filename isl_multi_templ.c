@@ -201,6 +201,31 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),reset_domain_space)(
 	return FN(MULTI(BASE),reset_space_and_domain)(multi, space, domain);
 }
 
+__isl_give MULTI(BASE) *FN(MULTI(BASE),reset_space)(
+	__isl_take MULTI(BASE) *multi, __isl_take isl_space *space)
+{
+	isl_space *domain;
+
+	domain = isl_space_domain(isl_space_copy(space));
+	return FN(MULTI(BASE),reset_space_and_domain)(multi, space, domain);
+}
+
+__isl_give MULTI(BASE) *FN(MULTI(BASE),set_tuple_id)(
+	__isl_keep MULTI(BASE) *multi, enum isl_dim_type type,
+	__isl_take isl_id *id)
+{
+	isl_space *space;
+
+	multi = FN(MULTI(BASE),cow)(multi);
+	if (!multi)
+		return isl_id_free(id);
+
+	space = FN(MULTI(BASE),get_space)(multi);
+	space = isl_space_set_tuple_id(space, type, id);
+
+	return FN(MULTI(BASE),reset_space)(multi, space);
+}
+
 __isl_give MULTI(BASE) *FN(MULTI(BASE),realign_domain)(
 	__isl_take MULTI(BASE) *multi, __isl_take isl_reordering *exp)
 {
