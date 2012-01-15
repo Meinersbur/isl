@@ -2339,6 +2339,9 @@ struct isl_basic_map *isl_map_simple_hull(struct isl_map *map)
 
 	hull = isl_basic_map_intersect(hull, affine_hull);
 	hull = isl_basic_map_remove_redundancies(hull);
+
+	if (!hull)
+		return NULL;
 	ISL_F_SET(hull, ISL_BASIC_MAP_NO_IMPLICIT);
 	ISL_F_SET(hull, ISL_BASIC_MAP_ALL_EQUALITIES);
 
