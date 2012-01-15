@@ -1157,14 +1157,62 @@ struct isl_basic_set *isl_basic_set_affine_hull(struct isl_basic_set *bset)
 		isl_basic_map_affine_hull((struct isl_basic_map *)bset);
 }
 
-struct isl_basic_map *isl_map_affine_hull(struct isl_map *map)
+/* Compute the affine hull of each basic map in "map" separately
+ * and call isl_basic_map_gauss on the result.
+ */
+static __isl_give isl_map *isl_map_local_affine_hull(__isl_take isl_map *map)
 {
 	int i;
+
+	map = isl_map_cow(map);
+	if (!map)
+		return NULL;
+
+	for (i = 0; i < map->n; ++i) {
+		map->p[i] = isl_basic_map_affine_hull(map->p[i]);
+		map->p[i] = isl_basic_map_gauss(map->p[i], NULL);
+		if (!map->p[i])
+			return isl_map_free(map);
+	}
+
+	return map;
+}
+
+static __isl_give isl_set *isl_set_local_affine_hull(__isl_take isl_set *set)
+{
+	return isl_map_local_affine_hull(set);
+}
+
+/* Compute the affine hull of "map".
+ *
+ * We first compute the affine hull of each basic map separately.
+ * Then we align the divs and recompute the affine hulls of the basic
+ * maps since some of them may now have extra divs.
+ * In order to avoid performing parametric integer programming to
+ * compute explicit expressions for the divs, possible leading to
+ * an explosion in the number of basic maps, we first drop all unknown
+ * divs before aligning the divs.  Note that the divs determined
+ * by an equality will be known since we call isl_basic_set_gauss
+ * from isl_map_local_affine_hull.  Calling gauss is also needed
+ * because affine_hull assumes its input has been gaussed, while
+ * isl_map_affine_hull may be called on input that has not been gaussed,
+ * in particular from initial_facet_constraint.
+ * Similarly, align_divs may reorder some divs so that we need to
+ * gauss the result again.
+ * Finally, we combine the individual affine hulls into a single
+ * affine hull.
+ */
+__isl_give isl_basic_map *isl_map_affine_hull(__isl_take isl_map *map)
+{
 	struct isl_basic_map *model = NULL;
 	struct isl_basic_map *hull = NULL;
 	struct isl_set *set;
+	isl_basic_set *bset;
 
 	map = isl_map_detect_equalities(map);
+	map = isl_map_local_affine_hull(map);
+	map = isl_map_remove_empty_parts(map);
+	map = isl_map_remove_unknown_divs(map);
 	map = isl_map_align_divs(map);
 
 	if (!map)
@@ -1179,30 +1227,15 @@ struct isl_basic_map *isl_map_affine_hull(struct isl_map *map)
 	model = isl_basic_map_copy(map->p[0]);
 	set = isl_map_underlying_set(map);
 	set = isl_set_cow(set);
+	set = isl_set_local_affine_hull(set);
 	if (!set)
 		goto error;
 
-	for (i = 0; i < set->n; ++i) {
-		set->p[i] = isl_basic_set_cow(set->p[i]);
-		set->p[i] = isl_basic_set_affine_hull(set->p[i]);
-		set->p[i] = isl_basic_set_gauss(set->p[i], NULL);
-		if (!set->p[i])
-			goto error;
-	}
-	set = isl_set_remove_empty_parts(set);
-	if (set->n == 0) {
-		hull = isl_basic_map_empty_like(model);
-		isl_basic_map_free(model);
-	} else {
-		struct isl_basic_set *bset;
-		while (set->n > 1) {
-			set->p[0] = affine_hull(set->p[0], set->p[--set->n]);
-			if (!set->p[0])
-				goto error;
-		}
-		bset = isl_basic_set_copy(set->p[0]);
-		hull = isl_basic_map_overlying_set(bset, model);
-	}
+	while (set->n > 1)
+		set->p[0] = affine_hull(set->p[0], set->p[--set->n]);
+
+	bset = isl_basic_set_copy(set->p[0]);
+	hull = isl_basic_map_overlying_set(bset, model);
 	isl_set_free(set);
 	hull = isl_basic_map_simplify(hull);
 	return isl_basic_map_finalize(hull);

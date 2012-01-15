@@ -738,6 +738,18 @@ int test_affine_hull(struct isl_ctx *ctx)
 		isl_die(ctx, isl_error_unknown, "not expecting any divs",
 			return -1);
 
+	/* Check that isl_map_affine_hull is not confused by
+	 * the reordering of divs in isl_map_align_divs.
+	 */
+	str = "{ [a, b, c, 0] : exists (e0 = [(b)/32], e1 = [(c)/32]: "
+				"32e0 = b and 32e1 = c); "
+		"[a, 0, c, 0] : exists (e0 = [(c)/32]: 32e0 = c) }";
+	set = isl_set_read_from_str(ctx, str);
+	bset = isl_set_affine_hull(set);
+	isl_basic_set_free(bset);
+	if (!bset)
+		return -1;
+
 	return 0;
 }
 
