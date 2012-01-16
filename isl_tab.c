@@ -3231,6 +3231,7 @@ error:
 
 int isl_tab_track_bmap(struct isl_tab *tab, __isl_take isl_basic_map *bmap)
 {
+	bmap = isl_basic_map_cow(bmap);
 	if (!tab || !bmap)
 		goto error;
 
