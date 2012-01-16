@@ -5129,6 +5129,92 @@ __isl_give isl_set *isl_set_upper_bound_si(__isl_take isl_set *set,
 	return isl_map_upper_bound_si(set, type, pos, value);
 }
 
+/* Bound the given variable of "bmap" from below (or above is "upper"
+ * is set) to "value".
+ */
+static __isl_give isl_basic_map *basic_map_bound(
+	__isl_take isl_basic_map *bmap,
+	enum isl_dim_type type, unsigned pos, isl_int value, int upper)
+{
+	int j;
+
+	if (!bmap)
+		return NULL;
+	if (pos >= isl_basic_map_dim(bmap, type))
+		isl_die(bmap->ctx, isl_error_invalid,
+			"index out of bounds", goto error);
+	pos += isl_basic_map_offset(bmap, type);
+	bmap = isl_basic_map_cow(bmap);
+	bmap = isl_basic_map_extend_constraints(bmap, 0, 1);
+	j = isl_basic_map_alloc_inequality(bmap);
+	if (j < 0)
+		goto error;
+	isl_seq_clr(bmap->ineq[j], 1 + isl_basic_map_total_dim(bmap));
+	if (upper) {
+		isl_int_set_si(bmap->ineq[j][pos], -1);
+		isl_int_set(bmap->ineq[j][0], value);
+	} else {
+		isl_int_set_si(bmap->ineq[j][pos], 1);
+		isl_int_neg(bmap->ineq[j][0], value);
+	}
+	bmap = isl_basic_map_simplify(bmap);
+	return isl_basic_map_finalize(bmap);
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+/* Bound the given variable of "map" from below (or above is "upper"
+ * is set) to "value".
+ */
+static __isl_give isl_map *map_bound(__isl_take isl_map *map,
+	enum isl_dim_type type, unsigned pos, isl_int value, int upper)
+{
+	int i;
+
+	map = isl_map_cow(map);
+	if (!map)
+		return NULL;
+
+	if (pos >= isl_map_dim(map, type))
+		isl_die(map->ctx, isl_error_invalid,
+			"index out of bounds", goto error);
+	for (i = map->n - 1; i >= 0; --i) {
+		map->p[i] = basic_map_bound(map->p[i], type, pos, value, upper);
+		if (remove_if_empty(map, i) < 0)
+			goto error;
+	}
+	ISL_F_CLR(map, ISL_MAP_NORMALIZED);
+	return map;
+error:
+	isl_map_free(map);
+	return NULL;
+}
+
+__isl_give isl_map *isl_map_lower_bound(__isl_take isl_map *map,
+	enum isl_dim_type type, unsigned pos, isl_int value)
+{
+	return map_bound(map, type, pos, value, 0);
+}
+
+__isl_give isl_map *isl_map_upper_bound(__isl_take isl_map *map,
+	enum isl_dim_type type, unsigned pos, isl_int value)
+{
+	return map_bound(map, type, pos, value, 1);
+}
+
+__isl_give isl_set *isl_set_lower_bound(__isl_take isl_set *set,
+	enum isl_dim_type type, unsigned pos, isl_int value)
+{
+	return isl_map_lower_bound(set, type, pos, value);
+}
+
+__isl_give isl_set *isl_set_upper_bound(__isl_take isl_set *set,
+	enum isl_dim_type type, unsigned pos, isl_int value)
+{
+	return isl_map_upper_bound(set, type, pos, value);
+}
+
 struct isl_set *isl_set_lower_bound_dim(struct isl_set *set, unsigned dim,
 					isl_int value)
 {
