@@ -223,7 +223,7 @@ static int fuse(struct isl_map *map, int i, int j,
 	    ISL_F_ISSET(map->p[j], ISL_BASIC_MAP_RATIONAL))
 		ISL_F_SET(fused, ISL_BASIC_MAP_RATIONAL);
 
-	fused_tab = isl_tab_from_basic_map(fused);
+	fused_tab = isl_tab_from_basic_map(fused, 0);
 	if (isl_tab_detect_redundant(fused_tab) < 0)
 		goto error;
 
@@ -1242,7 +1242,7 @@ struct isl_map *isl_map_coalesce(struct isl_map *map)
 
 	n = map->n;
 	for (i = 0; i < map->n; ++i) {
-		tabs[i] = isl_tab_from_basic_map(map->p[i]);
+		tabs[i] = isl_tab_from_basic_map(map->p[i], 0);
 		if (!tabs[i])
 			goto error;
 		if (!ISL_F_ISSET(map->p[i], ISL_BASIC_MAP_NO_IMPLICIT))

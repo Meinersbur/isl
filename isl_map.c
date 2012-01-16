@@ -8730,7 +8730,7 @@ int isl_basic_set_vars_get_sign(__isl_keep isl_basic_set *bset,
 		return -1;
 
 	bound = isl_vec_alloc(bset->ctx, 1 + isl_basic_set_total_dim(bset));
-	tab = isl_tab_from_basic_set(bset);
+	tab = isl_tab_from_basic_set(bset, 0);
 	if (!bound || !tab)
 		goto error;
 

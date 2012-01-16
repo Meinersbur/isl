@@ -28,7 +28,7 @@ enum isl_lp_result isl_tab_solve_lp(struct isl_basic_map *bmap, int maximize,
 		isl_seq_neg(f, f, 1 + dim);
 
 	bmap = isl_basic_map_gauss(bmap, NULL);
-	tab = isl_tab_from_basic_map(bmap);
+	tab = isl_tab_from_basic_map(bmap, 0);
 	res = isl_tab_min(tab, f, denom, opt, opt_denom, 0);
 	if (res == isl_lp_ok && sol) {
 		*sol = isl_tab_get_sample_value(tab);

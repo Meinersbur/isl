@@ -657,7 +657,7 @@ static struct isl_vec *sample_bounded(struct isl_basic_set *bset)
 		
 	ctx = bset->ctx;
 
-	tab = isl_tab_from_basic_set(bset);
+	tab = isl_tab_from_basic_set(bset, 1);
 	if (tab && tab->empty) {
 		isl_tab_free(tab);
 		ISL_F_SET(bset, ISL_BASIC_SET_EMPTY);
@@ -666,8 +666,6 @@ static struct isl_vec *sample_bounded(struct isl_basic_set *bset)
 		return sample;
 	}
 
-	if (isl_tab_track_bset(tab, isl_basic_set_copy(bset)) < 0)
-		goto error;
 	if (!ISL_F_ISSET(bset, ISL_BASIC_SET_NO_IMPLICIT))
 		if (isl_tab_detect_implicit_equalities(tab) < 0)
 			goto error;
@@ -746,7 +744,7 @@ static struct isl_vec *rational_sample(struct isl_basic_set *bset)
 	if (!bset)
 		return NULL;
 
-	tab = isl_tab_from_basic_set(bset);
+	tab = isl_tab_from_basic_set(bset, 0);
 	sample = isl_tab_get_sample_value(tab);
 	isl_tab_free(tab);
 

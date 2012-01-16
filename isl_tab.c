@@ -939,7 +939,7 @@ int isl_tab_mark_redundant(struct isl_tab *tab, int row)
 	struct isl_tab_var *var = isl_tab_var_from_row(tab, row);
 	var->is_redundant = 1;
 	isl_assert(tab->mat->ctx, row >= tab->n_redundant, return -1);
-	if (tab->need_undo || tab->row_var[row] >= 0) {
+	if (tab->preserve || tab->need_undo || tab->row_var[row] >= 0) {
 		if (tab->row_var[row] >= 0 && !var->is_nonneg) {
 			var->is_nonneg = 1;
 			if (isl_tab_push_var(tab, isl_tab_undo_nonneg, var) < 0)
@@ -2199,7 +2199,13 @@ int isl_tab_add_div(struct isl_tab *tab, __isl_keep isl_vec *div,
 	return r;
 }
 
-struct isl_tab *isl_tab_from_basic_map(struct isl_basic_map *bmap)
+/* If "track" is set, then we want to keep track of all constraints in tab
+ * in its bmap field.  This field is initialized from a copy of "bmap",
+ * so we need to make sure that all constraints in "bmap" also appear
+ * in the constructed tab.
+ */
+__isl_give struct isl_tab *isl_tab_from_basic_map(
+	__isl_keep isl_basic_map *bmap, int track)
 {
 	int i;
 	struct isl_tab *tab;
@@ -2211,11 +2217,12 @@ struct isl_tab *isl_tab_from_basic_map(struct isl_basic_map *bmap)
 			    isl_basic_map_total_dim(bmap), 0);
 	if (!tab)
 		return NULL;
+	tab->preserve = track;
 	tab->rational = ISL_F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL);
 	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_EMPTY)) {
 		if (isl_tab_mark_empty(tab) < 0)
 			goto error;
-		return tab;
+		goto done;
 	}
 	for (i = 0; i < bmap->n_eq; ++i) {
 		tab = add_eq(tab, bmap->eq[i]);
@@ -2226,17 +2233,21 @@ struct isl_tab *isl_tab_from_basic_map(struct isl_basic_map *bmap)
 		if (isl_tab_add_ineq(tab, bmap->ineq[i]) < 0)
 			goto error;
 		if (tab->empty)
-			return tab;
+			goto done;
 	}
+done:
+	if (track && isl_tab_track_bmap(tab, isl_basic_map_copy(bmap)) < 0)
+		goto error;
 	return tab;
 error:
 	isl_tab_free(tab);
 	return NULL;
 }
 
-struct isl_tab *isl_tab_from_basic_set(struct isl_basic_set *bset)
+__isl_give struct isl_tab *isl_tab_from_basic_set(
+	__isl_keep isl_basic_set *bset, int track)
 {
-	return isl_tab_from_basic_map((struct isl_basic_map *)bset);
+	return isl_tab_from_basic_map(bset, track);
 }
 
 /* Construct a tableau corresponding to the recession cone of "bset".

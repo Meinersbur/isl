@@ -2608,7 +2608,7 @@ static void gbr_init_shifted(struct isl_context_gbr *cgbr)
 		}
 	}
 
-	cgbr->shifted = isl_tab_from_basic_set(bset);
+	cgbr->shifted = isl_tab_from_basic_set(bset, 0);
 
 	for (i = 0; i < bset->n_ineq; ++i)
 		isl_int_set(bset->ineq[i][0], cst->el[i]);
@@ -3247,11 +3247,9 @@ static struct isl_context *isl_context_gbr_alloc(struct isl_basic_set *dom)
 
 	cgbr->shifted = NULL;
 	cgbr->cone = NULL;
-	cgbr->tab = isl_tab_from_basic_set(dom);
+	cgbr->tab = isl_tab_from_basic_set(dom, 1);
 	cgbr->tab = isl_tab_init_samples(cgbr->tab);
 	if (!cgbr->tab)
-		goto error;
-	if (isl_tab_track_bset(cgbr->tab, isl_basic_set_copy(dom)) < 0)
 		goto error;
 	check_gbr_integer_feasible(cgbr);
 

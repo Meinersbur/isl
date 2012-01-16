@@ -312,9 +312,7 @@ static int basic_map_collect_diff(__isl_take isl_basic_map *bmap,
 	bmap = isl_basic_map_order_divs(bmap);
 	map = isl_map_order_divs(map);
 
-	tab = isl_tab_from_basic_map(bmap);
-	if (isl_tab_track_bmap(tab, isl_basic_map_copy(bmap)) < 0)
-		goto error;
+	tab = isl_tab_from_basic_map(bmap, 1);
 
 	modified = 0;
 	level = 0;

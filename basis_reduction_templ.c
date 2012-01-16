@@ -329,7 +329,7 @@ struct isl_mat *isl_basic_set_reduced_basis(struct isl_basic_set *bset)
 		isl_die(bset->ctx, isl_error_invalid,
 			"no parameters allowed", return NULL);
 
-	tab = isl_tab_from_basic_set(bset);
+	tab = isl_tab_from_basic_set(bset, 0);
 	if (!tab)
 		return NULL;
 
