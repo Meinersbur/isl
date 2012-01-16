@@ -3235,6 +3235,14 @@ int isl_tab_track_bmap(struct isl_tab *tab, __isl_take isl_basic_map *bmap)
 	if (!tab || !bmap)
 		goto error;
 
+	if (tab->empty) {
+		bmap = isl_basic_map_set_to_empty(bmap);
+		if (!bmap)
+			goto error;
+		tab->bmap = bmap;
+		return 0;
+	}
+
 	isl_assert(tab->mat->ctx, tab->n_eq == bmap->n_eq, goto error);
 	isl_assert(tab->mat->ctx,
 		    tab->n_con == bmap->n_eq + bmap->n_ineq, goto error);
