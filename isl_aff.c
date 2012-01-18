@@ -1011,10 +1011,13 @@ __isl_give isl_aff *isl_aff_gist_params(__isl_take isl_aff *aff,
 __isl_give isl_basic_set *isl_aff_nonneg_basic_set(__isl_take isl_aff *aff)
 {
 	isl_constraint *ineq;
+	isl_basic_set *bset;
 
 	ineq = isl_inequality_from_aff(aff);
 
-	return isl_basic_set_from_constraint(ineq);
+	bset = isl_basic_set_from_constraint(ineq);
+	bset = isl_basic_set_simplify(bset);
+	return bset;
 }
 
 /* Return a basic set containing those elements in the space
@@ -1023,10 +1026,13 @@ __isl_give isl_basic_set *isl_aff_nonneg_basic_set(__isl_take isl_aff *aff)
 __isl_give isl_basic_set *isl_aff_zero_basic_set(__isl_take isl_aff *aff)
 {
 	isl_constraint *ineq;
+	isl_basic_set *bset;
 
 	ineq = isl_equality_from_aff(aff);
 
-	return isl_basic_set_from_constraint(ineq);
+	bset = isl_basic_set_from_constraint(ineq);
+	bset = isl_basic_set_simplify(bset);
+	return bset;
 }
 
 /* Return a basic set containing those elements in the shared space
