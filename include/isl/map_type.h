@@ -7,21 +7,17 @@
 extern "C" {
 #endif
 
-__isl_subclass(isl_map)
-struct isl_basic_map;
+struct __isl_subclass(isl_map) isl_basic_map;
 typedef struct isl_basic_map isl_basic_map;
-__isl_subclass(isl_union_map)
-struct isl_map;
+struct __isl_subclass(isl_union_map) isl_map;
 typedef struct isl_map isl_map;
 
 #ifndef isl_basic_set
-__isl_subclass(isl_set)
-struct isl_basic_set;
+struct __isl_subclass(isl_set) isl_basic_set;
 typedef struct isl_basic_set isl_basic_set;
 #endif
 #ifndef isl_set
-__isl_subclass(isl_union_set)
-struct isl_set;
+struct __isl_subclass(isl_union_set) isl_set;
 typedef struct isl_set isl_set;
 #endif
 

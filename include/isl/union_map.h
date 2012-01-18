@@ -9,12 +9,10 @@
 extern "C" {
 #endif
 
-__isl_export
-struct isl_union_map;
+struct __isl_export isl_union_map;
 typedef struct isl_union_map isl_union_map;
 #ifndef isl_union_set
-__isl_export
-struct isl_union_set;
+struct __isl_export isl_union_set;
 typedef struct isl_union_set isl_union_set;
 #endif
 
