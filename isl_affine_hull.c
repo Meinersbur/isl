@@ -34,7 +34,7 @@ struct isl_basic_map *isl_basic_map_implicit_equalities(
 	if (bmap->n_ineq <= 1)
 		return bmap;
 
-	tab = isl_tab_from_basic_map(bmap);
+	tab = isl_tab_from_basic_map(bmap, 0);
 	if (isl_tab_detect_implicit_equalities(tab) < 0)
 		goto error;
 	bmap = isl_basic_map_update_from_tab(bmap, tab);
@@ -480,7 +480,7 @@ static struct isl_basic_set *uset_affine_hull_bounded(struct isl_basic_set *bset
 		}
 	}
 
-	tab = isl_tab_from_basic_set(bset);
+	tab = isl_tab_from_basic_set(bset, 1);
 	if (!tab)
 		goto error;
 	if (tab->empty) {
@@ -488,8 +488,6 @@ static struct isl_basic_set *uset_affine_hull_bounded(struct isl_basic_set *bset
 		isl_vec_free(sample);
 		return isl_basic_set_set_to_empty(bset);
 	}
-	if (isl_tab_track_bset(tab, isl_basic_set_copy(bset)) < 0)
-		goto error;
 
 	if (!sample) {
 		struct isl_tab_undo *snap;

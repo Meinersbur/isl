@@ -124,7 +124,7 @@ int isl_basic_set_scan(struct isl_basic_set *bset,
 	if (!min || !max || !snap)
 		goto error;
 
-	tab = isl_tab_from_basic_set(bset);
+	tab = isl_tab_from_basic_set(bset, 0);
 	if (!tab)
 		goto error;
 	if (isl_tab_extend_cons(tab, dim + 1) < 0)

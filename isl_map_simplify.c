@@ -1579,7 +1579,7 @@ static __isl_give isl_basic_set *uset_gist_full(__isl_take isl_basic_set *bset,
 	context_ineq = context->n_ineq;
 	combined = isl_basic_set_cow(isl_basic_set_copy(context));
 	combined = isl_basic_set_extend_constraints(combined, 0, bset->n_ineq);
-	tab = isl_tab_from_basic_set(combined);
+	tab = isl_tab_from_basic_set(combined, 0);
 	for (i = 0; i < context_ineq; ++i)
 		if (isl_tab_freeze_constraint(tab, i) < 0)
 			goto error;
@@ -2207,7 +2207,7 @@ static struct isl_basic_map *drop_more_redundant_divs(
 	if (!vec)
 		goto error;
 
-	tab = isl_tab_from_basic_map(bmap);
+	tab = isl_tab_from_basic_map(bmap, 0);
 
 	while (n > 0) {
 		int i, l, u;

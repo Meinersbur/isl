@@ -94,7 +94,7 @@ __isl_give isl_basic_map *isl_basic_map_remove_redundancies(
 	if (bmap->n_ineq <= 1)
 		return bmap;
 
-	tab = isl_tab_from_basic_map(bmap);
+	tab = isl_tab_from_basic_map(bmap, 0);
 	if (isl_tab_detect_implicit_equalities(tab) < 0)
 		goto error;
 	if (isl_tab_detect_redundant(tab) < 0)
@@ -1169,7 +1169,7 @@ static struct isl_vec *valid_direction(
 		goto error;
 	lp = valid_direction_lp(isl_basic_set_copy(bset1),
 				isl_basic_set_copy(bset2));
-	tab = isl_tab_from_basic_set(lp);
+	tab = isl_tab_from_basic_set(lp, 0);
 	sample = isl_tab_get_sample_value(tab);
 	isl_tab_free(tab);
 	isl_basic_set_free(lp);
@@ -2117,7 +2117,7 @@ static int is_bound(struct sh_data *data, struct isl_set *set, int j,
 	isl_int opt;
 
 	if (!data->p[j].tab) {
-		data->p[j].tab = isl_tab_from_basic_set(set->p[j]);
+		data->p[j].tab = isl_tab_from_basic_set(set->p[j], 0);
 		if (!data->p[j].tab)
 			return -1;
 	}
@@ -2339,6 +2339,9 @@ struct isl_basic_map *isl_map_simple_hull(struct isl_map *map)
 
 	hull = isl_basic_map_intersect(hull, affine_hull);
 	hull = isl_basic_map_remove_redundancies(hull);
+
+	if (!hull)
+		return NULL;
 	ISL_F_SET(hull, ISL_BASIC_MAP_NO_IMPLICIT);
 	ISL_F_SET(hull, ISL_BASIC_MAP_ALL_EQUALITIES);
 

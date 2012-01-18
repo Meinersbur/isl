@@ -1863,6 +1863,9 @@ __isl_give isl_basic_map *isl_basic_map_remove_unknown_divs(
 		if (!div_is_unknown(bmap, i))
 			continue;
 		bmap = isl_basic_map_remove_dims(bmap, isl_dim_div, i, 1);
+		if (!bmap)
+			return NULL;
+		i = bmap->n_div;
 	}
 
 	return bmap;
@@ -8727,7 +8730,7 @@ int isl_basic_set_vars_get_sign(__isl_keep isl_basic_set *bset,
 		return -1;
 
 	bound = isl_vec_alloc(bset->ctx, 1 + isl_basic_set_total_dim(bset));
-	tab = isl_tab_from_basic_set(bset);
+	tab = isl_tab_from_basic_set(bset, 0);
 	if (!bound || !tab)
 		goto error;
 

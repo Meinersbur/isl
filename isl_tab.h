@@ -118,6 +118,9 @@ struct isl_tab_undo {
  * can be reinstated during rollback when the constraint that cut them
  * out is removed.  These samples are only maintained for the context
  * tableau while solving PILP problems.
+ *
+ * If "preserve" is set, then we want to keep all constraints in the
+ * tableau, even if they turn out to be redundant.
  */
 enum isl_tab_row_sign {
 	isl_tab_row_unknown = 0,
@@ -166,6 +169,7 @@ struct isl_tab {
 
 	unsigned strict_redundant : 1;
 	unsigned need_undo : 1;
+	unsigned preserve : 1;
 	unsigned rational : 1;
 	unsigned empty : 1;
 	unsigned in_undo : 1;
@@ -177,8 +181,10 @@ struct isl_tab *isl_tab_alloc(struct isl_ctx *ctx,
 	unsigned n_row, unsigned n_var, unsigned M);
 void isl_tab_free(struct isl_tab *tab);
 
-struct isl_tab *isl_tab_from_basic_map(struct isl_basic_map *bmap);
-struct isl_tab *isl_tab_from_basic_set(struct isl_basic_set *bset);
+__isl_give struct isl_tab *isl_tab_from_basic_map(
+	__isl_keep isl_basic_map *bmap, int track);
+__isl_give struct isl_tab *isl_tab_from_basic_set(
+	__isl_keep isl_basic_set *bset, int track);
 struct isl_tab *isl_tab_from_recession_cone(struct isl_basic_set *bset,
 	int parametric);
 int isl_tab_cone_is_bounded(struct isl_tab *tab);

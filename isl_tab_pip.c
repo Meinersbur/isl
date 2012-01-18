@@ -2510,7 +2510,6 @@ static struct isl_tab *context_tab_for_lexmin(struct isl_basic_set *bset)
 {
 	struct isl_tab *tab;
 
-	bset = isl_basic_set_cow(bset);
 	if (!bset)
 		return NULL;
 	tab = tab_for_lexmin((struct isl_basic_map *)bset, NULL, 1, 0);
@@ -2609,7 +2608,7 @@ static void gbr_init_shifted(struct isl_context_gbr *cgbr)
 		}
 	}
 
-	cgbr->shifted = isl_tab_from_basic_set(bset);
+	cgbr->shifted = isl_tab_from_basic_set(bset, 0);
 
 	for (i = 0; i < bset->n_ineq; ++i)
 		isl_int_set(bset->ineq[i][0], cst->el[i]);
@@ -2682,7 +2681,8 @@ static struct isl_vec *gbr_get_sample(struct isl_context_gbr *cgbr)
 		cgbr->cone = isl_tab_from_recession_cone(bset, 0);
 		if (!cgbr->cone)
 			return NULL;
-		if (isl_tab_track_bset(cgbr->cone, isl_basic_set_dup(bset)) < 0)
+		if (isl_tab_track_bset(cgbr->cone,
+					isl_basic_set_copy(bset)) < 0)
 			return NULL;
 	}
 	if (isl_tab_detect_implicit_equalities(cgbr->cone) < 0)
@@ -3044,7 +3044,8 @@ static int context_gbr_detect_equalities(struct isl_context *context,
 		cgbr->cone = isl_tab_from_recession_cone(bset, 0);
 		if (!cgbr->cone)
 			goto error;
-		if (isl_tab_track_bset(cgbr->cone, isl_basic_set_dup(bset)) < 0)
+		if (isl_tab_track_bset(cgbr->cone,
+					isl_basic_set_copy(bset)) < 0)
 			goto error;
 	}
 	if (isl_tab_detect_implicit_equalities(cgbr->cone) < 0)
@@ -3246,12 +3247,9 @@ static struct isl_context *isl_context_gbr_alloc(struct isl_basic_set *dom)
 
 	cgbr->shifted = NULL;
 	cgbr->cone = NULL;
-	cgbr->tab = isl_tab_from_basic_set(dom);
+	cgbr->tab = isl_tab_from_basic_set(dom, 1);
 	cgbr->tab = isl_tab_init_samples(cgbr->tab);
 	if (!cgbr->tab)
-		goto error;
-	if (isl_tab_track_bset(cgbr->tab,
-				isl_basic_set_cow(isl_basic_set_copy(dom))) < 0)
 		goto error;
 	check_gbr_integer_feasible(cgbr);
 

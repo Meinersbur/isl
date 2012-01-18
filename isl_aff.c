@@ -1040,10 +1040,13 @@ __isl_give isl_aff *isl_aff_gist_params(__isl_take isl_aff *aff,
 __isl_give isl_basic_set *isl_aff_nonneg_basic_set(__isl_take isl_aff *aff)
 {
 	isl_constraint *ineq;
+	isl_basic_set *bset;
 
 	ineq = isl_inequality_from_aff(aff);
 
-	return isl_basic_set_from_constraint(ineq);
+	bset = isl_basic_set_from_constraint(ineq);
+	bset = isl_basic_set_simplify(bset);
+	return bset;
 }
 
 /* Return a basic set containing those elements in the space
@@ -1052,10 +1055,13 @@ __isl_give isl_basic_set *isl_aff_nonneg_basic_set(__isl_take isl_aff *aff)
 __isl_give isl_basic_set *isl_aff_zero_basic_set(__isl_take isl_aff *aff)
 {
 	isl_constraint *ineq;
+	isl_basic_set *bset;
 
 	ineq = isl_equality_from_aff(aff);
 
-	return isl_basic_set_from_constraint(ineq);
+	bset = isl_basic_set_from_constraint(ineq);
+	bset = isl_basic_set_simplify(bset);
+	return bset;
 }
 
 /* Return a basic set containing those elements in the shared space
@@ -1525,9 +1531,11 @@ __isl_give isl_set *isl_pw_aff_nonneg_set(__isl_take isl_pw_aff *pwaff)
 }
 
 /* Return a set containing those elements in the domain
- * of pwaff where it is zero.
+ * of pwaff where it is zero (if complement is 0) or not zero
+ * (if complement is 1).
  */
-__isl_give isl_set *isl_pw_aff_zero_set(__isl_take isl_pw_aff *pwaff)
+static __isl_give isl_set *pw_aff_zero_set(__isl_take isl_pw_aff *pwaff,
+	int complement)
 {
 	int i;
 	isl_set *set;
@@ -1539,11 +1547,15 @@ __isl_give isl_set *isl_pw_aff_zero_set(__isl_take isl_pw_aff *pwaff)
 
 	for (i = 0; i < pwaff->n; ++i) {
 		isl_basic_set *bset;
-		isl_set *set_i;
+		isl_set *set_i, *zero;
 
 		bset = isl_aff_zero_basic_set(isl_aff_copy(pwaff->p[i].aff));
-		set_i = isl_set_from_basic_set(bset);
-		set_i = isl_set_intersect(set_i, isl_set_copy(pwaff->p[i].set));
+		zero = isl_set_from_basic_set(bset);
+		set_i = isl_set_copy(pwaff->p[i].set);
+		if (complement)
+			set_i = isl_set_subtract(set_i, zero);
+		else
+			set_i = isl_set_intersect(set_i, zero);
 		set = isl_set_union_disjoint(set, set_i);
 	}
 
@@ -1553,11 +1565,19 @@ __isl_give isl_set *isl_pw_aff_zero_set(__isl_take isl_pw_aff *pwaff)
 }
 
 /* Return a set containing those elements in the domain
+ * of pwaff where it is zero.
+ */
+__isl_give isl_set *isl_pw_aff_zero_set(__isl_take isl_pw_aff *pwaff)
+{
+	return pw_aff_zero_set(pwaff, 0);
+}
+
+/* Return a set containing those elements in the domain
  * of pwaff where it is not zero.
  */
 __isl_give isl_set *isl_pw_aff_non_zero_set(__isl_take isl_pw_aff *pwaff)
 {
-	return isl_set_complement(isl_pw_aff_zero_set(pwaff));
+	return pw_aff_zero_set(pwaff, 1);
 }
 
 /* Return a set containing those elements in the shared domain
