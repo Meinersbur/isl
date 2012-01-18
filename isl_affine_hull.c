@@ -353,6 +353,72 @@ error:
 	return NULL;
 }
 
+/* Move "sample" to a point that is one up (or down) from the original
+ * point in dimension "pos".
+ */
+static void adjacent_point(__isl_keep isl_vec *sample, int pos, int up)
+{
+	if (up)
+		isl_int_add_ui(sample->el[1 + pos], sample->el[1 + pos], 1);
+	else
+		isl_int_sub_ui(sample->el[1 + pos], sample->el[1 + pos], 1);
+}
+
+/* Check if any points that are adjacent to "sample" also belong to "bset".
+ * If so, add them to "hull" and return the updated hull.
+ *
+ * Before checking whether and adjacent point belongs to "bset", we first
+ * check whether it already belongs to "hull" as this test is typically
+ * much cheaper.
+ */
+static __isl_give isl_basic_set *add_adjacent_points(
+	__isl_take isl_basic_set *hull, __isl_take isl_vec *sample,
+	__isl_keep isl_basic_set *bset)
+{
+	int i, up;
+	int dim;
+
+	if (!sample)
+		goto error;
+
+	dim = isl_basic_set_dim(hull, isl_dim_set);
+
+	for (i = 0; i < dim; ++i) {
+		for (up = 0; up <= 1; ++up) {
+			int contains;
+			isl_basic_set *point;
+
+			adjacent_point(sample, i, up);
+			contains = isl_basic_set_contains(hull, sample);
+			if (contains < 0)
+				goto error;
+			if (contains) {
+				adjacent_point(sample, i, !up);
+				continue;
+			}
+			contains = isl_basic_set_contains(bset, sample);
+			if (contains < 0)
+				goto error;
+			if (contains) {
+				point = isl_basic_set_from_vec(
+							isl_vec_copy(sample));
+				hull = affine_hull(hull, point);
+			}
+			adjacent_point(sample, i, !up);
+			if (contains)
+				break;
+		}
+	}
+
+	isl_vec_free(sample);
+
+	return hull;
+error:
+	isl_vec_free(sample);
+	isl_basic_set_free(hull);
+	return NULL;
+}
+
 /* Extend an initial (under-)approximation of the affine hull of basic
  * set represented by the tableau "tab"
  * by looking for points that do not satisfy one of the equalities
@@ -361,9 +427,13 @@ error:
  *
  * The caller of this function ensures that "tab" is bounded or
  * that tab->basis and tab->n_unbounded have been set appropriately.
+ *
+ * "bset" may be either NULL or the basic set represented by "tab".
+ * If "bset" is not NULL, we check for any point we find if any
+ * of its adjacent points also belong to "bset".
  */
-static struct isl_basic_set *extend_affine_hull(struct isl_tab *tab,
-	struct isl_basic_set *hull)
+static __isl_give isl_basic_set *extend_affine_hull(struct isl_tab *tab,
+	__isl_take isl_basic_set *hull, __isl_keep isl_basic_set *bset)
 {
 	int i, j;
 	unsigned dim;
@@ -402,6 +472,9 @@ static struct isl_basic_set *extend_affine_hull(struct isl_tab *tab,
 			tab = isl_tab_add_sample(tab, isl_vec_copy(sample));
 		if (!tab)
 			goto error;
+		if (bset)
+			hull = add_adjacent_points(hull, isl_vec_copy(sample),
+						    bset);
 		point = isl_basic_set_from_vec(sample);
 		hull = affine_hull(hull, point);
 		if (!hull)
@@ -443,6 +516,20 @@ __isl_give isl_basic_set *isl_basic_set_drop_constraints_involving(
 	}
 
 	return bset;
+}
+
+/* Construct an initial underapproximatino of the hull of "bset"
+ * from "sample" and any of its adjacent points that also belong to "bset".
+ */
+static __isl_give isl_basic_set *initialize_hull(__isl_keep isl_basic_set *bset,
+	__isl_take isl_vec *sample)
+{
+	isl_basic_set *hull;
+
+	hull = isl_basic_set_from_vec(isl_vec_copy(sample));
+	hull = add_adjacent_points(hull, sample, bset);
+
+	return hull;
 }
 
 /* Look for all equalities satisfied by the integer points in bset,
@@ -507,10 +594,10 @@ static struct isl_basic_set *uset_affine_hull_bounded(struct isl_basic_set *bset
 		return isl_basic_set_set_to_empty(bset);
 	}
 
-	hull = isl_basic_set_from_vec(sample);
+	hull = initialize_hull(bset, sample);
 
+	hull = extend_affine_hull(tab, hull, bset);
 	isl_basic_set_free(bset);
-	hull = extend_affine_hull(tab, hull);
 	isl_tab_free(tab);
 
 	return hull;
@@ -622,7 +709,7 @@ struct isl_tab *isl_tab_detect_equalities(struct isl_tab *tab,
 
 	isl_vec_free(sample);
 
-	hull = extend_affine_hull(tab, hull);
+	hull = extend_affine_hull(tab, hull, NULL);
 	if (!hull)
 		goto error;
 
