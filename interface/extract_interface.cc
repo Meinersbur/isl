@@ -110,14 +110,14 @@ struct MyASTConsumer : public ASTConsumer {
 	set<RecordDecl *> types;
 	set<FunctionDecl *> functions;
 
-	virtual void HandleTopLevelDecl(DeclGroupRef D) {
+	virtual HandleTopLevelDeclReturn HandleTopLevelDecl(DeclGroupRef D) {
 		Decl *decl;
 
 		if (!D.isSingleDecl())
-			return;
+			return HandleTopLevelDeclContinue;
 		decl = D.getSingleDecl();
 		if (!is_exported(decl))
-			return;
+			return HandleTopLevelDeclContinue;
 		switch (decl->getKind()) {
 		case Decl::Record:
 			types.insert(cast<RecordDecl>(decl));
@@ -128,6 +128,7 @@ struct MyASTConsumer : public ASTConsumer {
 		default:
 			break;
 		}
+		return HandleTopLevelDeclContinue;
 	}
 };
 
