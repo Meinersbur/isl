@@ -153,6 +153,15 @@ dimension manipulation on the result.
 
 =back
 
+=head3 Changes since isl-0.09
+
+=over
+
+=item * The C<schedule_split_parallel> option has been replaced
+by the C<schedule_split_scaled> option.
+
+=back
+
 =head1 Installation
 
 The source of C<isl> can be obtained either as a tarball
@@ -4205,9 +4214,9 @@ A representation of the band can be printed using
 		isl_ctx *ctx, int val);
 	int isl_options_get_schedule_outer_zero_distance(
 		isl_ctx *ctx);
-	int isl_options_set_schedule_split_parallel(
+	int isl_options_set_schedule_split_scaled(
 		isl_ctx *ctx, int val);
-	int isl_options_get_schedule_split_parallel(
+	int isl_options_get_schedule_split_scaled(
 		isl_ctx *ctx);
 	int isl_options_set_schedule_algorithm(
 		isl_ctx *ctx, int val);
@@ -4240,13 +4249,14 @@ where the outermost scheduling dimension in each band
 results in a zero dependence distance over the proximity
 dependences.
 
-=item * schedule_split_parallel
+=item * schedule_split_scaled
 
 If this option is set, then we try to construct schedules in which the
 constant term is split off from the linear part if the linear parts of
-the scheduling rows for all nodes in the graphs are the same.
+the scheduling rows for all nodes in the graphs have a common non-trivial
+divisor.
 The constant term is then placed in a separate band and the linear
-part is simplified.
+part is reduced.
 
 =item * schedule_algorithm
 

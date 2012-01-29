@@ -150,9 +150,9 @@ ISL_ARG_BOOL(struct isl_options, schedule_outer_zero_distance, 0,
 ISL_ARG_BOOL(struct isl_options, schedule_maximize_band_depth, 0,
 	"schedule-maximize-band-depth", 0,
 	"maximize the number of scheduling dimensions in a band")
-ISL_ARG_BOOL(struct isl_options, schedule_split_parallel, 0,
-	"schedule-split-parallel", 1,
-	"split non-tilable bands with parallel schedules")
+ISL_ARG_BOOL(struct isl_options, schedule_split_scaled, 0,
+	"schedule-split-scaled", 1,
+	"split non-tilable bands with scaled schedules")
 ISL_ARG_CHOICE(struct isl_options, schedule_algorithm, 0,
 	"schedule-algorithm", isl_schedule_algorithm_choice,
 	ISL_SCHEDULE_ALGORITHM_ISL, "scheduling algorithm to use")
@@ -189,9 +189,9 @@ ISL_CTX_GET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
 	schedule_maximize_band_depth)
 
 ISL_CTX_SET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
-	schedule_split_parallel)
+	schedule_split_scaled)
 ISL_CTX_GET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
-	schedule_split_parallel)
+	schedule_split_scaled)
 
 ISL_CTX_SET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
 	schedule_outer_zero_distance)

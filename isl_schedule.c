@@ -2228,42 +2228,45 @@ static int setup_carry_lp(isl_ctx *ctx, struct isl_sched_graph *graph)
 	return 0;
 }
 
-/* If the schedule_split_parallel option is set and if the linear
- * parts of the scheduling rows for all nodes in the graphs are the same,
- * then split off the constant term from the linear part.
+/* If the schedule_split_scaled option is set and if the linear
+ * parts of the scheduling rows for all nodes in the graphs have
+ * non-trivial common divisor, then split off the constant term
+ * from the linear part.
  * The constant term is then placed in a separate band and
- * the linear part is simplified.
+ * the linear part is reduced.
  */
-static int split_parallel(isl_ctx *ctx, struct isl_sched_graph *graph)
+static int split_scaled(isl_ctx *ctx, struct isl_sched_graph *graph)
 {
 	int i;
-	int equal = 1;
-	int row, cols;
-	struct isl_sched_node *node0;
+	int row;
+	isl_int gcd, gcd_i;
 
-	if (!ctx->opt->schedule_split_parallel)
+	if (!ctx->opt->schedule_split_scaled)
 		return 0;
 	if (graph->n <= 1)
 		return 0;
 
-	node0 = &graph->node[0];
-	row = isl_mat_rows(node0->sched) - 1;
-	cols = isl_mat_cols(node0->sched);
-	for (i = 1; i < graph->n; ++i) {
-		struct isl_sched_node *node = &graph->node[i];
+	isl_int_init(gcd);
+	isl_int_init(gcd_i);
 
-		if (isl_mat_cols(node->sched) != cols)
-			return 0;
-		if (!isl_seq_eq(node0->sched->row[row] + 1,
-				node->sched->row[row] + 1, cols - 1))
-			return 0;
-		if (equal &&
-		    isl_int_ne(node0->sched->row[row][0],
-			       node->sched->row[row][0]))
-			equal = 0;
+	isl_int_set_si(gcd, 0);
+
+	row = isl_mat_rows(graph->node[0].sched) - 1;
+
+	for (i = 0; i < graph->n; ++i) {
+		struct isl_sched_node *node = &graph->node[i];
+		int cols = isl_mat_cols(node->sched);
+
+		isl_seq_gcd(node->sched->row[row] + 1, cols - 1, &gcd_i);
+		isl_int_gcd(gcd, gcd, gcd_i);
 	}
-	if (equal)
+
+	isl_int_clear(gcd_i);
+
+	if (isl_int_cmp_si(gcd, 1) <= 0) {
+		isl_int_clear(gcd);
 		return 0;
+	}
 
 	next_band(graph);
 
@@ -2274,19 +2277,26 @@ static int split_parallel(isl_ctx *ctx, struct isl_sched_graph *graph)
 		node->sched_map = NULL;
 		node->sched = isl_mat_add_zero_rows(node->sched, 1);
 		if (!node->sched)
-			return -1;
-		isl_int_set(node->sched->row[row + 1][0],
-			    node->sched->row[row][0]);
-		isl_int_set_si(node->sched->row[row][0], 0);
-		node->sched = isl_mat_normalize_row(node->sched, row);
+			goto error;
+		isl_int_fdiv_r(node->sched->row[row + 1][0],
+			       node->sched->row[row][0], gcd);
+		isl_int_fdiv_q(node->sched->row[row][0],
+			       node->sched->row[row][0], gcd);
+		isl_int_mul(node->sched->row[row][0],
+			    node->sched->row[row][0], gcd);
+		node->sched = isl_mat_scale_down_row(node->sched, row, gcd);
 		if (!node->sched)
-			return -1;
+			goto error;
 		node->band[graph->n_total_row] = graph->n_band;
 	}
 
 	graph->n_total_row++;
 
+	isl_int_clear(gcd);
 	return 0;
+error:
+	isl_int_clear(gcd);
+	return -1;
 }
 
 /* Construct a schedule row for each node such that as many dependences
@@ -2326,7 +2336,7 @@ static int carry_dependences(isl_ctx *ctx, struct isl_sched_graph *graph)
 	if (update_schedule(graph, sol, 0, 0) < 0)
 		return -1;
 
-	if (split_parallel(ctx, graph) < 0)
+	if (split_scaled(ctx, graph) < 0)
 		return -1;
 
 	return compute_next_band(ctx, graph);

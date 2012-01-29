@@ -49,7 +49,7 @@ struct isl_options {
 	int			schedule_parametric;
 	int			schedule_outer_zero_distance;
 	int			schedule_maximize_band_depth;
-	int			schedule_split_parallel;
+	int			schedule_split_scaled;
 	unsigned		schedule_algorithm;
 	int			schedule_fuse;
 };
