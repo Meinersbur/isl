@@ -3244,6 +3244,8 @@ Operations include
 	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_gist(
 		__isl_take isl_pw_multi_aff *pma,
 		__isl_take isl_set *set);
+	__isl_give isl_set *isl_pw_multi_aff_domain(
+		__isl_take isl_pw_multi_aff *pma);
 
 If the C<ls> argument of C<isl_multi_aff_lift> is not C<NULL>,
 then it is assigned the local space that lies at the basis of
