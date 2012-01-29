@@ -65,6 +65,9 @@ struct isl_mat *isl_mat_transpose(struct isl_mat *mat);
 __isl_give isl_mat *isl_mat_right_inverse(__isl_take isl_mat *mat);
 __isl_give isl_mat *isl_mat_right_kernel(__isl_take isl_mat *mat);
 
+__isl_give isl_mat *isl_mat_scale_down_row(__isl_take isl_mat *mat, int row,
+	isl_int m);
+
 __isl_give isl_mat *isl_mat_normalize(__isl_take isl_mat *mat);
 __isl_give isl_mat *isl_mat_normalize_row(__isl_take isl_mat *mat, int row);
 

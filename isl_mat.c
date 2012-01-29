@@ -1589,6 +1589,21 @@ __isl_give isl_mat *isl_mat_scale_down(__isl_take isl_mat *mat, isl_int m)
 	return mat;
 }
 
+__isl_give isl_mat *isl_mat_scale_down_row(__isl_take isl_mat *mat, int row,
+	isl_int m)
+{
+	if (isl_int_is_one(m))
+		return mat;
+
+	mat = isl_mat_cow(mat);
+	if (!mat)
+		return NULL;
+
+	isl_seq_scale_down(mat->row[row], mat->row[row], m, mat->n_col);
+
+	return mat;
+}
+
 __isl_give isl_mat *isl_mat_normalize(__isl_take isl_mat *mat)
 {
 	isl_int gcd;
