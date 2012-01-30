@@ -2252,6 +2252,8 @@ static int split_parallel(isl_ctx *ctx, struct isl_sched_graph *graph)
 	for (i = 1; i < graph->n; ++i) {
 		struct isl_sched_node *node = &graph->node[i];
 
+		if (isl_mat_cols(node->sched) != cols)
+			return 0;
 		if (!isl_seq_eq(node0->sched->row[row] + 1,
 				node->sched->row[row] + 1, cols - 1))
 			return 0;
