@@ -616,6 +616,7 @@ __isl_give isl_aff *isl_aff_normalize(__isl_take isl_aff *aff)
 	aff->v = isl_vec_normalize(aff->v);
 	if (!aff->v)
 		return isl_aff_free(aff);
+	aff = isl_aff_remove_unused_divs(aff);
 	return aff;
 }
 
