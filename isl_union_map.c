@@ -1135,10 +1135,22 @@ __isl_give isl_union_map *isl_union_map_product(__isl_take isl_union_map *umap1,
 	return bin_op(umap1, umap2, &product_entry);
 }
 
+static int set_product_entry(void **entry, void *user)
+{
+	struct isl_union_map_bin_data *data = user;
+	isl_set *set2 = *entry;
+
+	set2 = isl_set_product(isl_set_copy(data->map), isl_set_copy(set2));
+
+	data->res = isl_union_set_add_set(data->res, set2);
+
+	return 0;
+}
+
 __isl_give isl_union_set *isl_union_set_product(__isl_take isl_union_set *uset1,
 	__isl_take isl_union_set *uset2)
 {
-	return isl_union_map_product(uset1, uset2);
+	return bin_op(uset1, uset2, &set_product_entry);
 }
 
 static int range_product_entry(void **entry, void *user)

@@ -2451,6 +2451,7 @@ int test_product(isl_ctx *ctx)
 {
 	const char *str;
 	isl_set *set;
+	isl_union_set *uset1, *uset2;
 	int ok;
 
 	str = "{ A[i] }";
@@ -2458,6 +2459,19 @@ int test_product(isl_ctx *ctx)
 	set = isl_set_product(set, isl_set_copy(set));
 	ok = isl_set_is_wrapping(set);
 	isl_set_free(set);
+	if (ok < 0)
+		return -1;
+	if (!ok)
+		isl_die(ctx, isl_error_unknown, "unexpected result", return -1);
+
+	str = "{ [] }";
+	uset1 = isl_union_set_read_from_str(ctx, str);
+	uset1 = isl_union_set_product(uset1, isl_union_set_copy(uset1));
+	str = "{ [[] -> []] }";
+	uset2 = isl_union_set_read_from_str(ctx, str);
+	ok = isl_union_set_is_equal(uset1, uset2);
+	isl_union_set_free(uset1);
+	isl_union_set_free(uset2);
 	if (ok < 0)
 		return -1;
 	if (!ok)
