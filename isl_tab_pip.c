@@ -431,6 +431,8 @@ static void sol_add(struct isl_sol *sol, struct isl_tab *tab)
 
 	if (tab->empty && !sol->add_empty)
 		return;
+	if (sol->context->op->is_empty(sol->context))
+		return;
 
 	bset = sol_domain(sol);
 
