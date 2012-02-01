@@ -316,7 +316,7 @@ error:
 	return NULL;
 }
 
-/* Given a basic set, exploit the equalties in the a basic set to construct
+/* Given a basic set, exploit the equalties in the basic set to construct
  * a morphishm that maps the basic set to a lower-dimensional space.
  * Specifically, the morphism reduces the number of dimensions of type "type".
  *
