@@ -166,6 +166,7 @@ void test_parse(struct isl_ctx *ctx)
 	test_parse_pwqp(ctx, "{ [i] -> i + [ (i + [i/3])/2 ] }");
 	test_parse_map(ctx, "{ S1[i] -> [([i/10]),i%10] : 0 <= i <= 45 }");
 	test_parse_pwaff(ctx, "{ [i] -> [i + 1] : i > 0; [a] -> [a] : a < 0 }");
+	test_parse_pwqp(ctx, "{ [x] -> ([(x)/2] * [(x)/3]) }");
 }
 
 void test_read(struct isl_ctx *ctx)
