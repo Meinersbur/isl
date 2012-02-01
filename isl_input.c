@@ -1557,7 +1557,7 @@ static __isl_give isl_pw_qpolynomial *read_factor(struct isl_stream *s,
 		int pow;
 
 		isl_stream_push_token(s, tok);
-		pwaff = accept_affine(s, isl_map_get_space(map), v);
+		pwaff = accept_div(s, isl_map_get_space(map), v);
 		pow = optional_power(s);
 		pwqp = isl_pw_qpolynomial_from_pw_aff(pwaff);
 		pwqp = isl_pw_qpolynomial_pow(pwqp, pow);
