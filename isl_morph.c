@@ -784,12 +784,20 @@ __isl_give isl_morph *isl_morph_inverse(__isl_take isl_morph *morph)
 	return morph;
 }
 
+/* We detect all the equalities first to avoid implicit equalties
+ * being discovered during the computations.  In particular,
+ * the compression on the variables could expose additional stride
+ * constraints on the parameters.  This would result in existentially
+ * quantified variables after applying the resulting morph, which
+ * in turn could break invariants of the calling functions.
+ */
 __isl_give isl_morph *isl_basic_set_full_compression(
 	__isl_keep isl_basic_set *bset)
 {
 	isl_morph *morph, *morph2;
 
 	bset = isl_basic_set_copy(bset);
+	bset = isl_basic_set_detect_equalities(bset);
 
 	morph = isl_basic_set_variable_compression(bset, isl_dim_param);
 	bset = isl_morph_basic_set(isl_morph_copy(morph), bset);
