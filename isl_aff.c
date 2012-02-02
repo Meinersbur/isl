@@ -1,12 +1,14 @@
 /*
  * Copyright 2011      INRIA Saclay
  * Copyright 2011      Sven Verdoolaege
+ * Copyright 2012      Ecole Normale Superieure
  *
  * Use of this software is governed by the GNU LGPLv2.1 license
  *
  * Written by Sven Verdoolaege, INRIA Saclay - Ile-de-France,
  * Parc Club Orsay Universite, ZAC des vignes, 4 rue Jacques Monod,
  * 91893 Orsay, France
+ * and Ecole Normale Superieure, 45 rue d’Ulm, 75230 Paris, France
  */
 
 #include <isl_ctx_private.h>
@@ -568,6 +570,41 @@ __isl_give isl_aff *isl_aff_neg(__isl_take isl_aff *aff)
 		return isl_aff_free(aff);
 
 	isl_seq_neg(aff->v->el + 1, aff->v->el + 1, aff->v->size - 1);
+
+	return aff;
+}
+
+/* Remove divs from the local space that do not appear in the affine
+ * expression.
+ * We currently only remove divs at the end.
+ * Some intermediate divs may also not appear directly in the affine
+ * expression, but we would also need to check that no other divs are
+ * defined in terms of them.
+ */
+__isl_give isl_aff *isl_aff_remove_unused_divs( __isl_take isl_aff *aff)
+{
+	int pos;
+	int off;
+	int n;
+
+	if (!aff)
+		return NULL;
+
+	n = isl_local_space_dim(aff->ls, isl_dim_div);
+	off = isl_local_space_offset(aff->ls, isl_dim_div);
+
+	pos = isl_seq_last_non_zero(aff->v->el + 1 + off, n) + 1;
+	if (pos == n)
+		return aff;
+
+	aff = isl_aff_cow(aff);
+	if (!aff)
+		return NULL;
+
+	aff->ls = isl_local_space_drop_dims(aff->ls, isl_dim_div, pos, n - pos);
+	aff->v = isl_vec_drop_els(aff->v, 1 + off + pos, n - pos);
+	if (!aff->ls || !aff->v)
+		return isl_aff_free(aff);
 
 	return aff;
 }
@@ -2273,21 +2310,144 @@ __isl_give isl_set *isl_set_from_pw_multi_aff(__isl_take isl_pw_multi_aff *pma)
 	return isl_map_from_pw_multi_aff(pma);
 }
 
+/* Given a basic map with a single output dimension that is defined
+ * in terms of the parameters and input dimensions using an equality,
+ * extract an isl_aff that expresses the output dimension in terms
+ * of the parameters and input dimensions.
+ *
+ * Since some applications expect the result of isl_pw_multi_aff_from_map
+ * to only contain integer affine expressions, we compute the floor
+ * of the expression before returning.
+ *
+ * This function shares some similarities with
+ * isl_basic_map_has_defining_equality and isl_constraint_get_bound.
+ */
+static __isl_give isl_aff *extract_isl_aff_from_basic_map(
+	__isl_take isl_basic_map *bmap)
+{
+	int i;
+	unsigned offset;
+	unsigned total;
+	isl_local_space *ls;
+	isl_aff *aff;
+
+	if (!bmap)
+		return NULL;
+	if (isl_basic_map_dim(bmap, isl_dim_out) != 1)
+		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
+			"basic map should have a single output dimension",
+			goto error);
+	offset = isl_basic_map_offset(bmap, isl_dim_out);
+	total = isl_basic_map_total_dim(bmap);
+	for (i = 0; i < bmap->n_eq; ++i) {
+		if (isl_int_is_zero(bmap->eq[i][offset]))
+			continue;
+		if (isl_seq_first_non_zero(bmap->eq[i] + offset + 1,
+					   1 + total - (offset + 1)) != -1)
+			continue;
+		break;
+	}
+	if (i >= bmap->n_eq)
+		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
+			"unable to find suitable equality", goto error);
+	ls = isl_basic_map_get_local_space(bmap);
+	aff = isl_aff_alloc(isl_local_space_domain(ls));
+	if (!aff)
+		goto error;
+	if (isl_int_is_neg(bmap->eq[i][offset]))
+		isl_seq_cpy(aff->v->el + 1, bmap->eq[i], offset);
+	else
+		isl_seq_neg(aff->v->el + 1, bmap->eq[i], offset);
+	isl_seq_clr(aff->v->el + 1 + offset, aff->v->size - (1 + offset));
+	isl_int_abs(aff->v->el[0], bmap->eq[i][offset]);
+	isl_basic_map_free(bmap);
+
+	aff = isl_aff_remove_unused_divs(aff);
+	aff = isl_aff_floor(aff);
+	return aff;
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+/* Given a basic map where each output dimension is defined
+ * in terms of the parameters and input dimensions using an equality,
+ * extract an isl_multi_aff that expresses the output dimensions in terms
+ * of the parameters and input dimensions.
+ */
+static __isl_give isl_multi_aff *extract_isl_multi_aff_from_basic_map(
+	__isl_take isl_basic_map *bmap)
+{
+	int i;
+	unsigned n_out;
+	isl_multi_aff *ma;
+
+	if (!bmap)
+		return NULL;
+
+	ma = isl_multi_aff_alloc(isl_basic_map_get_space(bmap));
+	n_out = isl_basic_map_dim(bmap, isl_dim_out);
+
+	for (i = 0; i < n_out; ++i) {
+		isl_basic_map *bmap_i;
+		isl_aff *aff;
+
+		bmap_i = isl_basic_map_copy(bmap);
+		bmap_i = isl_basic_map_project_out(bmap_i, isl_dim_out,
+							i + 1, n_out - (1 + i));
+		bmap_i = isl_basic_map_project_out(bmap_i, isl_dim_out, 0, i);
+		aff = extract_isl_aff_from_basic_map(bmap_i);
+		ma = isl_multi_aff_set_aff(ma, i, aff);
+	}
+
+	isl_basic_map_free(bmap);
+
+	return ma;
+}
+
+/* Create an isl_pw_multi_aff that is equivalent to
+ * isl_map_intersect_domain(isl_map_from_basic_map(bmap), domain).
+ * The given basic map is such that each output dimension is defined
+ * in terms of the parameters and input dimensions using an equality.
+ */
+static __isl_give isl_pw_multi_aff *plain_pw_multi_aff_from_map(
+	__isl_take isl_set *domain, __isl_take isl_basic_map *bmap)
+{
+	isl_multi_aff *ma;
+
+	ma = extract_isl_multi_aff_from_basic_map(bmap);
+	return isl_pw_multi_aff_alloc(domain, ma);
+}
+
 /* Try and create an isl_pw_multi_aff that is equivalent to the given isl_map.
  * This obivously only works if the input "map" is single-valued.
  * If so, we compute the lexicographic minimum of the image in the form
  * of an isl_pw_multi_aff.  Since the image is unique, it is equal
  * to its lexicographic minimum.
  * If the input is not single-valued, we produce an error.
+ *
+ * As a special case, we first check if all output dimensions are uniquely
+ * defined in terms of the parameters and input dimensions over the entire
+ * domain.  If so, we extract the desired isl_pw_multi_aff directly
+ * from the affine hull of "map" and its domain.
  */
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_map(__isl_take isl_map *map)
 {
 	int i;
 	int sv;
 	isl_pw_multi_aff *pma;
+	isl_basic_map *hull;
 
 	if (!map)
 		return NULL;
+
+	hull = isl_map_affine_hull(isl_map_copy(map));
+	sv = isl_basic_map_plain_is_single_valued(hull);
+	if (sv >= 0 && sv)
+		return plain_pw_multi_aff_from_map(isl_map_domain(map), hull);
+	isl_basic_map_free(hull);
+	if (sv < 0)
+		goto error;
 
 	sv = isl_map_is_single_valued(map);
 	if (sv < 0)
