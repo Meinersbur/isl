@@ -2199,22 +2199,39 @@ static __isl_give isl_printer *print_aff_c(__isl_take isl_printer *p,
 	return p;
 }
 
+/* In the C format, we cannot express that "pwaff" may be undefined
+ * on parts of the domain space.  We therefore assume that the expression
+ * will only be evaluated on its definition domain and compute the gist
+ * of each cell with respect to this domain.
+ */
 static __isl_give isl_printer *print_pw_aff_c(__isl_take isl_printer *p,
 	__isl_keep isl_pw_aff *pwaff)
 {
 	int i;
+	isl_set *domain;
 
 	if (pwaff->n < 1)
 		isl_die(p->ctx, isl_error_unsupported,
 			"cannot print empty isl_pw_aff in C format", goto error);
 
+	domain = isl_pw_aff_domain(isl_pw_aff_copy(pwaff));
+
 	for (i = 0; i < pwaff->n - 1; ++i) {
+		isl_set *set_i;
+
 		p = isl_printer_print_str(p, "(");
-		p = print_set_c(p, pwaff->dim, pwaff->p[i].set);
+
+		set_i = isl_set_copy(pwaff->p[i].set);
+		set_i = isl_set_gist(set_i, isl_set_copy(domain));
+		p = print_set_c(p, pwaff->dim, set_i);
+		isl_set_free(set_i);
+
 		p = isl_printer_print_str(p, ") ? (");
 		p = print_aff_c(p, pwaff->p[i].aff);
 		p = isl_printer_print_str(p, ") : ");
 	}
+
+	isl_set_free(domain);
 
 	return print_aff_c(p, pwaff->p[pwaff->n - 1].aff);
 error:
