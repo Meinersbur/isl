@@ -2204,18 +2204,24 @@ static __isl_give isl_printer *print_pw_aff_c(__isl_take isl_printer *p,
 	__isl_keep isl_pw_aff *pwaff)
 {
 	int i;
+	isl_space *space;
 
 	if (pwaff->n < 1)
 		isl_die(p->ctx, isl_error_unsupported,
 			"cannot print empty isl_pw_aff in C format", goto error);
+	space = isl_pw_aff_get_domain_space(pwaff);
+	if (!space)
+		goto error;
 
 	for (i = 0; i < pwaff->n - 1; ++i) {
 		p = isl_printer_print_str(p, "(");
-		p = print_set_c(p, pwaff->dim, pwaff->p[i].set);
+		p = print_set_c(p, space, pwaff->p[i].set);
 		p = isl_printer_print_str(p, ") ? (");
 		p = print_aff_c(p, pwaff->p[i].aff);
 		p = isl_printer_print_str(p, ") : ");
 	}
+
+	isl_space_free(space);
 
 	return print_aff_c(p, pwaff->p[pwaff->n - 1].aff);
 error:
