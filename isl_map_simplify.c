@@ -1146,6 +1146,12 @@ int isl_basic_map_is_div_constraint(__isl_keep isl_basic_map *bmap,
 	return 1;
 }
 
+int isl_basic_set_is_div_constraint(__isl_keep isl_basic_set *bset,
+	isl_int *constraint, unsigned div)
+{
+	return isl_basic_map_is_div_constraint(bset, constraint, div);
+}
+
 
 /* If the only constraints a div d=floor(f/m)
  * appears in are its two defining constraints
