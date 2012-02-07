@@ -878,10 +878,10 @@ static __isl_give isl_vertices *compute_chambers(__isl_take isl_basic_set *bset,
 	bset = isl_basic_set_params(bset);
 
 	tab = isl_tab_from_basic_set(bset, 1);
-	isl_basic_set_free(bset);
 	for (i = 0; i < bset->n_ineq; ++i)
 		if (isl_tab_freeze_constraint(tab, i) < 0)
 			goto error;
+	isl_basic_set_free(bset);
 
 	snap = isl_tab_snap(tab);
 

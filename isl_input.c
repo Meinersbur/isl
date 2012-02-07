@@ -2541,7 +2541,7 @@ __isl_give isl_pw_aff *isl_stream_read_pw_aff(struct isl_stream *s)
 		pa_i = read_pw_aff_with_dom(s, aff_dom, v);
 		vars_drop(v, v->n - n);
 
-		pa = isl_pw_aff_add(pa, pa_i);
+		pa = isl_pw_aff_union_add(pa, pa_i);
 	}
 
 	if (isl_stream_eat(s, '}'))
