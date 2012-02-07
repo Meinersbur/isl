@@ -371,14 +371,14 @@ static __isl_give PW *FN(PW,union_add_aligned)(__isl_take PW *pw1,
 		for (j = 0; j < pw2->n; ++j) {
 			struct isl_set *common;
 			EL *sum;
-			set = isl_set_subtract(set,
-					isl_set_copy(pw2->p[j].set));
 			common = isl_set_intersect(isl_set_copy(pw1->p[i].set),
 						isl_set_copy(pw2->p[j].set));
 			if (isl_set_plain_is_empty(common)) {
 				isl_set_free(common);
 				continue;
 			}
+			set = isl_set_subtract(set,
+					isl_set_copy(pw2->p[j].set));
 
 			sum = FN(EL,add_on_domain)(common,
 						   FN(EL,copy)(pw1->p[i].FIELD),
