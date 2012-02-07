@@ -2595,6 +2595,33 @@ int test_union_pw(isl_ctx *ctx)
 	return 0;
 }
 
+int test_output(isl_ctx *ctx)
+{
+	char *s;
+	const char *str;
+	isl_pw_aff *pa;
+	isl_printer *p;
+	int equal;
+
+	str = "[x] -> { [1] : x % 4 <= 2; [2] : x = 3 }";
+	pa = isl_pw_aff_read_from_str(ctx, str);
+
+	p = isl_printer_to_str(ctx);
+	p = isl_printer_set_output_format(p, ISL_FORMAT_C);
+	p = isl_printer_print_pw_aff(p, pa);
+	s = isl_printer_get_str(p);
+	isl_printer_free(p);
+	isl_pw_aff_free(pa);
+	equal = !strcmp(s, "(2 - x + 4*floord(x, 4) >= 0) ? (1) : 2");
+	free(s);
+	if (equal < 0)
+		return -1;
+	if (!equal)
+		isl_die(ctx, isl_error_unknown, "unexpected result", return -1);
+
+	return 0;
+}
+
 int main()
 {
 	struct isl_ctx *ctx;
@@ -2603,6 +2630,8 @@ int main()
 	assert(srcdir);
 
 	ctx = isl_ctx_alloc();
+	if (test_output(ctx) < 0)
+		goto error;
 	if (test_vertices(ctx) < 0)
 		goto error;
 	if (test_fixed(ctx) < 0)
