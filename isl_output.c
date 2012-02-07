@@ -1648,10 +1648,22 @@ static __isl_give isl_printer *print_affine_c(__isl_take isl_printer *p,
 	return print_partial_affine_c(p, dim, bset, c, len);
 }
 
+/* We skip the constraint if it is implied by the div expression.
+ */
 static __isl_give isl_printer *print_constraint_c(__isl_take isl_printer *p,
 	__isl_keep isl_space *dim,
 	__isl_keep isl_basic_set *bset, isl_int *c, const char *op, int first)
 {
+	unsigned o_div;
+	unsigned n_div;
+	int div;
+
+	o_div = isl_basic_set_offset(bset, isl_dim_div);
+	n_div = isl_basic_set_dim(bset, isl_dim_div);
+	div = isl_seq_last_non_zero(c + o_div, n_div);
+	if (div >= 0 && isl_basic_set_is_div_constraint(bset, c, div))
+		return p;
+
 	if (!first)
 		p = isl_printer_print_str(p, " && ");
 
