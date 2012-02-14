@@ -1867,6 +1867,7 @@ static struct isl_basic_set *uset_convex_hull_wrap_bounded(struct isl_set *set)
 	if (set->n == 1) {
 		convex_hull = isl_basic_set_copy(set->p[0]);
 		isl_set_free(set);
+		convex_hull = isl_basic_map_remove_redundancies(convex_hull);
 		return convex_hull;
 	}
 	if (isl_set_n_dim(set) == 1)
