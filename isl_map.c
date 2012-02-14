@@ -4928,6 +4928,25 @@ struct isl_basic_set *isl_basic_set_fix_dim_si(struct isl_basic_set *bset,
 					isl_dim_set, dim, value);
 }
 
+static int remove_if_empty(__isl_keep isl_map *map, int i)
+{
+	int empty = isl_basic_map_plain_is_empty(map->p[i]);
+
+	if (empty < 0)
+		return -1;
+	if (!empty)
+		return 0;
+
+	isl_basic_map_free(map->p[i]);
+	if (i != map->n - 1) {
+		ISL_F_CLR(map, ISL_MAP_NORMALIZED);
+		map->p[i] = map->p[map->n - 1];
+	}
+	map->n--;
+
+	return 0;
+}
+
 struct isl_map *isl_map_fix_si(struct isl_map *map,
 		enum isl_dim_type type, unsigned pos, int value)
 {
@@ -7197,16 +7216,8 @@ struct isl_map *isl_map_remove_empty_parts(struct isl_map *map)
 	if (!map)
 		return NULL;
 
-	for (i = map->n-1; i >= 0; --i) {
-		if (!ISL_F_ISSET(map->p[i], ISL_BASIC_MAP_EMPTY))
-			continue;
-		isl_basic_map_free(map->p[i]);
-		if (i != map->n-1) {
-			ISL_F_CLR(map, ISL_MAP_NORMALIZED);
-			map->p[i] = map->p[map->n-1];
-		}
-		map->n--;
-	}
+	for (i = map->n - 1; i >= 0; --i)
+		remove_if_empty(map, i);
 
 	return map;
 }
@@ -10001,14 +10012,8 @@ __isl_give isl_set *isl_set_substitute(__isl_take isl_set *set,
 
 	for (i = set->n - 1; i >= 0; --i) {
 		set->p[i] = isl_basic_set_substitute(set->p[i], type, pos, subs);
-		if (!set->p[i])
+		if (remove_if_empty(set, i) < 0)
 			goto error;
-		if (isl_basic_set_plain_is_empty(set->p[i])) {
-			isl_basic_set_free(set->p[i]);
-			if (i != set->n - 1)
-				set->p[i] = set->p[set->n - 1];
-			set->n--;
-		}
 	}
 
 	return set;
