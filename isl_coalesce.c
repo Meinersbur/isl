@@ -1228,6 +1228,7 @@ struct isl_map *isl_map_coalesce(struct isl_map *map)
 	unsigned n;
 	struct isl_tab **tabs = NULL;
 
+	map = isl_map_remove_empty_parts(map);
 	if (!map)
 		return NULL;
 
