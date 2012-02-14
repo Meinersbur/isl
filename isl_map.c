@@ -9333,14 +9333,21 @@ __isl_give isl_basic_map *isl_basic_map_realign(__isl_take isl_basic_map *bmap,
 	__isl_take isl_space *dim, __isl_take struct isl_dim_map *dim_map)
 {
 	isl_basic_map *res;
+	unsigned flags;
 
 	bmap = isl_basic_map_cow(bmap);
 	if (!bmap || !dim || !dim_map)
 		goto error;
 
+	flags = bmap->flags;
+	ISL_FL_CLR(flags, ISL_BASIC_MAP_FINAL);
+	ISL_FL_CLR(flags, ISL_BASIC_MAP_NORMALIZED);
+	ISL_FL_CLR(flags, ISL_BASIC_MAP_NORMALIZED_DIVS);
 	res = isl_basic_map_alloc_space(dim,
 			bmap->n_div, bmap->n_eq, bmap->n_ineq);
 	res = isl_basic_map_add_constraints_dim_map(res, bmap, dim_map);
+	if (res)
+		res->flags = flags;
 	res = isl_basic_map_finalize(res);
 	return res;
 error:
