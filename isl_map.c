@@ -4957,9 +4957,9 @@ struct isl_map *isl_map_fix_si(struct isl_map *map,
 		return NULL;
 
 	isl_assert(map->ctx, pos < isl_map_dim(map, type), goto error);
-	for (i = 0; i < map->n; ++i) {
+	for (i = map->n - 1; i >= 0; --i) {
 		map->p[i] = isl_basic_map_fix_si(map->p[i], type, pos, value);
-		if (!map->p[i])
+		if (remove_if_empty(map, i) < 0)
 			goto error;
 	}
 	ISL_F_CLR(map, ISL_MAP_NORMALIZED);
