@@ -2239,6 +2239,49 @@ int test_schedule(isl_ctx *ctx)
 		return -1;
 	ctx->opt->schedule_outer_zero_distance = 0;
 
+	D = "{Stmt_for_body24[i0, i1, i2, i3]:"
+		"i0 >= 0 and i0 <= 1 and i1 >= 0 and i1 <= 6 and i2 >= 2 and "
+		"i2 <= 6 - i1 and i3 >= 0 and i3 <= -1 + i2;"
+	     "Stmt_for_body24[i0, i1, 1, 0]:"
+		"i0 >= 0 and i0 <= 1 and i1 >= 0 and i1 <= 5;"
+	     "Stmt_for_body7[i0, i1, i2]:"
+		"i0 >= 0 and i0 <= 1 and i1 >= 0 and i1 <= 7 and i2 >= 0 and "
+		"i2 <= 7 }";
+
+	V = "{Stmt_for_body24[0, i1, i2, i3] -> "
+		"Stmt_for_body24[1, i1, i2, i3]:"
+		"i3 >= 0 and i3 <= -1 + i2 and i1 >= 0 and i2 <= 6 - i1 and "
+		"i2 >= 1;"
+	     "Stmt_for_body24[0, i1, i2, i3] -> "
+		"Stmt_for_body7[1, 1 + i1 + i3, 1 + i1 + i2]:"
+		"i3 <= -1 + i2 and i2 <= 6 - i1 and i2 >= 1 and i1 >= 0 and "
+		"i3 >= 0;"
+	      "Stmt_for_body24[0, i1, i2, i3] ->"
+		"Stmt_for_body7[1, i1, 1 + i1 + i3]:"
+		"i3 >= 0 and i2 <= 6 - i1 and i1 >= 0 and i3 <= -1 + i2;"
+	      "Stmt_for_body7[0, i1, i2] -> Stmt_for_body7[1, i1, i2]:"
+		"(i2 >= 1 + i1 and i2 <= 6 and i1 >= 0 and i1 <= 4) or "
+		"(i2 >= 3 and i2 <= 7 and i1 >= 1 and i2 >= 1 + i1) or "
+		"(i2 >= 0 and i2 <= i1 and i2 >= -7 + i1 and i1 <= 7);"
+	      "Stmt_for_body7[0, i1, 1 + i1] -> Stmt_for_body7[1, i1, 1 + i1]:"
+		"i1 <= 6 and i1 >= 0;"
+	      "Stmt_for_body7[0, 0, 7] -> Stmt_for_body7[1, 0, 7];"
+	      "Stmt_for_body7[i0, i1, i2] -> "
+		"Stmt_for_body24[i0, o1, -1 + i2 - o1, -1 + i1 - o1]:"
+		"i0 >= 0 and i0 <= 1 and o1 >= 0 and i2 >= 1 + i1 and "
+		"o1 <= -2 + i2 and i2 <= 7 and o1 <= -1 + i1;"
+	      "Stmt_for_body7[i0, i1, i2] -> "
+		"Stmt_for_body24[i0, i1, o2, -1 - i1 + i2]:"
+		"i0 >= 0 and i0 <= 1 and i1 >= 0 and o2 >= -i1 + i2 and "
+		"o2 >= 1 and o2 <= 6 - i1 and i2 >= 1 + i1 }";
+	P = V;
+	S = "{ Stmt_for_body24[i0, i1, i2, i3] -> "
+		"[i0, 5i0 + i1, 6i0 + i1 + i2, 1 + 6i0 + i1 + i2 + i3, 1];"
+	    "Stmt_for_body7[i0, i1, i2] -> [0, 5i0, 6i0 + i1, 6i0 + i2, 0] }";
+
+	if (test_special_schedule(ctx, D, V, P, S) < 0)
+		return -1;
+
 	D = "{ S_0[i, j] : i >= 1 and i <= 10 and j >= 1 and j <= 8 }";
 	V = "{ S_0[i, j] -> S_0[i, 1 + j] : i >= 1 and i <= 10 and "
 					   "j >= 1 and j <= 7;"

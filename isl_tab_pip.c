@@ -1606,6 +1606,9 @@ static int add_cut(struct isl_tab *tab, int row)
 	return tab->con[r].index;
 }
 
+#define CUT_ALL 1
+#define CUT_ONE 0
+
 /* Given a non-parametric tableau, add cuts until an integer
  * sample point is obtained or until the tableau is determined
  * to be integer infeasible.
@@ -1617,8 +1620,12 @@ static int add_cut(struct isl_tab *tab, int row)
  * combination of variables/constraints plus a non-integral constant,
  * then there is no way to obtain an integer point and we return
  * a tableau that is marked empty.
+ * The parameter cutting_strategy controls the strategy used when adding cuts
+ * to remove non-integer points. CUT_ALL adds all possible cuts
+ * before continuing the search. CUT_ONE adds only one cut at a time.
  */
-static struct isl_tab *cut_to_integer_lexmin(struct isl_tab *tab)
+static struct isl_tab *cut_to_integer_lexmin(struct isl_tab *tab,
+	int cutting_strategy)
 {
 	int var;
 	int row;
@@ -1640,6 +1647,8 @@ static struct isl_tab *cut_to_integer_lexmin(struct isl_tab *tab)
 			row = add_cut(tab, row);
 			if (row < 0)
 				goto error;
+			if (cutting_strategy == CUT_ONE)
+				break;
 		} while ((var = next_non_integer_var(tab, var, &flags)) != -1);
 		if (restore_lexmin(tab) < 0)
 			goto error;
@@ -1730,7 +1739,7 @@ static struct isl_tab *check_integer_feasible(struct isl_tab *tab)
 	if (isl_tab_push_basis(tab) < 0)
 		goto error;
 
-	tab = cut_to_integer_lexmin(tab);
+	tab = cut_to_integer_lexmin(tab, CUT_ALL);
 	if (!tab)
 		goto error;
 
@@ -4958,7 +4967,7 @@ __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 		int side, base;
 
 		if (init) {
-			tab = cut_to_integer_lexmin(tab);
+			tab = cut_to_integer_lexmin(tab, CUT_ONE);
 			if (!tab)
 				goto error;
 			if (tab->empty)
