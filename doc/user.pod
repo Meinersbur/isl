@@ -1753,6 +1753,8 @@ i.e., whether both domain and range are nested relations.
 
 	__isl_give isl_set *isl_set_complement(
 		__isl_take isl_set *set);
+	__isl_give isl_map *isl_map_complement(
+		__isl_take isl_map *map);
 
 =item * Inverse map
 

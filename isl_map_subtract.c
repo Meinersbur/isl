@@ -843,14 +843,19 @@ __isl_give isl_set *isl_set_make_disjoint(__isl_take isl_set *set)
 	return (struct isl_set *)isl_map_make_disjoint((struct isl_map *)set);
 }
 
-__isl_give isl_set *isl_set_complement(__isl_take isl_set *set)
+__isl_give isl_map *isl_map_complement(__isl_take isl_map *map)
 {
-	isl_set *universe;
+	isl_map *universe;
 
-	if (!set)
+	if (!map)
 		return NULL;
 
-	universe = isl_set_universe(isl_set_get_space(set));
+	universe = isl_map_universe(isl_map_get_space(map));
 
-	return isl_set_subtract(universe, set);
+	return isl_map_subtract(universe, map);
+}
+
+__isl_give isl_set *isl_set_complement(__isl_take isl_set *set)
+{
+	return isl_map_complement(set);
 }
