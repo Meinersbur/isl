@@ -137,6 +137,10 @@ ISL_ARG_BOOL(struct isl_options, pip_symmetry, 0, "pip-symmetry", 1,
 	"detect simple symmetries in PIP input")
 ISL_ARG_CHOICE(struct isl_options, convex, 0, "convex-hull", \
 	convex,	ISL_CONVEX_HULL_WRAP, "convex hull algorithm to use")
+ISL_ARG_INT(struct isl_options, schedule_max_coefficient, 0,
+	"schedule-max-coefficient", "limit", -1, "Only consider schedules "
+	"where the coefficients of the variable and parameter dimensions "
+        "do not exceed <limit>. A value of -1 allows arbitrary coefficients.")
 ISL_ARG_INT(struct isl_options, schedule_max_constant_term, 0,
 	"schedule-max-constant-term", "limit", -1, "Only consider schedules "
 	"where the coefficients of the constant dimension do not exceed "
@@ -177,6 +181,11 @@ ISL_CTX_SET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
 	gbr_only_first)
 ISL_CTX_GET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
 	gbr_only_first)
+
+ISL_CTX_SET_INT_DEF(isl_options, struct isl_options, isl_options_args,
+	schedule_max_coefficient)
+ISL_CTX_GET_INT_DEF(isl_options, struct isl_options, isl_options_args,
+	schedule_max_coefficient)
 
 ISL_CTX_SET_INT_DEF(isl_options, struct isl_options, isl_options_args,
 	schedule_max_constant_term)

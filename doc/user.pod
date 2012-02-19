@@ -4206,6 +4206,10 @@ A representation of the band can be printed using
 =head3 Options
 
 	#include <isl/schedule.h>
+	int isl_options_set_schedule_max_coefficient(
+		isl_ctx *ctx, int val);
+	int isl_options_get_schedule_max_coefficient(
+		isl_ctx *ctx);
 	int isl_options_set_schedule_max_constant_term(
 		isl_ctx *ctx, int val);
 	int isl_options_get_schedule_max_constant_term(
@@ -4229,6 +4233,15 @@ A representation of the band can be printed using
 
 
 =over
+
+=item * schedule_max_coefficient
+
+This option enforces that the coefficients for variable and parameter
+dimensions in the calculated schedule are not larger than the specified value.
+This option can significantly increase the speed of the scheduling calculation
+and may also prevent fusing of unrelated dimensions. A value of -1 means that
+this option does not introduce bounds on the variable or parameter
+coefficients.
 
 =item * schedule_max_constant_term
 

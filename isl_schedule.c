@@ -1094,6 +1094,43 @@ static int count_constraints(struct isl_sched_graph *graph,
 	return 0;
 }
 
+/* Add constraints that bound the values of the variable and parameter
+ * coefficients of the schedule.
+ *
+ * The maximal value of the coefficients is defined by the option
+ * 'schedule_max_coefficient'.
+ */
+static int add_bound_coefficient_constraints(isl_ctx *ctx,
+	struct isl_sched_graph *graph)
+{
+	int i, j, k;
+	int max_coefficient;
+	int total;
+
+	max_coefficient = ctx->opt->schedule_max_coefficient;
+
+	if (max_coefficient == -1)
+		return 0;
+
+	total = isl_basic_set_total_dim(graph->lp);
+
+	for (i = 0; i < graph->n; ++i) {
+		struct isl_sched_node *node = &graph->node[i];
+		for (j = 0; j < 2 * node->nparam + 2 * node->nvar; ++j) {
+			int dim;
+			k = isl_basic_set_alloc_inequality(graph->lp);
+			if (k < 0)
+				return -1;
+			dim = 1 + node->start + 1 + j;
+			isl_seq_clr(graph->lp->ineq[k], 1 +  total);
+			isl_int_set_si(graph->lp->ineq[k][dim], -1);
+			isl_int_set_si(graph->lp->ineq[k][0], max_coefficient);
+		}
+	}
+
+	return 0;
+}
+
 /* Construct an ILP problem for finding schedule coefficients
  * that result in non-negative, but small dependence distances
  * over all dependences.
@@ -1140,8 +1177,10 @@ static int setup_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
 	int param_pos;
 	int n_eq, n_ineq;
 	int max_constant_term;
+	int max_coefficient;
 
 	max_constant_term = ctx->opt->schedule_max_constant_term;
+	max_coefficient = ctx->opt->schedule_max_coefficient;
 
 	parametric = ctx->opt->schedule_parametric;
 	nparam = isl_space_dim(graph->node[0].dim, isl_dim_param);
@@ -1163,6 +1202,10 @@ static int setup_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
 	n_eq += 2 + parametric + force_zero;
 	if (max_constant_term != -1)
 		n_ineq += graph->n;
+	if (max_coefficient != -1)
+		for (i = 0; i < graph->n; ++i)
+			n_ineq += 2 * graph->node[i].nparam +
+				  2 * graph->node[i].nvar;
 
 	graph->lp = isl_basic_set_alloc_space(dim, 0, n_eq, n_ineq);
 
@@ -1221,6 +1264,8 @@ static int setup_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
 			isl_int_set_si(graph->lp->ineq[k][0], max_constant_term);
 		}
 
+	if (add_bound_coefficient_constraints(ctx, graph) < 0)
+		return -1;
 	if (add_all_validity_constraints(graph) < 0)
 		return -1;
 	if (add_all_proximity_constraints(graph) < 0)
