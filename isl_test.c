@@ -637,11 +637,30 @@ void test_affine_hull_case(struct isl_ctx *ctx, const char *name)
 	fclose(input);
 }
 
-void test_affine_hull(struct isl_ctx *ctx)
+int test_affine_hull(struct isl_ctx *ctx)
 {
+	const char *str;
+	isl_set *set;
+	isl_basic_set *bset;
+	int n;
+
 	test_affine_hull_case(ctx, "affine2");
 	test_affine_hull_case(ctx, "affine");
 	test_affine_hull_case(ctx, "affine3");
+
+	str = "[m] -> { [i0] : exists (e0, e1: e1 <= 1 + i0 and "
+			"m >= 3 and 4i0 <= 2 + m and e1 >= i0 and "
+			"e1 >= 0 and e1 <= 2 and e1 >= 1 + 2e0 and "
+			"2e1 <= 1 + m + 4e0 and 2e1 >= 2 - m + 4i0 - 4e0) }";
+	set = isl_set_read_from_str(ctx, str);
+	bset = isl_set_affine_hull(set);
+	n = isl_basic_set_dim(bset, isl_dim_div);
+	isl_basic_set_free(bset);
+	if (n != 0)
+		isl_die(ctx, isl_error_unknown, "not expecting any divs",
+			return -1);
+
+	return 0;
 }
 
 void test_convex_hull_case(struct isl_ctx *ctx, const char *name)
@@ -2712,7 +2731,8 @@ int main()
 	test_dim(ctx);
 	test_div(ctx);
 	test_application(ctx);
-	test_affine_hull(ctx);
+	if (test_affine_hull(ctx) < 0)
+		goto error;
 	test_convex_hull(ctx);
 	test_gist(ctx);
 	test_coalesce(ctx);

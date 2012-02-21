@@ -745,6 +745,30 @@ static struct isl_vec *get_row_parameter_ineq(struct isl_tab *tab, int row)
 	return ineq;
 }
 
+/* Normalize a div expression of the form
+ *
+ *	[(g*f(x) + c)/(g * m)]
+ *
+ * with c the constant term and f(x) the remaining coefficients, to
+ *
+ *	[(f(x) + [c/g])/m]
+ */
+static void normalize_div(__isl_keep isl_vec *div)
+{
+	isl_ctx *ctx = isl_vec_get_ctx(div);
+	int len = div->size - 2;
+
+	isl_seq_gcd(div->el + 2, len, &ctx->normalize_gcd);
+	isl_int_gcd(ctx->normalize_gcd, ctx->normalize_gcd, div->el[0]);
+
+	if (isl_int_is_one(ctx->normalize_gcd))
+		return;
+
+	isl_int_divexact(div->el[0], div->el[0], ctx->normalize_gcd);
+	isl_int_fdiv_q(div->el[1], div->el[1], ctx->normalize_gcd);
+	isl_seq_scale_down(div->el + 2, div->el + 2, ctx->normalize_gcd, len);
+}
+
 /* Return a integer division for use in a parametric cut based on the given row.
  * In particular, let the parametric constant of the row be
  *
@@ -765,7 +789,7 @@ static struct isl_vec *get_row_parameter_div(struct isl_tab *tab, int row)
 
 	isl_int_set(div->el[0], tab->mat->row[row][0]);
 	get_row_parameter_line(tab, row, div->el + 1);
-	div = isl_vec_normalize(div);
+	normalize_div(div);
 	isl_seq_neg(div->el + 1, div->el + 1, div->size - 1);
 	isl_seq_fdiv_r(div->el + 1, div->el + 1, div->el[0], div->size - 1);
 
@@ -793,7 +817,7 @@ static struct isl_vec *get_row_split_div(struct isl_tab *tab, int row)
 
 	isl_int_set(div->el[0], tab->mat->row[row][0]);
 	get_row_parameter_line(tab, row, div->el + 1);
-	div = isl_vec_normalize(div);
+	normalize_div(div);
 	isl_seq_fdiv_r(div->el + 1, div->el + 1, div->el[0], div->size - 1);
 
 	return div;
