@@ -794,21 +794,33 @@ void test_gist(struct isl_ctx *ctx)
 	isl_basic_set_free(bset1);
 }
 
-void test_coalesce_set(isl_ctx *ctx, const char *str, int check_one)
+int test_coalesce_set(isl_ctx *ctx, const char *str, int check_one)
 {
 	isl_set *set, *set2;
+	int equal;
+	int one;
 
 	set = isl_set_read_from_str(ctx, str);
 	set = isl_set_coalesce(set);
 	set2 = isl_set_read_from_str(ctx, str);
-	assert(isl_set_is_equal(set, set2));
-	if (check_one)
-		assert(set && set->n == 1);
+	equal = isl_set_is_equal(set, set2);
+	one = set && set->n == 1;
 	isl_set_free(set);
 	isl_set_free(set2);
+
+	if (equal < 0)
+		return -1;
+	if (!equal)
+		isl_die(ctx, isl_error_unknown,
+			"coalesced set not equal to input", return -1);
+	if (check_one && !one)
+		isl_die(ctx, isl_error_unknown,
+			"coalesced set should not be a union", return -1);
+
+	return 0;
 }
 
-void test_coalesce(struct isl_ctx *ctx)
+int test_coalesce(struct isl_ctx *ctx)
 {
 	const char *str;
 	struct isl_set *set, *set2;
@@ -1041,18 +1053,32 @@ void test_coalesce(struct isl_ctx *ctx)
 			"-x - y + 1 >= 0 and -3 <= z <= 3;"
 		"[x,y,z] : -x+z + 20 >= 0 and -x-z + 20 >= 0 and "
 			"x-z + 20 >= 0 and x+z + 20 >= 0 and -10 <= y <= 0}", 1);
-	test_coalesce_set(ctx,
-		"{[x,y] : 0 <= x,y <= 10; [5,y]: 4 <=y <= 11}", 1);
-	test_coalesce_set(ctx, "{[x,0] : x >= 0; [x,1] : x <= 20}", 0);
-	test_coalesce_set(ctx,
-		"{[x,0,0] : -5 <= x <= 5; [0,y,1] : -5 <= y <= 5 }", 1);
-	test_coalesce_set(ctx, "{ [x, 1 - x] : 0 <= x <= 1; [0,0] }", 1);
-	test_coalesce_set(ctx, "{ [0,0]; [i,i] : 1 <= i <= 10 }", 1);
-	test_coalesce_set(ctx, "{ [0,0]; [i,j] : 1 <= i,j <= 10 }", 0);
-	test_coalesce_set(ctx, "{ [0,0]; [i,2i] : 1 <= i <= 10 }", 1);
-	test_coalesce_set(ctx, "{ [0,0]; [i,2i] : 2 <= i <= 10 }", 0);
-	test_coalesce_set(ctx, "{ [1,0]; [i,2i] : 1 <= i <= 10 }", 0);
-	test_coalesce_set(ctx, "{ [0,1]; [i,2i] : 1 <= i <= 10 }", 0);
+	if (test_coalesce_set(ctx,
+		"{[x,y] : 0 <= x,y <= 10; [5,y]: 4 <=y <= 11}", 1) < 0)
+		return -1;
+	if (test_coalesce_set(ctx, "{[x,0] : x >= 0; [x,1] : x <= 20}", 0) < 0)
+		return -1;
+	if (test_coalesce_set(ctx,
+		"{[x,0,0] : -5 <= x <= 5; [0,y,1] : -5 <= y <= 5 }", 1) < 0)
+		return -1;
+	if (test_coalesce_set(ctx, "{ [x, 1 - x] : 0 <= x <= 1; [0,0] }", 1) < 0)
+		return -1;
+	if (test_coalesce_set(ctx, "{ [0,0]; [i,i] : 1 <= i <= 10 }", 1) < 0)
+		return -1;
+	if (test_coalesce_set(ctx, "{ [0,0]; [i,j] : 1 <= i,j <= 10 }", 0) < 0)
+		return -1;
+	if (test_coalesce_set(ctx, "{ [0,0]; [i,2i] : 1 <= i <= 10 }", 1) < 0)
+		return -1;
+	if (test_coalesce_set(ctx, "{ [0,0]; [i,2i] : 2 <= i <= 10 }", 0) < 0)
+		return -1;
+	if (test_coalesce_set(ctx, "{ [1,0]; [i,2i] : 1 <= i <= 10 }", 0) < 0)
+		return -1;
+	if (test_coalesce_set(ctx, "{ [0,1]; [i,2i] : 1 <= i <= 10 }", 0) < 0)
+		return -1;
+	if (test_coalesce_set(ctx, "{ [a, b] : exists e : 2e = a and "
+		    "a >= 0 and (a <= 3 or (b <= 0 and b >= -4 + a)) }", 0) < 0)
+		return -1;
+	return 0;
 }
 
 void test_closure(struct isl_ctx *ctx)
@@ -2735,7 +2761,8 @@ int main()
 		goto error;
 	test_convex_hull(ctx);
 	test_gist(ctx);
-	test_coalesce(ctx);
+	if (test_coalesce(ctx) < 0)
+		goto error;
 	test_closure(ctx);
 	test_lexmin(ctx);
 	isl_ctx_free(ctx);

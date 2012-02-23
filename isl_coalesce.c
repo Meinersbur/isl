@@ -711,13 +711,16 @@ static int wrap_in_facets(struct isl_map *map, int i, int j,
 		set_is_redundant(tabs[i], map->p[i]->n_eq, cuts, n, k, 1);
 
 		isl_seq_neg(bound->el, map->p[i]->ineq[cuts[k]], 1 + total);
-		if (add_wraps(wraps, map->p[i], tabs[i], bound->el, set) < 0)
+		if (!tabs[i]->empty &&
+		    add_wraps(wraps, map->p[i], tabs[i], bound->el, set) < 0)
 			goto error;
 
 		set_is_redundant(tabs[i], map->p[i]->n_eq, cuts, n, k, 0);
 		if (isl_tab_rollback(tabs[i], snap_i) < 0)
 			goto error;
 
+		if (tabs[i]->empty)
+			break;
 		if (!wraps->n_row)
 			break;
 
