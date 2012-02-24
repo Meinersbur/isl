@@ -6713,6 +6713,12 @@ int isl_basic_map_is_subset(
 	return is_subset;
 }
 
+int isl_basic_set_is_subset(__isl_keep isl_basic_set *bset1,
+	__isl_keep isl_basic_set *bset2)
+{
+	return isl_basic_map_is_subset(bset1, bset2);
+}
+
 int isl_basic_map_is_equal(
 		struct isl_basic_map *bmap1, struct isl_basic_map *bmap2)
 {
