@@ -121,6 +121,8 @@ __isl_give isl_basic_set *isl_basic_set_affine_hull(
 __isl_give isl_basic_set *isl_basic_set_remove_dims(
 	__isl_take isl_basic_set *bset,
 	enum isl_dim_type type, unsigned first, unsigned n);
+__isl_export
+__isl_give isl_basic_set *isl_basic_set_sample(__isl_take isl_basic_set *bset);
 struct isl_basic_set *isl_basic_set_simplify(struct isl_basic_set *bset);
 __isl_export
 __isl_give isl_basic_set *isl_basic_set_detect_equalities(

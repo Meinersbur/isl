@@ -1287,6 +1287,11 @@ error:
 	return NULL;
 }
 
+__isl_give isl_basic_set *isl_basic_set_sample(__isl_take isl_basic_set *bset)
+{
+	return isl_basic_map_sample(bset);
+}
+
 __isl_give isl_basic_map *isl_map_sample(__isl_take isl_map *map)
 {
 	int i;
