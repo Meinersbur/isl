@@ -1873,7 +1873,7 @@ dimension has the fixed given value.
 		enum isl_dim_type type, unsigned pos, int value);
 
 Intersect the set or relation with the half-space where the given
-dimension has a value bounded the fixed given value.
+dimension has a value bounded by the fixed given value.
 
 	__isl_give isl_set *isl_set_equate(__isl_take isl_set *set,
 		enum isl_dim_type type1, int pos1,
