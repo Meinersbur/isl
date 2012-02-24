@@ -2710,6 +2710,52 @@ int test_output(isl_ctx *ctx)
 	return 0;
 }
 
+int test_sample(isl_ctx *ctx)
+{
+	const char *str;
+	isl_basic_set *bset1, *bset2;
+	int empty, subset;
+
+	str = "{ [a, b, c, d, e, f, g, h, i, j, k] : "
+	    "3i >= 1073741823b - c - 1073741823e + f and c >= 0 and "
+	    "3i >= -1 + 3221225466b + c + d - 3221225466e - f and "
+	    "2e >= a - b and 3e <= 2a and 3k <= -a and f <= -1 + a and "
+	    "3i <= 4 - a + 4b + 2c - e - 2f and 3k <= -a + c - f and "
+	    "3h >= -2 + a and 3g >= -3 - a and 3k >= -2 - a and "
+	    "3i >= -2 - a - 2c + 3e + 2f and 3h <= a + c - f and "
+	    "3h >= a + 2147483646b + 2c - 2147483646e - 2f and "
+	    "3g <= -1 - a and 3i <= 1 + c + d - f and a <= 1073741823 and "
+	    "f >= 1 - a + 1073741822b + c + d - 1073741822e and "
+	    "3i >= 1 + 2b - 2c + e + 2f + 3g and "
+	    "1073741822f <= 1073741822 - a + 1073741821b + 1073741822c +"
+		"d - 1073741821e and "
+	    "3j <= 3 - a + 3b and 3g <= -2 - 2b + c + d - e - f and "
+	    "3j >= 1 - a + b + 2e and "
+	    "3f >= -3 + a + 3221225462b + 3c + d - 3221225465e and "
+	    "3i <= 4 - a + 4b - e and "
+	    "f <= 1073741822 + 1073741822b - 1073741822e and 3h <= a and "
+	    "f >= 0 and 2e <= 4 - a + 5b - d and 2e <= a - b + d and "
+	    "c <= -1 + a and 3i >= -2 - a + 3e and "
+	    "1073741822e <= 1073741823 - a + 1073741822b + c and "
+	    "3g >= -4 + 3221225464b + 3c + d - 3221225467e - 3f and "
+	    "3i >= -1 + 3221225466b + 3c + d - 3221225466e - 3f and "
+	    "1073741823e >= 1 + 1073741823b - d and "
+	    "3i >= 1073741823b + c - 1073741823e - f and "
+	    "3i >= 1 + 2b + e + 3g }";
+	bset1 = isl_basic_set_read_from_str(ctx, str);
+	bset2 = isl_basic_set_sample(isl_basic_set_copy(bset1));
+	empty = isl_basic_set_is_empty(bset2);
+	subset = isl_basic_set_is_subset(bset2, bset1);
+	isl_basic_set_free(bset1);
+	isl_basic_set_free(bset2);
+	if (empty)
+		isl_die(ctx, isl_error_unknown, "point not found", return -1);
+	if (!subset)
+		isl_die(ctx, isl_error_unknown, "bad point found", return -1);
+
+	return 0;
+}
+
 int main()
 {
 	struct isl_ctx *ctx;
@@ -2718,6 +2764,8 @@ int main()
 	assert(srcdir);
 
 	ctx = isl_ctx_alloc();
+	if (test_sample(ctx) < 0)
+		goto error;
 	if (test_output(ctx) < 0)
 		goto error;
 	if (test_vertices(ctx) < 0)

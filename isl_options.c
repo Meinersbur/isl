@@ -117,7 +117,7 @@ ISL_ARG_CHOICE(struct isl_options, context, 0, "context", \
 	isl_pip_context_choice,	ISL_CONTEXT_GBR,
 	"how to handle the pip context tableau")
 ISL_ARG_CHOICE(struct isl_options, gbr, 0, "gbr", \
-	isl_gbr_choice,	ISL_GBR_ONCE,
+	isl_gbr_choice,	ISL_GBR_ALWAYS,
 	"how often to use generalized basis reduction")
 ISL_ARG_CHOICE(struct isl_options, closure, 0, "closure", \
 	isl_closure_choice,	ISL_CLOSURE_ISL,
