@@ -2764,6 +2764,13 @@ be created using the following functions.
 	__isl_give isl_pw_aff *isl_pw_aff_from_aff(
 		__isl_take isl_aff *aff);
 
+A piecewise quasi affine expression that is equal to 1 on a set
+and 0 outside the set can be created using the following function.
+
+	#include <isl/aff.h>
+	__isl_give isl_pw_aff *isl_set_indicator_function(
+		__isl_take isl_set *set);
+
 Quasi affine expressions can be copied and freed using
 
 	#include <isl/aff.h>

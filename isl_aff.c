@@ -2482,6 +2482,24 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_set(__isl_take isl_set *set)
 	return isl_pw_multi_aff_from_map(set);
 }
 
+/* Return the piecewise affine expression "set ? 1 : 0".
+ */
+__isl_give isl_pw_aff *isl_set_indicator_function(__isl_take isl_set *set)
+{
+	isl_pw_aff *pa;
+	isl_space *space = isl_set_get_space(set);
+	isl_local_space *ls = isl_local_space_from_space(space);
+	isl_aff *zero = isl_aff_zero_on_domain(isl_local_space_copy(ls));
+	isl_aff *one = isl_aff_zero_on_domain(ls);
+
+	one = isl_aff_add_constant_si(one, 1);
+	pa = isl_pw_aff_alloc(isl_set_copy(set), one);
+	set = isl_set_complement(set);
+	pa = isl_pw_aff_add_disjoint(pa, isl_pw_aff_alloc(set, zero));
+
+	return pa;
+}
+
 /* Plug in "subs" for dimension "type", "pos" of "aff".
  *
  * Let i be the dimension to replace and let "subs" be of the form

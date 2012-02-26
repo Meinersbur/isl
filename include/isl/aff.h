@@ -112,6 +112,8 @@ __isl_give isl_pw_aff *isl_pw_aff_empty(__isl_take isl_space *dim);
 __isl_give isl_pw_aff *isl_pw_aff_alloc(__isl_take isl_set *set,
 	__isl_take isl_aff *aff);
 
+__isl_give isl_pw_aff *isl_set_indicator_function(__isl_take isl_set *set);
+
 const char *isl_pw_aff_get_dim_name(__isl_keep isl_pw_aff *pa,
 	enum isl_dim_type type, unsigned pos);
 int isl_pw_aff_has_dim_id(__isl_keep isl_pw_aff *pa,
