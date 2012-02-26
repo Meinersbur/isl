@@ -1879,20 +1879,34 @@ __isl_give isl_pw_aff *isl_pw_aff_ceil(__isl_take isl_pw_aff *pwaff)
 	return pwaff;
 }
 
+/* Assuming that "cond1" and "cond2" are disjoint,
+ * return an affine expression that is equal to pwaff1 on cond1
+ * and to pwaff2 on cond2.
+ */
+static __isl_give isl_pw_aff *isl_pw_aff_select(
+	__isl_take isl_set *cond1, __isl_take isl_pw_aff *pwaff1,
+	__isl_take isl_set *cond2, __isl_take isl_pw_aff *pwaff2)
+{
+	pwaff1 = isl_pw_aff_intersect_domain(pwaff1, cond1);
+	pwaff2 = isl_pw_aff_intersect_domain(pwaff2, cond2);
+
+	return isl_pw_aff_add_disjoint(pwaff1, pwaff2);
+}
+
 /* Return an affine expression that is equal to pwaff_true for elements
- * in "cond" and to pwaff_false for elements not in "cond".
+ * where "cond" is non-zero and to pwaff_false for elements where "cond"
+ * is zero.
  * That is, return cond ? pwaff_true : pwaff_false;
  */
-__isl_give isl_pw_aff *isl_pw_aff_cond(__isl_take isl_set *cond,
+__isl_give isl_pw_aff *isl_pw_aff_cond(__isl_take isl_pw_aff *cond,
 	__isl_take isl_pw_aff *pwaff_true, __isl_take isl_pw_aff *pwaff_false)
 {
-	isl_set *comp;
+	isl_set *cond_true, *cond_false;
 
-	comp = isl_set_complement(isl_set_copy(cond));
-	pwaff_true = isl_pw_aff_intersect_domain(pwaff_true, cond);
-	pwaff_false = isl_pw_aff_intersect_domain(pwaff_false, comp);
-
-	return isl_pw_aff_add_disjoint(pwaff_true, pwaff_false);
+	cond_true = isl_pw_aff_non_zero_set(isl_pw_aff_copy(cond));
+	cond_false = isl_pw_aff_zero_set(cond);
+	return isl_pw_aff_select(cond_true, pwaff_true,
+				 cond_false, pwaff_false);
 }
 
 int isl_aff_is_cst(__isl_keep isl_aff *aff)
@@ -1981,10 +1995,14 @@ static __isl_give isl_pw_aff *pw_aff_min(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
 	isl_set *le;
+	isl_set *dom;
 
+	dom = isl_set_intersect(isl_pw_aff_domain(isl_pw_aff_copy(pwaff1)),
+				isl_pw_aff_domain(isl_pw_aff_copy(pwaff2)));
 	le = isl_pw_aff_le_set(isl_pw_aff_copy(pwaff1),
 				isl_pw_aff_copy(pwaff2));
-	return isl_pw_aff_cond(le, pwaff1, pwaff2);
+	dom = isl_set_subtract(dom, isl_set_copy(le));
+	return isl_pw_aff_select(le, pwaff1, dom, pwaff2);
 }
 
 __isl_give isl_pw_aff *isl_pw_aff_min(__isl_take isl_pw_aff *pwaff1,
@@ -1996,11 +2014,15 @@ __isl_give isl_pw_aff *isl_pw_aff_min(__isl_take isl_pw_aff *pwaff1,
 static __isl_give isl_pw_aff *pw_aff_max(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
-	isl_set *le;
+	isl_set *ge;
+	isl_set *dom;
 
-	le = isl_pw_aff_ge_set(isl_pw_aff_copy(pwaff1),
+	dom = isl_set_intersect(isl_pw_aff_domain(isl_pw_aff_copy(pwaff1)),
+				isl_pw_aff_domain(isl_pw_aff_copy(pwaff2)));
+	ge = isl_pw_aff_ge_set(isl_pw_aff_copy(pwaff1),
 				isl_pw_aff_copy(pwaff2));
-	return isl_pw_aff_cond(le, pwaff1, pwaff2);
+	dom = isl_set_subtract(dom, isl_set_copy(ge));
+	return isl_pw_aff_select(ge, pwaff1, dom, pwaff2);
 }
 
 __isl_give isl_pw_aff *isl_pw_aff_max(__isl_take isl_pw_aff *pwaff1,

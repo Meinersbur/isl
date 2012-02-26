@@ -160,6 +160,12 @@ dimension manipulation on the result.
 =item * The C<schedule_split_parallel> option has been replaced
 by the C<schedule_split_scaled> option.
 
+=item * The first argument of C<isl_pw_aff_cond> is now
+an C<isl_pw_aff> instead of an C<isl_set>.
+A call C<isl_pw_aff_cond(a, b, c)> can be replaced by
+
+	isl_pw_aff_cond(isl_set_indicator_function(a), b, c)
+
 =back
 
 =head1 Installation
@@ -3094,14 +3100,14 @@ of C<pwaff> where C<pwaff> is non-negative.
 
 	#include <isl/aff.h>
 	__isl_give isl_pw_aff *isl_pw_aff_cond(
-		__isl_take isl_set *cond,
+		__isl_take isl_pw_aff *cond,
 		__isl_take isl_pw_aff *pwaff_true,
 		__isl_take isl_pw_aff *pwaff_false);
 
 The function C<isl_pw_aff_cond> performs a conditional operator
 and returns an expression that is equal to C<pwaff_true>
-for elements in C<cond> and equal to C<pwaff_false> for elements
-not in C<cond>.
+for elements where C<cond> is non-zero and equal to C<pwaff_false> for elements
+where C<cond> is zero.
 
 	#include <isl/aff.h>
 	__isl_give isl_pw_aff *isl_pw_aff_union_min(

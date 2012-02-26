@@ -574,7 +574,7 @@ static __isl_give isl_pw_aff *accept_ternary(struct isl_stream *s,
 	__isl_take isl_map *cond, struct vars *v)
 {
 	isl_space *dim;
-	isl_pw_aff *pwaff1 = NULL, *pwaff2 = NULL;
+	isl_pw_aff *pwaff1 = NULL, *pwaff2 = NULL, *pa_cond;
 
 	if (!cond)
 		return NULL;
@@ -595,7 +595,8 @@ static __isl_give isl_pw_aff *accept_ternary(struct isl_stream *s,
 	if (!pwaff1)
 		goto error;
 
-	return isl_pw_aff_cond(isl_map_wrap(cond), pwaff1, pwaff2);
+	pa_cond = isl_set_indicator_function(isl_map_wrap(cond));
+	return isl_pw_aff_cond(pa_cond, pwaff1, pwaff2);
 error:
 	isl_map_free(cond);
 	isl_pw_aff_free(pwaff1);
