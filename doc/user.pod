@@ -676,13 +676,15 @@ using the following functions.
 	__isl_give isl_id *isl_space_get_dim_id(
 		__isl_keep isl_space *space,
 		enum isl_dim_type type, unsigned pos);
-	__isl_give isl_space *isl_space_set_dim_name(__isl_take isl_space *space,
-				 enum isl_dim_type type, unsigned pos,
-				 __isl_keep const char *name);
+	__isl_give isl_space *isl_space_set_dim_name(
+		__isl_take isl_space *space,
+		 enum isl_dim_type type, unsigned pos,
+		 __isl_keep const char *name);
 	int isl_space_has_dim_name(__isl_keep isl_space *space,
 		enum isl_dim_type type, unsigned pos);
-	__isl_keep const char *isl_space_get_dim_name(__isl_keep isl_space *space,
-				 enum isl_dim_type type, unsigned pos);
+	__isl_keep const char *isl_space_get_dim_name(
+		__isl_keep isl_space *space,
+		enum isl_dim_type type, unsigned pos);
 
 Note that C<isl_space_get_name> returns a pointer to some internal
 data structure, so the result can only be used while the
