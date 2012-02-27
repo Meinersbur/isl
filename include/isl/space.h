@@ -45,6 +45,8 @@ int isl_space_is_set(__isl_keep isl_space *space);
 
 __isl_give isl_space *isl_space_set_tuple_name(__isl_take isl_space *dim,
 	enum isl_dim_type type, const char *s);
+int isl_space_has_tuple_name(__isl_keep isl_space *space,
+	enum isl_dim_type type);
 const char *isl_space_get_tuple_name(__isl_keep isl_space *dim,
 				 enum isl_dim_type type);
 __isl_give isl_space *isl_space_set_tuple_id(__isl_take isl_space *dim,

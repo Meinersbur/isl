@@ -360,20 +360,33 @@ static int name_ok(isl_ctx *ctx, const char *s)
 	return 1;
 }
 
+/* Is it possible for the given dimension type to have a tuple id?
+ */
+static int space_can_have_id(__isl_keep isl_space *space,
+	enum isl_dim_type type)
+{
+	if (!space)
+		return 0;
+	if (isl_space_is_params(space))
+		isl_die(space->ctx, isl_error_invalid,
+			"parameter spaces don't have tuple ids", return 0);
+	if (isl_space_is_set(space) && type != isl_dim_set)
+		isl_die(space->ctx, isl_error_invalid,
+			"set spaces can only have a set id", return 0);
+	if (type != isl_dim_in && type != isl_dim_out)
+		isl_die(space->ctx, isl_error_invalid,
+			"only input, output and set tuples can have ids",
+			return 0);
+
+	return 1;
+}
+
+/* Does the tuple have an id?
+ */
 int isl_space_has_tuple_id(__isl_keep isl_space *dim, enum isl_dim_type type)
 {
-	if (!dim)
+	if (!space_can_have_id(dim, type))
 		return -1;
-	if (isl_space_is_params(dim))
-		isl_die(dim->ctx, isl_error_invalid,
-			"parameter spaces don't have tuple ids", return -1);
-	if (isl_space_is_set(dim) && type != isl_dim_set)
-		isl_die(dim->ctx, isl_error_invalid,
-			"set spaces can only have a set id", return -1);
-	if (type != isl_dim_in && type != isl_dim_out)
-		isl_die(dim->ctx, isl_error_invalid,
-			"only input, output and set tuples can have ids",
-			return -1);
 	return dim->tuple_id[type - isl_dim_in] != NULL;
 }
 
@@ -506,6 +519,19 @@ __isl_give isl_space *isl_space_set_tuple_name(__isl_take isl_space *dim,
 error:
 	isl_space_free(dim);
 	return NULL;
+}
+
+/* Does the tuple have a name?
+ */
+int isl_space_has_tuple_name(__isl_keep isl_space *space,
+	enum isl_dim_type type)
+{
+	isl_id *id;
+
+	if (!space_can_have_id(space, type))
+		return -1;
+	id = space->tuple_id[type - isl_dim_in];
+	return id && id->name;
 }
 
 const char *isl_space_get_tuple_name(__isl_keep isl_space *dim,
