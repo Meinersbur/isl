@@ -474,6 +474,14 @@ __isl_give isl_id *isl_set_get_tuple_id(__isl_keep isl_set *set)
 	return isl_map_get_tuple_id(set, isl_dim_set);
 }
 
+/* Does the set tuple have a name?
+ */
+int isl_set_has_tuple_name(__isl_keep isl_set *set)
+{
+	return set ? isl_space_has_tuple_name(set->dim, isl_dim_set) : -1;
+}
+
+
 const char *isl_basic_set_get_tuple_name(__isl_keep isl_basic_set *bset)
 {
 	return bset ? isl_space_get_tuple_name(bset->dim, isl_dim_set) : NULL;
