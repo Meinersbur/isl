@@ -303,6 +303,12 @@ __isl_give isl_space *isl_constraint_get_space(
 	return constraint ? isl_local_space_get_space(constraint->ls) : NULL;
 }
 
+__isl_give isl_local_space *isl_constraint_get_local_space(
+	__isl_keep isl_constraint *constraint)
+{
+	return constraint ? isl_local_space_copy(constraint->ls) : NULL;
+}
+
 int isl_constraint_dim(struct isl_constraint *constraint,
 	enum isl_dim_type type)
 {

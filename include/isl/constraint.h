@@ -68,6 +68,8 @@ int isl_basic_set_has_defining_inequalities(
 
 __isl_give isl_space *isl_constraint_get_space(
 	__isl_keep isl_constraint *constraint);
+__isl_give isl_local_space *isl_constraint_get_local_space(
+	__isl_keep isl_constraint *constraint);
 int isl_constraint_dim(struct isl_constraint *constraint,
 	enum isl_dim_type type);
 

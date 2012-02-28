@@ -801,8 +801,12 @@ the name and the internal structure are lost.
 
 A local space is essentially a space with
 zero or more existentially quantified variables.
-The local space of a basic set or relation can be obtained
+The local space of a (constraint of a) basic set or relation can be obtained
 using the following functions.
+
+	#include <isl/constraint.h>
+	__isl_give isl_local_space *isl_constraint_get_local_space(
+		__isl_keep isl_constraint *constraint);
 
 	#include <isl/set.h>
 	__isl_give isl_local_space *isl_basic_set_get_local_space(
