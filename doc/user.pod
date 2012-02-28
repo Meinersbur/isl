@@ -1422,6 +1422,8 @@ To iterate over the constraints of a basic set or map, use
 
 	#include <isl/constraint.h>
 
+	int isl_basic_set_n_constraint(
+		__isl_keep isl_basic_set *bset);
 	int isl_basic_set_foreach_constraint(
 		__isl_keep isl_basic_set *bset,
 		int (*fn)(__isl_take isl_constraint *c, void *user),

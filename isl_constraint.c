@@ -181,6 +181,18 @@ void *isl_constraint_free(struct isl_constraint *c)
 	return NULL;
 }
 
+/* Return the number of constraints in "bset", i.e., the
+ * number of times isl_basic_set_foreach_constraint will
+ * call the callback.
+ */
+int isl_basic_set_n_constraint(__isl_keep isl_basic_set *bset)
+{
+	if (!bset)
+		return -1;
+
+	return bset->n_eq + bset->n_ineq;
+}
+
 int isl_basic_map_foreach_constraint(__isl_keep isl_basic_map *bmap,
 	int (*fn)(__isl_take isl_constraint *c, void *user), void *user)
 {
