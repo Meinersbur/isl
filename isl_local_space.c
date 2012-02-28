@@ -178,6 +178,14 @@ unsigned isl_local_space_offset(__isl_keep isl_local_space *ls,
 	}
 }
 
+/* Does the given dimension have a name?
+ */
+int isl_local_space_has_dim_name(__isl_keep isl_local_space *ls,
+	enum isl_dim_type type, unsigned pos)
+{
+	return ls ? isl_space_has_dim_name(ls->dim, type, pos) : -1;
+}
+
 const char *isl_local_space_get_dim_name(__isl_keep isl_local_space *ls,
 	enum isl_dim_type type, unsigned pos)
 {

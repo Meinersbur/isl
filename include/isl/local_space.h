@@ -25,6 +25,8 @@ int isl_local_space_is_set(__isl_keep isl_local_space *ls);
 
 int isl_local_space_dim(__isl_keep isl_local_space *ls,
 	enum isl_dim_type type);
+int isl_local_space_has_dim_name(__isl_keep isl_local_space *ls,
+	enum isl_dim_type type, unsigned pos);
 const char *isl_local_space_get_dim_name(__isl_keep isl_local_space *ls,
 	enum isl_dim_type type, unsigned pos);
 __isl_give isl_local_space *isl_local_space_set_dim_name(
