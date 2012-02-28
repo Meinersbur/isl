@@ -99,6 +99,11 @@ struct isl_constraint *isl_constraint_negate(struct isl_constraint *constraint);
 int isl_constraint_is_equality(__isl_keep isl_constraint *constraint);
 int isl_constraint_is_div_constraint(__isl_keep isl_constraint *constraint);
 
+int isl_constraint_is_lower_bound(__isl_keep isl_constraint *constraint,
+	enum isl_dim_type type, unsigned pos);
+int isl_constraint_is_upper_bound(__isl_keep isl_constraint *constraint,
+	enum isl_dim_type type, unsigned pos);
+
 __isl_give isl_basic_map *isl_basic_map_from_constraint(
 	__isl_take isl_constraint *constraint);
 struct isl_basic_set *isl_basic_set_from_constraint(

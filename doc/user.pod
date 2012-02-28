@@ -1447,6 +1447,12 @@ represents an equality.  If not, it represents an inequality.
 The coefficients of the constraints can be inspected using
 the following functions.
 
+	int isl_constraint_is_lower_bound(
+		__isl_keep isl_constraint *constraint,
+		enum isl_dim_type type, unsigned pos);
+	int isl_constraint_is_upper_bound(
+		__isl_keep isl_constraint *constraint,
+		enum isl_dim_type type, unsigned pos);
 	void isl_constraint_get_constant(
 		__isl_keep isl_constraint *constraint, isl_int *v);
 	void isl_constraint_get_coefficient(

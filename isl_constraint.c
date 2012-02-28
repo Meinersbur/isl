@@ -349,6 +349,40 @@ error:
 	return -1;
 }
 
+/* Does the given constraint represent a lower bound on the given
+ * dimension?
+ */
+int isl_constraint_is_lower_bound(__isl_keep isl_constraint *constraint,
+	enum isl_dim_type type, unsigned pos)
+{
+	if (!constraint)
+		return -1;
+
+	if (pos >= isl_local_space_dim(constraint->ls, type))
+		isl_die(isl_constraint_get_ctx(constraint), isl_error_invalid,
+			"position out of bounds", return -1);
+
+	pos += isl_local_space_offset(constraint->ls, type);
+	return isl_int_is_pos(constraint->v->el[pos]);
+}
+
+/* Does the given constraint represent an upper bound on the given
+ * dimension?
+ */
+int isl_constraint_is_upper_bound(__isl_keep isl_constraint *constraint,
+	enum isl_dim_type type, unsigned pos)
+{
+	if (!constraint)
+		return -1;
+
+	if (pos >= isl_local_space_dim(constraint->ls, type))
+		isl_die(isl_constraint_get_ctx(constraint), isl_error_invalid,
+			"position out of bounds", return -1);
+
+	pos += isl_local_space_offset(constraint->ls, type);
+	return isl_int_is_neg(constraint->v->el[pos]);
+}
+
 const char *isl_constraint_get_dim_name(__isl_keep isl_constraint *constraint,
 	enum isl_dim_type type, unsigned pos)
 {
