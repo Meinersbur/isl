@@ -2904,8 +2904,9 @@ static __isl_give isl_basic_map *basic_map_space_reset(
 	return bmap;
 }
 
-__isl_give isl_basic_map *isl_basic_map_insert(__isl_take isl_basic_map *bmap,
-		enum isl_dim_type type, unsigned pos, unsigned n)
+__isl_give isl_basic_map *isl_basic_map_insert_dims(
+	__isl_take isl_basic_map *bmap, enum isl_dim_type type,
+	unsigned pos, unsigned n)
 {
 	isl_space *res_dim;
 	struct isl_basic_map *res;
@@ -2950,12 +2951,19 @@ __isl_give isl_basic_map *isl_basic_map_insert(__isl_take isl_basic_map *bmap,
 	return isl_basic_map_finalize(res);
 }
 
+__isl_give isl_basic_set *isl_basic_set_insert_dims(
+	__isl_take isl_basic_set *bset,
+	enum isl_dim_type type, unsigned pos, unsigned n)
+{
+	return isl_basic_map_insert_dims(bset, type, pos, n);
+}
+
 __isl_give isl_basic_map *isl_basic_map_add(__isl_take isl_basic_map *bmap,
 		enum isl_dim_type type, unsigned n)
 {
 	if (!bmap)
 		return NULL;
-	return isl_basic_map_insert(bmap, type,
+	return isl_basic_map_insert_dims(bmap, type,
 					isl_basic_map_dim(bmap, type), n);
 }
 
@@ -3002,7 +3010,7 @@ __isl_give isl_map *isl_map_insert_dims(__isl_take isl_map *map,
 		goto error;
 
 	for (i = 0; i < map->n; ++i) {
-		map->p[i] = isl_basic_map_insert(map->p[i], type, pos, n);
+		map->p[i] = isl_basic_map_insert_dims(map->p[i], type, pos, n);
 		if (!map->p[i])
 			goto error;
 	}

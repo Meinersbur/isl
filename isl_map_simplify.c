@@ -1533,7 +1533,7 @@ __isl_give isl_basic_map *isl_basic_map_eliminate(
 
 	space = isl_basic_map_get_space(bmap);
 	bmap = isl_basic_map_project_out(bmap, type, first, n);
-	bmap = isl_basic_map_insert(bmap, type, first, n);
+	bmap = isl_basic_map_insert_dims(bmap, type, first, n);
 	bmap = isl_basic_map_reset_space(bmap, space);
 	return bmap;
 error:

@@ -95,9 +95,6 @@ struct isl_map {
 	struct isl_basic_map *p[1];
 };
 
-__isl_give isl_basic_map *isl_basic_map_insert(__isl_take isl_basic_map *bmap,
-	enum isl_dim_type type, unsigned pos, unsigned n);
-
 __isl_give isl_map *isl_map_realign(__isl_take isl_map *map,
 	__isl_take isl_reordering *r);
 __isl_give isl_set *isl_set_realign(__isl_take isl_set *set,
