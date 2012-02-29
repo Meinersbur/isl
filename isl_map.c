@@ -8968,6 +8968,39 @@ int isl_basic_map_plain_is_single_valued(__isl_keep isl_basic_map *bmap)
 	return 1;
 }
 
+/* Check if the given basic map is single-valued.
+ * We simply compute
+ *
+ *	M \circ M^-1
+ *
+ * and check if the result is a subset of the identity mapping.
+ */
+int isl_basic_map_is_single_valued(__isl_keep isl_basic_map *bmap)
+{
+	isl_space *space;
+	isl_basic_map *test;
+	isl_basic_map *id;
+	int sv;
+
+	sv = isl_basic_map_plain_is_single_valued(bmap);
+	if (sv < 0 || sv)
+		return sv;
+
+	test = isl_basic_map_reverse(isl_basic_map_copy(bmap));
+	test = isl_basic_map_apply_range(test, isl_basic_map_copy(bmap));
+
+	space = isl_basic_map_get_space(bmap);
+	space = isl_space_map_from_set(isl_space_range(space));
+	id = isl_basic_map_identity(space);
+
+	sv = isl_basic_map_is_subset(test, id);
+
+	isl_basic_map_free(test);
+	isl_basic_map_free(id);
+
+	return sv;
+}
+
 /* Check if the given map is obviously single-valued.
  */
 int isl_map_plain_is_single_valued(__isl_keep isl_map *map)

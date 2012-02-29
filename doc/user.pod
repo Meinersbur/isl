@@ -1675,6 +1675,8 @@ is already known to be empty.
 
 =item * Single-valuedness
 
+	int isl_basic_map_is_single_valued(
+		__isl_keep isl_basic_map *bmap);
 	int isl_map_plain_is_single_valued(
 		__isl_keep isl_map *map);
 	int isl_map_is_single_valued(__isl_keep isl_map *map);
