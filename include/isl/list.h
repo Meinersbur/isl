@@ -37,6 +37,9 @@ __isl_give isl_##EL##_list *isl_##EL##_list_concat(			\
 int isl_##EL##_list_n_##EL(__isl_keep isl_##EL##_list *list);		\
 __isl_give struct isl_##EL *isl_##EL##_list_get_##EL(			\
 	__isl_keep isl_##EL##_list *list, int index);			\
+__isl_give struct isl_##EL##_list *isl_##EL##_list_set_##EL(		\
+	__isl_take struct isl_##EL##_list *list, int index,		\
+	__isl_take struct isl_##EL *el);				\
 int isl_##EL##_list_foreach(__isl_keep isl_##EL##_list *list,		\
 	int (*fn)(__isl_take struct isl_##EL *el, void *user),		\
 	void *user);							\

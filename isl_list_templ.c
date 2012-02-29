@@ -70,6 +70,17 @@ __isl_give LIST(EL) *FN(LIST(EL),dup)(__isl_keep LIST(EL) *list)
 	return dup;
 }
 
+__isl_give LIST(EL) *FN(LIST(EL),cow)(__isl_take LIST(EL) *list)
+{
+	if (!list)
+		return NULL;
+
+	if (list->ref == 1)
+		return list;
+	list->ref--;
+	return FN(LIST(EL),dup)(list);
+}
+
 __isl_give LIST(EL) *FN(LIST(EL),add)(__isl_take LIST(EL) *list,
 	__isl_take struct EL *el)
 {
@@ -116,6 +127,32 @@ __isl_give EL *FN(FN(LIST(EL),get),BASE)(__isl_keep LIST(EL) *list, int index)
 		isl_die(list->ctx, isl_error_invalid,
 			"index out of bounds", return NULL);
 	return FN(EL,copy)(list->p[index]);
+}
+
+/* Replace the element at position "index" in "list" by "el".
+ */
+__isl_give LIST(EL) *FN(FN(LIST(EL),set),BASE)(__isl_take LIST(EL) *list,
+	int index, __isl_take EL *el)
+{
+	if (!list || !el)
+		goto error;
+	if (index < 0 || index >= list->n)
+		isl_die(list->ctx, isl_error_invalid,
+			"index out of bounds", goto error);
+	if (list->p[index] == el) {
+		FN(EL,free)(el);
+		return list;
+	}
+	list = FN(LIST(EL),cow)(list);
+	if (!list)
+		goto error;
+	FN(EL,free)(list->p[index]);
+	list->p[index] = el;
+	return list;
+error:
+	FN(EL,free)(el);
+	FN(LIST(EL),free)(list);
+	return NULL;
 }
 
 int FN(LIST(EL),foreach)(__isl_keep LIST(EL) *list,

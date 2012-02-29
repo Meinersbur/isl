@@ -2814,7 +2814,7 @@ returning a basic set or relation.
 Lists are defined over several element types, including
 C<isl_aff>, C<isl_pw_aff>, C<isl_basic_set> and C<isl_set>.
 Here we take lists of C<isl_set>s as an example.
-Lists can be created, copied and freed using the following functions.
+Lists can be created, copied, modified and freed using the following functions.
 
 	#include <isl/list.h>
 	__isl_give isl_set_list *isl_set_list_from_set(
@@ -2826,6 +2826,9 @@ Lists can be created, copied and freed using the following functions.
 	__isl_give isl_set_list *isl_set_list_add(
 		__isl_take isl_set_list *list,
 		__isl_take isl_set *el);
+	__isl_give isl_set_list *isl_set_list_set_set(
+		__isl_take isl_set_list *list, int index,
+		__isl_take isl_set *set);
 	__isl_give isl_set_list *isl_set_list_concat(
 		__isl_take isl_set_list *list1,
 		__isl_take isl_set_list *list2);
