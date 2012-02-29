@@ -585,6 +585,12 @@ int isl_basic_map_has_dim_id(__isl_keep isl_basic_map *bmap,
 	return bmap ? isl_space_has_dim_id(bmap->dim, type, pos) : -1;
 }
 
+__isl_give isl_id *isl_basic_set_get_dim_id(__isl_keep isl_basic_set *bset,
+	enum isl_dim_type type, unsigned pos)
+{
+	return bset ? isl_space_get_dim_id(bset->dim, type, pos) : NULL;
+}
+
 int isl_map_has_dim_id(__isl_keep isl_map *map,
 	enum isl_dim_type type, unsigned pos)
 {
