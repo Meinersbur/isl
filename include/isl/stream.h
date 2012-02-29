@@ -37,7 +37,7 @@ enum isl_token_type { ISL_TOKEN_ERROR = -1,
 			ISL_TOKEN_LAST };
 
 struct isl_token {
-	enum isl_token_type  type;
+	int type;
 
 	unsigned int on_new_line : 1;
 	unsigned is_keyword : 1;
