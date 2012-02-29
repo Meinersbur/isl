@@ -3830,13 +3830,18 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_substitute(
 		for (j = 0; j < subs->n; ++j) {
 			isl_set *common;
 			isl_multi_aff *res_ij;
+			int empty;
+
 			common = isl_set_intersect(
 					isl_set_copy(pma->p[i].set),
 					isl_set_copy(subs->p[j].set));
 			common = isl_set_substitute(common,
 					type, pos, subs->p[j].aff);
-			if (isl_set_plain_is_empty(common)) {
+			empty = isl_set_plain_is_empty(common);
+			if (empty < 0 || empty) {
 				isl_set_free(common);
+				if (empty < 0)
+					goto error;
 				continue;
 			}
 
@@ -3850,6 +3855,10 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_substitute(
 
 	isl_pw_multi_aff_free(pma);
 	return res;
+error:
+	isl_pw_multi_aff_free(pma);
+	isl_pw_multi_aff_free(res);
+	return NULL;
 }
 
 /* Compute the preimage of the affine expression "src" under "ma"
