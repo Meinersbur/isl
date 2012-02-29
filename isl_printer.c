@@ -319,6 +319,13 @@ __isl_give isl_printer *isl_printer_set_output_format(__isl_take isl_printer *p,
 	return p;
 }
 
+int isl_printer_get_output_format(__isl_keep isl_printer *p)
+{
+	if (!p)
+		return -1;
+	return p->output_format;
+}
+
 __isl_give isl_printer *isl_printer_print_str(__isl_take isl_printer *p,
 	const char *s)
 {
