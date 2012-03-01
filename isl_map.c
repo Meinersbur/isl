@@ -10809,6 +10809,10 @@ __isl_give isl_aff *isl_basic_set_get_div(__isl_keep isl_basic_set *bset,
  * are replaced by
  *
  *	a f + d g
+ *
+ * We currently require that "subs" is an integral expression.
+ * Handling rational expressions may require us to add stride constraints
+ * as we do in isl_basic_set_preimage_multi_aff.
  */
 __isl_give isl_basic_set *isl_basic_set_substitute(
 	__isl_take isl_basic_set *bset,
@@ -10832,6 +10836,9 @@ __isl_give isl_basic_set *isl_basic_set_substitute(
 	if (isl_local_space_dim(subs->ls, isl_dim_div) != 0)
 		isl_die(ctx, isl_error_unsupported,
 			"cannot handle divs yet", goto error);
+	if (!isl_int_is_one(subs->v->el[0]))
+		isl_die(ctx, isl_error_invalid,
+			"can only substitute integer expressions", goto error);
 
 	pos += isl_basic_set_offset(bset, type);
 
