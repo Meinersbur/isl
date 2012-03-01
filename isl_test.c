@@ -196,6 +196,10 @@ int test_parse(struct isl_ctx *ctx)
 				      "{ [a] -> [b] : true }") < 0)
 		return -1;
 
+	if (test_parse_map_equal(ctx, "{ [i] : i/2 <= 5 }",
+				      "{ [i] : i <= 10 }") < 0)
+		return -1;
+
 	return 0;
 }
 

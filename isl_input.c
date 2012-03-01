@@ -283,7 +283,6 @@ static __isl_give isl_pw_aff *accept_div(struct isl_stream *s,
 	__isl_take isl_space *dim, struct vars *v)
 {
 	struct isl_token *tok;
-	int seen_paren = 0;
 	int f = 0;
 	int c = 0;
 	isl_pw_aff *pwaff = NULL;
@@ -298,8 +297,6 @@ static __isl_give isl_pw_aff *accept_div(struct isl_stream *s,
 	} else {
 		if (isl_stream_eat(s, '['))
 			goto error;
-		if (isl_stream_eat_if_available(s, '('))
-			seen_paren = 1;
 	}
 
 	pwaff = accept_affine(s, isl_space_copy(dim), v);
@@ -307,23 +304,18 @@ static __isl_give isl_pw_aff *accept_div(struct isl_stream *s,
 	if (f || c) {
 		if (isl_stream_eat(s, ','))
 			goto error;
-	} else {
-		if (seen_paren && isl_stream_eat(s, ')'))
-			goto error;
-		if (isl_stream_eat(s, '/'))
-			goto error;
-	}
 
-	tok = next_token(s);
-	if (!tok)
-		goto error;
-	if (tok->type != ISL_TOKEN_VALUE) {
-		isl_stream_error(s, tok, "expected denominator");
-		isl_stream_push_token(s, tok);
-		goto error;
+		tok = next_token(s);
+		if (!tok)
+			goto error;
+		if (tok->type != ISL_TOKEN_VALUE) {
+			isl_stream_error(s, tok, "expected denominator");
+			isl_stream_push_token(s, tok);
+			goto error;
+		}
+		isl_pw_aff_scale_down(pwaff,  tok->u.v);
+		isl_token_free(tok);
 	}
-	isl_pw_aff_scale_down(pwaff,  tok->u.v);
-	isl_token_free(tok);
 
 	if (c)
 		pwaff = isl_pw_aff_ceil(pwaff);
@@ -428,6 +420,17 @@ static __isl_give isl_pw_aff *accept_affine_factor(struct isl_stream *s,
 			goto error2;
 		}
 		res = isl_pw_aff_scale(res, f);
+		isl_int_clear(f);
+	}
+	if (isl_stream_eat_if_available(s, '/')) {
+		isl_int f;
+		isl_int_init(f);
+		isl_int_set_si(f, 1);
+		if (accept_cst_factor(s, &f) < 0) {
+			isl_int_clear(f);
+			goto error2;
+		}
+		res = isl_pw_aff_scale_down(res, f);
 		isl_int_clear(f);
 	}
 
