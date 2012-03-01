@@ -122,6 +122,8 @@ libisl_la_SOURCES = \
 	isl_tab.c \
 	isl_tab.h \
 	isl_tab_pip.c \
+	isl_tarjan.c \
+	isl_tarjan.h \
 	isl_transitive_closure.c \
 	isl_union_map.c \
 	isl_union_map_private.h \

@@ -26,6 +26,7 @@
 #include <isl_band_private.h>
 #include <isl_list_private.h>
 #include <isl_options_private.h>
+#include <isl_tarjan.h>
 
 /*
  * The scheduling algorithm implemented in this file was inspired by
@@ -62,11 +63,6 @@
  * indicating whether the corresponding scheduling dimension results
  * in zero dependence distances within its band and with respect
  * to the proximity edges.
- *
- * index, min_index and on_stack are used during the SCC detection
- * index represents the order in which nodes are visited.
- * min_index is the index of the root of a (sub)component.
- * on_stack indicates whether the node is currently on the stack.
  */
 struct isl_sched_node {
 	isl_space *dim;
@@ -83,11 +79,6 @@ struct isl_sched_node {
 	int	*band;
 	int	*band_id;
 	int	*zero;
-
-	/* scc detection */
-	int	 index;
-	int	 min_index;
-	int	 on_stack;
 };
 
 static int node_has_dim(const void *entry, const void *val)
@@ -174,11 +165,7 @@ enum isl_edge_type {
  * src_scc and dst_scc are the source and sink SCCs of an edge with
  *	conflicting constraints
  *
- * scc, sp, index and stack are used during the detection of SCCs
- * scc is the number of the next SCC
- * stack contains the nodes on the path from the root to the current node
- * sp is the stack pointer
- * index is the index of the last node visited
+ * scc represents the number of components
  */
 struct isl_sched_graph {
 	isl_hmap_map_basic_set *intra_hmap;
@@ -211,11 +198,7 @@ struct isl_sched_graph {
 	int src_scc;
 	int dst_scc;
 
-	/* scc detection */
 	int scc;
-	int sp;
-	int index;
-	int *stack;
 };
 
 /* Initialize node_table based on the list of nodes.
@@ -440,15 +423,13 @@ static int graph_alloc(isl_ctx *ctx, struct isl_sched_graph *graph,
 	graph->node = isl_calloc_array(ctx, struct isl_sched_node, graph->n);
 	graph->sorted = isl_calloc_array(ctx, int, graph->n);
 	graph->region = isl_alloc_array(ctx, struct isl_region, graph->n);
-	graph->stack = isl_alloc_array(ctx, int, graph->n);
 	graph->edge = isl_calloc_array(ctx,
 					struct isl_sched_edge, graph->n_edge);
 
 	graph->intra_hmap = isl_hmap_map_basic_set_alloc(ctx, 2 * n_edge);
 	graph->inter_hmap = isl_hmap_map_basic_set_alloc(ctx, 2 * n_edge);
 
-	if (!graph->node || !graph->region || !graph->stack || !graph->edge ||
-	    !graph->sorted)
+	if (!graph->node || !graph->region || !graph->edge || !graph->sorted)
 		return -1;
 
 	for(i = 0; i < graph->n; ++i)
@@ -481,7 +462,6 @@ static void graph_free(isl_ctx *ctx, struct isl_sched_graph *graph)
 		isl_map_free(graph->edge[i].map);
 	free(graph->edge);
 	free(graph->region);
-	free(graph->stack);
 	for (i = 0; i <= isl_edge_last; ++i)
 		isl_hash_table_free(ctx, graph->edge_table[i]);
 	isl_hash_table_free(ctx, graph->node_table);
@@ -629,92 +609,60 @@ static int extract_edge(__isl_take isl_map *map, void *user)
 	return graph_edge_table_add(ctx, graph, data->type, edge);
 }
 
-/* Check whether there is a validity dependence from src to dst,
- * forcing dst to follow src (if weak is not set).
- * If weak is set, then check if there is any dependence from src to dst.
+/* Check whether there is any dependence from node[j] to node[i]
+ * or from node[i] to node[j].
  */
-static int node_follows(struct isl_sched_graph *graph, 
-	struct isl_sched_node *dst, struct isl_sched_node *src, int weak)
+static int node_follows_weak(int i, int j, void *user)
 {
-	if (weak)
-		return graph_has_any_edge(graph, src, dst);
-	else
-		return graph_has_validity_edge(graph, src, dst);
+	int f;
+	struct isl_sched_graph *graph = user;
+
+	f = graph_has_any_edge(graph, &graph->node[j], &graph->node[i]);
+	if (f < 0 || f)
+		return f;
+	return graph_has_any_edge(graph, &graph->node[i], &graph->node[j]);
 }
 
-/* Perform Tarjan's algorithm for computing the strongly connected components
+/* Check whether there is a validity dependence from node[j] to node[i],
+ * forcing node[i] to follow node[j].
+ */
+static int node_follows_strong(int i, int j, void *user)
+{
+	struct isl_sched_graph *graph = user;
+
+	return graph_has_validity_edge(graph, &graph->node[j], &graph->node[i]);
+}
+
+/* Use Tarjan's algorithm for computing the strongly connected components
  * in the dependence graph (only validity edges).
  * If weak is set, we consider the graph to be undirected and
  * we effectively compute the (weakly) connected components.
  * Additionally, we also consider other edges when weak is set.
  */
-static int detect_sccs_tarjan(struct isl_sched_graph *g, int i, int weak)
+static int detect_ccs(isl_ctx *ctx, struct isl_sched_graph *graph, int weak)
 {
-	int j;
+	int i, n;
+	struct isl_tarjan_graph *g = NULL;
 
-	g->node[i].index = g->index;
-	g->node[i].min_index = g->index;
-	g->node[i].on_stack = 1;
-	g->index++;
-	g->stack[g->sp++] = i;
+	g = isl_tarjan_graph_init(ctx, graph->n,
+		weak ? &node_follows_weak : &node_follows_strong, graph);
+	if (!g)
+		return -1;
 
-	for (j = g->n - 1; j >= 0; --j) {
-		int f;
-
-		if (j == i)
-			continue;
-		if (g->node[j].index >= 0 &&
-			(!g->node[j].on_stack ||
-			 g->node[j].index > g->node[i].min_index))
-			continue;
-		
-		f = node_follows(g, &g->node[i], &g->node[j], weak);
-		if (f < 0)
-			return -1;
-		if (!f && weak) {
-			f = node_follows(g, &g->node[j], &g->node[i], weak);
-			if (f < 0)
-				return -1;
-		}
-		if (!f)
-			continue;
-		if (g->node[j].index < 0) {
-			detect_sccs_tarjan(g, j, weak);
-			if (g->node[j].min_index < g->node[i].min_index)
-				g->node[i].min_index = g->node[j].min_index;
-		} else if (g->node[j].index < g->node[i].min_index)
-			g->node[i].min_index = g->node[j].index;
-	}
-
-	if (g->node[i].index != g->node[i].min_index)
-		return 0;
-
-	do {
-		j = g->stack[--g->sp];
-		g->node[j].on_stack = 0;
-		g->node[j].scc = g->scc;
-	} while (j != i);
-	g->scc++;
-
-	return 0;
-}
-
-static int detect_ccs(struct isl_sched_graph *graph, int weak)
-{
-	int i;
-
-	graph->index = 0;
-	graph->sp = 0;
 	graph->scc = 0;
-	for (i = graph->n - 1; i >= 0; --i)
-		graph->node[i].index = -1;
-
-	for (i = graph->n - 1; i >= 0; --i) {
-		if (graph->node[i].index >= 0)
-			continue;
-		if (detect_sccs_tarjan(graph, i, weak) < 0)
-			return -1;
+	i = 0;
+	n = graph->n;
+	while (n) {
+		while (g->order[i] != -1) {
+			graph->node[g->order[i]].scc = graph->scc;
+			--n;
+			++i;
+		}
+		++i;
+		graph->scc++;
 	}
+
+	isl_tarjan_graph_free(g);
 
 	return 0;
 }
@@ -722,17 +670,17 @@ static int detect_ccs(struct isl_sched_graph *graph, int weak)
 /* Apply Tarjan's algorithm to detect the strongly connected components
  * in the dependence graph.
  */
-static int detect_sccs(struct isl_sched_graph *graph)
+static int detect_sccs(isl_ctx *ctx, struct isl_sched_graph *graph)
 {
-	return detect_ccs(graph, 0);
+	return detect_ccs(ctx, graph, 0);
 }
 
 /* Apply Tarjan's algorithm to detect the (weakly) connected components
  * in the dependence graph.
  */
-static int detect_wccs(struct isl_sched_graph *graph)
+static int detect_wccs(isl_ctx *ctx, struct isl_sched_graph *graph)
 {
-	return detect_ccs(graph, 1);
+	return detect_ccs(ctx, graph, 1);
 }
 
 static int cmp_scc(const void *a, const void *b, void *data)
@@ -1728,7 +1676,7 @@ static int sort_statements(isl_ctx *ctx, struct isl_sched_graph *graph)
 	if (graph->n_edge == 0)
 		return 0;
 
-	if (detect_sccs(graph) < 0)
+	if (detect_sccs(ctx, graph) < 0)
 		return -1;
 
 	for (i = 0; i < graph->n; ++i) {
@@ -2650,7 +2598,7 @@ static int compute_schedule_wcc(isl_ctx *ctx, struct isl_sched_graph *graph)
 {
 	int force_zero = 0;
 
-	if (detect_sccs(graph) < 0)
+	if (detect_sccs(ctx, graph) < 0)
 		return -1;
 	if (sort_sccs(graph) < 0)
 		return -1;
@@ -2789,10 +2737,10 @@ static int compute_component_schedule(isl_ctx *ctx,
 static int compute_schedule(isl_ctx *ctx, struct isl_sched_graph *graph)
 {
 	if (ctx->opt->schedule_fuse == ISL_SCHEDULE_FUSE_MIN) {
-		if (detect_sccs(graph) < 0)
+		if (detect_sccs(ctx, graph) < 0)
 			return -1;
 	} else {
-		if (detect_wccs(graph) < 0)
+		if (detect_wccs(ctx, graph) < 0)
 			return -1;
 	}
 

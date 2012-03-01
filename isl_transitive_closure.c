@@ -17,6 +17,7 @@
 #include <isl/union_map.h>
 #include <isl_mat_private.h>
 #include <isl_options_private.h>
+#include <isl_tarjan.h>
 
 int isl_map_is_transitively_closed(__isl_keep isl_map *map)
 {
@@ -1720,87 +1721,21 @@ error:
 	return NULL;
 }
 
-/* Structure for representing the nodes in the graph being traversed
- * using Tarjan's algorithm.
- * index represents the order in which nodes are visited.
- * min_index is the index of the root of a (sub)component.
- * on_stack indicates whether the node is currently on the stack.
- */
-struct basic_map_sort_node {
-	int index;
-	int min_index;
-	int on_stack;
-};
-/* Structure for representing the graph being traversed
- * using Tarjan's algorithm.
- * len is the number of nodes
- * node is an array of nodes
- * stack contains the nodes on the path from the root to the current node
- * sp is the stack pointer
- * index is the index of the last node visited
- * order contains the elements of the components separated by -1
- * op represents the current position in order
+/* Structure for representing the nodes of the graph of which
+ * strongly connected components are being computed.
  *
+ * list contains the actual nodes
  * check_closed is set if we may have used the fact that
  * a pair of basic maps can be interchanged
  */
-struct basic_map_sort {
-	int len;
-	struct basic_map_sort_node *node;
-	int *stack;
-	int sp;
-	int index;
-	int *order;
-	int op;
+struct isl_tc_follows_data {
+	isl_basic_map **list;
 	int check_closed;
 };
 
-static void basic_map_sort_free(struct basic_map_sort *s)
-{
-	if (!s)
-		return;
-	free(s->node);
-	free(s->stack);
-	free(s->order);
-	free(s);
-}
-
-static struct basic_map_sort *basic_map_sort_alloc(struct isl_ctx *ctx, int len)
-{
-	struct basic_map_sort *s;
-	int i;
-
-	s = isl_calloc_type(ctx, struct basic_map_sort);
-	if (!s)
-		return NULL;
-	s->len = len;
-	s->node = isl_alloc_array(ctx, struct basic_map_sort_node, len);
-	if (!s->node)
-		goto error;
-	for (i = 0; i < len; ++i)
-		s->node[i].index = -1;
-	s->stack = isl_alloc_array(ctx, int, len);
-	if (!s->stack)
-		goto error;
-	s->order = isl_alloc_array(ctx, int, 2 * len);
-	if (!s->order)
-		goto error;
-
-	s->sp = 0;
-	s->index = 0;
-	s->op = 0;
-
-	s->check_closed = 0;
-
-	return s;
-error:
-	basic_map_sort_free(s);
-	return NULL;
-}
-
 /* Check whether in the computation of the transitive closure
- * "bmap1" (R_1) should follow (or be part of the same component as)
- * "bmap2" (R_2).
+ * "list[i]" (R_1) should follow (or be part of the same component as)
+ * "list[j]" (R_2).
  *
  * That is check whether
  *
@@ -1816,20 +1751,21 @@ error:
  * *check_closed is set if the subset relation holds while
  * R_1 \circ R_2 is not empty.
  */
-static int basic_map_follows(__isl_keep isl_basic_map *bmap1,
-	__isl_keep isl_basic_map *bmap2, int *check_closed)
+static int basic_map_follows(int i, int j, void *user)
 {
+	struct isl_tc_follows_data *data = user;
 	struct isl_map *map12 = NULL;
 	struct isl_map *map21 = NULL;
 	int subset;
 
-	if (!isl_space_tuple_match(bmap1->dim, isl_dim_in, bmap2->dim, isl_dim_out))
+	if (!isl_space_tuple_match(data->list[i]->dim, isl_dim_in,
+				    data->list[j]->dim, isl_dim_out))
 		return 0;
 
 	map21 = isl_map_from_basic_map(
 			isl_basic_map_apply_range(
-				isl_basic_map_copy(bmap2),
-				isl_basic_map_copy(bmap1)));
+				isl_basic_map_copy(data->list[j]),
+				isl_basic_map_copy(data->list[i])));
 	subset = isl_map_is_empty(map21);
 	if (subset < 0)
 		goto error;
@@ -1838,16 +1774,18 @@ static int basic_map_follows(__isl_keep isl_basic_map *bmap1,
 		return 0;
 	}
 
-	if (!isl_space_tuple_match(bmap1->dim, isl_dim_in, bmap1->dim, isl_dim_out) ||
-	    !isl_space_tuple_match(bmap2->dim, isl_dim_in, bmap2->dim, isl_dim_out)) {
+	if (!isl_space_tuple_match(data->list[i]->dim, isl_dim_in,
+				    data->list[i]->dim, isl_dim_out) ||
+	    !isl_space_tuple_match(data->list[j]->dim, isl_dim_in,
+				    data->list[j]->dim, isl_dim_out)) {
 		isl_map_free(map21);
 		return 1;
 	}
 
 	map12 = isl_map_from_basic_map(
 			isl_basic_map_apply_range(
-				isl_basic_map_copy(bmap1),
-				isl_basic_map_copy(bmap2)));
+				isl_basic_map_copy(data->list[i]),
+				isl_basic_map_copy(data->list[j])));
 
 	subset = isl_map_is_subset(map21, map12);
 
@@ -1855,90 +1793,12 @@ static int basic_map_follows(__isl_keep isl_basic_map *bmap1,
 	isl_map_free(map21);
 
 	if (subset)
-		*check_closed = 1;
+		data->check_closed = 1;
 
 	return subset < 0 ? -1 : !subset;
 error:
 	isl_map_free(map21);
 	return -1;
-}
-
-/* Perform Tarjan's algorithm for computing the strongly connected components
- * in the graph with the disjuncts of "map" as vertices and with an
- * edge between any pair of disjuncts such that the first has
- * to be applied after the second.
- */
-static int power_components_tarjan(struct basic_map_sort *s,
-	__isl_keep isl_basic_map **list, int i)
-{
-	int j;
-
-	s->node[i].index = s->index;
-	s->node[i].min_index = s->index;
-	s->node[i].on_stack = 1;
-	s->index++;
-	s->stack[s->sp++] = i;
-
-	for (j = s->len - 1; j >= 0; --j) {
-		int f;
-
-		if (j == i)
-			continue;
-		if (s->node[j].index >= 0 &&
-			(!s->node[j].on_stack ||
-			 s->node[j].index > s->node[i].min_index))
-			continue;
-
-		f = basic_map_follows(list[i], list[j], &s->check_closed);
-		if (f < 0)
-			return -1;
-		if (!f)
-			continue;
-
-		if (s->node[j].index < 0) {
-			power_components_tarjan(s, list, j);
-			if (s->node[j].min_index < s->node[i].min_index)
-				s->node[i].min_index = s->node[j].min_index;
-		} else if (s->node[j].index < s->node[i].min_index)
-			s->node[i].min_index = s->node[j].index;
-	}
-
-	if (s->node[i].index != s->node[i].min_index)
-		return 0;
-
-	do {
-		j = s->stack[--s->sp];
-		s->node[j].on_stack = 0;
-		s->order[s->op++] = j;
-	} while (j != i);
-	s->order[s->op++] = -1;
-
-	return 0;
-}
-
-/* Decompose the "len" basic relations in "list" into strongly connected
- * components.
- */
-static struct basic_map_sort *basic_map_sort_init(isl_ctx *ctx, int len,
-	__isl_keep isl_basic_map **list)
-{
-	int i;
-	struct basic_map_sort *s = NULL;
-
-	s = basic_map_sort_alloc(ctx, len);
-	if (!s)
-		return NULL;
-	for (i = len - 1; i >= 0; --i) {
-		if (s->node[i].index >= 0)
-			continue;
-		if (power_components_tarjan(s, list, i) < 0)
-			goto error;
-	}
-
-	return s;
-error:
-	basic_map_sort_free(s);
-	return NULL;
 }
 
 /* Given a union of basic maps R = \cup_i R_i \subseteq D \times D
@@ -1979,7 +1839,8 @@ static __isl_give isl_map *construct_power_components(__isl_take isl_space *dim,
 {
 	int i, n, c;
 	struct isl_map *path = NULL;
-	struct basic_map_sort *s = NULL;
+	struct isl_tc_follows_data data;
+	struct isl_tarjan_graph *g = NULL;
 	int *orig_exact;
 	int local_exact;
 
@@ -1988,12 +1849,14 @@ static __isl_give isl_map *construct_power_components(__isl_take isl_space *dim,
 	if (map->n <= 1)
 		return floyd_warshall(dim, map, exact, project);
 
-	s = basic_map_sort_init(map->ctx, map->n, map->p);
-	if (!s)
+	data.list = map->p;
+	data.check_closed = 0;
+	g = isl_tarjan_graph_init(map->ctx, map->n, &basic_map_follows, &data);
+	if (!g)
 		goto error;
 
 	orig_exact = exact;
-	if (s->check_closed && !exact)
+	if (data.check_closed && !exact)
 		exact = &local_exact;
 
 	c = 0;
@@ -2008,9 +1871,9 @@ static __isl_give isl_map *construct_power_components(__isl_take isl_space *dim,
 		struct isl_map *comp;
 		isl_map *path_comp, *path_comb;
 		comp = isl_map_alloc_space(isl_map_get_space(map), n, 0);
-		while (s->order[i] != -1) {
+		while (g->order[i] != -1) {
 			comp = isl_map_add_basic_map(comp,
-				    isl_basic_map_copy(map->p[s->order[i]]));
+				    isl_basic_map_copy(map->p[g->order[i]]));
 			--n;
 			++i;
 		}
@@ -2026,25 +1889,25 @@ static __isl_give isl_map *construct_power_components(__isl_take isl_space *dim,
 		++c;
 	}
 
-	if (c > 1 && s->check_closed && !*exact) {
+	if (c > 1 && data.check_closed && !*exact) {
 		int closed;
 
 		closed = isl_map_is_transitively_closed(path);
 		if (closed < 0)
 			goto error;
 		if (!closed) {
-			basic_map_sort_free(s);
+			isl_tarjan_graph_free(g);
 			isl_map_free(path);
 			return floyd_warshall(dim, map, orig_exact, project);
 		}
 	}
 
-	basic_map_sort_free(s);
+	isl_tarjan_graph_free(g);
 	isl_space_free(dim);
 
 	return path;
 error:
-	basic_map_sort_free(s);
+	isl_tarjan_graph_free(g);
 	isl_space_free(dim);
 	isl_map_free(path);
 	return NULL;
@@ -2908,7 +2771,8 @@ static __isl_give isl_union_map *union_components(
 	isl_basic_map **list;
 	isl_basic_map **next;
 	isl_union_map *path = NULL;
-	struct basic_map_sort *s = NULL;
+	struct isl_tc_follows_data data;
+	struct isl_tarjan_graph *g = NULL;
 	int c, l;
 	int recheck = 0;
 
@@ -2928,8 +2792,10 @@ static __isl_give isl_union_map *union_components(
 	if (isl_union_map_foreach_map(umap, collect_basic_map, &next) < 0)
 		goto error;
 
-	s = basic_map_sort_init(ctx, n, list);
-	if (!s)
+	data.list = list;
+	data.check_closed = 0;
+	g = isl_tarjan_graph_init(ctx, n, &basic_map_follows, &data);
+	if (!g)
 		goto error;
 
 	c = 0;
@@ -2940,10 +2806,10 @@ static __isl_give isl_union_map *union_components(
 		isl_union_map *comp;
 		isl_union_map *path_comp, *path_comb;
 		comp = isl_union_map_empty(isl_union_map_get_space(umap));
-		while (s->order[i] != -1) {
+		while (g->order[i] != -1) {
 			comp = isl_union_map_add_map(comp,
 				    isl_map_from_basic_map(
-					isl_basic_map_copy(list[s->order[i]])));
+					isl_basic_map_copy(list[g->order[i]])));
 			--l;
 			++i;
 		}
@@ -2956,7 +2822,7 @@ static __isl_give isl_union_map *union_components(
 		++c;
 	}
 
-	if (c > 1 && s->check_closed && !*exact) {
+	if (c > 1 && data.check_closed && !*exact) {
 		int closed;
 
 		closed = isl_union_map_is_transitively_closed(path);
@@ -2965,7 +2831,7 @@ static __isl_give isl_union_map *union_components(
 		recheck = !closed;
 	}
 
-	basic_map_sort_free(s);
+	isl_tarjan_graph_free(g);
 
 	for (i = 0; i < n; ++i)
 		isl_basic_map_free(list[i]);
@@ -2980,7 +2846,7 @@ static __isl_give isl_union_map *union_components(
 
 	return path;
 error:
-	basic_map_sort_free(s);
+	isl_tarjan_graph_free(g);
 	if (list) {
 		for (i = 0; i < n; ++i)
 			isl_basic_map_free(list[i]);
