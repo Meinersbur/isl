@@ -2002,6 +2002,9 @@ __isl_give isl_map *isl_stream_read_map(struct isl_stream *s)
 	if (obj.v)
 		isl_assert(s->ctx, obj.type == isl_obj_map ||
 				   obj.type == isl_obj_set, goto error);
+	
+	if (obj.type == isl_obj_set)
+		obj.v = isl_map_from_range(obj.v);
 
 	return obj.v;
 error:
