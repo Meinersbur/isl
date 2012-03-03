@@ -1672,6 +1672,11 @@ static int is_subset_entry(void **entry, void *user)
 	entry2 = isl_hash_table_find(data->umap2->dim->ctx, &data->umap2->table,
 				     hash, &has_dim, map->dim, 0);
 	if (!entry2) {
+		int empty = isl_map_is_empty(map);
+		if (empty < 0)
+			return -1;
+		if (empty)
+			return 0;
 		data->is_subset = 0;
 		return -1;
 	}
