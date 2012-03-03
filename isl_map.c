@@ -506,6 +506,14 @@ const char *isl_basic_set_get_dim_name(__isl_keep isl_basic_set *bset,
 	return bset ? isl_space_get_dim_name(bset->dim, type, pos) : NULL;
 }
 
+/* Does the given dimension have a name?
+ */
+int isl_map_has_dim_name(__isl_keep isl_map *map,
+	enum isl_dim_type type, unsigned pos)
+{
+	return map ? isl_space_has_dim_name(map->dim, type, pos) : -1;
+}
+
 const char *isl_map_get_dim_name(__isl_keep isl_map *map,
 	enum isl_dim_type type, unsigned pos)
 {
