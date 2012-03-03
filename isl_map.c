@@ -7611,7 +7611,7 @@ struct isl_basic_map *isl_basic_map_align_divs(
 		struct isl_basic_map *dst, struct isl_basic_map *src)
 {
 	int i;
-	unsigned total = isl_space_dim(src->dim, isl_dim_all);
+	unsigned total;
 
 	if (!dst || !src)
 		goto error;
@@ -7628,6 +7628,7 @@ struct isl_basic_map *isl_basic_map_align_divs(
 			src->n_div, 0, 2 * src->n_div);
 	if (!dst)
 		return NULL;
+	total = isl_space_dim(src->dim, isl_dim_all);
 	for (i = 0; i < src->n_div; ++i) {
 		int j = find_div(dst, src, i);
 		if (j < 0) {
