@@ -1298,6 +1298,11 @@ error:
 }
 #endif
 
+int FN(PW,n_piece)(__isl_keep PW *pw)
+{
+	return pw ? pw->n : 0;
+}
+
 int FN(PW,foreach_piece)(__isl_keep PW *pw,
 	int (*fn)(__isl_take isl_set *set, __isl_take EL *el, void *user),
 	void *user)

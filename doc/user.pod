@@ -2835,6 +2835,7 @@ The expression can be inspected using
 	__isl_give isl_aff *isl_aff_get_div(
 		__isl_keep isl_aff *aff, int pos);
 
+	int isl_pw_aff_n_piece(__isl_keep isl_pw_aff *pwaff);
 	int isl_pw_aff_foreach_piece(__isl_keep isl_pw_aff *pwaff,
 		int (*fn)(__isl_take isl_set *set,
 			  __isl_take isl_aff *aff,
