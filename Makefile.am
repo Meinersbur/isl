@@ -240,6 +240,7 @@ EXTRA_DIST = \
 	isl_multi_templ.c \
 	isl_multi_templ.h \
 	print_templ.c \
+	isl_power_templ.c \
 	isl_pw_templ.c \
 	isl_union_templ.c \
 	isl.py \

@@ -1455,6 +1455,19 @@ static int map_is_equal(__isl_keep isl_map *map, const char *str)
 	return equal;
 }
 
+static int map_check_equal(__isl_keep isl_map *map, const char *str)
+{
+	int equal;
+
+	equal = map_is_equal(map, str);
+	if (equal < 0)
+		return -1;
+	if (!equal)
+		isl_die(isl_map_get_ctx(map), isl_error_unknown,
+			"result not as expected", return -1);
+	return 0;
+}
+
 void test_dep(struct isl_ctx *ctx)
 {
 	const char *str;
@@ -2756,6 +2769,27 @@ int test_sample(isl_ctx *ctx)
 	return 0;
 }
 
+int test_fixed_power(isl_ctx *ctx)
+{
+	const char *str;
+	isl_map *map;
+	isl_int exp;
+	int equal;
+
+	isl_int_init(exp);
+	str = "{ [i] -> [i + 1] }";
+	map = isl_map_read_from_str(ctx, str);
+	isl_int_set_si(exp, 23);
+	map = isl_map_fixed_power(map, exp);
+	equal = map_check_equal(map, "{ [i] -> [i + 23] }");
+	isl_int_clear(exp);
+	isl_map_free(map);
+	if (equal < 0)
+		return -1;
+
+	return 0;
+}
+
 int main()
 {
 	struct isl_ctx *ctx;
@@ -2764,6 +2798,8 @@ int main()
 	assert(srcdir);
 
 	ctx = isl_ctx_alloc();
+	if (test_fixed_power(ctx) < 0)
+		goto error;
 	if (test_sample(ctx) < 0)
 		goto error;
 	if (test_output(ctx) < 0)

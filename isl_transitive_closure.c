@@ -3102,3 +3102,11 @@ __isl_give isl_union_map *isl_union_map_power(__isl_take isl_union_map *umap,
 	
 	return umap;
 }
+
+#undef TYPE
+#define TYPE isl_map
+#include "isl_power_templ.c"
+
+#undef TYPE
+#define TYPE isl_union_map
+#include "isl_power_templ.c"
