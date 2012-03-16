@@ -102,19 +102,20 @@ typedef struct isl_ctx isl_ctx;
  * returns the value of 'expr'. It is used to ensure, that always an isl_ctx is
  * passed to the following macros, even if they currently do not use it.
  */
-#define isl_check_ctx(ctx, expr)	(ctx != (isl_ctx *) 0) ? expr : expr
+#define isl_check_ctx(ctx, expr)	((ctx != (isl_ctx *) 0) ? expr : expr)
 
-#define isl_alloc(ctx,type,size)	isl_check_ctx(ctx, (type *)malloc(size))
-#define isl_calloc(ctx,type,size)	isl_check_ctx(ctx, \
-						(type *)calloc(1, size))
-#define isl_realloc(ctx,ptr,type,size)	isl_check_ctx(ctx, \
-						(type *)realloc(ptr,size))
+#define isl_alloc(ctx,type,size)	((type *)isl_check_ctx(ctx,\
+							malloc(size)))
+#define isl_calloc(ctx,type,size)	((type *)isl_check_ctx(ctx,\
+							calloc(1, size)))
+#define isl_realloc(ctx,ptr,type,size)	((type *)isl_check_ctx(ctx,\
+							realloc(ptr,size)))
 #define isl_alloc_type(ctx,type)	isl_alloc(ctx,type,sizeof(type))
 #define isl_calloc_type(ctx,type)	isl_calloc(ctx,type,sizeof(type))
 #define isl_realloc_type(ctx,ptr,type)	isl_realloc(ctx,ptr,type,sizeof(type))
 #define isl_alloc_array(ctx,type,n)	isl_alloc(ctx,type,(n)*sizeof(type))
-#define isl_calloc_array(ctx,type,n)	isl_check_ctx(ctx,\
-						(type *)calloc(n, sizeof(type)))
+#define isl_calloc_array(ctx,type,n)	((type *)isl_check_ctx(ctx,\
+						calloc(n, sizeof(type))))
 #define isl_realloc_array(ctx,ptr,type,n) \
 				    isl_realloc(ctx,ptr,type,(n)*sizeof(type))
 
