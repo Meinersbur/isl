@@ -9890,6 +9890,18 @@ __isl_give isl_basic_map *isl_basic_map_from_multi_aff(
 	return bmap;
 }
 
+/* Construct a map mapping the domain the multi-affine expression
+ * to its range, with each dimension in the range equated to the
+ * corresponding affine expression.
+ */
+__isl_give isl_map *isl_map_from_multi_aff(__isl_take isl_multi_aff *maff)
+{
+	isl_basic_map *bmap;
+
+	bmap = isl_basic_map_from_multi_aff(maff);
+	return isl_map_from_basic_map(bmap);
+}
+
 /* Construct a basic map mapping a domain in the given space to
  * to an n-dimensional range, with n the number of elements in the list,
  * where each coordinate in the range is prescribed by the
