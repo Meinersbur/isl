@@ -15,8 +15,6 @@ struct MULTI(BASE) {
 
 #define ISL_DECLARE_MULTI_PRIVATE(BASE)					\
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_alloc(			\
-	__isl_take isl_space *space);					\
-__isl_give isl_multi_##BASE *isl_multi_##BASE##_set_##BASE(		\
-	__isl_take isl_multi_##BASE *multi, int pos, __isl_take EL *el);
+	__isl_take isl_space *space);
 
 ISL_DECLARE_MULTI_PRIVATE(aff)

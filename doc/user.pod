@@ -3289,6 +3289,9 @@ The expression can be inspected using
 It can be modified using
 
 	#include <isl/aff.h>
+	__isl_give isl_multi_aff *isl_multi_aff_set_aff(
+		__isl_take isl_multi_aff *multi, int pos,
+		__isl_take isl_aff *aff);
 	__isl_give isl_multi_aff *isl_multi_aff_set_dim_name(
 		__isl_take isl_multi_aff *maff,
 		enum isl_dim_type type, unsigned pos, const char *s);
