@@ -1,6 +1,7 @@
 #ifndef ISL_SCHEDLUE_PRIVATE_H
 #define ISL_SCHEDLUE_PRIVATE_H
 
+#include <isl/aff.h>
 #include <isl/schedule.h>
 
 /* The schedule for an individual domain, plus information about the bands
@@ -13,7 +14,7 @@
  * to the proximity edges.
  */
 struct isl_schedule_node {
-	isl_map *sched;
+	isl_multi_aff *sched;
 	int	 n_band;
 	int	*band_end;
 	int	*band_id;

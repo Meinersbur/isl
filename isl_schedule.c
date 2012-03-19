@@ -11,6 +11,7 @@
 #include <isl_ctx_private.h>
 #include <isl_map_private.h>
 #include <isl_space_private.h>
+#include <isl/aff.h>
 #include <isl/hash.h>
 #include <isl/constraint.h>
 #include <isl/schedule.h>
@@ -1563,58 +1564,65 @@ error:
 	return -1;
 }
 
-/* Convert node->sched into a map and return this map.
- * We simply add equality constraints that express each output variable
- * as the affine combination of parameters and input variables specified
- * by the schedule matrix.
- *
- * The result is cached in node->sched_map, which needs to be released
- * whenever node->sched is updated.
+/* Convert node->sched into a multi_aff and return this multi_aff.
  */
-static __isl_give isl_map *node_extract_schedule(struct isl_sched_node *node)
+static __isl_give isl_multi_aff *node_extract_schedule_multi_aff(
+	struct isl_sched_node *node)
 {
 	int i, j;
-	isl_space *dim;
+	isl_space *space;
 	isl_local_space *ls;
-	isl_basic_map *bmap;
-	isl_constraint *c;
+	isl_aff *aff;
+	isl_multi_aff *ma;
 	int nrow, ncol;
 	isl_int v;
 
-	if (node->sched_map)
-		return isl_map_copy(node->sched_map);
-
 	nrow = isl_mat_rows(node->sched);
 	ncol = isl_mat_cols(node->sched) - 1;
-	dim = isl_space_from_domain(isl_space_copy(node->dim));
-	dim = isl_space_add_dims(dim, isl_dim_out, nrow);
-	bmap = isl_basic_map_universe(isl_space_copy(dim));
-	ls = isl_local_space_from_space(dim);
+	space = isl_space_from_domain(isl_space_copy(node->dim));
+	space = isl_space_add_dims(space, isl_dim_out, nrow);
+	ma = isl_multi_aff_zero(space);
+	ls = isl_local_space_from_space(isl_space_copy(node->dim));
 
 	isl_int_init(v);
 
 	for (i = 0; i < nrow; ++i) {
-		c = isl_equality_alloc(isl_local_space_copy(ls));
-		isl_constraint_set_coefficient_si(c, isl_dim_out, i, -1);
+		aff = isl_aff_zero_on_domain(isl_local_space_copy(ls));
 		isl_mat_get_element(node->sched, i, 0, &v);
-		isl_constraint_set_constant(c, v);
+		aff = isl_aff_set_constant(aff, v);
 		for (j = 0; j < node->nparam; ++j) {
 			isl_mat_get_element(node->sched, i, 1 + j, &v);
-			isl_constraint_set_coefficient(c, isl_dim_param, j, v);
+			aff = isl_aff_set_coefficient(aff, isl_dim_param, j, v);
 		}
 		for (j = 0; j < node->nvar; ++j) {
 			isl_mat_get_element(node->sched,
 					    i, 1 + node->nparam + j, &v);
-			isl_constraint_set_coefficient(c, isl_dim_in, j, v);
+			aff = isl_aff_set_coefficient(aff, isl_dim_in, j, v);
 		}
-		bmap = isl_basic_map_add_constraint(bmap, c);
+		ma = isl_multi_aff_set_aff(ma, i, aff);
 	}
 
 	isl_int_clear(v);
 
 	isl_local_space_free(ls);
 
-	node->sched_map = isl_map_from_basic_map(bmap);
+	return ma;
+}
+
+/* Convert node->sched into a map and return this map.
+ *
+ * The result is cached in node->sched_map, which needs to be released
+ * whenever node->sched is updated.
+ */
+static __isl_give isl_map *node_extract_schedule(struct isl_sched_node *node)
+{
+	if (!node->sched_map) {
+		isl_multi_aff *ma;
+
+		ma = node_extract_schedule_multi_aff(node);
+		node->sched_map = isl_map_from_multi_aff(ma);
+	}
+
 	return isl_map_copy(node->sched_map);
 }
 
@@ -1739,7 +1747,8 @@ static __isl_give isl_schedule *extract_schedule(struct isl_sched_graph *graph,
 		band_end = isl_alloc_array(ctx, int, graph->n_band);
 		band_id = isl_alloc_array(ctx, int, graph->n_band);
 		zero = isl_alloc_array(ctx, int, graph->n_total_row);
-		sched->node[i].sched = node_extract_schedule(&graph->node[i]);
+		sched->node[i].sched =
+			node_extract_schedule_multi_aff(&graph->node[i]);
 		sched->node[i].band_end = band_end;
 		sched->node[i].band_id = band_id;
 		sched->node[i].zero = zero;
@@ -2837,7 +2846,7 @@ void *isl_schedule_free(__isl_take isl_schedule *sched)
 		return NULL;
 
 	for (i = 0; i < sched->n; ++i) {
-		isl_map_free(sched->node[i].sched);
+		isl_multi_aff_free(sched->node[i].sched);
 		free(sched->node[i].band_end);
 		free(sched->node[i].band_id);
 		free(sched->node[i].zero);
@@ -2862,9 +2871,12 @@ __isl_give isl_union_map *isl_schedule_get_map(__isl_keep isl_schedule *sched)
 		return NULL;
 
 	umap = isl_union_map_empty(isl_space_copy(sched->dim));
-	for (i = 0; i < sched->n; ++i)
-		umap = isl_union_map_add_map(umap,
-					    isl_map_copy(sched->node[i].sched));
+	for (i = 0; i < sched->n; ++i) {
+		isl_multi_aff *ma;
+
+		ma = isl_multi_aff_copy(sched->node[i].sched);
+		umap = isl_union_map_add_map(umap, isl_map_from_multi_aff(ma));
+	}
 
 	return umap;
 }
@@ -2932,13 +2944,15 @@ static __isl_give isl_band *construct_band(__isl_keep isl_schedule *schedule,
 
 	band->map = isl_union_map_empty(isl_space_copy(schedule->dim));
 	for (i = 0; i < schedule->n; ++i) {
+		isl_multi_aff *ma;
 		isl_map *map;
 		unsigned n_out;
 
 		if (!active[i])
 			continue;
 
-		map = isl_map_copy(schedule->node[i].sched);
+		ma = isl_multi_aff_copy(schedule->node[i].sched);
+		map = isl_map_from_multi_aff(ma);
 		n_out = isl_map_dim(map, isl_dim_out);
 		map = isl_map_project_out(map, isl_dim_out, end, n_out - end);
 		map = isl_map_project_out(map, isl_dim_out, 0, start);
