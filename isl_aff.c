@@ -2080,6 +2080,40 @@ __isl_give isl_pw_aff *isl_pw_aff_list_max(__isl_take isl_pw_aff_list *list)
 
 #include <isl_multi_templ.c>
 
+/* Construct an isl_multi_aff in the given space with value zero in
+ * each of the output dimensions.
+ */
+__isl_give isl_multi_aff *isl_multi_aff_zero(__isl_take isl_space *space)
+{
+	int n;
+	isl_multi_aff *ma;
+
+	if (!space)
+		return NULL;
+
+	n = isl_space_dim(space , isl_dim_out);
+	ma = isl_multi_aff_alloc(isl_space_copy(space));
+
+	if (!n)
+		isl_space_free(space);
+	else {
+		int i;
+		isl_local_space *ls;
+		isl_aff *aff;
+
+		space = isl_space_domain(space);
+		ls = isl_local_space_from_space(space);
+		aff = isl_aff_zero_on_domain(ls);
+
+		for (i = 0; i < n; ++i)
+			ma = isl_multi_aff_set_aff(ma, i, isl_aff_copy(aff));
+
+		isl_aff_free(aff);
+	}
+
+	return ma;
+}
+
 __isl_give isl_multi_aff *isl_multi_aff_add(__isl_take isl_multi_aff *maff1,
 	__isl_take isl_multi_aff *maff2)
 {
