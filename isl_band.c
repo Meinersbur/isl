@@ -139,6 +139,60 @@ __isl_give isl_union_map *isl_band_get_partial_schedule(
 	return isl_union_map_from_union_pw_multi_aff(sched);
 }
 
+__isl_give isl_union_pw_multi_aff *
+isl_band_get_suffix_schedule_union_pw_multi_aff(__isl_keep isl_band *band);
+
+/* Return the schedule for the given band list.
+ * For each band in the list, the schedule is composed of the partial
+ * and suffix schedules of that band.
+ */
+__isl_give isl_union_pw_multi_aff *
+isl_band_list_get_suffix_schedule_union_pw_multi_aff(
+	__isl_keep isl_band_list *list)
+{
+	isl_ctx *ctx;
+	int i, n;
+	isl_space *space;
+	isl_union_pw_multi_aff *suffix;
+
+	if (!list)
+		return NULL;
+
+	ctx = isl_band_list_get_ctx(list);
+	space = isl_space_alloc(ctx, 0, 0, 0);
+	suffix = isl_union_pw_multi_aff_empty(space);
+	n = isl_band_list_n_band(list);
+	for (i = 0; i < n; ++i) {
+		isl_band *el;
+		isl_union_pw_multi_aff *partial;
+		isl_union_pw_multi_aff *suffix_i;
+
+		el = isl_band_list_get_band(list, i);
+		partial = isl_band_get_partial_schedule_union_pw_multi_aff(el);
+		suffix_i = isl_band_get_suffix_schedule_union_pw_multi_aff(el);
+		suffix_i = isl_union_pw_multi_aff_flat_range_product(
+				partial, suffix_i);
+		suffix = isl_union_pw_multi_aff_add(suffix, suffix_i);
+
+		isl_band_free(el);
+	}
+
+	return suffix;
+}
+
+/* Return the schedule for the given band list.
+ * For each band in the list, the schedule is composed of the partial
+ * and suffix schedules of that band.
+ */
+__isl_give isl_union_map *isl_band_list_get_suffix_schedule(
+	__isl_keep isl_band_list *list)
+{
+	isl_union_pw_multi_aff *suffix;
+
+	suffix = isl_band_list_get_suffix_schedule_union_pw_multi_aff(list);
+	return isl_union_map_from_union_pw_multi_aff(suffix);
+}
+
 /* Return the schedule for the forest underneath the given band.
  */
 __isl_give isl_union_pw_multi_aff *
@@ -156,29 +210,12 @@ isl_band_get_suffix_schedule_union_pw_multi_aff(__isl_keep isl_band *band)
 		domain = isl_union_pw_multi_aff_domain(suffix);
 		suffix = isl_union_pw_multi_aff_from_domain(domain);
 	} else {
-		int i, n;
-		isl_space *space;
-		isl_band_list *children;
+		isl_band_list *list;
 
-		space = isl_union_pw_multi_aff_get_space(band->pma);
-		suffix = isl_union_pw_multi_aff_empty(space);
-		children = isl_band_get_children(band);
-		n = isl_band_list_n_band(children);
-		for (i = 0; i < n; ++i) {
-			isl_band *child;
-			isl_union_pw_multi_aff *partial_i;
-			isl_union_pw_multi_aff *suffix_i;
-
-			child = isl_band_list_get_band(children, i);
-			partial_i = isl_band_get_partial_schedule_union_pw_multi_aff(child);
-			suffix_i = isl_band_get_suffix_schedule_union_pw_multi_aff(child);
-			suffix_i = isl_union_pw_multi_aff_flat_range_product(
-					partial_i, suffix_i);
-			suffix = isl_union_pw_multi_aff_add(suffix, suffix_i);
-
-			isl_band_free(child);
-		}
-		isl_band_list_free(children);
+		list = isl_band_get_children(band);
+		suffix =
+		    isl_band_list_get_suffix_schedule_union_pw_multi_aff(list);
+		isl_band_list_free(list);
 	}
 
 	return suffix;
