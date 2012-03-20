@@ -244,18 +244,19 @@ static int free_u_entry(void **entry, void *user)
 	return 0;
 }
 
-void FN(UNION,free)(__isl_take UNION *u)
+void *FN(UNION,free)(__isl_take UNION *u)
 {
 	if (!u)
-		return;
+		return NULL;
 
 	if (--u->ref > 0)
-		return;
+		return NULL;
 
 	isl_hash_table_foreach(u->dim->ctx, &u->table, &free_u_entry, NULL);
 	isl_hash_table_clear(&u->table);
 	isl_space_free(u->dim);
 	free(u);
+	return NULL;
 }
 
 S(UNION,align) {
