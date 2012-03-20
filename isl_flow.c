@@ -1121,6 +1121,7 @@ static __isl_give struct isl_sched_info *sched_info_alloc(
 	isl_space *dim;
 	struct isl_sched_info *info;
 	int i, n;
+	isl_int v;
 
 	if (!map)
 		return NULL;
@@ -1140,9 +1141,13 @@ static __isl_give struct isl_sched_info *sched_info_alloc(
 	if (!info->is_cst || !info->cst)
 		goto error;
 
-	for (i = 0; i < n; ++i)
+	isl_int_init(v);
+	for (i = 0; i < n; ++i) {
 		info->is_cst[i] = isl_map_plain_is_fixed(map, isl_dim_in, i,
-							&info->cst->el[i]);
+							 &v);
+		info->cst = isl_vec_set_element(info->cst, i, v);
+	}
+	isl_int_clear(v);
 
 	return info;
 error:
@@ -1243,22 +1248,36 @@ static int before(void *first, void *second)
 	struct isl_sched_info *info2 = second;
 	int n1, n2;
 	int i;
+	isl_int v1, v2;
 
-	n1 = info1->cst->size;
-	n2 = info2->cst->size;
+	n1 = isl_vec_size(info1->cst);
+	n2 = isl_vec_size(info2->cst);
 
 	if (n2 < n1)
 		n1 = n2;
 
+	isl_int_init(v1);
+	isl_int_init(v2);
 	for (i = 0; i < n1; ++i) {
+		int r;
+
 		if (!info1->is_cst[i])
 			continue;
 		if (!info2->is_cst[i])
 			continue;
-		if (isl_int_eq(info1->cst->el[i], info2->cst->el[i]))
+		isl_vec_get_element(info1->cst, i, &v1);
+		isl_vec_get_element(info2->cst, i, &v2);
+		if (isl_int_eq(v1, v2))
 			continue;
-		return 2 * i + isl_int_lt(info1->cst->el[i], info2->cst->el[i]);
+
+		r = 2 * i + isl_int_lt(v1, v2);
+
+		isl_int_clear(v1);
+		isl_int_clear(v2);
+		return r;
 	}
+	isl_int_clear(v1);
+	isl_int_clear(v2);
 
 	return 2 * n1;
 }
