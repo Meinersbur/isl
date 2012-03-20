@@ -33,6 +33,8 @@ struct isl_band {
 	isl_band_list *children;
 };
 
+__isl_give isl_band *isl_band_alloc(isl_ctx *ctx);
+
 __isl_give isl_union_map *isl_band_list_get_suffix_schedule(
 	__isl_keep isl_band_list *list);
 

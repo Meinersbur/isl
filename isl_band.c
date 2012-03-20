@@ -17,6 +17,19 @@ isl_ctx *isl_band_get_ctx(__isl_keep isl_band *band)
 	return band ? isl_union_pw_multi_aff_get_ctx(band->pma) : NULL;
 }
 
+__isl_give isl_band *isl_band_alloc(isl_ctx *ctx)
+{
+	isl_band *band;
+
+	band = isl_calloc_type(ctx, isl_band);
+	if (!band)
+		return NULL;
+
+	band->ref = 1;
+
+	return band;
+}
+
 /* We not only increment the reference count of the band,
  * but also that of the schedule that contains this band.
  * This ensures that the schedule won't disappear while there

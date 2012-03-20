@@ -2911,11 +2911,10 @@ static __isl_give isl_band *construct_band(__isl_keep isl_schedule *schedule,
 	isl_band *band;
 	unsigned start, end;
 
-	band = isl_calloc_type(ctx, isl_band);
+	band = isl_band_alloc(ctx);
 	if (!band)
 		return NULL;
 
-	band->ref = 1;
 	band->schedule = schedule;
 	band->parent = parent;
 
