@@ -3,17 +3,11 @@
 
 #include <isl/space.h>
 #include <isl/map_type.h>
+#include <isl/union_map_type.h>
 #include <isl/printer.h>
 
 #if defined(__cplusplus)
 extern "C" {
-#endif
-
-struct __isl_export isl_union_map;
-typedef struct isl_union_map isl_union_map;
-#ifndef isl_union_set
-struct __isl_export isl_union_set;
-typedef struct isl_union_set isl_union_set;
 #endif
 
 __isl_constructor

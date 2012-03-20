@@ -227,7 +227,9 @@ pkginclude_HEADERS = \
 	include/isl/space.h \
 	include/isl/stream.h \
 	include/isl/union_map.h \
+	include/isl/union_map_type.h \
 	include/isl/union_set.h \
+	include/isl/union_set_type.h \
 	include/isl/vec.h \
 	include/isl/version.h \
 	include/isl/vertices.h

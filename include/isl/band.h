@@ -3,7 +3,7 @@
 
 #include <isl/printer.h>
 #include <isl/list.h>
-#include <isl/union_map.h>
+#include <isl/union_map_type.h>
 
 #if defined(__cplusplus)
 extern "C" {

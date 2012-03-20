@@ -1,8 +1,8 @@
 #ifndef ISL_SCHEDULE_H
 #define ISL_SCHEDULE_H
 
-#include <isl/union_set.h>
-#include <isl/union_map.h>
+#include <isl/union_set_type.h>
+#include <isl/union_map_type.h>
 #include <isl/list.h>
 
 #if defined(__cplusplus)
