@@ -1,17 +1,17 @@
 #ifndef ISL_BAND_PRIVATE_H
 #define ISL_BAND_PRIVATE_H
 
+#include <isl/aff.h>
 #include <isl/band.h>
 #include <isl/list.h>
 #include <isl/schedule.h>
-#include <isl/union_map.h>
 
 /* Information about a band within a schedule.
  *
  * n is the number of scheduling dimensions within the band.
  * zero is an array of length n, indicating whether a scheduling dimension
  *	results in zero dependence distances for the proximity dependences.
- * map is the partial map corresponding to this band.
+ * pma is the partial schedule corresponding to this band.
  * schedule is the schedule that contains this band.
  * parent is the parent of this band (or NULL if the band is a root).
  * children are the children of this band (or NULL if the band is a leaf).
@@ -27,7 +27,7 @@ struct isl_band {
 	int n;
 	int *zero;
 
-	isl_union_map *map;
+	isl_union_pw_multi_aff *pma;
 	isl_schedule *schedule;
 	isl_band *parent;
 	isl_band_list *children;

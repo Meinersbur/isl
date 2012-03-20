@@ -2942,24 +2942,24 @@ static __isl_give isl_band *construct_band(__isl_keep isl_schedule *schedule,
 	for (j = 0; j < band->n; ++j)
 		band->zero[j] = schedule->node[i].zero[start + j];
 
-	band->map = isl_union_map_empty(isl_space_copy(schedule->dim));
+	band->pma = isl_union_pw_multi_aff_empty(isl_space_copy(schedule->dim));
 	for (i = 0; i < schedule->n; ++i) {
 		isl_multi_aff *ma;
-		isl_map *map;
+		isl_pw_multi_aff *pma;
 		unsigned n_out;
 
 		if (!active[i])
 			continue;
 
 		ma = isl_multi_aff_copy(schedule->node[i].sched);
-		map = isl_map_from_multi_aff(ma);
-		n_out = isl_map_dim(map, isl_dim_out);
-		map = isl_map_project_out(map, isl_dim_out, end, n_out - end);
-		map = isl_map_project_out(map, isl_dim_out, 0, start);
-		band->map = isl_union_map_union(band->map,
-						isl_union_map_from_map(map));
+		n_out = isl_multi_aff_dim(ma, isl_dim_out);
+		ma = isl_multi_aff_drop_dims(ma, isl_dim_out, end, n_out - end);
+		ma = isl_multi_aff_drop_dims(ma, isl_dim_out, 0, start);
+		pma = isl_pw_multi_aff_from_multi_aff(ma);
+		band->pma = isl_union_pw_multi_aff_add_pw_multi_aff(band->pma,
+								    pma);
 	}
-	if (!band->map)
+	if (!band->pma)
 		goto error;
 
 	return band;
@@ -3101,7 +3101,7 @@ static __isl_give isl_printer *print_band(__isl_take isl_printer *p,
 	isl_band_list *children;
 
 	p = isl_printer_start_line(p);
-	p = isl_printer_print_union_map(p, band->map);
+	p = isl_printer_print_union_pw_multi_aff(p, band->pma);
 	p = isl_printer_end_line(p);
 
 	if (!isl_band_has_children(band))

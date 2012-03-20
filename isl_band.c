@@ -14,7 +14,7 @@
 
 isl_ctx *isl_band_get_ctx(__isl_keep isl_band *band)
 {
-	return band ? isl_union_map_get_ctx(band->map) : NULL;
+	return band ? isl_union_pw_multi_aff_get_ctx(band->pma) : NULL;
 }
 
 /* We not only increment the reference count of the band,
@@ -46,7 +46,7 @@ void *isl_band_free(__isl_take isl_band *band)
 	if (--band->ref > 0)
 		return isl_schedule_free(band->schedule);
 
-	isl_union_map_free(band->map);
+	isl_union_pw_multi_aff_free(band->pma);
 	isl_band_list_free(band->children);
 	free(band->zero);
 	free(band);
@@ -98,21 +98,34 @@ int isl_band_member_is_zero_distance(__isl_keep isl_band *band, int pos)
 __isl_give isl_union_map *isl_band_get_prefix_schedule(
 	__isl_keep isl_band *band)
 {
-	isl_union_map *prefix;
+	isl_union_set *domain;
+	isl_union_pw_multi_aff *prefix;
 	isl_band *a;
 
 	if (!band)
 		return NULL;
 
-	prefix = isl_union_map_copy(band->map);
-	prefix = isl_union_map_from_domain(isl_union_map_domain(prefix));
+	prefix = isl_union_pw_multi_aff_copy(band->pma);
+	domain = isl_union_pw_multi_aff_domain(prefix);
+	prefix = isl_union_pw_multi_aff_from_domain(domain);
 
 	for (a = band->parent; a; a = a->parent) {
-		isl_union_map *partial = isl_union_map_copy(a->map);
-		prefix = isl_union_map_flat_range_product(partial, prefix);
+		isl_union_pw_multi_aff *partial;
+
+		partial = isl_union_pw_multi_aff_copy(a->pma);
+		prefix = isl_union_pw_multi_aff_flat_range_product(partial,
+								   prefix);
 	}
 
-	return prefix;
+	return isl_union_map_from_union_pw_multi_aff(prefix);
+}
+
+/* Return the schedule of the band in isolation.
+ */
+__isl_give isl_union_pw_multi_aff *
+isl_band_get_partial_schedule_union_pw_multi_aff(__isl_keep isl_band *band)
+{
+	return band ? isl_union_pw_multi_aff_copy(band->pma) : NULL;
 }
 
 /* Return the schedule of the band in isolation.
@@ -120,40 +133,48 @@ __isl_give isl_union_map *isl_band_get_prefix_schedule(
 __isl_give isl_union_map *isl_band_get_partial_schedule(
 	__isl_keep isl_band *band)
 {
-	return band ? isl_union_map_copy(band->map) : NULL;
+	isl_union_pw_multi_aff *sched;
+
+	sched = isl_band_get_partial_schedule_union_pw_multi_aff(band);
+	return isl_union_map_from_union_pw_multi_aff(sched);
 }
 
 /* Return the schedule for the forest underneath the given band.
  */
-__isl_give isl_union_map *isl_band_get_suffix_schedule(
-	__isl_keep isl_band *band)
+__isl_give isl_union_pw_multi_aff *
+isl_band_get_suffix_schedule_union_pw_multi_aff(__isl_keep isl_band *band)
 {
-	isl_union_map *suffix;
+	isl_union_pw_multi_aff *suffix;
 
 	if (!band)
 		return NULL;
 
 	if (!isl_band_has_children(band)) {
-		suffix = isl_union_map_copy(band->map);
-		suffix = isl_union_map_from_domain(isl_union_map_domain(suffix));
+		isl_union_set *domain;
+
+		suffix = isl_union_pw_multi_aff_copy(band->pma);
+		domain = isl_union_pw_multi_aff_domain(suffix);
+		suffix = isl_union_pw_multi_aff_from_domain(domain);
 	} else {
 		int i, n;
+		isl_space *space;
 		isl_band_list *children;
 
-		suffix = isl_union_map_empty(isl_union_map_get_space(band->map));
+		space = isl_union_pw_multi_aff_get_space(band->pma);
+		suffix = isl_union_pw_multi_aff_empty(space);
 		children = isl_band_get_children(band);
 		n = isl_band_list_n_band(children);
 		for (i = 0; i < n; ++i) {
 			isl_band *child;
-			isl_union_map *partial_i;
-			isl_union_map *suffix_i;
+			isl_union_pw_multi_aff *partial_i;
+			isl_union_pw_multi_aff *suffix_i;
 
 			child = isl_band_list_get_band(children, i);
-			partial_i = isl_band_get_partial_schedule(child);
-			suffix_i = isl_band_get_suffix_schedule(child);
-			suffix_i = isl_union_map_flat_range_product(partial_i,
-								    suffix_i);
-			suffix = isl_union_map_union(suffix, suffix_i);
+			partial_i = isl_band_get_partial_schedule_union_pw_multi_aff(child);
+			suffix_i = isl_band_get_suffix_schedule_union_pw_multi_aff(child);
+			suffix_i = isl_union_pw_multi_aff_flat_range_product(
+					partial_i, suffix_i);
+			suffix = isl_union_pw_multi_aff_add(suffix, suffix_i);
 
 			isl_band_free(child);
 		}
@@ -161,6 +182,17 @@ __isl_give isl_union_map *isl_band_get_suffix_schedule(
 	}
 
 	return suffix;
+}
+
+/* Return the schedule for the forest underneath the given band.
+ */
+__isl_give isl_union_map *isl_band_get_suffix_schedule(
+	__isl_keep isl_band *band)
+{
+	isl_union_pw_multi_aff *suffix;
+
+	suffix = isl_band_get_suffix_schedule_union_pw_multi_aff(band);
+	return isl_union_map_from_union_pw_multi_aff(suffix);
 }
 
 __isl_give isl_printer *isl_printer_print_band(__isl_take isl_printer *p,
