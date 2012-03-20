@@ -70,12 +70,12 @@ error:
 }
 
 #ifdef HAS_TYPE
-__isl_give UNION *FN(UNION,zero)(__isl_take isl_space *dim, enum isl_fold type)
+__isl_give UNION *FN(UNION,ZERO)(__isl_take isl_space *dim, enum isl_fold type)
 {
 	return FN(UNION,alloc)(dim, type, 16);
 }
 #else
-__isl_give UNION *FN(UNION,zero)(__isl_take isl_space *dim)
+__isl_give UNION *FN(UNION,ZERO)(__isl_take isl_space *dim)
 {
 	return FN(UNION,alloc)(dim, 16);
 }
@@ -138,9 +138,9 @@ __isl_give PART *FN(FN(UNION,extract),PARTS)(__isl_keep UNION *u,
 				    &has_dim, dim, 0);
 	if (!entry)
 #ifdef HAS_TYPE
-		return FN(PART,zero)(dim, u->type);
+		return FN(PART,ZERO)(dim, u->type);
 #else
-		return FN(PART,zero)(dim);
+		return FN(PART,ZERO)(dim);
 #endif
 	isl_space_free(dim);
 	return FN(PART,copy)(entry->data);
@@ -158,7 +158,7 @@ __isl_give UNION *FN(FN(UNION,add),PARTS)(__isl_take UNION *u,
 	if (!part)
 		goto error;
 
-	if (FN(PART,is_zero)(part)) {
+	if (DEFAULT_IS_ZERO && FN(PART,IS_ZERO)(part)) {
 		FN(PART,free)(part);
 		return u;
 	}
@@ -184,7 +184,7 @@ __isl_give UNION *FN(FN(UNION,add),PARTS)(__isl_take UNION *u,
 		if (!entry->data)
 			goto error;
 		FN(PART,free)(part);
-		if (FN(PART,is_zero)(entry->data)) {
+		if (DEFAULT_IS_ZERO && FN(PART,IS_ZERO)(entry->data)) {
 			FN(PART,free)(entry->data);
 			isl_hash_table_remove(u->dim->ctx, &u->table, entry);
 		}
@@ -214,9 +214,9 @@ __isl_give UNION *FN(UNION,dup)(__isl_keep UNION *u)
 		return NULL;
 
 #ifdef HAS_TYPE
-	dup = FN(UNION,zero)(isl_space_copy(u->dim), u->type);
+	dup = FN(UNION,ZERO)(isl_space_copy(u->dim), u->type);
 #else
-	dup = FN(UNION,zero)(isl_space_copy(u->dim));
+	dup = FN(UNION,ZERO)(isl_space_copy(u->dim));
 #endif
 	if (FN(FN(UNION,foreach),PARTS)(u, &add_part, &dup) < 0)
 		goto error;
@@ -366,9 +366,9 @@ __isl_give UNION *FN(FN(UNION,from),PARTS)(__isl_take PART *part)
 	dim = isl_space_drop_dims(dim, isl_dim_in, 0, isl_space_dim(dim, isl_dim_in));
 	dim = isl_space_drop_dims(dim, isl_dim_out, 0, isl_space_dim(dim, isl_dim_out));
 #ifdef HAS_TYPE
-	u = FN(UNION,zero)(dim, part->type);
+	u = FN(UNION,ZERO)(dim, part->type);
 #else
-	u = FN(UNION,zero)(dim);
+	u = FN(UNION,ZERO)(dim);
 #endif
 	u = FN(FN(UNION,add),PARTS)(u, part);
 
@@ -426,19 +426,22 @@ static int any_set_entry(void **entry, void *user)
 {
 	S(UNION,any_set_data) *data = user;
 	PW *pw = *entry;
-	int empty;
 
 	pw = FN(PW,copy)(pw);
 	pw = data->fn(pw, isl_set_copy(data->set));
 
-	empty = FN(PW,is_zero)(pw);
-	if (empty < 0) {
-		FN(PW,free)(pw);
-		return -1;
-	}
-	if (empty) {
-		FN(PW,free)(pw);
-		return 0;
+	if (DEFAULT_IS_ZERO) {
+		int empty;
+
+		empty = FN(PW,IS_ZERO)(pw);
+		if (empty < 0) {
+			FN(PW,free)(pw);
+			return -1;
+		}
+		if (empty) {
+			FN(PW,free)(pw);
+			return 0;
+		}
 	}
 
 	data->res = FN(FN(UNION,add),PARTS)(data->res, pw);
@@ -522,7 +525,6 @@ static int match_domain_entry(void **entry, void *user)
 	struct isl_hash_table_entry *entry2;
 	PW *pw = *entry;
 	isl_space *space;
-	int empty;
 
 	space = FN(PW,get_domain_space)(pw);
 	hash = isl_space_get_hash(space);
@@ -535,14 +537,18 @@ static int match_domain_entry(void **entry, void *user)
 	pw = FN(PW,copy)(pw);
 	pw = data->fn(pw, isl_set_copy(entry2->data));
 
-	empty = FN(PW,is_zero)(pw);
-	if (empty < 0) {
-		FN(PW,free)(pw);
-		return -1;
-	}
-	if (empty) {
-		FN(PW,free)(pw);
-		return 0;
+	if (DEFAULT_IS_ZERO) {
+		int empty;
+
+		empty = FN(PW,IS_ZERO)(pw);
+		if (empty < 0) {
+			FN(PW,free)(pw);
+			return -1;
+		}
+		if (empty) {
+			FN(PW,free)(pw);
+			return 0;
+		}
 	}
 
 	data->res = FN(FN(UNION,add),PARTS)(data->res, pw);
@@ -710,13 +716,13 @@ __isl_give UNION *FN(UNION,mul_isl_int)(__isl_take UNION *u, isl_int v)
 	if (isl_int_is_one(v))
 		return u;
 
-	if (u && isl_int_is_zero(v)) {
+	if (DEFAULT_IS_ZERO && u && isl_int_is_zero(v)) {
 		UNION *zero;
 		isl_space *dim = FN(UNION,get_space)(u);
 #ifdef HAS_TYPE
-		zero = FN(UNION,zero)(dim, u->type);
+		zero = FN(UNION,ZERO)(dim, u->type);
 #else
-		zero = FN(UNION,zero)(dim);
+		zero = FN(UNION,ZERO)(dim);
 #endif
 		FN(UNION,free)(u);
 		return zero;
