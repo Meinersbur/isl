@@ -511,15 +511,16 @@ __isl_give PW *FN(PW,add_disjoint)(__isl_take PW *pw1, __isl_take PW *pw2)
 
 /* This function is currently only used from isl_aff.c
  */
-static __isl_give PW *FN(PW,on_shared_domain)(__isl_take PW *pw1,
-	__isl_take PW *pw2,
+static __isl_give PW *FN(PW,on_shared_domain_in)(__isl_take PW *pw1,
+	__isl_take PW *pw2, __isl_take isl_space *space,
 	__isl_give EL *(*fn)(__isl_take EL *el1, __isl_take EL *el2))
 	__attribute__ ((unused));
 
 /* Apply "fn" to pairs of elements from pw1 and pw2 on shared domains.
+ * The result of "fn" (and therefore also of this function) lives in "space".
  */
-static __isl_give PW *FN(PW,on_shared_domain)(__isl_take PW *pw1,
-	__isl_take PW *pw2,
+static __isl_give PW *FN(PW,on_shared_domain_in)(__isl_take PW *pw1,
+	__isl_take PW *pw2, __isl_take isl_space *space,
 	__isl_give EL *(*fn)(__isl_take EL *el1, __isl_take EL *el2))
 {
 	int i, j, n;
@@ -530,9 +531,9 @@ static __isl_give PW *FN(PW,on_shared_domain)(__isl_take PW *pw1,
 
 	n = pw1->n * pw2->n;
 #ifdef HAS_TYPE
-	res = FN(PW,alloc_size)(isl_space_copy(pw1->dim), pw1->type, n);
+	res = FN(PW,alloc_size)(space, pw1->type, n);
 #else
-	res = FN(PW,alloc_size)(isl_space_copy(pw1->dim), n);
+	res = FN(PW,alloc_size)(space, n);
 #endif
 
 	for (i = 0; i < pw1->n; ++i) {
@@ -564,9 +565,37 @@ static __isl_give PW *FN(PW,on_shared_domain)(__isl_take PW *pw1,
 	FN(PW,free)(pw2);
 	return res;
 error:
+	isl_space_free(space);
 	FN(PW,free)(pw1);
 	FN(PW,free)(pw2);
 	FN(PW,free)(res);
+	return NULL;
+}
+
+/* This function is currently only used from isl_aff.c
+ */
+static __isl_give PW *FN(PW,on_shared_domain)(__isl_take PW *pw1,
+	__isl_take PW *pw2,
+	__isl_give EL *(*fn)(__isl_take EL *el1, __isl_take EL *el2))
+	__attribute__ ((unused));
+
+/* Apply "fn" to pairs of elements from pw1 and pw2 on shared domains.
+ * The result of "fn" is assumed to live in the same space as "pw1" and "pw2".
+ */
+static __isl_give PW *FN(PW,on_shared_domain)(__isl_take PW *pw1,
+	__isl_take PW *pw2,
+	__isl_give EL *(*fn)(__isl_take EL *el1, __isl_take EL *el2))
+{
+	isl_space *space;
+
+	if (!pw1 || !pw2)
+		goto error;
+
+	space = isl_space_copy(pw1->dim);
+	return FN(PW,on_shared_domain_in)(pw1, pw2, space, fn);
+error:
+	FN(PW,free)(pw1);
+	FN(PW,free)(pw2);
 	return NULL;
 }
 
