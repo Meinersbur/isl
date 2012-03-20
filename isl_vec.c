@@ -230,6 +230,15 @@ void isl_vec_dump(struct isl_vec *vec)
 	isl_printer_free(printer);
 }
 
+__isl_give isl_vec *isl_vec_set(__isl_take isl_vec *vec, isl_int v)
+{
+	vec = isl_vec_cow(vec);
+	if (!vec)
+		return NULL;
+	isl_seq_set(vec->el, v, vec->size);
+	return vec;
+}
+
 __isl_give isl_vec *isl_vec_clr(__isl_take isl_vec *vec)
 {
 	vec = isl_vec_cow(vec);

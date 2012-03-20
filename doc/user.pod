@@ -2758,6 +2758,8 @@ The elements can be changed and inspected using the following functions.
 		__isl_take isl_vec *vec, int pos, isl_int v);
 	__isl_give isl_vec *isl_vec_set_element_si(
 		__isl_take isl_vec *vec, int pos, int v);
+	__isl_give isl_vec *isl_vec_set(__isl_take isl_vec *vec,
+		isl_int v);
 
 C<isl_vec_get_element> will return a negative value if anything went wrong.
 In that case, the value of C<*v> is undefined.
