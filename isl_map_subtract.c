@@ -13,6 +13,7 @@
 #include <isl/map.h>
 #include "isl_tab.h"
 #include <isl_point_private.h>
+#include <isl_vec_private.h>
 
 /* Expand the constraint "c" into "v".  The initial "dim" dimensions
  * are the same, but "v" may have more divs than "c" and the divs of "c"

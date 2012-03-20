@@ -141,6 +141,7 @@ libisl_la_SOURCES = \
 	isl_val.c \
 	isl_val_gmp.c \
 	isl_val_private.h \
+	isl_vec_private.h \
 	isl_vec.c \
 	isl_version.c \
 	isl_vertices_private.h \

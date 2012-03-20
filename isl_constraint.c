@@ -17,6 +17,7 @@
 #include <isl_aff_private.h>
 #include <isl_local_space_private.h>
 #include <isl_val_private.h>
+#include <isl_vec_private.h>
 
 #undef BASE
 #define BASE constraint

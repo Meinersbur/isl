@@ -18,6 +18,7 @@
 #include <isl_aff_private.h>
 #include <isl_space_private.h>
 #include <isl_local_space_private.h>
+#include <isl_vec_private.h>
 #include <isl_mat_private.h>
 #include <isl/constraint.h>
 #include <isl_seq.h>

@@ -11,6 +11,7 @@
  */
 
 #include <isl_mat_private.h>
+#include <isl_vec_private.h>
 #include <isl_seq.h>
 #include "isl_map_private.h"
 #include "isl_equalities.h"

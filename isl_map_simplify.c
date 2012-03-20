@@ -18,6 +18,7 @@
 #include "isl_tab.h"
 #include <isl_space_private.h>
 #include <isl_mat_private.h>
+#include <isl_vec_private.h>
 
 static void swap_equality(struct isl_basic_map *bmap, int a, int b)
 {

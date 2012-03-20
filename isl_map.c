@@ -28,6 +28,7 @@
 #include "isl_tab.h"
 #include <isl/vec.h>
 #include <isl_mat_private.h>
+#include <isl_vec_private.h>
 #include <isl_dim_map.h>
 #include <isl_local_space_private.h>
 #include <isl_aff_private.h>

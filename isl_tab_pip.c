@@ -16,6 +16,7 @@
 #include "isl_tab.h"
 #include "isl_sample.h"
 #include <isl_mat_private.h>
+#include <isl_vec_private.h>
 #include <isl_aff_private.h>
 #include <isl_options_private.h>
 #include <isl_config.h>

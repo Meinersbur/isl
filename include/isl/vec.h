@@ -12,9 +12,7 @@
 
 #include <stdio.h>
 
-#include <isl/int.h>
 #include <isl/ctx.h>
-#include <isl/blk.h>
 #include <isl/val.h>
 #include <isl/printer.h>
 
@@ -22,21 +20,11 @@
 extern "C" {
 #endif
 
-struct isl_vec {
-	int ref;
-
-	struct isl_ctx *ctx;
-
-	unsigned size;
-	isl_int *el;
-
-	struct isl_blk block;
-};
+struct isl_vec;
 typedef struct isl_vec isl_vec;
 
 __isl_give isl_vec *isl_vec_alloc(isl_ctx *ctx, unsigned size);
 __isl_give isl_vec *isl_vec_copy(__isl_keep isl_vec *vec);
-struct isl_vec *isl_vec_cow(struct isl_vec *vec);
 void *isl_vec_free(__isl_take isl_vec *vec);
 
 isl_ctx *isl_vec_get_ctx(__isl_keep isl_vec *vec);

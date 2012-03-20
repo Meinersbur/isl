@@ -18,6 +18,7 @@
 #include <isl_aff_private.h>
 #include <isl_mat_private.h>
 #include <isl_val_private.h>
+#include <isl_vec_private.h>
 
 enum isl_lp_result isl_tab_solve_lp(struct isl_basic_map *bmap, int maximize,
 				      isl_int *f, isl_int denom, isl_int *opt,

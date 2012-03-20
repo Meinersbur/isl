@@ -22,6 +22,7 @@
 #include <isl_vertices_private.h>
 #include <isl_polynomial_private.h>
 #include <isl_options_private.h>
+#include <isl_vec_private.h>
 #include <isl_bernstein.h>
 
 struct bernstein_data {

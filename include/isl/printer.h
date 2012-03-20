@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <isl/ctx.h>
+#include <isl/int.h>
 
 #if defined(__cplusplus)
 extern "C" {

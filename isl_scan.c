@@ -14,6 +14,7 @@
 #include <isl_seq.h>
 #include "isl_tab.h"
 #include <isl_val_private.h>
+#include <isl_vec_private.h>
 
 struct isl_counter {
 	struct isl_scan_callback callback;

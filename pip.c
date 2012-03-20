@@ -20,6 +20,7 @@
 #include <isl/ilp.h>
 #include <isl/printer.h>
 #include <isl_point_private.h>
+#include <isl_vec_private.h>
 #include <isl/options.h>
 
 /* The input of this program is the same as that of the "example" program

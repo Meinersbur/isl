@@ -17,6 +17,7 @@
 #include <isl_local_space_private.h>
 #include <isl_mat_private.h>
 #include <isl_val_private.h>
+#include <isl_vec_private.h>
 
 /* Given a basic set "bset", construct a basic set U such that for
  * each element x in U, the whole unit box positioned at x is inside
