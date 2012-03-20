@@ -2737,6 +2737,31 @@ Lists can be printed using
 		__isl_take isl_printer *p,
 		__isl_keep isl_set_list *list);
 
+=head2 Vectors
+
+Vectors can be created, copied and freed using the following functions.
+
+	#include <isl/vec.h>
+	__isl_give isl_vec *isl_vec_alloc(isl_ctx *ctx,
+		unsigned size);
+	__isl_give isl_vec *isl_vec_copy(__isl_keep isl_vec *vec);
+	void isl_vec_free(__isl_take isl_vec *vec);
+
+Note that the elements of a newly created vector may have arbitrary values.
+The elements can be changed and inspected using the following functions.
+
+	isl_ctx *isl_vec_get_ctx(__isl_keep isl_vec *vec);
+	int isl_vec_size(__isl_keep isl_vec *vec);
+	int isl_vec_get_element(__isl_keep isl_vec *vec,
+		int pos, isl_int *v);
+	__isl_give isl_vec *isl_vec_set_element(
+		__isl_take isl_vec *vec, int pos, isl_int v);
+	__isl_give isl_vec *isl_vec_set_element_si(
+		__isl_take isl_vec *vec, int pos, int v);
+
+C<isl_vec_get_element> will return a negative value if anything went wrong.
+In that case, the value of C<*v> is undefined.
+
 =head2 Matrices
 
 Matrices can be created, copied and freed using the following functions.

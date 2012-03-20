@@ -33,12 +33,19 @@ struct isl_vec {
 };
 typedef struct isl_vec isl_vec;
 
-struct isl_vec *isl_vec_alloc(struct isl_ctx *ctx, unsigned size);
-struct isl_vec *isl_vec_copy(struct isl_vec *vec);
+__isl_give isl_vec *isl_vec_alloc(isl_ctx *ctx, unsigned size);
+__isl_give isl_vec *isl_vec_copy(__isl_keep isl_vec *vec);
 struct isl_vec *isl_vec_cow(struct isl_vec *vec);
-void isl_vec_free(struct isl_vec *vec);
+void isl_vec_free(__isl_take isl_vec *vec);
 
 isl_ctx *isl_vec_get_ctx(__isl_keep isl_vec *vec);
+
+int isl_vec_size(__isl_keep isl_vec *vec);
+int isl_vec_get_element(__isl_keep isl_vec *vec, int pos, isl_int *v);
+__isl_give isl_vec *isl_vec_set_element(__isl_take isl_vec *vec,
+	int pos, isl_int v);
+__isl_give isl_vec *isl_vec_set_element_si(__isl_take isl_vec *vec,
+	int pos, int v);
 
 int isl_vec_is_equal(__isl_keep isl_vec *vec1, __isl_keep isl_vec *vec2);
 

@@ -134,6 +134,55 @@ void isl_vec_free(struct isl_vec *vec)
 	free(vec);
 }
 
+int isl_vec_size(__isl_keep isl_vec *vec)
+{
+	return vec ? vec->size : -1;
+}
+
+int isl_vec_get_element(__isl_keep isl_vec *vec, int pos, isl_int *v)
+{
+	if (!vec)
+		return -1;
+
+	if (pos < 0 || pos >= vec->size)
+		isl_die(vec->ctx, isl_error_invalid, "position out of range",
+			return -1);
+	isl_int_set(*v, vec->el[pos]);
+	return 0;
+}
+
+__isl_give isl_vec *isl_vec_set_element(__isl_take isl_vec *vec,
+	int pos, isl_int v)
+{
+	vec = isl_vec_cow(vec);
+	if (!vec)
+		return NULL;
+	if (pos < 0 || pos >= vec->size)
+		isl_die(vec->ctx, isl_error_invalid, "position out of range",
+			goto error);
+	isl_int_set(vec->el[pos], v);
+	return vec;
+error:
+	isl_vec_free(vec);
+	return NULL;
+}
+
+__isl_give isl_vec *isl_vec_set_element_si(__isl_take isl_vec *vec,
+	int pos, int v)
+{
+	vec = isl_vec_cow(vec);
+	if (!vec)
+		return NULL;
+	if (pos < 0 || pos >= vec->size)
+		isl_die(vec->ctx, isl_error_invalid, "position out of range",
+			goto error);
+	isl_int_set_si(vec->el[pos], v);
+	return vec;
+error:
+	isl_vec_free(vec);
+	return NULL;
+}
+
 int isl_vec_is_equal(__isl_keep isl_vec *vec1, __isl_keep isl_vec *vec2)
 {
 	if (!vec1 || !vec2)
