@@ -3962,44 +3962,11 @@ __isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_sub(
 					isl_union_pw_qpolynomial_neg(upwqp2));
 }
 
-static int mul_entry(void **entry, void *user)
-{
-	struct isl_union_pw_qpolynomial_match_bin_data *data = user;
-	uint32_t hash;
-	struct isl_hash_table_entry *entry2;
-	isl_pw_qpolynomial *pwpq = *entry;
-	int empty;
-
-	hash = isl_space_get_hash(pwpq->dim);
-	entry2 = isl_hash_table_find(data->u2->dim->ctx, &data->u2->table,
-				     hash, &has_dim, pwpq->dim, 0);
-	if (!entry2)
-		return 0;
-
-	pwpq = isl_pw_qpolynomial_copy(pwpq);
-	pwpq = isl_pw_qpolynomial_mul(pwpq,
-				      isl_pw_qpolynomial_copy(entry2->data));
-
-	empty = isl_pw_qpolynomial_is_zero(pwpq);
-	if (empty < 0) {
-		isl_pw_qpolynomial_free(pwpq);
-		return -1;
-	}
-	if (empty) {
-		isl_pw_qpolynomial_free(pwpq);
-		return 0;
-	}
-
-	data->res = isl_union_pw_qpolynomial_add_pw_qpolynomial(data->res, pwpq);
-
-	return 0;
-}
-
 __isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_mul(
 	__isl_take isl_union_pw_qpolynomial *upwqp1,
 	__isl_take isl_union_pw_qpolynomial *upwqp2)
 {
-	return match_bin_op(upwqp1, upwqp2, &mul_entry);
+	return match_bin_op(upwqp1, upwqp2, &isl_pw_qpolynomial_mul);
 }
 
 /* Reorder the columns of the given div definitions according to the

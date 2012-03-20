@@ -378,18 +378,66 @@ __isl_give UNION *FN(FN(UNION,from),PARTS)(__isl_take PART *part)
 S(UNION,match_bin_data) {
 	UNION *u2;
 	UNION *res;
+	__isl_give PART *(*fn)(__isl_take PART *, __isl_take PART *);
 };
+
+/* Check if data->u2 has an element living in the same space as *entry.
+ * If so, call data->fn on the two elements and add the result to
+ * data->res.
+ */
+static int match_bin_entry(void **entry, void *user)
+{
+	S(UNION,match_bin_data) *data = user;
+	uint32_t hash;
+	struct isl_hash_table_entry *entry2;
+	isl_space *space;
+	PART *part = *entry;
+
+	space = FN(PART,get_space)(part);
+	hash = isl_space_get_hash(space);
+	entry2 = isl_hash_table_find(data->u2->dim->ctx, &data->u2->table,
+				     hash, &has_dim, space, 0);
+	isl_space_free(space);
+	if (!entry2)
+		return 0;
+
+	part = FN(PART, copy)(part);
+	part = data->fn(part, FN(PART, copy)(entry2->data));
+
+	if (DEFAULT_IS_ZERO) {
+		int empty;
+
+		empty = FN(PART,IS_ZERO)(part);
+		if (empty < 0) {
+			FN(PART,free)(part);
+			return -1;
+		}
+		if (empty) {
+			FN(PART,free)(part);
+			return 0;
+		}
+	}
+
+	data->res = FN(FN(UNION,add),PARTS)(data->res, part);
+
+	return 0;
+}
 
 /* This function is currently only used from isl_polynomial.c
  * and not from isl_fold.c.
  */
 static __isl_give UNION *match_bin_op(__isl_take UNION *u1,
 	__isl_take UNION *u2,
-	int (*fn)(void **, void *)) __attribute__ ((unused));
+	__isl_give PART *(*fn)(__isl_take PART *, __isl_take PART *))
+	__attribute__ ((unused));
+/* For each pair of elements in "u1" and "u2" living in the same space,
+ * call "fn" and collect the results.
+ */
 static __isl_give UNION *match_bin_op(__isl_take UNION *u1,
-	__isl_take UNION *u2, int (*fn)(void **, void *))
+	__isl_take UNION *u2,
+	__isl_give PART *(*fn)(__isl_take PART *, __isl_take PART *))
 {
-	S(UNION,match_bin_data) data = { NULL, NULL };
+	S(UNION,match_bin_data) data = { NULL, NULL, fn };
 
 	u1 = FN(UNION,align_params)(u1, FN(UNION,get_space)(u2));
 	u2 = FN(UNION,align_params)(u2, FN(UNION,get_space)(u1));
@@ -403,7 +451,8 @@ static __isl_give UNION *match_bin_op(__isl_take UNION *u1,
 #else
 	data.res = FN(UNION,alloc)(isl_space_copy(u1->dim), u1->table.n);
 #endif
-	if (isl_hash_table_foreach(u1->dim->ctx, &u1->table, fn, &data) < 0)
+	if (isl_hash_table_foreach(u1->dim->ctx, &u1->table,
+				    &match_bin_entry, &data) < 0)
 		goto error;
 
 	FN(UNION,free)(u1);
