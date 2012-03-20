@@ -3212,7 +3212,8 @@ following function.
 An empty piecewise multiple quasi affine expression (one with no cells),
 the zero piecewise multiple quasi affine expression (with value zero
 for each output dimension) or
-a piecewise multiple quasi affine expression with a single cell can
+a piecewise multiple quasi affine expression with a single cell (with
+either a universe or a specified domain) can
 be created using the following functions.
 
 	#include <isl/aff.h>
@@ -3220,6 +3221,9 @@ be created using the following functions.
 		__isl_take isl_space *space);
 	__isl_give isl_multi_aff *isl_multi_aff_zero(
 		__isl_take isl_space *space);
+	__isl_give isl_pw_multi_aff *
+	isl_pw_multi_aff_from_multi_aff(
+		__isl_take isl_multi_aff *ma);
 	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_alloc(
 		__isl_take isl_set *set,
 		__isl_take isl_multi_aff *maff);

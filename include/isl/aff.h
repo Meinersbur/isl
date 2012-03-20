@@ -286,6 +286,8 @@ __isl_give isl_multi_aff *isl_multi_aff_read_from_str(isl_ctx *ctx,
 		const char *str);
 void isl_multi_aff_dump(__isl_keep isl_multi_aff *maff);
 
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_multi_aff(
+	__isl_take isl_multi_aff *ma);
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_alloc(__isl_take isl_set *set,
 	__isl_take isl_multi_aff *maff);
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_copy(

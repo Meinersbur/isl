@@ -2114,6 +2114,16 @@ __isl_give isl_multi_aff *isl_multi_aff_zero(__isl_take isl_space *space)
 	return ma;
 }
 
+/* Create an isl_pw_multi_aff with the given isl_multi_aff on a universe
+ * domain.
+ */
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_multi_aff(
+	__isl_take isl_multi_aff *ma)
+{
+	isl_set *dom = isl_set_universe(isl_multi_aff_get_domain_space(ma));
+	return isl_pw_multi_aff_alloc(dom, ma);
+}
+
 __isl_give isl_multi_aff *isl_multi_aff_add(__isl_take isl_multi_aff *maff1,
 	__isl_take isl_multi_aff *maff2)
 {
