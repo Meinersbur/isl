@@ -3,6 +3,7 @@
 
 #include <isl/union_set_type.h>
 #include <isl/union_map_type.h>
+#include <isl/band.h>
 #include <isl/list.h>
 
 #if defined(__cplusplus)
@@ -50,6 +51,9 @@ __isl_give isl_band_list *isl_schedule_get_band_forest(
 __isl_give isl_printer *isl_printer_print_schedule(__isl_take isl_printer *p,
 	__isl_keep isl_schedule *schedule);
 void isl_schedule_dump(__isl_keep isl_schedule *schedule);
+
+int isl_schedule_foreach_band(__isl_keep isl_schedule *sched,
+	int (*fn)(__isl_keep isl_band *band, void *user), void *user);
 
 #if defined(__cplusplus)
 }

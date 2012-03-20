@@ -3099,6 +3099,24 @@ __isl_give isl_band_list *isl_schedule_get_band_forest(
 	return isl_band_list_dup(schedule->band_forest);
 }
 
+/* Call "fn" on each band in the schedule in depth-first post-order.
+ */
+int isl_schedule_foreach_band(__isl_keep isl_schedule *sched,
+	int (*fn)(__isl_keep isl_band *band, void *user), void *user)
+{
+	int r;
+	isl_band_list *forest;
+
+	if (!sched)
+		return -1;
+
+	forest = isl_schedule_get_band_forest(sched);
+	r = isl_band_list_foreach_band(forest, fn, user);
+	isl_band_list_free(forest);
+
+	return r;
+}
+
 static __isl_give isl_printer *print_band_list(__isl_take isl_printer *p,
 	__isl_keep isl_band_list *list);
 
