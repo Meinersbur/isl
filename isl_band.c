@@ -284,6 +284,165 @@ __isl_give isl_union_map *isl_band_get_suffix_schedule(
 	return isl_union_map_from_union_pw_multi_aff(suffix);
 }
 
+/* Internal data used during the construction of the schedule
+ * for the tile loops.
+ *
+ * sizes contains the tile sizes
+ * scale is set if the tile loops should be scaled
+ * tiled collects the result for a single statement
+ * res collects the result for all statements
+ */
+struct isl_band_tile_data {
+	isl_vec *sizes;
+	isl_union_pw_multi_aff *res;
+	isl_pw_multi_aff *tiled;
+	int scale;
+};
+
+/* Given part of the schedule of a band, construct the corresponding
+ * schedule for the tile loops based on the tile sizes in data->sizes
+ * and add the result to data->tiled.
+ *
+ * If data->scale is set, then dimension i of the schedule will be
+ * of the form
+ *
+ *	m_i * floor(s_i(x) / m_i)
+ *
+ * where s_i(x) refers to the original schedule and m_i is the tile size.
+ * If data->scale is not set, then dimension i of the schedule will be
+ * of the form
+ *
+ *	floor(s_i(x) / m_i)
+ *
+ */
+static int multi_aff_tile(__isl_take isl_set *set,
+	__isl_take isl_multi_aff *ma, void *user)
+{
+	struct isl_band_tile_data *data = user;
+	isl_pw_multi_aff *pma;
+	int i, n;
+	isl_int v;
+
+	n = isl_multi_aff_dim(ma, isl_dim_out);
+	if (isl_vec_size(data->sizes) < n)
+		n = isl_vec_size(data->sizes);
+
+	isl_int_init(v);
+	for (i = 0; i < n; ++i) {
+		isl_aff *aff;
+
+		aff = isl_multi_aff_get_aff(ma, i);
+		isl_vec_get_element(data->sizes, i, &v);
+
+		aff = isl_aff_scale_down(aff, v);
+		aff = isl_aff_floor(aff);
+		if (data->scale)
+			aff = isl_aff_scale(aff, v);
+
+		ma = isl_multi_aff_set_aff(ma, i, aff);
+	}
+	isl_int_clear(v);
+
+	pma = isl_pw_multi_aff_alloc(set, ma);
+	data->tiled = isl_pw_multi_aff_union_add(data->tiled, pma);
+
+	return 0;
+}
+
+/* Given part of the schedule of a band, construct the corresponding
+ * schedule for the tile loops based on the tile sizes in data->sizes
+ * and add the result to data->res.
+ */
+static int pw_multi_aff_tile(__isl_take isl_pw_multi_aff *pma, void *user)
+{
+	struct isl_band_tile_data *data = user;
+
+	data->tiled = isl_pw_multi_aff_empty(isl_pw_multi_aff_get_space(pma));
+
+	if (isl_pw_multi_aff_foreach_piece(pma, &multi_aff_tile, data) < 0)
+		goto error;
+
+	isl_pw_multi_aff_free(pma);
+	data->res = isl_union_pw_multi_aff_add_pw_multi_aff(data->res,
+								data->tiled);
+
+	return 0;
+error:
+	isl_pw_multi_aff_free(pma);
+	isl_pw_multi_aff_free(data->tiled);
+	return -1;
+}
+
+/* Given the schedule of a band, construct the corresponding
+ * schedule for the tile loops based on the given tile sizes
+ * and return the result.
+ */
+static isl_union_pw_multi_aff *isl_union_pw_multi_aff_tile(
+	__isl_take isl_union_pw_multi_aff *sched, __isl_keep isl_vec *sizes)
+{
+	isl_ctx *ctx;
+	isl_space *space;
+	struct isl_band_tile_data data = { sizes };
+
+	ctx = isl_vec_get_ctx(sizes);
+
+	space = isl_union_pw_multi_aff_get_space(sched);
+	data.res = isl_union_pw_multi_aff_empty(space);
+	data.scale = isl_options_get_tile_scale_tile_loops(ctx);
+
+	if (isl_union_pw_multi_aff_foreach_pw_multi_aff(sched,
+						&pw_multi_aff_tile, &data) < 0)
+		goto error;
+
+	isl_union_pw_multi_aff_free(sched);
+	return data.res;
+error:
+	isl_union_pw_multi_aff_free(sched);
+	isl_union_pw_multi_aff_free(data.res);
+	return NULL;
+}
+
+/* Tile the given band using the specified tile sizes.
+ * The given band is modified to refer to the tile loops and
+ * a child band is created to refer to the point loops.
+ * The children of this point loop band are the children
+ * of the original band.
+ */
+int isl_band_tile(__isl_keep isl_band *band, __isl_take isl_vec *sizes)
+{
+	isl_ctx *ctx;
+	isl_band *child;
+	isl_band_list *list = NULL;
+	isl_union_pw_multi_aff *sched;
+
+	if (!band || !sizes)
+		goto error;
+
+	ctx = isl_vec_get_ctx(sizes);
+	child = isl_band_dup(band);
+	list = isl_band_list_alloc(ctx, 1);
+	list = isl_band_list_add(list, child);
+	if (!list)
+		goto error;
+
+	sched = isl_union_pw_multi_aff_copy(band->pma);
+	sched = isl_union_pw_multi_aff_tile(sched, sizes);
+	if (!sched)
+		goto error;
+
+	child->children = band->children;
+	band->children = list;
+	isl_union_pw_multi_aff_free(band->pma);
+	band->pma = sched;
+
+	isl_vec_free(sizes);
+	return 0;
+error:
+	isl_band_list_free(list);
+	isl_vec_free(sizes);
+	return -1;
+}
+
 __isl_give isl_printer *isl_printer_print_band(__isl_take isl_printer *p,
 	__isl_keep isl_band *band)
 {

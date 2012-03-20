@@ -4,6 +4,7 @@
 #include <isl/printer.h>
 #include <isl/list.h>
 #include <isl/union_map_type.h>
+#include <isl/vec.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -27,6 +28,11 @@ __isl_give isl_union_map *isl_band_get_partial_schedule(
 	__isl_keep isl_band *band);
 __isl_give isl_union_map *isl_band_get_suffix_schedule(
 	__isl_keep isl_band *band);
+
+int isl_options_set_tile_scale_tile_loops(isl_ctx *ctx, int val);
+int isl_options_get_tile_scale_tile_loops(isl_ctx *ctx);
+
+int isl_band_tile(__isl_keep isl_band *band, __isl_take isl_vec *sizes);
 
 int isl_band_n_member(__isl_keep isl_band *band);
 int isl_band_member_is_zero_distance(__isl_keep isl_band *band, int pos);

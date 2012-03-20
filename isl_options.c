@@ -167,6 +167,8 @@ ISL_ARG_CHOICE(struct isl_options, schedule_algorithm, 0,
 	ISL_SCHEDULE_ALGORITHM_ISL, "scheduling algorithm to use")
 ISL_ARG_CHOICE(struct isl_options, schedule_fuse, 0, "schedule-fuse", fuse,
 	ISL_SCHEDULE_FUSE_MAX, "level of fusion during scheduling")
+ISL_ARG_BOOL(struct isl_options, tile_scale_tile_loops, 0,
+	"tile-scale-tile-loops", 1, "scale tile loops")
 ISL_ARG_VERSION(print_version)
 ISL_ARGS_END
 
@@ -231,3 +233,8 @@ ISL_CTX_SET_CHOICE_DEF(isl_options, struct isl_options, isl_options_args,
 	schedule_fuse)
 ISL_CTX_GET_CHOICE_DEF(isl_options, struct isl_options, isl_options_args,
 	schedule_fuse)
+
+ISL_CTX_SET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
+	tile_scale_tile_loops)
+ISL_CTX_GET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
+	tile_scale_tile_loops)

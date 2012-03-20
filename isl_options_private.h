@@ -56,6 +56,9 @@ struct isl_options {
 	int			schedule_separate_components;
 	unsigned		schedule_algorithm;
 	int			schedule_fuse;
+
+	int			tile_scale_tile_loops;
+
 };
 
 #endif

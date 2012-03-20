@@ -4464,6 +4464,23 @@ That is, if the dependence distances of the proximity
 dependences are all zero in that direction (for fixed
 iterations of outer bands).
 
+A band can be tiled using the following function.
+
+	#include <isl/band.h>
+	int isl_band_tile(__isl_keep isl_band *band,
+		__isl_take isl_vec *sizes);
+
+	int isl_options_set_tile_scale_tile_loops(isl_ctx *ctx,
+		int val);
+	int isl_options_get_tile_scale_tile_loops(isl_ctx *ctx);
+
+The C<isl_band_tile> function tiles the band using the given tile sizes
+inside its schedule.
+A new child band is created to represent the point loops and it is
+inserted between the modified band and its children.
+The C<tile_scale_tile_loops> option specifies whether the tile
+loops iterators should be scaled by the tile sizes.
+
 A representation of the band can be printed using
 
 	#include <isl/band.h>
