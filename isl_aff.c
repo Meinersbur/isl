@@ -2989,3 +2989,163 @@ error:
 	isl_union_map_free(umap);
 	return NULL;
 }
+
+/* Local data for bin_entry and the callback "fn".
+ */
+struct isl_union_pw_multi_aff_bin_data {
+	isl_union_pw_multi_aff *upma2;
+	isl_union_pw_multi_aff *res;
+	isl_pw_multi_aff *pma;
+	int (*fn)(void **entry, void *user);
+};
+
+/* Given an isl_pw_multi_aff from upma1, store it in data->pma
+ * and call data->fn for each isl_pw_multi_aff in data->upma2.
+ */
+static int bin_entry(void **entry, void *user)
+{
+	struct isl_union_pw_multi_aff_bin_data *data = user;
+	isl_pw_multi_aff *pma = *entry;
+
+	data->pma = pma;
+	if (isl_hash_table_foreach(data->upma2->dim->ctx, &data->upma2->table,
+				   data->fn, data) < 0)
+		return -1;
+
+	return 0;
+}
+
+/* Call "fn" on each pair of isl_pw_multi_affs in "upma1" and "upma2".
+ * The isl_pw_multi_aff from upma1 is stored in data->pma (where data is
+ * passed as user field) and the isl_pw_multi_aff from upma2 is available
+ * as *entry.  The callback should adjust data->res if desired.
+ */
+static __isl_give isl_union_pw_multi_aff *bin_op(
+	__isl_take isl_union_pw_multi_aff *upma1,
+	__isl_take isl_union_pw_multi_aff *upma2,
+	int (*fn)(void **entry, void *user))
+{
+	isl_space *space;
+	struct isl_union_pw_multi_aff_bin_data data = { NULL, NULL, NULL, fn };
+
+	space = isl_union_pw_multi_aff_get_space(upma2);
+	upma1 = isl_union_pw_multi_aff_align_params(upma1, space);
+	space = isl_union_pw_multi_aff_get_space(upma1);
+	upma2 = isl_union_pw_multi_aff_align_params(upma2, space);
+
+	if (!upma1 || !upma2)
+		goto error;
+
+	data.upma2 = upma2;
+	data.res = isl_union_pw_multi_aff_alloc(isl_space_copy(upma1->dim),
+				       upma1->table.n);
+	if (isl_hash_table_foreach(upma1->dim->ctx, &upma1->table,
+				   &bin_entry, &data) < 0)
+		goto error;
+
+	isl_union_pw_multi_aff_free(upma1);
+	isl_union_pw_multi_aff_free(upma2);
+	return data.res;
+error:
+	isl_union_pw_multi_aff_free(upma1);
+	isl_union_pw_multi_aff_free(upma2);
+	isl_union_pw_multi_aff_free(data.res);
+	return NULL;
+}
+
+/* Given two isl_multi_affs A -> B and C -> D,
+ * construct an isl_multi_aff (A * C) -> (B, D).
+ */
+__isl_give isl_multi_aff *isl_multi_aff_flat_range_product(
+	__isl_take isl_multi_aff *ma1, __isl_take isl_multi_aff *ma2)
+{
+	int i, n1, n2;
+	isl_aff *aff;
+	isl_space *space;
+	isl_multi_aff *res;
+
+	if (!ma1 || !ma2)
+		goto error;
+
+	space = isl_space_range_product(isl_multi_aff_get_space(ma1),
+					isl_multi_aff_get_space(ma2));
+	space = isl_space_flatten_range(space);
+	res = isl_multi_aff_alloc(space);
+
+	n1 = isl_multi_aff_dim(ma1, isl_dim_out);
+	n2 = isl_multi_aff_dim(ma2, isl_dim_out);
+
+	for (i = 0; i < n1; ++i) {
+		aff = isl_multi_aff_get_aff(ma1, i);
+		res = isl_multi_aff_set_aff(res, i, aff);
+	}
+
+	for (i = 0; i < n2; ++i) {
+		aff = isl_multi_aff_get_aff(ma2, i);
+		res = isl_multi_aff_set_aff(res, n1 + i, aff);
+	}
+
+	isl_multi_aff_free(ma1);
+	isl_multi_aff_free(ma2);
+	return res;
+error:
+	isl_multi_aff_free(ma1);
+	isl_multi_aff_free(ma2);
+	return NULL;
+}
+
+/* Given two aligned isl_pw_multi_affs A -> B and C -> D,
+ * construct an isl_pw_multi_aff (A * C) -> (B, D).
+ */
+static __isl_give isl_pw_multi_aff *pw_multi_aff_flat_range_product(
+	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2)
+{
+	isl_space *space;
+
+	space = isl_space_range_product(isl_pw_multi_aff_get_space(pma1),
+					isl_pw_multi_aff_get_space(pma2));
+	space = isl_space_flatten_range(space);
+	return isl_pw_multi_aff_on_shared_domain_in(pma1, pma2, space,
+					    &isl_multi_aff_flat_range_product);
+}
+
+/* Given two isl_pw_multi_affs A -> B and C -> D,
+ * construct an isl_pw_multi_aff (A * C) -> (B, D).
+ */
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_flat_range_product(
+	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2)
+{
+	return isl_pw_multi_aff_align_params_pw_pw_and(pma1, pma2,
+					    &pw_multi_aff_flat_range_product);
+}
+
+/* If data->pma and *entry have the same domain space, then compute
+ * their flat range product and the result to data->res.
+ */
+static int flat_range_product_entry(void **entry, void *user)
+{
+	struct isl_union_pw_multi_aff_bin_data *data = user;
+	isl_pw_multi_aff *pma2 = *entry;
+
+	if (!isl_space_tuple_match(data->pma->dim, isl_dim_in,
+				 pma2->dim, isl_dim_in))
+		return 0;
+
+	pma2 = isl_pw_multi_aff_flat_range_product(
+					isl_pw_multi_aff_copy(data->pma),
+					isl_pw_multi_aff_copy(pma2));
+
+	data->res = isl_union_pw_multi_aff_add_pw_multi_aff(data->res, pma2);
+
+	return 0;
+}
+
+/* Given two isl_union_pw_multi_affs A -> B and C -> D,
+ * construct an isl_union_pw_multi_aff (A * C) -> (B, D).
+ */
+__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_flat_range_product(
+	__isl_take isl_union_pw_multi_aff *upma1,
+	__isl_take isl_union_pw_multi_aff *upma2)
+{
+	return bin_op(upma1, upma2, &flat_range_product_entry);
+}

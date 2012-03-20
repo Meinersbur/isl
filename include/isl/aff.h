@@ -272,6 +272,9 @@ __isl_give isl_multi_aff *isl_multi_aff_add(__isl_take isl_multi_aff *maff1,
 __isl_give isl_multi_aff *isl_multi_aff_scale(__isl_take isl_multi_aff *maff,
 	isl_int f);
 
+__isl_give isl_multi_aff *isl_multi_aff_flat_range_product(
+	__isl_take isl_multi_aff *ma1, __isl_take isl_multi_aff *ma2);
+
 __isl_give isl_multi_aff *isl_multi_aff_gist_params(
 	__isl_take isl_multi_aff *maff, __isl_take isl_set *context);
 __isl_give isl_multi_aff *isl_multi_aff_gist(__isl_take isl_multi_aff *maff,
@@ -339,6 +342,9 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_union_add(
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_add(
 	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2);
 
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_flat_range_product(
+	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2);
+
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_intersect_params(
 	__isl_take isl_pw_multi_aff *pma, __isl_take isl_set *set);
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_intersect_domain(
@@ -394,6 +400,10 @@ __isl_give isl_union_set *isl_union_pw_multi_aff_domain(
 	__isl_take isl_union_pw_multi_aff *upma);
 
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_add(
+	__isl_take isl_union_pw_multi_aff *upma1,
+	__isl_take isl_union_pw_multi_aff *upma2);
+
+__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_flat_range_product(
 	__isl_take isl_union_pw_multi_aff *upma1,
 	__isl_take isl_union_pw_multi_aff *upma2);
 
