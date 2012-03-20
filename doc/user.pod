@@ -3213,10 +3213,12 @@ following function.
 
 An empty piecewise multiple quasi affine expression (one with no cells),
 the zero piecewise multiple quasi affine expression (with value zero
-for each output dimension) or
+for each output dimension),
 a piecewise multiple quasi affine expression with a single cell (with
-either a universe or a specified domain) can
-be created using the following functions.
+either a universe or a specified domain) or
+a zero-dimensional piecewise multiple quasi affine expression
+on a given domain
+can be created using the following functions.
 
 	#include <isl/aff.h>
 	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_empty(
@@ -3229,6 +3231,8 @@ be created using the following functions.
 	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_alloc(
 		__isl_take isl_set *set,
 		__isl_take isl_multi_aff *maff);
+	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_domain(
+		__isl_take isl_set *set);
 
 	__isl_give isl_union_pw_multi_aff *
 	isl_union_pw_multi_aff_empty(
@@ -3237,6 +3241,9 @@ be created using the following functions.
 	isl_union_pw_multi_aff_add_pw_multi_aff(
 		__isl_take isl_union_pw_multi_aff *upma,
 		__isl_take isl_pw_multi_aff *pma);
+	__isl_give isl_union_pw_multi_aff *
+	isl_union_pw_multi_aff_from_domain(
+		__isl_take isl_union_set *uset);
 
 A piecewise multiple quasi affine expression can also be initialized
 from an C<isl_set> or C<isl_map>, provided the C<isl_set> is a singleton

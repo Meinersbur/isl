@@ -2892,3 +2892,59 @@ __isl_give isl_pw_aff *isl_pw_multi_aff_get_pw_aff(
 
 	return pa;
 }
+
+/* Return an isl_pw_multi_aff with the given "set" as domain and
+ * an unnamed zero-dimensional range.
+ */
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_domain(
+	__isl_take isl_set *set)
+{
+	isl_multi_aff *ma;
+	isl_space *space;
+
+	space = isl_set_get_space(set);
+	space = isl_space_from_domain(space);
+	ma = isl_multi_aff_zero(space);
+	return isl_pw_multi_aff_alloc(set, ma);
+}
+
+/* Add an isl_pw_multi_aff with the given "set" as domain and
+ * an unnamed zero-dimensional range to *user.
+ */
+static int add_pw_multi_aff_from_domain(__isl_take isl_set *set, void *user)
+{
+	isl_union_pw_multi_aff **upma = user;
+	isl_pw_multi_aff *pma;
+
+	pma = isl_pw_multi_aff_from_domain(set);
+	*upma = isl_union_pw_multi_aff_add_pw_multi_aff(*upma, pma);
+
+	return 0;
+}
+
+/* Return an isl_union_pw_multi_aff with the given "uset" as domain and
+ * an unnamed zero-dimensional range.
+ */
+__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_from_domain(
+	__isl_take isl_union_set *uset)
+{
+	isl_space *space;
+	isl_union_pw_multi_aff *upma;
+
+	if (!uset)
+		return NULL;
+
+	space = isl_union_set_get_space(uset);
+	upma = isl_union_pw_multi_aff_empty(space);
+
+	if (isl_union_set_foreach_set(uset,
+				    &add_pw_multi_aff_from_domain, &upma) < 0)
+		goto error;
+
+	isl_union_set_free(uset);
+	return upma;
+error:
+	isl_union_set_free(uset);
+	isl_union_pw_multi_aff_free(upma);
+	return NULL;
+}
