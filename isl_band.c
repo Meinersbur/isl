@@ -30,6 +30,45 @@ __isl_give isl_band *isl_band_alloc(isl_ctx *ctx)
 	return band;
 }
 
+/* Create a duplicate of the given band.  The duplicate refers
+ * to the same schedule and parent as the input, but does not
+ * increment their reference counts.
+ */
+__isl_give isl_band *isl_band_dup(__isl_keep isl_band *band)
+{
+	int i;
+	isl_ctx *ctx;
+	isl_band *dup;
+
+	if (!band)
+		return NULL;
+
+	ctx = isl_band_get_ctx(band);
+	dup = isl_band_alloc(ctx);
+	if (!dup)
+		return NULL;
+
+	dup->n = band->n;
+	dup->zero = isl_alloc_array(ctx, int, band->n);
+	if (!dup->zero)
+		goto error;
+
+	for (i = 0; i < band->n; ++i)
+		dup->zero[i] = band->zero[i];
+
+	dup->pma = isl_union_pw_multi_aff_copy(band->pma);
+	dup->schedule = band->schedule;
+	dup->parent = band->parent;
+
+	if (!dup->pma)
+		goto error;
+
+	return dup;
+error:
+	isl_band_free(dup);
+	return NULL;
+}
+
 /* We not only increment the reference count of the band,
  * but also that of the schedule that contains this band.
  * This ensures that the schedule won't disappear while there
