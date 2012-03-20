@@ -2862,6 +2862,11 @@ isl_ctx *isl_schedule_get_ctx(__isl_keep isl_schedule *schedule)
 	return schedule ? isl_space_get_ctx(schedule->dim) : NULL;
 }
 
+/* Return an isl_union_map of the schedule.  If we have already constructed
+ * a band forest, then this band forest may have been modified so we need
+ * to extract the isl_union_map from the forest rather than from
+ * the originally computed schedule.
+ */
 __isl_give isl_union_map *isl_schedule_get_map(__isl_keep isl_schedule *sched)
 {
 	int i;
@@ -2869,6 +2874,9 @@ __isl_give isl_union_map *isl_schedule_get_map(__isl_keep isl_schedule *sched)
 
 	if (!sched)
 		return NULL;
+
+	if (sched->band_forest)
+		return isl_band_list_get_suffix_schedule(sched->band_forest);
 
 	umap = isl_union_map_empty(isl_space_copy(sched->dim));
 	for (i = 0; i < sched->n; ++i) {
