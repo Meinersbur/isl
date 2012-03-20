@@ -239,6 +239,15 @@ __isl_give isl_vec *isl_vec_set(__isl_take isl_vec *vec, isl_int v)
 	return vec;
 }
 
+__isl_give isl_vec *isl_vec_set_si(__isl_take isl_vec *vec, int v)
+{
+	vec = isl_vec_cow(vec);
+	if (!vec)
+		return NULL;
+	isl_seq_set_si(vec->el, v, vec->size);
+	return vec;
+}
+
 __isl_give isl_vec *isl_vec_clr(__isl_take isl_vec *vec)
 {
 	vec = isl_vec_cow(vec);
