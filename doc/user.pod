@@ -1278,8 +1278,8 @@ C<isl_dim_set> and C<isl_dim_div> for sets and
 of C<isl_dim_cst>, C<isl_dim_param>,
 C<isl_dim_in>, C<isl_dim_out> and C<isl_dim_div> for relations.
 
-A (basic) set or relation can also be constructed from a (piecewise)
-(multiple) affine expression
+A (basic or union) set or relation can also be constructed from a
+(union) (piecewise) (multiple) affine expression
 or a list of affine expressions
 (See L<"Piecewise Quasi Affine Expressions"> and
 L<"Piecewise Multiple Quasi Affine Expressions">).
@@ -1301,6 +1301,9 @@ L<"Piecewise Multiple Quasi Affine Expressions">).
 		__isl_take isl_pw_multi_aff *pma);
 	__isl_give isl_map *isl_map_from_pw_multi_aff(
 		__isl_take isl_pw_multi_aff *pma);
+	__isl_give isl_union_map *
+	isl_union_map_from_union_pw_multi_aff(
+		__isl_take isl_union_pw_multi_aff *upma);
 
 The C<domain_dim> argument describes the domain of the resulting
 basic relation.  It is required because the C<list> may consist

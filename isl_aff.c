@@ -2948,3 +2948,44 @@ error:
 	isl_union_pw_multi_aff_free(upma);
 	return NULL;
 }
+
+/* Convert "pma" to an isl_map and add it to *umap.
+ */
+static int map_from_pw_multi_aff(__isl_take isl_pw_multi_aff *pma, void *user)
+{
+	isl_union_map **umap = user;
+	isl_map *map;
+
+	map = isl_map_from_pw_multi_aff(pma);
+	*umap = isl_union_map_add_map(*umap, map);
+
+	return 0;
+}
+
+/* Construct a union map mapping the domain of the union
+ * piecewise multi-affine expression to its range, with each dimension
+ * in the range equated to the corresponding affine expression on its cell.
+ */
+__isl_give isl_union_map *isl_union_map_from_union_pw_multi_aff(
+	__isl_take isl_union_pw_multi_aff *upma)
+{
+	isl_space *space;
+	isl_union_map *umap;
+
+	if (!upma)
+		return NULL;
+
+	space = isl_union_pw_multi_aff_get_space(upma);
+	umap = isl_union_map_empty(space);
+
+	if (isl_union_pw_multi_aff_foreach_pw_multi_aff(upma,
+					&map_from_pw_multi_aff, &umap) < 0)
+		goto error;
+
+	isl_union_pw_multi_aff_free(upma);
+	return umap;
+error:
+	isl_union_pw_multi_aff_free(upma);
+	isl_union_map_free(umap);
+	return NULL;
+}
