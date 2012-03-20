@@ -284,6 +284,44 @@ __isl_give isl_union_map *isl_band_get_suffix_schedule(
 	return isl_union_map_from_union_pw_multi_aff(suffix);
 }
 
+/* Call "fn" on each band (recursively) in the list
+ * in depth-first post-order.
+ */
+int isl_band_list_foreach_band(__isl_keep isl_band_list *list,
+	int (*fn)(__isl_keep isl_band *band, void *user), void *user)
+{
+	int i, n;
+
+	if (!list)
+		return -1;
+
+	n = isl_band_list_n_band(list);
+	for (i = 0; i < n; ++i) {
+		isl_band *band;
+		int r = 0;
+
+		band = isl_band_list_get_band(list, i);
+		if (isl_band_has_children(band)) {
+			isl_band_list *children;
+
+			children = isl_band_get_children(band);
+			r = isl_band_list_foreach_band(children, fn, user);
+			isl_band_list_free(children);
+		}
+
+		if (!band)
+			r = -1;
+		if (r == 0)
+			r = fn(band, user);
+
+		isl_band_free(band);
+		if (r)
+			return r;
+	}
+
+	return 0;
+}
+
 /* Internal data used during the construction of the schedule
  * for the tile loops.
  *

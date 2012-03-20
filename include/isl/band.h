@@ -37,6 +37,9 @@ int isl_band_tile(__isl_keep isl_band *band, __isl_take isl_vec *sizes);
 int isl_band_n_member(__isl_keep isl_band *band);
 int isl_band_member_is_zero_distance(__isl_keep isl_band *band, int pos);
 
+int isl_band_list_foreach_band(__isl_keep isl_band_list *list,
+	int (*fn)(__isl_keep isl_band *band, void *user), void *user);
+
 __isl_give isl_printer *isl_printer_print_band(__isl_take isl_printer *p,
 	__isl_keep isl_band *band);
 void isl_band_dump(__isl_keep isl_band *band);

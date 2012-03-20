@@ -4457,12 +4457,19 @@ The properties of a band can be inspected using the following functions.
 	int isl_band_member_is_zero_distance(
 		__isl_keep isl_band *band, int pos);
 
+	int isl_band_list_foreach_band(
+		__isl_keep isl_band_list *list,
+		int (*fn)(__isl_keep isl_band *band, void *user),
+		void *user);
+
 Note that a scheduling dimension is considered to be ``zero
 distance'' if it does not carry any proximity dependences
 within its band.
 That is, if the dependence distances of the proximity
 dependences are all zero in that direction (for fixed
 iterations of outer bands).
+The function C<isl_band_list_foreach_band> calls C<fn> on the bands
+in depth-first post-order.
 
 A band can be tiled using the following function.
 
