@@ -7,6 +7,7 @@
 #include <isl/aff_type.h>
 #include <isl/list.h>
 #include <isl/multi.h>
+#include <isl/union_set_type.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -364,6 +365,36 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_map(__isl_take isl_map *map);
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_read_from_str(isl_ctx *ctx,
 	const char *str);
 void isl_pw_multi_aff_dump(__isl_keep isl_pw_multi_aff *pma);
+
+
+__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_empty(
+	__isl_take isl_space *space);
+__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_copy(
+	__isl_keep isl_union_pw_multi_aff *upma);
+void *isl_union_pw_multi_aff_free(__isl_take isl_union_pw_multi_aff *upma);
+
+__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_add_pw_multi_aff(
+	__isl_take isl_union_pw_multi_aff *upma,
+	__isl_take isl_pw_multi_aff *pma);
+
+isl_ctx *isl_union_pw_multi_aff_get_ctx(
+	__isl_keep isl_union_pw_multi_aff *upma);
+__isl_give isl_space *isl_union_pw_multi_aff_get_space(
+	__isl_keep isl_union_pw_multi_aff *upma);
+
+int isl_union_pw_multi_aff_foreach_pw_multi_aff(
+	__isl_keep isl_union_pw_multi_aff *upma,
+	int (*fn)(__isl_take isl_pw_multi_aff *pma, void *user), void *user);
+
+__isl_give isl_union_set *isl_union_pw_multi_aff_domain(
+	__isl_take isl_union_pw_multi_aff *upma);
+
+__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_add(
+	__isl_take isl_union_pw_multi_aff *upma1,
+	__isl_take isl_union_pw_multi_aff *upma2);
+
+__isl_give isl_printer *isl_printer_print_union_pw_multi_aff(
+	__isl_take isl_printer *p, __isl_keep isl_union_pw_multi_aff *upma);
 
 #if defined(__cplusplus)
 }

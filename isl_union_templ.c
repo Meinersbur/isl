@@ -613,6 +613,7 @@ __isl_give UNION *FN(UNION,gist)(__isl_take UNION *u,
 	return match_domain_op(u, uset, &FN(PW,gist));
 }
 
+#ifndef NO_EVAL
 __isl_give isl_qpolynomial *FN(UNION,eval)(__isl_take UNION *u,
 	__isl_take isl_point *pnt)
 {
@@ -646,6 +647,7 @@ error:
 	isl_point_free(pnt);
 	return NULL;
 }
+#endif
 
 static int coalesce_entry(void **entry, void *user)
 {

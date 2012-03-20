@@ -75,3 +75,6 @@
 #undef BASE
 #define BASE pw_multi_aff
 #include <print_templ.c>
+#undef BASE
+#define BASE union_pw_multi_aff
+#include <print_templ.c>

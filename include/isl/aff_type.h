@@ -13,4 +13,7 @@ typedef struct isl_multi_aff isl_multi_aff;
 struct isl_pw_multi_aff;
 typedef struct isl_pw_multi_aff isl_pw_multi_aff;
 
+struct isl_union_pw_multi_aff;
+typedef struct isl_union_pw_multi_aff isl_union_pw_multi_aff;
+
 #endif

@@ -12,7 +12,9 @@
  */
 
 #include <isl_ctx_private.h>
+#define ISL_DIM_H
 #include <isl_map_private.h>
+#include <isl_union_map_private.h>
 #include <isl_aff_private.h>
 #include <isl_space_private.h>
 #include <isl_local_space_private.h>
@@ -2315,6 +2317,18 @@ __isl_give isl_multi_aff *isl_multi_aff_drop_dims(__isl_take isl_multi_aff *maff
 #define NO_MORPH
 
 #include <isl_pw_templ.c>
+
+#undef UNION
+#define UNION isl_union_pw_multi_aff
+#undef PART
+#define PART isl_pw_multi_aff
+#undef PARTS
+#define PARTS pw_multi_aff
+#define ALIGN_DOMAIN
+
+#define NO_EVAL
+
+#include <isl_union_templ.c>
 
 static __isl_give isl_pw_multi_aff *pw_multi_aff_add(
 	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2)

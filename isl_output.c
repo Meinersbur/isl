@@ -2330,11 +2330,29 @@ error:
 	return NULL;
 }
 
-static __isl_give isl_printer *print_pw_multi_aff_isl(__isl_take isl_printer *p,
-	__isl_keep isl_pw_multi_aff *pma)
+static __isl_give isl_printer *print_pw_multi_aff_body(
+	__isl_take isl_printer *p, __isl_keep isl_pw_multi_aff *pma)
 {
 	int i;
 
+	if (!pma)
+		goto error;
+
+	for (i = 0; i < pma->n; ++i) {
+		if (i)
+			p = isl_printer_print_str(p, "; ");
+		p = print_multi_aff(p, pma->p[i].maff);
+		p = print_disjuncts((isl_map *)pma->p[i].set, p, 0);
+	}
+	return p;
+error:
+	isl_printer_free(p);
+	return NULL;
+}
+
+static __isl_give isl_printer *print_pw_multi_aff_isl(__isl_take isl_printer *p,
+	__isl_keep isl_pw_multi_aff *pma)
+{
 	if (!pma)
 		goto error;
 
@@ -2343,12 +2361,7 @@ static __isl_give isl_printer *print_pw_multi_aff_isl(__isl_take isl_printer *p,
 		p = isl_printer_print_str(p, " -> ");
 	}
 	p = isl_printer_print_str(p, "{ ");
-	for (i = 0; i < pma->n; ++i) {
-		if (i)
-			p = isl_printer_print_str(p, "; ");
-		p = print_multi_aff(p, pma->p[i].maff);
-		p = print_disjuncts((isl_map *)pma->p[i].set, p, 0);
-	}
+	p = print_pw_multi_aff_body(p, pma);
 	p = isl_printer_print_str(p, " }");
 	return p;
 error:
@@ -2414,6 +2427,57 @@ __isl_give isl_printer *isl_printer_print_pw_multi_aff(
 		return print_pw_multi_aff_isl(p, pma);
 	if (p->output_format == ISL_FORMAT_C)
 		return print_pw_multi_aff_c(p, pma);
+	isl_die(p->ctx, isl_error_unsupported, "unsupported output format",
+		goto error);
+error:
+	isl_printer_free(p);
+	return NULL;
+}
+
+static int print_pw_multi_aff_body_wrap(__isl_take isl_pw_multi_aff *pma,
+	void *user)
+{
+	struct isl_union_print_data *data;
+	data = (struct isl_union_print_data *) user;
+
+	if (!data->first)
+		data->p = isl_printer_print_str(data->p, "; ");
+	data->first = 0;
+
+	data->p = print_pw_multi_aff_body(data->p, pma);
+	isl_pw_multi_aff_free(pma);
+
+	return 0;
+}
+
+static __isl_give isl_printer *print_union_pw_multi_aff_isl(
+	__isl_take isl_printer *p, __isl_keep isl_union_pw_multi_aff *upma)
+{
+	struct isl_union_print_data data = { p, 1 };
+	isl_space *space;
+
+	space = isl_union_pw_multi_aff_get_space(upma);
+	if (isl_space_dim(space, isl_dim_param) > 0) {
+		p = print_tuple(space, p, isl_dim_param, 0, NULL, NULL);
+		p = isl_printer_print_str(p, s_to[0]);
+	}
+	isl_space_free(space);
+	p = isl_printer_print_str(p, s_open_set[0]);
+	isl_union_pw_multi_aff_foreach_pw_multi_aff(upma,
+					&print_pw_multi_aff_body_wrap, &data);
+	p = data.p;
+	p = isl_printer_print_str(p, s_close_set[0]);
+	return p;
+}
+
+__isl_give isl_printer *isl_printer_print_union_pw_multi_aff(
+	__isl_take isl_printer *p, __isl_keep isl_union_pw_multi_aff *upma)
+{
+	if (!p || !upma)
+		goto error;
+
+	if (p->output_format == ISL_FORMAT_ISL)
+		return print_union_pw_multi_aff_isl(p, upma);
 	isl_die(p->ctx, isl_error_unsupported, "unsupported output format",
 		goto error);
 error:

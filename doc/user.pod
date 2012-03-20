@@ -664,6 +664,8 @@ of the original object.
 		__isl_keep isl_pw_multi_aff *pma);
 	__isl_give isl_space *isl_pw_multi_aff_get_space(
 		__isl_keep isl_pw_multi_aff *pma);
+	__isl_give isl_space *isl_union_pw_multi_aff_get_space(
+		__isl_keep isl_union_pw_multi_aff *upma);
 
 	#include <isl/point.h>
 	__isl_give isl_space *isl_point_get_space(
@@ -3228,6 +3230,14 @@ be created using the following functions.
 		__isl_take isl_set *set,
 		__isl_take isl_multi_aff *maff);
 
+	__isl_give isl_union_pw_multi_aff *
+	isl_union_pw_multi_aff_empty(
+		__isl_take isl_space *space);
+	__isl_give isl_union_pw_multi_aff *
+	isl_union_pw_multi_aff_add_pw_multi_aff(
+		__isl_take isl_union_pw_multi_aff *upma,
+		__isl_take isl_pw_multi_aff *pma);
+
 A piecewise multiple quasi affine expression can also be initialized
 from an C<isl_set> or C<isl_map>, provided the C<isl_set> is a singleton
 and the C<isl_map> is single-valued.
@@ -3249,6 +3259,12 @@ Multiple quasi affine expressions can be copied and freed using
 	void *isl_pw_multi_aff_free(
 		__isl_take isl_pw_multi_aff *pma);
 
+	__isl_give isl_union_pw_multi_aff *
+	isl_union_pw_multi_aff_copy(
+		__isl_keep isl_union_pw_multi_aff *upma);
+	void *isl_union_pw_multi_aff_free(
+		__isl_take isl_union_pw_multi_aff *upma);
+
 The expression can be inspected using
 
 	#include <isl/aff.h>
@@ -3256,6 +3272,8 @@ The expression can be inspected using
 		__isl_keep isl_multi_aff *maff);
 	isl_ctx *isl_pw_multi_aff_get_ctx(
 		__isl_keep isl_pw_multi_aff *pma);
+	isl_ctx *isl_union_pw_multi_aff_get_ctx(
+		__isl_keep isl_union_pw_multi_aff *upma);
 	unsigned isl_multi_aff_dim(__isl_keep isl_multi_aff *maff,
 		enum isl_dim_type type);
 	unsigned isl_pw_multi_aff_dim(
@@ -3288,6 +3306,11 @@ The expression can be inspected using
 		__isl_keep isl_pw_multi_aff *pma,
 		int (*fn)(__isl_take isl_set *set,
 			    __isl_take isl_multi_aff *maff,
+			    void *user), void *user);
+
+	int isl_union_pw_multi_aff_foreach_pw_multi_aff(
+		__isl_keep isl_union_pw_multi_aff *upma,
+		int (*fn)(__isl_take isl_pw_multi_aff *pma,
 			    void *user), void *user);
 
 It can be modified using
@@ -3328,6 +3351,9 @@ Operations include
 	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_add(
 		__isl_take isl_pw_multi_aff *pma1,
 		__isl_take isl_pw_multi_aff *pma2);
+	__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_add(
+		__isl_take isl_union_pw_multi_aff *upma1,
+		__isl_take isl_union_pw_multi_aff *upma2);
 	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_union_add(
 		__isl_take isl_pw_multi_aff *pma1,
 		__isl_take isl_pw_multi_aff *pma2);
@@ -3359,6 +3385,8 @@ Operations include
 		__isl_take isl_set *set);
 	__isl_give isl_set *isl_pw_multi_aff_domain(
 		__isl_take isl_pw_multi_aff *pma);
+	__isl_give isl_union_set *isl_union_pw_multi_aff_domain(
+		__isl_take isl_union_pw_multi_aff *upma);
 
 If the C<ls> argument of C<isl_multi_aff_lift> is not C<NULL>,
 then it is assigned the local space that lies at the basis of
@@ -3381,6 +3409,9 @@ An expression can be printed using
 	__isl_give isl_printer *isl_printer_print_pw_multi_aff(
 		__isl_take isl_printer *p,
 		__isl_keep isl_pw_multi_aff *pma);
+	__isl_give isl_printer *isl_printer_print_union_pw_multi_aff(
+		__isl_take isl_printer *p,
+		__isl_keep isl_union_pw_multi_aff *upma);
 
 =head2 Points
 
