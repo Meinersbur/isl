@@ -520,7 +520,7 @@ __isl_give isl_morph *isl_basic_set_parameter_compression(
 	H = isl_mat_right_inverse(H);
 	if (!H || !d)
 		goto error;
-	isl_seq_set(d->el, H->row[0][0], d->size);
+	d = isl_vec_set(d, H->row[0][0]);
 	H = isl_mat_drop_rows(H, 0, 1);
 	H = isl_mat_drop_cols(H, 0, 1);
 	B = isl_mat_product(H, B);
