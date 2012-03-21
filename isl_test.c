@@ -2428,6 +2428,7 @@ int test_one_schedule(isl_ctx *ctx, const char *d, const char *w,
 	isl_set *delta_set;
 	isl_set *slice;
 	isl_set *origin;
+	isl_schedule_constraints *sc;
 	isl_schedule *sched;
 	int is_nonneg, is_parallel, is_tilable, is_injection, is_complete;
 
@@ -2455,8 +2456,10 @@ int test_one_schedule(isl_ctx *ctx, const char *d, const char *w,
 	validity = isl_union_map_copy(dep);
 	proximity = isl_union_map_copy(dep);
 
-	sched = isl_union_set_compute_schedule(isl_union_set_copy(D),
-					       validity, proximity);
+	sc = isl_schedule_constraints_on_domain(isl_union_set_copy(D));
+	sc = isl_schedule_constraints_set_validity(sc, validity);
+	sc = isl_schedule_constraints_set_proximity(sc, proximity);
+	sched = isl_schedule_constraints_compute_schedule(sc);
 	schedule = isl_schedule_get_map(sched);
 	isl_schedule_free(sched);
 	isl_union_map_free(W);
@@ -2541,13 +2544,17 @@ static __isl_give isl_union_map *compute_schedule(isl_ctx *ctx,
 	isl_union_set *dom;
 	isl_union_map *dep;
 	isl_union_map *prox;
+	isl_schedule_constraints *sc;
 	isl_schedule *schedule;
 	isl_union_map *sched;
 
 	dom = isl_union_set_read_from_str(ctx, domain);
 	dep = isl_union_map_read_from_str(ctx, validity);
 	prox = isl_union_map_read_from_str(ctx, proximity);
-	schedule = isl_union_set_compute_schedule(dom, dep, prox);
+	sc = isl_schedule_constraints_on_domain(dom);
+	sc = isl_schedule_constraints_set_validity(sc, dep);
+	sc = isl_schedule_constraints_set_proximity(sc, prox);
+	schedule = isl_schedule_constraints_compute_schedule(sc);
 	sched = isl_schedule_get_map(schedule);
 	isl_schedule_free(schedule);
 
@@ -2600,6 +2607,7 @@ static int test_padded_schedule(isl_ctx *ctx)
 	const char *str;
 	isl_union_set *D;
 	isl_union_map *validity, *proximity;
+	isl_schedule_constraints *sc;
 	isl_schedule *sched;
 	isl_union_map *map1, *map2;
 	isl_band_list *list;
@@ -2609,7 +2617,10 @@ static int test_padded_schedule(isl_ctx *ctx)
 	D = isl_union_set_read_from_str(ctx, str);
 	validity = isl_union_map_empty(isl_union_set_get_space(D));
 	proximity = isl_union_map_copy(validity);
-	sched = isl_union_set_compute_schedule(D, validity, proximity);
+	sc = isl_schedule_constraints_on_domain(D);
+	sc = isl_schedule_constraints_set_validity(sc, validity);
+	sc = isl_schedule_constraints_set_proximity(sc, proximity);
+	sched = isl_schedule_constraints_compute_schedule(sc);
 	map1 = isl_schedule_get_map(sched);
 	list = isl_schedule_get_band_forest(sched);
 	isl_band_list_free(list);

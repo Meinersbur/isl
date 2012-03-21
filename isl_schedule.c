@@ -36,6 +36,157 @@
  * Parallelization and Locality Optimization in the Polyhedral Model".
  */
 
+/* Construct an isl_schedule_constraints object for computing a schedule
+ * on "domain".  The initial object does not impose any constraints.
+ */
+__isl_give isl_schedule_constraints *isl_schedule_constraints_on_domain(
+	__isl_take isl_union_set *domain)
+{
+	isl_ctx *ctx;
+	isl_space *space;
+	isl_schedule_constraints *sc;
+	isl_union_map *empty;
+	enum isl_edge_type i;
+
+	if (!domain)
+		return NULL;
+
+	ctx = isl_union_set_get_ctx(domain);
+	sc = isl_calloc_type(ctx, struct isl_schedule_constraints);
+	if (!sc)
+		return isl_union_set_free(domain);
+
+	space = isl_union_set_get_space(domain);
+	sc->domain = domain;
+	empty = isl_union_map_empty(space);
+	for (i = isl_edge_first; i <= isl_edge_last; ++i) {
+		sc->constraint[i] = isl_union_map_copy(empty);
+		if (!sc->constraint[i])
+			sc->domain = isl_union_set_free(sc->domain);
+	}
+	isl_union_map_free(empty);
+
+	if (!sc->domain)
+		return isl_schedule_constraints_free(sc);
+
+	return sc;
+}
+
+/* Replace the validity constraints of "sc" by "validity".
+ */
+__isl_give isl_schedule_constraints *isl_schedule_constraints_set_validity(
+	__isl_take isl_schedule_constraints *sc,
+	__isl_take isl_union_map *validity)
+{
+	if (!sc || !validity)
+		goto error;
+
+	isl_union_map_free(sc->constraint[isl_edge_validity]);
+	sc->constraint[isl_edge_validity] = validity;
+
+	return sc;
+error:
+	isl_schedule_constraints_free(sc);
+	isl_union_map_free(validity);
+	return NULL;
+}
+
+/* Replace the proximity constraints of "sc" by "proximity".
+ */
+__isl_give isl_schedule_constraints *isl_schedule_constraints_set_proximity(
+	__isl_take isl_schedule_constraints *sc,
+	__isl_take isl_union_map *proximity)
+{
+	if (!sc || !proximity)
+		goto error;
+
+	isl_union_map_free(sc->constraint[isl_edge_proximity]);
+	sc->constraint[isl_edge_proximity] = proximity;
+
+	return sc;
+error:
+	isl_schedule_constraints_free(sc);
+	isl_union_map_free(proximity);
+	return NULL;
+}
+
+void *isl_schedule_constraints_free(__isl_take isl_schedule_constraints *sc)
+{
+	enum isl_edge_type i;
+
+	if (!sc)
+		return NULL;
+
+	isl_union_set_free(sc->domain);
+	for (i = isl_edge_first; i <= isl_edge_last; ++i)
+		isl_union_map_free(sc->constraint[i]);
+
+	free(sc);
+
+	return NULL;
+}
+
+isl_ctx *isl_schedule_constraints_get_ctx(
+	__isl_keep isl_schedule_constraints *sc)
+{
+	return sc ? isl_union_set_get_ctx(sc->domain) : NULL;
+}
+
+void isl_schedule_constraints_dump(__isl_keep isl_schedule_constraints *sc)
+{
+	if (!sc)
+		return;
+
+	fprintf(stderr, "domain: ");
+	isl_union_set_dump(sc->domain);
+	fprintf(stderr, "validity: ");
+	isl_union_map_dump(sc->constraint[isl_edge_validity]);
+	fprintf(stderr, "proximity: ");
+	isl_union_map_dump(sc->constraint[isl_edge_proximity]);
+}
+
+/* Align the parameters of the fields of "sc".
+ */
+static __isl_give isl_schedule_constraints *
+isl_schedule_constraints_align_params(__isl_take isl_schedule_constraints *sc)
+{
+	isl_space *space;
+	enum isl_edge_type i;
+
+	if (!sc)
+		return NULL;
+
+	space = isl_union_set_get_space(sc->domain);
+	for (i = isl_edge_first; i <= isl_edge_last; ++i)
+		space = isl_space_align_params(space,
+				    isl_union_map_get_space(sc->constraint[i]));
+
+	for (i = isl_edge_first; i <= isl_edge_last; ++i) {
+		sc->constraint[i] = isl_union_map_align_params(
+				    sc->constraint[i], isl_space_copy(space));
+		if (!sc->constraint[i])
+			space = isl_space_free(space);
+	}
+	sc->domain = isl_union_set_align_params(sc->domain, space);
+	if (!sc->domain)
+		return isl_schedule_constraints_free(sc);
+
+	return sc;
+}
+
+/* Return the total number of isl_maps in the constraints of "sc".
+ */
+static __isl_give int isl_schedule_constraints_n_map(
+	__isl_keep isl_schedule_constraints *sc)
+{
+	enum isl_edge_type i;
+	int n = 0;
+
+	for (i = isl_edge_first; i <= isl_edge_last; ++i)
+		n += isl_union_map_n_map(sc->constraint[i]);
+
+	return n;
+}
 
 /* Internal information about a node that is used during the construction
  * of a schedule.
@@ -118,13 +269,6 @@ struct isl_sched_edge {
 
 	int start;
 	int end;
-};
-
-enum isl_edge_type {
-	isl_edge_validity = 0,
-	isl_edge_first = isl_edge_validity,
-	isl_edge_proximity,
-	isl_edge_last = isl_edge_proximity
 };
 
 /* Internal information about the dependence graph used during
@@ -2929,81 +3073,90 @@ static int compute_schedule(isl_ctx *ctx, struct isl_sched_graph *graph)
 	return compute_schedule_wcc(ctx, graph);
 }
 
-/* Compute a schedule for the given union of domains that respects
- * all the validity dependences.
+/* Compute a schedule on sc->domain that respects the given schedule
+ * constraints.
+ *
+ * In particular, the schedule respects all the validity dependences.
  * If the default isl scheduling algorithm is used, it tries to minimize
  * the dependence distances over the proximity dependences.
  * If Feautrier's scheduling algorithm is used, the proximity dependence
  * distances are only minimized during the extension to a full-dimensional
  * schedule.
  */
-__isl_give isl_schedule *isl_union_set_compute_schedule(
-	__isl_take isl_union_set *domain,
-	__isl_take isl_union_map *validity,
-	__isl_take isl_union_map *proximity)
+__isl_give isl_schedule *isl_schedule_constraints_compute_schedule(
+	__isl_take isl_schedule_constraints *sc)
 {
-	isl_ctx *ctx = isl_union_set_get_ctx(domain);
-	isl_space *dim;
+	isl_ctx *ctx = isl_schedule_constraints_get_ctx(sc);
 	struct isl_sched_graph graph = { 0 };
 	isl_schedule *sched;
 	struct isl_extract_edge_data data;
+	enum isl_edge_type i;
 
-	domain = isl_union_set_align_params(domain,
-					    isl_union_map_get_space(validity));
-	domain = isl_union_set_align_params(domain,
-					    isl_union_map_get_space(proximity));
-	dim = isl_union_set_get_space(domain);
-	validity = isl_union_map_align_params(validity, isl_space_copy(dim));
-	proximity = isl_union_map_align_params(proximity, dim);
+	sc = isl_schedule_constraints_align_params(sc);
+	if (!sc)
+		return NULL;
 
-	if (!domain)
-		goto error;
-
-	graph.n = isl_union_set_n_set(domain);
+	graph.n = isl_union_set_n_set(sc->domain);
 	if (graph.n == 0)
 		goto empty;
 	if (graph_alloc(ctx, &graph, graph.n,
-	    isl_union_map_n_map(validity) + isl_union_map_n_map(proximity)) < 0)
+	    isl_schedule_constraints_n_map(sc)) < 0)
 		goto error;
-	if (compute_max_row(&graph, domain) < 0)
+	if (compute_max_row(&graph, sc->domain) < 0)
 		goto error;
 	graph.root = 1;
 	graph.n = 0;
-	if (isl_union_set_foreach_set(domain, &extract_node, &graph) < 0)
+	if (isl_union_set_foreach_set(sc->domain, &extract_node, &graph) < 0)
 		goto error;
 	if (graph_init_table(ctx, &graph) < 0)
 		goto error;
-	graph.max_edge[isl_edge_validity] = isl_union_map_n_map(validity);
-	graph.max_edge[isl_edge_proximity] = isl_union_map_n_map(proximity);
+	for (i = isl_edge_first; i <= isl_edge_last; ++i)
+		graph.max_edge[i] = isl_union_map_n_map(sc->constraint[i]);
 	if (graph_init_edge_tables(ctx, &graph) < 0)
 		goto error;
 	graph.n_edge = 0;
 	data.graph = &graph;
-	data.type = isl_edge_validity;
-	if (isl_union_map_foreach_map(validity, &extract_edge, &data) < 0)
-		goto error;
-	data.type = isl_edge_proximity;
-	if (isl_union_map_foreach_map(proximity, &extract_edge, &data) < 0)
-		goto error;
+	for (i = isl_edge_first; i <= isl_edge_last; ++i) {
+		data.type = i;
+		if (isl_union_map_foreach_map(sc->constraint[i],
+						&extract_edge, &data) < 0)
+			goto error;
+	}
 
 	if (compute_schedule(ctx, &graph) < 0)
 		goto error;
 
 empty:
-	sched = extract_schedule(&graph, isl_union_set_get_space(domain));
+	sched = extract_schedule(&graph, isl_union_set_get_space(sc->domain));
 
 	graph_free(ctx, &graph);
-	isl_union_set_free(domain);
-	isl_union_map_free(validity);
-	isl_union_map_free(proximity);
+	isl_schedule_constraints_free(sc);
 
 	return sched;
 error:
 	graph_free(ctx, &graph);
-	isl_union_set_free(domain);
-	isl_union_map_free(validity);
-	isl_union_map_free(proximity);
+	isl_schedule_constraints_free(sc);
 	return NULL;
+}
+
+/* Compute a schedule for the given union of domains that respects
+ * all the validity dependences and minimizes
+ * the dependence distances over the proximity dependences.
+ *
+ * This function is kept for backward compatibility.
+ */
+__isl_give isl_schedule *isl_union_set_compute_schedule(
+	__isl_take isl_union_set *domain,
+	__isl_take isl_union_map *validity,
+	__isl_take isl_union_map *proximity)
+{
+	isl_schedule_constraints *sc;
+
+	sc = isl_schedule_constraints_on_domain(domain);
+	sc = isl_schedule_constraints_set_validity(sc, validity);
+	sc = isl_schedule_constraints_set_proximity(sc, proximity);
+
+	return isl_schedule_constraints_compute_schedule(sc);
 }
 
 void *isl_schedule_free(__isl_take isl_schedule *sched)
@@ -3409,7 +3562,7 @@ static int cmp_band(const void *a, const void *b, void *user)
  * This order should be a more "natural" order for the user, but otherwise
  * shouldn't have any effect.
  * If we would be constructing an isl_band forest directly in
- * isl_union_set_compute_schedule then there wouldn't be any need
+ * isl_schedule_constraints_compute_schedule then there wouldn't be any need
  * for a reordering, since the children would be added to the list
  * in their natural order automatically.
  *

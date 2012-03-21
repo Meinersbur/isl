@@ -4,6 +4,27 @@
 #include <isl/aff.h>
 #include <isl/schedule.h>
 
+enum isl_edge_type {
+	isl_edge_validity = 0,
+	isl_edge_first = isl_edge_validity,
+	isl_edge_proximity,
+	isl_edge_last = isl_edge_proximity
+};
+
+/* The constraints that need to be satisfied by a schedule on "domain".
+ *
+ * "validity" constraints map domain elements i to domain elements
+ * that should be scheduled after i.  (Hard constraint)
+ * "proximity" constraints map domain elements i to domains elements
+ * that should be scheduled as early as possible after i (or before i).
+ * (Soft constraint)
+ */
+struct isl_schedule_constraints {
+	isl_union_set *domain;
+
+	isl_union_map *constraint[isl_edge_last + 1];
+};
+
 /* The schedule for an individual domain, plus information about the bands
  * and scheduling dimensions.
  * In particular, we keep track of the number of bands and for each

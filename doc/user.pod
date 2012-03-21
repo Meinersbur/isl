@@ -5622,30 +5622,75 @@ whereas C<isl_restriction_empty> is essentially equivalent to
 B<The functionality described in this section is fairly new
 and may be subject to change.>
 
-The following function can be used to compute a schedule
-for a union of domains.
+	#include <isl/schedule.h>
+	__isl_give isl_schedule *
+	isl_schedule_constraints_compute_schedule(
+		__isl_take isl_schedule_constraints *sc);
+	void *isl_schedule_free(__isl_take isl_schedule *sched);
+
+The function C<isl_schedule_constraints_compute_schedule> can be
+used to compute a schedule that satisfy the given schedule constraints.
+These schedule constraints include the iteration domain for which
+a schedule should be computed and dependences between pairs of
+iterations.  In particular, these dependences include
+I<validity> dependences and I<proximity> dependences.
 By default, the algorithm used to construct the schedule is similar
 to that of C<Pluto>.
 Alternatively, Feautrier's multi-dimensional scheduling algorithm can
 be selected.
-The generated schedule respects all C<validity> dependences.
+The generated schedule respects all validity dependences.
 That is, all dependence distances over these dependences in the
 scheduled space are lexicographically positive.
 The default algorithm tries to minimize the dependence distances over
-C<proximity> dependences.
+proximity dependences.
 Moreover, it tries to obtain sequences (bands) of schedule dimensions
 for groups of domains where the dependence distances have only
 non-negative values.
-When using Feautrier's algorithm, the C<proximity> dependence
+When using Feautrier's algorithm, the proximity dependence
 distances are only minimized during the extension to a
 full-dimensional schedule.
+
+An C<isl_schedule_constraints> object can be constructed
+and manipulated using the following functions.
+
+	#include <isl/schedule.h>
+	__isl_give isl_schedule_constraints *
+	isl_schedule_constraints_on_domain(
+		__isl_take isl_union_set *domain);
+	isl_ctx *isl_schedule_constraints_get_ctx(
+		__isl_keep isl_schedule_constraints *sc);
+	__isl_give isl_schedule_constraints *
+	isl_schedule_constraints_set_validity(
+		__isl_take isl_schedule_constraints *sc,
+		__isl_take isl_union_map *validity);
+	__isl_give isl_schedule_constraints *
+	isl_schedule_constraints_set_proximity(
+		__isl_take isl_schedule_constraints *sc,
+		__isl_take isl_union_map *proximity);
+	void *isl_schedule_constraints_free(
+		__isl_take isl_schedule_constraints *sc);
+
+The initial C<isl_schedule_constraints> object created by
+C<isl_schedule_constraints_on_domain> does not impose any constraints.
+That is, it has an empty set of dependences.
+The function C<isl_schedule_constraints_set_validity> replaces the
+validity dependences, mapping domain elements I<i> to domain
+elements that should be scheduled after I<i>.
+The function C<isl_schedule_constraints_set_proximity> replaces the
+proximity dependences, mapping domain elements I<i> to domain
+elements that should be scheduled either before I<I>
+or as early as possible after I<i>.
+
+The following function computes a schedule directly from
+an iteration domain and validity and proximity dependences
+and is implemented in terms of the functions described above.
+The use of C<isl_union_set_compute_schedule> is discouraged.
 
 	#include <isl/schedule.h>
 	__isl_give isl_schedule *isl_union_set_compute_schedule(
 		__isl_take isl_union_set *domain,
 		__isl_take isl_union_map *validity,
 		__isl_take isl_union_map *proximity);
-	void *isl_schedule_free(__isl_take isl_schedule *sched);
 
 A mapping from the domains to the scheduled space can be obtained
 from an C<isl_schedule> using the following function.
