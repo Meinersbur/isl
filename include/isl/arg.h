@@ -274,7 +274,8 @@ struct isl_args {
 	.u = { .version = { .print_version = print } }			\
 },
 
-#define ISL_ARG_ALL	(1 << 0)
+#define ISL_ARG_ALL		(1 << 0)
+#define ISL_ARG_SKIP_HELP	(1 << 1)
 
 void isl_args_set_defaults(struct isl_args *args, void *opt);
 void isl_args_free(struct isl_args *args, void *opt);

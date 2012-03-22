@@ -1144,6 +1144,23 @@ static int next_arg(struct isl_arg *arg, int a)
 	return -1;
 }
 
+/* Unless ISL_ARG_SKIP_HELP is set, check if any of the arguments is
+ * equal to "--help" and if so call print_help_and_exit.
+ */
+void check_help(struct isl_args *args, int argc, char **argv, void *opt,
+	unsigned flags)
+{
+	int i;
+
+	if (ISL_FL_ISSET(flags, ISL_ARG_SKIP_HELP))
+		return;
+
+	for (i = 1; i < argc; ++i) {
+		if (strcmp(argv[i], "--help") == 0)
+			print_help_and_exit(args->args, argv[0], opt);
+	}
+}
+
 int isl_args_parse(struct isl_args *args, int argc, char **argv, void *opt,
 	unsigned flags)
 {
@@ -1154,10 +1171,7 @@ int isl_args_parse(struct isl_args *args, int argc, char **argv, void *opt,
 
 	n = n_arg(args->args);
 
-	for (i = 1; i < argc; ++i) {
-		if (strcmp(argv[i], "--help") == 0)
-			print_help_and_exit(args->args, argv[0], opt);
-	}
+	check_help(args, argc, argv, opt, flags);
 
 	for (i = 1; i < argc; ++i) {
 		if ((strcmp(argv[i], "--version") == 0 ||
