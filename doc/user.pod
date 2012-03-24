@@ -5667,6 +5667,11 @@ and manipulated using the following functions.
 	isl_schedule_constraints_set_proximity(
 		__isl_take isl_schedule_constraints *sc,
 		__isl_take isl_union_map *proximity);
+	__isl_give isl_schedule_constraints *
+	isl_schedule_constraints_set_conditional_validity(
+		__isl_take isl_schedule_constraints *sc,
+		__isl_take isl_union_map *condition,
+		__isl_take isl_union_map *validity);
 	void *isl_schedule_constraints_free(
 		__isl_take isl_schedule_constraints *sc);
 
@@ -5680,6 +5685,30 @@ The function C<isl_schedule_constraints_set_proximity> replaces the
 proximity dependences, mapping domain elements I<i> to domain
 elements that should be scheduled either before I<I>
 or as early as possible after I<i>.
+
+The function C<isl_schedule_constraints_set_conditional_validity>
+replaces the conditional validity constraints.
+A conditional validity constraint is only imposed when any of the corresponding
+conditions is satisfied, i.e., when any of them is non-zero.
+That is, the scheduler ensures that within each band if the dependence
+distances over the condition constraints are not all zero
+then all corresponding conditional validity constraints are respected.
+A conditional validity constraint corresponds to a condition
+if the two are adjacent, i.e., if the domain of one relation intersect
+the range of the other relation.
+The typical use case of conditional validity constraints is
+to allow order constraints between live ranges to be violated
+as long as the live ranges themselves are local to the band.
+To allow more fine-grained control over which conditions correspond
+to which conditional validity constraints, the domains and ranges
+of these relations may include I<tags>.  That is, the domains and
+ranges of those relation may themselves be wrapped relations
+where the iteration domain appears in the domain of those wrapped relations
+and the range of the wrapped relations can be arbitrarily chosen
+by the user.  Conditions and conditional validity constraints are only
+considere adjacent to each other if the entire wrapped relation matches.
+In particular, a relation with a tag will never be considered adjacent
+to a relation without a tag.
 
 The following function computes a schedule directly from
 an iteration domain and validity and proximity dependences

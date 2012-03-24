@@ -46,6 +46,11 @@ __isl_give isl_schedule_constraints *isl_schedule_constraints_set_validity(
 __isl_give isl_schedule_constraints *isl_schedule_constraints_set_proximity(
 	__isl_take isl_schedule_constraints *sc,
 	__isl_take isl_union_map *proximity);
+__isl_give isl_schedule_constraints *
+isl_schedule_constraints_set_conditional_validity(
+	__isl_take isl_schedule_constraints *sc,
+	__isl_take isl_union_map *condition,
+	__isl_take isl_union_map *validity);
 void *isl_schedule_constraints_free(__isl_take isl_schedule_constraints *sc);
 
 isl_ctx *isl_schedule_constraints_get_ctx(

@@ -2640,6 +2640,142 @@ static int test_padded_schedule(isl_ctx *ctx)
 	return 0;
 }
 
+/* Input for testing of schedule construction based on
+ * conditional constraints.
+ *
+ * domain is the iteration domain
+ * flow are the flow dependences, which determine the validity and
+ * 	proximity constraints
+ * condition are the conditions on the conditional validity constraints
+ * conditional_validity are the conditional validity constraints
+ * outer_band_n is the expected number of members in the outer band
+ */
+struct {
+	const char *domain;
+	const char *flow;
+	const char *condition;
+	const char *conditional_validity;
+	int outer_band_n;
+} live_range_tests[] = {
+	/* Contrived example that illustrates that we need to keep
+	 * track of tagged condition dependences and
+	 * tagged conditional validity dependences
+	 * in isl_sched_edge separately.
+	 * In particular, the conditional validity constraints on A
+	 * cannot be satisfied,
+	 * but they can be ignored because there are no corresponding
+	 * condition constraints.  However, we do have an additional
+	 * conditional validity constraint that maps to the same
+	 * dependence relation
+	 * as the condition constraint on B.  If we did not make a distinction
+	 * between tagged condition and tagged conditional validity
+	 * dependences, then we
+	 * could end up treating this shared dependence as an condition
+	 * constraint on A, forcing a localization of the conditions,
+	 * which is impossible.
+	 */
+	{ "{ S[i] : 0 <= 1 < 100; T[i] : 0 <= 1 < 100 }",
+	  "{ S[i] -> S[i+1] : 0 <= i < 99 }",
+	  "{ [S[i] -> B[]] -> [S[i+1] -> B[]] : 0 <= i < 99 }",
+	  "{ [S[i] -> A[]] -> [T[i'] -> A[]] : 0 <= i', i < 100 and i != i';"
+	    "[T[i] -> A[]] -> [S[i'] -> A[]] : 0 <= i', i < 100 and i != i';"
+	    "[S[i] -> A[]] -> [S[i+1] -> A[]] : 0 <= i < 99 }",
+	  1
+	},
+	/* TACO 2013 Fig. 7 */
+	{ "[n] -> { S1[i,j] : 0 <= i,j < n; S2[i,j] : 0 <= i,j < n }",
+	  "[n] -> { S1[i,j] -> S2[i,j] : 0 <= i,j < n;"
+		   "S2[i,j] -> S2[i,j+1] : 0 <= i < n and 0 <= j < n - 1 }",
+	  "[n] -> { [S1[i,j] -> t[]] -> [S2[i,j] -> t[]] : 0 <= i,j < n;"
+		   "[S2[i,j] -> x1[]] -> [S2[i,j+1] -> x1[]] : "
+				"0 <= i < n and 0 <= j < n - 1 }",
+	  "[n] -> { [S2[i,j] -> t[]] -> [S1[i,j'] -> t[]] : "
+				"0 <= i < n and 0 <= j < j' < n;"
+		   "[S2[i,j] -> t[]] -> [S1[i',j'] -> t[]] : "
+				"0 <= i < i' < n and 0 <= j,j' < n;"
+		   "[S2[i,j] -> x1[]] -> [S2[i,j'] -> x1[]] : "
+				"0 <= i,j,j' < n and j < j' }",
+	    2
+	},
+	/* TACO 2013 Fig. 7, without tags */
+	{ "[n] -> { S1[i,j] : 0 <= i,j < n; S2[i,j] : 0 <= i,j < n }",
+	  "[n] -> { S1[i,j] -> S2[i,j] : 0 <= i,j < n;"
+		   "S2[i,j] -> S2[i,j+1] : 0 <= i < n and 0 <= j < n - 1 }",
+	  "[n] -> { S1[i,j] -> S2[i,j] : 0 <= i,j < n;"
+		   "S2[i,j] -> S2[i,j+1] : 0 <= i < n and 0 <= j < n - 1 }",
+	  "[n] -> { S2[i,j] -> S1[i,j'] : 0 <= i < n and 0 <= j < j' < n;"
+		   "S2[i,j] -> S1[i',j'] : 0 <= i < i' < n and 0 <= j,j' < n;"
+		   "S2[i,j] -> S2[i,j'] : 0 <= i,j,j' < n and j < j' }",
+	   1
+	},
+	/* TACO 2013 Fig. 12 */
+	{ "{ S1[i,0] : 0 <= i <= 1; S2[i,j] : 0 <= i <= 1 and 1 <= j <= 2;"
+	    "S3[i,3] : 0 <= i <= 1 }",
+	  "{ S1[i,0] -> S2[i,1] : 0 <= i <= 1;"
+	    "S2[i,1] -> S2[i,2] : 0 <= i <= 1;"
+	    "S2[i,2] -> S3[i,3] : 0 <= i <= 1 }",
+	  "{ [S1[i,0]->t[]] -> [S2[i,1]->t[]] : 0 <= i <= 1;"
+	    "[S2[i,1]->t[]] -> [S2[i,2]->t[]] : 0 <= i <= 1;"
+	    "[S2[i,2]->t[]] -> [S3[i,3]->t[]] : 0 <= i <= 1 }",
+	  "{ [S2[i,1]->t[]] -> [S2[i,2]->t[]] : 0 <= i <= 1;"
+	    "[S2[0,j]->t[]] -> [S2[1,j']->t[]] : 1 <= j,j' <= 2;"
+	    "[S2[0,j]->t[]] -> [S1[1,0]->t[]] : 1 <= j <= 2;"
+	    "[S3[0,3]->t[]] -> [S2[1,j]->t[]] : 1 <= j <= 2;"
+	    "[S3[0,3]->t[]] -> [S1[1,0]->t[]] }",
+	   1
+	}
+};
+
+/* Test schedule construction based on conditional constraints.
+ * In particular, check the number of members in the outer band
+ * as an indication of whether tiling is possible or not.
+ */
+static int test_conditional_schedule_constraints(isl_ctx *ctx)
+{
+	int i;
+	isl_union_set *domain;
+	isl_union_map *condition;
+	isl_union_map *flow;
+	isl_union_map *validity;
+	isl_schedule_constraints *sc;
+	isl_schedule *schedule;
+	isl_band_list *list;
+	isl_band *band;
+	int n_member;
+
+	for (i = 0; i < ARRAY_SIZE(live_range_tests); ++i) {
+		domain = isl_union_set_read_from_str(ctx,
+				live_range_tests[i].domain);
+		flow = isl_union_map_read_from_str(ctx,
+				live_range_tests[i].flow);
+		condition = isl_union_map_read_from_str(ctx,
+				live_range_tests[i].condition);
+		validity = isl_union_map_read_from_str(ctx,
+				live_range_tests[i].conditional_validity);
+		sc = isl_schedule_constraints_on_domain(domain);
+		sc = isl_schedule_constraints_set_validity(sc,
+				isl_union_map_copy(flow));
+		sc = isl_schedule_constraints_set_proximity(sc, flow);
+		sc = isl_schedule_constraints_set_conditional_validity(sc,
+				condition, validity);
+		schedule = isl_schedule_constraints_compute_schedule(sc);
+		list = isl_schedule_get_band_forest(schedule);
+		band = isl_band_list_get_band(list, 0);
+		n_member = isl_band_n_member(band);
+		isl_band_free(band);
+		isl_band_list_free(list);
+		isl_schedule_free(schedule);
+
+		if (!schedule)
+			return -1;
+		if (n_member != live_range_tests[i].outer_band_n)
+			isl_die(ctx, isl_error_unknown,
+				"unexpected number of members in outer band",
+				return -1);
+	}
+	return 0;
+}
+
 int test_schedule(isl_ctx *ctx)
 {
 	const char *D, *W, *R, *V, *P, *S;
@@ -2916,6 +3052,9 @@ int test_schedule(isl_ctx *ctx)
 	if (test_has_schedule(ctx, D, V, P) < 0)
 		return -1;
 	ctx->opt->schedule_algorithm = ISL_SCHEDULE_ALGORITHM_ISL;
+
+	if (test_conditional_schedule_constraints(ctx) < 0)
+		return -1;
 
 	return 0;
 }
