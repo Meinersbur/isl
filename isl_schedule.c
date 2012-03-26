@@ -1042,8 +1042,8 @@ static int node_update_cmap(struct isl_sched_node *node)
 
 /* Count the number of equality and inequality constraints
  * that will be added for the given map.
- * If carry is set, then we are counting the number of constraints
- * that will be added in setup_carry_lp and we count
+ * If carry is set, then we are counting the number of (validity)
+ * constraints that will be added in setup_carry_lp and we count
  * each edge exactly once.  Otherwise, we count as follows
  * validity		-> 1 (>= 0)
  * validity+proximity	-> 2 (>= 0 and upper bound)
@@ -1055,6 +1055,11 @@ static int count_map_constraints(struct isl_sched_graph *graph,
 {
 	isl_basic_set *coef;
 	int f = carry ? 1 : edge->proximity ? 2 : 1;
+
+	if (carry && !edge->validity) {
+		isl_map_free(map);
+		return 0;
+	}
 
 	if (edge->src == edge->dst)
 		coef = intra_coefficients(graph, map);
@@ -2110,7 +2115,7 @@ static int add_inter_constraints(struct isl_sched_graph *graph,
 	return 0;
 }
 
-/* Add constraints to graph->lp that force all dependences
+/* Add constraints to graph->lp that force all validity dependences
  * to be respected and attempt to carry them.
  */
 static int add_all_constraints(struct isl_sched_graph *graph)
@@ -2121,6 +2126,10 @@ static int add_all_constraints(struct isl_sched_graph *graph)
 	pos = 0;
 	for (i = 0; i < graph->n_edge; ++i) {
 		struct isl_sched_edge *edge= &graph->edge[i];
+
+		if (!edge->validity)
+			continue;
+
 		for (j = 0; j < edge->map->n; ++j) {
 			isl_basic_map *bmap;
 			isl_map *map;
@@ -2198,7 +2207,7 @@ static int count_all_constraints(struct isl_sched_graph *graph,
  *		- positive and negative parts of c_i_n (if parametric)
  *		- positive and negative parts of c_i_x
  *
- * The constraints are those from the edges plus three equalities
+ * The constraints are those from the (validity) edges plus three equalities
  * to express the sums and n_edge inequalities to express e_i <= 1.
  */
 static int setup_carry_lp(isl_ctx *ctx, struct isl_sched_graph *graph)
