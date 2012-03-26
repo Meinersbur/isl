@@ -1551,7 +1551,7 @@ static void next_band(struct isl_sched_graph *graph)
 	graph->n_band++;
 }
 
-/* Topologically sort statements mapped to same schedule iteration
+/* Topologically sort statements mapped to the same schedule iteration
  * and add a row to the schedule corresponding to this order.
  */
 static int sort_statements(isl_ctx *ctx, struct isl_sched_graph *graph)
@@ -2110,8 +2110,8 @@ static int add_inter_constraints(struct isl_sched_graph *graph,
 	return 0;
 }
 
-/* Add constraints to graph->lp that force all dependence
- * to be respected and attempt to carry it.
+/* Add constraints to graph->lp that force all dependences
+ * to be respected and attempt to carry them.
  */
 static int add_all_constraints(struct isl_sched_graph *graph)
 {
