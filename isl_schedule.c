@@ -1042,7 +1042,8 @@ static int node_update_cmap(struct isl_sched_node *node)
 
 /* Count the number of equality and inequality constraints
  * that will be added for the given map.
- * If once is set, then we count
+ * If carry is set, then we are counting the number of constraints
+ * that will be added in setup_carry_lp and we count
  * each edge exactly once.  Otherwise, we count as follows
  * validity		-> 1 (>= 0)
  * validity+proximity	-> 2 (>= 0 and upper bound)
@@ -1050,10 +1051,10 @@ static int node_update_cmap(struct isl_sched_node *node)
  */
 static int count_map_constraints(struct isl_sched_graph *graph,
 	struct isl_sched_edge *edge, __isl_take isl_map *map,
-	int *n_eq, int *n_ineq, int once)
+	int *n_eq, int *n_ineq, int carry)
 {
 	isl_basic_set *coef;
-	int f = once ? 1 : edge->proximity ? 2 : 1;
+	int f = carry ? 1 : edge->proximity ? 2 : 1;
 
 	if (edge->src == edge->dst)
 		coef = intra_coefficients(graph, map);
@@ -1070,14 +1071,13 @@ static int count_map_constraints(struct isl_sched_graph *graph,
 
 /* Count the number of equality and inequality constraints
  * that will be added to the main lp problem.
- * If once is set, then we count
- * each edge exactly once.  Otherwise, we count as follows
+ * We count as follows
  * validity		-> 1 (>= 0)
  * validity+proximity	-> 2 (>= 0 and upper bound)
  * proximity		-> 2 (lower and upper bound)
  */
 static int count_constraints(struct isl_sched_graph *graph,
-	int *n_eq, int *n_ineq, int once)
+	int *n_eq, int *n_ineq)
 {
 	int i;
 
@@ -1087,7 +1087,7 @@ static int count_constraints(struct isl_sched_graph *graph,
 		isl_map *map = isl_map_copy(edge->map);
 
 		if (count_map_constraints(graph, edge, map,
-					  n_eq, n_ineq, once) < 0)
+					  n_eq, n_ineq, 0) < 0)
 			return -1;
 	}
 
@@ -1194,7 +1194,7 @@ static int setup_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
 		total += 1 + 2 * (node->nparam + node->nvar);
 	}
 
-	if (count_constraints(graph, &n_eq, &n_ineq, 0) < 0)
+	if (count_constraints(graph, &n_eq, &n_ineq) < 0)
 		return -1;
 
 	dim = isl_space_set_alloc(ctx, 0, total);
@@ -2143,14 +2143,10 @@ static int add_all_constraints(struct isl_sched_graph *graph)
 
 /* Count the number of equality and inequality constraints
  * that will be added to the carry_lp problem.
- * If once is set, then we count
- * each edge exactly once.  Otherwise, we count as follows
- * validity		-> 1 (>= 0)
- * validity+proximity	-> 2 (>= 0 and upper bound)
- * proximity		-> 2 (lower and upper bound)
+ * We count each edge exactly once.
  */
 static int count_all_constraints(struct isl_sched_graph *graph,
-	int *n_eq, int *n_ineq, int once)
+	int *n_eq, int *n_ineq)
 {
 	int i, j;
 
@@ -2165,7 +2161,7 @@ static int count_all_constraints(struct isl_sched_graph *graph,
 			map = isl_map_from_basic_map(bmap);
 
 			if (count_map_constraints(graph, edge, map,
-						  n_eq, n_ineq, once) < 0)
+						  n_eq, n_ineq, 1) < 0)
 				    return -1;
 		}
 	}
@@ -2225,7 +2221,7 @@ static int setup_carry_lp(isl_ctx *ctx, struct isl_sched_graph *graph)
 		total += 1 + 2 * (node->nparam + node->nvar);
 	}
 
-	if (count_all_constraints(graph, &n_eq, &n_ineq, 1) < 0)
+	if (count_all_constraints(graph, &n_eq, &n_ineq) < 0)
 		return -1;
 
 	dim = isl_space_set_alloc(ctx, 0, total);
