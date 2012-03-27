@@ -153,6 +153,12 @@ system)
 			   [Return type of HandleTopLevelDeclReturn])])
 	AC_LANG_POP
 	CPPFLAGS="$SAVE_CPPFLAGS"
+
+	SAVE_LDFLAGS="$LDFLAGS"
+	LDFLAGS="$CLANG_LDFLAGS $LDFLAGS"
+	AC_SUBST(LIB_CLANG_EDIT)
+	AC_CHECK_LIB([clangEdit], [main], [LIB_CLANG_EDIT=-lclangEdit], [])
+	LDFLAGS="$SAVE_LDFLAGS"
 	;;
 esac
 AM_CONDITIONAL(HAVE_CLANG, test $with_clang = system)
