@@ -119,6 +119,9 @@ __isl_give isl_space *isl_space_unwrap(__isl_take isl_space *dim);
 int isl_space_can_zip(__isl_keep isl_space *dim);
 __isl_give isl_space *isl_space_zip(__isl_take isl_space *dim);
 
+int isl_space_can_curry(__isl_keep isl_space *space);
+__isl_give isl_space *isl_space_curry(__isl_take isl_space *space);
+
 int isl_space_is_equal(__isl_keep isl_space *dim1, __isl_keep isl_space *dim2);
 int isl_space_match(__isl_keep isl_space *dim1, enum isl_dim_type dim1_type,
 	__isl_keep isl_space *dim2, enum isl_dim_type dim2_type);

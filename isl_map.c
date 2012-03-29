@@ -9818,6 +9818,83 @@ error:
 	return NULL;
 }
 
+/* Can we apply isl_basic_map_curry to "bmap"?
+ * That is, does it have a nested relation in its domain?
+ */
+int isl_basic_map_can_curry(__isl_keep isl_basic_map *bmap)
+{
+	if (!bmap)
+		return -1;
+
+	return isl_space_can_curry(bmap->dim);
+}
+
+/* Can we apply isl_map_curry to "map"?
+ * That is, does it have a nested relation in its domain?
+ */
+int isl_map_can_curry(__isl_keep isl_map *map)
+{
+	if (!map)
+		return -1;
+
+	return isl_space_can_curry(map->dim);
+}
+
+/* Given a basic map (A -> B) -> C, return the corresponding basic map
+ * A -> (B -> C).
+ */
+__isl_give isl_basic_map *isl_basic_map_curry(__isl_take isl_basic_map *bmap)
+{
+
+	if (!bmap)
+		return NULL;
+
+	if (!isl_basic_map_can_curry(bmap))
+		isl_die(bmap->ctx, isl_error_invalid,
+			"basic map cannot be curried", goto error);
+	bmap->dim = isl_space_curry(bmap->dim);
+	if (!bmap->dim)
+		goto error;
+	return bmap;
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+/* Given a map (A -> B) -> C, return the corresponding map
+ * A -> (B -> C).
+ */
+__isl_give isl_map *isl_map_curry(__isl_take isl_map *map)
+{
+	int i;
+
+	if (!map)
+		return NULL;
+
+	if (!isl_map_can_curry(map))
+		isl_die(map->ctx, isl_error_invalid, "map cannot be curried",
+			goto error);
+
+	map = isl_map_cow(map);
+	if (!map)
+		return NULL;
+
+	for (i = 0; i < map->n; ++i) {
+		map->p[i] = isl_basic_map_curry(map->p[i]);
+		if (!map->p[i])
+			goto error;
+	}
+
+	map->dim = isl_space_curry(map->dim);
+	if (!map->dim)
+		goto error;
+
+	return map;
+error:
+	isl_map_free(map);
+	return NULL;
+}
+
 /* Construct a basic map mapping the domain of the affine expression
  * to a one-dimensional range prescribed by the affine expression.
  */

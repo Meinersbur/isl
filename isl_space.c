@@ -1669,6 +1669,45 @@ error:
 	return NULL;
 }
 
+/* Can we apply isl_space_curry to "space"?
+ * That is, does it have a nested relation in its domain?
+ */
+int isl_space_can_curry(__isl_keep isl_space *space)
+{
+	if (!space)
+		return -1;
+
+	return !!space->nested[0];
+}
+
+/* Given a space (A -> B) -> C, return the corresponding space
+ * A -> (B -> C).
+ */
+__isl_give isl_space *isl_space_curry(__isl_take isl_space *space)
+{
+	isl_space *dom, *ran;
+	isl_space *dom_dom, *dom_ran;
+
+	if (!space)
+		return NULL;
+
+	if (!isl_space_can_curry(space))
+		isl_die(space->ctx, isl_error_invalid,
+			"space cannot be curried", goto error);
+
+	dom = isl_space_unwrap(isl_space_domain(isl_space_copy(space)));
+	ran = isl_space_range(space);
+	dom_dom = isl_space_domain(isl_space_copy(dom));
+	dom_ran = isl_space_range(dom);
+	ran = isl_space_join(isl_space_from_domain(dom_ran),
+			   isl_space_from_range(ran));
+	return isl_space_join(isl_space_from_domain(dom_dom),
+			    isl_space_from_range(isl_space_wrap(ran)));
+error:
+	isl_space_free(space);
+	return NULL;
+}
+
 int isl_space_has_named_params(__isl_keep isl_space *dim)
 {
 	int i;
