@@ -2234,6 +2234,33 @@ static int pad_schedule(struct isl_sched_graph *graph)
 	return 0;
 }
 
+/* Reset the current band by dropping all its schedule rows.
+ */
+static int reset_band(struct isl_sched_graph *graph)
+{
+	int i;
+	int drop;
+
+	drop = graph->n_total_row - graph->band_start;
+	graph->n_total_row -= drop;
+	graph->n_row -= drop;
+
+	for (i = 0; i < graph->n; ++i) {
+		struct isl_sched_node *node = &graph->node[i];
+
+		isl_map_free(node->sched_map);
+		node->sched_map = NULL;
+
+		node->sched = isl_mat_drop_rows(node->sched,
+						graph->band_start, drop);
+
+		if (!node->sched)
+			return -1;
+	}
+
+	return 0;
+}
+
 /* Split the current graph into two parts and compute a schedule for each
  * part individually.  In particular, one part consists of all SCCs up
  * to and including graph->src_scc, while the other part contains the other
@@ -2259,20 +2286,18 @@ static int compute_split_schedule(isl_ctx *ctx, struct isl_sched_graph *graph)
 	int i, j, n, e1, e2;
 	int n_total_row, orig_total_row;
 	int n_band, orig_band;
-	int drop;
 
 	if (graph->n_total_row >= graph->max_row)
 		isl_die(ctx, isl_error_internal,
 			"too many schedule rows", return -1);
 
-	drop = graph->n_total_row - graph->band_start;
-	graph->n_total_row -= drop;
-	graph->n_row -= drop;
+	if (reset_band(graph) < 0)
+		return -1;
 
 	n = 0;
 	for (i = 0; i < graph->n; ++i) {
 		struct isl_sched_node *node = &graph->node[i];
-		int row = isl_mat_rows(node->sched) - drop;
+		int row = isl_mat_rows(node->sched);
 		int cols = isl_mat_cols(node->sched);
 		int before = node->scc <= graph->src_scc;
 
@@ -2281,8 +2306,6 @@ static int compute_split_schedule(isl_ctx *ctx, struct isl_sched_graph *graph)
 
 		isl_map_free(node->sched_map);
 		node->sched_map = NULL;
-		node->sched = isl_mat_drop_rows(node->sched,
-						graph->band_start, drop);
 		node->sched = isl_mat_add_rows(node->sched, 1);
 		if (!node->sched)
 			return -1;
