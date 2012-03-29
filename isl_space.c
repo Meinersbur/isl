@@ -1651,7 +1651,7 @@ __isl_give isl_space *isl_space_zip(__isl_take isl_space *dim)
 			goto error);
 
 	if (!dim)
-		return 0;
+		return NULL;
 	dom = isl_space_unwrap(isl_space_domain(isl_space_copy(dim)));
 	ran = isl_space_unwrap(isl_space_range(dim));
 	dom_dom = isl_space_domain(isl_space_copy(dom));
