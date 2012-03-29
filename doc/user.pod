@@ -1286,6 +1286,8 @@ L<"Piecewise Multiple Quasi Affine Expressions">).
 
 	__isl_give isl_basic_map *isl_basic_map_from_aff(
 		__isl_take isl_aff *aff);
+	__isl_give isl_map *isl_map_from_aff(
+		__isl_take isl_aff *aff);
 	__isl_give isl_set *isl_set_from_pw_aff(
 		__isl_take isl_pw_aff *pwaff);
 	__isl_give isl_map *isl_map_from_pw_aff(

@@ -9853,6 +9853,17 @@ error:
 	return NULL;
 }
 
+/* Construct a map mapping the domain of the affine expression
+ * to a one-dimensional range prescribed by the affine expression.
+ */
+__isl_give isl_map *isl_map_from_aff(__isl_take isl_aff *aff)
+{
+	isl_basic_map *bmap;
+
+	bmap = isl_basic_map_from_aff(aff);
+	return isl_map_from_basic_map(bmap);
+}
+
 /* Construct a basic map mapping the domain the multi-affine expression
  * to its range, with each dimension in the range equated to the
  * corresponding affine expression.
