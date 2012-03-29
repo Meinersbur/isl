@@ -1746,18 +1746,46 @@ error:
 	return -1;
 }
 
+/* Convert row "row" of node->sched into an isl_aff living in "ls"
+ * and return this isl_aff.
+ */
+static __isl_give isl_aff *extract_schedule_row(__isl_take isl_local_space *ls,
+	struct isl_sched_node *node, int row)
+{
+	int j;
+	isl_int v;
+	isl_aff *aff;
+
+	isl_int_init(v);
+
+	aff = isl_aff_zero_on_domain(ls);
+	isl_mat_get_element(node->sched, row, 0, &v);
+	aff = isl_aff_set_constant(aff, v);
+	for (j = 0; j < node->nparam; ++j) {
+		isl_mat_get_element(node->sched, row, 1 + j, &v);
+		aff = isl_aff_set_coefficient(aff, isl_dim_param, j, v);
+	}
+	for (j = 0; j < node->nvar; ++j) {
+		isl_mat_get_element(node->sched, row, 1 + node->nparam + j, &v);
+		aff = isl_aff_set_coefficient(aff, isl_dim_in, j, v);
+	}
+
+	isl_int_clear(v);
+
+	return aff;
+}
+
 /* Convert node->sched into a multi_aff and return this multi_aff.
  */
 static __isl_give isl_multi_aff *node_extract_schedule_multi_aff(
 	struct isl_sched_node *node)
 {
-	int i, j;
+	int i;
 	isl_space *space;
 	isl_local_space *ls;
 	isl_aff *aff;
 	isl_multi_aff *ma;
 	int nrow, ncol;
-	isl_int v;
 
 	nrow = isl_mat_rows(node->sched);
 	ncol = isl_mat_cols(node->sched) - 1;
@@ -1766,25 +1794,10 @@ static __isl_give isl_multi_aff *node_extract_schedule_multi_aff(
 	ma = isl_multi_aff_zero(space);
 	ls = isl_local_space_from_space(isl_space_copy(node->dim));
 
-	isl_int_init(v);
-
 	for (i = 0; i < nrow; ++i) {
-		aff = isl_aff_zero_on_domain(isl_local_space_copy(ls));
-		isl_mat_get_element(node->sched, i, 0, &v);
-		aff = isl_aff_set_constant(aff, v);
-		for (j = 0; j < node->nparam; ++j) {
-			isl_mat_get_element(node->sched, i, 1 + j, &v);
-			aff = isl_aff_set_coefficient(aff, isl_dim_param, j, v);
-		}
-		for (j = 0; j < node->nvar; ++j) {
-			isl_mat_get_element(node->sched,
-					    i, 1 + node->nparam + j, &v);
-			aff = isl_aff_set_coefficient(aff, isl_dim_in, j, v);
-		}
+		aff = extract_schedule_row(isl_local_space_copy(ls), node, i);
 		ma = isl_multi_aff_set_aff(ma, i, aff);
 	}
-
-	isl_int_clear(v);
 
 	isl_local_space_free(ls);
 
