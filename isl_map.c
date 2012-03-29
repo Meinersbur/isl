@@ -10029,6 +10029,46 @@ error:
 	return NULL;
 }
 
+/* Add a constraint imposing that the value of the first dimension is
+ * greater than that of the second.
+ */
+__isl_give isl_map *isl_map_order_gt(__isl_take isl_map *map,
+	enum isl_dim_type type1, int pos1, enum isl_dim_type type2, int pos2)
+{
+	isl_basic_map *bmap = NULL;
+	int i;
+
+	if (!map)
+		return NULL;
+
+	if (pos1 >= isl_map_dim(map, type1))
+		isl_die(map->ctx, isl_error_invalid,
+			"index out of bounds", goto error);
+	if (pos2 >= isl_map_dim(map, type2))
+		isl_die(map->ctx, isl_error_invalid,
+			"index out of bounds", goto error);
+
+	bmap = isl_basic_map_alloc_space(isl_map_get_space(map), 0, 0, 1);
+	i = isl_basic_map_alloc_inequality(bmap);
+	if (i < 0)
+		goto error;
+	isl_seq_clr(bmap->ineq[i], 1 + isl_basic_map_total_dim(bmap));
+	pos1 += isl_basic_map_offset(bmap, type1);
+	pos2 += isl_basic_map_offset(bmap, type2);
+	isl_int_set_si(bmap->ineq[i][pos1], 1);
+	isl_int_set_si(bmap->ineq[i][pos2], -1);
+	isl_int_set_si(bmap->ineq[i][0], -1);
+	bmap = isl_basic_map_finalize(bmap);
+
+	map = isl_map_intersect(map, isl_map_from_basic_map(bmap));
+
+	return map;
+error:
+	isl_basic_map_free(bmap);
+	isl_map_free(map);
+	return NULL;
+}
+
 __isl_give isl_aff *isl_basic_map_get_div(__isl_keep isl_basic_map *bmap,
 	int pos)
 {

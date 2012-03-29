@@ -1921,6 +1921,13 @@ dimensions are equal to each other.
 Intersect the relation with the hyperplane where the given
 dimensions have opposite values.
 
+	__isl_give isl_map *isl_map_order_gt(__isl_take isl_map *map,
+		enum isl_dim_type type1, int pos1,
+		enum isl_dim_type type2, int pos2);
+
+Intersect the relation with the half-space where the given
+dimensions satisfy the given ordering.
+
 =item * Identity
 
 	__isl_give isl_map *isl_set_identity(
