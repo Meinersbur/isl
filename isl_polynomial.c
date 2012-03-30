@@ -3604,6 +3604,8 @@ __isl_give isl_aff *isl_term_get_div(__isl_keep isl_term *term, unsigned pos)
 
 	isl_seq_cpy(aff->v->el, term->div->row[pos], aff->v->size);
 
+	aff = isl_aff_normalize(aff);
+
 	return aff;
 }
 
