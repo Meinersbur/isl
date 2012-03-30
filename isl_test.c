@@ -1135,6 +1135,9 @@ int test_coalesce(struct isl_ctx *ctx)
 			"j >= 1 and j' <= i + j - i' and i >= 1; "
 		"[1, 1, 1, 1] }", 0) < 0)
 		return -1;
+	if (test_coalesce_set(ctx, "{ [i,j] : exists a,b : i = 2a and j = 3b; "
+				     "[i,j] : exists a : j = 3a }", 1) < 0)
+		return -1;
 	return 0;
 }
 
