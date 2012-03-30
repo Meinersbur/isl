@@ -38,24 +38,24 @@ static int status_in(isl_int *ineq, struct isl_tab *tab)
 	}
 }
 
-/* Compute the position of the equalities of basic map "i"
- * with respect to basic map "j".
+/* Compute the position of the equalities of basic map "bmap_i"
+ * with respect to the basic map represented by "tab_j".
  * The resulting array has twice as many entries as the number
  * of equalities corresponding to the two inequalties to which
  * each equality corresponds.
  */
-static int *eq_status_in(struct isl_map *map, int i, int j,
-	struct isl_tab **tabs)
+static int *eq_status_in(__isl_keep isl_basic_map *bmap_i,
+	struct isl_tab *tab_j)
 {
 	int k, l;
-	int *eq = isl_calloc_array(map->ctx, int, 2 * map->p[i]->n_eq);
+	int *eq = isl_calloc_array(bmap_i->ctx, int, 2 * bmap_i->n_eq);
 	unsigned dim;
 
-	dim = isl_basic_map_total_dim(map->p[i]);
-	for (k = 0; k < map->p[i]->n_eq; ++k) {
+	dim = isl_basic_map_total_dim(bmap_i);
+	for (k = 0; k < bmap_i->n_eq; ++k) {
 		for (l = 0; l < 2; ++l) {
-			isl_seq_neg(map->p[i]->eq[k], map->p[i]->eq[k], 1+dim);
-			eq[2 * k + l] = status_in(map->p[i]->eq[k], tabs[j]);
+			isl_seq_neg(bmap_i->eq[k], bmap_i->eq[k], 1+dim);
+			eq[2 * k + l] = status_in(bmap_i->eq[k], tab_j);
 			if (eq[2 * k + l] == STATUS_ERROR)
 				goto error;
 		}
@@ -70,22 +70,23 @@ error:
 	return NULL;
 }
 
-/* Compute the position of the inequalities of basic map "i"
- * with respect to basic map "j".
+/* Compute the position of the inequalities of basic map "bmap_i"
+ * (also represented by "tab_i") with respect to the basic map
+ * represented by "tab_j".
  */
-static int *ineq_status_in(struct isl_map *map, int i, int j,
-	struct isl_tab **tabs)
+static int *ineq_status_in(__isl_keep isl_basic_map *bmap_i,
+	struct isl_tab *tab_i, struct isl_tab *tab_j)
 {
 	int k;
-	unsigned n_eq = map->p[i]->n_eq;
-	int *ineq = isl_calloc_array(map->ctx, int, map->p[i]->n_ineq);
+	unsigned n_eq = bmap_i->n_eq;
+	int *ineq = isl_calloc_array(bmap_i->ctx, int, bmap_i->n_ineq);
 
-	for (k = 0; k < map->p[i]->n_ineq; ++k) {
-		if (isl_tab_is_redundant(tabs[i], n_eq + k)) {
+	for (k = 0; k < bmap_i->n_ineq; ++k) {
+		if (isl_tab_is_redundant(tab_i, n_eq + k)) {
 			ineq[k] = STATUS_REDUNDANT;
 			continue;
 		}
-		ineq[k] = status_in(map->p[i]->ineq[k], tabs[j]);
+		ineq[k] = status_in(bmap_i->ineq[k], tab_j);
 		if (ineq[k] == STATUS_ERROR)
 			goto error;
 		if (ineq[k] == STATUS_SEPARATE)
@@ -1238,7 +1239,7 @@ static int coalesce_pair(struct isl_map *map, int i, int j,
 	int *ineq_i = NULL;
 	int *ineq_j = NULL;
 
-	eq_i = eq_status_in(map, i, j, tabs);
+	eq_i = eq_status_in(map->p[i], tabs[j]);
 	if (!eq_i)
 		goto error;
 	if (any(eq_i, 2 * map->p[i]->n_eq, STATUS_ERROR))
@@ -1246,7 +1247,7 @@ static int coalesce_pair(struct isl_map *map, int i, int j,
 	if (any(eq_i, 2 * map->p[i]->n_eq, STATUS_SEPARATE))
 		goto done;
 
-	eq_j = eq_status_in(map, j, i, tabs);
+	eq_j = eq_status_in(map->p[j], tabs[i]);
 	if (!eq_j)
 		goto error;
 	if (any(eq_j, 2 * map->p[j]->n_eq, STATUS_ERROR))
@@ -1254,7 +1255,7 @@ static int coalesce_pair(struct isl_map *map, int i, int j,
 	if (any(eq_j, 2 * map->p[j]->n_eq, STATUS_SEPARATE))
 		goto done;
 
-	ineq_i = ineq_status_in(map, i, j, tabs);
+	ineq_i = ineq_status_in(map->p[i], tabs[i], tabs[j]);
 	if (!ineq_i)
 		goto error;
 	if (any(ineq_i, map->p[i]->n_ineq, STATUS_ERROR))
@@ -1262,7 +1263,7 @@ static int coalesce_pair(struct isl_map *map, int i, int j,
 	if (any(ineq_i, map->p[i]->n_ineq, STATUS_SEPARATE))
 		goto done;
 
-	ineq_j = ineq_status_in(map, j, i, tabs);
+	ineq_j = ineq_status_in(map->p[j], tabs[j], tabs[i]);
 	if (!ineq_j)
 		goto error;
 	if (any(ineq_j, map->p[j]->n_ineq, STATUS_ERROR))
