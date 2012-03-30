@@ -3581,20 +3581,12 @@ __isl_give isl_aff *isl_term_get_div(__isl_keep isl_term *term, unsigned pos)
 {
 	isl_local_space *ls;
 	isl_aff *aff;
-	unsigned total;
 
 	if (!term)
 		return NULL;
 
 	isl_assert(term->dim->ctx, pos < isl_term_dim(term, isl_dim_div),
 			return NULL);
-
-	total = term->div->n_col - term->div->n_row - 2;
-	/* No nested divs for now */
-	isl_assert(term->dim->ctx,
-		isl_seq_first_non_zero(term->div->row[pos] + 2 + total,
-					term->div->n_row) == -1,
-		return NULL);
 
 	ls = isl_local_space_alloc_div(isl_space_copy(term->dim),
 					isl_mat_copy(term->div));
