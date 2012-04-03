@@ -1972,6 +1972,13 @@ error:
 	return NULL;
 }
 
+__isl_give isl_basic_set *isl_basic_set_remove_divs_involving_dims(
+	__isl_take isl_basic_set *bset,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	return isl_basic_map_remove_divs_involving_dims(bset, type, first, n);
+}
+
 __isl_give isl_map *isl_map_remove_divs_involving_dims(__isl_take isl_map *map,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
