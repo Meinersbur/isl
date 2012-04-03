@@ -2264,6 +2264,47 @@ error:
 	return NULL;
 }
 
+/* Given two multi-affine expressions A -> B and C -> D,
+ * construct a multi-affine expression [A -> C] -> [B -> D].
+ */
+__isl_give isl_multi_aff *isl_multi_aff_product(
+	__isl_take isl_multi_aff *ma1, __isl_take isl_multi_aff *ma2)
+{
+	int i;
+	isl_aff *aff;
+	isl_space *space;
+	isl_multi_aff *res;
+	int in1, in2, out1, out2;
+
+	in1 = isl_multi_aff_dim(ma1, isl_dim_in);
+	in2 = isl_multi_aff_dim(ma2, isl_dim_in);
+	out1 = isl_multi_aff_dim(ma1, isl_dim_out);
+	out2 = isl_multi_aff_dim(ma2, isl_dim_out);
+	space = isl_space_product(isl_multi_aff_get_space(ma1),
+				  isl_multi_aff_get_space(ma2));
+	res = isl_multi_aff_alloc(isl_space_copy(space));
+	space = isl_space_domain(space);
+
+	for (i = 0; i < out1; ++i) {
+		aff = isl_multi_aff_get_aff(ma1, i);
+		aff = isl_aff_insert_dims(aff, isl_dim_in, in1, in2);
+		aff = isl_aff_reset_domain_space(aff, isl_space_copy(space));
+		res = isl_multi_aff_set_aff(res, i, aff);
+	}
+
+	for (i = 0; i < out2; ++i) {
+		aff = isl_multi_aff_get_aff(ma2, i);
+		aff = isl_aff_insert_dims(aff, isl_dim_in, 0, in1);
+		aff = isl_aff_reset_domain_space(aff, isl_space_copy(space));
+		res = isl_multi_aff_set_aff(res, out1 + i, aff);
+	}
+
+	isl_space_free(space);
+	isl_multi_aff_free(ma1);
+	isl_multi_aff_free(ma2);
+	return res;
+}
+
 /* Exploit the equalities in "eq" to simplify the affine expressions.
  */
 static __isl_give isl_multi_aff *isl_multi_aff_substitute_equalities(
@@ -2641,6 +2682,54 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_union_add(
 	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2)
 {
 	return isl_pw_multi_aff_union_add_(pma1, pma2);
+}
+
+/* Given two piecewise multi-affine expressions A -> B and C -> D,
+ * construct a piecewise multi-affine expression [A -> C] -> [B -> D].
+ */
+static __isl_give isl_pw_multi_aff *pw_multi_aff_product(
+	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2)
+{
+	int i, j, n;
+	isl_space *space;
+	isl_pw_multi_aff *res;
+
+	if (!pma1 || !pma2)
+		goto error;
+
+	n = pma1->n * pma2->n;
+	space = isl_space_product(isl_space_copy(pma1->dim),
+				  isl_space_copy(pma2->dim));
+	res = isl_pw_multi_aff_alloc_size(space, n);
+
+	for (i = 0; i < pma1->n; ++i) {
+		for (j = 0; j < pma2->n; ++j) {
+			isl_set *domain;
+			isl_multi_aff *ma;
+
+			domain = isl_set_product(isl_set_copy(pma1->p[i].set),
+						 isl_set_copy(pma2->p[j].set));
+			ma = isl_multi_aff_product(
+					isl_multi_aff_copy(pma1->p[i].maff),
+					isl_multi_aff_copy(pma2->p[i].maff));
+			res = isl_pw_multi_aff_add_piece(res, domain, ma);
+		}
+	}
+
+	isl_pw_multi_aff_free(pma1);
+	isl_pw_multi_aff_free(pma2);
+	return res;
+error:
+	isl_pw_multi_aff_free(pma1);
+	isl_pw_multi_aff_free(pma2);
+	return NULL;
+}
+
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_product(
+	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2)
+{
+	return isl_pw_multi_aff_align_params_pw_pw_and(pma1, pma2,
+						&pw_multi_aff_product);
 }
 
 /* Construct a map mapping the domain of the piecewise multi-affine expression
