@@ -16,8 +16,22 @@ extern "C" {
  */
 typedef int (*isl_access_level_before)(void *first, void *second);
 
-typedef __isl_give isl_set *(*isl_access_restrict_sources)(
-	__isl_take isl_map *source_map, void *sink_user, void *source_user);
+struct isl_restriction;
+typedef struct isl_restriction isl_restriction;
+
+void *isl_restriction_free(__isl_take isl_restriction *restr);
+__isl_give isl_restriction *isl_restriction_empty(
+	__isl_keep isl_map *source_map);
+__isl_give isl_restriction *isl_restriction_none(
+	__isl_keep isl_map *source_map);
+__isl_give isl_restriction *isl_restriction_input(
+	__isl_take isl_set *source_restr, __isl_take isl_set *sink_restr);
+__isl_give isl_restriction *isl_restriction_output(
+	__isl_take isl_set *source_restr);
+
+typedef __isl_give isl_restriction *(*isl_access_restrict)(
+	__isl_keep isl_map *source_map, __isl_keep isl_set *sink,
+	void *source_user, void *user);
 
 struct isl_access_info;
 typedef struct isl_access_info isl_access_info;
@@ -26,8 +40,8 @@ typedef struct isl_flow isl_flow;
 
 __isl_give isl_access_info *isl_access_info_alloc(__isl_take isl_map *sink,
 	void *sink_user, isl_access_level_before fn, int max_source);
-__isl_give isl_access_info *isl_access_info_set_restrict_sources(
-	__isl_take isl_access_info *acc, isl_access_restrict_sources fn);
+__isl_give isl_access_info *isl_access_info_set_restrict(
+	__isl_take isl_access_info *acc, isl_access_restrict fn, void *user);
 __isl_give isl_access_info *isl_access_info_add_source(
 	__isl_take isl_access_info *acc, __isl_take isl_map *source,
 	int must, void *source_user);

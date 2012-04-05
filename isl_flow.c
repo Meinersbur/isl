@@ -2,6 +2,7 @@
  * Copyright 2005-2007 Universiteit Leiden
  * Copyright 2008-2009 Katholieke Universiteit Leuven
  * Copyright 2010      INRIA Saclay
+ * Copyright 2012      Universiteit Leiden
  *
  * Use of this software is governed by the GNU LGPLv2.1 license
  *
@@ -17,6 +18,126 @@
 #include <isl/map.h>
 #include <isl/flow.h>
 #include <isl_qsort.h>
+
+enum isl_restriction_type {
+	isl_restriction_type_empty,
+	isl_restriction_type_none,
+	isl_restriction_type_input,
+	isl_restriction_type_output
+};
+
+struct isl_restriction {
+	enum isl_restriction_type type;
+
+	isl_set *source;
+	isl_set *sink;
+};
+
+/* Create a restriction that doesn't restrict anything.
+ */
+__isl_give isl_restriction *isl_restriction_none(__isl_keep isl_map *source_map)
+{
+	isl_ctx *ctx;
+	isl_restriction *restr;
+
+	if (!source_map)
+		return NULL;
+
+	ctx = isl_map_get_ctx(source_map);
+	restr = isl_calloc_type(ctx, struct isl_restriction);
+	if (!restr)
+		return NULL;
+
+	restr->type = isl_restriction_type_none;
+
+	return restr;
+}
+
+/* Create a restriction that removes everything.
+ */
+__isl_give isl_restriction *isl_restriction_empty(
+	__isl_keep isl_map *source_map)
+{
+	isl_ctx *ctx;
+	isl_restriction *restr;
+
+	if (!source_map)
+		return NULL;
+
+	ctx = isl_map_get_ctx(source_map);
+	restr = isl_calloc_type(ctx, struct isl_restriction);
+	if (!restr)
+		return NULL;
+
+	restr->type = isl_restriction_type_empty;
+
+	return restr;
+}
+
+/* Create a restriction on the input of the maximization problem
+ * based on the given source and sink restrictions.
+ */
+__isl_give isl_restriction *isl_restriction_input(
+	__isl_take isl_set *source_restr, __isl_take isl_set *sink_restr)
+{
+	isl_ctx *ctx;
+	isl_restriction *restr;
+
+	if (!source_restr || !sink_restr)
+		goto error;
+
+	ctx = isl_set_get_ctx(source_restr);
+	restr = isl_calloc_type(ctx, struct isl_restriction);
+	if (!restr)
+		goto error;
+
+	restr->type = isl_restriction_type_input;
+	restr->source = source_restr;
+	restr->sink = sink_restr;
+
+	return restr;
+error:
+	isl_set_free(source_restr);
+	isl_set_free(sink_restr);
+	return NULL;
+}
+
+/* Create a restriction on the output of the maximization problem
+ * based on the given source restriction.
+ */
+__isl_give isl_restriction *isl_restriction_output(
+	__isl_take isl_set *source_restr)
+{
+	isl_ctx *ctx;
+	isl_restriction *restr;
+
+	if (!source_restr)
+		return NULL;
+
+	ctx = isl_set_get_ctx(source_restr);
+	restr = isl_calloc_type(ctx, struct isl_restriction);
+	if (!restr)
+		goto error;
+
+	restr->type = isl_restriction_type_output;
+	restr->source = source_restr;
+
+	return restr;
+error:
+	isl_set_free(source_restr);
+	return NULL;
+}
+
+void *isl_restriction_free(__isl_take isl_restriction *restr)
+{
+	if (!restr)
+		return NULL;
+
+	isl_set_free(restr->source);
+	isl_set_free(restr->sink);
+	free(restr);
+	return NULL;
+}
 
 /* A private structure to keep track of a mapping together with
  * a user-specified identifier and a boolean indicating whether
@@ -37,14 +158,17 @@ struct isl_labeled_map {
  * domain_map is an auxiliary map that maps the sink access relation
  * to the domain of this access relation.
  *
- * restrict_sources is a callback that (if not NULL) will be called
+ * restrict_fn is a callback that (if not NULL) will be called
  * right before any lexicographical maximization.
  */
 struct isl_access_info {
 	isl_map				*domain_map;
 	struct isl_labeled_map		sink;
 	isl_access_level_before		level_before;
-	isl_access_restrict_sources	restrict_sources;
+
+	isl_access_restrict		restrict_fn;
+	void				*restrict_user;
+
 	int		    		max_source;
 	int		    		n_must;
 	int		    		n_may;
@@ -117,12 +241,13 @@ isl_ctx *isl_access_info_get_ctx(__isl_keep isl_access_info *acc)
 	return acc ? isl_map_get_ctx(acc->sink.map) : NULL;
 }
 
-__isl_give isl_access_info *isl_access_info_set_restrict_sources(
-	__isl_take isl_access_info *acc, isl_access_restrict_sources fn)
+__isl_give isl_access_info *isl_access_info_set_restrict(
+	__isl_take isl_access_info *acc, isl_access_restrict fn, void *user)
 {
 	if (!acc)
 		return NULL;
-	acc->restrict_sources = fn;
+	acc->restrict_fn = fn;
+	acc->restrict_user = user;
 	return acc;
 }
 
@@ -374,30 +499,67 @@ static __isl_give isl_map *after_at_level(__isl_take isl_space *dim, int level)
 	return isl_map_from_basic_map(bmap);
 }
 
-/* Check if the user has set acc->restrict_sources and if so
- * intersect the range of "dep" with the result of a call to this function.
+/* Compute the partial lexicographic maximum of "dep" on domain "sink",
+ * but first check if the user has set acc->restrict_fn and if so
+ * update either the input or the output of the maximization problem
+ * with respect to the resulting restriction.
  *
  * Since the user expects a mapping from sink iterations to source iterations,
  * whereas the domain of "dep" is a wrapped map, mapping sink iterations
  * to accessed array elements, we first need to project out the accessed
  * sink array elements by applying acc->domain_map.
+ * Similarly, the sink restriction specified by the user needs to be
+ * converted back to the wrapped map.
  */
-static __isl_give isl_map *restrict_sources(__isl_take isl_map *dep,
-	struct isl_access_info *acc, int source)
+static __isl_give isl_map *restricted_partial_lexmax(
+	__isl_keep isl_access_info *acc, __isl_take isl_map *dep,
+	int source, __isl_take isl_set *sink, __isl_give isl_set **empty)
 {
 	isl_map *source_map;
-	isl_set *param;
+	isl_restriction *restr;
+	isl_set *sink_domain;
+	isl_set *sink_restr;
+	isl_map *res;
 
-	if (!acc->restrict_sources)
-		return dep;
+	if (!acc->restrict_fn)
+		return isl_map_partial_lexmax(dep, sink, empty);
 
 	source_map = isl_map_copy(dep);
 	source_map = isl_map_apply_domain(source_map,
 					    isl_map_copy(acc->domain_map));
-	param = acc->restrict_sources(source_map, acc->sink.data,
-				    acc->source[source].data);
-	dep = isl_map_intersect_range(dep, param);
-	return dep;
+	sink_domain = isl_set_copy(sink);
+	sink_domain = isl_set_apply(sink_domain, isl_map_copy(acc->domain_map));
+	restr = acc->restrict_fn(source_map, sink_domain,
+				acc->source[source].data, acc->restrict_user);
+	isl_set_free(sink_domain);
+	isl_map_free(source_map);
+
+	if (!restr)
+		goto error;
+	if (restr->type == isl_restriction_type_input) {
+		dep = isl_map_intersect_range(dep, isl_set_copy(restr->source));
+		sink_restr = isl_set_copy(restr->sink);
+		sink_restr = isl_set_apply(sink_restr,
+				isl_map_reverse(isl_map_copy(acc->domain_map)));
+		sink = isl_set_intersect(sink, sink_restr);
+	} else if (restr->type == isl_restriction_type_empty) {
+		isl_space *space = isl_map_get_space(dep);
+		isl_map_free(dep);
+		dep = isl_map_empty(space);
+	}
+
+	res = isl_map_partial_lexmax(dep, sink, empty);
+
+	if (restr->type == isl_restriction_type_output)
+		res = isl_map_intersect_range(res, isl_set_copy(restr->source));
+
+	isl_restriction_free(restr);
+	return res;
+error:
+	isl_map_free(dep);
+	isl_set_free(sink);
+	*empty = NULL;
+	return NULL;
 }
 
 /* Compute the last iteration of must source j that precedes the sink
@@ -421,8 +583,7 @@ static struct isl_map *last_source(struct isl_access_info *acc,
 	dep_map = isl_map_apply_range(read_map, write_map);
 	after = after_at_level(isl_map_get_space(dep_map), level);
 	dep_map = isl_map_intersect(dep_map, after);
-	dep_map = restrict_sources(dep_map, acc, j);
-	result = isl_map_partial_lexmax(dep_map, set_C, empty);
+	result = restricted_partial_lexmax(acc, dep_map, j, set_C, empty);
 	result = isl_map_reverse(result);
 
 	return result;
@@ -463,8 +624,7 @@ static struct isl_map *last_later_source(struct isl_access_info *acc,
 	dep_map = isl_map_intersect(dep_map, after_write);
 	before_read = after_at_level(isl_map_get_space(dep_map), before_level);
 	dep_map = isl_map_intersect(dep_map, before_read);
-	dep_map = restrict_sources(dep_map, acc, k);
-	result = isl_map_partial_lexmax(dep_map, set_C, empty);
+	result = restricted_partial_lexmax(acc, dep_map, k, set_C, empty);
 	result = isl_map_reverse(result);
 
 	return result;
