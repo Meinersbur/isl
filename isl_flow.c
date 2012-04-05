@@ -169,11 +169,7 @@ error:
  * the source access identified by p1 should be sorted before, together
  * or after that identified by p2.
  *
- * If p1 and p2 share a different number of levels with the sink,
- * then the one with the lowest number of shared levels should be
- * sorted first.
- * If they both share no levels, then the order is irrelevant.
- * Otherwise, if p1 appears before p2, then it should be sorted first.
+ * If p1 appears before p2, then it should be sorted first.
  * For more generic initial schedules, it is possible that neither
  * p1 nor p2 appears before the other, or at least not in any obvious way.
  * We therefore also check if p2 appears before p1, in which case p2
@@ -191,12 +187,6 @@ static int access_sort_cmp(const void *p1, const void *p2, void *user)
 	i1 = (const struct isl_labeled_map *) p1;
 	i2 = (const struct isl_labeled_map *) p2;
 
-	level1 = acc->level_before(i1->data, acc->sink.data);
-	level2 = acc->level_before(i2->data, acc->sink.data);
-
-	if (level1 != level2 || !level1)
-		return level1 - level2;
-
 	level1 = acc->level_before(i1->data, i2->data);
 	if (level1 % 2)
 		return -1;
@@ -210,10 +200,7 @@ static int access_sort_cmp(const void *p1, const void *p2, void *user)
 	return h1 > h2 ? 1 : h1 < h2 ? -1 : 0;
 }
 
-/* Sort the must source accesses in order of increasing number of shared
- * levels with the sink access.
- * Source accesses with the same number of shared levels are sorted
- * in their textual order.
+/* Sort the must source accesses in their textual order.
  */
 static __isl_give isl_access_info *isl_access_info_sort_sources(
 	__isl_take isl_access_info *acc)
