@@ -190,6 +190,10 @@ int test_parse(struct isl_ctx *ctx)
 	test_parse_pwaff(ctx, "{ [i] -> [i + 1] : i > 0; [a] -> [a] : a < 0 }");
 	test_parse_pwqp(ctx, "{ [x] -> ([(x)/2] * [(x)/3]) }");
 
+	if (test_parse_map_equal(ctx, "{ [a] -> [b] : (not false) }",
+				      "{ [a] -> [b] : true }") < 0)
+		return -1;
+
 	return 0;
 }
 

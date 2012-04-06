@@ -1064,6 +1064,7 @@ static int resolve_paren_expr(struct isl_stream *s,
 			goto error;
 
 	if (isl_stream_next_token_is(s, ISL_TOKEN_EXISTS) ||
+	    isl_stream_next_token_is(s, ISL_TOKEN_NOT) ||
 	    isl_stream_next_token_is(s, ISL_TOKEN_TRUE) ||
 	    isl_stream_next_token_is(s, ISL_TOKEN_FALSE) ||
 	    isl_stream_next_token_is(s, ISL_TOKEN_MAP)) {
