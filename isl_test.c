@@ -51,15 +51,24 @@ void test_parse_map(isl_ctx *ctx, const char *str)
 	isl_map_free(map);
 }
 
-void test_parse_map_equal(isl_ctx *ctx, const char *str, const char *str2)
+int test_parse_map_equal(isl_ctx *ctx, const char *str, const char *str2)
 {
 	isl_map *map, *map2;
+	int equal;
 
 	map = isl_map_read_from_str(ctx, str);
 	map2 = isl_map_read_from_str(ctx, str2);
-	assert(map && map2 && isl_map_is_equal(map, map2));
+	equal = isl_map_is_equal(map, map2);
 	isl_map_free(map);
 	isl_map_free(map2);
+
+	if (equal < 0)
+		return -1;
+	if (!equal)
+		isl_die(ctx, isl_error_unknown, "maps not equal",
+			return -1);
+
+	return 0;
 }
 
 void test_parse_pwqp(isl_ctx *ctx, const char *str)
@@ -80,7 +89,7 @@ static void test_parse_pwaff(isl_ctx *ctx, const char *str)
 	isl_pw_aff_free(pwaff);
 }
 
-void test_parse(struct isl_ctx *ctx)
+int test_parse(struct isl_ctx *ctx)
 {
 	isl_map *map, *map2;
 	const char *str, *str2;
@@ -101,12 +110,16 @@ void test_parse(struct isl_ctx *ctx)
 
 	str = "{ [x,y]  : [([x/2]+y)/3] >= 1 }";
 	str2 = "{ [x, y] : 2y >= 6 - x }";
-	test_parse_map_equal(ctx, str, str2);
+	if (test_parse_map_equal(ctx, str, str2) < 0)
+		return -1;
 
-	test_parse_map_equal(ctx, "{ [x,y] : x <= min(y, 2*y+3) }",
-				  "{ [x,y] : x <= y, 2*y + 3 }");
+	if (test_parse_map_equal(ctx, "{ [x,y] : x <= min(y, 2*y+3) }",
+				      "{ [x,y] : x <= y, 2*y + 3 }") < 0)
+		return -1;
 	str = "{ [x, y] : (y <= x and y >= -3) or (2y <= -3 + x and y <= -4) }";
-	test_parse_map_equal(ctx, "{ [x,y] : x >= min(y, 2*y+3) }", str);
+	if (test_parse_map_equal(ctx, "{ [x,y] : x >= min(y, 2*y+3) }",
+					str) < 0)
+		return -1;
 
 	str = "{[new,old] -> [new+1-2*[(new+1)/2],old+1-2*[(old+1)/2]]}";
 	map = isl_map_read_from_str(ctx, str);
@@ -129,44 +142,55 @@ void test_parse(struct isl_ctx *ctx)
 
 	str = "[n] -> { [c1] : c1>=0 and c1<=floord(n-4,3) }";
 	str2 = "[n] -> { [c1] : c1 >= 0 and 3c1 <= -4 + n }";
-	test_parse_map_equal(ctx, str, str2);
+	if (test_parse_map_equal(ctx, str, str2) < 0)
+		return -1;
 
 	str = "{ [i,j] -> [i] : i < j; [i,j] -> [j] : j <= i }";
 	str2 = "{ [i,j] -> [min(i,j)] }";
-	test_parse_map_equal(ctx, str, str2);
+	if (test_parse_map_equal(ctx, str, str2) < 0)
+		return -1;
 
 	str = "{ [i,j] : i != j }";
 	str2 = "{ [i,j] : i < j or i > j }";
-	test_parse_map_equal(ctx, str, str2);
+	if (test_parse_map_equal(ctx, str, str2) < 0)
+		return -1;
 
 	str = "{ [i,j] : (i+1)*2 >= j }";
 	str2 = "{ [i, j] : j <= 2 + 2i }";
-	test_parse_map_equal(ctx, str, str2);
+	if (test_parse_map_equal(ctx, str, str2) < 0)
+		return -1;
 
 	str = "{ [i] -> [i > 0 ? 4 : 5] }";
 	str2 = "{ [i] -> [5] : i <= 0; [i] -> [4] : i >= 1 }";
-	test_parse_map_equal(ctx, str, str2);
+	if (test_parse_map_equal(ctx, str, str2) < 0)
+		return -1;
 
 	str = "[N=2,M] -> { [i=[(M+N)/4]] }";
 	str2 = "[N, M] -> { [i] : N = 2 and 4i <= 2 + M and 4i >= -1 + M }";
-	test_parse_map_equal(ctx, str, str2);
+	if (test_parse_map_equal(ctx, str, str2) < 0)
+		return -1;
 
 	str = "{ [x] : x >= 0 }";
 	str2 = "{ [x] : x-0 >= 0 }";
-	test_parse_map_equal(ctx, str, str2);
+	if (test_parse_map_equal(ctx, str, str2) < 0)
+		return -1;
 
 	str = "{ [i] : ((i > 10)) }";
 	str2 = "{ [i] : i >= 11 }";
-	test_parse_map_equal(ctx, str, str2);
+	if (test_parse_map_equal(ctx, str, str2) < 0)
+		return -1;
 
 	str = "{ [i] -> [0] }";
 	str2 = "{ [i] -> [0 * i] }";
-	test_parse_map_equal(ctx, str, str2);
+	if (test_parse_map_equal(ctx, str, str2) < 0)
+		return -1;
 
 	test_parse_pwqp(ctx, "{ [i] -> i + [ (i + [i/3])/2 ] }");
 	test_parse_map(ctx, "{ S1[i] -> [([i/10]),i%10] : 0 <= i <= 45 }");
 	test_parse_pwaff(ctx, "{ [i] -> [i + 1] : i > 0; [a] -> [a] : a < 0 }");
 	test_parse_pwqp(ctx, "{ [x] -> ([(x)/2] * [(x)/3]) }");
+
+	return 0;
 }
 
 void test_read(struct isl_ctx *ctx)
@@ -2828,7 +2852,8 @@ int main()
 	test_bound(ctx);
 	test_union(ctx);
 	test_split_periods(ctx);
-	test_parse(ctx);
+	if (test_parse(ctx) < 0)
+		goto error;
 	test_pwqp(ctx);
 	test_lex(ctx);
 	if (test_sv(ctx) < 0)
