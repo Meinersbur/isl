@@ -523,7 +523,7 @@ static __isl_give PW *FN(PW,on_shared_domain)(__isl_take PW *pw1,
 	__isl_give EL *(*fn)(__isl_take EL *el1, __isl_take EL *el2))
 {
 	int i, j, n;
-	PW *res;
+	PW *res = NULL;
 
 	if (!pw1 || !pw2)
 		goto error;
@@ -539,11 +539,16 @@ static __isl_give PW *FN(PW,on_shared_domain)(__isl_take PW *pw1,
 		for (j = 0; j < pw2->n; ++j) {
 			isl_set *common;
 			EL *res_ij;
+			int empty;
+
 			common = isl_set_intersect(
 					isl_set_copy(pw1->p[i].set),
 					isl_set_copy(pw2->p[j].set));
-			if (isl_set_plain_is_empty(common)) {
+			empty = isl_set_plain_is_empty(common);
+			if (empty < 0 || empty) {
 				isl_set_free(common);
+				if (empty < 0)
+					goto error;
 				continue;
 			}
 
@@ -561,6 +566,7 @@ static __isl_give PW *FN(PW,on_shared_domain)(__isl_take PW *pw1,
 error:
 	FN(PW,free)(pw1);
 	FN(PW,free)(pw2);
+	FN(PW,free)(res);
 	return NULL;
 }
 
