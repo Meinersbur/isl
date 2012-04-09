@@ -1186,10 +1186,14 @@ using the following functions.
 Sets and relations can be converted to union sets and relations
 using the following functions.
 
-	__isl_give isl_union_map *isl_union_map_from_map(
-		__isl_take isl_map *map);
+	__isl_give isl_union_set *isl_union_set_from_basic_set(
+		__isl_take isl_basic_set *bset);
+	__isl_give isl_union_map *isl_union_map_from_basic_map(
+		__isl_take isl_basic_map *bmap);
 	__isl_give isl_union_set *isl_union_set_from_set(
 		__isl_take isl_set *set);
+	__isl_give isl_union_map *isl_union_map_from_map(
+		__isl_take isl_map *map);
 
 The inverse conversions below can only be used if the input
 union set or relation is known to contain elements in exactly one

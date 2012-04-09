@@ -347,6 +347,18 @@ __isl_give isl_union_set *isl_union_set_from_set(__isl_take isl_set *set)
 	return isl_union_map_from_map((isl_map *)set);
 }
 
+__isl_give isl_union_map *isl_union_map_from_basic_map(
+	__isl_take isl_basic_map *bmap)
+{
+	return isl_union_map_from_map(isl_map_from_basic_map(bmap));
+}
+
+__isl_give isl_union_set *isl_union_set_from_basic_set(
+	__isl_take isl_basic_set *bset)
+{
+	return isl_union_map_from_basic_map(bset);
+}
+
 struct isl_union_map_foreach_data
 {
 	int (*fn)(__isl_take isl_map *map, void *user);
