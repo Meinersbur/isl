@@ -2489,17 +2489,45 @@ int test_injective(isl_ctx *ctx)
 	return 0;
 }
 
+static int aff_plain_is_equal(__isl_keep isl_aff *aff, const char *str)
+{
+	isl_aff *aff2;
+	int equal;
+
+	if (!aff)
+		return -1;
+
+	aff2 = isl_aff_read_from_str(isl_aff_get_ctx(aff), str);
+	equal = isl_aff_plain_is_equal(aff, aff2);
+	isl_aff_free(aff2);
+
+	return equal;
+}
+
+static int aff_check_plain_equal(__isl_keep isl_aff *aff, const char *str)
+{
+	int equal;
+
+	equal = aff_plain_is_equal(aff, str);
+	if (equal < 0)
+		return -1;
+	if (!equal)
+		isl_die(isl_aff_get_ctx(aff), isl_error_unknown,
+			"result not as expected", return -1);
+	return 0;
+}
+
 int test_aff(isl_ctx *ctx)
 {
 	const char *str;
 	isl_set *set;
-	isl_space *dim;
+	isl_space *space;
 	isl_local_space *ls;
 	isl_aff *aff;
-	int zero;
+	int zero, equal;
 
-	dim = isl_space_set_alloc(ctx, 0, 1);
-	ls = isl_local_space_from_space(dim);
+	space = isl_space_set_alloc(ctx, 0, 1);
+	ls = isl_local_space_from_space(space);
 	aff = isl_aff_zero_on_domain(ls);
 
 	aff = isl_aff_add_coefficient_si(aff, isl_dim_in, 0, 1);
@@ -2522,6 +2550,14 @@ int test_aff(isl_ctx *ctx)
 		return -1;
 	if (!zero)
 		isl_die(ctx, isl_error_unknown, "unexpected result", return -1);
+
+	aff = isl_aff_read_from_str(ctx, "{ [-1] }");
+	aff = isl_aff_scale_down_ui(aff, 64);
+	aff = isl_aff_floor(aff);
+	equal = aff_check_plain_equal(aff, "{ [-1] }");
+	isl_aff_free(aff);
+	if (equal < 0)
+		return -1;
 
 	return 0;
 }
