@@ -1059,6 +1059,12 @@ int test_coalesce(struct isl_ctx *ctx)
 	if (test_coalesce_set(ctx, "{ [a, b] : exists e : 2e = a and "
 		    "a >= 0 and (a <= 3 or (b <= 0 and b >= -4 + a)) }", 0) < 0)
 		return -1;
+	if (test_coalesce_set(ctx,
+		"{ [i, j, i', j'] : i <= 2 and j <= 2 and "
+			"j' >= -1 + 2i + j - 2i' and i' <= -1 + i and "
+			"j >= 1 and j' <= i + j - i' and i >= 1; "
+		"[1, 1, 1, 1] }", 0) < 0)
+		return -1;
 	return 0;
 }
 
