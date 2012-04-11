@@ -1541,6 +1541,13 @@ error:
 	return NULL;
 }
 
+__isl_give isl_basic_set *isl_basic_set_eliminate(
+	__isl_take isl_basic_set *bset,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	return isl_basic_map_eliminate(bset, type, first, n);
+}
+
 /* Don't assume equalities are in order, because align_divs
  * may have changed the order of the divs.
  */
