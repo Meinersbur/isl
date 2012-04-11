@@ -241,6 +241,16 @@ isl_ctx *isl_printer_get_ctx(__isl_keep isl_printer *printer)
 	return printer ? printer->ctx : NULL;
 }
 
+FILE *isl_printer_get_file(__isl_keep isl_printer *printer)
+{
+	if (!printer)
+		return NULL;
+	if (!printer->file)
+		isl_die(isl_printer_get_ctx(printer), isl_error_invalid,
+			"not a file printer", return NULL);
+	return printer->file;
+}
+
 __isl_give isl_printer *isl_printer_set_isl_int_width(__isl_take isl_printer *p,
 	int width)
 {

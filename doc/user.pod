@@ -976,6 +976,11 @@ be created.
 	__isl_give char *isl_printer_get_str(
 		__isl_keep isl_printer *printer);
 
+The printer can be inspected using the following function.
+
+	FILE *isl_printer_get_file(
+		__isl_keep isl_printer *printer);
+
 The behavior of the printer can be modified in various ways
 
 	__isl_give isl_printer *isl_printer_set_output_format(
