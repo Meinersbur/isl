@@ -12,6 +12,7 @@
 
 #include "isl_map_private.h"
 #include <isl/seq.h>
+#include <isl/options.h>
 #include "isl_tab.h"
 #include <isl_mat_private.h>
 
@@ -420,6 +421,106 @@ static int is_extension(struct isl_map *map, int i, int j, int k,
 	return changed;
 }
 
+/* Data structure that keeps track of the wrapping constraints
+ * and of information to bound the coefficients of those constraints.
+ *
+ * bound is set if we want to apply a bound on the coefficients
+ * mat contains the wrapping constraints
+ * max is the bound on the coefficients (if bound is set)
+ */
+struct isl_wraps {
+	int bound;
+	isl_mat *mat;
+	isl_int max;
+};
+
+/* Update wraps->max to be greater than or equal to the coefficients
+ * in the equalities and inequalities of bmap that can be removed if we end up
+ * applying wrapping.
+ */
+static void wraps_update_max(struct isl_wraps *wraps,
+	__isl_keep isl_basic_map *bmap, int *eq, int *ineq)
+{
+	int k;
+	isl_int max_k;
+	unsigned total = isl_basic_map_total_dim(bmap);
+
+	isl_int_init(max_k);
+
+	for (k = 0; k < bmap->n_eq; ++k) {
+		if (eq[2 * k] == STATUS_VALID &&
+		    eq[2 * k + 1] == STATUS_VALID)
+			continue;
+		isl_seq_abs_max(bmap->eq[k] + 1, total, &max_k);
+		if (isl_int_abs_gt(max_k, wraps->max))
+			isl_int_set(wraps->max, max_k);
+	}
+
+	for (k = 0; k < bmap->n_ineq; ++k) {
+		if (ineq[k] == STATUS_VALID || ineq[k] == STATUS_REDUNDANT)
+			continue;
+		isl_seq_abs_max(bmap->ineq[k] + 1, total, &max_k);
+		if (isl_int_abs_gt(max_k, wraps->max))
+			isl_int_set(wraps->max, max_k);
+	}
+
+	isl_int_clear(max_k);
+}
+
+/* Initialize the isl_wraps data structure.
+ * If we want to bound the coefficients of the wrapping constraints,
+ * we set wraps->max to the largest coefficient
+ * in the equalities and inequalities that can be removed if we end up
+ * applying wrapping.
+ */
+static void wraps_init(struct isl_wraps *wraps, __isl_take isl_mat *mat,
+	__isl_keep isl_map *map, int i, int j,
+	int *eq_i, int *ineq_i, int *eq_j, int *ineq_j)
+{
+	isl_ctx *ctx;
+
+	wraps->bound = 0;
+	wraps->mat = mat;
+	if (!mat)
+		return;
+	ctx = isl_mat_get_ctx(mat);
+	wraps->bound = isl_options_get_coalesce_bounded_wrapping(ctx);
+	if (!wraps->bound)
+		return;
+	isl_int_init(wraps->max);
+	isl_int_set_si(wraps->max, 0);
+	wraps_update_max(wraps, map->p[i], eq_i, ineq_i);
+	wraps_update_max(wraps, map->p[j], eq_j, ineq_j);
+}
+
+/* Free the contents of the isl_wraps data structure.
+ */
+static void wraps_free(struct isl_wraps *wraps)
+{
+	isl_mat_free(wraps->mat);
+	if (wraps->bound)
+		isl_int_clear(wraps->max);
+}
+
+/* Is the wrapping constraint in row "row" allowed?
+ *
+ * If wraps->bound is set, we check that none of the coefficients
+ * is greater than wraps->max.
+ */
+static int allow_wrap(struct isl_wraps *wraps, int row)
+{
+	int i;
+
+	if (!wraps->bound)
+		return 1;
+
+	for (i = 1; i < wraps->mat->n_col; ++i)
+		if (isl_int_abs_gt(wraps->mat->row[row][i], wraps->max))
+			return 0;
+
+	return 1;
+}
+
 /* For each non-redundant constraint in "bmap" (as determined by "tab"),
  * wrap the constraint around "bound" such that it includes the whole
  * set "set" and append the resulting constraint to "wraps".
@@ -430,15 +531,18 @@ static int is_extension(struct isl_map *map, int i, int j, int k,
  * identical to "bound", then this means that "set" is unbounded in such
  * way that no wrapping is possible.  If this happens then wraps->n_row
  * is reset to zero.
+ * Similarly, if we want to bound the coefficients of the wrapping
+ * constraints and a newly added wrapping constraint does not
+ * satisfy the bound, then wraps->n_row is also reset to zero.
  */
-static int add_wraps(__isl_keep isl_mat *wraps, __isl_keep isl_basic_map *bmap,
+static int add_wraps(struct isl_wraps *wraps, __isl_keep isl_basic_map *bmap,
 	struct isl_tab *tab, isl_int *bound, __isl_keep isl_set *set)
 {
 	int l;
 	int w;
 	unsigned total = isl_basic_map_total_dim(bmap);
 
-	w = wraps->n_row;
+	w = wraps->mat->n_row;
 
 	for (l = 0; l < bmap->n_ineq; ++l) {
 		if (isl_seq_is_neg(bound, bmap->ineq[l], 1 + total))
@@ -448,10 +552,12 @@ static int add_wraps(__isl_keep isl_mat *wraps, __isl_keep isl_basic_map *bmap,
 		if (isl_tab_is_redundant(tab, bmap->n_eq + l))
 			continue;
 
-		isl_seq_cpy(wraps->row[w], bound, 1 + total);
-		if (!isl_set_wrap_facet(set, wraps->row[w], bmap->ineq[l]))
+		isl_seq_cpy(wraps->mat->row[w], bound, 1 + total);
+		if (!isl_set_wrap_facet(set, wraps->mat->row[w], bmap->ineq[l]))
 			return -1;
-		if (isl_seq_eq(wraps->row[w], bound, 1 + total))
+		if (isl_seq_eq(wraps->mat->row[w], bound, 1 + total))
+			goto unbounded;
+		if (!allow_wrap(wraps, w))
 			goto unbounded;
 		++w;
 	}
@@ -461,26 +567,31 @@ static int add_wraps(__isl_keep isl_mat *wraps, __isl_keep isl_basic_map *bmap,
 		if (isl_seq_eq(bound, bmap->eq[l], 1 + total))
 			continue;
 
-		isl_seq_cpy(wraps->row[w], bound, 1 + total);
-		isl_seq_neg(wraps->row[w + 1], bmap->eq[l], 1 + total);
-		if (!isl_set_wrap_facet(set, wraps->row[w], wraps->row[w + 1]))
+		isl_seq_cpy(wraps->mat->row[w], bound, 1 + total);
+		isl_seq_neg(wraps->mat->row[w + 1], bmap->eq[l], 1 + total);
+		if (!isl_set_wrap_facet(set, wraps->mat->row[w],
+					wraps->mat->row[w + 1]))
 			return -1;
-		if (isl_seq_eq(wraps->row[w], bound, 1 + total))
+		if (isl_seq_eq(wraps->mat->row[w], bound, 1 + total))
+			goto unbounded;
+		if (!allow_wrap(wraps, w))
 			goto unbounded;
 		++w;
 
-		isl_seq_cpy(wraps->row[w], bound, 1 + total);
-		if (!isl_set_wrap_facet(set, wraps->row[w], bmap->eq[l]))
+		isl_seq_cpy(wraps->mat->row[w], bound, 1 + total);
+		if (!isl_set_wrap_facet(set, wraps->mat->row[w], bmap->eq[l]))
 			return -1;
-		if (isl_seq_eq(wraps->row[w], bound, 1 + total))
+		if (isl_seq_eq(wraps->mat->row[w], bound, 1 + total))
+			goto unbounded;
+		if (!allow_wrap(wraps, w))
 			goto unbounded;
 		++w;
 	}
 
-	wraps->n_row = w;
+	wraps->mat->n_row = w;
 	return 0;
 unbounded:
-	wraps->n_row = 0;
+	wraps->mat->n_row = 0;
 	return 0;
 }
 
@@ -558,7 +669,8 @@ static int can_wrap_in_facet(struct isl_map *map, int i, int j, int k,
 	struct isl_tab **tabs, int *eq_i, int *ineq_i, int *eq_j, int *ineq_j)
 {
 	int changed = 0;
-	struct isl_mat *wraps = NULL;
+	struct isl_wraps wraps;
+	isl_mat *mat;
 	struct isl_set *set_i = NULL;
 	struct isl_set *set_j = NULL;
 	struct isl_vec *bound = NULL;
@@ -568,22 +680,23 @@ static int can_wrap_in_facet(struct isl_map *map, int i, int j, int k,
 
 	set_i = set_from_updated_bmap(map->p[i], tabs[i]);
 	set_j = set_from_updated_bmap(map->p[j], tabs[j]);
-	wraps = isl_mat_alloc(map->ctx, 2 * (map->p[i]->n_eq + map->p[j]->n_eq) +
+	mat = isl_mat_alloc(map->ctx, 2 * (map->p[i]->n_eq + map->p[j]->n_eq) +
 					map->p[i]->n_ineq + map->p[j]->n_ineq,
 					1 + total);
+	wraps_init(&wraps, mat, map, i, j, eq_i, ineq_i, eq_j, ineq_j);
 	bound = isl_vec_alloc(map->ctx, 1 + total);
-	if (!set_i || !set_j || !wraps || !bound)
+	if (!set_i || !set_j || !wraps.mat || !bound)
 		goto error;
 
 	isl_seq_cpy(bound->el, map->p[i]->ineq[k], 1 + total);
 	isl_int_add_ui(bound->el[0], bound->el[0], 1);
 
-	isl_seq_cpy(wraps->row[0], bound->el, 1 + total);
-	wraps->n_row = 1;
+	isl_seq_cpy(wraps.mat->row[0], bound->el, 1 + total);
+	wraps.mat->n_row = 1;
 
-	if (add_wraps(wraps, map->p[j], tabs[j], bound->el, set_i) < 0)
+	if (add_wraps(&wraps, map->p[j], tabs[j], bound->el, set_i) < 0)
 		goto error;
-	if (!wraps->n_row)
+	if (!wraps.mat->n_row)
 		goto unbounded;
 
 	snap = isl_tab_snap(tabs[i]);
@@ -595,21 +708,21 @@ static int can_wrap_in_facet(struct isl_map *map, int i, int j, int k,
 
 	isl_seq_neg(bound->el, map->p[i]->ineq[k], 1 + total);
 
-	n = wraps->n_row;
-	if (add_wraps(wraps, map->p[i], tabs[i], bound->el, set_j) < 0)
+	n = wraps.mat->n_row;
+	if (add_wraps(&wraps, map->p[i], tabs[i], bound->el, set_j) < 0)
 		goto error;
 
 	if (isl_tab_rollback(tabs[i], snap) < 0)
 		goto error;
-	if (check_wraps(wraps, n, tabs[i]) < 0)
+	if (check_wraps(wraps.mat, n, tabs[i]) < 0)
 		goto error;
-	if (!wraps->n_row)
+	if (!wraps.mat->n_row)
 		goto unbounded;
 
-	changed = fuse(map, i, j, tabs, eq_i, ineq_i, eq_j, ineq_j, wraps);
+	changed = fuse(map, i, j, tabs, eq_i, ineq_i, eq_j, ineq_j, wraps.mat);
 
 unbounded:
-	isl_mat_free(wraps);
+	wraps_free(&wraps);
 
 	isl_set_free(set_i);
 	isl_set_free(set_j);
@@ -618,8 +731,8 @@ unbounded:
 
 	return changed;
 error:
+	wraps_free(&wraps);
 	isl_vec_free(bound);
-	isl_mat_free(wraps);
 	isl_set_free(set_i);
 	isl_set_free(set_j);
 	return -1;
@@ -679,7 +792,8 @@ static int wrap_in_facets(struct isl_map *map, int i, int j,
 	int *eq_i, int *ineq_i, int *eq_j, int *ineq_j)
 {
 	int changed = 0;
-	isl_mat *wraps = NULL;
+	struct isl_wraps wraps;
+	isl_mat *mat;
 	isl_set *set = NULL;
 	isl_vec *bound = NULL;
 	unsigned total = isl_basic_map_total_dim(map->p[i]);
@@ -696,15 +810,16 @@ static int wrap_in_facets(struct isl_map *map, int i, int j,
 
 	set = isl_set_union(set_from_updated_bmap(map->p[i], tabs[i]),
 			    set_from_updated_bmap(map->p[j], tabs[j]));
-	wraps = isl_mat_alloc(map->ctx, max_wrap, 1 + total);
+	mat = isl_mat_alloc(map->ctx, max_wrap, 1 + total);
+	wraps_init(&wraps, mat, map, i, j, eq_i, ineq_i, eq_j, ineq_j);
 	bound = isl_vec_alloc(map->ctx, 1 + total);
-	if (!set || !wraps || !bound)
+	if (!set || !wraps.mat || !bound)
 		goto error;
 
 	snap_i = isl_tab_snap(tabs[i]);
 	snap_j = isl_tab_snap(tabs[j]);
 
-	wraps->n_row = 0;
+	wraps.mat->n_row = 0;
 
 	for (k = 0; k < n; ++k) {
 		if (isl_tab_select_facet(tabs[i], map->p[i]->n_eq + cuts[k]) < 0)
@@ -715,7 +830,7 @@ static int wrap_in_facets(struct isl_map *map, int i, int j,
 
 		isl_seq_neg(bound->el, map->p[i]->ineq[cuts[k]], 1 + total);
 		if (!tabs[i]->empty &&
-		    add_wraps(wraps, map->p[i], tabs[i], bound->el, set) < 0)
+		    add_wraps(&wraps, map->p[i], tabs[i], bound->el, set) < 0)
 			goto error;
 
 		set_is_redundant(tabs[i], map->p[i]->n_eq, cuts, n, k, 0);
@@ -724,7 +839,7 @@ static int wrap_in_facets(struct isl_map *map, int i, int j,
 
 		if (tabs[i]->empty)
 			break;
-		if (!wraps->n_row)
+		if (!wraps.mat->n_row)
 			break;
 
 		isl_seq_cpy(bound->el, map->p[i]->ineq[cuts[k]], 1 + total);
@@ -735,28 +850,28 @@ static int wrap_in_facets(struct isl_map *map, int i, int j,
 			goto error;
 
 		if (!tabs[j]->empty &&
-		    add_wraps(wraps, map->p[j], tabs[j], bound->el, set) < 0)
+		    add_wraps(&wraps, map->p[j], tabs[j], bound->el, set) < 0)
 			goto error;
 
 		if (isl_tab_rollback(tabs[j], snap_j) < 0)
 			goto error;
 
-		if (!wraps->n_row)
+		if (!wraps.mat->n_row)
 			break;
 	}
 
 	if (k == n)
 		changed = fuse(map, i, j, tabs,
-				eq_i, ineq_i, eq_j, ineq_j, wraps);
+				eq_i, ineq_i, eq_j, ineq_j, wraps.mat);
 
 	isl_vec_free(bound);
-	isl_mat_free(wraps);
+	wraps_free(&wraps);
 	isl_set_free(set);
 
 	return changed;
 error:
 	isl_vec_free(bound);
-	isl_mat_free(wraps);
+	wraps_free(&wraps);
 	isl_set_free(set);
 	return -1;
 }
@@ -977,7 +1092,8 @@ static int check_eq_adj_eq(struct isl_map *map, int i, int j,
 {
 	int k;
 	int changed = 0;
-	struct isl_mat *wraps = NULL;
+	struct isl_wraps wraps;
+	isl_mat *mat;
 	struct isl_set *set_i = NULL;
 	struct isl_set *set_j = NULL;
 	struct isl_vec *bound = NULL;
@@ -992,11 +1108,12 @@ static int check_eq_adj_eq(struct isl_map *map, int i, int j,
 
 	set_i = set_from_updated_bmap(map->p[i], tabs[i]);
 	set_j = set_from_updated_bmap(map->p[j], tabs[j]);
-	wraps = isl_mat_alloc(map->ctx, 2 * (map->p[i]->n_eq + map->p[j]->n_eq) +
+	mat = isl_mat_alloc(map->ctx, 2 * (map->p[i]->n_eq + map->p[j]->n_eq) +
 					map->p[i]->n_ineq + map->p[j]->n_ineq,
 					1 + total);
+	wraps_init(&wraps, mat, map, i, j, eq_i, ineq_i, eq_j, ineq_j);
 	bound = isl_vec_alloc(map->ctx, 1 + total);
-	if (!set_i || !set_j || !wraps || !bound)
+	if (!set_i || !set_j || !wraps.mat || !bound)
 		goto error;
 
 	if (k % 2 == 0)
@@ -1005,33 +1122,33 @@ static int check_eq_adj_eq(struct isl_map *map, int i, int j,
 		isl_seq_cpy(bound->el, map->p[i]->eq[k / 2], 1 + total);
 	isl_int_add_ui(bound->el[0], bound->el[0], 1);
 
-	isl_seq_cpy(wraps->row[0], bound->el, 1 + total);
-	wraps->n_row = 1;
+	isl_seq_cpy(wraps.mat->row[0], bound->el, 1 + total);
+	wraps.mat->n_row = 1;
 
-	if (add_wraps(wraps, map->p[j], tabs[j], bound->el, set_i) < 0)
+	if (add_wraps(&wraps, map->p[j], tabs[j], bound->el, set_i) < 0)
 		goto error;
-	if (!wraps->n_row)
+	if (!wraps.mat->n_row)
 		goto unbounded;
 
 	isl_int_sub_ui(bound->el[0], bound->el[0], 1);
 	isl_seq_neg(bound->el, bound->el, 1 + total);
 
-	isl_seq_cpy(wraps->row[wraps->n_row], bound->el, 1 + total);
-	wraps->n_row++;
+	isl_seq_cpy(wraps.mat->row[wraps.mat->n_row], bound->el, 1 + total);
+	wraps.mat->n_row++;
 
-	if (add_wraps(wraps, map->p[i], tabs[i], bound->el, set_j) < 0)
+	if (add_wraps(&wraps, map->p[i], tabs[i], bound->el, set_j) < 0)
 		goto error;
-	if (!wraps->n_row)
+	if (!wraps.mat->n_row)
 		goto unbounded;
 
-	changed = fuse(map, i, j, tabs, eq_i, ineq_i, eq_j, ineq_j, wraps);
+	changed = fuse(map, i, j, tabs, eq_i, ineq_i, eq_j, ineq_j, wraps.mat);
 
 	if (0) {
 error:		changed = -1;
 	}
 unbounded:
 
-	isl_mat_free(wraps);
+	wraps_free(&wraps);
 	isl_set_free(set_i);
 	isl_set_free(set_j);
 	isl_vec_free(bound);

@@ -137,6 +137,8 @@ ISL_ARG_BOOL(struct isl_options, pip_symmetry, 0, "pip-symmetry", 1,
 	"detect simple symmetries in PIP input")
 ISL_ARG_CHOICE(struct isl_options, convex, 0, "convex-hull", \
 	convex,	ISL_CONVEX_HULL_WRAP, "convex hull algorithm to use")
+ISL_ARG_BOOL(struct isl_options, coalesce_bounded_wrapping, 0,
+	"coalesce-bounded-wrapping", 1, "bound wrapping during coalescing")
 ISL_ARG_INT(struct isl_options, schedule_max_coefficient, 0,
 	"schedule-max-coefficient", "limit", -1, "Only consider schedules "
 	"where the coefficients of the variable and parameter dimensions "
@@ -176,6 +178,11 @@ ISL_CTX_SET_CHOICE_DEF(isl_options, struct isl_options, isl_options_args,
 	on_error)
 ISL_CTX_GET_CHOICE_DEF(isl_options, struct isl_options, isl_options_args,
 	on_error)
+
+ISL_CTX_SET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
+	coalesce_bounded_wrapping)
+ISL_CTX_GET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
+	coalesce_bounded_wrapping)
 
 ISL_CTX_SET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
 	gbr_only_first)

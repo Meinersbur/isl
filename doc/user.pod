@@ -1955,6 +1955,17 @@ basic set or relation.
 	__isl_give isl_union_map *isl_union_map_coalesce(
 		__isl_take isl_union_map *umap);
 
+One of the methods for combining pairs of basic sets or relations
+can result in coefficients that are much larger than those that appear
+in the constraints of the input.  By default, the coefficients are
+not allowed to grow larger, but this can be changed by unsetting
+the following option.
+
+	int isl_options_set_coalesce_bounded_wrapping(
+		isl_ctx *ctx, int val);
+	int isl_options_get_coalesce_bounded_wrapping(
+		isl_ctx *ctx);
+
 =item * Detecting equalities
 
 	__isl_give isl_basic_set *isl_basic_set_detect_equalities(

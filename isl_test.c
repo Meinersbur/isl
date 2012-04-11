@@ -848,6 +848,38 @@ int test_coalesce_set(isl_ctx *ctx, const char *str, int check_one)
 	return 0;
 }
 
+int test_coalesce_unbounded_wrapping(isl_ctx *ctx)
+{
+	int r = 0;
+	int bounded;
+
+	bounded = isl_options_get_coalesce_bounded_wrapping(ctx);
+	isl_options_set_coalesce_bounded_wrapping(ctx, 0);
+
+	if (test_coalesce_set(ctx,
+		"{[x,y,z] : y + 2 >= 0 and x - y + 1 >= 0 and "
+			"-x - y + 1 >= 0 and -3 <= z <= 3;"
+		"[x,y,z] : -x+z + 20 >= 0 and -x-z + 20 >= 0 and "
+			"x-z + 20 >= 0 and x+z + 20 >= 0 and "
+			"-10 <= y <= 0}", 1) < 0)
+		goto error;
+	if (test_coalesce_set(ctx,
+		"{[x,y] : 0 <= x,y <= 10; [5,y]: 4 <=y <= 11}", 1) < 0)
+		goto error;
+	if (test_coalesce_set(ctx,
+		"{[x,0,0] : -5 <= x <= 5; [0,y,1] : -5 <= y <= 5 }", 1) < 0)
+		goto error;
+
+	if (0) {
+error:
+		r = -1;
+	}
+
+	isl_options_set_coalesce_bounded_wrapping(ctx, bounded);
+
+	return r;
+}
+
 int test_coalesce(struct isl_ctx *ctx)
 {
 	const char *str;
@@ -1076,18 +1108,9 @@ int test_coalesce(struct isl_ctx *ctx)
 	test_coalesce_set(ctx,
 		"{ [x, y] : (x >= 0 and y >= 0 and x <= 10 and y <= 10) or "
 		"(x >= 1 and y >= 1 and x <= 11 and y <= 11) }", 1);
-	test_coalesce_set(ctx,
-		"{[x,y,z] : y + 2 >= 0 and x - y + 1 >= 0 and "
-			"-x - y + 1 >= 0 and -3 <= z <= 3;"
-		"[x,y,z] : -x+z + 20 >= 0 and -x-z + 20 >= 0 and "
-			"x-z + 20 >= 0 and x+z + 20 >= 0 and -10 <= y <= 0}", 1);
-	if (test_coalesce_set(ctx,
-		"{[x,y] : 0 <= x,y <= 10; [5,y]: 4 <=y <= 11}", 1) < 0)
+	if (test_coalesce_unbounded_wrapping(ctx) < 0)
 		return -1;
 	if (test_coalesce_set(ctx, "{[x,0] : x >= 0; [x,1] : x <= 20}", 0) < 0)
-		return -1;
-	if (test_coalesce_set(ctx,
-		"{[x,0,0] : -5 <= x <= 5; [0,y,1] : -5 <= y <= 5 }", 1) < 0)
 		return -1;
 	if (test_coalesce_set(ctx, "{ [x, 1 - x] : 0 <= x <= 1; [0,0] }", 1) < 0)
 		return -1;
