@@ -399,6 +399,24 @@ static void graph_remove_edge(struct isl_sched_graph *graph,
 	}
 }
 
+/* Check whether the dependence graph has any edge
+ * between the given two nodes.
+ */
+static int graph_has_any_edge(struct isl_sched_graph *graph,
+	struct isl_sched_node *src, struct isl_sched_node *dst)
+{
+	int i;
+	int r;
+
+	for (i = 0; i <= isl_edge_last; ++i) {
+		r = graph_has_edge(graph, i, src, dst);
+		if (r < 0 || r)
+			return r;
+	}
+
+	return r;
+}
+
 /* Check whether the dependence graph has a validity edge
  * between the given two nodes.
  */
@@ -571,20 +589,25 @@ static int extract_edge(__isl_take isl_map *map, void *user)
 }
 
 /* Check whether there is a validity dependence from src to dst,
- * forcing dst to follow src.
+ * forcing dst to follow src (if weak is not set).
+ * If weak is set, then check if there is any dependence from src to dst.
  */
 static int node_follows(struct isl_sched_graph *graph, 
-	struct isl_sched_node *dst, struct isl_sched_node *src)
+	struct isl_sched_node *dst, struct isl_sched_node *src, int weak)
 {
-	return graph_has_validity_edge(graph, src, dst);
+	if (weak)
+		return graph_has_any_edge(graph, src, dst);
+	else
+		return graph_has_validity_edge(graph, src, dst);
 }
 
 /* Perform Tarjan's algorithm for computing the strongly connected components
  * in the dependence graph (only validity edges).
- * If directed is not set, we consider the graph to be undirected and
+ * If weak is set, we consider the graph to be undirected and
  * we effectively compute the (weakly) connected components.
+ * Additionally, we also consider other edges when weak is set.
  */
-static int detect_sccs_tarjan(struct isl_sched_graph *g, int i, int directed)
+static int detect_sccs_tarjan(struct isl_sched_graph *g, int i, int weak)
 {
 	int j;
 
@@ -604,18 +627,18 @@ static int detect_sccs_tarjan(struct isl_sched_graph *g, int i, int directed)
 			 g->node[j].index > g->node[i].min_index))
 			continue;
 		
-		f = node_follows(g, &g->node[i], &g->node[j]);
+		f = node_follows(g, &g->node[i], &g->node[j], weak);
 		if (f < 0)
 			return -1;
-		if (!f && !directed) {
-			f = node_follows(g, &g->node[j], &g->node[i]);
+		if (!f && weak) {
+			f = node_follows(g, &g->node[j], &g->node[i], weak);
 			if (f < 0)
 				return -1;
 		}
 		if (!f)
 			continue;
 		if (g->node[j].index < 0) {
-			detect_sccs_tarjan(g, j, directed);
+			detect_sccs_tarjan(g, j, weak);
 			if (g->node[j].min_index < g->node[i].min_index)
 				g->node[i].min_index = g->node[j].min_index;
 		} else if (g->node[j].index < g->node[i].min_index)
@@ -635,7 +658,7 @@ static int detect_sccs_tarjan(struct isl_sched_graph *g, int i, int directed)
 	return 0;
 }
 
-static int detect_ccs(struct isl_sched_graph *graph, int directed)
+static int detect_ccs(struct isl_sched_graph *graph, int weak)
 {
 	int i;
 
@@ -648,7 +671,7 @@ static int detect_ccs(struct isl_sched_graph *graph, int directed)
 	for (i = graph->n - 1; i >= 0; --i) {
 		if (graph->node[i].index >= 0)
 			continue;
-		if (detect_sccs_tarjan(graph, i, directed) < 0)
+		if (detect_sccs_tarjan(graph, i, weak) < 0)
 			return -1;
 	}
 
@@ -660,7 +683,7 @@ static int detect_ccs(struct isl_sched_graph *graph, int directed)
  */
 static int detect_sccs(struct isl_sched_graph *graph)
 {
-	return detect_ccs(graph, 1);
+	return detect_ccs(graph, 0);
 }
 
 /* Apply Tarjan's algorithm to detect the (weakly) connected components
@@ -668,7 +691,7 @@ static int detect_sccs(struct isl_sched_graph *graph)
  */
 static int detect_wccs(struct isl_sched_graph *graph)
 {
-	return detect_ccs(graph, 0);
+	return detect_ccs(graph, 1);
 }
 
 static int cmp_scc(const void *a, const void *b, void *data)
