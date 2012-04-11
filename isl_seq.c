@@ -194,6 +194,17 @@ int isl_seq_last_non_zero(isl_int *p, unsigned len)
 	return -1;
 }
 
+void isl_seq_abs_max(isl_int *p, unsigned len, isl_int *max)
+{
+	int i;
+
+	isl_int_set_si(*max, 0);
+
+	for (i = 0; i < len; ++i)
+		if (isl_int_abs_gt(p[i], *max))
+			isl_int_abs(*max, p[i]);
+}
+
 int isl_seq_abs_min_non_zero(isl_int *p, unsigned len)
 {
 	int i, min = isl_seq_first_non_zero(p, len);

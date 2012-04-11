@@ -36,6 +36,7 @@ void isl_seq_combine(isl_int *dst, isl_int m1, isl_int *src1,
 			isl_int m2, isl_int *src2, unsigned len);
 void isl_seq_elim(isl_int *dst, isl_int *src, unsigned pos, unsigned len,
 		  isl_int *m);
+void isl_seq_abs_max(isl_int *p, unsigned len, isl_int *max);
 void isl_seq_gcd(isl_int *p, unsigned len, isl_int *gcd);
 void isl_seq_lcm(isl_int *p, unsigned len, isl_int *lcm);
 void isl_seq_normalize(struct isl_ctx *ctx, isl_int *p, unsigned len);
