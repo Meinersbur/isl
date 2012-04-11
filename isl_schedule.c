@@ -2690,7 +2690,8 @@ static int compute_component_schedule(isl_ctx *ctx,
 	int n_total_row, orig_total_row;
 	int n_band, orig_band;
 
-	if (ctx->opt->schedule_fuse == ISL_SCHEDULE_FUSE_MIN)
+	if (ctx->opt->schedule_fuse == ISL_SCHEDULE_FUSE_MIN ||
+	    ctx->opt->schedule_separate_components)
 		split_on_scc(graph);
 
 	n_total_row = 0;

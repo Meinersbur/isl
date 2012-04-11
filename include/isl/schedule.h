@@ -27,6 +27,9 @@ int isl_options_get_schedule_outer_zero_distance(isl_ctx *ctx);
 int isl_options_set_schedule_split_scaled(isl_ctx *ctx, int val);
 int isl_options_get_schedule_split_scaled(isl_ctx *ctx);
 
+int isl_options_set_schedule_separate_components(isl_ctx *ctx, int val);
+int isl_options_get_schedule_separate_components(isl_ctx *ctx);
+
 #define		ISL_SCHEDULE_FUSE_MAX			0
 #define		ISL_SCHEDULE_FUSE_MIN			1
 int isl_options_set_schedule_fuse(isl_ctx *ctx, int val);
