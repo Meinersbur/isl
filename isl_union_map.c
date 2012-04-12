@@ -432,23 +432,23 @@ __isl_give isl_set *isl_set_from_union_set(__isl_take isl_union_set *uset)
 }
 
 __isl_give isl_map *isl_union_map_extract_map(__isl_keep isl_union_map *umap,
-	__isl_take isl_space *dim)
+	__isl_take isl_space *space)
 {
 	uint32_t hash;
 	struct isl_hash_table_entry *entry;
 
-	if (!umap || !dim)
+	if (!umap || !space)
 		goto error;
 
-	hash = isl_space_get_hash(dim);
+	hash = isl_space_get_hash(space);
 	entry = isl_hash_table_find(umap->dim->ctx, &umap->table, hash,
-				    &has_dim, dim, 0);
+				    &has_dim, space, 0);
 	if (!entry)
-		return isl_map_empty(dim);
-	isl_space_free(dim);
+		return isl_map_empty(space);
+	isl_space_free(space);
 	return isl_map_copy(entry->data);
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
