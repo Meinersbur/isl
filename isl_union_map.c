@@ -431,12 +431,18 @@ __isl_give isl_set *isl_set_from_union_set(__isl_take isl_union_set *uset)
 	return isl_map_from_union_map(uset);
 }
 
+/* Extract the map in "umap" that lives in the given space (ignoring
+ * parameters).
+ */
 __isl_give isl_map *isl_union_map_extract_map(__isl_keep isl_union_map *umap,
 	__isl_take isl_space *space)
 {
 	uint32_t hash;
 	struct isl_hash_table_entry *entry;
 
+	space = isl_space_drop_dims(space, isl_dim_param,
+					0, isl_space_dim(space, isl_dim_param));
+	space = isl_space_align_params(space, isl_union_map_get_space(umap));
 	if (!umap || !space)
 		goto error;
 
