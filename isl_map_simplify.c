@@ -372,6 +372,38 @@ struct isl_basic_set *isl_basic_set_normalize_constraints(
 		(struct isl_basic_map *)bset);
 }
 
+/* Remove any common factor in numerator and denominator of the div expression,
+ * not taking into account the constant term.
+ * That is, if the div is of the form
+ *
+ *	floor((a + m f(x))/(m d))
+ *
+ * then replace it by
+ *
+ *	floor((floor(a/m) + f(x))/d)
+ *
+ * The difference {a/m}/d in the argument satisfies 0 <= {a/m}/d < 1/d
+ * and can therefore not influence the result of the floor.
+ */
+static void normalize_div_expression(__isl_keep isl_basic_map *bmap, int div)
+{
+	unsigned total = isl_basic_map_total_dim(bmap);
+	isl_ctx *ctx = bmap->ctx;
+
+	if (isl_int_is_zero(bmap->div[div][0]))
+		return;
+	isl_seq_gcd(bmap->div[div] + 2, total, &ctx->normalize_gcd);
+	isl_int_gcd(ctx->normalize_gcd, ctx->normalize_gcd, bmap->div[div][0]);
+	if (isl_int_is_one(ctx->normalize_gcd))
+		return;
+	isl_int_fdiv_q(bmap->div[div][1], bmap->div[div][1],
+			ctx->normalize_gcd);
+	isl_int_divexact(bmap->div[div][0], bmap->div[div][0],
+			ctx->normalize_gcd);
+	isl_seq_scale_down(bmap->div[div] + 2, bmap->div[div] + 2,
+			ctx->normalize_gcd, total);
+}
+
 /* Remove any common factor in numerator and denominator of a div expression,
  * not taking into account the constant term.
  * That is, look for any div of the form
@@ -389,28 +421,14 @@ static __isl_give isl_basic_map *normalize_div_expressions(
 	__isl_take isl_basic_map *bmap)
 {
 	int i;
-	isl_int gcd;
-	unsigned total = isl_basic_map_total_dim(bmap);
 
 	if (!bmap)
 		return NULL;
 	if (bmap->n_div == 0)
 		return bmap;
 
-	isl_int_init(gcd);
-	for (i = 0; i < bmap->n_div; ++i) {
-		if (isl_int_is_zero(bmap->div[i][0]))
-			continue;
-		isl_seq_gcd(bmap->div[i] + 2, total, &gcd);
-		isl_int_gcd(gcd, gcd, bmap->div[i][0]);
-		if (isl_int_is_one(gcd))
-			continue;
-		isl_int_fdiv_q(bmap->div[i][1], bmap->div[i][1], gcd);
-		isl_int_divexact(bmap->div[i][0], bmap->div[i][0], gcd);
-		isl_seq_scale_down(bmap->div[i] + 2, bmap->div[i] + 2, gcd,
-					total);
-	}
-	isl_int_clear(gcd);
+	for (i = 0; i < bmap->n_div; ++i)
+		normalize_div_expression(bmap, i);
 
 	return bmap;
 }
@@ -463,10 +481,11 @@ static void eliminate_var_using_equality(struct isl_basic_map *bmap,
 		 * and we can keep the definition as long as the result
 		 * is still ordered.
 		 */
-		if (last_div == -1 || (keep_divs && last_div < k))
+		if (last_div == -1 || (keep_divs && last_div < k)) {
 			isl_seq_elim(bmap->div[k]+1, eq,
 					1+pos, 1+total, &bmap->div[k][0]);
-		else
+			normalize_div_expression(bmap, k);
+		} else
 			isl_seq_clr(bmap->div[k], 1 + total);
 		ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
 	}
