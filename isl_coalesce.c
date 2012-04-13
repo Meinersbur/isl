@@ -394,6 +394,9 @@ static int is_extension(struct isl_map *map, int i, int j, int k,
 	struct isl_tab_undo *snap, *snap2;
 	unsigned n_eq = map->p[i]->n_eq;
 
+	if (isl_tab_is_equality(tabs[i], n_eq + k))
+		return 0;
+
 	snap = isl_tab_snap(tabs[i]);
 	tabs[i] = isl_tab_relax(tabs[i], n_eq + k);
 	snap2 = isl_tab_snap(tabs[i]);

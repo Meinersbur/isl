@@ -3482,7 +3482,7 @@ __isl_give isl_term *isl_term_dup(__isl_keep isl_term *term)
 	isl_term *dup;
 	unsigned total;
 
-	if (term)
+	if (!term)
 		return NULL;
 
 	total = isl_space_dim(term->dim, isl_dim_all) + term->div->n_row;

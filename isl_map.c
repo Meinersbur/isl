@@ -7066,7 +7066,7 @@ struct isl_map *isl_basic_map_union(
 {
 	struct isl_map *map;
 	if (!bmap1 || !bmap2)
-		return NULL;
+		goto error;
 
 	isl_assert(bmap1->ctx, isl_space_is_equal(bmap1->dim, bmap2->dim), goto error);
 

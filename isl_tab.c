@@ -2556,6 +2556,13 @@ struct isl_tab *isl_tab_relax(struct isl_tab *tab, int con)
 
 	var = &tab->con[con];
 
+	if (var->is_row && (var->index < 0 || var->index < tab->n_redundant))
+		isl_die(tab->mat->ctx, isl_error_invalid,
+			"cannot relax redundant constraint", goto error);
+	if (!var->is_row && (var->index < 0 || var->index < tab->n_dead))
+		isl_die(tab->mat->ctx, isl_error_invalid,
+			"cannot relax dead constraint", goto error);
+
 	if (!var->is_row && !max_is_manifestly_unbounded(tab, var))
 		if (to_row(tab, var, 1) < 0)
 			goto error;
