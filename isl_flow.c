@@ -16,6 +16,7 @@
 #include <isl/set.h>
 #include <isl/map.h>
 #include <isl/flow.h>
+#include <isl_qsort.h>
 
 /* A private structure to keep track of a mapping together with
  * a user-specified identifier and a boolean indicating whether
@@ -164,14 +165,6 @@ error:
 	return NULL;
 }
 
-/* A temporary structure used while sorting the accesses in an isl_access_info.
- */
-struct isl_access_sort_info {
-	struct isl_map		*source_map;
-	void			*source_data;
-	struct isl_access_info	*acc;
-};
-
 /* Return -n, 0 or n (with n a positive value), depending on whether
  * the source access identified by p1 should be sorted before, together
  * or after that identified by p2.
@@ -189,30 +182,31 @@ struct isl_access_sort_info {
  * of the iteration domains.  This results in an arbitrary, but fairly
  * stable ordering.
  */
-static int access_sort_cmp(const void *p1, const void *p2)
+static int access_sort_cmp(const void *p1, const void *p2, void *user)
 {
-	const struct isl_access_sort_info *i1, *i2;
+	isl_access_info *acc = user;
+	const struct isl_labeled_map *i1, *i2;
 	int level1, level2;
 	uint32_t h1, h2;
-	i1 = (const struct isl_access_sort_info *) p1;
-	i2 = (const struct isl_access_sort_info *) p2;
+	i1 = (const struct isl_labeled_map *) p1;
+	i2 = (const struct isl_labeled_map *) p2;
 
-	level1 = i1->acc->level_before(i1->source_data, i1->acc->sink.data);
-	level2 = i2->acc->level_before(i2->source_data, i2->acc->sink.data);
+	level1 = acc->level_before(i1->data, acc->sink.data);
+	level2 = acc->level_before(i2->data, acc->sink.data);
 
 	if (level1 != level2 || !level1)
 		return level1 - level2;
 
-	level1 = i1->acc->level_before(i1->source_data, i2->source_data);
+	level1 = acc->level_before(i1->data, i2->data);
 	if (level1 % 2)
 		return -1;
 
-	level2 = i1->acc->level_before(i2->source_data, i1->source_data);
+	level2 = acc->level_before(i2->data, i1->data);
 	if (level2 % 2)
 		return 1;
 
-	h1 = isl_map_get_hash(i1->source_map);
-	h2 = isl_map_get_hash(i2->source_map);
+	h1 = isl_map_get_hash(i1->map);
+	h2 = isl_map_get_hash(i2->map);
 	return h1 > h2 ? 1 : h1 < h2 ? -1 : 0;
 }
 
@@ -224,40 +218,15 @@ static int access_sort_cmp(const void *p1, const void *p2)
 static __isl_give isl_access_info *isl_access_info_sort_sources(
 	__isl_take isl_access_info *acc)
 {
-	int i;
-	isl_ctx *ctx;
-	struct isl_access_sort_info *array;
-
 	if (!acc)
 		return NULL;
 	if (acc->n_must <= 1)
 		return acc;
 
-	ctx = isl_map_get_ctx(acc->sink.map);
-	array = isl_alloc_array(ctx, struct isl_access_sort_info, acc->n_must);
-	if (!array)
-		goto error;
-
-	for (i = 0; i < acc->n_must; ++i) {
-		array[i].source_map = acc->source[i].map;
-		array[i].source_data = acc->source[i].data;
-		array[i].acc = acc;
-	}
-
-	qsort(array, acc->n_must, sizeof(struct isl_access_sort_info),
-		access_sort_cmp);
-
-	for (i = 0; i < acc->n_must; ++i) {
-		acc->source[i].map = array[i].source_map;
-		acc->source[i].data = array[i].source_data;
-	}
-
-	free(array);
+	isl_quicksort(acc->source, acc->n_must, sizeof(struct isl_labeled_map),
+		access_sort_cmp, acc);
 
 	return acc;
-error:
-	isl_access_info_free(acc);
-	return NULL;
 }
 
 /* Align the parameters of the two spaces if needed and then call
