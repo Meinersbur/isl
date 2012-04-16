@@ -2173,6 +2173,57 @@ __isl_give isl_multi_aff *isl_multi_aff_zero(__isl_take isl_space *space)
 	return ma;
 }
 
+/* Create an isl_multi_aff in the given space that maps each
+ * input dimension to the corresponding output dimension.
+ */
+__isl_give isl_multi_aff *isl_multi_aff_identity(__isl_take isl_space *space)
+{
+	int n;
+	isl_multi_aff *ma;
+
+	if (!space)
+		return NULL;
+
+	if (isl_space_is_set(space))
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
+			"expecting map space", goto error);
+
+	n = isl_space_dim(space, isl_dim_out);
+	if (n != isl_space_dim(space, isl_dim_in))
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
+			"number of input and output dimensions needs to be "
+			"the same", goto error);
+
+	ma = isl_multi_aff_alloc(isl_space_copy(space));
+
+	if (!n)
+		isl_space_free(space);
+	else {
+		int i;
+		isl_local_space *ls;
+		isl_aff *aff;
+
+		space = isl_space_domain(space);
+		ls = isl_local_space_from_space(space);
+		aff = isl_aff_zero_on_domain(ls);
+
+		for (i = 0; i < n; ++i) {
+			isl_aff *aff_i;
+			aff_i = isl_aff_copy(aff);
+			aff_i = isl_aff_add_coefficient_si(aff_i,
+							    isl_dim_in, i, 1);
+			ma = isl_multi_aff_set_aff(ma, i, aff_i);
+		}
+
+		isl_aff_free(aff);
+	}
+
+	return ma;
+error:
+	isl_space_free(space);
+	return NULL;
+}
+
 /* Create an isl_pw_multi_aff with the given isl_multi_aff on a universe
  * domain.
  */
