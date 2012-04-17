@@ -1,6 +1,7 @@
 /*
  * Copyright 2008-2009 Katholieke Universiteit Leuven
  * Copyright 2010      INRIA Saclay
+ * Copyright 2012      Ecole Normale Superieure
  *
  * Use of this software is governed by the GNU LGPLv2.1 license
  *
@@ -8,6 +9,7 @@
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
  * and INRIA Saclay - Ile-de-France, Parc Club Orsay Universite,
  * ZAC des vignes, 4 rue Jacques Monod, 91893 Orsay, France 
+ * and Ecole Normale Superieure, 45 rue d’Ulm, 75230 Paris, France
  */
 
 #include "isl_map_private.h"
@@ -15,6 +17,7 @@
 #include <isl/options.h>
 #include "isl_tab.h"
 #include <isl_mat_private.h>
+#include <isl_local_space_private.h>
 
 #define STATUS_ERROR		-1
 #define STATUS_REDUNDANT	 1
@@ -71,7 +74,7 @@ error:
 }
 
 /* Compute the position of the inequalities of basic map "bmap_i"
- * (also represented by "tab_i") with respect to the basic map
+ * (also represented by "tab_i", if not NULL) with respect to the basic map
  * represented by "tab_j".
  */
 static int *ineq_status_in(__isl_keep isl_basic_map *bmap_i,
@@ -82,7 +85,7 @@ static int *ineq_status_in(__isl_keep isl_basic_map *bmap_i,
 	int *ineq = isl_calloc_array(bmap_i->ctx, int, bmap_i->n_ineq);
 
 	for (k = 0; k < bmap_i->n_ineq; ++k) {
-		if (isl_tab_is_redundant(tab_i, n_eq + k)) {
+		if (tab_i && isl_tab_is_redundant(tab_i, n_eq + k)) {
 			ineq[k] = STATUS_REDUNDANT;
 			continue;
 		}
@@ -1161,6 +1164,7 @@ unbounded:
  * can be represented by a single basic map.
  * If so, replace the pair by the single basic map and return 1.
  * Otherwise, return 0;
+ * The two basic maps are assumed to live in the same local space.
  *
  * We first check the effect of each constraint of one basic map
  * on the other basic map.
@@ -1230,7 +1234,7 @@ unbounded:
  * corresponding to the basic maps.  When the basic maps are dropped
  * or combined, the tableaus are modified accordingly.
  */
-static int coalesce_pair(struct isl_map *map, int i, int j,
+static int coalesce_local_pair(__isl_keep isl_map *map, int i, int j,
 	struct isl_tab **tabs)
 {
 	int changed = 0;
@@ -1322,6 +1326,190 @@ error:
 	return -1;
 }
 
+/* Do the two basic maps live in the same local space, i.e.,
+ * do they have the same (known) divs?
+ * If either basic map has any unknown divs, then we can only assume
+ * that they do not live in the same local space.
+ */
+static int same_divs(__isl_keep isl_basic_map *bmap1,
+	__isl_keep isl_basic_map *bmap2)
+{
+	int i;
+	int known;
+	int total;
+
+	if (!bmap1 || !bmap2)
+		return -1;
+	if (bmap1->n_div != bmap2->n_div)
+		return 0;
+
+	if (bmap1->n_div == 0)
+		return 1;
+
+	known = isl_basic_map_divs_known(bmap1);
+	if (known < 0 || !known)
+		return known;
+	known = isl_basic_map_divs_known(bmap2);
+	if (known < 0 || !known)
+		return known;
+
+	total = isl_basic_map_total_dim(bmap1);
+	for (i = 0; i < bmap1->n_div; ++i)
+		if (!isl_seq_eq(bmap1->div[i], bmap2->div[i], 2 + total))
+			return 0;
+
+	return 1;
+}
+
+/* Given two basic maps "i" and "j", where the divs of "i" form a subset
+ * of those of "j", check if basic map "j" is a subset of basic map "i"
+ * and, if so, drop basic map "j".
+ *
+ * We first expand the divs of basic map "i" to match those of basic map "j",
+ * using the divs and expansion computed by the caller.
+ * Then we check if all constraints of the expanded "i" are valid for "j".
+ */
+static int coalesce_subset(__isl_keep isl_map *map, int i, int j,
+	struct isl_tab **tabs, __isl_keep isl_mat *div, int *exp)
+{
+	isl_basic_map *bmap;
+	int changed = 0;
+	int *eq_i = NULL;
+	int *ineq_i = NULL;
+
+	bmap = isl_basic_map_copy(map->p[i]);
+	bmap = isl_basic_set_expand_divs(bmap, isl_mat_copy(div), exp);
+
+	if (!bmap)
+		goto error;
+
+	eq_i = eq_status_in(bmap, tabs[j]);
+	if (!eq_i)
+		goto error;
+	if (any(eq_i, 2 * bmap->n_eq, STATUS_ERROR))
+		goto error;
+	if (any(eq_i, 2 * bmap->n_eq, STATUS_SEPARATE))
+		goto done;
+
+	ineq_i = ineq_status_in(bmap, NULL, tabs[j]);
+	if (!ineq_i)
+		goto error;
+	if (any(ineq_i, bmap->n_ineq, STATUS_ERROR))
+		goto error;
+	if (any(ineq_i, bmap->n_ineq, STATUS_SEPARATE))
+		goto done;
+
+	if (all(eq_i, 2 * map->p[i]->n_eq, STATUS_VALID) &&
+	    all(ineq_i, map->p[i]->n_ineq, STATUS_VALID)) {
+		drop(map, j, tabs);
+		changed = 1;
+	}
+
+done:
+	isl_basic_map_free(bmap);
+	free(eq_i);
+	free(ineq_i);
+	return 0;
+error:
+	isl_basic_map_free(bmap);
+	free(eq_i);
+	free(ineq_i);
+	return -1;
+}
+
+/* Check if the basic map "j" is a subset of basic map "i",
+ * assuming that "i" has fewer divs that "j".
+ * If not, then we change the order.
+ *
+ * If the two basic maps have the same number of divs, then
+ * they must necessarily be different.  Otherwise, we would have
+ * called coalesce_local_pair.  We therefore don't do try anyhing
+ * in this case.
+ *
+ * We first check if the divs of "i" are all known and form a subset
+ * of those of "j".  If so, we pass control over to coalesce_subset.
+ */
+static int check_coalesce_subset(__isl_keep isl_map *map, int i, int j,
+	struct isl_tab **tabs)
+{
+	int known;
+	isl_mat *div_i, *div_j, *div;
+	int *exp1 = NULL;
+	int *exp2 = NULL;
+	isl_ctx *ctx;
+	int subset;
+
+	if (map->p[i]->n_div == map->p[j]->n_div)
+		return 0;
+	if (map->p[j]->n_div < map->p[i]->n_div)
+		return check_coalesce_subset(map, j, i, tabs);
+
+	known = isl_basic_map_divs_known(map->p[i]);
+	if (known < 0 || !known)
+		return known;
+
+	ctx = isl_map_get_ctx(map);
+
+	div_i = isl_basic_map_get_divs(map->p[i]);
+	div_j = isl_basic_map_get_divs(map->p[j]);
+
+	if (!div_i || !div_j)
+		goto error;
+
+	exp1 = isl_alloc_array(ctx, int, div_i->n_row);
+	exp2 = isl_alloc_array(ctx, int, div_j->n_row);
+	if (!exp1 || !exp2)
+		goto error;
+
+	div = isl_merge_divs(div_i, div_j, exp1, exp2);
+	if (!div)
+		goto error;
+
+	if (div->n_row == div_j->n_row)
+		subset = coalesce_subset(map, i, j, tabs, div, exp1);
+	else
+		subset = 0;
+
+	isl_mat_free(div);
+
+	isl_mat_free(div_i);
+	isl_mat_free(div_j);
+
+	free(exp2);
+	free(exp1);
+
+	return subset;
+error:
+	isl_mat_free(div_i);
+	isl_mat_free(div_j);
+	free(exp1);
+	free(exp2);
+	return -1;
+}
+
+/* Check if the union of the given pair of basic maps
+ * can be represented by a single basic map.
+ * If so, replace the pair by the single basic map and return 1.
+ * Otherwise, return 0;
+ *
+ * We first check if the two basic maps live in the same local space.
+ * If so, we do the complete check.  Otherwise, we check if one is
+ * an obvious subset of the other.
+ */
+static int coalesce_pair(__isl_keep isl_map *map, int i, int j,
+	struct isl_tab **tabs)
+{
+	int same;
+
+	same = same_divs(map->p[i], map->p[j]);
+	if (same < 0)
+		return -1;
+	if (same)
+		return coalesce_local_pair(map, i, j, tabs);
+
+	return check_coalesce_subset(map, i, j, tabs);
+}
+
 static struct isl_map *coalesce(struct isl_map *map, struct isl_tab **tabs)
 {
 	int i, j;
@@ -1359,7 +1547,8 @@ struct isl_map *isl_map_coalesce(struct isl_map *map)
 	if (map->n <= 1)
 		return map;
 
-	map = isl_map_align_divs(map);
+	map = isl_map_sort_divs(map);
+	map = isl_map_cow(map);
 
 	tabs = isl_calloc_array(map->ctx, struct isl_tab *, map->n);
 	if (!tabs)
