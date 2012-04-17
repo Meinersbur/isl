@@ -122,6 +122,8 @@ unsigned isl_basic_set_n_param(__isl_keep isl_basic_set *bset)
 
 unsigned isl_basic_set_total_dim(const struct isl_basic_set *bset)
 {
+	if (!bset)
+		return 0;
 	return isl_space_dim(bset->dim, isl_dim_all) + bset->n_div;
 }
 
