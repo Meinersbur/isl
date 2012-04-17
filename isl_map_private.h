@@ -193,6 +193,9 @@ struct isl_basic_map *isl_basic_map_align_divs(
 		struct isl_basic_map *dst, struct isl_basic_map *src);
 struct isl_basic_set *isl_basic_set_align_divs(
 		struct isl_basic_set *dst, struct isl_basic_set *src);
+__isl_give isl_basic_map *isl_basic_map_sort_divs(
+	__isl_take isl_basic_map *bmap);
+__isl_give isl_map *isl_map_sort_divs(__isl_take isl_map *map);
 struct isl_basic_map *isl_basic_map_gauss(
 	struct isl_basic_map *bmap, int *progress);
 struct isl_basic_set *isl_basic_set_gauss(

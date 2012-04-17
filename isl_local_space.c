@@ -1,11 +1,13 @@
 /*
  * Copyright 2011      INRIA Saclay
+ * Copyright 2012      Ecole Normale Superieure
  *
  * Use of this software is governed by the GNU LGPLv2.1 license
  *
  * Written by Sven Verdoolaege, INRIA Saclay - Ile-de-France,
  * Parc Club Orsay Universite, ZAC des vignes, 4 rue Jacques Monod,
  * 91893 Orsay, France
+ * and Ecole Normale Superieure, 45 rue d’Ulm, 75230 Paris, France
  */
 
 #include <isl_ctx_private.h>
@@ -381,23 +383,87 @@ static void expand_row(__isl_keep isl_mat *dst, int d,
 
 /* Compare (known) divs.
  * Return non-zero if at least one of the two divs is unknown.
+ * In particular, if both divs are unknown, we respect their
+ * current order.  Otherwise, we sort the known div after the unknown
+ * div only if the known div depends on the unknown div.
  */
-static int cmp_row(__isl_keep isl_mat *div, int i, int j)
+static int cmp_row(isl_int *row_i, isl_int *row_j, int i, int j,
+	unsigned n_row, unsigned n_col)
 {
 	int li, lj;
+	int unknown_i, unknown_j;
 
-	if (isl_int_is_zero(div->row[j][0]))
-		return -1;
-	if (isl_int_is_zero(div->row[i][0]))
-		return 1;
+	unknown_i = isl_int_is_zero(row_i[0]);
+	unknown_j = isl_int_is_zero(row_j[0]);
 
-	li = isl_seq_last_non_zero(div->row[i], div->n_col);
-	lj = isl_seq_last_non_zero(div->row[j], div->n_col);
+	if (unknown_i && unknown_j)
+		return i - j;
+
+	if (unknown_i)
+		li = n_col - n_row + i;
+	else
+		li = isl_seq_last_non_zero(row_i, n_col);
+	if (unknown_j)
+		lj = n_col - n_row + j;
+	else
+		lj = isl_seq_last_non_zero(row_j, n_col);
 
 	if (li != lj)
 		return li - lj;
 
-	return isl_seq_cmp(div->row[i], div->row[j], div->n_col);
+	return isl_seq_cmp(row_i, row_j, n_col);
+}
+
+/* Call cmp_row for divs in a matrix.
+ */
+static int mat_cmp_row(__isl_keep isl_mat *div, int i, int j)
+{
+	return cmp_row(div->row[i], div->row[j], i, j, div->n_row, div->n_col);
+}
+
+/* Call cmp_row for divs in a basic map.
+ */
+static int bmap_cmp_row(__isl_keep isl_basic_map *bmap, int i, int j,
+	unsigned total)
+{
+	return cmp_row(bmap->div[i], bmap->div[j], i, j, bmap->n_div, total);
+}
+
+/* Sort the divs in "bmap".
+ *
+ * We first make sure divs are placed after divs on which they depend.
+ * Then we perform a simple insertion sort based on the same ordering
+ * that is used in isl_merge_divs.
+ */
+__isl_give isl_basic_map *isl_basic_map_sort_divs(
+	__isl_take isl_basic_map *bmap)
+{
+	int i, j;
+	unsigned total;
+
+	bmap = isl_basic_map_order_divs(bmap);
+	if (!bmap)
+		return NULL;
+	if (bmap->n_div <= 1)
+		return bmap;
+
+	total = 2 + isl_basic_map_total_dim(bmap);
+	for (i = 1; i < bmap->n_div; ++i) {
+		for (j = i - 1; j >= 0; --j) {
+			if (bmap_cmp_row(bmap, j, j + 1, total) <= 0)
+				break;
+			isl_basic_map_swap_div(bmap, j, j + 1);
+		}
+	}
+
+	return bmap;
+}
+
+/* Sort the divs in the basic maps of "map".
+ */
+__isl_give isl_map *isl_map_sort_divs(__isl_take isl_map *map)
+{
+	return isl_map_inline_foreach_basic_map(map, &isl_basic_map_sort_divs);
 }
 
 /* Combine the two lists of divs into a single list.
@@ -430,7 +496,7 @@ __isl_give isl_mat *isl_merge_divs(__isl_keep isl_mat *div1,
 		expand_row(div, k, div1, i, exp1);
 		expand_row(div, k + 1, div2, j, exp2);
 
-		cmp = cmp_row(div, k, k + 1);
+		cmp = mat_cmp_row(div, k, k + 1);
 		if (cmp == 0) {
 			exp1[i++] = k;
 			exp2[j++] = k;
