@@ -1376,13 +1376,16 @@ struct isl_basic_set *isl_basic_set_eliminate_vars(
 }
 
 /* Eliminate the specified n dimensions starting at first from the
- * constraints using Fourier-Motzkin.  The dimensions themselves
- * are not removed.
+ * constraints, without removing the dimensions from the space.
+ * If the set is rational, the dimensions are eliminated using Fourier-Motzkin.
+ * Otherwise, they are projected out and the original space is restored.
  */
 __isl_give isl_basic_map *isl_basic_map_eliminate(
 	__isl_take isl_basic_map *bmap,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
+	isl_space *space;
+
 	if (!bmap)
 		return NULL;
 	if (n == 0)
@@ -1392,9 +1395,17 @@ __isl_give isl_basic_map *isl_basic_map_eliminate(
 		isl_die(bmap->ctx, isl_error_invalid,
 			"index out of bounds", goto error);
 
-	first += isl_basic_map_offset(bmap, type) - 1;
-	bmap = isl_basic_map_eliminate_vars(bmap, first, n);
-	return isl_basic_map_finalize(bmap);
+	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL)) {
+		first += isl_basic_map_offset(bmap, type) - 1;
+		bmap = isl_basic_map_eliminate_vars(bmap, first, n);
+		return isl_basic_map_finalize(bmap);
+	}
+
+	space = isl_basic_map_get_space(bmap);
+	bmap = isl_basic_map_project_out(bmap, type, first, n);
+	bmap = isl_basic_map_insert(bmap, type, first, n);
+	bmap = isl_basic_map_reset_space(bmap, space);
+	return bmap;
 error:
 	isl_basic_map_free(bmap);
 	return NULL;

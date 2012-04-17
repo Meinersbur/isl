@@ -2963,10 +2963,28 @@ int test_slice(isl_ctx *ctx)
 	return 0;
 }
 
+int test_eliminate(isl_ctx *ctx)
+{
+	const char *str;
+	isl_map *map;
+	int equal;
+
+	str = "{ [i] -> [j] : i = 2j }";
+	map = isl_map_read_from_str(ctx, str);
+	map = isl_map_eliminate(map, isl_dim_out, 0, 1);
+	equal = map_check_equal(map, "{ [i] -> [j] : exists a : i = 2a }");
+	isl_map_free(map);
+	if (equal < 0)
+		return -1;
+
+	return 0;
+}
+
 struct {
 	const char *name;
 	int (*fn)(isl_ctx *ctx);
 } tests [] = {
+	{ "eliminate", &test_eliminate },
 	{ "div", &test_div },
 	{ "slice", &test_slice },
 	{ "fixed power", &test_fixed_power },
