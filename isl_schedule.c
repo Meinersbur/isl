@@ -1687,6 +1687,9 @@ static int copy_nodes(struct isl_sched_graph *dst, struct isl_sched_graph *src,
 
 /* Copy non-empty edges that satisfy edge_pred from the src dependence graph
  * to the dst dependence graph.
+ * If the source or destination node of the edge is not in the destination
+ * graph, then it must be a backward proximity edge and it should simply
+ * be ignored.
  */
 static int copy_edges(isl_ctx *ctx, struct isl_sched_graph *dst,
 	struct isl_sched_graph *src,
@@ -1698,6 +1701,7 @@ static int copy_edges(isl_ctx *ctx, struct isl_sched_graph *dst,
 	for (i = 0; i < src->n_edge; ++i) {
 		struct isl_sched_edge *edge = &src->edge[i];
 		isl_map *map;
+		struct isl_sched_node *dst_src, *dst_dst;
 
 		if (!edge_pred(edge, data))
 			continue;
@@ -1705,12 +1709,19 @@ static int copy_edges(isl_ctx *ctx, struct isl_sched_graph *dst,
 		if (isl_map_plain_is_empty(edge->map))
 			continue;
 
+		dst_src = graph_find_node(ctx, dst, edge->src->dim);
+		dst_dst = graph_find_node(ctx, dst, edge->dst->dim);
+		if (!dst_src || !dst_dst) {
+			if (edge->validity)
+				isl_die(ctx, isl_error_internal,
+					"backward validity edge", return -1);
+			continue;
+		}
+
 		map = isl_map_copy(edge->map);
 
-		dst->edge[dst->n_edge].src =
-			graph_find_node(ctx, dst, edge->src->dim);
-		dst->edge[dst->n_edge].dst =
-			graph_find_node(ctx, dst, edge->dst->dim);
+		dst->edge[dst->n_edge].src = dst_src;
+		dst->edge[dst->n_edge].dst = dst_dst;
 		dst->edge[dst->n_edge].map = map;
 		dst->edge[dst->n_edge].validity = edge->validity;
 		dst->edge[dst->n_edge].proximity = edge->proximity;

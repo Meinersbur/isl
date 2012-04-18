@@ -27,7 +27,7 @@ __isl_give isl_local_space *isl_local_space_alloc_div(__isl_take isl_space *dim,
 	isl_ctx *ctx;
 	isl_local_space *ls = NULL;
 
-	if (!dim)
+	if (!dim || !div)
 		goto error;
 
 	ctx = isl_space_get_ctx(dim);
@@ -41,6 +41,7 @@ __isl_give isl_local_space *isl_local_space_alloc_div(__isl_take isl_space *dim,
 
 	return ls;
 error:
+	isl_mat_free(div);
 	isl_space_free(dim);
 	isl_local_space_free(ls);
 	return NULL;
