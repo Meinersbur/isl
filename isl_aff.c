@@ -2350,7 +2350,7 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_union_add(
 	return isl_pw_multi_aff_union_add_(pma1, pma2);
 }
 
-/* Construct a map mapping the domain the piecewise multi-affine expression
+/* Construct a map mapping the domain of the piecewise multi-affine expression
  * to its range, with each dimension in the range equated to the
  * corresponding affine expression on its cell.
  */
