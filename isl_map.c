@@ -257,25 +257,42 @@ __isl_give isl_space *isl_basic_set_get_space(__isl_keep isl_basic_set *bset)
 	return isl_space_copy(bset->dim);
 }
 
-__isl_give isl_local_space *isl_basic_map_get_local_space(
-	__isl_keep isl_basic_map *bmap)
+/* Extract the divs in "bmap" as a matrix.
+ */
+__isl_give isl_mat *isl_basic_map_get_divs(__isl_keep isl_basic_map *bmap)
 {
 	int i;
-	isl_local_space *ls;
+	isl_ctx *ctx;
+	isl_mat *div;
 	unsigned total;
+	unsigned cols;
 
 	if (!bmap)
 		return NULL;
 
-	total = isl_basic_map_total_dim(bmap);
-	ls = isl_local_space_alloc(isl_space_copy(bmap->dim), bmap->n_div);
-	if (!ls)
+	ctx = isl_basic_map_get_ctx(bmap);
+	total = isl_space_dim(bmap->dim, isl_dim_all);
+	cols = 1 + 1 + total + bmap->n_div;
+	div = isl_mat_alloc(ctx, bmap->n_div, cols);
+	if (!div)
 		return NULL;
 
 	for (i = 0; i < bmap->n_div; ++i)
-		isl_seq_cpy(ls->div->row[i], bmap->div[i], 2 + total);
+		isl_seq_cpy(div->row[i], bmap->div[i], cols);
 
-	return ls;
+	return div;
+}
+
+__isl_give isl_local_space *isl_basic_map_get_local_space(
+	__isl_keep isl_basic_map *bmap)
+{
+	isl_mat *div;
+
+	if (!bmap)
+		return NULL;
+
+	div = isl_basic_map_get_divs(bmap);
+	return isl_local_space_alloc_div(isl_space_copy(bmap->dim), div);
 }
 
 __isl_give isl_local_space *isl_basic_set_get_local_space(
