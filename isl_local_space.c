@@ -413,8 +413,12 @@ __isl_give isl_mat *isl_merge_divs(__isl_keep isl_mat *div1,
 {
 	int i, j, k;
 	isl_mat *div = NULL;
-	unsigned d = div1->n_col - div1->n_row;
+	unsigned d;
 
+	if (!div1 || !div2)
+		return NULL;
+
+	d = div1->n_col - div1->n_row;
 	div = isl_mat_alloc(div1->ctx, 1 + div1->n_row + div2->n_row,
 				d + div1->n_row + div2->n_row);
 	if (!div)
