@@ -3212,6 +3212,8 @@ When multiplying two affine expressions, at least one of the two needs
 to be a constant.
 
 	#include <isl/aff.h>
+	__isl_give isl_basic_set *isl_aff_neg_basic_set(
+		__isl_take isl_aff *aff);
 	__isl_give isl_basic_set *isl_aff_le_basic_set(
 		__isl_take isl_aff *aff1, __isl_take isl_aff *aff2);
 	__isl_give isl_basic_set *isl_aff_ge_basic_set(
@@ -3254,6 +3256,9 @@ to be a constant.
 		__isl_take isl_pw_aff_list *list1,
 		__isl_take isl_pw_aff_list *list2);
 
+The function C<isl_aff_neg_basic_set> returns a basic set
+containing those elements in the domain space
+of C<aff> where C<aff> is negative.
 The function C<isl_aff_ge_basic_set> returns a basic set
 containing those elements in the shared space
 of C<aff1> and C<aff2> where C<aff1> is greater than or equal to C<aff2>.

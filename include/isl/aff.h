@@ -97,6 +97,8 @@ __isl_give isl_aff *isl_aff_gist(__isl_take isl_aff *aff,
 __isl_give isl_aff *isl_aff_gist_params(__isl_take isl_aff *aff,
 	__isl_take isl_set *context);
 
+__isl_give isl_basic_set *isl_aff_neg_basic_set(__isl_take isl_aff *aff);
+
 __isl_give isl_basic_set *isl_aff_le_basic_set(__isl_take isl_aff *aff1,
 	__isl_take isl_aff *aff2);
 __isl_give isl_basic_set *isl_aff_ge_basic_set(__isl_take isl_aff *aff1,
