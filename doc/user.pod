@@ -3546,6 +3546,18 @@ If the C<ls> argument of C<isl_multi_aff_lift> is not C<NULL>,
 then it is assigned the local space that lies at the basis of
 the lifting applied.
 
+	__isl_give isl_set *isl_multi_aff_lex_le_set(
+		__isl_take isl_multi_aff *ma1,
+		__isl_take isl_multi_aff *ma2);
+	__isl_give isl_set *isl_multi_aff_lex_ge_set(
+		__isl_take isl_multi_aff *ma1,
+		__isl_take isl_multi_aff *ma2);
+
+The function C<isl_multi_aff_lex_le_set> returns a set
+containing those elements in the shared domain space
+where C<ma1> is lexicographically smaller than or
+equal to C<ma2>.
+
 An expression can be read from input using
 
 	#include <isl/aff.h>

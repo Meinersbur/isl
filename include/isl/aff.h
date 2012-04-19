@@ -293,6 +293,11 @@ __isl_give isl_multi_aff *isl_multi_aff_gist(__isl_take isl_multi_aff *maff,
 __isl_give isl_multi_aff *isl_multi_aff_lift(__isl_take isl_multi_aff *maff,
 	__isl_give isl_local_space **ls);
 
+__isl_give isl_set *isl_multi_aff_lex_le_set(__isl_take isl_multi_aff *ma1,
+	__isl_take isl_multi_aff *ma2);
+__isl_give isl_set *isl_multi_aff_lex_ge_set(__isl_take isl_multi_aff *ma1,
+	__isl_take isl_multi_aff *ma2);
+
 __isl_give isl_printer *isl_printer_print_multi_aff(__isl_take isl_printer *p,
 	__isl_keep isl_multi_aff *maff);
 

@@ -2403,6 +2403,36 @@ __isl_give isl_multi_aff *isl_multi_aff_drop_dims(__isl_take isl_multi_aff *maff
 	return maff;
 }
 
+/* Return the set of domain elements where "ma1" is lexicographically
+ * smaller than or equal to "ma2".
+ */
+__isl_give isl_set *isl_multi_aff_lex_le_set(__isl_take isl_multi_aff *ma1,
+	__isl_take isl_multi_aff *ma2)
+{
+	return isl_multi_aff_lex_ge_set(ma2, ma1);
+}
+
+/* Return the set of domain elements where "ma1" is lexicographically
+ * greater than or equal to "ma2".
+ */
+__isl_give isl_set *isl_multi_aff_lex_ge_set(__isl_take isl_multi_aff *ma1,
+	__isl_take isl_multi_aff *ma2)
+{
+	isl_space *space;
+	isl_map *map1, *map2;
+	isl_map *map, *ge;
+
+	map1 = isl_map_from_multi_aff(ma1);
+	map2 = isl_map_from_multi_aff(ma2);
+	map = isl_map_range_product(map1, map2);
+	space = isl_space_range(isl_map_get_space(map));
+	space = isl_space_domain(isl_space_unwrap(space));
+	ge = isl_map_lex_ge(space);
+	map = isl_map_intersect_range(map, isl_map_wrap(ge));
+
+	return isl_map_domain(map);
+}
+
 #undef PW
 #define PW isl_pw_multi_aff
 #undef EL
