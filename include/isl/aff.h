@@ -252,6 +252,8 @@ __isl_give isl_multi_aff *isl_multi_aff_identity(__isl_take isl_space *space);
 
 isl_ctx *isl_multi_aff_get_ctx(__isl_keep isl_multi_aff *maff);
 __isl_give isl_space *isl_multi_aff_get_space(__isl_keep isl_multi_aff *maff);
+__isl_give isl_space *isl_multi_aff_get_domain_space(
+	__isl_keep isl_multi_aff *maff);
 __isl_give isl_multi_aff *isl_multi_aff_set_tuple_id(
 	__isl_take isl_multi_aff *maff,
 	enum isl_dim_type type, __isl_take isl_id *id);

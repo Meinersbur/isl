@@ -673,6 +673,8 @@ of the original object.
 		__isl_keep isl_pw_aff *pwaff);
 	__isl_give isl_space *isl_pw_aff_get_space(
 		__isl_keep isl_pw_aff *pwaff);
+	__isl_give isl_space *isl_multi_aff_get_domain_space(
+		__isl_keep isl_multi_aff *maff);
 	__isl_give isl_space *isl_multi_aff_get_space(
 		__isl_keep isl_multi_aff *maff);
 	__isl_give isl_space *isl_pw_multi_aff_get_domain_space(
