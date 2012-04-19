@@ -5618,57 +5618,92 @@ __isl_give isl_pw_multi_aff *isl_basic_map_lexmin_pw_multi_aff(
 	return isl_basic_map_lexopt_pw_multi_aff(bmap, 0);
 }
 
-/* Given a basic map "bmap", compute the lexicographically minimal
- * (or maximal) image element for each domain element in dom.
+#undef TYPE
+#define TYPE	isl_pw_multi_aff
+#undef SUFFIX
+#define SUFFIX	_pw_multi_aff
+#undef EMPTY
+#define EMPTY	isl_pw_multi_aff_empty
+#undef ADD
+#define ADD	isl_pw_multi_aff_union_add
+#include "isl_map_lexopt_templ.c"
+
+/* Given a map "map", compute the lexicographically minimal
+ * (or maximal) image element for each domain element in dom,
+ * in the form of an isl_pw_multi_aff.
  * Set *empty to those elements in dom that do not have an image element.
  *
- * We first make sure the basic sets in dom are disjoint and then
- * simply collect the results over each of the basic sets separately.
- * We could probably improve the efficiency a bit by moving the union
- * domain down into the parametric integer programming.
+ * We first compute the lexicographically minimal or maximal element
+ * in the first basic map.  This results in a partial solution "res"
+ * and a subset "todo" of dom that still need to be handled.
+ * We then consider each of the remaining maps in "map" and successively
+ * update both "res" and "todo".
  */
-static __isl_give isl_map *basic_map_partial_lexopt(
-		__isl_take isl_basic_map *bmap, __isl_take isl_set *dom,
-		__isl_give isl_set **empty, int max)
+static __isl_give isl_pw_multi_aff *isl_map_partial_lexopt_aligned_pw_multi_aff(
+	__isl_take isl_map *map, __isl_take isl_set *dom,
+	__isl_give isl_set **empty, int max)
 {
 	int i;
-	struct isl_map *res;
+	isl_pw_multi_aff *res;
+	isl_set *todo;
 
-	dom = isl_set_make_disjoint(dom);
-	if (!dom)
+	if (!map || !dom)
 		goto error;
 
-	if (isl_set_plain_is_empty(dom)) {
-		res = isl_map_empty_like_basic_map(bmap);
-		*empty = isl_set_empty_like(dom);
-		isl_set_free(dom);
-		isl_basic_map_free(bmap);
-		return res;
+	if (isl_map_plain_is_empty(map)) {
+		if (empty)
+			*empty = dom;
+		else
+			isl_set_free(dom);
+		return isl_pw_multi_aff_from_map(map);
 	}
 
-	res = isl_basic_map_partial_lexopt(isl_basic_map_copy(bmap),
-			isl_basic_set_copy(dom->p[0]), empty, max);
-		
-	for (i = 1; i < dom->n; ++i) {
-		struct isl_map *res_i;
-		struct isl_set *empty_i;
+	res = basic_map_partial_lexopt_pw_multi_aff(
+					    isl_basic_map_copy(map->p[0]),
+					    isl_set_copy(dom), &todo, max);
 
-		res_i = isl_basic_map_partial_lexopt(isl_basic_map_copy(bmap),
-				isl_basic_set_copy(dom->p[i]), &empty_i, max);
+	for (i = 1; i < map->n; ++i) {
+		isl_pw_multi_aff *res_i;
+		isl_set *todo_i;
 
-		res = isl_map_union_disjoint(res, res_i);
-		*empty = isl_set_union_disjoint(*empty, empty_i);
+		res_i = basic_map_partial_lexopt_pw_multi_aff(
+					    isl_basic_map_copy(map->p[i]),
+					    isl_set_copy(dom), &todo_i, max);
+
+		if (max)
+			res = isl_pw_multi_aff_union_lexmax(res, res_i);
+		else
+			res = isl_pw_multi_aff_union_lexmin(res, res_i);
+
+		todo = isl_set_intersect(todo, todo_i);
 	}
 
 	isl_set_free(dom);
-	isl_basic_map_free(bmap);
+	isl_map_free(map);
+
+	if (empty)
+		*empty = todo;
+	else
+		isl_set_free(todo);
+
 	return res;
 error:
-	*empty = NULL;
+	if (empty)
+		*empty = NULL;
 	isl_set_free(dom);
-	isl_basic_map_free(bmap);
+	isl_map_free(map);
 	return NULL;
 }
+
+#undef TYPE
+#define TYPE	isl_map
+#undef SUFFIX
+#define SUFFIX
+#undef EMPTY
+#define EMPTY	isl_map_empty
+#undef ADD
+#define ADD	isl_map_union_disjoint
+#include "isl_map_lexopt_templ.c"
 
 /* Given a map "map", compute the lexicographically minimal
  * (or maximal) image element for each domain element in dom.
@@ -5678,7 +5713,7 @@ error:
  * in the first basic map.  This results in a partial solution "res"
  * and a subset "todo" of dom that still need to be handled.
  * We then consider each of the remaining maps in "map" and successively
- * improve both "res" and "todo".
+ * update both "res" and "todo".
  *
  * Let res^k and todo^k be the results after k steps and let i = k + 1.
  * Assume we are computing the lexicographical maximum.
@@ -5797,35 +5832,6 @@ error:
 	return NULL;
 }
 
-/* Given a map "map", compute the lexicographically minimal
- * (or maximal) image element for each domain element in dom.
- * Set *empty to those elements in dom that do not have an image element.
- *
- * Align parameters if needed and then call isl_map_partial_lexopt_aligned.
- */
-static __isl_give isl_map *isl_map_partial_lexopt(
-		__isl_take isl_map *map, __isl_take isl_set *dom,
-		__isl_give isl_set **empty, int max)
-{
-	if (!map || !dom)
-		goto error;
-	if (isl_space_match(map->dim, isl_dim_param, dom->dim, isl_dim_param))
-		return isl_map_partial_lexopt_aligned(map, dom, empty, max);
-	if (!isl_space_has_named_params(map->dim) ||
-	    !isl_space_has_named_params(dom->dim))
-		isl_die(map->ctx, isl_error_invalid,
-			"unaligned unnamed parameters", goto error);
-	map = isl_map_align_params(map, isl_map_get_space(dom));
-	dom = isl_map_align_params(dom, isl_map_get_space(map));
-	return isl_map_partial_lexopt_aligned(map, dom, empty, max);
-error:
-	if (empty)
-		*empty = NULL;
-	isl_set_free(dom);
-	isl_map_free(map);
-	return NULL;
-}
-
 __isl_give isl_map *isl_map_partial_lexmax(
 		__isl_take isl_map *map, __isl_take isl_set *dom,
 		__isl_give isl_set **empty)
@@ -5891,31 +5897,6 @@ __isl_give isl_set *isl_basic_set_lexmin(__isl_take isl_basic_set *bset)
 __isl_give isl_set *isl_basic_set_lexmax(__isl_take isl_basic_set *bset)
 {
 	return (isl_set *)isl_basic_map_lexmax((isl_basic_map *)bset);
-}
-
-__isl_give isl_map *isl_map_lexopt(__isl_take isl_map *map, int max)
-{
-	struct isl_set *dom = NULL;
-	isl_space *dom_dim;
-
-	if (!map)
-		goto error;
-	dom_dim = isl_space_domain(isl_space_copy(map->dim));
-	dom = isl_set_universe(dom_dim);
-	return isl_map_partial_lexopt(map, dom, NULL, max);
-error:
-	isl_map_free(map);
-	return NULL;
-}
-
-__isl_give isl_map *isl_map_lexmin(__isl_take isl_map *map)
-{
-	return isl_map_lexopt(map, 0);
-}
-
-__isl_give isl_map *isl_map_lexmax(__isl_take isl_map *map)
-{
-	return isl_map_lexopt(map, 1);
 }
 
 __isl_give isl_set *isl_set_lexmin(__isl_take isl_set *set)
