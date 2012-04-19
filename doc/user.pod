@@ -2241,6 +2241,12 @@ variables, then the result of these operations is currently undefined.
 
 =item * Simple hull
 
+	__isl_give isl_basic_set *
+	isl_set_unshifted_simple_hull(
+		__isl_take isl_set *set);
+	__isl_give isl_basic_map *
+	isl_map_unshifted_simple_hull(
+		__isl_take isl_map *map);
 	__isl_give isl_basic_set *isl_set_simple_hull(
 		__isl_take isl_set *set);
 	__isl_give isl_basic_map *isl_map_simple_hull(
@@ -2252,6 +2258,8 @@ These functions compute a single basic set or relation
 that contains the whole input set or relation.
 In particular, the output is described by translates
 of the constraints describing the basic sets or relations in the input.
+In case of C<isl_set_unshifted_simple_hull>, only the original
+constraints are used, without any translation.
 
 =begin latex
 

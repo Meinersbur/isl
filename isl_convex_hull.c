@@ -2107,12 +2107,14 @@ error:
  * it can be relaxed (by increasing the constant term) to become
  * a bound for that basic set.  In the latter case, the constant
  * term is updated.
+ * Relaxation of the constant term is only allowed if "shift" is set.
+ *
  * Return 1 if "ineq" is a bound
  *	  0 if "ineq" may attain arbitrarily small values on basic set "j"
  *	 -1 if some error occurred
  */
 static int is_bound(struct sh_data *data, struct isl_set *set, int j,
-			isl_int *ineq)
+	isl_int *ineq, int shift)
 {
 	enum isl_lp_result res;
 	isl_int opt;
@@ -2127,8 +2129,12 @@ static int is_bound(struct sh_data *data, struct isl_set *set, int j,
 
 	res = isl_tab_min(data->p[j].tab, ineq, data->ctx->one,
 				&opt, NULL, 0);
-	if (res == isl_lp_ok && isl_int_is_neg(opt))
-		isl_int_sub(ineq[0], ineq[0], opt);
+	if (res == isl_lp_ok && isl_int_is_neg(opt)) {
+		if (shift)
+			isl_int_sub(ineq[0], ineq[0], opt);
+		else
+			res = isl_lp_unbounded;
+	}
 
 	isl_int_clear(opt);
 
@@ -2136,9 +2142,9 @@ static int is_bound(struct sh_data *data, struct isl_set *set, int j,
 	       res == isl_lp_unbounded ? 0 : -1;
 }
 
-/* Check if inequality "ineq" from basic set "i" can be relaxed to
+/* Check if inequality "ineq" from basic set "i" is or can be relaxed to
  * become a bound on the whole set.  If so, add the (relaxed) inequality
- * to "hull".
+ * to "hull".  Relaxation is only allowed if "shift" is set.
  *
  * We first check if "hull" already contains a translate of the inequality.
  * If so, we are done.
@@ -2154,7 +2160,8 @@ static int is_bound(struct sh_data *data, struct isl_set *set, int j,
  * the inequality accordingly.
  */
 static struct isl_basic_set *add_bound(struct isl_basic_set *hull,
-	struct sh_data *data, struct isl_set *set, int i, isl_int *ineq)
+	struct sh_data *data, struct isl_set *set, int i, isl_int *ineq,
+	int shift)
 {
 	uint32_t c_hash;
 	struct ineq_cmp_data v;
@@ -2189,7 +2196,7 @@ static struct isl_basic_set *add_bound(struct isl_basic_set *hull,
 
 	for (j = 0; j < i; ++j) {
 		int bound;
-		bound = is_bound(data, set, j, hull->ineq[k]);
+		bound = is_bound(data, set, j, hull->ineq[k], shift);
 		if (bound < 0)
 			goto error;
 		if (!bound)
@@ -2217,7 +2224,7 @@ static struct isl_basic_set *add_bound(struct isl_basic_set *hull,
 				isl_int_neg(ineq_j[0], ineq_j[0]);
 			continue;
 		}
-		bound = is_bound(data, set, j, hull->ineq[k]);
+		bound = is_bound(data, set, j, hull->ineq[k], shift);
 		if (bound < 0)
 			goto error;
 		if (!bound)
@@ -2240,12 +2247,12 @@ error:
 	return NULL;
 }
 
-/* Check if any inequality from basic set "i" can be relaxed to
+/* Check if any inequality from basic set "i" is or can be relaxed to
  * become a bound on the whole set.  If so, add the (relaxed) inequality
- * to "hull".
+ * to "hull".  Relaxation is only allowed if "shift" is set.
  */
 static struct isl_basic_set *add_bounds(struct isl_basic_set *bset,
-	struct sh_data *data, struct isl_set *set, int i)
+	struct sh_data *data, struct isl_set *set, int i, int shift)
 {
 	int j, k;
 	unsigned dim = isl_basic_set_total_dim(bset);
@@ -2253,18 +2260,21 @@ static struct isl_basic_set *add_bounds(struct isl_basic_set *bset,
 	for (j = 0; j < set->p[i]->n_eq; ++j) {
 		for (k = 0; k < 2; ++k) {
 			isl_seq_neg(set->p[i]->eq[j], set->p[i]->eq[j], 1+dim);
-			bset = add_bound(bset, data, set, i, set->p[i]->eq[j]);
+			bset = add_bound(bset, data, set, i, set->p[i]->eq[j],
+					    shift);
 		}
 	}
 	for (j = 0; j < set->p[i]->n_ineq; ++j)
-		bset = add_bound(bset, data, set, i, set->p[i]->ineq[j]);
+		bset = add_bound(bset, data, set, i, set->p[i]->ineq[j], shift);
 	return bset;
 }
 
 /* Compute a superset of the convex hull of set that is described
- * by only translates of the constraints in the constituents of set.
+ * by only (translates of) the constraints in the constituents of set.
+ * Translation is only allowed if "shift" is set.
  */
-static struct isl_basic_set *uset_simple_hull(struct isl_set *set)
+static __isl_give isl_basic_set *uset_simple_hull(__isl_take isl_set *set,
+	int shift)
 {
 	struct sh_data *data = NULL;
 	struct isl_basic_set *hull = NULL;
@@ -2290,7 +2300,7 @@ static struct isl_basic_set *uset_simple_hull(struct isl_set *set)
 		goto error;
 
 	for (i = 0; i < set->n; ++i)
-		hull = add_bounds(hull, data, set, i);
+		hull = add_bounds(hull, data, set, i, shift);
 
 	sh_data_free(data);
 	isl_set_free(set);
@@ -2304,9 +2314,11 @@ error:
 }
 
 /* Compute a superset of the convex hull of map that is described
- * by only translates of the constraints in the constituents of map.
+ * by only (translates of) the constraints in the constituents of map.
+ * Translation is only allowed if "shift" is set.
  */
-struct isl_basic_map *isl_map_simple_hull(struct isl_map *map)
+static __isl_give isl_basic_map *map_simple_hull(__isl_take isl_map *map,
+	int shift)
 {
 	struct isl_set *set = NULL;
 	struct isl_basic_map *model = NULL;
@@ -2334,7 +2346,7 @@ struct isl_basic_map *isl_map_simple_hull(struct isl_map *map)
 
 	set = isl_map_underlying_set(map);
 
-	bset = uset_simple_hull(set);
+	bset = uset_simple_hull(set, shift);
 
 	hull = isl_basic_map_overlying_set(bset, model);
 
@@ -2349,10 +2361,33 @@ struct isl_basic_map *isl_map_simple_hull(struct isl_map *map)
 	return hull;
 }
 
+/* Compute a superset of the convex hull of map that is described
+ * by only translates of the constraints in the constituents of map.
+ */
+__isl_give isl_basic_map *isl_map_simple_hull(__isl_take isl_map *map)
+{
+	return map_simple_hull(map, 1);
+}
+
 struct isl_basic_set *isl_set_simple_hull(struct isl_set *set)
 {
 	return (struct isl_basic_set *)
 		isl_map_simple_hull((struct isl_map *)set);
+}
+
+/* Compute a superset of the convex hull of map that is described
+ * by only the constraints in the constituents of map.
+ */
+__isl_give isl_basic_map *isl_map_unshifted_simple_hull(
+	__isl_take isl_map *map)
+{
+	return map_simple_hull(map, 0);
+}
+
+__isl_give isl_basic_set *isl_set_unshifted_simple_hull(
+	__isl_take isl_set *set)
+{
+	return isl_map_unshifted_simple_hull(set);
 }
 
 /* Given a set "set", return parametric bounds on the dimension "dim".

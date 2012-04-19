@@ -267,6 +267,8 @@ __isl_give isl_basic_set *isl_set_convex_hull(__isl_take isl_set *set);
 __isl_export
 __isl_give isl_basic_set *isl_set_polyhedral_hull(__isl_take isl_set *set);
 __isl_give isl_basic_set *isl_set_simple_hull(__isl_take isl_set *set);
+__isl_give isl_basic_set *isl_set_unshifted_simple_hull(
+	__isl_take isl_set *set);
 struct isl_basic_set *isl_set_bounded_simple_hull(struct isl_set *set);
 __isl_give isl_set *isl_set_recession_cone(__isl_take isl_set *set);
 
