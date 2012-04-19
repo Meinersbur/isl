@@ -433,6 +433,43 @@ __isl_give isl_aff *isl_aff_add_constant_si(__isl_take isl_aff *aff, int v)
 	return aff;
 }
 
+/* Add "v" to the numerator of the constant term of "aff".
+ */
+__isl_give isl_aff *isl_aff_add_constant_num(__isl_take isl_aff *aff, isl_int v)
+{
+	if (isl_int_is_zero(v))
+		return aff;
+
+	aff = isl_aff_cow(aff);
+	if (!aff)
+		return NULL;
+
+	aff->v = isl_vec_cow(aff->v);
+	if (!aff->v)
+		return isl_aff_free(aff);
+
+	isl_int_add(aff->v->el[1], aff->v->el[1], v);
+
+	return aff;
+}
+
+/* Add "v" to the numerator of the constant term of "aff".
+ */
+__isl_give isl_aff *isl_aff_add_constant_num_si(__isl_take isl_aff *aff, int v)
+{
+	isl_int t;
+
+	if (v == 0)
+		return aff;
+
+	isl_int_init(t);
+	isl_int_set_si(t, v);
+	aff = isl_aff_add_constant_num(aff, t);
+	isl_int_clear(t);
+
+	return aff;
+}
+
 __isl_give isl_aff *isl_aff_set_constant_si(__isl_take isl_aff *aff, int v)
 {
 	aff = isl_aff_cow(aff);

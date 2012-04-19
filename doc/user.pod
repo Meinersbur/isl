@@ -3072,6 +3072,10 @@ It can be modified using
 		__isl_take isl_aff *aff, isl_int v);
 	__isl_give isl_aff *isl_aff_add_constant_si(
 		__isl_take isl_aff *aff, int v);
+	__isl_give isl_aff *isl_aff_add_constant_num(
+		__isl_take isl_aff *aff, isl_int v);
+	__isl_give isl_aff *isl_aff_add_constant_num_si(
+		__isl_take isl_aff *aff, int v);
 	__isl_give isl_aff *isl_aff_add_coefficient(
 		__isl_take isl_aff *aff,
 		enum isl_dim_type type, int pos, isl_int v);
@@ -3102,6 +3106,8 @@ Note that the C<set_constant> and C<set_coefficient> functions
 set the I<numerator> of the constant or coefficient, while
 C<add_constant> and C<add_coefficient> add an integer value to
 the possibly rational constant or coefficient.
+The C<add_constant_num> functions add an integer value to
+the numerator.
 
 To check whether an affine expressions is obviously zero
 or obviously equal to some other affine expression, use
