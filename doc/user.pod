@@ -3488,6 +3488,12 @@ obviously equal to each other, use
 Operations include
 
 	#include <isl/aff.h>
+	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_union_lexmin(
+		__isl_take isl_pw_multi_aff *pma1,
+		__isl_take isl_pw_multi_aff *pma2);
+	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_union_lexmax(
+		__isl_take isl_pw_multi_aff *pma1,
+		__isl_take isl_pw_multi_aff *pma2);
 	__isl_give isl_multi_aff *isl_multi_aff_add(
 		__isl_take isl_multi_aff *maff1,
 		__isl_take isl_multi_aff *maff2);

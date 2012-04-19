@@ -2471,6 +2471,158 @@ __isl_give isl_set *isl_multi_aff_lex_ge_set(__isl_take isl_multi_aff *ma1,
 
 #include <isl_union_templ.c>
 
+/* Given a function "cmp" that returns the set of elements where
+ * "ma1" is "better" than "ma2", return the intersection of this
+ * set with "dom1" and "dom2".
+ */
+static __isl_give isl_set *shared_and_better(__isl_keep isl_set *dom1,
+	__isl_keep isl_set *dom2, __isl_keep isl_multi_aff *ma1,
+	__isl_keep isl_multi_aff *ma2,
+	__isl_give isl_set *(*cmp)(__isl_take isl_multi_aff *ma1,
+				    __isl_take isl_multi_aff *ma2))
+{
+	isl_set *common;
+	isl_set *better;
+	int is_empty;
+
+	common = isl_set_intersect(isl_set_copy(dom1), isl_set_copy(dom2));
+	is_empty = isl_set_plain_is_empty(common);
+	if (is_empty >= 0 && is_empty)
+		return common;
+	if (is_empty < 0)
+		return isl_set_free(common);
+	better = cmp(isl_multi_aff_copy(ma1), isl_multi_aff_copy(ma2));
+	better = isl_set_intersect(common, better);
+
+	return better;
+}
+
+/* Given a function "cmp" that returns the set of elements where
+ * "ma1" is "better" than "ma2", return a piecewise multi affine
+ * expression defined on the union of the definition domains
+ * of "pma1" and "pma2" that maps to the "best" of "pma1" and
+ * "pma2" on each cell.  If only one of the two input functions
+ * is defined on a given cell, then it is considered the best.
+ */
+static __isl_give isl_pw_multi_aff *pw_multi_aff_union_opt(
+	__isl_take isl_pw_multi_aff *pma1,
+	__isl_take isl_pw_multi_aff *pma2,
+	__isl_give isl_set *(*cmp)(__isl_take isl_multi_aff *ma1,
+				    __isl_take isl_multi_aff *ma2))
+{
+	int i, j, n;
+	isl_pw_multi_aff *res = NULL;
+	isl_ctx *ctx;
+	isl_set *set = NULL;
+
+	if (!pma1 || !pma2)
+		goto error;
+
+	ctx = isl_space_get_ctx(pma1->dim);
+	if (!isl_space_is_equal(pma1->dim, pma2->dim))
+		isl_die(ctx, isl_error_invalid,
+			"arguments should live in the same space", goto error);
+
+	if (isl_pw_multi_aff_is_empty(pma1)) {
+		isl_pw_multi_aff_free(pma1);
+		return pma2;
+	}
+
+	if (isl_pw_multi_aff_is_empty(pma2)) {
+		isl_pw_multi_aff_free(pma2);
+		return pma1;
+	}
+
+	n = 2 * (pma1->n + 1) * (pma2->n + 1);
+	res = isl_pw_multi_aff_alloc_size(isl_space_copy(pma1->dim), n);
+
+	for (i = 0; i < pma1->n; ++i) {
+		set = isl_set_copy(pma1->p[i].set);
+		for (j = 0; j < pma2->n; ++j) {
+			isl_set *better;
+			int is_empty;
+
+			better = shared_and_better(pma2->p[j].set,
+					pma1->p[i].set, pma2->p[j].maff,
+					pma1->p[i].maff, cmp);
+			is_empty = isl_set_plain_is_empty(better);
+			if (is_empty < 0 || is_empty) {
+				isl_set_free(better);
+				if (is_empty < 0)
+					goto error;
+				continue;
+			}
+			set = isl_set_subtract(set, isl_set_copy(better));
+
+			res = isl_pw_multi_aff_add_piece(res, better,
+					isl_multi_aff_copy(pma2->p[j].maff));
+		}
+		res = isl_pw_multi_aff_add_piece(res, set,
+					isl_multi_aff_copy(pma1->p[i].maff));
+	}
+
+	for (j = 0; j < pma2->n; ++j) {
+		set = isl_set_copy(pma2->p[j].set);
+		for (i = 0; i < pma1->n; ++i)
+			set = isl_set_subtract(set,
+					isl_set_copy(pma1->p[i].set));
+		res = isl_pw_multi_aff_add_piece(res, set,
+					isl_multi_aff_copy(pma2->p[j].maff));
+	}
+
+	isl_pw_multi_aff_free(pma1);
+	isl_pw_multi_aff_free(pma2);
+
+	return res;
+error:
+	isl_pw_multi_aff_free(pma1);
+	isl_pw_multi_aff_free(pma2);
+	isl_set_free(set);
+	return isl_pw_multi_aff_free(res);
+}
+
+static __isl_give isl_pw_multi_aff *pw_multi_aff_union_lexmax(
+	__isl_take isl_pw_multi_aff *pma1,
+	__isl_take isl_pw_multi_aff *pma2)
+{
+	return pw_multi_aff_union_opt(pma1, pma2, &isl_multi_aff_lex_ge_set);
+}
+
+/* Given two piecewise multi affine expressions, return a piecewise
+ * multi-affine expression defined on the union of the definition domains
+ * of the inputs that is equal to the lexicographic maximum of the two
+ * inputs on each cell.  If only one of the two inputs is defined on
+ * a given cell, then it is considered to be the maximum.
+ */
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_union_lexmax(
+	__isl_take isl_pw_multi_aff *pma1,
+	__isl_take isl_pw_multi_aff *pma2)
+{
+	return isl_pw_multi_aff_align_params_pw_pw_and(pma1, pma2,
+						    &pw_multi_aff_union_lexmax);
+}
+
+static __isl_give isl_pw_multi_aff *pw_multi_aff_union_lexmin(
+	__isl_take isl_pw_multi_aff *pma1,
+	__isl_take isl_pw_multi_aff *pma2)
+{
+	return pw_multi_aff_union_opt(pma1, pma2, &isl_multi_aff_lex_le_set);
+}
+
+/* Given two piecewise multi affine expressions, return a piecewise
+ * multi-affine expression defined on the union of the definition domains
+ * of the inputs that is equal to the lexicographic minimum of the two
+ * inputs on each cell.  If only one of the two inputs is defined on
+ * a given cell, then it is considered to be the minimum.
+ */
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_union_lexmin(
+	__isl_take isl_pw_multi_aff *pma1,
+	__isl_take isl_pw_multi_aff *pma2)
+{
+	return isl_pw_multi_aff_align_params_pw_pw_and(pma1, pma2,
+						    &pw_multi_aff_union_lexmin);
+}
+
 static __isl_give isl_pw_multi_aff *pw_multi_aff_add(
 	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2)
 {
