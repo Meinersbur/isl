@@ -307,3 +307,15 @@ uint32_t isl_seq_get_hash_bits(isl_int *p, unsigned len, unsigned bits)
 	hash = isl_seq_get_hash(p, len);
 	return isl_hash_bits(hash, bits);
 }
+
+void isl_seq_dump(isl_int *p, unsigned len)
+{
+	int i;
+
+	for (i = 0; i < len; ++i) {
+		if (i)
+			fprintf(stderr, " ");
+		isl_int_print(stderr, p[i], 0);
+	}
+	fprintf(stderr, "\n");
+}
