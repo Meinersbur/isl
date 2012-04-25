@@ -144,9 +144,24 @@ __isl_give EL *FN(FN(MULTI(BASE),get),BASE)(__isl_keep MULTI(BASE) *multi,
 __isl_give MULTI(BASE) *FN(FN(MULTI(BASE),set),BASE)(
 	__isl_take MULTI(BASE) *multi, int pos, __isl_take EL *el)
 {
+	isl_space *multi_space = NULL;
+	isl_space *el_space = NULL;
+
 	multi = FN(MULTI(BASE),cow)(multi);
 	if (!multi || !el)
 		goto error;
+
+	multi_space = FN(MULTI(BASE),get_space)(multi);
+	el_space = FN(EL,get_space)(el);
+
+	if (!isl_space_match(multi_space, isl_dim_param,
+			    el_space, isl_dim_param))
+		isl_die(FN(MULTI(BASE),get_ctx)(multi), isl_error_invalid,
+			"parameters don't match", goto error);
+	if (!isl_space_tuple_match(multi_space, isl_dim_in,
+			    el_space, isl_dim_in))
+		isl_die(FN(MULTI(BASE),get_ctx)(multi), isl_error_invalid,
+			"domains don't match", goto error);
 
 	if (pos < 0 || pos >= multi->n)
 		isl_die(FN(MULTI(BASE),get_ctx)(multi), isl_error_invalid,
@@ -155,10 +170,15 @@ __isl_give MULTI(BASE) *FN(FN(MULTI(BASE),set),BASE)(
 	FN(EL,free)(multi->p[pos]);
 	multi->p[pos] = el;
 
+	isl_space_free(multi_space);
+	isl_space_free(el_space);
+
 	return multi;
 error:
 	FN(MULTI(BASE),free)(multi);
 	FN(EL,free)(el);
+	isl_space_free(multi_space);
+	isl_space_free(el_space);
 	return NULL;
 }
 
