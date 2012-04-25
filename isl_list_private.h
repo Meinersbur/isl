@@ -28,4 +28,9 @@
 
 #include <isl_list_templ.h>
 
+#undef EL
+#define EL isl_id
+
+#include <isl_list_templ.h>
+
 #endif

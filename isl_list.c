@@ -36,3 +36,8 @@
 #define BASE band
 
 #include <isl_list_templ.c>
+
+#undef BASE
+#define BASE id
+
+#include <isl_list_templ.c>

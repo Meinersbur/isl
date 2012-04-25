@@ -2812,7 +2812,7 @@ returning a basic set or relation.
 =head2 Lists
 
 Lists are defined over several element types, including
-C<isl_aff>, C<isl_pw_aff>, C<isl_basic_set> and C<isl_set>.
+C<isl_id>, C<isl_aff>, C<isl_pw_aff>, C<isl_basic_set> and C<isl_set>.
 Here we take lists of C<isl_set>s as an example.
 Lists can be created, copied, modified and freed using the following functions.
 
