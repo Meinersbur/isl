@@ -9834,6 +9834,60 @@ __isl_give isl_set *isl_set_align_params(__isl_take isl_set *set,
 	return isl_map_align_params(set, model);
 }
 
+/* Align the parameters of "bmap" to those of "model", introducing
+ * additional parameters if needed.
+ */
+__isl_give isl_basic_map *isl_basic_map_align_params(
+	__isl_take isl_basic_map *bmap, __isl_take isl_space *model)
+{
+	isl_ctx *ctx;
+
+	if (!bmap || !model)
+		goto error;
+
+	ctx = isl_space_get_ctx(model);
+	if (!isl_space_has_named_params(model))
+		isl_die(ctx, isl_error_invalid,
+			"model has unnamed parameters", goto error);
+	if (!isl_space_has_named_params(bmap->dim))
+		isl_die(ctx, isl_error_invalid,
+			"relation has unnamed parameters", goto error);
+	if (!isl_space_match(bmap->dim, isl_dim_param, model, isl_dim_param)) {
+		isl_reordering *exp;
+		struct isl_dim_map *dim_map;
+
+		model = isl_space_drop_dims(model, isl_dim_in,
+					0, isl_space_dim(model, isl_dim_in));
+		model = isl_space_drop_dims(model, isl_dim_out,
+					0, isl_space_dim(model, isl_dim_out));
+		exp = isl_parameter_alignment_reordering(bmap->dim, model);
+		exp = isl_reordering_extend_space(exp,
+					isl_basic_map_get_space(bmap));
+		dim_map = isl_dim_map_from_reordering(exp);
+		bmap = isl_basic_map_realign(bmap,
+				    exp ? isl_space_copy(exp->dim) : NULL,
+				    isl_dim_map_extend(dim_map, bmap));
+		isl_reordering_free(exp);
+		free(dim_map);
+	}
+
+	isl_space_free(model);
+	return bmap;
+error:
+	isl_space_free(model);
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+/* Align the parameters of "bset" to those of "model", introducing
+ * additional parameters if needed.
+ */
+__isl_give isl_basic_set *isl_basic_set_align_params(
+	__isl_take isl_basic_set *bset, __isl_take isl_space *model)
+{
+	return isl_basic_map_align_params(bset, model);
+}
+
 __isl_give isl_mat *isl_basic_map_equalities_matrix(
 		__isl_keep isl_basic_map *bmap, enum isl_dim_type c1,
 		enum isl_dim_type c2, enum isl_dim_type c3,
