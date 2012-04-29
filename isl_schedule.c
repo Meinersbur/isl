@@ -254,6 +254,29 @@ static int edge_has_src_and_dst(const void *entry, const void *val)
 	return edge->src == temp->src && edge->dst == temp->dst;
 }
 
+/* Add the given edge to graph->edge_table if it is a validity edge.
+ */
+static int graph_edge_table_add(isl_ctx *ctx, struct isl_sched_graph *graph,
+	struct isl_sched_edge *edge)
+{
+	struct isl_hash_table_entry *entry;
+	uint32_t hash;
+
+	if (!edge->validity)
+		return 0;
+
+	hash = isl_hash_init();
+	hash = isl_hash_builtin(hash, edge->src);
+	hash = isl_hash_builtin(hash, edge->dst);
+	entry = isl_hash_table_find(ctx, graph->edge_table, hash,
+				    &edge_has_src_and_dst, edge, 1);
+	if (!entry)
+		return -1;
+	entry->data = edge;
+
+	return 0;
+}
+
 /* Initialize edge_table based on the list of edges.
  * Only edges with validity set are added to the table.
  */
@@ -265,23 +288,9 @@ static int graph_init_edge_table(isl_ctx *ctx, struct isl_sched_graph *graph)
 	if (!graph->edge_table)
 		return -1;
 
-	for (i = 0; i < graph->n_edge; ++i) {
-		struct isl_hash_table_entry *entry;
-		uint32_t hash;
-
-		if (!graph->edge[i].validity)
-			continue;
-
-		hash = isl_hash_init();
-		hash = isl_hash_builtin(hash, graph->edge[i].src);
-		hash = isl_hash_builtin(hash, graph->edge[i].dst);
-		entry = isl_hash_table_find(ctx, graph->edge_table, hash,
-					    &edge_has_src_and_dst,
-					    &graph->edge[i], 1);
-		if (!entry)
+	for (i = 0; i < graph->n_edge; ++i)
+		if (graph_edge_table_add(ctx, graph, &graph->edge[i]) < 0)
 			return -1;
-		entry->data = &graph->edge[i];
-	}
 
 	return 0;
 }
