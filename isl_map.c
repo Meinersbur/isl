@@ -6452,7 +6452,7 @@ error:
 /*
  * returns range - domain
  */
-struct isl_set *isl_map_deltas(struct isl_map *map)
+__isl_give isl_set *isl_map_deltas(__isl_take isl_map *map)
 {
 	int i;
 	isl_space *dim;
