@@ -1177,8 +1177,8 @@ static int report_conflicting_constraint(struct isl_tab *tab, int con)
 
 /* Given a conflicting row in the tableau, report all constraints
  * involved in the row to the caller.  That is, the row itself
- * (if represents a constraint) and all constraint columns with
- * non-zero (and therefore negative) coefficient.
+ * (if it represents a constraint) and all constraint columns with
+ * non-zero (and therefore negative) coefficients.
  */
 static int report_conflict(struct isl_tab *tab, int row)
 {
