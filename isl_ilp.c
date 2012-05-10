@@ -427,8 +427,10 @@ error:
 
 /* Compute the minimum (maximum if max is set) of the integer affine
  * expression obj over the points in set and put the result in *opt.
+ *
+ * The parameters are assumed to have been aligned.
  */
-enum isl_lp_result isl_set_opt(__isl_keep isl_set *set, int max,
+static enum isl_lp_result isl_set_opt_aligned(__isl_keep isl_set *set, int max,
 	__isl_keep isl_aff *obj, isl_int *opt)
 {
 	int i;
@@ -464,6 +466,34 @@ enum isl_lp_result isl_set_opt(__isl_keep isl_set *set, int max,
 	isl_int_clear(opt_i);
 
 	return empty ? isl_lp_empty : isl_lp_ok;
+}
+
+/* Compute the minimum (maximum if max is set) of the integer affine
+ * expression obj over the points in set and put the result in *opt.
+ */
+enum isl_lp_result isl_set_opt(__isl_keep isl_set *set, int max,
+	__isl_keep isl_aff *obj, isl_int *opt)
+{
+	enum isl_lp_result res;
+
+	if (!set || !obj)
+		return isl_lp_error;
+
+	if (isl_space_match(set->dim, isl_dim_param,
+			    obj->ls->dim, isl_dim_param))
+		return isl_set_opt_aligned(set, max, obj, opt);
+
+	set = isl_set_copy(set);
+	obj = isl_aff_copy(obj);
+	set = isl_set_align_params(set, isl_aff_get_domain_space(obj));
+	obj = isl_aff_align_params(obj, isl_set_get_space(set));
+
+	res = isl_set_opt_aligned(set, max, obj, opt);
+
+	isl_set_free(set);
+	isl_aff_free(obj);
+
+	return res;
 }
 
 enum isl_lp_result isl_basic_set_max(__isl_keep isl_basic_set *bset,
