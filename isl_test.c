@@ -2850,6 +2850,31 @@ int test_fixed_power(isl_ctx *ctx)
 	return 0;
 }
 
+int test_slice(isl_ctx *ctx)
+{
+	const char *str;
+	isl_map *map;
+	int equal;
+
+	str = "{ [i] -> [j] }";
+	map = isl_map_read_from_str(ctx, str);
+	map = isl_map_equate(map, isl_dim_in, 0, isl_dim_out, 0);
+	equal = map_check_equal(map, "{ [i] -> [i] }");
+	isl_map_free(map);
+	if (equal < 0)
+		return -1;
+
+	str = "{ [i] -> [j] }";
+	map = isl_map_read_from_str(ctx, str);
+	map = isl_map_equate(map, isl_dim_in, 0, isl_dim_in, 0);
+	equal = map_check_equal(map, "{ [i] -> [j] }");
+	isl_map_free(map);
+	if (equal < 0)
+		return -1;
+
+	return 0;
+}
+
 int main()
 {
 	struct isl_ctx *ctx;
@@ -2858,6 +2883,8 @@ int main()
 	assert(srcdir);
 
 	ctx = isl_ctx_alloc();
+	if (test_slice(ctx) < 0)
+		goto error;
 	if (test_fixed_power(ctx) < 0)
 		goto error;
 	if (test_sample(ctx) < 0)

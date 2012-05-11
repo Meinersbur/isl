@@ -10095,6 +10095,9 @@ static __isl_give isl_basic_map *equator(__isl_take isl_space *space,
 		isl_die(isl_space_get_ctx(space), isl_error_invalid,
 			"index out of bounds", goto error);
 
+	if (type1 == type2 && pos1 == pos2)
+		return isl_basic_map_universe(space);
+
 	bmap = isl_basic_map_alloc_space(isl_space_copy(space), 0, 1, 0);
 	i = isl_basic_map_alloc_equality(bmap);
 	if (i < 0)
