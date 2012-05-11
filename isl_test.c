@@ -2872,6 +2872,22 @@ int test_slice(isl_ctx *ctx)
 	if (equal < 0)
 		return -1;
 
+	str = "{ [i] -> [j] }";
+	map = isl_map_read_from_str(ctx, str);
+	map = isl_map_oppose(map, isl_dim_in, 0, isl_dim_out, 0);
+	equal = map_check_equal(map, "{ [i] -> [-i] }");
+	isl_map_free(map);
+	if (equal < 0)
+		return -1;
+
+	str = "{ [i] -> [j] }";
+	map = isl_map_read_from_str(ctx, str);
+	map = isl_map_oppose(map, isl_dim_in, 0, isl_dim_in, 0);
+	equal = map_check_equal(map, "{ [0] -> [j] }");
+	isl_map_free(map);
+	if (equal < 0)
+		return -1;
+
 	return 0;
 }
 
