@@ -23,6 +23,8 @@
 #include <isl_options_private.h>
 #include <isl/vertices.h>
 
+#define ARRAY_SIZE(array) (sizeof(array)/sizeof(*array))
+
 static char *srcdir;
 
 static char *get_filename(isl_ctx *ctx, const char *name, const char *suffix) {
@@ -1984,7 +1986,7 @@ void test_subset(isl_ctx *ctx)
 	isl_set_free(set2);
 }
 
-void test_factorize(isl_ctx *ctx)
+int test_factorize(isl_ctx *ctx)
 {
 	const char *str;
 	isl_basic_set *bset;
@@ -1999,9 +2001,11 @@ void test_factorize(isl_ctx *ctx)
 	    "3i5 >= -2i0 - i2 + 3i4 }";
 	bset = isl_basic_set_read_from_str(ctx, str);
 	f = isl_basic_set_factorizer(bset);
-	assert(f);
 	isl_basic_set_free(bset);
 	isl_factorizer_free(f);
+	if (!f)
+		isl_die(ctx, isl_error_unknown,
+			"failed to construct factorizer", return -1);
 
 	str = "{ [i0, i1, i2, i3, i4, i5, i6, i7, i8, i9, i10, i11, i12] : "
 	    "i12 <= 2 + i0 - i11 and 2i8 >= -i4 and i11 >= i1 and "
@@ -2015,9 +2019,13 @@ void test_factorize(isl_ctx *ctx)
 	    "9i6 <= 5 - i2 + 6i3 and i12 <= -1 and i2 <= 0 }";
 	bset = isl_basic_set_read_from_str(ctx, str);
 	f = isl_basic_set_factorizer(bset);
-	assert(f);
 	isl_basic_set_free(bset);
 	isl_factorizer_free(f);
+	if (!f)
+		isl_die(ctx, isl_error_unknown,
+			"failed to construct factorizer", return -1);
+
+	return 0;
 }
 
 static int check_injective(__isl_take isl_map *map, void *user)
@@ -2943,52 +2951,51 @@ int test_slice(isl_ctx *ctx)
 	return 0;
 }
 
+struct {
+	const char *name;
+	int (*fn)(isl_ctx *ctx);
+} tests [] = {
+	{ "slice", &test_slice },
+	{ "fixed power", &test_fixed_power },
+	{ "sample", &test_sample },
+	{ "output", &test_output },
+	{ "vertices", &test_vertices },
+	{ "fixed", &test_fixed },
+	{ "equal", &test_equal },
+	{ "product", &test_product },
+	{ "dim_max", &test_dim_max },
+	{ "affine", &test_aff },
+	{ "injective", &test_injective },
+	{ "schedule", &test_schedule },
+	{ "union_pw", &test_union_pw },
+	{ "parse", &test_parse },
+	{ "single-valued", &test_sv },
+	{ "affine hull", &test_affine_hull },
+	{ "coalesce", &test_coalesce },
+	{ "factorize", &test_factorize },
+};
+
 int main()
 {
+	int i;
 	struct isl_ctx *ctx;
 
 	srcdir = getenv("srcdir");
 	assert(srcdir);
 
 	ctx = isl_ctx_alloc();
-	if (test_slice(ctx) < 0)
-		goto error;
-	if (test_fixed_power(ctx) < 0)
-		goto error;
-	if (test_sample(ctx) < 0)
-		goto error;
-	if (test_output(ctx) < 0)
-		goto error;
-	if (test_vertices(ctx) < 0)
-		goto error;
-	if (test_fixed(ctx) < 0)
-		goto error;
-	if (test_equal(ctx) < 0)
-		goto error;
-	if (test_product(ctx) < 0)
-		goto error;
-	if (test_dim_max(ctx) < 0)
-		goto error;
-	if (test_aff(ctx) < 0)
-		goto error;
-	if (test_injective(ctx) < 0)
-		goto error;
-	if (test_schedule(ctx) < 0)
-		goto error;
-	if (test_union_pw(ctx) < 0)
-		goto error;
-	test_factorize(ctx);
+	for (i = 0; i < ARRAY_SIZE(tests); ++i) {
+		printf("%s\n", tests[i].name);
+		if (tests[i].fn(ctx) < 0)
+			goto error;
+	}
 	test_subset(ctx);
 	test_lift(ctx);
 	test_bound(ctx);
 	test_union(ctx);
 	test_split_periods(ctx);
-	if (test_parse(ctx) < 0)
-		goto error;
 	test_pwqp(ctx);
 	test_lex(ctx);
-	if (test_sv(ctx) < 0)
-		goto error;
 	test_bijective(ctx);
 	test_dep(ctx);
 	test_read(ctx);
@@ -2997,12 +3004,8 @@ int main()
 	test_dim(ctx);
 	test_div(ctx);
 	test_application(ctx);
-	if (test_affine_hull(ctx) < 0)
-		goto error;
 	test_convex_hull(ctx);
 	test_gist(ctx);
-	if (test_coalesce(ctx) < 0)
-		goto error;
 	test_closure(ctx);
 	test_lexmin(ctx);
 	isl_ctx_free(ctx);
