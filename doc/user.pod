@@ -1813,6 +1813,9 @@ Check whether the domain of the (basic) relation is a wrapped relation.
 		__isl_keep isl_union_map *umap1,
 		__isl_keep isl_union_map *umap2);
 
+Check whether the first argument is a (strict) subset of the
+second argument.
+
 =back
 
 =head2 Unary Operations
