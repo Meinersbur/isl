@@ -10201,6 +10201,12 @@ __isl_give isl_map *isl_map_order_gt(__isl_take isl_map *map,
 		isl_die(map->ctx, isl_error_invalid,
 			"index out of bounds", goto error);
 
+	if (type1 == type2 && pos1 == pos2) {
+		isl_space *space = isl_map_get_space(map);
+		isl_map_free(map);
+		return isl_map_empty(space);
+	}
+
 	bmap = isl_basic_map_alloc_space(isl_map_get_space(map), 0, 0, 1);
 	i = isl_basic_map_alloc_inequality(bmap);
 	if (i < 0)
