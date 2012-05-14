@@ -24,6 +24,7 @@
 #include <isl/constraint.h>
 #include <isl_local_space_private.h>
 #include <isl_aff_private.h>
+#include <isl_ast_build_expr.h>
 
 static const char *s_to[2] = { " -> ", " \\to " };
 static const char *s_and[2] = { " and ", " \\wedge " };
@@ -2211,6 +2212,29 @@ static __isl_give isl_printer *print_aff_c(__isl_take isl_printer *p,
 	return p;
 }
 
+/* Print the affine expression "aff" in C format to "p".
+ * The dimension names are taken from "space"
+ * "set" represents the domain of the affine expression.
+ */
+static __isl_give isl_printer *print_aff_on_domain_c(__isl_take isl_printer *p,
+	__isl_keep isl_space *space, __isl_keep isl_aff *aff,
+	__isl_keep isl_set *set)
+{
+	isl_set *u;
+	isl_ast_build *build;
+	isl_ast_expr *expr;
+
+	u = isl_set_universe(isl_space_copy(space));
+	build = isl_ast_build_from_context(u);
+	build = isl_ast_build_restrict(build, isl_set_copy(set));
+	expr = isl_ast_expr_from_aff(isl_aff_copy(aff), build);
+	p = isl_printer_print_ast_expr(p, expr);
+	isl_ast_expr_free(expr);
+	isl_ast_build_free(build);
+
+	return p;
+}
+
 /* In the C format, we cannot express that "pwaff" may be undefined
  * on parts of the domain space.  We therefore assume that the expression
  * will only be evaluated on its definition domain and compute the gist
@@ -2243,14 +2267,17 @@ static __isl_give isl_printer *print_pw_aff_c(__isl_take isl_printer *p,
 		isl_set_free(set_i);
 
 		p = isl_printer_print_str(p, ") ? (");
-		p = print_aff_c(p, pwaff->p[i].aff);
+		p = print_aff_on_domain_c(p, space,
+					pwaff->p[i].aff, pwaff->p[i].set);
 		p = isl_printer_print_str(p, ") : ");
 	}
 
 	isl_set_free(domain);
-	isl_space_free(space);
 
-	return print_aff_c(p, pwaff->p[pwaff->n - 1].aff);
+	p = print_aff_on_domain_c(p, space, pwaff->p[pwaff->n - 1].aff,
+					pwaff->p[pwaff->n - 1].set);
+	isl_space_free(space);
+	return p;
 error:
 	isl_printer_free(p);
 	return NULL;
