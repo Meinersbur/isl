@@ -419,6 +419,8 @@ __isl_give isl_map *isl_map_eliminate(__isl_take isl_map *map,
 	enum isl_dim_type type, unsigned first, unsigned n);
 __isl_give isl_map *isl_map_remove_dims(__isl_take isl_map *map,
 	enum isl_dim_type type, unsigned first, unsigned n);
+__isl_give isl_map *isl_map_remove_divs_involving_dims(__isl_take isl_map *map,
+	enum isl_dim_type type, unsigned first, unsigned n);
 struct isl_map *isl_map_remove_inputs(struct isl_map *map,
 	unsigned first, unsigned n);
 
