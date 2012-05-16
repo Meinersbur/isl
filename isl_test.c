@@ -312,6 +312,7 @@ void test_dim(struct isl_ctx *ctx)
 
 static int test_div(isl_ctx *ctx)
 {
+	unsigned n;
 	const char *str;
 	isl_int v;
 	isl_space *dim;
@@ -616,6 +617,16 @@ static int test_div(isl_ctx *ctx)
 	isl_set_free(set);
 	if (!set)
 		return -1;
+
+	str = "{ [i,j] : 2*[i/2] + 3 * [j/4] <= 10 and 2 i = j }";
+	bset = isl_basic_set_read_from_str(ctx, str);
+	n = isl_basic_set_dim(bset, isl_dim_div);
+	isl_basic_set_free(bset);
+	if (!bset)
+		return -1;
+	if (n != 1)
+		isl_die(ctx, isl_error_unknown,
+			"expecting a single existential", return -1);
 
 	return 0;
 }

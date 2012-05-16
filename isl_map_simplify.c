@@ -1,10 +1,12 @@
 /*
  * Copyright 2008-2009 Katholieke Universiteit Leuven
+ * Copyright 2012      Ecole Normale Superieure
  *
  * Use of this software is governed by the GNU LGPLv2.1 license
  *
  * Written by Sven Verdoolaege, K.U.Leuven, Departement
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
+ * and Ecole Normale Superieure, 45 rue d’Ulm, 75230 Paris, France
  */
 
 #include <strings.h>
@@ -368,6 +370,49 @@ struct isl_basic_set *isl_basic_set_normalize_constraints(
 {
 	return (struct isl_basic_set *)isl_basic_map_normalize_constraints(
 		(struct isl_basic_map *)bset);
+}
+
+/* Remove any common factor in numerator and denominator of a div expression,
+ * not taking into account the constant term.
+ * That is, look for any div of the form
+ *
+ *	floor((a + m f(x))/(m d))
+ *
+ * and replace it by
+ *
+ *	floor((floor(a/m) + f(x))/d)
+ *
+ * The difference {a/m}/d in the argument satisfies 0 <= {a/m}/d < 1/d
+ * and can therefore not influence the result of the floor.
+ */
+static __isl_give isl_basic_map *normalize_div_expressions(
+	__isl_take isl_basic_map *bmap)
+{
+	int i;
+	isl_int gcd;
+	unsigned total = isl_basic_map_total_dim(bmap);
+
+	if (!bmap)
+		return NULL;
+	if (bmap->n_div == 0)
+		return bmap;
+
+	isl_int_init(gcd);
+	for (i = 0; i < bmap->n_div; ++i) {
+		if (isl_int_is_zero(bmap->div[i][0]))
+			continue;
+		isl_seq_gcd(bmap->div[i] + 2, total, &gcd);
+		isl_int_gcd(gcd, gcd, bmap->div[i][0]);
+		if (isl_int_is_one(gcd))
+			continue;
+		isl_int_fdiv_q(bmap->div[i][1], bmap->div[i][1], gcd);
+		isl_int_divexact(bmap->div[i][0], bmap->div[i][0], gcd);
+		isl_seq_scale_down(bmap->div[i] + 2, bmap->div[i] + 2, gcd,
+					total);
+	}
+	isl_int_clear(gcd);
+
+	return bmap;
 }
 
 /* Assumes divs have been ordered if keep_divs is set.
@@ -1092,6 +1137,7 @@ struct isl_basic_map *isl_basic_map_simplify(struct isl_basic_map *bmap)
 	while (progress) {
 		progress = 0;
 		bmap = isl_basic_map_normalize_constraints(bmap);
+		bmap = normalize_div_expressions(bmap);
 		bmap = remove_duplicate_divs(bmap, &progress);
 		bmap = eliminate_divs_eq(bmap, &progress);
 		bmap = eliminate_divs_ineq(bmap, &progress);
