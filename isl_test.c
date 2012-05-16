@@ -625,9 +625,9 @@ static int test_div(isl_ctx *ctx)
 	isl_basic_set_free(bset);
 	if (!bset)
 		return -1;
-	if (n != 1)
+	if (n != 0)
 		isl_die(ctx, isl_error_unknown,
-			"expecting a single existential", return -1);
+			"expecting no existentials", return -1);
 
 	str = "{ [i,j,k] : 3 + i + 2j >= 0 and 2 * [(i+2j)/4] <= k }";
 	set = isl_set_read_from_str(ctx, str);

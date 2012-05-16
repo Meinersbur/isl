@@ -1129,6 +1129,89 @@ static struct isl_basic_map *remove_duplicate_constraints(
 }
 
 
+/* Eliminate knowns divs from constraints where they appear with
+ * a (positive or negative) unit coefficient.
+ *
+ * That is, replace
+ *
+ *	floor(e/m) + f >= 0
+ *
+ * by
+ *
+ *	e + m f >= 0
+ *
+ * and
+ *
+ *	-floor(e/m) + f >= 0
+ *
+ * by
+ *
+ *	-e + m f + m - 1 >= 0
+ *
+ * The first conversion is valid because floor(e/m) >= -f is equivalent
+ * to e/m >= -f because -f is an integral expression.
+ * The second conversion follows from the fact that
+ *
+ *	-floor(e/m) = ceil(-e/m) = floor((-e + m - 1)/m)
+ *
+ *
+ * We skip integral divs, i.e., those with denominator 1, as we would
+ * risk eliminating the div from the div constraints.  We do not need
+ * to handle those divs here anyway since the div constraints will turn
+ * out to form an equality and this equality can then be use to eliminate
+ * the div from all constraints.
+ */
+static __isl_give isl_basic_map *eliminate_unit_divs(
+	__isl_take isl_basic_map *bmap, int *progress)
+{
+	int i, j;
+	isl_ctx *ctx;
+	unsigned total;
+
+	if (!bmap)
+		return NULL;
+
+	ctx = isl_basic_map_get_ctx(bmap);
+	total = 1 + isl_space_dim(bmap->dim, isl_dim_all);
+
+	for (i = 0; i < bmap->n_div; ++i) {
+		if (isl_int_is_zero(bmap->div[i][0]))
+			continue;
+		if (isl_int_is_one(bmap->div[i][0]))
+			continue;
+		for (j = 0; j < bmap->n_ineq; ++j) {
+			int s;
+
+			if (!isl_int_is_one(bmap->ineq[j][total + i]) &&
+			    !isl_int_is_negone(bmap->ineq[j][total + i]))
+				continue;
+
+			*progress = 1;
+
+			s = isl_int_sgn(bmap->ineq[j][total + i]);
+			isl_int_set_si(bmap->ineq[j][total + i], 0);
+			if (s < 0)
+				isl_seq_combine(bmap->ineq[j],
+					ctx->negone, bmap->div[i] + 1,
+					bmap->div[i][0], bmap->ineq[j],
+					total + bmap->n_div);
+			else
+				isl_seq_combine(bmap->ineq[j],
+					ctx->one, bmap->div[i] + 1,
+					bmap->div[i][0], bmap->ineq[j],
+					total + bmap->n_div);
+			if (s < 0) {
+				isl_int_add(bmap->ineq[j][0],
+					bmap->ineq[j][0], bmap->div[i][0]);
+				isl_int_sub_ui(bmap->ineq[j][0],
+					bmap->ineq[j][0], 1);
+			}
+		}
+	}
+
+	return bmap;
+}
+
 struct isl_basic_map *isl_basic_map_simplify(struct isl_basic_map *bmap)
 {
 	int progress = 1;
@@ -1139,6 +1222,7 @@ struct isl_basic_map *isl_basic_map_simplify(struct isl_basic_map *bmap)
 		bmap = isl_basic_map_normalize_constraints(bmap);
 		bmap = normalize_div_expressions(bmap);
 		bmap = remove_duplicate_divs(bmap, &progress);
+		bmap = eliminate_unit_divs(bmap, &progress);
 		bmap = eliminate_divs_eq(bmap, &progress);
 		bmap = eliminate_divs_ineq(bmap, &progress);
 		bmap = isl_basic_map_gauss(bmap, &progress);
