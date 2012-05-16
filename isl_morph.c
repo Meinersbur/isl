@@ -581,6 +581,7 @@ static __isl_give isl_basic_set *add_strides(__isl_take isl_basic_set *bset,
 		div = isl_basic_set_alloc_div(bset);
 		if (div < 0)
 			goto error;
+		isl_int_set_si(bset->div[div][0], 0);
 		k = isl_basic_set_alloc_equality(bset);
 		if (k < 0)
 			goto error;
