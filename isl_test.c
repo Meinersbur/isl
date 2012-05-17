@@ -314,6 +314,7 @@ static int test_div(isl_ctx *ctx)
 {
 	unsigned n;
 	const char *str;
+	int empty;
 	isl_int v;
 	isl_space *dim;
 	isl_set *set;
@@ -627,6 +628,18 @@ static int test_div(isl_ctx *ctx)
 	if (n != 1)
 		isl_die(ctx, isl_error_unknown,
 			"expecting a single existential", return -1);
+
+	str = "{ [i,j,k] : 3 + i + 2j >= 0 and 2 * [(i+2j)/4] <= k }";
+	set = isl_set_read_from_str(ctx, str);
+	set = isl_set_remove_divs_involving_dims(set, isl_dim_set, 0, 2);
+	set = isl_set_fix_si(set, isl_dim_set, 2, -3);
+	empty = isl_set_is_empty(set);
+	isl_set_free(set);
+	if (empty < 0)
+		return -1;
+	if (!empty)
+		isl_die(ctx, isl_error_unknown,
+			"result not as accurate as expected", return -1);
 
 	return 0;
 }

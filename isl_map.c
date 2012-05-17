@@ -1,6 +1,7 @@
 /*
  * Copyright 2008-2009 Katholieke Universiteit Leuven
  * Copyright 2010      INRIA Saclay
+ * Copyright 2012      Ecole Normale Superieure
  *
  * Use of this software is governed by the GNU LGPLv2.1 license
  *
@@ -8,6 +9,7 @@
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
  * and INRIA Saclay - Ile-de-France, Parc Club Orsay Universite,
  * ZAC des vignes, 4 rue Jacques Monod, 91893 Orsay, France 
+ * and Ecole Normale Superieure, 45 rue d’Ulm, 75230 Paris, France
  */
 
 #include <string.h>
@@ -1741,6 +1743,196 @@ static int div_involves_vars(__isl_keep isl_basic_map *bmap, int div,
 	return 0;
 }
 
+/* Try and add a lower and/or upper bound on "div" to "bmap"
+ * based on inequality "i".
+ * "total" is the total number of variables (excluding the divs).
+ * "v" is a temporary object that can be used during the calculations.
+ * If "lb" is set, then a lower bound should be constructed.
+ * If "ub" is set, then an upper bound should be constructed.
+ *
+ * The calling function has already checked that the inequality does not
+ * reference "div", but we still need to check that the inequality is
+ * of the right form.  We'll consider the case where we want to construct
+ * a lower bound.  The construction of upper bounds is similar.
+ *
+ * Let "div" be of the form
+ *
+ *	q = floor((a + f(x))/d)
+ *
+ * We essentially check if constraint "i" is of the form
+ *
+ *	b + f(x) >= 0
+ *
+ * so that we can use it to derive a lower bound on "div".
+ * However, we allow a slightly more general form
+ *
+ *	b + g(x) >= 0
+ *
+ * with the condition that the coefficients of g(x) - f(x) are all
+ * divisible by d.
+ * Rewriting this constraint as
+ *
+ *	0 >= -b - g(x)
+ *
+ * adding a + f(x) to both sides and dividing by d, we obtain
+ *
+ *	(a + f(x))/d >= (a-b)/d + (f(x)-g(x))/d
+ *
+ * Taking the floor on both sides, we obtain
+ *
+ *	q >= floor((a-b)/d) + (f(x)-g(x))/d
+ *
+ * or
+ *
+ *	(g(x)-f(x))/d + ceil((b-a)/d) + q >= 0
+ *
+ * In the case of an upper bound, we construct the constraint
+ *
+ *	(g(x)+f(x))/d + floor((b+a)/d) - q >= 0
+ *
+ */
+static __isl_give isl_basic_map *insert_bounds_on_div_from_ineq(
+	__isl_take isl_basic_map *bmap, int div, int i,
+	unsigned total, isl_int v, int lb, int ub)
+{
+	int j;
+
+	for (j = 0; (lb || ub) && j < total + bmap->n_div; ++j) {
+		if (lb) {
+			isl_int_sub(v, bmap->ineq[i][1 + j],
+					bmap->div[div][1 + 1 + j]);
+			lb = isl_int_is_divisible_by(v, bmap->div[div][0]);
+		}
+		if (ub) {
+			isl_int_add(v, bmap->ineq[i][1 + j],
+					bmap->div[div][1 + 1 + j]);
+			ub = isl_int_is_divisible_by(v, bmap->div[div][0]);
+		}
+	}
+	if (!lb && !ub)
+		return bmap;
+
+	bmap = isl_basic_map_extend_constraints(bmap, 0, lb + ub);
+	if (lb) {
+		int k = isl_basic_map_alloc_inequality(bmap);
+		if (k < 0)
+			goto error;
+		for (j = 0; j < 1 + total + bmap->n_div; ++j) {
+			isl_int_sub(bmap->ineq[k][j], bmap->ineq[i][j],
+					bmap->div[div][1 + j]);
+			isl_int_cdiv_q(bmap->ineq[k][j],
+					bmap->ineq[k][j], bmap->div[div][0]);
+		}
+		isl_int_set_si(bmap->ineq[k][1 + total + div], 1);
+	}
+	if (ub) {
+		int k = isl_basic_map_alloc_inequality(bmap);
+		if (k < 0)
+			goto error;
+		for (j = 0; j < 1 + total + bmap->n_div; ++j) {
+			isl_int_add(bmap->ineq[k][j], bmap->ineq[i][j],
+					bmap->div[div][1 + j]);
+			isl_int_fdiv_q(bmap->ineq[k][j],
+					bmap->ineq[k][j], bmap->div[div][0]);
+		}
+		isl_int_set_si(bmap->ineq[k][1 + total + div], -1);
+	}
+
+	return bmap;
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+/* This function is called right before "div" is eliminated from "bmap"
+ * using Fourier-Motzkin.
+ * Look through the constraints of "bmap" for constraints on the argument
+ * of the integer division and use them to construct constraints on the
+ * integer division itself.  These constraints can then be combined
+ * during the Fourier-Motzkin elimination.
+ * Note that it is only useful to introduce lower bounds on "div"
+ * if "bmap" already contains upper bounds on "div" as the newly
+ * introduce lower bounds can then be combined with the pre-existing
+ * upper bounds.  Similarly for upper bounds.
+ * We therefore first check if "bmap" contains any lower and/or upper bounds
+ * on "div".
+ *
+ * It is interesting to note that the introduction of these constraints
+ * can indeed lead to more accurate results, even when compared to
+ * deriving constraints on the argument of "div" from constraints on "div".
+ * Consider, for example, the set
+ *
+ *	{ [i,j,k] : 3 + i + 2j >= 0 and 2 * [(i+2j)/4] <= k }
+ *
+ * The second constraint can be rewritten as
+ *
+ *	2 * [(-i-2j+3)/4] + k >= 0
+ *
+ * from which we can derive
+ *
+ *	-i - 2j + 3 >= -2k
+ *
+ * or
+ *
+ *	i + 2j <= 3 + 2k
+ *
+ * Combined with the first constraint, we obtain
+ *
+ *	-3 <= 3 + 2k	or	k >= -3
+ *
+ * If, on the other hand we derive a constraint on [(i+2j)/4] from
+ * the first constraint, we obtain
+ *
+ *	[(i + 2j)/4] >= [-3/4] = -1
+ *
+ * Combining this constraint with the second constraint, we obtain
+ *
+ *	k >= -2
+ */
+static __isl_give isl_basic_map *insert_bounds_on_div(
+	__isl_take isl_basic_map *bmap, int div)
+{
+	int i;
+	int check_lb, check_ub;
+	isl_int v;
+	unsigned total;
+
+	if (!bmap)
+		return NULL;
+
+	if (isl_int_is_zero(bmap->div[div][0]))
+		return bmap;
+
+	total = isl_space_dim(bmap->dim, isl_dim_all);
+
+	check_lb = 0;
+	check_ub = 0;
+	for (i = 0; (!check_lb || !check_ub) && i < bmap->n_ineq; ++i) {
+		int s = isl_int_sgn(bmap->ineq[i][1 + total + div]);
+		if (s > 0)
+			check_ub = 1;
+		if (s < 0)
+			check_lb = 1;
+	}
+
+	if (!check_lb && !check_ub)
+		return bmap;
+
+	isl_int_init(v);
+
+	for (i = 0; bmap && i < bmap->n_ineq; ++i) {
+		if (!isl_int_is_zero(bmap->ineq[i][1 + total + div]))
+			continue;
+
+		bmap = insert_bounds_on_div_from_ineq(bmap, div, i, total, v,
+							check_lb, check_ub);
+	}
+
+	isl_int_clear(v);
+
+	return bmap;
+}
+
 /* Remove all divs (recursively) involving any of the given dimensions
  * in their definitions.
  */
@@ -1759,6 +1951,7 @@ __isl_give isl_basic_map *isl_basic_map_remove_divs_involving_dims(
 	for (i = bmap->n_div - 1; i >= 0; --i) {
 		if (!div_involves_vars(bmap, i, first, n))
 			continue;
+		bmap = insert_bounds_on_div(bmap, i);
 		bmap = isl_basic_map_remove_dims(bmap, isl_dim_div, i, 1);
 		if (!bmap)
 			return NULL;
