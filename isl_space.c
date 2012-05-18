@@ -468,6 +468,39 @@ error:
 	return NULL;
 }
 
+/* Reset the id of the given dimension of "space".
+ * If the dimension already has an id, then it is removed.
+ * If the dimension is a parameter, then we need to reset it
+ * in the nested spaces (if any) as well.
+ */
+__isl_give isl_space *isl_space_reset_dim_id(__isl_take isl_space *space,
+	enum isl_dim_type type, unsigned pos)
+{
+	space = isl_space_cow(space);
+	if (!space)
+		goto error;
+
+	if (type == isl_dim_param) {
+		int i;
+
+		for (i = 0; i < 2; ++i) {
+			if (!space->nested[i])
+				continue;
+			space->nested[i] =
+				isl_space_reset_dim_id(space->nested[i],
+							type, pos);
+			if (!space->nested[i])
+				goto error;
+		}
+	}
+
+	isl_id_free(get_id(space, type, pos));
+	return set_id(space, type, pos, NULL);
+error:
+	isl_space_free(space);
+	return NULL;
+}
+
 int isl_space_has_dim_id(__isl_keep isl_space *dim,
 	enum isl_dim_type type, unsigned pos)
 {
@@ -528,6 +561,8 @@ __isl_give isl_space *isl_space_set_dim_name(__isl_take isl_space *dim,
 
 	if (!dim)
 		return NULL;
+	if (!s)
+		return isl_space_reset_dim_id(dim, type, pos);
 	if (!name_ok(dim->ctx, s))
 		goto error;
 	id = isl_id_alloc(dim->ctx, s, NULL);
