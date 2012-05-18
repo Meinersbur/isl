@@ -347,6 +347,11 @@ void isl_space_free(__isl_take isl_space *dim)
 	free(dim);
 }
 
+/* Check if "s" is a valid dimension or tuple name.
+ * We currently only forbid names that look like a number.
+ *
+ * s is assumed to be non-NULL.
+ */
 static int name_ok(isl_ctx *ctx, const char *s)
 {
 	char *p;
