@@ -139,6 +139,11 @@ void *isl_restriction_free(__isl_take isl_restriction *restr)
 	return NULL;
 }
 
+isl_ctx *isl_restriction_get_ctx(__isl_keep isl_restriction *restr)
+{
+	return restr ? isl_set_get_ctx(restr->source) : NULL;
+}
+
 /* A private structure to keep track of a mapping together with
  * a user-specified identifier and a boolean indicating whether
  * the map represents a must or may access/dependence.

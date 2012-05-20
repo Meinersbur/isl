@@ -29,6 +29,8 @@ __isl_give isl_restriction *isl_restriction_input(
 __isl_give isl_restriction *isl_restriction_output(
 	__isl_take isl_set *source_restr);
 
+isl_ctx *isl_restriction_get_ctx(__isl_keep isl_restriction *restr);
+
 typedef __isl_give isl_restriction *(*isl_access_restrict)(
 	__isl_keep isl_map *source_map, __isl_keep isl_set *sink,
 	void *source_user, void *user);
