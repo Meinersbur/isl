@@ -501,7 +501,7 @@ __isl_give isl_basic_map *isl_basic_map_set_dim_name(
 	bmap->dim = isl_space_set_dim_name(bmap->dim, type, pos, s);
 	if (!bmap->dim)
 		goto error;
-	return bmap;
+	return isl_basic_map_finalize(bmap);
 error:
 	isl_basic_map_free(bmap);
 	return NULL;
