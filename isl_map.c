@@ -534,7 +534,7 @@ __isl_give isl_basic_map *isl_basic_map_set_dim_name(
 	bmap->dim = isl_space_set_dim_name(bmap->dim, type, pos, s);
 	if (!bmap->dim)
 		goto error;
-	return bmap;
+	return isl_basic_map_finalize(bmap);
 error:
 	isl_basic_map_free(bmap);
 	return NULL;
@@ -9819,6 +9819,7 @@ __isl_give isl_basic_map *isl_basic_map_zip(__isl_take isl_basic_map *bmap)
 		isl_space_dim(bmap->dim->nested[0], isl_dim_in);
 	n1 = isl_space_dim(bmap->dim->nested[0], isl_dim_out);
 	n2 = isl_space_dim(bmap->dim->nested[1], isl_dim_in);
+	bmap = isl_basic_map_cow(bmap);
 	bmap = isl_basic_map_swap_vars(bmap, pos, n1, n2);
 	if (!bmap)
 		return NULL;
