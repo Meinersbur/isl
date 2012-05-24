@@ -10229,6 +10229,15 @@ error:
 	return NULL;
 }
 
+/* Add a constraint imposing that the value of the first dimension is
+ * smaller than that of the second.
+ */
+__isl_give isl_map *isl_map_order_lt(__isl_take isl_map *map,
+	enum isl_dim_type type1, int pos1, enum isl_dim_type type2, int pos2)
+{
+	return isl_map_order_gt(map, type2, pos2, type1, pos1);
+}
+
 __isl_give isl_aff *isl_basic_map_get_div(__isl_keep isl_basic_map *bmap,
 	int pos)
 {
