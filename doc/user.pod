@@ -321,7 +321,7 @@ Location where C<build> C<piplib> was built.
 
 =back
 
-=head1 Library
+=head1 Integer Set Library
 
 =head2 Initialization
 
@@ -4660,6 +4660,74 @@ The functions taking a set compute a bound over all elements in the
 intersection of the set and the domain of the
 piecewise quasipolynomial reduction.
 
+=head2 Parametric Vertex Enumeration
+
+The parametric vertex enumeration described in this section
+is mainly intended to be used internally and by the C<barvinok>
+library.
+
+	#include <isl/vertices.h>
+	__isl_give isl_vertices *isl_basic_set_compute_vertices(
+		__isl_keep isl_basic_set *bset);
+
+The function C<isl_basic_set_compute_vertices> performs the
+actual computation of the parametric vertices and the chamber
+decomposition and store the result in an C<isl_vertices> object.
+This information can be queried by either iterating over all
+the vertices or iterating over all the chambers or cells
+and then iterating over all vertices that are active on the chamber.
+
+	int isl_vertices_foreach_vertex(
+		__isl_keep isl_vertices *vertices,
+		int (*fn)(__isl_take isl_vertex *vertex, void *user),
+		void *user);
+
+	int isl_vertices_foreach_cell(
+		__isl_keep isl_vertices *vertices,
+		int (*fn)(__isl_take isl_cell *cell, void *user),
+		void *user);
+	int isl_cell_foreach_vertex(__isl_keep isl_cell *cell,
+		int (*fn)(__isl_take isl_vertex *vertex, void *user),
+		void *user);
+
+Other operations that can be performed on an C<isl_vertices> object are
+the following.
+
+	isl_ctx *isl_vertices_get_ctx(
+		__isl_keep isl_vertices *vertices);
+	int isl_vertices_get_n_vertices(
+		__isl_keep isl_vertices *vertices);
+	void isl_vertices_free(__isl_take isl_vertices *vertices);
+
+Vertices can be inspected and destroyed using the following functions.
+
+	isl_ctx *isl_vertex_get_ctx(__isl_keep isl_vertex *vertex);
+	int isl_vertex_get_id(__isl_keep isl_vertex *vertex);
+	__isl_give isl_basic_set *isl_vertex_get_domain(
+		__isl_keep isl_vertex *vertex);
+	__isl_give isl_basic_set *isl_vertex_get_expr(
+		__isl_keep isl_vertex *vertex);
+	void isl_vertex_free(__isl_take isl_vertex *vertex);
+
+C<isl_vertex_get_expr> returns a singleton parametric set describing
+the vertex, while C<isl_vertex_get_domain> returns the activity domain
+of the vertex.
+Note that C<isl_vertex_get_domain> and C<isl_vertex_get_expr> return
+B<rational> basic sets, so they should mainly be used for inspection
+and should not be mixed with integer sets.
+
+Chambers can be inspected and destroyed using the following functions.
+
+	isl_ctx *isl_cell_get_ctx(__isl_keep isl_cell *cell);
+	__isl_give isl_basic_set *isl_cell_get_domain(
+		__isl_keep isl_cell *cell);
+	void isl_cell_free(__isl_take isl_cell *cell);
+
+=head1 Polyhedral Compilation Library
+
+This section collects functionality in C<isl> that has been specifically
+designed for use during polyhedral compilation.
+
 =head2 Dependence Analysis
 
 C<isl> contains specialized functionality for performing
@@ -5110,69 +5178,6 @@ If this option is set, then the components are given consecutive
 schedules.
 
 =back
-
-=head2 Parametric Vertex Enumeration
-
-The parametric vertex enumeration described in this section
-is mainly intended to be used internally and by the C<barvinok>
-library.
-
-	#include <isl/vertices.h>
-	__isl_give isl_vertices *isl_basic_set_compute_vertices(
-		__isl_keep isl_basic_set *bset);
-
-The function C<isl_basic_set_compute_vertices> performs the
-actual computation of the parametric vertices and the chamber
-decomposition and store the result in an C<isl_vertices> object.
-This information can be queried by either iterating over all
-the vertices or iterating over all the chambers or cells
-and then iterating over all vertices that are active on the chamber.
-
-	int isl_vertices_foreach_vertex(
-		__isl_keep isl_vertices *vertices,
-		int (*fn)(__isl_take isl_vertex *vertex, void *user),
-		void *user);
-
-	int isl_vertices_foreach_cell(
-		__isl_keep isl_vertices *vertices,
-		int (*fn)(__isl_take isl_cell *cell, void *user),
-		void *user);
-	int isl_cell_foreach_vertex(__isl_keep isl_cell *cell,
-		int (*fn)(__isl_take isl_vertex *vertex, void *user),
-		void *user);
-
-Other operations that can be performed on an C<isl_vertices> object are
-the following.
-
-	isl_ctx *isl_vertices_get_ctx(
-		__isl_keep isl_vertices *vertices);
-	int isl_vertices_get_n_vertices(
-		__isl_keep isl_vertices *vertices);
-	void isl_vertices_free(__isl_take isl_vertices *vertices);
-
-Vertices can be inspected and destroyed using the following functions.
-
-	isl_ctx *isl_vertex_get_ctx(__isl_keep isl_vertex *vertex);
-	int isl_vertex_get_id(__isl_keep isl_vertex *vertex);
-	__isl_give isl_basic_set *isl_vertex_get_domain(
-		__isl_keep isl_vertex *vertex);
-	__isl_give isl_basic_set *isl_vertex_get_expr(
-		__isl_keep isl_vertex *vertex);
-	void isl_vertex_free(__isl_take isl_vertex *vertex);
-
-C<isl_vertex_get_expr> returns a singleton parametric set describing
-the vertex, while C<isl_vertex_get_domain> returns the activity domain
-of the vertex.
-Note that C<isl_vertex_get_domain> and C<isl_vertex_get_expr> return
-B<rational> basic sets, so they should mainly be used for inspection
-and should not be mixed with integer sets.
-
-Chambers can be inspected and destroyed using the following functions.
-
-	isl_ctx *isl_cell_get_ctx(__isl_keep isl_cell *cell);
-	__isl_give isl_basic_set *isl_cell_get_domain(
-		__isl_keep isl_cell *cell);
-	void isl_cell_free(__isl_take isl_cell *cell);
 
 =head1 Applications
 
