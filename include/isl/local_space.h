@@ -32,6 +32,10 @@ const char *isl_local_space_get_dim_name(__isl_keep isl_local_space *ls,
 __isl_give isl_local_space *isl_local_space_set_dim_name(
 	__isl_take isl_local_space *ls,
 	enum isl_dim_type type, unsigned pos, const char *s);
+int isl_local_space_has_dim_id(__isl_keep isl_local_space *ls,
+	enum isl_dim_type type, unsigned pos);
+__isl_give isl_id *isl_local_space_get_dim_id(__isl_keep isl_local_space *ls,
+	enum isl_dim_type type, unsigned pos);
 __isl_give isl_local_space *isl_local_space_set_dim_id(
 	__isl_take isl_local_space *ls,
 	enum isl_dim_type type, unsigned pos, __isl_take isl_id *id);

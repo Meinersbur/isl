@@ -192,6 +192,18 @@ const char *isl_local_space_get_dim_name(__isl_keep isl_local_space *ls,
 	return ls ? isl_space_get_dim_name(ls->dim, type, pos) : NULL;
 }
 
+int isl_local_space_has_dim_id(__isl_keep isl_local_space *ls,
+	enum isl_dim_type type, unsigned pos)
+{
+	return ls ? isl_space_has_dim_id(ls->dim, type, pos) : -1;
+}
+
+__isl_give isl_id *isl_local_space_get_dim_id(__isl_keep isl_local_space *ls,
+	enum isl_dim_type type, unsigned pos)
+{
+	return ls ? isl_space_get_dim_id(ls->dim, type, pos) : NULL;
+}
+
 __isl_give isl_aff *isl_local_space_get_div(__isl_keep isl_local_space *ls,
 	int pos)
 {
