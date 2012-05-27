@@ -1567,7 +1567,7 @@ __isl_give isl_space *isl_space_unwrap(__isl_take isl_space *dim)
 		return NULL;
 
 	if (!isl_space_is_wrapping(dim))
-		isl_die(dim->ctx, isl_error_invalid, "not a wrapping dim",
+		isl_die(dim->ctx, isl_error_invalid, "not a wrapping space",
 			goto error);
 
 	unwrap = isl_space_copy(dim->nested[1]);
