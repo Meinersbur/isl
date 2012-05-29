@@ -102,7 +102,7 @@ typedef struct isl_ctx isl_ctx;
  * returns the value of 'expr'. It is used to ensure, that always an isl_ctx is
  * passed to the following macros, even if they currently do not use it.
  */
-#define isl_check_ctx(ctx, expr)	((ctx != (isl_ctx *) 0) ? expr : expr)
+#define isl_check_ctx(ctx, expr)	((ctx != (isl_ctx *) 0) ? expr : NULL)
 
 #define isl_alloc(ctx,type,size)	((type *)isl_check_ctx(ctx,\
 							malloc(size)))

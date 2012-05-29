@@ -11,6 +11,9 @@
 #include <isl/vec.h>
 #include <isl_options_private.h>
 
+#define __isl_calloc(type,size)		((type *)calloc(1, size))
+#define __isl_calloc_type(type)		__isl_calloc(type,sizeof(type))
+
 void isl_handle_error(isl_ctx *ctx, enum isl_error error, const char *msg,
 	const char *file, int line)
 {
@@ -86,7 +89,7 @@ isl_ctx *isl_ctx_alloc_with_options(struct isl_args *args, void *user_opt)
 		opt_allocated = 1;
 	}
 
-	ctx = isl_calloc_type(NULL, struct isl_ctx);
+	ctx = __isl_calloc_type(struct isl_ctx);
 	if (!ctx)
 		goto error;
 
