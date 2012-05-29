@@ -135,6 +135,7 @@ struct isl_sched_edge {
  * n is the number of nodes
  * node is the list of nodes
  * maxvar is the maximal number of variables over all nodes
+ * max_row is the allocated number of rows in the schedule
  * n_row is the current (maximal) number of linearly independent
  *	rows in the node schedules
  * n_total_row is the current number of rows in the node schedules
@@ -175,6 +176,7 @@ struct isl_sched_graph {
 	struct isl_sched_node *node;
 	int n;
 	int maxvar;
+	int max_row;
 	int n_row;
 
 	int *sorted;
@@ -372,6 +374,43 @@ static void graph_free(isl_ctx *ctx, struct isl_sched_graph *graph)
 	isl_basic_set_free(graph->lp);
 }
 
+/* For each "set" on which this function is called, increment
+ * graph->n by one and update graph->maxvar.
+ */
+static int init_n_maxvar(__isl_take isl_set *set, void *user)
+{
+	struct isl_sched_graph *graph = user;
+	int nvar = isl_set_dim(set, isl_dim_set);
+
+	graph->n++;
+	if (nvar > graph->maxvar)
+		graph->maxvar = nvar;
+
+	isl_set_free(set);
+
+	return 0;
+}
+
+/* Compute the number of rows that should be allocated for the schedule.
+ * The graph can be split at most "n - 1" times, there can be at most
+ * two rows for each dimension in the iteration domains (in particular,
+ * we usually have one row, but it may be split by split_parallel),
+ * and there can be one extra row for ordering the statements.
+ * Note that if we have actually split "n - 1" times, then no ordering
+ * is needed, so in principle we could use "graph->n + 2 * graph->maxvar - 1".
+ */
+static int compute_max_row(struct isl_sched_graph *graph,
+	__isl_keep isl_union_set *domain)
+{
+	graph->n = 0;
+	graph->maxvar = 0;
+	if (isl_union_set_foreach_set(domain, &init_n_maxvar, graph) < 0)
+		return -1;
+	graph->max_row = graph->n + 2 * graph->maxvar;
+
+	return 0;
+}
+
 /* Add a new node to the graph representing the given set.
  */
 static int extract_node(__isl_take isl_set *set, void *user)
@@ -396,11 +435,11 @@ static int extract_node(__isl_take isl_set *set, void *user)
 	graph->node[graph->n].nparam = nparam;
 	graph->node[graph->n].sched = sched;
 	graph->node[graph->n].sched_map = NULL;
-	band = isl_alloc_array(ctx, int, graph->n_edge + nvar);
+	band = isl_alloc_array(ctx, int, graph->max_row);
 	graph->node[graph->n].band = band;
-	band_id = isl_calloc_array(ctx, int, graph->n_edge + nvar);
+	band_id = isl_calloc_array(ctx, int, graph->max_row);
 	graph->node[graph->n].band_id = band_id;
-	zero = isl_calloc_array(ctx, int, graph->n_edge + nvar);
+	zero = isl_calloc_array(ctx, int, graph->max_row);
 	graph->node[graph->n].zero = zero;
 	graph->n++;
 
@@ -2555,6 +2594,8 @@ __isl_give isl_schedule *isl_union_set_compute_schedule(
 		goto empty;
 	if (graph_alloc(ctx, &graph, graph.n,
 	    isl_union_map_n_map(validity) + isl_union_map_n_map(proximity)) < 0)
+		goto error;
+	if (compute_max_row(&graph, domain) < 0)
 		goto error;
 	graph.root = 1;
 	graph.n = 0;
