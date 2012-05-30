@@ -795,6 +795,10 @@ static int valid_dim_type(enum isl_dim_type type)
 	}
 }
 
+/* Insert "n" dimensions of type "type" at position "pos".
+ * If we are inserting parameters, then they are also inserted in
+ * any nested spaces.
+ */
 __isl_give isl_space *isl_space_insert_dims(__isl_take isl_space *dim,
 	enum isl_dim_type type, unsigned pos, unsigned n)
 {
@@ -851,6 +855,17 @@ __isl_give isl_space *isl_space_insert_dims(__isl_take isl_space *dim,
 	default:		;
 	}
 	dim = isl_space_reset(dim, type);
+
+	if (type == isl_dim_param) {
+		if (dim && dim->nested[0] &&
+		    !(dim->nested[0] = isl_space_insert_dims(dim->nested[0],
+						    isl_dim_param, pos, n)))
+			goto error;
+		if (dim && dim->nested[1] &&
+		    !(dim->nested[1] = isl_space_insert_dims(dim->nested[1],
+						    isl_dim_param, pos, n)))
+			goto error;
+	}
 
 	return dim;
 error:
