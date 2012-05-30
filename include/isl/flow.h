@@ -21,9 +21,9 @@ typedef struct isl_restriction isl_restriction;
 
 void *isl_restriction_free(__isl_take isl_restriction *restr);
 __isl_give isl_restriction *isl_restriction_empty(
-	__isl_keep isl_map *source_map);
+	__isl_take isl_map *source_map);
 __isl_give isl_restriction *isl_restriction_none(
-	__isl_keep isl_map *source_map);
+	__isl_take isl_map *source_map);
 __isl_give isl_restriction *isl_restriction_input(
 	__isl_take isl_set *source_restr, __isl_take isl_set *sink_restr);
 __isl_give isl_restriction *isl_restriction_output(
