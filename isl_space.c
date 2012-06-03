@@ -865,27 +865,26 @@ __isl_give isl_space *isl_space_insert_dims(__isl_take isl_space *dim,
 		return NULL;
 
 	if (dim->ids) {
-		enum isl_dim_type t;
+		enum isl_dim_type t, o = isl_dim_param;
 		int off;
 		int s[3];
-		int *size = s - isl_dim_param;
 		ids = isl_calloc_array(dim->ctx, isl_id *,
 				     dim->nparam + dim->n_in + dim->n_out + n);
 		if (!ids)
 			goto error;
 		off = 0;
-		size[isl_dim_param] = dim->nparam;
-		size[isl_dim_in] = dim->n_in;
-		size[isl_dim_out] = dim->n_out;
+		s[isl_dim_param - o] = dim->nparam;
+		s[isl_dim_in - o] = dim->n_in;
+		s[isl_dim_out - o] = dim->n_out;
 		for (t = isl_dim_param; t <= isl_dim_out; ++t) {
 			if (t != type) {
-				get_ids(dim, t, 0, size[t], ids + off);
-				off += size[t];
+				get_ids(dim, t, 0, s[t - o], ids + off);
+				off += s[t - o];
 			} else {
 				get_ids(dim, t, 0, pos, ids + off);
 				off += pos + n;
-				get_ids(dim, t, pos, size[t] - pos, ids + off);
-				off += size[t] - pos;
+				get_ids(dim, t, pos, s[t - o] - pos, ids + off);
+				off += s[t - o] - pos;
 			}
 		}
 		free(dim->ids);
@@ -945,36 +944,35 @@ __isl_give isl_space *isl_space_move_dims(__isl_take isl_space *dim,
 
 	if (dim->ids) {
 		isl_id **ids;
-		enum isl_dim_type t;
+		enum isl_dim_type t, o = isl_dim_param;
 		int off;
 		int s[3];
-		int *size = s - isl_dim_param;
 		ids = isl_calloc_array(dim->ctx, isl_id *,
 					 dim->nparam + dim->n_in + dim->n_out);
 		if (!ids)
 			goto error;
 		off = 0;
-		size[isl_dim_param] = dim->nparam;
-		size[isl_dim_in] = dim->n_in;
-		size[isl_dim_out] = dim->n_out;
+		s[isl_dim_param - o] = dim->nparam;
+		s[isl_dim_in - o] = dim->n_in;
+		s[isl_dim_out - o] = dim->n_out;
 		for (t = isl_dim_param; t <= isl_dim_out; ++t) {
 			if (t == dst_type) {
 				get_ids(dim, t, 0, dst_pos, ids + off);
 				off += dst_pos;
 				get_ids(dim, src_type, src_pos, n, ids + off);
 				off += n;
-				get_ids(dim, t, dst_pos, size[t] - dst_pos,
+				get_ids(dim, t, dst_pos, s[t - o] - dst_pos,
 						ids + off);
-				off += size[t] - dst_pos;
+				off += s[t - o] - dst_pos;
 			} else if (t == src_type) {
 				get_ids(dim, t, 0, src_pos, ids + off);
 				off += src_pos;
 				get_ids(dim, t, src_pos + n,
-					    size[t] - src_pos - n, ids + off);
-				off += size[t] - src_pos - n;
+					    s[t - o] - src_pos - n, ids + off);
+				off += s[t - o] - src_pos - n;
 			} else {
-				get_ids(dim, t, 0, size[t], ids + off);
-				off += size[t];
+				get_ids(dim, t, 0, s[t - o], ids + off);
+				off += s[t - o];
 			}
 		}
 		free(dim->ids);
