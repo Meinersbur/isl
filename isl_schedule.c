@@ -127,6 +127,7 @@ struct isl_sched_edge {
 
 enum isl_edge_type {
 	isl_edge_validity = 0,
+	isl_edge_first = isl_edge_validity,
 	isl_edge_proximity,
 	isl_edge_last = isl_edge_proximity
 };
@@ -370,10 +371,10 @@ static int graph_has_edge(struct isl_sched_graph *graph,
 static struct isl_sched_edge *graph_find_any_edge(struct isl_sched_graph *graph,
 	struct isl_sched_node *src, struct isl_sched_node *dst)
 {
-	int i;
+	enum isl_edge_type i;
 	struct isl_sched_edge *edge;
 
-	for (i = 0; i <= isl_edge_last; ++i) {
+	for (i = isl_edge_first; i <= isl_edge_last; ++i) {
 		edge = graph_find_edge(graph, i, src, dst);
 		if (edge)
 			return edge;
@@ -388,9 +389,9 @@ static void graph_remove_edge(struct isl_sched_graph *graph,
 	struct isl_sched_edge *edge)
 {
 	isl_ctx *ctx = isl_map_get_ctx(edge->map);
-	int i;
+	enum isl_edge_type i;
 
-	for (i = 0; i <= isl_edge_last; ++i) {
+	for (i = isl_edge_first; i <= isl_edge_last; ++i) {
 		struct isl_hash_table_entry *entry;
 
 		entry = graph_find_edge_entry(graph, i, edge->src, edge->dst);
@@ -408,10 +409,10 @@ static void graph_remove_edge(struct isl_sched_graph *graph,
 static int graph_has_any_edge(struct isl_sched_graph *graph,
 	struct isl_sched_node *src, struct isl_sched_node *dst)
 {
-	int i;
+	enum isl_edge_type i;
 	int r;
 
-	for (i = 0; i <= isl_edge_last; ++i) {
+	for (i = isl_edge_first; i <= isl_edge_last; ++i) {
 		r = graph_has_edge(graph, i, src, dst);
 		if (r < 0 || r)
 			return r;
@@ -1857,7 +1858,7 @@ static int copy_edges(isl_ctx *ctx, struct isl_sched_graph *dst,
 	int (*edge_pred)(struct isl_sched_edge *edge, int data), int data)
 {
 	int i;
-	int t;
+	enum isl_edge_type t;
 
 	dst->n_edge = 0;
 	for (i = 0; i < src->n_edge; ++i) {
@@ -1889,7 +1890,7 @@ static int copy_edges(isl_ctx *ctx, struct isl_sched_graph *dst,
 		dst->edge[dst->n_edge].proximity = edge->proximity;
 		dst->n_edge++;
 
-		for (t = 0; t <= isl_edge_last; ++t) {
+		for (t = isl_edge_first; t <= isl_edge_last; ++t) {
 			if (edge !=
 			    graph_find_edge(src, t, edge->src, edge->dst))
 				continue;
