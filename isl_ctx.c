@@ -11,7 +11,7 @@
 #include <isl/vec.h>
 #include <isl/options.h>
 
-void isl_handle_error(isl_ctx *ctx, int error, const char *msg,
+void isl_handle_error(isl_ctx *ctx, enum isl_error error, const char *msg,
 	const char *file, int line)
 {
 	isl_ctx_set_error(ctx, error);
