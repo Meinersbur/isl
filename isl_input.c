@@ -933,7 +933,7 @@ error:
 }
 
 static __isl_give isl_set *construct_constraints(
-	__isl_take isl_set *set, enum isl_token_type type,
+	__isl_take isl_set *set, int type,
 	__isl_keep isl_pw_aff_list *left, __isl_keep isl_pw_aff_list *right)
 {
 	isl_set *cond;
