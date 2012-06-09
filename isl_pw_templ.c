@@ -190,6 +190,11 @@ __isl_give isl_id *FN(PW,get_dim_id)(__isl_keep PW *pw, enum isl_dim_type type,
 	return pw ? isl_space_get_dim_id(pw->dim, type, pos) : NULL;
 }
 
+int FN(PW,has_tuple_name)(__isl_keep PW *pw, enum isl_dim_type type)
+{
+	return pw ? isl_space_has_tuple_name(pw->dim, type) : -1;
+}
+
 const char *FN(PW,get_tuple_name)(__isl_keep PW *pw, enum isl_dim_type type)
 {
 	return pw ? isl_space_get_tuple_name(pw->dim, type) : NULL;

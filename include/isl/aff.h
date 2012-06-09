@@ -310,6 +310,8 @@ __isl_give isl_space *isl_pw_multi_aff_get_domain_space(
 	__isl_keep isl_pw_multi_aff *pma);
 __isl_give isl_space *isl_pw_multi_aff_get_space(
 	__isl_keep isl_pw_multi_aff *pma);
+int isl_pw_multi_aff_has_tuple_name(__isl_keep isl_pw_multi_aff *pma,
+	enum isl_dim_type type);
 const char *isl_pw_multi_aff_get_tuple_name(__isl_keep isl_pw_multi_aff *pma,
 	enum isl_dim_type type);
 __isl_give isl_id *isl_pw_multi_aff_get_tuple_id(

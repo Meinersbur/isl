@@ -3414,6 +3414,9 @@ The expression can be inspected using
 	const char *isl_multi_aff_get_tuple_name(
 		__isl_keep isl_multi_aff *multi,
 		enum isl_dim_type type);
+	int isl_pw_multi_aff_has_tuple_name(
+		__isl_keep isl_pw_multi_aff *pma,
+		enum isl_dim_type type);
 	const char *isl_pw_multi_aff_get_tuple_name(
 		__isl_keep isl_pw_multi_aff *pma,
 		enum isl_dim_type type);
