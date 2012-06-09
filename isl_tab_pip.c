@@ -789,8 +789,8 @@ static struct isl_vec *get_row_parameter_div(struct isl_tab *tab, int row)
 
 	isl_int_set(div->el[0], tab->mat->row[row][0]);
 	get_row_parameter_line(tab, row, div->el + 1);
-	normalize_div(div);
 	isl_seq_neg(div->el + 1, div->el + 1, div->size - 1);
+	normalize_div(div);
 	isl_seq_fdiv_r(div->el + 1, div->el + 1, div->el[0], div->size - 1);
 
 	return div;

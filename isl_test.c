@@ -310,10 +310,12 @@ void test_dim(struct isl_ctx *ctx)
 	isl_map_free(map2);
 }
 
-void test_div(struct isl_ctx *ctx)
+static int test_div(isl_ctx *ctx)
 {
+	const char *str;
 	isl_int v;
 	isl_space *dim;
+	isl_set *set;
 	isl_local_space *ls;
 	struct isl_basic_set *bset;
 	struct isl_constraint *c;
@@ -606,6 +608,16 @@ void test_div(struct isl_ctx *ctx)
 	isl_basic_set_free(bset);
 
 	isl_int_clear(v);
+
+	str = "{ [i] : exists (e0, e1: 3e1 >= 1 + 2e0 and "
+	    "8e1 <= -1 + 5i - 5e0 and 2e1 >= 1 + 2i - 5e0) }";
+	set = isl_set_read_from_str(ctx, str);
+	set = isl_set_compute_divs(set);
+	isl_set_free(set);
+	if (!set)
+		return -1;
+
+	return 0;
 }
 
 void test_application_case(struct isl_ctx *ctx, const char *name)
@@ -2955,6 +2967,7 @@ struct {
 	const char *name;
 	int (*fn)(isl_ctx *ctx);
 } tests [] = {
+	{ "div", &test_div },
 	{ "slice", &test_slice },
 	{ "fixed power", &test_fixed_power },
 	{ "sample", &test_sample },
@@ -3002,7 +3015,6 @@ int main()
 	test_bounded(ctx);
 	test_construction(ctx);
 	test_dim(ctx);
-	test_div(ctx);
 	test_application(ctx);
 	test_convex_hull(ctx);
 	test_gist(ctx);
