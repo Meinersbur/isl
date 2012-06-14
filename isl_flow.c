@@ -33,9 +33,10 @@ struct isl_restriction {
 	isl_set *sink;
 };
 
-/* Create a restriction that doesn't restrict anything.
+/* Create a restriction of the given type.
  */
-__isl_give isl_restriction *isl_restriction_none(__isl_take isl_map *source_map)
+static __isl_give isl_restriction *isl_restriction_alloc(
+	__isl_take isl_map *source_map, enum isl_restriction_type type)
 {
 	isl_ctx *ctx;
 	isl_restriction *restr;
@@ -48,7 +49,7 @@ __isl_give isl_restriction *isl_restriction_none(__isl_take isl_map *source_map)
 	if (!restr)
 		goto error;
 
-	restr->type = isl_restriction_type_none;
+	restr->type = type;
 
 	isl_map_free(source_map);
 	return restr;
@@ -57,29 +58,19 @@ error:
 	return NULL;
 }
 
+/* Create a restriction that doesn't restrict anything.
+ */
+__isl_give isl_restriction *isl_restriction_none(__isl_take isl_map *source_map)
+{
+	return isl_restriction_alloc(source_map, isl_restriction_type_none);
+}
+
 /* Create a restriction that removes everything.
  */
 __isl_give isl_restriction *isl_restriction_empty(
 	__isl_take isl_map *source_map)
 {
-	isl_ctx *ctx;
-	isl_restriction *restr;
-
-	if (!source_map)
-		return NULL;
-
-	ctx = isl_map_get_ctx(source_map);
-	restr = isl_calloc_type(ctx, struct isl_restriction);
-	if (!restr)
-		goto error;
-
-	restr->type = isl_restriction_type_empty;
-
-	isl_map_free(source_map);
-	return restr;
-error:
-	isl_map_free(source_map);
-	return NULL;
+	return isl_restriction_alloc(source_map, isl_restriction_type_empty);
 }
 
 /* Create a restriction on the input of the maximization problem
