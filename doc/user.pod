@@ -3213,7 +3213,7 @@ to be a constant.
 The function C<isl_aff_ge_basic_set> returns a basic set
 containing those elements in the shared space
 of C<aff1> and C<aff2> where C<aff1> is greater than or equal to C<aff2>.
-The function C<isl_aff_ge_set> returns a set
+The function C<isl_pw_aff_ge_set> returns a set
 containing those elements in the shared domain
 of C<pwaff1> and C<pwaff2> where C<pwaff1> is greater than or equal to C<pwaff2>.
 The functions operating on C<isl_pw_aff_list> apply the corresponding
@@ -4086,7 +4086,7 @@ obviously equal, use
 		__isl_take isl_point *pnt);
 
 	__isl_give isl_pw_qpolynomial_fold *
-	sl_pw_qpolynomial_fold_intersect_params(
+	isl_pw_qpolynomial_fold_intersect_params(
 		__isl_take isl_pw_qpolynomial_fold *pwf,
 		__isl_take isl_set *set);
 
@@ -4302,7 +4302,7 @@ any of the other arguments is treated as an error.
 
 During the dependence analysis, we frequently need to perform
 the following operation.  Given a relation between sink iterations
-and potential soure iterations from a particular source domain,
+and potential source iterations from a particular source domain,
 what is the last potential source iteration corresponding to each
 sink iteration.  It can sometimes be convenient to adjust
 the set of potential source iterations before or after each such operation.
