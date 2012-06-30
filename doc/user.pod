@@ -1220,7 +1220,7 @@ functions.
 	__isl_give isl_union_map *isl_union_map_copy(
 		__isl_keep isl_union_map *umap);
 	void isl_basic_set_free(__isl_take isl_basic_set *bset);
-	void isl_set_free(__isl_take isl_set *set);
+	void *isl_set_free(__isl_take isl_set *set);
 	void *isl_union_set_free(__isl_take isl_union_set *uset);
 	void isl_basic_map_free(__isl_take isl_basic_map *bmap);
 	void isl_map_free(__isl_take isl_map *map);
