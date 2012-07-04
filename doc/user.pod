@@ -1406,6 +1406,13 @@ using the following functions, which compute an overapproximation.
 	__isl_give isl_map *isl_map_remove_divs(
 		__isl_take isl_map *map);
 
+It is also possible to only remove those divs that are defined
+in terms of a given range of dimensions.
+
+	__isl_give isl_set *isl_set_remove_divs_involving_dims(
+		__isl_take isl_set *set, enum isl_dim_type type,
+		unsigned first, unsigned n);
+
 To iterate over all the sets or maps in a union set or map, use
 
 	int isl_union_set_foreach_set(__isl_keep isl_union_set *uset,
