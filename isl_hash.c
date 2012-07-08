@@ -64,6 +64,7 @@ int isl_hash_table_init(struct isl_ctx *ctx, struct isl_hash_table *table,
 static int grow_table(struct isl_ctx *ctx, struct isl_hash_table *table,
 			int (*eq)(const void *entry, const void *val))
 {
+	int n;
 	size_t old_size, size;
 	struct isl_hash_table_entry *entries;
 	uint32_t h;
@@ -78,6 +79,8 @@ static int grow_table(struct isl_ctx *ctx, struct isl_hash_table *table,
 		return -1;
 	}
 
+	n = table->n;
+	table->n = 0;
 	table->bits++;
 
 	for (h = 0; h < old_size; ++h) {
@@ -92,6 +95,7 @@ static int grow_table(struct isl_ctx *ctx, struct isl_hash_table *table,
 			table->bits--;
 			free(table->entries);
 			table->entries = entries;
+			table->n = n;
 			return -1;
 		}
 
