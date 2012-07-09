@@ -287,6 +287,9 @@ __isl_give isl_multi_aff *isl_multi_aff_flat_range_product(
 __isl_give isl_multi_aff *isl_multi_aff_product(
 	__isl_take isl_multi_aff *ma1, __isl_take isl_multi_aff *ma2);
 
+__isl_give isl_multi_aff *isl_multi_aff_align_params(
+	__isl_take isl_multi_aff *multi, __isl_take isl_space *model);
+
 __isl_give isl_multi_aff *isl_multi_aff_gist_params(
 	__isl_take isl_multi_aff *maff, __isl_take isl_set *context);
 __isl_give isl_multi_aff *isl_multi_aff_gist(__isl_take isl_multi_aff *maff,
