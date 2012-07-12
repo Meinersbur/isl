@@ -256,13 +256,15 @@ error:
 	return NULL;
 }
 
-void isl_printer_free(__isl_take isl_printer *p)
+void *isl_printer_free(__isl_take isl_printer *p)
 {
 	if (!p)
-		return;
+		return NULL;
 	free(p->buf);
 	isl_ctx_deref(p->ctx);
 	free(p);
+
+	return NULL;
 }
 
 isl_ctx *isl_printer_get_ctx(__isl_keep isl_printer *printer)
