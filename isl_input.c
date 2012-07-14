@@ -791,6 +791,53 @@ static __isl_give isl_multi_pw_aff *tuple_alloc(struct vars *v)
 	return isl_multi_pw_aff_alloc(isl_space_alloc(v->ctx, 0, v->n, 0));
 }
 
+/* Is "pa" an expression in term of earlier dimensions?
+ * The alternative is that the dimension is defined to be equal to itself,
+ * meaning that it has a universe domain and an expression that depends
+ * on itself.  "i" is the position of the expression in a sequence
+ * of "n" expressions.  The final dimensions of "pa" correspond to
+ * these "n" expressions.
+ */
+static int pw_aff_is_expr(__isl_keep isl_pw_aff *pa, int i, int n)
+{
+	isl_aff *aff;
+
+	if (!pa)
+		return -1;
+	if (pa->n != 1)
+		return 1;
+	if (!isl_set_plain_is_universe(pa->p[0].set))
+		return 1;
+
+	aff = pa->p[0].aff;
+	if (isl_int_is_zero(aff->v->el[aff->v->size - n + i]))
+		return 1;
+	return 0;
+}
+
+/* Does the tuple contain any dimensions that are defined
+ * in terms of earlier dimensions?
+ */
+static int tuple_has_expr(__isl_keep isl_multi_pw_aff *tuple)
+{
+	int i, n;
+	int has_expr = 0;
+	isl_pw_aff *pa;
+
+	if (!tuple)
+		return -1;
+	n = isl_multi_pw_aff_dim(tuple, isl_dim_out);
+	for (i = 0; i < n; ++i) {
+		pa = isl_multi_pw_aff_get_pw_aff(tuple, i);
+		has_expr = pw_aff_is_expr(pa, i, n);
+		isl_pw_aff_free(pa);
+		if (has_expr < 0 || has_expr)
+			break;
+	}
+
+	return has_expr;
+}
+
 /* Add a dimension to the given tuple.
  * The dimension is initially undefined, so it is encoded
  * as one times itself.
@@ -2739,29 +2786,130 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_read_from_str(isl_ctx *ctx,
 	return pma;
 }
 
+/* Assuming "pa" represents a single affine expression defined on a universe
+ * domain, extract this affine expression.
+ */
+static __isl_give isl_aff *aff_from_pw_aff(__isl_take isl_pw_aff *pa)
+{
+	isl_aff *aff;
+
+	if (!pa)
+		return NULL;
+	if (pa->n != 1)
+		isl_die(isl_pw_aff_get_ctx(pa), isl_error_invalid,
+			"expecting single affine expression",
+			goto error);
+	if (!isl_set_plain_is_universe(pa->p[0].set))
+		isl_die(isl_pw_aff_get_ctx(pa), isl_error_invalid,
+			"expecting universe domain",
+			goto error);
+
+	aff = isl_aff_copy(pa->p[0].aff);
+	isl_pw_aff_free(pa);
+	return aff;
+error:
+	isl_pw_aff_free(pa);
+	return NULL;
+}
+
 /* Read a multi-affine expression from "s".
- * We call isl_stream_read_pw_multi_aff to parse a possibly piecewise
- * multi-affine expression and then check that the result is
- * a single multi-affine expression on a universe domain.
+ * If the multi-affine expression has a domain, then then tuple
+ * representing this domain cannot involve any affine expressions.
+ * The tuple representing the actual expressions needs to consist
+ * of only affine expressions.  Moreover, these expressions can
+ * only depend on parameters and input dimensions and not on other
+ * output dimensions.
  */
 __isl_give isl_multi_aff *isl_stream_read_multi_aff(struct isl_stream *s)
 {
-	isl_pw_multi_aff *pma;
-	isl_multi_aff *maff;
+	struct vars *v;
+	isl_set *dom = NULL;
+	isl_multi_pw_aff *tuple = NULL;
+	int dim, i, n;
+	isl_space *space, *dom_space;
+	isl_multi_aff *ma = NULL;
 
-	pma = isl_stream_read_pw_multi_aff(s);
-	if (!pma)
+	v = vars_new(s->ctx);
+	if (!v)
 		return NULL;
-	if (pma->n != 1)
+
+	dom = isl_set_universe(isl_space_params_alloc(s->ctx, 0));
+	if (next_is_tuple(s)) {
+		dom = read_map_tuple(s, dom, isl_dim_param, v);
+		if (isl_stream_eat(s, ISL_TOKEN_TO))
+			goto error;
+	}
+	if (!isl_set_plain_is_universe(dom))
 		isl_die(s->ctx, isl_error_invalid,
-			"expecting single list of affine expressions",
-			return isl_pw_multi_aff_free(pma));
-	if (!isl_set_plain_is_universe(pma->p[0].set))
-		isl_die(s->ctx, isl_error_invalid, "expecting universe domain",
-			return isl_pw_multi_aff_free(pma));
-	maff = isl_multi_aff_copy(pma->p[0].maff);
-	isl_pw_multi_aff_free(pma);
-	return maff;
+			"expecting universe parameter domain", goto error);
+	if (isl_stream_eat(s, '{'))
+		goto error;
+
+	tuple = read_tuple(s, v);
+	if (!tuple)
+		goto error;
+	if (isl_stream_eat_if_available(s, ISL_TOKEN_TO)) {
+		isl_set *set;
+		isl_space *space;
+		int has_expr;
+
+		has_expr = tuple_has_expr(tuple);
+		if (has_expr < 0)
+			goto error;
+		if (has_expr)
+			isl_die(s->ctx, isl_error_invalid,
+				"expecting universe domain", goto error);
+		space = isl_space_range(isl_multi_pw_aff_get_space(tuple));
+		set = isl_set_universe(space);
+		dom = isl_set_intersect_params(set, dom);
+		isl_multi_pw_aff_free(tuple);
+		tuple = read_tuple(s, v);
+		if (!tuple)
+			goto error;
+	}
+
+	if (isl_stream_eat(s, '}'))
+		goto error;
+
+	n = isl_multi_pw_aff_dim(tuple, isl_dim_out);
+	dim = isl_set_dim(dom, isl_dim_all);
+	dom_space = isl_set_get_space(dom);
+	space = isl_space_range(isl_multi_pw_aff_get_space(tuple));
+	space = isl_space_align_params(space, isl_space_copy(dom_space));
+	if (!isl_space_is_params(dom_space))
+		space = isl_space_map_from_domain_and_range(
+				isl_space_copy(dom_space), space);
+	isl_space_free(dom_space);
+	ma = isl_multi_aff_alloc(space);
+
+	for (i = 0; i < n; ++i) {
+		isl_pw_aff *pa;
+		isl_aff *aff;
+		pa = isl_multi_pw_aff_get_pw_aff(tuple, i);
+		aff = aff_from_pw_aff(pa);
+		if (!aff)
+			goto error;
+		if (isl_aff_involves_dims(aff, isl_dim_in, dim, i + 1)) {
+			isl_aff_free(aff);
+			isl_die(s->ctx, isl_error_invalid,
+				"not an affine expression", goto error);
+		}
+		aff = isl_aff_drop_dims(aff, isl_dim_in, dim, n);
+		space = isl_multi_aff_get_domain_space(ma);
+		aff = isl_aff_reset_domain_space(aff, space);
+		ma = isl_multi_aff_set_aff(ma, i, aff);
+	}
+
+	isl_multi_pw_aff_free(tuple);
+	vars_free(v);
+	isl_set_free(dom);
+	return ma;
+error:
+	isl_multi_pw_aff_free(tuple);
+	vars_free(v);
+	isl_set_free(dom);
+	isl_multi_aff_free(ma);
+	return NULL;
 }
 
 __isl_give isl_multi_aff *isl_multi_aff_read_from_str(isl_ctx *ctx,
