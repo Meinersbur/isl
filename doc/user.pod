@@ -2773,6 +2773,19 @@ a parametric set as well.
 		__isl_take isl_union_map *umap1,
 		__isl_take isl_union_map *umap2);
 
+=item * Preimage
+
+	__isl_give isl_basic_set *
+	isl_basic_set_preimage_multi_aff(
+		__isl_take isl_basic_set *bset,
+		__isl_take isl_multi_aff *ma);
+
+This function computes the preimage of the given set under
+the given function.  In other words, the expression is plugged
+into the set description.
+Objects of type C<isl_multi_aff> are described in
+L</"Piecewise Multiple Quasi Affine Expressions">.
+
 =item * Cartesian Product
 
 	__isl_give isl_set *isl_set_product(

@@ -3184,11 +3184,67 @@ static int test_list(isl_ctx *ctx)
 }
 
 struct {
+	const char *set;
+	const char *ma;
+	const char *res;
+} preimage_tests[] = {
+	{ "{ B[i,j] : 0 <= i < 10 and 0 <= j < 100 }",
+	  "{ A[j,i] -> B[i,j] }",
+	  "{ A[j,i] : 0 <= i < 10 and 0 <= j < 100 }" },
+	{ "{ rat: B[i,j] : 0 <= i, j and 3 i + 5 j <= 100 }",
+	  "{ A[a,b] -> B[a/2,b/6] }",
+	  "{ rat: A[a,b] : 0 <= a, b and 9 a + 5 b <= 600 }" },
+	{ "{ B[i,j] : 0 <= i, j and 3 i + 5 j <= 100 }",
+	  "{ A[a,b] -> B[a/2,b/6] }",
+	  "{ A[a,b] : 0 <= a, b and 9 a + 5 b <= 600 and "
+		    "exists i,j : a = 2 i and b = 6 j }" },
+	{ "[n] -> { S[i] : 0 <= i <= 100 }", "[n] -> { S[n] }",
+	  "[n] -> { : 0 <= n <= 100 }" },
+	{ "{ B[i] : 0 <= i < 100 and exists a : i = 4 a }",
+	  "{ A[a] -> B[2a] }",
+	  "{ A[a] : 0 <= a < 50 and exists b : a = 2 b }" },
+	{ "{ B[i] : 0 <= i < 100 and exists a : i = 4 a }",
+	  "{ A[a] -> B[([a/2])] }",
+	  "{ A[a] : 0 <= a < 200 and exists b : [a/2] = 4 b }" },
+	{ "{ B[i,j,k] : 0 <= i,j,k <= 100 }",
+	  "{ A[a] -> B[a,a,a/3] }",
+	  "{ A[a] : 0 <= a <= 100 and exists b : a = 3 b }" },
+	{ "{ B[i,j] : j = [(i)/2] } ", "{ A[i,j] -> B[i/3,j] }",
+	  "{ A[i,j] : j = [(i)/6] and exists a : i = 3 a }" },
+};
+
+int test_preimage(isl_ctx *ctx)
+{
+	int i;
+	isl_basic_set *bset1, *bset2;
+	isl_multi_aff *ma;
+	int equal;
+
+	for (i = 0; i < ARRAY_SIZE(preimage_tests); ++i) {
+		bset1 = isl_basic_set_read_from_str(ctx, preimage_tests[i].set);
+		ma = isl_multi_aff_read_from_str(ctx, preimage_tests[i].ma);
+		bset2 = isl_basic_set_read_from_str(ctx, preimage_tests[i].res);
+		bset1 = isl_basic_set_preimage_multi_aff(bset1, ma);
+		equal = isl_basic_set_is_equal(bset1, bset2);
+		isl_basic_set_free(bset1);
+		isl_basic_set_free(bset2);
+		if (equal < 0)
+			return -1;
+		if (!equal)
+			isl_die(ctx, isl_error_unknown, "bad preimage",
+				return -1);
+	}
+
+	return 0;
+}
+
+struct {
 	const char *name;
 	int (*fn)(isl_ctx *ctx);
 } tests [] = {
 	{ "list", &test_list },
 	{ "align parameters", &test_align_parameters },
+	{ "preimage", &test_preimage },
 	{ "eliminate", &test_eliminate },
 	{ "reisdue class", &test_residue_class },
 	{ "div", &test_div },

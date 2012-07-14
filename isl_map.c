@@ -10899,3 +10899,244 @@ error:
 	isl_set_free(set);
 	return NULL;
 }
+
+/* Check if the range of "ma" is compatible with "space".
+ * Return -1 if anything is wrong.
+ */
+static int check_space_compatible_range_multi_aff(
+	__isl_keep isl_space *space, __isl_keep isl_multi_aff *ma)
+{
+	int m;
+	isl_space *ma_space;
+
+	ma_space = isl_multi_aff_get_space(ma);
+	m = isl_space_is_range_internal(space, ma_space);
+	isl_space_free(ma_space);
+	if (m >= 0 && !m)
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
+			"spaces don't match", return -1);
+	return m;
+}
+
+/* Check if the range of "ma" is compatible with "bset".
+ * Return -1 if anything is wrong.
+ */
+static int check_basic_set_compatible_range_multi_aff(
+	__isl_keep isl_basic_set *bset, __isl_keep isl_multi_aff *ma)
+{
+	return check_space_compatible_range_multi_aff(bset->dim, ma);
+}
+
+/* Copy the divs from "ma" to "bset", adding zeros for the coefficients
+ * of the other divs in "bset".
+ */
+static int set_ma_divs(__isl_keep isl_basic_set *bset,
+	__isl_keep isl_multi_aff *ma, int n_div)
+{
+	int i;
+	isl_local_space *ls;
+
+	if (n_div == 0)
+		return 0;
+
+	ls = isl_aff_get_domain_local_space(ma->p[0]);
+	if (!ls)
+		return -1;
+
+	for (i = 0; i < n_div; ++i) {
+		isl_seq_cpy(bset->div[i], ls->div->row[i], ls->div->n_col);
+		isl_seq_clr(bset->div[i] + ls->div->n_col, bset->n_div - n_div);
+		if (isl_basic_set_add_div_constraints(bset, i) < 0)
+			goto error;
+	}
+
+	isl_local_space_free(ls);
+	return 0;
+error:
+	isl_local_space_free(ls);
+	return -1;
+}
+
+/* How many stride constraints does "ma" enforce?
+ * That is, how many of the affine expressions have a denominator
+ * different from one?
+ */
+static int multi_aff_strides(__isl_keep isl_multi_aff *ma)
+{
+	int i;
+	int strides = 0;
+
+	for (i = 0; i < ma->n; ++i)
+		if (!isl_int_is_one(ma->p[i]->v->el[0]))
+			strides++;
+
+	return strides;
+}
+
+/* For each affine expression in ma of the form
+ *
+ *	x_i = (f_i y + h_i)/m_i
+ *
+ * with m_i different from one, add a constraint to "bset"
+ * of the form
+ *
+ *	f_i y + h_i = m_i alpha_i
+ *
+ * with alpha_i an additional existentially quantified variable.
+ */
+static __isl_give isl_basic_set *add_ma_strides(
+	__isl_take isl_basic_set *bset, __isl_keep isl_multi_aff *ma)
+{
+	int i, k;
+	int div;
+	int total;
+
+	total = isl_basic_set_total_dim(bset);
+	for (i = 0; i < ma->n; ++i) {
+		int len;
+
+		if (isl_int_is_one(ma->p[i]->v->el[0]))
+			continue;
+		div = isl_basic_set_alloc_div(bset);
+		k = isl_basic_set_alloc_equality(bset);
+		if (div < 0 || k < 0)
+			goto error;
+		isl_int_set_si(bset->div[div][0], 0);
+		len = ma->p[i]->v->size;
+		isl_seq_cpy(bset->eq[k], ma->p[i]->v->el + 1, len - 1);
+		isl_seq_clr(bset->eq[k] + len - 1, 1 + total - (len - 1));
+		isl_int_neg(bset->eq[k][1 + total], ma->p[i]->v->el[0]);
+		total++;
+	}
+
+	return bset;
+error:
+	isl_basic_set_free(bset);
+	return NULL;
+}
+
+/* Compute the preimage of "bset" under the function represented by "ma".
+ * In other words, plug in "ma" in "bset".  The result is a basic set
+ * that lives in the domain space of "ma".
+ *
+ * If bset is represented by
+ *
+ *	A(p) + B x + C(divs) >= 0
+ *
+ * and ma is represented by
+ *
+ *	x = D(p) + F(y) + G(divs')
+ *
+ * then the result is
+ *
+ *	A(p) + B D(p) + B F(y) + B G(divs') + C(divs) >= 0
+ *
+ * The divs in the input set are similarly adjusted.
+ * In particular
+ *
+ *	floor((a_i(p) + b_i x + c_i(divs))/n_i)
+ *
+ * becomes
+ *
+ *	floor((a_i(p) + b_i D(p) + b_i F(y) + B_i G(divs') + c_i(divs))/n_i)
+ *
+ * If bset is not a rational set and if F(y) involves any denominators
+ *
+ *	x_i = (f_i y + h_i)/m_i
+ *
+ * the additional constraints are added to ensure that we only
+ * map back integer points.  That is we enforce
+ *
+ *	f_i y + h_i = m_i alpha_i
+ *
+ * with alpha_i an additional existentially quantified variable.
+ *
+ * We first copy over the divs from "ma".
+ * Then we add the modified constraints and divs from "bset".
+ * Finally, we add the stride constraints, if needed.
+ */
+__isl_give isl_basic_set *isl_basic_set_preimage_multi_aff(
+	__isl_take isl_basic_set *bset, __isl_take isl_multi_aff *ma)
+{
+	int i, k;
+	isl_space *space;
+	isl_basic_set *res = NULL;
+	int n_div_bset, n_div_ma;
+	isl_int f, c1, c2, g;
+	int rational, strides;
+
+	isl_int_init(f);
+	isl_int_init(c1);
+	isl_int_init(c2);
+	isl_int_init(g);
+
+	ma = isl_multi_aff_align_divs(ma);
+	if (!bset || !ma)
+		goto error;
+	if (check_basic_set_compatible_range_multi_aff(bset, ma) < 0)
+		goto error;
+
+	n_div_bset = isl_basic_set_dim(bset, isl_dim_div);
+	n_div_ma = ma->n ? isl_aff_dim(ma->p[0], isl_dim_div) : 0;
+
+	space = isl_space_domain(isl_multi_aff_get_space(ma));
+	rational = isl_basic_set_is_rational(bset);
+	strides = rational ? 0 : multi_aff_strides(ma);
+	res = isl_basic_set_alloc_space(space, n_div_ma + n_div_bset + strides,
+			    bset->n_eq + strides, bset->n_ineq + 2 * n_div_ma);
+	if (rational)
+		res = isl_basic_set_set_rational(res);
+
+	for (i = 0; i < n_div_ma + n_div_bset; ++i)
+		if (isl_basic_set_alloc_div(res) < 0)
+			goto error;
+
+	if (set_ma_divs(res, ma, n_div_ma) < 0)
+		goto error;
+
+	for (i = 0; i < bset->n_eq; ++i) {
+		k = isl_basic_set_alloc_equality(res);
+		if (k < 0)
+			goto error;
+		isl_seq_preimage(res->eq[k], bset->eq[i], ma, n_div_ma,
+					n_div_bset, f, c1, c2, g, 0);
+	}
+
+	for (i = 0; i < bset->n_ineq; ++i) {
+		k = isl_basic_set_alloc_inequality(res);
+		if (k < 0)
+			goto error;
+		isl_seq_preimage(res->ineq[k], bset->ineq[i], ma, n_div_ma,
+					n_div_bset, f, c1, c2, g, 0);
+	}
+
+	for (i = 0; i < bset->n_div; ++i) {
+		if (isl_int_is_zero(bset->div[i][0])) {
+			isl_int_set_si(res->div[n_div_ma + i][0], 0);
+			continue;
+		}
+		isl_seq_preimage(res->div[n_div_ma + i], bset->div[i],
+				    ma, n_div_ma, n_div_bset, f, c1, c2, g, 1);
+	}
+
+	if (strides)
+		res = add_ma_strides(res, ma);
+
+	isl_int_clear(f);
+	isl_int_clear(c1);
+	isl_int_clear(c2);
+	isl_int_clear(g);
+	isl_basic_set_free(bset);
+	isl_multi_aff_free(ma);
+	res = isl_basic_set_simplify(res);
+	return isl_basic_set_finalize(res);
+error:
+	isl_int_clear(f);
+	isl_int_clear(c1);
+	isl_int_clear(c2);
+	isl_int_clear(g);
+	isl_basic_set_free(bset);
+	isl_multi_aff_free(ma);
+	isl_basic_set_free(res);
+	return NULL;
+}

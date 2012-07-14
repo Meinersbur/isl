@@ -120,6 +120,8 @@ __isl_export
 __isl_give isl_basic_set *isl_basic_set_apply(
 		__isl_take isl_basic_set *bset,
 		__isl_take isl_basic_map *bmap);
+__isl_give isl_basic_set *isl_basic_set_preimage_multi_aff(
+	__isl_take isl_basic_set *bset, __isl_take isl_multi_aff *ma);
 __isl_export
 __isl_give isl_basic_set *isl_basic_set_affine_hull(
 		__isl_take isl_basic_set *bset);
