@@ -2010,20 +2010,37 @@ void test_lift(isl_ctx *ctx)
 	isl_basic_set_free(bset);
 }
 
-void test_subset(isl_ctx *ctx)
-{
-	const char *str;
-	isl_set *set1, *set2;
-
-	str = "{ [112, 0] }";
-	set1 = isl_set_read_from_str(ctx, str);
-	str = "{ [i0, i1] : exists (e0 = [(i0 - i1)/16], e1: "
+struct {
+	const char *set1;
+	const char *set2;
+	int subset;
+} subset_tests[] = {
+	{ "{ [112, 0] }",
+	  "{ [i0, i1] : exists (e0 = [(i0 - i1)/16], e1: "
 		"16e0 <= i0 - i1 and 16e0 >= -15 + i0 - i1 and "
-		"16e1 <= i1 and 16e0 >= -i1 and 16e1 >= -i0 + i1) }";
-	set2 = isl_set_read_from_str(ctx, str);
-	assert(isl_set_is_subset(set1, set2));
-	isl_set_free(set1);
-	isl_set_free(set2);
+		"16e1 <= i1 and 16e0 >= -i1 and 16e1 >= -i0 + i1) }", 1 },
+};
+
+static int test_subset(isl_ctx *ctx)
+{
+	int i;
+	isl_set *set1, *set2;
+	int subset;
+
+	for (i = 0; i < ARRAY_SIZE(subset_tests); ++i) {
+		set1 = isl_set_read_from_str(ctx, subset_tests[i].set1);
+		set2 = isl_set_read_from_str(ctx, subset_tests[i].set2);
+		subset = isl_set_is_subset(set1, set2);
+		isl_set_free(set1);
+		isl_set_free(set2);
+		if (subset < 0)
+			return -1;
+		if (subset != subset_tests[i].subset)
+			isl_die(ctx, isl_error_unknown,
+				"incorrect subset result", return -1);
+	}
+
+	return 0;
 }
 
 int test_factorize(isl_ctx *ctx)
@@ -3137,6 +3154,7 @@ struct {
 	{ "affine hull", &test_affine_hull },
 	{ "coalesce", &test_coalesce },
 	{ "factorize", &test_factorize },
+	{ "subset", &test_subset },
 };
 
 int main()
@@ -3153,7 +3171,6 @@ int main()
 		if (tests[i].fn(ctx) < 0)
 			goto error;
 	}
-	test_subset(ctx);
 	test_lift(ctx);
 	test_bound(ctx);
 	test_union(ctx);
