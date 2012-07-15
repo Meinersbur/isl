@@ -85,6 +85,9 @@ __isl_give isl_pw_aff_list *isl_pw_aff_list_set_rational(
 
 __isl_give isl_multi_aff *isl_multi_aff_dup(__isl_keep isl_multi_aff *multi);
 
+__isl_give isl_multi_aff *isl_multi_aff_align_divs(
+	__isl_take isl_multi_aff *maff);
+
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_reset_domain_space(
 	__isl_take isl_pw_multi_aff *pwmaff, __isl_take isl_space *space);
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_reset_space(
