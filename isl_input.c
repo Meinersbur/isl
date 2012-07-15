@@ -1755,7 +1755,9 @@ static struct isl_obj obj_read_body(struct isl_stream *s,
 	if (!map)
 		goto error;
 	tok = isl_stream_next_token(s);
-	if (tok && tok->type == ISL_TOKEN_TO) {
+	if (!tok)
+		goto error;
+	if (tok->type == ISL_TOKEN_TO) {
 		obj.type = isl_obj_map;
 		isl_token_free(tok);
 		if (!next_is_tuple(s)) {
@@ -1767,8 +1769,7 @@ static struct isl_obj obj_read_body(struct isl_stream *s,
 			goto error;
 	} else {
 		map = isl_map_reverse(map);
-		if (tok)
-			isl_stream_push_token(s, tok);
+		isl_stream_push_token(s, tok);
 	}
 
 	map = read_optional_disjuncts(s, map, v);
