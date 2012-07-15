@@ -97,6 +97,7 @@ enum isl_token_type isl_stream_register_keyword(struct isl_stream *s,
 	const char *name);
 
 struct isl_obj isl_stream_read_obj(struct isl_stream *s);
+__isl_give isl_multi_aff *isl_stream_read_multi_aff(struct isl_stream *s);
 __isl_give isl_map *isl_stream_read_map(struct isl_stream *s);
 __isl_give isl_set *isl_stream_read_set(struct isl_stream *s);
 __isl_give isl_pw_qpolynomial *isl_stream_read_pw_qpolynomial(
