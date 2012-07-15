@@ -549,14 +549,14 @@ static int is_comparator(struct isl_token *tok)
 }
 
 static struct isl_map *read_disjuncts(struct isl_stream *s,
-	struct vars *v, __isl_take isl_map *map);
+	struct vars *v, __isl_take isl_map *map, int rational);
 static __isl_give isl_pw_aff *accept_extended_affine(struct isl_stream *s,
-	__isl_take isl_space *dim, struct vars *v);
+	__isl_take isl_space *dim, struct vars *v, int rational);
 
 /* Accept a ternary operator, given the first argument.
  */
 static __isl_give isl_pw_aff *accept_ternary(struct isl_stream *s,
-	__isl_take isl_map *cond, struct vars *v)
+	__isl_take isl_map *cond, struct vars *v, int rational)
 {
 	isl_space *dim;
 	isl_pw_aff *pwaff1 = NULL, *pwaff2 = NULL, *pa_cond;
@@ -568,7 +568,7 @@ static __isl_give isl_pw_aff *accept_ternary(struct isl_stream *s,
 		goto error;
 
 	dim = isl_space_wrap(isl_map_get_space(cond));
-	pwaff1 = accept_extended_affine(s, dim, v);
+	pwaff1 = accept_extended_affine(s, dim, v, rational);
 	if (!pwaff1)
 		goto error;
 
@@ -576,7 +576,7 @@ static __isl_give isl_pw_aff *accept_ternary(struct isl_stream *s,
 		goto error;
 
 	dim = isl_pw_aff_get_domain_space(pwaff1);
-	pwaff2 = accept_extended_affine(s, dim, v);
+	pwaff2 = accept_extended_affine(s, dim, v, rational);
 	if (!pwaff1)
 		goto error;
 
@@ -596,7 +596,7 @@ error:
  * argument of a ternary operator and try to parse that.
  */
 static __isl_give isl_pw_aff *accept_extended_affine(struct isl_stream *s,
-	__isl_take isl_space *dim, struct vars *v)
+	__isl_take isl_space *dim, struct vars *v, int rational)
 {
 	isl_space *space;
 	isl_map *cond;
@@ -613,6 +613,8 @@ static __isl_give isl_pw_aff *accept_extended_affine(struct isl_stream *s,
 	}
 
 	pwaff = accept_affine(s, dim, v);
+	if (rational)
+		pwaff = isl_pw_aff_set_rational(pwaff);
 	if (!pwaff)
 		return NULL;
 
@@ -636,13 +638,14 @@ static __isl_give isl_pw_aff *accept_extended_affine(struct isl_stream *s,
 
 	isl_stream_push_token(s, tok);
 
-	cond = read_disjuncts(s, v, cond);
+	cond = read_disjuncts(s, v, cond, rational);
 
-	return accept_ternary(s, cond, v);
+	return accept_ternary(s, cond, v, rational);
 }
 
 static __isl_give isl_map *read_var_def(struct isl_stream *s,
-	__isl_take isl_map *map, enum isl_dim_type type, struct vars *v)
+	__isl_take isl_map *map, enum isl_dim_type type, struct vars *v,
+	int rational)
 {
 	isl_pw_aff *def;
 	int pos;
@@ -658,7 +661,8 @@ static __isl_give isl_map *read_var_def(struct isl_stream *s,
 	}
 	--pos;
 
-	def = accept_extended_affine(s, isl_space_wrap(isl_map_get_space(map)), v);
+	def = accept_extended_affine(s, isl_space_wrap(isl_map_get_space(map)),
+					v, rational);
 	def_map = isl_map_from_pw_aff(def);
 	def_map = isl_map_equate(def_map, type, pos, isl_dim_out, 0);
 	def_map = isl_set_unwrap(isl_map_domain(def_map));
@@ -708,7 +712,7 @@ error:
 }
 
 static __isl_give isl_map *read_defined_var_list(struct isl_stream *s,
-	struct vars *v, __isl_take isl_map *map)
+	struct vars *v, __isl_take isl_map *map, int rational)
 {
 	struct isl_token *tok;
 
@@ -733,7 +737,7 @@ static __isl_give isl_map *read_defined_var_list(struct isl_stream *s,
 		tok = isl_stream_next_token(s);
 		if (tok && tok->type == '=') {
 			isl_token_free(tok);
-			map = read_var_def(s, map, isl_dim_out, v);
+			map = read_var_def(s, map, isl_dim_out, v, rational);
 			tok = isl_stream_next_token(s);
 		}
 
@@ -892,13 +896,14 @@ static __isl_give isl_multi_pw_aff *tuple_set_dim_name(
  * to "tuple".
  */
 static __isl_give isl_multi_pw_aff *read_tuple_var_def(struct isl_stream *s,
-	__isl_take isl_multi_pw_aff *tuple, int pos, struct vars *v)
+	__isl_take isl_multi_pw_aff *tuple, int pos, struct vars *v,
+	int rational)
 {
 	isl_space *space;
 	isl_pw_aff *def;
 
 	space = isl_space_wrap(isl_space_alloc(s->ctx, 0, v->n, 0));
-	def = accept_extended_affine(s, space, v);
+	def = accept_extended_affine(s, space, v, rational);
 	space = isl_space_set_alloc(s->ctx, 0, v->n);
 	def = isl_pw_aff_reset_domain_space(def, space);
 	tuple = isl_multi_pw_aff_set_pw_aff(tuple, pos, def);
@@ -911,7 +916,7 @@ static __isl_give isl_multi_pw_aff *read_tuple_var_def(struct isl_stream *s,
  * The elements in the list are separated by either "," or "][".
  */
 static __isl_give isl_multi_pw_aff *read_tuple_var_list(struct isl_stream *s,
-	struct vars *v)
+	struct vars *v, int rational)
 {
 	int i = 0;
 	struct isl_token *tok;
@@ -939,13 +944,14 @@ static __isl_give isl_multi_pw_aff *read_tuple_var_list(struct isl_stream *s,
 			res = tuple_set_dim_name(res, i, v->v->name);
 			isl_token_free(tok);
 			if (isl_stream_eat_if_available(s, '='))
-				res = read_tuple_var_def(s, res, i, v);
+				res = read_tuple_var_def(s, res, i, v,
+							rational);
 		} else {
 			isl_stream_push_token(s, tok);
 			tok = NULL;
 			if (vars_add_anon(v) < 0)
 				goto error;
-			res = read_tuple_var_def(s, res, i, v);
+			res = read_tuple_var_def(s, res, i, v, rational);
 		}
 
 		tok = isl_stream_next_token(s);
@@ -971,7 +977,7 @@ error:
 /* Read a tuple and represent it as an isl_multi_pw_aff.  See tuple_alloc.
  */
 static __isl_give isl_multi_pw_aff *read_tuple(struct isl_stream *s,
-	struct vars *v)
+	struct vars *v, int rational)
 {
 	struct isl_token *tok;
 	char *name = NULL;
@@ -992,15 +998,15 @@ static __isl_give isl_multi_pw_aff *read_tuple(struct isl_stream *s,
 	if (next_is_tuple(s)) {
 		isl_multi_pw_aff *out;
 		int n;
-		res = read_tuple(s, v);
+		res = read_tuple(s, v, rational);
 		if (isl_stream_eat(s, ISL_TOKEN_TO))
 			goto error;
-		out = read_tuple(s, v);
+		out = read_tuple(s, v, rational);
 		n = isl_multi_pw_aff_dim(out, isl_dim_out);
 		res = isl_multi_pw_aff_add_dims(res, isl_dim_in, n);
 		res = isl_multi_pw_aff_range_product(res, out);
 	} else
-		res = read_tuple_var_list(s, v);
+		res = read_tuple_var_list(s, v, rational);
 	if (isl_stream_eat(s, ']'))
 		goto error;
 
@@ -1023,13 +1029,14 @@ error:
  * however, so we first need to reset the space to that of "map".
  */
 static __isl_give isl_map *read_map_tuple(struct isl_stream *s,
-	__isl_take isl_map *map, enum isl_dim_type type, struct vars *v)
+	__isl_take isl_map *map, enum isl_dim_type type, struct vars *v,
+	int rational)
 {
 	int i, n;
 	isl_multi_pw_aff *tuple;
 	isl_space *space = NULL;
 
-	tuple = read_tuple(s, v);
+	tuple = read_tuple(s, v, rational);
 	if (!tuple)
 		goto error;
 
@@ -1057,12 +1064,16 @@ static __isl_give isl_map *read_map_tuple(struct isl_stream *s,
 		isl_set *set;
 
 		set = isl_set_universe(isl_space_copy(space));
+		if (rational)
+			set = isl_set_set_rational(set);
 		set = isl_set_intersect_params(set, isl_map_params(map));
 		map = isl_map_from_domain(set);
 	} else {
 		isl_set *set;
 
 		set = isl_set_universe(isl_space_copy(space));
+		if (rational)
+			set = isl_set_set_rational(set);
 		map = isl_map_from_domain_and_range(isl_map_domain(map), set);
 	}
 
@@ -1079,6 +1090,8 @@ static __isl_give isl_map *read_map_tuple(struct isl_stream *s,
 		aff = isl_aff_add_coefficient_si(aff,
 						isl_dim_in, v->n - n + i, -1);
 		pa = isl_pw_aff_add(pa, isl_pw_aff_from_aff(aff));
+		if (rational)
+			pa = isl_pw_aff_set_rational(pa);
 		set = isl_pw_aff_zero_set(pa);
 		map_i = isl_map_from_range(set);
 		map_i = isl_map_reset_space(map_i, isl_map_get_space(map));
@@ -1097,10 +1110,15 @@ error:
 
 static __isl_give isl_set *construct_constraints(
 	__isl_take isl_set *set, int type,
-	__isl_keep isl_pw_aff_list *left, __isl_keep isl_pw_aff_list *right)
+	__isl_keep isl_pw_aff_list *left, __isl_keep isl_pw_aff_list *right,
+	int rational)
 {
 	isl_set *cond;
 
+	if (rational) {
+		left = isl_pw_aff_list_set_rational(left);
+		right = isl_pw_aff_list_set_rational(right);
+	}
 	if (type == ISL_TOKEN_LE)
 		cond = isl_pw_aff_list_le_set(isl_pw_aff_list_copy(left),
 					      isl_pw_aff_list_copy(right));
@@ -1124,7 +1142,7 @@ static __isl_give isl_set *construct_constraints(
 }
 
 static __isl_give isl_map *add_constraint(struct isl_stream *s,
-	struct vars *v, __isl_take isl_map *map)
+	struct vars *v, __isl_take isl_map *map, int rational)
 {
 	struct isl_token *tok = NULL;
 	isl_pw_aff_list *list1 = NULL, *list2 = NULL;
@@ -1147,7 +1165,8 @@ static __isl_give isl_map *add_constraint(struct isl_stream *s,
 		if (!list2)
 			goto error;
 
-		set = construct_constraints(set, tok->type, list1, list2);
+		set = construct_constraints(set, tok->type, list1, list2,
+						rational);
 		isl_token_free(tok);
 		isl_pw_aff_list_free(list1);
 		list1 = list2;
@@ -1172,18 +1191,18 @@ error:
 }
 
 static __isl_give isl_map *read_exists(struct isl_stream *s,
-	struct vars *v, __isl_take isl_map *map)
+	struct vars *v, __isl_take isl_map *map, int rational)
 {
 	int n = v->n;
 	int seen_paren = isl_stream_eat_if_available(s, '(');
 
 	map = isl_map_from_domain(isl_map_wrap(map));
-	map = read_defined_var_list(s, v, map);
+	map = read_defined_var_list(s, v, map, rational);
 
 	if (isl_stream_eat(s, ':'))
 		goto error;
 
-	map = read_disjuncts(s, v, map);
+	map = read_disjuncts(s, v, map, rational);
 	map = isl_set_unwrap(isl_map_domain(map));
 
 	vars_drop(v, v->n - n);
@@ -1212,7 +1231,7 @@ error:
  * start of a condition and continue parsing.
  */
 static int resolve_paren_expr(struct isl_stream *s,
-	struct vars *v, __isl_take isl_map *map)
+	struct vars *v, __isl_take isl_map *map, int rational)
 {
 	struct isl_token *tok, *tok2;
 	int line, col;
@@ -1223,7 +1242,7 @@ static int resolve_paren_expr(struct isl_stream *s,
 		goto error;
 
 	if (isl_stream_next_token_is(s, '('))
-		if (resolve_paren_expr(s, v, isl_map_copy(map)))
+		if (resolve_paren_expr(s, v, isl_map_copy(map), rational))
 			goto error;
 
 	if (isl_stream_next_token_is(s, ISL_TOKEN_EXISTS) ||
@@ -1231,7 +1250,7 @@ static int resolve_paren_expr(struct isl_stream *s,
 	    isl_stream_next_token_is(s, ISL_TOKEN_TRUE) ||
 	    isl_stream_next_token_is(s, ISL_TOKEN_FALSE) ||
 	    isl_stream_next_token_is(s, ISL_TOKEN_MAP)) {
-		map = read_disjuncts(s, v, map);
+		map = read_disjuncts(s, v, map, rational);
 		if (isl_stream_eat(s, ')'))
 			goto error;
 		tok->type = ISL_TOKEN_MAP;
@@ -1266,7 +1285,7 @@ static int resolve_paren_expr(struct isl_stream *s,
 
 	isl_stream_push_token(s, tok2);
 
-	map = read_disjuncts(s, v, map);
+	map = read_disjuncts(s, v, map, rational);
 	if (isl_stream_eat(s, ')'))
 		goto error;
 
@@ -1284,10 +1303,10 @@ error:
 }
 
 static __isl_give isl_map *read_conjunct(struct isl_stream *s,
-	struct vars *v, __isl_take isl_map *map)
+	struct vars *v, __isl_take isl_map *map, int rational)
 {
 	if (isl_stream_next_token_is(s, '('))
-		if (resolve_paren_expr(s, v, isl_map_copy(map)))
+		if (resolve_paren_expr(s, v, isl_map_copy(map), rational))
 			goto error;
 
 	if (isl_stream_next_token_is(s, ISL_TOKEN_MAP)) {
@@ -1302,7 +1321,7 @@ static __isl_give isl_map *read_conjunct(struct isl_stream *s,
 	}
 
 	if (isl_stream_eat_if_available(s, ISL_TOKEN_EXISTS))
-		return read_exists(s, v, map);
+		return read_exists(s, v, map, rational);
 
 	if (isl_stream_eat_if_available(s, ISL_TOKEN_TRUE))
 		return map;
@@ -1313,20 +1332,20 @@ static __isl_give isl_map *read_conjunct(struct isl_stream *s,
 		return isl_map_empty(dim);
 	}
 		
-	return add_constraint(s, v, map);
+	return add_constraint(s, v, map, rational);
 error:
 	isl_map_free(map);
 	return NULL;
 }
 
 static __isl_give isl_map *read_conjuncts(struct isl_stream *s,
-	struct vars *v, __isl_take isl_map *map)
+	struct vars *v, __isl_take isl_map *map, int rational)
 {
 	isl_map *res;
 	int negate;
 
 	negate = isl_stream_eat_if_available(s, ISL_TOKEN_NOT);
-	res = read_conjunct(s, v, isl_map_copy(map));
+	res = read_conjunct(s, v, isl_map_copy(map), rational);
 	if (negate)
 		res = isl_map_subtract(isl_map_copy(map), res);
 
@@ -1334,7 +1353,7 @@ static __isl_give isl_map *read_conjuncts(struct isl_stream *s,
 		isl_map *res_i;
 
 		negate = isl_stream_eat_if_available(s, ISL_TOKEN_NOT);
-		res_i = read_conjunct(s, v, isl_map_copy(map));
+		res_i = read_conjunct(s, v, isl_map_copy(map), rational);
 		if (negate)
 			res = isl_map_subtract(res, res_i);
 		else
@@ -1346,7 +1365,7 @@ static __isl_give isl_map *read_conjuncts(struct isl_stream *s,
 }
 
 static struct isl_map *read_disjuncts(struct isl_stream *s,
-	struct vars *v, __isl_take isl_map *map)
+	struct vars *v, __isl_take isl_map *map, int rational)
 {
 	isl_map *res;
 
@@ -1356,11 +1375,11 @@ static struct isl_map *read_disjuncts(struct isl_stream *s,
 		return isl_map_universe(dim);
 	}
 
-	res = read_conjuncts(s, v, isl_map_copy(map));
+	res = read_conjuncts(s, v, isl_map_copy(map), rational);
 	while (isl_stream_eat_if_available(s, ISL_TOKEN_OR)) {
 		isl_map *res_i;
 
-		res_i = read_conjuncts(s, v, isl_map_copy(map));
+		res_i = read_conjuncts(s, v, isl_map_copy(map), rational);
 		res = isl_map_union(res, res_i);
 	}
 
@@ -1792,7 +1811,7 @@ static __isl_give isl_pw_qpolynomial *read_term(struct isl_stream *s,
 }
 
 static __isl_give isl_map *read_optional_disjuncts(struct isl_stream *s,
-	__isl_take isl_map *map, struct vars *v)
+	__isl_take isl_map *map, struct vars *v, int rational)
 {
 	struct isl_token *tok;
 
@@ -1804,7 +1823,7 @@ static __isl_give isl_map *read_optional_disjuncts(struct isl_stream *s,
 	if (tok->type == ':' ||
 	    (tok->type == ISL_TOKEN_OR && !strcmp(tok->u.s, "|"))) {
 		isl_token_free(tok);
-		map = read_disjuncts(s, v, map);
+		map = read_disjuncts(s, v, map, rational);
 	} else
 		isl_stream_push_token(s, tok);
 
@@ -1822,7 +1841,7 @@ static struct isl_obj obj_read_poly(struct isl_stream *s,
 	struct isl_set *set;
 
 	pwqp = read_term(s, map, v);
-	map = read_optional_disjuncts(s, map, v);
+	map = read_optional_disjuncts(s, map, v, 0);
 	set = isl_map_range(map);
 
 	pwqp = isl_pw_qpolynomial_intersect_domain(pwqp, set);
@@ -1860,7 +1879,7 @@ static struct isl_obj obj_read_poly_or_fold(struct isl_stream *s,
 	if (isl_stream_eat(s, ')'))
 		goto error;
 
-	set = read_optional_disjuncts(s, set, v);
+	set = read_optional_disjuncts(s, set, v, 0);
 	pwf = isl_pw_qpolynomial_fold_intersect_domain(pwf, set);
 
 	vars_drop(v, v->n - n);
@@ -1898,20 +1917,22 @@ static struct isl_obj obj_read_body(struct isl_stream *s,
 	struct isl_token *tok;
 	struct isl_obj obj = { isl_obj_set, NULL };
 	int n = v->n;
+	int rational;
 
-	if (is_rational(s))
+	rational = is_rational(s);
+	if (rational)
 		map = isl_map_set_rational(map);
 
 	if (isl_stream_next_token_is(s, ':')) {
 		obj.type = isl_obj_set;
-		obj.v = read_optional_disjuncts(s, map, v);
+		obj.v = read_optional_disjuncts(s, map, v, rational);
 		return obj;
 	}
 
 	if (!next_is_tuple(s))
 		return obj_read_poly_or_fold(s, map, v, n);
 
-	map = read_map_tuple(s, map, isl_dim_in, v);
+	map = read_map_tuple(s, map, isl_dim_in, v, rational);
 	if (!map)
 		goto error;
 	tok = isl_stream_next_token(s);
@@ -1924,7 +1945,7 @@ static struct isl_obj obj_read_body(struct isl_stream *s,
 			isl_set *set = isl_map_domain(map);
 			return obj_read_poly_or_fold(s, set, v, n);
 		}
-		map = read_map_tuple(s, map, isl_dim_out, v);
+		map = read_map_tuple(s, map, isl_dim_out, v, rational);
 		if (!map)
 			goto error;
 	} else {
@@ -1932,7 +1953,7 @@ static struct isl_obj obj_read_body(struct isl_stream *s,
 		isl_stream_push_token(s, tok);
 	}
 
-	map = read_optional_disjuncts(s, map, v);
+	map = read_optional_disjuncts(s, map, v, rational);
 
 	vars_drop(v, v->n - n);
 
@@ -2066,7 +2087,7 @@ static struct isl_obj obj_read(struct isl_stream *s)
 	map = isl_map_universe(isl_space_params_alloc(s->ctx, 0));
 	if (tok->type == '[') {
 		isl_stream_push_token(s, tok);
-		map = read_map_tuple(s, map, isl_dim_param, v);
+		map = read_map_tuple(s, map, isl_dim_param, v, 0);
 		if (!map)
 			goto error;
 		tok = isl_stream_next_token(s);
@@ -2094,7 +2115,7 @@ static struct isl_obj obj_read(struct isl_stream *s)
 		isl_token_free(tok);
 		if (isl_stream_eat(s, '='))
 			goto error;
-		map = read_map_tuple(s, map, isl_dim_param, v);
+		map = read_map_tuple(s, map, isl_dim_param, v, 0);
 		if (!map)
 			goto error;
 	} else if (tok->type == '}') {
@@ -2548,7 +2569,7 @@ static __isl_give isl_set *read_aff_domain(struct isl_stream *s,
 	tok = isl_stream_next_token(s);
 	if (tok && (tok->type == ISL_TOKEN_IDENT || tok->is_keyword)) {
 		isl_stream_push_token(s, tok);
-		return read_map_tuple(s, dom, isl_dim_set, v);
+		return read_map_tuple(s, dom, isl_dim_set, v, 1);
 	}
 	if (!tok || tok->type != '[') {
 		isl_stream_error(s, tok, "expecting '['");
@@ -2556,7 +2577,7 @@ static __isl_give isl_set *read_aff_domain(struct isl_stream *s,
 	}
 	if (next_is_tuple(s) || next_is_fresh_ident(s, v)) {
 		isl_stream_push_token(s, tok);
-		dom = read_map_tuple(s, dom, isl_dim_set, v);
+		dom = read_map_tuple(s, dom, isl_dim_set, v, 1);
 	} else
 		isl_stream_push_token(s, tok);
 
@@ -2610,7 +2631,7 @@ static __isl_give isl_pw_aff *read_pw_aff_with_dom(struct isl_stream *s,
 	if (isl_stream_eat(s, ']'))
 		goto error;
 
-	dom = read_optional_disjuncts(s, dom, v);
+	dom = read_optional_disjuncts(s, dom, v, 0);
 	pwaff = isl_pw_aff_intersect_domain(pwaff, dom);
 
 	return pwaff;
@@ -2634,7 +2655,7 @@ __isl_give isl_pw_aff *isl_stream_read_pw_aff(struct isl_stream *s)
 
 	dom = isl_set_universe(isl_space_params_alloc(s->ctx, 0));
 	if (next_is_tuple(s)) {
-		dom = read_map_tuple(s, dom, isl_dim_param, v);
+		dom = read_map_tuple(s, dom, isl_dim_param, v, 1);
 		if (isl_stream_eat(s, ISL_TOKEN_TO))
 			goto error;
 	}
@@ -2777,7 +2798,7 @@ __isl_give isl_multi_aff *isl_stream_read_multi_aff(struct isl_stream *s)
 
 	dom = isl_set_universe(isl_space_params_alloc(s->ctx, 0));
 	if (next_is_tuple(s)) {
-		dom = read_map_tuple(s, dom, isl_dim_param, v);
+		dom = read_map_tuple(s, dom, isl_dim_param, v, 1);
 		if (isl_stream_eat(s, ISL_TOKEN_TO))
 			goto error;
 	}
@@ -2787,7 +2808,7 @@ __isl_give isl_multi_aff *isl_stream_read_multi_aff(struct isl_stream *s)
 	if (isl_stream_eat(s, '{'))
 		goto error;
 
-	tuple = read_tuple(s, v);
+	tuple = read_tuple(s, v, 0);
 	if (!tuple)
 		goto error;
 	if (isl_stream_eat_if_available(s, ISL_TOKEN_TO)) {
@@ -2805,7 +2826,7 @@ __isl_give isl_multi_aff *isl_stream_read_multi_aff(struct isl_stream *s)
 		set = isl_set_universe(space);
 		dom = isl_set_intersect_params(set, dom);
 		isl_multi_pw_aff_free(tuple);
-		tuple = read_tuple(s, v);
+		tuple = read_tuple(s, v, 0);
 		if (!tuple)
 			goto error;
 	}
