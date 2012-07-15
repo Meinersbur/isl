@@ -306,6 +306,22 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),reset_space)(
 	return FN(MULTI(BASE),reset_space_and_domain)(multi, space, domain);
 }
 
+__isl_give MULTI(BASE) *FN(MULTI(BASE),set_tuple_name)(
+	__isl_keep MULTI(BASE) *multi, enum isl_dim_type type,
+	const char *s)
+{
+	isl_space *space;
+
+	multi = FN(MULTI(BASE),cow)(multi);
+	if (!multi)
+		return NULL;
+
+	space = FN(MULTI(BASE),get_space)(multi);
+	space = isl_space_set_tuple_name(space, type, s);
+
+	return FN(MULTI(BASE),reset_space)(multi, space);
+}
+
 __isl_give MULTI(BASE) *FN(MULTI(BASE),set_tuple_id)(
 	__isl_keep MULTI(BASE) *multi, enum isl_dim_type type,
 	__isl_take isl_id *id)
