@@ -775,6 +775,7 @@ static int map_is_singleton_subset(__isl_keep isl_map *map1,
 static int map_is_subset(__isl_keep isl_map *map1, __isl_keep isl_map *map2)
 {
 	int is_subset = 0;
+	int rat1, rat2;
 
 	if (!map1 || !map2)
 		return -1;
@@ -786,6 +787,13 @@ static int map_is_subset(__isl_keep isl_map *map1, __isl_keep isl_map *map2)
 		return 1;
 
 	if (isl_map_is_empty(map2))
+		return 0;
+
+	rat1 = isl_map_has_rational(map1);
+	rat2 = isl_map_has_rational(map2);
+	if (rat1 < 0 || rat2 < 0)
+		return -1;
+	if (rat1 && !rat2)
 		return 0;
 
 	if (isl_map_plain_is_universe(map2))
