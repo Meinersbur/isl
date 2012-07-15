@@ -3754,11 +3754,18 @@ It can be modified using
 		__isl_take isl_multi_pw_aff *mpa,
 		enum isl_dim_type type, unsigned pos, const char *s);
 
+	__isl_give isl_multi_aff *isl_multi_aff_insert_dims(
+		__isl_take isl_multi_aff *ma,
+		enum isl_dim_type type, unsigned first, unsigned n);
 	__isl_give isl_multi_aff *isl_multi_aff_drop_dims(
 		__isl_take isl_multi_aff *maff,
 		enum isl_dim_type type, unsigned first, unsigned n);
 	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_drop_dims(
 		__isl_take isl_pw_multi_aff *pma,
+		enum isl_dim_type type, unsigned first, unsigned n);
+
+	__isl_give isl_multi_pw_aff *isl_multi_pw_aff_insert_dims(
+		__isl_take isl_multi_pw_aff *mpa,
 		enum isl_dim_type type, unsigned first, unsigned n);
 
 To check whether two multiple affine expressions are

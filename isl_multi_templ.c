@@ -119,6 +119,38 @@ void *FN(MULTI(BASE),free)(__isl_take MULTI(BASE) *multi)
 	return NULL;
 }
 
+__isl_give MULTI(BASE) *FN(MULTI(BASE),insert_dims)(
+	__isl_take MULTI(BASE) *multi,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	int i;
+
+	if (!multi)
+		return NULL;
+	if (type == isl_dim_out)
+		isl_die(FN(MULTI(BASE),get_ctx)(multi), isl_error_invalid,
+			"cannot insert output/set dimensions",
+			return FN(MULTI(BASE),free)(multi));
+	if (n == 0 && !isl_space_is_named_or_nested(multi->space, type))
+		return multi;
+
+	multi = FN(MULTI(BASE),cow)(multi);
+	if (!multi)
+		return NULL;
+
+	multi->space = isl_space_insert_dims(multi->space, type, first, n);
+	if (!multi->space)
+		return FN(MULTI(BASE),free)(multi);
+
+	for (i = 0; i < multi->n; ++i) {
+		multi->p[i] = FN(EL,insert_dims)(multi->p[i], type, first, n);
+		if (!multi->p[i])
+			return FN(MULTI(BASE),free)(multi);
+	}
+
+	return multi;
+}
+
 unsigned FN(MULTI(BASE),dim)(__isl_keep MULTI(BASE) *multi,
 	enum isl_dim_type type)
 {
