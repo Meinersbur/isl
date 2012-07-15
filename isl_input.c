@@ -2511,57 +2511,6 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_read_from_file(isl_ctx *ctx,
 	return pwqp;
 }
 
-/* Read an affine expression from "s" with domain (space) "dom".
- * We call accept_affine to parse a possibly piecewise affine expression
- * and then check that the result is a single affine expression on
- * a universe domain.
- */
-static __isl_give isl_aff *read_aff_with_dom(struct isl_stream *s,
-	__isl_take isl_set *dom, struct vars *v)
-{
-	isl_aff *aff = NULL;
-	isl_pw_aff *pwaff = NULL;
-
-	if (!isl_set_plain_is_universe(dom))
-		isl_die(s->ctx, isl_error_invalid,
-			"expecting universe domain", goto error);
-
-	if (!isl_set_is_params(dom) && isl_stream_eat(s, ISL_TOKEN_TO))
-		goto error;
-
-	if (isl_stream_eat(s, '['))
-		goto error;
-
-	pwaff = accept_affine(s, isl_set_get_space(dom), v);
-
-	if (isl_stream_eat(s, ']'))
-		goto error;
-	if (isl_stream_eat(s, '}'))
-		goto error;
-
-	if (!pwaff)
-		goto error;
-
-	if (pwaff->n != 1)
-		isl_die(s->ctx, isl_error_invalid,
-			"expecting single affine expression", goto error);
-	if (!isl_set_plain_is_universe(pwaff->p[0].set))
-		isl_die(s->ctx, isl_error_invalid,
-			"expecting universe domain", goto error);
-
-	aff = isl_aff_copy(pwaff->p[0].aff);
-
-	vars_free(v);
-	isl_pw_aff_free(pwaff);
-	isl_set_free(dom);
-	return aff;
-error:
-	vars_free(v);
-	isl_pw_aff_free(pwaff);
-	isl_set_free(dom);
-	return NULL;
-}
-
 /* Is the next token an identifer not in "v"?
  */
 static int next_is_fresh_ident(struct isl_stream *s, struct vars *v)
@@ -2621,32 +2570,25 @@ error:
 }
 
 /* Read an affine expression from "s".
- * We first read the domain of the affine expression, which may be
- * a parameter space or a set, and then call read_aff_with_dom.
  */
 __isl_give isl_aff *isl_stream_read_aff(struct isl_stream *s)
 {
-	struct vars *v;
-	isl_set *dom = NULL;
+	isl_aff *aff;
+	isl_multi_aff *ma;
 
-	v = vars_new(s->ctx);
-	if (!v)
+	ma = isl_stream_read_multi_aff(s);
+	if (!ma)
 		return NULL;
+	if (isl_multi_aff_dim(ma, isl_dim_out) != 1)
+		isl_die(s->ctx, isl_error_invalid,
+			"expecting single affine expression",
+			goto error);
 
-	dom = isl_set_universe(isl_space_params_alloc(s->ctx, 0));
-	if (next_is_tuple(s)) {
-		dom = read_map_tuple(s, dom, isl_dim_param, v);
-		if (isl_stream_eat(s, ISL_TOKEN_TO))
-			goto error;
-	}
-	if (isl_stream_eat(s, '{'))
-		goto error;
-
-	dom = read_aff_domain(s, dom, v);
-	return read_aff_with_dom(s, dom, v);
+	aff = isl_multi_aff_get_aff(ma, 0);
+	isl_multi_aff_free(ma);
+	return aff;
 error:
-	vars_free(v);
-	isl_set_free(dom);
+	isl_multi_aff_free(ma);
 	return NULL;
 }
 
