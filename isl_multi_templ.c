@@ -151,6 +151,16 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),insert_dims)(
 	return multi;
 }
 
+__isl_give MULTI(BASE) *FN(MULTI(BASE),add_dims)(__isl_take MULTI(BASE) *multi,
+	enum isl_dim_type type, unsigned n)
+{
+	unsigned pos;
+
+	pos = FN(MULTI(BASE),dim)(multi, type);
+
+	return FN(MULTI(BASE),insert_dims)(multi, type, pos, n);
+}
+
 unsigned FN(MULTI(BASE),dim)(__isl_keep MULTI(BASE) *multi,
 	enum isl_dim_type type)
 {

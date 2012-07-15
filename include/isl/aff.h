@@ -284,6 +284,8 @@ __isl_give isl_aff *isl_multi_aff_get_aff(__isl_keep isl_multi_aff *multi,
 __isl_give isl_multi_aff *isl_multi_aff_insert_dims(
 	__isl_take isl_multi_aff *ma,
 	enum isl_dim_type type, unsigned first, unsigned n);
+__isl_give isl_multi_aff *isl_multi_aff_add_dims(__isl_take isl_multi_aff *ma,
+	enum isl_dim_type type, unsigned n);
 __isl_give isl_multi_aff *isl_multi_aff_drop_dims(
 	__isl_take isl_multi_aff *maff,
 	enum isl_dim_type type, unsigned first, unsigned n);
@@ -501,6 +503,8 @@ __isl_give isl_pw_aff *isl_multi_pw_aff_get_pw_aff(
 __isl_give isl_multi_pw_aff *isl_multi_pw_aff_insert_dims(
 	__isl_take isl_multi_pw_aff *mpa,
 	enum isl_dim_type type, unsigned first, unsigned n);
+__isl_give isl_multi_pw_aff *isl_multi_pw_aff_add_dims(
+	__isl_take isl_multi_pw_aff *mpa, enum isl_dim_type type, unsigned n);
 
 __isl_give isl_multi_pw_aff *isl_multi_pw_aff_set_dim_name(
 	__isl_take isl_multi_pw_aff *mpa,
