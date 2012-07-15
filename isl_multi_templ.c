@@ -616,7 +616,7 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),drop_dims)(
 /* Given two MULTI(BASE)s A -> B and C -> D,
  * construct a MULTI(BASE) (A * C) -> (B, D).
  */
-__isl_give MULTI(BASE) *FN(MULTI(BASE),flat_range_product)(
+__isl_give MULTI(BASE) *FN(MULTI(BASE),range_product)(
 	__isl_take MULTI(BASE) *multi1, __isl_take MULTI(BASE) *multi2)
 {
 	int i, n1, n2;
@@ -629,7 +629,6 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),flat_range_product)(
 
 	space = isl_space_range_product(FN(MULTI(BASE),get_space)(multi1),
 					FN(MULTI(BASE),get_space)(multi2));
-	space = isl_space_flatten_range(space);
 	res = FN(MULTI(BASE),alloc)(space);
 
 	n1 = FN(MULTI(BASE),dim)(multi1, isl_dim_out);
@@ -652,4 +651,37 @@ error:
 	FN(MULTI(BASE),free)(multi1);
 	FN(MULTI(BASE),free)(multi2);
 	return NULL;
+}
+
+__isl_give MULTI(BASE) *FN(MULTI(BASE),flatten_range)(
+	__isl_take MULTI(BASE) *multi)
+{
+	if (!multi)
+		return NULL;
+
+	if (!multi->space->nested[1])
+		return multi;
+
+	multi = FN(MULTI(BASE),cow)(multi);
+	if (!multi)
+		return NULL;
+
+	multi->space = isl_space_flatten_range(multi->space);
+	if (!multi->space)
+		return FN(MULTI(BASE),free)(multi);
+
+	return multi;
+}
+
+/* Given two MULTI(BASE)s A -> B and C -> D,
+ * construct a MULTI(BASE) (A * C) -> [B -> D].
+ */
+__isl_give MULTI(BASE) *FN(MULTI(BASE),flat_range_product)(
+	__isl_take MULTI(BASE) *multi1, __isl_take MULTI(BASE) *multi2)
+{
+	MULTI(BASE) *multi;
+
+	multi = FN(MULTI(BASE),range_product)(multi1, multi2);
+	multi = FN(MULTI(BASE),flatten_range)(multi);
+	return multi;
 }

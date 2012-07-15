@@ -303,6 +303,8 @@ __isl_give isl_multi_aff *isl_multi_aff_add(__isl_take isl_multi_aff *maff1,
 __isl_give isl_multi_aff *isl_multi_aff_scale(__isl_take isl_multi_aff *maff,
 	isl_int f);
 
+__isl_give isl_multi_aff *isl_multi_aff_range_product(
+	__isl_take isl_multi_aff *ma1, __isl_take isl_multi_aff *ma2);
 __isl_give isl_multi_aff *isl_multi_aff_flat_range_product(
 	__isl_take isl_multi_aff *ma1, __isl_take isl_multi_aff *ma2);
 __isl_give isl_multi_aff *isl_multi_aff_product(
@@ -511,6 +513,8 @@ __isl_give isl_multi_pw_aff *isl_multi_pw_aff_set_dim_name(
 	enum isl_dim_type type, unsigned pos, const char *s);
 
 __isl_give isl_multi_pw_aff *isl_multi_pw_aff_flat_range_product(
+	__isl_take isl_multi_pw_aff *mpa1, __isl_take isl_multi_pw_aff *mpa2);
+__isl_give isl_multi_pw_aff *isl_multi_pw_aff_range_product(
 	__isl_take isl_multi_pw_aff *mpa1, __isl_take isl_multi_pw_aff *mpa2);
 
 __isl_give isl_printer *isl_printer_print_multi_pw_aff(
