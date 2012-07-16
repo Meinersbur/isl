@@ -2262,6 +2262,9 @@ __isl_give isl_multi_aff *isl_multi_aff_set_dim_name(
 	maff->space = isl_space_set_dim_name(maff->space, type, pos, s);
 	if (!maff->space)
 		return isl_multi_aff_free(maff);
+
+	if (type == isl_dim_out)
+		return maff;
 	for (i = 0; i < maff->n; ++i) {
 		maff->p[i] = isl_aff_set_dim_name(maff->p[i], type, pos, s);
 		if (!maff->p[i])
