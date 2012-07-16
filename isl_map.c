@@ -690,6 +690,76 @@ int isl_basic_set_is_rational(__isl_keep isl_basic_set *bset)
 	return isl_basic_map_is_rational(bset);
 }
 
+/* Does "bmap" contain any rational points?
+ *
+ * If "bmap" has an equality for each dimension, equating the dimension
+ * to an integer constant, then it has no rational points, even if it
+ * is marked as rational.
+ */
+int isl_basic_map_has_rational(__isl_keep isl_basic_map *bmap)
+{
+	int has_rational = 1;
+	unsigned total;
+
+	if (!bmap)
+		return -1;
+	if (isl_basic_map_plain_is_empty(bmap))
+		return 0;
+	if (!isl_basic_map_is_rational(bmap))
+		return 0;
+	bmap = isl_basic_map_copy(bmap);
+	bmap = isl_basic_map_implicit_equalities(bmap);
+	if (!bmap)
+		return -1;
+	total = isl_basic_map_total_dim(bmap);
+	if (bmap->n_eq == total) {
+		int i, j;
+		for (i = 0; i < bmap->n_eq; ++i) {
+			j = isl_seq_first_non_zero(bmap->eq[i] + 1, total);
+			if (j < 0)
+				break;
+			if (!isl_int_is_one(bmap->eq[i][1 + j]) &&
+			    !isl_int_is_negone(bmap->eq[i][1 + j]))
+				break;
+			j = isl_seq_first_non_zero(bmap->eq[i] + 1 + j + 1,
+						    total - j - 1);
+			if (j >= 0)
+				break;
+		}
+		if (i == bmap->n_eq)
+			has_rational = 0;
+	}
+	isl_basic_map_free(bmap);
+
+	return has_rational;
+}
+
+/* Does "map" contain any rational points?
+ */
+int isl_map_has_rational(__isl_keep isl_map *map)
+{
+	int i;
+	int has_rational;
+
+	if (!map)
+		return -1;
+	for (i = 0; i < map->n; ++i) {
+		has_rational = isl_basic_map_has_rational(map->p[i]);
+		if (has_rational < 0)
+			return -1;
+		if (has_rational)
+			return 1;
+	}
+	return 0;
+}
+
+/* Does "set" contain any rational points?
+ */
+int isl_set_has_rational(__isl_keep isl_set *set)
+{
+	return isl_map_has_rational(set);
+}
+
 /* Is this basic set a parameter domain?
  */
 int isl_basic_set_is_params(__isl_keep isl_basic_set *bset)

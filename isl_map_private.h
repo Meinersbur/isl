@@ -272,6 +272,9 @@ __isl_give isl_basic_map *isl_basic_map_set_rational(
 	__isl_take isl_basic_map *bmap);
 __isl_give isl_map *isl_map_set_rational(__isl_take isl_map *map);
 
+int isl_map_has_rational(__isl_keep isl_map *map);
+int isl_set_has_rational(__isl_keep isl_set *set);
+
 struct isl_mat;
 
 struct isl_basic_set *isl_basic_set_preimage(struct isl_basic_set *bset,
