@@ -2687,31 +2687,6 @@ int isl_multi_aff_plain_is_equal(__isl_keep isl_multi_aff *maff1,
 	return 1;
 }
 
-__isl_give isl_multi_aff *isl_multi_aff_set_dim_name(
-	__isl_take isl_multi_aff *maff,
-	enum isl_dim_type type, unsigned pos, const char *s)
-{
-	int i;
-
-	maff = isl_multi_aff_cow(maff);
-	if (!maff)
-		return NULL;
-
-	maff->space = isl_space_set_dim_name(maff->space, type, pos, s);
-	if (!maff->space)
-		return isl_multi_aff_free(maff);
-
-	if (type == isl_dim_out)
-		return maff;
-	for (i = 0; i < maff->n; ++i) {
-		maff->p[i] = isl_aff_set_dim_name(maff->p[i], type, pos, s);
-		if (!maff->p[i])
-			return isl_multi_aff_free(maff);
-	}
-
-	return maff;
-}
-
 __isl_give isl_multi_aff *isl_multi_aff_drop_dims(__isl_take isl_multi_aff *maff,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {

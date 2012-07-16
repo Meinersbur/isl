@@ -121,6 +121,31 @@ unsigned FN(MULTI(BASE),dim)(__isl_keep MULTI(BASE) *multi,
 	return multi ? isl_space_dim(multi->space, type) : 0;
 }
 
+__isl_give MULTI(BASE) *FN(MULTI(BASE),set_dim_name)(
+	__isl_take MULTI(BASE) *multi,
+	enum isl_dim_type type, unsigned pos, const char *s)
+{
+	int i;
+
+	multi = FN(MULTI(BASE),cow)(multi);
+	if (!multi)
+		return NULL;
+
+	multi->space = isl_space_set_dim_name(multi->space, type, pos, s);
+	if (!multi->space)
+		return FN(MULTI(BASE),free)(multi);
+
+	if (type == isl_dim_out)
+		return multi;
+	for (i = 0; i < multi->n; ++i) {
+		multi->p[i] = FN(EL,set_dim_name)(multi->p[i], type, pos, s);
+		if (!multi->p[i])
+			return FN(MULTI(BASE),free)(multi);
+	}
+
+	return multi;
+}
+
 const char *FN(MULTI(BASE),get_tuple_name)(__isl_keep MULTI(BASE) *multi,
 	enum isl_dim_type type)
 {
