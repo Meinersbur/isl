@@ -3678,47 +3678,6 @@ error:
 	return NULL;
 }
 
-/* Given two isl_multi_affs A -> B and C -> D,
- * construct an isl_multi_aff (A * C) -> (B, D).
- */
-__isl_give isl_multi_aff *isl_multi_aff_flat_range_product(
-	__isl_take isl_multi_aff *ma1, __isl_take isl_multi_aff *ma2)
-{
-	int i, n1, n2;
-	isl_aff *aff;
-	isl_space *space;
-	isl_multi_aff *res;
-
-	if (!ma1 || !ma2)
-		goto error;
-
-	space = isl_space_range_product(isl_multi_aff_get_space(ma1),
-					isl_multi_aff_get_space(ma2));
-	space = isl_space_flatten_range(space);
-	res = isl_multi_aff_alloc(space);
-
-	n1 = isl_multi_aff_dim(ma1, isl_dim_out);
-	n2 = isl_multi_aff_dim(ma2, isl_dim_out);
-
-	for (i = 0; i < n1; ++i) {
-		aff = isl_multi_aff_get_aff(ma1, i);
-		res = isl_multi_aff_set_aff(res, i, aff);
-	}
-
-	for (i = 0; i < n2; ++i) {
-		aff = isl_multi_aff_get_aff(ma2, i);
-		res = isl_multi_aff_set_aff(res, n1 + i, aff);
-	}
-
-	isl_multi_aff_free(ma1);
-	isl_multi_aff_free(ma2);
-	return res;
-error:
-	isl_multi_aff_free(ma1);
-	isl_multi_aff_free(ma2);
-	return NULL;
-}
-
 /* Given two aligned isl_pw_multi_affs A -> B and C -> D,
  * construct an isl_pw_multi_aff (A * C) -> (B, D).
  */

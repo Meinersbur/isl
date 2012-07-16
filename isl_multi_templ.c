@@ -1,7 +1,11 @@
 /*
  * Copyright 2011      Sven Verdoolaege
+ * Copyright 2012      Ecole Normale Superieure
  *
  * Use of this software is governed by the MIT license
+ *
+ * Written by Sven Verdoolaege,
+ * Ecole Normale Superieure, 45 rue d’Ulm, 75230 Paris, France
  */
 
 #define xCAT(A,B) A ## B
@@ -555,4 +559,45 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),drop_dims)(
 	}
 
 	return multi;
+}
+
+/* Given two MULTI(BASE)s A -> B and C -> D,
+ * construct a MULTI(BASE) (A * C) -> (B, D).
+ */
+__isl_give MULTI(BASE) *FN(MULTI(BASE),flat_range_product)(
+	__isl_take MULTI(BASE) *multi1, __isl_take MULTI(BASE) *multi2)
+{
+	int i, n1, n2;
+	EL *el;
+	isl_space *space;
+	MULTI(BASE) *res;
+
+	if (!multi1 || !multi2)
+		goto error;
+
+	space = isl_space_range_product(FN(MULTI(BASE),get_space)(multi1),
+					FN(MULTI(BASE),get_space)(multi2));
+	space = isl_space_flatten_range(space);
+	res = FN(MULTI(BASE),alloc)(space);
+
+	n1 = FN(MULTI(BASE),dim)(multi1, isl_dim_out);
+	n2 = FN(MULTI(BASE),dim)(multi2, isl_dim_out);
+
+	for (i = 0; i < n1; ++i) {
+		el = FN(FN(MULTI(BASE),get),BASE)(multi1, i);
+		res = FN(FN(MULTI(BASE),set),BASE)(res, i, el);
+	}
+
+	for (i = 0; i < n2; ++i) {
+		el = FN(FN(MULTI(BASE),get),BASE)(multi2, i);
+		res = FN(FN(MULTI(BASE),set),BASE)(res, n1 + i, el);
+	}
+
+	FN(MULTI(BASE),free)(multi1);
+	FN(MULTI(BASE),free)(multi2);
+	return res;
+error:
+	FN(MULTI(BASE),free)(multi1);
+	FN(MULTI(BASE),free)(multi2);
+	return NULL;
 }
