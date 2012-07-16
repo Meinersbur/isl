@@ -2509,6 +2509,27 @@ __isl_give isl_pw_aff *isl_pw_aff_list_max(__isl_take isl_pw_aff_list *list)
 	return pw_aff_list_reduce(list, &isl_pw_aff_max);
 }
 
+/* Mark the domains of "pwaff" as rational.
+ */
+__isl_give isl_pw_aff *isl_pw_aff_set_rational(__isl_take isl_pw_aff *pwaff)
+{
+	int i;
+
+	pwaff = isl_pw_aff_cow(pwaff);
+	if (!pwaff)
+		return NULL;
+	if (pwaff->n == 0)
+		return pwaff;
+
+	for (i = 0; i < pwaff->n; ++i) {
+		pwaff->p[i].set = isl_set_set_rational(pwaff->p[i].set);
+		if (!pwaff->p[i].set)
+			return isl_pw_aff_free(pwaff);
+	}
+
+	return pwaff;
+}
+
 #undef BASE
 #define BASE aff
 

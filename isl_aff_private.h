@@ -74,6 +74,8 @@ __isl_give isl_pw_aff *isl_pw_aff_add_disjoint(
 __isl_give isl_pw_aff *isl_pw_aff_union_opt(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2, int max);
 
+__isl_give isl_pw_aff *isl_pw_aff_set_rational(__isl_take isl_pw_aff *pwaff);
+
 #undef BASE
 #define BASE aff
 
