@@ -1388,8 +1388,10 @@ __isl_give isl_basic_set *isl_aff_neg_basic_set(__isl_take isl_aff *aff)
 
 /* Return a basic set containing those elements in the space
  * of aff where it is zero.
+ * If "rational" is set, then return a rational basic set.
  */
-__isl_give isl_basic_set *isl_aff_zero_basic_set(__isl_take isl_aff *aff)
+static __isl_give isl_basic_set *aff_zero_basic_set(__isl_take isl_aff *aff,
+	int rational)
 {
 	isl_constraint *ineq;
 	isl_basic_set *bset;
@@ -1397,8 +1399,18 @@ __isl_give isl_basic_set *isl_aff_zero_basic_set(__isl_take isl_aff *aff)
 	ineq = isl_equality_from_aff(aff);
 
 	bset = isl_basic_set_from_constraint(ineq);
+	if (rational)
+		bset = isl_basic_set_set_rational(bset);
 	bset = isl_basic_set_simplify(bset);
 	return bset;
+}
+
+/* Return a basic set containing those elements in the space
+ * of aff where it is zero.
+ */
+__isl_give isl_basic_set *isl_aff_zero_basic_set(__isl_take isl_aff *aff)
+{
+	return aff_zero_basic_set(aff, 0);
 }
 
 /* Return a basic set containing those elements in the shared space
@@ -1885,8 +1897,11 @@ static __isl_give isl_set *pw_aff_zero_set(__isl_take isl_pw_aff *pwaff,
 	for (i = 0; i < pwaff->n; ++i) {
 		isl_basic_set *bset;
 		isl_set *set_i, *zero;
+		int rational;
 
-		bset = isl_aff_zero_basic_set(isl_aff_copy(pwaff->p[i].aff));
+		rational = isl_set_has_rational(pwaff->p[i].set);
+		bset = aff_zero_basic_set(isl_aff_copy(pwaff->p[i].aff),
+						rational);
 		zero = isl_set_from_basic_set(bset);
 		set_i = isl_set_copy(pwaff->p[i].set);
 		if (complement)
