@@ -13,8 +13,4 @@ struct MULTI(BASE) {
 	EL *p[1];
 };
 
-#define ISL_DECLARE_MULTI_PRIVATE(BASE)					\
-__isl_give isl_multi_##BASE *isl_multi_##BASE##_alloc(			\
-	__isl_take isl_space *space);
-
-ISL_DECLARE_MULTI_PRIVATE(aff)
+__isl_give MULTI(BASE) *CAT(MULTI(BASE),_alloc)(__isl_take isl_space *space);
