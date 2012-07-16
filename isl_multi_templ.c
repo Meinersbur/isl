@@ -521,6 +521,16 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),zero)(__isl_take isl_space *space)
 	return multi;
 }
 
+__isl_give MULTI(BASE) *FN(FN(MULTI(BASE),from),BASE)(__isl_take EL *el)
+{
+	MULTI(BASE) *multi;
+
+	multi = FN(MULTI(BASE),alloc)(FN(EL,get_space)(el));
+	multi = FN(FN(MULTI(BASE),set),BASE)(multi, 0, el);
+
+	return multi;
+}
+
 __isl_give MULTI(BASE) *FN(MULTI(BASE),drop_dims)(
 	__isl_take MULTI(BASE) *multi,
 	enum isl_dim_type type, unsigned first, unsigned n)

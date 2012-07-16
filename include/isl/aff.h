@@ -262,6 +262,7 @@ __isl_give isl_set *isl_pw_aff_list_ge_set(__isl_take isl_pw_aff_list *list1,
 __isl_give isl_set *isl_pw_aff_list_gt_set(__isl_take isl_pw_aff_list *list1,
 	__isl_take isl_pw_aff_list *list2);
 
+__isl_give isl_multi_aff *isl_multi_aff_from_aff(__isl_take isl_aff *aff);
 __isl_give isl_multi_aff *isl_multi_aff_zero(__isl_take isl_space *space);
 __isl_give isl_multi_aff *isl_multi_aff_identity(__isl_take isl_space *space);
 

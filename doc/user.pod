@@ -3579,10 +3579,13 @@ An expression can be printed using
 An C<isl_multi_aff> object represents a sequence of
 zero or more affine expressions, all defined on the same domain space.
 
-An C<isl_multi_aff> can be constructed from a C<isl_aff_list> using the
-following function.
+An C<isl_multi_aff> can be constructed from a single
+C<isl_aff> or an C<isl_aff_list> using the
+following functions.
 
 	#include <isl/aff.h>
+	__isl_give isl_multi_aff *isl_multi_aff_from_aff(
+		__isl_take isl_aff *aff);
 	__isl_give isl_multi_aff *isl_multi_aff_from_aff_list(
 		__isl_take isl_space *space,
 		__isl_take isl_aff_list *list);
