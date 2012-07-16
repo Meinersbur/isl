@@ -228,8 +228,8 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),reset_space_and_domain)(
 		goto error;
 
 	for (i = 0; i < multi->n; ++i) {
-		multi->p[i] = FN(EL,reset_space_and_domain)(multi->p[i],
-				 isl_space_copy(space), isl_space_copy(domain));
+		multi->p[i] = FN(EL,reset_domain_space)(multi->p[i],
+				 isl_space_copy(domain));
 		if (!multi->p[i])
 			goto error;
 	}
