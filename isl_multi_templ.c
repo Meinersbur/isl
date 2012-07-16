@@ -343,7 +343,7 @@ error:
 	return NULL;
 }
 
-static __isl_give MULTI(BASE) *align_params_multi_set_and(
+static __isl_give MULTI(BASE) *FN(MULTI(BASE),align_params_multi_set_and)(
 	__isl_take MULTI(BASE) *multi, __isl_take isl_set *set,
 	__isl_give MULTI(BASE) *(*fn)(__isl_take MULTI(BASE) *multi,
 					__isl_take isl_set *set))
@@ -394,7 +394,7 @@ error:
 __isl_give MULTI(BASE) *FN(MULTI(BASE),gist)(__isl_take MULTI(BASE) *multi,
 	__isl_take isl_set *context)
 {
-	return align_params_multi_set_and(multi, context,
+	return FN(MULTI(BASE),align_params_multi_set_and)(multi, context,
 						&FN(MULTI(BASE),gist_aligned));
 }
 
