@@ -475,6 +475,37 @@ __isl_give isl_union_map *isl_union_map_from_union_pw_multi_aff(
 __isl_give isl_printer *isl_printer_print_union_pw_multi_aff(
 	__isl_take isl_printer *p, __isl_keep isl_union_pw_multi_aff *upma);
 
+__isl_give isl_multi_pw_aff *isl_multi_pw_aff_zero(__isl_take isl_space *space);
+__isl_give isl_multi_pw_aff *isl_multi_pw_aff_identity(
+	__isl_take isl_space *space);
+__isl_give isl_multi_pw_aff *isl_multi_pw_aff_from_pw_aff(
+	__isl_take isl_pw_aff *pa);
+
+isl_ctx *isl_multi_pw_aff_get_ctx(__isl_keep isl_multi_pw_aff *mpa);
+__isl_give isl_space *isl_multi_pw_aff_get_space(
+	__isl_keep isl_multi_pw_aff *mpa);
+__isl_give isl_space *isl_multi_pw_aff_get_domain_space(
+	__isl_keep isl_multi_pw_aff *mpa);
+__isl_give isl_multi_pw_aff *isl_multi_pw_aff_copy(
+	__isl_keep isl_multi_pw_aff *mpa);
+void *isl_multi_pw_aff_free(__isl_take isl_multi_pw_aff *mpa);
+
+unsigned isl_multi_pw_aff_dim(__isl_keep isl_multi_pw_aff *mpa,
+	enum isl_dim_type type);
+__isl_give isl_pw_aff *isl_multi_pw_aff_get_pw_aff(
+	__isl_keep isl_multi_pw_aff *mpa, int pos);
+
+__isl_give isl_multi_pw_aff *isl_multi_pw_aff_set_dim_name(
+	__isl_take isl_multi_pw_aff *mpa,
+	enum isl_dim_type type, unsigned pos, const char *s);
+
+__isl_give isl_multi_pw_aff *isl_multi_pw_aff_flat_range_product(
+	__isl_take isl_multi_pw_aff *mpa1, __isl_take isl_multi_pw_aff *mpa2);
+
+__isl_give isl_printer *isl_printer_print_multi_pw_aff(
+	__isl_take isl_printer *p, __isl_keep isl_multi_pw_aff *mpa);
+void isl_multi_pw_aff_dump(__isl_keep isl_multi_pw_aff *mpa);
+
 #if defined(__cplusplus)
 }
 #endif

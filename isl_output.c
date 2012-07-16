@@ -2484,3 +2484,33 @@ error:
 	isl_printer_free(p);
 	return NULL;
 }
+
+static __isl_give isl_printer *print_multi_pw_aff_isl(__isl_take isl_printer *p,
+	__isl_keep isl_multi_pw_aff *mpa)
+{
+	int i;
+
+	if (!mpa)
+		return isl_printer_free(p);
+
+	p = isl_printer_print_str(p, "(");
+	for (i = 0; i < mpa->n; ++i) {
+		if (i)
+			p = isl_printer_print_str(p, ",");
+		p = isl_printer_print_pw_aff(p, mpa->p[i]);
+	}
+	p = isl_printer_print_str(p, ")");
+	return p;
+}
+
+__isl_give isl_printer *isl_printer_print_multi_pw_aff(
+	__isl_take isl_printer *p, __isl_keep isl_multi_pw_aff *mpa)
+{
+	if (!p || !mpa)
+		return isl_printer_free(p);
+
+	if (p->output_format == ISL_FORMAT_ISL)
+		return print_multi_pw_aff_isl(p, mpa);
+	isl_die(p->ctx, isl_error_unsupported, "unsupported output format",
+		return isl_printer_free(p));
+}

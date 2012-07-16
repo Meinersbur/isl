@@ -17,6 +17,7 @@ __isl_give isl_multi_##BASE *isl_multi_##BASE##_set_##BASE(		\
 	__isl_take isl_##BASE *el);
 
 ISL_DECLARE_MULTI(aff)
+ISL_DECLARE_MULTI(pw_aff)
 
 #if defined(__cplusplus)
 }

@@ -3817,3 +3817,8 @@ error:
 	isl_pw_aff_free(pa);
 	return NULL;
 }
+
+#undef BASE
+#define BASE pw_aff
+
+#include <isl_multi_templ.c>
