@@ -173,7 +173,10 @@ struct isl_stream* isl_stream_new_file(struct isl_ctx *ctx, FILE *file)
 
 struct isl_stream* isl_stream_new_str(struct isl_ctx *ctx, const char *str)
 {
-	struct isl_stream *s = isl_stream_new(ctx);
+	struct isl_stream *s;
+	if (!str)
+		return NULL;
+	s = isl_stream_new(ctx);
 	if (!s)
 		return NULL;
 	s->str = str;
