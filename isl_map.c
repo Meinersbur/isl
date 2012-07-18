@@ -11140,3 +11140,73 @@ error:
 	isl_basic_set_free(res);
 	return NULL;
 }
+
+/* Check if the range of "ma" is compatible with "set".
+ * Return -1 if anything is wrong.
+ */
+static int check_set_compatible_range_multi_aff(
+	__isl_keep isl_set *set, __isl_keep isl_multi_aff *ma)
+{
+	return check_space_compatible_range_multi_aff(set->dim, ma);
+}
+
+/* Compute the preimage of "set" under the function represented by "ma".
+ * In other words, plug in "ma" in "set.  The result is a set
+ * that lives in the domain space of "ma".
+ */
+static __isl_give isl_set *set_preimage_multi_aff(__isl_take isl_set *set,
+	__isl_take isl_multi_aff *ma)
+{
+	int i;
+
+	set = isl_set_cow(set);
+	ma = isl_multi_aff_align_divs(ma);
+	if (!set || !ma)
+		goto error;
+	if (check_set_compatible_range_multi_aff(set, ma) < 0)
+		goto error;
+
+	for (i = 0; i < set->n; ++i) {
+		set->p[i] = isl_basic_set_preimage_multi_aff(set->p[i],
+							isl_multi_aff_copy(ma));
+		if (!set->p[i])
+			goto error;
+	}
+
+	isl_space_free(set->dim);
+	set->dim = isl_multi_aff_get_domain_space(ma);
+	if (!set->dim)
+		goto error;
+
+	isl_multi_aff_free(ma);
+	if (set->n > 1)
+		ISL_F_CLR(set, ISL_MAP_DISJOINT);
+	ISL_F_CLR(set, ISL_SET_NORMALIZED);
+	return set;
+error:
+	isl_multi_aff_free(ma);
+	isl_set_free(set);
+	return NULL;
+}
+
+__isl_give isl_set *isl_set_preimage_multi_aff(__isl_take isl_set *set,
+	__isl_take isl_multi_aff *ma)
+{
+	if (!set || !ma)
+		goto error;
+
+	if (isl_space_match(set->dim, isl_dim_param, ma->space, isl_dim_param))
+		return set_preimage_multi_aff(set, ma);
+
+	if (!isl_space_has_named_params(set->dim) ||
+	    !isl_space_has_named_params(ma->space))
+		isl_die(set->ctx, isl_error_invalid,
+			"unaligned unnamed parameters", goto error);
+	set = isl_set_align_params(set, isl_multi_aff_get_space(ma));
+	ma = isl_multi_aff_align_params(ma, isl_set_get_space(set));
+
+	return set_preimage_multi_aff(set, ma);
+error:
+	isl_multi_aff_free(ma);
+	return isl_set_free(set);
+}
