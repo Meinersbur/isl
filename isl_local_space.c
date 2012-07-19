@@ -790,13 +790,8 @@ __isl_give isl_local_space *isl_local_space_substitute(
 	for (i = 0; i < ls->div->n_row; ++i) {
 		if (isl_int_is_zero(ls->div->row[i][1 + pos]))
 			continue;
-		isl_int_set(v, ls->div->row[i][1 + pos]);
-		isl_int_set_si(ls->div->row[i][1 + pos], 0);
-		isl_seq_combine(ls->div->row[i] + 1,
-				subs->v->el[0], ls->div->row[i] + 1,
-				v, subs->v->el + 1, subs->v->size - 1);
-		isl_int_mul(ls->div->row[i][0],
-			    ls->div->row[i][0], subs->v->el[0]);
+		isl_seq_substitute(ls->div->row[i], pos, subs->v->el,
+			subs->v->size, subs->v->size, v);
 		normalize_div(ls, i);
 	}
 	isl_int_clear(v);
