@@ -648,6 +648,66 @@ __isl_give isl_aff *isl_aff_remove_unused_divs( __isl_take isl_aff *aff)
 	return aff;
 }
 
+/* Swap divs "a" and "b" in "aff", which is assumed to be non-NULL.
+ *
+ * Even though this function is only called on isl_affs with a single
+ * reference, we are careful to only change aff->v and aff->ls together.
+ */
+static __isl_give isl_aff *swap_div(__isl_take isl_aff *aff, int a, int b)
+{
+	unsigned off = isl_local_space_offset(aff->ls, isl_dim_div);
+	isl_local_space *ls;
+	isl_vec *v;
+
+	ls = isl_local_space_copy(aff->ls);
+	ls = isl_local_space_swap_div(ls, a, b);
+	v = isl_vec_copy(aff->v);
+	v = isl_vec_cow(v);
+	if (!ls || !v)
+		goto error;
+
+	isl_int_swap(v->el[1 + off + a], v->el[1 + off + b]);
+	isl_vec_free(aff->v);
+	aff->v = v;
+	isl_local_space_free(aff->ls);
+	aff->ls = ls;
+
+	return aff;
+error:
+	isl_vec_free(v);
+	isl_local_space_free(ls);
+	return isl_aff_free(aff);
+}
+
+/* Sort the divs in the local space of "aff" according to
+ * the comparison function "cmp_row" in isl_local_space.c
+ *
+ * Reordering divs does not change the semantics of "aff",
+ * so there is no need to call isl_aff_cow.
+ * Moreover, this function is currently only called on isl_affs
+ * with a single reference.
+ */
+static __isl_give isl_aff *sort_divs(__isl_take isl_aff *aff)
+{
+	int i, j, n;
+
+	if (!aff)
+		return NULL;
+
+	n = isl_aff_dim(aff, isl_dim_div);
+	for (i = 1; i < n; ++i) {
+		for (j = i - 1; j >= 0; --j) {
+			if (isl_mat_cmp_div(aff->ls->div, j, j + 1) <= 0)
+				break;
+			aff = swap_div(aff, j, j + 1);
+			if (!aff)
+				return NULL;
+		}
+	}
+
+	return aff;
+}
+
 /* Normalize the representation of "aff".
  *
  * This function should only be called of "new" isl_affs, i.e.,
@@ -661,6 +721,7 @@ __isl_give isl_aff *isl_aff_normalize(__isl_take isl_aff *aff)
 	aff->v = isl_vec_normalize(aff->v);
 	if (!aff->v)
 		return isl_aff_free(aff);
+	aff = sort_divs(aff);
 	aff = isl_aff_remove_unused_divs(aff);
 	return aff;
 }
