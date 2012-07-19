@@ -2979,7 +2979,7 @@ __isl_give isl_pw_aff *isl_set_indicator_function(__isl_take isl_set *set)
  *
  * The result is
  *
- *	floor((a f + d g')/(m d))
+ *	(a f + d g')/(m d)
  *
  * where g' is the result of plugging in "subs" in each of the integer
  * divisions in g.
