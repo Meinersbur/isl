@@ -542,6 +542,27 @@ __isl_give isl_mat *isl_merge_divs(__isl_keep isl_mat *div1,
 	return div;
 }
 
+/* Swap divs "a" and "b" in "ls".
+ */
+__isl_give isl_local_space *isl_local_space_swap_div(
+	__isl_take isl_local_space *ls, int a, int b)
+{
+	int offset;
+
+	ls = isl_local_space_cow(ls);
+	if (!ls)
+		return NULL;
+	if (a < 0 || a >= ls->div->n_row || b < 0 || b >= ls->div->n_row)
+		isl_die(isl_local_space_get_ctx(ls), isl_error_invalid,
+			"index out of bounds", return isl_local_space_free(ls));
+	offset = ls->div->n_col - ls->div->n_row;
+	ls->div = isl_mat_swap_cols(ls->div, offset + a, offset + b);
+	ls->div = isl_mat_swap_rows(ls->div, a, b);
+	if (!ls->div)
+		return isl_local_space_free(ls);
+	return ls;
+}
+
 /* Construct a local space that contains all the divs in either
  * "ls1" or "ls2".
  */
