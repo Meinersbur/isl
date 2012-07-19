@@ -1500,6 +1500,34 @@ int isl_space_is_domain(__isl_keep isl_space *space1,
 	return isl_space_is_domain_internal(space1, space2);
 }
 
+/* Is space1 equal to the range of space2?
+ *
+ * In the internal version, space2 is allowed to be the space of a set,
+ * in which case it should be equal to space1.
+ */
+int isl_space_is_range_internal(__isl_keep isl_space *space1,
+	__isl_keep isl_space *space2)
+{
+	if (!space1 || !space2)
+		return -1;
+	if (!isl_space_is_set(space1))
+		return 0;
+	return match(space1, isl_dim_param, space2, isl_dim_param) &&
+	       isl_space_tuple_match(space1, isl_dim_set, space2, isl_dim_out);
+}
+
+/* Is space1 equal to the range of space2?
+ */
+int isl_space_is_range(__isl_keep isl_space *space1,
+	__isl_keep isl_space *space2)
+{
+	if (!space2)
+		return -1;
+	if (!isl_space_is_map(space2))
+		return 0;
+	return isl_space_is_range_internal(space1, space2);
+}
+
 int isl_space_compatible(__isl_keep isl_space *dim1,
 	__isl_keep isl_space *dim2)
 {

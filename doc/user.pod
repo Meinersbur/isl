@@ -623,6 +623,8 @@ Spaces can be compared using the following functions:
 		__isl_keep isl_space *space2);
 	int isl_space_is_domain(__isl_keep isl_space *space1,
 		__isl_keep isl_space *space2);
+	int isl_space_is_range(__isl_keep isl_space *space1,
+		__isl_keep isl_space *space2);
 
 C<isl_space_is_domain> checks whether the first argument is equal
 to the domain of the second argument.  This requires in particular that
