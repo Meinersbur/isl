@@ -20,6 +20,7 @@ __isl_give isl_local_space *isl_local_space_alloc_div(__isl_take isl_space *dim,
 __isl_give isl_local_space *isl_local_space_add_div(
 	__isl_take isl_local_space *ls, __isl_take isl_vec *div);
 
+int isl_mat_cmp_div(__isl_keep isl_mat *div, int i, int j);
 __isl_give isl_mat *isl_merge_divs(__isl_keep isl_mat *div1,
 	__isl_keep isl_mat *div2, int *exp1, int *exp2);
 

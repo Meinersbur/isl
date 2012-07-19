@@ -436,7 +436,7 @@ static int cmp_row(isl_int *row_i, isl_int *row_j, int i, int j,
 
 /* Call cmp_row for divs in a matrix.
  */
-static int mat_cmp_row(__isl_keep isl_mat *div, int i, int j)
+int isl_mat_cmp_div(__isl_keep isl_mat *div, int i, int j)
 {
 	return cmp_row(div->row[i], div->row[j], i, j, div->n_row, div->n_col);
 }
@@ -516,7 +516,7 @@ __isl_give isl_mat *isl_merge_divs(__isl_keep isl_mat *div1,
 		expand_row(div, k, div1, i, exp1);
 		expand_row(div, k + 1, div2, j, exp2);
 
-		cmp = mat_cmp_row(div, k, k + 1);
+		cmp = isl_mat_cmp_div(div, k, k + 1);
 		if (cmp == 0) {
 			exp1[i++] = k;
 			exp2[j++] = k;
