@@ -9,14 +9,17 @@
 
 #include <isl_ctx_private.h>
 #include <isl/vec.h>
-#include <isl/options.h>
+#include <isl_options_private.h>
 
 void isl_handle_error(isl_ctx *ctx, enum isl_error error, const char *msg,
 	const char *file, int line)
 {
+	if (!ctx)
+		return;
+
 	isl_ctx_set_error(ctx, error);
 
-	switch (isl_options_get_on_error(ctx)) {
+	switch (ctx->opt->on_error) {
 	case ISL_ON_ERROR_WARN:
 		fprintf(stderr, "%s:%d: %s\n", file, line, msg);
 		return;
