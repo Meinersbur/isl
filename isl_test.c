@@ -3239,12 +3239,60 @@ int test_preimage(isl_ctx *ctx)
 }
 
 struct {
+	const char *ma1;
+	const char *ma;
+	const char *res;
+} pullback_tests[] = {
+	{ "{ B[i,j] -> C[i + 2j] }" , "{ A[a,b] -> B[b,a] }",
+	  "{ A[a,b] -> C[b + 2a] }" },
+	{ "{ B[i] -> C[2i] }", "{ A[a] -> B[(a)/2] }", "{ A[a] -> C[a] }" },
+	{ "{ B[i] -> C[(i)/2] }", "{ A[a] -> B[2a] }", "{ A[a] -> C[a] }" },
+	{ "{ B[i] -> C[(i)/2] }", "{ A[a] -> B[(a)/3] }",
+	  "{ A[a] -> C[(a)/6] }" },
+	{ "{ B[i] -> C[2i] }", "{ A[a] -> B[5a] }", "{ A[a] -> C[10a] }" },
+	{ "{ B[i] -> C[2i] }", "{ A[a] -> B[(a)/3] }",
+	  "{ A[a] -> C[(2a)/3] }" },
+	{ "{ B[i,j] -> C[i + j] }", "{ A[a] -> B[a,a] }", "{ A[a] -> C[2a] }"},
+	{ "{ B[a] -> C[a,a] }", "{ A[i,j] -> B[i + j] }",
+	  "{ A[i,j] -> C[i + j, i + j] }"},
+	{ "{ B[i] -> C[([i/2])] }", "{ B[5] }", "{ C[2] }" },
+	{ "[n] -> { B[i,j] -> C[([i/2]) + 2j] }",
+	  "[n] -> { B[n,[n/3]] }", "[n] -> { C[([n/2]) + 2*[n/3]] }", },
+};
+
+static int test_pullback(isl_ctx *ctx)
+{
+	int i;
+	isl_multi_aff *ma1, *ma2;
+	isl_multi_aff *ma;
+	int equal;
+
+	for (i = 0; i < ARRAY_SIZE(pullback_tests); ++i) {
+		ma1 = isl_multi_aff_read_from_str(ctx, pullback_tests[i].ma1);
+		ma = isl_multi_aff_read_from_str(ctx, pullback_tests[i].ma);
+		ma2 = isl_multi_aff_read_from_str(ctx, pullback_tests[i].res);
+		ma1 = isl_multi_aff_pullback_multi_aff(ma1, ma);
+		equal = isl_multi_aff_plain_is_equal(ma1, ma2);
+		isl_multi_aff_free(ma1);
+		isl_multi_aff_free(ma2);
+		if (equal < 0)
+			return -1;
+		if (!equal)
+			isl_die(ctx, isl_error_unknown, "bad pullback",
+				return -1);
+	}
+
+	return 0;
+}
+
+struct {
 	const char *name;
 	int (*fn)(isl_ctx *ctx);
 } tests [] = {
 	{ "list", &test_list },
 	{ "align parameters", &test_align_parameters },
 	{ "preimage", &test_preimage },
+	{ "pullback", &test_pullback },
 	{ "eliminate", &test_eliminate },
 	{ "reisdue class", &test_residue_class },
 	{ "div", &test_div },

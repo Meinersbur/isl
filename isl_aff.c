@@ -3552,6 +3552,40 @@ error:
 	return NULL;
 }
 
+/* Compute the pullback of "ma1" by the function represented by "ma2".
+ * In other words, plug in "ma2" in "ma1".
+ */
+__isl_give isl_multi_aff *isl_multi_aff_pullback_multi_aff(
+	__isl_take isl_multi_aff *ma1, __isl_take isl_multi_aff *ma2)
+{
+	int i;
+	isl_space *space = NULL;
+
+	ma2 = isl_multi_aff_align_divs(ma2);
+	ma1 = isl_multi_aff_cow(ma1);
+	if (!ma1 || !ma2)
+		goto error;
+
+	space = isl_space_join(isl_multi_aff_get_space(ma2),
+				isl_multi_aff_get_space(ma1));
+
+	for (i = 0; i < ma1->n; ++i) {
+		ma1->p[i] = isl_aff_pullback_multi_aff(ma1->p[i],
+						    isl_multi_aff_copy(ma2));
+		if (!ma1->p[i])
+			goto error;
+	}
+
+	ma1 = isl_multi_aff_reset_space(ma1, space);
+	isl_multi_aff_free(ma2);
+	return ma1;
+error:
+	isl_space_free(space);
+	isl_multi_aff_free(ma2);
+	isl_multi_aff_free(ma1);
+	return NULL;
+}
+
 /* Extend the local space of "dst" to include the divs
  * in the local space of "src".
  */

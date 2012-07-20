@@ -3932,6 +3932,15 @@ If the C<ls> argument of C<isl_multi_aff_lift> is not C<NULL>,
 then it is assigned the local space that lies at the basis of
 the lifting applied.
 
+	#include <isl/aff.h>
+	__isl_give isl_multi_aff *isl_multi_aff_pullback_multi_aff(
+		__isl_take isl_multi_aff *ma1,
+		__isl_take isl_multi_aff *ma2);
+
+The function C<isl_multi_aff_pullback_multi_aff> precomposes C<ma1> by C<ma2>.
+In other words, C<ma2> is plugged
+into C<ma1>.
+
 	__isl_give isl_set *isl_multi_aff_lex_le_set(
 		__isl_take isl_multi_aff *ma1,
 		__isl_take isl_multi_aff *ma2);
