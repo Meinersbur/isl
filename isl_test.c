@@ -12,7 +12,7 @@
 #include <limits.h>
 #include <isl_ctx_private.h>
 #include <isl_map_private.h>
-#include <isl/aff.h>
+#include <isl_aff_private.h>
 #include <isl/set.h>
 #include <isl/flow.h>
 #include <isl/constraint.h>
@@ -2980,10 +2980,42 @@ int test_eliminate(isl_ctx *ctx)
 	return 0;
 }
 
+int test_align_parameters(isl_ctx *ctx)
+{
+	const char *str;
+	isl_space *space;
+	isl_multi_aff *ma1, *ma2;
+	int equal;
+
+	str = "{ A[B[] -> C[]] -> D[E[] -> F[]] }";
+	ma1 = isl_multi_aff_read_from_str(ctx, str);
+
+	space = isl_space_params_alloc(ctx, 1);
+	space = isl_space_set_dim_name(space, isl_dim_param, 0, "N");
+	ma1 = isl_multi_aff_align_params(ma1, space);
+
+	str = "[N] -> { A[B[] -> C[]] -> D[E[] -> F[]] }";
+	ma2 = isl_multi_aff_read_from_str(ctx, str);
+
+	equal = isl_multi_aff_plain_is_equal(ma1, ma2);
+
+	isl_multi_aff_free(ma1);
+	isl_multi_aff_free(ma2);
+
+	if (equal < 0)
+		return -1;
+	if (!equal)
+		isl_die(ctx, isl_error_unknown,
+			"result not as expected", return -1);
+
+	return 0;
+}
+
 struct {
 	const char *name;
 	int (*fn)(isl_ctx *ctx);
 } tests [] = {
+	{ "align parameters", &test_align_parameters },
 	{ "eliminate", &test_eliminate },
 	{ "div", &test_div },
 	{ "slice", &test_slice },
