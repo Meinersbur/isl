@@ -3488,6 +3488,70 @@ void isl_seq_preimage(isl_int *dst, isl_int *src,
 	}
 }
 
+/* Compute the pullback of "aff" by the function represented by "ma".
+ * In other words, plug in "ma" in "aff".  The result is an affine expression
+ * defined over the domain space of "ma".
+ *
+ * If "aff" is represented by
+ *
+ *	(a(p) + b x + c(divs))/d
+ *
+ * and ma is represented by
+ *
+ *	x = D(p) + F(y) + G(divs')
+ *
+ * then the result is
+ *
+ *	(a(p) + b D(p) + b F(y) + b G(divs') + c(divs))/d
+ *
+ * The divs in the local space of the input are similarly adjusted
+ * through a call to isl_local_space_preimage_multi_aff.
+ */
+__isl_give isl_aff *isl_aff_pullback_multi_aff(__isl_take isl_aff *aff,
+	__isl_take isl_multi_aff *ma)
+{
+	isl_aff *res = NULL;
+	isl_local_space *ls;
+	int n_div_aff, n_div_ma;
+	isl_int f, c1, c2, g;
+
+	ma = isl_multi_aff_align_divs(ma);
+	if (!aff || !ma)
+		goto error;
+
+	n_div_aff = isl_aff_dim(aff, isl_dim_div);
+	n_div_ma = ma->n ? isl_aff_dim(ma->p[0], isl_dim_div) : 0;
+
+	ls = isl_aff_get_domain_local_space(aff);
+	ls = isl_local_space_preimage_multi_aff(ls, isl_multi_aff_copy(ma));
+	res = isl_aff_alloc(ls);
+	if (!res)
+		goto error;
+
+	isl_int_init(f);
+	isl_int_init(c1);
+	isl_int_init(c2);
+	isl_int_init(g);
+
+	isl_seq_preimage(res->v->el, aff->v->el, ma, n_div_ma, n_div_aff,
+			f, c1, c2, g, 1);
+
+	isl_int_clear(f);
+	isl_int_clear(c1);
+	isl_int_clear(c2);
+	isl_int_clear(g);
+
+	isl_aff_free(aff);
+	isl_multi_aff_free(ma);
+	res = isl_aff_normalize(res);
+	return res;
+error:
+	isl_aff_free(aff);
+	isl_multi_aff_free(ma);
+	isl_aff_free(res);
+	return NULL;
+}
+
 /* Extend the local space of "dst" to include the divs
  * in the local space of "src".
  */
