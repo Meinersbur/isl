@@ -678,6 +678,56 @@ void isl_seq_substitute(isl_int *p, int pos, isl_int *subs,
 	isl_int_mul(p[0], p[0], subs[0]);
 }
 
+/* Look for any divs in the aff->ls with a denominator equal to one
+ * and plug them into the affine expression and any subsequent divs
+ * that may reference the div.
+ */
+static __isl_give isl_aff *plug_in_integral_divs(__isl_take isl_aff *aff)
+{
+	int i, n;
+	int len;
+	isl_int v;
+	isl_vec *vec;
+	isl_local_space *ls;
+	unsigned pos;
+
+	if (!aff)
+		return NULL;
+
+	n = isl_local_space_dim(aff->ls, isl_dim_div);
+	len = aff->v->size;
+	for (i = 0; i < n; ++i) {
+		if (!isl_int_is_one(aff->ls->div->row[i][0]))
+			continue;
+		ls = isl_local_space_copy(aff->ls);
+		ls = isl_local_space_substitute_seq(ls, isl_dim_div, i,
+					    aff->ls->div->row[i], len, i + 1);
+		vec = isl_vec_copy(aff->v);
+		vec = isl_vec_cow(vec);
+		if (!ls || !vec)
+			goto error;
+
+		isl_int_init(v);
+
+		pos = isl_local_space_offset(aff->ls, isl_dim_div) + i;
+		isl_seq_substitute(vec->el, pos, aff->ls->div->row[i],
+					len, len, v);
+
+		isl_int_clear(v);
+
+		isl_vec_free(aff->v);
+		aff->v = vec;
+		isl_local_space_free(aff->ls);
+		aff->ls = ls;
+	}
+
+	return aff;
+error:
+	isl_vec_free(vec);
+	isl_local_space_free(ls);
+	return isl_aff_free(aff);
+}
+
 /* Swap divs "a" and "b" in "aff", which is assumed to be non-NULL.
  *
  * Even though this function is only called on isl_affs with a single
@@ -751,6 +801,7 @@ __isl_give isl_aff *isl_aff_normalize(__isl_take isl_aff *aff)
 	aff->v = isl_vec_normalize(aff->v);
 	if (!aff->v)
 		return isl_aff_free(aff);
+	aff = plug_in_integral_divs(aff);
 	aff = sort_divs(aff);
 	aff = isl_aff_remove_unused_divs(aff);
 	return aff;
