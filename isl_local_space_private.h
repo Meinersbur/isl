@@ -49,6 +49,10 @@ int isl_local_space_is_div_constraint(__isl_keep isl_local_space *ls,
 
 int *isl_local_space_get_active(__isl_keep isl_local_space *ls, isl_int *l);
 
+__isl_give isl_local_space *isl_local_space_substitute_seq(
+	__isl_take isl_local_space *ls,
+	enum isl_dim_type type, unsigned pos, isl_int *subs, int subs_len,
+	int first);
 __isl_give isl_local_space *isl_local_space_substitute(
 	__isl_take isl_local_space *ls,
 	enum isl_dim_type type, unsigned pos, __isl_keep isl_aff *subs);

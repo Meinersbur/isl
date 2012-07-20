@@ -750,6 +750,52 @@ error:
 	return NULL;
 }
 
+/* Plug in the affine expressions "subs" of length "subs_len" (including
+ * the denominator and the constant term) into the variable at position "pos"
+ * of all the div expressions starting at "first".
+ *
+ * Let i be the dimension to replace and let "subs" be of the form
+ *
+ *	f/d
+ *
+ * Any integer division starting at "first" with a non-zero coefficient for i,
+ *
+ *	floor((a i + g)/m)
+ *
+ * is replaced by
+ *
+ *	floor((a f + d g)/(m d))
+ */
+__isl_give isl_local_space *isl_local_space_substitute_seq(
+	__isl_take isl_local_space *ls,
+	enum isl_dim_type type, unsigned pos, isl_int *subs, int subs_len,
+	int first)
+{
+	int i;
+	isl_int v;
+
+	ls = isl_local_space_cow(ls);
+	if (!ls)
+		return NULL;
+	ls->div = isl_mat_cow(ls->div);
+	if (!ls->div)
+		return isl_local_space_free(ls);
+
+	pos += isl_local_space_offset(ls, type);
+
+	isl_int_init(v);
+	for (i = first; i < ls->div->n_row; ++i) {
+		if (isl_int_is_zero(ls->div->row[i][1 + pos]))
+			continue;
+		isl_seq_substitute(ls->div->row[i], pos, subs,
+			ls->div->n_col, subs_len, v);
+		normalize_div(ls, i);
+	}
+	isl_int_clear(v);
+
+	return ls;
+}
+
 /* Plug in "subs" for dimension "type", "pos" in the integer divisions
  * of "ls".
  *
@@ -769,9 +815,6 @@ __isl_give isl_local_space *isl_local_space_substitute(
 	__isl_take isl_local_space *ls,
 	enum isl_dim_type type, unsigned pos, __isl_keep isl_aff *subs)
 {
-	int i;
-	isl_int v;
-
 	ls = isl_local_space_cow(ls);
 	if (!ls || !subs)
 		return isl_local_space_free(ls);
@@ -784,19 +827,8 @@ __isl_give isl_local_space *isl_local_space_substitute(
 			"cannot handle divs yet",
 			return isl_local_space_free(ls));
 
-	pos += isl_local_space_offset(ls, type);
-
-	isl_int_init(v);
-	for (i = 0; i < ls->div->n_row; ++i) {
-		if (isl_int_is_zero(ls->div->row[i][1 + pos]))
-			continue;
-		isl_seq_substitute(ls->div->row[i], pos, subs->v->el,
-			subs->v->size, subs->v->size, v);
-		normalize_div(ls, i);
-	}
-	isl_int_clear(v);
-
-	return ls;
+	return isl_local_space_substitute_seq(ls, type, pos, subs->v->el,
+						subs->v->size, 0);
 }
 
 int isl_local_space_is_named_or_nested(__isl_keep isl_local_space *ls,
