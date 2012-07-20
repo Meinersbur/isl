@@ -1034,3 +1034,85 @@ __isl_give isl_basic_map *isl_local_space_lifting(
 
 	return lifting;
 }
+
+/* Compute the preimage of "ls" under the function represented by "ma".
+ * In other words, plug in "ma" in "ls".  The result is a local space
+ * that is part of the domain space of "ma".
+ *
+ * If the divs in "ls" are represented as
+ *
+ *	floor((a_i(p) + b_i x + c_i(divs))/n_i)
+ *
+ * and ma is represented by
+ *
+ *	x = D(p) + F(y) + G(divs')
+ *
+ * then the resulting divs are
+ *
+ *	floor((a_i(p) + b_i D(p) + b_i F(y) + B_i G(divs') + c_i(divs))/n_i)
+ *
+ * We first copy over the divs from "ma" and then
+ * we add the modified divs from "ls".
+ */
+__isl_give isl_local_space *isl_local_space_preimage_multi_aff(
+	__isl_take isl_local_space *ls, __isl_take isl_multi_aff *ma)
+{
+	int i;
+	isl_space *space;
+	isl_local_space *res = NULL;
+	int n_div_ls, n_div_ma;
+	isl_int f, c1, c2, g;
+
+	ma = isl_multi_aff_align_divs(ma);
+	if (!ls || !ma)
+		goto error;
+	if (!isl_space_is_range_internal(ls->dim, ma->space))
+		isl_die(isl_local_space_get_ctx(ls), isl_error_invalid,
+			"spaces don't match", goto error);
+
+	n_div_ls = isl_local_space_dim(ls, isl_dim_div);
+	n_div_ma = ma->n ? isl_aff_dim(ma->p[0], isl_dim_div) : 0;
+
+	space = isl_space_domain(isl_multi_aff_get_space(ma));
+	res = isl_local_space_alloc(space, n_div_ma + n_div_ls);
+	if (!res)
+		goto error;
+
+	if (n_div_ma) {
+		isl_mat_free(res->div);
+		res->div = isl_mat_copy(ma->p[0]->ls->div);
+		res->div = isl_mat_add_zero_cols(res->div, n_div_ls);
+		res->div = isl_mat_add_rows(res->div, n_div_ls);
+		if (!res->div)
+			goto error;
+	}
+
+	isl_int_init(f);
+	isl_int_init(c1);
+	isl_int_init(c2);
+	isl_int_init(g);
+
+	for (i = 0; i < ls->div->n_row; ++i) {
+		if (isl_int_is_zero(ls->div->row[i][0])) {
+			isl_int_set_si(res->div->row[n_div_ma + i][0], 0);
+			continue;
+		}
+		isl_seq_preimage(res->div->row[n_div_ma + i], ls->div->row[i],
+				    ma, n_div_ma, n_div_ls, f, c1, c2, g, 1);
+		normalize_div(res, n_div_ma + i);
+	}
+
+	isl_int_clear(f);
+	isl_int_clear(c1);
+	isl_int_clear(c2);
+	isl_int_clear(g);
+
+	isl_local_space_free(ls);
+	isl_multi_aff_free(ma);
+	return res;
+error:
+	isl_local_space_free(ls);
+	isl_multi_aff_free(ma);
+	isl_local_space_free(res);
+	return NULL;
+}

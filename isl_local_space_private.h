@@ -60,4 +60,7 @@ __isl_give isl_local_space *isl_local_space_substitute(
 __isl_give isl_local_space *isl_local_space_lift(
 	__isl_take isl_local_space *ls);
 
+__isl_give isl_local_space *isl_local_space_preimage_multi_aff(
+	__isl_take isl_local_space *ls, __isl_take isl_multi_aff *ma);
+
 #endif
