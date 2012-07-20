@@ -638,6 +638,7 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_gist_params(
 #define DEFAULT_IS_ZERO 1
 
 #define NO_NEG
+#define NO_PULLBACK
 
 #include <isl_pw_templ.c>
 

@@ -219,6 +219,9 @@ __isl_give isl_pw_aff *isl_pw_aff_gist(__isl_take isl_pw_aff *pwaff,
 __isl_give isl_pw_aff *isl_pw_aff_gist_params(__isl_take isl_pw_aff *pwaff,
 	__isl_take isl_set *context);
 
+__isl_give isl_pw_aff *isl_pw_aff_pullback_multi_aff(
+	__isl_take isl_pw_aff *pa, __isl_take isl_multi_aff *ma);
+
 int isl_pw_aff_n_piece(__isl_keep isl_pw_aff *pwaff);
 int isl_pw_aff_foreach_piece(__isl_keep isl_pw_aff *pwaff,
 	int (*fn)(__isl_take isl_set *set, __isl_take isl_aff *aff,
@@ -442,6 +445,9 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_gist_params(
 	__isl_take isl_pw_multi_aff *pma, __isl_take isl_set *set);
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_gist(
 	__isl_take isl_pw_multi_aff *pma, __isl_take isl_set *set);
+
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_pullback_multi_aff(
+	__isl_take isl_pw_multi_aff *pma, __isl_take isl_multi_aff *ma);
 
 int isl_pw_multi_aff_foreach_piece(__isl_keep isl_pw_multi_aff *pma,
 	int (*fn)(__isl_take isl_set *set, __isl_take isl_multi_aff *maff,

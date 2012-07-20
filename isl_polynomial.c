@@ -2608,6 +2608,8 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_from_qpolynomial(
 #undef DEFAULT_IS_ZERO
 #define DEFAULT_IS_ZERO 1
 
+#define NO_PULLBACK
+
 #include <isl_pw_templ.c>
 
 #undef UNION

@@ -1,3 +1,5 @@
+#include <isl/aff.h>
+
 #define xFN(TYPE,NAME) TYPE ## _ ## NAME
 #define FN(TYPE,NAME) xFN(TYPE,NAME)
 #define xS(TYPE,NAME) struct TYPE ## _ ## NAME
@@ -1616,3 +1618,79 @@ error:
 	FN(PW,free)(pw2);
 	return -1;
 }
+
+#ifndef NO_PULLBACK
+static __isl_give PW *FN(PW,align_params_pw_multi_aff_and)(__isl_take PW *pw,
+	__isl_take isl_multi_aff *ma,
+	__isl_give PW *(*fn)(__isl_take PW *pw, __isl_take isl_multi_aff *ma))
+{
+	isl_ctx *ctx;
+	isl_space *ma_space;
+
+	ma_space = isl_multi_aff_get_space(ma);
+	if (!pw || !ma || !ma_space)
+		goto error;
+	if (isl_space_match(pw->dim, isl_dim_param, ma_space, isl_dim_param)) {
+		isl_space_free(ma_space);
+		return fn(pw, ma);
+	}
+	ctx = FN(PW,get_ctx)(pw);
+	if (!isl_space_has_named_params(pw->dim) ||
+	    !isl_space_has_named_params(ma_space))
+		isl_die(ctx, isl_error_invalid,
+			"unaligned unnamed parameters", goto error);
+	pw = FN(PW,align_params)(pw, ma_space);
+	ma = isl_multi_aff_align_params(ma, FN(PW,get_space)(pw));
+	return fn(pw, ma);
+error:
+	isl_space_free(ma_space);
+	FN(PW,free)(pw);
+	isl_multi_aff_free(ma);
+	return NULL;
+}
+
+/* Compute the pullback of "pw" by the function represented by "ma".
+ * In other words, plug in "ma" in "pw".
+ */
+static __isl_give PW *FN(PW,pullback_multi_aff_aligned)(__isl_take PW *pw,
+	__isl_take isl_multi_aff *ma)
+{
+	int i;
+	isl_space *space = NULL;
+
+	ma = isl_multi_aff_align_divs(ma);
+	pw = FN(PW,cow)(pw);
+	if (!pw || !ma)
+		goto error;
+
+	space = isl_space_join(isl_multi_aff_get_space(ma),
+				FN(PW,get_space)(pw));
+
+	for (i = 0; i < pw->n; ++i) {
+		pw->p[i].set = isl_set_preimage_multi_aff(pw->p[i].set,
+						    isl_multi_aff_copy(ma));
+		if (!pw->p[i].set)
+			goto error;
+		pw->p[i].FIELD = FN(EL,pullback_multi_aff)(pw->p[i].FIELD,
+						    isl_multi_aff_copy(ma));
+		if (!pw->p[i].FIELD)
+			goto error;
+	}
+
+	pw = FN(PW,reset_space)(pw, space);
+	isl_multi_aff_free(ma);
+	return pw;
+error:
+	isl_space_free(space);
+	isl_multi_aff_free(ma);
+	FN(PW,free)(pw);
+	return NULL;
+}
+
+__isl_give PW *FN(PW,pullback_multi_aff)(__isl_take PW *pw,
+	__isl_take isl_multi_aff *ma)
+{
+	return FN(PW,align_params_pw_multi_aff_and)(pw, ma,
+					&FN(PW,pullback_multi_aff_aligned));
+}
+#endif
