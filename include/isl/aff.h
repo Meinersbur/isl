@@ -340,6 +340,10 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_set_tuple_id(
 	__isl_take isl_pw_multi_aff *pma,
 	enum isl_dim_type type, __isl_take isl_id *id);
 
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_drop_dims(
+	__isl_take isl_pw_multi_aff *pma,
+	enum isl_dim_type type, unsigned first, unsigned n);
+
 __isl_give isl_set *isl_pw_multi_aff_domain(__isl_take isl_pw_multi_aff *pma);
 
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_empty(__isl_take isl_space *space);
