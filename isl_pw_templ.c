@@ -221,7 +221,7 @@ __isl_give PW *FN(PW,realign_domain)(__isl_take PW *pw,
 
 	pw = FN(PW,cow)(pw);
 	if (!pw || !exp)
-		return NULL;
+		goto error;
 
 	for (i = 0; i < pw->n; ++i) {
 		pw->p[i].set = isl_set_realign(pw->p[i].set,
