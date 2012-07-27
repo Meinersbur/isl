@@ -1607,6 +1607,10 @@ __isl_give isl_map *isl_map_eliminate(__isl_take isl_map *map,
 	if (n == 0)
 		return map;
 
+	if (first + n > isl_map_dim(map, type) || first + n < first)
+		isl_die(map->ctx, isl_error_invalid,
+			"index out of bounds", goto error);
+
 	map = isl_map_cow(map);
 	if (!map)
 		return NULL;

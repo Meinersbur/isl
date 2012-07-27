@@ -1391,7 +1391,7 @@ __isl_give isl_basic_map *isl_basic_map_eliminate(
 	if (n == 0)
 		return bmap;
 
-	if (first + n > isl_basic_map_dim(bmap, type))
+	if (first + n > isl_basic_map_dim(bmap, type) || first + n < first)
 		isl_die(bmap->ctx, isl_error_invalid,
 			"index out of bounds", goto error);
 
