@@ -1594,8 +1594,8 @@ void isl_basic_map_swap_div(struct isl_basic_map *bmap, int a, int b)
 }
 
 /* Eliminate the specified n dimensions starting at first from the
- * constraints using Fourier-Motzkin.  The dimensions themselves
- * are not removed.
+ * constraints, without removing the dimensions from the space.
+ * If the set is rational, the dimensions are eliminated using Fourier-Motzkin.
  */
 __isl_give isl_map *isl_map_eliminate(__isl_take isl_map *map,
 	enum isl_dim_type type, unsigned first, unsigned n)
@@ -1623,8 +1623,8 @@ error:
 }
 
 /* Eliminate the specified n dimensions starting at first from the
- * constraints using Fourier-Motzkin.  The dimensions themselves
- * are not removed.
+ * constraints, without removing the dimensions from the space.
+ * If the set is rational, the dimensions are eliminated using Fourier-Motzkin.
  */
 __isl_give isl_set *isl_set_eliminate(__isl_take isl_set *set,
 	enum isl_dim_type type, unsigned first, unsigned n)
@@ -1633,8 +1633,8 @@ __isl_give isl_set *isl_set_eliminate(__isl_take isl_set *set,
 }
 
 /* Eliminate the specified n dimensions starting at first from the
- * constraints using Fourier-Motzkin.  The dimensions themselves
- * are not removed.
+ * constraints, without removing the dimensions from the space.
+ * If the set is rational, the dimensions are eliminated using Fourier-Motzkin.
  */
 __isl_give isl_set *isl_set_eliminate_dims(__isl_take isl_set *set,
 	unsigned first, unsigned n)
