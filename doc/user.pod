@@ -4524,6 +4524,8 @@ A representation of the band can be printed using
 		isl_ctx *ctx, int val);
 	int isl_options_get_schedule_max_constant_term(
 		isl_ctx *ctx);
+	int isl_options_set_schedule_fuse(isl_ctx *ctx, int val);
+	int isl_options_get_schedule_fuse(isl_ctx *ctx);
 	int isl_options_set_schedule_maximize_band_depth(
 		isl_ctx *ctx, int val);
 	int isl_options_get_schedule_maximize_band_depth(
@@ -4540,7 +4542,10 @@ A representation of the band can be printed using
 		isl_ctx *ctx, int val);
 	int isl_options_get_schedule_algorithm(
 		isl_ctx *ctx);
-
+	int isl_options_set_schedule_separate_components(
+		isl_ctx *ctx, int val);
+	int isl_options_get_schedule_separate_components(
+		isl_ctx *ctx);
 
 =over
 
@@ -4561,6 +4566,14 @@ increase the speed of the scheduling calculation and may also prevent fusing of
 unrelated dimensions. A value of -1 means that this option does not introduce
 bounds on the constant coefficients.
 
+=item * schedule_fuse
+
+This option controls the level of fusion.
+If this option is set to C<ISL_SCHEDULE_FUSE_MIN>, then loops in the
+resulting schedule will be distributed as much as possible.
+If this option is set to C<ISL_SCHEDULE_FUSE_MAX>, then C<isl> will
+try to fuse loops in the resulting schedule.
+
 =item * schedule_maximize_band_depth
 
 If this option is set, we do not split bands at the point
@@ -4568,6 +4581,9 @@ where we detect splitting is necessary. Instead, we
 backtrack and split bands as early as possible. This
 reduces the number of splits and maximizes the width of
 the bands. Wider bands give more possibilities for tiling.
+Note that if the C<schedule_fuse> option is set to C<ISL_SCHEDULE_FUSE_MIN>,
+then bands will be split as early as possible, even if there is no need.
+The C<schedule_maximize_band_depth> option therefore has no effect in this case.
 
 =item * schedule_outer_zero_distance
 
@@ -4590,6 +4606,15 @@ part is reduced.
 Selects the scheduling algorithm to be used.
 Available scheduling algorithms are C<ISL_SCHEDULE_ALGORITHM_ISL>
 and C<ISL_SCHEDULE_ALGORITHM_FEAUTRIER>.
+
+=item * schedule_separate_components
+
+If at any point the dependence graph contains any (weakly connected) components,
+then these components are scheduled separately.
+If this option is not set, then some iterations of the domains
+in these components may be scheduled together.
+If this option is set, then the components are given consecutive
+schedules.
 
 =back
 
