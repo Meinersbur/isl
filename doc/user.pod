@@ -2468,6 +2468,11 @@ the same (number of) parameters.
 		__isl_take isl_union_map *umap1,
 		__isl_take isl_union_map *umap2);
 
+The second argument to the C<_params> functions needs to be
+a parametric (basic) set.  For the other functions, a parametric set
+for either argument is only allowed if the other argument is
+a parametric set as well.
+
 =item * Union
 
 	__isl_give isl_set *isl_basic_set_union(
