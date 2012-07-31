@@ -26,6 +26,13 @@ static __isl_give isl_printer *file_print_str(__isl_take isl_printer *p,
 	return p;
 }
 
+static __isl_give isl_printer *file_print_double(__isl_take isl_printer *p,
+	double d)
+{
+	fprintf(p->file, "%g", d);
+	return p;
+}
+
 static __isl_give isl_printer *file_print_int(__isl_take isl_printer *p, int i)
 {
 	fprintf(p->file, "%d", i);
@@ -116,6 +123,24 @@ static __isl_give isl_printer *str_print_str(__isl_take isl_printer *p,
 	return str_print(p, s, strlen(s));
 }
 
+static __isl_give isl_printer *str_print_double(__isl_take isl_printer *p,
+	double d)
+{
+	int left = p->buf_size - p->buf_n;
+	int need = snprintf(p->buf + p->buf_n, left, "%g", d);
+	if (need >= left) {
+		if (grow_buf(p, need))
+			goto error;
+		left = p->buf_size - p->buf_n;
+		need = snprintf(p->buf + p->buf_n, left, "%g", d);
+	}
+	p->buf_n += need;
+	return p;
+error:
+	isl_printer_free(p);
+	return NULL;
+}
+
 static __isl_give isl_printer *str_print_int(__isl_take isl_printer *p, int i)
 {
 	int left = p->buf_size - p->buf_n;
@@ -153,6 +178,8 @@ static __isl_give isl_printer *str_print_isl_int(__isl_take isl_printer *p,
 struct isl_printer_ops {
 	__isl_give isl_printer *(*start_line)(__isl_take isl_printer *p);
 	__isl_give isl_printer *(*end_line)(__isl_take isl_printer *p);
+	__isl_give isl_printer *(*print_double)(__isl_take isl_printer *p,
+		double d);
 	__isl_give isl_printer *(*print_int)(__isl_take isl_printer *p, int i);
 	__isl_give isl_printer *(*print_isl_int)(__isl_take isl_printer *p,
 						isl_int i);
@@ -164,6 +191,7 @@ struct isl_printer_ops {
 static struct isl_printer_ops file_ops = {
 	file_start_line,
 	file_end_line,
+	file_print_double,
 	file_print_int,
 	file_print_isl_int,
 	file_print_str,
@@ -173,6 +201,7 @@ static struct isl_printer_ops file_ops = {
 static struct isl_printer_ops str_ops = {
 	str_start_line,
 	str_end_line,
+	str_print_double,
 	str_print_int,
 	str_print_isl_int,
 	str_print_str,
@@ -333,6 +362,15 @@ __isl_give isl_printer *isl_printer_print_str(__isl_take isl_printer *p,
 		return NULL;
 
 	return p->ops->print_str(p, s);
+}
+
+__isl_give isl_printer *isl_printer_print_double(__isl_take isl_printer *p,
+	double d)
+{
+	if (!p)
+		return NULL;
+
+	return p->ops->print_double(p, d);
 }
 
 __isl_give isl_printer *isl_printer_print_int(__isl_take isl_printer *p, int i)

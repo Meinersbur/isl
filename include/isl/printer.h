@@ -45,6 +45,8 @@ __isl_give isl_printer *isl_printer_set_isl_int_width(__isl_take isl_printer *p,
 
 __isl_give isl_printer *isl_printer_start_line(__isl_take isl_printer *p);
 __isl_give isl_printer *isl_printer_end_line(__isl_take isl_printer *p);
+__isl_give isl_printer *isl_printer_print_double(__isl_take isl_printer *p,
+	double d);
 __isl_give isl_printer *isl_printer_print_int(__isl_take isl_printer *p, int i);
 __isl_give isl_printer *isl_printer_print_isl_int(__isl_take isl_printer *p,
 	isl_int i);
