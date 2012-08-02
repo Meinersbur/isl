@@ -21,7 +21,7 @@
 #include <isl_tab.h>
 #include <isl_dim_map.h>
 #include <isl_hmap_map_basic_set.h>
-#include <isl_qsort.h>
+#include <isl_sort.h>
 #include <isl_schedule_private.h>
 #include <isl_band_private.h>
 #include <isl_list_private.h>
@@ -746,9 +746,9 @@ static int cmp_scc(const void *a, const void *b, void *data)
 
 /* Sort the elements of graph->sorted according to the corresponding SCCs.
  */
-static void sort_sccs(struct isl_sched_graph *graph)
+static int sort_sccs(struct isl_sched_graph *graph)
 {
-	isl_quicksort(graph->sorted, graph->n, sizeof(int), &cmp_scc, graph);
+	return isl_sort(graph->sorted, graph->n, sizeof(int), &cmp_scc, graph);
 }
 
 /* Given a dependence relation R from a node to itself,
@@ -2652,7 +2652,8 @@ static int compute_schedule_wcc(isl_ctx *ctx, struct isl_sched_graph *graph)
 
 	if (detect_sccs(graph) < 0)
 		return -1;
-	sort_sccs(graph);
+	if (sort_sccs(graph) < 0)
+		return -1;
 
 	if (compute_maxvar(graph) < 0)
 		return -1;

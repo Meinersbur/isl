@@ -94,8 +94,6 @@ libisl_la_SOURCES = \
 	isl_options.c \
 	isl_options_private.h \
 	isl_output.c \
-	isl_qsort.c \
-	isl_qsort.h \
 	isl_piplib.h \
 	isl_point_private.h \
 	isl_point.c \
@@ -114,6 +112,8 @@ libisl_la_SOURCES = \
 	isl_scan.h \
 	isl_schedule.c \
 	isl_schedule_private.h \
+	isl_sort.c \
+	isl_sort.h \
 	isl_space.c \
 	isl_space_private.h \
 	isl_stream.c \

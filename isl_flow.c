@@ -17,7 +17,7 @@
 #include <isl/set.h>
 #include <isl/map.h>
 #include <isl/flow.h>
-#include <isl_qsort.h>
+#include <isl_sort.h>
 
 enum isl_restriction_type {
 	isl_restriction_type_empty,
@@ -340,8 +340,9 @@ static __isl_give isl_access_info *isl_access_info_sort_sources(
 	if (acc->n_must <= 1)
 		return acc;
 
-	isl_quicksort(acc->source, acc->n_must, sizeof(struct isl_labeled_map),
-		access_sort_cmp, acc);
+	if (isl_sort(acc->source, acc->n_must, sizeof(struct isl_labeled_map),
+		    access_sort_cmp, acc) < 0)
+		return isl_access_info_free(acc);
 
 	return acc;
 }
