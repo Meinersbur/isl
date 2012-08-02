@@ -227,17 +227,18 @@ error:
 
 /* Free the given isl_access_info structure.
  */
-void isl_access_info_free(__isl_take isl_access_info *acc)
+void *isl_access_info_free(__isl_take isl_access_info *acc)
 {
 	int i;
 
 	if (!acc)
-		return;
+		return NULL;
 	isl_map_free(acc->domain_map);
 	isl_map_free(acc->sink.map);
 	for (i = 0; i < acc->n_must + acc->n_may; ++i)
 		isl_map_free(acc->source[i].map);
 	free(acc);
+	return NULL;
 }
 
 isl_ctx *isl_access_info_get_ctx(__isl_keep isl_access_info *acc)

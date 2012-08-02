@@ -4226,7 +4226,7 @@ then value based dependence analysis is performed.
 		__isl_take isl_access_info *acc,
 		__isl_take isl_map *source, int must,
 		void *source_user);
-	void isl_access_info_free(__isl_take isl_access_info *acc);
+	void *isl_access_info_free(__isl_take isl_access_info *acc);
 
 	__isl_give isl_flow *isl_access_info_compute_flow(
 		__isl_take isl_access_info *acc);

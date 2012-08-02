@@ -47,7 +47,7 @@ __isl_give isl_access_info *isl_access_info_set_restrict(
 __isl_give isl_access_info *isl_access_info_add_source(
 	__isl_take isl_access_info *acc, __isl_take isl_map *source,
 	int must, void *source_user);
-void isl_access_info_free(__isl_take isl_access_info *acc);
+void *isl_access_info_free(__isl_take isl_access_info *acc);
 
 isl_ctx *isl_access_info_get_ctx(__isl_keep isl_access_info *acc);
 
