@@ -408,6 +408,13 @@ error:
 	return NULL;
 }
 
+/* Does the input or output tuple have a name?
+ */
+int isl_map_has_tuple_name(__isl_keep isl_map *map, enum isl_dim_type type)
+{
+	return map ? isl_space_has_tuple_name(map->dim, type) : -1;
+}
+
 const char *isl_map_get_tuple_name(__isl_keep isl_map *map,
 	enum isl_dim_type type)
 {
