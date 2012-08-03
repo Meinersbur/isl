@@ -385,6 +385,9 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_intersect_params(
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_intersect_domain(
 	__isl_take isl_pw_multi_aff *pma, __isl_take isl_set *set);
 
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_project_domain_on_params(
+	__isl_take isl_pw_multi_aff *pma);
+
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_coalesce(
 	__isl_take isl_pw_multi_aff *pma);
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_gist_params(
