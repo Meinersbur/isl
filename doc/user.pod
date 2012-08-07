@@ -614,6 +614,7 @@ or whether it is a parameter space, use these functions:
 	#include <isl/space.h>
 	int isl_space_is_params(__isl_keep isl_space *space);
 	int isl_space_is_set(__isl_keep isl_space *space);
+	int isl_space_is_map(__isl_keep isl_space *space);
 
 It is often useful to create objects that live in the
 same space as some other object.  This can be accomplished

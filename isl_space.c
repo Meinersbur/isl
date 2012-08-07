@@ -73,6 +73,16 @@ int isl_space_is_set(__isl_keep isl_space *space)
 	return 1;
 }
 
+/* Is the given space that of a map?
+ */
+int isl_space_is_map(__isl_keep isl_space *space)
+{
+	if (!space)
+		return -1;
+	return space->tuple_id[0] != &isl_id_none &&
+		space->tuple_id[1] != &isl_id_none;
+}
+
 __isl_give isl_space *isl_space_set_alloc(isl_ctx *ctx,
 			unsigned nparam, unsigned dim)
 {
