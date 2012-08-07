@@ -616,6 +616,12 @@ or whether it is a parameter space, use these functions:
 	int isl_space_is_set(__isl_keep isl_space *space);
 	int isl_space_is_map(__isl_keep isl_space *space);
 
+Spaces can be compared using the following function:
+
+	#include <isl/space.h>
+	int isl_space_is_equal(__isl_keep isl_space *space1,
+		__isl_keep isl_space *space2);
+
 It is often useful to create objects that live in the
 same space as some other object.  This can be accomplished
 by creating the new objects

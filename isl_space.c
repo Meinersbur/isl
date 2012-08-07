@@ -1459,6 +1459,8 @@ __isl_give isl_space *isl_space_underlying(__isl_take isl_space *dim,
 	return dim;
 }
 
+/* Are the two spaces the same, including positions and names of parameters?
+ */
 int isl_space_is_equal(__isl_keep isl_space *dim1, __isl_keep isl_space *dim2)
 {
 	if (!dim1 || !dim2)
