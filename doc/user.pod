@@ -616,11 +616,18 @@ or whether it is a parameter space, use these functions:
 	int isl_space_is_set(__isl_keep isl_space *space);
 	int isl_space_is_map(__isl_keep isl_space *space);
 
-Spaces can be compared using the following function:
+Spaces can be compared using the following functions:
 
 	#include <isl/space.h>
 	int isl_space_is_equal(__isl_keep isl_space *space1,
 		__isl_keep isl_space *space2);
+	int isl_space_is_domain(__isl_keep isl_space *space1,
+		__isl_keep isl_space *space2);
+
+C<isl_space_is_domain> checks whether the first argument is equal
+to the domain of the second argument.  This requires in particular that
+the first argument is a set space and that the second argument
+is a map space.
 
 It is often useful to create objects that live in the
 same space as some other object.  This can be accomplished

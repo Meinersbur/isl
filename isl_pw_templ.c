@@ -648,7 +648,8 @@ __isl_give isl_qpolynomial *FN(PW,eval)(__isl_take PW *pw,
 		goto error;
 	ctx = isl_point_get_ctx(pnt);
 	pnt_dim = isl_point_get_space(pnt);
-	isl_assert(ctx, isl_space_is_domain(pnt_dim, pw->dim), goto error);
+	isl_assert(ctx, isl_space_is_domain_internal(pnt_dim, pw->dim),
+		    goto error);
 
 	for (i = 0; i < pw->n; ++i) {
 		found = isl_set_contains_point(pw->p[i].set, pnt);
@@ -1307,7 +1308,7 @@ __isl_give PW *FN(PW,morph_domain)(__isl_take PW *pw,
 		goto error;
 
 	ctx = isl_space_get_ctx(pw->dim);
-	isl_assert(ctx, isl_space_is_domain(morph->dom->dim, pw->dim),
+	isl_assert(ctx, isl_space_is_domain_internal(morph->dom->dim, pw->dim),
 		goto error);
 
 	pw = FN(PW,cow)(pw);
