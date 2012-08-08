@@ -134,6 +134,31 @@ error:
 	return NULL;
 }
 
+/* Remove the "n" elements starting at "first" from "list".
+ */
+__isl_give LIST(EL) *FN(LIST(EL),drop)(__isl_take LIST(EL) *list,
+	unsigned first, unsigned n)
+{
+	int i;
+
+	if (!list)
+		return NULL;
+	if (first + n > list->n || first + n < first)
+		isl_die(list->ctx, isl_error_invalid,
+			"index out of bounds", return FN(LIST(EL),free)(list));
+	if (n == 0)
+		return list;
+	list = FN(LIST(EL),cow)(list);
+	if (!list)
+		return NULL;
+	for (i = 0; i < n; ++i)
+		FN(EL,free)(list->p[first + i]);
+	for (i = first; i + n < list->n; ++i)
+		list->p[i] = list->p[i + n];
+	list->n -= n;
+	return list;
+}
+
 void *FN(LIST(EL),free)(__isl_take LIST(EL) *list)
 {
 	int i;

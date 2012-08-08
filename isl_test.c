@@ -3039,10 +3039,54 @@ int test_align_parameters(isl_ctx *ctx)
 	return 0;
 }
 
+static int test_list(isl_ctx *ctx)
+{
+	isl_id *a, *b, *c, *d, *id;
+	isl_id_list *list;
+	int ok;
+
+	a = isl_id_alloc(ctx, "a", NULL);
+	b = isl_id_alloc(ctx, "b", NULL);
+	c = isl_id_alloc(ctx, "c", NULL);
+	d = isl_id_alloc(ctx, "d", NULL);
+
+	list = isl_id_list_alloc(ctx, 4);
+	list = isl_id_list_add(list, a);
+	list = isl_id_list_add(list, b);
+	list = isl_id_list_add(list, c);
+	list = isl_id_list_add(list, d);
+	list = isl_id_list_drop(list, 1, 1);
+
+	if (isl_id_list_n_id(list) != 3) {
+		isl_id_list_free(list);
+		isl_die(ctx, isl_error_unknown,
+			"unexpected number of elements in list", return -1);
+	}
+
+	id = isl_id_list_get_id(list, 0);
+	ok = id == a;
+	isl_id_free(id);
+	id = isl_id_list_get_id(list, 1);
+	ok = ok && id == c;
+	isl_id_free(id);
+	id = isl_id_list_get_id(list, 2);
+	ok = ok && id == d;
+	isl_id_free(id);
+
+	isl_id_list_free(list);
+
+	if (!ok)
+		isl_die(ctx, isl_error_unknown,
+			"unexpected elements in list", return -1);
+
+	return 0;
+}
+
 struct {
 	const char *name;
 	int (*fn)(isl_ctx *ctx);
 } tests [] = {
+	{ "list", &test_list },
 	{ "align parameters", &test_align_parameters },
 	{ "eliminate", &test_eliminate },
 	{ "div", &test_div },
