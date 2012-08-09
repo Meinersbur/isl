@@ -81,12 +81,50 @@ __isl_give LIST(EL) *FN(LIST(EL),cow)(__isl_take LIST(EL) *list)
 	return FN(LIST(EL),dup)(list);
 }
 
+/* Make sure "list" has room for at least "n" more pieces.
+ *
+ * If there is only one reference to list, we extend it in place.
+ * Otherwise, we create a new LIST(EL) and copy the elements.
+ */
+static __isl_give LIST(EL) *FN(LIST(EL),grow)(__isl_take LIST(EL) *list, int n)
+{
+	isl_ctx *ctx;
+	int i, new_size;
+	LIST(EL) *res;
+
+	if (!list)
+		return NULL;
+	if (list->n + n <= list->size)
+		return list;
+
+	ctx = FN(LIST(EL),get_ctx)(list);
+	new_size = ((list->n + n + 1) * 3) / 2;
+	if (list->ref == 1) {
+		res = isl_realloc(ctx, list, LIST(EL),
+			    sizeof(LIST(EL)) + (new_size - 1) * sizeof(EL *));
+		if (!res)
+			return FN(LIST(EL),free)(list);
+		res->size = new_size;
+		return res;
+	}
+
+	res = FN(LIST(EL),alloc)(ctx, new_size);
+	if (!res)
+		return FN(LIST(EL),free)(list);
+
+	for (i = 0; i < list->n; ++i)
+		res = FN(LIST(EL),add)(res, FN(EL,copy)(list->p[i]));
+
+	FN(LIST(EL),free)(list);
+	return res;
+}
+
 __isl_give LIST(EL) *FN(LIST(EL),add)(__isl_take LIST(EL) *list,
 	__isl_take struct EL *el)
 {
+	list = FN(LIST(EL),grow)(list, 1);
 	if (!list || !el)
 		goto error;
-	isl_assert(list->ctx, list->n < list->size, goto error);
 	list->p[list->n] = el;
 	list->n++;
 	return list;
