@@ -902,6 +902,11 @@ __isl_give isl_aff *isl_aff_scale_down(__isl_take isl_aff *aff, isl_int f)
 	aff = isl_aff_cow(aff);
 	if (!aff)
 		return NULL;
+
+	if (isl_int_is_zero(f))
+		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
+			"cannot scale down by zero", return isl_aff_free(aff));
+
 	aff->v = isl_vec_cow(aff->v);
 	if (!aff->v)
 		return isl_aff_free(aff);
