@@ -6,6 +6,18 @@ m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 AC_SUBST(versioninfo)
 versioninfo=10:0:0
 
+if test "x$prefix" != "xNONE"; then
+	prefix_wd=`cd $prefix && pwd`
+	srcdir_wd=`cd $srcdir && pwd`
+	wd=`pwd`
+	if test "x$prefix_wd" = "x$srcdir_wd"; then
+		AC_MSG_ERROR(Installation in source directory not supported)
+	fi
+	if test "x$prefix_wd" = "x$wd"; then
+		AC_MSG_ERROR(Installation in build directory not supported)
+	fi
+fi
+
 AC_PROG_CC
 AC_PROG_CXX
 
