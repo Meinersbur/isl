@@ -14,6 +14,17 @@
 #include "isl_tab.h"
 #include <isl_point_private.h>
 
+/* Expand the constraint "c" into "v".  The initial "dim" dimensions
+ * are the same, but "v" may have more divs than "c" and the divs of "c"
+ * may appear in different positions in "v".
+ * The number of divs in "c" is given by "n_div" and the mapping
+ * of divs in "c" to divs in "v" is given by "div_map".
+ *
+ * Although it shouldn't happen in practice, it is theoretically
+ * possible that two or more divs in "c" are mapped to the same div in "v".
+ * These divs are then necessarily the same, so we simply add their
+ * coefficients.
+ */
 static void expand_constraint(isl_vec *v, unsigned dim,
 	isl_int *c, int *div_map, unsigned n_div)
 {
@@ -22,8 +33,10 @@ static void expand_constraint(isl_vec *v, unsigned dim,
 	isl_seq_cpy(v->el, c, 1 + dim);
 	isl_seq_clr(v->el + 1 + dim, v->size - (1 + dim));
 
-	for (i = 0; i < n_div; ++i)
-		isl_int_set(v->el[1 + dim + div_map[i]], c[1 + dim + i]);
+	for (i = 0; i < n_div; ++i) {
+		int pos = 1 + dim + div_map[i];
+		isl_int_add(v->el[pos], v->el[pos], c[1 + dim + i]);
+	}
 }
 
 /* Add all constraints of bmap to tab.  The equalities of bmap
