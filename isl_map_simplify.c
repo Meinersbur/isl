@@ -645,6 +645,8 @@ struct isl_basic_map *isl_basic_map_gauss(
 			isl_int_set_si(bmap->div[div][1+1+last_var], 0);
 			isl_int_set(bmap->div[div][0],
 				    bmap->eq[done][1+last_var]);
+			if (progress)
+				*progress = 1;
 			ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
 		}
 	}
