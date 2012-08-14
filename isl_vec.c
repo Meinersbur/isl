@@ -87,6 +87,39 @@ __isl_give isl_vec *isl_vec_zero_extend(__isl_take isl_vec *vec, unsigned size)
 	return vec;
 }
 
+/* Return a vector containing the elements of "vec1" followed by
+ * those of "vec2".
+ */
+__isl_give isl_vec *isl_vec_concat(__isl_take isl_vec *vec1,
+	__isl_take isl_vec *vec2)
+{
+	if (!vec1 || !vec2)
+		goto error;
+
+	if (vec2->size == 0) {
+		isl_vec_free(vec2);
+		return vec1;
+	}
+
+	if (vec1->size == 0) {
+		isl_vec_free(vec1);
+		return vec2;
+	}
+
+	vec1 = isl_vec_extend(vec1, vec1->size + vec2->size);
+	if (!vec1)
+		goto error;
+
+	isl_seq_cpy(vec1->el + vec1->size - vec2->size, vec2->el, vec2->size);
+
+	isl_vec_free(vec2);
+	return vec1;
+error:
+	isl_vec_free(vec1);
+	isl_vec_free(vec2);
+	return NULL;
+}
+
 struct isl_vec *isl_vec_copy(struct isl_vec *vec)
 {
 	if (!vec)

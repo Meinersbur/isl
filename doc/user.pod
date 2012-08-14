@@ -3002,6 +3002,11 @@ The elements can be changed and inspected using the following functions.
 C<isl_vec_get_element> will return a negative value if anything went wrong.
 In that case, the value of C<*v> is undefined.
 
+The following function can be used to concatenate two vectors.
+
+	__isl_give isl_vec *isl_vec_concat(__isl_take isl_vec *vec1,
+		__isl_take isl_vec *vec2);
+
 =head2 Matrices
 
 Matrices can be created, copied and freed using the following functions.
