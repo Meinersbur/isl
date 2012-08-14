@@ -432,6 +432,8 @@ struct isl_map *isl_map_remove_inputs(struct isl_map *map,
 
 __isl_give isl_basic_map *isl_basic_map_equate(__isl_take isl_basic_map *bmap,
 	enum isl_dim_type type1, int pos1, enum isl_dim_type type2, int pos2);
+__isl_give isl_basic_map *isl_basic_map_order_ge(__isl_take isl_basic_map *bmap,
+	enum isl_dim_type type1, int pos1, enum isl_dim_type type2, int pos2);
 __isl_give isl_map *isl_map_equate(__isl_take isl_map *map,
 	enum isl_dim_type type1, int pos1, enum isl_dim_type type2, int pos2);
 __isl_give isl_map *isl_map_oppose(__isl_take isl_map *map,

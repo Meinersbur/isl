@@ -10458,6 +10458,37 @@ error:
 }
 
 /* Add a constraint imposing that the value of the first dimension is
+ * greater than or equal to that of the second.
+ */
+__isl_give isl_basic_map *isl_basic_map_order_ge(__isl_take isl_basic_map *bmap,
+	enum isl_dim_type type1, int pos1, enum isl_dim_type type2, int pos2)
+{
+	isl_constraint *c;
+	isl_local_space *ls;
+
+	if (!bmap)
+		return NULL;
+
+	if (pos1 >= isl_basic_map_dim(bmap, type1))
+		isl_die(bmap->ctx, isl_error_invalid,
+			"index out of bounds", return isl_basic_map_free(bmap));
+	if (pos2 >= isl_basic_map_dim(bmap, type2))
+		isl_die(bmap->ctx, isl_error_invalid,
+			"index out of bounds", return isl_basic_map_free(bmap));
+
+	if (type1 == type2 && pos1 == pos2)
+		return bmap;
+
+	ls = isl_local_space_from_space(isl_basic_map_get_space(bmap));
+	c = isl_inequality_alloc(ls);
+	c = isl_constraint_set_coefficient_si(c, type1, pos1, 1);
+	c = isl_constraint_set_coefficient_si(c, type2, pos2, -1);
+	bmap = isl_basic_map_add_constraint(bmap, c);
+
+	return bmap;
+}
+
+/* Add a constraint imposing that the value of the first dimension is
  * greater than that of the second.
  */
 __isl_give isl_map *isl_map_order_gt(__isl_take isl_map *map,
