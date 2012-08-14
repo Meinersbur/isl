@@ -926,13 +926,13 @@ struct isl_map *isl_map_copy(struct isl_map *map)
 	return map;
 }
 
-void isl_basic_map_free(struct isl_basic_map *bmap)
+void *isl_basic_map_free(__isl_take isl_basic_map *bmap)
 {
 	if (!bmap)
-		return;
+		return NULL;
 
 	if (--bmap->ref > 0)
-		return;
+		return NULL;
 
 	isl_ctx_deref(bmap->ctx);
 	free(bmap->div);
@@ -942,6 +942,8 @@ void isl_basic_map_free(struct isl_basic_map *bmap)
 	isl_vec_free(bmap->sample);
 	isl_space_free(bmap->dim);
 	free(bmap);
+
+	return NULL;
 }
 
 void isl_basic_set_free(struct isl_basic_set *bset)
