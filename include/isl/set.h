@@ -93,7 +93,7 @@ struct isl_basic_set *isl_basic_set_extend(struct isl_basic_set *base,
 struct isl_basic_set *isl_basic_set_extend_constraints(
 		struct isl_basic_set *base, unsigned n_eq, unsigned n_ineq);
 struct isl_basic_set *isl_basic_set_finalize(struct isl_basic_set *bset);
-void isl_basic_set_free(__isl_take isl_basic_set *bset);
+void *isl_basic_set_free(__isl_take isl_basic_set *bset);
 __isl_give isl_basic_set *isl_basic_set_copy(__isl_keep isl_basic_set *bset);
 struct isl_basic_set *isl_basic_set_dup(struct isl_basic_set *bset);
 __isl_give isl_basic_set *isl_basic_set_empty(__isl_take isl_space *dim);

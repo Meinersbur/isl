@@ -946,9 +946,9 @@ void *isl_basic_map_free(__isl_take isl_basic_map *bmap)
 	return NULL;
 }
 
-void isl_basic_set_free(struct isl_basic_set *bset)
+void *isl_basic_set_free(struct isl_basic_set *bset)
 {
-	isl_basic_map_free((struct isl_basic_map *)bset);
+	return isl_basic_map_free((struct isl_basic_map *)bset);
 }
 
 static int room_for_con(struct isl_basic_map *bmap, unsigned n)
