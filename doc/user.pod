@@ -3334,6 +3334,8 @@ When multiplying two affine expressions, at least one of the two needs
 to be a constant.
 
 	#include <isl/aff.h>
+	__isl_give isl_basic_set *isl_aff_zero_basic_set(
+		__isl_take isl_aff *aff);
 	__isl_give isl_basic_set *isl_aff_neg_basic_set(
 		__isl_take isl_aff *aff);
 	__isl_give isl_basic_set *isl_aff_le_basic_set(
