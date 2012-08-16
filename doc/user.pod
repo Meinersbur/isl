@@ -1284,7 +1284,7 @@ functions.
 	void *isl_set_free(__isl_take isl_set *set);
 	void *isl_union_set_free(__isl_take isl_union_set *uset);
 	void *isl_basic_map_free(__isl_take isl_basic_map *bmap);
-	void isl_map_free(__isl_take isl_map *map);
+	void *isl_map_free(__isl_take isl_map *map);
 	void *isl_union_map_free(__isl_take isl_union_map *umap);
 
 Other sets and relations can be constructed by starting

@@ -308,7 +308,7 @@ __isl_give isl_map *isl_map_lex_ge_first(__isl_take isl_space *dim, unsigned n);
 __isl_give isl_map *isl_map_lex_gt(__isl_take isl_space *set_dim);
 __isl_give isl_map *isl_map_lex_ge(__isl_take isl_space *set_dim);
 struct isl_map *isl_map_finalize(struct isl_map *map);
-void isl_map_free(__isl_take isl_map *map);
+void *isl_map_free(__isl_take isl_map *map);
 __isl_give isl_map *isl_map_copy(__isl_keep isl_map *map);
 struct isl_map *isl_map_extend(struct isl_map *base,
 		unsigned nparam, unsigned n_in, unsigned n_out);
