@@ -2981,7 +2981,7 @@ Vectors can be created, copied and freed using the following functions.
 	__isl_give isl_vec *isl_vec_alloc(isl_ctx *ctx,
 		unsigned size);
 	__isl_give isl_vec *isl_vec_copy(__isl_keep isl_vec *vec);
-	void isl_vec_free(__isl_take isl_vec *vec);
+	void *isl_vec_free(__isl_take isl_vec *vec);
 
 Note that the elements of a newly created vector may have arbitrary values.
 The elements can be changed and inspected using the following functions.

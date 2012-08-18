@@ -121,17 +121,19 @@ struct isl_vec *isl_vec_cow(struct isl_vec *vec)
 	return vec2;
 }
 
-void isl_vec_free(struct isl_vec *vec)
+void *isl_vec_free(__isl_take isl_vec *vec)
 {
 	if (!vec)
-		return;
+		return NULL;
 
 	if (--vec->ref > 0)
-		return;
+		return NULL;
 
 	isl_ctx_deref(vec->ctx);
 	isl_blk_free(vec->ctx, vec->block);
 	free(vec);
+
+	return NULL;
 }
 
 int isl_vec_size(__isl_keep isl_vec *vec)
