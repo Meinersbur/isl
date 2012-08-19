@@ -516,3 +516,43 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),zero)(__isl_take isl_space *space)
 
 	return multi;
 }
+
+__isl_give MULTI(BASE) *FN(MULTI(BASE),drop_dims)(
+	__isl_take MULTI(BASE) *multi,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	int i;
+	unsigned dim;
+
+	multi = FN(MULTI(BASE),cow)(multi);
+	if (!multi)
+		return NULL;
+
+	dim = FN(MULTI(BASE),dim)(multi, type);
+	if (first + n > dim || first + n < first)
+		isl_die(FN(MULTI(BASE),get_ctx)(multi), isl_error_invalid,
+			"index out of bounds",
+			return FN(MULTI(BASE),cow)(multi));
+
+	multi->space = isl_space_drop_dims(multi->space, type, first, n);
+	if (!multi->space)
+		return FN(MULTI(BASE),cow)(multi);
+
+	if (type == isl_dim_out) {
+		for (i = 0; i < n; ++i)
+			FN(EL,free)(multi->p[first + i]);
+		for (i = first; i + n < multi->n; ++i)
+			multi->p[i] = multi->p[i + n];
+		multi->n -= n;
+
+		return multi;
+	}
+
+	for (i = 0; i < multi->n; ++i) {
+		multi->p[i] = FN(EL,drop_dims)(multi->p[i], type, first, n);
+		if (!multi->p[i])
+			return FN(MULTI(BASE),cow)(multi);
+	}
+
+	return multi;
+}
