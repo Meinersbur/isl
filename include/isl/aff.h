@@ -309,6 +309,9 @@ __isl_give isl_multi_aff *isl_multi_aff_scale(__isl_take isl_multi_aff *maff,
 __isl_give isl_multi_aff *isl_multi_aff_range_splice(
 	__isl_take isl_multi_aff *ma1, unsigned pos,
 	__isl_take isl_multi_aff *ma2);
+__isl_give isl_multi_aff *isl_multi_aff_splice(
+	__isl_take isl_multi_aff *ma1, unsigned in_pos, unsigned out_pos,
+	__isl_take isl_multi_aff *ma2);
 __isl_give isl_multi_aff *isl_multi_aff_range_product(
 	__isl_take isl_multi_aff *ma1, __isl_take isl_multi_aff *ma2);
 __isl_give isl_multi_aff *isl_multi_aff_flat_range_product(
@@ -523,6 +526,9 @@ __isl_give isl_multi_pw_aff *isl_multi_pw_aff_set_dim_name(
 
 __isl_give isl_multi_pw_aff *isl_multi_pw_aff_range_splice(
 	__isl_take isl_multi_pw_aff *mpa1, unsigned pos,
+	__isl_take isl_multi_pw_aff *mpa2);
+__isl_give isl_multi_pw_aff *isl_multi_pw_aff_splice(
+	__isl_take isl_multi_pw_aff *mpa1, unsigned in_pos, unsigned out_pos,
 	__isl_take isl_multi_pw_aff *mpa2);
 __isl_give isl_multi_pw_aff *isl_multi_pw_aff_flat_range_product(
 	__isl_take isl_multi_pw_aff *mpa1, __isl_take isl_multi_pw_aff *mpa2);
