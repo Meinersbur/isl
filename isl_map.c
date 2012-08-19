@@ -5330,6 +5330,15 @@ __isl_give isl_basic_map *isl_basic_map_lower_bound_si(
 	return basic_map_bound_si(bmap, type, pos, value, 0);
 }
 
+/* Constrain the values of the given dimension to be no greater than "value".
+ */
+__isl_give isl_basic_map *isl_basic_map_upper_bound_si(
+	__isl_take isl_basic_map *bmap,
+	enum isl_dim_type type, unsigned pos, int value)
+{
+	return basic_map_bound_si(bmap, type, pos, value, 1);
+}
+
 struct isl_basic_set *isl_basic_set_lower_bound_dim(struct isl_basic_set *bset,
 	unsigned dim, isl_int value)
 {

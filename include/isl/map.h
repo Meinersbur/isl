@@ -214,6 +214,9 @@ __isl_give isl_basic_map *isl_basic_map_fix_si(__isl_take isl_basic_map *bmap,
 __isl_give isl_basic_map *isl_basic_map_lower_bound_si(
 		__isl_take isl_basic_map *bmap,
 		enum isl_dim_type type, unsigned pos, int value);
+__isl_give isl_basic_map *isl_basic_map_upper_bound_si(
+	__isl_take isl_basic_map *bmap,
+	enum isl_dim_type type, unsigned pos, int value);
 
 struct isl_basic_map *isl_basic_map_sum(
 		struct isl_basic_map *bmap1, struct isl_basic_map *bmap2);
