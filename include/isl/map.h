@@ -379,6 +379,8 @@ __isl_export
 __isl_give isl_map *isl_map_complement(__isl_take isl_map *map);
 struct isl_map *isl_map_fix_input_si(struct isl_map *map,
 		unsigned input, int value);
+__isl_give isl_map *isl_map_fix(__isl_take isl_map *map,
+	enum isl_dim_type type, unsigned pos, isl_int value);
 __isl_give isl_map *isl_map_fix_si(__isl_take isl_map *map,
 		enum isl_dim_type type, unsigned pos, int value);
 __isl_give isl_map *isl_map_lower_bound_si(__isl_take isl_map *map,
