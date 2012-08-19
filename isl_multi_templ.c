@@ -701,3 +701,44 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),flat_range_product)(
 	multi = FN(MULTI(BASE),flatten_range)(multi);
 	return multi;
 }
+
+/* Given two multi expressions, "multi1"
+ *
+ *	[A] -> [B1 B2]
+ *
+ * where B2 starts at position "pos", and "multi2"
+ *
+ *	[A] -> [D]
+ *
+ * return the multi expression
+ *
+ *	[A] -> [B1 D B2]
+ */
+__isl_give MULTI(BASE) *FN(MULTI(BASE),range_splice)(
+	__isl_take MULTI(BASE) *multi1, unsigned pos,
+	__isl_take MULTI(BASE) *multi2)
+{
+	MULTI(BASE) *res;
+	unsigned dim;
+
+	if (!multi1 || !multi2)
+		goto error;
+
+	dim = FN(MULTI(BASE),dim)(multi1, isl_dim_out);
+	if (pos > dim)
+		isl_die(FN(MULTI(BASE),get_ctx)(multi1), isl_error_invalid,
+			"index out of bounds", goto error);
+
+	res = FN(MULTI(BASE),copy)(multi1);
+	res = FN(MULTI(BASE),drop_dims)(res, isl_dim_out, pos, dim - pos);
+	multi1 = FN(MULTI(BASE),drop_dims)(multi1, isl_dim_out, 0, pos);
+
+	res = FN(MULTI(BASE),flat_range_product)(res, multi2);
+	res = FN(MULTI(BASE),flat_range_product)(res, multi1);
+
+	return res;
+error:
+	FN(MULTI(BASE),free)(multi1);
+	FN(MULTI(BASE),free)(multi2);
+	return NULL;
+}
