@@ -31,6 +31,9 @@ void *isl_##EL##_list_free(__isl_take isl_##EL##_list *list);		\
 __isl_give isl_##EL##_list *isl_##EL##_list_add(			\
 	__isl_take isl_##EL##_list *list,				\
 	__isl_take struct isl_##EL *el);				\
+__isl_give isl_##EL##_list *isl_##EL##_list_insert(			\
+	__isl_take isl_##EL##_list *list, unsigned pos,			\
+	__isl_take struct isl_##EL *el);				\
 __isl_give isl_##EL##_list *isl_##EL##_list_drop(			\
 	__isl_take isl_##EL##_list *list, unsigned first, unsigned n);	\
 __isl_give isl_##EL##_list *isl_##EL##_list_concat(			\

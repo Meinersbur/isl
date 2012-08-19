@@ -1,6 +1,7 @@
 /*
  * Copyright 2008-2009 Katholieke Universiteit Leuven
  * Copyright 2011      INRIA Saclay
+ * Copyright 2012      Ecole Normale Superieure
  *
  * Use of this software is governed by the MIT license
  *
@@ -8,6 +9,7 @@
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
  * and INRIA Saclay - Ile-de-France, Parc Club Orsay Universite,
  * ZAC des vignes, 4 rue Jacques Monod, 91893 Orsay, France
+ * and Ecole Normale Superieure, 45 rue d’Ulm, 75230 Paris, France
  */
 
 #define xCAT(A,B) A ## B
@@ -157,6 +159,50 @@ __isl_give LIST(EL) *FN(LIST(EL),drop)(__isl_take LIST(EL) *list,
 		list->p[i] = list->p[i + n];
 	list->n -= n;
 	return list;
+}
+
+/* Insert "el" at position "pos" in "list".
+ *
+ * If there is only one reference to "list" and if it already has space
+ * for one extra element, we insert it directly into "list".
+ * Otherwise, we create a new list consisting of "el" and copied
+ * elements from "list".
+ */
+__isl_give LIST(EL) *FN(LIST(EL),insert)(__isl_take LIST(EL) *list,
+	unsigned pos, __isl_take struct EL *el)
+{
+	int i;
+	isl_ctx *ctx;
+	LIST(EL) *res;
+
+	if (!list || !el)
+		goto error;
+	ctx = FN(LIST(EL),get_ctx)(list);
+	if (pos > list->n)
+		isl_die(ctx, isl_error_invalid,
+			"index out of bounds", goto error);
+
+	if (list->ref == 1 && list->size > list->n) {
+		for (i = list->n - 1; i >= pos; --i)
+			list->p[i + 1] = list->p[i];
+		list->n++;
+		list->p[pos] = el;
+		return list;
+	}
+
+	res = FN(LIST(EL),alloc)(ctx, list->n + 1);
+	for (i = 0; i < pos; ++i)
+		res = FN(LIST(EL),add)(res, FN(EL,copy)(list->p[i]));
+	res = FN(LIST(EL),add)(res, el);
+	for (i = pos; i < list->n; ++i)
+		res = FN(LIST(EL),add)(res, FN(EL,copy)(list->p[i]));
+	FN(LIST(EL),free)(list);
+
+	return res;
+error:
+	FN(EL,free)(el);
+	FN(LIST(EL),free)(list);
+	return NULL;
 }
 
 void *FN(LIST(EL),free)(__isl_take LIST(EL) *list)
