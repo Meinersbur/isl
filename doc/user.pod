@@ -3011,6 +3011,8 @@ The elements can be changed and inspected using the following functions.
 		isl_int v);
 	__isl_give isl_vec *isl_vec_set_si(__isl_take isl_vec *vec,
 		int v);
+	__isl_give isl_vec *isl_vec_fdiv_r(__isl_take isl_vec *vec,
+		isl_int m);
 
 C<isl_vec_get_element> will return a negative value if anything went wrong.
 In that case, the value of C<*v> is undefined.

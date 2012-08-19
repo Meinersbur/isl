@@ -61,6 +61,7 @@ __isl_give isl_vec *isl_vec_set_si(__isl_take isl_vec *vec, int v);
 __isl_give isl_vec *isl_vec_clr(__isl_take isl_vec *vec);
 __isl_give isl_vec *isl_vec_neg(__isl_take isl_vec *vec);
 __isl_give isl_vec *isl_vec_scale(__isl_take isl_vec *vec, isl_int m);
+__isl_give isl_vec *isl_vec_fdiv_r(__isl_take isl_vec *vec, isl_int m);
 __isl_give isl_vec *isl_vec_add(__isl_take isl_vec *vec1,
 	__isl_take isl_vec *vec2);
 __isl_give isl_vec *isl_vec_extend(__isl_take isl_vec *vec, unsigned size);

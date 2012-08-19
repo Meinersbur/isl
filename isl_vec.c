@@ -341,6 +341,19 @@ __isl_give isl_vec *isl_vec_scale(__isl_take isl_vec *vec, isl_int m)
 	return vec;
 }
 
+/* Reduce the elements of "vec" modulo "m".
+ */
+__isl_give isl_vec *isl_vec_fdiv_r(__isl_take isl_vec *vec, isl_int m)
+{
+	vec = isl_vec_cow(vec);
+	if (!vec)
+		return NULL;
+
+	isl_seq_fdiv_r(vec->el, vec->el, m, vec->size);
+
+	return vec;
+}
+
 __isl_give isl_vec *isl_vec_add(__isl_take isl_vec *vec1,
 	__isl_take isl_vec *vec2)
 {
