@@ -487,35 +487,123 @@ error:
 	return NULL;
 }
 
+/* Drop all constraints in bmap that involve any of the dimensions
+ * first to first+n-1.
+ */
+static __isl_give isl_basic_map *isl_basic_map_drop_constraints_involving(
+	__isl_take isl_basic_map *bmap, unsigned first, unsigned n)
+{
+	int i;
+
+	if (n == 0)
+		return bmap;
+
+	bmap = isl_basic_map_cow(bmap);
+
+	if (!bmap)
+		return NULL;
+
+	for (i = bmap->n_eq - 1; i >= 0; --i) {
+		if (isl_seq_first_non_zero(bmap->eq[i] + 1 + first, n) == -1)
+			continue;
+		isl_basic_map_drop_equality(bmap, i);
+	}
+
+	for (i = bmap->n_ineq - 1; i >= 0; --i) {
+		if (isl_seq_first_non_zero(bmap->ineq[i] + 1 + first, n) == -1)
+			continue;
+		isl_basic_map_drop_inequality(bmap, i);
+	}
+
+	return bmap;
+}
+
 /* Drop all constraints in bset that involve any of the dimensions
  * first to first+n-1.
  */
 __isl_give isl_basic_set *isl_basic_set_drop_constraints_involving(
 	__isl_take isl_basic_set *bset, unsigned first, unsigned n)
 {
-	int i;
+	return isl_basic_map_drop_constraints_involving(bset, first, n);
+}
 
+/* Drop all constraints in bmap that involve any of the dimensions
+ * first to first + n - 1 of the given type.
+ */
+__isl_give isl_basic_map *isl_basic_map_drop_constraints_involving_dims(
+	__isl_take isl_basic_map *bmap,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	unsigned dim;
+
+	if (!bmap)
+		return NULL;
 	if (n == 0)
-		return bset;
+		return bmap;
 
-	bset = isl_basic_set_cow(bset);
+	dim = isl_basic_map_dim(bmap, type);
+	if (first + n > dim || first + n < first)
+		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
+			"index out of bounds", return isl_basic_map_free(bmap));
 
-	if (!bset)
+	bmap = isl_basic_map_remove_divs_involving_dims(bmap, type, first, n);
+	first += isl_basic_map_offset(bmap, type) - 1;
+	return isl_basic_map_drop_constraints_involving(bmap, first, n);
+}
+
+/* Drop all constraints in bset that involve any of the dimensions
+ * first to first + n - 1 of the given type.
+ */
+__isl_give isl_basic_set *isl_basic_set_drop_constraints_involving_dims(
+	__isl_take isl_basic_set *bset,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	return isl_basic_map_drop_constraints_involving_dims(bset,
+							    type, first, n);
+}
+
+/* Drop all constraints in map that involve any of the dimensions
+ * first to first + n - 1 of the given type.
+ */
+__isl_give isl_map *isl_map_drop_constraints_involving_dims(
+	__isl_take isl_map *map,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	int i;
+	unsigned dim;
+
+	if (!map)
+		return NULL;
+	if (n == 0)
+		return map;
+
+	dim = isl_map_dim(map, type);
+	if (first + n > dim || first + n < first)
+		isl_die(isl_map_get_ctx(map), isl_error_invalid,
+			"index out of bounds", return isl_map_free(map));
+
+	map = isl_map_cow(map);
+	if (!map)
 		return NULL;
 
-	for (i = bset->n_eq - 1; i >= 0; --i) {
-		if (isl_seq_first_non_zero(bset->eq[i] + 1 + first, n) == -1)
-			continue;
-		isl_basic_set_drop_equality(bset, i);
+	for (i = 0; i < map->n; ++i) {
+		map->p[i] = isl_basic_map_drop_constraints_involving_dims(
+						    map->p[i], type, first, n);
+		if (!map->p[i])
+			return isl_map_free(map);
 	}
 
-	for (i = bset->n_ineq - 1; i >= 0; --i) {
-		if (isl_seq_first_non_zero(bset->ineq[i] + 1 + first, n) == -1)
-			continue;
-		isl_basic_set_drop_inequality(bset, i);
-	}
+	return map;
+}
 
-	return bset;
+/* Drop all constraints in set that involve any of the dimensions
+ * first to first + n - 1 of the given type.
+ */
+__isl_give isl_set *isl_set_drop_constraints_involving_dims(
+	__isl_take isl_set *set,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	return isl_map_drop_constraints_involving_dims(set, type, first, n);
 }
 
 /* Construct an initial underapproximatino of the hull of "bset"
