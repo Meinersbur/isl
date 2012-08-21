@@ -2980,6 +2980,34 @@ int test_eliminate(isl_ctx *ctx)
 	return 0;
 }
 
+/* Check that isl_set_dim_residue_class detects that the values of j
+ * in the set below are all odd and that it does not detect any spurious
+ * strides.
+ */
+static int test_residue_class(isl_ctx *ctx)
+{
+	const char *str;
+	isl_set *set;
+	isl_int m, r;
+	int res;
+
+	str = "{ [i,j] : j = 4 i + 1 and 0 <= i <= 100; "
+		"[i,j] : j = 4 i + 3 and 500 <= i <= 600 }";
+	set = isl_set_read_from_str(ctx, str);
+	isl_int_init(m);
+	isl_int_init(r);
+	res = isl_set_dim_residue_class(set, 1, &m, &r);
+	if (res >= 0 &&
+	    (isl_int_cmp_si(m, 2) != 0 || isl_int_cmp_si(r, 1) != 0))
+		isl_die(ctx, isl_error_unknown, "incorrect residue class",
+			res = -1);
+	isl_int_clear(r);
+	isl_int_clear(m);
+	isl_set_free(set);
+
+	return res;
+}
+
 int test_align_parameters(isl_ctx *ctx)
 {
 	const char *str;
@@ -3017,6 +3045,7 @@ struct {
 } tests [] = {
 	{ "align parameters", &test_align_parameters },
 	{ "eliminate", &test_eliminate },
+	{ "reisdue class", &test_residue_class },
 	{ "div", &test_div },
 	{ "slice", &test_slice },
 	{ "fixed power", &test_fixed_power },
