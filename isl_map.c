@@ -6533,8 +6533,7 @@ static __isl_give isl_map *map_intersect_range(__isl_take isl_map *map,
 		isl_die(set->ctx, isl_error_invalid,
 			"parameters don't match", goto error);
 
-	if (isl_space_dim(set->dim, isl_dim_set) != 0 &&
-	    !isl_map_compatible_range(map, set))
+	if (!isl_map_compatible_range(map, set))
 		isl_die(set->ctx, isl_error_invalid,
 			"incompatible spaces", goto error);
 
