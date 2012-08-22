@@ -2019,6 +2019,16 @@ struct {
 	  "{ [i0, i1] : exists (e0 = [(i0 - i1)/16], e1: "
 		"16e0 <= i0 - i1 and 16e0 >= -15 + i0 - i1 and "
 		"16e1 <= i1 and 16e0 >= -i1 and 16e1 >= -i0 + i1) }", 1 },
+	{ "{ [65] }",
+	  "{ [i] : exists (e0 = [(255i)/256], e1 = [(127i + 65e0)/191], "
+		"e2 = [(3i + 61e1)/65], e3 = [(52i + 12e2)/61], "
+		"e4 = [(2i + e3)/3], e5 = [(4i + e3)/4], e6 = [(8i + e3)/12]: "
+		    "3e4 = 2i + e3 and 4e5 = 4i + e3 and 12e6 = 8i + e3 and "
+		    "i <= 255 and 64e3 >= -45 + 67i and i >= 0 and "
+		    "256e0 <= 255i and 256e0 >= -255 + 255i and "
+		    "191e1 <= 127i + 65e0 and 191e1 >= -190 + 127i + 65e0 and "
+		    "65e2 <= 3i + 61e1 and 65e2 >= -64 + 3i + 61e1 and "
+		    "61e3 <= 52i + 12e2 and 61e3 >= -60 + 52i + 12e2) }", 1 },
 };
 
 static int test_subset(isl_ctx *ctx)

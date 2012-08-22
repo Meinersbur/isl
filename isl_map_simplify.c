@@ -2598,13 +2598,17 @@ static struct isl_basic_map *coalesce_or_drop_more_redundant_divs(
 /* Remove divs that are not strictly needed.
  * In particular, if a div only occurs positively (or negatively)
  * in constraints, then it can simply be dropped.
- * Also, if a div occurs only occurs in two constraints and if moreover
+ * Also, if a div occurs in only two constraints and if moreover
  * those two constraints are opposite to each other, except for the constant
  * term and if the sum of the constant terms is such that for any value
  * of the other values, there is always at least one integer value of the
  * div, i.e., if one plus this sum is greater than or equal to
  * the (absolute value) of the coefficent of the div in the constraints,
  * then we can also simply drop the div.
+ *
+ * We skip divs that appear in equalities or in the definition of other divs.
+ * Divs that appear in the definition of other divs usually occur in at least
+ * 4 constraints, but the constraints may have been simplified.
  *
  * If any divs are left after these simple checks then we move on
  * to more complicated cases in drop_more_redundant_divs.
@@ -2632,6 +2636,11 @@ struct isl_basic_map *isl_basic_map_drop_redundant_divs(
 		int defined;
 
 		defined = !isl_int_is_zero(bmap->div[i][0]);
+		for (j = i; j < bmap->n_div; ++j)
+			if (!isl_int_is_zero(bmap->div[j][1 + 1 + off + i]))
+				break;
+		if (j < bmap->n_div)
+			continue;
 		for (j = 0; j < bmap->n_eq; ++j)
 			if (!isl_int_is_zero(bmap->eq[j][1 + off + i]))
 				break;
