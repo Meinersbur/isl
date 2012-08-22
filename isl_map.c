@@ -6519,23 +6519,19 @@ struct isl_set *isl_set_union(struct isl_set *set1, struct isl_set *set2)
 		isl_map_union((struct isl_map *)set1, (struct isl_map *)set2);
 }
 
-static __isl_give isl_map *map_intersect_range(__isl_take isl_map *map,
-	__isl_take isl_set *set)
+/* Apply "fn" to pairs of elements from "map" and "set" and collect
+ * the results.
+ *
+ * "map" and "set" are assumed to be compatible and non-NULL.
+ */
+static __isl_give isl_map *map_intersect_set(__isl_take isl_map *map,
+	__isl_take isl_set *set,
+	__isl_give isl_basic_map *fn(__isl_take isl_basic_map *bmap,
+		__isl_take isl_basic_set *bset))
 {
 	unsigned flags = 0;
 	struct isl_map *result;
 	int i, j;
-
-	if (!map || !set)
-		goto error;
-
-	if (!isl_space_match(map->dim, isl_dim_param, set->dim, isl_dim_param))
-		isl_die(set->ctx, isl_error_invalid,
-			"parameters don't match", goto error);
-
-	if (!isl_map_compatible_range(map, set))
-		isl_die(set->ctx, isl_error_invalid,
-			"incompatible spaces", goto error);
 
 	if (isl_set_plain_is_universe(set)) {
 		isl_set_free(set);
@@ -6548,20 +6544,31 @@ static __isl_give isl_map *map_intersect_range(__isl_take isl_map *map,
 
 	result = isl_map_alloc_space(isl_space_copy(map->dim),
 					map->n * set->n, flags);
-	if (!result)
-		goto error;
-	for (i = 0; i < map->n; ++i)
+	for (i = 0; result && i < map->n; ++i)
 		for (j = 0; j < set->n; ++j) {
 			result = isl_map_add_basic_map(result,
-			    isl_basic_map_intersect_range(
-				isl_basic_map_copy(map->p[i]),
-				isl_basic_set_copy(set->p[j])));
+					fn(isl_basic_map_copy(map->p[i]),
+					    isl_basic_set_copy(set->p[j])));
 			if (!result)
-				goto error;
+				break;
 		}
+
 	isl_map_free(map);
 	isl_set_free(set);
 	return result;
+}
+
+static __isl_give isl_map *map_intersect_range(__isl_take isl_map *map,
+	__isl_take isl_set *set)
+{
+	if (!map || !set)
+		goto error;
+
+	if (!isl_map_compatible_range(map, set))
+		isl_die(set->ctx, isl_error_invalid,
+			"incompatible spaces", goto error);
+
+	return map_intersect_set(map, set, &isl_basic_map_intersect_range);
 error:
 	isl_map_free(map);
 	isl_set_free(set);
@@ -6574,11 +6581,28 @@ __isl_give isl_map *isl_map_intersect_range(__isl_take isl_map *map,
 	return isl_map_align_params_map_map_and(map, set, &map_intersect_range);
 }
 
-struct isl_map *isl_map_intersect_domain(
-		struct isl_map *map, struct isl_set *set)
+static __isl_give isl_map *map_intersect_domain(__isl_take isl_map *map,
+	__isl_take isl_set *set)
 {
-	return isl_map_reverse(
-		isl_map_intersect_range(isl_map_reverse(map), set));
+	if (!map || !set)
+		goto error;
+
+	if (!isl_map_compatible_domain(map, set))
+		isl_die(set->ctx, isl_error_invalid,
+			"incompatible spaces", goto error);
+
+	return map_intersect_set(map, set, &isl_basic_map_intersect_domain);
+error:
+	isl_map_free(map);
+	isl_set_free(set);
+	return NULL;
+}
+
+__isl_give isl_map *isl_map_intersect_domain(__isl_take isl_map *map,
+	__isl_take isl_set *set)
+{
+	return isl_map_align_params_map_map_and(map, set,
+						&map_intersect_domain);
 }
 
 static __isl_give isl_map *map_apply_domain(__isl_take isl_map *map1,
