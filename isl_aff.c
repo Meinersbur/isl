@@ -2530,6 +2530,29 @@ __isl_give isl_pw_aff *isl_pw_aff_set_rational(__isl_take isl_pw_aff *pwaff)
 	return pwaff;
 }
 
+/* Mark the domains of the elements of "list" as rational.
+ */
+__isl_give isl_pw_aff_list *isl_pw_aff_list_set_rational(
+	__isl_take isl_pw_aff_list *list)
+{
+	int i;
+
+	if (!list)
+		return NULL;
+	if (list->n == 0)
+		return list;
+
+	for (i = 0; i < list->n; ++i) {
+		isl_pw_aff *pa;
+
+		pa = isl_pw_aff_list_get_pw_aff(list, i);
+		pa = isl_pw_aff_set_rational(pa);
+		list = isl_pw_aff_list_set_pw_aff(list, i, pa);
+	}
+
+	return list;
+}
+
 #undef BASE
 #define BASE aff
 
