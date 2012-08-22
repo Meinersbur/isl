@@ -2786,12 +2786,14 @@ static __isl_give isl_map *map_intersect_internal(__isl_take isl_map *map1,
 	if (!map1 || !map2)
 		goto error;
 
-	if (isl_map_plain_is_empty(map1) &&
+	if ((isl_map_plain_is_empty(map1) ||
+	     isl_map_plain_is_universe(map2)) &&
 	    isl_space_is_equal(map1->dim, map2->dim)) {
 		isl_map_free(map2);
 		return map1;
 	}
-	if (isl_map_plain_is_empty(map2) &&
+	if ((isl_map_plain_is_empty(map2) ||
+	     isl_map_plain_is_universe(map1)) &&
 	    isl_space_is_equal(map1->dim, map2->dim)) {
 		isl_map_free(map1);
 		return map2;
