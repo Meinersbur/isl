@@ -4,6 +4,11 @@
 #include <isl/list.h>
 
 #undef EL
+#define EL isl_constraint
+
+#include <isl_list_templ.h>
+
+#undef EL
 #define EL isl_basic_set
 
 #include <isl_list_templ.h>

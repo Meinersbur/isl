@@ -53,6 +53,7 @@ __isl_give isl_printer *isl_printer_print_##EL##_list(			\
 void isl_##EL##_list_dump(__isl_keep isl_##EL##_list *list);
 
 ISL_DECLARE_LIST(id)
+ISL_DECLARE_LIST(constraint)
 ISL_DECLARE_LIST(basic_set)
 ISL_DECLARE_LIST(set)
 ISL_DECLARE_LIST(aff)

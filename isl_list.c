@@ -8,9 +8,15 @@
  */
 
 #include <isl_list_private.h>
+#include <isl/constraint.h>
 #include <isl/set.h>
 #include <isl/aff.h>
 #include <isl/band.h>
+
+#undef BASE
+#define BASE constraint
+
+#include <isl_list_templ.c>
 
 #undef BASE
 #define BASE basic_set
