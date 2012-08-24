@@ -802,16 +802,17 @@ static __isl_give PW *FN(PW,gist_aligned)(__isl_take PW *pw,
 		goto error;
 
 	for (i = pw->n - 1; i >= 0; --i) {
-		pw->p[i].set = isl_set_intersect(pw->p[i].set,
+		isl_set *set_i;
+		int empty;
+
+		set_i = isl_set_intersect(isl_set_copy(pw->p[i].set),
 						 isl_set_copy(context));
-		if (!pw->p[i].set)
-			goto error;
-		pw->p[i].FIELD = fn_el(pw->p[i].FIELD,
-					     isl_set_copy(pw->p[i].set));
+		empty = isl_set_plain_is_empty(set_i);
+		pw->p[i].FIELD = fn_el(pw->p[i].FIELD, set_i);
 		pw->p[i].set = fn_dom(pw->p[i].set, isl_basic_set_copy(hull));
-		if (!pw->p[i].set)
+		if (!pw->p[i].FIELD || !pw->p[i].set)
 			goto error;
-		if (isl_set_plain_is_empty(pw->p[i].set)) {
+		if (empty) {
 			isl_set_free(pw->p[i].set);
 			FN(EL,free)(pw->p[i].FIELD);
 			if (i != pw->n - 1)
