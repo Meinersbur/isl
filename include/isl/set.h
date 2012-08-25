@@ -305,6 +305,8 @@ __isl_give isl_set *isl_set_apply(
 		__isl_take isl_map *map);
 __isl_give isl_set *isl_set_preimage_multi_aff(__isl_take isl_set *set,
 	__isl_take isl_multi_aff *ma);
+__isl_give isl_set *isl_set_preimage_pw_multi_aff(__isl_take isl_set *set,
+	__isl_take isl_pw_multi_aff *pma);
 __isl_give isl_set *isl_set_fix(__isl_take isl_set *set,
 		enum isl_dim_type type, unsigned pos, isl_int value);
 struct isl_set *isl_set_fix_dim_si(struct isl_set *set,

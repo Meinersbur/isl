@@ -11210,3 +11210,67 @@ error:
 	isl_multi_aff_free(ma);
 	return isl_set_free(set);
 }
+
+/* Compute the preimage of "set" under the function represented by "pma".
+ * In other words, plug in "pma" in "set.  The result is a set
+ * that lives in the domain space of "pma".
+ */
+static __isl_give isl_set *set_preimage_pw_multi_aff(__isl_take isl_set *set,
+	__isl_take isl_pw_multi_aff *pma)
+{
+	int i;
+	isl_set *res;
+
+	if (!pma)
+		goto error;
+
+	if (pma->n == 0) {
+		isl_pw_multi_aff_free(pma);
+		res = isl_set_empty(isl_set_get_space(set));
+		isl_set_free(set);
+		return res;
+	}
+
+	res = isl_set_preimage_multi_aff(isl_set_copy(set),
+					isl_multi_aff_copy(pma->p[0].maff));
+	res = isl_set_intersect(res, isl_set_copy(pma->p[0].set));
+
+	for (i = 1; i < pma->n; ++i) {
+		isl_set *res_i;
+
+		res_i = isl_set_preimage_multi_aff(isl_set_copy(set),
+					isl_multi_aff_copy(pma->p[i].maff));
+		res_i = isl_set_intersect(res_i, isl_set_copy(pma->p[i].set));
+		res = isl_set_union(res, res_i);
+	}
+
+	isl_pw_multi_aff_free(pma);
+	isl_set_free(set);
+	return res;
+error:
+	isl_pw_multi_aff_free(pma);
+	isl_set_free(set);
+	return NULL;
+}
+
+__isl_give isl_set *isl_set_preimage_pw_multi_aff(__isl_take isl_set *set,
+	__isl_take isl_pw_multi_aff *pma)
+{
+	if (!set || !pma)
+		goto error;
+
+	if (isl_space_match(set->dim, isl_dim_param, pma->dim, isl_dim_param))
+		return set_preimage_pw_multi_aff(set, pma);
+
+	if (!isl_space_has_named_params(set->dim) ||
+	    !isl_space_has_named_params(pma->dim))
+		isl_die(set->ctx, isl_error_invalid,
+			"unaligned unnamed parameters", goto error);
+	set = isl_set_align_params(set, isl_pw_multi_aff_get_space(pma));
+	pma = isl_pw_multi_aff_align_params(pma, isl_set_get_space(set));
+
+	return set_preimage_pw_multi_aff(set, pma);
+error:
+	isl_pw_multi_aff_free(pma);
+	return isl_set_free(set);
+}
