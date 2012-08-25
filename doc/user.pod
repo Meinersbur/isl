@@ -3606,6 +3606,9 @@ It can be modified using
 	__isl_give isl_multi_aff *isl_multi_aff_set_aff(
 		__isl_take isl_multi_aff *multi, int pos,
 		__isl_take isl_aff *aff);
+	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_set_pw_aff(
+		__isl_take isl_pw_multi_aff *pma, unsigned pos,
+		__isl_take isl_pw_aff *pa);
 	__isl_give isl_multi_aff *isl_multi_aff_set_dim_name(
 		__isl_take isl_multi_aff *maff,
 		enum isl_dim_type type, unsigned pos, const char *s);

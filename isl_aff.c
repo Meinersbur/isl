@@ -3551,3 +3551,87 @@ __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_flat_range_product(
 {
 	return bin_op(upma1, upma2, &flat_range_product_entry);
 }
+
+/* Replace the affine expressions at position "pos" in "pma" by "pa".
+ * The parameters are assumed to have been aligned.
+ *
+ * The implementation essentially performs an isl_pw_*_on_shared_domain,
+ * except that it works on two different isl_pw_* types.
+ */
+static __isl_give isl_pw_multi_aff *pw_multi_aff_set_pw_aff(
+	__isl_take isl_pw_multi_aff *pma, unsigned pos,
+	__isl_take isl_pw_aff *pa)
+{
+	int i, j, n;
+	isl_pw_multi_aff *res = NULL;
+
+	if (!pma || !pa)
+		goto error;
+
+	if (!isl_space_tuple_match(pma->dim, isl_dim_in, pa->dim, isl_dim_in))
+		isl_die(isl_pw_multi_aff_get_ctx(pma), isl_error_invalid,
+			"domains don't match", goto error);
+	if (pos >= isl_pw_multi_aff_dim(pma, isl_dim_out))
+		isl_die(isl_pw_multi_aff_get_ctx(pma), isl_error_invalid,
+			"index out of bounds", goto error);
+
+	n = pma->n * pa->n;
+	res = isl_pw_multi_aff_alloc_size(isl_pw_multi_aff_get_space(pma), n);
+
+	for (i = 0; i < pma->n; ++i) {
+		for (j = 0; j < pa->n; ++j) {
+			isl_set *common;
+			isl_multi_aff *res_ij;
+			int empty;
+
+			common = isl_set_intersect(isl_set_copy(pma->p[i].set),
+						   isl_set_copy(pa->p[j].set));
+			empty = isl_set_plain_is_empty(common);
+			if (empty < 0 || empty) {
+				isl_set_free(common);
+				if (empty < 0)
+					goto error;
+				continue;
+			}
+
+			res_ij = isl_multi_aff_set_aff(
+					isl_multi_aff_copy(pma->p[i].maff), pos,
+					isl_aff_copy(pa->p[j].aff));
+			res_ij = isl_multi_aff_gist(res_ij,
+					isl_set_copy(common));
+
+			res = isl_pw_multi_aff_add_piece(res, common, res_ij);
+		}
+	}
+
+	isl_pw_multi_aff_free(pma);
+	isl_pw_aff_free(pa);
+	return res;
+error:
+	isl_pw_multi_aff_free(pma);
+	isl_pw_aff_free(pa);
+	return isl_pw_multi_aff_free(res);
+}
+
+/* Replace the affine expressions at position "pos" in "pma" by "pa".
+ */
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_set_pw_aff(
+	__isl_take isl_pw_multi_aff *pma, unsigned pos,
+	__isl_take isl_pw_aff *pa)
+{
+	if (!pma || !pa)
+		goto error;
+	if (isl_space_match(pma->dim, isl_dim_param, pa->dim, isl_dim_param))
+		return pw_multi_aff_set_pw_aff(pma, pos, pa);
+	if (!isl_space_has_named_params(pma->dim) ||
+	    !isl_space_has_named_params(pa->dim))
+		isl_die(isl_pw_multi_aff_get_ctx(pma), isl_error_invalid,
+			"unaligned unnamed parameters", goto error);
+	pma = isl_pw_multi_aff_align_params(pma, isl_pw_aff_get_space(pa));
+	pa = isl_pw_aff_align_params(pa, isl_pw_multi_aff_get_space(pma));
+	return pw_multi_aff_set_pw_aff(pma, pos, pa);
+error:
+	isl_pw_multi_aff_free(pma);
+	isl_pw_aff_free(pa);
+	return NULL;
+}
