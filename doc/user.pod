@@ -3155,6 +3155,9 @@ that is equal to a specified dimension on a given domain can be created using
 	__isl_give isl_aff *isl_aff_var_on_domain(
 		__isl_take isl_local_space *ls,
 		enum isl_dim_type type, unsigned pos);
+	__isl_give isl_pw_aff *isl_pw_aff_var_on_domain(
+		__isl_take isl_local_space *ls,
+		enum isl_dim_type type, unsigned pos);
 
 Note that the space in which the resulting objects live is a map space
 with the given space as domain and a one-dimensional range.
