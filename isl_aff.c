@@ -2245,6 +2245,15 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_multi_aff(
 	return isl_pw_multi_aff_alloc(dom, ma);
 }
 
+/* Create a piecewise multi-affine expression in the given space that maps each
+ * input dimension to the corresponding output dimension.
+ */
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_identity(
+	__isl_take isl_space *space)
+{
+	return isl_pw_multi_aff_from_multi_aff(isl_multi_aff_identity(space));
+}
+
 __isl_give isl_multi_aff *isl_multi_aff_add(__isl_take isl_multi_aff *maff1,
 	__isl_take isl_multi_aff *maff2)
 {
