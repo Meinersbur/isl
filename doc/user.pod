@@ -3147,12 +3147,16 @@ the original and the kernel (in that order) is the zero matrix.
 
 =head2 Piecewise Quasi Affine Expressions
 
-The zero quasi affine expression on a given domain can be created using
+The zero quasi affine expression or the quasi affine expression
+that is equal to a specified dimension on a given domain can be created using
 
 	__isl_give isl_aff *isl_aff_zero_on_domain(
 		__isl_take isl_local_space *ls);
+	__isl_give isl_aff *isl_aff_var_on_domain(
+		__isl_take isl_local_space *ls,
+		enum isl_dim_type type, unsigned pos);
 
-Note that the space in which the resulting object lives is a map space
+Note that the space in which the resulting objects live is a map space
 with the given space as domain and a one-dimensional range.
 
 An empty piecewise quasi affine expression (one with no cells)

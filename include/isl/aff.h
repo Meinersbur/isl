@@ -14,6 +14,8 @@ extern "C" {
 #endif
 
 __isl_give isl_aff *isl_aff_zero_on_domain(__isl_take isl_local_space *ls);
+__isl_give isl_aff *isl_aff_var_on_domain(__isl_take isl_local_space *ls,
+	enum isl_dim_type type, unsigned pos);
 
 __isl_give isl_aff *isl_aff_copy(__isl_keep isl_aff *aff);
 void *isl_aff_free(__isl_take isl_aff *aff);

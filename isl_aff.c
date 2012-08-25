@@ -88,6 +88,46 @@ __isl_give isl_aff *isl_aff_zero_on_domain(__isl_take isl_local_space *ls)
 	return aff;
 }
 
+/* Return an affine expression that is equal to the specified dimension
+ * in "ls".
+ */
+__isl_give isl_aff *isl_aff_var_on_domain(__isl_take isl_local_space *ls,
+	enum isl_dim_type type, unsigned pos)
+{
+	isl_space *space;
+	isl_aff *aff;
+
+	if (!ls)
+		return NULL;
+
+	space = isl_local_space_get_space(ls);
+	if (!space)
+		goto error;
+	if (isl_space_is_map(space))
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
+			"expecting (parameter) set space", goto error);
+	if (pos >= isl_local_space_dim(ls, type))
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
+			"position out of bounds", goto error);
+
+	isl_space_free(space);
+	aff = isl_aff_alloc(ls);
+	if (!aff)
+		return NULL;
+
+	pos += isl_local_space_offset(aff->ls, type);
+
+	isl_int_set_si(aff->v->el[0], 1);
+	isl_seq_clr(aff->v->el + 1, aff->v->size - 1);
+	isl_int_set_si(aff->v->el[1 + pos], 1);
+
+	return aff;
+error:
+	isl_local_space_free(ls);
+	isl_space_free(space);
+	return NULL;
+}
+
 __isl_give isl_aff *isl_aff_copy(__isl_keep isl_aff *aff)
 {
 	if (!aff)
