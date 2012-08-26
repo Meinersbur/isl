@@ -9036,7 +9036,7 @@ int isl_set_dim_is_bounded(__isl_keep isl_set *set,
 	return isl_map_dim_is_bounded((isl_map *)set, type, pos);
 }
 
-static int has_bound(__isl_keep isl_map *map,
+static int has_any_bound(__isl_keep isl_map *map,
 	enum isl_dim_type type, unsigned pos,
 	int (*fn)(__isl_keep isl_basic_map *bmap,
 		  enum isl_dim_type type, unsigned pos))
@@ -9058,18 +9058,20 @@ static int has_bound(__isl_keep isl_map *map,
 
 /* Return 1 if the specified dim is involved in any lower bound.
  */
-int isl_set_dim_has_lower_bound(__isl_keep isl_set *set,
+int isl_set_dim_has_any_lower_bound(__isl_keep isl_set *set,
 	enum isl_dim_type type, unsigned pos)
 {
-	return has_bound(set, type, pos, &isl_basic_map_dim_has_lower_bound);
+	return has_any_bound(set, type, pos,
+				&isl_basic_map_dim_has_lower_bound);
 }
 
 /* Return 1 if the specified dim is involved in any upper bound.
  */
-int isl_set_dim_has_upper_bound(__isl_keep isl_set *set,
+int isl_set_dim_has_any_upper_bound(__isl_keep isl_set *set,
 	enum isl_dim_type type, unsigned pos)
 {
-	return has_bound(set, type, pos, &isl_basic_map_dim_has_upper_bound);
+	return has_any_bound(set, type, pos,
+				&isl_basic_map_dim_has_upper_bound);
 }
 
 /* For each of the "n" variables starting at "first", determine
