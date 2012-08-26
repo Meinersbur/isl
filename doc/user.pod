@@ -176,6 +176,8 @@ A call C<isl_pw_aff_cond(a, b, c)> can be replaced by
 C<isl_set_dim_has_upper_bound> have been renamed to
 C<isl_set_dim_has_any_lower_bound> and
 C<isl_set_dim_has_any_upper_bound>.
+The new C<isl_set_dim_has_lower_bound> and
+C<isl_set_dim_has_upper_bound> have slightly different meanings.
 
 =back
 
@@ -1673,6 +1675,16 @@ a given dimension is involved in any lower or upper bound.
 	int isl_set_dim_has_any_lower_bound(__isl_keep isl_set *set,
 		enum isl_dim_type type, unsigned pos);
 	int isl_set_dim_has_any_upper_bound(__isl_keep isl_set *set,
+		enum isl_dim_type type, unsigned pos);
+
+Note that these functions return true even if there is a bound on
+the dimension on only some of the basic sets of C<set>.
+To check if they have a bound for all of the basic sets in C<set>,
+use the following functions instead.
+
+	int isl_set_dim_has_lower_bound(__isl_keep isl_set *set,
+		enum isl_dim_type type, unsigned pos);
+	int isl_set_dim_has_upper_bound(__isl_keep isl_set *set,
 		enum isl_dim_type type, unsigned pos);
 
 The identifiers or names of the domain and range spaces of a set
