@@ -125,7 +125,8 @@ system)
 	fi
 	CLANG_CXXFLAGS=`$llvm_config --cxxflags`
 	CLANG_LDFLAGS=`$llvm_config --ldflags`
-	CLANG_LIBS=`$llvm_config --libs analysis`
+	targets=`$llvm_config --targets-built`
+	CLANG_LIBS=`$llvm_config --libs $targets asmparser support mc`
 	CLANG_PREFIX=`$llvm_config --prefix`
 	AC_DEFINE_UNQUOTED(CLANG_PREFIX, ["$CLANG_PREFIX"],
 				[Clang installation prefix])
