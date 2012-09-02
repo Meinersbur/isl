@@ -269,7 +269,7 @@ __isl_give isl_access_info *isl_access_info_add_source(
 	isl_ctx *ctx;
 
 	if (!acc)
-		return NULL;
+		goto error;
 	ctx = isl_map_get_ctx(acc->sink.map);
 	isl_assert(ctx, acc->n_must + acc->n_may < acc->max_source, goto error);
 	

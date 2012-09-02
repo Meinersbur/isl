@@ -670,20 +670,15 @@ int isl_set_dim_residue_class(struct isl_set *set,
 	isl_int_init(r);
 
 	for (i = 1; i < set->n; ++i) {
-		if (isl_basic_set_dim_residue_class(set->p[0], pos, &m, &r) < 0)
+		if (isl_basic_set_dim_residue_class(set->p[i], pos, &m, &r) < 0)
 			goto error;
+		isl_int_gcd(*modulo, *modulo, m);
+		isl_int_sub(m, *residue, r);
 		isl_int_gcd(*modulo, *modulo, m);
 		if (!isl_int_is_zero(*modulo))
 			isl_int_fdiv_r(*residue, *residue, *modulo);
 		if (isl_int_is_one(*modulo))
 			break;
-		if (!isl_int_is_zero(*modulo))
-			isl_int_fdiv_r(r, r, *modulo);
-		if (isl_int_ne(*residue, r)) {
-			isl_int_set_si(*modulo, 1);
-			isl_int_set_si(*residue, 0);
-			break;
-		}
 	}
 
 	isl_int_clear(m);
