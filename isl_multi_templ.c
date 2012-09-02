@@ -1,7 +1,7 @@
 /*
  * Copyright 2011      Sven Verdoolaege
  *
- * Use of this software is governed by the GNU LGPLv2.1 license
+ * Use of this software is governed by the MIT license
  */
 
 #define xCAT(A,B) A ## B

@@ -2,7 +2,7 @@
  * Copyright 2006-2007 Universiteit Leiden
  * Copyright 2008-2009 Katholieke Universiteit Leuven
  *
- * Use of this software is governed by the GNU LGPLv2.1 license
+ * Use of this software is governed by the MIT license
  *
  * Written by Sven Verdoolaege, Leiden Institute of Advanced Computer Science,
  * Universiteit Leiden, Niels Bohrweg 1, 2333 CA Leiden, The Netherlands

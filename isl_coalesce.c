@@ -3,7 +3,7 @@
  * Copyright 2010      INRIA Saclay
  * Copyright 2012      Ecole Normale Superieure
  *
- * Use of this software is governed by the GNU LGPLv2.1 license
+ * Use of this software is governed by the MIT license
  *
  * Written by Sven Verdoolaege, K.U.Leuven, Departement
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium

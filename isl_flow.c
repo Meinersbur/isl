@@ -4,7 +4,7 @@
  * Copyright 2010      INRIA Saclay
  * Copyright 2012      Universiteit Leiden
  *
- * Use of this software is governed by the GNU LGPLv2.1 license
+ * Use of this software is governed by the MIT license
  *
  * Written by Sven Verdoolaege, Leiden Institute of Advanced Computer Science,
  * Universiteit Leiden, Niels Bohrweg 1, 2333 CA Leiden, The Netherlands
