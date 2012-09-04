@@ -1147,7 +1147,7 @@ static int next_arg(struct isl_arg *arg, int a)
 /* Unless ISL_ARG_SKIP_HELP is set, check if any of the arguments is
  * equal to "--help" and if so call print_help_and_exit.
  */
-void check_help(struct isl_args *args, int argc, char **argv, void *opt,
+static void check_help(struct isl_args *args, int argc, char **argv, void *opt,
 	unsigned flags)
 {
 	int i;
