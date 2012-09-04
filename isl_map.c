@@ -6783,7 +6783,7 @@ error:
 	return NULL;
 }
 
-__isl_give struct isl_basic_map *basic_map_identity(__isl_take isl_space *dims)
+static __isl_give isl_basic_map *basic_map_identity(__isl_take isl_space *dims)
 {
 	struct isl_basic_map *bmap;
 	unsigned nparam;
