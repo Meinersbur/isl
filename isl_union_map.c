@@ -910,6 +910,57 @@ __isl_give isl_union_map *isl_union_map_intersect_domain(
 	return gen_bin_op(umap, uset, &intersect_domain_entry);
 }
 
+/* Remove the elements of data->umap2 from the domain of *entry
+ * and add the result to data->res.
+ */
+static int subtract_domain_entry(void **entry, void *user)
+{
+	struct isl_union_map_gen_bin_data *data = user;
+	uint32_t hash;
+	struct isl_hash_table_entry *entry2;
+	isl_space *dim;
+	isl_map *map = *entry;
+	int empty;
+
+	dim = isl_map_get_space(map);
+	dim = isl_space_domain(dim);
+	hash = isl_space_get_hash(dim);
+	entry2 = isl_hash_table_find(data->umap2->dim->ctx, &data->umap2->table,
+				     hash, &has_dim, dim, 0);
+	isl_space_free(dim);
+
+	map = isl_map_copy(map);
+
+	if (!entry2) {
+		data->res = isl_union_map_add_map(data->res, map);
+		return 0;
+	}
+
+	map = isl_map_subtract_domain(map, isl_set_copy(entry2->data));
+
+	empty = isl_map_is_empty(map);
+	if (empty < 0) {
+		isl_map_free(map);
+		return -1;
+	}
+	if (empty) {
+		isl_map_free(map);
+		return 0;
+	}
+
+	data->res = isl_union_map_add_map(data->res, map);
+
+	return 0;
+}
+
+/* Remove the elements of "uset" from the domain of "umap".
+ */
+__isl_give isl_union_map *isl_union_map_subtract_domain(
+	__isl_take isl_union_map *umap, __isl_take isl_union_set *dom)
+{
+	return gen_bin_op(umap, dom, &subtract_domain_entry);
+}
+
 static int gist_domain_entry(void **entry, void *user)
 {
 	struct isl_union_map_gen_bin_data *data = user;

@@ -2053,6 +2053,44 @@ static int test_subset(isl_ctx *ctx)
 	return 0;
 }
 
+struct {
+	const char *minuend;
+	const char *subtrahend;
+	const char *difference;
+} subtract_domain_tests[] = {
+	{ "{ A[i] -> B[i] }", "{ A[i] }", "{ }" },
+	{ "{ A[i] -> B[i] }", "{ B[i] }", "{ A[i] -> B[i] }" },
+	{ "{ A[i] -> B[i] }", "{ A[i] : i > 0 }", "{ A[i] -> B[i] : i <= 0 }" },
+};
+
+static int test_subtract(isl_ctx *ctx)
+{
+	int i;
+	isl_union_map *umap1, *umap2;
+	isl_union_set *uset;
+	int equal;
+
+	for (i = 0; i < ARRAY_SIZE(subtract_domain_tests); ++i) {
+		umap1 = isl_union_map_read_from_str(ctx,
+				subtract_domain_tests[i].minuend);
+		uset = isl_union_set_read_from_str(ctx,
+				subtract_domain_tests[i].subtrahend);
+		umap2 = isl_union_map_read_from_str(ctx,
+				subtract_domain_tests[i].difference);
+		umap1 = isl_union_map_subtract_domain(umap1, uset);
+		equal = isl_union_map_is_equal(umap1, umap2);
+		isl_union_map_free(umap1);
+		isl_union_map_free(umap2);
+		if (equal < 0)
+			return -1;
+		if (!equal)
+			isl_die(ctx, isl_error_unknown,
+				"incorrect subtract domain result", return -1);
+	}
+
+	return 0;
+}
+
 int test_factorize(isl_ctx *ctx)
 {
 	const char *str;
@@ -3165,6 +3203,7 @@ struct {
 	{ "coalesce", &test_coalesce },
 	{ "factorize", &test_factorize },
 	{ "subset", &test_subset },
+	{ "subtract", &test_subtract },
 };
 
 int main()
