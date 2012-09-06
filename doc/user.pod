@@ -867,6 +867,8 @@ using the following functions.
 	__isl_give isl_space *isl_space_zip(__isl_take isl_space *space);
 	__isl_give isl_space *isl_space_curry(
 		__isl_take isl_space *space);
+	__isl_give isl_space *isl_space_uncurry(
+		__isl_take isl_space *space);
 
 Note that if dimensions are added or removed from a space, then
 the name and the internal structure are lost.
@@ -1865,6 +1867,12 @@ i.e., whether both domain and range are nested relations.
 
 Check whether the domain of the (basic) relation is a wrapped relation.
 
+	int isl_basic_map_can_uncurry(
+		__isl_keep isl_basic_map *bmap);
+	int isl_map_can_uncurry(__isl_keep isl_map *map);
+
+Check whether the range of the (basic) relation is a wrapped relation.
+
 =back
 
 =head3 Binary Properties
@@ -2468,15 +2476,21 @@ interchange the range of the domain with the domain of the range.
 
 	__isl_give isl_basic_map *isl_basic_map_curry(
 		__isl_take isl_basic_map *bmap);
+	__isl_give isl_basic_map *isl_basic_map_uncurry(
+		__isl_take isl_basic_map *bmap);
 	__isl_give isl_map *isl_map_curry(
+		__isl_take isl_map *map);
+	__isl_give isl_map *isl_map_uncurry(
 		__isl_take isl_map *map);
 	__isl_give isl_union_map *isl_union_map_curry(
 		__isl_take isl_union_map *umap);
 
 Given a relation with a nested relation for domain,
+the C<curry> functions
 move the range of the nested relation out of the domain
 and use it as the domain of a nested relation in the range,
 with the original range as range of this nested relation.
+The C<uncurry> functions perform the inverse operation.
 
 =item * Aligning parameters
 

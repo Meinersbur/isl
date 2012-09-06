@@ -10251,6 +10251,78 @@ error:
 	return NULL;
 }
 
+/* Can we apply isl_basic_map_uncurry to "bmap"?
+ * That is, does it have a nested relation in its domain?
+ */
+int isl_basic_map_can_uncurry(__isl_keep isl_basic_map *bmap)
+{
+	if (!bmap)
+		return -1;
+
+	return isl_space_can_uncurry(bmap->dim);
+}
+
+/* Can we apply isl_map_uncurry to "map"?
+ * That is, does it have a nested relation in its domain?
+ */
+int isl_map_can_uncurry(__isl_keep isl_map *map)
+{
+	if (!map)
+		return -1;
+
+	return isl_space_can_uncurry(map->dim);
+}
+
+/* Given a basic map A -> (B -> C), return the corresponding basic map
+ * (A -> B) -> C.
+ */
+__isl_give isl_basic_map *isl_basic_map_uncurry(__isl_take isl_basic_map *bmap)
+{
+
+	if (!bmap)
+		return NULL;
+
+	if (!isl_basic_map_can_uncurry(bmap))
+		isl_die(bmap->ctx, isl_error_invalid,
+			"basic map cannot be uncurried",
+			return isl_basic_map_free(bmap));
+	bmap->dim = isl_space_uncurry(bmap->dim);
+	if (!bmap->dim)
+		return isl_basic_map_free(bmap);
+	return bmap;
+}
+
+/* Given a map A -> (B -> C), return the corresponding map
+ * (A -> B) -> C.
+ */
+__isl_give isl_map *isl_map_uncurry(__isl_take isl_map *map)
+{
+	int i;
+
+	if (!map)
+		return NULL;
+
+	if (!isl_map_can_uncurry(map))
+		isl_die(map->ctx, isl_error_invalid, "map cannot be uncurried",
+			return isl_map_free(map));
+
+	map = isl_map_cow(map);
+	if (!map)
+		return NULL;
+
+	for (i = 0; i < map->n; ++i) {
+		map->p[i] = isl_basic_map_uncurry(map->p[i]);
+		if (!map->p[i])
+			return isl_map_free(map);
+	}
+
+	map->dim = isl_space_uncurry(map->dim);
+	if (!map->dim)
+		return isl_map_free(map);
+
+	return map;
+}
+
 /* Construct a basic map mapping the domain of the affine expression
  * to a one-dimensional range prescribed by the affine expression.
  */

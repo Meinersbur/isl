@@ -125,6 +125,9 @@ __isl_give isl_space *isl_space_zip(__isl_take isl_space *dim);
 int isl_space_can_curry(__isl_keep isl_space *space);
 __isl_give isl_space *isl_space_curry(__isl_take isl_space *space);
 
+int isl_space_can_uncurry(__isl_keep isl_space *space);
+__isl_give isl_space *isl_space_uncurry(__isl_take isl_space *space);
+
 int isl_space_is_domain(__isl_keep isl_space *space1,
 	__isl_keep isl_space *space2);
 int isl_space_is_range(__isl_keep isl_space *space1,

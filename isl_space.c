@@ -1844,6 +1844,43 @@ error:
 	return NULL;
 }
 
+/* Can we apply isl_space_uncurry to "space"?
+ * That is, does it have a nested relation in its range?
+ */
+int isl_space_can_uncurry(__isl_keep isl_space *space)
+{
+	if (!space)
+		return -1;
+
+	return !!space->nested[1];
+}
+
+/* Given a space A -> (B -> C), return the corresponding space
+ * (A -> B) -> C.
+ */
+__isl_give isl_space *isl_space_uncurry(__isl_take isl_space *space)
+{
+	isl_space *dom, *ran;
+	isl_space *ran_dom, *ran_ran;
+
+	if (!space)
+		return NULL;
+
+	if (!isl_space_can_uncurry(space))
+		isl_die(space->ctx, isl_error_invalid,
+			"space cannot be uncurried",
+			return isl_space_free(space));
+
+	dom = isl_space_domain(isl_space_copy(space));
+	ran = isl_space_unwrap(isl_space_range(space));
+	ran_dom = isl_space_domain(isl_space_copy(ran));
+	ran_ran = isl_space_range(ran);
+	dom = isl_space_join(isl_space_from_domain(dom),
+			   isl_space_from_range(ran_dom));
+	return isl_space_join(isl_space_from_domain(isl_space_wrap(dom)),
+			    isl_space_from_range(ran_ran));
+}
+
 int isl_space_has_named_params(__isl_keep isl_space *dim)
 {
 	int i;
