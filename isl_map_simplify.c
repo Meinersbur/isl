@@ -715,6 +715,7 @@ static struct isl_basic_map *remove_duplicate_divs(
 	unsigned total;
 	struct isl_ctx *ctx;
 
+	bmap = isl_basic_map_order_divs(bmap);
 	if (!bmap || bmap->n_div <= 1)
 		return bmap;
 
@@ -764,7 +765,7 @@ static struct isl_basic_map *remove_duplicate_divs(
 		k = elim_for[l] - 1;
 		isl_int_set_si(eq.data[1+total_var+k], -1);
 		isl_int_set_si(eq.data[1+total_var+l], 1);
-		eliminate_div(bmap, eq.data, l, 0);
+		eliminate_div(bmap, eq.data, l, 1);
 		isl_int_set_si(eq.data[1+total_var+k], 0);
 		isl_int_set_si(eq.data[1+total_var+l], 0);
 	}
