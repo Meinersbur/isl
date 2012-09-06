@@ -632,7 +632,7 @@ parameters is discouraged.
 	__isl_give isl_space *isl_space_set_alloc(isl_ctx *ctx,
 		unsigned nparam, unsigned dim);
 	__isl_give isl_space *isl_space_copy(__isl_keep isl_space *space);
-	void isl_space_free(__isl_take isl_space *space);
+	void *isl_space_free(__isl_take isl_space *space);
 	unsigned isl_space_dim(__isl_keep isl_space *space,
 		enum isl_dim_type type);
 

@@ -333,15 +333,15 @@ __isl_give isl_space *isl_space_copy(__isl_keep isl_space *dim)
 	return dim;
 }
 
-void isl_space_free(__isl_take isl_space *dim)
+void *isl_space_free(__isl_take isl_space *dim)
 {
 	int i;
 
 	if (!dim)
-		return;
+		return NULL;
 
 	if (--dim->ref > 0)
-		return;
+		return NULL;
 
 	isl_id_free(dim->tuple_id[0]);
 	isl_id_free(dim->tuple_id[1]);
@@ -355,6 +355,8 @@ void isl_space_free(__isl_take isl_space *dim)
 	isl_ctx_deref(dim->ctx);
 	
 	free(dim);
+
+	return NULL;
 }
 
 /* Check if "s" is a valid dimension or tuple name.
