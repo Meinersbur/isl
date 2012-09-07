@@ -2133,6 +2133,14 @@ __isl_give isl_basic_map *isl_basic_map_remove_unknown_divs(
 	return bmap;
 }
 
+/* Remove all divs that are unknown or defined in terms of unknown divs.
+ */
+__isl_give isl_basic_set *isl_basic_set_remove_unknown_divs(
+	__isl_take isl_basic_set *bset)
+{
+	return isl_basic_map_remove_unknown_divs(bset);
+}
+
 __isl_give isl_map *isl_map_remove_unknown_divs(__isl_take isl_map *map)
 {
 	int i;
