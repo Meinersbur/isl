@@ -955,6 +955,8 @@ __isl_give isl_aff *isl_aff_floor(__isl_take isl_aff *aff)
 	isl_int_set_si(aff->v->el[0], 1);
 	isl_int_set_si(aff->v->el[size], 1);
 
+	aff = isl_aff_normalize(aff);
+
 	return aff;
 }
 
