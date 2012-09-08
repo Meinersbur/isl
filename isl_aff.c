@@ -759,8 +759,32 @@ error:
 	return isl_aff_free(aff);
 }
 
+/* Merge divs "a" and "b" in "aff", which is assumed to be non-NULL.
+ *
+ * We currently do not actually remove div "b", but simply add its
+ * coefficient to that of "a" and then zero it out.
+ */
+static __isl_give isl_aff *merge_divs(__isl_take isl_aff *aff, int a, int b)
+{
+	unsigned off = isl_local_space_offset(aff->ls, isl_dim_div);
+
+	if (isl_int_is_zero(aff->v->el[1 + off + b]))
+		return aff;
+
+	aff->v = isl_vec_cow(aff->v);
+	if (!aff->v)
+		return isl_aff_free(aff);
+
+	isl_int_add(aff->v->el[1 + off + a],
+		    aff->v->el[1 + off + a], aff->v->el[1 + off + b]);
+	isl_int_set_si(aff->v->el[1 + off + b], 0);
+
+	return aff;
+}
+
 /* Sort the divs in the local space of "aff" according to
- * the comparison function "cmp_row" in isl_local_space.c
+ * the comparison function "cmp_row" in isl_local_space.c,
+ * combining the coefficients of identical divs.
  *
  * Reordering divs does not change the semantics of "aff",
  * so there is no need to call isl_aff_cow.
@@ -770,16 +794,22 @@ error:
 static __isl_give isl_aff *sort_divs(__isl_take isl_aff *aff)
 {
 	int i, j, n;
+	unsigned off;
 
 	if (!aff)
 		return NULL;
 
+	off = isl_local_space_offset(aff->ls, isl_dim_div);
 	n = isl_aff_dim(aff, isl_dim_div);
 	for (i = 1; i < n; ++i) {
 		for (j = i - 1; j >= 0; --j) {
-			if (isl_mat_cmp_div(aff->ls->div, j, j + 1) <= 0)
+			int cmp = isl_mat_cmp_div(aff->ls->div, j, j + 1);
+			if (cmp < 0)
 				break;
-			aff = swap_div(aff, j, j + 1);
+			if (cmp == 0)
+				aff = merge_divs(aff, j, j + 1);
+			else
+				aff = swap_div(aff, j, j + 1);
 			if (!aff)
 				return NULL;
 		}
