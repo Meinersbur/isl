@@ -12,6 +12,11 @@
 
 #include <isl/id.h>
 
+/* Represent a name and/or user pointer.
+ *
+ * If "free_user" is set, then it will be called on "user" when
+ * the last instance of the isl_id is freed.
+ */
 struct isl_id {
 	int ref;
 	isl_ctx *ctx;
@@ -19,6 +24,8 @@ struct isl_id {
 	const char *name;
 	void *user;
 	uint32_t hash;
+
+	__isl_give void (*free_user)(void *user);
 };
 
 uint32_t isl_hash_id(uint32_t hash, __isl_keep isl_id *id);

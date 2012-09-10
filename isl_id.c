@@ -44,7 +44,7 @@ static __isl_give isl_id *id_alloc(isl_ctx *ctx, const char *name, void *user)
 
 	if (name && !copy)
 		return NULL;
-	id = isl_alloc_type(ctx, struct isl_id);
+	id = isl_calloc_type(ctx, struct isl_id);
 	if (!id)
 		goto error;
 
@@ -135,6 +135,19 @@ uint32_t isl_hash_id(uint32_t hash, __isl_keep isl_id *id)
 	return hash;
 }
 
+/* Replace the free_user callback by "free_user".
+ */
+__isl_give isl_id *isl_id_set_free_user(__isl_take isl_id *id,
+	__isl_give void (*free_user)(void *user))
+{
+	if (!id)
+		return NULL;
+
+	id->free_user = free_user;
+
+	return id;
+}
+
 /* If the id has a negative refcount, then it is a static isl_id
  * and should not be freed.
  */
@@ -158,6 +171,9 @@ void *isl_id_free(__isl_take isl_id *id)
 			"unable to find id", (void)0);
 	else
 		isl_hash_table_remove(id->ctx, &id->ctx->id_table, entry);
+
+	if (id->free_user)
+		id->free_user(id->user);
 
 	free((char *)id->name);
 	isl_ctx_deref(id->ctx);
