@@ -581,9 +581,15 @@ It is also possible to query the current error mode.
 =head2 Identifiers
 
 Identifiers are used to identify both individual dimensions
-and tuples of dimensions.  They consist of a name and an optional
-pointer.  Identifiers with the same name but different pointer values
+and tuples of dimensions.  They consist of an optional name and an optional
+user pointer.  The name and the user pointer cannot both be C<NULL>, however.
+Identifiers with the same name but different pointer values
 are considered to be distinct.
+Similarly, identifiers with different names but the same pointer value
+are also considered to be distinct.
+Equal identifiers are represented using the same object.
+Pairs of identifiers can therefore be tested for equality using the
+C<==> operator.
 Identifiers can be constructed, copied, freed, inspected and printed
 using the following functions.
 
