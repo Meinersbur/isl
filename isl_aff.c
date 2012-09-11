@@ -3075,7 +3075,7 @@ static __isl_give isl_pw_multi_aff *plain_pw_multi_aff_from_map(
 }
 
 /* Try and create an isl_pw_multi_aff that is equivalent to the given isl_map.
- * This obivously only works if the input "map" is single-valued.
+ * This obviously only works if the input "map" is single-valued.
  * If so, we compute the lexicographic minimum of the image in the form
  * of an isl_pw_multi_aff.  Since the image is unique, it is equal
  * to its lexicographic minimum.
