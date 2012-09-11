@@ -3183,6 +3183,40 @@ static int test_list(isl_ctx *ctx)
 	return 0;
 }
 
+const char *set_conversion_tests[] = {
+	"[N] -> { [i] : N - 1 <= 2 i <= N }",
+};
+
+/* Check that converting from isl_set to isl_pw_multi_aff and back
+ * to isl_set produces the original isl_set.
+ */
+static int test_conversion(isl_ctx *ctx)
+{
+	int i;
+	const char *str;
+	isl_set *set1, *set2;
+	isl_pw_multi_aff *pma;
+	int equal;
+
+	for (i = 0; i < ARRAY_SIZE(set_conversion_tests); ++i) {
+		str = set_conversion_tests[i];
+		set1 = isl_set_read_from_str(ctx, str);
+		pma = isl_pw_multi_aff_from_set(isl_set_copy(set1));
+		set2 = isl_set_from_pw_multi_aff(pma);
+		equal = isl_set_is_equal(set1, set2);
+		isl_set_free(set1);
+		isl_set_free(set2);
+
+		if (equal < 0)
+			return -1;
+		if (!equal)
+			isl_die(ctx, isl_error_unknown, "bad conversion",
+				return -1);
+	}
+
+	return 0;
+}
+
 struct {
 	const char *set;
 	const char *ma;
@@ -3289,6 +3323,7 @@ struct {
 	const char *name;
 	int (*fn)(isl_ctx *ctx);
 } tests [] = {
+	{ "conversion", &test_conversion },
 	{ "list", &test_list },
 	{ "align parameters", &test_align_parameters },
 	{ "preimage", &test_preimage },

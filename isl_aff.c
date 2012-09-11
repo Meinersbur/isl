@@ -3208,29 +3208,13 @@ static __isl_give isl_pw_multi_aff *plain_pw_multi_aff_from_map(
  * of an isl_pw_multi_aff.  Since the image is unique, it is equal
  * to its lexicographic minimum.
  * If the input is not single-valued, we produce an error.
- *
- * As a special case, we first check if all output dimensions are uniquely
- * defined in terms of the parameters and input dimensions over the entire
- * domain.  If so, we extract the desired isl_pw_multi_aff directly
- * from the affine hull of "map" and its domain.
  */
-__isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_map(__isl_take isl_map *map)
+static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_base(
+	__isl_take isl_map *map)
 {
 	int i;
 	int sv;
 	isl_pw_multi_aff *pma;
-	isl_basic_map *hull;
-
-	if (!map)
-		return NULL;
-
-	hull = isl_map_affine_hull(isl_map_copy(map));
-	sv = isl_basic_map_plain_is_single_valued(hull);
-	if (sv >= 0 && sv)
-		return plain_pw_multi_aff_from_map(isl_map_domain(map), hull);
-	isl_basic_map_free(hull);
-	if (sv < 0)
-		goto error;
 
 	sv = isl_map_is_single_valued(map);
 	if (sv < 0)
@@ -3254,6 +3238,230 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_map(__isl_take isl_map *map)
 
 	isl_map_free(map);
 	return pma;
+error:
+	isl_map_free(map);
+	return NULL;
+}
+
+/* Try and create an isl_pw_multi_aff that is equivalent to the given isl_map,
+ * taking into account that the output dimension at position "d"
+ * can be represented as
+ *
+ *	x = floor((e(...) + c1) / m)
+ *
+ * given that constraint "i" is of the form
+ *
+ *	e(...) + c1 - m x >= 0
+ *
+ *
+ * Let "map" be of the form
+ *
+ *	A -> B
+ *
+ * We construct a mapping
+ *
+ *	A -> [A -> x = floor(...)]
+ *
+ * apply that to the map, obtaining
+ *
+ *	[A -> x = floor(...)] -> B
+ *
+ * and equate dimension "d" to x.
+ * We then compute a isl_pw_multi_aff representation of the resulting map
+ * and plug in the mapping above.
+ */
+static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_div(
+	__isl_take isl_map *map, __isl_take isl_basic_map *hull, int d, int i)
+{
+	isl_ctx *ctx;
+	isl_space *space;
+	isl_local_space *ls;
+	isl_multi_aff *ma;
+	isl_aff *aff;
+	isl_vec *v;
+	isl_map *insert;
+	int offset;
+	int n;
+	int n_in;
+	isl_pw_multi_aff *pma;
+	int is_set;
+
+	is_set = isl_map_is_set(map);
+
+	offset = isl_basic_map_offset(hull, isl_dim_out);
+	ctx = isl_map_get_ctx(map);
+	space = isl_space_domain(isl_map_get_space(map));
+	n_in = isl_space_dim(space, isl_dim_set);
+	n = isl_space_dim(space, isl_dim_all);
+
+	v = isl_vec_alloc(ctx, 1 + 1 + n);
+	if (v) {
+		isl_int_neg(v->el[0], hull->ineq[i][offset + d]);
+		isl_seq_cpy(v->el + 1, hull->ineq[i], 1 + n);
+	}
+	isl_basic_map_free(hull);
+
+	ls = isl_local_space_from_space(isl_space_copy(space));
+	aff = isl_aff_alloc_vec(ls, v);
+	aff = isl_aff_floor(aff);
+	if (is_set) {
+		isl_space_free(space);
+		ma = isl_multi_aff_from_aff(aff);
+	} else {
+		ma = isl_multi_aff_identity(isl_space_map_from_set(space));
+		ma = isl_multi_aff_range_product(ma,
+						isl_multi_aff_from_aff(aff));
+	}
+
+	insert = isl_map_from_multi_aff(isl_multi_aff_copy(ma));
+	map = isl_map_apply_domain(map, insert);
+	map = isl_map_equate(map, isl_dim_in, n_in, isl_dim_out, d);
+	pma = isl_pw_multi_aff_from_map(map);
+	pma = isl_pw_multi_aff_pullback_multi_aff(pma, ma);
+
+	return pma;
+}
+
+/* Is constraint "c" of the form
+ *
+ *	e(...) + c1 - m x >= 0
+ *
+ * or
+ *
+ *	-e(...) + c2 + m x >= 0
+ *
+ * where m > 1 and e only depends on parameters and input dimemnsions?
+ *
+ * "offset" is the offset of the output dimensions
+ * "pos" is the position of output dimension x.
+ */
+static int is_potential_div_constraint(isl_int *c, int offset, int d, int total)
+{
+	if (isl_int_is_zero(c[offset + d]))
+		return 0;
+	if (isl_int_is_one(c[offset + d]))
+		return 0;
+	if (isl_int_is_negone(c[offset + d]))
+		return 0;
+	if (isl_seq_first_non_zero(c + offset, d) != -1)
+		return 0;
+	if (isl_seq_first_non_zero(c + offset + d + 1,
+				    total - (offset + d + 1)) != -1)
+		return 0;
+	return 1;
+}
+
+/* Try and create an isl_pw_multi_aff that is equivalent to the given isl_map.
+ *
+ * As a special case, we first check if there is any pair of constraints,
+ * shared by all the basic maps in "map" that force a given dimension
+ * to be equal to the floor of some affine combination of the input dimensions.
+ *
+ * In particular, if we can find two constraints
+ *
+ *	e(...) + c1 - m x >= 0		i.e.,		m x <= e(...) + c1
+ *
+ * and
+ *
+ *	-e(...) + c2 + m x >= 0		i.e.,		m x >= e(...) - c2
+ *
+ * where m > 1 and e only depends on parameters and input dimemnsions,
+ * and such that
+ *
+ *	c1 + c2 < m			i.e.,		-c2 >= c1 - (m - 1)
+ *
+ * then we know that we can take
+ *
+ *	x = floor((e(...) + c1) / m)
+ *
+ * without having to perform any computation.
+ *
+ * Note that we know that
+ *
+ *	c1 + c2 >= 1
+ *
+ * If c1 + c2 were 0, then we would have detected an equality during
+ * simplification.  If c1 + c2 were negative, then we would have detected
+ * a contradiction.
+ */
+static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_check_div(
+	__isl_take isl_map *map)
+{
+	int d, dim;
+	int i, j, n;
+	int offset, total;
+	isl_int sum;
+	isl_basic_map *hull;
+
+	hull = isl_map_unshifted_simple_hull(isl_map_copy(map));
+	if (!hull)
+		goto error;
+
+	isl_int_init(sum);
+	dim = isl_map_dim(map, isl_dim_out);
+	offset = isl_basic_map_offset(hull, isl_dim_out);
+	total = 1 + isl_basic_map_total_dim(hull);
+	n = hull->n_ineq;
+	for (d = 0; d < dim; ++d) {
+		for (i = 0; i < n; ++i) {
+			if (!is_potential_div_constraint(hull->ineq[i],
+							offset, d, total))
+				continue;
+			for (j = i + 1; j < n; ++j) {
+				if (!isl_seq_is_neg(hull->ineq[i] + 1,
+						hull->ineq[j] + 1, total - 1))
+					continue;
+				isl_int_add(sum, hull->ineq[i][0],
+						hull->ineq[j][0]);
+				if (isl_int_abs_lt(sum,
+						    hull->ineq[i][offset + d]))
+					break;
+
+			}
+			if (j >= n)
+				continue;
+			isl_int_clear(sum);
+			if (isl_int_is_pos(hull->ineq[j][offset + d]))
+				j = i;
+			return pw_multi_aff_from_map_div(map, hull, d, j);
+		}
+	}
+	isl_int_clear(sum);
+	isl_basic_map_free(hull);
+	return pw_multi_aff_from_map_base(map);
+error:
+	isl_map_free(map);
+	isl_basic_map_free(hull);
+	return NULL;
+}
+
+/* Try and create an isl_pw_multi_aff that is equivalent to the given isl_map.
+ *
+ * As a special case, we first check if all output dimensions are uniquely
+ * defined in terms of the parameters and input dimensions over the entire
+ * domain.  If so, we extract the desired isl_pw_multi_aff directly
+ * from the affine hull of "map" and its domain.
+ *
+ * Then we continue with pw_multi_aff_from_map_check_div for a further
+ * special case.
+ */
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_map(__isl_take isl_map *map)
+{
+	int sv;
+	isl_basic_map *hull;
+
+	if (!map)
+		return NULL;
+
+	hull = isl_map_affine_hull(isl_map_copy(map));
+	sv = isl_basic_map_plain_is_single_valued(hull);
+	if (sv >= 0 && sv)
+		return plain_pw_multi_aff_from_map(isl_map_domain(map), hull);
+	isl_basic_map_free(hull);
+	if (sv < 0)
+		goto error;
+
+	return pw_multi_aff_from_map_check_div(map);
 error:
 	isl_map_free(map);
 	return NULL;
