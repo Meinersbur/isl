@@ -2170,12 +2170,14 @@ int isl_map_plain_is_disjoint(__isl_keep isl_map *map1,
 	__isl_keep isl_map *map2)
 {
 	int i, j;
+	int intersect;
 
 	if (!map1 || !map2)
 		return -1;
 
-	if (isl_map_plain_is_equal(map1, map2))
-		return 0;
+	intersect = isl_map_plain_is_equal(map1, map2);
+	if (intersect < 0 || intersect)
+		return intersect < 0 ? -1 : 0;
 
 	for (i = 0; i < map1->n; ++i) {
 		for (j = 0; j < map2->n; ++j) {
