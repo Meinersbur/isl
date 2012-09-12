@@ -1903,6 +1903,10 @@ Check whether the range of the (basic) relation is a wrapped relation.
 
 	int isl_set_plain_is_disjoint(__isl_keep isl_set *set1,
 		__isl_keep isl_set *set2);
+	int isl_set_is_disjoint(__isl_keep isl_set *set1,
+		__isl_keep isl_set *set2);
+	int isl_map_is_disjoint(__isl_keep isl_map *map1,
+		__isl_keep isl_map *map2);
 
 =item * Subset
 

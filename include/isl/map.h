@@ -515,6 +515,8 @@ __isl_export
 int isl_map_is_strict_subset(__isl_keep isl_map *map1, __isl_keep isl_map *map2);
 __isl_export
 int isl_map_is_equal(__isl_keep isl_map *map1, __isl_keep isl_map *map2);
+__isl_export
+int isl_map_is_disjoint(__isl_keep isl_map *map1, __isl_keep isl_map *map2);
 int isl_basic_map_is_single_valued(__isl_keep isl_basic_map *bmap);
 int isl_map_plain_is_single_valued(__isl_keep isl_map *map);
 __isl_export
