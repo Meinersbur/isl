@@ -3376,10 +3376,19 @@ Operations include
 	__isl_give isl_pw_aff *isl_pw_aff_div(
 		__isl_take isl_pw_aff *pa1,
 		__isl_take isl_pw_aff *pa2);
+	__isl_give isl_pw_aff *isl_pw_aff_tdiv_q(
+		__isl_take isl_pw_aff *pa1,
+		__isl_take isl_pw_aff *pa2);
+	__isl_give isl_pw_aff *isl_pw_aff_tdiv_r(
+		__isl_take isl_pw_aff *pa1,
+		__isl_take isl_pw_aff *pa2);
 
 When multiplying two affine expressions, at least one of the two needs
 to be a constant.  Similarly, when dividing an affine expression by another,
 the second expression needs to be a constant.
+C<isl_pw_aff_tdiv_q> computes the quotient of an integer division with
+rounding towards zero.  C<isl_pw_aff_tdiv_r> computes the corresponding
+remainder.
 
 	#include <isl/aff.h>
 	__isl_give isl_basic_set *isl_aff_zero_basic_set(

@@ -2300,6 +2300,74 @@ error:
 	return NULL;
 }
 
+/* Compute the quotient of the integer division of "pa1" by "pa2"
+ * with rounding towards zero.
+ * "pa2" is assumed to be a piecewise constant.
+ *
+ * In particular, return
+ *
+ *	pa1 >= 0 ? floor(pa1/pa2) : ceil(pa1/pa2)
+ *
+ */
+__isl_give isl_pw_aff *isl_pw_aff_tdiv_q(__isl_take isl_pw_aff *pa1,
+	__isl_take isl_pw_aff *pa2)
+{
+	int is_cst;
+	isl_set *cond;
+	isl_pw_aff *f, *c;
+
+	is_cst = isl_pw_aff_is_cst(pa2);
+	if (is_cst < 0)
+		goto error;
+	if (!is_cst)
+		isl_die(isl_pw_aff_get_ctx(pa2), isl_error_invalid,
+			"second argument should be a piecewise constant",
+			goto error);
+
+	pa1 = isl_pw_aff_div(pa1, pa2);
+
+	cond = isl_pw_aff_nonneg_set(isl_pw_aff_copy(pa1));
+	f = isl_pw_aff_floor(isl_pw_aff_copy(pa1));
+	c = isl_pw_aff_ceil(pa1);
+	return isl_pw_aff_cond(isl_set_indicator_function(cond), f, c);
+error:
+	isl_pw_aff_free(pa1);
+	isl_pw_aff_free(pa2);
+	return NULL;
+}
+
+/* Compute the remainder of the integer division of "pa1" by "pa2"
+ * with rounding towards zero.
+ * "pa2" is assumed to be a piecewise constant.
+ *
+ * In particular, return
+ *
+ *	pa1 - pa2 * (pa1 >= 0 ? floor(pa1/pa2) : ceil(pa1/pa2))
+ *
+ */
+__isl_give isl_pw_aff *isl_pw_aff_tdiv_r(__isl_take isl_pw_aff *pa1,
+	__isl_take isl_pw_aff *pa2)
+{
+	int is_cst;
+	isl_pw_aff *res;
+
+	is_cst = isl_pw_aff_is_cst(pa2);
+	if (is_cst < 0)
+		goto error;
+	if (!is_cst)
+		isl_die(isl_pw_aff_get_ctx(pa2), isl_error_invalid,
+			"second argument should be a piecewise constant",
+			goto error);
+	res = isl_pw_aff_tdiv_q(isl_pw_aff_copy(pa1), isl_pw_aff_copy(pa2));
+	res = isl_pw_aff_mul(pa2, res);
+	res = isl_pw_aff_sub(pa1, res);
+	return res;
+error:
+	isl_pw_aff_free(pa1);
+	isl_pw_aff_free(pa2);
+	return NULL;
+}
+
 static __isl_give isl_pw_aff *pw_aff_min(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
