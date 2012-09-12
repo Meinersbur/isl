@@ -2170,10 +2170,19 @@ int isl_map_plain_is_disjoint(__isl_keep isl_map *map1,
 	__isl_keep isl_map *map2)
 {
 	int i, j;
+	int disjoint;
 	int intersect;
 
 	if (!map1 || !map2)
 		return -1;
+
+	disjoint = isl_map_plain_is_empty(map1);
+	if (disjoint < 0 || disjoint)
+		return disjoint;
+
+	disjoint = isl_map_plain_is_empty(map2);
+	if (disjoint < 0 || disjoint)
+		return disjoint;
 
 	intersect = isl_map_plain_is_equal(map1, map2);
 	if (intersect < 0 || intersect)
