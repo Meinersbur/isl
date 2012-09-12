@@ -1526,8 +1526,8 @@ __isl_give PW *FN(PW,scale)(__isl_take PW *pw, isl_int v)
 
 static int FN(PW,qsort_set_cmp)(const void *p1, const void *p2)
 {
-	const isl_set *set1 = *(const isl_set **)p1;
-	const isl_set *set2 = *(const isl_set **)p2;
+	isl_set *set1 = *(isl_set * const *)p1;
+	isl_set *set2 = *(isl_set * const *)p2;
 
 	return isl_set_plain_cmp(set1, set2);
 }

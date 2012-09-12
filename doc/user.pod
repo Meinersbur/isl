@@ -1955,6 +1955,17 @@ Check whether the range of the (basic) relation is a wrapped relation.
 Check whether the first argument is a (strict) subset of the
 second argument.
 
+=item * Order
+
+	int isl_set_plain_cmp(__isl_keep isl_set *set1,
+		__isl_keep isl_set *set2);
+
+This function is useful for sorting C<isl_set>s.
+The order depends on the internal representation of the inputs.
+The order is fixed over different calls to the function (assuming
+the internal representation of the inputs has not changed), but may
+change over different versions of C<isl>.
+
 =back
 
 =head2 Unary Operations

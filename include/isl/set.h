@@ -424,6 +424,7 @@ int isl_set_dim_residue_class(struct isl_set *set,
 __isl_export
 __isl_give isl_set *isl_set_coalesce(__isl_take isl_set *set);
 
+int isl_set_plain_cmp(__isl_keep isl_set *set1, __isl_keep isl_set *set2);
 int isl_set_plain_is_equal(__isl_keep isl_set *set1, __isl_keep isl_set *set2);
 int isl_set_fast_is_equal(__isl_keep isl_set *set1, __isl_keep isl_set *set2);
 int isl_set_plain_is_disjoint(__isl_keep isl_set *set1,

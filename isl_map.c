@@ -8179,8 +8179,7 @@ int isl_basic_set_plain_cmp(const __isl_keep isl_basic_set *bset1,
 	return isl_basic_map_plain_cmp(bset1, bset2);
 }
 
-int isl_set_plain_cmp(const __isl_keep isl_set *set1,
-	const __isl_keep isl_set *set2)
+int isl_set_plain_cmp(__isl_keep isl_set *set1, __isl_keep isl_set *set2)
 {
 	int i, cmp;
 
