@@ -2203,6 +2203,46 @@ error:
 	return NULL;
 }
 
+/* Divide "aff1" by "aff2", assuming "aff2" is a piecewise constant.
+ */
+__isl_give isl_aff *isl_aff_div(__isl_take isl_aff *aff1,
+	__isl_take isl_aff *aff2)
+{
+	int is_cst;
+	int neg;
+
+	is_cst = isl_aff_is_cst(aff2);
+	if (is_cst < 0)
+		goto error;
+	if (!is_cst)
+		isl_die(isl_aff_get_ctx(aff2), isl_error_invalid,
+			"second argument should be a constant", goto error);
+
+	if (!aff2)
+		goto error;
+
+	neg = isl_int_is_neg(aff2->v->el[1]);
+	if (neg) {
+		isl_int_neg(aff2->v->el[0], aff2->v->el[0]);
+		isl_int_neg(aff2->v->el[1], aff2->v->el[1]);
+	}
+
+	aff1 = isl_aff_scale(aff1, aff2->v->el[0]);
+	aff1 = isl_aff_scale_down(aff1, aff2->v->el[1]);
+
+	if (neg) {
+		isl_int_neg(aff2->v->el[0], aff2->v->el[0]);
+		isl_int_neg(aff2->v->el[1], aff2->v->el[1]);
+	}
+
+	isl_aff_free(aff2);
+	return aff1;
+error:
+	isl_aff_free(aff1);
+	isl_aff_free(aff2);
+	return NULL;
+}
+
 static __isl_give isl_pw_aff *pw_aff_add(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
@@ -2231,6 +2271,33 @@ __isl_give isl_pw_aff *isl_pw_aff_mul(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
 	return isl_pw_aff_align_params_pw_pw_and(pwaff1, pwaff2, &pw_aff_mul);
+}
+
+static __isl_give isl_pw_aff *pw_aff_div(__isl_take isl_pw_aff *pa1,
+	__isl_take isl_pw_aff *pa2)
+{
+	return isl_pw_aff_on_shared_domain(pa1, pa2, &isl_aff_div);
+}
+
+/* Divide "pa1" by "pa2", assuming "pa2" is a piecewise constant.
+ */
+__isl_give isl_pw_aff *isl_pw_aff_div(__isl_take isl_pw_aff *pa1,
+	__isl_take isl_pw_aff *pa2)
+{
+	int is_cst;
+
+	is_cst = isl_pw_aff_is_cst(pa2);
+	if (is_cst < 0)
+		goto error;
+	if (!is_cst)
+		isl_die(isl_pw_aff_get_ctx(pa2), isl_error_invalid,
+			"second argument should be a piecewise constant",
+			goto error);
+	return isl_pw_aff_align_params_pw_pw_and(pa1, pa2, &pw_aff_div);
+error:
+	isl_pw_aff_free(pa1);
+	isl_pw_aff_free(pa2);
+	return NULL;
 }
 
 static __isl_give isl_pw_aff *pw_aff_min(__isl_take isl_pw_aff *pwaff1,
