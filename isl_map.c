@@ -6446,12 +6446,23 @@ error:
 	return NULL;
 }
 
+/* Return the union of "map1" and "map2", where we assume for now that
+ * "map1" and "map2" are disjoint.  Note that the basic maps inside
+ * "map1" or "map2" may not be disjoint from each other.
+ * Also note that this function is also called from isl_map_union,
+ * which takes care of handling the situation where "map1" and "map2"
+ * may not be disjoint.
+ *
+ * If one of the inputs is empty, we can simply return the other input.
+ * Similarly, if one of the inputs is universal, then it is equal to the union.
+ */
 static __isl_give isl_map *map_union_disjoint(__isl_take isl_map *map1,
 	__isl_take isl_map *map2)
 {
 	int i;
 	unsigned flags = 0;
 	struct isl_map *map = NULL;
+	int is_universe;
 
 	if (!map1 || !map2)
 		goto error;
@@ -6463,6 +6474,22 @@ static __isl_give isl_map *map_union_disjoint(__isl_take isl_map *map1,
 	if (map2->n == 0) {
 		isl_map_free(map2);
 		return map1;
+	}
+
+	is_universe = isl_map_plain_is_universe(map1);
+	if (is_universe < 0)
+		goto error;
+	if (is_universe) {
+		isl_map_free(map2);
+		return map1;
+	}
+
+	is_universe = isl_map_plain_is_universe(map2);
+	if (is_universe < 0)
+		goto error;
+	if (is_universe) {
+		isl_map_free(map1);
+		return map2;
 	}
 
 	isl_assert(map1->ctx, isl_space_is_equal(map1->dim, map2->dim), goto error);
