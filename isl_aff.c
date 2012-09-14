@@ -3435,6 +3435,176 @@ error:
 	return NULL;
 }
 
+/* Given an affine expression
+ *
+ *	[A -> B] -> f(A,B)
+ *
+ * construct an isl_multi_aff
+ *
+ *	[A -> B] -> B'
+ *
+ * such that dimension "d" in B' is set to "aff" and the remaining
+ * dimensions are set equal to the corresponding dimensions in B.
+ * "n_in" is the dimension of the space A.
+ * "n_out" is the dimension of the space B.
+ *
+ * If "is_set" is set, then the affine expression is of the form
+ *
+ *	[B] -> f(B)
+ *
+ * and we construct an isl_multi_aff
+ *
+ *	B -> B'
+ */
+static __isl_give isl_multi_aff *range_map(__isl_take isl_aff *aff, int d,
+	unsigned n_in, unsigned n_out, int is_set)
+{
+	int i;
+	isl_multi_aff *ma;
+	isl_space *space, *space2;
+	isl_local_space *ls;
+
+	space = isl_aff_get_domain_space(aff);
+	ls = isl_local_space_from_space(isl_space_copy(space));
+	space2 = isl_space_copy(space);
+	if (!is_set)
+		space2 = isl_space_range(isl_space_unwrap(space2));
+	space = isl_space_map_from_domain_and_range(space, space2);
+	ma = isl_multi_aff_alloc(space);
+	ma = isl_multi_aff_set_aff(ma, d, aff);
+
+	for (i = 0; i < n_out; ++i) {
+		if (i == d)
+			continue;
+		aff = isl_aff_var_on_domain(isl_local_space_copy(ls),
+						isl_dim_set, n_in + i);
+		ma = isl_multi_aff_set_aff(ma, i, aff);
+	}
+
+	isl_local_space_free(ls);
+
+	return ma;
+}
+
+/* Try and create an isl_pw_multi_aff that is equivalent to the given isl_map,
+ * taking into account that the dimension at position "d" can be written as
+ *
+ *	x = m a + f(..)						(1)
+ *
+ * where m is equal to "gcd".
+ * "i" is the index of the equality in "hull" that defines f(..).
+ * In particular, the equality is of the form
+ *
+ *	f(..) - x + m g(existentials) = 0
+ *
+ * or
+ *
+ *	-f(..) + x + m g(existentials) = 0
+ *
+ * We basically plug (1) into "map", resulting in a map with "a"
+ * in the range instead of "x".  The corresponding isl_pw_multi_aff
+ * defining "a" is then plugged back into (1) to obtain a definition fro "x".
+ *
+ * Specifically, given the input map
+ *
+ *	A -> B
+ *
+ * We first wrap it into a set
+ *
+ *	[A -> B]
+ *
+ * and define (1) on top of the corresponding space, resulting in "aff".
+ * We use this to create an isl_multi_aff that maps the output position "d"
+ * from "a" to "x", leaving all other (intput and output) dimensions unchanged.
+ * We plug this into the wrapped map, unwrap the result and compute the
+ * corresponding isl_pw_multi_aff.
+ * The result is an expression
+ *
+ *	A -> T(A)
+ *
+ * We adjust that to
+ *
+ *	A -> [A -> T(A)]
+ *
+ * so that we can plug that into "aff", after extending the latter to
+ * a mapping
+ *
+ *	[A -> B] -> B'
+ *
+ *
+ * If "map" is actually a set, then there is no "A" space, meaning
+ * that we do not need to perform any wrapping, and that the result
+ * of the recursive call is of the form
+ *
+ *	[T]
+ *
+ * which is plugged into a mapping of the form
+ *
+ *	B -> B'
+ */
+static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_stride(
+	__isl_take isl_map *map, __isl_take isl_basic_map *hull, int d, int i,
+	isl_int gcd)
+{
+	isl_set *set;
+	isl_space *space;
+	isl_local_space *ls;
+	isl_aff *aff;
+	isl_multi_aff *ma;
+	isl_pw_multi_aff *pma, *id;
+	unsigned n_in;
+	unsigned o_out;
+	unsigned n_out;
+	int is_set;
+
+	is_set = isl_map_is_set(map);
+
+	n_in = isl_basic_map_dim(hull, isl_dim_in);
+	n_out = isl_basic_map_dim(hull, isl_dim_out);
+	o_out = isl_basic_map_offset(hull, isl_dim_out);
+
+	if (is_set)
+		set = map;
+	else
+		set = isl_map_wrap(map);
+	space = isl_space_map_from_set(isl_set_get_space(set));
+	ma = isl_multi_aff_identity(space);
+	ls = isl_local_space_from_space(isl_set_get_space(set));
+	aff = isl_aff_alloc(ls);
+	if (aff) {
+		isl_int_set_si(aff->v->el[0], 1);
+		if (isl_int_is_one(hull->eq[i][o_out + d]))
+			isl_seq_neg(aff->v->el + 1, hull->eq[i],
+				    aff->v->size - 1);
+		else
+			isl_seq_cpy(aff->v->el + 1, hull->eq[i],
+				    aff->v->size - 1);
+		isl_int_set(aff->v->el[1 + o_out + d], gcd);
+	}
+	ma = isl_multi_aff_set_aff(ma, n_in + d, isl_aff_copy(aff));
+	set = isl_set_preimage_multi_aff(set, ma);
+
+	ma = range_map(aff, d, n_in, n_out, is_set);
+
+	if (is_set)
+		map = set;
+	else
+		map = isl_set_unwrap(set);
+	pma = isl_pw_multi_aff_from_map(set);
+
+	if (!is_set) {
+		space = isl_pw_multi_aff_get_domain_space(pma);
+		space = isl_space_map_from_set(space);
+		id = isl_pw_multi_aff_identity(space);
+		pma = isl_pw_multi_aff_range_product(id, pma);
+	}
+	id = isl_pw_multi_aff_from_multi_aff(ma);
+	pma = isl_pw_multi_aff_pullback_pw_multi_aff(id, pma);
+
+	isl_basic_map_free(hull);
+	return pma;
+}
+
 /* Try and create an isl_pw_multi_aff that is equivalent to the given isl_map.
  *
  * As a special case, we first check if all output dimensions are uniquely
@@ -3442,13 +3612,28 @@ error:
  * domain.  If so, we extract the desired isl_pw_multi_aff directly
  * from the affine hull of "map" and its domain.
  *
- * Then we continue with pw_multi_aff_from_map_check_div for a further
+ * Otherwise, we check if any of the output dimensions is "strided".
+ * That is, we check if can be written as
+ *
+ *	x = m a + f(..)
+ *
+ * with m greater than 1, a some combination of existentiall quantified
+ * variables and f and expression in the parameters and input dimensions.
+ * If so, we remove the stride in pw_multi_aff_from_map_stride.
+ *
+ * Otherwise, we continue with pw_multi_aff_from_map_check_div for a further
  * special case.
  */
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_map(__isl_take isl_map *map)
 {
+	int i, j;
 	int sv;
 	isl_basic_map *hull;
+	unsigned n_out;
+	unsigned o_out;
+	unsigned n_div;
+	unsigned o_div;
+	isl_int gcd;
 
 	if (!map)
 		return NULL;
@@ -3457,10 +3642,52 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_map(__isl_take isl_map *map)
 	sv = isl_basic_map_plain_is_single_valued(hull);
 	if (sv >= 0 && sv)
 		return plain_pw_multi_aff_from_map(isl_map_domain(map), hull);
-	isl_basic_map_free(hull);
 	if (sv < 0)
+		hull = isl_basic_map_free(hull);
+	if (!hull)
 		goto error;
 
+	n_div = isl_basic_map_dim(hull, isl_dim_div);
+	o_div = isl_basic_map_offset(hull, isl_dim_div);
+
+	if (n_div == 0) {
+		isl_basic_map_free(hull);
+		return pw_multi_aff_from_map_check_div(map);
+	}
+
+	isl_int_init(gcd);
+
+	n_out = isl_basic_map_dim(hull, isl_dim_out);
+	o_out = isl_basic_map_offset(hull, isl_dim_out);
+
+	for (i = 0; i < n_out; ++i) {
+		for (j = 0; j < hull->n_eq; ++j) {
+			isl_int *eq = hull->eq[j];
+			isl_pw_multi_aff *res;
+
+			if (!isl_int_is_one(eq[o_out + i]) &&
+			    !isl_int_is_negone(eq[o_out + i]))
+				continue;
+			if (isl_seq_first_non_zero(eq + o_out, i) != -1)
+				continue;
+			if (isl_seq_first_non_zero(eq + o_out + i + 1,
+						    n_out - (i + 1)) != -1)
+				continue;
+			isl_seq_gcd(eq + o_div, n_div, &gcd);
+			if (isl_int_is_zero(gcd))
+				continue;
+			if (isl_int_is_one(gcd))
+				continue;
+
+			res = pw_multi_aff_from_map_stride(map, hull,
+								i, j, gcd);
+			isl_int_clear(gcd);
+			return res;
+		}
+	}
+
+	isl_int_clear(gcd);
+	isl_basic_map_free(hull);
 	return pw_multi_aff_from_map_check_div(map);
 error:
 	isl_map_free(map);
