@@ -3486,9 +3486,13 @@ remainder.
 	__isl_give isl_pw_aff *isl_pw_aff_pullback_multi_aff(
 		__isl_take isl_pw_aff *pa,
 		__isl_take isl_multi_aff *ma);
+	__isl_give isl_pw_aff *isl_pw_aff_pullback_pw_multi_aff(
+		__isl_take isl_pw_aff *pa,
+		__isl_take isl_pw_multi_aff *pma);
 
 These functions precompose the input expression by the given
-C<isl_multi_aff>.  In other words, the C<isl_multi_aff> is plugged
+C<isl_multi_aff> or C<isl_pw_multi_aff>.  In other words,
+the C<isl_multi_aff> or C<isl_pw_multi_aff> is plugged
 into the (piecewise) affine expression.
 Objects of type C<isl_multi_aff> are described in
 L</"Piecewise Multiple Quasi Affine Expressions">.
@@ -3943,6 +3947,10 @@ the lifting applied.
 	isl_pw_multi_aff_pullback_multi_aff(
 		__isl_take isl_pw_multi_aff *pma,
 		__isl_take isl_multi_aff *ma);
+	__isl_give isl_pw_multi_aff *
+	isl_pw_multi_aff_pullback_pw_multi_aff(
+		__isl_take isl_pw_multi_aff *pma1,
+		__isl_take isl_pw_multi_aff *pma2);
 
 The function C<isl_multi_aff_pullback_multi_aff> precomposes C<ma1> by C<ma2>.
 In other words, C<ma2> is plugged
