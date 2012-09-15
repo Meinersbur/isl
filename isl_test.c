@@ -200,6 +200,10 @@ int test_parse(struct isl_ctx *ctx)
 				      "{ [i] : i <= 10 }") < 0)
 		return -1;
 
+	if (test_parse_map_equal(ctx, "{Sym=[n] [i] : i <= n }",
+				      "[n] -> { [i] : i <= n }") < 0)
+		return -1;
+
 	return 0;
 }
 
