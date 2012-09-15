@@ -2228,10 +2228,10 @@ static int plain_injective_on_range(__isl_take isl_union_map *umap,
 
 	ctx = isl_union_map_get_ctx(umap);
 
+	n = isl_union_map_n_map(umap);
 	if (!umap)
 		goto error;
 
-	n = isl_union_map_n_map(umap);
 	if (n <= 1) {
 		isl_union_map_free(umap);
 		return 1;
