@@ -2768,7 +2768,7 @@ static __isl_give isl_union_map *union_components(
 	int i;
 	int n;
 	isl_ctx *ctx;
-	isl_basic_map **list;
+	isl_basic_map **list = NULL;
 	isl_basic_map **next;
 	isl_union_map *path = NULL;
 	struct isl_tc_follows_data data;
