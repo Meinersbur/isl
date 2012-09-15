@@ -483,7 +483,7 @@ static __isl_give isl_mat *initial_facet_constraint(__isl_keep isl_set *set)
 	int i;
 	unsigned dim = isl_set_n_dim(set);
 	int is_bound;
-	isl_mat *bounds;
+	isl_mat *bounds = NULL;
 
 	isl_assert(set->ctx, set->n > 0, goto error);
 	bounds = isl_mat_alloc(set->ctx, 1, 1 + dim);
