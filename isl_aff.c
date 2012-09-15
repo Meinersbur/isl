@@ -3679,6 +3679,30 @@ error:
 }
 
 /* Given two aligned isl_pw_multi_affs A -> B and C -> D,
+ * construct an isl_pw_multi_aff (A * C) -> [B -> D].
+ */
+static __isl_give isl_pw_multi_aff *pw_multi_aff_range_product(
+	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2)
+{
+	isl_space *space;
+
+	space = isl_space_range_product(isl_pw_multi_aff_get_space(pma1),
+					isl_pw_multi_aff_get_space(pma2));
+	return isl_pw_multi_aff_on_shared_domain_in(pma1, pma2, space,
+					    &isl_multi_aff_range_product);
+}
+
+/* Given two isl_pw_multi_affs A -> B and C -> D,
+ * construct an isl_pw_multi_aff (A * C) -> [B -> D].
+ */
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_range_product(
+	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2)
+{
+	return isl_pw_multi_aff_align_params_pw_pw_and(pma1, pma2,
+					    &pw_multi_aff_range_product);
+}
+
+/* Given two aligned isl_pw_multi_affs A -> B and C -> D,
  * construct an isl_pw_multi_aff (A * C) -> (B, D).
  */
 static __isl_give isl_pw_multi_aff *pw_multi_aff_flat_range_product(
