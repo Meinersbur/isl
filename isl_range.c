@@ -440,7 +440,7 @@ static int qpolynomial_bound_on_domain_range(__isl_take isl_basic_set *bset,
 {
 	unsigned nparam = isl_basic_set_dim(bset, isl_dim_param);
 	unsigned nvar = isl_basic_set_dim(bset, isl_dim_set);
-	isl_set *set;
+	isl_set *set = NULL;
 
 	if (!bset)
 		goto error;
