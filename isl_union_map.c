@@ -961,6 +961,57 @@ __isl_give isl_union_map *isl_union_map_subtract_domain(
 	return gen_bin_op(umap, dom, &subtract_domain_entry);
 }
 
+/* Remove the elements of data->umap2 from the range of *entry
+ * and add the result to data->res.
+ */
+static int subtract_range_entry(void **entry, void *user)
+{
+	struct isl_union_map_gen_bin_data *data = user;
+	uint32_t hash;
+	struct isl_hash_table_entry *entry2;
+	isl_space *space;
+	isl_map *map = *entry;
+	int empty;
+
+	space = isl_map_get_space(map);
+	space = isl_space_range(space);
+	hash = isl_space_get_hash(space);
+	entry2 = isl_hash_table_find(data->umap2->dim->ctx, &data->umap2->table,
+				     hash, &has_dim, space, 0);
+	isl_space_free(space);
+
+	map = isl_map_copy(map);
+
+	if (!entry2) {
+		data->res = isl_union_map_add_map(data->res, map);
+		return 0;
+	}
+
+	map = isl_map_subtract_range(map, isl_set_copy(entry2->data));
+
+	empty = isl_map_is_empty(map);
+	if (empty < 0) {
+		isl_map_free(map);
+		return -1;
+	}
+	if (empty) {
+		isl_map_free(map);
+		return 0;
+	}
+
+	data->res = isl_union_map_add_map(data->res, map);
+
+	return 0;
+}
+
+/* Remove the elements of "uset" from the range of "umap".
+ */
+__isl_give isl_union_map *isl_union_map_subtract_range(
+	__isl_take isl_union_map *umap, __isl_take isl_union_set *dom)
+{
+	return gen_bin_op(umap, dom, &subtract_range_entry);
+}
+
 static int gist_domain_entry(void **entry, void *user)
 {
 	struct isl_union_map_gen_bin_data *data = user;
