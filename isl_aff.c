@@ -3092,6 +3092,9 @@ __isl_give isl_map *isl_map_from_pw_multi_aff(__isl_take isl_pw_multi_aff *pma)
 
 __isl_give isl_set *isl_set_from_pw_multi_aff(__isl_take isl_pw_multi_aff *pma)
 {
+	if (!pma)
+		return NULL;
+
 	if (!isl_space_is_set(pma->dim))
 		isl_die(isl_pw_multi_aff_get_ctx(pma), isl_error_invalid,
 			"isl_pw_multi_aff cannot be converted into an isl_set",
