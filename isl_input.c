@@ -2044,9 +2044,11 @@ __isl_give isl_union_map *isl_stream_read_union_map(struct isl_stream *s)
 		obj.type = isl_obj_union_set;
 		obj.v = isl_union_set_from_set(obj.v);
 	}
-	if (obj.v)
-		isl_assert(s->ctx, obj.type == isl_obj_union_map ||
-				   obj.type == isl_obj_union_set, goto error);
+	if (obj.v && obj.type == isl_obj_union_set &&
+	    isl_union_set_is_empty(obj.v))
+		obj.type = isl_obj_union_map;
+	if (obj.v && obj.type != isl_obj_union_map)
+		isl_die(s->ctx, isl_error_invalid, "invalid input", goto error);
 
 	return obj.v;
 error:
