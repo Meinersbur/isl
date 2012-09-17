@@ -190,6 +190,36 @@ int prefix ## _set_ ## field(isl_ctx *ctx, int val)			\
 	return 0;							\
 }
 
+#define ISL_CTX_GET_STR_DEF(prefix,st,args,field)			\
+const char *prefix ## _get_ ## field(isl_ctx *ctx)			\
+{									\
+	st *options;							\
+	options = isl_ctx_peek_ ## prefix(ctx);				\
+	if (!options)							\
+		isl_die(ctx, isl_error_invalid,				\
+			"isl_ctx does not reference " #prefix,		\
+			return NULL);					\
+	return options->field;						\
+}
+
+#define ISL_CTX_SET_STR_DEF(prefix,st,args,field)			\
+int prefix ## _set_ ## field(isl_ctx *ctx, const char *val)		\
+{									\
+	st *options;							\
+	options = isl_ctx_peek_ ## prefix(ctx);				\
+	if (!options)							\
+		isl_die(ctx, isl_error_invalid,				\
+			"isl_ctx does not reference " #prefix,		\
+			return -1);					\
+	if (!val)							\
+		return -1;						\
+	free(options->field);						\
+	options->field = strdup(val);					\
+	if (!options->field)						\
+		return -1;						\
+	return 0;							\
+}
+
 #define ISL_CTX_GET_BOOL_DEF(prefix,st,args,field)			\
 	ISL_CTX_GET_INT_DEF(prefix,st,args,field)
 
