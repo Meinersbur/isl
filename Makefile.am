@@ -11,8 +11,8 @@ lib_LTLIBRARIES = libisl.la
 noinst_PROGRAMS = isl_test isl_polyhedron_sample isl_pip \
 	isl_polyhedron_minimize isl_polytope_scan \
 	isl_polyhedron_detect_equalities isl_cat \
-	isl_closure isl_bound
-TESTS = isl_test pip_test.sh bound_test.sh
+	isl_closure isl_bound isl_codegen
+TESTS = isl_test codegen_test.sh pip_test.sh bound_test.sh
 
 if HAVE_PIPLIB
 ISL_PIPLIB = \
@@ -42,6 +42,15 @@ libisl_la_SOURCES = \
 	isl_aff_private.h \
 	isl_affine_hull.c \
 	isl_arg.c \
+	isl_ast.c \
+	isl_ast_private.h \
+	isl_ast_build.c \
+	isl_ast_build_private.h \
+	isl_ast_build_expr.c \
+	isl_ast_build_expr.h \
+	isl_ast_codegen.c \
+	isl_ast_graft.c \
+	isl_ast_graft_private.h \
 	isl_band.c \
 	isl_band_private.h \
 	isl_basis_reduction.h \
@@ -160,6 +169,12 @@ isl_pip_LDADD = libisl.la @GMP_LIBS@
 isl_pip_SOURCES = \
 	pip.c
 
+isl_codegen_CPPFLAGS = $(INCLUDES) @GMP_CPPFLAGS@
+isl_codegen_LDFLAGS = @GMP_LDFLAGS@
+isl_codegen_LDADD = libisl.la @GMP_LIBS@
+isl_codegen_SOURCES = \
+	codegen.c
+
 isl_bound_CPPFLAGS = $(INCLUDES) @GMP_CPPFLAGS@
 isl_bound_LDFLAGS = @GMP_LDFLAGS@
 isl_bound_LDADD = libisl.la @GMP_LIBS@
@@ -199,6 +214,8 @@ pkginclude_HEADERS = \
 	include/isl/aff.h \
 	include/isl/aff_type.h \
 	include/isl/arg.h \
+	include/isl/ast.h \
+	include/isl/ast_build.h \
 	include/isl/band.h \
 	include/isl/blk.h \
 	include/isl/constraint.h \

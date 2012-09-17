@@ -197,6 +197,7 @@ if test $with_clang = system; then
 	AC_CONFIG_FILES(interface/Makefile)
 fi
 AC_CONFIG_FILES([bound_test.sh], [chmod +x bound_test.sh])
+AC_CONFIG_FILES([codegen_test.sh], [chmod +x codegen_test.sh])
 AC_CONFIG_FILES([pip_test.sh], [chmod +x pip_test.sh])
 AC_CONFIG_COMMANDS_POST([
 	dnl pass on arguments to subdir configures, but don't

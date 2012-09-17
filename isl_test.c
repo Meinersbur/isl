@@ -22,6 +22,7 @@
 #include <isl/schedule.h>
 #include <isl_options_private.h>
 #include <isl/vertices.h>
+#include <isl/ast_build.h>
 
 #define ARRAY_SIZE(array) (sizeof(array)/sizeof(*array))
 
@@ -3361,6 +3362,191 @@ static int test_pullback(isl_ctx *ctx)
 	return 0;
 }
 
+/* Check that negation is printed correctly.
+ */
+static int test_ast(isl_ctx *ctx)
+{
+	isl_ast_expr *expr, *expr1, *expr2, *expr3;
+	char *str;
+	int ok;
+
+	expr1 = isl_ast_expr_from_id(isl_id_alloc(ctx, "A", NULL));
+	expr2 = isl_ast_expr_from_id(isl_id_alloc(ctx, "B", NULL));
+	expr = isl_ast_expr_add(expr1, expr2);
+	expr = isl_ast_expr_neg(expr);
+	str = isl_ast_expr_to_str(expr);
+	ok = !strcmp(str, "-(A + B)");
+	free(str);
+	isl_ast_expr_free(expr);
+
+	if (!ok)
+		isl_die(ctx, isl_error_unknown,
+			"isl_ast_expr printed incorrectly", return -1);
+
+	expr1 = isl_ast_expr_from_id(isl_id_alloc(ctx, "A", NULL));
+	expr2 = isl_ast_expr_from_id(isl_id_alloc(ctx, "B", NULL));
+	expr = isl_ast_expr_add(expr1, expr2);
+	expr3 = isl_ast_expr_from_id(isl_id_alloc(ctx, "C", NULL));
+	expr = isl_ast_expr_sub(expr3, expr);
+	str = isl_ast_expr_to_str(expr);
+	ok = !strcmp(str, "C - (A + B)");
+	free(str);
+	isl_ast_expr_free(expr);
+
+	if (!ok)
+		isl_die(ctx, isl_error_unknown,
+			"isl_ast_expr printed incorrectly", return -1);
+
+	return 0;
+}
+
+/* Check that the AST generator handles domains that are integrally disjoint
+ * but not ratinoally disjoint.
+ */
+static int test_ast_gen2(isl_ctx *ctx)
+{
+	const char *str;
+	isl_set *set;
+	isl_union_map *schedule;
+	isl_union_map *options;
+	isl_ast_build *build;
+	isl_ast_node *tree;
+
+	str = "{ A[i,j] -> [i,j] : 0 <= i,j <= 1 }";
+	schedule = isl_union_map_read_from_str(ctx, str);
+	set = isl_set_universe(isl_space_params_alloc(ctx, 0));
+	build = isl_ast_build_from_context(set);
+
+	str = "{ [i,j] -> atomic[1] : i + j = 1; [i,j] -> unroll[1] : i = j }";
+	options = isl_union_map_read_from_str(ctx, str);
+	build = isl_ast_build_set_options(build, options);
+	tree = isl_ast_build_ast_from_schedule(build, schedule);
+	isl_ast_build_free(build);
+	if (!tree)
+		return -1;
+	isl_ast_node_free(tree);
+
+	return 0;
+}
+
+/* Increment *user on each call.
+ */
+static __isl_give isl_ast_node *count_domains(__isl_take isl_ast_node *node,
+	__isl_keep isl_ast_build *build, void *user)
+{
+	int *n = user;
+
+	(*n)++;
+
+	return node;
+}
+
+/* Test that unrolling tries to minimize the number of instances.
+ * In particular, for the schedule given below, make sure it generates
+ * 3 nodes (rather than 101).
+ */
+static int test_ast_gen3(isl_ctx *ctx)
+{
+	const char *str;
+	isl_set *set;
+	isl_union_map *schedule;
+	isl_union_map *options;
+	isl_ast_build *build;
+	isl_ast_node *tree;
+	int n_domain = 0;
+
+	str = "[n] -> { A[i] -> [i] : 0 <= i <= 100 and n <= i <= n + 2 }";
+	schedule = isl_union_map_read_from_str(ctx, str);
+	set = isl_set_universe(isl_space_params_alloc(ctx, 0));
+
+	str = "{ [i] -> unroll[0] }";
+	options = isl_union_map_read_from_str(ctx, str);
+
+	build = isl_ast_build_from_context(set);
+	build = isl_ast_build_set_options(build, options);
+	build = isl_ast_build_set_at_each_domain(build,
+			&count_domains, &n_domain);
+	tree = isl_ast_build_ast_from_schedule(build, schedule);
+	isl_ast_build_free(build);
+	if (!tree)
+		return -1;
+
+	isl_ast_node_free(tree);
+
+	if (n_domain != 3)
+		isl_die(ctx, isl_error_unknown,
+			"unexpected number of for nodes", return -1);
+
+	return 0;
+}
+
+/* Check that if the ast_build_exploit_nested_bounds options is set,
+ * we do not get an outer if node in the generated AST,
+ * while we do get such an outer if node if the options is not set.
+ */
+static int test_ast_gen4(isl_ctx *ctx)
+{
+	const char *str;
+	isl_set *set;
+	isl_union_map *schedule;
+	isl_ast_build *build;
+	isl_ast_node *tree;
+	enum isl_ast_node_type type;
+	int enb;
+
+	enb = isl_options_get_ast_build_exploit_nested_bounds(ctx);
+	str = "[N,M] -> { A[i,j] -> [i,j] : 0 <= i <= N and 0 <= j <= M }";
+
+	isl_options_set_ast_build_exploit_nested_bounds(ctx, 1);
+
+	schedule = isl_union_map_read_from_str(ctx, str);
+	set = isl_set_universe(isl_space_params_alloc(ctx, 0));
+	build = isl_ast_build_from_context(set);
+	tree = isl_ast_build_ast_from_schedule(build, schedule);
+	isl_ast_build_free(build);
+	if (!tree)
+		return -1;
+
+	type = isl_ast_node_get_type(tree);
+	isl_ast_node_free(tree);
+
+	if (type == isl_ast_node_if)
+		isl_die(ctx, isl_error_unknown,
+			"not expecting if node", return -1);
+
+	isl_options_set_ast_build_exploit_nested_bounds(ctx, 0);
+
+	schedule = isl_union_map_read_from_str(ctx, str);
+	set = isl_set_universe(isl_space_params_alloc(ctx, 0));
+	build = isl_ast_build_from_context(set);
+	tree = isl_ast_build_ast_from_schedule(build, schedule);
+	isl_ast_build_free(build);
+	if (!tree)
+		return -1;
+
+	type = isl_ast_node_get_type(tree);
+	isl_ast_node_free(tree);
+
+	if (type != isl_ast_node_if)
+		isl_die(ctx, isl_error_unknown,
+			"expecting if node", return -1);
+
+	isl_options_set_ast_build_exploit_nested_bounds(ctx, enb);
+
+	return 0;
+}
+
+static int test_ast_gen(isl_ctx *ctx)
+{
+	if (test_ast_gen2(ctx) < 0)
+		return -1;
+	if (test_ast_gen3(ctx) < 0)
+		return -1;
+	if (test_ast_gen4(ctx) < 0)
+		return -1;
+	return 0;
+}
+
 struct {
 	const char *name;
 	int (*fn)(isl_ctx *ctx);
@@ -3370,6 +3556,8 @@ struct {
 	{ "align parameters", &test_align_parameters },
 	{ "preimage", &test_preimage },
 	{ "pullback", &test_pullback },
+	{ "AST", &test_ast },
+	{ "AST generation", &test_ast_gen },
 	{ "eliminate", &test_eliminate },
 	{ "reisdue class", &test_residue_class },
 	{ "div", &test_div },

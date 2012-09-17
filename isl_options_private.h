@@ -59,6 +59,14 @@ struct isl_options {
 
 	int			tile_scale_tile_loops;
 
+	char			*ast_iterator_type;
+
+	int			ast_build_atomic_upper_bound;
+	int			ast_build_prefer_pdiv;
+	int			ast_build_exploit_nested_bounds;
+	int			ast_build_group_coscheduled;
+	int			ast_build_separation_bounds;
+	int			ast_build_scale_strides;
 };
 
 #endif

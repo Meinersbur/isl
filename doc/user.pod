@@ -3055,7 +3055,7 @@ returning a basic set or relation.
 
 Lists are defined over several element types, including
 C<isl_id>, C<isl_aff>, C<isl_pw_aff>, C<isl_constraint>,
-C<isl_basic_set> and C<isl_set>.
+C<isl_basic_set>, C<isl_set>, C<isl_ast_expr> and C<isl_ast_node>.
 Here we take lists of C<isl_set>s as an example.
 Lists can be created, copied, modified and freed using the following functions.
 
@@ -5179,6 +5179,830 @@ schedules.
 
 =back
 
+=head2 AST Generation
+
+This section describes the C<isl> functionality for generating
+ASTs that visit all the elements
+in a domain in an order specified by a schedule.
+In particular, given a C<isl_union_map>, an AST is generated
+that visits all the elements in the domain of the C<isl_union_map>
+according to the lexicographic order of the corresponding image
+element(s).  If the range of the C<isl_union_map> consists of
+elements in more than one space, then each of these spaces is handled
+separately in an arbitrary order.
+It should be noted that the image elements only specify the I<order>
+in which the corresponding domain elements should be visited.
+No direct relation between the image elements and the loop iterators
+in the generated AST should be assumed.
+
+Each AST is generated within a build.  The initial build
+simply specifies the constraints on the parameters (if any)
+and can be created, inspected, copied and freed using the following functions.
+
+	#include <isl/ast_build.h>
+	__isl_give isl_ast_build *isl_ast_build_from_context(
+		__isl_take isl_set *set);
+	isl_ctx *isl_ast_build_get_ctx(
+		__isl_keep isl_ast_build *build);
+	__isl_give isl_ast_build *isl_ast_build_copy(
+		__isl_keep isl_ast_build *build);
+	void *isl_ast_build_free(
+		__isl_take isl_ast_build *build);
+
+The C<set> argument is usually a parameter set with zero or more parameters.
+More C<isl_ast_build> functions are described in L</"Nested AST Generation">
+and L</"Fine-grained Control over AST Generation">.
+Finally, the AST itself can be constructed using the following
+function.
+
+	#include <isl/ast_build.h>
+	__isl_give isl_ast_node *isl_ast_build_ast_from_schedule(
+		__isl_keep isl_ast_build *build,
+		__isl_take isl_union_map *schedule);
+
+=head3 Inspecting the AST
+
+The basic properties of an AST node can be obtained as follows.
+
+	#include <isl/ast.h>
+	isl_ctx *isl_ast_node_get_ctx(
+		__isl_keep isl_ast_node *node);
+	enum isl_ast_node_type isl_ast_node_get_type(
+		__isl_keep isl_ast_node *node);
+
+The type of an AST node is one of
+C<isl_ast_node_for>,
+C<isl_ast_node_if>,
+C<isl_ast_node_block> or
+C<isl_ast_node_user>.
+An C<isl_ast_node_for> represents a for node.
+An C<isl_ast_node_if> represents an if node.
+An C<isl_ast_node_block> represents a compound node.
+An C<isl_ast_node_user> represents an expression statement.
+An expression statement typically corresponds to a domain element, i.e.,
+one of the elements that is visited by the AST.
+
+Each type of node has its own additional properties.
+
+	#include <isl/ast.h>
+	__isl_give isl_ast_expr *isl_ast_node_for_get_iterator(
+		__isl_keep isl_ast_node *node);
+	__isl_give isl_ast_expr *isl_ast_node_for_get_init(
+		__isl_keep isl_ast_node *node);
+	__isl_give isl_ast_expr *isl_ast_node_for_get_cond(
+		__isl_keep isl_ast_node *node);
+	__isl_give isl_ast_expr *isl_ast_node_for_get_inc(
+		__isl_keep isl_ast_node *node);
+	__isl_give isl_ast_node *isl_ast_node_for_get_body(
+		__isl_keep isl_ast_node *node);
+	int isl_ast_node_for_is_degenerate(
+		__isl_keep isl_ast_node *node);
+
+An C<isl_ast_for> is considered degenerate if it is known to execute
+exactly once.
+
+	#include <isl/ast.h>
+	__isl_give isl_ast_expr *isl_ast_node_if_get_cond(
+		__isl_keep isl_ast_node *node);
+	__isl_give isl_ast_node *isl_ast_node_if_get_then(
+		__isl_keep isl_ast_node *node);
+	int isl_ast_node_if_has_else(
+		__isl_keep isl_ast_node *node);
+	__isl_give isl_ast_node *isl_ast_node_if_get_else(
+		__isl_keep isl_ast_node *node);
+
+	__isl_give isl_ast_node_list *
+	isl_ast_node_block_get_children(
+		__isl_keep isl_ast_node *node);
+
+	__isl_give isl_ast_expr *isl_ast_node_user_get_expr(
+		__isl_keep isl_ast_node *node);
+
+Each of the returned C<isl_ast_expr>s can in turn be inspected using
+the following functions.
+
+	#include <isl/ast.h>
+	isl_ctx *isl_ast_expr_get_ctx(
+		__isl_keep isl_ast_expr *expr);
+	enum isl_ast_expr_type isl_ast_expr_get_type(
+		__isl_keep isl_ast_expr *expr);
+
+The type of an AST expression is one of
+C<isl_ast_expr_op>,
+C<isl_ast_expr_id> or
+C<isl_ast_expr_int>.
+An C<isl_ast_expr_op> represents the result of an operation.
+An C<isl_ast_expr_id> represents an identifier.
+An C<isl_ast_expr_int> represents an integer value.
+
+Each type of expression has its own additional properties.
+
+	#include <isl/ast.h>
+	enum isl_ast_op_type isl_ast_expr_get_op_type(
+		__isl_keep isl_ast_expr *expr);
+	int isl_ast_expr_get_op_n_arg(__isl_keep isl_ast_expr *expr);
+	__isl_give isl_ast_expr *isl_ast_expr_get_op_arg(
+		__isl_keep isl_ast_expr *expr, int pos);
+	int isl_ast_node_foreach_ast_op_type(
+		__isl_keep isl_ast_node *node,
+		int (*fn)(enum isl_ast_op_type type, void *user),
+		void *user);
+
+C<isl_ast_expr_get_op_type> returns the type of the operation
+performed.  C<isl_ast_expr_get_op_n_arg> returns the number of
+arguments.  C<isl_ast_expr_get_op_arg> returns the specified
+argument.
+C<isl_ast_node_foreach_ast_op_type> calls C<fn> for each distinct
+C<isl_ast_op_type> that appears in C<node>.
+The operation type is one of the following.
+
+=over
+
+=item C<isl_ast_op_and>
+
+Logical I<and> of two arguments.
+Both arguments can be evaluated.
+
+=item C<isl_ast_op_and_then>
+
+Logical I<and> of two arguments.
+The second argument can only be evaluated if the first evaluates to true.
+
+=item C<isl_ast_op_or>
+
+Logical I<or> of two arguments.
+Both arguments can be evaluated.
+
+=item C<isl_ast_op_or_else>
+
+Logical I<or> of two arguments.
+The second argument can only be evaluated if the first evaluates to false.
+
+=item C<isl_ast_op_max>
+
+Maximum of two or more arguments.
+
+=item C<isl_ast_op_min>
+
+Minimum of two or more arguments.
+
+=item C<isl_ast_op_minus>
+
+Change sign.
+
+=item C<isl_ast_op_add>
+
+Sum of two arguments.
+
+=item C<isl_ast_op_sub>
+
+Difference of two arguments.
+
+=item C<isl_ast_op_mul>
+
+Product of two arguments.
+
+=item C<isl_ast_op_div>
+
+Exact division.  That is, the result is known to be an integer.
+
+=item C<isl_ast_op_fdiv_q>
+
+Result of integer division, rounded towards negative
+infinity.
+
+=item C<isl_ast_op_pdiv_q>
+
+Result of integer division, where dividend is known to be non-negative.
+
+=item C<isl_ast_op_pdiv_r>
+
+Remainder of integer division, where dividend is known to be non-negative.
+
+=item C<isl_ast_op_cond>
+
+Conditional operator defined on three arguments.
+If the first argument evaluates to true, then the result
+is equal to the second argument.  Otherwise, the result
+is equal to the third argument.
+The second and third argument may only be evaluated if
+the first argument evaluates to true and false, respectively.
+Corresponds to C<a ? b : c> in C.
+
+=item C<isl_ast_op_select>
+
+Conditional operator defined on three arguments.
+If the first argument evaluates to true, then the result
+is equal to the second argument.  Otherwise, the result
+is equal to the third argument.
+The second and third argument may be evaluated independently
+of the value of the first argument.
+Corresponds to C<a * b + (1 - a) * c> in C.
+
+=item C<isl_ast_op_eq>
+
+Equality relation.
+
+=item C<isl_ast_op_le>
+
+Less than or equal relation.
+
+=item C<isl_ast_op_ge>
+
+Greater than or equal relation.
+
+=item C<isl_ast_op_call>
+
+A function call.
+The number of arguments of the C<isl_ast_expr> is one more than
+the number of arguments in the function call, the first argument
+representing the function being called.
+
+=back
+
+	#include <isl/ast.h>
+	__isl_give isl_id *isl_ast_expr_get_id(
+		__isl_keep isl_ast_expr *expr);
+
+Return the identifier represented by the AST expression.
+
+	#include <isl/ast.h>
+	int isl_ast_expr_get_int(__isl_keep isl_ast_expr *expr,
+		isl_int *v);
+
+Return the integer represented by the AST expression.
+Note that the integer is returned through the C<v> argument.
+The return value of the function itself indicates whether the
+operation was performed successfully.
+
+=head3 Manipulating and printing the AST
+
+AST nodes can be copied and freed using the following functions.
+
+	#include <isl/ast.h>
+	__isl_give isl_ast_node *isl_ast_node_copy(
+		__isl_keep isl_ast_node *node);
+	void *isl_ast_node_free(__isl_take isl_ast_node *node);
+
+AST expressions can be copied and freed using the following functions.
+
+	#include <isl/ast.h>
+	__isl_give isl_ast_expr *isl_ast_expr_copy(
+		__isl_keep isl_ast_expr *expr);
+	void *isl_ast_expr_free(__isl_take isl_ast_expr *expr);
+
+New AST expressions can be created either directly or within
+the context of an C<isl_ast_build>.
+
+	#include <isl/ast.h>
+	__isl_give isl_ast_expr *isl_ast_expr_from_id(
+		__isl_take isl_id *id);
+	__isl_give isl_ast_expr *isl_ast_expr_neg(
+		__isl_take isl_ast_expr *expr);
+	__isl_give isl_ast_expr *isl_ast_expr_add(
+		__isl_take isl_ast_expr *expr1,
+		__isl_take isl_ast_expr *expr2);
+	__isl_give isl_ast_expr *isl_ast_expr_sub(
+		__isl_take isl_ast_expr *expr1,
+		__isl_take isl_ast_expr *expr2);
+	__isl_give isl_ast_expr *isl_ast_expr_mul(
+		__isl_take isl_ast_expr *expr1,
+		__isl_take isl_ast_expr *expr2);
+	__isl_give isl_ast_expr *isl_ast_expr_div(
+		__isl_take isl_ast_expr *expr1,
+		__isl_take isl_ast_expr *expr2);
+	__isl_give isl_ast_expr *isl_ast_expr_and(
+		__isl_take isl_ast_expr *expr1,
+		__isl_take isl_ast_expr *expr2)
+	__isl_give isl_ast_expr *isl_ast_expr_or(
+		__isl_take isl_ast_expr *expr1,
+		__isl_take isl_ast_expr *expr2)
+
+	#include <isl/ast_build.h>
+	__isl_give isl_ast_expr *isl_ast_build_expr_from_pw_aff(
+		__isl_keep isl_ast_build *build,
+		__isl_take isl_pw_aff *pa);
+	__isl_give isl_ast_expr *
+	isl_ast_build_call_from_pw_multi_aff(
+		__isl_keep isl_ast_build *build,
+		__isl_take isl_pw_multi_aff *pma);
+
+The domains of C<pa> and C<pma> should correspond
+to the schedule space of C<build>.
+The tuple id of C<pma> is used as the function being called.
+
+User specified data can be attached to an C<isl_ast_node> and obtained
+from the same C<isl_ast_node> using the following functions.
+
+	#include <isl/ast.h>
+	__isl_give isl_ast_node *isl_ast_node_set_annotation(
+		__isl_take isl_ast_node *node,
+		__isl_take isl_id *annotation);
+	__isl_give isl_id *isl_ast_node_get_annotation(
+		__isl_keep isl_ast_node *node);
+
+Basic printing can be performed using the following functions.
+
+	#include <isl/ast.h>
+	__isl_give isl_printer *isl_printer_print_ast_expr(
+		__isl_take isl_printer *p,
+		__isl_keep isl_ast_expr *expr);
+	__isl_give isl_printer *isl_printer_print_ast_node(
+		__isl_take isl_printer *p,
+		__isl_keep isl_ast_node *node);
+
+More advanced printing can be performed using the following functions.
+
+	#include <isl/ast.h>
+	__isl_give isl_printer *isl_ast_op_type_print_macro(
+		enum isl_ast_op_type type,
+		__isl_take isl_printer *p);
+	__isl_give isl_printer *isl_ast_node_print_macros(
+		__isl_keep isl_ast_node *node,
+		__isl_take isl_printer *p);
+	__isl_give isl_printer *isl_ast_node_print(
+		__isl_keep isl_ast_node *node,
+		__isl_take isl_printer *p,
+		__isl_keep isl_ast_print_options *options);
+	__isl_give isl_printer *isl_ast_node_for_print(
+		__isl_keep isl_ast_node *node,
+		__isl_take isl_printer *p,
+		__isl_keep isl_ast_print_options *options);
+	__isl_give isl_printer *isl_ast_node_if_print(
+		__isl_keep isl_ast_node *node,
+		__isl_take isl_printer *p,
+		__isl_keep isl_ast_print_options *options);
+
+While printing an C<isl_ast_node> in C<ISL_FORMAT_C>,
+C<isl> may print out an AST that makes use of macros such
+as C<floord>, C<min> and C<max>.
+C<isl_ast_op_type_print_macro> prints out the macro
+corresponding to a specific C<isl_ast_op_type>.
+C<isl_ast_node_print_macros> scans the C<isl_ast_node>
+for expressions where these macros would be used and prints
+out the required macro definitions.
+Essentially, C<isl_ast_node_print_macros> calls
+C<isl_ast_node_foreach_ast_op_type> with C<isl_ast_op_type_print_macro>
+as function argument.
+C<isl_ast_node_print>, C<isl_ast_node_for_print> and
+C<isl_ast_node_if_print> print an C<isl_ast_node>
+in C<ISL_FORMAT_C>, but allow for some extra control
+through an C<isl_ast_print_options> object.
+This object can be created using the following functions.
+
+	#include <isl/ast.h>
+	__isl_give isl_ast_print_options *
+	isl_ast_print_options_alloc(isl_ctx *ctx);
+	void *isl_ast_print_options_free(
+		__isl_take isl_ast_print_options *options);
+
+	__isl_give isl_ast_print_options *
+	isl_ast_print_options_set_print_user(
+		__isl_take isl_ast_print_options *options,
+		__isl_give isl_printer *(*print_user)(
+			__isl_take isl_printer *p,
+			__isl_keep isl_ast_node *node, void *user),
+		void *user);
+	__isl_give isl_ast_print_options *
+	isl_ast_print_options_set_print_for(
+		__isl_take isl_ast_print_options *options,
+		__isl_give isl_printer *(*print_for)(
+			__isl_take isl_printer *p,
+			__isl_keep isl_ast_node *node, void *user),
+		void *user);
+
+The callback set by C<isl_ast_print_options_set_print_domain>
+is called whenever a node of type C<isl_ast_node_user> needs to
+be printed.
+The callback set by C<isl_ast_print_options_set_print_for>
+is called whenever a node of type C<isl_ast_node_for> needs to
+be printed.
+Note that C<isl_ast_node_for_print> will I<not> call the
+callback set by C<isl_ast_print_options_set_print_for> on the node
+on which C<isl_ast_node_for_print> is called, but only on nested
+nodes of type C<isl_ast_node_for>.  It is therefore safe to
+call C<isl_ast_node_for_print> from within the callback set by
+C<isl_ast_print_options_set_print_for>.
+
+The following option determines the type to be used for iterators
+while printing the AST.
+
+	int isl_options_set_ast_iterator_type(
+		isl_ctx *ctx, const char *val);
+	const char *isl_options_get_ast_iterator_type(
+		isl_ctx *ctx);
+
+=head3 Options
+
+	#include <isl/ast_build.h>
+	int isl_options_set_ast_build_atomic_upper_bound(
+		isl_ctx *ctx, int val);
+	int isl_options_get_ast_build_atomic_upper_bound(
+		isl_ctx *ctx);
+	int isl_options_set_ast_build_prefer_pdiv(isl_ctx *ctx,
+		int val);
+	int isl_options_get_ast_build_prefer_pdiv(isl_ctx *ctx);
+	int isl_options_set_ast_build_exploit_nested_bounds(
+		isl_ctx *ctx, int val);
+	int isl_options_get_ast_build_exploit_nested_bounds(
+		isl_ctx *ctx);
+	int isl_options_set_ast_build_group_coscheduled(
+		isl_ctx *ctx, int val);
+	int isl_options_get_ast_build_group_coscheduled(
+		isl_ctx *ctx);
+	int isl_options_set_ast_build_scale_strides(
+		isl_ctx *ctx, int val);
+	int isl_options_get_ast_build_scale_strides(
+		isl_ctx *ctx);
+
+=over
+
+=item * ast_build_atomic_upper_bound
+
+Generate loop upper bounds that consist of the current loop iterator,
+an operator and an expression not involving the iterator.
+If this option is not set, then the current loop iterator may appear
+several times in the upper bound.
+For example, when this option is turned off, AST generation
+for the schedule
+
+	[n] -> { A[i] -> [i] : 0 <= i <= 100, n }
+
+produces
+
+	for (int c0 = 0; c0 <= 100 && n >= c0; c0 += 1)
+	  A(c0);
+
+When the option is turned on, the following AST is generated
+
+	for (int c0 = 0; c0 <= min(100, n); c0 += 1)
+	  A(c0);
+
+=item * ast_build_prefer_pdiv
+
+If this option is turned off, then the AST generation will
+produce ASTs that may only contain C<isl_ast_op_fdiv_q>
+operators, but no C<isl_ast_op_pdiv_q> or
+C<isl_ast_op_pdiv_r> operators.
+If this options is turned on, then C<isl> will try to convert
+some of the C<isl_ast_op_fdiv_q> operators to (expressions containing)
+C<isl_ast_op_pdiv_q> or C<isl_ast_op_pdiv_r> operators.
+
+=item * ast_build_exploit_nested_bounds
+
+Simplify conditions based on bounds of nested for loops.
+In particular, remove conditions that are implied by the fact
+that one or more nested loops have at least one iteration,
+meaning that the upper bound is at least as large as the lower bound.
+For example, when this option is turned off, AST generation
+for the schedule
+
+	[N,M] -> { A[i,j] -> [i,j] : 0 <= i <= N and
+					0 <= j <= M }
+
+produces
+
+	if (M >= 0)
+	  for (int c0 = 0; c0 <= N; c0 += 1)
+	    for (int c1 = 0; c1 <= M; c1 += 1)
+	      A(c0, c1);
+
+When the option is turned on, the following AST is generated
+
+	for (int c0 = 0; c0 <= N; c0 += 1)
+	  for (int c1 = 0; c1 <= M; c1 += 1)
+	    A(c0, c1);
+
+=item * ast_build_group_coscheduled
+
+If two domain elements are assigned the same schedule point, then
+they may be executed in any order and they may even appear in different
+loops.  If this options is set, then the AST generator will make
+sure that coscheduled domain elements do not appear in separate parts
+of the AST.  This is useful in case of nested AST generation
+if the outer AST generation is given only part of a schedule
+and the inner AST generation should handle the domains that are
+coscheduled by this initial part of the schedule together.
+For example if an AST is generated for a schedule
+
+	{ A[i] -> [0]; B[i] -> [0] }
+
+then the C<isl_ast_build_set_create_leaf> callback described
+below may get called twice, once for each domain.
+Setting this option ensures that the callback is only called once
+on both domains together.
+
+=item * ast_build_separation_bounds
+
+This option specifies which bounds to use during separation.
+If this option is set to C<ISL_AST_BUILD_SEPARATION_BOUNDS_IMPLICIT>
+then all (possibly implicit) bounds on the current dimension will
+be used during separation.
+If this option is set to C<ISL_AST_BUILD_SEPARATION_BOUNDS_EXPLICIT>
+then only those bounds that are explicitly available will
+be used during separation.
+
+=item * ast_build_scale_strides
+
+This option specifies whether the AST generator is allowed
+to scale down iterators of strided loops.
+
+=back
+
+=head3 Fine-grained Control over AST Generation
+
+Besides specifying the constraints on the parameters,
+an C<isl_ast_build> object can be used to control
+various aspects of the AST generation process.
+The most prominent way of control is through ``options'',
+which can be set using the following function.
+
+	#include <isl/ast_build.h>
+	__isl_give isl_ast_build *
+	isl_ast_build_set_options(
+		__isl_take isl_ast_build *control,
+		__isl_take isl_union_map *options);
+
+The options are encoded in an <isl_union_map>.
+The domain of this union relation refers to the schedule domain,
+i.e., the range of the schedule passed to C<isl_ast_build_ast_from_schedule>.
+In the case of nested AST generation (see L</"Nested AST Generation">),
+the domain of C<options> should refer to the extra piece of the schedule.
+That is, it should be equal to the range of the wrapped relation in the
+range of the schedule.
+The range of the options can consist of elements in one or more spaces,
+the names of which determine the effect of the option.
+The values of the range typically also refer to the schedule dimension
+to which the option applies.  In case of nested AST generation
+(see L</"Nested AST Generation">), these values refer to the position
+of the schedule dimension within the innermost AST generation.
+The constraints on the domain elements of
+the option should only refer to this dimension and earlier dimensions.
+We consider the following spaces.
+
+=over
+
+=item C<separation_class>
+
+This space is a wrapped relation between two one dimensional spaces.
+The input space represents the schedule dimension to which the option
+applies and the output space represents the separation class.
+While constructing a loop corresponding to the specified schedule
+dimension(s), the AST generator will try to generate separate loops
+for domain elements that are assigned different classes.
+If only some of the elements are assigned a class, then those elements
+that are not assigned any class will be treated as belonging to a class
+that is separate from the explicitly assigned classes.
+The typical use case for this option is to separate full tiles from
+partial tiles.
+The other options, described below, are applied after the separation
+into classes.
+
+As an example, consider the separation into full and partial tiles
+of a tiling of a triangular domain.
+Take, for example, the domain
+
+	{ A[i,j] : 0 <= i,j and i + j <= 100 }
+
+and a tiling into tiles of 10 by 10.  The input to the AST generator
+is then the schedule
+
+	{ A[i,j] -> [([i/10]),[j/10],i,j] : 0 <= i,j and
+						i + j <= 100 }
+
+Without any options, the following AST is generated
+
+	for (int c0 = 0; c0 <= 10; c0 += 1)
+	  for (int c1 = 0; c1 <= -c0 + 10; c1 += 1)
+	    for (int c2 = 10 * c0;
+		 c2 <= min(-10 * c1 + 100, 10 * c0 + 9);
+		 c2 += 1)
+	      for (int c3 = 10 * c1;
+		   c3 <= min(10 * c1 + 9, -c2 + 100);
+		   c3 += 1)
+		A(c2, c3);
+
+Separation into full and partial tiles can be obtained by assigning
+a class, say C<0>, to the full tiles.  The full tiles are represented by those
+values of the first and second schedule dimensions for which there are
+values of the third and fourth dimensions to cover an entire tile.
+That is, we need to specify the following option
+
+	{ [a,b,c,d] -> separation_class[[0]->[0]] :
+		exists b': 0 <= 10a,10b' and
+			   10a+9+10b'+9 <= 100;
+	  [a,b,c,d] -> separation_class[[1]->[0]] :
+		0 <= 10a,10b and 10a+9+10b+9 <= 100 }
+
+which simplifies to
+
+	{ [a, b, c, d] -> separation_class[[1] -> [0]] :
+		a >= 0 and b >= 0 and b <= 8 - a;
+	  [a, b, c, d] -> separation_class[[0] -> [0]] :
+		a >= 0 and a <= 8 }
+
+With this option, the generated AST is as follows
+
+	{
+	  for (int c0 = 0; c0 <= 8; c0 += 1) {
+	    for (int c1 = 0; c1 <= -c0 + 8; c1 += 1)
+	      for (int c2 = 10 * c0;
+		   c2 <= 10 * c0 + 9; c2 += 1)
+		for (int c3 = 10 * c1;
+		     c3 <= 10 * c1 + 9; c3 += 1)
+		  A(c2, c3);
+	    for (int c1 = -c0 + 9; c1 <= -c0 + 10; c1 += 1)
+	      for (int c2 = 10 * c0;
+		   c2 <= min(-10 * c1 + 100, 10 * c0 + 9);
+		   c2 += 1)
+		for (int c3 = 10 * c1;
+		     c3 <= min(-c2 + 100, 10 * c1 + 9);
+		     c3 += 1)
+		  A(c2, c3);
+	  }
+	  for (int c0 = 9; c0 <= 10; c0 += 1)
+	    for (int c1 = 0; c1 <= -c0 + 10; c1 += 1)
+	      for (int c2 = 10 * c0;
+		   c2 <= min(-10 * c1 + 100, 10 * c0 + 9);
+		   c2 += 1)
+		for (int c3 = 10 * c1;
+		     c3 <= min(10 * c1 + 9, -c2 + 100);
+		     c3 += 1)
+		  A(c2, c3);
+	}
+
+=item C<separate>
+
+This is a single-dimensional space representing the schedule dimension(s)
+to which ``separation'' should be applied.  Separation tries to split
+a loop into several pieces if this can avoid the generation of guards
+inside the loop.
+See also the C<atomic> option.
+
+=item C<atomic>
+
+This is a single-dimensional space representing the schedule dimension(s)
+for which the domains should be considered ``atomic''.  That is, the
+AST generator will make sure that any given domain space will only appear
+in a single loop at the specified level.
+
+Consider the following schedule
+
+	{ a[i] -> [i] : 0 <= i < 10;
+	  b[i] -> [i+1] : 0 <= i < 10 }
+
+If the following option is specified
+
+	{ [i] -> separate[x] }
+
+then the following AST will be generated
+
+	{
+	  a(0);
+	  for (int c0 = 1; c0 <= 9; c0 += 1) {
+	    a(c0);
+	    b(c0 - 1);
+	  }
+	  b(9);
+	}
+
+If, on the other hand, the following option is specified
+
+	{ [i] -> atomic[x] }
+
+then the following AST will be generated
+
+	for (int c0 = 0; c0 <= 10; c0 += 1) {
+	  if (c0 <= 9)
+	    a(c0);
+	  if (c0 >= 1)
+	    b(c0 - 1);
+	}
+
+If neither C<atomic> nor C<separate> is specified, then the AST generator
+may produce either of these two results or some intermediate form.
+
+=item C<unroll>
+
+This is a single-dimensional space representing the schedule dimension(s)
+that should be I<completely> unrolled.
+To obtain a partial unrolling, the user should apply an additional
+strip-mining to the schedule and fully unroll the inner loop.
+
+=back
+
+Additional control is available through the following functions.
+
+	#include <isl/ast_build.h>
+	__isl_give isl_ast_build *
+	isl_ast_build_set_iterators(
+		__isl_take isl_ast_build *control,
+		__isl_take isl_id_list *iterators);
+
+The function C<isl_ast_build_set_iterators> allows the user to
+specify a list of iterator C<isl_id>s to be used as iterators.
+If the input schedule is injective, then
+the number of elements in this list should be as large as the dimension
+of the schedule space, but no direct correspondence should be assumed
+between dimensions and elements.
+If the input schedule is not injective, then an additional number
+of C<isl_id>s equal to the largest dimension of the input domains
+may be required.
+If the number of provided C<isl_id>s is insufficient, then additional
+names are automatically generated.
+
+	#include <isl/ast_build.h>
+	__isl_give isl_ast_build *
+	isl_ast_build_set_create_leaf(
+		__isl_take isl_ast_build *control,
+		__isl_give isl_ast_node *(*fn)(
+			__isl_take isl_ast_build *build,
+			void *user), void *user);
+
+The
+C<isl_ast_build_set_create_leaf> function allows for the
+specification of a callback that should be called whenever the AST
+generator arrives at an element of the schedule domain.
+The callback should return an AST node that should be inserted
+at the corresponding position of the AST.  The default action (when
+the callback is not set) is to continue generating parts of the AST to scan
+all the domain elements associated to the schedule domain element
+and to insert user nodes, ``calling'' the domain element, for each of them.
+The C<build> argument contains the current state of the C<isl_ast_build>.
+To ease nested AST generation (see L</"Nested AST Generation">),
+all control information that is
+specific to the current AST generation such as the options and
+the callbacks has been removed from this C<isl_ast_build>.
+The callback would typically return the result of a nested
+AST generation or a
+user defined node created using the following function.
+
+	#include <isl/ast.h>
+	__isl_give isl_ast_node *isl_ast_node_alloc_user(
+		__isl_take isl_ast_expr *expr);
+
+	#include <isl/ast_build.h>
+	__isl_give isl_ast_build *
+	isl_ast_build_set_at_each_domain(
+		__isl_take isl_ast_build *build,
+		__isl_give isl_ast_node *(*fn)(
+			__isl_take isl_ast_node *node,
+			__isl_keep isl_ast_build *build,
+			void *user), void *user);
+
+The callback set by C<isl_ast_build_set_at_each_domain> will
+be called for each domain AST node.
+The given C<isl_ast_build> can be used to create new
+C<isl_ast_expr> objects using C<isl_ast_build_expr_from_pw_aff>
+or C<isl_ast_build_call_from_pw_multi_aff>.
+
+=head3 Nested AST Generation
+
+C<isl> allows the user to create an AST within the context
+of another AST.  These nested ASTs are created using the
+same C<isl_ast_build_ast_from_schedule> function that is used to create the
+outer AST.  The C<build> argument should be an C<isl_ast_build>
+passed to a callback set by
+C<isl_ast_build_set_create_leaf>.
+The space of the range of the C<schedule> argument should refer
+to this build.  In particular, the space should be a wrapped
+relation and the domain of this wrapped relation should be the
+same as that of the range of the schedule returned by
+C<isl_ast_build_get_schedule> below.
+In practice, the new schedule is typically
+created by calling C<isl_union_map_range_product> on the old schedule
+and some extra piece of the schedule.
+The space of the schedule domain is also available from
+the C<isl_ast_build>.
+
+	#include <isl/ast_build.h>
+	__isl_give isl_union_map *isl_ast_build_get_schedule(
+		__isl_keep isl_ast_build *build);
+	__isl_give isl_space *isl_ast_build_get_schedule_space(
+		__isl_keep isl_ast_build *build);
+	__isl_give isl_ast_build *isl_ast_build_restrict(
+		__isl_take isl_ast_build *build,
+		__isl_take isl_set *set);
+
+The C<isl_ast_build_get_schedule> function returns a (partial)
+schedule for the domains elements for which part of the AST still needs to
+be generated in the current build.
+In particular, the domain elements are mapped to those iterations of the loops
+enclosing the current point of the AST generation inside which
+the domain elements are executed.
+No direct correspondence between
+the input schedule and this schedule should be assumed.
+The space obtained from C<isl_ast_build_get_schedule_space> can be used
+to create a set for C<isl_ast_build_restrict> to intersect
+with the current build.  In particular, the set passed to
+C<isl_ast_build_restrict> can have additional parameters.
+The ids of the set dimensions in the space returned by
+C<isl_ast_build_get_schedule_space> correspond to the
+iterators of the already generated loops.
+The user should not rely on the ids of the output dimensions
+of the relations in the union relation returned by
+C<isl_ast_build_get_schedule> having any particular value.
+
 =head1 Applications
 
 Although C<isl> is mainly meant to be used as a library,
@@ -5218,3 +6042,10 @@ is given, then the constant should appear in the last column.
 
 Given a polytope, C<isl_polytope_scan> prints
 all integer points in the polytope.
+
+=head2 C<isl_codegen>
+
+Given a schedule, a context set and an options relation,
+C<isl_codegen> prints out an AST that scans the domain elements
+of the schedule in the order of their image(s) taking into account
+the constraints in the context set.

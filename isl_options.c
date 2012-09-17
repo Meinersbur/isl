@@ -13,6 +13,7 @@
 
 #include <isl/ctx.h>
 #include <isl_options_private.h>
+#include <isl/ast_build.h>
 #include <isl/schedule.h>
 #include <isl/version.h>
 
@@ -101,6 +102,12 @@ static struct isl_arg_choice fuse[] = {
 	{0}
 };
 
+static struct isl_arg_choice separation_bounds[] = {
+	{"explicit",	ISL_AST_BUILD_SEPARATION_BOUNDS_EXPLICIT},
+	{"implicit",	ISL_AST_BUILD_SEPARATION_BOUNDS_IMPLICIT},
+	{0}
+};
+
 static void print_version(void)
 {
 	printf("%s", isl_version());
@@ -169,6 +176,26 @@ ISL_ARG_CHOICE(struct isl_options, schedule_fuse, 0, "schedule-fuse", fuse,
 	ISL_SCHEDULE_FUSE_MAX, "level of fusion during scheduling")
 ISL_ARG_BOOL(struct isl_options, tile_scale_tile_loops, 0,
 	"tile-scale-tile-loops", 1, "scale tile loops")
+ISL_ARG_STR(struct isl_options, ast_iterator_type, 0,
+	"ast-iterator-type", "type", "int",
+	"type used for iterators during printing of AST")
+ISL_ARG_BOOL(struct isl_options, ast_build_atomic_upper_bound, 0,
+	"ast-build-atomic-upper-bound", 1, "generate atomic upper bounds")
+ISL_ARG_BOOL(struct isl_options, ast_build_prefer_pdiv, 0,
+	"ast-build-prefer-pdiv", 1, "prefer pdiv operation over fdiv")
+ISL_ARG_BOOL(struct isl_options, ast_build_exploit_nested_bounds, 0,
+	"ast-build-exploit-nested-bounds", 1,
+	"simplify conditions based on bounds of nested for loops")
+ISL_ARG_BOOL(struct isl_options, ast_build_group_coscheduled, 0,
+	"ast-build-group-coscheduled", 0,
+	"keep coscheduled domain elements together")
+ISL_ARG_CHOICE(struct isl_options, ast_build_separation_bounds, 0,
+	"ast-build-separation-bounds", separation_bounds,
+	ISL_AST_BUILD_SEPARATION_BOUNDS_EXPLICIT,
+	"bounds to use during separation")
+ISL_ARG_BOOL(struct isl_options, ast_build_scale_strides, 0,
+	"ast-build-scale-strides", 1,
+	"allow iterators of strided loops to be scaled down")
 ISL_ARG_VERSION(print_version)
 ISL_ARGS_END
 
@@ -238,3 +265,38 @@ ISL_CTX_SET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
 	tile_scale_tile_loops)
 ISL_CTX_GET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
 	tile_scale_tile_loops)
+
+ISL_CTX_SET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
+	ast_build_atomic_upper_bound)
+ISL_CTX_GET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
+	ast_build_atomic_upper_bound)
+
+ISL_CTX_SET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
+	ast_build_prefer_pdiv)
+ISL_CTX_GET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
+	ast_build_prefer_pdiv)
+
+ISL_CTX_SET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
+	ast_build_exploit_nested_bounds)
+ISL_CTX_GET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
+	ast_build_exploit_nested_bounds)
+
+ISL_CTX_SET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
+	ast_build_group_coscheduled)
+ISL_CTX_GET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
+	ast_build_group_coscheduled)
+
+ISL_CTX_SET_STR_DEF(isl_options, struct isl_options, isl_options_args,
+	ast_iterator_type)
+ISL_CTX_GET_STR_DEF(isl_options, struct isl_options, isl_options_args,
+	ast_iterator_type)
+
+ISL_CTX_SET_CHOICE_DEF(isl_options, struct isl_options, isl_options_args,
+	ast_build_separation_bounds)
+ISL_CTX_GET_CHOICE_DEF(isl_options, struct isl_options, isl_options_args,
+	ast_build_separation_bounds)
+
+ISL_CTX_SET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
+	ast_build_scale_strides)
+ISL_CTX_GET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
+	ast_build_scale_strides)

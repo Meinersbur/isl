@@ -10,6 +10,7 @@
 #include <isl/band.h>
 #include <isl/constraint.h>
 #include <isl/aff.h>
+#include <isl/ast.h>
 #include <isl/printer.h>
 
 #undef BASE
@@ -83,4 +84,10 @@
 #include <print_templ.c>
 #undef BASE
 #define BASE point
+#include <print_templ.c>
+#undef BASE
+#define BASE ast_expr
+#include <print_templ.c>
+#undef BASE
+#define BASE ast_node
 #include <print_templ.c>
