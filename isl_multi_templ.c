@@ -456,3 +456,38 @@ error:
 	isl_space_free(space);
 	return NULL;
 }
+
+/* Construct a multi expression in the given space with value zero in
+ * each of the output dimensions.
+ */
+__isl_give MULTI(BASE) *FN(MULTI(BASE),zero)(__isl_take isl_space *space)
+{
+	int n;
+	MULTI(BASE) *multi;
+
+	if (!space)
+		return NULL;
+
+	n = isl_space_dim(space , isl_dim_out);
+	multi = FN(MULTI(BASE),alloc)(isl_space_copy(space));
+
+	if (!n)
+		isl_space_free(space);
+	else {
+		int i;
+		isl_local_space *ls;
+		EL *el;
+
+		space = isl_space_domain(space);
+		ls = isl_local_space_from_space(space);
+		el = FN(EL,zero_on_domain)(ls);
+
+		for (i = 0; i < n; ++i)
+			multi = FN(FN(MULTI(BASE),set),BASE)(multi, i,
+							    FN(EL,copy)(el));
+
+		FN(EL,free)(el);
+	}
+
+	return multi;
+}
