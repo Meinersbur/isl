@@ -88,6 +88,14 @@ __isl_give isl_aff *isl_aff_zero_on_domain(__isl_take isl_local_space *ls)
 	return aff;
 }
 
+/* Return a piecewise affine expression defined on the specified domain
+ * that is equal to zero.
+ */
+__isl_give isl_pw_aff *isl_pw_aff_zero_on_domain(__isl_take isl_local_space *ls)
+{
+	return isl_pw_aff_from_aff(isl_aff_zero_on_domain(ls));
+}
+
 /* Return an affine expression that is equal to the specified dimension
  * in "ls".
  */
