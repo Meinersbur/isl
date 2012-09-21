@@ -288,7 +288,7 @@ gitversion.h: @GIT_HEAD@
 	$(AM_V_GEN)echo '#define GIT_HEAD_ID "'@GIT_HEAD_VERSION@'"' > $@
 
 install-data-local: $(srcdir)/isl.py
-	@libisl=`sed -ne "/^library_names=/{s/.*='//;s/'$$//;s/ .*//;p}" \
+	@libisl=`sed -ne "/^library_names=/{s/.*='//;s/'$$//;s/ .*//;p;}" \
 		 $(builddir)/libisl.la`; \
 	case $$libisl in \
 	'') echo Cannot find isl library name. GDB bindings not installed.;; \
