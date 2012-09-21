@@ -362,6 +362,8 @@ __isl_give isl_printer *isl_printer_print_str(__isl_take isl_printer *p,
 {
 	if (!p)
 		return NULL;
+	if (!s)
+		return isl_printer_free(p);
 
 	return p->ops->print_str(p, s);
 }
