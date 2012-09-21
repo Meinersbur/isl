@@ -204,7 +204,14 @@ static __isl_give isl_ast_expr *isl_ast_expr_mod(isl_int v,
 	expr = isl_ast_expr_from_aff(isl_aff_copy(aff), build);
 
 	c = isl_ast_expr_alloc_int(ctx, d);
-	return isl_ast_expr_alloc_binary(isl_ast_op_pdiv_r, expr, c);
+	expr = isl_ast_expr_alloc_binary(isl_ast_op_pdiv_r, expr, c);
+
+	if (!isl_int_is_one(v)) {
+		c = isl_ast_expr_alloc_int(ctx, v);
+		expr = isl_ast_expr_mul(c, expr);
+	}
+
+	return expr;
 }
 
 /* Create an isl_ast_expr evaluating "v" times the specified dimension of "ls".
