@@ -36,9 +36,27 @@ enum isl_lp_result isl_ast_build_max(__isl_keep isl_ast_build *build,
 	return isl_set_max(build->domain, obj, opt);
 }
 
+/* Compute the "opposite" of the (numerator of the) argument of a div
+ * with denonimator "d".
+ *
+ * In particular, compute
+ *
+ *	-aff + (d - 1)
+ */
+static __isl_give isl_aff *oppose_div_arg(__isl_take isl_aff *aff, isl_int d)
+{
+	aff = isl_aff_neg(aff);
+	aff = isl_aff_add_constant(aff, d);
+	aff = isl_aff_add_constant_si(aff, -1);
+
+	return aff;
+}
+
 /* Create an isl_ast_expr evaluating the div at position "pos" in "ls".
  * The result is simplified in terms of build->domain.
  *
+ * "v" points to the coefficient of the div in the expression where it
+ * appears and may be updated by this function.
  * "ls" is known to be non-NULL.
  *
  * Let the div be of the form floor(e/d).
@@ -51,8 +69,16 @@ enum isl_lp_result isl_ast_build_max(__isl_keep isl_ast_build *build,
  *
  *	(fdiv_q, expr(e), expr(d))
  *
+ * If the ast_build_prefer_pdiv option is set and
+ * if "e" is not non-negative, then we check if "-e + d - 1" is non-negative.
+ * If so, we can rewrite
+ *
+ *	floor(e/d) = -ceil(-e/d) = -floor((-e + d - 1)/d)
+ *
+ * and still use pdiv_q.
  */
-static __isl_give isl_ast_expr *var_div(__isl_keep isl_local_space *ls,
+static __isl_give isl_ast_expr *var_div(isl_int *v,
+	__isl_keep isl_local_space *ls,
 	int pos, __isl_keep isl_ast_build *build)
 {
 	isl_ctx *ctx = isl_local_space_get_ctx(ls);
@@ -66,17 +92,27 @@ static __isl_give isl_ast_expr *var_div(__isl_keep isl_local_space *ls,
 	isl_aff_get_denominator(aff, &d);
 	aff = isl_aff_scale(aff, d);
 	den = isl_ast_expr_alloc_int(ctx, d);
-	isl_int_clear(d);
 
 	type = isl_ast_op_fdiv_q;
 	if (isl_options_get_ast_build_prefer_pdiv(ctx)) {
 		int non_neg = isl_ast_build_aff_is_nonneg(build, aff);
+		if (non_neg >= 0 && !non_neg) {
+			isl_aff *opp = oppose_div_arg(isl_aff_copy(aff), d);
+			non_neg = isl_ast_build_aff_is_nonneg(build, opp);
+			if (non_neg >= 0 && non_neg) {
+				isl_int_neg(*v, *v);
+				isl_aff_free(aff);
+				aff = opp;
+			} else
+				isl_aff_free(opp);
+		}
 		if (non_neg < 0)
 			aff = isl_aff_free(aff);
 		else if (non_neg)
 			type = isl_ast_op_pdiv_q;
 	}
 
+	isl_int_clear(d);
 	num = isl_ast_expr_from_aff(aff, build);
 	return isl_ast_expr_alloc_binary(type, num, den);
 }
@@ -84,19 +120,22 @@ static __isl_give isl_ast_expr *var_div(__isl_keep isl_local_space *ls,
 /* Create an isl_ast_expr evaluating the specified dimension of "ls".
  * The result is simplified in terms of build->domain.
  *
+ * "v" points to the coefficient of the specified dimension
+ * in the expression where it appears and may be updated by this function.
+ *
  * The isl_ast_expr is constructed based on the type of the dimension.
  * - divs are constructed by var_div
  * - set variables are constructed from the iterator isl_ids in "build"
  * - parameters are constructed from the isl_ids in "ls"
  */
-static __isl_give isl_ast_expr *var(__isl_keep isl_local_space *ls,
+static __isl_give isl_ast_expr *var(isl_int *v, __isl_keep isl_local_space *ls,
 	enum isl_dim_type type, int pos, __isl_keep isl_ast_build *build)
 {
 	isl_ctx *ctx = isl_local_space_get_ctx(ls);
 	isl_id *id;
 
 	if (type == isl_dim_div)
-		return var_div(ls, pos, build);
+		return var_div(v, ls, pos, build);
 
 	if (type == isl_dim_set) {
 		id = isl_ast_build_get_iterator_id(build, pos);
@@ -212,50 +251,44 @@ static __isl_give isl_ast_expr *isl_ast_expr_mod(isl_int v,
 	return expr;
 }
 
-/* Create an isl_ast_expr evaluating "v" times the specified dimension of "ls".
- * The result is simplified in terms of build->domain.
+/* Create an isl_ast_expr that scales "expr" by "v".
  *
- * Let e be the expression for the specified dimension.
- * If v is 1, we simply return e.
+ * If v is 1, we simply return expr.
  * If v is -1, we return
  *
- *	(isl_ast_op_minus, e)
+ *	(isl_ast_op_minus, expr)
  *
  * Otherwise, we return
  *
- *	(isl_ast_op_mul, expr(v), e)
+ *	(isl_ast_op_mul, expr(v), expr)
  */
-static __isl_give isl_ast_expr *isl_ast_expr_term(
-	__isl_keep isl_local_space *ls, enum isl_dim_type type, int pos,
-	isl_int v, __isl_keep isl_ast_build *build)
+static __isl_give isl_ast_expr *scale(__isl_take isl_ast_expr *expr, isl_int v)
 {
 	isl_ctx *ctx;
-	isl_ast_expr *expr;
 	isl_ast_expr *c;
 
-	if (!ls)
+	if (!expr)
 		return NULL;
+	if (isl_int_is_one(v))
+		return expr;
 
-	ctx = isl_local_space_get_ctx(ls);
-	expr = var(ls, type, pos, build);
-
-	if (!isl_int_is_one(v)) {
-		if (isl_int_is_negone(v)) {
-			expr = isl_ast_expr_neg(expr);
-		} else {
-			c = isl_ast_expr_alloc_int(ctx, v);
-			expr = isl_ast_expr_mul(c, expr);
-		}
+	if (isl_int_is_negone(v)) {
+		expr = isl_ast_expr_neg(expr);
+	} else {
+		ctx = isl_ast_expr_get_ctx(expr);
+		c = isl_ast_expr_alloc_int(ctx, v);
+		expr = isl_ast_expr_mul(c, expr);
 	}
 
 	return expr;
 }
 
-/* Add an expression for "v" times the specified dimension of "ls"
+/* Add an expression for "*v" times the specified dimension of "ls"
  * to expr.
  *
- * Let e be the expression for the specified dimension.
- * If "v" is negative, we create
+ * Let e be the expression for the specified dimension,
+ * multiplied by the absolute value of "*v".
+ * If "*v" is negative, we create
  *
  *	(isl_ast_op_sub, expr, e)
  *
@@ -265,7 +298,7 @@ static __isl_give isl_ast_expr *isl_ast_expr_term(
  *
  * instead.
  *
- * If "v" is positive, we simply create
+ * If "*v" is positive, we simply create
  *
  *	(isl_ast_op_add, expr, e)
  *
@@ -273,19 +306,21 @@ static __isl_give isl_ast_expr *isl_ast_expr_term(
 static __isl_give isl_ast_expr *isl_ast_expr_add_term(
 	__isl_take isl_ast_expr *expr,
 	__isl_keep isl_local_space *ls, enum isl_dim_type type, int pos,
-	isl_int v, __isl_keep isl_ast_build *build)
+	isl_int *v, __isl_keep isl_ast_build *build)
 {
 	isl_ast_expr *term;
 
 	if (!expr)
 		return NULL;
 
-	if (isl_int_is_neg(v) && !ast_expr_is_zero(expr)) {
-		isl_int_neg(v, v);
-		term = isl_ast_expr_term(ls, type, pos, v, build);
+	term = var(v, ls, type, pos, build);
+
+	if (isl_int_is_neg(*v) && !ast_expr_is_zero(expr)) {
+		isl_int_neg(*v, *v);
+		term = scale(term, *v);
 		return ast_expr_sub(expr, term);
 	} else {
-		term = isl_ast_expr_term(ls, type, pos, v, build);
+		term = scale(term, *v);
 		return ast_expr_add(expr, term);
 	}
 }
@@ -338,6 +373,12 @@ static __isl_give isl_ast_expr *isl_ast_expr_add_int(
  *	(isl_ast_op_pdiv_r, a, m)
  *
  * we need to make sure that a is non-negative.
+ * If not, we check if "-a + m - 1" is non-negative.
+ * If so, we can rewrite
+ *
+ *	floor(a/m) = -ceil(-a/m) = -floor((-a + m - 1)/m)
+ *
+ * and still extract a modulo.
  *
  * The caller is responsible for dividing *neg and/or *pos by d.
  */
@@ -355,8 +396,20 @@ static __isl_give isl_aff *extract_modulo(__isl_take isl_aff *aff,
 	div = isl_aff_get_div(aff, j);
 	isl_aff_get_denominator(div, &d);
 	mod = isl_int_is_divisible_by(v, d);
-	if (mod)
+	if (mod) {
+		div = isl_aff_scale(div, d);
 		mod = isl_ast_build_aff_is_nonneg(build, div);
+		if (mod >= 0 && !mod) {
+			isl_aff *opp = oppose_div_arg(isl_aff_copy(div), d);
+			mod = isl_ast_build_aff_is_nonneg(build, opp);
+			if (mod >= 0 && mod) {
+				isl_aff_free(div);
+				div = opp;
+				isl_int_neg(v, v);
+			} else
+				isl_aff_free(opp);
+		}
+	}
 	if (mod < 0) {
 		isl_aff_free(div);
 		isl_int_clear(d);
@@ -366,7 +419,6 @@ static __isl_give isl_aff *extract_modulo(__isl_take isl_aff *aff,
 		isl_int_clear(d);
 		return aff;
 	}
-	div = isl_aff_scale(div, d);
 	isl_int_divexact(v, v, d);
 	s = isl_int_sgn(v);
 	isl_int_abs(v, v);
@@ -482,7 +534,7 @@ __isl_give isl_ast_expr *isl_ast_expr_from_aff(__isl_take isl_aff *aff,
 			if (isl_int_is_zero(v))
 				continue;
 			expr = isl_ast_expr_add_term(expr,
-							ls, l[i], j, v, build);
+							ls, l[i], j, &v, build);
 		}
 	}
 
@@ -526,7 +578,7 @@ static __isl_give isl_ast_expr *add_signed_terms(__isl_take isl_ast_expr *expr,
 				continue;
 			isl_int_abs(v, v);
 			expr = isl_ast_expr_add_term(expr,
-						ls, l[i], j, v, build);
+						ls, l[i], j, &v, build);
 		}
 	}
 
