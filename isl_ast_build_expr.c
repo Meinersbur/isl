@@ -38,7 +38,6 @@ enum isl_lp_result isl_ast_build_max(__isl_keep isl_ast_build *build,
 
 /* Create an isl_ast_expr evaluating the div at position "pos" in "ls".
  * The result is simplified in terms of build->domain.
- * The size is computed by the caller.
  *
  * "ls" is known to be non-NULL.
  *
@@ -84,7 +83,6 @@ static __isl_give isl_ast_expr *var_div(__isl_keep isl_local_space *ls,
 
 /* Create an isl_ast_expr evaluating the specified dimension of "ls".
  * The result is simplified in terms of build->domain.
- * The size is computed by the caller.
  *
  * The isl_ast_expr is constructed based on the type of the dimension.
  * - divs are constructed by var_div
@@ -259,9 +257,9 @@ static __isl_give isl_ast_expr *isl_ast_expr_term(
  * Let e be the expression for the specified dimension.
  * If "v" is negative, we create
  *
- *	(isl_ast_op_sub, cons->expr, e)
+ *	(isl_ast_op_sub, expr, e)
  *
- * except when cons->expr is trivially zero, in which case we create
+ * except when expr is trivially zero, in which case we create
  *
  *	(isl_ast_op_mines, e)
  *
@@ -269,7 +267,7 @@ static __isl_give isl_ast_expr *isl_ast_expr_term(
  *
  * If "v" is positive, we simply create
  *
- *	(isl_ast_op_add, cons->expr, e)
+ *	(isl_ast_op_add, expr, e)
  *
  */
 static __isl_give isl_ast_expr *isl_ast_expr_add_term(
