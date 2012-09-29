@@ -785,6 +785,50 @@ error:
 	return isl_aff_free(aff);
 }
 
+/* Look for any divs j that appear with a unit coefficient inside
+ * the definitions of other divs i and plug them into the definitions
+ * of the divs i.
+ *
+ * In particular, an expression of the form
+ *
+ *	floor((f(..) + floor(g(..)/n))/m)
+ *
+ * is simplified to
+ *
+ *	floor((n * f(..) + g(..))/(n * m))
+ *
+ * This simplification is correct because we can move the expression
+ * f(..) into the inner floor in the original expression to obtain
+ *
+ *	floor(floor((n * f(..) + g(..))/n)/m)
+ *
+ * from which we can derive the simplified expression.
+ */
+static __isl_give isl_aff *plug_in_unit_divs(__isl_take isl_aff *aff)
+{
+	int i, j, n;
+	int off;
+
+	if (!aff)
+		return NULL;
+
+	n = isl_local_space_dim(aff->ls, isl_dim_div);
+	off = isl_local_space_offset(aff->ls, isl_dim_div);
+	for (i = 1; i < n; ++i) {
+		for (j = 0; j < i; ++j) {
+			if (!isl_int_is_one(aff->ls->div->row[i][1 + off + j]))
+				continue;
+			aff->ls = isl_local_space_substitute_seq(aff->ls,
+				isl_dim_div, j, aff->ls->div->row[j],
+				aff->v->size, i, 1);
+			if (!aff->ls)
+				return isl_aff_free(aff);
+		}
+	}
+
+	return aff;
+}
+
 /* Swap divs "a" and "b" in "aff", which is assumed to be non-NULL.
  *
  * Even though this function is only called on isl_affs with a single
@@ -889,6 +933,7 @@ __isl_give isl_aff *isl_aff_normalize(__isl_take isl_aff *aff)
 	if (!aff->v)
 		return isl_aff_free(aff);
 	aff = plug_in_integral_divs(aff);
+	aff = plug_in_unit_divs(aff);
 	aff = sort_divs(aff);
 	aff = isl_aff_remove_unused_divs(aff);
 	return aff;
