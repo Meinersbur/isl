@@ -758,7 +758,7 @@ static __isl_give isl_aff *plug_in_integral_divs(__isl_take isl_aff *aff)
 			continue;
 		ls = isl_local_space_copy(aff->ls);
 		ls = isl_local_space_substitute_seq(ls, isl_dim_div, i,
-					    aff->ls->div->row[i], len, i + 1);
+				aff->ls->div->row[i], len, i + 1, n - (i + 1));
 		vec = isl_vec_copy(aff->v);
 		vec = isl_vec_cow(vec);
 		if (!ls || !vec)

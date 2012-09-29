@@ -752,7 +752,7 @@ error:
 
 /* Plug in the affine expressions "subs" of length "subs_len" (including
  * the denominator and the constant term) into the variable at position "pos"
- * of all the div expressions starting at "first".
+ * of the "n" div expressions starting at "first".
  *
  * Let i be the dimension to replace and let "subs" be of the form
  *
@@ -769,17 +769,23 @@ error:
 __isl_give isl_local_space *isl_local_space_substitute_seq(
 	__isl_take isl_local_space *ls,
 	enum isl_dim_type type, unsigned pos, isl_int *subs, int subs_len,
-	int first)
+	int first, int n)
 {
 	int i;
 	isl_int v;
 
+	if (n == 0)
+		return ls;
 	ls = isl_local_space_cow(ls);
 	if (!ls)
 		return NULL;
 	ls->div = isl_mat_cow(ls->div);
 	if (!ls->div)
 		return isl_local_space_free(ls);
+
+	if (first + n > ls->div->n_row)
+		isl_die(isl_local_space_get_ctx(ls), isl_error_invalid,
+			"index out of bounds", return isl_local_space_free(ls));
 
 	pos += isl_local_space_offset(ls, type);
 
@@ -828,7 +834,7 @@ __isl_give isl_local_space *isl_local_space_substitute(
 			return isl_local_space_free(ls));
 
 	return isl_local_space_substitute_seq(ls, type, pos, subs->v->el,
-						subs->v->size, 0);
+					    subs->v->size, 0, ls->div->n_row);
 }
 
 int isl_local_space_is_named_or_nested(__isl_keep isl_local_space *ls,
