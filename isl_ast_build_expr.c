@@ -315,6 +315,78 @@ static __isl_give isl_ast_expr *isl_ast_expr_add_int(
 	}
 }
 
+/* Check if "aff" involves any (implicit) modulo computations based
+ * on div "j".
+ * If so, remove them from aff and add expressions corresponding
+ * to those modulo computations to *pos and/or *neg.
+ * "v" is the coefficient of div "j".
+ *
+ * In particular, check if (v * div_j) / d is of the form
+ *
+ *	(f * m * floor(a / m)) / d
+ *
+ * and, if so, rewrite it as
+ *
+ *	(f * (a - (a mod m))) / d = (f * a) / d - (f * (a mod m)) / d
+ *
+ * and extract out -f * (a mod m).
+ * In particular, if f > 0, we add (f * (a mod m)) to *neg.
+ * If f < 0, we add ((-f) * (a mod m)) to *pos.
+ *
+ * Note that in order to represent "a mod m" as
+ *
+ *	(isl_ast_op_pdiv_r, a, m)
+ *
+ * we need to make sure that a is non-negative.
+ *
+ * The caller is responsible for dividing *neg and/or *pos by d.
+ */
+static __isl_give isl_aff *extract_modulo(__isl_take isl_aff *aff,
+	__isl_keep isl_ast_expr **pos, __isl_keep isl_ast_expr **neg,
+	__isl_keep isl_ast_build *build, int j, isl_int v)
+{
+	isl_ast_expr *expr;
+	isl_aff *div;
+	int s;
+	int mod;
+	isl_int d;
+
+	isl_int_init(d);
+	div = isl_aff_get_div(aff, j);
+	isl_aff_get_denominator(div, &d);
+	mod = isl_int_is_divisible_by(v, d);
+	if (mod)
+		mod = isl_ast_build_aff_is_nonneg(build, div);
+	if (mod < 0) {
+		isl_aff_free(div);
+		isl_int_clear(d);
+		return isl_aff_free(aff);
+	} else if (!mod) {
+		isl_aff_free(div);
+		isl_int_clear(d);
+		return aff;
+	}
+	div = isl_aff_scale(div, d);
+	isl_int_divexact(v, v, d);
+	s = isl_int_sgn(v);
+	isl_int_abs(v, v);
+	expr = isl_ast_expr_mod(v, div, d, build);
+	if (s > 0)
+		*neg = ast_expr_add(*neg, expr);
+	else
+		*pos = ast_expr_add(*pos, expr);
+	aff = isl_aff_set_coefficient_si(aff, isl_dim_div, j, 0);
+	if (s < 0)
+		isl_int_neg(v, v);
+	div = isl_aff_scale(div, v);
+	isl_aff_get_denominator(aff, &d);
+	div = isl_aff_scale_down(div, d);
+	aff = isl_aff_add(aff, div);
+	isl_int_clear(d);
+
+	return aff;
+}
+
 /* Check if "aff" involves any (implicit) modulo computations.
  * If so, remove them from aff and add expressions corresponding
  * to those modulo computations to *pos and/or *neg.
@@ -344,8 +416,7 @@ static __isl_give isl_aff *extract_modulos(__isl_take isl_aff *aff,
 {
 	isl_ctx *ctx;
 	int j, n;
-	isl_int v, d;
-	isl_local_space *ls;
+	isl_int v;
 
 	if (!aff)
 		return NULL;
@@ -355,52 +426,18 @@ static __isl_give isl_aff *extract_modulos(__isl_take isl_aff *aff,
 		return aff;
 
 	isl_int_init(v);
-	isl_int_init(d);
-	ls = isl_aff_get_domain_local_space(aff);
 
 	n = isl_aff_dim(aff, isl_dim_div);
 	for (j = 0; j < n; ++j) {
-		isl_ast_expr *expr;
-		isl_aff *div;
-		int s;
-		int mod;
-
 		isl_aff_get_coefficient(aff, isl_dim_div, j, &v);
-		if (isl_int_is_zero(v))
+		if (isl_int_is_zero(v) ||
+		    isl_int_is_one(v) || isl_int_is_negone(v))
 			continue;
-		div = isl_local_space_get_div(ls, j);
-		isl_aff_get_denominator(div, &d);
-		mod = isl_int_is_divisible_by(v, d);
-		if (mod)
-			mod = isl_ast_build_aff_is_nonneg(build, div);
-		if (mod < 0) {
-			aff = isl_aff_free(aff);
-			isl_aff_free(div);
+		aff = extract_modulo(aff, pos, neg, build, j, v);
+		if (!aff)
 			break;
-		} else if (!mod) {
-			isl_aff_free(div);
-			continue;
-		}
-		div = isl_aff_scale(div, d);
-		isl_int_divexact(v, v, d);
-		s = isl_int_sgn(v);
-		isl_int_abs(v, v);
-		expr = isl_ast_expr_mod(v, div, d, build);
-		if (s > 0)
-			*neg = ast_expr_add(*neg, expr);
-		else
-			*pos = ast_expr_add(*pos, expr);
-		aff = isl_aff_set_coefficient_si(aff, isl_dim_div, j, 0);
-		if (s < 0)
-			isl_int_neg(v, v);
-		div = isl_aff_scale(div, v);
-		isl_aff_get_denominator(aff, &d);
-		div = isl_aff_scale_down(div, d);
-		aff = isl_aff_add(aff, div);
 	}
 
-	isl_local_space_free(ls);
-	isl_int_clear(d);
 	isl_int_clear(v);
 
 	return aff;
