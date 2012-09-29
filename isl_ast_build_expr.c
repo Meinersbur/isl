@@ -261,7 +261,7 @@ static __isl_give isl_ast_expr *isl_ast_expr_term(
  *
  * except when expr is trivially zero, in which case we create
  *
- *	(isl_ast_op_mines, e)
+ *	(isl_ast_op_minus, e)
  *
  * instead.
  *
