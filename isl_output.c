@@ -1969,8 +1969,8 @@ error:
 	return NULL;
 }
 
-__isl_give isl_printer *isl_printer_print_space(__isl_take isl_printer *p,
-	__isl_keep isl_space *dim)
+static __isl_give isl_printer *isl_printer_print_space_isl(
+	__isl_take isl_printer *p, __isl_keep isl_space *dim)
 {
 	if (!dim)
 		goto error;
@@ -1991,6 +1991,21 @@ __isl_give isl_printer *isl_printer_print_space(__isl_take isl_printer *p,
 error:
 	isl_printer_free(p);
 	return NULL;
+}
+
+__isl_give isl_printer *isl_printer_print_space(__isl_take isl_printer *p,
+	__isl_keep isl_space *space)
+{
+	if (!p || !space)
+		return isl_printer_free(p);
+	if (p->output_format == ISL_FORMAT_ISL)
+		return isl_printer_print_space_isl(p, space);
+	else if (p->output_format == ISL_FORMAT_OMEGA)
+		return print_omega_parameters(space, p);
+
+	isl_die(isl_space_get_ctx(space), isl_error_unsupported,
+		"output format not supported for space",
+		return isl_printer_free(p));
 }
 
 __isl_give isl_printer *isl_printer_print_local_space(__isl_take isl_printer *p,
