@@ -4519,6 +4519,18 @@ __isl_give isl_basic_set *isl_basic_set_params(__isl_take isl_basic_set *bset)
 	return bset;
 }
 
+/* Construct a zero-dimensional basic set with the given parameter domain.
+ */
+__isl_give isl_basic_set *isl_basic_set_from_params(
+	__isl_take isl_basic_set *bset)
+{
+	isl_space *space;
+	space = isl_basic_set_get_space(bset);
+	space = isl_space_set_from_params(space);
+	bset = isl_basic_set_reset_space(bset, space);
+	return bset;
+}
+
 /* Compute the parameter domain of the given set.
  */
 __isl_give isl_set *isl_set_params(__isl_take isl_set *set)
