@@ -566,17 +566,6 @@ static __isl_give isl_printer *basic_map_print_omega(
 	return p;
 }
 
-static __isl_give isl_printer *isl_basic_map_print_omega(
-	__isl_keep isl_basic_map *bmap, __isl_take isl_printer *p)
-{
-	p = print_omega_parameters(bmap->dim, p);
-
-	p = isl_printer_start_line(p);
-	p = basic_map_print_omega(bmap, p);
-	p = isl_printer_end_line(p);
-	return p;
-}
-
 static __isl_give isl_printer *basic_set_print_omega(
 	__isl_keep isl_basic_set *bset, __isl_take isl_printer *p)
 {
@@ -588,31 +577,16 @@ static __isl_give isl_printer *basic_set_print_omega(
 	return p;
 }
 
-static __isl_give isl_printer *isl_basic_set_print_omega(
-	__isl_keep isl_basic_set *bset, __isl_take isl_printer *p)
-{
-	p = print_omega_parameters(bset->dim, p);
-
-	p = isl_printer_start_line(p);
-	p = basic_set_print_omega(bset, p);
-	p = isl_printer_end_line(p);
-	return p;
-}
-
 static __isl_give isl_printer *isl_map_print_omega(__isl_keep isl_map *map,
 	__isl_take isl_printer *p)
 {
 	int i;
 
-	p = print_omega_parameters(map->dim, p);
-
-	p = isl_printer_start_line(p);
 	for (i = 0; i < map->n; ++i) {
 		if (i)
 			p = isl_printer_print_str(p, " union ");
 		p = basic_map_print_omega(map->p[i], p);
 	}
-	p = isl_printer_end_line(p);
 	return p;
 }
 
@@ -621,15 +595,11 @@ static __isl_give isl_printer *isl_set_print_omega(__isl_keep isl_set *set,
 {
 	int i;
 
-	p = print_omega_parameters(set->dim, p);
-
-	p = isl_printer_start_line(p);
 	for (i = 0; i < set->n; ++i) {
 		if (i)
 			p = isl_printer_print_str(p, " union ");
 		p = basic_set_print_omega(set->p[i], p);
 	}
-	p = isl_printer_end_line(p);
 	return p;
 }
 
@@ -956,7 +926,7 @@ __isl_give isl_printer *isl_printer_print_basic_map(__isl_take isl_printer *p,
 	if (p->output_format == ISL_FORMAT_ISL)
 		return isl_basic_map_print_isl(bmap, p, 0);
 	else if (p->output_format == ISL_FORMAT_OMEGA)
-		return isl_basic_map_print_omega(bmap, p);
+		return basic_map_print_omega(bmap, p);
 	isl_assert(bmap->ctx, 0, goto error);
 error:
 	isl_printer_free(p);
@@ -996,7 +966,7 @@ __isl_give isl_printer *isl_printer_print_basic_set(__isl_take isl_printer *p,
 	else if (p->output_format == ISL_FORMAT_POLYLIB_CONSTRAINTS)
 		return bset_print_constraints_polylib(bset, p);
 	else if (p->output_format == ISL_FORMAT_OMEGA)
-		return isl_basic_set_print_omega(bset, p);
+		return basic_set_print_omega(bset, p);
 	isl_assert(p->ctx, 0, goto error);
 error:
 	isl_printer_free(p);
