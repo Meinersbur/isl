@@ -1372,7 +1372,7 @@ static __isl_give isl_aff *isl_aff_substitute_equalities(
 		goto error;
 	n_div = isl_local_space_dim(aff->ls, isl_dim_div);
 	if (n_div > 0)
-		eq = isl_basic_set_add(eq, isl_dim_set, n_div);
+		eq = isl_basic_set_add_dims(eq, isl_dim_set, n_div);
 	return isl_aff_substitute_equalities_lifted(aff, eq);
 error:
 	isl_basic_set_free(eq);

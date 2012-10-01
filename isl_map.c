@@ -3062,7 +3062,7 @@ __isl_give isl_basic_map *isl_basic_map_add(__isl_take isl_basic_map *bmap,
 					isl_basic_map_dim(bmap, type), n);
 }
 
-__isl_give isl_basic_set *isl_basic_set_add(__isl_take isl_basic_set *bset,
+__isl_give isl_basic_set *isl_basic_set_add_dims(__isl_take isl_basic_set *bset,
 		enum isl_dim_type type, unsigned n)
 {
 	if (!bset)

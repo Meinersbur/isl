@@ -609,7 +609,7 @@ static __isl_give isl_map *path_along_delta(__isl_take isl_space *dim,
 		isl_space *dim = isl_basic_set_get_space(delta);
 		delta = isl_basic_set_project_out(delta,
 						  isl_dim_param, 0, nparam);
-		delta = isl_basic_set_add(delta, isl_dim_param, nparam);
+		delta = isl_basic_set_add_dims(delta, isl_dim_param, nparam);
 		delta = isl_basic_set_reset_space(delta, dim);
 		if (!delta)
 			goto error;

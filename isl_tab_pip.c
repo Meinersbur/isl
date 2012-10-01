@@ -4521,7 +4521,7 @@ static union isl_lex_res basic_map_partial_lexopt_symm(
 	bmap = isl_basic_map_finalize(bmap);
 
 	n_div = isl_basic_set_dim(dom, isl_dim_div);
-	dom = isl_basic_set_add(dom, isl_dim_set, 1);
+	dom = isl_basic_set_add_dims(dom, isl_dim_set, 1);
 	dom = isl_basic_set_extend_constraints(dom, 0, n);
 	for (i = 0; i < n; ++i) {
 		k = isl_basic_set_alloc_inequality(dom);

@@ -2503,7 +2503,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_substitute_equalities(
 	if (!qp || !eq)
 		goto error;
 	if (qp->div->n_row > 0)
-		eq = isl_basic_set_add(eq, isl_dim_set, qp->div->n_row);
+		eq = isl_basic_set_add_dims(eq, isl_dim_set, qp->div->n_row);
 	return isl_qpolynomial_substitute_equalities_lifted(qp, eq);
 error:
 	isl_basic_set_free(eq);
@@ -3215,7 +3215,7 @@ int isl_qpolynomial_as_polynomial_on_domain(__isl_keep isl_qpolynomial *qp,
 	dim = isl_space_add_dims(dim, isl_dim_set, qp->div->n_row);
 	poly = isl_qpolynomial_alloc(dim, 0, isl_upoly_copy(qp->upoly));
 	bset = isl_basic_set_copy(bset);
-	bset = isl_basic_set_add(bset, isl_dim_set, qp->div->n_row);
+	bset = isl_basic_set_add_dims(bset, isl_dim_set, qp->div->n_row);
 	bset = add_div_constraints(bset, div);
 
 	return fn(bset, poly, user);
