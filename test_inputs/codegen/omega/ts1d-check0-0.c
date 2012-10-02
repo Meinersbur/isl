@@ -1,5 +1,5 @@
 {
-  for (int c1 = 0; c1 <= N - 1; c1 += 1)
+  for (int c1 = 0; c1 < N; c1 += 1)
     s0(1, c1, 1, 0, 0);
   for (int c1 = 0; c1 <= floord(T - 1, 500); c1 += 1)
     for (int c2 = 1000 * c1; c2 <= min(N + 1000 * c1 + 997, N + 2 * T - 3); c2 += 1) {

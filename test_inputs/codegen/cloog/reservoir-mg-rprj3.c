@@ -1,13 +1,13 @@
 if (N >= 3 && M >= 2)
-  for (int c1 = 2; c1 <= O - 1; c1 += 1) {
+  for (int c1 = 2; c1 < O; c1 += 1) {
     for (int c5 = 2; c5 <= M; c5 += 1)
       S1(c1, 2, c5);
-    for (int c3 = 3; c3 <= N - 1; c3 += 1) {
+    for (int c3 = 3; c3 < N; c3 += 1) {
       for (int c5 = 2; c5 <= M; c5 += 1)
         S2(c1, c3 - 1, c5);
       if (M >= 3) {
         S4(c1, c3 - 1, 2);
-        for (int c5 = 2; c5 <= M - 2; c5 += 1) {
+        for (int c5 = 2; c5 < M - 1; c5 += 1) {
           S3(c1, c3 - 1, c5);
           S5(c1, c3 - 1, c5);
           S4(c1, c3 - 1, c5 + 1);
@@ -22,7 +22,7 @@ if (N >= 3 && M >= 2)
       S2(c1, N - 1, c5);
     if (M >= 3) {
       S4(c1, N - 1, 2);
-      for (int c5 = 2; c5 <= M - 2; c5 += 1) {
+      for (int c5 = 2; c5 < M - 1; c5 += 1) {
         S3(c1, N - 1, c5);
         S5(c1, N - 1, c5);
         S4(c1, N - 1, c5 + 1);

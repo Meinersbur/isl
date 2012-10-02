@@ -1,4 +1,4 @@
-for (int c0 = 1; c0 <= n - 1; c0 += 64)
+for (int c0 = 1; c0 < n; c0 += 64)
   for (int c1 = c0 - 1; c1 <= n; c1 += 64) {
     for (int c2 = c0; c2 <= min(c0 + 63, n); c2 += 1) {
       for (int c3 = c0; c3 <= min(c1 + 62, c2 - 1); c3 += 1)

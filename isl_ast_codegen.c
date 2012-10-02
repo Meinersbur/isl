@@ -716,27 +716,121 @@ static __isl_give isl_ast_graft *set_enforced_from_list(
 	return graft;
 }
 
+/* Does "aff" have a negative constant term?
+ */
+static int aff_constant_is_negative(__isl_take isl_set *set,
+	__isl_take isl_aff *aff, void *user)
+{
+	int *neg = user;
+	isl_int v;
+
+	isl_int_init(v);
+	isl_aff_get_constant(aff, &v);
+	*neg = isl_int_is_neg(v);
+	isl_int_clear(v);
+	isl_set_free(set);
+	isl_aff_free(aff);
+
+	return *neg ? 0 : -1;
+}
+
+/* Does "pa" have a negative constant term over its entire domain?
+ */
+static int pw_aff_constant_is_negative(__isl_take isl_pw_aff *pa, void *user)
+{
+	int r;
+	int *neg = user;
+
+	r = isl_pw_aff_foreach_piece(pa, &aff_constant_is_negative, user);
+	isl_pw_aff_free(pa);
+
+	return *neg ? 0 : -1;
+}
+
+/* Does each element in "list" have a negative constant term?
+ *
+ * The callback terminates the iteration as soon an element has been
+ * found that does not have a negative constant term.
+ */
+static int list_constant_is_negative(__isl_keep isl_pw_aff_list *list)
+{
+	int neg = 1;
+
+	if (isl_pw_aff_list_foreach(list,
+				&pw_aff_constant_is_negative, &neg) < 0 && neg)
+		return -1;
+
+	return neg;
+}
+
+/* Add 1 to each of the elements in "list", where each of these elements
+ * is defined over the internal schedule space of "build".
+ */
+static __isl_give isl_pw_aff_list *list_add_one(
+	__isl_take isl_pw_aff_list *list, __isl_keep isl_ast_build *build)
+{
+	int i, n;
+	isl_space *space;
+	isl_aff *aff;
+	isl_pw_aff *one;
+
+	space = isl_ast_build_get_space(build, 1);
+	aff = isl_aff_zero_on_domain(isl_local_space_from_space(space));
+	aff = isl_aff_add_constant_si(aff, 1);
+	one = isl_pw_aff_from_aff(aff);
+
+	n = isl_pw_aff_list_n_pw_aff(list);
+	for (i = 0; i < n; ++i) {
+		isl_pw_aff *pa;
+		pa = isl_pw_aff_list_get_pw_aff(list, i);
+		pa = isl_pw_aff_add(pa, isl_pw_aff_copy(one));
+		list = isl_pw_aff_list_set_pw_aff(list, i, pa);
+	}
+
+	isl_pw_aff_free(one);
+
+	return list;
+}
+
 /* Set the condition part of the for node graft->node in case
  * the upper bound is represented as a list of piecewise affine expressions.
  *
  * In particular, set the condition to
  *
  *	iterator <= min(list of upper bounds)
+ *
+ * If each of the upper bounds has a negative constant term, then
+ * set the condition to
+ *
+ *	iterator < min(list of (upper bound + 1)s)
+ *
  */
 static __isl_give isl_ast_graft *set_for_cond_from_list(
 	__isl_take isl_ast_graft *graft, __isl_keep isl_pw_aff_list *list,
 	__isl_keep isl_ast_build *build)
 {
+	int neg;
 	isl_ast_expr *bound, *iterator, *cond;
+	enum isl_ast_op_type type = isl_ast_op_le;
 
 	if (!graft || !list)
 		return isl_ast_graft_free(graft);
 
+	neg = list_constant_is_negative(list);
+	if (neg < 0)
+		return isl_ast_graft_free(graft);
+	list = isl_pw_aff_list_copy(list);
+	if (neg) {
+		list = list_add_one(list, build);
+		type = isl_ast_op_lt;
+	}
+
 	bound = reduce_list(isl_ast_op_min, list, build);
 	iterator = isl_ast_expr_copy(graft->node->u.f.iterator);
-	cond = isl_ast_expr_alloc_binary(isl_ast_op_le, iterator, bound);
+	cond = isl_ast_expr_alloc_binary(type, iterator, bound);
 	graft->node->u.f.cond = cond;
 
+	isl_pw_aff_list_free(list);
 	if (!graft->node->u.f.cond)
 		return isl_ast_graft_free(graft);
 	return graft;
