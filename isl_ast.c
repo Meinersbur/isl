@@ -918,7 +918,9 @@ static char *op_str[] = {
 	[isl_ast_op_div] = "/",
 	[isl_ast_op_eq] = "==",
 	[isl_ast_op_le] = "<=",
-	[isl_ast_op_ge] = ">="
+	[isl_ast_op_ge] = ">=",
+	[isl_ast_op_lt] = "<",
+	[isl_ast_op_gt] = ">"
 };
 
 /* Precedence in C of the various operators.
@@ -945,6 +947,8 @@ static int op_prec[] = {
 	[isl_ast_op_eq] = 9,
 	[isl_ast_op_le] = 8,
 	[isl_ast_op_ge] = 8,
+	[isl_ast_op_lt] = 8,
+	[isl_ast_op_gt] = 8,
 	[isl_ast_op_call] = 2
 };
 
@@ -970,6 +974,8 @@ static int op_left[] = {
 	[isl_ast_op_eq] = 1,
 	[isl_ast_op_le] = 1,
 	[isl_ast_op_ge] = 1,
+	[isl_ast_op_lt] = 1,
+	[isl_ast_op_gt] = 1,
 	[isl_ast_op_call] = 1
 };
 

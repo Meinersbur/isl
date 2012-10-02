@@ -5414,9 +5414,17 @@ Equality relation.
 
 Less than or equal relation.
 
+=item C<isl_ast_op_lt>
+
+Less than relation.
+
 =item C<isl_ast_op_ge>
 
 Greater than or equal relation.
+
+=item C<isl_ast_op_gt>
+
+Greater than relation.
 
 =item C<isl_ast_op_call>
 
