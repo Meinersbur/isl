@@ -33,6 +33,8 @@ int isl_options_get_ast_build_separation_bounds(isl_ctx *ctx);
 int isl_options_set_ast_build_scale_strides(isl_ctx *ctx, int val);
 int isl_options_get_ast_build_scale_strides(isl_ctx *ctx);
 
+int isl_options_set_ast_build_allow_else(isl_ctx *ctx, int val);
+int isl_options_get_ast_build_allow_else(isl_ctx *ctx);
 
 isl_ctx *isl_ast_build_get_ctx(__isl_keep isl_ast_build *build);
 

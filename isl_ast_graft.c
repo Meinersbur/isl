@@ -430,12 +430,15 @@ static int clear_if_nodes(struct isl_if_node *if_node, int first, int n)
  * The guard of the node is then simplified based on the conditions
  * enforced at that then or else branch.
  * Otherwise, the current graft is appended to the list.
+ *
+ * We only construct else branches if allowed by the user.
  */
 static __isl_give isl_ast_graft_list *insert_pending_guard_nodes(
 	__isl_take isl_ast_graft_list *list,
 	__isl_keep isl_ast_build *build)
 {
 	int i, j, n, n_if;
+	int allow_else;
 	isl_ctx *ctx;
 	isl_ast_graft_list *res;
 	struct isl_if_node *if_node = NULL;
@@ -445,6 +448,8 @@ static __isl_give isl_ast_graft_list *insert_pending_guard_nodes(
 
 	ctx = isl_ast_build_get_ctx(build);
 	n = isl_ast_graft_list_n_ast_graft(list);
+
+	allow_else = isl_options_get_ast_build_allow_else(ctx);
 
 	n_if = 0;
 	if (n > 0) {
@@ -478,6 +483,8 @@ static __isl_give isl_ast_graft_list *insert_pending_guard_nodes(
 					found_then = j;
 					break;
 				}
+				if (!allow_else)
+					continue;
 				subset = isl_set_is_subset(test,
 							if_node[j].complement);
 				if (subset < 0 || subset) {

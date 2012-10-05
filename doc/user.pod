@@ -5629,6 +5629,9 @@ while printing the AST.
 		isl_ctx *ctx, int val);
 	int isl_options_get_ast_build_scale_strides(
 		isl_ctx *ctx);
+	int isl_options_set_ast_build_allow_else(isl_ctx *ctx,
+		int val);
+	int isl_options_get_ast_build_allow_else(isl_ctx *ctx);
 
 =over
 
@@ -5721,6 +5724,11 @@ be used during separation.
 
 This option specifies whether the AST generator is allowed
 to scale down iterators of strided loops.
+
+=item * ast_build_allow_else
+
+This option specifies whether the AST generator is allowed
+to construct if statements with else branches.
 
 =back
 
