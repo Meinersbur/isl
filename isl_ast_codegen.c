@@ -151,9 +151,11 @@ static __isl_give isl_ast_graft *at_each_domain(__isl_take isl_ast_graft *graft,
  * in generate_non_single_valued.
  * Note that the inverse schedule being single-valued may depend
  * on constraints that are only available in the original context
- * domain specified by the user.  If the bare inverse schedule
- * is not single-valued, we double-check after introducing the constraints
- * from data->build->domain.
+ * domain specified by the user.  We therefore first introduce
+ * the constraints from data->build->domain.
+ * On the other hand, we only perform the test after having taken the gist
+ * of the domain as the resulting map is the one from which the call
+ * expression is constructed.
  *
  * Otherwise, we generate a call expression for the single executed
  * domain element and put a guard around it based on the (simplified)
@@ -171,22 +173,19 @@ static int generate_domain(__isl_take isl_map *executed, void *user)
 	isl_map *map;
 	int sv;
 
-	sv = isl_map_is_single_valued(executed);
-	if (sv < 0)
-		goto error;
-	if (!sv) {
-		map = isl_map_copy(executed);
-		map = isl_map_intersect_domain(map,
+	executed = isl_map_intersect_domain(executed,
 					    isl_set_copy(data->build->domain));
-		sv = isl_map_is_single_valued(map);
-		isl_map_free(map);
-	}
-	if (!sv)
-		return generate_non_single_valued(executed, data);
 
 	executed = isl_map_coalesce(executed);
 	map = isl_map_copy(executed);
 	map = isl_ast_build_compute_gist_map_domain(data->build, map);
+	sv = isl_map_is_single_valued(map);
+	if (sv < 0)
+		goto error;
+	if (!sv) {
+		isl_map_free(map);
+		return generate_non_single_valued(executed, data);
+	}
 	guard = isl_map_domain(isl_map_copy(map));
 	guard = isl_set_coalesce(guard);
 	guard = isl_ast_build_compute_gist(data->build, guard);
@@ -201,6 +200,7 @@ static int generate_domain(__isl_take isl_map *executed, void *user)
 
 	return 0;
 error:
+	isl_map_free(map);
 	isl_map_free(executed);
 	return -1;
 }
