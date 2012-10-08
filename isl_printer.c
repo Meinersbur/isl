@@ -163,15 +163,13 @@ static __isl_give isl_printer *str_print_isl_int(__isl_take isl_printer *p,
 {
 	char *s;
 	int len;
-	isl_int_print_gmp_free_t gmp_free;
 
 	s = isl_int_get_str(i);
 	len = strlen(s);
 	if (len < p->width)
 		p = str_print_indent(p, p->width - len);
 	p = str_print(p, s, len);
-	mp_get_memory_functions(NULL, NULL, &gmp_free);
-	(*gmp_free)(s, len + 1);
+	isl_int_free_str(s);
 	return p;
 }
 

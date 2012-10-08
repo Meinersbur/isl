@@ -46,6 +46,13 @@ typedef mpz_t	isl_int;
 #define isl_int_get_ui(r)	mpz_get_ui(r)
 #define isl_int_get_d(r)	mpz_get_d(r)
 #define isl_int_get_str(r)	mpz_get_str(0, 10, r)
+typedef void (*isl_int_print_gmp_free_t)(void *, size_t);
+#define isl_int_free_str(s)					\
+	do {								\
+		isl_int_print_gmp_free_t gmp_free;			\
+		mp_get_memory_functions(NULL, NULL, &gmp_free);		\
+		(*gmp_free)(s, strlen(s) + 1);				\
+	} while (0)
 #define isl_int_abs(r,i)	mpz_abs(r,i)
 #define isl_int_neg(r,i)	mpz_neg(r,i)
 #define isl_int_swap(i,j)	mpz_swap(i,j)
@@ -73,15 +80,12 @@ typedef mpz_t	isl_int;
 #define isl_int_fdiv_q_ui(r,i,j)	mpz_fdiv_q_ui(r,i,j)
 
 #define isl_int_read(r,s)	mpz_set_str(r,s,10)
-typedef void (*isl_int_print_gmp_free_t)(void *, size_t);
 #define isl_int_print(out,i,width)					\
 	do {								\
 		char *s;						\
-		isl_int_print_gmp_free_t gmp_free;			\
 		s = mpz_get_str(0, 10, i);				\
 		fprintf(out, "%*s", width, s);				\
-		mp_get_memory_functions(NULL, NULL, &gmp_free);		\
-		(*gmp_free)(s, strlen(s)+1);				\
+		isl_int_free_str(s);                                        \
 	} while (0)
 
 #define isl_int_sgn(i)		mpz_sgn(i)
@@ -122,11 +126,9 @@ extern "C" { typedef void (*isl_gmp_free_t)(void *, size_t); }
 static inline std::ostream &operator<<(std::ostream &os, isl_int i)
 {
 	char *s;
-	isl_gmp_free_t gmp_free;
 	s = mpz_get_str(0, 10, i);
 	os << s;
-	mp_get_memory_functions(NULL, NULL, &gmp_free);
-	(*gmp_free)(s, strlen(s)+1);
+	isl_int_free_str(s);
 	return os;
 }
 #endif
