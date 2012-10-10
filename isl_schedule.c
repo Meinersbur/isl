@@ -1732,11 +1732,18 @@ static __isl_give isl_schedule *extract_schedule(struct isl_sched_graph *graph,
 		int r, b;
 		int *band_end, *band_id, *zero;
 
+		sched->node[i].sched =
+			node_extract_schedule_multi_aff(&graph->node[i]);
+		if (!sched->node[i].sched)
+			goto error;
+
+		sched->node[i].n_band = graph->n_band;
+		if (graph->n_band == 0)
+			continue;
+
 		band_end = isl_alloc_array(ctx, int, graph->n_band);
 		band_id = isl_alloc_array(ctx, int, graph->n_band);
 		zero = isl_alloc_array(ctx, int, graph->n_total_row);
-		sched->node[i].sched =
-			node_extract_schedule_multi_aff(&graph->node[i]);
 		sched->node[i].band_end = band_end;
 		sched->node[i].band_id = band_id;
 		sched->node[i].zero = zero;

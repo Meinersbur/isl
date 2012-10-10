@@ -2314,6 +2314,10 @@ int test_schedule(isl_ctx *ctx)
 {
 	const char *D, *W, *R, *V, *P, *S;
 
+	/* Handle resulting schedule with zero bands. */
+	if (test_one_schedule(ctx, "{[]}", "{}", "{}", "{[] -> []}", 0, 0) < 0)
+		return -1;
+
 	/* Jacobi */
 	D = "[T,N] -> { S1[t,i] : 1 <= t <= T and 2 <= i <= N - 1 }";
 	W = "{ S1[t,i] -> a[t,i] }";
