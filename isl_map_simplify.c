@@ -2204,12 +2204,26 @@ int isl_basic_set_plain_is_disjoint(__isl_keep isl_basic_set *bset1,
 					      (struct isl_basic_map *)bset2);
 }
 
+/* Are "map1" and "map2" obviously disjoint?
+ *
+ * If one of them is empty or if they live in different spaces (ignoring
+ * parameters), then they are clearly disjoint.
+ *
+ * If they have different parameters, then we skip any further tests.
+ *
+ * If they are obviously equal, but not obviously empty, then we will
+ * not be able to detect if they are disjoint.
+ *
+ * Otherwise we check if each basic map in "map1" is obviously disjoint
+ * from each basic map in "map2".
+ */
 int isl_map_plain_is_disjoint(__isl_keep isl_map *map1,
 	__isl_keep isl_map *map2)
 {
 	int i, j;
 	int disjoint;
 	int intersect;
+	int match;
 
 	if (!map1 || !map2)
 		return -1;
@@ -2221,6 +2235,21 @@ int isl_map_plain_is_disjoint(__isl_keep isl_map *map1,
 	disjoint = isl_map_plain_is_empty(map2);
 	if (disjoint < 0 || disjoint)
 		return disjoint;
+
+	match = isl_space_tuple_match(map1->dim, isl_dim_in,
+				map2->dim, isl_dim_in);
+	if (match < 0 || !match)
+		return match < 0 ? -1 : 1;
+
+	match = isl_space_tuple_match(map1->dim, isl_dim_out,
+				map2->dim, isl_dim_out);
+	if (match < 0 || !match)
+		return match < 0 ? -1 : 1;
+
+	match = isl_space_match(map1->dim, isl_dim_param,
+				map2->dim, isl_dim_param);
+	if (match < 0 || !match)
+		return match < 0 ? -1 : 0;
 
 	intersect = isl_map_plain_is_equal(map1, map2);
 	if (intersect < 0 || intersect)
