@@ -10272,7 +10272,8 @@ __isl_give isl_basic_map *isl_basic_map_from_constraint_matrices(
 	isl_mat_free(eq);
 	isl_mat_free(ineq);
 
-	return bmap;
+	bmap = isl_basic_map_simplify(bmap);
+	return isl_basic_map_finalize(bmap);
 error:
 	isl_space_free(dim);
 	isl_mat_free(eq);
