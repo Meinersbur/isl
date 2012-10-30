@@ -31,6 +31,8 @@
  * Sven Verdoolaege.
  */ 
 
+#include "isl_config.h"
+
 #include <assert.h>
 #include <iostream>
 #include <llvm/Support/raw_ostream.h>
@@ -49,7 +51,11 @@
 #include <clang/Driver/Tool.h>
 #include <clang/Frontend/CompilerInstance.h>
 #include <clang/Frontend/CompilerInvocation.h>
+#ifdef HAVE_BASIC_DIAGNOSTICOPTIONS_H
+#include <clang/Basic/DiagnosticOptions.h>
+#else
 #include <clang/Frontend/DiagnosticOptions.h>
+#endif
 #include <clang/Frontend/TextDiagnosticPrinter.h>
 #include <clang/Frontend/Utils.h>
 #include <clang/Lex/HeaderSearch.h>
@@ -57,7 +63,6 @@
 #include <clang/Parse/ParseAST.h>
 #include <clang/Sema/Sema.h>
 
-#include "isl_config.h"
 #include "extract_interface.h"
 #include "python.h"
 
@@ -188,14 +193,29 @@ static CompilerInvocation *construct_invocation(const char *filename,
 
 #endif
 
+#ifdef HAVE_BASIC_DIAGNOSTICOPTIONS_H
+
+static TextDiagnosticPrinter *construct_printer(void)
+{
+	return new TextDiagnosticPrinter(llvm::errs(), new DiagnosticOptions());
+}
+
+#else
+
+static TextDiagnosticPrinter *construct_printer(void)
+{
+	DiagnosticOptions DO;
+	return new TextDiagnosticPrinter(llvm::errs(), DO);
+}
+
+#endif
+
 int main(int argc, char *argv[])
 {
 	llvm::cl::ParseCommandLineOptions(argc, argv);
 
 	CompilerInstance *Clang = new CompilerInstance();
-	DiagnosticOptions DO;
-	Clang->createDiagnostics(0, NULL,
-				new TextDiagnosticPrinter(llvm::errs(), DO));
+	Clang->createDiagnostics(0, NULL, construct_printer());
 	DiagnosticsEngine &Diags = Clang->getDiagnostics();
 	Diags.setSuppressSystemWarnings(true);
 	CompilerInvocation *invocation =
