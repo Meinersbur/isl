@@ -1496,6 +1496,9 @@ static int update_schedule(struct isl_sched_graph *graph,
 	if (sol->size == 0)
 		isl_die(sol->ctx, isl_error_internal,
 			"no solution found", goto error);
+	if (graph->n_total_row >= graph->max_row)
+		isl_die(sol->ctx, isl_error_internal,
+			"too many schedule rows", goto error);
 
 	if (check_zero)
 		zero = isl_int_is_zero(sol->el[1]) &&
@@ -1678,6 +1681,10 @@ static int sort_statements(isl_ctx *ctx, struct isl_sched_graph *graph)
 
 	if (detect_sccs(ctx, graph) < 0)
 		return -1;
+
+	if (graph->n_total_row >= graph->max_row)
+		isl_die(ctx, isl_error_internal,
+			"too many schedule rows", return -1);
 
 	for (i = 0; i < graph->n; ++i) {
 		struct isl_sched_node *node = &graph->node[i];
@@ -1880,6 +1887,7 @@ static int copy_schedule(struct isl_sched_graph *dst,
 		src->n++;
 	}
 
+	dst->max_row = src->max_row;
 	dst->n_total_row = src->n_total_row;
 	dst->n_band = src->n_band;
 
@@ -1947,6 +1955,7 @@ static int compute_sub_schedule(isl_ctx *ctx,
 	if (copy_edges(ctx, &split, graph, edge_pred, data) < 0)
 		goto error;
 	split.n_row = graph->n_row;
+	split.max_row = graph->max_row;
 	split.n_total_row = graph->n_total_row;
 	split.n_band = graph->n_band;
 	split.band_start = graph->band_start;
@@ -2047,6 +2056,10 @@ static int compute_split_schedule(isl_ctx *ctx, struct isl_sched_graph *graph)
 	int n_total_row, orig_total_row;
 	int n_band, orig_band;
 	int drop;
+
+	if (graph->n_total_row >= graph->max_row)
+		isl_die(ctx, isl_error_internal,
+			"too many schedule rows", return -1);
 
 	drop = graph->n_total_row - graph->band_start;
 	graph->n_total_row -= drop;
@@ -2432,6 +2445,10 @@ static int split_scaled(isl_ctx *ctx, struct isl_sched_graph *graph)
 	if (graph->n <= 1)
 		return 0;
 
+	if (graph->n_total_row >= graph->max_row)
+		isl_die(ctx, isl_error_internal,
+			"too many schedule rows", return -1);
+
 	isl_int_init(gcd);
 	isl_int_init(gcd_i);
 
@@ -2715,9 +2732,13 @@ static int compute_schedule_wcc(isl_ctx *ctx, struct isl_sched_graph *graph)
 /* Add a row to the schedules that separates the SCCs and move
  * to the next band.
  */
-static int split_on_scc(struct isl_sched_graph *graph)
+static int split_on_scc(isl_ctx *ctx, struct isl_sched_graph *graph)
 {
 	int i;
+
+	if (graph->n_total_row >= graph->max_row)
+		isl_die(ctx, isl_error_internal,
+			"too many schedule rows", return -1);
 
 	for (i = 0; i < graph->n; ++i) {
 		struct isl_sched_node *node = &graph->node[i];
@@ -2758,7 +2779,8 @@ static int compute_component_schedule(isl_ctx *ctx,
 
 	if (ctx->opt->schedule_fuse == ISL_SCHEDULE_FUSE_MIN ||
 	    ctx->opt->schedule_separate_components)
-		split_on_scc(graph);
+		if (split_on_scc(ctx, graph) < 0)
+			return -1;
 
 	n_total_row = 0;
 	orig_total_row = graph->n_total_row;
