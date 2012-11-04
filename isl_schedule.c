@@ -2485,8 +2485,61 @@ error:
 	return -1;
 }
 
+static int compute_component_schedule(isl_ctx *ctx,
+	struct isl_sched_graph *graph);
+
+/* Is the schedule row "sol" trivial on node "node"?
+ * That is, is the solution zero on the dimensions orthogonal to
+ * the previously found solutions?
+ * Each coefficient is represented as the difference between
+ * two non-negative values in "sol".  The coefficient is then
+ * zero if those two values are equal to each other.
+ */
+static int is_trivial(struct isl_sched_node *node, __isl_keep isl_vec *sol)
+{
+	int i;
+	int pos;
+	int len;
+
+	pos = 1 + node->start + 1 + 2 * (node->nparam + node->rank);
+	len = 2 * (node->nvar - node->rank);
+
+	if (len == 0)
+		return 0;
+
+	for (i = 0; i < len; i += 2)
+		if (isl_int_ne(sol->el[pos + i], sol->el[pos + i + 1]))
+			return 0;
+
+	return 1;
+}
+
+/* Is the schedule row "sol" trivial on any node where it should
+ * not be trivial?
+ */
+static int is_any_trivial(struct isl_sched_graph *graph,
+	__isl_keep isl_vec *sol)
+{
+	int i;
+
+	for (i = 0; i < graph->n; ++i) {
+		struct isl_sched_node *node = &graph->node[i];
+
+		if (!needs_row(graph, node))
+			continue;
+		if (is_trivial(node, sol))
+			return 1;
+	}
+
+	return 0;
+}
+
 /* Construct a schedule row for each node such that as many dependences
  * as possible are carried and then continue with the next band.
+ *
+ * If the computed schedule row turns out to be trivial on one or
+ * more nodes where it should not be trivial, then we throw it away
+ * and try again on each component separately.
  */
 static int carry_dependences(isl_ctx *ctx, struct isl_sched_graph *graph)
 {
@@ -2517,6 +2570,14 @@ static int carry_dependences(isl_ctx *ctx, struct isl_sched_graph *graph)
 		isl_vec_free(sol);
 		isl_die(ctx, isl_error_unknown,
 			"unable to carry dependences", return -1);
+	}
+
+	if (is_any_trivial(graph, sol)) {
+		isl_vec_free(sol);
+		if (graph->scc > 1)
+			return compute_component_schedule(ctx, graph);
+		isl_die(ctx, isl_error_unknown,
+			"unable to construct non-trivial solution", return -1);
 	}
 
 	if (update_schedule(graph, sol, 0, 0) < 0)

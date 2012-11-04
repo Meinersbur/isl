@@ -2278,23 +2278,48 @@ int test_one_schedule(isl_ctx *ctx, const char *d, const char *w,
 	return 0;
 }
 
-int test_special_schedule(isl_ctx *ctx, const char *domain,
-	const char *validity, const char *proximity, const char *expected_sched)
+static __isl_give isl_union_map *compute_schedule(isl_ctx *ctx,
+	const char *domain, const char *validity, const char *proximity)
 {
 	isl_union_set *dom;
 	isl_union_map *dep;
 	isl_union_map *prox;
-	isl_union_map *sched1, *sched2;
 	isl_schedule *schedule;
-	int equal;
+	isl_union_map *sched;
 
 	dom = isl_union_set_read_from_str(ctx, domain);
 	dep = isl_union_map_read_from_str(ctx, validity);
 	prox = isl_union_map_read_from_str(ctx, proximity);
 	schedule = isl_union_set_compute_schedule(dom, dep, prox);
-	sched1 = isl_schedule_get_map(schedule);
+	sched = isl_schedule_get_map(schedule);
 	isl_schedule_free(schedule);
 
+	return sched;
+}
+
+/* Check that a schedule can be constructed on the given domain
+ * with the given validity and proximity constraints.
+ */
+static int test_has_schedule(isl_ctx *ctx, const char *domain,
+	const char *validity, const char *proximity)
+{
+	isl_union_map *sched;
+
+	sched = compute_schedule(ctx, domain, validity, proximity);
+	if (!sched)
+		return -1;
+
+	isl_union_map_free(sched);
+	return 0;
+}
+
+int test_special_schedule(isl_ctx *ctx, const char *domain,
+	const char *validity, const char *proximity, const char *expected_sched)
+{
+	isl_union_map *sched1, *sched2;
+	int equal;
+
+	sched1 = compute_schedule(ctx, domain, validity, proximity);
 	sched2 = isl_union_map_read_from_str(ctx, expected_sched);
 
 	equal = isl_union_map_is_equal(sched1, sched2);
@@ -2561,7 +2586,16 @@ int test_schedule(isl_ctx *ctx)
 	if (test_special_schedule(ctx, D, V, P, S) < 0)
 		return -1;
 	ctx->opt->schedule_algorithm = ISL_SCHEDULE_ALGORITHM_ISL;
-	return test_special_schedule(ctx, D, V, P, S);
+	if (test_special_schedule(ctx, D, V, P, S) < 0)
+		return -1;
+	
+	D = "{ A[a]; B[] }";
+	V = "{}";
+	P = "{ A[a] -> B[] }";
+	if (test_has_schedule(ctx, D, V, P) < 0)
+		return -1;
+
+	return 0;
 }
 
 int test_plain_injective(isl_ctx *ctx, const char *str, int injective)
