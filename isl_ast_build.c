@@ -76,6 +76,24 @@ error:
 	return isl_ast_build_free(build);
 }
 
+/* Return an isl_id called "c%d", with "%d" set to "i".
+ * If an isl_id with such a name already appears among the parameters
+ * in build->domain, then adjust the name to "c%d_%d".
+ */
+static __isl_give isl_id *generate_name(isl_ctx *ctx, int i,
+	__isl_keep isl_ast_build *build)
+{
+	int j;
+	char name[16];
+	isl_set *dom = build->domain;
+
+	snprintf(name, sizeof(name), "c%d", i);
+	j = 0;
+	while (isl_set_find_dim_by_name(dom, isl_dim_param, name) >= 0)
+		snprintf(name, sizeof(name), "c%d_%d", i, j++);
+	return isl_id_alloc(ctx, name, NULL);
+}
+
 /* Create an isl_ast_build with "set" as domain.
  *
  * The input set is usually a parameter domain, but we currently allow it to
@@ -108,7 +126,11 @@ __isl_give isl_ast_build *isl_ast_build_from_context(__isl_take isl_set *set)
 	build->depth = n;
 	build->iterators = isl_id_list_alloc(ctx, n);
 	for (i = 0; i < n; ++i) {
-		isl_id *id = isl_set_get_dim_id(set, isl_dim_set, i);
+		isl_id *id;
+		if (isl_set_has_dim_id(set, isl_dim_set, i))
+			id = isl_set_get_dim_id(set, isl_dim_set, i);
+		else
+			id = generate_name(ctx, i, build);
 		build->iterators = isl_id_list_add(build->iterators, id);
 	}
 	space = isl_set_get_space(set);
@@ -1502,20 +1524,14 @@ error:
 static __isl_give isl_id_list *generate_names(isl_ctx *ctx, int n, int first,
 	__isl_keep isl_ast_build *build)
 {
-	int i, j;
-	char name[16];
+	int i;
 	isl_id_list *names;
-	isl_set *dom = build->domain;
 
 	names = isl_id_list_alloc(ctx, n);
 	for (i = 0; i < n; ++i) {
 		isl_id *id;
 
-		snprintf(name, sizeof(name), "c%d", first + i);
-		j = 0;
-		while (isl_set_find_dim_by_name(dom, isl_dim_param, name) >= 0)
-			snprintf(name, sizeof(name), "c%d_%d", first + i, j++);
-		id = isl_id_alloc(ctx, name, NULL);
+		id = generate_name(ctx, first + i, build);
 		names = isl_id_list_add(names, id);
 	}
 
