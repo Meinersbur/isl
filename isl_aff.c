@@ -1276,7 +1276,8 @@ static __isl_give isl_aff *isl_aff_substitute_equalities_lifted(
 
 	aff->ls = isl_local_space_substitute_equalities(aff->ls,
 							isl_basic_set_copy(eq));
-	if (!aff->ls)
+	aff->v = isl_vec_cow(aff->v);
+	if (!aff->ls || !aff->v)
 		goto error;
 
 	total = 1 + isl_space_dim(eq->dim, isl_dim_all);
