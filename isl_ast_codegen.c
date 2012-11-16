@@ -2223,10 +2223,6 @@ static __isl_give isl_basic_set_list *do_unroll(__isl_take isl_set *domain,
  * the user, except that inner dimensions have been eliminated and
  * that they have been made pair-wise disjoint.
  *
- * "includes_schedule_domain" is set if the "class_domain" (not stored
- * in this structure, but passed to the various functions) has been
- * intersected with "schedule_domain".
- *
  * "sep_class" contains the user-specified split into separation classes
  * specialized to the current depth.
  * "done" contains the union of th separation domains that have already
@@ -2240,8 +2236,6 @@ struct isl_codegen_domains {
 	isl_set *schedule_domain;
 
 	isl_set *option[3];
-
-	int includes_schedule_domain;
 
 	isl_map *sep_class;
 	isl_set *done;
@@ -2391,6 +2385,10 @@ static int compute_separate_domain(struct isl_codegen_domains *domains,
  * basic sets for which code should be generated separately
  * for the given separation class domain.
  *
+ * If any separation classes have been defined, then "class_domain"
+ * is the domain of the current class and does not refer to inner dimensions.
+ * Otherwise, "class_domain" is the universe domain.
+ *
  * We first make sure that the class domain is disjoint from
  * previously considered class domains.
  *
@@ -2405,6 +2403,9 @@ static int compute_separate_domain(struct isl_codegen_domains *domains,
  *
  * For atomic and remainder domains, inner dimensions and divs involving
  * the current dimensions should be eliminated.
+ * In case we are working within a separation class, we need to intersect
+ * the result with the current "class_domain" to ensure that the domains
+ * are disjoint from those generated from other class domains.
  *
  * If anything is left after handling separate, unroll and atomic,
  * we split it up into basic sets and append the basic sets to domains->list.
@@ -2413,42 +2414,47 @@ static int compute_partial_domains(struct isl_codegen_domains *domains,
 	__isl_take isl_set *class_domain)
 {
 	isl_basic_set_list *list;
+	isl_set *domain;
 
 	class_domain = isl_set_subtract(class_domain,
 					isl_set_copy(domains->done));
 	domains->done = isl_set_union(domains->done,
 					isl_set_copy(class_domain));
 
-	if (compute_separate_domain(domains, class_domain) < 0)
+	domain = isl_set_copy(class_domain);
+
+	if (compute_separate_domain(domains, domain) < 0)
 		goto error;
-	class_domain = isl_set_subtract(class_domain,
+	domain = isl_set_subtract(domain,
 				    isl_set_copy(domains->option[separate]));
 
-	if (!domains->includes_schedule_domain)
-		class_domain = isl_set_intersect(class_domain,
-					isl_set_copy(domains->schedule_domain));
+	domain = isl_set_intersect(domain,
+				isl_set_copy(domains->schedule_domain));
 
-	if (compute_unroll_domains(domains, class_domain) < 0)
+	if (compute_unroll_domains(domains, domain) < 0)
 		goto error;
-	class_domain = isl_set_subtract(class_domain,
+	domain = isl_set_subtract(domain,
 				    isl_set_copy(domains->option[unroll]));
 
-	class_domain = isl_ast_build_eliminate(domains->build,
-					class_domain);
+	domain = isl_ast_build_eliminate(domains->build, domain);
+	domain = isl_set_intersect(domain, isl_set_copy(class_domain));
 
-	if (compute_atomic_domain(domains, class_domain) < 0)
+	if (compute_atomic_domain(domains, domain) < 0)
 		goto error;
-	class_domain = isl_set_subtract(class_domain,
+	domain = isl_set_subtract(domain,
 				    isl_set_copy(domains->option[atomic]));
 
-	class_domain = isl_set_coalesce(class_domain);
-	class_domain = isl_set_make_disjoint(class_domain);
+	domain = isl_set_coalesce(domain);
+	domain = isl_set_make_disjoint(domain);
 
-	list = isl_basic_set_list_from_set(class_domain);
+	list = isl_basic_set_list_from_set(domain);
 	domains->list = isl_basic_set_list_concat(domains->list, list);
+
+	isl_set_free(class_domain);
 
 	return 0;
 error:
+	isl_set_free(domain);
 	isl_set_free(class_domain);
 	return -1;
 }
@@ -2480,7 +2486,6 @@ static int compute_class_domains(__isl_take isl_point *pnt, void *user)
 		return 0;
 	}
 
-	domains->includes_schedule_domain = 0;
 	return compute_partial_domains(domains, domain);
 }
 
@@ -2522,9 +2527,8 @@ static void compute_domains_init_options(isl_set *option[3],
  * and split up the domain for each of them separately.
  * Finally, we consider the remainder.  If no separation classes were
  * specified, then we call compute_partial_domains with the universe
- * "class_domain".  Otherwise, we take the "schedule_domain" as "class_domain"
- * and set includes_schedule_domain to reflect that the schedule domain
- * has already been taken into account.  We do this because we want to
+ * "class_domain".  Otherwise, we take the "schedule_domain" as "class_domain",
+ * with inner dimensions removed.  We do this because we want to
  * avoid computing the complement of the class domains (i.e., the difference
  * between the universe and domains->done).
  */
@@ -2539,6 +2543,7 @@ static __isl_give isl_basic_set_list *compute_domains(
 	isl_space *space;
 	int n_param;
 	enum isl_ast_build_domain_type type;
+	int empty;
 
 	ctx = isl_union_map_get_ctx(executed);
 	domains.list = isl_basic_set_list_alloc(ctx, 0);
@@ -2563,12 +2568,15 @@ static __isl_give isl_basic_set_list *compute_domains(
 		domains.list = isl_basic_set_list_free(domains.list);
 	isl_set_free(classes);
 
-	if (!domains.done)
+	empty = isl_set_is_empty(domains.done);
+	if (empty < 0) {
 		domains.list = isl_basic_set_list_free(domains.list);
-	domains.includes_schedule_domain = !isl_set_is_empty(domains.done);
-	if (!domains.includes_schedule_domain) {
+		domain = isl_set_free(domain);
+	} else if (empty) {
 		isl_set_free(domain);
 		domain = isl_set_universe(isl_set_get_space(domains.done));
+	} else {
+		domain = isl_ast_build_eliminate(build, domain);
 	}
 	if (compute_partial_domains(&domains, domain) < 0)
 		domains.list = isl_basic_set_list_free(domains.list);
