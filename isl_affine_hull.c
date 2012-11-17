@@ -940,9 +940,10 @@ static struct isl_basic_set *affine_hull_with_cone(struct isl_basic_set *bset,
 
 	hull = uset_affine_hull_bounded(bset);
 
-	if (!hull)
+	if (!hull) {
+		isl_mat_free(Q);
 		isl_mat_free(U);
-	else {
+	} else {
 		struct isl_vec *sample = isl_vec_copy(hull->sample);
 		U = isl_mat_drop_cols(U, 1 + total - cone_dim, cone_dim);
 		if (sample && sample->size > 0)
