@@ -22,7 +22,7 @@ __isl_give isl_factorizer *isl_basic_set_factorizer(
 	__isl_keep isl_basic_set *bset);
 
 void isl_factorizer_free(__isl_take isl_factorizer *f);
-void isl_factorizer_dump(__isl_take isl_factorizer *f, FILE *out);
+void isl_factorizer_dump(__isl_take isl_factorizer *f);
 
 #if defined(__cplusplus)
 }

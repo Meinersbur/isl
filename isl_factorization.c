@@ -58,21 +58,21 @@ void isl_factorizer_free(__isl_take isl_factorizer *f)
 	free(f);
 }
 
-void isl_factorizer_dump(__isl_take isl_factorizer *f, FILE *out)
+void isl_factorizer_dump(__isl_take isl_factorizer *f)
 {
 	int i;
 
 	if (!f)
 		return;
 
-	isl_morph_print_internal(f->morph, out);
-	fprintf(out, "[");
+	isl_morph_print_internal(f->morph, stderr);
+	fprintf(stderr, "[");
 	for (i = 0; i < f->n_group; ++i) {
 		if (i)
-			fprintf(out, ", ");
-		fprintf(out, "%d", f->len[i]);
+			fprintf(stderr, ", ");
+		fprintf(stderr, "%d", f->len[i]);
 	}
-	fprintf(out, "]\n");
+	fprintf(stderr, "]\n");
 }
 
 __isl_give isl_factorizer *isl_factorizer_identity(__isl_keep isl_basic_set *bset)
