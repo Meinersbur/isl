@@ -1,4 +1,4 @@
-if (N >= 3 && M >= 2)
+if (M >= 2 && N >= 3)
   for (int c1 = 2; c1 < O; c1 += 1) {
     for (int c5 = 2; c5 <= M; c5 += 1)
       S1(c1, 2, c5);

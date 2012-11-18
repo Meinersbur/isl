@@ -1707,11 +1707,181 @@ error:
 	return bset;
 }
 
+/* Does the (linear part of a) constraint "c" involve any of the "len"
+ * "relevant" dimensions?
+ */
+static int is_related(isl_int *c, int len, int *relevant)
+{
+	int i;
+
+	for (i = 0; i < len; ++i) {
+		if (!relevant[i])
+			continue;
+		if (!isl_int_is_zero(c[i]))
+			return 1;
+	}
+
+	return 0;
+}
+
+/* Drop constraints from "bset" that do not involve any of
+ * the dimensions marked "relevant".
+ */
+static __isl_give isl_basic_set *drop_unrelated_constraints(
+	__isl_take isl_basic_set *bset, int *relevant)
+{
+	int i, dim;
+
+	dim = isl_basic_set_dim(bset, isl_dim_set);
+	for (i = 0; i < dim; ++i)
+		if (!relevant[i])
+			break;
+	if (i >= dim)
+		return bset;
+
+	for (i = bset->n_eq - 1; i >= 0; --i)
+		if (!is_related(bset->eq[i] + 1, dim, relevant))
+			isl_basic_set_drop_equality(bset, i);
+
+	for (i = bset->n_ineq - 1; i >= 0; --i)
+		if (!is_related(bset->ineq[i] + 1, dim, relevant))
+			isl_basic_set_drop_inequality(bset, i);
+
+	return bset;
+}
+
+/* Update the groups in "group" based on the (linear part of a) constraint "c".
+ *
+ * In particular, for any variable involved in the constraint,
+ * find the actual group id from before and replace the group
+ * of the corresponding variable by the minimal group of all
+ * the variables involved in the constraint considered so far
+ * (if this minimum is smaller) or replace the minimum by this group
+ * (if the minimum is larger).
+ *
+ * At the end, all the variables in "c" will (indirectly) point
+ * to the minimal of the groups that they referred to originally.
+ */
+static void update_groups(int dim, int *group, isl_int *c)
+{
+	int j;
+	int min = dim;
+
+	for (j = 0; j < dim; ++j) {
+		if (isl_int_is_zero(c[j]))
+			continue;
+		while (group[j] >= 0 && group[group[j]] != group[j])
+			group[j] = group[group[j]];
+		if (group[j] == min)
+			continue;
+		if (group[j] < min) {
+			if (min >= 0 && min < dim)
+				group[min] = group[j];
+			min = group[j];
+		} else
+			group[group[j]] = min;
+	}
+}
+
+/* Drop constraints from "context" that are irrelevant for computing
+ * the gist of "bset".
+ *
+ * In particular, drop constraints in variables that are not related
+ * to any of the variables involved in the constraints of "bset"
+ * in the sense that there is no sequence of constraints that connects them.
+ *
+ * We construct groups of variables that collect variables that
+ * (indirectly) appear in some common constraint of "context".
+ * Each group is identified by the first variable in the group,
+ * except for the special group of variables that appear in "bset"
+ * (or are related to those variables), which is identified by -1.
+ * If group[i] is equal to i (or -1), then the group of i is i (or -1),
+ * otherwise the group of i is the group of group[i].
+ *
+ * We first initialize the -1 group with the variables that appear in "bset".
+ * Then we initialize groups for the remaining variables.
+ * Then we iterate over the constraints of "context" and update the
+ * group of the variables in the constraint by the smallest group.
+ * Finally, we resolve indirect references to groups by running over
+ * the variables.
+ *
+ * After computing the groups, we drop constraints that do not involve
+ * any variables in the -1 group.
+ */
+static __isl_give isl_basic_set *drop_irrelevant_constraints(
+	__isl_take isl_basic_set *context, __isl_keep isl_basic_set *bset)
+{
+	isl_ctx *ctx;
+	int *group;
+	int dim;
+	int i, j;
+	int last;
+
+	if (!context || !bset)
+		return isl_basic_set_free(context);
+
+	dim = isl_basic_set_dim(bset, isl_dim_set);
+	ctx = isl_basic_set_get_ctx(bset);
+	group = isl_calloc_array(ctx, int, dim);
+
+	if (!group)
+		goto error;
+
+	for (i = 0; i < dim; ++i) {
+		for (j = 0; j < bset->n_eq; ++j)
+			if (!isl_int_is_zero(bset->eq[j][1 + i]))
+				break;
+		if (j < bset->n_eq) {
+			group[i] = -1;
+			continue;
+		}
+		for (j = 0; j < bset->n_ineq; ++j)
+			if (!isl_int_is_zero(bset->ineq[j][1 + i]))
+				break;
+		if (j < bset->n_ineq)
+			group[i] = -1;
+	}
+
+	last = -1;
+	for (i = 0; i < dim; ++i)
+		if (group[i] >= 0)
+			last = group[i] = i;
+	if (last < 0) {
+		free(group);
+		return context;
+	}
+
+	for (i = 0; i < context->n_eq; ++i)
+		update_groups(dim, group, context->eq[i] + 1);
+	for (i = 0; i < context->n_ineq; ++i)
+		update_groups(dim, group, context->ineq[i] + 1);
+
+	for (i = 0; i < dim; ++i)
+		if (group[i] >= 0)
+			group[i] = group[group[i]];
+
+	for (i = 0; i < dim; ++i)
+		group[i] = group[i] == -1;
+
+	context = drop_unrelated_constraints(context, group);
+
+	free(group);
+	return context;
+error:
+	free(group);
+	return isl_basic_set_free(context);
+}
+
 /* Remove all information from bset that is redundant in the context
  * of context.  Both bset and context are assumed to be full-dimensional.
  *
  * We first remove the inequalities from "bset"
  * that are obviously redundant with respect to some inequality in "context".
+ * Then we remove those constraints from "context" that have become
+ * irrelevant for computing the gist of "bset".
+ * Note that this removal of constraints cannot be replaced by
+ * a factorization because factors in "bset" may still be connected
+ * to each other through constraints in "context".
  *
  * If there are any inequalities left, we construct a tableau for
  * the context and then add the inequalities of "bset".
@@ -1751,6 +1921,14 @@ static __isl_give isl_basic_set *uset_gist_full(__isl_take isl_basic_set *bset,
 		goto error;
 	if (bset->n_ineq == 0)
 		goto done;
+
+	context = drop_irrelevant_constraints(context, bset);
+	if (!context)
+		goto error;
+	if (isl_basic_set_is_universe(context)) {
+		isl_basic_set_free(context);
+		return bset;
+	}
 
 	context_ineq = context->n_ineq;
 	combined = isl_basic_set_cow(isl_basic_set_copy(context));
@@ -1819,6 +1997,10 @@ error:
  * redundant in the context of the equalities and inequalities of
  * context are removed.
  *
+ * First of all, we drop those constraints from "context"
+ * that are irrelevant for computing the gist of "bset".
+ * Alternatively, we could factorize the intersection of "context" and "bset".
+ *
  * We first compute the integer affine hull of the intersection,
  * compute the gist inside this affine hull and then add back
  * those equalities that are not implied by the context.
@@ -1841,6 +2023,8 @@ static __isl_give isl_basic_set *uset_gist(__isl_take isl_basic_set *bset,
 
 	if (!bset || !context)
 		goto error;
+
+	context = drop_irrelevant_constraints(context, bset);
 
 	bset = isl_basic_set_intersect(bset, isl_basic_set_copy(context));
 	if (isl_basic_set_plain_is_empty(bset)) {
