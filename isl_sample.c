@@ -377,6 +377,75 @@ static enum isl_lp_result compute_max(isl_ctx *ctx, struct isl_tab *tab,
 	return res;
 }
 
+/* Perform a greedy search for an integer point in the set represented
+ * by "tab", given that the minimal rational value (rounded up to the
+ * nearest integer) at "level" is smaller than the maximal rational
+ * value (rounded down to the nearest integer).
+ *
+ * Return 1 if we have found an integer point (if tab->n_unbounded > 0
+ * then we may have only found integer values for the bounded dimensions
+ * and it is the responsibility of the caller to extend this solution
+ * to the unbounded dimensions).
+ * Return 0 if greedy search did not result in a solution.
+ * Return -1 if some error occurred.
+ *
+ * We assign a value half-way between the minimum and the maximum
+ * to the current dimension and check if the minimal value of the
+ * next dimension is still smaller than (or equal) to the maximal value.
+ * We continue this process until either
+ * - the minimal value (rounded up) is greater than the maximal value
+ *	(rounded down).  In this case, greedy search has failed.
+ * - we have exhausted all bounded dimensions, meaning that we have
+ *	found a solution.
+ * - the sample value of the tableau is integral.
+ * - some error has occurred.
+ */
+static int greedy_search(isl_ctx *ctx, struct isl_tab *tab,
+	__isl_keep isl_vec *min, __isl_keep isl_vec *max, int level)
+{
+	struct isl_tab_undo *snap;
+	enum isl_lp_result res;
+
+	snap = isl_tab_snap(tab);
+
+	do {
+		isl_int_add(tab->basis->row[1 + level][0],
+			    min->el[level], max->el[level]);
+		isl_int_fdiv_q_ui(tab->basis->row[1 + level][0],
+			    tab->basis->row[1 + level][0], 2);
+		isl_int_neg(tab->basis->row[1 + level][0],
+			    tab->basis->row[1 + level][0]);
+		if (isl_tab_add_valid_eq(tab, tab->basis->row[1 + level]) < 0)
+			return -1;
+		isl_int_set_si(tab->basis->row[1 + level][0], 0);
+
+		if (++level >= tab->n_var - tab->n_unbounded)
+			return 1;
+		if (isl_tab_sample_is_integer(tab))
+			return 1;
+
+		res = compute_min(ctx, tab, min, level);
+		if (res == isl_lp_error)
+			return -1;
+		if (res != isl_lp_ok)
+			isl_die(ctx, isl_error_internal,
+				"expecting bounded rational solution",
+				return -1);
+		res = compute_max(ctx, tab, max, level);
+		if (res == isl_lp_error)
+			return -1;
+		if (res != isl_lp_ok)
+			isl_die(ctx, isl_error_internal,
+				"expecting bounded rational solution",
+				return -1);
+	} while (isl_int_le(min->el[level], max->el[level]));
+
+	if (isl_tab_rollback(tab, snap) < 0)
+		return -1;
+
+	return 0;
+}
+
 /* Given a tableau representing a set, find and return
  * an integer point in the set, if there is any.
  *
@@ -415,6 +484,9 @@ static enum isl_lp_result compute_max(isl_ctx *ctx, struct isl_tab *tab,
  * The search is implemented iteratively.  "level" identifies the current
  * basis vector.  "init" is true if we want the first value at the current
  * level and false if we want the next value.
+ *
+ * At the start of each level, we first check if we can find a solution
+ * using greedy search.  If not, we continue with the exhaustive search.
  *
  * The initial basis is the identity matrix.  If the range in some direction
  * contains more than one integer value, we perform basis reduction based
@@ -486,6 +558,8 @@ struct isl_vec *isl_tab_sample(struct isl_tab *tab)
 
 	while (level >= 0) {
 		if (init) {
+			int choice;
+
 			res = compute_min(ctx, tab, min, level);
 			if (res == isl_lp_error)
 				goto error;
@@ -504,8 +578,17 @@ struct isl_vec *isl_tab_sample(struct isl_tab *tab)
 					goto error);
 			if (isl_tab_sample_is_integer(tab))
 				break;
-			if (!reduced && ctx->opt->gbr != ISL_GBR_NEVER &&
-			    isl_int_lt(min->el[level], max->el[level])) {
+			choice = isl_int_lt(min->el[level], max->el[level]);
+			if (choice) {
+				int g;
+				g = greedy_search(ctx, tab, min, max, level);
+				if (g < 0)
+					goto error;
+				if (g)
+					break;
+			}
+			if (!reduced && choice &&
+			    ctx->opt->gbr != ISL_GBR_NEVER) {
 				unsigned gbr_only_first;
 				if (ctx->opt->gbr == ISL_GBR_ONCE)
 					ctx->opt->gbr = ISL_GBR_NEVER;
