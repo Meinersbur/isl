@@ -1982,6 +1982,11 @@ __isl_give isl_set *isl_ast_build_eliminate_inner(
 }
 
 /* Eliminate unknown divs and divs that depend on the current dimension.
+ *
+ * Note that during the elimination of unknown divs, we may discover
+ * an explicit representation of some other unknown divs, which may
+ * depend on the current dimension.  We therefore need to eliminate
+ * unknown divs first.
  */
 __isl_give isl_set *isl_ast_build_eliminate_divs(
 	__isl_keep isl_ast_build *build, __isl_take isl_set *set)
@@ -1991,9 +1996,9 @@ __isl_give isl_set *isl_ast_build_eliminate_divs(
 	if (!build)
 		return isl_set_free(set);
 
+	set = isl_set_remove_unknown_divs(set);
 	depth = build->depth;
 	set = isl_set_remove_divs_involving_dims(set, isl_dim_set, depth, 1);
-	set = isl_set_remove_unknown_divs(set);
 
 	return set;
 }
