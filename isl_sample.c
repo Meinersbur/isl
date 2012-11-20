@@ -455,16 +455,16 @@ struct isl_vec *isl_tab_sample(struct isl_tab *tab)
 	reduced = 0;
 
 	while (level >= 0) {
-		int empty = 0;
 		if (init) {
 			res = isl_tab_min(tab, tab->basis->row[1 + level],
 				    ctx->one, &min->el[level], NULL, 0);
-			if (res == isl_lp_empty)
-				empty = 1;
-			isl_assert(ctx, res != isl_lp_unbounded, goto error);
 			if (res == isl_lp_error)
 				goto error;
-			if (!empty && isl_tab_sample_is_integer(tab))
+			if (res != isl_lp_ok)
+				isl_die(ctx, isl_error_internal,
+					"expecting bounded rational solution",
+					goto error);
+			if (isl_tab_sample_is_integer(tab))
 				break;
 			isl_seq_neg(tab->basis->row[1 + level] + 1,
 				    tab->basis->row[1 + level] + 1, dim);
@@ -473,15 +473,15 @@ struct isl_vec *isl_tab_sample(struct isl_tab *tab)
 			isl_seq_neg(tab->basis->row[1 + level] + 1,
 				    tab->basis->row[1 + level] + 1, dim);
 			isl_int_neg(max->el[level], max->el[level]);
-			if (res == isl_lp_empty)
-				empty = 1;
-			isl_assert(ctx, res != isl_lp_unbounded, goto error);
 			if (res == isl_lp_error)
 				goto error;
-			if (!empty && isl_tab_sample_is_integer(tab))
+			if (res != isl_lp_ok)
+				isl_die(ctx, isl_error_internal,
+					"expecting bounded rational solution",
+					goto error);
+			if (isl_tab_sample_is_integer(tab))
 				break;
-			if (!empty && !reduced &&
-			    ctx->opt->gbr != ISL_GBR_NEVER &&
+			if (!reduced && ctx->opt->gbr != ISL_GBR_NEVER &&
 			    isl_int_lt(min->el[level], max->el[level])) {
 				unsigned gbr_only_first;
 				if (ctx->opt->gbr == ISL_GBR_ONCE)
@@ -502,7 +502,7 @@ struct isl_vec *isl_tab_sample(struct isl_tab *tab)
 		} else
 			isl_int_add_ui(min->el[level], min->el[level], 1);
 
-		if (empty || isl_int_gt(min->el[level], max->el[level])) {
+		if (isl_int_gt(min->el[level], max->el[level])) {
 			level--;
 			init = 0;
 			if (level >= 0)
