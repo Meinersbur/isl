@@ -1710,7 +1710,7 @@ error:
 /* Remove all information from bset that is redundant in the context
  * of context.  Both bset and context are assumed to be full-dimensional.
  *
- * We first * remove the inequalities from "bset"
+ * We first remove the inequalities from "bset"
  * that are obviously redundant with respect to some inequality in "context".
  *
  * If there are any inequalities left, we construct a tableau for
