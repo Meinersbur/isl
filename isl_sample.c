@@ -347,6 +347,36 @@ static struct isl_mat *initial_basis(struct isl_tab *tab)
 	return Q;
 }
 
+/* Compute the minimum of the current ("level") basis row over "tab"
+ * and store the result in position "level" of "min".
+ */
+static enum isl_lp_result compute_min(isl_ctx *ctx, struct isl_tab *tab,
+	__isl_keep isl_vec *min, int level)
+{
+	return isl_tab_min(tab, tab->basis->row[1 + level],
+			    ctx->one, &min->el[level], NULL, 0);
+}
+
+/* Compute the maximum of the current ("level") basis row over "tab"
+ * and store the result in position "level" of "max".
+ */
+static enum isl_lp_result compute_max(isl_ctx *ctx, struct isl_tab *tab,
+	__isl_keep isl_vec *max, int level)
+{
+	enum isl_lp_result res;
+	unsigned dim = tab->n_var;
+
+	isl_seq_neg(tab->basis->row[1 + level] + 1,
+		    tab->basis->row[1 + level] + 1, dim);
+	res = isl_tab_min(tab, tab->basis->row[1 + level],
+		    ctx->one, &max->el[level], NULL, 0);
+	isl_seq_neg(tab->basis->row[1 + level] + 1,
+		    tab->basis->row[1 + level] + 1, dim);
+	isl_int_neg(max->el[level], max->el[level]);
+
+	return res;
+}
+
 /* Given a tableau representing a set, find and return
  * an integer point in the set, if there is any.
  *
@@ -456,8 +486,7 @@ struct isl_vec *isl_tab_sample(struct isl_tab *tab)
 
 	while (level >= 0) {
 		if (init) {
-			res = isl_tab_min(tab, tab->basis->row[1 + level],
-				    ctx->one, &min->el[level], NULL, 0);
+			res = compute_min(ctx, tab, min, level);
 			if (res == isl_lp_error)
 				goto error;
 			if (res != isl_lp_ok)
@@ -466,13 +495,7 @@ struct isl_vec *isl_tab_sample(struct isl_tab *tab)
 					goto error);
 			if (isl_tab_sample_is_integer(tab))
 				break;
-			isl_seq_neg(tab->basis->row[1 + level] + 1,
-				    tab->basis->row[1 + level] + 1, dim);
-			res = isl_tab_min(tab, tab->basis->row[1 + level],
-				    ctx->one, &max->el[level], NULL, 0);
-			isl_seq_neg(tab->basis->row[1 + level] + 1,
-				    tab->basis->row[1 + level] + 1, dim);
-			isl_int_neg(max->el[level], max->el[level]);
+			res = compute_max(ctx, tab, max, level);
 			if (res == isl_lp_error)
 				goto error;
 			if (res != isl_lp_ok)
