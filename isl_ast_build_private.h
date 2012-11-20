@@ -98,6 +98,12 @@ enum isl_ast_build_domain_type {
  * an element of the domain.  Each of these nodes is a user node
  * with as expression a call expression.
  *
+ * The "before_each_for" callback is called on each for node before
+ * its children have been created.
+ *
+ * The "after_each_for" callback is called on each for node after
+ * its children have been created.
+ *
  * "executed" contains the inverse schedule at this point
  * of the AST generation.
  * It is currently only used in isl_ast_build_get_schedule, which is
@@ -130,6 +136,14 @@ struct isl_ast_build {
 		__isl_take isl_ast_node *node,
 		__isl_keep isl_ast_build *build, void *user);
 	void *at_each_domain_user;
+
+	__isl_give isl_id *(*before_each_for)(
+		__isl_keep isl_ast_build *context, void *user);
+	void *before_each_for_user;
+	__isl_give isl_ast_node *(*after_each_for)(
+		__isl_take isl_ast_node *node,
+		__isl_keep isl_ast_build *context, void *user);
+	void *after_each_for_user;
 
 	__isl_give isl_ast_node *(*create_leaf)(
 		__isl_take isl_ast_build *build, void *user);

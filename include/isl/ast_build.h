@@ -64,8 +64,8 @@ __isl_give isl_ast_build *isl_ast_build_set_at_each_domain(
 		__isl_keep isl_ast_build *build, void *user), void *user);
 __isl_give isl_ast_build *isl_ast_build_set_before_each_for(
 	__isl_take isl_ast_build *build,
-	__isl_give isl_ast_node *(*fn)(__isl_take isl_ast_node *node,
-		__isl_keep isl_ast_build *build, void *user), void *user);
+	__isl_give isl_id *(*fn)(__isl_keep isl_ast_build *build,
+		void *user), void *user);
 __isl_give isl_ast_build *isl_ast_build_set_after_each_for(
 	__isl_take isl_ast_build *build,
 	__isl_give isl_ast_node *(*fn)(__isl_take isl_ast_node *node,

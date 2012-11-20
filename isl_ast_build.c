@@ -180,6 +180,10 @@ __isl_give isl_ast_build *isl_ast_build_dup(__isl_keep isl_ast_build *build)
 	dup->options = isl_union_map_copy(build->options);
 	dup->at_each_domain = build->at_each_domain;
 	dup->at_each_domain_user = build->at_each_domain_user;
+	dup->before_each_for = build->before_each_for;
+	dup->before_each_for_user = build->before_each_for_user;
+	dup->after_each_for = build->after_each_for;
+	dup->after_each_for_user = build->after_each_for_user;
 	dup->create_leaf = build->create_leaf;
 	dup->create_leaf_user = build->create_leaf_user;
 
@@ -338,6 +342,42 @@ __isl_give isl_ast_build *isl_ast_build_set_at_each_domain(
 	return build;
 }
 
+/* Set the "before_each_for" callback of "build" to "fn".
+ */
+__isl_give isl_ast_build *isl_ast_build_set_before_each_for(
+	__isl_take isl_ast_build *build,
+	__isl_give isl_id *(*fn)(__isl_keep isl_ast_build *build,
+		void *user), void *user)
+{
+	build = isl_ast_build_cow(build);
+
+	if (!build)
+		return NULL;
+
+	build->before_each_for = fn;
+	build->before_each_for_user = user;
+
+	return build;
+}
+
+/* Set the "after_each_for" callback of "build" to "fn".
+ */
+__isl_give isl_ast_build *isl_ast_build_set_after_each_for(
+	__isl_take isl_ast_build *build,
+	__isl_give isl_ast_node *(*fn)(__isl_take isl_ast_node *node,
+		__isl_keep isl_ast_build *build, void *user), void *user)
+{
+	build = isl_ast_build_cow(build);
+
+	if (!build)
+		return NULL;
+
+	build->after_each_for = fn;
+	build->after_each_for_user = user;
+
+	return build;
+}
+
 /* Set the "create_leaf" callback of "build" to "fn".
  */
 __isl_give isl_ast_build *isl_ast_build_set_create_leaf(
@@ -374,6 +414,10 @@ __isl_give isl_ast_build *isl_ast_build_clear_local_info(
 
 	build->at_each_domain = NULL;
 	build->at_each_domain_user = NULL;
+	build->before_each_for = NULL;
+	build->before_each_for_user = NULL;
+	build->after_each_for = NULL;
+	build->after_each_for_user = NULL;
 	build->create_leaf = NULL;
 	build->create_leaf_user = NULL;
 

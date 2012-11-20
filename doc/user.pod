@@ -5975,9 +5975,34 @@ user defined node created using the following function.
 			__isl_take isl_ast_node *node,
 			__isl_keep isl_ast_build *build,
 			void *user), void *user);
+	__isl_give isl_ast_build *
+	isl_ast_build_set_before_each_for(
+		__isl_take isl_ast_build *build,
+		__isl_give isl_id *(*fn)(
+			__isl_keep isl_ast_build *build,
+			void *user), void *user);
+	__isl_give isl_ast_build *
+	isl_ast_build_set_after_each_for(
+		__isl_take isl_ast_build *build,
+		__isl_give isl_ast_node *(*fn)(
+			__isl_take isl_ast_node *node,
+			__isl_keep isl_ast_build *build,
+			void *user), void *user);
 
 The callback set by C<isl_ast_build_set_at_each_domain> will
 be called for each domain AST node.
+The callbacks set by C<isl_ast_build_set_before_each_for>
+and C<isl_ast_build_set_after_each_for> will be called
+for each for AST node.  The first will be called in depth-first
+pre-order, while the second will be called in depth-first post-order.
+Since C<isl_ast_build_set_before_each_for> is called before the for
+node is actually constructed, it is only passed an C<isl_ast_build>.
+The returned C<isl_id> will be added as an annotation (using
+C<isl_ast_node_set_annotation>) to the constructed for node.
+In particular, if the user has also specified an C<after_each_for>
+callback, then the annotation can be retrieved from the node passed to
+that callback using C<isl_ast_node_get_annotation>.
+All callbacks should C<NULL> on failure.
 The given C<isl_ast_build> can be used to create new
 C<isl_ast_expr> objects using C<isl_ast_build_expr_from_pw_aff>
 or C<isl_ast_build_call_from_pw_multi_aff>.
