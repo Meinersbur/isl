@@ -11,13 +11,81 @@
 
 #include <isl_list_templ.c>
 
+isl_ctx *isl_ast_print_options_get_ctx(
+	__isl_keep isl_ast_print_options *options)
+{
+	return options ? options->ctx : NULL;
+}
+
 __isl_give isl_ast_print_options *isl_ast_print_options_alloc(isl_ctx *ctx)
 {
-	return isl_calloc_type(ctx, isl_ast_print_options);
+	isl_ast_print_options *options;
+
+	options = isl_calloc_type(ctx, isl_ast_print_options);
+	if (!options)
+		return NULL;
+
+	options->ctx = ctx;
+	isl_ctx_ref(ctx);
+	options->ref = 1;
+
+	return options;
+}
+
+__isl_give isl_ast_print_options *isl_ast_print_options_dup(
+	__isl_keep isl_ast_print_options *options)
+{
+	isl_ctx *ctx;
+	isl_ast_print_options *dup;
+
+	if (!options)
+		return NULL;
+
+	ctx = isl_ast_print_options_get_ctx(options);
+	dup = isl_ast_print_options_alloc(ctx);
+	if (!dup)
+		return NULL;
+
+	dup->print_for = options->print_for;
+	dup->print_for_user = options->print_for_user;
+	dup->print_user = options->print_user;
+	dup->print_user_user = options->print_user_user;
+
+	return dup;
+}
+
+__isl_give isl_ast_print_options *isl_ast_print_options_cow(
+	__isl_take isl_ast_print_options *options)
+{
+	if (!options)
+		return NULL;
+
+	if (options->ref == 1)
+		return options;
+	options->ref--;
+	return isl_ast_print_options_dup(options);
+}
+
+__isl_give isl_ast_print_options *isl_ast_print_options_copy(
+	__isl_keep isl_ast_print_options *options)
+{
+	if (!options)
+		return NULL;
+
+	options->ref++;
+	return options;
 }
 
 void *isl_ast_print_options_free(__isl_take isl_ast_print_options *options)
 {
+	if (!options)
+		return NULL;
+
+	if (--options->ref > 0)
+		return NULL;
+
+	isl_ctx_deref(options->ctx);
+
 	free(options);
 	return NULL;
 }
@@ -30,9 +98,11 @@ void *isl_ast_print_options_free(__isl_take isl_ast_print_options *options)
 __isl_give isl_ast_print_options *isl_ast_print_options_set_print_user(
 	__isl_take isl_ast_print_options *options,
 	__isl_give isl_printer *(*print_user)(__isl_take isl_printer *p,
+		__isl_take isl_ast_print_options *options,
 		__isl_keep isl_ast_node *node, void *user),
 	void *user)
 {
+	options = isl_ast_print_options_cow(options);
 	if (!options)
 		return NULL;
 
@@ -49,9 +119,11 @@ __isl_give isl_ast_print_options *isl_ast_print_options_set_print_user(
 __isl_give isl_ast_print_options *isl_ast_print_options_set_print_for(
 	__isl_take isl_ast_print_options *options,
 	__isl_give isl_printer *(*print_for)(__isl_take isl_printer *p,
+		__isl_take isl_ast_print_options *options,
 		__isl_keep isl_ast_node *node, void *user),
 	void *user)
 {
+	options = isl_ast_print_options_cow(options);
 	if (!options)
 		return NULL;
 
@@ -1274,7 +1346,8 @@ static __isl_give isl_printer *print_body_c(__isl_take isl_printer *p,
 	if (!else_node && !need_block(node)) {
 		p = isl_printer_end_line(p);
 		p = isl_printer_indent(p, 2);
-		p = isl_ast_node_print(node, p, options);
+		p = isl_ast_node_print(node, p,
+					isl_ast_print_options_copy(options));
 		p = isl_printer_indent(p, -2);
 		return p;
 	}
@@ -1393,8 +1466,9 @@ static __isl_give isl_printer *print_ast_node_c(__isl_take isl_printer *p,
 	switch (node->type) {
 	case isl_ast_node_for:
 		if (options->print_for)
-			return options->print_for(p, node,
-						    options->print_for_user);
+			return options->print_for(p,
+					isl_ast_print_options_copy(options),
+					node, options->print_for_user);
 		p = print_for_c(p, node, options, in_block);
 		break;
 	case isl_ast_node_if:
@@ -1417,8 +1491,9 @@ static __isl_give isl_printer *print_ast_node_c(__isl_take isl_printer *p,
 		break;
 	case isl_ast_node_user:
 		if (options->print_user)
-			return options->print_user(p, node,
-						    options->print_user_user);
+			return options->print_user(p,
+					isl_ast_print_options_copy(options),
+					node, options->print_user_user);
 		p = isl_printer_start_line(p);
 		p = isl_printer_print_ast_expr(p, node->u.e.expr);
 		p = isl_printer_print_str(p, ";");
@@ -1433,15 +1508,18 @@ static __isl_give isl_printer *print_ast_node_c(__isl_take isl_printer *p,
 /* Print the for node "node" to "p".
  */
 __isl_give isl_printer *isl_ast_node_for_print(__isl_keep isl_ast_node *node,
-	__isl_take isl_printer *p, __isl_keep isl_ast_print_options *options)
+	__isl_take isl_printer *p, __isl_take isl_ast_print_options *options)
 {
 	if (!node || !options)
 		goto error;
 	if (node->type != isl_ast_node_for)
 		isl_die(isl_ast_node_get_ctx(node), isl_error_invalid,
 			"not a for node", goto error);
-	return print_for_c(p, node, options, 0);
+	p = print_for_c(p, node, options, 0);
+	isl_ast_print_options_free(options);
+	return p;
 error:
+	isl_ast_print_options_free(options);
 	isl_printer_free(p);
 	return NULL;
 }
@@ -1449,15 +1527,18 @@ error:
 /* Print the if node "node" to "p".
  */
 __isl_give isl_printer *isl_ast_node_if_print(__isl_keep isl_ast_node *node,
-	__isl_take isl_printer *p, __isl_keep isl_ast_print_options *options)
+	__isl_take isl_printer *p, __isl_take isl_ast_print_options *options)
 {
 	if (!node || !options)
 		goto error;
 	if (node->type != isl_ast_node_if)
 		isl_die(isl_ast_node_get_ctx(node), isl_error_invalid,
 			"not an if node", goto error);
-	return print_if_c(p, node, options, 1);
+	p = print_if_c(p, node, options, 1);
+	isl_ast_print_options_free(options);
+	return p;
 error:
+	isl_ast_print_options_free(options);
 	isl_printer_free(p);
 	return NULL;
 }
@@ -1465,12 +1546,15 @@ error:
 /* Print "node" to "p".
  */
 __isl_give isl_printer *isl_ast_node_print(__isl_keep isl_ast_node *node,
-	__isl_take isl_printer *p, __isl_keep isl_ast_print_options *options)
+	__isl_take isl_printer *p, __isl_take isl_ast_print_options *options)
 {
 	if (!options || !node)
 		goto error;
-	return print_ast_node_c(p, node, options, 0);
+	p = print_ast_node_c(p, node, options, 0);
+	isl_ast_print_options_free(options);
+	return p;
 error:
+	isl_ast_print_options_free(options);
 	isl_printer_free(p);
 	return NULL;
 }
@@ -1494,7 +1578,6 @@ __isl_give isl_printer *isl_printer_print_ast_node(__isl_take isl_printer *p,
 	case ISL_FORMAT_C:
 		options = isl_ast_print_options_alloc(isl_printer_get_ctx(p));
 		p = isl_ast_node_print(node, p, options);
-		isl_ast_print_options_free(options);
 		break;
 	default:
 		isl_die(isl_printer_get_ctx(p), isl_error_unsupported,

@@ -95,10 +95,15 @@ __isl_give isl_ast_node *isl_ast_node_if_set_then(
 	__isl_take isl_ast_node *node, __isl_take isl_ast_node *child);
 
 struct isl_ast_print_options {
+	int ref;
+	isl_ctx *ctx;
+
 	__isl_give isl_printer *(*print_for)(__isl_take isl_printer *p,
+		__isl_take isl_ast_print_options *options,
 		__isl_keep isl_ast_node *node, void *user);
 	void *print_for_user;
 	__isl_give isl_printer *(*print_user)(__isl_take isl_printer *p,
+		__isl_take isl_ast_print_options *options,
 		__isl_keep isl_ast_node *node, void *user);
 	void *print_user_user;
 };

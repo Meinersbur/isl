@@ -141,16 +141,22 @@ __isl_give isl_printer *isl_printer_print_ast_node(__isl_take isl_printer *p,
 void isl_ast_node_dump(__isl_keep isl_ast_node *node);
 
 __isl_give isl_ast_print_options *isl_ast_print_options_alloc(isl_ctx *ctx);
+__isl_give isl_ast_print_options *isl_ast_print_options_copy(
+	__isl_keep isl_ast_print_options *options);
 void *isl_ast_print_options_free(__isl_take isl_ast_print_options *options);
+isl_ctx *isl_ast_print_options_get_ctx(
+	__isl_keep isl_ast_print_options *options);
 
 __isl_give isl_ast_print_options *isl_ast_print_options_set_print_user(
 	__isl_take isl_ast_print_options *options,
 	__isl_give isl_printer *(*print_user)(__isl_take isl_printer *p,
+		__isl_take isl_ast_print_options *options,
 		__isl_keep isl_ast_node *node, void *user),
 	void *user);
 __isl_give isl_ast_print_options *isl_ast_print_options_set_print_for(
 	__isl_take isl_ast_print_options *options,
 	__isl_give isl_printer *(*print_for)(__isl_take isl_printer *p,
+		__isl_take isl_ast_print_options *options,
 		__isl_keep isl_ast_node *node, void *user),
 	void *user);
 
@@ -162,13 +168,13 @@ __isl_give isl_printer *isl_ast_node_print_macros(
 	__isl_keep isl_ast_node *node, __isl_take isl_printer *p);
 __isl_give isl_printer *isl_ast_node_print(__isl_keep isl_ast_node *node,
 	__isl_take isl_printer *p,
-	__isl_keep isl_ast_print_options *options);
+	__isl_take isl_ast_print_options *options);
 __isl_give isl_printer *isl_ast_node_for_print(__isl_keep isl_ast_node *node,
 	__isl_take isl_printer *p,
-	__isl_keep isl_ast_print_options *options);
+	__isl_take isl_ast_print_options *options);
 __isl_give isl_printer *isl_ast_node_if_print(__isl_keep isl_ast_node *node,
 	__isl_take isl_printer *p,
-	__isl_keep isl_ast_print_options *options);
+	__isl_take isl_ast_print_options *options);
 
 #if defined(__cplusplus)
 }
