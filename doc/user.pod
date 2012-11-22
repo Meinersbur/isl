@@ -5589,7 +5589,7 @@ This object can be created using the following functions.
 			__isl_keep isl_ast_node *node, void *user),
 		void *user);
 
-The callback set by C<isl_ast_print_options_set_print_domain>
+The callback set by C<isl_ast_print_options_set_print_user>
 is called whenever a node of type C<isl_ast_node_user> needs to
 be printed.
 The callback set by C<isl_ast_print_options_set_print_for>
