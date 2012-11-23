@@ -210,6 +210,28 @@ static TextDiagnosticPrinter *construct_printer(void)
 
 #endif
 
+#ifdef CREATETARGETINFO_TAKES_POINTER
+
+static TargetInfo *create_target_info(CompilerInstance *Clang,
+	DiagnosticsEngine &Diags)
+{
+	TargetOptions &TO = Clang->getTargetOpts();
+	TO.Triple = llvm::sys::getDefaultTargetTriple();
+	return TargetInfo::CreateTargetInfo(Diags, &TO);
+}
+
+#else
+
+static TargetInfo *create_target_info(CompilerInstance *Clang,
+	DiagnosticsEngine &Diags)
+{
+	TargetOptions &TO = Clang->getTargetOpts();
+	TO.Triple = llvm::sys::getDefaultTargetTriple();
+	return TargetInfo::CreateTargetInfo(Diags, TO);
+}
+
+#endif
+
 int main(int argc, char *argv[])
 {
 	llvm::cl::ParseCommandLineOptions(argc, argv);
@@ -224,9 +246,7 @@ int main(int argc, char *argv[])
 		Clang->setInvocation(invocation);
 	Clang->createFileManager();
 	Clang->createSourceManager(Clang->getFileManager());
-	TargetOptions &TO = Clang->getTargetOpts();
-	TO.Triple = llvm::sys::getDefaultTargetTriple();
-	TargetInfo *target = TargetInfo::CreateTargetInfo(Diags, TO);
+	TargetInfo *target = create_target_info(Clang, Diags);
 	Clang->setTarget(target);
 	CompilerInvocation::setLangDefaults(Clang->getLangOpts(), IK_C,
 					    LangStandard::lang_unspecified);

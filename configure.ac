@@ -167,6 +167,13 @@ system)
 	AC_CHECK_HEADER([clang/Basic/DiagnosticOptions.h],
 		[AC_DEFINE([HAVE_BASIC_DIAGNOSTICOPTIONS_H], [],
 			   [Define if clang/Basic/DiagnosticOptions.h exists])])
+	AC_TRY_COMPILE([#include <clang/Basic/TargetInfo.h>], [
+		using namespace clang;
+		TargetOptions *TO;
+		DiagnosticsEngine *Diags;
+		TargetInfo::CreateTargetInfo(*Diags, TO);
+	], [AC_DEFINE([CREATETARGETINFO_TAKES_POINTER], [],
+		      [Define if TargetInfo::CreateTargetInfo takes pointer])])
 	AC_LANG_POP
 	CPPFLAGS="$SAVE_CPPFLAGS"
 
