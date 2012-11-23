@@ -224,7 +224,7 @@ int main(int argc, char *argv[])
 		Clang->setInvocation(invocation);
 	Clang->createFileManager();
 	Clang->createSourceManager(Clang->getFileManager());
-	TargetOptions TO;
+	TargetOptions &TO = Clang->getTargetOpts();
 	TO.Triple = llvm::sys::getDefaultTargetTriple();
 	TargetInfo *target = TargetInfo::CreateTargetInfo(Diags, TO);
 	Clang->setTarget(target);
