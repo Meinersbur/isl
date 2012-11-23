@@ -2394,6 +2394,27 @@ __isl_give isl_union_map *isl_union_map_zip(__isl_take isl_union_map *umap)
 	return cond_un_op(umap, &zip_entry);
 }
 
+static int uncurry_entry(void **entry, void *user)
+{
+	isl_map *map = *entry;
+	isl_union_map **res = user;
+
+	if (!isl_map_can_uncurry(map))
+		return 0;
+
+	*res = isl_union_map_add_map(*res, isl_map_uncurry(isl_map_copy(map)));
+
+	return 0;
+}
+
+/* Given a union map, take the maps of the form A -> (B -> C) and
+ * return the union of the corresponding maps (A -> B) -> C.
+ */
+__isl_give isl_union_map *isl_union_map_uncurry(__isl_take isl_union_map *umap)
+{
+	return cond_un_op(umap, &uncurry_entry);
+}
+
 static int curry_entry(void **entry, void *user)
 {
 	isl_map *map = *entry;
