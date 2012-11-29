@@ -66,6 +66,7 @@ libisl_la_SOURCES = \
 	isl_convex_hull.c \
 	isl_ctx.c \
 	isl_ctx_private.h \
+	isl_deprecated.c \
 	isl_dim.c \
 	isl_dim_map.h \
 	isl_dim_map.c \
