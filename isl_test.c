@@ -2969,7 +2969,10 @@ int test_output(isl_ctx *ctx)
 	s = isl_printer_get_str(p);
 	isl_printer_free(p);
 	isl_pw_aff_free(pa);
-	equal = !strcmp(s, "(2 - x + 4*floord(x, 4) >= 0) ? (1) : 2");
+	if (!s)
+		equal = -1;
+	else
+		equal = !strcmp(s, "(2 - x + 4*floord(x, 4) >= 0) ? (1) : 2");
 	free(s);
 	if (equal < 0)
 		return -1;
