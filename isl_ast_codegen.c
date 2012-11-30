@@ -291,7 +291,7 @@ static __isl_give isl_ast_graft *after_each_for(__isl_keep isl_ast_graft *graft,
 	__isl_keep isl_ast_build *build)
 {
 	if (!graft || !build)
-		isl_ast_graft_free(graft);
+		return isl_ast_graft_free(graft);
 	if (!build->after_each_for)
 		return graft;
 	graft->node = build->after_each_for(graft->node, build,
