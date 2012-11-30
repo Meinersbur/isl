@@ -2588,7 +2588,6 @@ static __isl_give isl_set *read_aff_domain(struct isl_stream *s,
 error:
 	if (tok)
 		isl_stream_push_token(s, tok);
-	vars_free(v);
 	isl_set_free(dom);
 	return NULL;
 }
