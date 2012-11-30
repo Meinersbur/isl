@@ -102,6 +102,8 @@ struct isl_context_op {
 	void *(*save)(struct isl_context *context);
 	/* restore saved context */
 	void (*restore)(struct isl_context *context, void *);
+	/* discard saved context */
+	void (*discard)(void *);
 	/* invalidate context */
 	void (*invalidate)(struct isl_context *context);
 	/* free context */
@@ -2418,6 +2420,10 @@ static void context_lex_restore(struct isl_context *context, void *save)
 	}
 }
 
+static void context_lex_discard(void *save)
+{
+}
+
 static int context_lex_is_ok(struct isl_context *context)
 {
 	struct isl_context_lex *clex = (struct isl_context_lex *)context;
@@ -2537,6 +2543,7 @@ struct isl_context_op isl_context_lex_op = {
 	context_lex_is_ok,
 	context_lex_save,
 	context_lex_restore,
+	context_lex_discard,
 	context_lex_invalidate,
 	context_lex_free,
 };
@@ -3225,6 +3232,12 @@ error:
 	cgbr->tab = NULL;
 }
 
+static void context_gbr_discard(void *save)
+{
+	struct isl_gbr_tab_undo *snap = (struct isl_gbr_tab_undo *)save;
+	free(snap);
+}
+
 static int context_gbr_is_ok(struct isl_context *context)
 {
 	struct isl_context_gbr *cgbr = (struct isl_context_gbr *)context;
@@ -3263,6 +3276,7 @@ struct isl_context_op isl_context_gbr_op = {
 	context_gbr_is_ok,
 	context_gbr_save,
 	context_gbr_restore,
+	context_gbr_discard,
 	context_gbr_invalidate,
 	context_gbr_free,
 };
@@ -3561,6 +3575,8 @@ static void find_in_pos(struct isl_sol *sol, struct isl_tab *tab, isl_int *ineq)
 
 	if (!sol->error)
 		sol->context->op->restore(sol->context, saved);
+	else
+		sol->context->op->discard(saved);
 	return;
 error:
 	sol->error = 1;
