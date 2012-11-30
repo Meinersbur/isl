@@ -201,6 +201,7 @@ static void sol_push_sol(struct isl_sol *sol,
 	return;
 error:
 	isl_basic_set_free(dom);
+	isl_mat_free(M);
 	sol->error = 1;
 }
 
