@@ -1064,6 +1064,7 @@ static struct isl_basic_set *equalities_in_underlying_set(
 
 	return hull;
 error:
+	isl_mat_free(T1);
 	isl_mat_free(T2);
 	isl_basic_set_free(bset);
 	isl_basic_set_free(hull);
