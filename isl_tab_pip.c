@@ -1958,6 +1958,7 @@ static int add_parametric_cut(struct isl_tab *tab, int row,
 
 	n = tab->n_div;
 	d = context->op->get_div(context, tab, div);
+	isl_vec_free(div);
 	if (d < 0)
 		return -1;
 
@@ -2022,8 +2023,6 @@ static int add_parametric_cut(struct isl_tab *tab, int row,
 		return -1;
 	if (tab->row_sign)
 		tab->row_sign[tab->con[r].index] = isl_tab_row_neg;
-
-	isl_vec_free(div);
 
 	row = tab->con[r].index;
 
