@@ -49,7 +49,7 @@ static __isl_give isl_ast_build *isl_ast_build_init_derived(
 	isl_vec *strides;
 
 	build = isl_ast_build_cow(build);
-	if (!build)
+	if (!build || !build->domain)
 		goto error;
 
 	ctx = isl_ast_build_get_ctx(build);
