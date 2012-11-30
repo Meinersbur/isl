@@ -345,7 +345,7 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),realign_domain)(
 
 	multi = FN(MULTI(BASE),cow)(multi);
 	if (!multi || !exp)
-		return NULL;
+		goto error;
 
 	for (i = 0; i < multi->n; ++i) {
 		multi->p[i] = FN(EL,realign_domain)(multi->p[i],
