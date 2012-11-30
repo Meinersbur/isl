@@ -182,6 +182,9 @@ __isl_give isl_reordering *isl_reordering_extend_space(
 
 	isl_reordering_free(exp);
 
+	if (!res->dim)
+		return isl_reordering_free(res);
+
 	return res;
 error:
 	isl_reordering_free(exp);
