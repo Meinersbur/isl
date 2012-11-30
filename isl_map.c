@@ -2858,7 +2858,7 @@ static __isl_give isl_map *map_intersect_internal(__isl_take isl_map *map1,
 	__isl_take isl_map *map2)
 {
 	unsigned flags = 0;
-	struct isl_map *result;
+	isl_map *result = NULL;
 	int i, j;
 
 	if (!map1 || !map2)
@@ -2915,6 +2915,7 @@ static __isl_give isl_map *map_intersect_internal(__isl_take isl_map *map1,
 error:
 	isl_map_free(map1);
 	isl_map_free(map2);
+	isl_map_free(result);
 	return NULL;
 }
 
