@@ -292,6 +292,8 @@ __isl_take isl_space *isl_space_dup(__isl_keep isl_space *dim)
 	if (!dim)
 		return NULL;
 	dup = isl_space_alloc(dim->ctx, dim->nparam, dim->n_in, dim->n_out);
+	if (!dup)
+		return NULL;
 	if (dim->tuple_id[0] &&
 	    !(dup->tuple_id[0] = isl_id_copy(dim->tuple_id[0])))
 		goto error;
