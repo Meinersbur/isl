@@ -700,7 +700,7 @@ static __isl_give isl_pw_aff_list *accept_affine_list(struct isl_stream *s,
 		list = isl_pw_aff_list_concat(list,
 				isl_pw_aff_list_from_pw_aff(pwaff));
 		if (!list)
-			return NULL;
+			goto error;
 	}
 
 	isl_space_free(dim);
