@@ -4287,6 +4287,7 @@ struct isl_basic_set *isl_basic_map_underlying_set(
 	bmap = isl_basic_map_finalize(bmap);
 	return (struct isl_basic_set *)bmap;
 error:
+	isl_basic_map_free(bmap);
 	return NULL;
 }
 
