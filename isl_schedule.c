@@ -794,6 +794,8 @@ static int add_intra_validity_constraints(struct isl_sched_graph *graph,
 
 	coef = isl_basic_set_transform_dims(coef, isl_dim_set,
 		    isl_space_dim(dim, isl_dim_set), isl_mat_copy(node->cmap));
+	if (!coef)
+		goto error;
 
 	total = isl_basic_set_total_dim(graph->lp);
 	dim_map = isl_dim_map_alloc(ctx, total);
@@ -810,6 +812,9 @@ static int add_intra_validity_constraints(struct isl_sched_graph *graph,
 	isl_space_free(dim);
 
 	return 0;
+error:
+	isl_space_free(dim);
+	return -1;
 }
 
 /* Add constraints to graph->lp that force validity for the given
@@ -851,6 +856,8 @@ static int add_inter_validity_constraints(struct isl_sched_graph *graph,
 	coef = isl_basic_set_transform_dims(coef, isl_dim_set,
 		    isl_space_dim(dim, isl_dim_set) + src->nvar,
 		    isl_mat_copy(dst->cmap));
+	if (!coef)
+		goto error;
 
 	total = isl_basic_set_total_dim(graph->lp);
 	dim_map = isl_dim_map_alloc(ctx, total);
@@ -884,6 +891,9 @@ static int add_inter_validity_constraints(struct isl_sched_graph *graph,
 	edge->end = graph->lp->n_ineq;
 
 	return 0;
+error:
+	isl_space_free(dim);
+	return -1;
 }
 
 /* Add constraints to graph->lp that bound the dependence distance for the given
@@ -933,6 +943,8 @@ static int add_intra_proximity_constraints(struct isl_sched_graph *graph,
 
 	coef = isl_basic_set_transform_dims(coef, isl_dim_set,
 		    isl_space_dim(dim, isl_dim_set), isl_mat_copy(node->cmap));
+	if (!coef)
+		goto error;
 
 	nparam = isl_space_dim(node->dim, isl_dim_param);
 	total = isl_basic_set_total_dim(graph->lp);
@@ -953,6 +965,9 @@ static int add_intra_proximity_constraints(struct isl_sched_graph *graph,
 	isl_space_free(dim);
 
 	return 0;
+error:
+	isl_space_free(dim);
+	return -1;
 }
 
 /* Add constraints to graph->lp that bound the dependence distance for the given
@@ -1012,6 +1027,8 @@ static int add_inter_proximity_constraints(struct isl_sched_graph *graph,
 	coef = isl_basic_set_transform_dims(coef, isl_dim_set,
 		    isl_space_dim(dim, isl_dim_set) + src->nvar,
 		    isl_mat_copy(dst->cmap));
+	if (!coef)
+		goto error;
 
 	nparam = isl_space_dim(src->dim, isl_dim_param);
 	total = isl_basic_set_total_dim(graph->lp);
@@ -1048,6 +1065,9 @@ static int add_inter_proximity_constraints(struct isl_sched_graph *graph,
 	isl_space_free(dim);
 
 	return 0;
+error:
+	isl_space_free(dim);
+	return -1;
 }
 
 static int add_all_validity_constraints(struct isl_sched_graph *graph)
