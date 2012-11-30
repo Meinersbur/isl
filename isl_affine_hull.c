@@ -805,7 +805,7 @@ struct isl_tab *isl_tab_detect_equalities(struct isl_tab *tab,
 {
 	int j;
 	struct isl_vec *sample;
-	struct isl_basic_set *hull;
+	struct isl_basic_set *hull = NULL;
 	struct isl_tab_undo *snap;
 
 	if (!tab || !tab_cone)
@@ -870,6 +870,7 @@ struct isl_tab *isl_tab_detect_equalities(struct isl_tab *tab,
 
 	return tab;
 error:
+	isl_basic_set_free(hull);
 	isl_tab_free(tab);
 	return NULL;
 }
