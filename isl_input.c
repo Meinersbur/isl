@@ -1043,6 +1043,8 @@ static __isl_give isl_map *read_map_tuple(struct isl_stream *s,
 
 	n = isl_multi_pw_aff_dim(tuple, isl_dim_out);
 	space = isl_space_range(isl_multi_pw_aff_get_space(tuple));
+	if (!space)
+		goto error;
 
 	if (type == isl_dim_param) {
 		if (isl_space_has_tuple_name(space, isl_dim_set) ||
