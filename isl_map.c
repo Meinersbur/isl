@@ -6040,6 +6040,8 @@ static int update_dim_opt(__isl_take isl_basic_set *dom,
 	isl_pw_aff **pwaff = user;
 	isl_pw_aff *pwaff_i;
 
+	if (!list)
+		goto error;
 	if (isl_aff_list_n_aff(list) != 1)
 		isl_die(ctx, isl_error_internal,
 			"expecting single element list", goto error);
