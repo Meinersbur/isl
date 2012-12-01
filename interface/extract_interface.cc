@@ -145,11 +145,17 @@ static Driver *construct_driver(const char *binary, DiagnosticsEngine &Diags)
 	return new Driver(binary, llvm::sys::getDefaultTargetTriple(),
 			    "", false, false, Diags);
 }
-#else
+#elif defined(HAVE_ISPRODUCTION)
 static Driver *construct_driver(const char *binary, DiagnosticsEngine &Diags)
 {
 	return new Driver(binary, llvm::sys::getDefaultTargetTriple(),
 			    "", false, Diags);
+}
+#else
+static Driver *construct_driver(const char *binary, DiagnosticsEngine &Diags)
+{
+	return new Driver(binary, llvm::sys::getDefaultTargetTriple(),
+			    "", Diags);
 }
 #endif
 
