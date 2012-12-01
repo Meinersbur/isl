@@ -3017,6 +3017,8 @@ int test_sample(isl_ctx *ctx)
 	subset = isl_basic_set_is_subset(bset2, bset1);
 	isl_basic_set_free(bset1);
 	isl_basic_set_free(bset2);
+	if (empty < 0 || subset < 0)
+		return -1;
 	if (empty)
 		isl_die(ctx, isl_error_unknown, "point not found", return -1);
 	if (!subset)
