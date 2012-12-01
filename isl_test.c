@@ -3489,6 +3489,8 @@ static __isl_give isl_id *before_for(__isl_keep isl_ast_build *build,
 
 	schedule = isl_ast_build_get_schedule(build);
 	uset = isl_union_map_range(schedule);
+	if (!uset)
+		return NULL;
 	if (isl_union_set_n_set(uset) != 1) {
 		isl_union_set_free(uset);
 		isl_die(ctx, isl_error_unknown,
