@@ -101,7 +101,7 @@ static __isl_give isl_vertices *vertices_from_list(__isl_keep isl_basic_set *bse
 
 	return vertices;
 error:
-	free(vertices);
+	isl_vertices_free(vertices);
 	free_vertex_list(list);
 	return NULL;
 }
