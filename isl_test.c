@@ -3758,7 +3758,7 @@ struct {
 	{ "AST", &test_ast },
 	{ "AST generation", &test_ast_gen },
 	{ "eliminate", &test_eliminate },
-	{ "reisdue class", &test_residue_class },
+	{ "residue class", &test_residue_class },
 	{ "div", &test_div },
 	{ "slice", &test_slice },
 	{ "fixed power", &test_fixed_power },
