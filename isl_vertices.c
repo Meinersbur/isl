@@ -495,6 +495,7 @@ __isl_give isl_vertices *isl_basic_set_compute_vertices(
 
 	return vertices;
 error:
+	free_vertex_list(list);
 	isl_mat_free(facets);
 	free(selection);
 	free(snap);
