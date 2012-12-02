@@ -309,6 +309,8 @@ static void sol_pop(struct isl_sol *sol)
 			struct isl_basic_set *bset;
 
 			bset = sol_domain(sol);
+			if (!bset)
+				goto error;
 
 			isl_basic_set_free(partial->next->dom);
 			partial->next->dom = bset;
@@ -321,6 +323,9 @@ static void sol_pop(struct isl_sol *sol)
 		}
 	} else
 		sol_pop_one(sol);
+
+	if (0)
+error:		sol->error = 1;
 }
 
 static void sol_dec_level(struct isl_sol *sol)
