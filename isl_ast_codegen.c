@@ -897,6 +897,8 @@ static __isl_give isl_ast_expr *for_inc(__isl_keep isl_ast_build *build)
 	isl_ctx *ctx;
 	isl_ast_expr *inc;
 
+	if (!build)
+		return NULL;
 	ctx = isl_ast_build_get_ctx(build);
 	depth = isl_ast_build_get_depth(build);
 
