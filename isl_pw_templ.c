@@ -538,9 +538,9 @@ static __isl_give PW *FN(PW,on_shared_domain_in)(__isl_take PW *pw1,
 
 	n = pw1->n * pw2->n;
 #ifdef HAS_TYPE
-	res = FN(PW,alloc_size)(space, pw1->type, n);
+	res = FN(PW,alloc_size)(isl_space_copy(space), pw1->type, n);
 #else
-	res = FN(PW,alloc_size)(space, n);
+	res = FN(PW,alloc_size)(isl_space_copy(space), n);
 #endif
 
 	for (i = 0; i < pw1->n; ++i) {
@@ -568,6 +568,7 @@ static __isl_give PW *FN(PW,on_shared_domain_in)(__isl_take PW *pw1,
 		}
 	}
 
+	isl_space_free(space);
 	FN(PW,free)(pw1);
 	FN(PW,free)(pw2);
 	return res;
