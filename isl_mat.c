@@ -909,6 +909,9 @@ struct isl_mat *isl_mat_transpose(struct isl_mat *mat)
 	struct isl_mat *transpose = NULL;
 	int i, j;
 
+	if (!mat)
+		return NULL;
+
 	if (mat->n_col == mat->n_row) {
 		mat = isl_mat_cow(mat);
 		if (!mat)
