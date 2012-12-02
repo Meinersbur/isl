@@ -1680,6 +1680,9 @@ static __isl_give isl_printer *print_set_c(__isl_take isl_printer *p,
 {
 	int i;
 
+	if (!set)
+		return isl_printer_free(p);
+
 	if (set->n == 0)
 		p = isl_printer_print_str(p, "0");
 
