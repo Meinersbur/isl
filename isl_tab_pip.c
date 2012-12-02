@@ -4784,11 +4784,13 @@ int isl_basic_map_foreach_lexopt(__isl_keep isl_basic_map *bmap, int max,
 	struct isl_sol_for *sol_for = NULL;
 
 	bmap = isl_basic_map_copy(bmap);
+	bmap = isl_basic_map_detect_equalities(bmap);
 	if (!bmap)
 		return -1;
 
-	bmap = isl_basic_map_detect_equalities(bmap);
 	sol_for = sol_for_init(bmap, max, fn, user);
+	if (!sol_for)
+		goto error;
 
 	if (isl_basic_map_plain_is_empty(bmap))
 		/* nothing */;
