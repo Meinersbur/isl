@@ -1449,6 +1449,8 @@ struct isl_basic_map *isl_basic_map_eliminate_vars(
 	bmap = isl_basic_map_cow(bmap);
 	for (d = pos + n - 1; d >= 0 && d >= pos; --d)
 		bmap = remove_dependent_vars(bmap, d);
+	if (!bmap)
+		return NULL;
 
 	for (d = pos + n - 1;
 	     d >= 0 && d >= total - bmap->n_div && d >= pos; --d)
