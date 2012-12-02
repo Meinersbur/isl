@@ -7421,7 +7421,7 @@ int isl_basic_map_is_empty(struct isl_basic_map *bmap)
 	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL)) {
 		struct isl_basic_map *copy = isl_basic_map_copy(bmap);
 		copy = isl_basic_map_remove_redundancies(copy);
-		empty = ISL_F_ISSET(copy, ISL_BASIC_MAP_EMPTY);
+		empty = isl_basic_map_plain_is_empty(copy);
 		isl_basic_map_free(copy);
 		return empty;
 	}
