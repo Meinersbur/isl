@@ -128,6 +128,8 @@ __isl_give isl_reordering *isl_parameter_alignment_reordering(
 		}
 	}
 
+	if (!exp->dim)
+		return isl_reordering_free(exp);
 	return exp;
 error:
 	isl_reordering_free(exp);
