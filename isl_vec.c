@@ -136,6 +136,8 @@ struct isl_vec *isl_vec_dup(struct isl_vec *vec)
 	if (!vec)
 		return NULL;
 	vec2 = isl_vec_alloc(vec->ctx, vec->size);
+	if (!vec2)
+		return NULL;
 	isl_seq_cpy(vec2->el, vec->el, vec->size);
 	return vec2;
 }
