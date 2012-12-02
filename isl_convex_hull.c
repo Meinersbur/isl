@@ -2342,7 +2342,7 @@ static __isl_give isl_basic_map *map_simple_hull(__isl_take isl_map *map,
 	map = isl_map_detect_equalities(map);
 	affine_hull = isl_map_affine_hull(isl_map_copy(map));
 	map = isl_map_align_divs(map);
-	model = isl_basic_map_copy(map->p[0]);
+	model = map ? isl_basic_map_copy(map->p[0]) : NULL;
 
 	set = isl_map_underlying_set(map);
 
