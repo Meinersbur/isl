@@ -7838,19 +7838,20 @@ static enum isl_lp_result basic_set_maximal_difference_at(
 	total = isl_basic_map_total_dim(bmap1);
 	ctx = bmap1->ctx;
 	obj = isl_vec_alloc(ctx, 1 + total);
+	if (!obj)
+		goto error2;
 	isl_seq_clr(obj->block.data, 1 + total);
 	isl_int_set_si(obj->block.data[1+nparam+pos], 1);
 	isl_int_set_si(obj->block.data[1+nparam+pos+(dim1-pos)], -1);
-	if (!obj)
-		goto error;
 	res = isl_basic_map_solve_lp(bmap1, 1, obj->block.data, ctx->one,
 					opt, NULL, NULL);
 	isl_basic_map_free(bmap1);
 	isl_vec_free(obj);
 	return res;
 error:
-	isl_basic_map_free(bmap1);
 	isl_basic_map_free(bmap2);
+error2:
+	isl_basic_map_free(bmap1);
 	return isl_lp_error;
 }
 
