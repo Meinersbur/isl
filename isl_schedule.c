@@ -887,6 +887,8 @@ static int add_inter_validity_constraints(struct isl_sched_graph *graph,
 			coef->n_eq, coef->n_ineq);
 	graph->lp = isl_basic_set_add_constraints_dim_map(graph->lp,
 							   coef, dim_map);
+	if (!graph->lp)
+		goto error;
 	isl_space_free(dim);
 	edge->end = graph->lp->n_ineq;
 
