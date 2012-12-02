@@ -1458,7 +1458,7 @@ static __isl_give isl_ast_graft *create_node(__isl_take isl_union_map *executed,
 	if (isl_aff_get_denominator(offset, &data.d) < 0)
 		executed = isl_union_map_free(executed);
 
-	if (isl_int_is_divisible_by(data.m, data.d))
+	if (executed && isl_int_is_divisible_by(data.m, data.d))
 		isl_int_divexact(data.m, data.m, data.d);
 	else
 		isl_int_set_si(data.m, 1);
