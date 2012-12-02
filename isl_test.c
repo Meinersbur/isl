@@ -3418,10 +3418,12 @@ static int test_ast(isl_ctx *ctx)
 	expr = isl_ast_expr_add(expr1, expr2);
 	expr = isl_ast_expr_neg(expr);
 	str = isl_ast_expr_to_str(expr);
-	ok = !strcmp(str, "-(A + B)");
+	ok = str ? !strcmp(str, "-(A + B)") : -1;
 	free(str);
 	isl_ast_expr_free(expr);
 
+	if (ok < 0)
+		return -1;
 	if (!ok)
 		isl_die(ctx, isl_error_unknown,
 			"isl_ast_expr printed incorrectly", return -1);
@@ -3432,10 +3434,12 @@ static int test_ast(isl_ctx *ctx)
 	expr3 = isl_ast_expr_from_id(isl_id_alloc(ctx, "C", NULL));
 	expr = isl_ast_expr_sub(expr3, expr);
 	str = isl_ast_expr_to_str(expr);
-	ok = !strcmp(str, "C - (A + B)");
+	ok = str ? !strcmp(str, "C - (A + B)") : -1;
 	free(str);
 	isl_ast_expr_free(expr);
 
+	if (ok < 0)
+		return -1;
 	if (!ok)
 		isl_die(ctx, isl_error_unknown,
 			"isl_ast_expr printed incorrectly", return -1);
