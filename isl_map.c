@@ -6827,8 +6827,10 @@ struct isl_basic_set *isl_basic_map_deltas(struct isl_basic_map *bmap)
 	for (i = 0; i < dim; ++i) {
 		int j = isl_basic_map_alloc_equality(
 					    (struct isl_basic_map *)bset);
-		if (j < 0)
-			goto error;
+		if (j < 0) {
+			bset = isl_basic_set_free(bset);
+			break;
+		}
 		isl_seq_clr(bset->eq[j], 1 + isl_basic_set_total_dim(bset));
 		isl_int_set_si(bset->eq[j][1+nparam+i], 1);
 		isl_int_set_si(bset->eq[j][1+nparam+dim+i], 1);
