@@ -1737,6 +1737,8 @@ static __isl_give isl_ast_graft_list *generate_sorted_domains(
 	data.depth = isl_ast_build_get_depth(build);
 	data.piece = domain_list->p;
 	g = isl_tarjan_graph_init(ctx, n, &domain_follows_at_depth, &data);
+	if (!g)
+		goto error;
 
 	i = 0;
 	while (list && n) {
