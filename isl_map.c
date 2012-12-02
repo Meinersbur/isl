@@ -1620,6 +1620,9 @@ static __isl_give isl_basic_set *isl_basic_set_swap_vars(
 	unsigned dim;
 	unsigned nparam;
 
+	if (!bset)
+		return NULL;
+
 	nparam = isl_basic_set_n_param(bset);
 	dim = isl_basic_set_n_dim(bset);
 	isl_assert(bset->ctx, n <= dim, goto error);
