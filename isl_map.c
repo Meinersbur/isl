@@ -4354,10 +4354,12 @@ struct isl_basic_map *isl_basic_map_overlying_set(
 		bmap = isl_basic_map_extend_constraints(bmap, 
 							0, 2 * like->n_div);
 		for (i = 0; i < like->n_div; ++i) {
+			if (!bmap)
+				break;
 			if (isl_int_is_zero(bmap->div[i][0]))
 				continue;
 			if (isl_basic_map_add_div_constraints(bmap, i) < 0)
-				goto error;
+				bmap = isl_basic_map_free(bmap);
 		}
 	}
 	isl_basic_map_free(like);
