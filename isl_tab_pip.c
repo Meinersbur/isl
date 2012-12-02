@@ -4989,12 +4989,18 @@ __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 {
 	int i, j;
 	int r;
-	isl_ctx *ctx = isl_basic_set_get_ctx(bset);
+	isl_ctx *ctx;
 	isl_vec *v = NULL;
-	isl_vec *sol = isl_vec_alloc(ctx, 0);
+	isl_vec *sol = NULL;
 	struct isl_tab *tab;
 	struct isl_trivial *triv = NULL;
 	int level, init;
+
+	if (!bset)
+		return NULL;
+
+	ctx = isl_basic_set_get_ctx(bset);
+	sol = isl_vec_alloc(ctx, 0);
 
 	tab = tab_for_lexmin(bset, NULL, 0, 0);
 	if (!tab)
