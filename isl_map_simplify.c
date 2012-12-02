@@ -1416,6 +1416,9 @@ static struct isl_basic_map *remove_dependent_vars(struct isl_basic_map *bmap,
 {
 	int i;
 
+	if (!bmap)
+		return NULL;
+
 	for (i = 0; i < bmap->n_div; ++i) {
 		if (isl_int_is_zero(bmap->div[i][0]))
 			continue;
