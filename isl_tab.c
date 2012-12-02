@@ -787,6 +787,8 @@ static int push_union(struct isl_tab *tab,
 {
 	struct isl_tab_undo *undo;
 
+	if (!tab)
+		return -1;
 	if (!tab->need_undo)
 		return 0;
 
