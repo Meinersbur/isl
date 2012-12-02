@@ -2587,6 +2587,9 @@ static __isl_give isl_basic_set_list *compute_domains(
 	enum isl_ast_build_domain_type type;
 	int empty;
 
+	if (!executed)
+		return NULL;
+
 	ctx = isl_union_map_get_ctx(executed);
 	domains.list = isl_basic_set_list_alloc(ctx, 0);
 
