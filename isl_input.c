@@ -1118,28 +1118,24 @@ static __isl_give isl_set *construct_constraints(
 {
 	isl_set *cond;
 
+	left = isl_pw_aff_list_copy(left);
+	right = isl_pw_aff_list_copy(right);
 	if (rational) {
 		left = isl_pw_aff_list_set_rational(left);
 		right = isl_pw_aff_list_set_rational(right);
 	}
 	if (type == ISL_TOKEN_LE)
-		cond = isl_pw_aff_list_le_set(isl_pw_aff_list_copy(left),
-					      isl_pw_aff_list_copy(right));
+		cond = isl_pw_aff_list_le_set(left, right);
 	else if (type == ISL_TOKEN_GE)
-		cond = isl_pw_aff_list_ge_set(isl_pw_aff_list_copy(left),
-					      isl_pw_aff_list_copy(right));
+		cond = isl_pw_aff_list_ge_set(left, right);
 	else if (type == ISL_TOKEN_LT)
-		cond = isl_pw_aff_list_lt_set(isl_pw_aff_list_copy(left),
-					      isl_pw_aff_list_copy(right));
+		cond = isl_pw_aff_list_lt_set(left, right);
 	else if (type == ISL_TOKEN_GT)
-		cond = isl_pw_aff_list_gt_set(isl_pw_aff_list_copy(left),
-					      isl_pw_aff_list_copy(right));
+		cond = isl_pw_aff_list_gt_set(left, right);
 	else if (type == ISL_TOKEN_NE)
-		cond = isl_pw_aff_list_ne_set(isl_pw_aff_list_copy(left),
-					      isl_pw_aff_list_copy(right));
+		cond = isl_pw_aff_list_ne_set(left, right);
 	else
-		cond = isl_pw_aff_list_eq_set(isl_pw_aff_list_copy(left),
-					      isl_pw_aff_list_copy(right));
+		cond = isl_pw_aff_list_eq_set(left, right);
 
 	return isl_set_intersect(set, cond);
 }
