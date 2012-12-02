@@ -783,6 +783,8 @@ __isl_give isl_space *isl_space_extend(__isl_take isl_space *dim,
 	isl_assert(dim->ctx, dim->n_out <= n_out, goto error);
 
 	dim = isl_space_cow(dim);
+	if (!dim)
+		goto error;
 
 	if (dim->ids) {
 		ids = isl_calloc_array(dim->ctx, isl_id *,
