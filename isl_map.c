@@ -2993,6 +2993,8 @@ static __isl_give isl_basic_map *basic_map_space_reset(
 {
 	isl_space *space;
 
+	if (!bmap)
+		return NULL;
 	if (!isl_space_is_named_or_nested(bmap->dim, type))
 		return bmap;
 
