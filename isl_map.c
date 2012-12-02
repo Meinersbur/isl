@@ -8240,7 +8240,8 @@ struct isl_basic_map *isl_basic_map_normalize(struct isl_basic_map *bmap)
 		return bmap;
 	bmap = isl_basic_map_remove_redundancies(bmap);
 	bmap = isl_basic_map_sort_constraints(bmap);
-	ISL_F_SET(bmap, ISL_BASIC_MAP_NORMALIZED);
+	if (bmap)
+		ISL_F_SET(bmap, ISL_BASIC_MAP_NORMALIZED);
 	return bmap;
 }
 
