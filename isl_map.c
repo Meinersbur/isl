@@ -2858,7 +2858,7 @@ static __isl_give isl_map *map_intersect_internal(__isl_take isl_map *map1,
 	__isl_take isl_map *map2)
 {
 	unsigned flags = 0;
-	isl_map *result = NULL;
+	isl_map *result;
 	int i, j;
 
 	if (!map1 || !map2)
@@ -2904,7 +2904,7 @@ static __isl_give isl_map *map_intersect_internal(__isl_take isl_map *map1,
 				    isl_basic_map_copy(map1->p[i]),
 				    isl_basic_map_copy(map2->p[j]));
 			if (isl_basic_map_is_empty(part) < 0)
-				goto error;
+				part = isl_basic_map_free(part);
 			result = isl_map_add_basic_map(result, part);
 			if (!result)
 				goto error;
@@ -2915,7 +2915,6 @@ static __isl_give isl_map *map_intersect_internal(__isl_take isl_map *map1,
 error:
 	isl_map_free(map1);
 	isl_map_free(map2);
-	isl_map_free(result);
 	return NULL;
 }
 
