@@ -2240,6 +2240,8 @@ static int add_inter_constraints(struct isl_sched_graph *graph,
 	struct isl_sched_node *dst = edge->dst;
 
 	coef = inter_coefficients(graph, map);
+	if (!coef)
+		return -1;
 
 	dim = isl_space_domain(isl_space_unwrap(isl_basic_set_get_space(coef)));
 
