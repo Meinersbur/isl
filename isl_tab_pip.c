@@ -5117,6 +5117,9 @@ __isl_give isl_vec *isl_tab_basic_set_non_neg_lexmin(
 	isl_ctx *ctx = isl_basic_set_get_ctx(bset);
 	isl_vec *sol;
 
+	if (!bset)
+		return NULL;
+
 	tab = tab_for_lexmin(bset, NULL, 0, 0);
 	if (!tab)
 		goto error;
