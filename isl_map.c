@@ -7579,11 +7579,11 @@ __isl_give isl_basic_set *isl_basic_set_expand_divs(
 		isl_die(isl_mat_get_ctx(div), isl_error_invalid,
 			"not an expansion", goto error);
 
-	bset = isl_basic_map_extend_space(bset, isl_space_copy(bset->dim),
-					div->n_row - bset->n_div, 0,
-					2 * (div->n_row - bset->n_div));
-
 	n_div = bset->n_div;
+	bset = isl_basic_map_extend_space(bset, isl_space_copy(bset->dim),
+					    div->n_row - n_div, 0,
+					    2 * (div->n_row - n_div));
+
 	for (i = n_div; i < div->n_row; ++i)
 		if (isl_basic_set_alloc_div(bset) < 0)
 			goto error;
