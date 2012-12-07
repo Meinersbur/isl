@@ -3220,6 +3220,8 @@ __isl_give isl_basic_map *isl_basic_map_move_dims(
 	res = isl_basic_map_alloc_space(isl_basic_map_get_space(bmap),
 			bmap->n_div, bmap->n_eq, bmap->n_ineq);
 	bmap = isl_basic_map_add_constraints_dim_map(res, bmap, dim_map);
+	if (!bmap)
+		goto error;
 
 	bmap->dim = isl_space_move_dims(bmap->dim, dst_type, dst_pos,
 					src_type, src_pos, n);
