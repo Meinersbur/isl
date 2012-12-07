@@ -1549,9 +1549,9 @@ static uint32_t isl_hash_dim(uint32_t hash, __isl_keep isl_space *dim)
 	if (!dim)
 		return hash;
 
-	hash = isl_hash_builtin(hash, dim->nparam);
-	hash = isl_hash_builtin(hash, dim->n_in);
-	hash = isl_hash_builtin(hash, dim->n_out);
+	isl_hash_byte(hash, dim->nparam % 256);
+	isl_hash_byte(hash, dim->n_in % 256);
+	isl_hash_byte(hash, dim->n_out % 256);
 
 	for (i = 0; i < dim->nparam; ++i) {
 		id = get_id(dim, isl_dim_param, i);

@@ -3,12 +3,12 @@
     for (int c1 = -c0 + 6; c1 <= 6; c1 += 1)
       S1(c0, c1);
   for (int c0 = 4; c0 <= 8; c0 += 1) {
-    if (c0 == 4) {
-      for (int c1 = 3; c1 <= 4; c1 += 1)
-        S1(4, c1);
-    } else if (c0 >= 6)
+    if (c0 >= 6) {
       S2(c0, -c0 + 9);
-    if (c0 <= 5) {
+    } else {
+      if (c0 == 4)
+        for (int c1 = 3; c1 <= 4; c1 += 1)
+          S1(4, c1);
       S1(c0, -c0 + 9);
       S2(c0, -c0 + 9);
     }
