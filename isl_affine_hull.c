@@ -1126,30 +1126,6 @@ __isl_give isl_basic_set *isl_basic_set_detect_equalities(
 		isl_basic_map_detect_equalities((isl_basic_map *)bset);
 }
 
-__isl_give isl_map *isl_map_inline_foreach_basic_map(__isl_take isl_map *map,
-	__isl_give isl_basic_map *(*fn)(__isl_take isl_basic_map *bmap))
-{
-	struct isl_basic_map *bmap;
-	int i;
-
-	if (!map)
-		return NULL;
-
-	for (i = 0; i < map->n; ++i) {
-		bmap = isl_basic_map_copy(map->p[i]);
-		bmap = fn(bmap);
-		if (!bmap)
-			goto error;
-		isl_basic_map_free(map->p[i]);
-		map->p[i] = bmap;
-	}
-
-	return map;
-error:
-	isl_map_free(map);
-	return NULL;
-}
-
 __isl_give isl_map *isl_map_detect_equalities(__isl_take isl_map *map)
 {
 	return isl_map_inline_foreach_basic_map(map,

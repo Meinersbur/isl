@@ -5331,6 +5331,39 @@ static int remove_if_empty(__isl_keep isl_map *map, int i)
 	return 0;
 }
 
+/* Perform "fn" on each basic map of "map", where we may not be holding
+ * the only reference to "map".
+ * In particular, "fn" should be a semantics preserving operation
+ * that we want to apply to all copies of "map".  We therefore need
+ * to be careful not to modify "map" in a way that breaks "map"
+ * in case anything goes wrong.
+ */
+__isl_give isl_map *isl_map_inline_foreach_basic_map(__isl_take isl_map *map,
+	__isl_give isl_basic_map *(*fn)(__isl_take isl_basic_map *bmap))
+{
+	struct isl_basic_map *bmap;
+	int i;
+
+	if (!map)
+		return NULL;
+
+	for (i = map->n - 1; i >= 0; --i) {
+		bmap = isl_basic_map_copy(map->p[i]);
+		bmap = fn(bmap);
+		if (!bmap)
+			goto error;
+		isl_basic_map_free(map->p[i]);
+		map->p[i] = bmap;
+		if (remove_if_empty(map, i) < 0)
+			goto error;
+	}
+
+	return map;
+error:
+	isl_map_free(map);
+	return NULL;
+}
+
 struct isl_map *isl_map_fix_si(struct isl_map *map,
 		enum isl_dim_type type, unsigned pos, int value)
 {
