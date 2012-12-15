@@ -941,7 +941,11 @@ static __isl_give isl_multi_pw_aff *read_tuple_var_list(struct isl_stream *s,
 			new_name = p >= n;
 		}
 
-		if (new_name) {
+		if (tok->type == '*') {
+			if (vars_add_anon(v) < 0)
+				goto error;
+			isl_token_free(tok);
+		} else if (new_name) {
 			res = tuple_set_dim_name(res, i, v->v->name);
 			isl_token_free(tok);
 			if (isl_stream_eat_if_available(s, '='))
