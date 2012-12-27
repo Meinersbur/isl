@@ -2520,6 +2520,7 @@ static int compute_class_domains(__isl_take isl_point *pnt, void *user)
 	class_set = isl_set_from_point(pnt);
 	domain = isl_map_domain(isl_map_intersect_range(
 				isl_map_copy(domains->sep_class), class_set));
+	domain = isl_ast_build_compute_gist(domains->build, domain);
 	domain = isl_ast_build_eliminate(domains->build, domain);
 
 	disjoint = isl_set_plain_is_disjoint(domain, domains->schedule_domain);

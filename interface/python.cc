@@ -34,6 +34,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <map>
+#include <clang/AST/Attr.h>
 #include "extract_interface.h"
 #include "python.h"
 
