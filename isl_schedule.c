@@ -326,7 +326,7 @@ static struct isl_sched_edge *graph_find_edge(struct isl_sched_graph *graph,
 	return entry->data;
 }
 
-/* Check whether the dependence graph has an edge of the give type
+/* Check whether the dependence graph has an edge of the given type
  * between the given two nodes.
  */
 static int graph_has_edge(struct isl_sched_graph *graph,
