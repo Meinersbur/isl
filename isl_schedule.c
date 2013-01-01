@@ -698,6 +698,23 @@ struct isl_extract_edge_data {
 	struct isl_sched_graph *graph;
 };
 
+/* Merge edge2 into edge1, freeing the contents of edge2.
+ * "type" is the type of the schedule constraint from which edge2 was
+ * extracted.
+ * Return 0 on success and -1 on failure.
+ *
+ * edge1 and edge2 are assumed to have the same value for the map field.
+ */
+static int merge_edge(enum isl_edge_type type, struct isl_sched_edge *edge1,
+	struct isl_sched_edge *edge2)
+{
+	edge1->validity |= edge2->validity;
+	edge1->proximity |= edge2->proximity;
+	isl_map_free(edge2->map);
+
+	return 0;
+}
+
 /* Add a new edge to the graph based on the given map
  * and add it to data->graph->edge_table[data->type].
  * If a dependence relation of a given type happens to be identical
@@ -752,9 +769,8 @@ static int extract_edge(__isl_take isl_map *map, void *user)
 				    &graph->edge[graph->n_edge - 1]);
 
 	graph->n_edge--;
-	edge->validity |= graph->edge[graph->n_edge].validity;
-	edge->proximity |= graph->edge[graph->n_edge].proximity;
-	isl_map_free(map);
+	if (merge_edge(data->type, edge, &graph->edge[graph->n_edge]) < 0)
+		return -1;
 
 	return graph_edge_table_add(ctx, graph, data->type, edge);
 }
