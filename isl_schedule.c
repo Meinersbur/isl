@@ -495,23 +495,32 @@ static int graph_has_edge(struct isl_sched_graph *graph,
 	return !empty;
 }
 
-/* If there is an edge from the given source to the given destination
- * of any type then return this edge.
- * Otherwise, return NULL.
+/* Look for any edge with the same src, dst and map fields as "model".
+ *
+ * Return the matching edge if one can be found.
+ * Return "model" if no matching edge is found.
+ * Return NULL on error.
  */
-static struct isl_sched_edge *graph_find_any_edge(struct isl_sched_graph *graph,
-	struct isl_sched_node *src, struct isl_sched_node *dst)
+static struct isl_sched_edge *graph_find_matching_edge(
+	struct isl_sched_graph *graph, struct isl_sched_edge *model)
 {
 	enum isl_edge_type i;
 	struct isl_sched_edge *edge;
 
 	for (i = isl_edge_first; i <= isl_edge_last; ++i) {
-		edge = graph_find_edge(graph, i, src, dst);
-		if (edge)
+		int is_equal;
+
+		edge = graph_find_edge(graph, i, model->src, model->dst);
+		if (!edge)
+			continue;
+		is_equal = isl_map_plain_is_equal(model->map, edge->map);
+		if (is_equal < 0)
+			return NULL;
+		if (is_equal)
 			return edge;
 	}
 
-	return NULL;
+	return model;
 }
 
 /* Remove the given edge from all the edge_tables that refer to it.
@@ -730,7 +739,6 @@ static int extract_edge(__isl_take isl_map *map, void *user)
 	struct isl_sched_node *src, *dst;
 	isl_space *dim;
 	struct isl_sched_edge *edge;
-	int is_equal;
 
 	dim = isl_space_domain(isl_map_get_space(map));
 	src = graph_find_node(ctx, graph, dim);
@@ -755,20 +763,12 @@ static int extract_edge(__isl_take isl_map *map, void *user)
 		graph->edge[graph->n_edge].validity = 0;
 		graph->edge[graph->n_edge].proximity = 1;
 	}
-	graph->n_edge++;
 
-	edge = graph_find_any_edge(graph, src, dst);
-	if (!edge)
+	edge = graph_find_matching_edge(graph, &graph->edge[graph->n_edge]);
+	if (edge == &graph->edge[graph->n_edge])
 		return graph_edge_table_add(ctx, graph, data->type,
-				    &graph->edge[graph->n_edge - 1]);
-	is_equal = isl_map_plain_is_equal(map, edge->map);
-	if (is_equal < 0)
-		return -1;
-	if (!is_equal)
-		return graph_edge_table_add(ctx, graph, data->type,
-				    &graph->edge[graph->n_edge - 1]);
+				    &graph->edge[graph->n_edge++]);
 
-	graph->n_edge--;
 	if (merge_edge(data->type, edge, &graph->edge[graph->n_edge]) < 0)
 		return -1;
 
