@@ -33,6 +33,7 @@
 #include <isl_aff_private.h>
 #include <isl_options_private.h>
 #include <isl_morph.h>
+#include <isl_val_private.h>
 
 static unsigned n(__isl_keep isl_space *dim, enum isl_dim_type type)
 {
@@ -5328,6 +5329,39 @@ error:
 	return NULL;
 }
 
+/* Fix the value of the variable at position "pos" of type "type" of "bmap"
+ * to be equal to "v".
+ */
+__isl_give isl_basic_map *isl_basic_map_fix_val(__isl_take isl_basic_map *bmap,
+	enum isl_dim_type type, unsigned pos, __isl_take isl_val *v)
+{
+	if (!bmap || !v)
+		goto error;
+	if (!isl_val_is_int(v))
+		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
+			"expecting integer value", goto error);
+	if (pos >= isl_basic_map_dim(bmap, type))
+		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
+			"index out of bounds", goto error);
+	pos += isl_basic_map_offset(bmap, type);
+	bmap = isl_basic_map_fix_pos(bmap, pos, v->n);
+	isl_val_free(v);
+	return bmap;
+error:
+	isl_basic_map_free(bmap);
+	isl_val_free(v);
+	return NULL;
+}
+
+/* Fix the value of the variable at position "pos" of type "type" of "bset"
+ * to be equal to "v".
+ */
+__isl_give isl_basic_set *isl_basic_set_fix_val(__isl_take isl_basic_set *bset,
+	enum isl_dim_type type, unsigned pos, __isl_take isl_val *v)
+{
+	return isl_basic_map_fix_val(bset, type, pos, v);
+}
+
 struct isl_basic_set *isl_basic_set_fix_si(struct isl_basic_set *bset,
 		enum isl_dim_type type, unsigned pos, int value)
 {
@@ -5465,6 +5499,48 @@ __isl_give isl_set *isl_set_fix(__isl_take isl_set *set,
 		enum isl_dim_type type, unsigned pos, isl_int value)
 {
 	return (struct isl_set *)isl_map_fix((isl_map *)set, type, pos, value);
+}
+
+/* Fix the value of the variable at position "pos" of type "type" of "map"
+ * to be equal to "v".
+ */
+__isl_give isl_map *isl_map_fix_val(__isl_take isl_map *map,
+	enum isl_dim_type type, unsigned pos, __isl_take isl_val *v)
+{
+	int i;
+
+	map = isl_map_cow(map);
+	if (!map || !v)
+		goto error;
+
+	if (!isl_val_is_int(v))
+		isl_die(isl_map_get_ctx(map), isl_error_invalid,
+			"expecting integer value", goto error);
+	if (pos >= isl_map_dim(map, type))
+		isl_die(isl_map_get_ctx(map), isl_error_invalid,
+			"index out of bounds", goto error);
+	for (i = map->n - 1; i >= 0; --i) {
+		map->p[i] = isl_basic_map_fix_val(map->p[i], type, pos,
+							isl_val_copy(v));
+		if (remove_if_empty(map, i) < 0)
+			goto error;
+	}
+	ISL_F_CLR(map, ISL_MAP_NORMALIZED);
+	isl_val_free(v);
+	return map;
+error:
+	isl_map_free(map);
+	isl_val_free(v);
+	return NULL;
+}
+
+/* Fix the value of the variable at position "pos" of type "type" of "set"
+ * to be equal to "v".
+ */
+__isl_give isl_set *isl_set_fix_val(__isl_take isl_set *set,
+	enum isl_dim_type type, unsigned pos, __isl_take isl_val *v)
+{
+	return isl_map_fix_val(set, type, pos, v);
 }
 
 struct isl_map *isl_map_fix_input_si(struct isl_map *map,

@@ -16,6 +16,7 @@
 #include <isl/mat.h>
 #include <isl/point.h>
 #include <isl/local_space.h>
+#include <isl/val.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -162,6 +163,8 @@ __isl_give isl_basic_set *isl_basic_set_fix(__isl_take isl_basic_set *bset,
 		enum isl_dim_type type, unsigned pos, isl_int value);
 __isl_give isl_basic_set *isl_basic_set_fix_si(__isl_take isl_basic_set *bset,
 		enum isl_dim_type type, unsigned pos, int value);
+__isl_give isl_basic_set *isl_basic_set_fix_val(__isl_take isl_basic_set *bset,
+	enum isl_dim_type type, unsigned pos, __isl_take isl_val *v);
 __isl_give isl_set *isl_set_fix_si(__isl_take isl_set *set,
 		enum isl_dim_type type, unsigned pos, int value);
 __isl_give isl_set *isl_set_lower_bound_si(__isl_take isl_set *set,
@@ -315,6 +318,8 @@ __isl_give isl_set *isl_set_preimage_pw_multi_aff(__isl_take isl_set *set,
 	__isl_take isl_pw_multi_aff *pma);
 __isl_give isl_set *isl_set_fix(__isl_take isl_set *set,
 		enum isl_dim_type type, unsigned pos, isl_int value);
+__isl_give isl_set *isl_set_fix_val(__isl_take isl_set *set,
+	enum isl_dim_type type, unsigned pos, __isl_take isl_val *v);
 struct isl_set *isl_set_fix_dim_si(struct isl_set *set,
 		unsigned dim, int value);
 struct isl_set *isl_set_lower_bound_dim(struct isl_set *set,

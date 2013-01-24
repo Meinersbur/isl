@@ -23,6 +23,7 @@
 #include <isl/aff_type.h>
 #include <isl/list.h>
 #include <isl/map_type.h>
+#include <isl/val.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -213,6 +214,8 @@ __isl_give isl_printer *isl_printer_print_map(__isl_take isl_printer *printer,
 	__isl_keep isl_map *map);
 __isl_give isl_basic_map *isl_basic_map_fix_si(__isl_take isl_basic_map *bmap,
 		enum isl_dim_type type, unsigned pos, int value);
+__isl_give isl_basic_map *isl_basic_map_fix_val(__isl_take isl_basic_map *bmap,
+	enum isl_dim_type type, unsigned pos, __isl_take isl_val *v);
 __isl_give isl_basic_map *isl_basic_map_lower_bound_si(
 		__isl_take isl_basic_map *bmap,
 		enum isl_dim_type type, unsigned pos, int value);
@@ -387,6 +390,8 @@ __isl_give isl_map *isl_map_fix(__isl_take isl_map *map,
 	enum isl_dim_type type, unsigned pos, isl_int value);
 __isl_give isl_map *isl_map_fix_si(__isl_take isl_map *map,
 		enum isl_dim_type type, unsigned pos, int value);
+__isl_give isl_map *isl_map_fix_val(__isl_take isl_map *map,
+	enum isl_dim_type type, unsigned pos, __isl_take isl_val *v);
 __isl_give isl_map *isl_map_lower_bound_si(__isl_take isl_map *map,
 		enum isl_dim_type type, unsigned pos, int value);
 __isl_give isl_map *isl_map_upper_bound_si(__isl_take isl_map *map,
