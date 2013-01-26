@@ -2751,6 +2751,47 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_read_from_str(isl_ctx *ctx,
 	return pma;
 }
 
+/* Read an isl_union_pw_multi_aff from "s".
+ * We currently read a generic object and if it turns out to be a set or
+ * a map, we convert that to an isl_union_pw_multi_aff.
+ * It would be more efficient if we were to construct
+ * the isl_union_pw_multi_aff directly.
+ */
+__isl_give isl_union_pw_multi_aff *isl_stream_read_union_pw_multi_aff(
+	struct isl_stream *s)
+{
+	struct isl_obj obj;
+
+	obj = obj_read(s);
+	if (!obj.v)
+		return NULL;
+
+	if (obj.type == isl_obj_map || obj.type == isl_obj_set)
+		obj = to_union(s->ctx, obj);
+	if (obj.type == isl_obj_union_map)
+		return isl_union_pw_multi_aff_from_union_map(obj.v);
+	if (obj.type == isl_obj_union_set)
+		return isl_union_pw_multi_aff_from_union_set(obj.v);
+
+	obj.type->free(obj.v);
+	isl_die(s->ctx, isl_error_invalid, "unexpected object type",
+		return NULL);
+}
+
+/* Read an isl_union_pw_multi_aff from "str".
+ */
+__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_read_from_str(
+	isl_ctx *ctx, const char *str)
+{
+	isl_union_pw_multi_aff *upma;
+	struct isl_stream *s = isl_stream_new_str(ctx, str);
+	if (!s)
+		return NULL;
+	upma = isl_stream_read_union_pw_multi_aff(s);
+	isl_stream_free(s);
+	return upma;
+}
+
 /* Assuming "pa" represents a single affine expression defined on a universe
  * domain, extract this affine expression.
  */

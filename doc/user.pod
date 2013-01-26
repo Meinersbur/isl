@@ -4008,6 +4008,9 @@ An expression can be read from input using
 		isl_ctx *ctx, const char *str);
 	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_read_from_str(
 		isl_ctx *ctx, const char *str);
+	__isl_give isl_union_pw_multi_aff *
+	isl_union_pw_multi_aff_read_from_str(
+		isl_ctx *ctx, const char *str);
 
 An expression can be printed using
 
