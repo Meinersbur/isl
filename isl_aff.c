@@ -3761,6 +3761,51 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_set(__isl_take isl_set *set)
 	return isl_pw_multi_aff_from_map(set);
 }
 
+/* Convert "map" into an isl_pw_multi_aff (if possible) and
+ * add it to *user.
+ */
+static int pw_multi_aff_from_map(__isl_take isl_map *map, void *user)
+{
+	isl_union_pw_multi_aff **upma = user;
+	isl_pw_multi_aff *pma;
+
+	pma = isl_pw_multi_aff_from_map(map);
+	*upma = isl_union_pw_multi_aff_add_pw_multi_aff(*upma, pma);
+
+	return *upma ? 0 : -1;
+}
+
+/* Try and create an isl_union_pw_multi_aff that is equivalent
+ * to the given isl_union_map.
+ * The isl_union_map is required to be single-valued in each space.
+ * Otherwise, an error is produced.
+ */
+__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_from_union_map(
+	__isl_take isl_union_map *umap)
+{
+	isl_space *space;
+	isl_union_pw_multi_aff *upma;
+
+	space = isl_union_map_get_space(umap);
+	upma = isl_union_pw_multi_aff_empty(space);
+	if (isl_union_map_foreach_map(umap, &pw_multi_aff_from_map, &upma) < 0)
+		upma = isl_union_pw_multi_aff_free(upma);
+	isl_union_map_free(umap);
+
+	return upma;
+}
+
+/* Try and create an isl_union_pw_multi_aff that is equivalent
+ * to the given isl_union_set.
+ * The isl_union_set is required to be a singleton in each space.
+ * Otherwise, an error is produced.
+ */
+__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_from_union_set(
+	__isl_take isl_union_set *uset)
+{
+	return isl_union_pw_multi_aff_from_union_map(uset);
+}
+
 /* Return the piecewise affine expression "set ? 1 : 0".
  */
 __isl_give isl_pw_aff *isl_set_indicator_function(__isl_take isl_set *set)
