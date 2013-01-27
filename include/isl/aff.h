@@ -517,6 +517,8 @@ __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_from_union_map(
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_read_from_str(
 	isl_ctx *ctx, const char *str);
 void isl_union_pw_multi_aff_dump(__isl_keep isl_union_pw_multi_aff *upma);
+__isl_give char *isl_union_pw_multi_aff_to_str(
+	__isl_keep isl_union_pw_multi_aff *upma);
 
 __isl_give isl_multi_pw_aff *isl_multi_pw_aff_zero(__isl_take isl_space *space);
 __isl_give isl_multi_pw_aff *isl_multi_pw_aff_identity(
