@@ -41,6 +41,7 @@ static __isl_give isl_union_map *isl_union_map_alloc(__isl_take isl_space *dim,
 {
 	isl_union_map *umap;
 
+	dim = isl_space_params(dim);
 	if (!dim)
 		return NULL;
 
