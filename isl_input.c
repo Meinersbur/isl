@@ -343,6 +343,7 @@ static __isl_give isl_pw_aff *accept_affine_factor(struct isl_stream *s,
 		if (pos < 0)
 			goto error;
 		if (pos >= n) {
+			vars_drop(v, v->n - n);
 			isl_stream_error(s, tok, "unknown identifier");
 			goto error;
 		}
