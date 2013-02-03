@@ -1352,7 +1352,7 @@ static __isl_give isl_map *read_conjuncts(struct isl_stream *s,
 	if (negate)
 		res = isl_map_subtract(isl_map_copy(map), res);
 
-	while (isl_stream_eat_if_available(s, ISL_TOKEN_AND)) {
+	while (res && isl_stream_eat_if_available(s, ISL_TOKEN_AND)) {
 		isl_map *res_i;
 
 		negate = isl_stream_eat_if_available(s, ISL_TOKEN_NOT);
