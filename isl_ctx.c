@@ -169,7 +169,7 @@ void isl_ctx_free(struct isl_ctx *ctx)
 	isl_int_clear(ctx->normalize_gcd);
 	isl_args_free(ctx->user_args, ctx->user_opt);
 	if (ctx->opt_allocated)
-		free(ctx->opt);
+		isl_options_free(ctx->opt);
 	free(ctx->stats);
 	free(ctx);
 }
