@@ -178,6 +178,8 @@ static __isl_give isl_set *extract_hoistable_guard(
 
 	depth = isl_ast_build_get_depth(build);
 	if (depth < isl_set_dim(guard, isl_dim_set)) {
+		guard = isl_set_remove_divs_involving_dims(guard,
+						isl_dim_set, depth, 1);
 		guard = isl_set_eliminate(guard, isl_dim_set, depth, 1);
 		guard = isl_set_compute_divs(guard);
 	}
