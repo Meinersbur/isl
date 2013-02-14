@@ -511,6 +511,119 @@ error:
 	return -1;
 }
 
+/* Internal data structure used inside isl_union_pw_multi_aff_drop.
+ *
+ * "pos" is the position of the first dimension to drop.
+ * "n" is the number of dimensions to drop.
+ * "res" accumulates the result.
+ */
+struct isl_union_pw_multi_aff_drop_data {
+	int pos;
+	int n;
+	isl_union_pw_multi_aff *res;
+};
+
+/* Drop the data->n output dimensions starting at data->pos from "pma"
+ * and add the result to data->res.
+ */
+static int pw_multi_aff_drop(__isl_take isl_pw_multi_aff *pma, void *user)
+{
+	struct isl_union_pw_multi_aff_drop_data *data = user;
+
+	pma = isl_pw_multi_aff_drop_dims(pma, isl_dim_out, data->pos, data->n);
+
+	data->res = isl_union_pw_multi_aff_add_pw_multi_aff(data->res, pma);
+	if (!data->res)
+		return -1;
+
+	return 0;
+}
+
+/* Drop the "n" output dimensions starting at "pos" from "sched".
+ */
+static isl_union_pw_multi_aff *isl_union_pw_multi_aff_drop(
+	__isl_take isl_union_pw_multi_aff *sched, int pos, int n)
+{
+	isl_space *space;
+	struct isl_union_pw_multi_aff_drop_data data = { pos, n };
+
+	space = isl_union_pw_multi_aff_get_space(sched);
+	data.res = isl_union_pw_multi_aff_empty(space);
+
+	if (isl_union_pw_multi_aff_foreach_pw_multi_aff(sched,
+						&pw_multi_aff_drop, &data) < 0)
+		data.res = isl_union_pw_multi_aff_free(data.res);
+
+	isl_union_pw_multi_aff_free(sched);
+	return data.res;
+}
+
+/* Drop the "n" dimensions starting at "pos" from "band".
+ */
+static int isl_band_drop(__isl_keep isl_band *band, int pos, int n)
+{
+	int i;
+	isl_union_pw_multi_aff *sched;
+
+	if (!band)
+		return -1;
+	if (n == 0)
+		return 0;
+
+	sched = isl_union_pw_multi_aff_copy(band->pma);
+	sched = isl_union_pw_multi_aff_drop(sched, pos, n);
+	if (!sched)
+		return -1;
+
+	isl_union_pw_multi_aff_free(band->pma);
+	band->pma = sched;
+
+	for (i = pos + n; i < band->n; ++i)
+		band->zero[i - n] = band->zero[i];
+
+	band->n -= n;
+
+	return 0;
+}
+
+/* Split the given band into two nested bands, one with the first "pos"
+ * dimensions of "band" and one with the remaining band->n - pos dimensions.
+ */
+int isl_band_split(__isl_keep isl_band *band, int pos)
+{
+	isl_ctx *ctx;
+	isl_band *child;
+	isl_band_list *list;
+
+	if (!band)
+		return -1;
+
+	ctx = isl_band_get_ctx(band);
+
+	if (pos < 0 || pos > band->n)
+		isl_die(ctx, isl_error_invalid, "position out of bounds",
+			return -1);
+
+	child = isl_band_dup(band);
+	if (isl_band_drop(child, 0, pos) < 0)
+		child = isl_band_free(child);
+	list = isl_band_list_alloc(ctx, 1);
+	list = isl_band_list_add(list, child);
+	if (!list)
+		return -1;
+
+	if (isl_band_drop(band, pos, band->n - pos) < 0) {
+		isl_band_list_free(list);
+		return -1;
+	}
+
+	child->children = band->children;
+	band->children = list;
+	child->parent = band;
+
+	return 0;
+}
+
 __isl_give isl_printer *isl_printer_print_band(__isl_take isl_printer *p,
 	__isl_keep isl_band *band)
 {

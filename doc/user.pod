@@ -5128,6 +5128,13 @@ loops iterators should be scaled by the tile sizes.
 If the C<tile_shift_point_loops> option is set, then the point loops
 are shifted to start at zero.
 
+A band can be split into two nested bands using the following function.
+
+	int isl_band_split(__isl_keep isl_band *band, int pos);
+
+The resulting outer band contains the first C<pos> dimensions of C<band>
+while the inner band contains the remaining dimensions.
+
 A representation of the band can be printed using
 
 	#include <isl/band.h>
