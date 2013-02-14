@@ -33,7 +33,7 @@ for (int c0 = 0; c0 <= 1; c0 += 1) {
               for (int c6 = max(0, -2 * c2 + 1); c6 <= min(31, length - 2 * c2); c6 += 1)
                 S_0(c0, c2 + c5, 2 * c2 + c6 - 1);
         }
-      if (32 * floord(length - 16, 32) + 16 == length && c2 + 16 == length && c1 == 0)
+      if ((length + 16) % 32 == 0 && c2 + 16 == length && c1 == 0)
         S_4(c0);
       if (c1 == 0)
         for (int c3 = 2 * c2 + 64; c3 <= length; c3 += 32)

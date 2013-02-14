@@ -359,6 +359,13 @@ error:
  * "v" is the coefficient in "aff" of the div
  * "div" is the argument of the div, with the denominator removed
  * "d" is the original denominator of the argument of the div
+ *
+ * "nonneg" is an affine expression that is non-negative over "build"
+ * and that can be used to extract a modulo expression from "div".
+ * In particular, if "sign" is 1, then the coefficients of "nonneg"
+ * are equal to those of "div" modulo "d".  If "sign" is -1, then
+ * the coefficients of "nonneg" are opposite to those of "div" modulo "d".
+ * If "sign" is 0, then no such affine expression has been found (yet).
  */
 struct isl_extract_mod_data {
 	isl_ast_build *build;
@@ -373,7 +380,55 @@ struct isl_extract_mod_data {
 	isl_val *v;
 	isl_val *d;
 	isl_aff *div;
+
+	isl_aff *nonneg;
+	int sign;
 };
+
+/* Given that data->v * div_i in data->aff is equal to
+ *
+ *	f * (term - (arg mod d))
+ *
+ * with data->d * f = data->v, add
+ *
+ *	f * term
+ *
+ * to data->add and
+ *
+ *	abs(f) * (arg mod d)
+ *
+ * to data->neg or data->pos depending on the sign of -f.
+ */
+static int extract_term_and_mod(struct isl_extract_mod_data *data,
+	__isl_take isl_aff *term, __isl_take isl_aff *arg)
+{
+	isl_ast_expr *expr;
+	int s;
+
+	data->v = isl_val_div(data->v, isl_val_copy(data->d));
+	s = isl_val_sgn(data->v);
+	data->v = isl_val_abs(data->v);
+	expr = isl_ast_expr_mod(data->v, arg, data->d, data->build);
+	isl_aff_free(arg);
+	if (s > 0)
+		data->neg = ast_expr_add(data->neg, expr);
+	else
+		data->pos = ast_expr_add(data->pos, expr);
+	data->aff = isl_aff_set_coefficient_si(data->aff,
+						isl_dim_div, data->i, 0);
+	if (s < 0)
+		data->v = isl_val_neg(data->v);
+	term = isl_aff_scale_val(data->div, isl_val_copy(data->v));
+
+	if (!data->add)
+		data->add = term;
+	else
+		data->add = isl_aff_add(data->add, term);
+	if (!data->add)
+		return -1;
+
+	return 0;
+}
 
 /* Given that data->v * div_i in data->aff is of the form
  *
@@ -395,31 +450,8 @@ struct isl_extract_mod_data {
  */
 static int extract_mod(struct isl_extract_mod_data *data)
 {
-	isl_ast_expr *expr;
-	int s;
-
-	data->v = isl_val_div(data->v, isl_val_copy(data->d));
-	s = isl_val_sgn(data->v);
-	data->v = isl_val_abs(data->v);
-	expr = isl_ast_expr_mod(data->v, data->div, data->d, data->build);
-	if (s > 0)
-		data->neg = ast_expr_add(data->neg, expr);
-	else
-		data->pos = ast_expr_add(data->pos, expr);
-	data->aff = isl_aff_set_coefficient_si(data->aff,
-						isl_dim_div, data->i, 0);
-	if (s < 0)
-		data->v = isl_val_neg(data->v);
-	data->div = isl_aff_scale_val(data->div, isl_val_copy(data->v));
-
-	if (!data->add)
-		data->add = isl_aff_copy(data->div);
-	else
-		data->add = isl_aff_add(data->add, isl_aff_copy(data->div));
-	if (!data->add)
-		return -1;
-
-	return 0;
+	return extract_term_and_mod(data, isl_aff_copy(data->div),
+			isl_aff_copy(data->div));
 }
 
 /* Given that data->v * div_i in data->aff is of the form
@@ -465,6 +497,248 @@ error:
 	return -1;
 }
 
+/* Is the affine expression of constraint "c" "simpler" than data->nonneg
+ * for use in extracting a modulo expression?
+ *
+ * We currently only consider the constant term of the affine expression.
+ * In particular, we prefer the affine expression with the smallest constant
+ * term.
+ * This means that if there are two constraints, say x >= 0 and -x + 10 >= 0,
+ * then we would pick x >= 0
+ *
+ * More detailed heuristics could be used if it turns out that there is a need.
+ */
+static int mod_constraint_is_simpler(struct isl_extract_mod_data *data,
+	__isl_keep isl_constraint *c)
+{
+	isl_val *v1, *v2;
+	int simpler;
+
+	if (!data->nonneg)
+		return 1;
+
+	v1 = isl_val_abs(isl_constraint_get_constant_val(c));
+	v2 = isl_val_abs(isl_aff_get_constant_val(data->nonneg));
+	simpler = isl_val_lt(v1, v2);
+	isl_val_free(v1);
+	isl_val_free(v2);
+
+	return simpler;
+}
+
+/* Check if the coefficients of "c" are either equal or opposite to those
+ * of data->div modulo data->d.  If so, and if "c" is "simpler" than
+ * data->nonneg, then replace data->nonneg by the affine expression of "c"
+ * and set data->sign accordingly.
+ *
+ * Both "c" and data->div are assumed not to involve any integer divisions.
+ *
+ * Before we start the actual comparison, we first quickly check if
+ * "c" and data->div have the same non-zero coefficients.
+ * If not, then we assume that "c" is not of the desired form.
+ * Note that while the coefficients of data->div can be reasonably expected
+ * not to involve any coefficients that are multiples of d, "c" may
+ * very well involve such coefficients.  This means that we may actually
+ * miss some cases.
+ */
+static int check_parallel_or_opposite(__isl_take isl_constraint *c, void *user)
+{
+	struct isl_extract_mod_data *data = user;
+	enum isl_dim_type c_type[2] = { isl_dim_param, isl_dim_set };
+	enum isl_dim_type a_type[2] = { isl_dim_param, isl_dim_in };
+	int i, t;
+	int n[2];
+	int parallel = 1, opposite = 1;
+
+	for (t = 0; t < 2; ++t) {
+		n[t] = isl_constraint_dim(c, c_type[t]);
+		for (i = 0; i < n[t]; ++i) {
+			int a, b;
+
+			a = isl_constraint_involves_dims(c, c_type[t], i, 1);
+			b = isl_aff_involves_dims(data->div, a_type[t], i, 1);
+			if (a != b)
+				parallel = opposite = 0;
+		}
+	}
+
+	for (t = 0; t < 2; ++t) {
+		for (i = 0; i < n[t]; ++i) {
+			isl_val *v1, *v2;
+
+			if (!parallel && !opposite)
+				break;
+			v1 = isl_constraint_get_coefficient_val(c,
+								c_type[t], i);
+			v2 = isl_aff_get_coefficient_val(data->div,
+								a_type[t], i);
+			if (parallel) {
+				v1 = isl_val_sub(v1, isl_val_copy(v2));
+				parallel = isl_val_is_divisible_by(v1, data->d);
+				v1 = isl_val_add(v1, isl_val_copy(v2));
+			}
+			if (opposite) {
+				v1 = isl_val_add(v1, isl_val_copy(v2));
+				opposite = isl_val_is_divisible_by(v1, data->d);
+			}
+			isl_val_free(v1);
+			isl_val_free(v2);
+		}
+	}
+
+	if ((parallel || opposite) && mod_constraint_is_simpler(data, c)) {
+		isl_aff_free(data->nonneg);
+		data->nonneg = isl_constraint_get_aff(c);
+		data->sign = parallel ? 1 : -1;
+	}
+
+	isl_constraint_free(c);
+
+	if (data->sign != 0 && data->nonneg == NULL)
+		return -1;
+
+	return 0;
+}
+
+/* Given that data->v * div_i in data->aff is of the form
+ *
+ *	f * d * floor(div/d)					(1)
+ *
+ * see if we can find an expression div' that is non-negative over data->build
+ * and that is related to div through
+ *
+ *	div' = div + d * e
+ *
+ * or
+ *
+ *	div' = -div + d - 1 + d * e
+ *
+ * with e some affine expression.
+ * If so, we write (1) as
+ *
+ *	f * div + f * (div' mod d)
+ *
+ * or
+ *
+ *	-f * (-div + d - 1) - f * (div' mod d)
+ *
+ * exploiting (in the second case) the fact that
+ *
+ *	f * d * floor(div/d) =	-f * d * floor((-div + d - 1)/d)
+ *
+ *
+ * We first try to find an appropriate expression for div'
+ * from the constraints of data->build->domain (which is therefore
+ * guaranteed to be non-negative on data->build), where we remove
+ * any integer divisions from the constraints and skip this step
+ * if "div" itself involves any integer divisions.
+ * If we cannot find an appropriate expression this way, then
+ * we pass control to extract_nonneg_mod where check
+ * if div or "-div + d -1" themselves happen to be
+ * non-negative on data->build.
+ *
+ * While looking for an appropriate constraint in data->build->domain,
+ * we ignore the constant term, so after finding such a constraint,
+ * we still need to fix up the constant term.
+ * In particular, if a is the constant term of "div"
+ * (or d - 1 - the constant term of "div" if data->sign < 0)
+ * and b is the constant term of the constraint, then we need to find
+ * a non-negative constant c such that
+ *
+ *	b + c \equiv a	mod d
+ *
+ * We therefore take
+ *
+ *	c = (a - b) mod d
+ *
+ * and add it to b to obtain the constant term of div'.
+ * If this constant term is "too negative", then we add an appropriate
+ * multiple of d to make it positive.
+ *
+ *
+ * Note that the above is a only a very simple heuristic for find an
+ * appropriate expression.  We could try a bit harder by also considering
+ * sums of constraints that involve disjoint sets of variables or
+ * we could consider arbitrary linear combinations of constraints,
+ * although that could potentially be much more expensive as it involves
+ * the solution of an LP problem.
+ *
+ * In particular, if v_i is a column vector representing constraint i,
+ * w represents div and e_i is the i-th unit vector, then we are looking
+ * for a solution of the constraints
+ *
+ *	\sum_i lambda_i v_i = w + \sum_i alpha_i d e_i
+ *
+ * with \lambda_i >= 0 and alpha_i of unrestricted sign.
+ * If we are not just interested in a non-negative expression, but
+ * also in one with a minimal range, then we don't just want
+ * c = \sum_i lambda_i v_i to be non-negative over the domain,
+ * but also beta - c = \sum_i mu_i v_i, where beta is a scalar
+ * that we want to minimize and we now also have to take into account
+ * the constant terms of the constraints.
+ * Alternatively, we could first compute the dual of the domain
+ * and plug in the constraints on the coefficients.
+ */
+static int try_extract_mod(struct isl_extract_mod_data *data)
+{
+	isl_basic_set *hull;
+	isl_val *v1, *v2;
+	int r;
+
+	if (!data->build)
+		goto error;
+
+	int n = isl_aff_dim(data->div, isl_dim_div);
+
+	if (isl_aff_involves_dims(data->div, isl_dim_div, 0, n))
+		return extract_nonneg_mod(data);
+
+	hull = isl_set_simple_hull(isl_set_copy(data->build->domain));
+	hull = isl_basic_set_remove_divs(hull);
+	data->sign = 0;
+	data->nonneg = NULL;
+	r = isl_basic_set_foreach_constraint(hull, &check_parallel_or_opposite,
+					data);
+	isl_basic_set_free(hull);
+
+	if (!data->sign || r < 0) {
+		isl_aff_free(data->nonneg);
+		if (r < 0)
+			goto error;
+		return extract_nonneg_mod(data);
+	}
+
+	v1 = isl_aff_get_constant_val(data->div);
+	v2 = isl_aff_get_constant_val(data->nonneg);
+	if (data->sign < 0) {
+		v1 = isl_val_neg(v1);
+		v1 = isl_val_add(v1, isl_val_copy(data->d));
+		v1 = isl_val_sub_ui(v1, 1);
+	}
+	v1 = isl_val_sub(v1, isl_val_copy(v2));
+	v1 = isl_val_mod(v1, isl_val_copy(data->d));
+	v1 = isl_val_add(v1, v2);
+	v2 = isl_val_div(isl_val_copy(v1), isl_val_copy(data->d));
+	v2 = isl_val_ceil(v2);
+	if (isl_val_is_neg(v2)) {
+		v2 = isl_val_mul(v2, isl_val_copy(data->d));
+		v1 = isl_val_sub(v1, isl_val_copy(v2));
+	}
+	data->nonneg = isl_aff_set_constant_val(data->nonneg, v1);
+	isl_val_free(v2);
+
+	if (data->sign < 0) {
+		data->div = oppose_div_arg(data->div, isl_val_copy(data->d));
+		data->v = isl_val_neg(data->v);
+	}
+
+	return extract_term_and_mod(data,
+				    isl_aff_copy(data->div), data->nonneg);
+error:
+	data->aff = isl_aff_free(data->aff);
+	return -1;
+}
+
 /* Check if "data->aff" involves any (implicit) modulo computations based
  * on div "data->i".
  * If so, remove them from aff and add expressions corresponding
@@ -502,7 +776,7 @@ static int extract_modulo(struct isl_extract_mod_data *data)
 	data->d = isl_aff_get_denominator_val(data->div);
 	if (isl_val_is_divisible_by(data->v, data->d)) {
 		data->div = isl_aff_scale_val(data->div, isl_val_copy(data->d));
-		if (extract_nonneg_mod(data) < 0)
+		if (try_extract_mod(data) < 0)
 			data->aff = isl_aff_free(data->aff);
 	}
 	isl_aff_free(data->div);
