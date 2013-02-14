@@ -470,6 +470,7 @@ int isl_band_tile(__isl_keep isl_band *band, __isl_take isl_vec *sizes)
 
 	child->children = band->children;
 	band->children = list;
+	child->parent = band;
 	isl_union_pw_multi_aff_free(band->pma);
 	band->pma = sched;
 
