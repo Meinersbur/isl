@@ -357,6 +357,8 @@ error:
  *
  * "i" is the position in "aff" of the div under investigation
  * "v" is the coefficient in "aff" of the div
+ * "div" is the argument of the div, with the denominator removed
+ * "d" is the original denominator of the argument of the div
  */
 struct isl_extract_mod_data {
 	isl_ast_build *build;
@@ -369,7 +371,99 @@ struct isl_extract_mod_data {
 
 	int i;
 	isl_val *v;
+	isl_val *d;
+	isl_aff *div;
 };
+
+/* Given that data->v * div_i in data->aff is of the form
+ *
+ *	f * d * floor(div/d)
+ *
+ * with div nonnegative on data->build, rewrite it as
+ *
+ *	f * (div - (div mod d)) = f * div - f * (div mod d)
+ *
+ * and add
+ *
+ *	f * div
+ *
+ * to data->add and
+ *
+ *	abs(f) * (div mod d)
+ *
+ * to data->neg or data->pos depending on the sign of -f.
+ */
+static int extract_mod(struct isl_extract_mod_data *data)
+{
+	isl_ast_expr *expr;
+	int s;
+
+	data->v = isl_val_div(data->v, isl_val_copy(data->d));
+	s = isl_val_sgn(data->v);
+	data->v = isl_val_abs(data->v);
+	expr = isl_ast_expr_mod(data->v, data->div, data->d, data->build);
+	if (s > 0)
+		data->neg = ast_expr_add(data->neg, expr);
+	else
+		data->pos = ast_expr_add(data->pos, expr);
+	data->aff = isl_aff_set_coefficient_si(data->aff,
+						isl_dim_div, data->i, 0);
+	if (s < 0)
+		data->v = isl_val_neg(data->v);
+	data->div = isl_aff_scale_val(data->div, isl_val_copy(data->v));
+
+	if (!data->add)
+		data->add = isl_aff_copy(data->div);
+	else
+		data->add = isl_aff_add(data->add, isl_aff_copy(data->div));
+	if (!data->add)
+		return -1;
+
+	return 0;
+}
+
+/* Given that data->v * div_i in data->aff is of the form
+ *
+ *	f * d * floor(div/d)					(1)
+ *
+ * check if div is non-negative on data->build and, if so,
+ * extract the corresponding modulo from data->aff.
+ * If not, then check if
+ *
+ *	-div + d - 1
+ *
+ * is non-negative on data->build.  If so, replace (1) by
+ *
+ *	-f * d * floor((-div + d - 1)/d)
+ *
+ * and extract the corresponding modulo from data->aff.
+ *
+ * This function may modify data->div.
+ */
+static int extract_nonneg_mod(struct isl_extract_mod_data *data)
+{
+	int mod;
+
+	mod = isl_ast_build_aff_is_nonneg(data->build, data->div);
+	if (mod < 0)
+		goto error;
+	if (mod)
+		return extract_mod(data);
+
+	data->div = oppose_div_arg(data->div, isl_val_copy(data->d));
+	mod = isl_ast_build_aff_is_nonneg(data->build, data->div);
+	if (mod < 0)
+		goto error;
+	if (mod) {
+		data->v = isl_val_neg(data->v);
+		return extract_mod(data);
+	}
+
+	return 0;
+error:
+	data->aff = isl_aff_free(data->aff);
+	return -1;
+}
 
 /* Check if "data->aff" involves any (implicit) modulo computations based
  * on div "data->i".
@@ -404,61 +498,15 @@ struct isl_extract_mod_data {
  */
 static int extract_modulo(struct isl_extract_mod_data *data)
 {
-	isl_ast_expr *expr;
-	isl_aff *div;
-	int s;
-	int mod;
-	isl_val *d;
-
-	div = isl_aff_get_div(data->aff, data->i);
-	d = isl_aff_get_denominator_val(div);
-	mod = isl_val_is_divisible_by(data->v, d);
-	if (mod) {
-		div = isl_aff_scale_val(div, isl_val_copy(d));
-		mod = isl_ast_build_aff_is_nonneg(data->build, div);
-		if (mod >= 0 && !mod) {
-			isl_aff *opp = oppose_div_arg(isl_aff_copy(div),
-							isl_val_copy(d));
-			mod = isl_ast_build_aff_is_nonneg(data->build, opp);
-			if (mod >= 0 && mod) {
-				isl_aff_free(div);
-				div = opp;
-				data->v = isl_val_neg(data->v);
-			} else
-				isl_aff_free(opp);
-		}
+	data->div = isl_aff_get_div(data->aff, data->i);
+	data->d = isl_aff_get_denominator_val(data->div);
+	if (isl_val_is_divisible_by(data->v, data->d)) {
+		data->div = isl_aff_scale_val(data->div, isl_val_copy(data->d));
+		if (extract_nonneg_mod(data) < 0)
+			data->aff = isl_aff_free(data->aff);
 	}
-	if (mod < 0) {
-		isl_aff_free(div);
-		isl_val_free(d);
-		return -1;
-	} else if (!mod) {
-		isl_aff_free(div);
-		isl_val_free(d);
-		return 0;
-	}
-	data->v = isl_val_div(data->v, isl_val_copy(d));
-	s = isl_val_sgn(data->v);
-	data->v = isl_val_abs(data->v);
-	expr = isl_ast_expr_mod(data->v, div, d, data->build);
-	isl_val_free(d);
-	if (s > 0)
-		data->neg = ast_expr_add(data->neg, expr);
-	else
-		data->pos = ast_expr_add(data->pos, expr);
-	data->aff = isl_aff_set_coefficient_si(data->aff,
-						isl_dim_div, data->i, 0);
-	if (s < 0)
-		data->v = isl_val_neg(data->v);
-	div = isl_aff_scale_val(div, isl_val_copy(data->v));
-
-	if (!data->add)
-		data->add = div;
-	else
-		data->add = isl_aff_add(data->add, div);
-	if (!data->add)
-		return -1;
-
+	isl_aff_free(data->div);
+	isl_val_free(data->d);
 	return 0;
 }
 
