@@ -345,11 +345,31 @@ error:
 	return NULL;
 }
 
-/* Check if "aff" involves any (implicit) modulo computations based
- * on div "j".
+/* Internal data structure used inside extract_modulos.
+ *
+ * If any modulo expressions are detected in "aff", then the
+ * expression is removed from "aff" and added to either "pos" or "neg"
+ * depending on the sign of the coefficient of the modulo expression
+ * inside "aff".
+ *
+ * "i" is the position in "aff" of the div under investigation
+ * "v" is the coefficient in "aff" of the div
+ */
+struct isl_extract_mod_data {
+	isl_ast_build *build;
+	isl_aff *aff;
+
+	isl_ast_expr *pos;
+	isl_ast_expr *neg;
+
+	int i;
+	isl_val *v;
+};
+
+/* Check if "data->aff" involves any (implicit) modulo computations based
+ * on div "data->i".
  * If so, remove them from aff and add expressions corresponding
- * to those modulo computations to *pos and/or *neg.
- * "v" is the coefficient of div "j".
+ * to those modulo computations to data->pos and/or data->neg.
  *
  * "aff" is assumed to be an integer affine expression.
  *
@@ -377,9 +397,7 @@ error:
  *
  * and still extract a modulo.
  */
-static __isl_give isl_aff *extract_modulo(__isl_take isl_aff *aff,
-	__isl_keep isl_ast_expr **pos, __isl_keep isl_ast_expr **neg,
-	__isl_keep isl_ast_build *build, int j, __isl_take isl_val *v)
+static int extract_modulo(struct isl_extract_mod_data *data)
 {
 	isl_ast_expr *expr;
 	isl_aff *div;
@@ -387,20 +405,20 @@ static __isl_give isl_aff *extract_modulo(__isl_take isl_aff *aff,
 	int mod;
 	isl_val *d;
 
-	div = isl_aff_get_div(aff, j);
+	div = isl_aff_get_div(data->aff, data->i);
 	d = isl_aff_get_denominator_val(div);
-	mod = isl_val_is_divisible_by(v, d);
+	mod = isl_val_is_divisible_by(data->v, d);
 	if (mod) {
 		div = isl_aff_scale_val(div, isl_val_copy(d));
-		mod = isl_ast_build_aff_is_nonneg(build, div);
+		mod = isl_ast_build_aff_is_nonneg(data->build, div);
 		if (mod >= 0 && !mod) {
 			isl_aff *opp = oppose_div_arg(isl_aff_copy(div),
 							isl_val_copy(d));
-			mod = isl_ast_build_aff_is_nonneg(build, opp);
+			mod = isl_ast_build_aff_is_nonneg(data->build, opp);
 			if (mod >= 0 && mod) {
 				isl_aff_free(div);
 				div = opp;
-				v = isl_val_neg(v);
+				data->v = isl_val_neg(data->v);
 			} else
 				isl_aff_free(opp);
 		}
@@ -408,30 +426,29 @@ static __isl_give isl_aff *extract_modulo(__isl_take isl_aff *aff,
 	if (mod < 0) {
 		isl_aff_free(div);
 		isl_val_free(d);
-		isl_val_free(v);
-		return isl_aff_free(aff);
+		return -1;
 	} else if (!mod) {
 		isl_aff_free(div);
 		isl_val_free(d);
-		isl_val_free(v);
-		return aff;
+		return 0;
 	}
-	v = isl_val_div(v, isl_val_copy(d));
-	s = isl_val_sgn(v);
-	v = isl_val_abs(v);
-	expr = isl_ast_expr_mod(v, div, d, build);
+	data->v = isl_val_div(data->v, isl_val_copy(d));
+	s = isl_val_sgn(data->v);
+	data->v = isl_val_abs(data->v);
+	expr = isl_ast_expr_mod(data->v, div, d, data->build);
 	isl_val_free(d);
 	if (s > 0)
-		*neg = ast_expr_add(*neg, expr);
+		data->neg = ast_expr_add(data->neg, expr);
 	else
-		*pos = ast_expr_add(*pos, expr);
-	aff = isl_aff_set_coefficient_si(aff, isl_dim_div, j, 0);
+		data->pos = ast_expr_add(data->pos, expr);
+	data->aff = isl_aff_set_coefficient_si(data->aff,
+						isl_dim_div, data->i, 0);
 	if (s < 0)
-		v = isl_val_neg(v);
-	div = isl_aff_scale_val(div, v);
-	aff = isl_aff_add(aff, div);
+		data->v = isl_val_neg(data->v);
+	div = isl_aff_scale_val(div, isl_val_copy(data->v));
+	data->aff = isl_aff_add(data->aff, div);
 
-	return aff;
+	return 0;
 }
 
 /* Check if "aff" involves any (implicit) modulo computations.
@@ -461,8 +478,9 @@ static __isl_give isl_aff *extract_modulos(__isl_take isl_aff *aff,
 	__isl_keep isl_ast_expr **pos, __isl_keep isl_ast_expr **neg,
 	__isl_keep isl_ast_build *build)
 {
+	struct isl_extract_mod_data data = { build, aff, *pos, *neg };
 	isl_ctx *ctx;
-	int j, n;
+	int n;
 
 	if (!aff)
 		return NULL;
@@ -471,24 +489,27 @@ static __isl_give isl_aff *extract_modulos(__isl_take isl_aff *aff,
 	if (!isl_options_get_ast_build_prefer_pdiv(ctx))
 		return aff;
 
-	n = isl_aff_dim(aff, isl_dim_div);
-	for (j = 0; j < n; ++j) {
-		isl_val *v;
-
-		v = isl_aff_get_coefficient_val(aff, isl_dim_div, j);
-		if (!v)
+	n = isl_aff_dim(data.aff, isl_dim_div);
+	for (data.i = 0; data.i < n; ++data.i) {
+		data.v = isl_aff_get_coefficient_val(data.aff,
+							isl_dim_div, data.i);
+		if (!data.v)
 			return isl_aff_free(aff);
-		if (isl_val_is_zero(v) ||
-		    isl_val_is_one(v) || isl_val_is_negone(v)) {
-			isl_val_free(v);
+		if (isl_val_is_zero(data.v) ||
+		    isl_val_is_one(data.v) || isl_val_is_negone(data.v)) {
+			isl_val_free(data.v);
 			continue;
 		}
-		aff = extract_modulo(aff, pos, neg, build, j, v);
-		if (!aff)
+		if (extract_modulo(&data) < 0)
+			data.aff = isl_aff_free(data.aff);
+		isl_val_free(data.v);
+		if (!data.aff)
 			break;
 	}
 
-	return aff;
+	*pos = data.pos;
+	*neg = data.neg;
+	return data.aff;
 }
 
 /* Check if aff involves any non-integer coefficients.
