@@ -950,6 +950,9 @@ They can be inspected, modified, copied and freed using the following functions.
 		__isl_keep isl_local_space *ls);
 	void *isl_local_space_free(__isl_take isl_local_space *ls);
 
+Note that C<isl_local_space_get_div> can only be used on local spaces
+of sets.
+
 Two local spaces can be compared using
 
 	int isl_local_space_is_equal(__isl_keep isl_local_space *ls1,

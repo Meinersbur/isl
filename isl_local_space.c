@@ -219,6 +219,9 @@ __isl_give isl_aff *isl_local_space_get_div(__isl_keep isl_local_space *ls,
 	if (isl_int_is_zero(ls->div->row[pos][0]))
 		isl_die(isl_local_space_get_ctx(ls), isl_error_invalid,
 			"expression of div unknown", return NULL);
+	if (!isl_local_space_is_set(ls))
+		isl_die(isl_local_space_get_ctx(ls), isl_error_invalid,
+			"cannot represent divs of map spaces", return NULL);
 
 	aff = isl_aff_alloc(isl_local_space_copy(ls));
 	if (!aff)
