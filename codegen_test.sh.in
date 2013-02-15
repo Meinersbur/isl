@@ -3,6 +3,8 @@
 EXEEXT=@EXEEXT@
 srcdir=@srcdir@
 
+failed=0
+
 for i in $srcdir/test_inputs/codegen/*.in \
 		$srcdir/test_inputs/codegen/cloog/*.in \
 		$srcdir/test_inputs/codegen/omega/*.in \
@@ -11,5 +13,7 @@ for i in $srcdir/test_inputs/codegen/*.in \
 	test=test-`basename $i .in`.c
 	ref=${i%.in}.c
 	(./isl_codegen$EXEEXT < $i > $test &&
-	 diff -uw $ref $test && rm $test) || exit
+	 diff -uw $ref $test && rm $test) || failed=1
 done
+
+test $failed -eq 0 || exit
