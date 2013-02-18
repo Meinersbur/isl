@@ -1214,6 +1214,11 @@ __isl_give isl_aff *isl_aff_scale(__isl_take isl_aff *aff, isl_int f)
 	if (!aff->v)
 		return isl_aff_free(aff);
 
+	if (isl_int_is_pos(f) && isl_int_is_divisible_by(aff->v->el[0], f)) {
+		isl_int_divexact(aff->v->el[0], aff->v->el[0], f);
+		return aff;
+	}
+
 	isl_int_init(gcd);
 	isl_int_gcd(gcd, aff->v->el[0], f);
 	isl_int_divexact(aff->v->el[0], aff->v->el[0], gcd);
