@@ -352,6 +352,9 @@ error:
  * depending on the sign of the coefficient of the modulo expression
  * inside "aff".
  *
+ * "add" is an expression that needs to be added to "aff" at the end of
+ * the computation.  It is NULL as long as no modulos have been extracted.
+ *
  * "i" is the position in "aff" of the div under investigation
  * "v" is the coefficient in "aff" of the div
  */
@@ -361,6 +364,8 @@ struct isl_extract_mod_data {
 
 	isl_ast_expr *pos;
 	isl_ast_expr *neg;
+
+	isl_aff *add;
 
 	int i;
 	isl_val *v;
@@ -446,7 +451,13 @@ static int extract_modulo(struct isl_extract_mod_data *data)
 	if (s < 0)
 		data->v = isl_val_neg(data->v);
 	div = isl_aff_scale_val(div, isl_val_copy(data->v));
-	data->aff = isl_aff_add(data->aff, div);
+
+	if (!data->add)
+		data->add = div;
+	else
+		data->add = isl_aff_add(data->add, div);
+	if (!data->add)
+		return -1;
 
 	return 0;
 }
@@ -506,6 +517,9 @@ static __isl_give isl_aff *extract_modulos(__isl_take isl_aff *aff,
 		if (!data.aff)
 			break;
 	}
+
+	if (data.add)
+		data.aff = isl_aff_add(data.aff, data.add);
 
 	*pos = data.pos;
 	*neg = data.neg;
