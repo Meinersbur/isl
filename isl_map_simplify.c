@@ -1042,9 +1042,39 @@ static int ok_to_set_div_from_bound(struct isl_basic_map *bmap,
 	return 1;
 }
 
+/* Would an expression for div "div" based on inequality "ineq" of "bmap"
+ * be a better expression than the current one?
+ *
+ * If we do not have any expression yet, then any expression would be better.
+ * Otherwise we check if the last variable involved in the inequality
+ * (disregarding the div that it would define) is in an earlier position
+ * than the last variable involved in the current div expression.
+ */
+static int better_div_constraint(__isl_keep isl_basic_map *bmap,
+	int div, int ineq)
+{
+	unsigned total = 1 + isl_space_dim(bmap->dim, isl_dim_all);
+	int last_div;
+	int last_ineq;
+
+	if (isl_int_is_zero(bmap->div[div][0]))
+		return 1;
+
+	if (isl_seq_last_non_zero(bmap->ineq[ineq] + total + div + 1,
+				  bmap->n_div - (div + 1)) >= 0)
+		return 0;
+
+	last_ineq = isl_seq_last_non_zero(bmap->ineq[ineq], total + div);
+	last_div = isl_seq_last_non_zero(bmap->div[div] + 1,
+					 total + bmap->n_div);
+
+	return last_ineq < last_div;
+}
+
 /* Given two constraints "k" and "l" that are opposite to each other,
  * except for the constant term, check if we can use them
- * to obtain an expression for one of the hitherto unknown divs.
+ * to obtain an expression for one of the hitherto unknown divs or
+ * a "better" expression for a div for which we already have an expression.
  * "sum" is the sum of the constant terms of the constraints.
  * If this sum is strictly smaller than the coefficient of one
  * of the divs, then this pair can be used define the div.
@@ -1060,11 +1090,11 @@ static struct isl_basic_map *check_for_div_constraints(
 	unsigned total = 1 + isl_space_dim(bmap->dim, isl_dim_all);
 
 	for (i = 0; i < bmap->n_div; ++i) {
-		if (!isl_int_is_zero(bmap->div[i][0]))
-			continue;
 		if (isl_int_is_zero(bmap->ineq[k][total + i]))
 			continue;
 		if (isl_int_abs_ge(sum, bmap->ineq[k][total + i]))
+			continue;
+		if (!better_div_constraint(bmap, i, k))
 			continue;
 		if (!ok_to_set_div_from_bound(bmap, i, k))
 			break;
