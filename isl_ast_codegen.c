@@ -108,6 +108,7 @@ static int generate_non_single_valued(__isl_take isl_map *executed,
 
 	identity = isl_set_identity(isl_map_range(isl_map_copy(executed)));
 	executed = isl_map_domain_product(executed, identity);
+	build = isl_ast_build_set_single_valued(build, 1);
 
 	list = generate_code(isl_union_map_from_map(executed), build, 1);
 
@@ -155,7 +156,16 @@ static __isl_give isl_ast_graft *at_each_domain(__isl_take isl_ast_graft *graft,
  * the constraints from data->build->domain.
  * On the other hand, we only perform the test after having taken the gist
  * of the domain as the resulting map is the one from which the call
- * expression is constructed.
+ * expression is constructed.  Using this map to construct the call
+ * expression usually yields simpler results.
+ * Because we perform the single-valuedness test on the gisted map,
+ * we may in rare cases fail to recognize that the inverse schedule
+ * is single-valued.  This becomes problematic if this happens
+ * from the recursive call through generate_non_single_valued
+ * as we would then end up in an infinite recursion.
+ * We therefore check if we are inside a call to generate_non_single_valued
+ * and revert to the ungisted map if the gisted map turns out not to be
+ * single-valued.
  *
  * Otherwise, we generate a call expression for the single executed
  * domain element and put a guard around it based on the (simplified)
@@ -184,7 +194,10 @@ static int generate_domain(__isl_take isl_map *executed, void *user)
 		goto error;
 	if (!sv) {
 		isl_map_free(map);
-		return generate_non_single_valued(executed, data);
+		if (data->build->single_valued)
+			map = isl_map_copy(executed);
+		else
+			return generate_non_single_valued(executed, data);
 	}
 	guard = isl_map_domain(isl_map_copy(map));
 	guard = isl_set_coalesce(guard);
@@ -3629,9 +3642,12 @@ __isl_give isl_ast_node *isl_ast_build_ast_from_schedule(
 	isl_ast_node *node;
 	isl_union_map *executed;
 
+	build = isl_ast_build_copy(build);
+	build = isl_ast_build_set_single_valued(build, 0);
 	executed = isl_union_map_reverse(schedule);
 	list = generate_code(executed, isl_ast_build_copy(build), 0);
 	node = isl_ast_node_from_graft_list(list, build);
+	isl_ast_build_free(build);
 
 	return node;
 }

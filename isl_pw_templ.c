@@ -983,11 +983,13 @@ __isl_give PW *FN(PW,drop_dims)(__isl_take PW *pw,
 	if (!pw->dim)
 		goto error;
 	for (i = 0; i < pw->n; ++i) {
-		pw->p[i].set = isl_set_drop(pw->p[i].set, set_type, first, n);
-		if (!pw->p[i].set)
-			goto error;
 		pw->p[i].FIELD = FN(EL,drop_dims)(pw->p[i].FIELD, type, first, n);
 		if (!pw->p[i].FIELD)
+			goto error;
+		if (type == isl_dim_out)
+			continue;
+		pw->p[i].set = isl_set_drop(pw->p[i].set, set_type, first, n);
+		if (!pw->p[i].set)
 			goto error;
 	}
 

@@ -3753,10 +3753,40 @@ static int test_ast_gen(isl_ctx *ctx)
 	return 0;
 }
 
+/* Check if dropping output dimensions from an isl_pw_multi_aff
+ * works properly.
+ */
+static int test_pw_multi_aff(isl_ctx *ctx)
+{
+	const char *str;
+	isl_pw_multi_aff *pma1, *pma2;
+	int equal;
+
+	str = "{ [i,j] -> [i+j, 4i-j] }";
+	pma1 = isl_pw_multi_aff_read_from_str(ctx, str);
+	str = "{ [i,j] -> [4i-j] }";
+	pma2 = isl_pw_multi_aff_read_from_str(ctx, str);
+
+	pma1 = isl_pw_multi_aff_drop_dims(pma1, isl_dim_out, 0, 1);
+
+	equal = isl_pw_multi_aff_plain_is_equal(pma1, pma2);
+
+	isl_pw_multi_aff_free(pma1);
+	isl_pw_multi_aff_free(pma2);
+	if (equal < 0)
+		return -1;
+	if (!equal)
+		isl_die(ctx, isl_error_unknown,
+			"expressions not equal", return -1);
+
+	return 0;
+}
+
 struct {
 	const char *name;
 	int (*fn)(isl_ctx *ctx);
 } tests [] = {
+	{ "piecewise multi affine expressions", &test_pw_multi_aff },
 	{ "conversion", &test_conversion },
 	{ "list", &test_list },
 	{ "align parameters", &test_align_parameters },
