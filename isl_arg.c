@@ -714,10 +714,9 @@ static int parse_choice_option(struct isl_arg *decl, char **arg,
 
 	if (!has_argument && (!arg[1] || arg[1][0] == '-')) {
 		unsigned u = decl->u.choice.default_selected;
+		*(unsigned *)(((char *)opt) + decl->offset) = u;
 		if (decl->u.choice.set)
 			decl->u.choice.set(opt, u);
-		else
-			*(unsigned *)(((char *)opt) + decl->offset) = u;
 
 		return 1;
 	}
@@ -732,10 +731,9 @@ static int parse_choice_option(struct isl_arg *decl, char **arg,
 			continue;
 
 		u = decl->u.choice.choice[i].value;
+		*(unsigned *)(((char *)opt) + decl->offset) = u;
 		if (decl->u.choice.set)
 			decl->u.choice.set(opt, u);
-		else
-			*(unsigned *)(((char *)opt) + decl->offset) = u;
 
 		return has_argument ? 1 : 2;
 	}
@@ -805,17 +803,17 @@ static int parse_bool_option(struct isl_arg *decl, char **arg,
 			char *endptr;
 			int val = strtol(arg[1], &endptr, 0);
 			if (*endptr == '\0' && (val == 0 || val == 1)) {
+				if (decl->offset != (size_t) -1)
+					*p = val;
 				if (decl->u.b.set)
 					decl->u.b.set(opt, val);
-				else if (decl->offset != (size_t) -1)
-					*p = val;
 				return 2;
 			}
 		}
+		if (decl->offset != (size_t) -1)
+			*p = 1;
 		if (decl->u.b.set)
 			decl->u.b.set(opt, 1);
-		else if (decl->offset != (size_t) -1)
-			*p = 1;
 
 		return 1;
 	}
@@ -848,10 +846,10 @@ static int parse_bool_option(struct isl_arg *decl, char **arg,
 	}
 
 	if (match_long_name(decl, name, name + strlen(name))) {
+		if (decl->offset != (size_t) -1)
+			*p = 0;
 		if (decl->u.b.set)
 			decl->u.b.set(opt, 0);
-		else if (decl->offset != (size_t) -1)
-			*p = 0;
 
 		return 1;
 	}
@@ -965,29 +963,26 @@ static int parse_long_option(struct isl_arg *decl, char **arg,
 
 	if (has_argument) {
 		long l = strtol(val, NULL, 0);
+		*p = l;
 		if (decl->u.l.set)
 			decl->u.l.set(opt, l);
-		else
-			*p = l;
 		return 1;
 	}
 
 	if (arg[1]) {
 		long l = strtol(arg[1], &endptr, 0);
 		if (*endptr == '\0') {
+			*p = l;
 			if (decl->u.l.set)
 				decl->u.l.set(opt, l);
-			else
-				*p = l;
 			return 2;
 		}
 	}
 
 	if (decl->u.l.default_value != decl->u.l.default_selected) {
+		*p = decl->u.l.default_selected;
 		if (decl->u.l.set)
 			decl->u.l.set(opt, decl->u.l.default_selected);
-		else
-			*p = decl->u.l.default_selected;
 		return 1;
 	}
 
