@@ -141,6 +141,12 @@ static void free_str_list(struct isl_arg *arg, void *opt)
 	free(list);
 }
 
+static void free_user(struct isl_arg *arg, void *opt)
+{
+	if (arg->u.user.clear)
+		arg->u.user.clear(((char *)opt) + arg->offset);
+}
+
 static void free_args(struct isl_arg *arg, void *opt)
 {
 	int i;
@@ -162,8 +168,7 @@ static void free_args(struct isl_arg *arg, void *opt)
 			free_str_list(&arg[i], opt);
 			break;
 		case isl_arg_user:
-			if (arg[i].u.user.clear)
-				arg[i].u.user.clear(((char *)opt) + arg[i].offset);
+			free_user(&arg[i], opt);
 			break;
 		case isl_arg_alias:
 		case isl_arg_bool:
