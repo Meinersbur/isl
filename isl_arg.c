@@ -1144,21 +1144,17 @@ static int next_arg(struct isl_arg *arg, int a)
 	return -1;
 }
 
-/* Unless ISL_ARG_SKIP_HELP is set, check if any of the arguments is
+/* Unless ISL_ARG_SKIP_HELP is set, check if "arg" is
  * equal to "--help" and if so call print_help_and_exit.
  */
-static void check_help(struct isl_args *args, int argc, char **argv, void *opt,
+static void check_help(struct isl_args *args, char *arg, char *prog, void *opt,
 	unsigned flags)
 {
-	int i;
-
 	if (ISL_FL_ISSET(flags, ISL_ARG_SKIP_HELP))
 		return;
 
-	for (i = 1; i < argc; ++i) {
-		if (strcmp(argv[i], "--help") == 0)
-			print_help_and_exit(args->args, argv[0], opt);
-	}
+	if (strcmp(arg, "--help") == 0)
+		print_help_and_exit(args->args, prog, opt);
 }
 
 int isl_args_parse(struct isl_args *args, int argc, char **argv, void *opt,
@@ -1170,8 +1166,6 @@ int isl_args_parse(struct isl_args *args, int argc, char **argv, void *opt,
 	int n;
 
 	n = n_arg(args->args);
-
-	check_help(args, argc, argv, opt, flags);
 
 	for (i = 1; i < argc; ++i) {
 		if ((strcmp(argv[i], "--version") == 0 ||
@@ -1198,6 +1192,7 @@ int isl_args_parse(struct isl_args *args, int argc, char **argv, void *opt,
 				++skip;
 			continue;
 		}
+		check_help(args, argv[1 + skip], argv[0], opt, flags);
 		parsed = parse_option(args->args, &argv[1 + skip], NULL, opt);
 		if (parsed)
 			argc = drop_argument(argc, argv, 1 + skip, parsed);
