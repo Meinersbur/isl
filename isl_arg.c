@@ -130,6 +130,17 @@ void isl_args_set_defaults(struct isl_args *args, void *opt)
 	}
 }
 
+static void free_args(struct isl_arg *arg, void *opt);
+
+static void free_child(struct isl_arg *arg, void *opt)
+{
+	if (arg->offset == (size_t) -1)
+		free_args(arg->u.child.child->args, opt);
+	else
+		isl_args_free(arg->u.child.child,
+			    *(void **)(((char *)opt) + arg->offset));
+}
+
 static void free_str_list(struct isl_arg *arg, void *opt)
 {
 	int i;
@@ -154,11 +165,7 @@ static void free_args(struct isl_arg *arg, void *opt)
 	for (i = 0; arg[i].type != isl_arg_end; ++i) {
 		switch (arg[i].type) {
 		case isl_arg_child:
-			if (arg[i].offset == (size_t) -1)
-				free_args(arg[i].u.child.child->args, opt);
-			else
-				isl_args_free(arg[i].u.child.child,
-				    *(void **)(((char *)opt) + arg[i].offset));
+			free_child(&arg[i], opt);
 			break;
 		case isl_arg_arg:
 		case isl_arg_str:
