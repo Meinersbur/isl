@@ -5755,6 +5755,46 @@ __isl_give isl_set *isl_set_upper_bound(__isl_take isl_set *set,
 	return isl_map_upper_bound(set, type, pos, value);
 }
 
+/* Force the values of the variable at position "pos" of type "type" of "set"
+ * to be no smaller than "value".
+ */
+__isl_give isl_set *isl_set_lower_bound_val(__isl_take isl_set *set,
+	enum isl_dim_type type, unsigned pos, __isl_take isl_val *value)
+{
+	if (!value)
+		goto error;
+	if (!isl_val_is_int(value))
+		isl_die(isl_set_get_ctx(set), isl_error_invalid,
+			"expecting integer value", goto error);
+	set = isl_set_lower_bound(set, type, pos, value->n);
+	isl_val_free(value);
+	return set;
+error:
+	isl_val_free(value);
+	isl_set_free(set);
+	return NULL;
+}
+
+/* Force the values of the variable at position "pos" of type "type" of "set"
+ * to be no greater than "value".
+ */
+__isl_give isl_set *isl_set_upper_bound_val(__isl_take isl_set *set,
+	enum isl_dim_type type, unsigned pos, __isl_take isl_val *value)
+{
+	if (!value)
+		goto error;
+	if (!isl_val_is_int(value))
+		isl_die(isl_set_get_ctx(set), isl_error_invalid,
+			"expecting integer value", goto error);
+	set = isl_set_upper_bound(set, type, pos, value->n);
+	isl_val_free(value);
+	return set;
+error:
+	isl_val_free(value);
+	isl_set_free(set);
+	return NULL;
+}
+
 struct isl_set *isl_set_lower_bound_dim(struct isl_set *set, unsigned dim,
 					isl_int value)
 {
