@@ -417,6 +417,21 @@ int isl_aff_get_constant(__isl_keep isl_aff *aff, isl_int *v)
 	return 0;
 }
 
+/* Return the constant term of "aff".
+ */
+__isl_give isl_val *isl_aff_get_constant_val(__isl_keep isl_aff *aff)
+{
+	isl_ctx *ctx;
+	isl_val *v;
+
+	if (!aff)
+		return NULL;
+
+	ctx = isl_aff_get_ctx(aff);
+	v = isl_val_rat_from_isl_int(ctx, aff->v->el[1], aff->v->el[0]);
+	return isl_val_normalize(v);
+}
+
 int isl_aff_get_coefficient(__isl_keep isl_aff *aff,
 	enum isl_dim_type type, int pos, isl_int *v)
 {
