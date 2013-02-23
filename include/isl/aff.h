@@ -208,6 +208,8 @@ __isl_give isl_pw_aff *isl_pw_aff_ceil(__isl_take isl_pw_aff *pwaff);
 __isl_give isl_pw_aff *isl_pw_aff_floor(__isl_take isl_pw_aff *pwaff);
 __isl_give isl_pw_aff *isl_pw_aff_mod(__isl_take isl_pw_aff *pwaff,
 	isl_int mod);
+__isl_give isl_pw_aff *isl_pw_aff_mod_val(__isl_take isl_pw_aff *pa,
+	__isl_take isl_val *mod);
 __isl_give isl_pw_aff *isl_pw_aff_tdiv_q(__isl_take isl_pw_aff *pa1,
 	__isl_take isl_pw_aff *pa2);
 __isl_give isl_pw_aff *isl_pw_aff_tdiv_r(__isl_take isl_pw_aff *pa1,

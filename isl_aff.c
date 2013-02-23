@@ -1357,6 +1357,29 @@ __isl_give isl_pw_aff *isl_pw_aff_mod(__isl_take isl_pw_aff *pwaff, isl_int m)
 	return res;
 }
 
+/* Compute
+ *
+ *	pa mod m = pa - m * floor(pa/m)
+ *
+ * with m an integer value.
+ */
+__isl_give isl_pw_aff *isl_pw_aff_mod_val(__isl_take isl_pw_aff *pa,
+	__isl_take isl_val *m)
+{
+	if (!pa || !m)
+		goto error;
+	if (!isl_val_is_int(m))
+		isl_die(isl_pw_aff_get_ctx(pa), isl_error_invalid,
+			"expecting integer modulo", goto error);
+	pa = isl_pw_aff_mod(pa, m->n);
+	isl_val_free(m);
+	return pa;
+error:
+	isl_pw_aff_free(pa);
+	isl_val_free(m);
+	return NULL;
+}
+
 /* Given f, return ceil(f).
  * If f is an integer expression, then just return f.
  * Otherwise, let f be the expression
