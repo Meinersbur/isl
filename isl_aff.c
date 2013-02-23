@@ -802,6 +802,69 @@ __isl_give isl_aff *isl_aff_add_coefficient(__isl_take isl_aff *aff,
 	return aff;
 }
 
+/* Add "v" to the coefficient of the variable of type "type"
+ * at position "pos" of "aff".
+ */
+__isl_give isl_aff *isl_aff_add_coefficient_val(__isl_take isl_aff *aff,
+	enum isl_dim_type type, int pos, __isl_take isl_val *v)
+{
+	if (!aff || !v)
+		goto error;
+
+	if (isl_val_is_zero(v)) {
+		isl_val_free(v);
+		return aff;
+	}
+
+	if (type == isl_dim_out)
+		isl_die(aff->v->ctx, isl_error_invalid,
+			"output/set dimension does not have a coefficient",
+			goto error);
+	if (type == isl_dim_in)
+		type = isl_dim_set;
+
+	if (pos >= isl_local_space_dim(aff->ls, type))
+		isl_die(aff->v->ctx, isl_error_invalid,
+			"position out of bounds", goto error);
+
+	if (!isl_val_is_rat(v))
+		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
+			"expecting rational value", goto error);
+
+	aff = isl_aff_cow(aff);
+	if (!aff)
+		goto error;
+
+	aff->v = isl_vec_cow(aff->v);
+	if (!aff->v)
+		goto error;
+
+	pos += isl_local_space_offset(aff->ls, type);
+	if (isl_int_is_one(v->d)) {
+		isl_int_addmul(aff->v->el[1 + pos], aff->v->el[0], v->n);
+	} else if (isl_int_eq(aff->v->el[0], v->d)) {
+		isl_int_add(aff->v->el[1 + pos], aff->v->el[1 + pos], v->n);
+		aff->v = isl_vec_normalize(aff->v);
+		if (!aff->v)
+			goto error;
+	} else {
+		isl_seq_scale(aff->v->el + 1,
+				aff->v->el + 1, v->d, aff->v->size - 1);
+		isl_int_addmul(aff->v->el[1 + pos], aff->v->el[0], v->n);
+		isl_int_mul(aff->v->el[0], aff->v->el[0], v->d);
+		aff->v = isl_vec_normalize(aff->v);
+		if (!aff->v)
+			goto error;
+	}
+
+	isl_val_free(v);
+	return aff;
+error:
+	isl_aff_free(aff);
+	isl_val_free(v);
+	return NULL;
+}
+
 __isl_give isl_aff *isl_aff_add_coefficient_si(__isl_take isl_aff *aff,
 	enum isl_dim_type type, int pos, int v)
 {
