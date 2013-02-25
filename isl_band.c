@@ -1,11 +1,13 @@
 /*
  * Copyright 2011      INRIA Saclay
+ * Copyright 2012-2013 Ecole Normale Superieure
  *
  * Use of this software is governed by the MIT license
  *
  * Written by Sven Verdoolaege, INRIA Saclay - Ile-de-France,
  * Parc Club Orsay Universite, ZAC des vignes, 4 rue Jacques Monod,
  * 91893 Orsay, France
+ * and Ecole Normale Superieure, 45 rue d'Ulm, 75230 Paris, France
  */
 
 #include <isl_band_private.h>
@@ -445,13 +447,26 @@ error:
  * a child band is created to refer to the point loops.
  * The children of this point loop band are the children
  * of the original band.
+ *
+ * If the scale tile loops option is set, then the tile loops
+ * are scaled by the tile sizes.  If the shift point loops option is set,
+ * then the point loops are shifted to start at zero.
+ * In particular, these options affect the tile and point loop schedules
+ * as follows
+ *
+ *	scale	shift	original	tile		point
+ *
+ *	0	0	i		floor(i/s)	i
+ *	1	0	i		s * floor(i/s)	i
+ *	0	1	i		floor(i/s)	i - s * floor(i/s)
+ *	1	1	i		s * floor(i/s)	i - s * floor(i/s)
  */
 int isl_band_tile(__isl_keep isl_band *band, __isl_take isl_vec *sizes)
 {
 	isl_ctx *ctx;
 	isl_band *child;
 	isl_band_list *list = NULL;
-	isl_union_pw_multi_aff *sched;
+	isl_union_pw_multi_aff *sched = NULL, *child_sched = NULL;
 
 	if (!band || !sizes)
 		goto error;
@@ -465,7 +480,17 @@ int isl_band_tile(__isl_keep isl_band *band, __isl_take isl_vec *sizes)
 
 	sched = isl_union_pw_multi_aff_copy(band->pma);
 	sched = isl_union_pw_multi_aff_tile(sched, sizes);
-	if (!sched)
+
+	child_sched = isl_union_pw_multi_aff_copy(child->pma);
+	if (isl_options_get_tile_shift_point_loops(ctx)) {
+		isl_union_pw_multi_aff *scaled;
+		scaled = isl_union_pw_multi_aff_copy(sched);
+		if (!isl_options_get_tile_scale_tile_loops(ctx))
+			scaled = isl_union_pw_multi_aff_scale_vec(scaled,
+							isl_vec_copy(sizes));
+		child_sched = isl_union_pw_multi_aff_sub(child_sched, scaled);
+	}
+	if (!sched || !child_sched)
 		goto error;
 
 	child->children = band->children;
@@ -473,10 +498,14 @@ int isl_band_tile(__isl_keep isl_band *band, __isl_take isl_vec *sizes)
 	child->parent = band;
 	isl_union_pw_multi_aff_free(band->pma);
 	band->pma = sched;
+	isl_union_pw_multi_aff_free(child->pma);
+	child->pma = child_sched;
 
 	isl_vec_free(sizes);
 	return 0;
 error:
+	isl_union_pw_multi_aff_free(sched);
+	isl_union_pw_multi_aff_free(child_sched);
 	isl_band_list_free(list);
 	isl_vec_free(sizes);
 	return -1;
