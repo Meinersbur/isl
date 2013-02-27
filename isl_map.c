@@ -10389,6 +10389,9 @@ __isl_give isl_basic_map *isl_basic_map_curry(__isl_take isl_basic_map *bmap)
 	if (!isl_basic_map_can_curry(bmap))
 		isl_die(bmap->ctx, isl_error_invalid,
 			"basic map cannot be curried", goto error);
+	bmap = isl_basic_map_cow(bmap);
+	if (!bmap)
+		return NULL;
 	bmap->dim = isl_space_curry(bmap->dim);
 	if (!bmap->dim)
 		goto error;

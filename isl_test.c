@@ -3303,6 +3303,31 @@ static int test_conversion(isl_ctx *ctx)
 	return 0;
 }
 
+/* Check that isl_basic_map_curry does not modify input.
+ */
+static int test_curry(isl_ctx *ctx)
+{
+	const char *str;
+	isl_basic_map *bmap1, *bmap2;
+	int equal;
+
+	str = "{ [A[] -> B[]] -> C[] }";
+	bmap1 = isl_basic_map_read_from_str(ctx, str);
+	bmap2 = isl_basic_map_curry(isl_basic_map_copy(bmap1));
+	equal = isl_basic_map_is_equal(bmap1, bmap2);
+	isl_basic_map_free(bmap1);
+	isl_basic_map_free(bmap2);
+
+	if (equal < 0)
+		return -1;
+	if (equal)
+		isl_die(ctx, isl_error_unknown,
+			"curried map should not be equal to original",
+			return -1);
+
+	return 0;
+}
+
 struct {
 	const char *set;
 	const char *ma;
@@ -3783,6 +3808,7 @@ struct {
 	const char *name;
 	int (*fn)(isl_ctx *ctx);
 } tests [] = {
+	{ "curry", &test_curry },
 	{ "piecewise multi affine expressions", &test_pw_multi_aff },
 	{ "conversion", &test_conversion },
 	{ "list", &test_list },
