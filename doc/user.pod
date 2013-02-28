@@ -5657,6 +5657,9 @@ while printing the AST.
 	int isl_options_set_ast_build_allow_else(isl_ctx *ctx,
 		int val);
 	int isl_options_get_ast_build_allow_else(isl_ctx *ctx);
+	int isl_options_set_ast_build_allow_or(isl_ctx *ctx,
+		int val);
+	int isl_options_get_ast_build_allow_or(isl_ctx *ctx);
 
 =over
 
@@ -5754,6 +5757,11 @@ to scale down iterators of strided loops.
 
 This option specifies whether the AST generator is allowed
 to construct if statements with else branches.
+
+=item * ast_build_allow_or
+
+This option specifies whether the AST generator is allowed
+to construct if conditions with disjunctions.
 
 =back
 

@@ -68,6 +68,7 @@ struct isl_options {
 	int			ast_build_separation_bounds;
 	int			ast_build_scale_strides;
 	int			ast_build_allow_else;
+	int			ast_build_allow_or;
 };
 
 #endif

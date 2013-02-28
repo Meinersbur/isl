@@ -209,6 +209,78 @@ static __isl_give isl_set *extract_hoistable_guard(
 	return guard;
 }
 
+/* Internal data structure used inside insert_if.
+ *
+ * list is the list of guarded nodes created by each call to insert_if.
+ * node is the original node that is guarded by insert_if.
+ * build is the build in which the AST is constructed.
+ */
+struct isl_insert_if_data {
+	isl_ast_node_list *list;
+	isl_ast_node *node;
+	isl_ast_build *build;
+};
+
+static int insert_if(__isl_take isl_basic_set *bset, void *user);
+
+/* Insert an if node around "node" testing the condition encoded
+ * in guard "guard".
+ *
+ * If the user does not want any disjunctions in the if conditions
+ * and if "guard" does involve a disjunction, then we make the different
+ * disjuncts disjoint and insert an if node corresponding to each disjunct
+ * around a copy of "node".  The result is then a block node containing
+ * this sequence of guarded copies of "node".
+ */
+static __isl_give isl_ast_node *ast_node_insert_if(
+	__isl_take isl_ast_node *node, __isl_take isl_set *guard,
+	__isl_keep isl_ast_build *build)
+{
+	struct isl_insert_if_data data;
+	isl_ctx *ctx;
+
+	ctx = isl_ast_build_get_ctx(build);
+	if (isl_options_get_ast_build_allow_or(ctx) ||
+	    isl_set_n_basic_set(guard) <= 1) {
+		isl_ast_node *if_node;
+		isl_ast_expr *expr;
+
+		expr = isl_ast_build_expr_from_set(build, guard);
+
+		if_node = isl_ast_node_alloc_if(expr);
+		return isl_ast_node_if_set_then(if_node, node);
+	}
+
+	guard = isl_set_make_disjoint(guard);
+
+	data.list = isl_ast_node_list_alloc(ctx, 0);
+	data.node = node;
+	data.build = build;
+	if (isl_set_foreach_basic_set(guard, &insert_if, &data) < 0)
+		data.list = isl_ast_node_list_free(data.list);
+
+	isl_set_free(guard);
+	isl_ast_node_free(data.node);
+	return isl_ast_node_alloc_block(data.list);
+}
+
+/* Insert an if node around a copy of "data->node" testing the condition
+ * encoded in guard "bset" and add the result to data->list.
+ */
+static int insert_if(__isl_take isl_basic_set *bset, void *user)
+{
+	struct isl_insert_if_data *data = user;
+	isl_ast_node *node;
+	isl_set *set;
+
+	set = isl_set_from_basic_set(bset);
+	node = isl_ast_node_copy(data->node);
+	node = ast_node_insert_if(node, set, data->build);
+	data->list = isl_ast_node_list_add(data->list, node);
+
+	return 0;
+}
+
 /* Insert an if node around graft->node testing the condition encoded
  * in guard "guard", assuming guard involves any conditions.
  */
@@ -217,8 +289,6 @@ static __isl_give isl_ast_graft *insert_if_node(
 	__isl_keep isl_ast_build *build)
 {
 	int univ;
-	isl_ast_node *node;
-	isl_ast_expr *expr;
 
 	if (!graft)
 		goto error;
@@ -234,11 +304,8 @@ static __isl_give isl_ast_graft *insert_if_node(
 	build = isl_ast_build_copy(build);
 	build = isl_ast_build_set_enforced(build,
 					isl_ast_graft_get_enforced(graft));
-	expr = isl_ast_build_expr_from_set(build, guard);
+	graft->node = ast_node_insert_if(graft->node, guard, build);
 	isl_ast_build_free(build);
-
-	node = isl_ast_node_alloc_if(expr);
-	graft->node = isl_ast_node_if_set_then(node, graft->node);
 
 	if (!graft->node)
 		return isl_ast_graft_free(graft);
