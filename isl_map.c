@@ -8193,13 +8193,13 @@ static int qsort_constraint_cmp(const void *p1, const void *p2)
 	int l1, l2;
 	unsigned size = isl_min(c1->size, c2->size);
 
-	l1 = isl_seq_last_non_zero(c1->c, size);
-	l2 = isl_seq_last_non_zero(c2->c, size);
+	l1 = isl_seq_last_non_zero(c1->c + 1, size);
+	l2 = isl_seq_last_non_zero(c2->c + 1, size);
 
 	if (l1 != l2)
 		return l1 - l2;
 
-	return isl_seq_cmp(c1->c, c2->c, size);
+	return isl_seq_cmp(c1->c + 1, c2->c + 1, size);
 }
 
 static struct isl_basic_map *isl_basic_map_sort_constraints(
