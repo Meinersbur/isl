@@ -2166,22 +2166,17 @@ error:
 	return isl_aff_free(data.lower);
 }
 
-/* Intersect "set" with the constraint
+/* Return the constraint
  *
  *	i_"depth" = aff + offset
  */
-static __isl_give isl_set *at_offset(__isl_take isl_set *set, int depth,
-	__isl_keep isl_aff *aff, int offset)
+static __isl_give isl_constraint *at_offset(int depth, __isl_keep isl_aff *aff,
+	int offset)
 {
-	isl_constraint *eq;
-
 	aff = isl_aff_copy(aff);
 	aff = isl_aff_add_coefficient_si(aff, isl_dim_in, depth, -1);
 	aff = isl_aff_add_constant_si(aff, offset);
-	eq = isl_equality_from_aff(aff);
-	set = isl_set_add_constraint(set, eq);
-
-	return set;
+	return isl_equality_from_aff(aff);
 }
 
 /* Return a list of basic sets, one for each value of the current dimension
@@ -2207,7 +2202,10 @@ static __isl_give isl_set *at_offset(__isl_take isl_set *set, int depth,
  *
  * We compute the unshifted simple hull of each slice to ensure that
  * we have a single basic set per offset.  The slicing constraint
- * is preserved by taking the unshifted simple hull, so these basic sets
+ * may get simplified away before the unshifted simple hull is taken
+ * and may therefore in some rare cases disappear from the result.
+ * We therefore explicitly add the constraint back after computing
+ * the unshifted simple hull to ensure that the basic sets
  * remain disjoint.  The constraints that are dropped by taking the hull
  * will be taken into account at the next level, as in the case of the
  * atomic option.
@@ -2252,9 +2250,13 @@ static __isl_give isl_basic_set_list *do_unroll(__isl_take isl_set *domain,
 	for (i = 0; list && i < n; ++i) {
 		isl_set *set;
 		isl_basic_set *bset;
+		isl_constraint *slice;
 
-		set = at_offset(isl_set_copy(domain), depth, lower, i);
+		slice = at_offset(depth, lower, i);
+		set = isl_set_copy(domain);
+		set = isl_set_add_constraint(set, isl_constraint_copy(slice));
 		bset = isl_set_unshifted_simple_hull(set);
+		bset = isl_basic_set_add_constraint(bset, slice);
 		bset = isl_basic_set_apply(bset, isl_basic_map_copy(bmap));
 		list = isl_basic_set_list_add(list, bset);
 	}

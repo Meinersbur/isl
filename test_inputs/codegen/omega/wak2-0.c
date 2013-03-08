@@ -17,10 +17,10 @@
         s1(c0, c1_0);
       }
       if (c0 >= a1 && b1 >= c0)
-        for (int c1_0 = max(c1, d2 + 1); c1_0 <= d1; c1_0 += 1)
+        for (int c1_0 = max(d2 + 1, c1); c1_0 <= d1; c1_0 += 1)
           s0(c0, c1_0);
     }
-  for (int c0 = max(max(b2 + 1, a1), a2); c0 <= b1; c0 += 1)
+  for (int c0 = max(max(a1, a2), b2 + 1); c0 <= b1; c0 += 1)
     for (int c1_0 = c1; c1_0 <= d1; c1_0 += 1)
       s0(c0, c1_0);
 }

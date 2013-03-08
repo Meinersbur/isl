@@ -8226,13 +8226,13 @@ static int qsort_constraint_cmp(const void *p1, const void *p2)
 	int l1, l2;
 	unsigned size = isl_min(c1->size, c2->size);
 
-	l1 = isl_seq_last_non_zero(c1->c, size);
-	l2 = isl_seq_last_non_zero(c2->c, size);
+	l1 = isl_seq_last_non_zero(c1->c + 1, size);
+	l2 = isl_seq_last_non_zero(c2->c + 1, size);
 
 	if (l1 != l2)
 		return l1 - l2;
 
-	return isl_seq_cmp(c1->c, c2->c, size);
+	return isl_seq_cmp(c1->c + 1, c2->c + 1, size);
 }
 
 static struct isl_basic_map *isl_basic_map_sort_constraints(
@@ -10423,6 +10423,9 @@ __isl_give isl_basic_map *isl_basic_map_curry(__isl_take isl_basic_map *bmap)
 	if (!isl_basic_map_can_curry(bmap))
 		isl_die(bmap->ctx, isl_error_invalid,
 			"basic map cannot be curried", goto error);
+	bmap = isl_basic_map_cow(bmap);
+	if (!bmap)
+		return NULL;
 	bmap->dim = isl_space_curry(bmap->dim);
 	if (!bmap->dim)
 		goto error;
@@ -10501,6 +10504,9 @@ __isl_give isl_basic_map *isl_basic_map_uncurry(__isl_take isl_basic_map *bmap)
 		isl_die(bmap->ctx, isl_error_invalid,
 			"basic map cannot be uncurried",
 			return isl_basic_map_free(bmap));
+	bmap = isl_basic_map_cow(bmap);
+	if (!bmap)
+		return NULL;
 	bmap->dim = isl_space_uncurry(bmap->dim);
 	if (!bmap->dim)
 		return isl_basic_map_free(bmap);
