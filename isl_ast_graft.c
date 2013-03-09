@@ -679,11 +679,15 @@ static __isl_give isl_ast_graft_list *gist_guards(
 /* Combine the grafts in the list into a single graft.
  *
  * If "up" is set then the resulting graft will be used at an outer level.
+ * In this case, "build" refers to the outer level, while "sub_build"
+ * refers to the inner level.  If "up" is not set, then the same build
+ * should be passed to both arguments.
  *
  * The guard is initialized to the shared guard of the list elements (if any),
  * provided it does not depend on the current dimension.
  * The guards in the elements are then simplified with respect to the
- * hoisted guard and materialized as if nodes around the contained AST nodes.
+ * hoisted guard and materialized as if nodes around the contained AST nodes
+ * in the context of "sub_build".
  *
  * The enforced set is initialized to the simple hull of the enforced sets
  * of the elements, provided the ast_build_exploit_nested_bounds option is set
@@ -693,8 +697,8 @@ static __isl_give isl_ast_graft_list *gist_guards(
  * or, if there is only a single element, the node of that element.
  */
 static __isl_give isl_ast_graft *ast_graft_list_fuse(
-	__isl_take isl_ast_graft_list *list,
-	__isl_keep isl_ast_build *build, int up)
+	__isl_take isl_ast_graft_list *list, __isl_keep isl_ast_build *build,
+	__isl_keep isl_ast_build *sub_build, int up)
 {
 	isl_ctx *ctx;
 	isl_ast_node *node;
@@ -708,7 +712,7 @@ static __isl_give isl_ast_graft *ast_graft_list_fuse(
 	ctx = isl_ast_build_get_ctx(build);
 	guard = extract_hoistable_guard(list, build);
 	list = gist_guards(list, guard);
-	list = insert_pending_guard_nodes(list, build);
+	list = insert_pending_guard_nodes(list, sub_build);
 
 	node_list = extract_node_list(list);
 	node = isl_ast_node_from_ast_node_list(node_list);
@@ -741,7 +745,7 @@ __isl_give isl_ast_graft_list *isl_ast_graft_list_fuse(
 		return NULL;
 	if (isl_ast_graft_list_n_ast_graft(list) <= 1)
 		return list;
-	graft = ast_graft_list_fuse(list, build, 0);
+	graft = ast_graft_list_fuse(list, build, build, 0);
 	return isl_ast_graft_list_from_ast_graft(graft);
 }
 
@@ -761,11 +765,13 @@ static __isl_give isl_ast_graft *isl_ast_graft_fuse(
 	list = isl_ast_graft_list_add(list, graft1);
 	list = isl_ast_graft_list_add(list, graft2);
 
-	return ast_graft_list_fuse(list, build, 0);
+	return ast_graft_list_fuse(list, build, build, 0);
 }
 
 /* Allocate a graft for the current level based on the list of grafts
  * of the inner level.
+ * "build" represents the context of the current level.
+ * "sub_build" represents the context of the inner level.
  *
  * The node is initialized to either a block containing the nodes of "children"
  * or, if there is only a single child, the node of that child.
@@ -774,9 +780,9 @@ static __isl_give isl_ast_graft *isl_ast_graft_fuse(
  */
 __isl_give isl_ast_graft *isl_ast_graft_alloc_level(
 	__isl_take isl_ast_graft_list *children,
-	__isl_keep isl_ast_build *build)
+	__isl_keep isl_ast_build *build, __isl_keep isl_ast_build *sub_build)
 {
-	return ast_graft_list_fuse(children, build, 1);
+	return ast_graft_list_fuse(children, build, sub_build, 1);
 }
 
 /* Insert a for node enclosing the current graft->node.

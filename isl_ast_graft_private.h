@@ -46,7 +46,7 @@ __isl_give isl_ast_graft *isl_ast_graft_alloc(
 	__isl_take isl_ast_node *node, __isl_keep isl_ast_build *build);
 __isl_give isl_ast_graft *isl_ast_graft_alloc_level(
 	__isl_take isl_ast_graft_list *children,
-	__isl_keep isl_ast_build *build);
+	__isl_keep isl_ast_build *build, __isl_keep isl_ast_build *sub_build);
 __isl_give isl_ast_graft_list *isl_ast_graft_list_fuse(
 	__isl_take isl_ast_graft_list *children,
 	__isl_keep isl_ast_build *build);

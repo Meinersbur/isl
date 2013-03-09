@@ -1303,7 +1303,7 @@ static __isl_give isl_ast_graft *create_node_scaled(
 	children = generate_next_level(executed,
 				    isl_ast_build_copy(body_build));
 
-	graft = isl_ast_graft_alloc_level(children, sub_build);
+	graft = isl_ast_graft_alloc_level(children, build, sub_build);
 	if (!eliminated)
 		graft = isl_ast_graft_insert_for(graft, node);
 	if (eliminated)
