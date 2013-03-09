@@ -1117,7 +1117,7 @@ static void print_version_and_exit(struct isl_arg *decl)
 
 static int drop_argument(int argc, char **argv, int drop, int n)
 {
-	for (; drop < argc; ++drop)
+	for (; drop + n < argc; ++drop)
 		argv[drop] = argv[drop + n];
 
 	return argc - n;
