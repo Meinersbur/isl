@@ -6062,19 +6062,33 @@ __isl_give isl_set *isl_set_partial_lexmax(
 			dom, empty);
 }
 
+/* Compute the lexicographic minimum (or maximum if "max" is set)
+ * of "bmap" over its domain.
+ *
+ * Since we are not interested in the part of the domain space where
+ * there is no solution, we initialize the domain to those constraints
+ * of "bmap" that only involve the parameters and the input dimensions.
+ * This relieves the parametric programming engine from detecting those
+ * inequalities and transferring them to the context.  More importantly,
+ * it ensures that those inequalities are transferred first and not
+ * intermixed with inequalities that actually split the domain.
+ */
 __isl_give isl_map *isl_basic_map_lexopt(__isl_take isl_basic_map *bmap, int max)
 {
-	struct isl_basic_set *dom = NULL;
-	isl_space *dom_dim;
+	int n_div;
+	int n_out;
+	isl_basic_map *copy;
+	isl_basic_set *dom;
 
-	if (!bmap)
-		goto error;
-	dom_dim = isl_space_domain(isl_space_copy(bmap->dim));
-	dom = isl_basic_set_universe(dom_dim);
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	n_out = isl_basic_map_dim(bmap, isl_dim_out);
+	copy = isl_basic_map_copy(bmap);
+	copy = isl_basic_map_drop_constraints_involving_dims(copy,
+							isl_dim_div, 0, n_div);
+	copy = isl_basic_map_drop_constraints_involving_dims(copy,
+							isl_dim_out, 0, n_out);
+	dom = isl_basic_map_domain(copy);
 	return isl_basic_map_partial_lexopt(bmap, dom, NULL, max);
-error:
-	isl_basic_map_free(bmap);
-	return NULL;
 }
 
 __isl_give isl_map *isl_basic_map_lexmin(__isl_take isl_basic_map *bmap)
