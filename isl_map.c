@@ -1,7 +1,7 @@
 /*
  * Copyright 2008-2009 Katholieke Universiteit Leuven
  * Copyright 2010      INRIA Saclay
- * Copyright 2012      Ecole Normale Superieure
+ * Copyright 2012-2013 Ecole Normale Superieure
  *
  * Use of this software is governed by the MIT license
  *
@@ -6439,41 +6439,162 @@ static struct isl_set *parameter_compute_divs(struct isl_basic_set *bset)
 	return set;
 }
 
-/* Compute an explicit representation for all the existentially
- * quantified variables.
- * The input and output dimensions are first turned into parameters.
- * compute_divs then returns a map with the same parameters and
+/* Insert the divs from "ls" before those of "bmap".
+ *
+ * The number of columns is not changed, which means that the last
+ * dimensions of "bmap" are being reintepreted as the divs from "ls".
+ * The caller is responsible for removing the same number of dimensions
+ * from the space of "bmap".
+ */
+static __isl_give isl_basic_map *insert_divs_from_local_space(
+	__isl_take isl_basic_map *bmap, __isl_keep isl_local_space *ls)
+{
+	int i;
+	int n_div;
+	int old_n_div;
+
+	n_div = isl_local_space_dim(ls, isl_dim_div);
+	if (n_div == 0)
+		return bmap;
+
+	old_n_div = bmap->n_div;
+	bmap = insert_div_rows(bmap, n_div);
+	if (!bmap)
+		return NULL;
+
+	for (i = 0; i < n_div; ++i) {
+		isl_seq_cpy(bmap->div[i], ls->div->row[i], ls->div->n_col);
+		isl_seq_clr(bmap->div[i] + ls->div->n_col, old_n_div);
+	}
+
+	return bmap;
+}
+
+/* Replace the space of "bmap" by the space and divs of "ls".
+ *
+ * If "ls" has any divs, then we simplify the result since we may
+ * have discovered some additional equalities that could simplify
+ * the div expressions.
+ */
+static __isl_give isl_basic_map *basic_replace_space_by_local_space(
+	__isl_take isl_basic_map *bmap, __isl_take isl_local_space *ls)
+{
+	int n_div;
+
+	bmap = isl_basic_map_cow(bmap);
+	if (!bmap || !ls)
+		goto error;
+
+	n_div = isl_local_space_dim(ls, isl_dim_div);
+	bmap = insert_divs_from_local_space(bmap, ls);
+	if (!bmap)
+		goto error;
+
+	isl_space_free(bmap->dim);
+	bmap->dim = isl_local_space_get_space(ls);
+	if (!bmap->dim)
+		goto error;
+
+	isl_local_space_free(ls);
+	if (n_div > 0)
+		bmap = isl_basic_map_simplify(bmap);
+	bmap = isl_basic_map_finalize(bmap);
+	return bmap;
+error:
+	isl_basic_map_free(bmap);
+	isl_local_space_free(ls);
+	return NULL;
+}
+
+/* Replace the space of "map" by the space and divs of "ls".
+ */
+static __isl_give isl_map *replace_space_by_local_space(__isl_take isl_map *map,
+	__isl_take isl_local_space *ls)
+{
+	int i;
+
+	map = isl_map_cow(map);
+	if (!map || !ls)
+		goto error;
+
+	for (i = 0; i < map->n; ++i) {
+		map->p[i] = basic_replace_space_by_local_space(map->p[i],
+						    isl_local_space_copy(ls));
+		if (!map->p[i])
+			goto error;
+	}
+	isl_space_free(map->dim);
+	map->dim = isl_local_space_get_space(ls);
+	if (!map->dim)
+		goto error;
+
+	isl_local_space_free(ls);
+	return map;
+error:
+	isl_local_space_free(ls);
+	isl_map_free(map);
+	return NULL;
+}
+
+/* Compute an explicit representation for the existentially
+ * quantified variables for which do not know any explicit representation yet.
+ *
+ * We first sort the existentially quantified variables so that the
+ * existentially quantified variables for which we already have an explicit
+ * representation are placed before those for which we do not.
+ * The input dimensions, the output dimensions and the existentially
+ * quantified variables for which we already have an explicit
+ * representation are then turned into parameters.
+ * compute_divs returns a map with the same parameters and
  * no input or output dimensions and the dimension specification
- * is reset to that of the input.
+ * is reset to that of the input, including the existentially quantified
+ * variables for which we already had an explicit representation.
  */
 static struct isl_map *compute_divs(struct isl_basic_map *bmap)
 {
 	struct isl_basic_set *bset;
 	struct isl_set *set;
 	struct isl_map *map;
-	isl_space *dim, *orig_dim = NULL;
+	isl_space *dim;
+	isl_local_space *ls;
 	unsigned	 nparam;
 	unsigned	 n_in;
 	unsigned	 n_out;
+	unsigned n_known;
+	int i;
 
+	bmap = isl_basic_map_sort_divs(bmap);
 	bmap = isl_basic_map_cow(bmap);
 	if (!bmap)
 		return NULL;
 
+	for (n_known = 0; n_known < bmap->n_div; ++n_known)
+		if (isl_int_is_zero(bmap->div[n_known][0]))
+			break;
+
 	nparam = isl_basic_map_dim(bmap, isl_dim_param);
 	n_in = isl_basic_map_dim(bmap, isl_dim_in);
 	n_out = isl_basic_map_dim(bmap, isl_dim_out);
-	dim = isl_space_set_alloc(bmap->ctx, nparam + n_in + n_out, 0);
+	dim = isl_space_set_alloc(bmap->ctx,
+				    nparam + n_in + n_out + n_known, 0);
 	if (!dim)
 		goto error;
 
-	orig_dim = bmap->dim;
-	bmap->dim = dim;
+	ls = isl_basic_map_get_local_space(bmap);
+	ls = isl_local_space_drop_dims(ls, isl_dim_div,
+					n_known, bmap->n_div - n_known);
+	if (n_known > 0) {
+		for (i = n_known; i < bmap->n_div; ++i)
+			swap_div(bmap, i - n_known, i);
+		bmap->n_div -= n_known;
+		bmap->extra -= n_known;
+	}
+	bmap = isl_basic_map_reset_space(bmap, dim);
 	bset = (struct isl_basic_set *)bmap;
 
 	set = parameter_compute_divs(bset);
 	map = (struct isl_map *)set;
-	map = isl_map_reset_space(map, orig_dim);
+	map = replace_space_by_local_space(map, ls);
 
 	return map;
 error:
