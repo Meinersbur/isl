@@ -3833,6 +3833,24 @@ error:
 	sol->error = 1;
 }
 
+/* Does "sol" contain a pair of partial solutions that could potentially
+ * be merged?
+ *
+ * We currently only check that "sol" is not in an error state
+ * and that there are at least two partial solutions of which the final two
+ * are defined at the same level.
+ */
+static int sol_has_mergeable_solutions(struct isl_sol *sol)
+{
+	if (sol->error)
+		return 0;
+	if (!sol->partial)
+		return 0;
+	if (!sol->partial->next)
+		return 0;
+	return sol->partial->level == sol->partial->next->level;
+}
+
 /* Compute the lexicographic minimum of the set represented by the main
  * tableau "tab" within the context "sol->context_tab".
  *
@@ -3843,10 +3861,20 @@ error:
  * corresponding rows may not be marked as being non-negative.
  * In parts of the context where the added equality does not hold,
  * the main tableau is marked as being empty.
+ *
+ * Before we embark on the actual computation, we save a copy
+ * of the context.  When we return, we check if there are any
+ * partial solutions that can potentially be merged.  If so,
+ * we perform a rollback to the initial state of the context.
+ * The merging of partial solutions happens inside calls to
+ * sol_dec_level that are pushed onto the undo stack of the context.
+ * If there are no partial solutions that can potentially be merged
+ * then the rollback is skipped as it would just be wasted effort.
  */
 static void find_solutions_main(struct isl_sol *sol, struct isl_tab *tab)
 {
 	int row;
+	void *saved;
 
 	if (!tab)
 		goto error;
@@ -3896,7 +3924,14 @@ static void find_solutions_main(struct isl_sol *sol, struct isl_tab *tab)
 		row = tab->n_redundant - 1;
 	}
 
+	saved = sol->context->op->save(sol->context);
+
 	find_solutions(sol, tab);
+
+	if (sol_has_mergeable_solutions(sol))
+		sol->context->op->restore(sol->context, saved);
+	else
+		sol->context->op->discard(saved);
 
 	sol->level = 0;
 	sol_pop(sol);
