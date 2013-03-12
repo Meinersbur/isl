@@ -33,6 +33,7 @@
 #include <isl_local_space_private.h>
 #include <isl_aff_private.h>
 #include <isl_options_private.h>
+#include <isl_morph.h>
 
 static unsigned n(__isl_keep isl_space *dim, enum isl_dim_type type)
 {
@@ -6403,6 +6404,46 @@ static int first_parameter_equality(__isl_keep isl_basic_set *bset)
 	return i;
 }
 
+/* Compute an explicit representation for the existentially quantified
+ * variables in "bset" by computing the "minimal value" of the set
+ * variables.  Since there are no set variables, the computation of
+ * the minimal value essentially computes an explicit representation
+ * of the non-empty part(s) of "bset".
+ *
+ * The input only involves parameters and existentially quantified variables.
+ * All equalities among parameters have been removed.
+ *
+ * Since the existentially quantified variables in the result are in general
+ * going to be different from those in the input, we first replace
+ * them by the minimal number of variables based on their equalities.
+ * This should simplify the parametric integer programming.
+ */
+static __isl_give isl_set *base_compute_divs(__isl_take isl_basic_set *bset)
+{
+	isl_morph *morph1, *morph2;
+	isl_set *set;
+	unsigned n;
+
+	if (!bset)
+		return NULL;
+	if (bset->n_eq == 0)
+		return isl_basic_set_lexmin(bset);
+
+	morph1 = isl_basic_set_parameter_compression(bset);
+	bset = isl_morph_basic_set(isl_morph_copy(morph1), bset);
+	bset = isl_basic_set_lift(bset);
+	morph2 = isl_basic_set_variable_compression(bset, isl_dim_set);
+	bset = isl_morph_basic_set(morph2, bset);
+	n = isl_basic_set_dim(bset, isl_dim_set);
+	bset = isl_basic_set_project_out(bset, isl_dim_set, 0, n);
+
+	set = isl_basic_set_lexmin(bset);
+
+	set = isl_morph_set(isl_morph_inverse(morph1), set);
+
+	return set;
+}
+
 /* Project the given basic set onto its parameter domain, possibly introducing
  * new, explicit, existential variables in the constraints.
  * The input has parameters and (possibly implicit) existential variables.
@@ -6418,7 +6459,8 @@ static int first_parameter_equality(__isl_keep isl_basic_set *bset)
  * The variable compression on the parameters may uncover additional
  * equalities that were only implicit before.  We therefore check
  * if there are any new parameter equalities in the result and
- * if so recurse.
+ * if so recurse.  The removal of parameter equalities is required
+ * for the parameter compression performed by base_compute_divs.
  */
 static struct isl_set *parameter_compute_divs(struct isl_basic_set *bset)
 {
@@ -6433,7 +6475,7 @@ static struct isl_set *parameter_compute_divs(struct isl_basic_set *bset)
 		return NULL;
 
 	if (bset->n_eq == 0)
-		return isl_basic_set_lexmin(bset);
+		return base_compute_divs(bset);
 
 	bset = isl_basic_set_gauss(bset, NULL);
 	if (!bset)
@@ -6443,7 +6485,7 @@ static struct isl_set *parameter_compute_divs(struct isl_basic_set *bset)
 
 	i = first_parameter_equality(bset);
 	if (i == bset->n_eq)
-		return isl_basic_set_lexmin(bset);
+		return base_compute_divs(bset);
 
 	nparam = isl_basic_set_dim(bset, isl_dim_param);
 	eq = isl_mat_sub_alloc6(bset->ctx, bset->eq, i, bset->n_eq - i,
@@ -6463,7 +6505,7 @@ static struct isl_set *parameter_compute_divs(struct isl_basic_set *bset)
 	if (!bset)
 		set = NULL;
 	else if (i == bset->n_eq)
-		set = isl_basic_set_lexmin(bset);
+		set = base_compute_divs(bset);
 	else
 		set = parameter_compute_divs(bset);
 	set = set_parameter_preimage(set, T2);

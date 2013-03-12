@@ -3852,10 +3852,34 @@ static int test_simplify(isl_ctx *ctx)
 	return 0;
 }
 
+/* Check that the variable compression performed on the existentially
+ * quantified variables inside isl_basic_set_compute_divs is not confused
+ * by the implicit equalities among the parameters.
+ */
+static int test_compute_divs(isl_ctx *ctx)
+{
+	const char *str;
+	isl_basic_set *bset;
+	isl_set *set;
+
+	str = "[a, b, c, d, e] -> { [] : exists (e0: 2d = b and a <= 124 and "
+		"b <= 2046 and b >= 0 and b <= 60 + 64a and 2e >= b + 2c and "
+		"2e >= b and 2e <= 1 + b and 2e <= 1 + b + 2c and "
+		"32768e0 >= -124 + a and 2097152e0 <= 60 + 64a - b) }";
+	bset = isl_basic_set_read_from_str(ctx, str);
+	set = isl_basic_set_compute_divs(bset);
+	isl_set_free(set);
+	if (!set)
+		return -1;
+
+	return 0;
+}
+
 struct {
 	const char *name;
 	int (*fn)(isl_ctx *ctx);
 } tests [] = {
+	{ "compute divs", &test_compute_divs },
 	{ "simplify", &test_simplify },
 	{ "curry", &test_curry },
 	{ "piecewise multi affine expressions", &test_pw_multi_aff },
