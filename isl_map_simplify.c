@@ -2182,6 +2182,8 @@ __isl_give isl_map *isl_map_gist_basic_map(__isl_take isl_map *map,
 		goto error;;
 	isl_assert(map->ctx, isl_space_is_equal(map->dim, context->dim), goto error);
 	map = isl_map_compute_divs(map);
+	if (!map)
+		goto error;
 	for (i = 0; i < map->n; ++i)
 		context = isl_basic_map_align_divs(context, map->p[i]);
 	for (i = map->n - 1; i >= 0; --i) {
