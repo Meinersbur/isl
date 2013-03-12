@@ -493,6 +493,7 @@ __isl_give isl_morph *isl_basic_set_parameter_compression(
 {
 	unsigned nparam;
 	unsigned nvar;
+	unsigned n_div;
 	int n_eq;
 	isl_mat *H, *B;
 	isl_vec *d;
@@ -507,26 +508,26 @@ __isl_give isl_morph *isl_basic_set_parameter_compression(
 	if (bset->n_eq == 0)
 		return isl_morph_identity(bset);
 
-	isl_assert(bset->ctx, bset->n_div == 0, return NULL);
-
 	n_eq = bset->n_eq;
 	nparam = isl_basic_set_dim(bset, isl_dim_param);
 	nvar = isl_basic_set_dim(bset, isl_dim_set);
+	n_div = isl_basic_set_dim(bset, isl_dim_div);
 
 	if (isl_seq_first_non_zero(bset->eq[bset->n_eq - 1] + 1 + nparam,
-				    nvar) == -1)
+				    nvar + n_div) == -1)
 		isl_die(isl_basic_set_get_ctx(bset), isl_error_invalid,
 			"input not allowed to have parameter equalities",
 			return NULL);
-	if (n_eq > nvar)
+	if (n_eq > nvar + n_div)
 		isl_die(isl_basic_set_get_ctx(bset), isl_error_invalid,
 			"input not gaussed", return NULL);
 
 	d = isl_vec_alloc(bset->ctx, n_eq);
 	B = isl_mat_sub_alloc6(bset->ctx, bset->eq, 0, n_eq, 0, 1 + nparam);
-	H = isl_mat_sub_alloc6(bset->ctx, bset->eq, 0, n_eq, 1 + nparam, nvar);
+	H = isl_mat_sub_alloc6(bset->ctx, bset->eq,
+				0, n_eq, 1 + nparam, nvar + n_div);
 	H = isl_mat_left_hermite(H, 0, NULL, NULL);
-	H = isl_mat_drop_cols(H, n_eq, nvar - n_eq);
+	H = isl_mat_drop_cols(H, n_eq, (nvar + n_div) - n_eq);
 	H = isl_mat_lin_to_aff(H);
 	H = isl_mat_right_inverse(H);
 	if (!H || !d)
