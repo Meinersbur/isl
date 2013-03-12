@@ -551,6 +551,9 @@ __isl_give isl_map *isl_basic_map_compute_divs(__isl_take isl_basic_map *bmap);
 __isl_give isl_map *isl_map_compute_divs(__isl_take isl_map *map);
 __isl_give isl_map *isl_map_align_divs(__isl_take isl_map *map);
 
+__isl_give isl_basic_map *isl_basic_map_drop_constraints_involving_dims(
+	__isl_take isl_basic_map *bmap,
+	enum isl_dim_type type, unsigned first, unsigned n);
 __isl_give isl_map *isl_map_drop_constraints_involving_dims(
 	__isl_take isl_map *map,
 	enum isl_dim_type type, unsigned first, unsigned n);
