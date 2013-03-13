@@ -6333,7 +6333,11 @@ static struct isl_set *parameter_compute_divs(struct isl_basic_set *bset)
 	if (bset->n_eq == 0)
 		return isl_basic_set_lexmin(bset);
 
-	isl_basic_set_gauss(bset, NULL);
+	bset = isl_basic_set_gauss(bset, NULL);
+	if (!bset)
+		return NULL;
+	if (isl_basic_set_plain_is_empty(bset))
+		return isl_set_from_basic_set(bset);
 
 	nparam = isl_basic_set_dim(bset, isl_dim_param);
 	n_div = isl_basic_set_dim(bset, isl_dim_div);
