@@ -2677,31 +2677,7 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_identity(
 __isl_give isl_multi_aff *isl_multi_aff_add(__isl_take isl_multi_aff *maff1,
 	__isl_take isl_multi_aff *maff2)
 {
-	int i;
-	isl_ctx *ctx;
-
-	maff1 = isl_multi_aff_cow(maff1);
-	if (!maff1 || !maff2)
-		goto error;
-
-	ctx = isl_multi_aff_get_ctx(maff1);
-	if (!isl_space_is_equal(maff1->space, maff2->space))
-		isl_die(ctx, isl_error_invalid,
-			"spaces don't match", goto error);
-
-	for (i = 0; i < maff1->n; ++i) {
-		maff1->p[i] = isl_aff_add(maff1->p[i],
-					    isl_aff_copy(maff2->p[i]));
-		if (!maff1->p[i])
-			goto error;
-	}
-
-	isl_multi_aff_free(maff2);
-	return maff1;
-error:
-	isl_multi_aff_free(maff1);
-	isl_multi_aff_free(maff2);
-	return NULL;
+	return isl_multi_aff_bin_op(maff1, maff2, &isl_aff_add);
 }
 
 /* Given two multi-affine expressions A -> B and C -> D,

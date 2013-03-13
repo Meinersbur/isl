@@ -794,3 +794,43 @@ error:
 	FN(MULTI(BASE),free)(multi2);
 	return NULL;
 }
+
+/* This function is currently only used from isl_aff.c
+ */
+static __isl_give MULTI(BASE) *FN(MULTI(BASE),bin_op)(
+	__isl_take MULTI(BASE) *multi1, __isl_take MULTI(BASE) *multi2,
+	__isl_give EL *(*fn)(__isl_take EL *, __isl_take EL *))
+	__attribute__ ((unused));
+
+/* Pairwise perform "fn" to the elements of "multi1" and "multi2" and
+ * return the result.
+ */
+static __isl_give MULTI(BASE) *FN(MULTI(BASE),bin_op)(
+	__isl_take MULTI(BASE) *multi1, __isl_take MULTI(BASE) *multi2,
+	__isl_give EL *(*fn)(__isl_take EL *, __isl_take EL *))
+{
+	int i;
+	isl_ctx *ctx;
+
+	multi1 = FN(MULTI(BASE),cow)(multi1);
+	if (!multi1 || !multi2)
+		goto error;
+
+	ctx = FN(MULTI(BASE),get_ctx)(multi1);
+	if (!isl_space_is_equal(multi1->space, multi2->space))
+		isl_die(ctx, isl_error_invalid,
+			"spaces don't match", goto error);
+
+	for (i = 0; i < multi1->n; ++i) {
+		multi1->p[i] = fn(multi1->p[i], FN(EL,copy)(multi2->p[i]));
+		if (!multi1->p[i])
+			goto error;
+	}
+
+	FN(MULTI(BASE),free)(multi2);
+	return multi1;
+error:
+	FN(MULTI(BASE),free)(multi1);
+	FN(MULTI(BASE),free)(multi2);
+	return NULL;
+}
