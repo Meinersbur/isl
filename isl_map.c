@@ -6377,6 +6377,32 @@ error:
 	return NULL;
 }
 
+/* Given a basic set "bset" that only involves parameters and existentially
+ * quantified variables, return the index of the first equality
+ * that only involves parameters.  If there is no such equality then
+ * return bset->n_eq.
+ *
+ * This function assumes that isl_basic_set_gauss has been called on "bset".
+ */
+static int first_parameter_equality(__isl_keep isl_basic_set *bset)
+{
+	int i, j;
+	unsigned nparam, n_div;
+
+	if (!bset)
+		return -1;
+
+	nparam = isl_basic_set_dim(bset, isl_dim_param);
+	n_div = isl_basic_set_dim(bset, isl_dim_div);
+
+	for (i = 0, j = n_div - 1; i < bset->n_eq && j >= 0; --j) {
+		if (!isl_int_is_zero(bset->eq[i][1 + nparam + j]))
+			++i;
+	}
+
+	return i;
+}
+
 /* Project the given basic set onto its parameter domain, possibly introducing
  * new, explicit, existential variables in the constraints.
  * The input has parameters and (possibly implicit) existential variables.
@@ -6391,11 +6417,11 @@ error:
  */
 static struct isl_set *parameter_compute_divs(struct isl_basic_set *bset)
 {
-	int i, j;
+	int i;
 	struct isl_mat *eq;
 	struct isl_mat *T, *T2;
 	struct isl_set *set;
-	unsigned nparam, n_div;
+	unsigned nparam;
 
 	bset = isl_basic_set_cow(bset);
 	if (!bset)
@@ -6410,16 +6436,11 @@ static struct isl_set *parameter_compute_divs(struct isl_basic_set *bset)
 	if (isl_basic_set_plain_is_empty(bset))
 		return isl_set_from_basic_set(bset);
 
-	nparam = isl_basic_set_dim(bset, isl_dim_param);
-	n_div = isl_basic_set_dim(bset, isl_dim_div);
-
-	for (i = 0, j = n_div - 1; i < bset->n_eq && j >= 0; --j) {
-		if (!isl_int_is_zero(bset->eq[i][1 + nparam + j]))
-			++i;
-	}
+	i = first_parameter_equality(bset);
 	if (i == bset->n_eq)
 		return isl_basic_set_lexmin(bset);
 
+	nparam = isl_basic_set_dim(bset, isl_dim_param);
 	eq = isl_mat_sub_alloc6(bset->ctx, bset->eq, i, bset->n_eq - i,
 		0, 1 + nparam);
 	eq = isl_mat_cow(eq);
