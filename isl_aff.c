@@ -1,7 +1,7 @@
 /*
  * Copyright 2011      INRIA Saclay
  * Copyright 2011      Sven Verdoolaege
- * Copyright 2012      Ecole Normale Superieure
+ * Copyright 2012-2013 Ecole Normale Superieure
  *
  * Use of this software is governed by the MIT license
  *
@@ -4645,3 +4645,38 @@ error:
 #define BASE pw_aff
 
 #include <isl_multi_templ.c>
+
+/* Scale the first elements of "ma" by the corresponding elements of "vec".
+ */
+__isl_give isl_multi_aff *isl_multi_aff_scale_vec(__isl_take isl_multi_aff *ma,
+	__isl_take isl_vec *vec)
+{
+	int i, n;
+	isl_int v;
+
+	if (!ma || !vec)
+		goto error;
+
+	n = isl_multi_aff_dim(ma, isl_dim_out);
+	if (isl_vec_size(vec) < n)
+		n = isl_vec_size(vec);
+
+	isl_int_init(v);
+	for (i = 0; i < n; ++i) {
+		isl_aff *aff;
+
+		isl_vec_get_element(vec, i, &v);
+
+		aff = isl_multi_aff_get_aff(ma, i);
+		aff = isl_aff_scale(aff, v);
+		ma = isl_multi_aff_set_aff(ma, i, aff);
+	}
+	isl_int_clear(v);
+
+	isl_vec_free(vec);
+	return ma;
+error:
+	isl_vec_free(vec);
+	isl_multi_aff_free(ma);
+	return NULL;
+}

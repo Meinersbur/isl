@@ -8,6 +8,7 @@
 #include <isl/list.h>
 #include <isl/multi.h>
 #include <isl/union_set_type.h>
+#include <isl/vec.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -315,6 +316,8 @@ __isl_give isl_multi_aff *isl_multi_aff_sub(__isl_take isl_multi_aff *ma1,
 
 __isl_give isl_multi_aff *isl_multi_aff_scale(__isl_take isl_multi_aff *maff,
 	isl_int f);
+__isl_give isl_multi_aff *isl_multi_aff_scale_vec(__isl_take isl_multi_aff *ma,
+	__isl_take isl_vec *v);
 
 __isl_give isl_multi_aff *isl_multi_aff_range_splice(
 	__isl_take isl_multi_aff *ma1, unsigned pos,
