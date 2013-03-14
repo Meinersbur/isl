@@ -4706,3 +4706,40 @@ error:
 	isl_pw_multi_aff_free(pma);
 	return NULL;
 }
+
+/* This function is called for each entry of an isl_union_pw_multi_aff.
+ * Replace the entry by the result of applying isl_pw_multi_aff_scale_vec
+ * to the original entry with the isl_vec in "user" as extra argument.
+ */
+static int union_pw_multi_aff_scale_vec_entry(void **entry, void *user)
+{
+	isl_pw_multi_aff **pma = (isl_pw_multi_aff **) entry;
+	isl_vec *v = user;
+
+	*pma = isl_pw_multi_aff_scale_vec(*pma, isl_vec_copy(v));
+	if (!*pma)
+		return -1;
+
+	return 0;
+}
+
+/* Scale the first elements of "upma" by the corresponding elements of "vec".
+ */
+__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_scale_vec(
+	__isl_take isl_union_pw_multi_aff *upma, __isl_take isl_vec *v)
+{
+	upma = isl_union_pw_multi_aff_cow(upma);
+	if (!upma || !v)
+		goto error;
+
+	if (isl_hash_table_foreach(upma->dim->ctx, &upma->table,
+				   &union_pw_multi_aff_scale_vec_entry, v) < 0)
+		goto error;
+
+	isl_vec_free(v);
+	return upma;
+error:
+	isl_vec_free(v);
+	isl_union_pw_multi_aff_free(upma);
+	return NULL;
+}
