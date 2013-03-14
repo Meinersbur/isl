@@ -3956,14 +3956,6 @@ error:
 	return NULL;
 }
 
-__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_sub(
-	__isl_take isl_union_pw_qpolynomial *upwqp1,
-	__isl_take isl_union_pw_qpolynomial *upwqp2)
-{
-	return isl_union_pw_qpolynomial_add(upwqp1,
-					isl_union_pw_qpolynomial_neg(upwqp2));
-}
-
 __isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_mul(
 	__isl_take isl_union_pw_qpolynomial *upwqp1,
 	__isl_take isl_union_pw_qpolynomial *upwqp2)

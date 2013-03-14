@@ -465,6 +465,15 @@ error:
 	return NULL;
 }
 
+#ifndef NO_SUB
+/* Subtract "u2" from "u1" and return the result.
+ */
+__isl_give UNION *FN(UNION,sub)(__isl_take UNION *u1, __isl_take UNION *u2)
+{
+	return match_bin_op(u1, u2, &FN(PART,sub));
+}
+#endif
+
 S(UNION,any_set_data) {
 	isl_set *set;
 	UNION *res;

@@ -650,6 +650,8 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_gist_params(
 #define PARTS pw_qpolynomial_fold
 #define ALIGN_DOMAIN
 
+#define NO_SUB
+
 #include <isl_union_templ.c>
 
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_empty(enum isl_fold type,
