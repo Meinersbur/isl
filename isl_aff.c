@@ -2680,6 +2680,14 @@ __isl_give isl_multi_aff *isl_multi_aff_add(__isl_take isl_multi_aff *maff1,
 	return isl_multi_aff_bin_op(maff1, maff2, &isl_aff_add);
 }
 
+/* Subtract "ma2" from "ma1" and return the result.
+ */
+__isl_give isl_multi_aff *isl_multi_aff_sub(__isl_take isl_multi_aff *ma1,
+	__isl_take isl_multi_aff *ma2)
+{
+	return isl_multi_aff_bin_op(ma1, ma2, &isl_aff_sub);
+}
+
 /* Given two multi-affine expressions A -> B and C -> D,
  * construct a multi-affine expression [A -> C] -> [B -> D].
  */

@@ -310,6 +310,8 @@ int isl_multi_aff_plain_is_equal(__isl_keep isl_multi_aff *maff1,
 
 __isl_give isl_multi_aff *isl_multi_aff_add(__isl_take isl_multi_aff *maff1,
 	__isl_take isl_multi_aff *maff2);
+__isl_give isl_multi_aff *isl_multi_aff_sub(__isl_take isl_multi_aff *ma1,
+	__isl_take isl_multi_aff *ma2);
 
 __isl_give isl_multi_aff *isl_multi_aff_scale(__isl_take isl_multi_aff *maff,
 	isl_int f);
