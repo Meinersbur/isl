@@ -4680,3 +4680,29 @@ error:
 	isl_multi_aff_free(ma);
 	return NULL;
 }
+
+/* Scale the first elements of "pma" by the corresponding elements of "vec".
+ */
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_scale_vec(
+	__isl_take isl_pw_multi_aff *pma, __isl_take isl_vec *v)
+{
+	int i;
+
+	pma = isl_pw_multi_aff_cow(pma);
+	if (!pma || !v)
+		goto error;
+
+	for (i = 0; i < pma->n; ++i) {
+		pma->p[i].maff = isl_multi_aff_scale_vec(pma->p[i].maff,
+							isl_vec_copy(v));
+		if (!pma->p[i].maff)
+			goto error;
+	}
+
+	isl_vec_free(v);
+	return pma;
+error:
+	isl_vec_free(v);
+	isl_pw_multi_aff_free(pma);
+	return NULL;
+}

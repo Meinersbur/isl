@@ -423,6 +423,9 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_add(
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_sub(
 	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2);
 
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_scale_vec(
+	__isl_take isl_pw_multi_aff *pma, __isl_take isl_vec *v);
+
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_union_lexmin(
 	__isl_take isl_pw_multi_aff *pma1,
 	__isl_take isl_pw_multi_aff *pma2);
