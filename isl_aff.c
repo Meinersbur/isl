@@ -3046,6 +3046,22 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_add(
 						&pw_multi_aff_add);
 }
 
+static __isl_give isl_pw_multi_aff *pw_multi_aff_sub(
+	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2)
+{
+	return isl_pw_multi_aff_on_shared_domain(pma1, pma2,
+						&isl_multi_aff_sub);
+}
+
+/* Subtract "pma2" from "pma1" and return the result.
+ */
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_sub(
+	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2)
+{
+	return isl_pw_multi_aff_align_params_pw_pw_and(pma1, pma2,
+						&pw_multi_aff_sub);
+}
+
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_union_add(
 	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2)
 {
