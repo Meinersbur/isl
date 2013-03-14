@@ -1241,6 +1241,10 @@ struct isl_basic_map *isl_basic_map_simplify(struct isl_basic_map *bmap)
 		return NULL;
 	while (progress) {
 		progress = 0;
+		if (!bmap)
+			break;
+		if (isl_basic_map_plain_is_empty(bmap))
+			break;
 		bmap = isl_basic_map_normalize_constraints(bmap);
 		bmap = normalize_div_expressions(bmap);
 		bmap = remove_duplicate_divs(bmap, &progress);
