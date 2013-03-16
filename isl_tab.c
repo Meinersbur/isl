@@ -1,10 +1,12 @@
 /*
  * Copyright 2008-2009 Katholieke Universiteit Leuven
+ * Copyright 2013      Ecole Normale Superieure
  *
  * Use of this software is governed by the MIT license
  *
  * Written by Sven Verdoolaege, K.U.Leuven, Departement
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
+ * and Ecole Normale Superieure, 45 rue d'Ulm, 75230 Paris, France
  */
 
 #include <isl_ctx_private.h>
@@ -2697,6 +2699,106 @@ int isl_tab_detect_implicit_equalities(struct isl_tab *tab)
 	}
 
 	return 0;
+}
+
+/* Update the element of row_var or col_var that corresponds to
+ * constraint tab->con[i] to a move from position "old" to position "i".
+ */
+static int update_con_after_move(struct isl_tab *tab, int i, int old)
+{
+	int *p;
+	int index;
+
+	index = tab->con[i].index;
+	if (index == -1)
+		return 0;
+	p = tab->con[i].is_row ? tab->row_var : tab->col_var;
+	if (p[index] != ~old)
+		isl_die(tab->mat->ctx, isl_error_internal,
+			"broken internal state", return -1);
+	p[index] = ~i;
+
+	return 0;
+}
+
+/* Rotate the "n" constraints starting at "first" to the right,
+ * putting the last constraint in the position of the first constraint.
+ */
+static int rotate_constraints(struct isl_tab *tab, int first, int n)
+{
+	int i, last;
+	struct isl_tab_var var;
+
+	if (n <= 1)
+		return 0;
+
+	last = first + n - 1;
+	var = tab->con[last];
+	for (i = last; i > first; --i) {
+		tab->con[i] = tab->con[i - 1];
+		if (update_con_after_move(tab, i, i - 1) < 0)
+			return -1;
+	}
+	tab->con[first] = var;
+	if (update_con_after_move(tab, first, last) < 0)
+		return -1;
+
+	return 0;
+}
+
+/* Make the equalities that are implicit in "bmap" but that have been
+ * detected in the corresponding "tab" explicit in "bmap" and update
+ * "tab" to reflect the new order of the constraints.
+ *
+ * In particular, if inequality i is an implicit equality then
+ * isl_basic_map_inequality_to_equality will move the inequality
+ * in front of the other equality and it will move the last inequality
+ * in the position of inequality i.
+ * In the tableau, the inequalities of "bmap" are stored after the equalities
+ * and so the original order
+ *
+ *		E E E E E A A A I B B B B L
+ *
+ * is changed into
+ *
+ *		I E E E E E A A A L B B B B
+ *
+ * where I is the implicit equality, the E are equalities,
+ * the A inequalities before I, the B inequalities after I and
+ * L the last inequality.
+ * We therefore need to rotate to the right two sets of constraints,
+ * those up to and including I and those after I.
+ *
+ * If "tab" contains any constraints that are not in "bmap" then they
+ * appear after those in "bmap" and they should be left untouched.
+ *
+ * Note that this function leaves "bmap" in a temporary state
+ * as it does not call isl_basic_map_gauss.  Calling this function
+ * is the responsibility of the caller.
+ */
+__isl_give isl_basic_map *isl_tab_make_equalities_explicit(struct isl_tab *tab,
+	__isl_take isl_basic_map *bmap)
+{
+	int i;
+
+	if (!tab || !bmap)
+		return isl_basic_map_free(bmap);
+	if (tab->empty)
+		return bmap;
+
+	for (i = bmap->n_ineq - 1; i >= 0; --i) {
+		if (!isl_tab_is_equality(tab, bmap->n_eq + i))
+			continue;
+		isl_basic_map_inequality_to_equality(bmap, i);
+		if (rotate_constraints(tab, 0, tab->n_eq + i + 1) < 0)
+			return isl_basic_map_free(bmap);
+		if (rotate_constraints(tab, tab->n_eq + i + 1,
+					bmap->n_ineq - i) < 0)
+			return isl_basic_map_free(bmap);
+		tab->n_eq++;
+	}
+
+	return bmap;
 }
 
 static int con_is_redundant(struct isl_tab *tab, struct isl_tab_var *var)
