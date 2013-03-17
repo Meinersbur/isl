@@ -1673,13 +1673,25 @@ struct isl_basic_set *isl_basic_set_set_to_empty(struct isl_basic_set *bset)
 		isl_basic_map_set_to_empty((struct isl_basic_map *)bset);
 }
 
+/* Swap divs "a" and "b" in "bmap" (without modifying any of the constraints
+ * of "bmap").
+ */
+static void swap_div(__isl_keep isl_basic_map *bmap, int a, int b)
+{
+	isl_int *t = bmap->div[a];
+	bmap->div[a] = bmap->div[b];
+	bmap->div[b] = t;
+}
+
+/* Swap divs "a" and "b" in "bmap" and adjust the constraints and
+ * div definitions accordingly.
+ */
 void isl_basic_map_swap_div(struct isl_basic_map *bmap, int a, int b)
 {
 	int i;
 	unsigned off = isl_space_dim(bmap->dim, isl_dim_all);
-	isl_int *t = bmap->div[a];
-	bmap->div[a] = bmap->div[b];
-	bmap->div[b] = t;
+
+	swap_div(bmap, a, b);
 
 	for (i = 0; i < bmap->n_eq; ++i)
 		isl_int_swap(bmap->eq[i][1+off+a], bmap->eq[i][1+off+b]);
