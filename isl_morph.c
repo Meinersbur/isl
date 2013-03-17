@@ -473,6 +473,10 @@ error:
  * We basically just call isl_mat_parameter_compression with the right input
  * and then extend the resulting matrix to include the variables.
  *
+ * The implementation assumes that "bset" does not have any equalities
+ * that only involve the parameters and that isl_basic_set_gauss has
+ * been applied to "bset".
+ *
  * Let the equalities be given as
  *
  *	B(p) + A x = 0
@@ -509,7 +513,14 @@ __isl_give isl_morph *isl_basic_set_parameter_compression(
 	nparam = isl_basic_set_dim(bset, isl_dim_param);
 	nvar = isl_basic_set_dim(bset, isl_dim_set);
 
-	isl_assert(bset->ctx, n_eq <= nvar, return NULL);
+	if (isl_seq_first_non_zero(bset->eq[bset->n_eq - 1] + 1 + nparam,
+				    nvar) == -1)
+		isl_die(isl_basic_set_get_ctx(bset), isl_error_invalid,
+			"input not allowed to have parameter equalities",
+			return NULL);
+	if (n_eq > nvar)
+		isl_die(isl_basic_set_get_ctx(bset), isl_error_invalid,
+			"input not gaussed", return NULL);
 
 	d = isl_vec_alloc(bset->ctx, n_eq);
 	B = isl_mat_sub_alloc6(bset->ctx, bset->eq, 0, n_eq, 0, 1 + nparam);

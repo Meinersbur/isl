@@ -1145,6 +1145,13 @@ int isl_basic_set_drop_equality(struct isl_basic_set *bset, unsigned pos)
 	return isl_basic_map_drop_equality((struct isl_basic_map *)bset, pos);
 }
 
+/* Turn inequality "pos" of "bmap" into an equality.
+ *
+ * In particular, we move the inequality in front of the equalities
+ * and move the last inequality in the position of the moved inequality.
+ * Note that isl_tab_make_equalities_explicit depends on this particular
+ * change in the ordering of the constraints.
+ */
 void isl_basic_map_inequality_to_equality(
 		struct isl_basic_map *bmap, unsigned pos)
 {
@@ -6366,7 +6373,11 @@ static struct isl_set *parameter_compute_divs(struct isl_basic_set *bset)
 	if (bset->n_eq == 0)
 		return isl_basic_set_lexmin(bset);
 
-	isl_basic_set_gauss(bset, NULL);
+	bset = isl_basic_set_gauss(bset, NULL);
+	if (!bset)
+		return NULL;
+	if (isl_basic_set_plain_is_empty(bset))
+		return isl_set_from_basic_set(bset);
 
 	nparam = isl_basic_set_dim(bset, isl_dim_param);
 	n_div = isl_basic_set_dim(bset, isl_dim_div);

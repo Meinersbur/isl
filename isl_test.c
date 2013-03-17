@@ -1188,6 +1188,19 @@ int test_coalesce(struct isl_ctx *ctx)
 	if (test_coalesce_set(ctx, "{ [i,j] : exists a,b : i = 2a and j = 3b; "
 				     "[i,j] : exists a : j = 3a }", 1) < 0)
 		return -1;
+	if (test_coalesce_set(ctx,
+		"{ [a, b, c] : (c <= 7 - b and b <= 1 and b >= 0 and "
+			"c >= 3 + b and b <= 3 + 8a and b >= -26 + 8a and "
+			"a >= 3) or "
+		    "(b <= 1 and c <= 7 and b >= 0 and c >= 4 + b and "
+			"b <= 3 + 8a and b >= -26 + 8a and a >= 3) }", 1) < 0)
+		return -1;
+	if (test_coalesce_set(ctx,
+		"{ [a, 0, c] : c >= 1 and c <= 29 and c >= -1 + 8a and "
+				"c <= 6 + 8a and a >= 3; "
+		    "[a, -1, c] : c >= 1 and c <= 30 and c >= 8a and "
+				"c <= 7 + 8a and a >= 3 and a <= 4 }", 1) < 0)
+		return -1;
 	return 0;
 }
 
@@ -3807,10 +3820,43 @@ static int test_pw_multi_aff(isl_ctx *ctx)
 	return 0;
 }
 
+/* This is a regression test for a bug where isl_basic_map_simplify
+ * would end up in an infinite loop.  In particular, we construct
+ * an empty basic set that is not obviously empty.
+ * isl_basic_set_is_empty marks the basic set as empty.
+ * After projecting out i3, the variable can be dropped completely,
+ * but isl_basic_map_simplify refrains from doing so if the basic set
+ * is empty and would end up in an infinite loop if it didn't test
+ * explicitly for empty basic maps in the outer loop.
+ */
+static int test_simplify(isl_ctx *ctx)
+{
+	const char *str;
+	isl_basic_set *bset;
+	int empty;
+
+	str = "{ [i0, i1, i2, i3] : i0 >= -2 and 6i2 <= 4 + i0 + 5i1 and "
+		"i2 <= 22 and 75i2 <= 111 + 13i0 + 60i1 and "
+		"25i2 >= 38 + 6i0 + 20i1 and i0 <= -1 and i2 >= 20 and "
+		"i3 >= i2 }";
+	bset = isl_basic_set_read_from_str(ctx, str);
+	empty = isl_basic_set_is_empty(bset);
+	bset = isl_basic_set_project_out(bset, isl_dim_set, 3, 1);
+	isl_basic_set_free(bset);
+	if (!bset)
+		return -1;
+	if (!empty)
+		isl_die(ctx, isl_error_unknown,
+			"basic set should be empty", return -1);
+
+	return 0;
+}
+
 struct {
 	const char *name;
 	int (*fn)(isl_ctx *ctx);
 } tests [] = {
+	{ "simplify", &test_simplify },
 	{ "curry", &test_curry },
 	{ "piecewise multi affine expressions", &test_pw_multi_aff },
 	{ "conversion", &test_conversion },

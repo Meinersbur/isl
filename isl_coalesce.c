@@ -1533,6 +1533,16 @@ error:
 /* For each pair of basic maps in the map, check if the union of the two
  * can be represented by a single basic map.
  * If so, replace the pair by the single basic map and start over.
+ *
+ * Since we are constructing the tableaus of the basic maps anyway,
+ * we exploit them to detect implicit equalities and redundant constraints.
+ * This also helps the coalescing as it can ignore the redundant constraints.
+ * In order to avoid confusion, we make all implicit equalities explicit
+ * in the basic maps.  We don't call isl_basic_map_gauss, though,
+ * as that may affect the number of constraints.
+ * This means that we have to call isl_basic_map_gauss at the end
+ * of the computation to ensure that the basic maps are not left
+ * in an unexpected state.
  */
 struct isl_map *isl_map_coalesce(struct isl_map *map)
 {
@@ -1562,6 +1572,10 @@ struct isl_map *isl_map_coalesce(struct isl_map *map)
 		if (!ISL_F_ISSET(map->p[i], ISL_BASIC_MAP_NO_IMPLICIT))
 			if (isl_tab_detect_implicit_equalities(tabs[i]) < 0)
 				goto error;
+		map->p[i] = isl_tab_make_equalities_explicit(tabs[i],
+								map->p[i]);
+		if (!map->p[i])
+			goto error;
 		if (!ISL_F_ISSET(map->p[i], ISL_BASIC_MAP_NO_REDUNDANT))
 			if (isl_tab_detect_redundant(tabs[i]) < 0)
 				goto error;
@@ -1576,6 +1590,7 @@ struct isl_map *isl_map_coalesce(struct isl_map *map)
 		for (i = 0; i < map->n; ++i) {
 			map->p[i] = isl_basic_map_update_from_tab(map->p[i],
 								    tabs[i]);
+			map->p[i] = isl_basic_map_gauss(map->p[i], NULL);
 			map->p[i] = isl_basic_map_finalize(map->p[i]);
 			if (!map->p[i])
 				goto error;
