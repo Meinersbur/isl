@@ -3366,6 +3366,50 @@ static __isl_give isl_basic_map *move_last(__isl_take isl_basic_map *bmap,
 	return res;
 }
 
+/* Insert "n" rows in the divs of "bmap".
+ *
+ * The number of columns is not changed, which means that the last
+ * dimensions of "bmap" are being reintepreted as the new divs.
+ * The space of "bmap" is not adjusted, however, which means
+ * that "bmap" is left in an inconsistent state.  Removing "n" dimensions
+ * from the space of "bmap" is the responsibility of the caller.
+ */
+static __isl_give isl_basic_map *insert_div_rows(__isl_take isl_basic_map *bmap,
+	int n)
+{
+	int i;
+	size_t row_size;
+	isl_int **new_div;
+	isl_int *old;
+
+	bmap = isl_basic_map_cow(bmap);
+	if (!bmap)
+		return NULL;
+
+	row_size = 1 + isl_space_dim(bmap->dim, isl_dim_all) + bmap->extra;
+	old = bmap->block2.data;
+	bmap->block2 = isl_blk_extend(bmap->ctx, bmap->block2,
+					(bmap->extra + n) * (1 + row_size));
+	if (!bmap->block2.data)
+		return isl_basic_map_free(bmap);
+	new_div = isl_alloc_array(bmap->ctx, isl_int *, bmap->extra + n);
+	if (!new_div)
+		return isl_basic_map_free(bmap);
+	for (i = 0; i < n; ++i) {
+		new_div[i] = bmap->block2.data +
+				(bmap->extra + i) * (1 + row_size);
+		isl_seq_clr(new_div[i], 1 + row_size);
+	}
+	for (i = 0; i < bmap->extra; ++i)
+		new_div[n + i] = bmap->block2.data + (bmap->div[i] - old);
+	free(bmap->div);
+	bmap->div = new_div;
+	bmap->n_div += n;
+	bmap->extra += n;
+
+	return bmap;
+}
+
 /* Turn the n dimensions of type type, starting at first
  * into existentially quantified variables.
  */
@@ -3373,11 +3417,6 @@ __isl_give isl_basic_map *isl_basic_map_project_out(
 		__isl_take isl_basic_map *bmap,
 		enum isl_dim_type type, unsigned first, unsigned n)
 {
-	int i;
-	size_t row_size;
-	isl_int **new_div;
-	isl_int *old;
-
 	if (n == 0)
 		return basic_map_space_reset(bmap, type);
 
@@ -3392,29 +3431,9 @@ __isl_give isl_basic_map *isl_basic_map_project_out(
 
 	bmap = move_last(bmap, type, first, n);
 	bmap = isl_basic_map_cow(bmap);
+	bmap = insert_div_rows(bmap, n);
 	if (!bmap)
 		return NULL;
-
-	row_size = 1 + isl_space_dim(bmap->dim, isl_dim_all) + bmap->extra;
-	old = bmap->block2.data;
-	bmap->block2 = isl_blk_extend(bmap->ctx, bmap->block2,
-					(bmap->extra + n) * (1 + row_size));
-	if (!bmap->block2.data)
-		goto error;
-	new_div = isl_alloc_array(bmap->ctx, isl_int *, bmap->extra + n);
-	if (!new_div)
-		goto error;
-	for (i = 0; i < n; ++i) {
-		new_div[i] = bmap->block2.data +
-				(bmap->extra + i) * (1 + row_size);
-		isl_seq_clr(new_div[i], 1 + row_size);
-	}
-	for (i = 0; i < bmap->extra; ++i)
-		new_div[n + i] = bmap->block2.data + (bmap->div[i] - old);
-	free(bmap->div);
-	bmap->div = new_div;
-	bmap->n_div += n;
-	bmap->extra += n;
 
 	bmap->dim = isl_space_drop_dims(bmap->dim, type, first, n);
 	if (!bmap->dim)
