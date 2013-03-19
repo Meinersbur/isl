@@ -3440,6 +3440,9 @@ __isl_give isl_qpolynomial *isl_qpolynomial_move_dims(
 		isl_die(ctx, isl_error_invalid,
 			"cannot move output/set dimension",
 			return isl_qpolynomial_free(qp));
+	if (src_type == isl_dim_div || dst_type == isl_dim_div)
+		isl_die(ctx, isl_error_invalid, "cannot move local variables",
+			return isl_qpolynomial_free(qp));
 	if (isl_qpolynomial_check_range(qp, src_type, src_pos, n) < 0)
 		return isl_qpolynomial_free(qp);
 	if (dst_type == isl_dim_in)
