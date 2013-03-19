@@ -5180,13 +5180,11 @@ __isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_to_polynomial(
 __isl_give isl_basic_map *isl_basic_map_from_qpolynomial(
 	__isl_take isl_qpolynomial *qp)
 {
-	int i, k;
-	isl_space *space;
-	isl_vec *vec = NULL;
-	isl_basic_map *bmap = NULL;
+	isl_local_space *ls;
+	isl_vec *vec;
+	isl_aff *aff;
+	isl_basic_map *bmap;
 	isl_bool is_affine;
-	unsigned pos;
-	unsigned n_div;
 
 	if (!qp)
 		return NULL;
@@ -5196,36 +5194,13 @@ __isl_give isl_basic_map *isl_basic_map_from_qpolynomial(
 	if (!is_affine)
 		isl_die(qp->dim->ctx, isl_error_invalid,
 			"input quasi-polynomial not affine", goto error);
+	ls = isl_qpolynomial_get_domain_local_space(qp);
 	vec = isl_qpolynomial_extract_affine(qp);
-	if (!vec)
-		goto error;
-	space = isl_qpolynomial_get_space(qp);
-	pos = 1 + isl_space_offset(space, isl_dim_out);
-	n_div = qp->div->n_row;
-	bmap = isl_basic_map_alloc_space(space, n_div, 1, 2 * n_div);
-
-	for (i = 0; i < n_div; ++i) {
-		k = isl_basic_map_alloc_div(bmap);
-		if (k < 0)
-			goto error;
-		isl_seq_cpy(bmap->div[k], qp->div->row[i], qp->div->n_col);
-		isl_int_set_si(bmap->div[k][qp->div->n_col], 0);
-		bmap = isl_basic_map_add_div_constraints(bmap, k);
-	}
-	k = isl_basic_map_alloc_equality(bmap);
-	if (k < 0)
-		goto error;
-	isl_int_neg(bmap->eq[k][pos], vec->el[0]);
-	isl_seq_cpy(bmap->eq[k], vec->el + 1, pos);
-	isl_seq_cpy(bmap->eq[k] + pos + 1, vec->el + 1 + pos, n_div);
-
-	isl_vec_free(vec);
+	aff = isl_aff_alloc_vec(ls, vec);
+	bmap = isl_basic_map_from_aff(aff);
 	isl_qpolynomial_free(qp);
-	bmap = isl_basic_map_finalize(bmap);
 	return bmap;
 error:
-	isl_vec_free(vec);
 	isl_qpolynomial_free(qp);
-	isl_basic_map_free(bmap);
 	return NULL;
 }
