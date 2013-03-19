@@ -4391,7 +4391,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_morph_domain(
 	if (!qp || !morph)
 		goto error;
 
-	ctx = qp->dim->ctx;
+	ctx = isl_qpolynomial_get_ctx(qp);
 	isl_assert(ctx, isl_space_is_equal(qp->dim, morph->dom->dim), goto error);
 
 	n_sub = morph->inv->n_row - 1;
