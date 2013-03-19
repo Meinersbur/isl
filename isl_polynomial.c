@@ -3425,6 +3425,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_move_dims(
 	enum isl_dim_type dst_type, unsigned dst_pos,
 	enum isl_dim_type src_type, unsigned src_pos, unsigned n)
 {
+	isl_ctx *ctx;
 	unsigned g_dst_pos;
 	unsigned g_src_pos;
 	int *reordering;
@@ -3432,8 +3433,9 @@ __isl_give isl_qpolynomial *isl_qpolynomial_move_dims(
 	if (!qp)
 		return NULL;
 
+	ctx = isl_qpolynomial_get_ctx(qp);
 	if (dst_type == isl_dim_out || src_type == isl_dim_out)
-		isl_die(qp->dim->ctx, isl_error_invalid,
+		isl_die(ctx, isl_error_invalid,
 			"cannot move output/set dimension",
 			goto error);
 	if (isl_qpolynomial_check_range(qp, src_type, src_pos, n) < 0)
@@ -3464,7 +3466,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_move_dims(
 	if (!qp)
 		goto error;
 
-	reordering = reordering_move(qp->dim->ctx,
+	reordering = reordering_move(ctx,
 				qp->div->n_col - 2, g_dst_pos, g_src_pos, n);
 	if (!reordering)
 		goto error;
