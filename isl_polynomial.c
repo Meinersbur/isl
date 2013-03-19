@@ -2365,6 +2365,7 @@ static void invert_div(__isl_keep isl_qpolynomial *qp, int div,
 static __isl_give isl_qpolynomial *reduce_divs(__isl_take isl_qpolynomial *qp)
 {
 	int i;
+	isl_ctx *ctx;
 	isl_vec *aff = NULL;
 	struct isl_upoly *s;
 	unsigned n_div, total;
@@ -2373,7 +2374,8 @@ static __isl_give isl_qpolynomial *reduce_divs(__isl_take isl_qpolynomial *qp)
 		return NULL;
 
 	total = isl_qpolynomial_domain_dim(qp, isl_dim_all);
-	aff = isl_vec_alloc(qp->div->ctx, 1 + total);
+	ctx = isl_qpolynomial_get_ctx(qp);
+	aff = isl_vec_alloc(ctx, 1 + total);
 	aff = isl_vec_clr(aff);
 	if (!aff)
 		goto error;
@@ -2389,8 +2391,7 @@ static __isl_give isl_qpolynomial *reduce_divs(__isl_take isl_qpolynomial *qp)
 		}
 	}
 
-	s = isl_upoly_from_affine(qp->div->ctx, aff->el,
-				  qp->div->ctx->one, 1 + total);
+	s = isl_upoly_from_affine(ctx, aff->el, ctx->one, 1 + total);
 	qp->upoly = isl_upoly_subs(qp->upoly, qp->upoly->var, 1, &s);
 	isl_upoly_free(s);
 	if (!qp->upoly)
