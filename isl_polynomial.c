@@ -441,6 +441,20 @@ __isl_give isl_space *isl_qpolynomial_get_domain_space(
 	return qp ? isl_space_copy(qp->dim) : NULL;
 }
 
+/* Return a copy of the local space on which "qp" is defined.
+ */
+static __isl_give isl_local_space *isl_qpolynomial_get_domain_local_space(
+	__isl_keep isl_qpolynomial *qp)
+{
+	isl_space *space;
+
+	if (!qp)
+		return NULL;
+
+	space = isl_qpolynomial_get_domain_space(qp);
+	return isl_local_space_alloc_div(space, isl_mat_copy(qp->div));
+}
+
 __isl_give isl_space *isl_qpolynomial_get_space(__isl_keep isl_qpolynomial *qp)
 {
 	isl_space *space;
@@ -2893,26 +2907,14 @@ error:
 __isl_give isl_qpolynomial *isl_qpolynomial_gist(
 	__isl_take isl_qpolynomial *qp, __isl_take isl_set *context)
 {
+	isl_local_space *ls;
 	isl_basic_set *aff;
 
-	if (!qp)
-		goto error;
-	if (qp->div->n_row > 0) {
-		isl_basic_set *bset;
-		context = isl_set_add_dims(context, isl_dim_set,
-					    qp->div->n_row);
-		bset = isl_basic_set_universe(isl_set_get_space(context));
-		bset = add_div_constraints(bset, isl_mat_copy(qp->div));
-		context = isl_set_intersect(context,
-					    isl_set_from_basic_set(bset));
-	}
+	ls = isl_qpolynomial_get_domain_local_space(qp);
+	context = isl_local_space_lift_set(ls, context);
 
 	aff = isl_set_affine_hull(context);
 	return isl_qpolynomial_substitute_equalities_lifted(qp, aff);
-error:
-	isl_qpolynomial_free(qp);
-	isl_set_free(context);
-	return NULL;
 }
 
 __isl_give isl_qpolynomial *isl_qpolynomial_gist_params(
