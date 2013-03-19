@@ -6414,6 +6414,11 @@ static int first_parameter_equality(__isl_keep isl_basic_set *bset)
  * among the parameters by performing a variable compression on
  * the parameters.  Afterward, an inverse transformation is performed
  * and the equalities among the parameters are inserted back in.
+ *
+ * The variable compression on the parameters may uncover additional
+ * equalities that were only implicit before.  We therefore check
+ * if there are any new parameter equalities in the result and
+ * if so recurse.
  */
 static struct isl_set *parameter_compute_divs(struct isl_basic_set *bset)
 {
@@ -6454,7 +6459,13 @@ static struct isl_set *parameter_compute_divs(struct isl_basic_set *bset)
 	}
 	bset = basic_set_parameter_preimage(bset, T);
 
-	set = isl_basic_set_lexmin(bset);
+	i = first_parameter_equality(bset);
+	if (!bset)
+		set = NULL;
+	else if (i == bset->n_eq)
+		set = isl_basic_set_lexmin(bset);
+	else
+		set = parameter_compute_divs(bset);
 	set = set_parameter_preimage(set, T2);
 	set = set_append_equalities(set, eq);
 	return set;
