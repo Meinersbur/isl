@@ -3439,7 +3439,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_move_dims(
 	if (dst_type == isl_dim_out || src_type == isl_dim_out)
 		isl_die(ctx, isl_error_invalid,
 			"cannot move output/set dimension",
-			goto error);
+			return isl_qpolynomial_free(qp));
 	if (isl_qpolynomial_check_range(qp, src_type, src_pos, n) < 0)
 		return isl_qpolynomial_free(qp);
 	if (dst_type == isl_dim_in)
@@ -3465,7 +3465,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_move_dims(
 
 	qp->div = isl_local_move_vars(qp->div, g_dst_pos, g_src_pos, n);
 	if (!qp->div)
-		goto error;
+		return isl_qpolynomial_free(qp);
 	qp = sort_divs(qp);
 
 	total = isl_qpolynomial_domain_dim(qp, isl_dim_all);
@@ -3473,21 +3473,18 @@ __isl_give isl_qpolynomial *isl_qpolynomial_move_dims(
 		return isl_qpolynomial_free(qp);
 	reordering = reordering_move(ctx, total, g_dst_pos, g_src_pos, n);
 	if (!reordering)
-		goto error;
+		return isl_qpolynomial_free(qp);
 
 	qp->poly = reorder(qp->poly, reordering);
 	free(reordering);
 	if (!qp->poly)
-		goto error;
+		return isl_qpolynomial_free(qp);
 
 	qp->dim = isl_space_move_dims(qp->dim, dst_type, dst_pos, src_type, src_pos, n);
 	if (!qp->dim)
-		goto error;
+		return isl_qpolynomial_free(qp);
 
 	return qp;
-error:
-	isl_qpolynomial_free(qp);
-	return NULL;
 }
 
 __isl_give isl_qpolynomial *isl_qpolynomial_from_affine(
