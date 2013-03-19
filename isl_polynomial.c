@@ -5182,7 +5182,7 @@ __isl_give isl_basic_map *isl_basic_map_from_qpolynomial(
 {
 	int i, k;
 	isl_space *space;
-	isl_vec *aff = NULL;
+	isl_vec *vec = NULL;
 	isl_basic_map *bmap = NULL;
 	isl_bool is_affine;
 	unsigned pos;
@@ -5196,8 +5196,8 @@ __isl_give isl_basic_map *isl_basic_map_from_qpolynomial(
 	if (!is_affine)
 		isl_die(qp->dim->ctx, isl_error_invalid,
 			"input quasi-polynomial not affine", goto error);
-	aff = isl_qpolynomial_extract_affine(qp);
-	if (!aff)
+	vec = isl_qpolynomial_extract_affine(qp);
+	if (!vec)
 		goto error;
 	space = isl_qpolynomial_get_space(qp);
 	pos = 1 + isl_space_offset(space, isl_dim_out);
@@ -5215,16 +5215,16 @@ __isl_give isl_basic_map *isl_basic_map_from_qpolynomial(
 	k = isl_basic_map_alloc_equality(bmap);
 	if (k < 0)
 		goto error;
-	isl_int_neg(bmap->eq[k][pos], aff->el[0]);
-	isl_seq_cpy(bmap->eq[k], aff->el + 1, pos);
-	isl_seq_cpy(bmap->eq[k] + pos + 1, aff->el + 1 + pos, n_div);
+	isl_int_neg(bmap->eq[k][pos], vec->el[0]);
+	isl_seq_cpy(bmap->eq[k], vec->el + 1, pos);
+	isl_seq_cpy(bmap->eq[k] + pos + 1, vec->el + 1 + pos, n_div);
 
-	isl_vec_free(aff);
+	isl_vec_free(vec);
 	isl_qpolynomial_free(qp);
 	bmap = isl_basic_map_finalize(bmap);
 	return bmap;
 error:
-	isl_vec_free(aff);
+	isl_vec_free(vec);
 	isl_qpolynomial_free(qp);
 	isl_basic_map_free(bmap);
 	return NULL;
