@@ -3457,7 +3457,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_move_dims(
 	if (dst_type > src_type)
 		g_dst_pos -= n;
 
-	qp->div = isl_mat_move_cols(qp->div, 2 + g_dst_pos, 2 + g_src_pos, n);
+	qp->div = isl_local_move_vars(qp->div, g_dst_pos, g_src_pos, n);
 	if (!qp->div)
 		goto error;
 	qp = sort_divs(qp);
