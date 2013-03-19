@@ -2004,11 +2004,12 @@ void test_bijective(struct isl_ctx *ctx)
 	test_bijective_case(ctx, "[N,M]->{[i,j] -> [x,y] : 2x=i & y =j}", 1);
 }
 
-void test_pwqp(struct isl_ctx *ctx)
+static int test_pwqp(struct isl_ctx *ctx)
 {
 	const char *str;
 	isl_set *set;
 	isl_pw_qpolynomial *pwqp1, *pwqp2;
+	int equal;
 
 	str = "{ [i,j,k] -> 1 + 9 * [i/5] + 7 * [j/11] + 4 * [k/13] }";
 	pwqp1 = isl_pw_qpolynomial_read_from_str(ctx, str);
@@ -2096,6 +2097,22 @@ void test_pwqp(struct isl_ctx *ctx)
 	pwqp1 = isl_pw_qpolynomial_sub(pwqp1, pwqp2);
 	assert(isl_pw_qpolynomial_is_zero(pwqp1));
 	isl_pw_qpolynomial_free(pwqp1);
+
+	str = "{ [a,b,a] -> (([(2*[a/3]+b)/5]) * ([(2*[a/3]+b)/5])) }";
+	pwqp2 = isl_pw_qpolynomial_read_from_str(ctx, str);
+	str = "{ [a,b,c] -> (([(2*[a/3]+b)/5]) * ([(2*[c/3]+b)/5])) }";
+	pwqp1 = isl_pw_qpolynomial_read_from_str(ctx, str);
+	set = isl_set_read_from_str(ctx, "{ [a,b,a] }");
+	pwqp1 = isl_pw_qpolynomial_intersect_domain(pwqp1, set);
+	equal = isl_pw_qpolynomial_plain_is_equal(pwqp1, pwqp2);
+	isl_pw_qpolynomial_free(pwqp1);
+	isl_pw_qpolynomial_free(pwqp2);
+	if (equal < 0)
+		return -1;
+	if (!equal)
+		isl_die(ctx, isl_error_unknown, "unexpected result", return -1);
+
+	return 0;
 }
 
 void test_split_periods(isl_ctx *ctx)
@@ -4301,6 +4318,7 @@ struct {
 	{ "subset", &test_subset },
 	{ "subtract", &test_subtract },
 	{ "lexmin", &test_lexmin },
+	{ "piecewise quasi-polynomials", &test_pwqp },
 };
 
 int main()
@@ -4321,7 +4339,6 @@ int main()
 	test_bound(ctx);
 	test_union(ctx);
 	test_split_periods(ctx);
-	test_pwqp(ctx);
 	test_lex(ctx);
 	test_bijective(ctx);
 	test_dep(ctx);
