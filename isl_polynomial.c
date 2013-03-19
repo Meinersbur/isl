@@ -2873,32 +2873,6 @@ error:
 	return NULL;
 }
 
-static __isl_give isl_basic_set *add_div_constraints(
-	__isl_take isl_basic_set *bset, __isl_take isl_mat *div)
-{
-	int i;
-	unsigned total;
-
-	if (!bset || !div)
-		goto error;
-
-	bset = isl_basic_set_extend_constraints(bset, 0, 2 * div->n_row);
-	if (!bset)
-		goto error;
-	total = isl_basic_set_total_dim(bset);
-	for (i = 0; i < div->n_row; ++i)
-		if (isl_basic_set_add_div_constraints_var(bset,
-				    total - div->n_row + i, div->row[i]) < 0)
-			goto error;
-
-	isl_mat_free(div);
-	return bset;
-error:
-	isl_mat_free(div);
-	isl_basic_set_free(bset);
-	return NULL;
-}
-
 /* Look for equalities among the variables shared by context and qp
  * and the integer divisions of qp, if any.
  * The equalities are then used to eliminate variables and/or integer
@@ -3489,7 +3463,7 @@ isl_stat isl_qpolynomial_as_polynomial_on_domain(__isl_keep isl_qpolynomial *qp,
 		  __isl_take isl_qpolynomial *poly, void *user), void *user)
 {
 	isl_space *space;
-	isl_mat *div;
+	isl_local_space *ls;
 	isl_qpolynomial *poly;
 
 	if (!qp || !bset)
@@ -3498,13 +3472,12 @@ isl_stat isl_qpolynomial_as_polynomial_on_domain(__isl_keep isl_qpolynomial *qp,
 		return fn(isl_basic_set_copy(bset), isl_qpolynomial_copy(qp),
 			  user);
 
-	div = isl_mat_copy(qp->div);
 	space = isl_space_copy(qp->dim);
 	space = isl_space_add_dims(space, isl_dim_set, qp->div->n_row);
 	poly = isl_qpolynomial_alloc(space, 0, isl_upoly_copy(qp->upoly));
 	bset = isl_basic_set_copy(bset);
-	bset = isl_basic_set_add_dims(bset, isl_dim_set, qp->div->n_row);
-	bset = add_div_constraints(bset, div);
+	ls = isl_qpolynomial_get_domain_local_space(qp);
+	bset = isl_local_space_lift_basic_set(ls, bset);
 
 	return fn(bset, poly, user);
 }
