@@ -1245,6 +1245,9 @@ struct isl_mat *isl_mat_drop_cols(struct isl_mat *mat, unsigned col, unsigned n)
 {
 	int r;
 
+	if (n == 0)
+		return mat;
+
 	mat = isl_mat_cow(mat);
 	if (!mat)
 		return NULL;
