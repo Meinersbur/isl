@@ -2815,6 +2815,24 @@ int test_dim_max(isl_ctx *ctx)
 	if (!equal)
 		isl_die(ctx, isl_error_unknown, "unexpected result", return -1);
 
+	/* Check that solutions are properly merged. */
+	str = "[n] -> { [a, b, c] : c >= -4a - 2b and "
+				"c <= -1 + n - 4a - 2b and c >= -2b and "
+				"4a >= -4 + n and c >= 0 }";
+	set = isl_set_read_from_str(ctx, str);
+	pwaff = isl_set_dim_min(set, 2);
+	set1 = isl_set_from_pw_aff(pwaff);
+	str = "[n] -> { [(0)] : n >= 1 }";
+	set2 = isl_set_read_from_str(ctx, str);
+	equal = isl_set_is_equal(set1, set2);
+	isl_set_free(set1);
+	isl_set_free(set2);
+
+	if (equal < 0)
+		return -1;
+	if (!equal)
+		isl_die(ctx, isl_error_unknown, "unexpected result", return -1);
+
 	return 0;
 }
 

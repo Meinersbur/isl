@@ -119,6 +119,12 @@ struct isl_context_lex {
 	struct isl_tab *tab;
 };
 
+/* A stack (linked list) of solutions of subtrees of the search space.
+ *
+ * "M" describes the solution in terms of the dimensions of "dom".
+ * The number of columns of "M" is one more than the total number
+ * of dimensions of "dom".
+ */
 struct isl_partial_sol {
 	int level;
 	struct isl_basic_set *dom;
@@ -307,14 +313,21 @@ static void sol_pop(struct isl_sol *sol)
 			sol_pop_one(sol);
 		} else {
 			struct isl_basic_set *bset;
+			isl_mat *M;
+			unsigned n;
 
+			n = isl_basic_set_dim(partial->next->dom, isl_dim_div);
+			n -= n_div;
 			bset = sol_domain(sol);
-			if (!bset)
-				goto error;
-
 			isl_basic_set_free(partial->next->dom);
 			partial->next->dom = bset;
+			M = partial->next->M;
+			M = isl_mat_drop_cols(M, M->n_col - n, n);
+			partial->next->M = M;
 			partial->next->level = sol->level;
+
+			if (!bset || !M)
+				goto error;
 
 			sol->partial = partial->next;
 			isl_basic_set_free(partial->dom);
