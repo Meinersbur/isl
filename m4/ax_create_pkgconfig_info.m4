@@ -1,6 +1,6 @@
-# ===========================================================================
-#    http://www.nongnu.org/autoconf-archive/ax_create_pkgconfig_info.html
-# ===========================================================================
+# ============================================================================
+#  http://www.gnu.org/software/autoconf-archive/ax_create_pkgconfig_info.html
+# ============================================================================
 #
 # SYNOPSIS
 #
@@ -14,8 +14,8 @@
 #     $2 = (empty)
 #     $3 = $PACKAGE_LIBS $LIBS (as set at that point in configure.ac)
 #     $4 = $PACKAGE_SUMMARY (or $1 Library)
-#     $5 = $CPPFLAGS $PACKAGE_CFLAGS (as set at the point in configure.ac)
-#     $6 = $LDFLAGS $PACKAGE_LDFLAGS (as set at the point in configure.ac)
+#     $5 = $PACKAGE_CFLAGS (as set at the point in configure.ac)
+#     $6 = $PACKAGE_LDFLAGS (as set at the point in configure.ac)
 #
 #     PACKAGE_NAME defaults to $PACKAGE if not set.
 #     PACKAGE_LIBS defaults to -l$PACKAGE_NAME if not set.
@@ -34,7 +34,7 @@
 #
 #   This program is free software; you can redistribute it and/or modify it
 #   under the terms of the GNU General Public License as published by the
-#   Free Software Foundation; either version 2 of the License, or (at your
+#   Free Software Foundation; either version 3 of the License, or (at your
 #   option) any later version.
 #
 #   This program is distributed in the hope that it will be useful, but
@@ -57,6 +57,8 @@
 #   Macro released by the Autoconf Archive. When you make and distribute a
 #   modified version of the Autoconf Macro, you may extend this special
 #   exception to the GPL to apply to your modified version as well.
+
+#serial 12
 
 AC_DEFUN([AX_CREATE_PKGCONFIG_INFO],[dnl
 AS_VAR_PUSHDEF([PKGCONFIG_suffix],[ax_create_pkgconfig_suffix])dnl
@@ -145,13 +147,13 @@ PKGCONFIG_libs=`eval echo "$PKGCONFIG_libs"`
 AC_MSG_RESULT($PKGCONFIG_libs)
 
 AC_MSG_CHECKING(our pkgconfig cppflags)
-PKGCONFIG_cppflags="ifelse($5,,$CPPFLAGS $PACKAGE_CFLAGS,$5)"
+PKGCONFIG_cppflags="ifelse($5,,$PACKAGE_CFLAGS,$5)"
 PKGCONFIG_cppflags=`eval echo "$PKGCONFIG_cppflags"`
 PKGCONFIG_cppflags=`eval echo "$PKGCONFIG_cppflags"`
 AC_MSG_RESULT($PKGCONFIG_cppflags)
 
 AC_MSG_CHECKING(our pkgconfig ldflags)
-PKGCONFIG_ldflags="ifelse($6,,$LDFLAGS $PACKAGE_LDFLAGS,$5)"
+PKGCONFIG_ldflags="ifelse($6,,$PACKAGE_LDFLAGS,$5)"
 PKGCONFIG_ldflags=`eval echo "$PKGCONFIG_ldflags"`
 PKGCONFIG_ldflags=`eval echo "$PKGCONFIG_ldflags"`
 AC_MSG_RESULT($PKGCONFIG_ldflags)
