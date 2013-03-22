@@ -967,7 +967,8 @@ struct isl_mat *isl_mat_swap_rows(struct isl_mat *mat, unsigned i, unsigned j)
 	return mat;
 }
 
-struct isl_mat *isl_mat_product(struct isl_mat *left, struct isl_mat *right)
+__isl_give isl_mat *isl_mat_product(__isl_take isl_mat *left,
+	__isl_take isl_mat *right)
 {
 	int i, j, k;
 	struct isl_mat *prod;
