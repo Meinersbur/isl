@@ -17,8 +17,8 @@
 extern "C" {
 #endif
 
-struct isl_mat *isl_mat_variable_compression(
-			struct isl_mat *B, struct isl_mat **T2);
+__isl_give isl_mat *isl_mat_variable_compression(__isl_take isl_mat *B,
+	__isl_give isl_mat **T2);
 struct isl_mat *isl_mat_parameter_compression(
 			struct isl_mat *B, struct isl_vec *d);
 struct isl_basic_set *isl_basic_set_remove_equalities(
