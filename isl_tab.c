@@ -89,6 +89,11 @@ error:
 	return NULL;
 }
 
+isl_ctx *isl_tab_get_ctx(struct isl_tab *tab)
+{
+	return tab ? isl_mat_get_ctx(tab->mat) : NULL;
+}
+
 int isl_tab_extend_cons(struct isl_tab *tab, unsigned n_new)
 {
 	unsigned off;
