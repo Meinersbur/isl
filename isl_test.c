@@ -1040,6 +1040,17 @@ struct {
 				"c <= 6 + 8a and a >= 3; "
 		"[a, -1, c] : c >= 1 and c <= 30 and c >= 8a and "
 				"c <= 7 + 8a and a >= 3 and a <= 4 }" },
+	{ 1, "{ [x,y] : 0 <= x <= 2 and y >= 0 and x + 2y <= 4; "
+		"[x,0] : 3 <= x <= 4 }" },
+	{ 1, "{ [x,y] : 0 <= x <= 3 and y >= 0 and x + 3y <= 6; "
+		"[x,0] : 4 <= x <= 5 }" },
+	{ 0, "{ [x,y] : 0 <= x <= 2 and y >= 0 and x + 2y <= 4; "
+		"[x,0] : 3 <= x <= 5 }" },
+	{ 0, "{ [x,y] : 0 <= x <= 2 and y >= 0 and x + y <= 4; "
+		"[x,0] : 3 <= x <= 4 }" },
+	{ 1 , "{ [i0, i1] : i0 <= 122 and i0 >= 1 and 128i1 >= -249 + i0 and "
+			"i1 <= 0; "
+		"[i0, 0] : i0 >= 123 and i0 <= 124 }" },
 };
 
 /* Test the functionality of isl_set_coalesce.
