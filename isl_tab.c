@@ -2605,6 +2605,29 @@ error:
 	return NULL;
 }
 
+/* Remove the sign constraint from constraint "con".
+ *
+ * If the constraint variable was originally marked non-negative,
+ * then we make sure we mark it non-negative again during rollback.
+ */
+int isl_tab_unrestrict(struct isl_tab *tab, int con)
+{
+	struct isl_tab_var *var;
+
+	if (!tab)
+		return -1;
+
+	var = &tab->con[con];
+	if (!var->is_nonneg)
+		return 0;
+
+	var->is_nonneg = 0;
+	if (isl_tab_push_var(tab, isl_tab_undo_unrestrict, var) < 0)
+		return -1;
+
+	return 0;
+}
+
 int isl_tab_select_facet(struct isl_tab *tab, int con)
 {
 	if (!tab)
@@ -3056,6 +3079,21 @@ static int unrelax(struct isl_tab *tab, struct isl_tab_var *var)
 	return 0;
 }
 
+/* Undo the operation performed by isl_tab_unrestrict.
+ *
+ * In particular, mark the variable as being non-negative and make
+ * sure the sample value respects this constraint.
+ */
+static int ununrestrict(struct isl_tab *tab, struct isl_tab_var *var)
+{
+	var->is_nonneg = 1;
+
+	if (var->is_row && restore_row(tab, var) < -1)
+		return -1;
+
+	return 0;
+}
+
 static int perform_undo_var(struct isl_tab *tab, struct isl_tab_undo *undo) WARN_UNUSED;
 static int perform_undo_var(struct isl_tab *tab, struct isl_tab_undo *undo)
 {
@@ -3098,6 +3136,8 @@ static int perform_undo_var(struct isl_tab *tab, struct isl_tab_undo *undo)
 		break;
 	case isl_tab_undo_relax:
 		return unrelax(tab, var);
+	case isl_tab_undo_unrestrict:
+		return ununrestrict(tab, var);
 	default:
 		isl_die(tab->mat->ctx, isl_error_internal,
 			"perform_undo_var called on invalid undo record",
@@ -3198,6 +3238,7 @@ static int perform_undo(struct isl_tab *tab, struct isl_tab_undo *undo)
 	case isl_tab_undo_zero:
 	case isl_tab_undo_allocate:
 	case isl_tab_undo_relax:
+	case isl_tab_undo_unrestrict:
 		return perform_undo_var(tab, undo);
 	case isl_tab_undo_bmap_eq:
 		return isl_basic_map_free_equality(tab->bmap, 1);
