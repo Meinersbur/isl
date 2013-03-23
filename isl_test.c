@@ -930,120 +930,35 @@ error:
 	return r;
 }
 
-int test_coalesce(struct isl_ctx *ctx)
-{
+/* Inputs for coalescing tests.
+ * "str" is a string representation of the input set.
+ * "single_disjunct" is set if we expect the result to consist of
+ *	a single disjunct.
+ */
+struct {
+	int single_disjunct;
 	const char *str;
-	struct isl_set *set, *set2;
-	struct isl_map *map, *map2;
-
-	set = isl_set_read_from_str(ctx,
-		"{[x,y]: x >= 0 & x <= 10 & y >= 0 & y <= 10 or "
-		       "y >= x & x >= 2 & 5 >= y }");
-	set = isl_set_coalesce(set);
-	assert(set && set->n == 1);
-	isl_set_free(set);
-
-	set = isl_set_read_from_str(ctx,
-		"{[x,y]: y >= 0 & 2x + y <= 30 & y <= 10 & x >= 0 or "
-		       "x + y >= 10 & y <= x & x + y <= 20 & y >= 0}");
-	set = isl_set_coalesce(set);
-	assert(set && set->n == 1);
-	isl_set_free(set);
-
-	set = isl_set_read_from_str(ctx,
-		"{[x,y]: y >= 0 & 2x + y <= 30 & y <= 10 & x >= 0 or "
-		       "x + y >= 10 & y <= x & x + y <= 19 & y >= 0}");
-	set = isl_set_coalesce(set);
-	assert(set && set->n == 2);
-	isl_set_free(set);
-
-	set = isl_set_read_from_str(ctx,
-		"{[x,y]: y >= 0 & x <= 5 & y <= x or "
-		       "y >= 0 & x >= 6 & x <= 10 & y <= x}");
-	set = isl_set_coalesce(set);
-	assert(set && set->n == 1);
-	isl_set_free(set);
-
-	set = isl_set_read_from_str(ctx,
-		"{[x,y]: y >= 0 & x <= 5 & y <= x or "
-		       "y >= 0 & x >= 7 & x <= 10 & y <= x}");
-	set = isl_set_coalesce(set);
-	assert(set && set->n == 2);
-	isl_set_free(set);
-
-	set = isl_set_read_from_str(ctx,
-		"{[x,y]: y >= 0 & x <= 5 & y <= x or "
-		       "y >= 0 & x >= 6 & x <= 10 & y + 1 <= x}");
-	set = isl_set_coalesce(set);
-	assert(set && set->n == 2);
-	isl_set_free(set);
-
-	set = isl_set_read_from_str(ctx,
-		"{[x,y]: y >= 0 & x <= 5 & y <= x or "
-		       "y >= 0 & x = 6 & y <= 6}");
-	set = isl_set_coalesce(set);
-	assert(set && set->n == 1);
-	isl_set_free(set);
-
-	set = isl_set_read_from_str(ctx,
-		"{[x,y]: y >= 0 & x <= 5 & y <= x or "
-		       "y >= 0 & x = 7 & y <= 6}");
-	set = isl_set_coalesce(set);
-	assert(set && set->n == 2);
-	isl_set_free(set);
-
-	set = isl_set_read_from_str(ctx,
-		"{[x,y]: y >= 0 & x <= 5 & y <= x or "
-		       "y >= 0 & x = 6 & y <= 5}");
-	set = isl_set_coalesce(set);
-	assert(set && set->n == 1);
-	set2 = isl_set_read_from_str(ctx,
-		"{[x,y]: y >= 0 & x <= 5 & y <= x or "
-		       "y >= 0 & x = 6 & y <= 5}");
-	assert(isl_set_is_equal(set, set2));
-	isl_set_free(set);
-	isl_set_free(set2);
-
-	set = isl_set_read_from_str(ctx,
-		"{[x,y]: y >= 0 & x <= 5 & y <= x or "
-		       "y >= 0 & x = 6 & y <= 7}");
-	set = isl_set_coalesce(set);
-	assert(set && set->n == 2);
-	isl_set_free(set);
-
-	set = isl_set_read_from_str(ctx,
-		"[n] -> { [i] : i = 1 and n >= 2 or 2 <= i and i <= n }");
-	set = isl_set_coalesce(set);
-	assert(set && set->n == 1);
-	set2 = isl_set_read_from_str(ctx,
-		"[n] -> { [i] : i = 1 and n >= 2 or 2 <= i and i <= n }");
-	assert(isl_set_is_equal(set, set2));
-	isl_set_free(set);
-	isl_set_free(set2);
-
-	set = isl_set_read_from_str(ctx,
-		"{[x,y] : x >= 0 and y >= 0 or 0 <= y and y <= 5 and x = -1}");
-	set = isl_set_coalesce(set);
-	set2 = isl_set_read_from_str(ctx,
-		"{[x,y] : x >= 0 and y >= 0 or 0 <= y and y <= 5 and x = -1}");
-	assert(isl_set_is_equal(set, set2));
-	isl_set_free(set);
-	isl_set_free(set2);
-
-	set = isl_set_read_from_str(ctx,
-		"[n] -> { [i] : 1 <= i and i <= n - 1 or "
-				"2 <= i and i <= n }");
-	set = isl_set_coalesce(set);
-	assert(set && set->n == 1);
-	set2 = isl_set_read_from_str(ctx,
-		"[n] -> { [i] : 1 <= i and i <= n - 1 or "
-				"2 <= i and i <= n }");
-	assert(isl_set_is_equal(set, set2));
-	isl_set_free(set);
-	isl_set_free(set2);
-
-	map = isl_map_read_from_str(ctx,
-		"[n] -> { [i0] -> [o0] : exists (e0 = [(i0)/4], e1 = [(o0)/4], "
+} coalesce_tests[] = {
+	{ 1, "{[x,y]: x >= 0 & x <= 10 & y >= 0 & y <= 10 or "
+		       "y >= x & x >= 2 & 5 >= y }" },
+	{ 1, "{[x,y]: y >= 0 & 2x + y <= 30 & y <= 10 & x >= 0 or "
+		       "x + y >= 10 & y <= x & x + y <= 20 & y >= 0}" },
+	{ 0, "{[x,y]: y >= 0 & 2x + y <= 30 & y <= 10 & x >= 0 or "
+		       "x + y >= 10 & y <= x & x + y <= 19 & y >= 0}" },
+	{ 1, "{[x,y]: y >= 0 & x <= 5 & y <= x or "
+		       "y >= 0 & x >= 6 & x <= 10 & y <= x}" },
+	{ 0, "{[x,y]: y >= 0 & x <= 5 & y <= x or "
+		       "y >= 0 & x >= 7 & x <= 10 & y <= x}" },
+	{ 0, "{[x,y]: y >= 0 & x <= 5 & y <= x or "
+		       "y >= 0 & x >= 6 & x <= 10 & y + 1 <= x}" },
+	{ 1, "{[x,y]: y >= 0 & x <= 5 & y <= x or y >= 0 & x = 6 & y <= 6}" },
+	{ 0, "{[x,y]: y >= 0 & x <= 5 & y <= x or y >= 0 & x = 7 & y <= 6}" },
+	{ 1, "{[x,y]: y >= 0 & x <= 5 & y <= x or y >= 0 & x = 6 & y <= 5}" },
+	{ 0, "{[x,y]: y >= 0 & x <= 5 & y <= x or y >= 0 & x = 6 & y <= 7}" },
+	{ 1, "[n] -> { [i] : i = 1 and n >= 2 or 2 <= i and i <= n }" },
+	{ 0, "{[x,y] : x >= 0 and y >= 0 or 0 <= y and y <= 5 and x = -1}" },
+	{ 1, "[n] -> { [i] : 1 <= i and i <= n - 1 or 2 <= i and i <= n }" },
+	{ 0, "[n] -> { [[i0] -> [o0]] : exists (e0 = [(i0)/4], e1 = [(o0)/4], "
 		"e2 = [(n)/2], e3 = [(-2 + i0)/4], e4 = [(-2 + o0)/4], "
 		"e5 = [(-2n + i0)/4]: 2e2 = n and 4e3 = -2 + i0 and "
 		"4e4 = -2 + o0 and i0 >= 8 + 2n and o0 >= 2 + i0 and "
@@ -1051,7 +966,7 @@ int test_coalesce(struct isl_ctx *ctx)
 		"i0 <= -11 + 4n and o0 >= 6 + 2n and 4e0 <= i0 and "
 		"4e0 >= -3 + i0 and 4e1 <= o0 and 4e1 >= -3 + o0 and "
 		"4e5 <= -2n + i0 and 4e5 >= -3 - 2n + i0);"
-		"[i0] -> [o0] : exists (e0 = [(i0)/4], e1 = [(o0)/4], "
+		"[[i0] -> [o0]] : exists (e0 = [(i0)/4], e1 = [(o0)/4], "
 		"e2 = [(n)/2], e3 = [(-2 + i0)/4], e4 = [(-2 + o0)/4], "
 		"e5 = [(-2n + i0)/4]: 2e2 = n and 4e3 = -2 + i0 and "
 		"4e4 = -2 + o0 and 2e0 >= 3 + n and e0 <= -4 + n and "
@@ -1060,44 +975,13 @@ int test_coalesce(struct isl_ctx *ctx)
 		"i0 <= -11 + 4n and i0 <= 57 + 2n and 4e0 <= -2 + i0 and "
 		"4e0 >= -3 + i0 and o0 >= 6 + 2n and o0 <= -11 + 4n and "
 		"o0 <= 57 + 2n and 4e1 <= -2 + o0 and 4e1 >= -3 + o0 and "
-		"4e5 <= -2n + i0 and 4e5 >= -3 - 2n + i0 ) }");
-	map = isl_map_coalesce(map);
-	map2 = isl_map_read_from_str(ctx,
-		"[n] -> { [i0] -> [o0] : exists (e0 = [(i0)/4], e1 = [(o0)/4], "
-		"e2 = [(n)/2], e3 = [(-2 + i0)/4], e4 = [(-2 + o0)/4], "
-		"e5 = [(-2n + i0)/4]: 2e2 = n and 4e3 = -2 + i0 and "
-		"4e4 = -2 + o0 and i0 >= 8 + 2n and o0 >= 2 + i0 and "
-		"o0 <= 56 + 2n and o0 <= -12 + 4n and i0 <= 57 + 2n and "
-		"i0 <= -11 + 4n and o0 >= 6 + 2n and 4e0 <= i0 and "
-		"4e0 >= -3 + i0 and 4e1 <= o0 and 4e1 >= -3 + o0 and "
-		"4e5 <= -2n + i0 and 4e5 >= -3 - 2n + i0);"
-		"[i0] -> [o0] : exists (e0 = [(i0)/4], e1 = [(o0)/4], "
-		"e2 = [(n)/2], e3 = [(-2 + i0)/4], e4 = [(-2 + o0)/4], "
-		"e5 = [(-2n + i0)/4]: 2e2 = n and 4e3 = -2 + i0 and "
-		"4e4 = -2 + o0 and 2e0 >= 3 + n and e0 <= -4 + n and "
-		"2e0 <= 27 + n and e1 <= -4 + n and 2e1 <= 27 + n and "
-		"2e1 >= 2 + n and e1 >= 1 + e0 and i0 >= 7 + 2n and "
-		"i0 <= -11 + 4n and i0 <= 57 + 2n and 4e0 <= -2 + i0 and "
-		"4e0 >= -3 + i0 and o0 >= 6 + 2n and o0 <= -11 + 4n and "
-		"o0 <= 57 + 2n and 4e1 <= -2 + o0 and 4e1 >= -3 + o0 and "
-		"4e5 <= -2n + i0 and 4e5 >= -3 - 2n + i0 ) }");
-	assert(isl_map_is_equal(map, map2));
-	isl_map_free(map);
-	isl_map_free(map2);
-
-	str = "[n, m] -> { [] -> [o0, o2, o3] : (o3 = 1 and o0 >= 1 + m and "
+		"4e5 <= -2n + i0 and 4e5 >= -3 - 2n + i0 ) }" },
+	{ 0, "[n, m] -> { [o0, o2, o3] : (o3 = 1 and o0 >= 1 + m and "
 	      "o0 <= n + m and o2 <= m and o0 >= 2 + n and o2 >= 3) or "
 	      "(o0 >= 2 + n and o0 >= 1 + m and o0 <= n + m and n >= 1 and "
-	      "o3 <= -1 + o2 and o3 >= 1 - m + o2 and o3 >= 2 and o3 <= n) }";
-	map = isl_map_read_from_str(ctx, str);
-	map = isl_map_coalesce(map);
-	map2 = isl_map_read_from_str(ctx, str);
-	assert(isl_map_is_equal(map, map2));
-	isl_map_free(map);
-	isl_map_free(map2);
-
-	str = "[M, N] -> { [i0, i1, i2, i3, i4, i5, i6] -> "
-	  "[o0, o1, o2, o3, o4, o5, o6] : "
+	      "o3 <= -1 + o2 and o3 >= 1 - m + o2 and o3 >= 2 and o3 <= n) }" },
+	{ 0, "[M, N] -> { [[i0, i1, i2, i3, i4, i5, i6] -> "
+	  "[o0, o1, o2, o3, o4, o5, o6]] : "
 	  "(o6 <= -4 + 2M - 2N + i0 + i1 - i2 + i6 - o0 - o1 + o2 and "
 	  "o3 <= -2 + i3 and o6 >= 2 + i0 + i3 + i6 - o0 - o3 and "
 	  "o6 >= 2 - M + N + i3 + i4 + i6 - o3 - o4 and o0 <= -1 + i0 and "
@@ -1110,97 +994,72 @@ int test_coalesce(struct isl_ctx *ctx)
 	  "(N >= 2 and o3 <= -1 + i3 and o0 <= -1 + i0 and "
 	  "o6 >= i3 + i6 - o3 and M >= 0 and "
 	  "2o6 >= 1 + i0 + i3 + 2i6 - o0 - o3 and "
-	  "o6 >= 1 - M + i0 + i6 - o0 and N >= 2M and o6 >= i0 + i6 - o0) }";
-	map = isl_map_read_from_str(ctx, str);
-	map = isl_map_coalesce(map);
-	map2 = isl_map_read_from_str(ctx, str);
-	assert(isl_map_is_equal(map, map2));
-	isl_map_free(map);
-	isl_map_free(map2);
-
-	str = "[M, N] -> { [] -> [o0] : (o0 = 0 and M >= 1 and N >= 2) or "
+	  "o6 >= 1 - M + i0 + i6 - o0 and N >= 2M and o6 >= i0 + i6 - o0) }" },
+	{ 0, "[M, N] -> { [o0] : (o0 = 0 and M >= 1 and N >= 2) or "
 		"(o0 = 0 and M >= 1 and N >= 2M and N >= 2 + M) or "
 		"(o0 = 0 and M >= 2 and N >= 3) or "
-		"(M = 0 and o0 = 0 and N >= 3) }";
-	map = isl_map_read_from_str(ctx, str);
-	map = isl_map_coalesce(map);
-	map2 = isl_map_read_from_str(ctx, str);
-	assert(isl_map_is_equal(map, map2));
-	isl_map_free(map);
-	isl_map_free(map2);
-
-	str = "{ [i0, i1, i2, i3] : (i1 = 10i0 and i0 >= 1 and 10i0 <= 100 and "
-		"i3 <= 9 + 10 i2 and i3 >= 1 + 10i2 and i3 >= 0) or "
-		"(i1 <= 9 + 10i0 and i1 >= 1 + 10i0 and i2 >= 0 and "
-		"i0 >= 0 and i1 <= 100 and i3 <= 9 + 10i2 and i3 >= 1 + 10i2) }";
-	map = isl_map_read_from_str(ctx, str);
-	map = isl_map_coalesce(map);
-	map2 = isl_map_read_from_str(ctx, str);
-	assert(isl_map_is_equal(map, map2));
-	isl_map_free(map);
-	isl_map_free(map2);
-
-	test_coalesce_set(ctx,
-		"[M] -> { [i1] : (i1 >= 2 and i1 <= M) or "
-				"(i1 = M and M >= 1) }", 0);
-	test_coalesce_set(ctx,
-		"{[x,y] : x,y >= 0; [x,y] : 10 <= x <= 20 and y >= -1 }", 0);
-	test_coalesce_set(ctx,
-		"{ [x, y] : (x >= 1 and y >= 1 and x <= 2 and y <= 2) or "
-		"(y = 3 and x = 1) }", 1);
-	test_coalesce_set(ctx,
-		"[M] -> { [i0, i1, i2, i3, i4] : (i1 >= 3 and i4 >= 2 + i2 and "
+		"(M = 0 and o0 = 0 and N >= 3) }" },
+	{ 0, "{ [i0, i1, i2, i3] : (i1 = 10i0 and i0 >= 1 and 10i0 <= 100 and "
+	    "i3 <= 9 + 10 i2 and i3 >= 1 + 10i2 and i3 >= 0) or "
+	    "(i1 <= 9 + 10i0 and i1 >= 1 + 10i0 and i2 >= 0 and "
+	    "i0 >= 0 and i1 <= 100 and i3 <= 9 + 10i2 and i3 >= 1 + 10i2) }" },
+	{ 0, "[M] -> { [i1] : (i1 >= 2 and i1 <= M) or (i1 = M and M >= 1) }" },
+	{ 0, "{[x,y] : x,y >= 0; [x,y] : 10 <= x <= 20 and y >= -1 }" },
+	{ 1, "{ [x, y] : (x >= 1 and y >= 1 and x <= 2 and y <= 2) or "
+		"(y = 3 and x = 1) }" },
+	{ 1, "[M] -> { [i0, i1, i2, i3, i4] : (i1 >= 3 and i4 >= 2 + i2 and "
 		"i2 >= 2 and i0 >= 2 and i3 >= 1 + i2 and i0 <= M and "
 		"i1 <= M and i3 <= M and i4 <= M) or "
 		"(i1 >= 2 and i4 >= 1 + i2 and i2 >= 2 and i0 >= 2 and "
 		"i3 >= 1 + i2 and i0 <= M and i1 <= -1 + M and i3 <= M and "
-		"i4 <= -1 + M) }", 1);
-	test_coalesce_set(ctx,
-		"{ [x, y] : (x >= 0 and y >= 0 and x <= 10 and y <= 10) or "
-		"(x >= 1 and y >= 1 and x <= 11 and y <= 11) }", 1);
-	if (test_coalesce_unbounded_wrapping(ctx) < 0)
-		return -1;
-	if (test_coalesce_set(ctx, "{[x,0] : x >= 0; [x,1] : x <= 20}", 0) < 0)
-		return -1;
-	if (test_coalesce_set(ctx, "{ [x, 1 - x] : 0 <= x <= 1; [0,0] }", 1) < 0)
-		return -1;
-	if (test_coalesce_set(ctx, "{ [0,0]; [i,i] : 1 <= i <= 10 }", 1) < 0)
-		return -1;
-	if (test_coalesce_set(ctx, "{ [0,0]; [i,j] : 1 <= i,j <= 10 }", 0) < 0)
-		return -1;
-	if (test_coalesce_set(ctx, "{ [0,0]; [i,2i] : 1 <= i <= 10 }", 1) < 0)
-		return -1;
-	if (test_coalesce_set(ctx, "{ [0,0]; [i,2i] : 2 <= i <= 10 }", 0) < 0)
-		return -1;
-	if (test_coalesce_set(ctx, "{ [1,0]; [i,2i] : 1 <= i <= 10 }", 0) < 0)
-		return -1;
-	if (test_coalesce_set(ctx, "{ [0,1]; [i,2i] : 1 <= i <= 10 }", 0) < 0)
-		return -1;
-	if (test_coalesce_set(ctx, "{ [a, b] : exists e : 2e = a and "
-		    "a >= 0 and (a <= 3 or (b <= 0 and b >= -4 + a)) }", 0) < 0)
-		return -1;
-	if (test_coalesce_set(ctx,
-		"{ [i, j, i', j'] : i <= 2 and j <= 2 and "
+		"i4 <= -1 + M) }" },
+	{ 1, "{ [x, y] : (x >= 0 and y >= 0 and x <= 10 and y <= 10) or "
+		"(x >= 1 and y >= 1 and x <= 11 and y <= 11) }" },
+	{ 0, "{[x,0] : x >= 0; [x,1] : x <= 20}" },
+	{ 1, "{ [x, 1 - x] : 0 <= x <= 1; [0,0] }" },
+	{ 1, "{ [0,0]; [i,i] : 1 <= i <= 10 }" },
+	{ 0, "{ [0,0]; [i,j] : 1 <= i,j <= 10 }" },
+	{ 1, "{ [0,0]; [i,2i] : 1 <= i <= 10 }" },
+	{ 0, "{ [0,0]; [i,2i] : 2 <= i <= 10 }" },
+	{ 0, "{ [1,0]; [i,2i] : 1 <= i <= 10 }" },
+	{ 0, "{ [0,1]; [i,2i] : 1 <= i <= 10 }" },
+	{ 0, "{ [a, b] : exists e : 2e = a and "
+		    "a >= 0 and (a <= 3 or (b <= 0 and b >= -4 + a)) }" },
+	{ 0, "{ [i, j, i', j'] : i <= 2 and j <= 2 and "
 			"j' >= -1 + 2i + j - 2i' and i' <= -1 + i and "
 			"j >= 1 and j' <= i + j - i' and i >= 1; "
-		"[1, 1, 1, 1] }", 0) < 0)
-		return -1;
-	if (test_coalesce_set(ctx, "{ [i,j] : exists a,b : i = 2a and j = 3b; "
-				     "[i,j] : exists a : j = 3a }", 1) < 0)
-		return -1;
-	if (test_coalesce_set(ctx,
-		"{ [a, b, c] : (c <= 7 - b and b <= 1 and b >= 0 and "
+		"[1, 1, 1, 1] }" },
+	{ 1, "{ [i,j] : exists a,b : i = 2a and j = 3b; "
+		 "[i,j] : exists a : j = 3a }" },
+	{ 1, "{ [a, b, c] : (c <= 7 - b and b <= 1 and b >= 0 and "
 			"c >= 3 + b and b <= 3 + 8a and b >= -26 + 8a and "
 			"a >= 3) or "
 		    "(b <= 1 and c <= 7 and b >= 0 and c >= 4 + b and "
-			"b <= 3 + 8a and b >= -26 + 8a and a >= 3) }", 1) < 0)
-		return -1;
-	if (test_coalesce_set(ctx,
-		"{ [a, 0, c] : c >= 1 and c <= 29 and c >= -1 + 8a and "
+			"b <= 3 + 8a and b >= -26 + 8a and a >= 3) }" },
+	{ 1, "{ [a, 0, c] : c >= 1 and c <= 29 and c >= -1 + 8a and "
 				"c <= 6 + 8a and a >= 3; "
-		    "[a, -1, c] : c >= 1 and c <= 30 and c >= 8a and "
-				"c <= 7 + 8a and a >= 3 and a <= 4 }", 1) < 0)
+		"[a, -1, c] : c >= 1 and c <= 30 and c >= 8a and "
+				"c <= 7 + 8a and a >= 3 and a <= 4 }" },
+};
+
+/* Test the functionality of isl_set_coalesce.
+ * That is, check that the output is always equal to the input
+ * and in some cases that the result consists of a single disjunct.
+ */
+static int test_coalesce(struct isl_ctx *ctx)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(coalesce_tests); ++i) {
+		const char *str = coalesce_tests[i].str;
+		int check_one = coalesce_tests[i].single_disjunct;
+		if (test_coalesce_set(ctx, str, check_one) < 0)
+			return -1;
+	}
+
+	if (test_coalesce_unbounded_wrapping(ctx) < 0)
 		return -1;
+
 	return 0;
 }
 
