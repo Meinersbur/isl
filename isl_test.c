@@ -2818,6 +2818,24 @@ int test_dim_max(isl_ctx *ctx)
 	if (!equal)
 		isl_die(ctx, isl_error_unknown, "unexpected result", return -1);
 
+	/* Check that solutions are properly merged. */
+	str = "[n] -> { [a, b, c] : c >= -4a - 2b and "
+				"c <= -1 + n - 4a - 2b and c >= -2b and "
+				"4a >= -4 + n and c >= 0 }";
+	set = isl_set_read_from_str(ctx, str);
+	pwaff = isl_set_dim_min(set, 2);
+	set1 = isl_set_from_pw_aff(pwaff);
+	str = "[n] -> { [(0)] : n >= 1 }";
+	set2 = isl_set_read_from_str(ctx, str);
+	equal = isl_set_is_equal(set1, set2);
+	isl_set_free(set1);
+	isl_set_free(set2);
+
+	if (equal < 0)
+		return -1;
+	if (!equal)
+		isl_die(ctx, isl_error_unknown, "unexpected result", return -1);
+
 	return 0;
 }
 
@@ -3852,6 +3870,31 @@ static int test_simplify(isl_ctx *ctx)
 	return 0;
 }
 
+/* This is a regression test for a bug where isl_tab_basic_map_partial_lexopt
+ * with gbr context would fail to disable the use of the shifted tableau
+ * when transferring equalities for the input to the context, resulting
+ * in invalid sample values.
+ */
+static int test_partial_lexmin(isl_ctx *ctx)
+{
+	const char *str;
+	isl_basic_set *bset;
+	isl_basic_map *bmap;
+	isl_map *map;
+
+	str = "{ [1, b, c, 1 - c] -> [e] : 2e <= -c and 2e >= -3 + c }";
+	bmap = isl_basic_map_read_from_str(ctx, str);
+	str = "{ [a, b, c, d] : c <= 1 and 2d >= 6 - 4b - c }";
+	bset = isl_basic_set_read_from_str(ctx, str);
+	map = isl_basic_map_partial_lexmin(bmap, bset, NULL);
+	isl_map_free(map);
+
+	if (!map)
+		return -1;
+
+	return 0;
+}
+
 /* Check that the variable compression performed on the existentially
  * quantified variables inside isl_basic_set_compute_divs is not confused
  * by the implicit equalities among the parameters.
@@ -3880,6 +3923,7 @@ struct {
 	int (*fn)(isl_ctx *ctx);
 } tests [] = {
 	{ "compute divs", &test_compute_divs },
+	{ "partial lexmin", &test_partial_lexmin },
 	{ "simplify", &test_simplify },
 	{ "curry", &test_curry },
 	{ "piecewise multi affine expressions", &test_pw_multi_aff },

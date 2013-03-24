@@ -119,6 +119,12 @@ struct isl_context_lex {
 	struct isl_tab *tab;
 };
 
+/* A stack (linked list) of solutions of subtrees of the search space.
+ *
+ * "M" describes the solution in terms of the dimensions of "dom".
+ * The number of columns of "M" is one more than the total number
+ * of dimensions of "dom".
+ */
 struct isl_partial_sol {
 	int level;
 	struct isl_basic_set *dom;
@@ -307,14 +313,21 @@ static void sol_pop(struct isl_sol *sol)
 			sol_pop_one(sol);
 		} else {
 			struct isl_basic_set *bset;
+			isl_mat *M;
+			unsigned n;
 
+			n = isl_basic_set_dim(partial->next->dom, isl_dim_div);
+			n -= n_div;
 			bset = sol_domain(sol);
-			if (!bset)
-				goto error;
-
 			isl_basic_set_free(partial->next->dom);
 			partial->next->dom = bset;
+			M = partial->next->M;
+			M = isl_mat_drop_cols(M, M->n_col - n, n);
+			partial->next->M = M;
 			partial->next->level = sol->level;
+
+			if (!bset || !M)
+				goto error;
 
 			sol->partial = partial->next;
 			isl_basic_set_free(partial->dom);
@@ -2597,6 +2610,14 @@ error:
 	return NULL;
 }
 
+/* Representation of the context when using generalized basis reduction.
+ *
+ * "shifted" contains the offsets of the unit hypercubes that lie inside the
+ * context.  Any rational point in "shifted" can therefore be rounded
+ * up to an integer point in the context.
+ * If the context is constrained by any equality, then "shifted" is not used
+ * as it would be empty.
+ */
 struct isl_context_gbr {
 	struct isl_context context;
 	struct isl_tab *tab;
@@ -2820,12 +2841,26 @@ error:
 	return NULL;
 }
 
+/* Add the equality described by "eq" to the context.
+ * If "check" is set, then we check if the context is empty after
+ * adding the equality.
+ * If "update" is set, then we check if the samples are still valid.
+ *
+ * We do not explicitly add shifted copies of the equality to
+ * cgbr->shifted since they would conflict with each other.
+ * Instead, we directly mark cgbr->shifted empty.
+ */
 static void context_gbr_add_eq(struct isl_context *context, isl_int *eq,
 		int check, int update)
 {
 	struct isl_context_gbr *cgbr = (struct isl_context_gbr *)context;
 
 	cgbr->tab = add_gbr_eq(cgbr->tab, eq);
+
+	if (cgbr->shifted && !cgbr->shifted->empty && use_shifted(cgbr)) {
+		if (isl_tab_mark_empty(cgbr->shifted) < 0)
+			goto error;
+	}
 
 	if (cgbr->cone && cgbr->cone->n_col != cgbr->cone->n_dead) {
 		if (isl_tab_extend_cons(cgbr->cone, 2) < 0)
@@ -3100,7 +3135,9 @@ static int context_gbr_detect_equalities(struct isl_context *context,
 
 	n_ineq = cgbr->tab->bmap->n_ineq;
 	cgbr->tab = isl_tab_detect_equalities(cgbr->tab, cgbr->cone);
-	if (cgbr->tab && cgbr->tab->bmap->n_ineq > n_ineq)
+	if (!cgbr->tab)
+		return -1;
+	if (cgbr->tab->bmap->n_ineq > n_ineq)
 		propagate_equalities(cgbr, tab, n_ineq);
 
 	return 0;
