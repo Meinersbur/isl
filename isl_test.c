@@ -3867,10 +3867,36 @@ static int test_simplify(isl_ctx *ctx)
 	return 0;
 }
 
+/* This is a regression test for a bug where isl_tab_basic_map_partial_lexopt
+ * with gbr context would fail to disable the use of the shifted tableau
+ * when transferring equalities for the input to the context, resulting
+ * in invalid sample values.
+ */
+static int test_partial_lexmin(isl_ctx *ctx)
+{
+	const char *str;
+	isl_basic_set *bset;
+	isl_basic_map *bmap;
+	isl_map *map;
+
+	str = "{ [1, b, c, 1 - c] -> [e] : 2e <= -c and 2e >= -3 + c }";
+	bmap = isl_basic_map_read_from_str(ctx, str);
+	str = "{ [a, b, c, d] : c <= 1 and 2d >= 6 - 4b - c }";
+	bset = isl_basic_set_read_from_str(ctx, str);
+	map = isl_basic_map_partial_lexmin(bmap, bset, NULL);
+	isl_map_free(map);
+
+	if (!map)
+		return -1;
+
+	return 0;
+}
+
 struct {
 	const char *name;
 	int (*fn)(isl_ctx *ctx);
 } tests [] = {
+	{ "partial lexmin", &test_partial_lexmin },
 	{ "simplify", &test_simplify },
 	{ "curry", &test_curry },
 	{ "piecewise multi affine expressions", &test_pw_multi_aff },

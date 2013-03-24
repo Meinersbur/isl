@@ -2610,6 +2610,14 @@ error:
 	return NULL;
 }
 
+/* Representation of the context when using generalized basis reduction.
+ *
+ * "shifted" contains the offsets of the unit hypercubes that lie inside the
+ * context.  Any rational point in "shifted" can therefore be rounded
+ * up to an integer point in the context.
+ * If the context is constrained by any equality, then "shifted" is not used
+ * as it would be empty.
+ */
 struct isl_context_gbr {
 	struct isl_context context;
 	struct isl_tab *tab;
@@ -2833,12 +2841,26 @@ error:
 	return NULL;
 }
 
+/* Add the equality described by "eq" to the context.
+ * If "check" is set, then we check if the context is empty after
+ * adding the equality.
+ * If "update" is set, then we check if the samples are still valid.
+ *
+ * We do not explicitly add shifted copies of the equality to
+ * cgbr->shifted since they would conflict with each other.
+ * Instead, we directly mark cgbr->shifted empty.
+ */
 static void context_gbr_add_eq(struct isl_context *context, isl_int *eq,
 		int check, int update)
 {
 	struct isl_context_gbr *cgbr = (struct isl_context_gbr *)context;
 
 	cgbr->tab = add_gbr_eq(cgbr->tab, eq);
+
+	if (cgbr->shifted && !cgbr->shifted->empty && use_shifted(cgbr)) {
+		if (isl_tab_mark_empty(cgbr->shifted) < 0)
+			goto error;
+	}
 
 	if (cgbr->cone && cgbr->cone->n_col != cgbr->cone->n_dead) {
 		if (isl_tab_extend_cons(cgbr->cone, 2) < 0)
