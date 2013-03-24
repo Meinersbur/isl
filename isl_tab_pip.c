@@ -3113,7 +3113,9 @@ static int context_gbr_detect_equalities(struct isl_context *context,
 
 	n_ineq = cgbr->tab->bmap->n_ineq;
 	cgbr->tab = isl_tab_detect_equalities(cgbr->tab, cgbr->cone);
-	if (cgbr->tab && cgbr->tab->bmap->n_ineq > n_ineq)
+	if (!cgbr->tab)
+		return -1;
+	if (cgbr->tab->bmap->n_ineq > n_ineq)
 		propagate_equalities(cgbr, tab, n_ineq);
 
 	return 0;
