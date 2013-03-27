@@ -383,7 +383,7 @@ static int contains(struct isl_map *map, int i, int *ineq_i,
  * map with exactly the other basic map (we already know that this
  * other basic map is included in the extension, because there
  * were no "cut" inequalities in "i") and we can replace the
- * two basic maps by thie extension.
+ * two basic maps by this extension.
  *        ____			  _____
  *       /    || 		 /     |
  *      /     ||  		/      |
