@@ -1,7 +1,7 @@
 /*
  * Copyright 2008-2009 Katholieke Universiteit Leuven
  * Copyright 2011      INRIA Saclay
- * Copyright 2012      Ecole Normale Superieure
+ * Copyright 2012-2013 Ecole Normale Superieure
  *
  * Use of this software is governed by the MIT license
  *
@@ -12,6 +12,8 @@
  * and Ecole Normale Superieure, 45 rue d’Ulm, 75230 Paris, France
  */
 
+#include <isl_sort.h>
+
 #define xCAT(A,B) A ## B
 #define CAT(A,B) xCAT(A,B)
 #undef EL
@@ -20,6 +22,8 @@
 #define FN(TYPE,NAME) xFN(TYPE,NAME)
 #define xLIST(EL) EL ## _list
 #define LIST(EL) xLIST(EL)
+#define xS(TYPE,NAME) struct TYPE ## _ ## NAME
+#define S(TYPE,NAME) xS(TYPE,NAME)
 
 isl_ctx *FN(LIST(EL),get_ctx)(__isl_keep LIST(EL) *list)
 {
@@ -281,6 +285,51 @@ int FN(LIST(EL),foreach)(__isl_keep LIST(EL) *list,
 	}
 
 	return 0;
+}
+
+/* Internal data structure for isl_*_list_sort.
+ *
+ * "cmp" is the original comparison function.
+ * "user" is a user provided pointer that should be passed to "cmp".
+ */
+S(LIST(EL),sort_data) {
+	int (*cmp)(__isl_keep EL *a, __isl_keep EL *b, void *user);
+	void *user;
+};
+
+/* Compare two entries of an isl_*_list based on the user provided
+ * comparison function on pairs of isl_* objects.
+ */
+static int FN(LIST(EL),cmp)(const void *a, const void *b, void *user)
+{
+	S(LIST(EL),sort_data) *data = user;
+	EL * const *el1 = a;
+	EL * const *el2 = b;
+
+	return data->cmp(*el1, *el2, data->user);
+}
+
+/* Sort the elements of "list" in ascending order according to
+ * comparison function "cmp".
+ */
+__isl_give LIST(EL) *FN(LIST(EL),sort)(__isl_take LIST(EL) *list,
+	int (*cmp)(__isl_keep EL *a, __isl_keep EL *b, void *user), void *user)
+{
+	S(LIST(EL),sort_data) data = { cmp, user };
+
+	if (!list)
+		return NULL;
+	if (list->n <= 1)
+		return list;
+	list = FN(LIST(EL),cow)(list);
+	if (!list)
+		return NULL;
+
+	if (isl_sort(list->p, list->n, sizeof(list->p[0]),
+			&FN(LIST(EL),cmp), &data) < 0)
+		return FN(LIST(EL),free)(list);
+
+	return list;
 }
 
 __isl_give LIST(EL) *FN(FN(LIST(EL),from),BASE)(__isl_take EL *el)

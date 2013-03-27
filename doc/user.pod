@@ -3105,6 +3105,11 @@ Lists can be created, copied, modified and freed using the following functions.
 	__isl_give isl_set_list *isl_set_list_concat(
 		__isl_take isl_set_list *list1,
 		__isl_take isl_set_list *list2);
+	__isl_give isl_set_list *isl_set_list_sort(
+		__isl_take isl_set_list *list,
+		int (*cmp)(__isl_keep isl_set *a,
+			__isl_keep isl_set *b, void *user),
+		void *user);
 	void *isl_set_list_free(__isl_take isl_set_list *list);
 
 C<isl_set_list_alloc> creates an empty list with a capacity for
