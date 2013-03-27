@@ -1073,12 +1073,10 @@ __isl_give isl_ast_graft_list *isl_ast_graft_list_preimage_multi_aff(
 
 /* Compare two grafts based on their guards.
  */
-static int cmp_graft(const void *a, const void *b)
+static int cmp_graft(__isl_keep isl_ast_graft *a, __isl_keep isl_ast_graft *b,
+	void *user)
 {
-	isl_ast_graft * const *g1 = a;
-	isl_ast_graft * const *g2 = b;
-
-	return isl_set_plain_cmp((*g1)->guard, (*g2)->guard);
+	return isl_set_plain_cmp(a->guard, b->guard);
 }
 
 /* Order the elements in "list" based on their guards.
@@ -1086,14 +1084,7 @@ static int cmp_graft(const void *a, const void *b)
 __isl_give isl_ast_graft_list *isl_ast_graft_list_sort_guard(
 	__isl_take isl_ast_graft_list *list)
 {
-	if (!list)
-		return NULL;
-	if (list->n <= 1)
-		return list;
-
-	qsort(list->p, list->n, sizeof(list->p[0]), &cmp_graft);
-
-	return list;
+	return isl_ast_graft_list_sort(list, &cmp_graft, NULL);
 }
 
 /* Merge the given two lists into a single list of grafts,
