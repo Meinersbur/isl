@@ -182,6 +182,8 @@ struct isl_tab *isl_tab_alloc(struct isl_ctx *ctx,
 	unsigned n_row, unsigned n_var, unsigned M);
 void isl_tab_free(struct isl_tab *tab);
 
+isl_ctx *isl_tab_get_ctx(struct isl_tab *tab);
+
 __isl_give struct isl_tab *isl_tab_from_basic_map(
 	__isl_keep isl_basic_map *bmap, int track);
 __isl_give struct isl_tab *isl_tab_from_basic_set(
