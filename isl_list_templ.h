@@ -13,12 +13,4 @@ struct LIST(EL) {
 	struct EL *p[1];
 };
 
-#define ISL_DECLARE_LIST_PRIVATE(EL)					\
-__isl_give isl_##EL##_list *isl_##EL##_list_dup(			\
-	__isl_keep isl_##EL##_list *list);
-
-ISL_DECLARE_LIST_PRIVATE(basic_set)
-ISL_DECLARE_LIST_PRIVATE(set)
-ISL_DECLARE_LIST_PRIVATE(aff)
-ISL_DECLARE_LIST_PRIVATE(pw_aff)
-ISL_DECLARE_LIST_PRIVATE(band)
+__isl_give LIST(EL) *FN(LIST(EL),dup)(__isl_keep LIST(EL) *list);

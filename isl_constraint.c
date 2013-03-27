@@ -17,6 +17,11 @@
 #include <isl_aff_private.h>
 #include <isl_local_space_private.h>
 
+#undef BASE
+#define BASE constraint
+
+#include <isl_list_templ.c>
+
 isl_ctx *isl_constraint_get_ctx(__isl_keep isl_constraint *c)
 {
 	return c ? isl_local_space_get_ctx(c->ls) : NULL;

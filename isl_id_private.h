@@ -28,6 +28,11 @@ struct isl_id {
 	__isl_give void (*free_user)(void *user);
 };
 
+#undef EL
+#define EL isl_id
+
+#include <isl_list_templ.h>
+
 uint32_t isl_hash_id(uint32_t hash, __isl_keep isl_id *id);
 
 extern isl_id isl_id_none;

@@ -17,10 +17,11 @@
 extern "C" {
 #endif
 
-#define ISL_DECLARE_LIST(EL)						\
+#define ISL_DECLARE_LIST_TYPE(EL)					\
 struct isl_##EL;							\
 struct isl_##EL##_list;							\
-typedef struct isl_##EL##_list isl_##EL##_list;				\
+typedef struct isl_##EL##_list isl_##EL##_list;
+#define ISL_DECLARE_LIST_FN(EL)						\
 isl_ctx *isl_##EL##_list_get_ctx(__isl_keep isl_##EL##_list *list);	\
 __isl_give isl_##EL##_list *isl_##EL##_list_from_##EL(			\
 	__isl_take struct isl_##EL *el);				\
@@ -63,13 +64,9 @@ __isl_give isl_printer *isl_printer_print_##EL##_list(			\
 	__isl_take isl_printer *p, __isl_keep isl_##EL##_list *list);	\
 void isl_##EL##_list_dump(__isl_keep isl_##EL##_list *list);
 
-ISL_DECLARE_LIST(id)
-ISL_DECLARE_LIST(constraint)
-ISL_DECLARE_LIST(basic_set)
-ISL_DECLARE_LIST(set)
-ISL_DECLARE_LIST(aff)
-ISL_DECLARE_LIST(pw_aff)
-ISL_DECLARE_LIST(band)
+#define ISL_DECLARE_LIST(EL)						\
+	ISL_DECLARE_LIST_TYPE(EL)					\
+	ISL_DECLARE_LIST_FN(EL)
 
 #if defined(__cplusplus)
 }

@@ -16,6 +16,11 @@ struct isl_aff {
 	isl_vec		*v;
 };
 
+#undef EL
+#define EL isl_aff
+
+#include <isl_list_templ.h>
+
 struct isl_pw_aff_piece {
 	struct isl_set *set;
 	struct isl_aff *aff;
@@ -31,6 +36,11 @@ struct isl_pw_aff {
 	size_t size;
 	struct isl_pw_aff_piece p[1];
 };
+
+#undef EL
+#define EL isl_pw_aff
+
+#include <isl_list_templ.h>
 
 struct isl_pw_multi_aff_piece {
 	isl_set *set;

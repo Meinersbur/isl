@@ -11,6 +11,11 @@
 #include <isl_ctx_private.h>
 #include <isl_id_private.h>
 
+#undef BASE
+#define BASE id
+
+#include <isl_list_templ.c>
+
 /* A special, static isl_id to use as domains (and ranges)
  * of sets and parameters domains.
  * The user should never get a hold on this isl_id.

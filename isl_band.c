@@ -12,7 +12,11 @@
 
 #include <isl_band_private.h>
 #include <isl_schedule_private.h>
-#include <isl_list_private.h>
+
+#undef BASE
+#define BASE band
+
+#include <isl_list_templ.c>
 
 isl_ctx *isl_band_get_ctx(__isl_keep isl_band *band)
 {

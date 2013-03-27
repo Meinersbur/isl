@@ -13,6 +13,8 @@ extern "C" {
 struct isl_band;
 typedef struct isl_band isl_band;
 
+ISL_DECLARE_LIST(band)
+
 __isl_give isl_band *isl_band_copy(__isl_keep isl_band *band);
 void *isl_band_free(__isl_take isl_band *band);
 

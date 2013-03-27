@@ -13,6 +13,10 @@
 #define isl_basic_set	isl_basic_map
 #define isl_set		isl_map
 #define isl_basic_set_list	isl_basic_map_list
+#define isl_set_list	isl_map_list
+#include <isl/list.h>
+ISL_DECLARE_LIST(basic_map)
+ISL_DECLARE_LIST(map)
 #include <isl/set.h>
 #include <isl/map.h>
 #include <isl_reordering.h>
@@ -70,6 +74,11 @@ struct isl_basic_map {
 	struct isl_blk block2;
 };
 
+#undef EL
+#define EL isl_basic_set
+
+#include <isl_list_templ.h>
+
 /* A "map" is a (possibly disjoint) union of basic maps.
  * A "set" is a (possibly disjoint) union of basic sets.
  *
@@ -94,6 +103,11 @@ struct isl_map {
 	size_t size;
 	struct isl_basic_map *p[1];
 };
+
+#undef EL
+#define EL isl_set
+
+#include <isl_list_templ.h>
 
 __isl_give isl_map *isl_map_realign(__isl_take isl_map *map,
 	__isl_take isl_reordering *r);

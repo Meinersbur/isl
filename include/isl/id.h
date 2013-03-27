@@ -2,6 +2,7 @@
 #define ISL_ID_H
 
 #include <isl/ctx.h>
+#include <isl/list.h>
 #include <isl/printer.h>
 
 #if defined(__cplusplus)
@@ -10,6 +11,8 @@ extern "C" {
 
 struct isl_id;
 typedef struct isl_id isl_id;
+
+ISL_DECLARE_LIST(id)
 
 isl_ctx *isl_id_get_ctx(__isl_keep isl_id *id);
 

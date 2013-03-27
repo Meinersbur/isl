@@ -1,5 +1,4 @@
 #include <isl_ast_private.h>
-#include <isl_list_private.h>
 
 #undef BASE
 #define BASE ast_expr

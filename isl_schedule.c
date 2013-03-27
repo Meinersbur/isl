@@ -26,7 +26,6 @@
 #include <isl_sort.h>
 #include <isl_schedule_private.h>
 #include <isl_band_private.h>
-#include <isl_list_private.h>
 #include <isl_options_private.h>
 #include <isl_tarjan.h>
 

@@ -14,6 +14,7 @@
 #include <isl/space.h>
 #include <isl/aff_type.h>
 #include <isl/set_type.h>
+#include <isl/list.h>
 #include <isl/printer.h>
 
 #if defined(__cplusplus)
@@ -22,6 +23,8 @@ extern "C" {
 
 struct isl_constraint;
 typedef struct isl_constraint isl_constraint;
+
+ISL_DECLARE_LIST(constraint)
 
 isl_ctx *isl_constraint_get_ctx(__isl_keep isl_constraint *c);
 

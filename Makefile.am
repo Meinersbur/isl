@@ -83,8 +83,6 @@ libisl_la_SOURCES = \
 	isl_hmap_map_basic_set.h \
 	isl_ilp.c \
 	isl_input.c \
-	isl_list.c \
-	isl_list_private.h \
 	isl_local_space_private.h \
 	isl_local_space.c \
 	isl_lp.c \
@@ -122,6 +120,7 @@ libisl_la_SOURCES = \
 	isl_scan.h \
 	isl_schedule.c \
 	isl_schedule_private.h \
+	isl_set_list.c \
 	isl_sort.c \
 	isl_sort.h \
 	isl_space.c \

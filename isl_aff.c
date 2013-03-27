@@ -19,11 +19,20 @@
 #include <isl_space_private.h>
 #include <isl_local_space_private.h>
 #include <isl_mat_private.h>
-#include <isl_list_private.h>
 #include <isl/constraint.h>
 #include <isl/seq.h>
 #include <isl/set.h>
 #include <isl_config.h>
+
+#undef BASE
+#define BASE aff
+
+#include <isl_list_templ.c>
+
+#undef BASE
+#define BASE pw_aff
+
+#include <isl_list_templ.c>
 
 __isl_give isl_aff *isl_aff_alloc_vec(__isl_take isl_local_space *ls,
 	__isl_take isl_vec *v)
