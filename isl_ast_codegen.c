@@ -1900,7 +1900,7 @@ static __isl_give isl_ast_graft_list *generate_parallel_domains(
 	if (n > 0)
 		list = isl_ast_graft_list_free(list);
 
-	list = isl_ast_graft_list_sort(list);
+	list = isl_ast_graft_list_sort_guard(list);
 
 	isl_tarjan_graph_free(g);
 

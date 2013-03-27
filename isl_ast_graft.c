@@ -1083,7 +1083,7 @@ static int cmp_graft(const void *a, const void *b)
 
 /* Order the elements in "list" based on their guards.
  */
-__isl_give isl_ast_graft_list *isl_ast_graft_list_sort(
+__isl_give isl_ast_graft_list *isl_ast_graft_list_sort_guard(
 	__isl_take isl_ast_graft_list *list)
 {
 	if (!list)
