@@ -6111,16 +6111,6 @@ __isl_give isl_set *isl_basic_set_lexmax(__isl_take isl_basic_set *bset)
 	return (isl_set *)isl_basic_map_lexmax((isl_basic_map *)bset);
 }
 
-__isl_give isl_set *isl_set_lexmin(__isl_take isl_set *set)
-{
-	return (isl_set *)isl_map_lexmin((isl_map *)set);
-}
-
-__isl_give isl_set *isl_set_lexmax(__isl_take isl_set *set)
-{
-	return (isl_set *)isl_map_lexmax((isl_map *)set);
-}
-
 /* Extract the first and only affine expression from list
  * and then add it to *pwaff with the given dom.
  * This domain is known to be disjoint from other domains

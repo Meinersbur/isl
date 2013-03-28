@@ -130,3 +130,13 @@ __isl_give TYPE *SF(isl_map_lexmax,SUFFIX)(__isl_take isl_map *map)
 {
 	return SF(isl_map_lexopt,SUFFIX)(map, 1);
 }
+
+__isl_give TYPE *SF(isl_set_lexmin,SUFFIX)(__isl_take isl_set *set)
+{
+	return SF(isl_map_lexmin,SUFFIX)(set);
+}
+
+__isl_give TYPE *SF(isl_set_lexmax,SUFFIX)(__isl_take isl_set *set)
+{
+	return SF(isl_map_lexmax,SUFFIX)(set);
+}

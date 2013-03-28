@@ -1454,8 +1454,9 @@ void test_lex(struct isl_ctx *ctx)
 	isl_map_free(map);
 }
 
-void test_lexmin(struct isl_ctx *ctx)
+static int test_lexmin(struct isl_ctx *ctx)
 {
+	int equal;
 	const char *str;
 	isl_basic_map *bmap;
 	isl_map *map, *map2;
@@ -1537,6 +1538,23 @@ void test_lexmin(struct isl_ctx *ctx)
 	assert(isl_map_is_equal(map, map2));
 	isl_map_free(map);
 	isl_map_free(map2);
+
+	str = "[i] -> { [i', j] : j = i - 8i' and i' >= 0 and i' <= 7 and "
+				" 8i' <= i and 8i' >= -7 + i }";
+	set = isl_set_read_from_str(ctx, str);
+	pma = isl_set_lexmin_pw_multi_aff(isl_set_copy(set));
+	set2 = isl_set_from_pw_multi_aff(pma);
+	equal = isl_set_is_equal(set, set2);
+	isl_set_free(set);
+	isl_set_free(set2);
+	if (equal < 0)
+		return -1;
+	if (!equal)
+		isl_die(ctx, isl_error_unknown,
+			"unexpected difference between set and "
+			"piecewise affine expression", return -1);
+
+	return 0;
 }
 
 struct must_may {
@@ -3957,6 +3975,7 @@ struct {
 	{ "factorize", &test_factorize },
 	{ "subset", &test_subset },
 	{ "subtract", &test_subtract },
+	{ "lexmin", &test_lexmin },
 };
 
 int main()
@@ -3989,7 +4008,6 @@ int main()
 	test_convex_hull(ctx);
 	test_gist(ctx);
 	test_closure(ctx);
-	test_lexmin(ctx);
 	isl_ctx_free(ctx);
 	return 0;
 error:
