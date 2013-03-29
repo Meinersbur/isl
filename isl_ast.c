@@ -1315,7 +1315,7 @@ static int need_block(__isl_keep isl_ast_node *node)
 
 static __isl_give isl_printer *print_ast_node_c(__isl_take isl_printer *p,
 	__isl_keep isl_ast_node *node,
-	__isl_keep isl_ast_print_options *options, int in_block);
+	__isl_keep isl_ast_print_options *options, int in_block, int in_list);
 static __isl_give isl_printer *print_if_c(__isl_take isl_printer *p,
 	__isl_keep isl_ast_node *node,
 	__isl_keep isl_ast_print_options *options, int new_line);
@@ -1355,7 +1355,7 @@ static __isl_give isl_printer *print_body_c(__isl_take isl_printer *p,
 	p = isl_printer_print_str(p, " {");
 	p = isl_printer_end_line(p);
 	p = isl_printer_indent(p, 2);
-	p = print_ast_node_c(p, node, options, 1);
+	p = print_ast_node_c(p, node, options, 1, 0);
 	p = isl_printer_indent(p, -2);
 	p = isl_printer_start_line(p);
 	p = isl_printer_print_str(p, "}");
@@ -1410,12 +1410,15 @@ static __isl_give isl_printer *end_block(__isl_take isl_printer *p)
  *		body
  *
  * "in_block" is set if we are currently inside a block.
- * We simply pass it along to print_ast_node_c in case of a degenerate
- * for loop.
+ * "in_list" is set if the current node is not alone in the block.
+ * If we are not in a block or if the current not is not alone in the block
+ * then we print a block around a degenerate for loop such that the variable
+ * declaration will not conflict with any potential other declaration
+ * of the same variable.
  */
 static __isl_give isl_printer *print_for_c(__isl_take isl_printer *p,
 	__isl_keep isl_ast_node *node,
-	__isl_keep isl_ast_print_options *options, int in_block)
+	__isl_keep isl_ast_print_options *options, int in_block, int in_list)
 {
 	isl_id *id;
 	const char *name;
@@ -1445,6 +1448,8 @@ static __isl_give isl_printer *print_for_c(__isl_take isl_printer *p,
 		id = isl_ast_expr_get_id(node->u.f.iterator);
 		name = isl_id_get_name(id);
 		isl_id_free(id);
+		if (!in_block || in_list)
+			p = start_block(p);
 		p = isl_printer_start_line(p);
 		p = isl_printer_print_str(p, type);
 		p = isl_printer_print_str(p, " ");
@@ -1453,7 +1458,9 @@ static __isl_give isl_printer *print_for_c(__isl_take isl_printer *p,
 		p = isl_printer_print_ast_expr(p, node->u.f.init);
 		p = isl_printer_print_str(p, ";");
 		p = isl_printer_end_line(p);
-		p = print_ast_node_c(p, node->u.f.body, options, in_block);
+		p = print_ast_node_c(p, node->u.f.body, options, 1, 0);
+		if (!in_block || in_list)
+			p = end_block(p);
 	}
 
 	return p;
@@ -1482,10 +1489,12 @@ static __isl_give isl_printer *print_if_c(__isl_take isl_printer *p,
  * If so, we do not print a block around the children of a block node.
  * We do this to avoid an extra block around the body of a degenerate
  * for node.
+ *
+ * "in_list" is set if the current node is not alone in the block.
  */
 static __isl_give isl_printer *print_ast_node_c(__isl_take isl_printer *p,
 	__isl_keep isl_ast_node *node,
-	__isl_keep isl_ast_print_options *options, int in_block)
+	__isl_keep isl_ast_print_options *options, int in_block, int in_list)
 {
 	switch (node->type) {
 	case isl_ast_node_for:
@@ -1493,7 +1502,7 @@ static __isl_give isl_printer *print_ast_node_c(__isl_take isl_printer *p,
 			return options->print_for(p,
 					isl_ast_print_options_copy(options),
 					node, options->print_for_user);
-		p = print_for_c(p, node, options, in_block);
+		p = print_for_c(p, node, options, in_block, in_list);
 		break;
 	case isl_ast_node_if:
 		p = print_if_c(p, node, options, 1);
@@ -1531,7 +1540,7 @@ __isl_give isl_printer *isl_ast_node_for_print(__isl_keep isl_ast_node *node,
 	if (node->type != isl_ast_node_for)
 		isl_die(isl_ast_node_get_ctx(node), isl_error_invalid,
 			"not a for node", goto error);
-	p = print_for_c(p, node, options, 0);
+	p = print_for_c(p, node, options, 0, 0);
 	isl_ast_print_options_free(options);
 	return p;
 error:
@@ -1566,7 +1575,7 @@ __isl_give isl_printer *isl_ast_node_print(__isl_keep isl_ast_node *node,
 {
 	if (!options || !node)
 		goto error;
-	p = print_ast_node_c(p, node, options, 0);
+	p = print_ast_node_c(p, node, options, 0, 0);
 	isl_ast_print_options_free(options);
 	return p;
 error:
@@ -1616,7 +1625,7 @@ __isl_give isl_printer *isl_ast_node_list_print(
 		return isl_printer_free(p);
 
 	for (i = 0; i < list->n; ++i)
-		p = print_ast_node_c(p, list->p[i], options, 1);
+		p = print_ast_node_c(p, list->p[i], options, 1, 1);
 
 	return p;
 }
