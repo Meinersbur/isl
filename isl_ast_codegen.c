@@ -1834,7 +1834,7 @@ static __isl_give isl_ast_graft_list *generate_sorted_domains_part(
  * of domains that share some values of the outer dimensions.
  * That is, domains in different components do not share any values
  * of the outer dimensions.  This means that these components
- * can be freely reorderd.
+ * can be freely reordered.
  * Within each of the components, we sort the domains according
  * to the execution order at the current depth.
  *
