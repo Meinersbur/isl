@@ -53,6 +53,12 @@ __isl_give isl_##EL##_list *isl_##EL##_list_sort(			\
 	int (*cmp)(__isl_keep struct isl_##EL *a,			\
 		__isl_keep struct isl_##EL *b,				\
 		void *user), void *user);				\
+int isl_##EL##_list_foreach_scc(__isl_keep isl_##EL##_list *list,	\
+	int (*follows)(__isl_keep struct isl_##EL *a,			\
+			__isl_keep struct isl_##EL *b, void *user),	\
+	void *follows_user,						\
+	int (*fn)(__isl_take isl_##EL##_list *scc, void *user),		\
+	void *fn_user);							\
 __isl_give isl_printer *isl_printer_print_##EL##_list(			\
 	__isl_take isl_printer *p, __isl_keep isl_##EL##_list *list);	\
 void isl_##EL##_list_dump(__isl_keep isl_##EL##_list *list);

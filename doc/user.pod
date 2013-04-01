@@ -3133,6 +3133,18 @@ Lists can be inspected using the following functions.
 	int isl_set_list_foreach(__isl_keep isl_set_list *list,
 		int (*fn)(__isl_take isl_set *el, void *user),
 		void *user);
+	int isl_set_list_foreach_scc(__isl_keep isl_set_list *list,
+		int (*follows)(__isl_keep isl_set *a,
+			__isl_keep isl_set *b, void *user),
+		void *follows_user
+		int (*fn)(__isl_take isl_set *el, void *user),
+		void *fn_user);
+
+The function C<isl_set_list_foreach_scc> calls C<fn> on each of the
+strongly connected components of the graph with as vertices the elements
+of C<list> and a directed edge from vertex C<b> to vertex C<a>
+iff C<follows(a, b)> returns C<1>.  The callbacks C<follows> and C<fn>
+should return C<-1> on error.
 
 Lists can be printed using
 
