@@ -18,7 +18,6 @@
 #include <isl_ast_build_expr.h>
 #include <isl_ast_build_private.h>
 #include <isl_ast_graft_private.h>
-#include <isl_list_private.h>
 
 /* Add the constraint to the list that "user" points to, if it is not
  * a div constraint.
@@ -345,13 +344,12 @@ static int constraint_type(isl_constraint *c, int pos)
  * to be sorted before the lower bounds on "depth", which in
  * turn are sorted before the upper bounds on "depth".
  */
-static int cmp_constraint(const void *a, const void *b, void *user)
+static int cmp_constraint(__isl_keep isl_constraint *a,
+	__isl_keep isl_constraint *b, void *user)
 {
 	int *depth = user;
-	isl_constraint * const *c1 = a;
-	isl_constraint * const *c2 = b;
-	int t1 = constraint_type(*c1, *depth);
-	int t2 = constraint_type(*c2, *depth);
+	int t1 = constraint_type(a, *depth);
+	int t2 = constraint_type(b, *depth);
 
 	return t1 - t2;
 }
@@ -445,21 +443,23 @@ static __isl_give isl_pw_aff *exact_bound(__isl_keep isl_set *domain,
 	return pa;
 }
 
-/* Return a list of "n" lower bounds on dimension "pos"
- * extracted from the "n" constraints starting at "constraint".
- * If "n" is zero, then we extract a lower bound from "domain" instead.
+/* Extract a lower bound on dimension "pos" from each constraint
+ * in "constraints" and return the list of lower bounds.
+ * If "constraints" has zero elements, then we extract a lower bound
+ * from "domain" instead.
  */
 static __isl_give isl_pw_aff_list *lower_bounds(
-	__isl_keep isl_constraint **constraint, int n, int pos,
+	__isl_keep isl_constraint_list *constraints, int pos,
 	__isl_keep isl_set *domain, __isl_keep isl_ast_build *build)
 {
 	isl_ctx *ctx;
 	isl_pw_aff_list *list;
-	int i;
+	int i, n;
 
 	if (!build)
 		return NULL;
 
+	n = isl_constraint_list_n_constraint(constraints);
 	if (n == 0) {
 		isl_pw_aff *pa;
 		pa = exact_bound(domain, build, 0);
@@ -471,26 +471,31 @@ static __isl_give isl_pw_aff_list *lower_bounds(
 
 	for (i = 0; i < n; ++i) {
 		isl_aff *aff;
+		isl_constraint *c;
 
-		aff = lower_bound(constraint[i], pos, build);
+		c = isl_constraint_list_get_constraint(constraints, i);
+		aff = lower_bound(c, pos, build);
+		isl_constraint_free(c);
 		list = isl_pw_aff_list_add(list, isl_pw_aff_from_aff(aff));
 	}
 
 	return list;
 }
 
-/* Return a list of "n" upper bounds on dimension "pos"
- * extracted from the "n" constraints starting at "constraint".
- * If "n" is zero, then we extract an upper bound from "domain" instead.
+/* Extract an upper bound on dimension "pos" from each constraint
+ * in "constraints" and return the list of upper bounds.
+ * If "constraints" has zero elements, then we extract an upper bound
+ * from "domain" instead.
  */
 static __isl_give isl_pw_aff_list *upper_bounds(
-	__isl_keep isl_constraint **constraint, int n, int pos,
+	__isl_keep isl_constraint_list *constraints, int pos,
 	__isl_keep isl_set *domain, __isl_keep isl_ast_build *build)
 {
 	isl_ctx *ctx;
 	isl_pw_aff_list *list;
-	int i;
+	int i, n;
 
+	n = isl_constraint_list_n_constraint(constraints);
 	if (n == 0) {
 		isl_pw_aff *pa;
 		pa = exact_bound(domain, build, 1);
@@ -502,8 +507,11 @@ static __isl_give isl_pw_aff_list *upper_bounds(
 
 	for (i = 0; i < n; ++i) {
 		isl_aff *aff;
+		isl_constraint *c;
 
-		aff = isl_constraint_get_bound(constraint[i], isl_dim_set, pos);
+		c = isl_constraint_list_get_constraint(constraints, i);
+		aff = isl_constraint_get_bound(c, isl_dim_set, pos);
+		isl_constraint_free(c);
 		aff = isl_aff_floor(aff);
 		list = isl_pw_aff_list_add(list, isl_pw_aff_from_aff(aff));
 	}
@@ -635,26 +643,26 @@ static __isl_give isl_ast_graft *refine_degenerate(
 	return graft;
 }
 
-/* Return the intersection of the "n" constraints starting at "constraint"
- * as a set.
+/* Return the intersection of constraints in "list" as a set.
  */
-static __isl_give isl_set *intersect_constraints(isl_ctx *ctx,
-	__isl_keep isl_constraint **constraint, int n)
+static __isl_give isl_set *intersect_constraints(
+	__isl_keep isl_constraint_list *list)
 {
-	int i;
+	int i, n;
 	isl_basic_set *bset;
 
+	n = isl_constraint_list_n_constraint(list);
 	if (n < 1)
-		isl_die(ctx, isl_error_internal,
+		isl_die(isl_constraint_list_get_ctx(list), isl_error_internal,
 			"expecting at least one constraint", return NULL);
 
 	bset = isl_basic_set_from_constraint(
-				isl_constraint_copy(constraint[0]));
+				isl_constraint_list_get_constraint(list, 0));
 	for (i = 1; i < n; ++i) {
 		isl_basic_set *bset_i;
 
 		bset_i = isl_basic_set_from_constraint(
-					isl_constraint_copy(constraint[i]));
+				isl_constraint_list_get_constraint(list, i));
 		bset = isl_basic_set_intersect(bset, bset_i);
 	}
 
@@ -992,7 +1000,7 @@ static __isl_give isl_ast_graft *set_for_node_expressions(
 /* Update "graft" based on "bounds" and "domain" for the generic,
  * non-degenerate, case.
  *
- * "constraints" contains the "n_lower" lower and "n_upper" upper bounds
+ * "c_lower" and "c_upper" contain the lower and upper bounds
  * that the loop node should express.
  * "domain" is the subset of the intersection of the constraints
  * for which some code is executed.
@@ -1022,7 +1030,8 @@ static __isl_give isl_ast_graft *set_for_node_expressions(
  */
 static __isl_give isl_ast_graft *refine_generic_bounds(
 	__isl_take isl_ast_graft *graft,
-	__isl_keep isl_constraint **constraint, int n_lower, int n_upper,
+	__isl_take isl_constraint_list *c_lower,
+	__isl_take isl_constraint_list *c_upper,
 	__isl_keep isl_set *domain, __isl_keep isl_ast_build *build)
 {
 	int depth;
@@ -1031,23 +1040,25 @@ static __isl_give isl_ast_graft *refine_generic_bounds(
 	int use_list;
 	isl_set *upper_set = NULL;
 	isl_pw_aff_list *upper_list = NULL;
+	int n_lower, n_upper;
 
-	if (!graft || !build)
-		return isl_ast_graft_free(graft);
+	if (!graft || !c_lower || !c_upper || !build)
+		goto error;
 
 	depth = isl_ast_build_get_depth(build);
 	ctx = isl_ast_graft_get_ctx(graft);
 
+	n_lower = isl_constraint_list_n_constraint(c_lower);
+	n_upper = isl_constraint_list_n_constraint(c_upper);
+
 	use_list = use_upper_bound_list(ctx, n_upper, domain, depth);
 
-	lower = lower_bounds(constraint, n_lower, depth, domain, build);
+	lower = lower_bounds(c_lower, depth, domain, build);
 
 	if (use_list)
-		upper_list = upper_bounds(constraint + n_lower, n_upper, depth,
-					    domain, build);
+		upper_list = upper_bounds(c_upper, depth, domain, build);
 	else if (n_upper > 0)
-		upper_set = intersect_constraints(ctx, constraint + n_lower,
-							n_upper);
+		upper_set = intersect_constraints(c_upper);
 	else
 		upper_set = isl_set_universe(isl_set_get_space(domain));
 
@@ -1064,26 +1075,46 @@ static __isl_give isl_ast_graft *refine_generic_bounds(
 	isl_pw_aff_list_free(lower);
 	isl_pw_aff_list_free(upper_list);
 	isl_set_free(upper_set);
+	isl_constraint_list_free(c_lower);
+	isl_constraint_list_free(c_upper);
 
 	return graft;
+error:
+	isl_constraint_list_free(c_lower);
+	isl_constraint_list_free(c_upper);
+	return isl_ast_graft_free(graft);
 }
 
-/* How many constraints in the "constraint" array, starting at position "first"
- * are of the give type?  "n" represents the total number of elements
- * in the array.
+/* Internal data structure used inside count_constraints to keep
+ * track of the number of constraints that are independent of dimension "pos",
+ * the lower bounds in "pos" and the upper bounds in "pos".
  */
-static int count_constraints(isl_constraint **constraint, int n, int first,
-	int pos, int type)
+struct isl_ast_count_constraints_data {
+	int pos;
+
+	int n_indep;
+	int n_lower;
+	int n_upper;
+};
+
+/* Increment data->n_indep, data->lower or data->upper depending
+ * on whether "c" is independenct of dimensions data->pos,
+ * a lower bound or an upper bound.
+ */
+static int count_constraints(__isl_take isl_constraint *c, void *user)
 {
-	int i;
+	struct isl_ast_count_constraints_data *data = user;
 
-	constraint += first;
+	if (isl_constraint_is_lower_bound(c, isl_dim_set, data->pos))
+		data->n_lower++;
+	else if (isl_constraint_is_upper_bound(c, isl_dim_set, data->pos))
+		data->n_upper++;
+	else
+		data->n_indep++;
 
-	for (i = 0; first + i < n; i++)
-		if (constraint_type(constraint[i], pos) != type)
-			break;
+	isl_constraint_free(c);
 
-	return i;
+	return 0;
 }
 
 /* Update "graft" based on "bounds" and "domain" for the generic,
@@ -1105,42 +1136,51 @@ static int count_constraints(isl_constraint **constraint, int n, int first,
  * where this guard is enforced.
  */
 static __isl_give isl_ast_graft *refine_generic_split(
-	__isl_take isl_ast_graft *graft, __isl_keep isl_constraint_list *list,
+	__isl_take isl_ast_graft *graft, __isl_take isl_constraint_list *list,
 	__isl_keep isl_set *domain, __isl_keep isl_ast_build *build)
 {
-	isl_ctx *ctx;
 	isl_ast_build *for_build;
 	isl_set *guard;
-	int n_indep, n_lower, n_upper;
-	int pos;
-	int n;
+	struct isl_ast_count_constraints_data data;
+	isl_constraint_list *lower;
+	isl_constraint_list *upper;
 
 	if (!list)
 		return isl_ast_graft_free(graft);
 
-	pos = isl_ast_build_get_depth(build);
+	data.pos = isl_ast_build_get_depth(build);
 
-	if (isl_sort(list->p, list->n, sizeof(isl_constraint *),
-			&cmp_constraint, &pos) < 0)
+	list = isl_constraint_list_sort(list, &cmp_constraint, &data.pos);
+	if (!list)
 		return isl_ast_graft_free(graft);
 
-	n = list->n;
-	n_indep = count_constraints(list->p, n, 0, pos, 0);
-	n_lower = count_constraints(list->p, n, n_indep, pos, 1);
-	n_upper = count_constraints(list->p, n, n_indep + n_lower, pos, 2);
+	data.n_indep = data.n_lower = data.n_upper = 0;
+	if (isl_constraint_list_foreach(list, &count_constraints, &data) < 0) {
+		isl_constraint_list_free(list);
+		return isl_ast_graft_free(graft);
+	}
 
-	if (n_indep == 0)
-		return refine_generic_bounds(graft,
-		     list->p + n_indep, n_lower, n_upper, domain, build);
+	lower = isl_constraint_list_copy(list);
+	lower = isl_constraint_list_drop(lower, 0, data.n_indep);
+	upper = isl_constraint_list_copy(lower);
+	lower = isl_constraint_list_drop(lower, data.n_lower, data.n_upper);
+	upper = isl_constraint_list_drop(upper, 0, data.n_lower);
 
-	ctx = isl_ast_graft_get_ctx(graft);
-	guard = intersect_constraints(ctx, list->p, n_indep);
+	if (data.n_indep == 0) {
+		isl_constraint_list_free(list);
+		return refine_generic_bounds(graft, lower, upper,
+						domain, build);
+	}
+
+	list = isl_constraint_list_drop(list, data.n_indep,
+					data.n_lower + data.n_upper);
+	guard = intersect_constraints(list);
+	isl_constraint_list_free(list);
 
 	for_build = isl_ast_build_copy(build);
 	for_build = isl_ast_build_restrict_pending(for_build,
 						isl_set_copy(guard));
-	graft = refine_generic_bounds(graft,
-		     list->p + n_indep, n_lower, n_upper, domain, for_build);
+	graft = refine_generic_bounds(graft, lower, upper, domain, for_build);
 	isl_ast_build_free(for_build);
 
 	graft = isl_ast_graft_add_guard(graft, guard, build);
@@ -1198,7 +1238,6 @@ static __isl_give isl_ast_graft *refine_generic(
 	graft = refine_generic_split(graft, list, domain, build);
 	graft = add_stride_guard(graft, build);
 
-	isl_constraint_list_free(list);
 	return graft;
 }
 
