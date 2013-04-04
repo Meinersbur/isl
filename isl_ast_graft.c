@@ -686,7 +686,8 @@ static __isl_give isl_basic_set *extract_shared_enforced(
 /* Record "guard" in "graft" so that it will be enforced somewhere
  * up the tree.  If the graft already has a guard, then it may be partially
  * redundant in combination with the new guard and in the context
- * of build->domain.  We therefore (re)compute the gist of the intersection.
+ * of build->domain.  We therefore (re)compute the gist of the intersection
+ * and coalesce the result.
  */
 static __isl_give isl_ast_graft *store_guard(__isl_take isl_ast_graft *graft,
 	__isl_take isl_set *guard, __isl_keep isl_ast_build *build)
@@ -706,6 +707,7 @@ static __isl_give isl_ast_graft *store_guard(__isl_take isl_ast_graft *graft,
 
 	graft->guard = isl_set_intersect(graft->guard, guard);
 	graft->guard = isl_ast_build_compute_gist(build, graft->guard);
+	graft->guard = isl_set_coalesce(graft->guard);
 	if (!graft->guard)
 		return isl_ast_graft_free(graft);
 
