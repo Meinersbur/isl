@@ -3783,6 +3783,8 @@ Operations include
 		__isl_take isl_pw_aff *pwaff);
 	__isl_give isl_aff *isl_aff_mod(__isl_take isl_aff *aff,
 		isl_int mod);
+	__isl_give isl_aff *isl_aff_mod_val(__isl_take isl_aff *aff,
+		__isl_take isl_val *mod);
 	__isl_give isl_pw_aff *isl_pw_aff_mod(
 		__isl_take isl_pw_aff *pwaff, isl_int mod);
 	__isl_give isl_aff *isl_aff_scale(__isl_take isl_aff *aff,

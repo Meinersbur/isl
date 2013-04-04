@@ -85,6 +85,8 @@ __isl_give isl_aff *isl_aff_neg(__isl_take isl_aff *aff);
 __isl_give isl_aff *isl_aff_ceil(__isl_take isl_aff *aff);
 __isl_give isl_aff *isl_aff_floor(__isl_take isl_aff *aff);
 __isl_give isl_aff *isl_aff_mod(__isl_take isl_aff *aff, isl_int mod);
+__isl_give isl_aff *isl_aff_mod_val(__isl_take isl_aff *aff,
+	__isl_take isl_val *mod);
 
 __isl_give isl_aff *isl_aff_mul(__isl_take isl_aff *aff1,
 	__isl_take isl_aff *aff2);

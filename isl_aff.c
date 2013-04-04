@@ -1311,6 +1311,37 @@ __isl_give isl_aff *isl_aff_mod(__isl_take isl_aff *aff, isl_int m)
 
 /* Compute
  *
+ *	aff mod m = aff - m * floor(aff/m)
+ *
+ * with m an integer value.
+ */
+__isl_give isl_aff *isl_aff_mod_val(__isl_take isl_aff *aff,
+	__isl_take isl_val *m)
+{
+	isl_aff *res;
+
+	if (!aff || !m)
+		goto error;
+
+	if (!isl_val_is_int(m))
+		isl_die(isl_val_get_ctx(m), isl_error_invalid,
+			"expecting integer modulo", goto error);
+
+	res = isl_aff_copy(aff);
+	aff = isl_aff_scale_down_val(aff, isl_val_copy(m));
+	aff = isl_aff_floor(aff);
+	aff = isl_aff_scale_val(aff, m);
+	res = isl_aff_sub(res, aff);
+
+	return res;
+error:
+	isl_aff_free(aff);
+	isl_val_free(m);
+	return NULL;
+}
+
+/* Compute
+ *
  *	pwaff mod m = pwaff - m * floor(pwaff/m)
  */
 __isl_give isl_pw_aff *isl_pw_aff_mod(__isl_take isl_pw_aff *pwaff, isl_int m)
