@@ -488,6 +488,7 @@ int isl_set_foreach_basic_set(__isl_keep isl_set *set,
 int isl_set_foreach_point(__isl_keep isl_set *set,
 	int (*fn)(__isl_take isl_point *pnt, void *user), void *user);
 int isl_set_count(__isl_keep isl_set *set, isl_int *count);
+__isl_give isl_val *isl_set_count_val(__isl_keep isl_set *set);
 int isl_basic_set_count_upto(__isl_keep isl_basic_set *bset,
 	isl_int max, isl_int *count);
 int isl_set_count_upto(__isl_keep isl_set *set, isl_int max, isl_int *count);
