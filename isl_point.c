@@ -143,6 +143,33 @@ int isl_point_get_coordinate(__isl_keep isl_point *pnt,
 	return 0;
 }
 
+/* Return the value of coordinate "pos" of type "type" of "pnt".
+ */
+__isl_give isl_val *isl_point_get_coordinate_val(__isl_keep isl_point *pnt,
+	enum isl_dim_type type, int pos)
+{
+	isl_ctx *ctx;
+	isl_val *v;
+
+	if (!pnt)
+		return NULL;
+
+	ctx = isl_point_get_ctx(pnt);
+	if (isl_point_is_void(pnt))
+		isl_die(ctx, isl_error_invalid,
+			"void point does not have coordinates", return NULL);
+	if (pos < 0 || pos >= isl_space_dim(pnt->dim, type))
+		isl_die(ctx, isl_error_invalid,
+			"position out of bounds", return NULL);
+
+	if (type == isl_dim_set)
+		pos += isl_space_dim(pnt->dim, isl_dim_param);
+
+	v = isl_val_rat_from_isl_int(ctx, pnt->vec->el[1 + pos],
+						pnt->vec->el[0]);
+	return isl_val_normalize(v);
+}
+
 __isl_give isl_point *isl_point_set_coordinate(__isl_take isl_point *pnt,
 	enum isl_dim_type type, int pos, isl_int v)
 {
