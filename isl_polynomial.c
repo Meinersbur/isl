@@ -1614,6 +1614,42 @@ int isl_qpolynomial_is_cst(__isl_keep isl_qpolynomial *qp,
 	return 1;
 }
 
+/* Return the constant term of "up".
+ */
+static __isl_give isl_val *isl_upoly_get_constant_val(
+	__isl_keep struct isl_upoly *up)
+{
+	struct isl_upoly_cst *cst;
+
+	if (!up)
+		return NULL;
+
+	while (!isl_upoly_is_cst(up)) {
+		struct isl_upoly_rec *rec;
+
+		rec = isl_upoly_as_rec(up);
+		if (!rec)
+			return NULL;
+		up = rec->p[0];
+	}
+
+	cst = isl_upoly_as_cst(up);
+	if (!cst)
+		return NULL;
+	return isl_val_rat_from_isl_int(cst->up.ctx, cst->n, cst->d);
+}
+
+/* Return the constant term of "qp".
+ */
+__isl_give isl_val *isl_qpolynomial_get_constant_val(
+	__isl_keep isl_qpolynomial *qp)
+{
+	if (!qp)
+		return NULL;
+
+	return isl_upoly_get_constant_val(qp->upoly);
+}
+
 int isl_upoly_is_affine(__isl_keep struct isl_upoly *up)
 {
 	int is_cst;

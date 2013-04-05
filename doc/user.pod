@@ -4690,6 +4690,11 @@ will not have any existentially quantified variables, but that
 the dimensions of the sets may be different for different
 invocations of C<fn>.
 
+The constant term of a quasipolynomial can be extracted using
+
+	__isl_give isl_val *isl_qpolynomial_get_constant_val(
+		__isl_keep isl_qpolynomial *qp);
+
 To iterate over all terms in a quasipolynomial,
 use
 

@@ -25,6 +25,9 @@ unsigned isl_qpolynomial_dim(__isl_keep isl_qpolynomial *qp,
 int isl_qpolynomial_involves_dims(__isl_keep isl_qpolynomial *qp,
 	enum isl_dim_type type, unsigned first, unsigned n);
 
+__isl_give isl_val *isl_qpolynomial_get_constant_val(
+	__isl_keep isl_qpolynomial *qp);
+
 __isl_give isl_qpolynomial *isl_qpolynomial_set_dim_name(
 	__isl_take isl_qpolynomial *qp,
 	enum isl_dim_type type, unsigned pos, const char *s);
