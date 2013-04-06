@@ -98,6 +98,9 @@ __isl_give isl_constraint *isl_constraint_set_coefficient(
 __isl_give isl_constraint *isl_constraint_set_coefficient_si(
 	__isl_take isl_constraint *constraint,
 	enum isl_dim_type type, int pos, int v);
+__isl_give isl_constraint *isl_constraint_set_coefficient_val(
+	__isl_take isl_constraint *constraint,
+	enum isl_dim_type type, int pos, isl_val *v);
 
 __isl_give isl_aff *isl_constraint_get_div(__isl_keep isl_constraint *constraint,
 	int pos);
