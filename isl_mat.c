@@ -246,6 +246,25 @@ int isl_mat_get_element(__isl_keep isl_mat *mat, int row, int col, isl_int *v)
 	return 0;
 }
 
+/* Extract the element at row "row", oolumn "col" of "mat".
+ */
+__isl_give isl_val *isl_mat_get_element_val(__isl_keep isl_mat *mat,
+	int row, int col)
+{
+	isl_ctx *ctx;
+
+	if (!mat)
+		return NULL;
+	ctx = isl_mat_get_ctx(mat);
+	if (row < 0 || row >= mat->n_row)
+		isl_die(ctx, isl_error_invalid, "row out of range",
+			return NULL);
+	if (col < 0 || col >= mat->n_col)
+		isl_die(ctx, isl_error_invalid, "column out of range",
+			return NULL);
+	return isl_val_int_from_isl_int(ctx, mat->row[row][col]);
+}
+
 __isl_give isl_mat *isl_mat_set_element(__isl_take isl_mat *mat,
 	int row, int col, isl_int v)
 {
