@@ -15,6 +15,7 @@
 #include <isl/int.h>
 #include <isl/ctx.h>
 #include <isl/blk.h>
+#include <isl/val.h>
 #include <isl/printer.h>
 
 #if defined(__cplusplus)
@@ -46,6 +47,8 @@ __isl_give isl_vec *isl_vec_set_element(__isl_take isl_vec *vec,
 	int pos, isl_int v);
 __isl_give isl_vec *isl_vec_set_element_si(__isl_take isl_vec *vec,
 	int pos, int v);
+__isl_give isl_vec *isl_vec_set_element_val(__isl_take isl_vec *vec,
+	int pos, __isl_take isl_val *v);
 
 int isl_vec_is_equal(__isl_keep isl_vec *vec1, __isl_keep isl_vec *vec2);
 

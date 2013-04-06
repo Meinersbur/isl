@@ -10,6 +10,7 @@
 #include <isl_ctx_private.h>
 #include <isl/seq.h>
 #include <isl/vec.h>
+#include <isl_val_private.h>
 
 isl_ctx *isl_vec_get_ctx(__isl_keep isl_vec *vec)
 {
@@ -218,6 +219,24 @@ __isl_give isl_vec *isl_vec_set_element_si(__isl_take isl_vec *vec,
 error:
 	isl_vec_free(vec);
 	return NULL;
+}
+
+/* Replace the element at position "pos" of "vec" by "v".
+ */
+__isl_give isl_vec *isl_vec_set_element_val(__isl_take isl_vec *vec,
+	int pos, __isl_take isl_val *v)
+{
+	if (!v)
+		return isl_vec_free(vec);
+	if (!isl_val_is_int(v))
+		isl_die(isl_val_get_ctx(v), isl_error_invalid,
+			"expecting integer value", goto error);
+	vec = isl_vec_set_element(vec, pos, v->n);
+	isl_val_free(v);
+	return vec;
+error:
+	isl_val_free(v);
+	return isl_vec_free(vec);
 }
 
 int isl_vec_is_equal(__isl_keep isl_vec *vec1, __isl_keep isl_vec *vec2)

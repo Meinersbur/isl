@@ -3447,6 +3447,9 @@ The elements can be changed and inspected using the following functions.
 		__isl_take isl_vec *vec, int pos, isl_int v);
 	__isl_give isl_vec *isl_vec_set_element_si(
 		__isl_take isl_vec *vec, int pos, int v);
+	__isl_give isl_vec *isl_vec_set_element_val(
+		__isl_take isl_vec *vec, int pos,
+		__isl_take isl_val *v);
 	__isl_give isl_vec *isl_vec_set(__isl_take isl_vec *vec,
 		isl_int v);
 	__isl_give isl_vec *isl_vec_set_si(__isl_take isl_vec *vec,
