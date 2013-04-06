@@ -2217,8 +2217,8 @@ static struct isl_obj obj_read(struct isl_stream *s)
 		    isl_int_is_neg(tok2->u.v)) {
 			if (tok2)
 				isl_stream_push_token(s, tok2);
-			obj.type = isl_obj_int;
-			obj.v = isl_int_obj_alloc(s->ctx, tok->u.v);
+			obj.type = isl_obj_val;
+			obj.v = isl_val_int_from_isl_int(s->ctx, tok->u.v);
 			isl_token_free(tok);
 			return obj;
 		}
