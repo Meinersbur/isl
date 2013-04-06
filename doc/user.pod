@@ -4805,6 +4805,10 @@ obviously equal, use
 	__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_pow(
 		__isl_take isl_pw_qpolynomial *pwqp, unsigned exponent);
 
+	__isl_give isl_union_pw_qpolynomial *
+	isl_union_pw_qpolynomial_scale_val(
+		__isl_take isl_union_pw_qpolynomial *upwqp,
+		__isl_take isl_val *v);
 	__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_add(
 		__isl_take isl_union_pw_qpolynomial *upwqp1,
 		__isl_take isl_union_pw_qpolynomial *upwqp2);
@@ -5016,6 +5020,10 @@ obviously equal, use
 	__isl_give isl_pw_qpolynomial_fold *
 	isl_pw_qpolynomial_fold_scale_val(
 		__isl_take isl_pw_qpolynomial_fold *pwf,
+		__isl_take isl_val *v);
+	__isl_give isl_union_pw_qpolynomial_fold *
+	isl_union_pw_qpolynomial_fold_scale_val(
+		__isl_take isl_union_pw_qpolynomial_fold *upwf,
 		__isl_take isl_val *v);
 
 	__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_add(
