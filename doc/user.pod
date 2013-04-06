@@ -499,6 +499,27 @@ A value can be printed using
 	__isl_give isl_printer *isl_printer_print_val(
 		__isl_take isl_printer *p, __isl_keep isl_val *v);
 
+=head3 GMP specific functions
+
+These functions are only available if C<isl> has been compiled with C<GMP>
+support.
+
+Specific integer and rational values can be created from C<GMP> values using
+the following functions.
+
+	#include <isl/val_gmp.h>
+	__isl_give isl_val *isl_val_int_from_gmp(isl_ctx *ctx,
+		mpz_t z);
+	__isl_give isl_val *isl_val_from_gmp(isl_ctx *ctx,
+		const mpz_t n, const mpz_t d);
+
+The numerator and denominator of a rational value can be extracted as
+C<GMP> values using the following functions.
+
+	#include <isl/val_gmp.h>
+	int isl_val_get_num_gmp(__isl_keep isl_val *v, mpz_t z);
+	int isl_val_get_den_gmp(__isl_keep isl_val *v, mpz_t z);
+
 =head2 Integers (obsolescent)
 
 All operations on integers, mainly the coefficients
