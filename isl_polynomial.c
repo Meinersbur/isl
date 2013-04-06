@@ -24,6 +24,7 @@
 #include <isl_range.h>
 #include <isl_local_space_private.h>
 #include <isl_aff_private.h>
+#include <isl_val_private.h>
 #include <isl_config.h>
 
 static unsigned pos(__isl_keep isl_space *dim, enum isl_dim_type type)
@@ -3561,6 +3562,17 @@ void isl_term_get_den(__isl_keep isl_term *term, isl_int *d)
 	if (!term)
 		return;
 	isl_int_set(*d, term->d);
+}
+
+/* Return the coefficient of the term "term".
+ */
+__isl_give isl_val *isl_term_get_coefficient_val(__isl_keep isl_term *term)
+{
+	if (!term)
+		return NULL;
+
+	return isl_val_rat_from_isl_int(isl_term_get_ctx(term),
+					term->n, term->d);
 }
 
 int isl_term_get_exp(__isl_keep isl_term *term,

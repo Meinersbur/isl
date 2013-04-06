@@ -4707,6 +4707,8 @@ these functions
 		isl_int *n);
 	void isl_term_get_den(__isl_keep isl_term *term,
 		isl_int *d);
+	__isl_give isl_val *isl_term_get_coefficient_val(
+		__isl_keep isl_term *term);
 	int isl_term_get_exp(__isl_keep isl_term *term,
 		enum isl_dim_type type, unsigned pos);
 	__isl_give isl_aff *isl_term_get_div(

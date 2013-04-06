@@ -10,6 +10,7 @@
 #include <isl/union_set_type.h>
 #include <isl/aff_type.h>
 #include <isl/polynomial_type.h>
+#include <isl/val.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -106,6 +107,7 @@ void isl_term_free(__isl_take isl_term *term);
 unsigned isl_term_dim(__isl_keep isl_term *term, enum isl_dim_type type);
 void isl_term_get_num(__isl_keep isl_term *term, isl_int *n);
 void isl_term_get_den(__isl_keep isl_term *term, isl_int *d);
+__isl_give isl_val *isl_term_get_coefficient_val(__isl_keep isl_term *term);
 int isl_term_get_exp(__isl_keep isl_term *term,
 	enum isl_dim_type type, unsigned pos);
 __isl_give isl_aff *isl_term_get_div(__isl_keep isl_term *term, unsigned pos);
