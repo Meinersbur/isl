@@ -4790,6 +4790,10 @@ obviously equal, use
 	__isl_give isl_qpolynomial *isl_qpolynomial_pow(
 		__isl_take isl_qpolynomial *qp, unsigned exponent);
 
+	__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_fix_val(
+		__isl_take isl_pw_qpolynomial *pwqp,
+		enum isl_dim_type type, unsigned n,
+		__isl_take isl_val *v);
 	__isl_give isl_pw_qpolynomial *
 	isl_pw_qpolynomial_scale_val(
 		__isl_take isl_pw_qpolynomial *pwqp,

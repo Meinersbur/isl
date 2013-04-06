@@ -1,4 +1,5 @@
 #include <isl/aff.h>
+#include <isl_val_private.h>
 
 #define xFN(TYPE,NAME) TYPE ## _ ## NAME
 #define FN(TYPE,NAME) xFN(TYPE,NAME)
@@ -1119,6 +1120,27 @@ __isl_give PW *FN(PW,fix_dim)(__isl_take PW *pw,
 error:
 	FN(PW,free)(pw);
 	return NULL;
+}
+
+/* Fix the value of the variable at position "pos" of type "type" of "pw"
+ * to be equal to "v".
+ */
+__isl_give PW *FN(PW,fix_val)(__isl_take PW *pw,
+	enum isl_dim_type type, unsigned pos, __isl_take isl_val *v)
+{
+	if (!v)
+		return FN(PW,free)(pw);
+	if (!isl_val_is_int(v))
+		isl_die(FN(PW,get_ctx)(pw), isl_error_invalid,
+			"expecting integer value", goto error);
+
+	pw = FN(PW,fix_dim)(pw, type, pos, v->n);
+	isl_val_free(v);
+
+	return pw;
+error:
+	isl_val_free(v);
+	return FN(PW,free)(pw);
 }
 
 unsigned FN(PW,dim)(__isl_keep PW *pw, enum isl_dim_type type)
