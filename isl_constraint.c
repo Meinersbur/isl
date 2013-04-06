@@ -446,6 +446,26 @@ __isl_give isl_constraint *isl_constraint_set_constant(
 	return constraint;
 }
 
+/* Replace the constant term of "constraint" by "v".
+ */
+__isl_give isl_constraint *isl_constraint_set_constant_val(
+	__isl_take isl_constraint *constraint, __isl_take isl_val *v)
+{
+	constraint = isl_constraint_cow(constraint);
+	if (!constraint || !v)
+		goto error;
+	if (!isl_val_is_int(v))
+		isl_die(isl_constraint_get_ctx(constraint), isl_error_invalid,
+			"expecting integer value", goto error);
+	constraint->v = isl_vec_set_element_val(constraint->v, 0, v);
+	if (!constraint->v)
+		constraint = isl_constraint_free(constraint);
+	return constraint;
+error:
+	isl_val_free(v);
+	return isl_constraint_free(constraint);
+}
+
 __isl_give isl_constraint *isl_constraint_set_constant_si(
 	__isl_take isl_constraint *constraint, int v)
 {

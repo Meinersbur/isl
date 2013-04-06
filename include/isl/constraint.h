@@ -15,6 +15,7 @@
 #include <isl/aff_type.h>
 #include <isl/set_type.h>
 #include <isl/list.h>
+#include <isl/val.h>
 #include <isl/printer.h>
 
 #if defined(__cplusplus)
@@ -89,6 +90,8 @@ __isl_give isl_constraint *isl_constraint_set_constant(
 	__isl_take isl_constraint *constraint, isl_int v);
 __isl_give isl_constraint *isl_constraint_set_constant_si(
 	__isl_take isl_constraint *constraint, int v);
+__isl_give isl_constraint *isl_constraint_set_constant_val(
+	__isl_take isl_constraint *constraint, __isl_take isl_val *v);
 __isl_give isl_constraint *isl_constraint_set_coefficient(
 	__isl_take isl_constraint *constraint,
 	enum isl_dim_type type, int pos, isl_int v);
