@@ -23,6 +23,8 @@ extern struct isl_obj_vtable isl_obj_none_vtable;
 #define isl_obj_none		(&isl_obj_none_vtable)
 extern struct isl_obj_vtable isl_obj_int_vtable;
 #define isl_obj_int		(&isl_obj_int_vtable)
+extern struct isl_obj_vtable isl_obj_val_vtable;
+#define isl_obj_val		(&isl_obj_val_vtable)
 extern struct isl_obj_vtable isl_obj_set_vtable;
 #define isl_obj_set		(&isl_obj_set_vtable)
 extern struct isl_obj_vtable isl_obj_union_set_vtable;

@@ -164,6 +164,34 @@ struct isl_obj_vtable isl_obj_int_vtable = {
 	isl_obj_int_free
 };
 
+static void *isl_obj_val_copy(void *v)
+{
+	return isl_val_copy((isl_val *)v);
+}
+
+static void isl_obj_val_free(void *v)
+{
+	isl_val_free((isl_val *)v);
+}
+
+static __isl_give isl_printer *isl_obj_val_print(__isl_take isl_printer *p,
+	void *v)
+{
+	return isl_printer_print_val(p, (isl_val *)v);
+}
+
+static void *isl_obj_val_add(void *v1, void *v2)
+{
+	return isl_val_add((isl_val *) v1, (isl_val *) v2);
+}
+
+struct isl_obj_vtable isl_obj_val_vtable = {
+	isl_obj_val_copy,
+	isl_obj_val_add,
+	isl_obj_val_print,
+	isl_obj_val_free
+};
+
 static void *isl_obj_map_copy(void *v)
 {
 	return isl_map_copy((struct isl_map *)v);
