@@ -177,6 +177,13 @@ system)
 		TargetInfo::CreateTargetInfo(*Diags, TO);
 	], [AC_DEFINE([CREATETARGETINFO_TAKES_POINTER], [],
 		      [Define if TargetInfo::CreateTargetInfo takes pointer])])
+	AC_TRY_COMPILE([#include <clang/Frontend/CompilerInstance.h>], [
+		using namespace clang;
+		DiagnosticConsumer *client;
+		CompilerInstance *Clang;
+		Clang->createDiagnostics(client);
+	], [], [AC_DEFINE([CREATEDIAGNOSTICS_TAKES_ARG], [],
+	[Define if CompilerInstance::createDiagnostics takes argc and argv])])
 	AC_LANG_POP
 	CPPFLAGS="$SAVE_CPPFLAGS"
 
