@@ -126,7 +126,7 @@ system)
 	CLANG_CXXFLAGS=`$llvm_config --cxxflags`
 	CLANG_LDFLAGS=`$llvm_config --ldflags`
 	targets=`$llvm_config --targets-built`
-	CLANG_LIBS=`$llvm_config --libs $targets asmparser support mc`
+	CLANG_LIBS=`$llvm_config --libs $targets asmparser bitreader support mc`
 	CLANG_PREFIX=`$llvm_config --prefix`
 	AC_DEFINE_UNQUOTED(CLANG_PREFIX, ["$CLANG_PREFIX"],
 				[Clang installation prefix])
@@ -177,6 +177,19 @@ system)
 		TargetInfo::CreateTargetInfo(*Diags, TO);
 	], [AC_DEFINE([CREATETARGETINFO_TAKES_POINTER], [],
 		      [Define if TargetInfo::CreateTargetInfo takes pointer])])
+	AC_TRY_COMPILE([#include <clang/Frontend/CompilerInstance.h>], [
+		using namespace clang;
+		DiagnosticConsumer *client;
+		CompilerInstance *Clang;
+		Clang->createDiagnostics(client);
+	], [], [AC_DEFINE([CREATEDIAGNOSTICS_TAKES_ARG], [],
+	[Define if CompilerInstance::createDiagnostics takes argc and argv])])
+	AC_TRY_COMPILE([#include <clang/Lex/HeaderSearchOptions.h>], [
+		using namespace clang;
+		HeaderSearchOptions HSO;
+		HSO.AddPath("", frontend::Angled, false, false);
+	], [AC_DEFINE([ADDPATH_TAKES_4_ARGUMENTS], [],
+		[Define if HeaderSearchOptions::AddPath takes 4 arguments])])
 	AC_LANG_POP
 	CPPFLAGS="$SAVE_CPPFLAGS"
 

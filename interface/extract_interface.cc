@@ -238,12 +238,44 @@ static TargetInfo *create_target_info(CompilerInstance *Clang,
 
 #endif
 
+#ifdef CREATEDIAGNOSTICS_TAKES_ARG
+
+static void create_diagnostics(CompilerInstance *Clang)
+{
+	Clang->createDiagnostics(0, NULL, construct_printer());
+}
+
+#else
+
+static void create_diagnostics(CompilerInstance *Clang)
+{
+	Clang->createDiagnostics(construct_printer());
+}
+
+#endif
+
+#ifdef ADDPATH_TAKES_4_ARGUMENTS
+
+void add_path(HeaderSearchOptions &HSO, string Path)
+{
+	HSO.AddPath(Path, frontend::Angled, false, false);
+}
+
+#else
+
+void add_path(HeaderSearchOptions &HSO, string Path)
+{
+	HSO.AddPath(Path, frontend::Angled, true, false, false);
+}
+
+#endif
+
 int main(int argc, char *argv[])
 {
 	llvm::cl::ParseCommandLineOptions(argc, argv);
 
 	CompilerInstance *Clang = new CompilerInstance();
-	Clang->createDiagnostics(0, NULL, construct_printer());
+	create_diagnostics(Clang);
 	DiagnosticsEngine &Diags = Clang->getDiagnostics();
 	Diags.setSuppressSystemWarnings(true);
 	CompilerInvocation *invocation =
@@ -262,7 +294,7 @@ int main(int argc, char *argv[])
 	HSO.ResourceDir = ResourceDir;
 
 	for (int i = 0; i < Includes.size(); ++i)
-		HSO.AddPath(Includes[i], frontend::Angled, true, false, false);
+		add_path(HSO, Includes[i]);
 
 	PO.addMacroDef("__isl_give=__attribute__((annotate(\"isl_give\")))");
 	PO.addMacroDef("__isl_keep=__attribute__((annotate(\"isl_keep\")))");
