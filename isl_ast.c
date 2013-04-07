@@ -1373,6 +1373,30 @@ static __isl_give isl_printer *print_body_c(__isl_take isl_printer *p,
 	return p;
 }
 
+/* Print the start of a compound statement.
+ */
+static __isl_give isl_printer *start_block(__isl_take isl_printer *p)
+{
+	p = isl_printer_start_line(p);
+	p = isl_printer_print_str(p, "{");
+	p = isl_printer_end_line(p);
+	p = isl_printer_indent(p, 2);
+
+	return p;
+}
+
+/* Print the end of a compound statement.
+ */
+static __isl_give isl_printer *end_block(__isl_take isl_printer *p)
+{
+	p = isl_printer_indent(p, -2);
+	p = isl_printer_start_line(p);
+	p = isl_printer_print_str(p, "}");
+	p = isl_printer_end_line(p);
+
+	return p;
+}
+
 /* Print the for node "node".
  *
  * If the for node is degenerate, it is printed as
@@ -1475,19 +1499,11 @@ static __isl_give isl_printer *print_ast_node_c(__isl_take isl_printer *p,
 		p = print_if_c(p, node, options, 1);
 		break;
 	case isl_ast_node_block:
-		if (!in_block) {
-			p = isl_printer_start_line(p);
-			p = isl_printer_print_str(p, "{");
-			p = isl_printer_end_line(p);
-			p = isl_printer_indent(p, 2);
-		}
+		if (!in_block)
+			p = start_block(p);
 		p = isl_ast_node_list_print(node->u.b.children, p, options);
-		if (!in_block) {
-			p = isl_printer_indent(p, -2);
-			p = isl_printer_start_line(p);
-			p = isl_printer_print_str(p, "}");
-			p = isl_printer_end_line(p);
-		}
+		if (!in_block)
+			p = end_block(p);
 		break;
 	case isl_ast_node_user:
 		if (options->print_user)
