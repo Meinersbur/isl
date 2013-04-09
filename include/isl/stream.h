@@ -14,6 +14,7 @@
 #include <isl/hash.h>
 #include <isl/aff_type.h>
 #include <isl/obj.h>
+#include <isl/val.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -52,6 +53,7 @@ struct isl_token {
 	} u;
 };
 
+__isl_give isl_val *isl_token_get_val(isl_ctx *ctx, struct isl_token *tok);
 void isl_token_free(struct isl_token *tok);
 
 struct isl_stream {

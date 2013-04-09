@@ -14,6 +14,7 @@
 #include <isl_stream_private.h>
 #include <isl/map.h>
 #include <isl/aff.h>
+#include <isl_val_private.h>
 
 struct isl_keyword {
 	char			*name;
@@ -78,6 +79,19 @@ struct isl_token *isl_token_new(isl_ctx *ctx,
 	tok->is_keyword = 0;
 	tok->u.s = NULL;
 	return tok;
+}
+
+/* Given a token of type ISL_TOKEN_VALUE, return the value it represents.
+ */
+__isl_give isl_val *isl_token_get_val(isl_ctx *ctx, struct isl_token *tok)
+{
+	if (!tok)
+		return NULL;
+	if (tok->type != ISL_TOKEN_VALUE)
+		isl_die(ctx, isl_error_invalid, "not a value token",
+			return NULL);
+
+	return isl_val_int_from_isl_int(ctx, tok->u.v);
 }
 
 void isl_token_free(struct isl_token *tok)
