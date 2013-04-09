@@ -2697,8 +2697,15 @@ dualization algorithms or skip the elimination step.
 
 	__isl_give isl_map *isl_map_fixed_power(
 		__isl_take isl_map *map, isl_int exp);
+	__isl_give isl_map *isl_map_fixed_power_val(
+		__isl_take isl_map *map,
+		__isl_take isl_val *exp);
 	__isl_give isl_union_map *isl_union_map_fixed_power(
 		__isl_take isl_union_map *umap, isl_int exp);
+	__isl_give isl_union_map *
+	isl_union_map_fixed_power_val(
+		__isl_take isl_union_map *umap,
+		__isl_take isl_val *exp);
 
 Compute the given power of C<map>, where C<exp> is assumed to be non-zero.
 If the exponent C<exp> is negative, then the -C<exp> th power of the inverse

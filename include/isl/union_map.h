@@ -5,6 +5,7 @@
 #include <isl/map_type.h>
 #include <isl/union_map_type.h>
 #include <isl/printer.h>
+#include <isl/val.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -160,6 +161,8 @@ __isl_give isl_basic_map *isl_union_map_sample(__isl_take isl_union_map *umap);
 
 __isl_give isl_union_map *isl_union_map_fixed_power(
 	__isl_take isl_union_map *umap, isl_int exp);
+__isl_give isl_union_map *isl_union_map_fixed_power_val(
+	__isl_take isl_union_map *umap, __isl_take isl_val *exp);
 __isl_give isl_union_map *isl_union_map_power(__isl_take isl_union_map *umap,
 	int *exact);
 __isl_give isl_union_map *isl_union_map_transitive_closure(

@@ -1,3 +1,5 @@
+#include <isl_val_private.h>
+
 #define xFN(TYPE,NAME) TYPE ## _ ## NAME
 #define FN(TYPE,NAME) xFN(TYPE,NAME)
 
@@ -54,5 +56,26 @@ __isl_give TYPE *FN(TYPE,fixed_power)(__isl_take TYPE *map, isl_int exp)
 	return res;
 error:
 	FN(TYPE,free)(map);
+	return NULL;
+}
+
+/* Compute the given non-zero power of "map" and return the result.
+ * If the exponent "exp" is negative, then the -exp th power of the inverse
+ * relation is computed.
+ */
+__isl_give TYPE *FN(TYPE,fixed_power_val)(__isl_take TYPE *map,
+	__isl_take isl_val *exp)
+{
+	if (!map || !exp)
+		goto error;
+	if (!isl_val_is_int(exp))
+		isl_die(FN(TYPE,get_ctx)(map), isl_error_invalid,
+			"expecting integer exponent", goto error);
+	map = FN(TYPE,fixed_power)(map, exp->n);
+	isl_val_free(exp);
+	return map;
+error:
+	FN(TYPE,free)(map);
+	isl_val_free(exp);
 	return NULL;
 }
