@@ -204,19 +204,21 @@ struct isl_mat *isl_mat_cow(struct isl_mat *mat)
 	return mat2;
 }
 
-void isl_mat_free(struct isl_mat *mat)
+void *isl_mat_free(struct isl_mat *mat)
 {
 	if (!mat)
-		return;
+		return NULL;
 
 	if (--mat->ref > 0)
-		return;
+		return NULL;
 
 	if (!ISL_F_ISSET(mat, ISL_MAT_BORROWED))
 		isl_blk_free(mat->ctx, mat->block);
 	isl_ctx_deref(mat->ctx);
 	free(mat->row);
 	free(mat);
+
+	return NULL;
 }
 
 int isl_mat_rows(__isl_keep isl_mat *mat)

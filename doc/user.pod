@@ -3178,7 +3178,7 @@ Matrices can be created, copied and freed using the following functions.
 	__isl_give isl_mat *isl_mat_alloc(isl_ctx *ctx,
 		unsigned n_row, unsigned n_col);
 	__isl_give isl_mat *isl_mat_copy(__isl_keep isl_mat *mat);
-	void isl_mat_free(__isl_take isl_mat *mat);
+	void *isl_mat_free(__isl_take isl_mat *mat);
 
 Note that the elements of a newly created matrix may have arbitrary values.
 The elements can be changed and inspected using the following functions.
