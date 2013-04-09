@@ -48,6 +48,8 @@ __isl_give isl_aff *isl_aff_set_coefficient(__isl_take isl_aff *aff,
 	enum isl_dim_type type, int pos, isl_int v);
 __isl_give isl_aff *isl_aff_set_coefficient_si(__isl_take isl_aff *aff,
 	enum isl_dim_type type, int pos, int v);
+__isl_give isl_aff *isl_aff_set_coefficient_val(__isl_take isl_aff *aff,
+	enum isl_dim_type type, int pos, __isl_take isl_val *v);
 __isl_give isl_aff *isl_aff_set_denominator(__isl_take isl_aff *aff, isl_int v);
 __isl_give isl_aff *isl_aff_add_constant(__isl_take isl_aff *aff, isl_int v);
 __isl_give isl_aff *isl_aff_add_constant_si(__isl_take isl_aff *aff, int v);
