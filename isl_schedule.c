@@ -3279,7 +3279,8 @@ static int cmp_band(const void *a, const void *b, void *user)
  *
  * If there is only one element in the list, then there is no need to sort
  * anything.
- * If partial schedule of the parent has more than one member, then it's
+ * If the partial schedule of the parent has more than one member
+ * (or if there is no parent), then it's
  * defnitely not assigning constant values to the different children in
  * the list and so we wouldn't be able to use it to sort the list.
  */
@@ -3292,7 +3293,7 @@ static __isl_give isl_band_list *sort_band_list(__isl_take isl_band_list *list,
 		return NULL;
 	if (list->n <= 1)
 		return list;
-	if (parent->n != 1)
+	if (!parent || parent->n != 1)
 		return list;
 
 	data.r = 0;
