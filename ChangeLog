@@ -1,3 +1,9 @@
+version: 0.11.2
+date: Tue Apr  9 18:45:10 CEST 2013
+changes:
+	- make code generation output the same on Solaris
+	- fix some hard to trigger bugs
+---
 version: 0.11.1
 date: Mon Dec 10 11:55:30 CET 2012
 changes:
