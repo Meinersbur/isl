@@ -3669,6 +3669,8 @@ It can be modified using
 		__isl_take isl_aff *aff, isl_int v);
 	__isl_give isl_aff *isl_aff_set_constant_si(
 		__isl_take isl_aff *aff, int v);
+	__isl_give isl_aff *isl_aff_set_constant_val(
+		__isl_take isl_aff *aff, __isl_take isl_val *v);
 	__isl_give isl_aff *isl_aff_set_coefficient(
 		__isl_take isl_aff *aff,
 		enum isl_dim_type type, int pos, isl_int v);
@@ -3712,8 +3714,10 @@ It can be modified using
 		__isl_take isl_pw_aff *pwaff,
 		enum isl_dim_type type, unsigned first, unsigned n);
 
-Note that the C<set_constant> and C<set_coefficient> functions
+Note that C<isl_aff_set_constant>, C<isl_aff_set_constant_si>,
+C<isl_aff_set_coefficient> and C<isl_aff_set_coefficient_si>
 set the I<numerator> of the constant or coefficient, while
+C<isl_aff_set_constant_val> sets the constant as a whole.
 C<add_constant> and C<add_coefficient> add an integer value to
 the possibly rational constant or coefficient.
 The C<add_constant_num> functions add an integer value to
