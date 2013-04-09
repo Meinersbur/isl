@@ -2969,10 +2969,83 @@ isl_ctx *isl_schedule_get_ctx(__isl_keep isl_schedule *schedule)
 	return schedule ? isl_space_get_ctx(schedule->dim) : NULL;
 }
 
+/* Set max_out to the maximal number of output dimensions over
+ * all maps.
+ */
+static int update_max_out(__isl_take isl_map *map, void *user)
+{
+	int *max_out = user;
+	int n_out = isl_map_dim(map, isl_dim_out);
+
+	if (n_out > *max_out)
+		*max_out = n_out;
+
+	isl_map_free(map);
+	return 0;
+}
+
+/* Internal data structure for map_pad_range.
+ *
+ * "max_out" is the maximal schedule dimension.
+ * "res" collects the results.
+ */
+struct isl_pad_schedule_map_data {
+	int max_out;
+	isl_union_map *res;
+};
+
+/* Pad the range of the given map with zeros to data->max_out and
+ * then add the result to data->res.
+ */
+static int map_pad_range(__isl_take isl_map *map, void *user)
+{
+	struct isl_pad_schedule_map_data *data = user;
+	int i;
+	int n_out = isl_map_dim(map, isl_dim_out);
+
+	map = isl_map_add_dims(map, isl_dim_out, data->max_out - n_out);
+	for (i = n_out; i < data->max_out; ++i)
+		map = isl_map_fix_si(map, isl_dim_out, i, 0);
+
+	data->res = isl_union_map_add_map(data->res, map);
+	if (!data->res)
+		return -1;
+
+	return 0;
+}
+
+/* Pad the ranges of the maps in the union map with zeros such they all have
+ * the same dimension.
+ */
+static __isl_give isl_union_map *pad_schedule_map(
+	__isl_take isl_union_map *umap)
+{
+	struct isl_pad_schedule_map_data data;
+
+	if (!umap)
+		return NULL;
+	if (isl_union_map_n_map(umap) <= 1)
+		return umap;
+
+	data.max_out = 0;
+	if (isl_union_map_foreach_map(umap, &update_max_out, &data.max_out) < 0)
+		return isl_union_map_free(umap);
+
+	data.res = isl_union_map_empty(isl_union_map_get_space(umap));
+	if (isl_union_map_foreach_map(umap, &map_pad_range, &data) < 0)
+		data.res = isl_union_map_free(data.res);
+
+	isl_union_map_free(umap);
+	return data.res;
+}
+
 /* Return an isl_union_map of the schedule.  If we have already constructed
  * a band forest, then this band forest may have been modified so we need
  * to extract the isl_union_map from the forest rather than from
- * the originally computed schedule.
+ * the originally computed schedule.  This reconstructed schedule map
+ * then needs to be padded with zeros to unify the schedule space
+ * since the result of isl_band_list_get_suffix_schedule may not have
+ * a unified schedule space.
  */
 __isl_give isl_union_map *isl_schedule_get_map(__isl_keep isl_schedule *sched)
 {
@@ -2982,8 +3055,10 @@ __isl_give isl_union_map *isl_schedule_get_map(__isl_keep isl_schedule *sched)
 	if (!sched)
 		return NULL;
 
-	if (sched->band_forest)
-		return isl_band_list_get_suffix_schedule(sched->band_forest);
+	if (sched->band_forest) {
+		umap = isl_band_list_get_suffix_schedule(sched->band_forest);
+		return pad_schedule_map(umap);
+	}
 
 	umap = isl_union_map_empty(isl_space_copy(sched->dim));
 	for (i = 0; i < sched->n; ++i) {
