@@ -13,6 +13,7 @@
 #include <isl/seq.h>
 #include <isl_mat_private.h>
 #include <isl_space_private.h>
+#include <isl_val_private.h>
 
 isl_ctx *isl_mat_get_ctx(__isl_keep isl_mat *mat)
 {
@@ -281,6 +282,24 @@ __isl_give isl_mat *isl_mat_set_element_si(__isl_take isl_mat *mat,
 error:
 	isl_mat_free(mat);
 	return NULL;
+}
+
+/* Replace the element at row "row", column "col" of "mat" by "v".
+ */
+__isl_give isl_mat *isl_mat_set_element_val(__isl_take isl_mat *mat,
+	int row, int col, __isl_take isl_val *v)
+{
+	if (!v)
+		return isl_mat_free(mat);
+	if (!isl_val_is_int(v))
+		isl_die(isl_val_get_ctx(v), isl_error_invalid,
+			"expecting integer value", goto error);
+	mat = isl_mat_set_element(mat, row, col, v->n);
+	isl_val_free(v);
+	return mat;
+error:
+	isl_val_free(v);
+	return isl_mat_free(mat);
 }
 
 __isl_give isl_mat *isl_mat_diag(isl_ctx *ctx, unsigned n_row, isl_int d)

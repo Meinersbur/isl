@@ -16,6 +16,7 @@
 #include <isl/ctx.h>
 #include <isl/blk.h>
 #include <isl/vec.h>
+#include <isl/val.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -43,6 +44,8 @@ __isl_give isl_mat *isl_mat_set_element(__isl_take isl_mat *mat,
 	int row, int col, isl_int v);
 __isl_give isl_mat *isl_mat_set_element_si(__isl_take isl_mat *mat,
 	int row, int col, int v);
+__isl_give isl_mat *isl_mat_set_element_val(__isl_take isl_mat *mat,
+	int row, int col, __isl_take isl_val *v);
 
 struct isl_mat *isl_mat_swap_cols(struct isl_mat *mat, unsigned i, unsigned j);
 struct isl_mat *isl_mat_swap_rows(struct isl_mat *mat, unsigned i, unsigned j);

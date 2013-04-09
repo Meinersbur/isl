@@ -3491,6 +3491,9 @@ The elements can be changed and inspected using the following functions.
 		int row, int col, isl_int v);
 	__isl_give isl_mat *isl_mat_set_element_si(__isl_take isl_mat *mat,
 		int row, int col, int v);
+	__isl_give isl_mat *isl_mat_set_element_val(
+		__isl_take isl_mat *mat, int row, int col,
+		__isl_take isl_val *v);
 
 C<isl_mat_get_element> will return a negative value if anything went wrong.
 In that case, the value of C<*v> is undefined.
