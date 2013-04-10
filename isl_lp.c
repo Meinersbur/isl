@@ -14,6 +14,10 @@
 #include <isl/seq.h>
 #include "isl_tab.h"
 #include <isl_options_private.h>
+#include <isl_local_space_private.h>
+#include <isl_aff_private.h>
+#include <isl_mat_private.h>
+#include <isl_val_private.h>
 
 enum isl_lp_result isl_tab_solve_lp(struct isl_basic_map *bmap, int maximize,
 				      isl_int *f, isl_int denom, isl_int *opt,
@@ -201,4 +205,162 @@ enum isl_lp_result isl_set_solve_lp(__isl_keep isl_set *set, int max,
 {
 	return isl_map_solve_lp((struct isl_map *)set, max,
 					f, d, opt, opt_denom, sol);
+}
+
+/* Return the optimal (rational) value of "obj" over "bset", assuming
+ * that "obj" and "bset" have aligned parameters and divs.
+ * If "max" is set, then the maximal value is computed.
+ * Otherwise, the minimal value is computed.
+ *
+ * Return infinity or negative infinity if the optimal value is unbounded and
+ * NaN if "bset" is empty.
+ *
+ * Call isl_basic_set_solve_lp and translate the results.
+ */
+static __isl_give isl_val *basic_set_opt_lp(
+	__isl_keep isl_basic_set *bset, int max, __isl_keep isl_aff *obj)
+{
+	isl_ctx *ctx;
+	isl_val *res;
+	enum isl_lp_result lp_res;
+
+	if (!bset || !obj)
+		return NULL;
+
+	ctx = isl_aff_get_ctx(obj);
+	res = isl_val_alloc(ctx);
+	if (!res)
+		return NULL;
+	lp_res = isl_basic_set_solve_lp(bset, max, obj->v->el + 1,
+					obj->v->el[0], &res->n, &res->d, NULL);
+	if (lp_res == isl_lp_ok)
+		return isl_val_normalize(res);
+	isl_val_free(res);
+	if (lp_res == isl_lp_error)
+		return NULL;
+	if (lp_res == isl_lp_empty)
+		return isl_val_nan(ctx);
+	if (max)
+		return isl_val_infty(ctx);
+	else
+		return isl_val_neginfty(ctx);
+}
+
+/* Return the optimal (rational) value of "obj" over "bset", assuming
+ * that "obj" and "bset" have aligned parameters.
+ * If "max" is set, then the maximal value is computed.
+ * Otherwise, the minimal value is computed.
+ *
+ * Return infinity or negative infinity if the optimal value is unbounded and
+ * NaN if "bset" is empty.
+ *
+ * Align the divs of "bset" and "obj" and call basic_set_opt_lp.
+ */
+static __isl_give isl_val *isl_basic_set_opt_lp_val_aligned(
+	__isl_keep isl_basic_set *bset, int max, __isl_keep isl_aff *obj)
+{
+	int *exp1 = NULL;
+	int *exp2 = NULL;
+	isl_ctx *ctx;
+	isl_mat *bset_div = NULL;
+	isl_mat *div = NULL;
+	isl_val *res;
+
+	if (!bset || !obj)
+		return NULL;
+
+	ctx = isl_aff_get_ctx(obj);
+	if (!isl_space_is_equal(bset->dim, obj->ls->dim))
+		isl_die(ctx, isl_error_invalid,
+			"spaces don't match", return NULL);
+
+	if (bset->n_div == 0 && obj->ls->div->n_row == 0)
+		return basic_set_opt_lp(bset, max, obj);
+
+	bset = isl_basic_set_copy(bset);
+	obj = isl_aff_copy(obj);
+
+	bset_div = isl_basic_set_get_divs(bset);
+	exp1 = isl_alloc_array(ctx, int, bset_div->n_row);
+	exp2 = isl_alloc_array(ctx, int, obj->ls->div->n_row);
+	if (!bset_div || !exp1 || !exp2)
+		goto error;
+
+	div = isl_merge_divs(bset_div, obj->ls->div, exp1, exp2);
+
+	bset = isl_basic_set_expand_divs(bset, isl_mat_copy(div), exp1);
+	obj = isl_aff_expand_divs(obj, isl_mat_copy(div), exp2);
+
+	res = basic_set_opt_lp(bset, max, obj);
+
+	isl_mat_free(bset_div);
+	isl_mat_free(div);
+	free(exp1);
+	free(exp2);
+	isl_basic_set_free(bset);
+	isl_aff_free(obj);
+
+	return res;
+error:
+	isl_mat_free(div);
+	isl_mat_free(bset_div);
+	free(exp1);
+	free(exp2);
+	isl_basic_set_free(bset);
+	isl_aff_free(obj);
+	return NULL;
+}
+
+/* Return the optimal (rational) value of "obj" over "bset".
+ * If "max" is set, then the maximal value is computed.
+ * Otherwise, the minimal value is computed.
+ *
+ * Return infinity or negative infinity if the optimal value is unbounded and
+ * NaN if "bset" is empty.
+ */
+static __isl_give isl_val *isl_basic_set_opt_lp_val(
+	__isl_keep isl_basic_set *bset, int max, __isl_keep isl_aff *obj)
+{
+	isl_val *res;
+
+	if (!bset || !obj)
+		return NULL;
+
+	if (isl_space_match(bset->dim, isl_dim_param,
+			    obj->ls->dim, isl_dim_param))
+		return isl_basic_set_opt_lp_val_aligned(bset, max, obj);
+
+	bset = isl_basic_set_copy(bset);
+	obj = isl_aff_copy(obj);
+	bset = isl_basic_set_align_params(bset, isl_aff_get_domain_space(obj));
+	obj = isl_aff_align_params(obj, isl_basic_set_get_space(bset));
+
+	res = isl_basic_set_opt_lp_val_aligned(bset, max, obj);
+
+	isl_basic_set_free(bset);
+	isl_aff_free(obj);
+
+	return res;
+}
+
+/* Return the minimal (rational) value of "obj" over "bset".
+ *
+ * Return negative infinity if the minimal value is unbounded and
+ * NaN if "bset" is empty.
+ */
+__isl_give isl_val *isl_basic_set_min_lp_val(__isl_keep isl_basic_set *bset,
+	__isl_keep isl_aff *obj)
+{
+	return isl_basic_set_opt_lp_val(bset, 0, obj);
+}
+
+/* Return the maximal (rational) value of "obj" over "bset".
+ *
+ * Return infinity if the maximal value is unbounded and
+ * NaN if "bset" is empty.
+ */
+__isl_give isl_val *isl_basic_set_max_lp_val(__isl_keep isl_basic_set *bset,
+	__isl_keep isl_aff *obj)
+{
+	return isl_basic_set_opt_lp_val(bset, 1, obj);
 }
