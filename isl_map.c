@@ -285,6 +285,13 @@ __isl_give isl_mat *isl_basic_map_get_divs(__isl_keep isl_basic_map *bmap)
 	return div;
 }
 
+/* Extract the divs in "bset" as a matrix.
+ */
+__isl_give isl_mat *isl_basic_set_get_divs(__isl_keep isl_basic_set *bset)
+{
+	return isl_basic_map_get_divs(bset);
+}
+
 __isl_give isl_local_space *isl_basic_map_get_local_space(
 	__isl_keep isl_basic_map *bmap)
 {
