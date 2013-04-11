@@ -97,8 +97,4 @@ changes:
 	- fix several hard to trigger bugs
 	- improved argument parsing
 	- support parametric vertex enumeration for barvinok
----
-version: 0.08
-date: Fri Oct 21 12:36:20 CEST 2011
-changes:
 	- optionally use Bernstein expansion to compute bounds
