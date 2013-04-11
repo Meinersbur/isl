@@ -1804,6 +1804,26 @@ int isl_ast_build_has_affine_value(__isl_keep isl_ast_build *build,
 	return !involves;
 }
 
+/* Plug in the known values (fixed affine expressions in terms of
+ * parameters and outer loop iterators) of all loop iterators
+ * in the domain of "umap".
+ *
+ * We simply precompose "umap" with build->values.
+ */
+__isl_give isl_union_map *isl_ast_build_substitute_values_union_map_domain(
+	__isl_keep isl_ast_build *build, __isl_take isl_union_map *umap)
+{
+	isl_multi_aff *values;
+
+	if (!build)
+		return isl_union_map_free(umap);
+
+	values = isl_multi_aff_copy(build->values);
+	umap = isl_union_map_preimage_domain_multi_aff(umap, values);
+
+	return umap;
+}
+
 /* Is the current dimension known to attain only a single value?
  */
 int isl_ast_build_has_value(__isl_keep isl_ast_build *build)

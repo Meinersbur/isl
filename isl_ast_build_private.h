@@ -221,6 +221,9 @@ __isl_give isl_pw_aff *isl_ast_build_compute_gist_pw_aff(
 __isl_give isl_pw_multi_aff *isl_ast_build_compute_gist_pw_multi_aff(
 	__isl_keep isl_ast_build *build, __isl_take isl_pw_multi_aff *pma);
 
+__isl_give isl_union_map *isl_ast_build_substitute_values_union_map_domain(
+	__isl_keep isl_ast_build *build, __isl_take isl_union_map *umap);
+
 int isl_ast_build_aff_is_nonneg(__isl_keep isl_ast_build *build,
 	__isl_keep isl_aff *aff);
 

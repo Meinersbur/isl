@@ -315,24 +315,17 @@ static __isl_give isl_ast_graft *after_each_for(__isl_keep isl_ast_graft *graft,
 	return graft;
 }
 
-/* Eliminate the schedule dimension "pos" from "executed" and return
- * the result.
+/* Plug in all the know values of the current and outer dimensions
+ * in the domain of "executed".  In principle, we only need to plug
+ * in the known value of the current dimension since the values of
+ * outer dimensions have been plugged in already.
+ * However, it turns out to be easier to just plug in all known values.
  */
-static __isl_give isl_union_map *eliminate(__isl_take isl_union_map *executed,
-	int pos, __isl_keep isl_ast_build *build)
+static __isl_give isl_union_map *plug_in_values(
+	__isl_take isl_union_map *executed, __isl_keep isl_ast_build *build)
 {
-	isl_space *space;
-	isl_map *elim;
-
-	space = isl_ast_build_get_space(build, 1);
-	space = isl_space_map_from_set(space);
-	elim = isl_map_identity(space);
-	elim = isl_map_eliminate(elim, isl_dim_in, pos, 1);
-
-	executed = isl_union_map_apply_domain(executed,
-						isl_union_map_from_map(elim));
-
-	return executed;
+	return isl_ast_build_substitute_values_union_map_domain(build,
+								    executed);
 }
 
 /* Check if the constraint "c" is a lower bound on dimension "pos",
@@ -1249,8 +1242,13 @@ static __isl_give isl_ast_node *create_for(__isl_keep isl_ast_build *build,
  * it can be printed as an assignment of the single value to the loop
  * "iterator".
  *
- * If the current level is eliminated, we eliminate the current dimension
- * from the inverse schedule to make sure no inner dimensions depend
+ * If the current level is eliminated, we explicitly plug in the value
+ * for the current level found by isl_ast_build_set_loop_bounds in the
+ * inverse schedule.  This ensures that if we are working on a slice
+ * of the domain based on information available in the inverse schedule
+ * and the build domain, that then this information is also reflected
+ * in the inverse schedule.  This operation also eliminates the current
+ * dimension from the inverse schedule making sure no inner dimensions depend
  * on the current dimension.  Otherwise, we create a for node, marking
  * it degenerate if appropriate.  The initial for node is still incomplete
  * and will be completed in either refine_degenerate or refine_generic.
@@ -1293,7 +1291,7 @@ static __isl_give isl_ast_graft *create_node_scaled(
 	if (degenerate < 0 || eliminated < 0)
 		executed = isl_union_map_free(executed);
 	if (eliminated)
-		executed = eliminate(executed, depth, build);
+		executed = plug_in_values(executed, sub_build);
 	else
 		node = create_for(build, degenerate);
 

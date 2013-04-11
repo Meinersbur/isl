@@ -3806,6 +3806,76 @@ static int test_ast_gen4(isl_ctx *ctx)
 	return 0;
 }
 
+/* This function is called for each leaf in the AST generated
+ * from test_ast_gen5.
+ *
+ * We finalize the AST generation by extending the outer schedule
+ * with a zero-dimensional schedule.  If this results in any for loops,
+ * then this means that we did not pass along enough information
+ * about the outer schedule to the inner AST generation.
+ */
+static __isl_give isl_ast_node *create_leaf(__isl_take isl_ast_build *build,
+	void *user)
+{
+	isl_union_map *schedule, *extra;
+	isl_ast_node *tree;
+
+	schedule = isl_ast_build_get_schedule(build);
+	extra = isl_union_map_copy(schedule);
+	extra = isl_union_map_from_domain(isl_union_map_domain(extra));
+	schedule = isl_union_map_range_product(schedule, extra);
+	tree = isl_ast_build_ast_from_schedule(build, schedule);
+	isl_ast_build_free(build);
+
+	if (!tree)
+		return NULL;
+
+	if (isl_ast_node_get_type(tree) == isl_ast_node_for)
+		isl_die(isl_ast_node_get_ctx(tree), isl_error_unknown,
+			"code should not contain any for loop",
+			return isl_ast_node_free(tree));
+
+	return tree;
+}
+
+/* Check that we do not lose any information when going back and
+ * forth between internal and external schedule.
+ *
+ * In particular, we create an AST where we unroll the only
+ * non-constant dimension in the schedule.  We therefore do
+ * not expect any for loops in the AST.  However, older versions
+ * of isl would not pass along enough information about the outer
+ * schedule when performing an inner code generation from a create_leaf
+ * callback, resulting in the inner code generation producing a for loop.
+ */
+static int test_ast_gen5(isl_ctx *ctx)
+{
+	const char *str;
+	isl_set *set;
+	isl_union_map *schedule, *options;
+	isl_ast_build *build;
+	isl_ast_node *tree;
+
+	str = "{ A[] -> [1, 1, 2]; B[i] -> [1, i, 0] : i >= 1 and i <= 2 }";
+	schedule = isl_union_map_read_from_str(ctx, str);
+
+	str = "{ [a, b, c] -> unroll[1] : exists (e0 = [(a)/4]: "
+				"4e0 >= -1 + a - b and 4e0 <= -2 + a + b) }";
+	options = isl_union_map_read_from_str(ctx, str);
+
+	set = isl_set_universe(isl_space_params_alloc(ctx, 0));
+	build = isl_ast_build_from_context(set);
+	build = isl_ast_build_set_options(build, options);
+        build = isl_ast_build_set_create_leaf(build, &create_leaf, NULL);
+	tree = isl_ast_build_ast_from_schedule(build, schedule);
+	isl_ast_build_free(build);
+	isl_ast_node_free(tree);
+	if (!tree)
+		return -1;
+
+	return 0;
+}
+
 static int test_ast_gen(isl_ctx *ctx)
 {
 	if (test_ast_gen1(ctx) < 0)
@@ -3815,6 +3885,8 @@ static int test_ast_gen(isl_ctx *ctx)
 	if (test_ast_gen3(ctx) < 0)
 		return -1;
 	if (test_ast_gen4(ctx) < 0)
+		return -1;
+	if (test_ast_gen5(ctx) < 0)
 		return -1;
 	return 0;
 }
