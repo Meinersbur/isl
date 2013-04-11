@@ -1691,6 +1691,56 @@ static int domain_follows_at_depth(__isl_keep isl_basic_set *i,
 	return empty < 0 ? -1 : !empty;
 }
 
+/* Split up each element of "list" into a part that is related to "bset"
+ * according to "gt" and a part that is not.
+ * Return a list that consist of "bset" and all the pieces.
+ */
+static __isl_give isl_basic_set_list *add_split_on(
+	__isl_take isl_basic_set_list *list, __isl_take isl_basic_set *bset,
+	__isl_keep isl_basic_map *gt)
+{
+	int i, n;
+	isl_basic_set_list *res;
+
+	gt = isl_basic_map_copy(gt);
+	gt = isl_basic_map_intersect_domain(gt, isl_basic_set_copy(bset));
+	n = isl_basic_set_list_n_basic_set(list);
+	res = isl_basic_set_list_from_basic_set(bset);
+	for (i = 0; res && i < n; ++i) {
+		isl_basic_set *bset;
+		isl_set *set1, *set2;
+		isl_basic_map *bmap;
+		int empty;
+
+		bset = isl_basic_set_list_get_basic_set(list, i);
+		bmap = isl_basic_map_copy(gt);
+		bmap = isl_basic_map_intersect_range(bmap, bset);
+		bset = isl_basic_map_range(bmap);
+		empty = isl_basic_set_is_empty(bset);
+		if (empty < 0)
+			res = isl_basic_set_list_free(res);
+		if (empty)  {
+			isl_basic_set_free(bset);
+			bset = isl_basic_set_list_get_basic_set(list, i);
+			res = isl_basic_set_list_add(res, bset);
+			continue;
+		}
+
+		res = isl_basic_set_list_add(res, isl_basic_set_copy(bset));
+		set1 = isl_set_from_basic_set(bset);
+		bset = isl_basic_set_list_get_basic_set(list, i);
+		set2 = isl_set_from_basic_set(bset);
+		set1 = isl_set_subtract(set2, set1);
+		set1 = isl_set_make_disjoint(set1);
+
+		res = isl_basic_set_list_concat(res,
+					    isl_basic_set_list_from_set(set1));
+	}
+	isl_basic_map_free(gt);
+	isl_basic_set_list_free(list);
+	return res;
+}
+
 static __isl_give isl_ast_graft_list *generate_sorted_domains(
 	__isl_keep isl_basic_set_list *domain_list,
 	__isl_keep isl_union_map *executed,
@@ -1730,24 +1780,19 @@ struct isl_add_nodes_data {
  * This may happen in particular in case of unrolling since the domain
  * of each slice is replaced by its simple hull.
  *
- * We collect the basic sets in the component, call isl_set_make_disjoint
- * and try again.  Note that we rely here on isl_set_make_disjoint also
- * making the basic sets rationally disjoint.  If the basic sets
- * are rationally disjoint, then the ordering problem does not occur.
- * To see this, there can only be a problem if there are points
- * (i,a) and (j,b) in one set and (i,c) and (j,d) in the other with
- * a < c and b > d.  This means that either the interval spanned
- * by a en b lies inside that spanned by c and or the other way around.
- * In either case, there is a point inside both intervals with the
- * convex combination in terms of a and b and in terms of c and d.
- * Taking the same combination of i and j gives a point in the intersection.
+ * For each basic set i in "scc" and for each of the following basic sets j,
+ * we split off that part of the basic set i that shares the outer dimensions
+ * with j and lies before j in the current dimension.
+ * We collect all the pieces in a new list that replaces "scc".
  */
 static int add_nodes(__isl_take isl_basic_set_list *scc, void *user)
 {
 	struct isl_add_nodes_data *data = user;
-	int i, n;
+	int i, n, depth;
 	isl_basic_set *bset;
-	isl_set *set;
+	isl_basic_set_list *list;
+	isl_space *space;
+	isl_basic_map *gt;
 
 	n = isl_basic_set_list_n_basic_set(scc);
 	bset = isl_basic_set_list_get_basic_set(scc, 0);
@@ -1759,19 +1804,22 @@ static int add_nodes(__isl_take isl_basic_set_list *scc, void *user)
 		return data->list ? 0 : -1;
 	}
 
-	set = isl_set_from_basic_set(bset);
+	depth = isl_ast_build_get_depth(data->build);
+	space = isl_basic_set_get_space(bset);
+	space = isl_space_map_from_set(space);
+	gt = isl_basic_map_universe(space);
+	for (i = 0; i < depth; ++i)
+		gt = isl_basic_map_equate(gt, isl_dim_in, i, isl_dim_out, i);
+	gt = isl_basic_map_order_gt(gt, isl_dim_in, depth, isl_dim_out, depth);
+
+	list = isl_basic_set_list_from_basic_set(bset);
 	for (i = 1; i < n; ++i) {
 		bset = isl_basic_set_list_get_basic_set(scc, i);
-		set = isl_set_union(set, isl_set_from_basic_set(bset));
+		list = add_split_on(list, bset, gt);
 	}
-
-	set = isl_set_make_disjoint(set);
-	if (isl_set_n_basic_set(set) == n)
-		isl_die(isl_basic_set_list_get_ctx(scc), isl_error_internal,
-			"unable to separate loop parts",
-			set = isl_set_free(set));
+	isl_basic_map_free(gt);
 	isl_basic_set_list_free(scc);
-	scc = isl_basic_set_list_from_set(set);
+	scc = list;
 	data->list = isl_ast_graft_list_concat(data->list,
 		    generate_sorted_domains(scc, data->executed, data->build));
 	isl_basic_set_list_free(scc);
