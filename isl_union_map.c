@@ -12,6 +12,7 @@
 #include <isl_map_private.h>
 #include <isl/ctx.h>
 #include <isl/hash.h>
+#include <isl/aff.h>
 #include <isl/map.h>
 #include <isl/set.h>
 #include <isl_space_private.h>
@@ -2530,5 +2531,86 @@ __isl_give isl_union_set *isl_union_set_solutions(
 error:
 	isl_union_set_free(uset);
 	isl_union_set_free(res);
+	return NULL;
+}
+
+/* Internal data structure for isl_union_map_preimage_domain_multi_aff.
+ *
+ * "ma" is the function under which the preimage should be taken.
+ * "space" is the space of "ma".
+ * "res" collects the results.
+ */
+struct isl_union_map_preimage_domain_data {
+	isl_space *space;
+	isl_multi_aff *ma;
+	isl_union_map *res;
+};
+
+/* Compute the preimage of the domain of *entry under the function
+ * represented by data->ma, provided the domain space of *entry
+ * match the target space of data->ma, and add the result to data->res.
+ */
+static int preimage_domain_entry(void **entry, void *user)
+{
+	int m;
+	isl_map *map = *entry;
+	struct isl_union_map_preimage_domain_data *data = user;
+	int empty;
+
+	m = isl_space_tuple_match(map->dim, isl_dim_in,
+					data->space, isl_dim_out);
+	if (m < 0)
+		return -1;
+	if (!m)
+		return 0;
+
+	map = isl_map_copy(map);
+	map = isl_map_preimage_domain_multi_aff(map,
+						isl_multi_aff_copy(data->ma));
+
+	empty = isl_map_is_empty(map);
+	if (empty < 0 || empty) {
+		isl_map_free(map);
+		return empty < 0 ? -1 : 0;
+	}
+
+	data->res = isl_union_map_add_map(data->res, map);
+
+	return 0;
+}
+
+/* Compute the preimage of the domain of "umap" under the function
+ * represented by "ma".
+ * In other words, plug in "ma" in the domain of "umap".
+ * The result contains maps that live in the same spaces as the maps of "umap"
+ * with domain space equal to the target space of "ma",
+ * except that the domain has been replaced by the domain space of "ma".
+ */
+__isl_give isl_union_map *isl_union_map_preimage_domain_multi_aff(
+	__isl_take isl_union_map *umap, __isl_take isl_multi_aff *ma)
+{
+	isl_ctx *ctx;
+	isl_space *space;
+	struct isl_union_map_preimage_domain_data data;
+
+	if (!umap || !ma)
+		goto error;
+
+	ctx = isl_union_map_get_ctx(umap);
+	space = isl_union_map_get_space(umap);
+	data.space = isl_multi_aff_get_space(ma);
+	data.ma = ma;
+	data.res = isl_union_map_alloc(space, umap->table.n);
+	if (isl_hash_table_foreach(ctx, &umap->table, &preimage_domain_entry,
+					&data) < 0)
+		data.res = isl_union_map_free(data.res);
+
+	isl_space_free(data.space);
+	isl_union_map_free(umap);
+	isl_multi_aff_free(ma);
+	return data.res;
+error:
+	isl_union_map_free(umap);
+	isl_multi_aff_free(ma);
 	return NULL;
 }

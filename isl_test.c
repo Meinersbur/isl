@@ -3332,7 +3332,7 @@ struct {
 	  "{ A[i,j] : j = [(i)/6] and exists a : i = 3 a }" },
 };
 
-int test_preimage(isl_ctx *ctx)
+static int test_preimage_basic_set(isl_ctx *ctx)
 {
 	int i;
 	isl_basic_set *bset1, *bset2;
@@ -3353,6 +3353,76 @@ int test_preimage(isl_ctx *ctx)
 			isl_die(ctx, isl_error_unknown, "bad preimage",
 				return -1);
 	}
+
+	return 0;
+}
+
+struct {
+	const char *map;
+	const char *ma;
+	const char *res;
+} preimage_domain_tests[] = {
+	{ "{ B[i,j] -> C[2i + 3j] : 0 <= i < 10 and 0 <= j < 100 }",
+	  "{ A[j,i] -> B[i,j] }",
+	  "{ A[j,i] -> C[2i + 3j] : 0 <= i < 10 and 0 <= j < 100 }" },
+	{ "{ B[i] -> C[i]; D[i] -> E[i] }",
+	  "{ A[i] -> B[i + 1] }",
+	  "{ A[i] -> C[i + 1] }" },
+	{ "{ B[i] -> C[i]; B[i] -> E[i] }",
+	  "{ A[i] -> B[i + 1] }",
+	  "{ A[i] -> C[i + 1]; A[i] -> E[i + 1] }" },
+	{ "{ B[i] -> C[([i/2])] }",
+	  "{ A[i] -> B[2i] }",
+	  "{ A[i] -> C[i] }" },
+	{ "{ B[i,j] -> C[([i/2]), ([(i+j)/3])] }",
+	  "{ A[i] -> B[([i/5]), ([i/7])] }",
+	  "{ A[i] -> C[([([i/5])/2]), ([(([i/5])+([i/7]))/3])] }" },
+	{ "[N] -> { B[i] -> C[([N/2]), i, ([N/3])] }",
+	  "[N] -> { A[] -> B[([N/5])] }",
+	  "[N] -> { A[] -> C[([N/2]), ([N/5]), ([N/3])] }" },
+	{ "{ B[i] -> C[i] : exists a : i = 5 a }",
+	  "{ A[i] -> B[2i] }",
+	  "{ A[i] -> C[2i] : exists a : 2i = 5 a }" },
+	{ "{ B[i] -> C[i] : exists a : i = 2 a; "
+	    "B[i] -> D[i] : exists a : i = 2 a + 1 }",
+	  "{ A[i] -> B[2i] }",
+	  "{ A[i] -> C[2i] }" },
+};
+
+static int test_preimage_union_map(isl_ctx *ctx)
+{
+	int i;
+	isl_union_map *umap1, *umap2;
+	isl_multi_aff *ma;
+	int equal;
+
+	for (i = 0; i < ARRAY_SIZE(preimage_domain_tests); ++i) {
+		umap1 = isl_union_map_read_from_str(ctx,
+						preimage_domain_tests[i].map);
+		ma = isl_multi_aff_read_from_str(ctx,
+						preimage_domain_tests[i].ma);
+		umap2 = isl_union_map_read_from_str(ctx,
+						preimage_domain_tests[i].res);
+		umap1 = isl_union_map_preimage_domain_multi_aff(umap1, ma);
+		equal = isl_union_map_is_equal(umap1, umap2);
+		isl_union_map_free(umap1);
+		isl_union_map_free(umap2);
+		if (equal < 0)
+			return -1;
+		if (!equal)
+			isl_die(ctx, isl_error_unknown, "bad preimage",
+				return -1);
+	}
+
+	return 0;
+}
+
+static int test_preimage(isl_ctx *ctx)
+{
+	if (test_preimage_basic_set(ctx) < 0)
+		return -1;
+	if (test_preimage_union_map(ctx) < 0)
+		return -1;
 
 	return 0;
 }
