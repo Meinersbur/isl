@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <isl/space.h>
+#include <isl/val.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -22,6 +23,8 @@ int isl_point_get_coordinate(__isl_keep isl_point *pnt,
 	enum isl_dim_type type, int pos, isl_int *v);
 __isl_give isl_point *isl_point_set_coordinate(__isl_take isl_point *pnt,
 	enum isl_dim_type type, int pos, isl_int v);
+__isl_give isl_point *isl_point_set_coordinate_val(__isl_take isl_point *pnt,
+	enum isl_dim_type type, int pos, __isl_take isl_val *v);
 
 __isl_give isl_point *isl_point_add_ui(__isl_take isl_point *pnt,
 	enum isl_dim_type type, int pos, unsigned val);

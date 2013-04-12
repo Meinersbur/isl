@@ -5,6 +5,7 @@
 #include <isl_scan.h>
 #include <isl/seq.h>
 #include <isl_space_private.h>
+#include <isl_val_private.h>
 
 isl_ctx *isl_point_get_ctx(__isl_keep isl_point *pnt)
 {
@@ -162,6 +163,58 @@ __isl_give isl_point *isl_point_set_coordinate(__isl_take isl_point *pnt,
 
 	return pnt;
 error:
+	isl_point_free(pnt);
+	return NULL;
+}
+
+/* Replace coordinate "pos" of type "type" of "pnt" by "v".
+ */
+__isl_give isl_point *isl_point_set_coordinate_val(__isl_take isl_point *pnt,
+	enum isl_dim_type type, int pos, __isl_take isl_val *v)
+{
+	if (!pnt || !v)
+		goto error;
+	if (isl_point_is_void(pnt))
+		isl_die(isl_point_get_ctx(pnt), isl_error_invalid,
+			"void point does not have coordinates", goto error);
+	if (pos < 0 || pos >= isl_space_dim(pnt->dim, type))
+		isl_die(isl_point_get_ctx(pnt), isl_error_invalid,
+			"position out of bounds", goto error);
+	if (!isl_val_is_rat(v))
+		isl_die(isl_point_get_ctx(pnt), isl_error_invalid,
+			"expecting rational value", goto error);
+
+	if (isl_int_eq(pnt->vec->el[1 + pos], v->n) &&
+	    isl_int_eq(pnt->vec->el[0], v->d)) {
+		isl_val_free(v);
+		return pnt;
+	}
+
+	pnt = isl_point_cow(pnt);
+	if (!pnt)
+		goto error;
+	pnt->vec = isl_vec_cow(pnt->vec);
+	if (!pnt->vec)
+		goto error;
+
+	if (isl_int_eq(pnt->vec->el[0], v->d)) {
+		isl_int_set(pnt->vec->el[1 + pos], v->n);
+	} else if (isl_int_is_one(v->d)) {
+		isl_int_mul(pnt->vec->el[1 + pos], pnt->vec->el[0], v->n);
+	} else {
+		isl_seq_scale(pnt->vec->el + 1,
+				pnt->vec->el + 1, v->d, pnt->vec->size - 1);
+		isl_int_mul(pnt->vec->el[1 + pos], pnt->vec->el[0], v->n);
+		isl_int_mul(pnt->vec->el[0], pnt->vec->el[0], v->d);
+		pnt->vec = isl_vec_normalize(pnt->vec);
+		if (!pnt->vec)
+			goto error;
+	}
+
+	isl_val_free(v);
+	return pnt;
+error:
+	isl_val_free(v);
 	isl_point_free(pnt);
 	return NULL;
 }

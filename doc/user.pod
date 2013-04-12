@@ -4395,6 +4395,10 @@ using
 	__isl_give isl_point *isl_point_set_coordinate(
 		__isl_take isl_point *pnt,
 		enum isl_dim_type type, int pos, isl_int v);
+	__isl_give isl_point *isl_point_set_coordinate_val(
+		__isl_take isl_point *pnt,
+		enum isl_dim_type type, int pos,
+		__isl_take isl_val *v);
 
 	__isl_give isl_point *isl_point_add_ui(
 		__isl_take isl_point *pnt,
