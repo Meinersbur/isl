@@ -455,6 +455,35 @@ int isl_aff_get_coefficient(__isl_keep isl_aff *aff,
 	return 0;
 }
 
+/* Return the coefficient of the variable of type "type" at position "pos"
+ * of "aff".
+ */
+__isl_give isl_val *isl_aff_get_coefficient_val(__isl_keep isl_aff *aff,
+	enum isl_dim_type type, int pos)
+{
+	isl_ctx *ctx;
+	isl_val *v;
+
+	if (!aff)
+		return NULL;
+
+	ctx = isl_aff_get_ctx(aff);
+	if (type == isl_dim_out)
+		isl_die(ctx, isl_error_invalid,
+			"output/set dimension does not have a coefficient",
+			return NULL);
+	if (type == isl_dim_in)
+		type = isl_dim_set;
+
+	if (pos >= isl_local_space_dim(aff->ls, type))
+		isl_die(ctx, isl_error_invalid,
+			"position out of bounds", return NULL);
+
+	pos += isl_local_space_offset(aff->ls, type);
+	v = isl_val_rat_from_isl_int(ctx, aff->v->el[1 + pos], aff->v->el[0]);
+	return isl_val_normalize(v);
+}
+
 __isl_give isl_aff *isl_aff_set_denominator(__isl_take isl_aff *aff, isl_int v)
 {
 	aff = isl_aff_cow(aff);

@@ -3627,6 +3627,9 @@ The expression can be inspected using
 		__isl_keep isl_aff *aff);
 	int isl_aff_get_coefficient(__isl_keep isl_aff *aff,
 		enum isl_dim_type type, int pos, isl_int *v);
+	__isl_give isl_val *isl_aff_get_coefficient_val(
+		__isl_keep isl_aff *aff,
+		enum isl_dim_type type, int pos);
 	int isl_aff_get_denominator(__isl_keep isl_aff *aff,
 		isl_int *v);
 	__isl_give isl_aff *isl_aff_get_div(
