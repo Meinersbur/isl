@@ -1107,7 +1107,7 @@ __isl_give isl_local_space *isl_local_space_preimage_multi_aff(
 			continue;
 		}
 		isl_seq_preimage(res->div->row[n_div_ma + i], ls->div->row[i],
-				    ma, n_div_ma, n_div_ls, f, c1, c2, g, 1);
+				ma, 0, 0, n_div_ma, n_div_ls, f, c1, c2, g, 1);
 		normalize_div(res, n_div_ma + i);
 	}
 

@@ -11456,7 +11456,7 @@ __isl_give isl_basic_set *isl_basic_set_preimage_multi_aff(
 		k = isl_basic_set_alloc_equality(res);
 		if (k < 0)
 			goto error;
-		isl_seq_preimage(res->eq[k], bset->eq[i], ma, n_div_ma,
+		isl_seq_preimage(res->eq[k], bset->eq[i], ma, 0, 0, n_div_ma,
 					n_div_bset, f, c1, c2, g, 0);
 	}
 
@@ -11464,8 +11464,8 @@ __isl_give isl_basic_set *isl_basic_set_preimage_multi_aff(
 		k = isl_basic_set_alloc_inequality(res);
 		if (k < 0)
 			goto error;
-		isl_seq_preimage(res->ineq[k], bset->ineq[i], ma, n_div_ma,
-					n_div_bset, f, c1, c2, g, 0);
+		isl_seq_preimage(res->ineq[k], bset->ineq[i], ma, 0, 0,
+					n_div_ma, n_div_bset, f, c1, c2, g, 0);
 	}
 
 	for (i = 0; i < bset->n_div; ++i) {
@@ -11474,7 +11474,7 @@ __isl_give isl_basic_set *isl_basic_set_preimage_multi_aff(
 			continue;
 		}
 		isl_seq_preimage(res->div[n_div_ma + i], bset->div[i],
-				    ma, n_div_ma, n_div_bset, f, c1, c2, g, 1);
+			    ma, 0, 0, n_div_ma, n_div_bset, f, c1, c2, g, 1);
 	}
 
 	if (strides)

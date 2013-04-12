@@ -3973,8 +3973,12 @@ error:
 	return NULL;
 }
 
-/* Compute the preimage of the affine expression "src" under "ma"
- * and put the result in "dst".  If "has_denom" is set (to one),
+/* Compute the preimage of a range of dimensions in the affine expression "src"
+ * under "ma" and put the result in "dst".  The number of dimensions in "src"
+ * that precede the range is given by "n_before".  The number of dimensions
+ * in the range is given by the number of output dimensions of "ma".
+ * The number of dimensions that follow the range is given by "n_after".
+ * If "has_denom" is set (to one),
  * then "src" and "dst" have an extra initial denominator.
  * "n_div_ma" is the number of existentials in "ma"
  * "n_div_bset" is the number of existentials in "src"
@@ -3986,17 +3990,18 @@ error:
  *
  * Let src represent the expression
  *
- *	(a(p) + b x + c(divs))/d
+ *	(a(p) + f_u u + b v + f_w w + c(divs))/d
  *
  * and let ma represent the expressions
  *
- *	x_i = (r_i(p) + s_i(y) + t_i(divs'))/m_i
+ *	v_i = (r_i(p) + s_i(y) + t_i(divs'))/m_i
  *
  * We start out with the following expression for dst:
  *
- *	(a(p) + 0 y + 0 divs' + f \sum_i b_i x_i + c(divs))/d
+ *	(a(p) + f_u u + 0 y + f_w w + 0 divs' + c(divs) + f \sum_i b_i v_i)/d
  *
- * with the multiplication factor f initially equal to 1.
+ * with the multiplication factor f initially equal to 1
+ * and f \sum_i b_i v_i kept separately.
  * For each x_i that we substitute, we multiply the numerator
  * (and denominator) of dst by c_1 = m_i and add the numerator
  * of the x_i expression multiplied by c_2 = f b_i,
@@ -4005,40 +4010,63 @@ error:
  * for the next x_j, j > i.
  */
 void isl_seq_preimage(isl_int *dst, isl_int *src,
-	__isl_keep isl_multi_aff *ma, int n_div_ma, int n_div_bset,
+	__isl_keep isl_multi_aff *ma, int n_before, int n_after,
+	int n_div_ma, int n_div_bmap,
 	isl_int f, isl_int c1, isl_int c2, isl_int g, int has_denom)
 {
 	int i;
 	int n_param, n_in, n_out;
-	int o_div_bset;
+	int o_dst, o_src;
 
 	n_param = isl_multi_aff_dim(ma, isl_dim_param);
 	n_in = isl_multi_aff_dim(ma, isl_dim_in);
 	n_out = isl_multi_aff_dim(ma, isl_dim_out);
 
-	o_div_bset = has_denom + 1 + n_param + n_in + n_div_ma;
-
-	isl_seq_cpy(dst, src, has_denom + 1 + n_param);
-	isl_seq_clr(dst + has_denom + 1 + n_param, n_in + n_div_ma);
-	isl_seq_cpy(dst + o_div_bset,
-		    src + has_denom + 1 + n_param + n_out, n_div_bset);
+	isl_seq_cpy(dst, src, has_denom + 1 + n_param + n_before);
+	o_dst = o_src = has_denom + 1 + n_param + n_before;
+	isl_seq_clr(dst + o_dst, n_in);
+	o_dst += n_in;
+	o_src += n_out;
+	isl_seq_cpy(dst + o_dst, src + o_src, n_after);
+	o_dst += n_after;
+	o_src += n_after;
+	isl_seq_clr(dst + o_dst, n_div_ma);
+	o_dst += n_div_ma;
+	isl_seq_cpy(dst + o_dst, src + o_src, n_div_bmap);
 
 	isl_int_set_si(f, 1);
 
 	for (i = 0; i < n_out; ++i) {
-		if (isl_int_is_zero(src[has_denom + 1 + n_param + i]))
+		int offset = has_denom + 1 + n_param + n_before + i;
+
+		if (isl_int_is_zero(src[offset]))
 			continue;
 		isl_int_set(c1, ma->p[i]->v->el[0]);
-		isl_int_mul(c2, f, src[has_denom + 1 + n_param + i]);
+		isl_int_mul(c2, f, src[offset]);
 		isl_int_gcd(g, c1, c2);
 		isl_int_divexact(c1, c1, g);
 		isl_int_divexact(c2, c2, g);
 
 		isl_int_mul(f, f, c1);
-		isl_seq_combine(dst + has_denom, c1, dst + has_denom,
-				c2, ma->p[i]->v->el + 1, ma->p[i]->v->size - 1);
-		isl_seq_scale(dst + o_div_bset,
-				dst + o_div_bset, c1, n_div_bset);
+		o_dst = has_denom;
+		o_src = 1;
+		isl_seq_combine(dst + o_dst, c1, dst + o_dst,
+				c2, ma->p[i]->v->el + o_src, 1 + n_param);
+		o_dst += 1 + n_param;
+		o_src += 1 + n_param;
+		isl_seq_scale(dst + o_dst, dst + o_dst, c1, n_before);
+		o_dst += n_before;
+		isl_seq_combine(dst + o_dst, c1, dst + o_dst,
+				c2, ma->p[i]->v->el + o_src, n_in);
+		o_dst += n_in;
+		o_src += n_in;
+		isl_seq_scale(dst + o_dst, dst + o_dst, c1, n_after);
+		o_dst += n_after;
+		isl_seq_combine(dst + o_dst, c1, dst + o_dst,
+				c2, ma->p[i]->v->el + o_src, n_div_ma);
+		o_dst += n_div_ma;
+		o_src += n_div_ma;
+		isl_seq_scale(dst + o_dst, dst + o_dst, c1, n_div_bmap);
 		if (has_denom)
 			isl_int_mul(dst[0], dst[0], c1);
 	}
@@ -4089,7 +4117,7 @@ __isl_give isl_aff *isl_aff_pullback_multi_aff(__isl_take isl_aff *aff,
 	isl_int_init(c2);
 	isl_int_init(g);
 
-	isl_seq_preimage(res->v->el, aff->v->el, ma, n_div_ma, n_div_aff,
+	isl_seq_preimage(res->v->el, aff->v->el, ma, 0, 0, n_div_ma, n_div_aff,
 			f, c1, c2, g, 1);
 
 	isl_int_clear(f);
