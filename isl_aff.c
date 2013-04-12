@@ -409,6 +409,19 @@ int isl_aff_get_denominator(__isl_keep isl_aff *aff, isl_int *v)
 	return 0;
 }
 
+/* Return the common denominator of "aff".
+ */
+__isl_give isl_val *isl_aff_get_denominator_val(__isl_keep isl_aff *aff)
+{
+	isl_ctx *ctx;
+
+	if (!aff)
+		return NULL;
+
+	ctx = isl_aff_get_ctx(aff);
+	return isl_val_int_from_isl_int(ctx, aff->v->el[0]);
+}
+
 int isl_aff_get_constant(__isl_keep isl_aff *aff, isl_int *v)
 {
 	if (!aff)
