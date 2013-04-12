@@ -63,6 +63,7 @@ typedef void (*isl_int_print_gmp_free_t)(void *, size_t);
 #define isl_int_mul_ui(r,i,j)	mpz_mul_ui(r,i,j)
 #define isl_int_pow_ui(r,i,j)	mpz_pow_ui(r,i,j)
 #define isl_int_addmul(r,i,j)	mpz_addmul(r,i,j)
+#define isl_int_addmul_ui(r,i,j)	mpz_addmul_ui(r,i,j)
 #define isl_int_submul(r,i,j)	mpz_submul(r,i,j)
 
 #define isl_int_gcd(r,i,j)	mpz_gcd(r,i,j)
