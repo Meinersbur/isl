@@ -6015,10 +6015,13 @@ Return the identifier represented by the AST expression.
 	#include <isl/ast.h>
 	int isl_ast_expr_get_int(__isl_keep isl_ast_expr *expr,
 		isl_int *v);
+	__isl_give isl_val *isl_ast_expr_get_val(
+		__isl_keep isl_ast_expr *expr);
 
 Return the integer represented by the AST expression.
-Note that the integer is returned through the C<v> argument.
-The return value of the function itself indicates whether the
+Note that the integer is returned by C<isl_ast_expr_get_int>
+through the C<v> argument.
+The return value of this function itself indicates whether the
 operation was performed successfully.
 
 =head3 Manipulating and printing the AST

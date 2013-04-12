@@ -1,4 +1,5 @@
 #include <isl_ast_private.h>
+#include <isl/val_int.h>
 
 #undef BASE
 #define BASE ast_expr
@@ -239,6 +240,21 @@ int isl_ast_expr_get_int(__isl_keep isl_ast_expr *expr, isl_int *v)
 			"expression not an int", return -1);
 	isl_int_set(*v, expr->u.i);
 	return 0;
+}
+
+/* Return the integer value represented by "expr".
+ */
+__isl_give isl_val *isl_ast_expr_get_val(__isl_keep isl_ast_expr *expr)
+{
+	isl_ctx *ctx;
+
+	if (!expr)
+		return NULL;
+	ctx = isl_ast_expr_get_ctx(expr);
+	if (expr->type != isl_ast_expr_int)
+		isl_die(ctx, isl_error_invalid,
+			"expression not an int", return NULL);
+	return isl_val_int_from_isl_int(ctx, expr->u.i);
 }
 
 __isl_give isl_id *isl_ast_expr_get_id(__isl_keep isl_ast_expr *expr)
