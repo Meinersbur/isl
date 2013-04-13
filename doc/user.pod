@@ -1798,6 +1798,9 @@ the following functions.
 	void isl_constraint_get_coefficient(
 		__isl_keep isl_constraint *constraint,
 		enum isl_dim_type type, int pos, isl_int *v);
+	__isl_give isl_val *isl_constraint_get_coefficient_val(
+		__isl_keep isl_constraint *constraint,
+		enum isl_dim_type type, int pos);
 	int isl_constraint_involves_dims(
 		__isl_keep isl_constraint *constraint,
 		enum isl_dim_type type, unsigned first, unsigned n);

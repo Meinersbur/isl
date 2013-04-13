@@ -437,6 +437,26 @@ void isl_constraint_get_coefficient(struct isl_constraint *constraint,
 	isl_int_set(*v, constraint->v->el[pos]);
 }
 
+/* Return the coefficient of the variable of type "type" at position "pos"
+ * of "constraint".
+ */
+__isl_give isl_val *isl_constraint_get_coefficient_val(
+	__isl_keep isl_constraint *constraint, enum isl_dim_type type, int pos)
+{
+	isl_ctx *ctx;
+
+	if (!constraint)
+		return NULL;
+
+	ctx = isl_constraint_get_ctx(constraint);
+	if (pos < 0 || pos >= isl_local_space_dim(constraint->ls, type))
+		isl_die(ctx, isl_error_invalid,
+			"position out of bounds", return NULL);
+
+	pos += isl_local_space_offset(constraint->ls, type);
+	return isl_val_int_from_isl_int(ctx, constraint->v->el[pos]);
+}
+
 __isl_give isl_aff *isl_constraint_get_div(__isl_keep isl_constraint *constraint,
 	int pos)
 {
