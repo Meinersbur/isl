@@ -610,6 +610,18 @@ __isl_give isl_val *isl_set_opt_val(__isl_keep isl_set *set, int max,
 	return convert_lp_result(lp_res, res, max);
 }
 
+/* Return the minimum of the integer affine
+ * expression "obj" over the points in "set".
+ *
+ * Return infinity or negative infinity if the optimal value is unbounded and
+ * NaN if "bset" is empty.
+ */
+__isl_give isl_val *isl_set_min_val(__isl_keep isl_set *set,
+	__isl_keep isl_aff *obj)
+{
+	return isl_set_opt_val(set, 0, obj);
+}
+
 /* Return the maximum of the integer affine
  * expression "obj" over the points in "set".
  *
