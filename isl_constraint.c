@@ -16,6 +16,7 @@
 #include <isl/seq.h>
 #include <isl_aff_private.h>
 #include <isl_local_space_private.h>
+#include <isl_val_private.h>
 
 #undef BASE
 #define BASE constraint
@@ -406,6 +407,20 @@ void isl_constraint_get_constant(struct isl_constraint *constraint, isl_int *v)
 	if (!constraint)
 		return;
 	isl_int_set(*v, constraint->v->el[0]);
+}
+
+/* Return the constant term of "constraint".
+ */
+__isl_give isl_val *isl_constraint_get_constant_val(
+	__isl_keep isl_constraint *constraint)
+{
+	isl_ctx *ctx;
+
+	if (!constraint)
+		return NULL;
+
+	ctx = isl_constraint_get_ctx(constraint);
+	return isl_val_int_from_isl_int(ctx, constraint->v->el[0]);
 }
 
 void isl_constraint_get_coefficient(struct isl_constraint *constraint,

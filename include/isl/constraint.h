@@ -84,6 +84,8 @@ const char *isl_constraint_get_dim_name(__isl_keep isl_constraint *constraint,
 	enum isl_dim_type type, unsigned pos);
 void isl_constraint_get_constant(__isl_keep isl_constraint *constraint,
 	isl_int *v);
+__isl_give isl_val *isl_constraint_get_constant_val(
+	__isl_keep isl_constraint *constraint);
 void isl_constraint_get_coefficient(__isl_keep isl_constraint *constraint,
 	enum isl_dim_type type, int pos, isl_int *v);
 __isl_give isl_constraint *isl_constraint_set_constant(
