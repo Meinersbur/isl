@@ -583,3 +583,41 @@ __isl_give isl_val *isl_basic_set_max_val(__isl_keep isl_basic_set *bset,
 {
 	return isl_basic_set_opt_val(bset, 1, obj);
 }
+
+/* Return the minimum (maximum if max is set) of the integer affine
+ * expression "obj" over the points in "set".
+ *
+ * Return infinity or negative infinity if the optimal value is unbounded and
+ * NaN if "bset" is empty.
+ *
+ * Call isl_set_opt and translate the results.
+ */
+__isl_give isl_val *isl_set_opt_val(__isl_keep isl_set *set, int max,
+	__isl_keep isl_aff *obj)
+{
+	isl_ctx *ctx;
+	isl_val *res;
+	enum isl_lp_result lp_res;
+
+	if (!set || !obj)
+		return NULL;
+
+	ctx = isl_aff_get_ctx(obj);
+	res = isl_val_alloc(ctx);
+	if (!res)
+		return NULL;
+	lp_res = isl_set_opt(set, max, obj, &res->n);
+	return convert_lp_result(lp_res, res, max);
+}
+
+/* Return the maximum of the integer affine
+ * expression "obj" over the points in "set".
+ *
+ * Return infinity or negative infinity if the optimal value is unbounded and
+ * NaN if "bset" is empty.
+ */
+__isl_give isl_val *isl_set_max_val(__isl_keep isl_set *set,
+	__isl_keep isl_aff *obj)
+{
+	return isl_set_opt_val(set, 1, obj);
+}

@@ -29,6 +29,8 @@ enum isl_lp_result isl_set_min(__isl_keep isl_set *set,
 	__isl_keep isl_aff *obj, isl_int *opt);
 enum isl_lp_result isl_set_max(__isl_keep isl_set *set,
 	__isl_keep isl_aff *obj, isl_int *opt);
+__isl_give isl_val *isl_set_max_val(__isl_keep isl_set *set,
+	__isl_keep isl_aff *obj);
 
 #if defined(__cplusplus)
 }

@@ -2583,6 +2583,9 @@ a singleton subset of the input.  Otherwise, return an empty set.
 		__isl_keep isl_aff *obj, isl_int *opt);
 	enum isl_lp_result isl_set_max(__isl_keep isl_set *set,
 		__isl_keep isl_aff *obj, isl_int *opt);
+	__isl_give isl_val *isl_set_max_val(
+		__isl_keep isl_set *set,
+		__isl_keep isl_aff *obj);
 
 Compute the minimum or maximum of the integer affine expression C<obj>
 over the points in C<set>, returning the result in C<opt>.
