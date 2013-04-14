@@ -580,6 +580,8 @@ int isl_map_plain_is_fixed(__isl_keep isl_map *map,
 	enum isl_dim_type type, unsigned pos, isl_int *val);
 int isl_map_fast_is_fixed(__isl_keep isl_map *map,
 	enum isl_dim_type type, unsigned pos, isl_int *val);
+__isl_give isl_val *isl_map_plain_get_val_if_fixed(__isl_keep isl_map *map,
+	enum isl_dim_type type, unsigned pos);
 
 __isl_export
 __isl_give isl_basic_map *isl_basic_map_gist(__isl_take isl_basic_map *bmap,

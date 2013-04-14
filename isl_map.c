@@ -8452,6 +8452,34 @@ int isl_map_plain_is_fixed(__isl_keep isl_map *map,
 		map_offset(map, type) - 1 + pos, val);
 }
 
+/* If "map" obviously lies on a hyperplane where the given dimension
+ * has a fixed value, then return that value.
+ * Otherwise return NaN.
+ */
+__isl_give isl_val *isl_map_plain_get_val_if_fixed(__isl_keep isl_map *map,
+	enum isl_dim_type type, unsigned pos)
+{
+	isl_ctx *ctx;
+	isl_val *v;
+	int fixed;
+
+	if (!map)
+		return NULL;
+	ctx = isl_map_get_ctx(map);
+	v = isl_val_alloc(ctx);
+	if (!v)
+		return NULL;
+	fixed = isl_map_plain_is_fixed(map, type, pos, &v->n);
+	if (fixed < 0)
+		return isl_val_free(v);
+	if (fixed) {
+		isl_int_set_si(v->d, 1);
+		return v;
+	}
+	isl_val_free(v);
+	return isl_val_nan(ctx);
+}
+
 int isl_set_plain_is_fixed(__isl_keep isl_set *set,
 	enum isl_dim_type type, unsigned pos, isl_int *val)
 {
