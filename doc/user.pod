@@ -2064,11 +2064,14 @@ has a fixed value and if so, return that value in C<*val>.
 	isl_basic_map_plain_get_val_if_fixed(
 		__isl_keep isl_basic_map *bmap,
 		enum isl_dim_type type, unsigned pos);
+	__isl_give isl_val *isl_set_plain_get_val_if_fixed(
+		__isl_keep isl_set *set,
+		enum isl_dim_type type, unsigned pos);
 	__isl_give isl_val *isl_map_plain_get_val_if_fixed(
 		__isl_keep isl_map *map,
 		enum isl_dim_type type, unsigned pos);
 
-If the relation obviously lies on a hyperplane where the given dimension
+If the set or relation obviously lies on a hyperplane where the given dimension
 has a fixed value, then return that value.
 Otherwise return NaN.
 

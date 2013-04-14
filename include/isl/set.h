@@ -433,6 +433,8 @@ int isl_set_plain_dim_is_fixed(__isl_keep isl_set *set,
 	unsigned dim, isl_int *val);
 int isl_set_fast_dim_is_fixed(__isl_keep isl_set *set,
 	unsigned dim, isl_int *val);
+__isl_give isl_val *isl_set_plain_get_val_if_fixed(__isl_keep isl_set *set,
+	enum isl_dim_type type, unsigned pos);
 int isl_set_plain_dim_has_fixed_lower_bound(__isl_keep isl_set *set,
 	unsigned dim, isl_int *val);
 int isl_set_dim_is_bounded(__isl_keep isl_set *set,

@@ -8509,6 +8509,16 @@ __isl_give isl_val *isl_map_plain_get_val_if_fixed(__isl_keep isl_map *map,
 	return isl_val_nan(ctx);
 }
 
+/* If "set" obviously lies on a hyperplane where the given dimension
+ * has a fixed value, then return that value.
+ * Otherwise return NaN.
+ */
+__isl_give isl_val *isl_set_plain_get_val_if_fixed(__isl_keep isl_set *set,
+	enum isl_dim_type type, unsigned pos)
+{
+	return isl_map_plain_get_val_if_fixed(set, type, pos);
+}
+
 int isl_set_plain_is_fixed(__isl_keep isl_set *set,
 	enum isl_dim_type type, unsigned pos, isl_int *val)
 {
