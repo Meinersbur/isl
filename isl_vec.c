@@ -189,6 +189,21 @@ int isl_vec_get_element(__isl_keep isl_vec *vec, int pos, isl_int *v)
 	return 0;
 }
 
+/* Extract the element at position "pos" of "vec".
+ */
+__isl_give isl_val *isl_vec_get_element_val(__isl_keep isl_vec *vec, int pos)
+{
+	isl_ctx *ctx;
+
+	if (!vec)
+		return NULL;
+	ctx = isl_vec_get_ctx(vec);
+	if (pos < 0 || pos >= vec->size)
+		isl_die(ctx, isl_error_invalid, "position out of range",
+			return NULL);
+	return isl_val_int_from_isl_int(ctx, vec->el[pos]);
+}
+
 __isl_give isl_vec *isl_vec_set_element(__isl_take isl_vec *vec,
 	int pos, isl_int v)
 {
