@@ -3852,6 +3852,26 @@ error:
 	return NULL;
 }
 
+/* Given a map A -> f(A) and an integer d, construct a map
+ * A -> floor(f(A)/d).
+ */
+__isl_give isl_map *isl_map_floordiv_val(__isl_take isl_map *map,
+	__isl_take isl_val *d)
+{
+	if (!map || !d)
+		goto error;
+	if (!isl_val_is_int(d))
+		isl_die(isl_val_get_ctx(d), isl_error_invalid,
+			"expecting integer denominator", goto error);
+	map = isl_map_floordiv(map, d->n);
+	isl_val_free(d);
+	return map;
+error:
+	isl_map_free(map);
+	isl_val_free(d);
+	return NULL;
+}
+
 static struct isl_basic_map *var_equal(struct isl_basic_map *bmap, unsigned pos)
 {
 	int i;
