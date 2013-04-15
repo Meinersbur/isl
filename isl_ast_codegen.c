@@ -2284,7 +2284,7 @@ static __isl_give isl_basic_set_list *do_unroll(__isl_take isl_set *domain,
  *
  * "sep_class" contains the user-specified split into separation classes
  * specialized to the current depth.
- * "done" contains the union of th separation domains that have already
+ * "done" contains the union of the separation domains that have already
  * been handled.
  */
 struct isl_codegen_domains {
