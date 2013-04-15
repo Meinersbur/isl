@@ -2251,6 +2251,43 @@ int test_special_schedule(isl_ctx *ctx, const char *domain,
 	return 0;
 }
 
+/* Check that the schedule map is properly padded, even after being
+ * reconstructed from the band forest.
+ */
+static int test_padded_schedule(isl_ctx *ctx)
+{
+	const char *str;
+	isl_union_set *D;
+	isl_union_map *validity, *proximity;
+	isl_schedule *sched;
+	isl_union_map *map1, *map2;
+	isl_band_list *list;
+	int equal;
+
+	str = "[N] -> { S0[i] : 0 <= i <= N; S1[i, j] : 0 <= i, j <= N }";
+	D = isl_union_set_read_from_str(ctx, str);
+	validity = isl_union_map_empty(isl_union_set_get_space(D));
+	proximity = isl_union_map_copy(validity);
+	sched = isl_union_set_compute_schedule(D, validity, proximity);
+	map1 = isl_schedule_get_map(sched);
+	list = isl_schedule_get_band_forest(sched);
+	isl_band_list_free(list);
+	map2 = isl_schedule_get_map(sched);
+	isl_schedule_free(sched);
+	equal = isl_union_map_is_equal(map1, map2);
+	isl_union_map_free(map1);
+	isl_union_map_free(map2);
+
+	if (equal < 0)
+		return -1;
+	if (!equal)
+		isl_die(ctx, isl_error_unknown,
+			"reconstructed schedule map not the same as original",
+			return -1);
+
+	return 0;
+}
+
 int test_schedule(isl_ctx *ctx)
 {
 	const char *D, *W, *R, *V, *P, *S;
@@ -2509,6 +2546,9 @@ int test_schedule(isl_ctx *ctx)
 	V = "{}";
 	P = "{ A[a] -> B[] }";
 	if (test_has_schedule(ctx, D, V, P) < 0)
+		return -1;
+
+	if (test_padded_schedule(ctx) < 0)
 		return -1;
 
 	return 0;

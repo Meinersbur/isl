@@ -3065,6 +3065,7 @@ __isl_give isl_basic_map *isl_basic_map_insert_dims(
 		res = isl_basic_map_set_rational(res);
 	if (isl_basic_map_plain_is_empty(bmap)) {
 		isl_basic_map_free(bmap);
+		free(dim_map);
 		return isl_basic_map_set_to_empty(res);
 	}
 	res = isl_basic_map_add_constraints_dim_map(res, bmap, dim_map);

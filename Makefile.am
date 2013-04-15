@@ -276,6 +276,8 @@ EXTRA_DIST = \
 	doc/mypod2latex \
 	doc/manual.tex \
 	doc/user.pod \
+	interface/all.h \
+	interface/isl.py.top \
 	test_inputs
 
 dist-hook:
