@@ -7,6 +7,7 @@
  * Ecole Normale Superieure, 45 rue d’Ulm, 75230 Paris, France
  */
 
+#include <limits.h>
 #include <isl/aff.h>
 #include <isl/set.h>
 #include <isl/ilp.h>
@@ -2090,7 +2091,8 @@ static int update_unrolling_lower_bound(struct isl_find_unroll_data *data,
 		return 0;
 	}
 
-	if (!data->lower || isl_int_cmp_si(data->tmp, *data->n) < 0) {
+	if (isl_int_cmp_si(data->tmp, INT_MAX) <= 0 &&
+	    (!data->lower || isl_int_cmp_si(data->tmp, *data->n) < 0)) {
 		isl_aff_free(data->lower);
 		data->lower = lower;
 		*data->n = isl_int_get_si(data->tmp);
