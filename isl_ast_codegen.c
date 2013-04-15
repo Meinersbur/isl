@@ -2288,6 +2288,9 @@ static __isl_give isl_basic_set_list *do_unroll(__isl_take isl_set *domain,
  * specialized to the current depth.
  * "done" contains the union of th separation domains that have already
  * been handled.
+ * "atomic" contains the domain that has effectively been made atomic.
+ * This domain may be larger than the intersection of option[atomic]
+ * and the schedule domain.
  */
 struct isl_codegen_domains {
 	isl_basic_set_list *list;
@@ -2300,6 +2303,7 @@ struct isl_codegen_domains {
 
 	isl_map *sep_class;
 	isl_set *done;
+	isl_set *atomic;
 };
 
 /* Add domains to domains->list for each individual value of the current
@@ -2364,7 +2368,8 @@ static int compute_unroll_domains(struct isl_codegen_domains *domains,
 
 /* Construct a single basic set that includes the intersection of
  * the schedule domain, the atomic option domain and the class domain.
- * Add the resulting basic set to domains->list.
+ * Add the resulting basic set to domains->list and save a copy
+ * in domains->atomic for use in compute_partial_domains.
  *
  * We construct a single domain rather than trying to combine
  * the schedule domains of individual domains because we are working
@@ -2390,12 +2395,13 @@ static int compute_atomic_domain(struct isl_codegen_domains *domains,
 	atomic_domain = isl_set_intersect(atomic_domain, isl_set_copy(domain));
 	empty = isl_set_is_empty(atomic_domain);
 	if (empty < 0 || empty) {
-		isl_set_free(atomic_domain);
+		domains->atomic = atomic_domain;
 		return empty < 0 ? -1 : 0;
 	}
 
 	atomic_domain = isl_set_coalesce(atomic_domain);
 	bset = isl_set_unshifted_simple_hull(atomic_domain);
+	domains->atomic = isl_set_from_basic_set(isl_basic_set_copy(bset));
 	domains->list = isl_basic_set_list_add(domains->list, bset);
 
 	return 0;
@@ -2468,6 +2474,11 @@ static int compute_separate_domain(struct isl_codegen_domains *domains,
  * the result with the current "class_domain" to ensure that the domains
  * are disjoint from those generated from other class domains.
  *
+ * The domain that has been made atomic may be larger than specified
+ * by the user since it needs to be representable as a single basic set.
+ * This possibly larger domain is stored in domains->atomic by
+ * compute_atomic_domain.
+ *
  * If anything is left after handling separate, unroll and atomic,
  * we split it up into basic sets and append the basic sets to domains->list.
  */
@@ -2501,9 +2512,8 @@ static int compute_partial_domains(struct isl_codegen_domains *domains,
 	domain = isl_set_intersect(domain, isl_set_copy(class_domain));
 
 	if (compute_atomic_domain(domains, domain) < 0)
-		goto error;
-	domain = isl_set_subtract(domain,
-				    isl_set_copy(domains->option[atomic]));
+		domain = isl_set_free(domain);
+	domain = isl_set_subtract(domain, domains->atomic);
 
 	domain = isl_set_coalesce(domain);
 	domain = isl_set_make_disjoint(domain);
