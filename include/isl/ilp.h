@@ -12,6 +12,7 @@
 
 #include <isl/aff_type.h>
 #include <isl/lp.h>
+#include <isl/val.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -22,6 +23,8 @@ enum isl_lp_result isl_basic_set_solve_ilp(struct isl_basic_set *bset, int max,
 				      struct isl_vec **sol_p);
 enum isl_lp_result isl_basic_set_max(__isl_keep isl_basic_set *bset,
 	__isl_keep isl_aff *obj, isl_int *opt);
+__isl_give isl_val *isl_basic_set_max_val(__isl_keep isl_basic_set *bset,
+	__isl_keep isl_aff *obj);
 enum isl_lp_result isl_set_min(__isl_keep isl_set *set,
 	__isl_keep isl_aff *obj, isl_int *opt);
 enum isl_lp_result isl_set_max(__isl_keep isl_set *set,
