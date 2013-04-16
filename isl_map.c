@@ -11258,24 +11258,6 @@ error:
 	return NULL;
 }
 
-/* Check if the range of "ma" is compatible with "space".
- * Return -1 if anything is wrong.
- */
-static int check_space_compatible_range_multi_aff(
-	__isl_keep isl_space *space, __isl_keep isl_multi_aff *ma)
-{
-	int m;
-	isl_space *ma_space;
-
-	ma_space = isl_multi_aff_get_space(ma);
-	m = isl_space_is_range_internal(space, ma_space);
-	isl_space_free(ma_space);
-	if (m >= 0 && !m)
-		isl_die(isl_space_get_ctx(space), isl_error_invalid,
-			"spaces don't match", return -1);
-	return m;
-}
-
 /* Check if the range of "ma" is compatible with the domain or range
  * (depending on "type") of "bmap".
  * Return -1 if anything is wrong.
@@ -11595,74 +11577,123 @@ __isl_give isl_basic_set *isl_basic_set_preimage_multi_aff(
 	return isl_basic_map_preimage_multi_aff(bset, isl_dim_set, ma);
 }
 
-/* Check if the range of "ma" is compatible with "set".
+/* Check if the range of "ma" is compatible with the domain or range
+ * (depending on "type") of "map".
  * Return -1 if anything is wrong.
  */
-static int check_set_compatible_range_multi_aff(
-	__isl_keep isl_set *set, __isl_keep isl_multi_aff *ma)
+static int check_map_compatible_range_multi_aff(
+	__isl_keep isl_map *map, enum isl_dim_type type,
+	__isl_keep isl_multi_aff *ma)
 {
-	return check_space_compatible_range_multi_aff(set->dim, ma);
+	int m;
+	isl_space *ma_space;
+
+	ma_space = isl_multi_aff_get_space(ma);
+	m = isl_space_tuple_match(map->dim, type, ma_space, isl_dim_out);
+	isl_space_free(ma_space);
+	if (m >= 0 && !m)
+		isl_die(isl_map_get_ctx(map), isl_error_invalid,
+			"spaces don't match", return -1);
+	return m;
 }
 
-/* Compute the preimage of "set" under the function represented by "ma".
- * In other words, plug in "ma" in "set.  The result is a set
- * that lives in the domain space of "ma".
+/* Compute the preimage of the domain or range (depending on "type")
+ * of "map" under the function represented by "ma".
+ * In other words, plug in "ma" in the domain or range of "map".
+ * The result is a map that lives in the same space as "map"
+ * except that the domain or range has been replaced by
+ * the domain space of "ma".
+ *
+ * The parameters are assumed to have been aligned.
  */
-static __isl_give isl_set *set_preimage_multi_aff(__isl_take isl_set *set,
-	__isl_take isl_multi_aff *ma)
+static __isl_give isl_map *map_preimage_multi_aff(__isl_take isl_map *map,
+	enum isl_dim_type type, __isl_take isl_multi_aff *ma)
 {
 	int i;
+	isl_space *space;
 
-	set = isl_set_cow(set);
+	map = isl_map_cow(map);
 	ma = isl_multi_aff_align_divs(ma);
-	if (!set || !ma)
+	if (!map || !ma)
 		goto error;
-	if (check_set_compatible_range_multi_aff(set, ma) < 0)
+	if (check_map_compatible_range_multi_aff(map, type, ma) < 0)
 		goto error;
 
-	for (i = 0; i < set->n; ++i) {
-		set->p[i] = isl_basic_set_preimage_multi_aff(set->p[i],
+	for (i = 0; i < map->n; ++i) {
+		map->p[i] = isl_basic_map_preimage_multi_aff(map->p[i], type,
 							isl_multi_aff_copy(ma));
-		if (!set->p[i])
+		if (!map->p[i])
 			goto error;
 	}
 
-	isl_space_free(set->dim);
-	set->dim = isl_multi_aff_get_domain_space(ma);
-	if (!set->dim)
+	space = isl_multi_aff_get_domain_space(ma);
+	space = isl_space_set(isl_map_get_space(map), type, space);
+
+	isl_space_free(map->dim);
+	map->dim = space;
+	if (!map->dim)
 		goto error;
 
 	isl_multi_aff_free(ma);
-	if (set->n > 1)
-		ISL_F_CLR(set, ISL_MAP_DISJOINT);
-	ISL_F_CLR(set, ISL_SET_NORMALIZED);
-	return set;
+	if (map->n > 1)
+		ISL_F_CLR(map, ISL_MAP_DISJOINT);
+	ISL_F_CLR(map, ISL_SET_NORMALIZED);
+	return map;
 error:
 	isl_multi_aff_free(ma);
-	isl_set_free(set);
+	isl_map_free(map);
 	return NULL;
 }
 
+/* Compute the preimage of the domain or range (depending on "type")
+ * of "map" under the function represented by "ma".
+ * In other words, plug in "ma" in the domain or range of "map".
+ * The result is a map that lives in the same space as "map"
+ * except that the domain or range has been replaced by
+ * the domain space of "ma".
+ */
+__isl_give isl_map *isl_map_preimage_multi_aff(__isl_take isl_map *map,
+	enum isl_dim_type type, __isl_take isl_multi_aff *ma)
+{
+	if (!map || !ma)
+		goto error;
+
+	if (isl_space_match(map->dim, isl_dim_param, ma->space, isl_dim_param))
+		return map_preimage_multi_aff(map, type, ma);
+
+	if (!isl_space_has_named_params(map->dim) ||
+	    !isl_space_has_named_params(ma->space))
+		isl_die(map->ctx, isl_error_invalid,
+			"unaligned unnamed parameters", goto error);
+	map = isl_map_align_params(map, isl_multi_aff_get_space(ma));
+	ma = isl_multi_aff_align_params(ma, isl_map_get_space(map));
+
+	return map_preimage_multi_aff(map, type, ma);
+error:
+	isl_multi_aff_free(ma);
+	return isl_map_free(map);
+}
+
+/* Compute the preimage of "set" under the function represented by "ma".
+ * In other words, plug in "ma" "set".  The result is a set
+ * that lives in the domain space of "ma".
+ */
 __isl_give isl_set *isl_set_preimage_multi_aff(__isl_take isl_set *set,
 	__isl_take isl_multi_aff *ma)
 {
-	if (!set || !ma)
-		goto error;
+	return isl_map_preimage_multi_aff(set, isl_dim_set, ma);
+}
 
-	if (isl_space_match(set->dim, isl_dim_param, ma->space, isl_dim_param))
-		return set_preimage_multi_aff(set, ma);
-
-	if (!isl_space_has_named_params(set->dim) ||
-	    !isl_space_has_named_params(ma->space))
-		isl_die(set->ctx, isl_error_invalid,
-			"unaligned unnamed parameters", goto error);
-	set = isl_set_align_params(set, isl_multi_aff_get_space(ma));
-	ma = isl_multi_aff_align_params(ma, isl_set_get_space(set));
-
-	return set_preimage_multi_aff(set, ma);
-error:
-	isl_multi_aff_free(ma);
-	return isl_set_free(set);
+/* Compute the preimage of the domain of "map" under the function
+ * represented by "ma".
+ * In other words, plug in "ma" in the domain of "map".
+ * The result is a map that lives in the same space as "map"
+ * except that the domain has been replaced by the domain space of "ma".
+ */
+__isl_give isl_map *isl_map_preimage_domain_multi_aff(__isl_take isl_map *map,
+	__isl_take isl_multi_aff *ma)
+{
+	return isl_map_preimage_multi_aff(map, isl_dim_in, ma);
 }
 
 /* Compute the preimage of "set" under the function represented by "pma".

@@ -2817,10 +2817,13 @@ a parametric set as well.
 	__isl_give isl_set *isl_set_preimage_pw_multi_aff(
 		__isl_take isl_set *set,
 		__isl_take isl_pw_multi_aff *pma);
+	__isl_give isl_map *isl_map_preimage_domain_multi_aff(
+		__isl_take isl_map *map,
+		__isl_take isl_multi_aff *ma);
 
-These functions compute the preimage of the given set under
+These functions compute the preimage of the given set or map domain under
 the given function.  In other words, the expression is plugged
-into the set description.
+into the set description or into the domain of the map.
 Objects of types C<isl_multi_aff> and C<isl_pw_multi_aff> are described in
 L</"Piecewise Multiple Quasi Affine Expressions">.
 

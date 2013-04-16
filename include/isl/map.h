@@ -341,6 +341,8 @@ __isl_export
 __isl_give isl_map *isl_map_apply_range(
 		__isl_take isl_map *map1,
 		__isl_take isl_map *map2);
+__isl_give isl_map *isl_map_preimage_domain_multi_aff(__isl_take isl_map *map,
+	__isl_take isl_multi_aff *ma);
 __isl_give isl_basic_map *isl_basic_map_product(
 	__isl_take isl_basic_map *bmap1, __isl_take isl_basic_map *bmap2);
 __isl_give isl_map *isl_map_product(__isl_take isl_map *map1,
