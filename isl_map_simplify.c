@@ -1363,9 +1363,12 @@ static int div_is_redundant(struct isl_basic_map *bmap, int div)
 			return 0;
 	}
 
-	for (i = 0; i < bmap->n_div; ++i)
+	for (i = 0; i < bmap->n_div; ++i) {
+		if (isl_int_is_zero(bmap->div[i][0]))
+			continue;
 		if (!isl_int_is_zero(bmap->div[i][1+pos]))
 			return 0;
+	}
 
 	return 1;
 }
