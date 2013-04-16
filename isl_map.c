@@ -11521,7 +11521,7 @@ __isl_give isl_basic_map *isl_basic_map_preimage_multi_aff(
 	n_div_bmap = isl_basic_map_dim(bmap, isl_dim_div);
 	n_div_ma = ma->n ? isl_aff_dim(ma->p[0], isl_dim_div) : 0;
 
-	space = isl_space_domain(isl_multi_aff_get_space(ma));
+	space = isl_multi_aff_get_domain_space(ma);
 	space = isl_space_set(isl_basic_map_get_space(bmap), type, space);
 	rational = isl_basic_map_is_rational(bmap);
 	strides = rational ? 0 : multi_aff_strides(ma);
