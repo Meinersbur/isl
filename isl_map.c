@@ -11402,7 +11402,7 @@ error:
  *
  *	x_i = (f_i y + h_i)/m_i
  *
- * the additional constraints are added to ensure that we only
+ * then additional constraints are added to ensure that we only
  * map back integer points.  That is we enforce
  *
  *	f_i y + h_i = m_i alpha_i
