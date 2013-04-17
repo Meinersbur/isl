@@ -12,30 +12,6 @@
 #include <isl_ast_private.h>
 #include <isl_ast_build_private.h>
 
-/* Compute the minimum of the integer affine expression "obj" over the points
- * in build->domain and put the result in *opt.
- */
-enum isl_lp_result isl_ast_build_min(__isl_keep isl_ast_build *build,
-	__isl_keep isl_aff *obj, isl_int *opt)
-{
-	if (!build)
-		return isl_lp_error;
-
-	return isl_set_min(build->domain, obj, opt);
-}
-
-/* Compute the maximum of the integer affine expression "obj" over the points
- * in build->domain and put the result in *opt.
- */
-enum isl_lp_result isl_ast_build_max(__isl_keep isl_ast_build *build,
-	__isl_keep isl_aff *obj, isl_int *opt)
-{
-	if (!build)
-		return isl_lp_error;
-
-	return isl_set_max(build->domain, obj, opt);
-}
-
 /* Compute the "opposite" of the (numerator of the) argument of a div
  * with denonimator "d".
  *
