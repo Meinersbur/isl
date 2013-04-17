@@ -13,7 +13,7 @@
 #include <isl_ctx_private.h>
 #include <isl_map_private.h>
 #include <isl_factorization.h>
-#include <isl/lp.h>
+#include <isl_lp_private.h>
 #include <isl_seq.h>
 #include <isl_union_map_private.h>
 #include <isl_constraint_private.h>

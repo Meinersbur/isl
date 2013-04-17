@@ -13,6 +13,7 @@
 #include <isl/aff_type.h>
 #include <isl/lp.h>
 #include <isl/val.h>
+#include <isl/vec.h>
 
 #if defined(__cplusplus)
 extern "C" {

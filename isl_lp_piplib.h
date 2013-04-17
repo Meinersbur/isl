@@ -11,6 +11,7 @@
 #define ISL_LP_PIPLIB_H
 
 #include <isl/lp.h>
+#include <isl/vec.h>
 
 #if defined(__cplusplus)
 extern "C" {
