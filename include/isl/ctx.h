@@ -14,7 +14,6 @@
 #include <stdlib.h>
 
 #include <isl/int.h>
-#include <isl/blk.h>
 #include <isl/arg.h>
 #include <isl/hash.h>
 #include <isl/config.h>

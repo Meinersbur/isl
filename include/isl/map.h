@@ -14,7 +14,6 @@
 
 #include <isl/int.h>
 #include <isl/ctx.h>
-#include <isl/blk.h>
 #include <isl/space.h>
 #include <isl/vec.h>
 #include <isl/mat.h>

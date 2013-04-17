@@ -1,4 +1,5 @@
 #include <isl/ctx.h>
+#include <isl_blk.h>
 
 struct isl_ctx {
 	int			ref;

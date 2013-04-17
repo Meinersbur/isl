@@ -7,7 +7,7 @@
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
  */
 
-#include <isl/blk.h>
+#include <isl_blk.h>
 #include <isl_ctx_private.h>
 
 /* The maximal number of cache misses before first element is evicted */

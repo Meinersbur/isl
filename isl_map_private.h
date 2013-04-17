@@ -21,6 +21,7 @@ ISL_DECLARE_LIST(map)
 #include <isl/map.h>
 #include <isl_reordering.h>
 #include <isl/vec.h>
+#include <isl_blk.h>
 
 /* A "basic map" is a relation between two sets of variables,
  * called the "in" and "out" variables.

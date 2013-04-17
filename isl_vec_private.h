@@ -1,7 +1,7 @@
 #ifndef ISL_VEC_PRIVATE_H
 #define ISL_VEC_PRIVATE_H
 
-#include <isl/blk.h>
+#include <isl_blk.h>
 #include <isl/vec.h>
 
 struct isl_vec {

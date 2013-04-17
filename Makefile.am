@@ -58,6 +58,7 @@ libisl_la_SOURCES = \
 	isl_bernstein.c \
 	isl_bernstein.h \
 	isl_blk.c \
+	isl_blk.h \
 	isl_bound.c \
 	isl_bound.h \
 	isl_coalesce.c \
@@ -223,7 +224,6 @@ pkginclude_HEADERS = \
 	include/isl/ast.h \
 	include/isl/ast_build.h \
 	include/isl/band.h \
-	include/isl/blk.h \
 	include/isl/constraint.h \
 	include/isl/ctx.h \
 	include/isl/dim.h \
