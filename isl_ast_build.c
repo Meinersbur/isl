@@ -7,7 +7,6 @@
  * Ecole Normale Superieure, 45 rue d’Ulm, 75230 Paris, France
  */
 
-#include <isl_int.h>
 #include <isl/map.h>
 #include <isl/aff.h>
 #include <isl/map.h>
@@ -1044,51 +1043,43 @@ __isl_give isl_id *isl_ast_build_get_iterator_id(
  * is the combined stride.
  */
 static __isl_give isl_ast_build *set_stride(__isl_take isl_ast_build *build,
-	isl_int stride, __isl_take isl_aff *offset)
+	__isl_take isl_val *stride, __isl_take isl_aff *offset)
 {
 	int pos;
 
 	build = isl_ast_build_cow(build);
-	if (!build || !offset)
+	if (!build || !stride || !offset)
 		goto error;
 
 	pos = build->depth;
 
 	if (isl_ast_build_has_stride(build, pos)) {
-		isl_int stride2, a, b, g;
+		isl_val *stride2, *a, *b, *g;
 		isl_aff *offset2;
 
-		isl_int_init(stride2);
-		isl_int_init(a);
-		isl_int_init(b);
-		isl_int_init(g);
-
-		isl_vec_get_element(build->strides, pos, &stride2);
-		isl_int_gcdext(g, a, b, stride, stride2);
-		isl_int_mul(a, a, stride);
-		isl_int_divexact(a, a, g);
-		isl_int_divexact(stride2, stride2, g);
-		isl_int_mul(b, b, stride2);
-		isl_int_mul(stride, stride, stride2);
+		stride2 = isl_vec_get_element_val(build->strides, pos);
+		g = isl_val_gcdext(isl_val_copy(stride), isl_val_copy(stride2),
+					&a, &b);
+		a = isl_val_mul(a, isl_val_copy(stride));
+		a = isl_val_div(a, isl_val_copy(g));
+		stride2 = isl_val_div(stride2, g);
+		b = isl_val_mul(b, isl_val_copy(stride2));
+		stride = isl_val_mul(stride, stride2);
 
 		offset2 = isl_multi_aff_get_aff(build->offsets, pos);
-		offset2 = isl_aff_scale(offset2, a);
-		offset = isl_aff_scale(offset, b);
+		offset2 = isl_aff_scale_val(offset2, a);
+		offset = isl_aff_scale_val(offset, b);
 		offset = isl_aff_add(offset, offset2);
-
-		isl_int_clear(stride2);
-		isl_int_clear(a);
-		isl_int_clear(b);
-		isl_int_clear(g);
 	}
 
-	build->strides = isl_vec_set_element(build->strides, pos, stride);
+	build->strides = isl_vec_set_element_val(build->strides, pos, stride);
 	build->offsets = isl_multi_aff_set_aff(build->offsets, pos, offset);
 	if (!build->strides || !build->offsets)
 		return isl_ast_build_free(build);
 
 	return build;
 error:
+	isl_val_free(stride);
 	isl_aff_free(offset);
 	return isl_ast_build_free(build);
 }
@@ -1245,7 +1236,8 @@ static int detect_stride(__isl_take isl_constraint *c, void *user)
 {
 	struct isl_detect_stride_data *data = user;
 	int i, n_div;
-	isl_int v, gcd, stride, a, b, m;
+	isl_ctx *ctx;
+	isl_val *v, *stride, *m;
 
 	if (!isl_constraint_is_equality(c) ||
 	    !isl_constraint_involves_dims(c, isl_dim_set, data->pos, 1)) {
@@ -1253,47 +1245,41 @@ static int detect_stride(__isl_take isl_constraint *c, void *user)
 		return 0;
 	}
 
-	isl_int_init(a);
-	isl_int_init(b);
-	isl_int_init(v);
-	isl_int_init(m);
-	isl_int_init(gcd);
-	isl_int_init(stride);
-
-	isl_int_set_si(gcd, 0);
+	ctx = isl_constraint_get_ctx(c);
+	stride = isl_val_zero(ctx);
 	n_div = isl_constraint_dim(c, isl_dim_div);
 	for (i = 0; i < n_div; ++i) {
-		isl_constraint_get_coefficient(c, isl_dim_div, i, &v);
-		isl_int_gcd(gcd, gcd, v);
+		v = isl_constraint_get_coefficient_val(c, isl_dim_div, i);
+		v = isl_val_gcd(stride, v);
 	}
 
-	isl_constraint_get_coefficient(c, isl_dim_set, data->pos, &v);
-	isl_int_gcd(m, v, gcd);
-	isl_int_divexact(stride, gcd, m);
-	isl_int_divexact(v, v, m);
+	v = isl_constraint_get_coefficient_val(c, isl_dim_set, data->pos);
+	m = isl_val_gcd(isl_val_copy(stride), isl_val_copy(v));
+	stride = isl_val_div(stride, isl_val_copy(m));
+	v = isl_val_div(v, isl_val_copy(m));
 
-	if (!isl_int_is_zero(stride) && !isl_int_is_one(stride)) {
+	if (!isl_val_is_zero(stride) && !isl_val_is_one(stride)) {
 		isl_aff *aff;
+		isl_val *gcd, *a, *b;
 
-		isl_int_gcdext(gcd, a, b, v, stride);
+		gcd = isl_val_gcdext(v, isl_val_copy(stride), &a, &b);
+		isl_val_free(gcd);
+		isl_val_free(b);
 
 		aff = isl_constraint_get_aff(c);
 		for (i = 0; i < n_div; ++i)
 			aff = isl_aff_set_coefficient_si(aff,
 							 isl_dim_div, i, 0);
 		aff = isl_aff_set_coefficient_si(aff, isl_dim_in, data->pos, 0);
-		isl_int_neg(a, a);
-		aff = isl_aff_scale(aff, a);
-		aff = isl_aff_scale_down(aff, m);
+		a = isl_val_neg(a);
+		aff = isl_aff_scale_val(aff, a);
+		aff = isl_aff_scale_down_val(aff, m);
 		data->build = set_stride(data->build, stride, aff);
+	} else {
+		isl_val_free(stride);
+		isl_val_free(m);
+		isl_val_free(v);
 	}
-
-	isl_int_clear(stride);
-	isl_int_clear(gcd);
-	isl_int_clear(m);
-	isl_int_clear(v);
-	isl_int_clear(b);
-	isl_int_clear(a);
 
 	isl_constraint_free(c);
 	return 0;
