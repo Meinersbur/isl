@@ -2102,8 +2102,6 @@ static __isl_give isl_set *separate_schedule_domains(
  * found any yet.
  * "n" is the corresponding size.  If lower is NULL, then the value of n
  * is undefined.
- *
- * "tmp" is a temporary initialized isl_int.
  */
 struct isl_find_unroll_data {
 	isl_set *domain;
@@ -2111,7 +2109,6 @@ struct isl_find_unroll_data {
 
 	isl_aff *lower;
 	int *n;
-	isl_int tmp;
 };
 
 /* Check if we can use "c" as a lower bound and if it is better than
@@ -2144,7 +2141,7 @@ static int update_unrolling_lower_bound(struct isl_find_unroll_data *data,
 	__isl_keep isl_constraint *c)
 {
 	isl_aff *aff, *lower;
-	enum isl_lp_result res;
+	isl_val *max;
 
 	if (!isl_constraint_is_lower_bound(c, isl_dim_set, data->depth))
 		return 0;
@@ -2155,23 +2152,25 @@ static int update_unrolling_lower_bound(struct isl_find_unroll_data *data,
 	aff = isl_aff_neg(aff);
 	aff = isl_aff_add_coefficient_si(aff, isl_dim_in, data->depth, 1);
 	aff = isl_aff_add_constant_si(aff, 1);
-	res = isl_set_max(data->domain, aff, &data->tmp);
+	max = isl_set_max_val(data->domain, aff);
 	isl_aff_free(aff);
 
-	if (res == isl_lp_error)
+	if (!max)
 		goto error;
-	if (res == isl_lp_unbounded) {
+	if (isl_val_is_infty(max)) {
+		isl_val_free(max);
 		isl_aff_free(lower);
 		return 0;
 	}
 
-	if (isl_int_cmp_si(data->tmp, INT_MAX) <= 0 &&
-	    (!data->lower || isl_int_cmp_si(data->tmp, *data->n) < 0)) {
+	if (isl_val_cmp_si(max, INT_MAX) <= 0 &&
+	    (!data->lower || isl_val_cmp_si(max, *data->n) < 0)) {
 		isl_aff_free(data->lower);
 		data->lower = lower;
-		*data->n = isl_int_get_si(data->tmp);
+		*data->n = isl_val_get_num_si(max);
 	} else
 		isl_aff_free(lower);
+	isl_val_free(max);
 
 	return 1;
 error:
@@ -2221,7 +2220,6 @@ static __isl_give isl_aff *find_unroll_lower_bound(__isl_keep isl_set *domain,
 	struct isl_find_unroll_data data = { domain, depth, NULL, n };
 	isl_basic_set *hull;
 
-	isl_int_init(data.tmp);
 	hull = isl_set_simple_hull(isl_set_copy(domain));
 
 	if (isl_basic_set_foreach_constraint(hull,
@@ -2229,7 +2227,6 @@ static __isl_give isl_aff *find_unroll_lower_bound(__isl_keep isl_set *domain,
 		goto error;
 
 	isl_basic_set_free(hull);
-	isl_int_clear(data.tmp);
 
 	if (!data.lower)
 		isl_die(isl_set_get_ctx(domain), isl_error_invalid,
@@ -2238,7 +2235,6 @@ static __isl_give isl_aff *find_unroll_lower_bound(__isl_keep isl_set *domain,
 	return data.lower;
 error:
 	isl_basic_set_free(hull);
-	isl_int_clear(data.tmp);
 	return isl_aff_free(data.lower);
 }
 
