@@ -1148,51 +1148,6 @@ __isl_give isl_ast_build *isl_ast_build_include_stride(
 	return build;
 }
 
-/* Compute x, y and g such that g = gcd(a,b) and a*x+b*y = g */
-static void euclid(isl_int a, isl_int b, isl_int *x, isl_int *y, isl_int *g)
-{
-	isl_int c, d, e, f, tmp;
-
-	isl_int_init(c);
-	isl_int_init(d);
-	isl_int_init(e);
-	isl_int_init(f);
-	isl_int_init(tmp);
-	isl_int_abs(c, a);
-	isl_int_abs(d, b);
-	isl_int_set_si(e, 1);
-	isl_int_set_si(f, 0);
-	while (isl_int_is_pos(d)) {
-		isl_int_tdiv_q(tmp, c, d);
-		isl_int_mul(tmp, tmp, f);
-		isl_int_sub(e, e, tmp);
-		isl_int_tdiv_q(tmp, c, d);
-		isl_int_mul(tmp, tmp, d);
-		isl_int_sub(c, c, tmp);
-		isl_int_swap(c, d);
-		isl_int_swap(e, f);
-	}
-	isl_int_set(*g, c);
-	if (isl_int_is_zero(a))
-		isl_int_set_si(*x, 0);
-	else if (isl_int_is_pos(a))
-		isl_int_set(*x, e);
-	else
-		isl_int_neg(*x, e);
-	if (isl_int_is_zero(b))
-		isl_int_set_si(*y, 0);
-	else {
-		isl_int_mul(tmp, a, *x);
-		isl_int_sub(tmp, c, tmp);
-		isl_int_divexact(*y, tmp, b);
-	}
-	isl_int_clear(c);
-	isl_int_clear(d);
-	isl_int_clear(e);
-	isl_int_clear(f);
-	isl_int_clear(tmp);
-}
-
 /* Information used inside detect_stride.
  *
  * "build" may be updated by detect_stride to include stride information.
@@ -1272,7 +1227,7 @@ static int detect_stride(__isl_take isl_constraint *c, void *user)
 	if (!isl_int_is_zero(stride) && !isl_int_is_one(stride)) {
 		isl_aff *aff;
 
-		euclid(v, stride, &a, &b, &gcd);
+		isl_int_gcdext(gcd, a, b, v, stride);
 
 		aff = isl_constraint_get_aff(c);
 		for (i = 0; i < n_div; ++i)
