@@ -1719,16 +1719,17 @@ int isl_ast_build_aff_is_nonneg(__isl_keep isl_ast_build *build,
  */
 int isl_ast_build_has_stride(__isl_keep isl_ast_build *build, int pos)
 {
-	isl_int v;
+	isl_val *v;
 	int has_stride;
 
 	if (!build)
 		return -1;
 
-	isl_int_init(v);
-	isl_vec_get_element(build->strides, pos, &v);
-	has_stride = !isl_int_is_one(v);
-	isl_int_clear(v);
+	v = isl_vec_get_element_val(build->strides, pos);
+	if (!v)
+		return -1;
+	has_stride = !isl_val_is_one(v);
+	isl_val_free(v);
 
 	return has_stride;
 }
