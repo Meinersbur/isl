@@ -765,12 +765,11 @@ static int aff_constant_is_negative(__isl_take isl_set *set,
 	__isl_take isl_aff *aff, void *user)
 {
 	int *neg = user;
-	isl_int v;
+	isl_val *v;
 
-	isl_int_init(v);
-	isl_aff_get_constant(aff, &v);
-	*neg = isl_int_is_neg(v);
-	isl_int_clear(v);
+	v = isl_aff_get_constant_val(aff);
+	*neg = isl_val_is_neg(v);
+	isl_val_free(v);
 	isl_set_free(set);
 	isl_aff_free(aff);
 
