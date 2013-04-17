@@ -3012,11 +3012,11 @@ static int first_offset(struct isl_set_map_pair *domain, int *order, int n,
  * in all cases.
  */
 static __isl_give isl_union_map *contruct_shifted_executed(
-	struct isl_set_map_pair *domain, int *order, int n, isl_int stride,
-	__isl_keep isl_vec *offset, __isl_keep isl_ast_build *build)
+	struct isl_set_map_pair *domain, int *order, int n,
+	__isl_keep isl_val *stride, __isl_keep isl_multi_val *offset,
+	__isl_take isl_ast_build *build)
 {
 	int i;
-	isl_int v;
 	isl_union_map *executed;
 	isl_space *space;
 	isl_map *map;
@@ -3036,17 +3036,18 @@ static __isl_give isl_union_map *contruct_shifted_executed(
 	c = isl_constraint_set_coefficient_si(c, isl_dim_in, depth, 1);
 	c = isl_constraint_set_coefficient_si(c, isl_dim_out, depth, -1);
 
-	isl_int_init(v);
-
 	for (i = 0; i < n; ++i) {
 		isl_map *map_i;
+		isl_val *v;
 
-		if (isl_vec_get_element(offset, i, &v) < 0)
+		v = isl_multi_val_get_val(offset, i);
+		if (!v)
 			break;
 		map_i = isl_map_copy(map);
-		map_i = isl_map_fix(map_i, isl_dim_out, depth + 1, v);
-		isl_int_neg(v, v);
-		c = isl_constraint_set_constant(c, v);
+		map_i = isl_map_fix_val(map_i, isl_dim_out, depth + 1,
+					isl_val_copy(v));
+		v = isl_val_neg(v);
+		c = isl_constraint_set_constant_val(c, v);
 		map_i = isl_map_add_constraint(map_i, isl_constraint_copy(c));
 
 		map_i = isl_map_apply_domain(isl_map_copy(domain[order[i]].map),
@@ -3056,8 +3057,6 @@ static __isl_give isl_union_map *contruct_shifted_executed(
 
 	isl_constraint_free(c);
 	isl_map_free(map);
-
-	isl_int_clear(v);
 
 	if (i < n)
 		executed = isl_union_map_free(executed);
@@ -3092,15 +3091,16 @@ static __isl_give isl_union_map *contruct_shifted_executed(
  * old schedule domain.
  */
 static __isl_give isl_ast_graft_list *generate_shift_component(
-	struct isl_set_map_pair *domain, int *order, int n, isl_int stride,
-	__isl_keep isl_vec *offset, __isl_take isl_ast_build *build)
+	struct isl_set_map_pair *domain, int *order, int n,
+	__isl_keep isl_val *stride, __isl_keep isl_multi_val *offset,
+	__isl_take isl_ast_build *build)
 {
 	isl_ast_graft_list *list;
 	int first;
 	int depth;
 	isl_ctx *ctx;
-	isl_int val;
-	isl_vec *v;
+	isl_val *val;
+	isl_multi_val *mv;
 	isl_space *space;
 	isl_multi_aff *ma, *zero;
 	isl_union_map *executed;
@@ -3112,16 +3112,13 @@ static __isl_give isl_ast_graft_list *generate_shift_component(
 	if (first < 0)
 		return isl_ast_build_free(build);
 
-	isl_int_init(val);
-	v = isl_vec_alloc(ctx, n);
-	if (isl_vec_get_element(offset, first, &val) < 0)
-		v = isl_vec_free(v);
-	isl_int_neg(val, val);
-	v = isl_vec_set(v, val);
-	v = isl_vec_add(v, isl_vec_copy(offset));
-	v = isl_vec_fdiv_r(v, stride);
+	mv = isl_multi_val_copy(offset);
+	val = isl_multi_val_get_val(offset, first);
+	val = isl_val_neg(val);
+	mv = isl_multi_val_add_val(mv, val);
+	mv = isl_multi_val_mod_val(mv, isl_val_copy(stride));
 
-	executed = contruct_shifted_executed(domain, order, n, stride, v,
+	executed = contruct_shifted_executed(domain, order, n, stride, mv,
 						build);
 	space = isl_ast_build_get_space(build, 1);
 	space = isl_space_map_from_set(space);
@@ -3135,8 +3132,7 @@ static __isl_give isl_ast_graft_list *generate_shift_component(
 
 	list = isl_ast_graft_list_preimage_multi_aff(list, ma);
 
-	isl_vec_free(v);
-	isl_int_clear(val);
+	isl_multi_val_free(mv);
 
 	return list;
 }
@@ -3214,8 +3210,8 @@ static __isl_give isl_ast_graft_list *generate_component(
 	isl_ctx *ctx;
 	isl_map *map;
 	isl_set *deltas;
-	isl_int m, r, gcd;
-	isl_vec *v;
+	isl_val *gcd;
+	isl_multi_val *mv;
 	int fixed, skip;
 	int base;
 	isl_ast_graft_list *list;
@@ -3240,13 +3236,12 @@ static __isl_give isl_ast_graft_list *generate_component(
 
 	ctx = isl_ast_build_get_ctx(build);
 
-	isl_int_init(m);
-	isl_int_init(r);
-	isl_int_init(gcd);
-	v = isl_vec_alloc(ctx, n);
+	mv = isl_multi_val_zero(isl_space_set_alloc(ctx, 0, n));
 
 	fixed = 1;
 	for (i = 0; i < n; ++i) {
+		isl_val *r, *m;
+
 		map = isl_map_from_domain_and_range(
 					isl_set_copy(domain[order[base]].set),
 					isl_set_copy(domain[order[i]].set));
@@ -3254,48 +3249,51 @@ static __isl_give isl_ast_graft_list *generate_component(
 			map = isl_map_equate(map, isl_dim_in, d,
 						    isl_dim_out, d);
 		deltas = isl_map_deltas(map);
-		res = isl_set_dim_residue_class(deltas, depth, &m, &r);
+		res = isl_set_dim_residue_class_val(deltas, depth, &m, &r);
 		isl_set_free(deltas);
 		if (res < 0)
 			break;
 
 		if (i == 0)
-			isl_int_set(gcd, m);
+			gcd = m;
 		else
-			isl_int_gcd(gcd, gcd, m);
-		if (isl_int_is_one(gcd))
+			gcd = isl_val_gcd(gcd, m);
+		if (isl_val_is_one(gcd)) {
+			isl_val_free(r);
 			break;
-		v = isl_vec_set_element(v, i, r);
+		}
+		mv = isl_multi_val_set_val(mv, i, r);
 
-		res = isl_set_plain_is_fixed(domain[order[i]].set,
-						isl_dim_set, depth, NULL);
+		res = dim_is_fixed(domain[order[i]].set, depth);
 		if (res < 0)
 			break;
 		if (res)
 			continue;
 
 		if (fixed && i > base) {
-			isl_vec_get_element(v, base, &m);
-			if (isl_int_ne(m, r))
+			isl_val *a, *b;
+			a = isl_multi_val_get_val(mv, i);
+			b = isl_multi_val_get_val(mv, base);
+			if (isl_val_ne(a, b))
 				fixed = 0;
+			isl_val_free(a);
+			isl_val_free(b);
 		}
 	}
 
-	if (res < 0) {
+	if (res < 0 || !gcd) {
 		isl_ast_build_free(build);
 		list = NULL;
 	} else if (i < n || fixed) {
 		list = generate_shifted_component_from_list(domain,
 							    order, n, build);
 	} else {
-		list = generate_shift_component(domain, order, n, gcd, v,
+		list = generate_shift_component(domain, order, n, gcd, mv,
 						build);
 	}
 
-	isl_vec_free(v);
-	isl_int_clear(gcd);
-	isl_int_clear(r);
-	isl_int_clear(m);
+	isl_val_free(gcd);
+	isl_multi_val_free(mv);
 
 	return list;
 }
