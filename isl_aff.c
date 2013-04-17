@@ -20,7 +20,7 @@
 #include <isl_local_space_private.h>
 #include <isl_mat_private.h>
 #include <isl/constraint.h>
-#include <isl/seq.h>
+#include <isl_seq.h>
 #include <isl/set.h>
 #include <isl_val_private.h>
 #include <isl_config.h>

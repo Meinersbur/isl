@@ -11,7 +11,7 @@
 #include <isl_map_private.h>
 #include <isl/ilp.h>
 #include "isl_sample.h"
-#include <isl/seq.h>
+#include <isl_seq.h>
 #include "isl_equalities.h"
 #include <isl_aff_private.h>
 #include <isl_local_space_private.h>

@@ -11,7 +11,7 @@
 #include <isl_map_private.h>
 #include <isl/set.h>
 #include <isl_space_private.h>
-#include <isl/seq.h>
+#include <isl_seq.h>
 
 /*
  * Let C be a cone and define

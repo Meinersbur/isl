@@ -18,7 +18,7 @@
 #include <isl_ctx_private.h>
 #include <isl_map_private.h>
 #include <isl/set.h>
-#include <isl/seq.h>
+#include <isl_seq.h>
 #include <isl_stream_private.h>
 #include <isl/obj.h>
 #include "isl_polynomial_private.h"

@@ -15,7 +15,7 @@
 #include <isl_point_private.h>
 #include <isl_space_private.h>
 #include <isl/lp.h>
-#include <isl/seq.h>
+#include <isl_seq.h>
 #include <isl_mat_private.h>
 #include <isl_val_private.h>
 #include <isl_config.h>

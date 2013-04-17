@@ -8,7 +8,7 @@
  */
 
 #include <isl_ctx_private.h>
-#include <isl/seq.h>
+#include <isl_seq.h>
 #include <isl/vec.h>
 #include <isl_val_private.h>
 

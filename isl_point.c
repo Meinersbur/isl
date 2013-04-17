@@ -3,7 +3,7 @@
 #include <isl/set.h>
 #include <isl_sample.h>
 #include <isl_scan.h>
-#include <isl/seq.h>
+#include <isl_seq.h>
 #include <isl_space_private.h>
 #include <isl_val_private.h>
 

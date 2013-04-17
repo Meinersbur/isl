@@ -12,7 +12,7 @@
 #include <isl/set.h>
 #include <isl/map.h>
 #include <isl/mat.h>
-#include <isl/seq.h>
+#include <isl_seq.h>
 #include "isl_piplib.h"
 #include "isl_map_piplib.h"
 

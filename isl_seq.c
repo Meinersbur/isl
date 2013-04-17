@@ -8,7 +8,7 @@
  */
 
 #include <isl_ctx_private.h>
-#include <isl/seq.h>
+#include <isl_seq.h>
 
 void isl_seq_clr(isl_int *p, unsigned len)
 {

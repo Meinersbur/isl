@@ -129,6 +129,7 @@ libisl_la_SOURCES = \
 	isl_stream.c \
 	isl_stream_private.h \
 	isl_seq.c \
+	isl_seq.h \
 	isl_tab.c \
 	isl_tab.h \
 	isl_tab_pip.c \
@@ -244,7 +245,6 @@ pkginclude_HEADERS = \
 	include/isl/polynomial_type.h \
 	include/isl/printer.h \
 	include/isl/schedule.h \
-	include/isl/seq.h \
 	include/isl/set.h \
 	include/isl/set_type.h \
 	include/isl/space.h \

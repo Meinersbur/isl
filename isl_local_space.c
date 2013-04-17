@@ -16,7 +16,7 @@
 #include <isl_space_private.h>
 #include <isl_mat_private.h>
 #include <isl_aff_private.h>
-#include <isl/seq.h>
+#include <isl_seq.h>
 
 isl_ctx *isl_local_space_get_ctx(__isl_keep isl_local_space *ls)
 {

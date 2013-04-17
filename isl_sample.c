@@ -13,7 +13,7 @@
 #include "isl_sample_piplib.h"
 #include <isl/vec.h>
 #include <isl/mat.h>
-#include <isl/seq.h>
+#include <isl_seq.h>
 #include "isl_equalities.h"
 #include "isl_tab.h"
 #include "isl_basis_reduction.h"
