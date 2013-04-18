@@ -365,27 +365,26 @@ static int multi_aff_tile(__isl_take isl_set *set,
 	struct isl_band_tile_data *data = user;
 	isl_pw_multi_aff *pma;
 	int i, n;
-	isl_int v;
+	isl_val *v;
 
 	n = isl_multi_aff_dim(ma, isl_dim_out);
 	if (isl_vec_size(data->sizes) < n)
 		n = isl_vec_size(data->sizes);
 
-	isl_int_init(v);
 	for (i = 0; i < n; ++i) {
 		isl_aff *aff;
 
 		aff = isl_multi_aff_get_aff(ma, i);
-		isl_vec_get_element(data->sizes, i, &v);
+		v = isl_vec_get_element_val(data->sizes, i);
 
-		aff = isl_aff_scale_down(aff, v);
+		aff = isl_aff_scale_down_val(aff, isl_val_copy(v));
 		aff = isl_aff_floor(aff);
 		if (data->scale)
-			aff = isl_aff_scale(aff, v);
+			aff = isl_aff_scale_val(aff, isl_val_copy(v));
+		isl_val_free(v);
 
 		ma = isl_multi_aff_set_aff(ma, i, aff);
 	}
-	isl_int_clear(v);
 
 	pma = isl_pw_multi_aff_alloc(set, ma);
 	data->tiled = isl_pw_multi_aff_union_add(data->tiled, pma);
