@@ -1127,7 +1127,6 @@ static __isl_give struct isl_sched_info *sched_info_alloc(
 	isl_space *dim;
 	struct isl_sched_info *info;
 	int i, n;
-	isl_int v;
 
 	if (!map)
 		return NULL;
@@ -1147,13 +1146,18 @@ static __isl_give struct isl_sched_info *sched_info_alloc(
 	if (!info->is_cst || !info->cst)
 		goto error;
 
-	isl_int_init(v);
 	for (i = 0; i < n; ++i) {
-		info->is_cst[i] = isl_map_plain_is_fixed(map, isl_dim_in, i,
-							 &v);
-		info->cst = isl_vec_set_element(info->cst, i, v);
+		isl_val *v;
+
+		v = isl_map_plain_get_val_if_fixed(map, isl_dim_in, i);
+		if (!v)
+			goto error;
+		info->is_cst[i] = !isl_val_is_nan(v);
+		if (info->is_cst[i])
+			info->cst = isl_vec_set_element_val(info->cst, i, v);
+		else
+			isl_val_free(v);
 	}
-	isl_int_clear(v);
 
 	return info;
 error:
