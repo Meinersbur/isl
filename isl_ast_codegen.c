@@ -2801,6 +2801,22 @@ static __isl_give isl_ast_graft_list *generate_shifted_component_from_list(
 	return generate_shifted_component(executed, build);
 }
 
+/* Does set dimension "pos" of "set" have an obviously fixed value?
+ */
+static int dim_is_fixed(__isl_keep isl_set *set, int pos)
+{
+	int fixed;
+	isl_val *v;
+
+	v = isl_set_plain_get_val_if_fixed(set, isl_dim_set, pos);
+	if (!v)
+		return -1;
+	fixed = !isl_val_is_nan(v);
+	isl_val_free(v);
+
+	return fixed;
+}
+
 /* Given an array "domain" of isl_set_map_pairs and an array "order"
  * of indices into the "domain" array,
  * do all (except for at most one) of the "set" field of the elements
@@ -2816,8 +2832,7 @@ static int at_most_one_non_fixed(struct isl_set_map_pair *domain,
 	for (i = 0; i < n; ++i) {
 		int f;
 
-		f = isl_set_plain_is_fixed(domain[order[i]].set,
-						isl_dim_set, depth, NULL);
+		f = dim_is_fixed(domain[order[i]].set, depth);
 		if (f < 0)
 			return -1;
 		if (f)
