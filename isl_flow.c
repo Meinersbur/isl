@@ -1258,7 +1258,6 @@ static int before(void *first, void *second)
 	struct isl_sched_info *info2 = second;
 	int n1, n2;
 	int i;
-	isl_int v1, v2;
 
 	n1 = isl_vec_size(info1->cst);
 	n2 = isl_vec_size(info2->cst);
@@ -1266,28 +1265,22 @@ static int before(void *first, void *second)
 	if (n2 < n1)
 		n1 = n2;
 
-	isl_int_init(v1);
-	isl_int_init(v2);
 	for (i = 0; i < n1; ++i) {
 		int r;
+		int cmp;
 
 		if (!info1->is_cst[i])
 			continue;
 		if (!info2->is_cst[i])
 			continue;
-		isl_vec_get_element(info1->cst, i, &v1);
-		isl_vec_get_element(info2->cst, i, &v2);
-		if (isl_int_eq(v1, v2))
+		cmp = isl_vec_cmp_element(info1->cst, info2->cst, i);
+		if (cmp == 0)
 			continue;
 
-		r = 2 * i + isl_int_lt(v1, v2);
+		r = 2 * i + (cmp < 0);
 
-		isl_int_clear(v1);
-		isl_int_clear(v2);
 		return r;
 	}
-	isl_int_clear(v1);
-	isl_int_clear(v2);
 
 	return 2 * n1;
 }
