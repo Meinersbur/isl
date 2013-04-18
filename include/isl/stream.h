@@ -39,21 +39,7 @@ enum isl_token_type { ISL_TOKEN_ERROR = -1,
 			ISL_TOKEN_IMPLIES,
 			ISL_TOKEN_LAST };
 
-struct isl_token {
-	int type;
-
-	unsigned int on_new_line : 1;
-	unsigned is_keyword : 1;
-	int line;
-	int col;
-
-	union {
-		isl_int	v;
-		char	*s;
-		isl_map *map;
-		isl_pw_aff *pwaff;
-	} u;
-};
+struct isl_token;
 
 __isl_give isl_val *isl_token_get_val(isl_ctx *ctx, struct isl_token *tok);
 __isl_give char *isl_token_get_str(isl_ctx *ctx, struct isl_token *tok);
