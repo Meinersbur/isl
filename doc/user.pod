@@ -2075,6 +2075,21 @@ If the set or relation obviously lies on a hyperplane where the given dimension
 has a fixed value, then return that value.
 Otherwise return NaN.
 
+=item * Stride
+
+	int isl_set_dim_residue_class_val(
+		__isl_keep isl_set *set,
+		int pos, __isl_give isl_val **modulo,
+		__isl_give isl_val **residue);
+
+Check if the values of the given set dimension are equal to a fixed
+value modulo some integer value.  If so, assign the modulo to C<*modulo>
+and the fixed value to C<*residue>.  If the given dimension attains only
+a single value, then assign C<0> to C<*modulo> and the fixed value to
+C<*residue>.
+If the dimension does not attain only a single value and if no modulo
+can be found then assign C<1> to C<*modulo> and C<1> to C<*residue>.
+
 =item * Space
 
 To check whether a set is a parameter domain, use this function:

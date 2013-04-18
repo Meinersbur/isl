@@ -14,6 +14,7 @@
 #include <isl/seq.h>
 #include "isl_map_private.h"
 #include "isl_equalities.h"
+#include <isl_val_private.h>
 
 /* Given a set of modulo constraints
  *
@@ -744,5 +745,37 @@ int isl_set_dim_residue_class(struct isl_set *set,
 error:
 	isl_int_clear(m);
 	isl_int_clear(r);
+	return -1;
+}
+
+/* Check if dimension "dim" belongs to a residue class
+ *		i_dim \equiv r mod m
+ * with m != 1 and if so return m in *modulo and r in *residue.
+ * As a special case, when i_dim has a fixed value v, then
+ * *modulo is set to 0 and *residue to v.
+ *
+ * If i_dim does not belong to such a residue class, then *modulo
+ * is set to 1 and *residue is set to 0.
+ */
+int isl_set_dim_residue_class_val(__isl_keep isl_set *set,
+	int pos, __isl_give isl_val **modulo, __isl_give isl_val **residue)
+{
+	*modulo = NULL;
+	*residue = NULL;
+	if (!set)
+		return -1;
+	*modulo = isl_val_alloc(isl_set_get_ctx(set));
+	*residue = isl_val_alloc(isl_set_get_ctx(set));
+	if (!*modulo || !*residue)
+		goto error;
+	if (isl_set_dim_residue_class(set, pos,
+					&(*modulo)->n, &(*residue)->n) < 0)
+		goto error;
+	isl_int_set_si((*modulo)->d, 1);
+	isl_int_set_si((*residue)->d, 1);
+	return 0;
+error:
+	isl_val_free(*modulo);
+	isl_val_free(*residue);
 	return -1;
 }
