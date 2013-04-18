@@ -733,9 +733,11 @@ __isl_give isl_ast_build *isl_ast_build_set_loop_bounds(
 		set = isl_set_compute_divs(set);
 		build->pending = isl_set_intersect(build->pending,
 							isl_set_copy(set));
-		if (isl_ast_build_has_stride(build, build->depth))
+		if (isl_ast_build_has_stride(build, build->depth)) {
 			build->domain = isl_set_eliminate(build->domain,
 						isl_dim_set, build->depth, 1);
+			build->domain = isl_set_compute_divs(build->domain);
+		}
 	} else {
 		isl_basic_set *generated, *pending;
 
