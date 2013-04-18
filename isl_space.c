@@ -11,6 +11,7 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 #include <isl_space_private.h>
 #include <isl_id_private.h>
 #include <isl_reordering.h>
