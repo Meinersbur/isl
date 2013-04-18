@@ -2117,6 +2117,8 @@ static struct isl_basic_map *normalize_divs_in_context(
 	for (i = 0; i < context->n_eq; ++i) {
 		int k;
 		k = isl_basic_map_alloc_equality(bmap);
+		if (k < 0)
+			return isl_basic_map_free(bmap);
 		isl_seq_cpy(bmap->eq[k], context->eq[i], 1 + total_context);
 		isl_seq_clr(bmap->eq[k] + 1 + total_context,
 				isl_basic_map_total_dim(bmap) - total_context);
