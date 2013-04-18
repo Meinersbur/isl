@@ -2862,8 +2862,7 @@ static int eliminate_non_fixed(struct isl_set_map_pair *domain,
 
 	for (i = n - 1; i >= 0; --i) {
 		int f;
-		f = isl_set_plain_is_fixed(domain[order[i]].set,
-						isl_dim_set, depth, NULL);
+		f = dim_is_fixed(domain[order[i]].set, depth);
 		if (f < 0)
 			return -1;
 		if (f)
