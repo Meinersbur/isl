@@ -62,6 +62,8 @@ struct isl_vec *isl_vec_ceil(struct isl_vec *vec);
 struct isl_vec *isl_vec_normalize(struct isl_vec *vec);
 __isl_give isl_vec *isl_vec_set(__isl_take isl_vec *vec, isl_int v);
 __isl_give isl_vec *isl_vec_set_si(__isl_take isl_vec *vec, int v);
+__isl_give isl_vec *isl_vec_set_val(__isl_take isl_vec *vec,
+	__isl_take isl_val *v);
 __isl_give isl_vec *isl_vec_clr(__isl_take isl_vec *vec);
 __isl_give isl_vec *isl_vec_neg(__isl_take isl_vec *vec);
 __isl_give isl_vec *isl_vec_scale(__isl_take isl_vec *vec, isl_int m);

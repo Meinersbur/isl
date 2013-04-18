@@ -319,6 +319,26 @@ __isl_give isl_vec *isl_vec_set_si(__isl_take isl_vec *vec, int v)
 	return vec;
 }
 
+/* Replace all elements of "vec" by "v".
+ */
+__isl_give isl_vec *isl_vec_set_val(__isl_take isl_vec *vec,
+	__isl_take isl_val *v)
+{
+	vec = isl_vec_cow(vec);
+	if (!vec || !v)
+		goto error;
+	if (!isl_val_is_int(v))
+		isl_die(isl_val_get_ctx(v), isl_error_invalid,
+			"expecting integer value", goto error);
+	isl_seq_set(vec->el, v->n, vec->size);
+	isl_val_free(v);
+	return vec;
+error:
+	isl_vec_free(vec);
+	isl_val_free(v);
+	return NULL;
+}
+
 __isl_give isl_vec *isl_vec_clr(__isl_take isl_vec *vec)
 {
 	vec = isl_vec_cow(vec);
