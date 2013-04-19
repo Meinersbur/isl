@@ -32,7 +32,7 @@ static int has_sign(__isl_keep isl_basic_set *bset,
 	unsigned nvar;
 	unsigned nparam;
 	isl_space *dim;
-	isl_qpolynomial *opt;
+	isl_val *opt;
 	int r;
 	enum isl_fold type;
 
@@ -70,14 +70,14 @@ static int has_sign(__isl_keep isl_basic_set *bset,
 
 	if (!opt)
 		r = -1;
-	else if (isl_qpolynomial_is_nan(opt) ||
-		 isl_qpolynomial_is_infty(opt) ||
-		 isl_qpolynomial_is_neginfty(opt))
+	else if (isl_val_is_nan(opt) ||
+		 isl_val_is_infty(opt) ||
+		 isl_val_is_neginfty(opt))
 		r = 0;
 	else
-		r = sign * isl_qpolynomial_sgn(opt) >= 0;
+		r = sign * isl_val_sgn(opt) >= 0;
 
-	isl_qpolynomial_free(opt);
+	isl_val_free(opt);
 
 	return r;
 error:

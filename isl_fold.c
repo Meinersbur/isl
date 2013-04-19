@@ -1004,39 +1004,41 @@ int isl_qpolynomial_fold_plain_is_equal(__isl_keep isl_qpolynomial_fold *fold1,
 	return 1;
 }
 
-__isl_give isl_qpolynomial *isl_qpolynomial_fold_eval(
+__isl_give isl_val *isl_qpolynomial_fold_eval(
 	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_point *pnt)
 {
-	isl_qpolynomial *qp;
+	isl_ctx *ctx;
+	isl_val *v;
 
 	if (!fold || !pnt)
 		goto error;
+	ctx = isl_point_get_ctx(pnt);
 	isl_assert(pnt->dim->ctx, isl_space_is_equal(pnt->dim, fold->dim), goto error);
 	isl_assert(pnt->dim->ctx,
 		fold->type == isl_fold_max || fold->type == isl_fold_min,
 		goto error);
 
 	if (fold->n == 0)
-		qp = isl_qpolynomial_zero_on_domain(isl_space_copy(fold->dim));
+		v = isl_val_zero(ctx);
 	else {
 		int i;
-		qp = isl_qpolynomial_eval(isl_qpolynomial_copy(fold->qp[0]),
+		v = isl_qpolynomial_eval(isl_qpolynomial_copy(fold->qp[0]),
 						isl_point_copy(pnt));
 		for (i = 1; i < fold->n; ++i) {
-			isl_qpolynomial *qp_i;
-			qp_i = isl_qpolynomial_eval(
+			isl_val *v_i;
+			v_i = isl_qpolynomial_eval(
 					    isl_qpolynomial_copy(fold->qp[i]),
 					    isl_point_copy(pnt));
 			if (fold->type == isl_fold_max)
-				qp = isl_qpolynomial_max_cst(qp, qp_i);
+				v = isl_val_max(v, v_i);
 			else
-				qp = isl_qpolynomial_min_cst(qp, qp_i);
+				v = isl_val_min(v, v_i);
 		}
 	}
 	isl_qpolynomial_fold_free(fold);
 	isl_point_free(pnt);
 
-	return qp;
+	return v;
 error:
 	isl_qpolynomial_fold_free(fold);
 	isl_point_free(pnt);
@@ -1054,33 +1056,33 @@ size_t isl_pw_qpolynomial_fold_size(__isl_keep isl_pw_qpolynomial_fold *pwf)
 	return n;
 }
 
-__isl_give isl_qpolynomial *isl_qpolynomial_fold_opt_on_domain(
+__isl_give isl_val *isl_qpolynomial_fold_opt_on_domain(
 	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_set *set, int max)
 {
 	int i;
-	isl_qpolynomial *opt;
+	isl_val *opt;
 
 	if (!set || !fold)
 		goto error;
 
 	if (fold->n == 0) {
-		isl_space *dim = isl_space_copy(fold->dim);
+		opt = isl_val_zero(isl_set_get_ctx(set));
 		isl_set_free(set);
 		isl_qpolynomial_fold_free(fold);
-		return isl_qpolynomial_zero_on_domain(dim);
+		return opt;
 	}
 
 	opt = isl_qpolynomial_opt_on_domain(isl_qpolynomial_copy(fold->qp[0]),
 						isl_set_copy(set), max);
 	for (i = 1; i < fold->n; ++i) {
-		isl_qpolynomial *opt_i;
+		isl_val *opt_i;
 		opt_i = isl_qpolynomial_opt_on_domain(
 				isl_qpolynomial_copy(fold->qp[i]),
 				isl_set_copy(set), max);
 		if (max)
-			opt = isl_qpolynomial_max_cst(opt, opt_i);
+			opt = isl_val_max(opt, opt_i);
 		else
-			opt = isl_qpolynomial_min_cst(opt, opt_i);
+			opt = isl_val_min(opt, opt_i);
 	}
 
 	isl_set_free(set);

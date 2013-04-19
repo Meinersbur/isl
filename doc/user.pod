@@ -189,6 +189,11 @@ C<isl_set_dim_has_upper_bound> have slightly different meanings.
 Some of the old functions are still available in C<isl/deprecated/*.h>
 but they will be removed in the future.
 
+=item * The functions C<isl_pw_qpolynomial_eval>,
+C<isl_union_pw_qpolynomial_eval>, C<isl_pw_qpolynomial_fold_eval>
+and C<isl_union_pw_qpolynomial_fold_eval> have been changed to return
+an C<isl_val> instead of an C<isl_qpolynomial>.
+
 =back
 
 =head1 License
@@ -4687,11 +4692,11 @@ obviously equal, use
 		__isl_take isl_union_pw_qpolynomial *upwqp1,
 		__isl_take isl_union_pw_qpolynomial *upwqp2);
 
-	__isl_give isl_qpolynomial *isl_pw_qpolynomial_eval(
+	__isl_give isl_val *isl_pw_qpolynomial_eval(
 		__isl_take isl_pw_qpolynomial *pwqp,
 		__isl_take isl_point *pnt);
 
-	__isl_give isl_qpolynomial *isl_union_pw_qpolynomial_eval(
+	__isl_give isl_val *isl_union_pw_qpolynomial_eval(
 		__isl_take isl_union_pw_qpolynomial *upwqp,
 		__isl_take isl_point *pnt);
 
@@ -4904,11 +4909,11 @@ obviously equal, use
 		__isl_take isl_union_pw_qpolynomial_fold *upwf1,
 		__isl_take isl_union_pw_qpolynomial_fold *upwf2);
 
-	__isl_give isl_qpolynomial *isl_pw_qpolynomial_fold_eval(
+	__isl_give isl_val *isl_pw_qpolynomial_fold_eval(
 		__isl_take isl_pw_qpolynomial_fold *pwf,
 		__isl_take isl_point *pnt);
 
-	__isl_give isl_qpolynomial *isl_union_pw_qpolynomial_fold_eval(
+	__isl_give isl_val *isl_union_pw_qpolynomial_fold_eval(
 		__isl_take isl_union_pw_qpolynomial_fold *upwf,
 		__isl_take isl_point *pnt);
 

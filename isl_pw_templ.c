@@ -639,14 +639,13 @@ __isl_give PW *FN(PW,sub)(__isl_take PW *pw1, __isl_take PW *pw2)
 #endif
 
 #ifndef NO_EVAL
-__isl_give isl_qpolynomial *FN(PW,eval)(__isl_take PW *pw,
-	__isl_take isl_point *pnt)
+__isl_give isl_val *FN(PW,eval)(__isl_take PW *pw, __isl_take isl_point *pnt)
 {
 	int i;
 	int found = 0;
 	isl_ctx *ctx;
 	isl_space *pnt_dim = NULL;
-	isl_qpolynomial *qp;
+	isl_val *v;
 
 	if (!pw || !pnt)
 		goto error;
@@ -663,14 +662,14 @@ __isl_give isl_qpolynomial *FN(PW,eval)(__isl_take PW *pw,
 			break;
 	}
 	if (found)
-		qp = FN(EL,eval)(FN(EL,copy)(pw->p[i].FIELD),
+		v = FN(EL,eval)(FN(EL,copy)(pw->p[i].FIELD),
 					    isl_point_copy(pnt));
 	else
-		qp = isl_qpolynomial_zero_on_domain(FN(PW,get_domain_space)(pw));
+		v = isl_val_zero(ctx);
 	FN(PW,free)(pw);
 	isl_space_free(pnt_dim);
 	isl_point_free(pnt);
-	return qp;
+	return v;
 error:
 	FN(PW,free)(pw);
 	isl_space_free(pnt_dim);
@@ -1199,42 +1198,42 @@ error:
  * In the worst case, the domain is scanned completely,
  * so the domain is assumed to be bounded.
  */
-__isl_give isl_qpolynomial *FN(PW,opt)(__isl_take PW *pw, int max)
+__isl_give isl_val *FN(PW,opt)(__isl_take PW *pw, int max)
 {
 	int i;
-	isl_qpolynomial *opt;
+	isl_val *opt;
 
 	if (!pw)
 		return NULL;
 
 	if (pw->n == 0) {
-		isl_space *dim = isl_space_copy(pw->dim);
+		opt = isl_val_zero(FN(PW,get_ctx)(pw));
 		FN(PW,free)(pw);
-		return isl_qpolynomial_zero_on_domain(isl_space_domain(dim));
+		return opt;
 	}
 
 	opt = FN(EL,opt_on_domain)(FN(EL,copy)(pw->p[0].FIELD),
 					isl_set_copy(pw->p[0].set), max);
 	for (i = 1; i < pw->n; ++i) {
-		isl_qpolynomial *opt_i;
+		isl_val *opt_i;
 		opt_i = FN(EL,opt_on_domain)(FN(EL,copy)(pw->p[i].FIELD),
 						isl_set_copy(pw->p[i].set), max);
 		if (max)
-			opt = isl_qpolynomial_max_cst(opt, opt_i);
+			opt = isl_val_max(opt, opt_i);
 		else
-			opt = isl_qpolynomial_min_cst(opt, opt_i);
+			opt = isl_val_min(opt, opt_i);
 	}
 
 	FN(PW,free)(pw);
 	return opt;
 }
 
-__isl_give isl_qpolynomial *FN(PW,max)(__isl_take PW *pw)
+__isl_give isl_val *FN(PW,max)(__isl_take PW *pw)
 {
 	return FN(PW,opt)(pw, 1);
 }
 
-__isl_give isl_qpolynomial *FN(PW,min)(__isl_take PW *pw)
+__isl_give isl_val *FN(PW,min)(__isl_take PW *pw)
 {
 	return FN(PW,opt)(pw, 0);
 }

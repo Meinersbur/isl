@@ -67,8 +67,8 @@ static int verify_point(__isl_take isl_point *pnt, void *user)
 	isl_int t;
 	isl_ctx *ctx;
 	isl_pw_qpolynomial_fold *pwf;
-	isl_qpolynomial *bound = NULL;
-	isl_qpolynomial *opt = NULL;
+	isl_val *bound = NULL;
+	isl_val *opt = NULL;
 	isl_set *dom = NULL;
 	isl_printer *p;
 	const char *minmax;
@@ -120,13 +120,12 @@ static int verify_point(__isl_take isl_point *pnt, void *user)
 		opt = isl_pw_qpolynomial_fold_min(isl_pw_qpolynomial_fold_copy(pwf));
 
 	nvar = isl_set_dim(dom, isl_dim_set);
-	opt = isl_qpolynomial_project_domain_on_params(opt);
 	if (vpb->exact && bounded)
-		ok = isl_qpolynomial_plain_is_equal(opt, bound);
+		ok = isl_val_eq(opt, bound);
 	else if (sign > 0)
-		ok = isl_qpolynomial_le_cst(opt, bound);
+		ok = isl_val_le(opt, bound);
 	else
-		ok = isl_qpolynomial_le_cst(bound, opt);
+		ok = isl_val_le(bound, opt);
 	if (ok < 0)
 		goto error;
 
@@ -140,11 +139,11 @@ static int verify_point(__isl_take isl_point *pnt, void *user)
 			p = isl_printer_print_isl_int(p, t);
 		}
 		p = isl_printer_print_str(p, ") = ");
-		p = isl_printer_print_qpolynomial(p, bound);
+		p = isl_printer_print_val(p, bound);
 		p = isl_printer_print_str(p, ", ");
 		p = isl_printer_print_str(p, bounded ? "opt" : "sample");
 		p = isl_printer_print_str(p, " = ");
-		p = isl_printer_print_qpolynomial(p, opt);
+		p = isl_printer_print_val(p, opt);
 		if (ok)
 			p = isl_printer_print_str(p, ". OK");
 		else
@@ -161,8 +160,8 @@ error:
 	}
 
 	isl_pw_qpolynomial_fold_free(pwf);
-	isl_qpolynomial_free(bound);
-	isl_qpolynomial_free(opt);
+	isl_val_free(bound);
+	isl_val_free(opt);
 	isl_point_free(pnt);
 	isl_set_free(dom);
 

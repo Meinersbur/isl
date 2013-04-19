@@ -139,13 +139,6 @@ __isl_give isl_qpolynomial *isl_qpolynomial_add_on_domain(
 	__isl_take isl_qpolynomial *qp1,
 	__isl_take isl_qpolynomial *qp2);
 
-int isl_qpolynomial_le_cst(__isl_keep isl_qpolynomial *qp1,
-	__isl_keep isl_qpolynomial *qp2);
-__isl_give isl_qpolynomial *isl_qpolynomial_max_cst(
-	__isl_take isl_qpolynomial *qp1, __isl_take isl_qpolynomial *qp2);
-__isl_give isl_qpolynomial *isl_qpolynomial_min_cst(
-	__isl_take isl_qpolynomial *qp1, __isl_take isl_qpolynomial *qp2);
-
 int isl_qpolynomial_degree(__isl_keep isl_qpolynomial *poly);
 __isl_give isl_qpolynomial *isl_qpolynomial_coeff(
 	__isl_keep isl_qpolynomial *poly,
@@ -168,7 +161,7 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_project_out(
 	__isl_take isl_pw_qpolynomial *pwqp,
 	enum isl_dim_type type, unsigned first, unsigned n);
 
-__isl_give isl_qpolynomial *isl_qpolynomial_opt_on_domain(
+__isl_give isl_val *isl_qpolynomial_opt_on_domain(
 	__isl_take isl_qpolynomial *qp, __isl_take isl_set *set, int max);
 
 enum isl_fold isl_fold_type_negate(enum isl_fold type);
@@ -190,7 +183,7 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_fold_on_domain(
 	__isl_take isl_qpolynomial_fold *fold1,
 	__isl_take isl_qpolynomial_fold *fold2);
 
-__isl_give isl_qpolynomial *isl_qpolynomial_fold_opt_on_domain(
+__isl_give isl_val *isl_qpolynomial_fold_opt_on_domain(
 	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_set *set, int max);
 
 int isl_pw_qpolynomial_fold_covers(__isl_keep isl_pw_qpolynomial_fold *pwf1,

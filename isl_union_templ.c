@@ -672,13 +672,13 @@ __isl_give UNION *FN(UNION,gist)(__isl_take UNION *u,
 }
 
 #ifndef NO_EVAL
-__isl_give isl_qpolynomial *FN(UNION,eval)(__isl_take UNION *u,
+__isl_give isl_val *FN(UNION,eval)(__isl_take UNION *u,
 	__isl_take isl_point *pnt)
 {
 	uint32_t hash;
 	struct isl_hash_table_entry *entry;
 	isl_space *space;
-	isl_qpolynomial *qp;
+	isl_val *v;
 
 	if (!u || !pnt)
 		goto error;
@@ -693,13 +693,13 @@ __isl_give isl_qpolynomial *FN(UNION,eval)(__isl_take UNION *u,
 				    hash, &has_dim, space, 0);
 	isl_space_free(space);
 	if (!entry) {
-		qp = isl_qpolynomial_zero_on_domain(isl_space_copy(pnt->dim));
+		v = isl_val_zero(isl_point_get_ctx(pnt));
 		isl_point_free(pnt);
 	} else {
-		qp = FN(PART,eval)(FN(PART,copy)(entry->data), pnt);
+		v = FN(PART,eval)(FN(PART,copy)(entry->data), pnt);
 	}
 	FN(UNION,free)(u);
-	return qp;
+	return v;
 error:
 	FN(UNION,free)(u);
 	isl_point_free(pnt);
