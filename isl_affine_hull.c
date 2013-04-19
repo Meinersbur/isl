@@ -1,10 +1,15 @@
 /*
  * Copyright 2008-2009 Katholieke Universiteit Leuven
+ * Copyright 2010      INRIA Saclay
+ * Copyright 2012      Ecole Normale Superieure
  *
  * Use of this software is governed by the MIT license
  *
  * Written by Sven Verdoolaege, K.U.Leuven, Departement
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
+ * and INRIA Saclay - Ile-de-France, Parc Club Orsay Universite,
+ * ZAC des vignes, 4 rue Jacques Monod, 91893 Orsay, France
+ * and Ecole Normale Superieure, 45 rue d'Ulm, 75230 Paris, France
  */
 
 #include <isl_ctx_private.h>
@@ -1157,8 +1162,150 @@ struct isl_basic_set *isl_basic_set_affine_hull(struct isl_basic_set *bset)
 		isl_basic_map_affine_hull((struct isl_basic_map *)bset);
 }
 
+/* Given a rational affine matrix "M", add stride constraints to "bmap"
+ * that ensure that
+ *
+ *		M(x)
+ *
+ * is an integer vector.  The variables x include all the variables
+ * of "bmap" except the unknown divs.
+ *
+ * If d is the common denominator of M, then we need to impose that
+ *
+ *		d M(x) = 0 	mod d
+ *
+ * or
+ *
+ *		exists alpha : d M(x) = d alpha
+ *
+ * This function is similar to add_strides in isl_morph.c
+ */
+static __isl_give isl_basic_map *add_strides(__isl_take isl_basic_map *bmap,
+	__isl_keep isl_mat *M, int n_known)
+{
+	int i, div, k;
+	isl_int gcd;
+
+	if (isl_int_is_one(M->row[0][0]))
+		return bmap;
+
+	bmap = isl_basic_map_extend_space(bmap, isl_space_copy(bmap->dim),
+					M->n_row - 1, M->n_row - 1, 0);
+
+	isl_int_init(gcd);
+	for (i = 1; i < M->n_row; ++i) {
+		isl_seq_gcd(M->row[i], M->n_col, &gcd);
+		if (isl_int_is_divisible_by(gcd, M->row[0][0]))
+			continue;
+		div = isl_basic_map_alloc_div(bmap);
+		if (div < 0)
+			goto error;
+		isl_int_set_si(bmap->div[div][0], 0);
+		k = isl_basic_map_alloc_equality(bmap);
+		if (k < 0)
+			goto error;
+		isl_seq_cpy(bmap->eq[k], M->row[i], M->n_col);
+		isl_seq_clr(bmap->eq[k] + M->n_col, bmap->n_div - n_known);
+		isl_int_set(bmap->eq[k][M->n_col - n_known + div],
+			    M->row[0][0]);
+	}
+	isl_int_clear(gcd);
+
+	return bmap;
+error:
+	isl_int_clear(gcd);
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+/* If there are any equalities that involve (multiple) unknown divs,
+ * then extract the stride information encoded by those equalities
+ * and make it explicitly available in "bmap".
+ *
+ * We first sort the divs so that the unknown divs appear last and
+ * then we count how many equalities involve these divs.
+ *
+ * Let these equalities be of the form
+ *
+ *		A(x) + B y = 0
+ *
+ * where y represents the unknown divs and x the remaining variables.
+ * Let [H 0] be the Hermite Normal Form of B, i.e.,
+ *
+ *		B = [H 0] Q
+ *
+ * Then x is a solution of the equalities iff
+ *
+ *		H^-1 A(x) (= - [I 0] Q y)
+ *
+ * is an integer vector.  Let d be the common denominator of H^-1.
+ * We impose
+ *
+ *		d H^-1 A(x) = d alpha
+ *
+ * in add_strides, with alpha fresh existentially quantified variables.
+ */
+static __isl_give isl_basic_map *isl_basic_map_make_strides_explicit(
+	__isl_take isl_basic_map *bmap)
+{
+	int known;
+	int n_known;
+	int n, n_col;
+	int total;
+	isl_ctx *ctx;
+	isl_mat *A, *B, *M;
+
+	known = isl_basic_map_divs_known(bmap);
+	if (known < 0)
+		return isl_basic_map_free(bmap);
+	if (known)
+		return bmap;
+	bmap = isl_basic_map_sort_divs(bmap);
+	bmap = isl_basic_map_gauss(bmap, NULL);
+	if (!bmap)
+		return NULL;
+
+	for (n_known = 0; n_known < bmap->n_div; ++n_known)
+		if (isl_int_is_zero(bmap->div[n_known][0]))
+			break;
+	ctx = isl_basic_map_get_ctx(bmap);
+	total = isl_space_dim(bmap->dim, isl_dim_all);
+	for (n = 0; n < bmap->n_eq; ++n)
+		if (isl_seq_first_non_zero(bmap->eq[n] + 1 + total + n_known,
+					    bmap->n_div - n_known) == -1)
+			break;
+	if (n == 0)
+		return bmap;
+	B = isl_mat_sub_alloc6(ctx, bmap->eq, 0, n, 0, 1 + total + n_known);
+	n_col = bmap->n_div - n_known;
+	A = isl_mat_sub_alloc6(ctx, bmap->eq, 0, n, 1 + total + n_known, n_col);
+	A = isl_mat_left_hermite(A, 0, NULL, NULL);
+	A = isl_mat_drop_cols(A, n, n_col - n);
+	A = isl_mat_lin_to_aff(A);
+	A = isl_mat_right_inverse(A);
+	B = isl_mat_insert_zero_rows(B, 0, 1);
+	B = isl_mat_set_element_si(B, 0, 0, 1);
+	M = isl_mat_product(A, B);
+	if (!M)
+		return isl_basic_map_free(bmap);
+	bmap = add_strides(bmap, M, n_known);
+	bmap = isl_basic_map_gauss(bmap, NULL);
+	isl_mat_free(M);
+
+	return bmap;
+}
+
 /* Compute the affine hull of each basic map in "map" separately
- * and call isl_basic_map_gauss on the result.
+ * and make all stride information explicit so that we can remove
+ * all unknown divs without losing this information.
+ * The result is also guaranteed to be gaussed.
+ *
+ * In simple cases where a div is determined by an equality,
+ * calling isl_basic_map_gauss is enough to make the stride information
+ * explicit, as it will derive an explicit representation for the div
+ * from the equality.  If, however, the stride information
+ * is encoded through multiple unknown divs then we need to make
+ * some extra effort in isl_basic_map_make_strides_explicit.
  */
 static __isl_give isl_map *isl_map_local_affine_hull(__isl_take isl_map *map)
 {
@@ -1171,6 +1318,7 @@ static __isl_give isl_map *isl_map_local_affine_hull(__isl_take isl_map *map)
 	for (i = 0; i < map->n; ++i) {
 		map->p[i] = isl_basic_map_affine_hull(map->p[i]);
 		map->p[i] = isl_basic_map_gauss(map->p[i], NULL);
+		map->p[i] = isl_basic_map_make_strides_explicit(map->p[i]);
 		if (!map->p[i])
 			return isl_map_free(map);
 	}
@@ -1191,11 +1339,11 @@ static __isl_give isl_set *isl_set_local_affine_hull(__isl_take isl_set *set)
  * In order to avoid performing parametric integer programming to
  * compute explicit expressions for the divs, possible leading to
  * an explosion in the number of basic maps, we first drop all unknown
- * divs before aligning the divs.  Note that the divs determined
- * by an equality will be known since we call isl_basic_set_gauss
- * from isl_map_local_affine_hull.  Calling gauss is also needed
- * because affine_hull assumes its input has been gaussed, while
- * isl_map_affine_hull may be called on input that has not been gaussed,
+ * divs before aligning the divs.  Note that isl_map_local_affine_hull tries
+ * to make sure that all stride information is explicitly available
+ * in terms of known divs.  This involves calling isl_basic_set_gauss,
+ * which is also needed because affine_hull assumes its input has been gaussed,
+ * while isl_map_affine_hull may be called on input that has not been gaussed,
  * in particular from initial_facet_constraint.
  * Similarly, align_divs may reorder some divs so that we need to
  * gauss the result again.

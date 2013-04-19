@@ -554,6 +554,7 @@ __isl_give isl_morph *isl_basic_set_parameter_compression(
  *
  *	exists alpha in Z^m: B x = d alpha
  *
+ * This function is similar to add_strides in isl_affine_hull.c
  */
 static __isl_give isl_basic_set *add_strides(__isl_take isl_basic_set *bset,
 	__isl_keep isl_morph *morph)

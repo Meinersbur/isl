@@ -719,8 +719,9 @@ int test_affine_hull(struct isl_ctx *ctx)
 {
 	const char *str;
 	isl_set *set;
-	isl_basic_set *bset;
+	isl_basic_set *bset, *bset2;
 	int n;
+	int subset;
 
 	test_affine_hull_case(ctx, "affine2");
 	test_affine_hull_case(ctx, "affine");
@@ -749,6 +750,21 @@ int test_affine_hull(struct isl_ctx *ctx)
 	isl_basic_set_free(bset);
 	if (!bset)
 		return -1;
+
+	str = "{ [a] : exists e0, e1, e2: 32e1 = 31 + 31a + 31e0 and "
+			"32e2 = 31 + 31e0 }";
+	set = isl_set_read_from_str(ctx, str);
+	bset = isl_set_affine_hull(set);
+	str = "{ [a] : exists e : a = 32 e }";
+	bset2 = isl_basic_set_read_from_str(ctx, str);
+	subset = isl_basic_set_is_subset(bset, bset2);
+	isl_basic_set_free(bset);
+	isl_basic_set_free(bset2);
+	if (subset < 0)
+		return -1;
+	if (!subset)
+		isl_die(ctx, isl_error_unknown, "not as accurate as expected",
+			return -1);
 
 	return 0;
 }
