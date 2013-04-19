@@ -1,10 +1,13 @@
 /*
  * Copyright 2008-2009 Katholieke Universiteit Leuven
+ * Copyright 2010      INRIA Saclay
  *
  * Use of this software is governed by the MIT license
  *
  * Written by Sven Verdoolaege, K.U.Leuven, Departement
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
+ * and INRIA Saclay - Ile-de-France, Parc Club Orsay Universite,
+ * ZAC des vignes, 4 rue Jacques Monod, 91893 Orsay, France
  */
 
 #include <isl_mat_private.h>
@@ -370,6 +373,59 @@ error:
 	isl_mat_free(B);
 	isl_vec_free(d);
 	return NULL;
+}
+
+/* Given a set of equalities
+ *
+ *		B(y) + A x = 0						(*)
+ *
+ * compute and return an affine transformation T,
+ *
+ *		y = T y'
+ *
+ * that bijectively maps the integer vectors y' to integer
+ * vectors y that satisfy the modulo constraints for some value of x.
+ *
+ * Let [H 0] be the Hermite Normal Form of A, i.e.,
+ *
+ *		A = [H 0] Q
+ *
+ * Then y is a solution of (*) iff
+ *
+ *		H^-1 B(y) (= - [I 0] Q x)
+ *
+ * is an integer vector.  Let d be the common denominator of H^-1.
+ * We impose
+ *
+ *		d H^-1 B(y) = 0 mod d
+ *
+ * and compute the solution using isl_mat_parameter_compression.
+ */
+__isl_give isl_mat *isl_mat_parameter_compression_ext(__isl_take isl_mat *B,
+	__isl_take isl_mat *A)
+{
+	isl_ctx *ctx;
+	isl_vec *d;
+	int n_row, n_col;
+
+	if (!A)
+		return isl_mat_free(B);
+
+	ctx = isl_mat_get_ctx(A);
+	n_row = A->n_row;
+	n_col = A->n_col;
+	A = isl_mat_left_hermite(A, 0, NULL, NULL);
+	A = isl_mat_drop_cols(A, n_row, n_col - n_row);
+	A = isl_mat_lin_to_aff(A);
+	A = isl_mat_right_inverse(A);
+	d = isl_vec_alloc(ctx, n_row);
+	if (A)
+		d = isl_vec_set(d, A->row[0][0]);
+	A = isl_mat_drop_rows(A, 0, 1);
+	A = isl_mat_drop_cols(A, 0, 1);
+	B = isl_mat_product(A, B);
+
+	return isl_mat_parameter_compression(B, d);
 }
 
 /* Given a set of equalities
