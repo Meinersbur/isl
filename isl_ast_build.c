@@ -1017,6 +1017,30 @@ __isl_give isl_id *isl_ast_build_get_iterator_id(
 
 /* Set the stride and offset of the current dimension to the given
  * value and expression.
+ *
+ * If we had already found a stride before, then the two strides
+ * are combined into a single stride.
+ *
+ * In particular, if the new stride information is of the form
+ *
+ *	i = f + s (...)
+ *
+ * and the old stride information is of the form
+ *
+ *	i = f2 + s2 (...)
+ *
+ * then we compute the extended gcd of s and s2
+ *
+ *	a s + b s2 = g,
+ *
+ * with g = gcd(s,s2), multiply the first equation with t1 = b s2/g
+ * and the second with t2 = a s1/g.
+ * This results in
+ *
+ *	i = (b s2 + a s1)/g i = t1 f + t2 f2 + (s s2)/g (...)
+ *
+ * so that t1 f + t2 f2 is the combined offset and (s s2)/g = lcm(s,s2)
+ * is the combined stride.
  */
 static __isl_give isl_ast_build *set_stride(__isl_take isl_ast_build *build,
 	isl_int stride, __isl_take isl_aff *offset)
@@ -1028,6 +1052,35 @@ static __isl_give isl_ast_build *set_stride(__isl_take isl_ast_build *build,
 		goto error;
 
 	pos = build->depth;
+
+	if (isl_ast_build_has_stride(build, pos)) {
+		isl_int stride2, a, b, g;
+		isl_aff *offset2;
+
+		isl_int_init(stride2);
+		isl_int_init(a);
+		isl_int_init(b);
+		isl_int_init(g);
+
+		isl_vec_get_element(build->strides, pos, &stride2);
+		isl_int_gcdext(g, a, b, stride, stride2);
+		isl_int_mul(a, a, stride);
+		isl_int_divexact(a, a, g);
+		isl_int_divexact(stride2, stride2, g);
+		isl_int_mul(b, b, stride2);
+		isl_int_mul(stride, stride, stride2);
+
+		offset2 = isl_multi_aff_get_aff(build->offsets, pos);
+		offset2 = isl_aff_scale(offset2, a);
+		offset = isl_aff_scale(offset, b);
+		offset = isl_aff_add(offset, offset2);
+
+		isl_int_clear(stride2);
+		isl_int_clear(a);
+		isl_int_clear(b);
+		isl_int_clear(g);
+	}
+
 	build->strides = isl_vec_set_element(build->strides, pos, stride);
 	build->offsets = isl_multi_aff_set_aff(build->offsets, pos, offset);
 	if (!build->strides || !build->offsets)
