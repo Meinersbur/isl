@@ -12,9 +12,13 @@
 #include <isl/aff.h>
 #include <isl/ast.h>
 #include <isl/printer.h>
+#include <isl/val.h>
 
 #undef BASE
 #define BASE id
+#include <print_templ.c>
+#undef BASE
+#define BASE val
 #include <print_templ.c>
 #undef BASE
 #define BASE space

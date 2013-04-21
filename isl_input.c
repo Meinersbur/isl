@@ -26,6 +26,7 @@
 #include <isl_mat_private.h>
 #include <isl_aff_private.h>
 #include <isl/list.h>
+#include <isl_val_private.h>
 
 struct variable {
 	char    	    	*name;
@@ -166,6 +167,86 @@ error:
 	isl_token_free(tok);
 	isl_token_free(tok2);
 	return NULL;
+}
+
+/* Read an isl_val from "s".
+ *
+ * The following token sequences are recognized
+ *
+ *	"infty"		->	infty
+ *	"-" "infty"	->	-infty
+ *	"NaN"		->	NaN
+ *	n "/" d		->	n/d
+ *	v		->	v
+ *
+ * where n, d and v are integer constants.
+ */
+__isl_give isl_val *isl_stream_read_val(struct isl_stream *s)
+{
+	struct isl_token *tok = NULL;
+	struct isl_token *tok2 = NULL;
+	isl_val *val;
+
+	tok = next_token(s);
+	if (!tok) {
+		isl_stream_error(s, NULL, "unexpected EOF");
+		goto error;
+	}
+	if (tok->type == ISL_TOKEN_INFTY) {
+		isl_token_free(tok);
+		return isl_val_infty(s->ctx);
+	}
+	if (tok->type == '-' &&
+	    isl_stream_eat_if_available(s, ISL_TOKEN_INFTY)) {
+		isl_token_free(tok);
+		return isl_val_neginfty(s->ctx);
+	}
+	if (tok->type == ISL_TOKEN_NAN) {
+		isl_token_free(tok);
+		return isl_val_nan(s->ctx);
+	}
+	if (tok->type != ISL_TOKEN_VALUE) {
+		isl_stream_error(s, tok, "expecting value");
+		goto error;
+	}
+
+	if (isl_stream_eat_if_available(s, '/')) {
+		tok2 = next_token(s);
+		if (!tok2) {
+			isl_stream_error(s, NULL, "unexpected EOF");
+			goto error;
+		}
+		if (tok2->type != ISL_TOKEN_VALUE) {
+			isl_stream_error(s, tok2, "expecting value");
+			goto error;
+		}
+		val = isl_val_rat_from_isl_int(s->ctx, tok->u.v, tok2->u.v);
+		val = isl_val_normalize(val);
+	} else {
+		val = isl_val_int_from_isl_int(s->ctx, tok->u.v);
+	}
+
+	isl_token_free(tok);
+	isl_token_free(tok2);
+	return val;
+error:
+	isl_token_free(tok);
+	isl_token_free(tok2);
+	return NULL;
+}
+
+/* Read an isl_val from "str".
+ */
+struct isl_val *isl_val_read_from_str(struct isl_ctx *ctx,
+	const char *str)
+{
+	isl_val *val;
+	struct isl_stream *s = isl_stream_new_str(ctx, str);
+	if (!s)
+		return NULL;
+	val = isl_stream_read_val(s);
+	isl_stream_free(s);
+	return val;
 }
 
 static int accept_cst_factor(struct isl_stream *s, isl_int *f)

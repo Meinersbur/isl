@@ -23,6 +23,7 @@
 #include <isl_options_private.h>
 #include <isl/vertices.h>
 #include <isl/ast_build.h>
+#include <isl/val.h>
 
 #define ARRAY_SIZE(array) (sizeof(array)/sizeof(*array))
 
@@ -320,6 +321,221 @@ void test_dim(struct isl_ctx *ctx)
 
 	isl_map_free(map1);
 	isl_map_free(map2);
+}
+
+struct {
+	__isl_give isl_val *(*op)(__isl_take isl_val *v);
+	const char *arg;
+	const char *res;
+} val_un_tests[] = {
+	{ &isl_val_neg, "0", "0" },
+	{ &isl_val_abs, "0", "0" },
+	{ &isl_val_2exp, "0", "1" },
+	{ &isl_val_floor, "0", "0" },
+	{ &isl_val_ceil, "0", "0" },
+	{ &isl_val_neg, "1", "-1" },
+	{ &isl_val_neg, "-1", "1" },
+	{ &isl_val_neg, "1/2", "-1/2" },
+	{ &isl_val_neg, "-1/2", "1/2" },
+	{ &isl_val_neg, "infty", "-infty" },
+	{ &isl_val_neg, "-infty", "infty" },
+	{ &isl_val_neg, "NaN", "NaN" },
+	{ &isl_val_abs, "1", "1" },
+	{ &isl_val_abs, "-1", "1" },
+	{ &isl_val_abs, "1/2", "1/2" },
+	{ &isl_val_abs, "-1/2", "1/2" },
+	{ &isl_val_abs, "infty", "infty" },
+	{ &isl_val_abs, "-infty", "infty" },
+	{ &isl_val_abs, "NaN", "NaN" },
+	{ &isl_val_floor, "1", "1" },
+	{ &isl_val_floor, "-1", "-1" },
+	{ &isl_val_floor, "1/2", "0" },
+	{ &isl_val_floor, "-1/2", "-1" },
+	{ &isl_val_floor, "infty", "infty" },
+	{ &isl_val_floor, "-infty", "-infty" },
+	{ &isl_val_floor, "NaN", "NaN" },
+	{ &isl_val_ceil, "1", "1" },
+	{ &isl_val_ceil, "-1", "-1" },
+	{ &isl_val_ceil, "1/2", "1" },
+	{ &isl_val_ceil, "-1/2", "0" },
+	{ &isl_val_ceil, "infty", "infty" },
+	{ &isl_val_ceil, "-infty", "-infty" },
+	{ &isl_val_ceil, "NaN", "NaN" },
+	{ &isl_val_2exp, "-3", "1/8" },
+	{ &isl_val_2exp, "-1", "1/2" },
+	{ &isl_val_2exp, "1", "2" },
+	{ &isl_val_2exp, "2", "4" },
+	{ &isl_val_2exp, "3", "8" },
+};
+
+/* Perform some basic tests of unary operations on isl_val objects.
+ */
+static int test_un_val(isl_ctx *ctx)
+{
+	int i;
+	isl_val *v, *res;
+	__isl_give isl_val *(*fn)(__isl_take isl_val *v);
+	int ok;
+
+	for (i = 0; i < ARRAY_SIZE(val_un_tests); ++i) {
+		v = isl_val_read_from_str(ctx, val_un_tests[i].arg);
+		res = isl_val_read_from_str(ctx, val_un_tests[i].res);
+		fn = val_un_tests[i].op;
+		v = fn(v);
+		if (isl_val_is_nan(res))
+			ok = isl_val_is_nan(v);
+		else
+			ok = isl_val_eq(v, res);
+		isl_val_free(v);
+		isl_val_free(res);
+		if (ok < 0)
+			return -1;
+		if (!ok)
+			isl_die(ctx, isl_error_unknown,
+				"unexpected result", return -1);
+	}
+
+	return 0;
+}
+
+struct {
+	__isl_give isl_val *(*fn)(__isl_take isl_val *v1,
+				__isl_take isl_val *v2);
+} val_bin_op[] = {
+	['+'] = { &isl_val_add },
+	['-'] = { &isl_val_sub },
+	['*'] = { &isl_val_mul },
+	['/'] = { &isl_val_div },
+	['g'] = { &isl_val_gcd },
+	['m'] = { &isl_val_min },
+	['M'] = { &isl_val_max },
+};
+
+struct {
+	const char *arg1;
+	unsigned char op;
+	const char *arg2;
+	const char *res;
+} val_bin_tests[] = {
+	{ "0", '+', "0", "0" },
+	{ "1", '+', "0", "1" },
+	{ "1", '+', "1", "2" },
+	{ "1", '-', "1", "0" },
+	{ "1", '*', "1", "1" },
+	{ "1", '/', "1", "1" },
+	{ "2", '*', "3", "6" },
+	{ "2", '*', "1/2", "1" },
+	{ "2", '*', "1/3", "2/3" },
+	{ "2/3", '*', "3/5", "2/5" },
+	{ "2/3", '*', "7/5", "14/15" },
+	{ "2", '/', "1/2", "4" },
+	{ "-2", '/', "-1/2", "4" },
+	{ "-2", '/', "1/2", "-4" },
+	{ "2", '/', "-1/2", "-4" },
+	{ "2", '/', "2", "1" },
+	{ "2", '/', "3", "2/3" },
+	{ "2/3", '/', "5/3", "2/5" },
+	{ "2/3", '/', "5/7", "14/15" },
+	{ "0", '/', "0", "NaN" },
+	{ "42", '/', "0", "NaN" },
+	{ "-42", '/', "0", "NaN" },
+	{ "infty", '/', "0", "NaN" },
+	{ "-infty", '/', "0", "NaN" },
+	{ "NaN", '/', "0", "NaN" },
+	{ "0", '/', "NaN", "NaN" },
+	{ "42", '/', "NaN", "NaN" },
+	{ "-42", '/', "NaN", "NaN" },
+	{ "infty", '/', "NaN", "NaN" },
+	{ "-infty", '/', "NaN", "NaN" },
+	{ "NaN", '/', "NaN", "NaN" },
+	{ "0", '/', "infty", "0" },
+	{ "42", '/', "infty", "0" },
+	{ "-42", '/', "infty", "0" },
+	{ "infty", '/', "infty", "NaN" },
+	{ "-infty", '/', "infty", "NaN" },
+	{ "NaN", '/', "infty", "NaN" },
+	{ "0", '/', "-infty", "0" },
+	{ "42", '/', "-infty", "0" },
+	{ "-42", '/', "-infty", "0" },
+	{ "infty", '/', "-infty", "NaN" },
+	{ "-infty", '/', "-infty", "NaN" },
+	{ "NaN", '/', "-infty", "NaN" },
+	{ "1", '-', "1/3", "2/3" },
+	{ "1/3", '+', "1/2", "5/6" },
+	{ "1/2", '+', "1/2", "1" },
+	{ "3/4", '-', "1/4", "1/2" },
+	{ "1/2", '-', "1/3", "1/6" },
+	{ "infty", '+', "42", "infty" },
+	{ "infty", '+', "infty", "infty" },
+	{ "42", '+', "infty", "infty" },
+	{ "infty", '-', "infty", "NaN" },
+	{ "infty", '*', "infty", "infty" },
+	{ "infty", '*', "-infty", "-infty" },
+	{ "-infty", '*', "infty", "-infty" },
+	{ "-infty", '*', "-infty", "infty" },
+	{ "0", '*', "infty", "NaN" },
+	{ "1", '*', "infty", "infty" },
+	{ "infty", '*', "0", "NaN" },
+	{ "infty", '*', "42", "infty" },
+	{ "42", '-', "infty", "-infty" },
+	{ "infty", '+', "-infty", "NaN" },
+	{ "4", 'g', "6", "2" },
+	{ "5", 'g', "6", "1" },
+	{ "42", 'm', "3", "3" },
+	{ "42", 'M', "3", "42" },
+	{ "3", 'm', "42", "3" },
+	{ "3", 'M', "42", "42" },
+	{ "42", 'm', "infty", "42" },
+	{ "42", 'M', "infty", "infty" },
+	{ "42", 'm', "-infty", "-infty" },
+	{ "42", 'M', "-infty", "42" },
+	{ "42", 'm', "NaN", "NaN" },
+	{ "42", 'M', "NaN", "NaN" },
+	{ "infty", 'm', "-infty", "-infty" },
+	{ "infty", 'M', "-infty", "infty" },
+};
+
+/* Perform some basic tests of binary operations on isl_val objects.
+ */
+static int test_bin_val(isl_ctx *ctx)
+{
+	int i;
+	isl_val *v1, *v2, *res;
+	__isl_give isl_val *(*fn)(__isl_take isl_val *v1,
+				__isl_take isl_val *v2);
+	int ok;
+
+	for (i = 0; i < ARRAY_SIZE(val_bin_tests); ++i) {
+		v1 = isl_val_read_from_str(ctx, val_bin_tests[i].arg1);
+		v2 = isl_val_read_from_str(ctx, val_bin_tests[i].arg2);
+		res = isl_val_read_from_str(ctx, val_bin_tests[i].res);
+		fn = val_bin_op[val_bin_tests[i].op].fn;
+		v1 = fn(v1, v2);
+		if (isl_val_is_nan(res))
+			ok = isl_val_is_nan(v1);
+		else
+			ok = isl_val_eq(v1, res);
+		isl_val_free(v1);
+		isl_val_free(res);
+		if (ok < 0)
+			return -1;
+		if (!ok)
+			isl_die(ctx, isl_error_unknown,
+				"unexpected result", return -1);
+	}
+
+	return 0;
+}
+
+/* Perform some basic tests on isl_val objects.
+ */
+static int test_val(isl_ctx *ctx)
+{
+	if (test_un_val(ctx) < 0)
+		return -1;
+	if (test_bin_val(ctx) < 0)
+		return -1;
+	return 0;
 }
 
 static int test_div(isl_ctx *ctx)
@@ -4048,6 +4264,7 @@ struct {
 	const char *name;
 	int (*fn)(isl_ctx *ctx);
 } tests [] = {
+	{ "val", &test_val },
 	{ "compute divs", &test_compute_divs },
 	{ "partial lexmin", &test_partial_lexmin },
 	{ "simplify", &test_simplify },

@@ -137,6 +137,7 @@ libisl_la_SOURCES = \
 	isl_transitive_closure.c \
 	isl_union_map.c \
 	isl_union_map_private.h \
+	isl_val.c \
 	isl_vec.c \
 	isl_version.c \
 	isl_vertices_private.h \
@@ -250,6 +251,7 @@ pkginclude_HEADERS = \
 	include/isl/union_map_type.h \
 	include/isl/union_set.h \
 	include/isl/union_set_type.h \
+	include/isl/val.h \
 	include/isl/vec.h \
 	include/isl/version.h \
 	include/isl/vertices.h
