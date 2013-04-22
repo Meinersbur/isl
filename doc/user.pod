@@ -3688,6 +3688,8 @@ It can be modified using
 		__isl_take isl_aff *aff, isl_int v);
 	__isl_give isl_aff *isl_aff_add_constant_si(
 		__isl_take isl_aff *aff, int v);
+	__isl_give isl_aff *isl_aff_add_constant_val(
+		__isl_take isl_aff *aff, __isl_take isl_val *v);
 	__isl_give isl_aff *isl_aff_add_constant_num(
 		__isl_take isl_aff *aff, isl_int v);
 	__isl_give isl_aff *isl_aff_add_constant_num_si(
@@ -3723,7 +3725,8 @@ C<isl_aff_set_coefficient> and C<isl_aff_set_coefficient_si>
 set the I<numerator> of the constant or coefficient, while
 C<isl_aff_set_constant_val> and C<isl_aff_set_coefficient_val> set
 the constant or coefficient as a whole.
-C<add_constant> and C<add_coefficient> add an integer value to
+The C<add_constant> and C<add_coefficient> functions add an integer
+or rational value to
 the possibly rational constant or coefficient.
 The C<add_constant_num> functions add an integer value to
 the numerator.

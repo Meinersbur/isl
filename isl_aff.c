@@ -535,6 +535,56 @@ __isl_give isl_aff *isl_aff_add_constant(__isl_take isl_aff *aff, isl_int v)
 	return aff;
 }
 
+/* Add "v" to the constant term of "aff".
+ */
+__isl_give isl_aff *isl_aff_add_constant_val(__isl_take isl_aff *aff,
+	__isl_take isl_val *v)
+{
+	if (!aff || !v)
+		goto error;
+
+	if (isl_val_is_zero(v)) {
+		isl_val_free(v);
+		return aff;
+	}
+
+	if (!isl_val_is_rat(v))
+		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
+			"expecting rational value", goto error);
+
+	aff = isl_aff_cow(aff);
+	if (!aff)
+		goto error;
+
+	aff->v = isl_vec_cow(aff->v);
+	if (!aff->v)
+		goto error;
+
+	if (isl_int_is_one(v->d)) {
+		isl_int_addmul(aff->v->el[1], aff->v->el[0], v->n);
+	} else if (isl_int_eq(aff->v->el[0], v->d)) {
+		isl_int_add(aff->v->el[1], aff->v->el[1], v->n);
+		aff->v = isl_vec_normalize(aff->v);
+		if (!aff->v)
+			goto error;
+	} else {
+		isl_seq_scale(aff->v->el + 1,
+				aff->v->el + 1, v->d, aff->v->size - 1);
+		isl_int_addmul(aff->v->el[1], aff->v->el[0], v->n);
+		isl_int_mul(aff->v->el[0], aff->v->el[0], v->d);
+		aff->v = isl_vec_normalize(aff->v);
+		if (!aff->v)
+			goto error;
+	}
+
+	isl_val_free(v);
+	return aff;
+error:
+	isl_aff_free(aff);
+	isl_val_free(v);
+	return NULL;
+}
+
 __isl_give isl_aff *isl_aff_add_constant_si(__isl_take isl_aff *aff, int v)
 {
 	isl_int t;

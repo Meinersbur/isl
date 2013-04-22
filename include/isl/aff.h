@@ -53,6 +53,8 @@ __isl_give isl_aff *isl_aff_set_coefficient_val(__isl_take isl_aff *aff,
 __isl_give isl_aff *isl_aff_set_denominator(__isl_take isl_aff *aff, isl_int v);
 __isl_give isl_aff *isl_aff_add_constant(__isl_take isl_aff *aff, isl_int v);
 __isl_give isl_aff *isl_aff_add_constant_si(__isl_take isl_aff *aff, int v);
+__isl_give isl_aff *isl_aff_add_constant_val(__isl_take isl_aff *aff,
+	__isl_take isl_val *v);
 __isl_give isl_aff *isl_aff_add_constant_num(__isl_take isl_aff *aff,
 	isl_int v);
 __isl_give isl_aff *isl_aff_add_constant_num_si(__isl_take isl_aff *aff, int v);
