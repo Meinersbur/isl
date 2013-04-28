@@ -11056,32 +11056,29 @@ __isl_give isl_basic_map *isl_basic_map_order_ge(__isl_take isl_basic_map *bmap,
 	return bmap;
 }
 
-/* Add a constraint imposing that the value of the first dimension is
+/* Construct a basic map where the value of the first dimension is
  * greater than that of the second.
  */
-__isl_give isl_map *isl_map_order_gt(__isl_take isl_map *map,
+static __isl_give isl_basic_map *greator(__isl_take isl_space *space,
 	enum isl_dim_type type1, int pos1, enum isl_dim_type type2, int pos2)
 {
 	isl_basic_map *bmap = NULL;
 	int i;
 
-	if (!map)
+	if (!space)
 		return NULL;
 
-	if (pos1 >= isl_map_dim(map, type1))
-		isl_die(map->ctx, isl_error_invalid,
+	if (pos1 >= isl_space_dim(space, type1))
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
 			"index out of bounds", goto error);
-	if (pos2 >= isl_map_dim(map, type2))
-		isl_die(map->ctx, isl_error_invalid,
+	if (pos2 >= isl_space_dim(space, type2))
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
 			"index out of bounds", goto error);
 
-	if (type1 == type2 && pos1 == pos2) {
-		isl_space *space = isl_map_get_space(map);
-		isl_map_free(map);
-		return isl_map_empty(space);
-	}
+	if (type1 == type2 && pos1 == pos2)
+		return isl_basic_map_empty(space);
 
-	bmap = isl_basic_map_alloc_space(isl_map_get_space(map), 0, 0, 1);
+	bmap = isl_basic_map_alloc_space(space, 0, 0, 1);
 	i = isl_basic_map_alloc_inequality(bmap);
 	if (i < 0)
 		goto error;
@@ -11093,13 +11090,41 @@ __isl_give isl_map *isl_map_order_gt(__isl_take isl_map *map,
 	isl_int_set_si(bmap->ineq[i][0], -1);
 	bmap = isl_basic_map_finalize(bmap);
 
+	return bmap;
+error:
+	isl_space_free(space);
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+/* Add a constraint imposing that the value of the first dimension is
+ * greater than that of the second.
+ */
+__isl_give isl_basic_map *isl_basic_map_order_gt(__isl_take isl_basic_map *bmap,
+	enum isl_dim_type type1, int pos1, enum isl_dim_type type2, int pos2)
+{
+	isl_basic_map *gt;
+
+	gt = greator(isl_basic_map_get_space(bmap), type1, pos1, type2, pos2);
+
+	bmap = isl_basic_map_intersect(bmap, gt);
+
+	return bmap;
+}
+
+/* Add a constraint imposing that the value of the first dimension is
+ * greater than that of the second.
+ */
+__isl_give isl_map *isl_map_order_gt(__isl_take isl_map *map,
+	enum isl_dim_type type1, int pos1, enum isl_dim_type type2, int pos2)
+{
+	isl_basic_map *bmap;
+
+	bmap = greator(isl_map_get_space(map), type1, pos1, type2, pos2);
+
 	map = isl_map_intersect(map, isl_map_from_basic_map(bmap));
 
 	return map;
-error:
-	isl_basic_map_free(bmap);
-	isl_map_free(map);
-	return NULL;
 }
 
 /* Add a constraint imposing that the value of the first dimension is
