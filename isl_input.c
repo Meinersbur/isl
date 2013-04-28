@@ -1690,8 +1690,9 @@ static __isl_give isl_pw_qpolynomial *read_factor(struct isl_stream *s,
 		pwqp = isl_pw_qpolynomial_pow(pwqp, pow);
 	} else if (tok->type == ISL_TOKEN_VALUE) {
 		struct isl_token *tok2;
-		tok2 = isl_stream_next_token(s);
 		isl_qpolynomial *qp;
+
+		tok2 = isl_stream_next_token(s);
 		if (tok2 && tok2->type == '/') {
 			isl_token_free(tok2);
 			tok2 = next_token(s);
