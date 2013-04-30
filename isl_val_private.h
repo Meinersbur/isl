@@ -20,6 +20,11 @@ struct isl_val {
 	isl_int d;
 };
 
+#undef EL
+#define EL isl_val
+
+#include <isl_list_templ.h>
+
 __isl_give isl_val *isl_val_alloc(isl_ctx *ctx);
 __isl_give isl_val *isl_val_normalize(__isl_take isl_val *v);
 __isl_give isl_val *isl_val_int_from_isl_int(isl_ctx *ctx, isl_int n);

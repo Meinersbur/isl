@@ -2,6 +2,7 @@
 #define ISL_VAL_H
 
 #include <isl/ctx.h>
+#include <isl/list.h>
 #include <isl/printer.h>
 
 #if defined(__cplusplus)
@@ -10,6 +11,8 @@ extern "C" {
 
 struct isl_val;
 typedef struct isl_val isl_val;
+
+ISL_DECLARE_LIST(val)
 
 __isl_give isl_val *isl_val_zero(isl_ctx *ctx);
 __isl_give isl_val *isl_val_one(isl_ctx *ctx);

@@ -11,6 +11,11 @@
 #include <isl_ctx_private.h>
 #include <isl_val_private.h>
 
+#undef BASE
+#define BASE val
+
+#include <isl_list_templ.c>
+
 /* Allocate an isl_val object with indeterminate value.
  */
 __isl_give isl_val *isl_val_alloc(isl_ctx *ctx)
