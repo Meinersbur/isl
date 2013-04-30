@@ -134,7 +134,7 @@ static int add_vertex(struct isl_vertex_list **list,
 		goto error;
 	isl_assert(bset->ctx, v->v.vertex->n_eq >= nvar, goto error);
 	v->v.dom = isl_basic_set_copy(v->v.vertex);
-	v->v.dom = isl_basic_set_project_out(v->v.dom, isl_dim_set, 0, nvar);
+	v->v.dom = isl_basic_set_params(v->v.dom);
 	if (!v->v.dom)
 		goto error;
 
@@ -992,10 +992,8 @@ __isl_give isl_basic_set *isl_vertex_get_domain(__isl_keep isl_vertex *vertex)
 
 	v = &vertex->vertices->v[vertex->id];
 	if (!v->dom) {
-		unsigned nvar;
-		nvar = isl_basic_set_dim(v->vertex, isl_dim_set);
 		v->dom = isl_basic_set_copy(v->vertex);
-		v->dom = isl_basic_set_project_out(v->dom, isl_dim_set, 0, nvar);
+		v->dom = isl_basic_set_params(v->dom);
 	}
 
 	return isl_basic_set_copy(v->dom);
