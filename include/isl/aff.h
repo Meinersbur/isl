@@ -271,6 +271,8 @@ __isl_give isl_set *isl_pw_aff_list_ge_set(__isl_take isl_pw_aff_list *list1,
 __isl_give isl_set *isl_pw_aff_list_gt_set(__isl_take isl_pw_aff_list *list1,
 	__isl_take isl_pw_aff_list *list2);
 
+ISL_DECLARE_MULTI(aff)
+
 __isl_give isl_multi_aff *isl_multi_aff_from_aff(__isl_take isl_aff *aff);
 __isl_give isl_multi_aff *isl_multi_aff_zero(__isl_take isl_space *space);
 __isl_give isl_multi_aff *isl_multi_aff_identity(__isl_take isl_space *space);
@@ -357,6 +359,8 @@ __isl_give isl_printer *isl_printer_print_multi_aff(__isl_take isl_printer *p,
 __isl_give isl_multi_aff *isl_multi_aff_read_from_str(isl_ctx *ctx,
 		const char *str);
 void isl_multi_aff_dump(__isl_keep isl_multi_aff *maff);
+
+ISL_DECLARE_MULTI(pw_aff)
 
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_identity(
 	__isl_take isl_space *space);
