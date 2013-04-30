@@ -227,16 +227,8 @@ __isl_give MULTI(BASE) *FN(FN(MULTI(BASE),set),BASE)(
 		goto error;
 
 	multi_space = FN(MULTI(BASE),get_space)(multi);
-	el_space = FN(EL,get_space)(el);
-
-	if (!isl_space_match(multi_space, isl_dim_param,
-			    el_space, isl_dim_param))
-		isl_die(FN(MULTI(BASE),get_ctx)(multi), isl_error_invalid,
-			"parameters don't match", goto error);
-	if (!isl_space_tuple_match(multi_space, isl_dim_in,
-			    el_space, isl_dim_in))
-		isl_die(FN(MULTI(BASE),get_ctx)(multi), isl_error_invalid,
-			"domains don't match", goto error);
+	if (FN(EL,check_match_domain_space)(el, multi_space) < 0)
+		goto error;
 
 	if (pos < 0 || pos >= multi->n)
 		isl_die(FN(MULTI(BASE),get_ctx)(multi), isl_error_invalid,

@@ -2659,6 +2659,41 @@ __isl_give isl_pw_aff_list *isl_pw_aff_list_set_rational(
 	return list;
 }
 
+/* Check that the domain space of "aff" matches "space".
+ *
+ * Return 0 on success and -1 on error.
+ */
+int isl_aff_check_match_domain_space(__isl_keep isl_aff *aff,
+	__isl_keep isl_space *space)
+{
+	isl_space *aff_space;
+	int match;
+
+	if (!aff || !space)
+		return -1;
+
+	aff_space = isl_aff_get_domain_space(aff);
+
+	match = isl_space_match(space, isl_dim_param, aff_space, isl_dim_param);
+	if (match < 0)
+		goto error;
+	if (!match)
+		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
+			"parameters don't match", goto error);
+	match = isl_space_tuple_match(space, isl_dim_in,
+					aff_space, isl_dim_set);
+	if (match < 0)
+		goto error;
+	if (!match)
+		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
+			"domains don't match", goto error);
+	isl_space_free(aff_space);
+	return 0;
+error:
+	isl_space_free(aff_space);
+	return -1;
+}
+
 #undef BASE
 #define BASE aff
 
@@ -4676,6 +4711,40 @@ error:
 	isl_pw_multi_aff_free(pma);
 	isl_pw_aff_free(pa);
 	return NULL;
+}
+
+/* Check that the domain space of "pa" matches "space".
+ *
+ * Return 0 on success and -1 on error.
+ */
+int isl_pw_aff_check_match_domain_space(__isl_keep isl_pw_aff *pa,
+	__isl_keep isl_space *space)
+{
+	isl_space *pa_space;
+	int match;
+
+	if (!pa || !space)
+		return -1;
+
+	pa_space = isl_pw_aff_get_space(pa);
+
+	match = isl_space_match(space, isl_dim_param, pa_space, isl_dim_param);
+	if (match < 0)
+		goto error;
+	if (!match)
+		isl_die(isl_pw_aff_get_ctx(pa), isl_error_invalid,
+			"parameters don't match", goto error);
+	match = isl_space_tuple_match(space, isl_dim_in, pa_space, isl_dim_in);
+	if (match < 0)
+		goto error;
+	if (!match)
+		isl_die(isl_pw_aff_get_ctx(pa), isl_error_invalid,
+			"domains don't match", goto error);
+	isl_space_free(pa_space);
+	return 0;
+error:
+	isl_space_free(pa_space);
+	return -1;
 }
 
 #undef BASE

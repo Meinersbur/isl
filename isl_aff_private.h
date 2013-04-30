@@ -88,6 +88,9 @@ __isl_give isl_pw_aff *isl_pw_aff_set_rational(__isl_take isl_pw_aff *pwaff);
 __isl_give isl_pw_aff_list *isl_pw_aff_list_set_rational(
 	__isl_take isl_pw_aff_list *list);
 
+int isl_aff_check_match_domain_space(__isl_keep isl_aff *aff,
+	__isl_keep isl_space *space);
+
 #undef BASE
 #define BASE aff
 
@@ -119,6 +122,9 @@ void isl_seq_preimage(isl_int *dst, isl_int *src,
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_substitute(
 	__isl_take isl_pw_multi_aff *pma, enum isl_dim_type type, unsigned pos,
 	__isl_keep isl_pw_aff *subs);
+
+int isl_pw_aff_check_match_domain_space(__isl_keep isl_pw_aff *pa,
+	__isl_keep isl_space *space);
 
 #undef BASE
 #define BASE pw_aff
