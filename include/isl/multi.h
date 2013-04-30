@@ -1,6 +1,7 @@
 #ifndef ISL_MULTI_H
 #define ISL_MULTI_H
 
+#include <isl/space.h>
 #include <isl/list.h>
 
 #if defined(__cplusplus)

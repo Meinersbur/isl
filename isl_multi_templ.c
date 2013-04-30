@@ -8,6 +8,10 @@
  * Ecole Normale Superieure, 45 rue d’Ulm, 75230 Paris, France
  */
 
+#include <isl_space_private.h>
+#include <isl/set.h>
+#include <isl_reordering.h>
+
 #define xCAT(A,B) A ## B
 #define CAT(A,B) xCAT(A,B)
 #undef EL
