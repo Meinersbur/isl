@@ -1411,3 +1411,11 @@ __isl_give isl_multi_val *isl_multi_val_add_val(__isl_take isl_multi_val *mv,
 	}
 	return isl_multi_val_fn_val(mv, &isl_val_add, v);
 }
+
+/* Reduce the elements of "mv" modulo "v".
+ */
+__isl_give isl_multi_val *isl_multi_val_mod_val(__isl_take isl_multi_val *mv,
+	__isl_take isl_val *v)
+{
+	return isl_multi_val_fn_val(mv, &isl_val_mod, v);
+}

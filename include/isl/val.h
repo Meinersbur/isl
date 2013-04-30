@@ -91,6 +91,8 @@ __isl_give char *isl_val_to_str(__isl_keep isl_val *v);
 
 __isl_give isl_multi_val *isl_multi_val_add_val(__isl_take isl_multi_val *mv,
 	__isl_take isl_val *v);
+__isl_give isl_multi_val *isl_multi_val_mod_val(__isl_take isl_multi_val *mv,
+	__isl_take isl_val *v);
 
 #if defined(__cplusplus)
 }
