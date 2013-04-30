@@ -3398,6 +3398,9 @@ Operations include
 	__isl_give isl_multi_val *isl_multi_val_flat_range_product(
 		__isl_take isl_multi_val *mv1,
 		__isl_take isl_multi_aff *mv2);
+	__isl_give isl_multi_val *isl_multi_val_add_val(
+		__isl_take isl_multi_val *mv,
+		__isl_take isl_val *v);
 
 =head2 Vectors
 

@@ -1369,3 +1369,45 @@ int isl_val_check_match_domain_space(__isl_keep isl_val *v,
 #define NO_IDENTITY
 #define NO_FROM_BASE
 #include <isl_multi_templ.c>
+
+/* Apply "fn" to each of the elements of "mv" with as second argument "v".
+ */
+static __isl_give isl_multi_val *isl_multi_val_fn_val(
+	__isl_take isl_multi_val *mv,
+	__isl_give isl_val *(*fn)(__isl_take isl_val *v1,
+					__isl_take isl_val *v2),
+	__isl_take isl_val *v)
+{
+	int i;
+
+	mv = isl_multi_val_cow(mv);
+	if (!mv || !v)
+		goto error;
+
+	for (i = 0; i < mv->n; ++i) {
+		mv->p[i] = fn(mv->p[i], isl_val_copy(v));
+		if (!mv->p[i])
+			goto error;
+	}
+
+	isl_val_free(v);
+	return mv;
+error:
+	isl_val_free(v);
+	isl_multi_val_free(mv);
+	return NULL;
+}
+
+/* Add "v" to each of the elements of "mv".
+ */
+__isl_give isl_multi_val *isl_multi_val_add_val(__isl_take isl_multi_val *mv,
+	__isl_take isl_val *v)
+{
+	if (!v)
+		return isl_multi_val_free(mv);
+	if (isl_val_is_zero(v)) {
+		isl_val_free(v);
+		return mv;
+	}
+	return isl_multi_val_fn_val(mv, &isl_val_add, v);
+}
