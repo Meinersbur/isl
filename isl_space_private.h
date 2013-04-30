@@ -1,3 +1,6 @@
+#ifndef ISL_SPACE_PRIVATE
+#define ISL_SPACE_PRIVATE
+
 #include <isl/space.h>
 #include <isl/hash.h>
 #include <isl/id.h>
@@ -51,3 +54,5 @@ __isl_give isl_space *isl_space_lift(__isl_take isl_space *dim, unsigned n_local
 
 __isl_give isl_space *isl_space_extend_domain_with_range(
 	__isl_take isl_space *domain, __isl_take isl_space *model);
+
+#endif
