@@ -1254,3 +1254,118 @@ __isl_give isl_printer *isl_printer_print_val(__isl_take isl_printer *p,
 
 	return p;
 }
+
+/* Insert "n" dimensions of type "type" at position "first".
+ *
+ * This function is only meant to be used in the generic isl_multi_*
+ * functions which have to deal with base objects that have an associated
+ * space.  Since an isl_val does not have an associated space, this function
+ * does not do anything.
+ */
+__isl_give isl_val *isl_val_insert_dims(__isl_take isl_val *v,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	return v;
+}
+
+/* Drop the the "n" first dimensions of type "type" at position "first".
+ *
+ * This function is only meant to be used in the generic isl_multi_*
+ * functions which have to deal with base objects that have an associated
+ * space.  Since an isl_val does not have an associated space, this function
+ * does not do anything.
+ */
+__isl_give isl_val *isl_val_drop_dims(__isl_take isl_val *v,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	return v;
+}
+
+/* Change the name of the dimension of type "type" at position "pos" to "s".
+ *
+ * This function is only meant to be used in the generic isl_multi_*
+ * functions which have to deal with base objects that have an associated
+ * space.  Since an isl_val does not have an associated space, this function
+ * does not do anything.
+ */
+__isl_give isl_val *isl_val_set_dim_name(__isl_take isl_val *v,
+	enum isl_dim_type type, unsigned pos, const char *s)
+{
+	return v;
+}
+
+/* Reset the domain space of "v" to "space".
+ *
+ * This function is only meant to be used in the generic isl_multi_*
+ * functions which have to deal with base objects that have an associated
+ * space.  Since an isl_val does not have an associated space, this function
+ * does not do anything, apart from error handling and cleaning up memory.
+ */
+__isl_give isl_val *isl_val_reset_domain_space(__isl_take isl_val *v,
+	__isl_take isl_space *space)
+{
+	if (!space)
+		return isl_val_free(v);
+	isl_space_free(space);
+	return v;
+}
+
+/* Reorder the dimensions of the domain of "v" according
+ * to the given reordering.
+ *
+ * This function is only meant to be used in the generic isl_multi_*
+ * functions which have to deal with base objects that have an associated
+ * space.  Since an isl_val does not have an associated space, this function
+ * does not do anything, apart from error handling and cleaning up memory.
+ */
+__isl_give isl_val *isl_val_realign_domain(__isl_take isl_val *v,
+	__isl_take isl_reordering *r)
+{
+	if (!r)
+		return isl_val_free(v);
+	isl_reordering_free(r);
+	return v;
+}
+
+/* Return an isl_val that is zero on "ls".
+ *
+ * This function is only meant to be used in the generic isl_multi_*
+ * functions which have to deal with base objects that have an associated
+ * space.  Since an isl_val does not have an associated space, this function
+ * simply returns a zero isl_val in the same context as "ls".
+ */
+__isl_give isl_val *isl_val_zero_on_domain(__isl_take isl_local_space *ls)
+{
+	isl_ctx *ctx;
+
+	if (!ls)
+		return NULL;
+	ctx = isl_local_space_get_ctx(ls);
+	isl_local_space_free(ls);
+	return isl_val_zero(ctx);
+}
+
+/* Check that the domain space of "v" matches "space".
+ *
+ * Return 0 on success and -1 on error.
+ *
+ * This function is only meant to be used in the generic isl_multi_*
+ * functions which have to deal with base objects that have an associated
+ * space.  Since an isl_val does not have an associated space, this function
+ * simply returns 0, except if "v" or "space" are NULL.
+ */
+int isl_val_check_match_domain_space(__isl_keep isl_val *v,
+	__isl_keep isl_space *space)
+{
+	if (!v || !space)
+		return -1;
+	return 0;
+}
+
+#undef BASE
+#define BASE val
+
+#define NO_GIST
+#define NO_IDENTITY
+#define NO_FROM_BASE
+#include <isl_multi_templ.c>

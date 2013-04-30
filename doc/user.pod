@@ -890,6 +890,10 @@ of the original object.
 	__isl_give isl_space *isl_union_pw_qpolynomial_fold_get_space(
 		__isl_keep isl_union_pw_qpolynomial_fold *upwf);
 
+	#include <isl/val.h>
+	__isl_give isl_space *isl_multi_val_get_space(
+		__isl_keep isl_multi_val *mv);
+
 	#include <isl/aff.h>
 	__isl_give isl_space *isl_aff_get_domain_space(
 		__isl_keep isl_aff *aff);
@@ -3312,6 +3316,88 @@ Lists can be printed using
 	__isl_give isl_printer *isl_printer_print_set_list(
 		__isl_take isl_printer *p,
 		__isl_keep isl_set_list *list);
+
+=head2 Multiple Values
+
+An C<isl_multi_val> object represents a sequence of zero or more values,
+living in a set space.
+
+An C<isl_multi_val> can be constructed from an C<isl_val_list>
+using the following function
+
+	#include <isl/val.h>
+	__isl_give isl_multi_val *isl_multi_val_from_val_list(
+		__isl_take isl_space *space,
+		__isl_take isl_val_list *list);
+
+The zero multiple value (with value zero for each set dimension)
+can be created using the following function.
+
+	#include <isl/val.h>
+	__isl_give isl_multi_val *isl_multi_val_zero(
+		__isl_take isl_space *space);
+
+Multiple values can be copied and freed using
+
+	#include <isl/val.h>
+	__isl_give isl_multi_val *isl_multi_val_copy(
+		__isl_keep isl_multi_val *mv);
+	void *isl_multi_val_free(__isl_take isl_multi_val *mv);
+
+They can be inspected using
+
+	#include <isl/val.h>
+	isl_ctx *isl_multi_val_get_ctx(
+		__isl_keep isl_multi_val *mv);
+	unsigned isl_multi_val_dim(__isl_keep isl_multi_val *mv,
+		enum isl_dim_type type);
+	__isl_give isl_val *isl_multi_val_get_val(
+		__isl_keep isl_multi_val *mv, int pos);
+	const char *isl_multi_val_get_tuple_name(
+		__isl_keep isl_multi_val *mv,
+		enum isl_dim_type type);
+
+They can be modified using
+
+	#include <isl/val.h>
+	__isl_give isl_multi_val *isl_multi_val_set_val(
+		__isl_take isl_multi_val *mv, int pos,
+		__isl_take isl_val *val);
+	__isl_give isl_multi_val *isl_multi_val_set_dim_name(
+		__isl_take isl_multi_val *mv,
+		enum isl_dim_type type, unsigned pos, const char *s);
+	__isl_give isl_multi_val *isl_multi_val_set_tuple_name(
+		__isl_take isl_multi_val *mv,
+		enum isl_dim_type type, const char *s);
+	__isl_give isl_multi_val *isl_multi_val_set_tuple_id(
+		__isl_take isl_multi_val *mv,
+		enum isl_dim_type type, __isl_take isl_id *id);
+
+	__isl_give isl_multi_val *isl_multi_val_insert_dims(
+		__isl_take isl_multi_val *mv,
+		enum isl_dim_type type, unsigned first, unsigned n);
+	__isl_give isl_multi_val *isl_multi_val_add_dims(
+		__isl_take isl_multi_val *mv,
+		enum isl_dim_type type, unsigned n);
+	__isl_give isl_multi_val *isl_multi_val_drop_dims(
+		__isl_take isl_multi_val *mv,
+		enum isl_dim_type type, unsigned first, unsigned n);
+
+Operations include
+
+	#include <isl/val.h>
+	__isl_give isl_multi_val *isl_multi_val_align_params(
+		__isl_take isl_multi_val *mv,
+		__isl_take isl_space *model);
+	__isl_give isl_multi_val *isl_multi_val_range_splice(
+		__isl_take isl_multi_val *mv1, unsigned pos,
+		__isl_take isl_multi_val *mv2);
+	__isl_give isl_multi_val *isl_multi_val_range_product(
+		__isl_take isl_multi_val *mv1,
+		__isl_take isl_multi_val *mv2);
+	__isl_give isl_multi_val *isl_multi_val_flat_range_product(
+		__isl_take isl_multi_val *mv1,
+		__isl_take isl_multi_aff *mv2);
 
 =head2 Vectors
 

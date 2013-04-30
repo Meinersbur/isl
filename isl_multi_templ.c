@@ -397,6 +397,7 @@ error:
 	return NULL;
 }
 
+#ifndef NO_GIST
 static __isl_give MULTI(BASE) *FN(MULTI(BASE),align_params_multi_set_and)(
 	__isl_take MULTI(BASE) *multi, __isl_take isl_set *set,
 	__isl_give MULTI(BASE) *(*fn)(__isl_take MULTI(BASE) *multi,
@@ -460,6 +461,7 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),gist_params)(
 	dom_context = isl_set_intersect_params(dom_context, context);
 	return FN(MULTI(BASE),gist)(multi, dom_context);
 }
+#endif
 
 __isl_give MULTI(BASE) *FN(FN(MULTI(BASE),from),LIST(BASE))(
 	__isl_take isl_space *space, __isl_take LIST(EL) *list)
@@ -493,6 +495,7 @@ error:
 	return NULL;
 }
 
+#ifndef NO_IDENTITY
 /* Create a multi expression in the given space that maps each
  * input dimension to the corresponding output dimension.
  */
@@ -539,6 +542,7 @@ error:
 	isl_space_free(space);
 	return NULL;
 }
+#endif
 
 /* Construct a multi expression in the given space with value zero in
  * each of the output dimensions.
@@ -575,6 +579,7 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),zero)(__isl_take isl_space *space)
 	return multi;
 }
 
+#ifndef NO_FROM_BASE
 __isl_give MULTI(BASE) *FN(FN(MULTI(BASE),from),BASE)(__isl_take EL *el)
 {
 	MULTI(BASE) *multi;
@@ -584,6 +589,7 @@ __isl_give MULTI(BASE) *FN(FN(MULTI(BASE),from),BASE)(__isl_take EL *el)
 
 	return multi;
 }
+#endif
 
 __isl_give MULTI(BASE) *FN(MULTI(BASE),drop_dims)(
 	__isl_take MULTI(BASE) *multi,

@@ -3,6 +3,8 @@
 
 #include <isl/int.h>
 #include <isl/val.h>
+#include <isl/local_space.h>
+#include <isl_reordering.h>
 
 /* Represents a "value", which may be an integer value, a rational value,
  * plus or minus infinity or "not a number".
@@ -31,5 +33,25 @@ __isl_give isl_val *isl_val_int_from_isl_int(isl_ctx *ctx, isl_int n);
 __isl_give isl_val *isl_val_rat_from_isl_int(isl_ctx *ctx,
 	isl_int n, isl_int d);
 __isl_give isl_val *isl_val_cow(__isl_take isl_val *val);
+
+__isl_give isl_val *isl_val_insert_dims(__isl_take isl_val *v,
+	enum isl_dim_type type, unsigned first, unsigned n);
+__isl_give isl_val *isl_val_drop_dims(__isl_take isl_val *v,
+	enum isl_dim_type type, unsigned first, unsigned n);
+__isl_give isl_val *isl_val_set_dim_name(__isl_take isl_val *v,
+	enum isl_dim_type type, unsigned pos, const char *s);
+__isl_give isl_val *isl_val_reset_domain_space(__isl_take isl_val *v,
+	__isl_take isl_space *space);
+__isl_give isl_val *isl_val_realign_domain(__isl_take isl_val *v,
+	__isl_take isl_reordering *r);
+__isl_give isl_val *isl_val_zero_on_domain(__isl_take isl_local_space *ls);
+
+int isl_val_check_match_domain_space(__isl_keep isl_val *v,
+	__isl_keep isl_space *space);
+
+#undef BASE
+#define BASE val
+
+#include <isl_multi_templ.h>
 
 #endif
