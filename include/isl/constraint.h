@@ -82,23 +82,14 @@ int isl_constraint_involves_dims(__isl_keep isl_constraint *constraint,
 
 const char *isl_constraint_get_dim_name(__isl_keep isl_constraint *constraint,
 	enum isl_dim_type type, unsigned pos);
-void isl_constraint_get_constant(__isl_keep isl_constraint *constraint,
-	isl_int *v);
 __isl_give isl_val *isl_constraint_get_constant_val(
 	__isl_keep isl_constraint *constraint);
-void isl_constraint_get_coefficient(__isl_keep isl_constraint *constraint,
-	enum isl_dim_type type, int pos, isl_int *v);
 __isl_give isl_val *isl_constraint_get_coefficient_val(
 	__isl_keep isl_constraint *constraint, enum isl_dim_type type, int pos);
-__isl_give isl_constraint *isl_constraint_set_constant(
-	__isl_take isl_constraint *constraint, isl_int v);
 __isl_give isl_constraint *isl_constraint_set_constant_si(
 	__isl_take isl_constraint *constraint, int v);
 __isl_give isl_constraint *isl_constraint_set_constant_val(
 	__isl_take isl_constraint *constraint, __isl_take isl_val *v);
-__isl_give isl_constraint *isl_constraint_set_coefficient(
-	__isl_take isl_constraint *constraint,
-	enum isl_dim_type type, int pos, isl_int v);
 __isl_give isl_constraint *isl_constraint_set_coefficient_si(
 	__isl_take isl_constraint *constraint,
 	enum isl_dim_type type, int pos, int v);

@@ -15,7 +15,7 @@
 #include <isl_aff_private.h>
 #include <isl/set.h>
 #include <isl/flow.h>
-#include <isl/constraint.h>
+#include <isl_constraint_private.h>
 #include <isl/polynomial.h>
 #include <isl/union_map.h>
 #include <isl_factorization.h>

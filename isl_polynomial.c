@@ -27,6 +27,7 @@
 #include <isl_aff_private.h>
 #include <isl_val_private.h>
 #include <isl_config.h>
+#include <isl/deprecated/polynomial_int.h>
 
 static unsigned pos(__isl_keep isl_space *dim, enum isl_dim_type type)
 {

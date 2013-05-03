@@ -9,8 +9,10 @@
 
 #ifndef ISL_INT_H
 #define ISL_INT_H
+#define ISL_DEPRECATED_INT_H
 
 #include <isl/hash.h>
+#include <isl/printer.h>
 #include <string.h>
 #include <gmp.h>
 #include <isl_config.h>
@@ -120,5 +122,8 @@ void isl_gmp_gcdext(mpz_t G, mpz_t S, mpz_t T, mpz_t A, mpz_t B);
 
 uint32_t isl_gmp_hash(mpz_t v, uint32_t hash);
 #define isl_int_hash(v,h)	isl_gmp_hash(v,h)
+
+__isl_give isl_printer *isl_printer_print_isl_int(__isl_take isl_printer *p,
+	isl_int i);
 
 #endif

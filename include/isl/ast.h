@@ -88,7 +88,6 @@ void *isl_ast_expr_free(__isl_take isl_ast_expr *expr);
 
 isl_ctx *isl_ast_expr_get_ctx(__isl_keep isl_ast_expr *expr);
 enum isl_ast_expr_type isl_ast_expr_get_type(__isl_keep isl_ast_expr *expr);
-int isl_ast_expr_get_int(__isl_keep isl_ast_expr *expr, isl_int *v);
 __isl_give isl_val *isl_ast_expr_get_val(__isl_keep isl_ast_expr *expr);
 __isl_give isl_id *isl_ast_expr_get_id(__isl_keep isl_ast_expr *expr);
 

@@ -1,4 +1,5 @@
 #include <string.h>
+#include <isl_int.h>
 #include <isl_printer_private.h>
 
 static __isl_give isl_printer *file_start_line(__isl_take isl_printer *p)

@@ -3,7 +3,6 @@
 
 #include <stdio.h>
 #include <isl/ctx.h>
-#include <isl/int.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -49,8 +48,6 @@ __isl_give isl_printer *isl_printer_end_line(__isl_take isl_printer *p);
 __isl_give isl_printer *isl_printer_print_double(__isl_take isl_printer *p,
 	double d);
 __isl_give isl_printer *isl_printer_print_int(__isl_take isl_printer *p, int i);
-__isl_give isl_printer *isl_printer_print_isl_int(__isl_take isl_printer *p,
-	isl_int i);
 __isl_give isl_printer *isl_printer_print_str(__isl_take isl_printer *p,
 	const char *s);
 

@@ -11,7 +11,7 @@
 #define ISL_SEQ_H
 
 #include <sys/types.h>
-#include <isl/int.h>
+#include <isl_int.h>
 #include <isl/ctx.h>
 
 #if defined(__cplusplus)

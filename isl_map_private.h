@@ -366,4 +366,25 @@ int isl_basic_map_plain_is_single_valued(__isl_keep isl_basic_map *bmap);
 
 int isl_map_is_set(__isl_keep isl_map *map);
 
+int isl_basic_set_plain_dim_is_fixed(__isl_keep isl_basic_set *bset,
+	unsigned dim, isl_int *val);
+
+int isl_basic_set_dim_residue_class(struct isl_basic_set *bset,
+	int pos, isl_int *modulo, isl_int *residue);
+int isl_set_dim_residue_class(struct isl_set *set,
+	int pos, isl_int *modulo, isl_int *residue);
+
+__isl_give isl_basic_set *isl_basic_set_fix(__isl_take isl_basic_set *bset,
+	enum isl_dim_type type, unsigned pos, isl_int value);
+__isl_give isl_set *isl_set_fix(__isl_take isl_set *set,
+	enum isl_dim_type type, unsigned pos, isl_int value);
+int isl_map_plain_is_fixed(__isl_keep isl_map *map,
+	enum isl_dim_type type, unsigned pos, isl_int *val);
+
+__isl_give isl_map *isl_map_fixed_power(__isl_take isl_map *map, isl_int exp);
+
+int isl_basic_set_count_upto(__isl_keep isl_basic_set *bset,
+	isl_int max, isl_int *count);
+int isl_set_count_upto(__isl_keep isl_set *set, isl_int max, isl_int *count);
+
 #endif

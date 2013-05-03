@@ -12,7 +12,6 @@
 
 #include <stdio.h>
 
-#include <isl/int.h>
 #include <isl/ctx.h>
 #include <isl/vec.h>
 #include <isl/val.h>
@@ -38,11 +37,8 @@ void *isl_mat_free(__isl_take isl_mat *mat);
 
 int isl_mat_rows(__isl_keep isl_mat *mat);
 int isl_mat_cols(__isl_keep isl_mat *mat);
-int isl_mat_get_element(__isl_keep isl_mat *mat, int row, int col, isl_int *v);
 __isl_give isl_val *isl_mat_get_element_val(__isl_keep isl_mat *mat,
 	int row, int col);
-__isl_give isl_mat *isl_mat_set_element(__isl_take isl_mat *mat,
-	int row, int col, isl_int v);
 __isl_give isl_mat *isl_mat_set_element_si(__isl_take isl_mat *mat,
 	int row, int col, int v);
 __isl_give isl_mat *isl_mat_set_element_val(__isl_take isl_mat *mat,
@@ -70,9 +66,6 @@ struct isl_mat *isl_mat_transpose(struct isl_mat *mat);
 __isl_give isl_mat *isl_mat_right_inverse(__isl_take isl_mat *mat);
 __isl_give isl_mat *isl_mat_right_kernel(__isl_take isl_mat *mat);
 
-__isl_give isl_mat *isl_mat_scale_down_row(__isl_take isl_mat *mat, int row,
-	isl_int m);
-
 __isl_give isl_mat *isl_mat_normalize(__isl_take isl_mat *mat);
 __isl_give isl_mat *isl_mat_normalize_row(__isl_take isl_mat *mat, int row);
 
@@ -95,9 +88,6 @@ __isl_give isl_mat *isl_mat_insert_zero_rows(__isl_take isl_mat *mat,
 __isl_give isl_mat *isl_mat_add_zero_rows(__isl_take isl_mat *mat, unsigned n);
 
 void isl_mat_col_add(__isl_keep isl_mat *mat, int dst_col, int src_col);
-void isl_mat_col_mul(struct isl_mat *mat, int dst_col, isl_int f, int src_col);
-void isl_mat_col_submul(struct isl_mat *mat,
-			int dst_col, isl_int f, int src_col);
 
 struct isl_mat *isl_mat_unimodular_complete(struct isl_mat *M, int row);
 

@@ -11,6 +11,7 @@
 #include <isl_seq.h>
 #include <isl_val_private.h>
 #include <isl_vec_private.h>
+#include <isl/deprecated/vec_int.h>
 
 isl_ctx *isl_vec_get_ctx(__isl_keep isl_vec *vec)
 {

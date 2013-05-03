@@ -35,6 +35,8 @@
 #include <isl_options_private.h>
 #include <isl_morph.h>
 #include <isl_val_private.h>
+#include <isl/deprecated/map_int.h>
+#include <isl/deprecated/set_int.h>
 
 static unsigned n(__isl_keep isl_space *dim, enum isl_dim_type type)
 {

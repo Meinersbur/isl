@@ -10,7 +10,7 @@
 #ifndef ISL_BLK_H
 #define ISL_BLK_H
 
-#include <isl/int.h>
+#include <isl_int.h>
 
 #if defined(__cplusplus)
 extern "C" {

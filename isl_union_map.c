@@ -18,6 +18,7 @@
 #include <isl_space_private.h>
 #include <isl_union_map_private.h>
 #include <isl/union_set.h>
+#include <isl/deprecated/union_map_int.h>
 
 /* Is this union set a parameter domain?
  */

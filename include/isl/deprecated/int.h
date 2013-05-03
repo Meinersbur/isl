@@ -7,8 +7,8 @@
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
  */
 
-#ifndef ISL_INT_H
-#define ISL_INT_H
+#ifndef ISL_DEPRECATED_INT_H
+#define ISL_DEPRECATED_INT_H
 
 #include <isl/hash.h>
 #include <string.h>

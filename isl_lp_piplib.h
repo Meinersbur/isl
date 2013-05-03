@@ -10,8 +10,7 @@
 #ifndef ISL_LP_PIPLIB_H
 #define ISL_LP_PIPLIB_H
 
-#include <isl/lp.h>
-#include <isl/vec.h>
+#include <isl_lp_private.h>
 
 #if defined(__cplusplus)
 extern "C" {

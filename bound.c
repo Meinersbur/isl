@@ -1,8 +1,11 @@
 #include <assert.h>
 #include <isl/stream.h>
+#include <isl_map_private.h>
 #include <isl_polynomial_private.h>
 #include <isl_scan.h>
 #include <isl/options.h>
+#include <isl/deprecated/point_int.h>
+#include <isl/deprecated/polynomial_int.h>
 
 struct bound_options {
 	struct isl_options	*isl;

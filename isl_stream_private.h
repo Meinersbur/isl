@@ -1,3 +1,4 @@
+#include <isl_int.h>
 #include <isl/stream.h>
 
 struct isl_token {

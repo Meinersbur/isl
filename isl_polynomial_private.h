@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <isl_int.h>
 #include <isl/map.h>
 #include <isl/mat.h>
 #include <isl_morph.h>
@@ -95,6 +96,8 @@ struct isl_pw_qpolynomial_fold {
 	struct isl_pw_qpolynomial_fold_piece p[1];
 };
 
+void isl_term_get_num(__isl_keep isl_term *term, isl_int *n);
+
 __isl_give struct isl_upoly *isl_upoly_zero(struct isl_ctx *ctx);
 __isl_give struct isl_upoly *isl_upoly_copy(__isl_keep struct isl_upoly *up);
 __isl_give struct isl_upoly *isl_upoly_cow(__isl_take struct isl_upoly *up);
@@ -122,10 +125,14 @@ __isl_give isl_qpolynomial *isl_qpolynomial_dup(__isl_keep isl_qpolynomial *qp);
 
 __isl_give isl_qpolynomial *isl_qpolynomial_cst_on_domain(__isl_take isl_space *dim,
 	isl_int v);
+__isl_give isl_qpolynomial *isl_qpolynomial_rat_cst_on_domain(
+	__isl_take isl_space *space, const isl_int n, const isl_int d);
 __isl_give isl_qpolynomial *isl_qpolynomial_var_pow_on_domain(__isl_take isl_space *dim,
 	int pos, int power);
 int isl_qpolynomial_is_one(__isl_keep isl_qpolynomial *qp);
 int isl_qpolynomial_is_affine(__isl_keep isl_qpolynomial *qp);
+int isl_qpolynomial_is_cst(__isl_keep isl_qpolynomial *qp,
+	isl_int *n, isl_int *d);
 
 __isl_give isl_qpolynomial *isl_qpolynomial_add_on_domain(
 	__isl_keep isl_set *dom,
@@ -231,3 +238,21 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_reset_space_and_domain(
 	__isl_take isl_space *domain);
 __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_reset_domain_space(
 	__isl_take isl_pw_qpolynomial_fold *pwf, __isl_take isl_space *dim);
+
+void isl_qpolynomial_get_den(__isl_keep isl_qpolynomial *qp, isl_int *d);
+__isl_give isl_qpolynomial *isl_qpolynomial_add_isl_int(
+	__isl_take isl_qpolynomial *qp, isl_int v);
+__isl_give isl_qpolynomial *isl_qpolynomial_mul_isl_int(
+	__isl_take isl_qpolynomial *qp, isl_int v);
+__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_mul_isl_int(
+	__isl_take isl_pw_qpolynomial *pwqp, isl_int v);
+
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_mul_isl_int(
+	__isl_take isl_qpolynomial_fold *fold, isl_int v);
+__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_mul_isl_int(
+	__isl_take isl_pw_qpolynomial_fold *pwf, isl_int v);
+__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_mul_isl_int(
+	__isl_take isl_union_pw_qpolynomial *upwqp, isl_int v);
+__isl_give isl_union_pw_qpolynomial_fold *
+isl_union_pw_qpolynomial_fold_mul_isl_int(
+	__isl_take isl_union_pw_qpolynomial_fold *upwf, isl_int v);

@@ -17,7 +17,7 @@
 #include "isl_sample.h"
 #include "isl_scan.h"
 #include <isl_seq.h>
-#include <isl/ilp.h>
+#include <isl_ilp_private.h>
 #include <isl/printer.h>
 #include <isl_point_private.h>
 #include <isl_vec_private.h>

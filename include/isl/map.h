@@ -12,7 +12,6 @@
 
 #include <stdio.h>
 
-#include <isl/int.h>
 #include <isl/ctx.h>
 #include <isl/space.h>
 #include <isl/vec.h>
@@ -225,12 +224,9 @@ __isl_give isl_basic_map *isl_basic_map_upper_bound_si(
 struct isl_basic_map *isl_basic_map_sum(
 		struct isl_basic_map *bmap1, struct isl_basic_map *bmap2);
 struct isl_basic_map *isl_basic_map_neg(struct isl_basic_map *bmap);
-struct isl_basic_map *isl_basic_map_floordiv(struct isl_basic_map *bmap,
-		isl_int d);
 
 struct isl_map *isl_map_sum(struct isl_map *map1, struct isl_map *map2);
 struct isl_map *isl_map_neg(struct isl_map *map);
-struct isl_map *isl_map_floordiv(struct isl_map *map, isl_int d);
 __isl_give isl_map *isl_map_floordiv_val(__isl_take isl_map *map,
 	__isl_take isl_val *d);
 
@@ -279,8 +275,6 @@ struct isl_basic_map *isl_map_copy_basic_map(struct isl_map *map);
 __isl_give isl_map *isl_map_drop_basic_map(__isl_take isl_map *map,
 						__isl_keep isl_basic_map *bmap);
 
-int isl_basic_map_plain_is_fixed(__isl_keep isl_basic_map *bmap,
-	enum isl_dim_type type, unsigned pos, isl_int *val);
 __isl_give isl_val *isl_basic_map_plain_get_val_if_fixed(
 	__isl_keep isl_basic_map *bmap,
 	enum isl_dim_type type, unsigned pos);
@@ -390,8 +384,6 @@ __isl_export
 __isl_give isl_map *isl_map_complement(__isl_take isl_map *map);
 struct isl_map *isl_map_fix_input_si(struct isl_map *map,
 		unsigned input, int value);
-__isl_give isl_map *isl_map_fix(__isl_take isl_map *map,
-	enum isl_dim_type type, unsigned pos, isl_int value);
 __isl_give isl_map *isl_map_fix_si(__isl_take isl_map *map,
 		enum isl_dim_type type, unsigned pos, int value);
 __isl_give isl_map *isl_map_fix_val(__isl_take isl_map *map,
@@ -578,12 +570,6 @@ int isl_map_involves_dims(__isl_keep isl_map *map,
 
 void isl_map_print_internal(__isl_keep isl_map *map, FILE *out, int indent);
 
-int isl_map_plain_input_is_fixed(__isl_keep isl_map *map,
-		unsigned in, isl_int *val);
-int isl_map_plain_is_fixed(__isl_keep isl_map *map,
-	enum isl_dim_type type, unsigned pos, isl_int *val);
-int isl_map_fast_is_fixed(__isl_keep isl_map *map,
-	enum isl_dim_type type, unsigned pos, isl_int *val);
 __isl_give isl_val *isl_map_plain_get_val_if_fixed(__isl_keep isl_map *map,
 	enum isl_dim_type type, unsigned pos);
 
@@ -617,7 +603,6 @@ int isl_map_foreach_basic_map(__isl_keep isl_map *map,
 
 __isl_give isl_map *isl_set_lifting(__isl_take isl_set *set);
 
-__isl_give isl_map *isl_map_fixed_power(__isl_take isl_map *map, isl_int exp);
 __isl_give isl_map *isl_map_fixed_power_val(__isl_take isl_map *map,
 	__isl_take isl_val *exp);
 __isl_give isl_map *isl_map_power(__isl_take isl_map *map, int *exact);

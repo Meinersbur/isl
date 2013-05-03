@@ -13,7 +13,7 @@
 #include <isl_ctx_private.h>
 #include <isl_map_private.h>
 #include <isl_space_private.h>
-#include <isl/aff.h>
+#include <isl_aff_private.h>
 #include <isl/hash.h>
 #include <isl/constraint.h>
 #include <isl/schedule.h>

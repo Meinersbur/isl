@@ -7,6 +7,7 @@
 #include <isl_space_private.h>
 #include <isl_val_private.h>
 #include <isl_vec_private.h>
+#include <isl/deprecated/point_int.h>
 
 isl_ctx *isl_point_get_ctx(__isl_keep isl_point *pnt)
 {

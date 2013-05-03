@@ -24,6 +24,7 @@
 #include <isl_seq.h>
 #include <isl/set.h>
 #include <isl_val_private.h>
+#include <isl/deprecated/aff_int.h>
 #include <isl_config.h>
 
 #undef BASE

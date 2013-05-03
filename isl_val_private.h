@@ -1,7 +1,7 @@
 #ifndef ISL_VAL_PRIVATE_H
 #define ISL_VAL_PRIVATE_H
 
-#include <isl/int.h>
+#include <isl_int.h>
 #include <isl/val.h>
 #include <isl/local_space.h>
 #include <isl_reordering.h>

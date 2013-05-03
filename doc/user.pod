@@ -181,6 +181,16 @@ C<isl_set_dim_has_upper_bound> have slightly different meanings.
 
 =back
 
+=head3 Changes since isl-0.12
+
+=over
+
+=item * C<isl_int> has been replaced by C<isl_val>.
+Some of the old functions are still available in C<isl/deprecated/*.h>
+but they will be removed in the future.
+
+=back
+
 =head1 License
 
 C<isl> is released under the MIT license.
@@ -536,140 +546,6 @@ C<GMP> values using the following functions.
 	#include <isl/val_gmp.h>
 	int isl_val_get_num_gmp(__isl_keep isl_val *v, mpz_t z);
 	int isl_val_get_den_gmp(__isl_keep isl_val *v, mpz_t z);
-
-=head3 Conversion from C<isl_int>
-
-The following functions are only temporarily available to ease
-the transition from C<isl_int> to C<isl_val>.  They will be removed
-in the next release.
-
-	#include <isl/val_int.h>
-	__isl_give isl_val *isl_val_int_from_isl_int(isl_ctx *ctx,
-		isl_int n);
-	int isl_val_get_num_isl_int(__isl_keep isl_val *v,
-		isl_int *n);
-
-=head2 Integers (obsolescent)
-
-In previous versions of C<isl>, integers were represented
-in the external interface using the C<isl_int> type.
-This type has now been superseded by C<isl_val>.
-The C<isl_int> type will be removed from the external interface
-in future releases.  New code should not use C<isl_int>.
-
-The operations below are currently available on C<isl_int>s.
-The meanings of these operations are essentially the same
-as their C<GMP> C<mpz_> counterparts.
-As always with C<GMP> types, C<isl_int>s need to be
-initialized with C<isl_int_init> before they can be used
-and they need to be released with C<isl_int_clear>
-after the last use.
-The user should not assume that an C<isl_int> is represented
-as a C<mpz_t>, but should instead explicitly convert between
-C<mpz_t>s and C<isl_int>s using C<isl_int_set_gmp> and
-C<isl_int_get_gmp> whenever a C<mpz_t> is required.
-
-=over
-
-=item isl_int_init(i)
-
-=item isl_int_clear(i)
-
-=item isl_int_set(r,i)
-
-=item isl_int_set_si(r,i)
-
-=item isl_int_set_gmp(r,g)
-
-=item isl_int_get_gmp(i,g)
-
-=item isl_int_abs(r,i)
-
-=item isl_int_neg(r,i)
-
-=item isl_int_swap(i,j)
-
-=item isl_int_swap_or_set(i,j)
-
-=item isl_int_add_ui(r,i,j)
-
-=item isl_int_sub_ui(r,i,j)
-
-=item isl_int_add(r,i,j)
-
-=item isl_int_sub(r,i,j)
-
-=item isl_int_mul(r,i,j)
-
-=item isl_int_mul_ui(r,i,j)
-
-=item isl_int_addmul(r,i,j)
-
-=item isl_int_submul(r,i,j)
-
-=item isl_int_gcd(r,i,j)
-
-=item isl_int_lcm(r,i,j)
-
-=item isl_int_divexact(r,i,j)
-
-=item isl_int_cdiv_q(r,i,j)
-
-=item isl_int_fdiv_q(r,i,j)
-
-=item isl_int_fdiv_r(r,i,j)
-
-=item isl_int_fdiv_q_ui(r,i,j)
-
-=item isl_int_read(r,s)
-
-=item isl_int_print(out,i,width)
-
-=item isl_int_sgn(i)
-
-=item isl_int_cmp(i,j)
-
-=item isl_int_cmp_si(i,si)
-
-=item isl_int_eq(i,j)
-
-=item isl_int_ne(i,j)
-
-=item isl_int_lt(i,j)
-
-=item isl_int_le(i,j)
-
-=item isl_int_gt(i,j)
-
-=item isl_int_ge(i,j)
-
-=item isl_int_abs_eq(i,j)
-
-=item isl_int_abs_ne(i,j)
-
-=item isl_int_abs_lt(i,j)
-
-=item isl_int_abs_gt(i,j)
-
-=item isl_int_abs_ge(i,j)
-
-=item isl_int_is_zero(i)
-
-=item isl_int_is_one(i)
-
-=item isl_int_is_negone(i)
-
-=item isl_int_is_pos(i)
-
-=item isl_int_is_neg(i)
-
-=item isl_int_is_nonpos(i)
-
-=item isl_int_is_nonneg(i)
-
-=item isl_int_is_divisible_by(i,j)
-
-=back
 
 =head2 Sets and Relations
 
@@ -1533,16 +1409,11 @@ using the following functions.
 		__isl_take isl_local_space *ls);
 	__isl_give isl_constraint *isl_inequality_alloc(
 		__isl_take isl_local_space *ls);
-	__isl_give isl_constraint *isl_constraint_set_constant(
-		__isl_take isl_constraint *constraint, isl_int v);
 	__isl_give isl_constraint *isl_constraint_set_constant_si(
 		__isl_take isl_constraint *constraint, int v);
 	__isl_give isl_constraint *isl_constraint_set_constant_val(
 		__isl_take isl_constraint *constraint,
 		__isl_take isl_val *v);
-	__isl_give isl_constraint *isl_constraint_set_coefficient(
-		__isl_take isl_constraint *constraint,
-		enum isl_dim_type type, int pos, isl_int v);
 	__isl_give isl_constraint *isl_constraint_set_coefficient_si(
 		__isl_take isl_constraint *constraint,
 		enum isl_dim_type type, int pos, int v);
@@ -1819,13 +1690,8 @@ the following functions.
 	int isl_constraint_is_upper_bound(
 		__isl_keep isl_constraint *constraint,
 		enum isl_dim_type type, unsigned pos);
-	void isl_constraint_get_constant(
-		__isl_keep isl_constraint *constraint, isl_int *v);
 	__isl_give isl_val *isl_constraint_get_constant_val(
 		__isl_keep isl_constraint *constraint);
-	void isl_constraint_get_coefficient(
-		__isl_keep isl_constraint *constraint,
-		enum isl_dim_type type, int pos, isl_int *v);
 	__isl_give isl_val *isl_constraint_get_coefficient_val(
 		__isl_keep isl_constraint *constraint,
 		enum isl_dim_type type, int pos);
@@ -2074,20 +1940,6 @@ is already known to be empty.
 
 =item * Position
 
-	int isl_basic_map_plain_is_fixed(
-		__isl_keep isl_basic_map *bmap,
-		enum isl_dim_type type, unsigned pos,
-		isl_int *val);
-	int isl_set_plain_is_fixed(__isl_keep isl_set *set,
-		enum isl_dim_type type, unsigned pos,
-		isl_int *val);
-	int isl_map_plain_is_fixed(__isl_keep isl_map *map,
-		enum isl_dim_type type, unsigned pos,
-		isl_int *val);
-
-Check if the relation obviously lies on a hyperplane where the given dimension
-has a fixed value and if so, return that value in C<*val>.
-
 	__isl_give isl_val *
 	isl_basic_map_plain_get_val_if_fixed(
 		__isl_keep isl_basic_map *bmap,
@@ -2334,10 +2186,6 @@ without removing the dimensions.
 
 =item * Slicing
 
-	__isl_give isl_basic_set *isl_basic_set_fix(
-		__isl_take isl_basic_set *bset,
-		enum isl_dim_type type, unsigned pos,
-		isl_int value);
 	__isl_give isl_basic_set *isl_basic_set_fix_si(
 		__isl_take isl_basic_set *bset,
 		enum isl_dim_type type, unsigned pos, int value);
@@ -2345,9 +2193,6 @@ without removing the dimensions.
 		__isl_take isl_basic_set *bset,
 		enum isl_dim_type type, unsigned pos,
 		__isl_take isl_val *v);
-	__isl_give isl_set *isl_set_fix(__isl_take isl_set *set,
-		enum isl_dim_type type, unsigned pos,
-		isl_int value);
 	__isl_give isl_set *isl_set_fix_si(__isl_take isl_set *set,
 		enum isl_dim_type type, unsigned pos, int value);
 	__isl_give isl_set *isl_set_fix_val(
@@ -2361,9 +2206,6 @@ without removing the dimensions.
 		__isl_take isl_basic_map *bmap,
 		enum isl_dim_type type, unsigned pos,
 		__isl_take isl_val *v);
-	__isl_give isl_map *isl_map_fix(__isl_take isl_map *map,
-		enum isl_dim_type type, unsigned pos,
-		isl_int value);
 	__isl_give isl_map *isl_map_fix_si(__isl_take isl_map *map,
 		enum isl_dim_type type, unsigned pos, int value);
 	__isl_give isl_map *isl_map_fix_val(
@@ -2380,10 +2222,6 @@ dimension has the fixed given value.
 	__isl_give isl_basic_map *isl_basic_map_upper_bound_si(
 		__isl_take isl_basic_map *bmap,
 		enum isl_dim_type type, unsigned pos, int value);
-	__isl_give isl_set *isl_set_lower_bound(
-		__isl_take isl_set *set,
-		enum isl_dim_type type, unsigned pos,
-		isl_int value);
 	__isl_give isl_set *isl_set_lower_bound_si(
 		__isl_take isl_set *set,
 		enum isl_dim_type type, unsigned pos, int value);
@@ -2394,10 +2232,6 @@ dimension has the fixed given value.
 	__isl_give isl_map *isl_map_lower_bound_si(
 		__isl_take isl_map *map,
 		enum isl_dim_type type, unsigned pos, int value);
-	__isl_give isl_set *isl_set_upper_bound(
-		__isl_take isl_set *set,
-		enum isl_dim_type type, unsigned pos,
-		isl_int value);
 	__isl_give isl_set *isl_set_upper_bound_si(
 		__isl_take isl_set *set,
 		enum isl_dim_type type, unsigned pos, int value);
@@ -2655,29 +2489,19 @@ a singleton subset of the input.  Otherwise, return an empty set.
 =item * Optimization
 
 	#include <isl/ilp.h>
-	enum isl_lp_result isl_basic_set_max(
-		__isl_keep isl_basic_set *bset,
-		__isl_keep isl_aff *obj, isl_int *opt)
 	__isl_give isl_val *isl_basic_set_max_val(
 		__isl_keep isl_basic_set *bset,
 		__isl_keep isl_aff *obj);
-	enum isl_lp_result isl_set_min(__isl_keep isl_set *set,
-		__isl_keep isl_aff *obj, isl_int *opt);
 	__isl_give isl_val *isl_set_min_val(
 		__isl_keep isl_set *set,
 		__isl_keep isl_aff *obj);
-	enum isl_lp_result isl_set_max(__isl_keep isl_set *set,
-		__isl_keep isl_aff *obj, isl_int *opt);
 	__isl_give isl_val *isl_set_max_val(
 		__isl_keep isl_set *set,
 		__isl_keep isl_aff *obj);
 
 Compute the minimum or maximum of the integer affine expression C<obj>
 over the points in C<set>, returning the result in C<opt>.
-The return value may be one of C<isl_lp_error>,
-C<isl_lp_ok>, C<isl_lp_unbounded> or C<isl_lp_empty>, in case of
-an C<isl_lp_result>.  If the result is an C<isl_val> then
-the result is C<NULL> in case of an error, the optimal value in case
+The result is C<NULL> in case of an error, the optimal value in case
 there is one, negative infinity or infinity if the problem is unbounded and
 NaN if the problem is empty.
 
@@ -2723,13 +2547,9 @@ dualization algorithms or skip the elimination step.
 
 =item * Power
 
-	__isl_give isl_map *isl_map_fixed_power(
-		__isl_take isl_map *map, isl_int exp);
 	__isl_give isl_map *isl_map_fixed_power_val(
 		__isl_take isl_map *map,
 		__isl_take isl_val *exp);
-	__isl_give isl_union_map *isl_union_map_fixed_power(
-		__isl_take isl_union_map *umap, isl_int exp);
 	__isl_give isl_union_map *
 	isl_union_map_fixed_power_val(
 		__isl_take isl_union_map *umap,
@@ -3561,27 +3381,19 @@ The elements can be changed and inspected using the following functions.
 
 	isl_ctx *isl_vec_get_ctx(__isl_keep isl_vec *vec);
 	int isl_vec_size(__isl_keep isl_vec *vec);
-	int isl_vec_get_element(__isl_keep isl_vec *vec,
-		int pos, isl_int *v);
 	__isl_give isl_val *isl_vec_get_element_val(
 		__isl_keep isl_vec *vec, int pos);
-	__isl_give isl_vec *isl_vec_set_element(
-		__isl_take isl_vec *vec, int pos, isl_int v);
 	__isl_give isl_vec *isl_vec_set_element_si(
 		__isl_take isl_vec *vec, int pos, int v);
 	__isl_give isl_vec *isl_vec_set_element_val(
 		__isl_take isl_vec *vec, int pos,
 		__isl_take isl_val *v);
-	__isl_give isl_vec *isl_vec_set(__isl_take isl_vec *vec,
-		isl_int v);
 	__isl_give isl_vec *isl_vec_set_si(__isl_take isl_vec *vec,
 		int v);
 	__isl_give isl_vec *isl_vec_set_val(
 		__isl_take isl_vec *vec, __isl_take isl_val *v);
 	int isl_vec_cmp_element(__isl_keep isl_vec *vec1,
 		__isl_keep isl_vec *vec2, int pos);
-	__isl_give isl_vec *isl_vec_fdiv_r(__isl_take isl_vec *vec,
-		isl_int m);
 
 C<isl_vec_get_element> will return a negative value if anything went wrong.
 In that case, the value of C<*v> is undefined.
@@ -3607,12 +3419,8 @@ The elements can be changed and inspected using the following functions.
 	isl_ctx *isl_mat_get_ctx(__isl_keep isl_mat *mat);
 	int isl_mat_rows(__isl_keep isl_mat *mat);
 	int isl_mat_cols(__isl_keep isl_mat *mat);
-	int isl_mat_get_element(__isl_keep isl_mat *mat,
-		int row, int col, isl_int *v);
 	__isl_give isl_val *isl_mat_get_element_val(
 		__isl_keep isl_mat *mat, int row, int col);
-	__isl_give isl_mat *isl_mat_set_element(__isl_take isl_mat *mat,
-		int row, int col, isl_int v);
 	__isl_give isl_mat *isl_mat_set_element_si(__isl_take isl_mat *mat,
 		int row, int col, int v);
 	__isl_give isl_mat *isl_mat_set_element_val(
@@ -3731,17 +3539,11 @@ The expression can be inspected using
 	__isl_give isl_id *isl_pw_aff_get_tuple_id(
 		__isl_keep isl_pw_aff *pa,
 		enum isl_dim_type type);
-	int isl_aff_get_constant(__isl_keep isl_aff *aff,
-		isl_int *v);
 	__isl_give isl_val *isl_aff_get_constant_val(
 		__isl_keep isl_aff *aff);
-	int isl_aff_get_coefficient(__isl_keep isl_aff *aff,
-		enum isl_dim_type type, int pos, isl_int *v);
 	__isl_give isl_val *isl_aff_get_coefficient_val(
 		__isl_keep isl_aff *aff,
 		enum isl_dim_type type, int pos);
-	int isl_aff_get_denominator(__isl_keep isl_aff *aff,
-		isl_int *v);
 	__isl_give isl_val *isl_aff_get_denominator_val(
 		__isl_keep isl_aff *aff);
 	__isl_give isl_aff *isl_aff_get_div(
@@ -3782,15 +3584,10 @@ It can be modified using
 		__isl_take isl_pw_aff *pma,
 		enum isl_dim_type type, unsigned pos,
 		__isl_take isl_id *id);
-	__isl_give isl_aff *isl_aff_set_constant(
-		__isl_take isl_aff *aff, isl_int v);
 	__isl_give isl_aff *isl_aff_set_constant_si(
 		__isl_take isl_aff *aff, int v);
 	__isl_give isl_aff *isl_aff_set_constant_val(
 		__isl_take isl_aff *aff, __isl_take isl_val *v);
-	__isl_give isl_aff *isl_aff_set_coefficient(
-		__isl_take isl_aff *aff,
-		enum isl_dim_type type, int pos, isl_int v);
 	__isl_give isl_aff *isl_aff_set_coefficient_si(
 		__isl_take isl_aff *aff,
 		enum isl_dim_type type, int pos, int v);
@@ -3798,22 +3595,13 @@ It can be modified using
 		__isl_take isl_aff *aff,
 		enum isl_dim_type type, int pos,
 		__isl_take isl_val *v);
-	__isl_give isl_aff *isl_aff_set_denominator(
-		__isl_take isl_aff *aff, isl_int v);
 
-	__isl_give isl_aff *isl_aff_add_constant(
-		__isl_take isl_aff *aff, isl_int v);
 	__isl_give isl_aff *isl_aff_add_constant_si(
 		__isl_take isl_aff *aff, int v);
 	__isl_give isl_aff *isl_aff_add_constant_val(
 		__isl_take isl_aff *aff, __isl_take isl_val *v);
-	__isl_give isl_aff *isl_aff_add_constant_num(
-		__isl_take isl_aff *aff, isl_int v);
 	__isl_give isl_aff *isl_aff_add_constant_num_si(
 		__isl_take isl_aff *aff, int v);
-	__isl_give isl_aff *isl_aff_add_coefficient(
-		__isl_take isl_aff *aff,
-		enum isl_dim_type type, int pos, isl_int v);
 	__isl_give isl_aff *isl_aff_add_coefficient_si(
 		__isl_take isl_aff *aff,
 		enum isl_dim_type type, int pos, int v);
@@ -3841,8 +3629,7 @@ It can be modified using
 		__isl_take isl_pw_aff *pwaff,
 		enum isl_dim_type type, unsigned first, unsigned n);
 
-Note that C<isl_aff_set_constant>, C<isl_aff_set_constant_si>,
-C<isl_aff_set_coefficient> and C<isl_aff_set_coefficient_si>
+Note that C<isl_aff_set_constant_si> and C<isl_aff_set_coefficient_si>
 set the I<numerator> of the constant or coefficient, while
 C<isl_aff_set_constant_val> and C<isl_aff_set_coefficient_val> set
 the constant or coefficient as a whole.
@@ -3891,31 +3678,19 @@ Operations include
 	__isl_give isl_aff *isl_aff_floor(__isl_take isl_aff *aff);
 	__isl_give isl_pw_aff *isl_pw_aff_floor(
 		__isl_take isl_pw_aff *pwaff);
-	__isl_give isl_aff *isl_aff_mod(__isl_take isl_aff *aff,
-		isl_int mod);
 	__isl_give isl_aff *isl_aff_mod_val(__isl_take isl_aff *aff,
 		__isl_take isl_val *mod);
-	__isl_give isl_pw_aff *isl_pw_aff_mod(
-		__isl_take isl_pw_aff *pwaff, isl_int mod);
 	__isl_give isl_pw_aff *isl_pw_aff_mod_val(
 		__isl_take isl_pw_aff *pa,
 		__isl_take isl_val *mod);
-	__isl_give isl_aff *isl_aff_scale(__isl_take isl_aff *aff,
-		isl_int f);
 	__isl_give isl_aff *isl_aff_scale_val(__isl_take isl_aff *aff,
 		__isl_take isl_val *v);
-	__isl_give isl_pw_aff *isl_pw_aff_scale(
-		__isl_take isl_pw_aff *pwaff, isl_int f);
 	__isl_give isl_pw_aff *isl_pw_aff_scale_val(
 		__isl_take isl_pw_aff *pa, __isl_take isl_val *v);
-	__isl_give isl_aff *isl_aff_scale_down(__isl_take isl_aff *aff,
-		isl_int f);
 	__isl_give isl_aff *isl_aff_scale_down_ui(
 		__isl_take isl_aff *aff, unsigned f);
 	__isl_give isl_aff *isl_aff_scale_down_val(
 		__isl_take isl_aff *aff, __isl_take isl_val *v);
-	__isl_give isl_pw_aff *isl_pw_aff_scale_down(
-		__isl_take isl_pw_aff *pwaff, isl_int f);
 	__isl_give isl_pw_aff *isl_pw_aff_scale_down_val(
 		__isl_take isl_pw_aff *pa,
 		__isl_take isl_val *f);
@@ -4373,9 +4148,6 @@ Operations include
 
 C<isl_multi_aff_sub> subtracts the second argument from the first.
 
-	__isl_give isl_multi_aff *isl_multi_aff_scale(
-		__isl_take isl_multi_aff *maff,
-		isl_int f);
 	__isl_give isl_multi_aff *isl_multi_aff_scale_val(
 		__isl_take isl_multi_aff *ma,
 		__isl_take isl_val *v);
@@ -4564,14 +4336,9 @@ The zero point (the origin) can be created using
 The coordinates of a point can be inspected, set and changed
 using
 
-	int isl_point_get_coordinate(__isl_keep isl_point *pnt,
-		enum isl_dim_type type, int pos, isl_int *v);
 	__isl_give isl_val *isl_point_get_coordinate_val(
 		__isl_keep isl_point *pnt,
 		enum isl_dim_type type, int pos);
-	__isl_give isl_point *isl_point_set_coordinate(
-		__isl_take isl_point *pnt,
-		enum isl_dim_type type, int pos, isl_int v);
 	__isl_give isl_point *isl_point_set_coordinate_val(
 		__isl_take isl_point *pnt,
 		enum isl_dim_type type, int pos,
@@ -4726,9 +4493,6 @@ on the resulting quasipolynomials
 		__isl_take isl_space *domain);
 	__isl_give isl_qpolynomial *isl_qpolynomial_nan_on_domain(
 		__isl_take isl_space *domain);
-	__isl_give isl_qpolynomial *isl_qpolynomial_rat_cst_on_domain(
-		__isl_take isl_space *domain,
-		const isl_int n, const isl_int d);
 	__isl_give isl_qpolynomial *isl_qpolynomial_val_on_domain(
 		__isl_take isl_space *domain,
 		__isl_take isl_val *val);
@@ -4844,10 +4608,6 @@ these functions
 
 	unsigned isl_term_dim(__isl_keep isl_term *term,
 		enum isl_dim_type type);
-	void isl_term_get_num(__isl_keep isl_term *term,
-		isl_int *n);
-	void isl_term_get_den(__isl_keep isl_term *term,
-		isl_int *d);
 	__isl_give isl_val *isl_term_get_coefficient_val(
 		__isl_keep isl_term *term);
 	int isl_term_get_exp(__isl_keep isl_term *term,
@@ -4859,21 +4619,8 @@ these functions
 Each term is a product of parameters, set variables and
 integer divisions.  The function C<isl_term_get_exp>
 returns the exponent of a given dimensions in the given term.
-The C<isl_int>s in the arguments of C<isl_term_get_num>
-and C<isl_term_get_den> need to have been initialized
-using C<isl_int_init> before calling these functions.
 
 =head3 Properties of (Piecewise) Quasipolynomials
-
-To check whether a quasipolynomial is actually a constant,
-use the following function.
-
-	int isl_qpolynomial_is_cst(__isl_keep isl_qpolynomial *qp,
-		isl_int *n, isl_int *d);
-
-If C<qp> is a constant and if C<n> and C<d> are not C<NULL>
-then the numerator and denominator of the constant
-are returned in C<*n> and C<*d>, respectively.
 
 To check whether two union piecewise quasipolynomials are
 obviously equal, use
@@ -4884,8 +4631,6 @@ obviously equal, use
 
 =head3 Operations on (Piecewise) Quasipolynomials
 
-	__isl_give isl_qpolynomial *isl_qpolynomial_scale(
-		__isl_take isl_qpolynomial *qp, isl_int v);
 	__isl_give isl_qpolynomial *isl_qpolynomial_scale_val(
 		__isl_take isl_qpolynomial *qp,
 		__isl_take isl_val *v);
@@ -5135,8 +4880,6 @@ obviously equal, use
 
 =head3 Operations on Piecewise Quasipolynomial Reductions
 
-	__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_scale(
-		__isl_take isl_qpolynomial_fold *fold, isl_int v);
 	__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_scale_val(
 		__isl_take isl_qpolynomial_fold *fold,
 		__isl_take isl_val *v);
@@ -6038,16 +5781,10 @@ representing the function being called.
 Return the identifier represented by the AST expression.
 
 	#include <isl/ast.h>
-	int isl_ast_expr_get_int(__isl_keep isl_ast_expr *expr,
-		isl_int *v);
 	__isl_give isl_val *isl_ast_expr_get_val(
 		__isl_keep isl_ast_expr *expr);
 
 Return the integer represented by the AST expression.
-Note that the integer is returned by C<isl_ast_expr_get_int>
-through the C<v> argument.
-The return value of this function itself indicates whether the
-operation was performed successfully.
 
 =head3 Manipulating and printing the AST
 

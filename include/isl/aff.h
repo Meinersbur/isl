@@ -35,34 +35,21 @@ __isl_give isl_local_space *isl_aff_get_local_space(__isl_keep isl_aff *aff);
 
 const char *isl_aff_get_dim_name(__isl_keep isl_aff *aff,
 	enum isl_dim_type type, unsigned pos);
-int isl_aff_get_constant(__isl_keep isl_aff *aff, isl_int *v);
 __isl_give isl_val *isl_aff_get_constant_val(__isl_keep isl_aff *aff);
-int isl_aff_get_coefficient(__isl_keep isl_aff *aff,
-	enum isl_dim_type type, int pos, isl_int *v);
 __isl_give isl_val *isl_aff_get_coefficient_val(__isl_keep isl_aff *aff,
 	enum isl_dim_type type, int pos);
-int isl_aff_get_denominator(__isl_keep isl_aff *aff, isl_int *v);
 __isl_give isl_val *isl_aff_get_denominator_val(__isl_keep isl_aff *aff);
-__isl_give isl_aff *isl_aff_set_constant(__isl_take isl_aff *aff, isl_int v);
 __isl_give isl_aff *isl_aff_set_constant_si(__isl_take isl_aff *aff, int v);
 __isl_give isl_aff *isl_aff_set_constant_val(__isl_take isl_aff *aff,
 	__isl_take isl_val *v);
-__isl_give isl_aff *isl_aff_set_coefficient(__isl_take isl_aff *aff,
-	enum isl_dim_type type, int pos, isl_int v);
 __isl_give isl_aff *isl_aff_set_coefficient_si(__isl_take isl_aff *aff,
 	enum isl_dim_type type, int pos, int v);
 __isl_give isl_aff *isl_aff_set_coefficient_val(__isl_take isl_aff *aff,
 	enum isl_dim_type type, int pos, __isl_take isl_val *v);
-__isl_give isl_aff *isl_aff_set_denominator(__isl_take isl_aff *aff, isl_int v);
-__isl_give isl_aff *isl_aff_add_constant(__isl_take isl_aff *aff, isl_int v);
 __isl_give isl_aff *isl_aff_add_constant_si(__isl_take isl_aff *aff, int v);
 __isl_give isl_aff *isl_aff_add_constant_val(__isl_take isl_aff *aff,
 	__isl_take isl_val *v);
-__isl_give isl_aff *isl_aff_add_constant_num(__isl_take isl_aff *aff,
-	isl_int v);
 __isl_give isl_aff *isl_aff_add_constant_num_si(__isl_take isl_aff *aff, int v);
-__isl_give isl_aff *isl_aff_add_coefficient(__isl_take isl_aff *aff,
-	enum isl_dim_type type, int pos, isl_int v);
 __isl_give isl_aff *isl_aff_add_coefficient_si(__isl_take isl_aff *aff,
 	enum isl_dim_type type, int pos, int v);
 __isl_give isl_aff *isl_aff_add_coefficient_val(__isl_take isl_aff *aff,
@@ -83,7 +70,6 @@ __isl_give isl_aff *isl_aff_get_div(__isl_keep isl_aff *aff, int pos);
 __isl_give isl_aff *isl_aff_neg(__isl_take isl_aff *aff);
 __isl_give isl_aff *isl_aff_ceil(__isl_take isl_aff *aff);
 __isl_give isl_aff *isl_aff_floor(__isl_take isl_aff *aff);
-__isl_give isl_aff *isl_aff_mod(__isl_take isl_aff *aff, isl_int mod);
 __isl_give isl_aff *isl_aff_mod_val(__isl_take isl_aff *aff,
 	__isl_take isl_val *mod);
 
@@ -96,10 +82,8 @@ __isl_give isl_aff *isl_aff_add(__isl_take isl_aff *aff1,
 __isl_give isl_aff *isl_aff_sub(__isl_take isl_aff *aff1,
 	__isl_take isl_aff *aff2);
 
-__isl_give isl_aff *isl_aff_scale(__isl_take isl_aff *aff, isl_int f);
 __isl_give isl_aff *isl_aff_scale_val(__isl_take isl_aff *aff,
 	__isl_take isl_val *v);
-__isl_give isl_aff *isl_aff_scale_down(__isl_take isl_aff *aff, isl_int f);
 __isl_give isl_aff *isl_aff_scale_down_ui(__isl_take isl_aff *aff, unsigned f);
 __isl_give isl_aff *isl_aff_scale_down_val(__isl_take isl_aff *aff,
 	__isl_take isl_val *v);
@@ -205,8 +189,6 @@ __isl_give isl_pw_aff *isl_pw_aff_sub(__isl_take isl_pw_aff *pwaff1,
 __isl_give isl_pw_aff *isl_pw_aff_neg(__isl_take isl_pw_aff *pwaff);
 __isl_give isl_pw_aff *isl_pw_aff_ceil(__isl_take isl_pw_aff *pwaff);
 __isl_give isl_pw_aff *isl_pw_aff_floor(__isl_take isl_pw_aff *pwaff);
-__isl_give isl_pw_aff *isl_pw_aff_mod(__isl_take isl_pw_aff *pwaff,
-	isl_int mod);
 __isl_give isl_pw_aff *isl_pw_aff_mod_val(__isl_take isl_pw_aff *pa,
 	__isl_take isl_val *mod);
 __isl_give isl_pw_aff *isl_pw_aff_tdiv_q(__isl_take isl_pw_aff *pa1,
@@ -222,12 +204,8 @@ __isl_give isl_pw_aff *isl_pw_aff_intersect_domain(__isl_take isl_pw_aff *pa,
 __isl_give isl_pw_aff *isl_pw_aff_cond(__isl_take isl_pw_aff *cond,
 	__isl_take isl_pw_aff *pwaff_true, __isl_take isl_pw_aff *pwaff_false);
 
-__isl_give isl_pw_aff *isl_pw_aff_scale(__isl_take isl_pw_aff *pwaff,
-	isl_int f);
 __isl_give isl_pw_aff *isl_pw_aff_scale_val(__isl_take isl_pw_aff *pa,
 	__isl_take isl_val *v);
-__isl_give isl_pw_aff *isl_pw_aff_scale_down(__isl_take isl_pw_aff *pwaff,
-	isl_int f);
 __isl_give isl_pw_aff *isl_pw_aff_scale_down_val(__isl_take isl_pw_aff *pa,
 	__isl_take isl_val *f);
 
@@ -307,9 +285,6 @@ __isl_give isl_multi_aff *isl_multi_aff_add(__isl_take isl_multi_aff *maff1,
 	__isl_take isl_multi_aff *maff2);
 __isl_give isl_multi_aff *isl_multi_aff_sub(__isl_take isl_multi_aff *ma1,
 	__isl_take isl_multi_aff *ma2);
-
-__isl_give isl_multi_aff *isl_multi_aff_scale(__isl_take isl_multi_aff *maff,
-	isl_int f);
 
 __isl_give isl_multi_aff *isl_multi_aff_product(
 	__isl_take isl_multi_aff *ma1, __isl_take isl_multi_aff *ma2);
