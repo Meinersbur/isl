@@ -1524,6 +1524,58 @@ error:
 	return NULL;
 }
 
+/* Multiply the pieces of "pw" by "v" and return the result.
+ */
+__isl_give PW *FN(PW,scale_val)(__isl_take PW *pw, __isl_take isl_val *v)
+{
+	int i;
+
+	if (!pw || !v)
+		goto error;
+
+	if (isl_val_is_one(v)) {
+		isl_val_free(v);
+		return pw;
+	}
+	if (pw && DEFAULT_IS_ZERO && isl_val_is_zero(v)) {
+		PW *zero;
+		isl_space *space = FN(PW,get_space)(pw);
+#ifdef HAS_TYPE
+		zero = FN(PW,ZERO)(space, pw->type);
+#else
+		zero = FN(PW,ZERO)(space);
+#endif
+		FN(PW,free)(pw);
+		isl_val_free(v);
+		return zero;
+	}
+	if (pw->n == 0) {
+		isl_val_free(v);
+		return pw;
+	}
+	pw = FN(PW,cow)(pw);
+	if (!pw)
+		goto error;
+
+#ifdef HAS_TYPE
+	if (isl_val_is_neg(v))
+		pw->type = isl_fold_type_negate(pw->type);
+#endif
+	for (i = 0; i < pw->n; ++i) {
+		pw->p[i].FIELD = FN(EL,scale_val)(pw->p[i].FIELD,
+						    isl_val_copy(v));
+		if (!pw->p[i].FIELD)
+			goto error;
+	}
+
+	isl_val_free(v);
+	return pw;
+error:
+	isl_val_free(v);
+	FN(PW,free)(pw);
+	return NULL;
+}
+
 __isl_give PW *FN(PW,scale)(__isl_take PW *pw, isl_int v)
 {
 	return FN(PW,mul_isl_int)(pw, v);

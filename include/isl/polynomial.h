@@ -207,6 +207,8 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_mul(
 	__isl_take isl_pw_qpolynomial *pwqp2);
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_mul_isl_int(
 	__isl_take isl_pw_qpolynomial *pwqp, isl_int v);
+__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_scale_val(
+	__isl_take isl_pw_qpolynomial *pwqp, __isl_take isl_val *v);
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_pow(
 	__isl_take isl_pw_qpolynomial *pwqp, unsigned exponent);
 
@@ -382,6 +384,8 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_add_disjoint(
 	__isl_take isl_pw_qpolynomial_fold *pwf2);
 __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_mul_isl_int(
 	__isl_take isl_pw_qpolynomial_fold *pwf, isl_int v);
+__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_scale_val(
+	__isl_take isl_pw_qpolynomial_fold *pwf, __isl_take isl_val *v);
 
 __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_project_domain_on_params(
 	__isl_take isl_pw_qpolynomial_fold *pwf);

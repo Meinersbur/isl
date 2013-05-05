@@ -60,7 +60,9 @@ __isl_give isl_multi_##BASE *isl_multi_##BASE##_flat_range_product(	\
 	__isl_take isl_multi_##BASE *multi2);				\
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_range_product(		\
 	__isl_take isl_multi_##BASE *multi1,				\
-	__isl_take isl_multi_##BASE *multi2);
+	__isl_take isl_multi_##BASE *multi2);				\
+__isl_give isl_multi_##BASE *isl_multi_##BASE##_scale_val(		\
+	__isl_take isl_multi_##BASE *multi, __isl_take isl_val *v);
 
 #if defined(__cplusplus)
 }

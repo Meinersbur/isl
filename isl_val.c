@@ -749,6 +749,17 @@ error:
 }
 
 /* Return the product of "v1" and "v2".
+ *
+ * This is a private copy of isl_val_mul for use in the generic
+ * isl_multi_*_scale_val instantiated for isl_val.
+ */
+__isl_give isl_val *isl_val_scale_val(__isl_take isl_val *v1,
+	__isl_take isl_val *v2)
+{
+	return isl_val_mul(v1, v2);
+}
+
+/* Return the product of "v1" and "v2".
  */
 __isl_give isl_val *isl_val_mul_ui(__isl_take isl_val *v1, unsigned long v2)
 {

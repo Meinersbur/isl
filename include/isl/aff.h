@@ -223,6 +223,8 @@ __isl_give isl_pw_aff *isl_pw_aff_cond(__isl_take isl_pw_aff *cond,
 
 __isl_give isl_pw_aff *isl_pw_aff_scale(__isl_take isl_pw_aff *pwaff,
 	isl_int f);
+__isl_give isl_pw_aff *isl_pw_aff_scale_val(__isl_take isl_pw_aff *pa,
+	__isl_take isl_val *v);
 __isl_give isl_pw_aff *isl_pw_aff_scale_down(__isl_take isl_pw_aff *pwaff,
 	isl_int f);
 
@@ -404,6 +406,8 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_add(
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_sub(
 	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2);
 
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_scale_val(
+	__isl_take isl_pw_multi_aff *pma, __isl_take isl_val *v);
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_scale_vec(
 	__isl_take isl_pw_multi_aff *pma, __isl_take isl_vec *v);
 
