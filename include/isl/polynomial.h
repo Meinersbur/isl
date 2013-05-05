@@ -72,6 +72,8 @@ __isl_give isl_qpolynomial *isl_qpolynomial_mul_isl_int(
 	__isl_take isl_qpolynomial *qp, isl_int v);
 __isl_give isl_qpolynomial *isl_qpolynomial_scale(
 	__isl_take isl_qpolynomial *qp, isl_int v);
+__isl_give isl_qpolynomial *isl_qpolynomial_scale_val(
+	__isl_take isl_qpolynomial *qp, __isl_take isl_val *v);
 
 __isl_give isl_qpolynomial *isl_qpolynomial_insert_dims(
 	__isl_take isl_qpolynomial *qp, enum isl_dim_type type,

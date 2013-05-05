@@ -802,6 +802,60 @@ error:
 	return NULL;
 }
 
+/* Multiply the constant polynomial "up" by "v".
+ */
+static __isl_give struct isl_upoly *isl_upoly_cst_scale_val(
+	__isl_take struct isl_upoly *up, __isl_keep isl_val *v)
+{
+	struct isl_upoly_cst *cst;
+
+	if (isl_upoly_is_zero(up))
+		return up;
+
+	up = isl_upoly_cow(up);
+	if (!up)
+		return NULL;
+
+	cst = isl_upoly_as_cst(up);
+
+	isl_int_mul(cst->n, cst->n, v->n);
+	isl_int_mul(cst->d, cst->d, v->d);
+	isl_upoly_cst_reduce(cst);
+
+	return up;
+}
+
+/* Multiply the polynomial "up" by "v".
+ */
+static __isl_give struct isl_upoly *isl_upoly_scale_val(
+	__isl_take struct isl_upoly *up, __isl_keep isl_val *v)
+{
+	int i;
+	struct isl_upoly_rec *rec;
+
+	if (!up)
+		return NULL;
+
+	if (isl_upoly_is_cst(up))
+		return isl_upoly_cst_scale_val(up, v);
+
+	up = isl_upoly_cow(up);
+	rec = isl_upoly_as_rec(up);
+	if (!rec)
+		goto error;
+
+	for (i = 0; i < rec->n; ++i) {
+		rec->p[i] = isl_upoly_scale_val(rec->p[i], v);
+		if (!rec->p[i])
+			goto error;
+	}
+
+	return up;
+error:
+	isl_upoly_free(up);
+	return NULL;
+}
+
 __isl_give struct isl_upoly *isl_upoly_mul_cst(__isl_take struct isl_upoly *up1,
 	__isl_take struct isl_upoly *up2)
 {
@@ -1462,6 +1516,48 @@ __isl_give isl_qpolynomial *isl_qpolynomial_scale(
 	__isl_take isl_qpolynomial *qp, isl_int v)
 {
 	return isl_qpolynomial_mul_isl_int(qp, v);
+}
+
+/* Multiply "qp" by "v".
+ */
+__isl_give isl_qpolynomial *isl_qpolynomial_scale_val(
+	__isl_take isl_qpolynomial *qp, __isl_take isl_val *v)
+{
+	if (!qp || !v)
+		goto error;
+
+	if (!isl_val_is_rat(v))
+		isl_die(isl_qpolynomial_get_ctx(qp), isl_error_invalid,
+			"expecting rational factor", goto error);
+
+	if (isl_val_is_one(v)) {
+		isl_val_free(v);
+		return qp;
+	}
+
+	if (isl_val_is_zero(v)) {
+		isl_space *space;
+
+		space = isl_qpolynomial_get_domain_space(qp);
+		isl_qpolynomial_free(qp);
+		isl_val_free(v);
+		return isl_qpolynomial_zero_on_domain(space);
+	}
+
+	qp = isl_qpolynomial_cow(qp);
+	if (!qp)
+		goto error;
+
+	qp->upoly = isl_upoly_scale_val(qp->upoly, v);
+	if (!qp->upoly)
+		qp = isl_qpolynomial_free(qp);
+
+	isl_val_free(v);
+	return qp;
+error:
+	isl_val_free(v);
+	isl_qpolynomial_free(qp);
+	return NULL;
 }
 
 __isl_give isl_qpolynomial *isl_qpolynomial_mul(__isl_take isl_qpolynomial *qp1,
