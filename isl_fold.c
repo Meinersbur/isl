@@ -1630,3 +1630,50 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_scale(
 {
 	return isl_qpolynomial_fold_mul_isl_int(fold, v);
 }
+
+/* Multiply "fold" by "v".
+ */
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_scale_val(
+	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_val *v)
+{
+	int i;
+
+	if (!fold || !v)
+		goto error;
+
+	if (isl_val_is_one(v)) {
+		isl_val_free(v);
+		return fold;
+	}
+	if (isl_val_is_zero(v)) {
+		isl_qpolynomial_fold *zero;
+		isl_space *space = isl_qpolynomial_fold_get_domain_space(fold);
+		zero = isl_qpolynomial_fold_empty(fold->type, space);
+		isl_qpolynomial_fold_free(fold);
+		isl_val_free(v);
+		return zero;
+	}
+	if (!isl_val_is_rat(v))
+		isl_die(isl_qpolynomial_fold_get_ctx(fold), isl_error_invalid,
+			"expecting rational factor", goto error);
+
+	fold = isl_qpolynomial_fold_cow(fold);
+	if (!fold)
+		goto error;
+
+	if (isl_val_is_neg(v))
+		fold->type = isl_fold_type_negate(fold->type);
+	for (i = 0; i < fold->n; ++i) {
+		fold->qp[i] = isl_qpolynomial_scale_val(fold->qp[i],
+							isl_val_copy(v));
+		if (!fold->qp[i])
+			goto error;
+	}
+
+	isl_val_free(v);
+	return fold;
+error:
+	isl_val_free(v);
+	isl_qpolynomial_fold_free(fold);
+	return NULL;
+}
