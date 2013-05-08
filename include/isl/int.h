@@ -70,7 +70,6 @@ typedef void (*isl_int_print_gmp_free_t)(void *, size_t);
 #define isl_int_submul(r,i,j)	mpz_submul(r,i,j)
 
 #define isl_int_gcd(r,i,j)	mpz_gcd(r,i,j)
-#define isl_int_gcdext(g,x,y,i,j)	mpz_gcdext(g,x,y,i,j)
 #define isl_int_lcm(r,i,j)	mpz_lcm(r,i,j)
 #define isl_int_divexact(r,i,j)	mpz_divexact(r,i,j)
 #define isl_int_divexact_ui(r,i,j)	mpz_divexact_ui(r,i,j)
