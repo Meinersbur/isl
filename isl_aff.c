@@ -1516,6 +1516,34 @@ __isl_give isl_aff *isl_aff_scale(__isl_take isl_aff *aff, isl_int f)
 	return aff;
 }
 
+/* Multiple "aff" by "v".
+ */
+__isl_give isl_aff *isl_aff_scale_val(__isl_take isl_aff *aff,
+	__isl_take isl_val *v)
+{
+	if (!aff || !v)
+		goto error;
+
+	if (isl_val_is_one(v)) {
+		isl_val_free(v);
+		return aff;
+	}
+
+	if (!isl_val_is_rat(v))
+		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
+			"expecting rational factor", goto error);
+
+	aff = isl_aff_scale(aff, v->n);
+	aff = isl_aff_scale_down(aff, v->d);
+
+	isl_val_free(v);
+	return aff;
+error:
+	isl_aff_free(aff);
+	isl_val_free(v);
+	return NULL;
+}
+
 __isl_give isl_aff *isl_aff_scale_down(__isl_take isl_aff *aff, isl_int f)
 {
 	isl_int gcd;

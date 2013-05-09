@@ -96,6 +96,8 @@ __isl_give isl_aff *isl_aff_sub(__isl_take isl_aff *aff1,
 	__isl_take isl_aff *aff2);
 
 __isl_give isl_aff *isl_aff_scale(__isl_take isl_aff *aff, isl_int f);
+__isl_give isl_aff *isl_aff_scale_val(__isl_take isl_aff *aff,
+	__isl_take isl_val *v);
 __isl_give isl_aff *isl_aff_scale_down(__isl_take isl_aff *aff, isl_int f);
 __isl_give isl_aff *isl_aff_scale_down_ui(__isl_take isl_aff *aff, unsigned f);
 
