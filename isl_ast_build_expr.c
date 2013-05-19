@@ -558,16 +558,29 @@ static __isl_give isl_ast_expr *add_signed_terms(__isl_take isl_ast_expr *expr,
 		}
 	}
 
-	isl_aff_get_constant(aff, &v);
-	if (sign * isl_int_sgn(v) > 0) {
-		isl_int_abs(v, v);
-		expr = isl_ast_expr_add_int(expr, v);
-	}
-
 	isl_local_space_free(ls);
 	isl_int_clear(v);
 
 	return expr;
+}
+
+/* Should the constant term "v" be considered positive?
+ *
+ * A positive constant will be added to "pos" by the caller,
+ * while a negative constant will be added to "neg".
+ * If either "pos" or "neg" is exactly zero, then we prefer
+ * to add the constant "v" to that side, irrespective of the sign of "v".
+ * This results in slightly shorter expressions and may reduce the risk
+ * of overflows.
+ */
+static int constant_is_considered_positive(isl_int v,
+	__isl_keep isl_ast_expr *pos, __isl_keep isl_ast_expr *neg)
+{
+	if (ast_expr_is_zero(pos))
+		return 1;
+	if (ast_expr_is_zero(neg))
+		return 0;
+	return isl_int_is_pos(v);
 }
 
 /* Construct an isl_ast_expr that evaluates the condition "constraint",
@@ -589,6 +602,10 @@ static __isl_give isl_ast_expr *add_signed_terms(__isl_take isl_ast_expr *expr,
  * However, if the first expression is an integer constant (and the second
  * is not), then we swap the two expressions.  This ensures that we construct,
  * e.g., "i <= 5" rather than "5 >= i".
+ *
+ * Furthermore, is there are no terms with positive coefficients (or no terms
+ * with negative coefficients), then the constant term is added to "pos"
+ * (or "neg"), ignoring the sign of the constant term.
  */
 static __isl_give isl_ast_expr *isl_ast_expr_from_constraint(
 	__isl_take isl_constraint *constraint, __isl_keep isl_ast_build *build)
@@ -598,6 +615,7 @@ static __isl_give isl_ast_expr *isl_ast_expr_from_constraint(
 	isl_ast_expr *expr_neg;
 	isl_ast_expr *expr;
 	isl_aff *aff;
+	isl_int v;
 	int eq;
 	enum isl_ast_op_type type;
 
@@ -614,6 +632,16 @@ static __isl_give isl_ast_expr *isl_ast_expr_from_constraint(
 
 	expr_pos = add_signed_terms(expr_pos, aff, 1, build);
 	expr_neg = add_signed_terms(expr_neg, aff, -1, build);
+
+	isl_int_init(v);
+	isl_aff_get_constant(aff, &v);
+	if (constant_is_considered_positive(v, expr_pos, expr_neg)) {
+		expr_pos = isl_ast_expr_add_int(expr_pos, v);
+	} else {
+		isl_int_neg(v, v);
+		expr_neg = isl_ast_expr_add_int(expr_neg, v);
+	}
+	isl_int_clear(v);
 
 	eq = isl_constraint_is_equality(constraint);
 
