@@ -299,6 +299,8 @@ static enum isl_token_type check_keywords(struct isl_stream *s)
 		return ISL_TOKEN_AND;
 	if (!strcasecmp(s->buffer, "or"))
 		return ISL_TOKEN_OR;
+	if (!strcasecmp(s->buffer, "implies"))
+		return ISL_TOKEN_IMPLIES;
 	if (!strcasecmp(s->buffer, "not"))
 		return ISL_TOKEN_NOT;
 	if (!strcasecmp(s->buffer, "infty"))

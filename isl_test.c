@@ -213,6 +213,10 @@ int test_parse(struct isl_ctx *ctx)
 				      "{ [i] : exists a : i = 2 a }") < 0)
 		return -1;
 
+	if (test_parse_map_equal(ctx, "{ [a] -> [b] : a = 5 implies b = 5 }",
+				      "{ [a] -> [b] : a != 5 or b = 5 }") < 0)
+		return -1;
+
 	return 0;
 }
 

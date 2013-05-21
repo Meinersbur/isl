@@ -660,7 +660,7 @@ static int is_comparator(struct isl_token *tok)
 	}
 }
 
-static struct isl_map *read_disjuncts(struct isl_stream *s,
+static __isl_give isl_map *read_formula(struct isl_stream *s,
 	struct vars *v, __isl_take isl_map *map, int rational);
 static __isl_give isl_pw_aff *accept_extended_affine(struct isl_stream *s,
 	__isl_take isl_space *dim, struct vars *v, int rational);
@@ -750,7 +750,7 @@ static __isl_give isl_pw_aff *accept_extended_affine(struct isl_stream *s,
 
 	isl_stream_push_token(s, tok);
 
-	cond = read_disjuncts(s, v, cond, rational);
+	cond = read_formula(s, v, cond, rational);
 
 	return accept_ternary(s, cond, v, rational);
 }
@@ -1317,7 +1317,7 @@ static __isl_give isl_map *read_exists(struct isl_stream *s,
 	if (isl_stream_eat(s, ':'))
 		goto error;
 
-	map = read_disjuncts(s, v, map, rational);
+	map = read_formula(s, v, map, rational);
 	map = isl_set_unwrap(isl_map_domain(map));
 
 	vars_drop(v, v->n - n);
@@ -1365,7 +1365,7 @@ static int resolve_paren_expr(struct isl_stream *s,
 	    isl_stream_next_token_is(s, ISL_TOKEN_TRUE) ||
 	    isl_stream_next_token_is(s, ISL_TOKEN_FALSE) ||
 	    isl_stream_next_token_is(s, ISL_TOKEN_MAP)) {
-		map = read_disjuncts(s, v, map, rational);
+		map = read_formula(s, v, map, rational);
 		if (isl_stream_eat(s, ')'))
 			goto error;
 		tok->type = ISL_TOKEN_MAP;
@@ -1400,7 +1400,7 @@ static int resolve_paren_expr(struct isl_stream *s,
 
 	isl_stream_push_token(s, tok2);
 
-	map = read_disjuncts(s, v, map, rational);
+	map = read_formula(s, v, map, rational);
 	if (isl_stream_eat(s, ')'))
 		goto error;
 
@@ -1499,6 +1499,46 @@ static struct isl_map *read_disjuncts(struct isl_stream *s,
 	}
 
 	isl_map_free(map);
+	return res;
+}
+
+/* Read a first order formula from "s", add the corresponding
+ * constraints to "map" and return the result.
+ *
+ * In particular, read a formula of the form
+ *
+ *	a
+ *
+ * or
+ *
+ *	a implies b
+ *
+ * where a and b are disjunctions.
+ *
+ * In the first case, map is replaced by
+ *
+ *	map \cap { [..] : a }
+ *
+ * In the second case, it is replaced by
+ *
+ *	(map \setminus { [..] : a}) \cup (map \cap { [..] : b })
+ */
+static __isl_give isl_map *read_formula(struct isl_stream *s,
+	struct vars *v, __isl_take isl_map *map, int rational)
+{
+	isl_map *res;
+
+	res = read_disjuncts(s, v, isl_map_copy(map), rational);
+
+	if (isl_stream_eat_if_available(s, ISL_TOKEN_IMPLIES)) {
+		isl_map *res2;
+
+		res = isl_map_subtract(isl_map_copy(map), res);
+		res2 = read_disjuncts(s, v, map, rational);
+		res = isl_map_union(res, res2);
+	} else
+		isl_map_free(map);
+
 	return res;
 }
 
@@ -1926,7 +1966,7 @@ static __isl_give isl_pw_qpolynomial *read_term(struct isl_stream *s,
 	return pwqp;
 }
 
-static __isl_give isl_map *read_optional_disjuncts(struct isl_stream *s,
+static __isl_give isl_map *read_optional_formula(struct isl_stream *s,
 	__isl_take isl_map *map, struct vars *v, int rational)
 {
 	struct isl_token *tok;
@@ -1939,7 +1979,7 @@ static __isl_give isl_map *read_optional_disjuncts(struct isl_stream *s,
 	if (tok->type == ':' ||
 	    (tok->type == ISL_TOKEN_OR && !strcmp(tok->u.s, "|"))) {
 		isl_token_free(tok);
-		map = read_disjuncts(s, v, map, rational);
+		map = read_formula(s, v, map, rational);
 	} else
 		isl_stream_push_token(s, tok);
 
@@ -1957,7 +1997,7 @@ static struct isl_obj obj_read_poly(struct isl_stream *s,
 	struct isl_set *set;
 
 	pwqp = read_term(s, map, v);
-	map = read_optional_disjuncts(s, map, v, 0);
+	map = read_optional_formula(s, map, v, 0);
 	set = isl_map_range(map);
 
 	pwqp = isl_pw_qpolynomial_intersect_domain(pwqp, set);
@@ -1995,7 +2035,7 @@ static struct isl_obj obj_read_poly_or_fold(struct isl_stream *s,
 	if (isl_stream_eat(s, ')'))
 		goto error;
 
-	set = read_optional_disjuncts(s, set, v, 0);
+	set = read_optional_formula(s, set, v, 0);
 	pwf = isl_pw_qpolynomial_fold_intersect_domain(pwf, set);
 
 	vars_drop(v, v->n - n);
@@ -2041,7 +2081,7 @@ static struct isl_obj obj_read_body(struct isl_stream *s,
 
 	if (isl_stream_next_token_is(s, ':')) {
 		obj.type = isl_obj_set;
-		obj.v = read_optional_disjuncts(s, map, v, rational);
+		obj.v = read_optional_formula(s, map, v, rational);
 		return obj;
 	}
 
@@ -2069,7 +2109,7 @@ static struct isl_obj obj_read_body(struct isl_stream *s,
 		isl_stream_push_token(s, tok);
 	}
 
-	map = read_optional_disjuncts(s, map, v, rational);
+	map = read_optional_formula(s, map, v, rational);
 
 	vars_drop(v, v->n - n);
 
@@ -2746,7 +2786,7 @@ static __isl_give isl_pw_aff *read_pw_aff_with_dom(struct isl_stream *s,
 	if (isl_stream_eat(s, ']'))
 		goto error;
 
-	dom = read_optional_disjuncts(s, dom, v, 0);
+	dom = read_optional_formula(s, dom, v, 0);
 	pwaff = isl_pw_aff_intersect_domain(pwaff, dom);
 
 	return pwaff;
