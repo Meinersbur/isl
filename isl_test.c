@@ -1437,6 +1437,20 @@ static int test_lexmin(struct isl_ctx *ctx)
 	isl_map_free(map);
 	isl_map_free(map2);
 
+	/* Check that empty pieces are properly combined. */
+	str = "[K, N] -> { [x, y] -> [a, b] : K+2<=N<=K+4 and x>=4 and "
+		"2N-6<=x<K+N and N-1<=a<=K+N-1 and N+b-6<=a<=2N-4 and "
+		"b<=2N-3K+a and 3b<=4N-K+1 and b>=N and a>=x+1 }";
+	map = isl_map_read_from_str(ctx, str);
+	map = isl_map_lexmin(map);
+	str = "[K, N] -> { [x, y] -> [1 + x, N] : x >= -6 + 2N and "
+		"x <= -5 + 2N and x >= -1 + 3K - N and x <= -2 + K + N and "
+		"x >= 4 }";
+	map2 = isl_map_read_from_str(ctx, str);
+	assert(isl_map_is_equal(map, map2));
+	isl_map_free(map);
+	isl_map_free(map2);
+
 	str = "[i] -> { [i', j] : j = i - 8i' and i' >= 0 and i' <= 7 and "
 				" 8i' <= i and 8i' >= -7 + i }";
 	set = isl_set_read_from_str(ctx, str);
