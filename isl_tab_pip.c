@@ -124,6 +124,8 @@ struct isl_context_lex {
  * "M" describes the solution in terms of the dimensions of "dom".
  * The number of columns of "M" is one more than the total number
  * of dimensions of "dom".
+ *
+ * If "M" is NULL, then there is no solution on "dom".
  */
 struct isl_partial_sol {
 	int level;
@@ -322,11 +324,15 @@ static void sol_pop(struct isl_sol *sol)
 			isl_basic_set_free(partial->next->dom);
 			partial->next->dom = bset;
 			M = partial->next->M;
-			M = isl_mat_drop_cols(M, M->n_col - n, n);
-			partial->next->M = M;
+			if (M) {
+				M = isl_mat_drop_cols(M, M->n_col - n, n);
+				partial->next->M = M;
+				if (!M)
+					goto error;
+			}
 			partial->next->level = sol->level;
 
-			if (!bset || !M)
+			if (!bset)
 				goto error;
 
 			sol->partial = partial->next;
