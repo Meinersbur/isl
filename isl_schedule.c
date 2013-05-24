@@ -2609,6 +2609,7 @@ static int carry_dependences(isl_ctx *ctx, struct isl_sched_graph *graph)
 			"error in schedule construction", return -1);
 	}
 
+	isl_int_divexact(sol->el[1], sol->el[1], sol->el[0]);
 	if (isl_int_cmp_si(sol->el[1], n_edge) >= 0) {
 		isl_vec_free(sol);
 		isl_die(ctx, isl_error_unknown,

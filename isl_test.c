@@ -2662,6 +2662,20 @@ int test_schedule(isl_ctx *ctx)
 	if (test_padded_schedule(ctx) < 0)
 		return -1;
 
+	/* Check that check for progress is not confused by rational
+	 * solution.
+	 */
+	D = "[N] -> { S0[i, j] : i >= 0 and i <= N and j >= 0 and j <= N }";
+	V = "[N] -> { S0[i0, -1 + N] -> S0[2 + i0, 0] : i0 >= 0 and "
+							"i0 <= -2 + N; "
+			"S0[i0, i1] -> S0[i0, 1 + i1] : i0 >= 0 and "
+				"i0 <= N and i1 >= 0 and i1 <= -1 + N }";
+	P = "{}";
+	ctx->opt->schedule_algorithm = ISL_SCHEDULE_ALGORITHM_FEAUTRIER;
+	if (test_has_schedule(ctx, D, V, P) < 0)
+		return -1;
+	ctx->opt->schedule_algorithm = ISL_SCHEDULE_ALGORITHM_ISL;
+
 	return 0;
 }
 
