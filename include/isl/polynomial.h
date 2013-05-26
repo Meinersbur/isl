@@ -39,6 +39,8 @@ __isl_give isl_qpolynomial *isl_qpolynomial_neginfty_on_domain(__isl_take isl_sp
 __isl_give isl_qpolynomial *isl_qpolynomial_nan_on_domain(__isl_take isl_space *dim);
 __isl_give isl_qpolynomial *isl_qpolynomial_rat_cst_on_domain(__isl_take isl_space *dim,
 	const isl_int n, const isl_int d);
+__isl_give isl_qpolynomial *isl_qpolynomial_val_on_domain(
+	__isl_take isl_space *space, __isl_take isl_val *val);
 __isl_give isl_qpolynomial *isl_qpolynomial_var_on_domain(__isl_take isl_space *dim,
 	enum isl_dim_type type, unsigned pos);
 __isl_give isl_qpolynomial *isl_qpolynomial_copy(__isl_keep isl_qpolynomial *qp);

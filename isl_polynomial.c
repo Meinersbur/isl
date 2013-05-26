@@ -2183,6 +2183,33 @@ __isl_give isl_qpolynomial *isl_qpolynomial_rat_cst_on_domain(
 	return qp;
 }
 
+/* Return an isl_qpolynomial that is equal to "val" on domain space "domain".
+ */
+__isl_give isl_qpolynomial *isl_qpolynomial_val_on_domain(
+	__isl_take isl_space *domain, __isl_take isl_val *val)
+{
+	isl_qpolynomial *qp;
+	struct isl_upoly_cst *cst;
+
+	if (!domain || !val)
+		goto error;
+
+	qp = isl_qpolynomial_alloc(domain, 0, isl_upoly_zero(domain->ctx));
+	if (!qp)
+		goto error;
+
+	cst = isl_upoly_as_cst(qp->upoly);
+	isl_int_set(cst->n, val->n);
+	isl_int_set(cst->d, val->d);
+
+	isl_val_free(val);
+	return qp;
+error:
+	isl_space_free(domain);
+	isl_val_free(val);
+	return NULL;
+}
+
 static int up_set_active(__isl_keep struct isl_upoly *up, int *active, int d)
 {
 	struct isl_upoly_rec *rec;
