@@ -284,6 +284,21 @@ long isl_val_get_num_si(__isl_keep isl_val *v)
 	return isl_int_get_si(v->n);
 }
 
+/* Extract the numerator of a rational value "v" as an isl_int.
+ *
+ * If "v" is not a rational value, then the result is undefined.
+ */
+int isl_val_get_num_isl_int(__isl_keep isl_val *v, isl_int *n)
+{
+	if (!v)
+		return -1;
+	if (!isl_val_is_rat(v))
+		isl_die(isl_val_get_ctx(v), isl_error_invalid,
+			"expecting rational value", return -1);
+	isl_int_set(*n, v->n);
+	return 0;
+}
+
 /* Extract the denominator of a rational value "v" as an integer.
  *
  * If "v" is not a rational value, then the result is undefined.

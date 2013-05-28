@@ -522,13 +522,15 @@ C<GMP> values using the following functions.
 
 =head3 Conversion from C<isl_int>
 
-The following function is only temporarily available to ease
-the transition from C<isl_int> to C<isl_val>.  It will be removed
+The following functions are only temporarily available to ease
+the transition from C<isl_int> to C<isl_val>.  They will be removed
 in the next release.
 
 	#include <isl/val_int.h>
 	__isl_give isl_val *isl_val_int_from_isl_int(isl_ctx *ctx,
 		isl_int n);
+	int isl_val_get_num_isl_int(__isl_keep isl_val *v,
+		isl_int *n);
 
 =head2 Integers (obsolescent)
 
