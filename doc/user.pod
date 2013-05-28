@@ -520,6 +520,16 @@ C<GMP> values using the following functions.
 	int isl_val_get_num_gmp(__isl_keep isl_val *v, mpz_t z);
 	int isl_val_get_den_gmp(__isl_keep isl_val *v, mpz_t z);
 
+=head3 Conversion from C<isl_int>
+
+The following function is only temporarily available to ease
+the transition from C<isl_int> to C<isl_val>.  It will be removed
+in the next release.
+
+	#include <isl/val_int.h>
+	__isl_give isl_val *isl_val_int_from_isl_int(isl_ctx *ctx,
+		isl_int n);
+
 =head2 Integers (obsolescent)
 
 All operations on integers, mainly the coefficients

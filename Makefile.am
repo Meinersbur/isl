@@ -254,6 +254,7 @@ pkginclude_HEADERS = \
 	include/isl/union_set_type.h \
 	include/isl/val.h \
 	include/isl/val_gmp.h \
+	include/isl/val_int.h \
 	include/isl/vec.h \
 	include/isl/version.h \
 	include/isl/vertices.h
