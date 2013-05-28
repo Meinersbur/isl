@@ -19,7 +19,7 @@ struct isl_ast_expr {
 	enum isl_ast_expr_type type;
 
 	union {
-		isl_int i;
+		isl_val *v;
 		isl_id *id;
 		struct {
 			enum isl_ast_op_type op;

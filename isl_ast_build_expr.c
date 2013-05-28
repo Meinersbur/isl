@@ -133,7 +133,7 @@ static int ast_expr_is_zero(__isl_keep isl_ast_expr *expr)
 		return -1;
 	if (expr->type != isl_ast_expr_int)
 		return 0;
-	return isl_int_is_zero(expr->u.i);
+	return isl_val_is_zero(expr->u.v);
 }
 
 /* Create an expression representing the sum of "expr1" and "expr2",

@@ -154,7 +154,7 @@ __isl_give isl_ast_expr *isl_ast_expr_dup(__isl_keep isl_ast_expr *expr)
 	ctx = isl_ast_expr_get_ctx(expr);
 	switch (expr->type) {
 	case isl_ast_expr_int:
-		dup = isl_ast_expr_alloc_int(ctx, expr->u.i);
+		dup = isl_ast_expr_from_val(isl_val_copy(expr->u.v));
 		break;
 	case isl_ast_expr_id:
 		dup = isl_ast_expr_from_id(isl_id_copy(expr->u.id));
@@ -203,7 +203,7 @@ void *isl_ast_expr_free(__isl_take isl_ast_expr *expr)
 
 	switch (expr->type) {
 	case isl_ast_expr_int:
-		isl_int_clear(expr->u.i);
+		isl_val_free(expr->u.v);
 		break;
 	case isl_ast_expr_id:
 		isl_id_free(expr->u.id);
@@ -238,23 +238,19 @@ int isl_ast_expr_get_int(__isl_keep isl_ast_expr *expr, isl_int *v)
 	if (expr->type != isl_ast_expr_int)
 		isl_die(isl_ast_expr_get_ctx(expr), isl_error_invalid,
 			"expression not an int", return -1);
-	isl_int_set(*v, expr->u.i);
-	return 0;
+	return isl_val_get_num_isl_int(expr->u.v, v);
 }
 
 /* Return the integer value represented by "expr".
  */
 __isl_give isl_val *isl_ast_expr_get_val(__isl_keep isl_ast_expr *expr)
 {
-	isl_ctx *ctx;
-
 	if (!expr)
 		return NULL;
-	ctx = isl_ast_expr_get_ctx(expr);
 	if (expr->type != isl_ast_expr_int)
-		isl_die(ctx, isl_error_invalid,
+		isl_die(isl_ast_expr_get_ctx(expr), isl_error_invalid,
 			"expression not an int", return NULL);
-	return isl_val_int_from_isl_int(ctx, expr->u.i);
+	return isl_val_copy(expr->u.v);
 }
 
 __isl_give isl_id *isl_ast_expr_get_id(__isl_keep isl_ast_expr *expr)
@@ -391,9 +387,9 @@ __isl_give isl_ast_expr *isl_ast_expr_alloc_int_si(isl_ctx *ctx, int i)
 	isl_ctx_ref(ctx);
 	expr->ref = 1;
 	expr->type = isl_ast_expr_int;
-
-	isl_int_init(expr->u.i);
-	isl_int_set_si(expr->u.i, i);
+	expr->u.v = isl_val_int_from_si(ctx, i);
+	if (!expr->u.v)
+		return isl_ast_expr_free(expr);
 
 	return expr;
 }
@@ -412,9 +408,9 @@ __isl_give isl_ast_expr *isl_ast_expr_alloc_int(isl_ctx *ctx, isl_int i)
 	isl_ctx_ref(ctx);
 	expr->ref = 1;
 	expr->type = isl_ast_expr_int;
-
-	isl_int_init(expr->u.i);
-	isl_int_set(expr->u.i, i);
+	expr->u.v = isl_val_int_from_isl_int(ctx, i);
+	if (!expr->u.v)
+		expr = isl_ast_expr_free(expr);
 
 	return expr;
 }
@@ -441,11 +437,8 @@ __isl_give isl_ast_expr *isl_ast_expr_from_val(__isl_take isl_val *v)
 	isl_ctx_ref(ctx);
 	expr->ref = 1;
 	expr->type = isl_ast_expr_int;
+	expr->u.v = v;
 
-	isl_int_init(expr->u.i);
-	isl_int_set(expr->u.i, v->n);
-
-	isl_val_free(v);
 	return expr;
 }
 
@@ -1277,7 +1270,7 @@ __isl_give isl_printer *isl_printer_print_ast_expr(__isl_take isl_printer *p,
 		p = isl_printer_print_str(p, isl_id_get_name(expr->u.id));
 		break;
 	case isl_ast_expr_int:
-		p = isl_printer_print_isl_int(p, expr->u.i);
+		p = isl_printer_print_val(p, expr->u.v);
 		break;
 	case isl_ast_expr_error:
 		break;
