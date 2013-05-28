@@ -419,6 +419,36 @@ __isl_give isl_ast_expr *isl_ast_expr_alloc_int(isl_ctx *ctx, isl_int i)
 	return expr;
 }
 
+/* Create a new integer expression representing "v".
+ */
+__isl_give isl_ast_expr *isl_ast_expr_from_val(__isl_take isl_val *v)
+{
+	isl_ctx *ctx;
+	isl_ast_expr *expr;
+
+	if (!v)
+		return NULL;
+	if (!isl_val_is_int(v))
+		isl_die(isl_val_get_ctx(v), isl_error_invalid,
+			"expecting integer value", return isl_val_free(v));
+
+	ctx = isl_val_get_ctx(v);
+	expr = isl_calloc_type(ctx, isl_ast_expr);
+	if (!expr)
+		return isl_val_free(v);
+
+	expr->ctx = ctx;
+	isl_ctx_ref(ctx);
+	expr->ref = 1;
+	expr->type = isl_ast_expr_int;
+
+	isl_int_init(expr->u.i);
+	isl_int_set(expr->u.i, v->n);
+
+	isl_val_free(v);
+	return expr;
+}
+
 /* Create an expression representing the negation of "arg".
  */
 __isl_give isl_ast_expr *isl_ast_expr_neg(__isl_take isl_ast_expr *arg)

@@ -6044,6 +6044,8 @@ New AST expressions can be created either directly or within
 the context of an C<isl_ast_build>.
 
 	#include <isl/ast.h>
+	__isl_give isl_ast_expr *isl_ast_expr_from_val(
+		__isl_take isl_val *v);
 	__isl_give isl_ast_expr *isl_ast_expr_from_id(
 		__isl_take isl_id *id);
 	__isl_give isl_ast_expr *isl_ast_expr_neg(
