@@ -81,6 +81,13 @@ struct isl_token *isl_token_new(isl_ctx *ctx,
 	return tok;
 }
 
+/* Return the type of "tok".
+ */
+int isl_token_get_type(struct isl_token *tok)
+{
+	return tok ? tok->type : ISL_TOKEN_ERROR;
+}
+
 /* Given a token of type ISL_TOKEN_VALUE, return the value it represents.
  */
 __isl_give isl_val *isl_token_get_val(isl_ctx *ctx, struct isl_token *tok)
