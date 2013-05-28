@@ -394,27 +394,6 @@ __isl_give isl_ast_expr *isl_ast_expr_alloc_int_si(isl_ctx *ctx, int i)
 	return expr;
 }
 
-/* Create a new integer expression representing "i".
- */
-__isl_give isl_ast_expr *isl_ast_expr_alloc_int(isl_ctx *ctx, isl_int i)
-{
-	isl_ast_expr *expr;
-
-	expr = isl_calloc_type(ctx, isl_ast_expr);
-	if (!expr)
-		return NULL;
-
-	expr->ctx = ctx;
-	isl_ctx_ref(ctx);
-	expr->ref = 1;
-	expr->type = isl_ast_expr_int;
-	expr->u.v = isl_val_int_from_isl_int(ctx, i);
-	if (!expr->u.v)
-		expr = isl_ast_expr_free(expr);
-
-	return expr;
-}
-
 /* Create a new integer expression representing "v".
  */
 __isl_give isl_ast_expr *isl_ast_expr_from_val(__isl_take isl_val *v)
