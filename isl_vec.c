@@ -254,6 +254,19 @@ error:
 	return isl_vec_free(vec);
 }
 
+/* Compare the elements of "vec1" and "vec2" at position "pos".
+ */
+int isl_vec_cmp_element(__isl_keep isl_vec *vec1, __isl_keep isl_vec *vec2,
+	int pos)
+{
+	if (!vec1 || !vec2)
+		return 0;
+	if (pos < 0 || pos >= vec1->size || pos >= vec2->size)
+		isl_die(isl_vec_get_ctx(vec1), isl_error_invalid,
+			"position out of range", return 0);
+	return isl_int_cmp(vec1->el[pos], vec2->el[pos]);
+}
+
 int isl_vec_is_equal(__isl_keep isl_vec *vec1, __isl_keep isl_vec *vec2)
 {
 	if (!vec1 || !vec2)
