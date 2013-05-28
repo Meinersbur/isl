@@ -1109,7 +1109,7 @@ __isl_give isl_set *isl_ast_build_get_stride_constraint(
 {
 	isl_aff *aff;
 	isl_set *set;
-	isl_int stride;
+	isl_val *stride;
 	int pos;
 
 	if (!build)
@@ -1120,15 +1120,11 @@ __isl_give isl_set *isl_ast_build_get_stride_constraint(
 	if (!isl_ast_build_has_stride(build, pos))
 		return isl_set_universe(isl_ast_build_get_space(build, 1));
 
-	isl_int_init(stride);
-
-	isl_ast_build_get_stride(build, pos, &stride);
+	stride = isl_ast_build_get_stride(build, pos);
 	aff = isl_ast_build_get_offset(build, pos);
 	aff = isl_aff_add_coefficient_si(aff, isl_dim_in, pos, -1);
-	aff = isl_aff_mod(aff, stride);
+	aff = isl_aff_mod_val(aff, stride);
 	set = isl_set_from_basic_set(isl_aff_zero_basic_set(aff));
-
-	isl_int_clear(stride);
 
 	return set;
 }
@@ -1151,7 +1147,7 @@ __isl_give isl_multi_aff *isl_ast_build_get_stride_expansion(
 	isl_multi_aff *ma;
 	int pos;
 	isl_aff *aff, *offset;
-	isl_int stride;
+	isl_val *stride;
 
 	if (!build)
 		return NULL;
@@ -1164,14 +1160,12 @@ __isl_give isl_multi_aff *isl_ast_build_get_stride_expansion(
 	if (!isl_ast_build_has_stride(build, pos))
 		return ma;
 
-	isl_int_init(stride);
 	offset = isl_ast_build_get_offset(build, pos);
-	isl_ast_build_get_stride(build, pos, &stride);
+	stride = isl_ast_build_get_stride(build, pos);
 	aff = isl_multi_aff_get_aff(ma, pos);
-	aff = isl_aff_scale(aff, stride);
+	aff = isl_aff_scale_val(aff, stride);
 	aff = isl_aff_add(aff, offset);
 	ma = isl_multi_aff_set_aff(ma, pos, aff);
-	isl_int_clear(stride);
 
 	return ma;
 }
@@ -1759,15 +1753,13 @@ int isl_ast_build_has_stride(__isl_keep isl_ast_build *build, int pos)
  *
  * with a an integer, return s through *stride.
  */
-int isl_ast_build_get_stride(__isl_keep isl_ast_build *build, int pos,
-	isl_int *stride)
+__isl_give isl_val *isl_ast_build_get_stride(__isl_keep isl_ast_build *build,
+	int pos)
 {
 	if (!build)
-		return -1;
+		return NULL;
 
-	isl_vec_get_element(build->strides, pos, stride);
-
-	return 0;
+	return isl_vec_get_element_val(build->strides, pos);
 }
 
 /* Given that the dimension at position "pos" takes on values

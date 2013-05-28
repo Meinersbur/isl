@@ -230,8 +230,8 @@ int isl_ast_build_aff_is_nonneg(__isl_keep isl_ast_build *build,
 int isl_ast_build_has_stride(__isl_keep isl_ast_build *build, int pos);
 __isl_give isl_aff *isl_ast_build_get_offset(__isl_keep isl_ast_build *build,
 	int pos);
-int isl_ast_build_get_stride(__isl_keep isl_ast_build *build, int pos,
-	isl_int *stride);
+__isl_give isl_val *isl_ast_build_get_stride(__isl_keep isl_ast_build *build,
+	int pos);
 __isl_give isl_set *isl_ast_build_get_stride_constraint(
 	__isl_keep isl_ast_build *build);
 __isl_give isl_multi_aff *isl_ast_build_get_stride_expansion(

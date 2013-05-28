@@ -12,7 +12,6 @@
 #include <isl/set.h>
 #include <isl/ilp.h>
 #include <isl/union_map.h>
-#include <isl/val_int.h>
 #include <isl_sort.h>
 #include <isl_tarjan.h>
 #include <isl_ast_private.h>
@@ -385,20 +384,16 @@ static __isl_give isl_aff *lower_bound(__isl_keep isl_constraint *c,
 
 	if (isl_ast_build_has_stride(build, pos)) {
 		isl_aff *offset;
-		isl_int stride;
-
-		isl_int_init(stride);
+		isl_val *stride;
 
 		offset = isl_ast_build_get_offset(build, pos);
-		isl_ast_build_get_stride(build, pos, &stride);
+		stride = isl_ast_build_get_stride(build, pos);
 
 		aff = isl_aff_sub(aff, isl_aff_copy(offset));
-		aff = isl_aff_scale_down(aff, stride);
+		aff = isl_aff_scale_down_val(aff, isl_val_copy(stride));
 		aff = isl_aff_ceil(aff);
-		aff = isl_aff_scale(aff, stride);
+		aff = isl_aff_scale_val(aff, stride);
 		aff = isl_aff_add(aff, offset);
-
-		isl_int_clear(stride);
 	}
 
 	aff = isl_ast_build_compute_gist_aff(build, aff);
@@ -909,9 +904,8 @@ static __isl_give isl_ast_graft *set_for_cond_from_set(
 static __isl_give isl_ast_expr *for_inc(__isl_keep isl_ast_build *build)
 {
 	int depth;
-	isl_int v;
+	isl_val *v;
 	isl_ctx *ctx;
-	isl_ast_expr *inc;
 
 	if (!build)
 		return NULL;
@@ -921,12 +915,8 @@ static __isl_give isl_ast_expr *for_inc(__isl_keep isl_ast_build *build)
 	if (!isl_ast_build_has_stride(build, depth))
 		return isl_ast_expr_alloc_int_si(ctx, 1);
 
-	isl_int_init(v);
-	isl_ast_build_get_stride(build, depth, &v);
-	inc = isl_ast_expr_alloc_int(ctx, v);
-	isl_int_clear(v);
-
-	return inc;
+	v = isl_ast_build_get_stride(build, depth);
+	return isl_ast_expr_from_val(v);
 }
 
 /* Should we express the loop condition as
@@ -1391,11 +1381,10 @@ static __isl_give isl_ast_graft *create_node_scaled(
  * are multiples of "m", reducing "m" if they are not.
  * If "m" is reduced all the way down to "1", then the check has failed
  * and we break out of the iteration.
- * "d" is an initialized isl_int that can be used internally.
  */
 struct isl_check_scaled_data {
 	int depth;
-	isl_int m, d;
+	isl_val *m;
 };
 
 /* If constraint "c" involves the input dimension data->depth,
@@ -1418,13 +1407,15 @@ static int constraint_check_scaled(__isl_take isl_constraint *c, void *user)
 	for (i = 0; i < 4; ++i) {
 		n = isl_constraint_dim(c, t[i]);
 		for (j = 0; j < n; ++j) {
+			isl_val *d;
+
 			if (t[i] == isl_dim_in && j == data->depth)
 				continue;
 			if (!isl_constraint_involves_dims(c, t[i], j, 1))
 				continue;
-			isl_constraint_get_coefficient(c, t[i], j, &data->d);
-			isl_int_gcd(data->m, data->m, data->d);
-			if (isl_int_is_one(data->m))
+			d = isl_constraint_get_coefficient_val(c, t[i], j);
+			data->m = isl_val_gcd(data->m, d);
+			if (isl_val_is_one(data->m))
 				break;
 		}
 		if (j < n)
@@ -1514,6 +1505,7 @@ static __isl_give isl_ast_graft *create_node(__isl_take isl_union_map *executed,
 	struct isl_check_scaled_data data;
 	isl_ctx *ctx;
 	isl_aff *offset;
+	isl_val *d;
 
 	ctx = isl_ast_build_get_ctx(build);
 	if (!isl_options_get_ast_build_scale_strides(ctx))
@@ -1523,41 +1515,41 @@ static __isl_give isl_ast_graft *create_node(__isl_take isl_union_map *executed,
 	if (!isl_ast_build_has_stride(build, data.depth))
 		return create_node_scaled(executed, bounds, domain, build);
 
-	isl_int_init(data.m);
-	isl_int_init(data.d);
-
 	offset = isl_ast_build_get_offset(build, data.depth);
-	if (isl_ast_build_get_stride(build, data.depth, &data.m) < 0)
+	data.m = isl_ast_build_get_stride(build, data.depth);
+	if (!data.m)
 		offset = isl_aff_free(offset);
-	offset = isl_aff_scale_down(offset, data.m);
-	if (isl_aff_get_denominator(offset, &data.d) < 0)
+	offset = isl_aff_scale_down_val(offset, isl_val_copy(data.m));
+	d = isl_aff_get_denominator_val(offset);
+	if (!d)
 		executed = isl_union_map_free(executed);
 
-	if (executed && isl_int_is_divisible_by(data.m, data.d))
-		isl_int_divexact(data.m, data.m, data.d);
-	else
-		isl_int_set_si(data.m, 1);
+	if (executed && isl_val_is_divisible_by(data.m, d))
+		data.m = isl_val_div(data.m, d);
+	else {
+		data.m = isl_val_set_si(data.m, 1);
+		isl_val_free(d);
+	}
 
-	if (!isl_int_is_one(data.m)) {
+	if (!isl_val_is_one(data.m)) {
 		if (isl_union_map_foreach_map(executed, &map_check_scaled,
 						&data) < 0 &&
-		    !isl_int_is_one(data.m))
+		    !isl_val_is_one(data.m))
 			executed = isl_union_map_free(executed);
 	}
 
-	if (!isl_int_is_one(data.m)) {
+	if (!isl_val_is_one(data.m)) {
 		isl_space *space;
 		isl_multi_aff *ma;
 		isl_aff *aff;
 		isl_map *map;
 		isl_union_map *umap;
-		isl_val *m;
 
 		space = isl_ast_build_get_space(build, 1);
 		space = isl_space_map_from_set(space);
 		ma = isl_multi_aff_identity(space);
 		aff = isl_multi_aff_get_aff(ma, data.depth);
-		aff = isl_aff_scale(aff, data.m);
+		aff = isl_aff_scale_val(aff, isl_val_copy(data.m));
 		ma = isl_multi_aff_set_aff(ma, data.depth, aff);
 
 		bounds = isl_basic_set_preimage_multi_aff(bounds,
@@ -1568,13 +1560,11 @@ static __isl_give isl_ast_graft *create_node(__isl_take isl_union_map *executed,
 		umap = isl_union_map_from_map(map);
 		executed = isl_union_map_apply_domain(executed,
 						isl_union_map_copy(umap));
-		m = isl_val_int_from_isl_int(ctx, data.m);
-		build = isl_ast_build_scale_down(build, m, umap);
+		build = isl_ast_build_scale_down(build, isl_val_copy(data.m),
+						umap);
 	}
 	isl_aff_free(offset);
-
-	isl_int_clear(data.d);
-	isl_int_clear(data.m);
+	isl_val_free(data.m);
 
 	return create_node_scaled(executed, bounds, domain, build);
 }
