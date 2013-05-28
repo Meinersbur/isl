@@ -8443,6 +8443,35 @@ int isl_basic_map_plain_is_fixed(__isl_keep isl_basic_map *bmap,
 		isl_basic_map_offset(bmap, type) - 1 + pos, val);
 }
 
+/* If "bmap" obviously lies on a hyperplane where the given dimension
+ * has a fixed value, then return that value.
+ * Otherwise return NaN.
+ */
+__isl_give isl_val *isl_basic_map_plain_get_val_if_fixed(
+	__isl_keep isl_basic_map *bmap,
+	enum isl_dim_type type, unsigned pos)
+{
+	isl_ctx *ctx;
+	isl_val *v;
+	int fixed;
+
+	if (!bmap)
+		return NULL;
+	ctx = isl_basic_map_get_ctx(bmap);
+	v = isl_val_alloc(ctx);
+	if (!v)
+		return NULL;
+	fixed = isl_basic_map_plain_is_fixed(bmap, type, pos, &v->n);
+	if (fixed < 0)
+		return isl_val_free(v);
+	if (fixed) {
+		isl_int_set_si(v->d, 1);
+		return v;
+	}
+	isl_val_free(v);
+	return isl_val_nan(ctx);
+}
+
 int isl_map_plain_is_fixed(__isl_keep isl_map *map,
 	enum isl_dim_type type, unsigned pos, isl_int *val)
 {
