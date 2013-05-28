@@ -174,7 +174,7 @@ __isl_give isl_ast_build *isl_ast_build_cow(
 __isl_give isl_ast_build *isl_ast_build_insert_dim(
 	__isl_take isl_ast_build *build, int pos);
 __isl_give isl_ast_build *isl_ast_build_scale_down(
-	__isl_take isl_ast_build *build, isl_int m,
+	__isl_take isl_ast_build *build, __isl_take isl_val *m,
 	__isl_take isl_union_map *umap);
 __isl_give isl_ast_build *isl_ast_build_product(
 	__isl_take isl_ast_build *build, __isl_take isl_space *embedding);

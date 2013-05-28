@@ -12,6 +12,7 @@
 #include <isl/set.h>
 #include <isl/ilp.h>
 #include <isl/union_map.h>
+#include <isl/val_int.h>
 #include <isl_sort.h>
 #include <isl_tarjan.h>
 #include <isl_ast_private.h>
@@ -1550,6 +1551,7 @@ static __isl_give isl_ast_graft *create_node(__isl_take isl_union_map *executed,
 		isl_aff *aff;
 		isl_map *map;
 		isl_union_map *umap;
+		isl_val *m;
 
 		space = isl_ast_build_get_space(build, 1);
 		space = isl_space_map_from_set(space);
@@ -1566,7 +1568,8 @@ static __isl_give isl_ast_graft *create_node(__isl_take isl_union_map *executed,
 		umap = isl_union_map_from_map(map);
 		executed = isl_union_map_apply_domain(executed,
 						isl_union_map_copy(umap));
-		build = isl_ast_build_scale_down(build, data.m, umap);
+		m = isl_val_int_from_isl_int(ctx, data.m);
+		build = isl_ast_build_scale_down(build, m, umap);
 	}
 	isl_aff_free(offset);
 

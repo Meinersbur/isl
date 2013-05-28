@@ -1540,28 +1540,25 @@ __isl_give isl_ast_build *isl_ast_build_insert_dim(
  * We therefore only need to update stride, offset and the options.
  */
 __isl_give isl_ast_build *isl_ast_build_scale_down(
-	__isl_take isl_ast_build *build, isl_int m,
+	__isl_take isl_ast_build *build, __isl_take isl_val *m,
 	__isl_take isl_union_map *umap)
 {
 	isl_aff *aff;
-	isl_int v;
+	isl_val *v;
 	int depth;
 
 	build = isl_ast_build_cow(build);
-	if (!build || !umap)
+	if (!build || !umap || !m)
 		goto error;
 
 	depth = build->depth;
 
-	isl_int_init(v);
-	if (isl_vec_get_element(build->strides, depth, &v) < 0)
-		build->strides = isl_vec_free(build->strides);
-	isl_int_divexact(v, v, m);
-	build->strides = isl_vec_set_element(build->strides, depth, v);
-	isl_int_clear(v);
+	v = isl_vec_get_element_val(build->strides, depth);
+	v = isl_val_div(v, isl_val_copy(m));
+	build->strides = isl_vec_set_element_val(build->strides, depth, v);
 
 	aff = isl_multi_aff_get_aff(build->offsets, depth);
-	aff = isl_aff_scale_down(aff, m);
+	aff = isl_aff_scale_down_val(aff, m);
 	build->offsets = isl_multi_aff_set_aff(build->offsets, depth, aff);
 	build->options = isl_union_map_apply_domain(build->options, umap);
 	if (!build->strides || !build->offsets || !build->options)
@@ -1569,6 +1566,7 @@ __isl_give isl_ast_build *isl_ast_build_scale_down(
 
 	return build;
 error:
+	isl_val_free(m);
 	isl_union_map_free(umap);
 	return isl_ast_build_free(build);
 }
