@@ -94,6 +94,19 @@ __isl_give isl_val *isl_token_get_val(isl_ctx *ctx, struct isl_token *tok)
 	return isl_val_int_from_isl_int(ctx, tok->u.v);
 }
 
+/* Given a token of type ISL_TOKEN_STRING, return the string it represents.
+ */
+__isl_give char *isl_token_get_str(isl_ctx *ctx, struct isl_token *tok)
+{
+	if (!tok)
+		return NULL;
+	if (tok->type != ISL_TOKEN_STRING)
+		isl_die(ctx, isl_error_invalid, "not a string token",
+			return NULL);
+
+	return strdup(tok->u.s);
+}
+
 void isl_token_free(struct isl_token *tok)
 {
 	if (!tok)

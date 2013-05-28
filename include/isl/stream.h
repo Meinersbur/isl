@@ -54,6 +54,7 @@ struct isl_token {
 };
 
 __isl_give isl_val *isl_token_get_val(isl_ctx *ctx, struct isl_token *tok);
+__isl_give char *isl_token_get_str(isl_ctx *ctx, struct isl_token *tok);
 void isl_token_free(struct isl_token *tok);
 
 struct isl_stream {
