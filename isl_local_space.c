@@ -1,6 +1,6 @@
 /*
  * Copyright 2011      INRIA Saclay
- * Copyright 2012      Ecole Normale Superieure
+ * Copyright 2012-2013 Ecole Normale Superieure
  *
  * Use of this software is governed by the MIT license
  *
@@ -1130,4 +1130,64 @@ error:
 	isl_multi_aff_free(ma);
 	isl_local_space_free(res);
 	return NULL;
+}
+
+/* Move the "n" dimensions of "src_type" starting at "src_pos" of "ls"
+ * to dimensions of "dst_type" at "dst_pos".
+ *
+ * Moving to/from local dimensions is not allowed.
+ * We currently assume that the dimension type changes.
+ */
+__isl_give isl_local_space *isl_local_space_move_dims(
+	__isl_take isl_local_space *ls,
+	enum isl_dim_type dst_type, unsigned dst_pos,
+	enum isl_dim_type src_type, unsigned src_pos, unsigned n)
+{
+	unsigned g_dst_pos;
+	unsigned g_src_pos;
+
+	if (!ls)
+		return NULL;
+	if (n == 0 &&
+	    !isl_local_space_is_named_or_nested(ls, src_type) &&
+	    !isl_local_space_is_named_or_nested(ls, dst_type))
+		return ls;
+
+	if (src_pos + n > isl_local_space_dim(ls, src_type))
+		isl_die(isl_local_space_get_ctx(ls), isl_error_invalid,
+			"range out of bounds", return isl_local_space_free(ls));
+	if (dst_pos > isl_local_space_dim(ls, dst_type))
+		isl_die(isl_local_space_get_ctx(ls), isl_error_invalid,
+			"position out of bounds",
+			return isl_local_space_free(ls));
+	if (src_type == isl_dim_div)
+		isl_die(isl_local_space_get_ctx(ls), isl_error_invalid,
+			"cannot move divs", return isl_local_space_free(ls));
+	if (dst_type == isl_dim_div)
+		isl_die(isl_local_space_get_ctx(ls), isl_error_invalid,
+			"cannot move to divs", return isl_local_space_free(ls));
+	if (dst_type == src_type && dst_pos == src_pos)
+		return ls;
+	if (dst_type == src_type)
+		isl_die(isl_local_space_get_ctx(ls), isl_error_unsupported,
+			"moving dims within the same type not supported",
+			return isl_local_space_free(ls));
+
+	ls = isl_local_space_cow(ls);
+	if (!ls)
+		return NULL;
+
+	g_src_pos = 1 + isl_local_space_offset(ls, src_type) + src_pos;
+	g_dst_pos = 1 + isl_local_space_offset(ls, dst_type) + dst_pos;
+	if (dst_type > src_type)
+		g_dst_pos -= n;
+	ls->div = isl_mat_move_cols(ls->div, g_dst_pos, g_src_pos, n);
+	if (!ls->div)
+		return isl_local_space_free(ls);
+	ls->dim = isl_space_move_dims(ls->dim, dst_type, dst_pos,
+					src_type, src_pos, n);
+	if (!ls->dim)
+		return isl_local_space_free(ls);
+
+	return ls;
 }
