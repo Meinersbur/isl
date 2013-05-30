@@ -2092,30 +2092,14 @@ error:
 __isl_give isl_aff *isl_aff_gist(__isl_take isl_aff *aff,
 	__isl_take isl_set *context)
 {
+	isl_local_space *ls;
 	isl_basic_set *hull;
-	int n_div;
 
-	if (!aff)
-		goto error;
-	n_div = isl_local_space_dim(aff->ls, isl_dim_div);
-	if (n_div > 0) {
-		isl_basic_set *bset;
-		isl_local_space *ls;
-		context = isl_set_add_dims(context, isl_dim_set, n_div);
-		ls = isl_aff_get_domain_local_space(aff);
-		bset = isl_basic_set_from_local_space(ls);
-		bset = isl_basic_set_lift(bset);
-		bset = isl_basic_set_flatten(bset);
-		context = isl_set_intersect(context,
-					    isl_set_from_basic_set(bset));
-	}
+	ls = isl_aff_get_domain_local_space(aff);
+	context = isl_local_space_lift_set(ls, context);
 
 	hull = isl_set_affine_hull(context);
 	return isl_aff_substitute_equalities_lifted(aff, hull);
-error:
-	isl_aff_free(aff);
-	isl_set_free(context);
-	return NULL;
 }
 
 __isl_give isl_aff *isl_aff_gist_params(__isl_take isl_aff *aff,
