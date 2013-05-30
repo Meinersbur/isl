@@ -2082,12 +2082,17 @@ static void poly_update_den(__isl_keep isl_poly *poly, isl_int *d)
 		poly_update_den(rec->p[i], d);
 }
 
-void isl_qpolynomial_get_den(__isl_keep isl_qpolynomial *qp, isl_int *d)
+__isl_give isl_val *isl_qpolynomial_get_den(__isl_keep isl_qpolynomial *qp)
 {
-	isl_int_set_si(*d, 1);
+	isl_val *d;
+
 	if (!qp)
-		return;
-	poly_update_den(qp->poly, d);
+		return NULL;
+	d = isl_val_one(isl_qpolynomial_get_ctx(qp));
+	if (!d)
+		return NULL;
+	poly_update_den(qp->poly, &d->n);
+	return d;
 }
 
 __isl_give isl_qpolynomial *isl_qpolynomial_var_pow_on_domain(

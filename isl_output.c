@@ -1858,28 +1858,27 @@ error:
 static __isl_give isl_printer *print_qpolynomial_c(__isl_take isl_printer *p,
 	__isl_keep isl_space *space, __isl_keep isl_qpolynomial *qp)
 {
-	isl_int den;
+	isl_bool is_one;
+	isl_val *den;
 
-	isl_int_init(den);
-	isl_qpolynomial_get_den(qp, &den);
-	if (!isl_int_is_one(den)) {
-		isl_qpolynomial *f;
+	den = isl_qpolynomial_get_den(qp);
+	qp = isl_qpolynomial_copy(qp);
+	qp = isl_qpolynomial_scale_val(qp, isl_val_copy(den));
+	is_one = isl_val_is_one(den);
+	if (is_one < 0)
+		p = isl_printer_free(p);
+	if (!is_one)
 		p = isl_printer_print_str(p, "(");
-		qp = isl_qpolynomial_copy(qp);
-		f = isl_qpolynomial_rat_cst_on_domain(isl_space_copy(qp->dim),
-						den, qp->dim->ctx->one);
-		qp = isl_qpolynomial_mul(qp, f);
-	}
 	if (qp)
 		p = poly_print(qp->poly, space, qp->div, p);
 	else
 		p = isl_printer_free(p);
-	if (!isl_int_is_one(den)) {
+	if (!is_one) {
 		p = isl_printer_print_str(p, ")/");
-		p = isl_printer_print_isl_int(p, den);
-		isl_qpolynomial_free(qp);
+		p = isl_printer_print_val(p, den);
 	}
-	isl_int_clear(den);
+	isl_qpolynomial_free(qp);
+	isl_val_free(den);
 	return p;
 }
 
