@@ -17,6 +17,7 @@
 #include <isl_mat_private.h>
 #include <isl_aff_private.h>
 #include <isl_vec_private.h>
+#include <isl_point_private.h>
 #include <isl_seq.h>
 #include <isl_local.h>
 
@@ -171,6 +172,22 @@ isl_bool isl_local_space_has_space(__isl_keep isl_local_space *ls,
 	__isl_keep isl_space *space)
 {
 	return isl_space_is_equal(isl_local_space_peek_space(ls), space);
+}
+
+/* Check that the space of "ls" is equal to "space".
+ */
+static isl_stat isl_local_space_check_has_space(__isl_keep isl_local_space *ls,
+	__isl_keep isl_space *space)
+{
+	isl_bool ok;
+
+	ok = isl_local_space_has_space(ls, space);
+	if (ok < 0)
+		return isl_stat_error;
+	if (!ok)
+		isl_die(isl_local_space_get_ctx(ls), isl_error_invalid,
+			"spaces don't match", return isl_stat_error);
+	return isl_stat_ok;
 }
 
 /* Return true if the two local spaces are identical, with identical
@@ -1526,4 +1543,40 @@ __isl_give isl_local_space *isl_local_space_wrap(__isl_take isl_local_space *ls)
 		return isl_local_space_free(ls);
 
 	return ls;
+}
+
+/* Lift the point "pnt", living in the space of "ls"
+ * to live in a space with extra coordinates corresponding
+ * to the local variables of "ls".
+ */
+__isl_give isl_point *isl_local_space_lift_point(__isl_take isl_local_space *ls,
+	__isl_take isl_point *pnt)
+{
+	unsigned n_local;
+	isl_space *space;
+	isl_local *local;
+	isl_vec *vec;
+
+	if (isl_local_space_check_has_space(ls, isl_point_peek_space(pnt)) < 0)
+		goto error;
+
+	local = isl_local_space_peek_local(ls);
+	n_local = isl_local_space_dim(ls, isl_dim_div);
+
+	space = isl_point_take_space(pnt);
+	vec = isl_point_take_vec(pnt);
+
+	space = isl_space_lift(space, n_local);
+	vec = isl_local_extend_point_vec(local, vec);
+
+	pnt = isl_point_restore_vec(pnt, vec);
+	pnt = isl_point_restore_space(pnt, space);
+
+	isl_local_space_free(ls);
+
+	return pnt;
+error:
+	isl_local_space_free(ls);
+	isl_point_free(pnt);
+	return NULL;
 }
