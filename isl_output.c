@@ -1361,6 +1361,8 @@ static __isl_give isl_printer *print_qpolynomial_c(__isl_take isl_printer *p,
 	}
 	if (qp)
 		p = upoly_print(qp->upoly, dim, qp->div, p, 0);
+	else
+		p = isl_printer_free(p);
 	if (!isl_int_is_one(den)) {
 		p = isl_printer_print_str(p, ")/");
 		p = isl_printer_print_isl_int(p, den);
