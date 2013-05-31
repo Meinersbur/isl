@@ -941,6 +941,40 @@ __isl_give isl_local_space *isl_local_space_add_dims(
 	return isl_local_space_insert_dims(ls, type, pos, n);
 }
 
+/* Lift the basic set "bset", living in the space of "ls"
+ * to live in a space with extra coordinates corresponding
+ * to the local variables of "ls".
+ */
+__isl_give isl_basic_set *isl_local_space_lift_basic_set(
+	__isl_take isl_local_space *ls, __isl_take isl_basic_set *bset)
+{
+	unsigned n_local;
+	isl_space *space;
+	isl_basic_set *ls_bset;
+
+	space = isl_basic_set_peek_space(bset);
+	if (isl_local_space_check_has_space(ls, space) < 0)
+		goto error;
+
+	n_local = isl_local_space_dim(ls, isl_dim_div);
+	if (n_local == 0) {
+		isl_local_space_free(ls);
+		return bset;
+	}
+
+	bset = isl_basic_set_add_dims(bset, isl_dim_set, n_local);
+	ls_bset = isl_basic_set_from_local_space(ls);
+	ls_bset = isl_basic_set_lift(ls_bset);
+	ls_bset = isl_basic_set_flatten(ls_bset);
+	bset = isl_basic_set_intersect(bset, ls_bset);
+
+	return bset;
+error:
+	isl_local_space_free(ls);
+	isl_basic_set_free(bset);
+	return NULL;
+}
+
 /* Lift the set "set", living in the space of "ls"
  * to live in a space with extra coordinates corresponding
  * to the local variables of "ls".
