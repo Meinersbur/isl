@@ -4592,7 +4592,7 @@ error:
 
 /* Drop all floors in "qp", turning each integer division [a/m] into
  * a rational division a/m.  If "down" is set, then the integer division
- * is replaces by (a-(m-1))/m instead.
+ * is replaced by (a-(m-1))/m instead.
  */
 static __isl_give isl_qpolynomial *qp_drop_floors(
 	__isl_take isl_qpolynomial *qp, int down)
