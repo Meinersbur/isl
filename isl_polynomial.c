@@ -3822,13 +3822,16 @@ __isl_give isl_val *isl_term_get_coefficient_val(__isl_keep isl_term *term)
 					term->n, term->d);
 }
 
+#undef TYPE
+#define TYPE	isl_term
+static
+#include "check_type_range_templ.c"
+
 int isl_term_get_exp(__isl_keep isl_term *term,
 	enum isl_dim_type type, unsigned pos)
 {
-	if (!term)
+	if (isl_term_check_range(term, type, pos, 1) < 0)
 		return -1;
-
-	isl_assert(term->dim->ctx, pos < isl_term_dim(term, type), return -1);
 
 	if (type >= isl_dim_set)
 		pos += isl_space_dim(term->dim, isl_dim_param);
@@ -3843,11 +3846,8 @@ __isl_give isl_aff *isl_term_get_div(__isl_keep isl_term *term, unsigned pos)
 	isl_local_space *ls;
 	isl_aff *aff;
 
-	if (!term)
+	if (isl_term_check_range(term, isl_dim_div, pos, 1) < 0)
 		return NULL;
-
-	isl_assert(term->dim->ctx, pos < isl_term_dim(term, isl_dim_div),
-			return NULL);
 
 	ls = isl_local_space_alloc_div(isl_space_copy(term->dim),
 					isl_mat_copy(term->div));
