@@ -1015,7 +1015,8 @@ error:
 
 /* Remove common factor of non-constant terms and denominator.
  */
-static void normalize_div(__isl_keep isl_local_space *ls, int div)
+static __isl_give isl_local_space *normalize_div(
+	__isl_take isl_local_space *ls, int div)
 {
 	isl_ctx *ctx = ls->div->ctx;
 	unsigned total = ls->div->n_col - 2;
@@ -1024,7 +1025,7 @@ static void normalize_div(__isl_keep isl_local_space *ls, int div)
 	isl_int_gcd(ctx->normalize_gcd,
 		    ctx->normalize_gcd, ls->div->row[div][0]);
 	if (isl_int_is_one(ctx->normalize_gcd))
-		return;
+		return ls;
 
 	isl_seq_scale_down(ls->div->row[div] + 2, ls->div->row[div] + 2,
 			    ctx->normalize_gcd, total);
@@ -1032,6 +1033,8 @@ static void normalize_div(__isl_keep isl_local_space *ls, int div)
 			    ctx->normalize_gcd);
 	isl_int_fdiv_q(ls->div->row[div][1], ls->div->row[div][1],
 			    ctx->normalize_gcd);
+
+	return ls;
 }
 
 /* Exploit the equalities in "eq" to simplify the expressions of
@@ -1071,7 +1074,9 @@ __isl_give isl_local_space *isl_local_space_substitute_equalities(
 				goto error;
 			isl_seq_elim(ls->div->row[k] + 1, eq->eq[i], j, total,
 					&ls->div->row[k][0]);
-			normalize_div(ls, k);
+			ls = normalize_div(ls, k);
+			if (!ls)
+				goto error;
 		}
 	}
 
@@ -1128,7 +1133,9 @@ __isl_give isl_local_space *isl_local_space_substitute_seq(
 			continue;
 		isl_seq_substitute(ls->div->row[i], pos, subs,
 			ls->div->n_col, subs_len, v);
-		normalize_div(ls, i);
+		ls = normalize_div(ls, i);
+		if (!ls)
+			break;
 	}
 	isl_int_clear(v);
 
@@ -1496,7 +1503,9 @@ __isl_give isl_local_space *isl_local_space_preimage_multi_aff(
 		}
 		isl_seq_preimage(res->div->row[n_div_ma + i], ls->div->row[i],
 				ma, 0, 0, n_div_ma, n_div_ls, f, c1, c2, g, 1);
-		normalize_div(res, n_div_ma + i);
+		res = normalize_div(res, n_div_ma + i);
+		if (!res)
+			break;
 	}
 
 	isl_int_clear(f);
