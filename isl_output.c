@@ -536,12 +536,12 @@ static __isl_give isl_printer *print_div(__isl_keep isl_space *dim,
 	__isl_keep isl_mat *div, int pos, __isl_take isl_printer *p)
 {
 	int c = p->output_format == ISL_FORMAT_C;
-	p = isl_printer_print_str(p, c ? "floord(" : "[(");
+	p = isl_printer_print_str(p, c ? "floord(" : "floor((");
 	p = print_affine_of_len(dim, div, p,
 				div->row[pos] + 1, div->n_col - 1);
 	p = isl_printer_print_str(p, c ? ", " : ")/");
 	p = isl_printer_print_isl_int(p, div->row[pos][0]);
-	p = isl_printer_print_str(p, c ? ")" : "]");
+	p = isl_printer_print_str(p, ")");
 	return p;
 }
 
