@@ -350,6 +350,10 @@ static int is_start_of_div(struct isl_token *tok)
 		return 0;
 	if (tok->type == '[')
 		return 1;
+	if (tok->type == ISL_TOKEN_FLOOR)
+		return 1;
+	if (tok->type == ISL_TOKEN_CEIL)
+		return 1;
 	if (tok->type == ISL_TOKEN_FLOORD)
 		return 1;
 	if (tok->type == ISL_TOKEN_CEILD)
@@ -357,17 +361,32 @@ static int is_start_of_div(struct isl_token *tok)
 	return 0;
 }
 
+/* Read an integer division from "s" and return it as an isl_pw_aff.
+ *
+ * The integer division can be of the form
+ *
+ *	[<affine expression>]
+ *	floor(<affine expression>)
+ *	ceil(<affine expression>)
+ *	floord(<affine expression>,<denominator>)
+ *	ceild(<affine expression>,<denominator>)
+ */
 static __isl_give isl_pw_aff *accept_div(struct isl_stream *s,
 	__isl_take isl_space *dim, struct vars *v)
 {
 	struct isl_token *tok;
 	int f = 0;
 	int c = 0;
+	int extra = 0;
 	isl_pw_aff *pwaff = NULL;
 
 	if (isl_stream_eat_if_available(s, ISL_TOKEN_FLOORD))
-		f = 1;
+		extra = f = 1;
 	else if (isl_stream_eat_if_available(s, ISL_TOKEN_CEILD))
+		extra = c = 1;
+	else if (isl_stream_eat_if_available(s, ISL_TOKEN_FLOOR))
+		f = 1;
+	else if (isl_stream_eat_if_available(s, ISL_TOKEN_CEIL))
 		c = 1;
 	if (f || c) {
 		if (isl_stream_eat(s, '('))
@@ -379,7 +398,7 @@ static __isl_give isl_pw_aff *accept_div(struct isl_stream *s,
 
 	pwaff = accept_affine(s, isl_space_copy(dim), v);
 
-	if (f || c) {
+	if (extra) {
 		if (isl_stream_eat(s, ','))
 			goto error;
 

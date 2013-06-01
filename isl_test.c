@@ -209,6 +209,10 @@ int test_parse(struct isl_ctx *ctx)
 	if (test_parse_map_equal(ctx, "{ [*] }", "{ [a] }") < 0)
 		return -1;
 
+	if (test_parse_map_equal(ctx, "{ [i] : 2*floor(i/2) = i }",
+				      "{ [i] : exists a : i = 2 a }") < 0)
+		return -1;
+
 	return 0;
 }
 
