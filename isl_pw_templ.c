@@ -696,6 +696,37 @@ __isl_give isl_set *FN(PW,domain)(__isl_take PW *pw)
 	return dom;
 }
 
+/* Exploit the equalities in the domain of piece "i" of "pw"
+ * to simplify the associated function.
+ * If the domain of piece "i" is empty, then remove it entirely,
+ * replacing it with the final piece.
+ */
+static int FN(PW,exploit_equalities_and_remove_if_empty)(__isl_keep PW *pw,
+	int i)
+{
+	isl_basic_set *aff;
+	int empty = isl_set_plain_is_empty(pw->p[i].set);
+
+	if (empty < 0)
+		return -1;
+	if (empty) {
+		isl_set_free(pw->p[i].set);
+		FN(EL,free)(pw->p[i].FIELD);
+		if (i != pw->n - 1)
+			pw->p[i] = pw->p[pw->n - 1];
+		pw->n--;
+
+		return 0;
+	}
+
+	aff = isl_set_affine_hull(isl_set_copy(pw->p[i].set));
+	pw->p[i].FIELD = FN(EL,substitute_equalities)(pw->p[i].FIELD, aff);
+	if (!pw->p[i].FIELD)
+		return -1;
+
+	return 0;
+}
+
 /* Restrict the domain of "pw" by combining each cell
  * with "set" through a call to "fn", where "fn" may be
  * isl_set_intersect or isl_set_intersect_params.
@@ -720,22 +751,9 @@ static __isl_give PW *FN(PW,intersect_aligned)(__isl_take PW *pw,
 		goto error;
 
 	for (i = pw->n - 1; i >= 0; --i) {
-		isl_basic_set *aff;
 		pw->p[i].set = fn(pw->p[i].set, isl_set_copy(set));
-		if (!pw->p[i].set)
+		if (FN(PW,exploit_equalities_and_remove_if_empty)(pw, i) < 0)
 			goto error;
-		aff = isl_set_affine_hull(isl_set_copy(pw->p[i].set));
-		pw->p[i].FIELD = FN(EL,substitute_equalities)(pw->p[i].FIELD,
-								aff);
-		if (!pw->p[i].FIELD)
-			goto error;
-		if (isl_set_plain_is_empty(pw->p[i].set)) {
-			isl_set_free(pw->p[i].set);
-			FN(EL,free)(pw->p[i].FIELD);
-			if (i != pw->n - 1)
-				pw->p[i] = pw->p[pw->n - 1];
-			pw->n--;
-		}
 	}
 	
 	isl_set_free(set);
