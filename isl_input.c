@@ -342,6 +342,21 @@ error:
 	return NULL;
 }
 
+/* Is "tok" the start of an integer division?
+ */
+static int is_start_of_div(struct isl_token *tok)
+{
+	if (!tok)
+		return 0;
+	if (tok->type == '[')
+		return 1;
+	if (tok->type == ISL_TOKEN_FLOORD)
+		return 1;
+	if (tok->type == ISL_TOKEN_CEILD)
+		return 1;
+	return 0;
+}
+
 static __isl_give isl_pw_aff *accept_div(struct isl_stream *s,
 	__isl_take isl_space *dim, struct vars *v)
 {
@@ -456,9 +471,7 @@ static __isl_give isl_pw_aff *accept_affine_factor(struct isl_stream *s,
 			goto error;
 		if (isl_stream_eat(s, ')'))
 			goto error;
-	} else if (tok->type == '[' ||
-		    tok->type == ISL_TOKEN_FLOORD ||
-		    tok->type == ISL_TOKEN_CEILD) {
+	} else if (is_start_of_div(tok)) {
 		isl_stream_push_token(s, tok);
 		tok = NULL;
 		res = accept_div(s, isl_space_copy(dim), v);
@@ -544,10 +557,8 @@ static __isl_give isl_pw_aff *accept_affine(struct isl_stream *s,
 			isl_token_free(tok);
 			continue;
 		}
-		if (tok->type == '(' || tok->type == '[' ||
+		if (tok->type == '(' || is_start_of_div(tok) ||
 		    tok->type == ISL_TOKEN_MIN || tok->type == ISL_TOKEN_MAX ||
-		    tok->type == ISL_TOKEN_FLOORD ||
-		    tok->type == ISL_TOKEN_CEILD ||
 		    tok->type == ISL_TOKEN_IDENT ||
 		    tok->type == ISL_TOKEN_AFF) {
 			isl_pw_aff *term;
@@ -1822,7 +1833,7 @@ static __isl_give isl_pw_qpolynomial *read_factor(struct isl_stream *s,
 		pow = optional_power(s);
 		qp = isl_qpolynomial_var_pow_on_domain(isl_map_get_space(map), pos, pow);
 		pwqp = isl_pw_qpolynomial_from_qpolynomial(qp);
-	} else if (tok->type == '[') {
+	} else if (is_start_of_div(tok)) {
 		isl_pw_aff *pwaff;
 		int pow;
 
