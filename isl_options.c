@@ -17,30 +17,6 @@
 #include <isl/schedule.h>
 #include <isl/version.h>
 
-struct isl_arg_choice isl_lp_solver_choice[] = {
-	{"tab",		ISL_LP_TAB},
-#ifdef ISL_PIPLIB
-	{"pip",		ISL_LP_PIP},
-#endif
-	{0}
-};
-
-struct isl_arg_choice isl_ilp_solver_choice[] = {
-	{"gbr",		ISL_ILP_GBR},
-#ifdef ISL_PIPLIB
-	{"pip",		ISL_ILP_PIP},
-#endif
-	{0}
-};
-
-struct isl_arg_choice isl_pip_solver_choice[] = {
-	{"tab",		ISL_PIP_TAB},
-#ifdef ISL_PIPLIB
-	{"pip",		ISL_PIP_PIP},
-#endif
-	{0}
-};
-
 struct isl_arg_choice isl_pip_context_choice[] = {
 	{"gbr",		ISL_CONTEXT_GBR},
 	{"lexmin",	ISL_CONTEXT_LEXMIN},
@@ -114,12 +90,6 @@ static void print_version(void)
 }
 
 ISL_ARGS_START(struct isl_options, isl_options_args)
-ISL_ARG_CHOICE(struct isl_options, lp_solver, 0, "lp-solver", \
-	isl_lp_solver_choice,	ISL_LP_TAB, "lp solver to use")
-ISL_ARG_CHOICE(struct isl_options, ilp_solver, 0, "ilp-solver", \
-	isl_ilp_solver_choice,	ISL_ILP_GBR, "ilp solver to use")
-ISL_ARG_CHOICE(struct isl_options, pip, 0, "pip", \
-	isl_pip_solver_choice,	ISL_PIP_TAB, "pip solver to use")
 ISL_ARG_CHOICE(struct isl_options, context, 0, "context", \
 	isl_pip_context_choice,	ISL_CONTEXT_GBR,
 	"how to handle the pip context tableau")

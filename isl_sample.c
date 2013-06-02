@@ -10,7 +10,6 @@
 #include <isl_ctx_private.h>
 #include <isl_map_private.h>
 #include "isl_sample.h"
-#include "isl_sample_piplib.h"
 #include <isl/vec.h>
 #include <isl/mat.h>
 #include <isl_seq.h>
@@ -107,146 +106,6 @@ static struct isl_vec *interval_sample(struct isl_basic_set *bset)
 error:
 	isl_basic_set_free(bset);
 	isl_vec_free(sample);
-	return NULL;
-}
-
-static struct isl_mat *independent_bounds(struct isl_basic_set *bset)
-{
-	int i, j, n;
-	struct isl_mat *dirs = NULL;
-	struct isl_mat *bounds = NULL;
-	unsigned dim;
-
-	if (!bset)
-		return NULL;
-
-	dim = isl_basic_set_n_dim(bset);
-	bounds = isl_mat_alloc(bset->ctx, 1+dim, 1+dim);
-	if (!bounds)
-		return NULL;
-
-	isl_int_set_si(bounds->row[0][0], 1);
-	isl_seq_clr(bounds->row[0]+1, dim);
-	bounds->n_row = 1;
-
-	if (bset->n_ineq == 0)
-		return bounds;
-
-	dirs = isl_mat_alloc(bset->ctx, dim, dim);
-	if (!dirs) {
-		isl_mat_free(bounds);
-		return NULL;
-	}
-	isl_seq_cpy(dirs->row[0], bset->ineq[0]+1, dirs->n_col);
-	isl_seq_cpy(bounds->row[1], bset->ineq[0], bounds->n_col);
-	for (j = 1, n = 1; n < dim && j < bset->n_ineq; ++j) {
-		int pos;
-
-		isl_seq_cpy(dirs->row[n], bset->ineq[j]+1, dirs->n_col);
-
-		pos = isl_seq_first_non_zero(dirs->row[n], dirs->n_col);
-		if (pos < 0)
-			continue;
-		for (i = 0; i < n; ++i) {
-			int pos_i;
-			pos_i = isl_seq_first_non_zero(dirs->row[i], dirs->n_col);
-			if (pos_i < pos)
-				continue;
-			if (pos_i > pos)
-				break;
-			isl_seq_elim(dirs->row[n], dirs->row[i], pos,
-					dirs->n_col, NULL);
-			pos = isl_seq_first_non_zero(dirs->row[n], dirs->n_col);
-			if (pos < 0)
-				break;
-		}
-		if (pos < 0)
-			continue;
-		if (i < n) {
-			int k;
-			isl_int *t = dirs->row[n];
-			for (k = n; k > i; --k)
-				dirs->row[k] = dirs->row[k-1];
-			dirs->row[i] = t;
-		}
-		++n;
-		isl_seq_cpy(bounds->row[n], bset->ineq[j], bounds->n_col);
-	}
-	isl_mat_free(dirs);
-	bounds->n_row = 1+n;
-	return bounds;
-}
-
-static void swap_inequality(struct isl_basic_set *bset, int a, int b)
-{
-	isl_int *t = bset->ineq[a];
-	bset->ineq[a] = bset->ineq[b];
-	bset->ineq[b] = t;
-}
-
-/* Skew into positive orthant and project out lineality space.
- *
- * We perform a unimodular transformation that turns a selected
- * maximal set of linearly independent bounds into constraints
- * on the first dimensions that impose that these first dimensions
- * are non-negative.  In particular, the constraint matrix is lower
- * triangular with positive entries on the diagonal and negative
- * entries below.
- * If "bset" has a lineality space then these constraints (and therefore
- * all constraints in bset) only involve the first dimensions.
- * The remaining dimensions then do not appear in any constraints and
- * we can select any value for them, say zero.  We therefore project
- * out this final dimensions and plug in the value zero later.  This
- * is accomplished by simply dropping the final columns of
- * the unimodular transformation.
- */
-static struct isl_basic_set *isl_basic_set_skew_to_positive_orthant(
-	struct isl_basic_set *bset, struct isl_mat **T)
-{
-	struct isl_mat *U = NULL;
-	struct isl_mat *bounds = NULL;
-	int i, j;
-	unsigned old_dim, new_dim;
-
-	*T = NULL;
-	if (!bset)
-		return NULL;
-
-	isl_assert(bset->ctx, isl_basic_set_n_param(bset) == 0, goto error);
-	isl_assert(bset->ctx, bset->n_div == 0, goto error);
-	isl_assert(bset->ctx, bset->n_eq == 0, goto error);
-	
-	old_dim = isl_basic_set_n_dim(bset);
-	/* Try to move (multiples of) unit rows up. */
-	for (i = 0, j = 0; i < bset->n_ineq; ++i) {
-		int pos = isl_seq_first_non_zero(bset->ineq[i]+1, old_dim);
-		if (pos < 0)
-			continue;
-		if (isl_seq_first_non_zero(bset->ineq[i]+1+pos+1,
-						old_dim-pos-1) >= 0)
-			continue;
-		if (i != j)
-			swap_inequality(bset, i, j);
-		++j;
-	}
-	bounds = independent_bounds(bset);
-	if (!bounds)
-		goto error;
-	new_dim = bounds->n_row - 1;
-	bounds = isl_mat_left_hermite(bounds, 1, &U, NULL);
-	if (!bounds)
-		goto error;
-	U = isl_mat_drop_cols(U, 1 + new_dim, old_dim - new_dim);
-	bset = isl_basic_set_preimage(bset, isl_mat_copy(U));
-	if (!bset)
-		goto error;
-	*T = U;
-	isl_mat_free(bounds);
-	return bset;
-error:
-	isl_mat_free(bounds);
-	isl_mat_free(U);
-	isl_basic_set_free(bset);
 	return NULL;
 }
 
@@ -1255,27 +1114,6 @@ error:
 	return NULL;
 }
 
-static struct isl_vec *pip_sample(struct isl_basic_set *bset)
-{
-	struct isl_mat *T;
-	struct isl_ctx *ctx;
-	struct isl_vec *sample;
-
-	bset = isl_basic_set_skew_to_positive_orthant(bset, &T);
-	if (!bset)
-		return NULL;
-
-	ctx = bset->ctx;
-	sample = isl_pip_basic_set_sample(bset);
-
-	if (sample && sample->size != 0)
-		sample = isl_mat_vec_product(T, sample);
-	else
-		isl_mat_free(T);
-
-	return sample;
-}
-
 static struct isl_vec *basic_set_sample(struct isl_basic_set *bset, int bounded)
 {
 	struct isl_ctx *ctx;
@@ -1312,13 +1150,7 @@ static struct isl_vec *basic_set_sample(struct isl_basic_set *bset, int bounded)
 	if (dim == 1)
 		return interval_sample(bset);
 
-	switch (bset->ctx->opt->ilp_solver) {
-	case ISL_ILP_PIP:
-		return pip_sample(bset);
-	case ISL_ILP_GBR:
-		return bounded ? sample_bounded(bset) : gbr_sample(bset);
-	}
-	isl_assert(bset->ctx, 0, );
+	return bounded ? sample_bounded(bset) : gbr_sample(bset);
 error:
 	isl_basic_set_free(bset);
 	return NULL;

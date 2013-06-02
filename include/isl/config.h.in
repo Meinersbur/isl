@@ -1,3 +1,1 @@
 #undef GCC_WARN_UNUSED_RESULT
-
-#undef ISL_PIPLIB

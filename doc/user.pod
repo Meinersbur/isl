@@ -284,16 +284,6 @@ A complete list of options can be obtained by running
 
 Below we discuss some of the more common options.
 
-C<isl> can optionally use C<piplib>, but no
-C<piplib> functionality is currently used by default.
-The C<--with-piplib> option can
-be used to specify which C<piplib>
-library to use, either an installed version (C<system>),
-an externally built version (C<build>)
-or no version (C<no>).  The option C<build> is mostly useful
-in C<configure> scripts of larger projects that bundle both C<isl>
-and C<piplib>.
-
 =over
 
 =item C<--prefix>
@@ -307,22 +297,6 @@ Installation prefix for C<GMP> (architecture-independent files).
 =item C<--with-gmp-exec-prefix>
 
 Installation prefix for C<GMP> (architecture-dependent files).
-
-=item C<--with-piplib>
-
-Which copy of C<piplib> to use, either C<no> (default), C<system> or C<build>.
-
-=item C<--with-piplib-prefix>
-
-Installation prefix for C<system> C<piplib> (architecture-independent files).
-
-=item C<--with-piplib-exec-prefix>
-
-Installation prefix for C<system> C<piplib> (architecture-dependent files).
-
-=item C<--with-piplib-builddir>
-
-Location where C<build> C<piplib> was built.
 
 =back
 

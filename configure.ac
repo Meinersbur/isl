@@ -105,49 +105,6 @@ AC_DEFINE([GMP_NORMALIZE_GCDEXT], [],
 	[result of mpz_gcdext needs to be normalized])
 fi
 
-AX_SUBMODULE(piplib,no|system|build,no)
-
-have_piplib=false
-AC_SUBST(PIPLIB_CPPFLAGS)
-AC_SUBST(PIPLIB_LDFLAGS)
-AC_SUBST(PIPLIB_LIBS)
-case "$with_piplib" in
-	build)
-		PIPLIB_CPPFLAGS="-I$piplib_srcdir/include"
-		PIPLIB_LIBS="$with_piplib_builddir/libpiplibMP.la"
-	;;
-	system)
-		PIPLIB_LIBS="-lpiplibMP"
-		if test "x$with_piplib_prefix" != "x"; then
-			PIPLIB_CPPFLAGS="-I$with_piplib_prefix/include"
-			PIPLIB_LDFLAGS="-L$with_piplib_prefix/lib"
-		fi
-		SAVE_CPPFLAGS="$CPPFLAGS"
-		SAVE_LDFLAGS="$LDFLAGS"
-		CPPFLAGS="$PIPLIB_CPPFLAGS $CPPFLAGS"
-		LDFLAGS="$PIPLIB_LDFLAGS $LDFLAGS"
-		AC_CHECK_LIB(piplibMP, pip_solve,[
-			AC_CHECK_MEMBER(PipOptions.Urs_parms, [], [
-				AC_MSG_ERROR([Piplib too old; please install version 1.3.6 or newer])
-			],[#include <piplib/piplibMP.h>])
-		],[
-			AC_MSG_ERROR([Piplib not found])
-		])
-		CPPFLAGS="$SAVE_CPPFLAGS"
-		LDFLAGS="$SAVE_LDFLAGS"
-	;;
-	no)
-	;;
-	*)
-		AC_MSG_ERROR(unsupported)
-	;;
-esac
-if test "$with_piplib" != "no"; then
-	AC_DEFINE(ISL_PIPLIB,,piplib is available)
-	have_piplib=true
-fi
-AM_CONDITIONAL(HAVE_PIPLIB, test x$have_piplib = xtrue)
-
 AC_SUBST(CLANG_CXXFLAGS)
 AC_SUBST(CLANG_LDFLAGS)
 AC_SUBST(CLANG_LIBS)

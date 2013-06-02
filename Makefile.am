@@ -14,20 +14,6 @@ noinst_PROGRAMS = isl_test isl_polyhedron_sample isl_pip \
 	isl_closure isl_bound isl_codegen
 TESTS = isl_test codegen_test.sh pip_test.sh bound_test.sh
 
-if HAVE_PIPLIB
-ISL_PIPLIB = \
-	isl_lp_piplib.c \
-	isl_map_piplib.c \
-	isl_sample_piplib.c \
-	isl_sample_piplib.h \
-	isl_piplib.c
-else
-ISL_PIPLIB = \
-	isl_lp_no_piplib.c \
-	isl_map_no_piplib.c \
-	isl_sample_no_piplib.c
-endif
-
 if NEED_GET_MEMORY_FUNCTIONS
 GET_MEMORY_FUNCTIONS=mp_get_memory_functions.c
 endif
@@ -36,7 +22,6 @@ INCLUDES = -I. -I$(srcdir) -I$(srcdir)/include -Iinclude/
 AM_CFLAGS = @WARNING_FLAGS@
 
 libisl_la_SOURCES = \
-	$(ISL_PIPLIB) \
 	$(GET_MEMORY_FUNCTIONS) \
 	isl_aff.c \
 	isl_aff_private.h \
@@ -89,13 +74,11 @@ libisl_la_SOURCES = \
 	isl_local_space_private.h \
 	isl_local_space.c \
 	isl_lp.c \
-	isl_lp_piplib.h \
 	isl_lp_private.h \
 	isl_map.c \
 	isl_map_simplify.c \
 	isl_map_subtract.c \
 	isl_map_private.h \
-	isl_map_piplib.h \
 	isl_mat.c \
 	isl_mat_private.h \
 	isl_morph.c \
@@ -106,7 +89,6 @@ libisl_la_SOURCES = \
 	isl_options.c \
 	isl_options_private.h \
 	isl_output.c \
-	isl_piplib.h \
 	isl_point_private.h \
 	isl_point.c \
 	isl_polynomial_private.h \
@@ -149,19 +131,10 @@ libisl_la_SOURCES = \
 	isl_version.c \
 	isl_vertices_private.h \
 	isl_vertices.c
-EXTRA_libisl_la_SOURCES = \
-	isl_lp_piplib.c \
-	isl_lp_no_piplib.c \
-	isl_map_piplib.c \
-	isl_map_no_piplib.c \
-	isl_sample_no_piplib.c \
-	isl_sample_piplib.c \
-	isl_sample_piplib.h \
-	isl_piplib.c
-libisl_la_LIBADD = @PIPLIB_LIBS@ @GMP_LIBS@
+libisl_la_LIBADD = @GMP_LIBS@
 libisl_la_LDFLAGS = -version-info @versioninfo@ \
-	@PIPLIB_LDFLAGS@ @GMP_LDFLAGS@
-libisl_la_CPPFLAGS = $(INCLUDES) @PIPLIB_CPPFLAGS@ @GMP_CPPFLAGS@
+	@GMP_LDFLAGS@
+libisl_la_CPPFLAGS = $(INCLUDES) @GMP_CPPFLAGS@
 
 isl_test_CPPFLAGS = $(INCLUDES) @GMP_CPPFLAGS@
 isl_test_LDFLAGS = @GMP_LDFLAGS@

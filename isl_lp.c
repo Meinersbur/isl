@@ -10,7 +10,6 @@
 #include <isl_ctx_private.h>
 #include <isl_map_private.h>
 #include <isl/lp.h>
-#include "isl_lp_piplib.h"
 #include <isl_seq.h>
 #include "isl_tab.h"
 #include <isl_options_private.h>
@@ -71,14 +70,7 @@ enum isl_lp_result isl_basic_map_solve_lp(struct isl_basic_map *bmap, int max,
 	if (!bmap)
 		return isl_lp_error;
 
-	switch (bmap->ctx->opt->lp_solver) {
-	case ISL_LP_PIP:
-		return isl_pip_solve_lp(bmap, max, f, d, opt, opt_denom, sol);
-	case ISL_LP_TAB:
-		return isl_tab_solve_lp(bmap, max, f, d, opt, opt_denom, sol);
-	default:
-		return isl_lp_error;
-	}
+	return isl_tab_solve_lp(bmap, max, f, d, opt, opt_denom, sol);
 }
 
 enum isl_lp_result isl_basic_set_solve_lp(struct isl_basic_set *bset, int max,
