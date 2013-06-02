@@ -1130,14 +1130,11 @@ __isl_give PW *FN(PW,fix_dim)(__isl_take PW *pw,
 		return NULL;
 	for (i = 0; i < pw->n; ++i) {
 		pw->p[i].set = isl_set_fix(pw->p[i].set, type, pos, v);
-		if (!pw->p[i].set)
-			goto error;
+		if (FN(PW,exploit_equalities_and_remove_if_empty)(pw, i) < 0)
+			return FN(PW,free)(pw);
 	}
 
 	return pw;
-error:
-	FN(PW,free)(pw);
-	return NULL;
 }
 
 /* Fix the value of the variable at position "pos" of type "type" of "pw"
