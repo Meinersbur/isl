@@ -3210,7 +3210,7 @@ static __isl_give isl_ast_graft_list *generate_component(
 	isl_ctx *ctx;
 	isl_map *map;
 	isl_set *deltas;
-	isl_val *gcd;
+	isl_val *gcd = NULL;
 	isl_multi_val *mv;
 	int fixed, skip;
 	int base;
