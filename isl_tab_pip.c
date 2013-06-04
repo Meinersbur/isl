@@ -3222,6 +3222,9 @@ static void *context_gbr_save(struct isl_context *context)
 	struct isl_context_gbr *cgbr = (struct isl_context_gbr *)context;
 	struct isl_gbr_tab_undo *snap;
 
+	if (!cgbr->tab)
+		return NULL;
+
 	snap = isl_alloc_type(cgbr->tab->mat->ctx, struct isl_gbr_tab_undo);
 	if (!snap)
 		return NULL;
