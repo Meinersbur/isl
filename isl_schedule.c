@@ -445,8 +445,8 @@ static void graph_free(isl_ctx *ctx, struct isl_sched_graph *graph)
 {
 	int i;
 
-	isl_map_to_basic_set_free(ctx, graph->intra_hmap);
-	isl_map_to_basic_set_free(ctx, graph->inter_hmap);
+	isl_map_to_basic_set_free(graph->intra_hmap);
+	isl_map_to_basic_set_free(graph->inter_hmap);
 
 	for (i = 0; i < graph->n; ++i) {
 		isl_space_free(graph->node[i].dim);
@@ -722,16 +722,15 @@ static int sort_sccs(struct isl_sched_graph *graph)
 static __isl_give isl_basic_set *intra_coefficients(
 	struct isl_sched_graph *graph, __isl_take isl_map *map)
 {
-	isl_ctx *ctx = isl_map_get_ctx(map);
 	isl_set *delta;
 	isl_basic_set *coef;
 
-	if (isl_map_to_basic_set_has(ctx, graph->intra_hmap, map))
-		return isl_map_to_basic_set_get(ctx, graph->intra_hmap, map);
+	if (isl_map_to_basic_set_has(graph->intra_hmap, map))
+		return isl_map_to_basic_set_get(graph->intra_hmap, map);
 
 	delta = isl_set_remove_divs(isl_map_deltas(isl_map_copy(map)));
 	coef = isl_set_coefficients(delta);
-	isl_map_to_basic_set_set(ctx, graph->intra_hmap, map,
+	isl_map_to_basic_set_set(graph->intra_hmap, map,
 					isl_basic_set_copy(coef));
 
 	return coef;
@@ -748,16 +747,15 @@ static __isl_give isl_basic_set *intra_coefficients(
 static __isl_give isl_basic_set *inter_coefficients(
 	struct isl_sched_graph *graph, __isl_take isl_map *map)
 {
-	isl_ctx *ctx = isl_map_get_ctx(map);
 	isl_set *set;
 	isl_basic_set *coef;
 
-	if (isl_map_to_basic_set_has(ctx, graph->inter_hmap, map))
-		return isl_map_to_basic_set_get(ctx, graph->inter_hmap, map);
+	if (isl_map_to_basic_set_has(graph->inter_hmap, map))
+		return isl_map_to_basic_set_get(graph->inter_hmap, map);
 
 	set = isl_map_wrap(isl_map_remove_divs(isl_map_copy(map)));
 	coef = isl_set_coefficients(set);
-	isl_map_to_basic_set_set(ctx, graph->inter_hmap, map,
+	isl_map_to_basic_set_set(graph->inter_hmap, map,
 					isl_basic_set_copy(coef));
 
 	return coef;
