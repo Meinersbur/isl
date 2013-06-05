@@ -7665,6 +7665,8 @@ struct isl_basic_map *isl_basic_map_align_divs(
 
 	src = isl_basic_map_order_divs(src);
 	dst = isl_basic_map_cow(dst);
+	if (!dst)
+		return NULL;
 	dst = isl_basic_map_extend_space(dst, isl_space_copy(dst->dim),
 			src->n_div, 0, 2 * src->n_div);
 	if (!dst)
