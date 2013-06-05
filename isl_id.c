@@ -71,6 +71,11 @@ error:
 	return NULL;
 }
 
+uint32_t isl_id_get_hash(__isl_keep isl_id *id)
+{
+	return id ? id->hash : 0;
+}
+
 struct isl_name_and_user {
 	const char *name;
 	void *user;
