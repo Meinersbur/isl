@@ -23,7 +23,7 @@
 #include <isl_seq.h>
 #include <isl_tab.h>
 #include <isl_dim_map.h>
-#include <isl_hmap_map_basic_set.h>
+#include <isl_map_to_basic_set.h>
 #include <isl_sort.h>
 #include <isl_schedule_private.h>
 #include <isl_band_private.h>
@@ -170,8 +170,8 @@ enum isl_edge_type {
  * scc represents the number of components
  */
 struct isl_sched_graph {
-	isl_hmap_map_basic_set *intra_hmap;
-	isl_hmap_map_basic_set *inter_hmap;
+	isl_map_to_basic_set *intra_hmap;
+	isl_map_to_basic_set *inter_hmap;
 
 	struct isl_sched_node *node;
 	int n;
@@ -428,8 +428,8 @@ static int graph_alloc(isl_ctx *ctx, struct isl_sched_graph *graph,
 	graph->edge = isl_calloc_array(ctx,
 					struct isl_sched_edge, graph->n_edge);
 
-	graph->intra_hmap = isl_hmap_map_basic_set_alloc(ctx, 2 * n_edge);
-	graph->inter_hmap = isl_hmap_map_basic_set_alloc(ctx, 2 * n_edge);
+	graph->intra_hmap = isl_map_to_basic_set_alloc(ctx, 2 * n_edge);
+	graph->inter_hmap = isl_map_to_basic_set_alloc(ctx, 2 * n_edge);
 
 	if (!graph->node || !graph->region || (graph->n_edge && !graph->edge) ||
 	    !graph->sorted)
@@ -445,8 +445,8 @@ static void graph_free(isl_ctx *ctx, struct isl_sched_graph *graph)
 {
 	int i;
 
-	isl_hmap_map_basic_set_free(ctx, graph->intra_hmap);
-	isl_hmap_map_basic_set_free(ctx, graph->inter_hmap);
+	isl_map_to_basic_set_free(ctx, graph->intra_hmap);
+	isl_map_to_basic_set_free(ctx, graph->inter_hmap);
 
 	for (i = 0; i < graph->n; ++i) {
 		isl_space_free(graph->node[i].dim);
@@ -726,12 +726,12 @@ static __isl_give isl_basic_set *intra_coefficients(
 	isl_set *delta;
 	isl_basic_set *coef;
 
-	if (isl_hmap_map_basic_set_has(ctx, graph->intra_hmap, map))
-		return isl_hmap_map_basic_set_get(ctx, graph->intra_hmap, map);
+	if (isl_map_to_basic_set_has(ctx, graph->intra_hmap, map))
+		return isl_map_to_basic_set_get(ctx, graph->intra_hmap, map);
 
 	delta = isl_set_remove_divs(isl_map_deltas(isl_map_copy(map)));
 	coef = isl_set_coefficients(delta);
-	isl_hmap_map_basic_set_set(ctx, graph->intra_hmap, map,
+	isl_map_to_basic_set_set(ctx, graph->intra_hmap, map,
 					isl_basic_set_copy(coef));
 
 	return coef;
@@ -752,12 +752,12 @@ static __isl_give isl_basic_set *inter_coefficients(
 	isl_set *set;
 	isl_basic_set *coef;
 
-	if (isl_hmap_map_basic_set_has(ctx, graph->inter_hmap, map))
-		return isl_hmap_map_basic_set_get(ctx, graph->inter_hmap, map);
+	if (isl_map_to_basic_set_has(ctx, graph->inter_hmap, map))
+		return isl_map_to_basic_set_get(ctx, graph->inter_hmap, map);
 
 	set = isl_map_wrap(isl_map_remove_divs(isl_map_copy(map)));
 	coef = isl_set_coefficients(set);
-	isl_hmap_map_basic_set_set(ctx, graph->inter_hmap, map,
+	isl_map_to_basic_set_set(ctx, graph->inter_hmap, map,
 					isl_basic_set_copy(coef));
 
 	return coef;

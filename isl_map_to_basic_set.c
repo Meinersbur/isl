@@ -1,14 +1,24 @@
-#include <isl_hmap_map_basic_set.h>
+/*
+ * Copyright 2011      INRIA Saclay
+ *
+ * Use of this software is governed by the MIT license
+ *
+ * Written by Sven Verdoolaege, INRIA Saclay - Ile-de-France,
+ * Parc Club Orsay Universite, ZAC des vignes, 4 rue Jacques Monod,
+ * 91893 Orsay, France
+ */
+
+#include <isl_map_to_basic_set.h>
 
 struct isl_map_basic_set_pair {
 	isl_map		*key;
 	isl_basic_set	*val;
 };
 
-__isl_give isl_hmap_map_basic_set *isl_hmap_map_basic_set_alloc(isl_ctx *ctx,
+__isl_give isl_map_to_basic_set *isl_map_to_basic_set_alloc(isl_ctx *ctx,
 	int min_size)
 {
-	return (isl_hmap_map_basic_set *) isl_hash_table_alloc(ctx, min_size);
+	return (isl_map_to_basic_set *) isl_hash_table_alloc(ctx, min_size);
 }
 
 static int free_pair(void **entry, void *user)
@@ -21,8 +31,8 @@ static int free_pair(void **entry, void *user)
 	return 0;
 }
 
-void isl_hmap_map_basic_set_free(isl_ctx *ctx,
-	__isl_take isl_hmap_map_basic_set *hmap)
+void isl_map_to_basic_set_free(isl_ctx *ctx,
+	__isl_take isl_map_to_basic_set *hmap)
 {
 	if (!hmap)
 		return;
@@ -38,8 +48,8 @@ static int has_key(const void *entry, const void *key)
 	return isl_map_plain_is_equal(pair->key, map);
 }
 
-int isl_hmap_map_basic_set_has(isl_ctx *ctx,
-	__isl_keep isl_hmap_map_basic_set *hmap, __isl_keep isl_map *key)
+int isl_map_to_basic_set_has(isl_ctx *ctx,
+	__isl_keep isl_map_to_basic_set *hmap, __isl_keep isl_map *key)
 {
 	uint32_t hash;
 
@@ -47,8 +57,8 @@ int isl_hmap_map_basic_set_has(isl_ctx *ctx,
 	return !!isl_hash_table_find(ctx, &hmap->table, hash, &has_key, key, 0);
 }
 
-__isl_give isl_basic_set *isl_hmap_map_basic_set_get(isl_ctx *ctx,
-	__isl_keep isl_hmap_map_basic_set *hmap, __isl_take isl_map *key)
+__isl_give isl_basic_set *isl_map_to_basic_set_get(isl_ctx *ctx,
+	__isl_keep isl_map_to_basic_set *hmap, __isl_take isl_map *key)
 {
 	struct isl_hash_table_entry *entry;
 	struct isl_map_basic_set_pair *pair;
@@ -66,8 +76,8 @@ __isl_give isl_basic_set *isl_hmap_map_basic_set_get(isl_ctx *ctx,
 	return isl_basic_set_copy(pair->val);
 }
 
-int isl_hmap_map_basic_set_set(isl_ctx *ctx,
-	__isl_keep isl_hmap_map_basic_set *hmap, __isl_take isl_map *key,
+int isl_map_to_basic_set_set(isl_ctx *ctx,
+	__isl_keep isl_map_to_basic_set *hmap, __isl_take isl_map *key,
 	__isl_take isl_basic_set *val)
 {
 	struct isl_hash_table_entry *entry;

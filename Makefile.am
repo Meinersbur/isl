@@ -66,8 +66,6 @@ libisl_la_SOURCES = \
 	isl_fold.c \
 	isl_gmp.c \
 	isl_hash.c \
-	isl_hmap_map_basic_set.c \
-	isl_hmap_map_basic_set.h \
 	isl_ilp.c \
 	isl_ilp_private.h \
 	isl_input.c \
@@ -80,6 +78,8 @@ libisl_la_SOURCES = \
 	isl_map_simplify.c \
 	isl_map_subtract.c \
 	isl_map_private.h \
+	isl_map_to_basic_set.c \
+	isl_map_to_basic_set.h \
 	isl_mat.c \
 	isl_mat_private.h \
 	isl_morph.c \
