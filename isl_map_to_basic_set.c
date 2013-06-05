@@ -28,6 +28,7 @@ __isl_give isl_map_to_basic_set *isl_map_to_basic_set_alloc(isl_ctx *ctx,
 
 	hmap->ctx = ctx;
 	isl_ctx_ref(ctx);
+	hmap->ref = 1;
 
 	if (isl_hash_table_init(ctx, &hmap->table, min_size) < 0)
 		return isl_map_to_basic_set_free(hmap);
@@ -49,6 +50,8 @@ void *isl_map_to_basic_set_free(__isl_take isl_map_to_basic_set *hmap)
 {
 	if (!hmap)
 		return NULL;
+	if (--hmap->ref > 0)
+		return NULL;
 	isl_hash_table_foreach(hmap->ctx, &hmap->table, &free_pair, NULL);
 	isl_hash_table_clear(&hmap->table);
 	isl_ctx_deref(hmap->ctx);
@@ -59,6 +62,59 @@ void *isl_map_to_basic_set_free(__isl_take isl_map_to_basic_set *hmap)
 isl_ctx *isl_map_to_basic_set_get_ctx(__isl_keep isl_map_to_basic_set *hmap)
 {
 	return hmap ? hmap->ctx : NULL;
+}
+
+/* Add a mapping from "key" to "val" to the associative array
+ * pointed to by user.
+ */
+static int add_key_val(__isl_take isl_map *key, __isl_take isl_basic_set *val,
+	void *user)
+{
+	isl_map_to_basic_set **hmap = (isl_map_to_basic_set **) user;
+
+	*hmap = isl_map_to_basic_set_set(*hmap, key, val);
+
+	if (!*hmap)
+		return -1;
+
+	return 0;
+}
+
+__isl_give isl_map_to_basic_set *isl_map_to_basic_set_dup(
+	__isl_keep isl_map_to_basic_set *hmap)
+{
+	isl_map_to_basic_set *dup;
+
+	if (!hmap)
+		return NULL;
+
+	dup = isl_map_to_basic_set_alloc(hmap->ctx, hmap->table.n);
+	if (isl_map_to_basic_set_foreach(hmap, &add_key_val, &dup) < 0)
+		return isl_map_to_basic_set_free(dup);
+
+	return dup;
+}
+
+__isl_give isl_map_to_basic_set *isl_map_to_basic_set_cow(
+	__isl_take isl_map_to_basic_set *hmap)
+{
+	if (!hmap)
+		return NULL;
+
+	if (hmap->ref == 1)
+		return hmap;
+	hmap->ref--;
+	return isl_map_to_basic_set_dup(hmap);
+}
+
+__isl_give isl_map_to_basic_set *isl_map_to_basic_set_copy(
+	__isl_keep isl_map_to_basic_set *hmap)
+{
+	if (!hmap)
+		return NULL;
+
+	hmap->ref++;
+	return hmap;
 }
 
 static int has_key(const void *entry, const void *key)
@@ -108,7 +164,14 @@ error:
 	return NULL;
 }
 
-int isl_map_to_basic_set_set(__isl_keep isl_map_to_basic_set *hmap,
+/* Add a mapping from "key" to "val" to "hmap".
+ * If "key" was already mapped to something else, then that mapping
+ * is replaced.
+ * If key happened to be mapped to "val" already, then we leave
+ * "hmap" untouched.
+ */
+__isl_give isl_map_to_basic_set *isl_map_to_basic_set_set(
+	__isl_take isl_map_to_basic_set *hmap,
 	__isl_take isl_map *key, __isl_take isl_basic_set *val)
 {
 	struct isl_hash_table_entry *entry;
@@ -120,6 +183,25 @@ int isl_map_to_basic_set_set(__isl_keep isl_map_to_basic_set *hmap,
 
 	hash = isl_map_get_hash(key);
 	entry = isl_hash_table_find(hmap->ctx, &hmap->table, hash,
+					&has_key, key, 0);
+	if (entry) {
+		int equal;
+		pair = entry->data;
+		equal = isl_basic_set_plain_is_equal(pair->val, val);
+		if (equal < 0)
+			goto error;
+		if (equal) {
+			isl_map_free(key);
+			isl_basic_set_free(val);
+			return hmap;
+		}
+	}
+
+	hmap = isl_map_to_basic_set_cow(hmap);
+	if (!hmap)
+		goto error;
+
+	entry = isl_hash_table_find(hmap->ctx, &hmap->table, hash,
 					&has_key, key, 1);
 
 	if (!entry)
@@ -130,7 +212,7 @@ int isl_map_to_basic_set_set(__isl_keep isl_map_to_basic_set *hmap,
 		isl_basic_set_free(pair->val);
 		pair->val = val;
 		isl_map_free(key);
-		return 0;
+		return hmap;
 	}
 
 	pair = isl_alloc_type(hmap->ctx, struct isl_map_basic_set_pair);
@@ -140,11 +222,11 @@ int isl_map_to_basic_set_set(__isl_keep isl_map_to_basic_set *hmap,
 	entry->data = pair;
 	pair->key = key;
 	pair->val = val;
-	return 0;
+	return hmap;
 error:
 	isl_map_free(key);
 	isl_basic_set_free(val);
-	return -1;
+	return isl_map_to_basic_set_free(hmap);
 }
 
 /* Internal data structure for isl_map_to_basic_set_foreach.

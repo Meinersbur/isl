@@ -730,7 +730,7 @@ static __isl_give isl_basic_set *intra_coefficients(
 
 	delta = isl_set_remove_divs(isl_map_deltas(isl_map_copy(map)));
 	coef = isl_set_coefficients(delta);
-	isl_map_to_basic_set_set(graph->intra_hmap, map,
+	graph->intra_hmap = isl_map_to_basic_set_set(graph->intra_hmap, map,
 					isl_basic_set_copy(coef));
 
 	return coef;
@@ -755,7 +755,7 @@ static __isl_give isl_basic_set *inter_coefficients(
 
 	set = isl_map_wrap(isl_map_remove_divs(isl_map_copy(map)));
 	coef = isl_set_coefficients(set);
-	isl_map_to_basic_set_set(graph->inter_hmap, map,
+	graph->inter_hmap = isl_map_to_basic_set_set(graph->inter_hmap, map,
 					isl_basic_set_copy(coef));
 
 	return coef;
