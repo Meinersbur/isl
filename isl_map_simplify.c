@@ -2152,6 +2152,8 @@ struct isl_basic_map *isl_basic_map_gist(struct isl_basic_map *bmap,
 
 	bmap = isl_basic_map_remove_redundancies(bmap);
 	context = isl_basic_map_remove_redundancies(context);
+	if (!context)
+		goto error;
 
 	if (context->n_eq)
 		bmap = normalize_divs_in_context(bmap, context);
