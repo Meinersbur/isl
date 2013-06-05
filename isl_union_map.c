@@ -51,13 +51,9 @@ static __isl_give isl_union_map *isl_union_map_alloc(__isl_take isl_space *dim,
 	umap->ref = 1;
 	umap->dim = dim;
 	if (isl_hash_table_init(dim->ctx, &umap->table, size) < 0)
-		goto error;
+		return isl_union_map_free(umap);
 
 	return umap;
-error:
-	isl_space_free(dim);
-	isl_union_map_free(umap);
-	return NULL;
 }
 
 __isl_give isl_union_map *isl_union_map_empty(__isl_take isl_space *dim)
