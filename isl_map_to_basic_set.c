@@ -1,11 +1,13 @@
 /*
  * Copyright 2011      INRIA Saclay
+ * Copyright 2013      Ecole Normale Superieure
  *
  * Use of this software is governed by the MIT license
  *
  * Written by Sven Verdoolaege, INRIA Saclay - Ile-de-France,
  * Parc Club Orsay Universite, ZAC des vignes, 4 rue Jacques Monod,
  * 91893 Orsay, France
+ * and Ecole Normale Superieure, 45 rue d’Ulm, 75230 Paris, France
  */
 
 #include <isl_map_to_basic_set.h>
@@ -143,4 +145,42 @@ error:
 	isl_map_free(key);
 	isl_basic_set_free(val);
 	return -1;
+}
+
+/* Internal data structure for isl_map_to_basic_set_foreach.
+ *
+ * fn is the function that should be called on each entry.
+ * user is the user-specified final argument to fn.
+ */
+struct isl_map_to_basic_set_foreach_data {
+	int (*fn)(__isl_take isl_map *key, __isl_take isl_basic_set *val,
+		    void *user);
+	void *user;
+};
+
+/* Call data->fn on a copy of the key and value in *entry.
+ */
+static int call_on_copy(void **entry, void *user)
+{
+	struct isl_map_basic_set_pair *pair = *entry;
+	struct isl_map_to_basic_set_foreach_data *data;
+	data = (struct isl_map_to_basic_set_foreach_data *) user;
+
+	return data->fn(isl_map_copy(pair->key), isl_basic_set_copy(pair->val),
+			data->user);
+}
+
+/* Call "fn" on each pair of key and value in "hmap".
+ */
+int isl_map_to_basic_set_foreach(__isl_keep isl_map_to_basic_set *hmap,
+	int (*fn)(__isl_take isl_map *key, __isl_take isl_basic_set *val,
+		    void *user), void *user)
+{
+	struct isl_map_to_basic_set_foreach_data data = { fn, user };
+
+	if (!hmap)
+		return -1;
+
+	return isl_hash_table_foreach(hmap->ctx, &hmap->table,
+				      &call_on_copy, &data);
 }

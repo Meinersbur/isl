@@ -25,4 +25,8 @@ __isl_give isl_basic_set *isl_map_to_basic_set_get(
 int isl_map_to_basic_set_set(__isl_keep isl_map_to_basic_set *map2bset,
 	__isl_take isl_map *key, __isl_take isl_basic_set *val);
 
+int isl_map_to_basic_set_foreach(__isl_keep isl_map_to_basic_set *hmap,
+	int (*fn)(__isl_take isl_map *key, __isl_take isl_basic_set *val,
+		    void *user), void *user);
+
 #endif
