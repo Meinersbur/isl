@@ -79,7 +79,6 @@ libisl_la_SOURCES = \
 	isl_map_subtract.c \
 	isl_map_private.h \
 	isl_map_to_basic_set.c \
-	isl_map_to_basic_set.h \
 	isl_mat.c \
 	isl_mat_private.h \
 	isl_morph.c \
@@ -220,11 +219,13 @@ pkginclude_HEADERS = \
 	include/isl/id.h \
 	include/isl/ilp.h \
 	include/isl/hash.h \
+	include/isl/hmap.h \
 	include/isl/list.h \
 	include/isl/local_space.h \
 	include/isl/lp.h \
 	include/isl/mat.h \
 	include/isl/map.h \
+	include/isl/map_to_basic_set.h \
 	include/isl/map_type.h \
 	include/isl/multi.h \
 	include/isl/obj.h \
@@ -252,6 +253,7 @@ EXTRA_DIST = \
 	LICENSE \
 	isl_config_post.h \
 	basis_reduction_templ.c \
+	isl_hmap_templ.c \
 	isl_list_templ.c \
 	isl_list_templ.h \
 	isl_map_lexopt_templ.c \

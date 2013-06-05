@@ -23,7 +23,7 @@
 #include <isl_seq.h>
 #include <isl_tab.h>
 #include <isl_dim_map.h>
-#include <isl_map_to_basic_set.h>
+#include <isl/map_to_basic_set.h>
 #include <isl_sort.h>
 #include <isl_schedule_private.h>
 #include <isl_band_private.h>
