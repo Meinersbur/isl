@@ -246,6 +246,8 @@ int isl_basic_set_is_bounded(__isl_keep isl_basic_set *bset);
 __isl_export
 int isl_basic_set_is_subset(__isl_keep isl_basic_set *bset1,
 	__isl_keep isl_basic_set *bset2);
+int isl_basic_set_plain_is_equal(__isl_keep isl_basic_set *bset1,
+	__isl_keep isl_basic_set *bset2);
 
 struct isl_set *isl_set_alloc(struct isl_ctx *ctx,
 		unsigned nparam, unsigned dim, int n, unsigned flags);

@@ -2006,6 +2006,9 @@ Check whether the range of the (basic) relation is a wrapped relation.
 
 =item * Equality
 
+	int isl_basic_set_plain_is_equal(
+		__isl_keep isl_basic_set *bset1,
+		__isl_keep isl_basic_set *bset2);
 	int isl_set_plain_is_equal(__isl_keep isl_set *set1,
 		__isl_keep isl_set *set2);
 	int isl_set_is_equal(__isl_keep isl_set *set1,
