@@ -1,3 +1,12 @@
+/*
+ * Copyright 2012-2013 Ecole Normale Superieure
+ *
+ * Use of this software is governed by the MIT license
+ *
+ * Written by Sven Verdoolaege,
+ * Ecole Normale Superieure, 45 rue d’Ulm, 75230 Paris, France
+ */
+
 #include <isl_ast_private.h>
 
 #undef BASE
@@ -310,6 +319,44 @@ __isl_give isl_ast_expr *isl_ast_expr_set_op_arg(__isl_take isl_ast_expr *expr,
 error:
 	isl_ast_expr_free(arg);
 	return isl_ast_expr_free(expr);
+}
+
+/* Is "expr1" equal to "expr2"?
+ */
+int isl_ast_expr_is_equal(__isl_keep isl_ast_expr *expr1,
+	__isl_keep isl_ast_expr *expr2)
+{
+	int i;
+
+	if (!expr1 || !expr2)
+		return -1;
+
+	if (expr1 == expr2)
+		return 1;
+	if (expr1->type != expr2->type)
+		return 0;
+	switch (expr1->type) {
+	case isl_ast_expr_int:
+		return isl_val_eq(expr1->u.v, expr2->u.v);
+	case isl_ast_expr_id:
+		return expr1->u.id == expr2->u.id;
+	case isl_ast_expr_op:
+		if (expr1->u.op.op != expr2->u.op.op)
+			return 0;
+		if (expr1->u.op.n_arg != expr2->u.op.n_arg)
+			return 0;
+		for (i = 0; i < expr1->u.op.n_arg; ++i) {
+			int equal;
+			equal = isl_ast_expr_is_equal(expr1->u.op.args[i],
+							expr2->u.op.args[i]);
+				return 0;
+			if (equal < 0 || !equal)
+				return equal;
+		}
+		return 1;
+	case isl_ast_expr_error:
+		return -1;
+	}
 }
 
 /* Create a new operation expression of operation type "op",

@@ -96,6 +96,9 @@ int isl_ast_expr_get_op_n_arg(__isl_keep isl_ast_expr *expr);
 __isl_give isl_ast_expr *isl_ast_expr_get_op_arg(__isl_keep isl_ast_expr *expr,
 	int pos);
 
+int isl_ast_expr_is_equal(__isl_keep isl_ast_expr *expr1,
+	__isl_keep isl_ast_expr *expr2);
+
 __isl_give isl_printer *isl_printer_print_ast_expr(__isl_take isl_printer *p,
 	__isl_keep isl_ast_expr *expr);
 void isl_ast_expr_dump(__isl_keep isl_ast_expr *expr);

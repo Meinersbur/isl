@@ -5994,6 +5994,14 @@ Return the identifier represented by the AST expression.
 
 Return the integer represented by the AST expression.
 
+=head3 Properties of ASTs
+
+	#include <isl/ast.h>
+	int isl_ast_expr_is_equal(__isl_keep isl_ast_expr *expr1,
+		__isl_keep isl_ast_expr *expr2);
+
+Check if two C<isl_ast_expr>s are equal to each other.
+
 =head3 Manipulating and printing the AST
 
 AST nodes can be copied and freed using the following functions.
