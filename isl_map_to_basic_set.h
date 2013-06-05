@@ -12,7 +12,7 @@ typedef struct isl_map_to_basic_set	isl_map_to_basic_set;
 
 __isl_give isl_map_to_basic_set *isl_map_to_basic_set_alloc( isl_ctx *ctx,
 	int min_size);
-void isl_map_to_basic_set_free(isl_ctx *ctx,
+void *isl_map_to_basic_set_free(isl_ctx *ctx,
 	__isl_take isl_map_to_basic_set *map2bset);
 
 int isl_map_to_basic_set_has(isl_ctx *ctx,

@@ -31,13 +31,14 @@ static int free_pair(void **entry, void *user)
 	return 0;
 }
 
-void isl_map_to_basic_set_free(isl_ctx *ctx,
+void *isl_map_to_basic_set_free(isl_ctx *ctx,
 	__isl_take isl_map_to_basic_set *hmap)
 {
 	if (!hmap)
-		return;
+		return NULL;
 	isl_hash_table_foreach(ctx, &hmap->table, &free_pair, NULL);
 	isl_hash_table_free(ctx, &hmap->table);
+	return NULL;
 }
 
 static int has_key(const void *entry, const void *key)
