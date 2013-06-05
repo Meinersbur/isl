@@ -78,7 +78,7 @@ int isl_hmap_map_basic_set_set(isl_ctx *ctx,
 	entry = isl_hash_table_find(ctx, &hmap->table, hash, &has_key, key, 1);
 
 	if (!entry)
-		return -1;
+		goto error;
 
 	if (entry->data) {
 		pair = entry->data;
@@ -89,14 +89,15 @@ int isl_hmap_map_basic_set_set(isl_ctx *ctx,
 	}
 
 	pair = isl_alloc_type(ctx, struct isl_map_basic_set_pair);
-	if (!pair) {
-		isl_map_free(key);
-		isl_basic_set_free(val);
-		return -1;
-	}
+	if (!pair)
+		goto error;
 
 	entry->data = pair;
 	pair->key = key;
 	pair->val = val;
 	return 0;
+error:
+	isl_map_free(key);
+	isl_basic_set_free(val);
+	return -1;
 }
