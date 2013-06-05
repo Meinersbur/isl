@@ -2708,6 +2708,9 @@ int isl_basic_map_contains(struct isl_basic_map *bmap, struct isl_vec *vec)
 	unsigned total;
 	isl_int s;
 
+	if (!bmap || !vec)
+		return -1;
+
 	total = 1 + isl_basic_map_total_dim(bmap);
 	if (total != vec->size)
 		return -1;
