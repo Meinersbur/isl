@@ -3287,6 +3287,62 @@ Lists can be printed using
 		__isl_take isl_printer *p,
 		__isl_keep isl_set_list *list);
 
+=head2 Associative arrays
+
+Associative arrays map isl objects of a specific type to isl objects
+of some (other) specific type.  They are defined for several pairs
+of types, including (C<isl_map>, C<isl_basic_set>) and
+(C<isl_id>, C<isl_ast_expr>).
+Here, we take associative arrays that map C<isl_id>s to C<isl_ast_expr>s
+as an example.
+
+Associative arrays can be created, copied and freed using
+the following functions.
+
+	#include <isl/id_to_ast_expr.h>
+	__isl_give id_to_ast_expr *isl_id_to_ast_expr_alloc(
+		isl_ctx *ctx, int min_size);
+	__isl_give id_to_ast_expr *isl_id_to_ast_expr_copy(
+		__isl_keep id_to_ast_expr *id2expr);
+	void *isl_id_to_ast_expr_free(
+		__isl_take id_to_ast_expr *id2expr);
+
+The C<min_size> argument to C<isl_id_to_ast_expr_alloc> can be used
+to specify the expected size of the associative array.
+The associative array will be grown automatically as needed.
+
+Associative arrays can be inspected using the following functions.
+
+	#include <isl/id_to_ast_expr.h>
+	isl_ctx *isl_id_to_ast_expr_get_ctx(
+		__isl_keep id_to_ast_expr *id2expr);
+	int isl_id_to_ast_expr_has(
+		__isl_keep id_to_ast_expr *id2expr,
+		__isl_keep isl_id *key);
+	__isl_give isl_ast_expr *isl_id_to_ast_expr_get(
+		__isl_keep id_to_ast_expr *id2expr,
+		__isl_take isl_id *key);
+	int isl_id_to_ast_expr_foreach(
+		__isl_keep id_to_ast_expr *id2expr,
+		int (*fn)(__isl_take isl_id *key,
+			__isl_take isl_ast_expr *val, void *user),
+		void *user);
+
+They can be modified using the following function.
+
+	#include <isl/id_to_ast_expr.h>
+	__isl_give id_to_ast_expr *isl_id_to_ast_expr_set(
+		__isl_take id_to_ast_expr *id2expr,
+		__isl_take isl_id *key,
+		__isl_take isl_ast_expr *val);
+
+Associative arrays can be printed using the following function.
+
+	#include <isl/id_to_ast_expr.h>
+	__isl_give isl_printer *isl_printer_print_id_to_ast_expr(
+		__isl_take isl_printer *p,
+		__isl_keep id_to_ast_expr *id2expr);
+
 =head2 Multiple Values
 
 An C<isl_multi_val> object represents a sequence of zero or more values,
