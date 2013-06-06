@@ -6109,6 +6109,9 @@ the context of an C<isl_ast_build>.
 	__isl_give isl_ast_expr *isl_ast_expr_or(
 		__isl_take isl_ast_expr *expr1,
 		__isl_take isl_ast_expr *expr2)
+	__isl_give isl_ast_expr *isl_ast_expr_access(
+		__isl_take isl_ast_expr *array,
+		__isl_take isl_ast_expr_list *indices);
 
 	#include <isl/ast_build.h>
 	__isl_give isl_ast_expr *isl_ast_build_expr_from_pw_aff(
