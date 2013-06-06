@@ -80,6 +80,8 @@ __isl_give isl_ast_build *isl_ast_build_set_create_leaf(
 
 __isl_give isl_ast_expr *isl_ast_build_expr_from_pw_aff(
 	__isl_keep isl_ast_build *build, __isl_take isl_pw_aff *pa);
+__isl_give isl_ast_expr *isl_ast_build_access_from_pw_multi_aff(
+	__isl_keep isl_ast_build *build, __isl_take isl_pw_multi_aff *pma);
 __isl_give isl_ast_expr *isl_ast_build_call_from_pw_multi_aff(
 	__isl_keep isl_ast_build *build, __isl_take isl_pw_multi_aff *pma);
 

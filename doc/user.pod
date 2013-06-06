@@ -6036,6 +6036,13 @@ The number of arguments of the C<isl_ast_expr> is one more than
 the number of arguments in the function call, the first argument
 representing the function being called.
 
+=item C<isl_ast_op_access>
+
+An array access.
+The number of arguments of the C<isl_ast_expr> is one more than
+the number of index expressions in the array access, the first argument
+representing the array being accessed.
+
 =back
 
 	#include <isl/ast.h>
@@ -6108,13 +6115,18 @@ the context of an C<isl_ast_build>.
 		__isl_keep isl_ast_build *build,
 		__isl_take isl_pw_aff *pa);
 	__isl_give isl_ast_expr *
+	isl_ast_build_access_from_pw_multi_aff(
+		__isl_keep isl_ast_build *build,
+		__isl_take isl_pw_multi_aff *pma);
+	__isl_give isl_ast_expr *
 	isl_ast_build_call_from_pw_multi_aff(
 		__isl_keep isl_ast_build *build,
 		__isl_take isl_pw_multi_aff *pma);
 
 The domains of C<pa> and C<pma> should correspond
 to the schedule space of C<build>.
-The tuple id of C<pma> is used as the function being called.
+The tuple id of C<pma> is used as the array being accessed or
+the function being called.
 
 User specified data can be attached to an C<isl_ast_node> and obtained
 from the same C<isl_ast_node> using the following functions.

@@ -983,14 +983,16 @@ static __isl_give isl_pw_multi_aff *set_iterator_names(
 	return pma;
 }
 
-/* Construct an isl_ast_expr that calls the domain element specified by "pma".
- * The name of the function is obtained from the output tuple name.
- * The arguments are given by the piecewise affine expressions.
+/* Construct an isl_ast_expr of type "type" that calls or accesses
+ * the element specified by "pma".
+ * The first argument is obtained from the output tuple name.
+ * The remaining arguments are given by the piecewise affine expressions.
  *
  * The domain of "pma" is assumed to live in the internal schedule domain.
  */
-static __isl_give isl_ast_expr *isl_ast_build_call_from_pw_multi_aff_internal(
-	__isl_keep isl_ast_build *build, __isl_take isl_pw_multi_aff *pma)
+static __isl_give isl_ast_expr *isl_ast_build_from_pw_multi_aff_internal(
+	__isl_keep isl_ast_build *build, enum isl_ast_op_type type,
+	__isl_take isl_pw_multi_aff *pma)
 {
 	int i, n;
 	isl_ctx *ctx;
@@ -1003,7 +1005,7 @@ static __isl_give isl_ast_expr *isl_ast_build_call_from_pw_multi_aff_internal(
 
 	ctx = isl_ast_build_get_ctx(build);
 	n = isl_pw_multi_aff_dim(pma, isl_dim_out);
-	expr = isl_ast_expr_alloc_op(ctx, isl_ast_op_call, 1 + n);
+	expr = isl_ast_expr_alloc_op(ctx, type, 1 + n);
 
 	if (isl_pw_multi_aff_has_tuple_id(pma, isl_dim_out))
 		id = isl_pw_multi_aff_get_tuple_id(pma, isl_dim_out);
@@ -1024,14 +1026,16 @@ static __isl_give isl_ast_expr *isl_ast_build_call_from_pw_multi_aff_internal(
 	return expr;
 }
 
-/* Construct an isl_ast_expr that calls the domain element specified by "pma".
- * The name of the function is obtained from the output tuple name.
- * The arguments are given by the piecewise affine expressions.
+/* Construct an isl_ast_expr of type "type" that calls or accesses
+ * the element specified by "pma".
+ * The first argument is obtained from the output tuple name.
+ * The remaining arguments are given by the piecewise affine expressions.
  *
  * The domain of "pma" is assumed to live in the external schedule domain.
  */
-__isl_give isl_ast_expr *isl_ast_build_call_from_pw_multi_aff(
-	__isl_keep isl_ast_build *build, __isl_take isl_pw_multi_aff *pma)
+static __isl_give isl_ast_expr *isl_ast_build_from_pw_multi_aff(
+	__isl_keep isl_ast_build *build, enum isl_ast_op_type type,
+	__isl_take isl_pw_multi_aff *pma)
 {
 	int is_domain;
 	isl_ast_expr *expr;
@@ -1056,8 +1060,32 @@ __isl_give isl_ast_expr *isl_ast_build_call_from_pw_multi_aff(
 		pma = isl_pw_multi_aff_pullback_multi_aff(pma, ma);
 	}
 
-	expr = isl_ast_build_call_from_pw_multi_aff_internal(build, pma);
+	expr = isl_ast_build_from_pw_multi_aff_internal(build, type, pma);
 	return expr;
+}
+
+/* Construct an isl_ast_expr that calls the domain element specified by "pma".
+ * The name of the function is obtained from the output tuple name.
+ * The arguments are given by the piecewise affine expressions.
+ *
+ * The domain of "pma" is assumed to live in the external schedule domain.
+ */
+__isl_give isl_ast_expr *isl_ast_build_call_from_pw_multi_aff(
+	__isl_keep isl_ast_build *build, __isl_take isl_pw_multi_aff *pma)
+{
+	return isl_ast_build_from_pw_multi_aff(build, isl_ast_op_call, pma);
+}
+
+/* Construct an isl_ast_expr that accesses the array element specified by "pma".
+ * The name of the array is obtained from the output tuple name.
+ * The index expressions are given by the piecewise affine expressions.
+ *
+ * The domain of "pma" is assumed to live in the external schedule domain.
+ */
+__isl_give isl_ast_expr *isl_ast_build_access_from_pw_multi_aff(
+	__isl_keep isl_ast_build *build, __isl_take isl_pw_multi_aff *pma)
+{
+	return isl_ast_build_from_pw_multi_aff(build, isl_ast_op_access, pma);
 }
 
 /* Construct an isl_ast_expr that calls the domain element
@@ -1076,6 +1104,7 @@ __isl_give isl_ast_node *isl_ast_build_call_from_executed(
 	iteration = isl_ast_build_compute_gist_pw_multi_aff(build, iteration);
 	iteration = isl_pw_multi_aff_intersect_domain(iteration,
 					isl_ast_build_get_domain(build));
-	expr = isl_ast_build_call_from_pw_multi_aff_internal(build, iteration);
+	expr = isl_ast_build_from_pw_multi_aff_internal(build, isl_ast_op_call,
+							iteration);
 	return isl_ast_node_alloc_user(expr);
 }

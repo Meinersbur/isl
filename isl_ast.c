@@ -1074,7 +1074,8 @@ static int op_prec[] = {
 	[isl_ast_op_ge] = 8,
 	[isl_ast_op_lt] = 8,
 	[isl_ast_op_gt] = 8,
-	[isl_ast_op_call] = 2
+	[isl_ast_op_call] = 2,
+	[isl_ast_op_access] = 2
 };
 
 /* Is the operator left-to-right associative?
@@ -1101,7 +1102,8 @@ static int op_left[] = {
 	[isl_ast_op_ge] = 1,
 	[isl_ast_op_lt] = 1,
 	[isl_ast_op_gt] = 1,
-	[isl_ast_op_call] = 1
+	[isl_ast_op_call] = 1,
+	[isl_ast_op_access] = 1
 };
 
 static int is_and(enum isl_ast_op_type op)
@@ -1224,6 +1226,25 @@ static __isl_give isl_printer *print_call(__isl_take isl_printer *p,
 	return p;
 }
 
+/* Print an array access "expr".
+ *
+ * The first argument represents the array being accessed.
+ */
+static __isl_give isl_printer *print_access(__isl_take isl_printer *p,
+	__isl_keep isl_ast_expr *expr)
+{
+	int i = 0;
+
+	p = isl_printer_print_ast_expr(p, expr->u.op.args[0]);
+	for (i = 1; i < expr->u.op.n_arg; ++i) {
+		p = isl_printer_print_str(p, "[");
+		p = isl_printer_print_ast_expr(p, expr->u.op.args[i]);
+		p = isl_printer_print_str(p, "]");
+	}
+
+	return p;
+}
+
 /* Print "expr" to "p".
  *
  * If we are printing in isl format, then we also print an indication
@@ -1241,6 +1262,10 @@ __isl_give isl_printer *isl_printer_print_ast_expr(__isl_take isl_printer *p,
 	case isl_ast_expr_op:
 		if (expr->u.op.op == isl_ast_op_call) {
 			p = print_call(p, expr);
+			break;
+		}
+		if (expr->u.op.op == isl_ast_op_access) {
+			p = print_access(p, expr);
 			break;
 		}
 		if (expr->u.op.n_arg == 1) {
