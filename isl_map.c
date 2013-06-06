@@ -7714,8 +7714,11 @@ struct isl_map *isl_map_align_divs(struct isl_map *map)
 
 	for (i = 1; i < map->n; ++i)
 		map->p[0] = isl_basic_map_align_divs(map->p[0], map->p[i]);
-	for (i = 1; i < map->n; ++i)
+	for (i = 1; i < map->n; ++i) {
 		map->p[i] = isl_basic_map_align_divs(map->p[i], map->p[0]);
+		if (!map->p[i])
+			return isl_map_free(map);
+	}
 
 	ISL_F_CLR(map, ISL_MAP_NORMALIZED);
 	return map;
