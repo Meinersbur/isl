@@ -1535,7 +1535,7 @@ error:
  *
  * If the two basic maps have the same number of divs, then
  * they must necessarily be different.  Otherwise, we would have
- * called coalesce_local_pair.  We therefore don't do try anyhing
+ * called coalesce_local_pair.  We therefore don't try anything
  * in this case.
  *
  * We first check if the divs of "i" are all known and form a subset
