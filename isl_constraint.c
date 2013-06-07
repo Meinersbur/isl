@@ -42,13 +42,6 @@ static unsigned offset(struct isl_constraint *c, enum isl_dim_type type)
 	return isl_local_space_offset(c->ls, type);
 }
 
-static unsigned basic_map_offset(__isl_keep isl_basic_map *bmap,
-							enum isl_dim_type type)
-{
-	return type == isl_dim_div ? 1 + isl_space_dim(bmap->dim, isl_dim_all)
-				   : 1 + isl_space_offset(bmap->dim, type);
-}
-
 static unsigned basic_set_offset(struct isl_basic_set *bset,
 							enum isl_dim_type type)
 {
@@ -816,7 +809,7 @@ isl_bool isl_basic_map_has_defining_equality(
 
 	if (!bmap)
 		return isl_bool_error;
-	offset = basic_map_offset(bmap, type);
+	offset = isl_basic_map_offset(bmap, type);
 	total = isl_basic_map_total_dim(bmap);
 	if (pos >= isl_basic_map_dim(bmap, type))
 		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
