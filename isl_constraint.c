@@ -42,19 +42,6 @@ static unsigned offset(struct isl_constraint *c, enum isl_dim_type type)
 	return isl_local_space_offset(c->ls, type);
 }
 
-static unsigned basic_set_offset(struct isl_basic_set *bset,
-							enum isl_dim_type type)
-{
-	isl_space *dim = bset->dim;
-	switch (type) {
-	case isl_dim_param:	return 1;
-	case isl_dim_in:	return 1 + dim->nparam;
-	case isl_dim_out:	return 1 + dim->nparam + dim->n_in;
-	case isl_dim_div:	return 1 + dim->nparam + dim->n_in + dim->n_out;
-	default:		return 0;
-	}
-}
-
 __isl_give isl_constraint *isl_constraint_alloc_vec(int eq,
 	__isl_take isl_local_space *ls, __isl_take isl_vec *v)
 {
@@ -853,7 +840,7 @@ isl_bool isl_basic_set_has_defining_inequalities(
 
 	if (!bset)
 		return isl_bool_error;
-	offset = basic_set_offset(bset, type);
+	offset = isl_basic_set_offset(bset, type);
 	total = isl_basic_set_total_dim(bset);
 	if (pos >= isl_basic_set_dim(bset, type))
 		isl_die(isl_basic_set_get_ctx(bset), isl_error_invalid,
