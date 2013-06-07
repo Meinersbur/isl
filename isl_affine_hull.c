@@ -1069,7 +1069,7 @@ static __isl_give isl_basic_map *isl_basic_map_make_strides_explicit(
 	isl_bool known;
 	int n_known;
 	int n, n_col;
-	int total;
+	int v_div;
 	isl_ctx *ctx;
 	isl_mat *A, *B, *M;
 
@@ -1087,16 +1087,18 @@ static __isl_give isl_basic_map *isl_basic_map_make_strides_explicit(
 		if (isl_int_is_zero(bmap->div[n_known][0]))
 			break;
 	ctx = isl_basic_map_get_ctx(bmap);
-	total = isl_space_dim(bmap->dim, isl_dim_all);
+	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
+	if (v_div < 0)
+		return isl_basic_map_free(bmap);
 	for (n = 0; n < bmap->n_eq; ++n)
-		if (isl_seq_first_non_zero(bmap->eq[n] + 1 + total + n_known,
+		if (isl_seq_first_non_zero(bmap->eq[n] + 1 + v_div + n_known,
 					    bmap->n_div - n_known) == -1)
 			break;
 	if (n == 0)
 		return bmap;
-	B = isl_mat_sub_alloc6(ctx, bmap->eq, 0, n, 0, 1 + total + n_known);
+	B = isl_mat_sub_alloc6(ctx, bmap->eq, 0, n, 0, 1 + v_div + n_known);
 	n_col = bmap->n_div - n_known;
-	A = isl_mat_sub_alloc6(ctx, bmap->eq, 0, n, 1 + total + n_known, n_col);
+	A = isl_mat_sub_alloc6(ctx, bmap->eq, 0, n, 1 + v_div + n_known, n_col);
 	A = isl_mat_left_hermite(A, 0, NULL, NULL);
 	A = isl_mat_drop_cols(A, n, n_col - n);
 	A = isl_mat_lin_to_aff(A);
