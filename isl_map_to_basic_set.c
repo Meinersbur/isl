@@ -266,3 +266,68 @@ int isl_map_to_basic_set_foreach(__isl_keep isl_map_to_basic_set *hmap,
 	return isl_hash_table_foreach(hmap->ctx, &hmap->table,
 				      &call_on_copy, &data);
 }
+
+/* Internal data structure for print_pair.
+ *
+ * p is the printer on which the associative array is being printed.
+ * first is set if the current key-value pair is the first to be printed.
+ */
+struct isl_map_to_basic_set_print_data {
+	isl_printer *p;
+	int first;
+};
+
+/* Print the given key-value pair to data->p.
+ */
+static int print_pair(__isl_take isl_map *key, __isl_take isl_basic_set *val,
+	void *user)
+{
+	struct isl_map_to_basic_set_print_data *data = user;
+
+	if (!data->first)
+		data->p = isl_printer_print_str(data->p, ", ");
+	data->p = isl_printer_print_map(data->p, key);
+	data->p = isl_printer_print_str(data->p, ": ");
+	data->p = isl_printer_print_basic_set(data->p, val);
+	data->first = 0;
+
+	isl_map_free(key);
+	isl_basic_set_free(val);
+	return 0;
+}
+
+/* Print the associative array to "p".
+ */
+__isl_give isl_printer *isl_printer_print_map_to_basic_set(
+	__isl_take isl_printer *p, __isl_keep isl_map_to_basic_set *hmap)
+{
+	struct isl_map_to_basic_set_print_data data;
+
+	if (!p || !hmap)
+		return isl_printer_free(p);
+
+	p = isl_printer_print_str(p, "{");
+	data.p = p;
+	data.first = 1;
+	if (isl_map_to_basic_set_foreach(hmap, &print_pair, &data) < 0)
+		data.p = isl_printer_free(data.p);
+	p = data.p;
+	p = isl_printer_print_str(p, "}");
+
+	return p;
+}
+
+void isl_map_to_basic_set_dump(__isl_keep isl_map_to_basic_set *hmap)
+{
+	isl_printer *printer;
+
+	if (!hmap)
+		return;
+
+	printer = isl_printer_to_file(isl_map_to_basic_set_get_ctx(hmap),
+					stderr);
+	printer = isl_printer_print_map_to_basic_set(printer, hmap);
+	printer = isl_printer_end_line(printer);
+
+	isl_printer_free(printer);
+}
