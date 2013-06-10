@@ -376,6 +376,7 @@ enum isl_lp_result isl_basic_set_opt(__isl_keep isl_basic_set *bset, int max,
 	isl_mat *bset_div = NULL;
 	isl_mat *div = NULL;
 	enum isl_lp_result res;
+	int bset_n_div;
 
 	if (!bset || !obj)
 		return isl_lp_error;
@@ -389,14 +390,15 @@ enum isl_lp_result isl_basic_set_opt(__isl_keep isl_basic_set *bset, int max,
 			"expecting integer affine expression",
 			return isl_lp_error);
 
-	if (bset->n_div == 0 && obj->ls->div->n_row == 0)
+	bset_n_div = isl_basic_set_dim(bset, isl_dim_div);
+	if (bset_n_div == 0 && obj->ls->div->n_row == 0)
 		return basic_set_opt(bset, max, obj, opt);
 
 	bset = isl_basic_set_copy(bset);
 	obj = isl_aff_copy(obj);
 
 	bset_div = extract_divs(bset);
-	exp1 = isl_alloc_array(ctx, int, bset_div->n_row);
+	exp1 = isl_alloc_array(ctx, int, bset_n_div);
 	exp2 = isl_alloc_array(ctx, int, obj->ls->div->n_row);
 	if (!bset_div || !exp1 || !exp2)
 		goto error;

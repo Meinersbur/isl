@@ -2728,6 +2728,9 @@ int isl_basic_map_contains(struct isl_basic_map *bmap, struct isl_vec *vec)
 	unsigned total;
 	isl_int s;
 
+	if (!bmap || !vec)
+		return -1;
+
 	total = 1 + isl_basic_map_total_dim(bmap);
 	if (total != vec->size)
 		return -1;
@@ -8067,6 +8070,8 @@ struct isl_basic_map *isl_basic_map_align_divs(
 
 	src = isl_basic_map_order_divs(src);
 	dst = isl_basic_map_cow(dst);
+	if (!dst)
+		return NULL;
 	dst = isl_basic_map_extend_space(dst, isl_space_copy(dst->dim),
 			src->n_div, 0, 2 * src->n_div);
 	if (!dst)
@@ -8114,8 +8119,11 @@ struct isl_map *isl_map_align_divs(struct isl_map *map)
 
 	for (i = 1; i < map->n; ++i)
 		map->p[0] = isl_basic_map_align_divs(map->p[0], map->p[i]);
-	for (i = 1; i < map->n; ++i)
+	for (i = 1; i < map->n; ++i) {
 		map->p[i] = isl_basic_map_align_divs(map->p[i], map->p[0]);
+		if (!map->p[i])
+			return isl_map_free(map);
+	}
 
 	ISL_F_CLR(map, ISL_MAP_NORMALIZED);
 	return map;

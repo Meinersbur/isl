@@ -2729,6 +2729,8 @@ static struct isl_basic_set *drop_constant_terms(struct isl_basic_set *bset)
 
 static int use_shifted(struct isl_context_gbr *cgbr)
 {
+	if (!cgbr->tab)
+		return 0;
 	return cgbr->tab->bmap->n_eq == 0 && cgbr->tab->bmap->n_div == 0;
 }
 
@@ -3219,6 +3221,9 @@ static void *context_gbr_save(struct isl_context *context)
 {
 	struct isl_context_gbr *cgbr = (struct isl_context_gbr *)context;
 	struct isl_gbr_tab_undo *snap;
+
+	if (!cgbr->tab)
+		return NULL;
 
 	snap = isl_alloc_type(cgbr->tab->mat->ctx, struct isl_gbr_tab_undo);
 	if (!snap)
