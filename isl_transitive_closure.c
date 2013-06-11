@@ -215,7 +215,7 @@ static int check_exactness(__isl_take isl_map *map, __isl_take isl_map *app,
  * For any element in this relation, the number of steps taken
  * is equal to the difference in the final coordinates.
  */
-static __isl_give isl_map *path_along_steps(__isl_take isl_space *dim,
+static __isl_give isl_map *path_along_steps(__isl_take isl_space *space,
 	__isl_keep isl_mat *steps)
 {
 	int i, j, k;
@@ -224,14 +224,14 @@ static __isl_give isl_map *path_along_steps(__isl_take isl_space *dim,
 	unsigned n;
 	unsigned nparam;
 
-	if (!dim || !steps)
+	if (!space || !steps)
 		goto error;
 
-	d = isl_space_dim(dim, isl_dim_in);
+	d = isl_space_dim(space, isl_dim_in);
 	n = steps->n_row;
-	nparam = isl_space_dim(dim, isl_dim_param);
+	nparam = isl_space_dim(space, isl_dim_param);
 
-	path = isl_basic_map_alloc_space(isl_space_copy(dim), n, d, n);
+	path = isl_basic_map_alloc_space(isl_space_copy(space), n, d, n);
 
 	for (i = 0; i < n; ++i) {
 		k = isl_basic_map_alloc_div(path);
@@ -265,13 +265,13 @@ static __isl_give isl_map *path_along_steps(__isl_take isl_space *dim,
 		isl_int_set_si(path->ineq[k][1 + nparam + 2 * d + i], 1);
 	}
 
-	isl_space_free(dim);
+	isl_space_free(space);
 
 	path = isl_basic_map_simplify(path);
 	path = isl_basic_map_finalize(path);
 	return isl_map_from_basic_map(path);
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	isl_basic_map_free(path);
 	return NULL;
 }
