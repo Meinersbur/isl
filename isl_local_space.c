@@ -728,7 +728,7 @@ __isl_give isl_local_space *isl_local_space_substitute_equalities(
 	total = isl_space_dim(eq->dim, isl_dim_all);
 	if (isl_local_space_dim(ls, isl_dim_all) != total)
 		isl_die(isl_local_space_get_ctx(ls), isl_error_invalid,
-			"dimensions don't match", goto error);
+			"spaces don't match", goto error);
 	total++;
 	n_div = eq->n_div;
 	for (i = 0; i < eq->n_eq; ++i) {
