@@ -369,7 +369,7 @@ static __isl_give isl_basic_set *copy_equalities(__isl_keep isl_basic_set *bset,
 		return NULL;
 
 	total = isl_basic_set_total_dim(bset);
-	eq = isl_basic_set_alloc_space(isl_space_copy(bset->dim), 0, n, 0);
+	eq = isl_basic_set_alloc_space(isl_basic_set_get_space(bset), 0, n, 0);
 	if (!eq)
 		return NULL;
 	for (i = 0; i < n; ++i) {
