@@ -433,7 +433,7 @@ __isl_give isl_morph *isl_basic_set_variable_compression_with_id(
 	if (isl_basic_set_check_no_locals(bset) < 0)
 		return NULL;
 
-	otype = 1 + isl_space_offset(bset->dim, type);
+	otype = isl_basic_set_offset(bset, type);
 	ntype = isl_basic_set_dim(bset, type);
 	orest = otype + ntype;
 	nrest = isl_basic_set_total_dim(bset) - (orest - 1);
