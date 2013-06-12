@@ -113,6 +113,7 @@ static isl_stat tab_add_constraint(struct isl_tab *tab,
 {
 	unsigned dim;
 	unsigned tab_total;
+	unsigned bmap_n_div;
 	unsigned bmap_total;
 	isl_vec *v;
 	isl_stat r;
@@ -122,7 +123,8 @@ static isl_stat tab_add_constraint(struct isl_tab *tab,
 
 	tab_total = isl_basic_map_total_dim(tab->bmap);
 	bmap_total = isl_basic_map_total_dim(bmap);
-	dim = isl_space_dim(tab->bmap->dim, isl_dim_all);
+	bmap_n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	dim = bmap_total - bmap_n_div;
 
 	v = isl_vec_alloc(bmap->ctx, 1 + tab_total);
 	if (!v)
@@ -134,7 +136,7 @@ static isl_stat tab_add_constraint(struct isl_tab *tab,
 					1 + bmap_total);
 		if (oppose)
 			isl_int_sub_ui(bmap->eq[c/2][0], bmap->eq[c/2][0], 1);
-		expand_constraint(v, dim, bmap->eq[c/2], div_map, bmap->n_div);
+		expand_constraint(v, dim, bmap->eq[c/2], div_map, bmap_n_div);
 		r = isl_tab_add_ineq(tab, v->el);
 		if (oppose)
 			isl_int_add_ui(bmap->eq[c/2][0], bmap->eq[c/2][0], 1);
@@ -148,7 +150,7 @@ static isl_stat tab_add_constraint(struct isl_tab *tab,
 					1 + bmap_total);
 			isl_int_sub_ui(bmap->ineq[c][0], bmap->ineq[c][0], 1);
 		}
-		expand_constraint(v, dim, bmap->ineq[c], div_map, bmap->n_div);
+		expand_constraint(v, dim, bmap->ineq[c], div_map, bmap_n_div);
 		r = isl_tab_add_ineq(tab, v->el);
 		if (oppose) {
 			isl_int_add_ui(bmap->ineq[c][0], bmap->ineq[c][0], 1);
