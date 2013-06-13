@@ -1262,20 +1262,19 @@ static __isl_give isl_basic_map *drop_aff(__isl_take isl_basic_map *bmap,
 	__isl_keep isl_basic_map *aff)
 {
 	int i, j;
-	unsigned total;
+	int v_div;
 
-	if (!bmap || !aff)
+	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
+	if (v_div < 0 || !aff)
 		goto error;
 
-	total = isl_space_dim(bmap->dim, isl_dim_all);
-
 	for (i = bmap->n_eq - 1; i >= 0; --i) {
-		if (isl_seq_first_non_zero(bmap->eq[i] + 1 + total,
+		if (isl_seq_first_non_zero(bmap->eq[i] + 1 + v_div,
 					    bmap->n_div) != -1)
 			continue;
 		for (j = 0; j < aff->n_eq; ++j) {
-			if (!isl_seq_eq(bmap->eq[i], aff->eq[j], 1 + total) &&
-			    !isl_seq_is_neg(bmap->eq[i], aff->eq[j], 1 + total))
+			if (!isl_seq_eq(bmap->eq[i], aff->eq[j], 1 + v_div) &&
+			    !isl_seq_is_neg(bmap->eq[i], aff->eq[j], 1 + v_div))
 				continue;
 			if (isl_basic_map_drop_equality(bmap, i) < 0)
 				goto error;
