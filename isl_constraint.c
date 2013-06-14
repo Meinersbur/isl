@@ -1251,33 +1251,32 @@ __isl_give isl_aff *isl_constraint_get_aff(
 	return aff;
 }
 
+/* Construct an inequality (eq = 0) or equality (eq = 1) constraint from "aff".
+ * In particular, construct aff >= 0 or aff = 0.
+ *
+ * The denominator of "aff" can be ignored.
+ */
+static __isl_give isl_constraint *isl_constraint_alloc_aff(int eq,
+	__isl_take isl_aff *aff)
+{
+	isl_local_space *ls;
+	isl_vec *v;
+
+	if (!aff)
+		return NULL;
+	ls = isl_aff_get_domain_local_space(aff);
+	v = isl_vec_drop_els(isl_vec_copy(aff->v), 0, 1);
+	isl_aff_free(aff);
+
+	return isl_constraint_alloc_vec(eq, ls, v);
+}
+
 /* Construct an equality constraint equating the given affine expression
  * to zero.
  */
 __isl_give isl_constraint *isl_equality_from_aff(__isl_take isl_aff *aff)
 {
-	int k;
-	isl_local_space *ls;
-	isl_basic_set *bset;
-
-	if (!aff)
-		return NULL;
-
-	ls = isl_aff_get_domain_local_space(aff);
-	bset = isl_basic_set_from_local_space(ls);
-	bset = isl_basic_set_extend_constraints(bset, 1, 0);
-	k = isl_basic_set_alloc_equality(bset);
-	if (k < 0)
-		goto error;
-
-	isl_seq_cpy(bset->eq[k], aff->v->el + 1, aff->v->size - 1);
-	isl_aff_free(aff);
-
-	return isl_basic_set_constraint(bset, &bset->eq[k]);
-error:
-	isl_aff_free(aff);
-	isl_basic_set_free(bset);
-	return NULL;
+	return isl_constraint_alloc_aff(1, aff);
 }
 
 /* Construct an inequality constraint enforcing the given affine expression
@@ -1285,26 +1284,5 @@ error:
  */
 __isl_give isl_constraint *isl_inequality_from_aff(__isl_take isl_aff *aff)
 {
-	int k;
-	isl_local_space *ls;
-	isl_basic_set *bset;
-
-	if (!aff)
-		return NULL;
-
-	ls = isl_aff_get_domain_local_space(aff);
-	bset = isl_basic_set_from_local_space(ls);
-	bset = isl_basic_set_extend_constraints(bset, 0, 1);
-	k = isl_basic_set_alloc_inequality(bset);
-	if (k < 0)
-		goto error;
-
-	isl_seq_cpy(bset->ineq[k], aff->v->el + 1, aff->v->size - 1);
-	isl_aff_free(aff);
-
-	return isl_basic_set_constraint(bset, &bset->ineq[k]);
-error:
-	isl_aff_free(aff);
-	isl_basic_set_free(bset);
-	return NULL;
+	return isl_constraint_alloc_aff(0, aff);
 }
