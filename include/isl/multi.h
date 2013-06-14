@@ -34,6 +34,9 @@ __isl_give isl_id *isl_multi_##BASE##_get_dim_id(			\
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_set_dim_name(		\
 	__isl_take isl_multi_##BASE *multi,				\
 	enum isl_dim_type type, unsigned pos, const char *s);		\
+__isl_give isl_multi_##BASE *isl_multi_##BASE##_set_dim_id(		\
+	__isl_take isl_multi_##BASE *multi,				\
+	enum isl_dim_type type, unsigned pos, __isl_take isl_id *id);	\
 const char *isl_multi_##BASE##_get_tuple_name(				\
 	__isl_keep isl_multi_##BASE *multi, enum isl_dim_type type);	\
 int isl_multi_##BASE##_has_tuple_id(__isl_keep isl_multi_##BASE *multi,	\

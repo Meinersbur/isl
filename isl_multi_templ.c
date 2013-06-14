@@ -348,6 +348,28 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),reset_space)(
 	return FN(MULTI(BASE),reset_space_and_domain)(multi, space, domain);
 }
 
+/* Set the id of the given dimension of "multi" to "id".
+ */
+__isl_give MULTI(BASE) *FN(MULTI(BASE),set_dim_id)(
+	__isl_take MULTI(BASE) *multi,
+	enum isl_dim_type type, unsigned pos, __isl_take isl_id *id)
+{
+	isl_space *space;
+
+	multi = FN(MULTI(BASE),cow)(multi);
+	if (!multi || !id)
+		goto error;
+
+	space = FN(MULTI(BASE),get_space)(multi);
+	space = isl_space_set_dim_id(space, type, pos, id);
+
+	return FN(MULTI(BASE),reset_space)(multi, space);
+error:
+	isl_id_free(id);
+	FN(MULTI(BASE),free)(multi);
+	return NULL;
+}
+
 __isl_give MULTI(BASE) *FN(MULTI(BASE),set_tuple_name)(
 	__isl_keep MULTI(BASE) *multi, enum isl_dim_type type,
 	const char *s)
