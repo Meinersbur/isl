@@ -1093,10 +1093,11 @@ void test_gist_case(struct isl_ctx *ctx, const char *name)
 	fclose(input);
 }
 
-void test_gist(struct isl_ctx *ctx)
+static int test_gist(struct isl_ctx *ctx)
 {
 	const char *str;
 	isl_basic_set *bset1, *bset2;
+	isl_map *map1, *map2;
 
 	test_gist_case(ctx, "gist1");
 
@@ -1122,6 +1123,32 @@ void test_gist(struct isl_ctx *ctx)
 	bset1 = isl_basic_set_gist(bset1, bset2);
 	assert(bset1 && bset1->n_div == 0);
 	isl_basic_set_free(bset1);
+
+	/* Check that the integer divisions of the second disjunct
+	 * do not spread to the first disjunct.
+	 */
+	str = "[t1] -> { S_0[] -> A[o0] : (exists (e0 = [(-t1 + o0)/16]: "
+		"16e0 = -t1 + o0 and o0 >= 0 and o0 <= 15 and t1 >= 0)) or "
+		"(exists (e0 = [(-1 + t1)/16], "
+			"e1 = [(-16 + t1 - 16e0)/4294967296]: "
+			"4294967296e1 = -16 + t1 - o0 - 16e0 and "
+			"16e0 <= -1 + t1 and 16e0 >= -16 + t1 and o0 >= 0 and "
+			"o0 <= 4294967295 and t1 <= -1)) }";
+	map1 = isl_map_read_from_str(ctx, str);
+	str = "[t1] -> { S_0[] -> A[o0] : t1 >= 0 and t1 <= 4294967295 }";
+	map2 = isl_map_read_from_str(ctx, str);
+	map1 = isl_map_gist(map1, map2);
+	if (!map1)
+		return -1;
+	if (map1->n != 1)
+		isl_die(ctx, isl_error_unknown, "expecting single disjunct",
+			isl_map_free(map1); return -1);
+	if (isl_basic_map_dim(map1->p[0], isl_dim_div) != 1)
+		isl_die(ctx, isl_error_unknown, "expecting single div",
+			isl_map_free(map1); return -1);
+	isl_map_free(map1);
+
+	return 0;
 }
 
 int test_coalesce_set(isl_ctx *ctx, const char *str, int check_one)
@@ -4340,6 +4367,7 @@ struct {
 	{ "subset", &test_subset },
 	{ "subtract", &test_subtract },
 	{ "lexmin", &test_lexmin },
+	{ "gist", &test_gist },
 	{ "piecewise quasi-polynomials", &test_pwqp },
 };
 
@@ -4370,7 +4398,6 @@ int main()
 	test_dim(ctx);
 	test_application(ctx);
 	test_convex_hull(ctx);
-	test_gist(ctx);
 	test_closure(ctx);
 	isl_ctx_free(ctx);
 	return 0;
