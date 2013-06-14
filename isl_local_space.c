@@ -721,7 +721,6 @@ __isl_give isl_local_space *isl_local_space_substitute_equalities(
 	unsigned total;
 	unsigned n_div;
 
-	ls = isl_local_space_cow(ls);
 	if (!ls || !eq)
 		goto error;
 
@@ -739,6 +738,12 @@ __isl_give isl_local_space *isl_local_space_substitute_equalities(
 		for (k = 0; k < ls->div->n_row; ++k) {
 			if (isl_int_is_zero(ls->div->row[k][1 + j]))
 				continue;
+			ls = isl_local_space_cow(ls);
+			if (!ls)
+				goto error;
+			ls->div = isl_mat_cow(ls->div);
+			if (!ls->div)
+				goto error;
 			isl_seq_elim(ls->div->row[k] + 1, eq->eq[i], j, total,
 					&ls->div->row[k][0]);
 			normalize_div(ls, k);

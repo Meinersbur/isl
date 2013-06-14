@@ -429,6 +429,7 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),gist_aligned)(
 {
 	int i;
 
+	multi = FN(MULTI(BASE),cow)(multi);
 	if (!multi || !context)
 		goto error;
 
