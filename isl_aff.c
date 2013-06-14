@@ -5604,6 +5604,82 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_pw_aff(
 	return pma;
 }
 
+/* Construct a set or map mapping the shared (parameter) domain
+ * of the piecewise affine expressions to the range of "mpa"
+ * with each dimension in the range equated to the
+ * corresponding piecewise affine expression.
+ */
+static __isl_give isl_map *map_from_multi_pw_aff(
+	__isl_take isl_multi_pw_aff *mpa)
+{
+	int i;
+	isl_space *space;
+	isl_map *map;
+
+	if (!mpa)
+		return NULL;
+
+	if (isl_space_dim(mpa->space, isl_dim_out) != mpa->n)
+		isl_die(isl_multi_pw_aff_get_ctx(mpa), isl_error_internal,
+			"invalid space", return isl_multi_pw_aff_free(mpa));
+
+	space = isl_multi_pw_aff_get_domain_space(mpa);
+	map = isl_map_universe(isl_space_from_domain(space));
+
+	for (i = 0; i < mpa->n; ++i) {
+		isl_pw_aff *pa;
+		isl_map *map_i;
+
+		pa = isl_pw_aff_copy(mpa->p[i]);
+		map_i = map_from_pw_aff(pa);
+
+		map = isl_map_flat_range_product(map, map_i);
+	}
+
+	map = isl_map_reset_space(map, isl_multi_pw_aff_get_space(mpa));
+
+	isl_multi_pw_aff_free(mpa);
+	return map;
+}
+
+/* Construct a map mapping the shared domain
+ * of the piecewise affine expressions to the range of "mpa"
+ * with each dimension in the range equated to the
+ * corresponding piecewise affine expression.
+ */
+__isl_give isl_map *isl_map_from_multi_pw_aff(__isl_take isl_multi_pw_aff *mpa)
+{
+	if (!mpa)
+		return NULL;
+	if (isl_space_is_set(mpa->space))
+		isl_die(isl_multi_pw_aff_get_ctx(mpa), isl_error_internal,
+			"space of input is not a map", goto error);
+
+	return map_from_multi_pw_aff(mpa);
+error:
+	isl_multi_pw_aff_free(mpa);
+	return NULL;
+}
+
+/* Construct a set mapping the shared parameter domain
+ * of the piecewise affine expressions to the space of "mpa"
+ * with each dimension in the range equated to the
+ * corresponding piecewise affine expression.
+ */
+__isl_give isl_set *isl_set_from_multi_pw_aff(__isl_take isl_multi_pw_aff *mpa)
+{
+	if (!mpa)
+		return NULL;
+	if (!isl_space_is_set(mpa->space))
+		isl_die(isl_multi_pw_aff_get_ctx(mpa), isl_error_internal,
+			"space of input is not a set", goto error);
+
+	return map_from_multi_pw_aff(mpa);
+error:
+	isl_multi_pw_aff_free(mpa);
+	return NULL;
+}
+
 /* Construct and return a piecewise multi affine expression
  * that is equal to the given multi piecewise affine expression
  * on the shared domain of the piecewise affine expressions.
