@@ -4340,6 +4340,54 @@ static int test_pw_multi_aff(isl_ctx *ctx)
 	return 0;
 }
 
+/* Check that we can properly parse multi piecewise affine expressions
+ * where the piecewise affine expressions have different domains.
+ */
+static int test_multi_pw_aff(isl_ctx *ctx)
+{
+	const char *str;
+	isl_set *dom, *dom2;
+	isl_multi_pw_aff *mpa1, *mpa2;
+	isl_pw_aff *pa;
+	int equal;
+	int equal_domain;
+
+	mpa1 = isl_multi_pw_aff_read_from_str(ctx, "{ [i] -> [i] }");
+	dom = isl_set_read_from_str(ctx, "{ [i] : i > 0 }");
+	mpa1 = isl_multi_pw_aff_intersect_domain(mpa1, dom);
+	mpa2 = isl_multi_pw_aff_read_from_str(ctx, "{ [i] -> [2i] }");
+	mpa2 = isl_multi_pw_aff_flat_range_product(mpa1, mpa2);
+	str = "{ [i] -> [(i : i > 0), 2i] }";
+	mpa1 = isl_multi_pw_aff_read_from_str(ctx, str);
+
+	equal = isl_multi_pw_aff_plain_is_equal(mpa1, mpa2);
+
+	pa = isl_multi_pw_aff_get_pw_aff(mpa1, 0);
+	dom = isl_pw_aff_domain(pa);
+	pa = isl_multi_pw_aff_get_pw_aff(mpa1, 1);
+	dom2 = isl_pw_aff_domain(pa);
+	equal_domain = isl_set_is_equal(dom, dom2);
+
+	isl_set_free(dom);
+	isl_set_free(dom2);
+	isl_multi_pw_aff_free(mpa1);
+	isl_multi_pw_aff_free(mpa2);
+
+	if (equal < 0)
+		return -1;
+	if (!equal)
+		isl_die(ctx, isl_error_unknown,
+			"expressions not equal", return -1);
+
+	if (equal_domain < 0)
+		return -1;
+	if (equal_domain)
+		isl_die(ctx, isl_error_unknown,
+			"domains unexpectedly equal", return -1);
+
+	return 0;
+}
+
 /* This is a regression test for a bug where isl_basic_map_simplify
  * would end up in an infinite loop.  In particular, we construct
  * an empty basic set that is not obviously empty.
@@ -4430,6 +4478,7 @@ struct {
 	{ "simplify", &test_simplify },
 	{ "curry", &test_curry },
 	{ "piecewise multi affine expressions", &test_pw_multi_aff },
+	{ "multi piecewise affine expressions", &test_multi_pw_aff },
 	{ "conversion", &test_conversion },
 	{ "list", &test_list },
 	{ "align parameters", &test_align_parameters },
