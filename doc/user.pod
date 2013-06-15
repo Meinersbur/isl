@@ -363,8 +363,14 @@ Specific integer values can be created using the following functions.
 		long i);
 	__isl_give isl_val *isl_val_int_from_ui(isl_ctx *ctx,
 		unsigned long u);
+	__isl_give isl_val *isl_val_int_from_chunks(isl_ctx *ctx,
+		size_t n, size_t size, const void *chunks);
 
-They can be copied and freed using the following functions.
+The function C<isl_val_int_from_chunks> constructs an C<isl_val>
+from the C<n> I<digits>, each consisting of C<size> bytes, stored at C<chunks>.
+The least significant digit is assumed to be stored first.
+
+Value objects can be copied and freed using the following functions.
 
 	#include <isl/val.h>
 	__isl_give isl_val *isl_val_copy(__isl_keep isl_val *v);
@@ -377,9 +383,20 @@ They can be inspected using the following functions.
 	long isl_val_get_num_si(__isl_keep isl_val *v);
 	long isl_val_get_den_si(__isl_keep isl_val *v);
 	double isl_val_get_d(__isl_keep isl_val *v);
+	size_t isl_val_n_abs_num_chunks(__isl_keep isl_val *v,
+		size_t size);
+	int isl_val_get_abs_num_chunks(__isl_keep isl_val *v,
+		size_t size, void *chunks);
 
-Note that C<isl_val_get_num_si>, C<isl_val_get_den_si> and
-C<isl_val_get_d> can only be applied to rational values.
+C<isl_val_n_abs_num_chunks> returns the number of I<digits>
+of C<size> bytes needed to store the absolute value of the
+numerator of C<v>.
+C<isl_val_get_abs_num_chunks> stores these digits at C<chunks>,
+which is assumed to have been preallocated by the caller.
+The least significant digit is stored first.
+Note that C<isl_val_get_num_si>, C<isl_val_get_den_si>,
+C<isl_val_get_d>, C<isl_val_n_abs_num_chunks>
+and C<isl_val_get_abs_num_chunks> can only be applied to rational values.
 
 An C<isl_val> can be modified using the following function.
 

@@ -27,6 +27,8 @@ __isl_give isl_val *isl_val_infty(isl_ctx *ctx);
 __isl_give isl_val *isl_val_neginfty(isl_ctx *ctx);
 __isl_give isl_val *isl_val_int_from_si(isl_ctx *ctx, long i);
 __isl_give isl_val *isl_val_int_from_ui(isl_ctx *ctx, unsigned long u);
+__isl_give isl_val *isl_val_int_from_chunks(isl_ctx *ctx, size_t n,
+	size_t size, const void *chunks);
 
 __isl_give isl_val *isl_val_copy(__isl_keep isl_val *v);
 void *isl_val_free(__isl_take isl_val *v);
@@ -35,6 +37,9 @@ isl_ctx *isl_val_get_ctx(__isl_keep isl_val *val);
 long isl_val_get_num_si(__isl_keep isl_val *v);
 long isl_val_get_den_si(__isl_keep isl_val *v);
 double isl_val_get_d(__isl_keep isl_val *v);
+size_t isl_val_n_abs_num_chunks(__isl_keep isl_val *v, size_t size);
+int isl_val_get_abs_num_chunks(__isl_keep isl_val *v, size_t size,
+	void *chunks);
 
 __isl_give isl_val *isl_val_set_si(__isl_take isl_val *v, long i);
 
