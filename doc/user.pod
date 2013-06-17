@@ -551,14 +551,13 @@ in the next release.
 
 =head2 Integers (obsolescent)
 
-All operations on integers, mainly the coefficients
-of the constraints describing the sets and relations,
-are performed in exact integer arithmetic using C<GMP>.
-However, to allow future versions of C<isl> to optionally
-support fixed integer arithmetic, all calls to C<GMP>
-are wrapped inside C<isl> specific macros.
-The basic type is C<isl_int> and the operations below
-are available on this type.
+In previous versions of C<isl>, integers were represented
+in the external interface using the C<isl_int> type.
+This type has now been superseded by C<isl_val>.
+The C<isl_int> type will be removed from the external interface
+in future releases.  New code should should not use C<isl_int>.
+
+The operations below are currently available on C<isl_int>s.
 The meanings of these operations are essentially the same
 as their C<GMP> C<mpz_> counterparts.
 As always with C<GMP> types, C<isl_int>s need to be
