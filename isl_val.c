@@ -1292,6 +1292,16 @@ __isl_give isl_printer *isl_printer_print_val(__isl_take isl_printer *p,
 	return p;
 }
 
+/* Is "val1" (obviously) equal to "val2"?
+ *
+ * This is a private copy of isl_val_eq for use in the generic
+ * isl_multi_*_plain_is_equal instantiated for isl_val.
+ */
+int isl_val_plain_is_equal(__isl_keep isl_val *val1, __isl_keep isl_val *val2)
+{
+	return isl_val_eq(val1, val2);
+}
+
 /* Insert "n" dimensions of type "type" at position "first".
  *
  * This function is only meant to be used in the generic isl_multi_*

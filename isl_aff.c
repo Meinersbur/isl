@@ -3514,29 +3514,6 @@ int isl_multi_aff_is_empty(__isl_keep isl_multi_aff *maff)
 	return 0;
 }
 
-int isl_multi_aff_plain_is_equal(__isl_keep isl_multi_aff *maff1,
-	__isl_keep isl_multi_aff *maff2)
-{
-	int i;
-	int equal;
-
-	if (!maff1 || !maff2)
-		return -1;
-	if (maff1->n != maff2->n)
-		return 0;
-	equal = isl_space_is_equal(maff1->space, maff2->space);
-	if (equal < 0 || !equal)
-		return equal;
-
-	for (i = 0; i < maff1->n; ++i) {
-		equal = isl_aff_plain_is_equal(maff1->p[i], maff2->p[i]);
-		if (equal < 0 || !equal)
-			return equal;
-	}
-
-	return 1;
-}
-
 /* Return the set of domain elements where "ma1" is lexicographically
  * smaller than or equal to "ma2".
  */

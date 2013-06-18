@@ -4235,6 +4235,9 @@ obviously equal to each other, use
 	int isl_pw_multi_aff_plain_is_equal(
 		__isl_keep isl_pw_multi_aff *pma1,
 		__isl_keep isl_pw_multi_aff *pma2);
+	int isl_multi_pw_aff_plain_is_equal(
+		__isl_keep isl_multi_pw_aff *mpa1,
+		__isl_keep isl_multi_pw_aff *mpa2);
 
 Operations include
 

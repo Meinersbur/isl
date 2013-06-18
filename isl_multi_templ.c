@@ -1209,3 +1209,28 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),from_range)(
 
 	return multi;
 }
+
+/* Are "multi1" and "multi2" obviously equal?
+ */
+int FN(MULTI(BASE),plain_is_equal)(__isl_keep MULTI(BASE) *multi1,
+	__isl_keep MULTI(BASE) *multi2)
+{
+	int i;
+	int equal;
+
+	if (!multi1 || !multi2)
+		return -1;
+	if (multi1->n != multi2->n)
+		return 0;
+	equal = isl_space_is_equal(multi1->space, multi2->space);
+	if (equal < 0 || !equal)
+		return equal;
+
+	for (i = 0; i < multi1->n; ++i) {
+		equal = FN(EL,plain_is_equal)(multi1->p[i], multi2->p[i]);
+		if (equal < 0 || !equal)
+			return equal;
+	}
+
+	return 1;
+}
