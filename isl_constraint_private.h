@@ -1,8 +1,9 @@
 #ifndef ISL_CONSTRAINT_PRIVATE_H
 #define ISL_CONSTRAINT_PRIVATE_H
 
-#include <isl/aff.h>
 #include <isl/constraint.h>
+#include <isl/local_space.h>
+#include <isl/vec.h>
 
 struct isl_constraint {
 	int ref;
