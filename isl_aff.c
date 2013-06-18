@@ -5322,3 +5322,69 @@ error:
 	isl_pw_multi_aff_free(pma);
 	return NULL;
 }
+
+/* Internal data structure for isl_union_pw_multi_aff_scale_multi_val.
+ * mv contains the mv argument.
+ * res collects the results.
+ */
+struct isl_union_pw_multi_aff_scale_multi_val_data {
+	isl_multi_val *mv;
+	isl_union_pw_multi_aff *res;
+};
+
+/* This function is called for each entry of an isl_union_pw_multi_aff.
+ * If the space of the entry matches that of data->mv,
+ * then apply isl_pw_multi_aff_scale_multi_val and add the result
+ * to data->res.
+ */
+static int union_pw_multi_aff_scale_multi_val_entry(void **entry, void *user)
+{
+	struct isl_union_pw_multi_aff_scale_multi_val_data *data = user;
+	isl_pw_multi_aff *pma = *entry;
+
+	if (!pma)
+		return -1;
+	if (!isl_space_tuple_match(pma->dim, isl_dim_out,
+				    data->mv->space, isl_dim_set))
+		return 0;
+
+	pma = isl_pw_multi_aff_copy(pma);
+	pma = isl_pw_multi_aff_scale_multi_val(pma,
+						isl_multi_val_copy(data->mv));
+	data->res = isl_union_pw_multi_aff_add_pw_multi_aff(data->res, pma);
+	if (!data->res)
+		return -1;
+
+	return 0;
+}
+
+/* Scale the elements of "upma" by the corresponding elements of "mv",
+ * for those entries that match the space of "mv".
+ */
+__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_scale_multi_val(
+	__isl_take isl_union_pw_multi_aff *upma, __isl_take isl_multi_val *mv)
+{
+	struct isl_union_pw_multi_aff_scale_multi_val_data data;
+
+	upma = isl_union_pw_multi_aff_align_params(upma,
+						isl_multi_val_get_space(mv));
+	mv = isl_multi_val_align_params(mv,
+					isl_union_pw_multi_aff_get_space(upma));
+	if (!upma || !mv)
+		goto error;
+
+	data.mv = mv;
+	data.res = isl_union_pw_multi_aff_alloc(isl_space_copy(upma->dim),
+						upma->table.n);
+	if (isl_hash_table_foreach(upma->dim->ctx, &upma->table,
+		       &union_pw_multi_aff_scale_multi_val_entry, &data) < 0)
+		goto error;
+
+	isl_multi_val_free(mv);
+	isl_union_pw_multi_aff_free(upma);
+	return data.res;
+error:
+	isl_multi_val_free(mv);
+	isl_union_pw_multi_aff_free(upma);
+	return NULL;
+}

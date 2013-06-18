@@ -500,6 +500,8 @@ __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_sub(
 	__isl_take isl_union_pw_multi_aff *upma1,
 	__isl_take isl_union_pw_multi_aff *upma2);
 
+__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_scale_multi_val(
+	__isl_take isl_union_pw_multi_aff *upma, __isl_take isl_multi_val *mv);
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_scale_vec(
 	__isl_take isl_union_pw_multi_aff *upma, __isl_take isl_vec *v);
 
