@@ -4401,20 +4401,9 @@ C<isl_multi_aff_sub> subtracts the second argument from the first.
 	isl_union_pw_multi_aff_scale_multi_val(
 		__isl_take isl_union_pw_multi_aff *upma,
 		__isl_take isl_multi_val *mv);
-	__isl_give isl_multi_aff *isl_multi_aff_scale_vec(
-		__isl_take isl_multi_aff *ma,
-		__isl_take isl_vec *v);
-	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_scale_vec(
-		__isl_take isl_pw_multi_aff *pma,
-		__isl_take isl_vec *v);
-	__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_scale_vec(
-		__isl_take isl_union_pw_multi_aff *upma,
-		__isl_take isl_vec *v);
 
 C<isl_multi_aff_scale_multi_val> scales the elements of C<ma>
 by the corresponding elements of C<mv>.
-C<isl_multi_aff_scale_vec> scales the first elements of C<ma>
-by the corresponding elements of C<v>.
 
 	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_intersect_params(
 		__isl_take isl_pw_multi_aff *pma,

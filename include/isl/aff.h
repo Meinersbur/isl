@@ -9,7 +9,6 @@
 #include <isl/multi.h>
 #include <isl/union_set_type.h>
 #include <isl/val.h>
-#include <isl/vec.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -311,8 +310,6 @@ __isl_give isl_multi_aff *isl_multi_aff_sub(__isl_take isl_multi_aff *ma1,
 
 __isl_give isl_multi_aff *isl_multi_aff_scale(__isl_take isl_multi_aff *maff,
 	isl_int f);
-__isl_give isl_multi_aff *isl_multi_aff_scale_vec(__isl_take isl_multi_aff *ma,
-	__isl_take isl_vec *v);
 
 __isl_give isl_multi_aff *isl_multi_aff_product(
 	__isl_take isl_multi_aff *ma1, __isl_take isl_multi_aff *ma2);
@@ -411,8 +408,6 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_scale_val(
 	__isl_take isl_pw_multi_aff *pma, __isl_take isl_val *v);
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_scale_multi_val(
 	__isl_take isl_pw_multi_aff *pma, __isl_take isl_multi_val *mv);
-__isl_give isl_pw_multi_aff *isl_pw_multi_aff_scale_vec(
-	__isl_take isl_pw_multi_aff *pma, __isl_take isl_vec *v);
 
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_union_lexmin(
 	__isl_take isl_pw_multi_aff *pma1,
@@ -502,8 +497,6 @@ __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_sub(
 
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_scale_multi_val(
 	__isl_take isl_union_pw_multi_aff *upma, __isl_take isl_multi_val *mv);
-__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_scale_vec(
-	__isl_take isl_union_pw_multi_aff *upma, __isl_take isl_vec *v);
 
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_flat_range_product(
 	__isl_take isl_union_pw_multi_aff *upma1,
