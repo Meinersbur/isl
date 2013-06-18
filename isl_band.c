@@ -337,7 +337,7 @@ int isl_band_list_foreach_band(__isl_keep isl_band_list *list,
  * res collects the result for all statements
  */
 struct isl_band_tile_data {
-	isl_vec *sizes;
+	isl_multi_val *sizes;
 	isl_union_pw_multi_aff *res;
 	isl_pw_multi_aff *tiled;
 	int scale;
@@ -368,14 +368,12 @@ static int multi_aff_tile(__isl_take isl_set *set,
 	isl_val *v;
 
 	n = isl_multi_aff_dim(ma, isl_dim_out);
-	if (isl_vec_size(data->sizes) < n)
-		n = isl_vec_size(data->sizes);
 
 	for (i = 0; i < n; ++i) {
 		isl_aff *aff;
 
 		aff = isl_multi_aff_get_aff(ma, i);
-		v = isl_vec_get_element_val(data->sizes, i);
+		v = isl_multi_val_get_val(data->sizes, i);
 
 		aff = isl_aff_scale_down_val(aff, isl_val_copy(v));
 		aff = isl_aff_floor(aff);
@@ -421,13 +419,14 @@ error:
  * and return the result.
  */
 static isl_union_pw_multi_aff *isl_union_pw_multi_aff_tile(
-	__isl_take isl_union_pw_multi_aff *sched, __isl_keep isl_vec *sizes)
+	__isl_take isl_union_pw_multi_aff *sched,
+	__isl_keep isl_multi_val *sizes)
 {
 	isl_ctx *ctx;
 	isl_space *space;
 	struct isl_band_tile_data data = { sizes };
 
-	ctx = isl_vec_get_ctx(sizes);
+	ctx = isl_multi_val_get_ctx(sizes);
 
 	space = isl_union_pw_multi_aff_get_space(sched);
 	data.res = isl_union_pw_multi_aff_empty(space);
@@ -442,6 +441,74 @@ static isl_union_pw_multi_aff *isl_union_pw_multi_aff_tile(
 error:
 	isl_union_pw_multi_aff_free(sched);
 	isl_union_pw_multi_aff_free(data.res);
+	return NULL;
+}
+
+/* Extract the range space from "pma" and store it in *user.
+ * All entries are expected to have the same range space, so we can
+ * stop after extracting the range space from the first entry.
+ */
+static int extract_range_space(__isl_take isl_pw_multi_aff *pma, void *user)
+{
+	isl_space **space = user;
+
+	*space = isl_space_range(isl_pw_multi_aff_get_space(pma));
+	isl_pw_multi_aff_free(pma);
+
+	return -1;
+}
+
+/* Extract the range space of "band".  All entries in band->pma should
+ * have the same range space.  Furthermore, band->pma should have at least
+ * one entry.
+ */
+static __isl_give isl_space *band_get_range_space(__isl_keep isl_band *band)
+{
+	isl_space *space;
+
+	if (!band)
+		return NULL;
+
+	space = NULL;
+	isl_union_pw_multi_aff_foreach_pw_multi_aff(band->pma,
+						&extract_range_space, &space);
+
+	return space;
+}
+
+/* Construct and return an isl_multi_val in the given space, with as entries
+ * the first elements of "v", padded with ones if the size of "v" is smaller
+ * than the dimension of "space".
+ */
+static __isl_give isl_multi_val *multi_val_from_vec(__isl_take isl_space *space,
+	__isl_take isl_vec *v)
+{
+	isl_ctx *ctx;
+	isl_multi_val *mv;
+	int i, n, size;
+
+	if (!space || !v)
+		goto error;
+
+	ctx = isl_space_get_ctx(space);
+	mv = isl_multi_val_zero(space);
+	n = isl_multi_val_dim(mv, isl_dim_set);
+	size = isl_vec_size(v);
+	if (n < size)
+		size = n;
+
+	for (i = 0; i < size; ++i) {
+		isl_val *val = isl_vec_get_element_val(v, i);
+		mv = isl_multi_val_set_val(mv, i, val);
+	}
+	for (i = size; i < n; ++i)
+		mv = isl_multi_val_set_val(mv, i, isl_val_one(ctx));
+
+	isl_vec_free(v);
+	return mv;
+error:
+	isl_space_free(space);
+	isl_vec_free(v);
 	return NULL;
 }
 
@@ -470,6 +537,8 @@ int isl_band_tile(__isl_keep isl_band *band, __isl_take isl_vec *sizes)
 	isl_band *child;
 	isl_band_list *list = NULL;
 	isl_union_pw_multi_aff *sched = NULL, *child_sched = NULL;
+	isl_space *space;
+	isl_multi_val *mv_sizes;
 
 	if (!band || !sizes)
 		goto error;
@@ -481,18 +550,21 @@ int isl_band_tile(__isl_keep isl_band *band, __isl_take isl_vec *sizes)
 	if (!list)
 		goto error;
 
+	space = band_get_range_space(band);
+	mv_sizes = multi_val_from_vec(space, isl_vec_copy(sizes));
 	sched = isl_union_pw_multi_aff_copy(band->pma);
-	sched = isl_union_pw_multi_aff_tile(sched, sizes);
+	sched = isl_union_pw_multi_aff_tile(sched, mv_sizes);
 
 	child_sched = isl_union_pw_multi_aff_copy(child->pma);
 	if (isl_options_get_tile_shift_point_loops(ctx)) {
 		isl_union_pw_multi_aff *scaled;
 		scaled = isl_union_pw_multi_aff_copy(sched);
 		if (!isl_options_get_tile_scale_tile_loops(ctx))
-			scaled = isl_union_pw_multi_aff_scale_vec(scaled,
-							isl_vec_copy(sizes));
+			scaled = isl_union_pw_multi_aff_scale_multi_val(scaled,
+						isl_multi_val_copy(mv_sizes));
 		child_sched = isl_union_pw_multi_aff_sub(child_sched, scaled);
 	}
+	isl_multi_val_free(mv_sizes);
 	if (!sched || !child_sched)
 		goto error;
 
