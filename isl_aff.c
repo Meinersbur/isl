@@ -5283,3 +5283,42 @@ error:
 	isl_union_pw_multi_aff_free(upma);
 	return NULL;
 }
+
+/* Scale the elements of "pma" by the corresponding elements of "mv".
+ */
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_scale_multi_val(
+	__isl_take isl_pw_multi_aff *pma, __isl_take isl_multi_val *mv)
+{
+	int i;
+
+	pma = isl_pw_multi_aff_cow(pma);
+	if (!pma || !mv)
+		goto error;
+	if (!isl_space_tuple_match(pma->dim, isl_dim_out,
+					mv->space, isl_dim_set))
+		isl_die(isl_pw_multi_aff_get_ctx(pma), isl_error_invalid,
+			"spaces don't match", goto error);
+	if (!isl_space_match(pma->dim, isl_dim_param,
+					mv->space, isl_dim_param)) {
+		pma = isl_pw_multi_aff_align_params(pma,
+					    isl_multi_val_get_space(mv));
+		mv = isl_multi_val_align_params(mv,
+					    isl_pw_multi_aff_get_space(pma));
+		if (!pma || !mv)
+			goto error;
+	}
+
+	for (i = 0; i < pma->n; ++i) {
+		pma->p[i].maff = isl_multi_aff_scale_multi_val(pma->p[i].maff,
+							isl_multi_val_copy(mv));
+		if (!pma->p[i].maff)
+			goto error;
+	}
+
+	isl_multi_val_free(mv);
+	return pma;
+error:
+	isl_multi_val_free(mv);
+	isl_pw_multi_aff_free(pma);
+	return NULL;
+}
