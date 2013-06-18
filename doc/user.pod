@@ -4230,7 +4230,7 @@ It can be modified using
 		unsigned n);
 
 To check whether two multiple affine expressions are
-obviously equal to each other, use
+(obviously) equal to each other, use
 
 	int isl_multi_aff_plain_is_equal(__isl_keep isl_multi_aff *maff1,
 		__isl_keep isl_multi_aff *maff2);
@@ -4238,6 +4238,9 @@ obviously equal to each other, use
 		__isl_keep isl_pw_multi_aff *pma1,
 		__isl_keep isl_pw_multi_aff *pma2);
 	int isl_multi_pw_aff_plain_is_equal(
+		__isl_keep isl_multi_pw_aff *mpa1,
+		__isl_keep isl_multi_pw_aff *mpa2);
+	int isl_multi_pw_aff_is_equal(
 		__isl_keep isl_multi_pw_aff *mpa1,
 		__isl_keep isl_multi_pw_aff *mpa2);
 

@@ -5647,3 +5647,49 @@ int isl_pw_aff_is_equal(__isl_keep isl_pw_aff *pa1, __isl_keep isl_pw_aff *pa2)
 
 	return equal;
 }
+
+/* Do "mpa1" and "mpa2" represent the same function?
+ *
+ * Note that we cannot convert the entire isl_multi_pw_aff
+ * to a map because the domains of the piecewise affine expressions
+ * may not be the same.
+ */
+int isl_multi_pw_aff_is_equal(__isl_keep isl_multi_pw_aff *mpa1,
+	__isl_keep isl_multi_pw_aff *mpa2)
+{
+	int i;
+	int equal;
+
+	if (!mpa1 || !mpa2)
+		return -1;
+
+	if (!isl_space_match(mpa1->space, isl_dim_param,
+			     mpa2->space, isl_dim_param)) {
+		if (!isl_space_has_named_params(mpa1->space))
+			return 0;
+		if (!isl_space_has_named_params(mpa2->space))
+			return 0;
+		mpa1 = isl_multi_pw_aff_copy(mpa1);
+		mpa2 = isl_multi_pw_aff_copy(mpa2);
+		mpa1 = isl_multi_pw_aff_align_params(mpa1,
+					    isl_multi_pw_aff_get_space(mpa2));
+		mpa2 = isl_multi_pw_aff_align_params(mpa2,
+					    isl_multi_pw_aff_get_space(mpa1));
+		equal = isl_multi_pw_aff_is_equal(mpa1, mpa2);
+		isl_multi_pw_aff_free(mpa1);
+		isl_multi_pw_aff_free(mpa2);
+		return equal;
+	}
+
+	equal = isl_space_is_equal(mpa1->space, mpa2->space);
+	if (equal < 0 || !equal)
+		return equal;
+
+	for (i = 0; i < mpa1->n; ++i) {
+		equal = isl_pw_aff_is_equal(mpa1->p[i], mpa2->p[i]);
+		if (equal < 0 || !equal)
+			return equal;
+	}
+
+	return 1;
+}

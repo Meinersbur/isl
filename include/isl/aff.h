@@ -532,6 +532,9 @@ __isl_give isl_multi_pw_aff *isl_multi_pw_aff_gist(
 __isl_give isl_multi_pw_aff *isl_multi_pw_aff_gist_params(
 	__isl_take isl_multi_pw_aff *mpa, __isl_take isl_set *set);
 
+int isl_multi_pw_aff_is_equal(__isl_keep isl_multi_pw_aff *mpa1,
+	__isl_keep isl_multi_pw_aff *mpa2);
+
 __isl_give isl_multi_pw_aff *isl_multi_pw_aff_move_dims(
 	__isl_take isl_multi_pw_aff *pma,
 	enum isl_dim_type dst_type, unsigned dst_pos,
