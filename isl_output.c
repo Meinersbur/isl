@@ -25,6 +25,7 @@
 #include <isl_local_space_private.h>
 #include <isl_aff_private.h>
 #include <isl_ast_build_expr.h>
+#include <isl_sort.h>
 
 static const char *s_to[2] = { " -> ", " \\to " };
 static const char *s_and[2] = { " and ", " \\wedge " };
@@ -738,7 +739,7 @@ error:
 	return NULL;
 }
 
-static int aff_split_cmp(const void *p1, const void *p2)
+static int aff_split_cmp(const void *p1, const void *p2, void *user)
 {
 	const struct isl_aff_split *s1, *s2;
 	s1 = (const struct isl_aff_split *) p1;
@@ -800,7 +801,9 @@ static __isl_give struct isl_aff_split *split_aff(__isl_keep isl_map *map)
 			goto error;
 	}
 
-	qsort(split, map->n, sizeof(struct isl_aff_split), &aff_split_cmp);
+	if (isl_sort(split, map->n, sizeof(struct isl_aff_split),
+			&aff_split_cmp, NULL) < 0)
+		goto error;
 
 	n = map->n;
 	for (i = n - 1; i >= 1; --i) {
