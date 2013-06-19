@@ -13,6 +13,7 @@
 #include <isl/hash.h>
 #include <string.h>
 #include <gmp.h>
+#include <isl_config.h>
 
 #ifndef mp_get_memory_functions
 void mp_get_memory_functions(
@@ -68,7 +69,12 @@ typedef void (*isl_int_print_gmp_free_t)(void *, size_t);
 #define isl_int_submul_ui(r,i,j)	mpz_submul_ui(r,i,j)
 
 #define isl_int_gcd(r,i,j)	mpz_gcd(r,i,j)
+#ifdef GMP_NORMALIZE_GCDEXT
+void isl_gmp_gcdext(mpz_t G, mpz_t S, mpz_t T, mpz_t A, mpz_t B);
+#define isl_int_gcdext(g,x,y,i,j)	isl_gmp_gcdext(g,x,y,i,j)
+#else
 #define isl_int_gcdext(g,x,y,i,j)	mpz_gcdext(g,x,y,i,j)
+#endif
 #define isl_int_lcm(r,i,j)	mpz_lcm(r,i,j)
 #define isl_int_divexact(r,i,j)	mpz_divexact(r,i,j)
 #define isl_int_divexact_ui(r,i,j)	mpz_divexact_ui(r,i,j)
