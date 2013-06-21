@@ -430,10 +430,6 @@ isl_stat isl_set_foreach_orthant(__isl_keep isl_set *set,
 
 isl_bool isl_basic_set_eq_is_stride(__isl_keep isl_basic_set *bset, int i);
 
-int isl_basic_map_add_div_constraints_var(__isl_keep isl_basic_map *bmap,
-	unsigned pos, isl_int *div);
-int isl_basic_set_add_div_constraints_var(__isl_keep isl_basic_set *bset,
-	unsigned pos, isl_int *div);
 isl_bool isl_basic_map_is_div_constraint(__isl_keep isl_basic_map *bmap,
 	isl_int *constraint, unsigned div);
 isl_bool isl_basic_set_is_div_constraint(__isl_keep isl_basic_set *bset,

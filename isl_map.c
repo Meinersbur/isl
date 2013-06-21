@@ -5227,7 +5227,7 @@ static isl_stat add_lower_div_constraint(__isl_keep isl_basic_map *bmap,
 	return isl_stat_ok;
 }
 
-/* For a div d = floor(f/m), add the constraints
+/* For the div d = floor(f/m) at position "pos", add the constraints
  *
  *		f - m d >= 0
  *		-(f-(m-1)) + m d >= 0
@@ -5236,32 +5236,20 @@ static isl_stat add_lower_div_constraint(__isl_keep isl_basic_map *bmap,
  *
  *		f - m d >= m
  */
-int isl_basic_map_add_div_constraints_var(__isl_keep isl_basic_map *bmap,
-	unsigned pos, isl_int *div)
-{
-	if (add_upper_div_constraint(bmap, pos, div) < 0)
-		return -1;
-	if (add_lower_div_constraint(bmap, pos, div) < 0)
-		return -1;
-	return 0;
-}
-
-int isl_basic_set_add_div_constraints_var(__isl_keep isl_basic_set *bset,
-	unsigned pos, isl_int *div)
-{
-	return isl_basic_map_add_div_constraints_var(bset_to_bmap(bset),
-							pos, div);
-}
-
 int isl_basic_map_add_div_constraints(__isl_keep isl_basic_map *bmap,
-	unsigned div)
+	unsigned pos)
 {
+	isl_int *div;
 	int v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
 
 	if (v_div < 0)
 		return -1;
-	return isl_basic_map_add_div_constraints_var(bmap, v_div + div,
-							bmap->div[div]);
+	div = bmap->div[pos];
+	if (add_upper_div_constraint(bmap, v_div + pos, div) < 0)
+		return -1;
+	if (add_lower_div_constraint(bmap, v_div + pos, div) < 0)
+		return -1;
+	return 0;
 }
 
 /* For each known div d = floor(f/m), add the constraints
