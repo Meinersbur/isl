@@ -5287,7 +5287,8 @@ int isl_basic_set_add_div_constraints_var(__isl_keep isl_basic_set *bset,
 							pos, div);
 }
 
-int isl_basic_map_add_div_constraints(struct isl_basic_map *bmap, unsigned div)
+int isl_basic_map_add_div_constraints(__isl_keep isl_basic_map *bmap,
+	unsigned div)
 {
 	unsigned total = isl_basic_map_total_dim(bmap);
 	unsigned div_pos = total - bmap->n_div + div;
