@@ -2413,6 +2413,8 @@ static int setup_carry_lp(isl_ctx *ctx, struct isl_sched_graph *graph)
 
 	if (count_all_constraints(graph, &n_eq, &n_ineq) < 0)
 		return -1;
+	if (count_bound_coefficient_constraints(ctx, graph, &n_eq, &n_ineq) < 0)
+		return -1;
 
 	dim = isl_space_set_alloc(ctx, 0, total);
 	isl_basic_set_free(graph->lp);
@@ -2464,6 +2466,8 @@ static int setup_carry_lp(isl_ctx *ctx, struct isl_sched_graph *graph)
 		isl_int_set_si(graph->lp->ineq[k][0], 1);
 	}
 
+	if (add_bound_coefficient_constraints(ctx, graph) < 0)
+		return -1;
 	if (add_all_constraints(graph) < 0)
 		return -1;
 
