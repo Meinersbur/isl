@@ -2586,21 +2586,63 @@ error:
 	return NULL;
 }
 
+/* Print dimension "pos" of data->space to "p".
+ *
+ * data->user is assumed to be an isl_multi_pw_aff.
+ *
+ * If the current dimension is an output dimension, then print
+ * the corresponding piecewise affine expression.
+ * Otherwise, print the name of the dimension.
+ */
+static __isl_give isl_printer *print_dim_mpa(__isl_take isl_printer *p,
+	struct isl_print_space_data *data, unsigned pos)
+{
+	int i;
+	int need_parens;
+	isl_multi_pw_aff *mpa = data->user;
+	isl_pw_aff *pa;
+
+	if (data->type != isl_dim_out)
+		return print_name(data->space, p, data->type, pos, data->latex);
+
+	pa = mpa->p[pos];
+	if (pa->n == 0)
+		return isl_printer_print_str(p, "(0 : 1 = 0)");
+
+	need_parens = pa->n != 1 || !isl_set_plain_is_universe(pa->p[0].set);
+	if (need_parens)
+		p = isl_printer_print_str(p, "(");
+	for (i = 0; i < pa->n; ++i) {
+		if (i)
+			p = isl_printer_print_str(p, "; ");
+		p = print_aff_body(p, pa->p[i].aff);
+		p = print_disjuncts(pa->p[i].set, p, 0);
+	}
+	if (need_parens)
+		p = isl_printer_print_str(p, ")");
+
+	return p;
+}
+
+/* Print "mpa" to "p" in isl format.
+ */
 static __isl_give isl_printer *print_multi_pw_aff_isl(__isl_take isl_printer *p,
 	__isl_keep isl_multi_pw_aff *mpa)
 {
-	int i;
+	struct isl_print_space_data data = { 0 };
 
 	if (!mpa)
 		return isl_printer_free(p);
 
-	p = isl_printer_print_str(p, "(");
-	for (i = 0; i < mpa->n; ++i) {
-		if (i)
-			p = isl_printer_print_str(p, ",");
-		p = isl_printer_print_pw_aff(p, mpa->p[i]);
+	if (isl_space_dim(mpa->space, isl_dim_param) > 0) {
+		p = print_tuple(mpa->space, p, isl_dim_param, &data);
+		p = isl_printer_print_str(p, " -> ");
 	}
-	p = isl_printer_print_str(p, ")");
+	p = isl_printer_print_str(p, "{ ");
+	data.print_dim = &print_dim_mpa;
+	data.user = mpa;
+	p = print_space(mpa->space, p, 0, &data);
+	p = isl_printer_print_str(p, " }");
 	return p;
 }
 
