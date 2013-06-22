@@ -1098,3 +1098,25 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),move_dims)(__isl_take MULTI(BASE) *multi,
 	return multi;
 }
 #endif
+
+/* Convert a multiple expression defined over a parameter domain
+ * into one that is defined over a zero-dimensional set.
+ */
+__isl_give MULTI(BASE) *FN(MULTI(BASE),from_range)(
+	__isl_take MULTI(BASE) *multi)
+{
+	isl_space *space;
+
+	if (!multi)
+		return NULL;
+	if (!isl_space_is_set(multi->space))
+		isl_die(FN(MULTI(BASE),get_ctx)(multi), isl_error_invalid,
+			"not living in a set space",
+			return FN(MULTI(BASE),free)(multi));
+
+	space = FN(MULTI(BASE),get_space)(multi);
+	space = isl_space_from_range(space);
+	multi = FN(MULTI(BASE),reset_space)(multi, space);
+
+	return multi;
+}
