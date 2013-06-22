@@ -182,6 +182,14 @@ int FN(MULTI(BASE),find_dim_by_id)(__isl_keep MULTI(BASE) *multi,
 	return isl_space_find_dim_by_id(multi->space, type, id);
 }
 
+/* Return the id of the given dimension.
+ */
+__isl_give isl_id *FN(MULTI(BASE),get_dim_id)(__isl_keep MULTI(BASE) *multi,
+	enum isl_dim_type type, unsigned pos)
+{
+	return multi ? isl_space_get_dim_id(multi->space, type, pos) : NULL;
+}
+
 __isl_give MULTI(BASE) *FN(MULTI(BASE),set_dim_name)(
 	__isl_take MULTI(BASE) *multi,
 	enum isl_dim_type type, unsigned pos, const char *s)
