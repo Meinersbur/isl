@@ -555,7 +555,7 @@ In previous versions of C<isl>, integers were represented
 in the external interface using the C<isl_int> type.
 This type has now been superseded by C<isl_val>.
 The C<isl_int> type will be removed from the external interface
-in future releases.  New code should should not use C<isl_int>.
+in future releases.  New code should not use C<isl_int>.
 
 The operations below are currently available on C<isl_int>s.
 The meanings of these operations are essentially the same
