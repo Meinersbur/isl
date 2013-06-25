@@ -26,7 +26,7 @@ int main(int argc, char **argv)
 	p = isl_printer_end_line(p);
 	isl_printer_free(p);
 	assert(sample);
-	if (sample->size > 0)
+	if (isl_vec_size(sample) > 0)
 		assert(isl_basic_set_contains(bset, sample));
 	isl_basic_set_free(bset);
 	isl_vec_free(sample);
