@@ -2321,12 +2321,10 @@ int isl_tab_add_div(struct isl_tab *tab, __isl_keep isl_vec *div,
 	if (nonneg)
 		tab->var[r].is_nonneg = 1;
 
-	tab->bmap = isl_basic_map_extend_space(tab->bmap,
-		isl_basic_map_get_space(tab->bmap), 1, 0, 2);
-	k = isl_basic_map_alloc_div(tab->bmap);
-	if (k < 0)
+	k = isl_basic_map_dim(tab->bmap, isl_dim_div);
+	tab->bmap = isl_basic_map_add_div(tab->bmap, div);
+	if (!tab->bmap)
 		return -1;
-	isl_seq_cpy(tab->bmap->div[k], div->el, div->size);
 	if (isl_tab_push_var(tab, isl_tab_undo_bmap_div, &tab->var[r]) < 0)
 		return -1;
 

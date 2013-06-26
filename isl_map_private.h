@@ -231,6 +231,8 @@ int isl_basic_set_alloc_inequality(struct isl_basic_set *bset);
 int isl_basic_map_alloc_inequality(struct isl_basic_map *bmap);
 int isl_basic_map_free_inequality(struct isl_basic_map *bmap, unsigned n);
 int isl_basic_map_alloc_div(struct isl_basic_map *bmap);
+__isl_give isl_basic_map *isl_basic_map_add_div(__isl_take isl_basic_map *bmap,
+	__isl_keep isl_vec *div);
 int isl_basic_set_alloc_div(struct isl_basic_set *bset);
 int isl_basic_map_free_div(struct isl_basic_map *bmap, unsigned n);
 int isl_basic_set_free_div(struct isl_basic_set *bset, unsigned n);

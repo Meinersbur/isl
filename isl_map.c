@@ -1425,6 +1425,31 @@ int isl_basic_set_alloc_div(struct isl_basic_set *bset)
 	return isl_basic_map_alloc_div((struct isl_basic_map *)bset);
 }
 
+/* Add an extra integer division, prescribed by "div", to "bmap".
+ */
+__isl_give isl_basic_map *isl_basic_map_add_div(__isl_take isl_basic_map *bmap,
+	__isl_keep isl_vec *div)
+{
+	int k;
+
+	bmap = isl_basic_map_cow(bmap);
+	if (!bmap || !div)
+		return isl_basic_map_free(bmap);
+
+	if (div->size != 1 + 1 + isl_basic_map_dim(bmap, isl_dim_all))
+		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
+			"unexpected size", return isl_basic_map_free(bmap));
+
+	bmap = isl_basic_map_extend_space(bmap,
+					isl_basic_map_get_space(bmap), 1, 0, 2);
+	k = isl_basic_map_alloc_div(bmap);
+	if (k < 0)
+		return isl_basic_map_free(bmap);
+	isl_seq_cpy(bmap->div[k], div->el, div->size);
+
+	return bmap;
+}
+
 int isl_basic_map_free_div(struct isl_basic_map *bmap, unsigned n)
 {
 	if (!bmap)

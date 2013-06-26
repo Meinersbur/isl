@@ -3210,7 +3210,7 @@ static isl_bool context_gbr_add_div(struct isl_context *context,
 {
 	struct isl_context_gbr *cgbr = (struct isl_context_gbr *)context;
 	if (cgbr->cone) {
-		int k, r;
+		int r;
 
 		if (isl_tab_extend_cons(cgbr->cone, 3) < 0)
 			return isl_bool_error;
@@ -3219,12 +3219,9 @@ static isl_bool context_gbr_add_div(struct isl_context *context,
 		if ((r = isl_tab_allocate_var(cgbr->cone)) <0)
 			return isl_bool_error;
 
-		cgbr->cone->bmap = isl_basic_map_extend_space(cgbr->cone->bmap,
-			isl_basic_map_get_space(cgbr->cone->bmap), 1, 0, 2);
-		k = isl_basic_map_alloc_div(cgbr->cone->bmap);
-		if (k < 0)
+		cgbr->cone->bmap = isl_basic_map_add_div(cgbr->cone->bmap, div);
+		if (!cgbr->cone->bmap)
 			return isl_bool_error;
-		isl_seq_cpy(cgbr->cone->bmap->div[k], div->el, div->size);
 		if (isl_tab_push_var(cgbr->cone, isl_tab_undo_bmap_div,
 				    &cgbr->cone->var[r]) < 0)
 			return isl_bool_error;
