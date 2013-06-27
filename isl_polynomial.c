@@ -2290,7 +2290,8 @@ __isl_give isl_qpolynomial *isl_qpolynomial_val_on_domain(
 	if (!domain || !val)
 		goto error;
 
-	qp = isl_qpolynomial_alloc(domain, 0, isl_upoly_zero(domain->ctx));
+	qp = isl_qpolynomial_alloc(isl_space_copy(domain), 0,
+					isl_upoly_zero(domain->ctx));
 	if (!qp)
 		goto error;
 
@@ -2298,6 +2299,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_val_on_domain(
 	isl_int_set(cst->n, val->n);
 	isl_int_set(cst->d, val->d);
 
+	isl_space_free(domain);
 	isl_val_free(val);
 	return qp;
 error:
