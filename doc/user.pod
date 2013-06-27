@@ -3309,6 +3309,9 @@ They can be inspected using
 	__isl_give isl_id *isl_multi_val_get_tuple_id(
 		__isl_keep isl_multi_val *mv,
 		enum isl_dim_type type);
+	__isl_give isl_multi_val *isl_multi_val_reset_tuple_id(
+		__isl_take isl_multi_val *mv,
+		enum isl_dim_type type);
 
 They can be modified using
 
@@ -4071,6 +4074,13 @@ The expression can be inspected using
 		enum isl_dim_type type);
 	__isl_give isl_id *isl_multi_pw_aff_get_tuple_id(
 		__isl_keep isl_multi_pw_aff *mpa,
+		enum isl_dim_type type);
+	__isl_give isl_multi_aff *isl_multi_aff_reset_tuple_id(
+		__isl_take isl_multi_aff *ma,
+		enum isl_dim_type type);
+	__isl_give isl_multi_pw_aff *
+	isl_multi_pw_aff_reset_tuple_id(
+		__isl_take isl_multi_pw_aff *mpa,
 		enum isl_dim_type type);
 
 	int isl_pw_multi_aff_foreach_piece(

@@ -361,6 +361,28 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),set_tuple_id)(
 	return FN(MULTI(BASE),reset_space)(multi, space);
 }
 
+/* Drop the id on the specified tuple.
+ */
+__isl_give MULTI(BASE) *FN(MULTI(BASE),reset_tuple_id)(
+	__isl_take MULTI(BASE) *multi, enum isl_dim_type type)
+{
+	isl_space *space;
+
+	if (!multi)
+		return NULL;
+	if (!FN(MULTI(BASE),has_tuple_id)(multi, type))
+		return multi;
+
+	multi = FN(MULTI(BASE),cow)(multi);
+	if (!multi)
+		return NULL;
+
+	space = FN(MULTI(BASE),get_space)(multi);
+	space = isl_space_reset_tuple_id(space, type);
+
+	return FN(MULTI(BASE),reset_space)(multi, space);
+}
+
 __isl_give MULTI(BASE) *FN(MULTI(BASE),realign_domain)(
 	__isl_take MULTI(BASE) *multi, __isl_take isl_reordering *exp)
 {
