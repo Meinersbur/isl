@@ -3326,6 +3326,77 @@ error:
 	return NULL;
 }
 
+/* Given the space of a set and a range of set dimensions,
+ * construct an isl_multi_aff that projects out those dimensions.
+ */
+__isl_give isl_multi_aff *isl_multi_aff_project_out_map(
+	__isl_take isl_space *space, enum isl_dim_type type,
+	unsigned first, unsigned n)
+{
+	int i, dim;
+	isl_local_space *ls;
+	isl_multi_aff *ma;
+
+	if (!space)
+		return NULL;
+	if (!isl_space_is_set(space))
+		isl_die(isl_space_get_ctx(space), isl_error_unsupported,
+			"expecting set space", goto error);
+	if (type != isl_dim_set)
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
+			"only set dimensions can be projected out", goto error);
+
+	dim = isl_space_dim(space, isl_dim_set);
+	if (first + n > dim)
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
+			"range out of bounds", goto error);
+
+	space = isl_space_from_domain(space);
+	space = isl_space_add_dims(space, isl_dim_out, dim - n);
+
+	if (dim == n)
+		return isl_multi_aff_alloc(space);
+
+	ma = isl_multi_aff_alloc(isl_space_copy(space));
+	space = isl_space_domain(space);
+	ls = isl_local_space_from_space(space);
+
+	for (i = 0; i < first; ++i) {
+		isl_aff *aff;
+
+		aff = isl_aff_var_on_domain(isl_local_space_copy(ls),
+						isl_dim_set, i);
+		ma = isl_multi_aff_set_aff(ma, i, aff);
+	}
+
+	for (i = 0; i < dim - (first + n); ++i) {
+		isl_aff *aff;
+
+		aff = isl_aff_var_on_domain(isl_local_space_copy(ls),
+						isl_dim_set, first + n + i);
+		ma = isl_multi_aff_set_aff(ma, first + i, aff);
+	}
+
+	isl_local_space_free(ls);
+	return ma;
+error:
+	isl_space_free(space);
+	return NULL;
+}
+
+/* Given the space of a set and a range of set dimensions,
+ * construct an isl_pw_multi_aff that projects out those dimensions.
+ */
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_project_out_map(
+	__isl_take isl_space *space, enum isl_dim_type type,
+	unsigned first, unsigned n)
+{
+	isl_multi_aff *ma;
+
+	ma = isl_multi_aff_project_out_map(space, type, first, n);
+	return isl_pw_multi_aff_from_multi_aff(ma);
+}
+
 /* Create an isl_pw_multi_aff with the given isl_multi_aff on a universe
  * domain.
  */

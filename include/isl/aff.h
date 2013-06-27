@@ -290,6 +290,9 @@ __isl_give isl_multi_aff *isl_multi_aff_from_aff(__isl_take isl_aff *aff);
 __isl_give isl_multi_aff *isl_multi_aff_identity(__isl_take isl_space *space);
 __isl_give isl_multi_aff *isl_multi_aff_domain_map(__isl_take isl_space *space);
 __isl_give isl_multi_aff *isl_multi_aff_range_map(__isl_take isl_space *space);
+__isl_give isl_multi_aff *isl_multi_aff_project_out_map(
+	__isl_take isl_space *space, enum isl_dim_type type,
+	unsigned first, unsigned n);
 
 int isl_multi_aff_plain_is_equal(__isl_keep isl_multi_aff *maff1,
 	__isl_keep isl_multi_aff *maff2);
@@ -330,6 +333,9 @@ ISL_DECLARE_MULTI(pw_aff)
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_zero(__isl_take isl_space *space);
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_identity(
 	__isl_take isl_space *space);
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_project_out_map(
+	__isl_take isl_space *space, enum isl_dim_type type,
+	unsigned first, unsigned n);
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_multi_aff(
 	__isl_take isl_multi_aff *ma);
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_pw_aff(
