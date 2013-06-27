@@ -1403,6 +1403,19 @@ error:
 	return NULL;
 }
 
+/* Given a map space A -> B, return the map space [A -> B] -> A.
+ */
+__isl_give isl_space *isl_space_domain_map(__isl_take isl_space *space)
+{
+	isl_space *domain;
+
+	domain = isl_space_from_range(isl_space_domain(isl_space_copy(space)));
+	space = isl_space_from_domain(isl_space_wrap(space));
+	space = isl_space_join(space, domain);
+
+	return space;
+}
+
 __isl_give isl_space *isl_space_params(__isl_take isl_space *space)
 {
 	if (isl_space_is_params(space))

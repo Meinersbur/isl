@@ -4843,15 +4843,12 @@ error:
 __isl_give isl_map *isl_map_domain_map(__isl_take isl_map *map)
 {
 	int i;
-	isl_space *domain_dim;
 
 	map = isl_map_cow(map);
 	if (!map)
 		return NULL;
 
-	domain_dim = isl_space_from_range(isl_space_domain(isl_map_get_space(map)));
-	map->dim = isl_space_from_domain(isl_space_wrap(map->dim));
-	map->dim = isl_space_join(map->dim, domain_dim);
+	map->dim = isl_space_domain_map(map->dim);
 	if (!map->dim)
 		goto error;
 	for (i = 0; i < map->n; ++i) {
