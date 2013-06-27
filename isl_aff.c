@@ -108,6 +108,37 @@ __isl_give isl_pw_aff *isl_pw_aff_zero_on_domain(__isl_take isl_local_space *ls)
 	return isl_pw_aff_from_aff(isl_aff_zero_on_domain(ls));
 }
 
+/* Return an affine expression that is equal to "val" on
+ * domain local space "ls".
+ */
+__isl_give isl_aff *isl_aff_val_on_domain(__isl_take isl_local_space *ls,
+	__isl_take isl_val *val)
+{
+	isl_aff *aff;
+
+	if (!ls || !val)
+		goto error;
+	if (!isl_val_is_rat(val))
+		isl_die(isl_val_get_ctx(val), isl_error_invalid,
+			"expecting rational value", goto error);
+
+	aff = isl_aff_alloc(isl_local_space_copy(ls));
+	if (!aff)
+		goto error;
+
+	isl_seq_clr(aff->v->el + 2, aff->v->size - 2);
+	isl_int_set(aff->v->el[1], val->n);
+	isl_int_set(aff->v->el[0], val->d);
+
+	isl_local_space_free(ls);
+	isl_val_free(val);
+	return aff;
+error:
+	isl_local_space_free(ls);
+	isl_val_free(val);
+	return NULL;
+}
+
 /* Return an affine expression that is equal to the specified dimension
  * in "ls".
  */
