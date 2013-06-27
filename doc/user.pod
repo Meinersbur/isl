@@ -3977,6 +3977,8 @@ can be created using the following functions.
 		__isl_take isl_space *space);
 	__isl_give isl_multi_pw_aff *isl_multi_pw_aff_identity(
 		__isl_take isl_space *space);
+	__isl_give isl_multi_aff *isl_multi_aff_domain_map(
+		__isl_take isl_space *space);
 	__isl_give isl_pw_multi_aff *
 	isl_pw_multi_aff_from_multi_aff(
 		__isl_take isl_multi_aff *ma);
