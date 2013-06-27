@@ -393,6 +393,10 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_set_dim_id(
 int isl_pw_multi_aff_plain_is_equal(__isl_keep isl_pw_multi_aff *pma1,
 	__isl_keep isl_pw_multi_aff *pma2);
 
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_fix_si(
+	__isl_take isl_pw_multi_aff *pma, enum isl_dim_type type,
+	unsigned pos, int value);
+
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_union_add(
 	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2);
 

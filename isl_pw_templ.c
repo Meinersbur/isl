@@ -766,6 +766,40 @@ __isl_give PW *FN(PW,from_range)(__isl_take PW *pw)
 	return pw;
 }
 
+/* Fix the value of the given parameter or domain dimension of "pw"
+ * to be equal to "value".
+ */
+__isl_give PW *FN(PW,fix_si)(__isl_take PW *pw, enum isl_dim_type type,
+	unsigned pos, int value)
+{
+	int i;
+
+	if (!pw)
+		return NULL;
+
+	if (type == isl_dim_out)
+		isl_die(FN(PW,get_ctx)(pw), isl_error_invalid,
+			"cannot fix output dimension", return FN(PW,free)(pw));
+
+	if (pw->n == 0)
+		return pw;
+
+	if (type == isl_dim_in)
+		type = isl_dim_set;
+
+	pw = FN(PW,cow)(pw);
+	if (!pw)
+		return FN(PW,free)(pw);
+
+	for (i = pw->n - 1; i >= 0; --i) {
+		pw->p[i].set = isl_set_fix_si(pw->p[i].set, type, pos, value);
+		if (FN(PW,exploit_equalities_and_remove_if_empty)(pw, i) < 0)
+			return FN(PW,free)(pw);
+	}
+
+	return pw;
+}
+
 /* Restrict the domain of "pw" by combining each cell
  * with "set" through a call to "fn", where "fn" may be
  * isl_set_intersect or isl_set_intersect_params.
