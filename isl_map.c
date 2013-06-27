@@ -12023,3 +12023,15 @@ error:
 	isl_pw_multi_aff_free(pma);
 	return isl_set_free(set);
 }
+
+/* Compute the preimage of "set" by the function represented by "mpa".
+ * In other words, plug in "mpa" in "set".
+ */
+__isl_give isl_set *isl_set_preimage_multi_pw_aff(__isl_take isl_set *set,
+	__isl_take isl_multi_pw_aff *mpa)
+{
+	isl_pw_multi_aff *pma;
+
+	pma = isl_pw_multi_aff_from_multi_pw_aff(mpa);
+	return isl_set_preimage_pw_multi_aff(set, pma);
+}

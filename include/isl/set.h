@@ -314,6 +314,8 @@ __isl_give isl_set *isl_set_preimage_multi_aff(__isl_take isl_set *set,
 	__isl_take isl_multi_aff *ma);
 __isl_give isl_set *isl_set_preimage_pw_multi_aff(__isl_take isl_set *set,
 	__isl_take isl_pw_multi_aff *pma);
+__isl_give isl_set *isl_set_preimage_multi_pw_aff(__isl_take isl_set *set,
+	__isl_take isl_multi_pw_aff *mpa);
 __isl_give isl_set *isl_set_fix_val(__isl_take isl_set *set,
 	enum isl_dim_type type, unsigned pos, __isl_take isl_val *v);
 struct isl_set *isl_set_fix_dim_si(struct isl_set *set,
