@@ -527,6 +527,8 @@ __isl_give isl_multi_pw_aff *isl_multi_pw_aff_identity(
 __isl_give isl_multi_pw_aff *isl_multi_pw_aff_from_pw_aff(
 	__isl_take isl_pw_aff *pa);
 
+__isl_give isl_multi_pw_aff *isl_multi_pw_aff_coalesce(
+	__isl_take isl_multi_pw_aff *mpa);
 __isl_give isl_multi_pw_aff *isl_multi_pw_aff_gist(
 	__isl_take isl_multi_pw_aff *mpa, __isl_take isl_set *set);
 __isl_give isl_multi_pw_aff *isl_multi_pw_aff_gist_params(

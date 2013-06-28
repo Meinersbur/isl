@@ -4331,6 +4331,8 @@ by the corresponding elements of C<mv>.
 		__isl_give isl_local_space **ls);
 	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_coalesce(
 		__isl_take isl_pw_multi_aff *pma);
+	__isl_give isl_multi_pw_aff *isl_multi_pw_aff_coalesce(
+		__isl_take isl_multi_pw_aff *mpa);
 	__isl_give isl_multi_aff *isl_multi_aff_align_params(
 		__isl_take isl_multi_aff *multi,
 		__isl_take isl_space *model);
