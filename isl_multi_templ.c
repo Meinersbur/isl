@@ -557,22 +557,31 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),gist_params)(
 #endif
 
 #ifndef NO_INTERSECT_DOMAIN
-/* Intersect the domain of "multi" with "domain".
+/* Transform the domain of "multi" by combining it with "domain"
+ * using "fn".
  *
  * The parameters of "multi" and "domain" are assumed to have been aligned.
  */
-__isl_give MULTI(BASE) *FN(MULTI(BASE),intersect_domain_aligned)(
-	__isl_take MULTI(BASE) *multi, __isl_take isl_set *domain)
+__isl_give MULTI(BASE) *FN(MULTI(BASE),intersect_aligned)(
+	__isl_take MULTI(BASE) *multi, __isl_take isl_set *domain,
+	__isl_give EL *(*fn)(EL *el, __isl_take isl_set *set2))
 {
 	int i;
 
-	multi = FN(MULTI(BASE),cow)(multi);
 	if (!multi || !domain)
 		goto error;
 
+	if (multi->n == 0) {
+		isl_set_free(domain);
+		return multi;
+	}
+
+	multi = FN(MULTI(BASE),cow)(multi);
+	if (!multi)
+		goto error;
+
 	for (i = 0; i < multi->n; ++i) {
-		multi->p[i] = FN(EL,intersect_domain)(multi->p[i],
-						isl_set_copy(domain));
+		multi->p[i] = fn(multi->p[i], isl_set_copy(domain));
 		if (!multi->p[i])
 			goto error;
 	}
@@ -586,12 +595,43 @@ error:
 }
 
 /* Intersect the domain of "multi" with "domain".
+ *
+ * The parameters of "multi" and "domain" are assumed to have been aligned.
+ */
+__isl_give MULTI(BASE) *FN(MULTI(BASE),intersect_domain_aligned)(
+	__isl_take MULTI(BASE) *multi, __isl_take isl_set *domain)
+{
+	return FN(MULTI(BASE),intersect_aligned)(multi, domain,
+						&FN(EL,intersect_domain));
+}
+
+/* Intersect the domain of "multi" with "domain".
  */
 __isl_give MULTI(BASE) *FN(MULTI(BASE),intersect_domain)(
 	__isl_take MULTI(BASE) *multi, __isl_take isl_set *domain)
 {
 	return FN(MULTI(BASE),align_params_multi_set_and)(multi, domain,
 				    &FN(MULTI(BASE),intersect_domain_aligned));
+}
+
+/* Intersect the parameter domain of "multi" with "domain".
+ *
+ * The parameters of "multi" and "domain" are assumed to have been aligned.
+ */
+__isl_give MULTI(BASE) *FN(MULTI(BASE),intersect_params_aligned)(
+	__isl_take MULTI(BASE) *multi, __isl_take isl_set *domain)
+{
+	return FN(MULTI(BASE),intersect_aligned)(multi, domain,
+						&FN(EL,intersect_params));
+}
+
+/* Intersect the parameter domain of "multi" with "domain".
+ */
+__isl_give MULTI(BASE) *FN(MULTI(BASE),intersect_params)(
+	__isl_take MULTI(BASE) *multi, __isl_take isl_set *domain)
+{
+	return FN(MULTI(BASE),align_params_multi_set_and)(multi, domain,
+				    &FN(MULTI(BASE),intersect_params_aligned));
 }
 #endif
 
