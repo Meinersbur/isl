@@ -5653,6 +5653,34 @@ __isl_give isl_multi_pw_aff *isl_multi_pw_aff_from_multi_aff(
 	return mpa;
 }
 
+/* Construct and return a multi piecewise affine expression
+ * that is equal to the given piecewise multi affine expression.
+ */
+__isl_give isl_multi_pw_aff *isl_multi_pw_aff_from_pw_multi_aff(
+	__isl_take isl_pw_multi_aff *pma)
+{
+	int i, n;
+	isl_space *space;
+	isl_multi_pw_aff *mpa;
+
+	if (!pma)
+		return NULL;
+
+	n = isl_pw_multi_aff_dim(pma, isl_dim_out);
+	space = isl_pw_multi_aff_get_space(pma);
+	mpa = isl_multi_pw_aff_alloc(space);
+
+	for (i = 0; i < n; ++i) {
+		isl_pw_aff *pa;
+
+		pa = isl_pw_multi_aff_get_pw_aff(pma, i);
+		mpa = isl_multi_pw_aff_set_pw_aff(mpa, i, pa);
+	}
+
+	isl_pw_multi_aff_free(pma);
+	return mpa;
+}
+
 /* Do "pa1" and "pa2" represent the same function?
  *
  * We first check if they are obviously equal.

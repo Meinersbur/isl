@@ -551,6 +551,8 @@ __isl_give isl_multi_pw_aff *isl_multi_pw_aff_move_dims(
 
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_multi_pw_aff(
 	__isl_take isl_multi_pw_aff *mpa);
+__isl_give isl_multi_pw_aff *isl_multi_pw_aff_from_pw_multi_aff(
+	__isl_take isl_pw_multi_aff *pma);
 
 __isl_give isl_printer *isl_printer_print_multi_pw_aff(
 	__isl_take isl_printer *p, __isl_keep isl_multi_pw_aff *mpa);

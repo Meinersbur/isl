@@ -3973,13 +3973,18 @@ and C<isl_pw_multi_aff>.
 		__isl_take isl_aff_list *list);
 
 An C<isl_multi_pw_aff> can be converted to an C<isl_pw_multi_aff>
-using the following function.  Note however that the domain
+using the function C<isl_pw_multi_aff_from_multi_pw_aff> below.
+Note however that the domain
 of the result is the intersection of the domains of the input.
+The reverse conversion is exact.
 
 	#include <isl/aff.h>
 	__isl_give isl_pw_multi_aff *
 	isl_pw_multi_aff_from_multi_pw_aff(
 		__isl_take isl_multi_pw_aff *mpa);
+	__isl_give isl_multi_pw_aff *
+	isl_multi_pw_aff_from_pw_multi_aff(
+		__isl_take isl_pw_multi_aff *pma);
 
 An empty piecewise multiple quasi affine expression (one with no cells),
 the zero piecewise multiple quasi affine expression (with value zero
