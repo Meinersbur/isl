@@ -1,7 +1,7 @@
 /*
  * Copyright 2008-2009 Katholieke Universiteit Leuven
  * Copyright 2010      INRIA Saclay
- * Copyright 2012      Ecole Normale Superieure
+ * Copyright 2012-2013 Ecole Normale Superieure
  *
  * Use of this software is governed by the MIT license
  *
@@ -1026,6 +1026,80 @@ static __isl_give isl_multi_pw_aff *tuple_set_dim_name(
 	return tuple;
 }
 
+/* Accept a piecewise affine expression.
+ *
+ * At the outer level, the piecewise affine expression may be of the form
+ *
+ *	aff1 : condition1; aff2 : conditions2; ...
+ *
+ * or simply
+ *
+ *	aff
+ *
+ * each of the affine expressions may in turn include ternary operators.
+ *
+ * There may be parentheses around some subexpression of "aff1"
+ * around "aff1" itself, around "aff1 : condition1" and/or
+ * around the entire piecewise affine expression.
+ * We therefore remove the opening parenthesis (if any) from the stream
+ * in case the closing parenthesis follows the colon, but if the closing
+ * parenthesis is the first thing in the stream after the parsed affine
+ * expression, we push the parsed expression onto the stream and parse
+ * again in case the parentheses enclose some subexpression of "aff1".
+ */
+static __isl_give isl_pw_aff *accept_piecewise_affine(struct isl_stream *s,
+	__isl_take isl_space *space, struct vars *v, int rational)
+{
+	isl_pw_aff *res;
+	isl_space *res_space;
+
+	res_space = isl_space_from_domain(isl_space_copy(space));
+	res_space = isl_space_add_dims(res_space, isl_dim_out, 1);
+	res = isl_pw_aff_empty(res_space);
+	do {
+		isl_pw_aff *pa;
+		int seen_paren;
+		int line = -1, col = -1;
+
+		set_current_line_col(s, &line, &col);
+		seen_paren = isl_stream_eat_if_available(s, '(');
+		if (seen_paren)
+			pa = accept_piecewise_affine(s, isl_space_copy(space),
+							v, rational);
+		else
+			pa = accept_extended_affine(s, isl_space_copy(space),
+							v, rational);
+		if (seen_paren && isl_stream_eat_if_available(s, ')')) {
+			seen_paren = 0;
+			if (push_aff(s, line, col, pa) < 0)
+				goto error;
+			pa = accept_extended_affine(s, isl_space_copy(space),
+							v, rational);
+		}
+		if (isl_stream_eat_if_available(s, ':')) {
+			isl_space *dom_space;
+			isl_set *dom;
+
+			dom_space = isl_pw_aff_get_domain_space(pa);
+			dom = isl_set_universe(dom_space);
+			dom = read_formula(s, v, dom, rational);
+			pa = isl_pw_aff_intersect_domain(pa, dom);
+		}
+
+		res = isl_pw_aff_union_add(res, pa);
+
+		if (seen_paren && isl_stream_eat(s, ')'))
+			goto error;
+	} while (isl_stream_eat_if_available(s, ';'));
+
+	isl_space_free(space);
+
+	return res;
+error:
+	isl_space_free(space);
+	return isl_pw_aff_free(res);
+}
+
 /* Read an affine expression from "s" and replace the definition
  * of dimension "pos" in "tuple" by this expression.
  *
@@ -1042,7 +1116,9 @@ static __isl_give isl_multi_pw_aff *read_tuple_var_def(struct isl_stream *s,
 	isl_pw_aff *def;
 
 	space = isl_space_wrap(isl_space_alloc(s->ctx, 0, v->n, 0));
-	def = accept_extended_affine(s, space, v, rational);
+
+	def = accept_piecewise_affine(s, space, v, rational);
+
 	space = isl_space_set_alloc(s->ctx, 0, v->n);
 	def = isl_pw_aff_reset_domain_space(def, space);
 	tuple = isl_multi_pw_aff_set_pw_aff(tuple, pos, def);

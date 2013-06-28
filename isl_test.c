@@ -1,10 +1,15 @@
 /*
  * Copyright 2008-2009 Katholieke Universiteit Leuven
+ * Copyright 2010      INRIA Saclay
+ * Copyright 2012-2013 Ecole Normale Superieure
  *
  * Use of this software is governed by the MIT license
  *
  * Written by Sven Verdoolaege, K.U.Leuven, Departement
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
+ * and INRIA Saclay - Ile-de-France, Parc Club Orsay Universite,
+ * ZAC des vignes, 4 rue Jacques Monod, 91893 Orsay, France
+ * and Ecole Normale Superieure, 45 rue d’Ulm, 75230 Paris, France
  */
 
 #include <assert.h>
@@ -215,6 +220,30 @@ int test_parse(struct isl_ctx *ctx)
 
 	if (test_parse_map_equal(ctx, "{ [a] -> [b] : a = 5 implies b = 5 }",
 				      "{ [a] -> [b] : a != 5 or b = 5 }") < 0)
+		return -1;
+
+	if (test_parse_map_equal(ctx, "{ [a] -> [a - 1 : a > 0] }",
+				      "{ [a] -> [a - 1] : a > 0 }") < 0)
+		return -1;
+	if (test_parse_map_equal(ctx,
+	    "{ [a] -> [a - 1 : a > 0; a : a <= 0] }",
+	    "{ [a] -> [a - 1] : a > 0; [a] -> [a] : a <= 0 }") < 0)
+		return -1;
+	if (test_parse_map_equal(ctx,
+	    "{ [a] -> [(a) * 2 : a >= 0; 0 : a < 0] }",
+	    "{ [a] -> [2a] : a >= 0; [a] -> [0] : a < 0 }") < 0)
+		return -1;
+	if (test_parse_map_equal(ctx,
+	    "{ [a] -> [(a * 2) : a >= 0; 0 : a < 0] }",
+	    "{ [a] -> [2a] : a >= 0; [a] -> [0] : a < 0 }") < 0)
+		return -1;
+	if (test_parse_map_equal(ctx,
+	    "{ [a] -> [(a * 2 : a >= 0); 0 : a < 0] }",
+	    "{ [a] -> [2a] : a >= 0; [a] -> [0] : a < 0 }") < 0)
+		return -1;
+	if (test_parse_map_equal(ctx,
+	    "{ [a] -> [(a * 2 : a >= 0; 0 : a < 0)] }",
+	    "{ [a] -> [2a] : a >= 0; [a] -> [0] : a < 0 }") < 0)
 		return -1;
 
 	return 0;
