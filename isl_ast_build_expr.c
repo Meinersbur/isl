@@ -962,25 +962,68 @@ __isl_give isl_ast_expr *isl_ast_build_expr_from_pw_aff(
 	return expr;
 }
 
-/* Set the ids of the input dimensions of "pma" to the iterator ids
+/* Set the ids of the input dimensions of "mpa" to the iterator ids
  * of "build".
  *
- * The domain of "pma" is assumed to live in the internal schedule domain.
+ * The domain of "mpa" is assumed to live in the internal schedule domain.
  */
-static __isl_give isl_pw_multi_aff *set_iterator_names(
-	__isl_keep isl_ast_build *build, __isl_take isl_pw_multi_aff *pma)
+static __isl_give isl_multi_pw_aff *set_iterator_names(
+	__isl_keep isl_ast_build *build, __isl_take isl_multi_pw_aff *mpa)
 {
 	int i, n;
 
-	n = isl_pw_multi_aff_dim(pma, isl_dim_in);
+	n = isl_multi_pw_aff_dim(mpa, isl_dim_in);
 	for (i = 0; i < n; ++i) {
 		isl_id *id;
 
 		id = isl_ast_build_get_iterator_id(build, i);
-		pma = isl_pw_multi_aff_set_dim_id(pma, isl_dim_in, i, id);
+		mpa = isl_multi_pw_aff_set_dim_id(mpa, isl_dim_in, i, id);
 	}
 
-	return pma;
+	return mpa;
+}
+
+/* Construct an isl_ast_expr of type "type" that calls or accesses
+ * the element specified by "mpa".
+ * The first argument is obtained from the output tuple name.
+ * The remaining arguments are given by the piecewise affine expressions.
+ *
+ * The domain of "mpa" is assumed to live in the internal schedule domain.
+ */
+static __isl_give isl_ast_expr *isl_ast_build_from_multi_pw_aff_internal(
+	__isl_keep isl_ast_build *build, enum isl_ast_op_type type,
+	__isl_take isl_multi_pw_aff *mpa)
+{
+	int i, n;
+	isl_ctx *ctx;
+	isl_id *id;
+	isl_ast_expr *expr;
+
+	mpa = set_iterator_names(build, mpa);
+	if (!build || !mpa)
+		return isl_multi_pw_aff_free(mpa);
+
+	ctx = isl_ast_build_get_ctx(build);
+	n = isl_multi_pw_aff_dim(mpa, isl_dim_out);
+	expr = isl_ast_expr_alloc_op(ctx, type, 1 + n);
+
+	if (isl_multi_pw_aff_has_tuple_id(mpa, isl_dim_out))
+		id = isl_multi_pw_aff_get_tuple_id(mpa, isl_dim_out);
+	else
+		id = isl_id_alloc(ctx, "", NULL);
+
+	expr = isl_ast_expr_set_op_arg(expr, 0, isl_ast_expr_from_id(id));
+	for (i = 0; i < n; ++i) {
+		isl_pw_aff *pa;
+		isl_ast_expr *arg;
+
+		pa = isl_multi_pw_aff_get_pw_aff(mpa, i);
+		arg = isl_ast_build_expr_from_pw_aff_internal(build, pa);
+		expr = isl_ast_expr_set_op_arg(expr, 1 + i, arg);
+	}
+
+	isl_multi_pw_aff_free(mpa);
+	return expr;
 }
 
 /* Construct an isl_ast_expr of type "type" that calls or accesses
@@ -994,36 +1037,72 @@ static __isl_give isl_ast_expr *isl_ast_build_from_pw_multi_aff_internal(
 	__isl_keep isl_ast_build *build, enum isl_ast_op_type type,
 	__isl_take isl_pw_multi_aff *pma)
 {
-	int i, n;
-	isl_ctx *ctx;
-	isl_id *id;
+	isl_multi_pw_aff *mpa;
+
+	mpa = isl_multi_pw_aff_from_pw_multi_aff(pma);
+	return isl_ast_build_from_multi_pw_aff_internal(build, type, mpa);
+}
+
+/* Construct an isl_ast_expr of type "type" that calls or accesses
+ * the element specified by "mpa".
+ * The first argument is obtained from the output tuple name.
+ * The remaining arguments are given by the piecewise affine expressions.
+ *
+ * The domain of "mpa" is assumed to live in the external schedule domain.
+ */
+static __isl_give isl_ast_expr *isl_ast_build_from_multi_pw_aff(
+	__isl_keep isl_ast_build *build, enum isl_ast_op_type type,
+	__isl_take isl_multi_pw_aff *mpa)
+{
+	int is_domain;
 	isl_ast_expr *expr;
+	isl_space *space_build, *space_mpa;
 
-	pma = set_iterator_names(build, pma);
-	if (!build || !pma)
-		return isl_pw_multi_aff_free(pma);
+	space_build = isl_ast_build_get_space(build, 0);
+	space_mpa = isl_multi_pw_aff_get_space(mpa);
+	is_domain = isl_space_tuple_match(space_build, isl_dim_set,
+					space_mpa, isl_dim_in);
+	isl_space_free(space_build);
+	isl_space_free(space_mpa);
+	if (is_domain < 0)
+		return isl_multi_pw_aff_free(mpa);
+	if (!is_domain)
+		isl_die(isl_ast_build_get_ctx(build), isl_error_invalid,
+			"spaces don't match",
+			return isl_multi_pw_aff_free(mpa));
 
-	ctx = isl_ast_build_get_ctx(build);
-	n = isl_pw_multi_aff_dim(pma, isl_dim_out);
-	expr = isl_ast_expr_alloc_op(ctx, type, 1 + n);
-
-	if (isl_pw_multi_aff_has_tuple_id(pma, isl_dim_out))
-		id = isl_pw_multi_aff_get_tuple_id(pma, isl_dim_out);
-	else
-		id = isl_id_alloc(ctx, "", NULL);
-
-	expr = isl_ast_expr_set_op_arg(expr, 0, isl_ast_expr_from_id(id));
-	for (i = 0; i < n; ++i) {
-		isl_pw_aff *pa;
-		isl_ast_expr *arg;
-
-		pa = isl_pw_multi_aff_get_pw_aff(pma, i);
-		arg = isl_ast_build_expr_from_pw_aff_internal(build, pa);
-		expr = isl_ast_expr_set_op_arg(expr, 1 + i, arg);
+	if (isl_ast_build_need_schedule_map(build)) {
+		isl_multi_aff *ma;
+		ma = isl_ast_build_get_schedule_map_multi_aff(build);
+		mpa = isl_multi_pw_aff_pullback_multi_aff(mpa, ma);
 	}
 
-	isl_pw_multi_aff_free(pma);
+	expr = isl_ast_build_from_multi_pw_aff_internal(build, type, mpa);
 	return expr;
+}
+
+/* Construct an isl_ast_expr that calls the domain element specified by "mpa".
+ * The name of the function is obtained from the output tuple name.
+ * The arguments are given by the piecewise affine expressions.
+ *
+ * The domain of "mpa" is assumed to live in the external schedule domain.
+ */
+__isl_give isl_ast_expr *isl_ast_build_call_from_multi_pw_aff(
+	__isl_keep isl_ast_build *build, __isl_take isl_multi_pw_aff *mpa)
+{
+	return isl_ast_build_from_multi_pw_aff(build, isl_ast_op_call, mpa);
+}
+
+/* Construct an isl_ast_expr that accesses the array element specified by "mpa".
+ * The name of the array is obtained from the output tuple name.
+ * The index expressions are given by the piecewise affine expressions.
+ *
+ * The domain of "mpa" is assumed to live in the external schedule domain.
+ */
+__isl_give isl_ast_expr *isl_ast_build_access_from_multi_pw_aff(
+	__isl_keep isl_ast_build *build, __isl_take isl_multi_pw_aff *mpa)
+{
+	return isl_ast_build_from_multi_pw_aff(build, isl_ast_op_access, mpa);
 }
 
 /* Construct an isl_ast_expr of type "type" that calls or accesses
@@ -1037,31 +1116,10 @@ static __isl_give isl_ast_expr *isl_ast_build_from_pw_multi_aff(
 	__isl_keep isl_ast_build *build, enum isl_ast_op_type type,
 	__isl_take isl_pw_multi_aff *pma)
 {
-	int is_domain;
-	isl_ast_expr *expr;
-	isl_space *space_build, *space_pma;
+	isl_multi_pw_aff *mpa;
 
-	space_build = isl_ast_build_get_space(build, 0);
-	space_pma = isl_pw_multi_aff_get_space(pma);
-	is_domain = isl_space_tuple_match(space_build, isl_dim_set,
-					space_pma, isl_dim_in);
-	isl_space_free(space_build);
-	isl_space_free(space_pma);
-	if (is_domain < 0)
-		return isl_pw_multi_aff_free(pma);
-	if (!is_domain)
-		isl_die(isl_ast_build_get_ctx(build), isl_error_invalid,
-			"spaces don't match",
-			return isl_pw_multi_aff_free(pma));
-
-	if (isl_ast_build_need_schedule_map(build)) {
-		isl_multi_aff *ma;
-		ma = isl_ast_build_get_schedule_map_multi_aff(build);
-		pma = isl_pw_multi_aff_pullback_multi_aff(pma, ma);
-	}
-
-	expr = isl_ast_build_from_pw_multi_aff_internal(build, type, pma);
-	return expr;
+	mpa = isl_multi_pw_aff_from_pw_multi_aff(pma);
+	return isl_ast_build_from_multi_pw_aff(build, type, mpa);
 }
 
 /* Construct an isl_ast_expr that calls the domain element specified by "pma".

@@ -6119,13 +6119,21 @@ the context of an C<isl_ast_build>.
 		__isl_keep isl_ast_build *build,
 		__isl_take isl_pw_multi_aff *pma);
 	__isl_give isl_ast_expr *
+	isl_ast_build_access_from_multi_pw_aff(
+		__isl_keep isl_ast_build *build,
+		__isl_take isl_multi_pw_aff *mpa);
+	__isl_give isl_ast_expr *
 	isl_ast_build_call_from_pw_multi_aff(
 		__isl_keep isl_ast_build *build,
 		__isl_take isl_pw_multi_aff *pma);
+	__isl_give isl_ast_expr *
+	isl_ast_build_call_from_multi_pw_aff(
+		__isl_keep isl_ast_build *build,
+		__isl_take isl_multi_pw_aff *mpa);
 
-The domains of C<pa> and C<pma> should correspond
+The domains of C<pa>, C<mpa> and C<pma> should correspond
 to the schedule space of C<build>.
-The tuple id of C<pma> is used as the array being accessed or
+The tuple id of C<mpa> or C<pma> is used as the array being accessed or
 the function being called.
 
 User specified data can be attached to an C<isl_ast_node> and obtained
