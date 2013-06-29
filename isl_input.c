@@ -702,6 +702,21 @@ error:
 	return NULL;
 }
 
+/* Set *line and *col to those of the next token, if any.
+ */
+static void set_current_line_col(struct isl_stream *s, int *line, int *col)
+{
+	struct isl_token *tok;
+
+	tok = isl_stream_next_token(s);
+	if (!tok)
+		return;
+
+	*line = tok->line;
+	*col = tok->col;
+	isl_stream_push_token(s, tok);
+}
+
 /* Accept an affine expression that may involve ternary operators.
  * We first read an affine expression.
  * If it is not followed by a comparison operator, we simply return it.
@@ -718,12 +733,7 @@ static __isl_give isl_pw_aff *accept_extended_affine(struct isl_stream *s,
 	int line = -1, col = -1;
 	int is_comp;
 
-	tok = isl_stream_next_token(s);
-	if (tok) {
-		line = tok->line;
-		col = tok->col;
-		isl_stream_push_token(s, tok);
-	}
+	set_current_line_col(s, &line, &col);
 
 	pwaff = accept_affine(s, dim, v);
 	if (rational)
