@@ -717,6 +717,27 @@ static void set_current_line_col(struct isl_stream *s, int *line, int *col)
 	isl_stream_push_token(s, tok);
 }
 
+/* Push a token encapsulating "pa" onto "s", with the given
+ * line and column.
+ */
+static int push_aff(struct isl_stream *s, int line, int col,
+	__isl_take isl_pw_aff *pa)
+{
+	struct isl_token *tok;
+
+	tok = isl_token_new(s->ctx, line, col, 0);
+	if (!tok)
+		goto error;
+	tok->type = ISL_TOKEN_AFF;
+	tok->u.pwaff = pa;
+	isl_stream_push_token(s, tok);
+
+	return 0;
+error:
+	isl_pw_aff_free(pa);
+	return -1;
+}
+
 /* Accept an affine expression that may involve ternary operators.
  * We first read an affine expression.
  * If it is not followed by a comparison operator, we simply return it.
@@ -750,16 +771,11 @@ static __isl_give isl_pw_aff *accept_extended_affine(struct isl_stream *s,
 	if (!is_comp)
 		return pwaff;
 
-	tok = isl_token_new(s->ctx, line, col, 0);
-	if (!tok)
-		return isl_pw_aff_free(pwaff);
-	tok->type = ISL_TOKEN_AFF;
-	tok->u.pwaff = pwaff;
-
 	space = isl_pw_aff_get_domain_space(pwaff);
 	cond = isl_map_universe(isl_space_unwrap(space));
 
-	isl_stream_push_token(s, tok);
+	if (push_aff(s, line, col, pwaff) < 0)
+		return NULL;
 
 	cond = read_formula(s, v, cond, rational);
 
