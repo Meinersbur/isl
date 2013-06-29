@@ -705,7 +705,7 @@ error:
 /* Accept an affine expression that may involve ternary operators.
  * We first read an affine expression.
  * If it is not followed by a comparison operator, we simply return it.
- * Otherwise, we assume the affine epxression is part of the first
+ * Otherwise, we assume the affine expression is part of the first
  * argument of a ternary operator and try to parse that.
  */
 static __isl_give isl_pw_aff *accept_extended_affine(struct isl_stream *s,
