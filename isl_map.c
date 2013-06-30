@@ -11832,6 +11832,18 @@ __isl_give isl_basic_map *isl_basic_map_preimage_domain_multi_aff(
 	return isl_basic_map_preimage_multi_aff(bmap, isl_dim_in, ma);
 }
 
+/* Compute the preimage of the range of "bmap" under the function
+ * represented by "ma".
+ * In other words, plug in "ma" in the range of "bmap".
+ * The result is a basic map that lives in the same space as "bmap"
+ * except that the range has been replaced by the domain space of "ma".
+ */
+__isl_give isl_basic_map *isl_basic_map_preimage_range_multi_aff(
+	__isl_take isl_basic_map *bmap, __isl_take isl_multi_aff *ma)
+{
+	return isl_basic_map_preimage_multi_aff(bmap, isl_dim_out, ma);
+}
+
 /* Check if the range of "ma" is compatible with the domain or range
  * (depending on "type") of "map".
  * Return -1 if anything is wrong.

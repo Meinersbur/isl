@@ -2926,10 +2926,14 @@ a parametric set as well.
 	isl_union_map_preimage_domain_multi_aff(
 		__isl_take isl_union_map *umap,
 		__isl_take isl_multi_aff *ma);
+	__isl_give isl_basic_map *
+	isl_basic_map_preimage_range_multi_aff(
+		__isl_take isl_basic_map *bmap,
+		__isl_take isl_multi_aff *ma);
 
-These functions compute the preimage of the given set or map domain under
+These functions compute the preimage of the given set or map domain/range under
 the given function.  In other words, the expression is plugged
-into the set description or into the domain of the map.
+into the set description or into the domain/range of the map.
 Objects of types C<isl_multi_aff> and C<isl_pw_multi_aff> are described in
 L</"Piecewise Multiple Quasi Affine Expressions">.
 
