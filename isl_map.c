@@ -3539,6 +3539,14 @@ struct isl_basic_map *isl_basic_map_apply_range(
 
 	if (!bmap1 || !bmap2)
 		goto error;
+	if (!isl_space_match(bmap1->dim, isl_dim_param,
+				bmap2->dim, isl_dim_param))
+		isl_die(isl_basic_map_get_ctx(bmap1), isl_error_invalid,
+			"parameters don't match", goto error);
+	if (!isl_space_tuple_match(bmap1->dim, isl_dim_out,
+				    bmap2->dim, isl_dim_in))
+		isl_die(isl_basic_map_get_ctx(bmap1), isl_error_invalid,
+			"spaces don't match", goto error);
 
 	dim_result = isl_space_join(isl_space_copy(bmap1->dim),
 				  isl_space_copy(bmap2->dim));
