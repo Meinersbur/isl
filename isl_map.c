@@ -11960,68 +11960,136 @@ __isl_give isl_map *isl_map_preimage_domain_multi_aff(__isl_take isl_map *map,
 	return isl_map_preimage_multi_aff(map, isl_dim_in, ma);
 }
 
-/* Compute the preimage of "set" under the function represented by "pma".
- * In other words, plug in "pma" in "set.  The result is a set
- * that lives in the domain space of "pma".
+/* Compute the preimage of "map" under the function represented by "pma".
+ * In other words, plug in "pma" in the domain or range of "map".
+ * The result is a map that lives in the same space as "map",
+ * except that the space of type "type" has been replaced by
+ * the domain space of "pma".
+ *
+ * The parameters of "map" and "pma" are assumed to have been aligned.
  */
-static __isl_give isl_set *set_preimage_pw_multi_aff(__isl_take isl_set *set,
+static __isl_give isl_map *isl_map_preimage_pw_multi_aff_aligned(
+	__isl_take isl_map *map, enum isl_dim_type type,
 	__isl_take isl_pw_multi_aff *pma)
 {
 	int i;
-	isl_set *res;
+	isl_map *res;
 
 	if (!pma)
 		goto error;
 
 	if (pma->n == 0) {
 		isl_pw_multi_aff_free(pma);
-		res = isl_set_empty(isl_set_get_space(set));
-		isl_set_free(set);
+		res = isl_map_empty(isl_map_get_space(map));
+		isl_map_free(map);
 		return res;
 	}
 
-	res = isl_set_preimage_multi_aff(isl_set_copy(set),
+	res = isl_map_preimage_multi_aff(isl_map_copy(map), type,
 					isl_multi_aff_copy(pma->p[0].maff));
-	res = isl_set_intersect(res, isl_set_copy(pma->p[0].set));
+	if (type == isl_dim_in)
+		res = isl_map_intersect_domain(res,
+						isl_map_copy(pma->p[0].set));
+	else
+		res = isl_map_intersect_range(res,
+						isl_map_copy(pma->p[0].set));
 
 	for (i = 1; i < pma->n; ++i) {
-		isl_set *res_i;
+		isl_map *res_i;
 
-		res_i = isl_set_preimage_multi_aff(isl_set_copy(set),
+		res_i = isl_map_preimage_multi_aff(isl_map_copy(map), type,
 					isl_multi_aff_copy(pma->p[i].maff));
-		res_i = isl_set_intersect(res_i, isl_set_copy(pma->p[i].set));
-		res = isl_set_union(res, res_i);
+		if (type == isl_dim_in)
+			res_i = isl_map_intersect_domain(res_i,
+						isl_map_copy(pma->p[i].set));
+		else
+			res_i = isl_map_intersect_range(res_i,
+						isl_map_copy(pma->p[i].set));
+		res = isl_map_union(res, res_i);
 	}
 
 	isl_pw_multi_aff_free(pma);
-	isl_set_free(set);
+	isl_map_free(map);
 	return res;
 error:
 	isl_pw_multi_aff_free(pma);
-	isl_set_free(set);
+	isl_map_free(map);
 	return NULL;
 }
 
+/* Compute the preimage of "map" under the function represented by "pma".
+ * In other words, plug in "pma" in the domain or range of "map".
+ * The result is a map that lives in the same space as "map",
+ * except that the space of type "type" has been replaced by
+ * the domain space of "pma".
+ */
+__isl_give isl_map *isl_map_preimage_pw_multi_aff(__isl_take isl_map *map,
+	enum isl_dim_type type, __isl_take isl_pw_multi_aff *pma)
+{
+	if (!map || !pma)
+		goto error;
+
+	if (isl_space_match(map->dim, isl_dim_param, pma->dim, isl_dim_param))
+		return isl_map_preimage_pw_multi_aff_aligned(map, type, pma);
+
+	if (!isl_space_has_named_params(map->dim) ||
+	    !isl_space_has_named_params(pma->dim))
+		isl_die(map->ctx, isl_error_invalid,
+			"unaligned unnamed parameters", goto error);
+	map = isl_map_align_params(map, isl_pw_multi_aff_get_space(pma));
+	pma = isl_pw_multi_aff_align_params(pma, isl_map_get_space(map));
+
+	return isl_map_preimage_pw_multi_aff_aligned(map, type, pma);
+error:
+	isl_pw_multi_aff_free(pma);
+	return isl_map_free(map);
+}
+
+/* Compute the preimage of "set" under the function represented by "pma".
+ * In other words, plug in "pma" in "set".  The result is a set
+ * that lives in the domain space of "pma".
+ */
 __isl_give isl_set *isl_set_preimage_pw_multi_aff(__isl_take isl_set *set,
 	__isl_take isl_pw_multi_aff *pma)
 {
-	if (!set || !pma)
-		goto error;
+	return isl_map_preimage_pw_multi_aff(set, isl_dim_set, pma);
+}
 
-	if (isl_space_match(set->dim, isl_dim_param, pma->dim, isl_dim_param))
-		return set_preimage_pw_multi_aff(set, pma);
+/* Compute the preimage of "map" under the function represented by "pma".
+ * In other words, plug in "pma" in the domain "map".
+ * The result is a map that lives in the same space as "map",
+ * except that domain space has been replaced by the domain space of "pma".
+ */
+__isl_give isl_map *isl_map_preimage_domain_pw_multi_aff(
+	__isl_take isl_map *map, __isl_take isl_pw_multi_aff *pma)
+{
+	return isl_map_preimage_pw_multi_aff(map, isl_dim_in, pma);
+}
 
-	if (!isl_space_has_named_params(set->dim) ||
-	    !isl_space_has_named_params(pma->dim))
-		isl_die(set->ctx, isl_error_invalid,
-			"unaligned unnamed parameters", goto error);
-	set = isl_set_align_params(set, isl_pw_multi_aff_get_space(pma));
-	pma = isl_pw_multi_aff_align_params(pma, isl_set_get_space(set));
+/* Compute the preimage of "map" under the function represented by "mpa".
+ * In other words, plug in "mpa" in the domain or range of "map".
+ * The result is a map that lives in the same space as "map",
+ * except that the space of type "type" has been replaced by
+ * the domain space of "mpa".
+ */
+__isl_give isl_map *isl_map_preimage_multi_pw_aff(__isl_take isl_map *map,
+	enum isl_dim_type type, __isl_take isl_multi_pw_aff *mpa)
+{
+	isl_pw_multi_aff *pma;
 
-	return set_preimage_pw_multi_aff(set, pma);
-error:
-	isl_pw_multi_aff_free(pma);
-	return isl_set_free(set);
+	pma = isl_pw_multi_aff_from_multi_pw_aff(mpa);
+	return isl_map_preimage_pw_multi_aff(map, type, pma);
+}
+
+/* Compute the preimage of "map" under the function represented by "mpa".
+ * In other words, plug in "mpa" in the domain "map".
+ * The result is a map that lives in the same space as "map",
+ * except that domain space has been replaced by the domain space of "mpa".
+ */
+__isl_give isl_map *isl_map_preimage_domain_multi_pw_aff(
+	__isl_take isl_map *map, __isl_take isl_multi_pw_aff *mpa)
+{
+	return isl_map_preimage_multi_pw_aff(map, isl_dim_in, mpa);
 }
 
 /* Compute the preimage of "set" by the function represented by "mpa".
@@ -12030,8 +12098,5 @@ error:
 __isl_give isl_set *isl_set_preimage_multi_pw_aff(__isl_take isl_set *set,
 	__isl_take isl_multi_pw_aff *mpa)
 {
-	isl_pw_multi_aff *pma;
-
-	pma = isl_pw_multi_aff_from_multi_pw_aff(mpa);
-	return isl_set_preimage_pw_multi_aff(set, pma);
+	return isl_map_preimage_multi_pw_aff(set, isl_dim_set, mpa);
 }
