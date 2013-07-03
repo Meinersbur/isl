@@ -441,23 +441,23 @@ static __isl_give isl_aff *extract_modulo(__isl_take isl_aff *aff,
  * to those modulo computations to *pos and/or *neg.
  * We only do this if the option ast_build_prefer_pdiv is set.
  *
+ * "aff" is assumed to be an integer affine expression.
+ *
  * A modulo expression is of the form
  *
  *	a mod m = a - m * floor(a / m)
  *
  * To detect them in aff, we look for terms of the form
  *
- *	(f * m * floor(a / m)) / d
+ *	f * m * floor(a / m)
  *
  * rewrite them as
  *
- *	(f * (a - (a mod m))) / d = (f * a) / d - (f * (a mod m)) / d
+ *	f * (a - (a mod m)) = f * a - f * (a mod m)
  *
  * and extract out -f * (a mod m).
  * In particular, if f > 0, we add (f * (a mod m)) to *neg.
  * If f < 0, we add ((-f) * (a mod m)) to *pos.
- *
- * The caller is responsible for dividing *neg and/or *pos by d.
  */
 static __isl_give isl_aff *extract_modulos(__isl_take isl_aff *aff,
 	__isl_keep isl_ast_expr **pos, __isl_keep isl_ast_expr **neg,
@@ -519,11 +519,11 @@ __isl_give isl_ast_expr *isl_ast_expr_from_aff(__isl_take isl_aff *aff,
 	expr = isl_ast_expr_alloc_int_si(ctx, 0);
 	expr_neg = isl_ast_expr_alloc_int_si(ctx, 0);
 
-	aff = extract_modulos(aff, &expr, &expr_neg, build);
-	expr = ast_expr_sub(expr, expr_neg);
-
 	d = isl_aff_get_denominator_val(aff);
 	aff = isl_aff_scale_val(aff, isl_val_copy(d));
+
+	aff = extract_modulos(aff, &expr, &expr_neg, build);
+	expr = ast_expr_sub(expr, expr_neg);
 
 	ls = isl_aff_get_domain_local_space(aff);
 
