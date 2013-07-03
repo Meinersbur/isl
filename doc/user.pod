@@ -6112,6 +6112,13 @@ the context of an C<isl_ast_build>.
 	__isl_give isl_ast_expr *isl_ast_expr_access(
 		__isl_take isl_ast_expr *array,
 		__isl_take isl_ast_expr_list *indices);
+	__isl_give isl_ast_expr *isl_ast_expr_substitute_ids(
+		__isl_take isl_ast_expr *expr,
+		__isl_take isl_id_to_ast_expr *id2expr);
+
+The function C<isl_ast_expr_substitute_ids> replaces the
+subexpressions of C<expr> of type C<isl_ast_expr_id>
+by the corresponding expression in C<id2expr>, if there is any.
 
 	#include <isl/ast_build.h>
 	__isl_give isl_ast_expr *isl_ast_build_expr_from_pw_aff(

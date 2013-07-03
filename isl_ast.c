@@ -591,6 +591,63 @@ error:
 	return NULL;
 }
 
+/* For each subexpression of "expr" of type isl_ast_expr_id,
+ * if it appears in "id2expr", then replace it by the corresponding
+ * expression.
+ */
+__isl_give isl_ast_expr *isl_ast_expr_substitute_ids(
+	__isl_take isl_ast_expr *expr, __isl_take isl_id_to_ast_expr *id2expr)
+{
+	int i;
+	isl_id *id;
+
+	if (!expr || !id2expr)
+		goto error;
+
+	switch (expr->type) {
+	case isl_ast_expr_int:
+		break;
+	case isl_ast_expr_id:
+		if (!isl_id_to_ast_expr_has(id2expr, expr->u.id))
+			break;
+		id = isl_id_copy(expr->u.id);
+		isl_ast_expr_free(expr);
+		expr = isl_id_to_ast_expr_get(id2expr, id);
+		break;
+	case isl_ast_expr_op:
+		for (i = 0; i < expr->u.op.n_arg; ++i) {
+			isl_ast_expr *arg;
+			arg = isl_ast_expr_copy(expr->u.op.args[i]);
+			arg = isl_ast_expr_substitute_ids(arg,
+					    isl_id_to_ast_expr_copy(id2expr));
+			if (arg == expr->u.op.args[i]) {
+				isl_ast_expr_free(arg);
+				continue;
+			}
+			if (!arg)
+				expr = isl_ast_expr_free(expr);
+			expr = isl_ast_expr_cow(expr);
+			if (!expr) {
+				isl_ast_expr_free(arg);
+				break;
+			}
+			isl_ast_expr_free(expr->u.op.args[i]);
+			expr->u.op.args[i] = arg;
+		}
+		break;
+	case isl_ast_expr_error:
+		expr = isl_ast_expr_free(expr);
+		break;
+	}
+
+	isl_id_to_ast_expr_free(id2expr);
+	return expr;
+error:
+	isl_ast_expr_free(expr);
+	isl_id_to_ast_expr_free(id2expr);
+	return NULL;
+}
+
 isl_ctx *isl_ast_node_get_ctx(__isl_keep isl_ast_node *node)
 {
 	return node ? node->ctx : NULL;

@@ -4,6 +4,7 @@
 #include <isl/ctx.h>
 #include <isl/ast_type.h>
 #include <isl/id.h>
+#include <isl/id_to_ast_expr.h>
 #include <isl/val.h>
 #include <isl/list.h>
 #include <isl/printer.h>
@@ -48,6 +49,9 @@ __isl_give isl_ast_expr *isl_ast_expr_get_op_arg(__isl_keep isl_ast_expr *expr,
 
 int isl_ast_expr_is_equal(__isl_keep isl_ast_expr *expr1,
 	__isl_keep isl_ast_expr *expr2);
+
+__isl_give isl_ast_expr *isl_ast_expr_substitute_ids(
+	__isl_take isl_ast_expr *expr, __isl_take isl_id_to_ast_expr *id2expr);
 
 __isl_give isl_printer *isl_printer_print_ast_expr(__isl_take isl_printer *p,
 	__isl_keep isl_ast_expr *expr);
