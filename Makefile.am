@@ -198,6 +198,7 @@ pkginclude_HEADERS = \
 	include/isl/aff_type.h \
 	include/isl/arg.h \
 	include/isl/ast.h \
+	include/isl/ast_type.h \
 	include/isl/ast_build.h \
 	include/isl/band.h \
 	include/isl/constraint.h \
