@@ -21,6 +21,9 @@
 #define BASE val
 #include <print_templ.c>
 #undef BASE
+#define BASE multi_val
+#include <print_templ.c>
+#undef BASE
 #define BASE space
 #include <print_templ.c>
 #undef BASE
