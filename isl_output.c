@@ -27,6 +27,7 @@
 #include <isl/constraint.h>
 #include <isl_local_space_private.h>
 #include <isl_aff_private.h>
+#include <isl_val_private.h>
 #include <isl_ast_build_expr.h>
 #include <isl_sort.h>
 
@@ -2611,6 +2612,62 @@ __isl_give isl_printer *isl_printer_print_multi_pw_aff(
 
 	if (p->output_format == ISL_FORMAT_ISL)
 		return print_multi_pw_aff_isl(p, mpa);
+	isl_die(p->ctx, isl_error_unsupported, "unsupported output format",
+		return isl_printer_free(p));
+}
+
+/* Print dimension "pos" of data->space to "p".
+ *
+ * data->user is assumed to be an isl_multi_val.
+ *
+ * If the current dimension is an output dimension, then print
+ * the corresponding value.  Otherwise, print the name of the dimension.
+ */
+static __isl_give isl_printer *print_dim_mv(__isl_take isl_printer *p,
+	struct isl_print_space_data *data, unsigned pos)
+{
+	isl_multi_val *mv = data->user;
+
+	if (data->type == isl_dim_out)
+		return isl_printer_print_val(p, mv->p[pos]);
+	else
+		return print_name(data->space, p, data->type, pos, data->latex);
+}
+
+/* Print the isl_multi_val "mv" to "p" in isl format.
+ */
+static __isl_give isl_printer *print_multi_val_isl(__isl_take isl_printer *p,
+	__isl_keep isl_multi_val *mv)
+{
+	struct isl_print_space_data data = { 0 };
+
+	if (!mv)
+		return isl_printer_free(p);
+
+	if (isl_space_dim(mv->space, isl_dim_param) > 0) {
+		p = print_tuple(mv->space, p, isl_dim_param, &data);
+		p = isl_printer_print_str(p, " -> ");
+	}
+	p = isl_printer_print_str(p, "{ ");
+	data.print_dim = &print_dim_mv;
+	data.user = mv;
+	p = print_space(mv->space, p, 0, &data);
+	p = isl_printer_print_str(p, " }");
+	return p;
+}
+
+/* Print the isl_multi_val "mv" to "p".
+ *
+ * Currently only supported in isl format.
+ */
+__isl_give isl_printer *isl_printer_print_multi_val(
+	__isl_take isl_printer *p, __isl_keep isl_multi_val *mv)
+{
+	if (!p || !mv)
+		return isl_printer_free(p);
+
+	if (p->output_format == ISL_FORMAT_ISL)
+		return print_multi_val_isl(p, mv);
 	isl_die(p->ctx, isl_error_unsupported, "unsupported output format",
 		return isl_printer_free(p));
 }

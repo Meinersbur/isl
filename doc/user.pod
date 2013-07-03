@@ -3359,6 +3359,12 @@ Operations include
 		__isl_take isl_multi_val *mv1,
 		__isl_take isl_multi_val *mv2);
 
+A multiple value can be printed using
+
+	__isl_give isl_printer *isl_printer_print_multi_val(
+		__isl_take isl_printer *p,
+		__isl_keep isl_multi_val *mv);
+
 =head2 Vectors
 
 Vectors can be created, copied and freed using the following functions.
