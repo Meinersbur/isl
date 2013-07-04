@@ -3285,6 +3285,47 @@ error:
 	return NULL;
 }
 
+/* Given a map space, return an isl_multi_aff that maps a wrapped copy
+ * of the space to its range.
+ */
+__isl_give isl_multi_aff *isl_multi_aff_range_map(__isl_take isl_space *space)
+{
+	int i, n_in, n_out;
+	isl_local_space *ls;
+	isl_multi_aff *ma;
+
+	if (!space)
+		return NULL;
+	if (!isl_space_is_map(space))
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
+			"not a map space", goto error);
+
+	n_in = isl_space_dim(space, isl_dim_in);
+	n_out = isl_space_dim(space, isl_dim_out);
+	space = isl_space_range_map(space);
+
+	ma = isl_multi_aff_alloc(isl_space_copy(space));
+	if (n_out == 0) {
+		isl_space_free(space);
+		return ma;
+	}
+
+	space = isl_space_domain(space);
+	ls = isl_local_space_from_space(space);
+	for (i = 0; i < n_out; ++i) {
+		isl_aff *aff;
+
+		aff = isl_aff_var_on_domain(isl_local_space_copy(ls),
+						isl_dim_set, n_in + i);
+		ma = isl_multi_aff_set_aff(ma, i, aff);
+	}
+	isl_local_space_free(ls);
+	return ma;
+error:
+	isl_space_free(space);
+	return NULL;
+}
+
 /* Create an isl_pw_multi_aff with the given isl_multi_aff on a universe
  * domain.
  */

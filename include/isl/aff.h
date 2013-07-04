@@ -286,6 +286,7 @@ ISL_DECLARE_MULTI(aff)
 __isl_give isl_multi_aff *isl_multi_aff_from_aff(__isl_take isl_aff *aff);
 __isl_give isl_multi_aff *isl_multi_aff_identity(__isl_take isl_space *space);
 __isl_give isl_multi_aff *isl_multi_aff_domain_map(__isl_take isl_space *space);
+__isl_give isl_multi_aff *isl_multi_aff_range_map(__isl_take isl_space *space);
 
 int isl_multi_aff_plain_is_equal(__isl_keep isl_multi_aff *maff1,
 	__isl_keep isl_multi_aff *maff2);
