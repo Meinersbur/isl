@@ -221,12 +221,23 @@ __isl_give MULTI(BASE) *FN(FN(MULTI(BASE),set),BASE)(
 {
 	isl_space *multi_space = NULL;
 	isl_space *el_space = NULL;
+	int match;
 
 	multi = FN(MULTI(BASE),cow)(multi);
 	if (!multi || !el)
 		goto error;
 
 	multi_space = FN(MULTI(BASE),get_space)(multi);
+	match = FN(EL,matching_params)(el, multi_space);
+	if (match < 0)
+		goto error;
+	if (!match) {
+		multi = FN(MULTI(BASE),align_params)(multi,
+						    FN(EL,get_space)(el));
+		isl_space_free(multi_space);
+		multi_space = FN(MULTI(BASE),get_space)(multi);
+		el = FN(EL,align_params)(el, isl_space_copy(multi_space));
+	}
 	if (FN(EL,check_match_domain_space)(el, multi_space) < 0)
 		goto error;
 

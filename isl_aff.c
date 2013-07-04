@@ -3186,6 +3186,25 @@ __isl_give isl_pw_aff_list *isl_pw_aff_list_set_rational(
 	return list;
 }
 
+/* Do the parameters of "aff" match those of "space"?
+ */
+int isl_aff_matching_params(__isl_keep isl_aff *aff,
+	__isl_keep isl_space *space)
+{
+	isl_space *aff_space;
+	int match;
+
+	if (!aff || !space)
+		return -1;
+
+	aff_space = isl_aff_get_domain_space(aff);
+
+	match = isl_space_match(space, isl_dim_param, aff_space, isl_dim_param);
+
+	isl_space_free(aff_space);
+	return match;
+}
+
 /* Check that the domain space of "aff" matches "space".
  *
  * Return 0 on success and -1 on error.
@@ -5237,6 +5256,25 @@ error:
 	isl_pw_multi_aff_free(pma);
 	isl_pw_aff_free(pa);
 	return NULL;
+}
+
+/* Do the parameters of "pa" match those of "space"?
+ */
+int isl_pw_aff_matching_params(__isl_keep isl_pw_aff *pa,
+	__isl_keep isl_space *space)
+{
+	isl_space *pa_space;
+	int match;
+
+	if (!pa || !space)
+		return -1;
+
+	pa_space = isl_pw_aff_get_space(pa);
+
+	match = isl_space_match(space, isl_dim_param, pa_space, isl_dim_param);
+
+	isl_space_free(pa_space);
+	return match;
 }
 
 /* Check that the domain space of "pa" matches "space".

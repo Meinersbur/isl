@@ -1320,6 +1320,22 @@ __isl_give isl_val *isl_val_set_dim_name(__isl_take isl_val *v,
 	return v;
 }
 
+/* Return the space of "v".
+ *
+ * This function is only meant to be used in the generic isl_multi_*
+ * functions which have to deal with base objects that have an associated
+ * space.  The conditions surrounding the call to this function make sure
+ * that this function will never actually get called.  We return a valid
+ * space anyway, just in case.
+ */
+__isl_give isl_space *isl_val_get_space(__isl_keep isl_val *v)
+{
+	if (!v)
+		return NULL;
+
+	return isl_space_params_alloc(isl_val_get_ctx(v), 0);
+}
+
 /* Reset the domain space of "v" to "space".
  *
  * This function is only meant to be used in the generic isl_multi_*
@@ -1328,6 +1344,24 @@ __isl_give isl_val *isl_val_set_dim_name(__isl_take isl_val *v,
  * does not do anything, apart from error handling and cleaning up memory.
  */
 __isl_give isl_val *isl_val_reset_domain_space(__isl_take isl_val *v,
+	__isl_take isl_space *space)
+{
+	if (!space)
+		return isl_val_free(v);
+	isl_space_free(space);
+	return v;
+}
+
+/* Align the parameters of "v" to those of "space".
+ *
+ * This function is only meant to be used in the generic isl_multi_*
+ * functions which have to deal with base objects that have an associated
+ * space.  Since an isl_val does not have an associated space, this function
+ * does not do anything, apart from error handling and cleaning up memory.
+ * Note that the conditions surrounding the call to this function make sure
+ * that this function will never actually get called.
+ */
+__isl_give isl_val *isl_val_align_params(__isl_take isl_val *v,
 	__isl_take isl_space *space)
 {
 	if (!space)
@@ -1369,6 +1403,20 @@ __isl_give isl_val *isl_val_zero_on_domain(__isl_take isl_local_space *ls)
 	ctx = isl_local_space_get_ctx(ls);
 	isl_local_space_free(ls);
 	return isl_val_zero(ctx);
+}
+
+/* Do the parameters of "v" match those of "space"?
+ *
+ * This function is only meant to be used in the generic isl_multi_*
+ * functions which have to deal with base objects that have an associated
+ * space.  Since an isl_val does not have an associated space, this function
+ * simply returns 1, except if "v" or "space" are NULL.
+ */
+int isl_val_matching_params(__isl_keep isl_val *v, __isl_keep isl_space *space)
+{
+	if (!v || !space)
+		return -1;
+	return 1;
 }
 
 /* Check that the domain space of "v" matches "space".

@@ -40,7 +40,10 @@ __isl_give isl_val *isl_val_drop_dims(__isl_take isl_val *v,
 	enum isl_dim_type type, unsigned first, unsigned n);
 __isl_give isl_val *isl_val_set_dim_name(__isl_take isl_val *v,
 	enum isl_dim_type type, unsigned pos, const char *s);
+__isl_give isl_space *isl_val_get_space(__isl_keep isl_val *v);
 __isl_give isl_val *isl_val_reset_domain_space(__isl_take isl_val *v,
+	__isl_take isl_space *space);
+__isl_give isl_val *isl_val_align_params(__isl_take isl_val *v,
 	__isl_take isl_space *space);
 __isl_give isl_val *isl_val_realign_domain(__isl_take isl_val *v,
 	__isl_take isl_reordering *r);
@@ -49,6 +52,7 @@ __isl_give isl_val *isl_val_zero_on_domain(__isl_take isl_local_space *ls);
 __isl_give isl_val *isl_val_scale_val(__isl_take isl_val *v1,
 	__isl_take isl_val *v2);
 
+int isl_val_matching_params(__isl_keep isl_val *v, __isl_keep isl_space *space);
 int isl_val_check_match_domain_space(__isl_keep isl_val *v,
 	__isl_keep isl_space *space);
 
