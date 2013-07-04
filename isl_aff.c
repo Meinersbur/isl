@@ -4751,8 +4751,10 @@ error:
 
 /* Compute the pullback of "ma1" by the function represented by "ma2".
  * In other words, plug in "ma2" in "ma1".
+ *
+ * The parameters of "ma1" and "ma2" are assumed to have been aligned.
  */
-__isl_give isl_multi_aff *isl_multi_aff_pullback_multi_aff(
+static __isl_give isl_multi_aff *isl_multi_aff_pullback_multi_aff_aligned(
 	__isl_take isl_multi_aff *ma1, __isl_take isl_multi_aff *ma2)
 {
 	int i;
@@ -4781,6 +4783,16 @@ error:
 	isl_multi_aff_free(ma2);
 	isl_multi_aff_free(ma1);
 	return NULL;
+}
+
+/* Compute the pullback of "ma1" by the function represented by "ma2".
+ * In other words, plug in "ma2" in "ma1".
+ */
+__isl_give isl_multi_aff *isl_multi_aff_pullback_multi_aff(
+	__isl_take isl_multi_aff *ma1, __isl_take isl_multi_aff *ma2)
+{
+	return isl_multi_aff_align_params_multi_multi_and(ma1, ma2,
+				&isl_multi_aff_pullback_multi_aff_aligned);
 }
 
 /* Extend the local space of "dst" to include the divs
