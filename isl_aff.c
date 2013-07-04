@@ -3573,7 +3573,7 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_product(
 						 isl_set_copy(pma2->p[j].set));
 			ma = isl_multi_aff_product(
 					isl_multi_aff_copy(pma1->p[i].maff),
-					isl_multi_aff_copy(pma2->p[i].maff));
+					isl_multi_aff_copy(pma2->p[j].maff));
 			res = isl_pw_multi_aff_add_piece(res, domain, ma);
 		}
 	}

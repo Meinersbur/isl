@@ -3105,6 +3105,68 @@ int test_dim_max(isl_ctx *ctx)
 	return 0;
 }
 
+/* Is "pma" obviously equal to the isl_pw_multi_aff represented by "str"?
+ */
+static int pw_multi_aff_plain_is_equal(__isl_keep isl_pw_multi_aff *pma,
+	const char *str)
+{
+	isl_ctx *ctx;
+	isl_pw_multi_aff *pma2;
+	int equal;
+
+	if (!pma)
+		return -1;
+
+	ctx = isl_pw_multi_aff_get_ctx(pma);
+	pma2 = isl_pw_multi_aff_read_from_str(ctx, str);
+	equal = isl_pw_multi_aff_plain_is_equal(pma, pma2);
+	isl_pw_multi_aff_free(pma2);
+
+	return equal;
+}
+
+/* Check that "pma" is obviously equal to the isl_pw_multi_aff
+ * represented by "str".
+ */
+static int pw_multi_aff_check_plain_equal(__isl_keep isl_pw_multi_aff *pma,
+	const char *str)
+{
+	int equal;
+
+	equal = pw_multi_aff_plain_is_equal(pma, str);
+	if (equal < 0)
+		return -1;
+	if (!equal)
+		isl_die(isl_pw_multi_aff_get_ctx(pma), isl_error_unknown,
+			"result not as expected", return -1);
+	return 0;
+}
+
+/* Basic test for isl_pw_multi_aff_product.
+ *
+ * Check that multiple pieces are properly handled.
+ */
+static int test_product_pma(isl_ctx *ctx)
+{
+	int equal;
+	const char *str;
+	isl_pw_multi_aff *pma1, *pma2;
+
+	str = "{ A[i] -> B[1] : i < 0; A[i] -> B[2] : i >= 0 }";
+	pma1 = isl_pw_multi_aff_read_from_str(ctx, str);
+	str = "{ C[] -> D[] }";
+	pma2 = isl_pw_multi_aff_read_from_str(ctx, str);
+	pma1 = isl_pw_multi_aff_product(pma1, pma2);
+	str = "{ [A[i] -> C[]] -> [B[(1)] -> D[]] : i < 0;"
+		"[A[i] -> C[]] -> [B[(2)] -> D[]] : i >= 0 }";
+	equal = pw_multi_aff_check_plain_equal(pma1, str);
+	isl_pw_multi_aff_free(pma1);
+	if (equal < 0)
+		return -1;
+
+	return 0;
+}
+
 int test_product(isl_ctx *ctx)
 {
 	const char *str;
@@ -3134,6 +3196,9 @@ int test_product(isl_ctx *ctx)
 		return -1;
 	if (!ok)
 		isl_die(ctx, isl_error_unknown, "unexpected result", return -1);
+
+	if (test_product_pma(ctx) < 0)
+		return -1;
 
 	return 0;
 }
