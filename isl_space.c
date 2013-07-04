@@ -1,6 +1,7 @@
 /*
  * Copyright 2008-2009 Katholieke Universiteit Leuven
  * Copyright 2010      INRIA Saclay
+ * Copyright 2014      Ecole Normale Superieure
  *
  * Use of this software is governed by the MIT license
  *
@@ -8,6 +9,7 @@
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
  * and INRIA Saclay - Ile-de-France, Parc Club Orsay Universite,
  * ZAC des vignes, 4 rue Jacques Monod, 91893 Orsay, France 
+ * and Ecole Normale Superieure, 45 rue d’Ulm, 75230 Paris, France
  */
 
 #include <stdlib.h>
@@ -1412,6 +1414,19 @@ __isl_give isl_space *isl_space_domain_map(__isl_take isl_space *space)
 	domain = isl_space_from_range(isl_space_domain(isl_space_copy(space)));
 	space = isl_space_from_domain(isl_space_wrap(space));
 	space = isl_space_join(space, domain);
+
+	return space;
+}
+
+/* Given a map space A -> B, return the map space [A -> B] -> B.
+ */
+__isl_give isl_space *isl_space_range_map(__isl_take isl_space *space)
+{
+	isl_space *range;
+
+	range = isl_space_from_range(isl_space_range(isl_space_copy(space)));
+	space = isl_space_from_domain(isl_space_wrap(space));
+	space = isl_space_join(space, range);
 
 	return space;
 }
