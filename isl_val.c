@@ -851,6 +851,17 @@ error:
 	return NULL;
 }
 
+/* Divide "v1" by "v2".
+ *
+ * This is a private copy of isl_val_div for use in the generic
+ * isl_multi_*_scale_down_val instantiated for isl_val.
+ */
+__isl_give isl_val *isl_val_scale_down_val(__isl_take isl_val *v1,
+	__isl_take isl_val *v2)
+{
+	return isl_val_div(v1, v2);
+}
+
 /* Given two integer values "v1" and "v2", check if "v1" is divisible by "v2".
  */
 int isl_val_is_divisible_by(__isl_keep isl_val *v1, __isl_keep isl_val *v2)
