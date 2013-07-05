@@ -89,7 +89,7 @@ static __isl_give isl_vertices *vertices_from_list(__isl_keep isl_basic_set *bse
 	vertices->ref = 1;
 	vertices->bset = isl_basic_set_copy(bset);
 	vertices->v = isl_alloc_array(bset->ctx, struct isl_vertex, n_vertices);
-	if (!vertices->v)
+	if (n_vertices && !vertices->v)
 		goto error;
 	vertices->n_vertices = n_vertices;
 
