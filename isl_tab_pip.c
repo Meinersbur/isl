@@ -4589,7 +4589,7 @@ static union isl_lex_res basic_map_partial_lexopt_symm(
 	ctx = isl_basic_map_get_ctx(bmap);
 	list = isl_alloc_array(ctx, int, bmap->n_ineq);
 	var = isl_vec_alloc(ctx, n_out);
-	if (!list || !var)
+	if ((bmap->n_ineq && !list) || (n_out && !var))
 		goto error;
 
 	list[0] = first;
