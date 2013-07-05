@@ -3121,7 +3121,7 @@ static __isl_give isl_band *construct_band(__isl_keep isl_schedule *schedule,
 	band->n = end - start;
 
 	band->zero = isl_alloc_array(ctx, int, band->n);
-	if (!band->zero)
+	if (band->n && !band->zero)
 		goto error;
 
 	for (j = 0; j < band->n; ++j)
