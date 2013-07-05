@@ -34,15 +34,15 @@ static struct isl_tarjan_graph *isl_tarjan_graph_alloc(isl_ctx *ctx, int len)
 		return NULL;
 	g->len = len;
 	g->node = isl_alloc_array(ctx, struct isl_tarjan_node, len);
-	if (!g->node)
+	if (len && !g->node)
 		goto error;
 	for (i = 0; i < len; ++i)
 		g->node[i].index = -1;
 	g->stack = isl_alloc_array(ctx, int, len);
-	if (!g->stack)
+	if (len && !g->stack)
 		goto error;
 	g->order = isl_alloc_array(ctx, int, 2 * len);
-	if (!g->order)
+	if (len && !g->order)
 		goto error;
 
 	g->sp = 0;
