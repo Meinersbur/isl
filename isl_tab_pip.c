@@ -2087,7 +2087,7 @@ static struct isl_tab *tab_for_lexmin(struct isl_basic_map *bmap,
 		tab->n_div = dom->n_div;
 		tab->row_sign = isl_calloc_array(bmap->ctx,
 					enum isl_tab_row_sign, tab->mat->n_row);
-		if (!tab->row_sign)
+		if (tab->mat->n_row && !tab->row_sign)
 			goto error;
 	}
 	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_EMPTY)) {
