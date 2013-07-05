@@ -467,7 +467,7 @@ struct isl_tab *isl_tab_product(struct isl_tab *tab1, struct isl_tab *tab2)
 		goto error;
 	prod->var = isl_alloc_array(tab1->mat->ctx, struct isl_tab_var,
 					tab1->max_var + tab2->max_var);
-	if (!prod->var)
+	if ((tab1->max_var + tab2->max_var) && !prod->var)
 		goto error;
 	for (i = 0; i < tab1->n_var; ++i) {
 		prod->var[i] = tab1->var[i];
@@ -481,7 +481,7 @@ struct isl_tab *isl_tab_product(struct isl_tab *tab1, struct isl_tab *tab2)
 	}
 	prod->con = isl_alloc_array(tab1->mat->ctx, struct isl_tab_var,
 					tab1->max_con +  tab2->max_con);
-	if (!prod->con)
+	if ((tab1->max_con + tab2->max_con) && !prod->con)
 		goto error;
 	for (i = 0; i < tab1->n_con; ++i) {
 		prod->con[i] = tab1->con[i];
@@ -495,7 +495,7 @@ struct isl_tab *isl_tab_product(struct isl_tab *tab1, struct isl_tab *tab2)
 	}
 	prod->col_var = isl_alloc_array(tab1->mat->ctx, int,
 					tab1->n_col + tab2->n_col);
-	if (!prod->col_var)
+	if ((tab1->n_col + tab2->n_col) && !prod->col_var)
 		goto error;
 	for (i = 0; i < tab1->n_col; ++i) {
 		int pos = i < d1 ? i : i + d2;
@@ -512,7 +512,7 @@ struct isl_tab *isl_tab_product(struct isl_tab *tab1, struct isl_tab *tab2)
 	}
 	prod->row_var = isl_alloc_array(tab1->mat->ctx, int,
 					tab1->mat->n_row + tab2->mat->n_row);
-	if (!prod->row_var)
+	if ((tab1->mat->n_row + tab2->mat->n_row) && !prod->row_var)
 		goto error;
 	for (i = 0; i < tab1->n_row; ++i) {
 		int pos = i < r1 ? i : i + r2;
