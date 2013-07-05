@@ -627,7 +627,7 @@ static int add_chamber(struct isl_chamber_list **list,
 	if (!c)
 		goto error;
 	c->c.vertices = isl_alloc_array(tab->mat->ctx, int, n_vertices);
-	if (!c->c.vertices)
+	if (n_vertices && !c->c.vertices)
 		goto error;
 	c->c.dom = isl_basic_set_from_basic_map(isl_basic_map_copy(tab->bmap));
 	c->c.dom = isl_basic_set_set_rational(c->c.dom);
