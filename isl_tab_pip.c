@@ -5093,7 +5093,7 @@ __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 
 	v = isl_vec_alloc(ctx, 1 + tab->n_var);
 	triv = isl_calloc_array(ctx, struct isl_trivial, n_region);
-	if (!v || !triv)
+	if (!v || (n_region && !triv))
 		goto error;
 
 	level = 0;
