@@ -1086,7 +1086,7 @@ static __isl_give isl_cell *isl_cell_alloc(__isl_take isl_vertices *vertices,
 
 	cell->n_vertices = vertices->c[id].n_vertices;
 	cell->ids = isl_alloc_array(dom->ctx, int, cell->n_vertices);
-	if (!cell->ids)
+	if (cell->n_vertices && !cell->ids)
 		goto error;
 	for (i = 0; i < cell->n_vertices; ++i)
 		cell->ids[i] = vertices->c[id].vertices[i];
