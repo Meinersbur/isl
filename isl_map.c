@@ -8711,6 +8711,8 @@ static struct isl_basic_map *isl_basic_map_sort_constraints(
 
 	if (!bmap)
 		return NULL;
+	if (bmap->n_ineq == 0)
+		return bmap;
 	total = isl_basic_map_total_dim(bmap);
 	c = isl_alloc_array(bmap->ctx, struct constraint, bmap->n_ineq);
 	if (!c)
