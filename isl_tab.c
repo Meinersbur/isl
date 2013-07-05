@@ -3166,7 +3166,7 @@ static int restore_basis(struct isl_tab *tab, int *col_var)
 	unsigned off = 2 + tab->M;
 
 	extra = isl_alloc_array(tab->mat->ctx, int, tab->n_col);
-	if (!extra)
+	if (tab->n_col && !extra)
 		goto error;
 	for (i = 0; i < tab->n_col; ++i) {
 		for (j = 0; j < tab->n_col; ++j)
