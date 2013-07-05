@@ -430,7 +430,8 @@ static int graph_alloc(isl_ctx *ctx, struct isl_sched_graph *graph,
 	graph->intra_hmap = isl_hmap_map_basic_set_alloc(ctx, 2 * n_edge);
 	graph->inter_hmap = isl_hmap_map_basic_set_alloc(ctx, 2 * n_edge);
 
-	if (!graph->node || !graph->region || !graph->edge || !graph->sorted)
+	if (!graph->node || !graph->region || (graph->n_edge && !graph->edge) ||
+	    !graph->sorted)
 		return -1;
 
 	for(i = 0; i < graph->n; ++i)
