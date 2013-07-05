@@ -35,7 +35,7 @@ struct isl_mat *isl_mat_alloc(struct isl_ctx *ctx,
 	if (isl_blk_is_error(mat->block))
 		goto error;
 	mat->row = isl_alloc_array(ctx, isl_int *, n_row);
-	if (!mat->row)
+	if (n_row && !mat->row)
 		goto error;
 
 	for (i = 0; i < n_row; ++i)
