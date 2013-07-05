@@ -36,16 +36,16 @@ struct isl_tab *isl_tab_alloc(struct isl_ctx *ctx,
 	if (!tab->mat)
 		goto error;
 	tab->var = isl_alloc_array(ctx, struct isl_tab_var, n_var);
-	if (!tab->var)
+	if (n_var && !tab->var)
 		goto error;
 	tab->con = isl_alloc_array(ctx, struct isl_tab_var, n_row);
-	if (!tab->con)
+	if (n_row && !tab->con)
 		goto error;
 	tab->col_var = isl_alloc_array(ctx, int, n_var);
-	if (!tab->col_var)
+	if (n_var && !tab->col_var)
 		goto error;
 	tab->row_var = isl_alloc_array(ctx, int, n_row);
-	if (!tab->row_var)
+	if (n_row && !tab->row_var)
 		goto error;
 	for (i = 0; i < n_var; ++i) {
 		tab->var[i].index = i;
