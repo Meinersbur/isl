@@ -812,7 +812,7 @@ static struct isl_basic_map *basic_map_init(struct isl_ctx *ctx,
 		goto error;
 
 	bmap->ineq = isl_alloc_array(ctx, isl_int *, n_ineq + n_eq);
-	if (!bmap->ineq)
+	if ((n_ineq + n_eq) && !bmap->ineq)
 		goto error;
 
 	if (extra == 0) {
