@@ -3487,7 +3487,7 @@ static __isl_give isl_band_list *construct_forest(
 	int *active;
 
 	active = isl_alloc_array(ctx, int, schedule->n);
-	if (!active)
+	if (schedule->n && !active)
 		return NULL;
 
 	for (i = 0; i < schedule->n; ++i)
