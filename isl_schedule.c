@@ -539,7 +539,7 @@ static int extract_node(__isl_take isl_set *set, void *user)
 	graph->node[graph->n].zero = zero;
 	graph->n++;
 
-	if (!sched || !band || !band_id || !zero)
+	if (!sched || (graph->max_row && (!band || !band_id || !zero)))
 		return -1;
 
 	return 0;
