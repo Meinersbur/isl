@@ -524,6 +524,8 @@ __isl_give char *isl_union_pw_multi_aff_to_str(
 
 __isl_give isl_multi_pw_aff *isl_multi_pw_aff_identity(
 	__isl_take isl_space *space);
+__isl_give isl_multi_pw_aff *isl_multi_pw_aff_from_multi_aff(
+	__isl_take isl_multi_aff *ma);
 __isl_give isl_multi_pw_aff *isl_multi_pw_aff_from_pw_aff(
 	__isl_take isl_pw_aff *pa);
 __isl_give isl_set *isl_multi_pw_aff_domain(__isl_take isl_multi_pw_aff *mpa);
