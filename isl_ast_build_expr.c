@@ -922,6 +922,7 @@ __isl_give isl_ast_expr *isl_ast_build_expr_from_pw_aff_internal(
 	struct isl_from_pw_aff_data data;
 	isl_ast_expr *res = NULL;
 
+	pa = isl_ast_build_compute_gist_pw_aff(build, pa);
 	if (!pa)
 		return NULL;
 
