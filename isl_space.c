@@ -1251,9 +1251,9 @@ __isl_give isl_space *isl_space_reverse(__isl_take isl_space *dim)
 	dim->nested[1] = nested;
 
 	if (dim->ids) {
-		ids = isl_alloc_array(dim->ctx, isl_id *,
-					dim->n_in + dim->n_out);
-		if (!ids)
+		int n_id = dim->n_in + dim->n_out;
+		ids = isl_alloc_array(dim->ctx, isl_id *, n_id);
+		if (n_id && !ids)
 			goto error;
 		get_ids(dim, isl_dim_in, 0, dim->n_in, ids);
 		get_ids(dim, isl_dim_out, 0, dim->n_out, ids + dim->n_in);
