@@ -836,7 +836,7 @@ int isl_tab_push_basis(struct isl_tab *tab)
 	union isl_tab_undo_val u;
 
 	u.col_var = isl_alloc_array(tab->mat->ctx, int, tab->n_col);
-	if (!u.col_var)
+	if (tab->n_col && !u.col_var)
 		return -1;
 	for (i = 0; i < tab->n_col; ++i)
 		u.col_var[i] = tab->col_var[i];
