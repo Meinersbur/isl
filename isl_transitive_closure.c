@@ -2779,6 +2779,8 @@ static __isl_give isl_union_map *union_components(
 	if (isl_union_map_foreach_map(umap, inc_count, &n) < 0)
 		goto error;
 
+	if (n == 0)
+		return umap;
 	if (n <= 1)
 		return union_floyd_warshall(umap, exact);
 
