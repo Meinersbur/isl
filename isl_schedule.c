@@ -3433,7 +3433,7 @@ static __isl_give isl_band_list *construct_band_list(
 	}
 
 	active = isl_alloc_array(ctx, int, schedule->n);
-	if (!active)
+	if (schedule->n && !active)
 		return NULL;
 
 	list = isl_band_list_alloc(ctx, n_band);
