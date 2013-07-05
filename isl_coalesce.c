@@ -1358,7 +1358,7 @@ static int coalesce_local_pair(__isl_keep isl_map *map, int i, int j,
 	int *ineq_j = NULL;
 
 	eq_i = eq_status_in(map->p[i], tabs[j]);
-	if (!eq_i)
+	if (map->p[i]->n_eq && !eq_i)
 		goto error;
 	if (any(eq_i, 2 * map->p[i]->n_eq, STATUS_ERROR))
 		goto error;
@@ -1366,7 +1366,7 @@ static int coalesce_local_pair(__isl_keep isl_map *map, int i, int j,
 		goto done;
 
 	eq_j = eq_status_in(map->p[j], tabs[i]);
-	if (!eq_j)
+	if (map->p[j]->n_eq && !eq_j)
 		goto error;
 	if (any(eq_j, 2 * map->p[j]->n_eq, STATUS_ERROR))
 		goto error;
@@ -1374,7 +1374,7 @@ static int coalesce_local_pair(__isl_keep isl_map *map, int i, int j,
 		goto done;
 
 	ineq_i = ineq_status_in(map->p[i], tabs[i], tabs[j]);
-	if (!ineq_i)
+	if (map->p[i]->n_ineq && !ineq_i)
 		goto error;
 	if (any(ineq_i, map->p[i]->n_ineq, STATUS_ERROR))
 		goto error;
@@ -1382,7 +1382,7 @@ static int coalesce_local_pair(__isl_keep isl_map *map, int i, int j,
 		goto done;
 
 	ineq_j = ineq_status_in(map->p[j], tabs[j], tabs[i]);
-	if (!ineq_j)
+	if (map->p[j]->n_ineq && !ineq_j)
 		goto error;
 	if (any(ineq_j, map->p[j]->n_ineq, STATUS_ERROR))
 		goto error;
