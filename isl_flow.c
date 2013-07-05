@@ -1319,7 +1319,8 @@ static int compute_flow(__isl_take isl_map *map, void *user)
 
 	data->accesses = isl_access_info_alloc(isl_map_copy(map),
 				data->sink_info, &before, data->count);
-	if (!data->sink_info || !data->source_info || !data->accesses)
+	if (!data->sink_info || (data->count && !data->source_info) ||
+	    !data->accesses)
 		goto error;
 	data->count = 0;
 	data->must = 1;
