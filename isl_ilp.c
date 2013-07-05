@@ -376,7 +376,7 @@ enum isl_lp_result isl_basic_set_opt(__isl_keep isl_basic_set *bset, int max,
 	isl_mat *bset_div = NULL;
 	isl_mat *div = NULL;
 	enum isl_lp_result res;
-	int bset_n_div;
+	int bset_n_div, obj_n_div;
 
 	if (!bset || !obj)
 		return isl_lp_error;
@@ -391,7 +391,8 @@ enum isl_lp_result isl_basic_set_opt(__isl_keep isl_basic_set *bset, int max,
 			return isl_lp_error);
 
 	bset_n_div = isl_basic_set_dim(bset, isl_dim_div);
-	if (bset_n_div == 0 && obj->ls->div->n_row == 0)
+	obj_n_div = isl_aff_dim(obj, isl_dim_div);
+	if (bset_n_div == 0 && obj_n_div == 0)
 		return basic_set_opt(bset, max, obj, opt);
 
 	bset = isl_basic_set_copy(bset);
@@ -399,8 +400,8 @@ enum isl_lp_result isl_basic_set_opt(__isl_keep isl_basic_set *bset, int max,
 
 	bset_div = extract_divs(bset);
 	exp1 = isl_alloc_array(ctx, int, bset_n_div);
-	exp2 = isl_alloc_array(ctx, int, obj->ls->div->n_row);
-	if (!bset_div || !exp1 || !exp2)
+	exp2 = isl_alloc_array(ctx, int, obj_n_div);
+	if (!bset_div || (bset_n_div && !exp1) || (obj_n_div && !exp2))
 		goto error;
 
 	div = isl_merge_divs(bset_div, obj->ls->div, exp1, exp2);
