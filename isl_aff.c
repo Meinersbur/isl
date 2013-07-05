@@ -4675,7 +4675,7 @@ __isl_give isl_aff *isl_aff_align_divs(__isl_take isl_aff *dst,
 
 	exp1 = isl_alloc_array(ctx, int, src->ls->div->n_row);
 	exp2 = isl_alloc_array(ctx, int, dst->ls->div->n_row);
-	if (!exp1 || !exp2)
+	if (!exp1 || (dst->ls->div->n_row && !exp2))
 		goto error;
 
 	div = isl_merge_divs(src->ls->div, dst->ls->div, exp1, exp2);
