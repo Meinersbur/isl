@@ -438,7 +438,7 @@ __isl_give isl_vertices *isl_basic_set_compute_vertices(
 	selection = isl_alloc_array(bset->ctx, int, bset->n_ineq);
 	snap = isl_alloc_array(bset->ctx, struct isl_tab_undo *, bset->n_ineq);
 	facets = isl_mat_alloc(bset->ctx, nvar, nvar);
-	if (!selection || !snap || !facets)
+	if ((bset->n_ineq && (!selection || !snap)) || !facets)
 		goto error;
 
 	level = 0;
