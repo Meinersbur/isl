@@ -56,7 +56,7 @@ __isl_give isl_band *isl_band_dup(__isl_keep isl_band *band)
 
 	dup->n = band->n;
 	dup->zero = isl_alloc_array(ctx, int, band->n);
-	if (!dup->zero)
+	if (band->n && !dup->zero)
 		goto error;
 
 	for (i = 0; i < band->n; ++i)
