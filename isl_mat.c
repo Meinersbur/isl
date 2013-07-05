@@ -95,7 +95,7 @@ struct isl_mat *isl_mat_extend(struct isl_mat *mat,
 	if (isl_blk_is_error(mat->block))
 		goto error;
 	row = isl_realloc_array(mat->ctx, mat->row, isl_int *, n_row);
-	if (!row)
+	if (n_row && !row)
 		goto error;
 	mat->row = row;
 
