@@ -4072,7 +4072,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_morph_domain(
 	if (morph->inv->n_row != morph->inv->n_col)
 		n_sub += qp->div->n_row;
 	subs = isl_calloc_array(ctx, struct isl_upoly *, n_sub);
-	if (!subs)
+	if (n_sub && !subs)
 		goto error;
 
 	for (i = 0; 1 + i < morph->inv->n_row; ++i)
