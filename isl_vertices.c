@@ -873,7 +873,7 @@ static __isl_give isl_vertices *compute_chambers(__isl_take isl_basic_set *bset,
 
 	ctx = isl_vertices_get_ctx(vertices);
 	selection = isl_alloc_array(ctx, int, vertices->n_vertices);
-	if (!selection)
+	if (vertices->n_vertices && !selection)
 		goto error;
 
 	bset = isl_basic_set_params(bset);
