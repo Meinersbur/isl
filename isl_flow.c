@@ -1143,7 +1143,7 @@ static __isl_give struct isl_sched_info *sched_info_alloc(
 		return NULL;
 	info->is_cst = isl_alloc_array(ctx, int, n);
 	info->cst = isl_vec_alloc(ctx, n);
-	if (!info->is_cst || !info->cst)
+	if (n && (!info->is_cst || !info->cst))
 		goto error;
 
 	for (i = 0; i < n; ++i) {
