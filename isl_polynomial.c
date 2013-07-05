@@ -3163,6 +3163,9 @@ __isl_give isl_qpolynomial *isl_qpolynomial_move_dims(
 	unsigned g_src_pos;
 	int *reordering;
 
+	if (n == 0)
+		return qp;
+
 	qp = isl_qpolynomial_cow(qp);
 	if (!qp)
 		return NULL;
