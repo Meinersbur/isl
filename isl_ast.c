@@ -343,7 +343,7 @@ __isl_give isl_ast_expr *isl_ast_expr_alloc_op(isl_ctx *ctx,
 	expr->u.op.n_arg = n_arg;
 	expr->u.op.args = isl_calloc_array(ctx, isl_ast_expr *, n_arg);
 
-	if (!expr->u.op.args)
+	if (n_arg && !expr->u.op.args)
 		return isl_ast_expr_free(expr);
 
 	return expr;
