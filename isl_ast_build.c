@@ -1914,7 +1914,8 @@ __isl_give isl_pw_aff *isl_ast_build_compute_gist_pw_aff(
 	if (!build)
 		goto error;
 
-	pa = isl_pw_aff_pullback_multi_aff(pa,
+	if (!isl_set_is_params(build->domain))
+		pa = isl_pw_aff_pullback_multi_aff(pa,
 					isl_multi_aff_copy(build->values));
 	pa = isl_pw_aff_gist(pa, isl_set_copy(build->domain));
 
