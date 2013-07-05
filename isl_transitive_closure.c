@@ -325,9 +325,6 @@ error:
  * 	variables are non-zero and if moreover the parametric constant
  * 	can never attain positive values.
  * Return IMPURE otherwise.
- *
- * If div_purity is NULL then we are dealing with a non-parametric set
- * and so the constraint is obviously PURE_VAR.
  */
 static int purity(__isl_keep isl_basic_set *bset, isl_int *c, int *div_purity,
 	int eq)
@@ -338,9 +335,6 @@ static int purity(__isl_keep isl_basic_set *bset, isl_int *c, int *div_purity,
 	int empty;
 	int i;
 	int p = 0, v = 0;
-
-	if (!div_purity)
-		return PURE_VAR;
 
 	n_div = isl_basic_set_dim(bset, isl_dim_div);
 	d = isl_basic_set_dim(bset, isl_dim_set);
@@ -392,7 +386,7 @@ static __isl_give int *get_div_purity(__isl_keep isl_basic_set *bset)
 	nparam = isl_basic_set_dim(bset, isl_dim_param);
 
 	div_purity = isl_alloc_array(bset->ctx, int, n_div);
-	if (!div_purity)
+	if (n_div && !div_purity)
 		return NULL;
 
 	for (i = 0; i < bset->n_div; ++i) {
@@ -450,6 +444,9 @@ error:
 
 /* If any of the constraints is found to be impure then this function
  * sets *impurity to 1.
+ *
+ * If impurity is NULL then we are dealing with a non-parametric set
+ * and so the constraints are obviously PURE_VAR.
  */
 static __isl_give isl_basic_map *add_delta_constraints(
 	__isl_take isl_basic_map *path,
@@ -465,7 +462,9 @@ static __isl_give isl_basic_map *add_delta_constraints(
 
 	for (i = 0; i < n; ++i) {
 		isl_int *path_c;
-		int p = purity(delta, delta_c[i], div_purity, eq);
+		int p = PURE_VAR;
+		if (impurity)
+			p = purity(delta, delta_c[i], div_purity, eq);
 		if (p < 0)
 			goto error;
 		if (p != PURE_VAR && p != PURE_PARAM && !*impurity)
@@ -598,7 +597,7 @@ static __isl_give isl_map *path_along_delta(__isl_take isl_space *dim,
 	}
 
 	div_purity = get_div_purity(delta);
-	if (!div_purity)
+	if (n_div && !div_purity)
 		goto error;
 
 	path = add_delta_constraints(path, delta, off, nparam, d,
@@ -616,9 +615,9 @@ static __isl_give isl_map *path_along_delta(__isl_take isl_space *dim,
 		path = isl_basic_map_extend_constraints(path, delta->n_eq,
 							delta->n_ineq + 1);
 		path = add_delta_constraints(path, delta, off, nparam, d,
-					     NULL, 1, &impurity);
+					     NULL, 1, NULL);
 		path = add_delta_constraints(path, delta, off, nparam, d,
-					     NULL, 0, &impurity);
+					     NULL, 0, NULL);
 		path = isl_basic_map_gauss(path, NULL);
 	}
 
