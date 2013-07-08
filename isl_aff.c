@@ -5537,3 +5537,12 @@ error:
 	isl_union_pw_multi_aff_free(upma);
 	return NULL;
 }
+
+/* Construct and return a piecewise multi affine expression
+ * in the given space with value zero in each of the output dimensions and
+ * a universe domain.
+ */
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_zero(__isl_take isl_space *space)
+{
+	return isl_pw_multi_aff_from_multi_aff(isl_multi_aff_zero(space));
+}
