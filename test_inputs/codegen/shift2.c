@@ -15,7 +15,7 @@ for (int c0 = 0; c0 <= 1; c0 += 1) {
             for (int c5 = 0; c5 <= 15; c5 += 1)
               for (int c6 = 0; c6 <= min(31, length - 2 * c2 - 32); c6 += 1)
                 S_0(c0, c2 + c5, 2 * c2 + c6 + 31);
-          for (int c5 = max((-2 * c2 + c3) / 2, c1 - c2 + c4 + 1); c5 <= min(-c2 + c3 / 2 + 15, length - c2 - 1); c5 += 1) {
+          for (int c5 = max((c3 / 2) - c2, c1 - c2 + c4 + 1); c5 <= min(-c2 + c3 / 2 + 15, length - c2 - 1); c5 += 1) {
             if (c4 == 0 && c1 == 0)
               for (int c6 = max(-c3 + 1, 0); c6 <= min(2 * c2 - c3 + 2 * c5 - 1, length - c3); c6 += 1)
                 S_0(c0, c2 + c5, c3 + c6 - 1);

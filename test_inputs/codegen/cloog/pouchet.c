@@ -7,4 +7,4 @@ for (int c0 = 1; c0 <= floord(Ny, 2) + 2; c0 += 1)
       }
     } else
       for (int c2 = 1; c2 <= 2; c2 += 1)
-        S2((-Ny + 2 * c0) / 4, (Ny + 2 * c0) / 4, (-Ny + 2 * c0) / 2, Ny - 1, c2);
+        S2((-Ny + 2 * c0) / 4, (Ny + 2 * c0) / 4, (-Ny / 2) + c0, Ny - 1, c2);

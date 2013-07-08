@@ -1,5 +1,5 @@
 /*
- * Copyright 2012      Ecole Normale Superieure
+ * Copyright 2012-2013 Ecole Normale Superieure
  *
  * Use of this software is governed by the MIT license
  *
@@ -493,6 +493,87 @@ static __isl_give isl_aff *extract_modulos(__isl_take isl_aff *aff,
 	return aff;
 }
 
+/* Check if aff involves any non-integer coefficients.
+ * If so, split aff into
+ *
+ *	aff = aff1 + (aff2 / d)
+ *
+ * with both aff1 and aff2 having only integer coefficients.
+ * Return aff1 and add (aff2 / d) to *expr.
+ */
+static __isl_give isl_aff *extract_rational(__isl_take isl_aff *aff,
+	__isl_keep isl_ast_expr **expr, __isl_keep isl_ast_build *build)
+{
+	int i, j, n;
+	isl_aff *rat = NULL;
+	isl_local_space *ls = NULL;
+	isl_ast_expr *rat_expr;
+	isl_val *v, *d;
+	enum isl_dim_type t[] = { isl_dim_param, isl_dim_in, isl_dim_div };
+	enum isl_dim_type l[] = { isl_dim_param, isl_dim_set, isl_dim_div };
+
+	if (!aff)
+		return NULL;
+	d = isl_aff_get_denominator_val(aff);
+	if (!d)
+		goto error;
+	if (isl_val_is_one(d)) {
+		isl_val_free(d);
+		return aff;
+	}
+
+	aff = isl_aff_scale_val(aff, isl_val_copy(d));
+
+	ls = isl_aff_get_domain_local_space(aff);
+	rat = isl_aff_zero_on_domain(isl_local_space_copy(ls));
+
+	for (i = 0; i < 3; ++i) {
+		n = isl_aff_dim(aff, t[i]);
+		for (j = 0; j < n; ++j) {
+			isl_aff *rat_j;
+
+			v = isl_aff_get_coefficient_val(aff, t[i], j);
+			if (!v)
+				goto error;
+			if (isl_val_is_divisible_by(v, d)) {
+				isl_val_free(v);
+				continue;
+			}
+			rat_j = isl_aff_var_on_domain(isl_local_space_copy(ls),
+							l[i], j);
+			rat_j = isl_aff_scale_val(rat_j, v);
+			rat = isl_aff_add(rat, rat_j);
+		}
+	}
+
+	v = isl_aff_get_constant_val(aff);
+	if (isl_val_is_divisible_by(v, d)) {
+		isl_val_free(v);
+	} else {
+		isl_aff *rat_0;
+
+		rat_0 = isl_aff_val_on_domain(isl_local_space_copy(ls), v);
+		rat = isl_aff_add(rat, rat_0);
+	}
+
+	isl_local_space_free(ls);
+
+	aff = isl_aff_sub(aff, isl_aff_copy(rat));
+	aff = isl_aff_scale_down_val(aff, isl_val_copy(d));
+
+	rat_expr = isl_ast_expr_from_aff(rat, build);
+	rat_expr = isl_ast_expr_div(rat_expr, isl_ast_expr_from_val(d));
+	*expr = ast_expr_add(*expr, rat_expr);
+
+	return aff;
+error:
+	isl_aff_free(rat);
+	isl_local_space_free(ls);
+	isl_aff_free(aff);
+	isl_val_free(d);
+	return NULL;
+}
+
 /* Construct an isl_ast_expr that evaluates the affine expression "aff",
  * The result is simplified in terms of build->domain.
  *
@@ -506,7 +587,7 @@ __isl_give isl_ast_expr *isl_ast_expr_from_aff(__isl_take isl_aff *aff,
 {
 	int i, j;
 	int n;
-	isl_val *v, *d;
+	isl_val *v;
 	isl_ctx *ctx = isl_aff_get_ctx(aff);
 	isl_ast_expr *expr, *expr_neg;
 	enum isl_dim_type t[] = { isl_dim_param, isl_dim_in, isl_dim_div };
@@ -519,8 +600,7 @@ __isl_give isl_ast_expr *isl_ast_expr_from_aff(__isl_take isl_aff *aff,
 	expr = isl_ast_expr_alloc_int_si(ctx, 0);
 	expr_neg = isl_ast_expr_alloc_int_si(ctx, 0);
 
-	d = isl_aff_get_denominator_val(aff);
-	aff = isl_aff_scale_val(aff, isl_val_copy(d));
+	aff = extract_rational(aff, &expr, build);
 
 	aff = extract_modulos(aff, &expr, &expr_neg, build);
 	expr = ast_expr_sub(expr, expr_neg);
@@ -544,11 +624,6 @@ __isl_give isl_ast_expr *isl_ast_expr_from_aff(__isl_take isl_aff *aff,
 
 	v = isl_aff_get_constant_val(aff);
 	expr = isl_ast_expr_add_int(expr, v);
-
-	if (!isl_val_is_one(d))
-		expr = isl_ast_expr_div(expr, isl_ast_expr_from_val(d));
-	else
-		isl_val_free(d);
 
 	isl_local_space_free(ls);
 	isl_aff_free(aff);
