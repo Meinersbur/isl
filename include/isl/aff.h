@@ -524,6 +524,9 @@ __isl_give isl_multi_pw_aff *isl_multi_pw_aff_move_dims(
 	enum isl_dim_type dst_type, unsigned dst_pos,
 	enum isl_dim_type src_type, unsigned src_pos, unsigned n);
 
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_multi_pw_aff(
+	__isl_take isl_multi_pw_aff *mpa);
+
 __isl_give isl_printer *isl_printer_print_multi_pw_aff(
 	__isl_take isl_printer *p, __isl_keep isl_multi_pw_aff *mpa);
 void isl_multi_pw_aff_dump(__isl_keep isl_multi_pw_aff *mpa);
