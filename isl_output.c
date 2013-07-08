@@ -605,24 +605,60 @@ static __isl_give isl_printer *isl_set_print_omega(__isl_keep isl_set *set,
 	return p;
 }
 
+static __isl_give isl_printer *print_div(__isl_keep isl_space *dim,
+	__isl_keep isl_mat *div, int pos, __isl_take isl_printer *p)
+{
+	int c = p->output_format == ISL_FORMAT_C;
+	p = isl_printer_print_str(p, c ? "floord(" : "[(");
+	p = print_affine_of_len(dim, div, p,
+				div->row[pos] + 1, div->n_col - 1);
+	p = isl_printer_print_str(p, c ? ", " : ")/");
+	p = isl_printer_print_isl_int(p, div->row[pos][0]);
+	p = isl_printer_print_str(p, c ? ")" : "]");
+	return p;
+}
+
+/* Print a comma separated list of div names, with their definitions
+ * (provided that they have a definition and we are printing in isl format).
+ */
+static __isl_give isl_printer *print_div_list(__isl_take isl_printer *p,
+	__isl_keep isl_space *space, __isl_keep isl_mat *div, int latex)
+{
+	int i;
+	unsigned n_div;
+
+	if (!p || !space || !div)
+		return isl_printer_free(p);
+
+	n_div = isl_mat_rows(div);
+
+	for (i = 0; i < n_div; ++i) {
+		if (i)
+			p = isl_printer_print_str(p, ", ");
+		p = print_name(space, p, isl_dim_div, i, latex);
+		if (p->output_format != ISL_FORMAT_ISL ||
+		    isl_int_is_zero(div->row[i][0]))
+			continue;
+		p = isl_printer_print_str(p, " = ");
+		p = print_div(space, div, i, p);
+	}
+
+	return p;
+}
+
 static __isl_give isl_printer *print_disjunct(__isl_keep isl_basic_map *bmap,
 	__isl_keep isl_space *dim, __isl_take isl_printer *p, int latex)
 {
 	if (bmap->n_div > 0) {
-		int i;
+		isl_space *space;
+		isl_mat *div;
+
+		space = isl_basic_map_get_space(bmap);
+		div = isl_basic_map_get_divs(bmap);
 		p = isl_printer_print_str(p, s_open_exists[latex]);
-		for (i = 0; i < bmap->n_div; ++i) {
-			if (i)
-				p = isl_printer_print_str(p, ", ");
-			p = print_name(dim, p, isl_dim_div, i, latex);
-			if (latex || isl_int_is_zero(bmap->div[i][0]))
-				continue;
-			p = isl_printer_print_str(p, " = [(");
-			p = print_affine(bmap, dim, p, bmap->div[i] + 1);
-			p = isl_printer_print_str(p, ")/");
-			p = isl_printer_print_isl_int(p, bmap->div[i][0]);
-			p = isl_printer_print_str(p, "]");
-		}
+		p = print_div_list(p, space, div, latex);
+		isl_space_free(space);
+		isl_mat_free(div);
 		p = isl_printer_print_str(p, ": ");
 	}
 
@@ -1178,19 +1214,6 @@ static int upoly_rec_n_non_zero(__isl_keep struct isl_upoly_rec *rec)
 			++n;
 
 	return n;
-}
-
-static __isl_give isl_printer *print_div(__isl_keep isl_space *dim,
-	__isl_keep isl_mat *div, int pos, __isl_take isl_printer *p)
-{
-	int c = p->output_format == ISL_FORMAT_C;
-	p = isl_printer_print_str(p, c ? "floord(" : "[(");
-	p = print_affine_of_len(dim, div, p,
-				div->row[pos] + 1, div->n_col - 1);
-	p = isl_printer_print_str(p, c ? ", " : ")/");
-	p = isl_printer_print_isl_int(p, div->row[pos][0]);
-	p = isl_printer_print_str(p, c ? ")" : "]");
-	return p;
 }
 
 static __isl_give isl_printer *upoly_print_cst(__isl_keep struct isl_upoly *up,
@@ -2005,22 +2028,9 @@ __isl_give isl_printer *isl_printer_print_local_space(__isl_take isl_printer *p,
 	p = print_space(ls->dim, p, 0, 0, NULL, NULL);
 	n_div = isl_local_space_dim(ls, isl_dim_div);
 	if (n_div > 0) {
-		int i;
 		p = isl_printer_print_str(p, " : ");
 		p = isl_printer_print_str(p, s_open_exists[0]);
-		for (i = 0; i < n_div; ++i) {
-			if (i)
-				p = isl_printer_print_str(p, ", ");
-			p = print_name(ls->dim, p, isl_dim_div, i, 0);
-			if (isl_int_is_zero(ls->div->row[i][0]))
-				continue;
-			p = isl_printer_print_str(p, " = [(");
-			p = print_affine_of_len(ls->dim, ls->div, p,
-					    ls->div->row[i] + 1, 1 + total);
-			p = isl_printer_print_str(p, ")/");
-			p = isl_printer_print_isl_int(p, ls->div->row[i][0]);
-			p = isl_printer_print_str(p, "]");
-		}
+		p = print_div_list(p, ls->dim, ls->div, 0);
 	} else if (isl_space_is_params(ls->dim))
 		p = isl_printer_print_str(p, s_such_that[0]);
 	p = isl_printer_print_str(p, " }");
