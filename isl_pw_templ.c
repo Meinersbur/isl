@@ -1,3 +1,16 @@
+/*
+ * Copyright 2010-2011 INRIA Saclay
+ * Copyright 2011      Sven Verdoolaege
+ * Copyright 2012-2013 Ecole Normale Superieure
+ *
+ * Use of this software is governed by the MIT license
+ *
+ * Written by Sven Verdoolaege, INRIA Saclay - Ile-de-France,
+ * Parc Club Orsay Universite, ZAC des vignes, 4 rue Jacques Monod,
+ * 91893 Orsay, France
+ * and Ecole Normale Superieure, 45 rue d’Ulm, 75230 Paris, France
+ */
+
 #include <isl/aff.h>
 #include <isl_val_private.h>
 
@@ -724,6 +737,26 @@ static int FN(PW,exploit_equalities_and_remove_if_empty)(__isl_keep PW *pw,
 		return -1;
 
 	return 0;
+}
+
+/* Convert a piecewise expression defined over a parameter domain
+ * into one that is defined over a zero-dimensional set.
+ */
+__isl_give PW *FN(PW,from_range)(__isl_take PW *pw)
+{
+	isl_space *space;
+
+	if (!pw)
+		return NULL;
+	if (!isl_space_is_set(pw->dim))
+		isl_die(FN(PW,get_ctx)(pw), isl_error_invalid,
+			"not living in a set space", return FN(PW,free)(pw));
+
+	space = FN(PW,get_space)(pw);
+	space = isl_space_from_range(space);
+	pw = FN(PW,reset_space)(pw, space);
+
+	return pw;
 }
 
 /* Restrict the domain of "pw" by combining each cell

@@ -3755,6 +3755,8 @@ Operations include
 
 	__isl_give isl_aff *isl_aff_project_domain_on_params(
 		__isl_take isl_aff *aff);
+	__isl_give isl_pw_aff *isl_pw_aff_from_range(
+		__isl_take isl_pw_aff *pwa);
 
 	__isl_give isl_aff *isl_aff_gist_params(
 		__isl_take isl_aff *aff,
