@@ -532,79 +532,6 @@ error:
 	return NULL;
 }
 
-static __isl_give isl_printer *print_omega_constraints(
-	__isl_keep isl_basic_map *bmap, __isl_take isl_printer *p)
-{
-	if (bmap->n_eq + bmap->n_ineq == 0)
-		return p;
-
-	p = isl_printer_print_str(p, ": ");
-	if (bmap->n_div > 0) {
-		int i;
-		p = isl_printer_print_str(p, "exists (");
-		for (i = 0; i < bmap->n_div; ++i) {
-			if (i)
-				p = isl_printer_print_str(p, ", ");
-			p = print_name(bmap->dim, p, isl_dim_div, i, 0);
-		}
-		p = isl_printer_print_str(p, ": ");
-	}
-	p = print_constraints(bmap, bmap->dim, p, 0);
-	if (bmap->n_div > 0)
-		p = isl_printer_print_str(p, ")");
-	return p;
-}
-
-static __isl_give isl_printer *basic_map_print_omega(
-	__isl_keep isl_basic_map *bmap, __isl_take isl_printer *p)
-{
-	p = isl_printer_print_str(p, "{ [");
-	p = print_var_list(bmap->dim, p, isl_dim_in, 0, NULL, NULL);
-	p = isl_printer_print_str(p, "] -> [");
-	p = print_var_list(bmap->dim, p, isl_dim_out, 0, NULL, NULL);
-	p = isl_printer_print_str(p, "] ");
-	p = print_omega_constraints(bmap, p);
-	p = isl_printer_print_str(p, " }");
-	return p;
-}
-
-static __isl_give isl_printer *basic_set_print_omega(
-	__isl_keep isl_basic_set *bset, __isl_take isl_printer *p)
-{
-	p = isl_printer_print_str(p, "{ [");
-	p = print_var_list(bset->dim, p, isl_dim_set, 0, NULL, NULL);
-	p = isl_printer_print_str(p, "] ");
-	p = print_omega_constraints((isl_basic_map *)bset, p);
-	p = isl_printer_print_str(p, " }");
-	return p;
-}
-
-static __isl_give isl_printer *isl_map_print_omega(__isl_keep isl_map *map,
-	__isl_take isl_printer *p)
-{
-	int i;
-
-	for (i = 0; i < map->n; ++i) {
-		if (i)
-			p = isl_printer_print_str(p, " union ");
-		p = basic_map_print_omega(map->p[i], p);
-	}
-	return p;
-}
-
-static __isl_give isl_printer *isl_set_print_omega(__isl_keep isl_set *set,
-	__isl_take isl_printer *p)
-{
-	int i;
-
-	for (i = 0; i < set->n; ++i) {
-		if (i)
-			p = isl_printer_print_str(p, " union ");
-		p = basic_set_print_omega(set->p[i], p);
-	}
-	return p;
-}
-
 static __isl_give isl_printer *print_div(__isl_keep isl_space *dim,
 	__isl_keep isl_mat *div, int pos, __isl_take isl_printer *p)
 {
@@ -666,6 +593,58 @@ static __isl_give isl_printer *print_disjunct(__isl_keep isl_basic_map *bmap,
 
 	if (bmap->n_div > 0)
 		p = isl_printer_print_str(p, s_close_exists[latex]);
+	return p;
+}
+
+static __isl_give isl_printer *basic_map_print_omega(
+	__isl_keep isl_basic_map *bmap, __isl_take isl_printer *p)
+{
+	p = isl_printer_print_str(p, "{ [");
+	p = print_var_list(bmap->dim, p, isl_dim_in, 0, NULL, NULL);
+	p = isl_printer_print_str(p, "] -> [");
+	p = print_var_list(bmap->dim, p, isl_dim_out, 0, NULL, NULL);
+	p = isl_printer_print_str(p, "] ");
+	p = isl_printer_print_str(p, ": ");
+	p = print_disjunct(bmap, bmap->dim, p, 0);
+	p = isl_printer_print_str(p, " }");
+	return p;
+}
+
+static __isl_give isl_printer *basic_set_print_omega(
+	__isl_keep isl_basic_set *bset, __isl_take isl_printer *p)
+{
+	p = isl_printer_print_str(p, "{ [");
+	p = print_var_list(bset->dim, p, isl_dim_set, 0, NULL, NULL);
+	p = isl_printer_print_str(p, "] ");
+	p = isl_printer_print_str(p, ": ");
+	p = print_disjunct(bset, bset->dim, p, 0);
+	p = isl_printer_print_str(p, " }");
+	return p;
+}
+
+static __isl_give isl_printer *isl_map_print_omega(__isl_keep isl_map *map,
+	__isl_take isl_printer *p)
+{
+	int i;
+
+	for (i = 0; i < map->n; ++i) {
+		if (i)
+			p = isl_printer_print_str(p, " union ");
+		p = basic_map_print_omega(map->p[i], p);
+	}
+	return p;
+}
+
+static __isl_give isl_printer *isl_set_print_omega(__isl_keep isl_set *set,
+	__isl_take isl_printer *p)
+{
+	int i;
+
+	for (i = 0; i < set->n; ++i) {
+		if (i)
+			p = isl_printer_print_str(p, " union ");
+		p = basic_set_print_omega(set->p[i], p);
+	}
 	return p;
 }
 
