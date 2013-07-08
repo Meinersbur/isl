@@ -5546,3 +5546,32 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_zero(__isl_take isl_space *space)
 {
 	return isl_pw_multi_aff_from_multi_aff(isl_multi_aff_zero(space));
 }
+
+/* Construct and return a piecewise multi affine expression
+ * that is equal to the given piecewise affine expression.
+ */
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_pw_aff(
+	__isl_take isl_pw_aff *pa)
+{
+	int i;
+	isl_space *space;
+	isl_pw_multi_aff *pma;
+
+	if (!pa)
+		return NULL;
+
+	space = isl_pw_aff_get_space(pa);
+	pma = isl_pw_multi_aff_alloc_size(space, pa->n);
+
+	for (i = 0; i < pa->n; ++i) {
+		isl_set *set;
+		isl_multi_aff *ma;
+
+		set = isl_set_copy(pa->p[i].set);
+		ma = isl_multi_aff_from_aff(isl_aff_copy(pa->p[i].aff));
+		pma = isl_pw_multi_aff_add_piece(pma, set, ma);
+	}
+
+	isl_pw_aff_free(pa);
+	return pma;
+}

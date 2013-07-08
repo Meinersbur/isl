@@ -332,6 +332,8 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_identity(
 	__isl_take isl_space *space);
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_multi_aff(
 	__isl_take isl_multi_aff *ma);
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_pw_aff(
+	__isl_take isl_pw_aff *pa);
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_alloc(__isl_take isl_set *set,
 	__isl_take isl_multi_aff *maff);
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_copy(
