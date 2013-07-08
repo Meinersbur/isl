@@ -1,10 +1,12 @@
 /*
  * Copyright 2008-2009 Katholieke Universiteit Leuven
+ * Copyright 2013      Ecole Normale Superieure
  *
  * Use of this software is governed by the MIT license
  *
  * Written by Sven Verdoolaege, K.U.Leuven, Departement
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
+ * and Ecole Normale Superieure, 45 rue d’Ulm, 75230 Paris, France
  */
 
 #include <isl_ctx_private.h>
@@ -526,4 +528,52 @@ __isl_give isl_vec *isl_vec_insert_zero_els(__isl_take isl_vec *vec,
 	isl_seq_clr(vec->el + pos, n);
 
 	return vec;
+}
+
+/* Move the "n" elements starting as "src_pos" of "vec"
+ * to "dst_pos".  The elements originally at "dst_pos" are moved
+ * up or down depending on whether "dst_pos" is smaller or greater
+ * than "src_pos".
+ */
+__isl_give isl_vec *isl_vec_move_els(__isl_take isl_vec *vec,
+	unsigned dst_pos, unsigned src_pos, unsigned n)
+{
+	isl_vec *res;
+
+	if (!vec)
+		return NULL;
+
+	if (src_pos + n > vec->size)
+		isl_die(vec->ctx, isl_error_invalid,
+			"source range out of bounds", return isl_vec_free(vec));
+	if (dst_pos + n > vec->size)
+		isl_die(vec->ctx, isl_error_invalid,
+			"destination range out of bounds",
+			return isl_vec_free(vec));
+
+	if (n == 0 || dst_pos == src_pos)
+		return vec;
+
+	res = isl_vec_alloc(vec->ctx, vec->size);
+	if (!res)
+		return isl_vec_free(vec);
+
+	if (dst_pos < src_pos) {
+		isl_seq_cpy(res->el, vec->el, dst_pos);
+		isl_seq_cpy(res->el + dst_pos, vec->el + src_pos, n);
+		isl_seq_cpy(res->el + dst_pos + n,
+			    vec->el + dst_pos, src_pos - dst_pos);
+		isl_seq_cpy(res->el + src_pos + n,
+			    vec->el + src_pos + n, res->size - src_pos - n);
+	} else {
+		isl_seq_cpy(res->el, vec->el, src_pos);
+		isl_seq_cpy(res->el + src_pos,
+			    vec->el + src_pos + n, dst_pos - src_pos);
+		isl_seq_cpy(res->el + dst_pos, vec->el + src_pos, n);
+		isl_seq_cpy(res->el + dst_pos + n,
+			    vec->el + dst_pos + n, res->size - dst_pos - n);
+	}
+
+	isl_vec_free(vec);
+	return res;
 }

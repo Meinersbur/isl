@@ -68,6 +68,8 @@ __isl_give isl_vec *isl_vec_insert_els(__isl_take isl_vec *vec,
 	unsigned pos, unsigned n);
 __isl_give isl_vec *isl_vec_insert_zero_els(__isl_take isl_vec *vec,
 	unsigned pos, unsigned n);
+__isl_give isl_vec *isl_vec_move_els(__isl_take isl_vec *vec,
+	unsigned dst_col, unsigned src_col, unsigned n);
 
 #if defined(__cplusplus)
 }
