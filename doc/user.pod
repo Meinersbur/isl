@@ -3811,6 +3811,9 @@ rounding towards zero.  C<isl_pw_aff_tdiv_r> computes the corresponding
 remainder.
 
 	#include <isl/aff.h>
+	__isl_give isl_aff *isl_aff_pullback_aff(
+		__isl_take isl_aff *aff1,
+		__isl_take isl_aff *aff2);
 	__isl_give isl_aff *isl_aff_pullback_multi_aff(
 		__isl_take isl_aff *aff,
 		__isl_take isl_multi_aff *ma);
@@ -3822,8 +3825,8 @@ remainder.
 		__isl_take isl_pw_multi_aff *pma);
 
 These functions precompose the input expression by the given
-C<isl_multi_aff> or C<isl_pw_multi_aff>.  In other words,
-the C<isl_multi_aff> or C<isl_pw_multi_aff> is plugged
+C<isl_aff>, C<isl_multi_aff> or C<isl_pw_multi_aff>.  In other words,
+the C<isl_aff>, C<isl_multi_aff> or C<isl_pw_multi_aff> is plugged
 into the (piecewise) affine expression.
 Objects of type C<isl_multi_aff> are described in
 L</"Piecewise Multiple Quasi Affine Expressions">.

@@ -109,6 +109,8 @@ __isl_give isl_aff *isl_aff_gist(__isl_take isl_aff *aff,
 __isl_give isl_aff *isl_aff_gist_params(__isl_take isl_aff *aff,
 	__isl_take isl_set *context);
 
+__isl_give isl_aff *isl_aff_pullback_aff(__isl_take isl_aff *aff1,
+	__isl_take isl_aff *aff2);
 __isl_give isl_aff *isl_aff_pullback_multi_aff(__isl_take isl_aff *aff,
 	__isl_take isl_multi_aff *ma);
 

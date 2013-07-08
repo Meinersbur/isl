@@ -4842,6 +4842,22 @@ error:
 	return NULL;
 }
 
+/* Compute the pullback of "aff1" by the function represented by "aff2".
+ * In other words, plug in "aff2" in "aff1".  The result is an affine expression
+ * defined over the domain space of "aff1".
+ *
+ * The domain of "aff1" should match the range of "aff2", which means
+ * that it should be single-dimensional.
+ */
+__isl_give isl_aff *isl_aff_pullback_aff(__isl_take isl_aff *aff1,
+	__isl_take isl_aff *aff2)
+{
+	isl_multi_aff *ma;
+
+	ma = isl_multi_aff_from_aff(aff2);
+	return isl_aff_pullback_multi_aff(aff1, ma);
+}
+
 /* Compute the pullback of "ma1" by the function represented by "ma2".
  * In other words, plug in "ma2" in "ma1".
  *
