@@ -29,6 +29,8 @@ __isl_give isl_multi_##BASE *isl_multi_##BASE##_set_dim_name(		\
 	enum isl_dim_type type, unsigned pos, const char *s);		\
 const char *isl_multi_##BASE##_get_tuple_name(				\
 	__isl_keep isl_multi_##BASE *multi, enum isl_dim_type type);	\
+int isl_multi_##BASE##_has_tuple_id(__isl_keep isl_multi_##BASE *multi,	\
+	enum isl_dim_type type);					\
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_set_tuple_name(		\
 	__isl_take isl_multi_##BASE *multi,				\
 	enum isl_dim_type type, const char *s);				\

@@ -202,6 +202,14 @@ const char *FN(MULTI(BASE),get_tuple_name)(__isl_keep MULTI(BASE) *multi,
 	return multi ? isl_space_get_tuple_name(multi->space, type) : NULL;
 }
 
+/* Does the specified tuple have an id?
+ */
+int FN(MULTI(BASE),has_tuple_id)(__isl_keep MULTI(BASE) *multi,
+	enum isl_dim_type type)
+{
+	return multi ? isl_space_has_tuple_id(multi->space, type) : -1;
+}
+
 __isl_give EL *FN(FN(MULTI(BASE),get),BASE)(__isl_keep MULTI(BASE) *multi,
 	int pos)
 {
