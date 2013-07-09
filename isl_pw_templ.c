@@ -691,6 +691,13 @@ error:
 }
 #endif
 
+/* Return the parameter domain of "pw".
+ */
+__isl_give isl_set *FN(PW,params)(__isl_take PW *pw)
+{
+	return isl_set_params(FN(PW,domain)(pw));
+}
+
 __isl_give isl_set *FN(PW,domain)(__isl_take PW *pw)
 {
 	int i;
