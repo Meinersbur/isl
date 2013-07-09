@@ -76,6 +76,7 @@ struct isl_stats {
 enum isl_error {
 	isl_error_none = 0,
 	isl_error_abort,
+	isl_error_alloc,
 	isl_error_unknown,
 	isl_error_internal,
 	isl_error_invalid,
@@ -96,24 +97,21 @@ typedef struct isl_ctx isl_ctx;
 #define ISL_F_CLR(p, f)     ISL_FL_CLR((p)->flags, f)
 #define ISL_F_ISSET(p, f)   ISL_FL_ISSET((p)->flags, f)
 
-/* isl_check_ctx() checks at compile time if 'ctx' is of type 'isl_ctx *' and
- * returns the value of 'expr'. It is used to ensure, that always an isl_ctx is
- * passed to the following macros, even if they currently do not use it.
- */
-#define isl_check_ctx(ctx, expr)	((ctx != (isl_ctx *) 0) ? expr : NULL)
+void *isl_malloc_or_die(isl_ctx *ctx, size_t size);
+void *isl_calloc_or_die(isl_ctx *ctx, size_t nmemb, size_t size);
+void *isl_realloc_or_die(isl_ctx *ctx, void *ptr, size_t size);
 
-#define isl_alloc(ctx,type,size)	((type *)isl_check_ctx(ctx,\
-							malloc(size)))
-#define isl_calloc(ctx,type,size)	((type *)isl_check_ctx(ctx,\
-							calloc(1, size)))
-#define isl_realloc(ctx,ptr,type,size)	((type *)isl_check_ctx(ctx,\
-							realloc(ptr,size)))
+#define isl_alloc(ctx,type,size)	((type *)isl_malloc_or_die(ctx, size))
+#define isl_calloc(ctx,type,size)	((type *)isl_calloc_or_die(ctx,\
+								    1, size))
+#define isl_realloc(ctx,ptr,type,size)	((type *)isl_realloc_or_die(ctx,\
+								    ptr, size))
 #define isl_alloc_type(ctx,type)	isl_alloc(ctx,type,sizeof(type))
 #define isl_calloc_type(ctx,type)	isl_calloc(ctx,type,sizeof(type))
 #define isl_realloc_type(ctx,ptr,type)	isl_realloc(ctx,ptr,type,sizeof(type))
 #define isl_alloc_array(ctx,type,n)	isl_alloc(ctx,type,(n)*sizeof(type))
-#define isl_calloc_array(ctx,type,n)	((type *)isl_check_ctx(ctx,\
-						calloc(n, sizeof(type))))
+#define isl_calloc_array(ctx,type,n)	((type *)isl_calloc_or_die(ctx,\
+							    n, sizeof(type)))
 #define isl_realloc_array(ctx,ptr,type,n) \
 				    isl_realloc(ctx,ptr,type,(n)*sizeof(type))
 

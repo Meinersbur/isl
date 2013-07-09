@@ -14,6 +14,41 @@
 #define __isl_calloc(type,size)		((type *)calloc(1, size))
 #define __isl_calloc_type(type)		__isl_calloc(type,sizeof(type))
 
+/* Check that the result of an allocation ("p") is not NULL and
+ * complain if it is.
+ * The only exception is when allocation size ("size") is equal to zero.
+ */
+static void *check_non_null(isl_ctx *ctx, void *p, size_t size)
+{
+	if (p || size == 0)
+		return p;
+	isl_die(ctx, isl_error_alloc, "allocation failure", return NULL);
+}
+
+/* Call malloc and complain if it fails.
+ * If ctx is NULL, then return NULL.
+ */
+void *isl_malloc_or_die(isl_ctx *ctx, size_t size)
+{
+	return ctx ? check_non_null(ctx, malloc(size), size) : NULL;
+}
+
+/* Call calloc and complain if it fails.
+ * If ctx is NULL, then return NULL.
+ */
+void *isl_calloc_or_die(isl_ctx *ctx, size_t nmemb, size_t size)
+{
+	return ctx ? check_non_null(ctx, calloc(nmemb, size), nmemb) : NULL;
+}
+
+/* Call realloc and complain if it fails.
+ * If ctx is NULL, then return NULL.
+ */
+void *isl_realloc_or_die(isl_ctx *ctx, void *ptr, size_t size)
+{
+	return ctx ? check_non_null(ctx, realloc(ptr, size), size) : NULL;
+}
+
 void isl_handle_error(isl_ctx *ctx, enum isl_error error, const char *msg,
 	const char *file, int line)
 {
