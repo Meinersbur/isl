@@ -25,6 +25,9 @@ __isl_give isl_multi_##BASE *isl_multi_##BASE##_zero(			\
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_copy(			\
 	__isl_keep isl_multi_##BASE *multi);				\
 void *isl_multi_##BASE##_free(__isl_take isl_multi_##BASE *multi);	\
+int isl_multi_##BASE##_find_dim_by_id(					\
+	__isl_keep isl_multi_##BASE *multi, enum isl_dim_type type,	\
+	__isl_keep isl_id *id);						\
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_set_dim_name(		\
 	__isl_take isl_multi_##BASE *multi,				\
 	enum isl_dim_type type, unsigned pos, const char *s);		\

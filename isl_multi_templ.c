@@ -171,6 +171,17 @@ unsigned FN(MULTI(BASE),dim)(__isl_keep MULTI(BASE) *multi,
 	return multi ? isl_space_dim(multi->space, type) : 0;
 }
 
+/* Return the position of the first dimension of "type" with id "id".
+ * Return -1 if there is no such dimension.
+ */
+int FN(MULTI(BASE),find_dim_by_id)(__isl_keep MULTI(BASE) *multi,
+	enum isl_dim_type type, __isl_keep isl_id *id)
+{
+	if (!multi)
+		return -1;
+	return isl_space_find_dim_by_id(multi->space, type, id);
+}
+
 __isl_give MULTI(BASE) *FN(MULTI(BASE),set_dim_name)(
 	__isl_take MULTI(BASE) *multi,
 	enum isl_dim_type type, unsigned pos, const char *s)
