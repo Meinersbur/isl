@@ -3636,6 +3636,11 @@ It can be modified using
 		enum isl_dim_type dst_type, unsigned dst_pos,
 		enum isl_dim_type src_type, unsigned src_pos,
 		unsigned n);
+	__isl_give isl_pw_aff *isl_pw_aff_move_dims(
+		__isl_take isl_pw_aff *pa,
+		enum isl_dim_type dst_type, unsigned dst_pos,
+		enum isl_dim_type src_type, unsigned src_pos,
+		unsigned n);
 
 Note that C<isl_aff_set_constant_si> and C<isl_aff_set_coefficient_si>
 set the I<numerator> of the constant or coefficient, while

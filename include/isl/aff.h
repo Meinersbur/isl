@@ -218,6 +218,9 @@ __isl_give isl_pw_aff *isl_pw_aff_insert_dims(__isl_take isl_pw_aff *pwaff,
 	enum isl_dim_type type, unsigned first, unsigned n);
 __isl_give isl_pw_aff *isl_pw_aff_add_dims(__isl_take isl_pw_aff *pwaff,
 	enum isl_dim_type type, unsigned n);
+__isl_give isl_pw_aff *isl_pw_aff_move_dims(__isl_take isl_pw_aff *pa,
+	enum isl_dim_type dst_type, unsigned dst_pos,
+	enum isl_dim_type src_type, unsigned src_pos, unsigned n);
 __isl_give isl_pw_aff *isl_pw_aff_drop_dims(__isl_take isl_pw_aff *pwaff,
 	enum isl_dim_type type, unsigned first, unsigned n);
 

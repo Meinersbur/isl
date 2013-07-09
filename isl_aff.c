@@ -2204,7 +2204,6 @@ __isl_give isl_pw_aff *isl_pw_aff_from_aff(__isl_take isl_aff *aff)
 
 #define NO_EVAL
 #define NO_OPT
-#define NO_MOVE_DIMS
 #define NO_LIFT
 #define NO_MORPH
 
