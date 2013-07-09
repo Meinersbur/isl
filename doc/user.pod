@@ -4464,6 +4464,10 @@ the lifting applied.
 	isl_multi_pw_aff_pullback_pw_multi_aff(
 		__isl_take isl_multi_pw_aff *mpa,
 		__isl_take isl_pw_multi_aff *pma);
+	__isl_give isl_multi_pw_aff *
+	isl_multi_pw_aff_pullback_multi_pw_aff(
+		__isl_take isl_multi_pw_aff *mpa1,
+		__isl_take isl_multi_pw_aff *mpa2);
 
 The function C<isl_multi_aff_pullback_multi_aff> precomposes C<ma1> by C<ma2>.
 In other words, C<ma2> is plugged

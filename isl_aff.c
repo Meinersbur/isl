@@ -5910,3 +5910,28 @@ error:
 	isl_pw_multi_aff_free(pma);
 	return NULL;
 }
+
+/* Compute the pullback of "mpa1" by the function represented by "mpa2".
+ * In other words, plug in "mpa2" in "mpa1".
+ *
+ * The parameters of "mpa1" and "mpa2" are assumed to have been aligned.
+ */
+static __isl_give isl_multi_pw_aff *
+isl_multi_pw_aff_pullback_multi_pw_aff_aligned(
+	__isl_take isl_multi_pw_aff *mpa1, __isl_take isl_multi_pw_aff *mpa2)
+{
+	isl_pw_multi_aff *pma;
+
+	pma = isl_pw_multi_aff_from_multi_pw_aff(mpa2);
+	return isl_multi_pw_aff_pullback_pw_multi_aff_aligned(mpa1, pma);
+}
+
+/* Compute the pullback of "mpa1" by the function represented by "mpa2".
+ * In other words, plug in "mpa2" in "mpa1".
+ */
+__isl_give isl_multi_pw_aff *isl_multi_pw_aff_pullback_multi_pw_aff(
+	__isl_take isl_multi_pw_aff *mpa1, __isl_take isl_multi_pw_aff *mpa2)
+{
+	return isl_multi_pw_aff_align_params_multi_multi_and(mpa1, mpa2,
+			&isl_multi_pw_aff_pullback_multi_pw_aff_aligned);
+}
