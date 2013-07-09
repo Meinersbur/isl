@@ -3191,6 +3191,8 @@ static __isl_give isl_ast_graft_list *generate_shift_component(
  * obviously fixed value for the current dimension to itself and all
  * other domains and collect the offsets and the gcd of the strides.
  * If the gcd becomes one, then we failed to find shifted strides.
+ * If the gcd is zero, then the differences were all fixed, meaning
+ * that some domains had non-obviously fixed values for the current dimension.
  * If all the offsets are the same (for those domains that do not have
  * an obviously fixed value for the current dimension), then we do not
  * apply the transformation.
@@ -3284,7 +3286,7 @@ static __isl_give isl_ast_graft_list *generate_component(
 	if (res < 0 || !gcd) {
 		isl_ast_build_free(build);
 		list = NULL;
-	} else if (i < n || fixed) {
+	} else if (i < n || fixed || isl_val_is_zero(gcd)) {
 		list = generate_shifted_component_from_list(domain,
 							    order, n, build);
 	} else {

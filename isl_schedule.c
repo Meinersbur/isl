@@ -431,7 +431,8 @@ static int graph_alloc(isl_ctx *ctx, struct isl_sched_graph *graph,
 	graph->intra_hmap = isl_hmap_map_basic_set_alloc(ctx, 2 * n_edge);
 	graph->inter_hmap = isl_hmap_map_basic_set_alloc(ctx, 2 * n_edge);
 
-	if (!graph->node || !graph->region || !graph->edge || !graph->sorted)
+	if (!graph->node || !graph->region || (graph->n_edge && !graph->edge) ||
+	    !graph->sorted)
 		return -1;
 
 	for(i = 0; i < graph->n; ++i)
@@ -539,7 +540,7 @@ static int extract_node(__isl_take isl_set *set, void *user)
 	graph->node[graph->n].zero = zero;
 	graph->n++;
 
-	if (!sched || !band || !band_id || !zero)
+	if (!sched || (graph->max_row && (!band || !band_id || !zero)))
 		return -1;
 
 	return 0;
@@ -3141,7 +3142,7 @@ static __isl_give isl_band *construct_band(__isl_keep isl_schedule *schedule,
 	band->n = end - start;
 
 	band->zero = isl_alloc_array(ctx, int, band->n);
-	if (!band->zero)
+	if (band->n && !band->zero)
 		goto error;
 
 	for (j = 0; j < band->n; ++j)
@@ -3453,7 +3454,7 @@ static __isl_give isl_band_list *construct_band_list(
 	}
 
 	active = isl_alloc_array(ctx, int, schedule->n);
-	if (!active)
+	if (schedule->n && !active)
 		return NULL;
 
 	list = isl_band_list_alloc(ctx, n_band);
@@ -3507,7 +3508,7 @@ static __isl_give isl_band_list *construct_forest(
 	int *active;
 
 	active = isl_alloc_array(ctx, int, schedule->n);
-	if (!active)
+	if (schedule->n && !active)
 		return NULL;
 
 	for (i = 0; i < schedule->n; ++i)

@@ -520,7 +520,7 @@ static __isl_give isl_ast_graft_list *insert_pending_guard_nodes(
 	allow_else = isl_options_get_ast_build_allow_else(ctx);
 
 	n_if = 0;
-	if (n > 0) {
+	if (n > 1) {
 		if_node = isl_alloc_array(ctx, struct isl_if_node, n - 1);
 		if (!if_node)
 			return isl_ast_graft_list_free(list);

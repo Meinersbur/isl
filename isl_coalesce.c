@@ -1359,7 +1359,7 @@ static int coalesce_local_pair(__isl_keep isl_map *map, int i, int j,
 	int *ineq_j = NULL;
 
 	eq_i = eq_status_in(map->p[i], tabs[j]);
-	if (!eq_i)
+	if (map->p[i]->n_eq && !eq_i)
 		goto error;
 	if (any(eq_i, 2 * map->p[i]->n_eq, STATUS_ERROR))
 		goto error;
@@ -1367,7 +1367,7 @@ static int coalesce_local_pair(__isl_keep isl_map *map, int i, int j,
 		goto done;
 
 	eq_j = eq_status_in(map->p[j], tabs[i]);
-	if (!eq_j)
+	if (map->p[j]->n_eq && !eq_j)
 		goto error;
 	if (any(eq_j, 2 * map->p[j]->n_eq, STATUS_ERROR))
 		goto error;
@@ -1375,7 +1375,7 @@ static int coalesce_local_pair(__isl_keep isl_map *map, int i, int j,
 		goto done;
 
 	ineq_i = ineq_status_in(map->p[i], tabs[i], tabs[j]);
-	if (!ineq_i)
+	if (map->p[i]->n_ineq && !ineq_i)
 		goto error;
 	if (any(ineq_i, map->p[i]->n_ineq, STATUS_ERROR))
 		goto error;
@@ -1383,7 +1383,7 @@ static int coalesce_local_pair(__isl_keep isl_map *map, int i, int j,
 		goto done;
 
 	ineq_j = ineq_status_in(map->p[j], tabs[j], tabs[i]);
-	if (!ineq_j)
+	if (map->p[j]->n_ineq && !ineq_j)
 		goto error;
 	if (any(ineq_j, map->p[j]->n_ineq, STATUS_ERROR))
 		goto error;
@@ -1497,7 +1497,7 @@ static int coalesce_subset(__isl_keep isl_map *map, int i, int j,
 		goto error;
 
 	eq_i = eq_status_in(bmap, tabs[j]);
-	if (!eq_i)
+	if (bmap->n_eq && !eq_i)
 		goto error;
 	if (any(eq_i, 2 * bmap->n_eq, STATUS_ERROR))
 		goto error;
@@ -1505,7 +1505,7 @@ static int coalesce_subset(__isl_keep isl_map *map, int i, int j,
 		goto done;
 
 	ineq_i = ineq_status_in(bmap, NULL, tabs[j]);
-	if (!ineq_i)
+	if (bmap->n_ineq && !ineq_i)
 		goto error;
 	if (any(ineq_i, bmap->n_ineq, STATUS_ERROR))
 		goto error;
@@ -1571,7 +1571,7 @@ static int check_coalesce_subset(__isl_keep isl_map *map, int i, int j,
 
 	exp1 = isl_alloc_array(ctx, int, div_i->n_row);
 	exp2 = isl_alloc_array(ctx, int, div_j->n_row);
-	if (!exp1 || !exp2)
+	if ((div_i->n_row && !exp1) || (div_j->n_row && !exp2))
 		goto error;
 
 	div = isl_merge_divs(div_i, div_j, exp1, exp2);

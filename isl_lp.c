@@ -258,6 +258,7 @@ static __isl_give isl_val *isl_basic_set_opt_lp_val_aligned(
 	isl_mat *bset_div = NULL;
 	isl_mat *div = NULL;
 	isl_val *res;
+	int bset_n_div, obj_n_div;
 
 	if (!bset || !obj)
 		return NULL;
@@ -267,16 +268,18 @@ static __isl_give isl_val *isl_basic_set_opt_lp_val_aligned(
 		isl_die(ctx, isl_error_invalid,
 			"spaces don't match", return NULL);
 
-	if (bset->n_div == 0 && obj->ls->div->n_row == 0)
+	bset_n_div = isl_basic_set_dim(bset, isl_dim_div);
+	obj_n_div = isl_aff_dim(obj, isl_dim_div);
+	if (bset_n_div == 0 && obj_n_div == 0)
 		return basic_set_opt_lp(bset, max, obj);
 
 	bset = isl_basic_set_copy(bset);
 	obj = isl_aff_copy(obj);
 
 	bset_div = isl_basic_set_get_divs(bset);
-	exp1 = isl_alloc_array(ctx, int, bset_div->n_row);
-	exp2 = isl_alloc_array(ctx, int, obj->ls->div->n_row);
-	if (!bset_div || !exp1 || !exp2)
+	exp1 = isl_alloc_array(ctx, int, bset_n_div);
+	exp2 = isl_alloc_array(ctx, int, obj_n_div);
+	if (!bset_div || (bset_n_div && !exp1) || (obj_n_div && !exp2))
 		goto error;
 
 	div = isl_merge_divs(bset_div, obj->ls->div, exp1, exp2);

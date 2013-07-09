@@ -1505,6 +1505,7 @@ __isl_give isl_aff *isl_aff_add(__isl_take isl_aff *aff1,
 	int *exp1 = NULL;
 	int *exp2 = NULL;
 	isl_mat *div;
+	int n_div1, n_div2;
 
 	if (!aff1 || !aff2)
 		goto error;
@@ -1514,12 +1515,14 @@ __isl_give isl_aff *isl_aff_add(__isl_take isl_aff *aff1,
 		isl_die(ctx, isl_error_invalid,
 			"spaces don't match", goto error);
 
-	if (aff1->ls->div->n_row == 0 && aff2->ls->div->n_row == 0)
+	n_div1 = isl_aff_dim(aff1, isl_dim_div);
+	n_div2 = isl_aff_dim(aff2, isl_dim_div);
+	if (n_div1 == 0 && n_div2 == 0)
 		return add_expanded(aff1, aff2);
 
-	exp1 = isl_alloc_array(ctx, int, aff1->ls->div->n_row);
-	exp2 = isl_alloc_array(ctx, int, aff2->ls->div->n_row);
-	if (!exp1 || !exp2)
+	exp1 = isl_alloc_array(ctx, int, n_div1);
+	exp2 = isl_alloc_array(ctx, int, n_div2);
+	if ((n_div1 && !exp1) || (n_div2 && !exp2))
 		goto error;
 
 	div = isl_merge_divs(aff1->ls->div, aff2->ls->div, exp1, exp2);
@@ -3575,7 +3578,7 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_product(
 						 isl_set_copy(pma2->p[j].set));
 			ma = isl_multi_aff_product(
 					isl_multi_aff_copy(pma1->p[i].maff),
-					isl_multi_aff_copy(pma2->p[i].maff));
+					isl_multi_aff_copy(pma2->p[j].maff));
 			res = isl_pw_multi_aff_add_piece(res, domain, ma);
 		}
 	}
@@ -4674,7 +4677,7 @@ __isl_give isl_aff *isl_aff_align_divs(__isl_take isl_aff *dst,
 
 	exp1 = isl_alloc_array(ctx, int, src->ls->div->n_row);
 	exp2 = isl_alloc_array(ctx, int, dst->ls->div->n_row);
-	if (!exp1 || !exp2)
+	if (!exp1 || (dst->ls->div->n_row && !exp2))
 		goto error;
 
 	div = isl_merge_divs(src->ls->div, dst->ls->div, exp1, exp2);

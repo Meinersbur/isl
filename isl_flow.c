@@ -373,7 +373,7 @@ static __isl_give isl_space *space_align_and_join(__isl_take isl_space *left,
  */
 static __isl_give isl_flow *isl_flow_alloc(__isl_keep isl_access_info *acc)
 {
-	int i;
+	int i, n;
 	struct isl_ctx *ctx;
 	struct isl_flow *dep;
 
@@ -385,12 +385,12 @@ static __isl_give isl_flow *isl_flow_alloc(__isl_keep isl_access_info *acc)
 	if (!dep)
 		return NULL;
 
-	dep->dep = isl_calloc_array(ctx, struct isl_labeled_map,
-					2 * acc->n_must + acc->n_may);
-	if (!dep->dep)
+	n = 2 * acc->n_must + acc->n_may;
+	dep->dep = isl_calloc_array(ctx, struct isl_labeled_map, n);
+	if (n && !dep->dep)
 		goto error;
 
-	dep->n_source = 2 * acc->n_must + acc->n_may;
+	dep->n_source = n;
 	for (i = 0; i < acc->n_must; ++i) {
 		isl_space *dim;
 		dim = space_align_and_join(
@@ -1143,7 +1143,7 @@ static __isl_give struct isl_sched_info *sched_info_alloc(
 		return NULL;
 	info->is_cst = isl_alloc_array(ctx, int, n);
 	info->cst = isl_vec_alloc(ctx, n);
-	if (!info->is_cst || !info->cst)
+	if (n && (!info->is_cst || !info->cst))
 		goto error;
 
 	for (i = 0; i < n; ++i) {
@@ -1319,7 +1319,8 @@ static int compute_flow(__isl_take isl_map *map, void *user)
 
 	data->accesses = isl_access_info_alloc(isl_map_copy(map),
 				data->sink_info, &before, data->count);
-	if (!data->sink_info || !data->source_info || !data->accesses)
+	if (!data->sink_info || (data->count && !data->source_info) ||
+	    !data->accesses)
 		goto error;
 	data->count = 0;
 	data->must = 1;

@@ -1370,6 +1370,7 @@ static __isl_give isl_qpolynomial *with_merged_divs(
 	int *exp1 = NULL;
 	int *exp2 = NULL;
 	isl_mat *div = NULL;
+	int n_div1, n_div2;
 
 	qp1 = isl_qpolynomial_cow(qp1);
 	qp2 = isl_qpolynomial_cow(qp2);
@@ -1380,9 +1381,11 @@ static __isl_give isl_qpolynomial *with_merged_divs(
 	isl_assert(qp1->div->ctx, qp1->div->n_row >= qp2->div->n_row &&
 				qp1->div->n_col >= qp2->div->n_col, goto error);
 
-	exp1 = isl_alloc_array(qp1->div->ctx, int, qp1->div->n_row);
-	exp2 = isl_alloc_array(qp2->div->ctx, int, qp2->div->n_row);
-	if (!exp1 || !exp2)
+	n_div1 = qp1->div->n_row;
+	n_div2 = qp2->div->n_row;
+	exp1 = isl_alloc_array(qp1->div->ctx, int, n_div1);
+	exp2 = isl_alloc_array(qp2->div->ctx, int, n_div2);
+	if ((n_div1 && !exp1) || (n_div2 && !exp2))
 		goto error;
 
 	div = isl_merge_divs(qp1->div, qp2->div, exp1, exp2);
@@ -2292,7 +2295,8 @@ __isl_give isl_qpolynomial *isl_qpolynomial_val_on_domain(
 	if (!domain || !val)
 		goto error;
 
-	qp = isl_qpolynomial_alloc(domain, 0, isl_upoly_zero(domain->ctx));
+	qp = isl_qpolynomial_alloc(isl_space_copy(domain), 0,
+					isl_upoly_zero(domain->ctx));
 	if (!qp)
 		goto error;
 
@@ -2300,6 +2304,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_val_on_domain(
 	isl_int_set(cst->n, val->n);
 	isl_int_set(cst->d, val->d);
 
+	isl_space_free(domain);
 	isl_val_free(val);
 	return qp;
 error:
@@ -3085,6 +3090,9 @@ __isl_give isl_qpolynomial *isl_qpolynomial_move_dims(
 	unsigned g_dst_pos;
 	unsigned g_src_pos;
 	int *reordering;
+
+	if (n == 0)
+		return qp;
 
 	qp = isl_qpolynomial_cow(qp);
 	if (!qp)
@@ -3992,7 +4000,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_morph_domain(
 	if (morph->inv->n_row != morph->inv->n_col)
 		n_sub += qp->div->n_row;
 	subs = isl_calloc_array(ctx, struct isl_upoly *, n_sub);
-	if (!subs)
+	if (n_sub && !subs)
 		goto error;
 
 	for (i = 0; 1 + i < morph->inv->n_row; ++i)

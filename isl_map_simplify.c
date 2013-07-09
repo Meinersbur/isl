@@ -2982,6 +2982,8 @@ struct isl_basic_map *isl_basic_map_drop_redundant_divs(
 
 	if (!bmap)
 		goto error;
+	if (bmap->n_div == 0)
+		return bmap;
 
 	off = isl_space_dim(bmap->dim, isl_dim_all);
 	pairs = isl_calloc_array(bmap->ctx, int, bmap->n_div);

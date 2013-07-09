@@ -989,7 +989,7 @@ int *isl_local_space_get_active(__isl_keep isl_local_space *ls, isl_int *l)
 	ctx = isl_local_space_get_ctx(ls);
 	total = isl_local_space_dim(ls, isl_dim_all);
 	active = isl_calloc_array(ctx, int, total);
-	if (!active)
+	if (total && !active)
 		return NULL;
 
 	for (i = 0; i < total; ++i)

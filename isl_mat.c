@@ -37,7 +37,7 @@ struct isl_mat *isl_mat_alloc(struct isl_ctx *ctx,
 	if (isl_blk_is_error(mat->block))
 		goto error;
 	mat->row = isl_alloc_array(ctx, isl_int *, n_row);
-	if (!mat->row)
+	if (n_row && !mat->row)
 		goto error;
 
 	for (i = 0; i < n_row; ++i)
@@ -97,7 +97,7 @@ struct isl_mat *isl_mat_extend(struct isl_mat *mat,
 	if (isl_blk_is_error(mat->block))
 		goto error;
 	row = isl_realloc_array(mat->ctx, mat->row, isl_int *, n_row);
-	if (!row)
+	if (n_row && !row)
 		goto error;
 	mat->row = row;
 
@@ -125,7 +125,7 @@ __isl_give isl_mat *isl_mat_sub_alloc6(isl_ctx *ctx, isl_int **row,
 	if (!mat)
 		return NULL;
 	mat->row = isl_alloc_array(ctx, isl_int *, n_row);
-	if (!mat->row)
+	if (n_row && !mat->row)
 		goto error;
 	for (i = 0; i < n_row; ++i)
 		mat->row[i] = row[first_row+i] + first_col;

@@ -37,16 +37,16 @@ struct isl_tab *isl_tab_alloc(struct isl_ctx *ctx,
 	if (!tab->mat)
 		goto error;
 	tab->var = isl_alloc_array(ctx, struct isl_tab_var, n_var);
-	if (!tab->var)
+	if (n_var && !tab->var)
 		goto error;
 	tab->con = isl_alloc_array(ctx, struct isl_tab_var, n_row);
-	if (!tab->con)
+	if (n_row && !tab->con)
 		goto error;
 	tab->col_var = isl_alloc_array(ctx, int, n_var);
-	if (!tab->col_var)
+	if (n_var && !tab->col_var)
 		goto error;
 	tab->row_var = isl_alloc_array(ctx, int, n_row);
-	if (!tab->row_var)
+	if (n_row && !tab->row_var)
 		goto error;
 	for (i = 0; i < n_var; ++i) {
 		tab->var[i].index = i;
@@ -239,29 +239,29 @@ struct isl_tab *isl_tab_dup(struct isl_tab *tab)
 	if (!dup->mat)
 		goto error;
 	dup->var = isl_alloc_array(tab->mat->ctx, struct isl_tab_var, tab->max_var);
-	if (!dup->var)
+	if (tab->max_var && !dup->var)
 		goto error;
 	for (i = 0; i < tab->n_var; ++i)
 		dup->var[i] = tab->var[i];
 	dup->con = isl_alloc_array(tab->mat->ctx, struct isl_tab_var, tab->max_con);
-	if (!dup->con)
+	if (tab->max_con && !dup->con)
 		goto error;
 	for (i = 0; i < tab->n_con; ++i)
 		dup->con[i] = tab->con[i];
 	dup->col_var = isl_alloc_array(tab->mat->ctx, int, tab->mat->n_col - off);
-	if (!dup->col_var)
+	if ((tab->mat->n_col - off) && !dup->col_var)
 		goto error;
 	for (i = 0; i < tab->n_col; ++i)
 		dup->col_var[i] = tab->col_var[i];
 	dup->row_var = isl_alloc_array(tab->mat->ctx, int, tab->mat->n_row);
-	if (!dup->row_var)
+	if (tab->mat->n_row && !dup->row_var)
 		goto error;
 	for (i = 0; i < tab->n_row; ++i)
 		dup->row_var[i] = tab->row_var[i];
 	if (tab->row_sign) {
 		dup->row_sign = isl_alloc_array(tab->mat->ctx, enum isl_tab_row_sign,
 						tab->mat->n_row);
-		if (!dup->row_sign)
+		if (tab->mat->n_row && !dup->row_sign)
 			goto error;
 		for (i = 0; i < tab->n_row; ++i)
 			dup->row_sign[i] = tab->row_sign[i];
@@ -272,7 +272,7 @@ struct isl_tab *isl_tab_dup(struct isl_tab *tab)
 			goto error;
 		dup->sample_index = isl_alloc_array(tab->mat->ctx, int,
 							tab->samples->n_row);
-		if (!dup->sample_index)
+		if (tab->samples->n_row && !dup->sample_index)
 			goto error;
 		dup->n_sample = tab->n_sample;
 		dup->n_outside = tab->n_outside;
@@ -468,7 +468,7 @@ struct isl_tab *isl_tab_product(struct isl_tab *tab1, struct isl_tab *tab2)
 		goto error;
 	prod->var = isl_alloc_array(tab1->mat->ctx, struct isl_tab_var,
 					tab1->max_var + tab2->max_var);
-	if (!prod->var)
+	if ((tab1->max_var + tab2->max_var) && !prod->var)
 		goto error;
 	for (i = 0; i < tab1->n_var; ++i) {
 		prod->var[i] = tab1->var[i];
@@ -482,7 +482,7 @@ struct isl_tab *isl_tab_product(struct isl_tab *tab1, struct isl_tab *tab2)
 	}
 	prod->con = isl_alloc_array(tab1->mat->ctx, struct isl_tab_var,
 					tab1->max_con +  tab2->max_con);
-	if (!prod->con)
+	if ((tab1->max_con + tab2->max_con) && !prod->con)
 		goto error;
 	for (i = 0; i < tab1->n_con; ++i) {
 		prod->con[i] = tab1->con[i];
@@ -496,7 +496,7 @@ struct isl_tab *isl_tab_product(struct isl_tab *tab1, struct isl_tab *tab2)
 	}
 	prod->col_var = isl_alloc_array(tab1->mat->ctx, int,
 					tab1->n_col + tab2->n_col);
-	if (!prod->col_var)
+	if ((tab1->n_col + tab2->n_col) && !prod->col_var)
 		goto error;
 	for (i = 0; i < tab1->n_col; ++i) {
 		int pos = i < d1 ? i : i + d2;
@@ -513,7 +513,7 @@ struct isl_tab *isl_tab_product(struct isl_tab *tab1, struct isl_tab *tab2)
 	}
 	prod->row_var = isl_alloc_array(tab1->mat->ctx, int,
 					tab1->mat->n_row + tab2->mat->n_row);
-	if (!prod->row_var)
+	if ((tab1->mat->n_row + tab2->mat->n_row) && !prod->row_var)
 		goto error;
 	for (i = 0; i < tab1->n_row; ++i) {
 		int pos = i < r1 ? i : i + r2;
@@ -837,7 +837,7 @@ int isl_tab_push_basis(struct isl_tab *tab)
 	union isl_tab_undo_val u;
 
 	u.col_var = isl_alloc_array(tab->mat->ctx, int, tab->n_col);
-	if (!u.col_var)
+	if (tab->n_col && !u.col_var)
 		return -1;
 	for (i = 0; i < tab->n_col; ++i)
 		u.col_var[i] = tab->col_var[i];
@@ -3167,7 +3167,7 @@ static int restore_basis(struct isl_tab *tab, int *col_var)
 	unsigned off = 2 + tab->M;
 
 	extra = isl_alloc_array(tab->mat->ctx, int, tab->n_col);
-	if (!extra)
+	if (tab->n_col && !extra)
 		goto error;
 	for (i = 0; i < tab->n_col; ++i) {
 		for (j = 0; j < tab->n_col; ++j)
