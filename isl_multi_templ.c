@@ -330,7 +330,7 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),set_tuple_name)(
 }
 
 __isl_give MULTI(BASE) *FN(MULTI(BASE),set_tuple_id)(
-	__isl_keep MULTI(BASE) *multi, enum isl_dim_type type,
+	__isl_take MULTI(BASE) *multi, enum isl_dim_type type,
 	__isl_take isl_id *id)
 {
 	isl_space *space;
