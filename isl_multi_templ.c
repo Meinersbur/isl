@@ -643,10 +643,42 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),drop_dims)(
 	return multi;
 }
 
+/* Align the parameters of "multi1" and "multi2" (if needed) and call "fn".
+ */
+static __isl_give MULTI(BASE) *FN(MULTI(BASE),align_params_multi_multi_and)(
+	__isl_take MULTI(BASE) *multi1, __isl_take MULTI(BASE) *multi2,
+	__isl_give MULTI(BASE) *(*fn)(__isl_take MULTI(BASE) *multi1,
+		__isl_take MULTI(BASE) *multi2))
+{
+	isl_ctx *ctx;
+
+	if (!multi1 || !multi2)
+		goto error;
+	if (isl_space_match(multi1->space, isl_dim_param,
+			    multi2->space, isl_dim_param))
+		return fn(multi1, multi2);
+	ctx = FN(MULTI(BASE),get_ctx)(multi1);
+	if (!isl_space_has_named_params(multi1->space) ||
+	    !isl_space_has_named_params(multi2->space))
+		isl_die(ctx, isl_error_invalid,
+			"unaligned unnamed parameters", goto error);
+	multi1 = FN(MULTI(BASE),align_params)(multi1,
+					    FN(MULTI(BASE),get_space)(multi2));
+	multi2 = FN(MULTI(BASE),align_params)(multi2,
+					    FN(MULTI(BASE),get_space)(multi1));
+	return fn(multi1, multi2);
+error:
+	FN(MULTI(BASE),free)(multi1);
+	FN(MULTI(BASE),free)(multi2);
+	return NULL;
+}
+
 /* Given two MULTI(BASE)s A -> B and C -> D,
  * construct a MULTI(BASE) (A * C) -> (B, D).
+ *
+ * The parameters are assumed to have been aligned.
  */
-__isl_give MULTI(BASE) *FN(MULTI(BASE),range_product)(
+static __isl_give MULTI(BASE) *FN(MULTI(BASE),range_product_aligned)(
 	__isl_take MULTI(BASE) *multi1, __isl_take MULTI(BASE) *multi2)
 {
 	int i, n1, n2;
@@ -681,6 +713,16 @@ error:
 	FN(MULTI(BASE),free)(multi1);
 	FN(MULTI(BASE),free)(multi2);
 	return NULL;
+}
+
+/* Given two MULTI(BASE)s A -> B and C -> D,
+ * construct a MULTI(BASE) (A * C) -> (B, D).
+ */
+__isl_give MULTI(BASE) *FN(MULTI(BASE),range_product)(
+	__isl_take MULTI(BASE) *multi1, __isl_take MULTI(BASE) *multi2)
+{
+	return FN(MULTI(BASE),align_params_multi_multi_and)(multi1, multi2,
+					&FN(MULTI(BASE),range_product_aligned));
 }
 
 __isl_give MULTI(BASE) *FN(MULTI(BASE),flatten_range)(
