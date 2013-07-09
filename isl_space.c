@@ -941,8 +941,10 @@ __isl_give isl_space *isl_space_move_dims(__isl_take isl_space *dim,
 
 	if (!dim)
 		return NULL;
-	if (n == 0)
-		return dim;
+	if (n == 0) {
+		dim = isl_space_reset(dim, src_type);
+		return isl_space_reset(dim, dst_type);
+	}
 
 	isl_assert(dim->ctx, src_pos + n <= isl_space_dim(dim, src_type),
 		goto error);
