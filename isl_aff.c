@@ -3432,7 +3432,6 @@ __isl_give isl_set *isl_multi_aff_lex_ge_set(__isl_take isl_multi_aff *ma1,
 #define NO_EVAL
 #define NO_OPT
 #define NO_INVOLVES_DIMS
-#define NO_MOVE_DIMS
 #define NO_INSERT_DIMS
 #define NO_LIFT
 #define NO_MORPH

@@ -1394,6 +1394,7 @@ int isl_val_check_match_domain_space(__isl_keep isl_val *v,
 #define NO_GIST
 #define NO_IDENTITY
 #define NO_FROM_BASE
+#define NO_MOVE_DIMS
 #include <isl_multi_templ.c>
 
 /* Apply "fn" to each of the elements of "mv" with as second argument "v".
