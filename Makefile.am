@@ -69,6 +69,7 @@ libisl_la_SOURCES = \
 	isl_hmap_map_basic_set.c \
 	isl_hmap_map_basic_set.h \
 	isl_ilp.c \
+	isl_ilp_private.h \
 	isl_input.c \
 	isl_int.h \
 	isl_local_space_private.h \
