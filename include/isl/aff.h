@@ -548,6 +548,8 @@ int isl_multi_pw_aff_is_equal(__isl_keep isl_multi_pw_aff *mpa1,
 
 __isl_give isl_multi_pw_aff *isl_multi_pw_aff_pullback_multi_aff(
 	__isl_take isl_multi_pw_aff *mpa, __isl_take isl_multi_aff *ma);
+__isl_give isl_multi_pw_aff *isl_multi_pw_aff_pullback_pw_multi_aff(
+	__isl_take isl_multi_pw_aff *mpa, __isl_take isl_pw_multi_aff *pma);
 
 __isl_give isl_multi_pw_aff *isl_multi_pw_aff_move_dims(
 	__isl_take isl_multi_pw_aff *pma,

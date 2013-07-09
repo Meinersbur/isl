@@ -5852,3 +5852,61 @@ error:
 	isl_multi_aff_free(ma);
 	return NULL;
 }
+
+/* Compute the pullback of "mpa" by the function represented by "pma".
+ * In other words, plug in "pma" in "mpa".
+ *
+ * The parameters of "mpa" and "mpa" are assumed to have been aligned.
+ */
+static __isl_give isl_multi_pw_aff *
+isl_multi_pw_aff_pullback_pw_multi_aff_aligned(
+	__isl_take isl_multi_pw_aff *mpa, __isl_take isl_pw_multi_aff *pma)
+{
+	int i;
+	isl_space *space = NULL;
+
+	mpa = isl_multi_pw_aff_cow(mpa);
+	if (!mpa || !pma)
+		goto error;
+
+	space = isl_space_join(isl_pw_multi_aff_get_space(pma),
+				isl_multi_pw_aff_get_space(mpa));
+
+	for (i = 0; i < mpa->n; ++i) {
+		mpa->p[i] = isl_pw_aff_pullback_pw_multi_aff_aligned(mpa->p[i],
+						    isl_pw_multi_aff_copy(pma));
+		if (!mpa->p[i])
+			goto error;
+	}
+
+	isl_pw_multi_aff_free(pma);
+	isl_space_free(mpa->space);
+	mpa->space = space;
+	return mpa;
+error:
+	isl_space_free(space);
+	isl_multi_pw_aff_free(mpa);
+	isl_pw_multi_aff_free(pma);
+	return NULL;
+}
+
+/* Compute the pullback of "mpa" by the function represented by "pma".
+ * In other words, plug in "pma" in "mpa".
+ */
+__isl_give isl_multi_pw_aff *isl_multi_pw_aff_pullback_pw_multi_aff(
+	__isl_take isl_multi_pw_aff *mpa, __isl_take isl_pw_multi_aff *pma)
+{
+	if (!mpa || !pma)
+		goto error;
+	if (isl_space_match(mpa->space, isl_dim_param, pma->dim, isl_dim_param))
+		return isl_multi_pw_aff_pullback_pw_multi_aff_aligned(mpa, pma);
+	mpa = isl_multi_pw_aff_align_params(mpa,
+					    isl_pw_multi_aff_get_space(pma));
+	pma = isl_pw_multi_aff_align_params(pma,
+					    isl_multi_pw_aff_get_space(mpa));
+	return isl_multi_pw_aff_pullback_pw_multi_aff_aligned(mpa, pma);
+error:
+	isl_multi_pw_aff_free(mpa);
+	isl_pw_multi_aff_free(pma);
+	return NULL;
+}
