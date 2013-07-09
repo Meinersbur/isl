@@ -2123,6 +2123,64 @@ __isl_give isl_pw_aff *isl_pw_aff_add_dims(__isl_take isl_pw_aff *pwaff,
 	return isl_pw_aff_insert_dims(pwaff, type, pos, n);
 }
 
+/* Move the "n" dimensions of "src_type" starting at "src_pos" of "aff"
+ * to dimensions of "dst_type" at "dst_pos".
+ *
+ * We only support moving input dimensions to parameters and vice versa.
+ */
+__isl_give isl_aff *isl_aff_move_dims(__isl_take isl_aff *aff,
+	enum isl_dim_type dst_type, unsigned dst_pos,
+	enum isl_dim_type src_type, unsigned src_pos, unsigned n)
+{
+	unsigned g_dst_pos;
+	unsigned g_src_pos;
+
+	if (!aff)
+		return NULL;
+	if (n == 0 &&
+	    !isl_local_space_is_named_or_nested(aff->ls, src_type) &&
+	    !isl_local_space_is_named_or_nested(aff->ls, dst_type))
+		return aff;
+
+	if (dst_type == isl_dim_out || src_type == isl_dim_out)
+		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
+			"cannot move output/set dimension", isl_aff_free(aff));
+	if (dst_type == isl_dim_div || src_type == isl_dim_div)
+		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
+			"cannot move divs", isl_aff_free(aff));
+	if (dst_type == isl_dim_in)
+		dst_type = isl_dim_set;
+	if (src_type == isl_dim_in)
+		src_type = isl_dim_set;
+
+	if (src_pos + n > isl_local_space_dim(aff->ls, src_type))
+		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
+			"range out of bounds", isl_aff_free(aff));
+	if (dst_type == src_type)
+		isl_die(isl_aff_get_ctx(aff), isl_error_unsupported,
+			"moving dims within the same type not supported",
+			isl_aff_free(aff));
+
+	aff = isl_aff_cow(aff);
+	if (!aff)
+		return NULL;
+
+	g_src_pos = 1 + isl_local_space_offset(aff->ls, src_type) + src_pos;
+	g_dst_pos = 1 + isl_local_space_offset(aff->ls, dst_type) + dst_pos;
+	if (dst_type > src_type)
+		g_dst_pos -= n;
+
+	aff->v = isl_vec_move_els(aff->v, g_dst_pos, g_src_pos, n);
+	aff->ls = isl_local_space_move_dims(aff->ls, dst_type, dst_pos,
+						src_type, src_pos, n);
+	if (!aff->v || !aff->ls)
+		return isl_aff_free(aff);
+
+	aff = sort_divs(aff);
+
+	return aff;
+}
+
 __isl_give isl_pw_aff *isl_pw_aff_from_aff(__isl_take isl_aff *aff)
 {
 	isl_set *dom = isl_set_universe(isl_aff_get_domain_space(aff));
