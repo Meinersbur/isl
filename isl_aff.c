@@ -5621,3 +5621,29 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_multi_pw_aff(
 	isl_multi_pw_aff_free(mpa);
 	return pma;
 }
+
+/* Do "pa1" and "pa2" represent the same function?
+ *
+ * We first check if they are obviously equal.
+ * If not, we convert them to maps and check if those are equal.
+ */
+int isl_pw_aff_is_equal(__isl_keep isl_pw_aff *pa1, __isl_keep isl_pw_aff *pa2)
+{
+	int equal;
+	isl_map *map1, *map2;
+
+	if (!pa1 || !pa2)
+		return -1;
+
+	equal = isl_pw_aff_plain_is_equal(pa1, pa2);
+	if (equal < 0 || equal)
+		return equal;
+
+	map1 = map_from_pw_aff(isl_pw_aff_copy(pa1));
+	map2 = map_from_pw_aff(isl_pw_aff_copy(pa2));
+	equal = isl_map_is_equal(map1, map2);
+	isl_map_free(map1);
+	isl_map_free(map2);
+
+	return equal;
+}

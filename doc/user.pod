@@ -3686,7 +3686,7 @@ The C<add_constant_num> functions add an integer value to
 the numerator.
 
 To check whether an affine expressions is obviously zero
-or obviously equal to some other affine expression, use
+or (obviously) equal to some other affine expression, use
 
 	#include <isl/aff.h>
 	int isl_aff_plain_is_zero(__isl_keep isl_aff *aff);
@@ -3695,6 +3695,8 @@ or obviously equal to some other affine expression, use
 	int isl_pw_aff_plain_is_equal(
 		__isl_keep isl_pw_aff *pwaff1,
 		__isl_keep isl_pw_aff *pwaff2);
+	int isl_pw_aff_is_equal(__isl_keep isl_pw_aff *pa1,
+		__isl_keep isl_pw_aff *pa2);
 
 Operations include
 
