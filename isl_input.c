@@ -1241,25 +1241,23 @@ error:
 	return isl_multi_pw_aff_free(res);
 }
 
-/* Read a tuple from "s" and add it to "map".
- * The tuple is initially represented as an isl_multi_pw_aff.
+/* Add the tuple represented by the isl_multi_pw_aff "tuple" to "map".
  * We first create the appropriate space in "map" based on the range
  * space of this isl_multi_pw_aff.  Then, we add equalities based
  * on the affine expressions.  These live in an anonymous space,
  * however, so we first need to reset the space to that of "map".
  */
-static __isl_give isl_map *read_map_tuple(struct isl_stream *s,
+static __isl_give isl_map *map_from_tuple(__isl_take isl_multi_pw_aff *tuple,
 	__isl_take isl_map *map, enum isl_dim_type type, struct vars *v,
-	int rational, int comma)
+	int rational)
 {
 	int i, n;
-	isl_multi_pw_aff *tuple;
+	isl_ctx *ctx;
 	isl_space *space = NULL;
 
-	tuple = read_tuple(s, v, rational, comma);
-	if (!tuple)
+	if (!map || !tuple)
 		goto error;
-
+	ctx = isl_multi_pw_aff_get_ctx(tuple);
 	n = isl_multi_pw_aff_dim(tuple, isl_dim_out);
 	space = isl_space_range(isl_multi_pw_aff_get_space(tuple));
 	if (!space)
@@ -1268,7 +1266,7 @@ static __isl_give isl_map *read_map_tuple(struct isl_stream *s,
 	if (type == isl_dim_param) {
 		if (isl_space_has_tuple_name(space, isl_dim_set) ||
 		    isl_space_is_wrapping(space)) {
-			isl_die(s->ctx, isl_error_invalid,
+			isl_die(ctx, isl_error_invalid,
 				"parameter tuples cannot be named or nested",
 				goto error);
 		}
@@ -1276,7 +1274,7 @@ static __isl_give isl_map *read_map_tuple(struct isl_stream *s,
 		for (i = 0; i < n; ++i) {
 			isl_id *id;
 			if (!isl_space_has_dim_name(space, isl_dim_set, i))
-				isl_die(s->ctx, isl_error_invalid,
+				isl_die(ctx, isl_error_invalid,
 					"parameters must be named",
 					goto error);
 			id = isl_space_get_dim_id(space, isl_dim_set, i);
@@ -1328,6 +1326,23 @@ error:
 	isl_multi_pw_aff_free(tuple);
 	isl_map_free(map);
 	return NULL;
+}
+
+/* Read a tuple from "s" and add it to "map".
+ * The tuple is initially represented as an isl_multi_pw_aff and
+ * then added to "map".
+ */
+static __isl_give isl_map *read_map_tuple(struct isl_stream *s,
+	__isl_take isl_map *map, enum isl_dim_type type, struct vars *v,
+	int rational, int comma)
+{
+	isl_multi_pw_aff *tuple;
+
+	tuple = read_tuple(s, v, rational, comma);
+	if (!tuple)
+		return isl_map_free(map);
+
+	return map_from_tuple(tuple, map, type, v, rational);
 }
 
 static __isl_give isl_set *construct_constraints(
