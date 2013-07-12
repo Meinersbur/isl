@@ -222,13 +222,13 @@ static int print_arg_help(struct isl_arg *decl, const char *prefix, int no)
 		len += 8;
 	}
 
-	if (prefix) {
-		printf("%s-", prefix);
-		len += strlen(prefix) + 1;
-	}
 	if (no) {
 		printf("no-");
 		len += 3;
+	}
+	if (prefix) {
+		printf("%s-", prefix);
+		len += strlen(prefix) + 1;
 	}
 	printf("%s", decl->long_name);
 	len += strlen(decl->long_name);
