@@ -3243,9 +3243,11 @@ error:
 #undef BASE
 #define BASE aff
 #define NO_INTERSECT_DOMAIN
+#define NO_DOMAIN
 
 #include <isl_multi_templ.c>
 
+#undef NO_DOMAIN
 #undef NO_INTERSECT_DOMAIN
 
 /* Given a map space, return an isl_multi_aff that maps a wrapped copy

@@ -1315,3 +1315,27 @@ int FN(MULTI(BASE),plain_is_equal)(__isl_keep MULTI(BASE) *multi1,
 
 	return 1;
 }
+
+#ifndef NO_DOMAIN
+/* Return the shared domain of the elements of "multi".
+ */
+__isl_give isl_set *FN(MULTI(BASE),domain)(__isl_take MULTI(BASE) *multi)
+{
+	int i;
+	isl_set *dom;
+
+	if (!multi)
+		return NULL;
+
+	dom = isl_set_universe(FN(MULTI(BASE),get_domain_space)(multi));
+	for (i = 0; i < multi->n; ++i) {
+		isl_set *dom_i;
+
+		dom_i = FN(EL,domain)(FN(FN(MULTI(BASE),get),BASE)(multi, i));
+		dom = isl_set_intersect(dom, dom_i);
+	}
+
+	FN(MULTI(BASE),free)(multi);
+	return dom;
+}
+#endif
