@@ -252,10 +252,10 @@ struct isl_args {
 },
 #define ISL_ARG_CHILD(st,f,l,c,h)					\
 	_ISL_ARG_CHILD(offsetof(st, f),l,c,h,0)
-#define ISL_ARG_GROUP_F(c,h,fl)						\
-	_ISL_ARG_CHILD(-1,NULL,c,h,fl)
-#define ISL_ARG_GROUP(c,h)						\
-	ISL_ARG_GROUP_F(c,h,0)
+#define ISL_ARG_GROUP_F(l,c,h,fl)					\
+	_ISL_ARG_CHILD(-1,l,c,h,fl)
+#define ISL_ARG_GROUP(l,c,h)						\
+	ISL_ARG_GROUP_F(l,c,h,0)
 #define ISL_ARG_FLAGS(st,f,s,l,c,d,h)	{				\
 	.type = isl_arg_flags,						\
 	.short_name = s,						\
