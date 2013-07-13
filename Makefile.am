@@ -67,6 +67,7 @@ libisl_la_SOURCES = \
 	isl_gmp.c \
 	isl_hash.c \
 	isl_id_to_ast_expr.c \
+	isl_id_to_pw_aff.c \
 	isl_ilp.c \
 	isl_ilp_private.h \
 	isl_input.c \
@@ -220,6 +221,7 @@ pkginclude_HEADERS = \
 	include/isl/flow.h \
 	include/isl/id.h \
 	include/isl/id_to_ast_expr.h \
+	include/isl/id_to_pw_aff.h \
 	include/isl/ilp.h \
 	include/isl/hash.h \
 	include/isl/hmap.h \
