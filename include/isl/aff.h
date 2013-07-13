@@ -172,6 +172,7 @@ int isl_pw_aff_is_cst(__isl_keep isl_pw_aff *pwaff);
 __isl_give isl_pw_aff *isl_pw_aff_align_params(__isl_take isl_pw_aff *pwaff,
 	__isl_take isl_space *model);
 
+int isl_pw_aff_has_tuple_id(__isl_keep isl_pw_aff *pa, enum isl_dim_type type);
 __isl_give isl_id *isl_pw_aff_get_tuple_id(__isl_keep isl_pw_aff *pa,
 	enum isl_dim_type type);
 __isl_give isl_pw_aff *isl_pw_aff_set_tuple_id(__isl_take isl_pw_aff *pwaff,
