@@ -635,34 +635,36 @@ error:
 }
 
 /* Apply the morphism to the set.
+ * In particular, compute the preimage of "set" under the inverse mapping
+ * in morph and intersect with the range of the morphism.
+ * Note that the mapping in morph applies to both parameters and set dimensions,
+ * so the parameters need to be treated as set dimensions during the call
+ * to isl_set_preimage_multi_aff.
  */
 __isl_give isl_set *isl_morph_set(__isl_take isl_morph *morph,
 	__isl_take isl_set *set)
 {
-	int i;
+	isl_size n_param;
+	isl_space *space;
+	isl_multi_aff *ma;
+	isl_basic_set *ran;
 
 	if (!morph || isl_set_basic_set_check_equal_space(set, morph->dom) < 0)
 		goto error;
-
-	set = isl_set_cow(set);
-	if (!set)
+	n_param = isl_basic_set_dim(morph->dom, isl_dim_param);
+	if (n_param < 0)
 		goto error;
 
-	isl_space_free(set->dim);
-	set->dim = isl_space_copy(morph->ran->dim);
-	if (!set->dim)
-		goto error;
+	ma = isl_multi_aff_from_aff_mat_anonymous(isl_mat_copy(morph->inv));
 
-	for (i = 0; i < set->n; ++i) {
-		set->p[i] = isl_morph_basic_set(isl_morph_copy(morph), set->p[i]);
-		if (!set->p[i])
-			goto error;
-	}
+	set = isl_set_move_dims(set, isl_dim_set, 0, isl_dim_param, 0, n_param);
+	set = isl_set_preimage_multi_aff(set, ma);
+	space = isl_basic_set_get_space(morph->ran);
+	set = isl_set_reset_space(set, space);
+	ran = isl_basic_set_copy(morph->ran);
+	set = isl_set_intersect(set, isl_set_from_basic_set(ran));
 
 	isl_morph_free(morph);
-
-	ISL_F_CLR(set, ISL_SET_NORMALIZED);
-
 	return set;
 error:
 	isl_set_free(set);
