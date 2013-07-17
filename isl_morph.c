@@ -18,6 +18,8 @@
 #include <isl_space_private.h>
 #include <isl_equalities.h>
 #include <isl_id_private.h>
+#include <isl_aff_private.h>
+#include <isl_vec_private.h>
 
 isl_ctx *isl_morph_get_ctx(__isl_keep isl_morph *morph)
 {
@@ -573,159 +575,62 @@ __isl_give isl_morph *isl_basic_set_parameter_compression(
 	return isl_morph_alloc(dom, ran, map, inv);
 }
 
-/* Add stride constraints to "bset" based on the inverse mapping
- * that was plugged in.  In particular, if morph maps x' to x,
- * the constraints of the original input
- *
- *	A x' + b >= 0
- *
- * have been rewritten to
- *
- *	A inv x + b >= 0
- *
- * However, this substitution may loose information on the integrality of x',
- * so we need to impose that
- *
- *	inv x
- *
- * is integral.  If inv = B/d, this means that we need to impose that
- *
- *	B x = 0		mod d
- *
- * or
- *
- *	exists alpha in Z^m: B x = d alpha
- *
- * This function is similar to add_strides in isl_affine_hull.c
+/* Construct an isl_multi_aff that corresponds
+ * to the affine transformation matrix "mat" and
+ * that lives in an anonymous space.
  */
-static __isl_give isl_basic_set *add_strides(__isl_take isl_basic_set *bset,
-	__isl_keep isl_morph *morph)
+static __isl_give isl_multi_aff *isl_multi_aff_from_aff_mat_anonymous(
+	__isl_take isl_mat *mat)
 {
-	int i, div, k;
-	isl_int gcd;
+	isl_size n_row, n_col;
+	isl_ctx *ctx;
+	isl_space *space;
 
-	if (isl_int_is_one(morph->inv->row[0][0]))
-		return bset;
+	ctx = isl_mat_get_ctx(mat);
+	n_row = isl_mat_rows(mat);
+	n_col = isl_mat_cols(mat);
+	if (n_row < 0 || n_col < 0)
+		space = NULL;
+	else
+		space = isl_space_alloc(ctx, 0, n_col - 1, n_row - 1);
 
-	isl_int_init(gcd);
-
-	for (i = 0; 1 + i < morph->inv->n_row; ++i) {
-		isl_seq_gcd(morph->inv->row[1 + i], morph->inv->n_col, &gcd);
-		if (isl_int_is_divisible_by(gcd, morph->inv->row[0][0]))
-			continue;
-		div = isl_basic_set_alloc_div(bset);
-		if (div < 0)
-			goto error;
-		isl_int_set_si(bset->div[div][0], 0);
-		k = isl_basic_set_alloc_equality(bset);
-		if (k < 0)
-			goto error;
-		isl_seq_cpy(bset->eq[k], morph->inv->row[1 + i],
-			    morph->inv->n_col);
-		isl_seq_clr(bset->eq[k] + morph->inv->n_col, bset->n_div);
-		isl_int_set(bset->eq[k][morph->inv->n_col + div],
-			    morph->inv->row[0][0]);
-	}
-
-	isl_int_clear(gcd);
-
-	return bset;
-error:
-	isl_int_clear(gcd);
-	isl_basic_set_free(bset);
-	return NULL;
+	return isl_multi_aff_from_aff_mat(space, mat);
 }
 
 /* Apply the morphism to the basic set.
- * We basically just compute the preimage of "bset" under the inverse mapping
- * in morph, add in stride constraints and intersect with the range
- * of the morphism.
+ * In particular, compute the preimage of "bset" under the inverse mapping
+ * in morph and intersect with the range of the morphism.
+ * Note that the mapping in morph applies to both parameters and set dimensions,
+ * so the parameters need to be treated as set dimensions during the call
+ * to isl_basic_set_preimage_multi_aff.
  */
 __isl_give isl_basic_set *isl_morph_basic_set(__isl_take isl_morph *morph,
 	__isl_take isl_basic_set *bset)
 {
-	isl_basic_set *res = NULL;
-	isl_mat *mat = NULL;
-	int i, k;
-	int max_stride;
+	isl_size n_param;
+	isl_space *space;
+	isl_multi_aff *ma;
 
 	if (!morph || isl_basic_set_check_equal_space(bset, morph->dom) < 0)
 		goto error;
-
-	max_stride = morph->inv->n_row - 1;
-	if (isl_int_is_one(morph->inv->row[0][0]))
-		max_stride = 0;
-	res = isl_basic_set_alloc_space(isl_space_copy(morph->ran->dim),
-		bset->n_div + max_stride, bset->n_eq + max_stride, bset->n_ineq);
-
-	for (i = 0; i < bset->n_div; ++i)
-		if (isl_basic_set_alloc_div(res) < 0)
-			goto error;
-
-	mat = isl_mat_sub_alloc6(bset->ctx, bset->eq, 0, bset->n_eq,
-					0, morph->inv->n_row);
-	mat = isl_mat_product(mat, isl_mat_copy(morph->inv));
-	if (!mat)
+	n_param = isl_basic_set_dim(morph->dom, isl_dim_param);
+	if (n_param < 0)
 		goto error;
-	for (i = 0; i < bset->n_eq; ++i) {
-		k = isl_basic_set_alloc_equality(res);
-		if (k < 0)
-			goto error;
-		isl_seq_cpy(res->eq[k], mat->row[i], mat->n_col);
-		isl_seq_scale(res->eq[k] + mat->n_col, bset->eq[i] + mat->n_col,
-				morph->inv->row[0][0], bset->n_div);
-	}
-	isl_mat_free(mat);
 
-	mat = isl_mat_sub_alloc6(bset->ctx, bset->ineq, 0, bset->n_ineq,
-					0, morph->inv->n_row);
-	mat = isl_mat_product(mat, isl_mat_copy(morph->inv));
-	if (!mat)
-		goto error;
-	for (i = 0; i < bset->n_ineq; ++i) {
-		k = isl_basic_set_alloc_inequality(res);
-		if (k < 0)
-			goto error;
-		isl_seq_cpy(res->ineq[k], mat->row[i], mat->n_col);
-		isl_seq_scale(res->ineq[k] + mat->n_col,
-				bset->ineq[i] + mat->n_col,
-				morph->inv->row[0][0], bset->n_div);
-	}
-	isl_mat_free(mat);
+	ma = isl_multi_aff_from_aff_mat_anonymous(isl_mat_copy(morph->inv));
 
-	mat = isl_mat_sub_alloc6(bset->ctx, bset->div, 0, bset->n_div,
-					1, morph->inv->n_row);
-	mat = isl_mat_product(mat, isl_mat_copy(morph->inv));
-	if (!mat)
-		goto error;
-	for (i = 0; i < bset->n_div; ++i) {
-		isl_int_mul(res->div[i][0],
-				morph->inv->row[0][0], bset->div[i][0]);
-		isl_seq_cpy(res->div[i] + 1, mat->row[i], mat->n_col);
-		isl_seq_scale(res->div[i] + 1 + mat->n_col,
-				bset->div[i] + 1 + mat->n_col,
-				morph->inv->row[0][0], bset->n_div);
-	}
-	isl_mat_free(mat);
-
-	res = add_strides(res, morph);
-
-	if (isl_basic_set_is_rational(bset))
-		res = isl_basic_set_set_rational(res);
-
-	res = isl_basic_set_simplify(res);
-	res = isl_basic_set_finalize(res);
-
-	res = isl_basic_set_intersect(res, isl_basic_set_copy(morph->ran));
+	bset = isl_basic_set_move_dims(bset, isl_dim_set, 0,
+					isl_dim_param, 0, n_param);
+	bset = isl_basic_set_preimage_multi_aff(bset, ma);
+	space = isl_basic_set_get_space(morph->ran);
+	bset = isl_basic_set_reset_space(bset, space);
+	bset = isl_basic_set_intersect(bset, isl_basic_set_copy(morph->ran));
 
 	isl_morph_free(morph);
-	isl_basic_set_free(bset);
-	return res;
+	return bset;
 error:
-	isl_mat_free(mat);
 	isl_morph_free(morph);
 	isl_basic_set_free(bset);
-	isl_basic_set_free(res);
 	return NULL;
 }
 
