@@ -3405,8 +3405,11 @@ __isl_give isl_basic_map *isl_basic_map_move_dims(
 
 	if (!bmap)
 		return NULL;
-	if (n == 0)
+	if (n == 0) {
+		bmap = isl_basic_map_reset(bmap, src_type);
+		bmap = isl_basic_map_reset(bmap, dst_type);
 		return bmap;
+	}
 
 	isl_assert(bmap->ctx, src_pos + n <= isl_basic_map_dim(bmap, src_type),
 		goto error);
