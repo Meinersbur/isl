@@ -1816,10 +1816,8 @@ static isl_bool basic_map_follows(int i, int j, void *user)
 		return isl_bool_false;
 	}
 
-	if (!isl_space_tuple_is_equal(data->list[i]->dim, isl_dim_in,
-				    data->list[i]->dim, isl_dim_out) ||
-	    !isl_space_tuple_is_equal(data->list[j]->dim, isl_dim_in,
-				    data->list[j]->dim, isl_dim_out)) {
+	if (!isl_basic_map_is_transformation(data->list[i]) ||
+	    !isl_basic_map_is_transformation(data->list[j])) {
 		isl_map_free(map21);
 		return isl_bool_true;
 	}

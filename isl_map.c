@@ -8463,6 +8463,17 @@ error:
 	return NULL;
 }
 
+/* Is "bmap" a transformation, i.e.,
+ * does it relate elements from the same space.
+ */
+isl_bool isl_basic_map_is_transformation(__isl_keep isl_basic_map *bmap)
+{
+	isl_space *space;
+
+	space = isl_basic_map_peek_space(bmap);
+	return isl_space_tuple_is_equal(space, isl_dim_in, space, isl_dim_out);
+}
+
 /*
  * returns range - domain
  */
@@ -8477,8 +8488,7 @@ __isl_give isl_basic_set *isl_basic_map_deltas(__isl_take isl_basic_map *bmap)
 
 	if (!bmap)
 		goto error;
-	isl_assert(bmap->ctx, isl_space_tuple_is_equal(bmap->dim, isl_dim_in,
-						  bmap->dim, isl_dim_out),
+	isl_assert(bmap->ctx, isl_basic_map_is_transformation(bmap),
 		   goto error);
 	dim = isl_basic_map_dim(bmap, isl_dim_in);
 	nparam = isl_basic_map_dim(bmap, isl_dim_param);
@@ -8570,8 +8580,7 @@ __isl_give isl_basic_map *isl_basic_map_deltas_map(
 	isl_size nparam, n;
 	isl_size total;
 
-	if (!isl_space_tuple_is_equal(bmap->dim, isl_dim_in,
-					bmap->dim, isl_dim_out))
+	if (!isl_basic_map_is_transformation(bmap))
 		isl_die(bmap->ctx, isl_error_invalid,
 			"domain and range don't match", goto error);
 

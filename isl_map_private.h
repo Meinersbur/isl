@@ -551,6 +551,7 @@ int isl_basic_set_count_upto(__isl_keep isl_basic_set *bset,
 	isl_int max, isl_int *count);
 int isl_set_count_upto(__isl_keep isl_set *set, isl_int max, isl_int *count);
 
+isl_bool isl_basic_map_is_transformation(__isl_keep isl_basic_map *bmap);
 isl_stat isl_map_check_transformation(__isl_keep isl_map *map);
 isl_stat isl_basic_set_check_equal_space(__isl_keep isl_basic_set *bset1,
 	__isl_keep isl_basic_set *bset2);
