@@ -82,4 +82,7 @@ __isl_give isl_local_space *isl_local_space_move_dims(
 int isl_local_space_cmp(__isl_keep isl_local_space *ls1,
 	__isl_keep isl_local_space *ls2);
 
+isl_bool isl_local_space_has_space(__isl_keep isl_local_space *ls,
+	__isl_keep isl_space *space);
+
 #endif

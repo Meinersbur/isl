@@ -165,6 +165,14 @@ isl_bool isl_local_space_has_equal_space(__isl_keep isl_local_space *ls1,
 	return isl_space_is_equal(ls1->dim, ls2->dim);
 }
 
+/* Is the space of "ls" equal to "space"?
+ */
+isl_bool isl_local_space_has_space(__isl_keep isl_local_space *ls,
+	__isl_keep isl_space *space)
+{
+	return isl_space_is_equal(isl_local_space_peek_space(ls), space);
+}
+
 /* Return true if the two local spaces are identical, with identical
  * expressions for the integer divisions.
  */
