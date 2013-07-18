@@ -8783,6 +8783,16 @@ static
 #include "isl_type_has_equal_space_templ.c"
 #include "isl_type_check_equal_space_templ.c"
 
+/* Check that "set" and "bset" live in the same space,
+ * reporting an error if they do not.
+ */
+isl_stat isl_set_basic_set_check_equal_space(__isl_keep isl_set *set,
+	__isl_keep isl_basic_set *bset)
+{
+	return isl_map_basic_map_check_equal_space(set_to_map(set),
+						    bset_to_bmap(bset));
+}
+
 static isl_bool map_is_equal(__isl_keep isl_map *map1, __isl_keep isl_map *map2)
 {
 	isl_bool is_subset;

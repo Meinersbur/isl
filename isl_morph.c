@@ -736,10 +736,8 @@ __isl_give isl_set *isl_morph_set(__isl_take isl_morph *morph,
 {
 	int i;
 
-	if (!morph || !set)
+	if (!morph || isl_set_basic_set_check_equal_space(set, morph->dom) < 0)
 		goto error;
-
-	isl_assert(set->ctx, isl_space_is_equal(set->dim, morph->dom->dim), goto error);
 
 	set = isl_set_cow(set);
 	if (!set)
