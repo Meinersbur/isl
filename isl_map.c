@@ -4613,18 +4613,27 @@ error:
 	return NULL;
 }
 
+/* Does "bmap2" apply to the range of "bmap1" (ignoring parameters)?
+ */
+isl_bool isl_basic_map_applies_range(__isl_keep isl_basic_map *bmap1,
+	__isl_keep isl_basic_map *bmap2)
+{
+	isl_space *space1, *space2;
+
+	space1 = isl_basic_map_peek_space(bmap1);
+	space2 = isl_basic_map_peek_space(bmap2);
+	return isl_space_tuple_is_equal(space1, isl_dim_out,
+					space2, isl_dim_in);
+}
+
 /* Check that "bmap2" applies to the range of "bmap1" (ignoring parameters).
  */
 static isl_stat isl_basic_map_check_applies_range(
 	__isl_keep isl_basic_map *bmap1, __isl_keep isl_basic_map *bmap2)
 {
 	isl_bool equal;
-	isl_space *space1, *space2;
 
-	space1 = isl_basic_map_peek_space(bmap1);
-	space2 = isl_basic_map_peek_space(bmap2);
-	equal = isl_space_tuple_is_equal(space1, isl_dim_out,
-					 space2, isl_dim_in);
+	equal = isl_basic_map_applies_range(bmap1, bmap2);
 	if (equal < 0)
 		return isl_stat_error;
 	if (!equal)

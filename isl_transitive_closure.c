@@ -1798,10 +1798,12 @@ static isl_bool basic_map_follows(int i, int j, void *user)
 	struct isl_tc_follows_data *data = user;
 	struct isl_map *map12 = NULL;
 	struct isl_map *map21 = NULL;
-	isl_bool subset;
+	isl_bool applies, subset;
 
-	if (!isl_space_tuple_is_equal(data->list[i]->dim, isl_dim_in,
-				    data->list[j]->dim, isl_dim_out))
+	applies = isl_basic_map_applies_range(data->list[j], data->list[i]);
+	if (applies < 0)
+		return isl_bool_error;
+	if (!applies)
 		return isl_bool_false;
 
 	map21 = isl_map_from_basic_map(
