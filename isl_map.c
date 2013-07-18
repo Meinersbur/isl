@@ -4613,6 +4613,26 @@ error:
 	return NULL;
 }
 
+/* Check that "bmap2" applies to the range of "bmap1" (ignoring parameters).
+ */
+static isl_stat isl_basic_map_check_applies_range(
+	__isl_keep isl_basic_map *bmap1, __isl_keep isl_basic_map *bmap2)
+{
+	isl_bool equal;
+	isl_space *space1, *space2;
+
+	space1 = isl_basic_map_peek_space(bmap1);
+	space2 = isl_basic_map_peek_space(bmap2);
+	equal = isl_space_tuple_is_equal(space1, isl_dim_out,
+					 space2, isl_dim_in);
+	if (equal < 0)
+		return isl_stat_error;
+	if (!equal)
+		isl_die(isl_basic_map_get_ctx(bmap1), isl_error_invalid,
+			"spaces don't match", return isl_stat_error);
+	return isl_stat_ok;
+}
+
 __isl_give isl_basic_map *isl_basic_map_apply_range(
 	__isl_take isl_basic_map *bmap1, __isl_take isl_basic_map *bmap2)
 {
@@ -4624,10 +4644,8 @@ __isl_give isl_basic_map *isl_basic_map_apply_range(
 
 	if (isl_basic_map_check_equal_params(bmap1, bmap2) < 0)
 		goto error;
-	if (!isl_space_tuple_is_equal(bmap1->dim, isl_dim_out,
-				    bmap2->dim, isl_dim_in))
-		isl_die(isl_basic_map_get_ctx(bmap1), isl_error_invalid,
-			"spaces don't match", goto error);
+	if (isl_basic_map_check_applies_range(bmap1, bmap2) < 0)
+		goto error;
 
 	n_in = isl_basic_map_dim(bmap1, isl_dim_in);
 	n_out = isl_basic_map_dim(bmap2, isl_dim_out);
