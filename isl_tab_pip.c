@@ -4390,13 +4390,14 @@ static __isl_give isl_basic_map *align_context_divs(
 	int i;
 	int common = 0;
 	int other;
-	isl_size bmap_n_div;
+	isl_size bmap_n_div, dom_n_div;
 
 	bmap_n_div = isl_basic_map_dim(bmap, isl_dim_div);
-	if (bmap_n_div < 0)
+	dom_n_div = isl_basic_set_dim(dom, isl_dim_div);
+	if (bmap_n_div < 0 || dom_n_div < 0)
 		return isl_basic_map_free(bmap);
 
-	for (i = 0; i < dom->n_div; ++i) {
+	for (i = 0; i < dom_n_div; ++i) {
 		isl_size pos;
 
 		pos = find_context_div(bmap, dom, i);
@@ -4406,13 +4407,13 @@ static __isl_give isl_basic_map *align_context_divs(
 			common++;
 	}
 	other = bmap_n_div - common;
-	if (dom->n_div - common > 0) {
+	if (dom_n_div - common > 0) {
 		bmap = isl_basic_map_cow(bmap);
-		bmap = isl_basic_map_extend(bmap, dom->n_div - common, 0, 0);
+		bmap = isl_basic_map_extend(bmap, dom_n_div - common, 0, 0);
 		if (!bmap)
 			return NULL;
 	}
-	for (i = 0; i < dom->n_div; ++i) {
+	for (i = 0; i < dom_n_div; ++i) {
 		isl_size pos = find_context_div(bmap, dom, i);
 		if (pos < 0)
 			bmap = isl_basic_map_free(bmap);
