@@ -3519,8 +3519,11 @@ __isl_give isl_map *isl_map_move_dims(__isl_take isl_map *map,
 
 	if (!map)
 		return NULL;
-	if (n == 0)
+	if (n == 0) {
+		map = isl_map_reset(map, src_type);
+		map = isl_map_reset(map, dst_type);
 		return map;
+	}
 
 	isl_assert(map->ctx, src_pos + n <= isl_map_dim(map, src_type),
 		goto error);
