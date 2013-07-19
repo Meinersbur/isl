@@ -284,7 +284,8 @@ static __isl_give isl_basic_map *normalize_div_expressions(
 
 /* Assumes divs have been ordered if keep_divs is set.
  */
-static void eliminate_var_using_equality(struct isl_basic_map *bmap,
+static __isl_give isl_basic_map *eliminate_var_using_equality(
+	__isl_take isl_basic_map *bmap,
 	unsigned pos, isl_int *eq, int keep_divs, int *progress)
 {
 	unsigned total;
@@ -338,6 +339,8 @@ static void eliminate_var_using_equality(struct isl_basic_map *bmap,
 		} else
 			isl_seq_clr(bmap->div[k], 1 + total);
 	}
+
+	return bmap;
 }
 
 /* Assumes divs have been ordered if keep_divs is set.
@@ -347,7 +350,7 @@ static __isl_give isl_basic_map *eliminate_div(__isl_take isl_basic_map *bmap,
 {
 	unsigned pos = isl_space_dim(bmap->dim, isl_dim_all) + div;
 
-	eliminate_var_using_equality(bmap, pos, eq, keep_divs, NULL);
+	bmap = eliminate_var_using_equality(bmap, pos, eq, keep_divs, NULL);
 
 	bmap = isl_basic_map_drop_div(bmap, div);
 
@@ -573,8 +576,8 @@ __isl_give isl_basic_map *isl_basic_map_gauss(__isl_take isl_basic_map *bmap,
 		if (isl_int_is_neg(bmap->eq[done][1+last_var]))
 			isl_seq_neg(bmap->eq[done], bmap->eq[done], 1+total);
 
-		eliminate_var_using_equality(bmap, last_var, bmap->eq[done], 1,
-						progress);
+		bmap = eliminate_var_using_equality(bmap, last_var,
+						bmap->eq[done], 1, progress);
 
 		if (last_var >= total_var)
 			bmap = set_div_from_eq(bmap, last_var - total_var,
@@ -1568,8 +1571,10 @@ __isl_give isl_basic_map *isl_basic_map_eliminate_vars(
 		for (i = 0; i < bmap->n_eq; ++i) {
 			if (isl_int_is_zero(bmap->eq[i][1+d]))
 				continue;
-			eliminate_var_using_equality(bmap, d, bmap->eq[i], 0, NULL);
-			isl_basic_map_drop_equality(bmap, i);
+			bmap = eliminate_var_using_equality(bmap, d,
+							bmap->eq[i], 0, NULL);
+			if (isl_basic_map_drop_equality(bmap, i) < 0)
+				return isl_basic_map_free(bmap);
 			need_gauss = 1;
 			break;
 		}
