@@ -1745,6 +1745,7 @@ isl_bool isl_basic_map_is_div_constraint(__isl_keep isl_basic_map *bmap,
 static isl_bool div_is_redundant(__isl_keep isl_basic_map *bmap, int div)
 {
 	int i;
+	isl_bool involves;
 	isl_size v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
 	unsigned pos = 1 + v_div + div;
 
@@ -1765,12 +1766,9 @@ static isl_bool div_is_redundant(__isl_keep isl_basic_map *bmap, int div)
 			return red;
 	}
 
-	for (i = 0; i < bmap->n_div; ++i) {
-		if (isl_int_is_zero(bmap->div[i][0]))
-			continue;
-		if (!isl_int_is_zero(bmap->div[i][1+pos]))
-			return isl_bool_false;
-	}
+	involves = isl_basic_map_any_div_involves_vars(bmap, v_div + div, 1);
+	if (involves < 0 || involves)
+		return isl_bool_not(involves);
 
 	return isl_bool_true;
 }
@@ -4299,8 +4297,8 @@ static isl_size div_find_coalesce(__isl_keep isl_basic_map *bmap, int *pairs,
 	int i, j;
 	isl_size n_div;
 	isl_size v_div;
-	int coalesce;
-	isl_bool opp;
+	isl_size coalesce;
+	isl_bool involves, opp;
 
 	n_div = isl_basic_map_dim(bmap, isl_dim_div);
 	if (n_div <= 1)
@@ -4317,12 +4315,9 @@ static isl_size div_find_coalesce(__isl_keep isl_basic_map *bmap, int *pairs,
 	if (opp < 0 || !opp)
 		return opp < 0 ? isl_size_error : n_div;
 
-	for (i = 0; i < n_div; ++i) {
-		if (isl_int_is_zero(bmap->div[i][0]))
-			continue;
-		if (!isl_int_is_zero(bmap->div[i][1 + 1 + v_div + div]))
-			return n_div;
-	}
+	involves = isl_basic_map_any_div_involves_vars(bmap, v_div + div, 1);
+	if (involves < 0 || involves)
+		return involves < 0 ? isl_size_error : n_div;
 
 	isl_int_add(bmap->ineq[l][0], bmap->ineq[l][0], bmap->ineq[u][0]);
 	if (isl_int_is_neg(bmap->ineq[l][0])) {
@@ -4340,13 +4335,11 @@ static isl_size div_find_coalesce(__isl_keep isl_basic_map *bmap, int *pairs,
 			continue;
 		if (!pairs[i])
 			continue;
-		for (j = 0; j < n_div; ++j) {
-			if (isl_int_is_zero(bmap->div[j][0]))
-				continue;
-			if (!isl_int_is_zero(bmap->div[j][1 + 1 + v_div + i]))
-				break;
-		}
-		if (j < n_div)
+		involves = isl_basic_map_any_div_involves_vars(bmap,
+							    v_div + i, 1);
+		if (involves < 0)
+			goto error;
+		if (involves)
 			continue;
 		for (j = 0; j < bmap->n_ineq; ++j) {
 			int valid;
@@ -4375,6 +4368,8 @@ static isl_size div_find_coalesce(__isl_keep isl_basic_map *bmap, int *pairs,
 		coalesce = i;
 		break;
 	}
+	if (0)
+error:		coalesce = isl_size_error;
 	isl_int_sub_ui(bmap->ineq[l][0], bmap->ineq[l][0], 1);
 	isl_int_sub(bmap->ineq[l][0], bmap->ineq[l][0], bmap->ineq[u][0]);
 	return coalesce;

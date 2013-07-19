@@ -4774,6 +4774,7 @@ static isl_bool need_split_basic_map(__isl_keep isl_basic_map *bmap,
 	__isl_keep isl_mat *cst)
 {
 	int i, j;
+	isl_bool involves;
 	isl_size total;
 	unsigned pos;
 
@@ -4782,9 +4783,9 @@ static isl_bool need_split_basic_map(__isl_keep isl_basic_map *bmap,
 	if (total < 0)
 		return isl_bool_error;
 
-	for (i = 0; i < bmap->n_div; ++i)
-		if (!isl_int_is_zero(bmap->div[i][2 + pos]))
-			return isl_bool_true;
+	involves = isl_basic_map_any_div_involves_vars(bmap, pos, 1);
+	if (involves < 0 || involves)
+		return involves;
 
 	for (i = 0; i < bmap->n_eq; ++i)
 		if (!isl_int_is_zero(bmap->eq[i][1 + pos]))

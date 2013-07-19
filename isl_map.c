@@ -2719,6 +2719,30 @@ static isl_bool div_involves_vars(__isl_keep isl_basic_map *bmap, int div,
 	return isl_bool_false;
 }
 
+/* Does the definition of any integer division involve
+ * any of the given variables?
+ */
+isl_bool isl_basic_map_any_div_involves_vars(__isl_keep isl_basic_map *bmap,
+	unsigned first, unsigned n)
+{
+	int i;
+	isl_size n_div;
+
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	if (n_div < 0)
+		return isl_bool_error;
+
+	for (i = 0; i < n_div; ++i) {
+		isl_bool has;
+
+		has = isl_basic_map_div_expr_involves_vars(bmap, i, first, n);
+		if (has < 0 || has)
+			return has;
+	}
+
+	return isl_bool_false;
+}
+
 /* Try and add a lower and/or upper bound on "div" to "bmap"
  * based on inequality "i".
  * "total" is the total number of variables (excluding the divs).
@@ -11607,22 +11631,18 @@ static isl_bool basic_map_dim_is_bounded(__isl_keep isl_basic_map *bmap,
 	enum isl_dim_type type, unsigned pos, int lower, int upper)
 {
 	int i;
-	isl_size n_div;
+	isl_bool involves;
 	isl_size off;
 
 	if (isl_basic_map_check_range(bmap, type, pos, 1) < 0)
 		return isl_bool_error;
 
 	off = isl_basic_map_var_offset(bmap, type);
-	n_div = isl_basic_map_dim(bmap, isl_dim_div);
-	if (off < 0 || n_div < 0)
+	if (off < 0)
 		return isl_bool_error;
-	for (i = 0; i < n_div; ++i) {
-		if (isl_int_is_zero(bmap->div[i][0]))
-			continue;
-		if (!isl_int_is_zero(bmap->div[i][1 + 1 + off + pos]))
-			return isl_bool_true;
-	}
+	involves = isl_basic_map_any_div_involves_vars(bmap, off + pos, 1);
+	if (involves < 0 || involves)
+		return involves;
 
 	for (i = 0; i < bmap->n_eq; ++i)
 		if (!isl_int_is_zero(bmap->eq[i][1 + off + pos]))

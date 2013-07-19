@@ -3600,7 +3600,6 @@ static enum isl_change coalesce_divs(int i, int j,
  */
 static isl_bool has_nested_div(__isl_keep isl_basic_map *bmap)
 {
-	int i;
 	isl_size total;
 	isl_size n_div;
 
@@ -3610,12 +3609,7 @@ static isl_bool has_nested_div(__isl_keep isl_basic_map *bmap)
 		return isl_bool_error;
 	total -= n_div;
 
-	for (i = 0; i < n_div; ++i)
-		if (isl_seq_first_non_zero(bmap->div[i] + 2 + total,
-					    n_div) != -1)
-			return isl_bool_true;
-
-	return isl_bool_false;
+	return isl_basic_map_any_div_involves_vars(bmap, total, n_div);
 }
 
 /* Return a list of affine expressions, one for each integer division
