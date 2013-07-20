@@ -1694,6 +1694,9 @@ static __isl_give isl_basic_set_list *add_split_on(
 	int i, n;
 	isl_basic_set_list *res;
 
+	if (!list)
+		bset = isl_basic_set_free(bset);
+
 	gt = isl_basic_map_copy(gt);
 	gt = isl_basic_map_intersect_domain(gt, isl_basic_set_copy(bset));
 	n = isl_basic_set_list_n_basic_set(list);
@@ -1776,12 +1779,16 @@ struct isl_add_nodes_data {
  * we split off that part of the basic set i that shares the outer dimensions
  * with j and lies before j in the current dimension.
  * We collect all the pieces in a new list that replaces "scc".
+ *
+ * While the elements in "scc" should be disjoint, we double-check
+ * this property to avoid running into an infinite recursion in case
+ * they intersect due to some internal error.
  */
 static int add_nodes(__isl_take isl_basic_set_list *scc, void *user)
 {
 	struct isl_add_nodes_data *data = user;
 	int i, n, depth;
-	isl_basic_set *bset;
+	isl_basic_set *bset, *first;
 	isl_basic_set_list *list;
 	isl_space *space;
 	isl_basic_map *gt;
@@ -1804,11 +1811,25 @@ static int add_nodes(__isl_take isl_basic_set_list *scc, void *user)
 		gt = isl_basic_map_equate(gt, isl_dim_in, i, isl_dim_out, i);
 	gt = isl_basic_map_order_gt(gt, isl_dim_in, depth, isl_dim_out, depth);
 
+	first = isl_basic_set_copy(bset);
 	list = isl_basic_set_list_from_basic_set(bset);
 	for (i = 1; i < n; ++i) {
+		int disjoint;
+
 		bset = isl_basic_set_list_get_basic_set(scc, i);
+
+		disjoint = isl_basic_set_is_disjoint(bset, first);
+		if (disjoint < 0)
+			list = isl_basic_set_list_free(list);
+		else if (!disjoint)
+			isl_die(isl_basic_set_list_get_ctx(scc),
+				isl_error_internal,
+				"basic sets in scc are assumed to be disjoint",
+				list = isl_basic_set_list_free(list));
+
 		list = add_split_on(list, bset, gt);
 	}
+	isl_basic_set_free(first);
 	isl_basic_map_free(gt);
 	isl_basic_set_list_free(scc);
 	scc = list;
