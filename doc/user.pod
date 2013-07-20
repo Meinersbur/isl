@@ -2018,10 +2018,16 @@ Check whether the range of the (basic) relation is a wrapped relation.
 
 =item * Disjointness
 
+	int isl_basic_set_is_disjoint(
+		__isl_keep isl_basic_set *bset1,
+		__isl_keep isl_basic_set *bset2);
 	int isl_set_plain_is_disjoint(__isl_keep isl_set *set1,
 		__isl_keep isl_set *set2);
 	int isl_set_is_disjoint(__isl_keep isl_set *set1,
 		__isl_keep isl_set *set2);
+	int isl_basic_map_is_disjoint(
+		__isl_keep isl_basic_map *bmap1,
+		__isl_keep isl_basic_map *bmap2);
 	int isl_map_is_disjoint(__isl_keep isl_map *map1,
 		__isl_keep isl_map *map2);
 

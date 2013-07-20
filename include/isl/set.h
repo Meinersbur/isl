@@ -184,6 +184,8 @@ struct isl_set *isl_set_to_underlying_set(struct isl_set *set);
 __isl_export
 int isl_basic_set_is_equal(
 		struct isl_basic_set *bset1, struct isl_basic_set *bset2);
+int isl_basic_set_is_disjoint(__isl_keep isl_basic_set *bset1,
+	__isl_keep isl_basic_set *bset2);
 
 __isl_give isl_set *isl_basic_set_partial_lexmin(
 		__isl_take isl_basic_set *bset, __isl_take isl_basic_set *dom,

@@ -2537,6 +2537,56 @@ int isl_map_is_disjoint(__isl_keep isl_map *map1, __isl_keep isl_map *map2)
 	return disjoint;
 }
 
+/* Are "bmap1" and "bmap2" disjoint?
+ *
+ * They are disjoint if they are "obviously disjoint" or if one of them
+ * is empty.  Otherwise, they are not disjoint if one of them is universal.
+ * If none of these cases apply, we compute the intersection and see if
+ * the result is empty.
+ */
+int isl_basic_map_is_disjoint(__isl_keep isl_basic_map *bmap1,
+	__isl_keep isl_basic_map *bmap2)
+{
+	int disjoint;
+	int intersect;
+	isl_basic_map *test;
+
+	disjoint = isl_basic_map_plain_is_disjoint(bmap1, bmap2);
+	if (disjoint < 0 || disjoint)
+		return disjoint;
+
+	disjoint = isl_basic_map_is_empty(bmap1);
+	if (disjoint < 0 || disjoint)
+		return disjoint;
+
+	disjoint = isl_basic_map_is_empty(bmap2);
+	if (disjoint < 0 || disjoint)
+		return disjoint;
+
+	intersect = isl_basic_map_is_universe(bmap1);
+	if (intersect < 0 || intersect)
+		return intersect < 0 ? -1 : 0;
+
+	intersect = isl_basic_map_is_universe(bmap2);
+	if (intersect < 0 || intersect)
+		return intersect < 0 ? -1 : 0;
+
+	test = isl_basic_map_intersect(isl_basic_map_copy(bmap1),
+		isl_basic_map_copy(bmap2));
+	disjoint = isl_basic_map_is_empty(test);
+	isl_basic_map_free(test);
+
+	return disjoint;
+}
+
+/* Are "bset1" and "bset2" disjoint?
+ */
+int isl_basic_set_is_disjoint(__isl_keep isl_basic_set *bset1,
+	__isl_keep isl_basic_set *bset2)
+{
+	return isl_basic_map_is_disjoint(bset1, bset2);
+}
+
 int isl_set_plain_is_disjoint(__isl_keep isl_set *set1,
 	__isl_keep isl_set *set2)
 {

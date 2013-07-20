@@ -238,6 +238,8 @@ __isl_export
 int isl_basic_map_is_equal(
 		__isl_keep isl_basic_map *bmap1,
 		__isl_keep isl_basic_map *bmap2);
+int isl_basic_map_is_disjoint(__isl_keep isl_basic_map *bmap1,
+	__isl_keep isl_basic_map *bmap2);
 
 __isl_give isl_map *isl_basic_map_partial_lexmax(
 		__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
