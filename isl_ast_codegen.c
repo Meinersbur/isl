@@ -2251,8 +2251,41 @@ static __isl_give isl_constraint *at_offset(int depth, __isl_keep isl_aff *aff,
 	return isl_equality_from_aff(aff);
 }
 
-/* Return a list of basic sets, one for each value of the current dimension
- * in "domain".
+/* Data structure for storing the results and the intermediate objects
+ * of compute_domains.
+ *
+ * "list" is the main result of the function and contains a list
+ * of disjoint basic sets for which code should be generated.
+ *
+ * "executed" and "build" are inputs to compute_domains.
+ * "schedule_domain" is the domain of "executed".
+ *
+ * "option" constains the domains at the current depth that should by
+ * atomic, separated or unrolled.  These domains are as specified by
+ * the user, except that inner dimensions have been eliminated and
+ * that they have been made pair-wise disjoint.
+ *
+ * "sep_class" contains the user-specified split into separation classes
+ * specialized to the current depth.
+ * "done" contains the union of the separation domains that have already
+ * been handled.
+ */
+struct isl_codegen_domains {
+	isl_basic_set_list *list;
+
+	isl_union_map *executed;
+	isl_ast_build *build;
+	isl_set *schedule_domain;
+
+	isl_set *option[3];
+
+	isl_map *sep_class;
+	isl_set *done;
+};
+
+/* Extend domains->list with a list of basic sets, one for each value
+ * of the current dimension in "domain" and remove the corresponding
+ * sets from the class domain.  Return the updated class domain.
  * The divs that involve the current dimension have not been projected out
  * from this domain.
  *
@@ -2283,24 +2316,28 @@ static __isl_give isl_constraint *at_offset(int depth, __isl_keep isl_aff *aff,
  * atomic option.
  *
  * Finally, we map i' back to i and add each basic set to the list.
+ * Since we may have dropped some constraints, we intersect with
+ * the class domain again to ensure that each element in the list
+ * is disjoint from the other class domains.
  */
-static __isl_give isl_basic_set_list *do_unroll(__isl_take isl_set *domain,
-	__isl_keep isl_ast_build *build)
+static __isl_give isl_set *do_unroll(struct isl_codegen_domains *domains,
+	__isl_take isl_set *domain, __isl_take isl_set *class_domain)
 {
 	int i, n;
 	int depth;
 	isl_ctx *ctx;
 	isl_aff *lower;
-	isl_basic_set_list *list;
 	isl_multi_aff *expansion;
 	isl_basic_map *bmap;
+	isl_set *unroll_domain;
+	isl_ast_build *build;
 
 	if (!domain)
-		return NULL;
+		return isl_set_free(class_domain);
 
 	ctx = isl_set_get_ctx(domain);
-	depth = isl_ast_build_get_depth(build);
-	build = isl_ast_build_copy(build);
+	depth = isl_ast_build_get_depth(domains->build);
+	build = isl_ast_build_copy(domains->build);
 	domain = isl_ast_build_eliminate_inner(build, domain);
 	build = isl_ast_build_detect_strides(build, isl_set_copy(domain));
 	expansion = isl_ast_build_get_stride_expansion(build);
@@ -2311,18 +2348,19 @@ static __isl_give isl_basic_set_list *do_unroll(__isl_take isl_set *domain,
 
 	isl_ast_build_free(build);
 
-	list = isl_basic_set_list_alloc(ctx, 0);
-
 	lower = find_unroll_lower_bound(domain, depth, &n);
 	if (!lower)
-		list = isl_basic_set_list_free(list);
+		class_domain = isl_set_free(class_domain);
 
 	bmap = isl_basic_map_from_multi_aff(expansion);
 
-	for (i = 0; list && i < n; ++i) {
+	unroll_domain = isl_set_empty(isl_set_get_space(domain));
+
+	for (i = 0; class_domain && i < n; ++i) {
 		isl_set *set;
 		isl_basic_set *bset;
 		isl_constraint *slice;
+		isl_basic_set_list *list;
 
 		slice = at_offset(depth, lower, i);
 		set = isl_set_copy(domain);
@@ -2330,59 +2368,28 @@ static __isl_give isl_basic_set_list *do_unroll(__isl_take isl_set *domain,
 		bset = isl_set_unshifted_simple_hull(set);
 		bset = isl_basic_set_add_constraint(bset, slice);
 		bset = isl_basic_set_apply(bset, isl_basic_map_copy(bmap));
-		list = isl_basic_set_list_add(list, bset);
+		set = isl_set_from_basic_set(bset);
+		unroll_domain = isl_set_union(unroll_domain, isl_set_copy(set));
+		set = isl_set_intersect(set, isl_set_copy(class_domain));
+		set = isl_set_make_disjoint(set);
+		list = isl_basic_set_list_from_set(set);
+		domains->list = isl_basic_set_list_concat(domains->list, list);
 	}
+
+	class_domain = isl_set_subtract(class_domain, unroll_domain);
 
 	isl_aff_free(lower);
 	isl_set_free(domain);
 	isl_basic_map_free(bmap);
 
-	return list;
+	return class_domain;
 }
-
-/* Data structure for storing the results and the intermediate objects
- * of compute_domains.
- *
- * "list" is the main result of the function and contains a list
- * of disjoint basic sets for which code should be generated.
- *
- * "executed" and "build" are inputs to compute_domains.
- * "schedule_domain" is the domain of "executed".
- *
- * "option" constains the domains at the current depth that should by
- * atomic, separated or unrolled.  These domains are as specified by
- * the user, except that inner dimensions have been eliminated and
- * that they have been made pair-wise disjoint.
- *
- * "sep_class" contains the user-specified split into separation classes
- * specialized to the current depth.
- * "done" contains the union of the separation domains that have already
- * been handled.
- * "atomic" contains the domain that has effectively been made atomic.
- * This domain may be larger than the intersection of option[atomic]
- * and the schedule domain.
- */
-struct isl_codegen_domains {
-	isl_basic_set_list *list;
-
-	isl_union_map *executed;
-	isl_ast_build *build;
-	isl_set *schedule_domain;
-
-	isl_set *option[3];
-
-	isl_map *sep_class;
-	isl_set *done;
-	isl_set *atomic;
-};
 
 /* Add domains to domains->list for each individual value of the current
  * dimension, for that part of the schedule domain that lies in the
  * intersection of the option domain and the class domain.
- *
- * "domain" is the intersection of the class domain and the schedule domain.
- * The divs that involve the current dimension have not been projected out
- * from this domain.
+ * Remove the corresponding sets from the class domain and
+ * return the updated class domain.
  *
  * We first break up the unroll option domain into individual pieces
  * and then handle each of them separately.  The unroll option domain
@@ -2394,8 +2401,8 @@ struct isl_codegen_domains {
  * intersecting with class and schedule domain, hoping that the
  * unroll option domain specified by the user is relatively simple.
  */
-static int compute_unroll_domains(struct isl_codegen_domains *domains,
-	__isl_keep isl_set *domain)
+static __isl_give isl_set *compute_unroll_domains(
+	struct isl_codegen_domains *domains, __isl_take isl_set *class_domain)
 {
 	isl_set *unroll_domain;
 	isl_basic_set_list *unroll_list;
@@ -2404,9 +2411,9 @@ static int compute_unroll_domains(struct isl_codegen_domains *domains,
 
 	empty = isl_set_is_empty(domains->option[unroll]);
 	if (empty < 0)
-		return -1;
+		return isl_set_free(class_domain);
 	if (empty)
-		return 0;
+		return class_domain;
 
 	unroll_domain = isl_set_copy(domains->option[unroll]);
 	unroll_list = isl_basic_set_list_from_set(unroll_domain);
@@ -2414,12 +2421,13 @@ static int compute_unroll_domains(struct isl_codegen_domains *domains,
 	n = isl_basic_set_list_n_basic_set(unroll_list);
 	for (i = 0; i < n; ++i) {
 		isl_basic_set *bset;
-		isl_basic_set_list *list;
 
 		bset = isl_basic_set_list_get_basic_set(unroll_list, i);
 		unroll_domain = isl_set_from_basic_set(bset);
 		unroll_domain = isl_set_intersect(unroll_domain,
-						    isl_set_copy(domain));
+						    isl_set_copy(class_domain));
+		unroll_domain = isl_set_intersect(unroll_domain,
+					isl_set_copy(domains->schedule_domain));
 
 		empty = isl_set_is_empty(unroll_domain);
 		if (empty >= 0 && empty) {
@@ -2427,19 +2435,18 @@ static int compute_unroll_domains(struct isl_codegen_domains *domains,
 			continue;
 		}
 
-		list = do_unroll(unroll_domain, domains->build);
-		domains->list = isl_basic_set_list_concat(domains->list, list);
+		class_domain = do_unroll(domains, unroll_domain, class_domain);
 	}
 
 	isl_basic_set_list_free(unroll_list);
 
-	return 0;
+	return class_domain;
 }
 
 /* Try and construct a single basic set that includes the intersection of
  * the schedule domain, the atomic option domain and the class domain.
- * Add the resulting basic set(s) to domains->list and save a copy
- * in domains->atomic for use in compute_partial_domains.
+ * Add the resulting basic set(s) to domains->list and remove them
+ * from class_domain.  Return the updated class domain.
  *
  * We construct a single domain rather than trying to combine
  * the schedule domains of individual domains because we are working
@@ -2453,12 +2460,12 @@ static int compute_unroll_domains(struct isl_codegen_domains *domains,
  * "domain" is the intersection of the schedule domain and the class domain,
  * with inner dimensions projected out.
  */
-static int compute_atomic_domain(struct isl_codegen_domains *domains,
-	__isl_keep isl_set *class_domain)
+static __isl_give isl_set *compute_atomic_domain(
+	struct isl_codegen_domains *domains, __isl_take isl_set *class_domain)
 {
 	isl_basic_set *bset;
 	isl_basic_set_list *list;
-	isl_set *domain;
+	isl_set *domain, *atomic_domain;
 	int empty;
 
 	domain = isl_set_copy(domains->option[atomic]);
@@ -2466,22 +2473,25 @@ static int compute_atomic_domain(struct isl_codegen_domains *domains,
 	domain = isl_set_intersect(domain,
 				isl_set_copy(domains->schedule_domain));
 	empty = isl_set_is_empty(domain);
-	if (empty < 0 || empty) {
-		domains->atomic = domain;
-		return empty < 0 ? -1 : 0;
+	if (empty < 0)
+		class_domain = isl_set_free(class_domain);
+	if (empty) {
+		isl_set_free(domain);
+		return class_domain;
 	}
 
 	domain = isl_ast_build_eliminate(domains->build, domain);
 	domain = isl_set_coalesce(domain);
 	bset = isl_set_unshifted_simple_hull(domain);
 	domain = isl_set_from_basic_set(bset);
-	domains->atomic = isl_set_copy(domain);
+	atomic_domain = isl_set_copy(domain);
 	domain = isl_set_intersect(domain, isl_set_copy(class_domain));
+	class_domain = isl_set_subtract(class_domain, atomic_domain);
 	domain = isl_set_make_disjoint(domain);
 	list = isl_basic_set_list_from_set(domain);
 	domains->list = isl_basic_set_list_concat(domains->list, list);
 
-	return 0;
+	return class_domain;
 }
 
 /* Split up the schedule domain into uniform basic sets,
@@ -2553,9 +2563,11 @@ static int compute_separate_domain(struct isl_codegen_domains *domains,
  *
  * The domain that has been made atomic may be larger than specified
  * by the user since it needs to be representable as a single basic set.
- * This possibly larger domain is stored in domains->atomic by
+ * This possibly larger domain is removed from class_domain by
  * compute_atomic_domain.  It is computed first so that the extended domain
  * would not overlap with any domains computed before.
+ * Similary, the unrolled domains may have some constraints removed and
+ * may therefore also be larger than specified by the user.
  *
  * If anything is left after handling separate, unroll and atomic,
  * we split it up into basic sets and append the basic sets to domains->list.
@@ -2571,11 +2583,10 @@ static int compute_partial_domains(struct isl_codegen_domains *domains,
 	domains->done = isl_set_union(domains->done,
 					isl_set_copy(class_domain));
 
-	domain = isl_set_copy(class_domain);
+	class_domain = compute_atomic_domain(domains, class_domain);
+	class_domain = compute_unroll_domains(domains, class_domain);
 
-	if (compute_atomic_domain(domains, class_domain) < 0)
-		domain = isl_set_free(domain);
-	domain = isl_set_subtract(domain, domains->atomic);
+	domain = isl_set_copy(class_domain);
 
 	if (compute_separate_domain(domains, domain) < 0)
 		goto error;
@@ -2584,11 +2595,6 @@ static int compute_partial_domains(struct isl_codegen_domains *domains,
 
 	domain = isl_set_intersect(domain,
 				isl_set_copy(domains->schedule_domain));
-
-	if (compute_unroll_domains(domains, domain) < 0)
-		goto error;
-	domain = isl_set_subtract(domain,
-				    isl_set_copy(domains->option[unroll]));
 
 	domain = isl_ast_build_eliminate(domains->build, domain);
 	domain = isl_set_intersect(domain, isl_set_copy(class_domain));
