@@ -2436,43 +2436,50 @@ static int compute_unroll_domains(struct isl_codegen_domains *domains,
 	return 0;
 }
 
-/* Construct a single basic set that includes the intersection of
+/* Try and construct a single basic set that includes the intersection of
  * the schedule domain, the atomic option domain and the class domain.
- * Add the resulting basic set to domains->list and save a copy
+ * Add the resulting basic set(s) to domains->list and save a copy
  * in domains->atomic for use in compute_partial_domains.
  *
  * We construct a single domain rather than trying to combine
  * the schedule domains of individual domains because we are working
  * within a single component so that non-overlapping schedule domains
  * should already have been separated.
- * Note, though, that this does not take into account the class domain.
- * So, it is possible for a class domain to carve out a piece of the
- * schedule domain with independent pieces and then we would only
- * generate a single domain for them.  If this proves to be problematic
- * for some users, then this function will have to be adjusted.
+ * We do however need to make sure that this single domains is a subset
+ * of the class domain so that it would not intersect with any other
+ * class domains.  This means that we may end up splitting up the atomic
+ * domain in case separation classes are being used.
  *
  * "domain" is the intersection of the schedule domain and the class domain,
  * with inner dimensions projected out.
  */
 static int compute_atomic_domain(struct isl_codegen_domains *domains,
-	__isl_keep isl_set *domain)
+	__isl_keep isl_set *class_domain)
 {
 	isl_basic_set *bset;
-	isl_set *atomic_domain;
+	isl_basic_set_list *list;
+	isl_set *domain;
 	int empty;
 
-	atomic_domain = isl_set_copy(domains->option[atomic]);
-	atomic_domain = isl_set_intersect(atomic_domain, isl_set_copy(domain));
-	empty = isl_set_is_empty(atomic_domain);
+	domain = isl_set_copy(domains->option[atomic]);
+	domain = isl_set_intersect(domain, isl_set_copy(class_domain));
+	domain = isl_set_intersect(domain,
+				isl_set_copy(domains->schedule_domain));
+	empty = isl_set_is_empty(domain);
 	if (empty < 0 || empty) {
-		domains->atomic = atomic_domain;
+		domains->atomic = domain;
 		return empty < 0 ? -1 : 0;
 	}
 
-	atomic_domain = isl_set_coalesce(atomic_domain);
-	bset = isl_set_unshifted_simple_hull(atomic_domain);
-	domains->atomic = isl_set_from_basic_set(isl_basic_set_copy(bset));
-	domains->list = isl_basic_set_list_add(domains->list, bset);
+	domain = isl_ast_build_eliminate(domains->build, domain);
+	domain = isl_set_coalesce(domain);
+	bset = isl_set_unshifted_simple_hull(domain);
+	domain = isl_set_from_basic_set(bset);
+	domains->atomic = isl_set_copy(domain);
+	domain = isl_set_intersect(domain, isl_set_copy(class_domain));
+	domain = isl_set_make_disjoint(domain);
+	list = isl_basic_set_list_from_set(domain);
+	domains->list = isl_basic_set_list_concat(domains->list, list);
 
 	return 0;
 }
@@ -2547,7 +2554,8 @@ static int compute_separate_domain(struct isl_codegen_domains *domains,
  * The domain that has been made atomic may be larger than specified
  * by the user since it needs to be representable as a single basic set.
  * This possibly larger domain is stored in domains->atomic by
- * compute_atomic_domain.
+ * compute_atomic_domain.  It is computed first so that the extended domain
+ * would not overlap with any domains computed before.
  *
  * If anything is left after handling separate, unroll and atomic,
  * we split it up into basic sets and append the basic sets to domains->list.
@@ -2565,6 +2573,10 @@ static int compute_partial_domains(struct isl_codegen_domains *domains,
 
 	domain = isl_set_copy(class_domain);
 
+	if (compute_atomic_domain(domains, class_domain) < 0)
+		domain = isl_set_free(domain);
+	domain = isl_set_subtract(domain, domains->atomic);
+
 	if (compute_separate_domain(domains, domain) < 0)
 		goto error;
 	domain = isl_set_subtract(domain,
@@ -2580,10 +2592,6 @@ static int compute_partial_domains(struct isl_codegen_domains *domains,
 
 	domain = isl_ast_build_eliminate(domains->build, domain);
 	domain = isl_set_intersect(domain, isl_set_copy(class_domain));
-
-	if (compute_atomic_domain(domains, domain) < 0)
-		domain = isl_set_free(domain);
-	domain = isl_set_subtract(domain, domains->atomic);
 
 	domain = isl_set_coalesce(domain);
 	domain = isl_set_make_disjoint(domain);
