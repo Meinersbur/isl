@@ -1650,7 +1650,7 @@ only being applied to relations from a given domain to itself.
 However, it is also possible to detect disjoint domains and ranges
 and to apply Floyd-Warshall internally.
 
-\linesnumbered
+\LinesNumbered
 \begin{algorithm}
 \caption{The modified Floyd-Warshall algorithm of
 \protect\shortciteN{Kelly1996closure}}
@@ -1662,8 +1662,8 @@ and to apply Floyd-Warshall internally.
 $R_{pq}$ contains all indirect paths from $p$ to $q$ in the input graph}
 %
 \BlankLine
-\SetVline
-\dontprintsemicolon
+\SetAlgoVlined
+\DontPrintSemicolon
 %
 \For{$r \in [0, n-1]$}{
     $R_{rr} \coloneqq R_{rr}^+$ \nllabel{l:Floyd:closure}\;
