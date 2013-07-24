@@ -1486,6 +1486,8 @@ A new local space can be created from a space using
 They can be inspected, modified, copied and freed using the following functions.
 
 	#include <isl/local_space.h>
+	int isl_local_space_is_params(
+		__isl_keep isl_local_space *ls);
 	int isl_local_space_is_set(__isl_keep isl_local_space *ls);
 	__isl_give isl_space *isl_local_space_get_space(
 		__isl_keep isl_local_space *ls);

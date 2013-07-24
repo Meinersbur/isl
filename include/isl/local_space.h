@@ -22,6 +22,7 @@ __isl_give isl_local_space *isl_local_space_copy(
 __isl_null isl_local_space *isl_local_space_free(
 	__isl_take isl_local_space *ls);
 
+int isl_local_space_is_params(__isl_keep isl_local_space *ls);
 int isl_local_space_is_set(__isl_keep isl_local_space *ls);
 
 __isl_give isl_local_space *isl_local_space_set_tuple_id(

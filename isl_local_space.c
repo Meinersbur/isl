@@ -119,6 +119,15 @@ __isl_null isl_local_space *isl_local_space_free(
 	return NULL;
 }
 
+/* Is the local space that of a parameter domain?
+ */
+int isl_local_space_is_params(__isl_keep isl_local_space *ls)
+{
+	if (!ls)
+		return -1;
+	return isl_space_is_params(ls->dim);
+}
+
 /* Is the local space that of a set?
  */
 int isl_local_space_is_set(__isl_keep isl_local_space *ls)
