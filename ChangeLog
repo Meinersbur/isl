@@ -1,3 +1,9 @@
+version: 0.12.1
+date: Wed Jul 24 12:54:46 CEST 2013
+changes:
+	- handle malloc returning NULL on zero-size allocation
+	- fix regression in AST generator
+---
 version: 0.12
 date: Sun Jun 23 20:23:05 CEST 2013
 changes:
