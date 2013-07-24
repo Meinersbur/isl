@@ -154,6 +154,7 @@ AC_SUBST(CLANG_LIBS)
 AX_SUBMODULE(clang,system|no,no)
 case "$with_clang" in
 system)
+	AC_PROG_GREP
 	llvm_config="llvm-config"
 	AC_CHECK_PROG([llvm_config_found], ["$llvm_config"], [yes])
 	if test "x$with_clang_prefix" != "x"; then
@@ -168,7 +169,12 @@ system)
 	CLANG_CXXFLAGS=`$llvm_config --cxxflags`
 	CLANG_LDFLAGS=`$llvm_config --ldflags`
 	targets=`$llvm_config --targets-built`
-	CLANG_LIBS=`$llvm_config --libs $targets asmparser bitreader support mc`
+	components="$targets asmparser bitreader support mc"
+	$llvm_config --components | $GREP option > /dev/null 2> /dev/null
+	if test $? -eq 0; then
+		components="$components option"
+	fi
+	CLANG_LIBS=`$llvm_config --libs $components`
 	CLANG_PREFIX=`$llvm_config --prefix`
 	AC_DEFINE_UNQUOTED(CLANG_PREFIX, ["$CLANG_PREFIX"],
 				[Clang installation prefix])
