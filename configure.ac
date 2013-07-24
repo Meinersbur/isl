@@ -1,10 +1,10 @@
-AC_INIT([isl], [0.12], [isl-development@googlegroups.com])
+AC_INIT([isl], [0.12.1], [isl-development@googlegroups.com])
 AC_CONFIG_AUX_DIR([.])
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([foreign])
 m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 AC_SUBST(versioninfo)
-versioninfo=12:0:2
+versioninfo=12:1:2
 
 if test "x$prefix" != "xNONE"; then
 	prefix_wd=`cd $prefix && pwd`
@@ -111,6 +111,7 @@ AC_SUBST(CLANG_LIBS)
 AX_SUBMODULE(clang,system|no,no)
 case "$with_clang" in
 system)
+	AC_PROG_GREP
 	llvm_config="llvm-config"
 	AC_CHECK_PROG([llvm_config_found], ["$llvm_config"], [yes])
 	if test "x$with_clang_prefix" != "x"; then
@@ -125,7 +126,12 @@ system)
 	CLANG_CXXFLAGS=`$llvm_config --cxxflags`
 	CLANG_LDFLAGS=`$llvm_config --ldflags`
 	targets=`$llvm_config --targets-built`
-	CLANG_LIBS=`$llvm_config --libs $targets asmparser bitreader support mc`
+	components="$targets asmparser bitreader support mc"
+	$llvm_config --components | $GREP option > /dev/null 2> /dev/null
+	if test $? -eq 0; then
+		components="$components option"
+	fi
+	CLANG_LIBS=`$llvm_config --libs $components`
 	CLANG_PREFIX=`$llvm_config --prefix`
 	AC_DEFINE_UNQUOTED(CLANG_PREFIX, ["$CLANG_PREFIX"],
 				[Clang installation prefix])
