@@ -127,6 +127,8 @@ __isl_give isl_union_set *isl_schedule_node_filter_get_filter(
 	__isl_keep isl_schedule_node *node);
 
 int isl_schedule_node_get_schedule_depth(__isl_keep isl_schedule_node *node);
+__isl_give isl_union_set *isl_schedule_node_get_domain(
+	__isl_keep isl_schedule_node *node);
 __isl_give isl_union_set *isl_schedule_node_get_universe_domain(
 	__isl_keep isl_schedule_node *node);
 __isl_give isl_union_pw_multi_aff *

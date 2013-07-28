@@ -280,6 +280,8 @@ int isl_schedule_node_get_schedule_depth(__isl_keep isl_schedule_node *node)
  * isl_schedule_node_get_prefix_schedule_union_pw_multi_aff
  *
  * "initialized" is set if the filter field has been initialized.
+ * If "universe_domain" is not set, then the collected filter is intersected
+ * with the the domain of the root domain node.
  * "universe_filter" is set if we are only collecting the universes of filters
  * "collect_prefix" is set if we are collecting prefixes.
  * "filter" collects all outer filters and is NULL until "initialized" is set.
@@ -289,6 +291,7 @@ int isl_schedule_node_get_schedule_depth(__isl_keep isl_schedule_node *node)
  */
 struct isl_schedule_node_get_filter_prefix_data {
 	int initialized;
+	int universe_domain;
 	int universe_filter;
 	int collect_prefix;
 	isl_union_set *filter;
@@ -304,7 +307,8 @@ struct isl_schedule_node_get_filter_prefix_data {
  * (or its universe).
  * If "tree" is a domain, then this means we have reached the root
  * of the schedule tree without being able to extract any information.
- * We therefore initialize data->filter to the universe of the domain.
+ * We therefore initialize data->filter to the universe of the domain,
+ * or the domain itself if data->universe_domain is not set.
  * If "tree" is a band with at least one member, then we set data->filter
  * to the universe of the schedule domain and replace the zero-dimensional
  * data->prefix by the band schedule (if data->collect_prefix is set).
@@ -327,7 +331,8 @@ static int collect_filter_prefix_init(__isl_keep isl_schedule_tree *tree,
 		return 0;
 	case isl_schedule_node_domain:
 		filter = isl_schedule_tree_domain_get_domain(tree);
-		filter = isl_union_set_universe(filter);
+		if (data->universe_domain)
+			filter = isl_union_set_universe(filter);
 		data->filter = filter;
 		break;
 	case isl_schedule_node_band:
@@ -365,6 +370,8 @@ static int collect_filter_prefix_init(__isl_keep isl_schedule_tree *tree,
  *
  * Return 0 on success and -1 on error.
  *
+ * If "tree" is a domain and data->universe_domain is not set, then
+ * intersect data->filter with the domain.
  * If "tree" is a filter, then we intersect data->filter with this filter
  * (or its universe).
  * If "tree" is a band with at least one member and data->collect_prefix
@@ -382,10 +389,15 @@ static int collect_filter_prefix_update(__isl_keep isl_schedule_tree *tree,
 	case isl_schedule_node_error:
 		return -1;
 	case isl_schedule_node_context:
-	case isl_schedule_node_domain:
 	case isl_schedule_node_leaf:
 	case isl_schedule_node_sequence:
 	case isl_schedule_node_set:
+		break;
+	case isl_schedule_node_domain:
+		if (data->universe_domain)
+			break;
+		filter = isl_schedule_tree_domain_get_domain(tree);
+		data->filter = isl_union_set_intersect(data->filter, filter);
 		break;
 	case isl_schedule_node_band:
 		if (isl_schedule_tree_band_n_member(tree) == 0)
@@ -487,6 +499,7 @@ isl_schedule_node_get_prefix_schedule_union_pw_multi_aff(
 		return isl_union_pw_multi_aff_empty(space);
 
 	space = isl_space_set_from_params(space);
+	data.universe_domain = 1;
 	data.universe_filter = 0;
 	data.collect_prefix = 1;
 	data.prefix = isl_multi_union_pw_aff_zero(space);
@@ -521,6 +534,41 @@ __isl_give isl_union_map *isl_schedule_node_get_prefix_schedule_union_map(
 	return isl_union_map_from_union_pw_multi_aff(upma);
 }
 
+/* Return the domain elements that reach "node".
+ *
+ * If "node" is pointing at the root of the schedule tree, then
+ * there are no domain elements reaching the current node, so
+ * we return an empty result.
+ *
+ * Otherwise, we collect all filters reaching the node,
+ * intersected with the root domain in collect_filter_prefix.
+ */
+__isl_give isl_union_set *isl_schedule_node_get_domain(
+	__isl_keep isl_schedule_node *node)
+{
+	struct isl_schedule_node_get_filter_prefix_data data;
+
+	if (!node)
+		return NULL;
+
+	if (node->tree == node->schedule->root) {
+		isl_space *space;
+
+		space = isl_schedule_get_space(node->schedule);
+		return isl_union_set_empty(space);
+	}
+
+	data.universe_domain = 0;
+	data.universe_filter = 0;
+	data.collect_prefix = 0;
+	data.prefix = NULL;
+
+	if (collect_filter_prefix(node->ancestors, &data) < 0)
+		data.filter = isl_union_set_free(data.filter);
+
+	return data.filter;
+}
+
 /* Return the union of universe sets of the domain elements that reach "node".
  *
  * If "node" is pointing at the root of the schedule tree, then
@@ -545,6 +593,7 @@ __isl_give isl_union_set *isl_schedule_node_get_universe_domain(
 		return isl_union_set_empty(space);
 	}
 
+	data.universe_domain = 1;
 	data.universe_filter = 1;
 	data.collect_prefix = 0;
 	data.prefix = NULL;
