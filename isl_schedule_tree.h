@@ -49,6 +49,9 @@ enum isl_schedule_node_type isl_schedule_tree_get_type(
 __isl_give isl_schedule_tree *isl_schedule_tree_leaf(isl_ctx *ctx);
 int isl_schedule_tree_is_leaf(__isl_keep isl_schedule_tree *tree);
 
+int isl_schedule_tree_plain_is_equal(__isl_keep isl_schedule_tree *tree1,
+	__isl_keep isl_schedule_tree *tree2);
+
 __isl_give isl_schedule_tree *isl_schedule_tree_copy(
 	__isl_keep isl_schedule_tree *tree);
 __isl_null isl_schedule_tree *isl_schedule_tree_free(

@@ -142,6 +142,29 @@ __isl_null isl_schedule_band *isl_schedule_band_free(
 	return NULL;
 }
 
+/* Are "band1" and "band2" obviously equal?
+ */
+int isl_schedule_band_plain_is_equal(__isl_keep isl_schedule_band *band1,
+	__isl_keep isl_schedule_band *band2)
+{
+	int i;
+
+	if (!band1 || !band2)
+		return -1;
+	if (band1 == band2)
+		return 1;
+
+	if (band1->n != band2->n)
+		return 0;
+	for (i = 0; i < band1->n; ++i)
+		if (band1->coincident[i] != band2->coincident[i])
+			return 0;
+	if (band1->permutable != band2->permutable)
+		return 0;
+
+	return isl_multi_union_pw_aff_plain_is_equal(band1->mupa, band2->mupa);
+}
+
 /* Return the number of scheduling dimensions in the band.
  */
 int isl_schedule_band_n_member(__isl_keep isl_schedule_band *band)

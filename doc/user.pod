@@ -7285,6 +7285,14 @@ C<isl_schedule> objects may be copied and freed using the following functions.
 	__isl_null isl_schedule *isl_schedule_free(
 		__isl_take isl_schedule *sched);
 
+The following functions checks whether two C<isl_schedule> objects
+are obviously the same.
+
+	#include <isl/schedule.h>
+	int isl_schedule_plain_is_equal(
+		__isl_keep isl_schedule *schedule1,
+		__isl_keep isl_schedule *schedule2);
+
 The domain of the schedule, i.e., the domain described by the root node,
 can be obtained using the following function.
 

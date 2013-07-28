@@ -82,6 +82,8 @@ __isl_null isl_schedule *isl_schedule_free(__isl_take isl_schedule *sched);
 __isl_give isl_union_map *isl_schedule_get_map(__isl_keep isl_schedule *sched);
 
 isl_ctx *isl_schedule_get_ctx(__isl_keep isl_schedule *sched);
+int isl_schedule_plain_is_equal(__isl_keep isl_schedule *schedule1,
+	__isl_keep isl_schedule *schedule2);
 
 __isl_give isl_schedule_node *isl_schedule_get_root(
 	__isl_keep isl_schedule *schedule);

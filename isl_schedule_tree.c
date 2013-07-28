@@ -302,6 +302,64 @@ enum isl_schedule_node_type isl_schedule_tree_get_type(
 	return tree ? tree->type : isl_schedule_node_error;
 }
 
+/* Are "tree1" and "tree2" obviously equal to each other?
+ */
+int isl_schedule_tree_plain_is_equal(__isl_keep isl_schedule_tree *tree1,
+	__isl_keep isl_schedule_tree *tree2)
+{
+	int equal;
+	int i, n;
+
+	if (!tree1 || !tree2)
+		return -1;
+	if (tree1 == tree2)
+		return 1;
+	if (tree1->type != tree2->type)
+		return 0;
+
+	switch (tree1->type) {
+	case isl_schedule_node_band:
+		equal = isl_schedule_band_plain_is_equal(tree1->band,
+							tree2->band);
+		break;
+	case isl_schedule_node_domain:
+		equal = isl_union_set_is_equal(tree1->domain, tree2->domain);
+		break;
+	case isl_schedule_node_filter:
+		equal = isl_union_set_is_equal(tree1->filter, tree2->filter);
+		break;
+	case isl_schedule_node_leaf:
+	case isl_schedule_node_sequence:
+	case isl_schedule_node_set:
+		equal = 1;
+		break;
+	case isl_schedule_node_error:
+		equal = -1;
+		break;
+	}
+
+	if (equal < 0 || !equal)
+		return equal;
+
+	n = isl_schedule_tree_n_children(tree1);
+	if (n != isl_schedule_tree_n_children(tree2))
+		return 0;
+	for (i = 0; i < n; ++i) {
+		isl_schedule_tree *child1, *child2;
+
+		child1 = isl_schedule_tree_get_child(tree1, i);
+		child2 = isl_schedule_tree_get_child(tree2, i);
+		equal = isl_schedule_tree_plain_is_equal(child1, child2);
+		isl_schedule_tree_free(child1);
+		isl_schedule_tree_free(child2);
+
+		if (equal < 0 || !equal)
+			return equal;
+	}
+
+	return 1;
+}
+
 /* Does "tree" have any children, other than an implicit leaf.
  */
 int isl_schedule_tree_has_children(__isl_keep isl_schedule_tree *tree)

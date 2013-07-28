@@ -177,6 +177,19 @@ __isl_keep isl_schedule_tree *isl_schedule_peek_leaf(
 	return schedule ? &schedule->leaf : NULL;
 }
 
+/* Are "schedule1" and "schedule2" obviously equal to each other?
+ */
+int isl_schedule_plain_is_equal(__isl_keep isl_schedule *schedule1,
+	__isl_keep isl_schedule *schedule2)
+{
+	if (!schedule1 || !schedule2)
+		return -1;
+	if (schedule1 == schedule2)
+		return 1;
+	return isl_schedule_tree_plain_is_equal(schedule1->root,
+						schedule2->root);
+}
+
 /* Return the (parameter) space of the schedule, i.e., the space
  * of the root domain.
  */
