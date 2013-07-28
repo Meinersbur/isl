@@ -7272,6 +7272,9 @@ domain or a given domain.
 	__isl_give isl_schedule *isl_schedule_from_domain(
 		__isl_take isl_union_set *domain);
 
+The function C<isl_schedule_constraints_compute_schedule> described
+in L</"Scheduling"> can also be used to construct schedules.
+
 C<isl_schedule> objects may be copied and freed using the following functions.
 
 	#include <isl/schedule.h>
@@ -7418,8 +7421,17 @@ Several node types have their own functions for querying
 The function C<isl_schedule_node_band_get_partial_schedule_union_map>
 returns a representation of the partial schedule of the band node
 in the form of an C<isl_union_map>.
-The coincident and permutable properties are currently unused,
-but they will be used by a future version of the scheduler.
+The coincident and permutable properties are set by
+C<isl_schedule_constraints_compute_schedule> on the schedule tree
+it produces.
+A scheduling dimension is considered to be ``coincident''
+if it satisfies the coincidence constraints within its band.
+That is, if the dependence distances of the coincidence
+constraints are all zero in that direction (for fixed
+iterations of outer bands).
+A band is marked permutable if it was produced using the Pluto-like scheduler.
+Note that the scheduler may have to resort to a Feautrier style scheduling
+step even if the default scheduler is used.
 
 	#include <isl/schedule_node.h>
 	__isl_give isl_union_set *
@@ -7828,6 +7840,10 @@ The use of C<isl_union_set_compute_schedule> is discouraged.
 		__isl_take isl_union_map *validity,
 		__isl_take isl_union_map *proximity);
 
+The generated schedule represents a schedule tree.
+For more information on schedule trees, see
+L</"Schedule Trees">.
+
 A representation of the schedule as a forest of bands can be obtained
 using the following function.
 
@@ -8031,12 +8047,8 @@ and C<ISL_SCHEDULE_ALGORITHM_FEAUTRIER>.
 
 =item * schedule_separate_components
 
-If at any point the dependence graph contains any (weakly connected) components,
-then these components are scheduled separately.
-If this option is not set, then some iterations of the domains
-in these components may be scheduled together.
-If this option is set, then the components are given consecutive
-schedules.
+If this option is set then the function C<isl_schedule_get_map>
+will treat set nodes in the same way as sequence nodes.
 
 =back
 
