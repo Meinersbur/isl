@@ -71,6 +71,7 @@ __isl_give isl_schedule *isl_union_set_compute_schedule(
 	__isl_take isl_union_set *domain,
 	__isl_take isl_union_map *validity,
 	__isl_take isl_union_map *proximity);
+__isl_give isl_schedule *isl_schedule_copy(__isl_keep isl_schedule *sched);
 __isl_null isl_schedule *isl_schedule_free(__isl_take isl_schedule *sched);
 __isl_give isl_union_map *isl_schedule_get_map(__isl_keep isl_schedule *sched);
 

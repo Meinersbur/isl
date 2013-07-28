@@ -7420,6 +7420,8 @@ and may be subject to change.>
 	__isl_give isl_schedule *
 	isl_schedule_constraints_compute_schedule(
 		__isl_take isl_schedule_constraints *sc);
+	__isl_give isl_schedule *isl_schedule_copy(
+		__isl_keep isl_schedule *sched);
 	__isl_null isl_schedule *isl_schedule_free(
 		__isl_take isl_schedule *sched);
 

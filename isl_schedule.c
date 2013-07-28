@@ -18,6 +18,17 @@
 #include <isl_schedule_private.h>
 #include <isl_band_private.h>
 
+/* Return a new reference to "sched".
+ */
+__isl_give isl_schedule *isl_schedule_copy(__isl_keep isl_schedule *sched)
+{
+	if (!sched)
+		return NULL;
+
+	sched->ref++;
+	return sched;
+}
+
 __isl_null isl_schedule *isl_schedule_free(__isl_take isl_schedule *sched)
 {
 	int i;
