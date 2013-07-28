@@ -28,6 +28,7 @@
 #include <isl/union_map.h>
 #include <isl_factorization.h>
 #include <isl/schedule.h>
+#include <isl/schedule_node.h>
 #include <isl_options_private.h>
 #include <isl/vertices.h>
 #include <isl/ast_build.h>
@@ -3012,7 +3013,7 @@ struct {
 };
 
 /* Test schedule construction based on conditional constraints.
- * In particular, check the number of members in the outer band
+ * In particular, check the number of members in the outer band node
  * as an indication of whether tiling is possible or not.
  */
 static int test_conditional_schedule_constraints(isl_ctx *ctx)
@@ -3024,8 +3025,7 @@ static int test_conditional_schedule_constraints(isl_ctx *ctx)
 	isl_union_map *validity;
 	isl_schedule_constraints *sc;
 	isl_schedule *schedule;
-	isl_band_list *list;
-	isl_band *band;
+	isl_schedule_node *node;
 	int n_member;
 
 	for (i = 0; i < ARRAY_SIZE(live_range_tests); ++i) {
@@ -3044,11 +3044,12 @@ static int test_conditional_schedule_constraints(isl_ctx *ctx)
 		sc = isl_schedule_constraints_set_conditional_validity(sc,
 				condition, validity);
 		schedule = isl_schedule_constraints_compute_schedule(sc);
-		list = isl_schedule_get_band_forest(schedule);
-		band = isl_band_list_get_band(list, 0);
-		n_member = isl_band_n_member(band);
-		isl_band_free(band);
-		isl_band_list_free(list);
+		node = isl_schedule_get_root(schedule);
+		while (node &&
+		    isl_schedule_node_get_type(node) != isl_schedule_node_band)
+			node = isl_schedule_node_first_child(node);
+		n_member = isl_schedule_node_band_n_member(node);
+		isl_schedule_node_free(node);
 		isl_schedule_free(schedule);
 
 		if (!schedule)
