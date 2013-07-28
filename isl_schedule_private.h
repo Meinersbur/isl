@@ -30,6 +30,7 @@ struct isl_schedule_node {
  */
 struct isl_schedule {
 	int ref;
+	isl_ctx *ctx;
 
 	int n;
 	int n_band;

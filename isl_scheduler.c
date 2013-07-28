@@ -2546,6 +2546,8 @@ static __isl_give isl_schedule *extract_schedule(struct isl_sched_graph *graph,
 		goto error;
 
 	sched->ref = 1;
+	sched->ctx = ctx;
+	isl_ctx_ref(ctx);
 	sched->n = graph->n;
 	sched->n_band = graph->n_band;
 	sched->n_total_row = graph->n_total_row;

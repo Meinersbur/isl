@@ -46,13 +46,14 @@ __isl_null isl_schedule *isl_schedule_free(__isl_take isl_schedule *sched)
 	}
 	isl_space_free(sched->dim);
 	isl_band_list_free(sched->band_forest);
+	isl_ctx_deref(sched->ctx);
 	free(sched);
 	return NULL;
 }
 
 isl_ctx *isl_schedule_get_ctx(__isl_keep isl_schedule *schedule)
 {
-	return schedule ? isl_space_get_ctx(schedule->dim) : NULL;
+	return schedule ? schedule->ctx : NULL;
 }
 
 /* Set max_out to the maximal number of output dimensions over
