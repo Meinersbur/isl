@@ -2344,12 +2344,13 @@ static __isl_give isl_aff *extract_schedule_row(__isl_take isl_local_space *ls,
 	return aff;
 }
 
-/* Convert node->sched into a multi_aff and return this multi_aff.
+/* Convert the "n" rows starting at "first" of node->sched into a multi_aff
+ * and return this multi_aff.
  *
  * The result is defined over the uncompressed node domain.
  */
-static __isl_give isl_multi_aff *node_extract_schedule_multi_aff(
-	struct isl_sched_node *node)
+static __isl_give isl_multi_aff *node_extract_partial_schedule_multi_aff(
+	struct isl_sched_node *node, int first, int n)
 {
 	int i;
 	isl_space *space;
@@ -2366,12 +2367,12 @@ static __isl_give isl_multi_aff *node_extract_schedule_multi_aff(
 		space = isl_space_copy(node->space);
 	ls = isl_local_space_from_space(isl_space_copy(space));
 	space = isl_space_from_domain(space);
-	space = isl_space_add_dims(space, isl_dim_out, nrow);
+	space = isl_space_add_dims(space, isl_dim_out, n);
 	ma = isl_multi_aff_zero(space);
 
-	for (i = 0; i < nrow; ++i) {
+	for (i = first; i < first + n; ++i) {
 		aff = extract_schedule_row(isl_local_space_copy(ls), node, i);
-		ma = isl_multi_aff_set_aff(ma, i, aff);
+		ma = isl_multi_aff_set_aff(ma, i - first, aff);
 	}
 
 	isl_local_space_free(ls);
@@ -2381,6 +2382,19 @@ static __isl_give isl_multi_aff *node_extract_schedule_multi_aff(
 					isl_multi_aff_copy(node->compress));
 
 	return ma;
+}
+
+/* Convert node->sched into a multi_aff and return this multi_aff.
+ *
+ * The result is defined over the uncompressed node domain.
+ */
+static __isl_give isl_multi_aff *node_extract_schedule_multi_aff(
+	struct isl_sched_node *node)
+{
+	int nrow;
+
+	nrow = isl_mat_rows(node->sched);
+	return node_extract_partial_schedule_multi_aff(node, 0, nrow);
 }
 
 /* Convert node->sched into a map and return this map.
