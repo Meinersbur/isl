@@ -370,6 +370,21 @@ static int node_has_space(const void *entry, const void *val)
 	return isl_space_is_equal(node->space, dim);
 }
 
+static int node_scc_exactly(struct isl_sched_node *node, int scc)
+{
+	return node->scc == scc;
+}
+
+static int node_scc_at_most(struct isl_sched_node *node, int scc)
+{
+	return node->scc <= scc;
+}
+
+static int node_scc_at_least(struct isl_sched_node *node, int scc)
+{
+	return node->scc >= scc;
+}
+
 /* An edge in the dependence graph.  An edge may be used to
  * ensure validity of the generated schedule, to minimize the dependence
  * distance or both
@@ -2822,21 +2837,6 @@ static int compute_sub_schedule(isl_ctx *ctx,
 error:
 	graph_free(ctx, &split);
 	return -1;
-}
-
-static int node_scc_exactly(struct isl_sched_node *node, int scc)
-{
-	return node->scc == scc;
-}
-
-static int node_scc_at_most(struct isl_sched_node *node, int scc)
-{
-	return node->scc <= scc;
-}
-
-static int node_scc_at_least(struct isl_sched_node *node, int scc)
-{
-	return node->scc >= scc;
 }
 
 static int edge_scc_exactly(struct isl_sched_edge *edge, int scc)
