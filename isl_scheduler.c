@@ -3305,27 +3305,47 @@ static int setup_carry_lp(isl_ctx *ctx, struct isl_sched_graph *graph)
 	return 0;
 }
 
+static int compute_component_schedule(isl_ctx *ctx,
+	struct isl_sched_graph *graph, int wcc);
+
+/* Comparison function for sorting the statements based on
+ * the corresponding value in "r".
+ */
+static int smaller_value(const void *a, const void *b, void *data)
+{
+	isl_vec *r = data;
+	const int *i1 = a;
+	const int *i2 = b;
+
+	return isl_int_cmp(r->el[*i1], r->el[*i2]);
+}
+
 /* If the schedule_split_scaled option is set and if the linear
  * parts of the scheduling rows for all nodes in the graphs have
- * non-trivial common divisor, then split off the constant term
- * from the linear part.
- * The constant term is then placed in a separate band and
- * the linear part is reduced.
+ * a non-trivial common divisor, then split off the remainder of the
+ * constant term modulo this common divisor from the linear part.
+ * Otherwise, continue with the construction of the schedule.
+ *
+ * If a non-trivial common divisor is found, then
+ * the linear part is reduced and the remainder is enforced
+ * by a piecewise constant schedule based on the order of these remainders.
+ * In particular, we assign an scc index based on the remainder and
+ * then rely on compute_component_schedule to insert the schedule row and
+ * to continue the schedule construction on each part.
  */
 static int split_scaled(isl_ctx *ctx, struct isl_sched_graph *graph)
 {
 	int i;
 	int row;
+	int scc;
 	isl_int gcd, gcd_i;
+	isl_vec *r;
+	int *order;
 
 	if (!ctx->opt->schedule_split_scaled)
-		return 0;
+		return compute_next_band(ctx, graph);
 	if (graph->n <= 1)
-		return 0;
-
-	if (graph->n_total_row >= graph->max_row)
-		isl_die(ctx, isl_error_internal,
-			"too many schedule rows", return -1);
+		return compute_next_band(ctx, graph);
 
 	isl_int_init(gcd);
 	isl_int_init(gcd_i);
@@ -3346,21 +3366,19 @@ static int split_scaled(isl_ctx *ctx, struct isl_sched_graph *graph)
 
 	if (isl_int_cmp_si(gcd, 1) <= 0) {
 		isl_int_clear(gcd);
-		return 0;
+		return compute_next_band(ctx, graph);
 	}
 
-	next_band(graph);
+	r = isl_vec_alloc(ctx, graph->n);
+	order = isl_calloc_array(ctx, int, graph->n);
+	if (!r || !order)
+		goto error;
 
 	for (i = 0; i < graph->n; ++i) {
 		struct isl_sched_node *node = &graph->node[i];
 
-		isl_map_free(node->sched_map);
-		node->sched_map = NULL;
-		node->sched = isl_mat_add_zero_rows(node->sched, 1);
-		if (!node->sched)
-			goto error;
-		isl_int_fdiv_r(node->sched->row[row + 1][0],
-			       node->sched->row[row][0], gcd);
+		order[i] = i;
+		isl_int_fdiv_r(r->el[i], node->sched->row[row][0], gcd);
 		isl_int_fdiv_q(node->sched->row[row][0],
 			       node->sched->row[row][0], gcd);
 		isl_int_mul(node->sched->row[row][0],
@@ -3368,20 +3386,33 @@ static int split_scaled(isl_ctx *ctx, struct isl_sched_graph *graph)
 		node->sched = isl_mat_scale_down_row(node->sched, row, gcd);
 		if (!node->sched)
 			goto error;
-		node->band[graph->n_total_row] = graph->n_band;
 	}
 
-	graph->n_total_row++;
+	if (isl_sort(order, graph->n, sizeof(order[0]), &smaller_value, r) < 0)
+		goto error;
+
+	scc = 0;
+	for (i = 0; i < graph->n; ++i) {
+		if (i > 0 && isl_int_ne(r->el[order[i - 1]], r->el[order[i]]))
+			++scc;
+		graph->node[order[i]].scc = scc;
+	}
+	graph->scc = ++scc;
+	graph->weak = 0;
 
 	isl_int_clear(gcd);
-	return 0;
+	isl_vec_free(r);
+	free(order);
+
+	if (update_edges(ctx, graph) < 0)
+		return -1;
+	next_band(graph);
+
+	return compute_component_schedule(ctx, graph, 0);
 error:
 	isl_int_clear(gcd);
 	return -1;
 }
-
-static int compute_component_schedule(isl_ctx *ctx,
-	struct isl_sched_graph *graph, int wcc);
 
 /* Is the schedule row "sol" trivial on node "node"?
  * That is, is the solution zero on the dimensions orthogonal to
@@ -3472,6 +3503,9 @@ static int is_any_trivial(struct isl_sched_graph *graph,
  * graph->maxvar is computed based on these ranks.  The test for
  * whether more schedule rows are required in compute_schedule_wcc
  * is therefore not affected.
+ *
+ * Continue with the construction of the schedule in split_scaled
+ * after optionally checking for non-trivial common divisors.
  */
 static int carry_dependences(isl_ctx *ctx, struct isl_sched_graph *graph)
 {
@@ -3519,10 +3553,7 @@ static int carry_dependences(isl_ctx *ctx, struct isl_sched_graph *graph)
 	if (trivial)
 		graph->n_row--;
 
-	if (split_scaled(ctx, graph) < 0)
-		return -1;
-
-	return compute_next_band(ctx, graph);
+	return split_scaled(ctx, graph);
 }
 
 /* Are there any (non-empty) (conditional) validity edges in the graph?
