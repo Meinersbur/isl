@@ -80,8 +80,6 @@ libisl_la_SOURCES = \
 	isl_ast_codegen.c \
 	isl_ast_graft.c \
 	isl_ast_graft_private.h \
-	isl_band.c \
-	isl_band_private.h \
 	isl_basis_reduction.h \
 	basis_reduction_tab.c \
 	isl_bernstein.c \
@@ -277,7 +275,6 @@ pkginclude_HEADERS = \
 	include/isl/ast.h \
 	include/isl/ast_type.h \
 	include/isl/ast_build.h \
-	include/isl/band.h \
 	include/isl/constraint.h \
 	include/isl/ctx.h \
 	include/isl/flow.h \
