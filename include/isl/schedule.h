@@ -3,7 +3,9 @@
 
 #include <isl/union_set_type.h>
 #include <isl/union_map_type.h>
+#include <isl/schedule_type.h>
 #include <isl/band.h>
+#include <isl/space.h>
 #include <isl/list.h>
 
 #if defined(__cplusplus)
@@ -12,8 +14,6 @@ extern "C" {
 
 struct isl_schedule_constraints;
 typedef struct isl_schedule_constraints isl_schedule_constraints;
-struct isl_schedule;
-typedef struct isl_schedule isl_schedule;
 
 int isl_options_set_schedule_max_coefficient(isl_ctx *ctx, int val);
 int isl_options_get_schedule_max_coefficient(isl_ctx *ctx);
@@ -71,11 +71,20 @@ __isl_give isl_schedule *isl_union_set_compute_schedule(
 	__isl_take isl_union_set *domain,
 	__isl_take isl_union_map *validity,
 	__isl_take isl_union_map *proximity);
+
+__isl_give isl_schedule *isl_schedule_empty(__isl_take isl_space *space);
+__isl_give isl_schedule *isl_schedule_from_domain(
+	__isl_take isl_union_set *domain);
 __isl_give isl_schedule *isl_schedule_copy(__isl_keep isl_schedule *sched);
 __isl_null isl_schedule *isl_schedule_free(__isl_take isl_schedule *sched);
 __isl_give isl_union_map *isl_schedule_get_map(__isl_keep isl_schedule *sched);
 
 isl_ctx *isl_schedule_get_ctx(__isl_keep isl_schedule *sched);
+
+__isl_give isl_schedule_node *isl_schedule_get_root(
+	__isl_keep isl_schedule *schedule);
+__isl_give isl_union_set *isl_schedule_get_domain(
+	__isl_keep isl_schedule *schedule);
 
 __isl_give isl_band_list *isl_schedule_get_band_forest(
 	__isl_keep isl_schedule *schedule);

@@ -138,6 +138,12 @@ libisl_la_SOURCES = \
 	isl_scan.c \
 	isl_scan.h \
 	isl_schedule.c \
+	isl_schedule_band.c \
+	isl_schedule_band.h \
+	isl_schedule_node.c \
+	isl_schedule_node_private.h \
+	isl_schedule_tree.c \
+	isl_schedule_tree.h \
 	isl_schedule_private.h \
 	isl_scheduler.c \
 	isl_set_list.c \
@@ -248,6 +254,8 @@ pkginclude_HEADERS = \
 	include/isl/polynomial_type.h \
 	include/isl/printer.h \
 	include/isl/schedule.h \
+	include/isl/schedule_node.h \
+	include/isl/schedule_type.h \
 	include/isl/set.h \
 	include/isl/set_type.h \
 	include/isl/space.h \
