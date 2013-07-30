@@ -1677,8 +1677,12 @@ __isl_give isl_set *isl_union_map_params(__isl_take isl_union_map *umap)
 	empty = isl_union_map_is_empty(umap);
 	if (empty < 0)
 		return isl_union_map_free(umap);
-	if (empty)
-		return isl_set_empty(isl_union_map_get_space(umap));
+	if (empty) {
+		isl_space *space;
+		space = isl_union_map_get_space(umap);
+		isl_union_map_free(umap);
+		return isl_set_empty(space);
+	}
 	return isl_set_from_union_set(cond_un_op(umap, &params_entry));
 }
 
