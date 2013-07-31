@@ -313,6 +313,30 @@ __isl_give isl_union_set *isl_schedule_get_domain(
 	return isl_schedule_tree_domain_get_domain(schedule->root);
 }
 
+/* Traverse all nodes of "sched" in depth first preorder.
+ *
+ * If "fn" returns -1 on any of the nodes, then the traversal is aborted.
+ * If "fn" returns 0 on any of the nodes, then the subtree rooted
+ * at that node is skipped.
+ *
+ * Return 0 on success and -1 on failure.
+ */
+int isl_schedule_foreach_schedule_node(__isl_keep isl_schedule *sched,
+	int (*fn)(__isl_keep isl_schedule_node *node, void *user), void *user)
+{
+	isl_schedule_node *node;
+	int r;
+
+	if (!sched)
+		return -1;
+
+	node = isl_schedule_get_root(sched);
+	r = isl_schedule_node_foreach_descendant(node, fn, user);
+	isl_schedule_node_free(node);
+
+	return r;
+}
+
 /* Return an isl_union_map representation of the schedule.
  * If we still have access to the schedule tree, then we return
  * an isl_union_map corresponding to the subtree schedule of the child

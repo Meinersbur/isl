@@ -7397,8 +7397,15 @@ child without destroying the current node.
 	__isl_give isl_schedule_node *isl_schedule_node_get_child(
 		__isl_keep isl_schedule_node *node, int pos);
 
-All descendants of a node (including the node) can be visited
-in depth-first pre-order using the following function.
+All nodes in a schedule tree or
+all descendants of a specific node (including the node) can be visited
+in depth-first pre-order using the following functions.
+
+	#include <isl/schedule.h>
+	int isl_schedule_foreach_schedule_node(
+		__isl_keep isl_schedule *sched,
+		int (*fn)(__isl_keep isl_schedule_node *node,
+			void *user), void *user);
 
 	#include <isl/schedule_node.h>
 	int isl_schedule_node_foreach_descendant(
