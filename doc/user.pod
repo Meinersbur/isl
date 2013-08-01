@@ -7420,10 +7420,18 @@ of the given node should be visited.  In particular, if the callback
 returns a positive value, then the children are visited, but if
 the callback returns zero, then the children are not visited.
 
-The following function allows for a depth-first post-order
-traversal of the descendants of a specific node (including the node
+The following functions allows for a depth-first post-order
+traversal of the nodes in a schedule tree or
+of the descendants of a specific node (including the node
 itself), where the user callback is allowed to modify the
 visited node.
+
+	#include <isl/schedule.h>
+	__isl_give isl_schedule *isl_schedule_map_schedule_node(
+		__isl_take isl_schedule *schedule,
+		__isl_give isl_schedule_node *(*fn)(
+			__isl_take isl_schedule_node *node,
+			void *user), void *user);
 
 	#include <isl/schedule_node.h>
 	__isl_give isl_schedule_node *

@@ -337,6 +337,30 @@ int isl_schedule_foreach_schedule_node(__isl_keep isl_schedule *sched,
 	return r;
 }
 
+/* Traverse the node of "sched" in depth first postorder,
+ * allowing the user to modify the visited node.
+ * The traversal continues from the node returned by the callback function.
+ * It is the responsibility of the user to ensure that this does not
+ * lead to an infinite loop.  It is safest to always return a pointer
+ * to the same position (same ancestors and child positions) as the input node.
+ */
+__isl_give isl_schedule *isl_schedule_map_schedule_node(
+	__isl_take isl_schedule *schedule,
+	__isl_give isl_schedule_node *(*fn)(
+		__isl_take isl_schedule_node *node, void *user), void *user)
+{
+	isl_schedule_node *node;
+
+	node = isl_schedule_get_root(schedule);
+	isl_schedule_free(schedule);
+
+	node = isl_schedule_node_map_descendant(node, fn, user);
+	schedule = isl_schedule_node_get_schedule(node);
+	isl_schedule_node_free(node);
+
+	return schedule;
+}
+
 /* Return an isl_union_map representation of the schedule.
  * If we still have access to the schedule tree, then we return
  * an isl_union_map corresponding to the subtree schedule of the child

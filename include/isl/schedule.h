@@ -90,6 +90,10 @@ __isl_give isl_union_set *isl_schedule_get_domain(
 
 int isl_schedule_foreach_schedule_node(__isl_keep isl_schedule *sched,
 	int (*fn)(__isl_keep isl_schedule_node *node, void *user), void *user);
+__isl_give isl_schedule *isl_schedule_map_schedule_node(
+	__isl_take isl_schedule *schedule,
+	__isl_give isl_schedule_node *(*fn)(
+		__isl_take isl_schedule_node *node, void *user), void *user);
 
 __isl_give isl_band_list *isl_schedule_get_band_forest(
 	__isl_keep isl_schedule *schedule);
