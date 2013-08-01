@@ -53,5 +53,7 @@ __isl_give isl_schedule_band *isl_schedule_band_tile(
 __isl_give isl_schedule_band *isl_schedule_band_point(
 	__isl_take isl_schedule_band *band, __isl_keep isl_schedule_band *tile,
 	__isl_take isl_multi_val *sizes);
+__isl_give isl_schedule_band *isl_schedule_band_drop(
+	__isl_take isl_schedule_band *band, int pos, int n);
 
 #endif

@@ -68,6 +68,8 @@ int isl_options_get_tile_shift_point_loops(isl_ctx *ctx);
 
 __isl_give isl_schedule_node *isl_schedule_node_band_tile(
 	__isl_take isl_schedule_node *node, __isl_take isl_multi_val *sizes);
+__isl_give isl_schedule_node *isl_schedule_node_band_split(
+	__isl_take isl_schedule_node *node, int pos);
 
 __isl_give isl_union_set *isl_schedule_node_domain_get_domain(
 	__isl_keep isl_schedule_node *node);

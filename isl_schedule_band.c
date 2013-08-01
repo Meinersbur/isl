@@ -340,3 +340,35 @@ error:
 	isl_multi_val_free(sizes);
 	return NULL;
 }
+
+/* Drop the "n" dimensions starting at "pos" from "band".
+ *
+ * We apply the transformation even if "n" is zero to ensure consistent
+ * behavior with respect to changes in the schedule space.
+ */
+__isl_give isl_schedule_band *isl_schedule_band_drop(
+	__isl_take isl_schedule_band *band, int pos, int n)
+{
+	int i;
+
+	if (pos < 0 || n < 0 || pos + n > band->n)
+		isl_die(isl_schedule_band_get_ctx(band), isl_error_internal,
+			"range out of bounds",
+			return isl_schedule_band_free(band));
+
+	band = isl_schedule_band_cow(band);
+	if (!band)
+		return NULL;
+
+	band->mupa = isl_multi_union_pw_aff_drop_dims(band->mupa,
+							isl_dim_set, pos, n);
+	if (!band->mupa)
+		return isl_schedule_band_free(band);
+
+	for (i = pos + n; i < band->n; ++i)
+		band->coincident[i - n] = band->coincident[i];
+
+	band->n -= n;
+
+	return band;
+}

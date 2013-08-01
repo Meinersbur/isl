@@ -983,6 +983,20 @@ error:
 	return NULL;
 }
 
+/* Split "node" into two nested band nodes, one with the first "pos"
+ * dimensions and one with the remaining dimensions.
+ * The schedules of the two band nodes live in anonymous spaces.
+ */
+__isl_give isl_schedule_node *isl_schedule_node_band_split(
+	__isl_take isl_schedule_node *node, int pos)
+{
+	isl_schedule_tree *tree;
+
+	tree = isl_schedule_node_get_tree(node);
+	tree = isl_schedule_tree_band_split(tree, pos);
+	return isl_schedule_node_graft_tree(node, tree);
+}
+
 /* Return the domain of the domain node "node".
  */
 __isl_give isl_union_set *isl_schedule_node_domain_get_domain(

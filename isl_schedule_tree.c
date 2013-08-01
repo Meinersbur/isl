@@ -1082,6 +1082,48 @@ error:
 	return NULL;
 }
 
+/* Split the band root node of "tree" into two nested band nodes,
+ * one with the first "pos" dimensions and
+ * one with the remaining dimensions.
+ */
+__isl_give isl_schedule_tree *isl_schedule_tree_band_split(
+	__isl_take isl_schedule_tree *tree, int pos)
+{
+	int n;
+	isl_schedule_tree *child;
+
+	if (!tree)
+		return NULL;
+	if (tree->type != isl_schedule_node_band)
+		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_invalid,
+			"not a band node", return isl_schedule_tree_free(tree));
+
+	n = isl_schedule_tree_band_n_member(tree);
+	if (pos < 0 || pos > n)
+		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_invalid,
+			"position out of bounds",
+			return isl_schedule_tree_free(tree));
+
+	child = isl_schedule_tree_copy(tree);
+	tree = isl_schedule_tree_cow(tree);
+	child = isl_schedule_tree_cow(child);
+	if (!tree || !child)
+		goto error;
+
+	child->band = isl_schedule_band_drop(child->band, 0, pos);
+	tree->band = isl_schedule_band_drop(tree->band, pos, n - pos);
+	if (!child->band || !tree->band)
+		goto error;
+
+	tree = isl_schedule_tree_replace_child(tree, 0, child);
+
+	return tree;
+error:
+	isl_schedule_tree_free(child);
+	isl_schedule_tree_free(tree);
+	return NULL;
+}
+
 /* Are any members in "band" marked coincident?
  */
 static int any_coincident(__isl_keep isl_schedule_band *band)

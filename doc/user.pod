@@ -7538,6 +7538,17 @@ loops iterators should be scaled by the tile sizes.
 If the C<tile_shift_point_loops> option is set, then the point loops
 are shifted to start at zero.
 
+A band node can be split into two nested band nodes
+using the following function.
+
+	#include <isl/schedule_node.h>
+	__isl_give isl_schedule_node *isl_schedule_node_band_split(
+		__isl_take isl_schedule_node *node, int pos);
+
+The resulting outer band node contains the first C<pos> dimensions of
+the schedule of C<node> while the inner band contains the remaining dimensions.
+The schedules of the two band nodes live in anonymous spaces.
+
 A representation of the schedule node can be printed using
 
 	#include <isl/schedule_node.h>
