@@ -45,11 +45,19 @@ static struct isl_options *find_nested_options(struct isl_args *args,
 		return opt;
 
 	for (i = 0; args->args[i].type != isl_arg_end; ++i) {
-		if (args->args[i].type != isl_arg_child)
+		struct isl_arg *arg = &args->args[i];
+		void *child;
+
+		if (arg->type != isl_arg_child)
 			continue;
-		options = find_nested_options(args->args[i].u.child.child,
-			    *(void **)(((char *)opt) + args->args[i].offset),
-			    wanted);
+
+		if (arg->offset == (size_t) -1)
+			child = opt;
+		else
+			child = *(void **)(((char *)opt) + arg->offset);
+
+		options = find_nested_options(arg->u.child.child,
+						child, wanted);
 		if (options)
 			return options;
 	}
