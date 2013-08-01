@@ -7,6 +7,7 @@
  * Ecole Normale Superieure, 45 rue d'Ulm, 75230 Paris, France
  */
 
+#include <isl/schedule_node.h>
 #include <isl_schedule_band.h>
 #include <isl_schedule_private.h>
 
@@ -231,4 +232,111 @@ __isl_give isl_multi_union_pw_aff *isl_schedule_band_get_partial_schedule(
 	__isl_keep isl_schedule_band *band)
 {
 	return band ? isl_multi_union_pw_aff_copy(band->mupa) : NULL;
+}
+
+/* Given the schedule of a band, construct the corresponding
+ * schedule for the tile loops based on the given tile sizes
+ * and return the result.
+ *
+ * If the scale tile loops options is set, then the tile loops
+ * are scaled by the tile sizes.
+ *
+ * That is replace each schedule dimension "i" by either
+ * "floor(i/s)" or "s * floor(i/s)".
+ */
+static isl_multi_union_pw_aff *isl_multi_union_pw_aff_tile(
+	__isl_take isl_multi_union_pw_aff *sched,
+	__isl_take isl_multi_val *sizes)
+{
+	isl_ctx *ctx;
+	int i, n;
+	isl_val *v;
+	int scale;
+
+	ctx = isl_multi_val_get_ctx(sizes);
+	scale = isl_options_get_tile_scale_tile_loops(ctx);
+
+	n = isl_multi_union_pw_aff_dim(sched, isl_dim_set);
+	for (i = 0; i < n; ++i) {
+		isl_union_pw_aff *upa;
+
+		upa = isl_multi_union_pw_aff_get_union_pw_aff(sched, i);
+		v = isl_multi_val_get_val(sizes, i);
+
+		upa = isl_union_pw_aff_scale_down_val(upa, isl_val_copy(v));
+		upa = isl_union_pw_aff_floor(upa);
+		if (scale)
+			upa = isl_union_pw_aff_scale_val(upa, isl_val_copy(v));
+		isl_val_free(v);
+
+		sched = isl_multi_union_pw_aff_set_union_pw_aff(sched, i, upa);
+	}
+
+	isl_multi_val_free(sizes);
+	return sched;
+}
+
+/* Replace "band" by a band corresponding to the tile loops of a tiling
+ * with the given tile sizes.
+ */
+__isl_give isl_schedule_band *isl_schedule_band_tile(
+	__isl_take isl_schedule_band *band, __isl_take isl_multi_val *sizes)
+{
+	band = isl_schedule_band_cow(band);
+	if (!band || !sizes)
+		goto error;
+	band->mupa = isl_multi_union_pw_aff_tile(band->mupa, sizes);
+	if (!band->mupa)
+		return isl_schedule_band_free(band);
+	return band;
+error:
+	isl_schedule_band_free(band);
+	isl_multi_val_free(sizes);
+	return NULL;
+}
+
+/* Replace "band" by a band corresponding to the point loops of a tiling
+ * with the given tile sizes.
+ * "tile" is the corresponding tile loop band.
+ *
+ * If the shift point loops option is set, then the point loops
+ * are shifted to start at zero.  That is, each schedule dimension "i"
+ * is replaced by "i - s * floor(i/s)".
+ * The expression "floor(i/s)" (or "s * floor(i/s)") is extracted from
+ * the tile band.
+ *
+ * Otherwise, the band is left untouched.
+ */
+__isl_give isl_schedule_band *isl_schedule_band_point(
+	__isl_take isl_schedule_band *band, __isl_keep isl_schedule_band *tile,
+	__isl_take isl_multi_val *sizes)
+{
+	isl_ctx *ctx;
+	isl_multi_union_pw_aff *scaled;
+
+	if (!band || !sizes)
+		goto error;
+
+	ctx = isl_schedule_band_get_ctx(band);
+	if (!isl_options_get_tile_shift_point_loops(ctx)) {
+		isl_multi_val_free(sizes);
+		return band;
+	}
+	band = isl_schedule_band_cow(band);
+	if (!band)
+		goto error;
+
+	scaled = isl_schedule_band_get_partial_schedule(tile);
+	if (!isl_options_get_tile_scale_tile_loops(ctx))
+		scaled = isl_multi_union_pw_aff_scale_multi_val(scaled, sizes);
+	else
+		isl_multi_val_free(sizes);
+	band->mupa = isl_multi_union_pw_aff_sub(band->mupa, scaled);
+	if (!band->mupa)
+		return isl_schedule_band_free(band);
+	return band;
+error:
+	isl_schedule_band_free(band);
+	isl_multi_val_free(sizes);
+	return NULL;
 }

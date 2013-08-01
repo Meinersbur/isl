@@ -104,6 +104,9 @@ __isl_give isl_schedule_tree *isl_schedule_tree_insert_domain(
 __isl_give isl_schedule_tree *isl_schedule_tree_insert_filter(
 	__isl_take isl_schedule_tree *tree, __isl_take isl_union_set *filter);
 
+__isl_give isl_schedule_tree *isl_schedule_tree_band_tile(
+	__isl_take isl_schedule_tree *tree, __isl_take isl_multi_val *sizes);
+
 __isl_give isl_schedule_tree *isl_schedule_tree_child(
 	__isl_take isl_schedule_tree *tree, int pos);
 __isl_give isl_schedule_tree *isl_schedule_tree_reset_children(

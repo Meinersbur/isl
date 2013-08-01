@@ -61,6 +61,14 @@ int isl_schedule_node_band_get_permutable(__isl_keep isl_schedule_node *node);
 __isl_give isl_schedule_node *isl_schedule_node_band_set_permutable(
 	__isl_take isl_schedule_node *node, int permutable);
 
+int isl_options_set_tile_scale_tile_loops(isl_ctx *ctx, int val);
+int isl_options_get_tile_scale_tile_loops(isl_ctx *ctx);
+int isl_options_set_tile_shift_point_loops(isl_ctx *ctx, int val);
+int isl_options_get_tile_shift_point_loops(isl_ctx *ctx);
+
+__isl_give isl_schedule_node *isl_schedule_node_band_tile(
+	__isl_take isl_schedule_node *node, __isl_take isl_multi_val *sizes);
+
 __isl_give isl_union_set *isl_schedule_node_domain_get_domain(
 	__isl_keep isl_schedule_node *node);
 __isl_give isl_union_set *isl_schedule_node_filter_get_filter(

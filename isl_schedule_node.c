@@ -919,6 +919,70 @@ __isl_give isl_union_map *isl_schedule_node_band_get_partial_schedule_union_map(
 	return isl_union_map_from_multi_union_pw_aff(mupa);
 }
 
+/* Make sure that that spaces of "node" and "mv" are the same.
+ * Return -1 on error, reporting the error to the user.
+ */
+static int check_space_multi_val(__isl_keep isl_schedule_node *node,
+	__isl_keep isl_multi_val *mv)
+{
+	isl_space *node_space, *mv_space;
+	int equal;
+
+	node_space = isl_schedule_node_band_get_space(node);
+	mv_space = isl_multi_val_get_space(mv);
+	equal = isl_space_tuple_is_equal(node_space, isl_dim_set,
+					mv_space, isl_dim_set);
+	isl_space_free(mv_space);
+	isl_space_free(node_space);
+	if (equal < 0)
+		return -1;
+	if (!equal)
+		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
+			"spaces don't match", return -1);
+
+	return 0;
+}
+
+/* Tile "node" with tile sizes "sizes".
+ *
+ * The current node is replaced by two nested nodes corresponding
+ * to the tile dimensions and the point dimensions.
+ *
+ * Return a pointer to the outer (tile) node.
+ *
+ * If the scale tile loops option is set, then the tile loops
+ * are scaled by the tile sizes.  If the shift point loops option is set,
+ * then the point loops are shifted to start at zero.
+ * In particular, these options affect the tile and point loop schedules
+ * as follows
+ *
+ *	scale	shift	original	tile		point
+ *
+ *	0	0	i		floor(i/s)	i
+ *	1	0	i		s * floor(i/s)	i
+ *	0	1	i		floor(i/s)	i - s * floor(i/s)
+ *	1	1	i		s * floor(i/s)	i - s * floor(i/s)
+ */
+__isl_give isl_schedule_node *isl_schedule_node_band_tile(
+	__isl_take isl_schedule_node *node, __isl_take isl_multi_val *sizes)
+{
+	isl_schedule_tree *tree;
+
+	if (!node || !sizes)
+		goto error;
+
+	if (check_space_multi_val(node, sizes) < 0)
+		goto error;
+
+	tree = isl_schedule_node_get_tree(node);
+	tree = isl_schedule_tree_band_tile(tree, sizes);
+	return isl_schedule_node_graft_tree(node, tree);
+error:
+	isl_multi_val_free(sizes);
+	isl_schedule_node_free(node);
+	return NULL;
+}
+
 /* Return the domain of the domain node "node".
  */
 __isl_give isl_union_set *isl_schedule_node_domain_get_domain(

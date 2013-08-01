@@ -1041,6 +1041,47 @@ __isl_give isl_union_map *isl_schedule_tree_get_subtree_schedule_union_map(
 	return subtree_schedule_extend(tree, umap);
 }
 
+/* Tile the band root node of "tree" with tile sizes "sizes".
+ *
+ * We duplicate the band node, change the schedule of one of them
+ * to the tile schedule and the other to the point schedule and then
+ * attach the point band as a child to the tile band.
+ */
+__isl_give isl_schedule_tree *isl_schedule_tree_band_tile(
+	__isl_take isl_schedule_tree *tree, __isl_take isl_multi_val *sizes)
+{
+	isl_schedule_tree *child = NULL;
+
+	if (!tree || !sizes)
+		goto error;
+	if (tree->type != isl_schedule_node_band)
+		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_invalid,
+			"not a band node", goto error);
+
+	child = isl_schedule_tree_copy(tree);
+	tree = isl_schedule_tree_cow(tree);
+	child = isl_schedule_tree_cow(child);
+	if (!tree || !child)
+		goto error;
+
+	tree->band = isl_schedule_band_tile(tree->band,
+					    isl_multi_val_copy(sizes));
+	if (!tree->band)
+		goto error;
+	child->band = isl_schedule_band_point(child->band, tree->band, sizes);
+	if (!child->band)
+		child = isl_schedule_tree_free(child);
+
+	tree = isl_schedule_tree_replace_child(tree, 0, child);
+
+	return tree;
+error:
+	isl_schedule_tree_free(child);
+	isl_schedule_tree_free(tree);
+	isl_multi_val_free(sizes);
+	return NULL;
+}
+
 /* Are any members in "band" marked coincident?
  */
 static int any_coincident(__isl_keep isl_schedule_band *band)

@@ -7515,6 +7515,29 @@ two filter nodes are merged into one.
 These functions insert a new sequence or set node with the given
 filters as children.
 
+A band node can be tiled using the following function.
+
+	#include <isl/schedule_node.h>
+	__isl_give isl_schedule_node *isl_schedule_node_band_tile(
+		__isl_take isl_schedule_node *node,
+		__isl_take isl_multi_val *sizes);
+
+	int isl_options_set_tile_scale_tile_loops(isl_ctx *ctx,
+		int val);
+	int isl_options_get_tile_scale_tile_loops(isl_ctx *ctx);
+	int isl_options_set_tile_shift_point_loops(isl_ctx *ctx,
+		int val);
+	int isl_options_get_tile_shift_point_loops(isl_ctx *ctx);
+
+The C<isl_schedule_node_band_tile> function tiles
+the band using the given tile sizes inside its schedule.
+A new child band node is created to represent the point loops and it is
+inserted between the modified band and its children.
+The C<tile_scale_tile_loops> option specifies whether the tile
+loops iterators should be scaled by the tile sizes.
+If the C<tile_shift_point_loops> option is set, then the point loops
+are shifted to start at zero.
+
 A representation of the schedule node can be printed using
 
 	#include <isl/schedule_node.h>
