@@ -1962,10 +1962,16 @@ or a list of affine expressions
 	__isl_give isl_union_map *
 	isl_union_map_from_union_pw_multi_aff(
 		__isl_take isl_union_pw_multi_aff *upma);
+	__isl_give isl_union_map *
+	isl_union_map_from_multi_union_pw_aff(
+		__isl_take isl_multi_union_pw_aff *mupa);
 
 The C<domain_space> argument describes the domain of the resulting
 basic relation.  It is required because the C<list> may consist
 of zero affine expressions.
+The C<mupa> passed to C<isl_union_map_from_multi_union_pw_aff>
+is not allowed to be zero-dimensional.  The domain of the result
+is the shared domain of the union piecewise affine elements.
 
 =head2 Inspecting Sets and Relations
 

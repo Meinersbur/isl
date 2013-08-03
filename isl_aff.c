@@ -7817,3 +7817,49 @@ error:
 	isl_multi_union_pw_aff_free(mupa);
 	return NULL;
 }
+
+/* Construct a union map mapping the shared domain
+ * of the union piecewise affine expressions to the range of "mupa"
+ * with each dimension in the range equated to the
+ * corresponding union piecewise affine expression.
+ *
+ * The input cannot be zero-dimensional as there is
+ * no way to extract a domain from a zero-dimensional isl_multi_union_pw_aff.
+ */
+__isl_give isl_union_map *isl_union_map_from_multi_union_pw_aff(
+	__isl_take isl_multi_union_pw_aff *mupa)
+{
+	int i, n;
+	isl_space *space;
+	isl_union_map *umap;
+	isl_union_pw_aff *upa;
+
+	if (!mupa)
+		return NULL;
+
+	n = isl_multi_union_pw_aff_dim(mupa, isl_dim_set);
+	if (n == 0)
+		isl_die(isl_multi_union_pw_aff_get_ctx(mupa), isl_error_invalid,
+			"cannot determine domain of zero-dimensional "
+			"isl_multi_union_pw_aff", goto error);
+
+	upa = isl_multi_union_pw_aff_get_union_pw_aff(mupa, 0);
+	umap = isl_union_map_from_union_pw_aff(upa);
+
+	for (i = 1; i < n; ++i) {
+		isl_union_map *umap_i;
+
+		upa = isl_multi_union_pw_aff_get_union_pw_aff(mupa, i);
+		umap_i = isl_union_map_from_union_pw_aff(upa);
+		umap = isl_union_map_flat_range_product(umap, umap_i);
+	}
+
+	space = isl_multi_union_pw_aff_get_space(mupa);
+	umap = isl_union_map_reset_range_space(umap, space);
+
+	isl_multi_union_pw_aff_free(mupa);
+	return umap;
+error:
+	isl_multi_union_pw_aff_free(mupa);
+	return NULL;
+}
