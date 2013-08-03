@@ -3569,6 +3569,56 @@ int isl_union_map_involves_dims(__isl_keep isl_union_map *umap,
 	return !excludes;
 }
 
+/* Internal data structure for isl_union_map_reset_range_space.
+ * "range" is the space from which to set the range space.
+ * "res" collects the results.
+ */
+struct isl_union_map_reset_range_space_data {
+	isl_space *range;
+	isl_union_map *res;
+};
+
+/* Replace the range space of "map" by the range space of data->range and
+ * add the result to data->res.
+ */
+static int reset_range_space(__isl_take isl_map *map, void *user)
+{
+	struct isl_union_map_reset_range_space_data *data = user;
+	isl_space *space;
+
+	space = isl_map_get_space(map);
+	space = isl_space_domain(space);
+	space = isl_space_extend_domain_with_range(space,
+						isl_space_copy(data->range));
+	map = isl_map_reset_space(map, space);
+	data->res = isl_union_map_add_map(data->res, map);
+
+	return data->res ? 0 : -1;
+}
+
+/* Replace the range space of all the maps in "umap" by
+ * the range space of "space".
+ *
+ * This assumes that all maps have the same output dimension.
+ * This function should therefore not be made publicly available.
+ *
+ * Since the spaces of the maps change, so do their hash value.
+ * We therefore need to create a new isl_union_map.
+ */
+__isl_give isl_union_map *isl_union_map_reset_range_space(
+	__isl_take isl_union_map *umap, __isl_take isl_space *space)
+{
+	struct isl_union_map_reset_range_space_data data = { space };
+
+	data.res = isl_union_map_empty(isl_union_map_get_space(umap));
+	if (isl_union_map_foreach_map(umap, &reset_range_space, &data) < 0)
+		data.res = isl_union_map_free(data.res);
+
+	isl_space_free(space);
+	isl_union_map_free(umap);
+	return data.res;
+}
+
 /* Return the union of the elements in the list "list".
  */
 __isl_give isl_union_set *isl_union_set_list_union(

@@ -9,3 +9,6 @@ struct isl_union_map {
 
 	struct isl_hash_table	table;
 };
+
+__isl_give isl_union_map *isl_union_map_reset_range_space(
+	__isl_take isl_union_map *umap, __isl_take isl_space *space);
