@@ -1904,6 +1904,8 @@ or a list of affine expressions
 		__isl_take isl_multi_pw_aff *mpa);
 	__isl_give isl_map *isl_map_from_multi_pw_aff(
 		__isl_take isl_multi_pw_aff *mpa);
+	__isl_give isl_union_map *isl_union_map_from_union_pw_aff(
+		__isl_take isl_union_pw_aff *upa);
 	__isl_give isl_union_map *
 	isl_union_map_from_union_pw_multi_aff(
 		__isl_take isl_union_pw_multi_aff *upma);

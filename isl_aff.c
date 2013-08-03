@@ -7200,3 +7200,40 @@ __isl_give isl_union_set *isl_union_pw_aff_zero_union_set(
 	isl_union_pw_aff_free(upa);
 	return zero;
 }
+
+/* Convert "pa" to an isl_map and add it to *umap.
+ */
+static int map_from_pw_aff_entry(__isl_take isl_pw_aff *pa, void *user)
+{
+	isl_union_map **umap = user;
+	isl_map *map;
+
+	map = isl_map_from_pw_aff(pa);
+	*umap = isl_union_map_add_map(*umap, map);
+
+	return *umap ? 0 : -1;
+}
+
+/* Construct a union map mapping the domain of the union
+ * piecewise affine expression to its range, with the single output dimension
+ * equated to the corresponding affine expressions on their cells.
+ */
+__isl_give isl_union_map *isl_union_map_from_union_pw_aff(
+	__isl_take isl_union_pw_aff *upa)
+{
+	isl_space *space;
+	isl_union_map *umap;
+
+	if (!upa)
+		return NULL;
+
+	space = isl_union_pw_aff_get_space(upa);
+	umap = isl_union_map_empty(space);
+
+	if (isl_union_pw_aff_foreach_pw_aff(upa, &map_from_pw_aff_entry,
+						&umap) < 0)
+		umap = isl_union_map_free(umap);
+
+	isl_union_pw_aff_free(upa);
+	return umap;
+}
