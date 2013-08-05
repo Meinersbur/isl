@@ -8845,8 +8845,8 @@ static int sort_constraint_cmp(const void *p1, const void *p2, void *arg)
 	return isl_seq_cmp(*c1 + 1, *c2 + 1, size);
 }
 
-static struct isl_basic_map *isl_basic_map_sort_constraints(
-	struct isl_basic_map *bmap)
+__isl_give isl_basic_map *isl_basic_map_sort_constraints(
+	__isl_take isl_basic_map *bmap)
 {
 	unsigned total;
 
