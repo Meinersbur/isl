@@ -104,6 +104,8 @@ if test $need_normalized_gcdext = true; then
 AC_DEFINE([GMP_NORMALIZE_GCDEXT], [],
 	[result of mpz_gcdext needs to be normalized])
 fi
+AC_CHECK_DECLS(ffs,[],[],[#include <strings.h>])
+AC_CHECK_DECLS(__builtin_ffs,[],[],[])
 
 AX_SUBMODULE(piplib,no|system|build,no)
 
