@@ -11,6 +11,7 @@
 #include <strings.h>
 #include <isl/hash.h>
 #include <isl/ctx.h>
+#include "isl_config.h"
 
 uint32_t isl_hash_string(uint32_t hash, const char *s)
 {
