@@ -1138,7 +1138,8 @@ static char *op_str[] = {
 	[isl_ast_op_le] = "<=",
 	[isl_ast_op_ge] = ">=",
 	[isl_ast_op_lt] = "<",
-	[isl_ast_op_gt] = ">"
+	[isl_ast_op_gt] = ">",
+	[isl_ast_op_member] = "."
 };
 
 /* Precedence in C of the various operators.
@@ -1168,7 +1169,8 @@ static int op_prec[] = {
 	[isl_ast_op_lt] = 8,
 	[isl_ast_op_gt] = 8,
 	[isl_ast_op_call] = 2,
-	[isl_ast_op_access] = 2
+	[isl_ast_op_access] = 2,
+	[isl_ast_op_member] = 2
 };
 
 /* Is the operator left-to-right associative?
@@ -1196,7 +1198,8 @@ static int op_left[] = {
 	[isl_ast_op_lt] = 1,
 	[isl_ast_op_gt] = 1,
 	[isl_ast_op_call] = 1,
-	[isl_ast_op_access] = 1
+	[isl_ast_op_access] = 1,
+	[isl_ast_op_member] = 1
 };
 
 static int is_and(enum isl_ast_op_type op)
@@ -1394,9 +1397,11 @@ __isl_give isl_printer *isl_printer_print_ast_expr(__isl_take isl_printer *p,
 				"operation should have two arguments",
 				goto error);
 		p = print_sub_expr(p, expr->u.op.op, expr->u.op.args[0], 1);
-		p = isl_printer_print_str(p, " ");
+		if (expr->u.op.op != isl_ast_op_member)
+			p = isl_printer_print_str(p, " ");
 		p = isl_printer_print_str(p, op_str[expr->u.op.op]);
-		p = isl_printer_print_str(p, " ");
+		if (expr->u.op.op != isl_ast_op_member)
+			p = isl_printer_print_str(p, " ");
 		p = print_sub_expr(p, expr->u.op.op, expr->u.op.args[1], 0);
 		break;
 	case isl_ast_expr_id:

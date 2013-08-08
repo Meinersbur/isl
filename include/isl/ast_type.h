@@ -37,7 +37,8 @@ enum isl_ast_op_type {
 	isl_ast_op_ge,
 	isl_ast_op_gt,
 	isl_ast_op_call,
-	isl_ast_op_access
+	isl_ast_op_access,
+	isl_ast_op_member
 };
 
 enum isl_ast_expr_type {
