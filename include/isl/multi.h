@@ -87,6 +87,10 @@ __isl_give isl_multi_##BASE *isl_multi_##BASE##_product(		\
 	__isl_take isl_multi_##BASE *multi2);				\
 int isl_multi_##BASE##_range_is_wrapping(				\
 	__isl_keep isl_multi_##BASE *multi);				\
+__isl_give isl_multi_##BASE *isl_multi_##BASE##_range_factor_domain(	\
+	__isl_take isl_multi_##BASE *multi);				\
+__isl_give isl_multi_##BASE *isl_multi_##BASE##_range_factor_range(	\
+	__isl_take isl_multi_##BASE *multi);				\
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_scale_val(		\
 	__isl_take isl_multi_##BASE *multi, __isl_take isl_val *v);	\
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_scale_multi_val(	\

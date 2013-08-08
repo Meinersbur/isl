@@ -908,6 +908,57 @@ int FN(MULTI(BASE),range_is_wrapping)(__isl_keep MULTI(BASE) *multi)
 	return isl_space_range_is_wrapping(multi->space);
 }
 
+/* Given a function A -> [B -> C], extract the function A -> B.
+ */
+__isl_give MULTI(BASE) *FN(MULTI(BASE),range_factor_domain)(
+	__isl_take MULTI(BASE) *multi)
+{
+	isl_space *space;
+	int total, keep;
+
+	if (!multi)
+		return NULL;
+	if (!isl_space_range_is_wrapping(multi->space))
+		isl_die(FN(MULTI(BASE),get_ctx)(multi), isl_error_invalid,
+			"range is not a product",
+			return FN(MULTI(BASE),free)(multi));
+
+	space = FN(MULTI(BASE),get_space)(multi);
+	total = isl_space_dim(space, isl_dim_out);
+	space = isl_space_range_factor_domain(space);
+	keep = isl_space_dim(space, isl_dim_out);
+	multi = FN(MULTI(BASE),drop_dims)(multi,
+					isl_dim_out, keep, total - keep);
+	multi = FN(MULTI(BASE),reset_space)(multi, space);
+
+	return multi;
+}
+
+/* Given a function A -> [B -> C], extract the function A -> C.
+ */
+__isl_give MULTI(BASE) *FN(MULTI(BASE),range_factor_range)(
+	__isl_take MULTI(BASE) *multi)
+{
+	isl_space *space;
+	int total, keep;
+
+	if (!multi)
+		return NULL;
+	if (!isl_space_range_is_wrapping(multi->space))
+		isl_die(FN(MULTI(BASE),get_ctx)(multi), isl_error_invalid,
+			"range is not a product",
+			return FN(MULTI(BASE),free)(multi));
+
+	space = FN(MULTI(BASE),get_space)(multi);
+	total = isl_space_dim(space, isl_dim_out);
+	space = isl_space_range_factor_range(space);
+	keep = isl_space_dim(space, isl_dim_out);
+	multi = FN(MULTI(BASE),drop_dims)(multi, isl_dim_out, 0, total - keep);
+	multi = FN(MULTI(BASE),reset_space)(multi, space);
+
+	return multi;
+}
+
 /* Given two MULTI(BASE)s A -> B and C -> D,
  * construct a MULTI(BASE) [A -> C] -> [B -> D].
  *
