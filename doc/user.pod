@@ -6225,6 +6225,10 @@ The domains of C<pa>, C<mpa> and C<pma> should correspond
 to the schedule space of C<build>.
 The tuple id of C<mpa> or C<pma> is used as the array being accessed or
 the function being called.
+If the accessed space is a nested relation, then it is taken
+to represent an access of the member specified by the range
+of this nested relation of the structure specified by the domain
+of the nested relation.
 
 The following functions can be used to modify an C<isl_ast_expr>.
 

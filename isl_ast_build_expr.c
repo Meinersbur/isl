@@ -1369,10 +1369,50 @@ static __isl_give isl_ast_expr *isl_ast_build_with_arguments(
 	return expr;
 }
 
+static __isl_give isl_ast_expr *isl_ast_build_from_multi_pw_aff_internal(
+	__isl_keep isl_ast_build *build, enum isl_ast_op_type type,
+	__isl_take isl_multi_pw_aff *mpa);
+
+/* Construct an isl_ast_expr that accesses the member specified by "mpa".
+ * The range of "mpa" is assumed to be wrapped relation.
+ * The domain of this wrapped relation specifies the structure being
+ * accessed, while the range of this wrapped relation spacifies the
+ * member of the structure being accessed.
+ *
+ * The domain of "mpa" is assumed to live in the internal schedule domain.
+ */
+static __isl_give isl_ast_expr *isl_ast_build_from_multi_pw_aff_member(
+	__isl_keep isl_ast_build *build, __isl_take isl_multi_pw_aff *mpa)
+{
+	isl_id *id;
+	isl_multi_pw_aff *domain;
+	isl_ast_expr *domain_expr, *expr;
+	enum isl_ast_op_type type = isl_ast_op_access;
+
+	domain = isl_multi_pw_aff_copy(mpa);
+	domain = isl_multi_pw_aff_range_factor_domain(domain);
+	domain_expr = isl_ast_build_from_multi_pw_aff_internal(build,
+								type, domain);
+	mpa = isl_multi_pw_aff_range_factor_range(mpa);
+	if (!isl_multi_pw_aff_has_tuple_id(mpa, isl_dim_out))
+		isl_die(isl_ast_build_get_ctx(build), isl_error_invalid,
+			"missing field name", goto error);
+	id = isl_multi_pw_aff_get_tuple_id(mpa, isl_dim_out);
+	expr = isl_ast_expr_from_id(id);
+	expr = isl_ast_expr_alloc_binary(isl_ast_op_member, domain_expr, expr);
+	return isl_ast_build_with_arguments(build, type, expr, mpa);
+error:
+	isl_multi_pw_aff_free(mpa);
+	return NULL;
+}
+
 /* Construct an isl_ast_expr of type "type" that calls or accesses
  * the element specified by "mpa".
  * The first argument is obtained from the output tuple name.
  * The remaining arguments are given by the piecewise affine expressions.
+ *
+ * If the range of "mpa" is a mapped relation, then we assume it
+ * represents an access to a member of a structure.
  *
  * The domain of "mpa" is assumed to live in the internal schedule domain.
  */
@@ -1383,6 +1423,13 @@ static __isl_give isl_ast_expr *isl_ast_build_from_multi_pw_aff_internal(
 	isl_ctx *ctx;
 	isl_id *id;
 	isl_ast_expr *expr;
+
+	if (!mpa)
+		return isl_multi_pw_aff_free(mpa);
+
+	if (type == isl_ast_op_access &&
+	    isl_multi_pw_aff_range_is_wrapping(mpa))
+		return isl_ast_build_from_multi_pw_aff_member(build, mpa);
 
 	mpa = set_iterator_names(build, mpa);
 	if (!build || !mpa)
