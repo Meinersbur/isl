@@ -911,6 +911,8 @@ such nested spaces.
 
 	#include <isl/space.h>
 	int isl_space_is_wrapping(__isl_keep isl_space *space);
+	int isl_space_range_is_wrapping(
+		__isl_keep isl_space *space);
 	__isl_give isl_space *isl_space_wrap(__isl_take isl_space *space);
 	__isl_give isl_space *isl_space_unwrap(__isl_take isl_space *space);
 	__isl_give isl_space *isl_space_product(__isl_take isl_space *space1,
@@ -924,6 +926,7 @@ such nested spaces.
 
 The input to C<isl_space_is_wrapping> and C<isl_space_unwrap> should
 be the space of a set, while that of
+C<isl_space_range_is_wrapping> and
 C<isl_space_wrap> should be the space of a relation.
 Conversely, the output of C<isl_space_unwrap> is the space
 of a relation, while that of C<isl_space_wrap> is the space of a set.

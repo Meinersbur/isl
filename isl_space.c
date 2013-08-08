@@ -1683,6 +1683,19 @@ int isl_space_is_wrapping(__isl_keep isl_space *dim)
 	return dim->nested[1] != NULL;
 }
 
+/* Is "space" the space of a map where the range is a wrapped map space?
+ */
+int isl_space_range_is_wrapping(__isl_keep isl_space *space)
+{
+	if (!space)
+		return -1;
+
+	if (isl_space_is_set(space))
+		return 0;
+
+	return space->nested[1] != NULL;
+}
+
 __isl_give isl_space *isl_space_wrap(__isl_take isl_space *dim)
 {
 	isl_space *wrap;
