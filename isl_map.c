@@ -10125,6 +10125,16 @@ int isl_set_is_wrapping(__isl_keep isl_set *set)
 	return isl_space_is_wrapping(set->dim);
 }
 
+/* Is the range of "map" a wrapped relation?
+ */
+int isl_map_range_is_wrapping(__isl_keep isl_map *map)
+{
+	if (!map)
+		return -1;
+
+	return isl_space_range_is_wrapping(map->dim);
+}
+
 __isl_give isl_basic_set *isl_basic_map_wrap(__isl_take isl_basic_map *bmap)
 {
 	bmap = isl_basic_map_cow(bmap);
