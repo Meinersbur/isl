@@ -899,6 +899,15 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),range_product)(
 					&FN(MULTI(BASE),range_product_aligned));
 }
 
+/* Is the range of "multi" a wrapped relation?
+ */
+int FN(MULTI(BASE),range_is_wrapping)(__isl_keep MULTI(BASE) *multi)
+{
+	if (!multi)
+		return -1;
+	return isl_space_range_is_wrapping(multi->space);
+}
+
 /* Given two MULTI(BASE)s A -> B and C -> D,
  * construct a MULTI(BASE) [A -> C] -> [B -> D].
  *
