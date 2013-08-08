@@ -3074,6 +3074,14 @@ instead.
 		__isl_take isl_map *map1,
 		__isl_take isl_map *map2);
 
+The arguments of a call to C<isl_map_product> can be extracted
+from the result using the following two functions.
+
+	__isl_give isl_map *isl_map_range_factor_domain(
+		__isl_take isl_map *map);
+	__isl_give isl_map *isl_map_range_factor_range(
+		__isl_take isl_map *map);
+
 =item * Simplification
 
 	__isl_give isl_basic_set *isl_basic_set_gist(
