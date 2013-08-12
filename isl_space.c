@@ -679,6 +679,65 @@ int isl_space_find_dim_by_name(__isl_keep isl_space *space,
 	return -1;
 }
 
+/* Reset the user pointer on all identifiers of parameters and tuples
+ * of "space".
+ */
+__isl_give isl_space *isl_space_reset_user(__isl_take isl_space *space)
+{
+	int i;
+	isl_ctx *ctx;
+	isl_id *id;
+	const char *name;
+
+	if (!space)
+		return NULL;
+
+	ctx = isl_space_get_ctx(space);
+
+	for (i = 0; i < space->nparam && i < space->n_id; ++i) {
+		if (!isl_id_get_user(space->ids[i]))
+			continue;
+		space = isl_space_cow(space);
+		if (!space)
+			return NULL;
+		name = isl_id_get_name(space->ids[i]);
+		id = isl_id_alloc(ctx, name, NULL);
+		isl_id_free(space->ids[i]);
+		space->ids[i] = id;
+		if (!id)
+			return isl_space_free(space);
+	}
+
+	for (i = 0; i < 2; ++i) {
+		if (!space->tuple_id[i])
+			continue;
+		if (!isl_id_get_user(space->tuple_id[i]))
+			continue;
+		space = isl_space_cow(space);
+		if (!space)
+			return NULL;
+		name = isl_id_get_name(space->tuple_id[i]);
+		id = isl_id_alloc(ctx, name, NULL);
+		isl_id_free(space->tuple_id[i]);
+		space->tuple_id[i] = id;
+		if (!id)
+			return isl_space_free(space);
+	}
+
+	for (i = 0; i < 2; ++i) {
+		if (!space->nested[i])
+			continue;
+		space = isl_space_cow(space);
+		if (!space)
+			return NULL;
+		space->nested[i] = isl_space_reset_user(space->nested[i]);
+		if (!space->nested[i])
+			return isl_space_free(space);
+	}
+
+	return space;
+}
+
 static __isl_keep isl_id *tuple_id(__isl_keep isl_space *dim,
 	enum isl_dim_type type)
 {

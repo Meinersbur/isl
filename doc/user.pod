@@ -898,6 +898,12 @@ data structure.
 Binary operations require the corresponding spaces of their arguments
 to have the same name.
 
+To keep the names of all parameters and tuples, but reset the user pointers
+of all the corresponding identifiers, use the following function.
+
+	__isl_give isl_space *isl_space_reset_user(
+		__isl_take isl_space *space);
+
 Spaces can be nested.  In particular, the domain of a set or
 the domain or range of a relation can be a nested relation.
 The following functions can be used to construct and deconstruct
