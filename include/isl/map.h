@@ -101,6 +101,7 @@ __isl_give isl_map *isl_map_reset_tuple_id(__isl_take isl_map *map,
 int isl_map_has_tuple_id(__isl_keep isl_map *map, enum isl_dim_type type);
 __isl_give isl_id *isl_map_get_tuple_id(__isl_keep isl_map *map,
 	enum isl_dim_type type);
+__isl_give isl_map *isl_map_reset_user(__isl_take isl_map *map);
 
 int isl_map_find_dim_by_id(__isl_keep isl_map *map, enum isl_dim_type type,
 	__isl_keep isl_id *id);

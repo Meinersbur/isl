@@ -688,6 +688,28 @@ int isl_set_find_dim_by_name(__isl_keep isl_set *set, enum isl_dim_type type,
 	return isl_map_find_dim_by_name(set, type, name);
 }
 
+/* Reset the user pointer on all identifiers of parameters and tuples
+ * of the space of "map".
+ */
+__isl_give isl_map *isl_map_reset_user(__isl_take isl_map *map)
+{
+	isl_space *space;
+
+	space = isl_map_get_space(map);
+	space = isl_space_reset_user(space);
+	map = isl_map_reset_space(map, space);
+
+	return map;
+}
+
+/* Reset the user pointer on all identifiers of parameters and tuples
+ * of the space of "set".
+ */
+__isl_give isl_set *isl_set_reset_user(__isl_take isl_set *set)
+{
+	return isl_map_reset_user(set);
+}
+
 int isl_basic_map_is_rational(__isl_keep isl_basic_map *bmap)
 {
 	if (!bmap)
