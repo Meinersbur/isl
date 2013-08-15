@@ -3431,6 +3431,8 @@ They can be modified using
 	__isl_give isl_multi_val *isl_multi_val_reset_tuple_id(
 		__isl_take isl_multi_val *mv,
 		enum isl_dim_type type);
+	__isl_give isl_multi_val *isl_multi_val_reset_user(
+		__isl_take isl_multi_val *mv);
 
 	__isl_give isl_multi_val *isl_multi_val_insert_dims(
 		__isl_take isl_multi_val *mv,
@@ -4289,6 +4291,10 @@ It can be modified using
 	isl_multi_pw_aff_reset_tuple_id(
 		__isl_take isl_multi_pw_aff *mpa,
 		enum isl_dim_type type);
+	__isl_give isl_multi_aff *isl_multi_aff_reset_user(
+		__isl_take isl_multi_aff *ma);
+	__isl_give isl_multi_pw_aff *isl_multi_pw_aff_reset_user(
+		__isl_take isl_multi_pw_aff *mpa);
 
 	__isl_give isl_multi_pw_aff *
 	isl_multi_pw_aff_set_dim_name(
