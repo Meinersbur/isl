@@ -913,12 +913,28 @@ such nested spaces.
 	int isl_space_is_wrapping(__isl_keep isl_space *space);
 	__isl_give isl_space *isl_space_wrap(__isl_take isl_space *space);
 	__isl_give isl_space *isl_space_unwrap(__isl_take isl_space *space);
+	__isl_give isl_space *isl_space_product(__isl_take isl_space *space1,
+		__isl_take isl_space *space2);
+	__isl_give isl_space *isl_space_domain_product(
+		__isl_take isl_space *space1,
+		__isl_take isl_space *space2);
+	__isl_give isl_space *isl_space_range_product(
+		__isl_take isl_space *space1,
+		__isl_take isl_space *space2);
 
 The input to C<isl_space_is_wrapping> and C<isl_space_unwrap> should
 be the space of a set, while that of
 C<isl_space_wrap> should be the space of a relation.
 Conversely, the output of C<isl_space_unwrap> is the space
 of a relation, while that of C<isl_space_wrap> is the space of a set.
+The functions
+C<isl_space_product>, C<isl_space_domain_product>
+and C<isl_space_range_product> take pairs or relation spaces and
+produce a single relations space, where either the domain, the range
+or both domain and range are wrapped spaces of relations between
+the domains and/or ranges of the input spaces.
+If the product is only constructed over the domain or the range
+then the ranges or the domains of the inputs should be the same.
 
 Spaces can be created from other spaces
 using the following functions.
