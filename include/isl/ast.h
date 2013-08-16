@@ -46,6 +46,8 @@ enum isl_ast_op_type isl_ast_expr_get_op_type(__isl_keep isl_ast_expr *expr);
 int isl_ast_expr_get_op_n_arg(__isl_keep isl_ast_expr *expr);
 __isl_give isl_ast_expr *isl_ast_expr_get_op_arg(__isl_keep isl_ast_expr *expr,
 	int pos);
+__isl_give isl_ast_expr *isl_ast_expr_set_op_arg(__isl_take isl_ast_expr *expr,
+	int pos, __isl_take isl_ast_expr *arg);
 
 int isl_ast_expr_is_equal(__isl_keep isl_ast_expr *expr1,
 	__isl_keep isl_ast_expr *expr2);

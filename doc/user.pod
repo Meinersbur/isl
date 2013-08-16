@@ -6193,13 +6193,6 @@ the context of an C<isl_ast_build>.
 	__isl_give isl_ast_expr *isl_ast_expr_access(
 		__isl_take isl_ast_expr *array,
 		__isl_take isl_ast_expr_list *indices);
-	__isl_give isl_ast_expr *isl_ast_expr_substitute_ids(
-		__isl_take isl_ast_expr *expr,
-		__isl_take isl_id_to_ast_expr *id2expr);
-
-The function C<isl_ast_expr_substitute_ids> replaces the
-subexpressions of C<expr> of type C<isl_ast_expr_id>
-by the corresponding expression in C<id2expr>, if there is any.
 
 	#include <isl/ast_build.h>
 	__isl_give isl_ast_expr *isl_ast_build_expr_from_pw_aff(
@@ -6226,6 +6219,25 @@ The domains of C<pa>, C<mpa> and C<pma> should correspond
 to the schedule space of C<build>.
 The tuple id of C<mpa> or C<pma> is used as the array being accessed or
 the function being called.
+
+The following functions can be used to modify an C<isl_ast_expr>.
+
+	#include <isl/ast.h>
+	__isl_give isl_ast_expr *isl_ast_expr_set_op_arg(
+		__isl_take isl_ast_expr *expr, int pos,
+		__isl_take isl_ast_expr *arg);
+
+Replace the argument of C<expr> at position C<pos> by C<arg>.
+
+	#include <isl/ast.h>
+	__isl_give isl_ast_expr *isl_ast_expr_substitute_ids(
+		__isl_take isl_ast_expr *expr,
+		__isl_take isl_id_to_ast_expr *id2expr);
+
+The function C<isl_ast_expr_substitute_ids> replaces the
+subexpressions of C<expr> of type C<isl_ast_expr_id>
+by the corresponding expression in C<id2expr>, if there is any.
+
 
 User specified data can be attached to an C<isl_ast_node> and obtained
 from the same C<isl_ast_node> using the following functions.
