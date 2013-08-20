@@ -351,13 +351,15 @@ error:
  * to those modulo computations to *pos and/or *neg.
  * "v" is the coefficient of div "j".
  *
- * In particular, check if (v * div_j) / d is of the form
+ * "aff" is assumed to be an integer affine expression.
  *
- *	(f * m * floor(a / m)) / d
+ * In particular, check if (v * div_j) is of the form
+ *
+ *	f * m * floor(a / m)
  *
  * and, if so, rewrite it as
  *
- *	(f * (a - (a mod m))) / d = (f * a) / d - (f * (a mod m)) / d
+ *	f * (a - (a mod m)) = f * a - f * (a mod m)
  *
  * and extract out -f * (a mod m).
  * In particular, if f > 0, we add (f * (a mod m)) to *neg.
@@ -374,8 +376,6 @@ error:
  *	floor(a/m) = -ceil(-a/m) = -floor((-a + m - 1)/m)
  *
  * and still extract a modulo.
- *
- * The caller is responsible for dividing *neg and/or *pos by d.
  */
 static __isl_give isl_aff *extract_modulo(__isl_take isl_aff *aff,
 	__isl_keep isl_ast_expr **pos, __isl_keep isl_ast_expr **neg,
@@ -429,8 +429,6 @@ static __isl_give isl_aff *extract_modulo(__isl_take isl_aff *aff,
 	if (s < 0)
 		v = isl_val_neg(v);
 	div = isl_aff_scale_val(div, v);
-	d = isl_aff_get_denominator_val(aff);
-	div = isl_aff_scale_down_val(div, d);
 	aff = isl_aff_add(aff, div);
 
 	return aff;
