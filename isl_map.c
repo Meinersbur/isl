@@ -8826,8 +8826,21 @@ int isl_set_plain_dim_has_fixed_lower_bound(__isl_keep isl_set *set,
 	return fixed;
 }
 
-/* uset_gist depends on constraints without existentially quantified
+/* Return -1 if the constraint "c1" should be sorted before "c2"
+ * and 1 if it should be sorted after "c2".
+ * Return 0 if the two constraints are the same (up to the constant term).
+ *
+ * In particular, if a constraint involves later variables than another
+ * then it is sorted after this other constraint.
+ * uset_gist depends on constraints without existentially quantified
  * variables sorting first.
+ *
+ * For constraints that have the same latest variable, those
+ * with the same coefficient for this latest variable (first in absolute value
+ * and then in actual value) are grouped together.
+ *
+ * Finally, within a group, constraints are sorted according to
+ * their coefficients (excluding the constant term).
  */
 static int sort_constraint_cmp(const void *p1, const void *p2, void *arg)
 {
@@ -8835,12 +8848,20 @@ static int sort_constraint_cmp(const void *p1, const void *p2, void *arg)
 	isl_int **c2 = (isl_int **) p2;
 	int l1, l2;
 	unsigned size = *(unsigned *) arg;
+	int cmp;
 
 	l1 = isl_seq_last_non_zero(*c1 + 1, size);
 	l2 = isl_seq_last_non_zero(*c2 + 1, size);
 
 	if (l1 != l2)
 		return l1 - l2;
+
+	cmp = isl_int_abs_cmp((*c1)[1 + l1], (*c2)[1 + l1]);
+	if (cmp != 0)
+		return cmp;
+	cmp = isl_int_cmp((*c1)[1 + l1], (*c2)[1 + l1]);
+	if (cmp != 0)
+		return -cmp;
 
 	return isl_seq_cmp(*c1 + 1, *c2 + 1, size);
 }
