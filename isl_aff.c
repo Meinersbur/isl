@@ -3036,49 +3036,6 @@ __isl_give isl_pw_aff *isl_pw_aff_scale_down(__isl_take isl_pw_aff *pwaff,
 	return pwaff;
 }
 
-/* Divide "pa" by "f".
- */
-__isl_give isl_pw_aff *isl_pw_aff_scale_down_val(__isl_take isl_pw_aff *pa,
-	__isl_take isl_val *f)
-{
-	int i;
-
-	if (!pa || !f)
-		goto error;
-
-	if (isl_val_is_one(f)) {
-		isl_val_free(f);
-		return pa;
-	}
-
-	if (!isl_val_is_rat(f))
-		isl_die(isl_pw_aff_get_ctx(pa), isl_error_invalid,
-			"expecting rational factor", goto error);
-	if (!isl_val_is_pos(f))
-		isl_die(isl_pw_aff_get_ctx(pa), isl_error_invalid,
-			"factor needs to be positive", goto error);
-
-	pa = isl_pw_aff_cow(pa);
-	if (!pa)
-		return NULL;
-	if (pa->n == 0)
-		return pa;
-
-	for (i = 0; i < pa->n; ++i) {
-		pa->p[i].aff = isl_aff_scale_down_val(pa->p[i].aff,
-							isl_val_copy(f));
-		if (!pa->p[i].aff)
-			goto error;
-	}
-
-	isl_val_free(f);
-	return pa;
-error:
-	isl_pw_aff_free(pa);
-	isl_val_free(f);
-	return NULL;
-}
-
 __isl_give isl_pw_aff *isl_pw_aff_floor(__isl_take isl_pw_aff *pwaff)
 {
 	int i;

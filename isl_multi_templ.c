@@ -1245,6 +1245,46 @@ error:
 	return FN(MULTI(BASE),free)(multi);
 }
 
+/* Divide the elements of "multi" by "v" and return the result.
+ */
+__isl_give MULTI(BASE) *FN(MULTI(BASE),scale_down_val)(
+	__isl_take MULTI(BASE) *multi, __isl_take isl_val *v)
+{
+	int i;
+
+	if (!multi || !v)
+		goto error;
+
+	if (isl_val_is_one(v)) {
+		isl_val_free(v);
+		return multi;
+	}
+
+	if (!isl_val_is_rat(v))
+		isl_die(isl_val_get_ctx(v), isl_error_invalid,
+			"expecting rational factor", goto error);
+	if (isl_val_is_zero(v))
+		isl_die(isl_val_get_ctx(v), isl_error_invalid,
+			"cannot scale down by zero", goto error);
+
+	multi = FN(MULTI(BASE),cow)(multi);
+	if (!multi)
+		return NULL;
+
+	for (i = 0; i < multi->n; ++i) {
+		multi->p[i] = FN(EL,scale_down_val)(multi->p[i],
+						    isl_val_copy(v));
+		if (!multi->p[i])
+			goto error;
+	}
+
+	isl_val_free(v);
+	return multi;
+error:
+	isl_val_free(v);
+	return FN(MULTI(BASE),free)(multi);
+}
+
 /* Multiply the elements of "multi" by the corresponding element of "mv"
  * and return the result.
  */

@@ -5713,6 +5713,9 @@ only defined on the shared definition domain of the arguments.
 	__isl_give isl_multi_val *isl_multi_val_scale_val(
 		__isl_take isl_multi_val *mv,
 		__isl_take isl_val *v);
+	__isl_give isl_multi_val *isl_multi_val_scale_down_val(
+		__isl_take isl_multi_val *mv,
+		__isl_take isl_val *v);
 
 	#include <isl/aff.h>
 	__isl_give isl_aff *isl_aff_mod_val(__isl_take isl_aff *aff,
@@ -5741,9 +5744,18 @@ only defined on the shared definition domain of the arguments.
 		__isl_take isl_aff *aff, unsigned f);
 	__isl_give isl_aff *isl_aff_scale_down_val(
 		__isl_take isl_aff *aff, __isl_take isl_val *v);
+	__isl_give isl_multi_aff *isl_multi_aff_scale_down_val(
+		__isl_take isl_multi_aff *ma,
+		__isl_take isl_val *v);
 	__isl_give isl_pw_aff *isl_pw_aff_scale_down_val(
 		__isl_take isl_pw_aff *pa,
 		__isl_take isl_val *f);
+	__isl_give isl_multi_pw_aff *isl_multi_pw_aff_scale_down_val(
+		__isl_take isl_multi_pw_aff *mpa,
+		__isl_take isl_val *v);
+	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_scale_down_val(
+		__isl_take isl_pw_multi_aff *pma,
+		__isl_take isl_val *v);
 
 	#include <isl/polynomial.h>
 	__isl_give isl_qpolynomial *isl_qpolynomial_scale_val(
@@ -5776,6 +5788,14 @@ only defined on the shared definition domain of the arguments.
 	__isl_give isl_qpolynomial_fold *
 	isl_qpolynomial_fold_scale_down_val(
 		__isl_take isl_qpolynomial_fold *fold,
+		__isl_take isl_val *v);
+	__isl_give isl_pw_qpolynomial *
+	isl_pw_qpolynomial_scale_down_val(
+		__isl_take isl_pw_qpolynomial *pwqp,
+		__isl_take isl_val *v);
+	__isl_give isl_pw_qpolynomial_fold *
+	isl_pw_qpolynomial_fold_scale_down_val(
+		__isl_take isl_pw_qpolynomial_fold *pwf,
 		__isl_take isl_val *v);
 
 	#include <isl/val.h>

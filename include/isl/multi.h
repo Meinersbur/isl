@@ -99,6 +99,8 @@ __isl_give isl_multi_##BASE *isl_multi_##BASE##_range_factor_range(	\
 	__isl_take isl_multi_##BASE *multi);				\
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_scale_val(		\
 	__isl_take isl_multi_##BASE *multi, __isl_take isl_val *v);	\
+__isl_give isl_multi_##BASE *isl_multi_##BASE##_scale_down_val(		\
+	__isl_take isl_multi_##BASE *multi, __isl_take isl_val *v);	\
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_scale_multi_val(	\
 	__isl_take isl_multi_##BASE *multi,				\
 	__isl_take isl_multi_val *mv);					\
