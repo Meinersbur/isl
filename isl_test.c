@@ -409,6 +409,15 @@ struct {
 	{ &isl_val_2exp, "1", "2" },
 	{ &isl_val_2exp, "2", "4" },
 	{ &isl_val_2exp, "3", "8" },
+	{ &isl_val_inv, "1", "1" },
+	{ &isl_val_inv, "2", "1/2" },
+	{ &isl_val_inv, "1/2", "2" },
+	{ &isl_val_inv, "-2", "-1/2" },
+	{ &isl_val_inv, "-1/2", "-2" },
+	{ &isl_val_inv, "0", "NaN" },
+	{ &isl_val_inv, "NaN", "NaN" },
+	{ &isl_val_inv, "infty", "0" },
+	{ &isl_val_inv, "-infty", "0" },
 };
 
 /* Perform some basic tests of unary operations on isl_val objects.

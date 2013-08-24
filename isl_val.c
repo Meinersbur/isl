@@ -393,6 +393,33 @@ __isl_give isl_val *isl_val_neg(__isl_take isl_val *v)
 	return v;
 }
 
+/* Return the inverse of "v".
+ */
+__isl_give isl_val *isl_val_inv(__isl_take isl_val *v)
+{
+	if (!v)
+		return NULL;
+	if (isl_val_is_nan(v))
+		return v;
+	if (isl_val_is_zero(v)) {
+		isl_ctx *ctx = isl_val_get_ctx(v);
+		isl_val_free(v);
+		return isl_val_nan(ctx);
+	}
+	if (isl_val_is_infty(v) || isl_val_is_neginfty(v)) {
+		isl_ctx *ctx = isl_val_get_ctx(v);
+		isl_val_free(v);
+		return isl_val_zero(ctx);
+	}
+
+	v = isl_val_cow(v);
+	if (!v)
+		return NULL;
+	isl_int_swap(v->n, v->d);
+
+	return isl_val_normalize(v);
+}
+
 /* Return the absolute value of "v".
  */
 __isl_give isl_val *isl_val_abs(__isl_take isl_val *v)
