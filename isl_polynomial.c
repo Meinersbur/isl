@@ -1566,6 +1566,28 @@ error:
 	return NULL;
 }
 
+/* Divide "qp" by "v".
+ */
+__isl_give isl_qpolynomial *isl_qpolynomial_scale_down_val(
+	__isl_take isl_qpolynomial *qp, __isl_take isl_val *v)
+{
+	if (!qp || !v)
+		goto error;
+
+	if (!isl_val_is_rat(v))
+		isl_die(isl_qpolynomial_get_ctx(qp), isl_error_invalid,
+			"expecting rational factor", goto error);
+	if (isl_val_is_zero(v))
+		isl_die(isl_val_get_ctx(v), isl_error_invalid,
+			"cannot scale down by zero", goto error);
+
+	return isl_qpolynomial_scale_val(qp, isl_val_inv(v));
+error:
+	isl_val_free(v);
+	isl_qpolynomial_free(qp);
+	return NULL;
+}
+
 __isl_give isl_qpolynomial *isl_qpolynomial_mul(__isl_take isl_qpolynomial *qp1,
 	__isl_take isl_qpolynomial *qp2)
 {
