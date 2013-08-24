@@ -962,6 +962,61 @@ error:
 	return NULL;
 }
 
+/* Divide *entry by the isl_val "user".
+ *
+ * Return 0 on success and -1 on error.
+ */
+static int FN(UNION,scale_down_val_entry)(void **entry, void *user)
+{
+	PW **pw = (PW **)entry;
+	isl_val *v = user;
+
+	*pw = FN(PW,scale_down_val)(*pw, isl_val_copy(v));
+	if (!*pw)
+		return -1;
+
+	return 0;
+}
+
+/* Divide "u" by "v" and return the result.
+ */
+__isl_give UNION *FN(UNION,scale_down_val)(__isl_take UNION *u,
+	__isl_take isl_val *v)
+{
+	if (!u || !v)
+		goto error;
+	if (isl_val_is_one(v)) {
+		isl_val_free(v);
+		return u;
+	}
+
+	if (!isl_val_is_rat(v))
+		isl_die(isl_val_get_ctx(v), isl_error_invalid,
+			"expecting rational factor", goto error);
+	if (isl_val_is_zero(v))
+		isl_die(isl_val_get_ctx(v), isl_error_invalid,
+			"cannot scale down by zero", goto error);
+
+	u = FN(UNION,cow)(u);
+	if (!u)
+		return NULL;
+
+#ifdef HAS_TYPE
+	if (isl_val_is_neg(v))
+		u->type = isl_fold_type_negate(u->type);
+#endif
+	if (isl_hash_table_foreach(FN(UNION,get_ctx)(u), &u->table,
+				    &FN(UNION,scale_down_val_entry), v) < 0)
+		goto error;
+
+	isl_val_free(v);
+	return u;
+error:
+	isl_val_free(v);
+	FN(UNION,free)(u);
+	return NULL;
+}
+
 S(UNION,plain_is_equal_data)
 {
 	UNION *u2;

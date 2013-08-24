@@ -465,6 +465,8 @@ __isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_mul(
 	__isl_take isl_union_pw_qpolynomial *upwqp2);
 __isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_scale_val(
 	__isl_take isl_union_pw_qpolynomial *upwqp, __isl_take isl_val *v);
+__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_scale_down_val(
+	__isl_take isl_union_pw_qpolynomial *upwqp, __isl_take isl_val *v);
 
 __isl_give isl_union_set *isl_union_pw_qpolynomial_domain(
 	__isl_take isl_union_pw_qpolynomial *upwqp);
@@ -529,6 +531,9 @@ __isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_fold_add_unio
 	__isl_take isl_union_pw_qpolynomial *upwqp);
 __isl_give isl_union_pw_qpolynomial_fold *
 isl_union_pw_qpolynomial_fold_scale_val(
+	__isl_take isl_union_pw_qpolynomial_fold *upwf, __isl_take isl_val *v);
+__isl_give isl_union_pw_qpolynomial_fold *
+isl_union_pw_qpolynomial_fold_scale_down_val(
 	__isl_take isl_union_pw_qpolynomial_fold *upwf, __isl_take isl_val *v);
 
 __isl_give isl_union_set *isl_union_pw_qpolynomial_fold_domain(
