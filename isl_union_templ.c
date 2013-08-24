@@ -131,7 +131,7 @@ S(UNION,foreach_data)
 	void *user;
 };
 
-static int call_on_copy(void **entry, void *user)
+static int FN(UNION,call_on_copy)(void **entry, void *user)
 {
 	PART *part = *entry;
 	S(UNION,foreach_data) *data = (S(UNION,foreach_data) *)user;
@@ -148,12 +148,12 @@ int FN(FN(UNION,foreach),PARTS)(__isl_keep UNION *u,
 		return -1;
 
 	return isl_hash_table_foreach(u->space->ctx, &u->table,
-				      &call_on_copy, &data);
+				      &FN(UNION,call_on_copy), &data);
 }
 
 /* Is the space of "entry" equal to "space"?
  */
-static int has_space(const void *entry, const void *val)
+static int FN(UNION,has_space)(const void *entry, const void *val)
 {
 	PART *part = (PART *)entry;
 	isl_space *space = (isl_space *) val;
@@ -163,12 +163,12 @@ static int has_space(const void *entry, const void *val)
 
 /* This function is not currently used by isl_aff.c.
  */
-static int has_domain_space(const void *entry, const void *val)
+static int FN(UNION,has_domain_space)(const void *entry, const void *val)
 	__attribute__ ((unused));
 
 /* Is the domain space of "entry" equal to "space"?
  */
-static int has_domain_space(const void *entry, const void *val)
+static int FN(UNION,has_domain_space)(const void *entry, const void *val)
 {
 	PART *part = (PART *)entry;
 	isl_space *space = (isl_space *) val;
@@ -182,7 +182,7 @@ static int has_domain_space(const void *entry, const void *val)
 
 /* Is the domain space of "entry" equal to the domain of "space"?
  */
-static int has_same_domain_space(const void *entry, const void *val)
+static int FN(UNION,has_same_domain_space)(const void *entry, const void *val)
 {
 	PART *part = (PART *)entry;
 	isl_space *space = (isl_space *) val;
@@ -218,7 +218,7 @@ __isl_give PART *FN(FN(UNION,extract),PARTS)(__isl_keep UNION *u,
 
 	hash = isl_space_get_hash(space);
 	entry = isl_hash_table_find(u->space->ctx, &u->table, hash,
-				    &has_space, space, 0);
+				    &FN(UNION,has_space), space, 0);
 	if (!entry)
 #ifdef HAS_TYPE
 		return FN(PART,ZERO)(space, u->type);
@@ -266,7 +266,8 @@ static __isl_give UNION *FN(UNION,add_part_generic)(__isl_take UNION *u,
 
 	hash = isl_space_get_hash(part->dim);
 	entry = isl_hash_table_find(u->space->ctx, &u->table, hash,
-				    &has_same_domain_space, part->dim, 1);
+				    &FN(UNION,has_same_domain_space),
+				    part->dim, 1);
 	if (!entry)
 		goto error;
 
@@ -313,7 +314,7 @@ __isl_give UNION *FN(FN(UNION,add),PARTS)(__isl_take UNION *u,
 	return FN(UNION,add_part_generic)(u, part, 1);
 }
 
-static int add_part(__isl_take PART *part, void *user)
+static int FN(UNION,add_part)(__isl_take PART *part, void *user)
 {
 	UNION **u = (UNION **)user;
 
@@ -334,7 +335,7 @@ __isl_give UNION *FN(UNION,dup)(__isl_keep UNION *u)
 #else
 	dup = FN(UNION,ZERO)(isl_space_copy(u->space));
 #endif
-	if (FN(FN(UNION,foreach),PARTS)(u, &add_part, &dup) < 0)
+	if (FN(FN(UNION,foreach),PARTS)(u, &FN(UNION,add_part), &dup) < 0)
 		goto error;
 	return dup;
 error:
@@ -353,7 +354,7 @@ __isl_give UNION *FN(UNION,cow)(__isl_take UNION *u)
 	return FN(UNION,dup)(u);
 }
 
-static int free_u_entry(void **entry, void *user)
+static int FN(UNION,free_u_entry)(void **entry, void *user)
 {
 	PART *part = *entry;
 	FN(PART,free)(part);
@@ -368,7 +369,8 @@ __isl_null UNION *FN(UNION,free)(__isl_take UNION *u)
 	if (--u->ref > 0)
 		return NULL;
 
-	isl_hash_table_foreach(u->space->ctx, &u->table, &free_u_entry, NULL);
+	isl_hash_table_foreach(u->space->ctx, &u->table,
+				&FN(UNION,free_u_entry), NULL);
 	isl_hash_table_clear(&u->table);
 	isl_space_free(u->space);
 	free(u);
@@ -381,7 +383,7 @@ S(UNION,align) {
 };
 
 #ifdef ALIGN_DOMAIN
-static int align_entry(__isl_take PART *part, void *user)
+static int FN(UNION,align_entry)(__isl_take PART *part, void *user)
 {
 	isl_reordering *exp;
 	S(UNION,align) *data = user;
@@ -395,7 +397,7 @@ static int align_entry(__isl_take PART *part, void *user)
 	return 0;
 }
 #else
-static int align_entry(__isl_take PART *part, void *user)
+static int FN(UNION,align_entry)(__isl_take PART *part, void *user)
 {
 	isl_reordering *exp;
 	S(UNION,align) *data = user;
@@ -434,7 +436,7 @@ __isl_give UNION *FN(UNION,align_params)(__isl_take UNION *u,
 #else
 	data.res = FN(UNION,alloc)(isl_space_copy(data.exp->dim), u->table.n);
 #endif
-	if (FN(FN(UNION,foreach),PARTS)(u, &align_entry, &data) < 0)
+	if (FN(FN(UNION,foreach),PARTS)(u, &FN(UNION,align_entry), &data) < 0)
 		goto error;
 
 	isl_reordering_free(data.exp);
@@ -452,7 +454,7 @@ error:
 /* Add "part" to *u, taking the union sum if "u" already has
  * a part defined on the same space as "part".
  */
-static int union_add_part(__isl_take PART *part, void *user)
+static int FN(UNION,union_add_part)(__isl_take PART *part, void *user)
 {
 	UNION **u = (UNION **)user;
 
@@ -482,7 +484,7 @@ static __isl_give UNION *FN(UNION,union_add_)(__isl_take UNION *u1,
 	if (!u1 || !u2)
 		goto error;
 
-	if (FN(FN(UNION,foreach),PARTS)(u2, &union_add_part, &u1) < 0)
+	if (FN(FN(UNION,foreach),PARTS)(u2, &FN(UNION,union_add_part), &u1) < 0)
 		goto error;
 
 	FN(UNION,free)(u2);
@@ -525,7 +527,7 @@ S(UNION,match_bin_data) {
  * If so, call data->fn on the two elements and add the result to
  * data->res.
  */
-static int match_bin_entry(void **entry, void *user)
+static int FN(UNION,match_bin_entry)(void **entry, void *user)
 {
 	S(UNION,match_bin_data) *data = user;
 	uint32_t hash;
@@ -537,7 +539,8 @@ static int match_bin_entry(void **entry, void *user)
 	space = FN(PART,get_space)(part);
 	hash = isl_space_get_hash(space);
 	entry2 = isl_hash_table_find(data->u2->space->ctx, &data->u2->table,
-				     hash, &has_same_domain_space, space, 0);
+				     hash, &FN(UNION,has_same_domain_space),
+				     space, 0);
 	isl_space_free(space);
 	if (!entry2)
 		return 0;
@@ -562,14 +565,14 @@ static int match_bin_entry(void **entry, void *user)
 /* This function is currently only used from isl_polynomial.c
  * and not from isl_fold.c.
  */
-static __isl_give UNION *match_bin_op(__isl_take UNION *u1,
+static __isl_give UNION *FN(UNION,match_bin_op)(__isl_take UNION *u1,
 	__isl_take UNION *u2,
 	__isl_give PART *(*fn)(__isl_take PART *, __isl_take PART *))
 	__attribute__ ((unused));
 /* For each pair of elements in "u1" and "u2" living in the same space,
  * call "fn" and collect the results.
  */
-static __isl_give UNION *match_bin_op(__isl_take UNION *u1,
+static __isl_give UNION *FN(UNION,match_bin_op)(__isl_take UNION *u1,
 	__isl_take UNION *u2,
 	__isl_give PART *(*fn)(__isl_take PART *, __isl_take PART *))
 {
@@ -589,7 +592,7 @@ static __isl_give UNION *match_bin_op(__isl_take UNION *u1,
 	data.res = FN(UNION,alloc)(isl_space_copy(u1->space), u1->table.n);
 #endif
 	if (isl_hash_table_foreach(u1->space->ctx, &u1->table,
-				    &match_bin_entry, &data) < 0)
+				    &FN(UNION,match_bin_entry), &data) < 0)
 		goto error;
 
 	FN(UNION,free)(u1);
@@ -613,7 +616,7 @@ __isl_give UNION *FN(UNION,add)(__isl_take UNION *u1, __isl_take UNION *u2)
 #if DEFAULT_IS_ZERO
 	return FN(UNION,union_add_)(u1, u2);
 #else
-	return match_bin_op(u1, u2, &FN(PART,add));
+	return FN(UNION,match_bin_op)(u1, u2, &FN(PART,add));
 #endif
 }
 
@@ -622,7 +625,7 @@ __isl_give UNION *FN(UNION,add)(__isl_take UNION *u1, __isl_take UNION *u2)
  */
 __isl_give UNION *FN(UNION,sub)(__isl_take UNION *u1, __isl_take UNION *u2)
 {
-	return match_bin_op(u1, u2, &FN(PART,sub));
+	return FN(UNION,match_bin_op)(u1, u2, &FN(PART,sub));
 }
 #endif
 
@@ -632,7 +635,7 @@ S(UNION,any_set_data) {
 	__isl_give PW *(*fn)(__isl_take PW*, __isl_take isl_set*);
 };
 
-static int any_set_entry(void **entry, void *user)
+static int FN(UNION,any_set_entry)(void **entry, void *user)
 {
 	S(UNION,any_set_data) *data = user;
 	PW *pw = *entry;
@@ -649,7 +652,7 @@ static int any_set_entry(void **entry, void *user)
 
 /* Update each element of "u" by calling "fn" on the element and "set".
  */
-static __isl_give UNION *any_set_op(__isl_take UNION *u,
+static __isl_give UNION *FN(UNION,any_set_op)(__isl_take UNION *u,
 	__isl_take isl_set *set,
 	__isl_give PW *(*fn)(__isl_take PW*, __isl_take isl_set*))
 {
@@ -669,7 +672,7 @@ static __isl_give UNION *any_set_op(__isl_take UNION *u,
 	data.res = FN(UNION,alloc)(isl_space_copy(u->space), u->table.n);
 #endif
 	if (isl_hash_table_foreach(u->space->ctx, &u->table,
-				   &any_set_entry, &data) < 0)
+				   &FN(UNION,any_set_entry), &data) < 0)
 		goto error;
 
 	FN(UNION,free)(u);
@@ -687,7 +690,7 @@ error:
 __isl_give UNION *FN(UNION,intersect_params)(__isl_take UNION *u,
 	__isl_take isl_set *set)
 {
-	return any_set_op(u, set, &FN(PW,intersect_params));
+	return FN(UNION,any_set_op)(u, set, &FN(PW,intersect_params));
 }
 
 /* Compute the gist of the domain of "u" with respect to
@@ -696,7 +699,7 @@ __isl_give UNION *FN(UNION,intersect_params)(__isl_take UNION *u,
 __isl_give UNION *FN(UNION,gist_params)(__isl_take UNION *u,
 	__isl_take isl_set *set)
 {
-	return any_set_op(u, set, &FN(PW,gist_params));
+	return FN(UNION,any_set_op)(u, set, &FN(PW,gist_params));
 }
 
 S(UNION,match_domain_data) {
@@ -705,7 +708,7 @@ S(UNION,match_domain_data) {
 	__isl_give PW *(*fn)(__isl_take PW*, __isl_take isl_set*);
 };
 
-static int set_has_dim(const void *entry, const void *val)
+static int FN(UNION,set_has_dim)(const void *entry, const void *val)
 {
 	isl_set *set = (isl_set *)entry;
 	isl_space *dim = (isl_space *)val;
@@ -717,7 +720,7 @@ static int set_has_dim(const void *entry, const void *val)
  * of *entry, apply data->fn to *entry and this set (if any), and add
  * the result to data->res.
  */
-static int match_domain_entry(void **entry, void *user)
+static int FN(UNION,match_domain_entry)(void **entry, void *user)
 {
 	S(UNION,match_domain_data) *data = user;
 	uint32_t hash;
@@ -728,7 +731,7 @@ static int match_domain_entry(void **entry, void *user)
 	space = FN(PW,get_domain_space)(pw);
 	hash = isl_space_get_hash(space);
 	entry2 = isl_hash_table_find(data->uset->dim->ctx, &data->uset->table,
-				     hash, &set_has_dim, space, 0);
+				     hash, &FN(UNION,set_has_dim), space, 0);
 	isl_space_free(space);
 	if (!entry2)
 		return 0;
@@ -747,7 +750,7 @@ static int match_domain_entry(void **entry, void *user)
  * the set lives in the same space as the domain of PW
  * and collect the results.
  */
-static __isl_give UNION *match_domain_op(__isl_take UNION *u,
+static __isl_give UNION *FN(UNION,match_domain_op)(__isl_take UNION *u,
 	__isl_take isl_union_set *uset,
 	__isl_give PW *(*fn)(__isl_take PW*, __isl_take isl_set*))
 {
@@ -767,7 +770,7 @@ static __isl_give UNION *match_domain_op(__isl_take UNION *u,
 	data.res = FN(UNION,alloc)(isl_space_copy(u->space), u->table.n);
 #endif
 	if (isl_hash_table_foreach(u->space->ctx, &u->table,
-				   &match_domain_entry, &data) < 0)
+				   &FN(UNION,match_domain_entry), &data) < 0)
 		goto error;
 
 	FN(UNION,free)(u);
@@ -790,7 +793,7 @@ __isl_give UNION *FN(UNION,intersect_domain)(__isl_take UNION *u,
 	if (isl_union_set_is_params(uset))
 		return FN(UNION,intersect_params)(u,
 						isl_set_from_union_set(uset));
-	return match_domain_op(u, uset, &FN(PW,intersect_domain));
+	return FN(UNION,match_domain_op)(u, uset, &FN(PW,intersect_domain));
 }
 
 /* Internal data structure for isl_union_*_subtract_domain.
@@ -855,7 +858,7 @@ __isl_give UNION *FN(UNION,gist)(__isl_take UNION *u,
 {
 	if (isl_union_set_is_params(uset))
 		return FN(UNION,gist_params)(u, isl_set_from_union_set(uset));
-	return match_domain_op(u, uset, &FN(PW,gist));
+	return FN(UNION,match_domain_op)(u, uset, &FN(PW,gist));
 }
 
 #ifndef NO_EVAL
@@ -875,7 +878,8 @@ __isl_give isl_val *FN(UNION,eval)(__isl_take UNION *u,
 		goto error;
 	hash = isl_space_get_hash(space);
 	entry = isl_hash_table_find(u->space->ctx, &u->table,
-				    hash, &has_domain_space, space, 0);
+				    hash, &FN(UNION,has_domain_space),
+				    space, 0);
 	isl_space_free(space);
 	if (!entry) {
 		v = isl_val_zero(isl_point_get_ctx(pnt));
@@ -892,7 +896,7 @@ error:
 }
 #endif
 
-static int coalesce_entry(void **entry, void *user)
+static int FN(UNION,coalesce_entry)(void **entry, void *user)
 {
 	PW **pw = (PW **)entry;
 
@@ -909,7 +913,7 @@ __isl_give UNION *FN(UNION,coalesce)(__isl_take UNION *u)
 		return NULL;
 
 	if (isl_hash_table_foreach(u->space->ctx, &u->table,
-				   &coalesce_entry, NULL) < 0)
+				   &FN(UNION,coalesce_entry), NULL) < 0)
 		goto error;
 
 	return u;
@@ -918,7 +922,7 @@ error:
 	return NULL;
 }
 
-static int domain(__isl_take PART *part, void *user)
+static int FN(UNION,domain_entry)(__isl_take PART *part, void *user)
 {
 	isl_union_set **uset = (isl_union_set **)user;
 
@@ -932,7 +936,7 @@ __isl_give isl_union_set *FN(UNION,domain)(__isl_take UNION *u)
 	isl_union_set *uset;
 
 	uset = isl_union_set_empty(FN(UNION,get_space)(u));
-	if (FN(FN(UNION,foreach),PARTS)(u, &domain, &uset) < 0)
+	if (FN(FN(UNION,foreach),PARTS)(u, &FN(UNION,domain_entry), &uset) < 0)
 		goto error;
 
 	FN(UNION,free)(u);
@@ -944,7 +948,7 @@ error:
 	return NULL;
 }
 
-static int mul_isl_int(void **entry, void *user)
+static int FN(UNION,mul_isl_int_entry)(void **entry, void *user)
 {
 	PW **pw = (PW **)entry;
 	isl_int *v = user;
@@ -982,7 +986,7 @@ __isl_give UNION *FN(UNION,mul_isl_int)(__isl_take UNION *u, isl_int v)
 		u->type = isl_fold_type_negate(u->type);
 #endif
 	if (isl_hash_table_foreach(u->space->ctx, &u->table,
-				    &mul_isl_int, &v) < 0)
+				    &FN(UNION,mul_isl_int_entry), v) < 0)
 		goto error;
 
 	return u;
@@ -995,7 +999,7 @@ error:
  *
  * Return 0 on success and -1 on error.
  */
-static int scale_val(void **entry, void *user)
+static int FN(UNION,scale_val_entry)(void **entry, void *user)
 {
 	PW **pw = (PW **)entry;
 	isl_val *v = user;
@@ -1044,7 +1048,8 @@ __isl_give UNION *FN(UNION,scale_val)(__isl_take UNION *u,
 	if (isl_val_is_neg(v))
 		u->type = isl_fold_type_negate(u->type);
 #endif
-	if (isl_hash_table_foreach(u->space->ctx, &u->table, &scale_val, v) < 0)
+	if (isl_hash_table_foreach(u->space->ctx, &u->table,
+				    &FN(UNION,scale_val_entry), v) < 0)
 		goto error;
 
 	isl_val_free(v);
@@ -1116,7 +1121,7 @@ S(UNION,plain_is_equal_data)
 	int is_equal;
 };
 
-static int plain_is_equal_entry(void **entry, void *user)
+static int FN(UNION,plain_is_equal_entry)(void **entry, void *user)
 {
 	S(UNION,plain_is_equal_data) *data = user;
 	uint32_t hash;
@@ -1125,7 +1130,8 @@ static int plain_is_equal_entry(void **entry, void *user)
 
 	hash = isl_space_get_hash(pw->dim);
 	entry2 = isl_hash_table_find(data->u2->space->ctx, &data->u2->table,
-				     hash, &has_same_domain_space, pw->dim, 0);
+				     hash, &FN(UNION,has_same_domain_space),
+				     pw->dim, 0);
 	if (!entry2) {
 		data->is_equal = 0;
 		return -1;
@@ -1158,7 +1164,7 @@ int FN(UNION,plain_is_equal)(__isl_keep UNION *u1, __isl_keep UNION *u2)
 
 	data.u2 = u2;
 	if (isl_hash_table_foreach(u1->space->ctx, &u1->table,
-				   &plain_is_equal_entry, &data) < 0 &&
+			       &FN(UNION,plain_is_equal_entry), &data) < 0 &&
 	    data.is_equal)
 		goto error;
 

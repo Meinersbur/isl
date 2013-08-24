@@ -4064,7 +4064,8 @@ __isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_mul(
 	__isl_take isl_union_pw_qpolynomial *upwqp1,
 	__isl_take isl_union_pw_qpolynomial *upwqp2)
 {
-	return match_bin_op(upwqp1, upwqp2, &isl_pw_qpolynomial_mul);
+	return isl_union_pw_qpolynomial_match_bin_op(upwqp1, upwqp2,
+						&isl_pw_qpolynomial_mul);
 }
 
 /* Reorder the columns of the given div definitions according to the

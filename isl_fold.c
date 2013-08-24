@@ -902,7 +902,8 @@ __isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_fold_fold_pw_
 
 	hash = isl_space_get_hash(part->dim);
 	entry = isl_hash_table_find(u->space->ctx, &u->table, hash,
-				    &has_same_domain_space, part->dim, 1);
+			&isl_union_pw_qpolynomial_fold_has_same_domain_space,
+			part->dim, 1);
 	if (!entry)
 		goto error;
 
@@ -1367,7 +1368,8 @@ static int add_pwqp(__isl_take isl_pw_qpolynomial *pwqp, void *user)
 	ctx = pwqp->dim->ctx;
 	hash = isl_space_get_hash(pwqp->dim);
 	entry = isl_hash_table_find(ctx, &(*upwf)->table, hash,
-				     &has_same_domain_space, pwqp->dim, 1);
+			 &isl_union_pw_qpolynomial_fold_has_same_domain_space,
+			 pwqp->dim, 1);
 	if (!entry)
 		goto error;
 
