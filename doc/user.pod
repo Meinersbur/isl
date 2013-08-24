@@ -492,6 +492,8 @@ in which the object was created.
 		__isl_keep isl_pw_multi_aff *pma);
 	isl_ctx *isl_multi_pw_aff_get_ctx(
 		__isl_keep isl_multi_pw_aff *mpa);
+	isl_ctx *isl_union_pw_aff_get_ctx(
+		__isl_keep isl_union_pw_aff *upa);
 	isl_ctx *isl_union_pw_multi_aff_get_ctx(
 		__isl_keep isl_union_pw_multi_aff *upma);
 
@@ -954,6 +956,8 @@ of the original object.
 		__isl_keep isl_pw_multi_aff *pma);
 	__isl_give isl_space *isl_pw_multi_aff_get_space(
 		__isl_keep isl_pw_multi_aff *pma);
+	__isl_give isl_space *isl_union_pw_aff_get_space(
+		__isl_keep isl_union_pw_aff *upa);
 	__isl_give isl_space *isl_union_pw_multi_aff_get_space(
 		__isl_keep isl_union_pw_multi_aff *upma);
 	__isl_give isl_space *isl_multi_pw_aff_get_domain_space(
@@ -1017,6 +1021,9 @@ C<isl_dim_out> (only for relations), C<isl_dim_set>
 		enum isl_dim_type type);
 	unsigned isl_multi_pw_aff_dim(
 		__isl_keep isl_multi_pw_aff *mpa,
+		enum isl_dim_type type);
+	unsigned isl_union_pw_aff_dim(
+		__isl_keep isl_union_pw_aff *upa,
 		enum isl_dim_type type);
 	unsigned isl_union_pw_multi_aff_dim(
 		__isl_keep isl_union_pw_multi_aff *upma,
@@ -1188,6 +1195,11 @@ operations and may not be preserved across those operations.
 	isl_multi_pw_aff_set_dim_name(
 		__isl_take isl_multi_pw_aff *mpa,
 		enum isl_dim_type type, unsigned pos, const char *s);
+	__isl_give isl_union_pw_aff *
+	isl_union_pw_aff_set_dim_name(
+		__isl_take isl_union_pw_aff *upa,
+		enum isl_dim_type type, unsigned pos,
+		const char *s);
 	__isl_give isl_union_pw_multi_aff *
 	isl_union_pw_multi_aff_set_dim_name(
 		__isl_take isl_union_pw_multi_aff *upma,
@@ -1299,6 +1311,9 @@ its position can be obtained from the following functions.
 		enum isl_dim_type type, const char *name);
 	int isl_pw_multi_aff_find_dim_by_name(
 		__isl_keep isl_pw_multi_aff *pma,
+		enum isl_dim_type type, const char *name);
+	int isl_union_pw_aff_find_dim_by_name(
+		__isl_keep isl_union_pw_aff *upa,
 		enum isl_dim_type type, const char *name);
 	int isl_union_pw_multi_aff_find_dim_by_name(
 		__isl_keep isl_union_pw_multi_aff *upma,
@@ -1521,6 +1536,8 @@ of all the corresponding identifiers, use the following function.
 		__isl_take isl_multi_pw_aff *mpa);
 	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_reset_user(
 		__isl_take isl_pw_multi_aff *pma);
+	__isl_give isl_union_pw_aff *isl_union_pw_aff_reset_user(
+		__isl_take isl_union_pw_aff *upa);
 	__isl_give isl_union_pw_multi_aff *
 	isl_union_pw_multi_aff_reset_user(
 		__isl_take isl_union_pw_multi_aff *upma);
@@ -2860,12 +2877,14 @@ over different domains.  The space of a union expression
 is that of the shared parameter space.
 
 The union expression types defined by C<isl>
-are C<isl_union_pw_multi_aff>, C<isl_union_pw_qpolynomial> and
-C<isl_union_pw_qpolynomial_fold>.
+are C<isl_union_pw_aff>, C<isl_union_pw_multi_aff>,
+C<isl_union_pw_qpolynomial> and C<isl_union_pw_qpolynomial_fold>.
 
 An empty union expression can be created using the following functions.
 
 	#include <isl/aff.h>
+	__isl_give isl_union_pw_aff *isl_union_pw_aff_empty(
+		__isl_take isl_space *space);
 	__isl_give isl_union_pw_multi_aff *
 	isl_union_pw_multi_aff_empty(
 		__isl_take isl_space *space);
@@ -2879,6 +2898,9 @@ A union expression containing a single base expression
 can be created using the following functions.
 
 	#include <isl/aff.h>
+	__isl_give isl_union_pw_aff *
+	isl_union_pw_aff_from_pw_aff(
+		__isl_take isl_pw_aff *pa);
 	__isl_give isl_union_pw_multi_aff *
 	isl_union_pw_multi_aff_from_aff(
 		__isl_take isl_aff *aff);
@@ -2904,6 +2926,10 @@ A base expression can be added to a union expression using
 the following functions.
 
 	#include <isl/aff.h>
+	__isl_give isl_union_pw_aff *
+	isl_union_pw_aff_add_pw_aff(
+		__isl_take isl_union_pw_aff *upa,
+		__isl_take isl_pw_aff *pa);
 	__isl_give isl_union_pw_multi_aff *
 	isl_union_pw_multi_aff_add_pw_multi_aff(
 		__isl_take isl_union_pw_multi_aff *upma,
@@ -2919,6 +2945,10 @@ Union expressions can be copied and freed using
 the following functions.
 
 	#include <isl/aff.h>
+	__isl_give isl_union_pw_aff *isl_union_pw_aff_copy(
+		__isl_keep isl_union_pw_aff *upa);
+	__isl_null isl_union_pw_aff *isl_union_pw_aff_free(
+		__isl_take isl_union_pw_aff *upa);
 	__isl_give isl_union_pw_multi_aff *
 	isl_union_pw_multi_aff_copy(
 		__isl_keep isl_union_pw_multi_aff *upma);
@@ -2944,6 +2974,12 @@ To iterate over the base expressions in a union expression,
 use the following functions.
 
 	#include <isl/aff.h>
+	int isl_union_pw_aff_n_pw_multi_aff(
+		__isl_keep isl_union_pw_aff *upa);
+	int isl_union_pw_aff_foreach_pw_aff(
+		__isl_keep isl_union_pw_aff *upa,
+		int (*fn)(__isl_take isl_pw_aff *ma, void *user),
+			void *user);
 	int isl_union_pw_multi_aff_n_pw_multi_aff(
 		__isl_keep isl_union_pw_multi_aff *upma);
 	int isl_union_pw_multi_aff_foreach_pw_multi_aff(
@@ -2969,6 +3005,9 @@ To extract the base expression in a given space from a union, use
 the following functions.
 
 	#include <isl/aff.h>
+	__isl_give isl_pw_aff *isl_union_pw_aff_extract_pw_aff(
+		__isl_keep isl_union_pw_aff *upa,
+		__isl_take isl_space *space);
 	__isl_give isl_pw_multi_aff *
 	isl_union_pw_multi_aff_extract_pw_multi_aff(
 		__isl_keep isl_union_pw_multi_aff *upma,
@@ -3210,6 +3249,9 @@ To actually print something, use
 	__isl_give isl_printer *isl_printer_print_multi_pw_aff(
 		__isl_take isl_printer *p,
 		__isl_keep isl_multi_pw_aff *mpa);
+	__isl_give isl_printer *isl_printer_print_union_pw_aff(
+		__isl_take isl_printer *p,
+		__isl_keep isl_union_pw_aff *upa);
 	__isl_give isl_printer *isl_printer_print_union_pw_multi_aff(
 		__isl_take isl_printer *p,
 		__isl_keep isl_union_pw_multi_aff *upma);
@@ -3283,6 +3325,8 @@ in isl format.
 	#include <isl/aff.h>
 	__isl_give char *isl_multi_aff_to_str(
 		__isl_keep isl_multi_aff *aff);
+	__isl_give char *isl_union_pw_aff_to_str(
+		__isl_keep isl_union_pw_aff *upa);
 	__isl_give char *isl_union_pw_multi_aff_to_str(
 		__isl_keep isl_union_pw_multi_aff *upma);
 
@@ -3590,6 +3634,9 @@ return true if the objects are not the same.
 	int isl_multi_pw_aff_is_equal(
 		__isl_keep isl_multi_pw_aff *mpa1,
 		__isl_keep isl_multi_pw_aff *mpa2);
+	int isl_union_pw_aff_plain_is_equal(
+		__isl_keep isl_union_pw_aff *upa1,
+		__isl_keep isl_union_pw_aff *upa2);
 	int isl_union_pw_multi_aff_plain_is_equal(
 		__isl_keep isl_union_pw_multi_aff *upma1,
 		__isl_keep isl_union_pw_multi_aff *upma2);
@@ -3824,6 +3871,8 @@ parameters.
 		__isl_take isl_pw_multi_aff *pma);
 	__isl_give isl_set *isl_multi_pw_aff_domain(
 		__isl_take isl_multi_pw_aff *mpa);
+	__isl_give isl_union_set *isl_union_pw_aff_domain(
+		__isl_take isl_union_pw_aff *upa);
 	__isl_give isl_union_set *isl_union_pw_multi_aff_domain(
 		__isl_take isl_union_pw_multi_aff *upma);
 	__isl_give isl_set *isl_pw_aff_params(
@@ -4193,6 +4242,8 @@ basic set or relation.
 		__isl_take isl_pw_multi_aff *pma);
 	__isl_give isl_multi_pw_aff *isl_multi_pw_aff_coalesce(
 		__isl_take isl_multi_pw_aff *mpa);
+	__isl_give isl_union_pw_aff *isl_union_pw_aff_coalesce(
+		__isl_take isl_union_pw_aff *upa);
 	__isl_give isl_union_pw_multi_aff *
 	isl_union_pw_multi_aff_coalesce(
 		__isl_take isl_union_pw_multi_aff *upma);
@@ -4747,6 +4798,10 @@ All parameters need to be named.
 	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_align_params(
 		__isl_take isl_pw_multi_aff *pma,
 		__isl_take isl_space *model);
+	__isl_give isl_union_pw_aff *
+	isl_union_pw_aff_align_params(
+		__isl_take isl_union_pw_aff *upa,
+		__isl_take isl_space *model);
 	__isl_give isl_union_pw_multi_aff *
 	isl_union_pw_multi_aff_align_params(
 		__isl_take isl_union_pw_multi_aff *upma,
@@ -4774,6 +4829,8 @@ All parameters need to be named.
 		__isl_take isl_pw_multi_aff *pma);
 	__isl_give isl_multi_pw_aff *isl_multi_pw_aff_neg(
 		__isl_take isl_multi_pw_aff *mpa);
+	__isl_give isl_union_pw_aff *isl_union_pw_aff_neg(
+		__isl_take isl_union_pw_aff *upa);
 	__isl_give isl_union_pw_multi_aff *
 	isl_union_pw_multi_aff_neg(
 		__isl_take isl_union_pw_multi_aff *upma);
@@ -4958,6 +5015,9 @@ are not sufficient.
 	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_drop_dims(
 		__isl_take isl_pw_multi_aff *pma,
 		enum isl_dim_type type, unsigned first, unsigned n);
+	__isl_give isl_union_pw_aff *isl_union_pw_aff_drop_dims(
+		__isl_take isl_union_pw_aff *upa,
+		enum isl_dim_type type, unsigned first, unsigned n);
 	__isl_give isl_union_pw_multi_aff *
 		isl_union_pw_multi_aff_drop_dims(
 		__isl_take isl_union_pw_multi_aff *upma,
@@ -5091,6 +5151,9 @@ the same (number of) parameters.
 	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_intersect_domain(
 		__isl_take isl_pw_multi_aff *pma,
 		__isl_take isl_set *set);
+	__isl_give isl_union_pw_aff *isl_union_pw_aff_intersect_domain(
+		__isl_take isl_union_pw_aff *upa,
+		__isl_take isl_union_set *uset);
 	__isl_give isl_union_pw_multi_aff *
 	isl_union_pw_multi_aff_intersect_domain(
 		__isl_take isl_union_pw_multi_aff *upma,
@@ -5105,6 +5168,9 @@ the same (number of) parameters.
 	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_intersect_params(
 		__isl_take isl_pw_multi_aff *pma,
 		__isl_take isl_set *set);
+	__isl_give isl_union_pw_aff *
+	isl_union_pw_aff_intersect_params(
+		__isl_take isl_union_pw_aff *upa,
 	__isl_give isl_union_pw_multi_aff *
 	isl_union_pw_multi_aff_intersect_params(
 		__isl_take isl_union_pw_multi_aff *upma,
@@ -5219,10 +5285,14 @@ at least one element and all elements need to live in the same space.
 	isl_pw_multi_aff_subtract_domain(
 		__isl_take isl_pw_multi_aff *pma,
 		__isl_take isl_set *set);
+	__isl_give isl_union_pw_aff *
+	isl_union_pw_aff_subtract_domain(
+		__isl_take isl_union_pw_aff *upa,
+		__isl_take isl_union_set *uset);
 	__isl_give isl_union_pw_multi_aff *
 	isl_union_pw_multi_aff_subtract_domain(
 		__isl_take isl_union_pw_multi_aff *upma,
-		__isl_take isl_union_set *uset);
+		__isl_take isl_set *set);
 
 	#include <isl/polynomial.h>
 	__isl_give isl_pw_qpolynomial *
@@ -5874,6 +5944,12 @@ to simplify the expression associated to each cell.
 	__isl_give isl_multi_pw_aff *isl_multi_pw_aff_gist(
 		__isl_take isl_multi_pw_aff *mpa,
 		__isl_take isl_set *set);
+	__isl_give isl_union_pw_aff *isl_union_pw_aff_gist(
+		__isl_take isl_union_pw_aff *upa,
+		__isl_take isl_union_set *context);
+	__isl_give isl_union_pw_aff *isl_union_pw_aff_gist_params(
+		__isl_take isl_union_pw_aff *upa,
+		__isl_take isl_set *context);
 	__isl_give isl_union_pw_multi_aff *
 	isl_union_pw_multi_aff_gist_params(
 		__isl_take isl_union_pw_multi_aff *upma,
@@ -5947,6 +6023,9 @@ to simplify the expression associated to each cell.
 	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_add(
 		__isl_take isl_pw_multi_aff *pma1,
 		__isl_take isl_pw_multi_aff *pma2);
+	__isl_give isl_union_pw_aff *isl_union_pw_aff_add(
+		__isl_take isl_union_pw_aff *upa1,
+		__isl_take isl_union_pw_aff *upa2);
 	__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_add(
 		__isl_take isl_union_pw_multi_aff *upma1,
 		__isl_take isl_union_pw_multi_aff *upma2);
@@ -5971,6 +6050,9 @@ to simplify the expression associated to each cell.
 	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_sub(
 		__isl_take isl_pw_multi_aff *pma1,
 		__isl_take isl_pw_multi_aff *pma2);
+	__isl_give isl_union_pw_aff *isl_union_pw_aff_sub(
+		__isl_take isl_union_pw_aff *upa1,
+		__isl_take isl_union_pw_aff *upa2);
 	__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_sub(
 		__isl_take isl_union_pw_multi_aff *upma1,
 		__isl_take isl_union_pw_multi_aff *upma2);
@@ -6017,6 +6099,9 @@ C<isl_aff_sub> subtracts the second argument from the first.
 	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_union_add(
 		__isl_take isl_pw_multi_aff *pma1,
 		__isl_take isl_pw_multi_aff *pma2);
+	__isl_give isl_union_pw_aff *isl_union_pw_aff_union_add(
+		__isl_take isl_union_pw_aff *upa1,
+		__isl_take isl_union_pw_aff *upa2);
 	__isl_give isl_union_pw_multi_aff *
 	isl_union_pw_multi_aff_union_add(
 		__isl_take isl_union_pw_multi_aff *upma1,
@@ -6071,6 +6156,9 @@ only defined on the shared definition domain of the arguments.
 		__isl_take isl_pw_multi_aff *pma,
 		__isl_take isl_val *v);
 	__isl_give isl_union_pw_multi_aff *
+	__isl_give isl_union_pw_aff *isl_union_pw_aff_scale_val(
+		__isl_take isl_union_pw_aff *upa,
+		__isl_take isl_val *f);
 	isl_union_pw_multi_aff_scale_val(
 		__isl_take isl_union_pw_multi_aff *upma,
 		__isl_take isl_val *val);
@@ -6089,6 +6177,9 @@ only defined on the shared definition domain of the arguments.
 		__isl_take isl_val *v);
 	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_scale_down_val(
 		__isl_take isl_pw_multi_aff *pma,
+		__isl_take isl_val *v);
+	__isl_give isl_union_pw_aff *isl_union_pw_aff_scale_down_val(
+		__isl_take isl_union_pw_aff *upa,
 		__isl_take isl_val *v);
 	__isl_give isl_union_pw_multi_aff *
 	isl_union_pw_multi_aff_scale_down_val(

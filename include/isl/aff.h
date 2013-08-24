@@ -696,6 +696,90 @@ __isl_give isl_printer *isl_printer_print_multi_pw_aff(
 	__isl_take isl_printer *p, __isl_keep isl_multi_pw_aff *mpa);
 void isl_multi_pw_aff_dump(__isl_keep isl_multi_pw_aff *mpa);
 
+__isl_give isl_union_pw_aff *isl_union_pw_aff_copy(
+	__isl_keep isl_union_pw_aff *upa);
+__isl_null isl_union_pw_aff *isl_union_pw_aff_free(
+	__isl_take isl_union_pw_aff *upa);
+
+isl_ctx *isl_union_pw_aff_get_ctx(__isl_keep isl_union_pw_aff *upa);
+__isl_give isl_space *isl_union_pw_aff_get_space(
+	__isl_keep isl_union_pw_aff *upa);
+
+unsigned isl_union_pw_aff_dim(__isl_keep isl_union_pw_aff *upa,
+	enum isl_dim_type type);
+__isl_give isl_union_pw_aff *isl_union_pw_aff_set_dim_name(
+	__isl_take isl_union_pw_aff *upa, enum isl_dim_type type,
+	unsigned pos, const char *s);
+
+int isl_union_pw_aff_find_dim_by_name(__isl_keep isl_union_pw_aff *upa,
+	enum isl_dim_type type, const char *name);
+
+__isl_give isl_union_pw_aff *isl_union_pw_aff_drop_dims(
+	__isl_take isl_union_pw_aff *upa,
+	enum isl_dim_type type, unsigned first, unsigned n);
+__isl_give isl_union_pw_aff *isl_union_pw_aff_reset_user(
+	__isl_take isl_union_pw_aff *upa);
+
+__isl_give isl_union_pw_aff *isl_union_pw_aff_empty(
+	__isl_take isl_space *space);
+__isl_give isl_union_pw_aff *isl_union_pw_aff_from_pw_aff(
+	__isl_take isl_pw_aff *pa);
+__isl_give isl_union_pw_aff *isl_union_pw_aff_add_pw_aff(
+	__isl_take isl_union_pw_aff *upa, __isl_take isl_pw_aff *pa);
+
+int isl_union_pw_aff_n_pw_multi_aff(__isl_keep isl_union_pw_aff *upa);
+
+int isl_union_pw_aff_foreach_pw_aff(__isl_keep isl_union_pw_aff *upa,
+	int (*fn)(__isl_take isl_pw_aff *ma, void *user), void *user);
+__isl_give isl_pw_aff *isl_union_pw_aff_extract_pw_aff(
+	__isl_keep isl_union_pw_aff *upa, __isl_take isl_space *space);
+
+int isl_union_pw_aff_plain_is_equal(__isl_keep isl_union_pw_aff *upa1,
+	__isl_keep isl_union_pw_aff *upa2);
+
+__isl_give isl_union_set *isl_union_pw_aff_domain(
+	__isl_take isl_union_pw_aff *upa);
+
+__isl_give isl_union_pw_aff *isl_union_pw_aff_neg(
+	__isl_take isl_union_pw_aff *upa);
+
+__isl_give isl_union_pw_aff *isl_union_pw_aff_add(
+	__isl_take isl_union_pw_aff *upa1, __isl_take isl_union_pw_aff *upa2);
+__isl_give isl_union_pw_aff *isl_union_pw_aff_union_add(
+	__isl_take isl_union_pw_aff *upa1, __isl_take isl_union_pw_aff *upa2);
+__isl_give isl_union_pw_aff *isl_union_pw_aff_sub(
+	__isl_take isl_union_pw_aff *upa1, __isl_take isl_union_pw_aff *upa2);
+
+__isl_give isl_union_pw_aff *isl_union_pw_aff_coalesce(
+	__isl_take isl_union_pw_aff *upa);
+__isl_give isl_union_pw_aff *isl_union_pw_aff_gist(
+	__isl_take isl_union_pw_aff *upa, __isl_take isl_union_set *context);
+__isl_give isl_union_pw_aff *isl_union_pw_aff_gist_params(
+	__isl_take isl_union_pw_aff *upa, __isl_take isl_set *context);
+
+__isl_give isl_union_pw_aff *isl_union_pw_aff_scale_val(
+	__isl_take isl_union_pw_aff *upa, __isl_take isl_val *v);
+__isl_give isl_union_pw_aff *isl_union_pw_aff_scale_down_val(
+	__isl_take isl_union_pw_aff *upa, __isl_take isl_val *v);
+
+__isl_give isl_union_pw_aff *isl_union_pw_aff_align_params(
+	__isl_take isl_union_pw_aff *upa, __isl_take isl_space *model);
+
+__isl_give isl_union_pw_aff *isl_union_pw_aff_intersect_params(
+	__isl_take isl_union_pw_aff *upa, __isl_take isl_set *set);
+__isl_give isl_union_pw_aff *isl_union_pw_aff_intersect_domain(
+	__isl_take isl_union_pw_aff *upa, __isl_take isl_union_set *uset);
+__isl_give isl_union_pw_aff *isl_union_pw_aff_subtract_domain(
+	__isl_take isl_union_pw_aff *upa, __isl_take isl_union_set *uset);
+
+__isl_give isl_union_pw_aff *isl_union_pw_aff_set_dim_name(
+	__isl_take isl_union_pw_aff *upa,
+	enum isl_dim_type type, unsigned pos, const char *s);
+
+__isl_give char *isl_union_pw_aff_to_str(__isl_keep isl_union_pw_aff *upa);
+__isl_give isl_printer *isl_printer_print_union_pw_aff(
+	__isl_take isl_printer *p, __isl_keep isl_union_pw_aff *upa);
+
 ISL_DECLARE_LIST_FN(union_pw_multi_aff)
 
 #if defined(__cplusplus)

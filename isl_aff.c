@@ -2563,6 +2563,18 @@ __isl_give isl_pw_aff *isl_pw_aff_from_aff(__isl_take isl_aff *aff)
 
 #include <isl_pw_templ.c>
 
+#undef UNION
+#define UNION isl_union_pw_aff
+#undef PART
+#define PART isl_pw_aff
+#undef PARTS
+#define PARTS pw_aff
+#define ALIGN_DOMAIN
+
+#define NO_EVAL
+
+#include <isl_union_templ.c>
+
 static __isl_give isl_set *align_params_pw_pw_set_and(
 	__isl_take isl_pw_aff *pwaff1, __isl_take isl_pw_aff *pwaff2,
 	__isl_give isl_set *(*fn)(__isl_take isl_pw_aff *pwaff1,
@@ -4165,6 +4177,16 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_union_add(
 	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2)
 {
 	return isl_pw_multi_aff_union_add_(pma1, pma2);
+}
+
+/* Compute the sum of "upa1" and "upa2" on the union of their domains,
+ * with the actual sum on the shared domain and
+ * the defined expression on the symmetric difference of the domains.
+ */
+__isl_give isl_union_pw_aff *isl_union_pw_aff_union_add(
+	__isl_take isl_union_pw_aff *upa1, __isl_take isl_union_pw_aff *upa2)
+{
+	return isl_union_pw_aff_union_add_(upa1, upa2);
 }
 
 /* Compute the sum of "upma1" and "upma2" on the union of their domains,
