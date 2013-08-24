@@ -6691,3 +6691,42 @@ __isl_give isl_pw_aff *isl_pw_aff_val_on_domain(__isl_take isl_set *domain,
 
 	return isl_pw_aff_alloc(domain, aff);
 }
+
+/* Return a multi affine expression that is equal to "mv" on domain
+ * space "space".
+ */
+__isl_give isl_multi_aff *isl_multi_aff_multi_val_on_space(
+	__isl_take isl_space *space, __isl_take isl_multi_val *mv)
+{
+	int i, n;
+	isl_space *space2;
+	isl_local_space *ls;
+	isl_multi_aff *ma;
+
+	if (!space || !mv)
+		goto error;
+
+	n = isl_multi_val_dim(mv, isl_dim_set);
+	space2 = isl_multi_val_get_space(mv);
+	space2 = isl_space_align_params(space2, isl_space_copy(space));
+	space = isl_space_align_params(space, isl_space_copy(space2));
+	space = isl_space_map_from_domain_and_range(space, space2);
+	ma = isl_multi_aff_alloc(isl_space_copy(space));
+	ls = isl_local_space_from_space(isl_space_domain(space));
+	for (i = 0; i < n; ++i) {
+		isl_val *v;
+		isl_aff *aff;
+
+		v = isl_multi_val_get_val(mv, i);
+		aff = isl_aff_val_on_domain(isl_local_space_copy(ls), v);
+		ma = isl_multi_aff_set_aff(ma, i, aff);
+	}
+	isl_local_space_free(ls);
+
+	isl_multi_val_free(mv);
+	return ma;
+error:
+	isl_space_free(space);
+	isl_multi_val_free(mv);
+	return NULL;
+}
