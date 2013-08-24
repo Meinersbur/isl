@@ -6745,3 +6745,49 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_multi_val_on_domain(
 
 	return isl_pw_multi_aff_alloc(domain, ma);
 }
+
+/* Internal data structure for isl_union_pw_multi_aff_multi_val_on_domain.
+ * mv is the value that should be attained on each domain set
+ * res collects the results
+ */
+struct isl_union_pw_multi_aff_multi_val_on_domain_data {
+	isl_multi_val *mv;
+	isl_union_pw_multi_aff *res;
+};
+
+/* Create an isl_pw_multi_aff equal to data->mv on "domain"
+ * and add it to data->res.
+ */
+static int pw_multi_aff_multi_val_on_domain(__isl_take isl_set *domain,
+	void *user)
+{
+	struct isl_union_pw_multi_aff_multi_val_on_domain_data *data = user;
+	isl_pw_multi_aff *pma;
+	isl_multi_val *mv;
+
+	mv = isl_multi_val_copy(data->mv);
+	pma = isl_pw_multi_aff_multi_val_on_domain(domain, mv);
+	data->res = isl_union_pw_multi_aff_add_pw_multi_aff(data->res, pma);
+
+	return data->res ? 0 : -1;
+}
+
+/* Return a union piecewise multi-affine expression
+ * that is equal to "mv" on "domain".
+ */
+__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_multi_val_on_domain(
+	__isl_take isl_union_set *domain, __isl_take isl_multi_val *mv)
+{
+	struct isl_union_pw_multi_aff_multi_val_on_domain_data data;
+	isl_space *space;
+
+	space = isl_union_set_get_space(domain);
+	data.res = isl_union_pw_multi_aff_empty(space);
+	data.mv = mv;
+	if (isl_union_set_foreach_set(domain,
+			&pw_multi_aff_multi_val_on_domain, &data) < 0)
+		data.res = isl_union_pw_multi_aff_free(data.res);
+	isl_union_set_free(domain);
+	isl_multi_val_free(mv);
+	return data.res;
+}

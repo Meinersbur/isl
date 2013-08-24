@@ -2787,6 +2787,15 @@ can be created using the following functions.
 	isl_union_pw_qpolynomial_from_pw_qpolynomial(
 		__isl_take isl_pw_qpolynomial *pwqp);
 
+The following function creates a base expression on each
+of the sets in the union set and collects the results.
+
+	#include <isl/aff.h>
+	__isl_give isl_union_pw_multi_aff *
+	isl_union_pw_multi_aff_multi_val_on_domain(
+		__isl_take isl_union_set *domain,
+		__isl_take isl_multi_val *mv);
+
 A base expression can be added to a union expression using
 the following functions.
 
