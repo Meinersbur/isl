@@ -6730,3 +6730,18 @@ error:
 	isl_multi_val_free(mv);
 	return NULL;
 }
+
+/* Return a piecewise multi-affine expression
+ * that is equal to "mv" on "domain".
+ */
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_multi_val_on_domain(
+	__isl_take isl_set *domain, __isl_take isl_multi_val *mv)
+{
+	isl_space *space;
+	isl_multi_aff *ma;
+
+	space = isl_set_get_space(domain);
+	ma = isl_multi_aff_multi_val_on_space(space, mv);
+
+	return isl_pw_multi_aff_alloc(domain, ma);
+}

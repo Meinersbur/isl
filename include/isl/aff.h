@@ -410,6 +410,9 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_empty(__isl_take isl_space *space)
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_domain(
 	__isl_take isl_set *set);
 
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_multi_val_on_domain(
+	__isl_take isl_set *domain, __isl_take isl_multi_val *mv);
+
 const char *isl_pw_multi_aff_get_dim_name(__isl_keep isl_pw_multi_aff *pma,
 	enum isl_dim_type type, unsigned pos);
 __isl_give isl_id *isl_pw_multi_aff_get_dim_id(
