@@ -8,7 +8,7 @@
  */
 
 #ifndef ISL_SAMPLE_H
-#define ISL_SAMPLE
+#define ISL_SAMPLE_H
 
 #include <isl/set.h>
 #include <isl_tab.h>
