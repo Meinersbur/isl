@@ -532,7 +532,7 @@ static void oppose(struct isl_mat *M, struct isl_mat **U,
  * with U and Q unimodular matrices and H a matrix in column echelon form
  * such that on each echelon row the entries in the non-echelon column
  * are non-negative (if neg == 0) or non-positive (if neg == 1)
- * and stricly smaller (in absolute value) than the entries in the echelon
+ * and strictly smaller (in absolute value) than the entries in the echelon
  * column.
  * If U or Q are NULL, then these matrices are not computed.
  */
