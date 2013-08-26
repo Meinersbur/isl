@@ -1149,7 +1149,7 @@ static int add_all_proximity_constraints(struct isl_sched_graph *graph)
  *	S U = H
  *
  * with H the Hermite normal form of S.  That is, all but the
- * first rank columns of Q are zero and so each row in S is
+ * first rank columns of H are zero and so each row in S is
  * a linear combination of the first rank rows of Q.
  * The matrix Q is then transposed because we will write the
  * coefficients of the next schedule row as a column vector s
