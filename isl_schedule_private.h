@@ -7,6 +7,7 @@
 enum isl_edge_type {
 	isl_edge_validity = 0,
 	isl_edge_first = isl_edge_validity,
+	isl_edge_coincidence,
 	isl_edge_condition,
 	isl_edge_conditional_validity,
 	isl_edge_proximity,
@@ -43,16 +44,15 @@ struct isl_schedule_constraints {
  * In particular, we keep track of the number of bands and for each
  * band, the starting position of the next band.  The first band starts at
  * position 0.
- * For each scheduling dimension, we keep track of whether it result
- * in zero dependence distances (within its band) with respect
- * to the proximity edges.
+ * For each scheduling dimension, we keep track of whether it satisfies
+ * the coincidence constraints (within its band).
  */
 struct isl_schedule_node {
 	isl_multi_aff *sched;
 	int	 n_band;
 	int	*band_end;
 	int	*band_id;
-	int	*zero;
+	int	*coincident;
 };
 
 /* Information about the computed schedule.

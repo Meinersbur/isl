@@ -2420,7 +2420,7 @@ int test_one_schedule(isl_ctx *ctx, const char *d, const char *w,
 	isl_union_map *W, *R, *S;
 	isl_union_map *empty;
 	isl_union_map *dep_raw, *dep_war, *dep_waw, *dep;
-	isl_union_map *validity, *proximity;
+	isl_union_map *validity, *proximity, *coincidence;
 	isl_union_map *schedule;
 	isl_union_map *test;
 	isl_union_set *delta;
@@ -2454,10 +2454,12 @@ int test_one_schedule(isl_ctx *ctx, const char *d, const char *w,
 	dep = isl_union_map_union(dep_waw, dep_war);
 	dep = isl_union_map_union(dep, dep_raw);
 	validity = isl_union_map_copy(dep);
+	coincidence = isl_union_map_copy(dep);
 	proximity = isl_union_map_copy(dep);
 
 	sc = isl_schedule_constraints_on_domain(isl_union_set_copy(D));
 	sc = isl_schedule_constraints_set_validity(sc, validity);
+	sc = isl_schedule_constraints_set_coincidence(sc, coincidence);
 	sc = isl_schedule_constraints_set_proximity(sc, proximity);
 	sched = isl_schedule_constraints_compute_schedule(sc);
 	schedule = isl_schedule_get_map(sched);
@@ -2944,10 +2946,10 @@ int test_schedule(isl_ctx *ctx)
 		    "S_0[j, k] -> A[k] : j <= -1 + n and j >= 0 and "
 					"k <= -1 + n and k >= 0 }";
 	S = "[n] -> { S_0[j, k] -> [2, j, k] }";
-	ctx->opt->schedule_outer_zero_distance = 1;
+	ctx->opt->schedule_outer_coincidence = 1;
 	if (test_one_schedule(ctx, D, W, R, S, 0, 0) < 0)
 		return -1;
-	ctx->opt->schedule_outer_zero_distance = 0;
+	ctx->opt->schedule_outer_coincidence = 0;
 
 	D = "{Stmt_for_body24[i0, i1, i2, i3]:"
 		"i0 >= 0 and i0 <= 1 and i1 >= 0 and i1 <= 6 and i2 >= 2 and "

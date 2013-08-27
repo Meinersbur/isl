@@ -55,12 +55,12 @@ __isl_give isl_band *isl_band_dup(__isl_keep isl_band *band)
 		return NULL;
 
 	dup->n = band->n;
-	dup->zero = isl_alloc_array(ctx, int, band->n);
-	if (band->n && !dup->zero)
+	dup->coincident = isl_alloc_array(ctx, int, band->n);
+	if (band->n && !dup->coincident)
 		goto error;
 
 	for (i = 0; i < band->n; ++i)
-		dup->zero[i] = band->zero[i];
+		dup->coincident[i] = band->coincident[i];
 
 	dup->pma = isl_union_pw_multi_aff_copy(band->pma);
 	dup->schedule = band->schedule;
@@ -106,7 +106,7 @@ void *isl_band_free(__isl_take isl_band *band)
 
 	isl_union_pw_multi_aff_free(band->pma);
 	isl_band_list_free(band->children);
-	free(band->zero);
+	free(band->coincident);
 	free(band);
 
 	return NULL;
@@ -136,10 +136,10 @@ int isl_band_n_member(__isl_keep isl_band *band)
 	return band ? band->n : 0;
 }
 
-/* Is the given scheduling dimension zero distance within the band and
- * with respect to the proximity dependences.
+/* Is the given scheduling dimension coincident within the band and
+ * with respect to the coincidence constraints.
  */
-int isl_band_member_is_zero_distance(__isl_keep isl_band *band, int pos)
+int isl_band_member_is_coincident(__isl_keep isl_band *band, int pos)
 {
 	if (!band)
 		return -1;
@@ -148,7 +148,7 @@ int isl_band_member_is_zero_distance(__isl_keep isl_band *band, int pos)
 		isl_die(isl_band_get_ctx(band), isl_error_invalid,
 			"invalid member position", return -1);
 
-	return band->zero[pos];
+	return band->coincident[pos];
 }
 
 /* Return the schedule that leads up to this band.
@@ -654,7 +654,7 @@ static int isl_band_drop(__isl_keep isl_band *band, int pos, int n)
 	band->pma = sched;
 
 	for (i = pos + n; i < band->n; ++i)
-		band->zero[i - n] = band->zero[i];
+		band->coincident[i - n] = band->coincident[i];
 
 	band->n -= n;
 

@@ -9,8 +9,9 @@
 /* Information about a band within a schedule.
  *
  * n is the number of scheduling dimensions within the band.
- * zero is an array of length n, indicating whether a scheduling dimension
- *	results in zero dependence distances for the proximity dependences.
+ * coincident is an array of length n, indicating whether a scheduling dimension
+ *	satisfies the coincidence constraints in the sense that
+ *	the corresponding dependence distances are zero.
  * pma is the partial schedule corresponding to this band.
  * schedule is the schedule that contains this band.
  * parent is the parent of this band (or NULL if the band is a root).
@@ -25,7 +26,7 @@ struct isl_band {
 	int ref;
 
 	int n;
-	int *zero;
+	int *coincident;
 
 	isl_union_pw_multi_aff *pma;
 	isl_schedule *schedule;

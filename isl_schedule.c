@@ -91,6 +91,25 @@ error:
 	return NULL;
 }
 
+/* Replace the coincidence constraints of "sc" by "coincidence".
+ */
+__isl_give isl_schedule_constraints *isl_schedule_constraints_set_coincidence(
+	__isl_take isl_schedule_constraints *sc,
+	__isl_take isl_union_map *coincidence)
+{
+	if (!sc || !coincidence)
+		goto error;
+
+	isl_union_map_free(sc->constraint[isl_edge_coincidence]);
+	sc->constraint[isl_edge_coincidence] = coincidence;
+
+	return sc;
+error:
+	isl_schedule_constraints_free(sc);
+	isl_union_map_free(coincidence);
+	return NULL;
+}
+
 /* Replace the proximity constraints of "sc" by "proximity".
  */
 __isl_give isl_schedule_constraints *isl_schedule_constraints_set_proximity(
@@ -168,6 +187,8 @@ void isl_schedule_constraints_dump(__isl_keep isl_schedule_constraints *sc)
 	isl_union_map_dump(sc->constraint[isl_edge_validity]);
 	fprintf(stderr, "proximity: ");
 	isl_union_map_dump(sc->constraint[isl_edge_proximity]);
+	fprintf(stderr, "coincidence: ");
+	isl_union_map_dump(sc->constraint[isl_edge_coincidence]);
 	fprintf(stderr, "condition: ");
 	isl_union_map_dump(sc->constraint[isl_edge_condition]);
 	fprintf(stderr, "conditional_validity: ");
@@ -242,10 +263,10 @@ static __isl_give int isl_schedule_constraints_n_map(
  * band_id is used to differentiate between separate bands at the same
  * level within the same parent band, i.e., bands that are separated
  * by the parent band or bands that are independent of each other.
- * zero contains a boolean for each of the rows of the schedule,
- * indicating whether the corresponding scheduling dimension results
- * in zero dependence distances within its band and with respect
- * to the proximity edges.
+ * coincident contains a boolean for each of the rows of the schedule,
+ * indicating whether the corresponding scheduling dimension satisfies
+ * the coincidence constraints in the sense that the corresponding
+ * dependence distances are zero.
  */
 struct isl_sched_node {
 	isl_space *dim;
@@ -262,7 +283,7 @@ struct isl_sched_node {
 
 	int	*band;
 	int	*band_id;
-	int	*zero;
+	int	*coincident;
 };
 
 static int node_has_dim(const void *entry, const void *val)
@@ -287,6 +308,7 @@ static int node_has_dim(const void *entry, const void *val)
  * src is the source node
  * dst is the sink node
  * validity is set if the edge is used to ensure correctness
+ * coincidence is used to enforce zero dependence distances
  * proximity is set if the edge is used to minimize dependence distances
  * condition is set if the edge represents a condition
  *	for a conditional validity schedule constraint
@@ -308,6 +330,7 @@ struct isl_sched_edge {
 	struct isl_sched_node *dst;
 
 	unsigned validity : 1;
+	unsigned coincidence : 1;
 	unsigned proximity : 1;
 	unsigned local : 1;
 	unsigned condition : 1;
@@ -672,7 +695,7 @@ static void graph_free(isl_ctx *ctx, struct isl_sched_graph *graph)
 		if (graph->root) {
 			free(graph->node[i].band);
 			free(graph->node[i].band_id);
-			free(graph->node[i].zero);
+			free(graph->node[i].coincident);
 		}
 	}
 	free(graph->node);
@@ -736,7 +759,7 @@ static int extract_node(__isl_take isl_set *set, void *user)
 	isl_space *dim;
 	isl_mat *sched;
 	struct isl_sched_graph *graph = user;
-	int *band, *band_id, *zero;
+	int *band, *band_id, *coincident;
 
 	ctx = isl_set_get_ctx(set);
 	dim = isl_set_get_space(set);
@@ -755,11 +778,11 @@ static int extract_node(__isl_take isl_set *set, void *user)
 	graph->node[graph->n].band = band;
 	band_id = isl_calloc_array(ctx, int, graph->max_row);
 	graph->node[graph->n].band_id = band_id;
-	zero = isl_calloc_array(ctx, int, graph->max_row);
-	graph->node[graph->n].zero = zero;
+	coincident = isl_calloc_array(ctx, int, graph->max_row);
+	graph->node[graph->n].coincident = coincident;
 	graph->n++;
 
-	if (!sched || (graph->max_row && (!band || !band_id || !zero)))
+	if (!sched || (graph->max_row && (!band || !band_id || !coincident)))
 		return -1;
 
 	return 0;
@@ -781,6 +804,7 @@ static int merge_edge(enum isl_edge_type type, struct isl_sched_edge *edge1,
 	struct isl_sched_edge *edge2)
 {
 	edge1->validity |= edge2->validity;
+	edge1->coincidence |= edge2->coincidence;
 	edge1->proximity |= edge2->proximity;
 	edge1->condition |= edge2->condition;
 	edge1->conditional_validity |= edge2->conditional_validity;
@@ -902,6 +926,7 @@ static int extract_edge(__isl_take isl_map *map, void *user)
 	graph->edge[graph->n_edge].dst = dst;
 	graph->edge[graph->n_edge].map = map;
 	graph->edge[graph->n_edge].validity = 0;
+	graph->edge[graph->n_edge].coincidence = 0;
 	graph->edge[graph->n_edge].proximity = 0;
 	graph->edge[graph->n_edge].condition = 0;
 	graph->edge[graph->n_edge].local = 0;
@@ -910,6 +935,8 @@ static int extract_edge(__isl_take isl_map *map, void *user)
 	graph->edge[graph->n_edge].tagged_validity = NULL;
 	if (data->type == isl_edge_validity)
 		graph->edge[graph->n_edge].validity = 1;
+	if (data->type == isl_edge_coincidence)
+		graph->edge[graph->n_edge].coincidence = 1;
 	if (data->type == isl_edge_proximity)
 		graph->edge[graph->n_edge].proximity = 1;
 	if (data->type == isl_edge_condition) {
@@ -1437,14 +1464,21 @@ error:
  * distances equal to zero.  We take care of bounding them by 0 from below
  * here.  add_all_proximity_constraints takes care of bounding them by 0
  * from above.
+ *
+ * If "use_coincidence" is set, then we treat coincidence edges as local edges.
+ * Otherwise, we ignore them.
  */
-static int add_all_validity_constraints(struct isl_sched_graph *graph)
+static int add_all_validity_constraints(struct isl_sched_graph *graph,
+	int use_coincidence)
 {
 	int i;
 
 	for (i = 0; i < graph->n_edge; ++i) {
 		struct isl_sched_edge *edge= &graph->edge[i];
-		if (!edge->validity && !edge->local)
+		int local;
+
+		local = edge->local || (edge->coincidence && use_coincidence);
+		if (!edge->validity && !local)
 			continue;
 		if (edge->src != edge->dst)
 			continue;
@@ -1454,7 +1488,10 @@ static int add_all_validity_constraints(struct isl_sched_graph *graph)
 
 	for (i = 0; i < graph->n_edge; ++i) {
 		struct isl_sched_edge *edge = &graph->edge[i];
-		if (!edge->validity && !edge->local)
+		int local;
+
+		local = edge->local || (edge->coincidence && use_coincidence);
+		if (!edge->validity && !local)
 			continue;
 		if (edge->src == edge->dst)
 			continue;
@@ -1473,15 +1510,20 @@ static int add_all_validity_constraints(struct isl_sched_graph *graph)
  * from above.  (This includes the case of "local" dependences
  * which are treated as validity dependence by add_all_validity_constraints.)
  * Otherwise, we need to bound the distance both from above and from below.
+ *
+ * If "use_coincidence" is set, then we treat coincidence edges as local edges.
+ * Otherwise, we ignore them.
  */
-static int add_all_proximity_constraints(struct isl_sched_graph *graph)
+static int add_all_proximity_constraints(struct isl_sched_graph *graph,
+	int use_coincidence)
 {
 	int i;
 
 	for (i = 0; i < graph->n_edge; ++i) {
 		struct isl_sched_edge *edge= &graph->edge[i];
-		int local = edge->local;
+		int local;
 
+		local = edge->local || (edge->coincidence && use_coincidence);
 		if (!edge->proximity && !local)
 			continue;
 		if (edge->src == edge->dst &&
@@ -1558,14 +1600,20 @@ static int node_update_cmap(struct isl_sched_node *node)
  *
  * If an edge is only marked conditional_validity then it counts
  * as zero since it is only checked afterwards.
+ *
+ * If "use_coincidence" is set, then we treat coincidence edges as local edges.
+ * Otherwise, we ignore them.
  */
-static int edge_multiplicity(struct isl_sched_edge *edge, int carry)
+static int edge_multiplicity(struct isl_sched_edge *edge, int carry,
+	int use_coincidence)
 {
 	if (carry && !edge->validity && !edge->conditional_validity)
 		return 0;
 	if (carry)
 		return 1;
 	if (edge->proximity || edge->local)
+		return 2;
+	if (use_coincidence && edge->coincidence)
 		return 2;
 	if (edge->validity)
 		return 1;
@@ -1574,13 +1622,15 @@ static int edge_multiplicity(struct isl_sched_edge *edge, int carry)
 
 /* Count the number of equality and inequality constraints
  * that will be added for the given map.
+ *
+ * "use_coincidence" is set if we should take into account coincidence edges.
  */
 static int count_map_constraints(struct isl_sched_graph *graph,
 	struct isl_sched_edge *edge, __isl_take isl_map *map,
-	int *n_eq, int *n_ineq, int carry)
+	int *n_eq, int *n_ineq, int carry, int use_coincidence)
 {
 	isl_basic_set *coef;
-	int f = edge_multiplicity(edge, carry);
+	int f = edge_multiplicity(edge, carry, use_coincidence);
 
 	if (f == 0) {
 		isl_map_free(map);
@@ -1607,9 +1657,12 @@ static int count_map_constraints(struct isl_sched_graph *graph,
  * validity+proximity	-> 2 (>= 0 and upper bound)
  * proximity		-> 2 (lower and upper bound)
  * local(+any)		-> 2 (>= 0 and <= 0)
+ *
+ * If "use_coincidence" is set, then we treat coincidence edges as local edges.
+ * Otherwise, we ignore them.
  */
 static int count_constraints(struct isl_sched_graph *graph,
-	int *n_eq, int *n_ineq)
+	int *n_eq, int *n_ineq, int use_coincidence)
 {
 	int i;
 
@@ -1618,8 +1671,8 @@ static int count_constraints(struct isl_sched_graph *graph,
 		struct isl_sched_edge *edge= &graph->edge[i];
 		isl_map *map = isl_map_copy(edge->map);
 
-		if (count_map_constraints(graph, edge, map,
-					  n_eq, n_ineq, 0) < 0)
+		if (count_map_constraints(graph, edge, map, n_eq, n_ineq,
+					    0, use_coincidence) < 0)
 			return -1;
 	}
 
@@ -1714,11 +1767,11 @@ static int add_bound_coefficient_constraints(isl_ctx *ctx,
  * The constraints are those from the edges plus two or three equalities
  * to express the sums.
  *
- * If force_zero is set, then we add equalities to ensure that
- * the sum of the m_n coefficients and m_0 are both zero.
+ * If "use_coincidence" is set, then we treat coincidence edges as local edges.
+ * Otherwise, we ignore them.
  */
 static int setup_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
-	int force_zero)
+	int use_coincidence)
 {
 	int i, j;
 	int k;
@@ -1744,14 +1797,14 @@ static int setup_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
 		total += 1 + 2 * (node->nparam + node->nvar);
 	}
 
-	if (count_constraints(graph, &n_eq, &n_ineq) < 0)
+	if (count_constraints(graph, &n_eq, &n_ineq, use_coincidence) < 0)
 		return -1;
 	if (count_bound_coefficient_constraints(ctx, graph, &n_eq, &n_ineq) < 0)
 		return -1;
 
 	dim = isl_space_set_alloc(ctx, 0, total);
 	isl_basic_set_free(graph->lp);
-	n_eq += 2 + parametric + force_zero;
+	n_eq += 2 + parametric;
 	if (max_constant_term != -1)
 		n_ineq += graph->n;
 
@@ -1761,18 +1814,9 @@ static int setup_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
 	if (k < 0)
 		return -1;
 	isl_seq_clr(graph->lp->eq[k], 1 +  total);
-	if (!force_zero)
-		isl_int_set_si(graph->lp->eq[k][1], -1);
+	isl_int_set_si(graph->lp->eq[k][1], -1);
 	for (i = 0; i < 2 * nparam; ++i)
 		isl_int_set_si(graph->lp->eq[k][1 + param_pos + i], 1);
-
-	if (force_zero) {
-		k = isl_basic_set_alloc_equality(graph->lp);
-		if (k < 0)
-			return -1;
-		isl_seq_clr(graph->lp->eq[k], 1 +  total);
-		isl_int_set_si(graph->lp->eq[k][2], -1);
-	}
 
 	if (parametric) {
 		k = isl_basic_set_alloc_equality(graph->lp);
@@ -1814,9 +1858,9 @@ static int setup_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
 
 	if (add_bound_coefficient_constraints(ctx, graph) < 0)
 		return -1;
-	if (add_all_validity_constraints(graph) < 0)
+	if (add_all_validity_constraints(graph, use_coincidence) < 0)
 		return -1;
-	if (add_all_proximity_constraints(graph) < 0)
+	if (add_all_proximity_constraints(graph, use_coincidence) < 0)
 		return -1;
 
 	return 0;
@@ -1914,16 +1958,13 @@ static __isl_give isl_vec *solve_lp(struct isl_sched_graph *graph)
  * In this case, we then also need to perform this multiplication
  * to obtain the values of c_i_x.
  *
- * If check_zero is set, then the first two coordinates of sol are
- * assumed to correspond to the dependence distance.  If these two
- * coordinates are zero, then the corresponding scheduling dimension
- * is marked as being zero distance.
+ * If coincident is set, then the caller guarantees that the new
+ * row satisfies the coincidence constraints.
  */
 static int update_schedule(struct isl_sched_graph *graph,
-	__isl_take isl_vec *sol, int use_cmap, int check_zero)
+	__isl_take isl_vec *sol, int use_cmap, int coincident)
 {
 	int i, j;
-	int zero = 0;
 	isl_vec *csol = NULL;
 
 	if (!sol)
@@ -1934,10 +1975,6 @@ static int update_schedule(struct isl_sched_graph *graph,
 	if (graph->n_total_row >= graph->max_row)
 		isl_die(sol->ctx, isl_error_internal,
 			"too many schedule rows", goto error);
-
-	if (check_zero)
-		zero = isl_int_is_zero(sol->el[1]) &&
-			   isl_int_is_zero(sol->el[2]);
 
 	for (i = 0; i < graph->n; ++i) {
 		struct isl_sched_node *node = &graph->node[i];
@@ -1975,7 +2012,7 @@ static int update_schedule(struct isl_sched_graph *graph,
 			node->sched = isl_mat_set_element(node->sched,
 					row, 1 + node->nparam + j, csol->el[j]);
 		node->band[graph->n_total_row] = graph->n_band;
-		node->zero[graph->n_total_row] = zero;
+		node->coincident[graph->n_total_row] = coincident;
 	}
 	isl_vec_free(sol);
 	isl_vec_free(csol);
@@ -2231,7 +2268,7 @@ static __isl_give isl_schedule *extract_schedule(struct isl_sched_graph *graph,
 
 	for (i = 0; i < sched->n; ++i) {
 		int r, b;
-		int *band_end, *band_id, *zero;
+		int *band_end, *band_id, *coincident;
 
 		sched->node[i].sched =
 			node_extract_schedule_multi_aff(&graph->node[i]);
@@ -2244,15 +2281,15 @@ static __isl_give isl_schedule *extract_schedule(struct isl_sched_graph *graph,
 
 		band_end = isl_alloc_array(ctx, int, graph->n_band);
 		band_id = isl_alloc_array(ctx, int, graph->n_band);
-		zero = isl_alloc_array(ctx, int, graph->n_total_row);
+		coincident = isl_alloc_array(ctx, int, graph->n_total_row);
 		sched->node[i].band_end = band_end;
 		sched->node[i].band_id = band_id;
-		sched->node[i].zero = zero;
-		if (!band_end || !band_id || !zero)
+		sched->node[i].coincident = coincident;
+		if (!band_end || !band_id || !coincident)
 			goto error;
 
 		for (r = 0; r < graph->n_total_row; ++r)
-			zero[r] = graph->node[i].zero[r];
+			coincident[r] = graph->node[i].coincident[r];
 		for (r = b = 0; r < graph->n_total_row; ++r) {
 			if (graph->node[i].band[r] == b)
 				continue;
@@ -2296,7 +2333,7 @@ static int copy_nodes(struct isl_sched_graph *dst, struct isl_sched_graph *src,
 			isl_map_copy(src->node[i].sched_map);
 		dst->node[dst->n].band = src->node[i].band;
 		dst->node[dst->n].band_id = src->node[i].band_id;
-		dst->node[dst->n].zero = src->node[i].zero;
+		dst->node[dst->n].coincident = src->node[i].coincident;
 		dst->n++;
 	}
 
@@ -2351,6 +2388,7 @@ static int copy_edges(isl_ctx *ctx, struct isl_sched_graph *dst,
 		dst->edge[dst->n_edge].tagged_validity = tagged_validity;
 		dst->edge[dst->n_edge].validity = edge->validity;
 		dst->edge[dst->n_edge].proximity = edge->proximity;
+		dst->edge[dst->n_edge].coincidence = edge->coincidence;
 		dst->edge[dst->n_edge].condition = edge->condition;
 		dst->edge[dst->n_edge].conditional_validity =
 						edge->conditional_validity;
@@ -2577,9 +2615,9 @@ static int reset_band(struct isl_sched_graph *graph)
  * It would be possible to reuse them as the first rows in the next
  * band, but recomputing them may result in better rows as we are looking
  * at a smaller part of the dependence graph.
- * compute_split_schedule is only called when no zero-distance schedule row
- * could be found on the entire graph, so we wark the splitting row as
- * non zero-distance.
+ *
+ * Since we do not enforce coincidence, we conservatively mark the
+ * splitting row as not coincident.
  *
  * The band_id of the second group is set to n, where n is the number
  * of nodes in the first group.  This ensures that the band_ids over
@@ -2620,7 +2658,7 @@ static int compute_split_schedule(isl_ctx *ctx, struct isl_sched_graph *graph)
 			node->sched = isl_mat_set_element_si(node->sched,
 							     row, j, 0);
 		node->band[graph->n_total_row] = graph->n_band;
-		node->zero[graph->n_total_row] = 0;
+		node->coincident[graph->n_total_row] = 0;
 	}
 
 	e1 = e2 = 0;
@@ -2844,7 +2882,7 @@ static int count_all_constraints(struct isl_sched_graph *graph,
 			map = isl_map_from_basic_map(bmap);
 
 			if (count_map_constraints(graph, edge, map,
-						  n_eq, n_ineq, 1) < 0)
+						  n_eq, n_ineq, 1, 0) < 0)
 				    return -1;
 		}
 	}
@@ -3259,6 +3297,19 @@ static int need_condition_check(struct isl_sched_graph *graph)
 	return any_condition && any_conditional_validity;
 }
 
+/* Does "graph" contain any coincidence edge?
+ */
+static int has_any_coincidence(struct isl_sched_graph *graph)
+{
+	int i;
+
+	for (i = 0; i < graph->n_edge; ++i)
+		if (graph->edge[i].coincidence)
+			return 1;
+
+	return 0;
+}
+
 /* Extract the final schedule row as a map with the iteration domain
  * of "node" as domain.
  */
@@ -3475,7 +3526,8 @@ error:
 /* Compute a schedule for a connected dependence graph.
  * We try to find a sequence of as many schedule rows as possible that result
  * in non-negative dependence distances (independent of the previous rows
- * in the sequence, i.e., such that the sequence is tilable).
+ * in the sequence, i.e., such that the sequence is tilable), with as
+ * many of the initial rows as possible satisfying the coincidence constraints.
  * If we can't find any more rows we either
  * - split between SCCs and start over (assuming we found an interesting
  *	pair of SCCs between which to split)
@@ -3491,8 +3543,8 @@ error:
  * If we manage to complete the schedule, we finish off by topologically
  * sorting the statements based on the remaining dependences.
  *
- * If ctx->opt->schedule_outer_zero_distance is set, then we force the
- * outermost dimension in the current band to be zero distance.  If this
+ * If ctx->opt->schedule_outer_coincidence is set, then we force the
+ * outermost dimension to satisfy the coincidence constraints.  If this
  * turns out to be impossible, we fall back on the general scheme above
  * and try to carry as many dependences as possible.
  *
@@ -3514,8 +3566,9 @@ error:
  */
 static int compute_schedule_wcc(isl_ctx *ctx, struct isl_sched_graph *graph)
 {
-	int init_force_zero = 0;
-	int force_zero;
+	int has_coincidence;
+	int use_coincidence;
+	int force_coincidence = 0;
 	int check_conditional;
 
 	if (detect_sccs(ctx, graph) < 0)
@@ -3531,37 +3584,44 @@ static int compute_schedule_wcc(isl_ctx *ctx, struct isl_sched_graph *graph)
 
 	clear_local_edges(graph);
 	check_conditional = need_condition_check(graph);
+	has_coincidence = has_any_coincidence(graph);
 
-	if (ctx->opt->schedule_outer_zero_distance)
-		init_force_zero = 1;
+	if (ctx->opt->schedule_outer_coincidence)
+		force_coincidence = 1;
 
-	force_zero = init_force_zero;
+	use_coincidence = has_coincidence;
 	while (graph->n_row < graph->maxvar) {
 		isl_vec *sol;
 		int violated;
+		int coincident;
 
 		graph->src_scc = -1;
 		graph->dst_scc = -1;
 
-		if (setup_lp(ctx, graph, force_zero) < 0)
+		if (setup_lp(ctx, graph, use_coincidence) < 0)
 			return -1;
 		sol = solve_lp(graph);
 		if (!sol)
 			return -1;
 		if (sol->size == 0) {
+			int empty = graph->n_total_row == graph->band_start;
+
 			isl_vec_free(sol);
-			if (!ctx->opt->schedule_maximize_band_depth &&
-			    graph->n_total_row > graph->band_start)
+			if (use_coincidence && (!force_coincidence || !empty)) {
+				use_coincidence = 0;
+				continue;
+			}
+			if (!ctx->opt->schedule_maximize_band_depth && !empty)
 				return compute_next_band(ctx, graph);
 			if (graph->src_scc >= 0)
 				return compute_split_schedule(ctx, graph);
-			if (graph->n_total_row > graph->band_start)
+			if (!empty)
 				return compute_next_band(ctx, graph);
 			return carry_dependences(ctx, graph);
 		}
-		if (update_schedule(graph, sol, 1, 1) < 0)
+		coincident = !has_coincidence || use_coincidence;
+		if (update_schedule(graph, sol, 1, coincident) < 0)
 			return -1;
-		force_zero = 0;
 
 		if (!check_conditional)
 			continue;
@@ -3572,7 +3632,7 @@ static int compute_schedule_wcc(isl_ctx *ctx, struct isl_sched_graph *graph)
 			continue;
 		if (reset_band(graph) < 0)
 			return -1;
-		force_zero = init_force_zero;
+		use_coincidence = has_coincidence;
 	}
 
 	if (graph->n_total_row > graph->band_start)
@@ -3796,7 +3856,7 @@ void *isl_schedule_free(__isl_take isl_schedule *sched)
 		isl_multi_aff_free(sched->node[i].sched);
 		free(sched->node[i].band_end);
 		free(sched->node[i].band_id);
-		free(sched->node[i].zero);
+		free(sched->node[i].coincident);
 	}
 	isl_space_free(sched->dim);
 	isl_band_list_free(sched->band_forest);
@@ -3957,12 +4017,12 @@ static __isl_give isl_band *construct_band(__isl_keep isl_schedule *schedule,
 		schedule->node[i].band_end[band_nr] : start;
 	band->n = end - start;
 
-	band->zero = isl_alloc_array(ctx, int, band->n);
-	if (band->n && !band->zero)
+	band->coincident = isl_alloc_array(ctx, int, band->n);
+	if (band->n && !band->coincident)
 		goto error;
 
 	for (j = 0; j < band->n; ++j)
-		band->zero[j] = schedule->node[i].zero[start + j];
+		band->coincident[j] = schedule->node[i].coincident[start + j];
 
 	band->pma = isl_union_pw_multi_aff_empty(isl_space_copy(schedule->dim));
 	for (i = 0; i < schedule->n; ++i) {

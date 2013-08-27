@@ -24,8 +24,8 @@ int isl_options_get_schedule_max_constant_term(isl_ctx *ctx);
 int isl_options_set_schedule_maximize_band_depth(isl_ctx *ctx, int val);
 int isl_options_get_schedule_maximize_band_depth(isl_ctx *ctx);
 
-int isl_options_set_schedule_outer_zero_distance(isl_ctx *ctx, int val);
-int isl_options_get_schedule_outer_zero_distance(isl_ctx *ctx);
+int isl_options_set_schedule_outer_coincidence(isl_ctx *ctx, int val);
+int isl_options_get_schedule_outer_coincidence(isl_ctx *ctx);
 
 int isl_options_set_schedule_split_scaled(isl_ctx *ctx, int val);
 int isl_options_get_schedule_split_scaled(isl_ctx *ctx);
@@ -43,6 +43,9 @@ __isl_give isl_schedule_constraints *isl_schedule_constraints_on_domain(
 __isl_give isl_schedule_constraints *isl_schedule_constraints_set_validity(
 	__isl_take isl_schedule_constraints *sc,
 	__isl_take isl_union_map *validity);
+__isl_give isl_schedule_constraints *isl_schedule_constraints_set_coincidence(
+	__isl_take isl_schedule_constraints *sc,
+	__isl_take isl_union_map *coincidence);
 __isl_give isl_schedule_constraints *isl_schedule_constraints_set_proximity(
 	__isl_take isl_schedule_constraints *sc,
 	__isl_take isl_union_map *proximity);
