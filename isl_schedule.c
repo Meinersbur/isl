@@ -1339,8 +1339,8 @@ static int node_update_cmap(struct isl_sched_node *node)
 	return 0;
 }
 
-/* Count the number of equality and inequality constraints
- * that will be added for the given map.
+/* How many times should we count the constraints in "edge"?
+ *
  * If carry is set, then we are counting the number of (validity)
  * constraints that will be added in setup_carry_lp and we count
  * each edge exactly once.  Otherwise, we count as follows
@@ -1348,14 +1348,28 @@ static int node_update_cmap(struct isl_sched_node *node)
  * validity+proximity	-> 2 (>= 0 and upper bound)
  * proximity		-> 2 (lower and upper bound)
  */
+static int edge_multiplicity(struct isl_sched_edge *edge, int carry)
+{
+	if (carry && !edge->validity)
+		return 0;
+	if (carry)
+		return 1;
+	if (edge->proximity)
+		return 2;
+	return 1;
+}
+
+/* Count the number of equality and inequality constraints
+ * that will be added for the given map.
+ */
 static int count_map_constraints(struct isl_sched_graph *graph,
 	struct isl_sched_edge *edge, __isl_take isl_map *map,
 	int *n_eq, int *n_ineq, int carry)
 {
 	isl_basic_set *coef;
-	int f = carry ? 1 : edge->proximity ? 2 : 1;
+	int f = edge_multiplicity(edge, carry);
 
-	if (carry && !edge->validity) {
+	if (f == 0) {
 		isl_map_free(map);
 		return 0;
 	}
