@@ -3087,6 +3087,10 @@ Alternatively, a string representation can be obtained
 directly using the following functions, which always print
 in isl format.
 
+	#include <isl/space.h>
+	__isl_give char *isl_space_to_str(
+		__isl_keep isl_space *space);
+
 	#include <isl/val.h>
 	__isl_give char *isl_val_to_str(__isl_keep isl_val *v);
 	__isl_give char *isl_multi_val_to_str(

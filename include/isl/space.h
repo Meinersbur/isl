@@ -157,6 +157,7 @@ int isl_space_compatible(__isl_keep isl_space *dim1,
 	__isl_keep isl_space *dim2);
 unsigned isl_space_dim(__isl_keep isl_space *dim, enum isl_dim_type type);
 
+__isl_give char *isl_space_to_str(__isl_keep isl_space *space);
 __isl_give isl_printer *isl_printer_print_space(__isl_take isl_printer *p,
 	__isl_keep isl_space *dim);
 void isl_space_dump(__isl_keep isl_space *dim);
