@@ -3100,6 +3100,10 @@ in isl format.
 	__isl_give char *isl_set_to_str(
 		__isl_keep isl_set *set);
 
+	#include <isl/map.h>
+	__isl_give char *isl_map_to_str(
+		__isl_keep isl_map *map);
+
 	#include <isl/aff.h>
 	__isl_give char *isl_union_pw_multi_aff_to_str(
 		__isl_keep isl_union_pw_multi_aff *upma);
