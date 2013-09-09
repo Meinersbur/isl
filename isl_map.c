@@ -7161,6 +7161,13 @@ error:
 	return NULL;
 }
 
+/* Return the union of "map1" and "map2", where "map1" and "map2" are
+ * guaranteed to be disjoint by the caller.
+ *
+ * Note that this functions is called from within isl_map_make_disjoint,
+ * so we have to be careful not to touch the constraints of the inputs
+ * in any way.
+ */
 __isl_give isl_map *isl_map_union_disjoint(__isl_take isl_map *map1,
 	__isl_take isl_map *map2)
 {
