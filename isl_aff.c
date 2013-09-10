@@ -8147,3 +8147,61 @@ error:
 	isl_aff_free(aff);
 	return NULL;
 }
+
+/* Apply "ma" to "mupa".  The space of "mupa" needs to be compatible
+ * with the domain of "ma".
+ * Furthermore, the dimension of this space needs to be greater than zero,
+ * unless the dimension of the target space of "ma" is also zero.
+ * The result is defined over the shared domain of the elements of "mupa"
+ */
+__isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_apply_multi_aff(
+	__isl_take isl_multi_union_pw_aff *mupa, __isl_take isl_multi_aff *ma)
+{
+	isl_space *space1, *space2;
+	isl_multi_union_pw_aff *res;
+	int equal;
+	int i, n_out;
+
+	mupa = isl_multi_union_pw_aff_align_params(mupa,
+						isl_multi_aff_get_space(ma));
+	ma = isl_multi_aff_align_params(ma,
+					isl_multi_union_pw_aff_get_space(mupa));
+	if (!mupa || !ma)
+		goto error;
+
+	space1 = isl_multi_union_pw_aff_get_space(mupa);
+	space2 = isl_multi_aff_get_domain_space(ma);
+	equal = isl_space_is_equal(space1, space2);
+	isl_space_free(space1);
+	isl_space_free(space2);
+	if (equal < 0)
+		goto error;
+	if (!equal)
+		isl_die(isl_multi_aff_get_ctx(ma), isl_error_invalid,
+			"spaces don't match", goto error);
+	n_out = isl_multi_aff_dim(ma, isl_dim_out);
+	if (isl_multi_aff_dim(ma, isl_dim_in) == 0 && n_out != 0)
+		isl_die(isl_multi_aff_get_ctx(ma), isl_error_invalid,
+			"cannot determine domains", goto error);
+
+	space1 = isl_space_range(isl_multi_aff_get_space(ma));
+	res = isl_multi_union_pw_aff_alloc(space1);
+
+	for (i = 0; i < n_out; ++i) {
+		isl_aff *aff;
+		isl_union_pw_aff *upa;
+
+		aff = isl_multi_aff_get_aff(ma, i);
+		upa = multi_union_pw_aff_apply_aff(
+					isl_multi_union_pw_aff_copy(mupa), aff);
+		res = isl_multi_union_pw_aff_set_union_pw_aff(res, i, upa);
+	}
+
+	isl_multi_aff_free(ma);
+	isl_multi_union_pw_aff_free(mupa);
+	return res;
+error:
+	isl_multi_union_pw_aff_free(mupa);
+	isl_multi_aff_free(ma);
+	return NULL;
+}
