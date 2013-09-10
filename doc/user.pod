@@ -5590,6 +5590,16 @@ that map to the specified range.
 		__isl_take isl_union_map *umap1,
 		__isl_take isl_union_map *umap2);
 
+	#include <isl/aff.h>
+	__isl_give isl_union_pw_aff *
+	isl_multi_union_pw_aff_apply_aff(
+		__isl_take isl_multi_union_pw_aff *mupa,
+		__isl_take isl_aff *aff);
+
+The result of C<isl_multi_union_pw_aff_apply_aff> is defined
+over the shared domain of the elements of the input.  The dimension is
+required to be greater than zero.
+
 	#include <isl/polynomial.h>
 	__isl_give isl_pw_qpolynomial_fold *
 	isl_set_apply_pw_qpolynomial_fold(
