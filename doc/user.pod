@@ -2926,6 +2926,16 @@ of the sets in the union set and collect the results.
 		__isl_take isl_union_set *domain,
 		__isl_take isl_multi_val *mv);
 
+An C<isl_union_pw_aff> that is equal to a (parametric) affine
+expression on a given domain can be created using the following
+function.
+
+	#include <isl/aff.h>
+	__isl_give isl_union_pw_aff *
+	isl_union_pw_aff_aff_on_domain(
+		__isl_take isl_union_set *domain,
+		__isl_take isl_aff *aff);
+
 A base expression can be added to a union expression using
 the following functions.
 

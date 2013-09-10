@@ -6932,6 +6932,68 @@ __isl_give isl_union_pw_aff *isl_union_pw_aff_floor(
 	return upa;
 }
 
+/* Internal data structure for isl_union_pw_aff_aff_on_domain.
+ * "aff" is the symbolic value that the resulting isl_union_pw_aff
+ * needs to attain.
+ * "res" collects the results.
+ */
+struct isl_union_pw_aff_aff_on_domain_data {
+	isl_aff *aff;
+	isl_union_pw_aff *res;
+};
+
+/* Construct a piecewise affine expression that is equal to data->aff
+ * on "domain" and add the result to data->res.
+ */
+static int pw_aff_aff_on_domain(__isl_take isl_set *domain, void *user)
+{
+	struct isl_union_pw_aff_aff_on_domain_data *data = user;
+	isl_pw_aff *pa;
+	isl_aff *aff;
+	int dim;
+
+	aff = isl_aff_copy(data->aff);
+	dim = isl_set_dim(domain, isl_dim_set);
+	aff = isl_aff_add_dims(aff, isl_dim_in, dim);
+	aff = isl_aff_reset_domain_space(aff, isl_set_get_space(domain));
+	pa = isl_pw_aff_alloc(domain, aff);
+	data->res = isl_union_pw_aff_add_pw_aff(data->res, pa);
+
+	return data->res ? 0 : -1;
+}
+
+/* Return a union piecewise affine expression
+ * that is equal to "aff" on "domain".
+ *
+ * Construct an isl_pw_aff on each of the sets in "domain" and
+ * collect the results.
+ */
+__isl_give isl_union_pw_aff *isl_union_pw_aff_aff_on_domain(
+	__isl_take isl_union_set *domain, __isl_take isl_aff *aff)
+{
+	struct isl_union_pw_aff_aff_on_domain_data data;
+	isl_space *space;
+
+	if (!domain || !aff)
+		goto error;
+	if (!isl_local_space_is_params(aff->ls))
+		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
+			"expecting parametric expression", goto error);
+
+	space = isl_union_set_get_space(domain);
+	data.res = isl_union_pw_aff_empty(space);
+	data.aff = aff;
+	if (isl_union_set_foreach_set(domain, &pw_aff_aff_on_domain, &data) < 0)
+		data.res = isl_union_pw_aff_free(data.res);
+	isl_union_set_free(domain);
+	isl_aff_free(aff);
+	return data.res;
+error:
+	isl_union_set_free(domain);
+	isl_aff_free(aff);
+	return NULL;
+}
+
 /* Internal data structure for isl_union_pw_aff_val_on_domain.
  * "v" is the value that the resulting isl_union_pw_aff needs to attain.
  * "res" collects the results.
