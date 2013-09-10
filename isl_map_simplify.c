@@ -1051,7 +1051,7 @@ static struct isl_basic_map *normalize_divs(
 	struct isl_mat *C = NULL;
 	struct isl_mat *C2 = NULL;
 	isl_int v;
-	int *pos;
+	int *pos = NULL;
 	int dropped, needed;
 
 	if (!bmap)
@@ -1182,6 +1182,7 @@ done:
 
 	return bmap;
 error:
+	free(pos);
 	isl_mat_free(C);
 	isl_mat_free(C2);
 	isl_mat_free(T);
