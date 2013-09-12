@@ -2161,11 +2161,31 @@ error:
 	return NULL;
 }
 
+/* Print the body of an isl_pw_aff, i.e., a semicolon delimited
+ * sequence of affine expressions, each followed by constraints.
+ */
+static __isl_give isl_printer *print_pw_aff_body(
+	__isl_take isl_printer *p, __isl_keep isl_pw_aff *pa)
+{
+	int i;
+
+	if (!pa)
+		return isl_printer_free(p);
+
+	for (i = 0; i < pa->n; ++i) {
+		if (i)
+			p = isl_printer_print_str(p, "; ");
+		p = print_aff(p, pa->p[i].aff);
+		p = print_disjuncts((isl_map *)pa->p[i].set, p, 0);
+	}
+
+	return p;
+}
+
 static __isl_give isl_printer *print_pw_aff_isl(__isl_take isl_printer *p,
 	__isl_keep isl_pw_aff *pwaff)
 {
 	struct isl_print_space_data data = { 0 };
-	int i;
 
 	if (!pwaff)
 		goto error;
@@ -2175,12 +2195,7 @@ static __isl_give isl_printer *print_pw_aff_isl(__isl_take isl_printer *p,
 		p = isl_printer_print_str(p, " -> ");
 	}
 	p = isl_printer_print_str(p, "{ ");
-	for (i = 0; i < pwaff->n; ++i) {
-		if (i)
-			p = isl_printer_print_str(p, "; ");
-		p = print_aff(p, pwaff->p[i].aff);
-		p = print_disjuncts((isl_map *)pwaff->p[i].set, p, 0);
-	}
+	p = print_pw_aff_body(p, pwaff);
 	p = isl_printer_print_str(p, " }");
 	return p;
 error:
