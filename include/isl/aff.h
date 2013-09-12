@@ -780,6 +780,7 @@ __isl_give char *isl_union_pw_aff_to_str(__isl_keep isl_union_pw_aff *upa);
 __isl_give isl_printer *isl_printer_print_union_pw_aff(
 	__isl_take isl_printer *p, __isl_keep isl_union_pw_aff *upa);
 
+ISL_DECLARE_LIST_FN(union_pw_aff)
 ISL_DECLARE_LIST_FN(union_pw_multi_aff)
 
 #if defined(__cplusplus)

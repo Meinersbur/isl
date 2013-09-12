@@ -158,6 +158,11 @@ int isl_pw_aff_check_match_domain_space(__isl_keep isl_pw_aff *pa,
 #include <isl_multi_templ.h>
 
 #undef EL
+#define EL isl_union_pw_aff
+
+#include <isl_list_templ.h>
+
+#undef EL
 #define EL isl_union_pw_multi_aff
 
 #include <isl_list_templ.h>
