@@ -2760,13 +2760,24 @@ while there is only a single multiple expression in
 an C<isl_multi_union_pw_aff>, which can therefore only live
 in a single space.  This means that not every
 C<isl_union_pw_multi_aff> can be converted to
-an C<isl_multi_union_pw_aff>.  The following function can
-be used to perform this conversion when it is possible.
+an C<isl_multi_union_pw_aff>.  Conversely, a zero-dimensional
+C<isl_multi_union_pw_aff> carries no information
+about any possible domain and therefore cannot be converted
+to an C<isl_union_pw_multi_aff>.  Moreover, the elements
+of an C<isl_multi_union_pw_aff> may be defined over different domains,
+while each multiple expression inside an C<isl_union_pw_multi_aff>
+has a single domain.  The conversion of an C<isl_union_pw_multi_aff>
+of dimension greater than one may therefore not be exact.
+The following functions can
+be used to perform these conversions when they are possible.
 
 	#include <isl/aff.h>
 	__isl_give isl_multi_union_pw_aff *
 	isl_multi_union_pw_aff_from_union_pw_multi_aff(
 		__isl_take isl_union_pw_multi_aff *upma);
+	__isl_give isl_union_pw_multi_aff *
+	isl_union_pw_multi_aff_from_multi_union_pw_aff(
+		__isl_take isl_multi_union_pw_aff *mupa);
 
 =head3 Piecewise Expressions
 

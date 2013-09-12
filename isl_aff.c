@@ -7863,3 +7863,105 @@ error:
 	isl_multi_union_pw_aff_free(mupa);
 	return NULL;
 }
+
+/* Internal data structure for isl_union_pw_multi_aff_reset_range_space.
+ * "range" is the space from which to set the range space.
+ * "res" collects the results.
+ */
+struct isl_union_pw_multi_aff_reset_range_space_data {
+	isl_space *range;
+	isl_union_pw_multi_aff *res;
+};
+
+/* Replace the range space of "pma" by the range space of data->range and
+ * add the result to data->res.
+ */
+static int reset_range_space(__isl_take isl_pw_multi_aff *pma, void *user)
+{
+	struct isl_union_pw_multi_aff_reset_range_space_data *data = user;
+	isl_space *space;
+
+	space = isl_pw_multi_aff_get_space(pma);
+	space = isl_space_domain(space);
+	space = isl_space_extend_domain_with_range(space,
+						isl_space_copy(data->range));
+	pma = isl_pw_multi_aff_reset_space(pma, space);
+	data->res = isl_union_pw_multi_aff_add_pw_multi_aff(data->res, pma);
+
+	return data->res ? 0 : -1;
+}
+
+/* Replace the range space of all the piecewise affine expressions in "upma" by
+ * the range space of "space".
+ *
+ * This assumes that all these expressions have the same output dimension.
+ *
+ * Since the spaces of the expressions change, so do their hash values.
+ * We therefore need to create a new isl_union_pw_multi_aff.
+ * Note that the hash value is currently computed based on the entire
+ * space even though there can only be a single expression with a given
+ * domain space.
+ */
+static __isl_give isl_union_pw_multi_aff *
+isl_union_pw_multi_aff_reset_range_space(
+	__isl_take isl_union_pw_multi_aff *upma, __isl_take isl_space *space)
+{
+	struct isl_union_pw_multi_aff_reset_range_space_data data = { space };
+	isl_space *space_upma;
+
+	space_upma = isl_union_pw_multi_aff_get_space(upma);
+	data.res = isl_union_pw_multi_aff_empty(space_upma);
+	if (isl_union_pw_multi_aff_foreach_pw_multi_aff(upma,
+					&reset_range_space, &data) < 0)
+		data.res = isl_union_pw_multi_aff_free(data.res);
+
+	isl_space_free(space);
+	isl_union_pw_multi_aff_free(upma);
+	return data.res;
+}
+
+/* Construct and return a union piecewise multi affine expression
+ * that is equal to the given multi union piecewise affine expression.
+ *
+ * In order to be able to perform the conversion, the input
+ * needs to have a least one output dimension.
+ */
+__isl_give isl_union_pw_multi_aff *
+isl_union_pw_multi_aff_from_multi_union_pw_aff(
+	__isl_take isl_multi_union_pw_aff *mupa)
+{
+	int i, n;
+	isl_space *space;
+	isl_union_pw_multi_aff *upma;
+	isl_union_pw_aff *upa;
+
+	if (!mupa)
+		return NULL;
+
+	space = isl_multi_union_pw_aff_get_space(mupa);
+
+	n = isl_multi_union_pw_aff_dim(mupa, isl_dim_set);
+	if (n == 0)
+		isl_die(isl_multi_union_pw_aff_get_ctx(mupa), isl_error_invalid,
+			"cannot determine domain of zero-dimensional "
+			"isl_multi_union_pw_aff", goto error);
+
+	upa = isl_multi_union_pw_aff_get_union_pw_aff(mupa, 0);
+	upma = isl_union_pw_multi_aff_from_union_pw_aff(upa);
+
+	for (i = 1; i < n; ++i) {
+		isl_union_pw_multi_aff *upma_i;
+
+		upa = isl_multi_union_pw_aff_get_union_pw_aff(mupa, i);
+		upma_i = isl_union_pw_multi_aff_from_union_pw_aff(upa);
+		upma = isl_union_pw_multi_aff_flat_range_product(upma, upma_i);
+	}
+
+	upma = isl_union_pw_multi_aff_reset_range_space(upma, space);
+
+	isl_multi_union_pw_aff_free(mupa);
+	return upma;
+error:
+	isl_multi_union_pw_aff_free(mupa);
+	return NULL;
+}

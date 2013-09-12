@@ -835,6 +835,10 @@ __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_gist(
 __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_gist_params(
 	__isl_take isl_multi_union_pw_aff *aff, __isl_take isl_set *context);
 
+__isl_give isl_union_pw_multi_aff *
+isl_union_pw_multi_aff_from_multi_union_pw_aff(
+	__isl_take isl_multi_union_pw_aff *mupa);
+
 __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_union_add(
 	__isl_take isl_multi_union_pw_aff *mupa1,
 	__isl_take isl_multi_union_pw_aff *mupa2);
