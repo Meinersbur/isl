@@ -135,9 +135,6 @@ __isl_give isl_basic_map *isl_basic_map_mark_final(
 	__isl_take isl_basic_map *bmap);
 __isl_give isl_basic_map *isl_basic_map_finalize(
 	__isl_take isl_basic_map *bmap);
-__isl_give isl_basic_map *isl_basic_map_extend(__isl_take isl_basic_map *base,
-	unsigned nparam, unsigned n_in, unsigned n_out, unsigned extra,
-	unsigned n_eq, unsigned n_ineq);
 __isl_give isl_basic_map *isl_basic_map_extend_constraints(
 	__isl_take isl_basic_map *base, unsigned n_eq, unsigned n_ineq);
 __isl_give isl_basic_map *isl_basic_map_simplify(

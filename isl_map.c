@@ -1990,26 +1990,6 @@ struct isl_basic_map *isl_basic_map_extend_constraints(
 					0, n_eq, n_ineq);
 }
 
-struct isl_basic_map *isl_basic_map_extend(struct isl_basic_map *base,
-		unsigned nparam, unsigned n_in, unsigned n_out, unsigned extra,
-		unsigned n_eq, unsigned n_ineq)
-{
-	struct isl_basic_map *bmap;
-	isl_space *dim;
-
-	if (!base)
-		return NULL;
-	dim = isl_space_alloc(base->ctx, nparam, n_in, n_out);
-	if (!dim)
-		goto error;
-
-	bmap = isl_basic_map_extend_space(base, dim, extra, n_eq, n_ineq);
-	return bmap;
-error:
-	isl_basic_map_free(base);
-	return NULL;
-}
-
 struct isl_basic_set *isl_basic_set_extend_constraints(
 		struct isl_basic_set *base, unsigned n_eq, unsigned n_ineq)
 {
