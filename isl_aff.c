@@ -7661,3 +7661,62 @@ __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_from_union_map(
 	upma = isl_union_pw_multi_aff_from_union_map(umap);
 	return isl_multi_union_pw_aff_from_union_pw_multi_aff(upma);
 }
+
+/* Return a multiple union piecewise affine expression
+ * that is equal to "mv" on "domain", assuming "domain" and "mv"
+ * have been aligned.
+ */
+static __isl_give isl_multi_union_pw_aff *
+isl_multi_union_pw_aff_multi_val_on_domain_aligned(
+	__isl_take isl_union_set *domain, __isl_take isl_multi_val *mv)
+{
+	int i, n;
+	isl_space *space;
+	isl_multi_union_pw_aff *mupa;
+
+	if (!domain || !mv)
+		goto error;
+
+	n = isl_multi_val_dim(mv, isl_dim_set);
+	space = isl_multi_val_get_space(mv);
+	mupa = isl_multi_union_pw_aff_alloc(space);
+	for (i = 0; i < n; ++i) {
+		isl_val *v;
+		isl_union_pw_aff *upa;
+
+		v = isl_multi_val_get_val(mv, i);
+		upa = isl_union_pw_aff_val_on_domain(isl_union_set_copy(domain),
+							v);
+		mupa = isl_multi_union_pw_aff_set_union_pw_aff(mupa, i, upa);
+	}
+
+	isl_union_set_free(domain);
+	isl_multi_val_free(mv);
+	return mupa;
+error:
+	isl_union_set_free(domain);
+	isl_multi_val_free(mv);
+	return NULL;
+}
+
+/* Return a multiple union piecewise affine expression
+ * that is equal to "mv" on "domain".
+ */
+__isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_multi_val_on_domain(
+	__isl_take isl_union_set *domain, __isl_take isl_multi_val *mv)
+{
+	if (!domain || !mv)
+		goto error;
+	if (isl_space_match(domain->dim, isl_dim_param,
+			    mv->space, isl_dim_param))
+		return isl_multi_union_pw_aff_multi_val_on_domain_aligned(
+								    domain, mv);
+	domain = isl_union_set_align_params(domain,
+						isl_multi_val_get_space(mv));
+	mv = isl_multi_val_align_params(mv, isl_union_set_get_space(domain));
+	return isl_multi_union_pw_aff_multi_val_on_domain_aligned(domain, mv);
+error:
+	isl_union_set_free(domain);
+	isl_multi_val_free(mv);
+	return NULL;
+}
