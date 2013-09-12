@@ -8595,14 +8595,13 @@ static enum isl_lp_result basic_set_maximal_difference_at(
 	__isl_keep isl_basic_set *bset1, __isl_keep isl_basic_set *bset2,
 	int pos, isl_int *opt)
 {
-	isl_space *dims;
-	struct isl_basic_map *bmap1 = NULL;
-	struct isl_basic_map *bmap2 = NULL;
+	isl_basic_map *bmap1;
+	isl_basic_map *bmap2;
 	struct isl_ctx *ctx;
 	struct isl_vec *obj;
 	unsigned total;
 	unsigned nparam;
-	unsigned dim1, dim2;
+	unsigned dim1;
 	enum isl_lp_result res;
 
 	if (!bset1 || !bset2)
@@ -8610,25 +8609,22 @@ static enum isl_lp_result basic_set_maximal_difference_at(
 
 	nparam = isl_basic_set_n_param(bset1);
 	dim1 = isl_basic_set_n_dim(bset1);
-	dim2 = isl_basic_set_n_dim(bset2);
-	dims = isl_space_alloc(bset1->ctx, nparam, pos, dim1 - pos);
-	bmap1 = isl_basic_map_from_basic_set(isl_basic_set_copy(bset1), dims);
-	dims = isl_space_alloc(bset2->ctx, nparam, pos, dim2 - pos);
-	bmap2 = isl_basic_map_from_basic_set(isl_basic_set_copy(bset2), dims);
-	if (!bmap1 || !bmap2)
-		goto error;
-	bmap1 = isl_basic_map_cow(bmap1);
-	bmap1 = isl_basic_map_extend(bmap1, nparam,
-			pos, (dim1 - pos) + (dim2 - pos),
-			bmap2->n_div, bmap2->n_eq, bmap2->n_ineq);
-	bmap1 = add_constraints(bmap1, bmap2, 0, dim1 - pos);
+
+	bmap1 = isl_basic_map_from_range(isl_basic_set_copy(bset1));
+	bmap2 = isl_basic_map_from_range(isl_basic_set_copy(bset2));
+	bmap1 = isl_basic_map_move_dims(bmap1, isl_dim_in, 0,
+					isl_dim_out, 0, pos);
+	bmap2 = isl_basic_map_move_dims(bmap2, isl_dim_in, 0,
+					isl_dim_out, 0, pos);
+	bmap1 = isl_basic_map_range_product(bmap1, bmap2);
 	if (!bmap1)
-		goto error2;
+		return isl_lp_error;
+
 	total = isl_basic_map_total_dim(bmap1);
 	ctx = bmap1->ctx;
 	obj = isl_vec_alloc(ctx, 1 + total);
 	if (!obj)
-		goto error2;
+		goto error;
 	isl_seq_clr(obj->block.data, 1 + total);
 	isl_int_set_si(obj->block.data[1+nparam+pos], 1);
 	isl_int_set_si(obj->block.data[1+nparam+pos+(dim1-pos)], -1);
@@ -8638,8 +8634,6 @@ static enum isl_lp_result basic_set_maximal_difference_at(
 	isl_vec_free(obj);
 	return res;
 error:
-	isl_basic_map_free(bmap2);
-error2:
 	isl_basic_map_free(bmap1);
 	return isl_lp_error;
 }
