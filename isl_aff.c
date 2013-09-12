@@ -6675,3 +6675,19 @@ int isl_pw_aff_plain_cmp(__isl_keep isl_pw_aff *pa1,
 
 	return 0;
 }
+
+/* Return a piecewise affine expression that is equal to "v" on "domain".
+ */
+__isl_give isl_pw_aff *isl_pw_aff_val_on_domain(__isl_take isl_set *domain,
+	__isl_take isl_val *v)
+{
+	isl_space *space;
+	isl_local_space *ls;
+	isl_aff *aff;
+
+	space = isl_set_get_space(domain);
+	ls = isl_local_space_from_space(space);
+	aff = isl_aff_val_on_domain(ls, v);
+
+	return isl_pw_aff_alloc(domain, aff);
+}

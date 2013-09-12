@@ -2600,6 +2600,14 @@ then create a piecewise expression over a universe domain.
 	__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_zero(
 		__isl_take isl_space *space);
 
+The following convenience function first creates a base expression and
+then create a piecewise expression over a given domain.
+
+	#include <isl/aff.h>
+	__isl_give isl_pw_aff *isl_pw_aff_val_on_domain(
+		__isl_take isl_set *domain,
+		__isl_take isl_val *v);
+
 As a convenience, a piecewise multiple expression can
 also be created from a piecewise expression.
 Each multiple expression in the result is derived

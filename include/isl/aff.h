@@ -146,6 +146,8 @@ __isl_give isl_pw_aff *isl_pw_aff_zero_on_domain(
 __isl_give isl_pw_aff *isl_pw_aff_var_on_domain(__isl_take isl_local_space *ls,
 	enum isl_dim_type type, unsigned pos);
 __isl_give isl_pw_aff *isl_pw_aff_nan_on_domain(__isl_take isl_local_space *ls);
+__isl_give isl_pw_aff *isl_pw_aff_val_on_domain(__isl_take isl_set *domain,
+	__isl_take isl_val *v);
 
 __isl_give isl_pw_aff *isl_set_indicator_function(__isl_take isl_set *set);
 
