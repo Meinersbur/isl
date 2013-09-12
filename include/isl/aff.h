@@ -724,6 +724,8 @@ __isl_give isl_union_pw_aff *isl_union_pw_aff_empty(
 	__isl_take isl_space *space);
 __isl_give isl_union_pw_aff *isl_union_pw_aff_from_pw_aff(
 	__isl_take isl_pw_aff *pa);
+__isl_give isl_union_pw_aff *isl_union_pw_aff_val_on_domain(
+	__isl_take isl_union_set *domain, __isl_take isl_val *v);
 __isl_give isl_union_pw_aff *isl_union_pw_aff_add_pw_aff(
 	__isl_take isl_union_pw_aff *upa, __isl_take isl_pw_aff *pa);
 

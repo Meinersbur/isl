@@ -2913,10 +2913,14 @@ can be created using the following functions.
 	isl_union_pw_qpolynomial_from_pw_qpolynomial(
 		__isl_take isl_pw_qpolynomial *pwqp);
 
-The following function creates a base expression on each
-of the sets in the union set and collects the results.
+The following functions create a base expression on each
+of the sets in the union set and collect the results.
 
 	#include <isl/aff.h>
+	__isl_give isl_union_pw_aff *
+	isl_union_pw_aff_val_on_domain(
+		__isl_take isl_union_set *domain,
+		__isl_take isl_val *v);
 	__isl_give isl_union_pw_multi_aff *
 	isl_union_pw_multi_aff_multi_val_on_domain(
 		__isl_take isl_union_set *domain,
