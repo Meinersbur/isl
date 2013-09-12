@@ -1890,13 +1890,14 @@ __isl_give isl_space *isl_space_underlying(__isl_take isl_space *space,
 	unsigned n_div)
 {
 	int i;
+	isl_bool is_set;
 
-	if (!space)
-		return NULL;
-	if (n_div == 0 &&
+	is_set = isl_space_is_set(space);
+	if (is_set < 0)
+		return isl_space_free(space);
+	if (n_div == 0 && is_set &&
 	    space->nparam == 0 && space->n_in == 0 && space->n_id == 0)
-		return isl_space_reset(isl_space_reset(space, isl_dim_in),
-					isl_dim_out);
+		return isl_space_reset(space, isl_dim_out);
 	space = isl_space_cow(space);
 	if (!space)
 		return NULL;
@@ -1909,6 +1910,7 @@ __isl_give isl_space *isl_space_underlying(__isl_take isl_space *space,
 	space->n_id = 0;
 	space = isl_space_reset(space, isl_dim_in);
 	space = isl_space_reset(space, isl_dim_out);
+	space = mark_as_set(space);
 
 	return space;
 }
