@@ -757,6 +757,9 @@ __isl_give isl_union_pw_aff *isl_union_pw_aff_gist(
 __isl_give isl_union_pw_aff *isl_union_pw_aff_gist_params(
 	__isl_take isl_union_pw_aff *upa, __isl_take isl_set *context);
 
+__isl_give isl_union_pw_aff *isl_union_pw_aff_floor(
+	__isl_take isl_union_pw_aff *upa);
+
 __isl_give isl_union_pw_aff *isl_union_pw_aff_scale_val(
 	__isl_take isl_union_pw_aff *upa, __isl_take isl_val *v);
 __isl_give isl_union_pw_aff *isl_union_pw_aff_scale_down_val(

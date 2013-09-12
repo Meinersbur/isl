@@ -6899,3 +6899,35 @@ isl_union_pw_multi_aff_pullback_union_pw_multi_aff(
 {
 	return bin_op(upma1, upma2, &pullback_entry);
 }
+
+/* Replace the entry of isl_union_pw_aff to which "entry" points
+ * by its floor.
+ */
+static int floor_entry(void **entry, void *user)
+{
+	isl_pw_aff **pa = (isl_pw_aff **) entry;
+
+	*pa = isl_pw_aff_floor(*pa);
+	if (!*pa)
+		return -1;
+
+	return 0;
+}
+
+/* Given f, return floor(f).
+ */
+__isl_give isl_union_pw_aff *isl_union_pw_aff_floor(
+	__isl_take isl_union_pw_aff *upa)
+{
+	isl_ctx *ctx;
+
+	upa = isl_union_pw_aff_cow(upa);
+	if (!upa)
+		return NULL;
+
+	ctx = isl_union_pw_aff_get_ctx(upa);
+	if (isl_hash_table_foreach(ctx, &upa->table, &floor_entry, NULL) < 0)
+		upa = isl_union_pw_aff_free(upa);
+
+	return upa;
+}

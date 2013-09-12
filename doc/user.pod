@@ -4844,6 +4844,8 @@ All parameters need to be named.
 		__isl_take isl_multi_aff *ma);
 	__isl_give isl_pw_aff *isl_pw_aff_floor(
 		__isl_take isl_pw_aff *pwaff);
+	__isl_give isl_union_pw_aff *isl_union_pw_aff_floor(
+		__isl_take isl_union_pw_aff *upa);
 
 	#include <isl/aff.h>
 	__isl_give isl_pw_aff *isl_pw_aff_list_min(
