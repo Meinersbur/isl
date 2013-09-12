@@ -1923,14 +1923,6 @@ error:
 	return NULL;
 }
 
-struct isl_basic_set *isl_basic_set_extend(struct isl_basic_set *base,
-		unsigned nparam, unsigned dim, unsigned extra,
-		unsigned n_eq, unsigned n_ineq)
-{
-	return bset_from_bmap(isl_basic_map_extend(bset_to_bmap(base),
-					nparam, 0, dim, extra, n_eq, n_ineq));
-}
-
 struct isl_basic_set *isl_basic_set_extend_constraints(
 		struct isl_basic_set *base, unsigned n_eq, unsigned n_ineq)
 {
