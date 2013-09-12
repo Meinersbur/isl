@@ -734,6 +734,9 @@ __isl_give isl_union_pw_aff *isl_union_pw_aff_aff_on_domain(
 __isl_give isl_union_pw_aff *isl_union_pw_aff_add_pw_aff(
 	__isl_take isl_union_pw_aff *upa, __isl_take isl_pw_aff *pa);
 
+__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_from_union_pw_aff(
+	__isl_take isl_union_pw_aff *upa);
+
 int isl_union_pw_aff_n_pw_multi_aff(__isl_keep isl_union_pw_aff *upa);
 
 int isl_union_pw_aff_foreach_pw_aff(__isl_keep isl_union_pw_aff *upa,

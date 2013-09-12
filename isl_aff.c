@@ -7135,3 +7135,40 @@ __isl_give isl_union_pw_aff *isl_union_pw_aff_val_on_domain(
 	isl_val_free(v);
 	return data.res;
 }
+
+/* Construct a piecewise multi affine expression
+ * that is equal to "pa" and add it to upma.
+ */
+static int pw_multi_aff_from_pw_aff_entry(__isl_take isl_pw_aff *pa, void *user)
+{
+	isl_union_pw_multi_aff **upma = user;
+	isl_pw_multi_aff *pma;
+
+	pma = isl_pw_multi_aff_from_pw_aff(pa);
+	*upma = isl_union_pw_multi_aff_add_pw_multi_aff(*upma, pma);
+
+	return *upma ? 0 : -1;
+}
+
+/* Construct and return a union piecewise multi affine expression
+ * that is equal to the given union piecewise affine expression.
+ */
+__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_from_union_pw_aff(
+	__isl_take isl_union_pw_aff *upa)
+{
+	isl_space *space;
+	isl_union_pw_multi_aff *upma;
+
+	if (!upa)
+		return NULL;
+
+	space = isl_union_pw_aff_get_space(upa);
+	upma = isl_union_pw_multi_aff_empty(space);
+
+	if (isl_union_pw_aff_foreach_pw_aff(upa,
+				&pw_multi_aff_from_pw_aff_entry, &upma) < 0)
+		upma = isl_union_pw_multi_aff_free(upma);
+
+	isl_union_pw_aff_free(upa);
+	return upma;
+}
