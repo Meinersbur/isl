@@ -1221,6 +1221,25 @@ error:
 	return NULL;
 }
 
+/* Subtract "multi2" from "multi1" and return the result.
+ *
+ * The parameters of "multi1" and "multi2" are assumed to have been aligned.
+ */
+static __isl_give MULTI(BASE) *FN(MULTI(BASE),sub_aligned)(
+	__isl_take MULTI(BASE) *multi1, __isl_take MULTI(BASE) *multi2)
+{
+	return FN(MULTI(BASE),bin_op)(multi1, multi2, &FN(EL,sub));
+}
+
+/* Subtract "multi2" from "multi1" and return the result.
+ */
+__isl_give MULTI(BASE) *FN(MULTI(BASE),sub)(__isl_take MULTI(BASE) *multi1,
+	__isl_take MULTI(BASE) *multi2)
+{
+	return FN(MULTI(BASE),align_params_multi_multi_and)(multi1, multi2,
+						&FN(MULTI(BASE),sub_aligned));
+}
+
 /* Multiply the elements of "multi" by "v" and return the result.
  */
 __isl_give MULTI(BASE) *FN(MULTI(BASE),scale_val)(__isl_take MULTI(BASE) *multi,

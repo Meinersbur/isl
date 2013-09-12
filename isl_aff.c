@@ -3801,25 +3801,6 @@ __isl_give isl_multi_aff *isl_multi_aff_add(__isl_take isl_multi_aff *ma1,
 						&isl_multi_aff_add_aligned);
 }
 
-/* Subtract "ma2" from "ma1" and return the result.
- *
- * The parameters of "ma1" and "ma2" are assumed to have been aligned.
- */
-static __isl_give isl_multi_aff *isl_multi_aff_sub_aligned(
-	__isl_take isl_multi_aff *ma1, __isl_take isl_multi_aff *ma2)
-{
-	return isl_multi_aff_bin_op(ma1, ma2, &isl_aff_sub);
-}
-
-/* Subtract "ma2" from "ma1" and return the result.
- */
-__isl_give isl_multi_aff *isl_multi_aff_sub(__isl_take isl_multi_aff *ma1,
-	__isl_take isl_multi_aff *ma2)
-{
-	return isl_multi_aff_align_params_multi_multi_and(ma1, ma2,
-						&isl_multi_aff_sub_aligned);
-}
-
 /* Exploit the equalities in "eq" to simplify the affine expressions.
  */
 static __isl_give isl_multi_aff *isl_multi_aff_substitute_equalities(
