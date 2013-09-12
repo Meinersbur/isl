@@ -1368,7 +1368,8 @@ __isl_give isl_basic_set *isl_basic_set_preimage(
 	isl_assert(ctx, mat->n_col > 0, goto error);
 
 	if (mat->n_col > mat->n_row) {
-		bset = isl_basic_set_extend(bset, 0, mat->n_col-1, 0, 0, 0);
+		bset = isl_basic_set_add_dims(bset, isl_dim_set,
+						mat->n_col - mat->n_row);
 		if (!bset)
 			goto error;
 	} else if (mat->n_col < mat->n_row) {
