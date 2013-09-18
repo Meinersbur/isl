@@ -1338,36 +1338,24 @@ static __isl_give isl_multi_pw_aff *set_iterator_names(
 	return mpa;
 }
 
-/* Construct an isl_ast_expr of type "type" that calls or accesses
- * the element specified by "mpa".
- * The first argument is obtained from the output tuple name.
- * The remaining arguments are given by the piecewise affine expressions.
- *
- * The domain of "mpa" is assumed to live in the internal schedule domain.
+/* Construct an isl_ast_expr of type "type" with as first argument "arg0" and
+ * the remaining arguments derived from "mpa".
+ * That is, construct a call or access expression that calls/accesses "arg0"
+ * with arguments/indices specified by "mpa".
  */
-static __isl_give isl_ast_expr *isl_ast_build_from_multi_pw_aff_internal(
+static __isl_give isl_ast_expr *isl_ast_build_with_arguments(
 	__isl_keep isl_ast_build *build, enum isl_ast_op_type type,
-	__isl_take isl_multi_pw_aff *mpa)
+	__isl_take isl_ast_expr *arg0, __isl_take isl_multi_pw_aff *mpa)
 {
 	int i, n;
 	isl_ctx *ctx;
-	isl_id *id;
 	isl_ast_expr *expr;
 
-	mpa = set_iterator_names(build, mpa);
-	if (!build || !mpa)
-		return isl_multi_pw_aff_free(mpa);
-
 	ctx = isl_ast_build_get_ctx(build);
+
 	n = isl_multi_pw_aff_dim(mpa, isl_dim_out);
 	expr = isl_ast_expr_alloc_op(ctx, type, 1 + n);
-
-	if (isl_multi_pw_aff_has_tuple_id(mpa, isl_dim_out))
-		id = isl_multi_pw_aff_get_tuple_id(mpa, isl_dim_out);
-	else
-		id = isl_id_alloc(ctx, "", NULL);
-
-	expr = isl_ast_expr_set_op_arg(expr, 0, isl_ast_expr_from_id(id));
+	expr = isl_ast_expr_set_op_arg(expr, 0, arg0);
 	for (i = 0; i < n; ++i) {
 		isl_pw_aff *pa;
 		isl_ast_expr *arg;
@@ -1379,6 +1367,36 @@ static __isl_give isl_ast_expr *isl_ast_build_from_multi_pw_aff_internal(
 
 	isl_multi_pw_aff_free(mpa);
 	return expr;
+}
+
+/* Construct an isl_ast_expr of type "type" that calls or accesses
+ * the element specified by "mpa".
+ * The first argument is obtained from the output tuple name.
+ * The remaining arguments are given by the piecewise affine expressions.
+ *
+ * The domain of "mpa" is assumed to live in the internal schedule domain.
+ */
+static __isl_give isl_ast_expr *isl_ast_build_from_multi_pw_aff_internal(
+	__isl_keep isl_ast_build *build, enum isl_ast_op_type type,
+	__isl_take isl_multi_pw_aff *mpa)
+{
+	isl_ctx *ctx;
+	isl_id *id;
+	isl_ast_expr *expr;
+
+	mpa = set_iterator_names(build, mpa);
+	if (!build || !mpa)
+		return isl_multi_pw_aff_free(mpa);
+
+	ctx = isl_ast_build_get_ctx(build);
+
+	if (isl_multi_pw_aff_has_tuple_id(mpa, isl_dim_out))
+		id = isl_multi_pw_aff_get_tuple_id(mpa, isl_dim_out);
+	else
+		id = isl_id_alloc(ctx, "", NULL);
+
+	expr = isl_ast_expr_from_id(id);
+	return isl_ast_build_with_arguments(build, type, expr, mpa);
 }
 
 /* Construct an isl_ast_expr of type "type" that calls or accesses
