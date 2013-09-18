@@ -104,10 +104,29 @@ static void test_parse_pwaff(isl_ctx *ctx, const char *str)
 	isl_pw_aff_free(pwaff);
 }
 
+/* Check that we can read an isl_multi_val from "str" without errors.
+ */
+static int test_parse_multi_val(isl_ctx *ctx, const char *str)
+{
+	isl_multi_val *mv;
+
+	mv = isl_multi_val_read_from_str(ctx, str);
+	isl_multi_val_free(mv);
+
+	return mv ? 0 : -1;
+}
+
 int test_parse(struct isl_ctx *ctx)
 {
 	isl_map *map, *map2;
 	const char *str, *str2;
+
+	if (test_parse_multi_val(ctx, "{ A[B[2] -> C[5, 7]] }") < 0)
+		return -1;
+	if (test_parse_multi_val(ctx, "[n] -> { [2] }") < 0)
+		return -1;
+	if (test_parse_multi_val(ctx, "{ A[4, infty, NaN, -1/2, 2/3] }") < 0)
+		return -1;
 
 	str = "{ [i] -> [-i] }";
 	map = isl_map_read_from_str(ctx, str);
