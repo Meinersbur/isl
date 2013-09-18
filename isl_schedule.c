@@ -49,6 +49,7 @@
  * the columns of cmap represent a change of basis for the schedule
  *	coefficients; the first rank columns span the linear part of
  *	the schedule rows
+ * cinv is the inverse of cmap.
  * start is the first variable in the LP problem in the sequences that
  *	represents the schedule coefficients of this node
  * nvar is the dimension of the domain
@@ -72,6 +73,7 @@ struct isl_sched_node {
 	isl_map *sched_map;
 	int	 rank;
 	isl_mat *cmap;
+	isl_mat *cinv;
 	int	 start;
 	int	 nvar;
 	int	 nparam;
@@ -453,6 +455,7 @@ static void graph_free(isl_ctx *ctx, struct isl_sched_graph *graph)
 		isl_mat_free(graph->node[i].sched);
 		isl_map_free(graph->node[i].sched_map);
 		isl_mat_free(graph->node[i].cmap);
+		isl_mat_free(graph->node[i].cinv);
 		if (graph->root) {
 			free(graph->node[i].band);
 			free(graph->node[i].band_id);
@@ -1142,7 +1145,8 @@ static int add_all_proximity_constraints(struct isl_sched_graph *graph)
  *
  * In particular, given the schedule rows S, we compute
  *
- *	S = H Q
+ *	S   = H Q
+ *	S U = H
  *
  * with H the Hermite normal form of S.  That is, all but the
  * first rank columns of Q are zero and so each row in S is
@@ -1151,22 +1155,26 @@ static int add_all_proximity_constraints(struct isl_sched_graph *graph)
  * coefficients of the next schedule row as a column vector s
  * and express this s as a linear combination s = Q c of the
  * computed basis.
+ * Similarly, the matrix U is transposed such that we can
+ * compute the coefficients c = U s from a schedule row s.
  */
 static int node_update_cmap(struct isl_sched_node *node)
 {
-	isl_mat *H, *Q;
+	isl_mat *H, *U, *Q;
 	int n_row = isl_mat_rows(node->sched);
 
 	H = isl_mat_sub_alloc(node->sched, 0, n_row,
 			      1 + node->nparam, node->nvar);
 
-	H = isl_mat_left_hermite(H, 0, NULL, &Q);
+	H = isl_mat_left_hermite(H, 0, &U, &Q);
 	isl_mat_free(node->cmap);
+	isl_mat_free(node->cinv);
 	node->cmap = isl_mat_transpose(Q);
+	node->cinv = isl_mat_transpose(U);
 	node->rank = isl_mat_initial_non_zero_cols(H);
 	isl_mat_free(H);
 
-	if (!node->cmap || node->rank < 0)
+	if (!node->cmap || !node->cinv || node->rank < 0)
 		return -1;
 	return 0;
 }
@@ -2555,31 +2563,58 @@ static int compute_component_schedule(isl_ctx *ctx,
 /* Is the schedule row "sol" trivial on node "node"?
  * That is, is the solution zero on the dimensions orthogonal to
  * the previously found solutions?
+ * Return 1 if the solution is trivial, 0 if it is not and -1 on error.
+ *
  * Each coefficient is represented as the difference between
- * two non-negative values in "sol".  The coefficient is then
- * zero if those two values are equal to each other.
+ * two non-negative values in "sol".  "sol" has been computed
+ * in terms of the original iterators (i.e., without use of cmap).
+ * We construct the schedule row s and write it as a linear
+ * combination of (linear combinations of) previously computed schedule rows.
+ * s = Q c or c = U s.
+ * If the final entries of c are all zero, then the solution is trivial.
  */
 static int is_trivial(struct isl_sched_node *node, __isl_keep isl_vec *sol)
 {
 	int i;
 	int pos;
-	int len;
+	int trivial;
+	isl_ctx *ctx;
+	isl_vec *node_sol;
 
-	pos = 1 + node->start + 1 + 2 * (node->nparam + node->rank);
-	len = 2 * (node->nvar - node->rank);
-
-	if (len == 0)
+	if (!sol)
+		return -1;
+	if (node->nvar == node->rank)
 		return 0;
 
-	for (i = 0; i < len; i += 2)
-		if (isl_int_ne(sol->el[pos + i], sol->el[pos + i + 1]))
-			return 0;
+	ctx = isl_vec_get_ctx(sol);
+	node_sol = isl_vec_alloc(ctx, node->nvar);
+	if (!node_sol)
+		return -1;
 
-	return 1;
+	pos = 1 + node->start + 1 + 2 * node->nparam;
+
+	for (i = 0; i < node->nvar; ++i)
+		isl_int_sub(node_sol->el[i],
+			    sol->el[pos + 2 * i + 1], sol->el[pos + 2 * i]);
+
+	node_sol = isl_mat_vec_product(isl_mat_copy(node->cinv), node_sol);
+
+	if (!node_sol)
+		return -1;
+
+	trivial = isl_seq_first_non_zero(node_sol->el + node->rank,
+					node->nvar - node->rank) == -1;
+
+	isl_vec_free(node_sol);
+
+	return trivial;
 }
 
 /* Is the schedule row "sol" trivial on any node where it should
  * not be trivial?
+ * "sol" has been computed in terms of the original iterators
+ * (i.e., without use of cmap).
+ * Return 1 if any solution is trivial, 0 if they are not and -1 on error.
  */
 static int is_any_trivial(struct isl_sched_graph *graph,
 	__isl_keep isl_vec *sol)
@@ -2588,11 +2623,13 @@ static int is_any_trivial(struct isl_sched_graph *graph,
 
 	for (i = 0; i < graph->n; ++i) {
 		struct isl_sched_node *node = &graph->node[i];
+		int trivial;
 
 		if (!needs_row(graph, node))
 			continue;
-		if (is_trivial(node, sol))
-			return 1;
+		trivial = is_trivial(node, sol);
+		if (trivial < 0 || trivial)
+			return trivial;
 	}
 
 	return 0;
@@ -2609,6 +2646,7 @@ static int carry_dependences(isl_ctx *ctx, struct isl_sched_graph *graph)
 {
 	int i;
 	int n_edge;
+	int trivial;
 	isl_vec *sol;
 	isl_basic_set *lp;
 
@@ -2637,7 +2675,10 @@ static int carry_dependences(isl_ctx *ctx, struct isl_sched_graph *graph)
 			"unable to carry dependences", return -1);
 	}
 
-	if (is_any_trivial(graph, sol)) {
+	trivial = is_any_trivial(graph, sol);
+	if (trivial < 0) {
+		sol = isl_vec_free(sol);
+	} else if (trivial) {
 		isl_vec_free(sol);
 		if (graph->scc > 1)
 			return compute_component_schedule(ctx, graph);
