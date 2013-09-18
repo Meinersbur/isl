@@ -3109,7 +3109,7 @@ error:
 }
 
 /* Read a multi-affine expression from "s".
- * If the multi-affine expression has a domain, then then tuple
+ * If the multi-affine expression has a domain, then the tuple
  * representing this domain cannot involve any affine expressions.
  * The tuple representing the actual expressions needs to consist
  * of only affine expressions.  Moreover, these expressions can
