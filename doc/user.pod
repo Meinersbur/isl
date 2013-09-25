@@ -7349,6 +7349,14 @@ The schedule tree is assumed not to have any anchored nodes.
 		__isl_take isl_schedule *schedule,
 		__isl_take isl_multi_union_pw_aff *partial);
 
+A top-level context node (right underneath the domain node) can
+be introduced into the schedule using the following function.
+
+	#include <isl/schedule.h>
+	__isl_give isl_schedule *isl_schedule_insert_context(
+		__isl_take isl_schedule *schedule,
+		__isl_take isl_set *context)
+
 A schedule that combines two schedules either in the given
 order or in an arbitrary order, i.e., with an C<isl_schedule_node_sequence>
 or an C<isl_schedule_node_set> node,
