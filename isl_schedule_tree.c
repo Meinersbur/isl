@@ -85,6 +85,11 @@ __isl_take isl_schedule_tree *isl_schedule_tree_dup(
 		if (!dup->band)
 			return isl_schedule_tree_free(dup);
 		break;
+	case isl_schedule_node_context:
+		dup->context = isl_set_copy(tree->context);
+		if (!dup->context)
+			return isl_schedule_tree_free(dup);
+		break;
 	case isl_schedule_node_domain:
 		dup->domain = isl_union_set_copy(tree->domain);
 		if (!dup->domain)
@@ -169,6 +174,9 @@ __isl_null isl_schedule_tree *isl_schedule_tree_free(
 	case isl_schedule_node_band:
 		isl_schedule_band_free(tree->band);
 		break;
+	case isl_schedule_node_context:
+		isl_set_free(tree->context);
+		break;
 	case isl_schedule_node_domain:
 		isl_union_set_free(tree->domain);
 		break;
@@ -218,6 +226,33 @@ __isl_give isl_schedule_tree *isl_schedule_tree_from_band(
 	return tree;
 error:
 	isl_schedule_band_free(band);
+	return NULL;
+}
+
+/* Create a new context schedule tree with the given context and no children.
+ * Since the context references the outer schedule dimension,
+ * the tree is anchored.
+ */
+__isl_give isl_schedule_tree *isl_schedule_tree_from_context(
+	__isl_take isl_set *context)
+{
+	isl_ctx *ctx;
+	isl_schedule_tree *tree;
+
+	if (!context)
+		return NULL;
+
+	ctx = isl_set_get_ctx(context);
+	tree = isl_schedule_tree_alloc(ctx, isl_schedule_node_context);
+	if (!tree)
+		goto error;
+
+	tree->context = context;
+	tree->anchored = 1;
+
+	return tree;
+error:
+	isl_set_free(context);
 	return NULL;
 }
 
@@ -280,6 +315,7 @@ int isl_schedule_tree_is_subtree_anchored(__isl_keep isl_schedule_tree *tree)
 /* Does the root node of "tree" depend on its position in the complete
  * schedule tree?
  * Band nodes may be anchored depending on the associated AST build options.
+ * Context nodes are always anchored.
  */
 int isl_schedule_tree_is_anchored(__isl_keep isl_schedule_tree *tree)
 {
@@ -291,6 +327,8 @@ int isl_schedule_tree_is_anchored(__isl_keep isl_schedule_tree *tree)
 		return -1;
 	case isl_schedule_node_band:
 		return isl_schedule_band_is_anchored(tree->band);
+	case isl_schedule_node_context:
+		return 1;
 	case isl_schedule_node_domain:
 	case isl_schedule_node_filter:
 	case isl_schedule_node_leaf:
@@ -441,6 +479,9 @@ int isl_schedule_tree_plain_is_equal(__isl_keep isl_schedule_tree *tree1,
 	case isl_schedule_node_band:
 		equal = isl_schedule_band_plain_is_equal(tree1->band,
 							tree2->band);
+		break;
+	case isl_schedule_node_context:
+		equal = isl_set_is_equal(tree1->context, tree2->context);
 		break;
 	case isl_schedule_node_domain:
 		equal = isl_union_set_is_equal(tree1->domain, tree2->domain);
@@ -642,6 +683,18 @@ __isl_give isl_schedule_tree *isl_schedule_tree_insert_band(
 	isl_schedule_tree *res;
 
 	res = isl_schedule_tree_from_band(band);
+	return isl_schedule_tree_replace_child(res, 0, tree);
+}
+
+/* Create a new context schedule tree with the given context and
+ * with "tree" as single child.
+ */
+__isl_give isl_schedule_tree *isl_schedule_tree_insert_context(
+	__isl_take isl_schedule_tree *tree, __isl_take isl_set *context)
+{
+	isl_schedule_tree *res;
+
+	res = isl_schedule_tree_from_context(context);
 	return isl_schedule_tree_replace_child(res, 0, tree);
 }
 
@@ -957,6 +1010,21 @@ error:
 	return NULL;
 }
 
+/* Return the context of the context tree root.
+ */
+__isl_give isl_set *isl_schedule_tree_context_get_context(
+	__isl_keep isl_schedule_tree *tree)
+{
+	if (!tree)
+		return NULL;
+
+	if (tree->type != isl_schedule_node_context)
+		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_invalid,
+			"not a context node", return NULL);
+
+	return isl_set_copy(tree->context);
+}
+
 /* Return the domain of the domain tree root.
  */
 __isl_give isl_union_set *isl_schedule_tree_domain_get_domain(
@@ -1093,14 +1161,41 @@ static __isl_give isl_union_map *append_range(__isl_take isl_union_map *umap,
 	return umap;
 }
 
+/* Should we skip the root of "tree" while looking for the first
+ * descendant with schedule information?
+ * That is, is it impossible to derive any information about
+ * the iteration domain from this node?
+ *
+ * We do not want to skip leaf or error nodes because there is
+ * no point in looking any deeper from these nodes.
+ */
+static int domain_less(__isl_keep isl_schedule_tree *tree)
+{
+	enum isl_schedule_node_type type;
+
+	type = isl_schedule_tree_get_type(tree);
+	switch (type) {
+	case isl_schedule_node_band:
+		return isl_schedule_tree_band_n_member(tree) == 0;
+	case isl_schedule_node_context:
+		return 1;
+	case isl_schedule_node_leaf:
+	case isl_schedule_node_error:
+	case isl_schedule_node_domain:
+	case isl_schedule_node_filter:
+	case isl_schedule_node_set:
+	case isl_schedule_node_sequence:
+		return 0;
+	}
+}
+
 /* Move down to the first descendant of "tree" that contains any schedule
  * information or return "leaf" if there is no such descendant.
  */
 __isl_give isl_schedule_tree *isl_schedule_tree_first_schedule_descendant(
 	__isl_take isl_schedule_tree *tree, __isl_keep isl_schedule_tree *leaf)
 {
-	while (isl_schedule_tree_get_type(tree) == isl_schedule_node_band &&
-	    isl_schedule_tree_band_n_member(tree) == 0) {
+	while (domain_less(tree)) {
 		if (!isl_schedule_tree_has_children(tree)) {
 			isl_schedule_tree_free(tree);
 			return isl_schedule_tree_copy(leaf);
@@ -1289,6 +1384,8 @@ static __isl_give isl_union_map *subtree_schedule_extend(
 	switch (tree->type) {
 	case isl_schedule_node_error:
 		return isl_union_map_free(outer);
+	case isl_schedule_node_context:
+		return subtree_schedule_extend_child(tree, outer);
 	case isl_schedule_node_band:
 		if (isl_schedule_tree_band_n_member(tree) == 0)
 			return subtree_schedule_extend_child(tree, outer);
@@ -1376,6 +1473,10 @@ static __isl_give isl_union_set *initial_domain(
 	switch (tree->type) {
 	case isl_schedule_node_error:
 		return NULL;
+	case isl_schedule_node_context:
+		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_internal,
+			"context node should be handled by caller",
+			return NULL);
 	case isl_schedule_node_band:
 		if (isl_schedule_tree_band_n_member(tree) == 0)
 			isl_die(isl_schedule_tree_get_ctx(tree),
@@ -1621,6 +1722,11 @@ __isl_give isl_schedule_tree *isl_schedule_tree_reset_user(
 		if (!tree->band)
 			return isl_schedule_tree_free(tree);
 		break;
+	case isl_schedule_node_context:
+		tree->context = isl_set_reset_user(tree->context);
+		if (!tree->context)
+			return isl_schedule_tree_free(tree);
+		break;
 	case isl_schedule_node_domain:
 		tree->domain = isl_union_set_reset_user(tree->domain);
 		if (!tree->domain)
@@ -1665,6 +1771,11 @@ __isl_give isl_schedule_tree *isl_schedule_tree_align_params(
 		if (!tree->band)
 			return isl_schedule_tree_free(tree);
 		break;
+	case isl_schedule_node_context:
+		tree->context = isl_set_align_params(tree->context, space);
+		if (!tree->context)
+			return isl_schedule_tree_free(tree);
+		break;
 	case isl_schedule_node_domain:
 		tree->domain = isl_union_set_align_params(tree->domain, space);
 		if (!tree->domain)
@@ -1705,6 +1816,7 @@ static int involves_iteration_domain(__isl_keep isl_schedule_tree *tree)
 	case isl_schedule_node_domain:
 	case isl_schedule_node_filter:
 		return 1;
+	case isl_schedule_node_context:
 	case isl_schedule_node_leaf:
 	case isl_schedule_node_sequence:
 	case isl_schedule_node_set:
@@ -1905,6 +2017,13 @@ __isl_give isl_printer *isl_printer_print_schedule_tree_mark(
 	case isl_schedule_node_set:
 		p = isl_printer_print_str(p, "set");
 		sequence = 1;
+		break;
+	case isl_schedule_node_context:
+		p = isl_printer_print_str(p, "context");
+		p = isl_printer_yaml_next(p);
+		p = isl_printer_print_str(p, "\"");
+		p = isl_printer_print_set(p, tree->context);
+		p = isl_printer_print_str(p, "\"");
 		break;
 	case isl_schedule_node_domain:
 		p = isl_printer_print_str(p, "domain");

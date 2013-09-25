@@ -4053,6 +4053,45 @@ static int after_in_band(__isl_keep isl_union_map *umap,
 
 /* Is any domain element of "umap" scheduled after any of
  * the corresponding image elements by the tree rooted at
+ * the context node "node"?
+ *
+ * The context constraints apply to the schedule domain,
+ * so we cannot apply them directly to "umap", which contains
+ * pairs of statement instances.  Instead, we add them
+ * to the range of the prefix schedule for both domain and
+ * range of "umap".
+ */
+static int after_in_context(__isl_keep isl_union_map *umap,
+	__isl_keep isl_schedule_node *node)
+{
+	isl_union_map *prefix, *universe, *umap1, *umap2;
+	isl_union_set *domain, *range;
+	isl_set *context;
+	int after;
+
+	umap = isl_union_map_copy(umap);
+	context = isl_schedule_node_context_get_context(node);
+	prefix = isl_schedule_node_get_prefix_schedule_union_map(node);
+	universe = isl_union_map_universe(isl_union_map_copy(umap));
+	domain = isl_union_map_domain(isl_union_map_copy(universe));
+	range = isl_union_map_range(universe);
+	umap1 = isl_union_map_copy(prefix);
+	umap1 = isl_union_map_intersect_domain(umap1, domain);
+	umap2 = isl_union_map_intersect_domain(prefix, range);
+	umap1 = isl_union_map_intersect_range(umap1,
+					    isl_union_set_from_set(context));
+	umap1 = isl_union_map_apply_range(umap1, isl_union_map_reverse(umap2));
+	umap = isl_union_map_intersect(umap, umap1);
+
+	after = after_in_child(umap, node);
+
+	isl_union_map_free(umap);
+
+	return after;
+}
+
+/* Is any domain element of "umap" scheduled after any of
+ * the corresponding image elements by the tree rooted at
  * the filter node "node"?
  *
  * We intersect domain and range of "umap" with the filter and
@@ -4217,6 +4256,8 @@ static int after_in_tree(__isl_keep isl_union_map *umap,
 	case isl_schedule_node_domain:
 		isl_die(isl_schedule_node_get_ctx(node), isl_error_internal,
 			"unexpected internal domain node", return -1);
+	case isl_schedule_node_context:
+		return after_in_context(umap, node);
 	case isl_schedule_node_filter:
 		return after_in_filter(umap, node);
 	case isl_schedule_node_set:
@@ -4809,6 +4850,126 @@ error:
 	return NULL;
 }
 
+/* Hoist a list of grafts (in practice containing a single graft)
+ * from "sub_build" (which includes extra context information)
+ * to "build".
+ *
+ * In particular, project out all additional parameters introduced
+ * by the context node from the enforced constraints and the guard
+ * of the single graft.
+ */
+static __isl_give isl_ast_graft_list *hoist_out_of_context(
+	__isl_take isl_ast_graft_list *list, __isl_keep isl_ast_build *build,
+	__isl_keep isl_ast_build *sub_build)
+{
+	isl_ast_graft *graft;
+	isl_basic_set *enforced;
+	isl_set *guard;
+	unsigned n_param, extra_param;
+
+	if (!build || !sub_build)
+		return isl_ast_graft_list_free(list);
+
+	n_param = isl_ast_build_dim(build, isl_dim_param);
+	extra_param = isl_ast_build_dim(sub_build, isl_dim_param);
+
+	if (extra_param == n_param)
+		return list;
+
+	extra_param -= n_param;
+	enforced = isl_ast_graft_list_extract_shared_enforced(list, sub_build);
+	enforced = isl_basic_set_project_out(enforced, isl_dim_param,
+							n_param, extra_param);
+	enforced = isl_basic_set_remove_unknown_divs(enforced);
+	guard = isl_ast_graft_list_extract_hoistable_guard(list, sub_build);
+	guard = isl_set_remove_divs_involving_dims(guard, isl_dim_param,
+							n_param, extra_param);
+	guard = isl_set_project_out(guard, isl_dim_param, n_param, extra_param);
+	guard = isl_set_compute_divs(guard);
+	graft = isl_ast_graft_alloc_from_children(list, guard, enforced,
+							build, sub_build);
+	list = isl_ast_graft_list_from_ast_graft(graft);
+
+	return list;
+}
+
+/* Generate an AST that visits the elements in the domain of "executed"
+ * in the relative order specified by the context node "node"
+ * and its descendants.
+ *
+ * The relation "executed" maps the outer generated loop iterators
+ * to the domain elements executed by those iterations.
+ *
+ * The context node may introduce additional parameters as well as
+ * constraints on the outer schedule dimenions or original parameters.
+ *
+ * We add the extra parameters to a new build and the context
+ * constraints to both the build and (as a single disjunct)
+ * to the domain of "executed".  Since the context constraints
+ * are specified in terms of the input schedule, we first need
+ * to map them to the internal schedule domain.
+ *
+ * After constructing the AST from the descendants of "node",
+ * we combine the list of grafts into a single graft within
+ * the new build, in order to be able to exploit the additional
+ * context constraints during this combination.
+ *
+ * Additionally, if the current node is the outermost node in
+ * the schedule tree (apart from the root domain node), we generate
+ * all pending guards, again to be able to exploit the additional
+ * context constraints.  We currently do not do this for internal
+ * context nodes since we may still want to hoist conditions
+ * to outer AST nodes.
+ *
+ * If the context node introduced any new parameters, then they
+ * are removed from the set of enforced constraints and guard
+ * in hoist_out_of_context.
+ */
+static __isl_give isl_ast_graft_list *build_ast_from_context(
+	__isl_take isl_ast_build *build, __isl_take isl_schedule_node *node,
+	__isl_take isl_union_map *executed)
+{
+	isl_set *context;
+	isl_space *space;
+	isl_multi_aff *internal2input;
+	isl_ast_build *sub_build;
+	isl_ast_graft_list *list;
+	int n, depth;
+
+	depth = isl_schedule_node_get_tree_depth(node);
+	space = isl_ast_build_get_space(build, 1);
+	context = isl_schedule_node_context_get_context(node);
+	context = isl_set_align_params(context, space);
+	sub_build = isl_ast_build_copy(build);
+	space = isl_set_get_space(context);
+	sub_build = isl_ast_build_align_params(sub_build, space);
+	internal2input = isl_ast_build_get_internal2input(sub_build);
+	context = isl_set_preimage_multi_aff(context, internal2input);
+	sub_build = isl_ast_build_restrict_generated(sub_build,
+					isl_set_copy(context));
+	context = isl_set_from_basic_set(isl_set_simple_hull(context));
+	executed = isl_union_map_intersect_domain(executed,
+					isl_union_set_from_set(context));
+
+	list = build_ast_from_child(isl_ast_build_copy(sub_build),
+						node, executed);
+	n = isl_ast_graft_list_n_ast_graft(list);
+	if (n < 0)
+		list = isl_ast_graft_list_free(list);
+
+	list = isl_ast_graft_list_fuse(list, sub_build);
+	if (depth == 1)
+		list = isl_ast_graft_list_insert_pending_guard_nodes(list,
+								sub_build);
+	if (n >= 1)
+		list = hoist_out_of_context(list, build, sub_build);
+
+	isl_ast_build_free(build);
+	isl_ast_build_free(sub_build);
+
+	return list;
+}
+
 /* Generate an AST that visits the elements in the domain of "executed"
  * in the relative order specified by the filter node "node" and
  * its descendants.
@@ -4938,6 +5099,8 @@ static __isl_give isl_ast_graft_list *build_ast_from_schedule_node(
 		return generate_inner_level(executed, build);
 	case isl_schedule_node_band:
 		return build_ast_from_band(build, node, executed);
+	case isl_schedule_node_context:
+		return build_ast_from_context(build, node, executed);
 	case isl_schedule_node_domain:
 		isl_die(isl_schedule_node_get_ctx(node), isl_error_unsupported,
 			"unexpected internal domain node", goto error);

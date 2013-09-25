@@ -7280,7 +7280,26 @@ is therefore also immaterial.
 
 =back
 
-None of these nodes may introduce any parameters that were not
+The following node type is only supported by the AST generator.
+
+=over
+
+=item C<isl_schedule_node_context>
+
+The context describes constraints on the parameters and
+the schedule dimensions of outer
+bands that the AST generator may assume to hold.  It is also the only
+kind of node that may introduce additional parameters.
+The space of the context is that of the flat product of the outer
+band nodes.  In particular, if there are no outer band nodes, then
+this space is the unnamed zero-dimensional space.
+Since a context node references the outer band nodes, any tree
+containing a context node is considered to be anchored.
+
+=back
+
+Except for the C<isl_schedule_node_context> nodes,
+none of the nodes may introduce any parameters that were not
 already present in the root domain node.
 
 A schedule tree is encapsulated in an C<isl_schedule> object.
@@ -7706,6 +7725,11 @@ the individual schedule dimensions during AST generation.
 See L</"AST Generation Options (Schedule Tree)">.
 
 	#include <isl/schedule_node.h>
+	__isl_give isl_set *
+	isl_schedule_node_context_get_context(
+		__isl_keep isl_schedule_node *node);
+
+	#include <isl/schedule_node.h>
 	__isl_give isl_union_set *
 	isl_schedule_node_domain_get_domain(
 		__isl_keep isl_schedule_node *node);
@@ -7770,6 +7794,14 @@ This function inserts a new band node with (the greatest integer
 part of) the given partial schedule.
 The subtree rooted at the given node is assumed not to have
 any anchored nodes.
+
+	#include <isl/schedule_node.h>
+	__isl_give isl_schedule_node *
+	isl_schedule_node_insert_context(
+		__isl_take isl_schedule_node *node,
+		__isl_take isl_set *context);
+
+This function inserts a new context node with the given context constraints.
 
 	#include <isl/schedule_node.h>
 	__isl_give isl_schedule_node *

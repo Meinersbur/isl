@@ -728,6 +728,9 @@ static __isl_give isl_band_list *construct_band_list(
 	switch (type) {
 	case isl_schedule_node_error:
 		goto error;
+	case isl_schedule_node_context:
+		isl_die(isl_schedule_node_get_ctx(node), isl_error_unsupported,
+			"context nodes not supported", goto error);
 	case isl_schedule_node_domain:
 		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
 			"internal domain nodes not allowed", goto error);

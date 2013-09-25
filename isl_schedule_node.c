@@ -320,6 +320,7 @@ static int collect_filter_prefix_init(__isl_keep isl_schedule_tree *tree,
 	switch (type) {
 	case isl_schedule_node_error:
 		return -1;
+	case isl_schedule_node_context:
 	case isl_schedule_node_leaf:
 	case isl_schedule_node_sequence:
 	case isl_schedule_node_set:
@@ -380,6 +381,7 @@ static int collect_filter_prefix_update(__isl_keep isl_schedule_tree *tree,
 	switch (type) {
 	case isl_schedule_node_error:
 		return -1;
+	case isl_schedule_node_context:
 	case isl_schedule_node_domain:
 	case isl_schedule_node_leaf:
 	case isl_schedule_node_sequence:
@@ -1519,6 +1521,17 @@ __isl_give isl_schedule_node *isl_schedule_node_band_split(
 	return isl_schedule_node_graft_tree(node, tree);
 }
 
+/* Return the context of the context node "node".
+ */
+__isl_give isl_set *isl_schedule_node_context_get_context(
+	__isl_keep isl_schedule_node *node)
+{
+	if (!node)
+		return NULL;
+
+	return isl_schedule_tree_context_get_context(node->tree);
+}
+
 /* Return the domain of the domain node "node".
  */
 __isl_give isl_union_set *isl_schedule_node_domain_get_domain(
@@ -1699,6 +1712,24 @@ error:
 	isl_schedule_node_free(node);
 	isl_multi_union_pw_aff_free(mupa);
 	return NULL;
+}
+
+/* Insert a context node with context "context" between "node" and its parent.
+ * Return a pointer to the new context node.
+ */
+__isl_give isl_schedule_node *isl_schedule_node_insert_context(
+	__isl_take isl_schedule_node *node, __isl_take isl_set *context)
+{
+	isl_schedule_tree *tree;
+
+	if (check_insert(node) < 0)
+		node = isl_schedule_node_free(node);
+
+	tree = isl_schedule_node_get_tree(node);
+	tree = isl_schedule_tree_insert_context(tree, context);
+	node = isl_schedule_node_graft_tree(node, tree);
+
+	return node;
 }
 
 /* Insert a filter node with filter "filter" between "node" and its parent.
@@ -1953,6 +1984,7 @@ static __isl_give isl_schedule_node *gist_enter(
 		case isl_schedule_node_error:
 			return isl_schedule_node_free(node);
 		case isl_schedule_node_band:
+		case isl_schedule_node_context:
 		case isl_schedule_node_domain:
 		case isl_schedule_node_leaf:
 		case isl_schedule_node_sequence:
@@ -2070,6 +2102,7 @@ static __isl_give isl_schedule_node *gist_leave(
 			node = isl_schedule_node_insert_filter(node, filter);
 		}
 		break;
+	case isl_schedule_node_context:
 	case isl_schedule_node_domain:
 	case isl_schedule_node_leaf:
 		break;

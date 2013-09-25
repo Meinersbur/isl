@@ -21,6 +21,9 @@ ISL_DECLARE_LIST(schedule_tree)
  * In this case, ref has a negative value.
  *
  * The "band" field is valid when type is isl_schedule_node_band.
+ * The "context" field is valid when type is isl_schedule_node_context
+ * and represents constraints on the flat product of the outer band nodes,
+ * possibly introducing additional parameters.
  * The "domain" field is valid when type is isl_schedule_node_domain
  * and introduces the statement instances scheduled by the tree.
  * The "filter" field is valid when type is isl_schedule_node_filter
@@ -40,6 +43,7 @@ struct isl_schedule_tree {
 	enum isl_schedule_node_type type;
 	union {
 		isl_schedule_band *band;
+		isl_set *context;
 		isl_union_set *domain;
 		isl_union_set *filter;
 	};
@@ -63,6 +67,8 @@ __isl_null isl_schedule_tree *isl_schedule_tree_free(
 
 __isl_give isl_schedule_tree *isl_schedule_tree_from_band(
 	__isl_take isl_schedule_band *band);
+__isl_give isl_schedule_tree *isl_schedule_tree_from_context(
+	__isl_take isl_set *context);
 __isl_give isl_schedule_tree *isl_schedule_tree_from_domain(
 	__isl_take isl_union_set *domain);
 __isl_give isl_schedule_tree *isl_schedule_tree_from_filter(
@@ -95,6 +101,8 @@ __isl_give isl_union_set *isl_schedule_tree_band_get_ast_build_options(
 	__isl_keep isl_schedule_tree *tree);
 __isl_give isl_schedule_tree *isl_schedule_tree_band_set_ast_build_options(
 	__isl_take isl_schedule_tree *tree, __isl_take isl_union_set *options);
+__isl_give isl_set *isl_schedule_tree_context_get_context(
+	__isl_keep isl_schedule_tree *tree);
 __isl_give isl_union_set *isl_schedule_tree_domain_get_domain(
 	__isl_keep isl_schedule_tree *tree);
 __isl_give isl_schedule_tree *isl_schedule_tree_domain_set_domain(
@@ -126,6 +134,8 @@ __isl_give isl_schedule_tree *isl_schedule_tree_get_child(
 
 __isl_give isl_schedule_tree *isl_schedule_tree_insert_band(
 	__isl_take isl_schedule_tree *tree, __isl_take isl_schedule_band *band);
+__isl_give isl_schedule_tree *isl_schedule_tree_insert_context(
+	__isl_take isl_schedule_tree *tree, __isl_take isl_set *context);
 __isl_give isl_schedule_tree *isl_schedule_tree_insert_domain(
 	__isl_take isl_schedule_tree *tree, __isl_take isl_union_set *domain);
 __isl_give isl_schedule_tree *isl_schedule_tree_insert_filter(
