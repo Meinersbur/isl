@@ -146,6 +146,19 @@ error:
 	return NULL;
 }
 
+/* Create an isl_ast_build with a universe (parametric) context.
+ */
+__isl_give isl_ast_build *isl_ast_build_alloc(isl_ctx *ctx)
+{
+	isl_space *space;
+	isl_set *context;
+
+	space = isl_space_params_alloc(ctx, 0);
+	context = isl_set_universe(space);
+
+	return isl_ast_build_from_context(context);
+}
+
 __isl_give isl_ast_build *isl_ast_build_copy(__isl_keep isl_ast_build *build)
 {
 	if (!build)

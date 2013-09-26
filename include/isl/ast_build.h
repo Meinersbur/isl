@@ -41,6 +41,7 @@ int isl_options_get_ast_build_allow_or(isl_ctx *ctx);
 
 isl_ctx *isl_ast_build_get_ctx(__isl_keep isl_ast_build *build);
 
+__isl_give isl_ast_build *isl_ast_build_alloc(isl_ctx *ctx);
 __isl_give isl_ast_build *isl_ast_build_from_context(__isl_take isl_set *set);
 
 __isl_give isl_space *isl_ast_build_get_schedule_space(

@@ -8329,6 +8329,8 @@ simply specifies the constraints on the parameters (if any)
 and can be created, inspected, copied and freed using the following functions.
 
 	#include <isl/ast_build.h>
+	__isl_give isl_ast_build *isl_ast_build_alloc(
+		isl_ctx *ctx);
 	__isl_give isl_ast_build *isl_ast_build_from_context(
 		__isl_take isl_set *set);
 	__isl_give isl_ast_build *isl_ast_build_copy(
@@ -8337,6 +8339,8 @@ and can be created, inspected, copied and freed using the following functions.
 		__isl_take isl_ast_build *build);
 
 The C<set> argument is usually a parameter set with zero or more parameters.
+An C<isl_ast_build> created using C<isl_ast_build_alloc> does not
+specify any parameter constraints.
 More C<isl_ast_build> functions are described in L</"Nested AST Generation">
 and L</"Fine-grained Control over AST Generation">.
 Finally, the AST itself can be constructed using the following
