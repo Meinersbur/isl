@@ -66,10 +66,12 @@ static __isl_give isl_ast_build *isl_ast_build_init_derived(
 	isl_multi_aff_free(build->offsets);
 	build->offsets = isl_multi_aff_zero(isl_space_copy(space));
 	isl_multi_aff_free(build->values);
-	build->values = isl_multi_aff_identity(space);
+	build->values = isl_multi_aff_identity(isl_space_copy(space));
+	isl_multi_aff_free(build->internal2input);
+	build->internal2input = isl_multi_aff_identity(space);
 
 	if (!build->iterators || !build->domain || !build->generated ||
-	    !build->pending || !build->values ||
+	    !build->pending || !build->values || !build->internal2input ||
 	    !build->strides || !build->offsets || !build->options)
 		return isl_ast_build_free(build);
 
@@ -189,6 +191,7 @@ __isl_give isl_ast_build *isl_ast_build_dup(__isl_keep isl_ast_build *build)
 	dup->generated = isl_set_copy(build->generated);
 	dup->pending = isl_set_copy(build->pending);
 	dup->values = isl_multi_aff_copy(build->values);
+	dup->internal2input = isl_multi_aff_copy(build->internal2input);
 	dup->value = isl_pw_aff_copy(build->value);
 	dup->strides = isl_vec_copy(build->strides);
 	dup->offsets = isl_multi_aff_copy(build->offsets);
@@ -219,6 +222,7 @@ __isl_give isl_ast_build *isl_ast_build_dup(__isl_keep isl_ast_build *build)
 	if (!dup->iterators || !dup->domain || !dup->generated ||
 	    !dup->pending || !dup->values ||
 	    !dup->strides || !dup->offsets || !dup->options ||
+	    (build->internal2input && !dup->internal2input) ||
 	    (build->executed && !dup->executed) ||
 	    (build->value && !dup->value) ||
 	    (build->node && !dup->node))
@@ -249,7 +253,15 @@ __isl_give isl_ast_build *isl_ast_build_align_params(
 						isl_space_copy(model));
 	build->options = isl_union_map_align_params(build->options,
 						isl_space_copy(model));
-	isl_space_free(model);
+	if (build->internal2input) {
+		build->internal2input =
+			isl_multi_aff_align_params(build->internal2input,
+						model);
+		if (!build->internal2input)
+			return isl_ast_build_free(build);
+	} else {
+		isl_space_free(model);
+	}
 
 	if (!build->domain || !build->values || !build->offsets ||
 	    !build->options)
@@ -286,6 +298,7 @@ __isl_null isl_ast_build *isl_ast_build_free(
 	isl_set_free(build->generated);
 	isl_set_free(build->pending);
 	isl_multi_aff_free(build->values);
+	isl_multi_aff_free(build->internal2input);
 	isl_pw_aff_free(build->value);
 	isl_vec_free(build->strides);
 	isl_multi_aff_free(build->offsets);
@@ -614,6 +627,8 @@ void isl_ast_build_dump(__isl_keep isl_ast_build *build)
 	isl_vec_dump(build->strides);
 	fprintf(stderr, "offsets: ");
 	isl_multi_aff_dump(build->offsets);
+	fprintf(stderr, "internal2input: ");
+	isl_multi_aff_dump(build->internal2input);
 }
 
 /* Initialize "build" for AST construction in schedule space "space"
@@ -1057,6 +1072,15 @@ __isl_give isl_set *isl_ast_build_get_generated(
 	__isl_keep isl_ast_build *build)
 {
 	return build ? isl_set_copy(build->generated) : NULL;
+}
+
+/* Return a copy of the map from the internal schedule domain
+ * to the original input schedule domain.
+ */
+__isl_give isl_multi_aff *isl_ast_build_get_internal2input(
+	__isl_keep isl_ast_build *build)
+{
+	return build ? isl_multi_aff_copy(build->internal2input) : NULL;
 }
 
 /* Return the number of variables of the given type
@@ -1656,6 +1680,12 @@ static __isl_give isl_ast_build *node_insert_dim(
  * However, the original schedule domain space may be named and/or
  * structured, so we have to take this possibility into account
  * while performing the transformations.
+ *
+ * Since the inserted schedule dimension is used by the caller
+ * to differentiate between different domain spaces, there is
+ * no longer a uniform mapping from the internal schedule space
+ * to the input schedule space.  The internal2input mapping is
+ * therefore removed.
  */
 __isl_give isl_ast_build *isl_ast_build_insert_dim(
 	__isl_take isl_ast_build *build, int pos)
@@ -1692,6 +1722,7 @@ __isl_give isl_ast_build *isl_ast_build_insert_dim(
 	build->values = isl_multi_aff_splice(build->values, pos, pos, ma);
 	if (!build->node)
 		build->options = options_insert_dim(build->options, space, pos);
+	build->internal2input = isl_multi_aff_free(build->internal2input);
 
 	if (!build->iterators || !build->domain || !build->generated ||
 	    !build->pending || !build->values ||
@@ -1712,7 +1743,11 @@ __isl_give isl_ast_build *isl_ast_build_insert_dim(
  * This function is called right after the strides have been
  * detected, but before any constraints on the current dimension
  * have been included in build->domain.
- * We therefore only need to update stride, offset and the options.
+ * We therefore only need to update stride, offset, the options and
+ * the mapping from internal schedule space to the original schedule
+ * space, if we are still keeping track of such a mapping.
+ * The latter mapping is updated by plugging in
+ * { [... i ...] -> [... m i ... ] }.
  */
 __isl_give isl_ast_build *isl_ast_build_scale_down(
 	__isl_take isl_ast_build *build, __isl_take isl_val *m,
@@ -1727,6 +1762,23 @@ __isl_give isl_ast_build *isl_ast_build_scale_down(
 		goto error;
 
 	depth = build->depth;
+
+	if (build->internal2input) {
+		isl_space *space;
+		isl_multi_aff *ma;
+		isl_aff *aff;
+
+		space = isl_multi_aff_get_space(build->internal2input);
+		space = isl_space_map_from_set(isl_space_domain(space));
+		ma = isl_multi_aff_identity(space);
+		aff = isl_multi_aff_get_aff(ma, depth);
+		aff = isl_aff_scale_val(aff, isl_val_copy(m));
+		ma = isl_multi_aff_set_aff(ma, depth, aff);
+		build->internal2input =
+		    isl_multi_aff_pullback_multi_aff(build->internal2input, ma);
+		if (!build->internal2input)
+			goto error;
+	}
 
 	v = isl_vec_get_element_val(build->strides, depth);
 	v = isl_val_div(v, isl_val_copy(m));
@@ -1872,7 +1924,18 @@ __isl_give isl_ast_build *isl_ast_build_product(
 	build->values = isl_multi_aff_align_params(build->values,
 						    isl_space_copy(space));
 	embedding = isl_multi_aff_identity(space);
-	build->values = isl_multi_aff_product(build->values, embedding);
+	build->values = isl_multi_aff_product(build->values,
+					isl_multi_aff_copy(embedding));
+	if (build->internal2input) {
+		build->internal2input =
+			isl_multi_aff_product(build->internal2input, embedding);
+		build->internal2input =
+			isl_multi_aff_flatten_range(build->internal2input);
+		if (!build->internal2input)
+			return isl_ast_build_free(build);
+	} else {
+		isl_multi_aff_free(embedding);
+	}
 
 	space = isl_ast_build_get_space(build, 1);
 	build->options = embed_options(build->options, space);

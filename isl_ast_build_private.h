@@ -84,6 +84,13 @@
  * domain.  It may be NULL if it hasn't been computed yet.
  * See isl_ast_build_get_schedule_map_multi_aff.
  *
+ * "internal2input" maps the internal schedule domain to the original
+ * input schedule domain.  In case of a schedule tree input, the original
+ * input schedule domain consist of the flat product of all outer
+ * band node spaces, including the current band node.
+ * It may be NULL if there no longer is such a uniform mapping
+ * (because different iterations have been rescheduled differently).
+ *
  * "options" contains the AST build options in case we are generating
  * an AST from a flat schedule map.  When creating an AST from a schedule
  * tree, this field is ignored.
@@ -144,6 +151,7 @@ struct isl_ast_build {
 	isl_multi_aff *offsets;
 
 	isl_multi_aff *schedule_map;
+	isl_multi_aff *internal2input;
 
 	isl_union_map *options;
 
@@ -203,6 +211,8 @@ __isl_give isl_ast_build *isl_ast_build_set_executed(
 	__isl_take isl_union_map *executed);
 __isl_give isl_ast_build *isl_ast_build_set_single_valued(
 	__isl_take isl_ast_build *build, int sv);
+__isl_give isl_multi_aff *isl_ast_build_get_internal2input(
+	__isl_keep isl_ast_build *build);
 __isl_give isl_set *isl_ast_build_get_domain(
 	__isl_keep isl_ast_build *build);
 __isl_give isl_set *isl_ast_build_get_pending(
