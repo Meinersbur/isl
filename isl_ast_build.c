@@ -1,5 +1,5 @@
 /*
- * Copyright 2012      Ecole Normale Superieure
+ * Copyright 2012-2013 Ecole Normale Superieure
  * Copyright 2014      INRIA Rocquencourt
  *
  * Use of this software is governed by the MIT license
@@ -203,12 +203,14 @@ __isl_give isl_ast_build *isl_ast_build_dup(__isl_keep isl_ast_build *build)
 	dup->after_each_for_user = build->after_each_for_user;
 	dup->create_leaf = build->create_leaf;
 	dup->create_leaf_user = build->create_leaf_user;
+	dup->node = isl_schedule_node_copy(build->node);
 
 	if (!dup->iterators || !dup->domain || !dup->generated ||
 	    !dup->pending || !dup->values ||
 	    !dup->strides || !dup->offsets || !dup->options ||
 	    (build->executed && !dup->executed) ||
-	    (build->value && !dup->value))
+	    (build->value && !dup->value) ||
+	    (build->node && !dup->node))
 		return isl_ast_build_free(dup);
 
 	return dup;
@@ -279,6 +281,7 @@ __isl_null isl_ast_build *isl_ast_build_free(
 	isl_multi_aff_free(build->schedule_map);
 	isl_union_map_free(build->executed);
 	isl_union_map_free(build->options);
+	isl_schedule_node_free(build->node);
 
 	free(build);
 
@@ -932,6 +935,61 @@ error:
 	return NULL;
 }
 
+/* Does "build" point to a band node?
+ * That is, are we currently handling a band node inside a schedule tree?
+ */
+int isl_ast_build_has_schedule_node(__isl_keep isl_ast_build *build)
+{
+	if (!build)
+		return -1;
+	return build->node != NULL;
+}
+
+/* Return a copy of the band node that "build" refers to.
+ */
+__isl_give isl_schedule_node *isl_ast_build_get_schedule_node(
+	__isl_keep isl_ast_build *build)
+{
+	if (!build)
+		return NULL;
+	return isl_schedule_node_copy(build->node);
+}
+
+/* Replace the band node that "build" refers to by "node".
+ */
+__isl_give isl_ast_build *isl_ast_build_set_schedule_node(
+	__isl_take isl_ast_build *build,
+	__isl_take isl_schedule_node *node)
+{
+	build = isl_ast_build_cow(build);
+	if (!build || !node)
+		goto error;
+
+	isl_schedule_node_free(build->node);
+	build->node = node;
+
+	return build;
+error:
+	isl_ast_build_free(build);
+	isl_schedule_node_free(node);
+	return NULL;
+}
+
+/* Remove any reference to a band node from "build".
+ */
+__isl_give isl_ast_build *isl_ast_build_reset_schedule_node(
+	__isl_take isl_ast_build *build)
+{
+	build = isl_ast_build_cow(build);
+	if (!build)
+		return NULL;
+
+	isl_schedule_node_free(build->node);
+	build->node = NULL;
+
+	return build;
+}
+
 /* Return a copy of the current schedule domain.
  */
 __isl_give isl_set *isl_ast_build_get_domain(__isl_keep isl_ast_build *build)
@@ -1532,7 +1590,8 @@ __isl_give isl_ast_build *isl_ast_build_insert_dim(
 
 	ctx = isl_ast_build_get_ctx(build);
 	id = isl_id_alloc(ctx, "", NULL);
-	space = isl_ast_build_get_space(build, 1);
+	if (!build->node)
+		space = isl_ast_build_get_space(build, 1);
 	build->iterators = isl_id_list_insert(build->iterators, pos, id);
 	build->domain = isl_set_insert_dims(build->domain,
 						isl_dim_set, pos, 1);
@@ -1550,7 +1609,8 @@ __isl_give isl_ast_build *isl_ast_build_insert_dim(
 	build->offsets = isl_multi_aff_splice(build->offsets, pos, pos, ma);
 	ma = isl_multi_aff_identity(ma_space);
 	build->values = isl_multi_aff_splice(build->values, pos, pos, ma);
-	build->options = options_insert_dim(build->options, space, pos);
+	if (!build->node)
+		build->options = options_insert_dim(build->options, space, pos);
 
 	if (!build->iterators || !build->domain || !build->generated ||
 	    !build->pending || !build->values ||

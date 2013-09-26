@@ -6,6 +6,7 @@
 #include <isl/ast_build.h>
 #include <isl/set.h>
 #include <isl/list.h>
+#include <isl/schedule_node.h>
 
 enum isl_ast_build_domain_type {
 	atomic,
@@ -89,6 +90,10 @@ enum isl_ast_build_domain_type {
  * domain.  It may be NULL if it hasn't been computed yet.
  * See isl_ast_build_get_schedule_map_multi_aff.
  *
+ * "options" contains the AST build options in case we are generating
+ * an AST from a flat schedule map.  When creating an AST from a schedule
+ * tree, this field is ignored.
+ *
  * The "create_leaf" callback is called for every leaf in the generated AST.
  * The callback is responsible for creating the node to be placed at those
  * leaves.  If this callback is not set, then isl will generated user
@@ -116,6 +121,10 @@ enum isl_ast_build_domain_type {
  * is extended to a single valued inverse schedule.  This is mainly used
  * to avoid an infinite recursion when we fail to detect later on that
  * the extended inverse schedule is single valued.
+ *
+ * "node" points to the current band node in case we are generating
+ * an AST from a schedule tree.  It may be NULL if we are not generating
+ * an AST from a schedule tree or if we are not inside a band node.
  */
 struct isl_ast_build {
 	int ref;
@@ -158,6 +167,8 @@ struct isl_ast_build {
 
 	isl_union_map *executed;
 	int single_valued;
+
+	isl_schedule_node *node;
 };
 
 __isl_give isl_ast_build *isl_ast_build_clear_local_info(
@@ -213,6 +224,15 @@ int isl_ast_build_has_affine_value(__isl_keep isl_ast_build *build, int pos);
 int isl_ast_build_has_value(__isl_keep isl_ast_build *build);
 __isl_give isl_id *isl_ast_build_get_iterator_id(
 	__isl_keep isl_ast_build *build, int pos);
+
+int isl_ast_build_has_schedule_node(__isl_keep isl_ast_build *build);
+__isl_give isl_schedule_node *isl_ast_build_get_schedule_node(
+	__isl_keep isl_ast_build *build);
+__isl_give isl_ast_build *isl_ast_build_set_schedule_node(
+	__isl_take isl_ast_build *build,
+	__isl_take isl_schedule_node *node);
+__isl_give isl_ast_build *isl_ast_build_reset_schedule_node(
+	__isl_take isl_ast_build *build);
 
 __isl_give isl_basic_set *isl_ast_build_compute_gist_basic_set(
 	__isl_keep isl_ast_build *build, __isl_take isl_basic_set *bset);

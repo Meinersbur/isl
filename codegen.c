@@ -1,5 +1,5 @@
 /*
- * Copyright 2012      Ecole Normale Superieure
+ * Copyright 2012,2014 Ecole Normale Superieure
  *
  * Use of this software is governed by the MIT license
  *
@@ -8,19 +8,23 @@
  */
 
 /* This program prints an AST that scans the domain elements of
- * the domain of a given schedule in the order of their image(s).
+ * the domain of a given schedule in the order specified by
+ * the schedule tree or by their image(s) in the schedule map.
  *
- * The input consists of three sets/relations.
- * - a schedule
+ * The input consists of either a schedule tree or
+ * a sequence of three sets/relations.
+ * - a schedule map
  * - a context
  * - a relation describing AST generation options
  */
 
 #include <assert.h>
+#include <stdlib.h>
 #include <isl/ast.h>
 #include <isl/ast_build.h>
 #include <isl/options.h>
 #include <isl/set.h>
+#include <isl/stream.h>
 
 struct options {
 	struct isl_options	*isl;
@@ -36,7 +40,8 @@ ISL_ARG_BOOL(struct options, separate, 0, "separate", 0,
 	"globally set the separate option")
 ISL_ARGS_END
 
-ISL_ARG_DEF(options, struct options, options_args)
+ISL_ARG_DEF(cg_options, struct options, options_args)
+ISL_ARG_CTX_DEF(cg_options, struct options, options_args)
 
 /* Return a universal, 1-dimensional set with the given name.
  */
@@ -100,31 +105,88 @@ static __isl_give isl_ast_build *set_options(__isl_take isl_ast_build *build,
 	return build;
 }
 
-int main(int argc, char **argv)
+/* Construct an AST in case the schedule is specified by a union map.
+ *
+ * We read the context and the options from "s" and construct the AST.
+ */
+static __isl_give isl_ast_node *construct_ast_from_union_map(
+	__isl_take isl_union_map *schedule, __isl_keep isl_stream *s)
 {
-	isl_ctx *ctx;
 	isl_set *context;
-	isl_union_map *schedule;
 	isl_union_map *options_map;
 	isl_ast_build *build;
 	isl_ast_node *tree;
 	struct options *options;
-	isl_printer *p;
 
-	options = options_new_with_defaults();
-	assert(options);
-	argc = options_parse(options, argc, argv, ISL_ARG_ALL);
+	options = isl_ctx_peek_cg_options(isl_stream_get_ctx(s));
 
-	ctx = isl_ctx_alloc_with_options(&options_args, options);
-
-	schedule = isl_union_map_read_from_file(ctx, stdin);
-	context = isl_set_read_from_file(ctx, stdin);
-	options_map = isl_union_map_read_from_file(ctx, stdin);
+	context = isl_stream_read_set(s);
+	options_map = isl_stream_read_union_map(s);
 
 	build = isl_ast_build_from_context(context);
 	build = set_options(build, options_map, options, schedule);
 	tree = isl_ast_build_node_from_schedule_map(build, schedule);
 	isl_ast_build_free(build);
+
+	return tree;
+}
+
+/* Construct an AST in case the schedule is specified by a schedule tree.
+ */
+static __isl_give isl_ast_node *construct_ast_from_schedule(
+	__isl_take isl_schedule *schedule)
+{
+	isl_ast_build *build;
+	isl_ast_node *tree;
+
+	build = isl_ast_build_alloc(isl_schedule_get_ctx(schedule));
+	tree = isl_ast_build_node_from_schedule(build, schedule);
+	isl_ast_build_free(build);
+
+	return tree;
+}
+
+/* Read an object from stdin.
+ * If it is a (union) map, then assume an input specified by
+ * schedule map, context and options and construct an AST from
+ * those elements
+ * If it is a schedule object, then construct the AST from the schedule.
+ */
+int main(int argc, char **argv)
+{
+	isl_ctx *ctx;
+	isl_stream *s;
+	isl_ast_node *tree = NULL;
+	struct options *options;
+	isl_printer *p;
+	struct isl_obj obj;
+	int r = EXIT_SUCCESS;
+
+	options = cg_options_new_with_defaults();
+	assert(options);
+	argc = cg_options_parse(options, argc, argv, ISL_ARG_ALL);
+
+	ctx = isl_ctx_alloc_with_options(&options_args, options);
+
+	s = isl_stream_new_file(ctx, stdin);
+	obj = isl_stream_read_obj(s);
+	if (obj.v == NULL) {
+		r = EXIT_FAILURE;
+	} else if (obj.type == isl_obj_map) {
+		isl_union_map *umap;
+
+		umap = isl_union_map_from_map(obj.v);
+		tree = construct_ast_from_union_map(umap, s);
+	} else if (obj.type == isl_obj_union_map) {
+		tree = construct_ast_from_union_map(obj.v, s);
+	} else if (obj.type == isl_obj_schedule) {
+		tree = construct_ast_from_schedule(obj.v);
+	} else {
+		obj.type->free(obj.v);
+		isl_die(ctx, isl_error_invalid, "unknown input",
+			r = EXIT_FAILURE);
+	}
+	isl_stream_free(s);
 
 	p = isl_printer_to_file(ctx, stdout);
 	p = isl_printer_set_output_format(p, ISL_FORMAT_C);
@@ -134,5 +196,5 @@ int main(int argc, char **argv)
 	isl_ast_node_free(tree);
 
 	isl_ctx_free(ctx);
-	return 0;
+	return r;
 }

@@ -7277,6 +7277,9 @@ is therefore also immaterial.
 
 =back
 
+None of these nodes may introduce any parameters that were not
+already present in the root domain node.
+
 A schedule tree is encapsulated in an C<isl_schedule> object.
 The simplest such objects, those with a tree consisting of single domain node,
 can be created using the following functions with either an empty
@@ -8312,17 +8315,20 @@ will treat set nodes in the same way as sequence nodes.
 
 This section describes the C<isl> functionality for generating
 ASTs that visit all the elements
-in a domain in an order specified by a schedule.
-In particular, given a C<isl_union_map>, an AST is generated
+in a domain in an order specified by a schedule tree or
+a schedule map.
+In case the schedule given as a C<isl_union_map>, an AST is generated
 that visits all the elements in the domain of the C<isl_union_map>
 according to the lexicographic order of the corresponding image
 element(s).  If the range of the C<isl_union_map> consists of
 elements in more than one space, then each of these spaces is handled
 separately in an arbitrary order.
-It should be noted that the image elements only specify the I<order>
+It should be noted that the schedule tree or the image elements
+in a schedule map only specify the I<order>
 in which the corresponding domain elements should be visited.
-No direct relation between the image elements and the loop iterators
-in the generated AST should be assumed.
+No direct relation between the partial schedule values
+or the image elements on the one hand and the loop iterators
+in the generated AST on the other hand should be assumed.
 
 Each AST is generated within a build.  The initial build
 simply specifies the constraints on the parameters (if any)
@@ -8339,14 +8345,19 @@ and can be created, inspected, copied and freed using the following functions.
 		__isl_take isl_ast_build *build);
 
 The C<set> argument is usually a parameter set with zero or more parameters.
+In fact, when creating an AST using C<isl_ast_build_node_from_schedule>,
+this set is required to be a parameter set.
 An C<isl_ast_build> created using C<isl_ast_build_alloc> does not
 specify any parameter constraints.
 More C<isl_ast_build> functions are described in L</"Nested AST Generation">
 and L</"Fine-grained Control over AST Generation">.
-Finally, the AST itself can be constructed using the following
-function.
+Finally, the AST itself can be constructed using one of the following
+functions.
 
 	#include <isl/ast_build.h>
+	__isl_give isl_ast_node *isl_ast_build_node_from_schedule(
+		__isl_keep isl_ast_build *build,
+		__isl_take isl_schedule *schedule);
 	__isl_give isl_ast_node *
 	isl_ast_build_node_from_schedule_map(
 		__isl_keep isl_ast_build *build,
@@ -8992,6 +9003,8 @@ Besides specifying the constraints on the parameters,
 an C<isl_ast_build> object can be used to control
 various aspects of the AST generation process.
 The most prominent way of control is through ``options'',
+which only have an effect on the construction of an AST
+using C<isl_ast_build_node_from_schedule_map> and
 which can be set using the following function.
 
 	#include <isl/ast_build.h>
