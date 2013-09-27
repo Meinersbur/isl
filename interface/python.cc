@@ -218,7 +218,7 @@ static void print_callback(QualType type, int arg)
 	for (int i = 0; i < n_arg - 1; ++i) {
 		string arg_type;
 		arg_type = type2python(extract_type(fn->getArgType(i)));
-		printf("            cb_arg%d = %s(ctx=self.ctx, ptr=cb_arg%d)\n",
+		printf("            cb_arg%d = %s(ctx=arg0.ctx, ptr=cb_arg%d)\n",
 			i, arg_type.c_str(), i);
 	}
 	printf("            try:\n");
@@ -246,8 +246,9 @@ static void print_callback(QualType type, int arg)
  * a user argument in the Python interface, so we simply drop it.
  * We also create a wrapper ("cb") for the callback.
  *
- * If the function has additional arguments that refer to isl structures,
- * then we check if the actual arguments are of the right type.
+ * For each argument of the function that refers to an isl structure,
+ * including the object on which the method is called,
+ * we check if the corresponding actual argument is of the right type.
  * If not, we try to convert it to the right type.
  * It that doesn't work and if subclass is set, we try to convert self
  * to the type of the superclass and call the corresponding method.
@@ -269,12 +270,12 @@ void isl_class::print_method(FunctionDecl *method, bool subclass, string super)
 			drop_user = 1;
 	}
 
-	printf("    def %s(self", cname.c_str());
+	printf("    def %s(arg0", cname.c_str());
 	for (int i = 1; i < num_params - drop_user; ++i)
 		printf(", arg%d", i);
 	printf("):\n");
 
-	for (int i = 1; i < num_params; ++i) {
+	for (int i = 0; i < num_params; ++i) {
 		ParmVarDecl *param = method->getParamDecl(i);
 		string type;
 		if (!is_isl_type(param->getOriginalType()))
@@ -286,8 +287,8 @@ void isl_class::print_method(FunctionDecl *method, bool subclass, string super)
 		printf("                arg%d = %s(arg%d)\n",
 			i, type.c_str(), i);
 		printf("        except:\n");
-		if (subclass) {
-			printf("            return %s(self).%s(",
+		if (i > 0 && subclass) {
+			printf("            return %s(arg0).%s(",
 				type2python(super).c_str(), cname.c_str());
 			for (int i = 1; i < num_params - drop_user; ++i) {
 				if (i != 1)
@@ -307,9 +308,9 @@ void isl_class::print_method(FunctionDecl *method, bool subclass, string super)
 	}
 	printf("        res = isl.%s(", fullname.c_str());
 	if (takes(method->getParamDecl(0)))
-		printf("isl.%s_copy(self.ptr)", name.c_str());
+		printf("isl.%s_copy(arg0.ptr)", name.c_str());
 	else
-		printf("self.ptr");
+		printf("arg0.ptr");
 	for (int i = 1; i < num_params - drop_user; ++i) {
 		ParmVarDecl *param = method->getParamDecl(i);
 		QualType type = param->getOriginalType();
@@ -328,7 +329,7 @@ void isl_class::print_method(FunctionDecl *method, bool subclass, string super)
 	if (is_isl_type(method->getResultType())) {
 		string type;
 		type = type2python(extract_type(method->getResultType()));
-		printf("        return %s(ctx=self.ctx, ptr=res)\n",
+		printf("        return %s(ctx=arg0.ctx, ptr=res)\n",
 			type.c_str());
 	} else {
 		if (drop_user) {
