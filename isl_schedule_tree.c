@@ -34,6 +34,9 @@ int isl_schedule_tree_is_leaf(__isl_keep isl_schedule_tree *tree)
 /* Create a new schedule tree of type "type".
  * The caller is responsible for filling in the type specific fields and
  * the children.
+ *
+ * By default, the single node tree does not have any anchored nodes.
+ * The caller is responsible for updating the anchored field if needed.
  */
 static __isl_give isl_schedule_tree *isl_schedule_tree_alloc(isl_ctx *ctx,
 	enum isl_schedule_node_type type)
@@ -51,6 +54,7 @@ static __isl_give isl_schedule_tree *isl_schedule_tree_alloc(isl_ctx *ctx,
 	tree->ctx = ctx;
 	isl_ctx_ref(ctx);
 	tree->type = type;
+	tree->anchored = 0;
 
 	return tree;
 }
@@ -102,6 +106,7 @@ __isl_take isl_schedule_tree *isl_schedule_tree_dup(
 		if (!dup->children)
 			return isl_schedule_tree_free(dup);
 	}
+	dup->anchored = tree->anchored;
 
 	return dup;
 }
@@ -208,6 +213,7 @@ __isl_give isl_schedule_tree *isl_schedule_tree_from_band(
 		goto error;
 
 	tree->band = band;
+	tree->anchored = isl_schedule_band_is_anchored(band);
 
 	return tree;
 error:
@@ -263,6 +269,76 @@ error:
 	return NULL;
 }
 
+/* Does "tree" have any node that depends on its position
+ * in the complete schedule tree?
+ */
+int isl_schedule_tree_is_subtree_anchored(__isl_keep isl_schedule_tree *tree)
+{
+	return tree ? tree->anchored : -1;
+}
+
+/* Does the root node of "tree" depend on its position in the complete
+ * schedule tree?
+ * Band nodes may be anchored depending on the associated AST build options.
+ */
+int isl_schedule_tree_is_anchored(__isl_keep isl_schedule_tree *tree)
+{
+	if (!tree)
+		return -1;
+
+	switch (isl_schedule_tree_get_type(tree)) {
+	case isl_schedule_node_error:
+		return -1;
+	case isl_schedule_node_band:
+		return isl_schedule_band_is_anchored(tree->band);
+	case isl_schedule_node_domain:
+	case isl_schedule_node_filter:
+	case isl_schedule_node_leaf:
+	case isl_schedule_node_sequence:
+	case isl_schedule_node_set:
+		return 0;
+	}
+}
+
+/* Update the anchored field of "tree" based on whether the root node
+ * itself in anchored and the anchored fields of the children.
+ *
+ * This function should be called whenever the children of a tree node
+ * are changed or the anchoredness of the tree root itself changes.
+ */
+__isl_give isl_schedule_tree *isl_schedule_tree_update_anchored(
+	__isl_take isl_schedule_tree *tree)
+{
+	int i, n;
+	int anchored;
+
+	if (!tree)
+		return NULL;
+
+	anchored = isl_schedule_tree_is_anchored(tree);
+	if (anchored < 0)
+		return isl_schedule_tree_free(tree);
+
+	n = isl_schedule_tree_list_n_schedule_tree(tree->children);
+	for (i = 0; !anchored && i < n; ++i) {
+		isl_schedule_tree *child;
+
+		child = isl_schedule_tree_get_child(tree, i);
+		if (!child)
+			return isl_schedule_tree_free(tree);
+		anchored = child->anchored;
+		isl_schedule_tree_free(child);
+	}
+
+	if (anchored == tree->anchored)
+		return tree;
+	tree = isl_schedule_tree_cow(tree);
+	if (!tree)
+		return NULL;
+	tree->anchored = anchored;
+	return tree;
+}
+
 /* Create a new tree of the given type (isl_schedule_node_sequence or
  * isl_schedule_node_set) with the given children.
  */
@@ -282,6 +358,7 @@ __isl_give isl_schedule_tree *isl_schedule_tree_from_children(
 		goto error;
 
 	tree->children = list;
+	tree = isl_schedule_tree_update_anchored(tree);
 
 	return tree;
 error:
@@ -529,6 +606,7 @@ __isl_give isl_schedule_tree *isl_schedule_tree_replace_child(
 
 	if (!tree->children)
 		return isl_schedule_tree_free(tree);
+	tree = isl_schedule_tree_update_anchored(tree);
 
 	return tree;
 error:
@@ -791,6 +869,47 @@ __isl_give isl_schedule_tree *isl_schedule_tree_band_member_set_ast_loop_type(
 	return tree;
 }
 
+/* Return the loop AST generation type for the band member
+ * of the band tree root at position "pos" for the isolated part.
+ */
+enum isl_ast_loop_type isl_schedule_tree_band_member_get_isolate_ast_loop_type(
+	__isl_keep isl_schedule_tree *tree, int pos)
+{
+	if (!tree)
+		return isl_ast_loop_error;
+
+	if (tree->type != isl_schedule_node_band)
+		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_invalid,
+			"not a band node", return isl_ast_loop_error);
+
+	return isl_schedule_band_member_get_isolate_ast_loop_type(tree->band,
+									pos);
+}
+
+/* Set the loop AST generation type for the band member of the band tree root
+ * at position "pos" for the isolated part to "type".
+ */
+__isl_give isl_schedule_tree *
+isl_schedule_tree_band_member_set_isolate_ast_loop_type(
+	__isl_take isl_schedule_tree *tree, int pos,
+	enum isl_ast_loop_type type)
+{
+	tree = isl_schedule_tree_cow(tree);
+	if (!tree)
+		return NULL;
+
+	if (tree->type != isl_schedule_node_band)
+		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_invalid,
+			"not a band node", return isl_schedule_tree_free(tree));
+
+	tree->band = isl_schedule_band_member_set_isolate_ast_loop_type(
+							tree->band, pos, type);
+	if (!tree->band)
+		return isl_schedule_tree_free(tree);
+
+	return tree;
+}
+
 /* Return the AST build options associated to the band tree root.
  */
 __isl_give isl_union_set *isl_schedule_tree_band_get_ast_build_options(
@@ -807,10 +926,14 @@ __isl_give isl_union_set *isl_schedule_tree_band_get_ast_build_options(
 }
 
 /* Replace the AST build options associated to band tree root by "options".
+ * Updated the anchored field if the anchoredness of the root node itself
+ * changes.
  */
 __isl_give isl_schedule_tree *isl_schedule_tree_band_set_ast_build_options(
 	__isl_take isl_schedule_tree *tree, __isl_take isl_union_set *options)
 {
+	int was_anchored;
+
 	tree = isl_schedule_tree_cow(tree);
 	if (!tree || !options)
 		goto error;
@@ -819,10 +942,13 @@ __isl_give isl_schedule_tree *isl_schedule_tree_band_set_ast_build_options(
 		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_invalid,
 			"not a band node", goto error);
 
+	was_anchored = isl_schedule_tree_is_anchored(tree);
 	tree->band = isl_schedule_band_set_ast_build_options(tree->band,
 								options);
 	if (!tree->band)
 		return isl_schedule_tree_free(tree);
+	if (isl_schedule_tree_is_anchored(tree) != was_anchored)
+		tree = isl_schedule_tree_update_anchored(tree);
 
 	return tree;
 error:

@@ -29,10 +29,14 @@ ISL_DECLARE_LIST(schedule_tree)
  * The "children" field is valid for all types except
  * isl_schedule_node_leaf.  This field is NULL if there are
  * no children (except for the implicit leaves).
+ *
+ * anchored is set if the node or any of its descendants depends
+ * on its position in the schedule tree.
  */
 struct isl_schedule_tree {
 	int ref;
 	isl_ctx *ctx;
+	int anchored;
 	enum isl_schedule_node_type type;
 	union {
 		isl_schedule_band *band;
@@ -70,6 +74,8 @@ __isl_give isl_schedule_tree *isl_schedule_tree_from_pair(
 	enum isl_schedule_node_type type, __isl_take isl_schedule_tree *tree1,
 	__isl_take isl_schedule_tree *tree2);
 
+int isl_schedule_tree_is_subtree_anchored(__isl_keep isl_schedule_tree *tree);
+
 __isl_give isl_space *isl_schedule_tree_band_get_space(
 	__isl_keep isl_schedule_tree *tree);
 __isl_give isl_multi_union_pw_aff *isl_schedule_tree_band_get_partial_schedule(
@@ -77,6 +83,12 @@ __isl_give isl_multi_union_pw_aff *isl_schedule_tree_band_get_partial_schedule(
 enum isl_ast_loop_type isl_schedule_tree_band_member_get_ast_loop_type(
 	__isl_keep isl_schedule_tree *tree, int pos);
 __isl_give isl_schedule_tree *isl_schedule_tree_band_member_set_ast_loop_type(
+	__isl_take isl_schedule_tree *tree, int pos,
+	enum isl_ast_loop_type type);
+enum isl_ast_loop_type isl_schedule_tree_band_member_get_isolate_ast_loop_type(
+	__isl_keep isl_schedule_tree *tree, int pos);
+__isl_give isl_schedule_tree *
+isl_schedule_tree_band_member_set_isolate_ast_loop_type(
 	__isl_take isl_schedule_tree *tree, int pos,
 	enum isl_ast_loop_type type);
 __isl_give isl_union_set *isl_schedule_tree_band_get_ast_build_options(

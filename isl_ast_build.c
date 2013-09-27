@@ -307,6 +307,7 @@ __isl_null isl_ast_build *isl_ast_build_free(
 	isl_union_map_free(build->options);
 	isl_schedule_node_free(build->node);
 	free(build->loop_type);
+	isl_set_free(build->isolated);
 
 	free(build);
 
@@ -1639,6 +1640,8 @@ static __isl_give isl_union_map *options_insert_dim(
  * then update the loop AST generation types
  * to reflect the insertion of a dimension at (global) position "pos"
  * in the schedule domain space.
+ * We do not need to adjust any isolate option since we would not be inserting
+ * any dimensions if there were any isolate option.
  */
 static __isl_give isl_ast_build *node_insert_dim(
 	__isl_take isl_ast_build *build, int pos)
@@ -2273,9 +2276,13 @@ __isl_give isl_set *isl_ast_build_get_option_domain(
  * They have been updated to reflect any dimension insertion in
  * node_insert_dim.
  * Return isl_ast_domain_error on error.
+ *
+ * If "isolated" is set, then we get the loop AST generation type
+ * directly from the band node since node_insert_dim cannot have been
+ * called on a band with the isolate option.
  */
 enum isl_ast_loop_type isl_ast_build_get_loop_type(
-	__isl_keep isl_ast_build *build)
+	__isl_keep isl_ast_build *build, int isolated)
 {
 	int local_pos;
 	isl_ctx *ctx;
@@ -2289,7 +2296,117 @@ enum isl_ast_loop_type isl_ast_build_get_loop_type(
 			return isl_ast_loop_error);
 
 	local_pos = build->depth - build->outer_pos;
-	return build->loop_type[local_pos];
+	if (!isolated)
+		return build->loop_type[local_pos];
+	return isl_schedule_node_band_member_get_isolate_ast_loop_type(
+							build->node, local_pos);
+}
+
+/* Extract the isolated set from the isolate option, if any,
+ * and store in the build.
+ * If there is no isolate option, then the isolated set is
+ * set to the empty set.
+ *
+ * The isolate option is of the form
+ *
+ *	isolate[[outer bands] -> current_band]
+ *
+ * We flatten this set and then map it back to the internal
+ * schedule space.
+ *
+ * If we have already extracted the isolated set
+ * or if internal2input is no longer set, then we do not
+ * need to do anything.  In the latter case, we know
+ * that the current band cannot have any isolate option.
+ */
+__isl_give isl_ast_build *isl_ast_build_extract_isolated(
+	__isl_take isl_ast_build *build)
+{
+	isl_space *space, *space2;
+	isl_union_set *options;
+	int n, n2;
+	isl_set *isolated;
+
+	if (!build)
+		return NULL;
+	if (!build->internal2input)
+		return build;
+	if (build->isolated)
+		return build;
+
+	build = isl_ast_build_cow(build);
+	if (!build)
+		return NULL;
+
+	options = isl_schedule_node_band_get_ast_build_options(build->node);
+
+	space = isl_multi_aff_get_space(build->internal2input);
+	space = isl_space_range(space);
+	space2 = isl_set_get_space(build->domain);
+	if (isl_space_is_wrapping(space2))
+		space2 = isl_space_range(isl_space_unwrap(space2));
+	n2 = isl_space_dim(space2, isl_dim_set);
+	n = isl_space_dim(space, isl_dim_set);
+	if (n < n2)
+		isl_die(isl_ast_build_get_ctx(build), isl_error_internal,
+			"total input space dimension cannot be smaller "
+			"than dimension of innermost band",
+			space = isl_space_free(space));
+	space = isl_space_drop_dims(space, isl_dim_set, n - n2, n2);
+	space = isl_space_map_from_domain_and_range(space, space2);
+	space = isl_space_wrap(space);
+	space = isl_space_set_tuple_name(space, isl_dim_set, "isolate");
+	isolated = isl_union_set_extract_set(options, space);
+	isl_union_set_free(options);
+
+	isolated = isl_set_flatten(isolated);
+	isolated = isl_set_preimage_multi_aff(isolated,
+				    isl_multi_aff_copy(build->internal2input));
+
+	build->isolated = isolated;
+	if (!build->isolated)
+		return isl_ast_build_free(build);
+
+	return build;
+}
+
+/* Does "build" have a non-empty isolated set?
+ *
+ * The caller is assumed to have called isl_ast_build_extract_isolated first.
+ */
+int isl_ast_build_has_isolated(__isl_keep isl_ast_build *build)
+{
+	int empty;
+
+	if (!build)
+		return -1;
+	if (!build->internal2input)
+		return 0;
+	if (!build->isolated)
+		isl_die(isl_ast_build_get_ctx(build), isl_error_internal,
+			"isolated set not extracted yet", return -1);
+
+	empty = isl_set_plain_is_empty(build->isolated);
+	return empty < 0 ? -1 : !empty;
+}
+
+/* Return a copy of the isolated set of "build".
+ *
+ * The caller is assume to have called isl_ast_build_has_isolated first,
+ * with this function returning true.
+ * In particular, this function should not be called if we are no
+ * longer keeping track of internal2input (and there therefore could
+ * not possibly be any isolated set).
+ */
+__isl_give isl_set *isl_ast_build_get_isolated(__isl_keep isl_ast_build *build)
+{
+	if (!build)
+		return NULL;
+	if (!build->internal2input)
+		isl_die(isl_ast_build_get_ctx(build), isl_error_internal,
+			"build cannot have isolated set", return NULL);
+
+	return isl_set_copy(build->isolated);
 }
 
 /* Extract the separation class mapping at the current depth.

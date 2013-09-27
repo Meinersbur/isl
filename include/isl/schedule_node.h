@@ -71,6 +71,8 @@ __isl_give isl_schedule_node *isl_schedule_node_previous_sibling(
 __isl_give isl_schedule_node *isl_schedule_node_next_sibling(
 	__isl_take isl_schedule_node *node);
 
+int isl_schedule_node_is_subtree_anchored(__isl_keep isl_schedule_node *node);
+
 __isl_give isl_space *isl_schedule_node_band_get_space(
 	__isl_keep isl_schedule_node *node);
 __isl_give isl_multi_union_pw_aff *isl_schedule_node_band_get_partial_schedule(
@@ -80,6 +82,12 @@ __isl_give isl_union_map *isl_schedule_node_band_get_partial_schedule_union_map(
 enum isl_ast_loop_type isl_schedule_node_band_member_get_ast_loop_type(
 	__isl_keep isl_schedule_node *node, int pos);
 __isl_give isl_schedule_node *isl_schedule_node_band_member_set_ast_loop_type(
+	__isl_take isl_schedule_node *node, int pos,
+	enum isl_ast_loop_type type);
+enum isl_ast_loop_type isl_schedule_node_band_member_get_isolate_ast_loop_type(
+	__isl_keep isl_schedule_node *node, int pos);
+__isl_give isl_schedule_node *
+isl_schedule_node_band_member_set_isolate_ast_loop_type(
 	__isl_take isl_schedule_node *node, int pos,
 	enum isl_ast_loop_type type);
 __isl_give isl_union_set *isl_schedule_node_band_get_ast_build_options(

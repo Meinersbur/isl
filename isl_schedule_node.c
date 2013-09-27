@@ -1102,6 +1102,16 @@ int isl_schedule_node_foreach_ancestor_top_down(
 	return 0;
 }
 
+/* Is any node in the subtree rooted at "node" anchored?
+ * That is, do any of these nodes reference the outer band nodes?
+ */
+int isl_schedule_node_is_subtree_anchored(__isl_keep isl_schedule_node *node)
+{
+	if (!node)
+		return -1;
+	return isl_schedule_tree_is_subtree_anchored(node->tree);
+}
+
 /* Return the number of members in the given band node.
  */
 unsigned isl_schedule_node_band_n_member(__isl_keep isl_schedule_node *node)
@@ -1253,6 +1263,38 @@ __isl_give isl_schedule_node *isl_schedule_node_band_member_set_ast_loop_type(
 	return isl_schedule_node_graft_tree(node, tree);
 }
 
+/* Return the loop AST generation type for the band member of band node "node"
+ * at position "pos" for the isolated part.
+ */
+enum isl_ast_loop_type isl_schedule_node_band_member_get_isolate_ast_loop_type(
+	__isl_keep isl_schedule_node *node, int pos)
+{
+	if (!node)
+		return isl_ast_loop_error;
+
+	return isl_schedule_tree_band_member_get_isolate_ast_loop_type(
+							    node->tree, pos);
+}
+
+/* Set the loop AST generation type for the band member of band node "node"
+ * at position "pos" for the isolated part to "type".
+ */
+__isl_give isl_schedule_node *
+isl_schedule_node_band_member_set_isolate_ast_loop_type(
+	__isl_take isl_schedule_node *node, int pos,
+	enum isl_ast_loop_type type)
+{
+	isl_schedule_tree *tree;
+
+	if (!node)
+		return NULL;
+
+	tree = isl_schedule_tree_copy(node->tree);
+	tree = isl_schedule_tree_band_member_set_isolate_ast_loop_type(tree,
+								    pos, type);
+	return isl_schedule_node_graft_tree(node, tree);
+}
+
 /* Return the AST build options associated to band node "node".
  */
 __isl_give isl_union_set *isl_schedule_node_band_get_ast_build_options(
@@ -1314,11 +1356,19 @@ __isl_give isl_schedule_node *isl_schedule_node_band_scale(
 	__isl_take isl_schedule_node *node, __isl_take isl_multi_val *mv)
 {
 	isl_schedule_tree *tree;
+	int anchored;
 
 	if (!node || !mv)
 		goto error;
 	if (check_space_multi_val(node, mv) < 0)
 		goto error;
+	anchored = isl_schedule_node_is_subtree_anchored(node);
+	if (anchored < 0)
+		goto error;
+	if (anchored)
+		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
+			"cannot scale band node with anchored subtree",
+			goto error);
 
 	tree = isl_schedule_node_get_tree(node);
 	tree = isl_schedule_tree_band_scale(tree, mv);
@@ -1336,11 +1386,19 @@ __isl_give isl_schedule_node *isl_schedule_node_band_scale_down(
 	__isl_take isl_schedule_node *node, __isl_take isl_multi_val *mv)
 {
 	isl_schedule_tree *tree;
+	int anchored;
 
 	if (!node || !mv)
 		goto error;
 	if (check_space_multi_val(node, mv) < 0)
 		goto error;
+	anchored = isl_schedule_node_is_subtree_anchored(node);
+	if (anchored < 0)
+		goto error;
+	if (anchored)
+		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
+			"cannot scale down band node with anchored subtree",
+			goto error);
 
 	tree = isl_schedule_node_get_tree(node);
 	tree = isl_schedule_tree_band_scale_down(tree, mv);
@@ -1357,6 +1415,9 @@ error:
  * to the tile dimensions and the point dimensions.
  *
  * Return a pointer to the outer (tile) node.
+ *
+ * If any of the descendants of "node" depend on the set of outer band nodes,
+ * then we refuse to tile the node.
  *
  * If the scale tile loops option is set, then the tile loops
  * are scaled by the tile sizes.  If the shift point loops option is set,
@@ -1375,9 +1436,17 @@ __isl_give isl_schedule_node *isl_schedule_node_band_tile(
 	__isl_take isl_schedule_node *node, __isl_take isl_multi_val *sizes)
 {
 	isl_schedule_tree *tree;
+	int anchored;
 
 	if (!node || !sizes)
 		goto error;
+	anchored = isl_schedule_node_is_subtree_anchored(node);
+	if (anchored < 0)
+		goto error;
+	if (anchored)
+		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
+			"cannot tile band node with anchored subtree",
+			goto error);
 
 	if (check_space_multi_val(node, sizes) < 0)
 		goto error;
@@ -1400,12 +1469,16 @@ error:
  * Otherwise, the child of the node is removed and the result is
  * appended to all the leaves in the subtree rooted at the original child.
  * The original node is then replaced by the result of this operation.
+ *
+ * If any of the nodes in the subtree rooted at "node" depend on
+ * the set of outer band nodes then we refuse to sink the band node.
  */
 __isl_give isl_schedule_node *isl_schedule_node_band_sink(
 	__isl_take isl_schedule_node *node)
 {
 	enum isl_schedule_node_type type;
 	isl_schedule_tree *tree, *child;
+	int anchored;
 
 	if (!node)
 		return NULL;
@@ -1414,6 +1487,13 @@ __isl_give isl_schedule_node *isl_schedule_node_band_sink(
 	if (type != isl_schedule_node_band)
 		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
 			"not a band node", isl_schedule_node_free(node));
+	anchored = isl_schedule_node_is_subtree_anchored(node);
+	if (anchored < 0)
+		return isl_schedule_node_free(node);
+	if (anchored)
+		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
+			"cannot sink band node in anchored subtree",
+			isl_schedule_node_free(node));
 	if (isl_schedule_tree_n_children(node->tree) == 0)
 		return node;
 
@@ -1587,16 +1667,27 @@ static int check_insert(__isl_keep isl_schedule_node *node)
 /* Insert a band node with partial schedule "mupa" between "node" and
  * its parent.
  * Return a pointer to the new band node.
+ *
+ * If any of the nodes in the subtree rooted at "node" depend on
+ * the set of outer band nodes then we refuse to insert the band node.
  */
 __isl_give isl_schedule_node *isl_schedule_node_insert_partial_schedule(
 	__isl_take isl_schedule_node *node,
 	__isl_take isl_multi_union_pw_aff *mupa)
 {
+	int anchored;
 	isl_schedule_band *band;
 	isl_schedule_tree *tree;
 
 	if (check_insert(node) < 0)
 		node = isl_schedule_node_free(node);
+	anchored = isl_schedule_node_is_subtree_anchored(node);
+	if (anchored < 0)
+		goto error;
+	if (anchored)
+		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
+			"cannot insert band node in anchored subtree",
+			goto error);
 
 	tree = isl_schedule_node_get_tree(node);
 	band = isl_schedule_band_from_multi_union_pw_aff(mupa);
@@ -1604,6 +1695,10 @@ __isl_give isl_schedule_node *isl_schedule_node_insert_partial_schedule(
 	node = isl_schedule_node_graft_tree(node, tree);
 
 	return node;
+error:
+	isl_schedule_node_free(node);
+	isl_multi_union_pw_aff_free(mupa);
+	return NULL;
 }
 
 /* Insert a filter node with filter "filter" between "node" and its parent.
@@ -1728,7 +1823,8 @@ __isl_give isl_schedule_node *isl_schedule_node_cut(
  * Return a pointer to this former child or to the leaf the position
  * of the original node if there was no child.
  * It is not allowed to remove the root of a schedule tree,
- * a set or sequence node or a child of a set or sequence node.
+ * a set or sequence node, a child of a set or sequence node or
+ * a band node with an anchored subtree.
  */
 __isl_give isl_schedule_node *isl_schedule_node_delete(
 	__isl_take isl_schedule_node *node)
@@ -1754,6 +1850,18 @@ __isl_give isl_schedule_node *isl_schedule_node_delete(
 		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
 			"cannot delete child of set or sequence",
 			return isl_schedule_node_free(node));
+	if (isl_schedule_node_get_type(node) == isl_schedule_node_band) {
+		int anchored;
+
+		anchored = isl_schedule_node_is_subtree_anchored(node);
+		if (anchored < 0)
+			return isl_schedule_node_free(node);
+		if (anchored)
+			isl_die(isl_schedule_node_get_ctx(node),
+				isl_error_invalid,
+				"cannot delete band node with anchored subtree",
+				return isl_schedule_node_free(node));
+	}
 
 	tree = isl_schedule_node_get_tree(node);
 	if (!tree || isl_schedule_tree_has_children(tree)) {

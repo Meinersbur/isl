@@ -11,6 +11,7 @@
  */
 
 #include <string.h>
+#include <isl/map.h>
 #include <isl/schedule_node.h>
 #include <isl_schedule_band.h>
 #include <isl_schedule_private.h>
@@ -40,6 +41,7 @@ static __isl_give isl_schedule_band *isl_schedule_band_alloc(isl_ctx *ctx)
  * that the schedule is always integral.
  * The band is not marked permutable, the dimensions are not
  * marked coincident and the AST build options are empty.
+ * Since there are no build options, the node is not anchored.
  */
 __isl_give isl_schedule_band *isl_schedule_band_from_multi_union_pw_aff(
 	__isl_take isl_multi_union_pw_aff *mupa)
@@ -61,6 +63,7 @@ __isl_give isl_schedule_band *isl_schedule_band_from_multi_union_pw_aff(
 	band->mupa = mupa;
 	space = isl_space_params_alloc(ctx, 0);
 	band->ast_build_options = isl_union_set_empty(space);
+	band->anchored = 0;
 
 	if ((band->n && !band->coincident) || !band->ast_build_options)
 		return isl_schedule_band_free(band);
@@ -110,6 +113,14 @@ __isl_give isl_schedule_band *isl_schedule_band_dup(
 		for (i = 0; i < band->n; ++i)
 			dup->loop_type[i] = band->loop_type[i];
 	}
+	if (band->isolate_loop_type) {
+		dup->isolate_loop_type = isl_alloc_array(ctx,
+					    enum isl_ast_loop_type, band->n);
+		if (band->n && !dup->isolate_loop_type)
+			return isl_schedule_band_free(dup);
+		for (i = 0; i < band->n; ++i)
+			dup->isolate_loop_type[i] = band->isolate_loop_type[i];
+	}
 
 	return dup;
 }
@@ -155,6 +166,7 @@ __isl_null isl_schedule_band *isl_schedule_band_free(
 	isl_multi_union_pw_aff_free(band->mupa);
 	isl_union_set_free(band->ast_build_options);
 	free(band->loop_type);
+	free(band->isolate_loop_type);
 	free(band->coincident);
 	free(band);
 
@@ -191,6 +203,14 @@ int isl_schedule_band_plain_is_equal(__isl_keep isl_schedule_band *band1,
 	if (band1->loop_type)
 		for (i = 0; i < band1->n; ++i)
 			if (band1->loop_type[i] != band2->loop_type[i])
+				return 0;
+
+	if (!band1->isolate_loop_type != !band2->isolate_loop_type)
+		return 0;
+	if (band1->isolate_loop_type)
+		for (i = 0; i < band1->n; ++i)
+			if (band1->isolate_loop_type[i] !=
+						band2->isolate_loop_type[i])
 				return 0;
 
 	return isl_union_set_is_equal(band1->ast_build_options,
@@ -271,6 +291,14 @@ __isl_give isl_schedule_band *isl_schedule_band_set_permutable(
 	return band;
 }
 
+/* Is the band node "node" anchored?  That is, does it reference
+ * the outer band nodes?
+ */
+int isl_schedule_band_is_anchored(__isl_keep isl_schedule_band *band)
+{
+	return band ? band->anchored : -1;
+}
+
 /* Return the schedule space of the band.
  */
 __isl_give isl_space *isl_schedule_band_get_space(
@@ -344,6 +372,64 @@ __isl_give isl_schedule_band *isl_schedule_band_member_set_ast_loop_type(
 	return band;
 }
 
+/* Return the loop AST generation type for the band member of "band"
+ * at position "pos" for the part that has been isolated by the isolate option.
+ */
+enum isl_ast_loop_type isl_schedule_band_member_get_isolate_ast_loop_type(
+	__isl_keep isl_schedule_band *band, int pos)
+{
+	if (!band)
+		return isl_ast_loop_error;
+
+	if (pos < 0 || pos >= band->n)
+		isl_die(isl_schedule_band_get_ctx(band), isl_error_invalid,
+			"invalid member position", return -1);
+
+	if (!band->isolate_loop_type)
+		return isl_ast_loop_default;
+
+	return band->isolate_loop_type[pos];
+}
+
+/* Set the loop AST generation type for the band member of "band"
+ * at position "pos" to "type" for the part that has been isolated
+ * by the isolate option.
+ */
+__isl_give isl_schedule_band *
+isl_schedule_band_member_set_isolate_ast_loop_type(
+	__isl_take isl_schedule_band *band, int pos,
+	enum isl_ast_loop_type type)
+{
+	if (!band)
+		return NULL;
+	if (isl_schedule_band_member_get_isolate_ast_loop_type(band, pos) ==
+									type)
+		return band;
+
+	if (pos < 0 || pos >= band->n)
+		isl_die(isl_schedule_band_get_ctx(band), isl_error_invalid,
+			"invalid member position",
+			isl_schedule_band_free(band));
+
+	band = isl_schedule_band_cow(band);
+	if (!band)
+		return isl_schedule_band_free(band);
+
+	if (!band->isolate_loop_type) {
+		isl_ctx *ctx;
+
+		ctx = isl_schedule_band_get_ctx(band);
+		band->isolate_loop_type = isl_calloc_array(ctx,
+					    enum isl_ast_loop_type, band->n);
+		if (band->n && !band->isolate_loop_type)
+			return isl_schedule_band_free(band);
+	}
+
+	band->isolate_loop_type[pos] = type;
+
+	return band;
+}
+
 static const char *option_str[] = {
 	[isl_ast_loop_atomic] = "atomic",
 	[isl_ast_loop_unroll] = "unroll",
@@ -354,10 +440,15 @@ static const char *option_str[] = {
  *
  *	{ type[x] }
  *
- * which can be used to encode loop AST generation options of the given type.
+ * or
+ *
+ *	{ [isolate[] -> type[x]] }
+ *
+ * depending on whether "isolate" is set.
+ * These can be used to encode loop AST generation options of the given type.
  */
 static __isl_give isl_space *loop_type_space(__isl_take isl_space *space,
-	enum isl_ast_loop_type type)
+	enum isl_ast_loop_type type, int isolate)
 {
 	const char *name;
 
@@ -365,19 +456,30 @@ static __isl_give isl_space *loop_type_space(__isl_take isl_space *space,
 	space = isl_space_set_from_params(space);
 	space = isl_space_add_dims(space, isl_dim_set, 1);
 	space = isl_space_set_tuple_name(space, isl_dim_set, name);
+	if (!isolate)
+		return space;
+	space = isl_space_from_range(space);
+	space = isl_space_set_tuple_name(space, isl_dim_in, "isolate");
+	space = isl_space_wrap(space);
 
 	return space;
 }
 
 /* Add encodings of the "n" loop AST generation options "type" to "options".
+ * If "isolate" is set, then these options refer to the isolated part.
  *
  * In particular, for each sequence of consecutive identical types "t",
  * different from the default, add an option
  *
  *	{ t[x] : first <= x <= last }
+ *
+ * or
+ *
+ *	{ [isolate[] -> t[x]] : first <= x <= last }
  */
 static __isl_give isl_union_set *add_loop_types(
-	__isl_take isl_union_set *options, int n, enum isl_ast_loop_type *type)
+	__isl_take isl_union_set *options, int n, enum isl_ast_loop_type *type,
+	int isolate)
 {
 	int i;
 	isl_ctx *ctx;
@@ -401,7 +503,7 @@ static __isl_give isl_union_set *add_loop_types(
 			++i;
 
 		space = isl_union_set_get_space(options);
-		space = loop_type_space(space, type[i]);
+		space = loop_type_space(space, type[i], isolate);
 		option = isl_set_universe(space);
 		option = isl_set_lower_bound_si(option, isl_dim_set, 0, first);
 		option = isl_set_upper_bound_si(option, isl_dim_set, 0, i);
@@ -422,7 +524,8 @@ __isl_give isl_union_set *isl_schedule_band_get_ast_build_options(
 		return NULL;
 
 	options = isl_union_set_copy(band->ast_build_options);
-	options = add_loop_types(options, band->n, band->loop_type);
+	options = add_loop_types(options, band->n, band->loop_type, 0);
+	options = add_loop_types(options, band->n, band->isolate_loop_type, 1);
 
 	return options;
 }
@@ -439,6 +542,40 @@ static int has_any(__isl_keep isl_union_set *uset,
 		return -1;
 
 	return found;
+}
+
+/* Does "set" live in a space of the form
+ *
+ *	isolate[[...] -> [...]]
+ *
+ * ?
+ *
+ * If so, set *found and abort the search.
+ */
+static int is_isolate(__isl_take isl_set *set, void *user)
+{
+	int *found = user;
+
+	if (isl_set_has_tuple_name(set)) {
+		const char *name;
+		name = isl_set_get_tuple_name(set);
+		if (isl_set_is_wrapping(set) && !strcmp(name, "isolate"))
+			*found = 1;
+	}
+	isl_set_free(set);
+
+	return *found ? -1 : 0;
+}
+
+/* Does "options" include an option of the ofrm
+ *
+ *	isolate[[...] -> [...]]
+ *
+ * ?
+ */
+static int has_isolate_option(__isl_keep isl_union_set *options)
+{
+	return has_any(options, &is_isolate);
 }
 
 /* Does "set" encode a loop AST generation option?
@@ -465,6 +602,54 @@ static int is_loop_type_option(__isl_take isl_set *set, void *user)
 	return *found ? -1 : 0;
 }
 
+/* Does "set" encode a loop AST generation option for the isolated part?
+ * That is, is of the form
+ *
+ *	{ [isolate[] -> t[x]] }
+ *
+ * with t equal to "atomic", "unroll" or "separate"?
+ */
+static int is_isolate_loop_type_option(__isl_take isl_set *set, void *user)
+{
+	int *found = user;
+	const char *name;
+	enum isl_ast_loop_type type;
+	isl_map *map;
+
+	if (!isl_set_is_wrapping(set)) {
+		isl_set_free(set);
+		return 0;
+	}
+	map = isl_set_unwrap(set);
+	if (!isl_map_has_tuple_name(map, isl_dim_in) ||
+	    !isl_map_has_tuple_name(map, isl_dim_out)) {
+		isl_map_free(map);
+		return 0;
+	}
+	name = isl_map_get_tuple_name(map, isl_dim_in);
+	if (!strcmp(name, "isolate")) {
+		name = isl_map_get_tuple_name(map, isl_dim_out);
+		for (type = isl_ast_loop_atomic;
+		    type <= isl_ast_loop_separate; ++type) {
+			if (strcmp(name, option_str[type]))
+				continue;
+			*found = 1;
+			break;
+		}
+	}
+	isl_map_free(map);
+
+	return *found ? -1 : 0;
+}
+
+/* Does "options" encode any loop AST generation options
+ * for the isolated part?
+ */
+static int has_isolate_loop_type_options(__isl_keep isl_union_set *options)
+{
+	return has_any(options, &is_isolate_loop_type_option);
+}
+
 /* Does "options" encode any loop AST generation options?
  */
 static int has_loop_type_options(__isl_keep isl_union_set *options)
@@ -474,9 +659,10 @@ static int has_loop_type_options(__isl_keep isl_union_set *options)
 
 /* Extract the loop AST generation type for the band member
  * at position "pos" from "options".
+ * If "isolate" is set, then extract the loop types for the isolated part.
  */
 static enum isl_ast_loop_type extract_loop_type(
-	__isl_keep isl_union_set *options, int pos)
+	__isl_keep isl_union_set *options, int pos, int isolate)
 {
 	isl_ctx *ctx;
 	enum isl_ast_loop_type type, res = isl_ast_loop_default;
@@ -489,7 +675,7 @@ static enum isl_ast_loop_type extract_loop_type(
 		int empty;
 
 		space = isl_union_set_get_space(options);
-		space = loop_type_space(space, type);
+		space = loop_type_space(space, type, isolate);
 		option = isl_union_set_extract_set(options, space);
 		option = isl_set_fix_si(option, isl_dim_set, 0, pos);
 		empty = isl_set_is_empty(option);
@@ -526,7 +712,7 @@ static int extract_loop_types(__isl_keep isl_schedule_band *band,
 			return -1;
 	}
 	for (i = 0; i < band->n; ++i) {
-		band->loop_type[i] = extract_loop_type(options, i);
+		band->loop_type[i] = extract_loop_type(options, i, 0);
 		if (band->loop_type[i] == isl_ast_loop_error)
 			return -1;
 	}
@@ -534,12 +720,44 @@ static int extract_loop_types(__isl_keep isl_schedule_band *band,
 	return 0;
 }
 
+/* Extract the loop AST generation types for the members of "band"
+ * from "options" for the isolated part and
+ * store them in band->isolate_loop_type.
+ * Return -1 on error.
+ */
+static int extract_isolate_loop_types(__isl_keep isl_schedule_band *band,
+	__isl_keep isl_union_set *options)
+{
+	int i;
+
+	if (!band->isolate_loop_type) {
+		isl_ctx *ctx = isl_schedule_band_get_ctx(band);
+		band->isolate_loop_type = isl_alloc_array(ctx,
+					    enum isl_ast_loop_type, band->n);
+		if (band->n && !band->isolate_loop_type)
+			return -1;
+	}
+	for (i = 0; i < band->n; ++i) {
+		band->isolate_loop_type[i] = extract_loop_type(options, i, 1);
+		if (band->isolate_loop_type[i] == isl_ast_loop_error)
+			return -1;
+	}
+
+	return 0;
+}
+
 /* Construct universe sets of the spaces that encode loop AST generation
- * types.  That is, construct
+ * types (for the isolated part if "isolate" is set).  That is, construct
  *
  *	{ atomic[x]; separate[x]; unroll[x] }
+ *
+ * or
+ *
+ *	{ [isolate[] -> atomic[x]]; [isolate[] -> separate[x]];
+ *	  [isolate[] -> unroll[x]] }
  */
-static __isl_give isl_union_set *loop_types(__isl_take isl_space *space)
+static __isl_give isl_union_set *loop_types(__isl_take isl_space *space,
+	int isolate)
 {
 	enum isl_ast_loop_type type;
 	isl_union_set *types;
@@ -550,7 +768,7 @@ static __isl_give isl_union_set *loop_types(__isl_take isl_space *space)
 		isl_set *set;
 
 		space = isl_union_set_get_space(types);
-		space = loop_type_space(space, type);
+		space = loop_type_space(space, type, isolate);
 		set = isl_set_universe(space);
 		types = isl_union_set_add_set(types, set);
 	}
@@ -566,7 +784,21 @@ static __isl_give isl_union_set *clear_loop_types(
 {
 	isl_union_set *types;
 
-	types = loop_types(isl_union_set_get_space(options));
+	types = loop_types(isl_union_set_get_space(options), 0);
+	options = isl_union_set_subtract(options, types);
+
+	return options;
+}
+
+/* Remove all elements from spaces that encode loop AST generation types
+ * for the isolated part from "options".
+ */
+static __isl_give isl_union_set *clear_isolate_loop_types(
+	__isl_take isl_union_set *options)
+{
+	isl_union_set *types;
+
+	types = loop_types(isl_union_set_get_space(options), 1);
 	options = isl_union_set_subtract(options, types);
 
 	return options;
@@ -576,19 +808,29 @@ static __isl_give isl_union_set *clear_loop_types(
  * If there are any loop AST generation type options, then they
  * are extracted and stored in band->loop_type.  Otherwise,
  * band->loop_type is removed to indicate that the default applies
- * to all members.
+ * to all members.  Similarly for the loop AST generation type options
+ * for the isolated part, which are stored in band->isolate_loop_type.
  * The remaining options are stored in band->ast_build_options.
+ *
+ * Set anchored if the options include an isolate option since the
+ * domain of the wrapped map references the outer band node schedules.
  */
 __isl_give isl_schedule_band *isl_schedule_band_set_ast_build_options(
 	__isl_take isl_schedule_band *band, __isl_take isl_union_set *options)
 {
-	int has_loop_type;
+	int has_isolate, has_loop_type, has_isolate_loop_type;
 
 	band = isl_schedule_band_cow(band);
 	if (!band || !options)
 		goto error;
+	has_isolate = has_isolate_option(options);
+	if (has_isolate < 0)
+		goto error;
 	has_loop_type = has_loop_type_options(options);
 	if (has_loop_type < 0)
+		goto error;
+	has_isolate_loop_type = has_isolate_loop_type_options(options);
+	if (has_isolate_loop_type < 0)
 		goto error;
 
 	if (!has_loop_type) {
@@ -602,8 +844,20 @@ __isl_give isl_schedule_band *isl_schedule_band_set_ast_build_options(
 			goto error;
 	}
 
+	if (!has_isolate_loop_type) {
+		free(band->isolate_loop_type);
+		band->isolate_loop_type = NULL;
+	} else {
+		if (extract_isolate_loop_types(band, options) < 0)
+			goto error;
+		options = clear_isolate_loop_types(options);
+		if (!options)
+			goto error;
+	}
+
 	isl_union_set_free(band->ast_build_options);
 	band->ast_build_options = options;
+	band->anchored = has_isolate;
 
 	return band;
 error:
@@ -766,6 +1020,9 @@ error:
  *
  * We apply the transformation even if "n" is zero to ensure consistent
  * behavior with respect to changes in the schedule space.
+ *
+ * The loop AST generation types for the isolated part become
+ * meaningless after dropping dimensions, so we remove them.
  */
 __isl_give isl_schedule_band *isl_schedule_band_drop(
 	__isl_take isl_schedule_band *band, int pos, int n)
@@ -791,6 +1048,8 @@ __isl_give isl_schedule_band *isl_schedule_band_drop(
 	if (band->loop_type)
 		for (i = pos + n; i < band->n; ++i)
 			band->loop_type[i - n] = band->loop_type[i];
+	free(band->isolate_loop_type);
+	band->isolate_loop_type = NULL;
 
 	band->n -= n;
 

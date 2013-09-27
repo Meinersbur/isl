@@ -17,8 +17,14 @@
  * loop_type contains the loop AST generation types for the members
  * in the band.  It may be NULL, if all members are
  * of type isl_ast_loop_default.
+ * isolate_loop_type contains the loop AST generation types for the members
+ * in the band for the isolated part.  It may be NULL, if all members are
+ * of type isl_ast_loop_default.
  * ast_build_options are the remaining AST build options associated
  * to the band.
+ * anchored is set if the node depends on its position in the schedule tree.
+ *	In particular, it is set if the AST build options include
+ *	an isolate option.
  */
 struct isl_schedule_band {
 	int ref;
@@ -29,8 +35,10 @@ struct isl_schedule_band {
 
 	isl_multi_union_pw_aff *mupa;
 
+	int anchored;
 	isl_union_set *ast_build_options;
 	enum isl_ast_loop_type *loop_type;
+	enum isl_ast_loop_type *isolate_loop_type;
 };
 typedef struct isl_schedule_band isl_schedule_band;
 
@@ -46,6 +54,8 @@ isl_ctx *isl_schedule_band_get_ctx(__isl_keep isl_schedule_band *band);
 int isl_schedule_band_plain_is_equal(__isl_keep isl_schedule_band *band1,
 	__isl_keep isl_schedule_band *band2);
 
+int isl_schedule_band_is_anchored(__isl_keep isl_schedule_band *band);
+
 __isl_give isl_space *isl_schedule_band_get_space(
 	__isl_keep isl_schedule_band *band);
 __isl_give isl_multi_union_pw_aff *isl_schedule_band_get_partial_schedule(
@@ -53,6 +63,12 @@ __isl_give isl_multi_union_pw_aff *isl_schedule_band_get_partial_schedule(
 enum isl_ast_loop_type isl_schedule_band_member_get_ast_loop_type(
 	__isl_keep isl_schedule_band *band, int pos);
 __isl_give isl_schedule_band *isl_schedule_band_member_set_ast_loop_type(
+	__isl_take isl_schedule_band *band, int pos,
+	enum isl_ast_loop_type type);
+enum isl_ast_loop_type isl_schedule_band_member_get_isolate_ast_loop_type(
+	__isl_keep isl_schedule_band *band, int pos);
+__isl_give isl_schedule_band *
+isl_schedule_band_member_set_isolate_ast_loop_type(
 	__isl_take isl_schedule_band *band, int pos,
 	enum isl_ast_loop_type type);
 __isl_give isl_union_set *isl_schedule_band_get_ast_build_options(

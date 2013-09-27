@@ -241,6 +241,9 @@ renamed to C<isl_ast_build_node_from_schedule_map>.
 The original name is still available
 for backward compatibility, but it will be removed in the future.
 
+=item * The C<separation_class> AST generation option has been
+deprecated.
+
 =back
 
 =head1 License
@@ -7319,6 +7322,7 @@ can be obtained using the following function.
 
 An extra top-level band node (right underneath the domain node) can
 be introduced into the schedule using the following function.
+The schedule tree is assumed not to have any anchored nodes.
 
 	#include <isl/schedule.h>
 	__isl_give isl_schedule *
@@ -7592,11 +7596,23 @@ from a schedule tree and returns a pointer to the child
 of the node, now located at the position of the original node
 or to a leaf node at that position if there was no child.
 It is not allowed to remove the root of a schedule tree,
-a set or sequence node or a child of a set or sequence node.
+a set or sequence node, a child of a set or sequence node or
+a band node with an anchored subtree.
 
 	#include <isl/schedule_node.h>
 	__isl_give isl_schedule_node *isl_schedule_node_delete(
 		__isl_take isl_schedule_node *node);
+
+Most nodes in a schedule tree only contain local information.
+In some cases, however, a node may also refer to outer band nodes.
+This means that the position of the node within the tree should
+not be changed, or at least that no changes are performed to the
+outer band nodes.  The following function can be used to test
+whether the subtree rooted at a given node contains any such nodes.
+
+	#include <isl/schedule_node.h>
+	int isl_schedule_node_is_subtree_anchored(
+		__isl_keep isl_schedule_node *node);
 
 The following function resets the user pointers on all parameter
 and tuple identifiers referenced by the given schedule node.
@@ -7647,6 +7663,13 @@ Several node types have their own functions for querying
 		__isl_take isl_schedule_node *node, int pos,
 		enum isl_ast_loop_type type);
 	__isl_give isl_union_set *
+	enum isl_ast_loop_type
+	isl_schedule_node_band_member_get_isolate_ast_loop_type(
+		__isl_keep isl_schedule_node *node, int pos);
+	__isl_give isl_schedule_node *
+	isl_schedule_node_band_member_set_isolate_ast_loop_type(
+		__isl_take isl_schedule_node *node, int pos,
+		enum isl_ast_loop_type type);
 	isl_schedule_node_band_get_ast_build_options(
 		__isl_keep isl_schedule_node *node);
 	__isl_give isl_schedule_node *
@@ -7672,9 +7695,11 @@ Note that the scheduler may have to resort to a Feautrier style scheduling
 step even if the default scheduler is used.
 An C<isl_ast_loop_type> is one of C<isl_ast_loop_default>,
 C<isl_ast_loop_atomic>, C<isl_ast_loop_unroll> or C<isl_ast_loop_separate>.
-For the meaning of these loop AST generation types, see
-L</"AST Generation Options (Schedule Tree)">.
-The function C<isl_schedule_node_band_member_get_ast_loop_type>
+For the meaning of these loop AST generation types and the difference
+between the regular loop AST generation type and the isolate
+loop AST generation type, see L</"AST Generation Options (Schedule Tree)">.
+The functions C<isl_schedule_node_band_member_get_ast_loop_type>
+and C<isl_schedule_node_band_member_get_isolate_ast_loop_type>
 may return C<isl_ast_loop_error> if an error occurs.
 The AST build options govern how an AST is generated for
 the individual schedule dimensions during AST generation.
@@ -7743,6 +7768,8 @@ the results points to the new node.
 
 This function inserts a new band node with (the greatest integer
 part of) the given partial schedule.
+The subtree rooted at the given node is assumed not to have
+any anchored nodes.
 
 	#include <isl/schedule_node.h>
 	__isl_give isl_schedule_node *
@@ -7802,6 +7829,8 @@ The C<isl_schedule_node_band_tile> function tiles
 the band using the given tile sizes inside its schedule.
 A new child band node is created to represent the point loops and it is
 inserted between the modified band and its children.
+The subtree rooted at the given node is assumed not to have
+any anchored nodes.
 The C<tile_scale_tile_loops> option specifies whether the tile
 loops iterators should be scaled by the tile sizes.
 If the C<tile_shift_point_loops> option is set, then the point loops
@@ -7825,6 +7854,8 @@ at the band node using the following function.
 	__isl_give isl_schedule_node *isl_schedule_node_band_sink(
 		__isl_take isl_schedule_node *node);
 
+The subtree rooted at the given node is assumed not to have
+any anchored nodes.
 The result points to the node in the resulting tree that is in the same
 position as the node pointed to by C<node> in the original tree.
 
@@ -9109,6 +9140,127 @@ dimension.
 
 =back
 
+The C<isolate> option is a bit more involved.  It allows the user
+to isolate a range of schedule dimension values from smaller and
+greater values.  Additionally, the user may specify a different
+atomic/separate/unroll choice for the isolated part and the remaining
+parts.  The typical use case of the C<isolate> option is to isolate
+full tiles from partial tiles.
+The part that needs to be isolated may depend on outer schedule dimensions.
+The option therefore needs to be able to reference those outer schedule
+dimensions.  In particular, the space of the C<isolate> option is that
+of a wrapped map with as domain the flat product of all outer band nodes
+and as range the space of the current band node.
+The atomic/separate/unroll choice for the isolated part is determined
+by an option that lives in an unnamed wrapped space with as domain
+a zero-dimensional C<isolate> space and as range the regular
+C<atomic>, C<separate> or C<unroll> space.
+This option may also be set directly using
+C<isl_schedule_node_band_member_set_isolate_ast_loop_type>.
+The atomic/separate/unroll choice for the remaining part is determined
+by the regular C<atomic>, C<separate> or C<unroll> option.
+The use of the C<isolate> option causes any tree containing the node
+to be considered anchored.
+
+As an example, consider the isolation of full tiles from partial tiles
+in a tiling of a triangular domain.  The original schedule is as follows.
+
+	domain: "{ A[i,j] : 0 <= i,j and i + j <= 100 }"
+	child:
+	  schedule: "[{ A[i,j] -> [floor(i/10)] }, \
+		{ A[i,j] -> [floor(j/10)] }, \
+		{ A[i,j] -> [i] }, { A[i,j] -> [j] }]"
+
+The output is
+
+	for (int c0 = 0; c0 <= 10; c0 += 1)
+	  for (int c1 = 0; c1 <= -c0 + 10; c1 += 1)
+	    for (int c2 = 10 * c0;
+                 c2 <= min(10 * c0 + 9, -10 * c1 + 100); c2 += 1)
+	      for (int c3 = 10 * c1;
+                   c3 <= min(10 * c1 + 9, -c2 + 100); c3 += 1)
+		A(c2, c3);
+
+Isolating the full tiles, we have the following input
+
+	domain: "{ A[i,j] : 0 <= i,j and i + j <= 100 }"
+	child:
+	  schedule: "[{ A[i,j] -> [floor(i/10)] }, \
+		{ A[i,j] -> [floor(j/10)] }, \
+		{ A[i,j] -> [i] }, { A[i,j] -> [j] }]"
+	  options: "{ isolate[[] -> [a,b,c,d]] : 0 <= 10a,10b and \
+		10a+9+10b+9 <= 100 }"
+
+and output
+
+	{
+	  for (int c0 = 0; c0 <= 8; c0 += 1) {
+	    for (int c1 = 0; c1 <= -c0 + 8; c1 += 1)
+	      for (int c2 = 10 * c0;
+		   c2 <= 10 * c0 + 9; c2 += 1)
+		for (int c3 = 10 * c1;
+		     c3 <= 10 * c1 + 9; c3 += 1)
+		  A(c2, c3);
+	    for (int c1 = -c0 + 9; c1 <= -c0 + 10; c1 += 1)
+	      for (int c2 = 10 * c0;
+                   c2 <= min(10 * c0 + 9, -10 * c1 + 100); c2 += 1)
+		for (int c3 = 10 * c1;
+                     c3 <= min(10 * c1 + 9, -c2 + 100); c3 += 1)
+		  A(c2, c3);
+	  }
+	  for (int c0 = 9; c0 <= 10; c0 += 1)
+	    for (int c1 = 0; c1 <= -c0 + 10; c1 += 1)
+	      for (int c2 = 10 * c0;
+                   c2 <= min(10 * c0 + 9, -10 * c1 + 100); c2 += 1)
+		for (int c3 = 10 * c1;
+                     c3 <= min(10 * c1 + 9, -c2 + 100); c3 += 1)
+		  A(c2, c3);
+	}
+
+We may then additionally unroll the innermost loop of the isolated part
+
+	domain: "{ A[i,j] : 0 <= i,j and i + j <= 100 }"
+	child:
+	  schedule: "[{ A[i,j] -> [floor(i/10)] }, \
+		{ A[i,j] -> [floor(j/10)] }, \
+		{ A[i,j] -> [i] }, { A[i,j] -> [j] }]"
+	  options: "{ isolate[[] -> [a,b,c,d]] : 0 <= 10a,10b and \
+		10a+9+10b+9 <= 100; [isolate[] -> unroll[3]] }"
+
+to obtain
+
+	{
+	  for (int c0 = 0; c0 <= 8; c0 += 1) {
+	    for (int c1 = 0; c1 <= -c0 + 8; c1 += 1)
+	      for (int c2 = 10 * c0; c2 <= 10 * c0 + 9; c2 += 1) {
+		A(c2, 10 * c1);
+		A(c2, 10 * c1 + 1);
+		A(c2, 10 * c1 + 2);
+		A(c2, 10 * c1 + 3);
+		A(c2, 10 * c1 + 4);
+		A(c2, 10 * c1 + 5);
+		A(c2, 10 * c1 + 6);
+		A(c2, 10 * c1 + 7);
+		A(c2, 10 * c1 + 8);
+		A(c2, 10 * c1 + 9);
+	      }
+	    for (int c1 = -c0 + 9; c1 <= -c0 + 10; c1 += 1)
+	      for (int c2 = 10 * c0;
+                   c2 <= min(10 * c0 + 9, -10 * c1 + 100); c2 += 1)
+		for (int c3 = 10 * c1;
+		     c3 <= min(10 * c1 + 9, -c2 + 100); c3 += 1)
+		  A(c2, c3);
+	  }
+	  for (int c0 = 9; c0 <= 10; c0 += 1)
+	    for (int c1 = 0; c1 <= -c0 + 10; c1 += 1)
+	      for (int c2 = 10 * c0;
+		   c2 <= min(10 * c0 + 9, -10 * c1 + 100); c2 += 1)
+		for (int c3 = 10 * c1;
+		     c3 <= min(10 * c1 + 9, -c2 + 100); c3 += 1)
+		  A(c2, c3);
+	}
+
+
 =head3 AST Generation Options (Schedule Map)
 
 In case of AST construction using
@@ -9144,6 +9296,9 @@ We consider the following spaces.
 =over
 
 =item C<separation_class>
+
+B<This option has been deprecated.  Use the isolate option on
+schedule trees instead.>
 
 This space is a wrapped relation between two one dimensional spaces.
 The input space represents the schedule dimension to which the option

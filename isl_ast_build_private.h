@@ -131,6 +131,10 @@
  * the "n" members of "node" and it is updated (along with "n") when
  * a schedule dimension is inserted.
  * It is NULL if "node" is NULL.
+ *
+ * "isolated" is the piece of the schedule domain isolated by the isolate
+ * option on the current band.  This set may be NULL if we have not checked
+ * for the isolate option yet.
  */
 struct isl_ast_build {
 	int ref;
@@ -178,6 +182,7 @@ struct isl_ast_build {
 	isl_schedule_node *node;
 	int n;
 	enum isl_ast_loop_type *loop_type;
+	isl_set *isolated;
 };
 
 __isl_give isl_ast_build *isl_ast_build_clear_local_info(
@@ -245,6 +250,12 @@ __isl_give isl_ast_build *isl_ast_build_set_schedule_node(
 __isl_give isl_ast_build *isl_ast_build_reset_schedule_node(
 	__isl_take isl_ast_build *build);
 
+__isl_give isl_ast_build *isl_ast_build_extract_isolated(
+	__isl_take isl_ast_build *build);
+int isl_ast_build_has_isolated(__isl_keep isl_ast_build *build);
+__isl_give isl_set *isl_ast_build_get_isolated(
+	__isl_keep isl_ast_build *build);
+
 __isl_give isl_basic_set *isl_ast_build_compute_gist_basic_set(
 	__isl_keep isl_ast_build *build, __isl_take isl_basic_set *bset);
 __isl_give isl_set *isl_ast_build_specialize(__isl_keep isl_ast_build *build,
@@ -290,7 +301,7 @@ __isl_give isl_set *isl_ast_build_eliminate_divs(
 	__isl_keep isl_ast_build *build, __isl_take isl_set *set);
 
 enum isl_ast_loop_type isl_ast_build_get_loop_type(
-	__isl_keep isl_ast_build *build);
+	__isl_keep isl_ast_build *build, int isolated);
 
 __isl_give isl_map *isl_ast_build_map_to_iterator(
 	__isl_keep isl_ast_build *build, __isl_take isl_set *set);

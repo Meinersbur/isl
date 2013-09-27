@@ -10,7 +10,6 @@
  * B.P. 105 - 78153 Le Chesnay, France
  */
 
-#include <string.h>
 #include <limits.h>
 #include <isl/aff.h>
 #include <isl/set.h>
@@ -3186,6 +3185,9 @@ static __isl_give isl_ast_graft_list *generate_shifted_component_tree_unroll(
 
 /* Generate code for a single component, after shifting (if any)
  * has been applied, in case the schedule was specified as a schedule tree.
+ * In particular, handle the base case where there is either no isolated
+ * set or we are within the isolated set (in which case "isolated" is set)
+ * or the iterations that precede or follow the isolated set.
  *
  * The schedule domain is broken up or combined into basic sets
  * according to the AST generation option specified in the current
@@ -3207,8 +3209,9 @@ static __isl_give isl_ast_graft_list *generate_shifted_component_tree_unroll(
  * Finally an AST is generated for each basic set and the results are
  * concatenated.
  */
-static __isl_give isl_ast_graft_list *generate_shifted_component_tree(
-	__isl_take isl_union_map *executed, __isl_take isl_ast_build *build)
+static __isl_give isl_ast_graft_list *generate_shifted_component_tree_base(
+	__isl_take isl_union_map *executed, __isl_take isl_ast_build *build,
+	int isolated)
 {
 	isl_union_set *schedule_domain;
 	isl_set *domain;
@@ -3216,7 +3219,7 @@ static __isl_give isl_ast_graft_list *generate_shifted_component_tree(
 	isl_ast_graft_list *list;
 	enum isl_ast_loop_type type;
 
-	type = isl_ast_build_get_loop_type(build);
+	type = isl_ast_build_get_loop_type(build, isolated);
 	if (type < 0)
 		goto error;
 
@@ -3251,6 +3254,126 @@ static __isl_give isl_ast_graft_list *generate_shifted_component_tree(
 
 	return list;
 error:
+	isl_union_map_free(executed);
+	isl_ast_build_free(build);
+	return NULL;
+}
+
+/* Generate code for a single component, after shifting (if any)
+ * has been applied, in case the schedule was specified as a schedule tree.
+ * In particular, do so for the specified subset of the schedule domsain.
+ */
+static __isl_give isl_ast_graft_list *generate_shifted_component_tree_part(
+	__isl_keep isl_union_map *executed, __isl_take isl_set *domain,
+	__isl_keep isl_ast_build *build, int isolated)
+{
+	isl_union_set *uset;
+	int empty;
+
+	uset = isl_union_set_from_set(domain);
+	executed = isl_union_map_copy(executed);
+	executed = isl_union_map_intersect_domain(executed, uset);
+	empty = isl_union_map_is_empty(executed);
+	if (empty < 0)
+		goto error;
+	if (empty) {
+		isl_ctx *ctx;
+		isl_union_map_free(executed);
+		ctx = isl_ast_build_get_ctx(build);
+		return isl_ast_graft_list_alloc(ctx, 0);
+	}
+
+	build = isl_ast_build_copy(build);
+	return generate_shifted_component_tree_base(executed, build, isolated);
+error:
+	isl_union_map_free(executed);
+	return NULL;
+}
+
+/* Generate code for a single component, after shifting (if any)
+ * has been applied, in case the schedule was specified as a schedule tree.
+ *
+ * We first check if the user has specified a (non-empty) isolated
+ * schedule domain.
+ * If so, we break up the schedule domain into iterations that
+ * precede the isolated domain, the isolated domain itself,
+ * the iterations that follow the isolated domain and
+ * the remaining iterations (those that are incomparable
+ * to the isolated domain).
+ * We generate an AST for each piece and concatenate the results.
+ * If no isolated set has been specified, then we generate an
+ * AST for the entire inverse schedule.
+ */
+static __isl_give isl_ast_graft_list *generate_shifted_component_tree(
+	__isl_take isl_union_map *executed, __isl_take isl_ast_build *build)
+{
+	int i, depth;
+	int empty, has_isolate;
+	isl_space *space;
+	isl_union_set *schedule_domain;
+	isl_set *domain;
+	isl_basic_set *hull;
+	isl_set *isolated, *before, *after;
+	isl_map *gt, *lt;
+	isl_ast_graft_list *list, *res;
+
+	build = isl_ast_build_extract_isolated(build);
+	has_isolate = isl_ast_build_has_isolated(build);
+	if (has_isolate < 0)
+		executed = isl_union_map_free(executed);
+	else if (!has_isolate)
+		return generate_shifted_component_tree_base(executed, build, 0);
+
+	schedule_domain = isl_union_map_domain(isl_union_map_copy(executed));
+	domain = isl_set_from_union_set(schedule_domain);
+
+	isolated = isl_ast_build_get_isolated(build);
+	isolated = isl_set_intersect(isolated, isl_set_copy(domain));
+	empty = isl_set_is_empty(isolated);
+	if (empty < 0)
+		goto error;
+	if (empty) {
+		isl_set_free(isolated);
+		isl_set_free(domain);
+		return generate_shifted_component_tree_base(executed, build, 0);
+	}
+	isolated = isl_ast_build_eliminate(build, isolated);
+	hull = isl_set_unshifted_simple_hull(isolated);
+	isolated = isl_set_from_basic_set(hull);
+
+	depth = isl_ast_build_get_depth(build);
+	space = isl_space_map_from_set(isl_set_get_space(isolated));
+	gt = isl_map_universe(space);
+	for (i = 0; i < depth; ++i)
+		gt = isl_map_equate(gt, isl_dim_in, i, isl_dim_out, i);
+	gt = isl_map_order_gt(gt, isl_dim_in, depth, isl_dim_out, depth);
+	lt = isl_map_reverse(isl_map_copy(gt));
+	before = isl_set_apply(isl_set_copy(isolated), gt);
+	after = isl_set_apply(isl_set_copy(isolated), lt);
+
+	domain = isl_set_subtract(domain, isl_set_copy(isolated));
+	domain = isl_set_subtract(domain, isl_set_copy(before));
+	domain = isl_set_subtract(domain, isl_set_copy(after));
+	after = isl_set_subtract(after, isl_set_copy(isolated));
+	after = isl_set_subtract(after, isl_set_copy(before));
+	before = isl_set_subtract(before, isl_set_copy(isolated));
+
+	res = generate_shifted_component_tree_part(executed, before, build, 0);
+	list = generate_shifted_component_tree_part(executed, isolated,
+						    build, 1);
+	res = isl_ast_graft_list_concat(res, list);
+	list = generate_shifted_component_tree_part(executed, after, build, 0);
+	res = isl_ast_graft_list_concat(res, list);
+	list = generate_shifted_component_tree_part(executed, domain, build, 0);
+	res = isl_ast_graft_list_concat(res, list);
+
+	isl_union_map_free(executed);
+	isl_ast_build_free(build);
+
+	return res;
+error:
+	isl_set_free(domain);
+	isl_set_free(isolated);
 	isl_union_map_free(executed);
 	isl_ast_build_free(build);
 	return NULL;
@@ -3651,6 +3774,21 @@ error:
 	return NULL;
 }
 
+/* Does any node in the schedule tree rooted at the current schedule node
+ * of "build" depend on outer schedule nodes?
+ */
+static int has_anchored_subtree(__isl_keep isl_ast_build *build)
+{
+	isl_schedule_node *node;
+	int dependent = 0;
+
+	node = isl_ast_build_get_schedule_node(build);
+	dependent = isl_schedule_node_is_subtree_anchored(node);
+	isl_schedule_node_free(node);
+
+	return dependent;
+}
+
 /* Generate code for a single component.
  *
  * The component inverse schedule is specified as the "map" fields
@@ -3688,6 +3826,9 @@ error:
  * in terms of the new schedule domain, but that would introduce constraints
  * that separate the domains in the options and that is something we would
  * like to avoid.
+ * In the case of a schedule tree input, we bail out if any of
+ * the descendants of the current schedule node refer to outer
+ * schedule nodes in any way.
  *
  *
  * To see if there is any shifted stride, we look at the differences
@@ -3740,7 +3881,9 @@ static __isl_give isl_ast_graft_list *generate_component(
 	if (skip >= 0 && !skip)
 		skip = at_most_one_non_fixed(domain, order, n, depth);
 	if (skip >= 0 && !skip) {
-		if (!isl_ast_build_has_schedule_node(build))
+		if (isl_ast_build_has_schedule_node(build))
+			skip = has_anchored_subtree(build);
+		else
 			skip = isl_ast_build_options_involve_depth(build);
 	}
 	if (skip < 0)
