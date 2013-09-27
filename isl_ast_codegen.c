@@ -10,6 +10,7 @@
  * B.P. 105 - 78153 Le Chesnay, France
  */
 
+#include <string.h>
 #include <limits.h>
 #include <isl/aff.h>
 #include <isl/set.h>
@@ -2513,6 +2514,8 @@ error:
 }
 
 /* Call "fn" on each iteration of the current dimension of "domain".
+ * If "init" is not NULL, then it is called with the number of
+ * iterations before any call to "fn".
  * Return -1 on failure.
  *
  * Since we are going to be iterating over the individual values,
@@ -2544,7 +2547,7 @@ error:
  * Finally, we map i' back to i and call "fn".
  */
 static int foreach_iteration(__isl_take isl_set *domain,
-	__isl_keep isl_ast_build *build,
+	__isl_keep isl_ast_build *build, int (*init)(int n, void *user),
 	int (*fn)(__isl_take isl_basic_set *bset, void *user), void *user)
 {
 	int i, n;
@@ -2574,6 +2577,8 @@ static int foreach_iteration(__isl_take isl_set *domain,
 	if (!lower)
 		domain = isl_set_free(domain);
 
+	if (init && init(n, user) < 0)
+		domain = isl_set_free(domain);
 	for (i = 0; i < n; ++i) {
 		isl_set *set;
 		isl_basic_set *bset;
@@ -2690,7 +2695,7 @@ static __isl_give isl_set *do_unroll(struct isl_codegen_domains *domains,
 	data.class_domain = class_domain;
 	data.unroll_domain = isl_set_empty(isl_set_get_space(domain));
 
-	if (foreach_iteration(domain, domains->build,
+	if (foreach_iteration(domain, domains->build, NULL,
 				&do_unroll_iteration, &data) < 0)
 		data.unroll_domain = isl_set_free(data.unroll_domain);
 
@@ -3091,27 +3096,23 @@ static __isl_give isl_ast_graft_list *generate_shifted_component_flat(
 }
 
 /* Generate code for a single component, after shifting (if any)
- * has been applied, in case the schedule was specified as a schedule tree.
+ * has been applied, in case the schedule was specified as a schedule tree
+ * and the separate option was specified.
  *
- * We currently simply split the schedule domain into disjoint
- * basic sets and then generate code for each of them,
- * concatenating the results.
+ * We perform separation on the domain of "executed" and then generate
+ * an AST for each of the resulting disjoint basic sets.
  */
-static __isl_give isl_ast_graft_list *generate_shifted_component_tree(
+static __isl_give isl_ast_graft_list *generate_shifted_component_tree_separate(
 	__isl_take isl_union_map *executed, __isl_take isl_ast_build *build)
 {
-	isl_union_set *schedule_domain;
+	isl_space *space;
 	isl_set *domain;
 	isl_basic_set_list *domain_list;
 	isl_ast_graft_list *list;
 
-	schedule_domain = isl_union_map_domain(isl_union_map_copy(executed));
-	domain = isl_set_from_union_set(schedule_domain);
-
-	domain = isl_ast_build_eliminate(build, domain);
-	domain = isl_set_coalesce(domain);
-
-	domain = isl_set_make_disjoint(domain);
+	space = isl_ast_build_get_space(build, 1);
+	domain = separate_schedule_domains(space,
+					isl_union_map_copy(executed), build);
 	domain_list = isl_basic_set_list_from_set(domain);
 
 	list = generate_parallel_domains(domain_list, executed, build);
@@ -3121,6 +3122,138 @@ static __isl_give isl_ast_graft_list *generate_shifted_component_tree(
 	isl_ast_build_free(build);
 
 	return list;
+}
+
+/* Internal data structure for generate_shifted_component_tree_unroll.
+ *
+ * "executed" and "build" are inputs to generate_shifted_component_tree_unroll.
+ * "list" collects the constructs grafts.
+ */
+struct isl_ast_unroll_tree_data {
+	isl_union_map *executed;
+	isl_ast_build *build;
+	isl_ast_graft_list *list;
+};
+
+/* Initialize data->list to a list of "n" elements.
+ */
+static int init_unroll_tree(int n, void *user)
+{
+	struct isl_ast_unroll_tree_data *data = user;
+	isl_ctx *ctx;
+
+	ctx = isl_ast_build_get_ctx(data->build);
+	data->list = isl_ast_graft_list_alloc(ctx, n);
+
+	return 0;
+}
+
+/* Given an iteration of an unrolled domain represented by "bset",
+ * generate the corresponding AST and add the result to data->list.
+ */
+static int do_unroll_tree_iteration(__isl_take isl_basic_set *bset, void *user)
+{
+	struct isl_ast_unroll_tree_data *data = user;
+
+	data->list = add_node(data->list, isl_union_map_copy(data->executed),
+				bset, isl_ast_build_copy(data->build));
+
+	return 0;
+}
+
+/* Generate code for a single component, after shifting (if any)
+ * has been applied, in case the schedule was specified as a schedule tree
+ * and the unroll option was specified.
+ *
+ * We call foreach_iteration to iterate over the individual values and
+ * construct and collect the corresponding grafts in do_unroll_tree_iteration.
+ */
+static __isl_give isl_ast_graft_list *generate_shifted_component_tree_unroll(
+	__isl_take isl_union_map *executed, __isl_take isl_set *domain,
+	__isl_take isl_ast_build *build)
+{
+	struct isl_ast_unroll_tree_data data = { executed, build, NULL };
+
+	if (foreach_iteration(domain, build, &init_unroll_tree,
+				&do_unroll_tree_iteration, &data) < 0)
+		data.list = isl_ast_graft_list_free(data.list);
+
+	isl_union_map_free(executed);
+	isl_ast_build_free(build);
+
+	return data.list;
+}
+
+/* Generate code for a single component, after shifting (if any)
+ * has been applied, in case the schedule was specified as a schedule tree.
+ *
+ * The schedule domain is broken up or combined into basic sets
+ * according to the AST generation option specified in the current
+ * schedule node, which may be either atomic, separate, unroll or
+ * unspecified.  If the option is unspecified, then we currently simply
+ * split the schedule domain into disjoint basic sets.
+ *
+ * In case the separate option is specified, the AST generation is
+ * handled by generate_shifted_component_tree_separate.
+ * In the other cases, we need the global schedule domain.
+ * In the unroll case, the AST generation is then handled by
+ * generate_shifted_component_tree_unroll which needs the actual
+ * schedule domain (with divs that may refer to the current dimension)
+ * so that stride detection can be performed.
+ * In the atomic or unspecified case, inner dimensions and divs involving
+ * the current dimensions should be eliminated.
+ * The result is then either combined into a single basic set or
+ * split up into disjoint basic sets.
+ * Finally an AST is generated for each basic set and the results are
+ * concatenated.
+ */
+static __isl_give isl_ast_graft_list *generate_shifted_component_tree(
+	__isl_take isl_union_map *executed, __isl_take isl_ast_build *build)
+{
+	isl_union_set *schedule_domain;
+	isl_set *domain;
+	isl_basic_set_list *domain_list;
+	isl_ast_graft_list *list;
+	enum isl_ast_loop_type type;
+
+	type = isl_ast_build_get_loop_type(build);
+	if (type < 0)
+		goto error;
+
+	if (type == isl_ast_loop_separate)
+		return generate_shifted_component_tree_separate(executed,
+								build);
+
+	schedule_domain = isl_union_map_domain(isl_union_map_copy(executed));
+	domain = isl_set_from_union_set(schedule_domain);
+
+	if (type == isl_ast_loop_unroll)
+		return generate_shifted_component_tree_unroll(executed, domain,
+								build);
+
+	domain = isl_ast_build_eliminate(build, domain);
+	domain = isl_set_coalesce(domain);
+
+	if (type == isl_ast_loop_atomic) {
+		isl_basic_set *hull;
+		hull = isl_set_unshifted_simple_hull(domain);
+		domain_list = isl_basic_set_list_from_basic_set(hull);
+	} else {
+		domain = isl_set_make_disjoint(domain);
+		domain_list = isl_basic_set_list_from_set(domain);
+	}
+
+	list = generate_parallel_domains(domain_list, executed, build);
+
+	isl_basic_set_list_free(domain_list);
+	isl_union_map_free(executed);
+	isl_ast_build_free(build);
+
+	return list;
+error:
+	isl_union_map_free(executed);
+	isl_ast_build_free(build);
+	return NULL;
 }
 
 /* Generate code for a single component, after shifting (if any)

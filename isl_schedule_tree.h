@@ -74,6 +74,15 @@ __isl_give isl_space *isl_schedule_tree_band_get_space(
 	__isl_keep isl_schedule_tree *tree);
 __isl_give isl_multi_union_pw_aff *isl_schedule_tree_band_get_partial_schedule(
 	__isl_keep isl_schedule_tree *tree);
+enum isl_ast_loop_type isl_schedule_tree_band_member_get_ast_loop_type(
+	__isl_keep isl_schedule_tree *tree, int pos);
+__isl_give isl_schedule_tree *isl_schedule_tree_band_member_set_ast_loop_type(
+	__isl_take isl_schedule_tree *tree, int pos,
+	enum isl_ast_loop_type type);
+__isl_give isl_union_set *isl_schedule_tree_band_get_ast_build_options(
+	__isl_keep isl_schedule_tree *tree);
+__isl_give isl_schedule_tree *isl_schedule_tree_band_set_ast_build_options(
+	__isl_take isl_schedule_tree *tree, __isl_take isl_union_set *options);
 __isl_give isl_union_set *isl_schedule_tree_domain_get_domain(
 	__isl_keep isl_schedule_tree *tree);
 __isl_give isl_schedule_tree *isl_schedule_tree_domain_set_domain(

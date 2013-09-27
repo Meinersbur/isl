@@ -8,13 +8,6 @@
 #include <isl/list.h>
 #include <isl/schedule_node.h>
 
-enum isl_ast_loop_type {
-	isl_ast_loop_default = 0,
-	isl_ast_loop_atomic,
-	isl_ast_loop_unroll,
-	isl_ast_loop_separate
-};
-
 /* An isl_ast_build represents the context in which AST is being
  * generated.  That is, it (mostly) contains information about outer
  * loops that can be used to simplify inner loops.
@@ -126,6 +119,11 @@ enum isl_ast_loop_type {
  * "node" points to the current band node in case we are generating
  * an AST from a schedule tree.  It may be NULL if we are not generating
  * an AST from a schedule tree or if we are not inside a band node.
+ *
+ * "loop_type" originally constains loop AST generation types for
+ * the "n" members of "node" and it is updated (along with "n") when
+ * a schedule dimension is inserted.
+ * It is NULL if "node" is NULL.
  */
 struct isl_ast_build {
 	int ref;
@@ -170,6 +168,8 @@ struct isl_ast_build {
 	int single_valued;
 
 	isl_schedule_node *node;
+	int n;
+	enum isl_ast_loop_type *loop_type;
 };
 
 __isl_give isl_ast_build *isl_ast_build_clear_local_info(
@@ -278,6 +278,9 @@ __isl_give isl_set *isl_ast_build_eliminate_inner(
 	__isl_keep isl_ast_build *build, __isl_take isl_set *set);
 __isl_give isl_set *isl_ast_build_eliminate_divs(
 	__isl_keep isl_ast_build *build, __isl_take isl_set *set);
+
+enum isl_ast_loop_type isl_ast_build_get_loop_type(
+	__isl_keep isl_ast_build *build);
 
 __isl_give isl_map *isl_ast_build_map_to_iterator(
 	__isl_keep isl_ast_build *build, __isl_take isl_set *set);

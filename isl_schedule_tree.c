@@ -752,6 +752,85 @@ __isl_give isl_multi_union_pw_aff *isl_schedule_tree_band_get_partial_schedule(
 	return isl_schedule_band_get_partial_schedule(tree->band);
 }
 
+/* Return the loop AST generation type for the band member
+ * of the band tree root at position "pos".
+ */
+enum isl_ast_loop_type isl_schedule_tree_band_member_get_ast_loop_type(
+	__isl_keep isl_schedule_tree *tree, int pos)
+{
+	if (!tree)
+		return isl_ast_loop_error;
+
+	if (tree->type != isl_schedule_node_band)
+		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_invalid,
+			"not a band node", return isl_ast_loop_error);
+
+	return isl_schedule_band_member_get_ast_loop_type(tree->band, pos);
+}
+
+/* Set the loop AST generation type for the band member of the band tree root
+ * at position "pos" to "type".
+ */
+__isl_give isl_schedule_tree *isl_schedule_tree_band_member_set_ast_loop_type(
+	__isl_take isl_schedule_tree *tree, int pos,
+	enum isl_ast_loop_type type)
+{
+	tree = isl_schedule_tree_cow(tree);
+	if (!tree)
+		return NULL;
+
+	if (tree->type != isl_schedule_node_band)
+		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_invalid,
+			"not a band node", return isl_schedule_tree_free(tree));
+
+	tree->band = isl_schedule_band_member_set_ast_loop_type(tree->band,
+								pos, type);
+	if (!tree->band)
+		return isl_schedule_tree_free(tree);
+
+	return tree;
+}
+
+/* Return the AST build options associated to the band tree root.
+ */
+__isl_give isl_union_set *isl_schedule_tree_band_get_ast_build_options(
+	__isl_keep isl_schedule_tree *tree)
+{
+	if (!tree)
+		return NULL;
+
+	if (tree->type != isl_schedule_node_band)
+		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_invalid,
+			"not a band node", return NULL);
+
+	return isl_schedule_band_get_ast_build_options(tree->band);
+}
+
+/* Replace the AST build options associated to band tree root by "options".
+ */
+__isl_give isl_schedule_tree *isl_schedule_tree_band_set_ast_build_options(
+	__isl_take isl_schedule_tree *tree, __isl_take isl_union_set *options)
+{
+	tree = isl_schedule_tree_cow(tree);
+	if (!tree || !options)
+		goto error;
+
+	if (tree->type != isl_schedule_node_band)
+		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_invalid,
+			"not a band node", goto error);
+
+	tree->band = isl_schedule_band_set_ast_build_options(tree->band,
+								options);
+	if (!tree->band)
+		return isl_schedule_tree_free(tree);
+
+	return tree;
+error:
+	isl_schedule_tree_free(tree);
+	isl_union_set_free(options);
+	return NULL;
+}
+
 /* Return the domain of the domain tree root.
  */
 __isl_give isl_union_set *isl_schedule_tree_domain_get_domain(
@@ -1609,6 +1688,9 @@ static int any_coincident(__isl_keep isl_schedule_band *band)
 static __isl_give isl_printer *print_tree_band(__isl_take isl_printer *p,
 	__isl_keep isl_schedule_band *band)
 {
+	isl_union_set *options;
+	int empty;
+
 	p = isl_printer_print_str(p, "schedule");
 	p = isl_printer_yaml_next(p);
 	p = isl_printer_print_str(p, "\"");
@@ -1639,6 +1721,19 @@ static __isl_give isl_printer *print_tree_band(__isl_take isl_printer *p,
 		p = isl_printer_yaml_end_sequence(p);
 		p = isl_printer_set_yaml_style(p, style);
 	}
+	options = isl_schedule_band_get_ast_build_options(band);
+	empty = isl_union_set_is_empty(options);
+	if (empty < 0)
+		p = isl_printer_free(p);
+	if (!empty) {
+		p = isl_printer_yaml_next(p);
+		p = isl_printer_print_str(p, "options");
+		p = isl_printer_yaml_next(p);
+		p = isl_printer_print_str(p, "\"");
+		p = isl_printer_print_union_set(p, options);
+		p = isl_printer_print_str(p, "\"");
+	}
+	isl_union_set_free(options);
 
 	return p;
 }

@@ -7639,6 +7639,20 @@ Several node types have their own functions for querying
 	__isl_give isl_schedule_node *
 	isl_schedule_node_band_set_permutable(
 		__isl_take isl_schedule_node *node, int permutable);
+	enum isl_ast_loop_type
+	isl_schedule_node_band_member_get_ast_loop_type(
+		__isl_keep isl_schedule_node *node, int pos);
+	__isl_give isl_schedule_node *
+	isl_schedule_node_band_member_set_ast_loop_type(
+		__isl_take isl_schedule_node *node, int pos,
+		enum isl_ast_loop_type type);
+	__isl_give isl_union_set *
+	isl_schedule_node_band_get_ast_build_options(
+		__isl_keep isl_schedule_node *node);
+	__isl_give isl_schedule_node *
+	isl_schedule_node_band_set_ast_build_options(
+		__isl_take isl_schedule_node *node,
+		__isl_take isl_union_set *options);
 
 The function C<isl_schedule_node_band_get_space> returns the space
 of the partial schedule of the band.
@@ -7656,6 +7670,15 @@ iterations of outer bands).
 A band is marked permutable if it was produced using the Pluto-like scheduler.
 Note that the scheduler may have to resort to a Feautrier style scheduling
 step even if the default scheduler is used.
+An C<isl_ast_loop_type> is one of C<isl_ast_loop_default>,
+C<isl_ast_loop_atomic>, C<isl_ast_loop_unroll> or C<isl_ast_loop_separate>.
+For the meaning of these loop AST generation types, see
+L</"AST Generation Options (Schedule Tree)">.
+The function C<isl_schedule_node_band_member_get_ast_loop_type>
+may return C<isl_ast_loop_error> if an error occurs.
+The AST build options govern how an AST is generated for
+the individual schedule dimensions during AST generation.
+See L</"AST Generation Options (Schedule Tree)">.
 
 	#include <isl/schedule_node.h>
 	__isl_give isl_union_set *
@@ -8997,15 +9020,102 @@ to construct if conditions with disjunctions.
 
 =back
 
-=head3 Fine-grained Control over AST Generation
+=head3 AST Generation Options (Schedule Tree)
 
-Besides specifying the constraints on the parameters,
-an C<isl_ast_build> object can be used to control
-various aspects of the AST generation process.
-The most prominent way of control is through ``options'',
-which only have an effect on the construction of an AST
-using C<isl_ast_build_node_from_schedule_map> and
-which can be set using the following function.
+In case of AST construction from a schedule tree, the options
+that control how an AST is created from the individual schedule
+dimensions are stored in the band nodes of the tree
+(see L</"Schedule Trees">).
+
+In particular, a schedule dimension can be handled in four
+different ways, atomic, separate, unroll or the default.
+This loop AST generation type can be set using
+C<isl_schedule_node_band_member_set_ast_loop_type>.
+Alternatively,
+the first three can be selected by including a one-dimensional
+element with as value the position of the schedule dimension
+within the band and as name one of C<atomic>, C<separate>
+or C<unroll> in the options
+set by C<isl_schedule_node_band_set_ast_build_options>.
+Only one of these three may be specified for
+any given schedule dimension within a band node.
+If none of these is specified, then the default
+is used.  The meaning of the options is as follows.
+
+=over
+
+=item C<atomic>
+
+When this option is specified, the AST generator will make
+sure that a given domains space only appears in a single
+loop at the specified level.
+
+For example, for the schedule tree
+
+	domain: "{ a[i] : 0 <= i < 10; b[i] : 0 <= i < 10 }"
+	child:
+	  schedule: "[{ a[i] -> [i]; b[i] -> [i+1] }]"
+	  options: "{ atomic[x] }"
+
+the following AST will be generated
+
+	for (int c0 = 0; c0 <= 10; c0 += 1) {
+	  if (c0 >= 1)
+	    b(c0 - 1);
+	  if (c0 <= 9)
+	    a(c0);
+	}
+
+On the other hand, for the schedule tree
+
+	domain: "{ a[i] : 0 <= i < 10; b[i] : 0 <= i < 10 }"
+	child:
+	  schedule: "[{ a[i] -> [i]; b[i] -> [i+1] }]"
+	  options: "{ separate[x] }"
+
+the following AST will be generated
+
+	{
+	  a(0);
+	  for (int c0 = 1; c0 <= 9; c0 += 1) {
+	    b(c0 - 1);
+	    a(c0);
+	  }
+	  b(9);
+	}
+
+If neither C<atomic> nor C<separate> is specified, then the AST generator
+may produce either of these two results or some intermediate form.
+
+=item C<separate>
+
+When this option is specified, the AST generator will
+split the domain of the specified schedule dimension
+into pieces with a fixed set of statements for which
+instances need to be executed by the iterations in
+the schedule domain part.  This option tends to avoid
+the generation of guards inside the corresponding loops.
+See also the C<atomic> option.
+
+=item C<unroll>
+
+When this option is specified, the AST generator will
+I<completely> unroll the corresponding schedule dimension.
+It is the responsibility of the user to ensure that such
+unrolling is possible.
+To obtain a partial unrolling, the user should apply an additional
+strip-mining to the schedule and fully unroll the inner schedule
+dimension.
+
+=back
+
+=head3 AST Generation Options (Schedule Map)
+
+In case of AST construction using
+C<isl_ast_build_node_from_schedule_map>, the options
+that control how an AST is created from the individual schedule
+dimensions are stored in the C<isl_ast_build>.
+They can be set using the following function.
 
 	#include <isl/ast_build.h>
 	__isl_give isl_ast_build *
@@ -9181,6 +9291,16 @@ To obtain a partial unrolling, the user should apply an additional
 strip-mining to the schedule and fully unroll the inner loop.
 
 =back
+
+=head3 Fine-grained Control over AST Generation
+
+Besides specifying the constraints on the parameters,
+an C<isl_ast_build> object can be used to control
+various aspects of the AST generation process.
+In case of AST construction using
+C<isl_ast_build_node_from_schedule_map>,
+the most prominent way of control is through ``options'',
+as explained above.
 
 Additional control is available through the following functions.
 

@@ -25,6 +25,7 @@
 #include <isl/options.h>
 #include <isl/set.h>
 #include <isl/stream.h>
+#include <isl/schedule_node.h>
 
 struct options {
 	struct isl_options	*isl;
@@ -131,6 +132,43 @@ static __isl_give isl_ast_node *construct_ast_from_union_map(
 	return tree;
 }
 
+/* If "node" is a band node, then replace the AST build options
+ * by "options".
+ */
+static __isl_give isl_schedule_node *node_set_options(
+	__isl_take isl_schedule_node *node, void *user)
+{
+	enum isl_ast_loop_type *type = user;
+	int i, n;
+
+	if (isl_schedule_node_get_type(node) != isl_schedule_node_band)
+		return node;
+
+	n = isl_schedule_node_band_n_member(node);
+	for (i = 0; i < n; ++i)
+		node = isl_schedule_node_band_member_set_ast_loop_type(node,
+								i, *type);
+	return node;
+}
+
+/* Replace the AST build options on all band nodes if requested
+ * by the user.
+ */
+static __isl_give isl_schedule *schedule_set_options(
+	__isl_take isl_schedule *schedule, struct options *options)
+{
+	enum isl_ast_loop_type type;
+
+	if (!options->separate && !options->atomic)
+		return schedule;
+
+	type = options->separate ? isl_ast_loop_separate : isl_ast_loop_atomic;
+	schedule = isl_schedule_map_schedule_node(schedule,
+						&node_set_options, &type);
+
+	return schedule;
+}
+
 /* Construct an AST in case the schedule is specified by a schedule tree.
  */
 static __isl_give isl_ast_node *construct_ast_from_schedule(
@@ -138,8 +176,12 @@ static __isl_give isl_ast_node *construct_ast_from_schedule(
 {
 	isl_ast_build *build;
 	isl_ast_node *tree;
+	struct options *options;
+
+	options = isl_ctx_peek_cg_options(isl_schedule_get_ctx(schedule));
 
 	build = isl_ast_build_alloc(isl_schedule_get_ctx(schedule));
+	schedule = schedule_set_options(schedule, options);
 	tree = isl_ast_build_node_from_schedule(build, schedule);
 	isl_ast_build_free(build);
 

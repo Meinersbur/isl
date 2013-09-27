@@ -10,6 +10,7 @@
  * B.P. 105 - 78153 Le Chesnay, France
  */
 
+#include <string.h>
 #include <isl/schedule_node.h>
 #include <isl_schedule_band.h>
 #include <isl_schedule_private.h>
@@ -37,14 +38,15 @@ static __isl_give isl_schedule_band *isl_schedule_band_alloc(isl_ctx *ctx)
 /* Return a new isl_schedule_band with partial schedule "mupa".
  * First replace "mupa" by its greatest integer part to ensure
  * that the schedule is always integral.
- * The band is not marked permutable and the dimensions are not
- * marked coincident.
+ * The band is not marked permutable, the dimensions are not
+ * marked coincident and the AST build options are empty.
  */
 __isl_give isl_schedule_band *isl_schedule_band_from_multi_union_pw_aff(
 	__isl_take isl_multi_union_pw_aff *mupa)
 {
 	isl_ctx *ctx;
 	isl_schedule_band *band;
+	isl_space *space;
 
 	mupa = isl_multi_union_pw_aff_floor(mupa);
 	if (!mupa)
@@ -57,8 +59,10 @@ __isl_give isl_schedule_band *isl_schedule_band_from_multi_union_pw_aff(
 	band->n = isl_multi_union_pw_aff_dim(mupa, isl_dim_set);
 	band->coincident = isl_calloc_array(ctx, int, band->n);
 	band->mupa = mupa;
+	space = isl_space_params_alloc(ctx, 0);
+	band->ast_build_options = isl_union_set_empty(space);
 
-	if (band->n && !band->coincident)
+	if ((band->n && !band->coincident) || !band->ast_build_options)
 		return isl_schedule_band_free(band);
 
 	return band;
@@ -94,8 +98,18 @@ __isl_give isl_schedule_band *isl_schedule_band_dup(
 	dup->permutable = band->permutable;
 
 	dup->mupa = isl_multi_union_pw_aff_copy(band->mupa);
-	if (!dup->mupa)
+	dup->ast_build_options = isl_union_set_copy(band->ast_build_options);
+	if (!dup->mupa || !dup->ast_build_options)
 		return isl_schedule_band_free(dup);
+
+	if (band->loop_type) {
+		dup->loop_type = isl_alloc_array(ctx,
+					    enum isl_ast_loop_type, band->n);
+		if (band->n && !dup->loop_type)
+			return isl_schedule_band_free(dup);
+		for (i = 0; i < band->n; ++i)
+			dup->loop_type[i] = band->loop_type[i];
+	}
 
 	return dup;
 }
@@ -139,6 +153,8 @@ __isl_null isl_schedule_band *isl_schedule_band_free(
 		return NULL;
 
 	isl_multi_union_pw_aff_free(band->mupa);
+	isl_union_set_free(band->ast_build_options);
+	free(band->loop_type);
 	free(band->coincident);
 	free(band);
 
@@ -151,6 +167,7 @@ int isl_schedule_band_plain_is_equal(__isl_keep isl_schedule_band *band1,
 	__isl_keep isl_schedule_band *band2)
 {
 	int i;
+	int equal;
 
 	if (!band1 || !band2)
 		return -1;
@@ -165,7 +182,19 @@ int isl_schedule_band_plain_is_equal(__isl_keep isl_schedule_band *band1,
 	if (band1->permutable != band2->permutable)
 		return 0;
 
-	return isl_multi_union_pw_aff_plain_is_equal(band1->mupa, band2->mupa);
+	equal = isl_multi_union_pw_aff_plain_is_equal(band1->mupa, band2->mupa);
+	if (equal < 0 || !equal)
+		return equal;
+
+	if (!band1->loop_type != !band2->loop_type)
+		return 0;
+	if (band1->loop_type)
+		for (i = 0; i < band1->n; ++i)
+			if (band1->loop_type[i] != band2->loop_type[i])
+				return 0;
+
+	return isl_union_set_is_equal(band1->ast_build_options,
+					band2->ast_build_options);
 }
 
 /* Return the number of scheduling dimensions in the band.
@@ -258,6 +287,329 @@ __isl_give isl_multi_union_pw_aff *isl_schedule_band_get_partial_schedule(
 	__isl_keep isl_schedule_band *band)
 {
 	return band ? isl_multi_union_pw_aff_copy(band->mupa) : NULL;
+}
+
+/* Return the loop AST generation type for the band member of "band"
+ * at position "pos".
+ */
+enum isl_ast_loop_type isl_schedule_band_member_get_ast_loop_type(
+	__isl_keep isl_schedule_band *band, int pos)
+{
+	if (!band)
+		return isl_ast_loop_error;
+
+	if (pos < 0 || pos >= band->n)
+		isl_die(isl_schedule_band_get_ctx(band), isl_error_invalid,
+			"invalid member position", return -1);
+
+	if (!band->loop_type)
+		return isl_ast_loop_default;
+
+	return band->loop_type[pos];
+}
+
+/* Set the loop AST generation type for the band member of "band"
+ * at position "pos" to "type".
+ */
+__isl_give isl_schedule_band *isl_schedule_band_member_set_ast_loop_type(
+	__isl_take isl_schedule_band *band, int pos,
+	enum isl_ast_loop_type type)
+{
+	if (!band)
+		return NULL;
+	if (isl_schedule_band_member_get_ast_loop_type(band, pos) == type)
+		return band;
+
+	if (pos < 0 || pos >= band->n)
+		isl_die(isl_schedule_band_get_ctx(band), isl_error_invalid,
+			"invalid member position",
+			isl_schedule_band_free(band));
+
+	band = isl_schedule_band_cow(band);
+	if (!band)
+		return isl_schedule_band_free(band);
+
+	if (!band->loop_type) {
+		isl_ctx *ctx;
+
+		ctx = isl_schedule_band_get_ctx(band);
+		band->loop_type = isl_calloc_array(ctx,
+					    enum isl_ast_loop_type, band->n);
+		if (band->n && !band->loop_type)
+			return isl_schedule_band_free(band);
+	}
+
+	band->loop_type[pos] = type;
+
+	return band;
+}
+
+static const char *option_str[] = {
+	[isl_ast_loop_atomic] = "atomic",
+	[isl_ast_loop_unroll] = "unroll",
+	[isl_ast_loop_separate] = "separate"
+};
+
+/* Given a parameter space "space", extend it to a set space
+ *
+ *	{ type[x] }
+ *
+ * which can be used to encode loop AST generation options of the given type.
+ */
+static __isl_give isl_space *loop_type_space(__isl_take isl_space *space,
+	enum isl_ast_loop_type type)
+{
+	const char *name;
+
+	name = option_str[type];
+	space = isl_space_set_from_params(space);
+	space = isl_space_add_dims(space, isl_dim_set, 1);
+	space = isl_space_set_tuple_name(space, isl_dim_set, name);
+
+	return space;
+}
+
+/* Add encodings of the "n" loop AST generation options "type" to "options".
+ *
+ * In particular, for each sequence of consecutive identical types "t",
+ * different from the default, add an option
+ *
+ *	{ t[x] : first <= x <= last }
+ */
+static __isl_give isl_union_set *add_loop_types(
+	__isl_take isl_union_set *options, int n, enum isl_ast_loop_type *type)
+{
+	int i;
+	isl_ctx *ctx;
+
+	if (!type)
+		return options;
+	if (!options)
+		return NULL;
+
+	ctx = isl_union_set_get_ctx(options);
+	for (i = 0; i < n; ++i) {
+		int first;
+		isl_space *space;
+		isl_set *option;
+
+		if (type[i] == isl_ast_loop_default)
+			continue;
+
+		first = i;
+		while (i + 1 < n && type[i + 1] == type[i])
+			++i;
+
+		space = isl_union_set_get_space(options);
+		space = loop_type_space(space, type[i]);
+		option = isl_set_universe(space);
+		option = isl_set_lower_bound_si(option, isl_dim_set, 0, first);
+		option = isl_set_upper_bound_si(option, isl_dim_set, 0, i);
+		options = isl_union_set_add_set(options, option);
+	}
+
+	return options;
+}
+
+/* Return the AST build options associated to "band".
+ */
+__isl_give isl_union_set *isl_schedule_band_get_ast_build_options(
+	__isl_keep isl_schedule_band *band)
+{
+	isl_union_set *options;
+
+	if (!band)
+		return NULL;
+
+	options = isl_union_set_copy(band->ast_build_options);
+	options = add_loop_types(options, band->n, band->loop_type);
+
+	return options;
+}
+
+/* Does "uset" contain any set that satisfies "is"?
+ * "is" is assumed to set its integer argument to 1 if it is satisfied.
+ */
+static int has_any(__isl_keep isl_union_set *uset,
+	int (*is)(__isl_take isl_set *set, void *user))
+{
+	int found = 0;
+
+	if (isl_union_set_foreach_set(uset, is, &found) < 0 && !found)
+		return -1;
+
+	return found;
+}
+
+/* Does "set" encode a loop AST generation option?
+ */
+static int is_loop_type_option(__isl_take isl_set *set, void *user)
+{
+	int *found = user;
+
+	if (isl_set_dim(set, isl_dim_set) == 1 &&
+	    isl_set_has_tuple_name(set)) {
+		const char *name;
+		enum isl_ast_loop_type type;
+		name = isl_set_get_tuple_name(set);
+		for (type = isl_ast_loop_atomic;
+		    type <= isl_ast_loop_separate; ++type) {
+			if (strcmp(name, option_str[type]))
+				continue;
+			*found = 1;
+			break;
+		}
+	}
+	isl_set_free(set);
+
+	return *found ? -1 : 0;
+}
+
+/* Does "options" encode any loop AST generation options?
+ */
+static int has_loop_type_options(__isl_keep isl_union_set *options)
+{
+	return has_any(options, &is_loop_type_option);
+}
+
+/* Extract the loop AST generation type for the band member
+ * at position "pos" from "options".
+ */
+static enum isl_ast_loop_type extract_loop_type(
+	__isl_keep isl_union_set *options, int pos)
+{
+	isl_ctx *ctx;
+	enum isl_ast_loop_type type, res = isl_ast_loop_default;
+
+	ctx = isl_union_set_get_ctx(options);
+	for (type = isl_ast_loop_atomic;
+	    type <= isl_ast_loop_separate; ++type) {
+		isl_space *space;
+		isl_set *option;
+		int empty;
+
+		space = isl_union_set_get_space(options);
+		space = loop_type_space(space, type);
+		option = isl_union_set_extract_set(options, space);
+		option = isl_set_fix_si(option, isl_dim_set, 0, pos);
+		empty = isl_set_is_empty(option);
+		isl_set_free(option);
+
+		if (empty < 0)
+			return isl_ast_loop_error;
+		if (empty)
+			continue;
+		if (res != isl_ast_loop_default)
+			isl_die(ctx, isl_error_invalid,
+				"conflicting loop type options",
+				return isl_ast_loop_error);
+		res = type;
+	}
+
+	return res;
+}
+
+/* Extract the loop AST generation types for the members of "band"
+ * from "options" and store them in band->loop_type.
+ * Return -1 on error.
+ */
+static int extract_loop_types(__isl_keep isl_schedule_band *band,
+	__isl_keep isl_union_set *options)
+{
+	int i;
+
+	if (!band->loop_type) {
+		isl_ctx *ctx = isl_schedule_band_get_ctx(band);
+		band->loop_type = isl_alloc_array(ctx,
+					    enum isl_ast_loop_type, band->n);
+		if (band->n && !band->loop_type)
+			return -1;
+	}
+	for (i = 0; i < band->n; ++i) {
+		band->loop_type[i] = extract_loop_type(options, i);
+		if (band->loop_type[i] == isl_ast_loop_error)
+			return -1;
+	}
+
+	return 0;
+}
+
+/* Construct universe sets of the spaces that encode loop AST generation
+ * types.  That is, construct
+ *
+ *	{ atomic[x]; separate[x]; unroll[x] }
+ */
+static __isl_give isl_union_set *loop_types(__isl_take isl_space *space)
+{
+	enum isl_ast_loop_type type;
+	isl_union_set *types;
+
+	types = isl_union_set_empty(space);
+	for (type = isl_ast_loop_atomic;
+	    type <= isl_ast_loop_separate; ++type) {
+		isl_set *set;
+
+		space = isl_union_set_get_space(types);
+		space = loop_type_space(space, type);
+		set = isl_set_universe(space);
+		types = isl_union_set_add_set(types, set);
+	}
+
+	return types;
+}
+
+/* Remove all elements from spaces that encode loop AST generation types
+ * from "options".
+ */
+static __isl_give isl_union_set *clear_loop_types(
+	__isl_take isl_union_set *options)
+{
+	isl_union_set *types;
+
+	types = loop_types(isl_union_set_get_space(options));
+	options = isl_union_set_subtract(options, types);
+
+	return options;
+}
+
+/* Replace the AST build options associated to "band" by "options".
+ * If there are any loop AST generation type options, then they
+ * are extracted and stored in band->loop_type.  Otherwise,
+ * band->loop_type is removed to indicate that the default applies
+ * to all members.
+ * The remaining options are stored in band->ast_build_options.
+ */
+__isl_give isl_schedule_band *isl_schedule_band_set_ast_build_options(
+	__isl_take isl_schedule_band *band, __isl_take isl_union_set *options)
+{
+	int has_loop_type;
+
+	band = isl_schedule_band_cow(band);
+	if (!band || !options)
+		goto error;
+	has_loop_type = has_loop_type_options(options);
+	if (has_loop_type < 0)
+		goto error;
+
+	if (!has_loop_type) {
+		free(band->loop_type);
+		band->loop_type = NULL;
+	} else {
+		if (extract_loop_types(band, options) < 0)
+			goto error;
+		options = clear_loop_types(options);
+		if (!options)
+			goto error;
+	}
+
+	isl_union_set_free(band->ast_build_options);
+	band->ast_build_options = options;
+
+	return band;
+error:
+	isl_schedule_band_free(band);
+	isl_union_set_free(options);
+	return NULL;
 }
 
 /* Multiply the partial schedule of "band" with the factors in "mv".
@@ -436,6 +788,9 @@ __isl_give isl_schedule_band *isl_schedule_band_drop(
 
 	for (i = pos + n; i < band->n; ++i)
 		band->coincident[i - n] = band->coincident[i];
+	if (band->loop_type)
+		for (i = pos + n; i < band->n; ++i)
+			band->loop_type[i - n] = band->loop_type[i];
 
 	band->n -= n;
 
@@ -453,7 +808,9 @@ __isl_give isl_schedule_band *isl_schedule_band_reset_user(
 		return NULL;
 
 	band->mupa = isl_multi_union_pw_aff_reset_user(band->mupa);
-	if (!band->mupa)
+	band->ast_build_options =
+		isl_union_set_reset_user(band->ast_build_options);
+	if (!band->mupa || !band->ast_build_options)
 		return isl_schedule_band_free(band);
 
 	return band;
@@ -468,8 +825,11 @@ __isl_give isl_schedule_band *isl_schedule_band_align_params(
 	if (!band || !space)
 		goto error;
 
-	band->mupa = isl_multi_union_pw_aff_align_params(band->mupa, space);
-	if (!band->mupa)
+	band->mupa = isl_multi_union_pw_aff_align_params(band->mupa,
+						isl_space_copy(space));
+	band->ast_build_options =
+		isl_union_set_align_params(band->ast_build_options, space);
+	if (!band->mupa || !band->ast_build_options)
 		return isl_schedule_band_free(band);
 
 	return band;

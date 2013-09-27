@@ -204,6 +204,17 @@ __isl_give isl_ast_build *isl_ast_build_dup(__isl_keep isl_ast_build *build)
 	dup->create_leaf = build->create_leaf;
 	dup->create_leaf_user = build->create_leaf_user;
 	dup->node = isl_schedule_node_copy(build->node);
+	if (build->loop_type) {
+		int i;
+
+		dup->n = build->n;
+		dup->loop_type = isl_alloc_array(ctx,
+						enum isl_ast_loop_type, dup->n);
+		if (dup->n && !dup->loop_type)
+			return isl_ast_build_free(dup);
+		for (i = 0; i < dup->n; ++i)
+			dup->loop_type[i] = build->loop_type[i];
+	}
 
 	if (!dup->iterators || !dup->domain || !dup->generated ||
 	    !dup->pending || !dup->values ||
@@ -282,6 +293,7 @@ __isl_null isl_ast_build *isl_ast_build_free(
 	isl_union_map_free(build->executed);
 	isl_union_map_free(build->options);
 	isl_schedule_node_free(build->node);
+	free(build->loop_type);
 
 	free(build);
 
@@ -955,7 +967,39 @@ __isl_give isl_schedule_node *isl_ast_build_get_schedule_node(
 	return isl_schedule_node_copy(build->node);
 }
 
-/* Replace the band node that "build" refers to by "node".
+/* Extract the loop AST generation types for the members of build->node
+ * and store them in build->loop_type.
+ */
+static __isl_give isl_ast_build *extract_loop_types(
+	__isl_take isl_ast_build *build)
+{
+	int i;
+	isl_ctx *ctx;
+	isl_schedule_node *node;
+
+	if (!build)
+		return NULL;
+	ctx = isl_ast_build_get_ctx(build);
+	if (!build->node)
+		isl_die(ctx, isl_error_internal, "missing AST node",
+			return isl_ast_build_free(build));
+
+	free(build->loop_type);
+	build->n = isl_schedule_node_band_n_member(build->node);
+	build->loop_type = isl_alloc_array(ctx,
+					    enum isl_ast_loop_type, build->n);
+	if (build->n && !build->loop_type)
+		return isl_ast_build_free(build);
+	node = build->node;
+	for (i = 0; i < build->n; ++i)
+		build->loop_type[i] =
+		    isl_schedule_node_band_member_get_ast_loop_type(node, i);
+
+	return build;
+}
+
+/* Replace the band node that "build" refers to by "node" and
+ * extract the corresponding loop AST generation types.
  */
 __isl_give isl_ast_build *isl_ast_build_set_schedule_node(
 	__isl_take isl_ast_build *build,
@@ -967,6 +1011,8 @@ __isl_give isl_ast_build *isl_ast_build_set_schedule_node(
 
 	isl_schedule_node_free(build->node);
 	build->node = node;
+
+	build = extract_loop_types(build);
 
 	return build;
 error:
@@ -1565,6 +1611,40 @@ static __isl_give isl_union_map *options_insert_dim(
 	return options;
 }
 
+/* If we are generating an AST from a schedule tree (build->node is set),
+ * then update the loop AST generation types
+ * to reflect the insertion of a dimension at (global) position "pos"
+ * in the schedule domain space.
+ */
+static __isl_give isl_ast_build *node_insert_dim(
+	__isl_take isl_ast_build *build, int pos)
+{
+	int i;
+	int local_pos;
+	enum isl_ast_loop_type *loop_type;
+	isl_ctx *ctx;
+
+	build = isl_ast_build_cow(build);
+	if (!build)
+		return NULL;
+	if (!build->node)
+		return build;
+
+	ctx = isl_ast_build_get_ctx(build);
+	local_pos = pos - build->outer_pos;
+	loop_type = isl_realloc_array(ctx, build->loop_type,
+					enum isl_ast_loop_type, build->n + 1);
+	if (!loop_type)
+		return isl_ast_build_free(build);
+	build->loop_type = loop_type;
+	for (i = build->n - 1; i >= local_pos; --i)
+		loop_type[i + 1] = loop_type[i];
+	loop_type[local_pos] = isl_ast_loop_default;
+	build->n++;
+
+	return build;
+}
+
 /* Insert a single dimension in the schedule domain at position "pos".
  * The new dimension is given an isl_id with the empty string as name.
  *
@@ -1617,6 +1697,8 @@ __isl_give isl_ast_build *isl_ast_build_insert_dim(
 	    !build->pending || !build->values ||
 	    !build->strides || !build->offsets || !build->options)
 		return isl_ast_build_free(build);
+
+	build = node_insert_dim(build, pos);
 
 	return build;
 }
@@ -2120,6 +2202,31 @@ __isl_give isl_set *isl_ast_build_get_option_domain(
 	domain = isl_ast_build_eliminate(build, domain);
 
 	return domain;
+}
+
+/* How does the user want the current schedule dimension to be generated?
+ * These choices have been extracted from the schedule node
+ * in extract_loop_types and stored in build->loop_type.
+ * They have been updated to reflect any dimension insertion in
+ * node_insert_dim.
+ * Return isl_ast_domain_error on error.
+ */
+enum isl_ast_loop_type isl_ast_build_get_loop_type(
+	__isl_keep isl_ast_build *build)
+{
+	int local_pos;
+	isl_ctx *ctx;
+
+	if (!build)
+		return isl_ast_loop_error;
+	ctx = isl_ast_build_get_ctx(build);
+	if (!build->node)
+		isl_die(ctx, isl_error_internal,
+			"only works for schedule tree based AST generation",
+			return isl_ast_loop_error);
+
+	local_pos = build->depth - build->outer_pos;
+	return build->loop_type[local_pos];
 }
 
 /* Extract the separation class mapping at the current depth.

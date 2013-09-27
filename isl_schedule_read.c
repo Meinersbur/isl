@@ -15,6 +15,7 @@ enum isl_schedule_key {
 	isl_schedule_key_domain,
 	isl_schedule_key_filter,
 	isl_schedule_key_leaf,
+	isl_schedule_key_options,
 	isl_schedule_key_permutable,
 	isl_schedule_key_schedule,
 	isl_schedule_key_sequence,
@@ -50,6 +51,8 @@ static enum isl_schedule_key extract_key(__isl_keep isl_stream *s,
 		key = isl_schedule_key_filter;
 	else if (!strcmp(name, "leaf"))
 		key = isl_schedule_key_leaf;
+	else if (!strcmp(name, "options"))
+		key = isl_schedule_key_options;
 	else if (!strcmp(name, "schedule"))
 		key = isl_schedule_key_schedule;
 	else if (!strcmp(name, "sequence"))
@@ -247,6 +250,7 @@ static __isl_give isl_schedule_tree *read_band(isl_stream *s)
 	isl_multi_union_pw_aff *schedule = NULL;
 	isl_schedule_tree *tree = NULL;
 	isl_val_list *coincident = NULL;
+	isl_union_set *options = NULL;
 	isl_ctx *ctx;
 	isl_schedule_band *band;
 	int permutable = 0;
@@ -290,6 +294,16 @@ static __isl_give isl_schedule_tree *read_band(isl_stream *s)
 			permutable = !isl_val_is_zero(v);
 			isl_val_free(v);
 			break;
+		case isl_schedule_key_options:
+			isl_union_set_free(options);
+			tok = isl_stream_next_token(s);
+			str = isl_token_get_str(ctx, tok);
+			options = isl_union_set_read_from_str(ctx, str);
+			free(str);
+			isl_token_free(tok);
+			if (!options)
+				goto error;
+			break;
 		case isl_schedule_key_child:
 			isl_schedule_tree_free(tree);
 			tree = isl_stream_read_schedule_tree(s);
@@ -312,6 +326,8 @@ static __isl_give isl_schedule_tree *read_band(isl_stream *s)
 	band = isl_schedule_band_set_permutable(band, permutable);
 	if (coincident)
 		band = set_coincident(band, coincident);
+	if (options)
+		band = isl_schedule_band_set_ast_build_options(band, options);
 	if (tree)
 		tree = isl_schedule_tree_insert_band(tree, band);
 	else
@@ -320,6 +336,7 @@ static __isl_give isl_schedule_tree *read_band(isl_stream *s)
 	return tree;
 error:
 	isl_val_list_free(coincident);
+	isl_union_set_free(options);
 	isl_schedule_tree_free(tree);
 	isl_multi_union_pw_aff_free(schedule);
 	return NULL;
@@ -421,6 +438,7 @@ static __isl_give isl_schedule_tree *isl_stream_read_schedule_tree(
 		break;
 	case isl_schedule_key_schedule:
 	case isl_schedule_key_coincident:
+	case isl_schedule_key_options:
 	case isl_schedule_key_permutable:
 		tree = read_band(s);
 		break;

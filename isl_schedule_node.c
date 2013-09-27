@@ -1224,6 +1224,65 @@ __isl_give isl_union_map *isl_schedule_node_band_get_partial_schedule_union_map(
 	return isl_union_map_from_multi_union_pw_aff(mupa);
 }
 
+/* Return the loop AST generation type for the band member of band node "node"
+ * at position "pos".
+ */
+enum isl_ast_loop_type isl_schedule_node_band_member_get_ast_loop_type(
+	__isl_keep isl_schedule_node *node, int pos)
+{
+	if (!node)
+		return isl_ast_loop_error;
+
+	return isl_schedule_tree_band_member_get_ast_loop_type(node->tree, pos);
+}
+
+/* Set the loop AST generation type for the band member of band node "node"
+ * at position "pos" to "type".
+ */
+__isl_give isl_schedule_node *isl_schedule_node_band_member_set_ast_loop_type(
+	__isl_take isl_schedule_node *node, int pos,
+	enum isl_ast_loop_type type)
+{
+	isl_schedule_tree *tree;
+
+	if (!node)
+		return NULL;
+
+	tree = isl_schedule_tree_copy(node->tree);
+	tree = isl_schedule_tree_band_member_set_ast_loop_type(tree, pos, type);
+	return isl_schedule_node_graft_tree(node, tree);
+}
+
+/* Return the AST build options associated to band node "node".
+ */
+__isl_give isl_union_set *isl_schedule_node_band_get_ast_build_options(
+	__isl_keep isl_schedule_node *node)
+{
+	if (!node)
+		return NULL;
+
+	return isl_schedule_tree_band_get_ast_build_options(node->tree);
+}
+
+/* Replace the AST build options associated to band node "node" by "options".
+ */
+__isl_give isl_schedule_node *isl_schedule_node_band_set_ast_build_options(
+	__isl_take isl_schedule_node *node, __isl_take isl_union_set *options)
+{
+	isl_schedule_tree *tree;
+
+	if (!node || !options)
+		goto error;
+
+	tree = isl_schedule_tree_copy(node->tree);
+	tree = isl_schedule_tree_band_set_ast_build_options(tree, options);
+	return isl_schedule_node_graft_tree(node, tree);
+error:
+	isl_schedule_node_free(node);
+	isl_union_set_free(options);
+	return NULL;
+}
+
 /* Make sure that that spaces of "node" and "mv" are the same.
  * Return -1 on error, reporting the error to the user.
  */
