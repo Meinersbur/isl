@@ -2674,14 +2674,19 @@ function.
 
 Similarly,
 a multiple union piecewise affine expression can be created from
-a multiple value with a given domain using the following
-function.
+a multiple value with a given domain or
+a multiple affine expression with a given domain
+using the following functions.
 
 	#include <isl/aff.h>
 	__isl_give isl_multi_union_pw_aff *
 	isl_multi_union_pw_aff_multi_val_on_domain(
 		__isl_take isl_union_set *domain,
 		__isl_take isl_multi_val *mv);
+	__isl_give isl_multi_union_pw_aff *
+	isl_multi_union_pw_aff_multi_aff_on_domain(
+		__isl_take isl_union_set *domain,
+		__isl_take isl_multi_aff *ma);
 
 Multiple expressions can be copied and freed using
 the following functions.
