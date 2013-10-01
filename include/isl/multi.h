@@ -110,6 +110,9 @@ __isl_give isl_multi_##BASE *isl_multi_##BASE##_scale_multi_val(	\
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_scale_down_multi_val(	\
 	__isl_take isl_multi_##BASE *multi,				\
 	__isl_take isl_multi_val *mv);					\
+__isl_give isl_multi_##BASE *isl_multi_##BASE##_mod_multi_val(		\
+	__isl_take isl_multi_##BASE *multi,				\
+	__isl_take isl_multi_val *mv);					\
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_sub(			\
 	__isl_take isl_multi_##BASE *multi1,				\
 	__isl_take isl_multi_##BASE *multi2);				\

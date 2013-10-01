@@ -936,6 +936,18 @@ error:
 	return NULL;
 }
 
+/* Given two integer values "v1" and "v2", return the residue of "v1"
+ * modulo "v2".
+ *
+ * This is a private copy of isl_val_mod for use in the generic
+ * isl_multi_*_mod_multi_val instantiated for isl_val.
+ */
+__isl_give isl_val *isl_val_mod_val(__isl_take isl_val *v1,
+	__isl_take isl_val *v2)
+{
+	return isl_val_mod(v1, v2);
+}
+
 /* Given two integer values, return their greatest common divisor.
  */
 __isl_give isl_val *isl_val_gcd(__isl_take isl_val *v1, __isl_take isl_val *v2)

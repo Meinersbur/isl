@@ -6057,6 +6057,9 @@ only defined on the shared definition domain of the arguments.
 		__isl_take isl_val *v);
 
 	#include <isl/val.h>
+	__isl_give isl_multi_val *isl_multi_val_mod_multi_val(
+		__isl_take isl_multi_val *mv1,
+		__isl_take isl_multi_val *mv2);
 	__isl_give isl_multi_val *isl_multi_val_scale_multi_val(
 		__isl_take isl_multi_val *mv1,
 		__isl_take isl_multi_val *mv2);
@@ -6066,6 +6069,13 @@ only defined on the shared definition domain of the arguments.
 		__isl_take isl_multi_val *mv2);
 
 	#include <isl/aff.h>
+	__isl_give isl_multi_aff *isl_multi_aff_mod_multi_val(
+		__isl_take isl_multi_aff *ma,
+		__isl_take isl_multi_val *mv);
+	__isl_give isl_multi_pw_aff *
+	isl_multi_pw_aff_mod_multi_val(
+		__isl_take isl_multi_pw_aff *mpa,
+		__isl_take isl_multi_val *mv);
 	__isl_give isl_multi_aff *isl_multi_aff_scale_multi_val(
 		__isl_take isl_multi_aff *ma,
 		__isl_take isl_multi_val *mv);
