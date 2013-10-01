@@ -4315,6 +4315,9 @@ dimensions satisfy the given ordering.
 	__isl_give isl_union_set *
 	isl_union_pw_aff_zero_union_set(
 		__isl_take isl_union_pw_aff *upa);
+	__isl_give isl_union_set *
+	isl_multi_union_pw_aff_zero_union_set(
+		__isl_take isl_multi_union_pw_aff *mupa);
 
 The function C<isl_aff_neg_basic_set> returns a basic set
 containing those elements in the domain space
@@ -4322,6 +4325,9 @@ of C<aff> where C<aff> is negative.
 The function C<isl_pw_aff_nonneg_set> returns a set
 containing those elements in the domain
 of C<pwaff> where C<pwaff> is non-negative.
+The function C<isl_multi_union_pw_aff_zero_union_set>
+returns a union set containing those elements
+in the domains of its elements where they are all zero.
 
 =item * Identity
 

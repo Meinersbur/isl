@@ -7779,3 +7779,41 @@ error:
 	isl_multi_aff_free(ma);
 	return NULL;
 }
+
+/* Return a union set containing those elements in the domains
+ * of the elements of "mupa" where they are all zero.
+ */
+__isl_give isl_union_set *isl_multi_union_pw_aff_zero_union_set(
+	__isl_take isl_multi_union_pw_aff *mupa)
+{
+	int i, n;
+	isl_union_pw_aff *upa;
+	isl_union_set *zero;
+
+	if (!mupa)
+		return NULL;
+
+	n = isl_multi_union_pw_aff_dim(mupa, isl_dim_set);
+	if (n == 0)
+		isl_die(isl_multi_union_pw_aff_get_ctx(mupa), isl_error_invalid,
+			"cannot determine zero set "
+			"of zero-dimensional function", goto error);
+
+	upa = isl_multi_union_pw_aff_get_union_pw_aff(mupa, 0);
+	zero = isl_union_pw_aff_zero_union_set(upa);
+
+	for (i = 1; i < n; ++i) {
+		isl_union_set *zero_i;
+
+		upa = isl_multi_union_pw_aff_get_union_pw_aff(mupa, i);
+		zero_i = isl_union_pw_aff_zero_union_set(upa);
+
+		zero = isl_union_set_intersect(zero, zero_i);
+	}
+
+	isl_multi_union_pw_aff_free(mupa);
+	return zero;
+error:
+	isl_multi_union_pw_aff_free(mupa);
+	return NULL;
+}
