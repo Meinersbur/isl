@@ -198,6 +198,7 @@ void isl_reordering_dump(__isl_keep isl_reordering *exp)
 {
 	int i;
 
+	isl_space_dump(exp->dim);
 	for (i = 0; i < exp->len; ++i)
 		fprintf(stderr, "%d -> %d; ", i, exp->pos[i]);
 	fprintf(stderr, "\n");
