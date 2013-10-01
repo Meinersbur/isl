@@ -7172,3 +7172,31 @@ __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_from_union_pw_aff(
 	isl_union_pw_aff_free(upa);
 	return upma;
 }
+
+/* Compute the set of elements in the domain of "pa" where it is zero and
+ * add this set to "uset".
+ */
+static int zero_union_set(__isl_take isl_pw_aff *pa, void *user)
+{
+	isl_union_set **uset = (isl_union_set **)user;
+
+	*uset = isl_union_set_add_set(*uset, isl_pw_aff_zero_set(pa));
+
+	return *uset ? 0 : -1;
+}
+
+/* Return a union set containing those elements in the domain
+ * of "upa" where it is zero.
+ */
+__isl_give isl_union_set *isl_union_pw_aff_zero_union_set(
+	__isl_take isl_union_pw_aff *upa)
+{
+	isl_union_set *zero;
+
+	zero = isl_union_set_empty(isl_union_pw_aff_get_space(upa));
+	if (isl_union_pw_aff_foreach_pw_aff(upa, &zero_union_set, &zero) < 0)
+		zero = isl_union_set_free(zero);
+
+	isl_union_pw_aff_free(upa);
+	return zero;
+}

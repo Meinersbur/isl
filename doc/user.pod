@@ -4166,6 +4166,9 @@ dimensions satisfy the given ordering.
 		__isl_take isl_pw_aff *pwaff);
 	__isl_give isl_set *isl_pw_aff_non_zero_set(
 		__isl_take isl_pw_aff *pwaff);
+	__isl_give isl_union_set *
+	isl_union_pw_aff_zero_union_set(
+		__isl_take isl_union_pw_aff *upa);
 
 The function C<isl_aff_neg_basic_set> returns a basic set
 containing those elements in the domain space
