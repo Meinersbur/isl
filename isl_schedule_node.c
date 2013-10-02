@@ -244,6 +244,35 @@ int isl_schedule_node_is_equal(__isl_keep isl_schedule_node *node1,
 	return 1;
 }
 
+/* Return the number of outer schedule dimensions of "node"
+ * in its schedule tree.
+ *
+ * Return -1 on error.
+ */
+int isl_schedule_node_get_schedule_depth(__isl_keep isl_schedule_node *node)
+{
+	int i, n;
+	int depth = 0;
+
+	if (!node)
+		return -1;
+
+	n = isl_schedule_tree_list_n_schedule_tree(node->ancestors);
+	for (i = n - 1; i >= 0; --i) {
+		isl_schedule_tree *tree;
+
+		tree = isl_schedule_tree_list_get_schedule_tree(
+						    node->ancestors, i);
+		if (!tree)
+			return -1;
+		if (tree->type == isl_schedule_node_band)
+			depth += isl_schedule_tree_band_n_member(tree);
+		isl_schedule_tree_free(tree);
+	}
+
+	return depth;
+}
+
 /* Internal data structure for
  * isl_schedule_node_get_prefix_schedule_union_pw_multi_aff
  *
