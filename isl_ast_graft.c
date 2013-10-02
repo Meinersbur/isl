@@ -114,7 +114,11 @@ static int equal_independent_guards(__isl_keep isl_ast_graft_list *list,
 		return -1;
 
 	depth = isl_ast_build_get_depth(build);
-	skip = isl_set_involves_dims(graft_0->guard, isl_dim_set, depth, 1);
+	if (isl_set_dim(graft_0->guard, isl_dim_set) <= depth)
+		skip = 0;
+	else
+		skip = isl_set_involves_dims(graft_0->guard,
+						isl_dim_set, depth, 1);
 	if (skip < 0 || skip) {
 		isl_ast_graft_free(graft_0);
 		return skip < 0 ? -1 : 0;
