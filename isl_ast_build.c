@@ -915,6 +915,17 @@ __isl_give isl_set *isl_ast_build_get_domain(__isl_keep isl_ast_build *build)
 	return build ? isl_set_copy(build->domain) : NULL;
 }
 
+/* Return the number of variables of the given type
+ * in the (internal) schedule space.
+ */
+unsigned isl_ast_build_dim(__isl_keep isl_ast_build *build,
+	enum isl_dim_type type)
+{
+	if (!build)
+		return 0;
+	return isl_set_dim(build->domain, type);
+}
+
 /* Return the (schedule) space of "build".
  *
  * If "internal" is set, then this space is the space of the internal
