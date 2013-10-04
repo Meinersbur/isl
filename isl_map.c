@@ -5075,6 +5075,26 @@ error:
 	return NULL;
 }
 
+/* Given a wrapped map of the form A[B -> C],
+ * return the map A[B -> C] -> B.
+ */
+__isl_give isl_map *isl_set_wrapped_domain_map(__isl_take isl_set *set)
+{
+	isl_id *id;
+	isl_map *map;
+
+	if (!set)
+		return NULL;
+	if (!isl_set_has_tuple_id(set))
+		return isl_map_domain_map(isl_set_unwrap(set));
+
+	id = isl_set_get_tuple_id(set);
+	map = isl_map_domain_map(isl_set_unwrap(set));
+	map = isl_map_set_tuple_id(map, isl_dim_in, id);
+
+	return map;
+}
+
 __isl_give isl_map *isl_map_from_set(__isl_take isl_set *set,
 	__isl_take isl_space *dim)
 {

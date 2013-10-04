@@ -3784,6 +3784,8 @@ parameters.
 		__isl_take isl_space *space);
 
 	#include <isl/map.h>
+	__isl_give isl_map *isl_set_wrapped_domain_map(
+		__isl_take isl_set *set);
 	__isl_give isl_basic_map *isl_basic_map_domain_map(
 		__isl_take isl_basic_map *bmap);
 	__isl_give isl_basic_map *isl_basic_map_range_map(
@@ -3799,6 +3801,8 @@ parameters.
 
 The functions above construct a (basic, regular or union) relation
 that maps (a wrapped version of) the input relation to its domain or range.
+C<isl_set_wrapped_domain_map> maps the input set to the domain
+of its wrapped relation.
 
 =item * Elimination
 
