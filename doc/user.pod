@@ -3798,6 +3798,9 @@ parameters.
 		__isl_take isl_union_map *umap);
 	__isl_give isl_union_map *isl_union_map_range_map(
 		__isl_take isl_union_map *umap);
+	__isl_give isl_union_map *
+	isl_union_set_wrapped_domain_map(
+		__isl_take isl_union_set *uset);
 
 The functions above construct a (basic, regular or union) relation
 that maps (a wrapped version of) the input relation to its domain or range.

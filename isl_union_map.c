@@ -1822,6 +1822,36 @@ __isl_give isl_union_map *isl_union_map_range_map(
 	return cond_un_op(umap, &range_map_entry);
 }
 
+/* Check if "set" is of the form A[B -> C].
+ * If so, add A[B -> C] -> B to "res".
+ */
+static int wrapped_domain_map_entry(void **entry, void *user)
+{
+	isl_set *set = *entry;
+	isl_union_set **res = user;
+	int wrapping;
+
+	wrapping = isl_set_is_wrapping(set);
+	if (wrapping < 0)
+		return -1;
+	if (!wrapping)
+		return 0;
+
+	*res = isl_union_map_add_map(*res,
+				isl_set_wrapped_domain_map(isl_set_copy(set)));
+
+	return 0;
+}
+
+/* Given a collection of wrapped maps of the form A[B -> C],
+ * return the collection of maps A[B -> C] -> B.
+ */
+__isl_give isl_union_map *isl_union_set_wrapped_domain_map(
+	__isl_take isl_union_set *uset)
+{
+	return cond_un_op(uset, &wrapped_domain_map_entry);
+}
+
 static int deltas_entry(void **entry, void *user)
 {
 	isl_map *map = *entry;
