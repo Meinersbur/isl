@@ -3683,6 +3683,366 @@ __isl_give isl_union_pw_multi_aff *isl_schedule_node_get_subtree_contraction(
 	return data.res;
 }
 
+/* Do the nearest "n" ancestors of "node" have the types given in "types"
+ * (starting at the parent of "node")?
+ */
+static int has_ancestors(__isl_keep isl_schedule_node *node,
+	int n, enum isl_schedule_node_type *types)
+{
+	int i, n_ancestor;
+
+	if (!node)
+		return -1;
+
+	n_ancestor = isl_schedule_tree_list_n_schedule_tree(node->ancestors);
+	if (n_ancestor < n)
+		return 0;
+
+	for (i = 0; i < n; ++i) {
+		isl_schedule_tree *tree;
+		int correct_type;
+
+		tree = isl_schedule_tree_list_get_schedule_tree(node->ancestors,
+							    n_ancestor - 1 - i);
+		if (!tree)
+			return -1;
+		correct_type = isl_schedule_tree_get_type(tree) == types[i];
+		isl_schedule_tree_free(tree);
+		if (!correct_type)
+			return 0;
+	}
+
+	return 1;
+}
+
+/* Given a node "node" that appears in an extension (i.e., it is the child
+ * of a filter in a sequence inside an extension node), are the spaces
+ * of the extension specified by "extension" disjoint from those
+ * of both the original extension and the domain elements that reach
+ * that original extension?
+ */
+static int is_disjoint_extension(__isl_keep isl_schedule_node *node,
+	__isl_keep isl_union_map *extension)
+{
+	isl_union_map *old;
+	isl_union_set *domain;
+	int empty;
+
+	node = isl_schedule_node_copy(node);
+	node = isl_schedule_node_parent(node);
+	node = isl_schedule_node_parent(node);
+	node = isl_schedule_node_parent(node);
+	old = isl_schedule_node_extension_get_extension(node);
+	domain = isl_schedule_node_get_universe_domain(node);
+	isl_schedule_node_free(node);
+	old = isl_union_map_universe(old);
+	domain = isl_union_set_union(domain, isl_union_map_range(old));
+	extension = isl_union_map_copy(extension);
+	extension = isl_union_map_intersect_range(extension, domain);
+	empty = isl_union_map_is_empty(extension);
+	isl_union_map_free(extension);
+
+	return empty;
+}
+
+/* Given a node "node" that is governed by an extension node, extend
+ * that extension node with "extension".
+ *
+ * In particular, "node" is the child of a filter in a sequence that
+ * is in turn a child of an extension node.  Extend that extension node
+ * with "extension".
+ *
+ * Return a pointer to the parent of the original node (i.e., a filter).
+ */
+static __isl_give isl_schedule_node *extend_extension(
+	__isl_take isl_schedule_node *node, __isl_take isl_union_map *extension)
+{
+	int pos;
+	int disjoint;
+	isl_union_map *node_extension;
+
+	node = isl_schedule_node_parent(node);
+	pos = isl_schedule_node_get_child_position(node);
+	node = isl_schedule_node_parent(node);
+	node = isl_schedule_node_parent(node);
+	node_extension = isl_schedule_node_extension_get_extension(node);
+	disjoint = isl_union_map_is_disjoint(extension, node_extension);
+	extension = isl_union_map_union(extension, node_extension);
+	node = isl_schedule_node_extension_set_extension(node, extension);
+	node = isl_schedule_node_child(node, 0);
+	node = isl_schedule_node_child(node, pos);
+
+	if (disjoint < 0)
+		return isl_schedule_node_free(node);
+	if (!node)
+		return NULL;
+	if (!disjoint)
+		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
+			"extension domain should be disjoint from earlier "
+			"extensions", return isl_schedule_node_free(node));
+
+	return node;
+}
+
+/* Return the universe of "uset" if this universe is disjoint from "ref".
+ * Otherwise, return "uset".
+ *
+ * Also check if "uset" itself is disjoint from "ref", reporting
+ * an error if it is not.
+ */
+static __isl_give isl_union_set *replace_by_universe_if_disjoint(
+	__isl_take isl_union_set *uset, __isl_keep isl_union_set *ref)
+{
+	int disjoint;
+	isl_union_set *universe;
+
+	disjoint = isl_union_set_is_disjoint(uset, ref);
+	if (disjoint < 0)
+		return isl_union_set_free(uset);
+	if (!disjoint)
+		isl_die(isl_union_set_get_ctx(uset), isl_error_invalid,
+			"extension domain should be disjoint from "
+			"current domain", return isl_union_set_free(uset));
+
+	universe = isl_union_set_universe(isl_union_set_copy(uset));
+	disjoint = isl_union_set_is_disjoint(universe, ref);
+	if (disjoint >= 0 && disjoint) {
+		isl_union_set_free(uset);
+		return universe;
+	}
+	isl_union_set_free(universe);
+
+	if (disjoint < 0)
+		return isl_union_set_free(uset);
+	return uset;
+}
+
+/* Insert an extension node on top of "node" with extension "extension".
+ * In addition, insert a filter that separates node from the extension
+ * between the extension node and "node".
+ * Return a pointer to the inserted filter node.
+ *
+ * If "node" already appears in an extension (i.e., if it is the child
+ * of a filter in a sequence inside an extension node), then extend that
+ * extension with "extension" instead.
+ * In this case, a pointer to the original filter node is returned.
+ * Note that if some of the elements in the new extension live in the
+ * same space as those of the original extension or the domain elements
+ * reaching the original extension, then we insert a new extension anyway.
+ * Otherwise, we would have to adjust the filters in the sequence child
+ * of the extension to ensure that the elements in the new extension
+ * are filtered out.
+ */
+static __isl_give isl_schedule_node *insert_extension(
+	__isl_take isl_schedule_node *node, __isl_take isl_union_map *extension)
+{
+	enum isl_schedule_node_type ancestors[] =
+		{ isl_schedule_node_filter, isl_schedule_node_sequence,
+		  isl_schedule_node_extension };
+	isl_union_set *domain;
+	isl_union_set *filter;
+	int in_ext;
+
+	in_ext = has_ancestors(node, 3, ancestors);
+	if (in_ext < 0)
+		goto error;
+	if (in_ext) {
+		int disjoint;
+
+		disjoint = is_disjoint_extension(node, extension);
+		if (disjoint < 0)
+			goto error;
+		if (disjoint)
+			return extend_extension(node, extension);
+	}
+
+	filter = isl_schedule_node_get_domain(node);
+	domain = isl_union_map_range(isl_union_map_copy(extension));
+	filter = replace_by_universe_if_disjoint(filter, domain);
+	isl_union_set_free(domain);
+
+	node = isl_schedule_node_insert_filter(node, filter);
+	node = isl_schedule_node_insert_extension(node, extension);
+	node = isl_schedule_node_child(node, 0);
+	return node;
+error:
+	isl_schedule_node_free(node);
+	isl_union_map_free(extension);
+	return NULL;
+}
+
+/* Replace the subtree that "node" points to by "tree" (which has
+ * a sequence root with two children), except if the parent of "node"
+ * is a sequence as well, in which case "tree" is spliced at the position
+ * of "node" in its parent.
+ * Return a pointer to the child of the second (filter) child of "tree"
+ * in the updated schedule tree.
+ */
+static __isl_give isl_schedule_node *graft_or_splice(
+	__isl_take isl_schedule_node *node, __isl_take isl_schedule_tree *tree)
+{
+	int pos;
+
+	if (isl_schedule_node_get_parent_type(node) ==
+	    isl_schedule_node_sequence) {
+		pos = isl_schedule_node_get_child_position(node);
+		node = isl_schedule_node_parent(node);
+		node = isl_schedule_node_sequence_splice(node, pos, tree);
+	} else {
+		pos = 0;
+		node = isl_schedule_node_graft_tree(node, tree);
+	}
+	node = isl_schedule_node_child(node, pos + 1);
+	node = isl_schedule_node_child(node, 0);
+
+	return node;
+}
+
+/* Insert a node "graft" into the schedule tree of "node" such that it
+ * is executed before the node that "node" points to.
+ * The root of "graft" is an extension node.
+ * Return a pointer to the node that "node" pointed to.
+ *
+ * We first insert an extension node on top of "node" (or extend
+ * the extension node if there already is one), with a filter on "node"
+ * separating it from the extension.
+ * We then insert a filter in the graft to separate it from the original
+ * domain elements and combine the original and new tree in a sequence.
+ * If we have extended an extension node, then the children of this
+ * sequence are spliced in the sequence of the extended extension
+ * at the position where "node" appears in the original extension.
+ * Otherwise, the sequence pair is attached to the new extension node.
+ */
+static __isl_give isl_schedule_node *graft_extension_before(
+	__isl_take isl_schedule_node *node, __isl_take isl_schedule_node *graft)
+{
+	isl_union_map *extension;
+	isl_union_set *graft_domain;
+	isl_union_set *node_domain;
+	isl_schedule_tree *tree, *tree_graft;
+
+	extension = isl_schedule_node_extension_get_extension(graft);
+	graft_domain = isl_union_map_range(isl_union_map_copy(extension));
+	node_domain = isl_schedule_node_get_universe_domain(node);
+	node = insert_extension(node, extension);
+
+	graft_domain = replace_by_universe_if_disjoint(graft_domain,
+							node_domain);
+	isl_union_set_free(node_domain);
+
+	tree = isl_schedule_node_get_tree(node);
+	if (!isl_schedule_node_has_children(graft)) {
+		tree_graft = isl_schedule_tree_from_filter(graft_domain);
+	} else {
+		graft = isl_schedule_node_child(graft, 0);
+		tree_graft = isl_schedule_node_get_tree(graft);
+		tree_graft = isl_schedule_tree_insert_filter(tree_graft,
+								graft_domain);
+	}
+	tree = isl_schedule_tree_sequence_pair(tree_graft, tree);
+	node = graft_or_splice(node, tree);
+
+	isl_schedule_node_free(graft);
+
+	return node;
+}
+
+/* Replace the root domain node of "node" by an extension node suitable
+ * for insertion at "pos".
+ * That is, create an extension node that maps the outer band nodes
+ * at "pos" to the domain of the root node of "node" and attach
+ * the child of this root node to the extension node.
+ */
+static __isl_give isl_schedule_node *extension_from_domain(
+	__isl_take isl_schedule_node *node, __isl_keep isl_schedule_node *pos)
+{
+	isl_union_set *universe;
+	isl_union_set *domain;
+	isl_union_map *ext;
+	int depth;
+	int anchored;
+	isl_space *space;
+	isl_schedule_node *res;
+	isl_schedule_tree *tree;
+
+	anchored = isl_schedule_node_is_subtree_anchored(node);
+	if (anchored < 0)
+		return isl_schedule_node_free(node);
+	if (anchored)
+		isl_die(isl_schedule_node_get_ctx(node), isl_error_unsupported,
+			"cannot graft anchored tree with domain root",
+			return isl_schedule_node_free(node));
+
+	depth = isl_schedule_node_get_schedule_depth(pos);
+	domain = isl_schedule_node_domain_get_domain(node);
+	space = isl_union_set_get_space(domain);
+	space = isl_space_set_from_params(space);
+	space = isl_space_add_dims(space, isl_dim_set, depth);
+	universe = isl_union_set_from_set(isl_set_universe(space));
+	ext = isl_union_map_from_domain_and_range(universe, domain);
+	res = isl_schedule_node_from_extension(ext);
+	node = isl_schedule_node_child(node, 0);
+	if (!node)
+		return isl_schedule_node_free(res);
+	if (!isl_schedule_tree_is_leaf(node->tree)) {
+		tree = isl_schedule_node_get_tree(node);
+		res = isl_schedule_node_child(res, 0);
+		res = isl_schedule_node_graft_tree(res, tree);
+		res = isl_schedule_node_parent(res);
+	}
+	isl_schedule_node_free(node);
+
+	return res;
+}
+
+/* Insert a node "graft" into the schedule tree of "node" such that it
+ * is executed before the node that "node" points to.
+ * The root of "graft" may be either a domain or an extension node.
+ * In the latter case, the domain of the extension needs to correspond
+ * to the outer band nodes of "node".
+ * The elements of the domain or the range of the extension may not
+ * intersect with the domain elements that reach "node".
+ * The schedule tree of "graft" may not be anchored.
+ *
+ * The schedule tree of "node" is modified to include an extension node
+ * corresponding to the root node of "graft" as a child of the original
+ * parent of "node".  The original node that "node" points to and the
+ * child of the root node of "graft" are attached to this extension node
+ * through a sequence, with appropriate filters and with the child
+ * of "graft" appearing before the original "node".
+ *
+ * If "node" already appears inside a sequence that is the child of
+ * an extension node and if the spaces of the new domain elements
+ * do not overlap with those of the original domain elements,
+ * then that extension node is extended with the new extension
+ * rather than introducing a new segment of extension and sequence nodes.
+ *
+ * Return a pointer to the same node in the modified tree that
+ * "node" pointed to in the original tree.
+ */
+__isl_give isl_schedule_node *isl_schedule_node_graft_before(
+	__isl_take isl_schedule_node *node, __isl_take isl_schedule_node *graft)
+{
+	if (!node || !graft)
+		goto error;
+	if (check_insert(node) < 0)
+		goto error;
+
+	if (isl_schedule_node_get_type(graft) == isl_schedule_node_domain)
+		graft = extension_from_domain(graft, node);
+
+	if (isl_schedule_node_get_type(graft) != isl_schedule_node_extension)
+		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
+			"expecting domain or extension as root of graft",
+			goto error);
+
+	return graft_extension_before(node, graft);
+error:
+	isl_schedule_node_free(node);
+	isl_schedule_node_free(graft);
+	return NULL;
+}
+
 /* Reset the user pointer on all identifiers of parameters and tuples
  * in the schedule node "node".
  */
