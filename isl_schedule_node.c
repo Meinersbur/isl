@@ -3875,11 +3875,12 @@ error:
  * a sequence root with two children), except if the parent of "node"
  * is a sequence as well, in which case "tree" is spliced at the position
  * of "node" in its parent.
- * Return a pointer to the child of the second (filter) child of "tree"
+ * Return a pointer to the child of the "tree_pos" (filter) child of "tree"
  * in the updated schedule tree.
  */
 static __isl_give isl_schedule_node *graft_or_splice(
-	__isl_take isl_schedule_node *node, __isl_take isl_schedule_tree *tree)
+	__isl_take isl_schedule_node *node, __isl_take isl_schedule_tree *tree,
+	int tree_pos)
 {
 	int pos;
 
@@ -3892,14 +3893,15 @@ static __isl_give isl_schedule_node *graft_or_splice(
 		pos = 0;
 		node = isl_schedule_node_graft_tree(node, tree);
 	}
-	node = isl_schedule_node_child(node, pos + 1);
+	node = isl_schedule_node_child(node, pos + tree_pos);
 	node = isl_schedule_node_child(node, 0);
 
 	return node;
 }
 
 /* Insert a node "graft" into the schedule tree of "node" such that it
- * is executed before the node that "node" points to.
+ * is executed before (if "before" is set) or after (if "before" is not set)
+ * the node that "node" points to.
  * The root of "graft" is an extension node.
  * Return a pointer to the node that "node" pointed to.
  *
@@ -3913,8 +3915,9 @@ static __isl_give isl_schedule_node *graft_or_splice(
  * at the position where "node" appears in the original extension.
  * Otherwise, the sequence pair is attached to the new extension node.
  */
-static __isl_give isl_schedule_node *graft_extension_before(
-	__isl_take isl_schedule_node *node, __isl_take isl_schedule_node *graft)
+static __isl_give isl_schedule_node *graft_extension(
+	__isl_take isl_schedule_node *node, __isl_take isl_schedule_node *graft,
+	int before)
 {
 	isl_union_map *extension;
 	isl_union_set *graft_domain;
@@ -3939,8 +3942,11 @@ static __isl_give isl_schedule_node *graft_extension_before(
 		tree_graft = isl_schedule_tree_insert_filter(tree_graft,
 								graft_domain);
 	}
-	tree = isl_schedule_tree_sequence_pair(tree_graft, tree);
-	node = graft_or_splice(node, tree);
+	if (before)
+		tree = isl_schedule_tree_sequence_pair(tree_graft, tree);
+	else
+		tree = isl_schedule_tree_sequence_pair(tree, tree_graft);
+	node = graft_or_splice(node, tree, before);
 
 	isl_schedule_node_free(graft);
 
@@ -3996,7 +4002,8 @@ static __isl_give isl_schedule_node *extension_from_domain(
 }
 
 /* Insert a node "graft" into the schedule tree of "node" such that it
- * is executed before the node that "node" points to.
+ * is executed before (if "before" is set) or after (if "before" is not set)
+ * the node that "node" points to.
  * The root of "graft" may be either a domain or an extension node.
  * In the latter case, the domain of the extension needs to correspond
  * to the outer band nodes of "node".
@@ -4009,7 +4016,7 @@ static __isl_give isl_schedule_node *extension_from_domain(
  * parent of "node".  The original node that "node" points to and the
  * child of the root node of "graft" are attached to this extension node
  * through a sequence, with appropriate filters and with the child
- * of "graft" appearing before the original "node".
+ * of "graft" appearing before or after the original "node".
  *
  * If "node" already appears inside a sequence that is the child of
  * an extension node and if the spaces of the new domain elements
@@ -4020,8 +4027,9 @@ static __isl_give isl_schedule_node *extension_from_domain(
  * Return a pointer to the same node in the modified tree that
  * "node" pointed to in the original tree.
  */
-__isl_give isl_schedule_node *isl_schedule_node_graft_before(
-	__isl_take isl_schedule_node *node, __isl_take isl_schedule_node *graft)
+static __isl_give isl_schedule_node *isl_schedule_node_graft_before_or_after(
+	__isl_take isl_schedule_node *node, __isl_take isl_schedule_node *graft,
+	int before)
 {
 	if (!node || !graft)
 		goto error;
@@ -4036,11 +4044,48 @@ __isl_give isl_schedule_node *isl_schedule_node_graft_before(
 			"expecting domain or extension as root of graft",
 			goto error);
 
-	return graft_extension_before(node, graft);
+	return graft_extension(node, graft, before);
 error:
 	isl_schedule_node_free(node);
 	isl_schedule_node_free(graft);
 	return NULL;
+}
+
+/* Insert a node "graft" into the schedule tree of "node" such that it
+ * is executed before the node that "node" points to.
+ * The root of "graft" may be either a domain or an extension node.
+ * In the latter case, the domain of the extension needs to correspond
+ * to the outer band nodes of "node".
+ * The elements of the domain or the range of the extension may not
+ * intersect with the domain elements that reach "node".
+ * The schedule tree of "graft" may not be anchored.
+ *
+ * Return a pointer to the same node in the modified tree that
+ * "node" pointed to in the original tree.
+ */
+__isl_give isl_schedule_node *isl_schedule_node_graft_before(
+	__isl_take isl_schedule_node *node, __isl_take isl_schedule_node *graft)
+{
+	return isl_schedule_node_graft_before_or_after(node, graft, 1);
+}
+
+/* Insert a node "graft" into the schedule tree of "node" such that it
+ * is executed after the node that "node" points to.
+ * The root of "graft" may be either a domain or an extension node.
+ * In the latter case, the domain of the extension needs to correspond
+ * to the outer band nodes of "node".
+ * The elements of the domain or the range of the extension may not
+ * intersect with the domain elements that reach "node".
+ * The schedule tree of "graft" may not be anchored.
+ *
+ * Return a pointer to the same node in the modified tree that
+ * "node" pointed to in the original tree.
+ */
+__isl_give isl_schedule_node *isl_schedule_node_graft_after(
+	__isl_take isl_schedule_node *node,
+	__isl_take isl_schedule_node *graft)
+{
+	return isl_schedule_node_graft_before_or_after(node, graft, 0);
 }
 
 /* Reset the user pointer on all identifiers of parameters and tuples

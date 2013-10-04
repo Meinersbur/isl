@@ -7327,7 +7327,7 @@ generated at that point.
 
 An extension node may also appear as the root of a schedule tree,
 when it is intended to be inserted into another tree
-using C<isl_schedule_node_graft_before>.
+using C<isl_schedule_node_graft_before> or C<isl_schedule_node_graft_after>.
 In this case, the domain of the extension node should
 correspond to the flat product of the outer band nodes
 in this other schedule tree at the point where the extension tree
@@ -8067,9 +8067,15 @@ position as the node pointed to by C<node> in the original tree.
 	isl_schedule_node_graft_before(
 		__isl_take isl_schedule_node *node,
 		__isl_take isl_schedule_node *graft);
+	__isl_give isl_schedule_node *
+	isl_schedule_node_graft_after(
+		__isl_take isl_schedule_node *node,
+		__isl_take isl_schedule_node *graft);
 
 This function inserts the C<graft> tree into the tree containing C<node>
-such that it is executed before C<node>.  The root node of C<graft>
+such that it is executed before (in case of C<isl_schedule_node_graft_before>)
+or after (in case of C<isl_schedule_node_graft_after>) C<node>.
+The root node of C<graft>
 should be an extension node where the domain of the extension
 is the flat product of all outer band nodes of C<node>.
 The root node may also be a domain node.
@@ -8082,7 +8088,7 @@ corresponding to the root node of C<graft> as a child of the original
 parent of C<node>.  The original node that C<node> points to and the
 child of the root node of C<graft> are attached to this extension node
 through a sequence, with appropriate filters and with the child
-of C<graft> appearing before the original C<node>.
+of C<graft> appearing before or after the original C<node>.
 
 If C<node> already appears inside a sequence that is the child of
 an extension node and if the spaces of the new domain elements
