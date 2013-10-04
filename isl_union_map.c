@@ -1,5 +1,6 @@
 /*
  * Copyright 2010-2011 INRIA Saclay
+ * Copyright 2013-2014 Ecole Normale Superieure
  *
  * Use of this software is governed by the MIT license
  *
@@ -2535,39 +2536,57 @@ error:
 	return NULL;
 }
 
-/* Internal data structure for isl_union_map_preimage_domain_multi_aff.
+/* Is the domain space of "map" equal to "space"?
+ */
+static int domain_match(__isl_keep isl_map *map, __isl_keep isl_space *space)
+{
+	return isl_space_tuple_match(map->dim, isl_dim_in, space, isl_dim_out);
+}
+
+/* Is the range space of "map" equal to "space"?
+ */
+static int range_match(__isl_keep isl_map *map, __isl_keep isl_space *space)
+{
+	return isl_space_tuple_match(map->dim, isl_dim_out, space, isl_dim_out);
+}
+
+/* Internal data structure for preimage_multi_aff.
  *
  * "ma" is the function under which the preimage should be taken.
  * "space" is the space of "ma".
  * "res" collects the results.
+ * "fn" computes the preimage for a given map.
+ * "match" returns true if "fn" can be called.
  */
-struct isl_union_map_preimage_domain_data {
+struct isl_union_map_preimage_data {
 	isl_space *space;
 	isl_multi_aff *ma;
 	isl_union_map *res;
+	int (*match)(__isl_keep isl_map *map, __isl_keep isl_space *space);
+	__isl_give isl_map *(*fn)(__isl_take isl_map *map,
+		__isl_take isl_multi_aff *ma);
 };
 
-/* Compute the preimage of the domain of *entry under the function
- * represented by data->ma, provided the domain space of *entry
- * match the target space of data->ma, and add the result to data->res.
+/* Call data->fn to compute the preimage of the domain or range of *entry
+ * under the function represented by data->ma, provided the domain/range
+ * space of *entry matches the target space of data->ma
+ * (as given by data->match), and add the result to data->res.
  */
-static int preimage_domain_entry(void **entry, void *user)
+static int preimage_entry(void **entry, void *user)
 {
 	int m;
 	isl_map *map = *entry;
-	struct isl_union_map_preimage_domain_data *data = user;
+	struct isl_union_map_preimage_data *data = user;
 	int empty;
 
-	m = isl_space_tuple_match(map->dim, isl_dim_in,
-					data->space, isl_dim_out);
+	m = data->match(map, data->space);
 	if (m < 0)
 		return -1;
 	if (!m)
 		return 0;
 
 	map = isl_map_copy(map);
-	map = isl_map_preimage_domain_multi_aff(map,
-						isl_multi_aff_copy(data->ma));
+	map = data->fn(map, isl_multi_aff_copy(data->ma));
 
 	empty = isl_map_is_empty(map);
 	if (empty < 0 || empty) {
@@ -2580,19 +2599,21 @@ static int preimage_domain_entry(void **entry, void *user)
 	return 0;
 }
 
-/* Compute the preimage of the domain of "umap" under the function
+/* Compute the preimage of the domain or range of "umap" under the function
  * represented by "ma".
- * In other words, plug in "ma" in the domain of "umap".
- * The result contains maps that live in the same spaces as the maps of "umap"
- * with domain space equal to the target space of "ma",
- * except that the domain has been replaced by the domain space of "ma".
+ * In other words, plug in "ma" in the domain or range of "umap".
+ * The function "fn" performs the actual preimage computation on a map,
+ * while "match" determines to which maps the function should be applied.
  */
-__isl_give isl_union_map *isl_union_map_preimage_domain_multi_aff(
-	__isl_take isl_union_map *umap, __isl_take isl_multi_aff *ma)
+static __isl_give isl_union_map *preimage_multi_aff(
+	__isl_take isl_union_map *umap, __isl_take isl_multi_aff *ma,
+	int (*match)(__isl_keep isl_map *map, __isl_keep isl_space *space),
+	__isl_give isl_map *(*fn)(__isl_take isl_map *map,
+		__isl_take isl_multi_aff *ma))
 {
 	isl_ctx *ctx;
 	isl_space *space;
-	struct isl_union_map_preimage_domain_data data;
+	struct isl_union_map_preimage_data data;
 
 	umap = isl_union_map_align_params(umap, isl_multi_aff_get_space(ma));
 	ma = isl_multi_aff_align_params(ma, isl_union_map_get_space(umap));
@@ -2605,7 +2626,9 @@ __isl_give isl_union_map *isl_union_map_preimage_domain_multi_aff(
 	data.space = isl_multi_aff_get_space(ma);
 	data.ma = ma;
 	data.res = isl_union_map_alloc(space, umap->table.n);
-	if (isl_hash_table_foreach(ctx, &umap->table, &preimage_domain_entry,
+	data.match = match;
+	data.fn = fn;
+	if (isl_hash_table_foreach(ctx, &umap->table, &preimage_entry,
 					&data) < 0)
 		data.res = isl_union_map_free(data.res);
 
@@ -2617,4 +2640,32 @@ error:
 	isl_union_map_free(umap);
 	isl_multi_aff_free(ma);
 	return NULL;
+}
+
+/* Compute the preimage of the domain of "umap" under the function
+ * represented by "ma".
+ * In other words, plug in "ma" in the domain of "umap".
+ * The result contains maps that live in the same spaces as the maps of "umap"
+ * with domain space equal to the target space of "ma",
+ * except that the domain has been replaced by the domain space of "ma".
+ */
+__isl_give isl_union_map *isl_union_map_preimage_domain_multi_aff(
+	__isl_take isl_union_map *umap, __isl_take isl_multi_aff *ma)
+{
+	return preimage_multi_aff(umap, ma, &domain_match,
+					&isl_map_preimage_domain_multi_aff);
+}
+
+/* Compute the preimage of the range of "umap" under the function
+ * represented by "ma".
+ * In other words, plug in "ma" in the range of "umap".
+ * The result contains maps that live in the same spaces as the maps of "umap"
+ * with range space equal to the target space of "ma",
+ * except that the range has been replaced by the domain space of "ma".
+ */
+__isl_give isl_union_map *isl_union_map_preimage_range_multi_aff(
+	__isl_take isl_union_map *umap, __isl_take isl_multi_aff *ma)
+{
+	return preimage_multi_aff(umap, ma, &range_match,
+					&isl_map_preimage_range_multi_aff);
 }

@@ -112,6 +112,8 @@ __isl_give isl_union_map *isl_union_map_apply_range(
 	__isl_take isl_union_map *umap1, __isl_take isl_union_map *umap2);
 __isl_give isl_union_map *isl_union_map_preimage_domain_multi_aff(
 	__isl_take isl_union_map *umap, __isl_take isl_multi_aff *ma);
+__isl_give isl_union_map *isl_union_map_preimage_range_multi_aff(
+	__isl_take isl_union_map *umap, __isl_take isl_multi_aff *ma);
 __isl_export
 __isl_give isl_union_map *isl_union_map_reverse(__isl_take isl_union_map *umap);
 __isl_give isl_union_map *isl_union_map_from_domain_and_range(
