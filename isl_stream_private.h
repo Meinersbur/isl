@@ -19,3 +19,25 @@ struct isl_token {
 
 struct isl_token *isl_token_new(isl_ctx *ctx,
 	int line, int col, unsigned on_new_line);
+
+struct isl_stream {
+	struct isl_ctx	*ctx;
+	FILE        	*file;
+	const char  	*str;
+	int	    	line;
+	int	    	col;
+	int	    	eof;
+
+	char	    	*buffer;
+	size_t	    	size;
+	size_t	    	len;
+	int	    	c;
+	int		un[5];
+	int		n_un;
+
+	struct isl_token	*tokens[5];
+	int	    	n_token;
+
+	struct isl_hash_table	*keywords;
+	enum isl_token_type	 next_type;
+};

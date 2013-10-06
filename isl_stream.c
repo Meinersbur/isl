@@ -28,7 +28,7 @@ static int same_name(const void *entry, const void *val)
 	return !strcmp(keyword->name, val);
 }
 
-enum isl_token_type isl_stream_register_keyword(struct isl_stream *s,
+enum isl_token_type isl_stream_register_keyword(__isl_keep isl_stream *s,
 	const char *name)
 {
 	struct isl_hash_table_entry *entry;
@@ -129,7 +129,8 @@ void isl_token_free(struct isl_token *tok)
 	free(tok);
 }
 
-void isl_stream_error(struct isl_stream *s, struct isl_token *tok, char *msg)
+void isl_stream_error(__isl_keep isl_stream *s, struct isl_token *tok,
+	char *msg)
 {
 	int line = tok ? tok->line : s->line;
 	int col = tok ? tok->col : s->col;
@@ -166,10 +167,10 @@ void isl_stream_error(struct isl_stream *s, struct isl_token *tok, char *msg)
 	}
 }
 
-static struct isl_stream* isl_stream_new(struct isl_ctx *ctx)
+static __isl_give isl_stream* isl_stream_new(struct isl_ctx *ctx)
 {
 	int i;
-	struct isl_stream *s = isl_alloc_type(ctx, struct isl_stream);
+	isl_stream *s = isl_alloc_type(ctx, struct isl_stream);
 	if (!s)
 		return NULL;
 	s->ctx = ctx;
@@ -196,18 +197,18 @@ error:
 	return NULL;
 }
 
-struct isl_stream* isl_stream_new_file(struct isl_ctx *ctx, FILE *file)
+__isl_give isl_stream* isl_stream_new_file(struct isl_ctx *ctx, FILE *file)
 {
-	struct isl_stream *s = isl_stream_new(ctx);
+	isl_stream *s = isl_stream_new(ctx);
 	if (!s)
 		return NULL;
 	s->file = file;
 	return s;
 }
 
-struct isl_stream* isl_stream_new_str(struct isl_ctx *ctx, const char *str)
+__isl_give isl_stream* isl_stream_new_str(struct isl_ctx *ctx, const char *str)
 {
-	struct isl_stream *s;
+	isl_stream *s;
 	if (!str)
 		return NULL;
 	s = isl_stream_new(ctx);
@@ -217,7 +218,7 @@ struct isl_stream* isl_stream_new_str(struct isl_ctx *ctx, const char *str)
 	return s;
 }
 
-static int stream_getc(struct isl_stream *s)
+static int stream_getc(__isl_keep isl_stream *s)
 {
 	int c;
 	if (s->eof)
@@ -244,14 +245,14 @@ static int stream_getc(struct isl_stream *s)
 	return c;
 }
 
-static void isl_stream_ungetc(struct isl_stream *s, int c)
+static void isl_stream_ungetc(__isl_keep isl_stream *s, int c)
 {
 	isl_assert(s->ctx, s->n_un < 5, return);
 	s->un[s->n_un++] = c;
 	s->c = -1;
 }
 
-static int isl_stream_getc(struct isl_stream *s)
+static int isl_stream_getc(__isl_keep isl_stream *s)
 {
 	int c;
 
@@ -267,7 +268,7 @@ static int isl_stream_getc(struct isl_stream *s)
 	return '\\';
 }
 
-static int isl_stream_push_char(struct isl_stream *s, int c)
+static int isl_stream_push_char(__isl_keep isl_stream *s, int c)
 {
 	if (s->len >= s->size) {
 		char *buffer;
@@ -281,13 +282,13 @@ static int isl_stream_push_char(struct isl_stream *s, int c)
 	return 0;
 }
 
-void isl_stream_push_token(struct isl_stream *s, struct isl_token *tok)
+void isl_stream_push_token(__isl_keep isl_stream *s, struct isl_token *tok)
 {
 	isl_assert(s->ctx, s->n_token < 5, return);
 	s->tokens[s->n_token++] = tok;
 }
 
-static enum isl_token_type check_keywords(struct isl_stream *s)
+static enum isl_token_type check_keywords(__isl_keep isl_stream *s)
 {
 	struct isl_hash_table_entry *entry;
 	struct isl_keyword *keyword;
@@ -344,7 +345,7 @@ static enum isl_token_type check_keywords(struct isl_stream *s)
 	return ISL_TOKEN_IDENT;
 }
 
-int isl_stream_skip_line(struct isl_stream *s)
+int isl_stream_skip_line(__isl_keep isl_stream *s)
 {
 	int c;
 
@@ -355,7 +356,7 @@ int isl_stream_skip_line(struct isl_stream *s)
 	return c == -1 ? -1 : 0;
 }
 
-static struct isl_token *next_token(struct isl_stream *s, int same_line)
+static struct isl_token *next_token(__isl_keep isl_stream *s, int same_line)
 {
 	int c;
 	struct isl_token *tok = NULL;
@@ -655,17 +656,17 @@ error:
 	return NULL;
 }
 
-struct isl_token *isl_stream_next_token(struct isl_stream *s)
+struct isl_token *isl_stream_next_token(__isl_keep isl_stream *s)
 {
 	return next_token(s, 0);
 }
 
-struct isl_token *isl_stream_next_token_on_same_line(struct isl_stream *s)
+struct isl_token *isl_stream_next_token_on_same_line(__isl_keep isl_stream *s)
 {
 	return next_token(s, 1);
 }
 
-int isl_stream_eat_if_available(struct isl_stream *s, int type)
+int isl_stream_eat_if_available(__isl_keep isl_stream *s, int type)
 {
 	struct isl_token *tok;
 
@@ -680,7 +681,7 @@ int isl_stream_eat_if_available(struct isl_stream *s, int type)
 	return 0;
 }
 
-int isl_stream_next_token_is(struct isl_stream *s, int type)
+int isl_stream_next_token_is(__isl_keep isl_stream *s, int type)
 {
 	struct isl_token *tok;
 	int r;
@@ -693,7 +694,7 @@ int isl_stream_next_token_is(struct isl_stream *s, int type)
 	return r;
 }
 
-char *isl_stream_read_ident_if_available(struct isl_stream *s)
+char *isl_stream_read_ident_if_available(__isl_keep isl_stream *s)
 {
 	struct isl_token *tok;
 
@@ -709,7 +710,7 @@ char *isl_stream_read_ident_if_available(struct isl_stream *s)
 	return NULL;
 }
 
-int isl_stream_eat(struct isl_stream *s, int type)
+int isl_stream_eat(__isl_keep isl_stream *s, int type)
 {
 	struct isl_token *tok;
 
@@ -725,7 +726,7 @@ int isl_stream_eat(struct isl_stream *s, int type)
 	return -1;
 }
 
-int isl_stream_is_empty(struct isl_stream *s)
+int isl_stream_is_empty(__isl_keep isl_stream *s)
 {
 	struct isl_token *tok;
 
@@ -748,7 +749,7 @@ static int free_keyword(void **p, void *user)
 	return 0;
 }
 
-void isl_stream_flush_tokens(struct isl_stream *s)
+void isl_stream_flush_tokens(__isl_keep isl_stream *s)
 {
 	int i;
 
@@ -759,12 +760,12 @@ void isl_stream_flush_tokens(struct isl_stream *s)
 	s->n_token = 0;
 }
 
-isl_ctx *isl_stream_get_ctx(struct isl_stream *s)
+isl_ctx *isl_stream_get_ctx(__isl_keep isl_stream *s)
 {
 	return s ? s->ctx : NULL;
 }
 
-void isl_stream_free(struct isl_stream *s)
+void isl_stream_free(__isl_take isl_stream *s)
 {
 	if (!s)
 		return;
