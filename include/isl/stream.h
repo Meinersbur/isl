@@ -72,6 +72,8 @@ struct isl_stream* isl_stream_new_file(struct isl_ctx *ctx, FILE *file);
 struct isl_stream* isl_stream_new_str(struct isl_ctx *ctx, const char *str);
 void isl_stream_free(struct isl_stream *s);
 
+isl_ctx *isl_stream_get_ctx(struct isl_stream *s);
+
 void isl_stream_error(struct isl_stream *s, struct isl_token *tok, char *msg);
 
 struct isl_token *isl_stream_next_token(struct isl_stream *s);

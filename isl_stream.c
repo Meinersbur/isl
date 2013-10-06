@@ -759,6 +759,11 @@ void isl_stream_flush_tokens(struct isl_stream *s)
 	s->n_token = 0;
 }
 
+isl_ctx *isl_stream_get_ctx(struct isl_stream *s)
+{
+	return s ? s->ctx : NULL;
+}
+
 void isl_stream_free(struct isl_stream *s)
 {
 	if (!s)
