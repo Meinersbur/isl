@@ -1,5 +1,6 @@
 #include <isl_int.h>
 #include <isl/stream.h>
+#include <isl_yaml.h>
 
 struct isl_token {
 	int type;
@@ -26,6 +27,16 @@ struct isl_token *isl_token_new(isl_ctx *ctx,
  * start_line and start_col are set by isl_stream_getc to point
  * to the position of the returned character.
  * last_line is the line number of the previous token.
+ *
+ * yaml_state and yaml_indent keep track of the currently active YAML
+ * elements.  yaml_size is the size of these arrays, while yaml_depth
+ * is the number of elements currently in use.
+ * yaml_state and yaml_indent may be NULL if no YAML parsing is being
+ * performed.
+ * yaml_state keeps track of what is expected next at each level.
+ * yaml_indent keeps track of the indentation at each level, with
+ * ISL_YAML_INDENT_FLOW meaning that the element is in flow format
+ * (such that the indentation is not relevant).
  */
 struct isl_stream {
 	struct isl_ctx	*ctx;
@@ -50,4 +61,9 @@ struct isl_stream {
 
 	struct isl_hash_table	*keywords;
 	enum isl_token_type	 next_type;
+
+	int			yaml_depth;
+	int			yaml_size;
+	enum isl_yaml_state	*yaml_state;
+	int			*yaml_indent;
 };

@@ -80,6 +80,12 @@ __isl_give isl_pw_qpolynomial *isl_stream_read_pw_qpolynomial(
 	__isl_keep isl_stream *s);
 __isl_give isl_union_map *isl_stream_read_union_map(__isl_keep isl_stream *s);
 
+int isl_stream_yaml_read_start_mapping(__isl_keep isl_stream *s);
+int isl_stream_yaml_read_end_mapping(__isl_keep isl_stream *s);
+int isl_stream_yaml_read_start_sequence(__isl_keep isl_stream *s);
+int isl_stream_yaml_read_end_sequence(__isl_keep isl_stream *s);
+int isl_stream_yaml_next(__isl_keep isl_stream *s);
+
 #if defined(__cplusplus)
 }
 #endif
