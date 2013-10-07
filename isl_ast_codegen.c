@@ -308,7 +308,7 @@ static __isl_give isl_ast_node *before_each_for(__isl_take isl_ast_node *node,
 
 /* Call the after_each_for callback, if requested by the user.
  */
-static __isl_give isl_ast_graft *after_each_for(__isl_keep isl_ast_graft *graft,
+static __isl_give isl_ast_graft *after_each_for(__isl_take isl_ast_graft *graft,
 	__isl_keep isl_ast_build *build)
 {
 	if (!graft || !build)
