@@ -418,6 +418,30 @@ error:
 	return NULL;
 }
 
+/* Replace the identifier of the tuple of type "type" by "id".
+ */
+__isl_give isl_basic_map *isl_basic_map_set_tuple_id(
+	__isl_take isl_basic_map *bmap,
+	enum isl_dim_type type, __isl_take isl_id *id)
+{
+	bmap = isl_basic_map_cow(bmap);
+	if (!bmap)
+		return isl_id_free(id);
+	bmap->dim = isl_space_set_tuple_id(bmap->dim, type, id);
+	if (!bmap->dim)
+		return isl_basic_map_free(bmap);
+	bmap = isl_basic_map_finalize(bmap);
+	return bmap;
+}
+
+/* Replace the identifier of the tuple by "id".
+ */
+__isl_give isl_basic_set *isl_basic_set_set_tuple_id(
+	__isl_take isl_basic_set *bset, __isl_take isl_id *id)
+{
+	return isl_basic_map_set_tuple_id(bset, isl_dim_set, id);
+}
+
 /* Does the input or output tuple have a name?
  */
 int isl_map_has_tuple_name(__isl_keep isl_map *map, enum isl_dim_type type)

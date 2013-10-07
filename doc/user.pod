@@ -1813,6 +1813,9 @@ use the following functions instead.
 The identifiers or names of the domain and range spaces of a set
 or relation can be read off or set using the following functions.
 
+	__isl_give isl_basic_set *isl_basic_set_set_tuple_id(
+		__isl_take isl_basic_set *bset,
+		__isl_take isl_id *id);
 	__isl_give isl_set *isl_set_set_tuple_id(
 		__isl_take isl_set *set, __isl_take isl_id *id);
 	__isl_give isl_set *isl_set_reset_tuple_id(
@@ -1820,6 +1823,9 @@ or relation can be read off or set using the following functions.
 	int isl_set_has_tuple_id(__isl_keep isl_set *set);
 	__isl_give isl_id *isl_set_get_tuple_id(
 		__isl_keep isl_set *set);
+	__isl_give isl_basic_map *isl_basic_map_set_tuple_id(
+		__isl_take isl_basic_map *bmap,
+		enum isl_dim_type type, __isl_take isl_id *id);
 	__isl_give isl_map *isl_map_set_tuple_id(
 		__isl_take isl_map *map, enum isl_dim_type type,
 		__isl_take isl_id *id);
