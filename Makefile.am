@@ -142,6 +142,7 @@ libisl_la_SOURCES = \
 	isl_schedule_band.h \
 	isl_schedule_node.c \
 	isl_schedule_node_private.h \
+	isl_schedule_read.c \
 	isl_schedule_tree.c \
 	isl_schedule_tree.h \
 	isl_schedule_private.h \

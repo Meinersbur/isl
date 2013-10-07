@@ -15,6 +15,7 @@
 #include <isl/aff_type.h>
 #include <isl/obj.h>
 #include <isl/val.h>
+#include <isl/schedule_type.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -80,6 +81,7 @@ __isl_give isl_set *isl_stream_read_set(__isl_keep isl_stream *s);
 __isl_give isl_pw_qpolynomial *isl_stream_read_pw_qpolynomial(
 	__isl_keep isl_stream *s);
 __isl_give isl_union_map *isl_stream_read_union_map(__isl_keep isl_stream *s);
+__isl_give isl_schedule *isl_stream_read_schedule(isl_stream *s);
 
 int isl_stream_yaml_read_start_mapping(__isl_keep isl_stream *s);
 int isl_stream_yaml_read_end_mapping(__isl_keep isl_stream *s);

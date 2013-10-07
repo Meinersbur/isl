@@ -7302,6 +7302,14 @@ the schedule by mapping the domain elements to a common schedule space.
 If the schedule_separate_components option is set, then the order
 of the children of a set node is explicitly encoded in the result.
 
+Schedules can be read from input using the following functions.
+
+	#include <isl/schedule.h>
+	__isl_give isl_schedule *isl_schedule_read_from_file(
+		isl_ctx *ctx, FILE *input);
+	__isl_give isl_schedule *isl_schedule_read_from_str(
+		isl_ctx *ctx, const char *str);
+
 A representation of the schedule can be printed using
 
 	#include <isl/schedule.h>
