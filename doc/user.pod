@@ -8661,6 +8661,9 @@ the context of an C<isl_ast_build>.
 	__isl_give isl_ast_expr *isl_ast_expr_access(
 		__isl_take isl_ast_expr *array,
 		__isl_take isl_ast_expr_list *indices);
+	__isl_give isl_ast_expr *isl_ast_expr_call(
+		__isl_take isl_ast_expr *function,
+		__isl_take isl_ast_expr_list *arguments);
 
 The function C<isl_ast_expr_address_of> can be applied to an
 C<isl_ast_expr> of type C<isl_ast_op_access> only. It is meant

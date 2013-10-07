@@ -665,40 +665,59 @@ __isl_give isl_ast_expr *isl_ast_expr_eq(__isl_take isl_ast_expr *expr1,
 	return isl_ast_expr_alloc_binary(isl_ast_op_eq, expr1, expr2);
 }
 
+/* Create an expression of type "type" with as arguments "arg0" followed
+ * by "arguments".
+ */
+static __isl_give isl_ast_expr *ast_expr_with_arguments(
+	enum isl_ast_op_type type, __isl_take isl_ast_expr *arg0,
+	__isl_take isl_ast_expr_list *arguments)
+{
+	int i, n;
+	isl_ctx *ctx;
+	isl_ast_expr *res = NULL;
+
+	if (!arg0 || !arguments)
+		goto error;
+
+	ctx = isl_ast_expr_get_ctx(arg0);
+	n = isl_ast_expr_list_n_ast_expr(arguments);
+	res = isl_ast_expr_alloc_op(ctx, type, 1 + n);
+	if (!res)
+		goto error;
+	for (i = 0; i < n; ++i) {
+		isl_ast_expr *arg;
+		arg = isl_ast_expr_list_get_ast_expr(arguments, i);
+		res->u.op.args[1 + i] = arg;
+		if (!arg)
+			goto error;
+	}
+	res->u.op.args[0] = arg0;
+
+	isl_ast_expr_list_free(arguments);
+	return res;
+error:
+	isl_ast_expr_free(arg0);
+	isl_ast_expr_list_free(arguments);
+	isl_ast_expr_free(res);
+	return NULL;
+}
+
 /* Create an expression representing an access to "array" with index
  * expressions "indices".
  */
 __isl_give isl_ast_expr *isl_ast_expr_access(__isl_take isl_ast_expr *array,
 	__isl_take isl_ast_expr_list *indices)
 {
-	int i, n;
-	isl_ctx *ctx;
-	isl_ast_expr *access = NULL;
+	return ast_expr_with_arguments(isl_ast_op_access, array, indices);
+}
 
-	if (!array || !indices)
-		goto error;
-
-	ctx = isl_ast_expr_get_ctx(array);
-	n = isl_ast_expr_list_n_ast_expr(indices);
-	access = isl_ast_expr_alloc_op(ctx, isl_ast_op_access, 1 + n);
-	if (!access)
-		goto error;
-	for (i = 0; i < n; ++i) {
-		isl_ast_expr *index;
-		index = isl_ast_expr_list_get_ast_expr(indices, i);
-		access->u.op.args[1 + i] = index;
-		if (!index)
-			goto error;
-	}
-	access->u.op.args[0] = array;
-
-	isl_ast_expr_list_free(indices);
-	return access;
-error:
-	isl_ast_expr_free(array);
-	isl_ast_expr_list_free(indices);
-	isl_ast_expr_free(access);
-	return NULL;
+/* Create an expression representing a call to "function" with argument
+ * expressions "arguments".
+ */
+__isl_give isl_ast_expr *isl_ast_expr_call(__isl_take isl_ast_expr *function,
+	__isl_take isl_ast_expr_list *arguments)
+{
+	return ast_expr_with_arguments(isl_ast_op_call, function, arguments);
 }
 
 /* For each subexpression of "expr" of type isl_ast_expr_id,
