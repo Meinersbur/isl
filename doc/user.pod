@@ -1349,6 +1349,10 @@ using the following functions.
 	isl_multi_pw_aff_reset_tuple_id(
 		__isl_take isl_multi_pw_aff *mpa,
 		enum isl_dim_type type);
+	__isl_give isl_pw_multi_aff *
+	isl_pw_multi_aff_reset_tuple_id(
+		__isl_take isl_pw_multi_aff *pma,
+		enum isl_dim_type type);
 	int isl_multi_aff_has_tuple_id(__isl_keep isl_multi_aff *ma,
 		enum isl_dim_type type);
 	__isl_give isl_id *isl_multi_aff_get_tuple_id(
