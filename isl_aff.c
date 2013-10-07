@@ -3713,6 +3713,15 @@ error:
 	return NULL;
 }
 
+/* Given a map space, return an isl_pw_multi_aff that maps a wrapped copy
+ * of the space to its range.
+ */
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_range_map(
+	__isl_take isl_space *space)
+{
+	return isl_pw_multi_aff_from_multi_aff(isl_multi_aff_range_map(space));
+}
+
 /* Given the space of a set and a range of set dimensions,
  * construct an isl_multi_aff that projects out those dimensions.
  */

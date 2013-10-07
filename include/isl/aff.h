@@ -368,6 +368,8 @@ ISL_DECLARE_MULTI_NEG(pw_aff)
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_zero(__isl_take isl_space *space);
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_identity(
 	__isl_take isl_space *space);
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_range_map(
+	__isl_take isl_space *space);
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_project_out_map(
 	__isl_take isl_space *space, enum isl_dim_type type,
 	unsigned first, unsigned n);
