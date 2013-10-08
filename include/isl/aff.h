@@ -518,6 +518,8 @@ __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_align_params(
 int isl_union_pw_multi_aff_foreach_pw_multi_aff(
 	__isl_keep isl_union_pw_multi_aff *upma,
 	int (*fn)(__isl_take isl_pw_multi_aff *pma, void *user), void *user);
+__isl_give isl_pw_multi_aff *isl_union_pw_multi_aff_extract_pw_multi_aff(
+	__isl_keep isl_union_pw_multi_aff *upma, __isl_take isl_space *space);
 
 __isl_give isl_union_set *isl_union_pw_multi_aff_domain(
 	__isl_take isl_union_pw_multi_aff *upma);

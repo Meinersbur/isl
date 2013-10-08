@@ -2815,7 +2815,13 @@ use the following functions.
 			    void *user), void *user);
 
 To extract the base expression in a given space from a union, use
-the following function.
+the following functions.
+
+	#include <isl/aff.h>
+	__isl_give isl_pw_multi_aff *
+	isl_union_pw_multi_aff_extract_pw_multi_aff(
+		__isl_keep isl_union_pw_multi_aff *upma,
+		__isl_take isl_space *space);
 
 	#include <isl/polynomial.h>
 	__isl_give isl_pw_qpolynomial *
