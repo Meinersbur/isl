@@ -1661,6 +1661,50 @@ __isl_give isl_schedule_node *isl_schedule_node_cut(
 	return isl_schedule_node_graft_tree(node, leaf);
 }
 
+/* Remove a single node from the schedule tree, attaching the child
+ * of "node" directly to its parent.
+ * Return a pointer to this former child or to the leaf the position
+ * of the original node if there was no child.
+ * It is not allowed to remove the root of a schedule tree,
+ * a set or sequence node or a child of a set or sequence node.
+ */
+__isl_give isl_schedule_node *isl_schedule_node_delete(
+	__isl_take isl_schedule_node *node)
+{
+	int n;
+	isl_schedule_tree *tree;
+	enum isl_schedule_node_type type;
+
+	if (!node)
+		return NULL;
+
+	if (isl_schedule_node_get_tree_depth(node) == 0)
+		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
+			"cannot delete root node",
+			return isl_schedule_node_free(node));
+	n = isl_schedule_node_n_children(node);
+	if (n != 1)
+		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
+			"can only delete node with a single child",
+			return isl_schedule_node_free(node));
+	type = isl_schedule_node_get_parent_type(node);
+	if (type == isl_schedule_node_sequence || type == isl_schedule_node_set)
+		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
+			"cannot delete child of set or sequence",
+			return isl_schedule_node_free(node));
+
+	tree = isl_schedule_node_get_tree(node);
+	if (!tree || isl_schedule_tree_has_children(tree)) {
+		tree = isl_schedule_tree_child(tree, 0);
+	} else {
+		isl_schedule_tree_free(tree);
+		tree = isl_schedule_node_get_leaf(node);
+	}
+	node = isl_schedule_node_graft_tree(node, tree);
+
+	return node;
+}
+
 /* Reset the user pointer on all identifiers of parameters and tuples
  * in the schedule node "node".
  */

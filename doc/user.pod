@@ -7560,6 +7560,17 @@ a child of a set or sequence node.
 	__isl_give isl_schedule_node *isl_schedule_node_cut(
 		__isl_take isl_schedule_node *node);
 
+The following function removes a single node
+from a schedule tree and returns a pointer to the child
+of the node, now located at the position of the original node
+or to a leaf node at that position if there was no child.
+It is not allowed to remove the root of a schedule tree,
+a set or sequence node or a child of a set or sequence node.
+
+	#include <isl/schedule_node.h>
+	__isl_give isl_schedule_node *isl_schedule_node_delete(
+		__isl_take isl_schedule_node *node);
+
 The following function resets the user pointers on all parameter
 and tuple identifiers referenced by the given schedule node.
 
