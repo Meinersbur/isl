@@ -179,8 +179,9 @@ static __isl_give isl_stream* isl_stream_new(struct isl_ctx *ctx)
 	s->str = NULL;
 	s->len = 0;
 	s->line = 1;
-	s->col = 0;
+	s->col = 1;
 	s->eof = 0;
+	s->last_line = 0;
 	s->c = -1;
 	s->n_un = 0;
 	for (i = 0; i < 5; ++i)
@@ -218,6 +219,9 @@ __isl_give isl_stream* isl_stream_new_str(struct isl_ctx *ctx, const char *str)
 	return s;
 }
 
+/* Read a character from the stream and advance s->line and s->col
+ * to point to the next character.
+ */
 static int stream_getc(__isl_keep isl_stream *s)
 {
 	int c;
@@ -234,13 +238,11 @@ static int stream_getc(__isl_keep isl_stream *s)
 	}
 	if (c == -1)
 		s->eof = 1;
-	if (!s->eof) {
-		if (s->c == '\n') {
-			s->line++;
-			s->col = 0;
-		} else
-			s->col++;
-	}
+	else if (c == '\n') {
+		s->line++;
+		s->col = 1;
+	} else
+		s->col++;
 	s->c = c;
 	return c;
 }
@@ -252,11 +254,17 @@ static void isl_stream_ungetc(__isl_keep isl_stream *s, int c)
 	s->c = -1;
 }
 
+/* Read a character from the stream, skipping pairs of '\\' and '\n'.
+ * Set s->start_line and s->start_col to the line and column
+ * of the returned character.
+ */
 static int isl_stream_getc(__isl_keep isl_stream *s)
 {
 	int c;
 
 	do {
+		s->start_line = s->line;
+		s->start_col = s->col;
 		c = stream_getc(s);
 		if (c != '\\')
 			return c;
@@ -361,7 +369,7 @@ static struct isl_token *next_token(__isl_keep isl_stream *s, int same_line)
 	int c;
 	struct isl_token *tok = NULL;
 	int line, col;
-	int old_line = s->line;
+	int old_line = s->last_line;
 
 	if (s->n_token) {
 		if (same_line && s->tokens[s->n_token - 1]->on_new_line)
@@ -386,11 +394,13 @@ static struct isl_token *next_token(__isl_keep isl_stream *s, int same_line)
 			break;
 	}
 
-	line = s->line;
-	col = s->col;
+	line = s->start_line;
+	col = s->start_col;
 
 	if (c == -1 || (same_line && c == '\n'))
 		return NULL;
+	s->last_line = line;
+
 	if (c == '(' ||
 	    c == ')' ||
 	    c == '+' ||
