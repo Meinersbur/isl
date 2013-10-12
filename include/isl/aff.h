@@ -59,6 +59,8 @@ __isl_give isl_aff *isl_aff_add_coefficient_val(__isl_take isl_aff *aff,
 
 int isl_aff_is_cst(__isl_keep isl_aff *aff);
 
+__isl_give isl_aff *isl_aff_set_tuple_id(__isl_take isl_aff *aff,
+	enum isl_dim_type type, __isl_take isl_id *id);
 __isl_give isl_aff *isl_aff_set_dim_name(__isl_take isl_aff *aff,
 	enum isl_dim_type type, unsigned pos, const char *s);
 __isl_give isl_aff *isl_aff_set_dim_id(__isl_take isl_aff *aff,
