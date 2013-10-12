@@ -458,6 +458,37 @@ __isl_give isl_schedule_tree *isl_schedule_tree_reset_children(
 	return tree;
 }
 
+/* Remove the child at position "pos" from the children of "tree".
+ * If there was only one child to begin with, then remove all children.
+ */
+__isl_give isl_schedule_tree *isl_schedule_tree_drop_child(
+	__isl_take isl_schedule_tree *tree, int pos)
+{
+	int n;
+
+	tree = isl_schedule_tree_cow(tree);
+	if (!tree)
+		return NULL;
+
+	if (!isl_schedule_tree_has_children(tree))
+		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_invalid,
+			"tree does not have any explicit children",
+			return isl_schedule_tree_free(tree));
+	n = isl_schedule_tree_list_n_schedule_tree(tree->children);
+	if (pos < 0 || pos >= n)
+		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_invalid,
+			"position out of bounds",
+			return isl_schedule_tree_free(tree));
+	if (n == 1)
+		return isl_schedule_tree_reset_children(tree);
+
+	tree->children = isl_schedule_tree_list_drop(tree->children, pos, 1);
+	if (!tree->children)
+		return isl_schedule_tree_free(tree);
+
+	return tree;
+}
+
 /* Replace the child at position "pos" of "tree" by "child".
  *
  * If the new child is a leaf, then it is not explicitly

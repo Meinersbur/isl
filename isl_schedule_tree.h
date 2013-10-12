@@ -129,6 +129,8 @@ __isl_give isl_schedule_tree *isl_schedule_tree_child(
 	__isl_take isl_schedule_tree *tree, int pos);
 __isl_give isl_schedule_tree *isl_schedule_tree_reset_children(
 	__isl_take isl_schedule_tree *tree);
+__isl_give isl_schedule_tree *isl_schedule_tree_drop_child(
+	__isl_take isl_schedule_tree *tree, int pos);
 __isl_give isl_schedule_tree *isl_schedule_tree_replace_child(
 	__isl_take isl_schedule_tree *tree, int pos,
 	__isl_take isl_schedule_tree *new_child);
