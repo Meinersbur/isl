@@ -1632,6 +1632,35 @@ __isl_give isl_schedule_node *isl_schedule_node_insert_set(
 					isl_schedule_node_set, filters);
 }
 
+/* Remove "node" from its schedule tree and return a pointer
+ * to the leaf at the same position in the updated schedule tree.
+ *
+ * It is not allowed to remove the root of a schedule tree or
+ * a child of a set or sequence node.
+ */
+__isl_give isl_schedule_node *isl_schedule_node_cut(
+	__isl_take isl_schedule_node *node)
+{
+	isl_schedule_tree *leaf;
+	enum isl_schedule_node_type parent_type;
+
+	if (!node)
+		return NULL;
+	if (!isl_schedule_node_has_parent(node))
+		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
+			"cannot cut root", return isl_schedule_node_free(node));
+
+	parent_type = isl_schedule_node_get_parent_type(node);
+	if (parent_type == isl_schedule_node_set ||
+	    parent_type == isl_schedule_node_sequence)
+		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
+			"cannot cut child of set or sequence",
+			return isl_schedule_node_free(node));
+
+	leaf = isl_schedule_node_get_leaf(node);
+	return isl_schedule_node_graft_tree(node, leaf);
+}
+
 /* Reset the user pointer on all identifiers of parameters and tuples
  * in the schedule node "node".
  */

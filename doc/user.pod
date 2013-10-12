@@ -7550,6 +7550,16 @@ It is the responsibility of the user to ensure that this does not
 lead to an infinite loop.  It is safest to always return a pointer
 to the same position (same ancestors and child positions) as the input node.
 
+The following function removes a node (along with its descendants)
+from a schedule tree and returns a pointer to the leaf at the
+same position in the updated tree.
+It is not allowed to remove the root of a schedule tree or
+a child of a set or sequence node.
+
+	#include <isl/schedule_node.h>
+	__isl_give isl_schedule_node *isl_schedule_node_cut(
+		__isl_take isl_schedule_node *node);
+
 The following function resets the user pointers on all parameter
 and tuple identifiers referenced by the given schedule node.
 
