@@ -210,6 +210,8 @@ __isl_give isl_id *isl_ast_build_get_iterator_id(
 
 __isl_give isl_basic_set *isl_ast_build_compute_gist_basic_set(
 	__isl_keep isl_ast_build *build, __isl_take isl_basic_set *bset);
+__isl_give isl_set *isl_ast_build_specialize(__isl_keep isl_ast_build *build,
+	__isl_take isl_set *set);
 __isl_give isl_set *isl_ast_build_compute_gist(
 	__isl_keep isl_ast_build *build, __isl_take isl_set *set);
 __isl_give isl_map *isl_ast_build_compute_gist_map_domain(

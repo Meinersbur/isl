@@ -1591,7 +1591,8 @@ static __isl_give isl_basic_set_list *isl_basic_set_list_from_set(
 /* Generate code for the schedule domain "bounds"
  * and add the result to "list".
  *
- * We mainly detect strides and additional equalities here
+ * We mainly detect strides here and check if the bounds do not
+ * conflict with the current build domain
  * and then pass over control to create_node.
  *
  * "bounds" reflects the bounds on the current dimension and possibly
@@ -1608,7 +1609,7 @@ static __isl_give isl_ast_graft_list *add_node(
 	isl_ast_graft *graft;
 	isl_set *domain = NULL;
 	isl_union_set *uset;
-	int empty;
+	int empty, disjoint;
 
 	uset = isl_union_set_from_basic_set(isl_basic_set_copy(bounds));
 	executed = isl_union_map_intersect_domain(executed, uset);
@@ -1620,14 +1621,16 @@ static __isl_give isl_ast_graft_list *add_node(
 
 	uset = isl_union_map_domain(isl_union_map_copy(executed));
 	domain = isl_set_from_union_set(uset);
-	domain = isl_ast_build_compute_gist(build, domain);
-	empty = isl_set_is_empty(domain);
-	if (empty < 0)
+	domain = isl_ast_build_specialize(build, domain);
+
+	domain = isl_set_compute_divs(domain);
+	domain = isl_ast_build_eliminate_inner(build, domain);
+	disjoint = isl_set_is_disjoint(domain, build->domain);
+	if (disjoint < 0)
 		goto error;
-	if (empty)
+	if (disjoint)
 		goto done;
 
-	domain = isl_ast_build_eliminate_inner(build, domain);
 	build = isl_ast_build_detect_strides(build, isl_set_copy(domain));
 
 	graft = create_node(executed, bounds, domain,

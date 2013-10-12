@@ -1866,6 +1866,24 @@ error:
 	return NULL;
 }
 
+/* Include information about what we know about the iterators of
+ * already generated loops to "set".
+ *
+ * We currently only plug in the known affine values of outer loop
+ * iterators.
+ * In principle we could also introduce equalities or even other
+ * constraints implied by the intersection of "set" and build->domain.
+ */
+__isl_give isl_set *isl_ast_build_specialize(__isl_keep isl_ast_build *build,
+	__isl_take isl_set *set)
+{
+	if (!build)
+		return isl_set_free(set);
+
+	return isl_set_preimage_multi_aff(set,
+					isl_multi_aff_copy(build->values));
+}
+
 /* Simplify the map "map" based on what we know about
  * the iterators of already generated loops.
  *
