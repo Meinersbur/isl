@@ -239,6 +239,21 @@ __isl_give isl_space *isl_local_space_get_space(__isl_keep isl_local_space *ls)
 	return isl_space_copy(ls->dim);
 }
 
+/* Replace the identifier of the tuple of type "type" by "id".
+ */
+__isl_give isl_local_space *isl_local_space_set_tuple_id(
+	__isl_take isl_local_space *ls,
+	enum isl_dim_type type, __isl_take isl_id *id)
+{
+	ls = isl_local_space_cow(ls);
+	if (!ls)
+		return isl_id_free(id);
+	ls->dim = isl_space_set_tuple_id(ls->dim, type, id);
+	if (!ls->dim)
+		return isl_local_space_free(ls);
+	return ls;
+}
+
 __isl_give isl_local_space *isl_local_space_set_dim_name(
 	__isl_take isl_local_space *ls,
 	enum isl_dim_type type, unsigned pos, const char *s)
