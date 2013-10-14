@@ -2550,6 +2550,13 @@ static int range_match(__isl_keep isl_map *map, __isl_keep isl_space *space)
 	return isl_space_tuple_match(map->dim, isl_dim_out, space, isl_dim_out);
 }
 
+/* Is the set space of "map" equal to "space"?
+ */
+static int set_match(__isl_keep isl_map *map, __isl_keep isl_space *space)
+{
+	return isl_space_tuple_match(map->dim, isl_dim_set, space, isl_dim_out);
+}
+
 /* Internal data structure for preimage_multi_aff.
  *
  * "ma" is the function under which the preimage should be taken.
@@ -2668,4 +2675,17 @@ __isl_give isl_union_map *isl_union_map_preimage_range_multi_aff(
 {
 	return preimage_multi_aff(umap, ma, &range_match,
 					&isl_map_preimage_range_multi_aff);
+}
+
+/* Compute the preimage of "uset" under the function represented by "ma".
+ * In other words, plug in "ma" in "uset".
+ * The result contains sets that live in the same spaces as the sets of "uset"
+ * with space equal to the target space of "ma",
+ * except that the space has been replaced by the domain space of "ma".
+ */
+__isl_give isl_union_map *isl_union_set_preimage_multi_aff(
+	__isl_take isl_union_set *uset, __isl_take isl_multi_aff *ma)
+{
+	return preimage_multi_aff(uset, ma, &set_match,
+					&isl_set_preimage_multi_aff);
 }
