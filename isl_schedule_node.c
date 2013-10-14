@@ -806,6 +806,115 @@ __isl_give isl_schedule_node *isl_schedule_node_get_child(
 	return isl_schedule_node_child(isl_schedule_node_copy(node), pos);
 }
 
+/* Traverse the descendant of "node" in depth-first order, including
+ * "node" itself.  Call "enter" whenever a node is entered and "leave"
+ * whenever a node is left.  The callback "enter" is responsible
+ * for moving to the deepest initial subtree of its argument that
+ * should be traversed.
+ */
+static __isl_give isl_schedule_node *traverse(
+	__isl_take isl_schedule_node *node,
+	__isl_give isl_schedule_node *(*enter)(
+		__isl_take isl_schedule_node *node, void *user),
+	__isl_give isl_schedule_node *(*leave)(
+		__isl_take isl_schedule_node *node, void *user),
+	void *user)
+{
+	int depth;
+
+	if (!node)
+		return NULL;
+
+	depth = isl_schedule_node_get_tree_depth(node);
+	do {
+		node = enter(node, user);
+		node = leave(node, user);
+		while (node && isl_schedule_node_get_tree_depth(node) > depth &&
+				!isl_schedule_node_has_next_sibling(node)) {
+			node = isl_schedule_node_parent(node);
+			node = leave(node, user);
+		}
+		if (node && isl_schedule_node_get_tree_depth(node) > depth)
+			node = isl_schedule_node_next_sibling(node);
+	} while (node && isl_schedule_node_get_tree_depth(node) > depth);
+
+	return node;
+}
+
+/* Internal data structure for isl_schedule_node_foreach_descendant.
+ *
+ * "fn" is the user-specified callback function.
+ * "user" is the user-specified argument for the callback.
+ */
+struct isl_schedule_node_preorder_data {
+	int (*fn)(__isl_keep isl_schedule_node *node, void *user);
+	void *user;
+};
+
+/* Callback for "traverse" to enter a node and to move
+ * to the deepest initial subtree that should be traversed
+ * for use in a preorder visit.
+ *
+ * If the user callback returns a negative value, then we abort
+ * the traversal.  If this callback returns zero, then we skip
+ * the subtree rooted at the current node.  Otherwise, we move
+ * down to the first child and repeat the process until a leaf
+ * is reached.
+ */
+static __isl_give isl_schedule_node *preorder_enter(
+	__isl_take isl_schedule_node *node, void *user)
+{
+	struct isl_schedule_node_preorder_data *data = user;
+
+	if (!node)
+		return NULL;
+
+	do {
+		int r;
+
+		r = data->fn(node, data->user);
+		if (r < 0)
+			return isl_schedule_node_free(node);
+		if (r == 0)
+			return node;
+	} while (isl_schedule_node_has_children(node) &&
+		(node = isl_schedule_node_first_child(node)) != NULL);
+
+	return node;
+}
+
+/* Callback for "traverse" to leave a node
+ * for use in a preorder visit.
+ * Since we already visited the node when we entered it,
+ * we do not need to do anything here.
+ */
+static __isl_give isl_schedule_node *preorder_leave(
+	__isl_take isl_schedule_node *node, void *user)
+{
+	return node;
+}
+
+/* Traverse the descendants of "node" (including the node itself)
+ * in depth first preorder.
+ *
+ * If "fn" returns -1 on any of the nodes, then the traversal is aborted.
+ * If "fn" returns 0 on any of the nodes, then the subtree rooted
+ * at that node is skipped.
+ *
+ * Return 0 on success and -1 on failure.
+ */
+int isl_schedule_node_foreach_descendant(__isl_keep isl_schedule_node *node,
+	int (*fn)(__isl_keep isl_schedule_node *node, void *user), void *user)
+{
+	struct isl_schedule_node_preorder_data data = { fn, user };
+
+	node = isl_schedule_node_copy(node);
+	node = traverse(node, &preorder_enter, &preorder_leave, &data);
+	isl_schedule_node_free(node);
+
+	return node ? 0 : -1;
+}
+
 /* Return the number of members in the given band node.
  */
 unsigned isl_schedule_node_band_n_member(__isl_keep isl_schedule_node *node)
