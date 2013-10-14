@@ -2174,6 +2174,80 @@ int isl_union_set_is_strict_subset(__isl_keep isl_union_set *uset1,
 	return isl_union_map_is_strict_subset(uset1, uset2);
 }
 
+/* Internal data structure for isl_union_map_is_disjoint.
+ * umap2 is the union map with which we are comparing.
+ * is_disjoint is initialized to 1 and is set to 0 as soon
+ * as the union maps turn out not to be disjoint.
+ */
+struct isl_union_map_is_disjoint_data {
+	isl_union_map *umap2;
+	int is_disjoint;
+};
+
+/* Check if "map" is disjoint from data->umap2 and abort
+ * the search if it is not.
+ */
+static int is_disjoint_entry(void **entry, void *user)
+{
+	struct isl_union_map_is_disjoint_data *data = user;
+	uint32_t hash;
+	struct isl_hash_table_entry *entry2;
+	isl_map *map = *entry;
+
+	hash = isl_space_get_hash(map->dim);
+	entry2 = isl_hash_table_find(data->umap2->dim->ctx, &data->umap2->table,
+				     hash, &has_dim, map->dim, 0);
+	if (!entry2)
+		return 0;
+
+	data->is_disjoint = isl_map_is_disjoint(map, entry2->data);
+	if (data->is_disjoint < 0 || !data->is_disjoint)
+		return -1;
+
+	return 0;
+}
+
+/* Are "umap1" and "umap2" disjoint?
+ */
+int isl_union_map_is_disjoint(__isl_keep isl_union_map *umap1,
+	__isl_keep isl_union_map *umap2)
+{
+	struct isl_union_map_is_disjoint_data data = { NULL, 1 };
+
+	umap1 = isl_union_map_copy(umap1);
+	umap2 = isl_union_map_copy(umap2);
+	umap1 = isl_union_map_align_params(umap1,
+						isl_union_map_get_space(umap2));
+	umap2 = isl_union_map_align_params(umap2,
+						isl_union_map_get_space(umap1));
+
+	if (!umap1 || !umap2)
+		goto error;
+
+	data.umap2 = umap2;
+	if (isl_hash_table_foreach(umap1->dim->ctx, &umap1->table,
+				   &is_disjoint_entry, &data) < 0 &&
+	    data.is_disjoint)
+		goto error;
+
+	isl_union_map_free(umap1);
+	isl_union_map_free(umap2);
+
+	return data.is_disjoint;
+error:
+	isl_union_map_free(umap1);
+	isl_union_map_free(umap2);
+	return -1;
+}
+
+/* Are "uset1" and "uset2" disjoint?
+ */
+int isl_union_set_is_disjoint(__isl_keep isl_union_set *uset1,
+	__isl_keep isl_union_set *uset2)
+{
+	return isl_union_map_is_disjoint(uset1, uset2);
+}
+
 static int sample_entry(void **entry, void *user)
 {
 	isl_basic_map **sample = (isl_basic_map **)user;

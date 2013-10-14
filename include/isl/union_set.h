@@ -94,6 +94,8 @@ int isl_union_set_is_subset(__isl_keep isl_union_set *uset1,
 __isl_export
 int isl_union_set_is_equal(__isl_keep isl_union_set *uset1,
 	__isl_keep isl_union_set *uset2);
+int isl_union_set_is_disjoint(__isl_keep isl_union_set *uset1,
+	__isl_keep isl_union_set *uset2);
 __isl_export
 int isl_union_set_is_strict_subset(__isl_keep isl_union_set *uset1,
 	__isl_keep isl_union_set *uset2);

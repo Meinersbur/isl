@@ -3555,6 +3555,7 @@ return true if the objects are not the same.
 
 =item * Disjointness
 
+	#include <isl/set.h>
 	int isl_basic_set_is_disjoint(
 		__isl_keep isl_basic_set *bset1,
 		__isl_keep isl_basic_set *bset2);
@@ -3562,11 +3563,23 @@ return true if the objects are not the same.
 		__isl_keep isl_set *set2);
 	int isl_set_is_disjoint(__isl_keep isl_set *set1,
 		__isl_keep isl_set *set2);
+
+	#include <isl/map.h>
 	int isl_basic_map_is_disjoint(
 		__isl_keep isl_basic_map *bmap1,
 		__isl_keep isl_basic_map *bmap2);
 	int isl_map_is_disjoint(__isl_keep isl_map *map1,
 		__isl_keep isl_map *map2);
+
+	#include <isl/union_set.h>
+	int isl_union_set_is_disjoint(
+		__isl_keep isl_union_set *uset1,
+		__isl_keep isl_union_set *uset2);
+
+	#include <isl/union_map.h>
+	int isl_union_map_is_disjoint(
+		__isl_keep isl_union_map *umap1,
+		__isl_keep isl_union_map *umap2);
 
 =item * Subset
 

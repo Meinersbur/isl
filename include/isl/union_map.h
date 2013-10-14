@@ -186,6 +186,8 @@ int isl_union_map_is_subset(__isl_keep isl_union_map *umap1,
 __isl_export
 int isl_union_map_is_equal(__isl_keep isl_union_map *umap1,
 	__isl_keep isl_union_map *umap2);
+int isl_union_map_is_disjoint(__isl_keep isl_union_map *umap1,
+	__isl_keep isl_union_map *umap2);
 __isl_export
 int isl_union_map_is_strict_subset(__isl_keep isl_union_map *umap1,
 	__isl_keep isl_union_map *umap2);
