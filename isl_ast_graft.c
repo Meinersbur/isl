@@ -161,7 +161,21 @@ static __isl_give isl_set *hoist_guard(__isl_take isl_set *guard,
  *
  * If all the grafts in the list have the same guard and if this guard
  * is independent of the current level, then it can be hoisted out.
+ * If there is only one graft in the list and if its guard
+ * depends on the current level, then we eliminate this level and
+ * return the result.
+ *
  * Otherwise, we return the unshifted simple hull of the guards.
+ * In order to be able to hoist as many constraints as possible,
+ * but at the same time avoid hoisting constraints that did not
+ * appear in the guards in the first place, we intersect the guards
+ * with all the information that is available (i.e., the domain
+ * from the build and the enforced constraints of the graft) and
+ * compute the unshifted hull of the result using only constraints
+ * from the original guards.
+ * In particular, intersecting the guards with other known information
+ * allows us to hoist guards that are only explicit is some of
+ * the grafts and implicit in the others.
  *
  * The special case for equal guards is needed in case those guards
  * are non-convex.  Taking the simple hull would remove information
@@ -171,9 +185,11 @@ static __isl_give isl_set *extract_hoistable_guard(
 	__isl_keep isl_ast_graft_list *list, __isl_keep isl_ast_build *build)
 {
 	int i, n;
-	isl_ast_graft *graft_0;
 	int equal;
+	isl_ctx *ctx;
 	isl_set *guard;
+	isl_set_list *set_list;
+	isl_basic_set *hull;
 
 	if (!list || !build)
 		return NULL;
@@ -186,39 +202,41 @@ static __isl_give isl_set *extract_hoistable_guard(
 	if (equal < 0)
 		return NULL;
 
-	graft_0 = isl_ast_graft_list_get_ast_graft(list, 0);
-	if (!graft_0)
-		return NULL;
-	guard = isl_set_copy(graft_0->guard);
-	isl_ast_graft_free(graft_0);
-	if (equal)
+	if (equal || n == 1) {
+		isl_ast_graft *graft_0;
+
+		graft_0 = isl_ast_graft_list_get_ast_graft(list, 0);
+		if (!graft_0)
+			return NULL;
+		guard = isl_set_copy(graft_0->guard);
+		if (!equal)
+			guard = hoist_guard(guard, build);
+		isl_ast_graft_free(graft_0);
 		return guard;
-
-	guard = hoist_guard(guard, build);
-
-	for (i = 1; i < n; ++i) {
-		isl_ast_graft *graft;
-		isl_basic_set *hull;
-		int is_universe;
-
-		is_universe = isl_set_plain_is_universe(guard);
-		if (is_universe < 0)
-			guard = isl_set_free(guard);
-		if (is_universe)
-			break;
-
-		graft = isl_ast_graft_list_get_ast_graft(list, i);
-		if (!graft) {
-			guard = isl_set_free(guard);
-			break;
-		}
-		guard = isl_set_union(guard, isl_set_copy(graft->guard));
-		hull = isl_set_unshifted_simple_hull(guard);
-		guard = isl_set_from_basic_set(hull);
-		isl_ast_graft_free(graft);
 	}
 
-	return guard;
+	ctx = isl_ast_build_get_ctx(build);
+	set_list = isl_set_list_alloc(ctx, n);
+	guard = isl_set_empty(isl_ast_build_get_space(build, 1));
+	for (i = 0; i < n; ++i) {
+		isl_ast_graft *graft;
+		isl_basic_set *enforced;
+		isl_set *guard_i;
+
+		graft = isl_ast_graft_list_get_ast_graft(list, i);
+		enforced = isl_ast_graft_get_enforced(graft);
+		guard_i = isl_set_copy(graft->guard);
+		isl_ast_graft_free(graft);
+		set_list = isl_set_list_add(set_list, isl_set_copy(guard_i));
+		guard_i = isl_set_intersect(guard_i,
+					    isl_set_from_basic_set(enforced));
+		guard_i = isl_set_intersect(guard_i,
+					    isl_ast_build_get_domain(build));
+		guard = isl_set_union(guard, guard_i);
+	}
+	hull = isl_set_unshifted_simple_hull_from_set_list(guard, set_list);
+	guard = isl_set_from_basic_set(hull);
+	return hoist_guard(guard, build);
 }
 
 /* Internal data structure used inside insert_if.
