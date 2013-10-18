@@ -89,6 +89,7 @@ __isl_give LIST(EL) *FN(LIST(EL),cow)(__isl_take LIST(EL) *list)
 }
 
 /* Make sure "list" has room for at least "n" more pieces.
+ * Always return a list with a single reference.
  *
  * If there is only one reference to list, we extend it in place.
  * Otherwise, we create a new LIST(EL) and copy the elements.
@@ -101,7 +102,7 @@ static __isl_give LIST(EL) *FN(LIST(EL),grow)(__isl_take LIST(EL) *list, int n)
 
 	if (!list)
 		return NULL;
-	if (list->n + n <= list->size)
+	if (list->ref == 1 && list->n + n <= list->size)
 		return list;
 
 	ctx = FN(LIST(EL),get_ctx)(list);
@@ -114,6 +115,9 @@ static __isl_give LIST(EL) *FN(LIST(EL),grow)(__isl_take LIST(EL) *list, int n)
 		res->size = new_size;
 		return res;
 	}
+
+	if (list->n + n <= list->size && list->size < new_size)
+		new_size = list->size;
 
 	res = FN(LIST(EL),alloc)(ctx, new_size);
 	if (!res)
