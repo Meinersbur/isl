@@ -915,6 +915,64 @@ int isl_schedule_node_foreach_descendant(__isl_keep isl_schedule_node *node,
 	return node ? 0 : -1;
 }
 
+/* Internal data structure for isl_schedule_node_map_descendant.
+ *
+ * "fn" is the user-specified callback function.
+ * "user" is the user-specified argument for the callback.
+ */
+struct isl_schedule_node_postorder_data {
+	__isl_give isl_schedule_node *(*fn)(__isl_take isl_schedule_node *node,
+		void *user);
+	void *user;
+};
+
+/* Callback for "traverse" to enter a node and to move
+ * to the deepest initial subtree that should be traversed
+ * for use in a postorder visit.
+ *
+ * Since we are performing a postorder visit, we only need
+ * to move to the deepest initial leaf here.
+ */
+static __isl_give isl_schedule_node *postorder_enter(
+	__isl_take isl_schedule_node *node, void *user)
+{
+	while (node && isl_schedule_node_has_children(node))
+		node = isl_schedule_node_first_child(node);
+
+	return node;
+}
+
+/* Callback for "traverse" to leave a node
+ * for use in a postorder visit.
+ *
+ * Since we are performing a postorder visit, we need
+ * to call the user callback here.
+ */
+static __isl_give isl_schedule_node *postorder_leave(
+	__isl_take isl_schedule_node *node, void *user)
+{
+	struct isl_schedule_node_postorder_data *data = user;
+
+	return data->fn(node, data->user);
+}
+
+/* Traverse the descendants of "node" (including the node itself)
+ * in depth first postorder, allowing the user to modify the visited node.
+ * The traversal continues from the node returned by the callback function.
+ * It is the responsibility of the user to ensure that this does not
+ * lead to an infinite loop.  It is safest to always return a pointer
+ * to the same position (same ancestors and child positions) as the input node.
+ */
+__isl_give isl_schedule_node *isl_schedule_node_map_descendant(
+	__isl_take isl_schedule_node *node,
+	__isl_give isl_schedule_node *(*fn)(__isl_take isl_schedule_node *node,
+		void *user), void *user)
+{
+	struct isl_schedule_node_postorder_data data = { fn, user };
+
+	return traverse(node, &postorder_enter, &postorder_leave, &data);
+}
+
 /* Return the number of members in the given band node.
  */
 unsigned isl_schedule_node_band_n_member(__isl_keep isl_schedule_node *node)

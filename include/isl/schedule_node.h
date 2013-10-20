@@ -28,6 +28,10 @@ __isl_give isl_schedule *isl_schedule_node_get_schedule(
 
 int isl_schedule_node_foreach_descendant(__isl_keep isl_schedule_node *node,
 	int (*fn)(__isl_keep isl_schedule_node *node, void *user), void *user);
+__isl_give isl_schedule_node *isl_schedule_node_map_descendant(
+	__isl_take isl_schedule_node *node,
+	__isl_give isl_schedule_node *(*fn)(__isl_take isl_schedule_node *node,
+		void *user), void *user);
 
 int isl_schedule_node_get_tree_depth(__isl_keep isl_schedule_node *node);
 int isl_schedule_node_has_parent(__isl_keep isl_schedule_node *node);
