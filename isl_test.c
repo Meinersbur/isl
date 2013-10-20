@@ -3203,6 +3203,30 @@ int test_product(isl_ctx *ctx)
 	return 0;
 }
 
+/* Check that two sets are not considered disjoint just because
+ * they have a different set of (named) parameters.
+ */
+static int test_disjoint(isl_ctx *ctx)
+{
+	const char *str;
+	isl_set *set, *set2;
+	int disjoint;
+
+	str = "[n] -> { [[]->[]] }";
+	set = isl_set_read_from_str(ctx, str);
+	str = "{ [[]->[]] }";
+	set2 = isl_set_read_from_str(ctx, str);
+	disjoint = isl_set_is_disjoint(set, set2);
+	isl_set_free(set);
+	isl_set_free(set2);
+	if (disjoint < 0)
+		return -1;
+	if (disjoint)
+		isl_die(ctx, isl_error_unknown, "unexpected result", return -1);
+
+	return 0;
+}
+
 int test_equal(isl_ctx *ctx)
 {
 	const char *str;
@@ -4418,6 +4442,7 @@ struct {
 	{ "vertices", &test_vertices },
 	{ "fixed", &test_fixed },
 	{ "equal", &test_equal },
+	{ "disjoint", &test_disjoint },
 	{ "product", &test_product },
 	{ "dim_max", &test_dim_max },
 	{ "affine", &test_aff },
