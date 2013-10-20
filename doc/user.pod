@@ -7384,11 +7384,14 @@ exists.
 	isl_schedule_node_next_sibling(
 		__isl_take isl_schedule_node *node);
 
-It is also possible to query the position of the current node
+It is also possible to query the number of ancestors of a node,
+the position of the current node
 within the children of its parent or to obtain a copy of a given
 child without destroying the current node.
 
 	#include <isl/schedule_node.h>
+	int isl_schedule_node_get_tree_depth(
+		__isl_keep isl_schedule_node *node);
 	int isl_schedule_node_get_child_position(
 		__isl_keep isl_schedule_node *node);
 	__isl_give isl_schedule_node *isl_schedule_node_get_child(

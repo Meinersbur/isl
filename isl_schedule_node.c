@@ -524,6 +524,15 @@ __isl_give isl_union_map *isl_schedule_node_get_subtree_schedule_union_map(
 	return umap;
 }
 
+/* Return the number of ancestors of "node" in its schedule tree.
+ */
+int isl_schedule_node_get_tree_depth(__isl_keep isl_schedule_node *node)
+{
+	if (!node)
+		return -1;
+	return isl_schedule_tree_list_n_schedule_tree(node->ancestors);
+}
+
 /* Does "node" have a parent?
  *
  * That is, does it point to any node of the schedule other than the root?

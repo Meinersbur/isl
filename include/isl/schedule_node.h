@@ -26,6 +26,7 @@ enum isl_schedule_node_type isl_schedule_node_get_parent_type(
 __isl_give isl_schedule *isl_schedule_node_get_schedule(
 	__isl_keep isl_schedule_node *node);
 
+int isl_schedule_node_get_tree_depth(__isl_keep isl_schedule_node *node);
 int isl_schedule_node_has_parent(__isl_keep isl_schedule_node *node);
 int isl_schedule_node_has_children(__isl_keep isl_schedule_node *node);
 int isl_schedule_node_has_previous_sibling(__isl_keep isl_schedule_node *node);
