@@ -4088,6 +4088,76 @@ __isl_give isl_schedule_node *isl_schedule_node_graft_after(
 	return isl_schedule_node_graft_before_or_after(node, graft, 0);
 }
 
+/* Split the domain elements that reach "node" into those that satisfy
+ * "filter" and those that do not.  Arrange for the first subset to be
+ * executed after the second subset.
+ * Return a pointer to the tree corresponding to the second subset,
+ * except when this subset is empty in which case the original pointer
+ * is returned.
+ * If both subsets are non-empty, then a sequence node is introduced
+ * to impose the order.  If the grandparent of the original node was
+ * itself a sequence, then the original child is replaced by two children
+ * in this sequence instead.
+ * The children in the sequence are copies of the original subtree,
+ * simplified with respect to their filters.
+ */
+__isl_give isl_schedule_node *isl_schedule_node_order_after(
+	__isl_take isl_schedule_node *node, __isl_take isl_union_set *filter)
+{
+	enum isl_schedule_node_type ancestors[] =
+		{ isl_schedule_node_filter, isl_schedule_node_sequence };
+	isl_union_set *node_domain, *node_filter = NULL;
+	isl_schedule_node *node2;
+	isl_schedule_tree *tree1, *tree2;
+	int empty1, empty2;
+	int in_seq;
+
+	if (!node || !filter)
+		goto error;
+	if (check_insert(node) < 0)
+		goto error;
+
+	in_seq = has_ancestors(node, 2, ancestors);
+	if (in_seq < 0)
+		goto error;
+	if (in_seq)
+		node = isl_schedule_node_parent(node);
+	node_domain = isl_schedule_node_get_domain(node);
+	filter = isl_union_set_gist(filter, isl_union_set_copy(node_domain));
+	node_filter = isl_union_set_copy(node_domain);
+	node_filter = isl_union_set_subtract(node_filter,
+						isl_union_set_copy(filter));
+	node_filter = isl_union_set_gist(node_filter, node_domain);
+	empty1 = isl_union_set_is_empty(filter);
+	empty2 = isl_union_set_is_empty(node_filter);
+	if (empty1 < 0 || empty2 < 0)
+		goto error;
+	if (empty1 || empty2) {
+		isl_union_set_free(filter);
+		isl_union_set_free(node_filter);
+		return node;
+	}
+
+	node2 = isl_schedule_node_copy(node);
+	node = isl_schedule_node_gist(node, isl_union_set_copy(node_filter));
+	node2 = isl_schedule_node_gist(node2, isl_union_set_copy(filter));
+	tree1 = isl_schedule_node_get_tree(node);
+	tree2 = isl_schedule_node_get_tree(node2);
+	isl_schedule_node_free(node2);
+	tree1 = isl_schedule_tree_insert_filter(tree1, node_filter);
+	tree2 = isl_schedule_tree_insert_filter(tree2, filter);
+	tree1 = isl_schedule_tree_sequence_pair(tree1, tree2);
+
+	node = graft_or_splice(node, tree1, 0);
+
+	return node;
+error:
+	isl_schedule_node_free(node);
+	isl_union_set_free(filter);
+	isl_union_set_free(node_filter);
+	return NULL;
+}
+
 /* Reset the user pointer on all identifiers of parameters and tuples
  * in the schedule node "node".
  */
