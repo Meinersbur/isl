@@ -112,6 +112,9 @@ __isl_give isl_schedule_tree *isl_schedule_tree_from_children(
 __isl_give isl_schedule_tree *isl_schedule_tree_from_pair(
 	enum isl_schedule_node_type type, __isl_take isl_schedule_tree *tree1,
 	__isl_take isl_schedule_tree *tree2);
+__isl_give isl_schedule_tree *isl_schedule_tree_sequence_pair(
+	__isl_take isl_schedule_tree *tree1,
+	__isl_take isl_schedule_tree *tree2);
 
 int isl_schedule_tree_is_subtree_anchored(__isl_keep isl_schedule_tree *tree);
 
