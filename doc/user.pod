@@ -5603,6 +5603,10 @@ that map to the specified range.
 	isl_multi_union_pw_aff_apply_multi_aff(
 		__isl_take isl_multi_union_pw_aff *mupa,
 		__isl_take isl_multi_aff *ma);
+	__isl_give isl_multi_union_pw_aff *
+	isl_multi_union_pw_aff_apply_pw_multi_aff(
+		__isl_take isl_multi_union_pw_aff *mupa,
+		__isl_take isl_pw_multi_aff *pma);
 
 The result of C<isl_multi_union_pw_aff_apply_aff> is defined
 over the shared domain of the elements of the input.  The dimension is
@@ -5611,6 +5615,7 @@ The C<isl_multi_union_pw_aff> argument of
 C<isl_multi_union_pw_aff_apply_multi_aff> is allowed to be zero-dimensional,
 but only if the range of the C<isl_multi_aff> argument
 is also zero-dimensional.
+Similarly for C<isl_multi_union_pw_aff_apply_pw_multi_aff>.
 
 	#include <isl/polynomial.h>
 	__isl_give isl_pw_qpolynomial_fold *
