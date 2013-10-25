@@ -12291,6 +12291,18 @@ __isl_give isl_map *isl_map_preimage_domain_pw_multi_aff(
 	return isl_map_preimage_pw_multi_aff(map, isl_dim_in, pma);
 }
 
+/* Compute the preimage of the range of "map" under the function
+ * represented by "pma".
+ * In other words, plug in "pma" in the range of "map".
+ * The result is a map that lives in the same space as "map",
+ * except that range space has been replaced by the domain space of "pma".
+ */
+__isl_give isl_map *isl_map_preimage_range_pw_multi_aff(
+	__isl_take isl_map *map, __isl_take isl_pw_multi_aff *pma)
+{
+	return isl_map_preimage_pw_multi_aff(map, isl_dim_out, pma);
+}
+
 /* Compute the preimage of "map" under the function represented by "mpa".
  * In other words, plug in "mpa" in the domain or range of "map".
  * The result is a map that lives in the same space as "map",

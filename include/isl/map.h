@@ -356,6 +356,8 @@ __isl_give isl_map *isl_map_preimage_domain_multi_aff(__isl_take isl_map *map,
 	__isl_take isl_multi_aff *ma);
 __isl_give isl_map *isl_map_preimage_domain_pw_multi_aff(
 	__isl_take isl_map *map, __isl_take isl_pw_multi_aff *pma);
+__isl_give isl_map *isl_map_preimage_range_pw_multi_aff(
+	__isl_take isl_map *map, __isl_take isl_pw_multi_aff *pma);
 __isl_give isl_map *isl_map_preimage_domain_multi_pw_aff(
 	__isl_take isl_map *map, __isl_take isl_multi_pw_aff *mpa);
 __isl_give isl_basic_map *isl_basic_map_product(
