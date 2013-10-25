@@ -2557,9 +2557,9 @@ static int set_match(__isl_keep isl_map *map, __isl_keep isl_space *space)
 	return isl_space_tuple_match(map->dim, isl_dim_set, space, isl_dim_out);
 }
 
-/* Internal data structure for preimage_multi_aff.
+/* Internal data structure for preimage_pw_multi_aff.
  *
- * "ma" is the function under which the preimage should be taken.
+ * "pma" is the function under which the preimage should be taken.
  * "space" is the space of "ma".
  * "res" collects the results.
  * "fn" computes the preimage for a given map.
@@ -2567,16 +2567,16 @@ static int set_match(__isl_keep isl_map *map, __isl_keep isl_space *space)
  */
 struct isl_union_map_preimage_data {
 	isl_space *space;
-	isl_multi_aff *ma;
+	isl_pw_multi_aff *pma;
 	isl_union_map *res;
 	int (*match)(__isl_keep isl_map *map, __isl_keep isl_space *space);
 	__isl_give isl_map *(*fn)(__isl_take isl_map *map,
-		__isl_take isl_multi_aff *ma);
+		__isl_take isl_pw_multi_aff *pma);
 };
 
 /* Call data->fn to compute the preimage of the domain or range of *entry
- * under the function represented by data->ma, provided the domain/range
- * space of *entry matches the target space of data->ma
+ * under the function represented by data->pma, provided the domain/range
+ * space of *entry matches the target space of data->pma
  * (as given by data->match), and add the result to data->res.
  */
 static int preimage_entry(void **entry, void *user)
@@ -2593,7 +2593,7 @@ static int preimage_entry(void **entry, void *user)
 		return 0;
 
 	map = isl_map_copy(map);
-	map = data->fn(map, isl_multi_aff_copy(data->ma));
+	map = data->fn(map, isl_pw_multi_aff_copy(data->pma));
 
 	empty = isl_map_is_empty(map);
 	if (empty < 0 || empty) {
@@ -2607,31 +2607,32 @@ static int preimage_entry(void **entry, void *user)
 }
 
 /* Compute the preimage of the domain or range of "umap" under the function
- * represented by "ma".
- * In other words, plug in "ma" in the domain or range of "umap".
+ * represented by "pma".
+ * In other words, plug in "pma" in the domain or range of "umap".
  * The function "fn" performs the actual preimage computation on a map,
  * while "match" determines to which maps the function should be applied.
  */
-static __isl_give isl_union_map *preimage_multi_aff(
-	__isl_take isl_union_map *umap, __isl_take isl_multi_aff *ma,
+static __isl_give isl_union_map *preimage_pw_multi_aff(
+	__isl_take isl_union_map *umap, __isl_take isl_pw_multi_aff *pma,
 	int (*match)(__isl_keep isl_map *map, __isl_keep isl_space *space),
 	__isl_give isl_map *(*fn)(__isl_take isl_map *map,
-		__isl_take isl_multi_aff *ma))
+		__isl_take isl_pw_multi_aff *pma))
 {
 	isl_ctx *ctx;
 	isl_space *space;
 	struct isl_union_map_preimage_data data;
 
-	umap = isl_union_map_align_params(umap, isl_multi_aff_get_space(ma));
-	ma = isl_multi_aff_align_params(ma, isl_union_map_get_space(umap));
+	umap = isl_union_map_align_params(umap,
+					    isl_pw_multi_aff_get_space(pma));
+	pma = isl_pw_multi_aff_align_params(pma, isl_union_map_get_space(umap));
 
-	if (!umap || !ma)
+	if (!umap || !pma)
 		goto error;
 
 	ctx = isl_union_map_get_ctx(umap);
 	space = isl_union_map_get_space(umap);
-	data.space = isl_multi_aff_get_space(ma);
-	data.ma = ma;
+	data.space = isl_pw_multi_aff_get_space(pma);
+	data.pma = pma;
 	data.res = isl_union_map_alloc(space, umap->table.n);
 	data.match = match;
 	data.fn = fn;
@@ -2641,12 +2642,53 @@ static __isl_give isl_union_map *preimage_multi_aff(
 
 	isl_space_free(data.space);
 	isl_union_map_free(umap);
-	isl_multi_aff_free(ma);
+	isl_pw_multi_aff_free(pma);
 	return data.res;
 error:
 	isl_union_map_free(umap);
-	isl_multi_aff_free(ma);
+	isl_pw_multi_aff_free(pma);
 	return NULL;
+}
+
+/* Compute the preimage of the domain of "umap" under the function
+ * represented by "pma".
+ * In other words, plug in "pma" in the domain of "umap".
+ * The result contains maps that live in the same spaces as the maps of "umap"
+ * with domain space equal to the target space of "pma",
+ * except that the domain has been replaced by the domain space of "pma".
+ */
+__isl_give isl_union_map *isl_union_map_preimage_domain_pw_multi_aff(
+	__isl_take isl_union_map *umap, __isl_take isl_pw_multi_aff *pma)
+{
+	return preimage_pw_multi_aff(umap, pma, &domain_match,
+					&isl_map_preimage_domain_pw_multi_aff);
+}
+
+/* Compute the preimage of the range of "umap" under the function
+ * represented by "pma".
+ * In other words, plug in "pma" in the range of "umap".
+ * The result contains maps that live in the same spaces as the maps of "umap"
+ * with range space equal to the target space of "pma",
+ * except that the range has been replaced by the domain space of "pma".
+ */
+__isl_give isl_union_map *isl_union_map_preimage_range_pw_multi_aff(
+	__isl_take isl_union_map *umap, __isl_take isl_pw_multi_aff *pma)
+{
+	return preimage_pw_multi_aff(umap, pma, &range_match,
+					&isl_map_preimage_range_pw_multi_aff);
+}
+
+/* Compute the preimage of "uset" under the function represented by "pma".
+ * In other words, plug in "pma" in "uset".
+ * The result contains sets that live in the same spaces as the sets of "uset"
+ * with space equal to the target space of "pma",
+ * except that the space has been replaced by the domain space of "pma".
+ */
+__isl_give isl_union_set *isl_union_set_preimage_pw_multi_aff(
+	__isl_take isl_union_set *uset, __isl_take isl_pw_multi_aff *pma)
+{
+	return preimage_pw_multi_aff(uset, pma, &set_match,
+					&isl_set_preimage_pw_multi_aff);
 }
 
 /* Compute the preimage of the domain of "umap" under the function
@@ -2659,8 +2701,8 @@ error:
 __isl_give isl_union_map *isl_union_map_preimage_domain_multi_aff(
 	__isl_take isl_union_map *umap, __isl_take isl_multi_aff *ma)
 {
-	return preimage_multi_aff(umap, ma, &domain_match,
-					&isl_map_preimage_domain_multi_aff);
+	return isl_union_map_preimage_domain_pw_multi_aff(umap,
+					isl_pw_multi_aff_from_multi_aff(ma));
 }
 
 /* Compute the preimage of the range of "umap" under the function
@@ -2673,8 +2715,8 @@ __isl_give isl_union_map *isl_union_map_preimage_domain_multi_aff(
 __isl_give isl_union_map *isl_union_map_preimage_range_multi_aff(
 	__isl_take isl_union_map *umap, __isl_take isl_multi_aff *ma)
 {
-	return preimage_multi_aff(umap, ma, &range_match,
-					&isl_map_preimage_range_multi_aff);
+	return isl_union_map_preimage_range_pw_multi_aff(umap,
+					isl_pw_multi_aff_from_multi_aff(ma));
 }
 
 /* Compute the preimage of "uset" under the function represented by "ma".
@@ -2686,6 +2728,6 @@ __isl_give isl_union_map *isl_union_map_preimage_range_multi_aff(
 __isl_give isl_union_map *isl_union_set_preimage_multi_aff(
 	__isl_take isl_union_set *uset, __isl_take isl_multi_aff *ma)
 {
-	return preimage_multi_aff(uset, ma, &set_match,
-					&isl_set_preimage_multi_aff);
+	return isl_union_set_preimage_pw_multi_aff(uset,
+					isl_pw_multi_aff_from_multi_aff(ma));
 }

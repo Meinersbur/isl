@@ -72,6 +72,8 @@ __isl_give isl_union_set *isl_union_set_apply(
 	__isl_take isl_union_set *uset, __isl_take isl_union_map *umap);
 __isl_give isl_union_set *isl_union_set_preimage_multi_aff(
 	__isl_take isl_union_set *uset, __isl_take isl_multi_aff *ma);
+__isl_give isl_union_set *isl_union_set_preimage_pw_multi_aff(
+	__isl_take isl_union_set *uset, __isl_take isl_pw_multi_aff *pma);
 
 int isl_union_set_is_params(__isl_keep isl_union_set *uset);
 __isl_export
