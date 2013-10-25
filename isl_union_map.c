@@ -2731,3 +2731,105 @@ __isl_give isl_union_map *isl_union_set_preimage_multi_aff(
 	return isl_union_set_preimage_pw_multi_aff(uset,
 					isl_pw_multi_aff_from_multi_aff(ma));
 }
+
+/* Internal data structure for preimage_upma.
+ *
+ * "umap" is the map of which the preimage should be computed.
+ * "res" collects the results.
+ * "fn" computes the preimage for a given piecewise multi-affine function.
+ */
+struct isl_union_map_preimage_upma_data {
+	isl_union_map *umap;
+	isl_union_map *res;
+	__isl_give isl_union_map *(*fn)(__isl_take isl_union_map *umap,
+		__isl_take isl_pw_multi_aff *pma);
+};
+
+/* Call data->fn to compute the preimage of the domain or range of data->umap
+ * under the function represented by pma and add the result to data->res.
+ */
+static int preimage_upma(__isl_take isl_pw_multi_aff *pma, void *user)
+{
+	struct isl_union_map_preimage_upma_data *data = user;
+	isl_union_map *umap;
+
+	umap = isl_union_map_copy(data->umap);
+	umap = data->fn(umap, pma);
+	data->res = isl_union_map_union(data->res, umap);
+
+	return data->res ? 0 : -1;
+}
+
+/* Compute the preimage of the domain or range of "umap" under the function
+ * represented by "upma".
+ * In other words, plug in "upma" in the domain or range of "umap".
+ * The function "fn" performs the actual preimage computation
+ * on a piecewise multi-affine function.
+ */
+static __isl_give isl_union_map *preimage_union_pw_multi_aff(
+	__isl_take isl_union_map *umap,
+	__isl_take isl_union_pw_multi_aff *upma,
+	__isl_give isl_union_map *(*fn)(__isl_take isl_union_map *umap,
+		__isl_take isl_pw_multi_aff *pma))
+{
+	struct isl_union_map_preimage_upma_data data;
+
+	data.umap = umap;
+	data.res = isl_union_map_empty(isl_union_map_get_space(umap));
+	data.fn = fn;
+	if (isl_union_pw_multi_aff_foreach_pw_multi_aff(upma,
+						    &preimage_upma, &data) < 0)
+		data.res = isl_union_map_free(data.res);
+
+	isl_union_map_free(umap);
+	isl_union_pw_multi_aff_free(upma);
+
+	return data.res;
+}
+
+/* Compute the preimage of the domain of "umap" under the function
+ * represented by "upma".
+ * In other words, plug in "upma" in the domain of "umap".
+ * The result contains maps that live in the same spaces as the maps of "umap"
+ * with domain space equal to one of the target spaces of "upma",
+ * except that the domain has been replaced by one of the the domain spaces that
+ * corresponds to that target space of "upma".
+ */
+__isl_give isl_union_map *isl_union_map_preimage_domain_union_pw_multi_aff(
+	__isl_take isl_union_map *umap,
+	__isl_take isl_union_pw_multi_aff *upma)
+{
+	return preimage_union_pw_multi_aff(umap, upma,
+				&isl_union_map_preimage_domain_pw_multi_aff);
+}
+
+/* Compute the preimage of the range of "umap" under the function
+ * represented by "upma".
+ * In other words, plug in "upma" in the range of "umap".
+ * The result contains maps that live in the same spaces as the maps of "umap"
+ * with range space equal to one of the target spaces of "upma",
+ * except that the range has been replaced by one of the the domain spaces that
+ * corresponds to that target space of "upma".
+ */
+__isl_give isl_union_map *isl_union_map_preimage_range_union_pw_multi_aff(
+	__isl_take isl_union_map *umap,
+	__isl_take isl_union_pw_multi_aff *upma)
+{
+	return preimage_union_pw_multi_aff(umap, upma,
+				&isl_union_map_preimage_range_pw_multi_aff);
+}
+
+/* Compute the preimage of "uset" under the function represented by "upma".
+ * In other words, plug in "upma" in the range of "uset".
+ * The result contains sets that live in the same spaces as the sets of "uset"
+ * with space equal to one of the target spaces of "upma",
+ * except that the space has been replaced by one of the the domain spaces that
+ * corresponds to that target space of "upma".
+ */
+__isl_give isl_union_set *isl_union_set_preimage_union_pw_multi_aff(
+	__isl_take isl_union_set *uset,
+	__isl_take isl_union_pw_multi_aff *upma)
+{
+	return preimage_union_pw_multi_aff(uset, upma,
+					&isl_union_set_preimage_pw_multi_aff);
+}

@@ -3085,6 +3085,10 @@ a parametric set as well.
 	isl_union_set_preimage_pw_multi_aff(
 		__isl_take isl_union_set *uset,
 		__isl_take isl_pw_multi_aff *pma);
+	__isl_give isl_union_set *
+	isl_union_set_preimage_union_pw_multi_aff(
+		__isl_take isl_union_set *uset,
+		__isl_take isl_union_pw_multi_aff *upma);
 
 	#include <isl/map.h>
 	__isl_give isl_basic_map *
@@ -3131,6 +3135,14 @@ a parametric set as well.
 	isl_union_map_preimage_range_pw_multi_aff(
 		__isl_take isl_union_map *umap,
 		__isl_take isl_pw_multi_aff *pma);
+	__isl_give isl_union_map *
+	isl_union_map_preimage_domain_union_pw_multi_aff(
+		__isl_take isl_union_map *umap,
+		__isl_take isl_union_pw_multi_aff *upma);
+	__isl_give isl_union_map *
+	isl_union_map_preimage_range_union_pw_multi_aff(
+		__isl_take isl_union_map *umap,
+		__isl_take isl_union_pw_multi_aff *upma);
 
 These functions compute the preimage of the given set or map domain/range under
 the given function.  In other words, the expression is plugged
