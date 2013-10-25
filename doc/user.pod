@@ -5403,6 +5403,9 @@ the same (number of) parameters.
 	isl_multi_union_pw_aff_intersect_params(
 		__isl_take isl_multi_union_pw_aff *mupa,
 		__isl_take isl_set *params);
+	isl_multi_union_pw_aff_intersect_range(
+		__isl_take isl_multi_union_pw_aff *mupa,
+		__isl_take isl_set *set);
 
 	#include <isl/polynomial.h>
 	__isl_give isl_pw_qpolynomial *
@@ -5440,6 +5443,9 @@ for either argument is only allowed if the other argument is
 a parametric set as well.
 The list passed to C<isl_basic_set_list_intersect> needs to have
 at least one element and all elements need to live in the same space.
+The function C<isl_multi_union_pw_aff_intersect_range>
+restricts the input function to those shared domain elements
+that map to the specified range.
 
 =item * Union
 
