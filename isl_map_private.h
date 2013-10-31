@@ -15,7 +15,6 @@
 #define isl_basic_set_list	isl_basic_map_list
 #define isl_set_list	isl_map_list
 #include <isl/list.h>
-ISL_DECLARE_LIST(basic_map)
 ISL_DECLARE_LIST(map)
 #include <isl/set.h>
 #include <isl/map.h>

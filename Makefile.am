@@ -107,6 +107,7 @@ libisl_la_SOURCES = \
 	isl_lp.c \
 	isl_lp_private.h \
 	isl_map.c \
+	isl_map_list.c \
 	isl_map_simplify.c \
 	isl_map_subtract.c \
 	isl_map_private.h \
