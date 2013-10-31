@@ -576,6 +576,24 @@ static __isl_give isl_printer *print_disjunct(__isl_keep isl_basic_map *bmap,
 	return p;
 }
 
+/* Print a colon followed by the constraints of "bmap"
+ * to "p", provided there are any constraints.
+ * The names of the variables are taken from "space".
+ * "latex" is set if the constraints should be printed in LaTeX format.
+ */
+static __isl_give isl_printer *print_optional_disjunct(
+	__isl_keep isl_basic_map *bmap, __isl_keep isl_space *space,
+	__isl_take isl_printer *p, int latex)
+{
+	if (isl_basic_map_is_universe(bmap))
+		return p;
+
+	p = isl_printer_print_str(p, ": ");
+	p = print_disjunct(bmap, space, p, latex);
+
+	return p;
+}
+
 static __isl_give isl_printer *basic_map_print_omega(
 	__isl_keep isl_basic_map *bmap, __isl_take isl_printer *p)
 {
@@ -584,8 +602,7 @@ static __isl_give isl_printer *basic_map_print_omega(
 	p = isl_printer_print_str(p, "] -> [");
 	p = print_var_list(p, bmap->dim, isl_dim_out);
 	p = isl_printer_print_str(p, "] ");
-	p = isl_printer_print_str(p, ": ");
-	p = print_disjunct(bmap, bmap->dim, p, 0);
+	p = print_optional_disjunct(bmap, bmap->dim, p, 0);
 	p = isl_printer_print_str(p, " }");
 	return p;
 }
@@ -596,8 +613,7 @@ static __isl_give isl_printer *basic_set_print_omega(
 	p = isl_printer_print_str(p, "{ [");
 	p = print_var_list(p, bset->dim, isl_dim_set);
 	p = isl_printer_print_str(p, "] ");
-	p = isl_printer_print_str(p, ": ");
-	p = print_disjunct(bset, bset->dim, p, 0);
+	p = print_optional_disjunct(bset, bset->dim, p, 0);
 	p = isl_printer_print_str(p, " }");
 	return p;
 }
