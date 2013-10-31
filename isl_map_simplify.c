@@ -1,6 +1,6 @@
 /*
  * Copyright 2008-2009 Katholieke Universiteit Leuven
- * Copyright 2012      Ecole Normale Superieure
+ * Copyright 2012-2013 Ecole Normale Superieure
  * Copyright 2014      INRIA Rocquencourt
  *
  * Use of this software is governed by the MIT license
@@ -2421,6 +2421,19 @@ __isl_give isl_set *isl_set_gist(__isl_take isl_set *set,
 {
 	return (struct isl_set *)isl_map_gist((struct isl_map *)set,
 					(struct isl_map *)context);
+}
+
+/* Compute the gist of "bmap" with respect to the constraints "context"
+ * on the domain.
+ */
+__isl_give isl_basic_map *isl_basic_map_gist_domain(
+	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *context)
+{
+	isl_space *space = isl_basic_map_get_space(bmap);
+	isl_basic_map *bmap_context = isl_basic_map_universe(space);
+
+	bmap_context = isl_basic_map_intersect_domain(bmap_context, context);
+	return isl_basic_map_gist(bmap, bmap_context);
 }
 
 __isl_give isl_map *isl_map_gist_domain(__isl_take isl_map *map,
