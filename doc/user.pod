@@ -4334,7 +4334,11 @@ and the C<isl_map> is single-valued.
 In case of a conversion from an C<isl_union_map>
 to an C<isl_union_pw_multi_aff>, these properties need to hold
 in each domain space.
+A conversion to a C<isl_multi_union_pw_aff> additionally
+requires that the input is non-empty and involves only a single
+range space.
 
+	#include <isl/aff.h>
 	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_set(
 		__isl_take isl_set *set);
 	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_map(
@@ -4345,6 +4349,10 @@ in each domain space.
 		__isl_take isl_union_set *uset);
 	__isl_give isl_union_pw_multi_aff *
 	isl_union_pw_multi_aff_from_union_map(
+		__isl_take isl_union_map *umap);
+
+	__isl_give isl_multi_union_pw_aff *
+	isl_multi_union_pw_aff_from_union_map(
 		__isl_take isl_union_map *umap);
 
 =item * Deltas

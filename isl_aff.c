@@ -7646,3 +7646,18 @@ error:
 	isl_union_pw_multi_aff_free(upma);
 	return NULL;
 }
+
+/* Try and create an isl_multi_union_pw_aff that is equivalent
+ * to the given isl_union_map.
+ * The isl_union_map is required to be single-valued in each space.
+ * Moreover, it cannot be empty and all range spaces need to be the same.
+ * Otherwise, an error is produced.
+ */
+__isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_from_union_map(
+	__isl_take isl_union_map *umap)
+{
+	isl_union_pw_multi_aff *upma;
+
+	upma = isl_union_pw_multi_aff_from_union_map(umap);
+	return isl_multi_union_pw_aff_from_union_pw_multi_aff(upma);
+}
