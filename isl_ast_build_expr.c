@@ -1137,6 +1137,16 @@ static int cmp_constraint(__isl_keep isl_constraint *a,
  * Otherwise, we sort the constraints, putting constraints that involve
  * integer divisions after those that do not, and construct an "and"
  * of the ast expressions of the individual constraints.
+ *
+ * Each constraint is added to the generated constraints of the build
+ * after it has been converted to an AST expression so that it can be used
+ * to simplify the following constraints.  This may change the truth value
+ * of subsequent constraints that do not satisfy the earlier constraints,
+ * but this does not affect the outcome of the conjunction as it is
+ * only true if all the conjuncts are true (no matter in what order
+ * they are evaluated).  In particular, the constraints that do not
+ * involve integer divisions may serve to simplify some constraints
+ * that do involve integer divisions.
  */
 __isl_give isl_ast_expr *isl_ast_build_expr_from_basic_set(
 	 __isl_keep isl_ast_build *build, __isl_take isl_basic_set *bset)
@@ -1145,6 +1155,7 @@ __isl_give isl_ast_expr *isl_ast_build_expr_from_basic_set(
 	isl_constraint *c;
 	isl_constraint_list *list;
 	isl_ast_expr *res;
+	isl_set *set;
 
 	list = isl_basic_set_get_constraint_list(bset);
 	isl_basic_set_free(bset);
@@ -1158,17 +1169,27 @@ __isl_give isl_ast_expr *isl_ast_build_expr_from_basic_set(
 		return isl_ast_expr_alloc_int_si(ctx, 1);
 	}
 
+	build = isl_ast_build_copy(build);
+
 	c = isl_constraint_list_get_constraint(list, 0);
+	bset = isl_basic_set_from_constraint(isl_constraint_copy(c));
+	set = isl_set_from_basic_set(bset);
 	res = isl_ast_expr_from_constraint(c, build);
+	build = isl_ast_build_restrict_generated(build, set);
+
 	for (i = 1; i < n; ++i) {
 		isl_ast_expr *expr;
 
 		c = isl_constraint_list_get_constraint(list, i);
+		bset = isl_basic_set_from_constraint(isl_constraint_copy(c));
+		set = isl_set_from_basic_set(bset);
 		expr = isl_ast_expr_from_constraint(c, build);
+		build = isl_ast_build_restrict_generated(build, set);
 		res = isl_ast_expr_and(res, expr);
 	}
 
 	isl_constraint_list_free(list);
+	isl_ast_build_free(build);
 	return res;
 }
 
