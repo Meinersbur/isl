@@ -98,7 +98,7 @@ static __isl_give isl_id *generate_name(isl_ctx *ctx, int i,
  *
  * The input set is usually a parameter domain, but we currently allow it to
  * be any kind of set.  We set the domain of the returned isl_ast_build
- * to "set" and initialize all the other field to default values.
+ * to "set" and initialize all the other fields to default values.
  */
 __isl_give isl_ast_build *isl_ast_build_from_context(__isl_take isl_set *set)
 {
