@@ -1112,63 +1112,46 @@ static __isl_give isl_ast_expr *isl_ast_expr_from_constraint(
 	return expr;
 }
 
-struct isl_expr_from_basic_data {
-	isl_ast_build *build;
-	int first;
-	isl_ast_expr *res;
-};
-
-/* Construct an isl_ast_expr that evaluates the condition "c",
- * except if it is a div constraint, and add it to the data->res.
- * The result is simplified in terms of data->build->domain.
- */
-static int expr_from_basic_set(__isl_take isl_constraint *c, void *user)
-{
-	struct isl_expr_from_basic_data *data = user;
-	isl_ast_expr *expr;
-
-	if (isl_constraint_is_div_constraint(c)) {
-		isl_constraint_free(c);
-		return 0;
-	}
-
-	expr = isl_ast_expr_from_constraint(c, data->build);
-	if (data->first)
-		data->res = expr;
-	else
-		data->res = isl_ast_expr_and(data->res, expr);
-
-	data->first = 0;
-
-	if (!data->res)
-		return -1;
-	return 0;
-}
-
 /* Construct an isl_ast_expr that evaluates the conditions defining "bset".
  * The result is simplified in terms of build->domain.
  *
- * We filter out the div constraints during printing, so we do not know
- * in advance how many constraints are going to be printed.
- *
- * If it turns out that there was no constraint, then we contruct
+ * If "bset" is not bounded by any constraint, then we contruct
  * the expression "1", i.e., "true".
+ *
+ * Otherwise, we construct an "and" of the ast expressions of the
+ * individual constraints.
  */
 __isl_give isl_ast_expr *isl_ast_build_expr_from_basic_set(
 	 __isl_keep isl_ast_build *build, __isl_take isl_basic_set *bset)
 {
-	struct isl_expr_from_basic_data data = { build, 1, NULL };
+	int i, n;
+	isl_constraint *c;
+	isl_constraint_list *list;
+	isl_ast_expr *res;
 
-	if (isl_basic_set_foreach_constraint(bset,
-					    &expr_from_basic_set, &data) < 0) {
-		data.res = isl_ast_expr_free(data.res);
-	} else if (data.res == NULL) {
+	list = isl_basic_set_get_constraint_list(bset);
+	isl_basic_set_free(bset);
+	if (!list)
+		return NULL;
+	n = isl_constraint_list_n_constraint(list);
+	if (n == 0) {
 		isl_ctx *ctx = isl_basic_set_get_ctx(bset);
-		data.res = isl_ast_expr_alloc_int_si(ctx, 1);
+		isl_constraint_list_free(list);
+		return isl_ast_expr_alloc_int_si(ctx, 1);
 	}
 
-	isl_basic_set_free(bset);
-	return data.res;
+	c = isl_constraint_list_get_constraint(list, 0);
+	res = isl_ast_expr_from_constraint(c, build);
+	for (i = 1; i < n; ++i) {
+		isl_ast_expr *expr;
+
+		c = isl_constraint_list_get_constraint(list, i);
+		expr = isl_ast_expr_from_constraint(c, build);
+		res = isl_ast_expr_and(res, expr);
+	}
+
+	isl_constraint_list_free(list);
+	return res;
 }
 
 struct isl_expr_from_set_data {
