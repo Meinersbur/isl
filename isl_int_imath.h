@@ -59,6 +59,7 @@ typedef mp_int isl_int;
 #define isl_int_le(i,j)		(impz_cmp(i,j) <= 0)
 #define isl_int_gt(i,j)		(impz_cmp(i,j) > 0)
 #define isl_int_ge(i,j)		(impz_cmp(i,j) >= 0)
+#define isl_int_abs_cmp(i,j)	impz_cmpabs(i,j)
 #define isl_int_abs_eq(i,j)	(impz_cmpabs(i,j) == 0)
 #define isl_int_abs_ne(i,j)	(impz_cmpabs(i,j) != 0)
 #define isl_int_abs_lt(i,j)	(impz_cmpabs(i,j) < 0)
