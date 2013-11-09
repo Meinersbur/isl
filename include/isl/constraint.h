@@ -132,6 +132,8 @@ __isl_give isl_basic_set *isl_basic_set_drop_constraint(
 
 int isl_constraint_plain_cmp(__isl_keep isl_constraint *c1,
 	__isl_keep isl_constraint *c2);
+int isl_constraint_cmp_last_non_zero(__isl_keep isl_constraint *c1,
+	__isl_keep isl_constraint *c2);
 
 __isl_give isl_printer *isl_printer_print_constraint(__isl_take isl_printer *p,
 	__isl_keep isl_constraint *c);

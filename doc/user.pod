@@ -2219,6 +2219,17 @@ The order is fixed over different calls to the function (assuming
 the internal representation of the inputs has not changed), but may
 change over different versions of C<isl>.
 
+	#include <isl/constraint.h>
+	int isl_constraint_cmp_last_non_zero(
+		__isl_keep isl_constraint *c1,
+		__isl_keep isl_constraint *c2);
+
+This function can be used to sort constraints that live in the same
+local space.  Constraints that involve ``earlier'' dimensions or
+that have a smaller coefficient for the shared latest dimension
+are considered smaller than other constraints.
+This function only defines a B<partial> order.
+
 	#include <isl/set.h>
 	int isl_set_plain_cmp(__isl_keep isl_set *set1,
 		__isl_keep isl_set *set2);

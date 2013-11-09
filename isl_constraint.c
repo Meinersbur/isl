@@ -1387,3 +1387,39 @@ int isl_constraint_plain_cmp(__isl_keep isl_constraint *c1,
 
 	return isl_seq_cmp(c1->v->el, c2->v->el, c1->v->size);
 }
+
+/* Compare two constraints based on their final (non-zero) coefficients.
+ * In particular, the constraint that involves later variables or
+ * that has a larger coefficient for a shared latest variable
+ * is considered "greater" than the other constraint.
+ *
+ * Return -1 if "c1" is "smaller" than "c2", 1 if "c1" is "greater"
+ * than "c2" and 0 if they are equal.
+ *
+ * If the constraints live in different local spaces, then we cannot
+ * really compare the constraints so we compare the local spaces instead.
+ */
+int isl_constraint_cmp_last_non_zero(__isl_keep isl_constraint *c1,
+	__isl_keep isl_constraint *c2)
+{
+	int cmp;
+	int last1, last2;
+
+	if (c1 == c2)
+		return 0;
+	if (!c1)
+		return -1;
+	if (!c2)
+		return 1;
+	cmp = isl_local_space_cmp(c1->ls, c2->ls);
+	if (cmp != 0)
+		return cmp;
+
+	last1 = isl_seq_last_non_zero(c1->v->el + 1, c1->v->size - 1);
+	last2 = isl_seq_last_non_zero(c2->v->el + 1, c1->v->size - 1);
+	if (last1 != last2)
+		return last1 - last2;
+	if (last1 == -1)
+		return 0;
+	return isl_int_abs_cmp(c1->v->el[1 + last1], c2->v->el[1 + last2]);
+}
