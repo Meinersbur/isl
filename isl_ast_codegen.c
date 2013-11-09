@@ -1316,7 +1316,7 @@ static __isl_give isl_ast_node *create_for(__isl_keep isl_ast_build *build,
  * a single affine expression.
  * In the first case, the current level is considered "degenerate".
  * In the second, sub-case, the current level is considered "eliminated".
- * Eliminated level don't need to be reflected in the AST since we can
+ * Eliminated levels don't need to be reflected in the AST since we can
  * simply plug in the affine expression.  For degenerate, but non-eliminated,
  * levels, we do introduce a for node, but mark is as degenerate so that
  * it can be printed as an assignment of the single value to the loop
@@ -1503,7 +1503,7 @@ static int map_check_scaled(__isl_take isl_map *map, void *user)
  *
  *	f + s a
  *
- * with a an integer.  We check if we can find an integer m that (obviouly)
+ * with a an integer.  We check if we can find an integer m that (obviously)
  * divides both f and s.
  *
  * If so, we check if the current dimension only appears in constraints
@@ -3607,8 +3607,8 @@ static __isl_give isl_union_map *internal_executed(
 }
 
 /* Generate an AST that visits the elements in the range of data->executed
- * in the relative order specified by the corresponding image element(s)
- * for those image elements that belong to "set".
+ * in the relative order specified by the corresponding domain element(s)
+ * for those domain elements that belong to "set".
  * Add the result to data->list.
  *
  * The caller ensures that "set" is a universe domain.
