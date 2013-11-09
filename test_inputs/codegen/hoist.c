@@ -1,4 +1,4 @@
-if (nj >= t1 + 1 && ni >= t0 + 1)
+if (ni >= t0 + 1 && nj >= t1 + 1)
   for (int c2 = 0; c2 <= min(15, nk - 1); c2 += 1) {
     S_1(t0, t1, c2);
     if (nj >= t1 + 17) {

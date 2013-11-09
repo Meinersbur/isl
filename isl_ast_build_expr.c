@@ -1112,14 +1112,31 @@ static __isl_give isl_ast_expr *isl_ast_expr_from_constraint(
 	return expr;
 }
 
+/* Wrapper around isl_constraint_cmp_last_non_zero for use
+ * as a callback to isl_constraint_list_sort.
+ * If isl_constraint_cmp_last_non_zero cannot tell the constraints
+ * apart, then use isl_constraint_plain_cmp instead.
+ */
+static int cmp_constraint(__isl_keep isl_constraint *a,
+	__isl_keep isl_constraint *b, void *user)
+{
+	int cmp;
+
+	cmp = isl_constraint_cmp_last_non_zero(a, b);
+	if (cmp != 0)
+		return cmp;
+	return isl_constraint_plain_cmp(a, b);
+}
+
 /* Construct an isl_ast_expr that evaluates the conditions defining "bset".
  * The result is simplified in terms of build->domain.
  *
  * If "bset" is not bounded by any constraint, then we contruct
  * the expression "1", i.e., "true".
  *
- * Otherwise, we construct an "and" of the ast expressions of the
- * individual constraints.
+ * Otherwise, we sort the constraints, putting constraints that involve
+ * integer divisions after those that do not, and construct an "and"
+ * of the ast expressions of the individual constraints.
  */
 __isl_give isl_ast_expr *isl_ast_build_expr_from_basic_set(
 	 __isl_keep isl_ast_build *build, __isl_take isl_basic_set *bset)
@@ -1131,6 +1148,7 @@ __isl_give isl_ast_expr *isl_ast_build_expr_from_basic_set(
 
 	list = isl_basic_set_get_constraint_list(bset);
 	isl_basic_set_free(bset);
+	list = isl_constraint_list_sort(list, &cmp_constraint, NULL);
 	if (!list)
 		return NULL;
 	n = isl_constraint_list_n_constraint(list);

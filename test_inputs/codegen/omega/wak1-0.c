@@ -19,7 +19,7 @@
     s1(c0);
   for (int c0 = max(max(a1, a3), b3 + 1); c0 <= b1; c0 += 1) {
     s0(c0);
-    if (b2 >= c0 && c0 >= a2)
+    if (c0 >= a2 && b2 >= c0)
       s1(c0);
   }
   for (int c0 = max(max(max(max(a1, b1 + 1), a3), b3 + 1), a2); c0 <= b2; c0 += 1)
