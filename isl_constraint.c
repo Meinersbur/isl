@@ -1355,3 +1355,35 @@ __isl_give isl_constraint *isl_inequality_from_aff(__isl_take isl_aff *aff)
 {
 	return isl_constraint_alloc_aff(0, aff);
 }
+
+/* Compare two isl_constraints.
+ *
+ * Return -1 if "c1" is "smaller" than "c2", 1 if "c1" is "greater"
+ * than "c2" and 0 if they are equal.
+ *
+ * The order is fairly arbitrary.  We do consider constraints that only involve
+ * earlier dimensions as "smaller".
+ */
+int isl_constraint_plain_cmp(__isl_keep isl_constraint *c1,
+	__isl_keep isl_constraint *c2)
+{
+	int cmp;
+	int last1, last2;
+
+	if (c1 == c2)
+		return 0;
+	if (!c1)
+		return -1;
+	if (!c2)
+		return 1;
+	cmp = isl_local_space_cmp(c1->ls, c2->ls);
+	if (cmp != 0)
+		return cmp;
+
+	last1 = isl_seq_last_non_zero(c1->v->el + 1, c1->v->size - 1);
+	last2 = isl_seq_last_non_zero(c2->v->el + 1, c1->v->size - 1);
+	if (last1 != last2)
+		return last1 - last2;
+
+	return isl_seq_cmp(c1->v->el, c2->v->el, c1->v->size);
+}

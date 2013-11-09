@@ -2203,6 +2203,23 @@ second argument.
 
 =item * Order
 
+Every comparison function returns a negative value if the first
+argument is considered smaller than the second, a positive value
+if the first argument is considered greater and zero if the two
+constraints are considered the same by the comparison criterion.
+
+	#include <isl/constraint.h>
+	int isl_constraint_plain_cmp(
+		__isl_keep isl_constraint *c1,
+		__isl_keep isl_constraint *c2);
+
+This function is useful for sorting C<isl_constraint>s.
+The order depends on the internal representation of the inputs.
+The order is fixed over different calls to the function (assuming
+the internal representation of the inputs has not changed), but may
+change over different versions of C<isl>.
+
+	#include <isl/set.h>
 	int isl_set_plain_cmp(__isl_keep isl_set *set1,
 		__isl_keep isl_set *set2);
 
