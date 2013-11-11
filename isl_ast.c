@@ -1212,6 +1212,7 @@ static char *op_str[] = {
 	[isl_ast_op_mul] = "*",
 	[isl_ast_op_pdiv_q] = "/",
 	[isl_ast_op_pdiv_r] = "%",
+	[isl_ast_op_zdiv_r] = "%",
 	[isl_ast_op_div] = "/",
 	[isl_ast_op_eq] = "==",
 	[isl_ast_op_le] = "<=",
@@ -1241,6 +1242,7 @@ static int op_prec[] = {
 	[isl_ast_op_fdiv_q] = 2,
 	[isl_ast_op_pdiv_q] = 5,
 	[isl_ast_op_pdiv_r] = 5,
+	[isl_ast_op_zdiv_r] = 5,
 	[isl_ast_op_cond] = 15,
 	[isl_ast_op_select] = 15,
 	[isl_ast_op_eq] = 9,
@@ -1271,6 +1273,7 @@ static int op_left[] = {
 	[isl_ast_op_fdiv_q] = 1,
 	[isl_ast_op_pdiv_q] = 1,
 	[isl_ast_op_pdiv_r] = 1,
+	[isl_ast_op_zdiv_r] = 1,
 	[isl_ast_op_cond] = 0,
 	[isl_ast_op_select] = 0,
 	[isl_ast_op_eq] = 1,
@@ -1301,7 +1304,9 @@ static int is_add_sub(enum isl_ast_op_type op)
 
 static int is_div_mod(enum isl_ast_op_type op)
 {
-	return op == isl_ast_op_div || op == isl_ast_op_pdiv_r;
+	return op == isl_ast_op_div ||
+	       op == isl_ast_op_pdiv_r ||
+	       op == isl_ast_op_zdiv_r;
 }
 
 /* Do we need/want parentheses around "expr" as a subexpression of

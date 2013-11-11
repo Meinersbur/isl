@@ -6546,6 +6546,10 @@ Result of integer division, where dividend is known to be non-negative.
 
 Remainder of integer division, where dividend is known to be non-negative.
 
+=item C<isl_ast_op_zdiv_r>
+
+Equal to zero iff the remainder on integer division is zero.
+
 =item C<isl_ast_op_cond>
 
 Conditional operator defined on three arguments.

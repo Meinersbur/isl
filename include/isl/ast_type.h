@@ -29,6 +29,7 @@ enum isl_ast_op_type {
 	isl_ast_op_fdiv_q,	/* Round towards -infty */
 	isl_ast_op_pdiv_q,	/* Dividend is non-negative */
 	isl_ast_op_pdiv_r,	/* Dividend is non-negative */
+	isl_ast_op_zdiv_r,	/* Result only compared against zero */
 	isl_ast_op_cond,
 	isl_ast_op_select,
 	isl_ast_op_eq,
