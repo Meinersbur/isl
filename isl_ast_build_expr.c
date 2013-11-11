@@ -1038,10 +1038,143 @@ static int constant_is_considered_positive(__isl_keep isl_val *v,
 	return isl_val_is_pos(v);
 }
 
+/* Check if the equality
+ *
+ *	aff = 0
+ *
+ * represents a stride constraint on the integer division "pos".
+ *
+ * In particular, if the integer division "pos" is equal to
+ *
+ *	floor(e/d)
+ *
+ * then check if aff is equal to
+ *
+ *	e - d floor(e/d)
+ *
+ * or its opposite.
+ *
+ * If so, the equality is exactly
+ *
+ *	e mod d = 0
+ *
+ * Note that in principle we could also accept
+ *
+ *	e - d floor(e'/d)
+ *
+ * where e and e' differ by a constant.
+ */
+static int is_stride_constraint(__isl_keep isl_aff *aff, int pos)
+{
+	isl_aff *div;
+	isl_val *c, *d;
+	int eq;
+
+	div = isl_aff_get_div(aff, pos);
+	c = isl_aff_get_coefficient_val(aff, isl_dim_div, pos);
+	d = isl_aff_get_denominator_val(div);
+	eq = isl_val_abs_eq(c, d);
+	if (eq >= 0 && eq) {
+		aff = isl_aff_copy(aff);
+		aff = isl_aff_set_coefficient_si(aff, isl_dim_div, pos, 0);
+		div = isl_aff_scale_val(div, d);
+		if (isl_val_is_pos(c))
+			div = isl_aff_neg(div);
+		eq = isl_aff_plain_is_equal(div, aff);
+		isl_aff_free(aff);
+	} else
+		isl_val_free(d);
+	isl_val_free(c);
+	isl_aff_free(div);
+
+	return eq;
+}
+
+/* Are all coefficients of "aff" (zero or) negative?
+ */
+static int all_negative_coefficients(__isl_keep isl_aff *aff)
+{
+	int i, n;
+
+	if (!aff)
+		return 0;
+
+	n = isl_aff_dim(aff, isl_dim_param);
+	for (i = 0; i < n; ++i)
+		if (isl_aff_coefficient_sgn(aff, isl_dim_param, i) > 0)
+			return 0;
+
+	n = isl_aff_dim(aff, isl_dim_in);
+	for (i = 0; i < n; ++i)
+		if (isl_aff_coefficient_sgn(aff, isl_dim_in, i) > 0)
+			return 0;
+
+	return 1;
+}
+
+/* Give an equality of the form
+ *
+ *	aff = e - d floor(e/d) = 0
+ *
+ * or
+ *
+ *	aff = -e + d floor(e/d) = 0
+ *
+ * with the integer division "pos" equal to floor(e/d),
+ * construct the AST expression
+ *
+ *	(isl_ast_op_eq, (isl_ast_op_zdiv_r, expr(e), expr(d)), expr(0))
+ *
+ * If e only has negative coefficients, then construct
+ *
+ *	(isl_ast_op_eq, (isl_ast_op_zdiv_r, expr(-e), expr(d)), expr(0))
+ *
+ * instead.
+ */
+static __isl_give isl_ast_expr *extract_stride_constraint(
+	__isl_take isl_aff *aff, int pos, __isl_keep isl_ast_build *build)
+{
+	isl_ctx *ctx;
+	isl_val *c;
+	isl_ast_expr *expr, *cst;
+
+	if (!aff)
+		return NULL;
+
+	ctx = isl_aff_get_ctx(aff);
+
+	c = isl_aff_get_coefficient_val(aff, isl_dim_div, pos);
+	aff = isl_aff_set_coefficient_si(aff, isl_dim_div, pos, 0);
+
+	if (all_negative_coefficients(aff))
+		aff = isl_aff_neg(aff);
+
+	cst = isl_ast_expr_from_val(isl_val_abs(c));
+	expr = isl_ast_expr_from_aff(aff, build);
+
+	expr = isl_ast_expr_alloc_binary(isl_ast_op_zdiv_r, expr, cst);
+	cst = isl_ast_expr_alloc_int_si(ctx, 0);
+	expr = isl_ast_expr_alloc_binary(isl_ast_op_eq, expr, cst);
+
+	return expr;
+}
+
 /* Construct an isl_ast_expr that evaluates the condition "constraint",
  * The result is simplified in terms of build->domain.
  *
- * Let the constraint by either "a >= 0" or "a == 0".
+ * We first check if the constraint is an equality of the form
+ *
+ *	e - d floor(e/d) = 0
+ *
+ * i.e.,
+ *
+ *	e mod d = 0
+ *
+ * If so, we convert it to
+ *
+ *	(isl_ast_op_eq, (isl_ast_op_zdiv_r, expr(e), expr(d)), expr(0))
+ *
+ * Otherwise, let the constraint by either "a >= 0" or "a == 0".
  * We first extract hidden modulo computations from "a"
  * and then collect all the terms with a positive coefficient in cons_pos
  * and the terms with a negative coefficient in cons_neg.
@@ -1065,6 +1198,7 @@ static int constant_is_considered_positive(__isl_keep isl_val *v,
 static __isl_give isl_ast_expr *isl_ast_expr_from_constraint(
 	__isl_take isl_constraint *constraint, __isl_keep isl_ast_build *build)
 {
+	int i, n;
 	isl_ctx *ctx;
 	isl_ast_expr *expr_pos;
 	isl_ast_expr *expr_neg;
@@ -1078,8 +1212,21 @@ static __isl_give isl_ast_expr *isl_ast_expr_from_constraint(
 		return NULL;
 
 	aff = isl_constraint_get_aff(constraint);
+	eq = isl_constraint_is_equality(constraint);
+	isl_constraint_free(constraint);
 
-	ctx = isl_constraint_get_ctx(constraint);
+	n = isl_aff_dim(aff, isl_dim_div);
+	if (eq && n > 0)
+		for (i = 0; i < n; ++i) {
+			int is_stride;
+			is_stride = is_stride_constraint(aff, i);
+			if (is_stride < 0)
+				goto error;
+			if (is_stride)
+				return extract_stride_constraint(aff, i, build);
+		}
+
+	ctx = isl_aff_get_ctx(aff);
 	expr_pos = isl_ast_expr_alloc_int_si(ctx, 0);
 	expr_neg = isl_ast_expr_alloc_int_si(ctx, 0);
 
@@ -1096,8 +1243,6 @@ static __isl_give isl_ast_expr *isl_ast_expr_from_constraint(
 		expr_neg = isl_ast_expr_add_int(expr_neg, v);
 	}
 
-	eq = isl_constraint_is_equality(constraint);
-
 	if (isl_ast_expr_get_type(expr_pos) == isl_ast_expr_int &&
 	    isl_ast_expr_get_type(expr_neg) != isl_ast_expr_int) {
 		type = eq ? isl_ast_op_eq : isl_ast_op_le;
@@ -1107,9 +1252,11 @@ static __isl_give isl_ast_expr *isl_ast_expr_from_constraint(
 		expr = isl_ast_expr_alloc_binary(type, expr_pos, expr_neg);
 	}
 
-	isl_constraint_free(constraint);
 	isl_aff_free(aff);
 	return expr;
+error:
+	isl_aff_free(aff);
+	return NULL;
 }
 
 /* Wrapper around isl_constraint_cmp_last_non_zero for use
