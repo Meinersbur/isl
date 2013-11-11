@@ -625,6 +625,33 @@ __isl_give isl_val *isl_aff_get_coefficient_val(__isl_keep isl_aff *aff,
 	return isl_val_normalize(v);
 }
 
+/* Return the sign of the coefficient of the variable of type "type"
+ * at position "pos" of "aff".
+ */
+int isl_aff_coefficient_sgn(__isl_keep isl_aff *aff, enum isl_dim_type type,
+	int pos)
+{
+	isl_ctx *ctx;
+
+	if (!aff)
+		return 0;
+
+	ctx = isl_aff_get_ctx(aff);
+	if (type == isl_dim_out)
+		isl_die(ctx, isl_error_invalid,
+			"output/set dimension does not have a coefficient",
+			return 0);
+	if (type == isl_dim_in)
+		type = isl_dim_set;
+
+	if (pos >= isl_local_space_dim(aff->ls, type))
+		isl_die(ctx, isl_error_invalid,
+			"position out of bounds", return 0);
+
+	pos += isl_local_space_offset(aff->ls, type);
+	return isl_int_sgn(aff->v->el[1 + pos]);
+}
+
 /* Replace the denominator of "aff" by "v".
  *
  * A NaN is unaffected by this operation.
