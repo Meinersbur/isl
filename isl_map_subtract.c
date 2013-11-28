@@ -493,11 +493,14 @@ static __isl_give isl_map *basic_map_subtract(__isl_take isl_basic_map *bmap,
 
 /* Return the set difference between map1 and map2.
  * (U_i A_i) \ (U_j B_j) is computed as U_i (A_i \ (U_j B_j))
+ *
+ * If "map1" and "map2" are disjoint, then simply return "map1".
  */
 static __isl_give isl_map *map_subtract( __isl_take isl_map *map1,
 	__isl_take isl_map *map2)
 {
 	int i;
+	int disjoint;
 	struct isl_map *diff;
 
 	if (!map1 || !map2)
@@ -505,7 +508,10 @@ static __isl_give isl_map *map_subtract( __isl_take isl_map *map1,
 
 	isl_assert(map1->ctx, isl_space_is_equal(map1->dim, map2->dim), goto error);
 
-	if (isl_map_is_empty(map2)) {
+	disjoint = isl_map_is_disjoint(map1, map2);
+	if (disjoint < 0)
+		goto error;
+	if (disjoint) {
 		isl_map_free(map2);
 		return map1;
 	}
