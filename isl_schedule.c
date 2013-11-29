@@ -782,6 +782,119 @@ error:
 	return NULL;
 }
 
+/* Return a tree with as top-level node a filter corresponding to "filter" and
+ * as child, the (single) child of "tree".
+ * However, if this single child is of type "type", then the filter is inserted
+ * in the children of this single child instead.
+ */
+static __isl_give isl_schedule_tree *insert_filter_in_child_of_type(
+	__isl_take isl_schedule_tree *tree, __isl_take isl_union_set *filter,
+	enum isl_schedule_node_type type)
+{
+	if (!isl_schedule_tree_has_children(tree)) {
+		isl_schedule_tree_free(tree);
+		return isl_schedule_tree_from_filter(filter);
+	} else {
+		tree = isl_schedule_tree_child(tree, 0);
+	}
+
+	if (isl_schedule_tree_get_type(tree) == type)
+		tree = isl_schedule_tree_children_insert_filter(tree, filter);
+	else
+		tree = isl_schedule_tree_insert_filter(tree, filter);
+
+	return tree;
+}
+
+/* Construct a schedule that combines the schedules "schedule1" and "schedule2"
+ * with a top-level node (underneath the domain node) of type "type",
+ * either isl_schedule_node_sequence or isl_schedule_node_set.
+ * The domains of the two schedules are assumed to be disjoint.
+ *
+ * The new schedule has as domain the union of the domains of the two
+ * schedules.  The child of the domain node is a node of type "type"
+ * with two filters corresponding to the domains of the input schedules.
+ * If one (or both) of the top-level nodes of the two schedules is itself
+ * of type "type", then the filter is pushed into the children of that
+ * node and the sequence of set is flattened.
+ */
+__isl_give isl_schedule *isl_schedule_pair(enum isl_schedule_node_type type,
+	__isl_take isl_schedule *schedule1, __isl_take isl_schedule *schedule2)
+{
+	int disjoint;
+	isl_ctx *ctx;
+	enum isl_schedule_node_type root_type;
+	isl_schedule_tree *tree1, *tree2;
+	isl_union_set *filter1, *filter2, *domain;
+
+	if (!schedule1 || !schedule2)
+		goto error;
+
+	root_type = isl_schedule_tree_get_type(schedule1->root);
+	if (root_type != isl_schedule_node_domain)
+		isl_die(isl_schedule_get_ctx(schedule1), isl_error_internal,
+			"root node not a domain node", goto error);
+	root_type = isl_schedule_tree_get_type(schedule2->root);
+	if (root_type != isl_schedule_node_domain)
+		isl_die(isl_schedule_get_ctx(schedule1), isl_error_internal,
+			"root node not a domain node", goto error);
+
+	ctx = isl_schedule_get_ctx(schedule1);
+	tree1 = isl_schedule_tree_copy(schedule1->root);
+	filter1 = isl_schedule_tree_domain_get_domain(tree1);
+	tree2 = isl_schedule_tree_copy(schedule2->root);
+	filter2 = isl_schedule_tree_domain_get_domain(tree2);
+
+	isl_schedule_free(schedule1);
+	isl_schedule_free(schedule2);
+
+	disjoint = isl_union_set_is_disjoint(filter1, filter2);
+	if (disjoint < 0)
+		filter1 = isl_union_set_free(filter1);
+	if (!disjoint)
+		isl_die(ctx, isl_error_invalid,
+			"schedule domains not disjoint",
+			filter1 = isl_union_set_free(filter1));
+
+	domain = isl_union_set_union(isl_union_set_copy(filter1),
+				    isl_union_set_copy(filter2));
+	filter1 = isl_union_set_gist(filter1, isl_union_set_copy(domain));
+	filter2 = isl_union_set_gist(filter2, isl_union_set_copy(domain));
+
+	tree1 = insert_filter_in_child_of_type(tree1, filter1, type);
+	tree2 = insert_filter_in_child_of_type(tree2, filter2, type);
+
+	tree1 = isl_schedule_tree_from_pair(type, tree1, tree2);
+	tree1 = isl_schedule_tree_insert_domain(tree1, domain);
+
+	return isl_schedule_from_schedule_tree(ctx, tree1);
+error:
+	isl_schedule_free(schedule1);
+	isl_schedule_free(schedule2);
+	return NULL;
+}
+
+/* Construct a schedule that combines the schedules "schedule1" and "schedule2"
+ * through a sequence node.
+ * The domains of the input schedules are assumed to be disjoint.
+ */
+__isl_give isl_schedule *isl_schedule_sequence(
+	__isl_take isl_schedule *schedule1, __isl_take isl_schedule *schedule2)
+{
+	return isl_schedule_pair(isl_schedule_node_sequence,
+				schedule1, schedule2);
+}
+
+/* Construct a schedule that combines the schedules "schedule1" and "schedule2"
+ * through a set node.
+ * The domains of the input schedules are assumed to be disjoint.
+ */
+__isl_give isl_schedule *isl_schedule_set(
+	__isl_take isl_schedule *schedule1, __isl_take isl_schedule *schedule2)
+{
+	return isl_schedule_pair(isl_schedule_node_set, schedule1, schedule2);
+}
+
 /* Print "schedule" to "p".
  *
  * If "schedule" was created from a schedule tree, then we print

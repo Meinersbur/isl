@@ -66,6 +66,9 @@ __isl_give isl_schedule_tree *isl_schedule_tree_from_filter(
 __isl_give isl_schedule_tree *isl_schedule_tree_from_children(
 	enum isl_schedule_node_type type,
 	__isl_take isl_schedule_tree_list *list);
+__isl_give isl_schedule_tree *isl_schedule_tree_from_pair(
+	enum isl_schedule_node_type type, __isl_take isl_schedule_tree *tree1,
+	__isl_take isl_schedule_tree *tree2);
 
 __isl_give isl_space *isl_schedule_tree_band_get_space(
 	__isl_keep isl_schedule_tree *tree);
@@ -105,6 +108,8 @@ __isl_give isl_schedule_tree *isl_schedule_tree_insert_band(
 __isl_give isl_schedule_tree *isl_schedule_tree_insert_domain(
 	__isl_take isl_schedule_tree *tree, __isl_take isl_union_set *domain);
 __isl_give isl_schedule_tree *isl_schedule_tree_insert_filter(
+	__isl_take isl_schedule_tree *tree, __isl_take isl_union_set *filter);
+__isl_give isl_schedule_tree *isl_schedule_tree_children_insert_filter(
 	__isl_take isl_schedule_tree *tree, __isl_take isl_union_set *filter);
 
 __isl_give isl_schedule_tree *isl_schedule_tree_append_to_leaves(

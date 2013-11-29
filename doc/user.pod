@@ -7309,6 +7309,21 @@ be introduced into the schedule using the following function.
 		__isl_take isl_schedule *schedule,
 		__isl_take isl_multi_union_pw_aff *partial);
 
+A schedule that combines two schedules either in the given
+order or in an arbitrary order, i.e., with an C<isl_schedule_node_sequence>
+or an C<isl_schedule_node_set> node,
+can be created using the following functions.
+
+	#include <isl/schedule.h>
+	__isl_give isl_schedule *isl_schedule_sequence(
+		__isl_take isl_schedule *schedule1,
+		__isl_take isl_schedule *schedule2);
+	__isl_give isl_schedule *isl_schedule_set(
+		__isl_take isl_schedule *schedule1,
+		__isl_take isl_schedule *schedule2);
+
+The domains of the two input schedules need to be disjoint.
+
 An C<isl_union_map> representation of the schedule can be obtained
 from an C<isl_schedule> using the following function.
 

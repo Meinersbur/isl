@@ -286,6 +286,46 @@ error:
 	return NULL;
 }
 
+/* Construct a tree with a root node of type "type" and as children
+ * "tree1" and "tree2".
+ * If the root of one (or both) of the input trees is itself of type "type",
+ * then the tree is replaced by its children.
+ */
+__isl_give isl_schedule_tree *isl_schedule_tree_from_pair(
+	enum isl_schedule_node_type type, __isl_take isl_schedule_tree *tree1,
+	__isl_take isl_schedule_tree *tree2)
+{
+	isl_ctx *ctx;
+	isl_schedule_tree_list *list;
+
+	if (!tree1 || !tree2)
+		goto error;
+
+	ctx = isl_schedule_tree_get_ctx(tree1);
+	if (isl_schedule_tree_get_type(tree1) == type) {
+		list = isl_schedule_tree_list_copy(tree1->children);
+		isl_schedule_tree_free(tree1);
+	} else {
+		list = isl_schedule_tree_list_alloc(ctx, 2);
+		list = isl_schedule_tree_list_add(list, tree1);
+	}
+	if (isl_schedule_tree_get_type(tree2) == type) {
+		isl_schedule_tree_list *children;
+
+		children = isl_schedule_tree_list_copy(tree2->children);
+		list = isl_schedule_tree_list_concat(list, children);
+		isl_schedule_tree_free(tree2);
+	} else {
+		list = isl_schedule_tree_list_add(list, tree2);
+	}
+
+	return isl_schedule_tree_from_children(type, list);
+error:
+	isl_schedule_tree_free(tree1);
+	isl_schedule_tree_free(tree2);
+	return NULL;
+}
+
 /* Return the isl_ctx to which "tree" belongs.
  */
 isl_ctx *isl_schedule_tree_get_ctx(__isl_keep isl_schedule_tree *tree)
@@ -526,6 +566,35 @@ __isl_give isl_schedule_tree *isl_schedule_tree_insert_filter(
 
 	res = isl_schedule_tree_from_filter(filter);
 	return isl_schedule_tree_replace_child(res, 0, tree);
+}
+
+/* Insert a filter node with filter set "filter"
+ * in each of the children of "tree".
+ */
+__isl_give isl_schedule_tree *isl_schedule_tree_children_insert_filter(
+	__isl_take isl_schedule_tree *tree, __isl_take isl_union_set *filter)
+{
+	int i, n;
+
+	if (!tree || !filter)
+		goto error;
+
+	n = isl_schedule_tree_n_children(tree);
+	for (i = 0; i < n; ++i) {
+		isl_schedule_tree *child;
+
+		child = isl_schedule_tree_get_child(tree, i);
+		child = isl_schedule_tree_insert_filter(child,
+						    isl_union_set_copy(filter));
+		tree = isl_schedule_tree_replace_child(tree, i, child);
+	}
+
+	isl_union_set_free(filter);
+	return tree;
+error:
+	isl_union_set_free(filter);
+	isl_schedule_tree_free(tree);
+	return NULL;
 }
 
 /* Return the number of members in the band tree root.

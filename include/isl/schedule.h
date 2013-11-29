@@ -101,6 +101,10 @@ __isl_give isl_schedule *isl_schedule_map_schedule_node(
 __isl_give isl_schedule *isl_schedule_insert_partial_schedule(
 	__isl_take isl_schedule *schedule,
 	__isl_take isl_multi_union_pw_aff *partial);
+__isl_give isl_schedule *isl_schedule_sequence(
+	__isl_take isl_schedule *schedule1, __isl_take isl_schedule *schedule2);
+__isl_give isl_schedule *isl_schedule_set(
+	__isl_take isl_schedule *schedule1, __isl_take isl_schedule *schedule2);
 
 __isl_give isl_band_list *isl_schedule_get_band_forest(
 	__isl_keep isl_schedule *schedule);
