@@ -307,6 +307,7 @@ __isl_give UNION *FN(UNION,align_params)(__isl_take UNION *u,
 		return u;
 	}
 
+	model = isl_space_params(model);
 	data.exp = isl_parameter_alignment_reordering(u->dim, model);
 	if (!data.exp)
 		goto error;
