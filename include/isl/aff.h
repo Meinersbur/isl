@@ -535,6 +535,9 @@ __isl_give isl_space *isl_union_pw_multi_aff_get_space(
 
 unsigned isl_union_pw_multi_aff_dim(__isl_keep isl_union_pw_multi_aff *upma,
 	enum isl_dim_type type);
+int isl_union_pw_multi_aff_find_dim_by_name(
+	__isl_keep isl_union_pw_multi_aff *upma, enum isl_dim_type type,
+	const char *name);
 
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_coalesce(
 	__isl_take isl_union_pw_multi_aff *upma);

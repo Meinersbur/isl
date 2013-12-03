@@ -52,6 +52,18 @@ unsigned FN(UNION,dim)(__isl_keep UNION *u, enum isl_dim_type type)
 	return isl_space_dim(u->space, type);
 }
 
+/* Return the position of the parameter with the given name
+ * in "u".
+ * Return -1 if no such dimension can be found.
+ */
+int FN(UNION,find_dim_by_name)(__isl_keep UNION *u, enum isl_dim_type type,
+	const char *name)
+{
+	if (!u)
+		return -1;
+	return isl_space_find_dim_by_name(u->space, type, name);
+}
+
 #ifdef HAS_TYPE
 static __isl_give UNION *FN(UNION,alloc)(__isl_take isl_space *dim,
 	enum isl_fold type, int size)
