@@ -2984,3 +2984,60 @@ __isl_give isl_union_set *isl_union_set_reset_user(
 {
 	return isl_union_map_reset_user(uset);
 }
+
+/* Internal data structure for isl_union_map_project_out.
+ * "type", "first" and "n" are the arguments for the isl_map_project_out
+ * call.
+ * "res" collects the results.
+ */
+struct isl_union_map_project_out_data {
+	enum isl_dim_type type;
+	unsigned first;
+	unsigned n;
+
+	isl_union_map *res;
+};
+
+/* Turn the data->n dimensions of type data->type, starting at data->first
+ * into existentially quantified variables and add the result to data->res.
+ */
+static int project_out(__isl_take isl_map *map, void *user)
+{
+	struct isl_union_map_project_out_data *data = user;
+
+	map = isl_map_project_out(map, data->type, data->first, data->n);
+	data->res = isl_union_map_add_map(data->res, map);
+
+	return 0;
+}
+
+/* Turn the "n" dimensions of type "type", starting at "first"
+ * into existentially quantified variables.
+ * Since the space of an isl_union_map only contains parameters,
+ * type is required to be equal to isl_dim_param.
+ */
+__isl_give isl_union_map *isl_union_map_project_out(
+	__isl_take isl_union_map *umap,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	isl_space *space;
+	struct isl_union_map_project_out_data data = { type, first, n };
+
+	if (!umap)
+		return NULL;
+
+	if (type != isl_dim_param)
+		isl_die(isl_union_map_get_ctx(umap), isl_error_invalid,
+			"can only project out parameters",
+			return isl_union_map_free(umap));
+
+	space = isl_union_map_get_space(umap);
+	space = isl_space_drop_dims(space, type, first, n);
+	data.res = isl_union_map_empty(space);
+	if (isl_union_map_foreach_map(umap, &project_out, &data) < 0)
+		data.res = isl_union_map_free(data.res);
+
+	isl_union_map_free(umap);
+
+	return data.res;
+}

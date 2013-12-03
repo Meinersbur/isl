@@ -2220,12 +2220,18 @@ change over different versions of C<isl>.
 		__isl_take isl_union_set *uset);
 
 	#include <isl/union_map.h>
+	__isl_give isl_union_map *isl_union_map_project_out(
+		__isl_take isl_union_map *umap,
+		enum isl_dim_type type, unsigned first, unsigned n);
 	__isl_give isl_set *isl_union_map_params(
 		__isl_take isl_union_map *umap);
 	__isl_give isl_union_set *isl_union_map_domain(
 		__isl_take isl_union_map *umap);
 	__isl_give isl_union_set *isl_union_map_range(
 		__isl_take isl_union_map *umap);
+
+The function C<isl_union_map_project_out> can only project out
+parameters.
 
 	#include <isl/map.h>
 	__isl_give isl_basic_map *isl_basic_map_domain_map(
