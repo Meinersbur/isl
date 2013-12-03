@@ -4903,6 +4903,20 @@ static int pw_multi_aff_from_map(__isl_take isl_map *map, void *user)
 	return *upma ? 0 : -1;
 }
 
+/* Create an isl_union_pw_multi_aff with the given isl_aff on a universe
+ * domain.
+ */
+__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_from_aff(
+	__isl_take isl_aff *aff)
+{
+	isl_multi_aff *ma;
+	isl_pw_multi_aff *pma;
+
+	ma = isl_multi_aff_from_aff(aff);
+	pma = isl_pw_multi_aff_from_multi_aff(ma);
+	return isl_union_pw_multi_aff_from_pw_multi_aff(pma);
+}
+
 /* Try and create an isl_union_pw_multi_aff that is equivalent
  * to the given isl_union_map.
  * The isl_union_map is required to be single-valued in each space.
