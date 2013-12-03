@@ -1253,6 +1253,9 @@ its position can be obtained from the following functions.
 	#include <isl/map.h>
 	int isl_map_find_dim_by_id(__isl_keep isl_map *map,
 		enum isl_dim_type type, __isl_keep isl_id *id);
+	int isl_basic_map_find_dim_by_name(
+		__isl_keep isl_basic_map *bmap,
+		enum isl_dim_type type, const char *name);
 	int isl_map_find_dim_by_name(__isl_keep isl_map *map,
 		enum isl_dim_type type, const char *name);
 

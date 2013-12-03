@@ -715,6 +715,18 @@ int isl_set_find_dim_by_id(__isl_keep isl_set *set, enum isl_dim_type type,
 	return isl_map_find_dim_by_id(set, type, id);
 }
 
+/* Return the position of the dimension of the given type and name
+ * in "bmap".
+ * Return -1 if no such dimension can be found.
+ */
+int isl_basic_map_find_dim_by_name(__isl_keep isl_basic_map *bmap,
+	enum isl_dim_type type, const char *name)
+{
+	if (!bmap)
+		return -1;
+	return isl_space_find_dim_by_name(bmap->dim, type, name);
+}
+
 int isl_map_find_dim_by_name(__isl_keep isl_map *map, enum isl_dim_type type,
 	const char *name)
 {
