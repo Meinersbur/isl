@@ -1258,6 +1258,9 @@ its position can be obtained from the following functions.
 		enum isl_dim_type type, const char *name);
 	int isl_map_find_dim_by_name(__isl_keep isl_map *map,
 		enum isl_dim_type type, const char *name);
+	int isl_union_map_find_dim_by_name(
+		__isl_keep isl_union_map *umap,
+		enum isl_dim_type type, const char *name);
 
 	#include <isl/aff.h>
 	int isl_multi_aff_find_dim_by_id(

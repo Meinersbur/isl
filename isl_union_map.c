@@ -129,6 +129,18 @@ __isl_give isl_space *isl_union_map_get_space(__isl_keep isl_union_map *umap)
 	return isl_space_copy(umap->dim);
 }
 
+/* Return the position of the parameter with the given name
+ * in "umap".
+ * Return -1 if no such dimension can be found.
+ */
+int isl_union_map_find_dim_by_name(__isl_keep isl_union_map *umap,
+	enum isl_dim_type type, const char *name)
+{
+	if (!umap)
+		return -1;
+	return isl_space_find_dim_by_name(umap->dim, type, name);
+}
+
 __isl_give isl_space *isl_union_set_get_space(__isl_keep isl_union_set *uset)
 {
 	return isl_union_map_get_space(uset);
