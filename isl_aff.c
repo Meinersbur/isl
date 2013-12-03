@@ -276,6 +276,22 @@ int isl_aff_dim(__isl_keep isl_aff *aff, enum isl_dim_type type)
 	return isl_local_space_dim(aff->ls, type);
 }
 
+/* Return the position of the dimension of the given type and name
+ * in "aff".
+ * Return -1 if no such dimension can be found.
+ */
+int isl_aff_find_dim_by_name(__isl_keep isl_aff *aff, enum isl_dim_type type,
+	const char *name)
+{
+	if (!aff)
+		return -1;
+	if (type == isl_dim_out)
+		return -1;
+	if (type == isl_dim_in)
+		type = isl_dim_set;
+	return isl_local_space_find_dim_by_name(aff->ls, type, name);
+}
+
 __isl_give isl_space *isl_aff_get_domain_space(__isl_keep isl_aff *aff)
 {
 	return aff ? isl_local_space_get_space(aff->ls) : NULL;
