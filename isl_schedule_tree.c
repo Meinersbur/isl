@@ -968,6 +968,29 @@ __isl_give isl_multi_union_pw_aff *isl_schedule_tree_band_get_partial_schedule(
 	return isl_schedule_band_get_partial_schedule(tree->band);
 }
 
+/* Replace the schedule of the band tree root by "schedule".
+ */
+__isl_give isl_schedule_tree *isl_schedule_tree_band_set_partial_schedule(
+	__isl_take isl_schedule_tree *tree,
+	__isl_take isl_multi_union_pw_aff *schedule)
+{
+	tree = isl_schedule_tree_cow(tree);
+	if (!tree || !schedule)
+		goto error;
+
+	if (tree->type != isl_schedule_node_band)
+		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_invalid,
+			"not a band node", return NULL);
+	tree->band = isl_schedule_band_set_partial_schedule(tree->band,
+								schedule);
+
+	return tree;
+error:
+	isl_schedule_tree_free(tree);
+	isl_multi_union_pw_aff_free(schedule);
+	return NULL;
+}
+
 /* Return the loop AST generation type for the band member
  * of the band tree root at position "pos".
  */

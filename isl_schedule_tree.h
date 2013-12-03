@@ -103,6 +103,9 @@ __isl_give isl_schedule_tree *isl_schedule_tree_band_intersect_domain(
 	__isl_take isl_schedule_tree *tree, __isl_take isl_union_set *domain);
 __isl_give isl_multi_union_pw_aff *isl_schedule_tree_band_get_partial_schedule(
 	__isl_keep isl_schedule_tree *tree);
+__isl_give isl_schedule_tree *isl_schedule_tree_band_set_partial_schedule(
+	__isl_take isl_schedule_tree *tree,
+	__isl_take isl_multi_union_pw_aff *schedule);
 enum isl_ast_loop_type isl_schedule_tree_band_member_get_ast_loop_type(
 	__isl_keep isl_schedule_tree *tree, int pos);
 __isl_give isl_schedule_tree *isl_schedule_tree_band_member_set_ast_loop_type(
