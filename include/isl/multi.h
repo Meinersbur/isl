@@ -18,6 +18,9 @@ __isl_give isl_space *isl_multi_##BASE##_get_space(			\
 	__isl_keep isl_multi_##BASE *multi);				\
 __isl_give isl_space *isl_multi_##BASE##_get_domain_space(		\
 	__isl_keep isl_multi_##BASE *multi);				\
+int isl_multi_##BASE##_find_dim_by_name(				\
+	__isl_keep isl_multi_##BASE *multi,				\
+	enum isl_dim_type type, const char *name);			\
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_from_##BASE##_list(	\
 	__isl_take isl_space *space, __isl_take isl_##BASE##_list *list); \
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_zero(			\

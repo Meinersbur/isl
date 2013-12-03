@@ -34,6 +34,18 @@ __isl_give isl_space *FN(MULTI(BASE),get_space)(__isl_keep MULTI(BASE) *multi)
 	return multi ? isl_space_copy(multi->space) : NULL;
 }
 
+/* Return the position of the dimension of the given type and name
+ * in "multi".
+ * Return -1 if no such dimension can be found.
+ */
+int FN(MULTI(BASE),find_dim_by_name)(__isl_keep MULTI(BASE) *multi,
+	enum isl_dim_type type, const char *name)
+{
+	if (!multi)
+		return -1;
+	return isl_space_find_dim_by_name(multi->space, type, name);
+}
+
 __isl_give isl_space *FN(MULTI(BASE),get_domain_space)(
 	__isl_keep MULTI(BASE) *multi)
 {

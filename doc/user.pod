@@ -1243,6 +1243,9 @@ its position can be obtained from the following functions.
 	int isl_multi_val_find_dim_by_id(
 		__isl_keep isl_multi_val *mv,
 		enum isl_dim_type type, __isl_keep isl_id *id);
+	int isl_multi_val_find_dim_by_name(
+		__isl_keep isl_multi_val *mv,
+		enum isl_dim_type type, const char *name);
 
 	#include <isl/set.h>
 	int isl_set_find_dim_by_id(__isl_keep isl_set *set,
@@ -1270,6 +1273,12 @@ its position can be obtained from the following functions.
 		__isl_keep isl_multi_pw_aff *mpa,
 		enum isl_dim_type type, __isl_keep isl_id *id);
 	int isl_aff_find_dim_by_name(__isl_keep isl_aff *aff,
+		enum isl_dim_type type, const char *name);
+	int isl_multi_aff_find_dim_by_name(
+		__isl_keep isl_multi_aff *ma,
+		enum isl_dim_type type, const char *name);
+	int isl_multi_pw_aff_find_dim_by_name(
+		__isl_keep isl_multi_pw_aff *mpa,
 		enum isl_dim_type type, const char *name);
 
 The identifiers or names of entire spaces may be set or read off
