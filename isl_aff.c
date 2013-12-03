@@ -6839,3 +6839,36 @@ __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_multi_val_on_domain(
 	isl_multi_val_free(mv);
 	return data.res;
 }
+
+/* Compute the pullback of data->pma by the function represented by "pma2",
+ * provided the spaces match, and add the results to data->res.
+ */
+static int pullback_entry(void **entry, void *user)
+{
+	struct isl_union_pw_multi_aff_bin_data *data = user;
+	isl_pw_multi_aff *pma2 = *entry;
+
+	if (!isl_space_tuple_is_equal(data->pma->dim, isl_dim_in,
+				 pma2->dim, isl_dim_out))
+		return 0;
+
+	pma2 = isl_pw_multi_aff_pullback_pw_multi_aff(
+					isl_pw_multi_aff_copy(data->pma),
+					isl_pw_multi_aff_copy(pma2));
+
+	data->res = isl_union_pw_multi_aff_add_pw_multi_aff(data->res, pma2);
+	if (!data->res)
+		return -1;
+
+	return 0;
+}
+
+/* Compute the pullback of "upma1" by the function represented by "upma2".
+ */
+__isl_give isl_union_pw_multi_aff *
+isl_union_pw_multi_aff_pullback_union_pw_multi_aff(
+	__isl_take isl_union_pw_multi_aff *upma1,
+	__isl_take isl_union_pw_multi_aff *upma2)
+{
+	return bin_op(upma1, upma2, &pullback_entry);
+}
