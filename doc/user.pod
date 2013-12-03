@@ -1277,8 +1277,21 @@ its position can be obtained from the following functions.
 	int isl_multi_aff_find_dim_by_name(
 		__isl_keep isl_multi_aff *ma,
 		enum isl_dim_type type, const char *name);
+	int isl_pw_aff_find_dim_by_name(__isl_keep isl_pw_aff *pa,
+		enum isl_dim_type type, const char *name);
 	int isl_multi_pw_aff_find_dim_by_name(
 		__isl_keep isl_multi_pw_aff *mpa,
+		enum isl_dim_type type, const char *name);
+	int isl_pw_multi_aff_find_dim_by_name(
+		__isl_keep isl_pw_multi_aff *pma,
+		enum isl_dim_type type, const char *name);
+
+	#include <isl/polynomial.h>
+	int isl_pw_qpolynomial_find_dim_by_name(
+		__isl_keep isl_pw_qpolynomial *pwqp,
+		enum isl_dim_type type, const char *name);
+	int isl_pw_qpolynomial_fold_find_dim_by_name(
+		__isl_keep isl_pw_qpolynomial_fold *pwf,
 		enum isl_dim_type type, const char *name);
 
 The identifiers or names of entire spaces may be set or read off

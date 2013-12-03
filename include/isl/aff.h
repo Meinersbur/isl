@@ -163,6 +163,9 @@ __isl_give isl_id *isl_pw_aff_get_dim_id(__isl_keep isl_pw_aff *pa,
 __isl_give isl_pw_aff *isl_pw_aff_set_dim_id(__isl_take isl_pw_aff *pma,
 	enum isl_dim_type type, unsigned pos, __isl_take isl_id *id);
 
+int isl_pw_aff_find_dim_by_name(__isl_keep isl_pw_aff *pa,
+	enum isl_dim_type type, const char *name);
+
 int isl_pw_aff_is_empty(__isl_keep isl_pw_aff *pwaff);
 int isl_pw_aff_involves_nan(__isl_keep isl_pw_aff *pa);
 int isl_pw_aff_plain_cmp(__isl_keep isl_pw_aff *pa1,
@@ -402,6 +405,9 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_set_tuple_id(
 	enum isl_dim_type type, __isl_take isl_id *id);
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_reset_tuple_id(
 	__isl_take isl_pw_multi_aff *pma, enum isl_dim_type type);
+
+int isl_pw_multi_aff_find_dim_by_name(__isl_keep isl_pw_multi_aff *pma,
+	enum isl_dim_type type, const char *name);
 
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_drop_dims(
 	__isl_take isl_pw_multi_aff *pma,

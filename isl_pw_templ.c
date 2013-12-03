@@ -1393,6 +1393,18 @@ __isl_give isl_space *FN(PW,get_domain_space)(__isl_keep PW *pw)
 	return pw ? isl_space_domain(isl_space_copy(pw->dim)) : NULL;
 }
 
+/* Return the position of the dimension of the given type and name
+ * in "pw".
+ * Return -1 if no such dimension can be found.
+ */
+int FN(PW,find_dim_by_name)(__isl_keep PW *pw,
+	enum isl_dim_type type, const char *name)
+{
+	if (!pw)
+		return -1;
+	return isl_space_find_dim_by_name(pw->dim, type, name);
+}
+
 #ifndef NO_RESET_DIM
 /* Reset the space of "pw".  Since we don't know if the elements
  * represent the spaces themselves or their domains, we pass along
