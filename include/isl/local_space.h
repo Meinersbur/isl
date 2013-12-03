@@ -49,6 +49,9 @@ __isl_give isl_space *isl_local_space_get_space(__isl_keep isl_local_space *ls);
 __isl_give isl_aff *isl_local_space_get_div(__isl_keep isl_local_space *ls,
 	int pos);
 
+int isl_local_space_find_dim_by_name(__isl_keep isl_local_space *ls,
+	enum isl_dim_type type, const char *name);
+
 __isl_give isl_local_space *isl_local_space_domain(
 	__isl_take isl_local_space *ls);
 __isl_give isl_local_space *isl_local_space_range(

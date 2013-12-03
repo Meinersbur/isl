@@ -243,6 +243,20 @@ unsigned isl_local_space_offset(__isl_keep isl_local_space *ls,
 	}
 }
 
+/* Return the position of the dimension of the given type and name
+ * in "ls".
+ * Return -1 if no such dimension can be found.
+ */
+int isl_local_space_find_dim_by_name(__isl_keep isl_local_space *ls,
+	enum isl_dim_type type, const char *name)
+{
+	if (!ls)
+		return -1;
+	if (type == isl_dim_div)
+		return -1;
+	return isl_space_find_dim_by_name(ls->dim, type, name);
+}
+
 /* Does the given dimension have a name?
  */
 int isl_local_space_has_dim_name(__isl_keep isl_local_space *ls,
