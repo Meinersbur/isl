@@ -62,8 +62,21 @@ int isl_hash_table_init(struct isl_ctx *ctx, struct isl_hash_table *table,
 	return 0;
 }
 
-static int grow_table(struct isl_ctx *ctx, struct isl_hash_table *table,
-			int (*eq)(const void *entry, const void *val))
+/* Dummy comparison function that always returns false.
+ */
+static int no(const void *entry, const void *val)
+{
+	return 0;
+}
+
+/* Extend "table" to twice its size.
+ * Return 0 on success and -1 on error.
+ *
+ * We reuse isl_hash_table_find to create entries in the extended table.
+ * Since all entries in the original table are assumed to be different,
+ * there is no need to compare them against each other.
+ */
+static int grow_table(struct isl_ctx *ctx, struct isl_hash_table *table)
 {
 	int n;
 	size_t old_size, size;
@@ -91,7 +104,7 @@ static int grow_table(struct isl_ctx *ctx, struct isl_hash_table *table,
 			continue;
 
 		entry = isl_hash_table_find(ctx, table, entries[h].hash,
-					    eq, entries[h].data, 1);
+					    &no, NULL, 1);
 		if (!entry) {
 			table->bits--;
 			free(table->entries);
@@ -156,7 +169,7 @@ struct isl_hash_table_entry *isl_hash_table_find(struct isl_ctx *ctx,
 		return NULL;
 
 	if (4 * table->n >= 3 * size) {
-		if (grow_table(ctx, table, eq) < 0)
+		if (grow_table(ctx, table) < 0)
 			return NULL;
 		return isl_hash_table_find(ctx, table, key_hash, eq, val, 1);
 	}
