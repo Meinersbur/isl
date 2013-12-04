@@ -24,6 +24,7 @@
 #include <isl/vertices.h>
 #include <isl/ast_build.h>
 #include <isl/val.h>
+#include <isl/ilp.h>
 
 #define ARRAY_SIZE(array) (sizeof(array)/sizeof(*array))
 
@@ -1716,6 +1717,39 @@ static int test_lexmin(struct isl_ctx *ctx)
 		isl_die(ctx, isl_error_unknown,
 			"unexpected difference between set and "
 			"piecewise affine expression", return -1);
+
+	return 0;
+}
+
+/* Check that isl_set_min_val and isl_set_max_val compute the correct
+ * result on non-convex inputs.
+ */
+static int test_min(struct isl_ctx *ctx)
+{
+	isl_set *set;
+	isl_aff *aff;
+	isl_val *val;
+	int min_ok, max_ok;
+
+	set = isl_set_read_from_str(ctx, "{ [-1]; [1] }");
+	aff = isl_aff_read_from_str(ctx, "{ [x] -> [x] }");
+	val = isl_set_min_val(set, aff);
+	min_ok = isl_val_is_negone(val);
+	isl_val_free(val);
+	val = isl_set_max_val(set, aff);
+	max_ok = isl_val_is_one(val);
+	isl_val_free(val);
+	isl_aff_free(aff);
+	isl_set_free(set);
+
+	if (min_ok < 0 || max_ok < 0)
+		return -1;
+	if (!min_ok)
+		isl_die(ctx, isl_error_unknown,
+			"unexpected minimum", return -1);
+	if (!max_ok)
+		isl_die(ctx, isl_error_unknown,
+			"unexpected maximum", return -1);
 
 	return 0;
 }
@@ -4457,6 +4491,7 @@ struct {
 	{ "subset", &test_subset },
 	{ "subtract", &test_subtract },
 	{ "lexmin", &test_lexmin },
+	{ "min", &test_min },
 	{ "gist", &test_gist },
 	{ "piecewise quasi-polynomials", &test_pwqp },
 };
