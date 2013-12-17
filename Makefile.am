@@ -18,7 +18,7 @@ if NEED_GET_MEMORY_FUNCTIONS
 GET_MEMORY_FUNCTIONS=mp_get_memory_functions.c
 endif
 
-INCLUDES = -I. -I$(srcdir) -I$(srcdir)/include -Iinclude/ 
+AM_CPPFLAGS = -I. -I$(srcdir) -I$(srcdir)/include -Iinclude/ @GMP_CPPFLAGS@
 AM_CFLAGS = @WARNING_FLAGS@
 
 libisl_la_SOURCES = \
@@ -136,57 +136,46 @@ libisl_la_SOURCES = \
 libisl_la_LIBADD = @GMP_LIBS@
 libisl_la_LDFLAGS = -version-info @versioninfo@ \
 	@GMP_LDFLAGS@
-libisl_la_CPPFLAGS = $(INCLUDES) @GMP_CPPFLAGS@
 
-isl_test_CPPFLAGS = $(INCLUDES) @GMP_CPPFLAGS@
 isl_test_LDFLAGS = @GMP_LDFLAGS@
 isl_test_LDADD = libisl.la @GMP_LIBS@
 
-isl_polyhedron_sample_CPPFLAGS = $(INCLUDES) @GMP_CPPFLAGS@
 isl_polyhedron_sample_LDADD = libisl.la
 isl_polyhedron_sample_SOURCES = \
 	polyhedron_sample.c
 
-isl_pip_CPPFLAGS = $(INCLUDES) @GMP_CPPFLAGS@
 isl_pip_LDFLAGS = @GMP_LDFLAGS@
 isl_pip_LDADD = libisl.la @GMP_LIBS@
 isl_pip_SOURCES = \
 	pip.c
 
-isl_codegen_CPPFLAGS = $(INCLUDES) @GMP_CPPFLAGS@
 isl_codegen_LDFLAGS = @GMP_LDFLAGS@
 isl_codegen_LDADD = libisl.la @GMP_LIBS@
 isl_codegen_SOURCES = \
 	codegen.c
 
-isl_bound_CPPFLAGS = $(INCLUDES) @GMP_CPPFLAGS@
 isl_bound_LDFLAGS = @GMP_LDFLAGS@
 isl_bound_LDADD = libisl.la @GMP_LIBS@
 isl_bound_SOURCES = \
 	bound.c
 
-isl_polyhedron_minimize_CPPFLAGS = $(INCLUDES) @GMP_CPPFLAGS@
 isl_polyhedron_minimize_LDFLAGS = @GMP_LDFLAGS@
 isl_polyhedron_minimize_LDADD = libisl.la @GMP_LIBS@
 isl_polyhedron_minimize_SOURCES = \
 	polyhedron_minimize.c
 
-isl_polytope_scan_CPPFLAGS = $(INCLUDES) @GMP_CPPFLAGS@
 isl_polytope_scan_LDADD = libisl.la
 isl_polytope_scan_SOURCES = \
 	polytope_scan.c
 
-isl_polyhedron_detect_equalities_CPPFLAGS = $(INCLUDES) @GMP_CPPFLAGS@
 isl_polyhedron_detect_equalities_LDADD = libisl.la
 isl_polyhedron_detect_equalities_SOURCES = \
 	polyhedron_detect_equalities.c
 
-isl_cat_CPPFLAGS = $(INCLUDES) @GMP_CPPFLAGS@
 isl_cat_LDADD = libisl.la
 isl_cat_SOURCES = \
 	cat.c
 
-isl_closure_CPPFLAGS = $(INCLUDES) @GMP_CPPFLAGS@
 isl_closure_LDADD = libisl.la
 isl_closure_SOURCES = \
 	closure.c
