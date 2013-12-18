@@ -168,6 +168,9 @@ isl_ctx *isl_ctx_alloc_with_options(struct isl_args *args, void *user_opt)
 
 	ctx->error = isl_error_none;
 
+	ctx->operations = 0;
+	isl_ctx_set_max_operations(ctx, ctx->opt->max_operations);
+
 	return ctx;
 error:
 	isl_args_free(args, user_opt);
@@ -197,6 +200,13 @@ void isl_ctx_deref(struct isl_ctx *ctx)
 	ctx->ref--;
 }
 
+/* Print statistics on usage.
+ */
+static void print_stats(isl_ctx *ctx)
+{
+	fprintf(stderr, "operations: %lu\n", ctx->operations);
+}
+
 void isl_ctx_free(struct isl_ctx *ctx)
 {
 	if (!ctx)
@@ -205,6 +215,9 @@ void isl_ctx_free(struct isl_ctx *ctx)
 		isl_die(ctx, isl_error_invalid,
 			"isl_ctx freed, but some objects still reference it",
 			return);
+
+	if (ctx->opt->print_stats)
+		print_stats(ctx);
 
 	isl_hash_table_clear(&ctx->id_table);
 	isl_blk_clear_cache(ctx);
@@ -265,4 +278,29 @@ int isl_ctx_parse_options(isl_ctx *ctx, int argc, char **argv, unsigned flags)
 	if (!ctx)
 		return -1;
 	return isl_args_parse(ctx->user_args, argc, argv, ctx->user_opt, flags);
+}
+
+/* Set the maximal number of iterations of "ctx" to "max_operations".
+ */
+void isl_ctx_set_max_operations(isl_ctx *ctx, unsigned long max_operations)
+{
+	if (!ctx)
+		return;
+	ctx->max_operations = max_operations;
+}
+
+/* Return the maximal number of iterations of "ctx".
+ */
+unsigned long isl_ctx_get_max_operations(isl_ctx *ctx)
+{
+	return ctx ? ctx->max_operations : 0;
+}
+
+/* Reset the number of operations performed by "ctx".
+ */
+void isl_ctx_reset_operations(isl_ctx *ctx)
+{
+	if (!ctx)
+		return;
+	ctx->operations = 0;
 }

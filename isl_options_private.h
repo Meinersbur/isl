@@ -58,6 +58,9 @@ struct isl_options {
 	int			ast_build_scale_strides;
 	int			ast_build_allow_else;
 	int			ast_build_allow_or;
+
+	int			print_stats;
+	unsigned long		max_operations;
 };
 
 #endif

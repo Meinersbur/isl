@@ -26,4 +26,7 @@ struct isl_ctx {
 	enum isl_error		error;
 
 	int			abort;
+
+	unsigned long		operations;
+	unsigned long		max_operations;
 };

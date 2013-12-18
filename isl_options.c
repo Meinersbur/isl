@@ -172,6 +172,10 @@ ISL_ARG_BOOL(struct isl_options, ast_build_allow_else, 0,
 	"ast-build-allow-else", 1, "generate if statements with else branches")
 ISL_ARG_BOOL(struct isl_options, ast_build_allow_or, 0,
 	"ast-build-allow-or", 1, "generate if conditions with disjunctions")
+ISL_ARG_BOOL(struct isl_options, print_stats, 0, "print-stats", 0,
+	"print statistics for every isl_ctx")
+ISL_ARG_ULONG(struct isl_options, max_operations, 0,
+	"max-operations", 0, "default number of maximal operations per isl_ctx")
 ISL_ARG_VERSION(print_version)
 ISL_ARGS_END
 
