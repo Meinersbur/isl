@@ -1431,7 +1431,9 @@ __isl_give isl_space *isl_space_drop_dims(__isl_take isl_space *dim,
 		isl_die(dim->ctx, isl_error_invalid,
 			"cannot drop dimensions of specified type", goto error);
 
-	isl_assert(dim->ctx, first + num <= n(dim, type), goto error);
+	if (first + num > n(dim, type) || first + num < first)
+		isl_die(isl_space_get_ctx(dim), isl_error_invalid,
+			"index out of bounds", return isl_space_free(dim));
 	dim = isl_space_cow(dim);
 	if (!dim)
 		goto error;

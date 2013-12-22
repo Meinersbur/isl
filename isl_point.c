@@ -424,6 +424,9 @@ __isl_give isl_basic_set *isl_basic_set_from_point(__isl_take isl_point *pnt)
 	isl_basic_set *bset;
 	isl_basic_set *model;
 
+	if (!pnt)
+		return NULL;
+
 	model = isl_basic_set_empty(isl_space_copy(pnt->dim));
 	bset = isl_basic_set_from_vec(isl_vec_copy(pnt->vec));
 	bset = isl_basic_set_from_underlying_set(bset, model);

@@ -1902,8 +1902,11 @@ static __isl_give PW *FN(PW,pullback_pw_multi_aff_aligned)(__isl_take PW *pw,
 		goto error;
 
 	if (pma->n == 0) {
+		isl_space *space;
+		space = isl_space_join(isl_pw_multi_aff_get_space(pma),
+					FN(PW,get_space)(pw));
 		isl_pw_multi_aff_free(pma);
-		res = FN(PW,empty)(FN(PW,get_space)(pw));
+		res = FN(PW,empty)(space);
 		FN(PW,free)(pw);
 		return res;
 	}

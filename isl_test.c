@@ -29,6 +29,7 @@
 #include <isl/vertices.h>
 #include <isl/ast_build.h>
 #include <isl/val.h>
+#include <isl/ilp.h>
 
 #define ARRAY_SIZE(array) (sizeof(array)/sizeof(*array))
 
@@ -1749,6 +1750,39 @@ static int test_lexmin(struct isl_ctx *ctx)
 	return 0;
 }
 
+/* Check that isl_set_min_val and isl_set_max_val compute the correct
+ * result on non-convex inputs.
+ */
+static int test_min(struct isl_ctx *ctx)
+{
+	isl_set *set;
+	isl_aff *aff;
+	isl_val *val;
+	int min_ok, max_ok;
+
+	set = isl_set_read_from_str(ctx, "{ [-1]; [1] }");
+	aff = isl_aff_read_from_str(ctx, "{ [x] -> [x] }");
+	val = isl_set_min_val(set, aff);
+	min_ok = isl_val_is_negone(val);
+	isl_val_free(val);
+	val = isl_set_max_val(set, aff);
+	max_ok = isl_val_is_one(val);
+	isl_val_free(val);
+	isl_aff_free(aff);
+	isl_set_free(set);
+
+	if (min_ok < 0 || max_ok < 0)
+		return -1;
+	if (!min_ok)
+		isl_die(ctx, isl_error_unknown,
+			"unexpected minimum", return -1);
+	if (!max_ok)
+		isl_die(ctx, isl_error_unknown,
+			"unexpected maximum", return -1);
+
+	return 0;
+}
+
 struct must_may {
 	isl_map *must;
 	isl_map *may;
@@ -3384,6 +3418,30 @@ int test_product(isl_ctx *ctx)
 	return 0;
 }
 
+/* Check that two sets are not considered disjoint just because
+ * they have a different set of (named) parameters.
+ */
+static int test_disjoint(isl_ctx *ctx)
+{
+	const char *str;
+	isl_set *set, *set2;
+	int disjoint;
+
+	str = "[n] -> { [[]->[]] }";
+	set = isl_set_read_from_str(ctx, str);
+	str = "{ [[]->[]] }";
+	set2 = isl_set_read_from_str(ctx, str);
+	disjoint = isl_set_is_disjoint(set, set2);
+	isl_set_free(set);
+	isl_set_free(set2);
+	if (disjoint < 0)
+		return -1;
+	if (disjoint)
+		isl_die(ctx, isl_error_unknown, "unexpected result", return -1);
+
+	return 0;
+}
+
 int test_equal(isl_ctx *ctx)
 {
 	const char *str;
@@ -4648,6 +4706,7 @@ struct {
 	{ "vertices", &test_vertices },
 	{ "fixed", &test_fixed },
 	{ "equal", &test_equal },
+	{ "disjoint", &test_disjoint },
 	{ "product", &test_product },
 	{ "dim_max", &test_dim_max },
 	{ "affine", &test_aff },
@@ -4662,6 +4721,7 @@ struct {
 	{ "subset", &test_subset },
 	{ "subtract", &test_subtract },
 	{ "lexmin", &test_lexmin },
+	{ "min", &test_min },
 	{ "gist", &test_gist },
 	{ "piecewise quasi-polynomials", &test_pwqp },
 };
