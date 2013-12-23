@@ -1479,12 +1479,16 @@ static __isl_give isl_printer *print_ast_node_isl(__isl_take isl_printer *p,
  * Also if the node is a degenerate for then we will print it as
  * an assignment followed by the body of the for loop, so we need a block
  * as well.
+ * If the node is an if node with an else, then we print a block
+ * to avoid spurious dangling else warnings emitted by some compilers.
  */
 static int need_block(__isl_keep isl_ast_node *node)
 {
 	if (node->type == isl_ast_node_block)
 		return 1;
 	if (node->type == isl_ast_node_for && node->u.f.degenerate)
+		return 1;
+	if (node->type == isl_ast_node_if && node->u.i.else_node)
 		return 1;
 	return 0;
 }

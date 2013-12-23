@@ -45,9 +45,10 @@ for (int c0 = 0; c0 <= 1; c0 += 1) {
       S_4(c0);
   }
   if (length <= 1)
-    for (int c5 = 0; c5 <= length; c5 += 1)
+    for (int c5 = 0; c5 <= length; c5 += 1) {
       if (c5 == length) {
         S_4(c0);
       } else
         S_0(c0, 0, 0);
+    }
 }
