@@ -3419,6 +3419,9 @@ They can be modified using the following function.
 		__isl_take id_to_ast_expr *id2expr,
 		__isl_take isl_id *key,
 		__isl_take isl_ast_expr *val);
+	__isl_give id_to_ast_expr *isl_id_to_ast_expr_drop(
+		__isl_take id_to_ast_expr *id2expr,
+		__isl_take isl_id *key);
 
 Associative arrays can be printed using the following function.
 

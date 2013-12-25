@@ -30,6 +30,8 @@ __isl_give ISL_VAL *ISL_FN(ISL_HMAP,get)(__isl_keep ISL_HMAP *hmap,
 	__isl_take ISL_KEY *key);
 __isl_give ISL_HMAP *ISL_FN(ISL_HMAP,set)(__isl_take ISL_HMAP *hmap,
 	__isl_take ISL_KEY *key, __isl_take ISL_VAL *val);
+__isl_give ISL_HMAP *ISL_FN(ISL_HMAP,drop)(__isl_take ISL_HMAP *hmap,
+	__isl_take ISL_KEY *key);
 
 int ISL_FN(ISL_HMAP,foreach)(__isl_keep ISL_HMAP *hmap,
 	int (*fn)(__isl_take ISL_KEY *key, __isl_take ISL_VAL *val, void *user),

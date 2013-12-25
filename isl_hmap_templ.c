@@ -178,6 +178,52 @@ error:
 	return NULL;
 }
 
+/* Remove the mapping between "key" and its associated value (if any)
+ * from "hmap".
+ *
+ * If "key" is not mapped to anything, then we leave "hmap" untouched"
+ */
+__isl_give HMAP *FN(HMAP,drop)(__isl_take HMAP *hmap, __isl_take KEY *key)
+{
+	struct isl_hash_table_entry *entry;
+	S(pair) *pair;
+	uint32_t hash;
+
+	if (!hmap || !key)
+		goto error;
+
+	hash = FN(KEY,get_hash)(key);
+	entry = isl_hash_table_find(hmap->ctx, &hmap->table, hash,
+					&has_key, key, 0);
+	if (!entry) {
+		FN(KEY,free)(key);
+		return hmap;
+	}
+
+	hmap = FN(HMAP,cow)(hmap);
+	if (!hmap)
+		goto error;
+	entry = isl_hash_table_find(hmap->ctx, &hmap->table, hash,
+					&has_key, key, 0);
+	FN(KEY,free)(key);
+
+	if (!entry)
+		isl_die(hmap->ctx, isl_error_internal,
+			"missing entry" , goto error);
+
+	pair = entry->data;
+	isl_hash_table_remove(hmap->ctx, &hmap->table, entry);
+	FN(KEY,free)(pair->key);
+	FN(VAL,free)(pair->val);
+	free(pair);
+
+	return hmap;
+error:
+	FN(KEY,free)(key);
+	FN(HMAP,free)(hmap);
+	return NULL;
+}
+
 /* Add a mapping from "key" to "val" to "hmap".
  * If "key" was already mapped to something else, then that mapping
  * is replaced.
