@@ -123,6 +123,31 @@ void *FN(MULTI(BASE),free)(__isl_take MULTI(BASE) *multi)
 	return NULL;
 }
 
+/* Check whether "multi" has non-zero coefficients for any dimension
+ * in the given range or if any of these dimensions appear
+ * with non-zero coefficients in any of the integer divisions involved.
+ */
+int FN(MULTI(BASE),involves_dims)(__isl_keep MULTI(BASE) *multi,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	int i;
+
+	if (!multi)
+		return -1;
+	if (multi->n == 0 || n == 0)
+		return 0;
+
+	for (i = 0; i < multi->n; ++i) {
+		int involves;
+
+		involves = FN(EL,involves_dims)(multi->p[i], type, first, n);
+		if (involves < 0 || involves)
+			return involves;
+	}
+
+	return 0;
+}
+
 __isl_give MULTI(BASE) *FN(MULTI(BASE),insert_dims)(
 	__isl_take MULTI(BASE) *multi,
 	enum isl_dim_type type, unsigned first, unsigned n)

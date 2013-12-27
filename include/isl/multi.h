@@ -56,6 +56,9 @@ __isl_give isl_multi_##BASE *isl_multi_##BASE##_reset_tuple_id(		\
 	__isl_take isl_multi_##BASE *multi, enum isl_dim_type type);	\
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_reset_user(		\
 	__isl_take isl_multi_##BASE *multi);				\
+int isl_multi_##BASE##_involves_dims(					\
+	__isl_keep isl_multi_##BASE *multi, enum isl_dim_type type,	\
+	unsigned first, unsigned n);					\
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_insert_dims(		\
 	__isl_take isl_multi_##BASE *multi, enum isl_dim_type type,	\
 	unsigned first, unsigned n);					\

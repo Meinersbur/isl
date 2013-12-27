@@ -4376,6 +4376,14 @@ The expression can be inspected using
 		__isl_keep isl_union_pw_multi_aff *upma);
 	isl_ctx *isl_multi_pw_aff_get_ctx(
 		__isl_keep isl_multi_pw_aff *mpa);
+
+	int isl_multi_aff_involves_dims(
+		__isl_keep isl_multi_aff *ma,
+		enum isl_dim_type type, unsigned first, unsigned n);
+	int isl_multi_pw_aff_involves_dims(
+		__isl_keep isl_multi_pw_aff *mpa,
+		enum isl_dim_type type, unsigned first, unsigned n);
+
 	unsigned isl_multi_aff_dim(__isl_keep isl_multi_aff *maff,
 		enum isl_dim_type type);
 	unsigned isl_pw_multi_aff_dim(
