@@ -6189,6 +6189,18 @@ error:
 
 /* Compute the pullback of "pa" by the function represented by "mpa".
  * In other words, plug in "mpa" in "pa".
+ * "pa" and "mpa" are assumed to have been aligned.
+ *
+ * The pullback is computed by applying "pa" to "mpa".
+ */
+static __isl_give isl_pw_aff *isl_pw_aff_pullback_multi_pw_aff_aligned(
+	__isl_take isl_pw_aff *pa, __isl_take isl_multi_pw_aff *mpa)
+{
+	return isl_multi_pw_aff_apply_pw_aff_aligned(mpa, pa);
+}
+
+/* Compute the pullback of "pa" by the function represented by "mpa".
+ * In other words, plug in "mpa" in "pa".
  *
  * The pullback is computed by applying "pa" to "mpa".
  */
@@ -6202,15 +6214,39 @@ __isl_give isl_pw_aff *isl_pw_aff_pullback_multi_pw_aff(
  * In other words, plug in "mpa2" in "mpa1".
  *
  * The parameters of "mpa1" and "mpa2" are assumed to have been aligned.
+ *
+ * We pullback each member of "mpa1" in turn.
  */
 static __isl_give isl_multi_pw_aff *
 isl_multi_pw_aff_pullback_multi_pw_aff_aligned(
 	__isl_take isl_multi_pw_aff *mpa1, __isl_take isl_multi_pw_aff *mpa2)
 {
-	isl_pw_multi_aff *pma;
+	int i;
+	isl_space *space = NULL;
 
-	pma = isl_pw_multi_aff_from_multi_pw_aff(mpa2);
-	return isl_multi_pw_aff_pullback_pw_multi_aff_aligned(mpa1, pma);
+	mpa1 = isl_multi_pw_aff_cow(mpa1);
+	if (!mpa1 || !mpa2)
+		goto error;
+
+	space = isl_space_join(isl_multi_pw_aff_get_space(mpa2),
+				isl_multi_pw_aff_get_space(mpa1));
+
+	for (i = 0; i < mpa1->n; ++i) {
+		mpa1->p[i] = isl_pw_aff_pullback_multi_pw_aff_aligned(
+				mpa1->p[i], isl_multi_pw_aff_copy(mpa2));
+		if (!mpa1->p[i])
+			goto error;
+	}
+
+	mpa1 = isl_multi_pw_aff_reset_space(mpa1, space);
+
+	isl_multi_pw_aff_free(mpa2);
+	return mpa1;
+error:
+	isl_space_free(space);
+	isl_multi_pw_aff_free(mpa1);
+	isl_multi_pw_aff_free(mpa2);
+	return NULL;
 }
 
 /* Compute the pullback of "mpa1" by the function represented by "mpa2".
