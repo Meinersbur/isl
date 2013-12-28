@@ -242,6 +242,8 @@ __isl_give isl_pw_aff *isl_pw_aff_pullback_multi_aff(
 	__isl_take isl_pw_aff *pa, __isl_take isl_multi_aff *ma);
 __isl_give isl_pw_aff *isl_pw_aff_pullback_pw_multi_aff(
 	__isl_take isl_pw_aff *pa, __isl_take isl_pw_multi_aff *pma);
+__isl_give isl_pw_aff *isl_pw_aff_pullback_multi_pw_aff(
+	__isl_take isl_pw_aff *pa, __isl_take isl_multi_pw_aff *mpa);
 
 int isl_pw_aff_n_piece(__isl_keep isl_pw_aff *pwaff);
 int isl_pw_aff_foreach_piece(__isl_keep isl_pw_aff *pwaff,

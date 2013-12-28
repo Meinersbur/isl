@@ -4101,6 +4101,9 @@ remainder.
 	__isl_give isl_pw_aff *isl_pw_aff_pullback_pw_multi_aff(
 		__isl_take isl_pw_aff *pa,
 		__isl_take isl_pw_multi_aff *pma);
+	__isl_give isl_pw_aff *isl_pw_aff_pullback_multi_pw_aff(
+		__isl_take isl_pw_aff *pa,
+		__isl_take isl_multi_pw_aff *mpa);
 
 These functions precompose the input expression by the given
 C<isl_aff>, C<isl_multi_aff> or C<isl_pw_multi_aff>.  In other words,

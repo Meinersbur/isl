@@ -1,7 +1,7 @@
 /*
  * Copyright 2011      INRIA Saclay
  * Copyright 2011      Sven Verdoolaege
- * Copyright 2012-2013 Ecole Normale Superieure
+ * Copyright 2012-2014 Ecole Normale Superieure
  *
  * Use of this software is governed by the MIT license
  *
@@ -6030,6 +6030,172 @@ error:
 	isl_multi_pw_aff_free(mpa);
 	isl_pw_multi_aff_free(pma);
 	return NULL;
+}
+
+/* Apply "aff" to "mpa".  The range of "mpa" needs to be compatible
+ * with the domain of "aff".  The domain of the result is the same
+ * as that of "mpa".
+ * "mpa" and "aff" are assumed to have been aligned.
+ *
+ * We first extract the parametric constant from "aff", defined
+ * over the correct domain.
+ * Then we add the appropriate combinations of the members of "mpa".
+ * Finally, we add the integer divisions through recursive calls.
+ */
+static __isl_give isl_pw_aff *isl_multi_pw_aff_apply_aff_aligned(
+	__isl_take isl_multi_pw_aff *mpa, __isl_take isl_aff *aff)
+{
+	int i, n_param, n_in, n_div;
+	isl_space *space;
+	isl_val *v;
+	isl_pw_aff *pa;
+	isl_aff *tmp;
+
+	n_param = isl_aff_dim(aff, isl_dim_param);
+	n_in = isl_aff_dim(aff, isl_dim_in);
+	n_div = isl_aff_dim(aff, isl_dim_div);
+
+	space = isl_space_domain(isl_multi_pw_aff_get_space(mpa));
+	tmp = isl_aff_copy(aff);
+	tmp = isl_aff_drop_dims(tmp, isl_dim_div, 0, n_div);
+	tmp = isl_aff_drop_dims(tmp, isl_dim_in, 0, n_in);
+	tmp = isl_aff_add_dims(tmp, isl_dim_in,
+				isl_space_dim(space, isl_dim_set));
+	tmp = isl_aff_reset_domain_space(tmp, space);
+	pa = isl_pw_aff_from_aff(tmp);
+
+	for (i = 0; i < n_in; ++i) {
+		isl_pw_aff *pa_i;
+
+		if (!isl_aff_involves_dims(aff, isl_dim_in, i, 1))
+			continue;
+		v = isl_aff_get_coefficient_val(aff, isl_dim_in, i);
+		pa_i = isl_multi_pw_aff_get_pw_aff(mpa, i);
+		pa_i = isl_pw_aff_scale_val(pa_i, v);
+		pa = isl_pw_aff_add(pa, pa_i);
+	}
+
+	for (i = 0; i < n_div; ++i) {
+		isl_aff *div;
+		isl_pw_aff *pa_i;
+
+		if (!isl_aff_involves_dims(aff, isl_dim_div, i, 1))
+			continue;
+		div = isl_aff_get_div(aff, i);
+		pa_i = isl_multi_pw_aff_apply_aff_aligned(
+					    isl_multi_pw_aff_copy(mpa), div);
+		pa_i = isl_pw_aff_floor(pa_i);
+		v = isl_aff_get_coefficient_val(aff, isl_dim_div, i);
+		pa_i = isl_pw_aff_scale_val(pa_i, v);
+		pa = isl_pw_aff_add(pa, pa_i);
+	}
+
+	isl_multi_pw_aff_free(mpa);
+	isl_aff_free(aff);
+
+	return pa;
+}
+
+/* Apply "aff" to "mpa".  The range of "mpa" needs to be compatible
+ * with the domain of "aff".  The domain of the result is the same
+ * as that of "mpa".
+ */
+__isl_give isl_pw_aff *isl_multi_pw_aff_apply_aff(
+	__isl_take isl_multi_pw_aff *mpa, __isl_take isl_aff *aff)
+{
+	if (!aff || !mpa)
+		goto error;
+	if (isl_space_match(aff->ls->dim, isl_dim_param,
+				mpa->space, isl_dim_param))
+		return isl_multi_pw_aff_apply_aff_aligned(mpa, aff);
+
+	aff = isl_aff_align_params(aff, isl_multi_pw_aff_get_space(mpa));
+	mpa = isl_multi_pw_aff_align_params(mpa, isl_aff_get_space(aff));
+
+	return isl_multi_pw_aff_apply_aff_aligned(mpa, aff);
+error:
+	isl_aff_free(aff);
+	isl_multi_pw_aff_free(mpa);
+	return NULL;
+}
+
+/* Apply "pa" to "mpa".  The range of "mpa" needs to be compatible
+ * with the domain of "pa".  The domain of the result is the same
+ * as that of "mpa".
+ * "mpa" and "pa" are assumed to have been aligned.
+ *
+ * We consider each piece in turn.  Note that the domains of the
+ * pieces are assumed to be disjoint and they remain disjoint
+ * after taking the preimage (over the same function).
+ */
+static __isl_give isl_pw_aff *isl_multi_pw_aff_apply_pw_aff_aligned(
+	__isl_take isl_multi_pw_aff *mpa, __isl_take isl_pw_aff *pa)
+{
+	isl_space *space;
+	isl_pw_aff *res;
+	int i;
+
+	if (!mpa || !pa)
+		goto error;
+
+	space = isl_space_join(isl_multi_pw_aff_get_space(mpa),
+				isl_pw_aff_get_space(pa));
+	res = isl_pw_aff_empty(space);
+
+	for (i = 0; i < pa->n; ++i) {
+		isl_pw_aff *pa_i;
+		isl_set *domain;
+
+		pa_i = isl_multi_pw_aff_apply_aff_aligned(
+					isl_multi_pw_aff_copy(mpa),
+					isl_aff_copy(pa->p[i].aff));
+		domain = isl_set_copy(pa->p[i].set);
+		domain = isl_set_preimage_multi_pw_aff(domain,
+					isl_multi_pw_aff_copy(mpa));
+		pa_i = isl_pw_aff_intersect_domain(pa_i, domain);
+		res = isl_pw_aff_add_disjoint(res, pa_i);
+	}
+
+	isl_pw_aff_free(pa);
+	isl_multi_pw_aff_free(mpa);
+	return res;
+error:
+	isl_pw_aff_free(pa);
+	isl_multi_pw_aff_free(mpa);
+	return NULL;
+}
+
+/* Apply "pa" to "mpa".  The range of "mpa" needs to be compatible
+ * with the domain of "pa".  The domain of the result is the same
+ * as that of "mpa".
+ */
+__isl_give isl_pw_aff *isl_multi_pw_aff_apply_pw_aff(
+	__isl_take isl_multi_pw_aff *mpa, __isl_take isl_pw_aff *pa)
+{
+	if (!pa || !mpa)
+		goto error;
+	if (isl_space_match(pa->dim, isl_dim_param, mpa->space, isl_dim_param))
+		return isl_multi_pw_aff_apply_pw_aff_aligned(mpa, pa);
+
+	pa = isl_pw_aff_align_params(pa, isl_multi_pw_aff_get_space(mpa));
+	mpa = isl_multi_pw_aff_align_params(mpa, isl_pw_aff_get_space(pa));
+
+	return isl_multi_pw_aff_apply_pw_aff_aligned(mpa, pa);
+error:
+	isl_pw_aff_free(pa);
+	isl_multi_pw_aff_free(mpa);
+	return NULL;
+}
+
+/* Compute the pullback of "pa" by the function represented by "mpa".
+ * In other words, plug in "mpa" in "pa".
+ *
+ * The pullback is computed by applying "pa" to "mpa".
+ */
+__isl_give isl_pw_aff *isl_pw_aff_pullback_multi_pw_aff(
+	__isl_take isl_pw_aff *pa, __isl_take isl_multi_pw_aff *mpa)
+{
+	return isl_multi_pw_aff_apply_pw_aff(mpa, pa);
 }
 
 /* Compute the pullback of "mpa1" by the function represented by "mpa2".
