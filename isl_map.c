@@ -12295,14 +12295,40 @@ __isl_give isl_map *isl_map_preimage_domain_pw_multi_aff(
  * The result is a map that lives in the same space as "map",
  * except that the space of type "type" has been replaced by
  * the domain space of "mpa".
+ *
+ * If the map does not involve any constraints that refer to the
+ * dimensions of the substituted space, then the only possible
+ * effect of "mpa" on the map is to map the space to a different space.
+ * We create a separate isl_multi_aff to effectuate this change
+ * in order to avoid spurious splitting of the map along the pieces
+ * of "mpa".
  */
 __isl_give isl_map *isl_map_preimage_multi_pw_aff(__isl_take isl_map *map,
 	enum isl_dim_type type, __isl_take isl_multi_pw_aff *mpa)
 {
+	int n;
 	isl_pw_multi_aff *pma;
+
+	if (!map || !mpa)
+		goto error;
+
+	n = isl_map_dim(map, type);
+	if (!isl_map_involves_dims(map, type, 0, n)) {
+		isl_space *space;
+		isl_multi_aff *ma;
+
+		space = isl_multi_pw_aff_get_space(mpa);
+		isl_multi_pw_aff_free(mpa);
+		ma = isl_multi_aff_zero(space);
+		return isl_map_preimage_multi_aff(map, type, ma);
+	}
 
 	pma = isl_pw_multi_aff_from_multi_pw_aff(mpa);
 	return isl_map_preimage_pw_multi_aff(map, type, pma);
+error:
+	isl_map_free(map);
+	isl_multi_pw_aff_free(mpa);
+	return NULL;
 }
 
 /* Compute the preimage of "map" under the function represented by "mpa".
