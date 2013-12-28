@@ -49,6 +49,13 @@ __isl_give isl_val *isl_val_one(isl_ctx *ctx)
 	return isl_val_int_from_si(ctx, 1);
 }
 
+/* Return a reference to an isl_val representing negative one.
+ */
+__isl_give isl_val *isl_val_negone(isl_ctx *ctx)
+{
+	return isl_val_int_from_si(ctx, -1);
+}
+
 /* Return a reference to an isl_val representing NaN.
  */
 __isl_give isl_val *isl_val_nan(isl_ctx *ctx)

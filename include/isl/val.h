@@ -22,6 +22,7 @@ ISL_DECLARE_MULTI(val)
 
 __isl_give isl_val *isl_val_zero(isl_ctx *ctx);
 __isl_give isl_val *isl_val_one(isl_ctx *ctx);
+__isl_give isl_val *isl_val_negone(isl_ctx *ctx);
 __isl_give isl_val *isl_val_nan(isl_ctx *ctx);
 __isl_give isl_val *isl_val_infty(isl_ctx *ctx);
 __isl_give isl_val *isl_val_neginfty(isl_ctx *ctx);
