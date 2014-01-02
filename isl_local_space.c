@@ -1,6 +1,6 @@
 /*
  * Copyright 2011      INRIA Saclay
- * Copyright 2012-2013 Ecole Normale Superieure
+ * Copyright 2012-2014 Ecole Normale Superieure
  *
  * Use of this software is governed by the MIT license
  *
@@ -1201,6 +1201,54 @@ __isl_give isl_local_space *isl_local_space_move_dims(
 		return isl_local_space_free(ls);
 	ls->dim = isl_space_move_dims(ls->dim, dst_type, dst_pos,
 					src_type, src_pos, n);
+	if (!ls->dim)
+		return isl_local_space_free(ls);
+
+	return ls;
+}
+
+/* Remove any internal structure of the domain of "ls".
+ * If there is any such internal structure in the input,
+ * then the name of the corresponding space is also removed.
+ */
+__isl_give isl_local_space *isl_local_space_flatten_domain(
+	__isl_take isl_local_space *ls)
+{
+	if (!ls)
+		return NULL;
+
+	if (!ls->dim->nested[0])
+		return ls;
+
+	ls = isl_local_space_cow(ls);
+	if (!ls)
+		return NULL;
+
+	ls->dim = isl_space_flatten_domain(ls->dim);
+	if (!ls->dim)
+		return isl_local_space_free(ls);
+
+	return ls;
+}
+
+/* Remove any internal structure of the range of "ls".
+ * If there is any such internal structure in the input,
+ * then the name of the corresponding space is also removed.
+ */
+__isl_give isl_local_space *isl_local_space_flatten_range(
+	__isl_take isl_local_space *ls)
+{
+	if (!ls)
+		return NULL;
+
+	if (!ls->dim->nested[1])
+		return ls;
+
+	ls = isl_local_space_cow(ls);
+	if (!ls)
+		return NULL;
+
+	ls->dim = isl_space_flatten_range(ls->dim);
 	if (!ls->dim)
 		return isl_local_space_free(ls);
 

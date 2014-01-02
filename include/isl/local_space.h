@@ -71,6 +71,11 @@ int isl_local_space_is_equal(__isl_keep isl_local_space *ls1,
 __isl_give isl_basic_map *isl_local_space_lifting(
 	__isl_take isl_local_space *ls);
 
+__isl_give isl_local_space *isl_local_space_flatten_domain(
+	__isl_take isl_local_space *ls);
+__isl_give isl_local_space *isl_local_space_flatten_range(
+	__isl_take isl_local_space *ls);
+
 __isl_give isl_printer *isl_printer_print_local_space(__isl_take isl_printer *p,
 	__isl_keep isl_local_space *ls);
 void isl_local_space_dump(__isl_keep isl_local_space *ls);
