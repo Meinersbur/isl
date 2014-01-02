@@ -848,7 +848,7 @@ error:
 }
 
 /* Given two MULTI(BASE)s A -> B and C -> D,
- * construct a MULTI(BASE) (A * C) -> (B, D).
+ * construct a MULTI(BASE) (A * C) -> [B -> D].
  *
  * The parameters are assumed to have been aligned.
  */
@@ -890,7 +890,7 @@ error:
 }
 
 /* Given two MULTI(BASE)s A -> B and C -> D,
- * construct a MULTI(BASE) (A * C) -> (B, D).
+ * construct a MULTI(BASE) (A * C) -> [B -> D].
  */
 __isl_give MULTI(BASE) *FN(MULTI(BASE),range_product)(
 	__isl_take MULTI(BASE) *multi1, __isl_take MULTI(BASE) *multi2)
@@ -1033,7 +1033,7 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),flatten_range)(
 }
 
 /* Given two MULTI(BASE)s A -> B and C -> D,
- * construct a MULTI(BASE) (A * C) -> [B -> D].
+ * construct a MULTI(BASE) (A * C) -> (B, D).
  */
 __isl_give MULTI(BASE) *FN(MULTI(BASE),flat_range_product)(
 	__isl_take MULTI(BASE) *multi1, __isl_take MULTI(BASE) *multi2)
