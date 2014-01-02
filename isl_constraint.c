@@ -550,7 +550,7 @@ __isl_give isl_constraint *isl_constraint_set_coefficient(
  */
 __isl_give isl_constraint *isl_constraint_set_coefficient_val(
 	__isl_take isl_constraint *constraint,
-	enum isl_dim_type type, int pos, isl_val *v)
+	enum isl_dim_type type, int pos, __isl_take isl_val *v)
 {
 	constraint = isl_constraint_cow(constraint);
 	if (!constraint || !v)
