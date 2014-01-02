@@ -3273,6 +3273,28 @@ error:
 #undef NO_DOMAIN
 #undef NO_INTERSECT_DOMAIN
 
+/* Remove any internal structure of the domain of "ma".
+ * If there is any such internal structure in the input,
+ * then the name of the corresponding space is also removed.
+ */
+__isl_give isl_multi_aff *isl_multi_aff_flatten_domain(
+	__isl_take isl_multi_aff *ma)
+{
+	isl_space *space;
+
+	if (!ma)
+		return NULL;
+
+	if (!ma->space->nested[0])
+		return ma;
+
+	space = isl_multi_aff_get_space(ma);
+	space = isl_space_flatten_domain(space);
+	ma = isl_multi_aff_reset_space(ma, space);
+
+	return ma;
+}
+
 /* Given a map space, return an isl_multi_aff that maps a wrapped copy
  * of the space to its domain.
  */

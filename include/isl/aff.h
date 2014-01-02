@@ -419,6 +419,9 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_union_lexmax(
 	__isl_take isl_pw_multi_aff *pma1,
 	__isl_take isl_pw_multi_aff *pma2);
 
+__isl_give isl_multi_aff *isl_multi_aff_flatten_domain(
+	__isl_take isl_multi_aff *ma);
+
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_range_product(
 	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2);
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_flat_range_product(
