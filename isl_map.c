@@ -1,7 +1,7 @@
 /*
  * Copyright 2008-2009 Katholieke Universiteit Leuven
  * Copyright 2010      INRIA Saclay
- * Copyright 2012-2013 Ecole Normale Superieure
+ * Copyright 2012-2014 Ecole Normale Superieure
  *
  * Use of this software is governed by the MIT license
  *
@@ -11403,6 +11403,36 @@ error:
 	return NULL;
 }
 
+/* Construct a constraint imposing that the value of the first dimension is
+ * greater than or equal to that of the second.
+ */
+static __isl_give isl_constraint *constraint_order_ge(
+	__isl_take isl_space *space, enum isl_dim_type type1, int pos1,
+	enum isl_dim_type type2, int pos2)
+{
+	isl_constraint *c;
+
+	if (!space)
+		return NULL;
+
+	c = isl_inequality_alloc(isl_local_space_from_space(space));
+
+	if (pos1 >= isl_constraint_dim(c, type1))
+		isl_die(isl_constraint_get_ctx(c), isl_error_invalid,
+			"index out of bounds", return isl_constraint_free(c));
+	if (pos2 >= isl_constraint_dim(c, type2))
+		isl_die(isl_constraint_get_ctx(c), isl_error_invalid,
+			"index out of bounds", return isl_constraint_free(c));
+
+	if (type1 == type2 && pos1 == pos2)
+		return c;
+
+	c = isl_constraint_set_coefficient_si(c, type1, pos1, 1);
+	c = isl_constraint_set_coefficient_si(c, type2, pos2, -1);
+
+	return c;
+}
+
 /* Add a constraint imposing that the value of the first dimension is
  * greater than or equal to that of the second.
  */
@@ -11410,28 +11440,42 @@ __isl_give isl_basic_map *isl_basic_map_order_ge(__isl_take isl_basic_map *bmap,
 	enum isl_dim_type type1, int pos1, enum isl_dim_type type2, int pos2)
 {
 	isl_constraint *c;
-	isl_local_space *ls;
-
-	if (!bmap)
-		return NULL;
-
-	if (pos1 >= isl_basic_map_dim(bmap, type1))
-		isl_die(bmap->ctx, isl_error_invalid,
-			"index out of bounds", return isl_basic_map_free(bmap));
-	if (pos2 >= isl_basic_map_dim(bmap, type2))
-		isl_die(bmap->ctx, isl_error_invalid,
-			"index out of bounds", return isl_basic_map_free(bmap));
+	isl_space *space;
 
 	if (type1 == type2 && pos1 == pos2)
 		return bmap;
-
-	ls = isl_local_space_from_space(isl_basic_map_get_space(bmap));
-	c = isl_inequality_alloc(ls);
-	c = isl_constraint_set_coefficient_si(c, type1, pos1, 1);
-	c = isl_constraint_set_coefficient_si(c, type2, pos2, -1);
+	space = isl_basic_map_get_space(bmap);
+	c = constraint_order_ge(space, type1, pos1, type2, pos2);
 	bmap = isl_basic_map_add_constraint(bmap, c);
 
 	return bmap;
+}
+
+/* Add a constraint imposing that the value of the first dimension is
+ * greater than or equal to that of the second.
+ */
+__isl_give isl_map *isl_map_order_ge(__isl_take isl_map *map,
+	enum isl_dim_type type1, int pos1, enum isl_dim_type type2, int pos2)
+{
+	isl_constraint *c;
+	isl_space *space;
+
+	if (type1 == type2 && pos1 == pos2)
+		return map;
+	space = isl_map_get_space(map);
+	c = constraint_order_ge(space, type1, pos1, type2, pos2);
+	map = isl_map_add_constraint(map, c);
+
+	return map;
+}
+
+/* Add a constraint imposing that the value of the first dimension is
+ * less than or equal to that of the second.
+ */
+__isl_give isl_map *isl_map_order_le(__isl_take isl_map *map,
+	enum isl_dim_type type1, int pos1, enum isl_dim_type type2, int pos2)
+{
+	return isl_map_order_ge(map, type2, pos2, type1, pos1);
 }
 
 /* Construct a basic map where the value of the first dimension is
