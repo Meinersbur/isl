@@ -1394,6 +1394,27 @@ __isl_give PW *FN(PW,set_tuple_id)(__isl_take PW *pw, enum isl_dim_type type,
 	return FN(PW,reset_space)(pw, space);
 }
 
+/* Drop the id on the specified tuple.
+ */
+__isl_give PW *FN(PW,reset_tuple_id)(__isl_take PW *pw, enum isl_dim_type type)
+{
+	isl_space *space;
+
+	if (!pw)
+		return NULL;
+	if (!FN(PW,has_tuple_id)(pw, type))
+		return pw;
+
+	pw = FN(PW,cow)(pw);
+	if (!pw)
+		return NULL;
+
+	space = FN(PW,get_space)(pw);
+	space = isl_space_reset_tuple_id(space, type);
+
+	return FN(PW,reset_space)(pw, space);
+}
+
 __isl_give PW *FN(PW,set_dim_id)(__isl_take PW *pw,
 	enum isl_dim_type type, unsigned pos, __isl_take isl_id *id)
 {

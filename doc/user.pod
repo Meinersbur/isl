@@ -3942,6 +3942,9 @@ It can be modified using
 	__isl_give isl_pw_aff *isl_pw_aff_set_tuple_id(
 		__isl_take isl_pw_aff *pwaff,
 		enum isl_dim_type type, __isl_take isl_id *id);
+	__isl_give isl_pw_aff *isl_pw_aff_reset_tuple_id(
+		__isl_take isl_pw_aff *pa,
+		enum isl_dim_type type);
 	__isl_give isl_aff *isl_aff_set_dim_name(
 		__isl_take isl_aff *aff, enum isl_dim_type type,
 		unsigned pos, const char *s);
