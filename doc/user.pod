@@ -2024,6 +2024,8 @@ The following functions check whether the space of the given
 	int isl_set_is_wrapping(__isl_keep isl_set *set);
 
 	#include <isl/map.h>
+	int isl_map_domain_is_wrapping(
+		__isl_keep isl_map *map);
 	int isl_map_range_is_wrapping(
 		__isl_keep isl_map *map);
 

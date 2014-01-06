@@ -10263,6 +10263,16 @@ int isl_set_is_wrapping(__isl_keep isl_set *set)
 	return isl_space_is_wrapping(set->dim);
 }
 
+/* Is the domain of "map" a wrapped relation?
+ */
+int isl_map_domain_is_wrapping(__isl_keep isl_map *map)
+{
+	if (!map)
+		return -1;
+
+	return isl_space_domain_is_wrapping(map->dim);
+}
+
 /* Is the range of "map" a wrapped relation?
  */
 int isl_map_range_is_wrapping(__isl_keep isl_map *map)
