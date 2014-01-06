@@ -751,6 +751,37 @@ static __isl_give isl_printer *print_band_list(__isl_take isl_printer *p,
 	return p;
 }
 
+/* Insert a band node with partial schedule "partial" between the domain
+ * root node of "schedule" and its single child.
+ * Return a pointer to the updated schedule.
+ */
+__isl_give isl_schedule *isl_schedule_insert_partial_schedule(
+	__isl_take isl_schedule *schedule,
+	__isl_take isl_multi_union_pw_aff *partial)
+{
+	isl_schedule_node *node;
+
+	node = isl_schedule_get_root(schedule);
+	isl_schedule_free(schedule);
+	if (!node)
+		goto error;
+	if (isl_schedule_node_get_type(node) != isl_schedule_node_domain)
+		isl_die(isl_schedule_node_get_ctx(node), isl_error_internal,
+			"root node not a domain node", goto error);
+
+	node = isl_schedule_node_child(node, 0);
+	node = isl_schedule_node_insert_partial_schedule(node, partial);
+
+	schedule = isl_schedule_node_get_schedule(node);
+	isl_schedule_node_free(node);
+
+	return schedule;
+error:
+	isl_schedule_node_free(node);
+	isl_multi_union_pw_aff_free(partial);
+	return NULL;
+}
+
 /* Print "schedule" to "p".
  *
  * If "schedule" was created from a schedule tree, then we print

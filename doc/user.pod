@@ -7300,6 +7300,15 @@ can be obtained using the following function.
 	__isl_give isl_union_set *isl_schedule_get_domain(
 		__isl_keep isl_schedule *schedule);
 
+An extra top-level band node (right underneath the domain node) can
+be introduced into the schedule using the following function.
+
+	#include <isl/schedule.h>
+	__isl_give isl_schedule *
+	isl_schedule_insert_partial_schedule(
+		__isl_take isl_schedule *schedule,
+		__isl_take isl_multi_union_pw_aff *partial);
+
 An C<isl_union_map> representation of the schedule can be obtained
 from an C<isl_schedule> using the following function.
 

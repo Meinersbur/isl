@@ -4,6 +4,7 @@
 #include <isl/union_set_type.h>
 #include <isl/union_map_type.h>
 #include <isl/schedule_type.h>
+#include <isl/aff_type.h>
 #include <isl/band.h>
 #include <isl/space.h>
 #include <isl/list.h>
@@ -96,6 +97,10 @@ __isl_give isl_schedule *isl_schedule_map_schedule_node(
 	__isl_take isl_schedule *schedule,
 	__isl_give isl_schedule_node *(*fn)(
 		__isl_take isl_schedule_node *node, void *user), void *user);
+
+__isl_give isl_schedule *isl_schedule_insert_partial_schedule(
+	__isl_take isl_schedule *schedule,
+	__isl_take isl_multi_union_pw_aff *partial);
 
 __isl_give isl_band_list *isl_schedule_get_band_forest(
 	__isl_keep isl_schedule *schedule);
