@@ -36,6 +36,32 @@
  * Parallelization and Locality Optimization in the Polyhedral Model".
  */
 
+ __isl_give isl_schedule_constraints *isl_schedule_constraints_copy(
+	__isl_keep isl_schedule_constraints *sc)
+{
+	isl_ctx *ctx;
+	isl_schedule_constraints *sc_copy;
+	enum isl_edge_type i;
+
+	ctx = isl_union_set_get_ctx(sc->domain);
+	sc_copy = isl_calloc_type(ctx, struct isl_schedule_constraints);
+	if (!sc_copy)
+		return NULL;
+
+	sc_copy->domain = isl_union_set_copy(sc->domain);
+	if (!sc_copy->domain)
+		return isl_schedule_constraints_free(sc_copy);
+
+	for (i = isl_edge_first; i <= isl_edge_last; ++i) {
+		sc_copy->constraint[i] = isl_union_map_copy(sc->constraint[i]);
+		if (!sc_copy->constraint[i])
+			return isl_schedule_constraints_free(sc_copy);
+	}
+
+	return sc_copy;
+}
+
+
 /* Construct an isl_schedule_constraints object for computing a schedule
  * on "domain".  The initial object does not impose any constraints.
  */
