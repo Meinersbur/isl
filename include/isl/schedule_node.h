@@ -112,6 +112,9 @@ __isl_give isl_schedule_node *isl_schedule_node_insert_set(
 	__isl_take isl_schedule_node *node,
 	__isl_take isl_union_set_list *filters);
 
+__isl_give isl_schedule_node *isl_schedule_node_reset_user(
+	__isl_take isl_schedule_node *node);
+
 __isl_give isl_printer *isl_printer_print_schedule_node(
 	__isl_take isl_printer *p, __isl_keep isl_schedule_node *node);
 void isl_schedule_node_dump(__isl_keep isl_schedule_node *node);

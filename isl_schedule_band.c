@@ -438,3 +438,20 @@ __isl_give isl_schedule_band *isl_schedule_band_drop(
 
 	return band;
 }
+
+/* Reset the user pointer on all identifiers of parameters and tuples
+ * in "band".
+ */
+__isl_give isl_schedule_band *isl_schedule_band_reset_user(
+	__isl_take isl_schedule_band *band)
+{
+	band = isl_schedule_band_cow(band);
+	if (!band)
+		return NULL;
+
+	band->mupa = isl_multi_union_pw_aff_reset_user(band->mupa);
+	if (!band->mupa)
+		return isl_schedule_band_free(band);
+
+	return band;
+}

@@ -1361,6 +1361,46 @@ error:
 	return NULL;
 }
 
+/* Reset the user pointer on all identifiers of parameters and tuples
+ * in the root of "tree".
+ */
+__isl_give isl_schedule_tree *isl_schedule_tree_reset_user(
+	__isl_take isl_schedule_tree *tree)
+{
+	if (isl_schedule_tree_is_leaf(tree))
+		return tree;
+
+	tree = isl_schedule_tree_cow(tree);
+	if (!tree)
+		return NULL;
+
+	switch (tree->type) {
+	case isl_schedule_node_error:
+		return isl_schedule_tree_free(tree);
+	case isl_schedule_node_band:
+		tree->band = isl_schedule_band_reset_user(tree->band);
+		if (!tree->band)
+			return isl_schedule_tree_free(tree);
+		break;
+	case isl_schedule_node_domain:
+		tree->domain = isl_union_set_reset_user(tree->domain);
+		if (!tree->domain)
+			return isl_schedule_tree_free(tree);
+		break;
+	case isl_schedule_node_filter:
+		tree->filter = isl_union_set_reset_user(tree->filter);
+		if (!tree->filter)
+			return isl_schedule_tree_free(tree);
+		break;
+	case isl_schedule_node_leaf:
+	case isl_schedule_node_sequence:
+	case isl_schedule_node_set:
+		break;
+	}
+
+	return tree;
+}
+
 /* Are any members in "band" marked coincident?
  */
 static int any_coincident(__isl_keep isl_schedule_band *band)

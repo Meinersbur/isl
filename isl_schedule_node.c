@@ -1506,6 +1506,21 @@ __isl_give isl_schedule_node *isl_schedule_node_insert_set(
 					isl_schedule_node_set, filters);
 }
 
+/* Reset the user pointer on all identifiers of parameters and tuples
+ * in the schedule node "node".
+ */
+__isl_give isl_schedule_node *isl_schedule_node_reset_user(
+	__isl_take isl_schedule_node *node)
+{
+	isl_schedule_tree *tree;
+
+	tree = isl_schedule_node_get_tree(node);
+	tree = isl_schedule_tree_reset_user(tree);
+	node = isl_schedule_node_graft_tree(node, tree);
+
+	return node;
+}
+
 /* Print "node" to "p".
  */
 __isl_give isl_printer *isl_printer_print_schedule_node(
