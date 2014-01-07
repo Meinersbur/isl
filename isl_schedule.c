@@ -374,6 +374,24 @@ __isl_give isl_schedule *isl_schedule_map_schedule_node(
 	return schedule;
 }
 
+/* Wrapper around isl_schedule_node_reset_user for use as
+ * an isl_schedule_map_schedule_node callback.
+ */
+static __isl_give isl_schedule_node *reset_user(
+	__isl_take isl_schedule_node *node, void *user)
+{
+	return isl_schedule_node_reset_user(node);
+}
+
+/* Reset the user pointer on all identifiers of parameters and tuples
+ * in the schedule "schedule".
+ */
+__isl_give isl_schedule *isl_schedule_reset_user(
+	__isl_take isl_schedule *schedule)
+{
+	return isl_schedule_map_schedule_node(schedule, &reset_user, NULL);
+}
+
 /* Return an isl_union_map representation of the schedule.
  * If we still have access to the schedule tree, then we return
  * an isl_union_map corresponding to the subtree schedule of the child
