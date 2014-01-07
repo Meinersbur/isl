@@ -1889,10 +1889,18 @@ operations and may not be preserved across those operations.
 The user pointers on all parameters and tuples can be reset
 using the following functions.
 
+	#include <isl/set.h>
 	__isl_give isl_set *isl_set_reset_user(
 		__isl_take isl_set *set);
+	#include <isl/map.h>
 	__isl_give isl_map *isl_map_reset_user(
 		__isl_take isl_map *map);
+	#include <isl/union_set.h>
+	__isl_give isl_union_set *isl_union_set_reset_user(
+		__isl_take isl_union_set *uset);
+	#include <isl/union_map.h>
+	__isl_give isl_union_map *isl_union_map_reset_user(
+		__isl_take isl_union_map *umap);
 
 =head2 Properties
 

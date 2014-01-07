@@ -2833,3 +2833,41 @@ __isl_give isl_union_set *isl_union_set_preimage_union_pw_multi_aff(
 	return preimage_union_pw_multi_aff(uset, upma,
 					&isl_union_set_preimage_pw_multi_aff);
 }
+
+/* Reset the user pointer on all identifiers of parameters and tuples
+ * of the space of *entry.
+ */
+static int reset_user(void **entry, void *user)
+{
+	isl_map **map = (isl_map **)entry;
+
+	*map = isl_map_reset_user(*map);
+
+	return *map ? 0 : -1;
+}
+
+/* Reset the user pointer on all identifiers of parameters and tuples
+ * of the spaces of "umap".
+ */
+__isl_give isl_union_map *isl_union_map_reset_user(
+	__isl_take isl_union_map *umap)
+{
+	umap = isl_union_map_cow(umap);
+	if (!umap)
+		return NULL;
+	umap->dim = isl_space_reset_user(umap->dim);
+	if (!umap->dim)
+		return isl_union_map_free(umap);
+	umap = un_op(umap, &reset_user);
+
+	return umap;
+}
+
+/* Reset the user pointer on all identifiers of parameters and tuples
+ * of the spaces of "uset".
+ */
+__isl_give isl_union_set *isl_union_set_reset_user(
+	__isl_take isl_union_set *uset)
+{
+	return isl_union_map_reset_user(uset);
+}
