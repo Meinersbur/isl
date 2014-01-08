@@ -3,6 +3,7 @@
  * Copyright 2008-2009 Katholieke Universiteit Leuven
  * Copyright 2010      INRIA Saclay
  * Copyright 2012      Universiteit Leiden
+ * Copyright 2014      Ecole Normale Superieure
  *
  * Use of this software is governed by the MIT license
  *
@@ -12,6 +13,7 @@
  * B-3001 Leuven, Belgium
  * and INRIA Saclay - Ile-de-France, Parc Club Orsay Universite,
  * ZAC des vignes, 4 rue Jacques Monod, 91893 Orsay, France 
+ * and Ecole Normale Superieure, 45 rue d'Ulm, 75230 Paris, France
  */
 
 #include <isl/set.h>
@@ -1167,13 +1169,158 @@ error:
 	return NULL;
 }
 
-struct isl_compute_flow_data {
-	isl_union_map *must_source;
-	isl_union_map *may_source;
+/* This structure epresents the result of a dependence analysis computation.
+ *
+ * "must_dep" represents the definite dependences.
+ * "may_dep" represents the non-definite dependences.
+ * "must_no_source" represents the subset of the sink accesses for which
+ * definitely no source was found.
+ * "may_no_source" represents the subset of the sink accesses for which
+ * possibly, but not definitely, no source was found.
+ */
+struct isl_union_flow {
 	isl_union_map *must_dep;
 	isl_union_map *may_dep;
 	isl_union_map *must_no_source;
 	isl_union_map *may_no_source;
+};
+
+typedef struct isl_union_flow isl_union_flow;
+
+/* Free "flow" and return NULL.
+ */
+__isl_null isl_union_flow *isl_union_flow_free(__isl_take isl_union_flow *flow)
+{
+	if (!flow)
+		return NULL;
+	isl_union_map_free(flow->must_dep);
+	isl_union_map_free(flow->may_dep);
+	isl_union_map_free(flow->must_no_source);
+	isl_union_map_free(flow->may_no_source);
+	free(flow);
+	return NULL;
+}
+
+void isl_union_flow_dump(__isl_keep isl_union_flow *flow)
+{
+	if (!flow)
+		return;
+
+	fprintf(stderr, "must dependences: ");
+	isl_union_map_dump(flow->must_dep);
+	fprintf(stderr, "may dependences: ");
+	isl_union_map_dump(flow->may_dep);
+	fprintf(stderr, "must no source: ");
+	isl_union_map_dump(flow->must_no_source);
+	fprintf(stderr, "may no source: ");
+	isl_union_map_dump(flow->may_no_source);
+}
+
+/* Return the definite dependences in "flow".
+ */
+__isl_give isl_union_map *isl_union_flow_get_must_dependence(
+	__isl_keep isl_union_flow *flow)
+{
+	if (!flow)
+		return NULL;
+	return isl_union_map_copy(flow->must_dep);
+}
+
+/* Return the non-definite dependences in "flow".
+ */
+static __isl_give isl_union_map *isl_union_flow_get_non_must_dependence(
+	__isl_keep isl_union_flow *flow)
+{
+	if (!flow)
+		return NULL;
+	return isl_union_map_copy(flow->may_dep);
+}
+
+/* Return the subset of the sink accesses for which definitely
+ * no source was found.
+ */
+__isl_give isl_union_map *isl_union_flow_get_must_no_source(
+	__isl_keep isl_union_flow *flow)
+{
+	if (!flow)
+		return NULL;
+	return isl_union_map_copy(flow->must_no_source);
+}
+
+/* Return the subset of the sink accesses for which possibly, but not
+ * definitely, no source was found.
+ */
+static __isl_give isl_union_map *isl_union_flow_get_non_must_no_source(
+	__isl_keep isl_union_flow *flow)
+{
+	if (!flow)
+		return NULL;
+	return isl_union_map_copy(flow->may_no_source);
+}
+
+/* Create a new isl_union_flow object, initialized with empty
+ * dependence relations and sink subsets.
+ */
+static __isl_give isl_union_flow *isl_union_flow_alloc(
+	__isl_take isl_space *space)
+{
+	isl_ctx *ctx;
+	isl_union_map *empty;
+	isl_union_flow *flow;
+
+	if (!space)
+		return NULL;
+	ctx = isl_space_get_ctx(space);
+	flow = isl_alloc_type(ctx, isl_union_flow);
+	if (!flow)
+		goto error;
+
+	empty = isl_union_map_empty(space);
+	flow->must_dep = isl_union_map_copy(empty);
+	flow->may_dep = isl_union_map_copy(empty);
+	flow->must_no_source = isl_union_map_copy(empty);
+	flow->may_no_source = empty;
+
+	if (!flow->must_dep || !flow->may_dep ||
+	    !flow->must_no_source || !flow->may_no_source)
+		return isl_union_flow_free(flow);
+
+	return flow;
+error:
+	isl_space_free(space);
+	return NULL;
+}
+
+/* Drop the schedule dimensions from the iteration domains in "flow".
+ * In particular, the schedule dimensions have been prepended
+ * to the iteration domains prior to the dependence analysis by
+ * replacing the iteration domain D, by the wrapped map [S -> D].
+ * Replace these wrapped maps by the original D.
+ */
+static __isl_give isl_union_flow *isl_union_flow_drop_schedule(
+	__isl_take isl_union_flow *flow)
+{
+	if (!flow)
+		return NULL;
+
+	flow->must_dep = isl_union_map_factor_range(flow->must_dep);
+	flow->may_dep = isl_union_map_factor_range(flow->may_dep);
+	flow->must_no_source =
+		isl_union_map_domain_factor_range(flow->must_no_source);
+	flow->may_no_source =
+		isl_union_map_domain_factor_range(flow->may_no_source);
+
+	if (!flow->must_dep || !flow->may_dep ||
+	    !flow->must_no_source || !flow->may_no_source)
+		return isl_union_flow_free(flow);
+
+	return flow;
+}
+
+struct isl_compute_flow_data {
+	isl_union_map *must_source;
+	isl_union_map *may_source;
+	isl_union_flow *flow;
 
 	int count;
 	int must;
@@ -1297,8 +1444,10 @@ static int compute_flow(__isl_take isl_map *map, void *user)
 	isl_ctx *ctx;
 	struct isl_compute_flow_data *data;
 	isl_flow *flow;
+	isl_union_flow *df;
 
 	data = (struct isl_compute_flow_data *)user;
+	df = data->flow;
 
 	ctx = isl_map_get_ctx(map);
 
@@ -1340,18 +1489,18 @@ static int compute_flow(__isl_take isl_map *map, void *user)
 	if (!flow)
 		goto error;
 
-	data->must_no_source = isl_union_map_union(data->must_no_source,
+	df->must_no_source = isl_union_map_union(df->must_no_source,
 		    isl_union_map_from_map(isl_flow_get_no_source(flow, 1)));
-	data->may_no_source = isl_union_map_union(data->may_no_source,
+	df->may_no_source = isl_union_map_union(df->may_no_source,
 		    isl_union_map_from_map(isl_flow_get_no_source(flow, 0)));
 
 	for (i = 0; i < flow->n_source; ++i) {
 		isl_union_map *dep;
 		dep = isl_union_map_from_map(isl_map_copy(flow->dep[i].map));
 		if (flow->dep[i].must)
-			data->must_dep = isl_union_map_union(data->must_dep, dep);
+			df->must_dep = isl_union_map_union(df->must_dep, dep);
 		else
-			data->may_dep = isl_union_map_union(data->may_dep, dep);
+			df->may_dep = isl_union_map_union(df->may_dep, dep);
 	}
 
 	isl_flow_free(flow);
@@ -1429,18 +1578,13 @@ int isl_union_map_compute_flow(__isl_take isl_union_map *sink,
 
 	data.must_source = must_source;
 	data.may_source = may_source;
-	data.must_dep = must_dep ?
-		isl_union_map_empty(isl_space_copy(space)) : NULL;
-	data.may_dep = may_dep ? isl_union_map_empty(isl_space_copy(space))
-			       : NULL;
-	data.must_no_source = must_no_source ?
-		isl_union_map_empty(isl_space_copy(space)) : NULL;
-	data.may_no_source = may_no_source ?
-		isl_union_map_empty(isl_space_copy(space)) : NULL;
-
-	isl_space_free(space);
+	data.flow = isl_union_flow_alloc(space);
 
 	if (isl_union_map_foreach_map(sink, &compute_flow, &data) < 0)
+		goto error;
+
+	data.flow = isl_union_flow_drop_schedule(data.flow);
+	if (!data.flow)
 		goto error;
 
 	isl_union_map_free(sink);
@@ -1448,25 +1592,23 @@ int isl_union_map_compute_flow(__isl_take isl_union_map *sink,
 	isl_union_map_free(may_source);
 
 	if (must_dep)
-		*must_dep = isl_union_map_factor_range(data.must_dep);
+		*must_dep = isl_union_flow_get_must_dependence(data.flow);
 	if (may_dep)
-		*may_dep = isl_union_map_factor_range(data.may_dep);
+		*may_dep = isl_union_flow_get_non_must_dependence(data.flow);
 	if (must_no_source)
-		*must_no_source = isl_union_map_domain_factor_range(
-							data.must_no_source);
+		*must_no_source = isl_union_flow_get_must_no_source(data.flow);
 	if (may_no_source)
-		*may_no_source = isl_union_map_domain_factor_range(
-							data.may_no_source);
+		*may_no_source =
+			    isl_union_flow_get_non_must_no_source(data.flow);
+
+	isl_union_flow_free(data.flow);
 
 	return 0;
 error:
 	isl_union_map_free(sink);
 	isl_union_map_free(must_source);
 	isl_union_map_free(may_source);
-	isl_union_map_free(data.must_dep);
-	isl_union_map_free(data.may_dep);
-	isl_union_map_free(data.must_no_source);
-	isl_union_map_free(data.may_no_source);
+	isl_union_flow_free(data.flow);
 
 	if (must_dep)
 		*must_dep = NULL;
