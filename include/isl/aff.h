@@ -767,6 +767,10 @@ __isl_give isl_union_pw_aff *isl_union_pw_aff_gist(
 __isl_give isl_union_pw_aff *isl_union_pw_aff_gist_params(
 	__isl_take isl_union_pw_aff *upa, __isl_take isl_set *context);
 
+__isl_give isl_union_pw_aff *isl_union_pw_aff_pullback_union_pw_multi_aff(
+	__isl_take isl_union_pw_aff *upa,
+	__isl_take isl_union_pw_multi_aff *upma);
+
 __isl_give isl_union_pw_aff *isl_union_pw_aff_floor(
 	__isl_take isl_union_pw_aff *upa);
 

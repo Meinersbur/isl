@@ -7237,3 +7237,96 @@ __isl_give isl_union_map *isl_union_map_from_union_pw_aff(
 	isl_union_pw_aff_free(upa);
 	return umap;
 }
+
+/* Internal data structure for isl_union_pw_aff_pullback_union_pw_multi_aff.
+ * upma is the function that is plugged in.
+ * pa is the current part of the function in which upma is plugged in.
+ * res collects the results.
+ */
+struct isl_union_pw_aff_pullback_upma_data {
+	isl_union_pw_multi_aff *upma;
+	isl_pw_aff *pa;
+	isl_union_pw_aff *res;
+};
+
+/* Check if "pma" can be plugged into data->pa.
+ * If so, perform the pullback and add the result to data->res.
+ */
+static int pa_pb_pma(void **entry, void *user)
+{
+	struct isl_union_pw_aff_pullback_upma_data *data = user;
+	isl_pw_multi_aff *pma = *entry;
+	isl_pw_aff *pa;
+
+	if (!isl_space_tuple_is_equal(data->pa->dim, isl_dim_in,
+				 pma->dim, isl_dim_out))
+		return 0;
+
+	pma = isl_pw_multi_aff_copy(pma);
+	pa = isl_pw_aff_copy(data->pa);
+	pa = isl_pw_aff_pullback_pw_multi_aff(pa, pma);
+
+	data->res = isl_union_pw_aff_add_pw_aff(data->res, pa);
+
+	return data->res ? 0 : -1;
+}
+
+/* Check if any of the elements of data->upma can be plugged into pa,
+ * add if so add the result to data->res.
+ */
+static int upa_pb_upma(void **entry, void *user)
+{
+	struct isl_union_pw_aff_pullback_upma_data *data = user;
+	isl_ctx *ctx;
+	isl_pw_aff *pa = *entry;
+
+	data->pa = pa;
+	ctx = isl_union_pw_multi_aff_get_ctx(data->upma);
+	if (isl_hash_table_foreach(ctx, &data->upma->table,
+				   &pa_pb_pma, data) < 0)
+		return -1;
+
+	return 0;
+}
+
+/* Compute the pullback of "upa" by the function represented by "upma".
+ * In other words, plug in "upma" in "upa".  The result contains
+ * expressions defined over the domain space of "upma".
+ *
+ * Run over all pairs of elements in "upa" and "upma", perform
+ * the pullback when appropriate and collect the results.
+ * If the hash value were based on the domain space rather than
+ * the function space, then we could run through all elements
+ * of "upma" and directly pick out the corresponding element of "upa".
+ */
+__isl_give isl_union_pw_aff *isl_union_pw_aff_pullback_union_pw_multi_aff(
+	__isl_take isl_union_pw_aff *upa,
+	__isl_take isl_union_pw_multi_aff *upma)
+{
+	struct isl_union_pw_aff_pullback_upma_data data = { NULL, NULL };
+	isl_ctx *ctx;
+	isl_space *space;
+
+	space = isl_union_pw_multi_aff_get_space(upma);
+	upa = isl_union_pw_aff_align_params(upa, space);
+	space = isl_union_pw_aff_get_space(upa);
+	upma = isl_union_pw_multi_aff_align_params(upma, space);
+
+	if (!upa || !upma)
+		goto error;
+
+	ctx = isl_union_pw_aff_get_ctx(upa);
+	data.upma = upma;
+	space = isl_union_pw_aff_get_space(upa);
+	data.res = isl_union_pw_aff_alloc(space, upa->table.n);
+	if (isl_hash_table_foreach(ctx, &upa->table, &upa_pb_upma, &data) < 0)
+		data.res = isl_union_pw_aff_free(data.res);
+
+	isl_union_pw_aff_free(upa);
+	isl_union_pw_multi_aff_free(upma);
+	return data.res;
+error:
+	isl_union_pw_aff_free(upa);
+	isl_union_pw_multi_aff_free(upma);
+	return NULL;
+}
