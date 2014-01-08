@@ -1284,6 +1284,21 @@ error:
 	return NULL;
 }
 
+/* Replace the schedule map of "access" by the schedule map
+ * derived from "schedule".
+ */
+__isl_give isl_union_access_info *isl_union_access_info_set_schedule(
+	__isl_take isl_union_access_info *access,
+	__isl_take isl_schedule *schedule)
+{
+	isl_union_map *schedule_map;
+
+	schedule_map = isl_schedule_get_map(schedule);
+	isl_schedule_free(schedule);
+
+	return isl_union_access_info_set_schedule_map(access, schedule_map);
+}
+
 /* Replace the schedule map of "access" by "schedule_map".
  */
 __isl_give isl_union_access_info *isl_union_access_info_set_schedule_map(

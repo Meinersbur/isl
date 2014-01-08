@@ -7859,6 +7859,10 @@ the following functions.
 		__isl_take isl_union_access_info *access,
 		__isl_take isl_union_map *may_source);
 	__isl_give isl_union_access_info *
+	isl_union_access_info_set_schedule(
+		__isl_take isl_union_access_info *access,
+		__isl_take isl_schedule *schedule);
+	__isl_give isl_union_access_info *
 	isl_union_access_info_set_schedule_map(
 		__isl_take isl_union_access_info *access,
 		__isl_take isl_union_map *schedule_map);
@@ -7873,6 +7877,9 @@ The user is free not to call one (or both) of these functions,
 in which case the corresponding set is kept to its empty default.
 Similarly, the default schedule initialized by
 C<isl_union_access_info_from_sink> is empty.
+The current schedule is determined by the last call to either
+C<isl_union_access_info_set_schedule> or
+C<isl_union_access_info_set_schedule_map>.
 The domain of the schedule corresponds to the domains of
 the access relations.  In particular, the domains of the access
 relations are effectively intersected with the domain of the schedule

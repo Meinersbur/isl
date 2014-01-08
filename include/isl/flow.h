@@ -5,6 +5,7 @@
 #include <isl/map_type.h>
 #include <isl/union_set_type.h>
 #include <isl/union_map_type.h>
+#include <isl/schedule.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -75,6 +76,9 @@ __isl_give isl_union_access_info *isl_union_access_info_set_must_source(
 __isl_give isl_union_access_info *isl_union_access_info_set_may_source(
 	__isl_take isl_union_access_info *access,
 	__isl_take isl_union_map *may_source);
+__isl_give isl_union_access_info *isl_union_access_info_set_schedule(
+	__isl_take isl_union_access_info *access,
+	__isl_take isl_schedule *schedule);
 __isl_give isl_union_access_info *isl_union_access_info_set_schedule_map(
 	__isl_take isl_union_access_info *access,
 	__isl_take isl_union_map *schedule_map);
