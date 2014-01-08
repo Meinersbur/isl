@@ -4347,6 +4347,46 @@ error:
 	return NULL;
 }
 
+/* For a div d = floor(f/m), add the constraint
+ *
+ *		f - m d >= 0
+ */
+static int add_upper_div_constraint(__isl_keep isl_basic_map *bmap,
+	unsigned pos, isl_int *div)
+{
+	int i;
+	unsigned total = isl_basic_map_total_dim(bmap);
+
+	i = isl_basic_map_alloc_inequality(bmap);
+	if (i < 0)
+		return -1;
+	isl_seq_cpy(bmap->ineq[i], div + 1, 1 + total);
+	isl_int_neg(bmap->ineq[i][1 + pos], div[0]);
+
+	return 0;
+}
+
+/* For a div d = floor(f/m), add the constraint
+ *
+ *		-(f-(n-1)) + m d >= 0
+ */
+static int add_lower_div_constraint(__isl_keep isl_basic_map *bmap,
+	unsigned pos, isl_int *div)
+{
+	int i;
+	unsigned total = isl_basic_map_total_dim(bmap);
+
+	i = isl_basic_map_alloc_inequality(bmap);
+	if (i < 0)
+		return -1;
+	isl_seq_neg(bmap->ineq[i], div + 1, 1 + total);
+	isl_int_set(bmap->ineq[i][1 + pos], div[0]);
+	isl_int_add(bmap->ineq[i][0], bmap->ineq[i][0], bmap->ineq[i][1 + pos]);
+	isl_int_sub_ui(bmap->ineq[i][0], bmap->ineq[i][0], 1);
+
+	return 0;
+}
+
 /* For a div d = floor(f/m), add the constraints
  *
  *		f - m d >= 0
@@ -4359,22 +4399,11 @@ error:
 int isl_basic_map_add_div_constraints_var(__isl_keep isl_basic_map *bmap,
 	unsigned pos, isl_int *div)
 {
-	int i, j;
-	unsigned total = isl_basic_map_total_dim(bmap);
-
-	i = isl_basic_map_alloc_inequality(bmap);
-	if (i < 0)
+	if (add_upper_div_constraint(bmap, pos, div) < 0)
 		return -1;
-	isl_seq_cpy(bmap->ineq[i], div + 1, 1 + total);
-	isl_int_neg(bmap->ineq[i][1 + pos], div[0]);
-
-	j = isl_basic_map_alloc_inequality(bmap);
-	if (j < 0)
+	if (add_lower_div_constraint(bmap, pos, div) < 0)
 		return -1;
-	isl_seq_neg(bmap->ineq[j], bmap->ineq[i], 1 + total);
-	isl_int_add(bmap->ineq[j][0], bmap->ineq[j][0], bmap->ineq[j][1 + pos]);
-	isl_int_sub_ui(bmap->ineq[j][0], bmap->ineq[j][0], 1);
-	return j;
+	return 0;
 }
 
 int isl_basic_set_add_div_constraints_var(__isl_keep isl_basic_set *bset,
@@ -4391,6 +4420,37 @@ int isl_basic_map_add_div_constraints(struct isl_basic_map *bmap, unsigned div)
 
 	return isl_basic_map_add_div_constraints_var(bmap, div_pos,
 							bmap->div[div]);
+}
+
+/* Add the div constraint of sign "sign" for div "div" of "bmap".
+ *
+ * In particular, if this div is of the form d = floor(f/m),
+ * then add the constraint
+ *
+ *		f - m d >= 0
+ *
+ * if sign < 0 or the constraint
+ *
+ *		-(f-(n-1)) + m d >= 0
+ *
+ * if sign > 0.
+ */
+int isl_basic_map_add_div_constraint(__isl_keep isl_basic_map *bmap,
+	unsigned div, int sign)
+{
+	unsigned total;
+	unsigned div_pos;
+
+	if (!bmap)
+		return -1;
+
+	total = isl_basic_map_total_dim(bmap);
+	div_pos = total - bmap->n_div + div;
+
+	if (sign < 0)
+		return add_upper_div_constraint(bmap, div_pos, bmap->div[div]);
+	else
+		return add_lower_div_constraint(bmap, div_pos, bmap->div[div]);
 }
 
 int isl_basic_set_add_div_constraints(struct isl_basic_set *bset, unsigned div)

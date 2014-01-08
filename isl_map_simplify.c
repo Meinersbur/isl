@@ -1208,6 +1208,12 @@ static struct isl_basic_map *remove_duplicate_constraints(
  *	-floor(e/m) = ceil(-e/m) = floor((-e + m - 1)/m)
  *
  *
+ * Note that one of the div constraints may have been eliminated
+ * due to being redundant with respect to the constraint that is
+ * being modified by this function.  The modified constraint may
+ * no longer imply this div constraint, so we add it back to make
+ * sure we do not lose any information.
+ *
  * We skip integral divs, i.e., those with denominator 1, as we would
  * risk eliminating the div from the div constraints.  We do not need
  * to handle those divs here anyway since the div constraints will turn
@@ -1259,6 +1265,10 @@ static __isl_give isl_basic_map *eliminate_unit_divs(
 				isl_int_sub_ui(bmap->ineq[j][0],
 					bmap->ineq[j][0], 1);
 			}
+
+			bmap = isl_basic_map_extend_constraints(bmap, 0, 1);
+			if (isl_basic_map_add_div_constraint(bmap, i, s) < 0)
+				return isl_basic_map_free(bmap);
 		}
 	}
 

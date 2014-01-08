@@ -271,6 +271,8 @@ __isl_give isl_set *isl_set_eliminate(__isl_take isl_set *set,
 int isl_basic_set_constraint_is_redundant(struct isl_basic_set **bset,
 	isl_int *c, isl_int *opt_n, isl_int *opt_d);
 
+int isl_basic_map_add_div_constraint(__isl_keep isl_basic_map *bmap,
+	unsigned div, int sign);
 int isl_basic_map_add_div_constraints(struct isl_basic_map *bmap, unsigned div);
 struct isl_basic_map *isl_basic_map_drop_redundant_divs(
 	struct isl_basic_map *bmap);

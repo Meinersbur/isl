@@ -2329,6 +2329,18 @@ struct {
 	{ "{ rat: [i] : 0 <= i <= 10 }", "{ [i] : 0 <= i <= 10 }", 0 },
 	{ "{ rat: [0] }", "{ [i] : 0 <= i <= 10 }", 1 },
 	{ "{ rat: [(1)/2] }", "{ [i] : 0 <= i <= 10 }", 0 },
+	{ "{ [t, i] : (exists (e0 = [(2 + t)/4]: 4e0 <= 2 + t and "
+			"4e0 >= -1 + t and i >= 57 and i <= 62 and "
+			"4e0 <= 62 + t - i and 4e0 >= -61 + t + i and "
+			"t >= 0 and t <= 511 and 4e0 <= -57 + t + i and "
+			"4e0 >= 58 + t - i and i >= 58 + t and i >= 62 - t)) }",
+	  "{ [i0, i1] : (exists (e0 = [(4 + i0)/4]: 4e0 <= 62 + i0 - i1 and "
+			"4e0 >= 1 + i0 and i0 >= 0 and i0 <= 511 and "
+			"4e0 <= -57 + i0 + i1)) or "
+		"(exists (e0 = [(2 + i0)/4]: 4e0 <= i0 and "
+			"4e0 >= 58 + i0 - i1 and i0 >= 2 and i0 <= 511 and "
+			"4e0 >= -61 + i0 + i1)) or "
+		"(i1 <= 66 - i0 and i0 >= 2 and i1 >= 59 + i0) }", 1 },
 };
 
 static int test_subset(isl_ctx *ctx)
