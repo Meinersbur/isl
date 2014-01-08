@@ -224,6 +224,15 @@ confused and is no longer available.
 
 =item * Band forests have been replaced by schedule trees.
 
+=item * The function C<isl_union_map_compute_flow> has been
+replaced by the function C<isl_union_access_info_compute_flow>.
+Note that the may dependence relation returned by
+C<isl_union_flow_get_may_dependence> is the union of
+the two dependence relations returned by
+C<isl_union_map_compute_flow>.  Similarly for the no source relations.
+The function C<isl_union_map_compute_flow> is still available
+for backward compatibility, but it will be removed in the future.
+
 =back
 
 =head1 License
@@ -7818,6 +7827,89 @@ then memory based dependence analysis is performed.
 If, on the other hand, all sources are I<must> accesses,
 then value based dependence analysis is performed.
 
+=head3 High-level Interface
+
+A high-level interface to dependence analysis is provided
+by the following function.
+
+	#include <isl/flow.h>
+	__isl_give isl_union_flow *
+	isl_union_access_info_compute_flow(
+		__isl_take isl_union_access_info *access);
+
+The input C<isl_union_access_info> object describes the sink
+access relations, the source access relations and a schedule,
+while the output C<isl_union_flow> object describes
+the resulting dependence relations and the subsets of the
+sink relations for which no source was found.
+
+An C<isl_union_access_info> is created, modified and freed using
+the following functions.
+
+	#include <isl/flow.h>
+	__isl_give isl_union_access_info *
+	isl_union_access_info_from_sink(
+		__isl_take isl_union_map *sink);
+	__isl_give isl_union_access_info *
+	isl_union_access_info_set_must_source(
+		__isl_take isl_union_access_info *access,
+		__isl_take isl_union_map *must_source);
+	__isl_give isl_union_access_info *
+	isl_union_access_info_set_may_source(
+		__isl_take isl_union_access_info *access,
+		__isl_take isl_union_map *may_source);
+	__isl_give isl_union_access_info *
+	isl_union_access_info_set_schedule_map(
+		__isl_take isl_union_access_info *access,
+		__isl_take isl_union_map *schedule_map);
+	__isl_null isl_union_access_info *
+	isl_union_access_info_free(
+		__isl_take isl_union_access_info *access);
+
+The may sources set by C<isl_union_access_info_set_may_source>
+do not need to include the must sources set by
+C<isl_union_access_info_set_must_source> as a subset.
+The user is free not to call one (or both) of these functions,
+in which case the corresponding set is kept to its empty default.
+Similarly, the default schedule initialized by
+C<isl_union_access_info_from_sink> is empty.
+The domain of the schedule corresponds to the domains of
+the access relations.  In particular, the domains of the access
+relations are effectively intersected with the domain of the schedule
+and only the resulting accesses are considered by the dependence analysis.
+
+The output of C<isl_union_access_info_compute_flow> can be examined
+and freed using the following functions.
+
+	#include <isl/flow.h>
+	__isl_give isl_union_map *isl_union_flow_get_must_dependence(
+		__isl_keep isl_union_flow *flow);
+	__isl_give isl_union_map *isl_union_flow_get_may_dependence(
+		__isl_keep isl_union_flow *flow);
+	__isl_give isl_union_map *isl_union_flow_get_must_no_source(
+		__isl_keep isl_union_flow *flow);
+	__isl_give isl_union_map *isl_union_flow_get_may_no_source(
+		__isl_keep isl_union_flow *flow);
+	__isl_null isl_union_flow *isl_union_flow_free(
+		__isl_take isl_union_flow *flow);
+
+The relation returned by C<isl_union_flow_get_must_dependence>
+relates domain elements of must sources to domain elements of the sink.
+The relation returned by C<isl_union_flow_get_may_dependence>
+relates domain elements of must or may sources to domain elements of the sink
+and includes the previous relation as a subset.
+The relation returned by C<isl_union_flow_get_must_no_source> is the subset
+of the sink relation for which no dependences have been found.
+The relation returned by C<isl_union_flow_get_may_no_source> is the subset
+of the sink relation for which no definite dependences have been found.
+That is, it contains those sink access that do not contribute to any
+of the elements in the relation returned
+by C<isl_union_flow_get_must_dependence>.
+
+=head3 Low-level Interface
+
+A lower-level interface is provided by the following functions.
+
 	#include <isl/flow.h>
 
 	typedef int (*isl_access_level_before)(void *first, void *second);
@@ -7903,31 +7995,7 @@ source and if it is not followed by any I<may> sources.
 After finishing with an C<isl_flow>, the user should call
 C<isl_flow_free> to free all associated memory.
 
-A higher-level interface to dependence analysis is provided
-by the following function.
-
-	#include <isl/flow.h>
-
-	int isl_union_map_compute_flow(__isl_take isl_union_map *sink,
-		__isl_take isl_union_map *must_source,
-		__isl_take isl_union_map *may_source,
-		__isl_take isl_union_map *schedule,
-		__isl_give isl_union_map **must_dep,
-		__isl_give isl_union_map **may_dep,
-		__isl_give isl_union_map **must_no_source,
-		__isl_give isl_union_map **may_no_source);
-
-The arrays are identified by the tuple names of the ranges
-of the accesses.  The iteration domains by the tuple names
-of the domains of the accesses and of the schedule.
-The relative order of the iteration domains is given by the
-schedule.  The relations returned through C<must_no_source>
-and C<may_no_source> are subsets of C<sink>.
-Any of C<must_dep>, C<may_dep>, C<must_no_source>
-or C<may_no_source> may be C<NULL>, but a C<NULL> value for
-any of the other arguments is treated as an error.
-
-=head3 Interaction with Dependence Analysis
+=head3 Interaction with the Low-level Interface
 
 During the dependence analysis, we frequently need to perform
 the following operation.  Given a relation between sink iterations
