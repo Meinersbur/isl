@@ -43,6 +43,8 @@ __isl_give isl_union_set *isl_union_map_domain(__isl_take isl_union_map *umap);
 __isl_give isl_union_set *isl_union_map_range(__isl_take isl_union_map *umap);
 __isl_give isl_union_map *isl_union_map_domain_map(
 	__isl_take isl_union_map *umap);
+__isl_give isl_union_pw_multi_aff *isl_union_map_domain_map_union_pw_multi_aff(
+	__isl_take isl_union_map *umap);
 __isl_give isl_union_map *isl_union_map_range_map(
 	__isl_take isl_union_map *umap);
 __isl_give isl_union_map *isl_union_set_wrapped_domain_map(

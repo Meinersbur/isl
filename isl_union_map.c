@@ -1851,6 +1851,39 @@ __isl_give isl_union_map *isl_union_map_domain_map(
 	return cond_un_op(umap, &domain_map_entry);
 }
 
+/* Construct an isl_pw_multi_aff that maps "map" to its domain and
+ * add the result to "res".
+ */
+static int domain_map_upma(__isl_take isl_map *map, void *user)
+{
+	isl_union_pw_multi_aff **res = user;
+	isl_multi_aff *ma;
+	isl_pw_multi_aff *pma;
+
+	ma = isl_multi_aff_domain_map(isl_map_get_space(map));
+	pma = isl_pw_multi_aff_alloc(isl_map_wrap(map), ma);
+	*res = isl_union_pw_multi_aff_add_pw_multi_aff(*res, pma);
+
+	return *res ? 0 : -1;
+
+}
+
+/* Return an isl_union_pw_multi_aff that maps a wrapped copy of "umap"
+ * to its domain.
+ */
+__isl_give isl_union_pw_multi_aff *isl_union_map_domain_map_union_pw_multi_aff(
+	__isl_take isl_union_map *umap)
+{
+	isl_union_pw_multi_aff *res;
+
+	res = isl_union_pw_multi_aff_empty(isl_union_map_get_space(umap));
+	if (isl_union_map_foreach_map(umap, &domain_map_upma, &res) < 0)
+		res = isl_union_pw_multi_aff_free(res);
+
+	isl_union_map_free(umap);
+	return res;
+}
+
 static int range_map_entry(void **entry, void *user)
 {
 	isl_map *map = *entry;
