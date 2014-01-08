@@ -1844,9 +1844,9 @@ error:
  * corresponding to those iterations that access an element
  * not previously accessed.
  *
- * We first prepend the schedule dimensions to the domain
- * of the accesses so that we can easily compare their relative order.
- * Then we consider each sink access individually in compute_flow.
+ * We collect the inputs in an isl_union_access_info object,
+ * call isl_union_access_info_compute_flow and extract
+ * the outputs from the result.
  */
 int isl_union_map_compute_flow(__isl_take isl_union_map *sink,
 	__isl_take isl_union_map *must_source,
@@ -1856,70 +1856,40 @@ int isl_union_map_compute_flow(__isl_take isl_union_map *sink,
 	__isl_give isl_union_map **must_no_source,
 	__isl_give isl_union_map **may_no_source)
 {
-	isl_space *space;
-	struct isl_compute_flow_data data;
+	isl_union_access_info *access;
+	isl_union_flow *flow;
 
-	sink = isl_union_map_align_params(sink,
-					    isl_union_map_get_space(must_source));
-	sink = isl_union_map_align_params(sink,
-					    isl_union_map_get_space(may_source));
-	sink = isl_union_map_align_params(sink,
-					    isl_union_map_get_space(schedule));
-	space = isl_union_map_get_space(sink);
-	must_source = isl_union_map_align_params(must_source,
-						isl_space_copy(space));
-	may_source = isl_union_map_align_params(may_source,
-						isl_space_copy(space));
-	schedule = isl_union_map_align_params(schedule, isl_space_copy(space));
-
-	schedule = isl_union_map_reverse(schedule);
-	schedule = isl_union_map_reverse(isl_union_map_range_map(schedule));
-	sink = isl_union_map_apply_domain(sink, isl_union_map_copy(schedule));
-	must_source = isl_union_map_apply_domain(must_source,
-						isl_union_map_copy(schedule));
-	may_source = isl_union_map_apply_domain(may_source, schedule);
-
-	data.must_source = must_source;
-	data.may_source = may_source;
-	data.flow = isl_union_flow_alloc(space);
-
-	if (isl_union_map_foreach_map(sink, &compute_flow, &data) < 0)
-		goto error;
-
-	data.flow = isl_union_flow_drop_schedule(data.flow);
-	if (!data.flow)
-		goto error;
-
-	isl_union_map_free(sink);
-	isl_union_map_free(must_source);
-	isl_union_map_free(may_source);
+	access = isl_union_access_info_from_sink(sink);
+	access = isl_union_access_info_set_must_source(access, must_source);
+	access = isl_union_access_info_set_may_source(access, may_source);
+	access = isl_union_access_info_set_schedule_map(access, schedule);
+	flow = isl_union_access_info_compute_flow(access);
 
 	if (must_dep)
-		*must_dep = isl_union_flow_get_must_dependence(data.flow);
+		*must_dep = isl_union_flow_get_must_dependence(flow);
 	if (may_dep)
-		*may_dep = isl_union_flow_get_non_must_dependence(data.flow);
+		*may_dep = isl_union_flow_get_non_must_dependence(flow);
 	if (must_no_source)
-		*must_no_source = isl_union_flow_get_must_no_source(data.flow);
+		*must_no_source = isl_union_flow_get_must_no_source(flow);
 	if (may_no_source)
-		*may_no_source =
-			    isl_union_flow_get_non_must_no_source(data.flow);
+		*may_no_source = isl_union_flow_get_non_must_no_source(flow);
 
-	isl_union_flow_free(data.flow);
+	isl_union_flow_free(flow);
+
+	if ((must_dep && !*must_dep) || (may_dep && !*may_dep) ||
+	    (must_no_source && !*must_no_source) ||
+	    (may_no_source && !*may_no_source))
+		goto error;
 
 	return 0;
 error:
-	isl_union_map_free(sink);
-	isl_union_map_free(must_source);
-	isl_union_map_free(may_source);
-	isl_union_flow_free(data.flow);
-
 	if (must_dep)
-		*must_dep = NULL;
+		*must_dep = isl_union_map_free(*must_dep);
 	if (may_dep)
-		*may_dep = NULL;
+		*may_dep = isl_union_map_free(*may_dep);
 	if (must_no_source)
-		*must_no_source = NULL;
+		*must_no_source = isl_union_map_free(*must_no_source);
 	if (may_no_source)
-		*may_no_source = NULL;
+		*may_no_source = isl_union_map_free(*may_no_source);
 	return -1;
 }
