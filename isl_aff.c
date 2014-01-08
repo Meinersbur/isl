@@ -8324,3 +8324,41 @@ error:
 	isl_pw_multi_aff_free(pma);
 	return NULL;
 }
+
+/* Compute the pullback of "mupa" by the function represented by "upma".
+ * In other words, plug in "upma" in "mupa".  The result contains
+ * expressions defined over the domain space of "upma".
+ *
+ * Run over all elements of "mupa" and plug in "upma" in each of them.
+ */
+__isl_give isl_multi_union_pw_aff *
+isl_multi_union_pw_aff_pullback_union_pw_multi_aff(
+	__isl_take isl_multi_union_pw_aff *mupa,
+	__isl_take isl_union_pw_multi_aff *upma)
+{
+	int i, n;
+
+	mupa = isl_multi_union_pw_aff_align_params(mupa,
+				    isl_union_pw_multi_aff_get_space(upma));
+	upma = isl_union_pw_multi_aff_align_params(upma,
+				    isl_multi_union_pw_aff_get_space(mupa));
+	if (!mupa || !upma)
+		goto error;
+
+	n = isl_multi_union_pw_aff_dim(mupa, isl_dim_set);
+	for (i = 0; i < n; ++i) {
+		isl_union_pw_aff *upa;
+
+		upa = isl_multi_union_pw_aff_get_union_pw_aff(mupa, i);
+		upa = isl_union_pw_aff_pullback_union_pw_multi_aff(upa,
+					    isl_union_pw_multi_aff_copy(upma));
+		mupa = isl_multi_union_pw_aff_set_union_pw_aff(mupa, i, upa);
+	}
+
+	isl_union_pw_multi_aff_free(upma);
+	return mupa;
+error:
+	isl_multi_union_pw_aff_free(mupa);
+	isl_union_pw_multi_aff_free(upma);
+	return NULL;
+}

@@ -5787,6 +5787,10 @@ into the set description or into the domain/range of the map.
 	isl_union_pw_multi_aff_pullback_union_pw_multi_aff(
 		__isl_take isl_union_pw_multi_aff *upma1,
 		__isl_take isl_union_pw_multi_aff *upma2);
+	__isl_give isl_multi_union_pw_aff *
+	isl_multi_union_pw_aff_pullback_union_pw_multi_aff(
+		__isl_take isl_multi_union_pw_aff *mupa,
+		__isl_take isl_union_pw_multi_aff *upma);
 
 These functions precompose the first expression by the second function.
 In other words, the second function is plugged
