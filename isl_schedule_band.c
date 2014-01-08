@@ -475,3 +475,27 @@ error:
 	isl_schedule_band_free(band);
 	return NULL;
 }
+
+/* Compute the pullback of "band" by the function represented by "upma".
+ * In other words, plug in "upma" in the iteration domains of "band".
+ */
+__isl_give isl_schedule_band *isl_schedule_band_pullback_union_pw_multi_aff(
+	__isl_take isl_schedule_band *band,
+	__isl_take isl_union_pw_multi_aff *upma)
+{
+	band = isl_schedule_band_cow(band);
+	if (!band || !upma)
+		goto error;
+
+	band->mupa =
+		isl_multi_union_pw_aff_pullback_union_pw_multi_aff(band->mupa,
+									upma);
+	if (!band->mupa)
+		return isl_schedule_band_free(band);
+
+	return band;
+error:
+	isl_union_pw_multi_aff_free(upma);
+	isl_schedule_band_free(band);
+	return NULL;
+}

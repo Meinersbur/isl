@@ -1,5 +1,5 @@
 /*
- * Copyright 2013      Ecole Normale Superieure
+ * Copyright 2013-2014 Ecole Normale Superieure
  *
  * Use of this software is governed by the MIT license
  *
@@ -1446,6 +1446,84 @@ __isl_give isl_schedule_tree *isl_schedule_tree_align_params(
 	return tree;
 error:
 	isl_space_free(space);
+	isl_schedule_tree_free(tree);
+	return NULL;
+}
+
+/* Does "tree" involve the iteration domain?
+ * That is, does it need to be modified
+ * by isl_schedule_tree_pullback_union_pw_multi_aff?
+ */
+static int involves_iteration_domain(__isl_keep isl_schedule_tree *tree)
+{
+	if (!tree)
+		return -1;
+
+	switch (tree->type) {
+	case isl_schedule_node_error:
+		return -1;
+	case isl_schedule_node_band:
+	case isl_schedule_node_domain:
+	case isl_schedule_node_filter:
+		return 1;
+	case isl_schedule_node_leaf:
+	case isl_schedule_node_sequence:
+	case isl_schedule_node_set:
+		return 0;
+	}
+}
+
+/* Compute the pullback of the root node of "tree" by the function
+ * represented by "upma".
+ * In other words, plug in "upma" in the iteration domains of
+ * the root node of "tree".
+ *
+ * We first check if the root node involves any iteration domains.
+ * If so, we handle the specific cases.
+ */
+__isl_give isl_schedule_tree *isl_schedule_tree_pullback_union_pw_multi_aff(
+	__isl_take isl_schedule_tree *tree,
+	__isl_take isl_union_pw_multi_aff *upma)
+{
+	int involves;
+
+	if (!tree || !upma)
+		goto error;
+
+	involves = involves_iteration_domain(tree);
+	if (involves < 0)
+		goto error;
+	if (!involves) {
+		isl_union_pw_multi_aff_free(upma);
+		return tree;
+	}
+
+	tree = isl_schedule_tree_cow(tree);
+	if (!tree)
+		goto error;
+
+	if (tree->type == isl_schedule_node_band) {
+		tree->band = isl_schedule_band_pullback_union_pw_multi_aff(
+							    tree->band, upma);
+		if (!tree->band)
+			return isl_schedule_tree_free(tree);
+	} else if (tree->type == isl_schedule_node_domain) {
+		tree->domain =
+			isl_union_set_preimage_union_pw_multi_aff(tree->domain,
+									upma);
+		if (!tree->domain)
+			return isl_schedule_tree_free(tree);
+	} else if (tree->type == isl_schedule_node_filter) {
+		tree->filter =
+			isl_union_set_preimage_union_pw_multi_aff(tree->filter,
+									upma);
+		if (!tree->filter)
+			return isl_schedule_tree_free(tree);
+	}
+
+	return tree;
+error:
+	isl_union_pw_multi_aff_free(upma);
 	isl_schedule_tree_free(tree);
 	return NULL;
 }

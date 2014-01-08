@@ -1661,6 +1661,29 @@ __isl_give isl_schedule_node *isl_schedule_node_align_params(
 	return node;
 }
 
+/* Compute the pullback of schedule node "node"
+ * by the function represented by "upma".
+ * In other words, plug in "upma" in the iteration domains
+ * of schedule node "node".
+ *
+ * Note that this is only a helper function for
+ * isl_schedule_pullback_union_pw_multi_aff.  In order to maintain consistency,
+ * this function should not be called on a single node without also
+ * calling it on all the other nodes.
+ */
+__isl_give isl_schedule_node *isl_schedule_node_pullback_union_pw_multi_aff(
+	__isl_take isl_schedule_node *node,
+	__isl_take isl_union_pw_multi_aff *upma)
+{
+	isl_schedule_tree *tree;
+
+	tree = isl_schedule_node_get_tree(node);
+	tree = isl_schedule_tree_pullback_union_pw_multi_aff(tree, upma);
+	node = isl_schedule_node_graft_tree(node, tree);
+
+	return node;
+}
+
 /* Return the position of the subtree containing "node" among the children
  * of "ancestor".  "node" is assumed to be a descendant of "ancestor".
  * In particular, both nodes should point to the same schedule tree.

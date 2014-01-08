@@ -67,5 +67,8 @@ __isl_give isl_schedule_band *isl_schedule_band_reset_user(
 	__isl_take isl_schedule_band *band);
 __isl_give isl_schedule_band *isl_schedule_band_align_params(
 	__isl_take isl_schedule_band *band, __isl_take isl_space *space);
+__isl_give isl_schedule_band *isl_schedule_band_pullback_union_pw_multi_aff(
+	__isl_take isl_schedule_band *band,
+	__isl_take isl_union_pw_multi_aff *upma);
 
 #endif

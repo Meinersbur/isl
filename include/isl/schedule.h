@@ -110,6 +110,9 @@ __isl_give isl_schedule *isl_schedule_reset_user(
 	__isl_take isl_schedule *schedule);
 __isl_give isl_schedule *isl_schedule_align_params(
 	__isl_take isl_schedule *schedule, __isl_take isl_space *space);
+__isl_give isl_schedule *isl_schedule_pullback_union_pw_multi_aff(
+	__isl_take isl_schedule *schedule,
+	__isl_take isl_union_pw_multi_aff *upma);
 
 __isl_give isl_band_list *isl_schedule_get_band_forest(
 	__isl_keep isl_schedule *schedule);

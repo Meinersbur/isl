@@ -38,4 +38,8 @@ __isl_give isl_schedule_node *isl_schedule_node_graft_tree(
 __isl_give isl_schedule_tree *isl_schedule_node_get_tree(
 	__isl_keep isl_schedule_node *node);
 
+__isl_give isl_schedule_node *isl_schedule_node_pullback_union_pw_multi_aff(
+	__isl_take isl_schedule_node *node,
+	__isl_take isl_union_pw_multi_aff *upma);
+
 #endif

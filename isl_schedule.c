@@ -415,6 +415,31 @@ __isl_give isl_schedule *isl_schedule_align_params(
 	return schedule;
 }
 
+/* Wrapper around isl_schedule_node_pullback_union_pw_multi_aff for use as
+ * an isl_schedule_map_schedule_node callback.
+ */
+static __isl_give isl_schedule_node *pullback_upma(
+	__isl_take isl_schedule_node *node, void *user)
+{
+	isl_union_pw_multi_aff *upma = user;
+
+	return isl_schedule_node_pullback_union_pw_multi_aff(node,
+					isl_union_pw_multi_aff_copy(upma));
+}
+
+/* Compute the pullback of "schedule" by the function represented by "upma".
+ * In other words, plug in "upma" in the iteration domains of "schedule".
+ */
+__isl_give isl_schedule *isl_schedule_pullback_union_pw_multi_aff(
+	__isl_take isl_schedule *schedule,
+	__isl_take isl_union_pw_multi_aff *upma)
+{
+	schedule = isl_schedule_map_schedule_node(schedule,
+						&pullback_upma, upma);
+	isl_union_pw_multi_aff_free(upma);
+	return schedule;
+}
+
 /* Return an isl_union_map representation of the schedule.
  * If we still have access to the schedule tree, then we return
  * an isl_union_map corresponding to the subtree schedule of the child

@@ -7339,6 +7339,15 @@ in the given schedule to the given space.
 		__isl_take isl_schedule *schedule,
 		__isl_take isl_space *space);
 
+The following function allows the user to plug in a given function
+in the iteration domains.
+
+	#include <isl/schedule.h>
+	__isl_give isl_schedule *
+	isl_schedule_pullback_union_pw_multi_aff(
+		__isl_take isl_schedule *schedule,
+		__isl_take isl_union_pw_multi_aff *upma);
+
 An C<isl_union_map> representation of the schedule can be obtained
 from an C<isl_schedule> using the following function.
 
