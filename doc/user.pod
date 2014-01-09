@@ -7459,7 +7459,9 @@ is the node itself, the ancestor of generation 1 is its parent and so on.
 
 It is also possible to query the number of ancestors of a node,
 the position of the current node
-within the children of its parent or to obtain a copy of a given
+within the children of its parent, the position of the subtree
+containing a node within the children of an ancestor
+or to obtain a copy of a given
 child without destroying the current node.
 
 	#include <isl/schedule_node.h>
@@ -7467,6 +7469,9 @@ child without destroying the current node.
 		__isl_keep isl_schedule_node *node);
 	int isl_schedule_node_get_child_position(
 		__isl_keep isl_schedule_node *node);
+	int isl_schedule_node_get_ancestor_child_position(
+		__isl_keep isl_schedule_node *node,
+		__isl_keep isl_schedule_node *ancestor);
 	__isl_give isl_schedule_node *isl_schedule_node_get_child(
 		__isl_keep isl_schedule_node *node, int pos);
 

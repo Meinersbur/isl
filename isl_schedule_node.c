@@ -1629,6 +1629,41 @@ __isl_give isl_schedule_node *isl_schedule_node_align_params(
 	return node;
 }
 
+/* Return the position of the subtree containing "node" among the children
+ * of "ancestor".  "node" is assumed to be a descendant of "ancestor".
+ * In particular, both nodes should point to the same schedule tree.
+ *
+ * Return -1 on error.
+ */
+int isl_schedule_node_get_ancestor_child_position(
+	__isl_keep isl_schedule_node *node,
+	__isl_keep isl_schedule_node *ancestor)
+{
+	int n1, n2;
+	isl_schedule_tree *tree;
+
+	if (!node || !ancestor)
+		return -1;
+
+	if (node->schedule != ancestor->schedule)
+		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
+			"not a descendant", return -1);
+
+	n1 = isl_schedule_node_get_tree_depth(ancestor);
+	n2 = isl_schedule_node_get_tree_depth(node);
+
+	if (n1 >= n2)
+		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
+			"not a descendant", return -1);
+	tree = isl_schedule_tree_list_get_schedule_tree(node->ancestors, n1);
+	isl_schedule_tree_free(tree);
+	if (tree != ancestor->tree)
+		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
+			"not a descendant", return -1);
+
+	return node->child_pos[n1];
+}
+
 /* Print "node" to "p".
  */
 __isl_give isl_printer *isl_printer_print_schedule_node(
