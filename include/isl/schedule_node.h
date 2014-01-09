@@ -18,6 +18,9 @@ __isl_give isl_schedule_node *isl_schedule_node_copy(
 __isl_null isl_schedule_node *isl_schedule_node_free(
 	__isl_take isl_schedule_node *node);
 
+int isl_schedule_node_is_equal(__isl_keep isl_schedule_node *node1,
+	__isl_keep isl_schedule_node *node2);
+
 isl_ctx *isl_schedule_node_get_ctx(__isl_keep isl_schedule_node *node);
 enum isl_schedule_node_type isl_schedule_node_get_type(
 	__isl_keep isl_schedule_node *node);

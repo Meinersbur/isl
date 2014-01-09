@@ -218,6 +218,32 @@ __isl_null isl_schedule_node *isl_schedule_node_free(
 	return NULL;
 }
 
+/* Do "node1" and "node2" point to the same position in the same
+ * schedule?
+ */
+int isl_schedule_node_is_equal(__isl_keep isl_schedule_node *node1,
+	__isl_keep isl_schedule_node *node2)
+{
+	int i, n1, n2;
+
+	if (!node1 || !node2)
+		return -1;
+	if (node1 == node2)
+		return 1;
+	if (node1->schedule != node2->schedule)
+		return 0;
+
+	n1 = isl_schedule_node_get_tree_depth(node1);
+	n2 = isl_schedule_node_get_tree_depth(node2);
+	if (n1 != n2)
+		return 0;
+	for (i = 0; i < n1; ++i)
+		if (node1->child_pos[i] != node2->child_pos[i])
+			return 0;
+
+	return 1;
+}
+
 /* Internal data structure for
  * isl_schedule_node_get_prefix_schedule_union_pw_multi_aff
  *

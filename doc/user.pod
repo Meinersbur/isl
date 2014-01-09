@@ -7396,6 +7396,14 @@ Schedule nodes can be copied and freed using the following functions.
 	__isl_null isl_schedule_node *isl_schedule_node_free(
 		__isl_take isl_schedule_node *node);
 
+The following functions can be used to check if two schedule
+nodes point to the same position in the same schedule.
+
+	#include <isl/schedule_node.h>
+	int isl_schedule_node_is_equal(
+		__isl_keep isl_schedule_node *node1,
+		__isl_keep isl_schedule_node *node2);
+
 The following properties can be obtained from a schedule node.
 
 	#include <isl/schedule_node.h>
