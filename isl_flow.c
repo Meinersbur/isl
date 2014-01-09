@@ -1174,7 +1174,11 @@ error:
  * "sink" represents the sink accesses.
  * "must_source" represents the definite source accesses.
  * "may_source" represents the possible source accesses.
- * "schedule_map" represents the execution order.
+ *
+ * "schedule" or "schedule_map" represents the execution order.
+ * At most one of these fields should be NULL.  The other field
+ * determines the execution order.  If neither field is NULL,
+ * the "schedule_map" is the schedule map derived from "schedule".
  *
  * The domains of these four maps refer to the same iteration spaces(s).
  * The ranges of the first three maps also refer to the same data space(s).
@@ -1186,6 +1190,8 @@ struct isl_union_access_info {
 	isl_union_map *sink;
 	isl_union_map *must_source;
 	isl_union_map *may_source;
+
+	isl_schedule *schedule;
 	isl_union_map *schedule_map;
 };
 
@@ -1200,6 +1206,7 @@ __isl_null isl_union_access_info *isl_union_access_info_free(
 	isl_union_map_free(access->sink);
 	isl_union_map_free(access->must_source);
 	isl_union_map_free(access->may_source);
+	isl_schedule_free(access->schedule);
 	isl_union_map_free(access->schedule_map);
 	free(access);
 
@@ -1215,11 +1222,16 @@ isl_ctx *isl_union_access_info_get_ctx(__isl_keep isl_union_access_info *access)
 
 /* Create a new isl_union_access_info with the given sink accesses and
  * and no source accesses or schedule information.
+ *
+ * By default, we use the schedule field of the isl_union_access_info,
+ * but this may be overridden by a call
+ * to isl_union_access_info_set_schedule_map.
  */
 __isl_give isl_union_access_info *isl_union_access_info_from_sink(
 	__isl_take isl_union_map *sink)
 {
 	isl_ctx *ctx;
+	isl_space *space;
 	isl_union_map *empty;
 	isl_union_access_info *access;
 
@@ -1230,14 +1242,16 @@ __isl_give isl_union_access_info *isl_union_access_info_from_sink(
 	if (!access)
 		goto error;
 
-	empty = isl_union_map_empty(isl_union_map_get_space(sink));
+	space = isl_union_map_get_space(sink);
+	empty = isl_union_map_empty(isl_space_copy(space));
 	access->sink = sink;
 	access->must_source = isl_union_map_copy(empty);
-	access->may_source = isl_union_map_copy(empty);
-	access->schedule_map = empty;
+	access->may_source = empty;
+	access->schedule = isl_schedule_empty(space);
+	access->schedule_map = NULL;
 
 	if (!access->sink || !access->must_source ||
-	    !access->may_source || !access->schedule_map)
+	    !access->may_source || !access->schedule)
 		return isl_union_access_info_free(access);
 
 	return access;
@@ -1284,22 +1298,29 @@ error:
 	return NULL;
 }
 
-/* Replace the schedule map of "access" by the schedule map
- * derived from "schedule".
+/* Replace the schedule of "access" by "schedule".
+ * Also free the schedule_map in case it was set last.
  */
 __isl_give isl_union_access_info *isl_union_access_info_set_schedule(
 	__isl_take isl_union_access_info *access,
 	__isl_take isl_schedule *schedule)
 {
-	isl_union_map *schedule_map;
+	if (!access || !schedule)
+		goto error;
 
-	schedule_map = isl_schedule_get_map(schedule);
+	access->schedule_map = isl_union_map_free(access->schedule_map);
+	isl_schedule_free(access->schedule);
+	access->schedule = schedule;
+
+	return access;
+error:
+	isl_union_access_info_free(access);
 	isl_schedule_free(schedule);
-
-	return isl_union_access_info_set_schedule_map(access, schedule_map);
+	return NULL;
 }
 
 /* Replace the schedule map of "access" by "schedule_map".
+ * Also free the schedule in case it was set last.
  */
 __isl_give isl_union_access_info *isl_union_access_info_set_schedule_map(
 	__isl_take isl_union_access_info *access,
@@ -1309,6 +1330,7 @@ __isl_give isl_union_access_info *isl_union_access_info_set_schedule_map(
 		goto error;
 
 	isl_union_map_free(access->schedule_map);
+	access->schedule = isl_schedule_free(access->schedule);
 	access->schedule_map = schedule_map;
 
 	return access;
@@ -1318,7 +1340,9 @@ error:
 	return NULL;
 }
 
-/* Update the fields of "access" such that they all have the same parameters.
+/* Update the fields of "access" such that they all have the same parameters,
+ * keeping in mind that the schedule_map field may be NULL and ignoring
+ * the schedule field.
  */
 static __isl_give isl_union_access_info *isl_union_access_info_align_params(
 	__isl_take isl_union_access_info *access)
@@ -1333,7 +1357,8 @@ static __isl_give isl_union_access_info *isl_union_access_info_align_params(
 				isl_union_map_get_space(access->must_source));
 	space = isl_space_align_params(space,
 				isl_union_map_get_space(access->may_source));
-	space = isl_space_align_params(space,
+	if (access->schedule_map)
+		space = isl_space_align_params(space,
 				isl_union_map_get_space(access->schedule_map));
 	access->sink = isl_union_map_align_params(access->sink,
 							isl_space_copy(space));
@@ -1341,11 +1366,16 @@ static __isl_give isl_union_access_info *isl_union_access_info_align_params(
 							isl_space_copy(space));
 	access->may_source = isl_union_map_align_params(access->may_source,
 							isl_space_copy(space));
-	access->schedule_map = isl_union_map_align_params(access->schedule_map,
-							space);
+	if (!access->schedule_map) {
+		isl_space_free(space);
+	} else {
+		access->schedule_map =
+		    isl_union_map_align_params(access->schedule_map, space);
+		if (!access->schedule_map)
+			return isl_union_access_info_free(access);
+	}
 
-	if (!access->sink || !access->must_source ||
-	    !access->may_source || !access->schedule_map)
+	if (!access->sink || !access->must_source || !access->may_source)
 		return isl_union_access_info_free(access);
 
 	return access;
@@ -1814,6 +1844,9 @@ static __isl_give isl_union_access_info *isl_union_access_info_normalize(
  * map domain elements of access->{may,must)_source to
  * domain elements of access->sink.
  *
+ * This function is based on the schedule map representation, so
+ * if it is not available yet, we extract it from the schedule tree.
+ *
  * We first prepend the schedule dimensions to the domain
  * of the accesses so that we can easily compare their relative order.
  * Then we consider each sink access individually in compute_flow.
@@ -1822,6 +1855,12 @@ __isl_give isl_union_flow *isl_union_access_info_compute_flow(
 	__isl_take isl_union_access_info *access)
 {
 	struct isl_compute_flow_data data;
+
+	if (!access)
+		return NULL;
+
+	if (!access->schedule_map)
+		access->schedule_map = isl_schedule_get_map(access->schedule);
 
 	access = isl_union_access_info_normalize(access);
 	access = isl_union_access_info_align_params(access);
