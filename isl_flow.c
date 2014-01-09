@@ -1767,6 +1767,26 @@ error:
 	return -1;
 }
 
+/* Remove the must accesses from the may accesses.
+ *
+ * A must access always trumps a may access, so there is no need
+ * for a must access to also be considered as a may access.  Doing so
+ * would only cost extra computations only to find out that
+ * the duplicated may access does not make any difference.
+ */
+static __isl_give isl_union_access_info *isl_union_access_info_normalize(
+	__isl_take isl_union_access_info *access)
+{
+	if (!access)
+		return NULL;
+	access->may_source = isl_union_map_subtract(access->may_source,
+				    isl_union_map_copy(access->must_source));
+	if (!access->may_source)
+		return isl_union_access_info_free(access);
+
+	return access;
+}
+
 /* Given a description of the "sink" accesses, the "source" accesses and
  * a schedule, compute for each instance of a sink access
  * and for each element accessed by that instance,
@@ -1788,6 +1808,7 @@ __isl_give isl_union_flow *isl_union_access_info_compute_flow(
 {
 	struct isl_compute_flow_data data;
 
+	access = isl_union_access_info_normalize(access);
 	access = isl_union_access_info_align_params(access);
 	access = isl_union_access_info_introduce_schedule(access);
 	if (!access)
