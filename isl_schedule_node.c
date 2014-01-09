@@ -1,5 +1,5 @@
 /*
- * Copyright 2013      Ecole Normale Superieure
+ * Copyright 2013-2014 Ecole Normale Superieure
  *
  * Use of this software is governed by the MIT license
  *
@@ -1662,6 +1662,45 @@ int isl_schedule_node_get_ancestor_child_position(
 			"not a descendant", return -1);
 
 	return node->child_pos[n1];
+}
+
+/* Given two nodes that point to the same schedule tree, return their
+ * closest shared ancestor.
+ *
+ * Since the two nodes point to the same schedule, they share at least
+ * one ancestor, the root of the schedule.  We move down from the root
+ * to the first ancestor where the respective children have a different
+ * child position.  This is the requested ancestor.
+ * If there is no ancestor where the children have a different position,
+ * then one node is an ancestor of the other and then this node is
+ * the requested ancestor.
+ */
+__isl_give isl_schedule_node *isl_schedule_node_get_shared_ancestor(
+	__isl_keep isl_schedule_node *node1,
+	__isl_keep isl_schedule_node *node2)
+{
+	int i, n1, n2;
+
+	if (!node1 || !node2)
+		return NULL;
+	if (node1->schedule != node2->schedule)
+		isl_die(isl_schedule_node_get_ctx(node1), isl_error_invalid,
+			"not part of same schedule", return NULL);
+	n1 = isl_schedule_node_get_tree_depth(node1);
+	n2 = isl_schedule_node_get_tree_depth(node2);
+	if (n2 < n1)
+		return isl_schedule_node_get_shared_ancestor(node2, node1);
+	if (n1 == 0)
+		return isl_schedule_node_copy(node1);
+	if (isl_schedule_node_is_equal(node1, node2))
+		return isl_schedule_node_copy(node1);
+
+	for (i = 0; i < n1; ++i)
+		if (node1->child_pos[i] != node2->child_pos[i])
+			break;
+
+	node1 = isl_schedule_node_copy(node1);
+	return isl_schedule_node_ancestor(node1, n1 - i);
 }
 
 /* Print "node" to "p".
