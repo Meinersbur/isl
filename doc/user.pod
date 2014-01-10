@@ -5505,9 +5505,11 @@ C<isl_space_range_factor_range> extract the two arguments from
 the result of a call to C<isl_space_range_product>.
 
 The arguments of a call to C<isl_map_range_product> can be extracted
-from the result using the following two functions.
+from the result using the following functions.
 
 	#include <isl/map.h>
+	__isl_give isl_map *isl_map_domain_factor_range(
+		__isl_take isl_map *map);
 	__isl_give isl_map *isl_map_range_factor_domain(
 		__isl_take isl_map *map);
 	__isl_give isl_map *isl_map_range_factor_range(
