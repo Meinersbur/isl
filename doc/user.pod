@@ -5493,6 +5493,8 @@ instead.
 	#include <isl/space.h>
 	__isl_give isl_space *isl_space_domain_factor_domain(
 		__isl_take isl_space *space);
+	__isl_give isl_space *isl_space_domain_factor_range(
+		__isl_take isl_space *space);
 	__isl_give isl_space *isl_space_range_factor_domain(
 		__isl_take isl_space *space);
 	__isl_give isl_space *isl_space_range_factor_range(

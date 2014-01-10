@@ -1310,6 +1310,44 @@ error:
 	return NULL;
 }
 
+/* Given a space of the form [A -> B] -> C, return the space B -> C.
+ */
+__isl_give isl_space *isl_space_domain_factor_range(
+	__isl_take isl_space *space)
+{
+	isl_space *nested;
+	isl_space *range;
+
+	if (!space)
+		return NULL;
+	if (!isl_space_domain_is_wrapping(space))
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
+			"domain not a product", return isl_space_free(space));
+
+	nested = space->nested[0];
+	range = isl_space_copy(space);
+	range = isl_space_drop_dims(space, isl_dim_in, 0, nested->n_in);
+	if (!range)
+		return isl_space_free(space);
+	if (nested->tuple_id[1]) {
+		range->tuple_id[0] = isl_id_copy(nested->tuple_id[1]);
+		if (!range->tuple_id[0])
+			goto error;
+	}
+	if (nested->nested[1]) {
+		range->nested[0] = isl_space_copy(nested->nested[1]);
+		if (!range->nested[0])
+			goto error;
+	}
+
+	isl_space_free(space);
+	return range;
+error:
+	isl_space_free(space);
+	isl_space_free(range);
+	return NULL;
+}
+
 /* Given a space of the form A -> [B -> C], return the space A -> B.
  */
 __isl_give isl_space *isl_space_range_factor_domain(
