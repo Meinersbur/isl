@@ -1569,7 +1569,7 @@ L<"Piecewise Multiple Quasi Affine Expressions">).
 	isl_union_map_from_union_pw_multi_aff(
 		__isl_take isl_union_pw_multi_aff *upma);
 
-The C<domain_dim> argument describes the domain of the resulting
+The C<domain_space> argument describes the domain of the resulting
 basic relation.  It is required because the C<list> may consist
 of zero affine expressions.
 
