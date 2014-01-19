@@ -1008,24 +1008,6 @@ error:
 	return NULL;
 }
 
-void isl_basic_map_print(__isl_keep isl_basic_map *bmap, FILE *out, int indent,
-	const char *prefix, const char *suffix, unsigned output_format)
-{
-	isl_printer *printer;
-
-	if (!bmap)
-		return;
-
-	printer = isl_printer_to_file(bmap->ctx, out);
-	printer = isl_printer_set_indent(printer, indent);
-	printer = isl_printer_set_prefix(printer, prefix);
-	printer = isl_printer_set_suffix(printer, suffix);
-	printer = isl_printer_set_output_format(printer, output_format);
-	isl_printer_print_basic_map(printer, bmap);
-
-	isl_printer_free(printer);
-}
-
 __isl_give isl_printer *isl_printer_print_basic_set(__isl_take isl_printer *p,
 	__isl_keep isl_basic_set *bset)
 {
@@ -1048,24 +1030,6 @@ error:
 	return NULL;
 }
 
-void isl_basic_set_print(struct isl_basic_set *bset, FILE *out, int indent,
-	const char *prefix, const char *suffix, unsigned output_format)
-{
-	isl_printer *printer;
-
-	if (!bset)
-		return;
-
-	printer = isl_printer_to_file(bset->ctx, out);
-	printer = isl_printer_set_indent(printer, indent);
-	printer = isl_printer_set_prefix(printer, prefix);
-	printer = isl_printer_set_suffix(printer, suffix);
-	printer = isl_printer_set_output_format(printer, output_format);
-	isl_printer_print_basic_set(printer, bset);
-
-	isl_printer_free(printer);
-}
-
 __isl_give isl_printer *isl_printer_print_set(__isl_take isl_printer *p,
 	__isl_keep isl_set *set)
 {
@@ -1085,22 +1049,6 @@ __isl_give isl_printer *isl_printer_print_set(__isl_take isl_printer *p,
 error:
 	isl_printer_free(p);
 	return NULL;
-}
-
-void isl_set_print(struct isl_set *set, FILE *out, int indent,
-	unsigned output_format)
-{
-	isl_printer *printer;
-
-	if (!set)
-		return;
-
-	printer = isl_printer_to_file(set->ctx, out);
-	printer = isl_printer_set_indent(printer, indent);
-	printer = isl_printer_set_output_format(printer, output_format);
-	printer = isl_printer_print_set(printer, set);
-
-	isl_printer_free(printer);
 }
 
 __isl_give isl_printer *isl_printer_print_map(__isl_take isl_printer *p,
@@ -1223,22 +1171,6 @@ __isl_give isl_printer *isl_printer_print_union_set(__isl_take isl_printer *p,
 error:
 	isl_printer_free(p);
 	return NULL;
-}
-
-void isl_map_print(__isl_keep isl_map *map, FILE *out, int indent,
-	unsigned output_format)
-{
-	isl_printer *printer;
-
-	if (!map)
-		return;
-
-	printer = isl_printer_to_file(map->ctx, out);
-	printer = isl_printer_set_indent(printer, indent);
-	printer = isl_printer_set_output_format(printer, output_format);
-	printer = isl_printer_print_map(printer, map);
-
-	isl_printer_free(printer);
 }
 
 static int upoly_rec_n_non_zero(__isl_keep struct isl_upoly_rec *rec)
