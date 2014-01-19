@@ -392,6 +392,29 @@ __isl_give isl_schedule *isl_schedule_reset_user(
 	return isl_schedule_map_schedule_node(schedule, &reset_user, NULL);
 }
 
+/* Wrapper around isl_schedule_node_align_params for use as
+ * an isl_schedule_map_schedule_node callback.
+ */
+static __isl_give isl_schedule_node *align_params(
+	__isl_take isl_schedule_node *node, void *user)
+{
+	isl_space *space = user;
+
+	return isl_schedule_node_align_params(node, isl_space_copy(space));
+}
+
+/* Align the parameters of all nodes in schedule "schedule"
+ * to those of "space".
+ */
+__isl_give isl_schedule *isl_schedule_align_params(
+	__isl_take isl_schedule *schedule, __isl_take isl_space *space)
+{
+	schedule = isl_schedule_map_schedule_node(schedule,
+						    &align_params, space);
+	isl_space_free(space);
+	return schedule;
+}
+
 /* Return an isl_union_map representation of the schedule.
  * If we still have access to the schedule tree, then we return
  * an isl_union_map corresponding to the subtree schedule of the child

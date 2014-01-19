@@ -7331,6 +7331,14 @@ and tuple identifiers referenced by the nodes of the given schedule.
 	__isl_give isl_schedule *isl_schedule_reset_user(
 		__isl_take isl_schedule *schedule);
 
+The following function aligns the parameters of all nodes
+in the given schedule to the given space.
+
+	#include <isl/schedule.h>
+	__isl_give isl_schedule *isl_schedule_align_params(
+		__isl_take isl_schedule *schedule,
+		__isl_take isl_space *space);
+
 An C<isl_union_map> representation of the schedule can be obtained
 from an C<isl_schedule> using the following function.
 
