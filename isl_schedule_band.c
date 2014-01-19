@@ -455,3 +455,23 @@ __isl_give isl_schedule_band *isl_schedule_band_reset_user(
 
 	return band;
 }
+
+/* Align the parameters of "band" to those of "space".
+ */
+__isl_give isl_schedule_band *isl_schedule_band_align_params(
+	__isl_take isl_schedule_band *band, __isl_take isl_space *space)
+{
+	band = isl_schedule_band_cow(band);
+	if (!band || !space)
+		goto error;
+
+	band->mupa = isl_multi_union_pw_aff_align_params(band->mupa, space);
+	if (!band->mupa)
+		return isl_schedule_band_free(band);
+
+	return band;
+error:
+	isl_space_free(space);
+	isl_schedule_band_free(band);
+	return NULL;
+}

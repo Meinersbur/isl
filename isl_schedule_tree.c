@@ -1401,6 +1401,55 @@ __isl_give isl_schedule_tree *isl_schedule_tree_reset_user(
 	return tree;
 }
 
+/* Align the parameters of the root of "tree" to those of "space".
+ */
+__isl_give isl_schedule_tree *isl_schedule_tree_align_params(
+	__isl_take isl_schedule_tree *tree, __isl_take isl_space *space)
+{
+	if (!space)
+		goto error;
+
+	if (isl_schedule_tree_is_leaf(tree)) {
+		isl_space_free(space);
+		return tree;
+	}
+
+	tree = isl_schedule_tree_cow(tree);
+	if (!tree)
+		goto error;
+
+	switch (tree->type) {
+	case isl_schedule_node_error:
+		goto error;
+	case isl_schedule_node_band:
+		tree->band = isl_schedule_band_align_params(tree->band, space);
+		if (!tree->band)
+			return isl_schedule_tree_free(tree);
+		break;
+	case isl_schedule_node_domain:
+		tree->domain = isl_union_set_align_params(tree->domain, space);
+		if (!tree->domain)
+			return isl_schedule_tree_free(tree);
+		break;
+	case isl_schedule_node_filter:
+		tree->filter = isl_union_set_align_params(tree->filter, space);
+		if (!tree->filter)
+			return isl_schedule_tree_free(tree);
+		break;
+	case isl_schedule_node_leaf:
+	case isl_schedule_node_sequence:
+	case isl_schedule_node_set:
+		isl_space_free(space);
+		break;
+	}
+
+	return tree;
+error:
+	isl_space_free(space);
+	isl_schedule_tree_free(tree);
+	return NULL;
+}
+
 /* Are any members in "band" marked coincident?
  */
 static int any_coincident(__isl_keep isl_schedule_band *band)

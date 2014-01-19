@@ -7502,6 +7502,15 @@ and tuple identifiers referenced by the given schedule node.
 	__isl_give isl_schedule_node *isl_schedule_node_reset_user(
 		__isl_take isl_schedule_node *node);
 
+The following function aligns the parameters of the given schedule
+node to the given space.
+
+	#include <isl/schedule_node.h>
+	__isl_give isl_schedule_node *
+	isl_schedule_node_align_params(
+		__isl_take isl_schedule_node *node,
+		__isl_take isl_space *space);
+
 Several node types have their own functions for querying
 (and in some cases setting) some node type specific properties.
 

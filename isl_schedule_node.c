@@ -1521,6 +1521,20 @@ __isl_give isl_schedule_node *isl_schedule_node_reset_user(
 	return node;
 }
 
+/* Align the parameters of the schedule node "node" to those of "space".
+ */
+__isl_give isl_schedule_node *isl_schedule_node_align_params(
+	__isl_take isl_schedule_node *node, __isl_take isl_space *space)
+{
+	isl_schedule_tree *tree;
+
+	tree = isl_schedule_node_get_tree(node);
+	tree = isl_schedule_tree_align_params(tree, space);
+	node = isl_schedule_node_graft_tree(node, tree);
+
+	return node;
+}
+
 /* Print "node" to "p".
  */
 __isl_give isl_printer *isl_printer_print_schedule_node(

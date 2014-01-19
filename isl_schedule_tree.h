@@ -135,6 +135,8 @@ __isl_give isl_schedule_tree *isl_schedule_tree_replace_child(
 
 __isl_give isl_schedule_tree *isl_schedule_tree_reset_user(
 	__isl_take isl_schedule_tree *tree);
+__isl_give isl_schedule_tree *isl_schedule_tree_align_params(
+	__isl_take isl_schedule_tree *tree, __isl_take isl_space *space);
 
 __isl_give isl_printer *isl_printer_print_schedule_tree(
 	__isl_take isl_printer *p, __isl_keep isl_schedule_tree *tree);
