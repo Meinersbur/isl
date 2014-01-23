@@ -31,6 +31,7 @@ unsigned isl_local_space_offset(__isl_keep isl_local_space *ls,
 
 __isl_give isl_local_space *isl_local_space_replace_divs(
 	__isl_take isl_local_space *ls, __isl_take isl_mat *div);
+int isl_local_space_div_is_known(__isl_keep isl_local_space *ls, int div);
 int isl_local_space_divs_known(__isl_keep isl_local_space *ls);
 
 __isl_give isl_local_space *isl_local_space_substitute_equalities(

@@ -642,6 +642,18 @@ error:
 	return NULL;
 }
 
+/* Does "ls" have an explicit representation for div "div"?
+ */
+int isl_local_space_div_is_known(__isl_keep isl_local_space *ls, int div)
+{
+	if (!ls)
+		return -1;
+	if (div < 0 || div >= ls->div->n_row)
+		isl_die(isl_local_space_get_ctx(ls), isl_error_invalid,
+			"position out of bounds", return -1);
+	return !isl_int_is_zero(ls->div->row[div][0]);
+}
+
 int isl_local_space_divs_known(__isl_keep isl_local_space *ls)
 {
 	int i;
