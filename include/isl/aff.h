@@ -154,6 +154,8 @@ __isl_give isl_pw_aff *isl_pw_aff_set_dim_id(__isl_take isl_pw_aff *pma,
 	enum isl_dim_type type, unsigned pos, __isl_take isl_id *id);
 
 int isl_pw_aff_is_empty(__isl_keep isl_pw_aff *pwaff);
+int isl_pw_aff_plain_cmp(__isl_keep isl_pw_aff *pa1,
+	__isl_keep isl_pw_aff *pa2);
 int isl_pw_aff_plain_is_equal(__isl_keep isl_pw_aff *pwaff1,
 	__isl_keep isl_pw_aff *pwaff2);
 int isl_pw_aff_is_equal(__isl_keep isl_pw_aff *pa1, __isl_keep isl_pw_aff *pa2);

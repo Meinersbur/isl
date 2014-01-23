@@ -6273,3 +6273,77 @@ __isl_give isl_multi_pw_aff *isl_multi_pw_aff_pullback_multi_pw_aff(
 	return isl_multi_pw_aff_align_params_multi_multi_and(mpa1, mpa2,
 			&isl_multi_pw_aff_pullback_multi_pw_aff_aligned);
 }
+
+/* Compare two isl_affs.
+ *
+ * Return -1 if "aff1" is "smaller" than "aff2", 1 if "aff1" is "greater"
+ * than "aff2" and 0 if they are equal.
+ *
+ * The order is fairly arbitrary.  We do consider expressions that only involve
+ * earlier dimensions as "smaller".
+ */
+int isl_aff_plain_cmp(__isl_keep isl_aff *aff1, __isl_keep isl_aff *aff2)
+{
+	int cmp;
+	int last1, last2;
+
+	if (aff1 == aff2)
+		return 0;
+
+	if (!aff1)
+		return -1;
+	if (!aff2)
+		return 1;
+
+	cmp = isl_local_space_cmp(aff1->ls, aff2->ls);
+	if (cmp != 0)
+		return cmp;
+
+	last1 = isl_seq_last_non_zero(aff1->v->el + 1, aff1->v->size - 1);
+	last2 = isl_seq_last_non_zero(aff2->v->el + 1, aff1->v->size - 1);
+	if (last1 != last2)
+		return last1 - last2;
+
+	return isl_seq_cmp(aff1->v->el, aff2->v->el, aff1->v->size);
+}
+
+/* Compare two isl_pw_affs.
+ *
+ * Return -1 if "pa1" is "smaller" than "pa2", 1 if "pa1" is "greater"
+ * than "pa2" and 0 if they are equal.
+ *
+ * The order is fairly arbitrary.  We do consider expressions that only involve
+ * earlier dimensions as "smaller".
+ */
+int isl_pw_aff_plain_cmp(__isl_keep isl_pw_aff *pa1,
+	__isl_keep isl_pw_aff *pa2)
+{
+	int i;
+	int cmp;
+
+	if (pa1 == pa2)
+		return 0;
+
+	if (!pa1)
+		return -1;
+	if (!pa2)
+		return 1;
+
+	cmp = isl_space_cmp(pa1->dim, pa2->dim);
+	if (cmp != 0)
+		return cmp;
+
+	if (pa1->n != pa2->n)
+		return pa1->n - pa2->n;
+
+	for (i = 0; i < pa1->n; ++i) {
+		cmp = isl_set_plain_cmp(pa1->p[i].set, pa2->p[i].set);
+		if (cmp != 0)
+			return cmp;
+		cmp = isl_aff_plain_cmp(pa1->p[i].aff, pa2->p[i].aff);
+		if (cmp != 0)
+			return cmp;
+	}
+
+	return 0;
+}

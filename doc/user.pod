@@ -4046,6 +4046,13 @@ or (obviously) equal to some other affine expression, use
 		__isl_keep isl_pw_aff *pwaff2);
 	int isl_pw_aff_is_equal(__isl_keep isl_pw_aff *pa1,
 		__isl_keep isl_pw_aff *pa2);
+	int isl_pw_aff_plain_cmp(__isl_keep isl_pw_aff *pa1,
+		__isl_keep isl_pw_aff *pa2);
+
+The function C<isl_pw_aff_plain_cmp> can be used to sort
+C<isl_pw_aff>s.  The order is not strictly defined.
+The current order sorts expressions that only involve
+earlier dimensions before those that involve later dimensions.
 
 Operations include
 
