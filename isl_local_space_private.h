@@ -69,4 +69,7 @@ __isl_give isl_local_space *isl_local_space_move_dims(
 	enum isl_dim_type dst_type, unsigned dst_pos,
 	enum isl_dim_type src_type, unsigned src_pos, unsigned n);
 
+int isl_local_space_cmp(__isl_keep isl_local_space *ls1,
+	__isl_keep isl_local_space *ls2);
+
 #endif
