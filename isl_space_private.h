@@ -55,4 +55,6 @@ __isl_give isl_space *isl_space_lift(__isl_take isl_space *dim, unsigned n_local
 __isl_give isl_space *isl_space_extend_domain_with_range(
 	__isl_take isl_space *domain, __isl_take isl_space *model);
 
+int isl_space_cmp(__isl_keep isl_space *space1, __isl_keep isl_space *space2);
+
 #endif

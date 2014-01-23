@@ -2201,3 +2201,71 @@ error:
 	isl_space_free(space);
 	return NULL;
 }
+
+/* Compare the "type" dimensions of two isl_spaces.
+ *
+ * The order is fairly arbitrary.
+ */
+static int isl_space_cmp_type(__isl_keep isl_space *space1,
+	__isl_keep isl_space *space2, enum isl_dim_type type)
+{
+	int cmp;
+	isl_space *nested1, *nested2;
+
+	if (isl_space_dim(space1, type) != isl_space_dim(space2, type))
+		return isl_space_dim(space1, type) -
+			isl_space_dim(space2, type);
+
+	cmp = isl_id_cmp(tuple_id(space1, type), tuple_id(space2, type));
+	if (cmp != 0)
+		return cmp;
+
+	nested1 = nested(space1, type);
+	nested2 = nested(space2, type);
+	if (!nested1 != !nested2)
+		return !nested1 - !nested2;
+
+	if (nested1)
+		return isl_space_cmp(nested1, nested2);
+
+	return 0;
+}
+
+/* Compare two isl_spaces.
+ *
+ * The order is fairly arbitrary.
+ */
+int isl_space_cmp(__isl_keep isl_space *space1, __isl_keep isl_space *space2)
+{
+	int i;
+	int cmp;
+
+	if (space1 == space2)
+		return 0;
+	if (!space1)
+		return -1;
+	if (!space2)
+		return 1;
+
+	cmp = isl_space_cmp_type(space1, space2, isl_dim_param);
+	if (cmp != 0)
+		return cmp;
+	cmp = isl_space_cmp_type(space1, space2, isl_dim_in);
+	if (cmp != 0)
+		return cmp;
+	cmp = isl_space_cmp_type(space1, space2, isl_dim_out);
+	if (cmp != 0)
+		return cmp;
+
+	if (!space1->ids && !space2->ids)
+		return 0;
+
+	for (i = 0; i < n(space1, isl_dim_param); ++i) {
+		cmp = isl_id_cmp(get_id(space1, isl_dim_param, i),
+				 get_id(space2, isl_dim_param, i));
+		if (cmp != 0)
+			return cmp;
+	}
+
+	return 0;
+}
