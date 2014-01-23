@@ -8,6 +8,6 @@ if (ub >= lb)
         if (n >= ub + 1)
           s2(c0, c1);
       }
-      for (int c3 = max(c0, lb); c3 <= ub; c3 += 1)
+      for (int c3 = max(lb, c0); c3 <= ub; c3 += 1)
         s1(c0, c1, c3);
     }

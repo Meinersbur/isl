@@ -11,7 +11,7 @@ for (int c0 = 0; c0 <= 4; c0 += 1) {
         for (int c6 = -2 * c0 + c4 + 4; c6 <= 2 * c0 - c4 + 4; c6 += 1)
           S_0(c4, c6);
   }
-  for (int c4 = max(2 * c0 - 1, 0); c4 <= min(7, 2 * c0); c4 += 1)
+  for (int c4 = max(0, 2 * c0 - 1); c4 <= min(7, 2 * c0); c4 += 1)
     for (int c6 = -2 * c0 + c4 + 8; c6 <= 8; c6 += 1)
       S_0(c4, c6);
   if (c0 <= 3 && c0 >= 1) {

@@ -10,6 +10,6 @@
   }
   for (int c1 = 0; c1 < n; c1 += 8)
     for (int c2 = 0; c2 < n % 8; c2 += 1)
-      for (int c3 = 0; c3 <= min(n - c1 - 1, 7); c3 += 1)
+      for (int c3 = 0; c3 <= min(7, n - c1 - 1); c3 += 1)
         A(-((n - 1) % 8) + n + c2 - 1, c1 + c3);
 }

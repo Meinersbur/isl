@@ -1,5 +1,5 @@
 /*
- * Copyright 2012      Ecole Normale Superieure
+ * Copyright 2012-2014 Ecole Normale Superieure
  *
  * Use of this software is governed by the MIT license
  *
@@ -515,12 +515,22 @@ static __isl_give isl_pw_aff_list *upper_bounds(
 	return list;
 }
 
+/* Callback for sorting the isl_pw_aff_list passed to reduce_list.
+ */
+static int reduce_list_cmp(__isl_keep isl_pw_aff *a, __isl_keep isl_pw_aff *b,
+	void *user)
+{
+	return isl_pw_aff_plain_cmp(a, b);
+}
+
 /* Return an isl_ast_expr that performs the reduction of type "type"
  * on AST expressions corresponding to the elements in "list".
  *
  * The list is assumed to contain at least one element.
  * If the list contains exactly one element, then the returned isl_ast_expr
  * simply computes that affine expression.
+ * If the list contains more than one element, then we sort it
+ * using a fairly abitrary but hopefully reasonably stable order.
  */
 static __isl_give isl_ast_expr *reduce_list(enum isl_ast_op_type type,
 	__isl_keep isl_pw_aff_list *list, __isl_keep isl_ast_build *build)
@@ -543,17 +553,27 @@ static __isl_give isl_ast_expr *reduce_list(enum isl_ast_op_type type,
 	if (!expr)
 		return NULL;
 
+	list = isl_pw_aff_list_copy(list);
+	list = isl_pw_aff_list_sort(list, &reduce_list_cmp, NULL);
+	if (!list)
+		return isl_ast_expr_free(expr);
+
 	for (i = 0; i < n; ++i) {
 		isl_ast_expr *expr_i;
 
 		expr_i = isl_ast_build_expr_from_pw_aff_internal(build,
 				isl_pw_aff_list_get_pw_aff(list, i));
 		if (!expr_i)
-			return isl_ast_expr_free(expr);
+			goto error;
 		expr->u.op.args[i] = expr_i;
 	}
 
+	isl_pw_aff_list_free(list);
 	return expr;
+error:
+	isl_pw_aff_list_free(list);
+	isl_ast_expr_free(expr);
+	return NULL;
 }
 
 /* Add a guard to "graft" based on "bound" in the case of a degenerate
