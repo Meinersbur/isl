@@ -2255,6 +2255,18 @@ that maps (a wrapped version of) the input relation to its domain or range.
 Eliminate the coefficients for the given dimensions from the constraints,
 without removing the dimensions.
 
+=item * Constructing a relation from a set
+
+	#include <isl/map.h>
+	__isl_give isl_map *isl_map_from_domain(
+		__isl_take isl_set *set);
+	__isl_give isl_map *isl_map_from_range(
+		__isl_take isl_set *set);
+
+Create a relation with the given set as domain or range.
+The range or domain of the created relation is a zero-dimensional
+flat anonymous space.
+
 =item * Slicing
 
 	__isl_give isl_basic_set *isl_basic_set_fix_si(

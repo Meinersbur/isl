@@ -5040,7 +5040,11 @@ __isl_give isl_basic_map *isl_basic_map_from_range(
 	return (isl_basic_map *)bset;
 }
 
-struct isl_map *isl_map_from_range(struct isl_set *set)
+/* Create a relation with the given set as range.
+ * The domain of the created relation is a zero-dimensional
+ * flat anonymous space.
+ */
+__isl_give isl_map *isl_map_from_range(__isl_take isl_set *set)
 {
 	isl_space *space;
 	space = isl_set_get_space(set);
@@ -5049,6 +5053,10 @@ struct isl_map *isl_map_from_range(struct isl_set *set)
 	return (struct isl_map *)set;
 }
 
+/* Create a relation with the given set as domain.
+ * The range of the created relation is a zero-dimensional
+ * flat anonymous space.
+ */
 __isl_give isl_map *isl_map_from_domain(__isl_take isl_set *set)
 {
 	return isl_map_reverse(isl_map_from_range(set));
