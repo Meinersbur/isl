@@ -1379,7 +1379,7 @@ __isl_give PW *FN(PW,reset_space)(__isl_take PW *pw, __isl_take isl_space *dim)
 	return FN(PW,reset_space_and_domain)(pw, dim, domain);
 }
 
-__isl_give PW *FN(PW,set_tuple_id)(__isl_keep PW *pw, enum isl_dim_type type,
+__isl_give PW *FN(PW,set_tuple_id)(__isl_take PW *pw, enum isl_dim_type type,
 	__isl_take isl_id *id)
 {
 	isl_space *space;
