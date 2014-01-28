@@ -787,6 +787,10 @@ __isl_give isl_aff *isl_aff_set_coefficient_si(__isl_take isl_aff *aff,
 		isl_die(aff->v->ctx, isl_error_invalid,
 			"position out of bounds", return isl_aff_free(aff));
 
+	pos += isl_local_space_offset(aff->ls, type);
+	if (isl_int_cmp_si(aff->v->el[1 + pos], v) == 0)
+		return aff;
+
 	aff = isl_aff_cow(aff);
 	if (!aff)
 		return NULL;
@@ -795,7 +799,6 @@ __isl_give isl_aff *isl_aff_set_coefficient_si(__isl_take isl_aff *aff,
 	if (!aff->v)
 		return isl_aff_free(aff);
 
-	pos += isl_local_space_offset(aff->ls, type);
 	isl_int_set_si(aff->v->el[1 + pos], v);
 
 	return aff;
