@@ -929,45 +929,12 @@ of all the corresponding identifiers, use the following function.
 
 Spaces can be nested.  In particular, the domain of a set or
 the domain or range of a relation can be a nested relation.
-The following functions can be used to construct and deconstruct
-such nested spaces.
-
-	#include <isl/space.h>
-	int isl_space_is_wrapping(__isl_keep isl_space *space);
-	int isl_space_range_is_wrapping(
-		__isl_keep isl_space *space);
-	__isl_give isl_space *isl_space_wrap(__isl_take isl_space *space);
-	__isl_give isl_space *isl_space_unwrap(__isl_take isl_space *space);
-	__isl_give isl_space *isl_space_product(__isl_take isl_space *space1,
-		__isl_take isl_space *space2);
-	__isl_give isl_space *isl_space_domain_product(
-		__isl_take isl_space *space1,
-		__isl_take isl_space *space2);
-	__isl_give isl_space *isl_space_range_product(
-		__isl_take isl_space *space1,
-		__isl_take isl_space *space2);
-	__isl_give isl_space *isl_space_range_factor_domain(
-		__isl_take isl_space *space);
-	__isl_give isl_space *isl_space_range_factor_range(
-		__isl_take isl_space *space);
-
-The input to C<isl_space_is_wrapping> and C<isl_space_unwrap> should
-be the space of a set, while that of
-C<isl_space_range_is_wrapping> and
-C<isl_space_wrap> should be the space of a relation.
-Conversely, the output of C<isl_space_unwrap> is the space
-of a relation, while that of C<isl_space_wrap> is the space of a set.
-The functions
-C<isl_space_product>, C<isl_space_domain_product>
-and C<isl_space_range_product> take pairs or relation spaces and
-produce a single relations space, where either the domain, the range
-or both domain and range are wrapped spaces of relations between
-the domains and/or ranges of the input spaces.
-If the product is only constructed over the domain or the range
-then the ranges or the domains of the inputs should be the same.
-The functions C<isl_space_range_factor_domain> and
-C<isl_space_range_factor_range> extract the two arguments from
-the result of a call to C<isl_space_range_product>.
+This process is also called I<wrapping>.
+The functions for detecting, constructing and deconstructing
+such nested spaces can be found in the wrapping properties
+of L</"Unary Properties">, the wrapping operations
+of L</"Unary Operations"> and the Cartesian product operations
+of L</"Basic Operations">.
 
 Spaces can be created from other spaces
 using the following functions.
@@ -2043,11 +2010,24 @@ To check whether a set is a parameter domain, use this function:
 The following functions check whether the space of the given
 (basic) set or relation range is a wrapped relation.
 
+	#include <isl/space.h>
+	int isl_space_is_wrapping(
+		__isl_keep isl_space *space);
+	int isl_space_range_is_wrapping(
+		__isl_keep isl_space *space);
+
+	#include <isl/set.h>
 	int isl_basic_set_is_wrapping(
 		__isl_keep isl_basic_set *bset);
 	int isl_set_is_wrapping(__isl_keep isl_set *set);
+
+	#include <isl/map.h>
 	int isl_map_range_is_wrapping(
 		__isl_keep isl_map *map);
+
+The input to C<isl_space_is_wrapping> should
+be the space of a set, while that of
+C<isl_space_range_is_wrapping> should be the space of a relation.
 
 =item * Internal Product
 
@@ -2693,18 +2673,37 @@ the overapproximation), then you will get an error message.
 
 =item * Wrapping
 
-	__isl_give isl_basic_set *isl_basic_map_wrap(
-		__isl_take isl_basic_map *bmap);
-	__isl_give isl_set *isl_map_wrap(
-		__isl_take isl_map *map);
-	__isl_give isl_union_set *isl_union_map_wrap(
-		__isl_take isl_union_map *umap);
+	#include <isl/space.h>
+	__isl_give isl_space *isl_space_wrap(
+		__isl_take isl_space *space);
+	__isl_give isl_space *isl_space_unwrap(
+		__isl_take isl_space *space);
+
+	#include <isl/set.h>
 	__isl_give isl_basic_map *isl_basic_set_unwrap(
 		__isl_take isl_basic_set *bset);
 	__isl_give isl_map *isl_set_unwrap(
 		__isl_take isl_set *set);
+
+	#include <isl/map.h>
+	__isl_give isl_basic_set *isl_basic_map_wrap(
+		__isl_take isl_basic_map *bmap);
+	__isl_give isl_set *isl_map_wrap(
+		__isl_take isl_map *map);
+
+	#include <isl/union_set.h>
 	__isl_give isl_union_map *isl_union_set_unwrap(
 		__isl_take isl_union_set *uset);
+
+	#include <isl/union_map.h>
+	__isl_give isl_union_set *isl_union_map_wrap(
+		__isl_take isl_union_map *umap);
+
+The input to C<isl_space_unwrap> should
+be the space of a set, while that of
+C<isl_space_wrap> should be the space of a relation.
+Conversely, the output of C<isl_space_unwrap> is the space
+of a relation, while that of C<isl_space_wrap> is the space of a set.
 
 =item * Flattening
 
@@ -3062,12 +3061,32 @@ L</"Piecewise Multiple Quasi Affine Expressions">.
 
 =item * Cartesian Product
 
+	#include <isl/space.h>
+	__isl_give isl_space *isl_space_product(
+		__isl_take isl_space *space1,
+		__isl_take isl_space *space2);
+	__isl_give isl_space *isl_space_domain_product(
+		__isl_take isl_space *space1,
+		__isl_take isl_space *space2);
+	__isl_give isl_space *isl_space_range_product(
+		__isl_take isl_space *space1,
+		__isl_take isl_space *space2);
+
+The functions
+C<isl_space_product>, C<isl_space_domain_product>
+and C<isl_space_range_product> take pairs or relation spaces and
+produce a single relations space, where either the domain, the range
+or both domain and range are wrapped spaces of relations between
+the domains and/or ranges of the input spaces.
+If the product is only constructed over the domain or the range
+then the ranges or the domains of the inputs should be the same.
+
+	#include <isl/set.h>
 	__isl_give isl_set *isl_set_product(
 		__isl_take isl_set *set1,
 		__isl_take isl_set *set2);
-	__isl_give isl_union_set *isl_union_set_product(
-		__isl_take isl_union_set *uset1,
-		__isl_take isl_union_set *uset2);
+
+	#include <isl/map.h>
 	__isl_give isl_basic_map *isl_basic_map_domain_product(
 		__isl_take isl_basic_map *bmap1,
 		__isl_take isl_basic_map *bmap2);
@@ -3083,15 +3102,22 @@ L</"Piecewise Multiple Quasi Affine Expressions">.
 	__isl_give isl_map *isl_map_range_product(
 		__isl_take isl_map *map1,
 		__isl_take isl_map *map2);
+	__isl_give isl_map *isl_map_product(
+		__isl_take isl_map *map1,
+		__isl_take isl_map *map2);
+
+	#include <isl/union_set.h>
+	__isl_give isl_union_set *isl_union_set_product(
+		__isl_take isl_union_set *uset1,
+		__isl_take isl_union_set *uset2);
+
+	#include <isl/union_map.h>
 	__isl_give isl_union_map *isl_union_map_domain_product(
 		__isl_take isl_union_map *umap1,
 		__isl_take isl_union_map *umap2);
 	__isl_give isl_union_map *isl_union_map_range_product(
 		__isl_take isl_union_map *umap1,
 		__isl_take isl_union_map *umap2);
-	__isl_give isl_map *isl_map_product(
-		__isl_take isl_map *map1,
-		__isl_take isl_map *map2);
 	__isl_give isl_union_map *isl_union_map_product(
 		__isl_take isl_union_map *umap1,
 		__isl_take isl_union_map *umap2);
@@ -3127,9 +3153,20 @@ instead.
 		__isl_take isl_map *map1,
 		__isl_take isl_map *map2);
 
+	#include <isl/space.h>
+	__isl_give isl_space *isl_space_range_factor_domain(
+		__isl_take isl_space *space);
+	__isl_give isl_space *isl_space_range_factor_range(
+		__isl_take isl_space *space);
+
+The functions C<isl_space_range_factor_domain> and
+C<isl_space_range_factor_range> extract the two arguments from
+the result of a call to C<isl_space_range_product>.
+
 The arguments of a call to C<isl_map_range_product> can be extracted
 from the result using the following two functions.
 
+	#include <isl/map.h>
 	__isl_give isl_map *isl_map_range_factor_domain(
 		__isl_take isl_map *map);
 	__isl_give isl_map *isl_map_range_factor_range(
