@@ -771,8 +771,8 @@ is a map space.
 It is often useful to create objects that live in the
 same space as some other object.  This can be accomplished
 by creating the new objects
-(see L<Creating New Sets and Relations> or
-L<Creating New (Piecewise) Quasipolynomials>) based on the space
+(see L</"Creating New Sets and Relations"> or
+L</"Creating New (Piecewise) Quasipolynomials">) based on the space
 of the original object.
 
 	#include <isl/set.h>
