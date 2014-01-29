@@ -1,7 +1,7 @@
 /*
  * Copyright 2008-2009 Katholieke Universiteit Leuven
  * Copyright 2010      INRIA Saclay
- * Copyright 2014      Ecole Normale Superieure
+ * Copyright 2013-2014 Ecole Normale Superieure
  *
  * Use of this software is governed by the MIT license
  *
@@ -1760,6 +1760,19 @@ int isl_space_is_wrapping(__isl_keep isl_space *dim)
 		return 0;
 
 	return dim->nested[1] != NULL;
+}
+
+/* Is "space" the space of a map where the domain is a wrapped map space?
+ */
+int isl_space_domain_is_wrapping(__isl_keep isl_space *space)
+{
+	if (!space)
+		return -1;
+
+	if (isl_space_is_set(space))
+		return 0;
+
+	return space->nested[0] != NULL;
 }
 
 /* Is "space" the space of a map where the range is a wrapped map space?

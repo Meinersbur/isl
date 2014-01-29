@@ -123,6 +123,7 @@ __isl_give isl_space *isl_space_align_params(__isl_take isl_space *dim1,
 	__isl_take isl_space *dim2);
 
 int isl_space_is_wrapping(__isl_keep isl_space *dim);
+int isl_space_domain_is_wrapping(__isl_keep isl_space *space);
 int isl_space_range_is_wrapping(__isl_keep isl_space *space);
 __isl_give isl_space *isl_space_wrap(__isl_take isl_space *dim);
 __isl_give isl_space *isl_space_unwrap(__isl_take isl_space *dim);

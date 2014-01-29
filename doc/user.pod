@@ -2013,6 +2013,8 @@ The following functions check whether the space of the given
 	#include <isl/space.h>
 	int isl_space_is_wrapping(
 		__isl_keep isl_space *space);
+	int isl_space_domain_is_wrapping(
+		__isl_keep isl_space *space);
 	int isl_space_range_is_wrapping(
 		__isl_keep isl_space *space);
 
@@ -2027,6 +2029,7 @@ The following functions check whether the space of the given
 
 The input to C<isl_space_is_wrapping> should
 be the space of a set, while that of
+C<isl_space_domain_is_wrapping> and
 C<isl_space_range_is_wrapping> should be the space of a relation.
 
 =item * Internal Product
