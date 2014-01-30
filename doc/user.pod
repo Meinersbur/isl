@@ -354,6 +354,59 @@ for the same version of C<isl>.
 	unsigned long isl_ctx_get_max_operations(isl_ctx *ctx);
 	void isl_ctx_reset_operations(isl_ctx *ctx);
 
+=head2 Memory Management
+
+Since a high-level operation on isl objects usually involves
+several substeps and since the user is usually not interested in
+the intermediate results, most functions that return a new object
+will also release all the objects passed as arguments.
+If the user still wants to use one or more of these arguments
+after the function call, she should pass along a copy of the
+object rather than the object itself.
+The user is then responsible for making sure that the original
+object gets used somewhere else or is explicitly freed.
+
+The arguments and return values of all documented functions are
+annotated to make clear which arguments are released and which
+arguments are preserved.  In particular, the following annotations
+are used
+
+=over
+
+=item C<__isl_give>
+
+C<__isl_give> means that a new object is returned.
+The user should make sure that the returned pointer is
+used exactly once as a value for an C<__isl_take> argument.
+In between, it can be used as a value for as many
+C<__isl_keep> arguments as the user likes.
+There is one exception, and that is the case where the
+pointer returned is C<NULL>.  Is this case, the user
+is free to use it as an C<__isl_take> argument or not.
+
+=item C<__isl_take>
+
+C<__isl_take> means that the object the argument points to
+is taken over by the function and may no longer be used
+by the user as an argument to any other function.
+The pointer value must be one returned by a function
+returning an C<__isl_give> pointer.
+If the user passes in a C<NULL> value, then this will
+be treated as an error in the sense that the function will
+not perform its usual operation.  However, it will still
+make sure that all the other C<__isl_take> arguments
+are released.
+
+=item C<__isl_keep>
+
+C<__isl_keep> means that the function will only use the object
+temporarily.  After the function has finished, the user
+can still use it as an argument to other functions.
+A C<NULL> value will be treated in the same way as
+a C<NULL> value for an C<__isl_take> argument.
+
+=back
+
 =head2 Values
 
 An C<isl_val> represents an integer value, a rational value
@@ -566,59 +619,6 @@ of dimensions and/or different names (see L<"Spaces">).
 The difference between sets and relations (maps) is that sets have
 one set of variables, while relations have two sets of variables,
 input variables and output variables.
-
-=head2 Memory Management
-
-Since a high-level operation on sets and/or relations usually involves
-several substeps and since the user is usually not interested in
-the intermediate results, most functions that return a new object
-will also release all the objects passed as arguments.
-If the user still wants to use one or more of these arguments
-after the function call, she should pass along a copy of the
-object rather than the object itself.
-The user is then responsible for making sure that the original
-object gets used somewhere else or is explicitly freed.
-
-The arguments and return values of all documented functions are
-annotated to make clear which arguments are released and which
-arguments are preserved.  In particular, the following annotations
-are used
-
-=over
-
-=item C<__isl_give>
-
-C<__isl_give> means that a new object is returned.
-The user should make sure that the returned pointer is
-used exactly once as a value for an C<__isl_take> argument.
-In between, it can be used as a value for as many
-C<__isl_keep> arguments as the user likes.
-There is one exception, and that is the case where the
-pointer returned is C<NULL>.  Is this case, the user
-is free to use it as an C<__isl_take> argument or not.
-
-=item C<__isl_take>
-
-C<__isl_take> means that the object the argument points to
-is taken over by the function and may no longer be used
-by the user as an argument to any other function.
-The pointer value must be one returned by a function
-returning an C<__isl_give> pointer.
-If the user passes in a C<NULL> value, then this will
-be treated as an error in the sense that the function will
-not perform its usual operation.  However, it will still
-make sure that all the other C<__isl_take> arguments
-are released.
-
-=item C<__isl_keep>
-
-C<__isl_keep> means that the function will only use the object
-temporarily.  After the function has finished, the user
-can still use it as an argument to other functions.
-A C<NULL> value will be treated in the same way as
-a C<NULL> value for an C<__isl_take> argument.
-
-=back
 
 =head2 Error Handling
 
