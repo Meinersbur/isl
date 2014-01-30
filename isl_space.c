@@ -338,28 +338,28 @@ __isl_give isl_space *isl_space_copy(__isl_keep isl_space *dim)
 	return dim;
 }
 
-void *isl_space_free(__isl_take isl_space *dim)
+void *isl_space_free(__isl_take isl_space *space)
 {
 	int i;
 
-	if (!dim)
+	if (!space)
 		return NULL;
 
-	if (--dim->ref > 0)
+	if (--space->ref > 0)
 		return NULL;
 
-	isl_id_free(dim->tuple_id[0]);
-	isl_id_free(dim->tuple_id[1]);
+	isl_id_free(space->tuple_id[0]);
+	isl_id_free(space->tuple_id[1]);
 
-	isl_space_free(dim->nested[0]);
-	isl_space_free(dim->nested[1]);
+	isl_space_free(space->nested[0]);
+	isl_space_free(space->nested[1]);
 
-	for (i = 0; i < dim->n_id; ++i)
-		isl_id_free(dim->ids[i]);
-	free(dim->ids);
-	isl_ctx_deref(dim->ctx);
+	for (i = 0; i < space->n_id; ++i)
+		isl_id_free(space->ids[i]);
+	free(space->ids);
+	isl_ctx_deref(space->ctx);
 	
-	free(dim);
+	free(space);
 
 	return NULL;
 }
