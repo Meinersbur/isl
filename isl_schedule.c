@@ -80,7 +80,7 @@ __isl_give isl_schedule_constraints *isl_schedule_constraints_on_domain(
 	ctx = isl_union_set_get_ctx(domain);
 	sc = isl_calloc_type(ctx, struct isl_schedule_constraints);
 	if (!sc)
-		return isl_union_set_free(domain);
+		goto error;
 
 	space = isl_union_set_get_space(domain);
 	sc->domain = domain;
@@ -96,6 +96,9 @@ __isl_give isl_schedule_constraints *isl_schedule_constraints_on_domain(
 		return isl_schedule_constraints_free(sc);
 
 	return sc;
+error:
+	isl_union_set_free(domain);
+	return NULL;
 }
 
 /* Replace the validity constraints of "sc" by "validity".
@@ -180,7 +183,8 @@ error:
 	return NULL;
 }
 
-void *isl_schedule_constraints_free(__isl_take isl_schedule_constraints *sc)
+__isl_null isl_schedule_constraints *isl_schedule_constraints_free(
+	__isl_take isl_schedule_constraints *sc)
 {
 	enum isl_edge_type i;
 
@@ -3869,7 +3873,7 @@ __isl_give isl_schedule *isl_union_set_compute_schedule(
 	return isl_schedule_constraints_compute_schedule(sc);
 }
 
-void *isl_schedule_free(__isl_take isl_schedule *sched)
+__isl_null isl_schedule *isl_schedule_free(__isl_take isl_schedule *sched)
 {
 	int i;
 	if (!sched)

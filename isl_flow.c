@@ -127,7 +127,8 @@ error:
 	return NULL;
 }
 
-void *isl_restriction_free(__isl_take isl_restriction *restr)
+__isl_null isl_restriction *isl_restriction_free(
+	__isl_take isl_restriction *restr)
 {
 	if (!restr)
 		return NULL;
@@ -227,7 +228,8 @@ error:
 
 /* Free the given isl_access_info structure.
  */
-void *isl_access_info_free(__isl_take isl_access_info *acc)
+__isl_null isl_access_info *isl_access_info_free(
+	__isl_take isl_access_info *acc)
 {
 	int i;
 

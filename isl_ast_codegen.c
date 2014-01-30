@@ -3145,7 +3145,7 @@ static __isl_give isl_ast_graft_list *generate_shift_component(
 
 	first = first_offset(domain, order, n, build);
 	if (first < 0)
-		return isl_ast_build_free(build);
+		goto error;
 
 	mv = isl_multi_val_copy(offset);
 	val = isl_multi_val_get_val(offset, first);
@@ -3170,6 +3170,9 @@ static __isl_give isl_ast_graft_list *generate_shift_component(
 	isl_multi_val_free(mv);
 
 	return list;
+error:
+	isl_ast_build_free(build);
+	return NULL;
 }
 
 /* Generate code for a single component.
@@ -3262,14 +3265,14 @@ static __isl_give isl_ast_graft_list *generate_component(
 	if (skip >= 0 && !skip)
 		skip = isl_ast_build_options_involve_depth(build);
 	if (skip < 0)
-		return isl_ast_build_free(build);
+		goto error;
 	if (skip)
 		return generate_shifted_component_from_list(domain,
 							    order, n, build);
 
 	base = eliminate_non_fixed(domain, order, n, depth, build);
 	if (base < 0)
-		return isl_ast_build_free(build);
+		goto error;
 
 	ctx = isl_ast_build_get_ctx(build);
 
@@ -3333,6 +3336,9 @@ static __isl_give isl_ast_graft_list *generate_component(
 	isl_multi_val_free(mv);
 
 	return list;
+error:
+	isl_ast_build_free(build);
+	return NULL;
 }
 
 /* Store both "map" itself and its domain in the

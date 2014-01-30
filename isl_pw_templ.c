@@ -170,7 +170,7 @@ __isl_give PW *FN(PW,copy)(__isl_keep PW *pw)
 	return pw;
 }
 
-void *FN(PW,free)(__isl_take PW *pw)
+__isl_null PW *FN(PW,free)(__isl_take PW *pw)
 {
 	int i;
 
@@ -1386,12 +1386,15 @@ __isl_give PW *FN(PW,set_tuple_id)(__isl_take PW *pw, enum isl_dim_type type,
 
 	pw = FN(PW,cow)(pw);
 	if (!pw)
-		return isl_id_free(id);
+		goto error;
 
 	space = FN(PW,get_space)(pw);
 	space = isl_space_set_tuple_id(space, type, id);
 
 	return FN(PW,reset_space)(pw, space);
+error:
+	isl_id_free(id);
+	return FN(PW,free)(pw);
 }
 
 /* Drop the id on the specified tuple.
@@ -1420,9 +1423,12 @@ __isl_give PW *FN(PW,set_dim_id)(__isl_take PW *pw,
 {
 	pw = FN(PW,cow)(pw);
 	if (!pw)
-		return isl_id_free(id);
+		goto error;
 	pw->dim = isl_space_set_dim_id(pw->dim, type, pos, id);
 	return FN(PW,reset_space)(pw, isl_space_copy(pw->dim));
+error:
+	isl_id_free(id);
+	return FN(PW,free)(pw);
 }
 #endif
 

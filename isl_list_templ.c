@@ -214,7 +214,7 @@ error:
 	return NULL;
 }
 
-void *FN(LIST(EL),free)(__isl_take LIST(EL) *list)
+__isl_null LIST(EL) *FN(LIST(EL),free)(__isl_take LIST(EL) *list)
 {
 	int i;
 

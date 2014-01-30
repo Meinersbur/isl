@@ -119,7 +119,7 @@ struct isl_basic_map *isl_basic_map_alloc(struct isl_ctx *ctx,
 __isl_give isl_basic_map *isl_basic_map_identity(__isl_take isl_space *dim);
 struct isl_basic_map *isl_basic_map_identity_like(struct isl_basic_map *model);
 struct isl_basic_map *isl_basic_map_finalize(struct isl_basic_map *bmap);
-void *isl_basic_map_free(__isl_take isl_basic_map *bmap);
+__isl_null isl_basic_map *isl_basic_map_free(__isl_take isl_basic_map *bmap);
 __isl_give isl_basic_map *isl_basic_map_copy(__isl_keep isl_basic_map *bmap);
 struct isl_basic_map *isl_basic_map_extend(struct isl_basic_map *base,
 		unsigned nparam, unsigned n_in, unsigned n_out, unsigned extra,
@@ -324,7 +324,7 @@ __isl_give isl_map *isl_map_lex_ge_first(__isl_take isl_space *dim, unsigned n);
 __isl_give isl_map *isl_map_lex_gt(__isl_take isl_space *set_dim);
 __isl_give isl_map *isl_map_lex_ge(__isl_take isl_space *set_dim);
 struct isl_map *isl_map_finalize(struct isl_map *map);
-void *isl_map_free(__isl_take isl_map *map);
+__isl_null isl_map *isl_map_free(__isl_take isl_map *map);
 __isl_give isl_map *isl_map_copy(__isl_keep isl_map *map);
 struct isl_map *isl_map_extend(struct isl_map *base,
 		unsigned nparam, unsigned n_in, unsigned n_out);

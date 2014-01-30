@@ -13,7 +13,7 @@ typedef struct isl_printer isl_printer;
 
 __isl_give isl_printer *isl_printer_to_file(isl_ctx *ctx, FILE *file);
 __isl_give isl_printer *isl_printer_to_str(isl_ctx *ctx);
-void *isl_printer_free(__isl_take isl_printer *printer);
+__isl_null isl_printer *isl_printer_free(__isl_take isl_printer *printer);
 
 isl_ctx *isl_printer_get_ctx(__isl_keep isl_printer *printer);
 FILE *isl_printer_get_file(__isl_keep isl_printer *printer);

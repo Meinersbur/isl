@@ -102,7 +102,8 @@ __isl_give isl_local_space *isl_local_space_cow(__isl_take isl_local_space *ls)
 	return isl_local_space_dup(ls);
 }
 
-void *isl_local_space_free(__isl_take isl_local_space *ls)
+__isl_null isl_local_space *isl_local_space_free(
+	__isl_take isl_local_space *ls)
 {
 	if (!ls)
 		return NULL;
@@ -247,11 +248,14 @@ __isl_give isl_local_space *isl_local_space_set_tuple_id(
 {
 	ls = isl_local_space_cow(ls);
 	if (!ls)
-		return isl_id_free(id);
+		goto error;
 	ls->dim = isl_space_set_tuple_id(ls->dim, type, id);
 	if (!ls->dim)
 		return isl_local_space_free(ls);
 	return ls;
+error:
+	isl_id_free(id);
+	return NULL;
 }
 
 __isl_give isl_local_space *isl_local_space_set_dim_name(
@@ -274,12 +278,15 @@ __isl_give isl_local_space *isl_local_space_set_dim_id(
 {
 	ls = isl_local_space_cow(ls);
 	if (!ls)
-		return isl_id_free(id);
+		goto error;
 	ls->dim = isl_space_set_dim_id(ls->dim, type, pos, id);
 	if (!ls->dim)
 		return isl_local_space_free(ls);
 
 	return ls;
+error:
+	isl_id_free(id);
+	return NULL;
 }
 
 __isl_give isl_local_space *isl_local_space_reset_space(
@@ -1054,8 +1061,7 @@ __isl_give isl_basic_map *isl_local_space_lifting(
 		return NULL;
 	if (!isl_local_space_is_set(ls))
 		isl_die(isl_local_space_get_ctx(ls), isl_error_invalid,
-			"lifting only defined on set spaces",
-			return isl_local_space_free(ls));
+			"lifting only defined on set spaces", goto error);
 
 	bset = isl_basic_set_from_local_space(ls);
 	lifting = isl_basic_set_unwrap(isl_basic_set_lift(bset));
@@ -1063,6 +1069,9 @@ __isl_give isl_basic_map *isl_local_space_lifting(
 	lifting = isl_basic_map_reverse(lifting);
 
 	return lifting;
+error:
+	isl_local_space_free(ls);
+	return NULL;
 }
 
 /* Compute the preimage of "ls" under the function represented by "ma".

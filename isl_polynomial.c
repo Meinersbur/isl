@@ -1112,7 +1112,8 @@ __isl_give isl_qpolynomial *isl_qpolynomial_cow(__isl_take isl_qpolynomial *qp)
 	return isl_qpolynomial_dup(qp);
 }
 
-void *isl_qpolynomial_free(__isl_take isl_qpolynomial *qp)
+__isl_null isl_qpolynomial *isl_qpolynomial_free(
+	__isl_take isl_qpolynomial *qp)
 {
 	if (!qp)
 		return NULL;

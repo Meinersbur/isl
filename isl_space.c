@@ -338,7 +338,7 @@ __isl_give isl_space *isl_space_copy(__isl_keep isl_space *dim)
 	return dim;
 }
 
-void *isl_space_free(__isl_take isl_space *space)
+__isl_null isl_space *isl_space_free(__isl_take isl_space *space)
 {
 	int i;
 

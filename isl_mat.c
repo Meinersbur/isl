@@ -207,7 +207,7 @@ struct isl_mat *isl_mat_cow(struct isl_mat *mat)
 	return mat2;
 }
 
-void *isl_mat_free(struct isl_mat *mat)
+__isl_null isl_mat *isl_mat_free(__isl_take isl_mat *mat)
 {
 	if (!mat)
 		return NULL;

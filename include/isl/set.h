@@ -97,7 +97,7 @@ struct isl_basic_set *isl_basic_set_extend(struct isl_basic_set *base,
 struct isl_basic_set *isl_basic_set_extend_constraints(
 		struct isl_basic_set *base, unsigned n_eq, unsigned n_ineq);
 struct isl_basic_set *isl_basic_set_finalize(struct isl_basic_set *bset);
-void *isl_basic_set_free(__isl_take isl_basic_set *bset);
+__isl_null isl_basic_set *isl_basic_set_free(__isl_take isl_basic_set *bset);
 __isl_give isl_basic_set *isl_basic_set_copy(__isl_keep isl_basic_set *bset);
 struct isl_basic_set *isl_basic_set_dup(struct isl_basic_set *bset);
 __isl_give isl_basic_set *isl_basic_set_empty(__isl_take isl_space *dim);
@@ -265,7 +265,7 @@ __isl_give isl_set *isl_set_add_basic_set(__isl_take isl_set *set,
 						__isl_take isl_basic_set *bset);
 struct isl_set *isl_set_finalize(struct isl_set *set);
 __isl_give isl_set *isl_set_copy(__isl_keep isl_set *set);
-void *isl_set_free(__isl_take isl_set *set);
+__isl_null isl_set *isl_set_free(__isl_take isl_set *set);
 struct isl_set *isl_set_dup(struct isl_set *set);
 __isl_constructor
 __isl_give isl_set *isl_set_from_basic_set(__isl_take isl_basic_set *bset);

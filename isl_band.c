@@ -96,13 +96,15 @@ __isl_give isl_band *isl_band_copy(__isl_keep isl_band *band)
  * schedule), then we also need to decrement the reference count of the
  * containing schedule as it was incremented in isl_band_copy.
  */
-void *isl_band_free(__isl_take isl_band *band)
+__isl_null isl_band *isl_band_free(__isl_take isl_band *band)
 {
 	if (!band)
 		return NULL;
 
-	if (--band->ref > 0)
-		return isl_schedule_free(band->schedule);
+	if (--band->ref > 0) {
+		isl_schedule_free(band->schedule);
+		return NULL;
+	}
 
 	isl_union_pw_multi_aff_free(band->pma);
 	isl_band_list_free(band->children);

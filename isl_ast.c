@@ -84,7 +84,8 @@ __isl_give isl_ast_print_options *isl_ast_print_options_copy(
 	return options;
 }
 
-void *isl_ast_print_options_free(__isl_take isl_ast_print_options *options)
+__isl_null isl_ast_print_options *isl_ast_print_options_free(
+	__isl_take isl_ast_print_options *options)
 {
 	if (!options)
 		return NULL;
@@ -197,7 +198,7 @@ __isl_give isl_ast_expr *isl_ast_expr_cow(__isl_take isl_ast_expr *expr)
 	return isl_ast_expr_dup(expr);
 }
 
-void *isl_ast_expr_free(__isl_take isl_ast_expr *expr)
+__isl_null isl_ast_expr *isl_ast_expr_free(__isl_take isl_ast_expr *expr)
 {
 	int i;
 
@@ -398,7 +399,7 @@ __isl_give isl_ast_expr *isl_ast_expr_from_id(__isl_take isl_id *id)
 	ctx = isl_id_get_ctx(id);
 	expr = isl_calloc_type(ctx, isl_ast_expr);
 	if (!expr)
-		return isl_id_free(id);
+		goto error;
 
 	expr->ctx = ctx;
 	isl_ctx_ref(ctx);
@@ -407,6 +408,9 @@ __isl_give isl_ast_expr *isl_ast_expr_from_id(__isl_take isl_id *id)
 	expr->u.id = id;
 
 	return expr;
+error:
+	isl_id_free(id);
+	return NULL;
 }
 
 /* Create a new integer expression representing "i".
@@ -441,12 +445,12 @@ __isl_give isl_ast_expr *isl_ast_expr_from_val(__isl_take isl_val *v)
 		return NULL;
 	if (!isl_val_is_int(v))
 		isl_die(isl_val_get_ctx(v), isl_error_invalid,
-			"expecting integer value", return isl_val_free(v));
+			"expecting integer value", goto error);
 
 	ctx = isl_val_get_ctx(v);
 	expr = isl_calloc_type(ctx, isl_ast_expr);
 	if (!expr)
-		return isl_val_free(v);
+		goto error;
 
 	expr->ctx = ctx;
 	isl_ctx_ref(ctx);
@@ -455,6 +459,9 @@ __isl_give isl_ast_expr *isl_ast_expr_from_val(__isl_take isl_val *v)
 	expr->u.v = v;
 
 	return expr;
+error:
+	isl_val_free(v);
+	return NULL;
 }
 
 /* Create an expression representing the negation of "arg".
@@ -853,7 +860,7 @@ __isl_give isl_ast_node *isl_ast_node_cow(__isl_take isl_ast_node *node)
 	return isl_ast_node_dup(node);
 }
 
-void *isl_ast_node_free(__isl_take isl_ast_node *node)
+__isl_null isl_ast_node *isl_ast_node_free(__isl_take isl_ast_node *node)
 {
 	if (!node)
 		return NULL;

@@ -244,7 +244,7 @@ static int free_u_entry(void **entry, void *user)
 	return 0;
 }
 
-void *FN(UNION,free)(__isl_take UNION *u)
+__isl_null UNION *FN(UNION,free)(__isl_take UNION *u)
 {
 	if (!u)
 		return NULL;

@@ -32,7 +32,7 @@ __isl_give isl_val *isl_val_int_from_chunks(isl_ctx *ctx, size_t n,
 	size_t size, const void *chunks);
 
 __isl_give isl_val *isl_val_copy(__isl_keep isl_val *v);
-void *isl_val_free(__isl_take isl_val *v);
+__isl_null isl_val *isl_val_free(__isl_take isl_val *v);
 
 isl_ctx *isl_val_get_ctx(__isl_keep isl_val *val);
 long isl_val_get_num_si(__isl_keep isl_val *v);

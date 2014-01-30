@@ -259,7 +259,7 @@ __isl_give isl_val *isl_val_cow(__isl_take isl_val *val)
 
 /* Free "v" and return NULL.
  */
-void *isl_val_free(__isl_take isl_val *v)
+__isl_null isl_val *isl_val_free(__isl_take isl_val *v)
 {
 	if (!v)
 		return NULL;

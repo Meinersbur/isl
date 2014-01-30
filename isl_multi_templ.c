@@ -105,7 +105,7 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),copy)(__isl_keep MULTI(BASE) *multi)
 	return multi;
 }
 
-void *FN(MULTI(BASE),free)(__isl_take MULTI(BASE) *multi)
+__isl_null MULTI(BASE) *FN(MULTI(BASE),free)(__isl_take MULTI(BASE) *multi)
 {
 	int i;
 
@@ -419,12 +419,15 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),set_tuple_id)(
 
 	multi = FN(MULTI(BASE),cow)(multi);
 	if (!multi)
-		return isl_id_free(id);
+		goto error;
 
 	space = FN(MULTI(BASE),get_space)(multi);
 	space = isl_space_set_tuple_id(space, type, id);
 
 	return FN(MULTI(BASE),reset_space)(multi, space);
+error:
+	isl_id_free(id);
+	return NULL;
 }
 
 /* Drop the id on the specified tuple.

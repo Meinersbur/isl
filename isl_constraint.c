@@ -174,7 +174,7 @@ struct isl_constraint *isl_constraint_copy(struct isl_constraint *constraint)
 	return constraint;
 }
 
-void *isl_constraint_free(struct isl_constraint *c)
+__isl_null isl_constraint *isl_constraint_free(__isl_take isl_constraint *c)
 {
 	if (!c)
 		return NULL;
@@ -752,9 +752,11 @@ struct isl_basic_set *isl_basic_set_from_constraint(
 
 	if (isl_constraint_dim(constraint, isl_dim_in) != 0)
 		isl_die(isl_constraint_get_ctx(constraint), isl_error_invalid,
-			"not a set constraint",
-			return isl_constraint_free(constraint));
+			"not a set constraint", goto error);
 	return (isl_basic_set *)isl_basic_map_from_constraint(constraint);
+error:
+	isl_constraint_free(constraint);
+	return NULL;
 }
 
 int isl_basic_map_has_defining_equality(

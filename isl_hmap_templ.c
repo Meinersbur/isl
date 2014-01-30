@@ -66,7 +66,7 @@ static int free_pair(void **entry, void *user)
 	return 0;
 }
 
-void *FN(HMAP,free)(__isl_take HMAP *hmap)
+__isl_null HMAP *FN(HMAP,free)(__isl_take HMAP *hmap)
 {
 	if (!hmap)
 		return NULL;

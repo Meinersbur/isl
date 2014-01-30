@@ -255,7 +255,7 @@ error:
 	return NULL;
 }
 
-void *isl_printer_free(__isl_take isl_printer *p)
+__isl_null isl_printer *isl_printer_free(__isl_take isl_printer *p)
 {
 	if (!p)
 		return NULL;

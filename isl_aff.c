@@ -217,7 +217,7 @@ __isl_give isl_aff *isl_aff_cow(__isl_take isl_aff *aff)
 	return isl_aff_dup(aff);
 }
 
-void *isl_aff_free(__isl_take isl_aff *aff)
+__isl_null isl_aff *isl_aff_free(__isl_take isl_aff *aff)
 {
 	if (!aff)
 		return NULL;
@@ -1737,7 +1737,7 @@ __isl_give isl_aff *isl_aff_set_dim_id(__isl_take isl_aff *aff,
 {
 	aff = isl_aff_cow(aff);
 	if (!aff)
-		return isl_id_free(id);
+		goto error;
 	if (type == isl_dim_out)
 		isl_die(aff->v->ctx, isl_error_invalid,
 			"cannot set name of output/set dimension",
@@ -1763,7 +1763,7 @@ __isl_give isl_aff *isl_aff_set_tuple_id(__isl_take isl_aff *aff,
 {
 	aff = isl_aff_cow(aff);
 	if (!aff)
-		return isl_id_free(id);
+		goto error;
 	if (type != isl_dim_out)
 		isl_die(aff->v->ctx, isl_error_invalid,
 			"cannot only set id of input tuple", goto error);
@@ -2428,9 +2428,11 @@ __isl_give isl_map *isl_map_from_pw_aff(__isl_take isl_pw_aff *pwaff)
 		return NULL;
 	if (isl_space_is_set(pwaff->dim))
 		isl_die(isl_pw_aff_get_ctx(pwaff), isl_error_invalid,
-			"space of input is not a map",
-			return isl_pw_aff_free(pwaff));
+			"space of input is not a map", goto error);
 	return map_from_pw_aff(pwaff);
+error:
+	isl_pw_aff_free(pwaff);
+	return NULL;
 }
 
 /* Construct a one-dimensional set with as parameter domain
@@ -2443,9 +2445,11 @@ __isl_give isl_set *isl_set_from_pw_aff(__isl_take isl_pw_aff *pwaff)
 		return NULL;
 	if (!isl_space_is_set(pwaff->dim))
 		isl_die(isl_pw_aff_get_ctx(pwaff), isl_error_invalid,
-			"space of input is not a set",
-			return isl_pw_aff_free(pwaff));
+			"space of input is not a set", goto error);
 	return map_from_pw_aff(pwaff);
+error:
+	isl_pw_aff_free(pwaff);
+	return NULL;
 }
 
 /* Return a set containing those elements in the domain
@@ -3138,8 +3142,7 @@ static __isl_give isl_pw_aff *pw_aff_list_reduce(
 	ctx = isl_pw_aff_list_get_ctx(list);
 	if (list->n < 1)
 		isl_die(ctx, isl_error_invalid,
-			"list should contain at least one element",
-			return isl_pw_aff_list_free(list));
+			"list should contain at least one element", goto error);
 
 	res = isl_pw_aff_copy(list->p[0]);
 	for (i = 1; i < list->n; ++i)
@@ -3147,6 +3150,9 @@ static __isl_give isl_pw_aff *pw_aff_list_reduce(
 
 	isl_pw_aff_list_free(list);
 	return res;
+error:
+	isl_pw_aff_list_free(list);
+	return NULL;
 }
 
 /* Return an isl_pw_aff that maps each element in the intersection of the
@@ -3909,9 +3915,12 @@ __isl_give isl_set *isl_set_from_pw_multi_aff(__isl_take isl_pw_multi_aff *pma)
 	if (!isl_space_is_set(pma->dim))
 		isl_die(isl_pw_multi_aff_get_ctx(pma), isl_error_invalid,
 			"isl_pw_multi_aff cannot be converted into an isl_set",
-			return isl_pw_multi_aff_free(pma));
+			goto error);
 
 	return isl_map_from_pw_multi_aff(pma);
+error:
+	isl_pw_multi_aff_free(pma);
+	return NULL;
 }
 
 /* Given a basic map with a single output dimension that is defined
@@ -5669,7 +5678,7 @@ static __isl_give isl_map *map_from_multi_pw_aff(
 
 	if (isl_space_dim(mpa->space, isl_dim_out) != mpa->n)
 		isl_die(isl_multi_pw_aff_get_ctx(mpa), isl_error_internal,
-			"invalid space", return isl_multi_pw_aff_free(mpa));
+			"invalid space", goto error);
 
 	space = isl_multi_pw_aff_get_domain_space(mpa);
 	map = isl_map_universe(isl_space_from_domain(space));
@@ -5688,6 +5697,9 @@ static __isl_give isl_map *map_from_multi_pw_aff(
 
 	isl_multi_pw_aff_free(mpa);
 	return map;
+error:
+	isl_multi_pw_aff_free(mpa);
+	return NULL;
 }
 
 /* Construct a map mapping the shared domain

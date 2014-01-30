@@ -161,7 +161,7 @@ __isl_give isl_id *isl_id_set_free_user(__isl_take isl_id *id,
 /* If the id has a negative refcount, then it is a static isl_id
  * and should not be freed.
  */
-void *isl_id_free(__isl_take isl_id *id)
+__isl_null isl_id *isl_id_free(__isl_take isl_id *id)
 {
 	struct isl_hash_table_entry *entry;
 

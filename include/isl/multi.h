@@ -24,7 +24,8 @@ __isl_give isl_multi_##BASE *isl_multi_##BASE##_zero(			\
 	__isl_take isl_space *space);					\
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_copy(			\
 	__isl_keep isl_multi_##BASE *multi);				\
-void *isl_multi_##BASE##_free(__isl_take isl_multi_##BASE *multi);	\
+__isl_null isl_multi_##BASE *isl_multi_##BASE##_free(			\
+	__isl_take isl_multi_##BASE *multi);				\
 int isl_multi_##BASE##_plain_is_equal(					\
 	__isl_keep isl_multi_##BASE *multi1,				\
 	__isl_keep isl_multi_##BASE *multi2);				\

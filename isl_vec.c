@@ -160,7 +160,7 @@ struct isl_vec *isl_vec_cow(struct isl_vec *vec)
 	return vec2;
 }
 
-void *isl_vec_free(__isl_take isl_vec *vec)
+__isl_null isl_vec *isl_vec_free(__isl_take isl_vec *vec)
 {
 	if (!vec)
 		return NULL;

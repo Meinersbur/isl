@@ -426,12 +426,15 @@ __isl_give isl_basic_map *isl_basic_map_set_tuple_id(
 {
 	bmap = isl_basic_map_cow(bmap);
 	if (!bmap)
-		return isl_id_free(id);
+		goto error;
 	bmap->dim = isl_space_set_tuple_id(bmap->dim, type, id);
 	if (!bmap->dim)
 		return isl_basic_map_free(bmap);
 	bmap = isl_basic_map_finalize(bmap);
 	return bmap;
+error:
+	isl_id_free(id);
+	return NULL;
 }
 
 /* Replace the identifier of the tuple by "id".
@@ -466,11 +469,14 @@ __isl_give isl_map *isl_map_set_tuple_id(__isl_take isl_map *map,
 {
 	map = isl_map_cow(map);
 	if (!map)
-		return isl_id_free(id);
+		goto error;
 
 	map->dim = isl_space_set_tuple_id(map->dim, type, id);
 
 	return isl_map_reset_space(map, isl_space_copy(map->dim));
+error:
+	isl_id_free(id);
+	return NULL;
 }
 
 __isl_give isl_set *isl_set_set_tuple_id(__isl_take isl_set *set,
@@ -671,11 +677,14 @@ __isl_give isl_map *isl_map_set_dim_id(__isl_take isl_map *map,
 {
 	map = isl_map_cow(map);
 	if (!map)
-		return isl_id_free(id);
+		goto error;
 
 	map->dim = isl_space_set_dim_id(map->dim, type, pos, id);
 
 	return isl_map_reset_space(map, isl_space_copy(map->dim));
+error:
+	isl_id_free(id);
+	return NULL;
 }
 
 __isl_give isl_set *isl_set_set_dim_id(__isl_take isl_set *set,
@@ -1052,7 +1061,7 @@ struct isl_map *isl_map_copy(struct isl_map *map)
 	return map;
 }
 
-void *isl_basic_map_free(__isl_take isl_basic_map *bmap)
+__isl_null isl_basic_map *isl_basic_map_free(__isl_take isl_basic_map *bmap)
 {
 	if (!bmap)
 		return NULL;
@@ -1072,7 +1081,7 @@ void *isl_basic_map_free(__isl_take isl_basic_map *bmap)
 	return NULL;
 }
 
-void *isl_basic_set_free(struct isl_basic_set *bset)
+__isl_null isl_basic_set *isl_basic_set_free(__isl_take isl_basic_set *bset)
 {
 	return isl_basic_map_free((struct isl_basic_map *)bset);
 }
@@ -2643,7 +2652,7 @@ __isl_give isl_set *isl_set_add_basic_set(__isl_take isl_set *set,
 						(struct isl_basic_map *)bset);
 }
 
-void *isl_set_free(__isl_take isl_set *set)
+__isl_null isl_set *isl_set_free(__isl_take isl_set *set)
 {
 	int i;
 
@@ -5357,7 +5366,7 @@ error:
 	return NULL;
 }
 
-void *isl_map_free(struct isl_map *map)
+__isl_null isl_map *isl_map_free(__isl_take isl_map *map)
 {
 	int i;
 
@@ -11243,7 +11252,7 @@ __isl_give isl_basic_map *isl_basic_map_from_multi_aff(
 
 	if (isl_space_dim(maff->space, isl_dim_out) != maff->n)
 		isl_die(isl_multi_aff_get_ctx(maff), isl_error_internal,
-			"invalid space", return isl_multi_aff_free(maff));
+			"invalid space", goto error);
 
 	space = isl_space_domain(isl_multi_aff_get_space(maff));
 	bmap = isl_basic_map_universe(isl_space_from_domain(space));
@@ -11262,6 +11271,9 @@ __isl_give isl_basic_map *isl_basic_map_from_multi_aff(
 
 	isl_multi_aff_free(maff);
 	return bmap;
+error:
+	isl_multi_aff_free(maff);
+	return NULL;
 }
 
 /* Construct a map mapping the domain the multi-affine expression

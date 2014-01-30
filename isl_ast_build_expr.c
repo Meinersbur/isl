@@ -1425,7 +1425,7 @@ static __isl_give isl_ast_expr *isl_ast_build_from_multi_pw_aff_internal(
 	isl_ast_expr *expr;
 
 	if (!mpa)
-		return isl_multi_pw_aff_free(mpa);
+		goto error;
 
 	if (type == isl_ast_op_access &&
 	    isl_multi_pw_aff_range_is_wrapping(mpa))
@@ -1433,7 +1433,7 @@ static __isl_give isl_ast_expr *isl_ast_build_from_multi_pw_aff_internal(
 
 	mpa = set_iterator_names(build, mpa);
 	if (!build || !mpa)
-		return isl_multi_pw_aff_free(mpa);
+		goto error;
 
 	ctx = isl_ast_build_get_ctx(build);
 
@@ -1444,6 +1444,9 @@ static __isl_give isl_ast_expr *isl_ast_build_from_multi_pw_aff_internal(
 
 	expr = isl_ast_expr_from_id(id);
 	return isl_ast_build_with_arguments(build, type, expr, mpa);
+error:
+	isl_multi_pw_aff_free(mpa);
+	return NULL;
 }
 
 /* Construct an isl_ast_expr of type "type" that calls or accesses
@@ -1485,11 +1488,10 @@ static __isl_give isl_ast_expr *isl_ast_build_from_multi_pw_aff(
 	isl_space_free(space_build);
 	isl_space_free(space_mpa);
 	if (is_domain < 0)
-		return isl_multi_pw_aff_free(mpa);
+		goto error;
 	if (!is_domain)
 		isl_die(isl_ast_build_get_ctx(build), isl_error_invalid,
-			"spaces don't match",
-			return isl_multi_pw_aff_free(mpa));
+			"spaces don't match", goto error);
 
 	if (isl_ast_build_need_schedule_map(build)) {
 		isl_multi_aff *ma;
@@ -1499,6 +1501,9 @@ static __isl_give isl_ast_expr *isl_ast_build_from_multi_pw_aff(
 
 	expr = isl_ast_build_from_multi_pw_aff_internal(build, type, mpa);
 	return expr;
+error:
+	isl_multi_pw_aff_free(mpa);
+	return NULL;
 }
 
 /* Construct an isl_ast_expr that calls the domain element specified by "mpa".

@@ -245,7 +245,7 @@ __isl_give isl_union_set *isl_union_set_copy(__isl_keep isl_union_set *uset)
 	return isl_union_map_copy(uset);
 }
 
-void *isl_union_map_free(__isl_take isl_union_map *umap)
+__isl_null isl_union_map *isl_union_map_free(__isl_take isl_union_map *umap)
 {
 	if (!umap)
 		return NULL;
@@ -261,7 +261,7 @@ void *isl_union_map_free(__isl_take isl_union_map *umap)
 	return NULL;
 }
 
-void *isl_union_set_free(__isl_take isl_union_set *uset)
+__isl_null isl_union_set *isl_union_set_free(__isl_take isl_union_set *uset)
 {
 	return isl_union_map_free(uset);
 }
@@ -417,13 +417,16 @@ __isl_give isl_map *isl_map_from_union_map(__isl_take isl_union_map *umap)
 	if (umap->table.n != 1)
 		isl_die(ctx, isl_error_invalid,
 			"union map needs to contain elements in exactly "
-			"one space", return isl_union_map_free(umap));
+			"one space", goto error);
 
 	isl_hash_table_foreach(ctx, &umap->table, &copy_map, &map);
 
 	isl_union_map_free(umap);
 
 	return map;
+error:
+	isl_union_map_free(umap);
+	return NULL;
 }
 
 __isl_give isl_set *isl_set_from_union_set(__isl_take isl_union_set *uset)
@@ -1678,7 +1681,7 @@ __isl_give isl_set *isl_union_map_params(__isl_take isl_union_map *umap)
 
 	empty = isl_union_map_is_empty(umap);
 	if (empty < 0)
-		return isl_union_map_free(umap);
+		goto error;
 	if (empty) {
 		isl_space *space;
 		space = isl_union_map_get_space(umap);
@@ -1686,6 +1689,9 @@ __isl_give isl_set *isl_union_map_params(__isl_take isl_union_map *umap)
 		return isl_set_empty(space);
 	}
 	return isl_set_from_union_set(cond_un_op(umap, &params_entry));
+error:
+	isl_union_map_free(umap);
+	return NULL;
 }
 
 /* Compute the parameter domain of the given union set.

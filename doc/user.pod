@@ -384,6 +384,10 @@ There is one exception, and that is the case where the
 pointer returned is C<NULL>.  Is this case, the user
 is free to use it as an C<__isl_take> argument or not.
 
+=item C<__isl_null>
+
+C<__isl_null> means that a C<NULL> value is returned.
+
 =item C<__isl_take>
 
 C<__isl_take> means that the object the argument points to
@@ -439,7 +443,7 @@ Value objects can be copied and freed using the following functions.
 
 	#include <isl/val.h>
 	__isl_give isl_val *isl_val_copy(__isl_keep isl_val *v);
-	void *isl_val_free(__isl_take isl_val *v);
+	__isl_null isl_val *isl_val_free(__isl_take isl_val *v);
 
 They can be inspected using the following functions.
 
@@ -685,7 +689,7 @@ using the following functions.
 		__isl_take isl_id *id,
 		__isl_give void (*free_user)(void *user));
 	__isl_give isl_id *isl_id_copy(isl_id *id);
-	void *isl_id_free(__isl_take isl_id *id);
+	__isl_null isl_id *isl_id_free(__isl_take isl_id *id);
 
 	isl_ctx *isl_id_get_ctx(__isl_keep isl_id *id);
 	void *isl_id_get_user(__isl_keep isl_id *id);
@@ -728,7 +732,7 @@ parameters is discouraged.
 	__isl_give isl_space *isl_space_set_alloc(isl_ctx *ctx,
 		unsigned nparam, unsigned dim);
 	__isl_give isl_space *isl_space_copy(__isl_keep isl_space *space);
-	void *isl_space_free(__isl_take isl_space *space);
+	__isl_null isl_space *isl_space_free(__isl_take isl_space *space);
 	unsigned isl_space_dim(__isl_keep isl_space *space,
 		enum isl_dim_type type);
 
@@ -1041,7 +1045,8 @@ They can be inspected, modified, copied and freed using the following functions.
 		__isl_keep isl_local_space *ls, int pos);
 	__isl_give isl_local_space *isl_local_space_copy(
 		__isl_keep isl_local_space *ls);
-	void *isl_local_space_free(__isl_take isl_local_space *ls);
+	__isl_null isl_local_space *isl_local_space_free(
+		__isl_take isl_local_space *ls);
 
 Note that C<isl_local_space_get_div> can only be used on local spaces
 of sets.
@@ -1158,7 +1163,8 @@ be created.
 	__isl_give isl_printer *isl_printer_to_file(isl_ctx *ctx,
 		FILE *file);
 	__isl_give isl_printer *isl_printer_to_str(isl_ctx *ctx);
-	void *isl_printer_free(__isl_take isl_printer *printer);
+	__isl_null isl_printer *isl_printer_free(
+		__isl_take isl_printer *printer);
 	__isl_give char *isl_printer_get_str(
 		__isl_keep isl_printer *printer);
 
@@ -1379,12 +1385,16 @@ functions.
 	__isl_give isl_map *isl_map_copy(__isl_keep isl_map *map);
 	__isl_give isl_union_map *isl_union_map_copy(
 		__isl_keep isl_union_map *umap);
-	void *isl_basic_set_free(__isl_take isl_basic_set *bset);
-	void *isl_set_free(__isl_take isl_set *set);
-	void *isl_union_set_free(__isl_take isl_union_set *uset);
-	void *isl_basic_map_free(__isl_take isl_basic_map *bmap);
-	void *isl_map_free(__isl_take isl_map *map);
-	void *isl_union_map_free(__isl_take isl_union_map *umap);
+	__isl_null isl_basic_set *isl_basic_set_free(
+		__isl_take isl_basic_set *bset);
+	__isl_null isl_set *isl_set_free(__isl_take isl_set *set);
+	__isl_null isl_union_set *isl_union_set_free(
+		__isl_take isl_union_set *uset);
+	__isl_null isl_basic_map *isl_basic_map_free(
+		__isl_take isl_basic_map *bmap);
+	__isl_null isl_map *isl_map_free(__isl_take isl_map *map);
+	__isl_null isl_union_map *isl_union_map_free(
+		__isl_take isl_union_map *umap);
 
 Other sets and relations can be constructed by starting
 from a universe set or relation, adding equality and/or
@@ -1664,7 +1674,8 @@ To iterate over the constraints of a basic set or map, use
 		__isl_keep isl_basic_map *bmap,
 		int (*fn)(__isl_take isl_constraint *c, void *user),
 		void *user);
-	void *isl_constraint_free(__isl_take isl_constraint *c);
+	__isl_null isl_constraint *isl_constraint_free(
+		__isl_take isl_constraint *c);
 
 Again, the callback function C<fn> should return 0 if successful and
 -1 if an error occurs.  In the latter case, or if any other error
@@ -3492,7 +3503,8 @@ Lists can be created, copied, modified and freed using the following functions.
 		int (*cmp)(__isl_keep isl_set *a,
 			__isl_keep isl_set *b, void *user),
 		void *user);
-	void *isl_set_list_free(__isl_take isl_set_list *list);
+	__isl_null isl_set_list *isl_set_list_free(
+		__isl_take isl_set_list *list);
 
 C<isl_set_list_alloc> creates an empty list with a capacity for
 C<n> elements.  C<isl_set_list_from_set> creates a list with a single
@@ -3546,7 +3558,7 @@ the following functions.
 		isl_ctx *ctx, int min_size);
 	__isl_give id_to_ast_expr *isl_id_to_ast_expr_copy(
 		__isl_keep id_to_ast_expr *id2expr);
-	void *isl_id_to_ast_expr_free(
+	__isl_null id_to_ast_expr *isl_id_to_ast_expr_free(
 		__isl_take id_to_ast_expr *id2expr);
 
 The C<min_size> argument to C<isl_id_to_ast_expr_alloc> can be used
@@ -3613,7 +3625,8 @@ Multiple values can be copied and freed using
 	#include <isl/val.h>
 	__isl_give isl_multi_val *isl_multi_val_copy(
 		__isl_keep isl_multi_val *mv);
-	void *isl_multi_val_free(__isl_take isl_multi_val *mv);
+	__isl_null isl_multi_val *isl_multi_val_free(
+		__isl_take isl_multi_val *mv);
 
 They can be inspected using
 
@@ -3733,7 +3746,7 @@ Vectors can be created, copied and freed using the following functions.
 	__isl_give isl_vec *isl_vec_alloc(isl_ctx *ctx,
 		unsigned size);
 	__isl_give isl_vec *isl_vec_copy(__isl_keep isl_vec *vec);
-	void *isl_vec_free(__isl_take isl_vec *vec);
+	__isl_null isl_vec *isl_vec_free(__isl_take isl_vec *vec);
 
 Note that the elements of a newly created vector may have arbitrary values.
 The elements can be changed and inspected using the following functions.
@@ -3770,7 +3783,7 @@ Matrices can be created, copied and freed using the following functions.
 	__isl_give isl_mat *isl_mat_alloc(isl_ctx *ctx,
 		unsigned n_row, unsigned n_col);
 	__isl_give isl_mat *isl_mat_copy(__isl_keep isl_mat *mat);
-	void *isl_mat_free(__isl_take isl_mat *mat);
+	__isl_null isl_mat *isl_mat_free(__isl_take isl_mat *mat);
 
 Note that the elements of a newly created matrix may have arbitrary values.
 The elements can be changed and inspected using the following functions.
@@ -3848,11 +3861,12 @@ Quasi affine expressions can be copied and freed using
 
 	#include <isl/aff.h>
 	__isl_give isl_aff *isl_aff_copy(__isl_keep isl_aff *aff);
-	void *isl_aff_free(__isl_take isl_aff *aff);
+	__isl_null isl_aff *isl_aff_free(__isl_take isl_aff *aff);
 
 	__isl_give isl_pw_aff *isl_pw_aff_copy(
 		__isl_keep isl_pw_aff *pwaff);
-	void *isl_pw_aff_free(__isl_take isl_pw_aff *pwaff);
+	__isl_null isl_pw_aff *isl_pw_aff_free(
+		__isl_take isl_pw_aff *pwaff);
 
 A (rational) bound on a dimension can be extracted from an C<isl_constraint>
 using the following function.  The constraint is required to have
@@ -4407,22 +4421,24 @@ Multiple quasi affine expressions can be copied and freed using
 	#include <isl/aff.h>
 	__isl_give isl_multi_aff *isl_multi_aff_copy(
 		__isl_keep isl_multi_aff *maff);
-	void *isl_multi_aff_free(__isl_take isl_multi_aff *maff);
+	__isl_null isl_multi_aff *isl_multi_aff_free(
+		__isl_take isl_multi_aff *maff);
 
 	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_copy(
 		__isl_keep isl_pw_multi_aff *pma);
-	void *isl_pw_multi_aff_free(
+	__isl_null isl_pw_multi_aff *isl_pw_multi_aff_free(
 		__isl_take isl_pw_multi_aff *pma);
 
 	__isl_give isl_union_pw_multi_aff *
 	isl_union_pw_multi_aff_copy(
 		__isl_keep isl_union_pw_multi_aff *upma);
-	void *isl_union_pw_multi_aff_free(
+	__isl_null isl_union_pw_multi_aff *
+	isl_union_pw_multi_aff_free(
 		__isl_take isl_union_pw_multi_aff *upma);
 
 	__isl_give isl_multi_pw_aff *isl_multi_pw_aff_copy(
 		__isl_keep isl_multi_pw_aff *mpa);
-	void *isl_multi_pw_aff_free(
+	__isl_null isl_multi_pw_aff *isl_multi_pw_aff_free(
 		__isl_take isl_multi_pw_aff *mpa);
 
 The expression can be inspected using
@@ -5093,16 +5109,18 @@ functions.
 
 	__isl_give isl_qpolynomial *isl_qpolynomial_copy(
 		__isl_keep isl_qpolynomial *qp);
-	void *isl_qpolynomial_free(__isl_take isl_qpolynomial *qp);
+	__isl_null isl_qpolynomial *isl_qpolynomial_free(
+		__isl_take isl_qpolynomial *qp);
 
 	__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_copy(
 		__isl_keep isl_pw_qpolynomial *pwqp);
-	void *isl_pw_qpolynomial_free(
+	__isl_null isl_pw_qpolynomial *isl_pw_qpolynomial_free(
 		__isl_take isl_pw_qpolynomial *pwqp);
 
 	__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_copy(
 		__isl_keep isl_union_pw_qpolynomial *upwqp);
-	void *isl_union_pw_qpolynomial_free(
+	__isl_null isl_union_pw_qpolynomial *
+	isl_union_pw_qpolynomial_free(
 		__isl_take isl_union_pw_qpolynomial *upwqp);
 
 =head3 Inspecting (Piecewise) Quasipolynomials
@@ -5362,9 +5380,11 @@ following functions.
 		__isl_keep isl_union_pw_qpolynomial_fold *upwf);
 	void isl_qpolynomial_fold_free(
 		__isl_take isl_qpolynomial_fold *fold);
-	void *isl_pw_qpolynomial_fold_free(
+	__isl_null isl_pw_qpolynomial_fold *
+	isl_pw_qpolynomial_fold_free(
 		__isl_take isl_pw_qpolynomial_fold *pwf);
-	void *isl_union_pw_qpolynomial_fold_free(
+	__isl_null isl_union_pw_qpolynomial_fold *
+	isl_union_pw_qpolynomial_fold_free(
 		__isl_take isl_union_pw_qpolynomial_fold *upwf);
 
 =head3 Printing Piecewise Quasipolynomial Reductions
@@ -5656,7 +5676,8 @@ then value based dependence analysis is performed.
 		__isl_take isl_access_info *acc,
 		__isl_take isl_map *source, int must,
 		void *source_user);
-	void *isl_access_info_free(__isl_take isl_access_info *acc);
+	__isl_null isl_access_info *isl_access_info_free(
+		__isl_take isl_access_info *acc);
 
 	__isl_give isl_flow *isl_access_info_compute_flow(
 		__isl_take isl_access_info *acc);
@@ -5810,7 +5831,7 @@ using the following functions.
 		__isl_take isl_map *source_map);
 	__isl_give isl_restriction *isl_restriction_empty(
 		__isl_take isl_map *source_map);
-	void *isl_restriction_free(
+	__isl_null isl_restriction *isl_restriction_free(
 		__isl_take isl_restriction *restr);
 	isl_ctx *isl_restriction_get_ctx(
 		__isl_keep isl_restriction *restr);
@@ -5840,7 +5861,8 @@ and may be subject to change.>
 	__isl_give isl_schedule *
 	isl_schedule_constraints_compute_schedule(
 		__isl_take isl_schedule_constraints *sc);
-	void *isl_schedule_free(__isl_take isl_schedule *sched);
+	__isl_null isl_schedule *isl_schedule_free(
+		__isl_take isl_schedule *sched);
 
 The function C<isl_schedule_constraints_compute_schedule> can be
 used to compute a schedule that satisfy the given schedule constraints.
@@ -5894,7 +5916,8 @@ and manipulated using the following functions.
 		__isl_take isl_schedule_constraints *sc,
 		__isl_take isl_union_map *condition,
 		__isl_take isl_union_map *validity);
-	void *isl_schedule_constraints_free(
+	__isl_null isl_schedule_constraints *
+	isl_schedule_constraints_free(
 		__isl_take isl_schedule_constraints *sc);
 
 The initial C<isl_schedule_constraints> object created by
@@ -5980,7 +6003,8 @@ functions.
 	#include <isl/band.h>
 	__isl_give isl_band *isl_band_copy(
 		__isl_keep isl_band *band);
-	void *isl_band_free(__isl_take isl_band *band);
+	__isl_null isl_band *isl_band_free(
+		__isl_take isl_band *band);
 
 Each band contains zero or more scheduling dimensions.
 These are referred to as the members of the band.
@@ -6194,7 +6218,7 @@ and can be created, inspected, copied and freed using the following functions.
 		__isl_keep isl_ast_build *build);
 	__isl_give isl_ast_build *isl_ast_build_copy(
 		__isl_keep isl_ast_build *build);
-	void *isl_ast_build_free(
+	__isl_null isl_ast_build *isl_ast_build_free(
 		__isl_take isl_ast_build *build);
 
 The C<set> argument is usually a parameter set with zero or more parameters.
@@ -6456,14 +6480,16 @@ AST nodes can be copied and freed using the following functions.
 	#include <isl/ast.h>
 	__isl_give isl_ast_node *isl_ast_node_copy(
 		__isl_keep isl_ast_node *node);
-	void *isl_ast_node_free(__isl_take isl_ast_node *node);
+	__isl_null isl_ast_node *isl_ast_node_free(
+		__isl_take isl_ast_node *node);
 
 AST expressions can be copied and freed using the following functions.
 
 	#include <isl/ast.h>
 	__isl_give isl_ast_expr *isl_ast_expr_copy(
 		__isl_keep isl_ast_expr *expr);
-	void *isl_ast_expr_free(__isl_take isl_ast_expr *expr);
+	__isl_null isl_ast_expr *isl_ast_expr_free(
+		__isl_take isl_ast_expr *expr);
 
 New AST expressions can be created either directly or within
 the context of an C<isl_ast_build>.
@@ -6611,7 +6637,8 @@ This object can be created using the following functions.
 	__isl_give isl_ast_print_options *
 	isl_ast_print_options_copy(
 		__isl_keep isl_ast_print_options *options);
-	void *isl_ast_print_options_free(
+	__isl_null isl_ast_print_options *
+	isl_ast_print_options_free(
 		__isl_take isl_ast_print_options *options);
 
 	__isl_give isl_ast_print_options *

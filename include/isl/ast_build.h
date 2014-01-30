@@ -53,7 +53,8 @@ __isl_give isl_ast_build *isl_ast_build_restrict(
 
 __isl_give isl_ast_build *isl_ast_build_copy(
 	__isl_keep isl_ast_build *build);
-void *isl_ast_build_free(__isl_take isl_ast_build *build);
+__isl_null isl_ast_build *isl_ast_build_free(
+	__isl_take isl_ast_build *build);
 
 __isl_give isl_ast_build *isl_ast_build_set_options(
 	__isl_take isl_ast_build *build,

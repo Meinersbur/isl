@@ -243,7 +243,8 @@ __isl_give isl_ast_build *isl_ast_build_cow(__isl_take isl_ast_build *build)
 	return isl_ast_build_dup(build);
 }
 
-void *isl_ast_build_free(__isl_take isl_ast_build *build)
+__isl_null isl_ast_build *isl_ast_build_free(
+	__isl_take isl_ast_build *build)
 {
 	if (!build)
 		return NULL;
