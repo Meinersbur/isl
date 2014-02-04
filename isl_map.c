@@ -7182,16 +7182,36 @@ __isl_give isl_map *isl_map_union_disjoint(__isl_take isl_map *map1,
  * If the result contains more than one basic map, then we clear
  * the disjoint flag since the result may contain basic maps from
  * both inputs and these are not guaranteed to be disjoint.
+ *
+ * As a special case, if "map1" and "map2" are obviously equal,
+ * then we simply return "map1".
  */
 static __isl_give isl_map *map_union_aligned(__isl_take isl_map *map1,
 	__isl_take isl_map *map2)
 {
+	int equal;
+
+	if (!map1 || !map2)
+		goto error;
+
+	equal = isl_map_plain_is_equal(map1, map2);
+	if (equal < 0)
+		goto error;
+	if (equal) {
+		isl_map_free(map2);
+		return map1;
+	}
+
 	map1 = map_union_disjoint(map1, map2);
 	if (!map1)
 		return NULL;
 	if (map1->n > 1)
 		ISL_F_CLR(map1, ISL_MAP_DISJOINT);
 	return map1;
+error:
+	isl_map_free(map1);
+	isl_map_free(map2);
+	return NULL;
 }
 
 /* Return the union of "map1" and "map2", where "map1" and "map2" may
