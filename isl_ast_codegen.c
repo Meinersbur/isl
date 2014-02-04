@@ -3803,6 +3803,7 @@ __isl_give isl_ast_node *isl_ast_build_ast_from_schedule(
 
 	build = isl_ast_build_copy(build);
 	build = isl_ast_build_set_single_valued(build, 0);
+	schedule = isl_union_map_coalesce(schedule);
 	executed = isl_union_map_reverse(schedule);
 	list = generate_code(executed, isl_ast_build_copy(build), 0);
 	node = isl_ast_node_from_graft_list(list, build);
