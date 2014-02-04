@@ -12279,8 +12279,9 @@ __isl_give isl_set *isl_set_preimage_pw_multi_aff(__isl_take isl_set *set,
 	return isl_map_preimage_pw_multi_aff(set, isl_dim_set, pma);
 }
 
-/* Compute the preimage of "map" under the function represented by "pma".
- * In other words, plug in "pma" in the domain "map".
+/* Compute the preimage of the domain of "map" under the function
+ * represented by "pma".
+ * In other words, plug in "pma" in the domain of "map".
  * The result is a map that lives in the same space as "map",
  * except that domain space has been replaced by the domain space of "pma".
  */
