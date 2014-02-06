@@ -201,6 +201,12 @@ system)
 		HSO.AddPath("", frontend::Angled, false, false);
 	], [AC_DEFINE([ADDPATH_TAKES_4_ARGUMENTS], [],
 		[Define if HeaderSearchOptions::AddPath takes 4 arguments])])
+	AC_EGREP_HEADER([getNumParams],
+		[clang/AST/CanonicalType.h],
+		[AC_DEFINE([getNumArgs], [getNumParams],
+		    [Define to getNumParams for newer versions of clang])
+		 AC_DEFINE([getArgType], [getParamType],
+		    [Define to getParamType for newer versions of clang])])
 	AC_LANG_POP
 	CPPFLAGS="$SAVE_CPPFLAGS"
 

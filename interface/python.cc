@@ -31,6 +31,8 @@
  * Sven Verdoolaege.
  */ 
 
+#include "isl_config.h"
+
 #include <stdio.h>
 #include <iostream>
 #include <map>
