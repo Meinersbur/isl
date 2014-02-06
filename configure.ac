@@ -207,6 +207,10 @@ system)
 		    [Define to getNumParams for newer versions of clang])
 		 AC_DEFINE([getArgType], [getParamType],
 		    [Define to getParamType for newer versions of clang])])
+	AC_EGREP_HEADER([getReturnType],
+		[clang/AST/CanonicalType.h], [],
+		[AC_DEFINE([getReturnType], [getResultType],
+		    [Define to getResultType for older versions of clang])])
 	AC_LANG_POP
 	CPPFLAGS="$SAVE_CPPFLAGS"
 

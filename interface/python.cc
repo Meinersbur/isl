@@ -328,9 +328,9 @@ void isl_class::print_method(FunctionDecl *method, bool subclass, string super)
 		printf(", None");
 	printf(")\n");
 
-	if (is_isl_type(method->getResultType())) {
+	if (is_isl_type(method->getReturnType())) {
 		string type;
-		type = type2python(extract_type(method->getResultType()));
+		type = type2python(extract_type(method->getReturnType()));
 		printf("        return %s(ctx=arg0.ctx, ptr=res)\n",
 			type.c_str());
 	} else {
@@ -474,7 +474,7 @@ void isl_class::print(map<string, isl_class> &classes, set<string> &done)
 	}
 	for (in = methods.begin(); in != methods.end(); ++in) {
 		string fullname = (*in)->getName();
-		if (is_isl_type((*in)->getResultType()))
+		if (is_isl_type((*in)->getReturnType()))
 			printf("isl.%s.restype = c_void_p\n", fullname.c_str());
 	}
 	printf("isl.%s_free.argtypes = [c_void_p]\n", name.c_str());
