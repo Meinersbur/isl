@@ -4740,6 +4740,10 @@ by the corresponding elements of C<mv>.
 	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_align_params(
 		__isl_take isl_pw_multi_aff *pma,
 		__isl_take isl_space *model);
+	__isl_give isl_union_pw_multi_aff *
+	isl_union_pw_multi_aff_align_params(
+		__isl_take isl_union_pw_multi_aff *upma,
+		__isl_take isl_space *model);
 	__isl_give isl_pw_multi_aff *
 	isl_pw_multi_aff_project_domain_on_params(
 		__isl_take isl_pw_multi_aff *pma);

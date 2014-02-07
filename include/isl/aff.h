@@ -495,6 +495,9 @@ isl_ctx *isl_union_pw_multi_aff_get_ctx(
 __isl_give isl_space *isl_union_pw_multi_aff_get_space(
 	__isl_keep isl_union_pw_multi_aff *upma);
 
+__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_align_params(
+	__isl_take isl_union_pw_multi_aff *upma, __isl_take isl_space *model);
+
 int isl_union_pw_multi_aff_foreach_pw_multi_aff(
 	__isl_keep isl_union_pw_multi_aff *upma,
 	int (*fn)(__isl_take isl_pw_multi_aff *pma, void *user), void *user);
