@@ -134,6 +134,10 @@ system)
 		components="$components option"
 	fi
 	CLANG_LIBS=`$llvm_config --libs $components`
+	systemlibs=`$llvm_config --system-libs 2> /dev/null | tail -1`
+	if test $? -eq 0; then
+		CLANG_LIBS="$CLANG_LIBS $systemlibs"
+	fi
 	CLANG_PREFIX=`$llvm_config --prefix`
 	AC_DEFINE_UNQUOTED(CLANG_PREFIX, ["$CLANG_PREFIX"],
 				[Clang installation prefix])
