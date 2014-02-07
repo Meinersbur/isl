@@ -163,13 +163,13 @@ __isl_give UNION *FN(FN(UNION,add),PARTS)(__isl_take UNION *u,
 		return u;
 	}
 
+	u = FN(UNION,align_params)(u, FN(PART,get_space)(part));
+	part = FN(PART,align_params)(part, FN(UNION,get_space)(u));
+
 	u = FN(UNION,cow)(u);
 
 	if (!u)
 		goto error;
-
-	isl_assert(u->dim->ctx, isl_space_match(part->dim, isl_dim_param, u->dim,
-					      isl_dim_param), goto error);
 
 	hash = isl_space_get_hash(part->dim);
 	entry = isl_hash_table_find(u->dim->ctx, &u->table, hash,
