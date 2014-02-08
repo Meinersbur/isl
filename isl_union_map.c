@@ -2594,6 +2594,9 @@ __isl_give isl_union_map *isl_union_map_preimage_domain_multi_aff(
 	isl_space *space;
 	struct isl_union_map_preimage_domain_data data;
 
+	umap = isl_union_map_align_params(umap, isl_multi_aff_get_space(ma));
+	ma = isl_multi_aff_align_params(ma, isl_union_map_get_space(umap));
+
 	if (!umap || !ma)
 		goto error;
 
