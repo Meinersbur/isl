@@ -260,6 +260,8 @@ __isl_null isl_printer *isl_printer_free(__isl_take isl_printer *p)
 	if (!p)
 		return NULL;
 	free(p->buf);
+	free(p->prefix);
+	free(p->suffix);
 	isl_ctx_deref(p->ctx);
 	free(p);
 
@@ -322,7 +324,8 @@ __isl_give isl_printer *isl_printer_set_prefix(__isl_take isl_printer *p,
 	if (!p)
 		return NULL;
 
-	p->prefix = prefix;
+	free(p->prefix);
+	p->prefix = prefix ? strdup(prefix) : NULL;
 
 	return p;
 }
@@ -333,7 +336,8 @@ __isl_give isl_printer *isl_printer_set_suffix(__isl_take isl_printer *p,
 	if (!p)
 		return NULL;
 
-	p->suffix = suffix;
+	free(p->suffix);
+	p->suffix = suffix ? strdup(suffix) : NULL;
 
 	return p;
 }
