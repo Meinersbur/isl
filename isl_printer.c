@@ -4,7 +4,8 @@
 
 static __isl_give isl_printer *file_start_line(__isl_take isl_printer *p)
 {
-	fprintf(p->file, "%*s%s", p->indent, "", p->prefix ? p->prefix : "");
+	fprintf(p->file, "%s%*s%s", p->indent_prefix ? p->indent_prefix : "",
+				    p->indent, "", p->prefix ? p->prefix : "");
 	return p;
 }
 
@@ -98,6 +99,8 @@ error:
 
 static __isl_give isl_printer *str_start_line(__isl_take isl_printer *p)
 {
+	if (p->indent_prefix)
+		p = str_print(p, p->indent_prefix, strlen(p->indent_prefix));
 	p = str_print_indent(p, p->indent);
 	if (p->prefix)
 		p = str_print(p, p->prefix, strlen(p->prefix));
@@ -221,6 +224,7 @@ __isl_give isl_printer *isl_printer_to_file(isl_ctx *ctx, FILE *file)
 	p->buf_size = 0;
 	p->indent = 0;
 	p->output_format = ISL_FORMAT_ISL;
+	p->indent_prefix = NULL;
 	p->prefix = NULL;
 	p->suffix = NULL;
 	p->width = 0;
@@ -245,6 +249,7 @@ __isl_give isl_printer *isl_printer_to_str(isl_ctx *ctx)
 	p->buf_size = 256;
 	p->indent = 0;
 	p->output_format = ISL_FORMAT_ISL;
+	p->indent_prefix = NULL;
 	p->prefix = NULL;
 	p->suffix = NULL;
 	p->width = 0;
@@ -314,6 +319,20 @@ __isl_give isl_printer *isl_printer_indent(__isl_take isl_printer *p,
 	p->indent += indent;
 	if (p->indent < 0)
 		p->indent = 0;
+
+	return p;
+}
+
+/* Replace the indent prefix of "p" by "prefix".
+ */
+__isl_give isl_printer *isl_printer_set_indent_prefix(__isl_take isl_printer *p,
+	const char *prefix)
+{
+	if (!p)
+		return NULL;
+
+	free(p->indent_prefix);
+	p->indent_prefix = prefix ? strdup(prefix) : NULL;
 
 	return p;
 }

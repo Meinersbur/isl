@@ -1181,6 +1181,8 @@ The behavior of the printer can be modified in various ways
 		__isl_take isl_printer *p, int output_format);
 	__isl_give isl_printer *isl_printer_set_indent(
 		__isl_take isl_printer *p, int indent);
+	__isl_give isl_printer *isl_printer_set_indent_prefix(
+		__isl_take isl_printer *p, const char *prefix);
 	__isl_give isl_printer *isl_printer_indent(
 		__isl_take isl_printer *p, int indent);
 	__isl_give isl_printer *isl_printer_set_prefix(
@@ -1191,8 +1193,8 @@ The behavior of the printer can be modified in various ways
 The C<output_format> may be either C<ISL_FORMAT_ISL>, C<ISL_FORMAT_OMEGA>,
 C<ISL_FORMAT_POLYLIB>, C<ISL_FORMAT_EXT_POLYLIB> or C<ISL_FORMAT_LATEX>
 and defaults to C<ISL_FORMAT_ISL>.
-Each line in the output is indented by C<indent> (set by
-C<isl_printer_set_indent>) spaces
+Each line in the output is prefixed by C<indent_prefix>,
+indented by C<indent> (set by C<isl_printer_set_indent>) spaces
 (default: 0), prefixed by C<prefix> and suffixed by C<suffix>.
 In the C<PolyLib> format output,
 the coefficients of the existentially quantified variables

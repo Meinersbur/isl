@@ -11,6 +11,7 @@ struct isl_printer {
 	char		*buf;
 	int		indent;
 	int		output_format;
+	char		*indent_prefix;
 	char		*prefix;
 	char		*suffix;
 	int		width;
