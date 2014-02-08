@@ -496,9 +496,16 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),align_params)(
 	__isl_take MULTI(BASE) *multi, __isl_take isl_space *model)
 {
 	isl_ctx *ctx;
+	isl_reordering *exp;
 
 	if (!multi || !model)
 		goto error;
+
+	if (isl_space_match(multi->space, isl_dim_param,
+			     model, isl_dim_param)) {
+		isl_space_free(model);
+		return multi;
+	}
 
 	ctx = isl_space_get_ctx(model);
 	if (!isl_space_has_named_params(model))
@@ -507,16 +514,12 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),align_params)(
 	if (!isl_space_has_named_params(multi->space))
 		isl_die(ctx, isl_error_invalid,
 			"input has unnamed parameters", goto error);
-	if (!isl_space_match(multi->space, isl_dim_param,
-			     model, isl_dim_param)) {
-		isl_reordering *exp;
 
-		model = isl_space_params(model);
-		exp = isl_parameter_alignment_reordering(multi->space, model);
-		exp = isl_reordering_extend_space(exp,
+	model = isl_space_params(model);
+	exp = isl_parameter_alignment_reordering(multi->space, model);
+	exp = isl_reordering_extend_space(exp,
 				    FN(MULTI(BASE),get_domain_space)(multi));
-		multi = FN(MULTI(BASE),realign_domain)(multi, exp);
-	}
+	multi = FN(MULTI(BASE),realign_domain)(multi, exp);
 
 	isl_space_free(model);
 	return multi;
