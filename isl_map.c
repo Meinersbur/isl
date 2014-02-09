@@ -7167,14 +7167,33 @@ __isl_give isl_map *isl_map_union_disjoint(__isl_take isl_map *map1,
 	return isl_map_align_params_map_map_and(map1, map2, &map_union_disjoint);
 }
 
-struct isl_map *isl_map_union(struct isl_map *map1, struct isl_map *map2)
+/* Return the union of "map1" and "map2", where "map1" and "map2" may
+ * not be disjoint.  The parameters are assumed to have been aligned.
+ *
+ * We currently simply call map_union_disjoint, the internal operation
+ * of which does not really depend on the inputs being disjoint.
+ * If the result contains more than one basic map, then we clear
+ * the disjoint flag since the result may contain basic maps from
+ * both inputs and these are not guaranteed to be disjoint.
+ */
+static __isl_give isl_map *map_union_aligned(__isl_take isl_map *map1,
+	__isl_take isl_map *map2)
 {
-	map1 = isl_map_union_disjoint(map1, map2);
+	map1 = map_union_disjoint(map1, map2);
 	if (!map1)
 		return NULL;
 	if (map1->n > 1)
 		ISL_F_CLR(map1, ISL_MAP_DISJOINT);
 	return map1;
+}
+
+/* Return the union of "map1" and "map2", where "map1" and "map2" may
+ * not be disjoint.
+ */
+__isl_give isl_map *isl_map_union(__isl_take isl_map *map1,
+	__isl_take isl_map *map2)
+{
+	return isl_map_align_params_map_map_and(map1, map2, &map_union_aligned);
 }
 
 struct isl_set *isl_set_union_disjoint(
