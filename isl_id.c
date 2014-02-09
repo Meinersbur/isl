@@ -132,6 +132,33 @@ __isl_give isl_id *isl_id_copy(isl_id *id)
 	return id;
 }
 
+/* Compare two isl_ids.
+ *
+ * The order is fairly arbitrary.  We do keep the comparison of
+ * the user pointers as a last resort since these pointer values
+ * may not be stable across different systems or even different runs.
+ */
+int isl_id_cmp(__isl_keep isl_id *id1, __isl_keep isl_id *id2)
+{
+	if (id1 == id2)
+		return 0;
+	if (!id1)
+		return -1;
+	if (!id2)
+		return 1;
+	if (!id1->name != !id2->name)
+		return !id1->name - !id2->name;
+	if (id1->name) {
+		int cmp = strcmp(id1->name, id2->name);
+		if (cmp != 0)
+			return cmp;
+	}
+	if (id1->user < id2->user)
+		return -1;
+	else
+		return 1;
+}
+
 static int isl_id_eq(const void *entry, const void *name)
 {
 	return entry == name;

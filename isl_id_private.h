@@ -34,6 +34,7 @@ struct isl_id {
 #include <isl_list_templ.h>
 
 uint32_t isl_hash_id(uint32_t hash, __isl_keep isl_id *id);
+int isl_id_cmp(__isl_keep isl_id *id1, __isl_keep isl_id *id2);
 
 extern isl_id isl_id_none;
 
