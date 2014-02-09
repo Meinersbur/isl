@@ -3061,6 +3061,7 @@ a parametric set as well.
 
 =item * Preimage
 
+	#include <isl/set.h>
 	__isl_give isl_basic_set *
 	isl_basic_set_preimage_multi_aff(
 		__isl_take isl_basic_set *bset,
@@ -3074,6 +3075,8 @@ a parametric set as well.
 	__isl_give isl_set *isl_set_preimage_multi_pw_aff(
 		__isl_take isl_set *set,
 		__isl_take isl_multi_pw_aff *mpa);
+
+	#include <isl/map.h>
 	__isl_give isl_basic_map *
 	isl_basic_map_preimage_domain_multi_aff(
 		__isl_take isl_basic_map *bmap,
@@ -3089,13 +3092,15 @@ a parametric set as well.
 	isl_map_preimage_domain_multi_pw_aff(
 		__isl_take isl_map *map,
 		__isl_take isl_multi_pw_aff *mpa);
-	__isl_give isl_union_map *
-	isl_union_map_preimage_domain_multi_aff(
-		__isl_take isl_union_map *umap,
-		__isl_take isl_multi_aff *ma);
 	__isl_give isl_basic_map *
 	isl_basic_map_preimage_range_multi_aff(
 		__isl_take isl_basic_map *bmap,
+		__isl_take isl_multi_aff *ma);
+
+	#include <isl/union_map.h>
+	__isl_give isl_union_map *
+	isl_union_map_preimage_domain_multi_aff(
+		__isl_take isl_union_map *umap,
 		__isl_take isl_multi_aff *ma);
 
 These functions compute the preimage of the given set or map domain/range under
