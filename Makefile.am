@@ -5,7 +5,7 @@ SUBDIRS = . $(MAYBE_INTERFACE) doc
 DIST_SUBDIRS = $(MAYBE_INTERFACE) doc
 
 ACLOCAL_AMFLAGS = -I m4
-AUTOMAKE_OPTIONS = nostdinc
+AUTOMAKE_OPTIONS = nostdinc subdir-objects
 
 lib_LTLIBRARIES = libisl.la
 noinst_PROGRAMS = isl_test isl_polyhedron_sample isl_pip \
@@ -14,21 +14,52 @@ noinst_PROGRAMS = isl_test isl_polyhedron_sample isl_pip \
 	isl_closure isl_bound isl_codegen
 TESTS = isl_test codegen_test.sh pip_test.sh bound_test.sh
 
+if IMATH_FOR_MP
+
+MP_SRC = \
+	isl_hide_deprecated.h \
+	isl_imath.c \
+	isl_imath.h \
+	isl_int_imath.h \
+	isl_val_imath.c \
+	imath_wrap/gmp_compat.h \
+	imath_wrap/imath.h \
+	imath_wrap/imrat.h \
+	imath_wrap/wrap.h \
+	imath_wrap/gmp_compat.c \
+	imath_wrap/imath.c \
+	imath_wrap/imrat.c
+
+DEPRECATED_SRC =
+MP_INCLUDE_H =
+endif
+
+if GMP_FOR_MP
 if NEED_GET_MEMORY_FUNCTIONS
 GET_MEMORY_FUNCTIONS=mp_get_memory_functions.c
 endif
 
-AM_CPPFLAGS = -I. -I$(srcdir) -I$(srcdir)/include -Iinclude/ @GMP_CPPFLAGS@
+MP_SRC = \
+	$(GET_MEMORY_FUNCTIONS) \
+	isl_int_gmp.h \
+	isl_gmp.c \
+	isl_val_gmp.c
+
+DEPRECATED_SRC = isl_ast_int.c
+MP_INCLUDE_H = include/isl/val_gmp.h
+endif
+
+AM_CPPFLAGS = -I. -I$(srcdir) -I$(srcdir)/include -Iinclude/ @MP_CPPFLAGS@
 AM_CFLAGS = @WARNING_FLAGS@
 
 libisl_la_SOURCES = \
-	$(GET_MEMORY_FUNCTIONS) \
+	$(MP_SRC) \
+	$(DEPRECATED_SRC) \
 	isl_aff.c \
 	isl_aff_private.h \
 	isl_affine_hull.c \
 	isl_arg.c \
 	isl_ast.c \
-	isl_ast_int.c \
 	isl_ast_private.h \
 	isl_ast_build.c \
 	isl_ast_build_private.h \
@@ -64,7 +95,6 @@ libisl_la_SOURCES = \
 	isl_farkas.c \
 	isl_flow.c \
 	isl_fold.c \
-	isl_gmp.c \
 	isl_hash.c \
 	isl_id_to_ast_expr.c \
 	isl_id_to_pw_aff.c \
@@ -126,41 +156,40 @@ libisl_la_SOURCES = \
 	isl_union_map.c \
 	isl_union_map_private.h \
 	isl_val.c \
-	isl_val_gmp.c \
 	isl_val_private.h \
 	isl_vec_private.h \
 	isl_vec.c \
 	isl_version.c \
 	isl_vertices_private.h \
 	isl_vertices.c
-libisl_la_LIBADD = @GMP_LIBS@
+libisl_la_LIBADD = @MP_LIBS@
 libisl_la_LDFLAGS = -version-info @versioninfo@ \
-	@GMP_LDFLAGS@
+	@MP_LDFLAGS@
 
-isl_test_LDFLAGS = @GMP_LDFLAGS@
-isl_test_LDADD = libisl.la @GMP_LIBS@
+isl_test_LDFLAGS = @MP_LDFLAGS@
+isl_test_LDADD = libisl.la @MP_LIBS@
 
 isl_polyhedron_sample_LDADD = libisl.la
 isl_polyhedron_sample_SOURCES = \
 	polyhedron_sample.c
 
-isl_pip_LDFLAGS = @GMP_LDFLAGS@
-isl_pip_LDADD = libisl.la @GMP_LIBS@
+isl_pip_LDFLAGS = @MP_LDFLAGS@
+isl_pip_LDADD = libisl.la @MP_LIBS@
 isl_pip_SOURCES = \
 	pip.c
 
-isl_codegen_LDFLAGS = @GMP_LDFLAGS@
-isl_codegen_LDADD = libisl.la @GMP_LIBS@
+isl_codegen_LDFLAGS = @MP_LDFLAGS@
+isl_codegen_LDADD = libisl.la @MP_LIBS@
 isl_codegen_SOURCES = \
 	codegen.c
 
-isl_bound_LDFLAGS = @GMP_LDFLAGS@
-isl_bound_LDADD = libisl.la @GMP_LIBS@
+isl_bound_LDFLAGS = @MP_LDFLAGS@
+isl_bound_LDADD = libisl.la @MP_LIBS@
 isl_bound_SOURCES = \
 	bound.c
 
-isl_polyhedron_minimize_LDFLAGS = @GMP_LDFLAGS@
-isl_polyhedron_minimize_LDADD = libisl.la @GMP_LIBS@
+isl_polyhedron_minimize_LDFLAGS = @MP_LDFLAGS@
+isl_polyhedron_minimize_LDADD = libisl.la @MP_LIBS@
 isl_polyhedron_minimize_SOURCES = \
 	polyhedron_minimize.c
 
@@ -183,6 +212,7 @@ isl_closure_SOURCES = \
 nodist_pkginclude_HEADERS = \
 	include/isl/stdint.h
 pkginclude_HEADERS = \
+	$(MP_INCLUDE_H) \
 	include/isl/aff.h \
 	include/isl/aff_type.h \
 	include/isl/arg.h \
@@ -224,7 +254,6 @@ pkginclude_HEADERS = \
 	include/isl/union_set.h \
 	include/isl/union_set_type.h \
 	include/isl/val.h \
-	include/isl/val_gmp.h \
 	include/isl/vec.h \
 	include/isl/version.h \
 	include/isl/vertices.h
@@ -267,6 +296,12 @@ EXTRA_DIST = \
 	doc/mypod2latex \
 	doc/manual.tex \
 	doc/user.pod \
+	imath/gmp_compat.c \
+	imath/gmp_compat.h \
+	imath/imath.c \
+	imath/imath.h \
+	imath/imrat.c \
+	imath/imrat.h \
 	interface/all.h \
 	interface/isl.py.top \
 	test_inputs

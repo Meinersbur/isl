@@ -5,7 +5,7 @@ sets and relations of integer points bounded by affine constraints.
 The descriptions of the sets and relations may involve
 both parameters and existentially quantified variables.
 All computations are performed in exact integer arithmetic
-using C<GMP>.
+using C<GMP> or C<imath>.
 The C<isl> library offers functionality that is similar
 to that offered by the C<Omega> and C<Omega+> libraries,
 but the underlying algorithms are in most cases completely different.
@@ -234,9 +234,12 @@ SOFTWARE.
 
 =back
 
-Note that C<isl> currently requires C<GMP>, which is released
+Note that by default C<isl> requires C<GMP>, which is released
 under the GNU Lesser General Public License (LGPL).  This means
 that code linked against C<isl> is also linked against LGPL code.
+
+When configuring with C<--with-int=imath>, C<isl> will link against C<imath>, a
+library for exact integer arithmetic released under the MIT license.
 
 =head1 Installation
 
@@ -261,6 +264,16 @@ To obtain updates, you need to pull in the latest changes
 
 	git pull
 
+=item 2 Optionally get C<imath> submodule
+
+To build C<isl> with C<imath>, you need to obtain the C<imath>
+submodule by running in the git source tree of C<isl>
+
+       git submodule init
+       git submodule update
+
+This will fetch the required version of C<imath> in a subdirectory of C<isl>.
+
 =item 2 Generate C<configure>
 
 	./autogen.sh
@@ -276,11 +289,12 @@ with the L<Common installation instructions>.
 
 =item 1 Obtain C<GMP>
 
-Building C<isl> requires C<GMP>, including its headers files.
+By default, building C<isl> requires C<GMP>, including its headers files.
 Your distribution may not provide these header files by default
 and you may need to install a package called C<gmp-devel> or something
 similar.  Alternatively, C<GMP> can be built from
 source, available from L<http://gmplib.org/>.
+C<GMP> is not needed if you build C<isl> with C<imath>.
 
 =item 2 Configure
 
@@ -301,6 +315,11 @@ Below we discuss some of the more common options.
 =item C<--prefix>
 
 Installation prefix for C<isl>
+
+=item C<--with-int=[gmp|imath]>
+
+Select the integer library to be used by C<isl>, the default is C<gmp>.
+Note that C<isl> may run significantly slower if you use C<imath>.
 
 =item C<--with-gmp-prefix>
 

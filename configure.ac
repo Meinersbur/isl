@@ -35,11 +35,32 @@ AM_CONDITIONAL(GENERATE_DOC, test -n "$PERL" -a -n "$PDFLATEX" -a -n "$POD2HTML"
 
 AX_CREATE_STDINT_H(include/isl/stdint.h)
 
-AC_SUBST(GMP_CPPFLAGS)
-AC_SUBST(GMP_LDFLAGS)
-AC_SUBST(GMP_LIBS)
-AX_DETECT_GMP
+AC_ARG_WITH([int],
+	    [AS_HELP_STRING([--with-int=gmp|imath],
+			    [Which package to use to represent
+				multi-precision integers [default=gmp]])],
+	    [], [with_int=gmp])
+case "$with_int" in
+gmp|imath)
+	;;
+*)
+	AC_MSG_ERROR([bad value ${withval} for --with-int (use gmp or imath)])
+esac
 
+AC_SUBST(MP_CPPFLAGS)
+AC_SUBST(MP_LDFLAGS)
+AC_SUBST(MP_LIBS)
+case "$with_int" in
+gmp)
+	AX_DETECT_GMP
+	;;
+imath)
+	AX_DETECT_IMATH
+	;;
+esac
+
+AM_CONDITIONAL(IMATH_FOR_MP, test x$with_int = ximath)
+AM_CONDITIONAL(GMP_FOR_MP, test x$with_int = xgmp)
 AC_CHECK_DECLS(ffs,[],[],[#include <strings.h>])
 AC_CHECK_DECLS(__builtin_ffs,[],[],[])
 
@@ -170,9 +191,9 @@ AX_SET_WARNING_FLAGS
 
 AC_SUBST(WARNING_FLAGS)
 
-PACKAGE_CFLAGS="$GMP_CPPFLAGS"
-PACKAGE_LDFLAGS="$GMP_LDFLAGS"
-PACKAGE_LIBS="-lisl -lgmp"
+PACKAGE_CFLAGS="$MP_CPPFLAGS"
+PACKAGE_LDFLAGS="$MP_LDFLAGS"
+PACKAGE_LIBS="-lisl $MP_LIBS"
 AX_CREATE_PKGCONFIG_INFO
 
 AX_DETECT_GIT_HEAD
