@@ -3329,6 +3329,22 @@ int test_dim_max(isl_ctx *ctx)
 	if (!equal)
 		isl_die(ctx, isl_error_unknown, "unexpected result", return -1);
 
+	/* Check that empty solution lie in the right space. */
+	str = "[n] -> { [t,a] : 1 = 0 }";
+	set = isl_set_read_from_str(ctx, str);
+	pwaff = isl_set_dim_max(set, 0);
+	set1 = isl_set_from_pw_aff(pwaff);
+	str = "[n] -> { [t] : 1 = 0 }";
+	set2 = isl_set_read_from_str(ctx, str);
+	equal = isl_set_is_equal(set1, set2);
+	isl_set_free(set1);
+	isl_set_free(set2);
+
+	if (equal < 0)
+		return -1;
+	if (!equal)
+		isl_die(ctx, isl_error_unknown, "unexpected result", return -1);
+
 	return 0;
 }
 

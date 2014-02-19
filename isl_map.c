@@ -6456,7 +6456,6 @@ static __isl_give isl_pw_aff *map_dim_opt(__isl_take isl_map *map, int pos,
 
 	if (map->n == 0) {
 		isl_space *dim = isl_map_get_space(map);
-		dim = isl_space_domain(isl_space_from_range(dim));
 		isl_map_free(map);
 		return isl_pw_aff_empty(dim);
 	}
