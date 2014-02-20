@@ -2081,6 +2081,9 @@ static __isl_give isl_printer *print_aff_body(__isl_take isl_printer *p,
 {
 	unsigned total;
 
+	if (isl_aff_is_nan(aff))
+		return isl_printer_print_str(p, "NaN");
+
 	total = isl_local_space_dim(aff->ls, isl_dim_all);
 	p = isl_printer_print_str(p, "(");
 	p = print_affine_of_len(aff->ls->dim, aff->ls->div, p,

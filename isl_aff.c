@@ -108,6 +108,30 @@ __isl_give isl_pw_aff *isl_pw_aff_zero_on_domain(__isl_take isl_local_space *ls)
 	return isl_pw_aff_from_aff(isl_aff_zero_on_domain(ls));
 }
 
+/* Return an affine expression defined on the specified domain
+ * that represents NaN.
+ */
+__isl_give isl_aff *isl_aff_nan_on_domain(__isl_take isl_local_space *ls)
+{
+	isl_aff *aff;
+
+	aff = isl_aff_alloc(ls);
+	if (!aff)
+		return NULL;
+
+	isl_seq_clr(aff->v->el, aff->v->size);
+
+	return aff;
+}
+
+/* Return a piecewise affine expression defined on the specified domain
+ * that represents NaN.
+ */
+__isl_give isl_pw_aff *isl_pw_aff_nan_on_domain(__isl_take isl_local_space *ls)
+{
+	return isl_pw_aff_from_aff(isl_aff_nan_on_domain(ls));
+}
+
 /* Return an affine expression that is equal to "val" on
  * domain local space "ls".
  */
@@ -412,20 +436,63 @@ error:
 	return NULL;
 }
 
+/* Is "aff" obviously equal to zero?
+ *
+ * If the denominator is zero, then "aff" is not equal to zero.
+ */
 int isl_aff_plain_is_zero(__isl_keep isl_aff *aff)
 {
 	if (!aff)
 		return -1;
 
+	if (isl_int_is_zero(aff->v->el[0]))
+		return 0;
 	return isl_seq_first_non_zero(aff->v->el + 1, aff->v->size - 1) < 0;
 }
 
+/* Does "aff" represent NaN?
+ */
+int isl_aff_is_nan(__isl_keep isl_aff *aff)
+{
+	if (!aff)
+		return -1;
+
+	return isl_seq_first_non_zero(aff->v->el, 2) < 0;
+}
+
+/* Does "pa" involve any NaNs?
+ */
+int isl_pw_aff_involves_nan(__isl_keep isl_pw_aff *pa)
+{
+	int i;
+
+	if (!pa)
+		return -1;
+	if (pa->n == 0)
+		return 0;
+
+	for (i = 0; i < pa->n; ++i) {
+		int is_nan = isl_aff_is_nan(pa->p[i].aff);
+		if (is_nan < 0 || is_nan)
+			return is_nan;
+	}
+
+	return 0;
+}
+
+/* Are "aff1" and "aff2" obviously equal?
+ *
+ * NaN is not equal to anything, not even to another NaN.
+ */
 int isl_aff_plain_is_equal(__isl_keep isl_aff *aff1, __isl_keep isl_aff *aff2)
 {
 	int equal;
 
 	if (!aff1 || !aff2)
 		return -1;
+
+	if (isl_aff_is_nan(aff1) || isl_aff_is_nan(aff2))
+		return 0;
 
 	equal = isl_local_space_is_equal(aff1->ls, aff2->ls);
 	if (equal < 0 || !equal)
@@ -434,10 +501,17 @@ int isl_aff_plain_is_equal(__isl_keep isl_aff *aff1, __isl_keep isl_aff *aff2)
 	return isl_vec_is_equal(aff1->v, aff2->v);
 }
 
+/* Return the common denominator of "aff" in "v".
+ *
+ * We cannot return anything meaningful in case of a NaN.
+ */
 int isl_aff_get_denominator(__isl_keep isl_aff *aff, isl_int *v)
 {
 	if (!aff)
 		return -1;
+	if (isl_aff_is_nan(aff))
+		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
+			"cannot get denominator of NaN", return -1);
 	isl_int_set(*v, aff->v->el[0]);
 	return 0;
 }
@@ -452,13 +526,22 @@ __isl_give isl_val *isl_aff_get_denominator_val(__isl_keep isl_aff *aff)
 		return NULL;
 
 	ctx = isl_aff_get_ctx(aff);
+	if (isl_aff_is_nan(aff))
+		return isl_val_nan(ctx);
 	return isl_val_int_from_isl_int(ctx, aff->v->el[0]);
 }
 
+/* Return the constant term of "aff" in "v".
+ *
+ * We cannot return anything meaningful in case of a NaN.
+ */
 int isl_aff_get_constant(__isl_keep isl_aff *aff, isl_int *v)
 {
 	if (!aff)
 		return -1;
+	if (isl_aff_is_nan(aff))
+		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
+			"cannot get constant term of NaN", return -1);
 	isl_int_set(*v, aff->v->el[1]);
 	return 0;
 }
@@ -474,10 +557,17 @@ __isl_give isl_val *isl_aff_get_constant_val(__isl_keep isl_aff *aff)
 		return NULL;
 
 	ctx = isl_aff_get_ctx(aff);
+	if (isl_aff_is_nan(aff))
+		return isl_val_nan(ctx);
 	v = isl_val_rat_from_isl_int(ctx, aff->v->el[1], aff->v->el[0]);
 	return isl_val_normalize(v);
 }
 
+/* Return the coefficient of the variable of type "type" at position "pos"
+ * of "aff" in "v".
+ *
+ * We cannot return anything meaningful in case of a NaN.
+ */
 int isl_aff_get_coefficient(__isl_keep isl_aff *aff,
 	enum isl_dim_type type, int pos, isl_int *v)
 {
@@ -495,6 +585,9 @@ int isl_aff_get_coefficient(__isl_keep isl_aff *aff,
 		isl_die(aff->v->ctx, isl_error_invalid,
 			"position out of bounds", return -1);
 
+	if (isl_aff_is_nan(aff))
+		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
+			"cannot get coefficient of NaN", return -1);
 	pos += isl_local_space_offset(aff->ls, type);
 	isl_int_set(*v, aff->v->el[1 + pos]);
 
@@ -525,13 +618,23 @@ __isl_give isl_val *isl_aff_get_coefficient_val(__isl_keep isl_aff *aff,
 		isl_die(ctx, isl_error_invalid,
 			"position out of bounds", return NULL);
 
+	if (isl_aff_is_nan(aff))
+		return isl_val_nan(ctx);
 	pos += isl_local_space_offset(aff->ls, type);
 	v = isl_val_rat_from_isl_int(ctx, aff->v->el[1 + pos], aff->v->el[0]);
 	return isl_val_normalize(v);
 }
 
+/* Replace the denominator of "aff" by "v".
+ *
+ * A NaN is unaffected by this operation.
+ */
 __isl_give isl_aff *isl_aff_set_denominator(__isl_take isl_aff *aff, isl_int v)
 {
+	if (!aff)
+		return NULL;
+	if (isl_aff_is_nan(aff))
+		return aff;
 	aff = isl_aff_cow(aff);
 	if (!aff)
 		return NULL;
@@ -545,8 +648,16 @@ __isl_give isl_aff *isl_aff_set_denominator(__isl_take isl_aff *aff, isl_int v)
 	return aff;
 }
 
+/* Replace the numerator of the constant term of "aff" by "v".
+ *
+ * A NaN is unaffected by this operation.
+ */
 __isl_give isl_aff *isl_aff_set_constant(__isl_take isl_aff *aff, isl_int v)
 {
+	if (!aff)
+		return NULL;
+	if (isl_aff_is_nan(aff))
+		return aff;
 	aff = isl_aff_cow(aff);
 	if (!aff)
 		return NULL;
@@ -561,12 +672,19 @@ __isl_give isl_aff *isl_aff_set_constant(__isl_take isl_aff *aff, isl_int v)
 }
 
 /* Replace the constant term of "aff" by "v".
+ *
+ * A NaN is unaffected by this operation.
  */
 __isl_give isl_aff *isl_aff_set_constant_val(__isl_take isl_aff *aff,
 	__isl_take isl_val *v)
 {
 	if (!aff || !v)
 		goto error;
+
+	if (isl_aff_is_nan(aff)) {
+		isl_val_free(v);
+		return aff;
+	}
 
 	if (!isl_val_is_rat(v))
 		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
@@ -607,11 +725,19 @@ error:
 	return NULL;
 }
 
+/* Add "v" to the constant term of "aff".
+ *
+ * A NaN is unaffected by this operation.
+ */
 __isl_give isl_aff *isl_aff_add_constant(__isl_take isl_aff *aff, isl_int v)
 {
 	if (isl_int_is_zero(v))
 		return aff;
 
+	if (!aff)
+		return NULL;
+	if (isl_aff_is_nan(aff))
+		return aff;
 	aff = isl_aff_cow(aff);
 	if (!aff)
 		return NULL;
@@ -626,6 +752,8 @@ __isl_give isl_aff *isl_aff_add_constant(__isl_take isl_aff *aff, isl_int v)
 }
 
 /* Add "v" to the constant term of "aff".
+ *
+ * A NaN is unaffected by this operation.
  */
 __isl_give isl_aff *isl_aff_add_constant_val(__isl_take isl_aff *aff,
 	__isl_take isl_val *v)
@@ -633,7 +761,7 @@ __isl_give isl_aff *isl_aff_add_constant_val(__isl_take isl_aff *aff,
 	if (!aff || !v)
 		goto error;
 
-	if (isl_val_is_zero(v)) {
+	if (isl_aff_is_nan(aff) || isl_val_is_zero(v)) {
 		isl_val_free(v);
 		return aff;
 	}
@@ -688,12 +816,18 @@ __isl_give isl_aff *isl_aff_add_constant_si(__isl_take isl_aff *aff, int v)
 }
 
 /* Add "v" to the numerator of the constant term of "aff".
+ *
+ * A NaN is unaffected by this operation.
  */
 __isl_give isl_aff *isl_aff_add_constant_num(__isl_take isl_aff *aff, isl_int v)
 {
 	if (isl_int_is_zero(v))
 		return aff;
 
+	if (!aff)
+		return NULL;
+	if (isl_aff_is_nan(aff))
+		return aff;
 	aff = isl_aff_cow(aff);
 	if (!aff)
 		return NULL;
@@ -708,6 +842,8 @@ __isl_give isl_aff *isl_aff_add_constant_num(__isl_take isl_aff *aff, isl_int v)
 }
 
 /* Add "v" to the numerator of the constant term of "aff".
+ *
+ * A NaN is unaffected by this operation.
  */
 __isl_give isl_aff *isl_aff_add_constant_num_si(__isl_take isl_aff *aff, int v)
 {
@@ -724,8 +860,16 @@ __isl_give isl_aff *isl_aff_add_constant_num_si(__isl_take isl_aff *aff, int v)
 	return aff;
 }
 
+/* Replace the numerator of the constant term of "aff" by "v".
+ *
+ * A NaN is unaffected by this operation.
+ */
 __isl_give isl_aff *isl_aff_set_constant_si(__isl_take isl_aff *aff, int v)
 {
+	if (!aff)
+		return NULL;
+	if (isl_aff_is_nan(aff))
+		return aff;
 	aff = isl_aff_cow(aff);
 	if (!aff)
 		return NULL;
@@ -739,6 +883,11 @@ __isl_give isl_aff *isl_aff_set_constant_si(__isl_take isl_aff *aff, int v)
 	return aff;
 }
 
+/* Replace the numerator of the coefficient of the variable of type "type"
+ * at position "pos" of "aff" by "v".
+ *
+ * A NaN is unaffected by this operation.
+ */
 __isl_give isl_aff *isl_aff_set_coefficient(__isl_take isl_aff *aff,
 	enum isl_dim_type type, int pos, isl_int v)
 {
@@ -756,6 +905,8 @@ __isl_give isl_aff *isl_aff_set_coefficient(__isl_take isl_aff *aff,
 		isl_die(aff->v->ctx, isl_error_invalid,
 			"position out of bounds", return isl_aff_free(aff));
 
+	if (isl_aff_is_nan(aff))
+		return aff;
 	aff = isl_aff_cow(aff);
 	if (!aff)
 		return NULL;
@@ -770,6 +921,11 @@ __isl_give isl_aff *isl_aff_set_coefficient(__isl_take isl_aff *aff,
 	return aff;
 }
 
+/* Replace the numerator of the coefficient of the variable of type "type"
+ * at position "pos" of "aff" by "v".
+ *
+ * A NaN is unaffected by this operation.
+ */
 __isl_give isl_aff *isl_aff_set_coefficient_si(__isl_take isl_aff *aff,
 	enum isl_dim_type type, int pos, int v)
 {
@@ -787,6 +943,8 @@ __isl_give isl_aff *isl_aff_set_coefficient_si(__isl_take isl_aff *aff,
 		isl_die(aff->v->ctx, isl_error_invalid,
 			"position out of bounds", return isl_aff_free(aff));
 
+	if (isl_aff_is_nan(aff))
+		return aff;
 	pos += isl_local_space_offset(aff->ls, type);
 	if (isl_int_cmp_si(aff->v->el[1 + pos], v) == 0)
 		return aff;
@@ -806,6 +964,8 @@ __isl_give isl_aff *isl_aff_set_coefficient_si(__isl_take isl_aff *aff,
 
 /* Replace the coefficient of the variable of type "type" at position "pos"
  * of "aff" by "v".
+ *
+ * A NaN is unaffected by this operation.
  */
 __isl_give isl_aff *isl_aff_set_coefficient_val(__isl_take isl_aff *aff,
 	enum isl_dim_type type, int pos, __isl_take isl_val *v)
@@ -824,6 +984,10 @@ __isl_give isl_aff *isl_aff_set_coefficient_val(__isl_take isl_aff *aff,
 		isl_die(aff->v->ctx, isl_error_invalid,
 			"position out of bounds", goto error);
 
+	if (isl_aff_is_nan(aff)) {
+		isl_val_free(v);
+		return aff;
+	}
 	if (!isl_val_is_rat(v))
 		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
 			"expecting rational value", goto error);
@@ -864,6 +1028,11 @@ error:
 	return NULL;
 }
 
+/* Add "v" to the coefficient of the variable of type "type"
+ * at position "pos" of "aff".
+ *
+ * A NaN is unaffected by this operation.
+ */
 __isl_give isl_aff *isl_aff_add_coefficient(__isl_take isl_aff *aff,
 	enum isl_dim_type type, int pos, isl_int v)
 {
@@ -881,6 +1050,8 @@ __isl_give isl_aff *isl_aff_add_coefficient(__isl_take isl_aff *aff,
 		isl_die(aff->v->ctx, isl_error_invalid,
 			"position out of bounds", return isl_aff_free(aff));
 
+	if (isl_aff_is_nan(aff))
+		return aff;
 	aff = isl_aff_cow(aff);
 	if (!aff)
 		return NULL;
@@ -897,6 +1068,8 @@ __isl_give isl_aff *isl_aff_add_coefficient(__isl_take isl_aff *aff,
 
 /* Add "v" to the coefficient of the variable of type "type"
  * at position "pos" of "aff".
+ *
+ * A NaN is unaffected by this operation.
  */
 __isl_give isl_aff *isl_aff_add_coefficient_val(__isl_take isl_aff *aff,
 	enum isl_dim_type type, int pos, __isl_take isl_val *v)
@@ -920,6 +1093,10 @@ __isl_give isl_aff *isl_aff_add_coefficient_val(__isl_take isl_aff *aff,
 		isl_die(aff->v->ctx, isl_error_invalid,
 			"position out of bounds", goto error);
 
+	if (isl_aff_is_nan(aff)) {
+		isl_val_free(v);
+		return aff;
+	}
 	if (!isl_val_is_rat(v))
 		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
 			"expecting rational value", goto error);
@@ -979,8 +1156,16 @@ __isl_give isl_aff *isl_aff_get_div(__isl_keep isl_aff *aff, int pos)
 	return isl_local_space_get_div(aff->ls, pos);
 }
 
+/* Return the negation of "aff".
+ *
+ * As a special case, -NaN = NaN.
+ */
 __isl_give isl_aff *isl_aff_neg(__isl_take isl_aff *aff)
 {
+	if (!aff)
+		return NULL;
+	if (isl_aff_is_nan(aff))
+		return aff;
 	aff = isl_aff_cow(aff);
 	if (!aff)
 		return NULL;
@@ -1268,6 +1453,8 @@ __isl_give isl_aff *isl_aff_normalize(__isl_take isl_aff *aff)
  * Otherwise, if f = g/m, write g = q m + r,
  * create a new div d = [r/m] and return the expression q + d.
  * The coefficients in r are taken to lie between -m/2 and m/2.
+ *
+ * As a special case, floor(NaN) = NaN.
  */
 __isl_give isl_aff *isl_aff_floor(__isl_take isl_aff *aff)
 {
@@ -1279,6 +1466,8 @@ __isl_give isl_aff *isl_aff_floor(__isl_take isl_aff *aff)
 	if (!aff)
 		return NULL;
 
+	if (isl_aff_is_nan(aff))
+		return aff;
 	if (isl_int_is_one(aff->v->el[0]))
 		return aff;
 
@@ -1425,12 +1614,16 @@ error:
  * then return
  *
  *	floor((e + m - 1)/m)
+ *
+ * As a special case, ceil(NaN) = NaN.
  */
 __isl_give isl_aff *isl_aff_ceil(__isl_take isl_aff *aff)
 {
 	if (!aff)
 		return NULL;
 
+	if (isl_aff_is_nan(aff))
+		return aff;
 	if (isl_int_is_one(aff->v->el[0]))
 		return aff;
 
@@ -1532,6 +1725,10 @@ error:
 	return NULL;
 }
 
+/* Return the sum of "aff1" and "aff2".
+ *
+ * If either of the two is NaN, then the result is NaN.
+ */
 __isl_give isl_aff *isl_aff_add(__isl_take isl_aff *aff1,
 	__isl_take isl_aff *aff2)
 {
@@ -1548,6 +1745,15 @@ __isl_give isl_aff *isl_aff_add(__isl_take isl_aff *aff1,
 	if (!isl_space_is_equal(aff1->ls->dim, aff2->ls->dim))
 		isl_die(ctx, isl_error_invalid,
 			"spaces don't match", goto error);
+
+	if (isl_aff_is_nan(aff1)) {
+		isl_aff_free(aff2);
+		return aff1;
+	}
+	if (isl_aff_is_nan(aff2)) {
+		isl_aff_free(aff1);
+		return aff2;
+	}
 
 	n_div1 = isl_aff_dim(aff1, isl_dim_div);
 	n_div2 = isl_aff_dim(aff2, isl_dim_div);
@@ -1580,9 +1786,18 @@ __isl_give isl_aff *isl_aff_sub(__isl_take isl_aff *aff1,
 	return isl_aff_add(aff1, isl_aff_neg(aff2));
 }
 
+/* Return the result of scaling "aff" by a factor of "f".
+ *
+ * As a special case, f * NaN = NaN.
+ */
 __isl_give isl_aff *isl_aff_scale(__isl_take isl_aff *aff, isl_int f)
 {
 	isl_int gcd;
+
+	if (!aff)
+		return NULL;
+	if (isl_aff_is_nan(aff))
+		return aff;
 
 	if (isl_int_is_one(f))
 		return aff;
@@ -1637,9 +1852,18 @@ error:
 	return NULL;
 }
 
+/* Return the result of scaling "aff" down by a factor of "f".
+ *
+ * As a special case, NaN/f = NaN.
+ */
 __isl_give isl_aff *isl_aff_scale_down(__isl_take isl_aff *aff, isl_int f)
 {
 	isl_int gcd;
+
+	if (!aff)
+		return NULL;
+	if (isl_aff_is_nan(aff))
+		return aff;
 
 	if (isl_int_is_one(f))
 		return aff;
@@ -1892,12 +2116,22 @@ __isl_give isl_aff *isl_aff_gist_params(__isl_take isl_aff *aff,
 /* Return a basic set containing those elements in the space
  * of aff where it is non-negative.
  * If "rational" is set, then return a rational basic set.
+ *
+ * If "aff" is NaN, then it is not non-negative (it's not negative either).
  */
 static __isl_give isl_basic_set *aff_nonneg_basic_set(
 	__isl_take isl_aff *aff, int rational)
 {
 	isl_constraint *ineq;
 	isl_basic_set *bset;
+
+	if (!aff)
+		return NULL;
+	if (isl_aff_is_nan(aff)) {
+		isl_space *space = isl_aff_get_domain_space(aff);
+		isl_aff_free(aff);
+		return isl_basic_set_empty(space);
+	}
 
 	ineq = isl_inequality_from_aff(aff);
 
@@ -1929,12 +2163,22 @@ __isl_give isl_basic_set *isl_aff_neg_basic_set(__isl_take isl_aff *aff)
 /* Return a basic set containing those elements in the space
  * of aff where it is zero.
  * If "rational" is set, then return a rational basic set.
+ *
+ * If "aff" is NaN, then it is not zero.
  */
 static __isl_give isl_basic_set *aff_zero_basic_set(__isl_take isl_aff *aff,
 	int rational)
 {
 	isl_constraint *ineq;
 	isl_basic_set *bset;
+
+	if (!aff)
+		return NULL;
+	if (isl_aff_is_nan(aff)) {
+		isl_space *space = isl_aff_get_domain_space(aff);
+		isl_aff_free(aff);
+		return isl_basic_set_empty(space);
+	}
 
 	ineq = isl_equality_from_aff(aff);
 
@@ -2486,6 +2730,9 @@ __isl_give isl_set *isl_pw_aff_nonneg_set(__isl_take isl_pw_aff *pwaff)
 /* Return a set containing those elements in the domain
  * of pwaff where it is zero (if complement is 0) or not zero
  * (if complement is 1).
+ *
+ * The pieces with a NaN never belong to the result since
+ * NaN is neither zero nor non-zero.
  */
 static __isl_give isl_set *pw_aff_zero_set(__isl_take isl_pw_aff *pwaff,
 	int complement)
@@ -2502,6 +2749,9 @@ static __isl_give isl_set *pw_aff_zero_set(__isl_take isl_pw_aff *pwaff,
 		isl_basic_set *bset;
 		isl_set *set_i, *zero;
 		int rational;
+
+		if (isl_aff_is_nan(pwaff->p[i].aff))
+			continue;
 
 		rational = isl_set_has_rational(pwaff->p[i].set);
 		bset = aff_zero_basic_set(isl_aff_copy(pwaff->p[i].aff),
@@ -2858,16 +3108,36 @@ static __isl_give isl_pw_aff *isl_pw_aff_select(
  * where "cond" is non-zero and to pwaff_false for elements where "cond"
  * is zero.
  * That is, return cond ? pwaff_true : pwaff_false;
+ *
+ * If "cond" involves and NaN, then we conservatively return a NaN
+ * on its entire domain.  In principle, we could consider the pieces
+ * where it is NaN separately from those where it is not.
  */
 __isl_give isl_pw_aff *isl_pw_aff_cond(__isl_take isl_pw_aff *cond,
 	__isl_take isl_pw_aff *pwaff_true, __isl_take isl_pw_aff *pwaff_false)
 {
 	isl_set *cond_true, *cond_false;
 
+	if (!cond)
+		goto error;
+	if (isl_pw_aff_involves_nan(cond)) {
+		isl_space *space = isl_pw_aff_get_domain_space(cond);
+		isl_local_space *ls = isl_local_space_from_space(space);
+		isl_pw_aff_free(cond);
+		isl_pw_aff_free(pwaff_true);
+		isl_pw_aff_free(pwaff_false);
+		return isl_pw_aff_nan_on_domain(ls);
+	}
+
 	cond_true = isl_pw_aff_non_zero_set(isl_pw_aff_copy(cond));
 	cond_false = isl_pw_aff_zero_set(cond);
 	return isl_pw_aff_select(cond_true, pwaff_true,
 				 cond_false, pwaff_false);
+error:
+	isl_pw_aff_free(cond);
+	isl_pw_aff_free(pwaff_true);
+	isl_pw_aff_free(pwaff_false);
+	return NULL;
 }
 
 int isl_aff_is_cst(__isl_keep isl_aff *aff)
@@ -2896,9 +3166,27 @@ int isl_pw_aff_is_cst(__isl_keep isl_pw_aff *pwaff)
 	return 1;
 }
 
+/* Return the product of "aff1" and "aff2".
+ *
+ * If either of the two is NaN, then the result is NaN.
+ *
+ * Otherwise, at least one of "aff1" or "aff2" needs to be a constant.
+ */
 __isl_give isl_aff *isl_aff_mul(__isl_take isl_aff *aff1,
 	__isl_take isl_aff *aff2)
 {
+	if (!aff1 || !aff2)
+		goto error;
+
+	if (isl_aff_is_nan(aff1)) {
+		isl_aff_free(aff2);
+		return aff1;
+	}
+	if (isl_aff_is_nan(aff2)) {
+		isl_aff_free(aff1);
+		return aff2;
+	}
+
 	if (!isl_aff_is_cst(aff2) && isl_aff_is_cst(aff1))
 		return isl_aff_mul(aff2, aff1);
 

@@ -8,6 +8,9 @@
 #include <isl_reordering.h>
 
 /* ls represents the domain space.
+ *
+ * If the first two elements of "v" (the denominator and the constant term)
+ * are zero, then the isl_aff represents NaN.
  */
 struct isl_aff {
 	int ref;

@@ -3209,6 +3209,22 @@ struct {
 	  "{ [i] -> [2i] }" },
 	{ "{ [i] -> [2] }", '*', "{ [i] -> [i] }",
 	  "{ [i] -> [2i] }" },
+	{ "{ [i] -> [i] }", '+', "{ [i] -> [NaN] }",
+	  "{ [i] -> [NaN] }" },
+	{ "{ [i] -> [i] }", '-', "{ [i] -> [NaN] }",
+	  "{ [i] -> [NaN] }" },
+	{ "{ [i] -> [i] }", '*', "{ [i] -> [NaN] }",
+	  "{ [i] -> [NaN] }" },
+	{ "{ [i] -> [2] }", '*', "{ [i] -> [NaN] }",
+	  "{ [i] -> [NaN] }" },
+	{ "{ [i] -> [NaN] }", '+', "{ [i] -> [i] }",
+	  "{ [i] -> [NaN] }" },
+	{ "{ [i] -> [NaN] }", '-', "{ [i] -> [i] }",
+	  "{ [i] -> [NaN] }" },
+	{ "{ [i] -> [NaN] }", '*', "{ [i] -> [2] }",
+	  "{ [i] -> [NaN] }" },
+	{ "{ [i] -> [NaN] }", '*', "{ [i] -> [i] }",
+	  "{ [i] -> [NaN] }" },
 };
 
 /* Perform some basic tests of binary operations on isl_aff objects.
@@ -3227,7 +3243,10 @@ static int test_bin_aff(isl_ctx *ctx)
 		res = isl_aff_read_from_str(ctx, aff_bin_tests[i].res);
 		fn = aff_bin_op[aff_bin_tests[i].op].fn;
 		aff1 = fn(aff1, aff2);
-		ok = isl_aff_plain_is_equal(aff1, res);
+		if (isl_aff_is_nan(res))
+			ok = isl_aff_is_nan(aff1);
+		else
+			ok = isl_aff_plain_is_equal(aff1, res);
 		isl_aff_free(aff1);
 		isl_aff_free(res);
 		if (ok < 0)

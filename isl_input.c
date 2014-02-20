@@ -553,6 +553,17 @@ static __isl_give isl_pw_aff *add_cst(__isl_take isl_pw_aff *pwaff, isl_int v)
 	return isl_pw_aff_add(pwaff, isl_pw_aff_from_aff(aff));
 }
 
+/* Return a piecewise affine expression defined on the specified domain
+ * that represents NaN.
+ */
+static __isl_give isl_pw_aff *nan_on_domain(__isl_keep isl_space *space)
+{
+	isl_local_space *ls;
+
+	ls = isl_local_space_from_space(isl_space_copy(space));
+	return isl_pw_aff_nan_on_domain(ls);
+}
+
 static __isl_give isl_pw_aff *accept_affine(struct isl_stream *s,
 	__isl_take isl_space *space, struct vars *v)
 {
@@ -609,6 +620,8 @@ static __isl_give isl_pw_aff *accept_affine(struct isl_stream *s,
 				res = add_cst(res, tok->u.v);
 			}
 			sign = 1;
+		} else if (tok->type == ISL_TOKEN_NAN) {
+			res = isl_pw_aff_add(res, nan_on_domain(space));
 		} else {
 			isl_stream_error(s, tok, "unexpected isl_token");
 			isl_stream_push_token(s, tok);

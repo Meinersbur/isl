@@ -19,6 +19,7 @@ __isl_give isl_aff *isl_aff_val_on_domain(__isl_take isl_local_space *ls,
 	__isl_take isl_val *val);
 __isl_give isl_aff *isl_aff_var_on_domain(__isl_take isl_local_space *ls,
 	enum isl_dim_type type, unsigned pos);
+__isl_give isl_aff *isl_aff_nan_on_domain(__isl_take isl_local_space *ls);
 
 __isl_give isl_aff *isl_aff_copy(__isl_keep isl_aff *aff);
 __isl_null isl_aff *isl_aff_free(__isl_take isl_aff *aff);
@@ -68,6 +69,7 @@ __isl_give isl_aff *isl_aff_set_dim_id(__isl_take isl_aff *aff,
 
 int isl_aff_plain_is_equal(__isl_keep isl_aff *aff1, __isl_keep isl_aff *aff2);
 int isl_aff_plain_is_zero(__isl_keep isl_aff *aff);
+int isl_aff_is_nan(__isl_keep isl_aff *aff);
 
 __isl_give isl_aff *isl_aff_get_div(__isl_keep isl_aff *aff, int pos);
 
@@ -141,6 +143,7 @@ __isl_give isl_pw_aff *isl_pw_aff_zero_on_domain(
 	__isl_take isl_local_space *ls);
 __isl_give isl_pw_aff *isl_pw_aff_var_on_domain(__isl_take isl_local_space *ls,
 	enum isl_dim_type type, unsigned pos);
+__isl_give isl_pw_aff *isl_pw_aff_nan_on_domain(__isl_take isl_local_space *ls);
 
 __isl_give isl_pw_aff *isl_set_indicator_function(__isl_take isl_set *set);
 
@@ -154,6 +157,7 @@ __isl_give isl_pw_aff *isl_pw_aff_set_dim_id(__isl_take isl_pw_aff *pma,
 	enum isl_dim_type type, unsigned pos, __isl_take isl_id *id);
 
 int isl_pw_aff_is_empty(__isl_keep isl_pw_aff *pwaff);
+int isl_pw_aff_involves_nan(__isl_keep isl_pw_aff *pa);
 int isl_pw_aff_plain_cmp(__isl_keep isl_pw_aff *pa1,
 	__isl_keep isl_pw_aff *pa2);
 int isl_pw_aff_plain_is_equal(__isl_keep isl_pw_aff *pwaff1,
