@@ -3186,6 +3186,60 @@ static int aff_check_plain_equal(__isl_keep isl_aff *aff, const char *str)
 	return 0;
 }
 
+struct {
+	__isl_give isl_aff *(*fn)(__isl_take isl_aff *aff1,
+				__isl_take isl_aff *aff2);
+} aff_bin_op[] = {
+	['+'] = { &isl_aff_add },
+	['-'] = { &isl_aff_sub },
+	['*'] = { &isl_aff_mul },
+};
+
+struct {
+	const char *arg1;
+	unsigned char op;
+	const char *arg2;
+	const char *res;
+} aff_bin_tests[] = {
+	{ "{ [i] -> [i] }", '+', "{ [i] -> [i] }",
+	  "{ [i] -> [2i] }" },
+	{ "{ [i] -> [i] }", '-', "{ [i] -> [i] }",
+	  "{ [i] -> [0] }" },
+	{ "{ [i] -> [i] }", '*', "{ [i] -> [2] }",
+	  "{ [i] -> [2i] }" },
+	{ "{ [i] -> [2] }", '*', "{ [i] -> [i] }",
+	  "{ [i] -> [2i] }" },
+};
+
+/* Perform some basic tests of binary operations on isl_aff objects.
+ */
+static int test_bin_aff(isl_ctx *ctx)
+{
+	int i;
+	isl_aff *aff1, *aff2, *res;
+	__isl_give isl_aff *(*fn)(__isl_take isl_aff *aff1,
+				__isl_take isl_aff *aff2);
+	int ok;
+
+	for (i = 0; i < ARRAY_SIZE(aff_bin_tests); ++i) {
+		aff1 = isl_aff_read_from_str(ctx, aff_bin_tests[i].arg1);
+		aff2 = isl_aff_read_from_str(ctx, aff_bin_tests[i].arg2);
+		res = isl_aff_read_from_str(ctx, aff_bin_tests[i].res);
+		fn = aff_bin_op[aff_bin_tests[i].op].fn;
+		aff1 = fn(aff1, aff2);
+		ok = isl_aff_plain_is_equal(aff1, res);
+		isl_aff_free(aff1);
+		isl_aff_free(res);
+		if (ok < 0)
+			return -1;
+		if (!ok)
+			isl_die(ctx, isl_error_unknown,
+				"unexpected result", return -1);
+	}
+
+	return 0;
+}
+
 int test_aff(isl_ctx *ctx)
 {
 	const char *str;
@@ -3194,6 +3248,9 @@ int test_aff(isl_ctx *ctx)
 	isl_local_space *ls;
 	isl_aff *aff;
 	int zero, equal;
+
+	if (test_bin_aff(ctx) < 0)
+		return -1;
 
 	space = isl_space_set_alloc(ctx, 0, 1);
 	ls = isl_local_space_from_space(space);
