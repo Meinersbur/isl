@@ -2922,7 +2922,7 @@ error:
 	return NULL;
 }
 
-/* Divide "aff1" by "aff2", assuming "aff2" is a piecewise constant.
+/* Divide "aff1" by "aff2", assuming "aff2" is a constant.
  */
 __isl_give isl_aff *isl_aff_div(__isl_take isl_aff *aff1,
 	__isl_take isl_aff *aff2)
