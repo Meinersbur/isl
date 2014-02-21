@@ -308,7 +308,7 @@ error:
 }
 
 static __isl_give isl_pw_aff *accept_affine(struct isl_stream *s,
-	__isl_take isl_space *dim, struct vars *v);
+	__isl_take isl_space *space, struct vars *v);
 static __isl_give isl_pw_aff_list *accept_affine_list(struct isl_stream *s,
 	__isl_take isl_space *dim, struct vars *v);
 
@@ -554,14 +554,14 @@ static __isl_give isl_pw_aff *add_cst(__isl_take isl_pw_aff *pwaff, isl_int v)
 }
 
 static __isl_give isl_pw_aff *accept_affine(struct isl_stream *s,
-	__isl_take isl_space *dim, struct vars *v)
+	__isl_take isl_space *space, struct vars *v)
 {
 	struct isl_token *tok = NULL;
 	isl_local_space *ls;
 	isl_pw_aff *res;
 	int sign = 1;
 
-	ls = isl_local_space_from_space(isl_space_copy(dim));
+	ls = isl_local_space_from_space(isl_space_copy(space));
 	res = isl_pw_aff_from_aff(isl_aff_zero_on_domain(ls));
 	if (!res)
 		goto error;
@@ -584,7 +584,8 @@ static __isl_give isl_pw_aff *accept_affine(struct isl_stream *s,
 			isl_pw_aff *term;
 			isl_stream_push_token(s, tok);
 			tok = NULL;
-			term = accept_affine_factor(s, isl_space_copy(dim), v);
+			term = accept_affine_factor(s,
+						    isl_space_copy(space), v);
 			if (sign < 0)
 				res = isl_pw_aff_sub(res, term);
 			else
@@ -599,7 +600,7 @@ static __isl_give isl_pw_aff *accept_affine(struct isl_stream *s,
 			    isl_stream_next_token_is(s, ISL_TOKEN_IDENT)) {
 				isl_pw_aff *term;
 				term = accept_affine_factor(s,
-							isl_space_copy(dim), v);
+						    isl_space_copy(space), v);
 				term = isl_pw_aff_scale(term, tok->u.v);
 				res = isl_pw_aff_add(res, term);
 				if (!res)
@@ -612,7 +613,7 @@ static __isl_give isl_pw_aff *accept_affine(struct isl_stream *s,
 			isl_stream_error(s, tok, "unexpected isl_token");
 			isl_stream_push_token(s, tok);
 			isl_pw_aff_free(res);
-			isl_space_free(dim);
+			isl_space_free(space);
 			return NULL;
 		}
 		isl_token_free(tok);
@@ -634,10 +635,10 @@ static __isl_give isl_pw_aff *accept_affine(struct isl_stream *s,
 		}
 	}
 
-	isl_space_free(dim);
+	isl_space_free(space);
 	return res;
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	isl_token_free(tok);
 	isl_pw_aff_free(res);
 	return NULL;
