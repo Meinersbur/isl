@@ -4,6 +4,10 @@
 #include <isl/deprecated/int.h>
 #include <isl/polynomial.h>
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 __isl_give isl_qpolynomial *isl_qpolynomial_rat_cst_on_domain(
 	__isl_take isl_space *space, const isl_int n, const isl_int d);
 int isl_qpolynomial_is_cst(__isl_keep isl_qpolynomial *qp,
@@ -20,5 +24,9 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_scale(
 __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_fix_dim(
 	__isl_take isl_pw_qpolynomial_fold *pwf,
 	enum isl_dim_type type, unsigned n, isl_int v);
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif
