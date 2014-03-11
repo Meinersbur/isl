@@ -237,7 +237,7 @@ __isl_give HMAP *FN(HMAP,set)(__isl_take HMAP *hmap,
 	S(pair) *pair;
 	uint32_t hash;
 
-	if (!hmap)
+	if (!hmap || !key || !val)
 		goto error;
 
 	hash = FN(KEY,get_hash)(key);
