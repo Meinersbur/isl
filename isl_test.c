@@ -1151,6 +1151,8 @@ struct {
 	  "{ [a, b, c] : exists (e0 = floor((-1 + a)/16): a >= 1 and "
 			"c <= 30 and 32e0 >= -62 + 2a + 2b - c and b >= 0) }",
 	  "{ [a, b, c] : a <= 15 }" },
+	{ "{ : }", "{ : 1 = 0 }", "{ : }" },
+	{ "{ : 1 = 0 }", "{ : 1 = 0 }", "{ : }" },
 };
 
 static int test_gist(struct isl_ctx *ctx)
