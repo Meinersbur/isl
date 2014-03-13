@@ -12220,7 +12220,7 @@ error:
 }
 
 /* Compute the preimage of "set" under the function represented by "ma".
- * In other words, plug in "ma" "set".  The result is a set
+ * In other words, plug in "ma" in "set".  The result is a set
  * that lives in the domain space of "ma".
  */
 __isl_give isl_set *isl_set_preimage_multi_aff(__isl_take isl_set *set,
