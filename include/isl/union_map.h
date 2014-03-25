@@ -117,7 +117,7 @@ __isl_give isl_union_map *isl_union_map_preimage_domain_multi_aff(
 	__isl_take isl_union_map *umap, __isl_take isl_multi_aff *ma);
 __isl_give isl_union_map *isl_union_map_preimage_range_multi_aff(
 	__isl_take isl_union_map *umap, __isl_take isl_multi_aff *ma);
-__isl_give isl_union_map *isl_union_map_preimage_range_pw_multi_aff(
+__isl_give isl_union_map *isl_union_map_preimage_domain_pw_multi_aff(
 	__isl_take isl_union_map *umap, __isl_take isl_pw_multi_aff *pma);
 __isl_give isl_union_map *isl_union_map_preimage_range_pw_multi_aff(
 	__isl_take isl_union_map *umap, __isl_take isl_pw_multi_aff *pma);
