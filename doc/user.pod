@@ -1873,6 +1873,9 @@ read off using the following functions.
 	__isl_give isl_id *isl_map_get_dim_id(
 		__isl_keep isl_map *map, enum isl_dim_type type,
 		unsigned pos);
+	__isl_give isl_id *isl_union_map_get_dim_id(
+		__isl_keep isl_union_map *umap,
+		enum isl_dim_type type, unsigned pos);
 
 	int isl_set_find_dim_by_id(__isl_keep isl_set *set,
 		enum isl_dim_type type, __isl_keep isl_id *id);

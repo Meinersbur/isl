@@ -37,6 +37,21 @@ unsigned isl_union_map_dim(__isl_keep isl_union_map *umap,
 	return isl_space_dim(umap->dim, type);
 }
 
+/* Return the id of the specified dimension.
+ */
+__isl_give isl_id *isl_union_map_get_dim_id(__isl_keep isl_union_map *umap,
+	enum isl_dim_type type, unsigned pos)
+{
+	if (!umap)
+		return NULL;
+
+	if (type != isl_dim_param)
+		isl_die(isl_union_map_get_ctx(umap), isl_error_invalid,
+			"can only reference parameters", return NULL);
+
+	return isl_space_get_dim_id(umap->dim, type, pos);
+}
+
 /* Is this union set a parameter domain?
  */
 int isl_union_set_is_params(__isl_keep isl_union_set *uset)
