@@ -1763,6 +1763,10 @@ be obtained using the following functions.
 		enum isl_dim_type type);
 	unsigned isl_map_dim(__isl_keep isl_map *map,
 		enum isl_dim_type type);
+	unsigned isl_union_map_dim(__isl_keep isl_union_map *umap,
+		enum isl_dim_type type);
+
+Note that a C<isl_union_map> only has parameters.
 
 To check whether the description of a set or relation depends
 on one or more given dimensions, it is not necessary to iterate over all

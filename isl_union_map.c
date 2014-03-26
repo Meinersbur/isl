@@ -21,6 +21,22 @@
 #include <isl/union_set.h>
 #include <isl/deprecated/union_map_int.h>
 
+/* Return the number of parameters of "umap", where "type"
+ * is required to be set to isl_dim_param.
+ */
+unsigned isl_union_map_dim(__isl_keep isl_union_map *umap,
+	enum isl_dim_type type)
+{
+	if (!umap)
+		return 0;
+
+	if (type != isl_dim_param)
+		isl_die(isl_union_map_get_ctx(umap), isl_error_invalid,
+			"can only reference parameters", return 0);
+
+	return isl_space_dim(umap->dim, type);
+}
+
 /* Is this union set a parameter domain?
  */
 int isl_union_set_is_params(__isl_keep isl_union_set *uset)

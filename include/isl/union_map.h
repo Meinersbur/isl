@@ -11,6 +11,9 @@
 extern "C" {
 #endif
 
+unsigned isl_union_map_dim(__isl_keep isl_union_map *umap,
+	enum isl_dim_type type);
+
 __isl_constructor
 __isl_give isl_union_map *isl_union_map_from_basic_map(
 	__isl_take isl_basic_map *bmap);
