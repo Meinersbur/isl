@@ -2738,6 +2738,113 @@ __isl_give isl_union_map *isl_union_set_preimage_multi_aff(
 					isl_pw_multi_aff_from_multi_aff(ma));
 }
 
+/* Internal data structure for preimage_multi_pw_aff.
+ *
+ * "mpa" is the function under which the preimage should be taken.
+ * "space" is the space of "mpa".
+ * "res" collects the results.
+ * "fn" computes the preimage for a given map.
+ * "match" returns true if "fn" can be called.
+ */
+struct isl_union_map_preimage_mpa_data {
+	isl_space *space;
+	isl_multi_pw_aff *mpa;
+	isl_union_map *res;
+	int (*match)(__isl_keep isl_map *map, __isl_keep isl_space *space);
+	__isl_give isl_map *(*fn)(__isl_take isl_map *map,
+		__isl_take isl_multi_pw_aff *mpa);
+};
+
+/* Call data->fn to compute the preimage of the domain or range of *entry
+ * under the function represented by data->mpa, provided the domain/range
+ * space of *entry matches the target space of data->mpa
+ * (as given by data->match), and add the result to data->res.
+ */
+static int preimage_mpa_entry(void **entry, void *user)
+{
+	int m;
+	isl_map *map = *entry;
+	struct isl_union_map_preimage_mpa_data *data = user;
+	int empty;
+
+	m = data->match(map, data->space);
+	if (m < 0)
+		return -1;
+	if (!m)
+		return 0;
+
+	map = isl_map_copy(map);
+	map = data->fn(map, isl_multi_pw_aff_copy(data->mpa));
+
+	empty = isl_map_is_empty(map);
+	if (empty < 0 || empty) {
+		isl_map_free(map);
+		return empty < 0 ? -1 : 0;
+	}
+
+	data->res = isl_union_map_add_map(data->res, map);
+
+	return 0;
+}
+
+/* Compute the preimage of the domain or range of "umap" under the function
+ * represented by "mpa".
+ * In other words, plug in "mpa" in the domain or range of "umap".
+ * The function "fn" performs the actual preimage computation on a map,
+ * while "match" determines to which maps the function should be applied.
+ */
+static __isl_give isl_union_map *preimage_multi_pw_aff(
+	__isl_take isl_union_map *umap, __isl_take isl_multi_pw_aff *mpa,
+	int (*match)(__isl_keep isl_map *map, __isl_keep isl_space *space),
+	__isl_give isl_map *(*fn)(__isl_take isl_map *map,
+		__isl_take isl_multi_pw_aff *mpa))
+{
+	isl_ctx *ctx;
+	isl_space *space;
+	struct isl_union_map_preimage_mpa_data data;
+
+	umap = isl_union_map_align_params(umap,
+					    isl_multi_pw_aff_get_space(mpa));
+	mpa = isl_multi_pw_aff_align_params(mpa, isl_union_map_get_space(umap));
+
+	if (!umap || !mpa)
+		goto error;
+
+	ctx = isl_union_map_get_ctx(umap);
+	space = isl_union_map_get_space(umap);
+	data.space = isl_multi_pw_aff_get_space(mpa);
+	data.mpa = mpa;
+	data.res = isl_union_map_alloc(space, umap->table.n);
+	data.match = match;
+	data.fn = fn;
+	if (isl_hash_table_foreach(ctx, &umap->table, &preimage_mpa_entry,
+					&data) < 0)
+		data.res = isl_union_map_free(data.res);
+
+	isl_space_free(data.space);
+	isl_union_map_free(umap);
+	isl_multi_pw_aff_free(mpa);
+	return data.res;
+error:
+	isl_union_map_free(umap);
+	isl_multi_pw_aff_free(mpa);
+	return NULL;
+}
+
+/* Compute the preimage of the domain of "umap" under the function
+ * represented by "mpa".
+ * In other words, plug in "mpa" in the domain of "umap".
+ * The result contains maps that live in the same spaces as the maps of "umap"
+ * with domain space equal to the target space of "mpa",
+ * except that the domain has been replaced by the domain space of "mpa".
+ */
+__isl_give isl_union_map *isl_union_map_preimage_domain_multi_pw_aff(
+	__isl_take isl_union_map *umap, __isl_take isl_multi_pw_aff *mpa)
+{
+	return preimage_multi_pw_aff(umap, mpa, &domain_match,
+					&isl_map_preimage_domain_multi_pw_aff);
+}
+
 /* Internal data structure for preimage_upma.
  *
  * "umap" is the map of which the preimage should be computed.
