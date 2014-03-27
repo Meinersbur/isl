@@ -3197,6 +3197,9 @@ or both domain and range are wrapped spaces of relations between
 the domains and/or ranges of the input spaces.
 If the product is only constructed over the domain or the range
 then the ranges or the domains of the inputs should be the same.
+The function C<isl_space_product> also accepts a pair of set spaces,
+in which case it returns a wrapped space of a relation between the
+two input spaces.
 
 	#include <isl/set.h>
 	__isl_give isl_set *isl_set_product(

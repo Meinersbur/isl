@@ -1137,13 +1137,26 @@ error:
 	return NULL;
 }
 
+/* Given two map spaces { A -> C } and { B -> D }, construct the space
+ * { [A -> B] -> [C -> D] }.
+ * Given two set spaces { A } and { B }, construct the space { [A -> B] }.
+ */
 __isl_give isl_space *isl_space_product(__isl_take isl_space *left,
 	__isl_take isl_space *right)
 {
 	isl_space *dom1, *dom2, *nest1, *nest2;
+	int is_set;
 
 	if (!left || !right)
 		goto error;
+
+	is_set = isl_space_is_set(left);
+	if (is_set != isl_space_is_set(right))
+		isl_die(isl_space_get_ctx(left), isl_error_invalid,
+			"expecting either two set spaces or two map spaces",
+			goto error);
+	if (is_set)
+		return isl_space_range_product(left, right);
 
 	isl_assert(left->ctx, match(left, isl_dim_param, right, isl_dim_param),
 			goto error);
