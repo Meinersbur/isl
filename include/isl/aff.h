@@ -309,6 +309,8 @@ __isl_give isl_multi_aff *isl_multi_aff_project_out_map(
 	__isl_take isl_space *space, enum isl_dim_type type,
 	unsigned first, unsigned n);
 
+__isl_give isl_multi_aff *isl_multi_aff_floor(__isl_take isl_multi_aff *ma);
+
 __isl_give isl_multi_aff *isl_multi_aff_add(__isl_take isl_multi_aff *maff1,
 	__isl_take isl_multi_aff *maff2);
 __isl_give isl_multi_aff *isl_multi_aff_sub(__isl_take isl_multi_aff *ma1,

@@ -3827,6 +3827,25 @@ error:
 	return NULL;
 }
 
+/* Given f, return floor(f).
+ */
+__isl_give isl_multi_aff *isl_multi_aff_floor(__isl_take isl_multi_aff *ma)
+{
+	int i;
+
+	ma = isl_multi_aff_cow(ma);
+	if (!ma)
+		return NULL;
+
+	for (i = 0; i < ma->n; ++i) {
+		ma->p[i] = isl_aff_floor(ma->p[i]);
+		if (!ma->p[i])
+			return isl_multi_aff_free(ma);
+	}
+
+	return ma;
+}
+
 __isl_give isl_multi_aff *isl_multi_aff_scale(__isl_take isl_multi_aff *maff,
 	isl_int f)
 {
