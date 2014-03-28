@@ -4235,10 +4235,6 @@ error:
  * extract an isl_aff that expresses the output dimension in terms
  * of the parameters and input dimensions.
  *
- * Since some applications expect the result of isl_pw_multi_aff_from_map
- * to only contain integer affine expressions, we compute the floor
- * of the expression before returning.
- *
  * This function shares some similarities with
  * isl_basic_map_has_defining_equality and isl_constraint_get_bound.
  */
@@ -4283,7 +4279,6 @@ static __isl_give isl_aff *extract_isl_aff_from_basic_map(
 	isl_basic_map_free(bmap);
 
 	aff = isl_aff_remove_unused_divs(aff);
-	aff = isl_aff_floor(aff);
 	return aff;
 error:
 	isl_basic_map_free(bmap);
@@ -4329,6 +4324,10 @@ static __isl_give isl_multi_aff *extract_isl_multi_aff_from_basic_map(
  * isl_map_intersect_domain(isl_map_from_basic_map(bmap), domain).
  * The given basic map is such that each output dimension is defined
  * in terms of the parameters and input dimensions using an equality.
+ *
+ * Since some applications expect the result of isl_pw_multi_aff_from_map
+ * to only contain integer affine expressions, we compute the floor
+ * of the expression before returning.
  */
 static __isl_give isl_pw_multi_aff *plain_pw_multi_aff_from_map(
 	__isl_take isl_set *domain, __isl_take isl_basic_map *bmap)
@@ -4336,6 +4335,7 @@ static __isl_give isl_pw_multi_aff *plain_pw_multi_aff_from_map(
 	isl_multi_aff *ma;
 
 	ma = extract_isl_multi_aff_from_basic_map(bmap);
+	ma = isl_multi_aff_floor(ma);
 	return isl_pw_multi_aff_alloc(domain, ma);
 }
 
