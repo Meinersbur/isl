@@ -201,6 +201,11 @@ setting up coincidence constraints.
 The option C<schedule_outer_zero_distance> has accordingly been
 replaced by the option C<schedule_outer_coincidence>.
 
+=item * The function C<isl_vertex_get_expr> has been changed
+to return an C<isl_multi_aff> instead of a rational C<isl_basic_set>.
+The function C<isl_vertex_get_domain> has been changed to return
+a regular basic set, rather than a rational basic set.
+
 =back
 
 =head1 License
@@ -5640,16 +5645,14 @@ Vertices can be inspected and destroyed using the following functions.
 	int isl_vertex_get_id(__isl_keep isl_vertex *vertex);
 	__isl_give isl_basic_set *isl_vertex_get_domain(
 		__isl_keep isl_vertex *vertex);
-	__isl_give isl_basic_set *isl_vertex_get_expr(
+	__isl_give isl_multi_aff *isl_vertex_get_expr(
 		__isl_keep isl_vertex *vertex);
 	void isl_vertex_free(__isl_take isl_vertex *vertex);
 
-C<isl_vertex_get_expr> returns a singleton parametric set describing
-the vertex, while C<isl_vertex_get_domain> returns the activity domain
+C<isl_vertex_get_expr> returns a multiple quasi-affine expression
+describing the vertex in terms of the parameters,
+while C<isl_vertex_get_domain> returns the activity domain
 of the vertex.
-Note that C<isl_vertex_get_domain> and C<isl_vertex_get_expr> return
-B<rational> basic sets, so they should mainly be used for inspection
-and should not be mixed with integer sets.
 
 Chambers can be inspected and destroyed using the following functions.
 

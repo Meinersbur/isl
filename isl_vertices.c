@@ -9,6 +9,7 @@
  */
 
 #include <isl_map_private.h>
+#include <isl_aff_private.h>
 #include <isl/set.h>
 #include <isl_seq.h>
 #include <isl_tab.h>
@@ -1003,6 +1004,8 @@ __isl_give isl_basic_set *isl_basic_set_set_integral(__isl_take isl_basic_set *b
 	return isl_basic_set_finalize(bset);
 }
 
+/* Return the activity domain of the vertex "vertex".
+ */
 __isl_give isl_basic_set *isl_vertex_get_domain(__isl_keep isl_vertex *vertex)
 {
 	struct isl_vertex *v;
@@ -1014,21 +1017,27 @@ __isl_give isl_basic_set *isl_vertex_get_domain(__isl_keep isl_vertex *vertex)
 	if (!v->dom) {
 		v->dom = isl_basic_set_copy(v->vertex);
 		v->dom = isl_basic_set_params(v->dom);
+		v->dom = isl_basic_set_set_integral(v->dom);
 	}
 
 	return isl_basic_set_copy(v->dom);
 }
 
-__isl_give isl_basic_set *isl_vertex_get_expr(__isl_keep isl_vertex *vertex)
+/* Return a multiple quasi-affine expression describing the vertex "vertex"
+ * in terms of the parameters,
+ */
+__isl_give isl_multi_aff *isl_vertex_get_expr(__isl_keep isl_vertex *vertex)
 {
 	struct isl_vertex *v;
+	isl_basic_set *bset;
 
 	if (!vertex)
 		return NULL;
 
 	v = &vertex->vertices->v[vertex->id];
 
-	return isl_basic_set_copy(v->vertex);
+	bset = isl_basic_set_copy(v->vertex);
+	return isl_multi_aff_from_basic_set_equalities(bset);
 }
 
 static __isl_give isl_vertex *isl_vertex_alloc(__isl_take isl_vertices *vertices,
