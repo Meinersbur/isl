@@ -4320,6 +4320,17 @@ static __isl_give isl_multi_aff *extract_isl_multi_aff_from_basic_map(
 	return ma;
 }
 
+/* Given a basic set where each set dimension is defined
+ * in terms of the parameters using an equality,
+ * extract an isl_multi_aff that expresses the set dimensions in terms
+ * of the parameters.
+ */
+__isl_give isl_multi_aff *isl_multi_aff_from_basic_set_equalities(
+	__isl_take isl_basic_set *bset)
+{
+	return extract_isl_multi_aff_from_basic_map(bset);
+}
+
 /* Create an isl_pw_multi_aff that is equivalent to
  * isl_map_intersect_domain(isl_map_from_basic_map(bmap), domain).
  * The given basic map is such that each output dimension is defined
