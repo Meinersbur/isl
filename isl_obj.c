@@ -1,13 +1,16 @@
 /*
  * Copyright 2010      INRIA Saclay
+ * Copyright 2014      Ecole Normale Superieure
  *
  * Use of this software is governed by the MIT license
  *
  * Written by Sven Verdoolaege, INRIA Saclay - Ile-de-France,
  * Parc Club Orsay Universite, ZAC des vignes, 4 rue Jacques Monod,
  * 91893 Orsay, France 
+ * and Ecole Normale Superieure, 45 rue d'Ulm, 75230 Paris, France
  */
 
+#include <isl/aff.h>
 #include <isl/set.h>
 #include <isl/map.h>
 #include <isl/polynomial.h>
@@ -151,6 +154,35 @@ struct isl_obj_vtable isl_obj_union_set_vtable = {
 	isl_obj_union_set_add,
 	isl_obj_union_set_print,
 	isl_obj_union_set_free
+};
+
+static void *isl_obj_pw_multi_aff_copy(void *v)
+{
+	return isl_pw_multi_aff_copy((isl_pw_multi_aff *) v);
+}
+
+static void isl_obj_pw_multi_aff_free(void *v)
+{
+	isl_pw_multi_aff_free((isl_pw_multi_aff *) v);
+}
+
+static __isl_give isl_printer *isl_obj_pw_multi_aff_print(
+	__isl_take isl_printer *p, void *v)
+{
+	return isl_printer_print_pw_multi_aff(p, (isl_pw_multi_aff *) v);
+}
+
+static void *isl_obj_pw_multi_aff_add(void *v1, void *v2)
+{
+	return isl_pw_multi_aff_add((isl_pw_multi_aff *) v1,
+				    (isl_pw_multi_aff *) v2);
+}
+
+struct isl_obj_vtable isl_obj_pw_multi_aff_vtable = {
+	isl_obj_pw_multi_aff_copy,
+	isl_obj_pw_multi_aff_add,
+	isl_obj_pw_multi_aff_print,
+	isl_obj_pw_multi_aff_free
 };
 
 static void *isl_obj_none_copy(void *v)

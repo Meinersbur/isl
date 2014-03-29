@@ -33,6 +33,8 @@ extern struct isl_obj_vtable isl_obj_map_vtable;
 #define isl_obj_map		(&isl_obj_map_vtable)
 extern struct isl_obj_vtable isl_obj_union_map_vtable;
 #define isl_obj_union_map	(&isl_obj_union_map_vtable)
+extern struct isl_obj_vtable isl_obj_pw_multi_aff_vtable;
+#define isl_obj_pw_multi_aff	(&isl_obj_pw_multi_aff_vtable)
 extern struct isl_obj_vtable isl_obj_pw_qpolynomial_vtable;
 #define isl_obj_pw_qpolynomial	(&isl_obj_pw_qpolynomial_vtable)
 extern struct isl_obj_vtable isl_obj_union_pw_qpolynomial_vtable;
