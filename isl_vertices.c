@@ -986,6 +986,23 @@ int isl_vertex_get_id(__isl_keep isl_vertex *vertex)
 	return vertex ? vertex->id : -1;
 }
 
+__isl_give isl_basic_set *isl_basic_set_set_integral(__isl_take isl_basic_set *bset)
+{
+	if (!bset)
+		return NULL;
+
+	if (!ISL_F_ISSET(bset, ISL_BASIC_MAP_RATIONAL))
+		return bset;
+
+	bset = isl_basic_set_cow(bset);
+	if (!bset)
+		return NULL;
+
+	ISL_F_CLR(bset, ISL_BASIC_MAP_RATIONAL);
+
+	return isl_basic_set_finalize(bset);
+}
+
 __isl_give isl_basic_set *isl_vertex_get_domain(__isl_keep isl_vertex *vertex)
 {
 	struct isl_vertex *v;
@@ -1043,23 +1060,6 @@ void isl_vertex_free(__isl_take isl_vertex *vertex)
 		return;
 	isl_vertices_free(vertex->vertices);
 	free(vertex);
-}
-
-__isl_give isl_basic_set *isl_basic_set_set_integral(__isl_take isl_basic_set *bset)
-{
-	if (!bset)
-		return NULL;
-
-	if (!ISL_F_ISSET(bset, ISL_BASIC_MAP_RATIONAL))
-		return bset;
-
-	bset = isl_basic_set_cow(bset);
-	if (!bset)
-		return NULL;
-
-	ISL_F_CLR(bset, ISL_BASIC_MAP_RATIONAL);
-
-	return isl_basic_set_finalize(bset);
 }
 
 isl_ctx *isl_cell_get_ctx(__isl_keep isl_cell *cell)
