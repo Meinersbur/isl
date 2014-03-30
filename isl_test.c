@@ -3611,27 +3611,81 @@ int test_fixed(isl_ctx *ctx)
 	return 0;
 }
 
+struct isl_vertices_test_data {
+	const char *set;
+	int n;
+	const char *vertex[2];
+} vertices_tests[] = {
+	{ "{ A[t, i] : t = 12 and i >= 4 and i <= 12 }",
+	  2, { "{ A[12, 4] }", "{ A[12, 12] }" } },
+	{ "{ A[t, i] : t = 14 and i = 1 }",
+	  1, { "{ A[14, 1] }" } },
+};
+
+/* Check that "vertex" corresponds to one of the vertices in data->vertex.
+ */
+static int find_vertex(__isl_take isl_vertex *vertex, void *user)
+{
+	struct isl_vertices_test_data *data = user;
+	isl_ctx *ctx;
+	isl_multi_aff *ma;
+	isl_basic_set *bset;
+	isl_pw_multi_aff *pma;
+	int i;
+	int equal;
+
+	ctx = isl_vertex_get_ctx(vertex);
+	bset = isl_vertex_get_domain(vertex);
+	ma = isl_vertex_get_expr(vertex);
+	pma = isl_pw_multi_aff_alloc(isl_set_from_basic_set(bset), ma);
+
+	for (i = 0; i < data->n; ++i) {
+		isl_pw_multi_aff *pma_i;
+
+		pma_i = isl_pw_multi_aff_read_from_str(ctx, data->vertex[i]);
+		equal = isl_pw_multi_aff_plain_is_equal(pma, pma_i);
+		isl_pw_multi_aff_free(pma_i);
+
+		if (equal < 0 || equal)
+			break;
+	}
+
+	isl_pw_multi_aff_free(pma);
+	isl_vertex_free(vertex);
+
+	if (equal < 0)
+		return -1;
+
+	return equal ? 0 : - 1;
+}
+
 int test_vertices(isl_ctx *ctx)
 {
-	const char *str;
-	isl_basic_set *bset;
-	isl_vertices *vertices;
+	int i;
 
-	str = "{ A[t, i] : t = 12 and i >= 4 and i <= 12 }";
-	bset = isl_basic_set_read_from_str(ctx, str);
-	vertices = isl_basic_set_compute_vertices(bset);
-	isl_basic_set_free(bset);
-	isl_vertices_free(vertices);
-	if (!vertices)
-		return -1;
+	for (i = 0; i < ARRAY_SIZE(vertices_tests); ++i) {
+		isl_basic_set *bset;
+		isl_vertices *vertices;
+		int ok = 1;
+		int n;
 
-	str = "{ A[t, i] : t = 14 and i = 1 }";
-	bset = isl_basic_set_read_from_str(ctx, str);
-	vertices = isl_basic_set_compute_vertices(bset);
-	isl_basic_set_free(bset);
-	isl_vertices_free(vertices);
-	if (!vertices)
-		return -1;
+		bset = isl_basic_set_read_from_str(ctx, vertices_tests[i].set);
+		vertices = isl_basic_set_compute_vertices(bset);
+		n = isl_vertices_get_n_vertices(vertices);
+		if (vertices_tests[i].n != n)
+			ok = 0;
+		if (isl_vertices_foreach_vertex(vertices, &find_vertex,
+						&vertices_tests[i]) < 0)
+			ok = 0;
+		isl_vertices_free(vertices);
+		isl_basic_set_free(bset);
+
+		if (!vertices)
+			return -1;
+		if (!ok)
+			isl_die(ctx, isl_error_unknown, "unexpected vertices",
+				return -1);
+	}
 
 	return 0;
 }
