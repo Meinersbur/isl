@@ -2566,7 +2566,7 @@ static int set_match(__isl_keep isl_map *map, __isl_keep isl_space *space)
 /* Internal data structure for preimage_pw_multi_aff.
  *
  * "pma" is the function under which the preimage should be taken.
- * "space" is the space of "ma".
+ * "space" is the space of "pma".
  * "res" collects the results.
  * "fn" computes the preimage for a given map.
  * "match" returns true if "fn" can be called.
