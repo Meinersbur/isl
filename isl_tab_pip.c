@@ -2076,6 +2076,8 @@ static struct isl_tab *tab_for_lexmin(struct isl_basic_map *bmap,
 {
 	int i;
 	struct isl_tab *tab;
+	unsigned n_var;
+	unsigned o_var;
 
 	tab = isl_tab_alloc(bmap->ctx, 2 * bmap->n_eq + bmap->n_ineq + 1,
 			    isl_basic_map_total_dim(bmap), M);
@@ -2101,16 +2103,16 @@ static struct isl_tab *tab_for_lexmin(struct isl_basic_map *bmap,
 		tab->var[i].is_nonneg = 1;
 		tab->var[i].frozen = 1;
 	}
+	o_var = 1 + tab->n_param;
+	n_var = tab->n_var - tab->n_param - tab->n_div;
 	for (i = 0; i < bmap->n_eq; ++i) {
 		if (max)
-			isl_seq_neg(bmap->eq[i] + 1 + tab->n_param,
-				    bmap->eq[i] + 1 + tab->n_param,
-				    tab->n_var - tab->n_param - tab->n_div);
+			isl_seq_neg(bmap->eq[i] + o_var,
+				    bmap->eq[i] + o_var, n_var);
 		tab = add_lexmin_valid_eq(tab, bmap->eq[i]);
 		if (max)
-			isl_seq_neg(bmap->eq[i] + 1 + tab->n_param,
-				    bmap->eq[i] + 1 + tab->n_param,
-				    tab->n_var - tab->n_param - tab->n_div);
+			isl_seq_neg(bmap->eq[i] + o_var,
+				    bmap->eq[i] + o_var, n_var);
 		if (!tab || tab->empty)
 			return tab;
 	}
@@ -2118,14 +2120,12 @@ static struct isl_tab *tab_for_lexmin(struct isl_basic_map *bmap,
 		goto error;
 	for (i = 0; i < bmap->n_ineq; ++i) {
 		if (max)
-			isl_seq_neg(bmap->ineq[i] + 1 + tab->n_param,
-				    bmap->ineq[i] + 1 + tab->n_param,
-				    tab->n_var - tab->n_param - tab->n_div);
+			isl_seq_neg(bmap->ineq[i] + o_var,
+				    bmap->ineq[i] + o_var, n_var);
 		tab = add_lexmin_ineq(tab, bmap->ineq[i]);
 		if (max)
-			isl_seq_neg(bmap->ineq[i] + 1 + tab->n_param,
-				    bmap->ineq[i] + 1 + tab->n_param,
-				    tab->n_var - tab->n_param - tab->n_div);
+			isl_seq_neg(bmap->ineq[i] + o_var,
+				    bmap->ineq[i] + o_var, n_var);
 		if (!tab || tab->empty)
 			return tab;
 	}

@@ -939,7 +939,7 @@ __isl_give isl_aff *isl_aff_set_coefficient_si(__isl_take isl_aff *aff,
 	if (type == isl_dim_in)
 		type = isl_dim_set;
 
-	if (pos >= isl_local_space_dim(aff->ls, type))
+	if (pos < 0 || pos >= isl_local_space_dim(aff->ls, type))
 		isl_die(aff->v->ctx, isl_error_invalid,
 			"position out of bounds", return isl_aff_free(aff));
 
