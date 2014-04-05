@@ -2555,7 +2555,10 @@ static __isl_give isl_basic_map *basic_map_read(struct isl_stream *s)
 	if (!map)
 		return NULL;
 
-	isl_assert(map->ctx, map->n <= 1, goto error);
+	if (map->n > 1)
+		isl_die(s->ctx, isl_error_invalid,
+			"set or map description involves "
+			"more than one disjunct", goto error);
 
 	if (map->n == 0)
 		bmap = isl_basic_map_empty_like_map(map);
