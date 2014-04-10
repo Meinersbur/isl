@@ -1108,14 +1108,8 @@ int isl_tab_pivot(struct isl_tab *tab, int row, int col)
 	unsigned off = 2 + tab->M;
 
 	ctx = isl_tab_get_ctx(tab);
-	if (ctx->abort) {
-		isl_ctx_set_error(ctx, isl_error_abort);
+	if (isl_ctx_next_operation(ctx) < 0)
 		return -1;
-	}
-	if (ctx->max_operations && ctx->operations >= ctx->max_operations)
-		isl_die(ctx, isl_error_quota,
-			"maximal number of operations exceeded", return -1);
-	ctx->operations++;
 
 	isl_int_swap(mat->row[row][0], mat->row[row][off + col]);
 	sgn = isl_int_sgn(mat->row[row][0]);

@@ -30,3 +30,5 @@ struct isl_ctx {
 	unsigned long		operations;
 	unsigned long		max_operations;
 };
+
+int isl_ctx_next_operation(isl_ctx *ctx);

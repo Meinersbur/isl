@@ -25,11 +25,33 @@ static void *check_non_null(isl_ctx *ctx, void *p, size_t size)
 	isl_die(ctx, isl_error_alloc, "allocation failure", return NULL);
 }
 
+/* Prepare for performing the next "operation" in the context.
+ * Return 0 if we are allowed to perform this operation and
+ * return -1 if we should abort the computation.
+ *
+ * In particular, we should stop if the user has explicitly aborted
+ * the computation or if the maximal number of operations has been exceeded.
+ */
+int isl_ctx_next_operation(isl_ctx *ctx)
+{
+	if (ctx->abort) {
+		isl_ctx_set_error(ctx, isl_error_abort);
+		return -1;
+	}
+	if (ctx->max_operations && ctx->operations >= ctx->max_operations)
+		isl_die(ctx, isl_error_quota,
+			"maximal number of operations exceeded", return -1);
+	ctx->operations++;
+	return 0;
+}
+
 /* Call malloc and complain if it fails.
  * If ctx is NULL, then return NULL.
  */
 void *isl_malloc_or_die(isl_ctx *ctx, size_t size)
 {
+	if (isl_ctx_next_operation(ctx) < 0)
+		return NULL;
 	return ctx ? check_non_null(ctx, malloc(size), size) : NULL;
 }
 
@@ -38,6 +60,8 @@ void *isl_malloc_or_die(isl_ctx *ctx, size_t size)
  */
 void *isl_calloc_or_die(isl_ctx *ctx, size_t nmemb, size_t size)
 {
+	if (isl_ctx_next_operation(ctx) < 0)
+		return NULL;
 	return ctx ? check_non_null(ctx, calloc(nmemb, size), nmemb) : NULL;
 }
 
@@ -46,6 +70,8 @@ void *isl_calloc_or_die(isl_ctx *ctx, size_t nmemb, size_t size)
  */
 void *isl_realloc_or_die(isl_ctx *ctx, void *ptr, size_t size)
 {
+	if (isl_ctx_next_operation(ctx) < 0)
+		return NULL;
 	return ctx ? check_non_null(ctx, realloc(ptr, size), size) : NULL;
 }
 
