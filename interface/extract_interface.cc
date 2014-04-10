@@ -35,6 +35,7 @@
 
 #include <assert.h>
 #include <iostream>
+#include <llvm/ADT/OwningPtr.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Support/CommandLine.h>
 #include <llvm/Support/Host.h>
