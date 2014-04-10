@@ -39,3 +39,13 @@
 	  (isl-development@googlegroups.com).  If you use
 	  git-send-email(1), please test it first by sending email
 	  to yourself.
+
+	Revisions:
+
+	- add the revision number inside square brackets to
+	  the subject line (e.g., use --subject-prefix='PATCH v2'
+	  when creating the patch)
+	- recall the major issues discovered during the previous
+	  review and explain how you addressed them or why you
+	  disagree.  Do so either in a cover letter, between the
+	  "---" and the diffstat or in a separate message.
