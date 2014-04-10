@@ -76,7 +76,8 @@ static llvm::cl::list<string> Includes("I",
 			llvm::cl::desc("Header search path"),
 			llvm::cl::value_desc("path"), llvm::cl::Prefix);
 
-static const char *ResourceDir = CLANG_PREFIX"/lib/clang/"CLANG_VERSION_STRING;
+static const char *ResourceDir =
+	CLANG_PREFIX "/lib/clang/" CLANG_VERSION_STRING;
 
 /* Does decl have an attribute of the following form?
  *
