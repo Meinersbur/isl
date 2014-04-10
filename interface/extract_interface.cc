@@ -255,6 +255,22 @@ static void create_diagnostics(CompilerInstance *Clang)
 
 #endif
 
+#ifdef CREATEPREPROCESSOR_TAKES_TUKIND
+
+static void create_preprocessor(CompilerInstance *Clang)
+{
+	Clang->createPreprocessor(TU_Complete);
+}
+
+#else
+
+static void create_preprocessor(CompilerInstance *Clang)
+{
+	Clang->createPreprocessor();
+}
+
+#endif
+
 #ifdef ADDPATH_TAKES_4_ARGUMENTS
 
 void add_path(HeaderSearchOptions &HSO, string Path)
@@ -304,7 +320,7 @@ int main(int argc, char *argv[])
 	PO.addMacroDef("__isl_constructor=__attribute__((annotate(\"isl_constructor\"))) __attribute__((annotate(\"isl_export\")))");
 	PO.addMacroDef("__isl_subclass(super)=__attribute__((annotate(\"isl_subclass(\" #super \")\"))) __attribute__((annotate(\"isl_export\")))");
 
-	Clang->createPreprocessor();
+	create_preprocessor(Clang);
 	Preprocessor &PP = Clang->getPreprocessor();
 
 	PP.getBuiltinInfo().InitializeBuiltins(PP.getIdentifierTable(), LO);

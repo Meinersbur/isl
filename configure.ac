@@ -211,6 +211,13 @@ system)
 		[clang/AST/CanonicalType.h], [],
 		[AC_DEFINE([getReturnType], [getResultType],
 		    [Define to getResultType for older versions of clang])])
+	AC_TRY_COMPILE([#include <clang/Frontend/CompilerInstance.h>], [
+		using namespace clang;
+		CompilerInstance *Clang;
+		Clang->createPreprocessor(TU_Complete);
+	], [AC_DEFINE([CREATEPREPROCESSOR_TAKES_TUKIND], [],
+	[Define if CompilerInstance::createPreprocessor takes
+	 TranslationUnitKind])])
 	AC_LANG_POP
 	CPPFLAGS="$SAVE_CPPFLAGS"
 
