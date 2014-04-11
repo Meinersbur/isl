@@ -193,19 +193,6 @@ pkginclude_HEADERS = \
 	include/isl/band.h \
 	include/isl/constraint.h \
 	include/isl/ctx.h \
-	include/isl/deprecated/int.h \
-	include/isl/deprecated/aff_int.h \
-	include/isl/deprecated/ast_int.h \
-	include/isl/deprecated/constraint_int.h \
-	include/isl/deprecated/ilp_int.h \
-	include/isl/deprecated/map_int.h \
-	include/isl/deprecated/mat_int.h \
-	include/isl/deprecated/point_int.h \
-	include/isl/deprecated/polynomial_int.h \
-	include/isl/deprecated/set_int.h \
-	include/isl/deprecated/union_map_int.h \
-	include/isl/deprecated/val_int.h \
-	include/isl/deprecated/vec_int.h \
 	include/isl/dim.h \
 	include/isl/flow.h \
 	include/isl/id.h \
@@ -242,6 +229,21 @@ pkginclude_HEADERS = \
 	include/isl/vec.h \
 	include/isl/version.h \
 	include/isl/vertices.h
+deprecateddir = $(pkgincludedir)/deprecated
+deprecated_HEADERS = \
+	include/isl/deprecated/int.h \
+	include/isl/deprecated/aff_int.h \
+	include/isl/deprecated/ast_int.h \
+	include/isl/deprecated/constraint_int.h \
+	include/isl/deprecated/ilp_int.h \
+	include/isl/deprecated/map_int.h \
+	include/isl/deprecated/mat_int.h \
+	include/isl/deprecated/point_int.h \
+	include/isl/deprecated/polynomial_int.h \
+	include/isl/deprecated/set_int.h \
+	include/isl/deprecated/union_map_int.h \
+	include/isl/deprecated/val_int.h \
+	include/isl/deprecated/vec_int.h
 
 EXTRA_DIST = \
 	LICENSE \
