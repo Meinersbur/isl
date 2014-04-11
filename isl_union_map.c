@@ -70,24 +70,24 @@ int isl_union_set_is_params(__isl_keep isl_union_set *uset)
 	return params;
 }
 
-static __isl_give isl_union_map *isl_union_map_alloc(__isl_take isl_space *dim,
-	int size)
+static __isl_give isl_union_map *isl_union_map_alloc(
+	__isl_take isl_space *space, int size)
 {
 	isl_union_map *umap;
 
-	dim = isl_space_params(dim);
-	if (!dim)
+	space = isl_space_params(space);
+	if (!space)
 		return NULL;
 
-	umap = isl_calloc_type(dim->ctx, isl_union_map);
+	umap = isl_calloc_type(space->ctx, isl_union_map);
 	if (!umap) {
-		isl_space_free(dim);
+		isl_space_free(space);
 		return NULL;
 	}
 
 	umap->ref = 1;
-	umap->dim = dim;
-	if (isl_hash_table_init(dim->ctx, &umap->table, size) < 0)
+	umap->dim = space;
+	if (isl_hash_table_init(space->ctx, &umap->table, size) < 0)
 		return isl_union_map_free(umap);
 
 	return umap;
