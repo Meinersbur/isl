@@ -1,3 +1,14 @@
+version: 0.13
+date: Mon Apr 14 11:08:45 CEST 2014
+changes:
+	- deprecate isl_int
+	- improved support for multi piecewise quasi-affine expressions
+	- allow the user to impose a bound on the number of low-level operations
+	- add isl_id_to_ast_expr and isl_id_to_pw_aff
+	- add isl_schedule_constraints
+	- hide internal structure of isl_vec
+	- remove support for piplib
+---
 version: 0.12.2
 date: Sun Jan 12 12:09:46 CET 2014
 changes:
