@@ -3064,8 +3064,10 @@ static int last_non_zero_var_col(struct isl_tab *tab, isl_int *p)
  * that is one or negative one, we use it to kill a column
  * in the main tableau.  Otherwise, we discard the tentatively
  * added row.
+ *
+ * Return 0 on success and -1 on failure.
  */
-static void propagate_equalities(struct isl_context_gbr *cgbr,
+static int propagate_equalities(struct isl_context_gbr *cgbr,
 	struct isl_tab *tab, unsigned first)
 {
 	int i;
@@ -3115,11 +3117,12 @@ static void propagate_equalities(struct isl_context_gbr *cgbr,
 
 	isl_vec_free(eq);
 
-	return;
+	return 0;
 error:
 	isl_vec_free(eq);
 	isl_tab_free(cgbr->tab);
 	cgbr->tab = NULL;
+	return -1;
 }
 
 static int context_gbr_detect_equalities(struct isl_context *context,
@@ -3147,8 +3150,9 @@ static int context_gbr_detect_equalities(struct isl_context *context,
 	cgbr->tab = isl_tab_detect_equalities(cgbr->tab, cgbr->cone);
 	if (!cgbr->tab)
 		return -1;
-	if (cgbr->tab->bmap->n_ineq > n_ineq)
-		propagate_equalities(cgbr, tab, n_ineq);
+	if (cgbr->tab->bmap->n_ineq > n_ineq &&
+	    propagate_equalities(cgbr, tab, n_ineq) < 0)
+		return -1;
 
 	return 0;
 error:
