@@ -209,8 +209,9 @@ void *isl_ast_expr_free(__isl_take isl_ast_expr *expr)
 		isl_id_free(expr->u.id);
 		break;
 	case isl_ast_expr_op:
-		for (i = 0; i < expr->u.op.n_arg; ++i)
-			isl_ast_expr_free(expr->u.op.args[i]);
+		if (expr->u.op.args)
+			for (i = 0; i < expr->u.op.n_arg; ++i)
+				isl_ast_expr_free(expr->u.op.args[i]);
 		free(expr->u.op.args);
 		break;
 	case isl_ast_expr_error:
