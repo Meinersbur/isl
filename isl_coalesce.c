@@ -54,6 +54,9 @@ static int *eq_status_in(__isl_keep isl_basic_map *bmap_i,
 	int *eq = isl_calloc_array(bmap_i->ctx, int, 2 * bmap_i->n_eq);
 	unsigned dim;
 
+	if (!eq)
+		return NULL;
+
 	dim = isl_basic_map_total_dim(bmap_i);
 	for (k = 0; k < bmap_i->n_eq; ++k) {
 		for (l = 0; l < 2; ++l) {
