@@ -84,6 +84,9 @@ static int *ineq_status_in(__isl_keep isl_basic_map *bmap_i,
 	unsigned n_eq = bmap_i->n_eq;
 	int *ineq = isl_calloc_array(bmap_i->ctx, int, bmap_i->n_ineq);
 
+	if (!ineq)
+		return NULL;
+
 	for (k = 0; k < bmap_i->n_ineq; ++k) {
 		if (tab_i && isl_tab_is_redundant(tab_i, n_eq + k)) {
 			ineq[k] = STATUS_REDUNDANT;
