@@ -4753,6 +4753,8 @@ struct isl_sol_for {
 
 static void sol_for_free(struct isl_sol_for *sol_for)
 {
+	if (!sol_for)
+		return;
 	if (sol_for->sol.context)
 		sol_for->sol.context->op->free(sol_for->sol.context);
 	free(sol_for);
