@@ -80,8 +80,10 @@ static __isl_give isl_union_map *isl_union_map_alloc(__isl_take isl_space *dim,
 		return NULL;
 
 	umap = isl_calloc_type(dim->ctx, isl_union_map);
-	if (!umap)
+	if (!umap) {
+		isl_space_free(dim);
 		return NULL;
+	}
 
 	umap->ref = 1;
 	umap->dim = dim;
