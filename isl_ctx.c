@@ -34,6 +34,8 @@ static void *check_non_null(isl_ctx *ctx, void *p, size_t size)
  */
 int isl_ctx_next_operation(isl_ctx *ctx)
 {
+	if (!ctx)
+		return -1;
 	if (ctx->abort) {
 		isl_ctx_set_error(ctx, isl_error_abort);
 		return -1;
