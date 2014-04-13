@@ -354,6 +354,11 @@ may differ significantly across different versions
 of C<isl>, but it should be the same across different platforms
 for the same version of C<isl>.
 
+Warning: This feature is experimental.  C<isl> has good support to abort and
+bail out during the computation, but this feature may exercise error code paths
+that are normally not used that much. Consequently, it is not unlikely that
+hidden bugs will be exposed.
+
 	void isl_ctx_set_max_operations(isl_ctx *ctx,
 		unsigned long max_operations);
 	unsigned long isl_ctx_get_max_operations(isl_ctx *ctx);
