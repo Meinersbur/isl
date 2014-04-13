@@ -2151,6 +2151,13 @@ error:
  *
  * Perhaps it would also be useful to look at the number of constraints
  * that conflict with any given constraint.
+ *
+ * best is the best row so far (-1 when we have not found any row yet).
+ * best_r is the number of other rows made redundant by row best.
+ * When best is still -1, bset_r is meaningless, but it is initialized
+ * to some arbitrary value (0) anyway.  Without this redundant initialization
+ * valgrind may warn about uninitialized memory accesses when isl
+ * is compiled with some versions of gcc.
  */
 static int best_split(struct isl_tab *tab, struct isl_tab *context_tab)
 {
@@ -2158,7 +2165,7 @@ static int best_split(struct isl_tab *tab, struct isl_tab *context_tab)
 	int split;
 	int row;
 	int best = -1;
-	int best_r;
+	int best_r = 0;
 
 	if (isl_tab_extend_cons(context_tab, 2) < 0)
 		return -1;
