@@ -671,7 +671,7 @@ int isl_basic_set_dim_residue_class(struct isl_basic_set *bset,
 	isl_mat_free(U);
 	C = isl_mat_product(U1, C);
 	if (!C)
-		goto error;
+		return -1;
 	if (!isl_int_is_divisible_by(C->row[1][0], C->row[0][0])) {
 		bset = isl_basic_set_copy(bset);
 		bset = isl_basic_set_set_to_empty(bset);

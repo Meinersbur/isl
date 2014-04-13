@@ -8427,7 +8427,7 @@ static enum isl_lp_result basic_set_maximal_difference_at(
 			bmap2->n_div, bmap2->n_eq, bmap2->n_ineq);
 	bmap1 = add_constraints(bmap1, bmap2, 0, dim1 - pos);
 	if (!bmap1)
-		goto error;
+		goto error2;
 	total = isl_basic_map_total_dim(bmap1);
 	ctx = bmap1->ctx;
 	obj = isl_vec_alloc(ctx, 1 + total);

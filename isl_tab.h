@@ -287,7 +287,7 @@ int isl_tab_push_var(struct isl_tab *tab,
 int isl_tab_push_basis(struct isl_tab *tab) WARN_UNUSED;
 
 struct isl_tab *isl_tab_init_samples(struct isl_tab *tab) WARN_UNUSED;
-struct isl_tab *isl_tab_add_sample(struct isl_tab *tab,
+int isl_tab_add_sample(struct isl_tab *tab,
 	__isl_take isl_vec *sample) WARN_UNUSED;
 struct isl_tab *isl_tab_drop_sample(struct isl_tab *tab, int s);
 int isl_tab_save_samples(struct isl_tab *tab) WARN_UNUSED;

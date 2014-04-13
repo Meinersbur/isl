@@ -187,6 +187,9 @@ int isl_hash_table_foreach(struct isl_ctx *ctx,
 	size_t size;
 	uint32_t h;
 
+	if (!table->entries)
+		return -1;
+
 	size = 1 << table->bits;
 	for (h = 0; h < size; ++ h)
 		if (table->entries[h].data &&

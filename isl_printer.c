@@ -234,7 +234,7 @@ __isl_give isl_printer *isl_printer_to_file(isl_ctx *ctx, FILE *file)
 
 __isl_give isl_printer *isl_printer_to_str(isl_ctx *ctx)
 {
-	struct isl_printer *p = isl_alloc_type(ctx, struct isl_printer);
+	struct isl_printer *p = isl_calloc_type(ctx, struct isl_printer);
 	if (!p)
 		return NULL;
 	p->ctx = ctx;

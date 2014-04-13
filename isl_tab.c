@@ -870,8 +870,7 @@ error:
 	return NULL;
 }
 
-struct isl_tab *isl_tab_add_sample(struct isl_tab *tab,
-	__isl_take isl_vec *sample)
+int isl_tab_add_sample(struct isl_tab *tab, __isl_take isl_vec *sample)
 {
 	if (!tab || !sample)
 		goto error;
@@ -894,11 +893,10 @@ struct isl_tab *isl_tab_add_sample(struct isl_tab *tab,
 	tab->sample_index[tab->n_sample] = tab->n_sample;
 	tab->n_sample++;
 
-	return tab;
+	return 0;
 error:
 	isl_vec_free(sample);
-	isl_tab_free(tab);
-	return NULL;
+	return -1;
 }
 
 struct isl_tab *isl_tab_drop_sample(struct isl_tab *tab, int s)

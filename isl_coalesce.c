@@ -55,6 +55,9 @@ static int *eq_status_in(__isl_keep isl_basic_map *bmap_i,
 	int *eq = isl_calloc_array(bmap_i->ctx, int, 2 * bmap_i->n_eq);
 	unsigned dim;
 
+	if (!eq)
+		return NULL;
+
 	dim = isl_basic_map_total_dim(bmap_i);
 	for (k = 0; k < bmap_i->n_eq; ++k) {
 		for (l = 0; l < 2; ++l) {
@@ -84,6 +87,9 @@ static int *ineq_status_in(__isl_keep isl_basic_map *bmap_i,
 	int k;
 	unsigned n_eq = bmap_i->n_eq;
 	int *ineq = isl_calloc_array(bmap_i->ctx, int, bmap_i->n_ineq);
+
+	if (!ineq)
+		return NULL;
 
 	for (k = 0; k < bmap_i->n_ineq; ++k) {
 		if (tab_i && isl_tab_is_redundant(tab_i, n_eq + k)) {
@@ -1672,6 +1678,9 @@ struct isl_map *isl_map_coalesce(struct isl_map *map)
 
 	map = isl_map_sort_divs(map);
 	map = isl_map_cow(map);
+
+	if (!map)
+		return NULL;
 
 	tabs = isl_calloc_array(map->ctx, struct isl_tab *, map->n);
 	if (!tabs)

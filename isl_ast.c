@@ -218,8 +218,9 @@ __isl_null isl_ast_expr *isl_ast_expr_free(__isl_take isl_ast_expr *expr)
 		isl_id_free(expr->u.id);
 		break;
 	case isl_ast_expr_op:
-		for (i = 0; i < expr->u.op.n_arg; ++i)
-			isl_ast_expr_free(expr->u.op.args[i]);
+		if (expr->u.op.args)
+			for (i = 0; i < expr->u.op.n_arg; ++i)
+				isl_ast_expr_free(expr->u.op.args[i]);
 		free(expr->u.op.args);
 		break;
 	case isl_ast_expr_error:
@@ -719,13 +720,16 @@ __isl_give isl_ast_node *isl_ast_node_alloc_for(__isl_take isl_id *id)
 	ctx = isl_id_get_ctx(id);
 	node = isl_ast_node_alloc(ctx, isl_ast_node_for);
 	if (!node)
-		return NULL;
+		goto error;
 
 	node->u.f.iterator = isl_ast_expr_from_id(id);
 	if (!node->u.f.iterator)
 		return isl_ast_node_free(node);
 
 	return node;
+error:
+	isl_id_free(id);
+	return NULL;
 }
 
 /* Create a user node evaluating "expr".

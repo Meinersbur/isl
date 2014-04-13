@@ -474,10 +474,9 @@ static __isl_give isl_basic_set *extend_affine_hull(struct isl_tab *tab,
 		}
 		if (j == hull->n_eq)
 			break;
-		if (tab->samples)
-			tab = isl_tab_add_sample(tab, isl_vec_copy(sample));
-		if (!tab)
-			goto error;
+		if (tab->samples &&
+		    isl_tab_add_sample(tab, isl_vec_copy(sample)) < 0)
+			hull = isl_basic_set_free(hull);
 		if (bset)
 			hull = add_adjacent_points(hull, isl_vec_copy(sample),
 						    bset);
