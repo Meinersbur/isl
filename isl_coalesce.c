@@ -1678,6 +1678,9 @@ struct isl_map *isl_map_coalesce(struct isl_map *map)
 	map = isl_map_sort_divs(map);
 	map = isl_map_cow(map);
 
+	if (!map)
+		return NULL;
+
 	tabs = isl_calloc_array(map->ctx, struct isl_tab *, map->n);
 	if (!tabs)
 		goto error;
