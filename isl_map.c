@@ -11578,7 +11578,7 @@ static __isl_give isl_basic_map *greator(__isl_take isl_space *space,
 	bmap = isl_basic_map_alloc_space(space, 0, 0, 1);
 	i = isl_basic_map_alloc_inequality(bmap);
 	if (i < 0)
-		goto error;
+		return isl_basic_map_free(bmap);
 	isl_seq_clr(bmap->ineq[i], 1 + isl_basic_map_total_dim(bmap));
 	pos1 += isl_basic_map_offset(bmap, type1);
 	pos2 += isl_basic_map_offset(bmap, type2);

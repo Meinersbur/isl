@@ -52,7 +52,7 @@ static __isl_give UNION *FN(UNION,alloc)(__isl_take isl_space *dim, int size)
 
 	u = isl_calloc_type(dim->ctx, UNION);
 	if (!u)
-		return NULL;
+		goto error;
 
 	u->ref = 1;
 #ifdef HAS_TYPE
@@ -60,12 +60,11 @@ static __isl_give UNION *FN(UNION,alloc)(__isl_take isl_space *dim, int size)
 #endif
 	u->dim = dim;
 	if (isl_hash_table_init(dim->ctx, &u->table, size) < 0)
-		goto error;
+		return FN(UNION,free)(u);
 
 	return u;
 error:
 	isl_space_free(dim);
-	FN(UNION,free)(u);
 	return NULL;
 }
 
