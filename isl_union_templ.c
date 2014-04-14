@@ -52,7 +52,7 @@ static __isl_give UNION *FN(UNION,alloc)(__isl_take isl_space *dim, int size)
 
 	u = isl_calloc_type(dim->ctx, UNION);
 	if (!u)
-		return NULL;
+		goto error;
 
 	u->ref = 1;
 #ifdef HAS_TYPE
