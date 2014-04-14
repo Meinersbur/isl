@@ -983,6 +983,10 @@ static int extract_edge(__isl_take isl_map *map, void *user)
 	}
 
 	edge = graph_find_matching_edge(graph, &graph->edge[graph->n_edge]);
+	if (!edge) {
+		graph->n_edge++;
+		return -1;
+	}
 	if (edge == &graph->edge[graph->n_edge])
 		return graph_edge_table_add(ctx, graph, data->type,
 				    &graph->edge[graph->n_edge++]);
