@@ -789,6 +789,8 @@ static __isl_give isl_pw_aff *accept_extended_affine(struct isl_stream *s,
 	cond = isl_map_universe(isl_space_unwrap(space));
 
 	if (push_aff(s, line, col, pwaff) < 0)
+		cond = isl_map_free(cond);
+	if (!cond)
 		return NULL;
 
 	cond = read_formula(s, v, cond, rational);
