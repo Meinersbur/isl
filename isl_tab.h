@@ -14,6 +14,7 @@
 #include <isl/map.h>
 #include <isl/mat.h>
 #include <isl/set.h>
+#include <isl_config.h>
 
 struct isl_tab_var {
 	int index;

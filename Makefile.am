@@ -181,7 +181,6 @@ isl_closure_SOURCES = \
 	closure.c
 
 nodist_pkginclude_HEADERS = \
-	include/isl/config.h \
 	include/isl/stdint.h
 pkginclude_HEADERS = \
 	include/isl/aff.h \

@@ -39,12 +39,6 @@
 #define __isl_subclass(super)
 #endif
 
-#ifdef GCC_WARN_UNUSED_RESULT
-#define	WARN_UNUSED	GCC_WARN_UNUSED_RESULT
-#else
-#define WARN_UNUSED
-#endif
-
 #if defined(__cplusplus)
 extern "C" {
 #endif

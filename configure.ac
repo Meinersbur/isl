@@ -244,7 +244,6 @@ echo '#define GIT_HEAD_ID "'$GIT_HEAD_ID'"' > gitversion.h
 
 AH_BOTTOM([#include <isl_config_post.h>])
 AC_CONFIG_HEADERS(isl_config.h)
-AC_CONFIG_HEADERS(include/isl/config.h)
 AC_CONFIG_FILES(Makefile)
 AC_CONFIG_FILES(doc/Makefile)
 if test $with_clang = system; then
