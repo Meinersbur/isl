@@ -1020,7 +1020,8 @@ static int tab_shift_cone(struct isl_tab *tab,
 		isl_vec_free(row);
 		if (isl_int_is_zero(v))
 			continue;
-		tab = isl_tab_extend(tab, 1);
+		if (isl_tab_extend_cons(tab, 1) < 0)
+			goto error;
 		isl_int_add(bset->ineq[i][0], bset->ineq[i][0], v);
 		ok = isl_tab_add_ineq(tab, bset->ineq[i]) >= 0;
 		isl_int_sub(bset->ineq[i][0], bset->ineq[i][0], v);
