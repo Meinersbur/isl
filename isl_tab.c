@@ -172,15 +172,6 @@ int isl_tab_extend_vars(struct isl_tab *tab, unsigned n_new)
 	return 0;
 }
 
-struct isl_tab *isl_tab_extend(struct isl_tab *tab, unsigned n_new)
-{
-	if (isl_tab_extend_cons(tab, n_new) >= 0)
-		return tab;
-
-	isl_tab_free(tab);
-	return NULL;
-}
-
 static void free_undo_record(struct isl_tab_undo *undo)
 {
 	switch (undo->type) {

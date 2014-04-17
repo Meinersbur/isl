@@ -1990,7 +1990,8 @@ static __isl_give isl_basic_set *uset_gist_full(__isl_take isl_basic_set *bset,
 	for (i = 0; i < context_ineq; ++i)
 		if (isl_tab_freeze_constraint(tab, i) < 0)
 			goto error;
-	tab = isl_tab_extend(tab, bset->n_ineq);
+	if (isl_tab_extend_cons(tab, bset->n_ineq) < 0)
+		goto error;
 	for (i = 0; i < bset->n_ineq; ++i)
 		if (isl_tab_add_ineq(tab, bset->ineq[i]) < 0)
 			goto error;
