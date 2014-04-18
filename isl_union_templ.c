@@ -116,6 +116,13 @@ __isl_give UNION *FN(UNION,copy)(__isl_keep UNION *u)
 	return u;
 }
 
+/* Return the number of base expressions in "u".
+ */
+int FN(FN(UNION,n),PARTS)(__isl_keep UNION *u)
+{
+	return u ? u->table.n : 0;
+}
+
 S(UNION,foreach_data)
 {
 	int (*fn)(__isl_take PART *part, void *user);

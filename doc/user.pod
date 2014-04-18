@@ -2926,16 +2926,22 @@ To iterate over the base expressions in a union expression,
 use the following functions.
 
 	#include <isl/aff.h>
+	int isl_union_pw_multi_aff_n_pw_multi_aff(
+		__isl_keep isl_union_pw_multi_aff *upma);
 	int isl_union_pw_multi_aff_foreach_pw_multi_aff(
 		__isl_keep isl_union_pw_multi_aff *upma,
 		int (*fn)(__isl_take isl_pw_multi_aff *pma,
 			    void *user), void *user);
 
 	#include <isl/polynomial.h>
+	int isl_union_pw_qplynomial_n_pw_qpolynomial(
+		__isl_keep isl_union_pw_qpolynomial *upwqp);
 	int isl_union_pw_qpolynomial_foreach_pw_qpolynomial(
 		__isl_keep isl_union_pw_qpolynomial *upwqp,
 		int (*fn)(__isl_take isl_pw_qpolynomial *pwqp,
 			    void *user), void *user);
+	int isl_union_pw_qplynomial_fold_n_pw_qpolynomial_fold(
+		__isl_keep isl_union_pw_qpolynomial_fold *upwf);
 	int isl_union_pw_qpolynomial_fold_foreach_pw_qpolynomial_fold(
 		__isl_keep isl_union_pw_qpolynomial_fold *upwf,
 		int (*fn)(__isl_take isl_pw_qpolynomial_fold *pwf,
