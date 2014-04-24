@@ -943,7 +943,7 @@ static __isl_give isl_flow *compute_val_based_dependences(
 
 	for (level = depth; level >= 1; --level) {
 		for (j = acc->n_must-1; j >=0; --j) {
-			must_rel[j] = isl_map_empty_like(res->dep[j].map);
+			must_rel[j] = isl_map_empty_like(res->dep[2 * j].map);
 			may_rel[j] = isl_map_copy(must_rel[j]);
 		}
 

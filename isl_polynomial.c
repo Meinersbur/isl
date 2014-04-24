@@ -3188,7 +3188,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_from_aff(__isl_take isl_aff *aff)
 	return qp;
 error:
 	isl_aff_free(aff);
-	return NULL;
+	return isl_qpolynomial_free(qp);
 }
 
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_from_pw_aff(
