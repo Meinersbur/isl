@@ -2023,6 +2023,33 @@ void test_dep(struct isl_ctx *ctx)
 	isl_flow_free(flow);
 }
 
+/* Check that the dependence analysis proceeds without errors.
+ * Earlier versions of isl would break down during the analysis
+ * due to the use of the wrong spaces.
+ */
+static int test_flow(isl_ctx *ctx)
+{
+	const char *str;
+	isl_union_map *access, *schedule;
+	isl_union_map *must_dep, *may_dep;
+	int r;
+
+	str = "{ S0[j] -> i[]; S1[j,i] -> i[]; S2[] -> i[]; S3[] -> i[] }";
+	access = isl_union_map_read_from_str(ctx, str);
+	str = "{ S0[j] -> [0,j,0,0] : 0 <= j < 10; "
+		"S1[j,i] -> [0,j,1,i] : 0 <= j < i < 10; "
+		"S2[] -> [1,0,0,0]; "
+		"S3[] -> [-1,0,0,0] }";
+	schedule = isl_union_map_read_from_str(ctx, str);
+	r = isl_union_map_compute_flow(access, isl_union_map_copy(access),
+					isl_union_map_copy(access), schedule,
+					&must_dep, &may_dep, NULL, NULL);
+	isl_union_map_free(may_dep);
+	isl_union_map_free(must_dep);
+
+	return r;
+}
+
 int test_sv(isl_ctx *ctx)
 {
 	const char *str;
@@ -4840,6 +4867,7 @@ struct {
 	const char *name;
 	int (*fn)(isl_ctx *ctx);
 } tests [] = {
+	{ "dependence analysis", &test_flow },
 	{ "val", &test_val },
 	{ "compute divs", &test_compute_divs },
 	{ "partial lexmin", &test_partial_lexmin },
