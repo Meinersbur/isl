@@ -7104,6 +7104,10 @@ static __isl_give isl_map *map_union_disjoint(__isl_take isl_map *map1,
 	if (!map1 || !map2)
 		goto error;
 
+	if (!isl_space_is_equal(map1->dim, map2->dim))
+		isl_die(isl_map_get_ctx(map1), isl_error_invalid,
+			"spaces don't match", goto error);
+
 	if (map1->n == 0) {
 		isl_map_free(map1);
 		return map2;
@@ -7128,8 +7132,6 @@ static __isl_give isl_map *map_union_disjoint(__isl_take isl_map *map1,
 		isl_map_free(map1);
 		return map2;
 	}
-
-	isl_assert(map1->ctx, isl_space_is_equal(map1->dim, map2->dim), goto error);
 
 	if (ISL_F_ISSET(map1, ISL_MAP_DISJOINT) &&
 	    ISL_F_ISSET(map2, ISL_MAP_DISJOINT))
