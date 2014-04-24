@@ -738,7 +738,7 @@ static __isl_give isl_map *all_sources(__isl_keep isl_access_info *acc,
  * after_level.
  */
 static __isl_give isl_map *all_later_sources(__isl_keep isl_access_info *acc,
-	__isl_keep isl_map *old_map,
+	__isl_take isl_map *old_map,
 	int j, int before_level, int k, int after_level)
 {
 	isl_space *dim;
