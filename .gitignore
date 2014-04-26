@@ -13,6 +13,7 @@ config.guess
 isl_config.h
 isl_config.h.in
 isl_config.h.in~
+compile
 config.log
 config.status
 config.sub
