@@ -15,7 +15,6 @@
 
 #include <isl/arg.h>
 #include <isl/hash.h>
-#include <isl/config.h>
 
 #ifndef __isl_give
 #define __isl_give
