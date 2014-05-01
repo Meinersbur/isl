@@ -30,6 +30,7 @@
 #include <isl/ast_build.h>
 #include <isl/val.h>
 #include <isl/ilp.h>
+#include <isl_ast_build_expr.h>
 
 #define ARRAY_SIZE(array) (sizeof(array)/sizeof(*array))
 
@@ -4331,6 +4332,31 @@ static int test_ast(isl_ctx *ctx)
 	return 0;
 }
 
+/* Check that isl_ast_build_expr_from_set returns a valid expression
+ * for an empty set.  Note that isl_ast_build_expr_from_set getting
+ * called on an empty set probably indicates a bug in the caller.
+ */
+static int test_ast_build(isl_ctx *ctx)
+{
+	isl_set *set;
+	isl_ast_build *build;
+	isl_ast_expr *expr;
+
+	set = isl_set_universe(isl_space_params_alloc(ctx, 0));
+	build = isl_ast_build_from_context(set);
+
+	set = isl_set_empty(isl_space_params_alloc(ctx, 0));
+	expr = isl_ast_build_expr_from_set(build, set);
+
+	isl_ast_expr_free(expr);
+	isl_ast_build_free(build);
+
+	if (!expr)
+		return -1;
+
+	return 0;
+}
+
 /* Internal data structure for before_for and after_for callbacks.
  *
  * depth is the current depth
@@ -4881,6 +4907,7 @@ struct {
 	{ "preimage", &test_preimage },
 	{ "pullback", &test_pullback },
 	{ "AST", &test_ast },
+	{ "AST build", &test_ast_build },
 	{ "AST generation", &test_ast_gen },
 	{ "eliminate", &test_eliminate },
 	{ "residue class", &test_residue_class },

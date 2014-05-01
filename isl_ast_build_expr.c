@@ -1201,6 +1201,8 @@ static int expr_from_set(__isl_take isl_basic_set *bset, void *user)
 
 /* Construct an isl_ast_expr that evaluates the conditions defining "set".
  * The result is simplified in terms of build->domain.
+ *
+ * If "set" is an (obviously) empty set, then return the expression "0".
  */
 __isl_give isl_ast_expr *isl_ast_build_expr_from_set(
 	__isl_keep isl_ast_build *build, __isl_take isl_set *set)
@@ -1209,6 +1211,10 @@ __isl_give isl_ast_expr *isl_ast_build_expr_from_set(
 
 	if (isl_set_foreach_basic_set(set, &expr_from_set, &data) < 0)
 		data.res = isl_ast_expr_free(data.res);
+	else if (data.first) {
+		isl_ctx *ctx = isl_ast_build_get_ctx(build);
+		data.res = isl_ast_expr_from_val(isl_val_zero(ctx));
+	}
 
 	isl_set_free(set);
 	return data.res;
