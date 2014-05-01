@@ -270,7 +270,7 @@ static __isl_give int isl_schedule_constraints_n_map(
 
 /* Internal information about a node that is used during the construction
  * of a schedule.
- * dim represents the space in which the domain lives
+ * space represents the space in which the domain lives
  * sched is a matrix representation of the schedule being constructed
  *	for this node
  * sched_map is an isl_map representation of the same (partial) schedule
@@ -299,7 +299,7 @@ static __isl_give int isl_schedule_constraints_n_map(
  * dependence distances are zero.
  */
 struct isl_sched_node {
-	isl_space *dim;
+	isl_space *space;
 	isl_mat *sched;
 	isl_map *sched_map;
 	int	 rank;
@@ -316,12 +316,12 @@ struct isl_sched_node {
 	int	*coincident;
 };
 
-static int node_has_dim(const void *entry, const void *val)
+static int node_has_space(const void *entry, const void *val)
 {
 	struct isl_sched_node *node = (struct isl_sched_node *)entry;
 	isl_space *dim = (isl_space *)val;
 
-	return isl_space_is_equal(node->dim, dim);
+	return isl_space_is_equal(node->space, dim);
 }
 
 /* An edge in the dependence graph.  An edge may be used to
@@ -462,10 +462,10 @@ static int graph_init_table(isl_ctx *ctx, struct isl_sched_graph *graph)
 		struct isl_hash_table_entry *entry;
 		uint32_t hash;
 
-		hash = isl_space_get_hash(graph->node[i].dim);
+		hash = isl_space_get_hash(graph->node[i].space);
 		entry = isl_hash_table_find(ctx, graph->node_table, hash,
-					    &node_has_dim,
-					    graph->node[i].dim, 1);
+					    &node_has_space,
+					    graph->node[i].space, 1);
 		if (!entry)
 			return -1;
 		entry->data = &graph->node[i];
@@ -485,7 +485,7 @@ static struct isl_sched_node *graph_find_node(isl_ctx *ctx,
 
 	hash = isl_space_get_hash(dim);
 	entry = isl_hash_table_find(ctx, graph->node_table, hash,
-				    &node_has_dim, dim, 0);
+				    &node_has_space, dim, 0);
 
 	return entry ? entry->data : NULL;
 }
@@ -544,7 +544,7 @@ static struct isl_hash_table_entry *graph_find_edge_entry(
 	enum isl_edge_type type,
 	struct isl_sched_node *src, struct isl_sched_node *dst)
 {
-	isl_ctx *ctx = isl_space_get_ctx(src->dim);
+	isl_ctx *ctx = isl_space_get_ctx(src->space);
 	uint32_t hash;
 	struct isl_sched_edge temp = { .src = src, .dst = dst };
 
@@ -718,7 +718,7 @@ static void graph_free(isl_ctx *ctx, struct isl_sched_graph *graph)
 
 	if (graph->node)
 		for (i = 0; i < graph->n; ++i) {
-			isl_space_free(graph->node[i].dim);
+			isl_space_free(graph->node[i].space);
 			isl_mat_free(graph->node[i].sched);
 			isl_map_free(graph->node[i].sched_map);
 			isl_mat_free(graph->node[i].cmap);
@@ -801,7 +801,7 @@ static int extract_node(__isl_take isl_set *set, void *user)
 	if (!ctx->opt->schedule_parametric)
 		nparam = 0;
 	sched = isl_mat_alloc(ctx, 0, 1 + nparam + nvar);
-	graph->node[graph->n].dim = space;
+	graph->node[graph->n].space = space;
 	graph->node[graph->n].nvar = nvar;
 	graph->node[graph->n].nparam = nparam;
 	graph->node[graph->n].sched = sched;
@@ -1350,7 +1350,7 @@ static int add_intra_proximity_constraints(struct isl_sched_graph *graph,
 	if (!coef)
 		goto error;
 
-	nparam = isl_space_dim(node->dim, isl_dim_param);
+	nparam = isl_space_dim(node->space, isl_dim_param);
 	total = isl_basic_set_total_dim(graph->lp);
 	dim_map = isl_dim_map_alloc(ctx, total);
 
@@ -1453,7 +1453,7 @@ static int add_inter_proximity_constraints(struct isl_sched_graph *graph,
 	if (!coef)
 		goto error;
 
-	nparam = isl_space_dim(src->dim, isl_dim_param);
+	nparam = isl_space_dim(src->space, isl_dim_param);
 	total = isl_basic_set_total_dim(graph->lp);
 	dim_map = isl_dim_map_alloc(ctx, total);
 
@@ -1823,7 +1823,7 @@ static int setup_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
 	max_constant_term = ctx->opt->schedule_max_constant_term;
 
 	parametric = ctx->opt->schedule_parametric;
-	nparam = isl_space_dim(graph->node[0].dim, isl_dim_param);
+	nparam = isl_space_dim(graph->node[0].space, isl_dim_param);
 	param_pos = 4;
 	total = param_pos + 2 * nparam;
 	for (i = 0; i < graph->n; ++i) {
@@ -2107,10 +2107,10 @@ static __isl_give isl_multi_aff *node_extract_schedule_multi_aff(
 
 	nrow = isl_mat_rows(node->sched);
 	ncol = isl_mat_cols(node->sched) - 1;
-	space = isl_space_from_domain(isl_space_copy(node->dim));
+	space = isl_space_from_domain(isl_space_copy(node->space));
 	space = isl_space_add_dims(space, isl_dim_out, nrow);
 	ma = isl_multi_aff_zero(space);
-	ls = isl_local_space_from_space(isl_space_copy(node->dim));
+	ls = isl_local_space_from_space(isl_space_copy(node->space));
 
 	for (i = 0; i < nrow; ++i) {
 		aff = extract_schedule_row(isl_local_space_copy(ls), node, i);
@@ -2366,7 +2366,7 @@ static int copy_nodes(struct isl_sched_graph *dst, struct isl_sched_graph *src,
 			continue;
 
 		j = dst->n;
-		dst->node[j].dim = isl_space_copy(src->node[i].dim);
+		dst->node[j].space = isl_space_copy(src->node[i].space);
 		dst->node[j].nvar = src->node[i].nvar;
 		dst->node[j].nparam = src->node[i].nparam;
 		dst->node[j].sched = isl_mat_copy(src->node[i].sched);
@@ -2376,7 +2376,7 @@ static int copy_nodes(struct isl_sched_graph *dst, struct isl_sched_graph *src,
 		dst->node[j].coincident = src->node[i].coincident;
 		dst->n++;
 
-		if (!dst->node[j].dim || !dst->node[j].sched)
+		if (!dst->node[j].space || !dst->node[j].sched)
 			return -1;
 	}
 
@@ -2410,8 +2410,8 @@ static int copy_edges(isl_ctx *ctx, struct isl_sched_graph *dst,
 		if (isl_map_plain_is_empty(edge->map))
 			continue;
 
-		dst_src = graph_find_node(ctx, dst, edge->src->dim);
-		dst_dst = graph_find_node(ctx, dst, edge->dst->dim);
+		dst_src = graph_find_node(ctx, dst, edge->src->space);
+		dst_dst = graph_find_node(ctx, dst, edge->dst->space);
 		if (!dst_src || !dst_dst) {
 			if (edge->validity || edge->conditional_validity)
 				isl_die(ctx, isl_error_internal,
@@ -3363,7 +3363,7 @@ static __isl_give isl_map *final_row(struct isl_sched_node *node)
 	int row;
 
 	row = isl_mat_rows(node->sched) - 1;
-	ls = isl_local_space_from_space(isl_space_copy(node->dim));
+	ls = isl_local_space_from_space(isl_space_copy(node->space));
 	aff = extract_schedule_row(ls, node, row);
 	return isl_map_from_aff(aff);
 }
