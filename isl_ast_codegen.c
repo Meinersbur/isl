@@ -145,7 +145,7 @@ static __isl_give isl_ast_graft *at_each_domain(__isl_take isl_ast_graft *graft,
 }
 
 /* Generate an AST for a single domain based on
- * the inverse schedule "executed".
+ * the inverse schedule "executed" and add it to data->list.
  *
  * If there is more than one domain element associated to the current
  * schedule "time", then we need to continue the generation process
@@ -180,11 +180,18 @@ static int generate_domain(__isl_take isl_map *executed, void *user)
 	isl_ast_graft *graft;
 	isl_ast_graft_list *list;
 	isl_set *guard;
-	isl_map *map;
-	int sv;
+	isl_map *map = NULL;
+	int empty, sv;
 
 	executed = isl_map_intersect_domain(executed,
 					    isl_set_copy(data->build->domain));
+	empty = isl_map_is_empty(executed);
+	if (empty < 0)
+		goto error;
+	if (empty) {
+		isl_map_free(executed);
+		return 0;
+	}
 
 	executed = isl_map_coalesce(executed);
 	map = isl_map_copy(executed);
