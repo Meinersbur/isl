@@ -201,7 +201,7 @@ static __isl_give isl_space *isl_space_solutions(__isl_take isl_space *dim)
  * in the opposite direction (shift == -1).  "dim" is the space in which
  * the dual should be created.
  */
-static __isl_give isl_basic_set *farkas(__isl_take isl_space *dim,
+static __isl_give isl_basic_set *farkas(__isl_take isl_space *space,
 	__isl_take isl_basic_set *bset, int shift)
 {
 	int i, j, k;
@@ -210,7 +210,7 @@ static __isl_give isl_basic_set *farkas(__isl_take isl_space *dim,
 
 	total = isl_basic_set_total_dim(bset);
 
-	dual = isl_basic_set_alloc_space(dim, bset->n_eq + bset->n_ineq,
+	dual = isl_basic_set_alloc_space(space, bset->n_eq + bset->n_ineq,
 					total, bset->n_ineq + (shift > 0));
 	dual = isl_basic_set_set_rational(dual);
 
