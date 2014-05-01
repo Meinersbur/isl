@@ -653,6 +653,7 @@ __isl_give isl_local_space *isl_local_space_intersect(
 	int *exp1 = NULL;
 	int *exp2 = NULL;
 	isl_mat *div;
+	int equal;
 
 	if (!ls1 || !ls2)
 		goto error;
@@ -679,6 +680,14 @@ __isl_give isl_local_space *isl_local_space_intersect(
 
 	div = isl_merge_divs(ls1->div, ls2->div, exp1, exp2);
 	if (!div)
+		goto error;
+
+	equal = isl_mat_is_equal(ls1->div, div);
+	if (equal < 0)
+		goto error;
+	if (!equal)
+		ls1 = isl_local_space_cow(ls1);
+	if (!ls1)
 		goto error;
 
 	free(exp1);
