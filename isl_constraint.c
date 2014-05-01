@@ -824,6 +824,11 @@ error:
 	return NULL;
 }
 
+/* Is the variable of "type" at position "pos" of "bmap" defined
+ * in terms of earlier dimensions through an equality?
+ *
+ * If so, and if c is not NULL, then return a copy of this equality in *c.
+ */
 int isl_basic_map_has_defining_equality(
 	__isl_keep isl_basic_map *bmap, enum isl_dim_type type, int pos,
 	__isl_give isl_constraint **c)
@@ -837,17 +842,24 @@ int isl_basic_map_has_defining_equality(
 	offset = basic_map_offset(bmap, type);
 	total = isl_basic_map_total_dim(bmap);
 	isl_assert(bmap->ctx, pos < isl_basic_map_dim(bmap, type), return -1);
-	for (i = 0; i < bmap->n_eq; ++i)
-		if (!isl_int_is_zero(bmap->eq[i][offset + pos]) &&
+	for (i = 0; i < bmap->n_eq; ++i) {
+		if (isl_int_is_zero(bmap->eq[i][offset + pos]) ||
 		    isl_seq_first_non_zero(bmap->eq[i]+offset+pos+1,
-					   1+total-offset-pos-1) == -1) {
+					   1+total-offset-pos-1) != -1)
+			continue;
+		if (c)
 			*c = isl_basic_map_constraint(isl_basic_map_copy(bmap),
 								&bmap->eq[i]);
-			return 1;
-		}
+		return 1;
+	}
 	return 0;
 }
 
+/* Is the variable of "type" at position "pos" of "bset" defined
+ * in terms of earlier dimensions through an equality?
+ *
+ * If so, and if c is not NULL, then return a copy of this equality in *c.
+ */
 int isl_basic_set_has_defining_equality(
 	__isl_keep isl_basic_set *bset, enum isl_dim_type type, int pos,
 	__isl_give isl_constraint **c)
