@@ -788,20 +788,20 @@ static int extract_node(__isl_take isl_set *set, void *user)
 {
 	int nvar, nparam;
 	isl_ctx *ctx;
-	isl_space *dim;
+	isl_space *space;
 	isl_mat *sched;
 	struct isl_sched_graph *graph = user;
 	int *band, *band_id, *coincident;
 
 	ctx = isl_set_get_ctx(set);
-	dim = isl_set_get_space(set);
+	space = isl_set_get_space(set);
 	isl_set_free(set);
-	nvar = isl_space_dim(dim, isl_dim_set);
-	nparam = isl_space_dim(dim, isl_dim_param);
+	nvar = isl_space_dim(space, isl_dim_set);
+	nparam = isl_space_dim(space, isl_dim_param);
 	if (!ctx->opt->schedule_parametric)
 		nparam = 0;
 	sched = isl_mat_alloc(ctx, 0, 1 + nparam + nvar);
-	graph->node[graph->n].dim = dim;
+	graph->node[graph->n].dim = space;
 	graph->node[graph->n].nvar = nvar;
 	graph->node[graph->n].nparam = nparam;
 	graph->node[graph->n].sched = sched;
