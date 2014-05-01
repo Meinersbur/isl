@@ -814,7 +814,8 @@ static int extract_node(__isl_take isl_set *set, void *user)
 	graph->node[graph->n].coincident = coincident;
 	graph->n++;
 
-	if (!sched || (graph->max_row && (!band || !band_id || !coincident)))
+	if (!space || !sched ||
+	    (graph->max_row && (!band || !band_id || !coincident)))
 		return -1;
 
 	return 0;
