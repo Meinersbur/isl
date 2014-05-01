@@ -40,16 +40,16 @@
  * constraints on P.
  * This is essentially Farkas' lemma.
  *
- * Let A' = [b A], then, since
+ * Since
  *				  [ 1 0 ]
  *		[ w y ] = [t_0 t] [ b A ]
  *
  * we have
  *
- *	C' = { w, y | exists t_0, t >= 0 : y = t A' and w = t_0 + t b }
+ *	C' = { w, y | exists t_0, t >= 0 : y = t A and w = t_0 + t b }
  * or
  *
- *	C' = { w, y | exists t >= 0 : y = t A' and w - t b >= 0 }
+ *	C' = { w, y | exists t >= 0 : y = t A and w - t b >= 0 }
  *
  * In practice, we introduce an extra variable (w), shifting all
  * other variables to the right, and an extra inequality
