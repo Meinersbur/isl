@@ -4903,9 +4903,78 @@ static int test_compute_divs(isl_ctx *ctx)
 }
 
 struct {
+	const char *set;
+	const char *dual;
+} coef_tests[] = {
+	{ "{ rat: [i] : 0 <= i <= 10 }",
+	  "{ rat: coefficients[[cst] -> [a]] : cst >= 0 and 10a + cst >= 0 }" },
+	{ "{ rat: [i] : FALSE }",
+	  "{ rat: coefficients[[cst] -> [a]] }" },
+	{ "{ rat: [i] : }",
+	  "{ rat: coefficients[[cst] -> [0]] : cst >= 0 }" },
+};
+
+struct {
+	const char *set;
+	const char *dual;
+} sol_tests[] = {
+	{ "{ rat: coefficients[[cst] -> [a]] : cst >= 0 and 10a + cst >= 0 }",
+	  "{ rat: [i] : 0 <= i <= 10 }" },
+	{ "{ rat: coefficients[[cst] -> [a]] : FALSE }",
+	  "{ rat: [i] }" },
+	{ "{ rat: coefficients[[cst] -> [a]] }",
+	  "{ rat: [i] : FALSE }" },
+};
+
+/* Test the basic functionality of isl_basic_set_coefficients and
+ * isl_basic_set_solutions.
+ */
+static int test_dual(isl_ctx *ctx)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(coef_tests); ++i) {
+		int equal;
+		isl_basic_set *bset1, *bset2;
+
+		bset1 = isl_basic_set_read_from_str(ctx, coef_tests[i].set);
+		bset2 = isl_basic_set_read_from_str(ctx, coef_tests[i].dual);
+		bset1 = isl_basic_set_coefficients(bset1);
+		equal = isl_basic_set_is_equal(bset1, bset2);
+		isl_basic_set_free(bset1);
+		isl_basic_set_free(bset2);
+		if (equal < 0)
+			return -1;
+		if (!equal)
+			isl_die(ctx, isl_error_unknown,
+				"incorrect dual", return -1);
+	}
+
+	for (i = 0; i < ARRAY_SIZE(sol_tests); ++i) {
+		int equal;
+		isl_basic_set *bset1, *bset2;
+
+		bset1 = isl_basic_set_read_from_str(ctx, sol_tests[i].set);
+		bset2 = isl_basic_set_read_from_str(ctx, sol_tests[i].dual);
+		bset1 = isl_basic_set_solutions(bset1);
+		equal = isl_basic_set_is_equal(bset1, bset2);
+		isl_basic_set_free(bset1);
+		isl_basic_set_free(bset2);
+		if (equal < 0)
+			return -1;
+		if (!equal)
+			isl_die(ctx, isl_error_unknown,
+				"incorrect dual", return -1);
+	}
+
+	return 0;
+}
+
+struct {
 	const char *name;
 	int (*fn)(isl_ctx *ctx);
 } tests [] = {
+	{ "dual", &test_dual },
 	{ "dependence analysis", &test_flow },
 	{ "val", &test_val },
 	{ "compute divs", &test_compute_divs },

@@ -212,6 +212,11 @@ static __isl_give isl_basic_set *rational_universe(__isl_take isl_space *space)
  * to coefficients (shift == 1) and we drop the extra dimension when going
  * in the opposite direction (shift == -1).  "dim" is the space in which
  * the dual should be created.
+ *
+ * If "bset" is (obviously) empty, then the way this emptiness
+ * is represented by the constraints does not allow for the application
+ * of the standard farkas algorithm.  We therefore handle this case
+ * specifically and return the universe basic set.
  */
 static __isl_give isl_basic_set *farkas(__isl_take isl_space *space,
 	__isl_take isl_basic_set *bset, int shift)
@@ -219,6 +224,11 @@ static __isl_give isl_basic_set *farkas(__isl_take isl_space *space,
 	int i, j, k;
 	isl_basic_set *dual = NULL;
 	unsigned total;
+
+	if (isl_basic_set_plain_is_empty(bset)) {
+		isl_basic_set_free(bset);
+		return rational_universe(space);
+	}
 
 	total = isl_basic_set_total_dim(bset);
 
