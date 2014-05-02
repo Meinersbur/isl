@@ -1,10 +1,12 @@
 /*
  * Copyright 2008-2009 Katholieke Universiteit Leuven
+ * Copyright 2014      Ecole Normale Superieure
  *
  * Use of this software is governed by the MIT license
  *
  * Written by Sven Verdoolaege, K.U.Leuven, Departement
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
+ * and Ecole Normale Superieure, 45 rue d'Ulm, 75230 Paris, France
  */
 
 #include <isl_ctx_private.h>
@@ -1553,6 +1555,26 @@ __isl_give isl_mat *isl_mat_from_row_vec(__isl_take isl_vec *vec)
 error:
 	isl_vec_free(vec);
 	return NULL;
+}
+
+/* Return a copy of row "row" of "mat" as an isl_vec.
+ */
+__isl_give isl_vec *isl_mat_get_row(__isl_keep isl_mat *mat, unsigned row)
+{
+	isl_vec *v;
+
+	if (!mat)
+		return NULL;
+	if (row >= mat->n_row)
+		isl_die(mat->ctx, isl_error_invalid, "row out of range",
+			return NULL);
+
+	v = isl_vec_alloc(isl_mat_get_ctx(mat), mat->n_col);
+	if (!v)
+		return NULL;
+	isl_seq_cpy(v->el, mat->row[row], mat->n_col);
+
+	return v;
 }
 
 __isl_give isl_mat *isl_mat_vec_concat(__isl_take isl_mat *top,
