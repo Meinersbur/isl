@@ -100,6 +100,9 @@ __isl_give isl_id *isl_id_alloc(isl_ctx *ctx, const char *name, void *user)
 	uint32_t id_hash;
 	struct isl_name_and_user nu = { name, user };
 
+	if (!ctx)
+		return NULL;
+
 	id_hash = isl_hash_init();
 	if (name)
 		id_hash = isl_hash_string(id_hash, name);
