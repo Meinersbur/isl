@@ -61,6 +61,8 @@ struct isl_pw_multi_aff {
 	struct isl_pw_multi_aff_piece p[1];
 };
 
+__isl_give isl_aff *isl_aff_alloc_vec(__isl_take isl_local_space *ls,
+	__isl_take isl_vec *v);
 __isl_give isl_aff *isl_aff_alloc(__isl_take isl_local_space *ls);
 
 __isl_give isl_aff *isl_aff_reset_space_and_domain(__isl_take isl_aff *aff,
