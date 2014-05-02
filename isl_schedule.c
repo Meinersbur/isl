@@ -1,6 +1,6 @@
 /*
  * Copyright 2011      INRIA Saclay
- * Copyright 2012-2013 Ecole Normale Superieure
+ * Copyright 2012-2014 Ecole Normale Superieure
  *
  * Use of this software is governed by the MIT license
  *
@@ -29,6 +29,7 @@
 #include <isl_band_private.h>
 #include <isl_options_private.h>
 #include <isl_tarjan.h>
+#include <isl_morph.h>
 
 /*
  * The scheduling algorithm implemented in this file was inspired by
@@ -272,9 +273,11 @@ static __isl_give int isl_schedule_constraints_n_map(
  * of a schedule.
  * space represents the space in which the domain lives
  * sched is a matrix representation of the schedule being constructed
- *	for this node
+ *	for this node; if compressed is set, then this schedule is
+ *	defined over the compressed domain space
  * sched_map is an isl_map representation of the same (partial) schedule
- *	sched_map may be NULL
+ *	sched_map may be NULL; if compressed is set, then this map
+ *	is defined over the uncompressed domain space
  * rank is the number of linearly independent rows in the linear part
  *	of sched
  * the columns of cmap represent a change of basis for the schedule
@@ -286,6 +289,11 @@ static __isl_give int isl_schedule_constraints_n_map(
  * nvar is the dimension of the domain
  * nparam is the number of parameters or 0 if we are not constructing
  *	a parametric schedule
+ *
+ * If compressed is set, then hull represents the constraints
+ * that were used to derive the compression, while compress and
+ * decompress map the original space to the compressed space and
+ * vice versa.
  *
  * scc is the index of SCC (or WCC) this node belongs to
  *
@@ -300,6 +308,10 @@ static __isl_give int isl_schedule_constraints_n_map(
  */
 struct isl_sched_node {
 	isl_space *space;
+	int	compressed;
+	isl_set	*hull;
+	isl_multi_aff *compress;
+	isl_multi_aff *decompress;
 	isl_mat *sched;
 	isl_map *sched_map;
 	int	 rank;
@@ -377,6 +389,9 @@ struct isl_sched_edge {
  *	for dependences from a node to itself
  * inter_hmap is a cache, mapping dependence relations to their dual,
  *	for dependences between distinct nodes
+ * if compression is involved then the key for these maps
+ * it the original, uncompressed dependence relation, while
+ * the value is the dual of the compressed dependence relation.
  *
  * n is the number of nodes
  * node is the list of nodes
@@ -719,6 +734,9 @@ static void graph_free(isl_ctx *ctx, struct isl_sched_graph *graph)
 	if (graph->node)
 		for (i = 0; i < graph->n; ++i) {
 			isl_space_free(graph->node[i].space);
+			isl_set_free(graph->node[i].hull);
+			isl_multi_aff_free(graph->node[i].compress);
+			isl_multi_aff_free(graph->node[i].decompress);
 			isl_mat_free(graph->node[i].sched);
 			isl_map_free(graph->node[i].sched_map);
 			isl_mat_free(graph->node[i].cmap);
@@ -782,21 +800,53 @@ static int compute_max_row(struct isl_sched_graph *graph,
 	return 0;
 }
 
-/* Add a new node to the graph representing the given set.
+/* Does "bset" have any defining equalities for its set variables?
  */
-static int extract_node(__isl_take isl_set *set, void *user)
+static int has_any_defining_equality(__isl_keep isl_basic_set *bset)
 {
-	int nvar, nparam;
+	int i, n;
+
+	if (!bset)
+		return -1;
+
+	n = isl_basic_set_dim(bset, isl_dim_set);
+	for (i = 0; i < n; ++i) {
+		int has;
+
+		has = isl_basic_set_has_defining_equality(bset, isl_dim_set, i,
+							NULL);
+		if (has < 0 || has)
+			return has;
+	}
+
+	return 0;
+}
+
+/* Add a new node to the graph representing the given space.
+ * "nvar" is the (possibly compressed) number of variables and
+ * may be smaller than then number of set variables in "space"
+ * if "compressed" is set.
+ * If "compressed" is set, then "hull" represents the constraints
+ * that were used to derive the compression, while "compress" and
+ * "decompress" map the original space to the compressed space and
+ * vice versa.
+ * If "compressed" is not set, then "hull", "compress" and "decompress"
+ * should be NULL.
+ */
+static int add_node(struct isl_sched_graph *graph, __isl_take isl_space *space,
+	int nvar, int compressed, __isl_take isl_set *hull,
+	__isl_take isl_multi_aff *compress,
+	__isl_take isl_multi_aff *decompress)
+{
+	int nparam;
 	isl_ctx *ctx;
-	isl_space *space;
 	isl_mat *sched;
-	struct isl_sched_graph *graph = user;
 	int *band, *band_id, *coincident;
 
-	ctx = isl_set_get_ctx(set);
-	space = isl_set_get_space(set);
-	isl_set_free(set);
-	nvar = isl_space_dim(space, isl_dim_set);
+	if (!space)
+		return -1;
+
+	ctx = isl_space_get_ctx(space);
 	nparam = isl_space_dim(space, isl_dim_param);
 	if (!ctx->opt->schedule_parametric)
 		nparam = 0;
@@ -812,13 +862,64 @@ static int extract_node(__isl_take isl_set *set, void *user)
 	graph->node[graph->n].band_id = band_id;
 	coincident = isl_calloc_array(ctx, int, graph->max_row);
 	graph->node[graph->n].coincident = coincident;
+	graph->node[graph->n].compressed = compressed;
+	graph->node[graph->n].hull = hull;
+	graph->node[graph->n].compress = compress;
+	graph->node[graph->n].decompress = decompress;
 	graph->n++;
 
 	if (!space || !sched ||
 	    (graph->max_row && (!band || !band_id || !coincident)))
 		return -1;
+	if (compressed && (!hull || !compress || !decompress))
+		return -1;
 
 	return 0;
+}
+
+/* Add a new node to the graph representing the given set.
+ *
+ * If any of the set variables is defined by an equality, then
+ * we perform variable compression such that we can perform
+ * the scheduling on the compressed domain.
+ */
+static int extract_node(__isl_take isl_set *set, void *user)
+{
+	int nvar;
+	int has_equality;
+	isl_space *space;
+	isl_basic_set *hull;
+	isl_set *hull_set;
+	isl_morph *morph;
+	isl_multi_aff *compress, *decompress;
+	struct isl_sched_graph *graph = user;
+
+	space = isl_set_get_space(set);
+	hull = isl_set_affine_hull(set);
+	hull = isl_basic_set_remove_divs(hull);
+	nvar = isl_space_dim(space, isl_dim_set);
+	has_equality = has_any_defining_equality(hull);
+
+	if (has_equality < 0)
+		goto error;
+	if (!has_equality) {
+		isl_basic_set_free(hull);
+		return add_node(graph, space, nvar, 0, NULL, NULL, NULL);
+	}
+
+	morph = isl_basic_set_variable_compression(hull, isl_dim_set);
+	nvar = isl_morph_ran_dim(morph, isl_dim_set);
+	compress = isl_morph_get_var_multi_aff(morph);
+	morph = isl_morph_inverse(morph);
+	decompress = isl_morph_get_var_multi_aff(morph);
+	isl_morph_free(morph);
+
+	hull_set = isl_set_from_basic_set(hull);
+	return add_node(graph, space, nvar, 1, hull_set, compress, decompress);
+error:
+	isl_basic_set_free(hull);
+	isl_space_free(space);
+	return -1;
 }
 
 struct isl_extract_edge_data {
@@ -906,6 +1007,42 @@ static __isl_give isl_map *insert_dummy_tags(__isl_take isl_map *map)
 	return map;
 }
 
+/* Given that at least one of "src" or "dst" is compressed, return
+ * a map between the spaces of these nodes restricted to the affine
+ * hull that was used in the compression.
+ */
+static __isl_give isl_map *extract_hull(struct isl_sched_node *src,
+	struct isl_sched_node *dst)
+{
+	isl_set *dom, *ran;
+
+	if (src->compressed)
+		dom = isl_set_copy(src->hull);
+	else
+		dom = isl_set_universe(isl_space_copy(src->space));
+	if (dst->compressed)
+		ran = isl_set_copy(dst->hull);
+	else
+		ran = isl_set_universe(isl_space_copy(dst->space));
+
+	return isl_map_from_domain_and_range(dom, ran);
+}
+
+/* Intersect the domains of the nested relations in domain and range
+ * of "tagged" with "map".
+ */
+static __isl_give isl_map *map_intersect_domains(__isl_take isl_map *tagged,
+	__isl_keep isl_map *map)
+{
+	isl_set *set;
+
+	tagged = isl_map_zip(tagged);
+	set = isl_map_wrap(isl_map_copy(map));
+	tagged = isl_map_intersect_domain(tagged, set);
+	tagged = isl_map_zip(tagged);
+	return tagged;
+}
+
 /* Add a new edge to the graph based on the given map
  * and add it to data->graph->edge_table[data->type].
  * If a dependence relation of a given type happens to be identical
@@ -921,6 +1058,13 @@ static __isl_give isl_map *insert_dummy_tags(__isl_take isl_map *map)
  * while edge->tagged_condition and edge->tagged_validity contain
  * the union of all the "map" relations
  * for which extract_edge is called that result in the same edge->map.
+ *
+ * If the source or the destination node is compressed, then
+ * intersect both "map" and "tagged" with the constraints that
+ * were used to construct the compression.
+ * This ensures that there are no schedule constraints defined
+ * outside of these domains, while the scheduler no longer has
+ * any control over those outside parts.
  */
 static int extract_edge(__isl_take isl_map *map, void *user)
 {
@@ -953,6 +1097,14 @@ static int extract_edge(__isl_take isl_map *map, void *user)
 		isl_map_free(map);
 		isl_map_free(tagged);
 		return 0;
+	}
+
+	if (src->compressed || dst->compressed) {
+		isl_map *hull;
+		hull = extract_hull(src, dst);
+		if (tagged)
+			tagged = map_intersect_domains(tagged, hull);
+		map = isl_map_intersect(map, hull);
 	}
 
 	graph->edge[graph->n_edge].src = src;
@@ -1088,7 +1240,7 @@ static int sort_sccs(struct isl_sched_graph *graph)
 	return isl_sort(graph->sorted, graph->n, sizeof(int), &cmp_scc, graph);
 }
 
-/* Given a dependence relation R from a node to itself,
+/* Given a dependence relation R from "node" to itself,
  * construct the set of coefficients of valid constraints for elements
  * in that dependence relation.
  * In particular, the result contains tuples of coefficients
@@ -1104,19 +1256,31 @@ static int sort_sccs(struct isl_sched_graph *graph)
  * Alternatively, we could have computed the dual of R, resulting
  * in a set of tuples c_0, c_n, c_x, c_y, and then
  * plugged in (c_0, c_n, c_x, -c_x).
+ *
+ * If "node" has been compressed, then the dependence relation
+ * is also compressed before the set of coefficients is computed.
  */
 static __isl_give isl_basic_set *intra_coefficients(
-	struct isl_sched_graph *graph, __isl_take isl_map *map)
+	struct isl_sched_graph *graph, struct isl_sched_node *node,
+	__isl_take isl_map *map)
 {
 	isl_set *delta;
+	isl_map *key;
 	isl_basic_set *coef;
 
 	if (isl_map_to_basic_set_has(graph->intra_hmap, map))
 		return isl_map_to_basic_set_get(graph->intra_hmap, map);
 
-	delta = isl_set_remove_divs(isl_map_deltas(isl_map_copy(map)));
+	key = isl_map_copy(map);
+	if (node->compressed) {
+		map = isl_map_preimage_domain_multi_aff(map,
+				    isl_multi_aff_copy(node->decompress));
+		map = isl_map_preimage_range_multi_aff(map,
+				    isl_multi_aff_copy(node->decompress));
+	}
+	delta = isl_set_remove_divs(isl_map_deltas(map));
 	coef = isl_set_coefficients(delta);
-	graph->intra_hmap = isl_map_to_basic_set_set(graph->intra_hmap, map,
+	graph->intra_hmap = isl_map_to_basic_set_set(graph->intra_hmap, key,
 					isl_basic_set_copy(coef));
 
 	return coef;
@@ -1129,19 +1293,31 @@ static __isl_give isl_basic_set *intra_coefficients(
  *
  *	c_0 + c_n n + c_x x + c_y y >= 0 for each (x,y) in R
  *
+ * If the source or destination nodes of "edge" have been compressed,
+ * then the dependence relation is also compressed before
+ * the set of coefficients is computed.
  */
 static __isl_give isl_basic_set *inter_coefficients(
-	struct isl_sched_graph *graph, __isl_take isl_map *map)
+	struct isl_sched_graph *graph, struct isl_sched_edge *edge,
+	__isl_take isl_map *map)
 {
 	isl_set *set;
+	isl_map *key;
 	isl_basic_set *coef;
 
 	if (isl_map_to_basic_set_has(graph->inter_hmap, map))
 		return isl_map_to_basic_set_get(graph->inter_hmap, map);
 
-	set = isl_map_wrap(isl_map_remove_divs(isl_map_copy(map)));
+	key = isl_map_copy(map);
+	if (edge->src->compressed)
+		map = isl_map_preimage_domain_multi_aff(map,
+				    isl_multi_aff_copy(edge->src->decompress));
+	if (edge->dst->compressed)
+		map = isl_map_preimage_range_multi_aff(map,
+				    isl_multi_aff_copy(edge->dst->decompress));
+	set = isl_map_wrap(isl_map_remove_divs(map));
 	coef = isl_set_coefficients(set);
-	graph->inter_hmap = isl_map_to_basic_set_set(graph->inter_hmap, map,
+	graph->inter_hmap = isl_map_to_basic_set_set(graph->inter_hmap, key,
 					isl_basic_set_copy(coef));
 
 	return coef;
@@ -1175,7 +1351,7 @@ static int add_intra_validity_constraints(struct isl_sched_graph *graph,
 	isl_basic_set *coef;
 	struct isl_sched_node *node = edge->src;
 
-	coef = intra_coefficients(graph, map);
+	coef = intra_coefficients(graph, node, map);
 
 	dim = isl_space_domain(isl_space_unwrap(isl_basic_set_get_space(coef)));
 
@@ -1234,7 +1410,7 @@ static int add_inter_validity_constraints(struct isl_sched_graph *graph,
 	struct isl_sched_node *src = edge->src;
 	struct isl_sched_node *dst = edge->dst;
 
-	coef = inter_coefficients(graph, map);
+	coef = inter_coefficients(graph, edge, map);
 
 	dim = isl_space_domain(isl_space_unwrap(isl_basic_set_get_space(coef)));
 
@@ -1341,7 +1517,7 @@ static int add_intra_proximity_constraints(struct isl_sched_graph *graph,
 	isl_basic_set *coef;
 	struct isl_sched_node *node = edge->src;
 
-	coef = intra_coefficients(graph, map);
+	coef = intra_coefficients(graph, node, map);
 
 	dim = isl_space_domain(isl_space_unwrap(isl_basic_set_get_space(coef)));
 
@@ -1441,7 +1617,7 @@ static int add_inter_proximity_constraints(struct isl_sched_graph *graph,
 	struct isl_sched_node *src = edge->src;
 	struct isl_sched_node *dst = edge->dst;
 
-	coef = inter_coefficients(graph, map);
+	coef = inter_coefficients(graph, edge, map);
 
 	dim = isl_space_domain(isl_space_unwrap(isl_basic_set_get_space(coef)));
 
@@ -1675,9 +1851,9 @@ static int count_map_constraints(struct isl_sched_graph *graph,
 	}
 
 	if (edge->src == edge->dst)
-		coef = intra_coefficients(graph, map);
+		coef = intra_coefficients(graph, edge->src, map);
 	else
-		coef = inter_coefficients(graph, map);
+		coef = inter_coefficients(graph, edge, map);
 	if (!coef)
 		return -1;
 	*n_eq += f * coef->n_eq;
@@ -2094,6 +2270,8 @@ static __isl_give isl_aff *extract_schedule_row(__isl_take isl_local_space *ls,
 }
 
 /* Convert node->sched into a multi_aff and return this multi_aff.
+ *
+ * The result is defined over the uncompressed node domain.
  */
 static __isl_give isl_multi_aff *node_extract_schedule_multi_aff(
 	struct isl_sched_node *node)
@@ -2107,10 +2285,14 @@ static __isl_give isl_multi_aff *node_extract_schedule_multi_aff(
 
 	nrow = isl_mat_rows(node->sched);
 	ncol = isl_mat_cols(node->sched) - 1;
-	space = isl_space_from_domain(isl_space_copy(node->space));
+	if (node->compressed)
+		space = isl_multi_aff_get_domain_space(node->decompress);
+	else
+		space = isl_space_copy(node->space);
+	ls = isl_local_space_from_space(isl_space_copy(space));
+	space = isl_space_from_domain(space);
 	space = isl_space_add_dims(space, isl_dim_out, nrow);
 	ma = isl_multi_aff_zero(space);
-	ls = isl_local_space_from_space(isl_space_copy(node->space));
 
 	for (i = 0; i < nrow; ++i) {
 		aff = extract_schedule_row(isl_local_space_copy(ls), node, i);
@@ -2119,6 +2301,10 @@ static __isl_give isl_multi_aff *node_extract_schedule_multi_aff(
 
 	isl_local_space_free(ls);
 
+	if (node->compressed)
+		ma = isl_multi_aff_pullback_multi_aff(ma,
+					isl_multi_aff_copy(node->compress));
+
 	return ma;
 }
 
@@ -2126,6 +2312,7 @@ static __isl_give isl_multi_aff *node_extract_schedule_multi_aff(
  *
  * The result is cached in node->sched_map, which needs to be released
  * whenever node->sched is updated.
+ * It is defined over the uncompressed node domain.
  */
 static __isl_give isl_map *node_extract_schedule(struct isl_sched_node *node)
 {
@@ -2367,6 +2554,12 @@ static int copy_nodes(struct isl_sched_graph *dst, struct isl_sched_graph *src,
 
 		j = dst->n;
 		dst->node[j].space = isl_space_copy(src->node[i].space);
+		dst->node[j].compressed = src->node[i].compressed;
+		dst->node[j].hull = isl_set_copy(src->node[i].hull);
+		dst->node[j].compress =
+			isl_multi_aff_copy(src->node[i].compress);
+		dst->node[j].decompress =
+			isl_multi_aff_copy(src->node[i].decompress);
 		dst->node[j].nvar = src->node[i].nvar;
 		dst->node[j].nparam = src->node[i].nparam;
 		dst->node[j].sched = isl_mat_copy(src->node[i].sched);
@@ -2377,6 +2570,10 @@ static int copy_nodes(struct isl_sched_graph *dst, struct isl_sched_graph *src,
 		dst->n++;
 
 		if (!dst->node[j].space || !dst->node[j].sched)
+			return -1;
+		if (dst->node[j].compressed &&
+		    (!dst->node[j].hull || !dst->node[j].compress ||
+		     !dst->node[j].decompress))
 			return -1;
 	}
 
@@ -2780,7 +2977,7 @@ static int add_intra_constraints(struct isl_sched_graph *graph,
 	isl_basic_set *coef;
 	struct isl_sched_node *node = edge->src;
 
-	coef = intra_coefficients(graph, map);
+	coef = intra_coefficients(graph, node, map);
 	if (!coef)
 		return -1;
 
@@ -2830,7 +3027,7 @@ static int add_inter_constraints(struct isl_sched_graph *graph,
 	struct isl_sched_node *src = edge->src;
 	struct isl_sched_node *dst = edge->dst;
 
-	coef = inter_coefficients(graph, map);
+	coef = inter_coefficients(graph, edge, map);
 	if (!coef)
 		return -1;
 
