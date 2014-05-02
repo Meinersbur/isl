@@ -95,6 +95,16 @@ void isl_morph_free(__isl_take isl_morph *morph)
 	free(morph);
 }
 
+/* Return the domain space of "morph".
+ */
+__isl_give isl_space *isl_morph_get_dom_space(__isl_keep isl_morph *morph)
+{
+	if (!morph)
+		return NULL;
+
+	return isl_basic_set_get_space(morph->dom);
+}
+
 __isl_give isl_space *isl_morph_get_ran_space(__isl_keep isl_morph *morph)
 {
 	if (!morph)
