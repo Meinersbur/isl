@@ -58,6 +58,8 @@ int isl_schedule_band_is_anchored(__isl_keep isl_schedule_band *band);
 
 __isl_give isl_space *isl_schedule_band_get_space(
 	__isl_keep isl_schedule_band *band);
+__isl_give isl_schedule_band *isl_schedule_band_intersect_domain(
+	__isl_take isl_schedule_band *band, __isl_take isl_union_set *domain);
 __isl_give isl_multi_union_pw_aff *isl_schedule_band_get_partial_schedule(
 	__isl_keep isl_schedule_band *band);
 enum isl_ast_loop_type isl_schedule_band_member_get_ast_loop_type(

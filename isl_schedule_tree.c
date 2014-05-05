@@ -929,6 +929,30 @@ __isl_give isl_space *isl_schedule_tree_band_get_space(
 	return isl_schedule_band_get_space(tree->band);
 }
 
+/* Intersect the domain of the band schedule of the band tree root
+ * with "domain".
+ */
+__isl_give isl_schedule_tree *isl_schedule_tree_band_intersect_domain(
+	__isl_take isl_schedule_tree *tree, __isl_take isl_union_set *domain)
+{
+	if (!tree || !domain)
+		goto error;
+
+	if (tree->type != isl_schedule_node_band)
+		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_invalid,
+			"not a band node", goto error);
+
+	tree->band = isl_schedule_band_intersect_domain(tree->band, domain);
+	if (!tree->band)
+		return isl_schedule_tree_free(tree);
+
+	return tree;
+error:
+	isl_schedule_tree_free(tree);
+	isl_union_set_free(domain);
+	return NULL;
+}
+
 /* Return the schedule of the band tree root in isolation.
  */
 __isl_give isl_multi_union_pw_aff *isl_schedule_tree_band_get_partial_schedule(
