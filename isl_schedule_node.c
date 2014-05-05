@@ -1813,20 +1813,32 @@ error:
  * to the current tree position by node->tree and continue updating
  * the ancestors in the same way until the root is reached.
  *
+ * If "fn" is not NULL, then it is called on each ancestor as we move up
+ * the tree so that it can modify the ancestor before it is added
+ * to the list of ancestors of the modified node.
+ * The additional "pos" argument records the position
+ * of the "tree" argument in the original schedule tree.
+ *
  * If "node" originally points to a leaf of the schedule tree, then make sure
  * that in the end it points to a leaf in the updated schedule tree.
  */
 static __isl_give isl_schedule_node *update_ancestors(
-	__isl_take isl_schedule_node *node)
+	__isl_take isl_schedule_node *node,
+	__isl_give isl_schedule_tree *(*fn)(__isl_take isl_schedule_tree *tree,
+		__isl_keep isl_schedule_node *pos, void *user), void *user)
 {
 	int i, n;
 	int is_leaf;
 	isl_ctx *ctx;
 	isl_schedule_tree *tree;
+	isl_schedule_node *pos = NULL;
+
+	if (fn)
+		pos = isl_schedule_node_copy(node);
 
 	node = isl_schedule_node_cow(node);
 	if (!node)
-		return NULL;
+		return isl_schedule_node_free(pos);
 
 	ctx = isl_schedule_node_get_ctx(node);
 	n = isl_schedule_tree_list_n_schedule_tree(node->ancestors);
@@ -1839,11 +1851,18 @@ static __isl_give isl_schedule_node *update_ancestors(
 						    node->ancestors, i);
 		parent = isl_schedule_tree_replace_child(parent,
 						    node->child_pos[i], tree);
+		if (fn) {
+			pos = isl_schedule_node_parent(pos);
+			parent = fn(parent, pos, user);
+		}
 		node->ancestors = isl_schedule_tree_list_set_schedule_tree(
 			    node->ancestors, i, isl_schedule_tree_copy(parent));
 
 		tree = parent;
 	}
+
+	if (fn)
+		isl_schedule_node_free(pos);
 
 	is_leaf = isl_schedule_tree_is_leaf(node->tree);
 	node->schedule = isl_schedule_set_root(node->schedule, tree);
@@ -1878,7 +1897,7 @@ __isl_give isl_schedule_node *isl_schedule_node_graft_tree(
 	isl_schedule_tree_free(pos->tree);
 	pos->tree = tree;
 
-	return update_ancestors(pos);
+	return update_ancestors(pos, NULL, NULL);
 error:
 	isl_schedule_node_free(pos);
 	isl_schedule_tree_free(tree);
