@@ -231,6 +231,8 @@ __isl_give isl_pw_aff *isl_pw_aff_intersect_params(__isl_take isl_pw_aff *pa,
 	__isl_take isl_set *set);
 __isl_give isl_pw_aff *isl_pw_aff_intersect_domain(__isl_take isl_pw_aff *pa,
 	__isl_take isl_set *set);
+__isl_give isl_pw_aff *isl_pw_aff_subtract_domain(__isl_take isl_pw_aff *pa,
+	__isl_take isl_set *set);
 
 __isl_give isl_pw_aff *isl_pw_aff_cond(__isl_take isl_pw_aff *cond,
 	__isl_take isl_pw_aff *pwaff_true, __isl_take isl_pw_aff *pwaff_false);
@@ -473,6 +475,8 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_product(
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_intersect_params(
 	__isl_take isl_pw_multi_aff *pma, __isl_take isl_set *set);
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_intersect_domain(
+	__isl_take isl_pw_multi_aff *pma, __isl_take isl_set *set);
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_subtract_domain(
 	__isl_take isl_pw_multi_aff *pma, __isl_take isl_set *set);
 
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_project_domain_on_params(

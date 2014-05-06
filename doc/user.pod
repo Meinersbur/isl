@@ -5037,9 +5037,12 @@ at least one element and all elements need to live in the same space.
 
 =item * Set difference
 
+	#include <isl/set.h>
 	__isl_give isl_set *isl_set_subtract(
 		__isl_take isl_set *set1,
 		__isl_take isl_set *set2);
+
+	#include <isl/map.h>
 	__isl_give isl_map *isl_map_subtract(
 		__isl_take isl_map *map1,
 		__isl_take isl_map *map2);
@@ -5049,9 +5052,13 @@ at least one element and all elements need to live in the same space.
 	__isl_give isl_map *isl_map_subtract_range(
 		__isl_take isl_map *map,
 		__isl_take isl_set *dom);
+
+	#include <isl/union_set.h>
 	__isl_give isl_union_set *isl_union_set_subtract(
 		__isl_take isl_union_set *uset1,
 		__isl_take isl_union_set *uset2);
+
+	#include <isl/union_map.h>
 	__isl_give isl_union_map *isl_union_map_subtract(
 		__isl_take isl_union_map *umap1,
 		__isl_take isl_union_map *umap2);
@@ -5061,6 +5068,25 @@ at least one element and all elements need to live in the same space.
 	__isl_give isl_union_map *isl_union_map_subtract_range(
 		__isl_take isl_union_map *umap,
 		__isl_take isl_union_set *dom);
+
+	#include <isl/aff.h>
+	__isl_give isl_pw_aff *isl_pw_aff_subtract_domain(
+		__isl_take isl_pw_aff *pa,
+		__isl_take isl_set *set);
+	__isl_give isl_pw_multi_aff *
+	isl_pw_multi_aff_subtract_domain(
+		__isl_take isl_pw_multi_aff *pma,
+		__isl_take isl_set *set);
+
+	#include <isl/polynomial.h>
+	__isl_give isl_pw_qpolynomial *
+	isl_pw_qpolynomial_subtract_domain(
+		__isl_take isl_pw_qpolynomial *pwpq,
+		__isl_take isl_set *set);
+	__isl_give isl_pw_qpolynomial_fold *
+	isl_pw_qpolynomial_fold_subtract_domain(
+		__isl_take isl_pw_qpolynomial_fold *pwf,
+		__isl_take isl_set *set);
 
 =item * Application
 
