@@ -423,8 +423,8 @@ static int collect_filter_prefix_update(__isl_keep isl_schedule_tree *tree,
 	return 0;
 }
 
-/* Collect filter and/or prefix information from the elements
- * in "list" (which represent the ancestors of a node).
+/* Collect filter and/or prefix information from the first "n"
+ * elements in "list" (which represent the ancestors of a node).
  * Store the results in "data".
  *
  * Return 0 on success and -1 on error.
@@ -437,9 +437,9 @@ static int collect_filter_prefix_update(__isl_keep isl_schedule_tree *tree,
  * ancestor is a domain node, which always results in an initialization.
  */
 static int collect_filter_prefix(__isl_keep isl_schedule_tree_list *list,
-	struct isl_schedule_node_get_filter_prefix_data *data)
+	int n, struct isl_schedule_node_get_filter_prefix_data *data)
 {
-	int i, n;
+	int i;
 
 	data->initialized = 0;
 	data->filter = NULL;
@@ -447,7 +447,6 @@ static int collect_filter_prefix(__isl_keep isl_schedule_tree_list *list,
 	if (!list)
 		return -1;
 
-	n = isl_schedule_tree_list_n_schedule_tree(list);
 	for (i = n - 1; i >= 0; --i) {
 		isl_schedule_tree *tree;
 		int r;
@@ -487,6 +486,7 @@ __isl_give isl_union_pw_multi_aff *
 isl_schedule_node_get_prefix_schedule_union_pw_multi_aff(
 	__isl_keep isl_schedule_node *node)
 {
+	int n;
 	isl_space *space;
 	isl_union_pw_multi_aff *prefix;
 	struct isl_schedule_node_get_filter_prefix_data data;
@@ -504,7 +504,8 @@ isl_schedule_node_get_prefix_schedule_union_pw_multi_aff(
 	data.collect_prefix = 1;
 	data.prefix = isl_multi_union_pw_aff_zero(space);
 
-	if (collect_filter_prefix(node->ancestors, &data) < 0)
+	n = isl_schedule_tree_list_n_schedule_tree(node->ancestors);
+	if (collect_filter_prefix(node->ancestors, n, &data) < 0)
 		data.prefix = isl_multi_union_pw_aff_free(data.prefix);
 
 	if (data.prefix &&
@@ -546,6 +547,7 @@ __isl_give isl_union_map *isl_schedule_node_get_prefix_schedule_union_map(
 __isl_give isl_union_set *isl_schedule_node_get_domain(
 	__isl_keep isl_schedule_node *node)
 {
+	int n;
 	struct isl_schedule_node_get_filter_prefix_data data;
 
 	if (!node)
@@ -563,7 +565,8 @@ __isl_give isl_union_set *isl_schedule_node_get_domain(
 	data.collect_prefix = 0;
 	data.prefix = NULL;
 
-	if (collect_filter_prefix(node->ancestors, &data) < 0)
+	n = isl_schedule_tree_list_n_schedule_tree(node->ancestors);
+	if (collect_filter_prefix(node->ancestors, n, &data) < 0)
 		data.filter = isl_union_set_free(data.filter);
 
 	return data.filter;
@@ -581,6 +584,7 @@ __isl_give isl_union_set *isl_schedule_node_get_domain(
 __isl_give isl_union_set *isl_schedule_node_get_universe_domain(
 	__isl_keep isl_schedule_node *node)
 {
+	int n;
 	struct isl_schedule_node_get_filter_prefix_data data;
 
 	if (!node)
@@ -598,7 +602,8 @@ __isl_give isl_union_set *isl_schedule_node_get_universe_domain(
 	data.collect_prefix = 0;
 	data.prefix = NULL;
 
-	if (collect_filter_prefix(node->ancestors, &data) < 0)
+	n = isl_schedule_tree_list_n_schedule_tree(node->ancestors);
+	if (collect_filter_prefix(node->ancestors, n, &data) < 0)
 		data.filter = isl_union_set_free(data.filter);
 
 	return data.filter;
