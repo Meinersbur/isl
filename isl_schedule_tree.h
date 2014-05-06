@@ -26,6 +26,14 @@ ISL_DECLARE_LIST(schedule_tree)
  * possibly introducing additional parameters.
  * The "domain" field is valid when type is isl_schedule_node_domain
  * and introduces the statement instances scheduled by the tree.
+ *
+ * The "contraction" and "expansion" fields are valid when type
+ * is isl_schedule_node_expansion.
+ * "expansion" expands the reaching domain elements to one or more
+ * domain elements for the subtree.
+ * "contraction" maps these elements back to the corresponding
+ * reaching domain element.  It does not involve any domain constraints.
+ *
  * The "filter" field is valid when type is isl_schedule_node_filter
  * and represents the statement instances selected by the node.
  *
@@ -45,6 +53,10 @@ struct isl_schedule_tree {
 		isl_schedule_band *band;
 		isl_set *context;
 		isl_union_set *domain;
+		struct {
+			isl_union_pw_multi_aff *contraction;
+			isl_union_map *expansion;
+		};
 		isl_union_set *filter;
 	};
 	isl_schedule_tree_list *children;
@@ -71,6 +83,9 @@ __isl_give isl_schedule_tree *isl_schedule_tree_from_context(
 	__isl_take isl_set *context);
 __isl_give isl_schedule_tree *isl_schedule_tree_from_domain(
 	__isl_take isl_union_set *domain);
+__isl_give isl_schedule_tree *isl_schedule_tree_from_expansion(
+	__isl_take isl_union_pw_multi_aff *contraction,
+	__isl_take isl_union_map *expansion);
 __isl_give isl_schedule_tree *isl_schedule_tree_from_filter(
 	__isl_take isl_union_set *filter);
 __isl_give isl_schedule_tree *isl_schedule_tree_from_children(
@@ -107,6 +122,15 @@ __isl_give isl_union_set *isl_schedule_tree_domain_get_domain(
 	__isl_keep isl_schedule_tree *tree);
 __isl_give isl_schedule_tree *isl_schedule_tree_domain_set_domain(
 	__isl_take isl_schedule_tree *tree, __isl_take isl_union_set *domain);
+__isl_give isl_union_pw_multi_aff *isl_schedule_tree_expansion_get_contraction(
+	__isl_keep isl_schedule_tree *tree);
+__isl_give isl_union_map *isl_schedule_tree_expansion_get_expansion(
+	__isl_keep isl_schedule_tree *tree);
+__isl_give isl_schedule_tree *
+isl_schedule_tree_expansion_set_contraction_and_expansion(
+	__isl_take isl_schedule_tree *tree,
+	__isl_take isl_union_pw_multi_aff *contraction,
+	__isl_take isl_union_map *expansion);
 __isl_give isl_union_set *isl_schedule_tree_filter_get_filter(
 	__isl_keep isl_schedule_tree *tree);
 __isl_give isl_schedule_tree *isl_schedule_tree_filter_set_filter(
@@ -138,6 +162,10 @@ __isl_give isl_schedule_tree *isl_schedule_tree_insert_context(
 	__isl_take isl_schedule_tree *tree, __isl_take isl_set *context);
 __isl_give isl_schedule_tree *isl_schedule_tree_insert_domain(
 	__isl_take isl_schedule_tree *tree, __isl_take isl_union_set *domain);
+__isl_give isl_schedule_tree *isl_schedule_tree_insert_expansion(
+	__isl_take isl_schedule_tree *tree,
+	__isl_take isl_union_pw_multi_aff *contraction,
+	__isl_take isl_union_map *expansion);
 __isl_give isl_schedule_tree *isl_schedule_tree_insert_filter(
 	__isl_take isl_schedule_tree *tree, __isl_take isl_union_set *filter);
 __isl_give isl_schedule_tree *isl_schedule_tree_children_insert_filter(

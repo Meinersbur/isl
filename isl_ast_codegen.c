@@ -4092,6 +4092,31 @@ static int after_in_context(__isl_keep isl_union_map *umap,
 
 /* Is any domain element of "umap" scheduled after any of
  * the corresponding image elements by the tree rooted at
+ * the expansion node "node"?
+ *
+ * We apply the expansion to domain and range of "umap" and
+ * continue with its child.
+ */
+static int after_in_expansion(__isl_keep isl_union_map *umap,
+	__isl_keep isl_schedule_node *node)
+{
+	isl_union_map *expansion;
+	int after;
+
+	expansion = isl_schedule_node_expansion_get_expansion(node);
+	umap = isl_union_map_copy(umap);
+	umap = isl_union_map_apply_domain(umap, isl_union_map_copy(expansion));
+	umap = isl_union_map_apply_range(umap, expansion);
+
+	after = after_in_child(umap, node);
+
+	isl_union_map_free(umap);
+
+	return after;
+}
+
+/* Is any domain element of "umap" scheduled after any of
+ * the corresponding image elements by the tree rooted at
  * the filter node "node"?
  *
  * We intersect domain and range of "umap" with the filter and
@@ -4258,6 +4283,8 @@ static int after_in_tree(__isl_keep isl_union_map *umap,
 			"unexpected internal domain node", return -1);
 	case isl_schedule_node_context:
 		return after_in_context(umap, node);
+	case isl_schedule_node_expansion:
+		return after_in_expansion(umap, node);
 	case isl_schedule_node_filter:
 		return after_in_filter(umap, node);
 	case isl_schedule_node_set:
@@ -4971,6 +4998,43 @@ static __isl_give isl_ast_graft_list *build_ast_from_context(
 }
 
 /* Generate an AST that visits the elements in the domain of "executed"
+ * in the relative order specified by the expansion node "node" and
+ * its descendants.
+ *
+ * The relation "executed" maps the outer generated loop iterators
+ * to the domain elements executed by those iterations.
+ *
+ * We expand the domain elements by the expansion and
+ * continue with the descendants of the node.
+ */
+static __isl_give isl_ast_graft_list *build_ast_from_expansion(
+	__isl_take isl_ast_build *build, __isl_take isl_schedule_node *node,
+	__isl_take isl_union_map *executed)
+{
+	isl_union_map *expansion;
+	unsigned n1, n2;
+
+	expansion = isl_schedule_node_expansion_get_expansion(node);
+	expansion = isl_union_map_align_params(expansion,
+				isl_union_map_get_space(executed));
+
+	n1 = isl_union_map_dim(executed, isl_dim_param);
+	executed = isl_union_map_apply_range(executed, expansion);
+	n2 = isl_union_map_dim(executed, isl_dim_param);
+	if (n2 > n1)
+		isl_die(isl_ast_build_get_ctx(build), isl_error_invalid,
+			"expansion node is not allowed to introduce "
+			"new parameters", goto error);
+
+	return build_ast_from_child(build, node, executed);
+error:
+	isl_ast_build_free(build);
+	isl_schedule_node_free(node);
+	isl_union_map_free(executed);
+	return NULL;
+}
+
+/* Generate an AST that visits the elements in the domain of "executed"
  * in the relative order specified by the filter node "node" and
  * its descendants.
  *
@@ -5104,6 +5168,8 @@ static __isl_give isl_ast_graft_list *build_ast_from_schedule_node(
 	case isl_schedule_node_domain:
 		isl_die(isl_schedule_node_get_ctx(node), isl_error_unsupported,
 			"unexpected internal domain node", goto error);
+	case isl_schedule_node_expansion:
+		return build_ast_from_expansion(build, node, executed);
 	case isl_schedule_node_filter:
 		return build_ast_from_filter(build, node, executed);
 	case isl_schedule_node_sequence:

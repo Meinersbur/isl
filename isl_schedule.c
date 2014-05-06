@@ -429,6 +429,8 @@ static __isl_give isl_schedule_node *pullback_upma(
 
 /* Compute the pullback of "schedule" by the function represented by "upma".
  * In other words, plug in "upma" in the iteration domains of "schedule".
+ *
+ * The schedule tree is not allowed to contain any expansion nodes.
  */
 __isl_give isl_schedule *isl_schedule_pullback_union_pw_multi_aff(
 	__isl_take isl_schedule *schedule,
@@ -734,6 +736,9 @@ static __isl_give isl_band_list *construct_band_list(
 	case isl_schedule_node_domain:
 		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
 			"internal domain nodes not allowed", goto error);
+	case isl_schedule_node_expansion:
+		isl_die(isl_schedule_node_get_ctx(node), isl_error_unsupported,
+			"expansion nodes not supported", goto error);
 	case isl_schedule_node_filter:
 		filter = isl_schedule_node_filter_get_filter(node);
 		domain = isl_union_set_intersect(domain, filter);

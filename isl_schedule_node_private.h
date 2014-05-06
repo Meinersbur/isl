@@ -45,4 +45,9 @@ __isl_give isl_schedule_node *isl_schedule_node_pullback_union_pw_multi_aff(
 __isl_give isl_schedule_node *isl_schedule_node_domain_intersect_domain(
 	__isl_take isl_schedule_node *node, __isl_take isl_union_set *domain);
 
+__isl_give isl_schedule_node *isl_schedule_node_insert_expansion(
+	__isl_take isl_schedule_node *node,
+	__isl_take isl_union_pw_multi_aff *contraction,
+	__isl_take isl_union_map *expansion);
+
 #endif

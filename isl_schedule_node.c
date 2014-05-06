@@ -298,6 +298,73 @@ struct isl_schedule_node_get_filter_prefix_data {
 	isl_multi_union_pw_aff *prefix;
 };
 
+static int collect_filter_prefix(__isl_keep isl_schedule_tree_list *list,
+	int n, struct isl_schedule_node_get_filter_prefix_data *data);
+
+/* Update the filter and prefix information in "data" based on the first "n"
+ * elements in "list" and the expansion tree root "tree".
+ *
+ * We first collect the information from the elements in "list",
+ * initializing the filter based on the domain of the expansion.
+ * Then we map the results to the expanded space and combined them
+ * with the results already in "data".
+ */
+static int collect_filter_prefix_expansion(__isl_take isl_schedule_tree *tree,
+	__isl_keep isl_schedule_tree_list *list, int n,
+	struct isl_schedule_node_get_filter_prefix_data *data)
+{
+	struct isl_schedule_node_get_filter_prefix_data contracted;
+	isl_union_pw_multi_aff *c;
+	isl_union_map *exp, *universe;
+	isl_union_set *filter;
+
+	c = isl_schedule_tree_expansion_get_contraction(tree);
+	exp = isl_schedule_tree_expansion_get_expansion(tree);
+
+	contracted.initialized = 1;
+	contracted.universe_domain = data->universe_domain;
+	contracted.universe_filter = data->universe_filter;
+	contracted.collect_prefix = data->collect_prefix;
+	universe = isl_union_map_universe(isl_union_map_copy(exp));
+	filter = isl_union_map_domain(universe);
+	if (data->collect_prefix) {
+		isl_space *space = isl_union_set_get_space(filter);
+		space = isl_space_set_from_params(space);
+		contracted.prefix = isl_multi_union_pw_aff_zero(space);
+	}
+	contracted.filter = filter;
+
+	if (collect_filter_prefix(list, n, &contracted) < 0)
+		contracted.filter = isl_union_set_free(contracted.filter);
+	if (data->collect_prefix) {
+		isl_multi_union_pw_aff *prefix;
+
+		prefix = contracted.prefix;
+		prefix =
+		    isl_multi_union_pw_aff_pullback_union_pw_multi_aff(prefix,
+						isl_union_pw_multi_aff_copy(c));
+		data->prefix = isl_multi_union_pw_aff_flat_range_product(
+						prefix, data->prefix);
+	}
+	filter = contracted.filter;
+	if (data->universe_domain)
+		filter = isl_union_set_preimage_union_pw_multi_aff(filter,
+						isl_union_pw_multi_aff_copy(c));
+	else
+		filter = isl_union_set_apply(filter, isl_union_map_copy(exp));
+	if (!data->initialized)
+		data->filter = filter;
+	else
+		data->filter = isl_union_set_intersect(filter, data->filter);
+	data->initialized = 1;
+
+	isl_union_pw_multi_aff_free(c);
+	isl_union_map_free(exp);
+	isl_schedule_tree_free(tree);
+
+	return 0;
+}
+
 /* Update "data" based on the tree node "tree" in case "data" has
  * not been initialized yet.
  *
@@ -324,6 +391,9 @@ static int collect_filter_prefix_init(__isl_keep isl_schedule_tree *tree,
 	switch (type) {
 	case isl_schedule_node_error:
 		return -1;
+	case isl_schedule_node_expansion:
+		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_internal,
+			"should be handled by caller", return -1);
 	case isl_schedule_node_context:
 	case isl_schedule_node_leaf:
 	case isl_schedule_node_sequence:
@@ -388,6 +458,9 @@ static int collect_filter_prefix_update(__isl_keep isl_schedule_tree *tree,
 	switch (type) {
 	case isl_schedule_node_error:
 		return -1;
+	case isl_schedule_node_expansion:
+		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_internal,
+			"should be handled by caller", return -1);
 	case isl_schedule_node_context:
 	case isl_schedule_node_leaf:
 	case isl_schedule_node_sequence:
@@ -433,6 +506,10 @@ static int collect_filter_prefix_update(__isl_keep isl_schedule_tree *tree,
  * to outermost ancestor (first element), calling collect_filter_prefix_init
  * on each node as long as we have not been able to extract any information
  * yet and collect_filter_prefix_update afterwards.
+ * If we come across an expansion node, then we interrupt the traversal
+ * and call collect_filter_prefix_expansion to restart the traversal
+ * over the remaining ancestors and to combine the results with those
+ * that have already been collected.
  * On successful return, data->initialized will be set since the outermost
  * ancestor is a domain node, which always results in an initialization.
  */
@@ -446,11 +523,16 @@ static int collect_filter_prefix(__isl_keep isl_schedule_tree_list *list,
 
 	for (i = n - 1; i >= 0; --i) {
 		isl_schedule_tree *tree;
+		enum isl_schedule_node_type type;
 		int r;
 
 		tree = isl_schedule_tree_list_get_schedule_tree(list, i);
 		if (!tree)
 			return -1;
+		type = isl_schedule_tree_get_type(tree);
+		if (type == isl_schedule_node_expansion)
+			return collect_filter_prefix_expansion(tree, list, i,
+								data);
 		if (!data->initialized)
 			r = collect_filter_prefix_init(tree, data);
 		else
@@ -617,6 +699,10 @@ __isl_give isl_union_set *isl_schedule_node_get_universe_domain(
  * Since isl_schedule_tree_get_subtree_schedule_union_map does not handle
  * trees that do not contain any schedule information, we first
  * move down to the first relevant descendant and handle leaves ourselves.
+ *
+ * If the subtree rooted at "node" contains any expansion nodes, then
+ * the returned subtree schedule is formulated in terms of the expanded
+ * domains.
  */
 __isl_give isl_union_map *isl_schedule_node_get_subtree_schedule_union_map(
 	__isl_keep isl_schedule_node *node)
@@ -1600,6 +1686,53 @@ __isl_give isl_union_set *isl_schedule_node_domain_get_domain(
 	return isl_schedule_tree_domain_get_domain(node->tree);
 }
 
+/* Return the expansion map of expansion node "node".
+ */
+__isl_give isl_union_map *isl_schedule_node_expansion_get_expansion(
+	__isl_keep isl_schedule_node *node)
+{
+	if (!node)
+		return NULL;
+
+	return isl_schedule_tree_expansion_get_expansion(node->tree);
+}
+
+/* Return the contraction of expansion node "node".
+ */
+__isl_give isl_union_pw_multi_aff *isl_schedule_node_expansion_get_contraction(
+	__isl_keep isl_schedule_node *node)
+{
+	if (!node)
+		return NULL;
+
+	return isl_schedule_tree_expansion_get_contraction(node->tree);
+}
+
+/* Replace the contraction and the expansion of the expansion node "node"
+ * by "contraction" and "expansion".
+ */
+__isl_give isl_schedule_node *
+isl_schedule_node_expansion_set_contraction_and_expansion(
+	__isl_take isl_schedule_node *node,
+	__isl_take isl_union_pw_multi_aff *contraction,
+	__isl_take isl_union_map *expansion)
+{
+	isl_schedule_tree *tree;
+
+	if (!node || !contraction || !expansion)
+		goto error;
+
+	tree = isl_schedule_tree_copy(node->tree);
+	tree = isl_schedule_tree_expansion_set_contraction_and_expansion(tree,
+							contraction, expansion);
+	return isl_schedule_node_graft_tree(node, tree);
+error:
+	isl_schedule_node_free(node);
+	isl_union_pw_multi_aff_free(contraction);
+	isl_union_map_free(expansion);
+	return NULL;
+}
+
 /* Return the filter of the filter node "node".
  */
 __isl_give isl_union_set *isl_schedule_node_filter_get_filter(
@@ -1784,6 +1917,32 @@ __isl_give isl_schedule_node *isl_schedule_node_insert_context(
 
 	tree = isl_schedule_node_get_tree(node);
 	tree = isl_schedule_tree_insert_context(tree, context);
+	node = isl_schedule_node_graft_tree(node, tree);
+
+	return node;
+}
+
+/* Insert an expansion node with the given "contraction" and "expansion"
+ * between "node" and its parent.
+ * Return a pointer to the new expansion node.
+ *
+ * Typically the domain and range spaces of the expansion are different.
+ * This means that only one of them can refer to the current domain space
+ * in a consistent tree.  It is up to the caller to ensure that the tree
+ * returns to a consistent state.
+ */
+__isl_give isl_schedule_node *isl_schedule_node_insert_expansion(
+	__isl_take isl_schedule_node *node,
+	__isl_take isl_union_pw_multi_aff *contraction,
+	__isl_take isl_union_map *expansion)
+{
+	isl_schedule_tree *tree;
+
+	if (check_insert(node) < 0)
+		node = isl_schedule_node_free(node);
+
+	tree = isl_schedule_node_get_tree(node);
+	tree = isl_schedule_tree_insert_expansion(tree, contraction, expansion);
 	node = isl_schedule_node_graft_tree(node, tree);
 
 	return node;
@@ -1976,24 +2135,71 @@ __isl_give isl_schedule_node *isl_schedule_node_band_gist(
 }
 
 /* Internal data structure for isl_schedule_node_gist.
- * "filters" contains an element for each outer filter node
+ * "n_expansion" is the number of outer expansion nodes
+ * with respect to the current position
+ * "filters" contains an element for each outer filter or expansion node
  * with respect to the current position, each representing
- * the intersection of the previous element and the filter on the filter node.
+ * the intersection of the previous element and the filter on the filter node
+ * or the expansion of the previous element.
  * The first element in the original context passed to isl_schedule_node_gist.
  */
 struct isl_node_gist_data {
+	int n_expansion;
 	isl_union_set_list *filters;
 };
+
+/* Enter the expansion node "node" during a isl_schedule_node_gist traversal.
+ *
+ * In particular, add an extra element to data->filters containing
+ * the expansion of the previous element and replace the expansion
+ * and contraction on "node" by the gist with respect to these filters.
+ * Also keep track of the fact that we have entered another expansion.
+ */
+static __isl_give isl_schedule_node *gist_enter_expansion(
+	__isl_take isl_schedule_node *node, struct isl_node_gist_data *data)
+{
+	int n;
+	isl_union_set *inner;
+	isl_union_map *expansion;
+	isl_union_pw_multi_aff *contraction;
+
+	data->n_expansion++;
+
+	n = isl_union_set_list_n_union_set(data->filters);
+	inner = isl_union_set_list_get_union_set(data->filters, n - 1);
+	expansion = isl_schedule_node_expansion_get_expansion(node);
+	inner = isl_union_set_apply(inner, expansion);
+
+	contraction = isl_schedule_node_expansion_get_contraction(node);
+	contraction = isl_union_pw_multi_aff_gist(contraction,
+						isl_union_set_copy(inner));
+
+	data->filters = isl_union_set_list_add(data->filters, inner);
+
+	inner = isl_union_set_list_get_union_set(data->filters, n - 1);
+	expansion = isl_schedule_node_expansion_get_expansion(node);
+	expansion = isl_union_map_gist_domain(expansion, inner);
+	node = isl_schedule_node_expansion_set_contraction_and_expansion(node,
+						contraction, expansion);
+
+	return node;
+}
 
 /* Can we finish gisting at this node?
  * That is, is the filter on the current filter node a subset of
  * the original context passed to isl_schedule_node_gist?
+ * If we have gone through any expansions, then we cannot perform
+ * this test since the current domain elements are incomparable
+ * to the domain elements in the original context.
  */
 static int gist_done(__isl_keep isl_schedule_node *node,
 	struct isl_node_gist_data *data)
 {
 	isl_union_set *filter, *outer;
 	int subset;
+
+	if (data->n_expansion != 0)
+		return 0;
 
 	filter = isl_schedule_node_filter_get_filter(node);
 	outer = isl_union_set_list_get_union_set(data->filters, 0);
@@ -2026,6 +2232,9 @@ static int gist_done(__isl_keep isl_schedule_node *node,
  * If the new element in the "filters" list is empty, then no elements
  * can reach the descendants of the current filter node.  The subtree
  * underneath the filter node is therefore removed.
+ *
+ * Each expansion node we come across is handled by
+ * gist_enter_expansion.
  */
 static __isl_give isl_schedule_node *gist_enter(
 	__isl_take isl_schedule_node *node, void *user)
@@ -2040,6 +2249,9 @@ static __isl_give isl_schedule_node *gist_enter(
 		switch (isl_schedule_node_get_type(node)) {
 		case isl_schedule_node_error:
 			return isl_schedule_node_free(node);
+		case isl_schedule_node_expansion:
+			node = gist_enter_expansion(node, data);
+			continue;
 		case isl_schedule_node_band:
 		case isl_schedule_node_context:
 		case isl_schedule_node_domain:
@@ -2088,6 +2300,10 @@ static __isl_give isl_schedule_node *gist_enter(
  * the node.  There is no need to compute any gist here, since we
  * already did that when we entered the node.
  *
+ * If the current node is an expansion, then we decrement
+ * the number of outer expansions and remove the element
+ * in data->filters that was added by gist_enter_expansion.
+ *
  * If the current node is a band node, then we compute the gist of
  * the band node with respect to the intersection of the original context
  * and the intermediate filters.
@@ -2113,6 +2329,8 @@ static __isl_give isl_schedule_node *gist_leave(
 	switch (isl_schedule_node_get_type(node)) {
 	case isl_schedule_node_error:
 		return isl_schedule_node_free(node);
+	case isl_schedule_node_expansion:
+		data->n_expansion--;
 	case isl_schedule_node_filter:
 		n = isl_union_set_list_n_union_set(data->filters);
 		data->filters = isl_union_set_list_drop(data->filters,
@@ -2184,6 +2402,7 @@ __isl_give isl_schedule_node *isl_schedule_node_gist(
 {
 	struct isl_node_gist_data data;
 
+	data.n_expansion = 0;
 	data.filters = isl_union_set_list_from_union_set(context);
 	node = traverse(node, &gist_enter, &gist_leave, &data);
 	isl_union_set_list_free(data.filters);
@@ -2269,6 +2488,7 @@ __isl_give isl_schedule_node *isl_schedule_node_align_params(
  * by the function represented by "upma".
  * In other words, plug in "upma" in the iteration domains
  * of schedule node "node".
+ * We currently do not handle expansion nodes.
  *
  * Note that this is only a helper function for
  * isl_schedule_pullback_union_pw_multi_aff.  In order to maintain consistency,

@@ -13,7 +13,9 @@ enum isl_schedule_key {
 	isl_schedule_key_child,
 	isl_schedule_key_coincident,
 	isl_schedule_key_context,
+	isl_schedule_key_contraction,
 	isl_schedule_key_domain,
+	isl_schedule_key_expansion,
 	isl_schedule_key_filter,
 	isl_schedule_key_leaf,
 	isl_schedule_key_options,
@@ -48,8 +50,12 @@ static enum isl_schedule_key extract_key(__isl_keep isl_stream *s,
 		key = isl_schedule_key_coincident;
 	else if (!strcmp(name, "context"))
 		key = isl_schedule_key_context;
+	else if (!strcmp(name, "contraction"))
+		key = isl_schedule_key_contraction;
 	else if (!strcmp(name, "domain"))
 		key = isl_schedule_key_domain;
+	else if (!strcmp(name, "expansion"))
+		key = isl_schedule_key_expansion;
 	else if (!strcmp(name, "filter"))
 		key = isl_schedule_key_filter;
 	else if (!strcmp(name, "leaf"))
@@ -189,6 +195,81 @@ static __isl_give isl_schedule_tree *read_domain(__isl_keep isl_stream *s)
 	return tree;
 error:
 	isl_union_set_free(domain);
+	return NULL;
+}
+
+/* Read a subtree with expansion root node from "s".
+ */
+static __isl_give isl_schedule_tree *read_expansion(isl_stream *s)
+{
+	isl_ctx *ctx;
+	isl_union_pw_multi_aff *contraction = NULL;
+	isl_union_map *expansion = NULL;
+	isl_schedule_tree *tree = NULL;
+	int more;
+
+	ctx = isl_stream_get_ctx(s);
+
+	do {
+		struct isl_token *tok;
+		enum isl_schedule_key key;
+		char *str;
+
+		key = get_key(s);
+		if (isl_stream_yaml_next(s) < 0)
+			goto error;
+
+		switch (key) {
+		case isl_schedule_key_contraction:
+			isl_union_pw_multi_aff_free(contraction);
+			tok = isl_stream_next_token(s);
+			str = isl_token_get_str(ctx, tok);
+			contraction = isl_union_pw_multi_aff_read_from_str(ctx,
+									str);
+			free(str);
+			isl_token_free(tok);
+			if (!contraction)
+				goto error;
+			break;
+		case isl_schedule_key_expansion:
+			isl_union_map_free(expansion);
+			tok = isl_stream_next_token(s);
+			str = isl_token_get_str(ctx, tok);
+			expansion = isl_union_map_read_from_str(ctx, str);
+			free(str);
+			isl_token_free(tok);
+			if (!expansion)
+				goto error;
+			break;
+		case isl_schedule_key_child:
+			isl_schedule_tree_free(tree);
+			tree = isl_stream_read_schedule_tree(s);
+			if (!tree)
+				goto error;
+			break;
+		default:
+			isl_die(ctx, isl_error_invalid, "unexpected key",
+				goto error);
+		}
+	} while ((more = isl_stream_yaml_next(s)) > 0);
+
+	if (more < 0)
+		goto error;
+
+	if (!contraction)
+		isl_die(ctx, isl_error_invalid, "missing contraction",
+			goto error);
+	if (!expansion)
+		isl_die(ctx, isl_error_invalid, "missing expansion",
+			goto error);
+
+	if (!tree)
+		return isl_schedule_tree_from_expansion(contraction, expansion);
+	return isl_schedule_tree_insert_expansion(tree, contraction, expansion);
+error:
+	isl_schedule_tree_free(tree);
+	isl_union_pw_multi_aff_free(contraction);
+	isl_union_map_free(expansion);
 	return NULL;
 }
 
@@ -479,6 +560,10 @@ static __isl_give isl_schedule_tree *isl_stream_read_schedule_tree(
 		break;
 	case isl_schedule_key_domain:
 		tree = read_domain(s);
+		break;
+	case isl_schedule_key_contraction:
+	case isl_schedule_key_expansion:
+		tree = read_expansion(s);
 		break;
 	case isl_schedule_key_filter:
 		tree = read_filter(s);
