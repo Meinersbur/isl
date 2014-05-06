@@ -441,9 +441,6 @@ static int collect_filter_prefix(__isl_keep isl_schedule_tree_list *list,
 {
 	int i;
 
-	data->initialized = 0;
-	data->filter = NULL;
-
 	if (!list)
 		return -1;
 
@@ -499,9 +496,11 @@ isl_schedule_node_get_prefix_schedule_union_pw_multi_aff(
 		return isl_union_pw_multi_aff_empty(space);
 
 	space = isl_space_set_from_params(space);
+	data.initialized = 0;
 	data.universe_domain = 1;
 	data.universe_filter = 0;
 	data.collect_prefix = 1;
+	data.filter = NULL;
 	data.prefix = isl_multi_union_pw_aff_zero(space);
 
 	n = isl_schedule_tree_list_n_schedule_tree(node->ancestors);
@@ -560,9 +559,11 @@ __isl_give isl_union_set *isl_schedule_node_get_domain(
 		return isl_union_set_empty(space);
 	}
 
+	data.initialized = 0;
 	data.universe_domain = 0;
 	data.universe_filter = 0;
 	data.collect_prefix = 0;
+	data.filter = NULL;
 	data.prefix = NULL;
 
 	n = isl_schedule_tree_list_n_schedule_tree(node->ancestors);
@@ -597,9 +598,11 @@ __isl_give isl_union_set *isl_schedule_node_get_universe_domain(
 		return isl_union_set_empty(space);
 	}
 
+	data.initialized = 0;
 	data.universe_domain = 1;
 	data.universe_filter = 1;
 	data.collect_prefix = 0;
+	data.filter = NULL;
 	data.prefix = NULL;
 
 	n = isl_schedule_tree_list_n_schedule_tree(node->ancestors);
