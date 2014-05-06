@@ -593,6 +593,9 @@ __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_intersect_params(
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_intersect_domain(
 	__isl_take isl_union_pw_multi_aff *upma,
 	__isl_take isl_union_set *uset);
+__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_subtract_domain(
+	__isl_take isl_union_pw_multi_aff *upma,
+	__isl_take isl_union_set *uset);
 
 __isl_give isl_union_map *isl_union_map_from_union_pw_multi_aff(
 	__isl_take isl_union_pw_multi_aff *upma);

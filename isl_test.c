@@ -2461,6 +2461,7 @@ static int test_subtract(isl_ctx *ctx)
 {
 	int i;
 	isl_union_map *umap1, *umap2;
+	isl_union_pw_multi_aff *upma1, *upma2;
 	isl_union_set *uset;
 	int equal;
 
@@ -2475,6 +2476,24 @@ static int test_subtract(isl_ctx *ctx)
 		equal = isl_union_map_is_equal(umap1, umap2);
 		isl_union_map_free(umap1);
 		isl_union_map_free(umap2);
+		if (equal < 0)
+			return -1;
+		if (!equal)
+			isl_die(ctx, isl_error_unknown,
+				"incorrect subtract domain result", return -1);
+	}
+
+	for (i = 0; i < ARRAY_SIZE(subtract_domain_tests); ++i) {
+		upma1 = isl_union_pw_multi_aff_read_from_str(ctx,
+				subtract_domain_tests[i].minuend);
+		uset = isl_union_set_read_from_str(ctx,
+				subtract_domain_tests[i].subtrahend);
+		upma2 = isl_union_pw_multi_aff_read_from_str(ctx,
+				subtract_domain_tests[i].difference);
+		upma1 = isl_union_pw_multi_aff_subtract_domain(upma1, uset);
+		equal = isl_union_pw_multi_aff_plain_is_equal(upma1, upma2);
+		isl_union_pw_multi_aff_free(upma1);
+		isl_union_pw_multi_aff_free(upma2);
 		if (equal < 0)
 			return -1;
 		if (!equal)

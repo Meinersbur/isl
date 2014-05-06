@@ -490,6 +490,9 @@ __isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_intersect_domain(
 __isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_intersect_params(
 	__isl_take isl_union_pw_qpolynomial *upwpq,
 	__isl_take isl_set *set);
+__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_subtract_domain(
+	__isl_take isl_union_pw_qpolynomial *upwpq,
+	__isl_take isl_union_set *uset);
 
 __isl_give isl_space *isl_union_pw_qpolynomial_get_space(
 	__isl_keep isl_union_pw_qpolynomial *upwqp);
@@ -566,6 +569,10 @@ __isl_give isl_union_pw_qpolynomial_fold *
 isl_union_pw_qpolynomial_fold_intersect_params(
 	__isl_take isl_union_pw_qpolynomial_fold *upwf,
 	__isl_take isl_set *set);
+__isl_give isl_union_pw_qpolynomial_fold *
+isl_union_pw_qpolynomial_fold_subtract_domain(
+	__isl_take isl_union_pw_qpolynomial_fold *upwf,
+	__isl_take isl_union_set *uset);
 
 enum isl_fold isl_union_pw_qpolynomial_fold_get_type(
 	__isl_keep isl_union_pw_qpolynomial_fold *upwf);
