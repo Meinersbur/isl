@@ -9133,11 +9133,11 @@ struct isl_map *isl_map_normalize(struct isl_map *map)
 		isl_basic_map_free(map->p[i]);
 		map->p[i] = bmap;
 	}
-	qsort(map->p, map->n, sizeof(struct isl_basic_map *), qsort_bmap_cmp);
-	ISL_F_SET(map, ISL_MAP_NORMALIZED);
 	map = isl_map_remove_empty_parts(map);
 	if (!map)
 		return NULL;
+	qsort(map->p, map->n, sizeof(struct isl_basic_map *), qsort_bmap_cmp);
+	ISL_F_SET(map, ISL_MAP_NORMALIZED);
 	for (i = map->n - 1; i >= 1; --i) {
 		if (!isl_basic_map_plain_is_equal(map->p[i-1], map->p[i]))
 			continue;
