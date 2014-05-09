@@ -1,7 +1,7 @@
 /*
  * Copyright 2010-2011 INRIA Saclay
  * Copyright 2011      Sven Verdoolaege
- * Copyright 2012-2013 Ecole Normale Superieure
+ * Copyright 2012-2014 Ecole Normale Superieure
  *
  * Use of this software is governed by the MIT license
  *
@@ -866,6 +866,40 @@ __isl_give PW *FN(PW,intersect_params)(__isl_take PW *pw,
 }
 
 /* Compute the gist of "pw" with respect to the domain constraints
+ * of "context" for the case where the domain of the last element
+ * of "pw" is equal to "context".
+ * Call "fn_el" to compute the gist of this element, replace
+ * its domain by the universe and drop all other elements
+ * as their domains are necessarily disjoint from "context".
+ */
+static __isl_give PW *FN(PW,gist_last)(__isl_take PW *pw,
+	__isl_take isl_set *context,
+	__isl_give EL *(*fn_el)(__isl_take EL *el, __isl_take isl_set *set))
+{
+	int i;
+	isl_space *space;
+
+	for (i = 0; i < pw->n - 1; ++i) {
+		isl_set_free(pw->p[i].set);
+		FN(EL,free)(pw->p[i].FIELD);
+	}
+	pw->p[0].FIELD = pw->p[pw->n - 1].FIELD;
+	pw->p[0].set = pw->p[pw->n - 1].set;
+	pw->n = 1;
+
+	space = isl_set_get_space(context);
+	pw->p[0].FIELD = fn_el(pw->p[0].FIELD, context);
+	context = isl_set_universe(space);
+	isl_set_free(pw->p[0].set);
+	pw->p[0].set = context;
+
+	if (!pw->p[0].FIELD || !pw->p[0].set)
+		return FN(PW,free)(pw);
+
+	return pw;
+}
+
+/* Compute the gist of "pw" with respect to the domain constraints
  * of "context".  Call "fn_el" to compute the gist of the elements
  * and "fn_dom" to compute the gist of the domains.
  *
@@ -905,17 +939,37 @@ static __isl_give PW *FN(PW,gist_aligned)(__isl_take PW *pw,
 		context = isl_set_align_params(context, FN(PW,get_space)(pw));
 	}
 
-	context = isl_set_compute_divs(context);
-	hull = isl_set_simple_hull(isl_set_copy(context));
-
 	pw = FN(PW,cow)(pw);
 	if (!pw)
 		goto error;
+
+	if (pw->n == 1) {
+		int equal;
+
+		equal = isl_set_plain_is_equal(pw->p[0].set, context);
+		if (equal < 0)
+			goto error;
+		if (equal)
+			return FN(PW,gist_last)(pw, context, fn_el);
+	}
+
+	context = isl_set_compute_divs(context);
+	hull = isl_set_simple_hull(isl_set_copy(context));
 
 	for (i = pw->n - 1; i >= 0; --i) {
 		isl_set *set_i;
 		int empty;
 
+		if (i == pw->n - 1) {
+			int equal;
+			equal = isl_set_plain_is_equal(pw->p[i].set, context);
+			if (equal < 0)
+				goto error;
+			if (equal) {
+				isl_basic_set_free(hull);
+				return FN(PW,gist_last)(pw, context, fn_el);
+			}
+		}
 		set_i = isl_set_intersect(isl_set_copy(pw->p[i].set),
 						 isl_set_copy(context));
 		empty = isl_set_plain_is_empty(set_i);
