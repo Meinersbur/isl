@@ -9113,13 +9113,39 @@ static int qsort_bmap_cmp(const void *p1, const void *p2)
 	return isl_basic_map_plain_cmp(bmap1, bmap2);
 }
 
+/* Sort the basic maps of "map" and remove duplicate basic maps.
+ *
+ * While removing basic maps, we make sure that the basic maps remain
+ * sorted because isl_map_normalize expects the basic maps of the result
+ * to be sorted.
+ */
+static __isl_give isl_map *sort_and_remove_duplicates(__isl_take isl_map *map)
+{
+	int i, j;
+
+	map = isl_map_remove_empty_parts(map);
+	if (!map)
+		return NULL;
+	qsort(map->p, map->n, sizeof(struct isl_basic_map *), qsort_bmap_cmp);
+	for (i = map->n - 1; i >= 1; --i) {
+		if (!isl_basic_map_plain_is_equal(map->p[i - 1], map->p[i]))
+			continue;
+		isl_basic_map_free(map->p[i-1]);
+		for (j = i; j < map->n; ++j)
+			map->p[j - 1] = map->p[j];
+		map->n--;
+	}
+
+	return map;
+}
+
 /* We normalize in place, but if anything goes wrong we need
  * to return NULL, so we need to make sure we don't change the
  * meaning of any possible other copies of map.
  */
-struct isl_map *isl_map_normalize(struct isl_map *map)
+__isl_give isl_map *isl_map_normalize(__isl_take isl_map *map)
 {
-	int i, j;
+	int i;
 	struct isl_basic_map *bmap;
 
 	if (!map)
@@ -9133,19 +9159,10 @@ struct isl_map *isl_map_normalize(struct isl_map *map)
 		isl_basic_map_free(map->p[i]);
 		map->p[i] = bmap;
 	}
-	map = isl_map_remove_empty_parts(map);
-	if (!map)
-		return NULL;
-	qsort(map->p, map->n, sizeof(struct isl_basic_map *), qsort_bmap_cmp);
-	ISL_F_SET(map, ISL_MAP_NORMALIZED);
-	for (i = map->n - 1; i >= 1; --i) {
-		if (!isl_basic_map_plain_is_equal(map->p[i-1], map->p[i]))
-			continue;
-		isl_basic_map_free(map->p[i-1]);
-		for (j = i; j < map->n; ++j)
-			map->p[j-1] = map->p[j];
-		map->n--;
-	}
+
+	map = sort_and_remove_duplicates(map);
+	if (map)
+		ISL_F_SET(map, ISL_MAP_NORMALIZED);
 	return map;
 error:
 	isl_map_free(map);
