@@ -9139,6 +9139,40 @@ static __isl_give isl_map *sort_and_remove_duplicates(__isl_take isl_map *map)
 	return map;
 }
 
+/* Remove obvious duplicates among the basic maps of "map".
+ *
+ * Unlike isl_map_normalize, this function does not remove redundant
+ * constraints and only removes duplicates that have exactly the same
+ * constraints in the input.  It does sort the constraints and
+ * the basic maps to ease the detection of duplicates.
+ *
+ * If "map" has already been normalized or if the basic maps are
+ * disjoint, then there can be no duplicates.
+ */
+__isl_give isl_map *isl_map_remove_obvious_duplicates(__isl_take isl_map *map)
+{
+	int i;
+	isl_basic_map *bmap;
+
+	if (!map)
+		return NULL;
+	if (map->n <= 1)
+		return map;
+	if (ISL_F_ISSET(map, ISL_MAP_NORMALIZED | ISL_MAP_DISJOINT))
+		return map;
+	for (i = 0; i < map->n; ++i) {
+		bmap = isl_basic_map_copy(map->p[i]);
+		bmap = isl_basic_map_sort_constraints(bmap);
+		if (!bmap)
+			return isl_map_free(map);
+		isl_basic_map_free(map->p[i]);
+		map->p[i] = bmap;
+	}
+
+	map = sort_and_remove_duplicates(map);
+	return map;
+}
+
 /* We normalize in place, but if anything goes wrong we need
  * to return NULL, so we need to make sure we don't change the
  * meaning of any possible other copies of map.
