@@ -865,6 +865,13 @@ __isl_give PW *FN(PW,intersect_params)(__isl_take PW *pw,
 					&FN(PW,intersect_params_aligned));
 }
 
+/* Compute the gist of "pw" with respect to the domain constraints
+ * of "context".  Call "fn_el" to compute the gist of the elements
+ * and "fn_dom" to compute the gist of the domains.
+ *
+ * If the piecewise expression is empty or the context is the universe,
+ * then nothing can be simplified.
+ */
 static __isl_give PW *FN(PW,gist_aligned)(__isl_take PW *pw,
 	__isl_take isl_set *context,
 	__isl_give EL *(*fn_el)(__isl_take EL *el,
@@ -873,12 +880,21 @@ static __isl_give PW *FN(PW,gist_aligned)(__isl_take PW *pw,
 				    __isl_take isl_basic_set *bset))
 {
 	int i;
+	int is_universe;
 	isl_basic_set *hull = NULL;
 
 	if (!pw || !context)
 		goto error;
 
 	if (pw->n == 0) {
+		isl_set_free(context);
+		return pw;
+	}
+
+	is_universe = isl_set_plain_is_universe(context);
+	if (is_universe < 0)
+		goto error;
+	if (is_universe) {
 		isl_set_free(context);
 		return pw;
 	}
