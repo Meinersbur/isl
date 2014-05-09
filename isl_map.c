@@ -9561,12 +9561,22 @@ __isl_give isl_basic_map *isl_basic_map_flat_range_product(
 	return prod;
 }
 
+/* Apply "basic_map_product" to each pair of basic maps in "map1" and "map2"
+ * and collect the results.
+ * The result live in the space obtained by calling "space_product"
+ * on the spaces of "map1" and "map2".
+ * If "remove_duplicates" is set then the result may contain duplicates
+ * (even if the inputs do not) and so we try and remove the obvious
+ * duplicates.
+ */
 static __isl_give isl_map *map_product(__isl_take isl_map *map1,
 	__isl_take isl_map *map2,
 	__isl_give isl_space *(*space_product)(__isl_take isl_space *left,
 					   __isl_take isl_space *right),
 	__isl_give isl_basic_map *(*basic_map_product)(
-		__isl_take isl_basic_map *left, __isl_take isl_basic_map *right))
+		__isl_take isl_basic_map *left,
+		__isl_take isl_basic_map *right),
+	int remove_duplicates)
 {
 	unsigned flags = 0;
 	struct isl_map *result;
@@ -9599,6 +9609,8 @@ static __isl_give isl_map *map_product(__isl_take isl_map *map1,
 			if (!result)
 				goto error;
 		}
+	if (remove_duplicates)
+		result = isl_map_remove_obvious_duplicates(result);
 	isl_map_free(map1);
 	isl_map_free(map2);
 	return result;
@@ -9613,7 +9625,8 @@ error:
 static __isl_give isl_map *map_product_aligned(__isl_take isl_map *map1,
 	__isl_take isl_map *map2)
 {
-	return map_product(map1, map2, &isl_space_product, &isl_basic_map_product);
+	return map_product(map1, map2, &isl_space_product,
+			&isl_basic_map_product, 0);
 }
 
 __isl_give isl_map *isl_map_product(__isl_take isl_map *map1,
@@ -9653,7 +9666,7 @@ static __isl_give isl_map *map_domain_product_aligned(__isl_take isl_map *map1,
 	__isl_take isl_map *map2)
 {
 	return map_product(map1, map2, &isl_space_domain_product,
-				&isl_basic_map_domain_product);
+				&isl_basic_map_domain_product, 1);
 }
 
 /* Given two maps A -> B and C -> D, construct a map (A * C) -> [B -> D]
@@ -9662,7 +9675,7 @@ static __isl_give isl_map *map_range_product_aligned(__isl_take isl_map *map1,
 	__isl_take isl_map *map2)
 {
 	return map_product(map1, map2, &isl_space_range_product,
-				&isl_basic_map_range_product);
+				&isl_basic_map_range_product, 1);
 }
 
 __isl_give isl_map *isl_map_domain_product(__isl_take isl_map *map1,
