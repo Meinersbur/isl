@@ -9071,7 +9071,6 @@ struct isl_map *isl_map_normalize(struct isl_map *map)
 error:
 	isl_map_free(map);
 	return NULL;
-
 }
 
 struct isl_set *isl_set_normalize(struct isl_set *set)
