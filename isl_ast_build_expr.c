@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 Ecole Normale Superieure
+ * Copyright 2012-2014 Ecole Normale Superieure
  *
  * Use of this software is governed by the MIT license
  *
@@ -1261,28 +1261,39 @@ struct isl_from_pw_aff_data {
  * Otherwise, data->next is set to a select operation that selects
  * an isl_ast_expr correponding to "aff" on "set" and to an expression
  * that will be filled in by later calls otherwise.
+ *
+ * In both cases, the constraints of "set" are added to the generated
+ * constraints of the build such that they can be exploited to simplify
+ * the AST expression constructed from "aff".
  */
 static int ast_expr_from_pw_aff(__isl_take isl_set *set,
 	__isl_take isl_aff *aff, void *user)
 {
 	struct isl_from_pw_aff_data *data = user;
 	isl_ctx *ctx;
+	isl_ast_build *build;
 
 	ctx = isl_set_get_ctx(set);
 	data->n--;
 	if (data->n == 0) {
-		*data->next = isl_ast_expr_from_aff(aff, data->build);
-		isl_set_free(set);
+		build = isl_ast_build_copy(data->build);
+		build = isl_ast_build_restrict_generated(build, set);
+		*data->next = isl_ast_expr_from_aff(aff, build);
+		isl_ast_build_free(build);
 		if (!*data->next)
 			return -1;
 	} else {
 		isl_ast_expr *ternary, *arg;
+		isl_set *gist;
 
 		ternary = isl_ast_expr_alloc_op(ctx, isl_ast_op_select, 3);
-		set = isl_set_gist(set, isl_set_copy(data->dom));
-		arg = isl_ast_build_expr_from_set(data->build, set);
+		gist = isl_set_gist(isl_set_copy(set), isl_set_copy(data->dom));
+		arg = isl_ast_build_expr_from_set(data->build, gist);
 		ternary = isl_ast_expr_set_op_arg(ternary, 0, arg);
-		arg = isl_ast_expr_from_aff(aff, data->build);
+		build = isl_ast_build_copy(data->build);
+		build = isl_ast_build_restrict_generated(build, set);
+		arg = isl_ast_expr_from_aff(aff, build);
+		isl_ast_build_free(build);
 		ternary = isl_ast_expr_set_op_arg(ternary, 1, arg);
 		if (!ternary)
 			return -1;
