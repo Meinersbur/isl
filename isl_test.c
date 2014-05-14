@@ -34,6 +34,7 @@
 #include <isl/val.h>
 #include <isl/ilp.h>
 #include <isl_ast_build_expr.h>
+#include <isl/options.h>
 
 #define ARRAY_SIZE(array) (sizeof(array)/sizeof(*array))
 
@@ -5051,15 +5052,20 @@ struct {
 	{ "piecewise quasi-polynomials", &test_pwqp },
 };
 
-int main()
+int main(int argc, char **argv)
 {
 	int i;
 	struct isl_ctx *ctx;
+	struct isl_options *options;
 
 	srcdir = getenv("srcdir");
 	assert(srcdir);
 
-	ctx = isl_ctx_alloc();
+	options = isl_options_new_with_defaults();
+	assert(options);
+	argc = isl_options_parse(options, argc, argv, ISL_ARG_ALL);
+
+	ctx = isl_ctx_alloc_with_options(&isl_options_args, options);
 	for (i = 0; i < ARRAY_SIZE(tests); ++i) {
 		printf("%s\n", tests[i].name);
 		if (tests[i].fn(ctx) < 0)
