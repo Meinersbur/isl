@@ -3432,6 +3432,9 @@ return true if the objects are not the same.
 	int isl_multi_pw_aff_is_equal(
 		__isl_keep isl_multi_pw_aff *mpa1,
 		__isl_keep isl_multi_pw_aff *mpa2);
+	int isl_union_pw_multi_aff_plain_is_equal(
+		__isl_keep isl_union_pw_multi_aff *upma1,
+		__isl_keep isl_union_pw_multi_aff *upma2);
 
 	#include <isl/polynomial.h>
 	int isl_union_pw_qpolynomial_plain_is_equal(

@@ -525,6 +525,10 @@ int isl_union_pw_multi_aff_foreach_pw_multi_aff(
 __isl_give isl_pw_multi_aff *isl_union_pw_multi_aff_extract_pw_multi_aff(
 	__isl_keep isl_union_pw_multi_aff *upma, __isl_take isl_space *space);
 
+int isl_union_pw_multi_aff_plain_is_equal(
+	__isl_keep isl_union_pw_multi_aff *upma1,
+	__isl_keep isl_union_pw_multi_aff *upma2);
+
 __isl_give isl_union_set *isl_union_pw_multi_aff_domain(
 	__isl_take isl_union_pw_multi_aff *upma);
 
