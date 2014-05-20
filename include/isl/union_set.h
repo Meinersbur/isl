@@ -130,6 +130,7 @@ __isl_give isl_union_set *isl_union_set_read_from_file(isl_ctx *ctx,
 __isl_constructor
 __isl_give isl_union_set *isl_union_set_read_from_str(isl_ctx *ctx,
 	const char *str);
+__isl_give char *isl_union_set_to_str(__isl_keep isl_union_set *uset);
 __isl_give isl_printer *isl_printer_print_union_set(__isl_take isl_printer *p,
 	__isl_keep isl_union_set *uset);
 void isl_union_set_dump(__isl_keep isl_union_set *uset);
