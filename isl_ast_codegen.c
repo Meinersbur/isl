@@ -3582,6 +3582,13 @@ static __isl_give isl_union_map *internal_executed(
  * the (inverse) schedule refers to the external build domain and needs to
  * be transformed to refer to the internal build domain.
  *
+ * If the build space is parametric, then we add some of the parameter
+ * constraints to the executed relation.  Adding these constraints
+ * allows for an earlier detection of conflicts in some cases.
+ * However, we do not want to divide the executed relation into
+ * more disjuncts than necessary.  We therefore approximate
+ * the constraints on the parameters by a single disjunct set.
+ *
  * The build is extended to include the additional part of the schedule.
  * If the original build space was not parametric, then the options
  * in data->build refer only to the additional part of the schedule
@@ -3611,6 +3618,12 @@ static int generate_code_in_space(struct isl_generate_code_data *data,
 	embed = !isl_set_is_params(data->build->domain);
 	if (embed && !data->internal)
 		executed = internal_executed(executed, space, data->build);
+	if (!embed) {
+		isl_set *domain;
+		domain = isl_ast_build_get_domain(data->build);
+		domain = isl_set_from_basic_set(isl_set_simple_hull(domain));
+		executed = isl_union_map_intersect_params(executed, domain);
+	}
 
 	build = isl_ast_build_copy(data->build);
 	build = isl_ast_build_product(build, space);
