@@ -11793,12 +11793,25 @@ static int check_basic_map_compatible_range_multi_aff(
 	isl_space *ma_space;
 
 	ma_space = isl_multi_aff_get_space(ma);
-	m = isl_space_tuple_match(bmap->dim, type, ma_space, isl_dim_out);
-	isl_space_free(ma_space);
-	if (m >= 0 && !m)
+
+	m = isl_space_match(bmap->dim, isl_dim_param, ma_space, isl_dim_param);
+	if (m < 0)
+		goto error;
+	if (!m)
 		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
-			"spaces don't match", return -1);
+			"parameters don't match", goto error);
+	m = isl_space_tuple_match(bmap->dim, type, ma_space, isl_dim_out);
+	if (m < 0)
+		goto error;
+	if (!m)
+		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
+			"spaces don't match", goto error);
+
+	isl_space_free(ma_space);
 	return m;
+error:
+	isl_space_free(ma_space);
+	return -1;
 }
 
 /* Copy the divs from "ma" to "bmap", adding zeros for the "n_before"
