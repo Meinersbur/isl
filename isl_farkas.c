@@ -194,6 +194,18 @@ static __isl_give isl_space *isl_space_solutions(__isl_take isl_space *dim)
 	return dim;
 }
 
+/* Return the rational universe basic set in the given space.
+ */
+static __isl_give isl_basic_set *rational_universe(__isl_take isl_space *space)
+{
+	isl_basic_set *bset;
+
+	bset = isl_basic_set_universe(space);
+	bset = isl_basic_set_set_rational(bset);
+
+	return bset;
+}
+
 /* Compute the dual of "bset" by applying Farkas' lemma.
  * As explained above, we add an extra dimension to represent
  * the coefficient of the constant term when going from solutions
@@ -332,10 +344,8 @@ __isl_give isl_basic_set *isl_set_coefficients(__isl_take isl_set *set)
 	if (set->n == 0) {
 		isl_space *space = isl_set_get_space(set);
 		space = isl_space_coefficients(space);
-		coeff = isl_basic_set_universe(space);
-		coeff = isl_basic_set_set_rational(coeff);
 		isl_set_free(set);
-		return coeff;
+		return rational_universe(space);
 	}
 
 	coeff = isl_basic_set_coefficients(isl_basic_set_copy(set->p[0]));
@@ -365,10 +375,8 @@ __isl_give isl_basic_set *isl_set_solutions(__isl_take isl_set *set)
 	if (set->n == 0) {
 		isl_space *space = isl_set_get_space(set);
 		space = isl_space_solutions(space);
-		sol = isl_basic_set_universe(space);
-		sol = isl_basic_set_set_rational(sol);
 		isl_set_free(set);
-		return sol;
+		return rational_universe(space);
 	}
 
 	sol = isl_basic_set_solutions(isl_basic_set_copy(set->p[0]));
