@@ -363,9 +363,9 @@ __isl_give isl_basic_set *isl_set_solutions(__isl_take isl_set *set)
 	if (!set)
 		return NULL;
 	if (set->n == 0) {
-		isl_space *dim = isl_set_get_space(set);
-		dim = isl_space_solutions(dim);
-		sol = isl_basic_set_universe(dim);
+		isl_space *space = isl_set_get_space(set);
+		space = isl_space_solutions(space);
+		sol = isl_basic_set_universe(space);
 		sol = isl_basic_set_set_rational(sol);
 		isl_set_free(set);
 		return sol;
