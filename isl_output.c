@@ -28,7 +28,7 @@
 #include <isl_local_space_private.h>
 #include <isl_aff_private.h>
 #include <isl_val_private.h>
-#include <isl_ast_build_expr.h>
+#include <isl/ast_build.h>
 #include <isl_sort.h>
 
 static const char *s_to[2] = { " -> ", " \\to " };
@@ -2284,29 +2284,6 @@ static __isl_give isl_printer *print_aff_c(__isl_take isl_printer *p,
 	return p;
 }
 
-/* Print the affine expression "aff" in C format to "p".
- * The dimension names are taken from "space"
- * "set" represents the domain of the affine expression.
- */
-static __isl_give isl_printer *print_aff_on_domain_c(__isl_take isl_printer *p,
-	__isl_keep isl_space *space, __isl_keep isl_aff *aff,
-	__isl_keep isl_set *set)
-{
-	isl_set *u;
-	isl_ast_build *build;
-	isl_ast_expr *expr;
-
-	u = isl_set_universe(isl_space_copy(space));
-	build = isl_ast_build_from_context(u);
-	build = isl_ast_build_restrict(build, isl_set_copy(set));
-	expr = isl_ast_expr_from_aff(isl_aff_copy(aff), build);
-	p = isl_printer_print_ast_expr(p, expr);
-	isl_ast_expr_free(expr);
-	isl_ast_build_free(build);
-
-	return p;
-}
-
 /* In the C format, we cannot express that "pwaff" may be undefined
  * on parts of the domain space.  We therefore assume that the expression
  * will only be evaluated on its definition domain and compute the gist
@@ -2315,44 +2292,23 @@ static __isl_give isl_printer *print_aff_on_domain_c(__isl_take isl_printer *p,
 static __isl_give isl_printer *print_pw_aff_c(__isl_take isl_printer *p,
 	__isl_keep isl_pw_aff *pwaff)
 {
-	int i;
 	isl_set *domain;
-	isl_space *space;
+	isl_ast_build *build;
+	isl_ast_expr *expr;
 
 	if (pwaff->n < 1)
 		isl_die(p->ctx, isl_error_unsupported,
-			"cannot print empty isl_pw_aff in C format", goto error);
-	space = isl_pw_aff_get_domain_space(pwaff);
-	if (!space)
-		goto error;
+			"cannot print empty isl_pw_aff in C format",
+			return isl_printer_free(p));
 
 	domain = isl_pw_aff_domain(isl_pw_aff_copy(pwaff));
+	build = isl_ast_build_from_context(domain);
+	expr = isl_ast_build_expr_from_pw_aff(build, isl_pw_aff_copy(pwaff));
+	p = isl_printer_print_ast_expr(p, expr);
+	isl_ast_expr_free(expr);
+	isl_ast_build_free(build);
 
-	for (i = 0; i < pwaff->n - 1; ++i) {
-		isl_set *set_i;
-
-		p = isl_printer_print_str(p, "(");
-
-		set_i = isl_set_copy(pwaff->p[i].set);
-		set_i = isl_set_gist(set_i, isl_set_copy(domain));
-		p = print_set_c(p, space, set_i);
-		isl_set_free(set_i);
-
-		p = isl_printer_print_str(p, ") ? (");
-		p = print_aff_on_domain_c(p, space,
-					pwaff->p[i].aff, pwaff->p[i].set);
-		p = isl_printer_print_str(p, ") : ");
-	}
-
-	isl_set_free(domain);
-
-	p = print_aff_on_domain_c(p, space, pwaff->p[pwaff->n - 1].aff,
-					pwaff->p[pwaff->n - 1].set);
-	isl_space_free(space);
 	return p;
-error:
-	isl_printer_free(p);
-	return NULL;
 }
 
 __isl_give isl_printer *isl_printer_print_aff(__isl_take isl_printer *p,

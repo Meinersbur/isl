@@ -3775,7 +3775,7 @@ int test_output(isl_ctx *ctx)
 	if (!s)
 		equal = -1;
 	else
-		equal = !strcmp(s, "(2 - x + 4*floord(x, 4) >= 0) ? (1) : 2");
+		equal = !strcmp(s, "4 * floord(x, 4) + 2 >= x ? 1 : 2");
 	free(s);
 	if (equal < 0)
 		return -1;
