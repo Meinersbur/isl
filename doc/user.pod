@@ -1839,6 +1839,8 @@ or relation can be read off or set using the following functions.
 	int isl_set_has_tuple_name(__isl_keep isl_set *set);
 	const char *isl_set_get_tuple_name(
 		__isl_keep isl_set *set);
+	__isl_give isl_set *isl_set_set_tuple_name(
+		__isl_take isl_set *set, const char *s);
 	const char *isl_basic_map_get_tuple_name(
 		__isl_keep isl_basic_map *bmap,
 		enum isl_dim_type type);
@@ -1850,6 +1852,9 @@ or relation can be read off or set using the following functions.
 	const char *isl_map_get_tuple_name(
 		__isl_keep isl_map *map,
 		enum isl_dim_type type);
+	__isl_give isl_map *isl_map_set_tuple_name(
+		__isl_take isl_map *map,
+		enum isl_dim_type type, const char *s);
 
 As with C<isl_space_get_tuple_name>, the value returned points to
 an internal data structure.
