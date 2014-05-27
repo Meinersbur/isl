@@ -249,6 +249,62 @@ int isl_basic_set_foreach_constraint(__isl_keep isl_basic_set *bset,
 	return isl_basic_map_foreach_constraint((isl_basic_map *)bset, fn, user);
 }
 
+/* Add the constraint to the list that "user" points to, if it is not
+ * a div constraint.
+ */
+static int collect_constraint(__isl_take isl_constraint *constraint,
+	void *user)
+{
+	isl_constraint_list **list = user;
+
+	if (isl_constraint_is_div_constraint(constraint))
+		isl_constraint_free(constraint);
+	else
+		*list = isl_constraint_list_add(*list, constraint);
+
+	return 0;
+}
+
+/* Return a list of constraints that, when combined, are equivalent
+ * to "bmap".  The input is required to have only known divs.
+ *
+ * There is no need to include the div constraints as they are
+ * implied by the div expressions.
+ */
+__isl_give isl_constraint_list *isl_basic_map_get_constraint_list(
+	__isl_keep isl_basic_map *bmap)
+{
+	int n;
+	int known;
+	isl_ctx *ctx;
+	isl_constraint_list *list;
+
+	known = isl_basic_map_divs_known(bmap);
+	if (known < 0)
+		return NULL;
+	ctx = isl_basic_map_get_ctx(bmap);
+	if (!known)
+		isl_die(ctx, isl_error_invalid,
+			"input involves unknown divs", return NULL);
+
+	n = isl_basic_map_n_constraint(bmap);
+	list = isl_constraint_list_alloc(ctx, n);
+	if (isl_basic_map_foreach_constraint(bmap,
+					    &collect_constraint, &list) < 0)
+		list = isl_constraint_list_free(list);
+
+	return list;
+}
+
+/* Return a list of constraints that, when combined, are equivalent
+ * to "bset".  The input is required to have only known divs.
+ */
+__isl_give isl_constraint_list *isl_basic_set_get_constraint_list(
+	__isl_keep isl_basic_set *bset)
+{
+	return isl_basic_map_get_constraint_list(bset);
+}
+
 int isl_constraint_is_equal(struct isl_constraint *constraint1,
 	struct isl_constraint *constraint2)
 {

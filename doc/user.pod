@@ -1720,6 +1720,21 @@ represents an equality.  If not, it represents an inequality.
 	int isl_constraint_is_equality(
 		__isl_keep isl_constraint *constraint);
 
+It is also possible to obtain a list of constraints from a basic
+map or set
+
+	#include <isl/constraint.h>
+	__isl_give isl_constraint_list *
+	isl_basic_map_get_constraint_list(
+		__isl_keep isl_basic_map *bmap);
+	__isl_give isl_constraint_list *
+	isl_basic_set_get_constraint_list(
+		__isl_keep isl_basic_set *bset);
+
+These functions require that all existentially quantified variables
+have an explicit representation.
+The returned list can be manipulated using the functions in L<"Lists">.
+
 The coefficients of the constraints can be inspected using
 the following functions.
 
