@@ -19,47 +19,6 @@
 #include <isl_ast_build_private.h>
 #include <isl_ast_graft_private.h>
 
-/* Add the constraint to the list that "user" points to, if it is not
- * a div constraint.
- */
-static int collect_constraint(__isl_take isl_constraint *constraint,
-	void *user)
-{
-	isl_constraint_list **list = user;
-
-	if (isl_constraint_is_div_constraint(constraint))
-		isl_constraint_free(constraint);
-	else
-		*list = isl_constraint_list_add(*list, constraint);
-
-	return 0;
-}
-
-/* Extract the constraints of "bset" (except the div constraints)
- * and collect them in an isl_constraint_list.
- */
-static __isl_give isl_constraint_list *isl_constraint_list_from_basic_set(
-	__isl_take isl_basic_set *bset)
-{
-	int n;
-	isl_ctx *ctx;
-	isl_constraint_list *list;
-
-	if (!bset)
-		return NULL;
-
-	ctx = isl_basic_set_get_ctx(bset);
-
-	n = isl_basic_set_n_constraint(bset);
-	list = isl_constraint_list_alloc(ctx, n);
-	if (isl_basic_set_foreach_constraint(bset,
-					    &collect_constraint, &list) < 0)
-		list = isl_constraint_list_free(list);
-
-	isl_basic_set_free(bset);
-	return list;
-}
-
 /* Data used in generate_domain.
  *
  * "build" is the input build.
@@ -1249,7 +1208,8 @@ static __isl_give isl_ast_graft *refine_generic(
 
 	bounds = isl_basic_set_copy(bounds);
 	bounds = isl_ast_build_compute_gist_basic_set(build, bounds);
-	list = isl_constraint_list_from_basic_set(bounds);
+	list = isl_basic_set_get_constraint_list(bounds);
+	isl_basic_set_free(bounds);
 
 	graft = refine_generic_split(graft, list, domain, build);
 	graft = add_stride_guard(graft, build);
