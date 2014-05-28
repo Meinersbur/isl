@@ -2359,6 +2359,8 @@ static __isl_give isl_basic_map *map_simple_hull(__isl_take isl_map *map,
 	ISL_F_SET(hull, ISL_BASIC_MAP_NO_IMPLICIT);
 	ISL_F_SET(hull, ISL_BASIC_MAP_ALL_EQUALITIES);
 
+	hull = isl_basic_map_finalize(hull);
+
 	return hull;
 }
 
