@@ -8270,20 +8270,33 @@ static int find_div(struct isl_basic_map *dst,
 	return -1;
 }
 
-struct isl_basic_map *isl_basic_map_align_divs(
-		struct isl_basic_map *dst, struct isl_basic_map *src)
+/* Align the divs of "dst" to those of "src", adding divs from "src"
+ * if needed.  That is, make sure that the first src->n_div divs
+ * of the result are equal to those of src.
+ *
+ * The result is not finalized as by design it will have redundant
+ * divs if any divs from "src" were copied.
+ */
+__isl_give isl_basic_map *isl_basic_map_align_divs(
+	__isl_take isl_basic_map *dst, __isl_keep isl_basic_map *src)
 {
 	int i;
+	int known;
 	unsigned total;
 
 	if (!dst || !src)
-		goto error;
+		return isl_basic_map_free(dst);
 
 	if (src->n_div == 0)
 		return dst;
 
-	for (i = 0; i < src->n_div; ++i)
-		isl_assert(src->ctx, !isl_int_is_zero(src->div[i][0]), goto error);
+	known = isl_basic_map_divs_known(src);
+	if (known < 0)
+		return isl_basic_map_free(dst);
+	if (!known)
+		isl_die(isl_basic_map_get_ctx(src), isl_error_invalid,
+			"some src divs are unknown",
+			return isl_basic_map_free(dst));
 
 	src = isl_basic_map_order_divs(src);
 	dst = isl_basic_map_cow(dst);
@@ -8299,19 +8312,16 @@ struct isl_basic_map *isl_basic_map_align_divs(
 		if (j < 0) {
 			j = isl_basic_map_alloc_div(dst);
 			if (j < 0)
-				goto error;
+				return isl_basic_map_free(dst);
 			isl_seq_cpy(dst->div[j], src->div[i], 1+1+total+i);
 			isl_seq_clr(dst->div[j]+1+1+total+i, dst->n_div - i);
 			if (isl_basic_map_add_div_constraints(dst, j) < 0)
-				goto error;
+				return isl_basic_map_free(dst);
 		}
 		if (j != i)
 			isl_basic_map_swap_div(dst, i, j);
 	}
 	return dst;
-error:
-	isl_basic_map_free(dst);
-	return NULL;
 }
 
 struct isl_basic_set *isl_basic_set_align_divs(
