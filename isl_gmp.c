@@ -1,4 +1,3 @@
-#include <stdio.h>
 /*
  * Copyright 2008-2009 Katholieke Universiteit Leuven
  *
