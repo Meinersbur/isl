@@ -1387,8 +1387,9 @@ static int div_is_redundant(struct isl_basic_map *bmap, int div)
 
 /*
  * Remove divs that don't occur in any of the constraints or other divs.
- * These can arise when dropping some of the variables in a quast
- * returned by piplib.
+ * These can arise when dropping constraints from a basic map or
+ * when the divs of a basic map have been temporarily aligned
+ * with the divs of another basic map.
  */
 static struct isl_basic_map *remove_redundant_divs(struct isl_basic_map *bmap)
 {
