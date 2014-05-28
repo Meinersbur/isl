@@ -80,30 +80,10 @@ need_get_memory_functions=false
 AC_CHECK_DECLS(mp_get_memory_functions,[],[
 	need_get_memory_functions=true
 ],[#include <gmp.h>])
-AC_RUN_IFELSE([AC_LANG_PROGRAM([[#include <gmp.h>]], [[
-	mpz_t x,y,g,a,b;
-	mpz_init(x);
-	mpz_init(y);
-	mpz_init(g);
-	mpz_init(a);
-	mpz_init(b);
-	mpz_set_si(x, -1);
-	mpz_set_si(y, 9);
-	mpz_gcdext(g, a, b, x, y);
-	if (mpz_get_si(a) == -1 && mpz_get_si(b) == 0)
-		return 0;
-	else
-		return 1;
-]])], [need_normalized_gcdext=false], [need_normalized_gcdext=true],
-[need_normalized_gcdext=true])
 CPPFLAGS="$SAVE_CPPFLAGS"
 LDFLAGS="$SAVE_LDFLAGS"
 LIBS="$SAVE_LIBS"
 AM_CONDITIONAL(NEED_GET_MEMORY_FUNCTIONS, test x$need_get_memory_functions = xtrue)
-if test $need_normalized_gcdext = true; then
-AC_DEFINE([GMP_NORMALIZE_GCDEXT], [],
-	[result of mpz_gcdext needs to be normalized])
-fi
 AC_CHECK_DECLS(ffs,[],[],[#include <strings.h>])
 AC_CHECK_DECLS(__builtin_ffs,[],[],[])
 

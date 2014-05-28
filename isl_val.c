@@ -942,6 +942,48 @@ error:
 	return NULL;
 }
 
+/* Compute x, y and g such that g = gcd(a,b) and a*x+b*y = g.
+ */
+static void isl_int_gcdext(isl_int g, isl_int x, isl_int y,
+	isl_int a, isl_int b)
+{
+	isl_int d, tmp;
+	isl_int a_copy, b_copy;
+
+	isl_int_init(a_copy);
+	isl_int_init(b_copy);
+	isl_int_init(d);
+	isl_int_init(tmp);
+	isl_int_set(a_copy, a);
+	isl_int_set(b_copy, b);
+	isl_int_abs(g, a_copy);
+	isl_int_abs(d, b_copy);
+	isl_int_set_si(x, 1);
+	isl_int_set_si(y, 0);
+	while (isl_int_is_pos(d)) {
+		isl_int_fdiv_q(tmp, g, d);
+		isl_int_submul(x, tmp, y);
+		isl_int_submul(g, tmp, d);
+		isl_int_swap(g, d);
+		isl_int_swap(x, y);
+	}
+	if (isl_int_is_zero(a_copy))
+		isl_int_set_si(x, 0);
+	else if (isl_int_is_neg(a_copy))
+		isl_int_neg(x, x);
+	if (isl_int_is_zero(b_copy))
+		isl_int_set_si(y, 0);
+	else {
+		isl_int_mul(tmp, a_copy, x);
+		isl_int_sub(tmp, g, tmp);
+		isl_int_divexact(y, tmp, b_copy);
+	}
+	isl_int_clear(d);
+	isl_int_clear(tmp);
+	isl_int_clear(a_copy);
+	isl_int_clear(b_copy);
+}
+
 /* Given two integer values v1 and v2, return their greatest common divisor g,
  * as well as two integers x and y such that x * v1 + y * v2 = g.
  */
