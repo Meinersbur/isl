@@ -8281,7 +8281,7 @@ __isl_give isl_basic_map *isl_basic_map_align_divs(
 	__isl_take isl_basic_map *dst, __isl_keep isl_basic_map *src)
 {
 	int i;
-	int known;
+	int known, extended;
 	unsigned total;
 
 	if (!dst || !src)
@@ -8299,17 +8299,22 @@ __isl_give isl_basic_map *isl_basic_map_align_divs(
 			return isl_basic_map_free(dst));
 
 	src = isl_basic_map_order_divs(src);
-	dst = isl_basic_map_cow(dst);
-	if (!dst)
-		return NULL;
-	dst = isl_basic_map_extend_space(dst, isl_space_copy(dst->dim),
-			src->n_div, 0, 2 * src->n_div);
-	if (!dst)
-		return NULL;
+
+	extended = 0;
 	total = isl_space_dim(src->dim, isl_dim_all);
 	for (i = 0; i < src->n_div; ++i) {
 		int j = find_div(dst, src, i);
 		if (j < 0) {
+			if (!extended) {
+				int extra = src->n_div - i;
+				dst = isl_basic_map_cow(dst);
+				if (!dst)
+					return NULL;
+				dst = isl_basic_map_extend_space(dst,
+						isl_space_copy(dst->dim),
+						extra, 0, 2 * extra);
+				extended = 1;
+			}
 			j = isl_basic_map_alloc_div(dst);
 			if (j < 0)
 				return isl_basic_map_free(dst);
