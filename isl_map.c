@@ -1986,6 +1986,7 @@ static __isl_give isl_basic_map *insert_bounds_on_div_from_ineq(
 	if (!lb && !ub)
 		return bmap;
 
+	bmap = isl_basic_map_cow(bmap);
 	bmap = isl_basic_map_extend_constraints(bmap, 0, lb + ub);
 	if (lb) {
 		int k = isl_basic_map_alloc_inequality(bmap);
@@ -2012,6 +2013,7 @@ static __isl_give isl_basic_map *insert_bounds_on_div_from_ineq(
 		isl_int_set_si(bmap->ineq[k][1 + total + div], -1);
 	}
 
+	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
 	return bmap;
 error:
 	isl_basic_map_free(bmap);
