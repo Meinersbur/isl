@@ -86,6 +86,7 @@ int isl_val_gt(__isl_keep isl_val *v1, __isl_keep isl_val *v2);
 int isl_val_ge(__isl_keep isl_val *v1, __isl_keep isl_val *v2);
 int isl_val_eq(__isl_keep isl_val *v1, __isl_keep isl_val *v2);
 int isl_val_ne(__isl_keep isl_val *v1, __isl_keep isl_val *v2);
+int isl_val_abs_eq(__isl_keep isl_val *v1, __isl_keep isl_val *v2);
 
 int isl_val_is_divisible_by(__isl_keep isl_val *v1, __isl_keep isl_val *v2);
 

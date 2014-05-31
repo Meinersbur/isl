@@ -536,6 +536,11 @@ The following binary properties are defined on pairs of C<isl_val>s.
 		__isl_keep isl_val *v2);
 	int isl_val_ne(__isl_keep isl_val *v1,
 		__isl_keep isl_val *v2);
+	int isl_val_abs_eq(__isl_keep isl_val *v1,
+		__isl_keep isl_val *v2);
+
+The function C<isl_val_abs_eq> checks whether its two arguments
+are equal in absolute value.
 
 For integer C<isl_val>s we additionally have the following binary property.
 
