@@ -744,6 +744,9 @@ static __isl_give isl_band_list *construct_band_list(
 		domain = isl_union_set_intersect(domain, filter);
 		node = isl_schedule_node_child(node, 0);
 		return construct_band_list(node, domain, parent);
+	case isl_schedule_node_guard:
+		isl_die(isl_schedule_node_get_ctx(node), isl_error_unsupported,
+			"guard nodes not supported", goto error);
 	case isl_schedule_node_mark:
 		isl_die(isl_schedule_node_get_ctx(node), isl_error_unsupported,
 			"mark nodes not supported", goto error);

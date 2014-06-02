@@ -17,6 +17,7 @@ enum isl_schedule_key {
 	isl_schedule_key_domain,
 	isl_schedule_key_expansion,
 	isl_schedule_key_filter,
+	isl_schedule_key_guard,
 	isl_schedule_key_leaf,
 	isl_schedule_key_mark,
 	isl_schedule_key_options,
@@ -59,6 +60,8 @@ static enum isl_schedule_key extract_key(__isl_keep isl_stream *s,
 		key = isl_schedule_key_expansion;
 	else if (!strcmp(name, "filter"))
 		key = isl_schedule_key_filter;
+	else if (!strcmp(name, "guard"))
+		key = isl_schedule_key_guard;
 	else if (!strcmp(name, "leaf"))
 		key = isl_schedule_key_leaf;
 	else if (!strcmp(name, "mark"))
@@ -324,6 +327,57 @@ static __isl_give isl_schedule_tree *read_filter(__isl_keep isl_stream *s)
 	return tree;
 error:
 	isl_union_set_free(filter);
+	return NULL;
+}
+
+/* Read a subtree with guard root node from "s".
+ */
+static __isl_give isl_schedule_tree *read_guard(isl_stream *s)
+{
+	isl_set *guard = NULL;
+	isl_schedule_tree *tree;
+	isl_ctx *ctx;
+	struct isl_token *tok;
+	enum isl_schedule_key key;
+	char *str;
+	int more;
+
+	ctx = isl_stream_get_ctx(s);
+
+	key = get_key(s);
+
+	if (isl_stream_yaml_next(s) < 0)
+		return NULL;
+
+	tok = isl_stream_next_token(s);
+	if (!tok) {
+		isl_stream_error(s, NULL, "unexpected EOF");
+		return NULL;
+	}
+	str = isl_token_get_str(ctx, tok);
+	guard = isl_set_read_from_str(ctx, str);
+	free(str);
+	isl_token_free(tok);
+
+	more = isl_stream_yaml_next(s);
+	if (more < 0)
+		goto error;
+	if (!more) {
+		tree = isl_schedule_tree_from_guard(guard);
+	} else {
+		key = get_key(s);
+		if (key != isl_schedule_key_child)
+			isl_die(ctx, isl_error_invalid, "expecting child",
+				goto error);
+		if (isl_stream_yaml_next(s) < 0)
+			goto error;
+		tree = isl_stream_read_schedule_tree(s);
+		tree = isl_schedule_tree_insert_guard(tree, guard);
+	}
+
+	return tree;
+error:
+	isl_set_free(guard);
 	return NULL;
 }
 
@@ -622,6 +676,9 @@ static __isl_give isl_schedule_tree *isl_stream_read_schedule_tree(
 		break;
 	case isl_schedule_key_filter:
 		tree = read_filter(s);
+		break;
+	case isl_schedule_key_guard:
+		tree = read_guard(s);
 		break;
 	case isl_schedule_key_leaf:
 		isl_token_free(isl_stream_next_token(s));

@@ -107,6 +107,11 @@ __isl_take isl_schedule_tree *isl_schedule_tree_dup(
 		if (!dup->filter)
 			return isl_schedule_tree_free(dup);
 		break;
+	case isl_schedule_node_guard:
+		dup->guard = isl_set_copy(tree->guard);
+		if (!dup->guard)
+			return isl_schedule_tree_free(dup);
+		break;
 	case isl_schedule_node_mark:
 		dup->mark = isl_id_copy(tree->mark);
 		if (!dup->mark)
@@ -198,6 +203,9 @@ __isl_null isl_schedule_tree *isl_schedule_tree_free(
 		break;
 	case isl_schedule_node_filter:
 		isl_union_set_free(tree->filter);
+		break;
+	case isl_schedule_node_guard:
+		isl_set_free(tree->guard);
 		break;
 	case isl_schedule_node_mark:
 		isl_id_free(tree->mark);
@@ -351,6 +359,33 @@ error:
 	return NULL;
 }
 
+/* Create a new guard schedule tree with the given guard and no children.
+ * Since the guard references the outer schedule dimension,
+ * the tree is anchored.
+ */
+__isl_give isl_schedule_tree *isl_schedule_tree_from_guard(
+	__isl_take isl_set *guard)
+{
+	isl_ctx *ctx;
+	isl_schedule_tree *tree;
+
+	if (!guard)
+		return NULL;
+
+	ctx = isl_set_get_ctx(guard);
+	tree = isl_schedule_tree_alloc(ctx, isl_schedule_node_guard);
+	if (!tree)
+		goto error;
+
+	tree->guard = guard;
+	tree->anchored = 1;
+
+	return tree;
+error:
+	isl_set_free(guard);
+	return NULL;
+}
+
 /* Create a new mark schedule tree with the given mark identifier and
  * no children.
  */
@@ -387,7 +422,7 @@ int isl_schedule_tree_is_subtree_anchored(__isl_keep isl_schedule_tree *tree)
 /* Does the root node of "tree" depend on its position in the complete
  * schedule tree?
  * Band nodes may be anchored depending on the associated AST build options.
- * Context nodes are always anchored.
+ * Context and guard nodes are always anchored.
  */
 int isl_schedule_tree_is_anchored(__isl_keep isl_schedule_tree *tree)
 {
@@ -400,6 +435,7 @@ int isl_schedule_tree_is_anchored(__isl_keep isl_schedule_tree *tree)
 	case isl_schedule_node_band:
 		return isl_schedule_band_is_anchored(tree->band);
 	case isl_schedule_node_context:
+	case isl_schedule_node_guard:
 		return 1;
 	case isl_schedule_node_domain:
 	case isl_schedule_node_expansion:
@@ -569,6 +605,9 @@ int isl_schedule_tree_plain_is_equal(__isl_keep isl_schedule_tree *tree1,
 		break;
 	case isl_schedule_node_filter:
 		equal = isl_union_set_is_equal(tree1->filter, tree2->filter);
+		break;
+	case isl_schedule_node_guard:
+		equal = isl_set_is_equal(tree1->guard, tree2->guard);
 		break;
 	case isl_schedule_node_mark:
 		equal = tree1->mark == tree2->mark;
@@ -858,6 +897,18 @@ error:
 	isl_union_set_free(filter);
 	isl_schedule_tree_free(tree);
 	return NULL;
+}
+
+/* Create a new guard schedule tree with the given guard and
+ * with "tree" as single child.
+ */
+__isl_give isl_schedule_tree *isl_schedule_tree_insert_guard(
+	__isl_take isl_schedule_tree *tree, __isl_take isl_set *guard)
+{
+	isl_schedule_tree *res;
+
+	res = isl_schedule_tree_from_guard(guard);
+	return isl_schedule_tree_replace_child(res, 0, tree);
 }
 
 /* Create a new mark schedule tree with the given mark identifier and
@@ -1318,6 +1369,21 @@ error:
 	return NULL;
 }
 
+/* Return the guard of the guard tree root.
+ */
+__isl_give isl_set *isl_schedule_tree_guard_get_guard(
+	__isl_take isl_schedule_tree *tree)
+{
+	if (!tree)
+		return NULL;
+
+	if (tree->type != isl_schedule_node_guard)
+		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_invalid,
+			"not a guard node", return NULL);
+
+	return isl_set_copy(tree->guard);
+}
+
 /* Return the mark identifier of the mark tree root "tree".
  */
 __isl_give isl_id *isl_schedule_tree_mark_get_id(
@@ -1410,6 +1476,7 @@ static int domain_less(__isl_keep isl_schedule_tree *tree)
 	case isl_schedule_node_band:
 		return isl_schedule_tree_band_n_member(tree) == 0;
 	case isl_schedule_node_context:
+	case isl_schedule_node_guard:
 	case isl_schedule_node_mark:
 		return 1;
 	case isl_schedule_node_leaf:
@@ -1621,6 +1688,7 @@ static __isl_give isl_union_map *subtree_schedule_extend(
 	case isl_schedule_node_error:
 		return isl_union_map_free(outer);
 	case isl_schedule_node_context:
+	case isl_schedule_node_guard:
 	case isl_schedule_node_mark:
 		return subtree_schedule_extend_child(tree, outer);
 	case isl_schedule_node_band:
@@ -1719,6 +1787,10 @@ static __isl_give isl_union_set *initial_domain(
 	case isl_schedule_node_context:
 		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_internal,
 			"context node should be handled by caller",
+			return NULL);
+	case isl_schedule_node_guard:
+		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_internal,
+			"guard node should be handled by caller",
 			return NULL);
 	case isl_schedule_node_mark:
 		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_internal,
@@ -1999,6 +2071,11 @@ __isl_give isl_schedule_tree *isl_schedule_tree_reset_user(
 		if (!tree->filter)
 			return isl_schedule_tree_free(tree);
 		break;
+	case isl_schedule_node_guard:
+		tree->guard = isl_set_reset_user(tree->guard);
+		if (!tree->guard)
+			return isl_schedule_tree_free(tree);
+		break;
 	case isl_schedule_node_leaf:
 	case isl_schedule_node_mark:
 	case isl_schedule_node_sequence:
@@ -2058,6 +2135,11 @@ __isl_give isl_schedule_tree *isl_schedule_tree_align_params(
 		if (!tree->filter)
 			return isl_schedule_tree_free(tree);
 		break;
+	case isl_schedule_node_guard:
+		tree->guard = isl_set_align_params(tree->guard, space);
+		if (!tree->guard)
+			return isl_schedule_tree_free(tree);
+		break;
 	case isl_schedule_node_leaf:
 	case isl_schedule_node_mark:
 	case isl_schedule_node_sequence:
@@ -2092,6 +2174,7 @@ static int involves_iteration_domain(__isl_keep isl_schedule_tree *tree)
 		return 1;
 	case isl_schedule_node_context:
 	case isl_schedule_node_leaf:
+	case isl_schedule_node_guard:
 	case isl_schedule_node_mark:
 	case isl_schedule_node_sequence:
 	case isl_schedule_node_set:
@@ -2329,6 +2412,13 @@ __isl_give isl_printer *isl_printer_print_schedule_tree_mark(
 		p = isl_printer_yaml_next(p);
 		p = isl_printer_print_str(p, "\"");
 		p = isl_printer_print_union_set(p, tree->filter);
+		p = isl_printer_print_str(p, "\"");
+		break;
+	case isl_schedule_node_guard:
+		p = isl_printer_print_str(p, "guard");
+		p = isl_printer_yaml_next(p);
+		p = isl_printer_print_str(p, "\"");
+		p = isl_printer_print_set(p, tree->guard);
 		p = isl_printer_print_str(p, "\"");
 		break;
 	case isl_schedule_node_mark:

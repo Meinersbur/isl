@@ -132,6 +132,8 @@ __isl_give isl_union_pw_multi_aff *isl_schedule_node_expansion_get_contraction(
 	__isl_keep isl_schedule_node *node);
 __isl_give isl_union_set *isl_schedule_node_filter_get_filter(
 	__isl_keep isl_schedule_node *node);
+__isl_give isl_set *isl_schedule_node_guard_get_guard(
+	__isl_keep isl_schedule_node *node);
 __isl_give isl_id *isl_schedule_node_mark_get_id(
 	__isl_keep isl_schedule_node *node);
 
@@ -164,6 +166,8 @@ __isl_give isl_schedule_node *isl_schedule_node_insert_partial_schedule(
 	__isl_take isl_multi_union_pw_aff *schedule);
 __isl_give isl_schedule_node *isl_schedule_node_insert_filter(
 	__isl_take isl_schedule_node *node, __isl_take isl_union_set *filter);
+__isl_give isl_schedule_node *isl_schedule_node_insert_guard(
+	__isl_take isl_schedule_node *node, __isl_take isl_set *context);
 __isl_give isl_schedule_node *isl_schedule_node_insert_mark(
 	__isl_take isl_schedule_node *node, __isl_take isl_id *mark);
 __isl_give isl_schedule_node *isl_schedule_node_insert_sequence(

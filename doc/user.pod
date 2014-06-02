@@ -7294,7 +7294,7 @@ is therefore also immaterial.
 
 =back
 
-The following node type is only supported by the AST generator.
+The following node types are only supported by the AST generator.
 
 =over
 
@@ -7309,6 +7309,18 @@ band nodes.  In particular, if there are no outer band nodes, then
 this space is the unnamed zero-dimensional space.
 Since a context node references the outer band nodes, any tree
 containing a context node is considered to be anchored.
+
+=item C<isl_schedule_node_guard>
+
+The guard describes constraints on the parameters and
+the schedule dimensions of outer
+bands that need to be enforced by the outer nodes
+in the generated AST.
+The space of the guard is that of the flat product of the outer
+band nodes.  In particular, if there are no outer band nodes, then
+this space is the unnamed zero-dimensional space.
+Since a guard node references the outer band nodes, any tree
+containing a guard node is considered to be anchored.
 
 =back
 
@@ -7773,6 +7785,10 @@ See L</"AST Generation Options (Schedule Tree)">.
 		__isl_keep isl_schedule_node *node);
 
 	#include <isl/schedule_node.h>
+	__isl_give isl_set *isl_schedule_node_guard_get_guard(
+		__isl_keep isl_schedule_node *node);
+
+	#include <isl/schedule_node.h>
 	__isl_give isl_id *isl_schedule_node_mark_get_id(
 		__isl_keep isl_schedule_node *node);
 
@@ -7877,6 +7893,14 @@ This function inserts a new context node with the given context constraints.
 This function inserts a new filter node with the given filter.
 If the original node already pointed to a filter node, then the
 two filter nodes are merged into one.
+
+	#include <isl/schedule_node.h>
+	__isl_give isl_schedule_node *
+	isl_schedule_node_insert_guard(
+		__isl_take isl_schedule_node *node,
+		__isl_take isl_set *guard);
+
+This function inserts a new guard node with the given guard constraints.
 
 	#include <isl/schedule_node.h>
 	__isl_give isl_schedule_node *

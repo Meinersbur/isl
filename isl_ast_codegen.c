@@ -4287,6 +4287,7 @@ static int after_in_tree(__isl_keep isl_union_map *umap,
 		return after_in_expansion(umap, node);
 	case isl_schedule_node_filter:
 		return after_in_filter(umap, node);
+	case isl_schedule_node_guard:
 	case isl_schedule_node_mark:
 		return after_in_child(umap, node);
 	case isl_schedule_node_set:
@@ -5091,6 +5092,66 @@ error:
 	return NULL;
 }
 
+/* Generate an AST that visits the elements in the domain of "executed"
+ * in the relative order specified by the guard node "node" and
+ * its descendants.
+ *
+ * The relation "executed" maps the outer generated loop iterators
+ * to the domain elements executed by those iterations.
+ *
+ * Ensure that the associated guard is enforced by the outer AST
+ * constructs by adding it to the guard of the graft.
+ * Since we know that we will enforce the guard, we can also include it
+ * in the generated constraints used to construct an AST for
+ * the descendant nodes.
+ */
+static __isl_give isl_ast_graft_list *build_ast_from_guard(
+	__isl_take isl_ast_build *build, __isl_take isl_schedule_node *node,
+	__isl_take isl_union_map *executed)
+{
+	isl_space *space;
+	isl_set *guard, *hoisted;
+	isl_basic_set *enforced;
+	isl_ast_build *sub_build;
+	isl_ast_graft *graft;
+	isl_ast_graft_list *list;
+	unsigned n1, n2;
+
+	space = isl_ast_build_get_space(build, 1);
+	guard = isl_schedule_node_guard_get_guard(node);
+	n1 = isl_space_dim(space, isl_dim_param);
+	guard = isl_set_align_params(guard, space);
+	n2 = isl_set_dim(guard, isl_dim_param);
+	if (n2 > n1)
+		isl_die(isl_ast_build_get_ctx(build), isl_error_invalid,
+			"guard node is not allowed to introduce "
+			"new parameters", guard = isl_set_free(guard));
+	guard = isl_set_preimage_multi_aff(guard,
+			isl_multi_aff_copy(build->internal2input));
+	guard = isl_ast_build_specialize(build, guard);
+	guard = isl_set_gist(guard, isl_set_copy(build->generated));
+
+	sub_build = isl_ast_build_copy(build);
+	sub_build = isl_ast_build_restrict_generated(sub_build,
+							isl_set_copy(guard));
+
+	list = build_ast_from_child(isl_ast_build_copy(sub_build),
+							node, executed);
+
+	hoisted = isl_ast_graft_list_extract_hoistable_guard(list, sub_build);
+	if (isl_set_n_basic_set(hoisted) > 1)
+		list = isl_ast_graft_list_gist_guards(list,
+						    isl_set_copy(hoisted));
+	guard = isl_set_intersect(guard, hoisted);
+	enforced = extract_shared_enforced(list, build);
+	graft = isl_ast_graft_alloc_from_children(list, guard, enforced,
+						    build, sub_build);
+
+	isl_ast_build_free(sub_build);
+	isl_ast_build_free(build);
+	return isl_ast_graft_list_from_ast_graft(graft);
+}
+
 /* Call the before_each_mark callback, if requested by the user.
  *
  * Return 0 on success and -1 on error.
@@ -5261,6 +5322,8 @@ static __isl_give isl_ast_graft_list *build_ast_from_schedule_node(
 		return build_ast_from_expansion(build, node, executed);
 	case isl_schedule_node_filter:
 		return build_ast_from_filter(build, node, executed);
+	case isl_schedule_node_guard:
+		return build_ast_from_guard(build, node, executed);
 	case isl_schedule_node_mark:
 		return build_ast_from_mark(build, node, executed);
 	case isl_schedule_node_sequence:

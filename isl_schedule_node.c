@@ -396,6 +396,7 @@ static int collect_filter_prefix_init(__isl_keep isl_schedule_tree *tree,
 			"should be handled by caller", return -1);
 	case isl_schedule_node_context:
 	case isl_schedule_node_leaf:
+	case isl_schedule_node_guard:
 	case isl_schedule_node_mark:
 	case isl_schedule_node_sequence:
 	case isl_schedule_node_set:
@@ -464,6 +465,7 @@ static int collect_filter_prefix_update(__isl_keep isl_schedule_tree *tree,
 			"should be handled by caller", return -1);
 	case isl_schedule_node_context:
 	case isl_schedule_node_leaf:
+	case isl_schedule_node_guard:
 	case isl_schedule_node_mark:
 	case isl_schedule_node_sequence:
 	case isl_schedule_node_set:
@@ -1856,6 +1858,17 @@ error:
 	return NULL;
 }
 
+/* Return the guard of the guard node "node".
+ */
+__isl_give isl_set *isl_schedule_node_guard_get_guard(
+	__isl_keep isl_schedule_node *node)
+{
+	if (!node)
+		return NULL;
+
+	return isl_schedule_tree_guard_get_guard(node->tree);
+}
+
 /* Return the mark identifier of the mark node "node".
  */
 __isl_give isl_id *isl_schedule_node_mark_get_id(
@@ -2084,6 +2097,24 @@ __isl_give isl_schedule_node *isl_schedule_node_insert_filter(
 
 	tree = isl_schedule_node_get_tree(node);
 	tree = isl_schedule_tree_insert_filter(tree, filter);
+	node = isl_schedule_node_graft_tree(node, tree);
+
+	return node;
+}
+
+/* Insert a guard node with guard "guard" between "node" and its parent.
+ * Return a pointer to the new guard node.
+ */
+__isl_give isl_schedule_node *isl_schedule_node_insert_guard(
+	__isl_take isl_schedule_node *node, __isl_take isl_set *guard)
+{
+	isl_schedule_tree *tree;
+
+	if (check_insert(node) < 0)
+		node = isl_schedule_node_free(node);
+
+	tree = isl_schedule_node_get_tree(node);
+	tree = isl_schedule_tree_insert_guard(tree, guard);
 	node = isl_schedule_node_graft_tree(node, tree);
 
 	return node;
@@ -2614,6 +2645,7 @@ static __isl_give isl_schedule_tree *group_ancestor(
 		data->finished = 1;
 		break;
 	case isl_schedule_node_leaf:
+	case isl_schedule_node_guard:
 	case isl_schedule_node_mark:
 	case isl_schedule_node_sequence:
 	case isl_schedule_node_set:
@@ -2868,6 +2900,7 @@ static __isl_give isl_schedule_node *gist_enter(
 		case isl_schedule_node_band:
 		case isl_schedule_node_context:
 		case isl_schedule_node_domain:
+		case isl_schedule_node_guard:
 		case isl_schedule_node_leaf:
 		case isl_schedule_node_mark:
 		case isl_schedule_node_sequence:
@@ -2993,6 +3026,7 @@ static __isl_give isl_schedule_node *gist_leave(
 		break;
 	case isl_schedule_node_context:
 	case isl_schedule_node_domain:
+	case isl_schedule_node_guard:
 	case isl_schedule_node_leaf:
 	case isl_schedule_node_mark:
 		break;
@@ -3138,6 +3172,7 @@ static __isl_give isl_schedule_node *subtree_expansion_enter(
 		case isl_schedule_node_band:
 		case isl_schedule_node_context:
 		case isl_schedule_node_domain:
+		case isl_schedule_node_guard:
 		case isl_schedule_node_leaf:
 		case isl_schedule_node_mark:
 		case isl_schedule_node_sequence:
@@ -3190,6 +3225,7 @@ static __isl_give isl_schedule_node *subtree_expansion_leave(
 	case isl_schedule_node_context:
 	case isl_schedule_node_domain:
 	case isl_schedule_node_expansion:
+	case isl_schedule_node_guard:
 	case isl_schedule_node_mark:
 	case isl_schedule_node_sequence:
 	case isl_schedule_node_set:
@@ -3313,6 +3349,7 @@ static __isl_give isl_schedule_node *subtree_contraction_enter(
 		case isl_schedule_node_band:
 		case isl_schedule_node_context:
 		case isl_schedule_node_domain:
+		case isl_schedule_node_guard:
 		case isl_schedule_node_leaf:
 		case isl_schedule_node_mark:
 		case isl_schedule_node_sequence:
@@ -3368,6 +3405,7 @@ static __isl_give isl_schedule_node *subtree_contraction_leave(
 	case isl_schedule_node_context:
 	case isl_schedule_node_domain:
 	case isl_schedule_node_expansion:
+	case isl_schedule_node_guard:
 	case isl_schedule_node_mark:
 	case isl_schedule_node_sequence:
 	case isl_schedule_node_set:
