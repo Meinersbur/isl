@@ -115,7 +115,12 @@ static __isl_give isl_ast_graft *at_each_domain(__isl_take isl_ast_graft *graft,
  * Note that the inverse schedule being single-valued may depend
  * on constraints that are only available in the original context
  * domain specified by the user.  We therefore first introduce
- * the constraints from data->build->domain.
+ * some of the constraints of data->build->domain.  In particular,
+ * we intersect with a single-disjunct approximation of this set.
+ * We perform this approximation to avoid further splitting up
+ * the executed relation, possibly introducing a disjunctive guard
+ * on the statement.
+ *
  * On the other hand, we only perform the test after having taken the gist
  * of the domain as the resulting map is the one from which the call
  * expression is constructed.  Using this map to construct the call
@@ -151,12 +156,13 @@ static int generate_domain(__isl_take isl_map *executed, void *user)
 	isl_ast_build *build;
 	isl_ast_graft *graft;
 	isl_ast_graft_list *list;
-	isl_set *guard;
+	isl_set *guard, *domain;
 	isl_map *map = NULL;
 	int empty, sv;
 
-	executed = isl_map_intersect_domain(executed,
-					    isl_set_copy(data->build->domain));
+	domain = isl_ast_build_get_domain(data->build);
+	domain = isl_set_from_basic_set(isl_set_simple_hull(domain));
+	executed = isl_map_intersect_domain(executed, domain);
 	empty = isl_map_is_empty(executed);
 	if (empty < 0)
 		goto error;
