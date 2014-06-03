@@ -207,6 +207,7 @@ static int generate_domain(__isl_take isl_map *executed, void *user)
 			return generate_non_single_valued(executed, data);
 	}
 	guard = isl_map_domain(isl_map_copy(map));
+	guard = isl_set_compute_divs(guard);
 	guard = isl_set_coalesce(guard);
 	guard = isl_ast_build_compute_gist(data->build, guard);
 	graft = isl_ast_graft_alloc_domain(map, data->build);
