@@ -273,6 +273,7 @@ int isl_pw_aff_foreach_piece(__isl_keep isl_pw_aff *pwaff,
 __isl_give isl_set *isl_set_from_pw_aff(__isl_take isl_pw_aff *pwaff);
 __isl_give isl_map *isl_map_from_pw_aff(__isl_take isl_pw_aff *pwaff);
 
+__isl_give isl_set *isl_pw_aff_pos_set(__isl_take isl_pw_aff *pa);
 __isl_give isl_set *isl_pw_aff_nonneg_set(__isl_take isl_pw_aff *pwaff);
 __isl_give isl_set *isl_pw_aff_zero_set(__isl_take isl_pw_aff *pwaff);
 __isl_give isl_set *isl_pw_aff_non_zero_set(__isl_take isl_pw_aff *pwaff);

@@ -2162,6 +2162,42 @@ __isl_give isl_aff *isl_aff_gist_params(__isl_take isl_aff *aff,
 }
 
 /* Return a basic set containing those elements in the space
+ * of aff where it is positive.  "rational" should not be set.
+ *
+ * If "aff" is NaN, then it is not positive.
+ */
+static __isl_give isl_basic_set *aff_pos_basic_set(__isl_take isl_aff *aff,
+	int rational)
+{
+	isl_constraint *ineq;
+	isl_basic_set *bset;
+	isl_val *c;
+
+	if (!aff)
+		return NULL;
+	if (isl_aff_is_nan(aff)) {
+		isl_space *space = isl_aff_get_domain_space(aff);
+		isl_aff_free(aff);
+		return isl_basic_set_empty(space);
+	}
+	if (rational)
+		isl_die(isl_aff_get_ctx(aff), isl_error_unsupported,
+			"rational sets not supported", goto error);
+
+	ineq = isl_inequality_from_aff(aff);
+	c = isl_constraint_get_constant_val(ineq);
+	c = isl_val_sub_ui(c, 1);
+	ineq = isl_constraint_set_constant_val(ineq, c);
+
+	bset = isl_basic_set_from_constraint(ineq);
+	bset = isl_basic_set_simplify(bset);
+	return bset;
+error:
+	isl_aff_free(aff);
+	return NULL;
+}
+
+/* Return a basic set containing those elements in the space
  * of aff where it is non-negative.
  * If "rational" is set, then return a rational basic set.
  *
@@ -2785,6 +2821,14 @@ static __isl_give isl_set *pw_aff_locus(__isl_take isl_pw_aff *pwaff,
 	isl_pw_aff_free(pwaff);
 
 	return set;
+}
+
+/* Return a set containing those elements in the domain
+ * of "pa" where it is positive.
+ */
+__isl_give isl_set *isl_pw_aff_pos_set(__isl_take isl_pw_aff *pa)
+{
+	return pw_aff_locus(pa, &aff_pos_basic_set, 0);
 }
 
 /* Return a set containing those elements in the domain
