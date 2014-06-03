@@ -135,6 +135,26 @@ static int equal_independent_guards(__isl_keep isl_ast_graft_list *list,
 	return equal;
 }
 
+/* Hoist "guard" out of the current level (given by "build").
+ *
+ * In particular, eliminate the dimension corresponding to the current depth.
+ */
+static __isl_give isl_set *hoist_guard(__isl_take isl_set *guard,
+	__isl_keep isl_ast_build *build)
+{
+	int depth;
+
+	depth = isl_ast_build_get_depth(build);
+	if (depth < isl_set_dim(guard, isl_dim_set)) {
+		guard = isl_set_remove_divs_involving_dims(guard,
+						isl_dim_set, depth, 1);
+		guard = isl_set_eliminate(guard, isl_dim_set, depth, 1);
+		guard = isl_set_compute_divs(guard);
+	}
+
+	return guard;
+}
+
 /* Extract a common guard from the grafts in "list" that can be hoisted
  * out of the current level.  If no such guard can be found, then return
  * a universal set.
@@ -151,7 +171,6 @@ static __isl_give isl_set *extract_hoistable_guard(
 	__isl_keep isl_ast_graft_list *list, __isl_keep isl_ast_build *build)
 {
 	int i, n;
-	int depth;
 	isl_ast_graft *graft_0;
 	int equal;
 	isl_set *guard;
@@ -175,13 +194,7 @@ static __isl_give isl_set *extract_hoistable_guard(
 	if (equal)
 		return guard;
 
-	depth = isl_ast_build_get_depth(build);
-	if (depth < isl_set_dim(guard, isl_dim_set)) {
-		guard = isl_set_remove_divs_involving_dims(guard,
-						isl_dim_set, depth, 1);
-		guard = isl_set_eliminate(guard, isl_dim_set, depth, 1);
-		guard = isl_set_compute_divs(guard);
-	}
+	guard = hoist_guard(guard, build);
 
 	for (i = 1; i < n; ++i) {
 		isl_ast_graft *graft;
