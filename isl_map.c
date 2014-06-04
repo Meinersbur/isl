@@ -9563,7 +9563,7 @@ __isl_give isl_basic_map *isl_basic_map_flat_range_product(
 
 static __isl_give isl_map *map_product(__isl_take isl_map *map1,
 	__isl_take isl_map *map2,
-	__isl_give isl_space *(*dim_product)(__isl_take isl_space *left,
+	__isl_give isl_space *(*space_product)(__isl_take isl_space *left,
 					   __isl_take isl_space *right),
 	__isl_give isl_basic_map *(*basic_map_product)(
 		__isl_take isl_basic_map *left, __isl_take isl_basic_map *right))
@@ -9582,7 +9582,7 @@ static __isl_give isl_map *map_product(__isl_take isl_map *map1,
 	    ISL_F_ISSET(map2, ISL_MAP_DISJOINT))
 		ISL_FL_SET(flags, ISL_MAP_DISJOINT);
 
-	result = isl_map_alloc_space(dim_product(isl_space_copy(map1->dim),
+	result = isl_map_alloc_space(space_product(isl_space_copy(map1->dim),
 					       isl_space_copy(map2->dim)),
 				map1->n * map2->n, flags);
 	if (!result)
