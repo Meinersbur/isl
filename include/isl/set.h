@@ -242,6 +242,7 @@ int isl_basic_set_dims_get_sign(__isl_keep isl_basic_set *bset,
 
 int isl_basic_set_is_universe(__isl_keep isl_basic_set *bset);
 int isl_basic_set_plain_is_empty(__isl_keep isl_basic_set *bset);
+ISL_DEPRECATED
 int isl_basic_set_fast_is_empty(__isl_keep isl_basic_set *bset);
 __isl_export
 int isl_basic_set_is_empty(__isl_keep isl_basic_set *bset);
@@ -388,8 +389,10 @@ int isl_set_involves_dims(__isl_keep isl_set *set,
 
 void isl_set_print_internal(__isl_keep isl_set *set, FILE *out, int indent);
 int isl_set_plain_is_empty(__isl_keep isl_set *set);
+ISL_DEPRECATED
 int isl_set_fast_is_empty(__isl_keep isl_set *set);
 int isl_set_plain_is_universe(__isl_keep isl_set *set);
+ISL_DEPRECATED
 int isl_set_fast_is_universe(__isl_keep isl_set *set);
 int isl_set_is_params(__isl_keep isl_set *set);
 __isl_export
@@ -452,9 +455,11 @@ __isl_give isl_set *isl_set_coalesce(__isl_take isl_set *set);
 
 int isl_set_plain_cmp(__isl_keep isl_set *set1, __isl_keep isl_set *set2);
 int isl_set_plain_is_equal(__isl_keep isl_set *set1, __isl_keep isl_set *set2);
+ISL_DEPRECATED
 int isl_set_fast_is_equal(__isl_keep isl_set *set1, __isl_keep isl_set *set2);
 int isl_set_plain_is_disjoint(__isl_keep isl_set *set1,
 	__isl_keep isl_set *set2);
+ISL_DEPRECATED
 int isl_set_fast_is_disjoint(__isl_keep isl_set *set1,
 	__isl_keep isl_set *set2);
 

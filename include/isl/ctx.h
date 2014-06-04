@@ -84,6 +84,12 @@ typedef struct isl_ctx isl_ctx;
 
 /* Some helper macros */
 
+#if __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1)
+#define ISL_DEPRECATED	__attribute__((__deprecated__))
+#else
+#define ISL_DEPRECATED
+#endif
+
 #define ISL_FL_INIT(l, f)   (l) = (f)               /* Specific flags location. */
 #define ISL_FL_SET(l, f)    ((l) |= (f))
 #define ISL_FL_CLR(l, f)    ((l) &= ~(f))
