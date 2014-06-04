@@ -905,7 +905,7 @@ static __isl_give PW *FN(PW,gist_aligned)(__isl_take PW *pw,
 		empty = isl_set_plain_is_empty(set_i);
 		pw->p[i].FIELD = fn_el(pw->p[i].FIELD, set_i);
 		pw->p[i].set = fn_dom(pw->p[i].set, isl_basic_set_copy(hull));
-		if (!pw->p[i].FIELD || !pw->p[i].set)
+		if (empty < 0 || !pw->p[i].FIELD || !pw->p[i].set)
 			goto error;
 		if (empty) {
 			isl_set_free(pw->p[i].set);
