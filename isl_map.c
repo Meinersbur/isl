@@ -27,6 +27,7 @@
 #include <isl/map.h>
 #include <isl_reordering.h>
 #include "isl_sample.h"
+#include <isl_sort.h>
 #include "isl_tab.h"
 #include <isl/vec.h>
 #include <isl_mat_private.h>
@@ -8955,35 +8956,28 @@ int isl_set_plain_dim_has_fixed_lower_bound(__isl_keep isl_set *set,
 	return fixed;
 }
 
-struct constraint {
-	unsigned	size;
-	isl_int		*c;
-};
-
 /* uset_gist depends on constraints without existentially quantified
  * variables sorting first.
  */
-static int qsort_constraint_cmp(const void *p1, const void *p2)
+static int sort_constraint_cmp(const void *p1, const void *p2, void *arg)
 {
-	const struct constraint *c1 = (const struct constraint *)p1;
-	const struct constraint *c2 = (const struct constraint *)p2;
+	isl_int **c1 = (isl_int **) p1;
+	isl_int **c2 = (isl_int **) p2;
 	int l1, l2;
-	unsigned size = isl_min(c1->size, c2->size);
+	unsigned size = *(unsigned *) arg;
 
-	l1 = isl_seq_last_non_zero(c1->c + 1, size);
-	l2 = isl_seq_last_non_zero(c2->c + 1, size);
+	l1 = isl_seq_last_non_zero(*c1 + 1, size);
+	l2 = isl_seq_last_non_zero(*c2 + 1, size);
 
 	if (l1 != l2)
 		return l1 - l2;
 
-	return isl_seq_cmp(c1->c + 1, c2->c + 1, size);
+	return isl_seq_cmp(*c1 + 1, *c2 + 1, size);
 }
 
 static struct isl_basic_map *isl_basic_map_sort_constraints(
 	struct isl_basic_map *bmap)
 {
-	int i;
-	struct constraint *c;
 	unsigned total;
 
 	if (!bmap)
@@ -8993,21 +8987,10 @@ static struct isl_basic_map *isl_basic_map_sort_constraints(
 	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_NORMALIZED))
 		return bmap;
 	total = isl_basic_map_total_dim(bmap);
-	c = isl_alloc_array(bmap->ctx, struct constraint, bmap->n_ineq);
-	if (!c)
-		goto error;
-	for (i = 0; i < bmap->n_ineq; ++i) {
-		c[i].size = total;
-		c[i].c = bmap->ineq[i];
-	}
-	qsort(c, bmap->n_ineq, sizeof(struct constraint), qsort_constraint_cmp);
-	for (i = 0; i < bmap->n_ineq; ++i)
-		bmap->ineq[i] = c[i].c;
-	free(c);
+	if (isl_sort(bmap->ineq, bmap->n_ineq, sizeof(isl_int *),
+		    &sort_constraint_cmp, &total) < 0)
+		return isl_basic_map_free(bmap);
 	return bmap;
-error:
-	isl_basic_map_free(bmap);
-	return NULL;
 }
 
 __isl_give isl_basic_set *isl_basic_set_sort_constraints(
