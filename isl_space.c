@@ -762,28 +762,28 @@ static __isl_keep isl_space *nested(__isl_keep isl_space *dim,
 	return NULL;
 }
 
-int isl_space_tuple_match(__isl_keep isl_space *dim1, enum isl_dim_type dim1_type,
-			__isl_keep isl_space *dim2, enum isl_dim_type dim2_type)
+int isl_space_tuple_match(__isl_keep isl_space *space1, enum isl_dim_type type1,
+	__isl_keep isl_space *space2, enum isl_dim_type type2)
 {
 	isl_id *id1, *id2;
 	isl_space *nested1, *nested2;
 
-	if (!dim1 || !dim2)
+	if (!space1 || !space2)
 		return -1;
 
-	if (dim1 == dim2 && dim1_type == dim2_type)
+	if (space1 == space2 && type1 == type2)
 		return 1;
 
-	if (n(dim1, dim1_type) != n(dim2, dim2_type))
+	if (n(space1, type1) != n(space2, type2))
 		return 0;
-	id1 = tuple_id(dim1, dim1_type);
-	id2 = tuple_id(dim2, dim2_type);
+	id1 = tuple_id(space1, type1);
+	id2 = tuple_id(space2, type2);
 	if (!id1 ^ !id2)
 		return 0;
 	if (id1 && id1 != id2)
 		return 0;
-	nested1 = nested(dim1, dim1_type);
-	nested2 = nested(dim2, dim2_type);
+	nested1 = nested(space1, type1);
+	nested2 = nested(space2, type2);
 	if (!nested1 ^ !nested2)
 		return 0;
 	if (nested1 && !isl_space_is_equal(nested1, nested2))
