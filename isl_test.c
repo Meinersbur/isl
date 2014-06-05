@@ -2099,52 +2099,40 @@ static int test_flow(isl_ctx *ctx)
 	return r;
 }
 
+struct {
+	const char *map;
+	int sv;
+} sv_tests[] = {
+	{ "[N] -> { [i] -> [f] : 0 <= i <= N and 0 <= i - 10 f <= 9 }", 1 },
+	{ "[N] -> { [i] -> [f] : 0 <= i <= N and 0 <= i - 10 f <= 10 }", 0 },
+	{ "{ [i] -> [3*floor(i/2) + 5*floor(i/3)] }", 1 },
+	{ "{ S1[i] -> [i] : 0 <= i <= 9; S2[i] -> [i] : 0 <= i <= 9 }", 1 },
+	{ "{ [i] -> S1[i] : 0 <= i <= 9; [i] -> S2[i] : 0 <= i <= 9 }", 0 },
+	{ "{ A[i] -> [i]; B[i] -> [i]; B[i] -> [i + 1] }", 0 },
+	{ "{ A[i] -> [i]; B[i] -> [i] : i < 0; B[i] -> [i + 1] : i > 0 }", 1 },
+	{ "{ A[i] -> [i]; B[i] -> A[i] : i < 0; B[i] -> [i + 1] : i > 0 }", 1 },
+	{ "{ A[i] -> [i]; B[i] -> [j] : i - 1 <= j <= i }", 0 },
+};
+
 int test_sv(isl_ctx *ctx)
 {
-	const char *str;
-	isl_map *map;
 	isl_union_map *umap;
+	int i;
 	int sv;
 
-	str = "[N] -> { [i] -> [f] : 0 <= i <= N and 0 <= i - 10 f <= 9 }";
-	map = isl_map_read_from_str(ctx, str);
-	sv = isl_map_is_single_valued(map);
-	isl_map_free(map);
-	if (sv < 0)
-		return -1;
-	if (!sv)
-		isl_die(ctx, isl_error_internal,
-			"map not detected as single valued", return -1);
-
-	str = "[N] -> { [i] -> [f] : 0 <= i <= N and 0 <= i - 10 f <= 10 }";
-	map = isl_map_read_from_str(ctx, str);
-	sv = isl_map_is_single_valued(map);
-	isl_map_free(map);
-	if (sv < 0)
-		return -1;
-	if (sv)
-		isl_die(ctx, isl_error_internal,
-			"map detected as single valued", return -1);
-
-	str = "{ S1[i] -> [i] : 0 <= i <= 9; S2[i] -> [i] : 0 <= i <= 9 }";
-	umap = isl_union_map_read_from_str(ctx, str);
-	sv = isl_union_map_is_single_valued(umap);
-	isl_union_map_free(umap);
-	if (sv < 0)
-		return -1;
-	if (!sv)
-		isl_die(ctx, isl_error_internal,
-			"map not detected as single valued", return -1);
-
-	str = "{ [i] -> S1[i] : 0 <= i <= 9; [i] -> S2[i] : 0 <= i <= 9 }";
-	umap = isl_union_map_read_from_str(ctx, str);
-	sv = isl_union_map_is_single_valued(umap);
-	isl_union_map_free(umap);
-	if (sv < 0)
-		return -1;
-	if (sv)
-		isl_die(ctx, isl_error_internal,
-			"map detected as single valued", return -1);
+	for (i = 0; i < ARRAY_SIZE(sv_tests); ++i) {
+		umap = isl_union_map_read_from_str(ctx, sv_tests[i].map);
+		sv = isl_union_map_is_single_valued(umap);
+		isl_union_map_free(umap);
+		if (sv < 0)
+			return -1;
+		if (sv_tests[i].sv && !sv)
+			isl_die(ctx, isl_error_internal,
+				"map not detected as single valued", return -1);
+		if (!sv_tests[i].sv && sv)
+			isl_die(ctx, isl_error_internal,
+				"map detected as single valued", return -1);
+	}
 
 	return 0;
 }
