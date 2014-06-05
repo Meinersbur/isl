@@ -3560,7 +3560,7 @@ int isl_aff_check_match_domain_space(__isl_keep isl_aff *aff,
 	if (!match)
 		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
 			"parameters don't match", goto error);
-	match = isl_space_tuple_match(space, isl_dim_in,
+	match = isl_space_tuple_is_equal(space, isl_dim_in,
 					aff_space, isl_dim_set);
 	if (match < 0)
 		goto error;
@@ -5684,7 +5684,7 @@ static int flat_range_product_entry(void **entry, void *user)
 	struct isl_union_pw_multi_aff_bin_data *data = user;
 	isl_pw_multi_aff *pma2 = *entry;
 
-	if (!isl_space_tuple_match(data->pma->dim, isl_dim_in,
+	if (!isl_space_tuple_is_equal(data->pma->dim, isl_dim_in,
 				 pma2->dim, isl_dim_in))
 		return 0;
 
@@ -5723,7 +5723,8 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_set_pw_aff(
 	if (!pma || !pa)
 		goto error;
 
-	if (!isl_space_tuple_match(pma->dim, isl_dim_in, pa->dim, isl_dim_in))
+	if (!isl_space_tuple_is_equal(pma->dim, isl_dim_in,
+					pa->dim, isl_dim_in))
 		isl_die(isl_pw_multi_aff_get_ctx(pma), isl_error_invalid,
 			"domains don't match", goto error);
 	if (pos >= isl_pw_multi_aff_dim(pma, isl_dim_out))
@@ -5831,7 +5832,8 @@ int isl_pw_aff_check_match_domain_space(__isl_keep isl_pw_aff *pa,
 	if (!match)
 		isl_die(isl_pw_aff_get_ctx(pa), isl_error_invalid,
 			"parameters don't match", goto error);
-	match = isl_space_tuple_match(space, isl_dim_in, pa_space, isl_dim_in);
+	match = isl_space_tuple_is_equal(space, isl_dim_in,
+					pa_space, isl_dim_in);
 	if (match < 0)
 		goto error;
 	if (!match)
@@ -5859,7 +5861,7 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_scale_multi_val(
 	pma = isl_pw_multi_aff_cow(pma);
 	if (!pma || !mv)
 		goto error;
-	if (!isl_space_tuple_match(pma->dim, isl_dim_out,
+	if (!isl_space_tuple_is_equal(pma->dim, isl_dim_out,
 					mv->space, isl_dim_set))
 		isl_die(isl_pw_multi_aff_get_ctx(pma), isl_error_invalid,
 			"spaces don't match", goto error);
@@ -5909,7 +5911,7 @@ static int union_pw_multi_aff_scale_multi_val_entry(void **entry, void *user)
 
 	if (!pma)
 		return -1;
-	if (!isl_space_tuple_match(pma->dim, isl_dim_out,
+	if (!isl_space_tuple_is_equal(pma->dim, isl_dim_out,
 				    data->mv->space, isl_dim_set))
 		return 0;
 

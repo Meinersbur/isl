@@ -1522,7 +1522,7 @@ static __isl_give isl_ast_expr *isl_ast_build_from_multi_pw_aff(
 
 	space_build = isl_ast_build_get_space(build, 0);
 	space_mpa = isl_multi_pw_aff_get_space(mpa);
-	is_domain = isl_space_tuple_match(space_build, isl_dim_set,
+	is_domain = isl_space_tuple_is_equal(space_build, isl_dim_set,
 					space_mpa, isl_dim_in);
 	isl_space_free(space_build);
 	isl_space_free(space_mpa);

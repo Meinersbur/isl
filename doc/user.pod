@@ -795,11 +795,20 @@ Spaces can be compared using the following functions:
 		__isl_keep isl_space *space2);
 	int isl_space_is_range(__isl_keep isl_space *space1,
 		__isl_keep isl_space *space2);
+	int isl_space_tuple_is_equal(
+		__isl_keep isl_space *space1,
+		enum isl_dim_type type1,
+		__isl_keep isl_space *space2,
+		enum isl_dim_type type2);
 
 C<isl_space_is_domain> checks whether the first argument is equal
 to the domain of the second argument.  This requires in particular that
 the first argument is a set space and that the second argument
-is a map space.
+is a map space.  C<isl_space_tuple_is_equal> checks whether the given
+tuples (C<isl_dim_in>, C<isl_dim_out> or C<isl_dim_set>) of the given
+spaces are the same.  That is, it checks if they have the same
+identifier (if any), the same dimension and the same internal structure
+(if any).
 
 It is often useful to create objects that live in the
 same space as some other object.  This can be accomplished

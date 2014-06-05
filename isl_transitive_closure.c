@@ -819,7 +819,8 @@ static int isl_set_overlaps(__isl_keep isl_set *set1, __isl_keep isl_set *set2)
 	isl_set *i;
 	int no_overlap;
 
-	if (!isl_space_tuple_match(set1->dim, isl_dim_set, set2->dim, isl_dim_set))
+	if (!isl_space_tuple_is_equal(set1->dim, isl_dim_set,
+					set2->dim, isl_dim_set))
 		return 0;
 
 	i = isl_set_intersect(isl_set_copy(set1), isl_set_copy(set2));
@@ -1758,7 +1759,7 @@ static int basic_map_follows(int i, int j, void *user)
 	struct isl_map *map21 = NULL;
 	int subset;
 
-	if (!isl_space_tuple_match(data->list[i]->dim, isl_dim_in,
+	if (!isl_space_tuple_is_equal(data->list[i]->dim, isl_dim_in,
 				    data->list[j]->dim, isl_dim_out))
 		return 0;
 
@@ -1774,9 +1775,9 @@ static int basic_map_follows(int i, int j, void *user)
 		return 0;
 	}
 
-	if (!isl_space_tuple_match(data->list[i]->dim, isl_dim_in,
+	if (!isl_space_tuple_is_equal(data->list[i]->dim, isl_dim_in,
 				    data->list[i]->dim, isl_dim_out) ||
-	    !isl_space_tuple_match(data->list[j]->dim, isl_dim_in,
+	    !isl_space_tuple_is_equal(data->list[j]->dim, isl_dim_in,
 				    data->list[j]->dim, isl_dim_out)) {
 		isl_map_free(map21);
 		return 1;

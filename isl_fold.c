@@ -1420,7 +1420,7 @@ static int join_compatible(__isl_keep isl_space *dim1, __isl_keep isl_space *dim
 	m = isl_space_match(dim1, isl_dim_param, dim2, isl_dim_param);
 	if (m < 0 || !m)
 		return m;
-	return isl_space_tuple_match(dim1, isl_dim_out, dim2, isl_dim_in);
+	return isl_space_tuple_is_equal(dim1, isl_dim_out, dim2, isl_dim_in);
 }
 
 /* Compute the intersection of the range of the map and the domain

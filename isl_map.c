@@ -194,7 +194,8 @@ int isl_map_compatible_domain(struct isl_map *map, struct isl_set *set)
 	m = isl_space_match(map->dim, isl_dim_param, set->dim, isl_dim_param);
 	if (m < 0 || !m)
 		return m;
-	return isl_space_tuple_match(map->dim, isl_dim_in, set->dim, isl_dim_set);
+	return isl_space_tuple_is_equal(map->dim, isl_dim_in,
+					set->dim, isl_dim_set);
 }
 
 int isl_basic_map_compatible_domain(struct isl_basic_map *bmap,
@@ -206,7 +207,8 @@ int isl_basic_map_compatible_domain(struct isl_basic_map *bmap,
 	m = isl_space_match(bmap->dim, isl_dim_param, bset->dim, isl_dim_param);
 	if (m < 0 || !m)
 		return m;
-	return isl_space_tuple_match(bmap->dim, isl_dim_in, bset->dim, isl_dim_set);
+	return isl_space_tuple_is_equal(bmap->dim, isl_dim_in,
+					bset->dim, isl_dim_set);
 }
 
 int isl_map_compatible_range(__isl_keep isl_map *map, __isl_keep isl_set *set)
@@ -217,7 +219,8 @@ int isl_map_compatible_range(__isl_keep isl_map *map, __isl_keep isl_set *set)
 	m = isl_space_match(map->dim, isl_dim_param, set->dim, isl_dim_param);
 	if (m < 0 || !m)
 		return m;
-	return isl_space_tuple_match(map->dim, isl_dim_out, set->dim, isl_dim_set);
+	return isl_space_tuple_is_equal(map->dim, isl_dim_out,
+					set->dim, isl_dim_set);
 }
 
 int isl_basic_map_compatible_range(struct isl_basic_map *bmap,
@@ -229,7 +232,8 @@ int isl_basic_map_compatible_range(struct isl_basic_map *bmap,
 	m = isl_space_match(bmap->dim, isl_dim_param, bset->dim, isl_dim_param);
 	if (m < 0 || !m)
 		return m;
-	return isl_space_tuple_match(bmap->dim, isl_dim_out, bset->dim, isl_dim_set);
+	return isl_space_tuple_is_equal(bmap->dim, isl_dim_out,
+					bset->dim, isl_dim_set);
 }
 
 isl_ctx *isl_basic_map_get_ctx(__isl_keep isl_basic_map *bmap)
@@ -3606,7 +3610,7 @@ struct isl_basic_map *isl_basic_map_apply_range(
 				bmap2->dim, isl_dim_param))
 		isl_die(isl_basic_map_get_ctx(bmap1), isl_error_invalid,
 			"parameters don't match", goto error);
-	if (!isl_space_tuple_match(bmap1->dim, isl_dim_out,
+	if (!isl_space_tuple_is_equal(bmap1->dim, isl_dim_out,
 				    bmap2->dim, isl_dim_in))
 		isl_die(isl_basic_map_get_ctx(bmap1), isl_error_invalid,
 			"spaces don't match", goto error);
@@ -7452,7 +7456,7 @@ struct isl_basic_set *isl_basic_map_deltas(struct isl_basic_map *bmap)
 
 	if (!bmap)
 		goto error;
-	isl_assert(bmap->ctx, isl_space_tuple_match(bmap->dim, isl_dim_in,
+	isl_assert(bmap->ctx, isl_space_tuple_is_equal(bmap->dim, isl_dim_in,
 						  bmap->dim, isl_dim_out),
 		   goto error);
 	target_dim = isl_space_domain(isl_basic_map_get_space(bmap));
@@ -7496,7 +7500,7 @@ __isl_give isl_set *isl_map_deltas(__isl_take isl_map *map)
 	if (!map)
 		return NULL;
 
-	isl_assert(map->ctx, isl_space_tuple_match(map->dim, isl_dim_in,
+	isl_assert(map->ctx, isl_space_tuple_is_equal(map->dim, isl_dim_in,
 						 map->dim, isl_dim_out),
 		   goto error);
 	dim = isl_map_get_space(map);
@@ -7526,7 +7530,8 @@ __isl_give isl_basic_map *isl_basic_map_deltas_map(
 	int nparam, n;
 	unsigned total;
 
-	if (!isl_space_tuple_match(bmap->dim, isl_dim_in, bmap->dim, isl_dim_out))
+	if (!isl_space_tuple_is_equal(bmap->dim, isl_dim_in,
+					bmap->dim, isl_dim_out))
 		isl_die(bmap->ctx, isl_error_invalid,
 			"domain and range don't match", goto error);
 
@@ -7570,7 +7575,8 @@ __isl_give isl_map *isl_map_deltas_map(__isl_take isl_map *map)
 	if (!map)
 		return NULL;
 
-	if (!isl_space_tuple_match(map->dim, isl_dim_in, map->dim, isl_dim_out))
+	if (!isl_space_tuple_is_equal(map->dim, isl_dim_in,
+					map->dim, isl_dim_out))
 		isl_die(map->ctx, isl_error_invalid,
 			"domain and range don't match", goto error);
 
@@ -12094,7 +12100,7 @@ static int check_basic_map_compatible_range_multi_aff(
 	if (!m)
 		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
 			"parameters don't match", goto error);
-	m = isl_space_tuple_match(bmap->dim, type, ma_space, isl_dim_out);
+	m = isl_space_tuple_is_equal(bmap->dim, type, ma_space, isl_dim_out);
 	if (m < 0)
 		goto error;
 	if (!m)
@@ -12443,7 +12449,7 @@ static int check_map_compatible_range_multi_aff(
 	isl_space *ma_space;
 
 	ma_space = isl_multi_aff_get_space(ma);
-	m = isl_space_tuple_match(map->dim, type, ma_space, isl_dim_out);
+	m = isl_space_tuple_is_equal(map->dim, type, ma_space, isl_dim_out);
 	isl_space_free(ma_space);
 	if (m >= 0 && !m)
 		isl_die(isl_map_get_ctx(map), isl_error_invalid,

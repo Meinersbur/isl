@@ -771,8 +771,10 @@ static int isl_space_has_equal_tuples(__isl_keep isl_space *space1,
 		return -1;
 	if (space1 == space2)
 		return 1;
-	return isl_space_tuple_match(space1, isl_dim_in, space2, isl_dim_in) &&
-	       isl_space_tuple_match(space1, isl_dim_out, space2, isl_dim_out);
+	return isl_space_tuple_is_equal(space1, isl_dim_in,
+					space2, isl_dim_in) &&
+	       isl_space_tuple_is_equal(space1, isl_dim_out,
+					space2, isl_dim_out);
 }
 
 /* Check if the tuple of type "type1" of "space1" is the same as
@@ -787,8 +789,9 @@ static int isl_space_has_equal_tuples(__isl_keep isl_space *space1,
  * to have result affected by possibly differing parameters
  * in those nested tuples.
  */
-int isl_space_tuple_match(__isl_keep isl_space *space1, enum isl_dim_type type1,
-	__isl_keep isl_space *space2, enum isl_dim_type type2)
+int isl_space_tuple_is_equal(__isl_keep isl_space *space1,
+	enum isl_dim_type type1, __isl_keep isl_space *space2,
+	enum isl_dim_type type2)
 {
 	isl_id *id1, *id2;
 	isl_space *nested1, *nested2;
@@ -816,6 +819,15 @@ int isl_space_tuple_match(__isl_keep isl_space *space1, enum isl_dim_type type1,
 	return 1;
 }
 
+/* This is the old, undocumented, name for isl_space_tuple_is_equal.
+ * It will be removed at some point.
+ */
+int isl_space_tuple_match(__isl_keep isl_space *space1, enum isl_dim_type type1,
+	__isl_keep isl_space *space2, enum isl_dim_type type2)
+{
+	return isl_space_tuple_is_equal(space1, type1, space2, type2);
+}
+
 static int match(__isl_keep isl_space *dim1, enum isl_dim_type dim1_type,
 	__isl_keep isl_space *dim2, enum isl_dim_type dim2_type)
 {
@@ -824,7 +836,7 @@ static int match(__isl_keep isl_space *dim1, enum isl_dim_type dim1_type,
 	if (dim1 == dim2 && dim1_type == dim2_type)
 		return 1;
 
-	if (!isl_space_tuple_match(dim1, dim1_type, dim2, dim2_type))
+	if (!isl_space_tuple_is_equal(dim1, dim1_type, dim2, dim2_type))
 		return 0;
 
 	if (!dim1->ids && !dim2->ids)
@@ -1128,7 +1140,7 @@ __isl_give isl_space *isl_space_join(__isl_take isl_space *left,
 	isl_assert(left->ctx, match(left, isl_dim_param, right, isl_dim_param),
 			goto error);
 	isl_assert(left->ctx,
-		isl_space_tuple_match(left, isl_dim_out, right, isl_dim_in),
+		isl_space_tuple_is_equal(left, isl_dim_out, right, isl_dim_in),
 		goto error);
 
 	dim = isl_space_alloc(left->ctx, left->nparam, left->n_in, right->n_out);
@@ -1215,7 +1227,7 @@ __isl_give isl_space *isl_space_domain_product(__isl_take isl_space *left,
 	if (!match(left, isl_dim_param, right, isl_dim_param))
 		isl_die(left->ctx, isl_error_invalid,
 			"parameters need to match", goto error);
-	if (!isl_space_tuple_match(left, isl_dim_out, right, isl_dim_out))
+	if (!isl_space_tuple_is_equal(left, isl_dim_out, right, isl_dim_out))
 		isl_die(left->ctx, isl_error_invalid,
 			"ranges need to match", goto error);
 
@@ -1242,7 +1254,7 @@ __isl_give isl_space *isl_space_range_product(__isl_take isl_space *left,
 
 	isl_assert(left->ctx, match(left, isl_dim_param, right, isl_dim_param),
 			goto error);
-	if (!isl_space_tuple_match(left, isl_dim_in, right, isl_dim_in))
+	if (!isl_space_tuple_is_equal(left, isl_dim_in, right, isl_dim_in))
 		isl_die(left->ctx, isl_error_invalid,
 			"domains need to match", goto error);
 
@@ -1720,8 +1732,8 @@ int isl_space_is_equal(__isl_keep isl_space *dim1, __isl_keep isl_space *dim2)
 	if (dim1 == dim2)
 		return 1;
 	return match(dim1, isl_dim_param, dim2, isl_dim_param) &&
-	       isl_space_tuple_match(dim1, isl_dim_in, dim2, isl_dim_in) &&
-	       isl_space_tuple_match(dim1, isl_dim_out, dim2, isl_dim_out);
+	       isl_space_tuple_is_equal(dim1, isl_dim_in, dim2, isl_dim_in) &&
+	       isl_space_tuple_is_equal(dim1, isl_dim_out, dim2, isl_dim_out);
 }
 
 /* Is space1 equal to the domain of space2?
@@ -1737,7 +1749,8 @@ int isl_space_is_domain_internal(__isl_keep isl_space *space1,
 	if (!isl_space_is_set(space1))
 		return 0;
 	return match(space1, isl_dim_param, space2, isl_dim_param) &&
-	       isl_space_tuple_match(space1, isl_dim_set, space2, isl_dim_in);
+	       isl_space_tuple_is_equal(space1, isl_dim_set,
+					space2, isl_dim_in);
 }
 
 /* Is space1 equal to the domain of space2?
@@ -1765,7 +1778,8 @@ int isl_space_is_range_internal(__isl_keep isl_space *space1,
 	if (!isl_space_is_set(space1))
 		return 0;
 	return match(space1, isl_dim_param, space2, isl_dim_param) &&
-	       isl_space_tuple_match(space1, isl_dim_set, space2, isl_dim_out);
+	       isl_space_tuple_is_equal(space1, isl_dim_set,
+					space2, isl_dim_out);
 }
 
 /* Is space1 equal to the range of space2?

@@ -1256,7 +1256,7 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),scale_multi_val)(
 	if (!multi || !mv)
 		goto error;
 
-	if (!isl_space_tuple_match(multi->space, isl_dim_out,
+	if (!isl_space_tuple_is_equal(multi->space, isl_dim_out,
 					mv->space, isl_dim_set))
 		isl_die(isl_multi_val_get_ctx(mv), isl_error_invalid,
 			"spaces don't match", goto error);
@@ -1292,7 +1292,7 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),scale_down_multi_val)(
 	if (!multi || !mv)
 		goto error;
 
-	if (!isl_space_tuple_match(multi->space, isl_dim_out,
+	if (!isl_space_tuple_is_equal(multi->space, isl_dim_out,
 					mv->space, isl_dim_set))
 		isl_die(isl_multi_val_get_ctx(mv), isl_error_invalid,
 			"spaces don't match", goto error);

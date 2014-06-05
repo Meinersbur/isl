@@ -1187,7 +1187,7 @@ static int apply_range_entry(void **entry, void *user)
 	isl_map *map2 = *entry;
 	int empty;
 
-	if (!isl_space_tuple_match(data->map->dim, isl_dim_out,
+	if (!isl_space_tuple_is_equal(data->map->dim, isl_dim_out,
 				 map2->dim, isl_dim_in))
 		return 0;
 
@@ -1274,7 +1274,7 @@ static int map_lex_lt_entry(void **entry, void *user)
 	struct isl_union_map_bin_data *data = user;
 	isl_map *map2 = *entry;
 
-	if (!isl_space_tuple_match(data->map->dim, isl_dim_out,
+	if (!isl_space_tuple_is_equal(data->map->dim, isl_dim_out,
 				 map2->dim, isl_dim_out))
 		return 0;
 
@@ -1296,7 +1296,7 @@ static int map_lex_le_entry(void **entry, void *user)
 	struct isl_union_map_bin_data *data = user;
 	isl_map *map2 = *entry;
 
-	if (!isl_space_tuple_match(data->map->dim, isl_dim_out,
+	if (!isl_space_tuple_is_equal(data->map->dim, isl_dim_out,
 				 map2->dim, isl_dim_out))
 		return 0;
 
@@ -1354,7 +1354,7 @@ static int domain_product_entry(void **entry, void *user)
 	struct isl_union_map_bin_data *data = user;
 	isl_map *map2 = *entry;
 
-	if (!isl_space_tuple_match(data->map->dim, isl_dim_out,
+	if (!isl_space_tuple_is_equal(data->map->dim, isl_dim_out,
 				 map2->dim, isl_dim_out))
 		return 0;
 
@@ -1379,7 +1379,7 @@ static int range_product_entry(void **entry, void *user)
 	struct isl_union_map_bin_data *data = user;
 	isl_map *map2 = *entry;
 
-	if (!isl_space_tuple_match(data->map->dim, isl_dim_in,
+	if (!isl_space_tuple_is_equal(data->map->dim, isl_dim_in,
 				 map2->dim, isl_dim_in))
 		return 0;
 
@@ -1402,7 +1402,7 @@ static int flat_range_product_entry(void **entry, void *user)
 	struct isl_union_map_bin_data *data = user;
 	isl_map *map2 = *entry;
 
-	if (!isl_space_tuple_match(data->map->dim, isl_dim_in,
+	if (!isl_space_tuple_is_equal(data->map->dim, isl_dim_in,
 				 map2->dim, isl_dim_in))
 		return 0;
 
@@ -1803,7 +1803,8 @@ static int deltas_entry(void **entry, void *user)
 	isl_map *map = *entry;
 	isl_union_set **res = user;
 
-	if (!isl_space_tuple_match(map->dim, isl_dim_in, map->dim, isl_dim_out))
+	if (!isl_space_tuple_is_equal(map->dim, isl_dim_in,
+					map->dim, isl_dim_out))
 		return 0;
 
 	*res = isl_union_set_add_set(*res, isl_map_deltas(isl_map_copy(map)));
@@ -1821,7 +1822,8 @@ static int deltas_map_entry(void **entry, void *user)
 	isl_map *map = *entry;
 	isl_union_map **res = user;
 
-	if (!isl_space_tuple_match(map->dim, isl_dim_in, map->dim, isl_dim_out))
+	if (!isl_space_tuple_is_equal(map->dim, isl_dim_in,
+					map->dim, isl_dim_out))
 		return 0;
 
 	*res = isl_union_map_add_map(*res,
@@ -2126,7 +2128,8 @@ static int is_subset_of_identity(__isl_keep isl_map *map)
 	if (!map)
 		return -1;
 
-	if (!isl_space_tuple_match(map->dim, isl_dim_in, map->dim, isl_dim_out))
+	if (!isl_space_tuple_is_equal(map->dim, isl_dim_in,
+					map->dim, isl_dim_out))
 		return 0;
 
 	dim = isl_map_get_space(map);
@@ -2643,21 +2646,24 @@ error:
  */
 static int domain_match(__isl_keep isl_map *map, __isl_keep isl_space *space)
 {
-	return isl_space_tuple_match(map->dim, isl_dim_in, space, isl_dim_out);
+	return isl_space_tuple_is_equal(map->dim, isl_dim_in,
+					space, isl_dim_out);
 }
 
 /* Is the range space of "map" equal to "space"?
  */
 static int range_match(__isl_keep isl_map *map, __isl_keep isl_space *space)
 {
-	return isl_space_tuple_match(map->dim, isl_dim_out, space, isl_dim_out);
+	return isl_space_tuple_is_equal(map->dim, isl_dim_out,
+					space, isl_dim_out);
 }
 
 /* Is the set space of "map" equal to "space"?
  */
 static int set_match(__isl_keep isl_map *map, __isl_keep isl_space *space)
 {
-	return isl_space_tuple_match(map->dim, isl_dim_set, space, isl_dim_out);
+	return isl_space_tuple_is_equal(map->dim, isl_dim_set,
+					space, isl_dim_out);
 }
 
 /* Internal data structure for preimage_pw_multi_aff.

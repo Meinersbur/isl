@@ -2561,12 +2561,12 @@ int isl_map_plain_is_disjoint(__isl_keep isl_map *map1,
 	if (disjoint < 0 || disjoint)
 		return disjoint;
 
-	match = isl_space_tuple_match(map1->dim, isl_dim_in,
+	match = isl_space_tuple_is_equal(map1->dim, isl_dim_in,
 				map2->dim, isl_dim_in);
 	if (match < 0 || !match)
 		return match < 0 ? -1 : 1;
 
-	match = isl_space_tuple_match(map1->dim, isl_dim_out,
+	match = isl_space_tuple_is_equal(map1->dim, isl_dim_out,
 				map2->dim, isl_dim_out);
 	if (match < 0 || !match)
 		return match < 0 ? -1 : 1;
