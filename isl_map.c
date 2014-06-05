@@ -10297,30 +10297,78 @@ int isl_basic_set_dims_get_sign(__isl_keep isl_basic_set *bset,
 	return isl_basic_set_vars_get_sign(bset, first, n, signs);
 }
 
+/* Is it possible for the integer division "div" to depend (possibly
+ * indirectly) on any output dimensions?
+ *
+ * If the div is undefined, then we conservatively assume that it
+ * may depend on them.
+ * Otherwise, we check if it actually depends on them or on any integer
+ * divisions that may depend on them.
+ */
+static int div_may_involve_output(__isl_keep isl_basic_map *bmap, int div)
+{
+	int i;
+	unsigned n_out, o_out;
+	unsigned n_div, o_div;
+
+	if (isl_int_is_zero(bmap->div[div][0]))
+		return 1;
+
+	n_out = isl_basic_map_dim(bmap, isl_dim_out);
+	o_out = isl_basic_map_offset(bmap, isl_dim_out);
+
+	if (isl_seq_first_non_zero(bmap->div[div] + 1 + o_out, n_out) != -1)
+		return 1;
+
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	o_div = isl_basic_map_offset(bmap, isl_dim_div);
+
+	for (i = 0; i < n_div; ++i) {
+		if (isl_int_is_zero(bmap->div[div][1 + o_div + i]))
+			continue;
+		if (div_may_involve_output(bmap, i))
+			return 1;
+	}
+
+	return 0;
+}
+
 /* Return the index of the equality of "bmap" that defines
  * the output dimension "pos" in terms of earlier dimensions.
+ * The equality may also involve integer divisions, as long
+ * as those integer divisions are defined in terms of
+ * parameters or input dimensions.
  * Return bmap->n_eq if there is no such equality.
  * Return -1 on error.
  */
 int isl_basic_map_output_defining_equality(__isl_keep isl_basic_map *bmap,
 	int pos)
 {
-	int j;
-	unsigned total;
+	int j, k;
 	unsigned n_out, o_out;
+	unsigned n_div, o_div;
 
 	if (!bmap)
 		return -1;
 
-	total = 1 + isl_basic_map_total_dim(bmap);
 	n_out = isl_basic_map_dim(bmap, isl_dim_out);
 	o_out = isl_basic_map_offset(bmap, isl_dim_out);
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	o_div = isl_basic_map_offset(bmap, isl_dim_div);
 
 	for (j = 0; j < bmap->n_eq; ++j) {
 		if (isl_int_is_zero(bmap->eq[j][o_out + pos]))
 			continue;
 		if (isl_seq_first_non_zero(bmap->eq[j] + o_out + pos + 1,
-					total - (o_out + pos + 1)) == -1)
+					n_out - (pos + 1)) != -1)
+			continue;
+		for (k = 0; k < n_div; ++k) {
+			if (isl_int_is_zero(bmap->eq[j][o_div + k]))
+				continue;
+			if (div_may_involve_output(bmap, k))
+				break;
+		}
+		if (k >= n_div)
 			return j;
 	}
 

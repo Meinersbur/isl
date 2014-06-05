@@ -4076,6 +4076,7 @@ const char *set_conversion_tests[] = {
 	"[N] -> { [i] : exists a : i = 4 a and N - 1 <= i <= N }",
 	"[N] -> { [i,j] : exists a : i = 4 a and N - 1 <= i, 2j <= N }",
 	"[N] -> { [[i]->[j]] : exists a : i = 4 a and N - 1 <= i, 2j <= N }",
+	"[N] -> { [3*floor(N/2) + 5*floor(N/3)] }",
 };
 
 /* Check that converting from isl_set to isl_pw_multi_aff and back

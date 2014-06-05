@@ -4248,6 +4248,8 @@ error:
  * in terms of the parameters and input dimensions using an equality,
  * extract an isl_aff that expresses the output dimension in terms
  * of the parameters and input dimensions.
+ * Note that this expression may involve integer divisions defined
+ * in terms of parameters and input dimensions.
  *
  * This function shares some similarities with
  * isl_basic_map_has_defining_equality and isl_constraint_get_bound.
@@ -4257,6 +4259,7 @@ static __isl_give isl_aff *extract_isl_aff_from_basic_map(
 {
 	int eq;
 	unsigned offset;
+	unsigned n_div;
 	isl_local_space *ls;
 	isl_aff *aff;
 
@@ -4275,11 +4278,16 @@ static __isl_give isl_aff *extract_isl_aff_from_basic_map(
 	if (!aff)
 		goto error;
 	offset = isl_basic_map_offset(bmap, isl_dim_out);
-	if (isl_int_is_neg(bmap->eq[eq][offset]))
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	if (isl_int_is_neg(bmap->eq[eq][offset])) {
 		isl_seq_cpy(aff->v->el + 1, bmap->eq[eq], offset);
-	else
+		isl_seq_cpy(aff->v->el + 1 + offset, bmap->eq[eq] + offset + 1,
+			    n_div);
+	} else {
 		isl_seq_neg(aff->v->el + 1, bmap->eq[eq], offset);
-	isl_seq_clr(aff->v->el + 1 + offset, aff->v->size - (1 + offset));
+		isl_seq_neg(aff->v->el + 1 + offset, bmap->eq[eq] + offset + 1,
+			    n_div);
+	}
 	isl_int_abs(aff->v->el[0], bmap->eq[eq][offset]);
 	isl_basic_map_free(bmap);
 
