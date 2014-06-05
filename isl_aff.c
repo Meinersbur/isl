@@ -4255,9 +4255,8 @@ error:
 static __isl_give isl_aff *extract_isl_aff_from_basic_map(
 	__isl_take isl_basic_map *bmap)
 {
-	int i;
+	int eq;
 	unsigned offset;
-	unsigned total;
 	isl_local_space *ls;
 	isl_aff *aff;
 
@@ -4267,29 +4266,21 @@ static __isl_give isl_aff *extract_isl_aff_from_basic_map(
 		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
 			"basic map should have a single output dimension",
 			goto error);
-	offset = isl_basic_map_offset(bmap, isl_dim_out);
-	total = isl_basic_map_total_dim(bmap);
-	for (i = 0; i < bmap->n_eq; ++i) {
-		if (isl_int_is_zero(bmap->eq[i][offset]))
-			continue;
-		if (isl_seq_first_non_zero(bmap->eq[i] + offset + 1,
-					   1 + total - (offset + 1)) != -1)
-			continue;
-		break;
-	}
-	if (i >= bmap->n_eq)
+	eq = isl_basic_map_output_defining_equality(bmap, 0);
+	if (eq >= bmap->n_eq)
 		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
 			"unable to find suitable equality", goto error);
 	ls = isl_basic_map_get_local_space(bmap);
 	aff = isl_aff_alloc(isl_local_space_domain(ls));
 	if (!aff)
 		goto error;
-	if (isl_int_is_neg(bmap->eq[i][offset]))
-		isl_seq_cpy(aff->v->el + 1, bmap->eq[i], offset);
+	offset = isl_basic_map_offset(bmap, isl_dim_out);
+	if (isl_int_is_neg(bmap->eq[eq][offset]))
+		isl_seq_cpy(aff->v->el + 1, bmap->eq[eq], offset);
 	else
-		isl_seq_neg(aff->v->el + 1, bmap->eq[i], offset);
+		isl_seq_neg(aff->v->el + 1, bmap->eq[eq], offset);
 	isl_seq_clr(aff->v->el + 1 + offset, aff->v->size - (1 + offset));
-	isl_int_abs(aff->v->el[0], bmap->eq[i][offset]);
+	isl_int_abs(aff->v->el[0], bmap->eq[eq][offset]);
 	isl_basic_map_free(bmap);
 
 	aff = isl_aff_remove_unused_divs(aff);

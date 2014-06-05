@@ -10297,17 +10297,17 @@ int isl_basic_set_dims_get_sign(__isl_keep isl_basic_set *bset,
 	return isl_basic_set_vars_get_sign(bset, first, n, signs);
 }
 
-/* Check if the given basic map is obviously single-valued.
- * In particular, for each output dimension, check that there is
- * an equality that defines the output dimension in terms of
- * earlier dimensions.
+/* Return the index of the equality of "bmap" that defines
+ * the output dimension "pos" in terms of earlier dimensions.
+ * Return bmap->n_eq if there is no such equality.
+ * Return -1 on error.
  */
-int isl_basic_map_plain_is_single_valued(__isl_keep isl_basic_map *bmap)
+int isl_basic_map_output_defining_equality(__isl_keep isl_basic_map *bmap,
+	int pos)
 {
-	int i, j;
+	int j;
 	unsigned total;
-	unsigned n_out;
-	unsigned o_out;
+	unsigned n_out, o_out;
 
 	if (!bmap)
 		return -1;
@@ -10316,15 +10316,39 @@ int isl_basic_map_plain_is_single_valued(__isl_keep isl_basic_map *bmap)
 	n_out = isl_basic_map_dim(bmap, isl_dim_out);
 	o_out = isl_basic_map_offset(bmap, isl_dim_out);
 
+	for (j = 0; j < bmap->n_eq; ++j) {
+		if (isl_int_is_zero(bmap->eq[j][o_out + pos]))
+			continue;
+		if (isl_seq_first_non_zero(bmap->eq[j] + o_out + pos + 1,
+					total - (o_out + pos + 1)) == -1)
+			return j;
+	}
+
+	return bmap->n_eq;
+}
+
+/* Check if the given basic map is obviously single-valued.
+ * In particular, for each output dimension, check that there is
+ * an equality that defines the output dimension in terms of
+ * earlier dimensions.
+ */
+int isl_basic_map_plain_is_single_valued(__isl_keep isl_basic_map *bmap)
+{
+	int i;
+	unsigned n_out;
+
+	if (!bmap)
+		return -1;
+
+	n_out = isl_basic_map_dim(bmap, isl_dim_out);
+
 	for (i = 0; i < n_out; ++i) {
-		for (j = 0; j < bmap->n_eq; ++j) {
-			if (isl_int_is_zero(bmap->eq[j][o_out + i]))
-				continue;
-			if (isl_seq_first_non_zero(bmap->eq[j] + o_out + i + 1,
-						total - (o_out + i + 1)) == -1)
-				break;
-		}
-		if (j >= bmap->n_eq)
+		int eq;
+
+		eq = isl_basic_map_output_defining_equality(bmap, i);
+		if (eq < 0)
+			return -1;
+		if (eq >= bmap->n_eq)
 			return 0;
 	}
 
