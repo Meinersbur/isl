@@ -762,6 +762,31 @@ static __isl_keep isl_space *nested(__isl_keep isl_space *dim,
 	return NULL;
 }
 
+/* Are the two spaces the same, apart from positions and names of parameters?
+ */
+static int isl_space_has_equal_tuples(__isl_keep isl_space *space1,
+	__isl_keep isl_space *space2)
+{
+	if (!space1 || !space2)
+		return -1;
+	if (space1 == space2)
+		return 1;
+	return isl_space_tuple_match(space1, isl_dim_in, space2, isl_dim_in) &&
+	       isl_space_tuple_match(space1, isl_dim_out, space2, isl_dim_out);
+}
+
+/* Check if the tuple of type "type1" of "space1" is the same as
+ * the tuple of type "type2" of "space2".
+ *
+ * That is, check if the tuples have the same identifier, the same dimension
+ * and the same internal structure.
+ * The identifiers of the dimensions inside the tuples do not affect the result.
+ *
+ * Note that this function only checks the tuples themselves.
+ * If nested tuples are involved, then we need to be careful not
+ * to have result affected by possibly differing parameters
+ * in those nested tuples.
+ */
 int isl_space_tuple_match(__isl_keep isl_space *space1, enum isl_dim_type type1,
 	__isl_keep isl_space *space2, enum isl_dim_type type2)
 {
@@ -786,7 +811,7 @@ int isl_space_tuple_match(__isl_keep isl_space *space1, enum isl_dim_type type1,
 	nested2 = nested(space2, type2);
 	if (!nested1 ^ !nested2)
 		return 0;
-	if (nested1 && !isl_space_is_equal(nested1, nested2))
+	if (nested1 && !isl_space_has_equal_tuples(nested1, nested2))
 		return 0;
 	return 1;
 }
