@@ -2155,29 +2155,83 @@ static int single_map_is_single_valued(__isl_keep isl_union_map *umap)
 	return sv;
 }
 
-/* Check if the given map is single-valued.
- * We simply compute
+/* Internal data structure for single_valued_on_domain.
+ *
+ * "umap" is the union map to be tested.
+ * "sv" is set to 1 as long as "umap" may still be single-valued.
+ */
+struct isl_union_map_is_sv_data {
+	isl_union_map *umap;
+	int sv;
+};
+
+/* Check if the data->umap is single-valued on "set".
+ *
+ * If data->umap consists of a single map on "set", then test it
+ * as an isl_map.
+ *
+ * Otherwise, compute
  *
  *	M \circ M^-1
  *
- * and check if the result is a subset of the identity mapping.
+ * check if the result is a subset of the identity mapping and
+ * store the result in data->sv.
+ *
+ * Terminate as soon as data->umap has been determined not to
+ * be single-valued.
+ */
+static int single_valued_on_domain(__isl_take isl_set *set, void *user)
+{
+	struct isl_union_map_is_sv_data *data = user;
+	isl_union_map *umap, *test;
+
+	umap = isl_union_map_copy(data->umap);
+	umap = isl_union_map_intersect_domain(umap,
+						isl_union_set_from_set(set));
+
+	if (isl_union_map_n_map(umap) == 1) {
+		data->sv = single_map_is_single_valued(umap);
+		isl_union_map_free(umap);
+	} else {
+		test = isl_union_map_reverse(isl_union_map_copy(umap));
+		test = isl_union_map_apply_range(test, umap);
+
+		data->sv = union_map_forall(test, &is_subset_of_identity);
+
+		isl_union_map_free(test);
+	}
+
+	if (data->sv < 0 || !data->sv)
+		return -1;
+	return 0;
+}
+
+/* Check if the given map is single-valued.
+ *
+ * If the union map consists of a single map, then test it as an isl_map.
+ * Otherwise, check if the union map is single-valued on each of its
+ * domain spaces.
  */
 int isl_union_map_is_single_valued(__isl_keep isl_union_map *umap)
 {
-	isl_union_map *test;
-	int sv;
+	isl_union_map *universe;
+	isl_union_set *domain;
+	struct isl_union_map_is_sv_data data;
 
 	if (isl_union_map_n_map(umap) == 1)
 		return single_map_is_single_valued(umap);
 
-	test = isl_union_map_reverse(isl_union_map_copy(umap));
-	test = isl_union_map_apply_range(test, isl_union_map_copy(umap));
+	universe = isl_union_map_universe(isl_union_map_copy(umap));
+	domain = isl_union_map_domain(universe);
 
-	sv = union_map_forall(test, &is_subset_of_identity);
+	data.sv = 1;
+	data.umap = umap;
+	if (isl_union_set_foreach_set(domain,
+			    &single_valued_on_domain, &data) < 0 && data.sv)
+		data.sv = -1;
+	isl_union_set_free(domain);
 
-	isl_union_map_free(test);
-
-	return sv;
+	return data.sv;
 }
 
 int isl_union_map_is_injective(__isl_keep isl_union_map *umap)
