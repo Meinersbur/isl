@@ -915,7 +915,7 @@ static __isl_give isl_map *insert_dummy_tags(__isl_take isl_map *map)
  *
  * Edges of type isl_edge_condition or isl_edge_conditional_validity
  * may be specified as "tagged" dependence relations.  That is, "map"
- * may contain elements * (i -> a) -> (j -> b), where i -> j denotes
+ * may contain elements (i -> a) -> (j -> b), where i -> j denotes
  * the dependence on iterations and a and b are tags.
  * edge->map is set to the relation containing the elements i -> j,
  * while edge->tagged_condition and edge->tagged_validity contain
@@ -1122,7 +1122,7 @@ static __isl_give isl_basic_set *intra_coefficients(
 	return coef;
 }
 
-/* Given a dependence relation R, * construct the set of coefficients
+/* Given a dependence relation R, construct the set of coefficients
  * of valid constraints for elements in that dependence relation.
  * In particular, the result contains tuples of coefficients
  * c_0, c_n, c_x, c_y such that
@@ -2139,7 +2139,7 @@ static __isl_give isl_map *node_extract_schedule(struct isl_sched_node *node)
 	return isl_map_copy(node->sched_map);
 }
 
-/* Construct a map that can be used to update dependence relation
+/* Construct a map that can be used to update a dependence relation
  * based on the current schedule.
  * That is, construct a map expressing that source and sink
  * are executed within the same iteration of the current schedule.
