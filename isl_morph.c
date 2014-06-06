@@ -1,14 +1,17 @@
 /*
- * Copyright 2010      INRIA Saclay
+ * Copyright 2010-2011 INRIA Saclay
+ * Copyright 2014      Ecole Normale Superieure
  *
  * Use of this software is governed by the MIT license
  *
  * Written by Sven Verdoolaege, INRIA Saclay - Ile-de-France,
  * Parc Club Orsay Universite, ZAC des vignes, 4 rue Jacques Monod,
  * 91893 Orsay, France 
+ * and Ecole Normale Superieure, 45 rue d'Ulm, 75230 Paris, France
  */
 
 #include <isl_map_private.h>
+#include <isl_aff_private.h>
 #include <isl_morph.h>
 #include <isl_seq.h>
 #include <isl_mat_private.h>
@@ -93,6 +96,77 @@ void isl_morph_free(__isl_take isl_morph *morph)
 	isl_mat_free(morph->map);
 	isl_mat_free(morph->inv);
 	free(morph);
+}
+
+/* Is "morph" an identity on the parameters?
+ */
+static int identity_on_parameters(__isl_keep isl_morph *morph)
+{
+	int is_identity;
+	unsigned nparam;
+	isl_mat *sub;
+
+	nparam = isl_morph_dom_dim(morph, isl_dim_param);
+	if (nparam != isl_morph_ran_dim(morph, isl_dim_param))
+		return 0;
+	if (nparam == 0)
+		return 1;
+	sub = isl_mat_sub_alloc(morph->map, 0, 1 + nparam, 0, 1 + nparam);
+	is_identity = isl_mat_is_scaled_identity(sub);
+	isl_mat_free(sub);
+
+	return is_identity;
+}
+
+/* Return an affine expression of the variables of the range of "morph"
+ * in terms of the parameters and the variables of the domain on "morph".
+ *
+ * In order for the space manipulations to make sense, we require
+ * that the parameters are not modified by "morph".
+ */
+__isl_give isl_multi_aff *isl_morph_get_var_multi_aff(
+	__isl_keep isl_morph *morph)
+{
+	isl_space *dom, *ran, *space;
+	isl_local_space *ls;
+	isl_multi_aff *ma;
+	unsigned nparam, nvar;
+	int i;
+	int is_identity;
+
+	if (!morph)
+		return NULL;
+
+	is_identity = identity_on_parameters(morph);
+	if (is_identity < 0)
+		return NULL;
+	if (!is_identity)
+		isl_die(isl_morph_get_ctx(morph), isl_error_invalid,
+			"cannot handle parameter compression", return NULL);
+
+	dom = isl_morph_get_dom_space(morph);
+	ls = isl_local_space_from_space(isl_space_copy(dom));
+	ran = isl_morph_get_ran_space(morph);
+	space = isl_space_map_from_domain_and_range(dom, ran);
+	ma = isl_multi_aff_zero(space);
+
+	nparam = isl_multi_aff_dim(ma, isl_dim_param);
+	nvar = isl_multi_aff_dim(ma, isl_dim_out);
+	for (i = 0; i < nvar; ++i) {
+		isl_val *val;
+		isl_vec *v;
+		isl_aff *aff;
+
+		v = isl_mat_get_row(morph->map, 1 + nparam + i);
+		v = isl_vec_insert_els(v, 0, 1);
+		val = isl_mat_get_element_val(morph->map, 0, 0);
+		v = isl_vec_set_element_val(v, 0, val);
+		aff = isl_aff_alloc_vec(isl_local_space_copy(ls), v);
+		ma = isl_multi_aff_set_aff(ma, i, aff);
+	}
+
+	isl_local_space_free(ls);
+	return ma;
 }
 
 /* Return the domain space of "morph".
