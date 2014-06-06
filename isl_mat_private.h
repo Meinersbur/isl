@@ -35,6 +35,8 @@ __isl_give isl_mat *isl_mat_scale_down_row(__isl_take isl_mat *mat, int row,
 
 __isl_give isl_vec *isl_mat_get_row(__isl_keep isl_mat *mat, unsigned row);
 
+int isl_mat_is_scaled_identity(__isl_keep isl_mat *mat);
+
 void isl_mat_col_mul(struct isl_mat *mat, int dst_col, isl_int f, int src_col);
 void isl_mat_col_submul(struct isl_mat *mat,
 			int dst_col, isl_int f, int src_col);
