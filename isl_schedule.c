@@ -2360,18 +2360,24 @@ static int copy_nodes(struct isl_sched_graph *dst, struct isl_sched_graph *src,
 
 	dst->n = 0;
 	for (i = 0; i < src->n; ++i) {
+		int j;
+
 		if (!node_pred(&src->node[i], data))
 			continue;
-		dst->node[dst->n].dim = isl_space_copy(src->node[i].dim);
-		dst->node[dst->n].nvar = src->node[i].nvar;
-		dst->node[dst->n].nparam = src->node[i].nparam;
-		dst->node[dst->n].sched = isl_mat_copy(src->node[i].sched);
-		dst->node[dst->n].sched_map =
-			isl_map_copy(src->node[i].sched_map);
-		dst->node[dst->n].band = src->node[i].band;
-		dst->node[dst->n].band_id = src->node[i].band_id;
-		dst->node[dst->n].coincident = src->node[i].coincident;
+
+		j = dst->n;
+		dst->node[j].dim = isl_space_copy(src->node[i].dim);
+		dst->node[j].nvar = src->node[i].nvar;
+		dst->node[j].nparam = src->node[i].nparam;
+		dst->node[j].sched = isl_mat_copy(src->node[i].sched);
+		dst->node[j].sched_map = isl_map_copy(src->node[i].sched_map);
+		dst->node[j].band = src->node[i].band;
+		dst->node[j].band_id = src->node[i].band_id;
+		dst->node[j].coincident = src->node[i].coincident;
 		dst->n++;
+
+		if (!dst->node[j].dim || !dst->node[j].sched)
+			return -1;
 	}
 
 	return 0;
