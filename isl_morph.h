@@ -35,6 +35,8 @@ struct isl_morph {
 };
 typedef struct isl_morph isl_morph;
 
+isl_ctx *isl_morph_get_ctx(__isl_keep isl_morph *morph);
+
 __isl_give isl_morph *isl_morph_alloc(
 	__isl_take isl_basic_set *dom, __isl_take isl_basic_set *ran,
 	__isl_take isl_mat *map, __isl_take isl_mat *inv);

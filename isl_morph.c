@@ -15,6 +15,13 @@
 #include <isl_space_private.h>
 #include <isl_equalities.h>
 
+isl_ctx *isl_morph_get_ctx(__isl_keep isl_morph *morph)
+{
+	if (!morph)
+		return NULL;
+	return isl_basic_set_get_ctx(morph->dom);
+}
+
 __isl_give isl_morph *isl_morph_alloc(
 	__isl_take isl_basic_set *dom, __isl_take isl_basic_set *ran,
 	__isl_take isl_mat *map, __isl_take isl_mat *inv)
