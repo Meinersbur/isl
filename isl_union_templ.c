@@ -115,14 +115,54 @@ int FN(FN(UNION,foreach),PARTS)(__isl_keep UNION *u,
 				      &call_on_copy, &data);
 }
 
-static int has_dim(const void *entry, const void *val)
+/* Is the space of "entry" equal to "space"?
+ */
+static int has_space(const void *entry, const void *val)
 {
 	PART *part = (PART *)entry;
-	isl_space *dim = (isl_space *)val;
+	isl_space *space = (isl_space *) val;
 
-	return isl_space_is_equal(part->dim, dim);
+	return isl_space_is_equal(part->dim, space);
 }
 
+/* This function is not currently used by isl_aff.c.
+ */
+static int has_domain_space(const void *entry, const void *val)
+	__attribute__ ((unused));
+
+/* Is the domain space of "entry" equal to "space"?
+ */
+static int has_domain_space(const void *entry, const void *val)
+{
+	PART *part = (PART *)entry;
+	isl_space *space = (isl_space *) val;
+
+	if (isl_space_is_params(space))
+		return isl_space_is_set(part->dim);
+
+	return isl_space_tuple_is_equal(part->dim, isl_dim_in,
+					space, isl_dim_set);
+}
+
+/* Is the domain space of "entry" equal to the domain of "space"?
+ */
+static int has_same_domain_space(const void *entry, const void *val)
+{
+	PART *part = (PART *)entry;
+	isl_space *space = (isl_space *) val;
+
+	if (isl_space_is_set(space))
+		return isl_space_is_set(part->dim);
+
+	return isl_space_tuple_is_equal(part->dim, isl_dim_in,
+					space, isl_dim_in);
+}
+
+/* Extract the element of "u" living in "space".
+ *
+ * Return the ZERO element if "u" does not contain any element
+ * living in "space".
+ */
 __isl_give PART *FN(FN(UNION,extract),PARTS)(__isl_keep UNION *u,
 	__isl_take isl_space *space)
 {
@@ -134,7 +174,7 @@ __isl_give PART *FN(FN(UNION,extract),PARTS)(__isl_keep UNION *u,
 
 	hash = isl_space_get_hash(space);
 	entry = isl_hash_table_find(u->space->ctx, &u->table, hash,
-				    &has_dim, space, 0);
+				    &has_space, space, 0);
 	if (!entry)
 #ifdef HAS_TYPE
 		return FN(PART,ZERO)(space, u->type);
@@ -176,13 +216,19 @@ __isl_give UNION *FN(FN(UNION,add),PARTS)(__isl_take UNION *u,
 
 	hash = isl_space_get_hash(part->dim);
 	entry = isl_hash_table_find(u->space->ctx, &u->table, hash,
-				    &has_dim, part->dim, 1);
+				    &has_same_domain_space, part->dim, 1);
 	if (!entry)
 		goto error;
 
 	if (!entry->data)
 		entry->data = part;
 	else {
+		PART *entry_part = entry->data;
+		if (!isl_space_tuple_is_equal(entry_part->dim, isl_dim_out,
+						part->dim, isl_dim_out))
+			isl_die(FN(UNION,get_ctx)(u), isl_error_invalid,
+				"union expression can only contain a single "
+				"expression over a given domain", goto error);
 		entry->data = FN(PART,add)(entry->data, FN(PART,copy)(part));
 		if (!entry->data)
 			goto error;
@@ -399,14 +445,22 @@ static int match_bin_entry(void **entry, void *user)
 	struct isl_hash_table_entry *entry2;
 	isl_space *space;
 	PART *part = *entry;
+	PART *part2;
 
 	space = FN(PART,get_space)(part);
 	hash = isl_space_get_hash(space);
 	entry2 = isl_hash_table_find(data->u2->space->ctx, &data->u2->table,
-				     hash, &has_dim, space, 0);
+				     hash, &has_same_domain_space, space, 0);
 	isl_space_free(space);
 	if (!entry2)
 		return 0;
+
+	part2 = entry2->data;
+	if (!isl_space_tuple_is_equal(part->dim, isl_dim_out,
+					part2->dim, isl_dim_out))
+		isl_die(FN(UNION,get_ctx)(data->u2), isl_error_invalid,
+			"entries should have the same range space",
+			return -1);
 
 	part = FN(PART, copy)(part);
 	part = data->fn(part, FN(PART, copy)(entry2->data));
@@ -658,13 +712,11 @@ __isl_give isl_val *FN(UNION,eval)(__isl_take UNION *u,
 		goto error;
 
 	space = isl_space_copy(pnt->dim);
-	space = isl_space_from_domain(space);
-	space = isl_space_add_dims(space, isl_dim_out, 1);
 	if (!space)
 		goto error;
 	hash = isl_space_get_hash(space);
 	entry = isl_hash_table_find(u->space->ctx, &u->table,
-				    hash, &has_dim, space, 0);
+				    hash, &has_domain_space, space, 0);
 	isl_space_free(space);
 	if (!entry) {
 		v = isl_val_zero(isl_point_get_ctx(pnt));
@@ -859,7 +911,7 @@ static int plain_is_equal_entry(void **entry, void *user)
 
 	hash = isl_space_get_hash(pw->dim);
 	entry2 = isl_hash_table_find(data->u2->space->ctx, &data->u2->table,
-				     hash, &has_dim, pw->dim, 0);
+				     hash, &has_same_domain_space, pw->dim, 0);
 	if (!entry2) {
 		data->is_equal = 0;
 		return -1;
