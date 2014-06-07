@@ -124,27 +124,27 @@ static int has_dim(const void *entry, const void *val)
 }
 
 __isl_give PART *FN(FN(UNION,extract),PARTS)(__isl_keep UNION *u,
-	__isl_take isl_space *dim)
+	__isl_take isl_space *space)
 {
 	uint32_t hash;
 	struct isl_hash_table_entry *entry;
 
-	if (!u || !dim)
+	if (!u || !space)
 		goto error;
 
-	hash = isl_space_get_hash(dim);
+	hash = isl_space_get_hash(space);
 	entry = isl_hash_table_find(u->space->ctx, &u->table, hash,
-				    &has_dim, dim, 0);
+				    &has_dim, space, 0);
 	if (!entry)
 #ifdef HAS_TYPE
-		return FN(PART,ZERO)(dim, u->type);
+		return FN(PART,ZERO)(space, u->type);
 #else
-		return FN(PART,ZERO)(dim);
+		return FN(PART,ZERO)(space);
 #endif
-	isl_space_free(dim);
+	isl_space_free(space);
 	return FN(PART,copy)(entry->data);
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
