@@ -572,7 +572,7 @@ static int set_has_dim(const void *entry, const void *val)
 	return isl_space_is_equal(set->dim, dim);
 }
 
-/* Find the set in data->uset that live in the same space as the domain
+/* Find the set in data->uset that lives in the same space as the domain
  * of *entry, apply data->fn to *entry and this set (if any), and add
  * the result to data->res.
  */
