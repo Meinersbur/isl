@@ -4054,7 +4054,7 @@ __isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_neg(
 	if (!upwqp)
 		return NULL;
 
-	if (isl_hash_table_foreach(upwqp->dim->ctx, &upwqp->table,
+	if (isl_hash_table_foreach(upwqp->space->ctx, &upwqp->table,
 				   &neg_entry, NULL) < 0)
 		goto error;
 
@@ -4783,7 +4783,7 @@ __isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_to_polynomial(
 	if (!upwqp)
 		return NULL;
 
-	if (isl_hash_table_foreach(upwqp->dim->ctx, &upwqp->table,
+	if (isl_hash_table_foreach(upwqp->space->ctx, &upwqp->table,
 				   &poly_entry, &sign) < 0)
 		goto error;
 

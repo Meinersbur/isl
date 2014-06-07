@@ -895,11 +895,12 @@ __isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_fold_fold_pw_
 	if (!part || !u)
 		goto error;
 
-	isl_assert(u->dim->ctx, isl_space_match(part->dim, isl_dim_param, u->dim,
-					      isl_dim_param), goto error);
+	isl_assert(u->space->ctx,
+	    isl_space_match(part->dim, isl_dim_param, u->space, isl_dim_param),
+	    goto error);
 
 	hash = isl_space_get_hash(part->dim);
-	entry = isl_hash_table_find(u->dim->ctx, &u->table, hash,
+	entry = isl_hash_table_find(u->space->ctx, &u->table, hash,
 				    &has_dim, part->dim, 1);
 	if (!entry)
 		goto error;

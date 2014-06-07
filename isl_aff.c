@@ -5609,7 +5609,7 @@ static int bin_entry(void **entry, void *user)
 	isl_pw_multi_aff *pma = *entry;
 
 	data->pma = pma;
-	if (isl_hash_table_foreach(data->upma2->dim->ctx, &data->upma2->table,
+	if (isl_hash_table_foreach(data->upma2->space->ctx, &data->upma2->table,
 				   data->fn, data) < 0)
 		return -1;
 
@@ -5638,9 +5638,9 @@ static __isl_give isl_union_pw_multi_aff *bin_op(
 		goto error;
 
 	data.upma2 = upma2;
-	data.res = isl_union_pw_multi_aff_alloc(isl_space_copy(upma1->dim),
+	data.res = isl_union_pw_multi_aff_alloc(isl_space_copy(upma1->space),
 				       upma1->table.n);
-	if (isl_hash_table_foreach(upma1->dim->ctx, &upma1->table,
+	if (isl_hash_table_foreach(upma1->space->ctx, &upma1->table,
 				   &bin_entry, &data) < 0)
 		goto error;
 
@@ -5968,9 +5968,9 @@ __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_scale_multi_val(
 		goto error;
 
 	data.mv = mv;
-	data.res = isl_union_pw_multi_aff_alloc(isl_space_copy(upma->dim),
+	data.res = isl_union_pw_multi_aff_alloc(isl_space_copy(upma->space),
 						upma->table.n);
-	if (isl_hash_table_foreach(upma->dim->ctx, &upma->table,
+	if (isl_hash_table_foreach(upma->space->ctx, &upma->table,
 		       &union_pw_multi_aff_scale_multi_val_entry, &data) < 0)
 		goto error;
 
