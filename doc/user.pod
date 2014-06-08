@@ -5705,6 +5705,10 @@ only defined on the shared definition domain of the arguments.
 	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_scale_val(
 		__isl_take isl_pw_multi_aff *pma,
 		__isl_take isl_val *v);
+	__isl_give isl_union_pw_multi_aff *
+	isl_union_pw_multi_aff_scale_val(
+		__isl_take isl_union_pw_multi_aff *upma,
+		__isl_take isl_val *val);
 	__isl_give isl_aff *isl_aff_scale_down_ui(
 		__isl_take isl_aff *aff, unsigned f);
 	__isl_give isl_aff *isl_aff_scale_down_val(
