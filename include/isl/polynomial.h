@@ -281,6 +281,8 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_fold(
 
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_scale_val(
 	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_val *v);
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_scale_down_val(
+	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_val *v);
 
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_move_dims(
 	__isl_take isl_qpolynomial_fold *fold,

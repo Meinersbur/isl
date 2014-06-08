@@ -1683,3 +1683,29 @@ error:
 	isl_qpolynomial_fold_free(fold);
 	return NULL;
 }
+
+/* Divide "fold" by "v".
+ */
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_scale_down_val(
+	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_val *v)
+{
+	if (!fold || !v)
+		goto error;
+
+	if (isl_val_is_one(v)) {
+		isl_val_free(v);
+		return fold;
+	}
+	if (!isl_val_is_rat(v))
+		isl_die(isl_qpolynomial_fold_get_ctx(fold), isl_error_invalid,
+			"expecting rational factor", goto error);
+	if (isl_val_is_zero(v))
+		isl_die(isl_val_get_ctx(v), isl_error_invalid,
+			"cannot scale down by zero", goto error);
+
+	return isl_qpolynomial_fold_scale_val(fold, isl_val_inv(v));
+error:
+	isl_val_free(v);
+	isl_qpolynomial_fold_free(fold);
+	return NULL;
+}

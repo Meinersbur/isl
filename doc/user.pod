@@ -5773,6 +5773,10 @@ only defined on the shared definition domain of the arguments.
 	isl_qpolynomial_scale_down_val(
 		__isl_take isl_qpolynomial *qp,
 		__isl_take isl_val *v);
+	__isl_give isl_qpolynomial_fold *
+	isl_qpolynomial_fold_scale_down_val(
+		__isl_take isl_qpolynomial_fold *fold,
+		__isl_take isl_val *v);
 
 	#include <isl/val.h>
 	__isl_give isl_multi_val *isl_multi_val_scale_multi_val(
