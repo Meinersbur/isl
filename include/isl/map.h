@@ -390,6 +390,7 @@ __isl_give isl_map *isl_map_flat_range_product(__isl_take isl_map *map1,
 	__isl_take isl_map *map2);
 int isl_map_domain_is_wrapping(__isl_keep isl_map *map);
 int isl_map_range_is_wrapping(__isl_keep isl_map *map);
+__isl_give isl_map *isl_map_factor_range(__isl_take isl_map *map);
 __isl_give isl_map *isl_map_domain_factor_domain(__isl_take isl_map *map);
 __isl_give isl_map *isl_map_domain_factor_range(__isl_take isl_map *map);
 __isl_give isl_map *isl_map_range_factor_domain(__isl_take isl_map *map);
