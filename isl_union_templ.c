@@ -151,15 +151,21 @@ error:
 __isl_give UNION *FN(FN(UNION,add),PARTS)(__isl_take UNION *u,
 	__isl_take PART *part)
 {
+	int empty;
 	uint32_t hash;
 	struct isl_hash_table_entry *entry;
 
 	if (!part)
 		goto error;
 
-	if (DEFAULT_IS_ZERO && FN(PART,IS_ZERO)(part)) {
-		FN(PART,free)(part);
-		return u;
+	if (DEFAULT_IS_ZERO) {
+		empty = FN(PART,IS_ZERO)(part);
+		if (empty < 0)
+			goto error;
+		if (empty) {
+			FN(PART,free)(part);
+			return u;
+		}
 	}
 
 	u = FN(UNION,align_params)(u, FN(PART,get_space)(part));
@@ -182,11 +188,17 @@ __isl_give UNION *FN(FN(UNION,add),PARTS)(__isl_take UNION *u,
 		entry->data = FN(PART,add)(entry->data, FN(PART,copy)(part));
 		if (!entry->data)
 			goto error;
-		FN(PART,free)(part);
-		if (DEFAULT_IS_ZERO && FN(PART,IS_ZERO)(entry->data)) {
-			FN(PART,free)(entry->data);
-			isl_hash_table_remove(u->dim->ctx, &u->table, entry);
+		if (DEFAULT_IS_ZERO) {
+			empty = FN(PART,IS_ZERO)(part);
+			if (empty < 0)
+				goto error;
+			if (empty) {
+				FN(PART,free)(entry->data);
+				isl_hash_table_remove(u->dim->ctx,
+							&u->table, entry);
+			}
 		}
+		FN(PART,free)(part);
 	}
 
 	return u;
@@ -404,21 +416,9 @@ static int match_bin_entry(void **entry, void *user)
 	part = FN(PART, copy)(part);
 	part = data->fn(part, FN(PART, copy)(entry2->data));
 
-	if (DEFAULT_IS_ZERO) {
-		int empty;
-
-		empty = FN(PART,IS_ZERO)(part);
-		if (empty < 0) {
-			FN(PART,free)(part);
-			return -1;
-		}
-		if (empty) {
-			FN(PART,free)(part);
-			return 0;
-		}
-	}
-
 	data->res = FN(FN(UNION,add),PARTS)(data->res, part);
+	if (!data->res)
+		return -1;
 
 	return 0;
 }
@@ -488,21 +488,9 @@ static int any_set_entry(void **entry, void *user)
 	pw = FN(PW,copy)(pw);
 	pw = data->fn(pw, isl_set_copy(data->set));
 
-	if (DEFAULT_IS_ZERO) {
-		int empty;
-
-		empty = FN(PW,IS_ZERO)(pw);
-		if (empty < 0) {
-			FN(PW,free)(pw);
-			return -1;
-		}
-		if (empty) {
-			FN(PW,free)(pw);
-			return 0;
-		}
-	}
-
 	data->res = FN(FN(UNION,add),PARTS)(data->res, pw);
+	if (!data->res)
+		return -1;
 
 	return 0;
 }
@@ -595,21 +583,9 @@ static int match_domain_entry(void **entry, void *user)
 	pw = FN(PW,copy)(pw);
 	pw = data->fn(pw, isl_set_copy(entry2->data));
 
-	if (DEFAULT_IS_ZERO) {
-		int empty;
-
-		empty = FN(PW,IS_ZERO)(pw);
-		if (empty < 0) {
-			FN(PW,free)(pw);
-			return -1;
-		}
-		if (empty) {
-			FN(PW,free)(pw);
-			return 0;
-		}
-	}
-
 	data->res = FN(FN(UNION,add),PARTS)(data->res, pw);
+	if (!data->res)
+		return -1;
 
 	return 0;
 }
