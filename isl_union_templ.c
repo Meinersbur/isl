@@ -158,14 +158,12 @@ __isl_give UNION *FN(FN(UNION,add),PARTS)(__isl_take UNION *u,
 	if (!part)
 		goto error;
 
-	if (DEFAULT_IS_ZERO) {
-		empty = FN(PART,IS_ZERO)(part);
-		if (empty < 0)
-			goto error;
-		if (empty) {
-			FN(PART,free)(part);
-			return u;
-		}
+	empty = FN(PART,IS_ZERO)(part);
+	if (empty < 0)
+		goto error;
+	if (empty) {
+		FN(PART,free)(part);
+		return u;
 	}
 
 	u = FN(UNION,align_params)(u, FN(PART,get_space)(part));
@@ -188,15 +186,12 @@ __isl_give UNION *FN(FN(UNION,add),PARTS)(__isl_take UNION *u,
 		entry->data = FN(PART,add)(entry->data, FN(PART,copy)(part));
 		if (!entry->data)
 			goto error;
-		if (DEFAULT_IS_ZERO) {
-			empty = FN(PART,IS_ZERO)(part);
-			if (empty < 0)
-				goto error;
-			if (empty) {
-				FN(PART,free)(entry->data);
-				isl_hash_table_remove(u->dim->ctx,
-							&u->table, entry);
-			}
+		empty = FN(PART,IS_ZERO)(part);
+		if (empty < 0)
+			goto error;
+		if (empty) {
+			FN(PART,free)(entry->data);
+			isl_hash_table_remove(u->dim->ctx, &u->table, entry);
 		}
 		FN(PART,free)(part);
 	}
