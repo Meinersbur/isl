@@ -771,8 +771,6 @@ parameters is discouraged.
 		unsigned nparam, unsigned dim);
 	__isl_give isl_space *isl_space_copy(__isl_keep isl_space *space);
 	__isl_null isl_space *isl_space_free(__isl_take isl_space *space);
-	unsigned isl_space_dim(__isl_keep isl_space *space,
-		enum isl_dim_type type);
 
 The space used for creating a parameter domain
 needs to be created using C<isl_space_params_alloc>.
@@ -780,12 +778,6 @@ For other sets, the space
 needs to be created using C<isl_space_set_alloc>, while
 for a relation, the space
 needs to be created using C<isl_space_alloc>.
-C<isl_space_dim> can be used
-to find out the number of dimensions of each type in
-a space, where type may be
-C<isl_dim_param>, C<isl_dim_in> (only for relations),
-C<isl_dim_out> (only for relations), C<isl_dim_set>
-(only for sets) or C<isl_dim_all>.
 
 To check whether a given space is that of a set or a map
 or whether it is a parameter space, use these functions:
@@ -900,8 +892,65 @@ of the original object.
 	__isl_give isl_space *isl_point_get_space(
 		__isl_keep isl_point *pnt);
 
-The identifiers or names of the individual dimensions may be set or read off
-using the following functions.
+The number of dimensions of a given type of space
+may be read off from a space or an object that lives
+in a space using the following functions.
+In case of C<isl_space_dim>, type may be
+C<isl_dim_param>, C<isl_dim_in> (only for relations),
+C<isl_dim_out> (only for relations), C<isl_dim_set>
+(only for sets) or C<isl_dim_all>.
+
+	#include <isl/space.h>
+	unsigned isl_space_dim(__isl_keep isl_space *space,
+		enum isl_dim_type type);
+
+	#include <isl/local_space.h>
+	int isl_local_space_dim(__isl_keep isl_local_space *ls,
+		enum isl_dim_type type);
+
+	#include <isl/set.h>
+	unsigned isl_basic_set_dim(__isl_keep isl_basic_set *bset,
+		enum isl_dim_type type);
+	unsigned isl_set_dim(__isl_keep isl_set *set,
+		enum isl_dim_type type);
+
+	#include <isl/map.h>
+	unsigned isl_basic_map_dim(__isl_keep isl_basic_map *bmap,
+		enum isl_dim_type type);
+	unsigned isl_map_dim(__isl_keep isl_map *map,
+		enum isl_dim_type type);
+
+	#include <isl/union_map.h>
+	unsigned isl_union_map_dim(__isl_keep isl_union_map *umap,
+		enum isl_dim_type type);
+
+	#include <isl/val.h>
+	unsigned isl_multi_val_dim(__isl_keep isl_multi_val *mv,
+		enum isl_dim_type type);
+
+	#include <isl/aff.h>
+	int isl_aff_dim(__isl_keep isl_aff *aff,
+		enum isl_dim_type type);
+	unsigned isl_multi_aff_dim(__isl_keep isl_multi_aff *maff,
+		enum isl_dim_type type);
+	unsigned isl_pw_aff_dim(__isl_keep isl_pw_aff *pwaff,
+		enum isl_dim_type type);
+	unsigned isl_pw_multi_aff_dim(
+		__isl_keep isl_pw_multi_aff *pma,
+		enum isl_dim_type type);
+	unsigned isl_multi_pw_aff_dim(
+		__isl_keep isl_multi_pw_aff *mpa,
+		enum isl_dim_type type);
+
+Note that an C<isl_union_map> only has parameters.
+
+The identifiers or names of the individual dimensions of spaces
+may be set or read off using the following functions on spaces
+or objects that live in spaces.
+These functions are mostly useful to obtain the identifiers, positions
+or names of the parameters.  Identifiers of individual dimensions are
+essentially only useful for printing.  They are ignored by all other
+operations and may not be preserved across those operations.
 
 	#include <isl/space.h>
 	__isl_give isl_space *isl_space_set_dim_id(
@@ -923,6 +972,155 @@ using the following functions.
 		__isl_keep isl_space *space,
 		enum isl_dim_type type, unsigned pos);
 
+	#include <isl/local_space.h>
+	__isl_give isl_local_space *isl_local_space_set_dim_id(
+		__isl_take isl_local_space *ls,
+		enum isl_dim_type type, unsigned pos,
+		__isl_take isl_id *id);
+	int isl_local_space_has_dim_id(
+		__isl_keep isl_local_space *ls,
+		enum isl_dim_type type, unsigned pos);
+	__isl_give isl_id *isl_local_space_get_dim_id(
+		__isl_keep isl_local_space *ls,
+		enum isl_dim_type type, unsigned pos);
+	__isl_give isl_local_space *isl_local_space_set_dim_name(
+		__isl_take isl_local_space *ls,
+		enum isl_dim_type type, unsigned pos, const char *s);
+	int isl_local_space_has_dim_name(
+		__isl_keep isl_local_space *ls,
+		enum isl_dim_type type, unsigned pos)
+	const char *isl_local_space_get_dim_name(
+		__isl_keep isl_local_space *ls,
+		enum isl_dim_type type, unsigned pos);
+
+	#include <isl/constraint.h>
+	const char *isl_constraint_get_dim_name(
+		__isl_keep isl_constraint *constraint,
+		enum isl_dim_type type, unsigned pos);
+
+	#include <isl/set.h>
+	__isl_give isl_id *isl_basic_set_get_dim_id(
+		__isl_keep isl_basic_set *bset,
+		enum isl_dim_type type, unsigned pos);
+	__isl_give isl_set *isl_set_set_dim_id(
+		__isl_take isl_set *set, enum isl_dim_type type,
+		unsigned pos, __isl_take isl_id *id);
+	int isl_set_has_dim_id(__isl_keep isl_set *set,
+		enum isl_dim_type type, unsigned pos);
+	__isl_give isl_id *isl_set_get_dim_id(
+		__isl_keep isl_set *set, enum isl_dim_type type,
+		unsigned pos);
+	const char *isl_basic_set_get_dim_name(
+		__isl_keep isl_basic_set *bset,
+		enum isl_dim_type type, unsigned pos);
+	int isl_set_has_dim_name(__isl_keep isl_set *set,
+		enum isl_dim_type type, unsigned pos);
+	const char *isl_set_get_dim_name(
+		__isl_keep isl_set *set,
+		enum isl_dim_type type, unsigned pos);
+
+	#include <isl/map.h>
+	__isl_give isl_map *isl_map_set_dim_id(
+		__isl_take isl_map *map, enum isl_dim_type type,
+		unsigned pos, __isl_take isl_id *id);
+	int isl_basic_map_has_dim_id(
+		__isl_keep isl_basic_map *bmap,
+		enum isl_dim_type type, unsigned pos);
+	int isl_map_has_dim_id(__isl_keep isl_map *map,
+		enum isl_dim_type type, unsigned pos);
+	__isl_give isl_id *isl_map_get_dim_id(
+		__isl_keep isl_map *map, enum isl_dim_type type,
+		unsigned pos);
+	__isl_give isl_id *isl_union_map_get_dim_id(
+		__isl_keep isl_union_map *umap,
+		enum isl_dim_type type, unsigned pos);
+	const char *isl_basic_map_get_dim_name(
+		__isl_keep isl_basic_map *bmap,
+		enum isl_dim_type type, unsigned pos);
+	int isl_map_has_dim_name(__isl_keep isl_map *map,
+		enum isl_dim_type type, unsigned pos);
+	const char *isl_map_get_dim_name(
+		__isl_keep isl_map *map,
+		enum isl_dim_type type, unsigned pos);
+
+	#include <isl/val.h>
+	__isl_give isl_multi_val *isl_multi_val_set_dim_id(
+		__isl_take isl_multi_val *mv,
+		enum isl_dim_type type, unsigned pos,
+		__isl_take isl_id *id);
+	__isl_give isl_id *isl_multi_val_get_dim_id(
+		__isl_keep isl_multi_val *mv,
+		enum isl_dim_type type, unsigned pos);
+	__isl_give isl_multi_val *isl_multi_val_set_dim_name(
+		__isl_take isl_multi_val *mv,
+		enum isl_dim_type type, unsigned pos, const char *s);
+
+	#include <isl/aff.h>
+	__isl_give isl_aff *isl_aff_set_dim_id(
+		__isl_take isl_aff *aff, enum isl_dim_type type,
+		unsigned pos, __isl_take isl_id *id);
+	__isl_give isl_multi_aff *isl_multi_aff_set_dim_id(
+		__isl_take isl_multi_aff *maff,
+		enum isl_dim_type type, unsigned pos,
+		__isl_take isl_id *id);
+	__isl_give isl_pw_aff *isl_pw_aff_set_dim_id(
+		__isl_take isl_pw_aff *pma,
+		enum isl_dim_type type, unsigned pos,
+		__isl_take isl_id *id);
+	__isl_give isl_multi_pw_aff *
+	isl_multi_pw_aff_set_dim_id(
+		__isl_take isl_multi_pw_aff *mpa,
+		enum isl_dim_type type, unsigned pos,
+		__isl_take isl_id *id);
+	__isl_give isl_id *isl_multi_aff_get_dim_id(
+		__isl_keep isl_multi_aff *ma,
+		enum isl_dim_type type, unsigned pos);
+	int isl_pw_aff_has_dim_id(__isl_keep isl_pw_aff *pa,
+		enum isl_dim_type type, unsigned pos);
+	__isl_give isl_id *isl_pw_aff_get_dim_id(
+		__isl_keep isl_pw_aff *pa,
+		enum isl_dim_type type, unsigned pos);
+	__isl_give isl_id *isl_pw_multi_aff_get_dim_id(
+		__isl_keep isl_pw_multi_aff *pma,
+		enum isl_dim_type type, unsigned pos);
+	__isl_give isl_id *isl_multi_pw_aff_get_dim_id(
+		__isl_keep isl_multi_pw_aff *mpa,
+		enum isl_dim_type type, unsigned pos);
+	__isl_give isl_aff *isl_aff_set_dim_name(
+		__isl_take isl_aff *aff, enum isl_dim_type type,
+		unsigned pos, const char *s);
+	__isl_give isl_multi_aff *isl_multi_aff_set_dim_name(
+		__isl_take isl_multi_aff *maff,
+		enum isl_dim_type type, unsigned pos, const char *s);
+	__isl_give isl_multi_pw_aff *
+	isl_multi_pw_aff_set_dim_name(
+		__isl_take isl_multi_pw_aff *mpa,
+		enum isl_dim_type type, unsigned pos, const char *s);
+	const char *isl_aff_get_dim_name(__isl_keep isl_aff *aff,
+		enum isl_dim_type type, unsigned pos);
+	const char *isl_pw_aff_get_dim_name(
+		__isl_keep isl_pw_aff *pa,
+		enum isl_dim_type type, unsigned pos);
+	const char *isl_pw_multi_aff_get_dim_name(
+		__isl_keep isl_pw_multi_aff *pma,
+		enum isl_dim_type type, unsigned pos);
+
+	#include <isl/polynomial.h>
+	__isl_give isl_qpolynomial *isl_qpolynomial_set_dim_name(
+		__isl_take isl_qpolynomial *qp,
+		enum isl_dim_type type, unsigned pos,
+		const char *s);
+	__isl_give isl_pw_qpolynomial *
+	isl_pw_qpolynomial_set_dim_name(
+		__isl_take isl_pw_qpolynomial *pwqp,
+		enum isl_dim_type type, unsigned pos,
+		const char *s);
+	__isl_give isl_pw_qpolynomial_fold *
+	isl_pw_qpolynomial_fold_set_dim_name(
+		__isl_take isl_pw_qpolynomial_fold *pwf,
+		enum isl_dim_type type, unsigned pos,
+		const char *s);
+
 Note that C<isl_space_get_name> returns a pointer to some internal
 data structure, so the result can only be used while the
 corresponding C<isl_space> is alive.
@@ -936,13 +1134,38 @@ in which case the result will have as parameters the union of the parameters of
 the arguments.
 
 Given the identifier or name of a dimension (typically a parameter),
-its position can be obtained from the following function.
+its position can be obtained from the following functions.
 
 	#include <isl/space.h>
 	int isl_space_find_dim_by_id(__isl_keep isl_space *space,
 		enum isl_dim_type type, __isl_keep isl_id *id);
 	int isl_space_find_dim_by_name(__isl_keep isl_space *space,
 		enum isl_dim_type type, const char *name);
+
+	#include <isl/val.h>
+	int isl_multi_val_find_dim_by_id(
+		__isl_keep isl_multi_val *mv,
+		enum isl_dim_type type, __isl_keep isl_id *id);
+
+	#include <isl/set.h>
+	int isl_set_find_dim_by_id(__isl_keep isl_set *set,
+		enum isl_dim_type type, __isl_keep isl_id *id);
+	int isl_set_find_dim_by_name(__isl_keep isl_set *set,
+		enum isl_dim_type type, const char *name);
+
+	#include <isl/map.h>
+	int isl_map_find_dim_by_id(__isl_keep isl_map *map,
+		enum isl_dim_type type, __isl_keep isl_id *id);
+	int isl_map_find_dim_by_name(__isl_keep isl_map *map,
+		enum isl_dim_type type, const char *name);
+
+	#include <isl/aff.h>
+	int isl_multi_aff_find_dim_by_id(
+		__isl_keep isl_multi_aff *ma,
+		enum isl_dim_type type, __isl_keep isl_id *id);
+	int isl_multi_pw_aff_find_dim_by_id(
+		__isl_keep isl_multi_pw_aff *mpa,
+		enum isl_dim_type type, __isl_keep isl_id *id);
 
 The identifiers or names of entire spaces may be set or read off
 using the following functions.
@@ -965,6 +1188,141 @@ using the following functions.
 	const char *isl_space_get_tuple_name(__isl_keep isl_space *space,
 		enum isl_dim_type type);
 
+	#include <isl/local_space.h>
+	__isl_give isl_local_space *isl_local_space_set_tuple_id(
+		__isl_take isl_local_space *ls,
+		enum isl_dim_type type, __isl_take isl_id *id);
+
+	#include <isl/set.h>
+	__isl_give isl_basic_set *isl_basic_set_set_tuple_id(
+		__isl_take isl_basic_set *bset,
+		__isl_take isl_id *id);
+	__isl_give isl_set *isl_set_set_tuple_id(
+		__isl_take isl_set *set, __isl_take isl_id *id);
+	__isl_give isl_set *isl_set_reset_tuple_id(
+		__isl_take isl_set *set);
+	int isl_set_has_tuple_id(__isl_keep isl_set *set);
+	__isl_give isl_id *isl_set_get_tuple_id(
+		__isl_keep isl_set *set);
+	__isl_give isl_basic_set *isl_basic_set_set_tuple_name(
+		__isl_take isl_basic_set *set, const char *s);
+	__isl_give isl_set *isl_set_set_tuple_name(
+		__isl_take isl_set *set, const char *s);
+	const char *isl_basic_set_get_tuple_name(
+		__isl_keep isl_basic_set *bset);
+	int isl_set_has_tuple_name(__isl_keep isl_set *set);
+	const char *isl_set_get_tuple_name(
+		__isl_keep isl_set *set);
+
+	#include <isl/map.h>
+	__isl_give isl_basic_map *isl_basic_map_set_tuple_id(
+		__isl_take isl_basic_map *bmap,
+		enum isl_dim_type type, __isl_take isl_id *id);
+	__isl_give isl_map *isl_map_set_tuple_id(
+		__isl_take isl_map *map, enum isl_dim_type type,
+		__isl_take isl_id *id);
+	__isl_give isl_map *isl_map_reset_tuple_id(
+		__isl_take isl_map *map, enum isl_dim_type type);
+	int isl_map_has_tuple_id(__isl_keep isl_map *map,
+		enum isl_dim_type type);
+	__isl_give isl_id *isl_map_get_tuple_id(
+		__isl_keep isl_map *map, enum isl_dim_type type);
+	__isl_give isl_map *isl_map_set_tuple_name(
+		__isl_take isl_map *map,
+		enum isl_dim_type type, const char *s);
+	const char *isl_basic_map_get_tuple_name(
+		__isl_keep isl_basic_map *bmap,
+		enum isl_dim_type type);
+	__isl_give isl_basic_map *isl_basic_map_set_tuple_name(
+		__isl_take isl_basic_map *bmap,
+		enum isl_dim_type type, const char *s);
+	int isl_map_has_tuple_name(__isl_keep isl_map *map,
+		enum isl_dim_type type);
+	const char *isl_map_get_tuple_name(
+		__isl_keep isl_map *map,
+		enum isl_dim_type type);
+
+	#include <isl/val.h>
+	__isl_give isl_multi_val *isl_multi_val_set_tuple_id(
+		__isl_take isl_multi_val *mv,
+		enum isl_dim_type type, __isl_take isl_id *id);
+	__isl_give isl_multi_val *isl_multi_val_reset_tuple_id(
+		__isl_take isl_multi_val *mv,
+		enum isl_dim_type type);
+	int isl_multi_val_has_tuple_id(__isl_keep isl_multi_val *mv,
+		enum isl_dim_type type);
+	__isl_give isl_id *isl_multi_val_get_tuple_id(
+		__isl_keep isl_multi_val *mv,
+		enum isl_dim_type type);
+	__isl_give isl_multi_val *isl_multi_val_set_tuple_name(
+		__isl_take isl_multi_val *mv,
+		enum isl_dim_type type, const char *s);
+	const char *isl_multi_val_get_tuple_name(
+		__isl_keep isl_multi_val *mv,
+		enum isl_dim_type type);
+
+	#include <isl/aff.h>
+	__isl_give isl_aff *isl_aff_set_tuple_id(
+		__isl_take isl_aff *aff,
+		enum isl_dim_type type, __isl_take isl_id *id);
+	__isl_give isl_multi_aff *isl_multi_aff_set_tuple_id(
+		__isl_take isl_multi_aff *maff,
+		enum isl_dim_type type, __isl_take isl_id *id);
+	__isl_give isl_pw_aff *isl_pw_aff_set_tuple_id(
+		__isl_take isl_pw_aff *pwaff,
+		enum isl_dim_type type, __isl_take isl_id *id);
+	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_set_tuple_id(
+		__isl_take isl_pw_multi_aff *pma,
+		enum isl_dim_type type, __isl_take isl_id *id);
+	__isl_give isl_multi_aff *isl_multi_aff_reset_tuple_id(
+		__isl_take isl_multi_aff *ma,
+		enum isl_dim_type type);
+	__isl_give isl_pw_aff *isl_pw_aff_reset_tuple_id(
+		__isl_take isl_pw_aff *pa,
+		enum isl_dim_type type);
+	__isl_give isl_multi_pw_aff *
+	isl_multi_pw_aff_reset_tuple_id(
+		__isl_take isl_multi_pw_aff *mpa,
+		enum isl_dim_type type);
+	int isl_multi_aff_has_tuple_id(__isl_keep isl_multi_aff *ma,
+		enum isl_dim_type type);
+	__isl_give isl_id *isl_multi_aff_get_tuple_id(
+		__isl_keep isl_multi_aff *ma,
+		enum isl_dim_type type);
+	int isl_pw_aff_has_tuple_id(__isl_keep isl_pw_aff *pa,
+		enum isl_dim_type type);
+	__isl_give isl_id *isl_pw_aff_get_tuple_id(
+		__isl_keep isl_pw_aff *pa,
+		enum isl_dim_type type);
+	int isl_pw_multi_aff_has_tuple_id(
+		__isl_keep isl_pw_multi_aff *pma,
+		enum isl_dim_type type);
+	__isl_give isl_id *isl_pw_multi_aff_get_tuple_id(
+		__isl_keep isl_pw_multi_aff *pma,
+		enum isl_dim_type type);
+	int isl_multi_pw_aff_has_tuple_id(
+		__isl_keep isl_multi_pw_aff *mpa,
+		enum isl_dim_type type);
+	__isl_give isl_id *isl_multi_pw_aff_get_tuple_id(
+		__isl_keep isl_multi_pw_aff *mpa,
+		enum isl_dim_type type);
+	__isl_give isl_multi_aff *isl_multi_aff_set_tuple_name(
+		__isl_take isl_multi_aff *maff,
+		enum isl_dim_type type, const char *s);
+	__isl_give isl_multi_pw_aff *
+	isl_multi_pw_aff_set_tuple_name(
+		__isl_take isl_multi_pw_aff *mpa,
+		enum isl_dim_type type, const char *s);
+	const char *isl_multi_aff_get_tuple_name(
+		__isl_keep isl_multi_aff *multi,
+		enum isl_dim_type type);
+	int isl_pw_multi_aff_has_tuple_name(
+		__isl_keep isl_pw_multi_aff *pma,
+		enum isl_dim_type type);
+	const char *isl_pw_multi_aff_get_tuple_name(
+		__isl_keep isl_pw_multi_aff *pma,
+		enum isl_dim_type type);
+
 The C<type> argument needs to be one of C<isl_dim_in>, C<isl_dim_out>
 or C<isl_dim_set>.  As with C<isl_space_get_name>,
 the C<isl_space_get_tuple_name> function returns a pointer to some internal
@@ -975,8 +1333,35 @@ to have the same name.
 To keep the names of all parameters and tuples, but reset the user pointers
 of all the corresponding identifiers, use the following function.
 
+	#include <isl/space.h>
 	__isl_give isl_space *isl_space_reset_user(
 		__isl_take isl_space *space);
+
+	#include <isl/set.h>
+	__isl_give isl_set *isl_set_reset_user(
+		__isl_take isl_set *set);
+
+	#include <isl/map.h>
+	__isl_give isl_map *isl_map_reset_user(
+		__isl_take isl_map *map);
+
+	#include <isl/union_set.h>
+	__isl_give isl_union_set *isl_union_set_reset_user(
+		__isl_take isl_union_set *uset);
+
+	#include <isl/union_map.h>
+	__isl_give isl_union_map *isl_union_map_reset_user(
+		__isl_take isl_union_map *umap);
+
+	#include <isl/val.h>
+	__isl_give isl_multi_val *isl_multi_val_reset_user(
+		__isl_take isl_multi_val *mv);
+
+	#include <isl/aff.h>
+	__isl_give isl_multi_aff *isl_multi_aff_reset_user(
+		__isl_take isl_multi_aff *ma);
+	__isl_give isl_multi_pw_aff *isl_multi_pw_aff_reset_user(
+		__isl_take isl_multi_pw_aff *mpa);
 
 Spaces can be nested.  In particular, the domain of a set or
 the domain or range of a relation can be a nested relation.
@@ -1022,30 +1407,6 @@ They can be inspected, modified, copied and freed using the following functions.
 	isl_ctx *isl_local_space_get_ctx(
 		__isl_keep isl_local_space *ls);
 	int isl_local_space_is_set(__isl_keep isl_local_space *ls);
-	int isl_local_space_dim(__isl_keep isl_local_space *ls,
-		enum isl_dim_type type);
-	__isl_give isl_local_space *isl_local_space_set_tuple_id(
-		__isl_take isl_local_space *ls,
-		enum isl_dim_type type, __isl_take isl_id *id);
-	int isl_local_space_has_dim_id(
-		__isl_keep isl_local_space *ls,
-		enum isl_dim_type type, unsigned pos);
-	__isl_give isl_id *isl_local_space_get_dim_id(
-		__isl_keep isl_local_space *ls,
-		enum isl_dim_type type, unsigned pos);
-	int isl_local_space_has_dim_name(
-		__isl_keep isl_local_space *ls,
-		enum isl_dim_type type, unsigned pos)
-	const char *isl_local_space_get_dim_name(
-		__isl_keep isl_local_space *ls,
-		enum isl_dim_type type, unsigned pos);
-	__isl_give isl_local_space *isl_local_space_set_dim_name(
-		__isl_take isl_local_space *ls,
-		enum isl_dim_type type, unsigned pos, const char *s);
-	__isl_give isl_local_space *isl_local_space_set_dim_id(
-		__isl_take isl_local_space *ls,
-		enum isl_dim_type type, unsigned pos,
-		__isl_take isl_id *id);
 	__isl_give isl_space *isl_local_space_get_space(
 		__isl_keep isl_local_space *ls);
 	__isl_give isl_aff *isl_local_space_get_div(
@@ -1771,22 +2132,6 @@ For map inputs, they should be a permutation of
 C<isl_dim_cst>, C<isl_dim_param>,
 C<isl_dim_in>, C<isl_dim_out> and C<isl_dim_div>.
 
-The number of parameters, input, output or set dimensions can
-be obtained using the following functions.
-
-	unsigned isl_basic_set_dim(__isl_keep isl_basic_set *bset,
-		enum isl_dim_type type);
-	unsigned isl_basic_map_dim(__isl_keep isl_basic_map *bmap,
-		enum isl_dim_type type);
-	unsigned isl_set_dim(__isl_keep isl_set *set,
-		enum isl_dim_type type);
-	unsigned isl_map_dim(__isl_keep isl_map *map,
-		enum isl_dim_type type);
-	unsigned isl_union_map_dim(__isl_keep isl_union_map *umap,
-		enum isl_dim_type type);
-
-Note that a C<isl_union_map> only has parameters.
-
 To check whether the description of a set or relation depends
 on one or more given dimensions, it is not necessary to iterate over all
 constraints.  Instead the following functions can be used.
@@ -1819,137 +2164,6 @@ use the following functions instead.
 		enum isl_dim_type type, unsigned pos);
 	int isl_set_dim_has_upper_bound(__isl_keep isl_set *set,
 		enum isl_dim_type type, unsigned pos);
-
-The identifiers or names of the domain and range spaces of a set
-or relation can be read off or set using the following functions.
-
-	__isl_give isl_basic_set *isl_basic_set_set_tuple_id(
-		__isl_take isl_basic_set *bset,
-		__isl_take isl_id *id);
-	__isl_give isl_set *isl_set_set_tuple_id(
-		__isl_take isl_set *set, __isl_take isl_id *id);
-	__isl_give isl_set *isl_set_reset_tuple_id(
-		__isl_take isl_set *set);
-	int isl_set_has_tuple_id(__isl_keep isl_set *set);
-	__isl_give isl_id *isl_set_get_tuple_id(
-		__isl_keep isl_set *set);
-	__isl_give isl_basic_map *isl_basic_map_set_tuple_id(
-		__isl_take isl_basic_map *bmap,
-		enum isl_dim_type type, __isl_take isl_id *id);
-	__isl_give isl_map *isl_map_set_tuple_id(
-		__isl_take isl_map *map, enum isl_dim_type type,
-		__isl_take isl_id *id);
-	__isl_give isl_map *isl_map_reset_tuple_id(
-		__isl_take isl_map *map, enum isl_dim_type type);
-	int isl_map_has_tuple_id(__isl_keep isl_map *map,
-		enum isl_dim_type type);
-	__isl_give isl_id *isl_map_get_tuple_id(
-		__isl_keep isl_map *map, enum isl_dim_type type);
-
-	const char *isl_basic_set_get_tuple_name(
-		__isl_keep isl_basic_set *bset);
-	__isl_give isl_basic_set *isl_basic_set_set_tuple_name(
-		__isl_take isl_basic_set *set, const char *s);
-	int isl_set_has_tuple_name(__isl_keep isl_set *set);
-	const char *isl_set_get_tuple_name(
-		__isl_keep isl_set *set);
-	__isl_give isl_set *isl_set_set_tuple_name(
-		__isl_take isl_set *set, const char *s);
-	const char *isl_basic_map_get_tuple_name(
-		__isl_keep isl_basic_map *bmap,
-		enum isl_dim_type type);
-	__isl_give isl_basic_map *isl_basic_map_set_tuple_name(
-		__isl_take isl_basic_map *bmap,
-		enum isl_dim_type type, const char *s);
-	int isl_map_has_tuple_name(__isl_keep isl_map *map,
-		enum isl_dim_type type);
-	const char *isl_map_get_tuple_name(
-		__isl_keep isl_map *map,
-		enum isl_dim_type type);
-	__isl_give isl_map *isl_map_set_tuple_name(
-		__isl_take isl_map *map,
-		enum isl_dim_type type, const char *s);
-
-As with C<isl_space_get_tuple_name>, the value returned points to
-an internal data structure.
-The identifiers, positions or names of individual dimensions can be
-read off using the following functions.
-
-	__isl_give isl_id *isl_basic_set_get_dim_id(
-		__isl_keep isl_basic_set *bset,
-		enum isl_dim_type type, unsigned pos);
-	__isl_give isl_set *isl_set_set_dim_id(
-		__isl_take isl_set *set, enum isl_dim_type type,
-		unsigned pos, __isl_take isl_id *id);
-	int isl_set_has_dim_id(__isl_keep isl_set *set,
-		enum isl_dim_type type, unsigned pos);
-	__isl_give isl_id *isl_set_get_dim_id(
-		__isl_keep isl_set *set, enum isl_dim_type type,
-		unsigned pos);
-	int isl_basic_map_has_dim_id(
-		__isl_keep isl_basic_map *bmap,
-		enum isl_dim_type type, unsigned pos);
-	__isl_give isl_map *isl_map_set_dim_id(
-		__isl_take isl_map *map, enum isl_dim_type type,
-		unsigned pos, __isl_take isl_id *id);
-	int isl_map_has_dim_id(__isl_keep isl_map *map,
-		enum isl_dim_type type, unsigned pos);
-	__isl_give isl_id *isl_map_get_dim_id(
-		__isl_keep isl_map *map, enum isl_dim_type type,
-		unsigned pos);
-	__isl_give isl_id *isl_union_map_get_dim_id(
-		__isl_keep isl_union_map *umap,
-		enum isl_dim_type type, unsigned pos);
-
-	int isl_set_find_dim_by_id(__isl_keep isl_set *set,
-		enum isl_dim_type type, __isl_keep isl_id *id);
-	int isl_map_find_dim_by_id(__isl_keep isl_map *map,
-		enum isl_dim_type type, __isl_keep isl_id *id);
-	int isl_set_find_dim_by_name(__isl_keep isl_set *set,
-		enum isl_dim_type type, const char *name);
-	int isl_map_find_dim_by_name(__isl_keep isl_map *map,
-		enum isl_dim_type type, const char *name);
-
-	const char *isl_constraint_get_dim_name(
-		__isl_keep isl_constraint *constraint,
-		enum isl_dim_type type, unsigned pos);
-	const char *isl_basic_set_get_dim_name(
-		__isl_keep isl_basic_set *bset,
-		enum isl_dim_type type, unsigned pos);
-	int isl_set_has_dim_name(__isl_keep isl_set *set,
-		enum isl_dim_type type, unsigned pos);
-	const char *isl_set_get_dim_name(
-		__isl_keep isl_set *set,
-		enum isl_dim_type type, unsigned pos);
-	const char *isl_basic_map_get_dim_name(
-		__isl_keep isl_basic_map *bmap,
-		enum isl_dim_type type, unsigned pos);
-	int isl_map_has_dim_name(__isl_keep isl_map *map,
-		enum isl_dim_type type, unsigned pos);
-	const char *isl_map_get_dim_name(
-		__isl_keep isl_map *map,
-		enum isl_dim_type type, unsigned pos);
-
-These functions are mostly useful to obtain the identifiers, positions
-or names of the parameters.  Identifiers of individual dimensions are
-essentially only useful for printing.  They are ignored by all other
-operations and may not be preserved across those operations.
-
-The user pointers on all parameters and tuples can be reset
-using the following functions.
-
-	#include <isl/set.h>
-	__isl_give isl_set *isl_set_reset_user(
-		__isl_take isl_set *set);
-	#include <isl/map.h>
-	__isl_give isl_map *isl_map_reset_user(
-		__isl_take isl_map *map);
-	#include <isl/union_set.h>
-	__isl_give isl_union_set *isl_union_set_reset_user(
-		__isl_take isl_union_set *uset);
-	#include <isl/union_map.h>
-	__isl_give isl_union_map *isl_union_map_reset_user(
-		__isl_take isl_union_map *umap);
 
 =head2 Properties
 
@@ -3824,24 +4038,8 @@ They can be inspected using
 	#include <isl/val.h>
 	isl_ctx *isl_multi_val_get_ctx(
 		__isl_keep isl_multi_val *mv);
-	unsigned isl_multi_val_dim(__isl_keep isl_multi_val *mv,
-		enum isl_dim_type type);
 	__isl_give isl_val *isl_multi_val_get_val(
 		__isl_keep isl_multi_val *mv, int pos);
-	int isl_multi_val_find_dim_by_id(
-		__isl_keep isl_multi_val *mv,
-		enum isl_dim_type type, __isl_keep isl_id *id);
-	__isl_give isl_id *isl_multi_val_get_dim_id(
-		__isl_keep isl_multi_val *mv,
-		enum isl_dim_type type, unsigned pos);
-	const char *isl_multi_val_get_tuple_name(
-		__isl_keep isl_multi_val *mv,
-		enum isl_dim_type type);
-	int isl_multi_val_has_tuple_id(__isl_keep isl_multi_val *mv,
-		enum isl_dim_type type);
-	__isl_give isl_id *isl_multi_val_get_tuple_id(
-		__isl_keep isl_multi_val *mv,
-		enum isl_dim_type type);
 	int isl_multi_val_range_is_wrapping(
 		__isl_keep isl_multi_val *mv);
 
@@ -3851,24 +4049,6 @@ They can be modified using
 	__isl_give isl_multi_val *isl_multi_val_set_val(
 		__isl_take isl_multi_val *mv, int pos,
 		__isl_take isl_val *val);
-	__isl_give isl_multi_val *isl_multi_val_set_dim_name(
-		__isl_take isl_multi_val *mv,
-		enum isl_dim_type type, unsigned pos, const char *s);
-	__isl_give isl_multi_val *isl_multi_val_set_dim_id(
-		__isl_take isl_multi_val *mv,
-		enum isl_dim_type type, unsigned pos,
-		__isl_take isl_id *id);
-	__isl_give isl_multi_val *isl_multi_val_set_tuple_name(
-		__isl_take isl_multi_val *mv,
-		enum isl_dim_type type, const char *s);
-	__isl_give isl_multi_val *isl_multi_val_set_tuple_id(
-		__isl_take isl_multi_val *mv,
-		enum isl_dim_type type, __isl_take isl_id *id);
-	__isl_give isl_multi_val *isl_multi_val_reset_tuple_id(
-		__isl_take isl_multi_val *mv,
-		enum isl_dim_type type);
-	__isl_give isl_multi_val *isl_multi_val_reset_user(
-		__isl_take isl_multi_val *mv);
 
 	__isl_give isl_multi_val *isl_multi_val_insert_dims(
 		__isl_take isl_multi_val *mv,
@@ -4092,27 +4272,10 @@ The expression can be inspected using
 
 	#include <isl/aff.h>
 	isl_ctx *isl_aff_get_ctx(__isl_keep isl_aff *aff);
-	int isl_aff_dim(__isl_keep isl_aff *aff,
-		enum isl_dim_type type);
 	__isl_give isl_local_space *isl_aff_get_domain_local_space(
 		__isl_keep isl_aff *aff);
 	__isl_give isl_local_space *isl_aff_get_local_space(
 		__isl_keep isl_aff *aff);
-	const char *isl_aff_get_dim_name(__isl_keep isl_aff *aff,
-		enum isl_dim_type type, unsigned pos);
-	const char *isl_pw_aff_get_dim_name(
-		__isl_keep isl_pw_aff *pa,
-		enum isl_dim_type type, unsigned pos);
-	int isl_pw_aff_has_dim_id(__isl_keep isl_pw_aff *pa,
-		enum isl_dim_type type, unsigned pos);
-	__isl_give isl_id *isl_pw_aff_get_dim_id(
-		__isl_keep isl_pw_aff *pa,
-		enum isl_dim_type type, unsigned pos);
-	int isl_pw_aff_has_tuple_id(__isl_keep isl_pw_aff *pa,
-		enum isl_dim_type type);
-	__isl_give isl_id *isl_pw_aff_get_tuple_id(
-		__isl_keep isl_pw_aff *pa,
-		enum isl_dim_type type);
 	__isl_give isl_val *isl_aff_get_constant_val(
 		__isl_keep isl_aff *aff);
 	__isl_give isl_val *isl_aff_get_coefficient_val(
@@ -4143,32 +4306,11 @@ The expression can be inspected using
 		enum isl_dim_type type, unsigned first, unsigned n);
 
 	isl_ctx *isl_pw_aff_get_ctx(__isl_keep isl_pw_aff *pwaff);
-	unsigned isl_pw_aff_dim(__isl_keep isl_pw_aff *pwaff,
-		enum isl_dim_type type);
 	int isl_pw_aff_is_empty(__isl_keep isl_pw_aff *pwaff);
 
 It can be modified using
 
 	#include <isl/aff.h>
-	__isl_give isl_aff *isl_aff_set_tuple_id(
-		__isl_take isl_aff *aff,
-		enum isl_dim_type type, __isl_take isl_id *id);
-	__isl_give isl_pw_aff *isl_pw_aff_set_tuple_id(
-		__isl_take isl_pw_aff *pwaff,
-		enum isl_dim_type type, __isl_take isl_id *id);
-	__isl_give isl_pw_aff *isl_pw_aff_reset_tuple_id(
-		__isl_take isl_pw_aff *pa,
-		enum isl_dim_type type);
-	__isl_give isl_aff *isl_aff_set_dim_name(
-		__isl_take isl_aff *aff, enum isl_dim_type type,
-		unsigned pos, const char *s);
-	__isl_give isl_aff *isl_aff_set_dim_id(
-		__isl_take isl_aff *aff, enum isl_dim_type type,
-		unsigned pos, __isl_take isl_id *id);
-	__isl_give isl_pw_aff *isl_pw_aff_set_dim_id(
-		__isl_take isl_pw_aff *pma,
-		enum isl_dim_type type, unsigned pos,
-		__isl_take isl_id *id);
 	__isl_give isl_aff *isl_aff_set_constant_si(
 		__isl_take isl_aff *aff, int v);
 	__isl_give isl_aff *isl_aff_set_constant_val(
@@ -4668,64 +4810,12 @@ The expression can be inspected using
 		__isl_keep isl_multi_pw_aff *mpa,
 		enum isl_dim_type type, unsigned first, unsigned n);
 
-	unsigned isl_multi_aff_dim(__isl_keep isl_multi_aff *maff,
-		enum isl_dim_type type);
-	unsigned isl_pw_multi_aff_dim(
-		__isl_keep isl_pw_multi_aff *pma,
-		enum isl_dim_type type);
-	unsigned isl_multi_pw_aff_dim(
-		__isl_keep isl_multi_pw_aff *mpa,
-		enum isl_dim_type type);
 	__isl_give isl_aff *isl_multi_aff_get_aff(
 		__isl_keep isl_multi_aff *multi, int pos);
 	__isl_give isl_pw_aff *isl_pw_multi_aff_get_pw_aff(
 		__isl_keep isl_pw_multi_aff *pma, int pos);
 	__isl_give isl_pw_aff *isl_multi_pw_aff_get_pw_aff(
 		__isl_keep isl_multi_pw_aff *mpa, int pos);
-	int isl_multi_aff_find_dim_by_id(
-		__isl_keep isl_multi_aff *ma,
-		enum isl_dim_type type, __isl_keep isl_id *id);
-	int isl_multi_pw_aff_find_dim_by_id(
-		__isl_keep isl_multi_pw_aff *mpa,
-		enum isl_dim_type type, __isl_keep isl_id *id);
-	const char *isl_pw_multi_aff_get_dim_name(
-		__isl_keep isl_pw_multi_aff *pma,
-		enum isl_dim_type type, unsigned pos);
-	__isl_give isl_id *isl_multi_aff_get_dim_id(
-		__isl_keep isl_multi_aff *ma,
-		enum isl_dim_type type, unsigned pos);
-	__isl_give isl_id *isl_pw_multi_aff_get_dim_id(
-		__isl_keep isl_pw_multi_aff *pma,
-		enum isl_dim_type type, unsigned pos);
-	__isl_give isl_id *isl_multi_pw_aff_get_dim_id(
-		__isl_keep isl_multi_pw_aff *mpa,
-		enum isl_dim_type type, unsigned pos);
-	const char *isl_multi_aff_get_tuple_name(
-		__isl_keep isl_multi_aff *multi,
-		enum isl_dim_type type);
-	int isl_pw_multi_aff_has_tuple_name(
-		__isl_keep isl_pw_multi_aff *pma,
-		enum isl_dim_type type);
-	const char *isl_pw_multi_aff_get_tuple_name(
-		__isl_keep isl_pw_multi_aff *pma,
-		enum isl_dim_type type);
-	int isl_multi_aff_has_tuple_id(__isl_keep isl_multi_aff *ma,
-		enum isl_dim_type type);
-	int isl_pw_multi_aff_has_tuple_id(
-		__isl_keep isl_pw_multi_aff *pma,
-		enum isl_dim_type type);
-	int isl_multi_pw_aff_has_tuple_id(
-		__isl_keep isl_multi_pw_aff *mpa,
-		enum isl_dim_type type);
-	__isl_give isl_id *isl_multi_aff_get_tuple_id(
-		__isl_keep isl_multi_aff *ma,
-		enum isl_dim_type type);
-	__isl_give isl_id *isl_pw_multi_aff_get_tuple_id(
-		__isl_keep isl_pw_multi_aff *pma,
-		enum isl_dim_type type);
-	__isl_give isl_id *isl_multi_pw_aff_get_tuple_id(
-		__isl_keep isl_multi_pw_aff *mpa,
-		enum isl_dim_type type);
 	int isl_multi_aff_range_is_wrapping(
 		__isl_keep isl_multi_aff *ma);
 	int isl_multi_pw_aff_range_is_wrapping(
@@ -4751,47 +4841,6 @@ It can be modified using
 	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_set_pw_aff(
 		__isl_take isl_pw_multi_aff *pma, unsigned pos,
 		__isl_take isl_pw_aff *pa);
-	__isl_give isl_multi_aff *isl_multi_aff_set_dim_name(
-		__isl_take isl_multi_aff *maff,
-		enum isl_dim_type type, unsigned pos, const char *s);
-	__isl_give isl_multi_aff *isl_multi_aff_set_dim_id(
-		__isl_take isl_multi_aff *maff,
-		enum isl_dim_type type, unsigned pos,
-		__isl_take isl_id *id);
-	__isl_give isl_multi_aff *isl_multi_aff_set_tuple_name(
-		__isl_take isl_multi_aff *maff,
-		enum isl_dim_type type, const char *s);
-	__isl_give isl_multi_aff *isl_multi_aff_set_tuple_id(
-		__isl_take isl_multi_aff *maff,
-		enum isl_dim_type type, __isl_take isl_id *id);
-	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_set_tuple_id(
-		__isl_take isl_pw_multi_aff *pma,
-		enum isl_dim_type type, __isl_take isl_id *id);
-	__isl_give isl_multi_aff *isl_multi_aff_reset_tuple_id(
-		__isl_take isl_multi_aff *ma,
-		enum isl_dim_type type);
-	__isl_give isl_multi_pw_aff *
-	isl_multi_pw_aff_reset_tuple_id(
-		__isl_take isl_multi_pw_aff *mpa,
-		enum isl_dim_type type);
-	__isl_give isl_multi_aff *isl_multi_aff_reset_user(
-		__isl_take isl_multi_aff *ma);
-	__isl_give isl_multi_pw_aff *isl_multi_pw_aff_reset_user(
-		__isl_take isl_multi_pw_aff *mpa);
-
-	__isl_give isl_multi_pw_aff *
-	isl_multi_pw_aff_set_dim_name(
-		__isl_take isl_multi_pw_aff *mpa,
-		enum isl_dim_type type, unsigned pos, const char *s);
-	__isl_give isl_multi_pw_aff *
-	isl_multi_pw_aff_set_dim_id(
-		__isl_take isl_multi_pw_aff *mpa,
-		enum isl_dim_type type, unsigned pos,
-		__isl_take isl_id *id);
-	__isl_give isl_multi_pw_aff *
-	isl_multi_pw_aff_set_tuple_name(
-		__isl_take isl_multi_pw_aff *mpa,
-		enum isl_dim_type type, const char *s);
 
 	__isl_give isl_multi_aff *isl_multi_aff_flatten_domain(
 		__isl_take isl_multi_aff *ma);
@@ -5253,17 +5302,7 @@ needs to be set to either C<ISL_FORMAT_ISL> or C<ISL_FORMAT_C>.
 For C<isl_printer_print_union_pw_qpolynomial>, only C<ISL_FORMAT_ISL>
 is supported.
 In case of printing in C<ISL_FORMAT_C>, the user may want
-to set the names of all dimensions
-
-	__isl_give isl_qpolynomial *isl_qpolynomial_set_dim_name(
-		__isl_take isl_qpolynomial *qp,
-		enum isl_dim_type type, unsigned pos,
-		const char *s);
-	__isl_give isl_pw_qpolynomial *
-	isl_pw_qpolynomial_set_dim_name(
-		__isl_take isl_pw_qpolynomial *pwqp,
-		enum isl_dim_type type, unsigned pos,
-		const char *s);
+to set the names of all dimensions first.
 
 =head3 Creating New (Piecewise) Quasipolynomials
 
@@ -5620,13 +5659,7 @@ For C<isl_printer_print_union_pw_qpolynomial_fold>,
 output format of the printer
 needs to be set to C<ISL_FORMAT_ISL>.
 In case of printing in C<ISL_FORMAT_C>, the user may want
-to set the names of all dimensions
-
-	__isl_give isl_pw_qpolynomial_fold *
-	isl_pw_qpolynomial_fold_set_dim_name(
-		__isl_take isl_pw_qpolynomial_fold *pwf,
-		enum isl_dim_type type, unsigned pos,
-		const char *s);
+to set the names of all dimensions first.
 
 =head3 Inspecting (Piecewise) Quasipolynomial Reductions
 
