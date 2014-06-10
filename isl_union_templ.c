@@ -1,11 +1,13 @@
 /*
  * Copyright 2010      INRIA Saclay
+ * Copyright 2013      Ecole Normale Superieure
  *
  * Use of this software is governed by the MIT license
  *
  * Written by Sven Verdoolaege, INRIA Saclay - Ile-de-France,
  * Parc Club Orsay Universite, ZAC des vignes, 4 rue Jacques Monod,
  * 91893 Orsay, France 
+ * and Ecole Normale Superieure, 45 rue d'Ulm, 75230 Paris, France
  */
 
 #define xFN(TYPE,NAME) TYPE ## _ ## NAME
@@ -1199,6 +1201,66 @@ __isl_give UNION *FN(UNION,neg)(__isl_take UNION *u)
 	return u;
 }
 #endif
+
+/* Internal data structure for isl_union_*_drop_dims.
+ * type, first and n are passed to isl_*_drop_dims.
+ * res collects the results.
+ */
+S(UNION,drop_dims_data) {
+	enum isl_dim_type type;
+	unsigned first;
+	unsigned n;
+
+	UNION *res;
+};
+
+/* Drop the parameters specified by "data" from "part" and
+ * add the results to data->res.
+ */
+static int FN(UNION,drop_dims_entry)(__isl_take PART *part, void *user)
+{
+	S(UNION,drop_dims_data) *data = user;
+
+	part = FN(PART,drop_dims)(part, data->type, data->first, data->n);
+	data->res = FN(FN(UNION,add),PARTS)(data->res, part);
+	if (!data->res)
+		return -1;
+
+	return 0;
+}
+
+/* Drop the specified parameters from "u".
+ * That is, type is required to be isl_dim_param.
+ */
+__isl_give UNION *FN(UNION,drop_dims)( __isl_take UNION *u,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	isl_space *space;
+	S(UNION,drop_dims_data) data = { type, first, n };
+
+	if (!u)
+		return NULL;
+
+	if (type != isl_dim_param)
+		isl_die(FN(UNION,get_ctx)(u), isl_error_invalid,
+			"can only project out parameters",
+			return FN(UNION,free)(u));
+
+	space = FN(UNION,get_space)(u);
+	space = isl_space_drop_dims(space, type, first, n);
+#ifdef HAS_TYPE
+	data.res = FN(UNION,alloc)(space, u->type, u->table.n);
+#else
+	data.res = FN(UNION,alloc)(space, u->table.n);
+#endif
+	if (FN(FN(UNION,foreach),PARTS)(u,
+					&FN(UNION,drop_dims_entry), &data) < 0)
+		data.res = FN(UNION,free)(data.res);
+
+	FN(UNION,free)(u);
+
+	return data.res;
+}
 
 /* Reset the user pointer on all identifiers of parameters and tuples
  * of the space of "part" and add the result to *res.
