@@ -2745,44 +2745,14 @@ error:
 }
 
 /* Return a set containing those elements in the domain
- * of pwaff where it is non-negative.
- */
-__isl_give isl_set *isl_pw_aff_nonneg_set(__isl_take isl_pw_aff *pwaff)
-{
-	int i;
-	isl_set *set;
-
-	if (!pwaff)
-		return NULL;
-
-	set = isl_set_empty(isl_pw_aff_get_domain_space(pwaff));
-
-	for (i = 0; i < pwaff->n; ++i) {
-		isl_basic_set *bset;
-		isl_set *set_i;
-		int rational;
-
-		rational = isl_set_has_rational(pwaff->p[i].set);
-		bset = aff_nonneg_basic_set(isl_aff_copy(pwaff->p[i].aff),
-						rational);
-		set_i = isl_set_from_basic_set(bset);
-		set_i = isl_set_intersect(set_i, isl_set_copy(pwaff->p[i].set));
-		set = isl_set_union_disjoint(set, set_i);
-	}
-
-	isl_pw_aff_free(pwaff);
-
-	return set;
-}
-
-/* Return a set containing those elements in the domain
- * of pwaff where it is zero (if complement is 0) or not zero
- * (if complement is 1).
+ * of "pwaff" where it satisfies "fn" (if complement is 0) or
+ * does not satisfy "fn" (if complement is 1).
  *
  * The pieces with a NaN never belong to the result since
- * NaN is neither zero nor non-zero.
+ * NaN does not satisfy any property.
  */
-static __isl_give isl_set *pw_aff_zero_set(__isl_take isl_pw_aff *pwaff,
+static __isl_give isl_set *pw_aff_locus(__isl_take isl_pw_aff *pwaff,
+	__isl_give isl_basic_set *(*fn)(__isl_take isl_aff *aff, int rational),
 	int complement)
 {
 	int i;
@@ -2795,21 +2765,20 @@ static __isl_give isl_set *pw_aff_zero_set(__isl_take isl_pw_aff *pwaff,
 
 	for (i = 0; i < pwaff->n; ++i) {
 		isl_basic_set *bset;
-		isl_set *set_i, *zero;
+		isl_set *set_i, *locus;
 		int rational;
 
 		if (isl_aff_is_nan(pwaff->p[i].aff))
 			continue;
 
 		rational = isl_set_has_rational(pwaff->p[i].set);
-		bset = aff_zero_basic_set(isl_aff_copy(pwaff->p[i].aff),
-						rational);
-		zero = isl_set_from_basic_set(bset);
+		bset = fn(isl_aff_copy(pwaff->p[i].aff), rational);
+		locus = isl_set_from_basic_set(bset);
 		set_i = isl_set_copy(pwaff->p[i].set);
 		if (complement)
-			set_i = isl_set_subtract(set_i, zero);
+			set_i = isl_set_subtract(set_i, locus);
 		else
-			set_i = isl_set_intersect(set_i, zero);
+			set_i = isl_set_intersect(set_i, locus);
 		set = isl_set_union_disjoint(set, set_i);
 	}
 
@@ -2819,11 +2788,19 @@ static __isl_give isl_set *pw_aff_zero_set(__isl_take isl_pw_aff *pwaff,
 }
 
 /* Return a set containing those elements in the domain
+ * of pwaff where it is non-negative.
+ */
+__isl_give isl_set *isl_pw_aff_nonneg_set(__isl_take isl_pw_aff *pwaff)
+{
+	return pw_aff_locus(pwaff, &aff_nonneg_basic_set, 0);
+}
+
+/* Return a set containing those elements in the domain
  * of pwaff where it is zero.
  */
 __isl_give isl_set *isl_pw_aff_zero_set(__isl_take isl_pw_aff *pwaff)
 {
-	return pw_aff_zero_set(pwaff, 0);
+	return pw_aff_locus(pwaff, &aff_zero_basic_set, 0);
 }
 
 /* Return a set containing those elements in the domain
@@ -2831,7 +2808,7 @@ __isl_give isl_set *isl_pw_aff_zero_set(__isl_take isl_pw_aff *pwaff)
  */
 __isl_give isl_set *isl_pw_aff_non_zero_set(__isl_take isl_pw_aff *pwaff)
 {
-	return pw_aff_zero_set(pwaff, 1);
+	return pw_aff_locus(pwaff, &aff_zero_basic_set, 1);
 }
 
 /* Return a set containing those elements in the shared domain
