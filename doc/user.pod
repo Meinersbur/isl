@@ -7383,6 +7383,14 @@ be introduced into the schedule using the following function.
 		__isl_take isl_schedule *schedule,
 		__isl_take isl_set *context)
 
+A top-level guard node (right underneath the domain node) can
+be introduced into the schedule using the following function.
+
+	#include <isl/schedule.h>
+	__isl_give isl_schedule *isl_schedule_insert_guard(
+		__isl_take isl_schedule *schedule,
+		__isl_take isl_set *guard)
+
 A schedule that combines two schedules either in the given
 order or in an arbitrary order, i.e., with an C<isl_schedule_node_sequence>
 or an C<isl_schedule_node_set> node,

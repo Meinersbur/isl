@@ -921,6 +921,25 @@ __isl_give isl_schedule *isl_schedule_insert_context(
 	return schedule;
 }
 
+/* Insert a guard node with constraints "guard" between the domain
+ * root node of "schedule" and its single child.
+ * Return a pointer to the updated schedule.
+ */
+__isl_give isl_schedule *isl_schedule_insert_guard(
+	__isl_take isl_schedule *schedule, __isl_take isl_set *guard)
+{
+	isl_schedule_node *node;
+
+	node = isl_schedule_get_root(schedule);
+	isl_schedule_free(schedule);
+	node = isl_schedule_node_child(node, 0);
+	node = isl_schedule_node_insert_guard(node, guard);
+	schedule = isl_schedule_node_get_schedule(node);
+	isl_schedule_node_free(node);
+
+	return schedule;
+}
+
 /* Return a tree with as top-level node a filter corresponding to "filter" and
  * as child, the (single) child of "tree".
  * However, if this single child is of type "type", then the filter is inserted
