@@ -196,8 +196,14 @@ error:
 	return NULL;
 }
 
-__isl_give UNION *FN(FN(UNION,add),PARTS)(__isl_take UNION *u,
-	__isl_take PART *part)
+/* Add "part" to "u".
+ * If "disjoint" is set, then "u" is not allowed to already have
+ * a part that is defined on the same space as "part".
+ * Otherwise, compute the union sum of "part" and the part in "u"
+ * defined on the same space.
+ */
+static __isl_give UNION *FN(UNION,add_part_generic)(__isl_take UNION *u,
+	__isl_take PART *part, int disjoint)
 {
 	int empty;
 	uint32_t hash;
@@ -232,12 +238,17 @@ __isl_give UNION *FN(FN(UNION,add),PARTS)(__isl_take UNION *u,
 		entry->data = part;
 	else {
 		PART *entry_part = entry->data;
+		if (disjoint)
+			isl_die(FN(UNION,get_ctx)(u), isl_error_invalid,
+				"additional part should live on separate "
+				"space", goto error);
 		if (!isl_space_tuple_is_equal(entry_part->dim, isl_dim_out,
 						part->dim, isl_dim_out))
 			isl_die(FN(UNION,get_ctx)(u), isl_error_invalid,
 				"union expression can only contain a single "
 				"expression over a given domain", goto error);
-		entry->data = FN(PART,add)(entry->data, FN(PART,copy)(part));
+		entry->data = FN(PART,union_add_)(entry->data,
+						FN(PART,copy)(part));
 		if (!entry->data)
 			goto error;
 		empty = FN(PART,IS_ZERO)(part);
@@ -255,6 +266,15 @@ error:
 	FN(PART,free)(part);
 	FN(UNION,free)(u);
 	return NULL;
+}
+
+/* Add "part" to "u", where "u" is assumed not to already have
+ * a part that is defined on the same space as "part".
+ */
+__isl_give UNION *FN(FN(UNION,add),PARTS)(__isl_take UNION *u,
+	__isl_take PART *part)
+{
+	return FN(UNION,add_part_generic)(u, part, 1);
 }
 
 static int add_part(__isl_take PART *part, void *user)
@@ -393,7 +413,30 @@ error:
 	return NULL;
 }
 
-__isl_give UNION *FN(UNION,add)(__isl_take UNION *u1, __isl_take UNION *u2)
+/* Add "part" to *u, taking the union sum if "u" already has
+ * a part defined on the same space as "part".
+ */
+static int union_add_part(__isl_take PART *part, void *user)
+{
+	UNION **u = (UNION **)user;
+
+	*u = FN(UNION,add_part_generic)(*u, part, 0);
+
+	return 0;
+}
+
+/* Compute the sum of "u1" and "u2" on the union of their domains,
+ * with the actual sum on the shared domain and
+ * the defined expression on the symmetric difference of the domains.
+ *
+ * This is an internal function that is exposed under different
+ * names depending on whether the base expressions have a zero default
+ * value.
+ * If they do, then this function is called "add".
+ * Otherwise, it is called "union_add".
+ */
+static __isl_give UNION *FN(UNION,union_add_)(__isl_take UNION *u1,
+	__isl_take UNION *u2)
 {
 	u1 = FN(UNION,align_params)(u1, FN(UNION,get_space)(u2));
 	u2 = FN(UNION,align_params)(u2, FN(UNION,get_space)(u1));
@@ -403,7 +446,7 @@ __isl_give UNION *FN(UNION,add)(__isl_take UNION *u1, __isl_take UNION *u2)
 	if (!u1 || !u2)
 		goto error;
 
-	if (FN(FN(UNION,foreach),PARTS)(u2, &add_part, &u1) < 0)
+	if (FN(FN(UNION,foreach),PARTS)(u2, &union_add_part, &u1) < 0)
 		goto error;
 
 	FN(UNION,free)(u2);
@@ -521,6 +564,21 @@ error:
 	FN(UNION,free)(u2);
 	FN(UNION,free)(data.res);
 	return NULL;
+}
+
+/* Compute the sum of "u1" and "u2".
+ *
+ * If the base expressions have a default zero value, then the sum
+ * is computed on the union of the domains of "u1" and "u2".
+ * Otherwise, it is computed on their shared domains.
+ */
+__isl_give UNION *FN(UNION,add)(__isl_take UNION *u1, __isl_take UNION *u2)
+{
+#if DEFAULT_IS_ZERO
+	return FN(UNION,union_add_)(u1, u2);
+#else
+	return match_bin_op(u1, u2, &FN(PART,add));
+#endif
 }
 
 #ifndef NO_SUB

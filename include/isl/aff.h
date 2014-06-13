@@ -539,6 +539,9 @@ __isl_give isl_union_set *isl_union_pw_multi_aff_domain(
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_add(
 	__isl_take isl_union_pw_multi_aff *upma1,
 	__isl_take isl_union_pw_multi_aff *upma2);
+__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_union_add(
+	__isl_take isl_union_pw_multi_aff *upma1,
+	__isl_take isl_union_pw_multi_aff *upma2);
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_sub(
 	__isl_take isl_union_pw_multi_aff *upma1,
 	__isl_take isl_union_pw_multi_aff *upma2);

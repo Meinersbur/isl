@@ -232,7 +232,7 @@ isl_band_list_get_suffix_schedule_union_pw_multi_aff(
 		suffix_i = isl_band_get_suffix_schedule_union_pw_multi_aff(el);
 		suffix_i = isl_union_pw_multi_aff_flat_range_product(
 				partial, suffix_i);
-		suffix = isl_union_pw_multi_aff_add(suffix, suffix_i);
+		suffix = isl_union_pw_multi_aff_union_add(suffix, suffix_i);
 
 		isl_band_free(el);
 	}

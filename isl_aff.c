@@ -4176,6 +4176,17 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_union_add(
 	return isl_pw_multi_aff_union_add_(pma1, pma2);
 }
 
+/* Compute the sum of "upma1" and "upma2" on the union of their domains,
+ * with the actual sum on the shared domain and
+ * the defined expression on the symmetric difference of the domains.
+ */
+__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_union_add(
+	__isl_take isl_union_pw_multi_aff *upma1,
+	__isl_take isl_union_pw_multi_aff *upma2)
+{
+	return isl_union_pw_multi_aff_union_add_(upma1, upma2);
+}
+
 /* Given two piecewise multi-affine expressions A -> B and C -> D,
  * construct a piecewise multi-affine expression [A -> C] -> [B -> D].
  */

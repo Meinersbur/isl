@@ -215,6 +215,13 @@ a regular basic set, rather than a rational basic set.
 =item * Objects of type C<isl_union_pw_multi_aff> can no longer contain
 two or more C<isl_pw_multi_aff> objects with the same domain space.
 
+=item * The function C<isl_union_pw_multi_aff_add> now consistently
+computes the sum on the shared definition domain.
+The function C<isl_union_pw_multi_aff_union_add> has been added
+to compute the sum on the union of definition domains.
+The original behavior of C<isl_union_pw_multi_aff_add> was
+confused and is no longer available.
+
 =back
 
 =head1 License
@@ -5673,6 +5680,10 @@ C<isl_aff_sub> subtracts the second argument from the first.
 	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_union_add(
 		__isl_take isl_pw_multi_aff *pma1,
 		__isl_take isl_pw_multi_aff *pma2);
+	__isl_give isl_union_pw_multi_aff *
+	isl_union_pw_multi_aff_union_add(
+		__isl_take isl_union_pw_multi_aff *upma1,
+		__isl_take isl_union_pw_multi_aff *upma2);
 	__isl_give isl_pw_aff *isl_pw_aff_union_min(
 		__isl_take isl_pw_aff *pwaff1,
 		__isl_take isl_pw_aff *pwaff2);

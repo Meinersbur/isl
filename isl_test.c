@@ -3344,6 +3344,51 @@ static int test_bin_aff(isl_ctx *ctx)
 	return 0;
 }
 
+struct {
+	__isl_give isl_union_pw_multi_aff *(*fn)(
+		__isl_take isl_union_pw_multi_aff *upma1,
+		__isl_take isl_union_pw_multi_aff *upma2);
+	const char *arg1;
+	const char *arg2;
+	const char *res;
+} upma_bin_tests[] = {
+	{ &isl_union_pw_multi_aff_add, "{ A[] -> [0]; B[0] -> [1] }",
+	  "{ B[x] -> [2] : x >= 0 }", "{ B[0] -> [3] }" },
+	{ &isl_union_pw_multi_aff_union_add, "{ A[] -> [0]; B[0] -> [1] }",
+	  "{ B[x] -> [2] : x >= 0 }",
+	  "{ A[] -> [0]; B[0] -> [3]; B[x] -> [2] : x >= 1 }" },
+};
+
+/* Perform some basic tests of binary operations on
+ * isl_union_pw_multi_aff objects.
+ */
+static int test_bin_upma(isl_ctx *ctx)
+{
+	int i;
+	isl_union_pw_multi_aff *upma1, *upma2, *res;
+	int ok;
+
+	for (i = 0; i < ARRAY_SIZE(upma_bin_tests); ++i) {
+		upma1 = isl_union_pw_multi_aff_read_from_str(ctx,
+							upma_bin_tests[i].arg1);
+		upma2 = isl_union_pw_multi_aff_read_from_str(ctx,
+							upma_bin_tests[i].arg2);
+		res = isl_union_pw_multi_aff_read_from_str(ctx,
+							upma_bin_tests[i].res);
+		upma1 = upma_bin_tests[i].fn(upma1, upma2);
+		ok = isl_union_pw_multi_aff_plain_is_equal(upma1, res);
+		isl_union_pw_multi_aff_free(upma1);
+		isl_union_pw_multi_aff_free(res);
+		if (ok < 0)
+			return -1;
+		if (!ok)
+			isl_die(ctx, isl_error_unknown,
+				"unexpected result", return -1);
+	}
+
+	return 0;
+}
+
 int test_aff(isl_ctx *ctx)
 {
 	const char *str;
@@ -3354,6 +3399,8 @@ int test_aff(isl_ctx *ctx)
 	int zero, equal;
 
 	if (test_bin_aff(ctx) < 0)
+		return -1;
+	if (test_bin_upma(ctx) < 0)
 		return -1;
 
 	space = isl_space_set_alloc(ctx, 0, 1);
