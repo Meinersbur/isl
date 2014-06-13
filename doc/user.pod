@@ -1188,6 +1188,11 @@ operations and may not be preserved across those operations.
 	isl_multi_pw_aff_set_dim_name(
 		__isl_take isl_multi_pw_aff *mpa,
 		enum isl_dim_type type, unsigned pos, const char *s);
+	__isl_give isl_union_pw_multi_aff *
+	isl_union_pw_multi_aff_set_dim_name(
+		__isl_take isl_union_pw_multi_aff *upma,
+		enum isl_dim_type type, unsigned pos,
+		const char *s);
 	const char *isl_aff_get_dim_name(__isl_keep isl_aff *aff,
 		enum isl_dim_type type, unsigned pos);
 	const char *isl_pw_aff_get_dim_name(
@@ -1210,6 +1215,16 @@ operations and may not be preserved across those operations.
 	__isl_give isl_pw_qpolynomial_fold *
 	isl_pw_qpolynomial_fold_set_dim_name(
 		__isl_take isl_pw_qpolynomial_fold *pwf,
+		enum isl_dim_type type, unsigned pos,
+		const char *s);
+	__isl_give isl_union_pw_qpolynomial *
+	isl_union_pw_qpolynomial_set_dim_name(
+		__isl_take isl_union_pw_qpolynomial *upwqp,
+		enum isl_dim_type type, unsigned pos,
+		const char *s);
+	__isl_give isl_union_pw_qpolynomial_fold *
+	isl_union_pw_qpolynomial_fold_set_dim_name(
+		__isl_take isl_union_pw_qpolynomial_fold *upwf,
 		enum isl_dim_type type, unsigned pos,
 		const char *s);
 

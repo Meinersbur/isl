@@ -1262,6 +1262,67 @@ __isl_give UNION *FN(UNION,drop_dims)( __isl_take UNION *u,
 	return data.res;
 }
 
+/* Internal data structure for isl_union_*_set_dim_name.
+ * pos is the position of the parameter that needs to be renamed.
+ * s is the new name.
+ * res collects the results.
+ */
+S(UNION,set_dim_name_data) {
+	unsigned pos;
+	const char *s;
+
+	UNION *res;
+};
+
+/* Change the name of the parameter at position data->pos of "part" to data->s
+ * and add the result to data->res.
+ */
+static int FN(UNION,set_dim_name_entry)(__isl_take PART *part, void *user)
+{
+	S(UNION,set_dim_name_data) *data = user;
+
+	part = FN(PART,set_dim_name)(part, isl_dim_param, data->pos, data->s);
+	data->res = FN(FN(UNION,add),PARTS)(data->res, part);
+	if (!data->res)
+		return -1;
+
+	return 0;
+}
+
+/* Change the name of the parameter at position "pos" to "s".
+ * That is, type is required to be isl_dim_param.
+ */
+__isl_give UNION *FN(UNION,set_dim_name)(__isl_take UNION *u,
+	enum isl_dim_type type, unsigned pos, const char *s)
+{
+	S(UNION,set_dim_name_data) data = { pos, s };
+	isl_space *space;
+
+	if (!u)
+		return NULL;
+
+	if (type != isl_dim_param)
+		isl_die(FN(UNION,get_ctx)(u), isl_error_invalid,
+			"can only set parameter names",
+			return FN(UNION,free)(u));
+
+	space = FN(UNION,get_space)(u);
+	space = isl_space_set_dim_name(space, type, pos, s);
+#ifdef HAS_TYPE
+	data.res = FN(UNION,alloc)(space, u->type, u->table.n);
+#else
+	data.res = FN(UNION,alloc)(space, u->table.n);
+#endif
+
+	if (FN(FN(UNION,foreach),PARTS)(u,
+				    &FN(UNION,set_dim_name_entry), &data) < 0)
+		data.res = FN(UNION,free)(data.res);
+
+	FN(UNION,free)(u);
+
+	return data.res;
+}
+
 /* Reset the user pointer on all identifiers of parameters and tuples
  * of the space of "part" and add the result to *res.
  */
