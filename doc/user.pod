@@ -4000,6 +4000,9 @@ basic set or relation.
 		__isl_take isl_pw_multi_aff *pma);
 	__isl_give isl_multi_pw_aff *isl_multi_pw_aff_coalesce(
 		__isl_take isl_multi_pw_aff *mpa);
+	__isl_give isl_union_pw_multi_aff *
+	isl_union_pw_multi_aff_coalesce(
+		__isl_take isl_union_pw_multi_aff *upma);
 
 	#include <isl/polynomial.h>
 	__isl_give isl_pw_qpolynomial_fold *
