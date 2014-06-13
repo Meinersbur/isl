@@ -514,6 +514,8 @@ __isl_give isl_space *isl_union_pw_multi_aff_get_space(
 
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_coalesce(
 	__isl_take isl_union_pw_multi_aff *upma);
+__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_gist_params(
+	__isl_take isl_union_pw_multi_aff *upma, __isl_take isl_set *context);
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_gist(
 	__isl_take isl_union_pw_multi_aff *upma,
 	__isl_take isl_union_set *context);
