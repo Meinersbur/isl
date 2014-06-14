@@ -3211,12 +3211,26 @@ error:
 }
 
 /* Divide "aff1" by "aff2", assuming "aff2" is a constant.
+ *
+ * If either of the two is NaN, then the result is NaN.
  */
 __isl_give isl_aff *isl_aff_div(__isl_take isl_aff *aff1,
 	__isl_take isl_aff *aff2)
 {
 	int is_cst;
 	int neg;
+
+	if (!aff1 || !aff2)
+		goto error;
+
+	if (isl_aff_is_nan(aff1)) {
+		isl_aff_free(aff2);
+		return aff1;
+	}
+	if (isl_aff_is_nan(aff2)) {
+		isl_aff_free(aff1);
+		return aff2;
+	}
 
 	is_cst = isl_aff_is_cst(aff2);
 	if (is_cst < 0)
