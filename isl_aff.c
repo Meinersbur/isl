@@ -6996,6 +6996,67 @@ static int pw_aff_aff_on_domain(__isl_take isl_set *domain, void *user)
 	return data->res ? 0 : -1;
 }
 
+/* Internal data structure for isl_union_pw_multi_aff_get_union_pw_aff.
+ * pos is the output position that needs to be extracted.
+ * res collects the results.
+ */
+struct isl_union_pw_multi_aff_get_union_pw_aff_data {
+	int pos;
+	isl_union_pw_aff *res;
+};
+
+/* Extract an isl_pw_aff corresponding to output dimension "pos" of "pma"
+ * (assuming it has such a dimension) and add it to data->res.
+ */
+static int get_union_pw_aff(__isl_take isl_pw_multi_aff *pma, void *user)
+{
+	struct isl_union_pw_multi_aff_get_union_pw_aff_data *data = user;
+	int n_out;
+	isl_pw_aff *pa;
+
+	if (!pma)
+		return -1;
+
+	n_out = isl_pw_multi_aff_dim(pma, isl_dim_out);
+	if (data->pos >= n_out) {
+		isl_pw_multi_aff_free(pma);
+		return 0;
+	}
+
+	pa = isl_pw_multi_aff_get_pw_aff(pma, data->pos);
+	isl_pw_multi_aff_free(pma);
+
+	data->res = isl_union_pw_aff_add_pw_aff(data->res, pa);
+
+	return data->res ? 0 : -1;
+}
+
+/* Extract an isl_union_pw_aff corresponding to
+ * output dimension "pos" of "upma".
+ */
+__isl_give isl_union_pw_aff *isl_union_pw_multi_aff_get_union_pw_aff(
+	__isl_keep isl_union_pw_multi_aff *upma, int pos)
+{
+	struct isl_union_pw_multi_aff_get_union_pw_aff_data data;
+	isl_space *space;
+
+	if (!upma)
+		return NULL;
+
+	if (pos < 0)
+		isl_die(isl_union_pw_multi_aff_get_ctx(upma), isl_error_invalid,
+			"cannot extract at negative position", return NULL);
+
+	space = isl_union_pw_multi_aff_get_space(upma);
+	data.res = isl_union_pw_aff_empty(space);
+	data.pos = pos;
+	if (isl_union_pw_multi_aff_foreach_pw_multi_aff(upma,
+						&get_union_pw_aff, &data) < 0)
+		data.res = isl_union_pw_aff_free(data.res);
+
+	return data.res;
+}
+
 /* Return a union piecewise affine expression
  * that is equal to "aff" on "domain".
  *

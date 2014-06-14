@@ -2918,6 +2918,9 @@ of the sets in the union set and collect the results.
 
 	#include <isl/aff.h>
 	__isl_give isl_union_pw_aff *
+	isl_union_pw_multi_aff_get_union_pw_aff(
+		__isl_keep isl_union_pw_multi_aff *upma, int pos);
+	__isl_give isl_union_pw_aff *
 	isl_union_pw_aff_val_on_domain(
 		__isl_take isl_union_set *domain,
 		__isl_take isl_val *v);
