@@ -6932,6 +6932,40 @@ __isl_give isl_union_pw_aff *isl_union_pw_aff_floor(
 	return upa;
 }
 
+/* Compute
+ *
+ *	upa mod m = upa - m * floor(upa/m)
+ *
+ * with m an integer value.
+ */
+__isl_give isl_union_pw_aff *isl_union_pw_aff_mod_val(
+	__isl_take isl_union_pw_aff *upa, __isl_take isl_val *m)
+{
+	isl_union_pw_aff *res;
+
+	if (!upa || !m)
+		goto error;
+
+	if (!isl_val_is_int(m))
+		isl_die(isl_val_get_ctx(m), isl_error_invalid,
+			"expecting integer modulo", goto error);
+	if (!isl_val_is_pos(m))
+		isl_die(isl_val_get_ctx(m), isl_error_invalid,
+			"expecting positive modulo", goto error);
+
+	res = isl_union_pw_aff_copy(upa);
+	upa = isl_union_pw_aff_scale_down_val(upa, isl_val_copy(m));
+	upa = isl_union_pw_aff_floor(upa);
+	upa = isl_union_pw_aff_scale_val(upa, m);
+	res = isl_union_pw_aff_sub(res, upa);
+
+	return res;
+error:
+	isl_val_free(m);
+	isl_union_pw_aff_free(upa);
+	return NULL;
+}
+
 /* Internal data structure for isl_union_pw_aff_aff_on_domain.
  * "aff" is the symbolic value that the resulting isl_union_pw_aff
  * needs to attain.
