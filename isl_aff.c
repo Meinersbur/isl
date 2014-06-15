@@ -7570,3 +7570,79 @@ __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_from_multi_pw_aff(
 
 	return mupa;
 }
+
+/* Extract the range space of "pma" and assign it to *space.
+ * If *space has already been set (through a previous call to this function),
+ * then check that the range space is the same.
+ */
+static int extract_space(__isl_take isl_pw_multi_aff *pma, void *user)
+{
+	isl_space **space = user;
+	isl_space *pma_space;
+	int equal;
+
+	pma_space = isl_space_range(isl_pw_multi_aff_get_space(pma));
+	isl_pw_multi_aff_free(pma);
+
+	if (!pma_space)
+		return -1;
+	if (!*space) {
+		*space = pma_space;
+		return 0;
+	}
+
+	equal = isl_space_is_equal(pma_space, *space);
+	isl_space_free(pma_space);
+
+	if (equal < 0)
+		return -1;
+	if (!equal)
+		isl_die(isl_space_get_ctx(*space), isl_error_invalid,
+			"range spaces not the same", return -1);
+	return 0;
+}
+
+/* Construct and return a multi union piecewise affine expression
+ * that is equal to the given union piecewise multi affine expression.
+ *
+ * In order to be able to perform the conversion, the input
+ * needs to be non-empty and may only involve a single range space.
+ */
+__isl_give isl_multi_union_pw_aff *
+isl_multi_union_pw_aff_from_union_pw_multi_aff(
+	__isl_take isl_union_pw_multi_aff *upma)
+{
+	isl_space *space = NULL;
+	isl_multi_union_pw_aff *mupa;
+	int i, n;
+
+	if (!upma)
+		return NULL;
+	if (isl_union_pw_multi_aff_n_pw_multi_aff(upma) == 0)
+		isl_die(isl_union_pw_multi_aff_get_ctx(upma), isl_error_invalid,
+			"cannot extract range space from empty input",
+			goto error);
+	if (isl_union_pw_multi_aff_foreach_pw_multi_aff(upma, &extract_space,
+							&space) < 0)
+		goto error;
+
+	if (!space)
+		goto error;
+
+	n = isl_space_dim(space, isl_dim_set);
+	mupa = isl_multi_union_pw_aff_alloc(space);
+
+	for (i = 0; i < n; ++i) {
+		isl_union_pw_aff *upa;
+
+		upa = isl_union_pw_multi_aff_get_union_pw_aff(upma, i);
+		mupa = isl_multi_union_pw_aff_set_union_pw_aff(mupa, i, upa);
+	}
+
+	isl_union_pw_multi_aff_free(upma);
+	return mupa;
+error:
+	isl_space_free(space);
+	isl_union_pw_multi_aff_free(upma);
+	return NULL;
+}
