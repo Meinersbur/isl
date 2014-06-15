@@ -2789,3 +2789,64 @@ __isl_give isl_printer *isl_printer_print_multi_val(
 	isl_die(p->ctx, isl_error_unsupported, "unsupported output format",
 		return isl_printer_free(p));
 }
+
+/* Print dimension "pos" of data->space to "p".
+ *
+ * data->user is assumed to be an isl_multi_union_pw_aff.
+ *
+ * The current dimension is necessarily a set dimension, so
+ * we print the corresponding isl_union_pw_aff, including
+ * the braces.
+ */
+static __isl_give isl_printer *print_union_pw_aff_dim(__isl_take isl_printer *p,
+	struct isl_print_space_data *data, unsigned pos)
+{
+	isl_multi_union_pw_aff *mupa = data->user;
+	isl_union_pw_aff *upa;
+
+	upa = isl_multi_union_pw_aff_get_union_pw_aff(mupa, pos);
+	p = print_union_pw_aff_body(p, upa);
+	isl_union_pw_aff_free(upa);
+
+	return p;
+}
+
+/* Print the isl_multi_union_pw_aff "mupa" to "p" in isl format.
+ */
+static __isl_give isl_printer *print_multi_union_pw_aff_isl(
+	__isl_take isl_printer *p, __isl_keep isl_multi_union_pw_aff *mupa)
+{
+	struct isl_print_space_data data = { 0 };
+	isl_space *space;
+
+	space = isl_multi_union_pw_aff_get_space(mupa);
+	if (isl_space_dim(space, isl_dim_param) > 0) {
+		struct isl_print_space_data space_data = { 0 };
+		p = print_tuple(space, p, isl_dim_param, &space_data);
+		p = isl_printer_print_str(p, s_to[0]);
+	}
+
+	data.print_dim = &print_union_pw_aff_dim;
+	data.user = mupa;
+
+	p = print_space(space, p, 0, &data);
+	isl_space_free(space);
+
+	return p;
+}
+
+/* Print the isl_multi_union_pw_aff "mupa" to "p" in isl format.
+ *
+ * We currently only support an isl format.
+ */
+__isl_give isl_printer *isl_printer_print_multi_union_pw_aff(
+	__isl_take isl_printer *p, __isl_keep isl_multi_union_pw_aff *mupa)
+{
+	if (!p || !mupa)
+		return isl_printer_free(p);
+
+	if (p->output_format == ISL_FORMAT_ISL)
+		return print_multi_union_pw_aff_isl(p, mupa);
+	isl_die(isl_printer_get_ctx(p), isl_error_unsupported,
+		"unsupported output format", return isl_printer_free(p));
+}

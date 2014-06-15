@@ -20,6 +20,8 @@ typedef struct isl_multi_val isl_multi_val;
 
 ISL_DECLARE_MULTI(val)
 ISL_DECLARE_MULTI_NEG(val)
+ISL_DECLARE_MULTI_DIMS(val)
+ISL_DECLARE_MULTI_WITH_DOMAIN(val)
 
 __isl_give isl_val *isl_val_zero(isl_ctx *ctx);
 __isl_give isl_val *isl_val_one(isl_ctx *ctx);

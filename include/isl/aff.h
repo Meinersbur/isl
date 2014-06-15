@@ -315,6 +315,8 @@ __isl_give isl_set *isl_pw_aff_list_gt_set(__isl_take isl_pw_aff_list *list1,
 
 ISL_DECLARE_MULTI(aff)
 ISL_DECLARE_MULTI_NEG(aff)
+ISL_DECLARE_MULTI_DIMS(aff)
+ISL_DECLARE_MULTI_WITH_DOMAIN(aff)
 
 __isl_give isl_multi_aff *isl_multi_aff_from_aff(__isl_take isl_aff *aff);
 __isl_give isl_multi_aff *isl_multi_aff_identity(__isl_take isl_space *space);
@@ -365,6 +367,8 @@ void isl_multi_aff_dump(__isl_keep isl_multi_aff *maff);
 
 ISL_DECLARE_MULTI(pw_aff)
 ISL_DECLARE_MULTI_NEG(pw_aff)
+ISL_DECLARE_MULTI_DIMS(pw_aff)
+ISL_DECLARE_MULTI_WITH_DOMAIN(pw_aff)
 
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_zero(__isl_take isl_space *space);
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_identity(
@@ -804,6 +808,34 @@ __isl_give isl_union_map *isl_union_map_from_union_pw_aff(
 __isl_give char *isl_union_pw_aff_to_str(__isl_keep isl_union_pw_aff *upa);
 __isl_give isl_printer *isl_printer_print_union_pw_aff(
 	__isl_take isl_printer *p, __isl_keep isl_union_pw_aff *upa);
+
+ISL_DECLARE_MULTI(union_pw_aff)
+ISL_DECLARE_MULTI_NEG(union_pw_aff)
+
+__isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_from_union_pw_aff(
+	__isl_take isl_union_pw_aff *upa);
+
+__isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_intersect_domain(
+	__isl_take isl_multi_union_pw_aff *mupa,
+	__isl_take isl_union_set *uset);
+__isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_intersect_params(
+	__isl_take isl_multi_union_pw_aff *mupa, __isl_take isl_set *params);
+
+__isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_gist(
+	__isl_take isl_multi_union_pw_aff *aff,
+	__isl_take isl_union_set *context);
+__isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_gist_params(
+	__isl_take isl_multi_union_pw_aff *aff, __isl_take isl_set *context);
+
+__isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_union_add(
+	__isl_take isl_multi_union_pw_aff *mupa1,
+	__isl_take isl_multi_union_pw_aff *mupa2);
+
+__isl_give char *isl_multi_union_pw_aff_to_str(
+	__isl_keep isl_multi_union_pw_aff *mupa);
+__isl_give isl_printer *isl_printer_print_multi_union_pw_aff(
+	__isl_take isl_printer *p, __isl_keep isl_multi_union_pw_aff *mupa);
+void isl_multi_union_pw_aff_dump(__isl_keep isl_multi_union_pw_aff *mupa);
 
 ISL_DECLARE_LIST_FN(union_pw_aff)
 ISL_DECLARE_LIST_FN(union_pw_multi_aff)

@@ -129,6 +129,7 @@ __isl_null MULTI(BASE) *FN(MULTI(BASE),free)(__isl_take MULTI(BASE) *multi)
 	return NULL;
 }
 
+#ifndef NO_DIMS
 /* Check whether "multi" has non-zero coefficients for any dimension
  * in the given range or if any of these dimensions appear
  * with non-zero coefficients in any of the integer divisions involved.
@@ -195,6 +196,7 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),add_dims)(__isl_take MULTI(BASE) *multi,
 
 	return FN(MULTI(BASE),insert_dims)(multi, type, pos, n);
 }
+#endif
 
 unsigned FN(MULTI(BASE),dim)(__isl_keep MULTI(BASE) *multi,
 	enum isl_dim_type type)
@@ -619,6 +621,7 @@ error:
 }
 #endif
 
+#ifndef NO_ZERO
 /* Construct a multi expression in the given space with value zero in
  * each of the output dimensions.
  */
@@ -653,13 +656,29 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),zero)(__isl_take isl_space *space)
 
 	return multi;
 }
+#endif
 
 #ifndef NO_FROM_BASE
+/* Create a multiple expression with a single output/set dimension
+ * equal to "el".
+ * For most multiple expression types, the base type has a single
+ * output/set dimension and the space of the result is therefore
+ * the same as the space of the input.
+ * In the case of isl_multi_union_pw_aff, however, the base type
+ * lives in a parameter space and we therefore need to add
+ * a single set dimension.
+ */
 __isl_give MULTI(BASE) *FN(FN(MULTI(BASE),from),BASE)(__isl_take EL *el)
 {
+	isl_space *space;
 	MULTI(BASE) *multi;
 
-	multi = FN(MULTI(BASE),alloc)(FN(EL,get_space)(el));
+	space = FN(EL,get_space(el));
+	if (isl_space_is_params(space)) {
+		space = isl_space_set_from_params(space);
+		space = isl_space_add_dims(space, isl_dim_set, 1);
+	}
+	multi = FN(MULTI(BASE),alloc)(space);
 	multi = FN(FN(MULTI(BASE),set),BASE)(multi, 0, el);
 
 	return multi;
@@ -848,6 +867,7 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),range_factor_range)(
 	return multi;
 }
 
+#ifndef NO_PRODUCT
 /* Given two MULTI(BASE)s A -> B and C -> D,
  * construct a MULTI(BASE) [A -> C] -> [B -> D].
  *
@@ -900,6 +920,7 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),product)(
 	return FN(MULTI(BASE),align_params_multi_multi_and)(multi1, multi2,
 					&FN(MULTI(BASE),product_aligned));
 }
+#endif
 
 __isl_give MULTI(BASE) *FN(MULTI(BASE),flatten_range)(
 	__isl_take MULTI(BASE) *multi)
@@ -975,6 +996,7 @@ error:
 	return NULL;
 }
 
+#ifndef NO_SPLICE
 /* Given two multi expressions, "multi1"
  *
  *	[A1 A2] -> [B1 B2]
@@ -1026,6 +1048,7 @@ error:
 	FN(MULTI(BASE),free)(multi2);
 	return NULL;
 }
+#endif
 
 /* This function is currently only used from isl_aff.c
  */

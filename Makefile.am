@@ -288,6 +288,7 @@ EXTRA_DIST = \
 	isl_multi_templ.h \
 	isl_multi_apply_templ.c \
 	isl_multi_apply_set.c \
+	isl_multi_apply_union_set.c \
 	isl_multi_gist.c \
 	isl_multi_intersect.c \
 	print_templ.c \

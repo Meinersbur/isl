@@ -6905,6 +6905,123 @@ isl_union_pw_multi_aff_pullback_union_pw_multi_aff(
 	return bin_op(upma1, upma2, &pullback_entry);
 }
 
+/* Check that the domain space of "upa" matches "space".
+ *
+ * Return 0 on success and -1 on error.
+ *
+ * This function is called from isl_multi_union_pw_aff_set_union_pw_aff and
+ * can in principle never fail since the space "space" is that
+ * of the isl_multi_union_pw_aff and is a set space such that
+ * there is no domain space to match.
+ *
+ * We check the parameters and double-check that "space" is
+ * indeed that of a set.
+ */
+static int isl_union_pw_aff_check_match_domain_space(
+	__isl_keep isl_union_pw_aff *upa, __isl_keep isl_space *space)
+{
+	isl_space *upa_space;
+	int match;
+
+	if (!upa || !space)
+		return -1;
+
+	match = isl_space_is_set(space);
+	if (match < 0)
+		return -1;
+	if (!match)
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
+			"expecting set space", return -1);
+
+	upa_space = isl_union_pw_aff_get_space(upa);
+	match = isl_space_match(space, isl_dim_param, upa_space, isl_dim_param);
+	if (match < 0)
+		goto error;
+	if (!match)
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
+			"parameters don't match", goto error);
+
+	isl_space_free(upa_space);
+	return 0;
+error:
+	isl_space_free(upa_space);
+	return -1;
+}
+
+/* Do the parameters of "upa" match those of "space"?
+ */
+static int isl_union_pw_aff_matching_params(__isl_keep isl_union_pw_aff *upa,
+	__isl_keep isl_space *space)
+{
+	isl_space *upa_space;
+	int match;
+
+	if (!upa || !space)
+		return -1;
+
+	upa_space = isl_union_pw_aff_get_space(upa);
+
+	match = isl_space_match(space, isl_dim_param, upa_space, isl_dim_param);
+
+	isl_space_free(upa_space);
+	return match;
+}
+
+/* Internal data structure for isl_union_pw_aff_reset_domain_space.
+ * space represents the new parameters.
+ * res collects the results.
+ */
+struct isl_union_pw_aff_reset_params_data {
+	isl_space *space;
+	isl_union_pw_aff *res;
+};
+
+/* Replace the parameters of "pa" by data->space and
+ * add the result to data->res.
+ */
+static int reset_params(__isl_take isl_pw_aff *pa, void *user)
+{
+	struct isl_union_pw_aff_reset_params_data *data = user;
+	isl_space *space;
+
+	space = isl_pw_aff_get_space(pa);
+	space = isl_space_replace(space, isl_dim_param, data->space);
+	pa = isl_pw_aff_reset_space(pa, space);
+	data->res = isl_union_pw_aff_add_pw_aff(data->res, pa);
+
+	return data->res ? 0 : -1;
+}
+
+/* Replace the domain space of "upa" by "space".
+ * Since a union expression does not have a (single) domain space,
+ * "space" is necessarily a parameter space.
+ *
+ * Since the order and the names of the parameters determine
+ * the hash value, we need to create a new hash table.
+ */
+static __isl_give isl_union_pw_aff *isl_union_pw_aff_reset_domain_space(
+	__isl_take isl_union_pw_aff *upa, __isl_take isl_space *space)
+{
+	struct isl_union_pw_aff_reset_params_data data = { space };
+	int match;
+
+	match = isl_union_pw_aff_matching_params(upa, space);
+	if (match < 0)
+		upa = isl_union_pw_aff_free(upa);
+	else if (match) {
+		isl_space_free(space);
+		return upa;
+	}
+
+	data.res = isl_union_pw_aff_empty(isl_space_copy(space));
+	if (isl_union_pw_aff_foreach_pw_aff(upa, &reset_params, &data) < 0)
+		data.res = isl_union_pw_aff_free(data.res);
+
+	isl_union_pw_aff_free(upa);
+	isl_space_free(space);
+	return data.res;
+}
+
 /* Replace the entry of isl_union_pw_aff to which "entry" points
  * by its floor.
  */
@@ -7334,4 +7451,78 @@ error:
 	isl_union_pw_aff_free(upa);
 	isl_union_pw_multi_aff_free(upma);
 	return NULL;
+}
+
+#undef BASE
+#define BASE union_pw_aff
+#undef DOMBASE
+#define DOMBASE union_set
+
+#define NO_MOVE_DIMS
+#define NO_DIMS
+#define NO_DOMAIN
+#define NO_PRODUCT
+#define NO_SPLICE
+#define NO_ZERO
+#define NO_IDENTITY
+#define NO_GIST
+
+#include <isl_multi_templ.c>
+#include <isl_multi_apply_set.c>
+#include <isl_multi_apply_union_set.c>
+#include <isl_multi_gist.c>
+#include <isl_multi_intersect.c>
+
+/* Construct a multiple union piecewise affine expression
+ * in the given space with value zero in each of the output dimensions.
+ *
+ * Since there is no canonical zero value for
+ * a union piecewise affine expression, we can only construct
+ * zero-dimensional "zero" value.
+ */
+__isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_zero(
+	__isl_take isl_space *space)
+{
+	if (!space)
+		return NULL;
+
+	if (!isl_space_is_set(space))
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
+			"expecting set space", goto error);
+	if (isl_space_dim(space , isl_dim_out) != 0)
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
+			"expecting 0D space", goto error);
+
+	return isl_multi_union_pw_aff_alloc(space);
+error:
+	isl_space_free(space);
+	return NULL;
+}
+
+/* Compute the sum of "mupa1" and "mupa2" on the union of their domains,
+ * with the actual sum on the shared domain and
+ * the defined expression on the symmetric difference of the domains.
+ *
+ * We simply iterate over the elements in both arguments and
+ * call isl_union_pw_aff_union_add on each of them.
+ */
+static __isl_give isl_multi_union_pw_aff *
+isl_multi_union_pw_aff_union_add_aligned(
+	__isl_take isl_multi_union_pw_aff *mupa1,
+	__isl_take isl_multi_union_pw_aff *mupa2)
+{
+	return isl_multi_union_pw_aff_bin_op(mupa1, mupa2,
+					    &isl_union_pw_aff_union_add);
+}
+
+/* Compute the sum of "mupa1" and "mupa2" on the union of their domains,
+ * with the actual sum on the shared domain and
+ * the defined expression on the symmetric difference of the domains.
+ */
+__isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_union_add(
+	__isl_take isl_multi_union_pw_aff *mupa1,
+	__isl_take isl_multi_union_pw_aff *mupa2)
+{
+	return isl_multi_union_pw_aff_align_params_multi_multi_and(mupa1, mupa2,
+				    &isl_multi_union_pw_aff_union_add_aligned);
 }

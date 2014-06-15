@@ -93,6 +93,9 @@
 #define BASE union_pw_aff
 #include <print_templ.c>
 #undef BASE
+#define BASE multi_union_pw_aff
+#include <print_templ.c>
+#undef BASE
 #define BASE point
 #include <print_templ.c>
 #undef BASE
