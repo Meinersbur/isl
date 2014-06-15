@@ -382,7 +382,6 @@ S(UNION,align) {
 	UNION *res;
 };
 
-#ifdef ALIGN_DOMAIN
 static int FN(UNION,align_entry)(__isl_take PART *part, void *user)
 {
 	isl_reordering *exp;
@@ -396,21 +395,6 @@ static int FN(UNION,align_entry)(__isl_take PART *part, void *user)
 
 	return 0;
 }
-#else
-static int FN(UNION,align_entry)(__isl_take PART *part, void *user)
-{
-	isl_reordering *exp;
-	S(UNION,align) *data = user;
-
-	exp = isl_reordering_extend_space(isl_reordering_copy(data->exp),
-				    FN(PART,get_space)(part));
-
-	data->res = FN(FN(UNION,add),PARTS)(data->res,
-					    FN(PART,realign)(part, exp));
-
-	return 0;
-}
-#endif
 
 __isl_give UNION *FN(UNION,align_params)(__isl_take UNION *u,
 	__isl_take isl_space *model)

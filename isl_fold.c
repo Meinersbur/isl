@@ -652,7 +652,6 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_gist_params(
 #define PART isl_pw_qpolynomial_fold
 #undef PARTS
 #define PARTS pw_qpolynomial_fold
-#define ALIGN_DOMAIN
 
 #define NO_SUB
 

@@ -2574,7 +2574,6 @@ __isl_give isl_pw_aff *isl_pw_aff_from_aff(__isl_take isl_aff *aff)
 #define PART isl_pw_aff
 #undef PARTS
 #define PARTS pw_aff
-#define ALIGN_DOMAIN
 
 #define NO_EVAL
 
@@ -3990,7 +3989,6 @@ __isl_give isl_set *isl_multi_aff_lex_ge_set(__isl_take isl_multi_aff *ma1,
 #define PART isl_pw_multi_aff
 #undef PARTS
 #define PARTS pw_multi_aff
-#define ALIGN_DOMAIN
 
 #define NO_EVAL
 
