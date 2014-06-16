@@ -812,6 +812,8 @@ __isl_give isl_printer *isl_printer_print_union_pw_aff(
 ISL_DECLARE_MULTI(union_pw_aff)
 ISL_DECLARE_MULTI_NEG(union_pw_aff)
 
+__isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_from_multi_aff(
+	__isl_take isl_multi_aff *ma);
 __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_from_union_pw_aff(
 	__isl_take isl_union_pw_aff *upa);
 __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_from_multi_pw_aff(
