@@ -849,6 +849,8 @@ __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_from_union_map(
 __isl_give isl_union_set *isl_multi_union_pw_aff_zero_union_set(
 	__isl_take isl_multi_union_pw_aff *mupa);
 
+__isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_read_from_str(
+	isl_ctx *ctx, const char *str);
 __isl_give char *isl_multi_union_pw_aff_to_str(
 	__isl_keep isl_multi_union_pw_aff *mupa);
 __isl_give isl_printer *isl_printer_print_multi_union_pw_aff(

@@ -3287,6 +3287,9 @@ Objects can be read from input using the following functions.
 	__isl_give isl_union_pw_multi_aff *
 	isl_union_pw_multi_aff_read_from_str(
 		isl_ctx *ctx, const char *str);
+	__isl_give isl_multi_union_pw_aff *
+	isl_multi_union_pw_aff_read_from_str(
+		isl_ctx *ctx, const char *str);
 
 	#include <isl/polynomial.h>
 	__isl_give isl_union_pw_qpolynomial *
