@@ -1,3 +1,9 @@
+version: 0.14
+date: Sat Oct 25 16:08:47 CEST 2014
+changes:
+	- support IMath as an optional replacement for GMP
+	- minor AST generator improvements
+---
 version: 0.13
 date: Mon Apr 14 11:08:45 CEST 2014
 changes:
