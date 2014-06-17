@@ -935,21 +935,6 @@ static int next_is_tuple(struct isl_stream *s)
 	return is_tuple;
 }
 
-/* Allocate an initial tuple with zero dimensions and an anonymous,
- * unstructured space.
- * A tuple is represented as an isl_multi_pw_aff.
- * The range space is the space of the tuple.
- * The domain space is an anonymous space
- * with a dimension for each variable in the set of variables in "v".
- * If a given dimension is not defined in terms of earlier dimensions in
- * the input, then the corresponding isl_pw_aff is set equal to one time
- * the variable corresponding to the dimension being defined.
- */
-static __isl_give isl_multi_pw_aff *tuple_alloc(struct vars *v)
-{
-	return isl_multi_pw_aff_alloc(isl_space_alloc(v->ctx, 0, v->n, 0));
-}
-
 /* Is "pa" an expression in term of earlier dimensions?
  * The alternative is that the dimension is defined to be equal to itself,
  * meaning that it has a universe domain and an expression that depends
@@ -997,49 +982,27 @@ static int tuple_has_expr(__isl_keep isl_multi_pw_aff *tuple)
 	return has_expr;
 }
 
-/* Add a dimension to the given tuple.
- * The dimension is initially undefined, so it is encoded
- * as one times itself.
- */
-static __isl_give isl_multi_pw_aff *tuple_add_dim(
-	__isl_take isl_multi_pw_aff *tuple, struct vars *v)
-{
-	isl_space *space;
-	isl_aff *aff;
-	isl_pw_aff *pa;
-
-	tuple = isl_multi_pw_aff_add_dims(tuple, isl_dim_in, 1);
-	space = isl_multi_pw_aff_get_domain_space(tuple);
-	aff = isl_aff_zero_on_domain(isl_local_space_from_space(space));
-	aff = isl_aff_add_coefficient_si(aff, isl_dim_in, v->n, 1);
-	pa = isl_pw_aff_from_aff(aff);
-	tuple = isl_multi_pw_aff_flat_range_product(tuple,
-					    isl_multi_pw_aff_from_pw_aff(pa));
-
-	return tuple;
-}
-
-/* Set the name of dimension "pos" in "tuple" to "name".
+/* Set the name of dimension "pos" in "space" to "name".
  * During printing, we add primes if the same name appears more than once
  * to distinguish the occurrences.  Here, we remove those primes from "name"
  * before setting the name of the dimension.
  */
-static __isl_give isl_multi_pw_aff *tuple_set_dim_name(
-	__isl_take isl_multi_pw_aff *tuple, int pos, char *name)
+static __isl_give isl_space *space_set_dim_name(__isl_take isl_space *space,
+	int pos, char *name)
 {
 	char *prime;
 
 	if (!name)
-		return tuple;
+		return space;
 
 	prime = strchr(name, '\'');
 	if (prime)
 		*prime = '\0';
-	tuple = isl_multi_pw_aff_set_dim_name(tuple, isl_dim_set, pos, name);
+	space = isl_space_set_dim_name(space, isl_dim_out, pos, name);
 	if (prime)
 		*prime = '\'';
 
-	return tuple;
+	return space;
 }
 
 /* Accept a piecewise affine expression.
@@ -1116,17 +1079,15 @@ error:
 	return isl_pw_aff_free(res);
 }
 
-/* Read an affine expression from "s" and replace the definition
- * of dimension "pos" in "tuple" by this expression.
+/* Read an affine expression from "s" for use in read_tuple.
  *
  * accept_extended_affine requires a wrapped space as input.
- * The domain space of "tuple", on the other hand is an anonymous space,
- * so we have to adjust the space of the isl_pw_aff before adding it
- * to "tuple".
+ * read_tuple on the other hand expects each isl_pw_aff
+ * to have an anonymous space.  We therefore adjust the space
+ * of the isl_pw_aff before returning it.
  */
-static __isl_give isl_multi_pw_aff *read_tuple_var_def(struct isl_stream *s,
-	__isl_take isl_multi_pw_aff *tuple, int pos, struct vars *v,
-	int rational)
+static __isl_give isl_pw_aff *read_tuple_var_def(struct isl_stream *s,
+	struct vars *v, int rational)
 {
 	isl_space *space;
 	isl_pw_aff *def;
@@ -1137,87 +1098,68 @@ static __isl_give isl_multi_pw_aff *read_tuple_var_def(struct isl_stream *s,
 
 	space = isl_space_set_alloc(s->ctx, 0, v->n);
 	def = isl_pw_aff_reset_domain_space(def, space);
-	tuple = isl_multi_pw_aff_set_pw_aff(tuple, pos, def);
 
-	return tuple;
+	return def;
 }
 
-/* Read a list of variables and/or affine expressions and return the list
- * as an isl_multi_pw_aff.
+/* Read a list of tuple elements by calling "read_el" on each of them and
+ * return a space with the same number of set dimensions derived from
+ * the parameter space "space" and possibly updated by "read_el".
  * The elements in the list are separated by either "," or "][".
  * If "comma" is set then only "," is allowed.
  */
-static __isl_give isl_multi_pw_aff *read_tuple_var_list(struct isl_stream *s,
-	struct vars *v, int rational, int comma)
+static __isl_give isl_space *read_tuple_list(struct isl_stream *s,
+	struct vars *v, __isl_take isl_space *space, int rational, int comma,
+	__isl_give isl_space *(*read_el)(struct isl_stream *s, struct vars *v,
+		__isl_take isl_space *space, int rational, void *user),
+	void *user)
 {
-	int i = 0;
-	struct isl_token *tok;
-	isl_multi_pw_aff *res;
+	if (!space)
+		return NULL;
 
-	res = tuple_alloc(v);
+	space = isl_space_set_from_params(space);
 
 	if (isl_stream_next_token_is(s, ']'))
-		return res;
+		return space;
 
-	while ((tok = next_token(s)) != NULL) {
-		int new_name = 0;
+	for (;;) {
+		struct isl_token *tok;
 
-		res = tuple_add_dim(res, v);
+		space = isl_space_add_dims(space, isl_dim_set, 1);
 
-		if (tok->type == ISL_TOKEN_IDENT) {
-			int n = v->n;
-			int p = vars_pos(v, tok->u.s, -1);
-			if (p < 0)
-				goto error;
-			new_name = p >= n;
-		}
-
-		if (tok->type == '*') {
-			if (vars_add_anon(v) < 0)
-				goto error;
-			isl_token_free(tok);
-		} else if (new_name) {
-			res = tuple_set_dim_name(res, i, v->v->name);
-			isl_token_free(tok);
-			if (isl_stream_eat_if_available(s, '='))
-				res = read_tuple_var_def(s, res, i, v,
-							rational);
-		} else {
-			isl_stream_push_token(s, tok);
-			tok = NULL;
-			if (vars_add_anon(v) < 0)
-				goto error;
-			res = read_tuple_var_def(s, res, i, v, rational);
-		}
+		space = read_el(s, v, space, rational, user);
+		if (!space)
+			return NULL;
 
 		tok = isl_stream_next_token(s);
 		if (!comma && tok && tok->type == ']' &&
 		    isl_stream_next_token_is(s, '[')) {
 			isl_token_free(tok);
 			tok = isl_stream_next_token(s);
-		} else if (!tok || tok->type != ',')
+		} else if (!tok || tok->type != ',') {
+			if (tok)
+				isl_stream_push_token(s, tok);
 			break;
+		}
 
 		isl_token_free(tok);
-		i++;
 	}
-	if (tok)
-		isl_stream_push_token(s, tok);
 
-	return res;
-error:
-	isl_token_free(tok);
-	return isl_multi_pw_aff_free(res);
+	return space;
 }
 
-/* Read a tuple and represent it as an isl_multi_pw_aff.  See tuple_alloc.
+/* Read a tuple space from "s" derived from the parameter space "space".
+ * Call "read_el" on each element in the tuples.
  */
-static __isl_give isl_multi_pw_aff *read_tuple(struct isl_stream *s,
-	struct vars *v, int rational, int comma)
+static __isl_give isl_space *read_tuple_space(struct isl_stream *s,
+	struct vars *v, __isl_take isl_space *space, int rational, int comma,
+	__isl_give isl_space *(*read_el)(struct isl_stream *s, struct vars *v,
+		__isl_take isl_space *space, int rational, void *user),
+	void *user)
 {
 	struct isl_token *tok;
 	char *name = NULL;
-	isl_multi_pw_aff *res = NULL;
+	isl_space *res = NULL;
 
 	tok = isl_stream_next_token(s);
 	if (!tok)
@@ -1232,29 +1174,149 @@ static __isl_give isl_multi_pw_aff *read_tuple(struct isl_stream *s,
 	if (isl_stream_eat(s, '['))
 		goto error;
 	if (next_is_tuple(s)) {
-		isl_multi_pw_aff *out;
-		int n;
-		res = read_tuple(s, v, rational, comma);
+		isl_space *out;
+		res = read_tuple_space(s, v, isl_space_copy(space),
+					rational, comma, read_el, user);
 		if (isl_stream_eat(s, ISL_TOKEN_TO))
 			goto error;
-		out = read_tuple(s, v, rational, comma);
-		n = isl_multi_pw_aff_dim(out, isl_dim_out);
-		res = isl_multi_pw_aff_add_dims(res, isl_dim_in, n);
-		res = isl_multi_pw_aff_range_product(res, out);
+		out = read_tuple_space(s, v, isl_space_copy(space),
+					rational, comma, read_el, user);
+		res = isl_space_range_product(res, out);
 	} else
-		res = read_tuple_var_list(s, v, rational, comma);
+		res = read_tuple_list(s, v, isl_space_copy(space),
+					rational, comma, read_el, user);
 	if (isl_stream_eat(s, ']'))
 		goto error;
 
 	if (name) {
-		res = isl_multi_pw_aff_set_tuple_name(res, isl_dim_out, name);
+		res = isl_space_set_tuple_name(res, isl_dim_set, name);
 		free(name);
 	}
 
+	isl_space_free(space);
 	return res;
 error:
 	free(name);
-	return isl_multi_pw_aff_free(res);
+	isl_space_free(res);
+	isl_space_free(space);
+	return NULL;
+}
+
+/* Construct an isl_pw_aff defined on a space with v->n variables
+ * that is equal to the last of those variables.
+ */
+static __isl_give isl_pw_aff *identity_tuple_el(struct vars *v)
+{
+	isl_space *space;
+	isl_aff *aff;
+
+	space = isl_space_set_alloc(v->ctx, 0, v->n);
+	aff = isl_aff_zero_on_domain(isl_local_space_from_space(space));
+	aff = isl_aff_add_coefficient_si(aff, isl_dim_in, v->n - 1, 1);
+	return isl_pw_aff_from_aff(aff);
+}
+
+/* This function is called for each element in a tuple inside read_tuple.
+ * Add a new variable to "v" and construct a corresponding isl_pw_aff defined
+ * over a space containing all variables in "v" defined so far.
+ * The isl_pw_aff expresses the new variable in terms of earlier variables
+ * if a definition is provided.  Otherwise, it is represented as being
+ * equal to itself.
+ * Add the isl_pw_aff to *list.
+ * If the new variable was named, then adjust "space" accordingly and
+ * return the updated space.
+ */
+static __isl_give isl_space *read_tuple_pw_aff_el(struct isl_stream *s,
+	struct vars *v, __isl_take isl_space *space, int rational, void *user)
+{
+	isl_pw_aff_list **list = (isl_pw_aff_list **) user;
+	isl_pw_aff *pa;
+	struct isl_token *tok;
+	int new_name = 0;
+
+	tok = next_token(s);
+	if (!tok) {
+		isl_stream_error(s, NULL, "unexpected EOF");
+		return isl_space_free(space);
+	}
+
+	if (tok->type == ISL_TOKEN_IDENT) {
+		int n = v->n;
+		int p = vars_pos(v, tok->u.s, -1);
+		if (p < 0)
+			goto error;
+		new_name = p >= n;
+	}
+
+	if (tok->type == '*') {
+		if (vars_add_anon(v) < 0)
+			goto error;
+		isl_token_free(tok);
+		pa = identity_tuple_el(v);
+	} else if (new_name) {
+		int pos = isl_space_dim(space, isl_dim_out) - 1;
+		space = space_set_dim_name(space, pos, v->v->name);
+		isl_token_free(tok);
+		if (isl_stream_eat_if_available(s, '='))
+			pa = read_tuple_var_def(s, v, rational);
+		else
+			pa = identity_tuple_el(v);
+	} else {
+		isl_stream_push_token(s, tok);
+		tok = NULL;
+		if (vars_add_anon(v) < 0)
+			goto error;
+		pa = read_tuple_var_def(s, v, rational);
+	}
+
+	*list = isl_pw_aff_list_add(*list, pa);
+	if (!*list)
+		return isl_space_free(space);
+
+	return space;
+error:
+	isl_token_free(tok);
+	return isl_space_free(space);
+}
+
+/* Read a tuple and represent it as an isl_multi_pw_aff.
+ * The range space of the isl_multi_pw_aff is the space of the tuple.
+ * The domain space is an anonymous space
+ * with a dimension for each variable in the set of variables in "v",
+ * including the variables in the range.
+ * If a given dimension is not defined in terms of earlier dimensions in
+ * the input, then the corresponding isl_pw_aff is set equal to one time
+ * the variable corresponding to the dimension being defined.
+ *
+ * The elements in the tuple are collected in a list by read_tuple_pw_aff_el.
+ * Each element in this list is defined over a space representing
+ * the variables defined so far.  We need to adjust the earlier
+ * elements to have as many variables in the domain as the final
+ * element in the list.
+ */
+static __isl_give isl_multi_pw_aff *read_tuple(struct isl_stream *s,
+	struct vars *v, int rational, int comma)
+{
+	int i, n;
+	isl_space *space;
+	isl_pw_aff_list *list;
+
+	space = isl_space_params_alloc(v->ctx, 0);
+	list = isl_pw_aff_list_alloc(s->ctx, 0);
+	space = read_tuple_space(s, v, space, rational, comma,
+				&read_tuple_pw_aff_el, &list);
+	n = isl_space_dim(space, isl_dim_set);
+	for (i = 0; i + 1 < n; ++i) {
+		isl_pw_aff *pa;
+
+		pa = isl_pw_aff_list_get_pw_aff(list, i);
+		pa = isl_pw_aff_add_dims(pa, isl_dim_in, n - (i + 1));
+		list = isl_pw_aff_list_set_pw_aff(list, i, pa);
+	}
+
+	space = isl_space_from_range(space);
+	space = isl_space_add_dims(space, isl_dim_in, v->n);
+	return isl_multi_pw_aff_from_pw_aff_list(space, list);
 }
 
 /* Add the tuple represented by the isl_multi_pw_aff "tuple" to "map".
