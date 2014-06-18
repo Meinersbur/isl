@@ -831,6 +831,9 @@ __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_intersect_params(
 __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_intersect_range(
 	__isl_take isl_multi_union_pw_aff *mupa, __isl_take isl_set *set);
 
+__isl_give isl_union_set *isl_multi_union_pw_aff_domain(
+	__isl_take isl_multi_union_pw_aff *mupa);
+
 __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_gist(
 	__isl_take isl_multi_union_pw_aff *aff,
 	__isl_take isl_union_set *context);

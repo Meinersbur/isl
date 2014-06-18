@@ -4058,8 +4058,14 @@ parameters.
 		__isl_take isl_union_pw_aff *upa);
 	__isl_give isl_union_set *isl_union_pw_multi_aff_domain(
 		__isl_take isl_union_pw_multi_aff *upma);
+	__isl_give isl_union_set *
+	isl_multi_union_pw_aff_domain(
+		__isl_take isl_multi_union_pw_aff *mupa);
 	__isl_give isl_set *isl_pw_aff_params(
 		__isl_take isl_pw_aff *pwa);
+
+The function C<isl_multi_union_pw_aff_domain> requires its
+input to have at least one set dimension.
 
 	#include <isl/polynomial.h>
 	__isl_give isl_qpolynomial *

@@ -8009,3 +8009,37 @@ error:
 	isl_set_free(range);
 	return NULL;
 }
+
+/* Return the shared domain of the elements of "mupa".
+ */
+__isl_give isl_union_set *isl_multi_union_pw_aff_domain(
+	__isl_take isl_multi_union_pw_aff *mupa)
+{
+	int i, n;
+	isl_union_pw_aff *upa;
+	isl_union_set *dom;
+
+	if (!mupa)
+		return NULL;
+
+	n = isl_multi_union_pw_aff_dim(mupa, isl_dim_set);
+	if (n == 0)
+		isl_die(isl_multi_union_pw_aff_get_ctx(mupa), isl_error_invalid,
+			"cannot determine domain", goto error);
+
+	upa = isl_multi_union_pw_aff_get_union_pw_aff(mupa, 0);
+	dom = isl_union_pw_aff_domain(upa);
+	for (i = 1; i < n; ++i) {
+		isl_union_set *dom_i;
+
+		upa = isl_multi_union_pw_aff_get_union_pw_aff(mupa, i);
+		dom_i = isl_union_pw_aff_domain(upa);
+		dom = isl_union_set_intersect(dom, dom_i);
+	}
+
+	isl_multi_union_pw_aff_free(mupa);
+	return dom;
+error:
+	isl_multi_union_pw_aff_free(mupa);
+	return NULL;
+}
