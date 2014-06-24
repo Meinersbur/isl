@@ -12,7 +12,7 @@
  * For each scheduling dimension, we keep track of whether it satisfies
  * the coincidence constraints (within its band).
  */
-struct isl_schedule_node {
+struct isl_schedule_domain_node {
 	isl_multi_aff *sched;
 	int	 n_band;
 	int	*band_end;
@@ -39,7 +39,7 @@ struct isl_schedule {
 
 	isl_band_list *band_forest;
 
-	struct isl_schedule_node node[1];
+	struct isl_schedule_domain_node node[1];
 };
 
 #endif

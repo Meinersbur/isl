@@ -2541,7 +2541,8 @@ static __isl_give isl_schedule *extract_schedule(struct isl_sched_graph *graph,
 	ctx = isl_space_get_ctx(dim);
 	sched = isl_calloc(ctx, struct isl_schedule,
 			   sizeof(struct isl_schedule) +
-			   (graph->n - 1) * sizeof(struct isl_schedule_node));
+			   (graph->n - 1) *
+				sizeof(struct isl_schedule_domain_node));
 	if (!sched)
 		goto error;
 
