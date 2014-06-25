@@ -138,6 +138,7 @@ libisl_la_SOURCES = \
 	isl_scan.h \
 	isl_schedule.c \
 	isl_schedule_private.h \
+	isl_scheduler.c \
 	isl_set_list.c \
 	isl_sort.c \
 	isl_sort.h \
