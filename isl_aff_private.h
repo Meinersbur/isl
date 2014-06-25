@@ -5,6 +5,7 @@
 #include <isl/vec.h>
 #include <isl/mat.h>
 #include <isl/local_space.h>
+#include <isl_int.h>
 #include <isl_reordering.h>
 
 /* ls represents the domain space.
