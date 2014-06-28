@@ -2019,6 +2019,34 @@ __isl_give isl_id *isl_schedule_node_mark_get_id(
 	return isl_schedule_tree_mark_get_id(node->tree);
 }
 
+/* Replace the child at position "pos" of the sequence node "node"
+ * by the children of sequence root node of "tree".
+ */
+__isl_give isl_schedule_node *isl_schedule_node_sequence_splice(
+	__isl_take isl_schedule_node *node, int pos,
+	__isl_take isl_schedule_tree *tree)
+{
+	isl_schedule_tree *node_tree;
+
+	if (!node || !tree)
+		goto error;
+	if (isl_schedule_node_get_type(node) != isl_schedule_node_sequence)
+		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
+			"not a sequence node", goto error);
+	if (isl_schedule_tree_get_type(tree) != isl_schedule_node_sequence)
+		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
+			"not a sequence node", goto error);
+	node_tree = isl_schedule_node_get_tree(node);
+	node_tree = isl_schedule_tree_sequence_splice(node_tree, pos, tree);
+	node = isl_schedule_node_graft_tree(node, node_tree);
+
+	return node;
+error:
+	isl_schedule_node_free(node);
+	isl_schedule_tree_free(tree);
+	return NULL;
+}
+
 /* Update the ancestors of "node" to point to the tree that "node"
  * now points to.
  * That is, replace the child in the original parent that corresponds

@@ -2024,6 +2024,48 @@ error:
 	return NULL;
 }
 
+/* Given two trees with sequence roots, replace the child at position
+ * "pos" of "tree" with the children of "child".
+ */
+__isl_give isl_schedule_tree *isl_schedule_tree_sequence_splice(
+	__isl_take isl_schedule_tree *tree, int pos,
+	__isl_take isl_schedule_tree *child)
+{
+	int n;
+	isl_schedule_tree_list *list1, *list2;
+
+	tree = isl_schedule_tree_cow(tree);
+	if (!tree || !child)
+		goto error;
+	if (isl_schedule_tree_get_type(tree) != isl_schedule_node_sequence)
+		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_invalid,
+			"not a sequence node", goto error);
+	n = isl_schedule_tree_n_children(tree);
+	if (pos < 0 || pos >= n)
+		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_invalid,
+			"position out of bounds", goto error);
+	if (isl_schedule_tree_get_type(child) != isl_schedule_node_sequence)
+		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_invalid,
+			"not a sequence node", goto error);
+
+	list1 = isl_schedule_tree_list_copy(tree->children);
+	list1 = isl_schedule_tree_list_drop(list1, pos, n - pos);
+	list2 = isl_schedule_tree_list_copy(tree->children);
+	list2 = isl_schedule_tree_list_drop(list2, 0, pos + 1);
+	list1 = isl_schedule_tree_list_concat(list1,
+				isl_schedule_tree_list_copy(child->children));
+	list1 = isl_schedule_tree_list_concat(list1, list2);
+
+	isl_schedule_tree_free(tree);
+	isl_schedule_tree_free(child);
+	return isl_schedule_tree_from_children(isl_schedule_node_sequence,
+						list1);
+error:
+	isl_schedule_tree_free(tree);
+	isl_schedule_tree_free(child);
+	return NULL;
+}
+
 /* Tile the band root node of "tree" with tile sizes "sizes".
  *
  * We duplicate the band node, change the schedule of one of them
