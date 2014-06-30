@@ -2287,7 +2287,7 @@ static __isl_give isl_schedule *extract_schedule(struct isl_sched_graph *graph,
 	int i;
 	isl_ctx *ctx;
 	isl_schedule *sched = NULL;
-		
+
 	if (!dim)
 		return NULL;
 
@@ -2751,7 +2751,7 @@ static int compute_next_band(isl_ctx *ctx, struct isl_sched_graph *graph)
 	if (update_edges(ctx, graph) < 0)
 		return -1;
 	next_band(graph);
-		
+
 	return compute_schedule(ctx, graph);
 }
 
