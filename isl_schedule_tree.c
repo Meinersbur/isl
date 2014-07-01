@@ -543,6 +543,21 @@ __isl_give isl_schedule_tree *isl_schedule_tree_band_set_permutable(
 	return tree;
 }
 
+/* Return the schedule space of the band tree root.
+ */
+__isl_give isl_space *isl_schedule_tree_band_get_space(
+	__isl_keep isl_schedule_tree *tree)
+{
+	if (!tree)
+		return NULL;
+
+	if (tree->type != isl_schedule_node_band)
+		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_invalid,
+			"not a band node", return NULL);
+
+	return isl_schedule_band_get_space(tree->band);
+}
+
 /* Return the schedule of the band tree root in isolation.
  */
 __isl_give isl_multi_union_pw_aff *isl_schedule_tree_band_get_partial_schedule(

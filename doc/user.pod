@@ -7398,6 +7398,8 @@ Several node types have their own functions for querying
 (and in some cases setting) some node type specific properties.
 
 	#include <isl/schedule_node.h>
+	__isl_give isl_space *isl_schedule_node_band_get_space(
+		__isl_keep isl_schedule_node *node);
 	__isl_give isl_multi_union_pw_aff *
 	isl_schedule_node_band_get_partial_schedule(
 		__isl_keep isl_schedule_node *node);
@@ -7418,6 +7420,8 @@ Several node types have their own functions for querying
 	isl_schedule_node_band_set_permutable(
 		__isl_take isl_schedule_node *node, int permutable);
 
+The function C<isl_schedule_node_band_get_space> returns the space
+of the partial schedule of the band.
 The function C<isl_schedule_node_band_get_partial_schedule_union_map>
 returns a representation of the partial schedule of the band node
 in the form of an C<isl_union_map>.

@@ -34,6 +34,8 @@ __isl_null isl_schedule_band *isl_schedule_band_free(
 
 isl_ctx *isl_schedule_band_get_ctx(__isl_keep isl_schedule_band *band);
 
+__isl_give isl_space *isl_schedule_band_get_space(
+	__isl_keep isl_schedule_band *band);
 __isl_give isl_multi_union_pw_aff *isl_schedule_band_get_partial_schedule(
 	__isl_keep isl_schedule_band *band);
 

@@ -215,6 +215,16 @@ __isl_give isl_schedule_band *isl_schedule_band_set_permutable(
 	return band;
 }
 
+/* Return the schedule space of the band.
+ */
+__isl_give isl_space *isl_schedule_band_get_space(
+	__isl_keep isl_schedule_band *band)
+{
+	if (!band)
+		return NULL;
+	return isl_multi_union_pw_aff_get_space(band->mupa);
+}
+
 /* Return the schedule of the band in isolation.
  */
 __isl_give isl_multi_union_pw_aff *isl_schedule_band_get_partial_schedule(

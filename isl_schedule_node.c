@@ -867,6 +867,17 @@ __isl_give isl_schedule_node *isl_schedule_node_band_set_permutable(
 	return node;
 }
 
+/* Return the schedule space of the band node.
+ */
+__isl_give isl_space *isl_schedule_node_band_get_space(
+	__isl_keep isl_schedule_node *node)
+{
+	if (!node)
+		return NULL;
+
+	return isl_schedule_tree_band_get_space(node->tree);
+}
+
 /* Return the schedule of the band node in isolation.
  */
 __isl_give isl_multi_union_pw_aff *isl_schedule_node_band_get_partial_schedule(

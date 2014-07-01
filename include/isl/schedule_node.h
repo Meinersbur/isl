@@ -46,6 +46,8 @@ __isl_give isl_schedule_node *isl_schedule_node_previous_sibling(
 __isl_give isl_schedule_node *isl_schedule_node_next_sibling(
 	__isl_take isl_schedule_node *node);
 
+__isl_give isl_space *isl_schedule_node_band_get_space(
+	__isl_keep isl_schedule_node *node);
 __isl_give isl_multi_union_pw_aff *isl_schedule_node_band_get_partial_schedule(
 	__isl_keep isl_schedule_node *node);
 __isl_give isl_union_map *isl_schedule_node_band_get_partial_schedule_union_map(

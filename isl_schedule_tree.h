@@ -64,6 +64,8 @@ __isl_give isl_schedule_tree *isl_schedule_tree_from_children(
 	enum isl_schedule_node_type type,
 	__isl_take isl_schedule_tree_list *list);
 
+__isl_give isl_space *isl_schedule_tree_band_get_space(
+	__isl_keep isl_schedule_tree *tree);
 __isl_give isl_multi_union_pw_aff *isl_schedule_tree_band_get_partial_schedule(
 	__isl_keep isl_schedule_tree *tree);
 __isl_give isl_union_set *isl_schedule_tree_domain_get_domain(
