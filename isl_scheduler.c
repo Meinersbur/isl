@@ -462,6 +462,7 @@ struct isl_sched_edge {
  *	conflicting constraints
  *
  * scc represents the number of components
+ * weak is set if the components are weakly connected
  */
 struct isl_sched_graph {
 	isl_map_to_basic_set *intra_hmap;
@@ -495,6 +496,7 @@ struct isl_sched_graph {
 	int dst_scc;
 
 	int scc;
+	int weak;
 };
 
 /* Initialize node_table based on the list of nodes.
@@ -1247,6 +1249,7 @@ static int detect_ccs(isl_ctx *ctx, struct isl_sched_graph *graph, int weak)
 	if (!g)
 		return -1;
 
+	graph->weak = weak;
 	graph->scc = 0;
 	i = 0;
 	n = graph->n;
@@ -3982,6 +3985,11 @@ static int split_on_scc(isl_ctx *ctx, struct isl_sched_graph *graph)
  * there is no need for compute_sub_schedule to look for weakly
  * connected components.
  *
+ * An extra schedule row is added first to separate the groups
+ * unless the groups represent weakly connected components
+ * (graph->weak is set) and the option schedule_separate_components
+ * is not set.
+ *
  * The band_id is adjusted such that each component has a separate id.
  * Note that the band_id may have already been set to a value different
  * from zero by compute_split_schedule.
@@ -3994,8 +4002,7 @@ static int compute_component_schedule(isl_ctx *ctx,
 	int n_total_row, orig_total_row;
 	int n_band, orig_band;
 
-	if (ctx->opt->schedule_fuse == ISL_SCHEDULE_FUSE_MIN ||
-	    ctx->opt->schedule_separate_components)
+	if (!graph->weak || ctx->opt->schedule_separate_components)
 		if (split_on_scc(ctx, graph) < 0)
 			return -1;
 
