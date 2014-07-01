@@ -6008,7 +6008,7 @@ and may be subject to change.>
 		__isl_take isl_schedule *sched);
 
 The function C<isl_schedule_constraints_compute_schedule> can be
-used to compute a schedule that satisfy the given schedule constraints.
+used to compute a schedule that satisfies the given schedule constraints.
 These schedule constraints include the iteration domain for which
 a schedule should be computed and dependences between pairs of
 iterations.  In particular, these dependences include
@@ -6097,7 +6097,7 @@ ranges of those relation may themselves be wrapped relations
 where the iteration domain appears in the domain of those wrapped relations
 and the range of the wrapped relations can be arbitrarily chosen
 by the user.  Conditions and conditional validity constraints are only
-considere adjacent to each other if the entire wrapped relation matches.
+considered adjacent to each other if the entire wrapped relation matches.
 In particular, a relation with a tag will never be considered adjacent
 to a relation without a tag.
 
@@ -7000,7 +7000,7 @@ which can be set using the following function.
 		__isl_take isl_ast_build *control,
 		__isl_take isl_union_map *options);
 
-The options are encoded in an <isl_union_map>.
+The options are encoded in an C<isl_union_map>.
 The domain of this union relation refers to the schedule domain,
 i.e., the range of the schedule passed to C<isl_ast_build_ast_from_schedule>.
 In the case of nested AST generation (see L</"Nested AST Generation">),
