@@ -2371,6 +2371,9 @@ static struct isl_obj obj_add(__isl_keep isl_stream *s,
 				"attempt to combine incompatible objects");
 		goto error;
 	}
+	if (!obj1.type->add)
+		isl_die(s->ctx, isl_error_internal,
+			"combination not supported on object type", goto error);
 	if (obj1.type == isl_obj_map && !isl_map_has_equal_space(obj1.v, obj2.v)) {
 		obj1 = to_union(s->ctx, obj1);
 		obj2 = to_union(s->ctx, obj2);
