@@ -2343,47 +2343,51 @@ error:
 	return obj;
 }
 
-static struct isl_obj obj_add(struct isl_ctx *ctx,
+static struct isl_obj obj_add(__isl_keep isl_stream *s,
 	struct isl_obj obj1, struct isl_obj obj2)
 {
 	if (obj1.type == isl_obj_set && obj2.type == isl_obj_union_set)
-		obj1 = to_union(ctx, obj1);
+		obj1 = to_union(s->ctx, obj1);
 	if (obj1.type == isl_obj_union_set && obj2.type == isl_obj_set)
-		obj2 = to_union(ctx, obj2);
+		obj2 = to_union(s->ctx, obj2);
 	if (obj1.type == isl_obj_map && obj2.type == isl_obj_union_map)
-		obj1 = to_union(ctx, obj1);
+		obj1 = to_union(s->ctx, obj1);
 	if (obj1.type == isl_obj_union_map && obj2.type == isl_obj_map)
-		obj2 = to_union(ctx, obj2);
+		obj2 = to_union(s->ctx, obj2);
 	if (obj1.type == isl_obj_pw_qpolynomial &&
 	    obj2.type == isl_obj_union_pw_qpolynomial)
-		obj1 = to_union(ctx, obj1);
+		obj1 = to_union(s->ctx, obj1);
 	if (obj1.type == isl_obj_union_pw_qpolynomial &&
 	    obj2.type == isl_obj_pw_qpolynomial)
-		obj2 = to_union(ctx, obj2);
+		obj2 = to_union(s->ctx, obj2);
 	if (obj1.type == isl_obj_pw_qpolynomial_fold &&
 	    obj2.type == isl_obj_union_pw_qpolynomial_fold)
-		obj1 = to_union(ctx, obj1);
+		obj1 = to_union(s->ctx, obj1);
 	if (obj1.type == isl_obj_union_pw_qpolynomial_fold &&
 	    obj2.type == isl_obj_pw_qpolynomial_fold)
-		obj2 = to_union(ctx, obj2);
-	isl_assert(ctx, obj1.type == obj2.type, goto error);
+		obj2 = to_union(s->ctx, obj2);
+	if (obj1.type != obj2.type) {
+		isl_stream_error(s, NULL,
+				"attempt to combine incompatible objects");
+		goto error;
+	}
 	if (obj1.type == isl_obj_map && !isl_map_has_equal_space(obj1.v, obj2.v)) {
-		obj1 = to_union(ctx, obj1);
-		obj2 = to_union(ctx, obj2);
+		obj1 = to_union(s->ctx, obj1);
+		obj2 = to_union(s->ctx, obj2);
 	}
 	if (obj1.type == isl_obj_set && !isl_set_has_equal_space(obj1.v, obj2.v)) {
-		obj1 = to_union(ctx, obj1);
-		obj2 = to_union(ctx, obj2);
+		obj1 = to_union(s->ctx, obj1);
+		obj2 = to_union(s->ctx, obj2);
 	}
 	if (obj1.type == isl_obj_pw_qpolynomial &&
 	    !isl_pw_qpolynomial_has_equal_space(obj1.v, obj2.v)) {
-		obj1 = to_union(ctx, obj1);
-		obj2 = to_union(ctx, obj2);
+		obj1 = to_union(s->ctx, obj1);
+		obj2 = to_union(s->ctx, obj2);
 	}
 	if (obj1.type == isl_obj_pw_qpolynomial_fold &&
 	    !isl_pw_qpolynomial_fold_has_equal_space(obj1.v, obj2.v)) {
-		obj1 = to_union(ctx, obj1);
-		obj2 = to_union(ctx, obj2);
+		obj1 = to_union(s->ctx, obj1);
+		obj2 = to_union(s->ctx, obj2);
 	}
 	obj1.v = obj1.type->add(obj1.v, obj2.v);
 	return obj1;
@@ -2490,7 +2494,7 @@ static struct isl_obj obj_read(__isl_keep isl_stream *s)
 		if (!obj.v)
 			obj = o;
 		else {
-			obj = obj_add(s->ctx, obj, o);
+			obj = obj_add(s, obj, o);
 			if (obj.type == isl_obj_none || !obj.v)
 				goto error;
 		}
