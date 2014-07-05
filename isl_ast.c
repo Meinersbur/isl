@@ -571,6 +571,26 @@ __isl_give isl_ast_expr *isl_ast_expr_div(__isl_take isl_ast_expr *expr1,
 	return isl_ast_expr_alloc_binary(isl_ast_op_div, expr1, expr2);
 }
 
+/* Create an expression representing the quotient of the integer
+ * division of "expr1" by "expr2", where "expr1" is known to be
+ * non-negative.
+ */
+__isl_give isl_ast_expr *isl_ast_expr_pdiv_q(__isl_take isl_ast_expr *expr1,
+	__isl_take isl_ast_expr *expr2)
+{
+	return isl_ast_expr_alloc_binary(isl_ast_op_pdiv_q, expr1, expr2);
+}
+
+/* Create an expression representing the remainder of the integer
+ * division of "expr1" by "expr2", where "expr1" is known to be
+ * non-negative.
+ */
+__isl_give isl_ast_expr *isl_ast_expr_pdiv_r(__isl_take isl_ast_expr *expr1,
+	__isl_take isl_ast_expr *expr2)
+{
+	return isl_ast_expr_alloc_binary(isl_ast_op_pdiv_r, expr1, expr2);
+}
+
 /* Create an expression representing the conjunction of "expr1" and "expr2".
  */
 __isl_give isl_ast_expr *isl_ast_expr_and(__isl_take isl_ast_expr *expr1,
