@@ -443,6 +443,9 @@ __isl_constructor
 __isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_read_from_str(
 	isl_ctx *ctx, const char *str);
 
+__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_neg(
+	__isl_take isl_union_pw_qpolynomial *upwqp);
+
 __isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_add(
 	__isl_take isl_union_pw_qpolynomial *upwqp1,
 	__isl_take isl_union_pw_qpolynomial *upwqp2);

@@ -4571,6 +4571,9 @@ All parameters need to be named.
 		__isl_take isl_qpolynomial *qp);
 	__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_neg(
 		__isl_take isl_pw_qpolynomial *pwqp);
+	__isl_give isl_union_pw_qpolynomial *
+	isl_union_pw_qpolynomial_neg(
+		__isl_take isl_union_pw_qpolynomial *upwqp);
 	__isl_give isl_qpolynomial *isl_qpolynomial_pow(
 		__isl_take isl_qpolynomial *qp,
 		unsigned exponent);
