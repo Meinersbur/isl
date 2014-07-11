@@ -573,6 +573,9 @@ int isl_union_pw_multi_aff_plain_is_equal(
 __isl_give isl_union_set *isl_union_pw_multi_aff_domain(
 	__isl_take isl_union_pw_multi_aff *upma);
 
+__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_neg(
+	__isl_take isl_union_pw_multi_aff *upma);
+
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_add(
 	__isl_take isl_union_pw_multi_aff *upma1,
 	__isl_take isl_union_pw_multi_aff *upma2);

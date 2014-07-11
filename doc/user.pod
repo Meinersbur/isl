@@ -4722,6 +4722,9 @@ All parameters need to be named.
 		__isl_take isl_pw_multi_aff *pma);
 	__isl_give isl_multi_pw_aff *isl_multi_pw_aff_neg(
 		__isl_take isl_multi_pw_aff *mpa);
+	__isl_give isl_union_pw_multi_aff *
+	isl_union_pw_multi_aff_neg(
+		__isl_take isl_union_pw_multi_aff *upma);
 	__isl_give isl_aff *isl_aff_ceil(
 		__isl_take isl_aff *aff);
 	__isl_give isl_pw_aff *isl_pw_aff_ceil(

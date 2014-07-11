@@ -4060,32 +4060,6 @@ error:
 	return NULL;
 }
 
-static int neg_entry(void **entry, void *user)
-{
-	isl_pw_qpolynomial **pwqp = (isl_pw_qpolynomial **)entry;
-
-	*pwqp = isl_pw_qpolynomial_neg(*pwqp);
-
-	return *pwqp ? 0 : -1;
-}
-
-__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_neg(
-	__isl_take isl_union_pw_qpolynomial *upwqp)
-{
-	upwqp = isl_union_pw_qpolynomial_cow(upwqp);
-	if (!upwqp)
-		return NULL;
-
-	if (isl_hash_table_foreach(upwqp->space->ctx, &upwqp->table,
-				   &neg_entry, NULL) < 0)
-		goto error;
-
-	return upwqp;
-error:
-	isl_union_pw_qpolynomial_free(upwqp);
-	return NULL;
-}
-
 __isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_mul(
 	__isl_take isl_union_pw_qpolynomial *upwqp1,
 	__isl_take isl_union_pw_qpolynomial *upwqp2)
