@@ -1551,3 +1551,24 @@ __isl_give isl_set *FN(MULTI(BASE),domain)(__isl_take MULTI(BASE) *multi)
 	return dom;
 }
 #endif
+
+#ifndef NO_NEG
+/* Return the opposite of "multi".
+ */
+__isl_give MULTI(BASE) *FN(MULTI(BASE),neg)(__isl_take MULTI(BASE) *multi)
+{
+	int i;
+
+	multi = FN(MULTI(BASE),cow)(multi);
+	if (!multi)
+		return NULL;
+
+	for (i = 0; i < multi->n; ++i) {
+		multi->p[i] = FN(EL,neg)(multi->p[i]);
+		if (!multi->p[i])
+			return FN(MULTI(BASE),free)(multi);
+	}
+
+	return multi;
+}
+#endif

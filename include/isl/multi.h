@@ -122,6 +122,10 @@ __isl_give isl_multi_##BASE *isl_multi_##BASE##_align_params(		\
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_from_range(		\
 	__isl_take isl_multi_##BASE *multi);
 
+#define ISL_DECLARE_MULTI_NEG(BASE)					\
+__isl_give isl_multi_##BASE *isl_multi_##BASE##_neg(		 	\
+	__isl_take isl_multi_##BASE *multi);
+
 #if defined(__cplusplus)
 }
 #endif

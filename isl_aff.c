@@ -3925,7 +3925,7 @@ __isl_give isl_set *isl_multi_aff_lex_ge_set(__isl_take isl_multi_aff *ma1,
 #undef DEFAULT_IS_ZERO
 #define DEFAULT_IS_ZERO 0
 
-#define NO_NEG
+#define NO_SUB
 #define NO_EVAL
 #define NO_OPT
 #define NO_INVOLVES_DIMS
@@ -3934,6 +3934,8 @@ __isl_give isl_set *isl_multi_aff_lex_ge_set(__isl_take isl_multi_aff *ma1,
 #define NO_MORPH
 
 #include <isl_pw_templ.c>
+
+#undef NO_SUB
 
 #undef UNION
 #define UNION isl_union_pw_multi_aff

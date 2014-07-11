@@ -644,7 +644,9 @@ __isl_give PW *FN(PW,neg)(__isl_take PW *pw)
 
 	return pw;
 }
+#endif
 
+#ifndef NO_SUB
 __isl_give PW *FN(PW,sub)(__isl_take PW *pw1, __isl_take PW *pw2)
 {
 	return FN(PW,add)(pw1, FN(PW,neg)(pw2));
