@@ -677,31 +677,55 @@ int isl_schedule_node_n_children(__isl_keep isl_schedule_node *node)
 	return n;
 }
 
+/* Move the "node" pointer to the ancestor of the given generation
+ * of the node it currently points to, where generation 0 is the node
+ * itself and generation 1 is its parent.
+ */
+__isl_give isl_schedule_node *isl_schedule_node_ancestor(
+	__isl_take isl_schedule_node *node, int generation)
+{
+	int n;
+	isl_schedule_tree *tree;
+
+	if (!node)
+		return NULL;
+	if (generation == 0)
+		return node;
+	n = isl_schedule_node_get_tree_depth(node);
+	if (n < 0)
+		return isl_schedule_node_free(node);
+	if (generation < 0 || generation > n)
+		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
+			"generation out of bounds",
+			return isl_schedule_node_free(node));
+	node = isl_schedule_node_cow(node);
+	if (!node)
+		return NULL;
+
+	tree = isl_schedule_tree_list_get_schedule_tree(node->ancestors,
+							n - generation);
+	isl_schedule_tree_free(node->tree);
+	node->tree = tree;
+	node->ancestors = isl_schedule_tree_list_drop(node->ancestors,
+						    n - generation, generation);
+	if (!node->ancestors || !node->tree)
+		return isl_schedule_node_free(node);
+
+	return node;
+}
+
 /* Move the "node" pointer to the parent of the node it currently points to.
  */
 __isl_give isl_schedule_node *isl_schedule_node_parent(
 	__isl_take isl_schedule_node *node)
 {
-	int n;
-	isl_schedule_tree *tree;
-
-	node = isl_schedule_node_cow(node);
 	if (!node)
 		return NULL;
 	if (!isl_schedule_node_has_parent(node))
 		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
 			"node has no parent",
 			return isl_schedule_node_free(node));
-	n = isl_schedule_tree_list_n_schedule_tree(node->ancestors);
-	tree = isl_schedule_tree_list_get_schedule_tree(node->ancestors, n - 1);
-	isl_schedule_tree_free(node->tree);
-	node->tree = tree;
-	node->ancestors = isl_schedule_tree_list_drop(node->ancestors,
-								n - 1, 1);
-	if (!node->ancestors || !node->tree)
-		return isl_schedule_node_free(node);
-
-	return node;
+	return isl_schedule_node_ancestor(node, 1);
 }
 
 /* Move the "node" pointer to the child at position "pos" of the node

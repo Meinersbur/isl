@@ -7430,6 +7430,9 @@ exists.
 		__isl_keep isl_schedule_node *node);
 	__isl_give isl_schedule_node *isl_schedule_node_parent(
 		__isl_take isl_schedule_node *node);
+	__isl_give isl_schedule_node *isl_schedule_node_ancestor(
+		__isl_take isl_schedule_node *node,
+		int generation);
 	int isl_schedule_node_n_children(
 		__isl_keep isl_schedule_node *node);
 	__isl_give isl_schedule_node *isl_schedule_node_child(
@@ -7448,6 +7451,9 @@ exists.
 	__isl_give isl_schedule_node *
 	isl_schedule_node_next_sibling(
 		__isl_take isl_schedule_node *node);
+
+For C<isl_schedule_node_ancestor>, the ancestor of generation 0
+is the node itself, the ancestor of generation 1 is its parent and so on.
 
 It is also possible to query the number of ancestors of a node,
 the position of the current node
