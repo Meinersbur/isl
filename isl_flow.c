@@ -1404,7 +1404,7 @@ int isl_union_map_compute_flow(__isl_take isl_union_map *sink,
 	__isl_give isl_union_map **must_no_source,
 	__isl_give isl_union_map **may_no_source)
 {
-	isl_space *dim;
+	isl_space *space;
 	isl_union_map *range_map = NULL;
 	struct isl_compute_flow_data data;
 
@@ -1414,10 +1414,12 @@ int isl_union_map_compute_flow(__isl_take isl_union_map *sink,
 					    isl_union_map_get_space(may_source));
 	sink = isl_union_map_align_params(sink,
 					    isl_union_map_get_space(schedule));
-	dim = isl_union_map_get_space(sink);
-	must_source = isl_union_map_align_params(must_source, isl_space_copy(dim));
-	may_source = isl_union_map_align_params(may_source, isl_space_copy(dim));
-	schedule = isl_union_map_align_params(schedule, isl_space_copy(dim));
+	space = isl_union_map_get_space(sink);
+	must_source = isl_union_map_align_params(must_source,
+						isl_space_copy(space));
+	may_source = isl_union_map_align_params(may_source,
+						isl_space_copy(space));
+	schedule = isl_union_map_align_params(schedule, isl_space_copy(space));
 
 	schedule = isl_union_map_reverse(schedule);
 	range_map = isl_union_map_range_map(schedule);
@@ -1430,14 +1432,15 @@ int isl_union_map_compute_flow(__isl_take isl_union_map *sink,
 	data.must_source = must_source;
 	data.may_source = may_source;
 	data.must_dep = must_dep ?
-		isl_union_map_empty(isl_space_copy(dim)) : NULL;
-	data.may_dep = may_dep ? isl_union_map_empty(isl_space_copy(dim)) : NULL;
+		isl_union_map_empty(isl_space_copy(space)) : NULL;
+	data.may_dep = may_dep ? isl_union_map_empty(isl_space_copy(space))
+			       : NULL;
 	data.must_no_source = must_no_source ?
-		isl_union_map_empty(isl_space_copy(dim)) : NULL;
+		isl_union_map_empty(isl_space_copy(space)) : NULL;
 	data.may_no_source = may_no_source ?
-		isl_union_map_empty(isl_space_copy(dim)) : NULL;
+		isl_union_map_empty(isl_space_copy(space)) : NULL;
 
-	isl_space_free(dim);
+	isl_space_free(space);
 
 	if (isl_union_map_foreach_map(sink, &compute_flow, &data) < 0)
 		goto error;
