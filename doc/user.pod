@@ -5525,6 +5525,11 @@ from the result using the following functions.
 	__isl_give isl_map *isl_map_range_factor_range(
 		__isl_take isl_map *map);
 
+	#include <isl/union_map.h>
+	__isl_give isl_union_map *
+	isl_union_map_domain_factor_range(
+		__isl_take isl_union_map *umap);
+
 	#include <isl/val.h>
 	__isl_give isl_multi_val *
 	isl_multi_val_range_factor_domain(
