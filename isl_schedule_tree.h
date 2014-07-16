@@ -34,6 +34,10 @@ ISL_DECLARE_LIST(schedule_tree)
  * "contraction" maps these elements back to the corresponding
  * reaching domain element.  It does not involve any domain constraints.
  *
+ * The "extension" field is valid when the is isl_schedule_node_extension
+ * maps outer schedule dimenions (the flat product of the outer band nodes)
+ * to additional iteration domains.
+ *
  * The "filter" field is valid when type is isl_schedule_node_filter
  * and represents the statement instances selected by the node.
  *
@@ -64,6 +68,7 @@ struct isl_schedule_tree {
 			isl_union_pw_multi_aff *contraction;
 			isl_union_map *expansion;
 		};
+		isl_union_map *extension;
 		isl_union_set *filter;
 		isl_set *guard;
 		isl_id *mark;
@@ -95,6 +100,8 @@ __isl_give isl_schedule_tree *isl_schedule_tree_from_domain(
 __isl_give isl_schedule_tree *isl_schedule_tree_from_expansion(
 	__isl_take isl_union_pw_multi_aff *contraction,
 	__isl_take isl_union_map *expansion);
+__isl_give isl_schedule_tree *isl_schedule_tree_from_extension(
+	__isl_take isl_union_map *extension);
 __isl_give isl_schedule_tree *isl_schedule_tree_from_filter(
 	__isl_take isl_union_set *filter);
 __isl_give isl_schedule_tree *isl_schedule_tree_from_guard(
@@ -147,6 +154,11 @@ isl_schedule_tree_expansion_set_contraction_and_expansion(
 	__isl_take isl_schedule_tree *tree,
 	__isl_take isl_union_pw_multi_aff *contraction,
 	__isl_take isl_union_map *expansion);
+__isl_give isl_union_map *isl_schedule_tree_extension_get_extension(
+	__isl_keep isl_schedule_tree *tree);
+__isl_give isl_schedule_tree *isl_schedule_tree_extension_set_extension(
+	__isl_take isl_schedule_tree *tree,
+	__isl_take isl_union_map *extension);
 __isl_give isl_union_set *isl_schedule_tree_filter_get_filter(
 	__isl_keep isl_schedule_tree *tree);
 __isl_give isl_schedule_tree *isl_schedule_tree_filter_set_filter(
@@ -186,6 +198,9 @@ __isl_give isl_schedule_tree *isl_schedule_tree_insert_expansion(
 	__isl_take isl_schedule_tree *tree,
 	__isl_take isl_union_pw_multi_aff *contraction,
 	__isl_take isl_union_map *expansion);
+__isl_give isl_schedule_tree *isl_schedule_tree_insert_extension(
+	__isl_take isl_schedule_tree *tree,
+	__isl_take isl_union_map *extension);
 __isl_give isl_schedule_tree *isl_schedule_tree_insert_filter(
 	__isl_take isl_schedule_tree *tree, __isl_take isl_union_set *filter);
 __isl_give isl_schedule_tree *isl_schedule_tree_children_insert_filter(

@@ -24,7 +24,7 @@
 
 /* Return a schedule encapsulating the given schedule tree.
  *
- * We currently only allow schedule trees with a domain as root.
+ * We currently only allow schedule trees with a domain or extension as root.
  *
  * The leaf field is initialized as a leaf node so that it can be
  * used to represent leaves in the constructed schedule.
@@ -36,13 +36,16 @@
 __isl_give isl_schedule *isl_schedule_from_schedule_tree(isl_ctx *ctx,
 	__isl_take isl_schedule_tree *tree)
 {
+	enum isl_schedule_node_type type;
 	isl_schedule *schedule;
 
 	if (!tree)
 		return NULL;
-	if (isl_schedule_tree_get_type(tree) != isl_schedule_node_domain)
+	type = isl_schedule_tree_get_type(tree);
+	if (type != isl_schedule_node_domain &&
+	    type != isl_schedule_node_extension)
 		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_unsupported,
-			"root of schedule tree should be a domain",
+			"root of schedule tree should be a domain or extension",
 			goto error);
 
 	schedule = isl_calloc_type(ctx, isl_schedule);
@@ -443,6 +446,7 @@ __isl_give isl_schedule *isl_schedule_pullback_union_pw_multi_aff(
 }
 
 /* Intersect the domain of the schedule "schedule" with "domain".
+ * The root of "schedule" is required to be a domain node.
  */
 __isl_give isl_schedule *isl_schedule_intersect_domain(
 	__isl_take isl_schedule *schedule, __isl_take isl_union_set *domain)
@@ -455,8 +459,8 @@ __isl_give isl_schedule *isl_schedule_intersect_domain(
 
 	root_type = isl_schedule_tree_get_type(schedule->root);
 	if (root_type != isl_schedule_node_domain)
-		isl_die(isl_schedule_get_ctx(schedule), isl_error_internal,
-			"root node not a domain node", goto error);
+		isl_die(isl_schedule_get_ctx(schedule), isl_error_invalid,
+			"root node must be a domain node", goto error);
 
 	node = isl_schedule_get_root(schedule);
 	isl_schedule_free(schedule);
@@ -739,6 +743,9 @@ static __isl_give isl_band_list *construct_band_list(
 	case isl_schedule_node_expansion:
 		isl_die(isl_schedule_node_get_ctx(node), isl_error_unsupported,
 			"expansion nodes not supported", goto error);
+	case isl_schedule_node_extension:
+		isl_die(isl_schedule_node_get_ctx(node), isl_error_unsupported,
+			"extension nodes not supported", goto error);
 	case isl_schedule_node_filter:
 		filter = isl_schedule_node_filter_get_filter(node);
 		domain = isl_union_set_intersect(domain, filter);

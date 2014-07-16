@@ -16,6 +16,7 @@ enum isl_schedule_key {
 	isl_schedule_key_contraction,
 	isl_schedule_key_domain,
 	isl_schedule_key_expansion,
+	isl_schedule_key_extension,
 	isl_schedule_key_filter,
 	isl_schedule_key_guard,
 	isl_schedule_key_leaf,
@@ -58,6 +59,8 @@ static enum isl_schedule_key extract_key(__isl_keep isl_stream *s,
 		key = isl_schedule_key_domain;
 	else if (!strcmp(name, "expansion"))
 		key = isl_schedule_key_expansion;
+	else if (!strcmp(name, "extension"))
+		key = isl_schedule_key_extension;
 	else if (!strcmp(name, "filter"))
 		key = isl_schedule_key_filter;
 	else if (!strcmp(name, "guard"))
@@ -276,6 +279,57 @@ error:
 	isl_schedule_tree_free(tree);
 	isl_union_pw_multi_aff_free(contraction);
 	isl_union_map_free(expansion);
+	return NULL;
+}
+
+/* Read a subtree with extension root node from "s".
+ */
+static __isl_give isl_schedule_tree *read_extension(isl_stream *s)
+{
+	isl_union_map *extension = NULL;
+	isl_schedule_tree *tree;
+	isl_ctx *ctx;
+	struct isl_token *tok;
+	enum isl_schedule_key key;
+	char *str;
+	int more;
+
+	ctx = isl_stream_get_ctx(s);
+
+	key = get_key(s);
+
+	if (isl_stream_yaml_next(s) < 0)
+		return NULL;
+
+	tok = isl_stream_next_token(s);
+	if (!tok) {
+		isl_stream_error(s, NULL, "unexpected EOF");
+		return NULL;
+	}
+	str = isl_token_get_str(ctx, tok);
+	extension = isl_union_map_read_from_str(ctx, str);
+	free(str);
+	isl_token_free(tok);
+
+	more = isl_stream_yaml_next(s);
+	if (more < 0)
+		goto error;
+	if (!more) {
+		tree = isl_schedule_tree_from_extension(extension);
+	} else {
+		key = get_key(s);
+		if (key != isl_schedule_key_child)
+			isl_die(ctx, isl_error_invalid, "expecting child",
+				goto error);
+		if (isl_stream_yaml_next(s) < 0)
+			goto error;
+		tree = isl_stream_read_schedule_tree(s);
+		tree = isl_schedule_tree_insert_extension(tree, extension);
+	}
+
+	return tree;
+error:
+	isl_union_map_free(extension);
 	return NULL;
 }
 
@@ -673,6 +727,9 @@ static __isl_give isl_schedule_tree *isl_stream_read_schedule_tree(
 	case isl_schedule_key_contraction:
 	case isl_schedule_key_expansion:
 		tree = read_expansion(s);
+		break;
+	case isl_schedule_key_extension:
+		tree = read_extension(s);
 		break;
 	case isl_schedule_key_filter:
 		tree = read_filter(s);

@@ -14,6 +14,8 @@ extern "C" {
 
 __isl_give isl_schedule_node *isl_schedule_node_from_domain(
 	__isl_take isl_union_set *domain);
+__isl_give isl_schedule_node *isl_schedule_node_from_extension(
+	__isl_take isl_union_map *extension);
 __isl_give isl_schedule_node *isl_schedule_node_copy(
 	__isl_keep isl_schedule_node *node);
 __isl_null isl_schedule_node *isl_schedule_node_free(
@@ -129,6 +131,8 @@ __isl_give isl_union_set *isl_schedule_node_domain_get_domain(
 __isl_give isl_union_map *isl_schedule_node_expansion_get_expansion(
 	__isl_keep isl_schedule_node *node);
 __isl_give isl_union_pw_multi_aff *isl_schedule_node_expansion_get_contraction(
+	__isl_keep isl_schedule_node *node);
+__isl_give isl_union_map *isl_schedule_node_extension_get_extension(
 	__isl_keep isl_schedule_node *node);
 __isl_give isl_union_set *isl_schedule_node_filter_get_filter(
 	__isl_keep isl_schedule_node *node);

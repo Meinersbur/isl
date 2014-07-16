@@ -4117,6 +4117,20 @@ static int after_in_expansion(__isl_keep isl_union_map *umap,
 
 /* Is any domain element of "umap" scheduled after any of
  * the corresponding image elements by the tree rooted at
+ * the extension node "node"?
+ *
+ * Since the extension node may add statement instances before or
+ * after the pairs of statement instances in "umap", we return 1
+ * to ensure that these pairs are not broken up.
+ */
+static int after_in_extension(__isl_keep isl_union_map *umap,
+	__isl_keep isl_schedule_node *node)
+{
+	return 1;
+}
+
+/* Is any domain element of "umap" scheduled after any of
+ * the corresponding image elements by the tree rooted at
  * the filter node "node"?
  *
  * We intersect domain and range of "umap" with the filter and
@@ -4285,6 +4299,8 @@ static int after_in_tree(__isl_keep isl_union_map *umap,
 		return after_in_context(umap, node);
 	case isl_schedule_node_expansion:
 		return after_in_expansion(umap, node);
+	case isl_schedule_node_extension:
+		return after_in_extension(umap, node);
 	case isl_schedule_node_filter:
 		return after_in_filter(umap, node);
 	case isl_schedule_node_guard:
@@ -5038,6 +5054,41 @@ error:
 }
 
 /* Generate an AST that visits the elements in the domain of "executed"
+ * in the relative order specified by the extension node "node" and
+ * its descendants.
+ *
+ * The relation "executed" maps the outer generated loop iterators
+ * to the domain elements executed by those iterations.
+ *
+ * Extend the inverse schedule with the extension applied to current
+ * set of generated constraints.  Since the extension if formulated
+ * in terms of the input schedule, it first needs to be transformed
+ * to refer to the internal schedule.
+ */
+static __isl_give isl_ast_graft_list *build_ast_from_extension(
+	__isl_take isl_ast_build *build, __isl_take isl_schedule_node *node,
+	__isl_take isl_union_map *executed)
+{
+	isl_union_set *schedule_domain;
+	isl_union_map *extension;
+	isl_set *set;
+
+	set = isl_ast_build_get_generated(build);
+	schedule_domain = isl_union_set_from_set(set);
+
+	extension = isl_schedule_node_extension_get_extension(node);
+
+	extension = isl_union_map_preimage_domain_multi_aff(extension,
+			isl_multi_aff_copy(build->internal2input));
+	extension = isl_union_map_intersect_domain(extension, schedule_domain);
+	extension = isl_ast_build_substitute_values_union_map_domain(build,
+								    extension);
+	executed = isl_union_map_union(executed, extension);
+
+	return build_ast_from_child(build, node, executed);
+}
+
+/* Generate an AST that visits the elements in the domain of "executed"
  * in the relative order specified by the filter node "node" and
  * its descendants.
  *
@@ -5320,6 +5371,8 @@ static __isl_give isl_ast_graft_list *build_ast_from_schedule_node(
 			"unexpected internal domain node", goto error);
 	case isl_schedule_node_expansion:
 		return build_ast_from_expansion(build, node, executed);
+	case isl_schedule_node_extension:
+		return build_ast_from_extension(build, node, executed);
 	case isl_schedule_node_filter:
 		return build_ast_from_filter(build, node, executed);
 	case isl_schedule_node_guard:
