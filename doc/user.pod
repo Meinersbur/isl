@@ -7271,6 +7271,11 @@ set node.
 
 A leaf of the schedule tree.  Leaf nodes do not impose any ordering.
 
+=item C<isl_schedule_node_mark>
+
+A mark node can be used to attach any kind of information to a subtree
+of the schedule tree.
+
 =item C<isl_schedule_node_sequence>
 
 A sequence node has one or more children, each of which is a filter node.
@@ -7767,6 +7772,10 @@ See L</"AST Generation Options (Schedule Tree)">.
 	isl_schedule_node_filter_get_filter(
 		__isl_keep isl_schedule_node *node);
 
+	#include <isl/schedule_node.h>
+	__isl_give isl_id *isl_schedule_node_mark_get_id(
+		__isl_keep isl_schedule_node *node);
+
 The following functions can be used to obtain an C<isl_multi_union_pw_aff>,
 an C<isl_union_pw_multi_aff> or C<isl_union_map> representation of
 partial schedules related to the node.
@@ -7863,6 +7872,14 @@ This function inserts a new context node with the given context constraints.
 This function inserts a new filter node with the given filter.
 If the original node already pointed to a filter node, then the
 two filter nodes are merged into one.
+
+	#include <isl/schedule_node.h>
+	__isl_give isl_schedule_node *
+	isl_schedule_node_insert_mark(
+		__isl_take isl_schedule_node *node,
+		__isl_take isl_id *mark);
+
+This function inserts a new mark node with the give mark identifier.
 
 	#include <isl/schedule_node.h>
 	__isl_give isl_schedule_node *

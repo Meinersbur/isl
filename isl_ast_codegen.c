@@ -4287,6 +4287,8 @@ static int after_in_tree(__isl_keep isl_union_map *umap,
 		return after_in_expansion(umap, node);
 	case isl_schedule_node_filter:
 		return after_in_filter(umap, node);
+	case isl_schedule_node_mark:
+		return after_in_child(umap, node);
 	case isl_schedule_node_set:
 		return after_in_set(umap, node);
 	case isl_schedule_node_sequence:
@@ -5089,6 +5091,44 @@ error:
 	return NULL;
 }
 
+/* Generate an AST that visits the elements in the domain of "executed"
+ * in the relative order specified by the mark node "node" and
+ * its descendants.
+ *
+ * The relation "executed" maps the outer generated loop iterators
+ * to the domain elements executed by those iterations.
+ *
+ * We generate an AST for the child of the mark node, combine
+ * the graft list into a single graft and then insert the mark
+ * in the AST of that single graft.
+ */
+static __isl_give isl_ast_graft_list *build_ast_from_mark(
+	__isl_take isl_ast_build *build, __isl_take isl_schedule_node *node,
+	__isl_take isl_union_map *executed)
+{
+	isl_id *mark;
+	isl_ast_graft *graft;
+	isl_ast_graft_list *list;
+	int n;
+
+	mark = isl_schedule_node_mark_get_id(node);
+	list = build_ast_from_child(isl_ast_build_copy(build), node, executed);
+	list = isl_ast_graft_list_fuse(list, build);
+	isl_ast_build_free(build);
+	n = isl_ast_graft_list_n_ast_graft(list);
+	if (n < 0)
+		list = isl_ast_graft_list_free(list);
+	if (n == 0) {
+		isl_id_free(mark);
+	} else {
+		graft = isl_ast_graft_list_get_ast_graft(list, 0);
+		graft = isl_ast_graft_insert_mark(graft, mark);
+		list = isl_ast_graft_list_set_ast_graft(list, 0, graft);
+	}
+
+	return list;
+}
+
 static __isl_give isl_ast_graft_list *build_ast_from_schedule_node(
 	__isl_take isl_ast_build *build, __isl_take isl_schedule_node *node,
 	__isl_take isl_union_map *executed);
@@ -5172,6 +5212,8 @@ static __isl_give isl_ast_graft_list *build_ast_from_schedule_node(
 		return build_ast_from_expansion(build, node, executed);
 	case isl_schedule_node_filter:
 		return build_ast_from_filter(build, node, executed);
+	case isl_schedule_node_mark:
+		return build_ast_from_mark(build, node, executed);
 	case isl_schedule_node_sequence:
 	case isl_schedule_node_set:
 		return build_ast_from_sequence(build, node, executed);

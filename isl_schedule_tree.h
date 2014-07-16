@@ -37,6 +37,9 @@ ISL_DECLARE_LIST(schedule_tree)
  * The "filter" field is valid when type is isl_schedule_node_filter
  * and represents the statement instances selected by the node.
  *
+ * The "mark" field is valid when type is isl_schedule_node_mark and
+ * identifies the mark.
+ *
  * The "children" field is valid for all types except
  * isl_schedule_node_leaf.  This field is NULL if there are
  * no children (except for the implicit leaves).
@@ -58,6 +61,7 @@ struct isl_schedule_tree {
 			isl_union_map *expansion;
 		};
 		isl_union_set *filter;
+		isl_id *mark;
 	};
 	isl_schedule_tree_list *children;
 };
@@ -140,6 +144,8 @@ __isl_give isl_union_set *isl_schedule_tree_filter_get_filter(
 	__isl_keep isl_schedule_tree *tree);
 __isl_give isl_schedule_tree *isl_schedule_tree_filter_set_filter(
 	__isl_take isl_schedule_tree *tree, __isl_take isl_union_set *filter);
+__isl_give isl_id *isl_schedule_tree_mark_get_id(
+	__isl_keep isl_schedule_tree *tree);
 
 __isl_give isl_schedule_tree *isl_schedule_tree_first_schedule_descendant(
 	__isl_take isl_schedule_tree *tree, __isl_keep isl_schedule_tree *leaf);
@@ -175,6 +181,8 @@ __isl_give isl_schedule_tree *isl_schedule_tree_insert_filter(
 	__isl_take isl_schedule_tree *tree, __isl_take isl_union_set *filter);
 __isl_give isl_schedule_tree *isl_schedule_tree_children_insert_filter(
 	__isl_take isl_schedule_tree *tree, __isl_take isl_union_set *filter);
+__isl_give isl_schedule_tree *isl_schedule_tree_insert_mark(
+	__isl_take isl_schedule_tree *tree, __isl_take isl_id *mark);
 
 __isl_give isl_schedule_tree *isl_schedule_tree_append_to_leaves(
 	__isl_take isl_schedule_tree *tree1,

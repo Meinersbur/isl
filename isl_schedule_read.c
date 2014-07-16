@@ -18,6 +18,7 @@ enum isl_schedule_key {
 	isl_schedule_key_expansion,
 	isl_schedule_key_filter,
 	isl_schedule_key_leaf,
+	isl_schedule_key_mark,
 	isl_schedule_key_options,
 	isl_schedule_key_permutable,
 	isl_schedule_key_schedule,
@@ -60,6 +61,8 @@ static enum isl_schedule_key extract_key(__isl_keep isl_stream *s,
 		key = isl_schedule_key_filter;
 	else if (!strcmp(name, "leaf"))
 		key = isl_schedule_key_leaf;
+	else if (!strcmp(name, "mark"))
+		key = isl_schedule_key_mark;
 	else if (!strcmp(name, "options"))
 		key = isl_schedule_key_options;
 	else if (!strcmp(name, "schedule"))
@@ -324,6 +327,58 @@ error:
 	return NULL;
 }
 
+/* Read a subtree with mark root node from "s".
+ */
+static __isl_give isl_schedule_tree *read_mark(isl_stream *s)
+{
+	isl_id *mark;
+	isl_schedule_tree *tree;
+	isl_ctx *ctx;
+	struct isl_token *tok;
+	enum isl_schedule_key key;
+	char *str;
+	int more;
+
+	ctx = isl_stream_get_ctx(s);
+
+	key = get_key(s);
+
+	if (isl_stream_yaml_next(s) < 0)
+		return NULL;
+
+	tok = isl_stream_next_token(s);
+	if (!tok) {
+		isl_stream_error(s, NULL, "unexpected EOF");
+		return NULL;
+	}
+	str = isl_token_get_str(ctx, tok);
+	mark = isl_id_alloc(ctx, str, NULL);
+	free(str);
+	isl_token_free(tok);
+
+	more = isl_stream_yaml_next(s);
+	if (more < 0)
+		goto error;
+	if (!more) {
+		isl_die(ctx, isl_error_invalid, "expecting child",
+			goto error);
+	} else {
+		key = get_key(s);
+		if (key != isl_schedule_key_child)
+			isl_die(ctx, isl_error_invalid, "expecting child",
+				goto error);
+		if (isl_stream_yaml_next(s) < 0)
+			goto error;
+		tree = isl_stream_read_schedule_tree(s);
+		tree = isl_schedule_tree_insert_mark(tree, mark);
+	}
+
+	return tree;
+error:
+	isl_id_free(mark);
+	return NULL;
+}
+
 /* Read a sequence of integers from "s" (representing the coincident
  * property of a band node).
  */
@@ -571,6 +626,9 @@ static __isl_give isl_schedule_tree *isl_stream_read_schedule_tree(
 	case isl_schedule_key_leaf:
 		isl_token_free(isl_stream_next_token(s));
 		tree = isl_schedule_tree_leaf(isl_stream_get_ctx(s));
+		break;
+	case isl_schedule_key_mark:
+		tree = read_mark(s);
 		break;
 	case isl_schedule_key_sequence:
 		tree = read_sequence(s);
