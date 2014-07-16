@@ -1614,7 +1614,7 @@ static __isl_give isl_id_list *generate_names(isl_ctx *ctx, int n, int first,
 /* Embed "options" into the given isl_ast_build space.
  *
  * This function is called from within a nested call to
- * isl_ast_build_ast_from_schedule.
+ * isl_ast_build_node_from_schedule_map.
  * "options" refers to the additional schedule,
  * while space refers to both the space of the outer isl_ast_build and
  * that of the additional schedule.

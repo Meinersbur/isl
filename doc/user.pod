@@ -236,6 +236,11 @@ for backward compatibility, but it will be removed in the future.
 =item * The function C<isl_basic_set_drop_constraint> has been
 deprecated.
 
+=item * The function C<isl_ast_build_ast_from_schedule> has been
+renamed to C<isl_ast_build_node_from_schedule_map>.
+The original name is still available
+for backward compatibility, but it will be removed in the future.
+
 =back
 
 =head1 License
@@ -8338,7 +8343,8 @@ Finally, the AST itself can be constructed using the following
 function.
 
 	#include <isl/ast_build.h>
-	__isl_give isl_ast_node *isl_ast_build_ast_from_schedule(
+	__isl_give isl_ast_node *
+	isl_ast_build_node_from_schedule_map(
 		__isl_keep isl_ast_build *build,
 		__isl_take isl_union_map *schedule);
 
@@ -8992,7 +8998,8 @@ which can be set using the following function.
 
 The options are encoded in an C<isl_union_map>.
 The domain of this union relation refers to the schedule domain,
-i.e., the range of the schedule passed to C<isl_ast_build_ast_from_schedule>.
+i.e., the range of the schedule passed
+to C<isl_ast_build_node_from_schedule_map>.
 In the case of nested AST generation (see L</"Nested AST Generation">),
 the domain of C<options> should refer to the extra piece of the schedule.
 That is, it should be equal to the range of the wrapped relation in the
@@ -9252,8 +9259,8 @@ or C<isl_ast_build_call_from_pw_multi_aff>.
 
 C<isl> allows the user to create an AST within the context
 of another AST.  These nested ASTs are created using the
-same C<isl_ast_build_ast_from_schedule> function that is used to create the
-outer AST.  The C<build> argument should be an C<isl_ast_build>
+same C<isl_ast_build_node_from_schedule_map> function that is used to create
+the outer AST.  The C<build> argument should be an C<isl_ast_build>
 passed to a callback set by
 C<isl_ast_build_set_create_leaf>.
 The space of the range of the C<schedule> argument should refer

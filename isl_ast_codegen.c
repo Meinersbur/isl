@@ -3753,7 +3753,7 @@ error:
 	return NULL;
 }
 
-/* Internal data structure used by isl_ast_build_ast_from_schedule.
+/* Internal data structure used by isl_ast_build_node_from_schedule_map.
  * internal, executed and build are the inputs to generate_code.
  * list collects the output.
  */
@@ -3811,7 +3811,8 @@ static __isl_give isl_union_map *internal_executed(
  * It is equal to the space of "set" if build->domain is parametric.
  * Otherwise, it is equal to the range of the wrapped space of "set".
  *
- * If the build space is not parametric and if isl_ast_build_ast_from_schedule
+ * If the build space is not parametric and
+ * if isl_ast_build_node_from_schedule_map
  * was called from an outside user (data->internal not set), then
  * the (inverse) schedule refers to the external build domain and needs to
  * be transformed to refer to the internal build domain.
@@ -4012,7 +4013,7 @@ error:
  * the schedule domain in the domain and the elements to be executed
  * in the range) called "executed".
  */
-__isl_give isl_ast_node *isl_ast_build_ast_from_schedule(
+__isl_give isl_ast_node *isl_ast_build_node_from_schedule_map(
 	__isl_keep isl_ast_build *build, __isl_take isl_union_map *schedule)
 {
 	isl_ast_graft_list *list;
@@ -4029,4 +4030,14 @@ __isl_give isl_ast_node *isl_ast_build_ast_from_schedule(
 	isl_ast_build_free(build);
 
 	return node;
+}
+
+/* The old name for isl_ast_build_node_from_schedule_map.
+ * It is being kept for backward compatibility, but
+ * it will be removed in the future.
+ */
+__isl_give isl_ast_node *isl_ast_build_ast_from_schedule(
+	__isl_keep isl_ast_build *build, __isl_take isl_union_map *schedule)
+{
+	return isl_ast_build_node_from_schedule_map(build, schedule);
 }

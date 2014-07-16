@@ -123,7 +123,7 @@ int main(int argc, char **argv)
 
 	build = isl_ast_build_from_context(context);
 	build = set_options(build, options_map, options, schedule);
-	tree = isl_ast_build_ast_from_schedule(build, schedule);
+	tree = isl_ast_build_node_from_schedule_map(build, schedule);
 	isl_ast_build_free(build);
 
 	p = isl_printer_to_file(ctx, stdout);

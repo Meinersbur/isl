@@ -92,6 +92,8 @@ __isl_give isl_ast_expr *isl_ast_build_call_from_pw_multi_aff(
 __isl_give isl_ast_expr *isl_ast_build_call_from_multi_pw_aff(
 	__isl_keep isl_ast_build *build, __isl_take isl_multi_pw_aff *mpa);
 
+__isl_give isl_ast_node *isl_ast_build_node_from_schedule_map(
+	__isl_keep isl_ast_build *build, __isl_take isl_union_map *schedule);
 __isl_give isl_ast_node *isl_ast_build_ast_from_schedule(
 	__isl_keep isl_ast_build *build, __isl_take isl_union_map *schedule);
 
