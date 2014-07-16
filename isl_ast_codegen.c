@@ -5091,12 +5091,55 @@ error:
 	return NULL;
 }
 
+/* Call the before_each_mark callback, if requested by the user.
+ *
+ * Return 0 on success and -1 on error.
+ *
+ * The caller is responsible for recording the current inverse schedule
+ * in "build".
+ */
+static int before_each_mark(__isl_keep isl_id *mark,
+	__isl_keep isl_ast_build *build)
+{
+	if (!build)
+		return -1;
+	if (!build->before_each_mark)
+		return 0;
+	return build->before_each_mark(mark, build,
+					build->before_each_mark_user);
+}
+
+/* Call the after_each_mark callback, if requested by the user.
+ *
+ * Return 0 on success and -1 on error.
+ *
+ * The caller is responsible for recording the current inverse schedule
+ * in "build".
+ */
+static __isl_give isl_ast_graft *after_each_mark(
+	__isl_take isl_ast_graft *graft, __isl_keep isl_ast_build *build)
+{
+	if (!graft || !build)
+		return isl_ast_graft_free(graft);
+	if (!build->after_each_mark)
+		return graft;
+	graft->node = build->after_each_mark(graft->node, build,
+						build->after_each_mark_user);
+	if (!graft->node)
+		return isl_ast_graft_free(graft);
+	return graft;
+}
+
+
 /* Generate an AST that visits the elements in the domain of "executed"
  * in the relative order specified by the mark node "node" and
  * its descendants.
  *
  * The relation "executed" maps the outer generated loop iterators
  * to the domain elements executed by those iterations.
+
+ * Since we may be calling before_each_mark and after_each_mark
+ * callbacks, we record the current inverse schedule in the build.
  *
  * We generate an AST for the child of the mark node, combine
  * the graft list into a single graft and then insert the mark
@@ -5111,10 +5154,14 @@ static __isl_give isl_ast_graft_list *build_ast_from_mark(
 	isl_ast_graft_list *list;
 	int n;
 
+	build = isl_ast_build_set_executed(build, isl_union_map_copy(executed));
+
 	mark = isl_schedule_node_mark_get_id(node);
+	if (before_each_mark(mark, build) < 0)
+		node = isl_schedule_node_free(node);
+
 	list = build_ast_from_child(isl_ast_build_copy(build), node, executed);
 	list = isl_ast_graft_list_fuse(list, build);
-	isl_ast_build_free(build);
 	n = isl_ast_graft_list_n_ast_graft(list);
 	if (n < 0)
 		list = isl_ast_graft_list_free(list);
@@ -5123,8 +5170,10 @@ static __isl_give isl_ast_graft_list *build_ast_from_mark(
 	} else {
 		graft = isl_ast_graft_list_get_ast_graft(list, 0);
 		graft = isl_ast_graft_insert_mark(graft, mark);
+		graft = after_each_mark(graft, build);
 		list = isl_ast_graft_list_set_ast_graft(list, 0, graft);
 	}
+	isl_ast_build_free(build);
 
 	return list;
 }

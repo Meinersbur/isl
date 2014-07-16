@@ -9656,6 +9656,19 @@ user defined node created using the following function.
 			__isl_take isl_ast_node *node,
 			__isl_keep isl_ast_build *build,
 			void *user), void *user);
+	__isl_give isl_ast_build *
+	isl_ast_build_set_before_each_mark(
+		__isl_take isl_ast_build *build,
+		int (*fn)(__isl_keep isl_id *mark,
+			__isl_keep isl_ast_build *build,
+			void *user), void *user);
+	__isl_give isl_ast_build *
+	isl_ast_build_set_after_each_mark(
+		__isl_take isl_ast_build *build,
+		__isl_give isl_ast_node *(*fn)(
+			__isl_take isl_ast_node *node,
+			__isl_keep isl_ast_build *build,
+			void *user), void *user);
 
 The callback set by C<isl_ast_build_set_at_each_domain> will
 be called for each domain AST node.
@@ -9670,7 +9683,15 @@ C<isl_ast_node_set_annotation>) to the constructed for node.
 In particular, if the user has also specified an C<after_each_for>
 callback, then the annotation can be retrieved from the node passed to
 that callback using C<isl_ast_node_get_annotation>.
-All callbacks should C<NULL> on failure.
+The callbacks set by C<isl_ast_build_set_before_each_mark>
+and C<isl_ast_build_set_after_each_mark> will be called for each
+mark AST node that is created, i.e., for each mark schedule node
+in the input schedule tree.  The first will be called in depth-first
+pre-order, while the second will be called in depth-first post-order.
+Since the callback set by C<isl_ast_build_set_before_each_mark>
+is called before the mark AST node is actually constructed, it is passed
+the identifier of the mark node.
+All callbacks should C<NULL> (or -1) on failure.
 The given C<isl_ast_build> can be used to create new
 C<isl_ast_expr> objects using C<isl_ast_build_expr_from_pw_aff>
 or C<isl_ast_build_call_from_pw_multi_aff>.
