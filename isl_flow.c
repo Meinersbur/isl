@@ -1405,7 +1405,6 @@ int isl_union_map_compute_flow(__isl_take isl_union_map *sink,
 	__isl_give isl_union_map **may_no_source)
 {
 	isl_space *space;
-	isl_union_map *range_map = NULL;
 	struct isl_compute_flow_data data;
 
 	sink = isl_union_map_align_params(sink,
@@ -1422,8 +1421,7 @@ int isl_union_map_compute_flow(__isl_take isl_union_map *sink,
 	schedule = isl_union_map_align_params(schedule, isl_space_copy(space));
 
 	schedule = isl_union_map_reverse(schedule);
-	range_map = isl_union_map_range_map(schedule);
-	schedule = isl_union_map_reverse(isl_union_map_copy(range_map));
+	schedule = isl_union_map_reverse(isl_union_map_range_map(schedule));
 	sink = isl_union_map_apply_domain(sink, isl_union_map_copy(schedule));
 	must_source = isl_union_map_apply_domain(must_source,
 						isl_union_map_copy(schedule));
@@ -1449,36 +1447,19 @@ int isl_union_map_compute_flow(__isl_take isl_union_map *sink,
 	isl_union_map_free(must_source);
 	isl_union_map_free(may_source);
 
-	if (must_dep) {
-		data.must_dep = isl_union_map_apply_domain(data.must_dep,
-					isl_union_map_copy(range_map));
-		data.must_dep = isl_union_map_apply_range(data.must_dep,
-					isl_union_map_copy(range_map));
-		*must_dep = data.must_dep;
-	}
-	if (may_dep) {
-		data.may_dep = isl_union_map_apply_domain(data.may_dep,
-					isl_union_map_copy(range_map));
-		data.may_dep = isl_union_map_apply_range(data.may_dep,
-					isl_union_map_copy(range_map));
-		*may_dep = data.may_dep;
-	}
-	if (must_no_source) {
-		data.must_no_source = isl_union_map_apply_domain(
-			data.must_no_source, isl_union_map_copy(range_map));
-		*must_no_source = data.must_no_source;
-	}
-	if (may_no_source) {
-		data.may_no_source = isl_union_map_apply_domain(
-			data.may_no_source, isl_union_map_copy(range_map));
-		*may_no_source = data.may_no_source;
-	}
-
-	isl_union_map_free(range_map);
+	if (must_dep)
+		*must_dep = isl_union_map_factor_range(data.must_dep);
+	if (may_dep)
+		*may_dep = isl_union_map_factor_range(data.may_dep);
+	if (must_no_source)
+		*must_no_source = isl_union_map_domain_factor_range(
+							data.must_no_source);
+	if (may_no_source)
+		*may_no_source = isl_union_map_domain_factor_range(
+							data.may_no_source);
 
 	return 0;
 error:
-	isl_union_map_free(range_map);
 	isl_union_map_free(sink);
 	isl_union_map_free(must_source);
 	isl_union_map_free(may_source);
