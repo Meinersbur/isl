@@ -96,6 +96,8 @@ __isl_give isl_union_map *isl_union_map_domain_factor_domain(
 	__isl_take isl_union_map *umap);
 __isl_give isl_union_map *isl_union_map_domain_factor_range(
 	__isl_take isl_union_map *umap);
+__isl_give isl_union_map *isl_union_map_range_factor_range(
+	__isl_take isl_union_map *umap);
 __isl_export
 __isl_give isl_union_map *isl_union_map_gist(__isl_take isl_union_map *umap,
 	__isl_take isl_union_map *context);
