@@ -2012,11 +2012,17 @@ is already known to be empty.
 
 =item * Single-valuedness
 
+	#include <isl/set.h>
+	int isl_set_is_singleton(__isl_keep isl_set *set);
+
+	#include <isl/map.h>
 	int isl_basic_map_is_single_valued(
 		__isl_keep isl_basic_map *bmap);
 	int isl_map_plain_is_single_valued(
 		__isl_keep isl_map *map);
 	int isl_map_is_single_valued(__isl_keep isl_map *map);
+
+	#include <isl/union_map.h>
 	int isl_union_map_is_single_valued(__isl_keep isl_union_map *umap);
 
 =item * Injectivity
