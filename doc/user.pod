@@ -5526,6 +5526,8 @@ from the result using the following functions.
 		__isl_take isl_map *map);
 
 	#include <isl/union_map.h>
+	__isl_give isl_union_map *isl_union_map_factor_range(
+		__isl_take isl_union_map *umap);
 	__isl_give isl_union_map *
 	isl_union_map_domain_factor_domain(
 		__isl_take isl_union_map *umap);
