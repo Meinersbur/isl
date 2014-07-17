@@ -8528,11 +8528,13 @@ The basic properties of an AST node can be obtained as follows.
 The type of an AST node is one of
 C<isl_ast_node_for>,
 C<isl_ast_node_if>,
-C<isl_ast_node_block> or
+C<isl_ast_node_block>,
+C<isl_ast_node_mark> or
 C<isl_ast_node_user>.
 An C<isl_ast_node_for> represents a for node.
 An C<isl_ast_node_if> represents an if node.
 An C<isl_ast_node_block> represents a compound node.
+An C<isl_ast_node_mark> introduces a mark in the AST.
 An C<isl_ast_node_user> represents an expression statement.
 An expression statement typically corresponds to a domain element, i.e.,
 one of the elements that is visited by the AST.
@@ -8570,6 +8572,15 @@ exactly once.
 	isl_ast_node_block_get_children(
 		__isl_keep isl_ast_node *node);
 
+	__isl_give isl_id *isl_ast_node_mark_get_id(
+		__isl_keep isl_ast_node *node);
+	__isl_give isl_ast_node *isl_ast_node_mark_get_node(
+		__isl_keep isl_ast_node *node);
+
+C<isl_ast_node_mark_get_id> returns the identifier of the mark.
+C<isl_ast_node_mark_get_node> returns the child node that is being marked.
+
+	#include <isl/ast.h>
 	__isl_give isl_ast_expr *isl_ast_node_user_get_expr(
 		__isl_keep isl_ast_node *node);
 
