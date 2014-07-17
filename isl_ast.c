@@ -1609,7 +1609,7 @@ static __isl_give isl_printer *print_ast_node_isl(__isl_take isl_printer *p,
 	case isl_ast_node_block:
 		p = isl_printer_print_ast_node_list(p, node->u.b.children);
 		break;
-	default:
+	case isl_ast_node_error:
 		break;
 	}
 	p = isl_printer_print_str(p, ")");
