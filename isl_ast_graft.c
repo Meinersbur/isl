@@ -649,6 +649,42 @@ static __isl_give isl_ast_graft_list *insert_pending_guard_nodes(
 	return res;
 }
 
+/* For each graft in "list",
+ * insert an if node around graft->node testing the condition encoded
+ * in graft->guard, assuming graft->guard involves any conditions.
+ * Subsequently remove the guards from the grafts.
+ */
+__isl_give isl_ast_graft_list *isl_ast_graft_list_insert_pending_guard_nodes(
+	__isl_take isl_ast_graft_list *list, __isl_keep isl_ast_build *build)
+{
+	int i, n;
+	isl_set *universe;
+
+	list = insert_pending_guard_nodes(list, build);
+	if (!list)
+		return NULL;
+
+	universe = isl_set_universe(isl_ast_build_get_space(build, 1));
+	n = isl_ast_graft_list_n_ast_graft(list);
+	for (i = 0; i < n; ++i) {
+		isl_ast_graft *graft;
+
+		graft = isl_ast_graft_list_get_ast_graft(list, i);
+		if (!graft)
+			break;
+		isl_set_free(graft->guard);
+		graft->guard = isl_set_copy(universe);
+		if (!graft->guard)
+			graft = isl_ast_graft_free(graft);
+		list = isl_ast_graft_list_set_ast_graft(list, i, graft);
+	}
+	isl_set_free(universe);
+	if (i < n)
+		return isl_ast_graft_list_free(list);
+
+	return list;
+}
+
 /* Collect the nodes contained in the grafts in "list" in a node list.
  */
 static __isl_give isl_ast_node_list *extract_node_list(
