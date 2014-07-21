@@ -1235,6 +1235,27 @@ static __isl_give isl_ast_node *create_for(__isl_keep isl_ast_build *build,
 	return node;
 }
 
+/* If the ast_build_exploit_nested_bounds option is set, then return
+ * the constraints enforced by all elements in "list".
+ * Otherwise, return the universe.
+ */
+static __isl_give isl_basic_set *extract_shared_enforced(
+	__isl_keep isl_ast_graft_list *list, __isl_keep isl_ast_build *build)
+{
+	isl_ctx *ctx;
+	isl_space *space;
+
+	if (!list)
+		return NULL;
+
+	ctx = isl_ast_graft_list_get_ctx(list);
+	if (isl_options_get_ast_build_exploit_nested_bounds(ctx))
+		return isl_ast_graft_list_extract_shared_enforced(list, build);
+
+	space = isl_ast_build_get_space(build, 1);
+	return isl_basic_set_universe(space);
+}
+
 /* Create an AST node for the current dimension based on
  * the schedule domain "bounds" and return the node encapsulated
  * in an isl_ast_graft.
@@ -1290,6 +1311,10 @@ static __isl_give isl_ast_node *create_for(__isl_keep isl_ast_build *build,
  * We then generate a sequence of grafts for the next level,
  * create a surrounding graft for the current level and insert
  * the for node we created (if the current level is not eliminated).
+ * Before creating a graft for the current level, we first extract
+ * hoistable constraints from the child guards.  These constraints
+ * are used to simplify the child guards and then added to the guard
+ * of the current graft.
  *
  * Finally, we set the bounds of the for loop and insert guards
  * (either in the AST or in the graft) in one of
@@ -1303,6 +1328,8 @@ static __isl_give isl_ast_graft *create_node_scaled(
 	int depth;
 	int degenerate, eliminated;
 	isl_basic_set *hull;
+	isl_basic_set *enforced;
+	isl_set *hoisted;
 	isl_ast_node *node = NULL;
 	isl_ast_graft *graft;
 	isl_ast_graft_list *children;
@@ -1335,7 +1362,10 @@ static __isl_give isl_ast_graft *create_node_scaled(
 	children = generate_next_level(executed,
 				    isl_ast_build_copy(body_build));
 
-	graft = isl_ast_graft_alloc_level(children, build, sub_build);
+	enforced = extract_shared_enforced(children, build);
+	hoisted = isl_ast_graft_list_extract_hoistable_guard(children, build);
+	graft = isl_ast_graft_alloc_from_children(children, hoisted, enforced,
+						    build, sub_build);
 	if (!eliminated)
 		graft = isl_ast_graft_insert_for(graft, node);
 	if (eliminated)
