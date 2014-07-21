@@ -777,6 +777,18 @@ static __isl_give isl_ast_graft_list *gist_guards(
 	return list;
 }
 
+/* For each graft in "list", replace its guard with the gist with
+ * respect to "context".
+ */
+__isl_give isl_ast_graft_list *isl_ast_graft_list_gist_guards(
+	__isl_take isl_ast_graft_list *list, __isl_take isl_set *context)
+{
+	list = gist_guards(list, context);
+	isl_set_free(context);
+
+	return list;
+}
+
 /* Allocate a graft in "build" based on the list of grafts in "sub_build".
  * "guard" and "enforced" are the guard and enforced constraints
  * of the allocated graft.  The guard is used to simplify the guards
