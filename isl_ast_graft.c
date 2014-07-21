@@ -181,7 +181,7 @@ static __isl_give isl_set *hoist_guard(__isl_take isl_set *guard,
  * are non-convex.  Taking the simple hull would remove information
  * and would not allow for these guards to be hoisted completely.
  */
-static __isl_give isl_set *extract_hoistable_guard(
+__isl_give isl_set *isl_ast_graft_list_extract_hoistable_guard(
 	__isl_keep isl_ast_graft_list *list, __isl_keep isl_ast_build *build)
 {
 	int i, n;
@@ -851,7 +851,7 @@ static __isl_give isl_ast_graft *ast_graft_list_fuse(
 		enforced = isl_basic_set_universe(space);
 	}
 
-	guard = extract_hoistable_guard(list, build);
+	guard = isl_ast_graft_list_extract_hoistable_guard(list, build);
 	graft = isl_ast_graft_alloc_from_children(list, guard, enforced,
 						    build, sub_build);
 
