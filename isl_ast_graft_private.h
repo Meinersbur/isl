@@ -87,6 +87,9 @@ __isl_give isl_ast_graft_list *isl_ast_graft_list_preimage_multi_aff(
 __isl_give isl_ast_node *isl_ast_node_from_graft_list(
 	__isl_take isl_ast_graft_list *list, __isl_keep isl_ast_build *build);
 
+__isl_give isl_basic_set *isl_ast_graft_list_extract_shared_enforced(
+	__isl_keep isl_ast_graft_list *list, __isl_keep isl_ast_build *build);
+
 __isl_give isl_printer *isl_printer_print_ast_graft(__isl_take isl_printer *p,
 	__isl_keep isl_ast_graft *graft);
 

@@ -680,7 +680,7 @@ static __isl_give isl_ast_node_list *extract_node_list(
  *
  * We assume that the number of children is at least one.
  */
-static __isl_give isl_basic_set *extract_shared_enforced(
+__isl_give isl_basic_set *isl_ast_graft_list_extract_shared_enforced(
 	__isl_keep isl_ast_graft_list *list,
 	__isl_keep isl_ast_build *build)
 {
@@ -844,7 +844,8 @@ static __isl_give isl_ast_graft *ast_graft_list_fuse(
 
 	ctx = isl_ast_build_get_ctx(build);
 	if (!up || isl_options_get_ast_build_exploit_nested_bounds(ctx))
-		enforced = extract_shared_enforced(list, build);
+		enforced = isl_ast_graft_list_extract_shared_enforced(list,
+									build);
 	else {
 		isl_space *space = isl_ast_build_get_space(build, 1);
 		enforced = isl_basic_set_universe(space);
