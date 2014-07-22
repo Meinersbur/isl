@@ -628,7 +628,24 @@ static int extract_single_piece(__isl_take isl_set *set,
 	return -1;
 }
 
-/* Check if the given bounds on the current dimension imply that
+/* Intersect "set" with the stride constraint of "build", if any.
+ */
+static __isl_give isl_set *intersect_stride_constraint(__isl_take isl_set *set,
+	__isl_keep isl_ast_build *build)
+{
+	isl_set *stride;
+
+	if (!build)
+		return isl_set_free(set);
+	if (!isl_ast_build_has_stride(build, build->depth))
+		return set;
+
+	stride = isl_ast_build_get_stride_constraint(build);
+	return isl_set_intersect(set, stride);
+}
+
+/* Check if the given bounds on the current dimension (together with
+ * the stride constraint, if any) imply that
  * this current dimension attains only a single value (in terms of
  * parameters and outer dimensions).
  * If so, we record it in build->value.
@@ -655,6 +672,7 @@ static __isl_give isl_ast_build *update_values(
 
 	set = isl_set_from_basic_set(bounds);
 	set = isl_set_intersect(set, isl_set_copy(build->domain));
+	set = intersect_stride_constraint(set, build);
 	it_map = isl_ast_build_map_to_iterator(build, set);
 
 	sv = isl_map_is_single_valued(it_map);
