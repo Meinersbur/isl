@@ -1269,7 +1269,8 @@ static __isl_give isl_ast_node *create_for(__isl_keep isl_ast_build *build,
  * about the strides at the current level, but this information is not
  * reflected in the build->domain.
  * We first add this information and the "bounds" to the sub_build->domain.
- * isl_ast_build_set_loop_bounds checks whether the current dimension attains
+ * isl_ast_build_set_loop_bounds adds the stride information and
+ * checks whether the current dimension attains
  * only a single value and whether this single value can be represented using
  * a single affine expression.
  * In the first case, the current level is considered "degenerate".
@@ -1321,7 +1322,6 @@ static __isl_give isl_ast_graft *create_node_scaled(
 
 	depth = isl_ast_build_get_depth(build);
 	sub_build = isl_ast_build_copy(build);
-	sub_build = isl_ast_build_include_stride(sub_build);
 	sub_build = isl_ast_build_set_loop_bounds(sub_build,
 						isl_basic_set_copy(bounds));
 	degenerate = isl_ast_build_has_value(sub_build);

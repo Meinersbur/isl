@@ -705,7 +705,7 @@ static __isl_give isl_ast_build *update_values(
 }
 
 /* Update the AST build based on the given loop bounds for
- * the current dimension.
+ * the current dimension and the stride information available in the build.
  *
  * We first make sure that the bounds do not refer to any iterators
  * that have already been eliminated.
@@ -737,6 +737,7 @@ __isl_give isl_ast_build *isl_ast_build_set_loop_bounds(
 {
 	isl_set *set;
 
+	build = isl_ast_build_include_stride(build);
 	build = isl_ast_build_cow(build);
 	if (!build)
 		goto error;
