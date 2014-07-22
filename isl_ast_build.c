@@ -1,10 +1,13 @@
 /*
  * Copyright 2012      Ecole Normale Superieure
+ * Copyright 2014      INRIA Rocquencourt
  *
  * Use of this software is governed by the MIT license
  *
  * Written by Sven Verdoolaege,
  * Ecole Normale Superieure, 45 rue d’Ulm, 75230 Paris, France
+ * and Inria Paris - Rocquencourt, Domaine de Voluceau - Rocquencourt,
+ * B.P. 105 - 78153 Le Chesnay, France
  */
 
 #include <isl/map.h>
@@ -718,10 +721,9 @@ static __isl_give isl_ast_build *update_values(
  * be defined on a subset of the domain.  Plugging in the value
  * would restrict the build domain to this subset, while this
  * restriction may not be reflected in the generated code.
- * build->domain may, however, already refer to the current dimension
- * due an earlier call to isl_ast_build_include_stride.  If so, we need
- * to eliminate the dimension so that we do not introduce it in any other sets.
  * Finally, we intersect build->domain with the updated bounds.
+ * We also add the stride constraint unless we have been able
+ * to find a fixed value expressed as a single affine expression.
  *
  * Note that the check for a fixed value in update_values requires
  * us to intersect the bounds with the current build domain.
@@ -737,7 +739,6 @@ __isl_give isl_ast_build *isl_ast_build_set_loop_bounds(
 {
 	isl_set *set;
 
-	build = isl_ast_build_include_stride(build);
 	build = isl_ast_build_cow(build);
 	if (!build)
 		goto error;
@@ -753,11 +754,7 @@ __isl_give isl_ast_build *isl_ast_build_set_loop_bounds(
 		set = isl_set_compute_divs(set);
 		build->pending = isl_set_intersect(build->pending,
 							isl_set_copy(set));
-		if (isl_ast_build_has_stride(build, build->depth)) {
-			build->domain = isl_set_eliminate(build->domain,
-						isl_dim_set, build->depth, 1);
-			build->domain = isl_set_compute_divs(build->domain);
-		}
+		build->domain = isl_set_intersect(build->domain, set);
 	} else {
 		isl_basic_set *generated, *pending;
 
@@ -771,10 +768,13 @@ __isl_give isl_ast_build *isl_ast_build_set_loop_bounds(
 				    generated, isl_dim_set, build->depth, 1);
 		build->generated = isl_set_intersect(build->generated,
 					isl_set_from_basic_set(generated));
+		build->domain = isl_set_intersect(build->domain, set);
+		build = isl_ast_build_include_stride(build);
+		if (!build)
+			goto error;
 	}
 	isl_basic_set_free(bounds);
 
-	build->domain = isl_set_intersect(build->domain, set);
 	if (!build->domain || !build->pending || !build->generated)
 		return isl_ast_build_free(build);
 
