@@ -1,12 +1,15 @@
 /*
  * Copyright 2008-2009 Katholieke Universiteit Leuven
  * Copyright 2012      Ecole Normale Superieure
+ * Copyright 2014      INRIA Rocquencourt
  *
  * Use of this software is governed by the MIT license
  *
  * Written by Sven Verdoolaege, K.U.Leuven, Departement
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
  * and Ecole Normale Superieure, 45 rue d’Ulm, 75230 Paris, France
+ * and Inria Paris - Rocquencourt, Domaine de Voluceau - Rocquencourt,
+ * B.P. 105 - 78153 Le Chesnay, France
  */
 
 #include <strings.h>
@@ -2083,20 +2086,17 @@ static __isl_give isl_basic_set *uset_gist(__isl_take isl_basic_set *bset,
 
 	context = drop_irrelevant_constraints(context, bset);
 
-	bset = isl_basic_set_intersect(bset, isl_basic_set_copy(context));
-	if (isl_basic_set_plain_is_empty(bset)) {
-		isl_basic_set_free(context);
-		return bset;
-	}
-	bset = isl_basic_set_sort_constraints(bset);
-	aff = isl_basic_set_affine_hull(isl_basic_set_copy(bset));
+	aff = isl_basic_set_copy(bset);
+	aff = isl_basic_set_intersect(aff, isl_basic_set_copy(context));
+	aff = isl_basic_set_affine_hull(aff);
 	if (!aff)
 		goto error;
 	if (isl_basic_set_plain_is_empty(aff)) {
-		isl_basic_set_free(aff);
+		isl_basic_set_free(bset);
 		isl_basic_set_free(context);
-		return bset;
+		return aff;
 	}
+	bset = isl_basic_set_sort_constraints(bset);
 	if (aff->n_eq == 0) {
 		isl_basic_set_free(aff);
 		return uset_gist_full(bset, context);
