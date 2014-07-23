@@ -2,6 +2,7 @@
  * Copyright 2008-2009 Katholieke Universiteit Leuven
  * Copyright 2010      INRIA Saclay
  * Copyright 2012-2013 Ecole Normale Superieure
+ * Copyright 2014      INRIA Rocquencourt
  *
  * Use of this software is governed by the MIT license
  *
@@ -10,6 +11,8 @@
  * and INRIA Saclay - Ile-de-France, Parc Club Orsay Universite,
  * ZAC des vignes, 4 rue Jacques Monod, 91893 Orsay, France
  * and Ecole Normale Superieure, 45 rue d’Ulm, 75230 Paris, France
+ * and Inria Paris - Rocquencourt, Domaine de Voluceau - Rocquencourt,
+ * B.P. 105 - 78153 Le Chesnay, France
  */
 
 #include <assert.h>
@@ -1139,11 +1142,39 @@ void test_gist_case(struct isl_ctx *ctx, const char *name)
 	fclose(input);
 }
 
+struct {
+	const char *set;
+	const char *context;
+	const char *gist;
+} gist_tests[] = {
+	{ "{ [a, b, c] : a <= 15 and a >= 1 }",
+	  "{ [a, b, c] : exists (e0 = floor((-1 + a)/16): a >= 1 and "
+			"c <= 30 and 32e0 >= -62 + 2a + 2b - c and b >= 0) }",
+	  "{ [a, b, c] : a <= 15 }" },
+};
+
 static int test_gist(struct isl_ctx *ctx)
 {
+	int i;
 	const char *str;
 	isl_basic_set *bset1, *bset2;
 	isl_map *map1, *map2;
+	int equal;
+
+	for (i = 0; i < ARRAY_SIZE(gist_tests); ++i) {
+		bset1 = isl_basic_set_read_from_str(ctx, gist_tests[i].set);
+		bset2 = isl_basic_set_read_from_str(ctx, gist_tests[i].context);
+		bset1 = isl_basic_set_gist(bset1, bset2);
+		bset2 = isl_basic_set_read_from_str(ctx, gist_tests[i].gist);
+		equal = isl_basic_set_is_equal(bset1, bset2);
+		isl_basic_set_free(bset1);
+		isl_basic_set_free(bset2);
+		if (equal < 0)
+			return -1;
+		if (!equal)
+			isl_die(ctx, isl_error_unknown,
+				"incorrect gist result", return -1);
+	}
 
 	test_gist_case(ctx, "gist1");
 

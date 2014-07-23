@@ -1766,6 +1766,42 @@ error:
 	return bset;
 }
 
+/* Remove constraints from "bmap" that are identical to constraints
+ * in "context" or that are more relaxed (greater constant term).
+ *
+ * We perform the test for shifted copies on the pure constraints
+ * in remove_shifted_constraints.
+ */
+static __isl_give isl_basic_map *isl_basic_map_remove_shifted_constraints(
+	__isl_take isl_basic_map *bmap, __isl_take isl_basic_map *context)
+{
+	isl_basic_set *bset, *bset_context;
+
+	if (!bmap || !context)
+		goto error;
+
+	if (bmap->n_ineq == 0 || context->n_ineq == 0) {
+		isl_basic_map_free(context);
+		return bmap;
+	}
+
+	context = isl_basic_map_align_divs(context, bmap);
+	bmap = isl_basic_map_align_divs(bmap, context);
+
+	bset = isl_basic_map_underlying_set(isl_basic_map_copy(bmap));
+	bset_context = isl_basic_map_underlying_set(context);
+	bset = remove_shifted_constraints(bset, bset_context);
+	isl_basic_set_free(bset_context);
+
+	bmap = isl_basic_map_overlying_set(bset, bmap);
+
+	return bmap;
+error:
+	isl_basic_map_free(bmap);
+	isl_basic_map_free(context);
+	return NULL;
+}
+
 /* Does the (linear part of a) constraint "c" involve any of the "len"
  * "relevant" dimensions?
  */
@@ -2174,10 +2210,27 @@ static struct isl_basic_map *normalize_divs_in_context(
 	return bmap;
 }
 
+/* Return a basic map that has the same intersection with "context" as "bmap"
+ * and that is as "simple" as possible.
+ *
+ * The core computation is performed on the pure constraints.
+ * When we add back the meaning of the integer divisions, we need
+ * to (re)introduce the div constraints.  If we happen to have
+ * discovered that some of these integer divisions are equal to
+ * some affine combination of other variables, then these div
+ * constraints may end up getting simplified in terms of the equalities,
+ * resulting in extra inequalities on the other variables that
+ * may have been removed already or that may not even have been
+ * part of the input.  We try and remove those constraints of
+ * this form that are most obviously redundant with respect to
+ * the context.
+ */
 struct isl_basic_map *isl_basic_map_gist(struct isl_basic_map *bmap,
 	struct isl_basic_map *context)
 {
-	struct isl_basic_set *bset;
+	isl_basic_set *bset, *eq;
+	isl_basic_map *eq_bmap;
+	unsigned n_div, n_eq, n_ineq;
 
 	if (!bmap || !context)
 		goto error;
@@ -2205,11 +2258,32 @@ struct isl_basic_map *isl_basic_map_gist(struct isl_basic_map *bmap,
 
 	context = isl_basic_map_align_divs(context, bmap);
 	bmap = isl_basic_map_align_divs(bmap, context);
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
 
 	bset = uset_gist(isl_basic_map_underlying_set(isl_basic_map_copy(bmap)),
-			 isl_basic_map_underlying_set(context));
+		    isl_basic_map_underlying_set(isl_basic_map_copy(context)));
 
-	return isl_basic_map_overlying_set(bset, bmap);
+	if (!bset || bset->n_eq == 0 || n_div == 0 ||
+	    isl_basic_set_plain_is_empty(bset)) {
+		isl_basic_map_free(context);
+		return isl_basic_map_overlying_set(bset, bmap);
+	}
+
+	n_eq = bset->n_eq;
+	n_ineq = bset->n_ineq;
+	eq = isl_basic_set_copy(bset);
+	eq = isl_basic_set_cow(bset);
+	if (isl_basic_set_free_inequality(eq, n_ineq) < 0)
+		eq = isl_basic_set_free(eq);
+	if (isl_basic_set_free_equality(bset, n_eq) < 0)
+		bset = isl_basic_set_free(bset);
+
+	eq_bmap = isl_basic_map_overlying_set(eq, isl_basic_map_copy(bmap));
+	eq_bmap = isl_basic_map_remove_shifted_constraints(eq_bmap, context);
+	bmap = isl_basic_map_overlying_set(bset, bmap);
+	bmap = isl_basic_map_intersect(bmap, eq_bmap);
+
+	return bmap;
 error:
 	isl_basic_map_free(bmap);
 	isl_basic_map_free(context);
