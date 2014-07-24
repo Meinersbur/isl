@@ -3506,7 +3506,7 @@ static __isl_give isl_ast_graft_list *generate_next_level(
 	}
 
 	depth = isl_ast_build_get_depth(build);
-	if (depth >= isl_set_dim(build->domain, isl_dim_set))
+	if (depth >= isl_ast_build_dim(build, isl_dim_set))
 		return generate_inner_level(executed, build);
 
 	if (isl_union_map_n_map(executed) == 1)
