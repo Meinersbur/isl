@@ -2223,7 +2223,8 @@ static struct isl_basic_map *normalize_divs_in_context(
  * may have been removed already or that may not even have been
  * part of the input.  We try and remove those constraints of
  * this form that are most obviously redundant with respect to
- * the context.
+ * the context.  We also remove those div constraints that are
+ * redundant with respect to the other constraints in the result.
  */
 struct isl_basic_map *isl_basic_map_gist(struct isl_basic_map *bmap,
 	struct isl_basic_map *context)
@@ -2282,6 +2283,7 @@ struct isl_basic_map *isl_basic_map_gist(struct isl_basic_map *bmap,
 	eq_bmap = isl_basic_map_remove_shifted_constraints(eq_bmap, context);
 	bmap = isl_basic_map_overlying_set(bset, bmap);
 	bmap = isl_basic_map_intersect(bmap, eq_bmap);
+	bmap = isl_basic_map_remove_redundancies(bmap);
 
 	return bmap;
 error:
