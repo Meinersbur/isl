@@ -1,10 +1,13 @@
 /*
  * Copyright 2008-2009 Katholieke Universiteit Leuven
+ * Copyright 2014      INRIA Rocquencourt
  *
  * Use of this software is governed by the MIT license
  *
  * Written by Sven Verdoolaege, K.U.Leuven, Departement
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
+ * and Inria Paris - Rocquencourt, Domaine de Voluceau - Rocquencourt,
+ * B.P. 105 - 78153 Le Chesnay, France
  */
 
 #include <isl_ctx_private.h>
@@ -18,6 +21,7 @@
 #include <isl_options_private.h>
 #include "isl_equalities.h"
 #include "isl_tab.h"
+#include <isl_sort.h>
 
 static struct isl_basic_set *uset_convex_hull_wrap_bounded(struct isl_set *set);
 
@@ -2391,6 +2395,359 @@ __isl_give isl_basic_set *isl_set_unshifted_simple_hull(
 	__isl_take isl_set *set)
 {
 	return isl_map_unshifted_simple_hull(set);
+}
+
+/* Check if "ineq" is a bound on "set" and, if so, add it to "hull".
+ *
+ * For each basic set in "set", we first check if the basic set
+ * contains a translate of "ineq".  If this translate is more relaxed,
+ * then we assume that "ineq" is not a bound on this basic set.
+ * Otherwise, we know that it is a bound.
+ * If the basic set does not contain a translate of "ineq", then
+ * we call is_bound to perform the test.
+ */
+static __isl_give isl_basic_set *add_bound_from_constraint(
+	__isl_take isl_basic_set *hull, struct sh_data *data,
+	__isl_keep isl_set *set, isl_int *ineq)
+{
+	int i, k;
+	isl_ctx *ctx;
+	uint32_t c_hash;
+	struct ineq_cmp_data v;
+
+	if (!hull || !set)
+		return isl_basic_set_free(hull);
+
+	v.len = isl_basic_set_total_dim(hull);
+	v.p = ineq;
+	c_hash = isl_seq_get_hash(ineq + 1, v.len);
+
+	ctx = isl_basic_set_get_ctx(hull);
+	for (i = 0; i < set->n; ++i) {
+		int bound;
+		struct isl_hash_table_entry *entry;
+
+		entry = isl_hash_table_find(ctx, data->p[i].table,
+						c_hash, &has_ineq, &v, 0);
+		if (entry) {
+			isl_int *ineq_i = entry->data;
+			int neg, more_relaxed;
+
+			neg = isl_seq_is_neg(ineq_i + 1, ineq + 1, v.len);
+			if (neg)
+				isl_int_neg(ineq_i[0], ineq_i[0]);
+			more_relaxed = isl_int_gt(ineq_i[0], ineq[0]);
+			if (neg)
+				isl_int_neg(ineq_i[0], ineq_i[0]);
+			if (more_relaxed)
+				break;
+			else
+				continue;
+		}
+		bound = is_bound(data, set, i, ineq, 0);
+		if (bound < 0)
+			return isl_basic_set_free(hull);
+		if (!bound)
+			break;
+	}
+	if (i < set->n)
+		return hull;
+
+	k = isl_basic_set_alloc_inequality(hull);
+	if (k < 0)
+		return isl_basic_set_free(hull);
+	isl_seq_cpy(hull->ineq[k], ineq, 1 + v.len);
+
+	return hull;
+}
+
+/* Compute a superset of the convex hull of "set" that is described
+ * by only some of the "n_ineq" constraints in the list "ineq", where "set"
+ * has no parameters or integer divisions.
+ *
+ * The inequalities in "ineq" are assumed to have been sorted such
+ * that constraints with the same linear part appear together and
+ * that among constraints with the same linear part, those with
+ * smaller constant term appear first.
+ *
+ * We reuse the same data structure that is used by uset_simple_hull,
+ * but we do not need the hull table since we will not consider the
+ * same constraint more than once.  We therefore allocate it with zero size.
+ *
+ * We run through the constraints and try to add them one by one,
+ * skipping identical constraints.  If we have added a constraint and
+ * the next constraint is a more relaxed translate, then we skip this
+ * next constraint as well.
+ */
+static __isl_give isl_basic_set *uset_unshifted_simple_hull_from_constraints(
+	__isl_take isl_set *set, int n_ineq, isl_int **ineq)
+{
+	int i;
+	int last_added = 0;
+	struct sh_data *data = NULL;
+	isl_basic_set *hull = NULL;
+	unsigned dim;
+
+	hull = isl_basic_set_alloc_space(isl_set_get_space(set), 0, 0, n_ineq);
+	if (!hull)
+		goto error;
+
+	data = sh_data_alloc(set, 0);
+	if (!data)
+		goto error;
+
+	dim = isl_set_dim(set, isl_dim_set);
+	for (i = 0; i < n_ineq; ++i) {
+		int hull_n_ineq = hull->n_ineq;
+		int parallel;
+
+		parallel = i > 0 && isl_seq_eq(ineq[i - 1] + 1, ineq[i] + 1,
+						dim);
+		if (parallel &&
+		    (last_added || isl_int_eq(ineq[i - 1][0], ineq[i][0])))
+			continue;
+		hull = add_bound_from_constraint(hull, data, set, ineq[i]);
+		if (!hull)
+			goto error;
+		last_added = hull->n_ineq > hull_n_ineq;
+	}
+
+	sh_data_free(data);
+	isl_set_free(set);
+	return hull;
+error:
+	sh_data_free(data);
+	isl_set_free(set);
+	isl_basic_set_free(hull);
+	return NULL;
+}
+
+/* Collect pointers to all the inequalities in the elements of "list"
+ * in "ineq".  For equalities, store both a pointer to the equality and
+ * a pointer to its opposite, which is first copied to "mat".
+ * "ineq" and "mat" are assumed to have been preallocated to the right size
+ * (the number of inequalities + 2 times the number of equalites and
+ * the number of equalities, respectively).
+ */
+static __isl_give isl_mat *collect_inequalities(__isl_take isl_mat *mat,
+	__isl_keep isl_basic_set_list *list, isl_int **ineq)
+{
+	int i, j, n, n_eq, n_ineq;
+
+	if (!mat)
+		return NULL;
+
+	n_eq = 0;
+	n_ineq = 0;
+	n = isl_basic_set_list_n_basic_set(list);
+	for (i = 0; i < n; ++i) {
+		isl_basic_set *bset;
+		bset = isl_basic_set_list_get_basic_set(list, i);
+		if (!bset)
+			return isl_mat_free(mat);
+		for (j = 0; j < bset->n_eq; ++j) {
+			ineq[n_ineq++] = mat->row[n_eq];
+			ineq[n_ineq++] = bset->eq[j];
+			isl_seq_neg(mat->row[n_eq++], bset->eq[j], mat->n_col);
+		}
+		for (j = 0; j < bset->n_ineq; ++j)
+			ineq[n_ineq++] = bset->ineq[j];
+		isl_basic_set_free(bset);
+	}
+
+	return mat;
+}
+
+/* Comparison routine for use as an isl_sort callback.
+ *
+ * Constraints with the same linear part are sorted together and
+ * among constraints with the same linear part, those with smaller
+ * constant term are sorted first.
+ */
+static int cmp_ineq(const void *a, const void *b, void *arg)
+{
+	unsigned dim = *(unsigned *) arg;
+	isl_int * const *ineq1 = a;
+	isl_int * const *ineq2 = b;
+	int cmp;
+
+	cmp = isl_seq_cmp((*ineq1) + 1, (*ineq2) + 1, dim);
+	if (cmp != 0)
+		return cmp;
+	return isl_int_cmp((*ineq1)[0], (*ineq2)[0]);
+}
+
+/* Compute a superset of the convex hull of "set" that is described
+ * by only constraints in the elements of "list", where "set" has
+ * no parameters or integer divisions.
+ *
+ * We collect all the constraints in those elements and then
+ * sort the constraints such that constraints with the same linear part
+ * are sorted together and that those with smaller constant term are
+ * sorted first.
+ */
+static __isl_give isl_basic_set *uset_unshifted_simple_hull_from_basic_set_list(
+	__isl_take isl_set *set, __isl_take isl_basic_set_list *list)
+{
+	int i, n, n_eq, n_ineq;
+	unsigned dim;
+	isl_ctx *ctx;
+	isl_mat *mat = NULL;
+	isl_int **ineq = NULL;
+	isl_basic_set *hull;
+
+	if (!set)
+		goto error;
+	ctx = isl_set_get_ctx(set);
+
+	n_eq = 0;
+	n_ineq = 0;
+	n = isl_basic_set_list_n_basic_set(list);
+	for (i = 0; i < n; ++i) {
+		isl_basic_set *bset;
+		bset = isl_basic_set_list_get_basic_set(list, i);
+		if (!bset)
+			goto error;
+		n_eq += bset->n_eq;
+		n_ineq += 2 * bset->n_eq + bset->n_ineq;
+		isl_basic_set_free(bset);
+	}
+
+	ineq = isl_alloc_array(ctx, isl_int *, n_ineq);
+	if (n_ineq > 0 && !ineq)
+		goto error;
+
+	dim = isl_set_dim(set, isl_dim_set);
+	mat = isl_mat_alloc(ctx, n_eq, 1 + dim);
+	mat = collect_inequalities(mat, list, ineq);
+	if (!mat)
+		goto error;
+
+	if (isl_sort(ineq, n_ineq, sizeof(ineq[0]), &cmp_ineq, &dim) < 0)
+		goto error;
+
+	hull = uset_unshifted_simple_hull_from_constraints(set, n_ineq, ineq);
+
+	isl_mat_free(mat);
+	free(ineq);
+	isl_basic_set_list_free(list);
+	return hull;
+error:
+	isl_mat_free(mat);
+	free(ineq);
+	isl_set_free(set);
+	isl_basic_set_list_free(list);
+	return NULL;
+}
+
+/* Compute a superset of the convex hull of "set" that is described
+ * by only constraints in the elements of "list".
+ *
+ * If the list is empty, then we can only describe the universe set.
+ * If the input set is empty, then all constraints are valid, so
+ * we return the intersection of the elements in "list".
+ *
+ * Otherwise, we align all divs and temporarily treat them
+ * as regular variables, computing the unshifted simple hull in
+ * uset_unshifted_simple_hull_from_basic_set_list.
+ */
+static __isl_give isl_basic_set *set_unshifted_simple_hull_from_basic_set_list(
+	__isl_take isl_set *set, __isl_take isl_basic_set_list *list)
+{
+	isl_basic_set *model;
+	isl_basic_set *hull;
+
+	if (!set || !list)
+		goto error;
+
+	if (isl_basic_set_list_n_basic_set(list) == 0) {
+		isl_space *space;
+
+		space = isl_set_get_space(set);
+		isl_set_free(set);
+		isl_basic_set_list_free(list);
+		return isl_basic_set_universe(space);
+	}
+	if (isl_set_plain_is_empty(set)) {
+		isl_set_free(set);
+		return isl_basic_set_list_intersect(list);
+	}
+
+	set = isl_set_align_divs_to_basic_set_list(set, list);
+	if (!set)
+		goto error;
+	list = isl_basic_set_list_align_divs_to_basic_set(list, set->p[0]);
+
+	model = isl_basic_set_list_get_basic_set(list, 0);
+
+	set = isl_set_to_underlying_set(set);
+	list = isl_basic_set_list_underlying_set(list);
+
+	hull = uset_unshifted_simple_hull_from_basic_set_list(set, list);
+	hull = isl_basic_map_overlying_set(hull, model);
+
+	return hull;
+error:
+	isl_set_free(set);
+	isl_basic_set_list_free(list);
+	return NULL;
+}
+
+/* Return a sequence of the basic sets that make up the sets in "list".
+ */
+static __isl_give isl_basic_set_list *collect_basic_sets(
+	__isl_take isl_set_list *list)
+{
+	int i, n;
+	isl_ctx *ctx;
+	isl_basic_set_list *bset_list;
+
+	if (!list)
+		return NULL;
+	n = isl_set_list_n_set(list);
+	ctx = isl_set_list_get_ctx(list);
+	bset_list = isl_basic_set_list_alloc(ctx, 0);
+
+	for (i = 0; i < n; ++i) {
+		isl_set *set;
+		isl_basic_set_list *list_i;
+
+		set = isl_set_list_get_set(list, i);
+		set = isl_set_compute_divs(set);
+		list_i = isl_set_get_basic_set_list(set);
+		isl_set_free(set);
+		bset_list = isl_basic_set_list_concat(bset_list, list_i);
+	}
+
+	isl_set_list_free(list);
+	return bset_list;
+}
+
+/* Compute a superset of the convex hull of "set" that is described
+ * by only constraints in the elements of "list".
+ *
+ * If "set" is the universe, then the convex hull (and therefore
+ * any superset of the convexhull) is the universe as well.
+ *
+ * Otherwise, we collect all the basic sets in the set list and
+ * continue with set_unshifted_simple_hull_from_basic_set_list.
+ */
+__isl_give isl_basic_set *isl_set_unshifted_simple_hull_from_set_list(
+	__isl_take isl_set *set, __isl_take isl_set_list *list)
+{
+	isl_basic_set_list *bset_list;
+	int is_universe;
+
+	is_universe = isl_set_plain_is_universe(set);
+	if (is_universe < 0)
+		set = isl_set_free(set);
+	if (is_universe < 0 || is_universe) {
+		isl_set_list_free(list);
+		return isl_set_unshifted_simple_hull(set);
+	}
+
+	bset_list = collect_basic_sets(list);
+	return set_unshifted_simple_hull_from_basic_set_list(set, bset_list);
 }
 
 /* Given a set "set", return parametric bounds on the dimension "dim".
