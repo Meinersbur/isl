@@ -3037,6 +3037,8 @@ the same (number of) parameters.
 	__isl_give isl_basic_set *isl_basic_set_intersect(
 		__isl_take isl_basic_set *bset1,
 		__isl_take isl_basic_set *bset2);
+	__isl_give isl_basic_set *isl_basic_set_list_intersect(
+		__isl_take struct isl_basic_set_list *list);
 	__isl_give isl_set *isl_set_intersect_params(
 		__isl_take isl_set *set,
 		__isl_take isl_set *params);
@@ -3093,6 +3095,8 @@ The second argument to the C<_params> functions needs to be
 a parametric (basic) set.  For the other functions, a parametric set
 for either argument is only allowed if the other argument is
 a parametric set as well.
+The list passed to C<isl_basic_set_list_intersect> needs to have
+at least one element and all elements need to live in the same space.
 
 =item * Union
 

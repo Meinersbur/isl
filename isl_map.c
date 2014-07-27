@@ -2,6 +2,7 @@
  * Copyright 2008-2009 Katholieke Universiteit Leuven
  * Copyright 2010      INRIA Saclay
  * Copyright 2012-2014 Ecole Normale Superieure
+ * Copyright 2014      INRIA Rocquencourt
  *
  * Use of this software is governed by the MIT license
  *
@@ -10,6 +11,8 @@
  * and INRIA Saclay - Ile-de-France, Parc Club Orsay Universite,
  * ZAC des vignes, 4 rue Jacques Monod, 91893 Orsay, France 
  * and Ecole Normale Superieure, 45 rue d’Ulm, 75230 Paris, France
+ * and Inria Paris - Rocquencourt, Domaine de Voluceau - Rocquencourt,
+ * B.P. 105 - 78153 Le Chesnay, France
  */
 
 #include <string.h>
@@ -9155,6 +9158,37 @@ struct isl_basic_set *isl_basic_set_interval(struct isl_ctx *ctx,
 	return bset;
 error:
 	isl_basic_set_free(bset);
+	return NULL;
+}
+
+/* Return the intersection of the elements in the non-empty list "list".
+ * All elements are assumed to live in the same space.
+ */
+__isl_give isl_basic_set *isl_basic_set_list_intersect(
+	__isl_take struct isl_basic_set_list *list)
+{
+	int i, n;
+	isl_basic_set *bset;
+
+	if (!list)
+		return NULL;
+	n = isl_basic_set_list_n_basic_set(list);
+	if (n < 1)
+		isl_die(isl_basic_set_list_get_ctx(list), isl_error_invalid,
+			"expecting non-empty list", goto error);
+	
+	bset = isl_basic_set_list_get_basic_set(list, 0);
+	for (i = 1; i < n; ++i) {
+		isl_basic_set *bset_i;
+
+		bset_i = isl_basic_set_list_get_basic_set(list, i);
+		bset = isl_basic_set_intersect(bset, bset_i);
+	}
+
+	isl_basic_set_list_free(list);
+	return bset;
+error:
+	isl_basic_set_list_free(list);
 	return NULL;
 }
 
