@@ -8381,6 +8381,29 @@ __isl_give isl_set *isl_set_align_divs_to_basic_set_list(
 	return isl_set_align_divs(set);
 }
 
+/* Align the divs of each element of "list" to those of "bset".
+ * Both "bset" and the elements of "list" are assumed to have known divs.
+ */
+__isl_give isl_basic_set_list *isl_basic_set_list_align_divs_to_basic_set(
+	__isl_take isl_basic_set_list *list, __isl_keep isl_basic_set *bset)
+{
+	int i, n;
+
+	if (!list || !bset)
+		return isl_basic_set_list_free(list);
+
+	n = isl_basic_set_list_n_basic_set(list);
+	for (i = 0; i < n; ++i) {
+		isl_basic_set *bset_i;
+
+		bset_i = isl_basic_set_list_get_basic_set(list, i);
+		bset_i = isl_basic_set_align_divs(bset_i, bset);
+		list = isl_basic_set_list_set_basic_set(list, i, bset_i);
+	}
+
+	return list;
+}
+
 static __isl_give isl_set *set_apply( __isl_take isl_set *set,
 	__isl_take isl_map *map)
 {
