@@ -2191,9 +2191,9 @@ static struct isl_basic_set *add_bound(struct isl_basic_set *hull,
 		return hull;
 
 	k = isl_basic_set_alloc_inequality(hull);
-	isl_seq_cpy(hull->ineq[k], ineq, 1 + v.len);
 	if (k < 0)
 		goto error;
+	isl_seq_cpy(hull->ineq[k], ineq, 1 + v.len);
 
 	for (j = 0; j < i; ++j) {
 		int bound;
