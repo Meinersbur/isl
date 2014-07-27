@@ -8351,6 +8351,36 @@ struct isl_set *isl_set_align_divs(struct isl_set *set)
 	return (struct isl_set *)isl_map_align_divs((struct isl_map *)set);
 }
 
+/* Align the divs of the basic sets in "set" to those
+ * of the basic sets in "list", as well as to the other basic sets in "set".
+ * The elements in "list" are assumed to have known divs.
+ */
+__isl_give isl_set *isl_set_align_divs_to_basic_set_list(
+	__isl_take isl_set *set, __isl_keep isl_basic_set_list *list)
+{
+	int i, n;
+
+	set = isl_set_compute_divs(set);
+	set = isl_set_cow(set);
+	if (!set || !list)
+		return isl_set_free(set);
+	if (set->n == 0)
+		return set;
+
+	n = isl_basic_set_list_n_basic_set(list);
+	for (i = 0; i < n; ++i) {
+		isl_basic_set *bset;
+
+		bset = isl_basic_set_list_get_basic_set(list, i);
+		set->p[0] = isl_basic_set_align_divs(set->p[0], bset);
+		isl_basic_set_free(bset);
+	}
+	if (!set->p[0])
+		return isl_set_free(set);
+
+	return isl_set_align_divs(set);
+}
+
 static __isl_give isl_set *set_apply( __isl_take isl_set *set,
 	__isl_take isl_map *map)
 {
