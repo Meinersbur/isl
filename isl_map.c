@@ -9237,6 +9237,30 @@ error:
 	return NULL;
 }
 
+/* Return the basic sets in "set" as a list.
+ */
+__isl_give isl_basic_set_list *isl_set_get_basic_set_list(
+	__isl_keep isl_set *set)
+{
+	int i;
+	isl_ctx *ctx;
+	isl_basic_set_list *list;
+
+	if (!set)
+		return NULL;
+	ctx = isl_set_get_ctx(set);
+	list = isl_basic_set_list_alloc(ctx, set->n);
+
+	for (i = 0; i < set->n; ++i) {
+		isl_basic_set *bset;
+
+		bset = isl_basic_set_copy(set->p[i]);
+		list = isl_basic_set_list_add(list, bset);
+	}
+
+	return list;
+}
+
 /* Return the intersection of the elements in the non-empty list "list".
  * All elements are assumed to live in the same space.
  */

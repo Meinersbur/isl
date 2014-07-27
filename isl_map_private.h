@@ -392,6 +392,9 @@ __isl_give isl_set *isl_set_fix(__isl_take isl_set *set,
 int isl_map_plain_is_fixed(__isl_keep isl_map *map,
 	enum isl_dim_type type, unsigned pos, isl_int *val);
 
+__isl_give isl_basic_set_list *isl_set_get_basic_set_list(
+	__isl_keep isl_set *set);
+
 __isl_give isl_map *isl_map_fixed_power(__isl_take isl_map *map, isl_int exp);
 
 int isl_basic_set_count_upto(__isl_keep isl_basic_set *bset,
