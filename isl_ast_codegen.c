@@ -565,12 +565,6 @@ static __isl_give isl_ast_graft *add_degenerate_guard(
 	depth = isl_ast_build_get_depth(build);
 
 	dom = isl_set_from_basic_set(isl_basic_set_copy(bounds));
-	if (isl_ast_build_has_stride(build, depth)) {
-		isl_set *stride;
-
-		stride = isl_ast_build_get_stride_constraint(build);
-		dom = isl_set_intersect(dom, stride);
-	}
 	dom = isl_set_eliminate(dom, isl_dim_set, depth, 1);
 	dom = isl_ast_build_compute_gist(build, dom);
 
@@ -643,6 +637,7 @@ static __isl_give isl_ast_graft *refine_degenerate(
 		return isl_ast_graft_free(graft);
 
 	graft = add_degenerate_guard(graft, bounds, build);
+	graft = add_stride_guard(graft, build);
 
 	return graft;
 }
