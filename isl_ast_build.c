@@ -785,38 +785,6 @@ error:
 	return NULL;
 }
 
-/* Update build->domain based on the constraints enforced by inner loops.
- *
- * The constraints in build->pending may end up not getting generated
- * if they are implied by "enforced".  We therefore reconstruct
- * build->domain from build->generated and build->pending, dropping
- * those constraint in build->pending that may not get generated.
- */
-__isl_give isl_ast_build *isl_ast_build_set_enforced(
-	__isl_take isl_ast_build *build, __isl_take isl_basic_set *enforced)
-{
-	isl_set *set;
-
-	build = isl_ast_build_cow(build);
-	if (!build)
-		goto error;
-
-	set = isl_set_from_basic_set(enforced);
-	set = isl_set_gist(isl_set_copy(build->pending), set);
-	set = isl_set_intersect(isl_set_copy(build->generated), set);
-
-	isl_set_free(build->domain);
-	build->domain = set;
-
-	if (!build->domain)
-		return isl_ast_build_free(build);
-
-	return build;
-error:
-	isl_basic_set_free(enforced);
-	return isl_ast_build_free(build);
-}
-
 /* Intersect build->domain with "set", where "set" is specified
  * in terms of the internal schedule domain.
  */

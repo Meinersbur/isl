@@ -968,8 +968,6 @@ static __isl_give isl_ast_graft *set_for_node_expressions(
 		return NULL;
 
 	build = isl_ast_build_copy(build);
-	build = isl_ast_build_set_enforced(build,
-					isl_ast_graft_get_enforced(graft));
 
 	node = graft->node;
 	node->u.f.init = reduce_list(isl_ast_op_max, lower, build);

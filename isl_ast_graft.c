@@ -335,8 +335,6 @@ static __isl_give isl_ast_graft *insert_if_node(
 	}
 
 	build = isl_ast_build_copy(build);
-	build = isl_ast_build_set_enforced(build,
-					isl_ast_graft_get_enforced(graft));
 	graft->node = ast_node_insert_if(graft->node, guard, build);
 	isl_ast_build_free(build);
 
