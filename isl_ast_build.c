@@ -934,6 +934,14 @@ __isl_give isl_set *isl_ast_build_get_domain(__isl_keep isl_ast_build *build)
 	return build ? isl_set_copy(build->domain) : NULL;
 }
 
+/* Return a copy of the set of pending constraints.
+ */
+__isl_give isl_set *isl_ast_build_get_pending(
+	__isl_keep isl_ast_build *build)
+{
+	return build ? isl_set_copy(build->pending) : NULL;
+}
+
 /* Return the number of variables of the given type
  * in the (internal) schedule space.
  */

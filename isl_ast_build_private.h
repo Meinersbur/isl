@@ -193,6 +193,8 @@ __isl_give isl_ast_build *isl_ast_build_set_single_valued(
 	__isl_take isl_ast_build *build, int sv);
 __isl_give isl_set *isl_ast_build_get_domain(
 	__isl_keep isl_ast_build *build);
+__isl_give isl_set *isl_ast_build_get_pending(
+	__isl_keep isl_ast_build *build);
 __isl_give isl_ast_build *isl_ast_build_restrict_generated(
 	__isl_take isl_ast_build *build, __isl_take isl_set *set);
 __isl_give isl_ast_build *isl_ast_build_restrict_pending(
