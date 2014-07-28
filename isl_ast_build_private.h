@@ -199,6 +199,8 @@ __isl_give isl_set *isl_ast_build_get_generated(
 	__isl_keep isl_ast_build *build);
 __isl_give isl_ast_build *isl_ast_build_restrict_generated(
 	__isl_take isl_ast_build *build, __isl_take isl_set *set);
+__isl_give isl_ast_build *isl_ast_build_replace_pending_by_guard(
+	__isl_take isl_ast_build *build, __isl_take isl_set *guard);
 __isl_give isl_ast_build *isl_ast_build_restrict_pending(
 	__isl_take isl_ast_build *build, __isl_take isl_set *set);
 __isl_give isl_ast_build *isl_ast_build_set_enforced(

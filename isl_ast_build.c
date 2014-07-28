@@ -866,6 +866,30 @@ error:
 	return NULL;
 }
 
+/* Replace the set of pending constraints by "guard", which is then
+ * no longer considered as pending.
+ * That is, add "guard" to the generated constraints and clear all pending
+ * constraints, making the domain equal to the generated constraints.
+ */
+__isl_give isl_ast_build *isl_ast_build_replace_pending_by_guard(
+	__isl_take isl_ast_build *build, __isl_take isl_set *guard)
+{
+	build = isl_ast_build_restrict_generated(build, guard);
+	build = isl_ast_build_cow(build);
+	if (!build)
+		return NULL;
+
+	isl_set_free(build->domain);
+	build->domain = isl_set_copy(build->generated);
+	isl_set_free(build->pending);
+	build->pending = isl_set_universe(isl_set_get_space(build->domain));
+
+	if (!build->pending)
+		return isl_ast_build_free(build);
+
+	return build;
+}
+
 /* Intersect build->pending and build->domain with "set",
  * where "set" is specified in terms of the internal schedule domain.
  */
