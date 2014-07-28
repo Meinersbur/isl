@@ -1251,7 +1251,7 @@ static int detect_stride(__isl_take isl_constraint *c, void *user)
 	n_div = isl_constraint_dim(c, isl_dim_div);
 	for (i = 0; i < n_div; ++i) {
 		v = isl_constraint_get_coefficient_val(c, isl_dim_div, i);
-		v = isl_val_gcd(stride, v);
+		stride = isl_val_gcd(stride, v);
 	}
 
 	v = isl_constraint_get_coefficient_val(c, isl_dim_set, data->pos);
