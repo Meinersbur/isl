@@ -637,7 +637,6 @@ static __isl_give isl_ast_graft *refine_degenerate(
 		return isl_ast_graft_free(graft);
 
 	graft = add_degenerate_guard(graft, bounds, build);
-	graft = add_stride_guard(graft, build);
 
 	return graft;
 }
@@ -1207,7 +1206,6 @@ static __isl_give isl_ast_graft *refine_generic(
 	isl_basic_set_free(bounds);
 
 	graft = refine_generic_split(graft, list, domain, build);
-	graft = add_stride_guard(graft, build);
 
 	return graft;
 }
@@ -1374,8 +1372,10 @@ static __isl_give isl_ast_graft *create_node_scaled(
 		graft = refine_degenerate(graft, bounds, build, sub_build);
 	else
 		graft = refine_generic(graft, bounds, domain, build);
-	if (!eliminated)
+	if (!eliminated) {
+		graft = add_stride_guard(graft, build);
 		graft = after_each_for(graft, body_build);
+	}
 
 	isl_ast_build_free(body_build);
 	isl_ast_build_free(sub_build);
