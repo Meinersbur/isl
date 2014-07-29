@@ -573,16 +573,16 @@ error:
 }
 
 /* Add guards implied by the "generated constraints",
- * but not (necessarily) enforced by the generated AST to "graft".
+ * but not (necessarily) enforced by the generated AST to "guard".
  * In particular, if there is any stride constraints,
  * then add the guard implied by those constraints.
  * If we have generated a degenerate loop, then add the guard
  * implied by "bounds" on the outer dimensions, i.e., the guard
  * that ensures that the single value actually exists.
  */
-static __isl_give isl_ast_graft *add_implied_guards(
-	__isl_take isl_ast_graft *graft, int degenerate,
-	__isl_keep isl_basic_set *bounds, __isl_keep isl_ast_build *build)
+static __isl_give isl_set *add_implied_guards(__isl_take isl_set *guard,
+	int degenerate, __isl_keep isl_basic_set *bounds,
+	__isl_keep isl_ast_build *build)
 {
 	int depth, has_stride;
 	isl_set *dom;
@@ -590,7 +590,7 @@ static __isl_give isl_ast_graft *add_implied_guards(
 	depth = isl_ast_build_get_depth(build);
 	has_stride = isl_ast_build_has_stride(build, depth);
 	if (!has_stride && !degenerate)
-		return graft;
+		return guard;
 
 	if (degenerate) {
 		bounds = isl_basic_set_copy(bounds);
@@ -599,17 +599,17 @@ static __isl_give isl_ast_graft *add_implied_guards(
 		dom = isl_set_from_basic_set(bounds);
 		dom = isl_set_eliminate(dom, isl_dim_set, depth, 1);
 		dom = isl_ast_build_compute_gist(build, dom);
-		graft = isl_ast_graft_add_guard(graft, dom, build);
+		guard = isl_set_intersect(guard, dom);
 	}
 
 	if (has_stride) {
 		dom = isl_ast_build_get_stride_constraint(build);
 		dom = isl_set_eliminate(dom, isl_dim_set, depth, 1);
 		dom = isl_ast_build_compute_gist(build, dom);
-		graft = isl_ast_graft_add_guard(graft, dom, build);
+		guard = isl_set_intersect(guard, dom);
 	}
 
-	return graft;
+	return guard;
 }
 
 /* Update "graft" based on "sub_build" for the degenerate case.
@@ -1363,6 +1363,8 @@ static __isl_give isl_ast_graft *create_node_scaled(
 		children = isl_ast_graft_list_gist_guards(children,
 						    isl_set_copy(hoisted));
 	guard = isl_set_intersect(guard, hoisted);
+	if (!eliminated)
+		guard = add_implied_guards(guard, degenerate, bounds, build);
 
 	graft = isl_ast_graft_alloc_from_children(children,
 			    isl_set_copy(guard), enforced, build, sub_build);
@@ -1384,10 +1386,8 @@ static __isl_give isl_ast_graft *create_node_scaled(
 		isl_ast_build_free(for_build);
 	}
 	isl_set_free(guard);
-	if (!eliminated) {
-		graft = add_implied_guards(graft, degenerate, bounds, build);
+	if (!eliminated)
 		graft = after_each_for(graft, body_build);
-	}
 
 	isl_ast_build_free(body_build);
 	isl_ast_build_free(sub_build);
