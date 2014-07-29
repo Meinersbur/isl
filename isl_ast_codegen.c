@@ -1212,10 +1212,7 @@ static __isl_give isl_ast_graft *refine_generic(
 	if (!build || !graft)
 		return isl_ast_graft_free(graft);
 
-	bounds = isl_basic_set_copy(bounds);
-	bounds = isl_ast_build_compute_gist_basic_set(build, bounds);
 	list = isl_basic_set_get_constraint_list(bounds);
-	isl_basic_set_free(bounds);
 
 	graft = refine_generic_split(graft, list, domain, build);
 
@@ -1382,8 +1379,10 @@ static __isl_give isl_ast_graft *create_node_scaled(
 		graft = refine_eliminated(graft, bounds, build);
 	else if (degenerate)
 		graft = refine_degenerate(graft, build, sub_build);
-	else
+	else {
+		bounds = isl_ast_build_compute_gist_basic_set(build, bounds);
 		graft = refine_generic(graft, bounds, domain, build);
+	}
 	if (!eliminated) {
 		graft = add_implied_guards(graft, degenerate, bounds, build);
 		graft = after_each_for(graft, body_build);
