@@ -579,6 +579,28 @@ static __isl_give isl_ast_graft *add_degenerate_guard(
 	return graft;
 }
 
+/* Add the guard implied by the current stride constraint (if any),
+ * but not (necessarily) enforced by the generated AST to "graft".
+ */
+static __isl_give isl_ast_graft *add_stride_guard(
+	__isl_take isl_ast_graft *graft, __isl_keep isl_ast_build *build)
+{
+	int depth;
+	isl_set *dom;
+
+	depth = isl_ast_build_get_depth(build);
+	if (!isl_ast_build_has_stride(build, depth))
+		return graft;
+
+	dom = isl_ast_build_get_stride_constraint(build);
+	dom = isl_set_eliminate(dom, isl_dim_set, depth, 1);
+	dom = isl_ast_build_compute_gist(build, dom);
+
+	graft = isl_ast_graft_add_guard(graft, dom, build);
+
+	return graft;
+}
+
 /* Update "graft" based on "bounds" for the eliminated case.
  *
  * In the eliminated case, no for node is created, so we only need
@@ -1159,28 +1181,6 @@ static __isl_give isl_ast_graft *refine_generic_split(
 	isl_ast_build_free(for_build);
 
 	graft = isl_ast_graft_add_guard(graft, guard, build);
-
-	return graft;
-}
-
-/* Add the guard implied by the current stride constraint (if any),
- * but not (necessarily) enforced by the generated AST to "graft".
- */
-static __isl_give isl_ast_graft *add_stride_guard(
-	__isl_take isl_ast_graft *graft, __isl_keep isl_ast_build *build)
-{
-	int depth;
-	isl_set *dom;
-
-	depth = isl_ast_build_get_depth(build);
-	if (!isl_ast_build_has_stride(build, depth))
-		return graft;
-
-	dom = isl_ast_build_get_stride_constraint(build);
-	dom = isl_set_eliminate(dom, isl_dim_set, depth, 1);
-	dom = isl_ast_build_compute_gist(build, dom);
-
-	graft = isl_ast_graft_add_guard(graft, dom, build);
 
 	return graft;
 }
