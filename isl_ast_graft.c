@@ -1,10 +1,13 @@
 /*
  * Copyright 2012      Ecole Normale Superieure
+ * Copyright 2014      INRIA Rocquencourt
  *
  * Use of this software is governed by the MIT license
  *
  * Written by Sven Verdoolaege,
  * Ecole Normale Superieure, 45 rue d’Ulm, 75230 Paris, France
+ * and Inria Paris - Rocquencourt, Domaine de Voluceau - Rocquencourt,
+ * B.P. 105 - 78153 Le Chesnay, France
  */
 
 #include <isl_ast_private.h>
@@ -716,7 +719,9 @@ __isl_give isl_basic_set *isl_ast_graft_list_extract_shared_enforced(
 /* Record "guard" in "graft" so that it will be enforced somewhere
  * up the tree.  If the graft already has a guard, then it may be partially
  * redundant in combination with the new guard and in the context
- * of build->domain.  We therefore (re)compute the gist of the intersection
+ * the generated constraints of "build".  In fact, the new guard
+ * may in itself have some redundant constraints.
+ * We therefore (re)compute the gist of the intersection
  * and coalesce the result.
  */
 static __isl_give isl_ast_graft *store_guard(__isl_take isl_ast_graft *graft,
@@ -736,7 +741,8 @@ static __isl_give isl_ast_graft *store_guard(__isl_take isl_ast_graft *graft,
 	}
 
 	graft->guard = isl_set_intersect(graft->guard, guard);
-	graft->guard = isl_ast_build_compute_gist(build, graft->guard);
+	graft->guard = isl_set_gist(graft->guard,
+				    isl_ast_build_get_generated(build));
 	graft->guard = isl_set_coalesce(graft->guard);
 	if (!graft->guard)
 		return isl_ast_graft_free(graft);
@@ -804,12 +810,17 @@ __isl_give isl_ast_graft *isl_ast_graft_alloc_from_children(
 	__isl_take isl_basic_set *enforced, __isl_keep isl_ast_build *build,
 	__isl_keep isl_ast_build *sub_build)
 {
+	isl_ast_build *guard_build;
 	isl_ast_node *node;
 	isl_ast_node_list *node_list;
 	isl_ast_graft *graft;
 
+	guard_build = isl_ast_build_copy(sub_build);
+	guard_build = isl_ast_build_replace_pending_by_guard(guard_build,
+						isl_set_copy(guard));
 	list = gist_guards(list, guard);
-	list = insert_pending_guard_nodes(list, sub_build);
+	list = insert_pending_guard_nodes(list, guard_build);
+	isl_ast_build_free(guard_build);
 
 	node_list = extract_node_list(list);
 	node = isl_ast_node_from_ast_node_list(node_list);
@@ -979,30 +990,12 @@ __isl_give isl_set *isl_ast_graft_get_guard(__isl_keep isl_ast_graft *graft)
 }
 
 /* Record that "guard" needs to be inserted in "graft".
- *
- * We first simplify the guard in the context of the enforced set and
- * then we store the guard in case we may be able
- * to hoist it to higher levels and/or combine it with those of other grafts.
  */
 __isl_give isl_ast_graft *isl_ast_graft_add_guard(
 	__isl_take isl_ast_graft *graft,
 	__isl_take isl_set *guard, __isl_keep isl_ast_build *build)
 {
-	isl_basic_set *enforced;
-
-	if (!graft || !build)
-		goto error;
-
-	enforced = isl_basic_set_copy(graft->enforced);
-	guard = isl_set_gist(guard, isl_set_from_basic_set(enforced));
-
-	graft = store_guard(graft, guard, build);
-
-	return graft;
-error:
-	isl_set_free(guard);
-	isl_ast_graft_free(graft);
-	return NULL;
+	return store_guard(graft, guard, build);
 }
 
 /* Reformulate the "graft", which was generated in the context

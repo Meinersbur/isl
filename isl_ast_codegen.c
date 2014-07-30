@@ -1,10 +1,13 @@
 /*
  * Copyright 2012-2014 Ecole Normale Superieure
+ * Copyright 2014      INRIA Rocquencourt
  *
  * Use of this software is governed by the MIT license
  *
  * Written by Sven Verdoolaege,
  * Ecole Normale Superieure, 45 rue d’Ulm, 75230 Paris, France
+ * and Inria Paris - Rocquencourt, Domaine de Voluceau - Rocquencourt,
+ * B.P. 105 - 78153 Le Chesnay, France
  */
 
 #include <limits.h>
@@ -130,12 +133,22 @@ static __isl_give isl_ast_graft *at_each_domain(__isl_take isl_ast_graft *graft,
  * domain element and put a guard around it based on the (simplified)
  * domain of "executed".
  *
+ * At this stage, any pending constraints in the build can no longer
+ * be simplified with respect to any enforced constraints since
+ * the call node does not have any enforced constraints.
+ * We therefore turn all pending constraints into guards
+ * (after simplifying them with respect to the already generated
+ * constraints) and add them to both the generated constraints
+ * and the guard of the constructed graft.  This guard will ensure
+ * that the constraints are effectively generated.
+ *
  * If the user has set an at_each_domain callback, it is called
  * on the constructed call expression node.
  */
 static int generate_domain(__isl_take isl_map *executed, void *user)
 {
 	struct isl_generate_domain_data *data = user;
+	isl_ast_build *build;
 	isl_ast_graft *graft;
 	isl_ast_graft_list *list;
 	isl_set *guard;
@@ -167,11 +180,18 @@ static int generate_domain(__isl_take isl_map *executed, void *user)
 	}
 	guard = isl_map_domain(isl_map_copy(map));
 	guard = isl_set_compute_divs(guard);
+	guard = isl_set_intersect(guard,
+				    isl_ast_build_get_pending(data->build));
 	guard = isl_set_coalesce(guard);
-	guard = isl_ast_build_compute_gist(data->build, guard);
-	graft = isl_ast_graft_alloc_domain(map, data->build);
-	graft = at_each_domain(graft, executed, data->build);
+	guard = isl_ast_build_specialize(data->build, guard);
+	guard = isl_set_gist(guard, isl_ast_build_get_generated(data->build));
 
+	build = isl_ast_build_copy(data->build);
+	build = isl_ast_build_replace_pending_by_guard(build,
+							isl_set_copy(guard));
+	graft = isl_ast_graft_alloc_domain(map, build);
+	graft = at_each_domain(graft, executed, build);
+	isl_ast_build_free(build);
 	isl_map_free(executed);
 	graft = isl_ast_graft_add_guard(graft, guard, data->build);
 
@@ -191,6 +211,10 @@ error:
  *
  * Note that the node returned by the user may be an entire tree.
  *
+ * Since the node itself cannot enforce any constraints, we turn
+ * all pending constraints into guards and add them to the resulting
+ * graft to ensure that they will be generated.
+ *
  * Before we pass control to the user, we first clear some information
  * from the build that is (presumbably) only meaningful
  * for the current code generation.
@@ -200,11 +224,15 @@ error:
 static __isl_give isl_ast_graft_list *call_create_leaf(
 	__isl_take isl_union_map *executed, __isl_take isl_ast_build *build)
 {
+	isl_set *guard;
 	isl_ast_node *node;
 	isl_ast_graft *graft;
 	isl_ast_build *user_build;
 
+	guard = isl_ast_build_get_pending(build);
 	user_build = isl_ast_build_copy(build);
+	user_build = isl_ast_build_replace_pending_by_guard(user_build,
+							isl_set_copy(guard));
 	user_build = isl_ast_build_set_executed(user_build, executed);
 	user_build = isl_ast_build_clear_local_info(user_build);
 	if (!user_build)
@@ -212,6 +240,7 @@ static __isl_give isl_ast_graft_list *call_create_leaf(
 	else
 		node = build->create_leaf(user_build, build->create_leaf_user);
 	graft = isl_ast_graft_alloc(node, build);
+	graft = isl_ast_graft_add_guard(graft, guard, build);
 	isl_ast_build_free(build);
 	return isl_ast_graft_list_from_ast_graft(graft);
 }
@@ -543,36 +572,6 @@ error:
 	return NULL;
 }
 
-/* Add a guard to "graft" based on "bound" in the case of a degenerate
- * level (including the special case of an eliminated level).
- *
- * We eliminate the current dimension, simplify the result in the current
- * build and add the result as guards to the graft.
- *
- * Note that we cannot simply drop the constraints on the current dimension
- * even in the eliminated case, because the single affine expression may
- * not be explicitly available in "bounds".  Moreover, the single affine
- * expression may only be defined on a subset of the build domain,
- * so we do in some cases need to insert a guard even in the eliminated case.
- */
-static __isl_give isl_ast_graft *add_degenerate_guard(
-	__isl_take isl_ast_graft *graft, __isl_keep isl_basic_set *bounds,
-	__isl_keep isl_ast_build *build)
-{
-	int depth;
-	isl_set *dom;
-
-	depth = isl_ast_build_get_depth(build);
-
-	dom = isl_set_from_basic_set(isl_basic_set_copy(bounds));
-	dom = isl_set_eliminate(dom, isl_dim_set, depth, 1);
-	dom = isl_ast_build_compute_gist(build, dom);
-
-	graft = isl_ast_graft_add_guard(graft, dom, build);
-
-	return graft;
-}
-
 /* Add guards implied by the "generated constraints",
  * but not (necessarily) enforced by the generated AST to "graft".
  * In particular, if there is any stride constraints,
@@ -595,6 +594,8 @@ static __isl_give isl_ast_graft *add_implied_guards(
 
 	if (degenerate) {
 		bounds = isl_basic_set_copy(bounds);
+		bounds = isl_basic_set_drop_constraints_not_involving_dims(
+					bounds, isl_dim_set, depth, 1);
 		dom = isl_set_from_basic_set(bounds);
 		dom = isl_set_eliminate(dom, isl_dim_set, depth, 1);
 		dom = isl_ast_build_compute_gist(build, dom);
@@ -611,25 +612,13 @@ static __isl_give isl_ast_graft *add_implied_guards(
 	return graft;
 }
 
-/* Update "graft" based on "bounds" for the eliminated case.
- *
- * In the eliminated case, no for node is created, so we only need
- * to check if "bounds" imply any guards that need to be inserted.
- */
-static __isl_give isl_ast_graft *refine_eliminated(
-	__isl_take isl_ast_graft *graft, __isl_keep isl_basic_set *bounds,
-	__isl_keep isl_ast_build *build)
-{
-	return add_degenerate_guard(graft, bounds, build);
-}
-
 /* Update "graft" based on "sub_build" for the degenerate case.
  *
  * "build" is the build in which graft->node was created
  * "sub_build" contains information about the current level itself,
  * including the single value attained.
  *
- * We first set the initialization part of the for loop to the single
+ * We set the initialization part of the for loop to the single
  * value attained by the current dimension.
  * The increment and condition are not strictly needed as the are known
  * to be "1" and "iterator <= value" respectively.
@@ -1124,7 +1113,9 @@ static int count_constraints(__isl_take isl_constraint *c, void *user)
  * non-degenerate, case.
  *
  * "list" respresent the list of bounds that need to be encoded by
- * the for loop (or a guard around the for loop).
+ * the for loop.  Only the constraints that involve the iterator
+ * are relevant here.  The other constraints are taken care of by
+ * the caller and are included in the generated constraints of "build".
  * "domain" is the subset of the intersection of the constraints
  * for which some code is executed.
  * "build" is the build in which graft->node was created.
@@ -1133,17 +1124,11 @@ static int count_constraints(__isl_take isl_constraint *c, void *user)
  * are independent of the loop iterator.
  *
  * The actual for loop bounds are generated in refine_generic_bounds.
- * If there are any constraints that are independent of the loop iterator,
- * we need to put a guard around the for loop (which may get hoisted up
- * to higher levels) and we call refine_generic_bounds in a build
- * where this guard is enforced.
  */
 static __isl_give isl_ast_graft *refine_generic_split(
 	__isl_take isl_ast_graft *graft, __isl_take isl_constraint_list *list,
 	__isl_keep isl_set *domain, __isl_keep isl_ast_build *build)
 {
-	isl_ast_build *for_build;
-	isl_set *guard;
 	struct isl_ast_count_constraints_data data;
 	isl_constraint_list *lower;
 	isl_constraint_list *upper;
@@ -1163,32 +1148,12 @@ static __isl_give isl_ast_graft *refine_generic_split(
 		return isl_ast_graft_free(graft);
 	}
 
-	lower = isl_constraint_list_copy(list);
-	lower = isl_constraint_list_drop(lower, 0, data.n_indep);
+	lower = isl_constraint_list_drop(list, 0, data.n_indep);
 	upper = isl_constraint_list_copy(lower);
 	lower = isl_constraint_list_drop(lower, data.n_lower, data.n_upper);
 	upper = isl_constraint_list_drop(upper, 0, data.n_lower);
 
-	if (data.n_indep == 0) {
-		isl_constraint_list_free(list);
-		return refine_generic_bounds(graft, lower, upper,
-						domain, build);
-	}
-
-	list = isl_constraint_list_drop(list, data.n_indep,
-					data.n_lower + data.n_upper);
-	guard = intersect_constraints(list);
-	isl_constraint_list_free(list);
-
-	for_build = isl_ast_build_copy(build);
-	for_build = isl_ast_build_restrict_pending(for_build,
-						isl_set_copy(guard));
-	graft = refine_generic_bounds(graft, lower, upper, domain, for_build);
-	isl_ast_build_free(for_build);
-
-	graft = isl_ast_graft_add_guard(graft, guard, build);
-
-	return graft;
+	return refine_generic_bounds(graft, lower, upper, domain, build);
 }
 
 /* Update "graft" based on "bounds" and "domain" for the generic,
@@ -1263,6 +1228,22 @@ static __isl_give isl_basic_set *extract_shared_enforced(
 	return isl_basic_set_universe(space);
 }
 
+/* Return the pending constraints of "build" that are not already taken
+ * care of (by a combination of "enforced" and the generated constraints
+ * of "build").
+ */
+static __isl_give isl_set *extract_pending(__isl_keep isl_ast_build *build,
+	__isl_keep isl_basic_set *enforced)
+{
+	isl_set *guard, *context;
+
+	guard = isl_ast_build_get_pending(build);
+	context = isl_set_from_basic_set(isl_basic_set_copy(enforced));
+	context = isl_set_intersect(context,
+					isl_ast_build_get_generated(build));
+	return isl_set_gist(guard, context);
+}
+
 /* Create an AST node for the current dimension based on
  * the schedule domain "bounds" and return the node encapsulated
  * in an isl_ast_graft.
@@ -1319,13 +1300,21 @@ static __isl_give isl_basic_set *extract_shared_enforced(
  * create a surrounding graft for the current level and insert
  * the for node we created (if the current level is not eliminated).
  * Before creating a graft for the current level, we first extract
- * hoistable constraints from the child guards.  These constraints
+ * hoistable constraints from the child guards and combine them
+ * with the pending constraints in the build.  These constraints
  * are used to simplify the child guards and then added to the guard
- * of the current graft.
+ * of the current graft to ensure that they will be generated.
+ * If the hoisted guard is a disjunction, then we use it directly
+ * to gist the guards on the children before intersect it with the
+ * pending constraints.  We do so because this disjunction is typically
+ * identical to the guards on the children such that these guards
+ * can be effectively removed completely.  After the intersection,
+ * the gist operation would have a harder time figuring this out.
  *
- * Finally, we set the bounds of the for loop and insert guards
- * (either in the AST or in the graft) in one of
- * refine_eliminated, refine_degenerate or refine_generic.
+ * Finally, we set the bounds of the for loop in either
+ * refine_degenerate or refine_generic.
+ * We do so in a context where the pending constraints of the build
+ * have been replaced by the guard of the current graft.
  */
 static __isl_give isl_ast_graft *create_node_scaled(
 	__isl_take isl_union_map *executed,
@@ -1336,7 +1325,7 @@ static __isl_give isl_ast_graft *create_node_scaled(
 	int degenerate, eliminated;
 	isl_basic_set *hull;
 	isl_basic_set *enforced;
-	isl_set *hoisted;
+	isl_set *guard, *hoisted;
 	isl_ast_node *node = NULL;
 	isl_ast_graft *graft;
 	isl_ast_graft_list *children;
@@ -1370,19 +1359,33 @@ static __isl_give isl_ast_graft *create_node_scaled(
 				    isl_ast_build_copy(body_build));
 
 	enforced = extract_shared_enforced(children, build);
+	guard = extract_pending(sub_build, enforced);
 	hoisted = isl_ast_graft_list_extract_hoistable_guard(children, build);
-	graft = isl_ast_graft_alloc_from_children(children, hoisted, enforced,
-						    build, sub_build);
-	if (!eliminated)
-		graft = isl_ast_graft_insert_for(graft, node);
-	if (eliminated)
-		graft = refine_eliminated(graft, bounds, build);
-	else if (degenerate)
-		graft = refine_degenerate(graft, build, sub_build);
-	else {
+	if (isl_set_n_basic_set(hoisted) > 1)
+		children = isl_ast_graft_list_gist_guards(children,
+						    isl_set_copy(hoisted));
+	guard = isl_set_intersect(guard, hoisted);
+
+	graft = isl_ast_graft_alloc_from_children(children,
+			    isl_set_copy(guard), enforced, build, sub_build);
+
+	if (!degenerate)
 		bounds = isl_ast_build_compute_gist_basic_set(build, bounds);
-		graft = refine_generic(graft, bounds, domain, build);
+	if (!eliminated) {
+		isl_ast_build *for_build;
+
+		graft = isl_ast_graft_insert_for(graft, node);
+		for_build = isl_ast_build_copy(build);
+		for_build = isl_ast_build_replace_pending_by_guard(for_build,
+							isl_set_copy(guard));
+		if (degenerate)
+			graft = refine_degenerate(graft, for_build, sub_build);
+		else
+			graft = refine_generic(graft, bounds,
+					domain, for_build);
+		isl_ast_build_free(for_build);
 	}
+	isl_set_free(guard);
 	if (!eliminated) {
 		graft = add_implied_guards(graft, degenerate, bounds, build);
 		graft = after_each_for(graft, body_build);
