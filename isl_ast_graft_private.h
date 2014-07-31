@@ -15,7 +15,7 @@ typedef struct isl_ast_graft isl_ast_graft;
  * "guard" contains conditions that should still be enforced by
  * some ancestor of the current tree.  In particular, the already
  * generated tree assumes that these conditions hold, but may not
- * enforced them itself.
+ * have enforced them itself.
  * The guard should not contain any unknown divs as it will be used
  * to generate an if condition.
  *
