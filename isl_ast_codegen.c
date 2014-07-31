@@ -642,8 +642,7 @@ static __isl_give isl_ast_graft *refine_eliminated(
  * value attained by the current dimension.
  * The increment and condition are not strictly needed as the are known
  * to be "1" and "iterator <= value" respectively.
- * Then we set the size of the iterator and
- * check if "bounds" imply any guards that need to be inserted.
+ * Then we check if "bounds" imply any guards that need to be inserted.
  */
 static __isl_give isl_ast_graft *refine_degenerate(
 	__isl_take isl_ast_graft *graft, __isl_keep isl_basic_set *bounds,
@@ -978,7 +977,6 @@ static int use_upper_bound_list(isl_ctx *ctx, int n_upper,
  *
  * In particular,
  * - set the initialization part of the loop to the maximum of the lower bounds
- * - set the size of the iterator based on the values attained by the iterator
  * - extract the increment from the stride of the current dimension
  * - construct the for condition either based on a list of upper bounds
  *	or on a set of upper bound constraints.
