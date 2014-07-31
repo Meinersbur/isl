@@ -777,6 +777,39 @@ static __isl_give isl_ast_graft_list *gist_guards(
 	return list;
 }
 
+/* Allocate a graft in "build" based on the list of grafts in "sub_build".
+ * "guard" and "enforced" are the guard and enforced constraints
+ * of the allocated graft.  The guard is used to simplify the guards
+ * of the elements in "list".
+ *
+ * The node is initialized to either a block containing the nodes of "children"
+ * or, if there is only a single child, the node of that child.
+ * If the current level requires a for node, it should be inserted by
+ * a subsequent call to isl_ast_graft_insert_for.
+ */
+__isl_give isl_ast_graft *isl_ast_graft_alloc_from_children(
+	__isl_take isl_ast_graft_list *list, __isl_take isl_set *guard,
+	__isl_take isl_basic_set *enforced, __isl_keep isl_ast_build *build,
+	__isl_keep isl_ast_build *sub_build)
+{
+	isl_ast_node *node;
+	isl_ast_node_list *node_list;
+	isl_ast_graft *graft;
+
+	list = gist_guards(list, guard);
+	list = insert_pending_guard_nodes(list, sub_build);
+
+	node_list = extract_node_list(list);
+	node = isl_ast_node_from_ast_node_list(node_list);
+	isl_ast_graft_list_free(list);
+
+	graft = isl_ast_graft_alloc(node, build);
+	graft = store_guard(graft, guard, build);
+	graft = isl_ast_graft_enforce(graft, enforced);
+
+	return graft;
+}
+
 /* Combine the grafts in the list into a single graft.
  *
  * If "up" is set then the resulting graft will be used at an outer level.
@@ -802,33 +835,25 @@ static __isl_give isl_ast_graft *ast_graft_list_fuse(
 	__isl_keep isl_ast_build *sub_build, int up)
 {
 	isl_ctx *ctx;
-	isl_ast_node *node;
 	isl_ast_graft *graft;
-	isl_ast_node_list *node_list;
+	isl_basic_set *enforced;
 	isl_set *guard;
 
 	if (!list)
 		return NULL;
 
 	ctx = isl_ast_build_get_ctx(build);
-	guard = extract_hoistable_guard(list, build);
-	list = gist_guards(list, guard);
-	list = insert_pending_guard_nodes(list, sub_build);
-
-	node_list = extract_node_list(list);
-	node = isl_ast_node_from_ast_node_list(node_list);
-
-	graft = isl_ast_graft_alloc(node, build);
-
-	if (!up || isl_options_get_ast_build_exploit_nested_bounds(ctx)) {
-		isl_basic_set *enforced;
+	if (!up || isl_options_get_ast_build_exploit_nested_bounds(ctx))
 		enforced = extract_shared_enforced(list, build);
-		graft = isl_ast_graft_enforce(graft, enforced);
+	else {
+		isl_space *space = isl_ast_build_get_space(build, 1);
+		enforced = isl_basic_set_universe(space);
 	}
 
-	graft = store_guard(graft, guard, build);
+	guard = extract_hoistable_guard(list, build);
+	graft = isl_ast_graft_alloc_from_children(list, guard, enforced,
+						    build, sub_build);
 
-	isl_ast_graft_list_free(list);
 	return graft;
 }
 

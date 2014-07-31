@@ -44,6 +44,10 @@ isl_ctx *isl_ast_graft_get_ctx(__isl_keep isl_ast_graft *graft);
 
 __isl_give isl_ast_graft *isl_ast_graft_alloc(
 	__isl_take isl_ast_node *node, __isl_keep isl_ast_build *build);
+__isl_give isl_ast_graft *isl_ast_graft_alloc_from_children(
+	__isl_take isl_ast_graft_list *list, __isl_take isl_set *guard,
+	__isl_take isl_basic_set *enforced, __isl_keep isl_ast_build *build,
+	__isl_keep isl_ast_build *sub_build);
 __isl_give isl_ast_graft *isl_ast_graft_alloc_level(
 	__isl_take isl_ast_graft_list *children,
 	__isl_keep isl_ast_build *build, __isl_keep isl_ast_build *sub_build);
