@@ -2261,7 +2261,7 @@ error:
 }
 
 /* Return a map that has the same intersection with "context" as "map"
- * and that as "simple" as possible.
+ * and that is as "simple" as possible.
  *
  * If "map" is already the universe, then we cannot make it any simpler.
  * Similarly, if "context" is the universe, then we cannot exploit it
