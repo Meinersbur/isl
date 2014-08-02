@@ -2392,6 +2392,7 @@ static __isl_give isl_set *do_unroll(struct isl_codegen_domains *domains,
 	depth = isl_ast_build_get_depth(domains->build);
 	build = isl_ast_build_copy(domains->build);
 	domain = isl_ast_build_eliminate_inner(build, domain);
+	domain = isl_set_intersect(domain, isl_ast_build_get_domain(build));
 	build = isl_ast_build_detect_strides(build, isl_set_copy(domain));
 	expansion = isl_ast_build_get_stride_expansion(build);
 
