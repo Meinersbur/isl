@@ -2512,6 +2512,91 @@ error:
 	return isl_aff_free(data.lower);
 }
 
+/* Call "fn" on each iteration of the current dimension of "domain".
+ * Return -1 on failure.
+ *
+ * Since we are going to be iterating over the individual values,
+ * we first check if there are any strides on the current dimension.
+ * If there is, we rewrite the current dimension i as
+ *
+ *		i = stride i' + offset
+ *
+ * and then iterate over individual values of i' instead.
+ *
+ * We then look for a lower bound on i' and a size such that the domain
+ * is a subset of
+ *
+ *	{ [j,i'] : l(j) <= i' < l(j) + n }
+ *
+ * and then take slices of the domain at values of i'
+ * between l(j) and l(j) + n - 1.
+ *
+ * We compute the unshifted simple hull of each slice to ensure that
+ * we have a single basic set per offset.  The slicing constraint
+ * may get simplified away before the unshifted simple hull is taken
+ * and may therefore in some rare cases disappear from the result.
+ * We therefore explicitly add the constraint back after computing
+ * the unshifted simple hull to ensure that the basic sets
+ * remain disjoint.  The constraints that are dropped by taking the hull
+ * will be taken into account at the next level, as in the case of the
+ * atomic option.
+ *
+ * Finally, we map i' back to i and call "fn".
+ */
+static int foreach_iteration(__isl_take isl_set *domain,
+	__isl_keep isl_ast_build *build,
+	int (*fn)(__isl_take isl_basic_set *bset, void *user), void *user)
+{
+	int i, n;
+	int depth;
+	isl_multi_aff *expansion;
+	isl_basic_map *bmap;
+	isl_aff *lower;
+	isl_ast_build *stride_build;
+
+	depth = isl_ast_build_get_depth(build);
+
+	domain = isl_ast_build_eliminate_inner(build, domain);
+	domain = isl_set_intersect(domain, isl_ast_build_get_domain(build));
+	stride_build = isl_ast_build_copy(build);
+	stride_build = isl_ast_build_detect_strides(stride_build,
+							isl_set_copy(domain));
+	expansion = isl_ast_build_get_stride_expansion(stride_build);
+
+	domain = isl_set_preimage_multi_aff(domain,
+					    isl_multi_aff_copy(expansion));
+	domain = isl_ast_build_eliminate_divs(stride_build, domain);
+	isl_ast_build_free(stride_build);
+
+	bmap = isl_basic_map_from_multi_aff(expansion);
+
+	lower = find_unroll_lower_bound(build, domain, depth, bmap, &n);
+	if (!lower)
+		domain = isl_set_free(domain);
+
+	for (i = 0; i < n; ++i) {
+		isl_set *set;
+		isl_basic_set *bset;
+		isl_constraint *slice;
+
+		slice = at_offset(depth, lower, i);
+		set = isl_set_copy(domain);
+		set = isl_set_add_constraint(set, isl_constraint_copy(slice));
+		bset = isl_set_unshifted_simple_hull(set);
+		bset = isl_basic_set_add_constraint(bset, slice);
+		bset = isl_basic_set_apply(bset, isl_basic_map_copy(bmap));
+
+		if (fn(bset, user) < 0)
+			break;
+	}
+
+	isl_aff_free(lower);
+	isl_set_free(domain);
+	isl_basic_map_free(bmap);
+
+	return i < n ? -1 : 0;
+}
+
 /* Data structure for storing the results and the intermediate objects
  * of compute_domains.
  *
@@ -2544,104 +2629,72 @@ struct isl_codegen_domains {
 	isl_set *done;
 };
 
+/* Internal data structure for do_unroll.
+ *
+ * "domains" stores the results of compute_domains.
+ * "class_domain" is the original class domain passed to do_unroll.
+ * "unroll_domain" collects the unrolled iterations.
+ */
+struct isl_ast_unroll_data {
+	struct isl_codegen_domains *domains;
+	isl_set *class_domain;
+	isl_set *unroll_domain;
+};
+
+/* Given an iteration of an unrolled domain represented by "bset",
+ * add it to data->domains->list.
+ * Since we may have dropped some constraints, we intersect with
+ * the class domain again to ensure that each element in the list
+ * is disjoint from the other class domains.
+ */
+static int do_unroll_iteration(__isl_take isl_basic_set *bset, void *user)
+{
+	struct isl_ast_unroll_data *data = user;
+	isl_set *set;
+	isl_basic_set_list *list;
+
+	set = isl_set_from_basic_set(bset);
+	data->unroll_domain = isl_set_union(data->unroll_domain,
+					    isl_set_copy(set));
+	set = isl_set_intersect(set, isl_set_copy(data->class_domain));
+	set = isl_set_make_disjoint(set);
+	list = isl_basic_set_list_from_set(set);
+	data->domains->list = isl_basic_set_list_concat(data->domains->list,
+							list);
+
+	return 0;
+}
+
 /* Extend domains->list with a list of basic sets, one for each value
  * of the current dimension in "domain" and remove the corresponding
  * sets from the class domain.  Return the updated class domain.
  * The divs that involve the current dimension have not been projected out
  * from this domain.
  *
- * Since we are going to be iterating over the individual values,
- * we first check if there are any strides on the current dimension.
- * If there is, we rewrite the current dimension i as
- *
- *		i = stride i' + offset
- *
- * and then iterate over individual values of i' instead.
- *
- * We then look for a lower bound on i' and a size such that the domain
- * is a subset of
- *
- *	{ [j,i'] : l(j) <= i' < l(j) + n }
- *
- * and then take slices of the domain at values of i'
- * between l(j) and l(j) + n - 1.
- *
- * We compute the unshifted simple hull of each slice to ensure that
- * we have a single basic set per offset.  The slicing constraint
- * may get simplified away before the unshifted simple hull is taken
- * and may therefore in some rare cases disappear from the result.
- * We therefore explicitly add the constraint back after computing
- * the unshifted simple hull to ensure that the basic sets
- * remain disjoint.  The constraints that are dropped by taking the hull
- * will be taken into account at the next level, as in the case of the
- * atomic option.
- *
- * Finally, we map i' back to i and add each basic set to the list.
- * Since we may have dropped some constraints, we intersect with
- * the class domain again to ensure that each element in the list
- * is disjoint from the other class domains.
+ * We call foreach_iteration to iterate over the individual values and
+ * in do_unroll_iteration we collect the individual basic sets in
+ * domains->list and their union in data->unroll_domain, which is then
+ * used to update the class domain.
  */
 static __isl_give isl_set *do_unroll(struct isl_codegen_domains *domains,
 	__isl_take isl_set *domain, __isl_take isl_set *class_domain)
 {
-	int i, n;
-	int depth;
-	isl_aff *lower;
-	isl_multi_aff *expansion;
-	isl_basic_map *bmap;
-	isl_set *unroll_domain;
-	isl_ast_build *build;
+	struct isl_ast_unroll_data data;
 
 	if (!domain)
 		return isl_set_free(class_domain);
+	if (!class_domain)
+		return isl_set_free(domain);
 
-	depth = isl_ast_build_get_depth(domains->build);
-	build = isl_ast_build_copy(domains->build);
-	domain = isl_ast_build_eliminate_inner(build, domain);
-	domain = isl_set_intersect(domain, isl_ast_build_get_domain(build));
-	build = isl_ast_build_detect_strides(build, isl_set_copy(domain));
-	expansion = isl_ast_build_get_stride_expansion(build);
+	data.domains = domains;
+	data.class_domain = class_domain;
+	data.unroll_domain = isl_set_empty(isl_set_get_space(domain));
 
-	domain = isl_set_preimage_multi_aff(domain,
-					    isl_multi_aff_copy(expansion));
-	domain = isl_ast_build_eliminate_divs(build, domain);
+	if (foreach_iteration(domain, domains->build,
+				&do_unroll_iteration, &data) < 0)
+		data.unroll_domain = isl_set_free(data.unroll_domain);
 
-	isl_ast_build_free(build);
-
-	bmap = isl_basic_map_from_multi_aff(expansion);
-
-	lower = find_unroll_lower_bound(domains->build, domain, depth, bmap,
-					&n);
-	if (!lower)
-		class_domain = isl_set_free(class_domain);
-
-	unroll_domain = isl_set_empty(isl_set_get_space(domain));
-
-	for (i = 0; class_domain && i < n; ++i) {
-		isl_set *set;
-		isl_basic_set *bset;
-		isl_constraint *slice;
-		isl_basic_set_list *list;
-
-		slice = at_offset(depth, lower, i);
-		set = isl_set_copy(domain);
-		set = isl_set_add_constraint(set, isl_constraint_copy(slice));
-		bset = isl_set_unshifted_simple_hull(set);
-		bset = isl_basic_set_add_constraint(bset, slice);
-		bset = isl_basic_set_apply(bset, isl_basic_map_copy(bmap));
-		set = isl_set_from_basic_set(bset);
-		unroll_domain = isl_set_union(unroll_domain, isl_set_copy(set));
-		set = isl_set_intersect(set, isl_set_copy(class_domain));
-		set = isl_set_make_disjoint(set);
-		list = isl_basic_set_list_from_set(set);
-		domains->list = isl_basic_set_list_concat(domains->list, list);
-	}
-
-	class_domain = isl_set_subtract(class_domain, unroll_domain);
-
-	isl_aff_free(lower);
-	isl_set_free(domain);
-	isl_basic_map_free(bmap);
+	class_domain = isl_set_subtract(class_domain, data.unroll_domain);
 
 	return class_domain;
 }
