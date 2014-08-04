@@ -250,6 +250,9 @@ struct isl_map *isl_map_drop_inputs(
 struct isl_map *isl_map_drop(struct isl_map *map,
 	enum isl_dim_type type, unsigned first, unsigned n);
 
+__isl_give isl_basic_map *isl_basic_map_remove_duplicate_constraints(
+	__isl_take isl_basic_map *bmap, int *progress, int detect_divs);
+
 struct isl_map *isl_map_remove_empty_parts(struct isl_map *map);
 struct isl_set *isl_set_remove_empty_parts(struct isl_set *set);
 
