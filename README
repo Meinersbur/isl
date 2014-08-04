@@ -29,6 +29,11 @@ https://www.ohloh.net/p/isl on ohloh.
 For bug reports, feature requests and questions,
 contact http://groups.google.com/group/isl-development
 
+Whenever you report a bug, please mention the exact version of isl
+that you are using (output of "./isl_cat --version").  If you are unable
+to compile isl, then report the git version (output of "git describe")
+or the version included in the name of the tarball.
+
 If you use isl for your research, you are invited do cite
 the following paper and/or the paper(s) describing the specific
 operations you use.
