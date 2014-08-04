@@ -4433,6 +4433,38 @@ int isl_basic_map_add_div_constraints(struct isl_basic_map *bmap, unsigned div)
 							bmap->div[div]);
 }
 
+/* For each known div d = floor(f/m), add the constraints
+ *
+ *		f - m d >= 0
+ *		-(f-(n-1)) + m d >= 0
+ */
+__isl_give isl_basic_map *isl_basic_map_add_known_div_constraints(
+	__isl_take isl_basic_map *bmap)
+{
+	int i;
+	unsigned n_div;
+
+	if (!bmap)
+		return NULL;
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	if (n_div == 0)
+		return bmap;
+	bmap = isl_basic_map_cow(bmap);
+	bmap = isl_basic_map_extend_constraints(bmap, 0, 2 * n_div);
+	if (!bmap)
+		return NULL;
+	for (i = 0; i < n_div; ++i) {
+		if (isl_int_is_zero(bmap->div[i][0]))
+			continue;
+		if (isl_basic_map_add_div_constraints(bmap, i) < 0)
+			return isl_basic_map_free(bmap);
+	}
+
+	bmap = isl_basic_map_remove_duplicate_constraints(bmap, NULL, 0);
+	bmap = isl_basic_map_finalize(bmap);
+	return bmap;
+}
+
 /* Add the div constraint of sign "sign" for div "div" of "bmap".
  *
  * In particular, if this div is of the form d = floor(f/m),
@@ -4550,16 +4582,7 @@ struct isl_basic_map *isl_basic_map_overlying_set(
 			isl_seq_cpy(bmap->div[i], like->div[i], 1 + 1 + ltotal);
 			isl_seq_clr(bmap->div[i]+1+1+ltotal, total - ltotal);
 		}
-		bmap = isl_basic_map_extend_constraints(bmap, 
-							0, 2 * like->n_div);
-		for (i = 0; i < like->n_div; ++i) {
-			if (!bmap)
-				break;
-			if (isl_int_is_zero(bmap->div[i][0]))
-				continue;
-			if (isl_basic_map_add_div_constraints(bmap, i) < 0)
-				bmap = isl_basic_map_free(bmap);
-		}
+		bmap = isl_basic_map_add_known_div_constraints(bmap);
 	}
 	isl_basic_map_free(like);
 	bmap = isl_basic_map_simplify(bmap);
