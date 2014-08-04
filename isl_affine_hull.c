@@ -520,6 +520,7 @@ static __isl_give isl_basic_map *isl_basic_map_drop_constraints_involving(
 		isl_basic_map_drop_inequality(bmap, i);
 	}
 
+	bmap = isl_basic_map_add_known_div_constraints(bmap);
 	return bmap;
 }
 
@@ -570,6 +571,7 @@ __isl_give isl_basic_map *isl_basic_map_drop_constraints_not_involving_dims(
 		isl_basic_map_drop_inequality(bmap, i);
 	}
 
+	bmap = isl_basic_map_add_known_div_constraints(bmap);
 	return bmap;
 }
 
