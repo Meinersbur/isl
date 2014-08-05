@@ -194,23 +194,45 @@ static __isl_give isl_space *isl_space_solutions(__isl_take isl_space *dim)
 	return dim;
 }
 
+/* Return the rational universe basic set in the given space.
+ */
+static __isl_give isl_basic_set *rational_universe(__isl_take isl_space *space)
+{
+	isl_basic_set *bset;
+
+	bset = isl_basic_set_universe(space);
+	bset = isl_basic_set_set_rational(bset);
+
+	return bset;
+}
+
 /* Compute the dual of "bset" by applying Farkas' lemma.
  * As explained above, we add an extra dimension to represent
  * the coefficient of the constant term when going from solutions
  * to coefficients (shift == 1) and we drop the extra dimension when going
  * in the opposite direction (shift == -1).  "dim" is the space in which
  * the dual should be created.
+ *
+ * If "bset" is (obviously) empty, then the way this emptiness
+ * is represented by the constraints does not allow for the application
+ * of the standard farkas algorithm.  We therefore handle this case
+ * specifically and return the universe basic set.
  */
-static __isl_give isl_basic_set *farkas(__isl_take isl_space *dim,
+static __isl_give isl_basic_set *farkas(__isl_take isl_space *space,
 	__isl_take isl_basic_set *bset, int shift)
 {
 	int i, j, k;
 	isl_basic_set *dual = NULL;
 	unsigned total;
 
+	if (isl_basic_set_plain_is_empty(bset)) {
+		isl_basic_set_free(bset);
+		return rational_universe(space);
+	}
+
 	total = isl_basic_set_total_dim(bset);
 
-	dual = isl_basic_set_alloc_space(dim, bset->n_eq + bset->n_ineq,
+	dual = isl_basic_set_alloc_space(space, bset->n_eq + bset->n_ineq,
 					total, bset->n_ineq + (shift > 0));
 	dual = isl_basic_set_set_rational(dual);
 
@@ -330,12 +352,10 @@ __isl_give isl_basic_set *isl_set_coefficients(__isl_take isl_set *set)
 	if (!set)
 		return NULL;
 	if (set->n == 0) {
-		isl_space *dim = isl_set_get_space(set);
-		dim = isl_space_coefficients(dim);
-		coeff = isl_basic_set_universe(dim);
-		coeff = isl_basic_set_set_rational(coeff);
+		isl_space *space = isl_set_get_space(set);
+		space = isl_space_coefficients(space);
 		isl_set_free(set);
-		return coeff;
+		return rational_universe(space);
 	}
 
 	coeff = isl_basic_set_coefficients(isl_basic_set_copy(set->p[0]));
@@ -363,12 +383,10 @@ __isl_give isl_basic_set *isl_set_solutions(__isl_take isl_set *set)
 	if (!set)
 		return NULL;
 	if (set->n == 0) {
-		isl_space *dim = isl_set_get_space(set);
-		dim = isl_space_solutions(dim);
-		sol = isl_basic_set_universe(dim);
-		sol = isl_basic_set_set_rational(sol);
+		isl_space *space = isl_set_get_space(set);
+		space = isl_space_solutions(space);
 		isl_set_free(set);
-		return sol;
+		return rational_universe(space);
 	}
 
 	sol = isl_basic_set_solutions(isl_basic_set_copy(set->p[0]));

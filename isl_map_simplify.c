@@ -1110,8 +1110,8 @@ static struct isl_basic_map *check_for_div_constraints(
 	return bmap;
 }
 
-static struct isl_basic_map *remove_duplicate_constraints(
-	struct isl_basic_map *bmap, int *progress, int detect_divs)
+__isl_give isl_basic_map *isl_basic_map_remove_duplicate_constraints(
+	__isl_take isl_basic_map *bmap, int *progress, int detect_divs)
 {
 	unsigned int size;
 	isl_int ***index;
@@ -1295,7 +1295,8 @@ struct isl_basic_map *isl_basic_map_simplify(struct isl_basic_map *bmap)
 		bmap = isl_basic_map_gauss(bmap, &progress);
 		/* requires equalities in normal form */
 		bmap = normalize_divs(bmap, &progress);
-		bmap = remove_duplicate_constraints(bmap, &progress, 1);
+		bmap = isl_basic_map_remove_duplicate_constraints(bmap,
+								&progress, 1);
 	}
 	return bmap;
 }
@@ -1554,7 +1555,8 @@ struct isl_basic_map *isl_basic_map_eliminate_vars(
 		}
 		if (n_lower > 0 && n_upper > 0) {
 			bmap = isl_basic_map_normalize_constraints(bmap);
-			bmap = remove_duplicate_constraints(bmap, NULL, 0);
+			bmap = isl_basic_map_remove_duplicate_constraints(bmap,
+								    NULL, 0);
 			bmap = isl_basic_map_gauss(bmap, NULL);
 			bmap = isl_basic_map_remove_redundancies(bmap);
 			need_gauss = 0;

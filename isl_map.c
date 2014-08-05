@@ -1986,6 +1986,7 @@ static __isl_give isl_basic_map *insert_bounds_on_div_from_ineq(
 	if (!lb && !ub)
 		return bmap;
 
+	bmap = isl_basic_map_cow(bmap);
 	bmap = isl_basic_map_extend_constraints(bmap, 0, lb + ub);
 	if (lb) {
 		int k = isl_basic_map_alloc_inequality(bmap);
@@ -2012,6 +2013,7 @@ static __isl_give isl_basic_map *insert_bounds_on_div_from_ineq(
 		isl_int_set_si(bmap->ineq[k][1 + total + div], -1);
 	}
 
+	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
 	return bmap;
 error:
 	isl_basic_map_free(bmap);
@@ -4431,6 +4433,38 @@ int isl_basic_map_add_div_constraints(struct isl_basic_map *bmap, unsigned div)
 							bmap->div[div]);
 }
 
+/* For each known div d = floor(f/m), add the constraints
+ *
+ *		f - m d >= 0
+ *		-(f-(n-1)) + m d >= 0
+ */
+__isl_give isl_basic_map *isl_basic_map_add_known_div_constraints(
+	__isl_take isl_basic_map *bmap)
+{
+	int i;
+	unsigned n_div;
+
+	if (!bmap)
+		return NULL;
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	if (n_div == 0)
+		return bmap;
+	bmap = isl_basic_map_cow(bmap);
+	bmap = isl_basic_map_extend_constraints(bmap, 0, 2 * n_div);
+	if (!bmap)
+		return NULL;
+	for (i = 0; i < n_div; ++i) {
+		if (isl_int_is_zero(bmap->div[i][0]))
+			continue;
+		if (isl_basic_map_add_div_constraints(bmap, i) < 0)
+			return isl_basic_map_free(bmap);
+	}
+
+	bmap = isl_basic_map_remove_duplicate_constraints(bmap, NULL, 0);
+	bmap = isl_basic_map_finalize(bmap);
+	return bmap;
+}
+
 /* Add the div constraint of sign "sign" for div "div" of "bmap".
  *
  * In particular, if this div is of the form d = floor(f/m),
@@ -4548,16 +4582,7 @@ struct isl_basic_map *isl_basic_map_overlying_set(
 			isl_seq_cpy(bmap->div[i], like->div[i], 1 + 1 + ltotal);
 			isl_seq_clr(bmap->div[i]+1+1+ltotal, total - ltotal);
 		}
-		bmap = isl_basic_map_extend_constraints(bmap, 
-							0, 2 * like->n_div);
-		for (i = 0; i < like->n_div; ++i) {
-			if (!bmap)
-				break;
-			if (isl_int_is_zero(bmap->div[i][0]))
-				continue;
-			if (isl_basic_map_add_div_constraints(bmap, i) < 0)
-				bmap = isl_basic_map_free(bmap);
-		}
+		bmap = isl_basic_map_add_known_div_constraints(bmap);
 	}
 	isl_basic_map_free(like);
 	bmap = isl_basic_map_simplify(bmap);
@@ -11793,12 +11818,25 @@ static int check_basic_map_compatible_range_multi_aff(
 	isl_space *ma_space;
 
 	ma_space = isl_multi_aff_get_space(ma);
-	m = isl_space_tuple_match(bmap->dim, type, ma_space, isl_dim_out);
-	isl_space_free(ma_space);
-	if (m >= 0 && !m)
+
+	m = isl_space_match(bmap->dim, isl_dim_param, ma_space, isl_dim_param);
+	if (m < 0)
+		goto error;
+	if (!m)
 		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
-			"spaces don't match", return -1);
+			"parameters don't match", goto error);
+	m = isl_space_tuple_match(bmap->dim, type, ma_space, isl_dim_out);
+	if (m < 0)
+		goto error;
+	if (!m)
+		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
+			"spaces don't match", goto error);
+
+	isl_space_free(ma_space);
 	return m;
+error:
+	isl_space_free(ma_space);
+	return -1;
 }
 
 /* Copy the divs from "ma" to "bmap", adding zeros for the "n_before"

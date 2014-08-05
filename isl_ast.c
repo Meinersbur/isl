@@ -1102,6 +1102,9 @@ __isl_give isl_ast_expr *isl_ast_node_user_get_expr(
 {
 	if (!node)
 		return NULL;
+	if (node->type != isl_ast_node_user)
+		isl_die(isl_ast_node_get_ctx(node), isl_error_invalid,
+			"not a user node", return NULL);
 
 	return isl_ast_expr_copy(node->u.e.expr);
 }

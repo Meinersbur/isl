@@ -520,6 +520,7 @@ static __isl_give isl_basic_map *isl_basic_map_drop_constraints_involving(
 		isl_basic_map_drop_inequality(bmap, i);
 	}
 
+	bmap = isl_basic_map_add_known_div_constraints(bmap);
 	return bmap;
 }
 
@@ -542,8 +543,11 @@ __isl_give isl_basic_map *isl_basic_map_drop_constraints_not_involving_dims(
 	int i;
 	unsigned dim;
 
-	if (n == 0)
-		return isl_basic_map_set_to_empty(bmap);
+	if (n == 0) {
+		isl_space *space = isl_basic_map_get_space(bmap);
+		isl_basic_map_free(bmap);
+		return isl_basic_map_universe(space);
+	}
 	bmap = isl_basic_map_cow(bmap);
 	if (!bmap)
 		return NULL;
@@ -567,6 +571,7 @@ __isl_give isl_basic_map *isl_basic_map_drop_constraints_not_involving_dims(
 		isl_basic_map_drop_inequality(bmap, i);
 	}
 
+	bmap = isl_basic_map_add_known_div_constraints(bmap);
 	return bmap;
 }
 
