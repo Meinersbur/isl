@@ -3475,6 +3475,8 @@ static __isl_give isl_ast_graft_list *generate_components(
 	data.depth = isl_ast_build_get_depth(build);
 	data.group_coscheduled = isl_options_get_ast_build_group_coscheduled(ctx);
 	g = isl_tarjan_graph_init(ctx, n, &any_scheduled_after, &data);
+	if (!g)
+		goto error;
 
 	list = isl_ast_graft_list_alloc(ctx, 0);
 
