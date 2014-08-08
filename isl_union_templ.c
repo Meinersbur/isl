@@ -1192,3 +1192,45 @@ __isl_give UNION *FN(UNION,neg)(__isl_take UNION *u)
 	return u;
 }
 #endif
+
+/* Reset the user pointer on all identifiers of parameters and tuples
+ * of the space of "part" and add the result to *res.
+ */
+static int FN(UNION,reset_user_entry)(__isl_take PART *part, void *user)
+{
+	UNION **res = user;
+
+	part = FN(PART,reset_user)(part);
+	*res = FN(FN(UNION,add),PARTS)(*res, part);
+	if (!*res)
+		return -1;
+
+	return 0;
+}
+
+/* Reset the user pointer on all identifiers of parameters and tuples
+ * of the spaces of "u".
+ */
+__isl_give UNION *FN(UNION,reset_user)(__isl_take UNION *u)
+{
+	isl_space *space;
+	UNION *res;
+
+	if (!u)
+		return NULL;
+
+	space = FN(UNION,get_space)(u);
+	space = isl_space_reset_user(space);
+#ifdef HAS_TYPE
+	res = FN(UNION,alloc)(space, u->type, u->table.n);
+#else
+	res = FN(UNION,alloc)(space, u->table.n);
+#endif
+	if (FN(FN(UNION,foreach),PARTS)(u,
+					&FN(UNION,reset_user_entry), &res) < 0)
+		res = FN(UNION,free)(res);
+
+	FN(UNION,free)(u);
+
+	return res;
+}

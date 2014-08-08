@@ -1506,14 +1506,23 @@ of all the corresponding identifiers, use the following function.
 		__isl_take isl_multi_pw_aff *mpa);
 	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_reset_user(
 		__isl_take isl_pw_multi_aff *pma);
+	__isl_give isl_union_pw_multi_aff *
+	isl_union_pw_multi_aff_reset_user(
+		__isl_take isl_union_pw_multi_aff *upma);
 
 	#include <isl/polynomial.h>
 	__isl_give isl_pw_qpolynomial *
 	isl_pw_qpolynomial_reset_user(
 		__isl_take isl_pw_qpolynomial *pwqp);
+	__isl_give isl_union_pw_qpolynomial *
+	isl_union_pw_qpolynomial_reset_user(
+		__isl_take isl_union_pw_qpolynomial *upwqp);
 	__isl_give isl_pw_qpolynomial_fold *
 	isl_pw_qpolynomial_fold_reset_user(
 		__isl_take isl_pw_qpolynomial_fold *pwf);
+	__isl_give isl_union_pw_qpolynomial_fold *
+	isl_union_pw_qpolynomial_fold_reset_user(
+		__isl_take isl_union_pw_qpolynomial_fold *upwf);
 
 Spaces can be nested.  In particular, the domain of a set or
 the domain or range of a relation can be a nested relation.
