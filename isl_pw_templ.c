@@ -1535,6 +1535,19 @@ error:
 }
 #endif
 
+/* Reset the user pointer on all identifiers of parameters and tuples
+ * of the space of "pw".
+ */
+__isl_give PW *FN(PW,reset_user)(__isl_take PW *pw)
+{
+	isl_space *space;
+
+	space = FN(PW,get_space)(pw);
+	space = isl_space_reset_user(space);
+
+	return FN(PW,reset_space)(pw, space);
+}
+
 int FN(PW,has_equal_space)(__isl_keep PW *pw1, __isl_keep PW *pw2)
 {
 	if (!pw1 || !pw2)

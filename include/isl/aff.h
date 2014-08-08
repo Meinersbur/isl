@@ -200,6 +200,7 @@ __isl_give isl_pw_aff *isl_pw_aff_set_tuple_id(__isl_take isl_pw_aff *pwaff,
 	enum isl_dim_type type, __isl_take isl_id *id);
 __isl_give isl_pw_aff *isl_pw_aff_reset_tuple_id(__isl_take isl_pw_aff *pa,
 	enum isl_dim_type type);
+__isl_give isl_pw_aff *isl_pw_aff_reset_user(__isl_take isl_pw_aff *pa);
 
 __isl_give isl_set *isl_pw_aff_params(__isl_take isl_pw_aff *pwa);
 __isl_give isl_set *isl_pw_aff_domain(__isl_take isl_pw_aff *pwaff);
@@ -410,6 +411,8 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_set_tuple_id(
 	enum isl_dim_type type, __isl_take isl_id *id);
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_reset_tuple_id(
 	__isl_take isl_pw_multi_aff *pma, enum isl_dim_type type);
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_reset_user(
+	__isl_take isl_pw_multi_aff *pma);
 
 int isl_pw_multi_aff_find_dim_by_name(__isl_keep isl_pw_multi_aff *pma,
 	enum isl_dim_type type, const char *name);
