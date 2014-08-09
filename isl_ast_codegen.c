@@ -573,24 +573,40 @@ static __isl_give isl_ast_graft *add_degenerate_guard(
 	return graft;
 }
 
-/* Add the guard implied by the current stride constraint (if any),
+/* Add guards implied by the "generated constraints",
  * but not (necessarily) enforced by the generated AST to "graft".
+ * In particular, if there is any stride constraints,
+ * then add the guard implied by those constraints.
+ * If we have generated a degenerate loop, then add the guard
+ * implied by "bounds" on the outer dimensions, i.e., the guard
+ * that ensures that the single value actually exists.
  */
-static __isl_give isl_ast_graft *add_stride_guard(
-	__isl_take isl_ast_graft *graft, __isl_keep isl_ast_build *build)
+static __isl_give isl_ast_graft *add_implied_guards(
+	__isl_take isl_ast_graft *graft, int degenerate,
+	__isl_keep isl_basic_set *bounds, __isl_keep isl_ast_build *build)
 {
-	int depth;
+	int depth, has_stride;
 	isl_set *dom;
 
 	depth = isl_ast_build_get_depth(build);
-	if (!isl_ast_build_has_stride(build, depth))
+	has_stride = isl_ast_build_has_stride(build, depth);
+	if (!has_stride && !degenerate)
 		return graft;
 
-	dom = isl_ast_build_get_stride_constraint(build);
-	dom = isl_set_eliminate(dom, isl_dim_set, depth, 1);
-	dom = isl_ast_build_compute_gist(build, dom);
+	if (degenerate) {
+		bounds = isl_basic_set_copy(bounds);
+		dom = isl_set_from_basic_set(bounds);
+		dom = isl_set_eliminate(dom, isl_dim_set, depth, 1);
+		dom = isl_ast_build_compute_gist(build, dom);
+		graft = isl_ast_graft_add_guard(graft, dom, build);
+	}
 
-	graft = isl_ast_graft_add_guard(graft, dom, build);
+	if (has_stride) {
+		dom = isl_ast_build_get_stride_constraint(build);
+		dom = isl_set_eliminate(dom, isl_dim_set, depth, 1);
+		dom = isl_ast_build_compute_gist(build, dom);
+		graft = isl_ast_graft_add_guard(graft, dom, build);
+	}
 
 	return graft;
 }
@@ -607,7 +623,7 @@ static __isl_give isl_ast_graft *refine_eliminated(
 	return add_degenerate_guard(graft, bounds, build);
 }
 
-/* Update "graft" based on "bounds" and "sub_build" for the degenerate case.
+/* Update "graft" based on "sub_build" for the degenerate case.
  *
  * "build" is the build in which graft->node was created
  * "sub_build" contains information about the current level itself,
@@ -617,11 +633,9 @@ static __isl_give isl_ast_graft *refine_eliminated(
  * value attained by the current dimension.
  * The increment and condition are not strictly needed as the are known
  * to be "1" and "iterator <= value" respectively.
- * Then we check if "bounds" imply any guards that need to be inserted.
  */
 static __isl_give isl_ast_graft *refine_degenerate(
-	__isl_take isl_ast_graft *graft, __isl_keep isl_basic_set *bounds,
-	__isl_keep isl_ast_build *build,
+	__isl_take isl_ast_graft *graft, __isl_keep isl_ast_build *build,
 	__isl_keep isl_ast_build *sub_build)
 {
 	isl_pw_aff *value;
@@ -635,8 +649,6 @@ static __isl_give isl_ast_graft *refine_degenerate(
 						value);
 	if (!graft->node->u.f.init)
 		return isl_ast_graft_free(graft);
-
-	graft = add_degenerate_guard(graft, bounds, build);
 
 	return graft;
 }
@@ -1369,11 +1381,11 @@ static __isl_give isl_ast_graft *create_node_scaled(
 	if (eliminated)
 		graft = refine_eliminated(graft, bounds, build);
 	else if (degenerate)
-		graft = refine_degenerate(graft, bounds, build, sub_build);
+		graft = refine_degenerate(graft, build, sub_build);
 	else
 		graft = refine_generic(graft, bounds, domain, build);
 	if (!eliminated) {
-		graft = add_stride_guard(graft, build);
+		graft = add_implied_guards(graft, degenerate, bounds, build);
 		graft = after_each_for(graft, body_build);
 	}
 
