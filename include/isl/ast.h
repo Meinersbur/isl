@@ -43,6 +43,7 @@ __isl_give isl_ast_expr *isl_ast_expr_eq(__isl_take isl_ast_expr *expr1,
 	__isl_take isl_ast_expr *expr2);
 __isl_give isl_ast_expr *isl_ast_expr_access(__isl_take isl_ast_expr *array,
 	__isl_take isl_ast_expr_list *indices);
+__isl_give isl_ast_expr *isl_ast_expr_address_of(__isl_take isl_ast_expr *expr);
 
 __isl_give isl_ast_expr *isl_ast_expr_copy(__isl_keep isl_ast_expr *expr);
 __isl_null isl_ast_expr *isl_ast_expr_free(__isl_take isl_ast_expr *expr);

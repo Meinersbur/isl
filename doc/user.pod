@@ -6634,6 +6634,8 @@ the context of an C<isl_ast_build>.
 		__isl_take isl_id *id);
 	__isl_give isl_ast_expr *isl_ast_expr_neg(
 		__isl_take isl_ast_expr *expr);
+	__isl_give isl_ast_expr *isl_ast_expr_address_of(
+		__isl_take isl_ast_expr *expr);
 	__isl_give isl_ast_expr *isl_ast_expr_add(
 		__isl_take isl_ast_expr *expr1,
 		__isl_take isl_ast_expr *expr2);
@@ -6670,6 +6672,10 @@ the context of an C<isl_ast_build>.
 	__isl_give isl_ast_expr *isl_ast_expr_access(
 		__isl_take isl_ast_expr *array,
 		__isl_take isl_ast_expr_list *indices);
+
+The function C<isl_ast_expr_address_of> can be applied to an
+C<isl_ast_expr> of type C<isl_ast_op_access> only. It is meant
+to represent the address of the C<isl_ast_expr_access>.
 
 	#include <isl/ast_build.h>
 	__isl_give isl_ast_expr *isl_ast_build_expr_from_pw_aff(

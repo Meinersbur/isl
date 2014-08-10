@@ -465,9 +465,11 @@ error:
 	return NULL;
 }
 
-/* Create an expression representing the negation of "arg".
+/* Create an expression representing the unary operation "type" applied to
+ * "arg".
  */
-__isl_give isl_ast_expr *isl_ast_expr_neg(__isl_take isl_ast_expr *arg)
+__isl_give isl_ast_expr *isl_ast_expr_alloc_unary(enum isl_ast_op_type type,
+	__isl_take isl_ast_expr *arg)
 {
 	isl_ctx *ctx;
 	isl_ast_expr *expr = NULL;
@@ -476,7 +478,7 @@ __isl_give isl_ast_expr *isl_ast_expr_neg(__isl_take isl_ast_expr *arg)
 		return NULL;
 
 	ctx = isl_ast_expr_get_ctx(arg);
-	expr = isl_ast_expr_alloc_op(ctx, isl_ast_op_minus, 1);
+	expr = isl_ast_expr_alloc_op(ctx, type, 1);
 	if (!expr)
 		goto error;
 
@@ -486,6 +488,29 @@ __isl_give isl_ast_expr *isl_ast_expr_neg(__isl_take isl_ast_expr *arg)
 error:
 	isl_ast_expr_free(arg);
 	return NULL;
+}
+
+/* Create an expression representing the negation of "arg".
+ */
+__isl_give isl_ast_expr *isl_ast_expr_neg(__isl_take isl_ast_expr *arg)
+{
+	return isl_ast_expr_alloc_unary(isl_ast_op_minus, arg);
+}
+
+/* Create an expression representing the address of "expr".
+ */
+__isl_give isl_ast_expr *isl_ast_expr_address_of(__isl_take isl_ast_expr *expr)
+{
+	if (!expr)
+		return NULL;
+
+	if (isl_ast_expr_get_type(expr) != isl_ast_expr_op ||
+	    isl_ast_expr_get_op_type(expr) != isl_ast_op_access)
+		isl_die(isl_ast_expr_get_ctx(expr), isl_error_invalid,
+			"can only take address of access expressions",
+			return isl_ast_expr_free(expr));
+
+	return isl_ast_expr_alloc_unary(isl_ast_op_address_of, expr);
 }
 
 /* Create an expression representing the binary operation "type"
@@ -1193,7 +1218,8 @@ static char *op_str[] = {
 	[isl_ast_op_ge] = ">=",
 	[isl_ast_op_lt] = "<",
 	[isl_ast_op_gt] = ">",
-	[isl_ast_op_member] = "."
+	[isl_ast_op_member] = ".",
+	[isl_ast_op_address_of] = "&"
 };
 
 /* Precedence in C of the various operators.
@@ -1224,7 +1250,8 @@ static int op_prec[] = {
 	[isl_ast_op_gt] = 8,
 	[isl_ast_op_call] = 2,
 	[isl_ast_op_access] = 2,
-	[isl_ast_op_member] = 2
+	[isl_ast_op_member] = 2,
+	[isl_ast_op_address_of] = 3
 };
 
 /* Is the operator left-to-right associative?
@@ -1253,7 +1280,8 @@ static int op_left[] = {
 	[isl_ast_op_gt] = 1,
 	[isl_ast_op_call] = 1,
 	[isl_ast_op_access] = 1,
-	[isl_ast_op_member] = 1
+	[isl_ast_op_member] = 1,
+	[isl_ast_op_address_of] = 0
 };
 
 static int is_and(enum isl_ast_op_type op)
