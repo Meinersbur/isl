@@ -31,6 +31,16 @@ __isl_give isl_ast_expr *isl_ast_expr_and(__isl_take isl_ast_expr *expr1,
 	__isl_take isl_ast_expr *expr2);
 __isl_give isl_ast_expr *isl_ast_expr_or(__isl_take isl_ast_expr *expr1,
 	__isl_take isl_ast_expr *expr2);
+__isl_give isl_ast_expr *isl_ast_expr_le(__isl_take isl_ast_expr *expr1,
+	__isl_take isl_ast_expr *expr2);
+__isl_give isl_ast_expr *isl_ast_expr_lt(__isl_take isl_ast_expr *expr1,
+	__isl_take isl_ast_expr *expr2);
+__isl_give isl_ast_expr *isl_ast_expr_ge(__isl_take isl_ast_expr *expr1,
+	__isl_take isl_ast_expr *expr2);
+__isl_give isl_ast_expr *isl_ast_expr_gt(__isl_take isl_ast_expr *expr1,
+	__isl_take isl_ast_expr *expr2);
+__isl_give isl_ast_expr *isl_ast_expr_eq(__isl_take isl_ast_expr *expr1,
+	__isl_take isl_ast_expr *expr2);
 __isl_give isl_ast_expr *isl_ast_expr_access(__isl_take isl_ast_expr *array,
 	__isl_take isl_ast_expr_list *indices);
 

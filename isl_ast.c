@@ -563,6 +563,46 @@ __isl_give isl_ast_expr *isl_ast_expr_or(__isl_take isl_ast_expr *expr1,
 	return isl_ast_expr_alloc_binary(isl_ast_op_or, expr1, expr2);
 }
 
+/* Create an expression representing "expr1" less than or equal to "expr2".
+ */
+__isl_give isl_ast_expr *isl_ast_expr_le(__isl_take isl_ast_expr *expr1,
+	__isl_take isl_ast_expr *expr2)
+{
+	return isl_ast_expr_alloc_binary(isl_ast_op_le, expr1, expr2);
+}
+
+/* Create an expression representing "expr1" less than "expr2".
+ */
+__isl_give isl_ast_expr *isl_ast_expr_lt(__isl_take isl_ast_expr *expr1,
+	__isl_take isl_ast_expr *expr2)
+{
+	return isl_ast_expr_alloc_binary(isl_ast_op_lt, expr1, expr2);
+}
+
+/* Create an expression representing "expr1" greater than or equal to "expr2".
+ */
+__isl_give isl_ast_expr *isl_ast_expr_ge(__isl_take isl_ast_expr *expr1,
+	__isl_take isl_ast_expr *expr2)
+{
+	return isl_ast_expr_alloc_binary(isl_ast_op_ge, expr1, expr2);
+}
+
+/* Create an expression representing "expr1" greater than "expr2".
+ */
+__isl_give isl_ast_expr *isl_ast_expr_gt(__isl_take isl_ast_expr *expr1,
+	__isl_take isl_ast_expr *expr2)
+{
+	return isl_ast_expr_alloc_binary(isl_ast_op_gt, expr1, expr2);
+}
+
+/* Create an expression representing "expr1" equal to "expr2".
+ */
+__isl_give isl_ast_expr *isl_ast_expr_eq(__isl_take isl_ast_expr *expr1,
+	__isl_take isl_ast_expr *expr2)
+{
+	return isl_ast_expr_alloc_binary(isl_ast_op_eq, expr1, expr2);
+}
+
 /* Create an expression representing an access to "array" with index
  * expressions "indices".
  */
