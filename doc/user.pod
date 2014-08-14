@@ -7791,6 +7791,9 @@ partial schedules related to the node.
 	isl_schedule_node_get_prefix_schedule_union_map(
 		__isl_keep isl_schedule_node *node);
 	__isl_give isl_union_map *
+	isl_schedule_node_get_prefix_schedule_relation(
+		__isl_keep isl_schedule_node *node);
+	__isl_give isl_union_map *
 	isl_schedule_node_get_subtree_schedule_union_map(
 		__isl_keep isl_schedule_node *node);
 
@@ -7800,6 +7803,8 @@ C<isl_schedule_node_get_prefix_schedule_union_pw_multi_aff>
 and C<isl_schedule_node_get_prefix_schedule_union_map>
 return a relative ordering on the domain elements that reach the given
 node determined by its ancestors.
+The function C<isl_schedule_node_get_prefix_schedule_relation>
+additionally includes the domain constraints in the result.
 The function C<isl_schedule_node_get_subtree_schedule_union_map>
 returns a representation of the partial schedule defined by the
 subtree rooted at the given node.

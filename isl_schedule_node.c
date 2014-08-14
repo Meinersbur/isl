@@ -662,6 +662,53 @@ __isl_give isl_union_map *isl_schedule_node_get_prefix_schedule_union_map(
 	return isl_union_map_from_union_pw_multi_aff(upma);
 }
 
+/* Return the concatenation of the partial schedules of all outer band
+ * nodes of "node" intersected with all outer domain constraints.
+ *
+ * Essentially, this functions intersected the domain of the output
+ * of isl_schedule_node_get_prefix_schedule_union_map with the output
+ * of isl_schedule_node_get_domain, except that it only traverses
+ * the ancestors of "node" once.
+ */
+__isl_give isl_union_map *isl_schedule_node_get_prefix_schedule_relation(
+	__isl_keep isl_schedule_node *node)
+{
+	int n;
+	isl_space *space;
+	isl_union_map *prefix;
+	struct isl_schedule_node_get_filter_prefix_data data;
+
+	if (!node)
+		return NULL;
+
+	space = isl_schedule_get_space(node->schedule);
+	if (node->tree == node->schedule->root)
+		return isl_union_map_empty(space);
+
+	space = isl_space_set_from_params(space);
+	data.initialized = 0;
+	data.universe_domain = 0;
+	data.universe_filter = 0;
+	data.collect_prefix = 1;
+	data.filter = NULL;
+	data.prefix = isl_multi_union_pw_aff_zero(space);
+
+	n = isl_schedule_tree_list_n_schedule_tree(node->ancestors);
+	if (collect_filter_prefix(node->ancestors, n, &data) < 0)
+		data.prefix = isl_multi_union_pw_aff_free(data.prefix);
+
+	if (data.prefix &&
+	    isl_multi_union_pw_aff_dim(data.prefix, isl_dim_set) == 0) {
+		isl_multi_union_pw_aff_free(data.prefix);
+		prefix = isl_union_map_from_domain(data.filter);
+	} else {
+		prefix = isl_union_map_from_multi_union_pw_aff(data.prefix);
+		prefix = isl_union_map_intersect_domain(prefix, data.filter);
+	}
+
+	return prefix;
+}
+
 /* Return the domain elements that reach "node".
  *
  * If "node" is pointing at the root of the schedule tree, then
