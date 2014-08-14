@@ -158,7 +158,7 @@ static int has_same_domain_space(const void *entry, const void *val)
 					space, isl_dim_in);
 }
 
-/* Extract the element of "u" living in "space".
+/* Extract the element of "u" living in "space" (ignoring parameters).
  *
  * Return the ZERO element if "u" does not contain any element
  * living in "space".
@@ -171,6 +171,14 @@ __isl_give PART *FN(FN(UNION,extract),PARTS)(__isl_keep UNION *u,
 
 	if (!u || !space)
 		goto error;
+	if (!isl_space_match(u->space, isl_dim_param, space, isl_dim_param)) {
+		space = isl_space_drop_dims(space, isl_dim_param,
+					0, isl_space_dim(space, isl_dim_param));
+		space = isl_space_align_params(space,
+					FN(UNION,get_space)(u));
+		if (!space)
+			goto error;
+	}
 
 	hash = isl_space_get_hash(space);
 	entry = isl_hash_table_find(u->space->ctx, &u->table, hash,
