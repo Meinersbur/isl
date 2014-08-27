@@ -943,6 +943,28 @@ static int check_space_multi_val(__isl_keep isl_schedule_node *node,
 	return 0;
 }
 
+/* Multiply the partial schedule of the band node "node"
+ * with the factors in "mv".
+ */
+__isl_give isl_schedule_node *isl_schedule_node_band_scale(
+	__isl_take isl_schedule_node *node, __isl_take isl_multi_val *mv)
+{
+	isl_schedule_tree *tree;
+
+	if (!node || !mv)
+		goto error;
+	if (check_space_multi_val(node, mv) < 0)
+		goto error;
+
+	tree = isl_schedule_node_get_tree(node);
+	tree = isl_schedule_tree_band_scale(tree, mv);
+	return isl_schedule_node_graft_tree(node, tree);
+error:
+	isl_multi_val_free(mv);
+	isl_schedule_node_free(node);
+	return NULL;
+}
+
 /* Tile "node" with tile sizes "sizes".
  *
  * The current node is replaced by two nested nodes corresponding

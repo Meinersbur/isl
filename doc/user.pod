@@ -7515,6 +7515,19 @@ two filter nodes are merged into one.
 These functions insert a new sequence or set node with the given
 filters as children.
 
+The partial schedule of a band node can be scaled using
+the following function.
+
+	#include <isl/schedule_node.h>
+	__isl_give isl_schedule_node *
+	isl_schedule_node_band_scale(
+		__isl_take isl_schedule_node *node,
+		__isl_take isl_multi_val *mv);
+
+The spaces of the two arguments need to match.
+After scaling, the partial schedule is replaced by its greatest
+integer part to ensure that the schedule remains integral.
+
 A band node can be tiled using the following function.
 
 	#include <isl/schedule_node.h>

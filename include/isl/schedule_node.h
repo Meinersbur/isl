@@ -66,6 +66,8 @@ int isl_options_get_tile_scale_tile_loops(isl_ctx *ctx);
 int isl_options_set_tile_shift_point_loops(isl_ctx *ctx, int val);
 int isl_options_get_tile_shift_point_loops(isl_ctx *ctx);
 
+__isl_give isl_schedule_node *isl_schedule_node_band_scale(
+	__isl_take isl_schedule_node *node, __isl_take isl_multi_val *mv);
 __isl_give isl_schedule_node *isl_schedule_node_band_tile(
 	__isl_take isl_schedule_node *node, __isl_take isl_multi_val *sizes);
 __isl_give isl_schedule_node *isl_schedule_node_band_split(

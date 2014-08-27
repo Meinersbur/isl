@@ -48,6 +48,8 @@ int isl_schedule_band_get_permutable(__isl_keep isl_schedule_band *band);
 __isl_give isl_schedule_band *isl_schedule_band_set_permutable(
 	__isl_take isl_schedule_band *band, int permutable);
 
+__isl_give isl_schedule_band *isl_schedule_band_scale(
+	__isl_take isl_schedule_band *band, __isl_take isl_multi_val *mv);
 __isl_give isl_schedule_band *isl_schedule_band_tile(
 	__isl_take isl_schedule_band *band, __isl_take isl_multi_val *sizes);
 __isl_give isl_schedule_band *isl_schedule_band_point(
