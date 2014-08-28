@@ -255,6 +255,28 @@ error:
 	return NULL;
 }
 
+/* Divide the partial schedule of "band" by the factors in "mv".
+ * Replace the result by its greatest integer part to ensure
+ * that the schedule is always integral.
+ */
+__isl_give isl_schedule_band *isl_schedule_band_scale_down(
+	__isl_take isl_schedule_band *band, __isl_take isl_multi_val *mv)
+{
+	band = isl_schedule_band_cow(band);
+	if (!band || !mv)
+		goto error;
+	band->mupa = isl_multi_union_pw_aff_scale_down_multi_val(band->mupa,
+								mv);
+	band->mupa = isl_multi_union_pw_aff_floor(band->mupa);
+	if (!band->mupa)
+		return isl_schedule_band_free(band);
+	return band;
+error:
+	isl_schedule_band_free(band);
+	isl_multi_val_free(mv);
+	return NULL;
+}
+
 /* Given the schedule of a band, construct the corresponding
  * schedule for the tile loops based on the given tile sizes
  * and return the result.
