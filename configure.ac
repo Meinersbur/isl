@@ -181,6 +181,9 @@ system)
 	], [AC_DEFINE([CREATEPREPROCESSOR_TAKES_TUKIND], [],
 	[Define if CompilerInstance::createPreprocessor takes
 	 TranslationUnitKind])])
+	AC_EGREP_HEADER([setMainFileID], [clang/Basic/SourceManager.h],
+		[AC_DEFINE([HAVE_SETMAINFILEID], [],
+		[Define if SourceManager has a setMainFileID method])])
 	AC_LANG_POP
 	CPPFLAGS="$SAVE_CPPFLAGS"
 

@@ -293,6 +293,23 @@ void add_path(HeaderSearchOptions &HSO, string Path)
 
 #endif
 
+#ifdef HAVE_SETMAINFILEID
+
+static void create_main_file_id(SourceManager &SM, const FileEntry *file)
+{
+	SM.setMainFileID(SM.createFileID(file, SourceLocation(),
+					SrcMgr::C_User));
+}
+
+#else
+
+static void create_main_file_id(SourceManager &SM, const FileEntry *file)
+{
+	SM.createMainFileID(file);
+}
+
+#endif
+
 int main(int argc, char *argv[])
 {
 	llvm::cl::ParseCommandLineOptions(argc, argv);
@@ -333,7 +350,7 @@ int main(int argc, char *argv[])
 
 	const FileEntry *file = Clang->getFileManager().getFile(InputFilename);
 	assert(file);
-	Clang->getSourceManager().createMainFileID(file);
+	create_main_file_id(Clang->getSourceManager(), file);
 
 	Clang->createASTContext();
 	MyASTConsumer consumer;
