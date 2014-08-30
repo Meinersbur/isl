@@ -146,6 +146,13 @@ system)
 			   [Define if clang/Basic/DiagnosticOptions.h exists])])
 	AC_TRY_COMPILE([#include <clang/Basic/TargetInfo.h>], [
 		using namespace clang;
+		std::shared_ptr<TargetOptions> TO;
+		DiagnosticsEngine *Diags;
+		TargetInfo::CreateTargetInfo(*Diags, TO);
+	], [AC_DEFINE([CREATETARGETINFO_TAKES_SHARED_PTR], [],
+		    [Define if TargetInfo::CreateTargetInfo takes shared_ptr])])
+	AC_TRY_COMPILE([#include <clang/Basic/TargetInfo.h>], [
+		using namespace clang;
 		TargetOptions *TO;
 		DiagnosticsEngine *Diags;
 		TargetInfo::CreateTargetInfo(*Diags, TO);

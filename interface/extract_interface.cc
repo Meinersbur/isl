@@ -231,7 +231,17 @@ static TextDiagnosticPrinter *construct_printer(void)
 
 #endif
 
-#ifdef CREATETARGETINFO_TAKES_POINTER
+#ifdef CREATETARGETINFO_TAKES_SHARED_PTR
+
+static TargetInfo *create_target_info(CompilerInstance *Clang,
+	DiagnosticsEngine &Diags)
+{
+	shared_ptr<TargetOptions> TO = Clang->getInvocation().TargetOpts;
+	TO->Triple = llvm::sys::getDefaultTargetTriple();
+	return TargetInfo::CreateTargetInfo(Diags, TO);
+}
+
+#elif defined(CREATETARGETINFO_TAKES_POINTER)
 
 static TargetInfo *create_target_info(CompilerInstance *Clang,
 	DiagnosticsEngine &Diags)
