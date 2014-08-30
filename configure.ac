@@ -126,6 +126,12 @@ system)
 	AC_EGREP_HEADER([ IsProduction], [clang/Driver/Driver.h],
 		[AC_DEFINE([HAVE_ISPRODUCTION], [],
 		[Define if Driver constructor takes IsProduction argument])])
+	AC_TRY_COMPILE([#include <clang/Driver/Driver.h>], [
+		using namespace clang;
+		DiagnosticsEngine *Diags;
+		new driver::Driver("", "", "", *Diags);
+	], [AC_DEFINE([DRIVER_CTOR_TAKES_DEFAULTIMAGENAME], [],
+		      [Define if Driver constructor takes default image name])])
 	AC_EGREP_HEADER([void HandleTopLevelDecl\(], [clang/AST/ASTConsumer.h],
 		[AC_DEFINE([HandleTopLevelDeclReturn], [void],
 			   [Return type of HandleTopLevelDeclReturn])
