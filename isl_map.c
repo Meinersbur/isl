@@ -9730,6 +9730,29 @@ __isl_give isl_map *isl_map_range_product(__isl_take isl_map *map1,
 						&map_range_product_aligned);
 }
 
+/* Given a map of the form [A -> B] -> C, return the map A -> C.
+ */
+__isl_give isl_map *isl_map_domain_factor_domain(__isl_take isl_map *map)
+{
+	isl_space *space;
+	int total, keep;
+
+	if (!map)
+		return NULL;
+	if (!isl_space_domain_is_wrapping(map->dim))
+		isl_die(isl_map_get_ctx(map), isl_error_invalid,
+			"domain is not a product", return isl_map_free(map));
+
+	space = isl_map_get_space(map);
+	total = isl_space_dim(space, isl_dim_in);
+	space = isl_space_domain_factor_domain(space);
+	keep = isl_space_dim(space, isl_dim_in);
+	map = isl_map_project_out(map, isl_dim_in, keep, total - keep);
+	map = isl_map_reset_space(map, space);
+
+	return map;
+}
+
 /* Given a map of the form [A -> B] -> C, return the map B -> C.
  */
 __isl_give isl_map *isl_map_domain_factor_range(__isl_take isl_map *map)
