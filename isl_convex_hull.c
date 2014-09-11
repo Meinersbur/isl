@@ -1385,7 +1385,7 @@ static struct isl_basic_set *convex_hull_pair(struct isl_basic_set *bset1,
 		goto error;
 
 	if (bounded1 && bounded2)
-		uset_convex_hull_wrap(isl_basic_set_union(bset1, bset2));
+		return uset_convex_hull_wrap(isl_basic_set_union(bset1, bset2));
 
 	if (bounded1 || bounded2)
 		return convex_hull_pair_pointed(bset1, bset2);
