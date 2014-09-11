@@ -1053,10 +1053,25 @@ void test_convex_hull_case(struct isl_ctx *ctx, const char *name)
 	fclose(input);
 }
 
+struct {
+	const char *set;
+	const char *hull;
+} convex_hull_tests[] = {
+	{ "{ [i0, i1, i2] : (i2 = 1 and i0 = 0 and i1 >= 0) or "
+	       "(i0 = 1 and i1 = 0 and i2 = 1) or "
+	       "(i0 = 0 and i1 = 0 and i2 = 0) }",
+	  "{ [i0, i1, i2] : i0 >= 0 and i2 >= i0 and i2 <= 1 and i1 >= 0 }" },
+	{ "[n] -> { [i0, i1, i0] : i0 <= -4 + n; "
+	    "[i0, i0, i2] : n = 6 and i0 >= 0 and i2 <= 7 - i0 and "
+	    "i2 <= 5 and i2 >= 4; "
+	    "[3, i1, 3] : n = 5 and i1 <= 2 and i1 >= 0 }",
+	  "[n] -> { [i0, i1, i2] : i2 <= -1 + n and 2i2 <= -6 + 3n - i0 and "
+	    "i2 <= 5 + i0 and i2 >= i0 }" },
+};
+
 void test_convex_hull_algo(struct isl_ctx *ctx, int convex)
 {
-	const char *str1, *str2;
-	isl_set *set1, *set2;
+	int i;
 	int orig_convex = ctx->opt->convex;
 	ctx->opt->convex = convex;
 
@@ -1077,16 +1092,16 @@ void test_convex_hull_algo(struct isl_ctx *ctx, int convex)
 	test_convex_hull_case(ctx, "convex14");
 	test_convex_hull_case(ctx, "convex15");
 
-	str1 = "{ [i0, i1, i2] : (i2 = 1 and i0 = 0 and i1 >= 0) or "
-	       "(i0 = 1 and i1 = 0 and i2 = 1) or "
-	       "(i0 = 0 and i1 = 0 and i2 = 0) }";
-	str2 = "{ [i0, i1, i2] : i0 >= 0 and i2 >= i0 and i2 <= 1 and i1 >= 0 }";
-	set1 = isl_set_read_from_str(ctx, str1);
-	set2 = isl_set_read_from_str(ctx, str2);
-	set1 = isl_set_from_basic_set(isl_set_convex_hull(set1));
-	assert(isl_set_is_equal(set1, set2));
-	isl_set_free(set1);
-	isl_set_free(set2);
+	for (i = 0; i < ARRAY_SIZE(convex_hull_tests); ++i) {
+		isl_set *set1, *set2;
+
+		set1 = isl_set_read_from_str(ctx, convex_hull_tests[i].set);
+		set2 = isl_set_read_from_str(ctx, convex_hull_tests[i].hull);
+		set1 = isl_set_from_basic_set(isl_set_convex_hull(set1));
+		assert(isl_set_is_equal(set1, set2));
+		isl_set_free(set1);
+		isl_set_free(set2);
+	}
 
 	ctx->opt->convex = orig_convex;
 }
