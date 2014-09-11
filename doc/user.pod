@@ -1789,8 +1789,11 @@ form, use the following functions.
 		enum isl_dim_type c4, enum isl_dim_type c5);
 
 The C<isl_dim_type> arguments dictate the order in which
-different kinds of variables appear in the resulting matrix
-and should be a permutation of C<isl_dim_cst>, C<isl_dim_param>,
+different kinds of variables appear in the resulting matrix.
+For set inputs, they should be a permutation of
+C<isl_dim_cst>, C<isl_dim_param>, C<isl_dim_set> and C<isl_dim_div>.
+For map inputs, they should be a permutation of
+C<isl_dim_cst>, C<isl_dim_param>,
 C<isl_dim_in>, C<isl_dim_out> and C<isl_dim_div>.
 
 The number of parameters, input, output or set dimensions can
