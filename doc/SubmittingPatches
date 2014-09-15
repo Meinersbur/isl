@@ -23,6 +23,7 @@
 
 	- use "git format-patch -M" to create the patch
 	- do not PGP sign your patch
+	- send a single patch per mail, e.g., using git-send-email(1)
 	- do not attach your patch, but read in the mail
 	  body, unless you cannot teach your mailer to
 	  leave the formatting of the patch alone.
