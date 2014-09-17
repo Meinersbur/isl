@@ -441,10 +441,95 @@ static __isl_give isl_pw_aff *exact_bound(__isl_keep isl_set *domain,
 	return pa;
 }
 
+/* Callback for sorting the isl_pw_aff_list passed to reduce_list and
+ * remove_redundant_lower_bounds.
+ */
+static int reduce_list_cmp(__isl_keep isl_pw_aff *a, __isl_keep isl_pw_aff *b,
+	void *user)
+{
+	return isl_pw_aff_plain_cmp(a, b);
+}
+
+/* Given a list of lower bounds "list", remove those that are redundant
+ * with respect to the other bounds in "list" and the domain of "build".
+ *
+ * We first sort the bounds in the same way as they would be sorted
+ * by set_for_node_expressions so that we can try and remove the last
+ * bounds first.
+ *
+ * For a lower bound to be effective, there needs to be at least
+ * one domain element for which it is larger than all other lower bounds.
+ * For each lower bound we therefore intersect the domain with
+ * the conditions that it is larger than all other bounds and
+ * check whether the result is empty.  If so, the bound can be removed.
+ */
+static __isl_give isl_pw_aff_list *remove_redundant_lower_bounds(
+	__isl_take isl_pw_aff_list *list, __isl_keep isl_ast_build *build)
+{
+	int i, j, n;
+	isl_set *domain;
+
+	list = isl_pw_aff_list_sort(list, &reduce_list_cmp, NULL);
+	if (!list)
+		return NULL;
+
+	n = isl_pw_aff_list_n_pw_aff(list);
+	if (n <= 1)
+		return list;
+
+	domain = isl_ast_build_get_domain(build);
+
+	for (i = n - 1; i >= 0; --i) {
+		isl_pw_aff *pa_i;
+		isl_set *domain_i;
+		int empty;
+
+		domain_i = isl_set_copy(domain);
+		pa_i = isl_pw_aff_list_get_pw_aff(list, i);
+
+		for (j = 0; j < n; ++j) {
+			isl_pw_aff *pa_j;
+			isl_set *better;
+
+			if (j == i)
+				continue;
+
+			pa_j = isl_pw_aff_list_get_pw_aff(list, j);
+			better = isl_pw_aff_gt_set(isl_pw_aff_copy(pa_i), pa_j);
+			domain_i = isl_set_intersect(domain_i, better);
+		}
+
+		empty = isl_set_is_empty(domain_i);
+
+		isl_set_free(domain_i);
+		isl_pw_aff_free(pa_i);
+
+		if (empty < 0)
+			goto error;
+		if (!empty)
+			continue;
+		list = isl_pw_aff_list_drop(list, i, 1);
+		n--;
+	}
+
+	isl_set_free(domain);
+
+	return list;
+error:
+	isl_set_free(domain);
+	return isl_pw_aff_list_free(list);
+}
+
 /* Extract a lower bound on dimension "pos" from each constraint
  * in "constraints" and return the list of lower bounds.
  * If "constraints" has zero elements, then we extract a lower bound
  * from "domain" instead.
+ *
+ * If the current dimension is strided, then the lower bound
+ * is adjusted by lower_bound to match the stride information.
+ * This modification may make one or more lower bounds redundant
+ * with respect to the other lower bounds.  We therefore check
+ * for this condition and remove the redundant lower bounds.
  */
 static __isl_give isl_pw_aff_list *lower_bounds(
 	__isl_keep isl_constraint_list *constraints, int pos,
@@ -476,6 +561,9 @@ static __isl_give isl_pw_aff_list *lower_bounds(
 		isl_constraint_free(c);
 		list = isl_pw_aff_list_add(list, isl_pw_aff_from_aff(aff));
 	}
+
+	if (isl_ast_build_has_stride(build, pos))
+		list = remove_redundant_lower_bounds(list, build);
 
 	return list;
 }
@@ -515,14 +603,6 @@ static __isl_give isl_pw_aff_list *upper_bounds(
 	}
 
 	return list;
-}
-
-/* Callback for sorting the isl_pw_aff_list passed to reduce_list.
- */
-static int reduce_list_cmp(__isl_keep isl_pw_aff *a, __isl_keep isl_pw_aff *b,
-	void *user)
-{
-	return isl_pw_aff_plain_cmp(a, b);
 }
 
 /* Return an isl_ast_expr that performs the reduction of type "type"

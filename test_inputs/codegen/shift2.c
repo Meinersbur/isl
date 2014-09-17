@@ -36,7 +36,7 @@ for (int c0 = 0; c0 <= 1; c0 += 1) {
   }
   for (int c1 = 32; c1 < length - 1; c1 += 32)
     for (int c2 = c1; c2 < length; c2 += 32)
-      for (int c3 = max(c1, c2); c3 <= min(length - 1, c2 + 31); c3 += 16)
+      for (int c3 = c2; c3 <= min(length - 1, c2 + 31); c3 += 16)
         for (int c4 = 0; c4 <= min(min(31, length - c1 - 2), -c1 + c3 + 14); c4 += 1)
           for (int c5 = max(-c2 + c3, c1 - c2 + c4 + 1); c5 <= min(length - c2 - 1, -c2 + c3 + 15); c5 += 1)
             S_3(c0, c1 + c4, c2 + c5);
