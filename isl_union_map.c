@@ -37,6 +37,15 @@ unsigned isl_union_map_dim(__isl_keep isl_union_map *umap,
 	return isl_space_dim(umap->dim, type);
 }
 
+/* Return the number of parameters of "uset", where "type"
+ * is required to be set to isl_dim_param.
+ */
+unsigned isl_union_set_dim(__isl_keep isl_union_set *uset,
+	enum isl_dim_type type)
+{
+	return isl_union_map_dim(uset, type);
+}
+
 /* Return the id of the specified dimension.
  */
 __isl_give isl_id *isl_union_map_get_dim_id(__isl_keep isl_union_map *umap,

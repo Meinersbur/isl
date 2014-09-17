@@ -8,6 +8,9 @@
 extern "C" {
 #endif
 
+unsigned isl_union_set_dim(__isl_keep isl_union_set *uset,
+	enum isl_dim_type type);
+
 __isl_constructor
 __isl_give isl_union_set *isl_union_set_from_basic_set(
 	__isl_take isl_basic_set *bset);

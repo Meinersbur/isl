@@ -987,6 +987,10 @@ C<isl_dim_out> (only for relations), C<isl_dim_set>
 	unsigned isl_set_dim(__isl_keep isl_set *set,
 		enum isl_dim_type type);
 
+	#include <isl/union_set.h>
+	unsigned isl_union_set_dim(__isl_keep isl_union_set *uset,
+		enum isl_dim_type type);
+
 	#include <isl/map.h>
 	unsigned isl_basic_map_dim(__isl_keep isl_basic_map *bmap,
 		enum isl_dim_type type);
@@ -1015,7 +1019,8 @@ C<isl_dim_out> (only for relations), C<isl_dim_set>
 		__isl_keep isl_multi_pw_aff *mpa,
 		enum isl_dim_type type);
 
-Note that an C<isl_union_map> only has parameters.
+Note that both an C<isl_union_set> and an C<isl_union_map>
+only have parameters.
 
 The identifiers or names of the individual dimensions of spaces
 may be set or read off using the following functions on spaces
