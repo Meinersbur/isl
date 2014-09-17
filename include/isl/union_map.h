@@ -13,6 +13,8 @@ extern "C" {
 
 unsigned isl_union_map_dim(__isl_keep isl_union_map *umap,
 	enum isl_dim_type type);
+int isl_union_map_involves_dims(__isl_keep isl_union_map *umap,
+	enum isl_dim_type type, unsigned first, unsigned n);
 __isl_give isl_id *isl_union_map_get_dim_id(__isl_keep isl_union_map *umap,
 	enum isl_dim_type type, unsigned pos);
 

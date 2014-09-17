@@ -1,12 +1,15 @@
 /*
  * Copyright 2010-2011 INRIA Saclay
  * Copyright 2013-2014 Ecole Normale Superieure
+ * Copyright 2014      INRIA Rocquencourt
  *
  * Use of this software is governed by the MIT license
  *
  * Written by Sven Verdoolaege, INRIA Saclay - Ile-de-France,
  * Parc Club Orsay Universite, ZAC des vignes, 4 rue Jacques Monod,
  * 91893 Orsay, France 
+ * and Inria Paris - Rocquencourt, Domaine de Voluceau - Rocquencourt,
+ * B.P. 105 - 78153 Le Chesnay, France
  */
 
 #define ISL_DIM_H
@@ -3164,4 +3167,52 @@ __isl_give isl_union_map *isl_union_map_project_out(
 	isl_union_map_free(umap);
 
 	return data.res;
+}
+
+/* Internal data structure for isl_union_map_involves_dims.
+ * "first" and "n" are the arguments for the isl_map_involves_dims calls.
+ */
+struct isl_union_map_involves_dims_data {
+	unsigned first;
+	unsigned n;
+};
+
+/* Does "map" _not_ involve the data->n parameters starting at data->first?
+ */
+static int map_excludes(__isl_keep isl_map *map, void *user)
+{
+	struct isl_union_map_involves_dims_data *data = user;
+	int involves;
+
+	involves = isl_map_involves_dims(map,
+					isl_dim_param, data->first, data->n);
+	if (involves < 0)
+		return -1;
+	return !involves;
+}
+
+/* Does "umap" involve any of the n parameters starting at first?
+ * "type" is required to be set to isl_dim_param.
+ *
+ * "umap" involves any of those parameters if any of its maps
+ * involve the parameters.  In other words, "umap" does not
+ * involve any of the parameters if all its maps to not
+ * involve the parameters.
+ */
+int isl_union_map_involves_dims(__isl_keep isl_union_map *umap,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	struct isl_union_map_involves_dims_data data = { first, n };
+	int excludes;
+
+	if (type != isl_dim_param)
+		isl_die(isl_union_map_get_ctx(umap), isl_error_invalid,
+			"can only reference parameters", return 0);
+
+	excludes = union_map_forall_user(umap, &map_excludes, &data);
+
+	if (excludes < 0)
+		return -1;
+
+	return !excludes;
 }
