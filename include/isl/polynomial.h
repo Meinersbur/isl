@@ -432,6 +432,9 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_to_polynomial(
 isl_ctx *isl_union_pw_qpolynomial_get_ctx(
 	__isl_keep isl_union_pw_qpolynomial *upwqp);
 
+unsigned isl_union_pw_qpolynomial_dim(
+	__isl_keep isl_union_pw_qpolynomial *upwqp, enum isl_dim_type type);
+
 int isl_union_pw_qpolynomial_plain_is_equal(
 	__isl_keep isl_union_pw_qpolynomial *upwqp1,
 	__isl_keep isl_union_pw_qpolynomial *upwqp2);
@@ -507,6 +510,9 @@ __isl_give isl_printer *isl_printer_print_union_pw_qpolynomial(
 
 isl_ctx *isl_union_pw_qpolynomial_fold_get_ctx(
 	__isl_keep isl_union_pw_qpolynomial_fold *upwf);
+
+unsigned isl_union_pw_qpolynomial_fold_dim(
+	__isl_keep isl_union_pw_qpolynomial_fold *upwf, enum isl_dim_type type);
 
 int isl_union_pw_qpolynomial_fold_plain_is_equal(
 	__isl_keep isl_union_pw_qpolynomial_fold *upwf1,

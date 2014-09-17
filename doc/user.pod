@@ -1018,8 +1018,22 @@ C<isl_dim_out> (only for relations), C<isl_dim_set>
 	unsigned isl_multi_pw_aff_dim(
 		__isl_keep isl_multi_pw_aff *mpa,
 		enum isl_dim_type type);
+	unsigned isl_union_pw_multi_aff_dim(
+		__isl_keep isl_union_pw_multi_aff *upma,
+		enum isl_dim_type type);
 
-Note that both an C<isl_union_set> and an C<isl_union_map>
+	#include <isl/polynomial.h>
+	unsigned isl_union_pw_qpolynomial_dim(
+		__isl_keep isl_union_pw_qpolynomial *upwqp,
+		enum isl_dim_type type);
+	unsigned isl_union_pw_qpolynomial_fold_dim(
+		__isl_keep isl_union_pw_qpolynomial_fold *upwf,
+		enum isl_dim_type type);
+
+Note that an C<isl_union_set>, an C<isl_union_map>,
+an C<isl_union_pw_multi_aff>,
+an C<isl_union_pw_qpolynomial> and
+an C<isl_union_pw_qpolynomial_fold>
 only have parameters.
 
 The identifiers or names of the individual dimensions of spaces
