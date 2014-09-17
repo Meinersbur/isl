@@ -3426,6 +3426,18 @@ __isl_give isl_union_map *isl_union_map_project_out(
 	return data.res;
 }
 
+/* Turn the "n" dimensions of type "type", starting at "first"
+ * into existentially quantified variables.
+ * Since the space of an isl_union_set only contains parameters,
+ * "type" is required to be equal to isl_dim_param.
+ */
+__isl_give isl_union_set *isl_union_set_project_out(
+	__isl_take isl_union_set *uset,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	return isl_union_map_project_out(uset, type, first, n);
+}
+
 /* Internal data structure for isl_union_map_involves_dims.
  * "first" and "n" are the arguments for the isl_map_involves_dims calls.
  */

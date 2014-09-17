@@ -84,6 +84,10 @@ __isl_give isl_union_set *isl_union_set_preimage_union_pw_multi_aff(
 	__isl_take isl_union_set *uset,
 	__isl_take isl_union_pw_multi_aff *upma);
 
+__isl_give isl_union_set *isl_union_set_project_out(
+	__isl_take isl_union_set *uset,
+	enum isl_dim_type type, unsigned first, unsigned n);
+
 int isl_union_set_is_params(__isl_keep isl_union_set *uset);
 __isl_export
 int isl_union_set_is_empty(__isl_keep isl_union_set *uset);

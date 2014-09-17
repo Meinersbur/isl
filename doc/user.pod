@@ -3739,8 +3739,15 @@ earlier dimensions before those that involve later dimensions.
 		__isl_take isl_map *map);
 
 	#include <isl/union_set.h>
+	__isl_give isl_union_set *isl_union_set_project_out(
+		__isl_take isl_union_set *uset,
+		enum isl_dim_type type,
+		unsigned first, unsigned n);
 	__isl_give isl_set *isl_union_set_params(
 		__isl_take isl_union_set *uset);
+
+The function C<isl_union_set_project_out> can only project out
+parameters.
 
 	#include <isl/union_map.h>
 	__isl_give isl_union_map *isl_union_map_project_out(
