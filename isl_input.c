@@ -2553,6 +2553,9 @@ static __isl_give isl_basic_map *basic_map_read(struct isl_stream *s)
 	struct isl_basic_map *bmap;
 
 	obj = obj_read(s);
+	if (obj.v && (obj.type != isl_obj_map && obj.type != isl_obj_set))
+		isl_die(s->ctx, isl_error_invalid, "not a (basic) set or map",
+			goto error);
 	map = obj.v;
 	if (!map)
 		return NULL;
@@ -2571,7 +2574,7 @@ static __isl_give isl_basic_map *basic_map_read(struct isl_stream *s)
 
 	return bmap;
 error:
-	isl_map_free(map);
+	obj.type->free(obj.v);
 	return NULL;
 }
 
