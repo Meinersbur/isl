@@ -2178,8 +2178,23 @@ void test_bijective(struct isl_ctx *ctx)
 	test_bijective_case(ctx, "[N,M]->{[i,j] -> [x,y] : 2x=i & y =j}", 1);
 }
 
+/* Inputs for isl_pw_qpolynomial_gist tests.
+ * "pwqp" is the input, "set" is the context and "gist" is the expected result.
+ */
+struct {
+	const char *pwqp;
+	const char *set;
+	const char *gist;
+} pwqp_gist_tests[] = {
+	{ "{ [i] -> i }", "{ [k] : exists a : k = 2a }", "{ [i] -> i }" },
+	{ "{ [i] -> i + [ (i + [i/3])/2 ] }", "{ [10] }", "{ [i] -> 16 }" },
+	{ "{ [i] -> ([(i)/2]) }", "{ [k] : exists a : k = 2a+1 }",
+	  "{ [i] -> -1/2 + 1/2 * i }" },
+};
+
 static int test_pwqp(struct isl_ctx *ctx)
 {
+	int i;
 	const char *str;
 	isl_set *set;
 	isl_pw_qpolynomial *pwqp1, *pwqp2;
@@ -2200,47 +2215,24 @@ static int test_pwqp(struct isl_ctx *ctx)
 
 	isl_pw_qpolynomial_free(pwqp1);
 
-	str = "{ [i] -> i }";
-	pwqp1 = isl_pw_qpolynomial_read_from_str(ctx, str);
-	str = "{ [k] : exists a : k = 2a }";
-	set = isl_set_read_from_str(ctx, str);
-	pwqp1 = isl_pw_qpolynomial_gist(pwqp1, set);
-	str = "{ [i] -> i }";
-	pwqp2 = isl_pw_qpolynomial_read_from_str(ctx, str);
+	for (i = 0; i < ARRAY_SIZE(pwqp_gist_tests); ++i) {
+		str = pwqp_gist_tests[i].pwqp;
+		pwqp1 = isl_pw_qpolynomial_read_from_str(ctx, str);
+		str = pwqp_gist_tests[i].set;
+		set = isl_set_read_from_str(ctx, str);
+		pwqp1 = isl_pw_qpolynomial_gist(pwqp1, set);
+		str = pwqp_gist_tests[i].gist;
+		pwqp2 = isl_pw_qpolynomial_read_from_str(ctx, str);
+		pwqp1 = isl_pw_qpolynomial_sub(pwqp1, pwqp2);
+		equal = isl_pw_qpolynomial_is_zero(pwqp1);
+		isl_pw_qpolynomial_free(pwqp1);
 
-	pwqp1 = isl_pw_qpolynomial_sub(pwqp1, pwqp2);
-
-	assert(isl_pw_qpolynomial_is_zero(pwqp1));
-
-	isl_pw_qpolynomial_free(pwqp1);
-
-	str = "{ [i] -> i + [ (i + [i/3])/2 ] }";
-	pwqp1 = isl_pw_qpolynomial_read_from_str(ctx, str);
-	str = "{ [10] }";
-	set = isl_set_read_from_str(ctx, str);
-	pwqp1 = isl_pw_qpolynomial_gist(pwqp1, set);
-	str = "{ [i] -> 16 }";
-	pwqp2 = isl_pw_qpolynomial_read_from_str(ctx, str);
-
-	pwqp1 = isl_pw_qpolynomial_sub(pwqp1, pwqp2);
-
-	assert(isl_pw_qpolynomial_is_zero(pwqp1));
-
-	isl_pw_qpolynomial_free(pwqp1);
-
-	str = "{ [i] -> ([(i)/2]) }";
-	pwqp1 = isl_pw_qpolynomial_read_from_str(ctx, str);
-	str = "{ [k] : exists a : k = 2a+1 }";
-	set = isl_set_read_from_str(ctx, str);
-	pwqp1 = isl_pw_qpolynomial_gist(pwqp1, set);
-	str = "{ [i] -> -1/2 + 1/2 * i }";
-	pwqp2 = isl_pw_qpolynomial_read_from_str(ctx, str);
-
-	pwqp1 = isl_pw_qpolynomial_sub(pwqp1, pwqp2);
-
-	assert(isl_pw_qpolynomial_is_zero(pwqp1));
-
-	isl_pw_qpolynomial_free(pwqp1);
+		if (equal < 0)
+			return -1;
+		if (!equal)
+			isl_die(ctx, isl_error_unknown,
+				"unexpected result", return -1);
+	}
 
 	str = "{ [i] -> ([([i/2] + [i/2])/5]) }";
 	pwqp1 = isl_pw_qpolynomial_read_from_str(ctx, str);
