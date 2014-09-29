@@ -151,6 +151,9 @@ ISL_ARG_BOOL(struct isl_options, tile_shift_point_loops, 0,
 ISL_ARG_STR(struct isl_options, ast_iterator_type, 0,
 	"ast-iterator-type", "type", "int",
 	"type used for iterators during printing of AST")
+ISL_ARG_BOOL(struct isl_options, ast_always_print_block, 0,
+	"ast-always-print-block", 0, "print for and if bodies as a block "
+	"regardless of the number of statements in the body")
 ISL_ARG_BOOL(struct isl_options, ast_build_atomic_upper_bound, 0,
 	"ast-build-atomic-upper-bound", 1, "generate atomic upper bounds")
 ISL_ARG_BOOL(struct isl_options, ast_build_prefer_pdiv, 0,
@@ -275,6 +278,11 @@ ISL_CTX_SET_STR_DEF(isl_options, struct isl_options, isl_options_args,
 	ast_iterator_type)
 ISL_CTX_GET_STR_DEF(isl_options, struct isl_options, isl_options_args,
 	ast_iterator_type)
+
+ISL_CTX_SET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
+	ast_always_print_block)
+ISL_CTX_GET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
+	ast_always_print_block)
 
 ISL_CTX_SET_CHOICE_DEF(isl_options, struct isl_options, isl_options_args,
 	ast_build_separation_bounds)

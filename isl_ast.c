@@ -1563,16 +1563,21 @@ static __isl_give isl_printer *print_ast_node_isl(__isl_take isl_printer *p,
  * as well.
  * If the node is an if node with an else, then we print a block
  * to avoid spurious dangling else warnings emitted by some compilers.
+ * If the ast_always_print_block option has been set, then we print a block.
  */
 static int need_block(__isl_keep isl_ast_node *node)
 {
+	isl_ctx *ctx;
+
 	if (node->type == isl_ast_node_block)
 		return 1;
 	if (node->type == isl_ast_node_for && node->u.f.degenerate)
 		return 1;
 	if (node->type == isl_ast_node_if && node->u.i.else_node)
 		return 1;
-	return 0;
+
+	ctx = isl_ast_node_get_ctx(node);
+	return isl_options_get_ast_always_print_block(ctx);
 }
 
 static __isl_give isl_printer *print_ast_node_c(__isl_take isl_printer *p,

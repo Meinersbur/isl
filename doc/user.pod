@@ -6842,6 +6842,16 @@ while printing the AST.
 	const char *isl_options_get_ast_iterator_type(
 		isl_ctx *ctx);
 
+The AST printer only prints body nodes as blocks if these
+blocks cannot be safely omitted.
+For example, a C<for> node with one body node will not be
+surrounded with braces in C<ISL_FORMAT_C>.
+A block will always be printed by setting the following option.
+
+	int isl_options_set_ast_always_print_block(isl_ctx *ctx,
+		int val);
+	int isl_options_get_ast_always_print_block(isl_ctx *ctx);
+
 =head3 Options
 
 	#include <isl/ast_build.h>
