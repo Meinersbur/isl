@@ -405,6 +405,24 @@ error:
 	return NULL;
 }
 
+/* Replace the (explicit) children of "tree" by "children"?
+ */
+__isl_give isl_schedule_tree *isl_schedule_tree_set_children(
+	__isl_take isl_schedule_tree *tree,
+	__isl_take isl_schedule_tree_list *children)
+{
+	tree = isl_schedule_tree_cow(tree);
+	if (!tree || !children)
+		goto error;
+	isl_schedule_tree_list_free(tree->children);
+	tree->children = children;
+	return tree;
+error:
+	isl_schedule_tree_free(tree);
+	isl_schedule_tree_list_free(children);
+	return NULL;
+}
+
 /* Create a new band schedule tree referring to "band"
  * with "tree" as single child.
  */
@@ -1175,6 +1193,44 @@ __isl_give isl_schedule_tree *isl_schedule_tree_band_split(
 error:
 	isl_schedule_tree_free(child);
 	isl_schedule_tree_free(tree);
+	return NULL;
+}
+
+/* Attach "tree2" at each of the leaves of "tree1".
+ *
+ * If "tree1" does not have any explicit children, then make "tree2"
+ * its single child.  Otherwise, attach "tree2" to the leaves of
+ * each of the children of "tree1".
+ */
+__isl_give isl_schedule_tree *isl_schedule_tree_append_to_leaves(
+	__isl_take isl_schedule_tree *tree1,
+	__isl_take isl_schedule_tree *tree2)
+{
+	int i, n;
+
+	if (!tree1 || !tree2)
+		goto error;
+	n = isl_schedule_tree_n_children(tree1);
+	if (n == 0) {
+		isl_schedule_tree_list *list;
+		list = isl_schedule_tree_list_from_schedule_tree(tree2);
+		tree1 = isl_schedule_tree_set_children(tree1, list);
+		return tree1;
+	}
+	for (i = 0; i < n; ++i) {
+		isl_schedule_tree *child;
+
+		child = isl_schedule_tree_get_child(tree1, i);
+		child = isl_schedule_tree_append_to_leaves(child,
+					isl_schedule_tree_copy(tree2));
+		tree1 = isl_schedule_tree_replace_child(tree1, i, child);
+	}
+
+	isl_schedule_tree_free(tree2);
+	return tree1;
+error:
+	isl_schedule_tree_free(tree1);
+	isl_schedule_tree_free(tree2);
 	return NULL;
 }
 

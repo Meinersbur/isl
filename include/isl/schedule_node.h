@@ -72,6 +72,8 @@ __isl_give isl_schedule_node *isl_schedule_node_band_scale_down(
 	__isl_take isl_schedule_node *node, __isl_take isl_multi_val *mv);
 __isl_give isl_schedule_node *isl_schedule_node_band_tile(
 	__isl_take isl_schedule_node *node, __isl_take isl_multi_val *sizes);
+__isl_give isl_schedule_node *isl_schedule_node_band_sink(
+	__isl_take isl_schedule_node *node);
 __isl_give isl_schedule_node *isl_schedule_node_band_split(
 	__isl_take isl_schedule_node *node, int pos);
 

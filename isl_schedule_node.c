@@ -1027,6 +1027,40 @@ error:
 	return NULL;
 }
 
+/* Move the band node "node" down to all the leaves in the subtree
+ * rooted at "node".
+ * Return a pointer to the node in the resulting tree that is in the same
+ * position as the node pointed to by "node" in the original tree.
+ *
+ * If the node only has a leaf child, then nothing needs to be done.
+ * Otherwise, the child of the node is removed and the result is
+ * appended to all the leaves in the subtree rooted at the original child.
+ * The original node is then replaced by the result of this operation.
+ */
+__isl_give isl_schedule_node *isl_schedule_node_band_sink(
+	__isl_take isl_schedule_node *node)
+{
+	enum isl_schedule_node_type type;
+	isl_schedule_tree *tree, *child;
+
+	if (!node)
+		return NULL;
+
+	type = isl_schedule_node_get_type(node);
+	if (type != isl_schedule_node_band)
+		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
+			"not a band node", isl_schedule_node_free(node));
+	if (isl_schedule_tree_n_children(node->tree) == 0)
+		return node;
+
+	tree = isl_schedule_node_get_tree(node);
+	child = isl_schedule_tree_get_child(tree, 0);
+	tree = isl_schedule_tree_reset_children(tree);
+	tree = isl_schedule_tree_append_to_leaves(child, tree);
+
+	return isl_schedule_node_graft_tree(node, tree);
+}
+
 /* Split "node" into two nested band nodes, one with the first "pos"
  * dimensions and one with the remaining dimensions.
  * The schedules of the two band nodes live in anonymous spaces.
