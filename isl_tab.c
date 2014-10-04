@@ -1409,7 +1409,8 @@ static int row_at_most_neg_one(struct isl_tab *tab, int row)
 /* Return 1 if "var" can attain values <= -1.
  * Return 0 otherwise.
  *
- * The sample value of "var" is assumed to be non-negative when the
+ * If the variable "var" is supposed to be non-negative (is_nonneg is set),
+ * then the sample value of "var" is assumed to be non-negative when the
  * the function is called.  If 1 is returned then the constraint
  * is not redundant and the sample value is made non-negative again before
  * the function returns.
@@ -1447,7 +1448,7 @@ int isl_tab_min_at_most_neg_one(struct isl_tab *tab, struct isl_tab_var *var)
 	do {
 		find_pivot(tab, var, var, -1, &row, &col);
 		if (row == var->index) {
-			if (restore_row(tab, var) < -1)
+			if (var->is_nonneg && restore_row(tab, var) < -1)
 				return -1;
 			return 1;
 		}
