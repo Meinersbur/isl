@@ -1101,7 +1101,7 @@ error:
 	return -1;
 }
 
-/* Check if either i or j has a single cut constraint that can
+/* Check if either i or j has only cut inequalities that can
  * be used to wrap in (a facet of) the other basic set.
  * if so, replace the pair by their union.
  */
