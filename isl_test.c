@@ -3159,6 +3159,18 @@ int test_schedule(isl_ctx *ctx)
 		return -1;
 	ctx->opt->schedule_algorithm = ISL_SCHEDULE_ALGORITHM_ISL;
 
+	/* Check that we allow schedule rows that are only non-trivial
+	 * on some full-dimensional domains.
+	 */
+	D = "{ S1[j] : 0 <= j <= 1; S0[]; S2[k] : 0 <= k <= 1 }";
+	V = "{ S0[] -> S1[j] : 0 <= j <= 1; S2[0] -> S0[];"
+		"S1[j] -> S2[1] : 0 <= j <= 1 }";
+	P = "{}";
+	ctx->opt->schedule_algorithm = ISL_SCHEDULE_ALGORITHM_FEAUTRIER;
+	if (test_has_schedule(ctx, D, V, P) < 0)
+		return -1;
+	ctx->opt->schedule_algorithm = ISL_SCHEDULE_ALGORITHM_ISL;
+
 	if (test_conditional_schedule_constraints(ctx) < 0)
 		return -1;
 

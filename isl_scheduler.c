@@ -814,22 +814,45 @@ static int init_n_maxvar(__isl_take isl_set *set, void *user)
 	return 0;
 }
 
+/* Add the number of basic maps in "map" to *n.
+ */
+static int add_n_basic_map(__isl_take isl_map *map, void *user)
+{
+	int *n = user;
+
+	*n += isl_map_n_basic_map(map);
+	isl_map_free(map);
+
+	return 0;
+}
+
 /* Compute the number of rows that should be allocated for the schedule.
  * The graph can be split at most "n - 1" times, there can be at most
- * two rows for each dimension in the iteration domains (in particular,
+ * one row for each dimension in the iteration domains plus two rows
+ * for each basic map in the dependences (in particular,
  * we usually have one row, but it may be split by split_scaled),
  * and there can be one extra row for ordering the statements.
  * Note that if we have actually split "n - 1" times, then no ordering
  * is needed, so in principle we could use "graph->n + 2 * graph->maxvar - 1".
+ * It is also practically impossible to exhaust both the number of dependences
+ * and the number of variables.
  */
 static int compute_max_row(struct isl_sched_graph *graph,
-	__isl_keep isl_union_set *domain)
+	__isl_keep isl_schedule_constraints *sc)
 {
+	enum isl_edge_type i;
+	int n_edge;
+
 	graph->n = 0;
 	graph->maxvar = 0;
-	if (isl_union_set_foreach_set(domain, &init_n_maxvar, graph) < 0)
+	if (isl_union_set_foreach_set(sc->domain, &init_n_maxvar, graph) < 0)
 		return -1;
-	graph->max_row = graph->n + 2 * graph->maxvar;
+	n_edge = 0;
+	for (i = isl_edge_first; i <= isl_edge_last; ++i)
+		if (isl_union_map_foreach_map(sc->constraint[i],
+						&add_n_basic_map, &n_edge) < 0)
+			return -1;
+	graph->max_row = graph->n + 2 * n_edge + graph->maxvar;
 
 	return 0;
 }
@@ -3438,6 +3461,14 @@ static int is_any_trivial(struct isl_sched_graph *graph,
  * If the computed schedule row turns out to be trivial on one or
  * more nodes where it should not be trivial, then we throw it away
  * and try again on each component separately.
+ *
+ * If there is only one component, then we accept the schedule row anyway,
+ * but we do not consider it as a complete row and therefore do not
+ * increment graph->n_row.  Note that the ranks of the nodes that
+ * do get a non-trivial schedule part will get updated regardless and
+ * graph->maxvar is computed based on these ranks.  The test for
+ * whether more schedule rows are required in compute_schedule_wcc
+ * is therefore not affected.
  */
 static int carry_dependences(isl_ctx *ctx, struct isl_sched_graph *graph)
 {
@@ -3475,16 +3506,15 @@ static int carry_dependences(isl_ctx *ctx, struct isl_sched_graph *graph)
 	trivial = is_any_trivial(graph, sol);
 	if (trivial < 0) {
 		sol = isl_vec_free(sol);
-	} else if (trivial) {
+	} else if (trivial && graph->scc > 1) {
 		isl_vec_free(sol);
-		if (graph->scc > 1)
-			return compute_component_schedule(ctx, graph);
-		isl_die(ctx, isl_error_unknown,
-			"unable to construct non-trivial solution", return -1);
+		return compute_component_schedule(ctx, graph);
 	}
 
 	if (update_schedule(graph, sol, 0, 0) < 0)
 		return -1;
+	if (trivial)
+		graph->n_row--;
 
 	if (split_scaled(ctx, graph) < 0)
 		return -1;
@@ -4060,7 +4090,7 @@ __isl_give isl_schedule *isl_schedule_constraints_compute_schedule(
 	if (graph_alloc(ctx, &graph, graph.n,
 	    isl_schedule_constraints_n_map(sc)) < 0)
 		goto error;
-	if (compute_max_row(&graph, sc->domain) < 0)
+	if (compute_max_row(&graph, sc) < 0)
 		goto error;
 	graph.root = 1;
 	graph.n = 0;
