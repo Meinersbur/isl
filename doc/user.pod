@@ -1691,9 +1691,14 @@ the following functions first.
 		__isl_take isl_map *map);
 
 The number of basic sets in a set can be obtained
+or the number of basic maps in a map can be obtained
 from
 
+	#include <isl/set.h>
 	int isl_set_n_basic_set(__isl_keep isl_set *set);
+
+	#include <isl/map.h>
+	int isl_map_n_basic_map(__isl_keep isl_map *map);
 
 To iterate over the constraints of a basic set or map, use
 

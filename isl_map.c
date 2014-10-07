@@ -9878,6 +9878,13 @@ int isl_set_dim_is_unique(struct isl_set *set, unsigned dim)
 	return 1;
 }
 
+/* Return the number of basic maps in the (current) representation of "map".
+ */
+int isl_map_n_basic_map(__isl_keep isl_map *map)
+{
+	return map ? map->n : 0;
+}
+
 int isl_set_n_basic_set(__isl_keep isl_set *set)
 {
 	return set ? set->n : 0;
