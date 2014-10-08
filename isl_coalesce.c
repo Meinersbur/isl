@@ -1756,6 +1756,71 @@ static int coalesced_subset(int i, int j, struct isl_coalesce_info *info)
 	return superset;
 }
 
+/* Check if basic map "j" is a subset of basic map "i" after
+ * exploiting the extra equalities of "j" to simplify the divs of "i".
+ * If so, remove basic map "j".
+ *
+ * If "j" does not have any equalities or if they are the same
+ * as those of "i", then we cannot exploit them to simplify the divs.
+ * Similarly, if there are no divs in "i", then they cannot be simplified.
+ * If, on the other hand, the affine hulls of "i" and "j" do not intersect,
+ * then "j" cannot be a subset of "i".
+ *
+ * Otherwise, we intersect "i" with the affine hull of "j" and then
+ * check if "j" is a subset of the result after aligning the divs.
+ * If so, then "j" is definitely a subset of "i" and can be removed.
+ * Note that if after intersection with the affine hull of "j".
+ * "i" still has more divs than "j", then there is no way we can
+ * align the divs of "i" to those of "j".
+ */
+static int coalesced_subset_with_equalities(int i, int j,
+	struct isl_coalesce_info *info)
+{
+	isl_basic_map *hull_i, *hull_j, *bmap_i;
+	int equal, empty, subset;
+
+	if (info[j].bmap->n_eq == 0)
+		return 0;
+	if (info[i].bmap->n_div == 0)
+		return 0;
+
+	hull_i = isl_basic_map_copy(info[i].bmap);
+	hull_i = isl_basic_map_plain_affine_hull(hull_i);
+	hull_j = isl_basic_map_copy(info[j].bmap);
+	hull_j = isl_basic_map_plain_affine_hull(hull_j);
+
+	hull_j = isl_basic_map_intersect(hull_j, isl_basic_map_copy(hull_i));
+	equal = isl_basic_map_plain_is_equal(hull_i, hull_j);
+	empty = isl_basic_map_plain_is_empty(hull_j);
+	isl_basic_map_free(hull_i);
+
+	if (equal < 0 || equal || empty < 0 || empty) {
+		isl_basic_map_free(hull_j);
+		return equal < 0 || empty < 0 ? -1 : 0;
+	}
+
+	bmap_i = isl_basic_map_copy(info[i].bmap);
+	bmap_i = isl_basic_map_intersect(bmap_i, hull_j);
+	if (!bmap_i)
+		return -1;
+
+	if (bmap_i->n_div > info[j].bmap->n_div) {
+		isl_basic_map_free(bmap_i);
+		return 0;
+	}
+
+	subset = contains_after_aligning_divs(bmap_i, &info[j]);
+
+	isl_basic_map_free(bmap_i);
+
+	if (subset < 0)
+		return -1;
+	if (subset)
+		drop(&info[j]);
+
+	return subset;
+}
+
 /* Check if one of the basic maps is a subset of the other and, if so,
  * drop the subset.
  * Note that we only perform any test if the number of divs is different
@@ -1776,6 +1841,14 @@ static enum isl_change check_coalesce_subset(int i, int j,
 		return changed < 0 ? isl_change_error : isl_change_drop_second;
 
 	changed = coalesced_subset(j, i, info);
+	if (changed < 0 || changed)
+		return changed < 0 ? isl_change_error : isl_change_drop_first;
+
+	changed = coalesced_subset_with_equalities(i, j, info);
+	if (changed < 0 || changed)
+		return changed < 0 ? isl_change_error : isl_change_drop_second;
+
+	changed = coalesced_subset_with_equalities(j, i, info);
 	if (changed < 0 || changed)
 		return changed < 0 ? isl_change_error : isl_change_drop_first;
 
