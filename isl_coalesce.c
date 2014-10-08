@@ -1543,7 +1543,7 @@ done:
 	isl_basic_map_free(bmap);
 	free(eq_i);
 	free(ineq_i);
-	return 0;
+	return changed;
 error:
 	isl_basic_map_free(bmap);
 	free(eq_i);
