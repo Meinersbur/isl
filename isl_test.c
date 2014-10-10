@@ -1462,6 +1462,21 @@ struct {
 	{ 1, "{ [i,j] : i = 4 j and 0 <= i <= 100;"
 		"[i,j] : 1 <= i <= 100 and i >= 4j + 1 and i <= 4j + 2 }" },
 	{ 1, "{ [x,y] : x % 2 = 0 and y % 2 = 0; [x,x] : x % 2 = 0 }" },
+	{ 1, "[n] -> { [1] : n >= 0;"
+		    "[x] : exists (e0 = floor((x)/2): x >= 2 and "
+			"2e0 >= -1 + x and 2e0 <= x and 2e0 <= n) }" },
+	{ 1, "[n] -> { [x, y] : exists (e0 = floor((x)/2), e1 = floor((y)/3): "
+			"3e1 = y and x >= 2 and 2e0 >= -1 + x and "
+			"2e0 <= x and 2e0 <= n);"
+		    "[1, y] : exists (e0 = floor((y)/3): 3e0 = y and "
+			"n >= 0) }" },
+	{ 1, "[t1] -> { [i0] : (exists (e0 = floor((63t1)/64): "
+				"128e0 >= -134 + 127t1 and t1 >= 2 and "
+				"64e0 <= 63t1 and 64e0 >= -63 + 63t1)) or "
+				"t1 = 1 }" },
+	{ 1, "{ [i, i] : exists (e0 = floor((1 + 2i)/3): 3e0 <= 2i and "
+				"3e0 >= -1 + 2i and i <= 9 and i >= 1);"
+		"[0, 0] }" },
 };
 
 /* Test the functionality of isl_set_coalesce.

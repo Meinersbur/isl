@@ -22,6 +22,7 @@
 #include <isl_mat_private.h>
 #include <isl_local_space_private.h>
 #include <isl_vec_private.h>
+#include <isl_aff_private.h>
 
 #define STATUS_ERROR		-1
 #define STATUS_REDUNDANT	 1
@@ -225,6 +226,26 @@ enum isl_change {
 	isl_change_drop_second,
 	isl_change_fuse,
 };
+
+/* Update "change" based on an interchange of the first and the second
+ * basic map.  That is, interchange isl_change_drop_first and
+ * isl_change_drop_second.
+ */
+static enum isl_change invert_change(enum isl_change change)
+{
+	switch (change) {
+	case isl_change_error:
+		return isl_change_error;
+	case isl_change_none:
+		return isl_change_none;
+	case isl_change_drop_first:
+		return isl_change_drop_second;
+	case isl_change_drop_second:
+		return isl_change_drop_first;
+	case isl_change_fuse:
+		return isl_change_fuse;
+	}
+}
 
 /* Add the valid constraints of the basic map represented by "info"
  * to "bmap".  "len" is the size of the constraints.
@@ -1855,6 +1876,311 @@ static enum isl_change check_coalesce_subset(int i, int j,
 	return isl_change_none;
 }
 
+/* Does "bmap" involve any divs that themselves refer to divs?
+ */
+static int has_nested_div(__isl_keep isl_basic_map *bmap)
+{
+	int i;
+	unsigned total;
+	unsigned n_div;
+
+	total = isl_basic_map_dim(bmap, isl_dim_all);
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	total -= n_div;
+
+	for (i = 0; i < n_div; ++i)
+		if (isl_seq_first_non_zero(bmap->div[i] + 2 + total,
+					    n_div) != -1)
+			return 1;
+
+	return 0;
+}
+
+/* Return a list of affine expressions, one for each integer division
+ * in "bmap_i".  For each integer division that also appears in "bmap_j",
+ * the affine expression is set to NaN.  The number of NaNs in the list
+ * is equal to the number of integer divisions in "bmap_j".
+ * For the other integer divisions of "bmap_i", the corresponding
+ * element in the list is a purely affine expression equal to the integer
+ * division in "hull".
+ * If no such list can be constructed, then the number of elements
+ * in the returned list is smaller than the number of integer divisions
+ * in "bmap_i".
+ */
+static __isl_give isl_aff_list *set_up_substitutions(
+	__isl_keep isl_basic_map *bmap_i, __isl_keep isl_basic_map *bmap_j,
+	__isl_take isl_basic_map *hull)
+{
+	unsigned n_div_i, n_div_j, total;
+	isl_ctx *ctx;
+	isl_local_space *ls;
+	isl_basic_set *wrap_hull;
+	isl_aff *aff_nan;
+	isl_aff_list *list;
+	int i, j;
+
+	if (!hull)
+		return NULL;
+
+	ctx = isl_basic_map_get_ctx(hull);
+
+	n_div_i = isl_basic_map_dim(bmap_i, isl_dim_div);
+	n_div_j = isl_basic_map_dim(bmap_j, isl_dim_div);
+	total = isl_basic_map_total_dim(bmap_i) - n_div_i;
+
+	ls = isl_basic_map_get_local_space(bmap_i);
+	ls = isl_local_space_wrap(ls);
+	wrap_hull = isl_basic_map_wrap(hull);
+
+	aff_nan = isl_aff_nan_on_domain(isl_local_space_copy(ls));
+	list = isl_aff_list_alloc(ctx, n_div_i);
+
+	j = 0;
+	for (i = 0; i < n_div_i; ++i) {
+		isl_aff *aff;
+
+		if (j < n_div_j &&
+		    isl_seq_eq(bmap_i->div[i], bmap_j->div[j], 2 + total)) {
+			++j;
+			list = isl_aff_list_add(list, isl_aff_copy(aff_nan));
+			continue;
+		}
+		if (n_div_i - i <= n_div_j - j)
+			break;
+
+		aff = isl_local_space_get_div(ls, i);
+		aff = isl_aff_substitute_equalities(aff,
+						isl_basic_set_copy(wrap_hull));
+		aff = isl_aff_floor(aff);
+		if (!aff)
+			goto error;
+		if (isl_aff_dim(aff, isl_dim_div) != 0) {
+			isl_aff_free(aff);
+			break;
+		}
+
+		list = isl_aff_list_add(list, aff);
+	}
+
+	isl_aff_free(aff_nan);
+	isl_local_space_free(ls);
+	isl_basic_set_free(wrap_hull);
+
+	return list;
+error:
+	isl_local_space_free(ls);
+	isl_basic_set_free(wrap_hull);
+	isl_aff_list_free(list);
+	return NULL;
+}
+
+/* Add variables to "tab" corresponding to the elements in "list"
+ * that are not set to NaN.  The value of the added variable
+ * is fixed to the purely affine expression defined by the element.
+ * "dim" is the offset in the variables of "tab" where we should
+ * start considering the elements in "list".
+ * When this function returns, the total number of variables in "tab"
+ * is equal to "dim" plus the number of elements in "list".
+ */
+static int add_subs(struct isl_tab *tab, __isl_keep isl_aff_list *list, int dim)
+{
+	int i, extra;
+	isl_ctx *ctx;
+	isl_vec *sub;
+	isl_aff *aff;
+	int n;
+
+	if (!list)
+		return -1;
+
+	n = isl_aff_list_n_aff(list);
+	extra = n - (tab->n_var - dim);
+
+	if (isl_tab_extend_vars(tab, extra) < 0)
+		return -1;
+	if (isl_tab_extend_cons(tab, 2 * extra) < 0)
+		return -1;
+
+	ctx = isl_tab_get_ctx(tab);
+	sub = isl_vec_alloc(ctx, 1 + dim + n);
+	if (!sub)
+		return -1;
+	isl_seq_clr(sub->el + 1 + dim, n);
+
+	for (i = 0; i < n; ++i) {
+		aff = isl_aff_list_get_aff(list, i);
+		if (!aff)
+			goto error;
+		if (isl_aff_is_nan(aff)) {
+			isl_aff_free(aff);
+			continue;
+		}
+		if (isl_tab_insert_var(tab, dim + i) < 0)
+			goto error;
+		isl_seq_cpy(sub->el, aff->v->el + 1, 1 + dim);
+		isl_int_neg(sub->el[1 + dim + i], aff->v->el[0]);
+		if (isl_tab_add_eq(tab, sub->el) < 0)
+			goto error;
+		isl_int_set_si(sub->el[1 + dim + i], 0);
+		isl_aff_free(aff);
+	}
+
+	isl_vec_free(sub);
+	return 0;
+error:
+	isl_aff_free(aff);
+	isl_vec_free(sub);
+	return -1;
+}
+
+/* Coalesce basic map "j" into basic map "i" after adding the extra integer
+ * divisions in "i" but not in "j" to basic map "j", with values
+ * specified by "list".  The total number of elements in "list"
+ * is equal to the number of integer divisions in "i", while the number
+ * of NaN elements in the list is equal to the number of integer divisions
+ * in "j".
+ * If no coalescing can be performed, then we need to revert basic map "j"
+ * to its original state.  We do the same if basic map "i" gets dropped
+ * during the coalescing, even though this should not happen in practice
+ * since we have already checked for "j" being a subset of "i"
+ * before we reach this stage.
+ */
+static enum isl_change coalesce_with_subs(int i, int j,
+	struct isl_coalesce_info *info, __isl_keep isl_aff_list *list)
+{
+	isl_basic_map *bmap_j;
+	struct isl_tab_undo *snap;
+	unsigned dim;
+	enum isl_change change;
+
+	bmap_j = isl_basic_map_copy(info[j].bmap);
+	info[j].bmap = isl_basic_map_align_divs(info[j].bmap, info[i].bmap);
+	if (!info[j].bmap)
+		goto error;
+
+	snap = isl_tab_snap(info[j].tab);
+
+	dim = isl_basic_map_dim(bmap_j, isl_dim_all);
+	dim -= isl_basic_map_dim(bmap_j, isl_dim_div);
+	if (add_subs(info[j].tab, list, dim) < 0)
+		goto error;
+
+	change = coalesce_local_pair(i, j, info);
+	if (change != isl_change_none && change != isl_change_drop_first) {
+		isl_basic_map_free(bmap_j);
+	} else {
+		isl_basic_map_free(info[j].bmap);
+		info[j].bmap = bmap_j;
+
+		if (isl_tab_rollback(info[j].tab, snap) < 0)
+			return isl_change_error;
+	}
+
+	return change;
+error:
+	isl_basic_map_free(bmap_j);
+	return isl_change_error;
+}
+
+/* Check if we can coalesce basic map "j" into basic map "i" after copying
+ * those extra integer divisions in "i" that can be simplified away
+ * using the extra equalities in "j".
+ * All divs are assumed to be known and not contain any nested divs.
+ *
+ * We first check if there are any extra equalities in "j" that we
+ * can exploit.  Then we check if every integer division in "i"
+ * either already appears in "j" or can be simplified using the
+ * extra equalities to a purely affine expression.
+ * If these tests succeed, then we try to coalesce the two basic maps
+ * by introducing extra dimensions in "j" corresponding to
+ * the extra integer divsisions "i" fixed to the corresponding
+ * purely affine expression.
+ */
+static enum isl_change check_coalesce_into_eq(int i, int j,
+	struct isl_coalesce_info *info)
+{
+	unsigned n_div_i, n_div_j;
+	isl_basic_map *hull_i, *hull_j;
+	int equal, empty;
+	isl_aff_list *list;
+	enum isl_change change;
+
+	n_div_i = isl_basic_map_dim(info[i].bmap, isl_dim_div);
+	n_div_j = isl_basic_map_dim(info[j].bmap, isl_dim_div);
+	if (n_div_i <= n_div_j)
+		return isl_change_none;
+	if (info[j].bmap->n_eq == 0)
+		return isl_change_none;
+
+	hull_i = isl_basic_map_copy(info[i].bmap);
+	hull_i = isl_basic_map_plain_affine_hull(hull_i);
+	hull_j = isl_basic_map_copy(info[j].bmap);
+	hull_j = isl_basic_map_plain_affine_hull(hull_j);
+
+	hull_j = isl_basic_map_intersect(hull_j, isl_basic_map_copy(hull_i));
+	equal = isl_basic_map_plain_is_equal(hull_i, hull_j);
+	empty = isl_basic_map_plain_is_empty(hull_j);
+	isl_basic_map_free(hull_i);
+
+	if (equal < 0 || empty < 0)
+		goto error;
+	if (equal || empty) {
+		isl_basic_map_free(hull_j);
+		return isl_change_none;
+	}
+
+	list = set_up_substitutions(info[i].bmap, info[j].bmap, hull_j);
+	if (!list)
+		goto error;
+	if (isl_aff_list_n_aff(list) < n_div_i)
+		change = isl_change_none;
+	else
+		change = coalesce_with_subs(i, j, info, list);
+
+	isl_aff_list_free(list);
+
+	return change;
+error:
+	isl_basic_map_free(hull_j);
+	return isl_change_error;
+}
+
+/* Check if we can coalesce basic maps "i" and "j" after copying
+ * those extra integer divisions in one of the basic maps that can
+ * be simplified away using the extra equalities in the other basic map.
+ * We require all divs to be known in both basic maps.
+ * Furthermore, to simplify the comparison of div expressions,
+ * we do not allow any nested integer divisions.
+ */
+static enum isl_change check_coalesce_eq(int i, int j,
+	struct isl_coalesce_info *info)
+{
+	int known, nested;
+	enum isl_change change;
+
+	known = isl_basic_map_divs_known(info[i].bmap);
+	if (known < 0 || !known)
+		return known < 0 ? isl_change_error : isl_change_none;
+	known = isl_basic_map_divs_known(info[j].bmap);
+	if (known < 0 || !known)
+		return known < 0 ? isl_change_error : isl_change_none;
+	nested = has_nested_div(info[i].bmap);
+	if (nested < 0 || nested)
+		return nested < 0 ? isl_change_error : isl_change_none;
+	nested = has_nested_div(info[j].bmap);
+	if (nested < 0 || nested)
+		return nested < 0 ? isl_change_error : isl_change_none;
+
+	change = check_coalesce_into_eq(i, j, info);
+	if (change != isl_change_none)
+		return change;
+	change = check_coalesce_into_eq(j, i, info);
+	if (change != isl_change_none)
+		return invert_change(change);
+
+	return isl_change_none;
+}
+
 /* Check if the union of the given pair of basic maps
  * can be represented by a single basic map.
  * If so, replace the pair by the single basic map and return
@@ -1863,12 +2189,15 @@ static enum isl_change check_coalesce_subset(int i, int j,
  *
  * We first check if the two basic maps live in the same local space.
  * If so, we do the complete check.  Otherwise, we check if one is
- * an obvious subset of the other.
+ * an obvious subset of the other or if the extra integer divisions
+ * of one basic map can be simplified away using the extra equalities
+ * of the other basic map.
  */
 static enum isl_change coalesce_pair(int i, int j,
 	struct isl_coalesce_info *info)
 {
 	int same;
+	enum isl_change change;
 
 	same = same_divs(info[i].bmap, info[j].bmap);
 	if (same < 0)
@@ -1876,7 +2205,11 @@ static enum isl_change coalesce_pair(int i, int j,
 	if (same)
 		return coalesce_local_pair(i, j, info);
 
-	return check_coalesce_subset(i, j, info);
+	change = check_coalesce_subset(i, j, info);
+	if (change != isl_change_none)
+		return change;
+
+	return check_coalesce_eq(i, j, info);
 }
 
 /* Pairwise coalesce the basic maps described by the "n" elements of "info",
