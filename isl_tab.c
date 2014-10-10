@@ -3109,8 +3109,7 @@ static int perform_undo_var(struct isl_tab *tab, struct isl_tab_undo *undo)
 	case isl_tab_undo_allocate:
 		if (undo->u.var_index >= 0) {
 			isl_assert(tab->mat->ctx, !var->is_row, return -1);
-			drop_col(tab, var->index);
-			break;
+			return drop_col(tab, var->index);
 		}
 		if (!var->is_row) {
 			if (!max_is_manifestly_unbounded(tab, var)) {
@@ -3123,8 +3122,7 @@ static int perform_undo_var(struct isl_tab *tab, struct isl_tab_undo *undo)
 				if (to_row(tab, var, 0) < 0)
 					return -1;
 		}
-		drop_row(tab, var->index);
-		break;
+		return drop_row(tab, var->index);
 	case isl_tab_undo_relax:
 		return unrelax(tab, var);
 	case isl_tab_undo_unrestrict:
