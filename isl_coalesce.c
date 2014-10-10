@@ -761,14 +761,21 @@ static int check_wraps(__isl_keep isl_mat *wraps, int first,
  * and should therefore continue to be ignored ever after.
  * Otherwise, the relaxation might be thwarted by some of
  * these constraints.
+ *
+ * Update the underlying set to ensure that the dimension doesn't change.
+ * Otherwise the integer divisions could get dropped if the tab
+ * turns out to be empty.
  */
 static __isl_give isl_set *set_from_updated_bmap(__isl_keep isl_basic_map *bmap,
 	struct isl_tab *tab)
 {
+	isl_basic_set *bset;
+
 	bmap = isl_basic_map_copy(bmap);
-	bmap = isl_basic_map_cow(bmap);
-	bmap = isl_basic_map_update_from_tab(bmap, tab);
-	return isl_set_from_basic_set(isl_basic_map_underlying_set(bmap));
+	bset = isl_basic_map_underlying_set(bmap);
+	bset = isl_basic_set_cow(bset);
+	bset = isl_basic_set_update_from_tab(bset, tab);
+	return isl_set_from_basic_set(bset);
 }
 
 /* Given a basic set i with a constraint k that is adjacent to
