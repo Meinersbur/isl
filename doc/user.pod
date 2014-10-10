@@ -4478,6 +4478,10 @@ the overapproximation), then you will get an error message.
 	__isl_give isl_space *isl_space_unwrap(
 		__isl_take isl_space *space);
 
+	#include <isl/local_space.h>
+	__isl_give isl_local_space *isl_local_space_wrap(
+		__isl_take isl_local_space *ls);
+
 	#include <isl/set.h>
 	__isl_give isl_basic_map *isl_basic_set_unwrap(
 		__isl_take isl_basic_set *bset);
