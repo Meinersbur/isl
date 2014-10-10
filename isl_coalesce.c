@@ -774,9 +774,13 @@ static int add_wrap(struct isl_wraps *wraps, int w, isl_int *bound,
 	return 1;
 }
 
-/* For each non-redundant constraint in info->bmap (as determined by info->tab),
+/* For each constraint in info->bmap that is not redundant (as determined
+ * by info->tab) and that is not a valid constraint for the other basic map,
  * wrap the constraint around "bound" such that it includes the whole
  * set "set" and append the resulting constraint to "wraps".
+ * Note that the constraints that are valid for the other basic map
+ * will be added to the combined basic map by default, so there is
+ * no need to wrap them.
  * "wraps" is assumed to have been pre-allocated to the appropriate size.
  * wraps->n_row is the number of actual wrapped constraints that have
  * been added.
@@ -791,7 +795,7 @@ static int add_wrap(struct isl_wraps *wraps, int w, isl_int *bound,
 static int add_wraps(struct isl_wraps *wraps, struct isl_coalesce_info *info,
 	isl_int *bound, __isl_keep isl_set *set)
 {
-	int l;
+	int l, m;
 	int w;
 	int added;
 	isl_basic_map *bmap = info->bmap;
@@ -800,6 +804,9 @@ static int add_wraps(struct isl_wraps *wraps, struct isl_coalesce_info *info,
 	w = wraps->mat->n_row;
 
 	for (l = 0; l < bmap->n_ineq; ++l) {
+		if (info->ineq[l] == STATUS_VALID ||
+		    info->ineq[l] == STATUS_REDUNDANT)
+			continue;
 		if (isl_seq_is_neg(bound, bmap->ineq[l], len))
 			continue;
 		if (isl_seq_eq(bound, bmap->ineq[l], len))
@@ -820,19 +827,17 @@ static int add_wraps(struct isl_wraps *wraps, struct isl_coalesce_info *info,
 		if (isl_seq_eq(bound, bmap->eq[l], len))
 			continue;
 
-		added = add_wrap(wraps, w, bound, bmap->eq[l], len, set, 1);
-		if (added < 0)
-			return -1;
-		if (!added)
-			goto unbounded;
-		++w;
-
-		added = add_wrap(wraps, w, bound, bmap->eq[l], len, set, 0);
-		if (added < 0)
-			return -1;
-		if (!added)
-			goto unbounded;
-		++w;
+		for (m = 0; m < 2; ++m) {
+			if (info->eq[2 * l + m] == STATUS_VALID)
+				continue;
+			added = add_wrap(wraps, w, bound, bmap->eq[l], len,
+					set, !m);
+			if (added < 0)
+				return -1;
+			if (!added)
+				goto unbounded;
+			++w;
+		}
 	}
 
 	wraps->mat->n_row = w;
