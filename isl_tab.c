@@ -1,12 +1,15 @@
 /*
  * Copyright 2008-2009 Katholieke Universiteit Leuven
  * Copyright 2013      Ecole Normale Superieure
+ * Copyright 2014      INRIA Rocquencourt
  *
  * Use of this software is governed by the MIT license
  *
  * Written by Sven Verdoolaege, K.U.Leuven, Departement
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
  * and Ecole Normale Superieure, 45 rue d'Ulm, 75230 Paris, France
+ * and Inria Paris - Rocquencourt, Domaine de Voluceau - Rocquencourt,
+ * B.P. 105 - 78153 Le Chesnay, France
  */
 
 #include <isl_ctx_private.h>
@@ -1660,19 +1663,75 @@ int isl_tab_allocate_con(struct isl_tab *tab)
 	return r;
 }
 
-/* Add a variable to the tableau and allocate a column for it.
- * Return the index into the variable array "var".
+/* Move the entries in tab->var up one position, starting at "first",
+ * creating room for an extra entry at position "first".
+ * Since some of the entries of tab->row_var and tab->col_var contain
+ * indices into this array, they have to be updated accordingly.
  */
-int isl_tab_allocate_var(struct isl_tab *tab)
+static int var_insert_entry(struct isl_tab *tab, int first)
 {
-	int r;
+	int i;
+
+	if (tab->n_var >= tab->max_var)
+		isl_die(isl_tab_get_ctx(tab), isl_error_internal,
+			"not enough room for new variable", return -1);
+	if (first > tab->n_var)
+		isl_die(isl_tab_get_ctx(tab), isl_error_internal,
+			"invalid initial position", return -1);
+
+	for (i = tab->n_var - 1; i >= first; --i) {
+		tab->var[i + 1] = tab->var[i];
+		if (tab->var[i + 1].is_row)
+			tab->row_var[tab->var[i + 1].index]++;
+		else
+			tab->col_var[tab->var[i + 1].index]++;
+	}
+
+	tab->n_var++;
+
+	return 0;
+}
+
+/* Drop the entry at position "first" in tab->var, moving all
+ * subsequent entries down.
+ * Since some of the entries of tab->row_var and tab->col_var contain
+ * indices into this array, they have to be updated accordingly.
+ */
+static int var_drop_entry(struct isl_tab *tab, int first)
+{
+	int i;
+
+	if (first >= tab->n_var)
+		isl_die(isl_tab_get_ctx(tab), isl_error_internal,
+			"invalid initial position", return -1);
+
+	tab->n_var--;
+
+	for (i = first; i < tab->n_var; ++i) {
+		tab->var[i] = tab->var[i + 1];
+		if (tab->var[i + 1].is_row)
+			tab->row_var[tab->var[i].index]--;
+		else
+			tab->col_var[tab->var[i].index]--;
+	}
+
+	return 0;
+}
+
+/* Add a variable to the tableau at position "r" and allocate a column for it.
+ * Return the index into the variable array "var", i.e., "r",
+ * or -1 on error.
+ */
+int isl_tab_insert_var(struct isl_tab *tab, int r)
+{
 	int i;
 	unsigned off = 2 + tab->M;
 
 	isl_assert(tab->mat->ctx, tab->n_col < tab->mat->n_col, return -1);
-	isl_assert(tab->mat->ctx, tab->n_var < tab->max_var, return -1);
 
-	r = tab->n_var;
+	if (var_insert_entry(tab, r) < 0)
+		return -1;
+
 	tab->var[r].index = tab->n_col;
 	tab->var[r].is_row = 0;
 	tab->var[r].is_nonneg = 0;
@@ -1685,12 +1744,22 @@ int isl_tab_allocate_var(struct isl_tab *tab)
 	for (i = 0; i < tab->n_row; ++i)
 		isl_int_set_si(tab->mat->row[i][off + tab->n_col], 0);
 
-	tab->n_var++;
 	tab->n_col++;
 	if (isl_tab_push_var(tab, isl_tab_undo_allocate, &tab->var[r]) < 0)
 		return -1;
 
 	return r;
+}
+
+/* Add a variable to the tableau and allocate a column for it.
+ * Return the index into the variable array "var".
+ */
+int isl_tab_allocate_var(struct isl_tab *tab)
+{
+	if (!tab)
+		return -1;
+
+	return isl_tab_insert_var(tab, tab->n_var);
 }
 
 /* Add a row to the tableau.  The row is given as an affine combination
@@ -1770,13 +1839,15 @@ static int drop_row(struct isl_tab *tab, int row)
 	return 0;
 }
 
+/* Drop the variable in column "col".
+ */
 static int drop_col(struct isl_tab *tab, int col)
 {
-	isl_assert(tab->mat->ctx, tab->col_var[col] == tab->n_var - 1, return -1);
+	if (var_drop_entry(tab, tab->col_var[col]) < 0)
+		return -1;
 	if (col != tab->n_col - 1)
 		swap_cols(tab, col, tab->n_col - 1);
 	tab->n_col--;
-	tab->n_var--;
 	return 0;
 }
 
