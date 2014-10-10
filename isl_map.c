@@ -1626,8 +1626,10 @@ struct isl_basic_map *isl_basic_map_cow(struct isl_basic_map *bmap)
 		bmap->ref--;
 		bmap = isl_basic_map_dup(bmap);
 	}
-	if (bmap)
+	if (bmap) {
 		ISL_F_CLR(bmap, ISL_BASIC_SET_FINAL);
+		ISL_F_CLR(bmap, ISL_BASIC_MAP_REDUCED_COEFFICIENTS);
+	}
 	return bmap;
 }
 

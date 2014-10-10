@@ -41,6 +41,7 @@ struct isl_basic_map {
 #define ISL_BASIC_MAP_NORMALIZED	(1 << 5)
 #define ISL_BASIC_MAP_NORMALIZED_DIVS	(1 << 6)
 #define ISL_BASIC_MAP_ALL_EQUALITIES	(1 << 7)
+#define ISL_BASIC_MAP_REDUCED_COEFFICIENTS	(1 << 8)
 #define ISL_BASIC_SET_FINAL		(1 << 0)
 #define ISL_BASIC_SET_EMPTY		(1 << 1)
 #define ISL_BASIC_SET_NO_IMPLICIT	(1 << 2)
@@ -49,6 +50,7 @@ struct isl_basic_map {
 #define ISL_BASIC_SET_NORMALIZED	(1 << 5)
 #define ISL_BASIC_SET_NORMALIZED_DIVS	(1 << 6)
 #define ISL_BASIC_SET_ALL_EQUALITIES	(1 << 7)
+#define ISL_BASIC_SET_REDUCED_COEFFICIENTS	(1 << 8)
 	unsigned flags;
 
 	struct isl_ctx *ctx;
@@ -398,6 +400,9 @@ int isl_map_plain_is_fixed(__isl_keep isl_map *map,
 
 int isl_basic_map_output_defining_equality(__isl_keep isl_basic_map *bmap,
 	int pos);
+
+__isl_give isl_basic_map *isl_basic_map_reduce_coefficients(
+	__isl_take isl_basic_map *bmap);
 
 __isl_give isl_basic_map_list *isl_map_get_basic_map_list(
 	__isl_keep isl_map *map);

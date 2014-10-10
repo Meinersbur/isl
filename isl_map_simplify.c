@@ -1320,6 +1320,8 @@ struct isl_basic_map *isl_basic_map_simplify(struct isl_basic_map *bmap)
 		bmap = normalize_divs(bmap, &progress);
 		bmap = isl_basic_map_remove_duplicate_constraints(bmap,
 								&progress, 1);
+		if (bmap && progress)
+			ISL_F_CLR(bmap, ISL_BASIC_MAP_REDUCED_COEFFICIENTS);
 	}
 	return bmap;
 }
@@ -3311,4 +3313,160 @@ struct isl_set *isl_set_drop_redundant_divs(struct isl_set *set)
 {
 	return (struct isl_set *)
 	    isl_map_drop_redundant_divs((struct isl_map *)set);
+}
+
+/* Does "bmap" satisfy any equality that involves more than 2 variables
+ * and/or has coefficients different from -1 and 1?
+ */
+static int has_multiple_var_equality(__isl_keep isl_basic_map *bmap)
+{
+	int i;
+	unsigned total;
+
+	total = isl_basic_map_dim(bmap, isl_dim_all);
+
+	for (i = 0; i < bmap->n_eq; ++i) {
+		int j, k;
+
+		j = isl_seq_first_non_zero(bmap->eq[i] + 1, total);
+		if (j < 0)
+			continue;
+		if (!isl_int_is_one(bmap->eq[i][1 + j]) &&
+		    !isl_int_is_negone(bmap->eq[i][1 + j]))
+			return 1;
+
+		j += 1;
+		k = isl_seq_first_non_zero(bmap->eq[i] + 1 + j, total - j);
+		if (k < 0)
+			continue;
+		j += k;
+		if (!isl_int_is_one(bmap->eq[i][1 + j]) &&
+		    !isl_int_is_negone(bmap->eq[i][1 + j]))
+			return 1;
+
+		j += 1;
+		k = isl_seq_first_non_zero(bmap->eq[i] + 1 + j, total - j);
+		if (k >= 0)
+			return 1;
+	}
+
+	return 0;
+}
+
+/* Remove any common factor g from the constraint coefficients in "v".
+ * The constant term is stored in the first position and is replaced
+ * by floor(c/g).  If any common factor is removed and if this results
+ * in a tightening of the constraint, then set *tightened.
+ */
+static __isl_give isl_vec *normalize_constraint(__isl_take isl_vec *v,
+	int *tightened)
+{
+	isl_ctx *ctx;
+
+	if (!v)
+		return NULL;
+	ctx = isl_vec_get_ctx(v);
+	isl_seq_gcd(v->el + 1, v->size - 1, &ctx->normalize_gcd);
+	if (isl_int_is_zero(ctx->normalize_gcd))
+		return v;
+	if (isl_int_is_one(ctx->normalize_gcd))
+		return v;
+	v = isl_vec_cow(v);
+	if (!v)
+		return NULL;
+	if (tightened && !isl_int_is_divisible_by(v->el[0], ctx->normalize_gcd))
+		*tightened = 1;
+	isl_int_fdiv_q(v->el[0], v->el[0], ctx->normalize_gcd);
+	isl_seq_scale_down(v->el + 1, v->el + 1, ctx->normalize_gcd,
+				v->size - 1);
+	return v;
+}
+
+/* If "bmap" is an integer set that satisfies any equality involving
+ * more than 2 variables and/or has coefficients different from -1 and 1,
+ * then use variable compression to reduce the coefficients by removing
+ * any (hidden) common factor.
+ * In particular, apply the variable compression to each constraint,
+ * factor out any common factor in the non-constant coefficients and
+ * then apply the inverse of the compression.
+ * At the end, we mark the basic map as having reduced constants.
+ * If this flag is still set on the next invocation of this function,
+ * then we skip the computation.
+ *
+ * Removing a common factor may result in a tightening of some of
+ * the constraints.  If this happens, then we may end up with two
+ * opposite inequalities that can be replaced by an equality.
+ * We therefore call isl_basic_map_detect_inequality_pairs,
+ * which checks for such pairs of inequalities as well as eliminate_divs_eq
+ * if such a pair was found.
+ */
+__isl_give isl_basic_map *isl_basic_map_reduce_coefficients(
+	__isl_take isl_basic_map *bmap)
+{
+	unsigned total;
+	isl_ctx *ctx;
+	isl_vec *v;
+	isl_mat *eq, *T, *T2;
+	int i;
+	int tightened;
+
+	if (!bmap)
+		return NULL;
+	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_REDUCED_COEFFICIENTS))
+		return bmap;
+	if (isl_basic_map_is_rational(bmap))
+		return bmap;
+	if (bmap->n_eq == 0)
+		return bmap;
+	if (!has_multiple_var_equality(bmap))
+		return bmap;
+
+	total = isl_basic_map_dim(bmap, isl_dim_all);
+	ctx = isl_basic_map_get_ctx(bmap);
+	v = isl_vec_alloc(ctx, 1 + total);
+	if (!v)
+		return isl_basic_map_free(bmap);
+
+	eq = isl_mat_sub_alloc6(ctx, bmap->eq, 0, bmap->n_eq, 0, 1 + total);
+	T = isl_mat_variable_compression(eq, &T2);
+	if (!T || !T2)
+		goto error;
+	if (T->n_col == 0) {
+		isl_mat_free(T);
+		isl_mat_free(T2);
+		isl_vec_free(v);
+		return isl_basic_map_set_to_empty(bmap);
+	}
+
+	tightened = 0;
+	for (i = 0; i < bmap->n_ineq; ++i) {
+		isl_seq_cpy(v->el, bmap->ineq[i], 1 + total);
+		v = isl_vec_mat_product(v, isl_mat_copy(T));
+		v = normalize_constraint(v, &tightened);
+		v = isl_vec_mat_product(v, isl_mat_copy(T2));
+		if (!v)
+			goto error;
+		isl_seq_cpy(bmap->ineq[i], v->el, 1 + total);
+	}
+
+	isl_mat_free(T);
+	isl_mat_free(T2);
+	isl_vec_free(v);
+
+	ISL_F_SET(bmap, ISL_BASIC_MAP_REDUCED_COEFFICIENTS);
+
+	if (tightened) {
+		int progress = 0;
+
+		bmap = isl_basic_map_detect_inequality_pairs(bmap, &progress);
+		if (progress)
+			bmap = eliminate_divs_eq(bmap, &progress);
+	}
+
+	return bmap;
+error:
+	isl_mat_free(T);
+	isl_mat_free(T2);
+	isl_vec_free(v);
+	return isl_basic_map_free(bmap);
 }
