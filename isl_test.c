@@ -1456,6 +1456,9 @@ struct {
 		"[i0, 0] : i0 >= 123 and i0 <= 124 }" },
 	{ 1, "{ [0,0]; [1,1] }" },
 	{ 1, "[n] -> { [k] : 16k <= -1 + n and k >= 1; [0] : n >= 2 }" },
+	{ 1, "{ [k, ii, k - ii] : ii >= -6 + k and ii <= 6 and ii >= 1 and "
+				"ii <= k;"
+		"[k, 0, k] : k <= 6 and k >= 1 }" },
 };
 
 /* Test the functionality of isl_set_coalesce.

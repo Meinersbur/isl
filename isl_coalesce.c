@@ -1292,9 +1292,6 @@ static enum isl_change check_adj_eq(int i, int j,
 	if (change != isl_change_none)
 		return change;
 
-	if (count(info[j].eq, 2 * info[j].bmap->n_eq, STATUS_ADJ_INEQ) != 1)
-		return isl_change_none;
-
 	change = can_wrap_in_facet(i, j, k, info);
 
 	return change;
