@@ -2102,8 +2102,8 @@ error:
 /* Exploit the equalities in "eq" to simplify the affine expression
  * and the expressions of the integer divisions in the local space.
  */
-static __isl_give isl_aff *isl_aff_substitute_equalities(
-	__isl_take isl_aff *aff, __isl_take isl_basic_set *eq)
+__isl_give isl_aff *isl_aff_substitute_equalities(__isl_take isl_aff *aff,
+	__isl_take isl_basic_set *eq)
 {
 	int n_div;
 
