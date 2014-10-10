@@ -2304,6 +2304,9 @@ static __isl_give isl_map *update_basic_maps(__isl_take isl_map *map,
  * can be represented by a single basic map.
  * If so, replace the pair by the single basic map and start over.
  *
+ * We factor out any (hidden) common factor from the constraint
+ * coefficients to improve the detection of adjacent constraints.
+ *
  * Since we are constructing the tableaus of the basic maps anyway,
  * we exploit them to detect implicit equalities and redundant constraints.
  * This also helps the coalescing as it can ignore the redundant constraints.
@@ -2342,6 +2345,9 @@ struct isl_map *isl_map_coalesce(struct isl_map *map)
 		goto error;
 
 	for (i = 0; i < map->n; ++i) {
+		map->p[i] = isl_basic_map_reduce_coefficients(map->p[i]);
+		if (!map->p[i])
+			goto error;
 		info[i].bmap = isl_basic_map_copy(map->p[i]);
 		info[i].tab = isl_tab_from_basic_map(info[i].bmap, 0);
 		if (!info[i].tab)

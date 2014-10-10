@@ -1477,6 +1477,13 @@ struct {
 	{ 1, "{ [i, i] : exists (e0 = floor((1 + 2i)/3): 3e0 <= 2i and "
 				"3e0 >= -1 + 2i and i <= 9 and i >= 1);"
 		"[0, 0] }" },
+	{ 1, "{ [t1] : exists (e0 = floor((-11 + t1)/2): 2e0 = -11 + t1 and "
+				"t1 >= 13 and t1 <= 16);"
+		"[t1] : t1 <= 15 and t1 >= 12 }" },
+	{ 1, "{ [x,y] : x = 3y and 0 <= y <= 2; [-3,-1] }" },
+	{ 1, "{ [x,y] : 2x = 3y and 0 <= y <= 4; [-3,-2] }" },
+	{ 0, "{ [x,y] : 2x = 3y and 0 <= y <= 4; [-2,-2] }" },
+	{ 0, "{ [x,y] : 2x = 3y and 0 <= y <= 4; [-3,-1] }" },
 };
 
 /* Test the functionality of isl_set_coalesce.
