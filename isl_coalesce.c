@@ -157,7 +157,7 @@ static void drop(struct isl_map *map, int i, struct isl_tab **tabs)
 }
 
 /* Replace the pair of basic maps i and j by the basic map bounded
- * by the valid constraints in both basic maps and the constraint
+ * by the valid constraints in both basic maps and the constraints
  * in extra (if not NULL).
  */
 static int fuse(struct isl_map *map, int i, int j,
@@ -735,7 +735,7 @@ static int check_wraps(__isl_keep isl_mat *wraps, int first,
 	return 0;
 }
 
-/* Return a set that corresponds to the non-redudant constraints
+/* Return a set that corresponds to the non-redundant constraints
  * (as recorded in tab) of bmap.
  *
  * It's important to remove the redundant constraints as some
