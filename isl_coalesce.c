@@ -153,6 +153,10 @@ static int all(int *con, unsigned len, int status)
  * "bmap" is the basic map itself (or NULL if "removed" is set)
  * "tab" is the corresponding tableau (or NULL if "removed" is set)
  * "removed" is set if this basic map has been removed from the map
+ * "simplify" is set if this basic map may have some unknown integer
+ * divisions that were not present in the input basic maps.  The basic
+ * map should then be simplified such that we may be able to find
+ * a definition among the constraints.
  *
  * "eq" and "ineq" are only set if we are currently trying to coalesce
  * this basic map with another basic map, in which case they represent
@@ -165,6 +169,7 @@ struct isl_coalesce_info {
 	isl_basic_map *bmap;
 	struct isl_tab *tab;
 	int removed;
+	int simplify;
 	int *eq;
 	int *ineq;
 };
@@ -323,6 +328,12 @@ static int number_of_constraints_increases(int i, int j,
  * as pairs of inequalities.
  * If "check_number" is set, then the original basic maps are only
  * replaced if the total number of constraints does not increase.
+ * While the number of integer divisions in the two basic maps
+ * is assumed to be the same, the actual definitions may be different.
+ * We only copy the definition from one of the basic map if it is
+ * the same as that of the other basic map.  Otherwise, we mark
+ * the integer division as unknown and schedule for the basic map
+ * to be simplified in an attempt to recover the integer division definition.
  */
 static enum isl_change fuse(int i, int j, struct isl_coalesce_info *info,
 	__isl_keep isl_mat *extra, int detect_equalities, int check_number)
@@ -350,7 +361,14 @@ static enum isl_change fuse(int i, int j, struct isl_coalesce_info *info,
 		int l = isl_basic_map_alloc_div(fused);
 		if (l < 0)
 			goto error;
-		isl_seq_cpy(fused->div[l], info[i].bmap->div[k], 1 + 1 + total);
+		if (isl_seq_eq(info[i].bmap->div[k], info[j].bmap->div[k],
+				1 + 1 + total)) {
+			isl_seq_cpy(fused->div[l], info[i].bmap->div[k],
+				1 + 1 + total);
+		} else {
+			isl_int_set_si(fused->div[l][0], 0);
+			info[i].simplify = 1;
+		}
 	}
 
 	for (k = 0; k < extra_rows; ++k) {
@@ -379,6 +397,7 @@ static enum isl_change fuse(int i, int j, struct isl_coalesce_info *info,
 		return isl_change_none;
 	}
 
+	info[i].simplify |= info[j].simplify;
 	isl_basic_map_free(info[i].bmap);
 	info[i].bmap = fused;
 	isl_tab_free(info[i].tab);
@@ -2266,6 +2285,8 @@ static int coalesce(isl_ctx *ctx, int n, struct isl_coalesce_info *info)
  * update the others based on the information in the corresponding tableau.
  * Since we detected implicit equalities without calling
  * isl_basic_map_gauss, we need to do it now.
+ * Also call isl_basic_map_simplify if we may have lost the definition
+ * of one or more integer divisions.
  */
 static __isl_give isl_map *update_basic_maps(__isl_take isl_map *map,
 	int n, struct isl_coalesce_info *info)
@@ -2287,6 +2308,8 @@ static __isl_give isl_map *update_basic_maps(__isl_take isl_map *map,
 		info[i].bmap = isl_basic_map_update_from_tab(info[i].bmap,
 							info[i].tab);
 		info[i].bmap = isl_basic_map_gauss(info[i].bmap, NULL);
+		if (info[i].simplify)
+			info[i].bmap = isl_basic_map_simplify(info[i].bmap);
 		info[i].bmap = isl_basic_map_finalize(info[i].bmap);
 		if (!info[i].bmap)
 			return isl_map_free(map);
