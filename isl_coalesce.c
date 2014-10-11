@@ -673,6 +673,10 @@ static enum isl_change check_adj_ineq(int i, int j,
  * other basic map is included in the extension, because there
  * were no "cut" inequalities in "i") and we can replace the
  * two basic maps by this extension.
+ * Each integer division that does not have exactly the same
+ * definition in "i" and "j" is marked unknown and the basic map
+ * is scheduled to be simplified in an attempt to recover
+ * the integer division definition.
  * Place this extension in the position that is the smallest of i and j.
  *        ____			  _____
  *       /    || 		 /     |
@@ -700,11 +704,21 @@ static enum isl_change is_adj_eq_extension(int i, int j, int k,
 		return isl_change_error;
 	super = contains(&info[j], info[i].tab);
 	if (super) {
+		int l;
+		unsigned total;
+
 		if (isl_tab_rollback(info[i].tab, snap2) < 0)
 			return isl_change_error;
 		info[i].bmap = isl_basic_map_cow(info[i].bmap);
 		if (!info[i].bmap)
 			return isl_change_error;
+		total = isl_basic_map_total_dim(info[i].bmap);
+		for (l = 0; l < info[i].bmap->n_div; ++l)
+			if (!isl_seq_eq(info[i].bmap->div[l],
+					info[j].bmap->div[l], 1 + 1 + total)) {
+				isl_int_set_si(info[i].bmap->div[l][0], 0);
+				info[i].simplify = 1;
+			}
 		isl_int_add_ui(info[i].bmap->ineq[k][0],
 				info[i].bmap->ineq[k][0], 1);
 		ISL_F_SET(info[i].bmap, ISL_BASIC_MAP_FINAL);
