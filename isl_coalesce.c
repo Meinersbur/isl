@@ -2221,7 +2221,8 @@ static enum isl_change check_coalesce_eq(int i, int j,
  * Otherwise, return isl_change_none.
  *
  * We first check if the two basic maps live in the same local space.
- * If so, we do the complete check.  Otherwise, we check if one is
+ * If so, we do the complete check.  Otherwise, we check if they have
+ * the same number of integer divisions and can be coalesced, if one is
  * an obvious subset of the other or if the extra integer divisions
  * of one basic map can be simplified away using the extra equalities
  * of the other basic map.
@@ -2237,6 +2238,12 @@ static enum isl_change coalesce_pair(int i, int j,
 		return isl_change_error;
 	if (same)
 		return coalesce_local_pair(i, j, info);
+
+	if (info[i].bmap->n_div == info[j].bmap->n_div) {
+		change = coalesce_local_pair(i, j, info);
+		if (change != isl_change_none)
+			return change;
+	}
 
 	change = check_coalesce_subset(i, j, info);
 	if (change != isl_change_none)

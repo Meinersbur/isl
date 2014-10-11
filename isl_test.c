@@ -1484,6 +1484,11 @@ struct {
 	{ 1, "{ [x,y] : 2x = 3y and 0 <= y <= 4; [-3,-2] }" },
 	{ 0, "{ [x,y] : 2x = 3y and 0 <= y <= 4; [-2,-2] }" },
 	{ 0, "{ [x,y] : 2x = 3y and 0 <= y <= 4; [-3,-1] }" },
+	{ 1, "{ [i] : exists j : i = 4 j and 0 <= i <= 100;"
+		"[i] : exists j : 1 <= i <= 100 and i >= 4j + 1 and "
+				"i <= 4j + 2 }" },
+	{ 1, "{ [c0] : (exists (e0 : c0 - 1 <= 3e0 <= c0)) or "
+		"(exists (e0 : 3e0 = -2 + c0)) }" },
 };
 
 /* Test the functionality of isl_set_coalesce.
