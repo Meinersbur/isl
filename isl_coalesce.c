@@ -969,8 +969,8 @@ static int add_wraps_around_facet(struct isl_wraps *wraps,
 
 /* Given a basic set i with a constraint k that is adjacent to
  * basic set j, check if we can wrap
- * both the facet corresponding to k and basic map j
- * around their ridges to include the other set.
+ * both the facet corresponding to k (if "wrap_facet" is set) and basic map j
+ * (always) around their ridges to include the other set.
  * If so, replace the pair of basic sets by their union.
  *
  * All constraints of i (except k) are assumed to be valid or
@@ -978,6 +978,8 @@ static int add_wraps_around_facet(struct isl_wraps *wraps,
  * Wrapping the cut constraints to include basic map j may result
  * in constraints that are no longer valid of basic map i
  * we have to check that the resulting wrapping constraints are valid for i.
+ * If "wrap_facet" is not set, then all constraints of i (except k)
+ * are assumed to be valid for j.
  *        ____			  _____
  *       /    | 		 /     \
  *      /     ||  		/      |
@@ -987,7 +989,7 @@ static int add_wraps_around_facet(struct isl_wraps *wraps,
  *
  */
 static enum isl_change can_wrap_in_facet(int i, int j, int k,
-	struct isl_coalesce_info *info)
+	struct isl_coalesce_info *info, int wrap_facet)
 {
 	enum isl_change change = isl_change_none;
 	struct isl_wraps wraps;
@@ -1020,10 +1022,13 @@ static enum isl_change can_wrap_in_facet(int i, int j, int k,
 	if (!wraps.mat->n_row)
 		goto unbounded;
 
-	if (add_wraps_around_facet(&wraps, &info[i], k, bound->el, set_j) < 0)
-		goto error;
-	if (!wraps.mat->n_row)
-		goto unbounded;
+	if (wrap_facet) {
+		if (add_wraps_around_facet(&wraps, &info[i], k,
+					    bound->el, set_j) < 0)
+			goto error;
+		if (!wraps.mat->n_row)
+			goto unbounded;
+	}
 
 	change = fuse(i, j, info, wraps.mat, 0, 0);
 
@@ -1315,7 +1320,7 @@ static enum isl_change check_adj_eq(int i, int j,
 			return change;
 	}
 
-	change = can_wrap_in_facet(i, j, k, info);
+	change = can_wrap_in_facet(i, j, k, info, any_cut);
 
 	return change;
 }
