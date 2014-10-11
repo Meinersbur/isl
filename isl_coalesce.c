@@ -936,9 +936,10 @@ static __isl_give isl_set *set_from_updated_bmap(__isl_keep isl_basic_map *bmap,
  * around their ridges to include the other set.
  * If so, replace the pair of basic sets by their union.
  *
- * All constraints of i (except k) are assumed to be valid for j.
- * This means that there is no real need to wrap the ridges of
- * the faces of basic map i around basic map j but since we do,
+ * All constraints of i (except k) are assumed to be valid or
+ * cut constraints for j.
+ * Wrapping the cut constraints to include basic map j may result
+ * in constraints that are no longer valid of basic map i
  * we have to check that the resulting wrapping constraints are valid for i.
  *        ____			  _____
  *       /    | 		 /     \
@@ -1254,6 +1255,7 @@ static enum isl_change check_wrap(int i, int j, struct isl_coalesce_info *info)
  * map that has the equality "j".
  * If "i" has any "cut" (in)equality, then relaxing the inequality
  * by one would not result in a basic map that contains the other
+ * basic map.  However, it may still be possible to wrap in the other
  * basic map.
  */
 static enum isl_change check_adj_eq(int i, int j,
@@ -1261,6 +1263,7 @@ static enum isl_change check_adj_eq(int i, int j,
 {
 	enum isl_change change = isl_change_none;
 	int k;
+	int any_cut;
 
 	if (any(info[i].eq, 2 * info[i].bmap->n_eq, STATUS_ADJ_INEQ) &&
 	    any(info[j].eq, 2 * info[j].bmap->n_eq, STATUS_ADJ_INEQ))
@@ -1274,9 +1277,7 @@ static enum isl_change check_adj_eq(int i, int j,
 
 	if (any(info[i].eq, 2 * info[i].bmap->n_eq, STATUS_CUT))
 		return isl_change_none;
-	if (any(info[i].ineq, info[i].bmap->n_ineq, STATUS_CUT))
-		/* ADJ EQ CUT */
-		return isl_change_none;
+	any_cut = any(info[i].ineq, info[i].bmap->n_ineq, STATUS_CUT);
 	if (count(info[i].ineq, info[i].bmap->n_ineq, STATUS_ADJ_EQ) != 1 ||
 	    any(info[j].ineq, info[j].bmap->n_ineq, STATUS_ADJ_EQ) ||
 	    any(info[i].ineq, info[i].bmap->n_ineq, STATUS_ADJ_INEQ) ||
@@ -1288,9 +1289,11 @@ static enum isl_change check_adj_eq(int i, int j,
 		if (info[i].ineq[k] == STATUS_ADJ_EQ)
 			break;
 
-	change = is_adj_eq_extension(i, j, k, info);
-	if (change != isl_change_none)
-		return change;
+	if (!any_cut) {
+		change = is_adj_eq_extension(i, j, k, info);
+		if (change != isl_change_none)
+			return change;
+	}
 
 	change = can_wrap_in_facet(i, j, k, info);
 
