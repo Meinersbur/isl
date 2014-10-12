@@ -152,6 +152,7 @@ static int all(int *con, unsigned len, int status)
  *
  * "bmap" is the basic map itself (or NULL if "removed" is set)
  * "tab" is the corresponding tableau (or NULL if "removed" is set)
+ * "hull_hash" identifies the affine space in which "bmap" lives.
  * "removed" is set if this basic map has been removed from the map
  * "simplify" is set if this basic map may have some unknown integer
  * divisions that were not present in the input basic maps.  The basic
@@ -168,11 +169,32 @@ static int all(int *con, unsigned len, int status)
 struct isl_coalesce_info {
 	isl_basic_map *bmap;
 	struct isl_tab *tab;
+	uint32_t hull_hash;
 	int removed;
 	int simplify;
 	int *eq;
 	int *ineq;
 };
+
+/* Compute the hash of the (apparent) affine hull of info->bmap (with
+ * the existentially quantified variables removed) and store it
+ * in info->hash.
+ */
+static int coalesce_info_set_hull_hash(struct isl_coalesce_info *info)
+{
+	isl_basic_map *hull;
+	unsigned n_div;
+
+	hull = isl_basic_map_copy(info->bmap);
+	hull = isl_basic_map_plain_affine_hull(hull);
+	n_div = isl_basic_map_dim(hull, isl_dim_div);
+	hull = isl_basic_map_drop_constraints_involving_dims(hull,
+							isl_dim_div, 0, n_div);
+	info->hull_hash = isl_basic_map_get_hash(hull);
+	isl_basic_map_free(hull);
+
+	return hull ? 0 : -1;
+}
 
 /* Free all the allocated memory in an array
  * of "n" isl_coalesce_info elements.
@@ -2252,27 +2274,36 @@ static enum isl_change coalesce_pair(int i, int j,
 	return check_coalesce_eq(i, j, info);
 }
 
-/* Pairwise coalesce the basic maps described by the "n" elements of "info",
- * skipping basic maps that have been removed (either before or within
- * this function).
+/* Return the maximum of "a" and "b".
+ */
+static inline int max(int a, int b)
+{
+	return a > b ? a : b;
+}
+
+/* Pairwise coalesce the basic maps in the range [start1, end1[ of "info"
+ * with those in the range [start2, end2[, skipping basic maps
+ * that have been removed (either before or within this function).
  *
- * For each basic map i, we check if it can be coalesced with respect
- * to any previously considered basic map j.
+ * For each basic map i in the first range, we check if it can be coalesced
+ * with respect to any previously considered basic map j in the second range.
  * If i gets dropped (because it was a subset of some j), then
  * we can move on to the next basic map.
  * If j gets dropped, we need to continue checking against the other
  * previously considered basic maps.
  * If the two basic maps got fused, then we recheck the fused basic map
- * against the previously considered basic maps.
+ * against the previously considered basic maps, starting at i + 1
+ * (even if start2 is greater than i + 1).
  */
-static int coalesce(isl_ctx *ctx, int n, struct isl_coalesce_info *info)
+static int coalesce_range(isl_ctx *ctx, struct isl_coalesce_info *info,
+	int start1, int end1, int start2, int end2)
 {
 	int i, j;
 
-	for (i = n - 2; i >= 0; --i) {
+	for (i = end1 - 1; i >= start1; --i) {
 		if (info[i].removed)
 			continue;
-		for (j = i + 1; j < n; ++j) {
+		for (j = max(i + 1, start2); j < end2; ++j) {
 			enum isl_change changed;
 
 			if (info[j].removed)
@@ -2289,13 +2320,39 @@ static int coalesce(isl_ctx *ctx, int n, struct isl_coalesce_info *info)
 			case isl_change_drop_second:
 				continue;
 			case isl_change_drop_first:
-				j = n;
+				j = end2;
 				break;
 			case isl_change_fuse:
 				j = i;
 				break;
 			}
 		}
+	}
+
+	return 0;
+}
+
+/* Pairwise coalesce the basic maps described by the "n" elements of "info".
+ *
+ * We consider groups of basic maps that live in the same apparent
+ * affine hull and we first coalesce within such a group before we
+ * coalesce the elements in the group with elements of previously
+ * considered groups.  If a fuse happens during the second phase,
+ * then we also reconsider the elements within the group.
+ */
+static int coalesce(isl_ctx *ctx, int n, struct isl_coalesce_info *info)
+{
+	int start, end;
+
+	for (end = n; end > 0; end = start) {
+		start = end - 1;
+		while (start >= 1 &&
+		    info[start - 1].hull_hash == info[start].hull_hash)
+			start--;
+		if (coalesce_range(ctx, info, start, end, start, end) < 0)
+			return -1;
+		if (coalesce_range(ctx, info, start, end, end, n) < 0)
+			return -1;
 	}
 
 	return 0;
@@ -2360,6 +2417,8 @@ static __isl_give isl_map *update_basic_maps(__isl_take isl_map *map,
  * This means that we have to call isl_basic_map_gauss at the end
  * of the computation (in update_basic_maps) to ensure that
  * the basic maps are not left in an unexpected state.
+ * For each basic map, we also compute the hash of the apparent affine hull
+ * for use in coalesce.
  */
 struct isl_map *isl_map_coalesce(struct isl_map *map)
 {
@@ -2406,6 +2465,8 @@ struct isl_map *isl_map_coalesce(struct isl_map *map)
 		if (!ISL_F_ISSET(info[i].bmap, ISL_BASIC_MAP_NO_REDUNDANT))
 			if (isl_tab_detect_redundant(info[i].tab) < 0)
 				goto error;
+		if (coalesce_info_set_hull_hash(&info[i]) < 0)
+			goto error;
 	}
 	for (i = map->n - 1; i >= 0; --i)
 		if (info[i].tab->empty)
