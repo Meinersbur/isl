@@ -162,6 +162,7 @@ static void drop(struct isl_map *map, int i, struct isl_tab **tabs)
 /* Replace the pair of basic maps i and j by the basic map bounded
  * by the valid constraints in both basic maps and the constraints
  * in extra (if not NULL).
+ * Place the fused basic map in the position that is the smallest of i and j.
  *
  * If "detect_equalities" is set, then look for equalities encoded
  * as pairs of inequalities.
@@ -175,6 +176,10 @@ static int fuse(struct isl_map *map, int i, int j,
 	struct isl_tab *fused_tab = NULL;
 	unsigned total = isl_basic_map_total_dim(map->p[i]);
 	unsigned extra_rows = extra ? extra->n_row : 0;
+
+	if (j < i)
+		return fuse(map, j, i, tabs, eq_j, ineq_j, eq_i, ineq_i,
+				extra, detect_equalities);
 
 	fused = isl_basic_map_alloc_space(isl_space_copy(map->p[i]->dim),
 			map->p[i]->n_div,
