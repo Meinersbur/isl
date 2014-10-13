@@ -1634,6 +1634,24 @@ error:
 	return NULL;
 }
 
+/* Remove redundant constraints in each of the basic maps of "umap".
+ * Since removing redundant constraints does not change the meaning
+ * or the space, the operation can be performed in-place.
+ */
+__isl_give isl_union_map *isl_union_map_remove_redundancies(
+	__isl_take isl_union_map *umap)
+{
+	return inplace(umap, &isl_map_remove_redundancies);
+}
+
+/* Remove redundant constraints in each of the basic sets of "uset".
+ */
+__isl_give isl_union_set *isl_union_set_remove_redundancies(
+	__isl_take isl_union_set *uset)
+{
+	return isl_union_map_remove_redundancies(uset);
+}
+
 __isl_give isl_union_map *isl_union_map_coalesce(
 	__isl_take isl_union_map *umap)
 {

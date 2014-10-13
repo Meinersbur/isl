@@ -4185,14 +4185,27 @@ equalities.
 
 =item * Removing redundant constraints
 
+	#include <isl/set.h>
 	__isl_give isl_basic_set *isl_basic_set_remove_redundancies(
 		__isl_take isl_basic_set *bset);
 	__isl_give isl_set *isl_set_remove_redundancies(
 		__isl_take isl_set *set);
+
+	#include <isl/union_set.h>
+	__isl_give isl_union_set *
+	isl_union_set_remove_redundancies(
+		__isl_take isl_union_set *uset);
+
+	#include <isl/map.h>
 	__isl_give isl_basic_map *isl_basic_map_remove_redundancies(
 		__isl_take isl_basic_map *bmap);
 	__isl_give isl_map *isl_map_remove_redundancies(
 		__isl_take isl_map *map);
+
+	#include <isl/union_map.h>
+	__isl_give isl_union_map *
+	isl_union_map_remove_redundancies(
+		__isl_take isl_union_map *umap);
 
 =item * Convex hull
 
