@@ -1071,6 +1071,8 @@ struct {
 	    "[3, i1, 3] : n = 5 and i1 <= 2 and i1 >= 0 }",
 	  "[n] -> { [i0, i1, i2] : i2 <= -1 + n and 2i2 <= -6 + 3n - i0 and "
 	    "i2 <= 5 + i0 and i2 >= i0 }" },
+	{ "{ [x, y] : 3y <= 2x and y >= -2 + 2x and 2y >= 2 - x }",
+	    "{ [x, y] : 1 = 0 }" },
 };
 
 void test_convex_hull_algo(struct isl_ctx *ctx, int convex)
