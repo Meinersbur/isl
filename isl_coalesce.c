@@ -1658,6 +1658,102 @@ error:
 	return isl_change_error;
 }
 
+/* Shift the integer division at position "div" of the basic map
+ * represented by "info" by "shift".
+ *
+ * That is, if the integer division has the form
+ *
+ *	floor(f(x)/d)
+ *
+ * then replace it by
+ *
+ *	floor((f(x) + shift * d)/d) - shift
+ */
+static int shift_div(struct isl_coalesce_info *info, int div, isl_int shift)
+{
+	unsigned total;
+
+	info->bmap = isl_basic_map_shift_div(info->bmap, div, shift);
+	if (!info->bmap)
+		return -1;
+
+	total = isl_basic_map_dim(info->bmap, isl_dim_all);
+	total -= isl_basic_map_dim(info->bmap, isl_dim_div);
+	if (isl_tab_shift_var(info->tab, total + div, shift) < 0)
+		return -1;
+
+	return 0;
+}
+
+/* Check if some of the divs in the basic map represented by "info1"
+ * are shifts of the corresponding divs in the basic map represented
+ * by "info2".  If so, align them with those of "info2".
+ * Only do this if "info1" and "info2" have the same number
+ * of integer divisions.
+ *
+ * An integer division is considered to be a shift of another integer
+ * division if one is equal to the other plus a constant.
+ *
+ * In particular, for each pair of integer divisions, if both are known,
+ * have identical coefficients (apart from the constant term) and
+ * if the difference between the constant terms (taking into account
+ * the denominator) is an integer, then move the difference outside.
+ * That is, if one integer division is of the form
+ *
+ *	floor((f(x) + c_1)/d)
+ *
+ * while the other is of the form
+ *
+ *	floor((f(x) + c_2)/d)
+ *
+ * and n = (c_2 - c_1)/d is an integer, then replace the first
+ * integer division by
+ *
+ *	floor((f(x) + c_1 + n * d)/d) - n = floor((f(x) + c_2)/d) - n
+ */
+static int harmonize_divs(struct isl_coalesce_info *info1,
+	struct isl_coalesce_info *info2)
+{
+	int i;
+	int total;
+
+	if (!info1->bmap || !info2->bmap)
+		return -1;
+
+	if (info1->bmap->n_div != info2->bmap->n_div)
+		return 0;
+	if (info1->bmap->n_div == 0)
+		return 0;
+
+	total = isl_basic_map_total_dim(info1->bmap);
+	for (i = 0; i < info1->bmap->n_div; ++i) {
+		isl_int d;
+		int r = 0;
+
+		if (isl_int_is_zero(info1->bmap->div[i][0]) ||
+		    isl_int_is_zero(info2->bmap->div[i][0]))
+			continue;
+		if (isl_int_ne(info1->bmap->div[i][0], info2->bmap->div[i][0]))
+			continue;
+		if (isl_int_eq(info1->bmap->div[i][1], info2->bmap->div[i][1]))
+			continue;
+		if (!isl_seq_eq(info1->bmap->div[i] + 2,
+				info2->bmap->div[i] + 2, total))
+			continue;
+		isl_int_init(d);
+		isl_int_sub(d, info2->bmap->div[i][1], info1->bmap->div[i][1]);
+		if (isl_int_is_divisible_by(d, info1->bmap->div[i][0])) {
+			isl_int_divexact(d, d, info1->bmap->div[i][0]);
+			r = shift_div(info1, i, d);
+		}
+		isl_int_clear(d);
+		if (r < 0)
+			return -1;
+	}
+
+	return 0;
+}
+
 /* Do the two basic maps live in the same local space, i.e.,
  * do they have the same (known) divs?
  * If either basic map has any unknown divs, then we can only assume
@@ -2242,7 +2338,8 @@ static enum isl_change check_coalesce_eq(int i, int j,
  * isl_change_drop_first, isl_change_drop_second or isl_change_fuse.
  * Otherwise, return isl_change_none.
  *
- * We first check if the two basic maps live in the same local space.
+ * We first check if the two basic maps live in the same local space,
+ * after aligning the divs that differ by only an integer constant.
  * If so, we do the complete check.  Otherwise, we check if they have
  * the same number of integer divisions and can be coalesced, if one is
  * an obvious subset of the other or if the extra integer divisions
@@ -2255,6 +2352,8 @@ static enum isl_change coalesce_pair(int i, int j,
 	int same;
 	enum isl_change change;
 
+	if (harmonize_divs(&info[i], &info[j]) < 0)
+		return isl_change_error;
 	same = same_divs(info[i].bmap, info[j].bmap);
 	if (same < 0)
 		return isl_change_error;
