@@ -17,7 +17,7 @@ used as a backend polyhedral library for the polyhedral
 scanner C<CLooG> and as part of an equivalence checker of
 static affine programs.
 For bug reports, feature requests and questions,
-visit the the discussion group at
+visit the discussion group at
 L<http://groups.google.com/group/isl-development>.
 
 =head2 Backward Incompatible Changes
@@ -730,7 +730,7 @@ corresponding C<isl_id> is alive.
 
 =head2 Spaces
 
-Whenever a new set, relation or similiar object is created from scratch,
+Whenever a new set, relation or similar object is created from scratch,
 the space in which it lives needs to be specified using an C<isl_space>.
 Each space involves zero or more parameters and zero, one or two
 tuples of set or input/output dimensions.  The parameters and dimensions
