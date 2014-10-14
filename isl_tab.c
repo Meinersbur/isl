@@ -2543,34 +2543,34 @@ static int cut_to_hyperplane(struct isl_tab *tab, struct isl_tab_var *var)
  * even after the relaxation, so we need to restore it.
  * We therefore prefer to pivot a column up to a row, if possible.
  */
-struct isl_tab *isl_tab_relax(struct isl_tab *tab, int con)
+int isl_tab_relax(struct isl_tab *tab, int con)
 {
 	struct isl_tab_var *var;
 
 	if (!tab)
-		return NULL;
+		return -1;
 
 	var = &tab->con[con];
 
 	if (var->is_row && (var->index < 0 || var->index < tab->n_redundant))
 		isl_die(tab->mat->ctx, isl_error_invalid,
-			"cannot relax redundant constraint", goto error);
+			"cannot relax redundant constraint", return -1);
 	if (!var->is_row && (var->index < 0 || var->index < tab->n_dead))
 		isl_die(tab->mat->ctx, isl_error_invalid,
-			"cannot relax dead constraint", goto error);
+			"cannot relax dead constraint", return -1);
 
 	if (!var->is_row && !max_is_manifestly_unbounded(tab, var))
 		if (to_row(tab, var, 1) < 0)
-			goto error;
+			return -1;
 	if (!var->is_row && !min_is_manifestly_unbounded(tab, var))
 		if (to_row(tab, var, -1) < 0)
-			goto error;
+			return -1;
 
 	if (var->is_row) {
 		isl_int_add(tab->mat->row[var->index][1],
 		    tab->mat->row[var->index][1], tab->mat->row[var->index][0]);
 		if (restore_row(tab, var) < 0)
-			goto error;
+			return -1;
 	} else {
 		int i;
 		unsigned off = 2 + tab->M;
@@ -2585,12 +2585,9 @@ struct isl_tab *isl_tab_relax(struct isl_tab *tab, int con)
 	}
 
 	if (isl_tab_push_var(tab, isl_tab_undo_relax, var) < 0)
-		goto error;
+		return -1;
 
-	return tab;
-error:
-	isl_tab_free(tab);
-	return NULL;
+	return 0;
 }
 
 /* Remove the sign constraint from constraint "con".

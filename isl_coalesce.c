@@ -515,7 +515,8 @@ static int is_adj_eq_extension(struct isl_map *map, int i, int j, int k,
 		return 0;
 
 	snap = isl_tab_snap(tabs[i]);
-	tabs[i] = isl_tab_relax(tabs[i], n_eq + k);
+	if (isl_tab_relax(tabs[i], n_eq + k) < 0)
+		return -1;
 	snap2 = isl_tab_snap(tabs[i]);
 	if (isl_tab_select_facet(tabs[i], n_eq + k) < 0)
 		return -1;
