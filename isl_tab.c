@@ -2546,7 +2546,6 @@ static int cut_to_hyperplane(struct isl_tab *tab, struct isl_tab_var *var)
 struct isl_tab *isl_tab_relax(struct isl_tab *tab, int con)
 {
 	struct isl_tab_var *var;
-	unsigned off = 2 + tab->M;
 
 	if (!tab)
 		return NULL;
@@ -2574,6 +2573,7 @@ struct isl_tab *isl_tab_relax(struct isl_tab *tab, int con)
 			goto error;
 	} else {
 		int i;
+		unsigned off = 2 + tab->M;
 
 		for (i = 0; i < tab->n_row; ++i) {
 			if (isl_int_is_zero(tab->mat->row[i][off + var->index]))
