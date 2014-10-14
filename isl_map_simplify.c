@@ -3470,3 +3470,51 @@ error:
 	isl_vec_free(v);
 	return isl_basic_map_free(bmap);
 }
+
+/* Shift the integer division at position "div" of "bmap" by "shift".
+ *
+ * That is, if the integer division has the form
+ *
+ *	floor(f(x)/d)
+ *
+ * then replace it by
+ *
+ *	floor((f(x) + shift * d)/d) - shift
+ */
+__isl_give isl_basic_map *isl_basic_map_shift_div(
+	__isl_take isl_basic_map *bmap, int div, isl_int shift)
+{
+	int i;
+	unsigned total;
+
+	if (!bmap)
+		return NULL;
+
+	total = isl_basic_map_dim(bmap, isl_dim_all);
+	total -= isl_basic_map_dim(bmap, isl_dim_div);
+
+	isl_int_addmul(bmap->div[div][1], shift, bmap->div[div][0]);
+
+	for (i = 0; i < bmap->n_eq; ++i) {
+		if (isl_int_is_zero(bmap->eq[i][1 + total + div]))
+			continue;
+		isl_int_submul(bmap->eq[i][0],
+				shift, bmap->eq[i][1 + total + div]);
+	}
+	for (i = 0; i < bmap->n_ineq; ++i) {
+		if (isl_int_is_zero(bmap->ineq[i][1 + total + div]))
+			continue;
+		isl_int_submul(bmap->ineq[i][0],
+				shift, bmap->ineq[i][1 + total + div]);
+	}
+	for (i = 0; i < bmap->n_div; ++i) {
+		if (isl_int_is_zero(bmap->div[i][0]))
+			continue;
+		if (isl_int_is_zero(bmap->div[i][1 + 1 + total + div]))
+			continue;
+		isl_int_submul(bmap->div[i][1],
+				shift, bmap->div[i][1 + 1 + total + div]);
+	}
+
+	return bmap;
+}
