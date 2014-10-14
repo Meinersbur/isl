@@ -2677,6 +2677,64 @@ int isl_tab_relax(struct isl_tab *tab, int con)
 	return 0;
 }
 
+/* Replace the variable v at position "pos" in the tableau "tab"
+ * by v' = v + shift.
+ *
+ * If the variable is in a column, then we first check if we can
+ * simply plug in v = v' - shift.  The effect on a row with
+ * coefficient f/d for variable v is that the constant term c/d
+ * is replaced by (c - f * shift)/d.  If shift is positive and
+ * f is negative for each row that needs to remain non-negative,
+ * then this is clearly safe.  In other words, if the minimum of v
+ * is manifestly unbounded, then we can keep v in a column position.
+ * Otherwise, we can pivot it down to a row.
+ * Similarly, if shift is negative, we need to check if the maximum
+ * of is manifestly unbounded.
+ *
+ * If the variable is in a row (from the start or after pivoting),
+ * then the constant term c/d is replaced by (c + d * shift)/d.
+ */
+int isl_tab_shift_var(struct isl_tab *tab, int pos, isl_int shift)
+{
+	struct isl_tab_var *var;
+
+	if (!tab)
+		return -1;
+	if (isl_int_is_zero(shift))
+		return 0;
+
+	var = &tab->var[pos];
+	if (!var->is_row) {
+		if (isl_int_is_neg(shift)) {
+			if (!max_is_manifestly_unbounded(tab, var))
+				if (to_row(tab, var, 1) < 0)
+					return -1;
+		} else {
+			if (!min_is_manifestly_unbounded(tab, var))
+				if (to_row(tab, var, -1) < 0)
+					return -1;
+		}
+	}
+
+	if (var->is_row) {
+		isl_int_addmul(tab->mat->row[var->index][1],
+				shift, tab->mat->row[var->index][0]);
+	} else {
+		int i;
+		unsigned off = 2 + tab->M;
+
+		for (i = 0; i < tab->n_row; ++i) {
+			if (isl_int_is_zero(tab->mat->row[i][off + var->index]))
+				continue;
+			isl_int_submul(tab->mat->row[i][1],
+				    shift, tab->mat->row[i][off + var->index]);
+		}
+
+	}
+
+	return 0;
+}
+
 /* Remove the sign constraint from constraint "con".
  *
  * If the constraint variable was originally marked non-negative,

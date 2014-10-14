@@ -304,4 +304,6 @@ int isl_tab_push_callback(struct isl_tab *tab,
 int isl_tab_add_div(struct isl_tab *tab, __isl_keep isl_vec *div,
 	int (*add_ineq)(void *user, isl_int *), void *user);
 
+int isl_tab_shift_var(struct isl_tab *tab, int pos, isl_int shift) WARN_UNUSED;
+
 #endif
