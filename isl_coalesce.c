@@ -781,6 +781,8 @@ static int add_wrap(struct isl_wraps *wraps, int w, isl_int *bound,
  * Note that the constraints that are valid for the other basic map
  * will be added to the combined basic map by default, so there is
  * no need to wrap them.
+ * The caller wrap_in_facets even relies on this function not wrapping
+ * any constraints that are already valid.
  * "wraps" is assumed to have been pre-allocated to the appropriate size.
  * wraps->n_row is the number of actual wrapped constraints that have
  * been added.
@@ -1005,7 +1007,14 @@ error:
  * If the result is empty, then t(x) >= 0 was actually a valid constraint
  * (with respect to the integer points), so we add t(x) >= 0 instead.
  * Otherwise, we wrap the constraints of basic map j that are not
- * redundant in this intersection over the union of the two basic maps.
+ * redundant in this intersection and that are not already valid
+ * for basic map i over basic map i.
+ * Note that it is sufficient to wrap the constraints to include
+ * basic map i, because we will only wrap the constraints that do
+ * not include basic map i already.  The wrapped constraint will
+ * therefore be more relaxed compared to the original constraint.
+ * Since the original constraint is valid for basic map j, so is
+ * the wrapped constraint.
  *
  * If any wrapping fails, i.e., if we cannot wrap to touch
  * the union, then we give up.
@@ -1018,7 +1027,7 @@ static enum isl_change wrap_in_facets(int i, int j, int *cuts, int n,
 	struct isl_wraps wraps;
 	isl_ctx *ctx;
 	isl_mat *mat;
-	isl_set *set = NULL;
+	isl_set *set_i = NULL;
 	unsigned total = isl_basic_map_total_dim(info[i].bmap);
 	int max_wrap;
 	int k, w;
@@ -1030,12 +1039,11 @@ static enum isl_change wrap_in_facets(int i, int j, int *cuts, int n,
 	max_wrap = 1 + 2 * info[j].bmap->n_eq + info[j].bmap->n_ineq;
 	max_wrap *= n;
 
-	set = isl_set_union(set_from_updated_bmap(info[i].bmap, info[i].tab),
-			    set_from_updated_bmap(info[j].bmap, info[j].tab));
+	set_i = set_from_updated_bmap(info[i].bmap, info[i].tab);
 	ctx = isl_basic_map_get_ctx(info[i].bmap);
 	mat = isl_mat_alloc(ctx, max_wrap, 1 + total);
 	wraps_init(&wraps, mat, info, i, j);
-	if (!set || !wraps.mat)
+	if (!set_i || !wraps.mat)
 		goto error;
 
 	snap = isl_tab_snap(info[j].tab);
@@ -1056,7 +1064,7 @@ static enum isl_change wrap_in_facets(int i, int j, int *cuts, int n,
 			isl_int_sub_ui(wraps.mat->row[w][0],
 					wraps.mat->row[w][0], 1);
 		else if (add_wraps(&wraps, &info[j],
-				    wraps.mat->row[w], set) < 0)
+				    wraps.mat->row[w], set_i) < 0)
 			goto error;
 
 		if (isl_tab_rollback(info[j].tab, snap) < 0)
@@ -1070,12 +1078,12 @@ static enum isl_change wrap_in_facets(int i, int j, int *cuts, int n,
 		change = fuse(i, j, info, wraps.mat, 0);
 
 	wraps_free(&wraps);
-	isl_set_free(set);
+	isl_set_free(set_i);
 
 	return change;
 error:
 	wraps_free(&wraps);
-	isl_set_free(set);
+	isl_set_free(set_i);
 	return isl_change_error;
 }
 
