@@ -400,22 +400,27 @@ static enum isl_change check_facets(int i, int j,
 
 /* Check if info->bmap contains the basic map represented
  * by the tableau "tab".
+ * For each equality, we check both the constraint itself
+ * (as an inequality) and its negation.  Make sure the
+ * equality is returned to its original state before returning.
  */
 static int contains(struct isl_coalesce_info *info, struct isl_tab *tab)
 {
-	int k, l;
+	int k;
 	unsigned dim;
 	isl_basic_map *bmap = info->bmap;
 
 	dim = isl_basic_map_total_dim(bmap);
 	for (k = 0; k < bmap->n_eq; ++k) {
-		for (l = 0; l < 2; ++l) {
-			int stat;
-			isl_seq_neg(bmap->eq[k], bmap->eq[k], 1+dim);
-			stat = status_in(bmap->eq[k], tab);
-			if (stat != STATUS_VALID)
-				return 0;
-		}
+		int stat;
+		isl_seq_neg(bmap->eq[k], bmap->eq[k], 1 + dim);
+		stat = status_in(bmap->eq[k], tab);
+		isl_seq_neg(bmap->eq[k], bmap->eq[k], 1 + dim);
+		if (stat != STATUS_VALID)
+			return 0;
+		stat = status_in(bmap->eq[k], tab);
+		if (stat != STATUS_VALID)
+			return 0;
 	}
 
 	for (k = 0; k < bmap->n_ineq; ++k) {
