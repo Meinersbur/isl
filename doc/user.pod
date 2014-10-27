@@ -5491,6 +5491,8 @@ instead.
 		__isl_take isl_union_pw_multi_aff *upma2);
 
 	#include <isl/space.h>
+	__isl_give isl_space *isl_space_factor_domain(
+		__isl_take isl_space *space);
 	__isl_give isl_space *isl_space_factor_range(
 		__isl_take isl_space *space);
 	__isl_give isl_space *isl_space_domain_factor_domain(
