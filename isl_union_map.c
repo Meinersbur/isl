@@ -1982,6 +1982,31 @@ __isl_give isl_union_map *isl_union_map_range_factor_range(
 	return cond_un_op(umap, &range_factor_range_entry);
 }
 
+/* If "map" is of the form [A -> B] -> [C -> D], then add A -> C to "res".
+ */
+static int factor_domain_entry(void **entry, void *user)
+{
+	isl_map *map = *entry;
+	isl_union_map **res = user;
+
+	if (!isl_map_domain_is_wrapping(map) || !isl_map_range_is_wrapping(map))
+		return 0;
+
+	*res = isl_union_map_add_map(*res,
+				isl_map_factor_domain(isl_map_copy(map)));
+
+	return *res ? 0 : -1;
+}
+
+/* For each map in "umap" of the form [A -> B] -> [C -> D],
+ * construct the map A -> C and collect the results.
+ */
+__isl_give isl_union_map *isl_union_map_factor_domain(
+	__isl_take isl_union_map *umap)
+{
+	return cond_un_op(umap, &factor_domain_entry);
+}
+
 /* If "map" is of the form [A -> B] -> [C -> D], then add B -> D to "res".
  */
 static int factor_range_entry(void **entry, void *user)
