@@ -1499,9 +1499,9 @@ static __isl_give isl_map *construct_insertion_map(__isl_take isl_space *space,
 }
 
 static const char *option_str[] = {
-	[atomic] = "atomic",
-	[unroll] = "unroll",
-	[separate] = "separate"
+	[isl_ast_loop_atomic] = "atomic",
+	[isl_ast_loop_unroll] = "unroll",
+	[isl_ast_loop_separate] = "separate"
 };
 
 /* Update the "options" to reflect the insertion of a dimension
@@ -1530,7 +1530,7 @@ static __isl_give isl_union_map *options_insert_dim(
 {
 	isl_map *map;
 	isl_union_map *insertion;
-	enum isl_ast_build_domain_type type;
+	enum isl_ast_loop_type type;
 	const char *name = "separation_class";
 
 	space = isl_space_map_from_set(space);
@@ -1546,7 +1546,8 @@ static __isl_give isl_union_map *options_insert_dim(
 
 	insertion = isl_union_map_empty(isl_union_map_get_space(options));
 
-	for (type = atomic; type <= separate; ++type) {
+	for (type = isl_ast_loop_atomic;
+	    type <= isl_ast_loop_separate; ++type) {
 		isl_map *map_type = isl_map_copy(map);
 		const char *name = option_str[type];
 		map_type = isl_map_set_tuple_name(map_type, isl_dim_in, name);
@@ -2093,8 +2094,7 @@ error:
  * but the position is still that within the current code generation.
  */
 __isl_give isl_set *isl_ast_build_get_option_domain(
-	__isl_keep isl_ast_build *build,
-	enum isl_ast_build_domain_type type)
+	__isl_keep isl_ast_build *build, enum isl_ast_loop_type type)
 {
 	const char *name;
 	isl_space *space;

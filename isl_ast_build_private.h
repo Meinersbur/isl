@@ -8,10 +8,10 @@
 #include <isl/list.h>
 #include <isl/schedule_node.h>
 
-enum isl_ast_build_domain_type {
-	atomic,
-	unroll,
-	separate
+enum isl_ast_loop_type {
+	isl_ast_loop_atomic,
+	isl_ast_loop_unroll,
+	isl_ast_loop_separate
 };
 
 /* An isl_ast_build represents the context in which AST is being
@@ -268,8 +268,7 @@ __isl_give isl_multi_aff *isl_ast_build_get_stride_expansion(
 void isl_ast_build_dump(__isl_keep isl_ast_build *build);
 
 __isl_give isl_set *isl_ast_build_get_option_domain(
-	__isl_keep isl_ast_build *build,
-	enum isl_ast_build_domain_type type);
+	__isl_keep isl_ast_build *build, enum isl_ast_loop_type type);
 __isl_give isl_map *isl_ast_build_get_separation_class(
 	__isl_keep isl_ast_build *build);
 __isl_give isl_set *isl_ast_build_eliminate(

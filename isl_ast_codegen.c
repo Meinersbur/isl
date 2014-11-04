@@ -2723,13 +2723,13 @@ static __isl_give isl_set *compute_unroll_domains(
 	int i, n;
 	int empty;
 
-	empty = isl_set_is_empty(domains->option[unroll]);
+	empty = isl_set_is_empty(domains->option[isl_ast_loop_unroll]);
 	if (empty < 0)
 		return isl_set_free(class_domain);
 	if (empty)
 		return class_domain;
 
-	unroll_domain = isl_set_copy(domains->option[unroll]);
+	unroll_domain = isl_set_copy(domains->option[isl_ast_loop_unroll]);
 	unroll_list = isl_basic_set_list_from_set(unroll_domain);
 
 	n = isl_basic_set_list_n_basic_set(unroll_list);
@@ -2782,7 +2782,7 @@ static __isl_give isl_set *compute_atomic_domain(
 	isl_set *domain, *atomic_domain;
 	int empty;
 
-	domain = isl_set_copy(domains->option[atomic]);
+	domain = isl_set_copy(domains->option[isl_ast_loop_atomic]);
 	domain = isl_set_intersect(domain, isl_set_copy(class_domain));
 	domain = isl_set_intersect(domain,
 				isl_set_copy(domains->schedule_domain));
@@ -2829,7 +2829,7 @@ static int compute_separate_domain(struct isl_codegen_domains *domains,
 	isl_basic_set_list *list;
 	int empty;
 
-	domain = isl_set_copy(domains->option[separate]);
+	domain = isl_set_copy(domains->option[isl_ast_loop_separate]);
 	domain = isl_set_intersect(domain, isl_set_copy(class_domain));
 	executed = isl_union_map_copy(domains->executed);
 	executed = isl_union_map_intersect_domain(executed,
@@ -2905,7 +2905,7 @@ static int compute_partial_domains(struct isl_codegen_domains *domains,
 	if (compute_separate_domain(domains, domain) < 0)
 		goto error;
 	domain = isl_set_subtract(domain,
-				    isl_set_copy(domains->option[separate]));
+			isl_set_copy(domains->option[isl_ast_loop_separate]));
 
 	domain = isl_set_intersect(domain,
 				isl_set_copy(domains->schedule_domain));
@@ -2968,17 +2968,21 @@ static int compute_class_domains(__isl_take isl_point *pnt, void *user)
 static void compute_domains_init_options(isl_set *option[3],
 	__isl_keep isl_ast_build *build)
 {
-	enum isl_ast_build_domain_type type, type2;
+	enum isl_ast_loop_type type, type2;
+	isl_set *unroll;
 
-	for (type = atomic; type <= separate; ++type) {
+	for (type = isl_ast_loop_atomic;
+	    type <= isl_ast_loop_separate; ++type) {
 		option[type] = isl_ast_build_get_option_domain(build, type);
-		for (type2 = atomic; type2 < type; ++type2)
+		for (type2 = isl_ast_loop_atomic; type2 < type; ++type2)
 			option[type] = isl_set_subtract(option[type],
 						isl_set_copy(option[type2]));
 	}
 
-	option[unroll] = isl_set_coalesce(option[unroll]);
-	option[unroll] = isl_set_make_disjoint(option[unroll]);
+	unroll = option[isl_ast_loop_unroll];
+	unroll = isl_set_coalesce(unroll);
+	unroll = isl_set_make_disjoint(unroll);
+	option[isl_ast_loop_unroll] = unroll;
 }
 
 /* Split up the domain at the current depth into disjoint
@@ -3012,7 +3016,7 @@ static __isl_give isl_basic_set_list *compute_domains(
 	isl_set *classes;
 	isl_space *space;
 	int n_param;
-	enum isl_ast_build_domain_type type;
+	enum isl_ast_loop_type type;
 	int empty;
 
 	if (!executed)
@@ -3057,7 +3061,7 @@ static __isl_give isl_basic_set_list *compute_domains(
 	isl_set_free(domains.schedule_domain);
 	isl_set_free(domains.done);
 	isl_map_free(domains.sep_class);
-	for (type = atomic; type <= separate; ++type)
+	for (type = isl_ast_loop_atomic; type <= isl_ast_loop_separate; ++type)
 		isl_set_free(domains.option[type]);
 
 	return domains.list;
