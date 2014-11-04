@@ -2623,7 +2623,7 @@ struct isl_codegen_domains {
 	isl_ast_build *build;
 	isl_set *schedule_domain;
 
-	isl_set *option[3];
+	isl_set *option[4];
 
 	isl_map *sep_class;
 	isl_set *done;
@@ -2965,7 +2965,7 @@ static int compute_class_domains(__isl_take isl_point *pnt, void *user)
  * The domains specified by the user might overlap, so we make
  * them disjoint by subtracting earlier domains from later domains.
  */
-static void compute_domains_init_options(isl_set *option[3],
+static void compute_domains_init_options(isl_set *option[4],
 	__isl_keep isl_ast_build *build)
 {
 	enum isl_ast_loop_type type, type2;

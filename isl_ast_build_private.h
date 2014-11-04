@@ -9,6 +9,7 @@
 #include <isl/schedule_node.h>
 
 enum isl_ast_loop_type {
+	isl_ast_loop_default = 0,
 	isl_ast_loop_atomic,
 	isl_ast_loop_unroll,
 	isl_ast_loop_separate
