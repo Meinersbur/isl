@@ -14,9 +14,9 @@
  * of "context".
  */
 __isl_give MULTI(BASE) *FN(MULTI(BASE),gist)(__isl_take MULTI(BASE) *multi,
-	__isl_take isl_set *context)
+	__isl_take DOM *context)
 {
-	return FN(MULTI(BASE),apply_set)(multi, context, &FN(EL,gist));
+	return FN(FN(MULTI(BASE),apply),DOMBASE)(multi, context, &FN(EL,gist));
 }
 
 /* Compute the gist of "multi" with respect to the parameter constraints

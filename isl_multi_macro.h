@@ -6,3 +6,5 @@
 #define FN(TYPE,NAME) xFN(TYPE,NAME)
 #define xMULTI(BASE) isl_multi_ ## BASE
 #define MULTI(BASE) xMULTI(BASE)
+#undef DOM
+#define DOM CAT(isl_,DOMBASE)

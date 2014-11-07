@@ -3618,6 +3618,8 @@ error:
 
 #undef BASE
 #define BASE aff
+#undef DOMBASE
+#define DOMBASE set
 #define NO_DOMAIN
 
 #include <isl_multi_templ.c>
@@ -5916,6 +5918,8 @@ error:
 
 #undef BASE
 #define BASE pw_aff
+#undef DOMBASE
+#define DOMBASE set
 
 #include <isl_multi_templ.c>
 #include <isl_multi_apply_set.c>

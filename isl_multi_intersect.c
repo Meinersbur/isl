@@ -13,9 +13,9 @@
 /* Intersect the domain of "multi" with "domain".
  */
 __isl_give MULTI(BASE) *FN(MULTI(BASE),intersect_domain)(
-	__isl_take MULTI(BASE) *multi, __isl_take isl_set *domain)
+	__isl_take MULTI(BASE) *multi, __isl_take DOM *domain)
 {
-	return FN(MULTI(BASE),apply_set)(multi, domain,
+	return FN(FN(MULTI(BASE),apply),DOMBASE)(multi, domain,
 					&FN(EL,intersect_domain));
 }
 
