@@ -3618,13 +3618,13 @@ error:
 
 #undef BASE
 #define BASE aff
-#define NO_INTERSECT_DOMAIN
 #define NO_DOMAIN
 
 #include <isl_multi_templ.c>
+#include <isl_multi_apply_set.c>
+#include <isl_multi_gist.c>
 
 #undef NO_DOMAIN
-#undef NO_INTERSECT_DOMAIN
 
 /* Remove any internal structure of the domain of "ma".
  * If there is any such internal structure in the input,
@@ -5918,6 +5918,9 @@ error:
 #define BASE pw_aff
 
 #include <isl_multi_templ.c>
+#include <isl_multi_apply_set.c>
+#include <isl_multi_gist.c>
+#include <isl_multi_intersect.c>
 
 /* Scale the elements of "pma" by the corresponding elements of "mv".
  */

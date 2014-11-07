@@ -286,6 +286,9 @@ EXTRA_DIST = \
 	isl_multi_macro.h \
 	isl_multi_templ.c \
 	isl_multi_templ.h \
+	isl_multi_apply_set.c \
+	isl_multi_gist.c \
+	isl_multi_intersect.c \
 	print_templ.c \
 	isl_power_templ.c \
 	isl_pw_templ.c \
