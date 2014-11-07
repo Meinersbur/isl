@@ -1,10 +1,13 @@
 /*
  * Copyright 2013-2014 Ecole Normale Superieure
+ * Copyright 2014      INRIA Rocquencourt
  *
  * Use of this software is governed by the MIT license
  *
  * Written by Sven Verdoolaege,
  * Ecole Normale Superieure, 45 rue d'Ulm, 75230 Paris, France
+ * and Inria Paris - Rocquencourt, Domaine de Voluceau - Rocquencourt,
+ * B.P. 105 - 78153 Le Chesnay, France
  */
 
 #include <isl/map.h>
@@ -1555,6 +1558,30 @@ __isl_give isl_schedule_tree *isl_schedule_tree_pullback_union_pw_multi_aff(
 	return tree;
 error:
 	isl_union_pw_multi_aff_free(upma);
+	isl_schedule_tree_free(tree);
+	return NULL;
+}
+
+/* Compute the gist of the band tree root with respect to "context".
+ */
+__isl_give isl_schedule_tree *isl_schedule_tree_band_gist(
+	__isl_take isl_schedule_tree *tree, __isl_take isl_union_set *context)
+{
+	if (!tree)
+		return NULL;
+	if (tree->type != isl_schedule_node_band)
+		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_invalid,
+			"not a band node", goto error);
+	tree = isl_schedule_tree_cow(tree);
+	if (!tree)
+		goto error;
+
+	tree->band = isl_schedule_band_gist(tree->band, context);
+	if (!tree->band)
+		return isl_schedule_tree_free(tree);
+	return tree;
+error:
+	isl_union_set_free(context);
 	isl_schedule_tree_free(tree);
 	return NULL;
 }

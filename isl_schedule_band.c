@@ -1,10 +1,13 @@
 /*
  * Copyright 2013-2014 Ecole Normale Superieure
+ * Copyright 2014      INRIA Rocquencourt
  *
  * Use of this software is governed by the MIT license
  *
  * Written by Sven Verdoolaege,
  * Ecole Normale Superieure, 45 rue d'Ulm, 75230 Paris, France
+ * and Inria Paris - Rocquencourt, Domaine de Voluceau - Rocquencourt,
+ * B.P. 105 - 78153 Le Chesnay, France
  */
 
 #include <isl/schedule_node.h>
@@ -496,6 +499,31 @@ __isl_give isl_schedule_band *isl_schedule_band_pullback_union_pw_multi_aff(
 	return band;
 error:
 	isl_union_pw_multi_aff_free(upma);
+	isl_schedule_band_free(band);
+	return NULL;
+}
+
+/* Compute the gist of "band" with respect to "context".
+ * In particular, compute the gist of the associated partial schedule.
+ */
+__isl_give isl_schedule_band *isl_schedule_band_gist(
+	__isl_take isl_schedule_band *band, __isl_take isl_union_set *context)
+{
+	if (!band || !context)
+		goto error;
+	if (band->n == 0) {
+		isl_union_set_free(context);
+		return band;
+	}
+	band = isl_schedule_band_cow(band);
+	if (!band)
+		goto error;
+	band->mupa = isl_multi_union_pw_aff_gist(band->mupa, context);
+	if (!band->mupa)
+		return isl_schedule_band_free(band);
+	return band;
+error:
+	isl_union_set_free(context);
 	isl_schedule_band_free(band);
 	return NULL;
 }

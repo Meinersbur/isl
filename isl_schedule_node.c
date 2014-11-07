@@ -1,10 +1,13 @@
 /*
  * Copyright 2013-2014 Ecole Normale Superieure
+ * Copyright 2014      INRIA Rocquencourt
  *
  * Use of this software is governed by the MIT license
  *
  * Written by Sven Verdoolaege,
  * Ecole Normale Superieure, 45 rue d'Ulm, 75230 Paris, France
+ * and Inria Paris - Rocquencourt, Domaine de Voluceau - Rocquencourt,
+ * B.P. 105 - 78153 Le Chesnay, France
  */
 
 #include <isl/set.h>
@@ -1702,6 +1705,231 @@ __isl_give isl_schedule_node *isl_schedule_node_delete(
 	}
 	node = isl_schedule_node_graft_tree(node, tree);
 
+	return node;
+}
+
+/* Compute the gist of the given band node with respect to "context".
+ */
+__isl_give isl_schedule_node *isl_schedule_node_band_gist(
+	__isl_take isl_schedule_node *node, __isl_take isl_union_set *context)
+{
+	isl_schedule_tree *tree;
+
+	tree = isl_schedule_node_get_tree(node);
+	tree = isl_schedule_tree_band_gist(tree, context);
+	return isl_schedule_node_graft_tree(node, tree);
+}
+
+/* Internal data structure for isl_schedule_node_gist.
+ * "filters" contains an element for each outer filter node
+ * with respect to the current position, each representing
+ * the intersection of the previous element and the filter on the filter node.
+ * The first element in the original context passed to isl_schedule_node_gist.
+ */
+struct isl_node_gist_data {
+	isl_union_set_list *filters;
+};
+
+/* Can we finish gisting at this node?
+ * That is, is the filter on the current filter node a subset of
+ * the original context passed to isl_schedule_node_gist?
+ */
+static int gist_done(__isl_keep isl_schedule_node *node,
+	struct isl_node_gist_data *data)
+{
+	isl_union_set *filter, *outer;
+	int subset;
+
+	filter = isl_schedule_node_filter_get_filter(node);
+	outer = isl_union_set_list_get_union_set(data->filters, 0);
+	subset = isl_union_set_is_subset(filter, outer);
+	isl_union_set_free(outer);
+	isl_union_set_free(filter);
+
+	return subset;
+}
+
+/* Callback for "traverse" to enter a node and to move
+ * to the deepest initial subtree that should be traversed
+ * by isl_schedule_node_gist.
+ *
+ * The "filters" list is extended by one element each time
+ * we come across a filter node by the result of intersecting
+ * the last element in the list with the filter on the filter node.
+ *
+ * If the filter on the current filter node is a subset of
+ * the original context passed to isl_schedule_node_gist,
+ * then there is no need to go into its subtree since it cannot
+ * be further simplified by the context.  The "filters" list is
+ * still extended for consistency, but the actual value of the
+ * added element is immaterial since it will not be used.
+ *
+ * Otherwise, the filter on the current filter node is replaced by
+ * the gist of the original filter with respect to the intersection
+ * of the original context with the intermediate filters.
+ *
+ * If the new element in the "filters" list is empty, then no elements
+ * can reach the descendants of the current filter node.  The subtree
+ * underneath the filter node is therefore removed.
+ */
+static __isl_give isl_schedule_node *gist_enter(
+	__isl_take isl_schedule_node *node, void *user)
+{
+	struct isl_node_gist_data *data = user;
+
+	do {
+		isl_union_set *filter, *inner;
+		int done, empty;
+		int n;
+
+		switch (isl_schedule_node_get_type(node)) {
+		case isl_schedule_node_error:
+			return isl_schedule_node_free(node);
+		case isl_schedule_node_band:
+		case isl_schedule_node_domain:
+		case isl_schedule_node_leaf:
+		case isl_schedule_node_sequence:
+		case isl_schedule_node_set:
+			continue;
+		case isl_schedule_node_filter:
+			break;
+		}
+		done = gist_done(node, data);
+		filter = isl_schedule_node_filter_get_filter(node);
+		if (done < 0 || done) {
+			data->filters = isl_union_set_list_add(data->filters,
+								filter);
+			if (done < 0)
+				return isl_schedule_node_free(node);
+			return node;
+		}
+		n = isl_union_set_list_n_union_set(data->filters);
+		inner = isl_union_set_list_get_union_set(data->filters, n - 1);
+		filter = isl_union_set_gist(filter, isl_union_set_copy(inner));
+		node = isl_schedule_node_filter_set_filter(node,
+						isl_union_set_copy(filter));
+		filter = isl_union_set_intersect(filter, inner);
+		empty = isl_union_set_is_empty(filter);
+		data->filters = isl_union_set_list_add(data->filters, filter);
+		if (empty < 0)
+			return isl_schedule_node_free(node);
+		if (!empty)
+			continue;
+		node = isl_schedule_node_child(node, 0);
+		node = isl_schedule_node_cut(node);
+		node = isl_schedule_node_parent(node);
+		return node;
+	} while (isl_schedule_node_has_children(node) &&
+		(node = isl_schedule_node_first_child(node)) != NULL);
+
+	return node;
+}
+
+/* Callback for "traverse" to leave a node for isl_schedule_node_gist.
+ *
+ * In particular, if the current node is a filter node, then we remove
+ * the element on the "filters" list that was added when we entered
+ * the node.  There is no need to compute any gist here, since we
+ * already did that when we entered the node.
+ *
+ * If the current node is a band node, then we compute the gist of
+ * the band node with respect to the intersection of the original context
+ * and the intermediate filters.
+ *
+ * If the current node is a sequence or set node, then some of
+ * the filter children may have become empty and so they are removed.
+ * If only one child is left, then the set or sequence node along with
+ * the single remaining child filter is removed.  The filter can be
+ * removed because the filters on a sequence or set node are supposed
+ * to partition the incoming domain instances.
+ * In principle, it should then be impossible for there to be zero
+ * remaining children, but should this happen, we replace the entire
+ * subtree with an empty filter.
+ */
+static __isl_give isl_schedule_node *gist_leave(
+	__isl_take isl_schedule_node *node, void *user)
+{
+	struct isl_node_gist_data *data = user;
+	isl_schedule_tree *tree;
+	int i, n;
+	isl_union_set *filter;
+
+	switch (isl_schedule_node_get_type(node)) {
+	case isl_schedule_node_error:
+		return isl_schedule_node_free(node);
+	case isl_schedule_node_filter:
+		n = isl_union_set_list_n_union_set(data->filters);
+		data->filters = isl_union_set_list_drop(data->filters,
+							n - 1, 1);
+		break;
+	case isl_schedule_node_band:
+		n = isl_union_set_list_n_union_set(data->filters);
+		filter = isl_union_set_list_get_union_set(data->filters, n - 1);
+		node = isl_schedule_node_band_gist(node, filter);
+		break;
+	case isl_schedule_node_set:
+	case isl_schedule_node_sequence:
+		tree = isl_schedule_node_get_tree(node);
+		n = isl_schedule_tree_n_children(tree);
+		for (i = n - 1; i >= 0; --i) {
+			isl_schedule_tree *child;
+			isl_union_set *filter;
+			int empty;
+
+			child = isl_schedule_tree_get_child(tree, i);
+			filter = isl_schedule_tree_filter_get_filter(child);
+			empty = isl_union_set_is_empty(filter);
+			isl_union_set_free(filter);
+			isl_schedule_tree_free(child);
+			if (empty < 0)
+				tree = isl_schedule_tree_free(tree);
+			else if (empty)
+				tree = isl_schedule_tree_drop_child(tree, i);
+		}
+		n = isl_schedule_tree_n_children(tree);
+		node = isl_schedule_node_graft_tree(node, tree);
+		if (n == 1) {
+			node = isl_schedule_node_delete(node);
+			node = isl_schedule_node_delete(node);
+		} else if (n == 0) {
+			isl_space *space;
+
+			filter =
+			    isl_union_set_list_get_union_set(data->filters, 0);
+			space = isl_union_set_get_space(filter);
+			isl_union_set_free(filter);
+			filter = isl_union_set_empty(space);
+			node = isl_schedule_node_cut(node);
+			node = isl_schedule_node_insert_filter(node, filter);
+		}
+		break;
+	case isl_schedule_node_domain:
+	case isl_schedule_node_leaf:
+		break;
+	}
+
+	return node;
+}
+
+/* Compute the gist of the subtree at "node" with respect to
+ * the reaching domain elements in "context".
+ * In particular, compute the gist of all band and filter nodes
+ * in the subtree with respect to "context".  Children of set or sequence
+ * nodes that end up with an empty filter are removed completely.
+ *
+ * We keep track of the intersection of "context" with all outer filters
+ * of the current node within the subtree in the final element of "filters".
+ * Initially, this list contains the single element "context" and it is
+ * extended or shortened each time we enter or leave a filter node.
+ */
+__isl_give isl_schedule_node *isl_schedule_node_gist(
+	__isl_take isl_schedule_node *node, __isl_take isl_union_set *context)
+{
+	struct isl_node_gist_data data;
+
+	data.filters = isl_union_set_list_from_union_set(context);
+	node = traverse(node, &gist_enter, &gist_leave, &data);
+	isl_union_set_list_free(data.filters);
 	return node;
 }
 
