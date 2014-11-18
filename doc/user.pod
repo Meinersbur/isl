@@ -381,6 +381,8 @@ C<__isl_keep> arguments as the user likes.
 There is one exception, and that is the case where the
 pointer returned is C<NULL>.  Is this case, the user
 is free to use it as an C<__isl_take> argument or not.
+When applied to a C<char *>, the returned pointer needs to be
+freed using C<free>.
 
 =item C<__isl_null>
 
@@ -406,6 +408,10 @@ temporarily.  After the function has finished, the user
 can still use it as an argument to other functions.
 A C<NULL> value will be treated in the same way as
 a C<NULL> value for an C<__isl_take> argument.
+This annotation may also be used on return values of
+type C<const char *>, in which case the returned pointer should
+not be freed by the user and is only valid until the object
+from which it was derived is updated or freed.
 
 =back
 
