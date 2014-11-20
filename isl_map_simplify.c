@@ -2190,6 +2190,7 @@ static struct isl_basic_map *normalize_divs_in_context(
 	if (div_eq == 0)
 		return bmap;
 
+	bmap = isl_basic_map_cow(bmap);
 	if (context->n_div > 0)
 		bmap = isl_basic_map_align_divs(bmap, context);
 
