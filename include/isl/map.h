@@ -691,6 +691,7 @@ __isl_give isl_map *isl_map_from_multi_aff(__isl_take isl_multi_aff *maff);
 __isl_give isl_pw_aff *isl_map_dim_max(__isl_take isl_map *map, int pos);
 
 ISL_DECLARE_LIST_FN(basic_map)
+ISL_DECLARE_LIST_FN(map)
 
 #if defined(__cplusplus)
 }
