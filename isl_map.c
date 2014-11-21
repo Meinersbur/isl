@@ -9353,32 +9353,41 @@ __isl_give isl_basic_set_list *isl_set_get_basic_set_list(
 /* Return the intersection of the elements in the non-empty list "list".
  * All elements are assumed to live in the same space.
  */
-__isl_give isl_basic_set *isl_basic_set_list_intersect(
-	__isl_take struct isl_basic_set_list *list)
+__isl_give isl_basic_map *isl_basic_map_list_intersect(
+	__isl_take isl_basic_map_list *list)
 {
 	int i, n;
-	isl_basic_set *bset;
+	isl_basic_map *bmap;
 
 	if (!list)
 		return NULL;
-	n = isl_basic_set_list_n_basic_set(list);
+	n = isl_basic_map_list_n_basic_map(list);
 	if (n < 1)
-		isl_die(isl_basic_set_list_get_ctx(list), isl_error_invalid,
+		isl_die(isl_basic_map_list_get_ctx(list), isl_error_invalid,
 			"expecting non-empty list", goto error);
 
-	bset = isl_basic_set_list_get_basic_set(list, 0);
+	bmap = isl_basic_map_list_get_basic_map(list, 0);
 	for (i = 1; i < n; ++i) {
-		isl_basic_set *bset_i;
+		isl_basic_map *bmap_i;
 
-		bset_i = isl_basic_set_list_get_basic_set(list, i);
-		bset = isl_basic_set_intersect(bset, bset_i);
+		bmap_i = isl_basic_map_list_get_basic_map(list, i);
+		bmap = isl_basic_map_intersect(bmap, bmap_i);
 	}
 
-	isl_basic_set_list_free(list);
-	return bset;
+	isl_basic_map_list_free(list);
+	return bmap;
 error:
-	isl_basic_set_list_free(list);
+	isl_basic_map_list_free(list);
 	return NULL;
+}
+
+/* Return the intersection of the elements in the non-empty list "list".
+ * All elements are assumed to live in the same space.
+ */
+__isl_give isl_basic_set *isl_basic_set_list_intersect(
+	__isl_take isl_basic_set_list *list)
+{
+	return isl_basic_map_list_intersect(list);
 }
 
 /* Return the Cartesian product of the basic sets in list (in the given order).
