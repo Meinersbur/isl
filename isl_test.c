@@ -1167,6 +1167,12 @@ struct {
 	{ "{ : 1 = 0 }", "{ : 1 = 0 }", "{ : }" },
 	{ "[M] -> { [x] : exists (e0 = floor((-2 + x)/3): 3e0 = -2 + x) }",
 	  "[M] -> { [3M] }" , "[M] -> { [x] : 1 = 0 }" },
+	{ "{ [m, n, a, b] : a <= 2147 + n }",
+	  "{ [m, n, a, b] : (m >= 1 and n >= 1 and a <= 2148 - m and "
+			"b <= 2148 - n and b >= 0 and b >= 2149 - n - a) or "
+			"(n >= 1 and a >= 0 and b <= 2148 - n - a and "
+			"b >= 0) }",
+	  "{ [m, n, ku, kl] }" },
 };
 
 static int test_gist(struct isl_ctx *ctx)

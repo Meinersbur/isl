@@ -2352,12 +2352,21 @@ error:
  * return the corresponding universe.
  *
  * If none of these cases apply, we have to work a bit harder.
+ * During this computation, we make use of a single disjunct context,
+ * so if the original context consists of more than one disjunct
+ * then we need to approximate the context by a single disjunct set.
+ * Simply taking the simple hull may drop constraints that are
+ * only implicitly available in each disjunct.  We therefore also
+ * look for constraints among those defining "map" that are valid
+ * for the context.  These can then be used to simplify away
+ * the corresponding constraints in "map".
  */
 static __isl_give isl_map *map_gist(__isl_take isl_map *map,
 	__isl_take isl_map *context)
 {
 	int equal;
 	int is_universe;
+	isl_basic_map *hull;
 
 	is_universe = isl_map_plain_is_universe(map);
 	if (is_universe >= 0 && !is_universe)
@@ -2380,7 +2389,22 @@ static __isl_give isl_map *map_gist(__isl_take isl_map *map,
 	}
 
 	context = isl_map_compute_divs(context);
-	return isl_map_gist_basic_map(map, isl_map_simple_hull(context));
+	if (!context)
+		goto error;
+	if (isl_map_n_basic_map(context) == 1) {
+		hull = isl_map_simple_hull(context);
+	} else {
+		isl_ctx *ctx;
+		isl_map_list *list;
+
+		ctx = isl_map_get_ctx(map);
+		list = isl_map_list_alloc(ctx, 2);
+		list = isl_map_list_add(list, isl_map_copy(context));
+		list = isl_map_list_add(list, isl_map_copy(map));
+		hull = isl_map_unshifted_simple_hull_from_map_list(context,
+								    list);
+	}
+	return isl_map_gist_basic_map(map, hull);
 error:
 	isl_map_free(map);
 	isl_map_free(context);
