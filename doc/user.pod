@@ -4223,6 +4223,10 @@ variables, then the result of these operations is currently undefined.
 		__isl_take isl_map *map);
 	__isl_give isl_basic_map *isl_map_simple_hull(
 		__isl_take isl_map *map);
+	__isl_give isl_basic_map *
+	isl_map_unshifted_simple_hull_from_map_list(
+		__isl_take isl_map *map,
+		__isl_take isl_map_list *list);
 
 	#include <isl/union_map.h>
 	__isl_give isl_union_map *isl_union_map_simple_hull(
@@ -4234,7 +4238,8 @@ In particular, the output is described by translates
 of the constraints describing the basic sets or relations in the input.
 In case of C<isl_set_unshifted_simple_hull>, only the original
 constraints are used, without any translation.
-In case of C<isl_set_unshifted_simple_hull_from_set_list>, the
+In case of C<isl_set_unshifted_simple_hull_from_set_list> and
+C<isl_map_unshifted_simple_hull_from_map_list>, the
 constraints are taken from the elements of the second argument.
 
 =begin latex
