@@ -9365,7 +9365,7 @@ __isl_give isl_basic_set *isl_basic_set_list_intersect(
 	if (n < 1)
 		isl_die(isl_basic_set_list_get_ctx(list), isl_error_invalid,
 			"expecting non-empty list", goto error);
-	
+
 	bset = isl_basic_set_list_get_basic_set(list, 0);
 	for (i = 1; i < n; ++i) {
 		isl_basic_set *bset_i;
