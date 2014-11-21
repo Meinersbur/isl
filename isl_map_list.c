@@ -19,3 +19,13 @@
 #define BASE map
 
 #include <isl_list_templ.c>
+
+#undef EL
+#define EL isl_union_map
+
+#include <isl_list_templ.h>
+
+#undef BASE
+#define BASE union_map
+
+#include <isl_list_templ.c>

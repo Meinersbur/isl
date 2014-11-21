@@ -244,6 +244,8 @@ __isl_give isl_union_map *isl_union_map_align_params(
 __isl_give isl_union_set *isl_union_set_align_params(
 	__isl_take isl_union_set *uset, __isl_take isl_space *model);
 
+ISL_DECLARE_LIST_FN(union_map)
+
 #if defined(__cplusplus)
 }
 #endif
