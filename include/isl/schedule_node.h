@@ -46,6 +46,8 @@ int isl_schedule_node_get_child_position(__isl_keep isl_schedule_node *node);
 __isl_give isl_schedule_node *isl_schedule_node_get_child(
 	__isl_keep isl_schedule_node *node, int pos);
 
+__isl_give isl_schedule_node *isl_schedule_node_root(
+	__isl_take isl_schedule_node *node);
 __isl_give isl_schedule_node *isl_schedule_node_parent(
 	__isl_take isl_schedule_node *node);
 __isl_give isl_schedule_node *isl_schedule_node_ancestor(

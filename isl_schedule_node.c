@@ -728,6 +728,21 @@ __isl_give isl_schedule_node *isl_schedule_node_parent(
 	return isl_schedule_node_ancestor(node, 1);
 }
 
+/* Move the "node" pointer to the root of its schedule tree.
+ */
+__isl_give isl_schedule_node *isl_schedule_node_root(
+	__isl_take isl_schedule_node *node)
+{
+	int n;
+
+	if (!node)
+		return NULL;
+	n = isl_schedule_node_get_tree_depth(node);
+	if (n < 0)
+		return isl_schedule_node_free(node);
+	return isl_schedule_node_ancestor(node, n);
+}
+
 /* Move the "node" pointer to the child at position "pos" of the node
  * it currently points to.
  */
