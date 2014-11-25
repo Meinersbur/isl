@@ -2,6 +2,7 @@
  * Copyright 2011      INRIA Saclay
  * Copyright 2011      Sven Verdoolaege
  * Copyright 2012-2014 Ecole Normale Superieure
+ * Copyright 2014      INRIA Rocquencourt
  *
  * Use of this software is governed by the MIT license
  *
@@ -9,6 +10,8 @@
  * Parc Club Orsay Universite, ZAC des vignes, 4 rue Jacques Monod,
  * 91893 Orsay, France
  * and Ecole Normale Superieure, 45 rue d’Ulm, 75230 Paris, France
+ * and Inria Paris - Rocquencourt, Domaine de Voluceau - Rocquencourt,
+ * B.P. 105 - 78153 Le Chesnay, France
  */
 
 #include <isl_ctx_private.h>
@@ -2602,6 +2605,31 @@ error:
 	return NULL;
 }
 
+/* Align the parameters of the to isl_pw_aff arguments and
+ * then apply a function "fn" on them that returns an isl_map.
+ */
+static __isl_give isl_map *align_params_pw_pw_map_and(
+	__isl_take isl_pw_aff *pa1, __isl_take isl_pw_aff *pa2,
+	__isl_give isl_map *(*fn)(__isl_take isl_pw_aff *pa1,
+				    __isl_take isl_pw_aff *pa2))
+{
+	if (!pa1 || !pa2)
+		goto error;
+	if (isl_space_match(pa1->dim, isl_dim_param, pa2->dim, isl_dim_param))
+		return fn(pa1, pa2);
+	if (!isl_space_has_named_params(pa1->dim) ||
+	    !isl_space_has_named_params(pa2->dim))
+		isl_die(isl_pw_aff_get_ctx(pa1), isl_error_invalid,
+			"unaligned unnamed parameters", goto error);
+	pa1 = isl_pw_aff_align_params(pa1, isl_pw_aff_get_space(pa2));
+	pa2 = isl_pw_aff_align_params(pa2, isl_pw_aff_get_space(pa1));
+	return fn(pa1, pa2);
+error:
+	isl_pw_aff_free(pa1);
+	isl_pw_aff_free(pa2);
+	return NULL;
+}
+
 /* Compute a piecewise quasi-affine expression with a domain that
  * is the union of those of pwaff1 and pwaff2 and such that on each
  * cell, the quasi-affine expression is the better (according to cmp)
@@ -2961,6 +2989,57 @@ __isl_give isl_set *isl_pw_aff_lt_set(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
 	return isl_pw_aff_gt_set(pwaff2, pwaff1);
+}
+
+/* Return a map containing pairs of elements in the domains of "pa1" and "pa2"
+ * where the function values are ordered in the same way as "order",
+ * which returns a set in the shared domain of its two arguments.
+ * The parameters of "pa1" and "pa2" are assumed to have been aligned.
+ *
+ * Let "pa1" and "pa2" be defined on domains A and B respectively.
+ * We first pull back the two functions such that they are defined on
+ * the domain [A -> B].  Then we apply "order", resulting in a set
+ * in the space [A -> B].  Finally, we unwrap this set to obtain
+ * a map in the space A -> B.
+ */
+static __isl_give isl_map *isl_pw_aff_order_map_aligned(
+	__isl_take isl_pw_aff *pa1, __isl_take isl_pw_aff *pa2,
+	__isl_give isl_set *(*order)(__isl_take isl_pw_aff *pa1,
+		__isl_take isl_pw_aff *pa2))
+{
+	isl_space *space1, *space2;
+	isl_multi_aff *ma;
+	isl_set *set;
+
+	space1 = isl_space_domain(isl_pw_aff_get_space(pa1));
+	space2 = isl_space_domain(isl_pw_aff_get_space(pa2));
+	space1 = isl_space_map_from_domain_and_range(space1, space2);
+	ma = isl_multi_aff_domain_map(isl_space_copy(space1));
+	pa1 = isl_pw_aff_pullback_multi_aff(pa1, ma);
+	ma = isl_multi_aff_range_map(space1);
+	pa2 = isl_pw_aff_pullback_multi_aff(pa2, ma);
+	set = order(pa1, pa2);
+
+	return isl_set_unwrap(set);
+}
+
+/* Return a map containing pairs of elements in the domains of "pa1" and "pa2"
+ * where the function values are equal.
+ * The parameters of "pa1" and "pa2" are assumed to have been aligned.
+ */
+static __isl_give isl_map *isl_pw_aff_eq_map_aligned(__isl_take isl_pw_aff *pa1,
+	__isl_take isl_pw_aff *pa2)
+{
+	return isl_pw_aff_order_map_aligned(pa1, pa2, &isl_pw_aff_eq_set);
+}
+
+/* Return a map containing pairs of elements in the domains of "pa1" and "pa2"
+ * where the function values are equal.
+ */
+__isl_give isl_map *isl_pw_aff_eq_map(__isl_take isl_pw_aff *pa1,
+	__isl_take isl_pw_aff *pa2)
+{
+	return align_params_pw_pw_map_and(pa1, pa2, &isl_pw_aff_eq_map_aligned);
 }
 
 /* Return a set containing those elements in the shared domain

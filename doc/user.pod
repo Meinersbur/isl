@@ -5877,6 +5877,14 @@ equal to C<ma2>.
 The functions operating on C<isl_pw_aff_list> apply the corresponding
 C<isl_pw_aff> function to each pair of elements in the two lists.
 
+	#include <isl/aff.h>
+	__isl_give isl_map *isl_pw_aff_eq_map(
+		__isl_take isl_pw_aff *pa1,
+		__isl_take isl_pw_aff *pa2);
+
+This function returns a map between domain elements of the arguments
+where the function values satisfy the given relation.
+
 =item * Cartesian Product
 
 	#include <isl/space.h>
