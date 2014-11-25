@@ -8362,3 +8362,54 @@ error:
 	isl_union_pw_multi_aff_free(upma);
 	return NULL;
 }
+
+/* Extract the sequence of elements in "mupa" with domain space "space"
+ * (ignoring parameters).
+ *
+ * For the elements of "mupa" that are not defined on the specified space,
+ * the corresponding element in the result is empty.
+ */
+__isl_give isl_multi_pw_aff *isl_multi_union_pw_aff_extract_multi_pw_aff(
+	__isl_keep isl_multi_union_pw_aff *mupa, __isl_take isl_space *space)
+{
+	int i, n;
+	isl_space *space_mpa = NULL;
+	isl_multi_pw_aff *mpa;
+
+	if (!mupa || !space)
+		goto error;
+
+	space_mpa = isl_multi_union_pw_aff_get_space(mupa);
+	if (!isl_space_match(space_mpa, isl_dim_param, space, isl_dim_param)) {
+		space = isl_space_drop_dims(space, isl_dim_param,
+					0, isl_space_dim(space, isl_dim_param));
+		space = isl_space_align_params(space,
+					isl_space_copy(space_mpa));
+		if (!space)
+			goto error;
+	}
+	space_mpa = isl_space_map_from_domain_and_range(isl_space_copy(space),
+							space_mpa);
+	mpa = isl_multi_pw_aff_alloc(space_mpa);
+
+	space = isl_space_from_domain(space);
+	space = isl_space_add_dims(space, isl_dim_out, 1);
+	n = isl_multi_union_pw_aff_dim(mupa, isl_dim_set);
+	for (i = 0; i < n; ++i) {
+		isl_union_pw_aff *upa;
+		isl_pw_aff *pa;
+
+		upa = isl_multi_union_pw_aff_get_union_pw_aff(mupa, i);
+		pa = isl_union_pw_aff_extract_pw_aff(upa,
+							isl_space_copy(space));
+		mpa = isl_multi_pw_aff_set_pw_aff(mpa, i, pa);
+		isl_union_pw_aff_free(upa);
+	}
+
+	isl_space_free(space);
+	return mpa;
+error:
+	isl_space_free(space_mpa);
+	isl_space_free(space);
+	return NULL;
+}

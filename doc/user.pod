@@ -2751,6 +2751,16 @@ It can be replaced using the following functions.
 		__isl_take isl_multi_union_pw_aff *mupa, int pos,
 		__isl_take isl_union_pw_aff *upa);
 
+As a convenience, a sequence of base expressions that have
+their domains in a given space can be extracted from a sequence
+of union expressions using the following function.
+
+	#include <isl/aff.h>
+	__isl_give isl_multi_pw_aff *
+	isl_multi_union_pw_aff_extract_multi_pw_aff(
+		__isl_keep isl_multi_union_pw_aff *mupa,
+		__isl_take isl_space *space);
+
 Note that there is a difference between C<isl_multi_union_pw_aff>
 and C<isl_union_pw_multi_aff> objects.  The first is a sequence
 of unions of piecewise expressions, while the second is a union
