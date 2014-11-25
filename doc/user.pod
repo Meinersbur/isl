@@ -5901,6 +5901,15 @@ C<isl_pw_aff> function to each pair of elements in the two lists.
 These functions return a map between domain elements of the arguments
 where the function values satisfy the given relation.
 
+	#include <isl/union_map.h>
+	__isl_give isl_union_map *
+	isl_union_map_eq_at_multi_union_pw_aff(
+		__isl_take isl_union_map *umap,
+		__isl_take isl_multi_union_pw_aff *mupa);
+
+This function selects the subset of elements in the union map
+that have an equal function value.
+
 =item * Cartesian Product
 
 	#include <isl/space.h>

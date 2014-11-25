@@ -3619,6 +3619,78 @@ __isl_give isl_union_map *isl_union_map_reset_range_space(
 	return data.res;
 }
 
+/* Internal data structure for isl_union_map_order_at_multi_union_pw_aff.
+ * "mupa" is the function from which the isl_multi_pw_affs are extracted.
+ * "order" is applied to the extracted isl_multi_pw_affs that correspond
+ * to the domain and the range of each map.
+ * "res" collects the results.
+ */
+struct isl_union_order_at_data {
+	isl_multi_union_pw_aff *mupa;
+	__isl_give isl_map *(*order)(__isl_take isl_multi_pw_aff *mpa1,
+		__isl_take isl_multi_pw_aff *mpa2);
+	isl_union_map *res;
+};
+
+/* Intersect "map" with the result of applying data->order to
+ * the functions in data->mupa that apply to the domain and the range
+ * of "map" and add the result to data->res.
+ */
+static int order_at(__isl_take isl_map *map, void *user)
+{
+	struct isl_union_order_at_data *data = user;
+	isl_space *space;
+	isl_multi_pw_aff *mpa1, *mpa2;
+	isl_map *order;
+
+	space = isl_space_domain(isl_map_get_space(map));
+	mpa1 = isl_multi_union_pw_aff_extract_multi_pw_aff(data->mupa, space);
+	space = isl_space_range(isl_map_get_space(map));
+	mpa2 = isl_multi_union_pw_aff_extract_multi_pw_aff(data->mupa, space);
+	order = data->order(mpa1, mpa2);
+	map = isl_map_intersect(map, order);
+	data->res = isl_union_map_add_map(data->res, map);
+
+	return data->res ? 0 : -1;
+}
+
+/* Intersect each map in "umap" with the result of calling "order"
+ * on the functions is "mupa" that apply to the domain and the range
+ * of the map.
+ */
+static __isl_give isl_union_map *isl_union_map_order_at_multi_union_pw_aff(
+	__isl_take isl_union_map *umap, __isl_take isl_multi_union_pw_aff *mupa,
+	__isl_give isl_map *(*order)(__isl_take isl_multi_pw_aff *mpa1,
+		__isl_take isl_multi_pw_aff *mpa2))
+{
+	struct isl_union_order_at_data data;
+
+	umap = isl_union_map_align_params(umap,
+				isl_multi_union_pw_aff_get_space(mupa));
+	mupa = isl_multi_union_pw_aff_align_params(mupa,
+				isl_union_map_get_space(umap));
+	data.mupa = mupa;
+	data.order = order;
+	data.res = isl_union_map_empty(isl_union_map_get_space(umap));
+	if (isl_union_map_foreach_map(umap, &order_at, &data) < 0)
+		data.res = isl_union_map_free(data.res);
+
+	isl_multi_union_pw_aff_free(mupa);
+	isl_union_map_free(umap);
+	return data.res;
+}
+
+/* Return the subset of "umap" where the domain and the range
+ * have equal "mupa" values.
+ */
+__isl_give isl_union_map *isl_union_map_eq_at_multi_union_pw_aff(
+	__isl_take isl_union_map *umap,
+	__isl_take isl_multi_union_pw_aff *mupa)
+{
+	return isl_union_map_order_at_multi_union_pw_aff(umap, mupa,
+						&isl_multi_pw_aff_eq_map);
+}
+
 /* Return the union of the elements in the list "list".
  */
 __isl_give isl_union_set *isl_union_set_list_union(
