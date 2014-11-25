@@ -6783,6 +6783,87 @@ __isl_give isl_multi_pw_aff *isl_multi_pw_aff_pullback_multi_pw_aff(
 			&isl_multi_pw_aff_pullback_multi_pw_aff_aligned);
 }
 
+/* Align the parameters of "mpa1" and "mpa2", check that the ranges
+ * of "mpa1" and "mpa2" live in the same space, construct map space
+ * between the domain spaces of "mpa1" and "mpa2" and call "order"
+ * with this map space as extract argument.
+ */
+static __isl_give isl_map *isl_multi_pw_aff_order_map(
+	__isl_take isl_multi_pw_aff *mpa1, __isl_take isl_multi_pw_aff *mpa2,
+	__isl_give isl_map *(*order)(__isl_keep isl_multi_pw_aff *mpa1,
+		__isl_keep isl_multi_pw_aff *mpa2, __isl_take isl_space *space))
+{
+	int match;
+	isl_space *space1, *space2;
+	isl_map *res;
+
+	mpa1 = isl_multi_pw_aff_align_params(mpa1,
+					    isl_multi_pw_aff_get_space(mpa2));
+	mpa2 = isl_multi_pw_aff_align_params(mpa2,
+					    isl_multi_pw_aff_get_space(mpa1));
+	if (!mpa1 || !mpa2)
+		goto error;
+	match = isl_space_tuple_is_equal(mpa1->space, isl_dim_out,
+					mpa2->space, isl_dim_out);
+	if (match < 0)
+		goto error;
+	if (!match)
+		isl_die(isl_multi_pw_aff_get_ctx(mpa1), isl_error_invalid,
+			"range spaces don't match", goto error);
+	space1 = isl_space_domain(isl_multi_pw_aff_get_space(mpa1));
+	space2 = isl_space_domain(isl_multi_pw_aff_get_space(mpa2));
+	space1 = isl_space_map_from_domain_and_range(space1, space2);
+
+	res = order(mpa1, mpa2, space1);
+	isl_multi_pw_aff_free(mpa1);
+	isl_multi_pw_aff_free(mpa2);
+	return res;
+error:
+	isl_multi_pw_aff_free(mpa1);
+	isl_multi_pw_aff_free(mpa2);
+	return NULL;
+}
+
+/* Return a map containing pairs of elements in the domains of "mpa1" and "mpa2"
+ * where the function values are equal.  "space" is the space of the result.
+ * The parameters of "mpa1" and "mpa2" are assumed to have been aligned.
+ *
+ * "mpa1" and "mpa2" are equal when each of the pairs of elements
+ * in the sequences are equal.
+ */
+static __isl_give isl_map *isl_multi_pw_aff_eq_map_on_space(
+	__isl_keep isl_multi_pw_aff *mpa1, __isl_keep isl_multi_pw_aff *mpa2,
+	__isl_take isl_space *space)
+{
+	int i, n;
+	isl_map *res;
+
+	res = isl_map_universe(space);
+
+	n = isl_multi_pw_aff_dim(mpa1, isl_dim_out);
+	for (i = 0; i < n; ++i) {
+		isl_pw_aff *pa1, *pa2;
+		isl_map *map;
+
+		pa1 = isl_multi_pw_aff_get_pw_aff(mpa1, i);
+		pa2 = isl_multi_pw_aff_get_pw_aff(mpa2, i);
+		map = isl_pw_aff_eq_map(pa1, pa2);
+		res = isl_map_intersect(res, map);
+	}
+
+	return res;
+}
+
+/* Return a map containing pairs of elements in the domains of "mpa1" and "mpa2"
+ * where the function values are equal.
+ */
+__isl_give isl_map *isl_multi_pw_aff_eq_map(__isl_take isl_multi_pw_aff *mpa1,
+	__isl_take isl_multi_pw_aff *mpa2)
+{
+	return isl_multi_pw_aff_order_map(mpa1, mpa2,
+					    &isl_multi_pw_aff_eq_map_on_space);
+}
+
 /* Compare two isl_affs.
  *
  * Return -1 if "aff1" is "smaller" than "aff2", 1 if "aff1" is "greater"
