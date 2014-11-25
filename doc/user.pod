@@ -5906,9 +5906,13 @@ where the function values satisfy the given relation.
 	isl_union_map_eq_at_multi_union_pw_aff(
 		__isl_take isl_union_map *umap,
 		__isl_take isl_multi_union_pw_aff *mupa);
+	__isl_give isl_union_map *
+	isl_union_map_lex_lt_at_multi_union_pw_aff(
+		__isl_take isl_union_map *umap,
+		__isl_take isl_multi_union_pw_aff *mupa);
 
-This function selects the subset of elements in the union map
-that have an equal function value.
+These functions select the subset of elements in the union map
+that have an equal or lexicographically smaller function value.
 
 =item * Cartesian Product
 

@@ -3691,6 +3691,17 @@ __isl_give isl_union_map *isl_union_map_eq_at_multi_union_pw_aff(
 						&isl_multi_pw_aff_eq_map);
 }
 
+/* Return the subset of "umap" where the domain has a lexicographically
+ * smaller "mupa" value than the range.
+ */
+__isl_give isl_union_map *isl_union_map_lex_lt_at_multi_union_pw_aff(
+	__isl_take isl_union_map *umap,
+	__isl_take isl_multi_union_pw_aff *mupa)
+{
+	return isl_union_map_order_at_multi_union_pw_aff(umap, mupa,
+						&isl_multi_pw_aff_lex_lt_map);
+}
+
 /* Return the union of the elements in the list "list".
  */
 __isl_give isl_union_set *isl_union_set_list_union(
