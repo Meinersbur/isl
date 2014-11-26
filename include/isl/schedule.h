@@ -105,6 +105,8 @@ __isl_give isl_schedule *isl_schedule_sequence(
 	__isl_take isl_schedule *schedule1, __isl_take isl_schedule *schedule2);
 __isl_give isl_schedule *isl_schedule_set(
 	__isl_take isl_schedule *schedule1, __isl_take isl_schedule *schedule2);
+__isl_give isl_schedule *isl_schedule_intersect_domain(
+	__isl_take isl_schedule *schedule, __isl_take isl_union_set *domain);
 
 __isl_give isl_schedule *isl_schedule_reset_user(
 	__isl_take isl_schedule *schedule);

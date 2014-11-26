@@ -7324,6 +7324,16 @@ can be created using the following functions.
 
 The domains of the two input schedules need to be disjoint.
 
+The following function can be used to restrict the domain
+of a schedule to be a subset of the given union set.
+This operation may remove nodes in the tree that have become
+redundant.
+
+	#include <isl/schedule.h>
+	__isl_give isl_schedule *isl_schedule_intersect_domain(
+		__isl_take isl_schedule *schedule,
+		__isl_take isl_union_set *domain);
+
 The following function resets the user pointers on all parameter
 and tuple identifiers referenced by the nodes of the given schedule.
 

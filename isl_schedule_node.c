@@ -1933,6 +1933,52 @@ __isl_give isl_schedule_node *isl_schedule_node_gist(
 	return node;
 }
 
+/* Intersect the domain of domain node "node" with "domain".
+ *
+ * If the domain of "node" is already a subset of "domain",
+ * then nothing needs to be changed.
+ *
+ * Otherwise, we replace the domain of the domain node by the intersection
+ * and simplify the subtree rooted at "node" with respect to this intersection.
+ */
+__isl_give isl_schedule_node *isl_schedule_node_domain_intersect_domain(
+	__isl_take isl_schedule_node *node, __isl_take isl_union_set *domain)
+{
+	isl_schedule_tree *tree;
+	isl_union_set *uset;
+	int is_subset;
+
+	if (!node || !domain)
+		goto error;
+
+	uset = isl_schedule_tree_domain_get_domain(node->tree);
+	is_subset = isl_union_set_is_subset(uset, domain);
+	isl_union_set_free(uset);
+	if (is_subset < 0)
+		goto error;
+	if (is_subset) {
+		isl_union_set_free(domain);
+		return node;
+	}
+
+	tree = isl_schedule_tree_copy(node->tree);
+	uset = isl_schedule_tree_domain_get_domain(tree);
+	uset = isl_union_set_intersect(uset, domain);
+	tree = isl_schedule_tree_domain_set_domain(tree,
+						    isl_union_set_copy(uset));
+	node = isl_schedule_node_graft_tree(node, tree);
+
+	node = isl_schedule_node_child(node, 0);
+	node = isl_schedule_node_gist(node, uset);
+	node = isl_schedule_node_parent(node);
+
+	return node;
+error:
+	isl_schedule_node_free(node);
+	isl_union_set_free(domain);
+	return NULL;
+}
+
 /* Reset the user pointer on all identifiers of parameters and tuples
  * in the schedule node "node".
  */
