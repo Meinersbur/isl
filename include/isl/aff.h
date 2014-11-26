@@ -664,6 +664,8 @@ __isl_give isl_printer *isl_printer_print_multi_pw_aff(
 	__isl_take isl_printer *p, __isl_keep isl_multi_pw_aff *mpa);
 void isl_multi_pw_aff_dump(__isl_keep isl_multi_pw_aff *mpa);
 
+ISL_DECLARE_LIST_FN(union_pw_multi_aff)
+
 #if defined(__cplusplus)
 }
 #endif

@@ -37,6 +37,11 @@
 
 #include <isl_list_templ.c>
 
+#undef BASE
+#define BASE union_pw_multi_aff
+
+#include <isl_list_templ.c>
+
 __isl_give isl_aff *isl_aff_alloc_vec(__isl_take isl_local_space *ls,
 	__isl_take isl_vec *v)
 {
