@@ -6864,6 +6864,80 @@ __isl_give isl_map *isl_multi_pw_aff_eq_map(__isl_take isl_multi_pw_aff *mpa1,
 					    &isl_multi_pw_aff_eq_map_on_space);
 }
 
+/* Return a map containing pairs of elements in the domains of "mpa1" and "mpa2"
+ * where the function values of "mpa1" is lexicographically satisfies "base"
+ * compared to that of "mpa2".  "space" is the space of the result.
+ * The parameters of "mpa1" and "mpa2" are assumed to have been aligned.
+ *
+ * "mpa1" lexicographically satisfies "base" compared to "mpa2"
+ * if its i-th element satisfies "base" when compared to
+ * the i-th element of "mpa2" while all previous elements are
+ * pairwise equal.
+ */
+static __isl_give isl_map *isl_multi_pw_aff_lex_map_on_space(
+	__isl_take isl_multi_pw_aff *mpa1, __isl_take isl_multi_pw_aff *mpa2,
+	__isl_give isl_map *(*base)(__isl_take isl_pw_aff *pa1,
+		__isl_take isl_pw_aff *pa2),
+	__isl_take isl_space *space)
+{
+	int i, n;
+	isl_map *res, *rest;
+
+	res = isl_map_empty(isl_space_copy(space));
+	rest = isl_map_universe(space);
+
+	n = isl_multi_pw_aff_dim(mpa1, isl_dim_out);
+	for (i = 0; i < n; ++i) {
+		isl_pw_aff *pa1, *pa2;
+		isl_map *map;
+
+		pa1 = isl_multi_pw_aff_get_pw_aff(mpa1, i);
+		pa2 = isl_multi_pw_aff_get_pw_aff(mpa2, i);
+		map = base(pa1, pa2);
+		map = isl_map_intersect(map, isl_map_copy(rest));
+		res = isl_map_union(res, map);
+
+		if (i == n - 1)
+			continue;
+
+		pa1 = isl_multi_pw_aff_get_pw_aff(mpa1, i);
+		pa2 = isl_multi_pw_aff_get_pw_aff(mpa2, i);
+		map = isl_pw_aff_eq_map(pa1, pa2);
+		rest = isl_map_intersect(rest, map);
+	}
+
+	isl_map_free(rest);
+	return res;
+}
+
+/* Return a map containing pairs of elements in the domains of "mpa1" and "mpa2"
+ * where the function value of "mpa1" is lexicographically less than that
+ * of "mpa2".  "space" is the space of the result.
+ * The parameters of "mpa1" and "mpa2" are assumed to have been aligned.
+ *
+ * "mpa1" is less than "mpa2" if its i-th element is smaller
+ * than the i-th element of "mpa2" while all previous elements are
+ * pairwise equal.
+ */
+__isl_give isl_map *isl_multi_pw_aff_lex_lt_map_on_space(
+	__isl_take isl_multi_pw_aff *mpa1, __isl_take isl_multi_pw_aff *mpa2,
+	__isl_take isl_space *space)
+{
+	return isl_multi_pw_aff_lex_map_on_space(mpa1, mpa2,
+						&isl_pw_aff_lt_map, space);
+}
+
+/* Return a map containing pairs of elements in the domains of "mpa1" and "mpa2"
+ * where the function value of "mpa1" is lexicographically less than that
+ * of "mpa2".
+ */
+__isl_give isl_map *isl_multi_pw_aff_lex_lt_map(
+	__isl_take isl_multi_pw_aff *mpa1, __isl_take isl_multi_pw_aff *mpa2)
+{
+	return isl_multi_pw_aff_order_map(mpa1, mpa2,
+					&isl_multi_pw_aff_lex_lt_map_on_space);
+}
+
 /* Compare two isl_affs.
  *
  * Return -1 if "aff1" is "smaller" than "aff2", 1 if "aff1" is "greater"
