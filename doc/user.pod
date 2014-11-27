@@ -4057,6 +4057,9 @@ of C<pwaff> where C<pwaff> is non-negative.
 		__isl_take isl_set *set);
 	__isl_give isl_union_map *isl_union_set_identity(
 		__isl_take isl_union_set *uset);
+	__isl_give isl_union_pw_multi_aff *
+	isl_union_set_identity_union_pw_multi_aff(
+		__isl_take isl_union_set *uset);
 
 Construct an identity relation on the given (union) set.
 
