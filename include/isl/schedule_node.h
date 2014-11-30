@@ -150,6 +150,8 @@ __isl_give isl_union_map *isl_schedule_node_get_subtree_schedule_union_map(
 	__isl_keep isl_schedule_node *node);
 __isl_give isl_union_map *isl_schedule_node_get_subtree_expansion(
 	__isl_keep isl_schedule_node *node);
+__isl_give isl_union_pw_multi_aff *isl_schedule_node_get_subtree_contraction(
+	__isl_keep isl_schedule_node *node);
 
 __isl_give isl_schedule_node *isl_schedule_node_insert_context(
 	__isl_take isl_schedule_node *node, __isl_take isl_set *context);
