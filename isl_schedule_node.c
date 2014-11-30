@@ -1067,6 +1067,38 @@ __isl_give isl_schedule_node *isl_schedule_node_map_descendant(
 	return traverse(node, &postorder_enter, &postorder_leave, &data);
 }
 
+/* Traverse the ancestors of "node" from the root down to and including
+ * the parent of "node", calling "fn" on each of them.
+ *
+ * If "fn" returns -1 on any of the nodes, then the traversal is aborted.
+ *
+ * Return 0 on success and -1 on failure.
+ */
+int isl_schedule_node_foreach_ancestor_top_down(
+	__isl_keep isl_schedule_node *node,
+	int (*fn)(__isl_keep isl_schedule_node *node, void *user), void *user)
+{
+	int i, n;
+
+	if (!node)
+		return -1;
+
+	n = isl_schedule_node_get_tree_depth(node);
+	for (i = 0; i < n; ++i) {
+		isl_schedule_node *ancestor;
+		int r;
+
+		ancestor = isl_schedule_node_copy(node);
+		ancestor = isl_schedule_node_ancestor(ancestor, n - i);
+		r = fn(ancestor, user);
+		isl_schedule_node_free(ancestor);
+		if (r < 0)
+			return -1;
+	}
+
+	return 0;
+}
+
 /* Return the number of members in the given band node.
  */
 unsigned isl_schedule_node_band_n_member(__isl_keep isl_schedule_node *node)

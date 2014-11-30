@@ -7505,6 +7505,16 @@ of the given node should be visited.  In particular, if the callback
 returns a positive value, then the children are visited, but if
 the callback returns zero, then the children are not visited.
 
+The ancestors of a node in a schedule tree can be visited from
+the root down to and including the parent of the node using
+the following function.
+
+	#include <isl/schedule_node.h>
+	int isl_schedule_node_foreach_ancestor_top_down(
+		__isl_keep isl_schedule_node *node,
+		int (*fn)(__isl_keep isl_schedule_node *node,
+			void *user), void *user);
+
 The following functions allows for a depth-first post-order
 traversal of the nodes in a schedule tree or
 of the descendants of a specific node (including the node
