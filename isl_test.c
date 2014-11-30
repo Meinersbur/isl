@@ -5248,14 +5248,17 @@ static int test_schedule_tree_group_1(isl_ctx *ctx)
  * the domain constraints from the ranges of the expansion nodes,
  * while they are missing from the union map representation of
  * the tree without expansion nodes.
+ *
+ * Also check that the global expansion is as expected.
  */
 static int test_schedule_tree_group_2(isl_ctx *ctx)
 {
-	int equal;
+	int equal, equal_expansion;
 	const char *str;
 	isl_id *id;
 	isl_union_set *uset;
 	isl_union_map *umap1, *umap2;
+	isl_union_map *expansion1, *expansion2;
 	isl_union_set_list *filters;
 	isl_multi_union_pw_aff *mupa;
 	isl_schedule *schedule;
@@ -5306,18 +5309,33 @@ static int test_schedule_tree_group_2(isl_ctx *ctx)
 	umap2 = isl_schedule_get_map(schedule);
 	isl_schedule_free(schedule);
 
+	node = isl_schedule_node_root(node);
+	node = isl_schedule_node_child(node, 0);
+	expansion1 = isl_schedule_node_get_subtree_expansion(node);
 	isl_schedule_node_free(node);
 
+	str = "{ group1[i] -> S1[i,j] : 0 <= i,j < 10; "
+		"group1[i] -> S2[i,j] : 0 <= i,j < 10; "
+		"group1[i] -> S3[i,j] : 0 <= i,j < 10 }";
+
+	expansion2 = isl_union_map_read_from_str(ctx, str);
+
 	equal = isl_union_map_is_equal(umap1, umap2);
+	equal_expansion = isl_union_map_is_equal(expansion1, expansion2);
 
 	isl_union_map_free(umap1);
 	isl_union_map_free(umap2);
+	isl_union_map_free(expansion1);
+	isl_union_map_free(expansion2);
 
-	if (equal < 0)
+	if (equal < 0 || equal_expansion < 0)
 		return -1;
 	if (!equal)
 		isl_die(ctx, isl_error_unknown,
 			"expressions not equal", return -1);
+	if (!equal_expansion)
+		isl_die(ctx, isl_error_unknown,
+			"unexpected expansion", return -1);
 
 	return 0;
 }

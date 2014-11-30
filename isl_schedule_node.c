@@ -2988,6 +2988,173 @@ error:
 	return NULL;
 }
 
+/* Internal data structure for isl_schedule_node_get_subtree_expansion.
+ * "expansions" contains a list of accumulated expansions
+ * for each outer expansion, set or sequence node.  The first element
+ * in the list is an identity mapping on the reaching domain elements.
+ * "res" collects the results.
+ */
+struct isl_subtree_expansion_data {
+	isl_union_map_list *expansions;
+	isl_union_map *res;
+};
+
+/* Callback for "traverse" to enter a node and to move
+ * to the deepest initial subtree that should be traversed
+ * by isl_schedule_node_get_subtree_expansion.
+ *
+ * Whenever we come across an expansion node, the last element
+ * of data->expansions is combined with the expansion
+ * on the expansion node.
+ *
+ * Whenever we come across a filter node that is the child
+ * of a set or sequence node, data->expansions is extended
+ * with a new element that restricts the previous element
+ * to the elements selected by the filter.
+ * The previous element can then be reused while backtracking.
+ */
+static __isl_give isl_schedule_node *subtree_expansion_enter(
+	__isl_take isl_schedule_node *node, void *user)
+{
+	struct isl_subtree_expansion_data *data = user;
+
+	do {
+		enum isl_schedule_node_type type;
+		isl_union_set *filter;
+		isl_union_map *inner, *expansion;
+		int n;
+
+		switch (isl_schedule_node_get_type(node)) {
+		case isl_schedule_node_error:
+			return isl_schedule_node_free(node);
+		case isl_schedule_node_filter:
+			type = isl_schedule_node_get_parent_type(node);
+			if (type != isl_schedule_node_set &&
+			    type != isl_schedule_node_sequence)
+				break;
+			filter = isl_schedule_node_filter_get_filter(node);
+			n = isl_union_map_list_n_union_map(data->expansions);
+			inner =
+			    isl_union_map_list_get_union_map(data->expansions,
+								n - 1);
+			inner = isl_union_map_intersect_range(inner, filter);
+			data->expansions =
+			    isl_union_map_list_add(data->expansions, inner);
+			break;
+		case isl_schedule_node_expansion:
+			n = isl_union_map_list_n_union_map(data->expansions);
+			expansion =
+				isl_schedule_node_expansion_get_expansion(node);
+			inner =
+			    isl_union_map_list_get_union_map(data->expansions,
+								n - 1);
+			inner = isl_union_map_apply_range(inner, expansion);
+			data->expansions =
+			    isl_union_map_list_set_union_map(data->expansions,
+								n - 1, inner);
+			break;
+		case isl_schedule_node_band:
+		case isl_schedule_node_context:
+		case isl_schedule_node_domain:
+		case isl_schedule_node_leaf:
+		case isl_schedule_node_sequence:
+		case isl_schedule_node_set:
+			break;
+		}
+	} while (isl_schedule_node_has_children(node) &&
+		(node = isl_schedule_node_first_child(node)) != NULL);
+
+	return node;
+}
+
+/* Callback for "traverse" to leave a node for
+ * isl_schedule_node_get_subtree_expansion.
+ *
+ * If we come across a filter node that is the child
+ * of a set or sequence node, then we remove the element
+ * of data->expansions that was added in subtree_expansion_enter.
+ *
+ * If we reach a leaf node, then the accumulated expansion is
+ * added to data->res.
+ */
+static __isl_give isl_schedule_node *subtree_expansion_leave(
+	__isl_take isl_schedule_node *node, void *user)
+{
+	struct isl_subtree_expansion_data *data = user;
+	int n;
+	isl_union_map *inner;
+	enum isl_schedule_node_type type;
+
+	switch (isl_schedule_node_get_type(node)) {
+	case isl_schedule_node_error:
+		return isl_schedule_node_free(node);
+	case isl_schedule_node_filter:
+		type = isl_schedule_node_get_parent_type(node);
+		if (type != isl_schedule_node_set &&
+		    type != isl_schedule_node_sequence)
+			break;
+		n = isl_union_map_list_n_union_map(data->expansions);
+		data->expansions = isl_union_map_list_drop(data->expansions,
+							n - 1, 1);
+		break;
+	case isl_schedule_node_leaf:
+		n = isl_union_map_list_n_union_map(data->expansions);
+		inner = isl_union_map_list_get_union_map(data->expansions,
+							n - 1);
+		data->res = isl_union_map_union(data->res, inner);
+		break;
+	case isl_schedule_node_band:
+	case isl_schedule_node_context:
+	case isl_schedule_node_domain:
+	case isl_schedule_node_expansion:
+	case isl_schedule_node_sequence:
+	case isl_schedule_node_set:
+		break;
+	}
+
+	return node;
+}
+
+/* Return a mapping from the domain elements that reach "node"
+ * to the corresponding domain elements in the leaves of the subtree
+ * rooted at "node" obtained by composing the intermediate expansions.
+ *
+ * We start out with an identity mapping between the domain elements
+ * that reach "node" and compose it with all the expansions
+ * on a path from "node" to a leaf while traversing the subtree.
+ * Within the children of an a sequence or set node, the
+ * accumulated expansion is restricted to the elements selected
+ * by the filter child.
+ */
+__isl_give isl_union_map *isl_schedule_node_get_subtree_expansion(
+	__isl_keep isl_schedule_node *node)
+{
+	struct isl_subtree_expansion_data data;
+	isl_space *space;
+	isl_union_set *domain;
+	isl_union_map *expansion;
+
+	if (!node)
+		return NULL;
+
+	domain = isl_schedule_node_get_universe_domain(node);
+	space = isl_union_set_get_space(domain);
+	expansion = isl_union_set_identity(domain);
+	data.res = isl_union_map_empty(space);
+	data.expansions = isl_union_map_list_from_union_map(expansion);
+
+	node = isl_schedule_node_copy(node);
+	node = traverse(node, &subtree_expansion_enter,
+			&subtree_expansion_leave, &data);
+	if (!node)
+		data.res = isl_union_map_free(data.res);
+	isl_schedule_node_free(node);
+
+	isl_union_map_list_free(data.expansions);
+
+	return data.res;
+}
+
 /* Reset the user pointer on all identifiers of parameters and tuples
  * in the schedule node "node".
  */

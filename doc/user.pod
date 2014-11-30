@@ -7797,6 +7797,15 @@ subtree rooted at the given node.
 If the tree contains any expansion nodes, then the subtree schedule
 is formulated in terms of the expanded domain elements.
 
+The expansion defined by an entire subtree, combining the expansions
+on the expansion nodes in the subtree, can be obtained using
+the following function.
+
+	#include <isl/schedule_node.h>
+	__isl_give isl_union_map *
+	isl_schedule_node_get_subtree_expansion(
+		__isl_keep isl_schedule_node *node);
+
 The total number of outer band members of given node, i.e.,
 the shared output dimension of the maps in the result
 of C<isl_schedule_node_get_prefix_schedule_union_map> can be obtained
