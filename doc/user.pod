@@ -5041,21 +5041,30 @@ at least one element and all elements need to live in the same space.
 
 =item * Union
 
+	#include <isl/set.h>
 	__isl_give isl_set *isl_basic_set_union(
 		__isl_take isl_basic_set *bset1,
 		__isl_take isl_basic_set *bset2);
-	__isl_give isl_map *isl_basic_map_union(
-		__isl_take isl_basic_map *bmap1,
-		__isl_take isl_basic_map *bmap2);
 	__isl_give isl_set *isl_set_union(
 		__isl_take isl_set *set1,
 		__isl_take isl_set *set2);
+
+	#include <isl/map.h>
+	__isl_give isl_map *isl_basic_map_union(
+		__isl_take isl_basic_map *bmap1,
+		__isl_take isl_basic_map *bmap2);
 	__isl_give isl_map *isl_map_union(
 		__isl_take isl_map *map1,
 		__isl_take isl_map *map2);
+
+	#include <isl/union_set.h>
 	__isl_give isl_union_set *isl_union_set_union(
 		__isl_take isl_union_set *uset1,
 		__isl_take isl_union_set *uset2);
+	__isl_give isl_union_set *isl_union_set_list_union(
+		__isl_take isl_union_set_list *list);
+
+	#include <isl/union_map.h>
 	__isl_give isl_union_map *isl_union_map_union(
 		__isl_take isl_union_map *umap1,
 		__isl_take isl_union_map *umap2);

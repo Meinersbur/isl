@@ -3517,3 +3517,32 @@ int isl_union_map_involves_dims(__isl_keep isl_union_map *umap,
 
 	return !excludes;
 }
+
+/* Return the union of the elements in the list "list".
+ */
+__isl_give isl_union_set *isl_union_set_list_union(
+	__isl_take isl_union_set_list *list)
+{
+	int i, n;
+	isl_ctx *ctx;
+	isl_space *space;
+	isl_union_set *res;
+
+	if (!list)
+		return NULL;
+
+	ctx = isl_union_set_list_get_ctx(list);
+	space = isl_space_params_alloc(ctx, 0);
+	res = isl_union_set_empty(space);
+
+	n = isl_union_set_list_n_union_set(list);
+	for (i = 0; i < n; ++i) {
+		isl_union_set *uset_i;
+
+		uset_i = isl_union_set_list_get_union_set(list, i);
+		res = isl_union_set_union(res, uset_i);
+	}
+
+	isl_union_set_list_free(list);
+	return res;
+}

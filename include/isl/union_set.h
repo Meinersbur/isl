@@ -146,6 +146,9 @@ void isl_union_set_dump(__isl_keep isl_union_set *uset);
 
 ISL_DECLARE_LIST_FN(union_set)
 
+__isl_give isl_union_set *isl_union_set_list_union(
+	__isl_take isl_union_set_list *list);
+
 #if defined(__cplusplus)
 }
 #endif
