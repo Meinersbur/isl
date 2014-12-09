@@ -1983,12 +1983,9 @@ int isl_tab_add_eq(struct isl_tab *tab, isl_int *eq)
 	var = &tab->con[r];
 	row = var->index;
 	if (row_is_manifestly_zero(tab, row)) {
-		if (snap) {
-			if (isl_tab_rollback(tab, snap) < 0)
-				return -1;
-		} else
-			drop_row(tab, row);
-		return 0;
+		if (snap)
+			return isl_tab_rollback(tab, snap);
+		return drop_row(tab, row);
 	}
 
 	if (tab->bmap) {
