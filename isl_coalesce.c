@@ -272,6 +272,27 @@ static __isl_give isl_basic_map *add_valid_constraints(
 	return bmap;
 }
 
+/* Is "bmap" defined by a number of (non-redundant) constraints that
+ * is greater than the number of constraints of basic maps i and j combined?
+ * Equalities are counted as two inequalities.
+ */
+static int number_of_constraints_increases(int i, int j,
+	struct isl_coalesce_info *info,
+	__isl_keep isl_basic_map *bmap, struct isl_tab *tab)
+{
+	int k, n_old, n_new;
+
+	n_old = 2 * info[i].bmap->n_eq + info[i].bmap->n_ineq;
+	n_old += 2 * info[j].bmap->n_eq + info[j].bmap->n_ineq;
+
+	n_new = 2 * bmap->n_eq;
+	for (k = 0; k < bmap->n_ineq; ++k)
+		if (!isl_tab_is_redundant(tab, bmap->n_eq + k))
+			++n_new;
+
+	return n_new > n_old;
+}
+
 /* Replace the pair of basic maps i and j by the basic map bounded
  * by the valid constraints in both basic maps and the constraints
  * in extra (if not NULL).
@@ -279,9 +300,11 @@ static __isl_give isl_basic_map *add_valid_constraints(
  *
  * If "detect_equalities" is set, then look for equalities encoded
  * as pairs of inequalities.
+ * If "check_number" is set, then the original basic maps are only
+ * replaced if the total number of constraints does not increase.
  */
 static enum isl_change fuse(int i, int j, struct isl_coalesce_info *info,
-	__isl_keep isl_mat *extra, int detect_equalities)
+	__isl_keep isl_mat *extra, int detect_equalities, int check_number)
 {
 	int k, l;
 	struct isl_basic_map *fused = NULL;
@@ -291,7 +314,7 @@ static enum isl_change fuse(int i, int j, struct isl_coalesce_info *info,
 	unsigned n_eq, n_ineq;
 
 	if (j < i)
-		return fuse(j, i, info, extra, detect_equalities);
+		return fuse(j, i, info, extra, detect_equalities, check_number);
 
 	n_eq = info[i].bmap->n_eq + info[j].bmap->n_eq;
 	n_ineq = info[i].bmap->n_ineq + info[j].bmap->n_ineq;
@@ -327,6 +350,13 @@ static enum isl_change fuse(int i, int j, struct isl_coalesce_info *info,
 	fused_tab = isl_tab_from_basic_map(fused, 0);
 	if (isl_tab_detect_redundant(fused_tab) < 0)
 		goto error;
+
+	if (check_number &&
+	    number_of_constraints_increases(i, j, info, fused, fused_tab)) {
+		isl_tab_free(fused_tab);
+		isl_basic_map_free(fused);
+		return isl_change_none;
+	}
 
 	isl_basic_map_free(info[i].bmap);
 	info[i].bmap = fused;
@@ -406,7 +436,7 @@ static enum isl_change check_facets(int i, int j,
 			return isl_change_error;
 		return isl_change_none;
 	}
-	return fuse(i, j, info, NULL, 0);
+	return fuse(i, j, info, NULL, 0, 0);
 }
 
 /* Check if info->bmap contains the basic map represented
@@ -523,7 +553,7 @@ static enum isl_change is_adj_ineq_extension(int i, int j,
 	}
 
 	if (contains(&info[j], info[i].tab))
-		return fuse(i, j, info, NULL, 0);
+		return fuse(i, j, info, NULL, 0, 0);
 
 	if (isl_tab_rollback(info[i].tab, snap) < 0)
 		return isl_change_error;
@@ -581,7 +611,7 @@ static enum isl_change check_adj_ineq(int i, int j,
 		any(info[j].ineq, info[j].bmap->n_ineq, STATUS_CUT);
 
 	if (!cut_i && !cut_j && count_i == 1 && count_j == 1)
-		return fuse(i, j, info, NULL, 0);
+		return fuse(i, j, info, NULL, 0, 0);
 
 	if (count_i == 1 && !cut_i)
 		return is_adj_ineq_extension(i, j, info);
@@ -974,7 +1004,7 @@ static enum isl_change can_wrap_in_facet(int i, int j, int k,
 	if (!wraps.mat->n_row)
 		goto unbounded;
 
-	change = fuse(i, j, info, wraps.mat, 0);
+	change = fuse(i, j, info, wraps.mat, 0, 0);
 
 unbounded:
 	wraps_free(&wraps);
@@ -1075,7 +1105,7 @@ static enum isl_change wrap_in_facets(int i, int j, int *cuts, int n,
 	}
 
 	if (k == n)
-		change = fuse(i, j, info, wraps.mat, 0);
+		change = fuse(i, j, info, wraps.mat, 0, 1);
 
 	wraps_free(&wraps);
 	isl_set_free(set_i);
@@ -1345,7 +1375,7 @@ static enum isl_change check_eq_adj_eq(int i, int j,
 	if (!wraps.mat->n_row)
 		goto unbounded;
 
-	change = fuse(i, j, info, wraps.mat, detect_equalities);
+	change = fuse(i, j, info, wraps.mat, detect_equalities, 0);
 
 	if (0) {
 error:		change = isl_change_error;
