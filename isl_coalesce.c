@@ -268,15 +268,18 @@ error:
  * To see that we are not introducing any extra points, call the
  * two basic maps A and B and the resulting map U and let x
  * be an element of U \setminus ( A \cup B ).
- * Then there is a pair of cut constraints c_1 and c_2 in A and B such that x
- * violates them.  Let X be the intersection of U with the opposites
- * of these constraints.  Then x \in X.
- * The facet corresponding to c_1 contains the corresponding facet of A.
- * This facet is entirely contained in B, so c_2 is valid on the facet.
- * However, since it is also (part of) a facet of X, -c_2 is also valid
- * on the facet.  This means c_2 is saturated on the facet, so c_1 and
- * c_2 must be opposites of each other, but then x could not violate
- * both of them.
+ * A line connecting x with an element of A \cup B meets a facet F
+ * of either A or B.  Assume it is a facet of B and let c_1 be
+ * the corresponding facet constraint.  We have c_1(x) < 0 and
+ * so c_1 is a cut constraint.  This implies that there is some
+ * (possibly rational) point x' satisfying the constraints of A
+ * and the opposite of c_1 as otherwise c_1 would have been marked
+ * valid for A.  The line connecting x and x' meets a facet of A
+ * in a (possibly rational) point that also violates c_1, but this
+ * is impossible since all cut constraints of B are valid for all
+ * cut facets of A.
+ * In case F is a facet of A rather than B, then we can apply the
+ * above reasoning to find a facet of B separating x from A \cup B first.
  */
 static int check_facets(struct isl_map *map, int i, int j,
 	struct isl_tab **tabs, int *ineq_i, int *ineq_j)
