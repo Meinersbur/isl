@@ -257,6 +257,13 @@ error:
  * constraints of i lie entirely within basic map j.
  * If so, replace the pair by the basic map consisting of the valid
  * constraints in both basic maps.
+ * Checking whether the facet lies entirely within basic map j
+ * is performed by checking whether the constraints of basic map j
+ * are valid for the facet.  These tests are performed on a rational
+ * tableau to avoid the theoretical possibility that a constraint
+ * that was considered to be a cut constraint for the entire basic map i
+ * happens to be considered to be a valid constraint for the facet,
+ * even though it cuts off the same rational points.
  *
  * To see that we are not introducing any extra points, call the
  * two basic maps A and B and the resulting map U and let x
@@ -275,10 +282,13 @@ static int check_facets(struct isl_map *map, int i, int j,
 	struct isl_tab **tabs, int *ineq_i, int *ineq_j)
 {
 	int k, l;
-	struct isl_tab_undo *snap;
+	struct isl_tab_undo *snap, *snap2;
 	unsigned n_eq = map->p[i]->n_eq;
 
 	snap = isl_tab_snap(tabs[i]);
+	if (isl_tab_mark_rational(tabs[i]) < 0)
+		return -1;
+	snap2 = isl_tab_snap(tabs[i]);
 
 	for (k = 0; k < map->p[i]->n_ineq; ++k) {
 		if (ineq_i[k] != STATUS_CUT)
@@ -293,15 +303,17 @@ static int check_facets(struct isl_map *map, int i, int j,
 			if (stat != STATUS_VALID)
 				break;
 		}
-		if (isl_tab_rollback(tabs[i], snap) < 0)
+		if (isl_tab_rollback(tabs[i], snap2) < 0)
 			return -1;
 		if (l < map->p[j]->n_ineq)
 			break;
 	}
 
-	if (k < map->p[i]->n_ineq)
-		/* BAD CUT PAIR */
+	if (k < map->p[i]->n_ineq) {
+		if (isl_tab_rollback(tabs[i], snap) < 0)
+			return -1;
 		return 0;
+	}
 	return fuse(map, i, j, tabs, NULL, ineq_i, NULL, ineq_j, NULL);
 }
 
