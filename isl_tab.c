@@ -957,6 +957,22 @@ int isl_tab_mark_redundant(struct isl_tab *tab, int row)
 	}
 }
 
+/* Mark "tab" as a rational tableau.
+ * If it wasn't marked as a rational tableau already and if we may
+ * need to undo changes, then arrange for the marking to be undone
+ * during the undo.
+ */
+int isl_tab_mark_rational(struct isl_tab *tab)
+{
+	if (!tab)
+		return -1;
+	if (!tab->rational && tab->need_undo)
+		if (isl_tab_push(tab, isl_tab_undo_rational) < 0)
+			return -1;
+	tab->rational = 1;
+	return 0;
+}
+
 int isl_tab_mark_empty(struct isl_tab *tab)
 {
 	if (!tab)
@@ -3212,6 +3228,9 @@ static int perform_undo(struct isl_tab *tab, struct isl_tab_undo *undo) WARN_UNU
 static int perform_undo(struct isl_tab *tab, struct isl_tab_undo *undo)
 {
 	switch (undo->type) {
+	case isl_tab_undo_rational:
+		tab->rational = 0;
+		break;
 	case isl_tab_undo_empty:
 		tab->empty = 0;
 		break;

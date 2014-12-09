@@ -29,6 +29,7 @@ struct isl_tab_var {
 
 enum isl_tab_undo_type {
 	isl_tab_undo_bottom,
+	isl_tab_undo_rational,
 	isl_tab_undo_empty,
 	isl_tab_undo_nonneg,
 	isl_tab_undo_redundant,
@@ -267,6 +268,7 @@ __isl_give isl_vec *isl_tab_basic_set_non_neg_lexmin(
 
 struct isl_tab_var *isl_tab_var_from_row(struct isl_tab *tab, int i);
 int isl_tab_mark_redundant(struct isl_tab *tab, int row) WARN_UNUSED;
+int isl_tab_mark_rational(struct isl_tab *tab) WARN_UNUSED;
 int isl_tab_mark_empty(struct isl_tab *tab) WARN_UNUSED;
 struct isl_tab *isl_tab_dup(struct isl_tab *tab);
 struct isl_tab *isl_tab_product(struct isl_tab *tab1, struct isl_tab *tab2);
