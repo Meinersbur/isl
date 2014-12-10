@@ -159,6 +159,22 @@ static void drop(struct isl_map *map, int i, struct isl_tab **tabs)
 	map->n--;
 }
 
+/* Exchange the basic maps in positions i and j, along with their tabs.
+ */
+static void exchange(__isl_keep isl_map *map, int i, int j,
+	struct isl_tab **tabs)
+{
+	isl_basic_map *bmap;
+	struct isl_tab *tab;
+
+	bmap = map->p[i];
+	map->p[i] = map->p[j];
+	map->p[j] = bmap;
+	tab = tabs[i];
+	tabs[i] = tabs[j];
+	tabs[j] = tab;
+}
+
 /* Replace the pair of basic maps i and j by the basic map bounded
  * by the valid constraints in both basic maps and the constraints
  * in extra (if not NULL).
@@ -526,6 +542,7 @@ static int check_adj_ineq(struct isl_map *map, int i, int j,
  * other basic map is included in the extension, because there
  * were no "cut" inequalities in "i") and we can replace the
  * two basic maps by this extension.
+ * Place this extension in the position that is the smallest of i and j.
  *        ____			  _____
  *       /    || 		 /     |
  *      /     ||  		/      |
@@ -559,7 +576,12 @@ static int is_adj_eq_extension(struct isl_map *map, int i, int j, int k,
 			return -1;
 		isl_int_add_ui(map->p[i]->ineq[k][0], map->p[i]->ineq[k][0], 1);
 		ISL_F_SET(map->p[i], ISL_BASIC_MAP_FINAL);
-		drop(map, j, tabs);
+		if (j < i) {
+			exchange(map, i, j, tabs);
+			drop(map, i, tabs);
+		} else {
+			drop(map, j, tabs);
+		}
 		changed = 1;
 	} else
 		if (isl_tab_rollback(tabs[i], snap) < 0)
