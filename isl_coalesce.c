@@ -1728,6 +1728,31 @@ error:
 	return NULL;
 }
 
+/* Update the basic maps in "map" based on the information in "tabs".
+ * Since we detected implicit equalities without calling
+ * isl_basic_map_gauss, we need to do it now.
+ */
+static __isl_give isl_map *update_basic_maps(__isl_take isl_map *map,
+	struct isl_tab **tabs)
+{
+	int i;
+
+	if (!map)
+		return NULL;
+
+	for (i = 0; i < map->n; ++i) {
+		map->p[i] = isl_basic_map_update_from_tab(map->p[i], tabs[i]);
+		map->p[i] = isl_basic_map_gauss(map->p[i], NULL);
+		map->p[i] = isl_basic_map_finalize(map->p[i]);
+		if (!map->p[i])
+			return isl_map_free(map);
+		ISL_F_SET(map->p[i], ISL_BASIC_MAP_NO_IMPLICIT);
+		ISL_F_SET(map->p[i], ISL_BASIC_MAP_NO_REDUNDANT);
+	}
+
+	return map;
+}
+
 /* For each pair of basic maps in the map, check if the union of the two
  * can be represented by a single basic map.
  * If so, replace the pair by the single basic map and start over.
@@ -1739,8 +1764,8 @@ error:
  * in the basic maps.  We don't call isl_basic_map_gauss, though,
  * as that may affect the number of constraints.
  * This means that we have to call isl_basic_map_gauss at the end
- * of the computation to ensure that the basic maps are not left
- * in an unexpected state.
+ * of the computation (in update_basic_maps) to ensure that
+ * the basic maps are not left in an unexpected state.
  */
 struct isl_map *isl_map_coalesce(struct isl_map *map)
 {
@@ -1787,17 +1812,7 @@ struct isl_map *isl_map_coalesce(struct isl_map *map)
 
 	map = coalesce(map, tabs);
 
-	if (map)
-		for (i = 0; i < map->n; ++i) {
-			map->p[i] = isl_basic_map_update_from_tab(map->p[i],
-								    tabs[i]);
-			map->p[i] = isl_basic_map_gauss(map->p[i], NULL);
-			map->p[i] = isl_basic_map_finalize(map->p[i]);
-			if (!map->p[i])
-				goto error;
-			ISL_F_SET(map->p[i], ISL_BASIC_MAP_NO_IMPLICIT);
-			ISL_F_SET(map->p[i], ISL_BASIC_MAP_NO_REDUNDANT);
-		}
+	map = update_basic_maps(map, tabs);
 
 	for (i = 0; i < n; ++i)
 		isl_tab_free(tabs[i]);
