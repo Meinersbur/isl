@@ -731,7 +731,7 @@ static int allow_wrap(struct isl_wraps *wraps, int row)
 	return 1;
 }
 
-/* For each non-redundant constraint in "bmap" (as determined by "tab"),
+/* For each non-redundant constraint in info->bmap (as determined by info->tab),
  * wrap the constraint around "bound" such that it includes the whole
  * set "set" and append the resulting constraint to "wraps".
  * "wraps" is assumed to have been pre-allocated to the appropriate size.
@@ -745,11 +745,12 @@ static int allow_wrap(struct isl_wraps *wraps, int row)
  * constraints and a newly added wrapping constraint does not
  * satisfy the bound, then wraps->n_row is also reset to zero.
  */
-static int add_wraps(struct isl_wraps *wraps, __isl_keep isl_basic_map *bmap,
-	struct isl_tab *tab, isl_int *bound, __isl_keep isl_set *set)
+static int add_wraps(struct isl_wraps *wraps, struct isl_coalesce_info *info,
+	isl_int *bound, __isl_keep isl_set *set)
 {
 	int l;
 	int w;
+	isl_basic_map *bmap = info->bmap;
 	unsigned total = isl_basic_map_total_dim(bmap);
 
 	w = wraps->mat->n_row;
@@ -759,7 +760,7 @@ static int add_wraps(struct isl_wraps *wraps, __isl_keep isl_basic_map *bmap,
 			continue;
 		if (isl_seq_eq(bound, bmap->ineq[l], 1 + total))
 			continue;
-		if (isl_tab_is_redundant(tab, bmap->n_eq + l))
+		if (isl_tab_is_redundant(info->tab, bmap->n_eq + l))
 			continue;
 
 		isl_seq_cpy(wraps->mat->row[w], bound, 1 + total);
@@ -906,7 +907,7 @@ static enum isl_change can_wrap_in_facet(int i, int j, int k,
 	isl_seq_cpy(wraps.mat->row[0], bound->el, 1 + total);
 	wraps.mat->n_row = 1;
 
-	if (add_wraps(&wraps, info[j].bmap, info[j].tab, bound->el, set_i) < 0)
+	if (add_wraps(&wraps, &info[j], bound->el, set_i) < 0)
 		goto error;
 	if (!wraps.mat->n_row)
 		goto unbounded;
@@ -921,7 +922,7 @@ static enum isl_change can_wrap_in_facet(int i, int j, int k,
 	isl_seq_neg(bound->el, info[i].bmap->ineq[k], 1 + total);
 
 	n = wraps.mat->n_row;
-	if (add_wraps(&wraps, info[i].bmap, info[i].tab, bound->el, set_j) < 0)
+	if (add_wraps(&wraps, &info[i], bound->el, set_j) < 0)
 		goto error;
 
 	if (isl_tab_rollback(info[i].tab, snap) < 0)
@@ -1015,7 +1016,7 @@ static enum isl_change wrap_in_facets(int i, int j, int *cuts, int n,
 		if (info[j].tab->empty)
 			isl_int_sub_ui(wraps.mat->row[w][0],
 					wraps.mat->row[w][0], 1);
-		else if (add_wraps(&wraps, info[j].bmap, info[j].tab,
+		else if (add_wraps(&wraps, &info[j],
 				    wraps.mat->row[w], set) < 0)
 			goto error;
 
@@ -1290,7 +1291,7 @@ static enum isl_change check_eq_adj_eq(int i, int j,
 	isl_seq_cpy(wraps.mat->row[0], bound->el, 1 + total);
 	wraps.mat->n_row = 1;
 
-	if (add_wraps(&wraps, info[j].bmap, info[j].tab, bound->el, set_i) < 0)
+	if (add_wraps(&wraps, &info[j], bound->el, set_i) < 0)
 		goto error;
 	if (!wraps.mat->n_row)
 		goto unbounded;
@@ -1301,7 +1302,7 @@ static enum isl_change check_eq_adj_eq(int i, int j,
 	isl_seq_cpy(wraps.mat->row[wraps.mat->n_row], bound->el, 1 + total);
 	wraps.mat->n_row++;
 
-	if (add_wraps(&wraps, info[i].bmap, info[i].tab, bound->el, set_j) < 0)
+	if (add_wraps(&wraps, &info[i], bound->el, set_j) < 0)
 		goto error;
 	if (!wraps.mat->n_row)
 		goto unbounded;
