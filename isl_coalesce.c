@@ -391,14 +391,15 @@ static enum isl_change check_facets(int i, int j,
 	return fuse(i, j, info, NULL, ineq_i, NULL, ineq_j, NULL, 0);
 }
 
-/* Check if "bmap" contains the basic map represented
+/* Check if info->bmap contains the basic map represented
  * by the tableau "tab".
  */
-static int contains(__isl_keep isl_basic_map *bmap, int *ineq_i,
+static int contains(struct isl_coalesce_info *info, int *ineq_i,
 	struct isl_tab *tab)
 {
 	int k, l;
 	unsigned dim;
+	isl_basic_map *bmap = info->bmap;
 
 	dim = isl_basic_map_total_dim(bmap);
 	for (k = 0; k < bmap->n_eq; ++k) {
@@ -500,7 +501,7 @@ static enum isl_change is_adj_ineq_extension(int i, int j,
 			return isl_change_error;
 	}
 
-	if (contains(info[j].bmap, ineq_j, info[i].tab))
+	if (contains(&info[j], ineq_j, info[i].tab))
 		return fuse(i, j, info, eq_i, ineq_i, eq_j, ineq_j, NULL, 0);
 
 	if (isl_tab_rollback(info[i].tab, snap) < 0)
@@ -610,7 +611,7 @@ static enum isl_change is_adj_eq_extension(int i, int j, int k,
 	snap2 = isl_tab_snap(info[i].tab);
 	if (isl_tab_select_facet(info[i].tab, n_eq + k) < 0)
 		return isl_change_error;
-	super = contains(info[j].bmap, ineq_j, info[i].tab);
+	super = contains(&info[j], ineq_j, info[i].tab);
 	if (super) {
 		if (isl_tab_rollback(info[i].tab, snap2) < 0)
 			return isl_change_error;
