@@ -645,31 +645,31 @@ struct isl_wraps {
 };
 
 /* Update wraps->max to be greater than or equal to the coefficients
- * in the equalities and inequalities of bmap that can be removed if we end up
- * applying wrapping.
+ * in the equalities and inequalities of info->bmap that can be removed
+ * if we end up applying wrapping.
  */
 static void wraps_update_max(struct isl_wraps *wraps,
-	__isl_keep isl_basic_map *bmap, int *eq, int *ineq)
+	struct isl_coalesce_info *info, int *eq, int *ineq)
 {
 	int k;
 	isl_int max_k;
-	unsigned total = isl_basic_map_total_dim(bmap);
+	unsigned total = isl_basic_map_total_dim(info->bmap);
 
 	isl_int_init(max_k);
 
-	for (k = 0; k < bmap->n_eq; ++k) {
+	for (k = 0; k < info->bmap->n_eq; ++k) {
 		if (eq[2 * k] == STATUS_VALID &&
 		    eq[2 * k + 1] == STATUS_VALID)
 			continue;
-		isl_seq_abs_max(bmap->eq[k] + 1, total, &max_k);
+		isl_seq_abs_max(info->bmap->eq[k] + 1, total, &max_k);
 		if (isl_int_abs_gt(max_k, wraps->max))
 			isl_int_set(wraps->max, max_k);
 	}
 
-	for (k = 0; k < bmap->n_ineq; ++k) {
+	for (k = 0; k < info->bmap->n_ineq; ++k) {
 		if (ineq[k] == STATUS_VALID || ineq[k] == STATUS_REDUNDANT)
 			continue;
-		isl_seq_abs_max(bmap->ineq[k] + 1, total, &max_k);
+		isl_seq_abs_max(info->bmap->ineq[k] + 1, total, &max_k);
 		if (isl_int_abs_gt(max_k, wraps->max))
 			isl_int_set(wraps->max, max_k);
 	}
@@ -699,8 +699,8 @@ static void wraps_init(struct isl_wraps *wraps, __isl_take isl_mat *mat,
 		return;
 	isl_int_init(wraps->max);
 	isl_int_set_si(wraps->max, 0);
-	wraps_update_max(wraps, info[i].bmap, eq_i, ineq_i);
-	wraps_update_max(wraps, info[j].bmap, eq_j, ineq_j);
+	wraps_update_max(wraps, &info[i], eq_i, ineq_i);
+	wraps_update_max(wraps, &info[j], eq_j, ineq_j);
 }
 
 /* Free the contents of the isl_wraps data structure.
