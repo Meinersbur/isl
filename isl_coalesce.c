@@ -930,6 +930,43 @@ static __isl_give isl_set *set_from_updated_bmap(__isl_keep isl_basic_map *bmap,
 	return isl_set_from_basic_set(bset);
 }
 
+/* Wrap the constraints of info->bmap that bound the facet defined
+ * by inequality "k" around (the opposite of) this inequality to
+ * include "set".  "bound" may be used to store the negated inequality.
+ * Since the wrapped constraints are not guaranteed to contain the whole
+ * of info->bmap, we check them in check_wraps.
+ * If any of the wrapped constraints turn out to be invalid, then
+ * check_wraps will reset wrap->n_row to zero.
+ */
+static int add_wraps_around_facet(struct isl_wraps *wraps,
+	struct isl_coalesce_info *info, int k, isl_int *bound,
+	__isl_keep isl_set *set)
+{
+	struct isl_tab_undo *snap;
+	int n;
+	unsigned total = isl_basic_map_total_dim(info->bmap);
+
+	snap = isl_tab_snap(info->tab);
+
+	if (isl_tab_select_facet(info->tab, info->bmap->n_eq + k) < 0)
+		return -1;
+	if (isl_tab_detect_redundant(info->tab) < 0)
+		return -1;
+
+	isl_seq_neg(bound, info->bmap->ineq[k], 1 + total);
+
+	n = wraps->mat->n_row;
+	if (add_wraps(wraps, info, bound, set) < 0)
+		return -1;
+
+	if (isl_tab_rollback(info->tab, snap) < 0)
+		return -1;
+	if (check_wraps(wraps->mat, n, info->tab) < 0)
+		return -1;
+
+	return 0;
+}
+
 /* Given a basic set i with a constraint k that is adjacent to
  * basic set j, check if we can wrap
  * both the facet corresponding to k and basic map j
@@ -960,8 +997,6 @@ static enum isl_change can_wrap_in_facet(int i, int j, int k,
 	struct isl_set *set_j = NULL;
 	struct isl_vec *bound = NULL;
 	unsigned total = isl_basic_map_total_dim(info[i].bmap);
-	struct isl_tab_undo *snap;
-	int n;
 
 	set_i = set_from_updated_bmap(info[i].bmap, info[i].tab);
 	set_j = set_from_updated_bmap(info[j].bmap, info[j].tab);
@@ -985,22 +1020,7 @@ static enum isl_change can_wrap_in_facet(int i, int j, int k,
 	if (!wraps.mat->n_row)
 		goto unbounded;
 
-	snap = isl_tab_snap(info[i].tab);
-
-	if (isl_tab_select_facet(info[i].tab, info[i].bmap->n_eq + k) < 0)
-		goto error;
-	if (isl_tab_detect_redundant(info[i].tab) < 0)
-		goto error;
-
-	isl_seq_neg(bound->el, info[i].bmap->ineq[k], 1 + total);
-
-	n = wraps.mat->n_row;
-	if (add_wraps(&wraps, &info[i], bound->el, set_j) < 0)
-		goto error;
-
-	if (isl_tab_rollback(info[i].tab, snap) < 0)
-		goto error;
-	if (check_wraps(wraps.mat, n, info[i].tab) < 0)
+	if (add_wraps_around_facet(&wraps, &info[i], k, bound->el, set_j) < 0)
 		goto error;
 	if (!wraps.mat->n_row)
 		goto unbounded;
