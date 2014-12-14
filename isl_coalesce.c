@@ -756,24 +756,16 @@ static __isl_give isl_set *set_from_updated_bmap(__isl_keep isl_basic_map *bmap,
 	return isl_set_from_basic_set(isl_basic_map_underlying_set(bmap));
 }
 
-/* Given a basic set i with a constraint k that is adjacent to either the
- * whole of basic set j or a facet of basic set j, check if we can wrap
- * both the facet corresponding to k and the facet of j (or the whole of j)
+/* Given a basic set i with a constraint k that is adjacent to
+ * basic set j, check if we can wrap
+ * both the facet corresponding to k and basic map j
  * around their ridges to include the other set.
  * If so, replace the pair of basic sets by their union.
  *
  * All constraints of i (except k) are assumed to be valid for j.
- *
- * However, the constraints of j may not be valid for i and so
- * we have to check that the wrapping constraints for j are valid for i.
- *
- * In the case where j has a facet adjacent to i, tab[j] is assumed
- * to have been restricted to this facet, so that the non-redundant
- * constraints in tab[j] are the ridges of the facet.
- * Note that for the purpose of wrapping, it does not matter whether
- * we wrap the ridges of i around the whole of j or just around
- * the facet since all the other constraints are assumed to be valid for j.
- * In practice, we wrap to include the whole of j.
+ * This means that there is no real need to wrap the ridges of
+ * the faces of basic map i around basic map j but since we do,
+ * we have to check that the resulting wrapping constraints are valid for i.
  *        ____			  _____
  *       /    | 		 /     \
  *      /     ||  		/      |
