@@ -1496,29 +1496,26 @@ static int same_divs(__isl_keep isl_basic_map *bmap1,
 	return 1;
 }
 
-/* Given two basic maps "i" and "j", where the divs of "i" form a subset
- * of those of "j", check if basic map "j" is a subset of basic map "i"
- * and, if so, drop basic map "j".
- *
- * We first expand the divs of basic map "i" to match those of basic map "j",
- * using the divs and expansion computed by the caller.
- * Then we check if all constraints of the expanded "i" are valid for "j".
+/* Does "bmap" contain the basic map represented by the tableau "tab"
+ * after expanding the divs of "bmap" to match those of "tab"?
+ * The expansion is performed using the divs "div" and expansion "exp"
+ * computed by the caller.
+ * Then we check if all constraints of the expanded "bmap" are valid for "tab".
  */
-static int coalesce_subset(__isl_keep isl_map *map, int i, int j,
-	struct isl_tab **tabs, __isl_keep isl_mat *div, int *exp)
+static int contains_with_expanded_divs(__isl_keep isl_basic_map *bmap,
+	struct isl_tab *tab, __isl_keep isl_mat *div, int *exp)
 {
-	isl_basic_map *bmap;
-	int changed = 0;
+	int superset = 0;
 	int *eq_i = NULL;
 	int *ineq_i = NULL;
 
-	bmap = isl_basic_map_copy(map->p[i]);
+	bmap = isl_basic_map_copy(bmap);
 	bmap = isl_basic_set_expand_divs(bmap, isl_mat_copy(div), exp);
 
 	if (!bmap)
 		goto error;
 
-	eq_i = eq_status_in(bmap, tabs[j]);
+	eq_i = eq_status_in(bmap, tab);
 	if (bmap->n_eq && !eq_i)
 		goto error;
 	if (any(eq_i, 2 * bmap->n_eq, STATUS_ERROR))
@@ -1526,7 +1523,7 @@ static int coalesce_subset(__isl_keep isl_map *map, int i, int j,
 	if (any(eq_i, 2 * bmap->n_eq, STATUS_SEPARATE))
 		goto done;
 
-	ineq_i = ineq_status_in(bmap, NULL, tabs[j]);
+	ineq_i = ineq_status_in(bmap, NULL, tab);
 	if (bmap->n_ineq && !ineq_i)
 		goto error;
 	if (any(ineq_i, bmap->n_ineq, STATUS_ERROR))
@@ -1534,17 +1531,15 @@ static int coalesce_subset(__isl_keep isl_map *map, int i, int j,
 	if (any(ineq_i, bmap->n_ineq, STATUS_SEPARATE))
 		goto done;
 
-	if (all(eq_i, 2 * map->p[i]->n_eq, STATUS_VALID) &&
-	    all(ineq_i, map->p[i]->n_ineq, STATUS_VALID)) {
-		drop(map, j, tabs);
-		changed = 1;
-	}
+	if (all(eq_i, 2 * bmap->n_eq, STATUS_VALID) &&
+	    all(ineq_i, bmap->n_ineq, STATUS_VALID))
+		superset = 1;
 
 done:
 	isl_basic_map_free(bmap);
 	free(eq_i);
 	free(ineq_i);
-	return changed;
+	return superset;
 error:
 	isl_basic_map_free(bmap);
 	free(eq_i);
@@ -1552,20 +1547,18 @@ error:
 	return -1;
 }
 
-/* Check if the basic map "j" is a subset of basic map "i",
- * if "i" has fewer divs that "j".
- * If so, remove basic map "j".
+/* Does "bmap_i" contain the basic map represented by "bmap_j" and
+ * the corresponding tableau "tab_j" after aligning the divs of "bmap_i"
+ * to those of "bmap_j".
+ * Note that this can only succeed if the number of divs of "bmap_i"
+ * is smaller than (or equal to) the number of divs of "bmap_j".
  *
- * If the two basic maps have the same number of divs, then
- * they must necessarily be different.  Otherwise, we would have
- * called coalesce_local_pair.  We therefore don't try anything
- * in this case.
- *
- * We first check if the divs of "i" are all known and form a subset
- * of those of "j".  If so, we pass control over to coalesce_subset.
+ * We first check if the divs of "bmap_i" are all known and form a subset
+ * of those of "bmap_j".  If so, we pass control over to
+ * contains_with_expanded_divs.
  */
-static int coalesced_subset(__isl_keep isl_map *map, int i, int j,
-	struct isl_tab **tabs)
+static int contains_after_aligning_divs(__isl_keep isl_basic_map *bmap_i,
+	__isl_keep isl_basic_map *bmap_j, struct isl_tab *tab_j)
 {
 	int known;
 	isl_mat *div_i, *div_j, *div;
@@ -1574,17 +1567,14 @@ static int coalesced_subset(__isl_keep isl_map *map, int i, int j,
 	isl_ctx *ctx;
 	int subset;
 
-	if (map->p[i]->n_div >= map->p[j]->n_div)
-		return 0;
-
-	known = isl_basic_map_divs_known(map->p[i]);
+	known = isl_basic_map_divs_known(bmap_i);
 	if (known < 0 || !known)
 		return known;
 
-	ctx = isl_map_get_ctx(map);
+	ctx = isl_basic_map_get_ctx(bmap_i);
 
-	div_i = isl_basic_map_get_divs(map->p[i]);
-	div_j = isl_basic_map_get_divs(map->p[j]);
+	div_i = isl_basic_map_get_divs(bmap_i);
+	div_j = isl_basic_map_get_divs(bmap_j);
 
 	if (!div_i || !div_j)
 		goto error;
@@ -1599,7 +1589,7 @@ static int coalesced_subset(__isl_keep isl_map *map, int i, int j,
 		goto error;
 
 	if (div->n_row == div_j->n_row)
-		subset = coalesce_subset(map, i, j, tabs, div, exp1);
+		subset = contains_with_expanded_divs(bmap_i, tab_j, div, exp1);
 	else
 		subset = 0;
 
@@ -1618,6 +1608,32 @@ error:
 	free(exp1);
 	free(exp2);
 	return -1;
+}
+
+/* Check if the basic map "j" is a subset of basic map "i",
+ * if "i" has fewer divs that "j".
+ * If so, remove basic map "j".
+ *
+ * If the two basic maps have the same number of divs, then
+ * they must necessarily be different.  Otherwise, we would have
+ * called coalesce_local_pair.  We therefore don't try anything
+ * in this case.
+ */
+static int coalesced_subset(__isl_keep isl_map *map, int i, int j,
+	struct isl_tab **tabs)
+{
+	int superset;
+
+	if (map->p[i]->n_div >= map->p[j]->n_div)
+		return 0;
+
+	superset = contains_after_aligning_divs(map->p[i], map->p[j], tabs[j]);
+	if (superset < 0)
+		return -1;
+	if (superset)
+		drop(map, j, tabs);
+
+	return superset;
 }
 
 /* Check if one of the basic maps is a subset of the other and, if so,
