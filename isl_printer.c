@@ -118,6 +118,7 @@ static __isl_give isl_printer *str_end_line(__isl_take isl_printer *p)
 static __isl_give isl_printer *str_flush(__isl_take isl_printer *p)
 {
 	p->buf_n = 0;
+	p->buf[p->buf_n] = '\0';
 	return p;
 }
 
