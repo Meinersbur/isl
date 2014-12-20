@@ -2244,6 +2244,29 @@ struct isl_find_unroll_data {
 	int *n;
 };
 
+/* Is the lower bound "lower" with corresponding iteration count "n"
+ * better than the one stored in "data"?
+ * If there is no upper bound on the iteration count ("n" is infinity) or
+ * if the count is too large, then we cannot use this lower bound.
+ * Otherwise, if there was no previous lower bound or
+ * if the iteration count of the new lower bound is smaller than
+ * the iteration count of the previous lower bound, then we consider
+ * the new lower bound to be better.
+ */
+static int is_better_lower_bound(struct isl_find_unroll_data *data,
+	__isl_keep isl_aff *lower, __isl_keep isl_val *n)
+{
+	if (!n)
+		return -1;
+	if (isl_val_is_infty(n))
+		return 0;
+	if (isl_val_cmp_si(n, INT_MAX) > 0)
+		return 0;
+	if (!data->lower)
+		return 1;
+	return isl_val_cmp_si(n, *data->n) < 0;
+}
+
 /* Check if we can use "c" as a lower bound and if it is better than
  * any previously found lower bound.
  *
@@ -2275,6 +2298,7 @@ static int update_unrolling_lower_bound(struct isl_find_unroll_data *data,
 {
 	isl_aff *aff, *lower;
 	isl_val *max;
+	int better;
 
 	if (!isl_constraint_is_lower_bound(c, isl_dim_set, data->depth))
 		return 0;
@@ -2288,27 +2312,19 @@ static int update_unrolling_lower_bound(struct isl_find_unroll_data *data,
 	max = isl_set_max_val(data->domain, aff);
 	isl_aff_free(aff);
 
-	if (!max)
-		goto error;
-	if (isl_val_is_infty(max)) {
+	better = is_better_lower_bound(data, lower, max);
+	if (better < 0 || !better) {
 		isl_val_free(max);
 		isl_aff_free(lower);
-		return 0;
+		return better < 0 ? -1 : 0;
 	}
 
-	if (isl_val_cmp_si(max, INT_MAX) <= 0 &&
-	    (!data->lower || isl_val_cmp_si(max, *data->n) < 0)) {
-		isl_aff_free(data->lower);
-		data->lower = lower;
-		*data->n = isl_val_get_num_si(max);
-	} else
-		isl_aff_free(lower);
+	isl_aff_free(data->lower);
+	data->lower = lower;
+	*data->n = isl_val_get_num_si(max);
 	isl_val_free(max);
 
 	return 1;
-error:
-	isl_aff_free(lower);
-	return -1;
 }
 
 /* Check if we can use "c" as a lower bound and if it is better than
