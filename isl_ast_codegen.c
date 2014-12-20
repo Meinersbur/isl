@@ -2244,6 +2244,19 @@ struct isl_find_unroll_data {
 	int *n;
 };
 
+/* Return the constraint
+ *
+ *	i_"depth" = aff + offset
+ */
+static __isl_give isl_constraint *at_offset(int depth, __isl_keep isl_aff *aff,
+	int offset)
+{
+	aff = isl_aff_copy(aff);
+	aff = isl_aff_add_coefficient_si(aff, isl_dim_in, depth, -1);
+	aff = isl_aff_add_constant_si(aff, offset);
+	return isl_equality_from_aff(aff);
+}
+
 /* Is the lower bound "lower" with corresponding iteration count "n"
  * better than the one stored in "data"?
  * If there is no upper bound on the iteration count ("n" is infinity) or
@@ -2385,19 +2398,6 @@ static __isl_give isl_aff *find_unroll_lower_bound(__isl_keep isl_set *domain,
 error:
 	isl_basic_set_free(hull);
 	return isl_aff_free(data.lower);
-}
-
-/* Return the constraint
- *
- *	i_"depth" = aff + offset
- */
-static __isl_give isl_constraint *at_offset(int depth, __isl_keep isl_aff *aff,
-	int offset)
-{
-	aff = isl_aff_copy(aff);
-	aff = isl_aff_add_coefficient_si(aff, isl_dim_in, depth, -1);
-	aff = isl_aff_add_constant_si(aff, offset);
-	return isl_equality_from_aff(aff);
 }
 
 /* Data structure for storing the results and the intermediate objects
