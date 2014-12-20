@@ -2228,20 +2228,29 @@ static __isl_give isl_set *separate_schedule_domains(
 
 /* Temporary data used during the search for a lower bound for unrolling.
  *
+ * "build" is the build in which the unrolling will be performed
  * "domain" is the original set for which to find a lower bound
  * "depth" is the dimension for which to find a lower boudn
+ * "expansion" is the expansion that needs to be applied to "domain"
+ * in the unrolling that will be performed
  *
  * "lower" is the best lower bound found so far.  It is NULL if we have not
  * found any yet.
  * "n" is the corresponding size.  If lower is NULL, then the value of n
  * is undefined.
+ * "n_div" is the maximal number of integer divisions in the first
+ * unrolled iteration (after expansion).  It is set to -1 if it hasn't
+ * been computed yet.
  */
 struct isl_find_unroll_data {
+	isl_ast_build *build;
 	isl_set *domain;
 	int depth;
+	isl_basic_map *expansion;
 
 	isl_aff *lower;
 	int *n;
+	int n_div;
 };
 
 /* Return the constraint
@@ -2257,6 +2266,56 @@ static __isl_give isl_constraint *at_offset(int depth, __isl_keep isl_aff *aff,
 	return isl_equality_from_aff(aff);
 }
 
+/* Update *user to the number of integer divsions in the first element
+ * of "ma", if it is larger than the current value.
+ */
+static int update_n_div(__isl_take isl_set *set, __isl_take isl_multi_aff *ma,
+	void *user)
+{
+	isl_aff *aff;
+	int *n = user;
+	int n_div;
+
+	aff = isl_multi_aff_get_aff(ma, 0);
+	n_div = isl_aff_dim(aff, isl_dim_div);
+	isl_aff_free(aff);
+	isl_multi_aff_free(ma);
+	isl_set_free(set);
+
+	if (n_div > *n)
+		*n = n_div;
+
+	return aff ? 0 : -1;
+}
+
+/* Get the number of integer divisions in the expression for the iterator
+ * value at the first slice in the unrolling based on lower bound "lower",
+ * taking into account the expansion that needs to be performed on this slice.
+ */
+static int get_expanded_n_div(struct isl_find_unroll_data *data,
+	__isl_keep isl_aff *lower)
+{
+	isl_constraint *c;
+	isl_set *set;
+	isl_map *it_map, *expansion;
+	isl_pw_multi_aff *pma;
+	int n;
+
+	c = at_offset(data->depth, lower, 0);
+	set = isl_set_copy(data->domain);
+	set = isl_set_add_constraint(set, c);
+	expansion = isl_map_from_basic_map(isl_basic_map_copy(data->expansion));
+	set = isl_set_apply(set, expansion);
+	it_map = isl_ast_build_map_to_iterator(data->build, set);
+	pma = isl_pw_multi_aff_from_map(it_map);
+	n = 0;
+	if (isl_pw_multi_aff_foreach_piece(pma, &update_n_div, &n) < 0)
+		n = -1;
+	isl_pw_multi_aff_free(pma);
+
+	return n;
+}
+
 /* Is the lower bound "lower" with corresponding iteration count "n"
  * better than the one stored in "data"?
  * If there is no upper bound on the iteration count ("n" is infinity) or
@@ -2265,10 +2324,18 @@ static __isl_give isl_constraint *at_offset(int depth, __isl_keep isl_aff *aff,
  * if the iteration count of the new lower bound is smaller than
  * the iteration count of the previous lower bound, then we consider
  * the new lower bound to be better.
+ * If the iteration count is the same, then compare the number
+ * of integer divisions that would be needed to express
+ * the iterator value at the first slice in the unrolling
+ * according to the lower bound.  If we end up computing this
+ * number, then store the lowest value in data->n_div.
  */
 static int is_better_lower_bound(struct isl_find_unroll_data *data,
 	__isl_keep isl_aff *lower, __isl_keep isl_val *n)
 {
+	int cmp;
+	int n_div;
+
 	if (!n)
 		return -1;
 	if (isl_val_is_infty(n))
@@ -2277,7 +2344,25 @@ static int is_better_lower_bound(struct isl_find_unroll_data *data,
 		return 0;
 	if (!data->lower)
 		return 1;
-	return isl_val_cmp_si(n, *data->n) < 0;
+	cmp = isl_val_cmp_si(n, *data->n);
+	if (cmp < 0)
+		return 1;
+	if (cmp > 0)
+		return 0;
+	if (data->n_div < 0)
+		data->n_div = get_expanded_n_div(data, data->lower);
+	if (data->n_div < 0)
+		return -1;
+	if (data->n_div == 0)
+		return 0;
+	n_div = get_expanded_n_div(data, lower);
+	if (n_div < 0)
+		return -1;
+	if (n_div >= data->n_div)
+		return 0;
+	data->n_div = n_div;
+
+	return 1;
 }
 
 /* Check if we can use "c" as a lower bound and if it is better than
@@ -2303,8 +2388,8 @@ static int is_better_lower_bound(struct isl_find_unroll_data *data,
  *
  * meaning that we can use ceil(f(j)/a)) as a lower bound for unrolling.
  * We just need to check if we have found any lower bound before and
- * if the new lower bound is better (smaller n) than the previously found
- * lower bounds.
+ * if the new lower bound is better (smaller n or fewer integer divisions)
+ * than the previously found lower bounds.
  */
 static int update_unrolling_lower_bound(struct isl_find_unroll_data *data,
 	__isl_keep isl_constraint *c)
@@ -2363,6 +2448,9 @@ static int constraint_find_unroll(__isl_take isl_constraint *c, void *user)
  * where d is "depth" and l(i) depends only on earlier dimensions.
  * Furthermore, try and find a lower bound such that n is as small as possible.
  * In particular, "n" needs to be finite.
+ * "build" is the build in which the unrolling will be performed.
+ * "expansion" is the expansion that needs to be applied to "domain"
+ * in the unrolling that will be performed.
  *
  * Inner dimensions have been eliminated from "domain" by the caller.
  *
@@ -2376,10 +2464,12 @@ static int constraint_find_unroll(__isl_take isl_constraint *c, void *user)
  * If we cannot find a suitable lower bound, then we consider that
  * to be an error.
  */
-static __isl_give isl_aff *find_unroll_lower_bound(__isl_keep isl_set *domain,
-	int depth, int *n)
+static __isl_give isl_aff *find_unroll_lower_bound(
+	__isl_keep isl_ast_build *build, __isl_keep isl_set *domain,
+	int depth, __isl_keep isl_basic_map *expansion, int *n)
 {
-	struct isl_find_unroll_data data = { domain, depth, NULL, n };
+	struct isl_find_unroll_data data =
+			{ build, domain, depth, expansion, NULL, n, -1 };
 	isl_basic_set *hull;
 
 	hull = isl_set_simple_hull(isl_set_copy(domain));
@@ -2498,11 +2588,12 @@ static __isl_give isl_set *do_unroll(struct isl_codegen_domains *domains,
 
 	isl_ast_build_free(build);
 
-	lower = find_unroll_lower_bound(domain, depth, &n);
+	bmap = isl_basic_map_from_multi_aff(expansion);
+
+	lower = find_unroll_lower_bound(domains->build, domain, depth, bmap,
+					&n);
 	if (!lower)
 		class_domain = isl_set_free(class_domain);
-
-	bmap = isl_basic_map_from_multi_aff(expansion);
 
 	unroll_domain = isl_set_empty(isl_set_get_space(domain));
 
