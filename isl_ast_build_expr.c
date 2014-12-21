@@ -29,11 +29,21 @@ static __isl_give isl_aff *oppose_div_arg(__isl_take isl_aff *aff,
 	return aff;
 }
 
+/* Internal data structure used inside isl_ast_expr_add_term.
+ * The domain of "build" is used to simplify the expressions.
+ * "build" needs to be set by the caller of isl_ast_expr_add_term.
+ * "v" is the coefficient of the term that is being constructed and
+ * is set internally by isl_ast_expr_add_term.
+ */
+struct isl_ast_add_term_data {
+	isl_ast_build *build;
+	isl_val *v;
+};
+
 /* Create an isl_ast_expr evaluating the div at position "pos" in "ls".
- * The result is simplified in terms of build->domain.
+ * The result is simplified in terms of data->build->domain.
+ * This function may change (the sign of) data->v.
  *
- * *change_sign is set by this function if the sign of
- * the expression has changed.
  * "ls" is known to be non-NULL.
  *
  * Let the div be of the form floor(e/d).
@@ -52,11 +62,10 @@ static __isl_give isl_aff *oppose_div_arg(__isl_take isl_aff *aff,
  *
  *	floor(e/d) = -ceil(-e/d) = -floor((-e + d - 1)/d)
  *
- * and still use pdiv_q.
+ * and still use pdiv_q, while changing the sign of data->v.
  */
-static __isl_give isl_ast_expr *var_div(int *change_sign,
-	__isl_keep isl_local_space *ls,
-	int pos, __isl_keep isl_ast_build *build)
+static __isl_give isl_ast_expr *var_div(struct isl_ast_add_term_data *data,
+	__isl_keep isl_local_space *ls, int pos)
 {
 	isl_ctx *ctx = isl_local_space_get_ctx(ls);
 	isl_aff *aff;
@@ -71,13 +80,13 @@ static __isl_give isl_ast_expr *var_div(int *change_sign,
 
 	type = isl_ast_op_fdiv_q;
 	if (isl_options_get_ast_build_prefer_pdiv(ctx)) {
-		int non_neg = isl_ast_build_aff_is_nonneg(build, aff);
+		int non_neg = isl_ast_build_aff_is_nonneg(data->build, aff);
 		if (non_neg >= 0 && !non_neg) {
 			isl_aff *opp = oppose_div_arg(isl_aff_copy(aff),
 							isl_val_copy(d));
-			non_neg = isl_ast_build_aff_is_nonneg(build, opp);
+			non_neg = isl_ast_build_aff_is_nonneg(data->build, opp);
 			if (non_neg >= 0 && non_neg) {
-				*change_sign = 1;
+				data->v = isl_val_neg(data->v);
 				isl_aff_free(aff);
 				aff = opp;
 			} else
@@ -90,33 +99,30 @@ static __isl_give isl_ast_expr *var_div(int *change_sign,
 	}
 
 	isl_val_free(d);
-	num = isl_ast_expr_from_aff(aff, build);
+	num = isl_ast_expr_from_aff(aff, data->build);
 	return isl_ast_expr_alloc_binary(type, num, den);
 }
 
 /* Create an isl_ast_expr evaluating the specified dimension of "ls".
- * The result is simplified in terms of build->domain.
- *
- * *change_sign is set by this function if the sign of
- * the expression has changed.
+ * The result is simplified in terms of data->build->domain.
+ * This function may change (the sign of) data->v.
  *
  * The isl_ast_expr is constructed based on the type of the dimension.
  * - divs are constructed by var_div
- * - set variables are constructed from the iterator isl_ids in "build"
+ * - set variables are constructed from the iterator isl_ids in data->build
  * - parameters are constructed from the isl_ids in "ls"
  */
-static __isl_give isl_ast_expr *var(int *change_sign,
-	__isl_keep isl_local_space *ls,
-	enum isl_dim_type type, int pos, __isl_keep isl_ast_build *build)
+static __isl_give isl_ast_expr *var(struct isl_ast_add_term_data *data,
+	__isl_keep isl_local_space *ls, enum isl_dim_type type, int pos)
 {
 	isl_ctx *ctx = isl_local_space_get_ctx(ls);
 	isl_id *id;
 
 	if (type == isl_dim_div)
-		return var_div(change_sign, ls, pos, build);
+		return var_div(data, ls, pos);
 
 	if (type == isl_dim_set) {
-		id = isl_ast_build_get_iterator_id(build, pos);
+		id = isl_ast_build_get_iterator_id(data->build, pos);
 		return isl_ast_expr_from_id(id);
 	}
 
@@ -270,6 +276,7 @@ error:
 
 /* Add an expression for "*v" times the specified dimension of "ls"
  * to expr.
+ * The result is simplified in terms of data->build->domain.
  *
  * Let e be the expression for the specified dimension,
  * multiplied by the absolute value of "*v".
@@ -291,18 +298,16 @@ error:
 static __isl_give isl_ast_expr *isl_ast_expr_add_term(
 	__isl_take isl_ast_expr *expr,
 	__isl_keep isl_local_space *ls, enum isl_dim_type type, int pos,
-	__isl_take isl_val *v, __isl_keep isl_ast_build *build)
+	__isl_take isl_val *v, struct isl_ast_add_term_data *data)
 {
 	isl_ast_expr *term;
-	int change_sign;
 
 	if (!expr)
 		return NULL;
 
-	change_sign = 0;
-	term = var(&change_sign, ls, type, pos, build);
-	if (change_sign)
-		v = isl_val_neg(v);
+	data->v = v;
+	term = var(data, ls, type, pos);
+	v = data->v;
 
 	if (isl_val_is_neg(v) && !ast_expr_is_zero(expr)) {
 		v = isl_val_neg(v);
@@ -948,6 +953,7 @@ __isl_give isl_ast_expr *isl_ast_expr_from_aff(__isl_take isl_aff *aff,
 	enum isl_dim_type t[] = { isl_dim_param, isl_dim_in, isl_dim_div };
 	enum isl_dim_type l[] = { isl_dim_param, isl_dim_set, isl_dim_div };
 	isl_local_space *ls;
+	struct isl_ast_add_term_data data;
 
 	if (!aff)
 		return NULL;
@@ -962,6 +968,7 @@ __isl_give isl_ast_expr *isl_ast_expr_from_aff(__isl_take isl_aff *aff,
 
 	ls = isl_aff_get_domain_local_space(aff);
 
+	data.build = build;
 	for (i = 0; i < 3; ++i) {
 		n = isl_aff_dim(aff, t[i]);
 		for (j = 0; j < n; ++j) {
@@ -973,7 +980,7 @@ __isl_give isl_ast_expr *isl_ast_expr_from_aff(__isl_take isl_aff *aff,
 				continue;
 			}
 			expr = isl_ast_expr_add_term(expr,
-							ls, l[i], j, v, build);
+							ls, l[i], j, v, &data);
 		}
 	}
 
@@ -987,10 +994,10 @@ __isl_give isl_ast_expr *isl_ast_expr_from_aff(__isl_take isl_aff *aff,
 
 /* Add terms to "expr" for each variable in "aff" with a coefficient
  * with sign equal to "sign".
- * The result is simplified in terms of build->domain.
+ * The result is simplified in terms of data->build->domain.
  */
 static __isl_give isl_ast_expr *add_signed_terms(__isl_take isl_ast_expr *expr,
-	__isl_keep isl_aff *aff, int sign, __isl_keep isl_ast_build *build)
+	__isl_keep isl_aff *aff, int sign, struct isl_ast_add_term_data *data)
 {
 	int i, j;
 	isl_val *v;
@@ -1010,7 +1017,7 @@ static __isl_give isl_ast_expr *add_signed_terms(__isl_take isl_ast_expr *expr,
 			}
 			v = isl_val_abs(v);
 			expr = isl_ast_expr_add_term(expr,
-						ls, l[i], j, v, build);
+						ls, l[i], j, v, data);
 		}
 	}
 
@@ -1207,6 +1214,7 @@ static __isl_give isl_ast_expr *isl_ast_expr_from_constraint(
 	isl_val *v;
 	int eq;
 	enum isl_ast_op_type type;
+	struct isl_ast_add_term_data data;
 
 	if (!constraint)
 		return NULL;
@@ -1232,8 +1240,9 @@ static __isl_give isl_ast_expr *isl_ast_expr_from_constraint(
 
 	aff = extract_modulos(aff, &expr_pos, &expr_neg, build);
 
-	expr_pos = add_signed_terms(expr_pos, aff, 1, build);
-	expr_neg = add_signed_terms(expr_neg, aff, -1, build);
+	data.build = build;
+	expr_pos = add_signed_terms(expr_pos, aff, 1, &data);
+	expr_neg = add_signed_terms(expr_neg, aff, -1, &data);
 
 	v = isl_aff_get_constant_val(aff);
 	if (constant_is_considered_positive(v, expr_pos, expr_neg)) {
