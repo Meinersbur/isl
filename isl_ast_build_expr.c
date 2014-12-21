@@ -683,12 +683,12 @@ static int try_extract_mod(struct isl_extract_mod_data *data)
 {
 	isl_basic_set *hull;
 	isl_val *v1, *v2;
-	int r;
+	int r, n;
 
 	if (!data->build)
 		goto error;
 
-	int n = isl_aff_dim(data->div, isl_dim_div);
+	n = isl_aff_dim(data->div, isl_dim_div);
 
 	if (isl_aff_involves_dims(data->div, isl_dim_div, 0, n))
 		return extract_nonneg_mod(data);
