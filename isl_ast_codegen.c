@@ -665,35 +665,42 @@ error:
  * If we have generated a degenerate loop, then add the guard
  * implied by "bounds" on the outer dimensions, i.e., the guard
  * that ensures that the single value actually exists.
+ * Since there may also be guards implied by a combination
+ * of these constraints, we first combine them before
+ * deriving the implied constraints.
  */
 static __isl_give isl_set *add_implied_guards(__isl_take isl_set *guard,
 	int degenerate, __isl_keep isl_basic_set *bounds,
 	__isl_keep isl_ast_build *build)
 {
 	int depth, has_stride;
-	isl_set *dom;
+	isl_space *space;
+	isl_set *dom, *set;
 
 	depth = isl_ast_build_get_depth(build);
 	has_stride = isl_ast_build_has_stride(build, depth);
 	if (!has_stride && !degenerate)
 		return guard;
 
+	space = isl_basic_set_get_space(bounds);
+	dom = isl_set_universe(space);
+
 	if (degenerate) {
 		bounds = isl_basic_set_copy(bounds);
 		bounds = isl_basic_set_drop_constraints_not_involving_dims(
 					bounds, isl_dim_set, depth, 1);
-		dom = isl_set_from_basic_set(bounds);
-		dom = isl_set_eliminate(dom, isl_dim_set, depth, 1);
-		dom = isl_ast_build_compute_gist(build, dom);
-		guard = isl_set_intersect(guard, dom);
+		set = isl_set_from_basic_set(bounds);
+		dom = isl_set_intersect(dom, set);
 	}
 
 	if (has_stride) {
-		dom = isl_ast_build_get_stride_constraint(build);
-		dom = isl_set_eliminate(dom, isl_dim_set, depth, 1);
-		dom = isl_ast_build_compute_gist(build, dom);
-		guard = isl_set_intersect(guard, dom);
+		set = isl_ast_build_get_stride_constraint(build);
+		dom = isl_set_intersect(dom, set);
 	}
+
+	dom = isl_set_eliminate(dom, isl_dim_set, depth, 1);
+	dom = isl_ast_build_compute_gist(build, dom);
+	guard = isl_set_intersect(guard, dom);
 
 	return guard;
 }
