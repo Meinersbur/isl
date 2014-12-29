@@ -1440,6 +1440,7 @@ struct {
 	{ 1, "{ [i0, i1] : i0 <= 122 and i0 >= 1 and 128i1 >= -249 + i0 and "
 			"i1 <= 0; "
 		"[i0, 0] : i0 >= 123 and i0 <= 124 }" },
+	{ 1, "{ [0,0]; [1,1] }" },
 };
 
 /* Test the functionality of isl_set_coalesce.

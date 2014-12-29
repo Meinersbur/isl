@@ -159,10 +159,13 @@ static void drop(struct isl_map *map, int i, struct isl_tab **tabs)
 /* Replace the pair of basic maps i and j by the basic map bounded
  * by the valid constraints in both basic maps and the constraints
  * in extra (if not NULL).
+ *
+ * If "detect_equalities" is set, then look for equalities encoded
+ * as pairs of inequalities.
  */
 static int fuse(struct isl_map *map, int i, int j,
 	struct isl_tab **tabs, int *eq_i, int *ineq_i, int *eq_j, int *ineq_j,
-	__isl_keep isl_mat *extra)
+	__isl_keep isl_mat *extra, int detect_equalities)
 {
 	int k, l;
 	struct isl_basic_map *fused = NULL;
@@ -229,6 +232,8 @@ static int fuse(struct isl_map *map, int i, int j,
 		isl_seq_cpy(fused->ineq[l], extra->row[k], 1 + total);
 	}
 
+	if (detect_equalities)
+		fused = isl_basic_map_detect_inequality_pairs(fused, NULL);
 	fused = isl_basic_map_gauss(fused, NULL);
 	ISL_F_SET(fused, ISL_BASIC_MAP_FINAL);
 	if (ISL_F_ISSET(map->p[i], ISL_BASIC_MAP_RATIONAL) &&
@@ -317,7 +322,7 @@ static int check_facets(struct isl_map *map, int i, int j,
 			return -1;
 		return 0;
 	}
-	return fuse(map, i, j, tabs, NULL, ineq_i, NULL, ineq_j, NULL);
+	return fuse(map, i, j, tabs, NULL, ineq_i, NULL, ineq_j, NULL, 0);
 }
 
 /* Check if basic map "i" contains the basic map represented
@@ -429,7 +434,8 @@ static int is_adj_ineq_extension(__isl_keep isl_map *map, int i, int j,
 	}
 
 	if (contains(map, j, ineq_j, tabs[i]))
-		return fuse(map, i, j, tabs, eq_i, ineq_i, eq_j, ineq_j, NULL);
+		return fuse(map, i, j, tabs, eq_i, ineq_i, eq_j, ineq_j,
+				NULL, 0);
 
 	if (isl_tab_rollback(tabs[i], snap) < 0)
 		return -1;
@@ -487,7 +493,8 @@ static int check_adj_ineq(struct isl_map *map, int i, int j,
 		any(ineq_j, map->p[j]->n_ineq, STATUS_CUT);
 
 	if (!cut_i && !cut_j && count_i == 1 && count_j == 1)
-		return fuse(map, i, j, tabs, NULL, ineq_i, NULL, ineq_j, NULL);
+		return fuse(map, i, j, tabs, NULL, ineq_i, NULL, ineq_j,
+				NULL, 0);
 
 	if (count_i == 1 && !cut_i)
 		return is_adj_ineq_extension(map, i, j, tabs,
@@ -850,7 +857,8 @@ static int can_wrap_in_facet(struct isl_map *map, int i, int j, int k,
 	if (!wraps.mat->n_row)
 		goto unbounded;
 
-	changed = fuse(map, i, j, tabs, eq_i, ineq_i, eq_j, ineq_j, wraps.mat);
+	changed = fuse(map, i, j, tabs, eq_i, ineq_i, eq_j, ineq_j,
+			wraps.mat, 0);
 
 unbounded:
 	wraps_free(&wraps);
@@ -993,7 +1001,7 @@ static int wrap_in_facets(struct isl_map *map, int i, int j,
 
 	if (k == n)
 		changed = fuse(map, i, j, tabs,
-				eq_i, ineq_i, eq_j, ineq_j, wraps.mat);
+				eq_i, ineq_i, eq_j, ineq_j, wraps.mat, 0);
 
 	isl_vec_free(bound);
 	wraps_free(&wraps);
@@ -1204,26 +1212,18 @@ static int check_adj_eq(struct isl_map *map, int i, int j,
  *	 \\		=>	 \\
  *	  \			  \|
  *
- * We only allow one equality of "i" to be adjacent to an equality of "j"
- * to avoid coalescing
- *
- *	[m, n] -> { [x, y] -> [x, 1 + y] : x >= 1 and y >= 1 and
- *					    x <= 10 and y <= 10;
- *		    [x, y] -> [1 + x, y] : x >= 1 and x <= 20 and
- *					    y >= 5 and y <= 15 }
- *
- * to
- *
- *	[m, n] -> { [x, y] -> [x2, y2] : x >= 1 and 10y2 <= 20 - x + 10y and
- *					4y2 >= 5 + 3y and 5y2 <= 15 + 4y and
- *					y2 <= 1 + x + y - x2 and y2 >= y and
- *					y2 >= 1 + x + y - x2 }
+ * If there is more than one equality of "i" adjacent to an equality of "j",
+ * then the result will satisfy one or more equalities that are a linear
+ * combination of these equalities.  These will be encoded as pairs
+ * of inequalities in the wrapping constraints and need to be made
+ * explicit.
  */
 static int check_eq_adj_eq(struct isl_map *map, int i, int j,
 	struct isl_tab **tabs, int *eq_i, int *ineq_i, int *eq_j, int *ineq_j)
 {
 	int k;
 	int changed = 0;
+	int detect_equalities = 0;
 	struct isl_wraps wraps;
 	isl_mat *mat;
 	struct isl_set *set_i = NULL;
@@ -1232,7 +1232,7 @@ static int check_eq_adj_eq(struct isl_map *map, int i, int j,
 	unsigned total = isl_basic_map_total_dim(map->p[i]);
 
 	if (count(eq_i, 2 * map->p[i]->n_eq, STATUS_ADJ_EQ) != 1)
-		return 0;
+		detect_equalities = 1;
 
 	for (k = 0; k < 2 * map->p[i]->n_eq ; ++k)
 		if (eq_i[k] == STATUS_ADJ_EQ)
@@ -1273,7 +1273,8 @@ static int check_eq_adj_eq(struct isl_map *map, int i, int j,
 	if (!wraps.mat->n_row)
 		goto unbounded;
 
-	changed = fuse(map, i, j, tabs, eq_i, ineq_i, eq_j, ineq_j, wraps.mat);
+	changed = fuse(map, i, j, tabs, eq_i, ineq_i, eq_j, ineq_j, wraps.mat,
+			detect_equalities);
 
 	if (0) {
 error:		changed = -1;
