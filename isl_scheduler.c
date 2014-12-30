@@ -277,6 +277,17 @@ __isl_give isl_union_map *isl_schedule_constraints_get_validity(
 	return isl_union_map_copy(sc->constraint[isl_edge_validity]);
 }
 
+/* Return the coincidence constraints of "sc".
+ */
+__isl_give isl_union_map *isl_schedule_constraints_get_coincidence(
+	__isl_keep isl_schedule_constraints *sc)
+{
+	if (!sc)
+		return NULL;
+
+	return isl_union_map_copy(sc->constraint[isl_edge_coincidence]);
+}
+
 void isl_schedule_constraints_dump(__isl_keep isl_schedule_constraints *sc)
 {
 	if (!sc)
