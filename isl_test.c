@@ -1287,31 +1287,43 @@ int test_coalesce_set(isl_ctx *ctx, const char *str, int check_one)
 	return 0;
 }
 
+/* Inputs for coalescing tests with unbounded wrapping.
+ * "str" is a string representation of the input set.
+ * "single_disjunct" is set if we expect the result to consist of
+ *	a single disjunct.
+ */
+struct {
+	int single_disjunct;
+	const char *str;
+} coalesce_unbounded_tests[] = {
+	{ 1, "{ [x,y,z] : y + 2 >= 0 and x - y + 1 >= 0 and "
+			"-x - y + 1 >= 0 and -3 <= z <= 3;"
+		"[x,y,z] : -x+z + 20 >= 0 and -x-z + 20 >= 0 and "
+			"x-z + 20 >= 0 and x+z + 20 >= 0 and "
+			"-10 <= y <= 0}" },
+	{ 1, "{ [x,y] : 0 <= x,y <= 10; [5,y]: 4 <= y <= 11 }" },
+	{ 1, "{ [x,0,0] : -5 <= x <= 5; [0,y,1] : -5 <= y <= 5 }" },
+};
+
+/* Test the functionality of isl_set_coalesce with the bounded wrapping
+ * option turned off.
+ */
 int test_coalesce_unbounded_wrapping(isl_ctx *ctx)
 {
+	int i;
 	int r = 0;
 	int bounded;
 
 	bounded = isl_options_get_coalesce_bounded_wrapping(ctx);
 	isl_options_set_coalesce_bounded_wrapping(ctx, 0);
 
-	if (test_coalesce_set(ctx,
-		"{[x,y,z] : y + 2 >= 0 and x - y + 1 >= 0 and "
-			"-x - y + 1 >= 0 and -3 <= z <= 3;"
-		"[x,y,z] : -x+z + 20 >= 0 and -x-z + 20 >= 0 and "
-			"x-z + 20 >= 0 and x+z + 20 >= 0 and "
-			"-10 <= y <= 0}", 1) < 0)
-		goto error;
-	if (test_coalesce_set(ctx,
-		"{[x,y] : 0 <= x,y <= 10; [5,y]: 4 <=y <= 11}", 1) < 0)
-		goto error;
-	if (test_coalesce_set(ctx,
-		"{[x,0,0] : -5 <= x <= 5; [0,y,1] : -5 <= y <= 5 }", 1) < 0)
-		goto error;
-
-	if (0) {
-error:
+	for (i = 0; i < ARRAY_SIZE(coalesce_unbounded_tests); ++i) {
+		const char *str = coalesce_unbounded_tests[i].str;
+		int check_one = coalesce_unbounded_tests[i].single_disjunct;
+		if (test_coalesce_set(ctx, str, check_one) >= 0)
+			continue;
 		r = -1;
+		break;
 	}
 
 	isl_options_set_coalesce_bounded_wrapping(ctx, bounded);
