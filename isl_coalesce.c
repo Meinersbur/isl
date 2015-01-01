@@ -228,6 +228,8 @@ enum isl_change {
 
 /* Add the valid constraints of the basic map represented by "info"
  * to "bmap".  "len" is the size of the constraints.
+ * If only one of the pair of inequalities that make up an equality
+ * is valid, then add that inequality.
  */
 static __isl_give isl_basic_map *add_valid_constraints(
 	__isl_take isl_basic_map *bmap, struct isl_coalesce_info *info,
@@ -239,13 +241,23 @@ static __isl_give isl_basic_map *add_valid_constraints(
 		return NULL;
 
 	for (k = 0; k < info->bmap->n_eq; ++k) {
-		if (info->eq[2 * k] != STATUS_VALID ||
-		    info->eq[2 * k + 1] != STATUS_VALID)
-			continue;
-		l = isl_basic_map_alloc_equality(bmap);
-		if (l < 0)
-			return isl_basic_map_free(bmap);
-		isl_seq_cpy(bmap->eq[l], info->bmap->eq[k], len);
+		if (info->eq[2 * k] == STATUS_VALID &&
+		    info->eq[2 * k + 1] == STATUS_VALID) {
+			l = isl_basic_map_alloc_equality(bmap);
+			if (l < 0)
+				return isl_basic_map_free(bmap);
+			isl_seq_cpy(bmap->eq[l], info->bmap->eq[k], len);
+		} else if (info->eq[2 * k] == STATUS_VALID) {
+			l = isl_basic_map_alloc_inequality(bmap);
+			if (l < 0)
+				return isl_basic_map_free(bmap);
+			isl_seq_neg(bmap->ineq[l], info->bmap->eq[k], len);
+		} else if (info->eq[2 * k + 1] == STATUS_VALID) {
+			l = isl_basic_map_alloc_inequality(bmap);
+			if (l < 0)
+				return isl_basic_map_free(bmap);
+			isl_seq_cpy(bmap->ineq[l], info->bmap->eq[k], len);
+		}
 	}
 
 	for (k = 0; k < info->bmap->n_ineq; ++k) {
@@ -276,14 +288,15 @@ static enum isl_change fuse(int i, int j, struct isl_coalesce_info *info,
 	struct isl_tab *fused_tab = NULL;
 	unsigned total = isl_basic_map_total_dim(info[i].bmap);
 	unsigned extra_rows = extra ? extra->n_row : 0;
+	unsigned n_eq, n_ineq;
 
 	if (j < i)
 		return fuse(j, i, info, extra, detect_equalities);
 
+	n_eq = info[i].bmap->n_eq + info[j].bmap->n_eq;
+	n_ineq = info[i].bmap->n_ineq + info[j].bmap->n_ineq;
 	fused = isl_basic_map_alloc_space(isl_space_copy(info[i].bmap->dim),
-		    info[i].bmap->n_div,
-		    info[i].bmap->n_eq + info[j].bmap->n_eq,
-		    info[i].bmap->n_ineq + info[j].bmap->n_ineq + extra_rows);
+		    info[i].bmap->n_div, n_eq, n_eq + n_ineq + extra_rows);
 	fused = add_valid_constraints(fused, &info[i], 1 + total);
 	fused = add_valid_constraints(fused, &info[j], 1 + total);
 	if (!fused)
