@@ -1184,6 +1184,26 @@ __isl_give isl_basic_map *isl_basic_map_remove_duplicate_constraints(
 	return bmap;
 }
 
+/* Detect all pairs of inequalities that form an equality.
+ *
+ * isl_basic_map_remove_duplicate_constraints detects at most one such pair.
+ * Call it repeatedly while it is making progress.
+ */
+__isl_give isl_basic_map *isl_basic_map_detect_inequality_pairs(
+	__isl_take isl_basic_map *bmap, int *progress)
+{
+	int duplicate;
+
+	do {
+		duplicate = 0;
+		bmap = isl_basic_map_remove_duplicate_constraints(bmap,
+								&duplicate, 0);
+		if (progress && duplicate)
+			*progress = 1;
+	} while (duplicate);
+
+	return bmap;
+}
 
 /* Eliminate knowns divs from constraints where they appear with
  * a (positive or negative) unit coefficient.
