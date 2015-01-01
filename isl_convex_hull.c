@@ -595,8 +595,9 @@ static struct isl_basic_set *compute_facet(struct isl_set *set, isl_int *c)
 	set = isl_set_preimage(set, U);
 	facet = uset_convex_hull_wrap_bounded(set);
 	facet = isl_basic_set_preimage(facet, Q);
-	if (facet)
-		isl_assert(ctx, facet->n_eq == 0, goto error);
+	if (facet && facet->n_eq != 0)
+		isl_die(ctx, isl_error_internal, "unexpected equality",
+			return isl_basic_set_free(facet));
 	return facet;
 error:
 	isl_basic_set_free(facet);
