@@ -1303,6 +1303,7 @@ struct {
 			"-10 <= y <= 0}" },
 	{ 1, "{ [x,y] : 0 <= x,y <= 10; [5,y]: 4 <= y <= 11 }" },
 	{ 1, "{ [x,0,0] : -5 <= x <= 5; [0,y,1] : -5 <= y <= 5 }" },
+	{ 1, "{ [x,y] : 0 <= x <= 10 and 0 >= y >= -1 and x+y >= 0; [0,1] }" },
 };
 
 /* Test the functionality of isl_set_coalesce with the bounded wrapping
