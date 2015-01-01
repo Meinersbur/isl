@@ -226,6 +226,40 @@ enum isl_change {
 	isl_change_fuse,
 };
 
+/* Add the valid constraints of the basic map represented by "info"
+ * to "bmap".  "len" is the size of the constraints.
+ */
+static __isl_give isl_basic_map *add_valid_constraints(
+	__isl_take isl_basic_map *bmap, struct isl_coalesce_info *info,
+	unsigned len)
+{
+	int k, l;
+
+	if (!bmap)
+		return NULL;
+
+	for (k = 0; k < info->bmap->n_eq; ++k) {
+		if (info->eq[2 * k] != STATUS_VALID ||
+		    info->eq[2 * k + 1] != STATUS_VALID)
+			continue;
+		l = isl_basic_map_alloc_equality(bmap);
+		if (l < 0)
+			return isl_basic_map_free(bmap);
+		isl_seq_cpy(bmap->eq[l], info->bmap->eq[k], len);
+	}
+
+	for (k = 0; k < info->bmap->n_ineq; ++k) {
+		if (info->ineq[k] != STATUS_VALID)
+			continue;
+		l = isl_basic_map_alloc_inequality(bmap);
+		if (l < 0)
+			return isl_basic_map_free(bmap);
+		isl_seq_cpy(bmap->ineq[l], info->bmap->ineq[k], len);
+	}
+
+	return bmap;
+}
+
 /* Replace the pair of basic maps i and j by the basic map bounded
  * by the valid constraints in both basic maps and the constraints
  * in extra (if not NULL).
@@ -250,46 +284,10 @@ static enum isl_change fuse(int i, int j, struct isl_coalesce_info *info,
 		    info[i].bmap->n_div,
 		    info[i].bmap->n_eq + info[j].bmap->n_eq,
 		    info[i].bmap->n_ineq + info[j].bmap->n_ineq + extra_rows);
+	fused = add_valid_constraints(fused, &info[i], 1 + total);
+	fused = add_valid_constraints(fused, &info[j], 1 + total);
 	if (!fused)
 		goto error;
-
-	for (k = 0; k < info[i].bmap->n_eq; ++k) {
-		if (info[i].eq[2 * k] != STATUS_VALID ||
-		    info[i].eq[2 * k + 1] != STATUS_VALID)
-			continue;
-		l = isl_basic_map_alloc_equality(fused);
-		if (l < 0)
-			goto error;
-		isl_seq_cpy(fused->eq[l], info[i].bmap->eq[k], 1 + total);
-	}
-
-	for (k = 0; k < info[j].bmap->n_eq; ++k) {
-		if (info[j].eq[2 * k] != STATUS_VALID ||
-		    info[j].eq[2 * k + 1] != STATUS_VALID)
-			continue;
-		l = isl_basic_map_alloc_equality(fused);
-		if (l < 0)
-			goto error;
-		isl_seq_cpy(fused->eq[l], info[j].bmap->eq[k], 1 + total);
-	}
-
-	for (k = 0; k < info[i].bmap->n_ineq; ++k) {
-		if (info[i].ineq[k] != STATUS_VALID)
-			continue;
-		l = isl_basic_map_alloc_inequality(fused);
-		if (l < 0)
-			goto error;
-		isl_seq_cpy(fused->ineq[l], info[i].bmap->ineq[k], 1 + total);
-	}
-
-	for (k = 0; k < info[j].bmap->n_ineq; ++k) {
-		if (info[j].ineq[k] != STATUS_VALID)
-			continue;
-		l = isl_basic_map_alloc_inequality(fused);
-		if (l < 0)
-			goto error;
-		isl_seq_cpy(fused->ineq[l], info[j].bmap->ineq[k], 1 + total);
-	}
 
 	for (k = 0; k < info[i].bmap->n_div; ++k) {
 		int l = isl_basic_map_alloc_div(fused);
