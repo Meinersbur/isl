@@ -69,6 +69,11 @@ __isl_give isl_union_map *isl_schedule_constraints_get_validity(
 	__isl_keep isl_schedule_constraints *sc);
 __isl_give isl_union_map *isl_schedule_constraints_get_coincidence(
 	__isl_keep isl_schedule_constraints *sc);
+__isl_give isl_union_map *isl_schedule_constraints_get_conditional_validity(
+	__isl_keep isl_schedule_constraints *sc);
+__isl_give isl_union_map *
+isl_schedule_constraints_get_conditional_validity_condition(
+	__isl_keep isl_schedule_constraints *sc);
 
 void isl_schedule_constraints_dump(__isl_keep isl_schedule_constraints *sc);
 
