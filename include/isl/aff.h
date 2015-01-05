@@ -296,6 +296,8 @@ __isl_give isl_map *isl_pw_aff_eq_map(__isl_take isl_pw_aff *pa1,
 	__isl_take isl_pw_aff *pa2);
 __isl_give isl_map *isl_pw_aff_lt_map(__isl_take isl_pw_aff *pa1,
 	__isl_take isl_pw_aff *pa2);
+__isl_give isl_map *isl_pw_aff_gt_map(__isl_take isl_pw_aff *pa1,
+	__isl_take isl_pw_aff *pa2);
 
 __isl_give isl_pw_aff *isl_pw_aff_read_from_str(isl_ctx *ctx, const char *str);
 __isl_give isl_printer *isl_printer_print_pw_aff(__isl_take isl_printer *p,

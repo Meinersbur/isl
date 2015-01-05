@@ -3061,6 +3061,27 @@ __isl_give isl_map *isl_pw_aff_lt_map(__isl_take isl_pw_aff *pa1,
 	return align_params_pw_pw_map_and(pa1, pa2, &isl_pw_aff_lt_map_aligned);
 }
 
+/* Return a map containing pairs of elements in the domains of "pa1" and "pa2"
+ * where the function value of "pa1" is greater than the function value
+ * of "pa2".
+ * The parameters of "pa1" and "pa2" are assumed to have been aligned.
+ */
+static __isl_give isl_map *isl_pw_aff_gt_map_aligned(__isl_take isl_pw_aff *pa1,
+	__isl_take isl_pw_aff *pa2)
+{
+	return isl_pw_aff_order_map_aligned(pa1, pa2, &isl_pw_aff_gt_set);
+}
+
+/* Return a map containing pairs of elements in the domains of "pa1" and "pa2"
+ * where the function value of "pa1" is greater than the function value
+ * of "pa2".
+ */
+__isl_give isl_map *isl_pw_aff_gt_map(__isl_take isl_pw_aff *pa1,
+	__isl_take isl_pw_aff *pa2)
+{
+	return align_params_pw_pw_map_and(pa1, pa2, &isl_pw_aff_gt_map_aligned);
+}
+
 /* Return a set containing those elements in the shared domain
  * of the elements of list1 and list2 where each element in list1
  * has the relation specified by "fn" with each element in list2.
