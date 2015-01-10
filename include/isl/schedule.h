@@ -65,6 +65,8 @@ __isl_null isl_schedule_constraints *isl_schedule_constraints_free(
 
 isl_ctx *isl_schedule_constraints_get_ctx(
 	__isl_keep isl_schedule_constraints *sc);
+__isl_give isl_union_map *isl_schedule_constraints_get_validity(
+	__isl_keep isl_schedule_constraints *sc);
 
 void isl_schedule_constraints_dump(__isl_keep isl_schedule_constraints *sc);
 
