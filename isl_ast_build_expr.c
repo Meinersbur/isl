@@ -1535,7 +1535,7 @@ struct isl_from_pw_aff_data {
  * If this is the last pair, then data->next is set to evaluate aff
  * and the domain is ignored.
  * Otherwise, data->next is set to a select operation that selects
- * an isl_ast_expr correponding to "aff" on "set" and to an expression
+ * an isl_ast_expr corresponding to "aff" on "set" and to an expression
  * that will be filled in by later calls otherwise.
  *
  * In both cases, the constraints of "set" are added to the generated
