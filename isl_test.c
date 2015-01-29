@@ -1508,6 +1508,27 @@ struct {
 				"i <= 4j + 2 }" },
 	{ 1, "{ [c0] : (exists (e0 : c0 - 1 <= 3e0 <= c0)) or "
 		"(exists (e0 : 3e0 = -2 + c0)) }" },
+	{ 0, "[n, b0, t0] -> "
+		"{ [i0, i1, i2, i3, i4, i5, i6, i7, i8, i9, i10, i11, i12] : "
+		"(exists (e0 = floor((-32b0 + i4)/1048576), "
+		"e1 = floor((i8)/32): 1048576e0 = -32b0 + i4 and 32e1 = i8 and "
+		"n <= 2147483647 and b0 <= 32767 and b0 >= 0 and "
+		"32b0 <= -2 + n and t0 <= 31 and t0 >= 0 and i0 >= 8 + n and "
+		"3i4 <= -96 + 3t0 + i0 and 3i4 >= -95 - n + 3t0 + i0 and "
+		"i8 >= -157 + i0 - 4i4 and i8 >= 0 and "
+		"i8 <= -33 + i0 - 4i4 and 3i8 <= -91 + 4n - i0)) or "
+		"(exists (e0 = floor((-32b0 + i4)/1048576), "
+		"e1 = floor((i8)/32): 1048576e0 = -32b0 + i4 and 32e1 = i8 and "
+		"n <= 2147483647 and b0 <= 32767 and b0 >= 0 and "
+		"32b0 <= -2 + n and t0 <= 31 and t0 >= 0 and i0 <= 7 + n and "
+		"4i4 <= -3 + i0 and 3i4 <= -96 + 3t0 + i0 and "
+		"3i4 >= -95 - n + 3t0 + i0 and i8 >= -157 + i0 - 4i4 and "
+		"i8 >= 0 and i8 <= -4 + i0 - 3i4 and i8 <= -41 + i0));"
+		"[i0, i1, i2, i3, 0, i5, i6, i7, i8, i9, i10, i11, i12] : "
+		"(exists (e0 = floor((i8)/32): b0 = 0 and 32e0 = i8 and "
+		"n <= 2147483647 and t0 <= 31 and t0 >= 0 and i0 >= 11 and "
+		"i0 >= 96 - 3t0 and i0 <= 95 + n - 3t0 and i0 <= 7 + n and "
+		"i8 >= -40 + i0 and i8 <= -10 + i0)) }" },
 };
 
 /* Test the functionality of isl_set_coalesce.
