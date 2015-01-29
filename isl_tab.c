@@ -3154,10 +3154,21 @@ enum isl_lp_result isl_tab_min(struct isl_tab *tab,
 	return res;
 }
 
+/* Is the constraint at position "con" marked as being redundant?
+ * If it is marked as representing an equality, then it is not
+ * considered to be redundant.
+ * Note that isl_tab_mark_redundant marks both the isl_tab_var as
+ * redundant and moves the corresponding row into the first
+ * tab->n_redundant positions (or removes the row, assigning it index -1),
+ * so the final test is actually redundant itself.
+ */
 int isl_tab_is_redundant(struct isl_tab *tab, int con)
 {
 	if (!tab)
 		return -1;
+	if (con < 0 || con >= tab->n_con)
+		isl_die(isl_tab_get_ctx(tab), isl_error_invalid,
+			"position out of bounds", return -1);
 	if (tab->con[con].is_zero)
 		return 0;
 	if (tab->con[con].is_redundant)
