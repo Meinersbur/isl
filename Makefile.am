@@ -1,8 +1,15 @@
 if HAVE_CLANG
     MAYBE_INTERFACE = interface
 endif
-SUBDIRS = . $(MAYBE_INTERFACE) doc
-DIST_SUBDIRS = $(MAYBE_INTERFACE) doc
+SUBDIRS = $(MAYBE_INTERFACE) doc
+
+# Do not traverse optional subdirectories with 'make dist'
+# These might not be configured, therefore would fail
+# In order to ensure that their content lands in the distribution, their content
+# is added to EXTRA_DIST
+# NOTE: The automake manual says there is no reason to not include all of 
+# SUBDIRS to DIST_SUBDIRS, but 'make distcheck' won't work otherwise.
+DIST_SUBDIRS = doc
 
 ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = nostdinc subdir-objects
@@ -275,6 +282,17 @@ deprecated_HEADERS = \
 	include/isl/deprecated/val_int.h \
 	include/isl/deprecated/vec_int.h
 
+CLEANFILES = \
+	gitversion.h
+
+DISTCLEANFILES = \
+	isl-uninstalled.sh \
+	isl-uninstalled.pc \
+	isl.pc \
+	isl.pc.in \
+	include/isl/stdint.h
+
+
 EXTRA_DIST = \
 	LICENSE \
 	isl_config_post.h \
@@ -306,6 +324,13 @@ EXTRA_DIST = \
 	imath/imrat.h \
 	interface/all.h \
 	interface/isl.py.top \
+	interface/extract_interface.cc \
+	interface/extract_interface.h \
+	interface/isl.py \
+	interface/Makefile.am \
+	interface/Makefile.in \
+	interface/python.cc \
+	interface/python.h \
 	test_inputs
 
 dist-hook:
@@ -328,3 +353,11 @@ install-data-local: $(srcdir)/isl.py
 		$(DESTDIR)$(libdir)/$$libisl-gdb.py; \
 	test -z "$(libdir)" || $(MKDIR_P) "$(DESTDIR)$(libdir)"; \
 	$(INSTALL_DATA) $(srcdir)/isl.py $(DESTDIR)$(libdir)/$$libisl-gdb.py; esac
+
+uninstall-local:
+	@libisl=`sed -ne "/^library_names=/{s/.*='//;s/'$$//;s/ .*//;p;}" \
+	$(builddir)/libisl.la`; \
+	if test -n "$$libisl"; then \
+		echo " ( cd '$(DESTDIR)$(libdir)' && rm $$libisl-gdb.py)"; \
+		( cd '$(DESTDIR)$(libdir)' && rm $$libisl-gdb.py); \
+	fi
