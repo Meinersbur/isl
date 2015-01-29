@@ -1839,15 +1839,22 @@ static int drop_row(struct isl_tab *tab, int row)
 	return 0;
 }
 
-/* Drop the variable in column "col".
+/* Drop the variable in column "col" along with the column.
+ * The column is removed first because it may need to be moved
+ * into the last position and this process requires
+ * the contents of the col_var array in a state
+ * before the removal of the variable.
  */
 static int drop_col(struct isl_tab *tab, int col)
 {
-	if (var_drop_entry(tab, tab->col_var[col]) < 0)
-		return -1;
+	int var;
+
+	var = tab->col_var[col];
 	if (col != tab->n_col - 1)
 		swap_cols(tab, col, tab->n_col - 1);
 	tab->n_col--;
+	if (var_drop_entry(tab, var) < 0)
+		return -1;
 	return 0;
 }
 

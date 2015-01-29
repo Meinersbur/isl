@@ -1531,6 +1531,45 @@ struct {
 		"i8 >= -40 + i0 and i8 <= -10 + i0)) }" },
 };
 
+/* A specialized coalescing test case that would result
+ * in a segmentation fault or a failed assertion in earlier versions of isl.
+ */
+static int test_coalesce_special(struct isl_ctx *ctx)
+{
+	const char *str;
+	isl_map *map1, *map2;
+
+	str = "[y] -> { [S_L220_OUT[] -> T7[]] -> "
+	    "[[S_L309_IN[] -> T11[]] -> ce_imag2[1, o1]] : "
+	    "(y = 201 and o1 <= 239 and o1 >= 212) or "
+	    "(exists (e0 = [(y)/3]: 3e0 = y and y <= 198 and y >= 3 and "
+		"o1 <= 239 and o1 >= 212)) or "
+	    "(exists (e0 = [(y)/3]: 3e0 = y and y <= 201 and y >= 3 and "
+		"o1 <= 241 and o1 >= 240));"
+	    "[S_L220_OUT[] -> T7[]] -> "
+	    "[[S_L309_IN[] -> T11[]] -> ce_imag2[0, o1]] : "
+	    "(y = 2 and o1 <= 241 and o1 >= 212) or "
+	    "(exists (e0 = [(-2 + y)/3]: 3e0 = -2 + y and y <= 200 and "
+		"y >= 5 and o1 <= 241 and o1 >= 212)) }";
+	map1 = isl_map_read_from_str(ctx, str);
+	map1 = isl_map_align_divs(map1);
+	map1 = isl_map_coalesce(map1);
+	str = "[y] -> { [S_L220_OUT[] -> T7[]] -> "
+	    "[[S_L309_IN[] -> T11[]] -> ce_imag2[o0, o1]] : "
+	    "exists (e0 = [(-1 - y + o0)/3]: 3e0 = -1 - y + o0 and "
+		"y <= 201 and o0 <= 2 and o1 >= 212 and o1 <= 241 and "
+		"o0 >= 3 - y and o0 <= -2 + y and o0 >= 0) }";
+	map2 = isl_map_read_from_str(ctx, str);
+	map2 = isl_map_union(map2, map1);
+	map2 = isl_map_align_divs(map2);
+	map2 = isl_map_coalesce(map2);
+	isl_map_free(map2);
+	if (!map2)
+		return -1;
+
+	return 0;
+}
+
 /* Test the functionality of isl_set_coalesce.
  * That is, check that the output is always equal to the input
  * and in some cases that the result consists of a single disjunct.
@@ -1547,6 +1586,8 @@ static int test_coalesce(struct isl_ctx *ctx)
 	}
 
 	if (test_coalesce_unbounded_wrapping(ctx) < 0)
+		return -1;
+	if (test_coalesce_special(ctx) < 0)
 		return -1;
 
 	return 0;
