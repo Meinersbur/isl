@@ -2126,31 +2126,49 @@ error:
 }
 
 /* Add variables to "tab" corresponding to the elements in "list"
- * that are not set to NaN.  The value of the added variable
- * is fixed to the purely affine expression defined by the element.
+ * that are not set to NaN.
  * "dim" is the offset in the variables of "tab" where we should
  * start considering the elements in "list".
  * When this function returns, the total number of variables in "tab"
  * is equal to "dim" plus the number of elements in "list".
  */
-static int add_subs(struct isl_tab *tab, __isl_keep isl_aff_list *list, int dim)
+static int add_sub_vars(struct isl_tab *tab, __isl_keep isl_aff_list *list,
+	int dim)
 {
-	int i, extra;
+	int i, n;
+
+	n = isl_aff_list_n_aff(list);
+	for (i = 0; i < n; ++i) {
+		int is_nan;
+		isl_aff *aff;
+
+		aff = isl_aff_list_get_aff(list, i);
+		is_nan = isl_aff_is_nan(aff);
+		isl_aff_free(aff);
+		if (is_nan < 0)
+			return -1;
+
+		if (!is_nan && isl_tab_insert_var(tab, dim + i) < 0)
+			return -1;
+	}
+
+	return 0;
+}
+
+/* For each element in "list" that is not set to NaN, fix the corresponding
+ * variable in "tab" to the purely affine expression defined by the element.
+ * "dim" is the offset in the variables of "tab" where we should
+ * start considering the elements in "list".
+ */
+static int add_sub_equalities(struct isl_tab *tab,
+	__isl_keep isl_aff_list *list, int dim)
+{
+	int i, n;
 	isl_ctx *ctx;
 	isl_vec *sub;
 	isl_aff *aff;
-	int n;
-
-	if (!list)
-		return -1;
 
 	n = isl_aff_list_n_aff(list);
-	extra = n - (tab->n_var - dim);
-
-	if (isl_tab_extend_vars(tab, extra) < 0)
-		return -1;
-	if (isl_tab_extend_cons(tab, 2 * extra) < 0)
-		return -1;
 
 	ctx = isl_tab_get_ctx(tab);
 	sub = isl_vec_alloc(ctx, 1 + dim + n);
@@ -2166,8 +2184,6 @@ static int add_subs(struct isl_tab *tab, __isl_keep isl_aff_list *list, int dim)
 			isl_aff_free(aff);
 			continue;
 		}
-		if (isl_tab_insert_var(tab, dim + i) < 0)
-			goto error;
 		isl_seq_cpy(sub->el, aff->v->el + 1, 1 + dim);
 		isl_int_neg(sub->el[1 + dim + i], aff->v->el[0]);
 		if (isl_tab_add_eq(tab, sub->el) < 0)
@@ -2182,6 +2198,34 @@ error:
 	isl_aff_free(aff);
 	isl_vec_free(sub);
 	return -1;
+}
+
+/* Add variables to "tab" corresponding to the elements in "list"
+ * that are not set to NaN.  The value of the added variable
+ * is fixed to the purely affine expression defined by the element.
+ * "dim" is the offset in the variables of "tab" where we should
+ * start considering the elements in "list".
+ * When this function returns, the total number of variables in "tab"
+ * is equal to "dim" plus the number of elements in "list".
+ */
+static int add_subs(struct isl_tab *tab, __isl_keep isl_aff_list *list, int dim)
+{
+	int extra;
+	int n;
+
+	if (!list)
+		return -1;
+
+	n = isl_aff_list_n_aff(list);
+	extra = n - (tab->n_var - dim);
+
+	if (isl_tab_extend_vars(tab, extra) < 0)
+		return -1;
+	if (isl_tab_extend_cons(tab, 2 * extra) < 0)
+		return -1;
+	if (add_sub_vars(tab, list, dim) < 0)
+		return -1;
+	return add_sub_equalities(tab, list, dim);
 }
 
 /* Coalesce basic map "j" into basic map "i" after adding the extra integer
