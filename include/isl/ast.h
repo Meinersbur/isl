@@ -69,6 +69,10 @@ int isl_ast_expr_is_equal(__isl_keep isl_ast_expr *expr1,
 __isl_give isl_ast_expr *isl_ast_expr_substitute_ids(
 	__isl_take isl_ast_expr *expr, __isl_take isl_id_to_ast_expr *id2expr);
 
+__isl_give isl_printer *isl_ast_expr_print(__isl_keep isl_ast_expr *expr,
+	__isl_take isl_printer *p, __isl_take isl_ast_print_options *options);
+__isl_give isl_printer *isl_ast_expr_print_c(__isl_take isl_printer *p,
+	__isl_keep isl_ast_expr *expr, __isl_take isl_ast_print_options *options);
 __isl_give isl_printer *isl_printer_print_ast_expr(__isl_take isl_printer *p,
 	__isl_keep isl_ast_expr *expr);
 void isl_ast_expr_dump(__isl_keep isl_ast_expr *expr);
