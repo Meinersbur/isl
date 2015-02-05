@@ -3479,6 +3479,200 @@ __isl_give isl_multi_pw_aff *isl_multi_pw_aff_read_from_str(isl_ctx *ctx,
 	return mpa;
 }
 
+/* Read the body of an isl_union_pw_aff from "s" with parameter domain "dom".
+ */
+static __isl_give isl_union_pw_aff *read_union_pw_aff_with_dom(
+	struct isl_stream *s, __isl_take isl_set *dom, struct vars *v)
+{
+	isl_pw_aff *pa;
+	isl_union_pw_aff *upa = NULL;
+	isl_set *aff_dom;
+	int n;
+
+	n = v->n;
+	aff_dom = read_aff_domain(s, isl_set_copy(dom), v);
+	pa = read_pw_aff_with_dom(s, aff_dom, v);
+	vars_drop(v, v->n - n);
+
+	upa = isl_union_pw_aff_from_pw_aff(pa);
+
+	while (isl_stream_eat_if_available(s, ';')) {
+		isl_pw_aff *pa_i;
+		isl_union_pw_aff *upa_i;
+
+		n = v->n;
+		aff_dom = read_aff_domain(s, isl_set_copy(dom), v);
+		pa_i = read_pw_aff_with_dom(s, aff_dom, v);
+		vars_drop(v, v->n - n);
+
+		upa_i = isl_union_pw_aff_from_pw_aff(pa_i);
+		upa = isl_union_pw_aff_union_add(upa, upa_i);
+	}
+
+	isl_set_free(dom);
+	return upa;
+}
+
+/* This function is called for each element in a tuple inside
+ * isl_stream_read_multi_union_pw_aff.
+ *
+ * Read a '{', the union piecewise affine expression body and a '}' and
+ * add the isl_union_pw_aff to *list.
+ */
+static __isl_give isl_space *read_union_pw_aff_el(struct isl_stream *s,
+	struct vars *v, __isl_take isl_space *space, int rational, void *user)
+{
+	isl_set *dom;
+	isl_union_pw_aff *upa;
+	isl_union_pw_aff_list **list = (isl_union_pw_aff_list **) user;
+
+	dom = isl_set_universe(isl_space_params(isl_space_copy(space)));
+	if (isl_stream_eat(s, '{'))
+		goto error;
+	upa = read_union_pw_aff_with_dom(s, dom, v);
+	*list = isl_union_pw_aff_list_add(*list, upa);
+	if (isl_stream_eat(s, '}'))
+		return isl_space_free(space);
+	if (!*list)
+		return isl_space_free(space);
+	return space;
+error:
+	isl_set_free(dom);
+	return isl_space_free(space);
+}
+
+/* Do the next tokens in "s" correspond to an empty tuple?
+ * In particular, does the stream start with a '[', followed by a ']',
+ * not followed by a "->"?
+ */
+static int next_is_empty_tuple(struct isl_stream *s)
+{
+	struct isl_token *tok, *tok2, *tok3;
+	int is_empty_tuple = 0;
+
+	tok = isl_stream_next_token(s);
+	if (!tok)
+		return 0;
+	if (tok->type != '[') {
+		isl_stream_push_token(s, tok);
+		return 0;
+	}
+
+	tok2 = isl_stream_next_token(s);
+	if (tok2 && tok2->type == ']') {
+		tok3 = isl_stream_next_token(s);
+		is_empty_tuple = !tok || tok->type != ISL_TOKEN_TO;
+		if (tok3)
+			isl_stream_push_token(s, tok3);
+	}
+	if (tok2)
+		isl_stream_push_token(s, tok2);
+	isl_stream_push_token(s, tok);
+
+	return is_empty_tuple;
+}
+
+/* Do the next tokens in "s" correspond to a tuple of parameters?
+ * In particular, does the stream start with a '[' that is not
+ * followed by a '{' or a nested tuple?
+ */
+static int next_is_param_tuple(struct isl_stream *s)
+{
+	struct isl_token *tok, *tok2;
+	int is_tuple;
+
+	tok = isl_stream_next_token(s);
+	if (!tok)
+		return 0;
+	if (tok->type != '[' || next_is_tuple(s)) {
+		isl_stream_push_token(s, tok);
+		return 0;
+	}
+
+	tok2 = isl_stream_next_token(s);
+	is_tuple = tok2 && tok2->type != '{';
+	if (tok2)
+		isl_stream_push_token(s, tok2);
+	isl_stream_push_token(s, tok);
+
+	return is_tuple;
+}
+
+/* Read an isl_multi_union_pw_aff from "s".
+ *
+ * The input has the form
+ *
+ *	[{ [..] : ... ; [..] : ... }, { [..] : ... ; [..] : ... }]
+ *
+ * or
+ *
+ *	[..] -> [{ [..] : ... ; [..] : ... }, { [..] : ... ; [..] : ... }]
+ *
+ * We first check for the special case of an empty tuple "[]".
+ * Then we check if there are any parameters.
+ * Finally, we read the tuple, collecting the individual isl_union_pw_aff
+ * elements in a list and construct the result from the tuple space and
+ * the list.
+ */
+__isl_give isl_multi_union_pw_aff *isl_stream_read_multi_union_pw_aff(
+	struct isl_stream *s)
+{
+	struct vars *v;
+	isl_set *dom = NULL;
+	isl_space *space;
+	isl_multi_union_pw_aff *mupa = NULL;
+	isl_union_pw_aff_list *list;
+
+	if (next_is_empty_tuple(s)) {
+		if (isl_stream_eat(s, '['))
+			return NULL;
+		if (isl_stream_eat(s, ']'))
+			return NULL;
+		space = isl_space_set_alloc(s->ctx, 0, 0);
+		return isl_multi_union_pw_aff_zero(space);
+	}
+
+	v = vars_new(s->ctx);
+	if (!v)
+		return NULL;
+
+	dom = isl_set_universe(isl_space_params_alloc(s->ctx, 0));
+	if (next_is_param_tuple(s)) {
+		dom = read_map_tuple(s, dom, isl_dim_param, v, 1, 0);
+		if (isl_stream_eat(s, ISL_TOKEN_TO))
+			goto error;
+	}
+	space = isl_set_get_space(dom);
+	isl_set_free(dom);
+	list = isl_union_pw_aff_list_alloc(s->ctx, 0);
+	space = read_tuple_space(s, v, space, 1, 0,
+				&read_union_pw_aff_el, &list);
+	mupa = isl_multi_union_pw_aff_from_union_pw_aff_list(space, list);
+
+	vars_free(v);
+
+	return mupa;
+error:
+	vars_free(v);
+	isl_set_free(dom);
+	isl_multi_union_pw_aff_free(mupa);
+	return NULL;
+}
+
+/* Read an isl_multi_union_pw_aff from "str".
+ */
+__isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_read_from_str(
+	isl_ctx *ctx, const char *str)
+{
+	isl_multi_union_pw_aff *mupa;
+	struct isl_stream *s = isl_stream_new_str(ctx, str);
+	if (!s)
+		return NULL;
+	mupa = isl_stream_read_multi_union_pw_aff(s);
+	isl_stream_free(s);
+	return mupa;
+}
+
 __isl_give isl_union_pw_qpolynomial *isl_stream_read_union_pw_qpolynomial(
 	struct isl_stream *s)
 {

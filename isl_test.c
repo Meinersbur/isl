@@ -1508,7 +1508,67 @@ struct {
 				"i <= 4j + 2 }" },
 	{ 1, "{ [c0] : (exists (e0 : c0 - 1 <= 3e0 <= c0)) or "
 		"(exists (e0 : 3e0 = -2 + c0)) }" },
+	{ 0, "[n, b0, t0] -> "
+		"{ [i0, i1, i2, i3, i4, i5, i6, i7, i8, i9, i10, i11, i12] : "
+		"(exists (e0 = floor((-32b0 + i4)/1048576), "
+		"e1 = floor((i8)/32): 1048576e0 = -32b0 + i4 and 32e1 = i8 and "
+		"n <= 2147483647 and b0 <= 32767 and b0 >= 0 and "
+		"32b0 <= -2 + n and t0 <= 31 and t0 >= 0 and i0 >= 8 + n and "
+		"3i4 <= -96 + 3t0 + i0 and 3i4 >= -95 - n + 3t0 + i0 and "
+		"i8 >= -157 + i0 - 4i4 and i8 >= 0 and "
+		"i8 <= -33 + i0 - 4i4 and 3i8 <= -91 + 4n - i0)) or "
+		"(exists (e0 = floor((-32b0 + i4)/1048576), "
+		"e1 = floor((i8)/32): 1048576e0 = -32b0 + i4 and 32e1 = i8 and "
+		"n <= 2147483647 and b0 <= 32767 and b0 >= 0 and "
+		"32b0 <= -2 + n and t0 <= 31 and t0 >= 0 and i0 <= 7 + n and "
+		"4i4 <= -3 + i0 and 3i4 <= -96 + 3t0 + i0 and "
+		"3i4 >= -95 - n + 3t0 + i0 and i8 >= -157 + i0 - 4i4 and "
+		"i8 >= 0 and i8 <= -4 + i0 - 3i4 and i8 <= -41 + i0));"
+		"[i0, i1, i2, i3, 0, i5, i6, i7, i8, i9, i10, i11, i12] : "
+		"(exists (e0 = floor((i8)/32): b0 = 0 and 32e0 = i8 and "
+		"n <= 2147483647 and t0 <= 31 and t0 >= 0 and i0 >= 11 and "
+		"i0 >= 96 - 3t0 and i0 <= 95 + n - 3t0 and i0 <= 7 + n and "
+		"i8 >= -40 + i0 and i8 <= -10 + i0)) }" },
 };
+
+/* A specialized coalescing test case that would result
+ * in a segmentation fault or a failed assertion in earlier versions of isl.
+ */
+static int test_coalesce_special(struct isl_ctx *ctx)
+{
+	const char *str;
+	isl_map *map1, *map2;
+
+	str = "[y] -> { [S_L220_OUT[] -> T7[]] -> "
+	    "[[S_L309_IN[] -> T11[]] -> ce_imag2[1, o1]] : "
+	    "(y = 201 and o1 <= 239 and o1 >= 212) or "
+	    "(exists (e0 = [(y)/3]: 3e0 = y and y <= 198 and y >= 3 and "
+		"o1 <= 239 and o1 >= 212)) or "
+	    "(exists (e0 = [(y)/3]: 3e0 = y and y <= 201 and y >= 3 and "
+		"o1 <= 241 and o1 >= 240));"
+	    "[S_L220_OUT[] -> T7[]] -> "
+	    "[[S_L309_IN[] -> T11[]] -> ce_imag2[0, o1]] : "
+	    "(y = 2 and o1 <= 241 and o1 >= 212) or "
+	    "(exists (e0 = [(-2 + y)/3]: 3e0 = -2 + y and y <= 200 and "
+		"y >= 5 and o1 <= 241 and o1 >= 212)) }";
+	map1 = isl_map_read_from_str(ctx, str);
+	map1 = isl_map_align_divs(map1);
+	map1 = isl_map_coalesce(map1);
+	str = "[y] -> { [S_L220_OUT[] -> T7[]] -> "
+	    "[[S_L309_IN[] -> T11[]] -> ce_imag2[o0, o1]] : "
+	    "exists (e0 = [(-1 - y + o0)/3]: 3e0 = -1 - y + o0 and "
+		"y <= 201 and o0 <= 2 and o1 >= 212 and o1 <= 241 and "
+		"o0 >= 3 - y and o0 <= -2 + y and o0 >= 0) }";
+	map2 = isl_map_read_from_str(ctx, str);
+	map2 = isl_map_union(map2, map1);
+	map2 = isl_map_align_divs(map2);
+	map2 = isl_map_coalesce(map2);
+	isl_map_free(map2);
+	if (!map2)
+		return -1;
+
+	return 0;
+}
 
 /* Test the functionality of isl_set_coalesce.
  * That is, check that the output is always equal to the input
@@ -1526,6 +1586,8 @@ static int test_coalesce(struct isl_ctx *ctx)
 	}
 
 	if (test_coalesce_unbounded_wrapping(ctx) < 0)
+		return -1;
+	if (test_coalesce_special(ctx) < 0)
 		return -1;
 
 	return 0;

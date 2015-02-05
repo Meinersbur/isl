@@ -1578,8 +1578,6 @@ int isl_val_check_match_domain_space(__isl_keep isl_val *v,
 #define BASE val
 
 #define NO_DOMAIN
-#define NO_INTERSECT_DOMAIN
-#define NO_GIST
 #define NO_IDENTITY
 #define NO_FROM_BASE
 #define NO_MOVE_DIMS

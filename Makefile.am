@@ -301,8 +301,15 @@ EXTRA_DIST = \
 	isl_list_templ.c \
 	isl_list_templ.h \
 	isl_map_lexopt_templ.c \
+	isl_multi_macro.h \
 	isl_multi_templ.c \
 	isl_multi_templ.h \
+	isl_multi_apply_templ.c \
+	isl_multi_apply_set.c \
+	isl_multi_apply_union_set.c \
+	isl_multi_floor.c \
+	isl_multi_gist.c \
+	isl_multi_intersect.c \
 	print_templ.c \
 	isl_power_templ.c \
 	isl_pw_templ.c \

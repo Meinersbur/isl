@@ -2126,31 +2126,49 @@ error:
 }
 
 /* Add variables to "tab" corresponding to the elements in "list"
- * that are not set to NaN.  The value of the added variable
- * is fixed to the purely affine expression defined by the element.
+ * that are not set to NaN.
  * "dim" is the offset in the variables of "tab" where we should
  * start considering the elements in "list".
  * When this function returns, the total number of variables in "tab"
  * is equal to "dim" plus the number of elements in "list".
  */
-static int add_subs(struct isl_tab *tab, __isl_keep isl_aff_list *list, int dim)
+static int add_sub_vars(struct isl_tab *tab, __isl_keep isl_aff_list *list,
+	int dim)
 {
-	int i, extra;
+	int i, n;
+
+	n = isl_aff_list_n_aff(list);
+	for (i = 0; i < n; ++i) {
+		int is_nan;
+		isl_aff *aff;
+
+		aff = isl_aff_list_get_aff(list, i);
+		is_nan = isl_aff_is_nan(aff);
+		isl_aff_free(aff);
+		if (is_nan < 0)
+			return -1;
+
+		if (!is_nan && isl_tab_insert_var(tab, dim + i) < 0)
+			return -1;
+	}
+
+	return 0;
+}
+
+/* For each element in "list" that is not set to NaN, fix the corresponding
+ * variable in "tab" to the purely affine expression defined by the element.
+ * "dim" is the offset in the variables of "tab" where we should
+ * start considering the elements in "list".
+ */
+static int add_sub_equalities(struct isl_tab *tab,
+	__isl_keep isl_aff_list *list, int dim)
+{
+	int i, n;
 	isl_ctx *ctx;
 	isl_vec *sub;
 	isl_aff *aff;
-	int n;
-
-	if (!list)
-		return -1;
 
 	n = isl_aff_list_n_aff(list);
-	extra = n - (tab->n_var - dim);
-
-	if (isl_tab_extend_vars(tab, extra) < 0)
-		return -1;
-	if (isl_tab_extend_cons(tab, 2 * extra) < 0)
-		return -1;
 
 	ctx = isl_tab_get_ctx(tab);
 	sub = isl_vec_alloc(ctx, 1 + dim + n);
@@ -2166,8 +2184,6 @@ static int add_subs(struct isl_tab *tab, __isl_keep isl_aff_list *list, int dim)
 			isl_aff_free(aff);
 			continue;
 		}
-		if (isl_tab_insert_var(tab, dim + i) < 0)
-			goto error;
 		isl_seq_cpy(sub->el, aff->v->el + 1, 1 + dim);
 		isl_int_neg(sub->el[1 + dim + i], aff->v->el[0]);
 		if (isl_tab_add_eq(tab, sub->el) < 0)
@@ -2184,12 +2200,66 @@ error:
 	return -1;
 }
 
+/* Add variables to info->tab corresponding to the elements in "list"
+ * that are not set to NaN.  The value of the added variable
+ * is fixed to the purely affine expression defined by the element.
+ * "dim" is the offset in the variables of info->tab where we should
+ * start considering the elements in "list".
+ * When this function returns, the total number of variables in info->tab
+ * is equal to "dim" plus the number of elements in "list".
+ * Additionally, add the div constraints that have been added info->bmap
+ * after the tableau was constructed to info->tab.  These constraints
+ * start at position "n_ineq" in info->bmap.
+ * The constraints need to be added to the tableau before
+ * the equalities assigning the purely affine expression
+ * because the position needs to match that in info->bmap.
+ * They are frozen because the corresponding added equality is a consequence
+ * of the two div constraints and the other equalities, meaning that
+ * the div constraints would otherwise get marked as redundant,
+ * while they are only redundant with respect to the extra equalities
+ * added to the tableau, which do not appear explicitly in the basic map.
+ */
+static int add_subs(struct isl_coalesce_info *info,
+	__isl_keep isl_aff_list *list, int dim, int n_ineq)
+{
+	int i, extra_var, extra_con;
+	int n;
+	unsigned n_eq = info->bmap->n_eq;
+
+	if (!list)
+		return -1;
+
+	n = isl_aff_list_n_aff(list);
+	extra_var = n - (info->tab->n_var - dim);
+	extra_con = info->bmap->n_ineq - n_ineq;
+
+	if (isl_tab_extend_vars(info->tab, extra_var) < 0)
+		return -1;
+	if (isl_tab_extend_cons(info->tab, extra_con + 2 * extra_var) < 0)
+		return -1;
+	if (add_sub_vars(info->tab, list, dim) < 0)
+		return -1;
+
+	for (i = n_ineq; i < info->bmap->n_ineq; ++i) {
+		if (isl_tab_add_ineq(info->tab, info->bmap->ineq[i]) < 0)
+			return -1;
+		if (isl_tab_freeze_constraint(info->tab, n_eq + i) < 0)
+			return -1;
+	}
+
+	return add_sub_equalities(info->tab, list, dim);
+}
+
 /* Coalesce basic map "j" into basic map "i" after adding the extra integer
  * divisions in "i" but not in "j" to basic map "j", with values
  * specified by "list".  The total number of elements in "list"
  * is equal to the number of integer divisions in "i", while the number
  * of NaN elements in the list is equal to the number of integer divisions
  * in "j".
+ * Adding extra integer divisions to "j" through isl_basic_map_align_divs
+ * also adds the corresponding div constraints.  These need to be added
+ * to the corresponding tableau as well in add_subs to maintain consistency.
+ *
  * If no coalescing can be performed, then we need to revert basic map "j"
  * to its original state.  We do the same if basic map "i" gets dropped
  * during the coalescing, even though this should not happen in practice
@@ -2203,8 +2273,10 @@ static enum isl_change coalesce_with_subs(int i, int j,
 	struct isl_tab_undo *snap;
 	unsigned dim;
 	enum isl_change change;
+	int n_ineq;
 
 	bmap_j = isl_basic_map_copy(info[j].bmap);
+	n_ineq = info[j].bmap->n_ineq;
 	info[j].bmap = isl_basic_map_align_divs(info[j].bmap, info[i].bmap);
 	if (!info[j].bmap)
 		goto error;
@@ -2213,7 +2285,7 @@ static enum isl_change coalesce_with_subs(int i, int j,
 
 	dim = isl_basic_map_dim(bmap_j, isl_dim_all);
 	dim -= isl_basic_map_dim(bmap_j, isl_dim_div);
-	if (add_subs(info[j].tab, list, dim) < 0)
+	if (add_subs(&info[j], list, dim, n_ineq) < 0)
 		goto error;
 
 	change = coalesce_local_pair(i, j, info);
