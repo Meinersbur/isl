@@ -3153,7 +3153,7 @@ To iterate over the base expressions in a union expression,
 use the following functions.
 
 	#include <isl/aff.h>
-	int isl_union_pw_aff_n_pw_multi_aff(
+	int isl_union_pw_aff_n_pw_aff(
 		__isl_keep isl_union_pw_aff *upa);
 	int isl_union_pw_aff_foreach_pw_aff(
 		__isl_keep isl_union_pw_aff *upa,
