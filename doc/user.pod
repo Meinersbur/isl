@@ -3167,13 +3167,13 @@ use the following functions.
 			    void *user), void *user);
 
 	#include <isl/polynomial.h>
-	int isl_union_pw_qplynomial_n_pw_qpolynomial(
+	int isl_union_pw_qpolynomial_n_pw_qpolynomial(
 		__isl_keep isl_union_pw_qpolynomial *upwqp);
 	int isl_union_pw_qpolynomial_foreach_pw_qpolynomial(
 		__isl_keep isl_union_pw_qpolynomial *upwqp,
 		int (*fn)(__isl_take isl_pw_qpolynomial *pwqp,
 			    void *user), void *user);
-	int isl_union_pw_qplynomial_fold_n_pw_qpolynomial_fold(
+	int isl_union_pw_qpolynomial_fold_n_pw_qpolynomial_fold(
 		__isl_keep isl_union_pw_qpolynomial_fold *upwf);
 	int isl_union_pw_qpolynomial_fold_foreach_pw_qpolynomial_fold(
 		__isl_keep isl_union_pw_qpolynomial_fold *upwf,
