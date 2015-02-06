@@ -1536,7 +1536,7 @@ __isl_give isl_printer *isl_ast_expr_print(__isl_keep isl_ast_expr *expr,
 	if (!options)
 		goto error;
 	if (options->print_expr)
-		return options->print_expr(p, isl_ast_print_options_copy(options), expr, options->print_expr_user);
+		return options->print_expr(p, options, expr, options->print_expr_user);
 
 	if (!expr)
 		goto error;
@@ -1562,7 +1562,7 @@ __isl_give isl_printer *isl_printer_print_ast_expr(__isl_take isl_printer *p,
 	if (!options)
 		goto error;
 
-	p = isl_ast_expr_print(expr, p, isl_ast_print_options_copy(options));
+	p = isl_ast_expr_print(expr, p, options);
 	return p;
 error:
 	isl_printer_free(p);

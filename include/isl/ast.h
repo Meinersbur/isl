@@ -139,6 +139,12 @@ __isl_give isl_ast_print_options *isl_ast_print_options_set_print_for(
 		__isl_take isl_ast_print_options *options,
 		__isl_keep isl_ast_node *node, void *user),
 	void *user);
+__isl_give isl_ast_print_options *isl_ast_print_options_set_print_expr(
+	__isl_take isl_ast_print_options *options,
+	__isl_give isl_printer *(*print_expr)(__isl_take isl_printer *p,
+		__isl_take isl_ast_print_options *options,
+		__isl_keep isl_ast_expr *expr, void *user),
+	void *user);
 
 int isl_ast_node_foreach_ast_op_type(__isl_keep isl_ast_node *node,
 	int (*fn)(enum isl_ast_op_type type, void *user), void *user);
