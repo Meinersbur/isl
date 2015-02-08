@@ -1372,7 +1372,8 @@ static int sub_expr_need_parens(enum isl_ast_op_type op,
  * If "left" is set, then "expr" is the left-most operand.
  */
 static __isl_give isl_printer *print_sub_expr(__isl_take isl_printer *p,
-	enum isl_ast_op_type op, __isl_keep isl_ast_expr *expr, int left, __isl_keep isl_ast_print_options *options)
+	enum isl_ast_op_type op, __isl_keep isl_ast_expr *expr, int left,
+	__isl_keep isl_ast_print_options *options)
 {
 	int need_parens;
 
@@ -1397,7 +1398,8 @@ static __isl_give isl_printer *print_min_max(__isl_take isl_printer *p,
 		p = isl_printer_print_str(p, op_str[expr->u.op.op]);
 		p = isl_printer_print_str(p, "(");
 	}
-	p = isl_ast_expr_print(expr->u.op.args[0], p, isl_ast_print_options_copy(options));
+	p = isl_ast_expr_print(
+		expr->u.op.args[0], p, isl_ast_print_options_copy(options));
 	for (i = 1; i < expr->u.op.n_arg; ++i) {
 		p = isl_printer_print_str(p, ", ");
 		p = isl_printer_print_ast_expr(p, expr->u.op.args[i]);
@@ -1416,12 +1418,14 @@ static __isl_give isl_printer *print_call(__isl_take isl_printer *p,
 {
 	int i = 0;
 
-	p = isl_ast_expr_print(expr->u.op.args[0], p, isl_ast_print_options_copy(options));
+	p = isl_ast_expr_print(
+		expr->u.op.args[0], p, isl_ast_print_options_copy(options));
 	p = isl_printer_print_str(p, "(");
 	for (i = 1; i < expr->u.op.n_arg; ++i) {
 		if (i != 1)
 			p = isl_printer_print_str(p, ", ");
-		p = isl_ast_expr_print(expr->u.op.args[i], p, isl_ast_print_options_copy(options));
+		p = isl_ast_expr_print(
+			expr->u.op.args[i], p, isl_ast_print_options_copy(options));
 	}
 	p = isl_printer_print_str(p, ")");
 
@@ -1440,7 +1444,8 @@ static __isl_give isl_printer *print_access(__isl_take isl_printer *p,
 	p = isl_printer_print_ast_expr(p, expr->u.op.args[0]);
 	for (i = 1; i < expr->u.op.n_arg; ++i) {
 		p = isl_printer_print_str(p, "[");
-		p = isl_ast_expr_print(expr->u.op.args[i], p, isl_ast_print_options_copy(options));
+		p = isl_ast_expr_print(
+			expr->u.op.args[i], p, isl_ast_print_options_copy(options));
 		p = isl_printer_print_str(p, "]");
 	}
 
@@ -1449,8 +1454,10 @@ static __isl_give isl_printer *print_access(__isl_take isl_printer *p,
 
 /* Print "expr" to "p" using c-syntax for the current node.
  *
- * The print_expr callback is ignored for the current expr, but still considered for child nodes. print_expr callbacks should call this function if they have
- * no custom syntax for expr's type. It is also the default implementation if no print_expr callback has been defined.
+ * The print_expr callback is ignored for the current expr, but still considered
+ *for child nodes. print_expr callbacks should call this function if they have
+ * no custom syntax for expr's type. It is also the default implementation if no
+ *print_expr callback has been defined.
  */
 __isl_give isl_printer *isl_ast_expr_print_c(__isl_take isl_printer *p,
 	__isl_keep isl_ast_expr *expr, __isl_take isl_ast_print_options *options)
@@ -1470,15 +1477,17 @@ __isl_give isl_printer *isl_ast_expr_print_c(__isl_take isl_printer *p,
 		}
 		if (expr->u.op.n_arg == 1) {
 			p = isl_printer_print_str(p, op_str[expr->u.op.op]);
-			p = print_sub_expr(p, expr->u.op.op,
-						expr->u.op.args[0], 0, options);
+			p = print_sub_expr(
+				p, expr->u.op.op, expr->u.op.args[0], 0, options);
 			break;
 		}
 		if (expr->u.op.op == isl_ast_op_fdiv_q) {
 			p = isl_printer_print_str(p, "floord(");
-			p = isl_ast_expr_print(expr->u.op.args[0], p, isl_ast_print_options_copy(options));
+			p = isl_ast_expr_print(
+				expr->u.op.args[0], p, isl_ast_print_options_copy(options));
 			p = isl_printer_print_str(p, ", ");
-			p = isl_ast_expr_print(expr->u.op.args[1], p, isl_ast_print_options_copy(options));
+			p = isl_ast_expr_print(
+				expr->u.op.args[1], p, isl_ast_print_options_copy(options));
 			p = isl_printer_print_str(p, ")");
 			break;
 		}
@@ -1489,11 +1498,14 @@ __isl_give isl_printer *isl_ast_expr_print_c(__isl_take isl_printer *p,
 		}
 		if (expr->u.op.op == isl_ast_op_cond ||
 		    expr->u.op.op == isl_ast_op_select) {
-			p = isl_ast_expr_print(expr->u.op.args[0], p, isl_ast_print_options_copy(options));
+			p = isl_ast_expr_print(
+				expr->u.op.args[0], p, isl_ast_print_options_copy(options));
 			p = isl_printer_print_str(p, " ? ");
-			p = isl_ast_expr_print(expr->u.op.args[1], p, isl_ast_print_options_copy(options));
+			p = isl_ast_expr_print(
+				expr->u.op.args[1], p, isl_ast_print_options_copy(options));
 			p = isl_printer_print_str(p, " : ");
-			p = isl_ast_expr_print(expr->u.op.args[2], p, isl_ast_print_options_copy(options));
+			p = isl_ast_expr_print(
+				expr->u.op.args[2], p, isl_ast_print_options_copy(options));
 			break;
 		}
 		if (expr->u.op.n_arg != 2)
@@ -1548,10 +1560,11 @@ error:
 	return NULL;
 }
 
-/* For compatibility; use isl_ast_expr_print instead which supports printing options
+/* For compatibility; use isl_ast_expr_print instead which supports printing
+ * options
  */
-__isl_give isl_printer *isl_printer_print_ast_expr(__isl_take isl_printer *p,
-	__isl_keep isl_ast_expr *expr)
+__isl_give isl_printer *isl_printer_print_ast_expr(
+	__isl_take isl_printer *p, __isl_keep isl_ast_expr *expr)
 {
 	isl_ast_print_options *options;
 
@@ -1769,13 +1782,16 @@ static __isl_give isl_printer *print_for_c(__isl_take isl_printer *p,
 		p = isl_printer_print_str(p, " ");
 		p = isl_printer_print_str(p, name);
 		p = isl_printer_print_str(p, " = ");
-		p = isl_ast_expr_print(node->u.f.init, p, isl_ast_print_options_copy(options));
+		p = isl_ast_expr_print(
+			node->u.f.init, p, isl_ast_print_options_copy(options));
 		p = isl_printer_print_str(p, "; ");
-		p = isl_ast_expr_print(node->u.f.cond, p, isl_ast_print_options_copy(options));
+		p = isl_ast_expr_print(
+			node->u.f.cond, p, isl_ast_print_options_copy(options));
 		p = isl_printer_print_str(p, "; ");
 		p = isl_printer_print_str(p, name);
 		p = isl_printer_print_str(p, " += ");
-		p = isl_ast_expr_print(node->u.f.inc, p, isl_ast_print_options_copy(options));
+		p = isl_ast_expr_print(
+			node->u.f.inc, p, isl_ast_print_options_copy(options));
 		p = isl_printer_print_str(p, ")");
 		p = print_body_c(p, node->u.f.body, NULL, options);
 	} else {
@@ -1789,7 +1805,8 @@ static __isl_give isl_printer *print_for_c(__isl_take isl_printer *p,
 		p = isl_printer_print_str(p, " ");
 		p = isl_printer_print_str(p, name);
 		p = isl_printer_print_str(p, " = ");
-		p = isl_ast_expr_print(node->u.f.init, p, isl_ast_print_options_copy(options));
+		p = isl_ast_expr_print(
+			node->u.f.init, p, isl_ast_print_options_copy(options));
 		p = isl_printer_print_str(p, ";");
 		p = isl_printer_end_line(p);
 		p = print_ast_node_c(p, node->u.f.body, options, 1, 0);
@@ -1810,7 +1827,8 @@ static __isl_give isl_printer *print_if_c(__isl_take isl_printer *p,
 	if (new_line)
 		p = isl_printer_start_line(p);
 	p = isl_printer_print_str(p, "if (");
-	p = isl_ast_expr_print(node->u.i.guard, p, isl_ast_print_options_copy(options));
+	p = isl_ast_expr_print(
+		node->u.i.guard, p, isl_ast_print_options_copy(options));
 	p = isl_printer_print_str(p, ")");
 	p = print_body_c(p, node->u.i.then, node->u.i.else_node, options);
 
@@ -1854,7 +1872,8 @@ static __isl_give isl_printer *print_ast_node_c(__isl_take isl_printer *p,
 					isl_ast_print_options_copy(options),
 					node, options->print_user_user);
 		p = isl_printer_start_line(p);
-		p = isl_ast_expr_print(node->u.e.expr, p, isl_ast_print_options_copy(options));
+		p = isl_ast_expr_print(
+			node->u.e.expr, p, isl_ast_print_options_copy(options));
 		p = isl_printer_print_str(p, ";");
 		p = isl_printer_end_line(p);
 		break;
