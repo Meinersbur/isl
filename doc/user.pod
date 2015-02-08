@@ -8187,6 +8187,14 @@ More advanced printing can be performed using the following functions.
 		__isl_keep isl_ast_node *node,
 		__isl_take isl_printer *p,
 		__isl_take isl_ast_print_options *options);
+	__isl_give isl_printer *isl_ast_expr_print(
+		__isl_keep isl_ast_expr *expr,
+		__isl_take isl_printer *p, 
+		__isl_take isl_ast_print_options *options);
+	__isl_give isl_printer *isl_ast_expr_print_c(
+		__isl_take isl_printer *p,
+		__isl_keep isl_ast_expr *expr, 
+		__isl_take isl_ast_print_options *options);
 
 While printing an C<isl_ast_node> in C<ISL_FORMAT_C>,
 C<isl> may print out an AST that makes use of macros such
@@ -8203,7 +8211,11 @@ C<isl_ast_node_print>, C<isl_ast_node_for_print> and
 C<isl_ast_node_if_print> print an C<isl_ast_node>
 in C<ISL_FORMAT_C>, but allow for some extra control
 through an C<isl_ast_print_options> object.
-This object can be created using the following functions.
+Also, C<isl_ast_expr_print> can be customized with such an object. 
+C<isl_ast_expr_print_c> is meant to be used by expression printer callbacks if
+they do not handle an expression, but use the default printer in 
+C<ISL_FORMAT_C>. Subexpression will again call trigger a callback.
+An C<isl_ast_print_options> object can be created using the following functions.
 
 	#include <isl/ast.h>
 	__isl_give isl_ast_print_options *
@@ -8231,12 +8243,23 @@ This object can be created using the following functions.
 			__isl_take isl_ast_print_options *options,
 			__isl_keep isl_ast_node *node, void *user),
 		void *user);
+	__isl_give isl_ast_print_options *
+		isl_ast_print_options_set_print_expr(
+		__isl_take isl_ast_print_options *options,
+		__isl_give isl_printer *(*print_expr)(
+			__isl_take isl_printer *p,
+			__isl_take isl_ast_print_options *options,
+			__isl_keep isl_ast_expr *expr, void *user),
+		void *user);
 
 The callback set by C<isl_ast_print_options_set_print_user>
 is called whenever a node of type C<isl_ast_node_user> needs to
 be printed.
 The callback set by C<isl_ast_print_options_set_print_for>
 is called whenever a node of type C<isl_ast_node_for> needs to
+be printed.
+The callback set by C<isl_ast_print_options_set_print_expr>
+is called whenever a node of type C<isl_ast_node_expr> needs to
 be printed.
 Note that C<isl_ast_node_for_print> will I<not> call the
 callback set by C<isl_ast_print_options_set_print_for> on the node
