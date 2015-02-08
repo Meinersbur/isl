@@ -3346,6 +3346,7 @@ The printer can be inspected using the following functions.
 		__isl_keep isl_printer *printer);
 	int isl_printer_get_output_format(
 		__isl_keep isl_printer *p);
+	int isl_printer_get_yaml_style(__isl_keep isl_printer *p);
 
 The behavior of the printer can be modified in various ways
 
@@ -3361,6 +3362,8 @@ The behavior of the printer can be modified in various ways
 		__isl_take isl_printer *p, const char *prefix);
 	__isl_give isl_printer *isl_printer_set_suffix(
 		__isl_take isl_printer *p, const char *suffix);
+	__isl_give isl_printer *isl_printer_set_yaml_style(
+		__isl_take isl_printer *p, int yaml_style);
 
 The C<output_format> may be either C<ISL_FORMAT_ISL>, C<ISL_FORMAT_OMEGA>,
 C<ISL_FORMAT_POLYLIB>, C<ISL_FORMAT_EXT_POLYLIB> or C<ISL_FORMAT_LATEX>
@@ -3374,6 +3377,9 @@ appear between those of the set variables and those
 of the parameters.
 The function C<isl_printer_indent> increases the indentation
 by the specified amount (which may be negative).
+The YAML style may be either C<ISL_YAML_STYLE_BLOCK> or
+C<ISL_YAML_STYLE_FLOW> and when we are printing something
+in YAML format.
 
 To actually print something, use
 
@@ -3472,6 +3478,34 @@ C<isl_printer_print_union_pw_qpolynomial_fold>, only C<ISL_FORMAT_ISL>
 is supported.
 In case of printing in C<ISL_FORMAT_C>, the user may want
 to set the names of all dimensions first.
+
+C<isl> also provides limited support for printing YAML documents,
+just enough for the internal use for printing such documents.
+
+	#include <isl/printer.h>
+	__isl_give isl_printer *isl_printer_yaml_start_mapping(
+		__isl_take isl_printer *p);
+	__isl_give isl_printer *isl_printer_yaml_end_mapping(
+		__isl_take isl_printer *p);
+	__isl_give isl_printer *isl_printer_yaml_start_sequence(
+		__isl_take isl_printer *p);
+	__isl_give isl_printer *isl_printer_yaml_end_sequence(
+		__isl_take isl_printer *p);
+	__isl_give isl_printer *isl_printer_yaml_next(
+		__isl_take isl_printer *p);
+
+A document is started by a call to either
+C<isl_printer_yaml_start_mapping> or C<isl_printer_yaml_start_sequence>.
+Anything printed to the printer after such a call belong to the
+first key of the mapping or the first element in the sequence.
+The function C<isl_printer_yaml_next> moves to the value if
+we are currently printing a mapping key, the next key if we
+are printing a value or the next element if we are printing
+an element in a sequence.
+Nested mappings and sequences are initiated by the same
+C<isl_printer_yaml_start_mapping> or C<isl_printer_yaml_start_sequence>.
+Each call to these functions needs to have a corresponding call to
+C<isl_printer_yaml_end_mapping> or C<isl_printer_yaml_end_sequence>.
 
 When called on a file printer, the following function flushes
 the file.  When called on a string printer, the buffer is cleared.

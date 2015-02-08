@@ -29,7 +29,7 @@ ISL_ARG_DEF(cat_options, struct cat_options, cat_options_args)
 int main(int argc, char **argv)
 {
 	struct isl_ctx *ctx;
-	struct isl_stream *s;
+	isl_stream *s;
 	struct isl_obj obj;
 	struct cat_options *options;
 	isl_printer *p;
