@@ -146,7 +146,10 @@ __isl_give isl_ast_print_options *isl_ast_print_options_set_print_for(
 
 /* Set the print_expr callback of "options" to "print_expr"
  *
- * If the callback is set, it will be called instead of the default expression printer. The custom expression printer can either handle the expression itself, or call isl_ast_expr_print_c to which will print the expression in C-format, but again call the custom handler for subexpressions.
+ * If the callback is set, it will be called instead of the default expression
+ *printer. The custom expression printer can either handle the expression
+ *itself, or call isl_ast_expr_print_c to which will print the expression in
+ *C-format, but again call the custom handler for subexpressions.
  */
 __isl_give isl_ast_print_options *isl_ast_print_options_set_print_expr(
 	__isl_take isl_ast_print_options *options,
