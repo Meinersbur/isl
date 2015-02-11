@@ -705,10 +705,28 @@ error:
 	return NULL;
 }
 
+/* Intersect "umap" with the parameter domain "set".
+ *
+ * If "set" does not have any constraints, then we can return immediately.
+ */
 __isl_give isl_union_map *isl_union_map_intersect_params(
 	__isl_take isl_union_map *umap, __isl_take isl_set *set)
 {
+	int is_universe;
+
+	is_universe = isl_set_plain_is_universe(set);
+	if (is_universe < 0)
+		goto error;
+	if (is_universe) {
+		isl_set_free(set);
+		return umap;
+	}
+
 	return gen_bin_set_op(umap, set, &intersect_params_entry);
+error:
+	isl_union_map_free(umap);
+	isl_set_free(set);
+	return NULL;
 }
 
 __isl_give isl_union_set *isl_union_set_intersect_params(
