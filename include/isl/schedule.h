@@ -42,6 +42,8 @@ __isl_give isl_schedule_constraints *isl_schedule_constraints_copy(
 	__isl_keep isl_schedule_constraints *sc);
 __isl_give isl_schedule_constraints *isl_schedule_constraints_on_domain(
 	__isl_take isl_union_set *domain);
+__isl_give isl_schedule_constraints *isl_schedule_constraints_set_context(
+	__isl_take isl_schedule_constraints *sc, __isl_take isl_set *context);
 __isl_give isl_schedule_constraints *isl_schedule_constraints_set_validity(
 	__isl_take isl_schedule_constraints *sc,
 	__isl_take isl_union_map *validity);

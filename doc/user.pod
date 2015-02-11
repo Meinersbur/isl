@@ -7771,6 +7771,10 @@ and manipulated using the following functions.
 	isl_schedule_constraints_on_domain(
 		__isl_take isl_union_set *domain);
 	__isl_give isl_schedule_constraints *
+	isl_schedule_constraints_set_context(
+		__isl_take isl_schedule_constraints *sc,
+		__isl_take isl_set *context);
+	__isl_give isl_schedule_constraints *
 	isl_schedule_constraints_set_validity(
 		__isl_take isl_schedule_constraints *sc,
 		__isl_take isl_union_map *validity);
@@ -7794,6 +7798,9 @@ and manipulated using the following functions.
 The initial C<isl_schedule_constraints> object created by
 C<isl_schedule_constraints_on_domain> does not impose any constraints.
 That is, it has an empty set of dependences.
+The function C<isl_schedule_constraints_set_context> allows the user
+to specify additional constraints on the parameters that may
+be assumed to hold during the construction of the schedule.
 The function C<isl_schedule_constraints_set_validity> replaces the
 validity dependences, mapping domain elements I<i> to domain
 elements that should be scheduled after I<i>.

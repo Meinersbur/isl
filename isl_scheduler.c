@@ -48,6 +48,8 @@ enum isl_edge_type {
 
 /* The constraints that need to be satisfied by a schedule on "domain".
  *
+ * "context" specifies extra constraints on the parameters.
+ *
  * "validity" constraints map domain elements i to domain elements
  * that should be scheduled after i.  (Hard constraint)
  * "proximity" constraints map domain elements i to domains elements
@@ -67,6 +69,7 @@ enum isl_edge_type {
  */
 struct isl_schedule_constraints {
 	isl_union_set *domain;
+	isl_set *context;
 
 	isl_union_map *constraint[isl_edge_last + 1];
 };
@@ -84,7 +87,8 @@ struct isl_schedule_constraints {
 		return NULL;
 
 	sc_copy->domain = isl_union_set_copy(sc->domain);
-	if (!sc_copy->domain)
+	sc_copy->context = isl_set_copy(sc->context);
+	if (!sc_copy->domain || !sc_copy->context)
 		return isl_schedule_constraints_free(sc_copy);
 
 	for (i = isl_edge_first; i <= isl_edge_last; ++i) {
@@ -119,6 +123,7 @@ __isl_give isl_schedule_constraints *isl_schedule_constraints_on_domain(
 
 	space = isl_union_set_get_space(domain);
 	sc->domain = domain;
+	sc->context = isl_set_universe(isl_space_copy(space));
 	empty = isl_union_map_empty(space);
 	for (i = isl_edge_first; i <= isl_edge_last; ++i) {
 		sc->constraint[i] = isl_union_map_copy(empty);
@@ -127,12 +132,30 @@ __isl_give isl_schedule_constraints *isl_schedule_constraints_on_domain(
 	}
 	isl_union_map_free(empty);
 
-	if (!sc->domain)
+	if (!sc->domain || !sc->context)
 		return isl_schedule_constraints_free(sc);
 
 	return sc;
 error:
 	isl_union_set_free(domain);
+	return NULL;
+}
+
+/* Replace the context of "sc" by "context".
+ */
+__isl_give isl_schedule_constraints *isl_schedule_constraints_set_context(
+	__isl_take isl_schedule_constraints *sc, __isl_take isl_set *context)
+{
+	if (!sc || !context)
+		goto error;
+
+	isl_set_free(sc->context);
+	sc->context = context;
+
+	return sc;
+error:
+	isl_schedule_constraints_free(sc);
+	isl_set_free(context);
 	return NULL;
 }
 
@@ -227,6 +250,7 @@ __isl_null isl_schedule_constraints *isl_schedule_constraints_free(
 		return NULL;
 
 	isl_union_set_free(sc->domain);
+	isl_set_free(sc->context);
 	for (i = isl_edge_first; i <= isl_edge_last; ++i)
 		isl_union_map_free(sc->constraint[i]);
 
@@ -248,6 +272,8 @@ void isl_schedule_constraints_dump(__isl_keep isl_schedule_constraints *sc)
 
 	fprintf(stderr, "domain: ");
 	isl_union_set_dump(sc->domain);
+	fprintf(stderr, "context: ");
+	isl_set_dump(sc->context);
 	fprintf(stderr, "validity: ");
 	isl_union_map_dump(sc->constraint[isl_edge_validity]);
 	fprintf(stderr, "proximity: ");
@@ -272,6 +298,7 @@ isl_schedule_constraints_align_params(__isl_take isl_schedule_constraints *sc)
 		return NULL;
 
 	space = isl_union_set_get_space(sc->domain);
+	space = isl_space_align_params(space, isl_set_get_space(sc->context));
 	for (i = isl_edge_first; i <= isl_edge_last; ++i)
 		space = isl_space_align_params(space,
 				    isl_union_map_get_space(sc->constraint[i]));
@@ -282,8 +309,9 @@ isl_schedule_constraints_align_params(__isl_take isl_schedule_constraints *sc)
 		if (!sc->constraint[i])
 			space = isl_space_free(space);
 	}
+	sc->context = isl_set_align_params(sc->context, isl_space_copy(space));
 	sc->domain = isl_union_set_align_params(sc->domain, space);
-	if (!sc->domain)
+	if (!sc->context || !sc->domain)
 		return isl_schedule_constraints_free(sc);
 
 	return sc;
@@ -4089,6 +4117,12 @@ static __isl_give isl_schedule_node *compute_schedule(isl_schedule_node *node,
  * then the conditional validity dependences may be violated inside
  * a tilable band, provided they have no adjacent non-local
  * condition dependences.
+ *
+ * The context is included in the domain before the nodes of
+ * the graphs are extracted in order to be able to exploit
+ * any possible additional equalities.
+ * However, the returned schedule contains the original domain
+ * (before this intersection).
  */
 __isl_give isl_schedule *isl_schedule_constraints_compute_schedule(
 	__isl_take isl_schedule_constraints *sc)
@@ -4097,8 +4131,10 @@ __isl_give isl_schedule *isl_schedule_constraints_compute_schedule(
 	struct isl_sched_graph graph = { 0 };
 	isl_schedule *sched;
 	isl_schedule_node *node;
+	isl_union_set *domain;
 	struct isl_extract_edge_data data;
 	enum isl_edge_type i;
+	int r;
 
 	sc = isl_schedule_constraints_align_params(sc);
 	if (!sc)
@@ -4117,7 +4153,12 @@ __isl_give isl_schedule *isl_schedule_constraints_compute_schedule(
 		goto error;
 	graph.root = 1;
 	graph.n = 0;
-	if (isl_union_set_foreach_set(sc->domain, &extract_node, &graph) < 0)
+	domain = isl_union_set_copy(sc->domain);
+	domain = isl_union_set_intersect_params(domain,
+						isl_set_copy(sc->context));
+	r = isl_union_set_foreach_set(domain, &extract_node, &graph);
+	isl_union_set_free(domain);
+	if (r < 0)
 		goto error;
 	if (graph_init_table(ctx, &graph) < 0)
 		goto error;
