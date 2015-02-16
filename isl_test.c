@@ -28,6 +28,7 @@
 #include <isl/union_map.h>
 #include <isl_factorization.h>
 #include <isl/schedule.h>
+#include <isl/schedule_node.h>
 #include <isl_options_private.h>
 #include <isl/vertices.h>
 #include <isl/ast_build.h>
@@ -3012,7 +3013,7 @@ struct {
 };
 
 /* Test schedule construction based on conditional constraints.
- * In particular, check the number of members in the outer band
+ * In particular, check the number of members in the outer band node
  * as an indication of whether tiling is possible or not.
  */
 static int test_conditional_schedule_constraints(isl_ctx *ctx)
@@ -3024,8 +3025,7 @@ static int test_conditional_schedule_constraints(isl_ctx *ctx)
 	isl_union_map *validity;
 	isl_schedule_constraints *sc;
 	isl_schedule *schedule;
-	isl_band_list *list;
-	isl_band *band;
+	isl_schedule_node *node;
 	int n_member;
 
 	for (i = 0; i < ARRAY_SIZE(live_range_tests); ++i) {
@@ -3044,11 +3044,12 @@ static int test_conditional_schedule_constraints(isl_ctx *ctx)
 		sc = isl_schedule_constraints_set_conditional_validity(sc,
 				condition, validity);
 		schedule = isl_schedule_constraints_compute_schedule(sc);
-		list = isl_schedule_get_band_forest(schedule);
-		band = isl_band_list_get_band(list, 0);
-		n_member = isl_band_n_member(band);
-		isl_band_free(band);
-		isl_band_list_free(list);
+		node = isl_schedule_get_root(schedule);
+		while (node &&
+		    isl_schedule_node_get_type(node) != isl_schedule_node_band)
+			node = isl_schedule_node_first_child(node);
+		n_member = isl_schedule_node_band_n_member(node);
+		isl_schedule_node_free(node);
 		isl_schedule_free(schedule);
 
 		if (!schedule)
@@ -5240,6 +5241,112 @@ static int test_dual(isl_ctx *ctx)
 }
 
 struct {
+	int scale_tile;
+	int shift_point;
+	const char *domain;
+	const char *schedule;
+	const char *sizes;
+	const char *tile;
+	const char *point;
+} tile_tests[] = {
+	{ 0, 0, "[n] -> { S[i,j] : 0 <= i,j < n }",
+	  "[{ S[i,j] -> [i] }, { S[i,j] -> [j] }]",
+	  "{ [32,32] }",
+	  "[{ S[i,j] -> [floor(i/32)] }, { S[i,j] -> [floor(j/32)] }]",
+	  "[{ S[i,j] -> [i] }, { S[i,j] -> [j] }]",
+	},
+	{ 1, 0, "[n] -> { S[i,j] : 0 <= i,j < n }",
+	  "[{ S[i,j] -> [i] }, { S[i,j] -> [j] }]",
+	  "{ [32,32] }",
+	  "[{ S[i,j] -> [32*floor(i/32)] }, { S[i,j] -> [32*floor(j/32)] }]",
+	  "[{ S[i,j] -> [i] }, { S[i,j] -> [j] }]",
+	},
+	{ 0, 1, "[n] -> { S[i,j] : 0 <= i,j < n }",
+	  "[{ S[i,j] -> [i] }, { S[i,j] -> [j] }]",
+	  "{ [32,32] }",
+	  "[{ S[i,j] -> [floor(i/32)] }, { S[i,j] -> [floor(j/32)] }]",
+	  "[{ S[i,j] -> [i%32] }, { S[i,j] -> [j%32] }]",
+	},
+	{ 1, 1, "[n] -> { S[i,j] : 0 <= i,j < n }",
+	  "[{ S[i,j] -> [i] }, { S[i,j] -> [j] }]",
+	  "{ [32,32] }",
+	  "[{ S[i,j] -> [32*floor(i/32)] }, { S[i,j] -> [32*floor(j/32)] }]",
+	  "[{ S[i,j] -> [i%32] }, { S[i,j] -> [j%32] }]",
+	},
+};
+
+/* Basic tiling tests.  Create a schedule tree with a domain and a band node,
+ * tile the band and then check if the tile and point bands have the
+ * expected partial schedule.
+ */
+static int test_tile(isl_ctx *ctx)
+{
+	int i;
+	int scale;
+	int shift;
+
+	scale = isl_options_get_tile_scale_tile_loops(ctx);
+	shift = isl_options_get_tile_shift_point_loops(ctx);
+
+	for (i = 0; i < ARRAY_SIZE(tile_tests); ++i) {
+		int opt;
+		int equal;
+		const char *str;
+		isl_union_set *domain;
+		isl_multi_union_pw_aff *mupa, *mupa2;
+		isl_schedule_node *node;
+		isl_multi_val *sizes;
+
+		opt = tile_tests[i].scale_tile;
+		isl_options_set_tile_scale_tile_loops(ctx, opt);
+		opt = tile_tests[i].shift_point;
+		isl_options_set_tile_shift_point_loops(ctx, opt);
+
+		str = tile_tests[i].domain;
+		domain = isl_union_set_read_from_str(ctx, str);
+		node = isl_schedule_node_from_domain(domain);
+		node = isl_schedule_node_child(node, 0);
+		str = tile_tests[i].schedule;
+		mupa = isl_multi_union_pw_aff_read_from_str(ctx, str);
+		node = isl_schedule_node_insert_partial_schedule(node, mupa);
+		str = tile_tests[i].sizes;
+		sizes = isl_multi_val_read_from_str(ctx, str);
+		node = isl_schedule_node_band_tile(node, sizes);
+
+		str = tile_tests[i].tile;
+		mupa = isl_multi_union_pw_aff_read_from_str(ctx, str);
+		mupa2 = isl_schedule_node_band_get_partial_schedule(node);
+		equal = isl_multi_union_pw_aff_plain_is_equal(mupa, mupa2);
+		isl_multi_union_pw_aff_free(mupa);
+		isl_multi_union_pw_aff_free(mupa2);
+
+		node = isl_schedule_node_child(node, 0);
+
+		str = tile_tests[i].point;
+		mupa = isl_multi_union_pw_aff_read_from_str(ctx, str);
+		mupa2 = isl_schedule_node_band_get_partial_schedule(node);
+		if (equal >= 0 && equal)
+			equal = isl_multi_union_pw_aff_plain_is_equal(mupa,
+									mupa2);
+		isl_multi_union_pw_aff_free(mupa);
+		isl_multi_union_pw_aff_free(mupa2);
+
+		isl_schedule_node_free(node);
+
+		if (equal < 0)
+			return -1;
+		if (!equal)
+			isl_die(ctx, isl_error_unknown,
+				"unexpected result", return -1);
+	}
+
+	isl_options_set_tile_scale_tile_loops(ctx, scale);
+	isl_options_set_tile_shift_point_loops(ctx, shift);
+
+	return 0;
+}
+
+struct {
 	const char *name;
 	int (*fn)(isl_ctx *ctx);
 } tests [] = {
@@ -5276,6 +5383,7 @@ struct {
 	{ "affine", &test_aff },
 	{ "injective", &test_injective },
 	{ "schedule", &test_schedule },
+	{ "tile", &test_tile },
 	{ "union_pw", &test_union_pw },
 	{ "parse", &test_parse },
 	{ "single-valued", &test_sv },
