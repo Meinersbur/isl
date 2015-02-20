@@ -5442,7 +5442,6 @@ static __isl_give isl_pw_aff *set_minimum_pa(__isl_take isl_space *space,
 	int i;
 	isl_aff *aff = NULL;
 	isl_basic_set *bset = NULL;
-	isl_ctx *ctx;
 	isl_pw_aff *paff = NULL;
 	isl_space *pw_space;
 	isl_local_space *ls = NULL;
@@ -5450,7 +5449,6 @@ static __isl_give isl_pw_aff *set_minimum_pa(__isl_take isl_space *space,
 	if (!space || !var)
 		goto error;
 
-	ctx = isl_space_get_ctx(space);
 	ls = isl_local_space_from_space(isl_space_copy(space));
 	pw_space = isl_space_copy(space);
 	pw_space = isl_space_from_domain(pw_space);
