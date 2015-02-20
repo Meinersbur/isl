@@ -2011,13 +2011,11 @@ __isl_give isl_printer *isl_printer_print_local_space(__isl_take isl_printer *p,
 	__isl_keep isl_local_space *ls)
 {
 	struct isl_print_space_data data = { 0 };
-	unsigned total;
 	unsigned n_div;
 
 	if (!ls)
 		goto error;
 
-	total = isl_local_space_dim(ls, isl_dim_all);
 	if (isl_local_space_dim(ls, isl_dim_param) > 0) {
 		p = print_tuple(ls->dim, p, isl_dim_param, &data);
 		p = isl_printer_print_str(p, " -> ");
