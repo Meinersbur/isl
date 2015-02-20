@@ -2276,7 +2276,7 @@ struct isl_basic_map *isl_basic_map_gist(struct isl_basic_map *bmap,
 	n_eq = bset->n_eq;
 	n_ineq = bset->n_ineq;
 	eq = isl_basic_set_copy(bset);
-	eq = isl_basic_set_cow(bset);
+	eq = isl_basic_set_cow(eq);
 	if (isl_basic_set_free_inequality(eq, n_ineq) < 0)
 		eq = isl_basic_set_free(eq);
 	if (isl_basic_set_free_equality(bset, n_eq) < 0)
