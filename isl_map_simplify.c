@@ -735,8 +735,10 @@ static struct isl_basic_map *remove_duplicate_divs(
 	if (k <= 0)
 		return bmap;
 
-	elim_for = isl_calloc_array(ctx, int, bmap->n_div);
 	size = round_up(4 * bmap->n_div / 3 - 1);
+	if (size == 0)
+		return bmap;
+	elim_for = isl_calloc_array(ctx, int, bmap->n_div);
 	bits = ffs(size) - 1;
 	index = isl_calloc_array(ctx, int, size);
 	if (!elim_for || !index)
@@ -1128,6 +1130,8 @@ __isl_give isl_basic_map *isl_basic_map_remove_duplicate_constraints(
 		return bmap;
 
 	size = round_up(4 * (bmap->n_ineq+1) / 3 - 1);
+	if (size == 0)
+		return bmap;
 	bits = ffs(size) - 1;
 	ctx = isl_basic_map_get_ctx(bmap);
 	index = isl_calloc_array(ctx, isl_int **, size);
@@ -1736,6 +1740,8 @@ static struct isl_basic_set *remove_shifted_constraints(
 		return NULL;
 
 	size = round_up(4 * (context->n_ineq+1) / 3 - 1);
+	if (size == 0)
+		return bset;
 	bits = ffs(size) - 1;
 	ctx = isl_basic_set_get_ctx(bset);
 	index = isl_calloc_array(ctx, isl_int **, size);
