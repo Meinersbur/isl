@@ -4751,7 +4751,7 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_stride(
 		map = set;
 	else
 		map = isl_set_unwrap(set);
-	pma = isl_pw_multi_aff_from_map(set);
+	pma = isl_pw_multi_aff_from_map(map);
 
 	if (!is_set) {
 		space = isl_pw_multi_aff_get_domain_space(pma);
