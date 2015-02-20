@@ -739,8 +739,8 @@ static struct isl_basic_map *remove_duplicate_divs(
 	size = round_up(4 * bmap->n_div / 3 - 1);
 	bits = ffs(size) - 1;
 	index = isl_calloc_array(ctx, int, size);
-	if (!index)
-		return bmap;
+	if (!elim_for || !index)
+		goto out;
 	eq = isl_blk_alloc(ctx, 1+total);
 	if (isl_blk_is_error(eq))
 		goto out;
