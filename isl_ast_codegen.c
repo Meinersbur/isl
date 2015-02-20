@@ -2571,7 +2571,6 @@ static __isl_give isl_set *do_unroll(struct isl_codegen_domains *domains,
 {
 	int i, n;
 	int depth;
-	isl_ctx *ctx;
 	isl_aff *lower;
 	isl_multi_aff *expansion;
 	isl_basic_map *bmap;
@@ -2581,7 +2580,6 @@ static __isl_give isl_set *do_unroll(struct isl_codegen_domains *domains,
 	if (!domain)
 		return isl_set_free(class_domain);
 
-	ctx = isl_set_get_ctx(domain);
 	depth = isl_ast_build_get_depth(domains->build);
 	build = isl_ast_build_copy(domains->build);
 	domain = isl_ast_build_eliminate_inner(build, domain);
