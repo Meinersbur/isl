@@ -114,14 +114,12 @@ static int add_vertex(struct isl_vertex_list **list,
 	__isl_keep isl_basic_set *bset, struct isl_tab *tab)
 {
 	unsigned nvar;
-	unsigned nparam;
 	struct isl_vertex_list *v = NULL;
 
 	if (isl_tab_detect_implicit_equalities(tab) < 0)
 		return -1;
 
 	nvar = isl_basic_set_dim(bset, isl_dim_set);
-	nparam = isl_basic_set_dim(bset, isl_dim_param);
 
 	v = isl_calloc_type(tab->mat->ctx, struct isl_vertex_list);
 	if (!v)
