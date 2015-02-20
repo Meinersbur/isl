@@ -1980,7 +1980,7 @@ static __isl_give isl_printer *print_union_pw_qpolynomial_fold_isl(
 	__isl_take isl_printer *p,
 	__isl_keep isl_union_pw_qpolynomial_fold *upwf)
 {
-	struct isl_union_print_data data = { p, 1 };
+	struct isl_union_print_data data;
 	struct isl_print_space_data space_data = { 0 };
 	isl_space *dim;
 
@@ -1991,6 +1991,8 @@ static __isl_give isl_printer *print_union_pw_qpolynomial_fold_isl(
 	}
 	isl_space_free(dim);
 	p = isl_printer_print_str(p, "{ ");
+	data.p = p;
+	data.first = 1;
 	isl_union_pw_qpolynomial_fold_foreach_pw_qpolynomial_fold(upwf,
 							&print_pwf_body, &data);
 	p = data.p;
