@@ -595,7 +595,6 @@ error:
 static struct isl_vec *sample_bounded(struct isl_basic_set *bset)
 {
 	unsigned dim;
-	struct isl_ctx *ctx;
 	struct isl_vec *sample;
 	struct isl_tab *tab = NULL;
 	isl_factorizer *f;
@@ -620,8 +619,6 @@ static struct isl_vec *sample_bounded(struct isl_basic_set *bset)
 	if (f->n_group != 0)
 		return factored_sample(bset, f);
 	isl_factorizer_free(f);
-		
-	ctx = bset->ctx;
 
 	tab = isl_tab_from_basic_set(bset, 1);
 	if (tab && tab->empty) {
