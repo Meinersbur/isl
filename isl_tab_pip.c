@@ -4292,13 +4292,11 @@ static __isl_give isl_set *set_minimum(__isl_take isl_space *dim,
 {
 	int i, k;
 	isl_basic_set *bset = NULL;
-	isl_ctx *ctx;
 	isl_set *set = NULL;
 
 	if (!dim || !var)
 		goto error;
 
-	ctx = isl_space_get_ctx(dim);
 	set = isl_set_alloc_space(isl_space_copy(dim),
 				var->n_row, ISL_SET_DISJOINT);
 
