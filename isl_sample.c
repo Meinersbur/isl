@@ -627,7 +627,7 @@ static struct isl_vec *sample_bounded(struct isl_basic_set *bset)
 	if (tab && tab->empty) {
 		isl_tab_free(tab);
 		ISL_F_SET(bset, ISL_BASIC_SET_EMPTY);
-		sample = isl_vec_alloc(bset->ctx, 0);
+		sample = isl_vec_alloc(isl_basic_set_get_ctx(bset), 0);
 		isl_basic_set_free(bset);
 		return sample;
 	}
