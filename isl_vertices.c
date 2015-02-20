@@ -153,12 +153,9 @@ error:
 static __isl_give isl_vertices *vertices_empty(__isl_keep isl_basic_set *bset)
 {
 	isl_vertices *vertices;
-	unsigned nparam;
 
 	if (!bset)
 		return NULL;
-
-	nparam = isl_basic_set_dim(bset, isl_dim_param);
 
 	vertices = isl_calloc_type(bset->ctx, isl_vertices);
 	if (!vertices)
