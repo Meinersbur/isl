@@ -4187,7 +4187,7 @@ static int parallel_constraints(__isl_keep isl_basic_map *bmap,
 	int *first, int *second)
 {
 	int i;
-	isl_ctx *ctx = isl_basic_map_get_ctx(bmap);
+	isl_ctx *ctx;
 	struct isl_hash_table *table = NULL;
 	struct isl_hash_table_entry *entry;
 	struct isl_constraint_equal_info info;
