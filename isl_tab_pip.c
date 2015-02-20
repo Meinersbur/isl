@@ -3137,10 +3137,7 @@ static int context_gbr_detect_equalities(struct isl_context *context,
 	struct isl_tab *tab)
 {
 	struct isl_context_gbr *cgbr = (struct isl_context_gbr *)context;
-	struct isl_ctx *ctx;
 	unsigned n_ineq;
-
-	ctx = cgbr->tab->mat->ctx;
 
 	if (!cgbr->cone) {
 		struct isl_basic_set *bset = isl_tab_peek_bset(cgbr->tab);
