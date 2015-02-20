@@ -6567,13 +6567,12 @@ error:
 static __isl_give isl_pw_aff *isl_multi_pw_aff_apply_aff_aligned(
 	__isl_take isl_multi_pw_aff *mpa, __isl_take isl_aff *aff)
 {
-	int i, n_param, n_in, n_div;
+	int i, n_in, n_div;
 	isl_space *space;
 	isl_val *v;
 	isl_pw_aff *pa;
 	isl_aff *tmp;
 
-	n_param = isl_aff_dim(aff, isl_dim_param);
 	n_in = isl_aff_dim(aff, isl_dim_in);
 	n_div = isl_aff_dim(aff, isl_dim_div);
 
