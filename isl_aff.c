@@ -1459,12 +1459,10 @@ static __isl_give isl_aff *merge_divs(__isl_take isl_aff *aff, int a, int b)
 static __isl_give isl_aff *sort_divs(__isl_take isl_aff *aff)
 {
 	int i, j, n;
-	unsigned off;
 
 	if (!aff)
 		return NULL;
 
-	off = isl_local_space_offset(aff->ls, isl_dim_div);
 	n = isl_aff_dim(aff, isl_dim_div);
 	for (i = 1; i < n; ++i) {
 		for (j = i - 1; j >= 0; --j) {
