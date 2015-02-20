@@ -1926,14 +1926,12 @@ struct isl_basic_map *isl_map_convex_hull(struct isl_map *map)
 	struct isl_basic_set *affine_hull = NULL;
 	struct isl_basic_map *convex_hull = NULL;
 	struct isl_set *set = NULL;
-	struct isl_ctx *ctx;
 
 	map = isl_map_detect_equalities(map);
 	map = isl_map_align_divs(map);
 	if (!map)
 		goto error;
 
-	ctx = map->ctx;
 	if (map->n == 0) {
 		convex_hull = isl_basic_map_empty_like_map(map);
 		isl_map_free(map);
