@@ -2542,7 +2542,7 @@ static int print_pw_multi_aff_body_wrap(__isl_take isl_pw_multi_aff *pma,
 static __isl_give isl_printer *print_union_pw_multi_aff_isl(
 	__isl_take isl_printer *p, __isl_keep isl_union_pw_multi_aff *upma)
 {
-	struct isl_union_print_data data = { p, 1 };
+	struct isl_union_print_data data;
 	struct isl_print_space_data space_data = { 0 };
 	isl_space *space;
 
@@ -2553,6 +2553,8 @@ static __isl_give isl_printer *print_union_pw_multi_aff_isl(
 	}
 	isl_space_free(space);
 	p = isl_printer_print_str(p, s_open_set[0]);
+	data.p = p;
+	data.first = 1;
 	isl_union_pw_multi_aff_foreach_pw_multi_aff(upma,
 					&print_pw_multi_aff_body_wrap, &data);
 	p = data.p;
