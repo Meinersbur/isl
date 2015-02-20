@@ -3830,7 +3830,6 @@ static void find_solutions(struct isl_sol *sol, struct isl_tab *tab)
 			sol_inc_level(sol);
 			find_in_pos(sol, tab, ineq->el);
 			tab->row_sign[split] = isl_tab_row_neg;
-			row = split;
 			isl_seq_neg(ineq->el, ineq->el, ineq->size);
 			isl_int_sub_ui(ineq->el[0], ineq->el[0], 1);
 			if (!sol->error)
