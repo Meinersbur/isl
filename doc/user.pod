@@ -233,6 +233,9 @@ C<isl_union_map_compute_flow>.  Similarly for the no source relations.
 The function C<isl_union_map_compute_flow> is still available
 for backward compatibility, but it will be removed in the future.
 
+=item * The function C<isl_basic_set_drop_constraint> has been
+deprecated.
+
 =back
 
 =head1 License
@@ -1883,9 +1886,6 @@ using the following functions.
 		__isl_take isl_constraint *constraint);
 	__isl_give isl_set *isl_set_add_constraint(
 		__isl_take isl_set *set,
-		__isl_take isl_constraint *constraint);
-	__isl_give isl_basic_set *isl_basic_set_drop_constraint(
-		__isl_take isl_basic_set *bset,
 		__isl_take isl_constraint *constraint);
 
 For example, to create a set containing the even integers
