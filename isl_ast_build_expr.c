@@ -441,7 +441,6 @@ static __isl_give isl_ast_expr *isl_ast_expr_add_term(
 static __isl_give isl_ast_expr *isl_ast_expr_add_int(
 	__isl_take isl_ast_expr *expr, __isl_take isl_val *v)
 {
-	isl_ctx *ctx;
 	isl_ast_expr *expr_int;
 
 	if (!expr || !v)
@@ -452,7 +451,6 @@ static __isl_give isl_ast_expr *isl_ast_expr_add_int(
 		return expr;
 	}
 
-	ctx = isl_ast_expr_get_ctx(expr);
 	if (isl_val_is_neg(v) && !ast_expr_is_zero(expr)) {
 		v = isl_val_neg(v);
 		expr_int = isl_ast_expr_from_val(v);
