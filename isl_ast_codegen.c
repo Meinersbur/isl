@@ -3358,14 +3358,12 @@ static __isl_give isl_ast_graft_list *generate_shift_component(
 	isl_ast_graft_list *list;
 	int first;
 	int depth;
-	isl_ctx *ctx;
 	isl_val *val;
 	isl_multi_val *mv;
 	isl_space *space;
 	isl_multi_aff *ma, *zero;
 	isl_union_map *executed;
 
-	ctx = isl_ast_build_get_ctx(build);
 	depth = isl_ast_build_get_depth(build);
 
 	first = first_offset(domain, order, n, build);
