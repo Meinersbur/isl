@@ -4334,6 +4334,9 @@ struct {
 	{ "{ B[i] -> C[([i/2])] }", "{ B[5] }", "{ C[2] }" },
 	{ "[n] -> { B[i,j] -> C[([i/2]) + 2j] }",
 	  "[n] -> { B[n,[n/3]] }", "[n] -> { C[([n/2]) + 2*[n/3]] }", },
+	{ "{ [i, j] -> [floor((i)/4) + floor((2*i+j)/5)] }",
+	  "{ [i, j] -> [floor((i)/3), j] }",
+	  "{ [i, j] -> [(floor((i)/12) + floor((j + 2*floor((i)/3))/5))] }" },
 };
 
 static int test_pullback(isl_ctx *ctx)
