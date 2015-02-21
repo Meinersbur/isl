@@ -882,7 +882,7 @@ static int pw_aff_constant_is_negative(__isl_take isl_pw_aff *pa, void *user)
 	r = isl_pw_aff_foreach_piece(pa, &aff_constant_is_negative, user);
 	isl_pw_aff_free(pa);
 
-	return *neg ? 0 : -1;
+	return (*neg && r >= 0) ? 0 : -1;
 }
 
 /* Does each element in "list" have a negative constant term?
