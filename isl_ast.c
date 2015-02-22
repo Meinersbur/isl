@@ -579,12 +579,30 @@ __isl_give isl_ast_expr *isl_ast_expr_and(__isl_take isl_ast_expr *expr1,
 	return isl_ast_expr_alloc_binary(isl_ast_op_and, expr1, expr2);
 }
 
+/* Create an expression representing the conjunction of "expr1" and "expr2",
+ * where "expr2" is evaluated only if "expr1" is evaluated to true.
+ */
+__isl_give isl_ast_expr *isl_ast_expr_and_then(__isl_take isl_ast_expr *expr1,
+	__isl_take isl_ast_expr *expr2)
+{
+	return isl_ast_expr_alloc_binary(isl_ast_op_and_then, expr1, expr2);
+}
+
 /* Create an expression representing the disjunction of "expr1" and "expr2".
  */
 __isl_give isl_ast_expr *isl_ast_expr_or(__isl_take isl_ast_expr *expr1,
 	__isl_take isl_ast_expr *expr2)
 {
 	return isl_ast_expr_alloc_binary(isl_ast_op_or, expr1, expr2);
+}
+
+/* Create an expression representing the disjunction of "expr1" and "expr2",
+ * where "expr2" is evaluated only if "expr1" is evaluated to false.
+ */
+__isl_give isl_ast_expr *isl_ast_expr_or_else(__isl_take isl_ast_expr *expr1,
+	__isl_take isl_ast_expr *expr2)
+{
+	return isl_ast_expr_alloc_binary(isl_ast_op_or_else, expr1, expr2);
 }
 
 /* Create an expression representing "expr1" less than or equal to "expr2".
