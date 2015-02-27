@@ -375,5 +375,5 @@ uninstall-local:
 	$(builddir)/libisl.la`; \
 	if test -n "$$libisl"; then \
 		echo " ( cd '$(DESTDIR)$(libdir)' && rm $$libisl-gdb.py)"; \
-		( cd '$(DESTDIR)$(libdir)' && rm $$libisl-gdb.py); \
+		( cd '$(DESTDIR)$(libdir)' && rm -f $$libisl-gdb.py); \
 	fi
