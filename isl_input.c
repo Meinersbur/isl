@@ -1771,14 +1771,9 @@ static __isl_give isl_basic_map *basic_map_read_polylib_constraint(
 	int type;
 	int k;
 	isl_int *c;
-	unsigned nparam;
-	unsigned dim;
 
 	if (!bmap)
 		return NULL;
-
-	nparam = isl_basic_map_dim(bmap, isl_dim_param);
-	dim = isl_basic_map_dim(bmap, isl_dim_out);
 
 	tok = isl_stream_next_token(s);
 	if (!tok || tok->type != ISL_TOKEN_VALUE) {
@@ -2343,47 +2338,54 @@ error:
 	return obj;
 }
 
-static struct isl_obj obj_add(struct isl_ctx *ctx,
+static struct isl_obj obj_add(__isl_keep isl_stream *s,
 	struct isl_obj obj1, struct isl_obj obj2)
 {
 	if (obj1.type == isl_obj_set && obj2.type == isl_obj_union_set)
-		obj1 = to_union(ctx, obj1);
+		obj1 = to_union(s->ctx, obj1);
 	if (obj1.type == isl_obj_union_set && obj2.type == isl_obj_set)
-		obj2 = to_union(ctx, obj2);
+		obj2 = to_union(s->ctx, obj2);
 	if (obj1.type == isl_obj_map && obj2.type == isl_obj_union_map)
-		obj1 = to_union(ctx, obj1);
+		obj1 = to_union(s->ctx, obj1);
 	if (obj1.type == isl_obj_union_map && obj2.type == isl_obj_map)
-		obj2 = to_union(ctx, obj2);
+		obj2 = to_union(s->ctx, obj2);
 	if (obj1.type == isl_obj_pw_qpolynomial &&
 	    obj2.type == isl_obj_union_pw_qpolynomial)
-		obj1 = to_union(ctx, obj1);
+		obj1 = to_union(s->ctx, obj1);
 	if (obj1.type == isl_obj_union_pw_qpolynomial &&
 	    obj2.type == isl_obj_pw_qpolynomial)
-		obj2 = to_union(ctx, obj2);
+		obj2 = to_union(s->ctx, obj2);
 	if (obj1.type == isl_obj_pw_qpolynomial_fold &&
 	    obj2.type == isl_obj_union_pw_qpolynomial_fold)
-		obj1 = to_union(ctx, obj1);
+		obj1 = to_union(s->ctx, obj1);
 	if (obj1.type == isl_obj_union_pw_qpolynomial_fold &&
 	    obj2.type == isl_obj_pw_qpolynomial_fold)
-		obj2 = to_union(ctx, obj2);
-	isl_assert(ctx, obj1.type == obj2.type, goto error);
+		obj2 = to_union(s->ctx, obj2);
+	if (obj1.type != obj2.type) {
+		isl_stream_error(s, NULL,
+				"attempt to combine incompatible objects");
+		goto error;
+	}
+	if (!obj1.type->add)
+		isl_die(s->ctx, isl_error_internal,
+			"combination not supported on object type", goto error);
 	if (obj1.type == isl_obj_map && !isl_map_has_equal_space(obj1.v, obj2.v)) {
-		obj1 = to_union(ctx, obj1);
-		obj2 = to_union(ctx, obj2);
+		obj1 = to_union(s->ctx, obj1);
+		obj2 = to_union(s->ctx, obj2);
 	}
 	if (obj1.type == isl_obj_set && !isl_set_has_equal_space(obj1.v, obj2.v)) {
-		obj1 = to_union(ctx, obj1);
-		obj2 = to_union(ctx, obj2);
+		obj1 = to_union(s->ctx, obj1);
+		obj2 = to_union(s->ctx, obj2);
 	}
 	if (obj1.type == isl_obj_pw_qpolynomial &&
 	    !isl_pw_qpolynomial_has_equal_space(obj1.v, obj2.v)) {
-		obj1 = to_union(ctx, obj1);
-		obj2 = to_union(ctx, obj2);
+		obj1 = to_union(s->ctx, obj1);
+		obj2 = to_union(s->ctx, obj2);
 	}
 	if (obj1.type == isl_obj_pw_qpolynomial_fold &&
 	    !isl_pw_qpolynomial_fold_has_equal_space(obj1.v, obj2.v)) {
-		obj1 = to_union(ctx, obj1);
-		obj2 = to_union(ctx, obj2);
+		obj1 = to_union(s->ctx, obj1);
+		obj2 = to_union(s->ctx, obj2);
 	}
 	obj1.v = obj1.type->add(obj1.v, obj2.v);
 	return obj1;
@@ -2395,12 +2397,79 @@ error:
 	return obj1;
 }
 
+/* Are the first two tokens on "s", "domain" (either as a string
+ * or as an identifier) followed by ":"?
+ */
+static int next_is_domain_colon(__isl_keep isl_stream *s)
+{
+	struct isl_token *tok;
+	char *name;
+	int res;
+
+	tok = isl_stream_next_token(s);
+	if (!tok)
+		return 0;
+	if (tok->type != ISL_TOKEN_IDENT && tok->type != ISL_TOKEN_STRING) {
+		isl_stream_push_token(s, tok);
+		return 0;
+	}
+
+	name = isl_token_get_str(s->ctx, tok);
+	res = !strcmp(name, "domain") && isl_stream_next_token_is(s, ':');
+	free(name);
+
+	isl_stream_push_token(s, tok);
+
+	return res;
+}
+
+/* Do the first tokens on "s" look like a schedule?
+ *
+ * The root of a schedule is always a domain node, so the first thing
+ * we expect in the stream is a domain key, i.e., "domain" followed
+ * by ":".  If the schedule was printed in YAML flow style, then
+ * we additionally expect a "{" to open the outer mapping.
+ */
+static int next_is_schedule(__isl_keep isl_stream *s)
+{
+	struct isl_token *tok;
+	int is_schedule;
+
+	tok = isl_stream_next_token(s);
+	if (!tok)
+		return 0;
+	if (tok->type != '{') {
+		isl_stream_push_token(s, tok);
+		return next_is_domain_colon(s);
+	}
+
+	is_schedule = next_is_domain_colon(s);
+	isl_stream_push_token(s, tok);
+
+	return is_schedule;
+}
+
+/* Read an isl_schedule from "s" and store it in an isl_obj.
+ */
+static struct isl_obj schedule_read(__isl_keep isl_stream *s)
+{
+	struct isl_obj obj;
+
+	obj.type = isl_obj_schedule;
+	obj.v = isl_stream_read_schedule(s);
+
+	return obj;
+}
+
 static struct isl_obj obj_read(__isl_keep isl_stream *s)
 {
 	isl_map *map = NULL;
 	struct isl_token *tok;
 	struct vars *v = NULL;
 	struct isl_obj obj = { isl_obj_set, NULL };
+
+	if (next_is_schedule(s))
+		return schedule_read(s);
 
 	tok = next_token(s);
 	if (!tok) {
@@ -2490,7 +2559,7 @@ static struct isl_obj obj_read(__isl_keep isl_stream *s)
 		if (!obj.v)
 			obj = o;
 		else {
-			obj = obj_add(s->ctx, obj, o);
+			obj = obj_add(s, obj, o);
 			if (obj.type == isl_obj_none || !obj.v)
 				goto error;
 		}
