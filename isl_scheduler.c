@@ -2459,6 +2459,68 @@ error:
 	return -1;
 }
 
+/* Does the domain of "umap" intersect "uset"?
+ */
+static int domain_intersects(__isl_keep isl_union_map *umap,
+	__isl_keep isl_union_set *uset)
+{
+	int empty;
+
+	umap = isl_union_map_copy(umap);
+	umap = isl_union_map_intersect_domain(umap, isl_union_set_copy(uset));
+	empty = isl_union_map_is_empty(umap);
+	isl_union_map_free(umap);
+
+	return empty < 0 ? -1 : !empty;
+}
+
+/* Does the range of "umap" intersect "uset"?
+ */
+static int range_intersects(__isl_keep isl_union_map *umap,
+	__isl_keep isl_union_set *uset)
+{
+	int empty;
+
+	umap = isl_union_map_copy(umap);
+	umap = isl_union_map_intersect_range(umap, isl_union_set_copy(uset));
+	empty = isl_union_map_is_empty(umap);
+	isl_union_map_free(umap);
+
+	return empty < 0 ? -1 : !empty;
+}
+
+/* Are the condition dependences of "edge" local with respect to
+ * the current schedule?
+ *
+ * That is, are domain and range of the condition dependences mapped
+ * to the same point?
+ *
+ * In other words, is the condition false?
+ */
+static int is_condition_false(struct isl_sched_edge *edge)
+{
+	isl_union_map *umap;
+	isl_map *map, *sched, *test;
+	int local;
+
+	umap = isl_union_map_copy(edge->tagged_condition);
+	umap = isl_union_map_zip(umap);
+	umap = isl_union_set_unwrap(isl_union_map_domain(umap));
+	map = isl_map_from_union_map(umap);
+
+	sched = node_extract_schedule(edge->src);
+	map = isl_map_apply_domain(map, sched);
+	sched = node_extract_schedule(edge->dst);
+	map = isl_map_apply_range(map, sched);
+
+	test = isl_map_identity(isl_map_get_space(map));
+	local = isl_map_is_subset(map, test);
+	isl_map_free(map);
+	isl_map_free(test);
+
+	return local;
+}
+
 /* Update the dependence relations of all edges based on the current schedule.
  */
 static int update_edges(isl_ctx *ctx, struct isl_sched_graph *graph)
@@ -3657,68 +3719,6 @@ static int is_violated(struct isl_sched_graph *graph, int edge_index)
 		return -1;
 
 	return !empty;
-}
-
-/* Does the domain of "umap" intersect "uset"?
- */
-static int domain_intersects(__isl_keep isl_union_map *umap,
-	__isl_keep isl_union_set *uset)
-{
-	int empty;
-
-	umap = isl_union_map_copy(umap);
-	umap = isl_union_map_intersect_domain(umap, isl_union_set_copy(uset));
-	empty = isl_union_map_is_empty(umap);
-	isl_union_map_free(umap);
-
-	return empty < 0 ? -1 : !empty;
-}
-
-/* Does the range of "umap" intersect "uset"?
- */
-static int range_intersects(__isl_keep isl_union_map *umap,
-	__isl_keep isl_union_set *uset)
-{
-	int empty;
-
-	umap = isl_union_map_copy(umap);
-	umap = isl_union_map_intersect_range(umap, isl_union_set_copy(uset));
-	empty = isl_union_map_is_empty(umap);
-	isl_union_map_free(umap);
-
-	return empty < 0 ? -1 : !empty;
-}
-
-/* Are the condition dependences of "edge" local with respect to
- * the current schedule?
- *
- * That is, are domain and range of the condition dependences mapped
- * to the same point?
- *
- * In other words, is the condition false?
- */
-static int is_condition_false(struct isl_sched_edge *edge)
-{
-	isl_union_map *umap;
-	isl_map *map, *sched, *test;
-	int local;
-
-	umap = isl_union_map_copy(edge->tagged_condition);
-	umap = isl_union_map_zip(umap);
-	umap = isl_union_set_unwrap(isl_union_map_domain(umap));
-	map = isl_map_from_union_map(umap);
-
-	sched = node_extract_schedule(edge->src);
-	map = isl_map_apply_domain(map, sched);
-	sched = node_extract_schedule(edge->dst);
-	map = isl_map_apply_range(map, sched);
-
-	test = isl_map_identity(isl_map_get_space(map));
-	local = isl_map_is_subset(map, test);
-	isl_map_free(map);
-	isl_map_free(test);
-
-	return local;
 }
 
 /* Does "graph" have any satisfied condition edges that
