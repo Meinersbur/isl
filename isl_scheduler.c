@@ -2425,6 +2425,7 @@ static __isl_give isl_union_map *intersect_domains(
 static int update_edge(struct isl_sched_graph *graph,
 	struct isl_sched_edge *edge)
 {
+	int empty;
 	isl_map *id;
 
 	id = specializer(edge->src, edge->dst);
@@ -2445,10 +2446,13 @@ static int update_edge(struct isl_sched_graph *graph,
 			goto error;
 	}
 
-	isl_map_free(id);
-	if (isl_map_plain_is_empty(edge->map))
+	empty = isl_map_plain_is_empty(edge->map);
+	if (empty < 0)
+		goto error;
+	if (empty)
 		graph_remove_edge(graph, edge);
 
+	isl_map_free(id);
 	return 0;
 error:
 	isl_map_free(id);
