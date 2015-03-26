@@ -2501,7 +2501,11 @@ static int is_condition_false(struct isl_sched_edge *edge)
 {
 	isl_union_map *umap;
 	isl_map *map, *sched, *test;
-	int local;
+	int empty, local;
+
+	empty = isl_union_map_is_empty(edge->tagged_condition);
+	if (empty < 0 || empty)
+		return empty;
 
 	umap = isl_union_map_copy(edge->tagged_condition);
 	umap = isl_union_map_zip(umap);
