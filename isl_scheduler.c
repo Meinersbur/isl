@@ -533,7 +533,7 @@ struct isl_sched_edge {
  * edge_table contains pointers into the edge array, hashed on the source
  *	and sink spaces; there is one such table for each type;
  *	a given edge may be referenced from more than one table
- *	if the corresponding relation appears in more than of the
+ *	if the corresponding relation appears in more than one of the
  *	sets of dependences
  *
  * node_table contains pointers into the node array, hashed on the space
@@ -3150,7 +3150,7 @@ static __isl_give isl_schedule_node *insert_current_band(
 }
 
 /* Update the dependence relations based on the current schedule,
- * add the current band to "node" and the continue with the computation
+ * add the current band to "node" and then continue with the computation
  * of the next band.
  * Return the updated schedule node.
  */
@@ -3358,12 +3358,12 @@ static int count_all_constraints(struct isl_sched_graph *graph,
  * such that the schedule carries as many dependences as possible.
  * In particular, for each dependence i, we bound the dependence distance
  * from below by e_i, with 0 <= e_i <= 1 and then maximize the sum
- * of all e_i's.  Dependence with e_i = 0 in the solution are simply
+ * of all e_i's.  Dependences with e_i = 0 in the solution are simply
  * respected, while those with e_i > 0 (in practice e_i = 1) are carried.
  * Note that if the dependence relation is a union of basic maps,
  * then we have to consider each basic map individually as it may only
  * be possible to carry the dependences expressed by some of those
- * basic maps and not all off them.
+ * basic maps and not all of them.
  * Below, we consider each of those basic maps as a separate "edge".
  *
  * All variables of the LP are non-negative.  The actual coefficients
