@@ -4213,14 +4213,14 @@ error:
 	return -1;
 }
 
-/* Compute a schedule for a connected dependence graph and return
- * the updated schedule node.
+/* Examine the current band (the rows between graph->band_start and
+ * graph->n_total_row), deciding whether to drop it or add it to "node"
+ * and then continue with the computation of the next band, if any.
  *
- * We try to find a sequence of as many schedule rows as possible that result
- * in non-negative dependence distances (independent of the previous rows
- * in the sequence, i.e., such that the sequence is tilable), with as
- * many of the initial rows as possible satisfying the coincidence constraints.
- * If we can't find any more rows we either
+ * The caller keeps looking for a new row as long as
+ * graph->n_row < graph->maxvar.  If the latest attempt to find
+ * such a row failed (i.e., we still have graph->n_row < graph->maxvar),
+ * then we either
  * - split between SCCs and start over (assuming we found an interesting
  *	pair of SCCs between which to split)
  * - continue with the next band (assuming the current band has at least
@@ -4230,13 +4230,58 @@ error:
  * In each case, we first insert a band node in the schedule tree
  * if any rows have been computed.
  *
+ * If the caller managed to complete the schedule, we insert a band node
+ * (if any schedule rows were computed) and we finish off by topologically
+ * sorting the statements based on the remaining dependences.
+ */
+static __isl_give isl_schedule_node *compute_schedule_finish_band(
+	__isl_take isl_schedule_node *node, struct isl_sched_graph *graph)
+{
+	int insert;
+
+	if (!node)
+		return NULL;
+
+	if (graph->n_row < graph->maxvar) {
+		isl_ctx *ctx;
+		int empty = graph->n_total_row == graph->band_start;
+
+		ctx = isl_schedule_node_get_ctx(node);
+		if (!ctx->opt->schedule_maximize_band_depth && !empty)
+			return compute_next_band(node, graph, 1);
+		if (graph->src_scc >= 0)
+			return compute_split_schedule(node, graph);
+		if (!empty)
+			return compute_next_band(node, graph, 1);
+		return carry_dependences(node, graph);
+	}
+
+	insert = graph->n_total_row > graph->band_start;
+	if (insert) {
+		node = insert_current_band(node, graph, 1);
+		node = isl_schedule_node_child(node, 0);
+	}
+	node = sort_statements(node, graph);
+	if (insert)
+		node = isl_schedule_node_parent(node);
+
+	return node;
+}
+
+/* Compute a schedule for a connected dependence graph and return
+ * the updated schedule node.
+ *
+ * We try to find a sequence of as many schedule rows as possible that result
+ * in non-negative dependence distances (independent of the previous rows
+ * in the sequence, i.e., such that the sequence is tilable), with as
+ * many of the initial rows as possible satisfying the coincidence constraints.
+ * If we can't find any more rows or if we have found all the rows
+ * we wanted to find, we call compute_schedule_finish_band to update "node"
+ * and to continue the computation.
+ *
  * If Feautrier's algorithm is selected, we first recursively try to satisfy
  * as many validity dependences as possible. When all validity dependences
  * are satisfied we extend the schedule to a full-dimensional schedule.
- *
- * If we manage to complete the schedule, we insert a band node
- * (if any schedule rows were computed) and we finish off by topologically
- * sorting the statements based on the remaining dependences.
  *
  * If ctx->opt->schedule_outer_coincidence is set, then we force the
  * outermost dimension to satisfy the coincidence constraints.  If this
@@ -4266,7 +4311,6 @@ static __isl_give isl_schedule_node *compute_schedule_wcc(
 	int use_coincidence;
 	int force_coincidence = 0;
 	int check_conditional;
-	int insert;
 	isl_ctx *ctx;
 
 	if (!node)
@@ -4313,13 +4357,7 @@ static __isl_give isl_schedule_node *compute_schedule_wcc(
 				use_coincidence = 0;
 				continue;
 			}
-			if (!ctx->opt->schedule_maximize_band_depth && !empty)
-				return compute_next_band(node, graph, 1);
-			if (graph->src_scc >= 0)
-				return compute_split_schedule(node, graph);
-			if (!empty)
-				return compute_next_band(node, graph, 1);
-			return carry_dependences(node, graph);
+			return compute_schedule_finish_band(node, graph);
 		}
 		coincident = !has_coincidence || use_coincidence;
 		if (update_schedule(graph, sol, 1, coincident) < 0)
@@ -4337,16 +4375,7 @@ static __isl_give isl_schedule_node *compute_schedule_wcc(
 		use_coincidence = has_coincidence;
 	}
 
-	insert = graph->n_total_row > graph->band_start;
-	if (insert) {
-		node = insert_current_band(node, graph, 1);
-		node = isl_schedule_node_child(node, 0);
-	}
-	node = sort_statements(node, graph);
-	if (insert)
-		node = isl_schedule_node_parent(node);
-
-	return node;
+	return compute_schedule_finish_band(node, graph);
 }
 
 /* Compute a schedule for each group of nodes identified by node->scc
