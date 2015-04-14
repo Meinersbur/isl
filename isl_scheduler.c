@@ -3030,9 +3030,7 @@ static __isl_give isl_schedule_node *compute_schedule_wcc(
 
 /* Compute a schedule for a subgraph of "graph".  In particular, for
  * the graph composed of nodes that satisfy node_pred and edges that
- * that satisfy edge_pred.  The caller should precompute the number
- * of nodes and edges that satisfy these predicates and pass them along
- * as "n" and "n_edge".
+ * that satisfy edge_pred.
  * If the subgraph is known to consist of a single component, then wcc should
  * be set and then we call compute_schedule_wcc on the constructed subgraph.
  * Otherwise, we call compute_schedule, which will check whether the subgraph
@@ -3043,14 +3041,21 @@ static __isl_give isl_schedule_node *compute_schedule_wcc(
  */
 static __isl_give isl_schedule_node *compute_sub_schedule(
 	__isl_take isl_schedule_node *node, isl_ctx *ctx,
-	struct isl_sched_graph *graph, int n, int n_edge,
+	struct isl_sched_graph *graph,
 	int (*node_pred)(struct isl_sched_node *node, int data),
 	int (*edge_pred)(struct isl_sched_edge *edge, int data),
 	int data, int wcc)
 {
 	struct isl_sched_graph split = { 0 };
+	int i, n = 0, n_edge = 0;
 	int t;
 
+	for (i = 0; i < graph->n; ++i)
+		if (node_pred(&graph->node[i], data))
+			++n;
+	for (i = 0; i < graph->n_edge; ++i)
+		if (edge_pred(&graph->edge[i], data))
+			++n_edge;
 	if (graph_alloc(ctx, &split, n, n_edge) < 0)
 		goto error;
 	if (copy_nodes(&split, graph, node_pred, data) < 0)
@@ -3136,7 +3141,6 @@ static int reset_band(struct isl_sched_graph *graph)
 static __isl_give isl_schedule_node *compute_split_schedule(
 	__isl_take isl_schedule_node *node, struct isl_sched_graph *graph)
 {
-	int i, n, e1, e2;
 	isl_ctx *ctx;
 	isl_union_set_list *filters;
 
@@ -3146,23 +3150,6 @@ static __isl_give isl_schedule_node *compute_split_schedule(
 	if (reset_band(graph) < 0)
 		return isl_schedule_node_free(node);
 
-	n = 0;
-	for (i = 0; i < graph->n; ++i) {
-		struct isl_sched_node *node = &graph->node[i];
-		int before = node->scc <= graph->src_scc;
-
-		if (before)
-			n++;
-	}
-
-	e1 = e2 = 0;
-	for (i = 0; i < graph->n_edge; ++i) {
-		if (graph->edge[i].dst->scc <= graph->src_scc)
-			e1++;
-		if (graph->edge[i].src->scc > graph->src_scc)
-			e2++;
-	}
-
 	next_band(graph);
 
 	ctx = isl_schedule_node_get_ctx(node);
@@ -3171,13 +3158,13 @@ static __isl_give isl_schedule_node *compute_split_schedule(
 	node = isl_schedule_node_child(node, 0);
 	node = isl_schedule_node_child(node, 0);
 
-	node = compute_sub_schedule(node, ctx, graph, n, e1,
+	node = compute_sub_schedule(node, ctx, graph,
 				&node_scc_at_most, &edge_dst_scc_at_most,
 				graph->src_scc, 0);
 	node = isl_schedule_node_parent(node);
 	node = isl_schedule_node_next_sibling(node);
 	node = isl_schedule_node_child(node, 0);
-	node = compute_sub_schedule(node, ctx, graph, graph->n - n, e2,
+	node = compute_sub_schedule(node, ctx, graph,
 				&node_scc_at_least, &edge_src_scc_at_least,
 				graph->src_scc + 1, 0);
 	node = isl_schedule_node_parent(node);
@@ -4280,8 +4267,7 @@ static __isl_give isl_schedule_node *compute_component_schedule(
 	__isl_take isl_schedule_node *node, struct isl_sched_graph *graph,
 	int wcc)
 {
-	int component, i;
-	int n, n_edge;
+	int component;
 	isl_ctx *ctx;
 	isl_union_set_list *filters;
 
@@ -4296,19 +4282,9 @@ static __isl_give isl_schedule_node *compute_component_schedule(
 		node = isl_schedule_node_insert_sequence(node, filters);
 
 	for (component = 0; component < graph->scc; ++component) {
-		n = 0;
-		for (i = 0; i < graph->n; ++i)
-			if (graph->node[i].scc == component)
-				n++;
-		n_edge = 0;
-		for (i = 0; i < graph->n_edge; ++i)
-			if (graph->edge[i].src->scc == component &&
-			    graph->edge[i].dst->scc == component)
-				n_edge++;
-
 		node = isl_schedule_node_child(node, component);
 		node = isl_schedule_node_child(node, 0);
-		node = compute_sub_schedule(node, ctx, graph, n, n_edge,
+		node = compute_sub_schedule(node, ctx, graph,
 				    &node_scc_exactly,
 				    &edge_scc_exactly, component, wcc);
 		node = isl_schedule_node_parent(node);
