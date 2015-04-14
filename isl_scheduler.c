@@ -3048,7 +3048,6 @@ static __isl_give isl_schedule_node *compute_split_schedule(
 	__isl_take isl_schedule_node *node, struct isl_sched_graph *graph)
 {
 	int i, n, e1, e2;
-	int orig_total_row;
 	isl_ctx *ctx;
 	isl_union_set_list *filters;
 
@@ -3083,14 +3082,12 @@ static __isl_give isl_schedule_node *compute_split_schedule(
 	node = isl_schedule_node_child(node, 0);
 	node = isl_schedule_node_child(node, 0);
 
-	orig_total_row = graph->n_total_row;
 	node = compute_sub_schedule(node, ctx, graph, n, e1,
 				&node_scc_at_most, &edge_dst_scc_at_most,
 				graph->src_scc, 0);
 	node = isl_schedule_node_parent(node);
 	node = isl_schedule_node_next_sibling(node);
 	node = isl_schedule_node_child(node, 0);
-	graph->n_total_row = orig_total_row;
 	node = compute_sub_schedule(node, ctx, graph, graph->n - n, e2,
 				&node_scc_at_least, &edge_src_scc_at_least,
 				graph->src_scc + 1, 0);
