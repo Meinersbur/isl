@@ -4268,20 +4268,16 @@ static __isl_give isl_schedule_node *compute_schedule_finish_band(
 	return node;
 }
 
-/* Compute a schedule for a connected dependence graph and return
- * the updated schedule node.
+/* Construct a band of schedule rows for a connected dependence graph.
+ * The caller is responsible for determining the strongly connected
+ * components and calling compute_maxvar first.
  *
  * We try to find a sequence of as many schedule rows as possible that result
  * in non-negative dependence distances (independent of the previous rows
  * in the sequence, i.e., such that the sequence is tilable), with as
  * many of the initial rows as possible satisfying the coincidence constraints.
- * If we can't find any more rows or if we have found all the rows
- * we wanted to find, we call compute_schedule_finish_band to update "node"
- * and to continue the computation.
- *
- * If Feautrier's algorithm is selected, we first recursively try to satisfy
- * as many validity dependences as possible. When all validity dependences
- * are satisfied we extend the schedule to a full-dimensional schedule.
+ * The computation stops if we can't find any more rows or if we have found
+ * all the rows we wanted to find.
  *
  * If ctx->opt->schedule_outer_coincidence is set, then we force the
  * outermost dimension to satisfy the coincidence constraints.  If this
@@ -4304,29 +4300,16 @@ static __isl_give isl_schedule_node *compute_schedule_finish_band(
  * Since there are only a finite number of dependences,
  * there will only be a finite number of iterations.
  */
-static __isl_give isl_schedule_node *compute_schedule_wcc(
-	__isl_take isl_schedule_node *node, struct isl_sched_graph *graph)
+static isl_stat compute_schedule_wcc_band(isl_ctx *ctx,
+	struct isl_sched_graph *graph)
 {
 	int has_coincidence;
 	int use_coincidence;
 	int force_coincidence = 0;
 	int check_conditional;
-	isl_ctx *ctx;
 
-	if (!node)
-		return NULL;
-
-	ctx = isl_schedule_node_get_ctx(node);
-	if (detect_sccs(ctx, graph) < 0)
-		return isl_schedule_node_free(node);
 	if (sort_sccs(graph) < 0)
-		return isl_schedule_node_free(node);
-
-	if (compute_maxvar(graph) < 0)
-		return isl_schedule_node_free(node);
-
-	if (need_feautrier_step(ctx, graph))
-		return compute_schedule_wcc_feautrier(node, graph);
+		return isl_stat_error;
 
 	clear_local_edges(graph);
 	check_conditional = need_condition_check(graph);
@@ -4345,10 +4328,10 @@ static __isl_give isl_schedule_node *compute_schedule_wcc(
 		graph->dst_scc = -1;
 
 		if (setup_lp(ctx, graph, use_coincidence) < 0)
-			return isl_schedule_node_free(node);
+			return isl_stat_error;
 		sol = solve_lp(graph);
 		if (!sol)
-			return isl_schedule_node_free(node);
+			return isl_stat_error;
 		if (sol->size == 0) {
 			int empty = graph->n_total_row == graph->band_start;
 
@@ -4357,23 +4340,59 @@ static __isl_give isl_schedule_node *compute_schedule_wcc(
 				use_coincidence = 0;
 				continue;
 			}
-			return compute_schedule_finish_band(node, graph);
+			return isl_stat_ok;
 		}
 		coincident = !has_coincidence || use_coincidence;
 		if (update_schedule(graph, sol, 1, coincident) < 0)
-			return isl_schedule_node_free(node);
+			return isl_stat_error;
 
 		if (!check_conditional)
 			continue;
 		violated = has_violated_conditional_constraint(ctx, graph);
 		if (violated < 0)
-			return isl_schedule_node_free(node);
+			return isl_stat_error;
 		if (!violated)
 			continue;
 		if (reset_band(graph) < 0)
-			return isl_schedule_node_free(node);
+			return isl_stat_error;
 		use_coincidence = has_coincidence;
 	}
+
+	return isl_stat_ok;
+}
+
+/* Compute a schedule for a connected dependence graph and return
+ * the updated schedule node.
+ *
+ * If Feautrier's algorithm is selected, we first recursively try to satisfy
+ * as many validity dependences as possible. When all validity dependences
+ * are satisfied we extend the schedule to a full-dimensional schedule.
+ *
+ * The actual schedule rows of the current band are computed by
+ * compute_schedule_wcc_band.  compute_schedule_finish_band takes
+ * care of integrating the band into "node" and continuing
+ * the computation.
+ */
+static __isl_give isl_schedule_node *compute_schedule_wcc(
+	__isl_take isl_schedule_node *node, struct isl_sched_graph *graph)
+{
+	isl_ctx *ctx;
+
+	if (!node)
+		return NULL;
+
+	ctx = isl_schedule_node_get_ctx(node);
+	if (detect_sccs(ctx, graph) < 0)
+		return isl_schedule_node_free(node);
+
+	if (compute_maxvar(graph) < 0)
+		return isl_schedule_node_free(node);
+
+	if (need_feautrier_step(ctx, graph))
+		return compute_schedule_wcc_feautrier(node, graph);
+
+	if (compute_schedule_wcc_band(ctx, graph) < 0)
+		return isl_schedule_node_free(node);
 
 	return compute_schedule_finish_band(node, graph);
 }
