@@ -38,6 +38,9 @@ int isl_options_get_schedule_separate_components(isl_ctx *ctx);
 isl_stat isl_options_set_schedule_serialize_sccs(isl_ctx *ctx, int val);
 int isl_options_get_schedule_serialize_sccs(isl_ctx *ctx);
 
+isl_stat isl_options_set_schedule_whole_component(isl_ctx *ctx, int val);
+int isl_options_get_schedule_whole_component(isl_ctx *ctx);
+
 __isl_give isl_schedule_constraints *isl_schedule_constraints_copy(
 	__isl_keep isl_schedule_constraints *sc);
 __isl_give isl_schedule_constraints *isl_schedule_constraints_on_domain(

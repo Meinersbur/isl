@@ -42,6 +42,7 @@ struct isl_options {
 	int			schedule_maximize_band_depth;
 	int			schedule_split_scaled;
 	int			schedule_separate_components;
+	int			schedule_whole_component;
 	unsigned		schedule_algorithm;
 	int			schedule_serialize_sccs;
 

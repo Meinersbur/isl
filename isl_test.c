@@ -3922,6 +3922,36 @@ int test_schedule(isl_ctx *ctx)
 	return 0;
 }
 
+/* Perform scheduling tests using the whole component scheduler.
+ */
+static int test_schedule_whole(isl_ctx *ctx)
+{
+	int whole;
+	int r;
+
+	whole = isl_options_get_schedule_whole_component(ctx);
+	isl_options_set_schedule_whole_component(ctx, 1);
+	r = test_schedule(ctx);
+	isl_options_set_schedule_whole_component(ctx, whole);
+
+	return r;
+}
+
+/* Perform scheduling tests using the incremental scheduler.
+ */
+static int test_schedule_incremental(isl_ctx *ctx)
+{
+	int whole;
+	int r;
+
+	whole = isl_options_get_schedule_whole_component(ctx);
+	isl_options_set_schedule_whole_component(ctx, 0);
+	r = test_schedule(ctx);
+	isl_options_set_schedule_whole_component(ctx, whole);
+
+	return r;
+}
+
 int test_plain_injective(isl_ctx *ctx, const char *str, int injective)
 {
 	isl_union_map *umap;
@@ -6248,7 +6278,8 @@ struct {
 	{ "dim_max", &test_dim_max },
 	{ "affine", &test_aff },
 	{ "injective", &test_injective },
-	{ "schedule", &test_schedule },
+	{ "schedule (whole component)", &test_schedule_whole },
+	{ "schedule (incremental)", &test_schedule_incremental },
 	{ "schedule tree grouping", &test_schedule_tree_group },
 	{ "tile", &test_tile },
 	{ "union_pw", &test_union_pw },
