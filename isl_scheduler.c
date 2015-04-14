@@ -4188,7 +4188,6 @@ static __isl_give isl_schedule_node *compute_component_schedule(
 {
 	int component, i;
 	int n, n_edge;
-	int orig_total_row;
 	isl_ctx *ctx;
 	isl_union_set_list *filters;
 
@@ -4202,7 +4201,6 @@ static __isl_give isl_schedule_node *compute_component_schedule(
 	else
 		node = isl_schedule_node_insert_sequence(node, filters);
 
-	orig_total_row = graph->n_total_row;
 	for (component = 0; component < graph->scc; ++component) {
 		n = 0;
 		for (i = 0; i < graph->n; ++i)
@@ -4221,7 +4219,6 @@ static __isl_give isl_schedule_node *compute_component_schedule(
 				    &edge_scc_exactly, component, wcc);
 		node = isl_schedule_node_parent(node);
 		node = isl_schedule_node_parent(node);
-		graph->n_total_row = orig_total_row;
 	}
 
 	return node;
