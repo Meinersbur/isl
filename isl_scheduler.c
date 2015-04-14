@@ -3092,6 +3092,44 @@ static int compute_maxvar(struct isl_sched_graph *graph)
 	return 0;
 }
 
+/* Extract the subgraph of "graph" that consists of the node satisfying
+ * "node_pred" and the edges satisfying "edge_pred" and store
+ * the result in "sub".
+ */
+static int extract_sub_graph(isl_ctx *ctx, struct isl_sched_graph *graph,
+	int (*node_pred)(struct isl_sched_node *node, int data),
+	int (*edge_pred)(struct isl_sched_edge *edge, int data),
+	int data, struct isl_sched_graph *sub)
+{
+	int i, n = 0, n_edge = 0;
+	int t;
+
+	for (i = 0; i < graph->n; ++i)
+		if (node_pred(&graph->node[i], data))
+			++n;
+	for (i = 0; i < graph->n_edge; ++i)
+		if (edge_pred(&graph->edge[i], data))
+			++n_edge;
+	if (graph_alloc(ctx, sub, n, n_edge) < 0)
+		return -1;
+	if (copy_nodes(sub, graph, node_pred, data) < 0)
+		return -1;
+	if (graph_init_table(ctx, sub) < 0)
+		return -1;
+	for (t = 0; t <= isl_edge_last; ++t)
+		sub->max_edge[t] = graph->max_edge[t];
+	if (graph_init_edge_tables(ctx, sub) < 0)
+		return -1;
+	if (copy_edges(ctx, sub, graph, edge_pred, data) < 0)
+		return -1;
+	sub->n_row = graph->n_row;
+	sub->max_row = graph->max_row;
+	sub->n_total_row = graph->n_total_row;
+	sub->band_start = graph->band_start;
+
+	return 0;
+}
+
 static __isl_give isl_schedule_node *compute_schedule(isl_schedule_node *node,
 	struct isl_sched_graph *graph);
 static __isl_give isl_schedule_node *compute_schedule_wcc(
@@ -3116,31 +3154,10 @@ static __isl_give isl_schedule_node *compute_sub_schedule(
 	int data, int wcc)
 {
 	struct isl_sched_graph split = { 0 };
-	int i, n = 0, n_edge = 0;
-	int t;
 
-	for (i = 0; i < graph->n; ++i)
-		if (node_pred(&graph->node[i], data))
-			++n;
-	for (i = 0; i < graph->n_edge; ++i)
-		if (edge_pred(&graph->edge[i], data))
-			++n_edge;
-	if (graph_alloc(ctx, &split, n, n_edge) < 0)
+	if (extract_sub_graph(ctx, graph, node_pred, edge_pred, data,
+				&split) < 0)
 		goto error;
-	if (copy_nodes(&split, graph, node_pred, data) < 0)
-		goto error;
-	if (graph_init_table(ctx, &split) < 0)
-		goto error;
-	for (t = 0; t <= isl_edge_last; ++t)
-		split.max_edge[t] = graph->max_edge[t];
-	if (graph_init_edge_tables(ctx, &split) < 0)
-		goto error;
-	if (copy_edges(ctx, &split, graph, edge_pred, data) < 0)
-		goto error;
-	split.n_row = graph->n_row;
-	split.max_row = graph->max_row;
-	split.n_total_row = graph->n_total_row;
-	split.band_start = graph->band_start;
 
 	if (wcc)
 		node = compute_schedule_wcc(node, &split);
