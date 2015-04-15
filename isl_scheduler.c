@@ -4388,8 +4388,8 @@ __isl_give isl_schedule *isl_schedule_constraints_compute_schedule(
 	graph.n = isl_union_set_n_set(sc->domain);
 	if (graph.n == 0) {
 		isl_union_set *domain = isl_union_set_copy(sc->domain);
-		sched = isl_schedule_from_domain(domain);
-		goto done;
+		isl_schedule_constraints_free(sc);
+		return isl_schedule_from_domain(domain);
 	}
 	if (graph_alloc(ctx, &graph, graph.n,
 	    isl_schedule_constraints_n_map(sc)) < 0)
@@ -4427,7 +4427,6 @@ __isl_give isl_schedule *isl_schedule_constraints_compute_schedule(
 	sched = isl_schedule_node_get_schedule(node);
 	isl_schedule_node_free(node);
 
-done:
 	graph_free(ctx, &graph);
 	isl_schedule_constraints_free(sc);
 
