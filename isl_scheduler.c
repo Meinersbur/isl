@@ -1175,6 +1175,38 @@ static __isl_give isl_map *map_intersect_domains(__isl_take isl_map *tagged,
 	return tagged;
 }
 
+/* Return a pointer to the node that lives in the domain space of "map"
+ * or NULL if there is no such node.
+ */
+static struct isl_sched_node *find_domain_node(isl_ctx *ctx,
+	struct isl_sched_graph *graph, __isl_keep isl_map *map)
+{
+	struct isl_sched_node *node;
+	isl_space *space;
+
+	space = isl_space_domain(isl_map_get_space(map));
+	node = graph_find_node(ctx, graph, space);
+	isl_space_free(space);
+
+	return node;
+}
+
+/* Return a pointer to the node that lives in the range space of "map"
+ * or NULL if there is no such node.
+ */
+static struct isl_sched_node *find_range_node(isl_ctx *ctx,
+	struct isl_sched_graph *graph, __isl_keep isl_map *map)
+{
+	struct isl_sched_node *node;
+	isl_space *space;
+
+	space = isl_space_range(isl_map_get_space(map));
+	node = graph_find_node(ctx, graph, space);
+	isl_space_free(space);
+
+	return node;
+}
+
 /* Add a new edge to the graph based on the given map
  * and add it to data->graph->edge_table[data->type].
  * If a dependence relation of a given type happens to be identical
@@ -1204,7 +1236,6 @@ static isl_stat extract_edge(__isl_take isl_map *map, void *user)
 	struct isl_extract_edge_data *data = user;
 	struct isl_sched_graph *graph = data->graph;
 	struct isl_sched_node *src, *dst;
-	isl_space *space;
 	struct isl_sched_edge *edge;
 	isl_map *tagged = NULL;
 
@@ -1218,12 +1249,8 @@ static isl_stat extract_edge(__isl_take isl_map *map, void *user)
 		}
 	}
 
-	space = isl_space_domain(isl_map_get_space(map));
-	src = graph_find_node(ctx, graph, space);
-	isl_space_free(space);
-	space = isl_space_range(isl_map_get_space(map));
-	dst = graph_find_node(ctx, graph, space);
-	isl_space_free(space);
+	src = find_domain_node(ctx, graph, map);
+	dst = find_range_node(ctx, graph, map);
 
 	if (!src || !dst) {
 		isl_map_free(map);
