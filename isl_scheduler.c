@@ -45,7 +45,8 @@ enum isl_edge_type {
 	isl_edge_condition,
 	isl_edge_conditional_validity,
 	isl_edge_proximity,
-	isl_edge_last = isl_edge_proximity
+	isl_edge_last = isl_edge_proximity,
+	isl_edge_local
 };
 
 /* The constraints that need to be satisfied by a schedule on "domain".
@@ -468,6 +469,8 @@ static int node_scc_at_least(struct isl_sched_node *node, int scc)
  *	If these fields are NULL, then they represent the empty relation.
  * src is the source node
  * dst is the sink node
+ *
+ * types is a bit vector containing the types of this edge.
  * validity is set if the edge is used to ensure correctness
  * coincidence is used to enforce zero dependence distances
  * proximity is set if the edge is used to minimize dependence distances
@@ -490,16 +493,95 @@ struct isl_sched_edge {
 	struct isl_sched_node *src;
 	struct isl_sched_node *dst;
 
-	unsigned validity : 1;
-	unsigned coincidence : 1;
-	unsigned proximity : 1;
-	unsigned local : 1;
-	unsigned condition : 1;
-	unsigned conditional_validity : 1;
+	unsigned types;
 
 	int start;
 	int end;
 };
+
+/* Is "edge" marked as being of type "type"?
+ */
+static int is_type(struct isl_sched_edge *edge, enum isl_edge_type type)
+{
+	return ISL_FL_ISSET(edge->types, 1 << type);
+}
+
+/* Mark "edge" as being of type "type".
+ */
+static void set_type(struct isl_sched_edge *edge, enum isl_edge_type type)
+{
+	ISL_FL_SET(edge->types, 1 << type);
+}
+
+/* No longer mark "edge" as being of type "type"?
+ */
+static void clear_type(struct isl_sched_edge *edge, enum isl_edge_type type)
+{
+	ISL_FL_CLR(edge->types, 1 << type);
+}
+
+/* Is "edge" marked as a validity edge?
+ */
+static int is_validity(struct isl_sched_edge *edge)
+{
+	return is_type(edge, isl_edge_validity);
+}
+
+/* Mark "edge" as a validity edge.
+ */
+static void set_validity(struct isl_sched_edge *edge)
+{
+	set_type(edge, isl_edge_validity);
+}
+
+/* Is "edge" marked as a proximity edge?
+ */
+static int is_proximity(struct isl_sched_edge *edge)
+{
+	return is_type(edge, isl_edge_proximity);
+}
+
+/* Is "edge" marked as a local edge?
+ */
+static int is_local(struct isl_sched_edge *edge)
+{
+	return is_type(edge, isl_edge_local);
+}
+
+/* Mark "edge" as a local edge.
+ */
+static void set_local(struct isl_sched_edge *edge)
+{
+	set_type(edge, isl_edge_local);
+}
+
+/* No longer mark "edge" as a local edge.
+ */
+static void clear_local(struct isl_sched_edge *edge)
+{
+	clear_type(edge, isl_edge_local);
+}
+
+/* Is "edge" marked as a coincidence edge?
+ */
+static int is_coincidence(struct isl_sched_edge *edge)
+{
+	return is_type(edge, isl_edge_coincidence);
+}
+
+/* Is "edge" marked as a condition edge?
+ */
+static int is_condition(struct isl_sched_edge *edge)
+{
+	return is_type(edge, isl_edge_condition);
+}
+
+/* Is "edge" marked as a conditional validity edge?
+ */
+static int is_conditional_validity(struct isl_sched_edge *edge)
+{
+	return is_type(edge, isl_edge_conditional_validity);
+}
 
 /* Internal information about the dependence graph used during
  * the construction of the schedule.
@@ -1069,11 +1151,7 @@ struct isl_extract_edge_data {
 static int merge_edge(enum isl_edge_type type, struct isl_sched_edge *edge1,
 	struct isl_sched_edge *edge2)
 {
-	edge1->validity |= edge2->validity;
-	edge1->coincidence |= edge2->coincidence;
-	edge1->proximity |= edge2->proximity;
-	edge1->condition |= edge2->condition;
-	edge1->conditional_validity |= edge2->conditional_validity;
+	edge1->types |= edge2->types;
 	isl_map_free(edge2->map);
 
 	if (type == isl_edge_condition) {
@@ -1269,30 +1347,16 @@ static isl_stat extract_edge(__isl_take isl_map *map, void *user)
 	graph->edge[graph->n_edge].src = src;
 	graph->edge[graph->n_edge].dst = dst;
 	graph->edge[graph->n_edge].map = map;
-	graph->edge[graph->n_edge].validity = 0;
-	graph->edge[graph->n_edge].coincidence = 0;
-	graph->edge[graph->n_edge].proximity = 0;
-	graph->edge[graph->n_edge].condition = 0;
-	graph->edge[graph->n_edge].local = 0;
-	graph->edge[graph->n_edge].conditional_validity = 0;
+	graph->edge[graph->n_edge].types = 0;
 	graph->edge[graph->n_edge].tagged_condition = NULL;
 	graph->edge[graph->n_edge].tagged_validity = NULL;
-	if (data->type == isl_edge_validity)
-		graph->edge[graph->n_edge].validity = 1;
-	if (data->type == isl_edge_coincidence)
-		graph->edge[graph->n_edge].coincidence = 1;
-	if (data->type == isl_edge_proximity)
-		graph->edge[graph->n_edge].proximity = 1;
-	if (data->type == isl_edge_condition) {
-		graph->edge[graph->n_edge].condition = 1;
+	set_type(&graph->edge[graph->n_edge], data->type);
+	if (data->type == isl_edge_condition)
 		graph->edge[graph->n_edge].tagged_condition =
 					isl_union_map_from_map(tagged);
-	}
-	if (data->type == isl_edge_conditional_validity) {
-		graph->edge[graph->n_edge].conditional_validity = 1;
+	if (data->type == isl_edge_conditional_validity)
 		graph->edge[graph->n_edge].tagged_validity =
 					isl_union_map_from_map(tagged);
-	}
 
 	edge = graph_find_matching_edge(graph, &graph->edge[graph->n_edge]);
 	if (!edge) {
@@ -1850,8 +1914,9 @@ static int add_all_validity_constraints(struct isl_sched_graph *graph,
 		struct isl_sched_edge *edge= &graph->edge[i];
 		int local;
 
-		local = edge->local || (edge->coincidence && use_coincidence);
-		if (!edge->validity && !local)
+		local = is_local(edge) ||
+			(is_coincidence(edge) && use_coincidence);
+		if (!is_validity(edge) && !local)
 			continue;
 		if (edge->src != edge->dst)
 			continue;
@@ -1863,8 +1928,9 @@ static int add_all_validity_constraints(struct isl_sched_graph *graph,
 		struct isl_sched_edge *edge = &graph->edge[i];
 		int local;
 
-		local = edge->local || (edge->coincidence && use_coincidence);
-		if (!edge->validity && !local)
+		local = is_local(edge) ||
+			(is_coincidence(edge) && use_coincidence);
+		if (!is_validity(edge) && !local)
 			continue;
 		if (edge->src == edge->dst)
 			continue;
@@ -1896,8 +1962,9 @@ static int add_all_proximity_constraints(struct isl_sched_graph *graph,
 		struct isl_sched_edge *edge= &graph->edge[i];
 		int local;
 
-		local = edge->local || (edge->coincidence && use_coincidence);
-		if (!edge->proximity && !local)
+		local = is_local(edge) ||
+			(is_coincidence(edge) && use_coincidence);
+		if (!is_proximity(edge) && !local)
 			continue;
 		if (edge->src == edge->dst &&
 		    add_intra_proximity_constraints(graph, edge, 1, local) < 0)
@@ -1905,7 +1972,7 @@ static int add_all_proximity_constraints(struct isl_sched_graph *graph,
 		if (edge->src != edge->dst &&
 		    add_inter_proximity_constraints(graph, edge, 1, local) < 0)
 			return -1;
-		if (edge->validity || local)
+		if (is_validity(edge) || local)
 			continue;
 		if (edge->src == edge->dst &&
 		    add_intra_proximity_constraints(graph, edge, -1, 0) < 0)
@@ -1980,15 +2047,15 @@ static int node_update_cmap(struct isl_sched_node *node)
 static int edge_multiplicity(struct isl_sched_edge *edge, int carry,
 	int use_coincidence)
 {
-	if (carry && !edge->validity && !edge->conditional_validity)
+	if (carry && !is_validity(edge) && !is_conditional_validity(edge))
 		return 0;
 	if (carry)
 		return 1;
-	if (edge->proximity || edge->local)
+	if (is_proximity(edge) || is_local(edge))
 		return 2;
-	if (use_coincidence && edge->coincidence)
+	if (use_coincidence && is_coincidence(edge))
 		return 2;
-	if (edge->validity)
+	if (is_validity(edge))
 		return 1;
 	return 0;
 }
@@ -2259,7 +2326,7 @@ static int check_conflict(int con, void *user)
 		return 0;
 
 	for (i = 0; i < graph->n_edge; ++i) {
-		if (!graph->edge[i].validity)
+		if (!is_validity(&graph->edge[i]))
 			continue;
 		if (graph->edge[i].src == graph->edge[i].dst)
 			continue;
@@ -2657,9 +2724,9 @@ static int unconditionalize_adjacent_validity(struct isl_sched_graph *graph,
 		int adjacent;
 		isl_union_map *validity;
 
-		if (!graph->edge[i].conditional_validity)
+		if (!is_conditional_validity(&graph->edge[i]))
 			continue;
-		if (graph->edge[i].validity)
+		if (is_validity(&graph->edge[i]))
 			continue;
 
 		validity = graph->edge[i].tagged_validity;
@@ -2671,7 +2738,7 @@ static int unconditionalize_adjacent_validity(struct isl_sched_graph *graph,
 		if (!adjacent)
 			continue;
 
-		graph->edge[i].validity = 1;
+		set_validity(&graph->edge[i]);
 	}
 
 	isl_union_set_free(condition_source);
@@ -2709,9 +2776,9 @@ static int update_edges(isl_ctx *ctx, struct isl_sched_graph *graph)
 		isl_union_set *uset;
 		isl_union_map *umap;
 
-		if (!graph->edge[i].condition)
+		if (!is_condition(&graph->edge[i]))
 			continue;
-		if (graph->edge[i].local)
+		if (is_local(&graph->edge[i]))
 			continue;
 		local = is_condition_false(&graph->edge[i]);
 		if (local < 0)
@@ -2895,7 +2962,7 @@ static int copy_edges(isl_ctx *ctx, struct isl_sched_graph *dst,
 		dst_src = graph_find_node(ctx, dst, edge->src->space);
 		dst_dst = graph_find_node(ctx, dst, edge->dst->space);
 		if (!dst_src || !dst_dst) {
-			if (edge->validity || edge->conditional_validity)
+			if (is_validity(edge) || is_conditional_validity(edge))
 				isl_die(ctx, isl_error_internal,
 					"backward (conditional) validity edge",
 					return -1);
@@ -2911,12 +2978,7 @@ static int copy_edges(isl_ctx *ctx, struct isl_sched_graph *dst,
 		dst->edge[dst->n_edge].map = map;
 		dst->edge[dst->n_edge].tagged_condition = tagged_condition;
 		dst->edge[dst->n_edge].tagged_validity = tagged_validity;
-		dst->edge[dst->n_edge].validity = edge->validity;
-		dst->edge[dst->n_edge].proximity = edge->proximity;
-		dst->edge[dst->n_edge].coincidence = edge->coincidence;
-		dst->edge[dst->n_edge].condition = edge->condition;
-		dst->edge[dst->n_edge].conditional_validity =
-						edge->conditional_validity;
+		dst->edge[dst->n_edge].types = edge->types;
 		dst->n_edge++;
 
 		if (edge->tagged_condition && !tagged_condition)
@@ -3332,7 +3394,7 @@ static int add_all_constraints(struct isl_sched_graph *graph)
 	for (i = 0; i < graph->n_edge; ++i) {
 		struct isl_sched_edge *edge= &graph->edge[i];
 
-		if (!edge->validity && !edge->conditional_validity)
+		if (!is_validity(edge) && !is_conditional_validity(edge))
 			continue;
 
 		for (j = 0; j < edge->map->n; ++j) {
@@ -3840,8 +3902,8 @@ static int has_validity_edges(struct isl_sched_graph *graph)
 			return -1;
 		if (empty)
 			continue;
-		if (graph->edge[i].validity ||
-		    graph->edge[i].conditional_validity)
+		if (is_validity(&graph->edge[i]) ||
+		    is_conditional_validity(&graph->edge[i]))
 			return 1;
 	}
 
@@ -3884,8 +3946,8 @@ static void clear_local_edges(struct isl_sched_graph *graph)
 	int i;
 
 	for (i = 0; i < graph->n_edge; ++i)
-		if (graph->edge[i].condition)
-			graph->edge[i].local = 0;
+		if (is_condition(&graph->edge[i]))
+			clear_local(&graph->edge[i]);
 }
 
 /* Does "graph" have both condition and conditional validity edges?
@@ -3897,9 +3959,9 @@ static int need_condition_check(struct isl_sched_graph *graph)
 	int any_conditional_validity = 0;
 
 	for (i = 0; i < graph->n_edge; ++i) {
-		if (graph->edge[i].condition)
+		if (is_condition(&graph->edge[i]))
 			any_condition = 1;
-		if (graph->edge[i].conditional_validity)
+		if (is_conditional_validity(&graph->edge[i]))
 			any_conditional_validity = 1;
 	}
 
@@ -3913,7 +3975,7 @@ static int has_any_coincidence(struct isl_sched_graph *graph)
 	int i;
 
 	for (i = 0; i < graph->n_edge; ++i)
-		if (graph->edge[i].coincidence)
+		if (is_coincidence(&graph->edge[i]))
 			return 1;
 
 	return 0;
@@ -3981,9 +4043,9 @@ static int has_adjacent_true_conditions(struct isl_sched_graph *graph,
 		int adjacent, local;
 		isl_union_map *condition;
 
-		if (!graph->edge[i].condition)
+		if (!is_condition(&graph->edge[i]))
 			continue;
-		if (graph->edge[i].local)
+		if (is_local(&graph->edge[i]))
 			continue;
 
 		condition = graph->edge[i].tagged_condition;
@@ -3996,7 +4058,7 @@ static int has_adjacent_true_conditions(struct isl_sched_graph *graph,
 		if (!adjacent)
 			continue;
 
-		graph->edge[i].local = 1;
+		set_local(&graph->edge[i]);
 
 		local = is_condition_false(&graph->edge[i]);
 		if (local < 0)
@@ -4036,7 +4098,7 @@ static int has_violated_conditional_constraint(isl_ctx *ctx,
 		isl_union_map *umap;
 		int violated;
 
-		if (!graph->edge[i].conditional_validity)
+		if (!is_conditional_validity(&graph->edge[i]))
 			continue;
 
 		violated = is_violated(graph, i);
