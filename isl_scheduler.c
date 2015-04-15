@@ -268,6 +268,17 @@ isl_ctx *isl_schedule_constraints_get_ctx(
 	return sc ? isl_union_set_get_ctx(sc->domain) : NULL;
 }
 
+/* Return the domain of "sc".
+ */
+__isl_give isl_union_set *isl_schedule_constraints_get_domain(
+	__isl_keep isl_schedule_constraints *sc)
+{
+	if (!sc)
+		return NULL;
+
+	return isl_union_set_copy(sc->domain);
+}
+
 /* Return the validity constraints of "sc".
  */
 __isl_give isl_union_map *isl_schedule_constraints_get_validity(
