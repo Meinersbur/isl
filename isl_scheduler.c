@@ -1142,19 +1142,17 @@ struct isl_extract_edge_data {
 };
 
 /* Merge edge2 into edge1, freeing the contents of edge2.
- * "type" is the type of the schedule constraint from which edge2 was
- * extracted.
  * Return 0 on success and -1 on failure.
  *
  * edge1 and edge2 are assumed to have the same value for the map field.
  */
-static int merge_edge(enum isl_edge_type type, struct isl_sched_edge *edge1,
+static int merge_edge(struct isl_sched_edge *edge1,
 	struct isl_sched_edge *edge2)
 {
 	edge1->types |= edge2->types;
 	isl_map_free(edge2->map);
 
-	if (type == isl_edge_condition) {
+	if (is_condition(edge2)) {
 		if (!edge1->tagged_condition)
 			edge1->tagged_condition = edge2->tagged_condition;
 		else
@@ -1163,7 +1161,7 @@ static int merge_edge(enum isl_edge_type type, struct isl_sched_edge *edge1,
 						    edge2->tagged_condition);
 	}
 
-	if (type == isl_edge_conditional_validity) {
+	if (is_conditional_validity(edge2)) {
 		if (!edge1->tagged_validity)
 			edge1->tagged_validity = edge2->tagged_validity;
 		else
@@ -1172,9 +1170,9 @@ static int merge_edge(enum isl_edge_type type, struct isl_sched_edge *edge1,
 						    edge2->tagged_validity);
 	}
 
-	if (type == isl_edge_condition && !edge1->tagged_condition)
+	if (is_condition(edge2) && !edge1->tagged_condition)
 		return -1;
-	if (type == isl_edge_conditional_validity && !edge1->tagged_validity)
+	if (is_conditional_validity(edge2) && !edge1->tagged_validity)
 		return -1;
 
 	return 0;
@@ -1367,7 +1365,7 @@ static isl_stat extract_edge(__isl_take isl_map *map, void *user)
 		return graph_edge_table_add(ctx, graph, data->type,
 				    &graph->edge[graph->n_edge++]);
 
-	if (merge_edge(data->type, edge, &graph->edge[graph->n_edge]) < 0)
+	if (merge_edge(edge, &graph->edge[graph->n_edge]) < 0)
 		return -1;
 
 	return graph_edge_table_add(ctx, graph, data->type, edge);
