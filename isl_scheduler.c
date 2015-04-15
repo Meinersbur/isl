@@ -5068,6 +5068,49 @@ static isl_stat adjust_maxvar_to_slack(isl_ctx *ctx,
 	return isl_stat_ok;
 }
 
+/* Return the number of coincident dimensions in the current band of "graph",
+ * where the nodes of "graph" are assumed to be scheduled by a single band.
+ */
+static int get_n_coincident(struct isl_sched_graph *graph)
+{
+	int i;
+
+	for (i = graph->band_start; i < graph->n_total_row; ++i)
+		if (!graph->node[0].coincident[i])
+			break;
+
+	return i - graph->band_start;
+}
+
+/* Should the clusters be merged based on the cluster schedule
+ * in the current (and only) band of "merge_graph", given that
+ * coincidence should be maximized?
+ *
+ * If the number of coincident schedule dimensions in the merged band
+ * would be less than the maximal number of coincident schedule dimensions
+ * in any of the merged clusters, then the clusters should not be merged.
+ */
+static isl_bool ok_to_merge_coincident(struct isl_clustering *c,
+	struct isl_sched_graph *merge_graph)
+{
+	int i;
+	int n_coincident;
+	int max_coincident;
+
+	max_coincident = 0;
+	for (i = 0; i < c->n; ++i) {
+		if (!c->scc_in_merge[i])
+			continue;
+		n_coincident = get_n_coincident(&c->scc[i]);
+		if (n_coincident > max_coincident)
+			max_coincident = n_coincident;
+	}
+
+	n_coincident = get_n_coincident(merge_graph);
+
+	return n_coincident >= max_coincident;
+}
+
 /* Return the transformation on "node" expressed by the current (and only)
  * band of "merge_graph" applied to the clusters in "c".
  *
@@ -5314,6 +5357,9 @@ static isl_bool ok_to_merge_proximity(isl_ctx *ctx,
  * bands in the original schedule will be reduced), then the clusters
  * should not be merged.
  *
+ * If the schedule_maximize_coincidence option is set, then check that
+ * the number of coincident schedule dimensions is not reduced.
+ *
  * Finally, only allow the merge if at least one proximity
  * constraint is optimized.
  */
@@ -5326,6 +5372,14 @@ static isl_bool ok_to_merge(isl_ctx *ctx, struct isl_sched_graph *graph,
 	if (isl_options_get_schedule_maximize_band_depth(ctx) &&
 	    merge_graph->n_total_row < merge_graph->maxvar)
 		return isl_bool_false;
+
+	if (isl_options_get_schedule_maximize_coincidence(ctx)) {
+		isl_bool ok;
+
+		ok = ok_to_merge_coincident(c, merge_graph);
+		if (ok < 0 || !ok)
+			return ok;
+	}
 
 	return ok_to_merge_proximity(ctx, graph, c, merge_graph);
 }

@@ -151,6 +151,9 @@ ISL_ARG_BOOL(struct isl_options, schedule_outer_coincidence, 0,
 ISL_ARG_BOOL(struct isl_options, schedule_maximize_band_depth, 0,
 	"schedule-maximize-band-depth", 0,
 	"maximize the number of scheduling dimensions in a band")
+ISL_ARG_BOOL(struct isl_options, schedule_maximize_coincidence, 0,
+	"schedule-maximize-coincidence", 0,
+	"maximize the number of coincident dimensions in a band")
 ISL_ARG_BOOL(struct isl_options, schedule_split_scaled, 0,
 	"schedule-split-scaled", 1,
 	"split non-tilable bands with scaled schedules")
@@ -243,6 +246,11 @@ ISL_CTX_SET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
 	schedule_maximize_band_depth)
 ISL_CTX_GET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
 	schedule_maximize_band_depth)
+
+ISL_CTX_SET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
+	schedule_maximize_coincidence)
+ISL_CTX_GET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
+	schedule_maximize_coincidence)
 
 ISL_CTX_SET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
 	schedule_split_scaled)

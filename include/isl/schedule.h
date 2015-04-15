@@ -26,6 +26,9 @@ int isl_options_get_schedule_max_constant_term(isl_ctx *ctx);
 isl_stat isl_options_set_schedule_maximize_band_depth(isl_ctx *ctx, int val);
 int isl_options_get_schedule_maximize_band_depth(isl_ctx *ctx);
 
+isl_stat isl_options_set_schedule_maximize_coincidence(isl_ctx *ctx, int val);
+int isl_options_get_schedule_maximize_coincidence(isl_ctx *ctx);
+
 isl_stat isl_options_set_schedule_outer_coincidence(isl_ctx *ctx, int val);
 int isl_options_get_schedule_outer_coincidence(isl_ctx *ctx);
 

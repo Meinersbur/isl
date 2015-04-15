@@ -8986,6 +8986,14 @@ not reduce the width of the bands.
 Note that if the C<schedule_serialize_sccs> options is set, then
 the C<schedule_maximize_band_depth> option therefore has no effect.
 
+=item * schedule_maximize_coincidence
+
+This option is only effective if the C<schedule_whole_component>
+option is turned off.
+If the C<schedule_maximize_coincidence> option is set, then (clusters of)
+strongly connected components are only combined with each other
+if this does not reduce the number of coincident band members.
+
 =item * schedule_outer_coincidence
 
 If this option is set, then we try to construct schedules

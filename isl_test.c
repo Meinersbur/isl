@@ -3621,6 +3621,7 @@ static int test_bounded_coefficients_schedule(isl_ctx *ctx)
 int test_schedule(isl_ctx *ctx)
 {
 	const char *D, *W, *R, *V, *P, *S;
+	int max_coincidence;
 
 	/* Handle resulting schedule with zero bands. */
 	if (test_one_schedule(ctx, "{[]}", "{}", "{}", "{[] -> []}", 0, 0) < 0)
@@ -3710,8 +3711,11 @@ int test_schedule(isl_ctx *ctx)
 		    "S4[i] -> a[i,N] }";
 	S = "{ S1[i] -> [0,i,0]; S2[i] -> [1,i,0]; S3[i,j] -> [2,i,j]; "
 		"S4[i] -> [4,i,0] }";
+	max_coincidence = isl_options_get_schedule_maximize_coincidence(ctx);
+	isl_options_set_schedule_maximize_coincidence(ctx, 0);
 	if (test_one_schedule(ctx, D, W, R, S, 2, 0) < 0)
 		return -1;
+	isl_options_set_schedule_maximize_coincidence(ctx, max_coincidence);
 
 	D = "[N] -> { S_0[i, j] : i >= 1 and i <= N and j >= 1 and j <= N }";
 	W = "[N] -> { S_0[i, j] -> s[0] : i >= 1 and i <= N and j >= 1 and "
