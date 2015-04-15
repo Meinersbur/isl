@@ -534,7 +534,9 @@ struct isl_sched_edge {
  *	and sink spaces; there is one such table for each type;
  *	a given edge may be referenced from more than one table
  *	if the corresponding relation appears in more than one of the
- *	sets of dependences
+ *	sets of dependences; however, for each type there is only
+ *	a single edge between a given pair of source and sink space
+ *	in the entire graph
  *
  * node_table contains pointers into the node array, hashed on the space
  *
