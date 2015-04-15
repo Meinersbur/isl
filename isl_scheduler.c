@@ -1382,6 +1382,64 @@ static isl_stat extract_edge(__isl_take isl_map *map, void *user)
 	return graph_edge_table_add(ctx, graph, data->type, edge);
 }
 
+/* Initialize the schedule graph "graph" from the schedule constraints "sc".
+ *
+ * The context is included in the domain before the nodes of
+ * the graphs are extracted in order to be able to exploit
+ * any possible additional equalities.
+ * Note that this intersection is only performed locally here.
+ */
+static isl_stat graph_init(struct isl_sched_graph *graph,
+	__isl_keep isl_schedule_constraints *sc)
+{
+	isl_ctx *ctx;
+	isl_union_set *domain;
+	struct isl_extract_edge_data data;
+	enum isl_edge_type i;
+	isl_stat r;
+
+	if (!sc)
+		return isl_stat_error;
+
+	ctx = isl_schedule_constraints_get_ctx(sc);
+
+	domain = isl_schedule_constraints_get_domain(sc);
+	graph->n = isl_union_set_n_set(domain);
+	isl_union_set_free(domain);
+
+	if (graph_alloc(ctx, graph, graph->n,
+	    isl_schedule_constraints_n_map(sc)) < 0)
+		return isl_stat_error;
+
+	if (compute_max_row(graph, sc) < 0)
+		return isl_stat_error;
+	graph->root = 1;
+	graph->n = 0;
+	domain = isl_schedule_constraints_get_domain(sc);
+	domain = isl_union_set_intersect_params(domain,
+						isl_set_copy(sc->context));
+	r = isl_union_set_foreach_set(domain, &extract_node, graph);
+	isl_union_set_free(domain);
+	if (r < 0)
+		return isl_stat_error;
+	if (graph_init_table(ctx, graph) < 0)
+		return isl_stat_error;
+	for (i = isl_edge_first; i <= isl_edge_last; ++i)
+		graph->max_edge[i] = isl_union_map_n_map(sc->constraint[i]);
+	if (graph_init_edge_tables(ctx, graph) < 0)
+		return isl_stat_error;
+	graph->n_edge = 0;
+	data.graph = graph;
+	for (i = isl_edge_first; i <= isl_edge_last; ++i) {
+		data.type = i;
+		if (isl_union_map_foreach_map(sc->constraint[i],
+						&extract_edge, &data) < 0)
+			return isl_stat_error;
+	}
+
+	return isl_stat_ok;
+}
+
 /* Check whether there is any dependence from node[j] to node[i]
  * or from node[i] to node[j].
  */
@@ -4362,12 +4420,6 @@ static __isl_give isl_schedule_node *compute_schedule(isl_schedule_node *node,
  * then the conditional validity dependences may be violated inside
  * a tilable band, provided they have no adjacent non-local
  * condition dependences.
- *
- * The context is included in the domain before the nodes of
- * the graphs are extracted in order to be able to exploit
- * any possible additional equalities.
- * However, the returned schedule contains the original domain
- * (before this intersection).
  */
 __isl_give isl_schedule *isl_schedule_constraints_compute_schedule(
 	__isl_take isl_schedule_constraints *sc)
@@ -4376,49 +4428,19 @@ __isl_give isl_schedule *isl_schedule_constraints_compute_schedule(
 	struct isl_sched_graph graph = { 0 };
 	isl_schedule *sched;
 	isl_schedule_node *node;
-	isl_union_set *domain;
-	struct isl_extract_edge_data data;
-	enum isl_edge_type i;
-	int r;
 
 	sc = isl_schedule_constraints_align_params(sc);
 	if (!sc)
 		return NULL;
 
-	graph.n = isl_union_set_n_set(sc->domain);
-	if (graph.n == 0) {
+	if (isl_union_set_n_set(sc->domain) == 0) {
 		isl_union_set *domain = isl_union_set_copy(sc->domain);
 		isl_schedule_constraints_free(sc);
 		return isl_schedule_from_domain(domain);
 	}
-	if (graph_alloc(ctx, &graph, graph.n,
-	    isl_schedule_constraints_n_map(sc)) < 0)
+
+	if (graph_init(&graph, sc) < 0)
 		goto error;
-	if (compute_max_row(&graph, sc) < 0)
-		goto error;
-	graph.root = 1;
-	graph.n = 0;
-	domain = isl_union_set_copy(sc->domain);
-	domain = isl_union_set_intersect_params(domain,
-						isl_set_copy(sc->context));
-	r = isl_union_set_foreach_set(domain, &extract_node, &graph);
-	isl_union_set_free(domain);
-	if (r < 0)
-		goto error;
-	if (graph_init_table(ctx, &graph) < 0)
-		goto error;
-	for (i = isl_edge_first; i <= isl_edge_last; ++i)
-		graph.max_edge[i] = isl_union_map_n_map(sc->constraint[i]);
-	if (graph_init_edge_tables(ctx, &graph) < 0)
-		goto error;
-	graph.n_edge = 0;
-	data.graph = &graph;
-	for (i = isl_edge_first; i <= isl_edge_last; ++i) {
-		data.type = i;
-		if (isl_union_map_foreach_map(sc->constraint[i],
-						&extract_edge, &data) < 0)
-			goto error;
-	}
 
 	node = isl_schedule_node_from_domain(isl_union_set_copy(sc->domain));
 	node = isl_schedule_node_child(node, 0);
