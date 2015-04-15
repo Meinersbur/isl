@@ -4428,21 +4428,20 @@ __isl_give isl_schedule *isl_schedule_constraints_compute_schedule(
 	struct isl_sched_graph graph = { 0 };
 	isl_schedule *sched;
 	isl_schedule_node *node;
+	isl_union_set *domain;
 
 	sc = isl_schedule_constraints_align_params(sc);
-	if (!sc)
-		return NULL;
 
-	if (isl_union_set_n_set(sc->domain) == 0) {
-		isl_union_set *domain = isl_union_set_copy(sc->domain);
+	domain = isl_schedule_constraints_get_domain(sc);
+	if (isl_union_set_n_set(domain) == 0) {
 		isl_schedule_constraints_free(sc);
 		return isl_schedule_from_domain(domain);
 	}
 
 	if (graph_init(&graph, sc) < 0)
-		goto error;
+		domain = isl_union_set_free(domain);
 
-	node = isl_schedule_node_from_domain(isl_union_set_copy(sc->domain));
+	node = isl_schedule_node_from_domain(domain);
 	node = isl_schedule_node_child(node, 0);
 	if (graph.n > 0)
 		node = compute_schedule(node, &graph);
@@ -4453,10 +4452,6 @@ __isl_give isl_schedule *isl_schedule_constraints_compute_schedule(
 	isl_schedule_constraints_free(sc);
 
 	return sched;
-error:
-	graph_free(ctx, &graph);
-	isl_schedule_constraints_free(sc);
-	return NULL;
 }
 
 /* Compute a schedule for the given union of domains that respects
