@@ -1204,7 +1204,7 @@ static isl_stat extract_edge(__isl_take isl_map *map, void *user)
 	struct isl_extract_edge_data *data = user;
 	struct isl_sched_graph *graph = data->graph;
 	struct isl_sched_node *src, *dst;
-	isl_space *dim;
+	isl_space *space;
 	struct isl_sched_edge *edge;
 	isl_map *tagged = NULL;
 
@@ -1218,12 +1218,12 @@ static isl_stat extract_edge(__isl_take isl_map *map, void *user)
 		}
 	}
 
-	dim = isl_space_domain(isl_map_get_space(map));
-	src = graph_find_node(ctx, graph, dim);
-	isl_space_free(dim);
-	dim = isl_space_range(isl_map_get_space(map));
-	dst = graph_find_node(ctx, graph, dim);
-	isl_space_free(dim);
+	space = isl_space_domain(isl_map_get_space(map));
+	src = graph_find_node(ctx, graph, space);
+	isl_space_free(space);
+	space = isl_space_range(isl_map_get_space(map));
+	dst = graph_find_node(ctx, graph, space);
+	isl_space_free(space);
 
 	if (!src || !dst) {
 		isl_map_free(map);
