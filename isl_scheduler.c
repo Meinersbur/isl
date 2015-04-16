@@ -1465,22 +1465,18 @@ static isl_bool node_follows_strong(int i, int j, void *user)
 }
 
 /* Use Tarjan's algorithm for computing the strongly connected components
- * in the dependence graph (only validity edges).
- * If weak is set, we consider the graph to be undirected and
- * we effectively compute the (weakly) connected components.
- * Additionally, we also consider other edges when weak is set.
+ * in the dependence graph only considering those edges defined by "follows".
  */
-static int detect_ccs(isl_ctx *ctx, struct isl_sched_graph *graph, int weak)
+static int detect_ccs(isl_ctx *ctx, struct isl_sched_graph *graph,
+	isl_bool (*follows)(int i, int j, void *user))
 {
 	int i, n;
 	struct isl_tarjan_graph *g = NULL;
 
-	g = isl_tarjan_graph_init(ctx, graph->n,
-		weak ? &node_follows_weak : &node_follows_strong, graph);
+	g = isl_tarjan_graph_init(ctx, graph->n, follows, graph);
 	if (!g)
 		return -1;
 
-	graph->weak = weak;
 	graph->scc = 0;
 	i = 0;
 	n = graph->n;
@@ -1501,18 +1497,22 @@ static int detect_ccs(isl_ctx *ctx, struct isl_sched_graph *graph, int weak)
 
 /* Apply Tarjan's algorithm to detect the strongly connected components
  * in the dependence graph.
+ * Only consider the (conditional) validity dependences and clear "weak".
  */
 static int detect_sccs(isl_ctx *ctx, struct isl_sched_graph *graph)
 {
-	return detect_ccs(ctx, graph, 0);
+	graph->weak = 0;
+	return detect_ccs(ctx, graph, &node_follows_strong);
 }
 
 /* Apply Tarjan's algorithm to detect the (weakly) connected components
  * in the dependence graph.
+ * Consider all dependences and set "weak".
  */
 static int detect_wccs(isl_ctx *ctx, struct isl_sched_graph *graph)
 {
-	return detect_ccs(ctx, graph, 1);
+	graph->weak = 1;
+	return detect_ccs(ctx, graph, &node_follows_weak);
 }
 
 static int cmp_scc(const void *a, const void *b, void *data)
