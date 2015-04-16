@@ -3926,6 +3926,9 @@ static __isl_give isl_schedule_node *carry_dependences(
 /* Topologically sort statements mapped to the same schedule iteration
  * and add insert a sequence node in front of "node"
  * corresponding to this order.
+ * If "initialized" is set, then it may be assumed that compute_maxvar
+ * has been called on the current band.  Otherwise, call
+ * compute_maxvar if and before carry_dependences gets called.
  *
  * If it turns out to be impossible to sort the statements apart,
  * because different dependences impose different orderings
@@ -3933,7 +3936,8 @@ static __isl_give isl_schedule_node *carry_dependences(
  * it carries at least one more dependence.
  */
 static __isl_give isl_schedule_node *sort_statements(
-	__isl_take isl_schedule_node *node, struct isl_sched_graph *graph)
+	__isl_take isl_schedule_node *node, struct isl_sched_graph *graph,
+	int initialized)
 {
 	isl_ctx *ctx;
 	isl_union_set_list *filters;
@@ -3960,8 +3964,11 @@ static __isl_give isl_schedule_node *sort_statements(
 		return isl_schedule_node_free(node);
 
 	next_band(graph);
-	if (graph->scc < graph->n)
+	if (graph->scc < graph->n) {
+		if (!initialized && compute_maxvar(graph) < 0)
+			return isl_schedule_node_free(node);
 		return carry_dependences(node, graph);
+	}
 
 	filters = extract_sccs(ctx, graph);
 	node = isl_schedule_node_insert_sequence(node, filters);
@@ -4216,6 +4223,9 @@ error:
 /* Examine the current band (the rows between graph->band_start and
  * graph->n_total_row), deciding whether to drop it or add it to "node"
  * and then continue with the computation of the next band, if any.
+ * If "initialized" is set, then it may be assumed that compute_maxvar
+ * has been called on the current band.  Otherwise, call
+ * compute_maxvar if and before carry_dependences gets called.
  *
  * The caller keeps looking for a new row as long as
  * graph->n_row < graph->maxvar.  If the latest attempt to find
@@ -4235,7 +4245,8 @@ error:
  * sorting the statements based on the remaining dependences.
  */
 static __isl_give isl_schedule_node *compute_schedule_finish_band(
-	__isl_take isl_schedule_node *node, struct isl_sched_graph *graph)
+	__isl_take isl_schedule_node *node, struct isl_sched_graph *graph,
+	int initialized)
 {
 	int insert;
 
@@ -4253,6 +4264,8 @@ static __isl_give isl_schedule_node *compute_schedule_finish_band(
 			return compute_split_schedule(node, graph);
 		if (!empty)
 			return compute_next_band(node, graph, 1);
+		if (!initialized && compute_maxvar(graph) < 0)
+			return isl_schedule_node_free(node);
 		return carry_dependences(node, graph);
 	}
 
@@ -4261,7 +4274,7 @@ static __isl_give isl_schedule_node *compute_schedule_finish_band(
 		node = insert_current_band(node, graph, 1);
 		node = isl_schedule_node_child(node, 0);
 	}
-	node = sort_statements(node, graph);
+	node = sort_statements(node, graph, initialized);
 	if (insert)
 		node = isl_schedule_node_parent(node);
 
@@ -4394,7 +4407,7 @@ static __isl_give isl_schedule_node *compute_schedule_wcc(
 	if (compute_schedule_wcc_band(ctx, graph) < 0)
 		return isl_schedule_node_free(node);
 
-	return compute_schedule_finish_band(node, graph);
+	return compute_schedule_finish_band(node, graph, 1);
 }
 
 /* Compute a schedule for each group of nodes identified by node->scc
