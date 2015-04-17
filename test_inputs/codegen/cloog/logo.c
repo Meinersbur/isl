@@ -1,17 +1,17 @@
 {
-  for (int c1 = 0; c1 <= 7; c1 += 1)
+  for (int c1 = 0, c1_end = 7; c1 <= c1_end; c1 += 1)
     S1(1, c1);
-  for (int c0 = 2; c0 <= 6; c0 += 1) {
-    for (int c1 = 0; c1 < c0 - 1; c1 += 1)
+  for (int c0 = 2, c0_end = 6; c0 <= c0_end; c0 += 1) {
+    for (int c1 = 0, c1_end = c0 - 1; c1 < c1_end; c1 += 1)
       S2(c0, c1);
-    for (int c1 = c0 - 1; c1 <= 4; c1 += 1) {
+    for (int c1 = c0 - 1, c1_end = 4; c1 <= c1_end; c1 += 1) {
       S1(c0, c1);
       S2(c0, c1);
     }
-    for (int c1 = 5; c1 <= 7; c1 += 1)
+    for (int c1 = 5, c1_end = 7; c1 <= c1_end; c1 += 1)
       S1(c0, c1);
   }
-  for (int c0 = 7; c0 <= 8; c0 += 1)
-    for (int c1 = c0 - 1; c1 <= 7; c1 += 1)
+  for (int c0 = 7, c0_end = 8; c0 <= c0_end; c0 += 1)
+    for (int c1 = c0 - 1, c1_end = 7; c1 <= c1_end; c1 += 1)
       S1(c0, c1);
 }
