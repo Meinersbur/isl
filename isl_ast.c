@@ -19,6 +19,8 @@
 
 #include <isl_list_templ.c>
 
+#include <string.h>
+
 isl_ctx *isl_ast_print_options_get_ctx(
 	__isl_keep isl_ast_print_options *options)
 {
@@ -1847,9 +1849,69 @@ static __isl_give isl_printer *print_for_c(__isl_take isl_printer *p,
 		p = isl_printer_print_str(p, " = ");
 		p = isl_ast_expr_print(
 			node->u.f.init, p, isl_ast_print_options_copy(options));
+#if 1
+	isl_ctx *ctx = isl_ast_node_get_ctx(node);
+	id = isl_ast_expr_get_id(node->u.f.iterator);
+
+	isl_ast_expr *cond = node->u.f.cond;
+	enum isl_ast_expr_type cond_type = isl_ast_expr_get_type(cond);
+	enum isl_ast_op_type cond_op;
+	int cond_nargs;
+	isl_ast_expr *cond_lhs;
+	isl_ast_expr *cond_rhs;
+	enum isl_ast_expr_type cond_lhs_type;
+	isl_id *cond_lhs_id;
+
+	if (cond_type == isl_ast_expr_op) {
+		cond_op = isl_ast_expr_get_op_type(cond);
+		cond_nargs = isl_ast_expr_get_op_n_arg(cond);
+
+		if (cond_nargs >= 1) {
+			cond_lhs = cond->u.op.args[0];
+			cond_lhs_type = isl_ast_expr_get_type(cond_lhs);
+			if (cond_lhs_type == isl_ast_expr_id) {
+				cond_lhs_id = cond_lhs->u.id;
+			}
+		}
+
+		if (cond_nargs >= 2) {
+			cond_rhs = cond->u.op.args[1];
+		}
+	}
+
+	if (cond_type==isl_ast_expr_op && (cond_op==isl_ast_op_lt||cond_op==isl_ast_op_le||cond_op==isl_ast_op_ge||cond_op==isl_ast_op_gt) && cond_nargs==2
+			&& cond_lhs_type==isl_ast_expr_id && isl_id_cmp(cond_lhs_id, id)==0) //TODO: Test whether cond_rhs and inc not depend on anything that changes in the body, if that is even possible
+	{
+		p = isl_printer_print_str(p, ", ");
+
+		char buf[strlen(name)+4+1];
+		strcpy(buf, name);
+		strcpy(buf+sizeof(buf)-5, "_end");
+		p = isl_printer_print_str(p, buf);
+		p = isl_printer_print_str(p, " = ");
+		p = isl_ast_expr_print(cond_rhs, p, isl_ast_print_options_copy(options));
+		p = isl_printer_print_str(p, "; ");
+
+		isl_id *endid = isl_id_alloc(ctx, buf, NULL);
+
+		isl_ast_expr *cmp = isl_ast_expr_alloc_op(ctx, cond_op, 2);
+		cmp = isl_ast_expr_set_op_arg(cmp, 0, isl_ast_expr_copy(cond_lhs));
+		cmp = isl_ast_expr_set_op_arg(cmp, 1, isl_ast_expr_from_id(/*take*/endid)); endid=NULL;
+		p = isl_ast_expr_print(cmp, p, isl_ast_print_options_copy(options));
+
+		isl_ast_expr_free(cmp); cmp = NULL;
+	} else {
 		p = isl_printer_print_str(p, "; ");
 		p = isl_ast_expr_print(
 			node->u.f.cond, p, isl_ast_print_options_copy(options));
+	}
+
+	isl_id_free(id);
+#else
+		p = isl_printer_print_str(p, "; ");
+		p = isl_ast_expr_print(
+			node->u.f.cond, p, isl_ast_print_options_copy(options));
+#endif
 		p = isl_printer_print_str(p, "; ");
 		p = isl_printer_print_str(p, name);
 		p = isl_printer_print_str(p, " += ");
