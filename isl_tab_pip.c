@@ -2790,7 +2790,7 @@ static struct isl_vec *gbr_get_sample(struct isl_context_gbr *cgbr)
 
 		sample = isl_tab_sample(cgbr->tab);
 
-		if (isl_tab_rollback(cgbr->tab, snap) < 0) {
+		if (!sample || isl_tab_rollback(cgbr->tab, snap) < 0) {
 			isl_vec_free(sample);
 			return NULL;
 		}
