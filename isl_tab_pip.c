@@ -3269,10 +3269,8 @@ static void context_gbr_restore(struct isl_context *context, void *save)
 	struct isl_gbr_tab_undo *snap = (struct isl_gbr_tab_undo *)save;
 	if (!snap)
 		goto error;
-	if (isl_tab_rollback(cgbr->tab, snap->tab_snap) < 0) {
-		isl_tab_free(cgbr->tab);
-		cgbr->tab = NULL;
-	}
+	if (isl_tab_rollback(cgbr->tab, snap->tab_snap) < 0)
+		goto error;
 
 	if (snap->shifted_snap) {
 		if (isl_tab_rollback(cgbr->shifted, snap->shifted_snap) < 0)
