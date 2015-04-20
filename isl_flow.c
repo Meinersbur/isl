@@ -1958,6 +1958,9 @@ static void isl_compute_flow_schedule_data_clear(
 {
 	int i;
 
+	if (!data->sink)
+		return;
+
 	for (i = 0; i < data->n_sink; ++i) {
 		isl_map_free(data->sink[i].access);
 		isl_schedule_node_free(data->sink[i].node);
