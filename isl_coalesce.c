@@ -484,6 +484,8 @@ static enum isl_change check_facets(int i, int j,
 			if (info[j].ineq[l] != STATUS_CUT)
 				continue;
 			stat = status_in(info[j].bmap->ineq[l], info[i].tab);
+			if (stat < 0)
+				return isl_change_error;
 			if (stat != STATUS_VALID)
 				break;
 		}
