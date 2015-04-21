@@ -322,6 +322,8 @@ static int contains(struct isl_map *map, int i, int *ineq_i,
 			int stat;
 			isl_seq_neg(map->p[i]->eq[k], map->p[i]->eq[k], 1+dim);
 			stat = status_in(map->p[i]->eq[k], tab);
+			if (stat < 0)
+				return -1;
 			if (stat != STATUS_VALID)
 				return 0;
 		}
@@ -332,6 +334,8 @@ static int contains(struct isl_map *map, int i, int *ineq_i,
 		if (ineq_i[k] == STATUS_REDUNDANT)
 			continue;
 		stat = status_in(map->p[i]->ineq[k], tab);
+		if (stat < 0)
+			return -1;
 		if (stat != STATUS_VALID)
 			return 0;
 	}
@@ -383,6 +387,7 @@ static int is_adj_ineq_extension(__isl_keep isl_map *map, int i, int j,
 	unsigned n_eq = map->p[i]->n_eq;
 	unsigned total = isl_basic_map_total_dim(map->p[i]);
 	int r;
+	int super;
 
 	if (isl_tab_extend_cons(tabs[i], 1 + map->p[j]->n_ineq) < 0)
 		return -1;
@@ -415,7 +420,10 @@ static int is_adj_ineq_extension(__isl_keep isl_map *map, int i, int j,
 			return -1;
 	}
 
-	if (contains(map, j, ineq_j, tabs[i]))
+	super = contains(map, j, ineq_j, tabs[i]);
+	if (super < 0)
+		return -1;
+	if (super)
 		return fuse(map, i, j, tabs, eq_i, ineq_i, eq_j, ineq_j, NULL);
 
 	if (isl_tab_rollback(tabs[i], snap) < 0)
@@ -522,6 +530,8 @@ static int is_adj_eq_extension(struct isl_map *map, int i, int j, int k,
 	if (isl_tab_select_facet(tabs[i], n_eq + k) < 0)
 		return -1;
 	super = contains(map, j, ineq_j, tabs[i]);
+	if (super < 0)
+		return -1;
 	if (super) {
 		if (isl_tab_rollback(tabs[i], snap2) < 0)
 			return -1;
