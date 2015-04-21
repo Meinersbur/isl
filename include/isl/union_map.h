@@ -2,6 +2,7 @@
 #define ISL_UNION_MAP_H
 
 #include <isl/space.h>
+#include <isl/aff_type.h>
 #include <isl/map_type.h>
 #include <isl/union_map_type.h>
 #include <isl/printer.h>
