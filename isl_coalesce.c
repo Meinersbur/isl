@@ -2119,6 +2119,7 @@ static __isl_give isl_aff_list *set_up_substitutions(
 
 	return list;
 error:
+	isl_aff_free(aff_nan);
 	isl_local_space_free(ls);
 	isl_basic_set_free(wrap_hull);
 	isl_aff_list_free(list);
