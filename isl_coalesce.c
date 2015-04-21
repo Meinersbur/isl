@@ -290,6 +290,8 @@ static int check_facets(struct isl_map *map, int i, int j,
 			if (ineq_j[l] != STATUS_CUT)
 				continue;
 			stat = status_in(map->p[j]->ineq[l], tabs[i]);
+			if (stat < 0)
+				return -1;
 			if (stat != STATUS_VALID)
 				break;
 		}
