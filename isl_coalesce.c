@@ -2354,7 +2354,7 @@ static enum isl_change check_coalesce_into_eq(int i, int j,
 
 	list = set_up_substitutions(info[i].bmap, info[j].bmap, hull_j);
 	if (!list)
-		goto error;
+		return isl_change_error;
 	if (isl_aff_list_n_aff(list) < n_div_i)
 		change = isl_change_none;
 	else
