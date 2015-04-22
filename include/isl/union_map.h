@@ -265,6 +265,4 @@ ISL_DECLARE_LIST_FN(union_map)
 }
 #endif
 
-#include <isl/dim.h>
-
 #endif
