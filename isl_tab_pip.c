@@ -564,9 +564,8 @@ static void sol_map_free_wrap(struct isl_sol *sol)
 static void sol_map_add_empty(struct isl_sol_map *sol,
 	struct isl_basic_set *bset)
 {
-	if (!bset)
+	if (!bset || !sol->empty)
 		goto error;
-	isl_assert(bset->ctx, sol->empty, goto error);
 
 	sol->empty = isl_set_grow(sol->empty, 1);
 	bset = isl_basic_set_simplify(bset);
@@ -5257,9 +5256,8 @@ static void sol_pma_free(struct isl_sol_pma *sol_pma)
 static void sol_pma_add_empty(struct isl_sol_pma *sol,
 	__isl_take isl_basic_set *bset)
 {
-	if (!bset)
+	if (!bset || !sol->empty)
 		goto error;
-	isl_assert(bset->ctx, sol->empty, goto error);
 
 	sol->empty = isl_set_grow(sol->empty, 1);
 	bset = isl_basic_set_simplify(bset);
