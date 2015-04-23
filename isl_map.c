@@ -19,6 +19,7 @@
 #include <isl_ctx_private.h>
 #include <isl_map_private.h>
 #include <isl_blk.h>
+#include <isl/constraint.h>
 #include "isl_space_private.h"
 #include "isl_equalities.h"
 #include <isl_lp_private.h>
