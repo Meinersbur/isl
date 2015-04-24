@@ -3271,18 +3271,76 @@ error:
 	return NULL;
 }
 
+/* Extract out the disjunction imposed by "domain" on the outer
+ * schedule dimensions.
+ *
+ * In particular, remove all inner dimensions from "domain" (including
+ * the current dimension) and then remove the constraints that are shared
+ * by all disjuncts in the result.
+ */
+static __isl_give isl_set *extract_disjunction(__isl_take isl_set *domain,
+	__isl_keep isl_ast_build *build)
+{
+	isl_set *hull;
+	int depth, dim;
+
+	domain = isl_ast_build_specialize(build, domain);
+	depth = isl_ast_build_get_depth(build);
+	dim = isl_set_dim(domain, isl_dim_set);
+	domain = isl_set_eliminate(domain, isl_dim_set, depth, dim - depth);
+	domain = isl_set_remove_unknown_divs(domain);
+	hull = isl_set_copy(domain);
+	hull = isl_set_from_basic_set(isl_set_unshifted_simple_hull(hull));
+	domain = isl_set_gist(domain, hull);
+
+	return domain;
+}
+
+/* Add "guard" to the grafts in "list".
+ * "build" is the outer AST build, while "sub_build" includes "guard"
+ * in its generated domain.
+ *
+ * First combine the grafts into a single graft and then add the guard.
+ * If the list is empty, or if some error occurred, then simply return
+ * the list.
+ */
+static __isl_give isl_ast_graft_list *list_add_guard(
+	__isl_take isl_ast_graft_list *list, __isl_keep isl_set *guard,
+	__isl_keep isl_ast_build *build, __isl_keep isl_ast_build *sub_build)
+{
+	isl_ast_graft *graft;
+
+	list = isl_ast_graft_list_fuse(list, sub_build);
+
+	if (isl_ast_graft_list_n_ast_graft(list) != 1)
+		return list;
+
+	graft = isl_ast_graft_list_get_ast_graft(list, 0);
+	graft = isl_ast_graft_add_guard(graft, isl_set_copy(guard), build);
+	list = isl_ast_graft_list_set_ast_graft(list, 0, graft);
+
+	return list;
+}
+
 /* Generate code for a single component, after shifting (if any)
  * has been applied, in case the schedule was specified as a schedule tree.
  * In particular, do so for the specified subset of the schedule domain.
+ *
+ * If we are outside of the isolated part, then "domain" may include
+ * a disjunction.  Explicitly generate this disjunction at this point
+ * instead of relying on the disjunction getting hoisted back up
+ * to this level.
  */
 static __isl_give isl_ast_graft_list *generate_shifted_component_tree_part(
 	__isl_keep isl_union_map *executed, __isl_take isl_set *domain,
 	__isl_keep isl_ast_build *build, int isolated)
 {
 	isl_union_set *uset;
+	isl_ast_graft_list *list;
+	isl_ast_build *sub_build;
 	int empty;
 
-	uset = isl_union_set_from_set(domain);
+	uset = isl_union_set_from_set(isl_set_copy(domain));
 	executed = isl_union_map_copy(executed);
 	executed = isl_union_map_intersect_domain(executed, uset);
 	empty = isl_union_map_is_empty(executed);
@@ -3291,14 +3349,27 @@ static __isl_give isl_ast_graft_list *generate_shifted_component_tree_part(
 	if (empty) {
 		isl_ctx *ctx;
 		isl_union_map_free(executed);
+		isl_set_free(domain);
 		ctx = isl_ast_build_get_ctx(build);
 		return isl_ast_graft_list_alloc(ctx, 0);
 	}
 
-	build = isl_ast_build_copy(build);
-	return generate_shifted_component_tree_base(executed, build, isolated);
+	sub_build = isl_ast_build_copy(build);
+	if (!isolated) {
+		domain = extract_disjunction(domain, build);
+		sub_build = isl_ast_build_restrict_generated(sub_build,
+							isl_set_copy(domain));
+	}
+	list = generate_shifted_component_tree_base(executed,
+				isl_ast_build_copy(sub_build), isolated);
+	if (!isolated)
+		list = list_add_guard(list, domain, build, sub_build);
+	isl_ast_build_free(sub_build);
+	isl_set_free(domain);
+	return list;
 error:
 	isl_union_map_free(executed);
+	isl_set_free(domain);
 	return NULL;
 }
 
