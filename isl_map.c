@@ -7956,19 +7956,9 @@ int isl_map_plain_is_empty(__isl_keep isl_map *map)
 	return map ? map->n == 0 : -1;
 }
 
-int isl_map_fast_is_empty(__isl_keep isl_map *map)
-{
-	return isl_map_plain_is_empty(map);
-}
-
 int isl_set_plain_is_empty(struct isl_set *set)
 {
 	return set ? set->n == 0 : -1;
-}
-
-int isl_set_fast_is_empty(__isl_keep isl_set *set)
-{
-	return isl_set_plain_is_empty(set);
 }
 
 int isl_set_is_empty(struct isl_set *set)
@@ -8081,11 +8071,6 @@ int isl_set_plain_is_universe(__isl_keep isl_set *set)
 	return isl_map_plain_is_universe((isl_map *) set);
 }
 
-int isl_set_fast_is_universe(__isl_keep isl_set *set)
-{
-	return isl_set_plain_is_universe(set);
-}
-
 int isl_basic_map_is_empty(struct isl_basic_map *bmap)
 {
 	struct isl_basic_set *bset = NULL;
@@ -8142,21 +8127,11 @@ int isl_basic_map_plain_is_empty(__isl_keep isl_basic_map *bmap)
 	return ISL_F_ISSET(bmap, ISL_BASIC_MAP_EMPTY);
 }
 
-int isl_basic_map_fast_is_empty(__isl_keep isl_basic_map *bmap)
-{
-	return isl_basic_map_plain_is_empty(bmap);
-}
-
 int isl_basic_set_plain_is_empty(__isl_keep isl_basic_set *bset)
 {
 	if (!bset)
 		return -1;
 	return ISL_F_ISSET(bset, ISL_BASIC_SET_EMPTY);
-}
-
-int isl_basic_set_fast_is_empty(__isl_keep isl_basic_set *bset)
-{
-	return isl_basic_set_plain_is_empty(bset);
 }
 
 int isl_basic_set_is_empty(struct isl_basic_set *bset)
@@ -8881,12 +8856,6 @@ int isl_set_plain_is_fixed(__isl_keep isl_set *set,
 	return isl_map_plain_is_fixed(set, type, pos, val);
 }
 
-int isl_map_fast_is_fixed(__isl_keep isl_map *map,
-	enum isl_dim_type type, unsigned pos, isl_int *val)
-{
-	return isl_map_plain_is_fixed(map, type, pos, val);
-}
-
 /* Check if dimension dim has fixed value and if so and if val is not NULL,
  * then return this fixed value in *val.
  */
@@ -8904,12 +8873,6 @@ int isl_set_plain_dim_is_fixed(__isl_keep isl_set *set,
 	unsigned dim, isl_int *val)
 {
 	return isl_set_plain_has_fixed_var(set, isl_set_n_param(set) + dim, val);
-}
-
-int isl_set_fast_dim_is_fixed(__isl_keep isl_set *set,
-	unsigned dim, isl_int *val)
-{
-	return isl_set_plain_dim_is_fixed(set, dim, val);
 }
 
 /* Check if input variable in has fixed value and if so and if val is not NULL,
@@ -9287,20 +9250,10 @@ error:
 	return -1;
 }
 
-int isl_map_fast_is_equal(__isl_keep isl_map *map1, __isl_keep isl_map *map2)
-{
-	return isl_map_plain_is_equal(map1, map2);
-}
-
 int isl_set_plain_is_equal(__isl_keep isl_set *set1, __isl_keep isl_set *set2)
 {
 	return isl_map_plain_is_equal((struct isl_map *)set1,
 						(struct isl_map *)set2);
-}
-
-int isl_set_fast_is_equal(__isl_keep isl_set *set1, __isl_keep isl_set *set2)
-{
-	return isl_set_plain_is_equal(set1, set2);
 }
 
 /* Return an interval that ranges from min to max (inclusive)
