@@ -1005,11 +1005,11 @@ static struct isl_basic_set *uset_affine_hull(struct isl_basic_set *bset)
 	if (!cone)
 		goto error;
 	if (cone->n_eq == 0) {
-		struct isl_basic_set *hull;
+		isl_space *space;
+		space = isl_basic_set_get_space(bset);
 		isl_basic_set_free(cone);
-		hull = isl_basic_set_universe_like(bset);
 		isl_basic_set_free(bset);
-		return hull;
+		return isl_basic_set_universe(space);
 	}
 
 	if (cone->n_eq < isl_basic_set_total_dim(cone))
