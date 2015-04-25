@@ -3263,7 +3263,7 @@ error:
 
 /* Generate code for a single component, after shifting (if any)
  * has been applied, in case the schedule was specified as a schedule tree.
- * In particular, do so for the specified subset of the schedule domsain.
+ * In particular, do so for the specified subset of the schedule domain.
  */
 static __isl_give isl_ast_graft_list *generate_shifted_component_tree_part(
 	__isl_keep isl_union_map *executed, __isl_take isl_set *domain,
