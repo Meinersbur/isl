@@ -5088,6 +5088,7 @@ static __isl_give isl_ast_graft_list *build_ast_from_extension(
 	isl_set *set;
 
 	set = isl_ast_build_get_generated(build);
+	set = isl_set_from_basic_set(isl_set_simple_hull(set));
 	schedule_domain = isl_union_set_from_set(set);
 
 	extension = isl_schedule_node_extension_get_extension(node);
