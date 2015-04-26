@@ -5175,31 +5175,6 @@ __isl_give isl_map *isl_map_from_domain_and_range(__isl_take isl_set *domain,
 	return isl_map_apply_range(isl_map_reverse(domain), range);
 }
 
-struct isl_set *isl_set_from_map(struct isl_map *map)
-{
-	int i;
-	struct isl_set *set = NULL;
-
-	if (!map)
-		return NULL;
-	map = isl_map_cow(map);
-	if (!map)
-		return NULL;
-	map->dim = isl_space_as_set_space(map->dim);
-	if (!map->dim)
-		goto error;
-	set = (struct isl_set *)map;
-	for (i = 0; i < map->n; ++i) {
-		set->p[i] = isl_basic_set_from_basic_map(map->p[i]);
-		if (!set->p[i])
-			goto error;
-	}
-	return set;
-error:
-	isl_map_free(map);
-	return NULL;
-}
-
 __isl_give isl_map *isl_map_alloc_space(__isl_take isl_space *dim, int n,
 	unsigned flags)
 {

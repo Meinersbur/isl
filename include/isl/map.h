@@ -531,7 +531,6 @@ __isl_give isl_map *isl_map_from_domain_and_range(__isl_take isl_set *domain,
 	__isl_take isl_set *range);
 __isl_give isl_map *isl_map_from_set(__isl_take isl_set *set,
 	__isl_take isl_space *dim);
-struct isl_set *isl_set_from_map(struct isl_map *map);
 __isl_export
 __isl_give isl_basic_map *isl_map_sample(__isl_take isl_map *map);
 
