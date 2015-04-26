@@ -826,6 +826,9 @@ static int isl_set_overlaps(__isl_keep isl_set *set1, __isl_keep isl_set *set2)
 	isl_set *i;
 	int no_overlap;
 
+	if (!set1 || !set2)
+		return -1;
+
 	if (!isl_space_tuple_is_equal(set1->dim, isl_dim_set,
 					set2->dim, isl_dim_set))
 		return 0;
