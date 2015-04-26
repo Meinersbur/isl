@@ -476,13 +476,15 @@ static __isl_give isl_basic_map *add_delta_constraints(
 			continue;
 		if (eq && p != MIXED) {
 			k = isl_basic_map_alloc_equality(path);
+			if (k < 0)
+				goto error;
 			path_c = path->eq[k];
 		} else {
 			k = isl_basic_map_alloc_inequality(path);
+			if (k < 0)
+				goto error;
 			path_c = path->ineq[k];
 		}
-		if (k < 0)
-			goto error;
 		isl_seq_clr(path_c, 1 + isl_basic_map_total_dim(path));
 		if (p == PURE_VAR) {
 			isl_seq_cpy(path_c + off,
