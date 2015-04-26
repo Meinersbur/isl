@@ -1243,7 +1243,7 @@ __isl_give isl_basic_map *isl_map_sample(__isl_take isl_map *map)
 		isl_basic_map_free(sample);
 	}
 	if (i == map->n)
-		sample = isl_basic_map_empty_like_map(map);
+		sample = isl_basic_map_empty(isl_map_get_space(map));
 	isl_map_free(map);
 	return sample;
 error:
