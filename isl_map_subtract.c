@@ -546,7 +546,7 @@ static __isl_give isl_map *map_subtract( __isl_take isl_map *map1,
 	map1 = isl_map_remove_empty_parts(map1);
 	map2 = isl_map_remove_empty_parts(map2);
 
-	diff = isl_map_empty_like(map1);
+	diff = isl_map_empty(isl_map_get_space(map1));
 	for (i = 0; i < map1->n; ++i) {
 		struct isl_map *d;
 		d = basic_map_subtract(isl_basic_map_copy(map1->p[i]),
