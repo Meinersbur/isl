@@ -866,16 +866,20 @@ static __isl_give isl_map *construct_component(__isl_take isl_space *dim,
 	struct isl_set *range = NULL;
 	struct isl_map *app = NULL;
 	struct isl_map *path = NULL;
+	int overlaps;
 
 	domain = isl_map_domain(isl_map_copy(map));
 	domain = isl_set_coalesce(domain);
 	range = isl_map_range(isl_map_copy(map));
 	range = isl_set_coalesce(range);
-	if (!isl_set_overlaps(domain, range)) {
+	overlaps = isl_set_overlaps(domain, range);
+	if (overlaps < 0 || !overlaps) {
 		isl_set_free(domain);
 		isl_set_free(range);
 		isl_space_free(dim);
 
+		if (overlaps < 0)
+			map = NULL;
 		map = isl_map_copy(map);
 		map = isl_map_add_dims(map, isl_dim_in, 1);
 		map = isl_map_add_dims(map, isl_dim_out, 1);
