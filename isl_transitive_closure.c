@@ -758,6 +758,9 @@ static __isl_give isl_map *construct_extended_path(__isl_take isl_space *dim,
 	unsigned d;
 	int i, j, n;
 
+	if (!map)
+		goto error;
+
 	d = isl_map_dim(map, isl_dim_in);
 
 	path = isl_map_identity(isl_space_copy(dim));
