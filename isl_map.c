@@ -5371,37 +5371,6 @@ __isl_null isl_map *isl_map_free(__isl_take isl_map *map)
 	return NULL;
 }
 
-struct isl_map *isl_map_extend(struct isl_map *base,
-		unsigned nparam, unsigned n_in, unsigned n_out)
-{
-	int i;
-
-	base = isl_map_cow(base);
-	if (!base)
-		return NULL;
-
-	base->dim = isl_space_extend(base->dim, nparam, n_in, n_out);
-	if (!base->dim)
-		goto error;
-	for (i = 0; i < base->n; ++i) {
-		base->p[i] = isl_basic_map_extend_space(base->p[i],
-				isl_space_copy(base->dim), 0, 0, 0);
-		if (!base->p[i])
-			goto error;
-	}
-	return base;
-error:
-	isl_map_free(base);
-	return NULL;
-}
-
-struct isl_set *isl_set_extend(struct isl_set *base,
-		unsigned nparam, unsigned dim)
-{
-	return (struct isl_set *)isl_map_extend((struct isl_map *)base,
-							nparam, 0, dim);
-}
-
 static struct isl_basic_map *isl_basic_map_fix_pos_si(
 	struct isl_basic_map *bmap, unsigned pos, int value)
 {

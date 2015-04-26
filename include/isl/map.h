@@ -319,8 +319,6 @@ __isl_give isl_map *isl_map_lex_ge(__isl_take isl_space *set_dim);
 struct isl_map *isl_map_finalize(struct isl_map *map);
 __isl_null isl_map *isl_map_free(__isl_take isl_map *map);
 __isl_give isl_map *isl_map_copy(__isl_keep isl_map *map);
-struct isl_map *isl_map_extend(struct isl_map *base,
-		unsigned nparam, unsigned n_in, unsigned n_out);
 __isl_export
 __isl_give isl_map *isl_map_reverse(__isl_take isl_map *map);
 __isl_export

@@ -247,8 +247,6 @@ int isl_basic_set_plain_is_equal(__isl_keep isl_basic_set *bset1,
 
 struct isl_set *isl_set_alloc(struct isl_ctx *ctx,
 		unsigned nparam, unsigned dim, int n, unsigned flags);
-struct isl_set *isl_set_extend(struct isl_set *base,
-		unsigned nparam, unsigned dim);
 __isl_give isl_set *isl_set_empty(__isl_take isl_space *dim);
 __isl_give isl_set *isl_set_universe(__isl_take isl_space *dim);
 __isl_give isl_set *isl_set_nat_universe(__isl_take isl_space *dim);
