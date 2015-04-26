@@ -70,13 +70,15 @@ static __isl_give isl_map *set_path_length(__isl_take isl_map *map,
 	bmap = isl_basic_map_alloc_space(dim, 0, 1, 1);
 	if (exactly) {
 		k = isl_basic_map_alloc_equality(bmap);
+		if (k < 0)
+			goto error;
 		c = bmap->eq[k];
 	} else {
 		k = isl_basic_map_alloc_inequality(bmap);
+		if (k < 0)
+			goto error;
 		c = bmap->ineq[k];
 	}
-	if (k < 0)
-		goto error;
 	isl_seq_clr(c, 1 + isl_basic_map_total_dim(bmap));
 	isl_int_set_si(c[0], -length);
 	isl_int_set_si(c[1 + nparam + d - 1], -1);
