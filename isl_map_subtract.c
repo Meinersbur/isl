@@ -483,7 +483,7 @@ static __isl_give isl_map *basic_map_subtract(__isl_take isl_basic_map *bmap,
 {
 	struct isl_subtract_diff_collector sdc;
 	sdc.dc.add = &basic_map_subtract_add;
-	sdc.diff = isl_map_empty_like_basic_map(bmap);
+	sdc.diff = isl_map_empty(isl_basic_map_get_space(bmap));
 	if (basic_map_collect_diff(bmap, map, &sdc.dc) < 0) {
 		isl_map_free(sdc.diff);
 		sdc.diff = NULL;
