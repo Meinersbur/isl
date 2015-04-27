@@ -4857,22 +4857,16 @@ __isl_give isl_set *isl_map_params(__isl_take isl_map *map)
 struct isl_basic_set *isl_basic_map_domain(struct isl_basic_map *bmap)
 {
 	isl_space *space;
-	struct isl_basic_set *domain;
-	unsigned n_in;
 	unsigned n_out;
 
 	if (!bmap)
 		return NULL;
 	space = isl_space_domain(isl_basic_map_get_space(bmap));
 
-	n_in = isl_basic_map_n_in(bmap);
 	n_out = isl_basic_map_n_out(bmap);
-	domain = isl_basic_set_from_basic_map(bmap);
-	domain = isl_basic_set_project_out(domain, isl_dim_set, n_in, n_out);
+	bmap = isl_basic_map_project_out(bmap, isl_dim_out, 0, n_out);
 
-	domain = isl_basic_set_reset_space(domain, space);
-
-	return domain;
+	return isl_basic_map_reset_space(bmap, space);
 }
 
 int isl_basic_map_may_be_set(__isl_keep isl_basic_map *bmap)
