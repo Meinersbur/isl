@@ -3084,7 +3084,7 @@ __isl_give isl_set *isl_set_intersect_params(__isl_take isl_set *set,
 
 struct isl_basic_map *isl_basic_map_reverse(struct isl_basic_map *bmap)
 {
-	isl_space *dim;
+	isl_space *space;
 	struct isl_basic_set *bset;
 	unsigned in;
 
@@ -3093,11 +3093,11 @@ struct isl_basic_map *isl_basic_map_reverse(struct isl_basic_map *bmap)
 	bmap = isl_basic_map_cow(bmap);
 	if (!bmap)
 		return NULL;
-	dim = isl_space_reverse(isl_space_copy(bmap->dim));
+	space = isl_space_reverse(isl_space_copy(bmap->dim));
 	in = isl_basic_map_n_in(bmap);
 	bset = isl_basic_set_from_basic_map(bmap);
 	bset = isl_basic_set_swap_vars(bset, in);
-	return isl_basic_map_from_basic_set(bset, dim);
+	return isl_basic_map_from_basic_set(bset, space);
 }
 
 static __isl_give isl_basic_map *basic_map_space_reset(
