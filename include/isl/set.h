@@ -161,10 +161,6 @@ __isl_give isl_set *isl_set_upper_bound_val(__isl_take isl_set *set,
 __isl_give isl_set *isl_set_equate(__isl_take isl_set *set,
 	enum isl_dim_type type1, int pos1, enum isl_dim_type type2, int pos2);
 
-struct isl_set *isl_set_from_underlying_set(
-	struct isl_set *set, struct isl_basic_set *like);
-struct isl_set *isl_set_to_underlying_set(struct isl_set *set);
-
 __isl_export
 int isl_basic_set_is_equal(
 		struct isl_basic_set *bset1, struct isl_basic_set *bset2);
@@ -232,17 +228,13 @@ int isl_basic_set_is_subset(__isl_keep isl_basic_set *bset1,
 int isl_basic_set_plain_is_equal(__isl_keep isl_basic_set *bset1,
 	__isl_keep isl_basic_set *bset2);
 
-struct isl_set *isl_set_alloc(struct isl_ctx *ctx,
-		unsigned nparam, unsigned dim, int n, unsigned flags);
 __isl_give isl_set *isl_set_empty(__isl_take isl_space *dim);
 __isl_give isl_set *isl_set_universe(__isl_take isl_space *dim);
 __isl_give isl_set *isl_set_nat_universe(__isl_take isl_space *dim);
 __isl_give isl_set *isl_set_add_basic_set(__isl_take isl_set *set,
 						__isl_take isl_basic_set *bset);
-struct isl_set *isl_set_finalize(struct isl_set *set);
 __isl_give isl_set *isl_set_copy(__isl_keep isl_set *set);
 __isl_null isl_set *isl_set_free(__isl_take isl_set *set);
-struct isl_set *isl_set_dup(struct isl_set *set);
 __isl_constructor
 __isl_give isl_set *isl_set_from_basic_set(__isl_take isl_basic_set *bset);
 __isl_export
