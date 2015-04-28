@@ -7341,7 +7341,7 @@ __isl_give isl_map *isl_map_apply_range(__isl_take isl_map *map1,
  */
 struct isl_basic_set *isl_basic_map_deltas(struct isl_basic_map *bmap)
 {
-	isl_space *dims, *target_dim;
+	isl_space *space, *target_space;
 	struct isl_basic_set *bset;
 	unsigned dim;
 	unsigned nparam;
@@ -7352,14 +7352,14 @@ struct isl_basic_set *isl_basic_map_deltas(struct isl_basic_map *bmap)
 	isl_assert(bmap->ctx, isl_space_tuple_is_equal(bmap->dim, isl_dim_in,
 						  bmap->dim, isl_dim_out),
 		   goto error);
-	target_dim = isl_space_domain(isl_basic_map_get_space(bmap));
+	target_space = isl_space_domain(isl_basic_map_get_space(bmap));
 	dim = isl_basic_map_n_in(bmap);
 	nparam = isl_basic_map_n_param(bmap);
 	bset = isl_basic_set_from_basic_map(bmap);
 	bset = isl_basic_set_cow(bset);
-	dims = isl_basic_set_get_space(bset);
-	dims = isl_space_add_dims(dims, isl_dim_set, dim);
-	bset = isl_basic_set_extend_space(bset, dims, 0, dim, 0);
+	space = isl_basic_set_get_space(bset);
+	space = isl_space_add_dims(space, isl_dim_set, dim);
+	bset = isl_basic_set_extend_space(bset, space, 0, dim, 0);
 	bset = isl_basic_set_swap_vars(bset, 2*dim);
 	for (i = 0; i < dim; ++i) {
 		int j = isl_basic_map_alloc_equality(
@@ -7374,7 +7374,7 @@ struct isl_basic_set *isl_basic_map_deltas(struct isl_basic_map *bmap)
 		isl_int_set_si(bset->eq[j][1+nparam+2*dim+i], -1);
 	}
 	bset = isl_basic_set_project_out(bset, isl_dim_set, dim, 2*dim);
-	bset = isl_basic_set_reset_space(bset, target_dim);
+	bset = isl_basic_set_reset_space(bset, target_space);
 	return bset;
 error:
 	isl_basic_map_free(bmap);
