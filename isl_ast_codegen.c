@@ -2576,10 +2576,9 @@ static int foreach_iteration(__isl_take isl_set *domain,
 
 	lower = find_unroll_lower_bound(build, domain, depth, bmap, &n);
 	if (!lower)
-		domain = isl_set_free(domain);
-
-	if (init && init(n, user) < 0)
-		domain = isl_set_free(domain);
+		n = -1;
+	else if (init && init(n, user) < 0)
+		n = -1;
 	for (i = 0; i < n; ++i) {
 		isl_set *set;
 		isl_basic_set *bset;
@@ -2600,7 +2599,7 @@ static int foreach_iteration(__isl_take isl_set *domain,
 	isl_set_free(domain);
 	isl_basic_map_free(bmap);
 
-	return i < n ? -1 : 0;
+	return n < 0 || i < n ? -1 : 0;
 }
 
 /* Data structure for storing the results and the intermediate objects
