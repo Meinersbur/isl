@@ -1709,25 +1709,6 @@ error:
 	return NULL;
 }
 
-static __isl_give isl_basic_set *isl_basic_set_swap_vars(
-	__isl_take isl_basic_set *bset, unsigned n)
-{
-	unsigned dim;
-	unsigned nparam;
-
-	if (!bset)
-		return NULL;
-
-	nparam = isl_basic_set_n_param(bset);
-	dim = isl_basic_set_n_dim(bset);
-	isl_assert(bset->ctx, n <= dim, goto error);
-
-	return isl_basic_map_swap_vars(bset, 1 + nparam, n, dim - n);
-error:
-	isl_basic_set_free(bset);
-	return NULL;
-}
-
 struct isl_basic_map *isl_basic_map_set_to_empty(struct isl_basic_map *bmap)
 {
 	int i = 0;
@@ -7341,7 +7322,7 @@ __isl_give isl_map *isl_map_apply_range(__isl_take isl_map *map1,
  */
 struct isl_basic_set *isl_basic_map_deltas(struct isl_basic_map *bmap)
 {
-	isl_space *space, *target_space;
+	isl_space *target_space;
 	struct isl_basic_set *bset;
 	unsigned dim;
 	unsigned nparam;
@@ -7355,25 +7336,21 @@ struct isl_basic_set *isl_basic_map_deltas(struct isl_basic_map *bmap)
 	target_space = isl_space_domain(isl_basic_map_get_space(bmap));
 	dim = isl_basic_map_n_in(bmap);
 	nparam = isl_basic_map_n_param(bmap);
-	bset = isl_basic_set_from_basic_map(bmap);
-	bset = isl_basic_set_cow(bset);
-	space = isl_basic_set_get_space(bset);
-	space = isl_space_add_dims(space, isl_dim_set, dim);
-	bset = isl_basic_set_extend_space(bset, space, 0, dim, 0);
-	bset = isl_basic_set_swap_vars(bset, 2*dim);
+	bmap = isl_basic_map_from_range(isl_basic_map_wrap(bmap));
+	bmap = isl_basic_map_add_dims(bmap, isl_dim_in, dim);
+	bmap = isl_basic_map_extend_constraints(bmap, dim, 0);
 	for (i = 0; i < dim; ++i) {
-		int j = isl_basic_map_alloc_equality(
-					    (struct isl_basic_map *)bset);
+		int j = isl_basic_map_alloc_equality(bmap);
 		if (j < 0) {
-			bset = isl_basic_set_free(bset);
+			bmap = isl_basic_map_free(bmap);
 			break;
 		}
-		isl_seq_clr(bset->eq[j], 1 + isl_basic_set_total_dim(bset));
-		isl_int_set_si(bset->eq[j][1+nparam+i], 1);
-		isl_int_set_si(bset->eq[j][1+nparam+dim+i], 1);
-		isl_int_set_si(bset->eq[j][1+nparam+2*dim+i], -1);
+		isl_seq_clr(bmap->eq[j], 1 + isl_basic_map_total_dim(bmap));
+		isl_int_set_si(bmap->eq[j][1+nparam+i], 1);
+		isl_int_set_si(bmap->eq[j][1+nparam+dim+i], 1);
+		isl_int_set_si(bmap->eq[j][1+nparam+2*dim+i], -1);
 	}
-	bset = isl_basic_set_project_out(bset, isl_dim_set, dim, 2*dim);
+	bset = isl_basic_map_domain(bmap);
 	bset = isl_basic_set_reset_space(bset, target_space);
 	return bset;
 error:
