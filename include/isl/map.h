@@ -115,18 +115,9 @@ int isl_map_find_dim_by_name(__isl_keep isl_map *map, enum isl_dim_type type,
 
 int isl_basic_map_is_rational(__isl_keep isl_basic_map *bmap);
 
-struct isl_basic_map *isl_basic_map_alloc(struct isl_ctx *ctx,
-		unsigned nparam, unsigned in, unsigned out, unsigned extra,
-		unsigned n_eq, unsigned n_ineq);
 __isl_give isl_basic_map *isl_basic_map_identity(__isl_take isl_space *dim);
-struct isl_basic_map *isl_basic_map_finalize(struct isl_basic_map *bmap);
 __isl_null isl_basic_map *isl_basic_map_free(__isl_take isl_basic_map *bmap);
 __isl_give isl_basic_map *isl_basic_map_copy(__isl_keep isl_basic_map *bmap);
-struct isl_basic_map *isl_basic_map_extend(struct isl_basic_map *base,
-		unsigned nparam, unsigned n_in, unsigned n_out, unsigned extra,
-		unsigned n_eq, unsigned n_ineq);
-struct isl_basic_map *isl_basic_map_extend_constraints(
-		struct isl_basic_map *base, unsigned n_eq, unsigned n_ineq);
 __isl_give isl_basic_map *isl_basic_map_equal(
 	__isl_take isl_space *dim, unsigned n_equal);
 __isl_give isl_basic_map *isl_basic_map_less_at(__isl_take isl_space *dim,
@@ -196,7 +187,6 @@ __isl_give isl_basic_map *isl_basic_map_from_basic_set(
 	__isl_take isl_basic_set *bset, __isl_take isl_space *dim);
 __isl_export
 __isl_give isl_basic_map *isl_basic_map_sample(__isl_take isl_basic_map *bmap);
-struct isl_basic_map *isl_basic_map_simplify(struct isl_basic_map *bmap);
 __isl_export
 __isl_give isl_basic_map *isl_basic_map_detect_equalities(
 						__isl_take isl_basic_map *bmap);
