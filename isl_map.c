@@ -4343,25 +4343,6 @@ error:
 	return NULL;
 }
 
-struct isl_basic_set *isl_basic_set_from_basic_map(struct isl_basic_map *bmap)
-{
-	if (!bmap)
-		goto error;
-	if (bmap->dim->n_in == 0)
-		return (struct isl_basic_set *)bmap;
-	bmap = isl_basic_map_cow(bmap);
-	if (!bmap)
-		goto error;
-	bmap->dim = isl_space_as_set_space(bmap->dim);
-	if (!bmap->dim)
-		goto error;
-	bmap = isl_basic_map_finalize(bmap);
-	return (struct isl_basic_set *)bmap;
-error:
-	isl_basic_map_free(bmap);
-	return NULL;
-}
-
 /* For a div d = floor(f/m), add the constraint
  *
  *		f - m d >= 0

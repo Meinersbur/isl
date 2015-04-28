@@ -194,7 +194,6 @@ __isl_give isl_basic_map *isl_basic_map_eliminate(
 	enum isl_dim_type type, unsigned first, unsigned n);
 __isl_give isl_basic_map *isl_basic_map_from_basic_set(
 	__isl_take isl_basic_set *bset, __isl_take isl_space *dim);
-struct isl_basic_set *isl_basic_set_from_basic_map(struct isl_basic_map *bmap);
 __isl_export
 __isl_give isl_basic_map *isl_basic_map_sample(__isl_take isl_basic_map *bmap);
 struct isl_basic_map *isl_basic_map_simplify(struct isl_basic_map *bmap);
