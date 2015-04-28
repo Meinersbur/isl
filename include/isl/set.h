@@ -88,18 +88,8 @@ int isl_set_find_dim_by_name(__isl_keep isl_set *set, enum isl_dim_type type,
 
 int isl_basic_set_is_rational(__isl_keep isl_basic_set *bset);
 
-struct isl_basic_set *isl_basic_set_alloc(struct isl_ctx *ctx,
-		unsigned nparam, unsigned dim, unsigned extra,
-		unsigned n_eq, unsigned n_ineq);
-struct isl_basic_set *isl_basic_set_extend(struct isl_basic_set *base,
-		unsigned nparam, unsigned dim, unsigned extra,
-		unsigned n_eq, unsigned n_ineq);
-struct isl_basic_set *isl_basic_set_extend_constraints(
-		struct isl_basic_set *base, unsigned n_eq, unsigned n_ineq);
-struct isl_basic_set *isl_basic_set_finalize(struct isl_basic_set *bset);
 __isl_null isl_basic_set *isl_basic_set_free(__isl_take isl_basic_set *bset);
 __isl_give isl_basic_set *isl_basic_set_copy(__isl_keep isl_basic_set *bset);
-struct isl_basic_set *isl_basic_set_dup(struct isl_basic_set *bset);
 __isl_give isl_basic_set *isl_basic_set_empty(__isl_take isl_space *dim);
 __isl_give isl_basic_set *isl_basic_set_universe(__isl_take isl_space *dim);
 __isl_give isl_basic_set *isl_basic_set_nat_universe(__isl_take isl_space *dim);
@@ -128,7 +118,6 @@ __isl_give isl_basic_set *isl_basic_set_remove_dims(
 	enum isl_dim_type type, unsigned first, unsigned n);
 __isl_export
 __isl_give isl_basic_set *isl_basic_set_sample(__isl_take isl_basic_set *bset);
-struct isl_basic_set *isl_basic_set_simplify(struct isl_basic_set *bset);
 __isl_export
 __isl_give isl_basic_set *isl_basic_set_detect_equalities(
 						__isl_take isl_basic_set *bset);
@@ -172,8 +161,6 @@ __isl_give isl_set *isl_set_upper_bound_val(__isl_take isl_set *set,
 __isl_give isl_set *isl_set_equate(__isl_take isl_set *set,
 	enum isl_dim_type type1, int pos1, enum isl_dim_type type2, int pos2);
 
-struct isl_basic_set *isl_basic_set_from_underlying_set(
-	struct isl_basic_set *bset, struct isl_basic_set *like);
 struct isl_set *isl_set_from_underlying_set(
 	struct isl_set *set, struct isl_basic_set *like);
 struct isl_set *isl_set_to_underlying_set(struct isl_set *set);

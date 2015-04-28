@@ -111,6 +111,23 @@ struct isl_map {
 
 #include <isl_list_templ.h>
 
+__isl_give isl_basic_set *isl_basic_set_alloc(isl_ctx *ctx,
+	unsigned nparam, unsigned dim, unsigned extra,
+	unsigned n_eq, unsigned n_ineq);
+__isl_give isl_basic_set *isl_basic_set_extend(__isl_take isl_basic_set *base,
+	unsigned nparam, unsigned dim, unsigned extra,
+	unsigned n_eq, unsigned n_ineq);
+__isl_give isl_basic_set *isl_basic_set_extend_constraints(
+	__isl_take isl_basic_set *base, unsigned n_eq, unsigned n_ineq);
+__isl_give isl_basic_set *isl_basic_set_finalize(
+	__isl_take isl_basic_set *bset);
+__isl_give isl_basic_set *isl_basic_set_dup(__isl_keep isl_basic_set *bset);
+__isl_give isl_basic_set *isl_basic_set_simplify(
+	__isl_take isl_basic_set *bset);
+
+__isl_give isl_basic_set *isl_basic_set_from_underlying_set(
+	__isl_take isl_basic_set *bset, __isl_take isl_basic_set *like);
+
 __isl_give isl_map *isl_map_realign(__isl_take isl_map *map,
 	__isl_take isl_reordering *r);
 __isl_give isl_set *isl_set_realign(__isl_take isl_set *set,
