@@ -3171,7 +3171,7 @@ __isl_give isl_basic_set *isl_basic_set_insert_dims(
 	return isl_basic_map_insert_dims(bset, type, pos, n);
 }
 
-__isl_give isl_basic_map *isl_basic_map_add(__isl_take isl_basic_map *bmap,
+__isl_give isl_basic_map *isl_basic_map_add_dims(__isl_take isl_basic_map *bmap,
 		enum isl_dim_type type, unsigned n)
 {
 	if (!bmap)
@@ -3186,7 +3186,7 @@ __isl_give isl_basic_set *isl_basic_set_add_dims(__isl_take isl_basic_set *bset,
 	if (!bset)
 		return NULL;
 	isl_assert(bset->ctx, type != isl_dim_in, goto error);
-	return (isl_basic_set *)isl_basic_map_add((isl_basic_map *)bset, type, n);
+	return isl_basic_map_add_dims(bset, type, n);
 error:
 	isl_basic_set_free(bset);
 	return NULL;
