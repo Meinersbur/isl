@@ -2555,10 +2555,11 @@ static int foreach_iteration(__isl_take isl_set *domain,
 	int (*fn)(__isl_take isl_basic_set *bset, void *user), void *user)
 {
 	int i, n;
+	int empty;
 	int depth;
 	isl_multi_aff *expansion;
 	isl_basic_map *bmap;
-	isl_aff *lower;
+	isl_aff *lower = NULL;
 	isl_ast_build *stride_build;
 
 	depth = isl_ast_build_get_depth(build);
@@ -2577,10 +2578,17 @@ static int foreach_iteration(__isl_take isl_set *domain,
 
 	bmap = isl_basic_map_from_multi_aff(expansion);
 
-	lower = find_unroll_lower_bound(build, domain, depth, bmap, &n);
-	if (!lower)
+	empty = isl_set_is_empty(domain);
+	if (empty < 0) {
 		n = -1;
-	else if (init && init(n, user) < 0)
+	} else if (empty) {
+		n = 0;
+	} else {
+		lower = find_unroll_lower_bound(build, domain, depth, bmap, &n);
+		if (!lower)
+			n = -1;
+	}
+	if (n >= 0 && init && init(n, user) < 0)
 		n = -1;
 	for (i = 0; i < n; ++i) {
 		isl_set *set;
