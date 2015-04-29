@@ -1482,34 +1482,6 @@ __isl_give isl_ast_expr *isl_ast_build_expr_from_basic_set(
 	return res;
 }
 
-struct isl_expr_from_set_data {
-	isl_ast_build *build;
-	int first;
-	isl_ast_expr *res;
-};
-
-/* Construct an isl_ast_expr that evaluates the conditions defining "bset"
- * and add it to data->res.
- * The result is simplified in terms of data->build->domain.
- */
-static isl_stat expr_from_set(__isl_take isl_basic_set *bset, void *user)
-{
-	struct isl_expr_from_set_data *data = user;
-	isl_ast_expr *expr;
-
-	expr = isl_ast_build_expr_from_basic_set(data->build, bset);
-	if (data->first)
-		data->res = expr;
-	else
-		data->res = isl_ast_expr_or(data->res, expr);
-
-	data->first = 0;
-
-	if (!data->res)
-		return isl_stat_error;
-	return isl_stat_ok;
-}
-
 /* Construct an isl_ast_expr that evaluates the conditions defining "set".
  * The result is simplified in terms of build->domain.
  *
@@ -1520,17 +1492,36 @@ static isl_stat expr_from_set(__isl_take isl_basic_set *bset, void *user)
 __isl_give isl_ast_expr *isl_ast_build_expr_from_set_internal(
 	__isl_keep isl_ast_build *build, __isl_take isl_set *set)
 {
-	struct isl_expr_from_set_data data = { build, 1, NULL };
+	int i, n;
+	isl_basic_set *bset;
+	isl_basic_set_list *list;
+	isl_ast_expr *res;
 
-	if (isl_set_foreach_basic_set(set, &expr_from_set, &data) < 0)
-		data.res = isl_ast_expr_free(data.res);
-	else if (data.first) {
+	list = isl_set_get_basic_set_list(set);
+	isl_set_free(set);
+
+	if (!list)
+		return NULL;
+	n = isl_basic_set_list_n_basic_set(list);
+	if (n == 0) {
 		isl_ctx *ctx = isl_ast_build_get_ctx(build);
-		data.res = isl_ast_expr_from_val(isl_val_zero(ctx));
+		isl_basic_set_list_free(list);
+		return isl_ast_expr_from_val(isl_val_zero(ctx));
 	}
 
-	isl_set_free(set);
-	return data.res;
+	bset = isl_basic_set_list_get_basic_set(list, 0);
+	res = isl_ast_build_expr_from_basic_set(build, bset);
+
+	for (i = 1; i < n; ++i) {
+		isl_ast_expr *expr;
+
+		bset = isl_basic_set_list_get_basic_set(list, i);
+		expr = isl_ast_build_expr_from_basic_set(build, bset);
+		res = isl_ast_expr_or(res, expr);
+	}
+
+	isl_basic_set_list_free(list);
+	return res;
 }
 
 /* Construct an isl_ast_expr that evaluates the conditions defining "set".
