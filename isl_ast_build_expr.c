@@ -1487,6 +1487,12 @@ __isl_give isl_ast_expr *isl_ast_build_expr_from_basic_set(
  *
  * If "set" is an (obviously) empty set, then return the expression "0".
  *
+ * If there are multiple disjuncts in the description of the set,
+ * then subsequent disjuncts are simplified in a context where
+ * the previous disjuncts have been removed from build->domain.
+ * In particular, constraints that ensure that there is no overlap
+ * with these previous disjuncts, can be removed.
+ *
  * "set" lives in the internal schedule space.
  */
 __isl_give isl_ast_expr *isl_ast_build_expr_from_set_internal(
@@ -1495,6 +1501,7 @@ __isl_give isl_ast_expr *isl_ast_build_expr_from_set_internal(
 	int i, n;
 	isl_basic_set *bset;
 	isl_basic_set_list *list;
+	isl_set *domain;
 	isl_ast_expr *res;
 
 	list = isl_set_get_basic_set_list(set);
@@ -1509,17 +1516,26 @@ __isl_give isl_ast_expr *isl_ast_build_expr_from_set_internal(
 		return isl_ast_expr_from_val(isl_val_zero(ctx));
 	}
 
+	domain = isl_ast_build_get_domain(build);
+
 	bset = isl_basic_set_list_get_basic_set(list, 0);
+	set = isl_set_from_basic_set(isl_basic_set_copy(bset));
 	res = isl_ast_build_expr_from_basic_set(build, bset);
 
 	for (i = 1; i < n; ++i) {
 		isl_ast_expr *expr;
 
+		domain = isl_set_subtract(domain, set);
 		bset = isl_basic_set_list_get_basic_set(list, i);
+		set = isl_set_from_basic_set(isl_basic_set_copy(bset));
+		bset = isl_basic_set_gist(bset,
+				isl_set_simple_hull(isl_set_copy(domain)));
 		expr = isl_ast_build_expr_from_basic_set(build, bset);
 		res = isl_ast_expr_or(res, expr);
 	}
 
+	isl_set_free(domain);
+	isl_set_free(set);
 	isl_basic_set_list_free(list);
 	return res;
 }
