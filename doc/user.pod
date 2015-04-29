@@ -2181,6 +2181,14 @@ from
 	#include <isl/map.h>
 	int isl_map_n_basic_map(__isl_keep isl_map *map);
 
+It is also possible to obtain a list of basic sets from a set
+
+	#include <isl/set.h>
+	__isl_give isl_basic_set_list *isl_set_get_basic_set_list(
+		__isl_keep isl_set *set);
+
+The returned list can be manipulated using the functions in L<"Lists">.
+
 To iterate over the constraints of a basic set or map, use
 
 	#include <isl/constraint.h>
