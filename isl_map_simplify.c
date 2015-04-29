@@ -3478,7 +3478,10 @@ error:
 	return isl_basic_map_free(bmap);
 }
 
-/* Shift the integer division at position "div" of "bmap" by "shift".
+/* Shift the integer division at position "div" of "bmap"
+ * by "shift" times the variable at position "pos".
+ * "pos" is as determined by isl_basic_map_offset, i.e., pos == 0
+ * corresponds to the constant term.
  *
  * That is, if the integer division has the form
  *
@@ -3486,10 +3489,10 @@ error:
  *
  * then replace it by
  *
- *	floor((f(x) + shift * d)/d) - shift
+ *	floor((f(x) + shift * d * x_pos)/d) - shift * x_pos
  */
 __isl_give isl_basic_map *isl_basic_map_shift_div(
-	__isl_take isl_basic_map *bmap, int div, isl_int shift)
+	__isl_take isl_basic_map *bmap, int div, int pos, isl_int shift)
 {
 	int i;
 	unsigned total;
@@ -3500,18 +3503,18 @@ __isl_give isl_basic_map *isl_basic_map_shift_div(
 	total = isl_basic_map_dim(bmap, isl_dim_all);
 	total -= isl_basic_map_dim(bmap, isl_dim_div);
 
-	isl_int_addmul(bmap->div[div][1], shift, bmap->div[div][0]);
+	isl_int_addmul(bmap->div[div][1 + pos], shift, bmap->div[div][0]);
 
 	for (i = 0; i < bmap->n_eq; ++i) {
 		if (isl_int_is_zero(bmap->eq[i][1 + total + div]))
 			continue;
-		isl_int_submul(bmap->eq[i][0],
+		isl_int_submul(bmap->eq[i][pos],
 				shift, bmap->eq[i][1 + total + div]);
 	}
 	for (i = 0; i < bmap->n_ineq; ++i) {
 		if (isl_int_is_zero(bmap->ineq[i][1 + total + div]))
 			continue;
-		isl_int_submul(bmap->ineq[i][0],
+		isl_int_submul(bmap->ineq[i][pos],
 				shift, bmap->ineq[i][1 + total + div]);
 	}
 	for (i = 0; i < bmap->n_div; ++i) {
@@ -3519,7 +3522,7 @@ __isl_give isl_basic_map *isl_basic_map_shift_div(
 			continue;
 		if (isl_int_is_zero(bmap->div[i][1 + 1 + total + div]))
 			continue;
-		isl_int_submul(bmap->div[i][1],
+		isl_int_submul(bmap->div[i][1 + pos],
 				shift, bmap->div[i][1 + 1 + total + div]);
 	}
 

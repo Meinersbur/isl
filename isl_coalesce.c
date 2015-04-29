@@ -1689,7 +1689,7 @@ static int shift_div(struct isl_coalesce_info *info, int div, isl_int shift)
 {
 	unsigned total;
 
-	info->bmap = isl_basic_map_shift_div(info->bmap, div, shift);
+	info->bmap = isl_basic_map_shift_div(info->bmap, div, 0, shift);
 	if (!info->bmap)
 		return -1;
 
