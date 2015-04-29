@@ -375,6 +375,80 @@ struct isl_basic_set *isl_basic_set_normalize_constraints(
 		(struct isl_basic_map *)bset);
 }
 
+/* Assuming the variable at position "pos" has an integer coefficient
+ * in integer division "div", extract it from this integer division.
+ * "pos" is as determined by isl_basic_map_offset, i.e., pos == 0
+ * corresponds to the constant term.
+ *
+ * That is, the integer division is of the form
+ *
+ *	floor((... + c * d * x_pos + ...)/d)
+ *
+ * Replace it by
+ *
+ *	floor((... + 0 * x_pos + ...)/d) + c * x_pos
+ */
+static __isl_give isl_basic_map *remove_var_from_div(
+	__isl_take isl_basic_map *bmap, int div, int pos)
+{
+	isl_int shift;
+
+	isl_int_init(shift);
+	isl_int_divexact(shift, bmap->div[div][1 + pos], bmap->div[div][0]);
+	isl_int_neg(shift, shift);
+	bmap = isl_basic_map_shift_div(bmap, div, pos, shift);
+	isl_int_clear(shift);
+
+	return bmap;
+}
+
+/* Check if integer division "div" has any integral coefficient
+ * (or constant term).  If so, extract them from the integer division.
+ */
+static __isl_give isl_basic_map *remove_independent_vars_from_div(
+	__isl_take isl_basic_map *bmap, int div)
+{
+	int i;
+	unsigned total = 1 + isl_basic_map_total_dim(bmap);
+
+	for (i = 0; i < total; ++i) {
+		if (isl_int_is_zero(bmap->div[div][1 + i]))
+			continue;
+		if (!isl_int_is_divisible_by(bmap->div[div][1 + i],
+					     bmap->div[div][0]))
+			continue;
+		bmap = remove_var_from_div(bmap, div, i);
+		if (!bmap)
+			break;
+	}
+
+	return bmap;
+}
+
+/* Check if any known integer division has any integral coefficient
+ * (or constant term).  If so, extract them from the integer division.
+ */
+static __isl_give isl_basic_map *remove_independent_vars_from_divs(
+	__isl_take isl_basic_map *bmap)
+{
+	int i;
+
+	if (!bmap)
+		return NULL;
+	if (bmap->n_div == 0)
+		return bmap;
+
+	for (i = 0; i < bmap->n_div; ++i) {
+		if (isl_int_is_zero(bmap->div[i][0]))
+			continue;
+		bmap = remove_independent_vars_from_div(bmap, i);
+		if (!bmap)
+			break;
+	}
+
+	return bmap;
+}
+
 /* Remove any common factor in numerator and denominator of the div expression,
  * not taking into account the constant term.
  * That is, if the div is of the form
@@ -1318,6 +1392,7 @@ struct isl_basic_map *isl_basic_map_simplify(struct isl_basic_map *bmap)
 		if (isl_basic_map_plain_is_empty(bmap))
 			break;
 		bmap = isl_basic_map_normalize_constraints(bmap);
+		bmap = remove_independent_vars_from_divs(bmap);
 		bmap = normalize_div_expressions(bmap);
 		bmap = remove_duplicate_divs(bmap, &progress);
 		bmap = eliminate_unit_divs(bmap, &progress);
