@@ -278,6 +278,18 @@ static isl_stat add_guarded_poly(__isl_take isl_basic_set *bset,
 	return isl_stat_ok;
 }
 
+/* Plug in "sub" for the variable at position "pos" in "poly".
+ */
+static __isl_give isl_qpolynomial *plug_in_at_pos(
+	__isl_take isl_qpolynomial *poly, int pos,
+	__isl_take isl_qpolynomial *sub)
+{
+	poly = isl_qpolynomial_substitute(poly, isl_dim_in, pos, 1, &sub);
+	isl_qpolynomial_free(sub);
+
+	return poly;
+}
+
 /* Given a lower and upper bound on the final variable and constraints
  * on the remaining variables where these bounds are active,
  * eliminate the variable from data->poly based on these bounds.
@@ -320,10 +332,8 @@ static isl_stat propagate_on_bound_pair(__isl_take isl_constraint *lower,
 			isl_constraint_free(upper);
 		}
 		poly = isl_qpolynomial_copy(data->poly);
-		poly = isl_qpolynomial_substitute(poly, isl_dim_in, nvar, 1, &sub);
+		poly = plug_in_at_pos(poly, nvar, sub);
 		poly = isl_qpolynomial_drop_dims(poly, isl_dim_in, nvar, 1);
-
-		isl_qpolynomial_free(sub);
 	} else {
 		isl_qpolynomial *l, *u;
 		isl_qpolynomial *pos, *neg;
@@ -339,14 +349,11 @@ static isl_stat propagate_on_bound_pair(__isl_take isl_constraint *lower,
 		pos = isl_qpolynomial_terms_of_sign(data->poly, data->signs, sign);
 		neg = isl_qpolynomial_terms_of_sign(data->poly, data->signs, -sign);
 
-		pos = isl_qpolynomial_substitute(pos, isl_dim_in, nvar, 1, &u);
-		neg = isl_qpolynomial_substitute(neg, isl_dim_in, nvar, 1, &l);
+		pos = plug_in_at_pos(pos, nvar, u);
+		neg = plug_in_at_pos(neg, nvar, l);
 
 		poly = isl_qpolynomial_add(pos, neg);
 		poly = isl_qpolynomial_drop_dims(poly, isl_dim_in, nvar, 1);
-
-		isl_qpolynomial_free(u);
-		isl_qpolynomial_free(l);
 	}
 
 	if (isl_basic_set_dim(bset, isl_dim_set) == 0)
