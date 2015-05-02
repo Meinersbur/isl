@@ -438,7 +438,13 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_fold_on_domain(
 	for (i = 0; i < fold2->n; ++i) {
 		for (j = n1 - 1; j >= 0; --j) {
 			isl_qpolynomial *d;
-			int sgn;
+			int sgn, equal;
+			equal = isl_qpolynomial_plain_is_equal(res->qp[j],
+								fold2->qp[i]);
+			if (equal < 0)
+				goto error;
+			if (equal)
+				break;
 			d = isl_qpolynomial_sub(
 				isl_qpolynomial_copy(res->qp[j]),
 				isl_qpolynomial_copy(fold2->qp[i]));
