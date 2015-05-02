@@ -138,15 +138,15 @@ error:
 }
 
 static __isl_give isl_qpolynomial *bound2poly(__isl_take isl_constraint *bound,
-	__isl_take isl_space *dim, unsigned pos, int sign)
+	__isl_take isl_space *space, unsigned pos, int sign)
 {
 	if (!bound) {
 		if (sign > 0)
-			return isl_qpolynomial_infty_on_domain(dim);
+			return isl_qpolynomial_infty_on_domain(space);
 		else
-			return isl_qpolynomial_neginfty_on_domain(dim);
+			return isl_qpolynomial_neginfty_on_domain(space);
 	}
-	isl_space_free(dim);
+	isl_space_free(space);
 	return isl_qpolynomial_from_constraint(bound, isl_dim_set, pos);
 }
 
