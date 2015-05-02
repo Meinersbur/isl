@@ -775,6 +775,17 @@ int isl_qpolynomial_fold_is_empty(__isl_keep isl_qpolynomial_fold *fold)
 	return fold->n == 0;
 }
 
+/* Does "fold" represent max(NaN) or min(NaN)?
+ */
+int isl_qpolynomial_fold_is_nan(__isl_keep isl_qpolynomial_fold *fold)
+{
+	if (!fold)
+		return -1;
+	if (fold->n != 1)
+		return 0;
+	return isl_qpolynomial_is_nan(fold->qp[0]);
+}
+
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_fold(
 	__isl_take isl_qpolynomial_fold *fold1,
 	__isl_take isl_qpolynomial_fold *fold2)
