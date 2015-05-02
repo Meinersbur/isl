@@ -1758,8 +1758,8 @@ static struct isl_basic_set *remove_shifted_constraints(
 	int k, h, l;
 	isl_ctx *ctx;
 
-	if (!bset)
-		return NULL;
+	if (!bset || !context)
+		return bset;
 
 	size = round_up(4 * (context->n_ineq+1) / 3 - 1);
 	if (size == 0)

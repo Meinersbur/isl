@@ -9066,6 +9066,9 @@ int isl_basic_map_plain_cmp(const __isl_keep isl_basic_map *bmap1,
 	int i, cmp;
 	unsigned total;
 
+	if (!bmap1 || !bmap2)
+		return -1;
+
 	if (bmap1 == bmap2)
 		return 0;
 	if (ISL_F_ISSET(bmap1, ISL_BASIC_MAP_RATIONAL) !=
