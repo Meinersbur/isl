@@ -137,15 +137,23 @@ error:
 	return -2;
 }
 
+/* Return a positive ("sign" > 0) or negative ("sign" < 0) infinite polynomial
+ * with domain space "space".
+ */
+static __isl_give isl_qpolynomial *signed_infty(__isl_take isl_space *space,
+	int sign)
+{
+	if (sign > 0)
+		return isl_qpolynomial_infty_on_domain(space);
+	else
+		return isl_qpolynomial_neginfty_on_domain(space);
+}
+
 static __isl_give isl_qpolynomial *bound2poly(__isl_take isl_constraint *bound,
 	__isl_take isl_space *space, unsigned pos, int sign)
 {
-	if (!bound) {
-		if (sign > 0)
-			return isl_qpolynomial_infty_on_domain(space);
-		else
-			return isl_qpolynomial_neginfty_on_domain(space);
-	}
+	if (!bound)
+		return signed_infty(space, sign);
 	isl_space_free(space);
 	return isl_qpolynomial_from_constraint(bound, isl_dim_set, pos);
 }
