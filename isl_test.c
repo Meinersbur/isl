@@ -2077,7 +2077,7 @@ struct must_may {
 	isl_map *may;
 };
 
-static int collect_must_may(__isl_take isl_map *dep, int must,
+static isl_stat collect_must_may(__isl_take isl_map *dep, int must,
 	void *dep_user, void *user)
 {
 	struct must_may *mm = (struct must_may *)user;
@@ -2087,7 +2087,7 @@ static int collect_must_may(__isl_take isl_map *dep, int must,
 	else
 		mm->may = isl_map_union(mm->may, dep);
 
-	return 0;
+	return isl_stat_ok;
 }
 
 static int common_space(void *first, void *second)
@@ -2842,7 +2842,7 @@ int test_factorize(isl_ctx *ctx)
 	return 0;
 }
 
-static int check_injective(__isl_take isl_map *map, void *user)
+static isl_stat check_injective(__isl_take isl_map *map, void *user)
 {
 	int *injective = user;
 
@@ -2850,9 +2850,9 @@ static int check_injective(__isl_take isl_map *map, void *user)
 	isl_map_free(map);
 
 	if (*injective < 0 || !*injective)
-		return -1;
+		return isl_stat_error;
 
-	return 0;
+	return isl_stat_ok;
 }
 
 int test_one_schedule(isl_ctx *ctx, const char *d, const char *w,
@@ -4214,7 +4214,7 @@ struct isl_vertices_test_data {
 
 /* Check that "vertex" corresponds to one of the vertices in data->vertex.
  */
-static int find_vertex(__isl_take isl_vertex *vertex, void *user)
+static isl_stat find_vertex(__isl_take isl_vertex *vertex, void *user)
 {
 	struct isl_vertices_test_data *data = user;
 	isl_ctx *ctx;
@@ -4222,7 +4222,7 @@ static int find_vertex(__isl_take isl_vertex *vertex, void *user)
 	isl_basic_set *bset;
 	isl_pw_multi_aff *pma;
 	int i;
-	int equal;
+	isl_bool equal;
 
 	ctx = isl_vertex_get_ctx(vertex);
 	bset = isl_vertex_get_domain(vertex);
@@ -4244,9 +4244,9 @@ static int find_vertex(__isl_take isl_vertex *vertex, void *user)
 	isl_vertex_free(vertex);
 
 	if (equal < 0)
-		return -1;
+		return isl_stat_error;
 
-	return equal ? 0 : - 1;
+	return equal ? isl_stat_ok : isl_stat_error;
 }
 
 int test_vertices(isl_ctx *ctx)
