@@ -497,14 +497,16 @@ static void eliminate_var_using_equality(struct isl_basic_map *bmap,
 
 /* Assumes divs have been ordered if keep_divs is set.
  */
-static void eliminate_div(struct isl_basic_map *bmap, isl_int *eq,
-	unsigned div, int keep_divs)
+static __isl_give isl_basic_map *eliminate_div(__isl_take isl_basic_map *bmap,
+	isl_int *eq, unsigned div, int keep_divs)
 {
 	unsigned pos = isl_space_dim(bmap->dim, isl_dim_all) + div;
 
 	eliminate_var_using_equality(bmap, pos, eq, keep_divs, NULL);
 
-	isl_basic_map_drop_div(bmap, div);
+	bmap = isl_basic_map_drop_div(bmap, div);
+
+	return bmap;
 }
 
 /* Check if elimination of div "div" using equality "eq" would not
@@ -558,8 +560,9 @@ static struct isl_basic_map *eliminate_divs_eq(
 				continue;
 			modified = 1;
 			*progress = 1;
-			eliminate_div(bmap, bmap->eq[i], d, 1);
-			isl_basic_map_drop_equality(bmap, i);
+			bmap = eliminate_div(bmap, bmap->eq[i], d, 1);
+			if (isl_basic_map_drop_equality(bmap, i) < 0)
+				return isl_basic_map_free(bmap);
 			break;
 		}
 	}
@@ -773,7 +776,9 @@ static struct isl_basic_map *remove_duplicate_divs(
 		k = elim_for[l] - 1;
 		isl_int_set_si(eq.data[1+total_var+k], -1);
 		isl_int_set_si(eq.data[1+total_var+l], 1);
-		eliminate_div(bmap, eq.data, l, 1);
+		bmap = eliminate_div(bmap, eq.data, l, 1);
+		if (!bmap)
+			break;
 		isl_int_set_si(eq.data[1+total_var+k], 0);
 		isl_int_set_si(eq.data[1+total_var+l], 0);
 	}
