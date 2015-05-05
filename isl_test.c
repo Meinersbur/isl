@@ -1588,6 +1588,14 @@ struct {
 		"n <= 2147483647 and t0 <= 31 and t0 >= 0 and i0 >= 11 and "
 		"i0 >= 96 - 3t0 and i0 <= 95 + n - 3t0 and i0 <= 7 + n and "
 		"i8 >= -40 + i0 and i8 <= -10 + i0)) }" },
+	{ 0, "{ [i0, i1, i2] : "
+		"(exists (e0, e1 = floor((i0)/32), e2 = floor((i1)/32): "
+		"32e1 = i0 and 32e2 = i1 and i1 >= -31 + i0 and "
+		"i1 <= 31 + i0 and i2 >= -30 + i0 and i2 >= -30 + i1 and "
+		"32e0 >= -30 + i0 and 32e0 >= -30 + i1 and "
+		"32e0 >= -31 + i2 and 32e0 <= 30 + i2 and 32e0 <= 31 + i1 and "
+		"32e0 <= 31 + i0)) or "
+		"i0 >= 0 }" },
 };
 
 /* A specialized coalescing test case that would result
