@@ -887,8 +887,13 @@ __isl_give isl_space *isl_space_extend(__isl_take isl_space *space,
 		goto error;
 
 	if (space->ids) {
-		ids = isl_calloc_array(space->ctx, isl_id *,
-					 nparam + n_in + n_out);
+		unsigned n;
+		n = nparam + n_in + n_out;
+		if (n < nparam || n < n_in || n < n_out)
+			isl_die(isl_space_get_ctx(space), isl_error_invalid,
+				"overflow in total number of dimensions",
+				goto error);
+		ids = isl_calloc_array(space->ctx, isl_id *, n);
 		if (!ids)
 			goto error;
 		get_ids(space, isl_dim_param, 0, space->nparam, ids);
