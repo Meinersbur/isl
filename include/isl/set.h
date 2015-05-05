@@ -17,6 +17,7 @@
 #include <isl/point.h>
 #include <isl/local_space.h>
 #include <isl/val.h>
+#include <isl/stdint.h>
 
 #if defined(__cplusplus)
 extern "C" {

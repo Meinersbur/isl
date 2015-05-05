@@ -22,6 +22,7 @@
 #include <isl/list.h>
 #include <isl/map_type.h>
 #include <isl/val.h>
+#include <isl/stdint.h>
 
 #if defined(__cplusplus)
 extern "C" {
