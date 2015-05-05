@@ -867,44 +867,46 @@ static void get_ids(__isl_keep isl_space *dim, enum isl_dim_type type,
 		ids[i] = get_id(dim, type, first + i);
 }
 
-__isl_give isl_space *isl_space_extend(__isl_take isl_space *dim,
+__isl_give isl_space *isl_space_extend(__isl_take isl_space *space,
 			unsigned nparam, unsigned n_in, unsigned n_out)
 {
 	isl_id **ids = NULL;
 
-	if (!dim)
+	if (!space)
 		return NULL;
-	if (dim->nparam == nparam && dim->n_in == n_in && dim->n_out == n_out)
-		return dim;
+	if (space->nparam == nparam &&
+	    space->n_in == n_in && space->n_out == n_out)
+		return space;
 
-	isl_assert(dim->ctx, dim->nparam <= nparam, goto error);
-	isl_assert(dim->ctx, dim->n_in <= n_in, goto error);
-	isl_assert(dim->ctx, dim->n_out <= n_out, goto error);
+	isl_assert(space->ctx, space->nparam <= nparam, goto error);
+	isl_assert(space->ctx, space->n_in <= n_in, goto error);
+	isl_assert(space->ctx, space->n_out <= n_out, goto error);
 
-	dim = isl_space_cow(dim);
-	if (!dim)
+	space = isl_space_cow(space);
+	if (!space)
 		goto error;
 
-	if (dim->ids) {
-		ids = isl_calloc_array(dim->ctx, isl_id *,
+	if (space->ids) {
+		ids = isl_calloc_array(space->ctx, isl_id *,
 					 nparam + n_in + n_out);
 		if (!ids)
 			goto error;
-		get_ids(dim, isl_dim_param, 0, dim->nparam, ids);
-		get_ids(dim, isl_dim_in, 0, dim->n_in, ids + nparam);
-		get_ids(dim, isl_dim_out, 0, dim->n_out, ids + nparam + n_in);
-		free(dim->ids);
-		dim->ids = ids;
-		dim->n_id = nparam + n_in + n_out;
+		get_ids(space, isl_dim_param, 0, space->nparam, ids);
+		get_ids(space, isl_dim_in, 0, space->n_in, ids + nparam);
+		get_ids(space, isl_dim_out, 0, space->n_out,
+			ids + nparam + n_in);
+		free(space->ids);
+		space->ids = ids;
+		space->n_id = nparam + n_in + n_out;
 	}
-	dim->nparam = nparam;
-	dim->n_in = n_in;
-	dim->n_out = n_out;
+	space->nparam = nparam;
+	space->n_in = n_in;
+	space->n_out = n_out;
 
-	return dim;
+	return space;
 error:
 	free(ids);
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
