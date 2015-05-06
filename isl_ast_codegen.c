@@ -3294,8 +3294,8 @@ error:
 /* Generate code for a single component, after shifting (if any)
  * has been applied, in case the schedule was specified as a schedule tree.
  *
- * We first check if the user has specified a (non-empty) isolated
- * schedule domain.
+ * We first check if the user has specified an isolated schedule domain
+ * and that we are not already outside of this isolated schedule domain.
  * If so, we break up the schedule domain into iterations that
  * precede the isolated domain, the isolated domain itself,
  * the iterations that follow the isolated domain and
@@ -3314,7 +3314,7 @@ static __isl_give isl_ast_graft_list *generate_shifted_component_tree(
 	isl_union_set *schedule_domain;
 	isl_set *domain;
 	isl_basic_set *hull;
-	isl_set *isolated, *before, *after;
+	isl_set *isolated, *before, *after, *test;
 	isl_map *gt, *lt;
 	isl_ast_graft_list *list, *res;
 
@@ -3330,7 +3330,9 @@ static __isl_give isl_ast_graft_list *generate_shifted_component_tree(
 
 	isolated = isl_ast_build_get_isolated(build);
 	isolated = isl_set_intersect(isolated, isl_set_copy(domain));
-	empty = isl_set_is_empty(isolated);
+	test = isl_ast_build_specialize(build, isl_set_copy(isolated));
+	empty = isl_set_is_empty(test);
+	isl_set_free(test);
 	if (empty < 0)
 		goto error;
 	if (empty) {
