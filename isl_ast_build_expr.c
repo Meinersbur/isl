@@ -661,6 +661,12 @@ static int mod_constraint_is_simpler(struct isl_extract_mod_data *data,
  * not to involve any coefficients that are multiples of d, "c" may
  * very well involve such coefficients.  This means that we may actually
  * miss some cases.
+ *
+ * If the constant term is "too large", then the constraint is rejected,
+ * where "too large" is fairly arbitrarily set to 1 << 15.
+ * We do this to avoid picking up constraints that bound a variable
+ * by a very large number, say the largest or smallest possible
+ * variable in the representation of some integer type.
  */
 static isl_stat check_parallel_or_opposite(__isl_take isl_constraint *c,
 	void *user)
@@ -682,6 +688,15 @@ static isl_stat check_parallel_or_opposite(__isl_take isl_constraint *c,
 			if (a != b)
 				parallel = opposite = 0;
 		}
+	}
+
+	if (parallel || opposite) {
+		isl_val *v;
+
+		v = isl_val_abs(isl_constraint_get_constant_val(c));
+		if (isl_val_cmp_si(v, 1 << 15) > 0)
+			parallel = opposite = 0;
+		isl_val_free(v);
 	}
 
 	for (t = 0; t < 2; ++t) {
