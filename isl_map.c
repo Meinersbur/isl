@@ -9105,6 +9105,8 @@ int isl_set_plain_cmp(__isl_keep isl_set *set1, __isl_keep isl_set *set2)
 int isl_basic_map_plain_is_equal(__isl_keep isl_basic_map *bmap1,
 	__isl_keep isl_basic_map *bmap2)
 {
+	if (!bmap1 || !bmap2)
+		return -1;
 	return isl_basic_map_plain_cmp(bmap1, bmap2) == 0;
 }
 
