@@ -775,7 +775,7 @@ error:
 	return NULL;
 }
 
-/* Return 1 is the singleton map "map1" is a subset of "map2",
+/* Return 1 if the singleton map "map1" is a subset of "map2",
  * i.e., if the single element of "map1" is also an element of "map2".
  * Assumes "map2" has known divs.
  */
