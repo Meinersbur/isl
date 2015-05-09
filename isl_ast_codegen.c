@@ -5225,8 +5225,6 @@ static int before_each_mark(__isl_keep isl_id *mark,
 
 /* Call the after_each_mark callback, if requested by the user.
  *
- * Return 0 on success and -1 on error.
- *
  * The caller is responsible for recording the current inverse schedule
  * in "build".
  */
