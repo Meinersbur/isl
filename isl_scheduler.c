@@ -2639,53 +2639,6 @@ static void next_band(struct isl_sched_graph *graph)
 	graph->n_band++;
 }
 
-/* Topologically sort statements mapped to the same schedule iteration
- * and add a row to the schedule corresponding to this order.
- */
-static int sort_statements(isl_ctx *ctx, struct isl_sched_graph *graph)
-{
-	int i, j;
-
-	if (graph->n <= 1)
-		return 0;
-
-	if (update_edges(ctx, graph) < 0)
-		return -1;
-
-	if (graph->n_edge == 0)
-		return 0;
-
-	if (detect_sccs(ctx, graph) < 0)
-		return -1;
-
-	if (graph->n_total_row >= graph->max_row)
-		isl_die(ctx, isl_error_internal,
-			"too many schedule rows", return -1);
-
-	for (i = 0; i < graph->n; ++i) {
-		struct isl_sched_node *node = &graph->node[i];
-		int row = isl_mat_rows(node->sched);
-		int cols = isl_mat_cols(node->sched);
-
-		isl_map_free(node->sched_map);
-		node->sched_map = NULL;
-		node->sched = isl_mat_add_rows(node->sched, 1);
-		if (!node->sched)
-			return -1;
-		node->sched = isl_mat_set_element_si(node->sched, row, 0,
-						     node->scc);
-		for (j = 1; j < cols; ++j)
-			node->sched = isl_mat_set_element_si(node->sched,
-							     row, j, 0);
-		node->band[graph->n_total_row] = graph->n_band;
-	}
-
-	graph->n_total_row++;
-	next_band(graph);
-
-	return 0;
-}
-
 /* Construct an isl_schedule based on the computed schedule stored
  * in graph and with parameters specified by dim.
  */
@@ -3684,6 +3637,53 @@ static int carry_dependences(isl_ctx *ctx, struct isl_sched_graph *graph)
 		return -1;
 
 	return compute_next_band(ctx, graph);
+}
+
+/* Topologically sort statements mapped to the same schedule iteration
+ * and add a row to the schedule corresponding to this order.
+ */
+static int sort_statements(isl_ctx *ctx, struct isl_sched_graph *graph)
+{
+	int i, j;
+
+	if (graph->n <= 1)
+		return 0;
+
+	if (update_edges(ctx, graph) < 0)
+		return -1;
+
+	if (graph->n_edge == 0)
+		return 0;
+
+	if (detect_sccs(ctx, graph) < 0)
+		return -1;
+
+	if (graph->n_total_row >= graph->max_row)
+		isl_die(ctx, isl_error_internal,
+			"too many schedule rows", return -1);
+
+	for (i = 0; i < graph->n; ++i) {
+		struct isl_sched_node *node = &graph->node[i];
+		int row = isl_mat_rows(node->sched);
+		int cols = isl_mat_cols(node->sched);
+
+		isl_map_free(node->sched_map);
+		node->sched_map = NULL;
+		node->sched = isl_mat_add_rows(node->sched, 1);
+		if (!node->sched)
+			return -1;
+		node->sched = isl_mat_set_element_si(node->sched, row, 0,
+						     node->scc);
+		for (j = 1; j < cols; ++j)
+			node->sched = isl_mat_set_element_si(node->sched,
+							     row, j, 0);
+		node->band[graph->n_total_row] = graph->n_band;
+	}
+
+	graph->n_total_row++;
+	next_band(graph);
+
+	return 0;
 }
 
 /* Are there any (non-empty) (conditional) validity edges in the graph?
