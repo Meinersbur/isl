@@ -7792,6 +7792,7 @@ __isl_give isl_set *isl_set_split_dims(__isl_take isl_set *set,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
 	int i;
+	unsigned offset;
 	isl_basic_set *nonneg;
 	isl_basic_set *neg;
 
@@ -7802,11 +7803,11 @@ __isl_give isl_set *isl_set_split_dims(__isl_take isl_set *set,
 
 	isl_assert(set->ctx, first + n <= isl_set_dim(set, type), goto error);
 
+	offset = pos(set->dim, type);
 	for (i = 0; i < n; ++i) {
 		nonneg = nonneg_halfspace(isl_set_get_space(set),
-					  pos(set->dim, type) + first + i);
-		neg = neg_halfspace(isl_set_get_space(set),
-					  pos(set->dim, type) + first + i);
+					  offset + first + i);
+		neg = neg_halfspace(isl_set_get_space(set), offset + first + i);
 
 		set = isl_set_intersect(set, isl_basic_set_union(nonneg, neg));
 	}
@@ -9103,6 +9104,8 @@ int isl_set_plain_cmp(__isl_keep isl_set *set1, __isl_keep isl_set *set2)
 int isl_basic_map_plain_is_equal(__isl_keep isl_basic_map *bmap1,
 	__isl_keep isl_basic_map *bmap2)
 {
+	if (!bmap1 || !bmap2)
+		return -1;
 	return isl_basic_map_plain_cmp(bmap1, bmap2) == 0;
 }
 
