@@ -3641,6 +3641,11 @@ static int carry_dependences(isl_ctx *ctx, struct isl_sched_graph *graph)
 
 /* Topologically sort statements mapped to the same schedule iteration
  * and add a row to the schedule corresponding to this order.
+ *
+ * If it turns out to be impossible to sort the statements apart,
+ * because different dependences impose different orderings
+ * on the statements, then we extend the schedule such that
+ * it carries at least one more dependence.
  */
 static int sort_statements(isl_ctx *ctx, struct isl_sched_graph *graph)
 {
@@ -3657,6 +3662,9 @@ static int sort_statements(isl_ctx *ctx, struct isl_sched_graph *graph)
 
 	if (detect_sccs(ctx, graph) < 0)
 		return -1;
+
+	if (graph->scc < graph->n)
+		return carry_dependences(ctx, graph);
 
 	if (graph->n_total_row >= graph->max_row)
 		isl_die(ctx, isl_error_internal,
