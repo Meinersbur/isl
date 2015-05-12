@@ -2399,6 +2399,8 @@ static int test_bound(isl_ctx *ctx)
 	pwf = isl_pw_qpolynomial_bound(pwqp, isl_fold_max, NULL);
 	assert(isl_pw_qpolynomial_fold_dim(pwf, isl_dim_in) == 1);
 	isl_pw_qpolynomial_fold_free(pwf);
+
+	return 0;
 }
 
 void test_lift(isl_ctx *ctx)
