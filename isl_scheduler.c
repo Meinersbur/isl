@@ -4082,6 +4082,7 @@ static __isl_give isl_schedule_node *compute_schedule_wcc(
 	int use_coincidence;
 	int force_coincidence = 0;
 	int check_conditional;
+	int insert;
 	isl_ctx *ctx;
 
 	if (!node)
@@ -4152,12 +4153,13 @@ static __isl_give isl_schedule_node *compute_schedule_wcc(
 		use_coincidence = has_coincidence;
 	}
 
-	if (graph->n_total_row > graph->band_start) {
+	insert = graph->n_total_row > graph->band_start;
+	if (insert) {
 		node = insert_current_band(node, graph, 1);
 		node = isl_schedule_node_child(node, 0);
 	}
 	node = sort_statements(node, graph);
-	if (graph->n_total_row > graph->band_start)
+	if (insert)
 		node = isl_schedule_node_parent(node);
 
 	return node;
