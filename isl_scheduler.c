@@ -2794,43 +2794,6 @@ static __isl_give isl_union_set_list *extract_split(isl_ctx *ctx,
 	return filters;
 }
 
-/* Topologically sort statements mapped to the same schedule iteration
- * and add insert a sequence node in front of "node"
- * corresponding to this order.
- */
-static __isl_give isl_schedule_node *sort_statements(
-	__isl_take isl_schedule_node *node, struct isl_sched_graph *graph)
-{
-	isl_ctx *ctx;
-	isl_union_set_list *filters;
-
-	if (!node)
-		return NULL;
-
-	ctx = isl_schedule_node_get_ctx(node);
-	if (graph->n < 1)
-		isl_die(ctx, isl_error_internal,
-			"graph should have at least one node",
-			return isl_schedule_node_free(node));
-
-	if (graph->n == 1)
-		return node;
-
-	if (update_edges(ctx, graph) < 0)
-		return isl_schedule_node_free(node);
-
-	if (graph->n_edge == 0)
-		return node;
-
-	if (detect_sccs(ctx, graph) < 0)
-		return isl_schedule_node_free(node);
-
-	filters = extract_sccs(ctx, graph);
-	node = isl_schedule_node_insert_sequence(node, filters);
-
-	return node;
-}
-
 /* Copy nodes that satisfy node_pred from the src dependence graph
  * to the dst dependence graph.
  */
@@ -3783,6 +3746,43 @@ static __isl_give isl_schedule_node *carry_dependences(
 		graph->n_row--;
 
 	return split_scaled(node, graph);
+}
+
+/* Topologically sort statements mapped to the same schedule iteration
+ * and add insert a sequence node in front of "node"
+ * corresponding to this order.
+ */
+static __isl_give isl_schedule_node *sort_statements(
+	__isl_take isl_schedule_node *node, struct isl_sched_graph *graph)
+{
+	isl_ctx *ctx;
+	isl_union_set_list *filters;
+
+	if (!node)
+		return NULL;
+
+	ctx = isl_schedule_node_get_ctx(node);
+	if (graph->n < 1)
+		isl_die(ctx, isl_error_internal,
+			"graph should have at least one node",
+			return isl_schedule_node_free(node));
+
+	if (graph->n == 1)
+		return node;
+
+	if (update_edges(ctx, graph) < 0)
+		return isl_schedule_node_free(node);
+
+	if (graph->n_edge == 0)
+		return node;
+
+	if (detect_sccs(ctx, graph) < 0)
+		return isl_schedule_node_free(node);
+
+	filters = extract_sccs(ctx, graph);
+	node = isl_schedule_node_insert_sequence(node, filters);
+
+	return node;
 }
 
 /* Are there any (non-empty) (conditional) validity edges in the graph?
