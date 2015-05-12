@@ -3751,6 +3751,11 @@ static __isl_give isl_schedule_node *carry_dependences(
 /* Topologically sort statements mapped to the same schedule iteration
  * and add insert a sequence node in front of "node"
  * corresponding to this order.
+ *
+ * If it turns out to be impossible to sort the statements apart,
+ * because different dependences impose different orderings
+ * on the statements, then we extend the schedule such that
+ * it carries at least one more dependence.
  */
 static __isl_give isl_schedule_node *sort_statements(
 	__isl_take isl_schedule_node *node, struct isl_sched_graph *graph)
@@ -3778,6 +3783,10 @@ static __isl_give isl_schedule_node *sort_statements(
 
 	if (detect_sccs(ctx, graph) < 0)
 		return isl_schedule_node_free(node);
+
+	next_band(graph);
+	if (graph->scc < graph->n)
+		return carry_dependences(node, graph);
 
 	filters = extract_sccs(ctx, graph);
 	node = isl_schedule_node_insert_sequence(node, filters);
