@@ -14,14 +14,15 @@
 #include <isl/ctx.h>
 #include <isl_tarjan.h>
 
-void isl_tarjan_graph_free(struct isl_tarjan_graph *g)
+struct isl_tarjan_graph *isl_tarjan_graph_free(struct isl_tarjan_graph *g)
 {
 	if (!g)
-		return;
+		return NULL;
 	free(g->node);
 	free(g->stack);
 	free(g->order);
 	free(g);
+	return NULL;
 }
 
 static struct isl_tarjan_graph *isl_tarjan_graph_alloc(isl_ctx *ctx, int len)
@@ -128,11 +129,8 @@ struct isl_tarjan_graph *isl_tarjan_graph_init(isl_ctx *ctx, int len,
 		if (g->node[i].index >= 0)
 			continue;
 		if (isl_tarjan_components(g, i, follows, user) < 0)
-			goto error;
+			return isl_tarjan_graph_free(g);
 	}
 
 	return g;
-error:
-	isl_tarjan_graph_free(g);
-	return NULL;
 }
