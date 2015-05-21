@@ -985,7 +985,7 @@ __isl_give UNION *FN(UNION,mul_isl_int)(__isl_take UNION *u, isl_int v)
 		u->type = isl_fold_type_negate(u->type);
 #endif
 	if (isl_hash_table_foreach(u->space->ctx, &u->table,
-				    &FN(UNION,mul_isl_int_entry), v) < 0)
+				    &FN(UNION,mul_isl_int_entry), &v) < 0)
 		goto error;
 
 	return u;
