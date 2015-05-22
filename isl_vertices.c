@@ -623,7 +623,7 @@ static int add_chamber(struct isl_chamber_list **list,
 	c->c.vertices = isl_alloc_array(tab->mat->ctx, int, n_vertices);
 	if (n_vertices && !c->c.vertices)
 		goto error;
-	c->c.dom = isl_basic_set_from_basic_map(isl_basic_map_copy(tab->bmap));
+	c->c.dom = isl_basic_set_copy(isl_tab_peek_bset(tab));
 	c->c.dom = isl_basic_set_set_rational(c->c.dom);
 	c->c.dom = isl_basic_set_cow(c->c.dom);
 	c->c.dom = isl_basic_set_update_from_tab(c->c.dom, tab);
@@ -700,7 +700,7 @@ static struct isl_facet_todo *create_todo(struct isl_tab *tab, int con)
 	if (!todo->constraint)
 		goto error;
 	isl_seq_neg(todo->constraint->el, tab->bmap->ineq[con], 1 + tab->n_var);
-	todo->bset = isl_basic_set_from_basic_map(isl_basic_map_copy(tab->bmap));
+	todo->bset = isl_basic_set_copy(isl_tab_peek_bset(tab));
 	todo->bset = isl_basic_set_set_rational(todo->bset);
 	todo->bset = isl_basic_set_cow(todo->bset);
 	todo->bset = isl_basic_set_update_from_tab(todo->bset, tab);

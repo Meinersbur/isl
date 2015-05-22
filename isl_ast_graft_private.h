@@ -76,10 +76,15 @@ __isl_give isl_ast_graft *isl_ast_graft_add_guard(
 __isl_give isl_ast_graft *isl_ast_graft_enforce(
 	__isl_take isl_ast_graft *graft, __isl_take isl_basic_set *enforced);
 
+__isl_give isl_ast_graft *isl_ast_graft_insert_mark(
+	__isl_take isl_ast_graft *graft, __isl_take isl_id *mark);
+
 __isl_give isl_ast_graft_list *isl_ast_graft_list_unembed(
 	__isl_take isl_ast_graft_list *list, int product);
 __isl_give isl_ast_graft_list *isl_ast_graft_list_preimage_multi_aff(
 	__isl_take isl_ast_graft_list *list, __isl_take isl_multi_aff *ma);
+__isl_give isl_ast_graft_list *isl_ast_graft_list_insert_pending_guard_nodes(
+	__isl_take isl_ast_graft_list *list, __isl_keep isl_ast_build *build);
 
 __isl_give isl_ast_node *isl_ast_node_from_graft_list(
 	__isl_take isl_ast_graft_list *list, __isl_keep isl_ast_build *build);
