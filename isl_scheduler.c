@@ -4337,7 +4337,8 @@ __isl_give isl_schedule *isl_schedule_constraints_compute_schedule(
 
 	node = isl_schedule_node_from_domain(isl_union_set_copy(sc->domain));
 	node = isl_schedule_node_child(node, 0);
-	node = compute_schedule(node, &graph);
+	if (graph.n > 0)
+		node = compute_schedule(node, &graph);
 	sched = isl_schedule_node_get_schedule(node);
 	isl_schedule_node_free(node);
 

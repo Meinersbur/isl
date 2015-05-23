@@ -2983,9 +2983,15 @@ int test_one_schedule(isl_ctx *ctx, const char *d, const char *w,
 	return 0;
 }
 
-static __isl_give isl_union_map *compute_schedule(isl_ctx *ctx,
-	const char *domain, const char *validity, const char *proximity)
+/* Compute a schedule for the given instance set, validity constraints,
+ * proximity constraints and context and return a corresponding union map
+ * representation.
+ */
+static __isl_give isl_union_map *compute_schedule_with_context(isl_ctx *ctx,
+	const char *domain, const char *validity, const char *proximity,
+	const char *context)
 {
+	isl_set *con;
 	isl_union_set *dom;
 	isl_union_map *dep;
 	isl_union_map *prox;
@@ -2993,10 +2999,12 @@ static __isl_give isl_union_map *compute_schedule(isl_ctx *ctx,
 	isl_schedule *schedule;
 	isl_union_map *sched;
 
+	con = isl_set_read_from_str(ctx, context);
 	dom = isl_union_set_read_from_str(ctx, domain);
 	dep = isl_union_map_read_from_str(ctx, validity);
 	prox = isl_union_map_read_from_str(ctx, proximity);
 	sc = isl_schedule_constraints_on_domain(dom);
+	sc = isl_schedule_constraints_set_context(sc, con);
 	sc = isl_schedule_constraints_set_validity(sc, dep);
 	sc = isl_schedule_constraints_set_proximity(sc, prox);
 	schedule = isl_schedule_constraints_compute_schedule(sc);
@@ -3004,6 +3012,16 @@ static __isl_give isl_union_map *compute_schedule(isl_ctx *ctx,
 	isl_schedule_free(schedule);
 
 	return sched;
+}
+
+/* Compute a schedule for the given instance set, validity constraints and
+ * proximity constraints and return a corresponding union map representation.
+ */
+static __isl_give isl_union_map *compute_schedule(isl_ctx *ctx,
+	const char *domain, const char *validity, const char *proximity)
+{
+	return compute_schedule_with_context(ctx, domain, validity, proximity,
+						"{ : }");
 }
 
 /* Check that a schedule can be constructed on the given domain
@@ -3339,6 +3357,27 @@ static int test_strongly_satisfying_schedule(isl_ctx *ctx)
 	return 0;
 }
 
+/* Compute a schedule for input where the instance set constraints
+ * conflict with the context constraints.
+ * Earlier versions of isl did not properly handle this situation.
+ */
+static int test_conflicting_context_schedule(isl_ctx *ctx)
+{
+	isl_union_map *schedule;
+	const char *domain, *context;
+
+	domain = "[n] -> { A[] : n >= 0 }";
+	context = "[n] -> { : n < 0 }";
+	schedule = compute_schedule_with_context(ctx,
+						domain, "{}", "{}", context);
+	isl_union_map_free(schedule);
+
+	if (!schedule)
+		return -1;
+
+	return 0;
+}
+
 int test_schedule(isl_ctx *ctx)
 {
 	const char *D, *W, *R, *V, *P, *S;
@@ -3632,6 +3671,9 @@ int test_schedule(isl_ctx *ctx)
 		return -1;
 
 	if (test_strongly_satisfying_schedule(ctx) < 0)
+		return -1;
+
+	if (test_conflicting_context_schedule(ctx) < 0)
 		return -1;
 
 	return 0;
