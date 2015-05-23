@@ -305,6 +305,7 @@ EXTRA_DIST = \
 	isl_pw_templ.c \
 	isl_union_templ.c \
 	isl.py \
+	doc/CodingStyle \
 	doc/SubmittingPatches \
 	doc/chicago.bst \
 	doc/chicago.sty \
