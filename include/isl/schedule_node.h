@@ -40,7 +40,7 @@ isl_stat isl_schedule_node_foreach_ancestor_top_down(
 	__isl_keep isl_schedule_node *node,
 	isl_stat (*fn)(__isl_keep isl_schedule_node *node, void *user),
 	void *user);
-__isl_give isl_schedule_node *isl_schedule_node_map_descendant(
+__isl_give isl_schedule_node *isl_schedule_node_map_descendant_bottom_up(
 	__isl_take isl_schedule_node *node,
 	__isl_give isl_schedule_node *(*fn)(__isl_take isl_schedule_node *node,
 		void *user), void *user);

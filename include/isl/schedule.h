@@ -105,7 +105,7 @@ isl_stat isl_schedule_foreach_schedule_node_top_down(
 	__isl_keep isl_schedule *sched,
 	isl_bool (*fn)(__isl_keep isl_schedule_node *node, void *user),
 	void *user);
-__isl_give isl_schedule *isl_schedule_map_schedule_node(
+__isl_give isl_schedule *isl_schedule_map_schedule_node_bottom_up(
 	__isl_take isl_schedule *schedule,
 	__isl_give isl_schedule_node *(*fn)(
 		__isl_take isl_schedule_node *node, void *user), void *user);

@@ -1364,7 +1364,7 @@ isl_stat isl_schedule_node_foreach_descendant_top_down(
 	return node ? isl_stat_ok : isl_stat_error;
 }
 
-/* Internal data structure for isl_schedule_node_map_descendant.
+/* Internal data structure for isl_schedule_node_map_descendant_bottom_up.
  *
  * "fn" is the user-specified callback function.
  * "user" is the user-specified argument for the callback.
@@ -1412,7 +1412,7 @@ static __isl_give isl_schedule_node *postorder_leave(
  * lead to an infinite loop.  It is safest to always return a pointer
  * to the same position (same ancestors and child positions) as the input node.
  */
-__isl_give isl_schedule_node *isl_schedule_node_map_descendant(
+__isl_give isl_schedule_node *isl_schedule_node_map_descendant_bottom_up(
 	__isl_take isl_schedule_node *node,
 	__isl_give isl_schedule_node *(*fn)(__isl_take isl_schedule_node *node,
 		void *user), void *user)

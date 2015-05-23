@@ -7732,7 +7732,8 @@ itself), where the user callback is allowed to modify the
 visited node.
 
 	#include <isl/schedule.h>
-	__isl_give isl_schedule *isl_schedule_map_schedule_node(
+	__isl_give isl_schedule *
+	isl_schedule_map_schedule_node_bottom_up(
 		__isl_take isl_schedule *schedule,
 		__isl_give isl_schedule_node *(*fn)(
 			__isl_take isl_schedule_node *node,
@@ -7740,7 +7741,7 @@ visited node.
 
 	#include <isl/schedule_node.h>
 	__isl_give isl_schedule_node *
-	isl_schedule_node_map_descendant(
+	isl_schedule_node_map_descendant_bottom_up(
 		__isl_take isl_schedule_node *node,
 		__isl_give isl_schedule_node *(*fn)(
 			__isl_take isl_schedule_node *node,
