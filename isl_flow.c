@@ -1979,7 +1979,7 @@ static void isl_compute_flow_schedule_data_clear(
 	free(data->sink);
 }
 
-/* isl_schedule_foreach_schedule_node callback for counting
+/* isl_schedule_foreach_schedule_node_top_down callback for counting
  * (an upper bound on) the number of sinks and sources.
  *
  * Sinks and sources are only extracted at leaves of the tree,
@@ -2048,7 +2048,7 @@ static isl_stat extract_sink_source(__isl_take isl_map *map, void *user)
 	return isl_stat_ok;
 }
 
-/* isl_schedule_foreach_schedule_node callback for collecting
+/* isl_schedule_foreach_schedule_node_top_down callback for collecting
  * individual scheduled source and sink accesses.
  *
  * We only collect accesses at the leaves of the schedule tree.
@@ -2276,7 +2276,7 @@ static __isl_give isl_union_flow *compute_flow_schedule(
 
 	data.n_sink = 0;
 	data.n_source = 0;
-	if (isl_schedule_foreach_schedule_node(access->schedule,
+	if (isl_schedule_foreach_schedule_node_top_down(access->schedule,
 						&count_sink_source, &data) < 0)
 		goto error;
 
@@ -2288,7 +2288,7 @@ static __isl_give isl_union_flow *compute_flow_schedule(
 
 	data.n_sink = 0;
 	data.n_source = 0;
-	if (isl_schedule_foreach_schedule_node(access->schedule,
+	if (isl_schedule_foreach_schedule_node_top_down(access->schedule,
 					    &collect_sink_source, &data) < 0)
 		goto error;
 

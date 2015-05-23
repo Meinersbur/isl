@@ -337,7 +337,8 @@ __isl_give isl_union_set *isl_schedule_get_domain(
  *
  * Return 0 on success and -1 on failure.
  */
-isl_stat isl_schedule_foreach_schedule_node(__isl_keep isl_schedule *sched,
+isl_stat isl_schedule_foreach_schedule_node_top_down(
+	__isl_keep isl_schedule *sched,
 	isl_bool (*fn)(__isl_keep isl_schedule_node *node, void *user),
 	void *user)
 {
@@ -348,7 +349,7 @@ isl_stat isl_schedule_foreach_schedule_node(__isl_keep isl_schedule *sched,
 		return isl_stat_error;
 
 	node = isl_schedule_get_root(sched);
-	r = isl_schedule_node_foreach_descendant(node, fn, user);
+	r = isl_schedule_node_foreach_descendant_top_down(node, fn, user);
 	isl_schedule_node_free(node);
 
 	return r;

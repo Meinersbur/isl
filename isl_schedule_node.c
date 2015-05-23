@@ -1288,7 +1288,7 @@ static __isl_give isl_schedule_node *traverse(
 	return node;
 }
 
-/* Internal data structure for isl_schedule_node_foreach_descendant.
+/* Internal data structure for isl_schedule_node_foreach_descendant_top_down.
  *
  * "fn" is the user-specified callback function.
  * "user" is the user-specified argument for the callback.
@@ -1350,7 +1350,7 @@ static __isl_give isl_schedule_node *preorder_leave(
  *
  * Return 0 on success and -1 on failure.
  */
-isl_stat isl_schedule_node_foreach_descendant(
+isl_stat isl_schedule_node_foreach_descendant_top_down(
 	__isl_keep isl_schedule_node *node,
 	isl_bool (*fn)(__isl_keep isl_schedule_node *node, void *user),
 	void *user)
