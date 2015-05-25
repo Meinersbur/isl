@@ -3674,7 +3674,7 @@ static __isl_give isl_union_map *contruct_shifted_executed(
 	map = isl_map_insert_dims(map, isl_dim_out, depth + 1, 1);
 	space = isl_space_insert_dims(space, isl_dim_out, depth + 1, 1);
 
-	c = isl_equality_alloc(isl_local_space_from_space(space));
+	c = isl_constraint_alloc_equality(isl_local_space_from_space(space));
 	c = isl_constraint_set_coefficient_si(c, isl_dim_in, depth, 1);
 	c = isl_constraint_set_coefficient_si(c, isl_dim_out, depth, -1);
 

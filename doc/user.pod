@@ -244,6 +244,11 @@ for backward compatibility, but it will be removed in the future.
 =item * The C<separation_class> AST generation option has been
 deprecated.
 
+=item * The functions C<isl_equality_alloc> and C<isl_inequality_alloc>
+have been renamed to C<isl_constraint_alloc_equality> and
+C<isl_constraint_alloc_inequality>.  The original names have been
+kept for backward compatibility, but they will be removed in the future.
+
 =back
 
 =head1 License
@@ -1893,9 +1898,9 @@ added to (or removed from) (basic) sets and relations
 using the following functions.
 
 	#include <isl/constraint.h>
-	__isl_give isl_constraint *isl_equality_alloc(
+	__isl_give isl_constraint *isl_constraint_alloc_equality(
 		__isl_take isl_local_space *ls);
-	__isl_give isl_constraint *isl_inequality_alloc(
+	__isl_give isl_constraint *isl_constraint_alloc_inequality(
 		__isl_take isl_local_space *ls);
 	__isl_give isl_constraint *isl_constraint_set_constant_si(
 		__isl_take isl_constraint *constraint, int v);
@@ -1935,17 +1940,17 @@ between 10 and 42, you would use the following code.
 	bset = isl_basic_set_universe(isl_space_copy(space));
 	ls = isl_local_space_from_space(space);
 
-	c = isl_equality_alloc(isl_local_space_copy(ls));
+	c = isl_constraint_alloc_equality(isl_local_space_copy(ls));
 	c = isl_constraint_set_coefficient_si(c, isl_dim_set, 0, -1);
 	c = isl_constraint_set_coefficient_si(c, isl_dim_set, 1, 2);
 	bset = isl_basic_set_add_constraint(bset, c);
 
-	c = isl_inequality_alloc(isl_local_space_copy(ls));
+	c = isl_constraint_alloc_inequality(isl_local_space_copy(ls));
 	c = isl_constraint_set_constant_si(c, -10);
 	c = isl_constraint_set_coefficient_si(c, isl_dim_set, 0, 1);
 	bset = isl_basic_set_add_constraint(bset, c);
 
-	c = isl_inequality_alloc(ls);
+	c = isl_constraint_alloc_inequality(ls);
 	c = isl_constraint_set_constant_si(c, 42);
 	c = isl_constraint_set_coefficient_si(c, isl_dim_set, 0, -1);
 	bset = isl_basic_set_add_constraint(bset, c);

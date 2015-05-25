@@ -1603,7 +1603,7 @@ static __isl_give isl_map *construct_insertion_map(__isl_take isl_space *space,
 	space = isl_space_set_from_params(space);
 	space = isl_space_add_dims(space, isl_dim_set, 1);
 	space = isl_space_map_from_set(space);
-	c = isl_equality_alloc(isl_local_space_from_space(space));
+	c = isl_constraint_alloc_equality(isl_local_space_from_space(space));
 	c = isl_constraint_set_coefficient_si(c, isl_dim_in, 0, 1);
 	c = isl_constraint_set_coefficient_si(c, isl_dim_out, 0, -1);
 	bmap1 = isl_basic_map_from_constraint(isl_constraint_copy(c));

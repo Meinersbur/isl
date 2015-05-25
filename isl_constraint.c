@@ -135,12 +135,14 @@ struct isl_constraint *isl_basic_set_constraint(struct isl_basic_set *bset,
 	return isl_basic_map_constraint((struct isl_basic_map *)bset, line);
 }
 
-__isl_give isl_constraint *isl_equality_alloc(__isl_take isl_local_space *ls)
+__isl_give isl_constraint *isl_constraint_alloc_equality(
+	__isl_take isl_local_space *ls)
 {
 	return isl_constraint_alloc(1, ls);
 }
 
-__isl_give isl_constraint *isl_inequality_alloc(__isl_take isl_local_space *ls)
+__isl_give isl_constraint *isl_constraint_alloc_inequality(
+	__isl_take isl_local_space *ls)
 {
 	return isl_constraint_alloc(0, ls);
 }

@@ -11712,7 +11712,7 @@ static __isl_give isl_constraint *constraint_order_ge(
 	if (!space)
 		return NULL;
 
-	c = isl_inequality_alloc(isl_local_space_from_space(space));
+	c = isl_constraint_alloc_inequality(isl_local_space_from_space(space));
 
 	if (pos1 >= isl_constraint_dim(c, type1))
 		isl_die(isl_constraint_get_ctx(c), isl_error_invalid,
