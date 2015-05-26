@@ -32,22 +32,24 @@ int isl_imath_fits_ulong_p(mp_int op)
 
 void isl_imath_addmul_ui(mp_int rop, mp_int op1, unsigned long op2)
 {
-	isl_int temp;
-	isl_int_init(temp);
+	mpz_t temp;
+	mp_int_init(&temp);
 
-	isl_int_set_ui(temp, op2);
-	isl_int_addmul(rop, op1, temp);
+	mp_int_set_uvalue(&temp, op2);
+	mp_int_mul(op1, &temp, &temp);
+	mp_int_add(rop, &temp, rop);
 
-	isl_int_clear(temp);
+	mp_int_clear(&temp);
 }
 
 void isl_imath_submul_ui(mp_int rop, mp_int op1, unsigned long op2)
 {
-	isl_int temp;
-	isl_int_init(temp);
+	mpz_t temp;
+	mp_int_init(&temp);
 
-	isl_int_set_ui(temp, op2);
-	isl_int_submul(rop, op1, temp);
+	mp_int_set_uvalue(&temp, op2);
+	mp_int_mul(op1, &temp, &temp);
+	mp_int_sub(rop, &temp, rop);
 
-	isl_int_clear(temp);
+	mp_int_clear(&temp);
 }
