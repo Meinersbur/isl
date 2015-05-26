@@ -286,8 +286,9 @@ Note that by default C<isl> requires C<GMP>, which is released
 under the GNU Lesser General Public License (LGPL).  This means
 that code linked against C<isl> is also linked against LGPL code.
 
-When configuring with C<--with-int=imath>, C<isl> will link against C<imath>, a
-library for exact integer arithmetic released under the MIT license.
+When configuring with C<--with-int=imath> or C<--with-int=imath-32>, C<isl>
+will link against C<imath>, a library for exact integer arithmetic released
+under the MIT license.
 
 =head1 Installation
 
@@ -364,10 +365,13 @@ Below we discuss some of the more common options.
 
 Installation prefix for C<isl>
 
-=item C<--with-int=[gmp|imath]>
+=item C<--with-int=[gmp|imath|imath-32]>
 
 Select the integer library to be used by C<isl>, the default is C<gmp>.
-Note that C<isl> may run significantly slower if you use C<imath>.
+With C<imath-32>, C<isl> will use 32 bit integers, but fall back to C<imath>
+for values out of the 32 bit range. In most applications, C<isl> will run
+fastest with the C<imath-32> option, followed by C<gmp> and C<imath>, the
+slowest.
 
 =item C<--with-gmp-prefix>
 
