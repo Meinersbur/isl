@@ -249,6 +249,11 @@ have been renamed to C<isl_constraint_alloc_equality> and
 C<isl_constraint_alloc_inequality>.  The original names have been
 kept for backward compatibility, but they will be removed in the future.
 
+=item * The C<schedule_fuse> option has been replaced
+by the C<schedule_serialize_sccs> option.  The effect
+of setting the C<schedule_fuse> option to C<ISL_SCHEDULE_FUSE_MIN>
+is now obtained by turning on the C<schedule_serialize_sccs> option.
+
 =back
 
 =head1 License
@@ -8647,8 +8652,9 @@ L</"Schedule Trees">.
 		isl_ctx *ctx, int val);
 	int isl_options_get_schedule_max_constant_term(
 		isl_ctx *ctx);
-	isl_stat isl_options_set_schedule_fuse(isl_ctx *ctx, int val);
-	int isl_options_get_schedule_fuse(isl_ctx *ctx);
+	isl_stat isl_options_set_schedule_serialize_sccs(
+		isl_ctx *ctx, int val);
+	int isl_options_get_schedule_serialize_sccs(isl_ctx *ctx);
 	isl_stat isl_options_set_schedule_maximize_band_depth(
 		isl_ctx *ctx, int val);
 	int isl_options_get_schedule_maximize_band_depth(
@@ -8689,13 +8695,14 @@ increase the speed of the scheduling calculation and may also prevent fusing of
 unrelated dimensions. A value of -1 means that this option does not introduce
 bounds on the constant coefficients.
 
-=item * schedule_fuse
+=item * schedule_serialize_sccs
 
-This option controls the level of fusion.
-If this option is set to C<ISL_SCHEDULE_FUSE_MIN>, then loops in the
-resulting schedule will be distributed as much as possible.
-If this option is set to C<ISL_SCHEDULE_FUSE_MAX>, then C<isl> will
-try to fuse loops in the resulting schedule.
+If this option is set, then all strongly connected components
+in the dependence graph are serialized as soon as they are detected.
+This means in particular that instances of statements will only
+appear in the same band node if these statements belong
+to the same strongly connected component at the point where
+the band node is constructed.
 
 =item * schedule_maximize_band_depth
 
@@ -8704,7 +8711,7 @@ where we detect splitting is necessary. Instead, we
 backtrack and split bands as early as possible. This
 reduces the number of splits and maximizes the width of
 the bands. Wider bands give more possibilities for tiling.
-Note that if the C<schedule_fuse> option is set to C<ISL_SCHEDULE_FUSE_MIN>,
+Note that if the C<schedule_serialize_sccs> options is set,
 then bands will be split as early as possible, even if there is no need.
 The C<schedule_maximize_band_depth> option therefore has no effect in this case.
 
