@@ -5169,7 +5169,7 @@ static int test_ast_gen1(isl_ctx *ctx)
 }
 
 /* Check that the AST generator handles domains that are integrally disjoint
- * but not ratinoally disjoint.
+ * but not rationally disjoint.
  */
 static int test_ast_gen2(isl_ctx *ctx)
 {
