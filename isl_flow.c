@@ -1450,6 +1450,13 @@ struct isl_union_flow {
 	isl_union_map *may_no_source;
 };
 
+/* Return the isl_ctx to which "flow" belongs.
+ */
+isl_ctx *isl_union_flow_get_ctx(__isl_keep isl_union_flow *flow)
+{
+	return flow ? isl_union_map_get_ctx(flow->must_dep) : NULL;
+}
+
 /* Free "flow" and return NULL.
  */
 __isl_null isl_union_flow *isl_union_flow_free(__isl_take isl_union_flow *flow)
