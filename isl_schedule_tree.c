@@ -2359,6 +2359,9 @@ static int involves_iteration_domain(__isl_keep isl_schedule_tree *tree)
 	case isl_schedule_node_set:
 		return 0;
 	}
+
+	isl_die(isl_schedule_tree_get_ctx(tree), isl_error_internal,
+		"unhandled case", return -1);
 }
 
 /* Compute the pullback of the root node of "tree" by the function
