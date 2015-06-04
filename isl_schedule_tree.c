@@ -1600,6 +1600,9 @@ static int domain_less(__isl_keep isl_schedule_tree *tree)
 	case isl_schedule_node_sequence:
 		return 0;
 	}
+
+	isl_die(isl_schedule_tree_get_ctx(tree), isl_error_internal,
+		"unhandled case", return 0);
 }
 
 /* Move down to the first descendant of "tree" that contains any schedule
