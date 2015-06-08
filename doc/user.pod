@@ -6263,7 +6263,7 @@ The functions C<isl_space_range_factor_domain> and
 C<isl_space_range_factor_range> extract the two arguments from
 the result of a call to C<isl_space_range_product>.
 
-The arguments of a call to C<isl_map_range_product> can be extracted
+The arguments of a call to a product can be extracted
 from the result using the following functions.
 
 	#include <isl/map.h>
@@ -6296,6 +6296,8 @@ from the result using the following functions.
 		__isl_take isl_union_map *umap);
 
 	#include <isl/val.h>
+	__isl_give isl_multi_val *isl_multi_val_factor_range(
+		__isl_take isl_multi_val *mv);
 	__isl_give isl_multi_val *
 	isl_multi_val_range_factor_domain(
 		__isl_take isl_multi_val *mv);
@@ -6304,6 +6306,8 @@ from the result using the following functions.
 		__isl_take isl_multi_val *mv);
 
 	#include <isl/aff.h>
+	__isl_give isl_multi_aff *isl_multi_aff_factor_range(
+		__isl_take isl_multi_aff *ma);
 	__isl_give isl_multi_aff *
 	isl_multi_aff_range_factor_domain(
 		__isl_take isl_multi_aff *ma);
@@ -6311,11 +6315,17 @@ from the result using the following functions.
 	isl_multi_aff_range_factor_range(
 		__isl_take isl_multi_aff *ma);
 	__isl_give isl_multi_pw_aff *
+	isl_multi_pw_aff_factor_range(
+		__isl_take isl_multi_pw_aff *mpa);
+	__isl_give isl_multi_pw_aff *
 	isl_multi_pw_aff_range_factor_domain(
 		__isl_take isl_multi_pw_aff *mpa);
 	__isl_give isl_multi_pw_aff *
 	isl_multi_pw_aff_range_factor_range(
 		__isl_take isl_multi_pw_aff *mpa);
+	__isl_give isl_multi_union_pw_aff *
+	isl_multi_union_pw_aff_factor_range(
+		__isl_take isl_multi_union_pw_aff *mupa);
 	__isl_give isl_multi_union_pw_aff *
 	isl_multi_union_pw_aff_range_factor_domain(
 		__isl_take isl_multi_union_pw_aff *mupa);
@@ -6326,6 +6336,11 @@ from the result using the following functions.
 The splice functions are a generalization of the flat product functions,
 where the second argument may be inserted at any position inside
 the first argument rather than being placed at the end.
+The functions C<isl_multi_val_factor_range>,
+C<isl_multi_aff_factor_range>,
+C<isl_multi_pw_aff_factor_range> and
+C<isl_multi_union_pw_aff_factor_range>
+take functions that live in a set space.
 
 	#include <isl/val.h>
 	__isl_give isl_multi_val *isl_multi_val_range_splice(
