@@ -2032,6 +2032,33 @@ error:
 	return NULL;
 }
 
+/* Reduce the partial schedule of the band root node of "tree"
+ * modulo the factors in "mv".
+ */
+__isl_give isl_schedule_tree *isl_schedule_tree_band_mod(
+	__isl_take isl_schedule_tree *tree, __isl_take isl_multi_val *mv)
+{
+	if (!tree || !mv)
+		goto error;
+	if (tree->type != isl_schedule_node_band)
+		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_invalid,
+			"not a band node", goto error);
+
+	tree = isl_schedule_tree_cow(tree);
+	if (!tree)
+		goto error;
+
+	tree->band = isl_schedule_band_mod(tree->band, mv);
+	if (!tree->band)
+		return isl_schedule_tree_free(tree);
+
+	return tree;
+error:
+	isl_schedule_tree_free(tree);
+	isl_multi_val_free(mv);
+	return NULL;
+}
+
 /* Shift the partial schedule of the band root node of "tree" by "shift".
  */
 __isl_give isl_schedule_tree *isl_schedule_tree_band_shift(

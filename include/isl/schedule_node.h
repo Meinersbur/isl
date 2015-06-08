@@ -123,6 +123,8 @@ __isl_give isl_schedule_node *isl_schedule_node_band_scale(
 	__isl_take isl_schedule_node *node, __isl_take isl_multi_val *mv);
 __isl_give isl_schedule_node *isl_schedule_node_band_scale_down(
 	__isl_take isl_schedule_node *node, __isl_take isl_multi_val *mv);
+__isl_give isl_schedule_node *isl_schedule_node_band_mod(
+	__isl_take isl_schedule_node *node, __isl_take isl_multi_val *mv);
 __isl_give isl_schedule_node *isl_schedule_node_band_shift(
 	__isl_take isl_schedule_node *node,
 	__isl_take isl_multi_union_pw_aff *shift);

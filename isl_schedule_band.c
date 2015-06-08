@@ -950,6 +950,24 @@ error:
 	return NULL;
 }
 
+/* Reduce the partial schedule of "band" modulo the factors in "mv".
+ */
+__isl_give isl_schedule_band *isl_schedule_band_mod(
+	__isl_take isl_schedule_band *band, __isl_take isl_multi_val *mv)
+{
+	band = isl_schedule_band_cow(band);
+	if (!band || !mv)
+		goto error;
+	band->mupa = isl_multi_union_pw_aff_mod_multi_val(band->mupa, mv);
+	if (!band->mupa)
+		return isl_schedule_band_free(band);
+	return band;
+error:
+	isl_schedule_band_free(band);
+	isl_multi_val_free(mv);
+	return NULL;
+}
+
 /* Shift the partial schedule of "band" by "shift" after checking
  * that the domain of the partial schedule would not be affected
  * by this shift.
