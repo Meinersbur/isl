@@ -3776,6 +3776,11 @@ the following functions can be used.
 		__isl_keep isl_multi_pw_aff *mpa,
 		enum isl_dim_type type, unsigned first, unsigned n);
 
+	#include <isl/polynomial.h>
+	isl_bool isl_qpolynomial_involves_dims(
+		__isl_keep isl_qpolynomial *qp,
+		enum isl_dim_type type, unsigned first, unsigned n);
+
 Similarly, the following functions can be used to check whether
 a given dimension is involved in any lower or upper bound.
 
