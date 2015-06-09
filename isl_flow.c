@@ -18,6 +18,8 @@
 
 #include <isl/set.h>
 #include <isl/map.h>
+#include <isl/union_set.h>
+#include <isl/union_map.h>
 #include <isl/flow.h>
 #include <isl/schedule_node.h>
 #include <isl_sort.h>
@@ -434,24 +436,25 @@ error:
  * while the third argument correspond to the final argument of
  * the isl_flow_foreach call.
  */
-int isl_flow_foreach(__isl_keep isl_flow *deps,
-	int (*fn)(__isl_take isl_map *dep, int must, void *dep_user, void *user),
+isl_stat isl_flow_foreach(__isl_keep isl_flow *deps,
+	isl_stat (*fn)(__isl_take isl_map *dep, int must, void *dep_user,
+		void *user),
 	void *user)
 {
 	int i;
 
 	if (!deps)
-		return -1;
+		return isl_stat_error;
 
 	for (i = 0; i < deps->n_source; ++i) {
 		if (isl_map_plain_is_empty(deps->dep[i].map))
 			continue;
 		if (fn(isl_map_copy(deps->dep[i].map), deps->dep[i].must,
 				deps->dep[i].data, user) < 0)
-			return -1;
+			return isl_stat_error;
 	}
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Return a copy of the subset of the sink for which no source could be found.
@@ -933,7 +936,7 @@ static __isl_give isl_flow *compute_val_based_dependences(
 
 	depth = 2 * isl_map_dim(acc->sink.map, isl_dim_in) + 1;
 	mustdo = isl_map_domain(isl_map_copy(acc->sink.map));
-	maydo = isl_set_empty_like(mustdo);
+	maydo = isl_set_empty(isl_set_get_space(mustdo));
 	if (!mustdo || !maydo)
 		goto error;
 	if (isl_set_plain_is_empty(mustdo))
@@ -946,7 +949,9 @@ static __isl_give isl_flow *compute_val_based_dependences(
 
 	for (level = depth; level >= 1; --level) {
 		for (j = acc->n_must-1; j >=0; --j) {
-			must_rel[j] = isl_map_empty_like(res->dep[2 * j].map);
+			isl_space *space;
+			space = isl_map_get_space(res->dep[2 * j].map);
+			must_rel[j] = isl_map_empty(space);
 			may_rel[j] = isl_map_copy(must_rel[j]);
 		}
 
@@ -1613,7 +1618,7 @@ struct isl_compute_flow_data {
 	isl_access_info *accesses;
 };
 
-static int count_matching_array(__isl_take isl_map *map, void *user)
+static isl_stat count_matching_array(__isl_take isl_map *map, void *user)
 {
 	int eq;
 	isl_space *dim;
@@ -1629,14 +1634,14 @@ static int count_matching_array(__isl_take isl_map *map, void *user)
 	isl_map_free(map);
 
 	if (eq < 0)
-		return -1;
+		return isl_stat_error;
 	if (eq)
 		data->count++;
 
-	return 0;
+	return isl_stat_ok;
 }
 
-static int collect_matching_array(__isl_take isl_map *map, void *user)
+static isl_stat collect_matching_array(__isl_take isl_map *map, void *user)
 {
 	int eq;
 	isl_space *dim;
@@ -1655,7 +1660,7 @@ static int collect_matching_array(__isl_take isl_map *map, void *user)
 		goto error;
 	if (!eq) {
 		isl_map_free(map);
-		return 0;
+		return isl_stat_ok;
 	}
 
 	info = sched_info_alloc(map);
@@ -1666,10 +1671,10 @@ static int collect_matching_array(__isl_take isl_map *map, void *user)
 
 	data->count++;
 
-	return 0;
+	return isl_stat_ok;
 error:
 	isl_map_free(map);
-	return -1;
+	return isl_stat_error;
 }
 
 /* Determine the shared nesting level and the "textual order" of
@@ -1721,7 +1726,7 @@ static int before(void *first, void *second)
  * the same array and perform dataflow analysis on them using
  * isl_access_info_compute_flow.
  */
-static int compute_flow(__isl_take isl_map *map, void *user)
+static isl_stat compute_flow(__isl_take isl_map *map, void *user)
 {
 	int i;
 	isl_ctx *ctx;
@@ -1797,7 +1802,7 @@ static int compute_flow(__isl_take isl_map *map, void *user)
 	isl_space_free(data->dim);
 	isl_map_free(map);
 
-	return 0;
+	return isl_stat_ok;
 error:
 	isl_access_info_free(data->accesses);
 	sched_info_free(data->sink_info);
@@ -1809,7 +1814,7 @@ error:
 	isl_space_free(data->dim);
 	isl_map_free(map);
 
-	return -1;
+	return isl_stat_error;
 }
 
 /* Remove the must accesses from the may accesses.
@@ -1958,6 +1963,9 @@ static void isl_compute_flow_schedule_data_clear(
 {
 	int i;
 
+	if (!data->sink)
+		return;
+
 	for (i = 0; i < data->n_sink; ++i) {
 		isl_map_free(data->sink[i].access);
 		isl_schedule_node_free(data->sink[i].node);
@@ -1971,7 +1979,7 @@ static void isl_compute_flow_schedule_data_clear(
 	free(data->sink);
 }
 
-/* isl_schedule_foreach_schedule_node callback for counting
+/* isl_schedule_foreach_schedule_node_top_down callback for counting
  * (an upper bound on) the number of sinks and sources.
  *
  * Sinks and sources are only extracted at leaves of the tree,
@@ -1980,15 +1988,16 @@ static void isl_compute_flow_schedule_data_clear(
  * the number of spaces in the sink and source access domains
  * that reach this node.
  */
-static int count_sink_source(__isl_keep isl_schedule_node *node, void *user)
+static isl_bool count_sink_source(__isl_keep isl_schedule_node *node,
+	void *user)
 {
 	struct isl_compute_flow_schedule_data *data = user;
 	isl_union_set *domain;
 	isl_union_map *umap;
-	int r = 0;
+	isl_bool r = isl_bool_false;
 
 	if (isl_schedule_node_get_type(node) != isl_schedule_node_leaf)
-		return 1;
+		return isl_bool_true;
 
 	domain = isl_schedule_node_get_universe_domain(node);
 
@@ -1997,21 +2006,21 @@ static int count_sink_source(__isl_keep isl_schedule_node *node, void *user)
 	data->n_sink += isl_union_map_n_map(umap);
 	isl_union_map_free(umap);
 	if (!umap)
-		r = -1;
+		r = isl_bool_error;
 
 	umap = isl_union_map_copy(data->access->must_source);
 	umap = isl_union_map_intersect_domain(umap, isl_union_set_copy(domain));
 	data->n_source += isl_union_map_n_map(umap);
 	isl_union_map_free(umap);
 	if (!umap)
-		r = -1;
+		r = isl_bool_error;
 
 	umap = isl_union_map_copy(data->access->may_source);
 	umap = isl_union_map_intersect_domain(umap, isl_union_set_copy(domain));
 	data->n_source += isl_union_map_n_map(umap);
 	isl_union_map_free(umap);
 	if (!umap)
-		r = -1;
+		r = isl_bool_error;
 
 	isl_union_set_free(domain);
 
@@ -2022,7 +2031,7 @@ static int count_sink_source(__isl_keep isl_schedule_node *node, void *user)
  * with scheduled access relation "map", must property data->must and
  * schedule node data->node to the list of sinks or sources.
  */
-static int extract_sink_source(__isl_take isl_map *map, void *user)
+static isl_stat extract_sink_source(__isl_take isl_map *map, void *user)
 {
 	struct isl_compute_flow_schedule_data *data = user;
 	struct isl_scheduled_access *access;
@@ -2036,10 +2045,10 @@ static int extract_sink_source(__isl_take isl_map *map, void *user)
 	access->must = data->must;
 	access->node = isl_schedule_node_copy(data->node);
 
-	return 0;
+	return isl_stat_ok;
 }
 
-/* isl_schedule_foreach_schedule_node callback for collecting
+/* isl_schedule_foreach_schedule_node_top_down callback for collecting
  * individual scheduled source and sink accesses.
  *
  * We only collect accesses at the leaves of the schedule tree.
@@ -2062,15 +2071,16 @@ static int extract_sink_source(__isl_take isl_map *map, void *user)
  * Note that S consists of a single space such that introducing S
  * in the access relations does not increase the number of spaces.
  */
-static int collect_sink_source(__isl_keep isl_schedule_node *node, void *user)
+static isl_bool collect_sink_source(__isl_keep isl_schedule_node *node,
+	void *user)
 {
 	struct isl_compute_flow_schedule_data *data = user;
 	isl_union_map *prefix;
 	isl_union_map *umap;
-	int r = 0;
+	isl_bool r = isl_bool_false;
 
 	if (isl_schedule_node_get_type(node) != isl_schedule_node_leaf)
-		return 1;
+		return isl_bool_true;
 
 	data->node = node;
 
@@ -2082,7 +2092,7 @@ static int collect_sink_source(__isl_keep isl_schedule_node *node, void *user)
 	umap = isl_union_map_copy(data->access->sink);
 	umap = isl_union_map_apply_range(isl_union_map_copy(prefix), umap);
 	if (isl_union_map_foreach_map(umap, &extract_sink_source, data) < 0)
-		r = -1;
+		r = isl_bool_error;
 	isl_union_map_free(umap);
 
 	data->set_sink = 0;
@@ -2090,7 +2100,7 @@ static int collect_sink_source(__isl_keep isl_schedule_node *node, void *user)
 	umap = isl_union_map_copy(data->access->must_source);
 	umap = isl_union_map_apply_range(isl_union_map_copy(prefix), umap);
 	if (isl_union_map_foreach_map(umap, &extract_sink_source, data) < 0)
-		r = -1;
+		r = isl_bool_error;
 	isl_union_map_free(umap);
 
 	data->set_sink = 0;
@@ -2098,7 +2108,7 @@ static int collect_sink_source(__isl_keep isl_schedule_node *node, void *user)
 	umap = isl_union_map_copy(data->access->may_source);
 	umap = isl_union_map_apply_range(isl_union_map_copy(prefix), umap);
 	if (isl_union_map_foreach_map(umap, &extract_sink_source, data) < 0)
-		r = -1;
+		r = isl_bool_error;
 	isl_union_map_free(umap);
 
 	isl_union_map_free(prefix);
@@ -2266,7 +2276,7 @@ static __isl_give isl_union_flow *compute_flow_schedule(
 
 	data.n_sink = 0;
 	data.n_source = 0;
-	if (isl_schedule_foreach_schedule_node(access->schedule,
+	if (isl_schedule_foreach_schedule_node_top_down(access->schedule,
 						&count_sink_source, &data) < 0)
 		goto error;
 
@@ -2278,7 +2288,7 @@ static __isl_give isl_union_flow *compute_flow_schedule(
 
 	data.n_sink = 0;
 	data.n_source = 0;
-	if (isl_schedule_foreach_schedule_node(access->schedule,
+	if (isl_schedule_foreach_schedule_node_top_down(access->schedule,
 					    &collect_sink_source, &data) < 0)
 		goto error;
 

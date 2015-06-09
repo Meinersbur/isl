@@ -12,6 +12,7 @@
 
 #include <stdlib.h>
 #include <isl/stdint.h>
+#include <isl/ctx.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -52,8 +53,6 @@ struct isl_hash_table {
 	struct isl_hash_table_entry *entries;
 };
 
-struct isl_ctx;
-
 struct isl_hash_table *isl_hash_table_alloc(struct isl_ctx *ctx, int min_size);
 void isl_hash_table_free(struct isl_ctx *ctx, struct isl_hash_table *table);
 
@@ -65,9 +64,8 @@ struct isl_hash_table_entry *isl_hash_table_find(struct isl_ctx *ctx,
 				uint32_t key_hash,
 				int (*eq)(const void *entry, const void *val),
 				const void *val, int reserve);
-int isl_hash_table_foreach(struct isl_ctx *ctx,
-			    struct isl_hash_table *table,
-			    int (*fn)(void **entry, void *user), void *user);
+isl_stat isl_hash_table_foreach(isl_ctx *ctx, struct isl_hash_table *table,
+	isl_stat (*fn)(void **entry, void *user), void *user);
 void isl_hash_table_remove(struct isl_ctx *ctx,
 				struct isl_hash_table *table,
 				struct isl_hash_table_entry *entry);
