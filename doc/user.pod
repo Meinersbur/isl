@@ -8142,6 +8142,17 @@ The spaces of the two arguments need to match.
 After scaling, the partial schedule is replaced by its greatest
 integer part to ensure that the schedule remains integral.
 
+The partial schedule of a band node can be shifted by an
+C<isl_multi_union_pw_aff> with a domain that is a superset
+of the domain of the partial schedule using
+the following function.
+
+	#include <isl/schedule_node.h>
+	__isl_give isl_schedule_node *
+	isl_schedule_node_band_shift(
+		__isl_take isl_schedule_node *node,
+		__isl_take isl_multi_union_pw_aff *shift);
+
 A band node can be tiled using the following function.
 
 	#include <isl/schedule_node.h>

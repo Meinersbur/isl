@@ -950,6 +950,43 @@ error:
 	return NULL;
 }
 
+/* Shift the partial schedule of "band" by "shift" after checking
+ * that the domain of the partial schedule would not be affected
+ * by this shift.
+ */
+__isl_give isl_schedule_band *isl_schedule_band_shift(
+	__isl_take isl_schedule_band *band,
+	__isl_take isl_multi_union_pw_aff *shift)
+{
+	isl_union_set *dom1, *dom2;
+	isl_bool subset;
+
+	band = isl_schedule_band_cow(band);
+	if (!band || !shift)
+		goto error;
+	dom1 = isl_multi_union_pw_aff_domain(
+				isl_multi_union_pw_aff_copy(band->mupa));
+	dom2 = isl_multi_union_pw_aff_domain(
+				isl_multi_union_pw_aff_copy(shift));
+	subset = isl_union_set_is_subset(dom1, dom2);
+	isl_union_set_free(dom1);
+	isl_union_set_free(dom2);
+	if (subset < 0)
+		goto error;
+	if (!subset)
+		isl_die(isl_schedule_band_get_ctx(band), isl_error_invalid,
+			"domain of shift needs to include domain of "
+			"partial schedule", goto error);
+	band->mupa = isl_multi_union_pw_aff_add(band->mupa, shift);
+	if (!band->mupa)
+		return isl_schedule_band_free(band);
+	return band;
+error:
+	isl_schedule_band_free(band);
+	isl_multi_union_pw_aff_free(shift);
+	return NULL;
+}
+
 /* Given the schedule of a band, construct the corresponding
  * schedule for the tile loops based on the given tile sizes
  * and return the result.
