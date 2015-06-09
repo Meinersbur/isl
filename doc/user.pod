@@ -6537,6 +6537,9 @@ to simplify the expression associated to each cell.
 =item * Binary Arithmethic Operations
 
 	#include <isl/val.h>
+	__isl_give isl_multi_val *isl_multi_val_add(
+		__isl_take isl_multi_val *mv1,
+		__isl_take isl_multi_val *mv2);
 	__isl_give isl_multi_val *isl_multi_val_sub(
 		__isl_take isl_multi_val *mv1,
 		__isl_take isl_multi_val *mv2);
@@ -6551,6 +6554,9 @@ to simplify the expression associated to each cell.
 	__isl_give isl_pw_aff *isl_pw_aff_add(
 		__isl_take isl_pw_aff *pwaff1,
 		__isl_take isl_pw_aff *pwaff2);
+	__isl_give isl_multi_pw_aff *isl_multi_pw_aff_add(
+		__isl_take isl_multi_pw_aff *mpa1,
+		__isl_take isl_multi_pw_aff *mpa2);
 	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_add(
 		__isl_take isl_pw_multi_aff *pma1,
 		__isl_take isl_pw_multi_aff *pma2);
@@ -6560,6 +6566,10 @@ to simplify the expression associated to each cell.
 	__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_add(
 		__isl_take isl_union_pw_multi_aff *upma1,
 		__isl_take isl_union_pw_multi_aff *upma2);
+	__isl_give isl_multi_union_pw_aff *
+	isl_multi_union_pw_aff_add(
+		__isl_take isl_multi_union_pw_aff *mupa1,
+		__isl_take isl_multi_union_pw_aff *mupa2);
 	__isl_give isl_pw_aff *isl_pw_aff_min(
 		__isl_take isl_pw_aff *pwaff1,
 		__isl_take isl_pw_aff *pwaff2);
