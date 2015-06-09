@@ -1288,15 +1288,6 @@ __isl_give isl_space *isl_space_factor_domain(__isl_take isl_space *space)
 	return space;
 }
 
-/* Given a space of the form [A -> B] -> [C -> D], return the space B -> D.
- */
-__isl_give isl_space *isl_space_factor_range(__isl_take isl_space *space)
-{
-	space = isl_space_domain_factor_range(space);
-	space = isl_space_range_factor_range(space);
-	return space;
-}
-
 /* Given a space of the form [A -> B] -> C, return the space A -> C.
  */
 __isl_give isl_space *isl_space_domain_factor_domain(
@@ -1449,6 +1440,15 @@ error:
 	isl_space_free(space);
 	isl_space_free(range);
 	return NULL;
+}
+
+/* Given a space of the form [A -> B] -> [C -> D], return the space B -> D.
+ */
+__isl_give isl_space *isl_space_factor_range(__isl_take isl_space *space)
+{
+	space = isl_space_domain_factor_range(space);
+	space = isl_space_range_factor_range(space);
+	return space;
 }
 
 __isl_give isl_space *isl_space_map_from_set(__isl_take isl_space *dim)
