@@ -86,6 +86,9 @@ __isl_give isl_union_access_info *isl_union_access_info_set_schedule_map(
 __isl_null isl_union_access_info *isl_union_access_info_free(
 	__isl_take isl_union_access_info *access);
 
+isl_ctx *isl_union_access_info_get_ctx(
+	__isl_keep isl_union_access_info *access);
+
 __isl_give isl_union_flow *isl_union_access_info_compute_flow(
 	__isl_take isl_union_access_info *access);
 
