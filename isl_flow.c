@@ -1345,6 +1345,29 @@ error:
 	return NULL;
 }
 
+__isl_give isl_union_access_info *isl_union_access_info_copy(
+	__isl_keep isl_union_access_info *access)
+{
+	isl_union_access_info *copy;
+
+	if (!access)
+		return NULL;
+	copy = isl_union_access_info_from_sink(
+				isl_union_map_copy(access->sink));
+	copy = isl_union_access_info_set_must_source(copy,
+				isl_union_map_copy(access->must_source));
+	copy = isl_union_access_info_set_may_source(copy,
+				isl_union_map_copy(access->may_source));
+	if (access->schedule)
+		copy = isl_union_access_info_set_schedule(copy,
+				isl_schedule_copy(access->schedule));
+	else
+		copy = isl_union_access_info_set_schedule_map(copy,
+				isl_union_map_copy(access->schedule_map));
+
+	return copy;
+}
+
 /* Update the fields of "access" such that they all have the same parameters,
  * keeping in mind that the schedule_map field may be NULL and ignoring
  * the schedule field.
