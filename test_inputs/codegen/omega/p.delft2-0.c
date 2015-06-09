@@ -1,7 +1,7 @@
 if (P1 >= 0 && P1 <= 3 && P2 >= 0 && P2 <= 3)
-  for (int c0 = P1 - 1, c0_end = 3; c0 <= c0_end; c0 += 1)
-    for (int c2 = 0, c2_end = 7; c2 <= c2_end; c2 += 1)
-      for (int c3 = 0, c3_end = 7; c3 <= c3_end; c3 += 1)
+  for (int c0 = P1 - 1; c0 <= 3; c0 += 1)
+    for (int c2 = 0; c2 <= 7; c2 += 1)
+      for (int c3 = 0; c3 <= 7; c3 += 1)
         if ((5 * P2 + 2 * c3) % 9 <= 3) {
           if (P1 >= 1 && c0 + 1 == P1 && (5 * P1 + 2 * c2) % 9 <= 2) {
             s0(P1 - 1, P2, c2, c3, ((5 * P1 + 2 * c2) % 9) + 1, (-4 * P2 + 2 * c3 + 9) % 9);

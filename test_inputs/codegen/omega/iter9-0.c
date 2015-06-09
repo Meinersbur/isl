@@ -1,4 +1,4 @@
-for (int c0 = 1, c0_end = 15; c0 <= c0_end; c0 += 1) {
+for (int c0 = 1; c0 <= 15; c0 += 1) {
   if (((-exprVar1 + 15) % 8) + c0 <= 15) {
     s4(c0);
     s0(c0);

@@ -1926,7 +1926,7 @@ static __isl_give isl_printer *print_for_c(__isl_take isl_printer *p,
 		p = isl_printer_print_str(p, " = ");
 		p = isl_ast_expr_print(
 			node->u.f.init, p, isl_ast_print_options_copy(options));
-#if 1
+#if 0
 	isl_ctx *ctx = isl_ast_node_get_ctx(node);
 	id = isl_ast_expr_get_id(node->u.f.iterator);
 
