@@ -45,7 +45,7 @@ struct isl_options {
 	int			schedule_separate_components;
 	int			schedule_whole_component;
 	unsigned		schedule_algorithm;
-	int			schedule_fuse;
+	int			schedule_serialize_sccs;
 
 	int			tile_scale_tile_loops;
 	int			tile_shift_point_loops;

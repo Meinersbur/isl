@@ -10,6 +10,7 @@
  * B.P. 105 - 78153 Le Chesnay, France
  */
 
+#include <isl/constraint.h>
 #include <isl/ilp.h>
 #include <isl_ast_build_expr.h>
 #include <isl_ast_private.h>
@@ -661,7 +662,8 @@ static int mod_constraint_is_simpler(struct isl_extract_mod_data *data,
  * very well involve such coefficients.  This means that we may actually
  * miss some cases.
  */
-static int check_parallel_or_opposite(__isl_take isl_constraint *c, void *user)
+static isl_stat check_parallel_or_opposite(__isl_take isl_constraint *c,
+	void *user)
 {
 	struct isl_extract_mod_data *data = user;
 	enum isl_dim_type c_type[2] = { isl_dim_param, isl_dim_set };
@@ -715,9 +717,9 @@ static int check_parallel_or_opposite(__isl_take isl_constraint *c, void *user)
 	isl_constraint_free(c);
 
 	if (data->sign != 0 && data->nonneg == NULL)
-		return -1;
+		return isl_stat_error;
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Given that data->v * div_i in data->aff is of the form
@@ -1475,7 +1477,7 @@ struct isl_expr_from_set_data {
  * and add it to data->res.
  * The result is simplified in terms of data->build->domain.
  */
-static int expr_from_set(__isl_take isl_basic_set *bset, void *user)
+static isl_stat expr_from_set(__isl_take isl_basic_set *bset, void *user)
 {
 	struct isl_expr_from_set_data *data = user;
 	isl_ast_expr *expr;
@@ -1489,8 +1491,8 @@ static int expr_from_set(__isl_take isl_basic_set *bset, void *user)
 	data->first = 0;
 
 	if (!data->res)
-		return -1;
-	return 0;
+		return isl_stat_error;
+	return isl_stat_ok;
 }
 
 /* Construct an isl_ast_expr that evaluates the conditions defining "set".
@@ -1566,7 +1568,7 @@ struct isl_from_pw_aff_data {
  * constraints of the build such that they can be exploited to simplify
  * the AST expression constructed from "aff".
  */
-static int ast_expr_from_pw_aff(__isl_take isl_set *set,
+static isl_stat ast_expr_from_pw_aff(__isl_take isl_set *set,
 	__isl_take isl_aff *aff, void *user)
 {
 	struct isl_from_pw_aff_data *data = user;
@@ -1581,7 +1583,7 @@ static int ast_expr_from_pw_aff(__isl_take isl_set *set,
 		*data->next = isl_ast_expr_from_aff(aff, build);
 		isl_ast_build_free(build);
 		if (!*data->next)
-			return -1;
+			return isl_stat_error;
 	} else {
 		isl_ast_expr *ternary, *arg;
 		isl_set *gist;
@@ -1596,13 +1598,13 @@ static int ast_expr_from_pw_aff(__isl_take isl_set *set,
 		isl_ast_build_free(build);
 		ternary = isl_ast_expr_set_op_arg(ternary, 1, arg);
 		if (!ternary)
-			return -1;
+			return isl_stat_error;
 
 		*data->next = ternary;
 		data->next = &ternary->u.op.args[2];
 	}
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Construct an isl_ast_expr that evaluates "pa".

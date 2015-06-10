@@ -92,7 +92,6 @@ libisl_la_SOURCES = \
 	isl_ctx.c \
 	isl_ctx_private.h \
 	isl_deprecated.c \
-	isl_dim.c \
 	isl_dim_map.h \
 	isl_dim_map.c \
 	isl_equalities.c \
@@ -239,7 +238,6 @@ pkginclude_HEADERS = \
 	include/isl/band.h \
 	include/isl/constraint.h \
 	include/isl/ctx.h \
-	include/isl/dim.h \
 	include/isl/flow.h \
 	include/isl/id.h \
 	include/isl/id_to_ast_expr.h \
@@ -325,6 +323,7 @@ EXTRA_DIST = \
 	isl_pw_templ.c \
 	isl_union_templ.c \
 	isl.py \
+	doc/CodingStyle \
 	doc/SubmittingPatches \
 	doc/chicago.bst \
 	doc/chicago.sty \

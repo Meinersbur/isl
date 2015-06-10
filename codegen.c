@@ -24,6 +24,8 @@
 #include <isl/ast_build.h>
 #include <isl/options.h>
 #include <isl/set.h>
+#include <isl/union_set.h>
+#include <isl/union_map.h>
 #include <isl/stream.h>
 #include <isl/schedule_node.h>
 
@@ -163,7 +165,7 @@ static __isl_give isl_schedule *schedule_set_options(
 		return schedule;
 
 	type = options->separate ? isl_ast_loop_separate : isl_ast_loop_atomic;
-	schedule = isl_schedule_map_schedule_node(schedule,
+	schedule = isl_schedule_map_schedule_node_bottom_up(schedule,
 						&node_set_options, &type);
 
 	return schedule;

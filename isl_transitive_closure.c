@@ -70,13 +70,15 @@ static __isl_give isl_map *set_path_length(__isl_take isl_map *map,
 	bmap = isl_basic_map_alloc_space(dim, 0, 1, 1);
 	if (exactly) {
 		k = isl_basic_map_alloc_equality(bmap);
+		if (k < 0)
+			goto error;
 		c = bmap->eq[k];
 	} else {
 		k = isl_basic_map_alloc_inequality(bmap);
+		if (k < 0)
+			goto error;
 		c = bmap->ineq[k];
 	}
-	if (k < 0)
-		goto error;
 	isl_seq_clr(c, 1 + isl_basic_map_total_dim(bmap));
 	isl_int_set_si(c[0], -length);
 	isl_int_set_si(c[1 + nparam + d - 1], -1);
@@ -474,13 +476,15 @@ static __isl_give isl_basic_map *add_delta_constraints(
 			continue;
 		if (eq && p != MIXED) {
 			k = isl_basic_map_alloc_equality(path);
+			if (k < 0)
+				goto error;
 			path_c = path->eq[k];
 		} else {
 			k = isl_basic_map_alloc_inequality(path);
+			if (k < 0)
+				goto error;
 			path_c = path->ineq[k];
 		}
-		if (k < 0)
-			goto error;
 		isl_seq_clr(path_c, 1 + isl_basic_map_total_dim(path));
 		if (p == PURE_VAR) {
 			isl_seq_cpy(path_c + off,
@@ -754,6 +758,9 @@ static __isl_give isl_map *construct_extended_path(__isl_take isl_space *dim,
 	unsigned d;
 	int i, j, n;
 
+	if (!map)
+		goto error;
+
 	d = isl_map_dim(map, isl_dim_in);
 
 	path = isl_map_identity(isl_space_copy(dim));
@@ -819,6 +826,9 @@ static int isl_set_overlaps(__isl_keep isl_set *set1, __isl_keep isl_set *set2)
 	isl_set *i;
 	int no_overlap;
 
+	if (!set1 || !set2)
+		return -1;
+
 	if (!isl_space_tuple_is_equal(set1->dim, isl_dim_set,
 					set2->dim, isl_dim_set))
 		return 0;
@@ -856,16 +866,20 @@ static __isl_give isl_map *construct_component(__isl_take isl_space *dim,
 	struct isl_set *range = NULL;
 	struct isl_map *app = NULL;
 	struct isl_map *path = NULL;
+	int overlaps;
 
 	domain = isl_map_domain(isl_map_copy(map));
 	domain = isl_set_coalesce(domain);
 	range = isl_map_range(isl_map_copy(map));
 	range = isl_set_coalesce(range);
-	if (!isl_set_overlaps(domain, range)) {
+	overlaps = isl_set_overlaps(domain, range);
+	if (overlaps < 0 || !overlaps) {
 		isl_set_free(domain);
 		isl_set_free(range);
 		isl_space_free(dim);
 
+		if (overlaps < 0)
+			map = NULL;
 		map = isl_map_copy(map);
 		map = isl_map_add_dims(map, isl_dim_in, 1);
 		map = isl_map_add_dims(map, isl_dim_out, 1);
@@ -1752,16 +1766,16 @@ struct isl_tc_follows_data {
  * *check_closed is set if the subset relation holds while
  * R_1 \circ R_2 is not empty.
  */
-static int basic_map_follows(int i, int j, void *user)
+static isl_bool basic_map_follows(int i, int j, void *user)
 {
 	struct isl_tc_follows_data *data = user;
 	struct isl_map *map12 = NULL;
 	struct isl_map *map21 = NULL;
-	int subset;
+	isl_bool subset;
 
 	if (!isl_space_tuple_is_equal(data->list[i]->dim, isl_dim_in,
 				    data->list[j]->dim, isl_dim_out))
-		return 0;
+		return isl_bool_false;
 
 	map21 = isl_map_from_basic_map(
 			isl_basic_map_apply_range(
@@ -1772,7 +1786,7 @@ static int basic_map_follows(int i, int j, void *user)
 		goto error;
 	if (subset) {
 		isl_map_free(map21);
-		return 0;
+		return isl_bool_false;
 	}
 
 	if (!isl_space_tuple_is_equal(data->list[i]->dim, isl_dim_in,
@@ -1780,7 +1794,7 @@ static int basic_map_follows(int i, int j, void *user)
 	    !isl_space_tuple_is_equal(data->list[j]->dim, isl_dim_in,
 				    data->list[j]->dim, isl_dim_out)) {
 		isl_map_free(map21);
-		return 1;
+		return isl_bool_true;
 	}
 
 	map12 = isl_map_from_basic_map(
@@ -1796,10 +1810,10 @@ static int basic_map_follows(int i, int j, void *user)
 	if (subset)
 		data->check_closed = 1;
 
-	return subset < 0 ? -1 : !subset;
+	return subset < 0 ? isl_bool_error : !subset;
 error:
 	isl_map_free(map21);
-	return -1;
+	return isl_bool_error;
 }
 
 /* Given a union of basic maps R = \cup_i R_i \subseteq D \times D
@@ -2596,7 +2610,7 @@ error:
 	return NULL;
 }
 
-static int inc_count(__isl_take isl_map *map, void *user)
+static isl_stat inc_count(__isl_take isl_map *map, void *user)
 {
 	int *n = user;
 
@@ -2604,10 +2618,10 @@ static int inc_count(__isl_take isl_map *map, void *user)
 
 	isl_map_free(map);
 
-	return 0;
+	return isl_stat_ok;
 }
 
-static int collect_basic_map(__isl_take isl_map *map, void *user)
+static isl_stat collect_basic_map(__isl_take isl_map *map, void *user)
 {
 	int i;
 	isl_basic_map ***next = user;
@@ -2620,10 +2634,10 @@ static int collect_basic_map(__isl_take isl_map *map, void *user)
 	}
 
 	isl_map_free(map);
-	return 0;
+	return isl_stat_ok;
 error:
 	isl_map_free(map);
-	return -1;
+	return isl_stat_error;
 }
 
 /* Perform Floyd-Warshall on the given list of basic relations.
@@ -2891,14 +2905,14 @@ struct isl_union_power {
 	int *exact;
 };
 
-static int power(__isl_take isl_map *map, void *user)
+static isl_stat power(__isl_take isl_map *map, void *user)
 {
 	struct isl_union_power *up = user;
 
 	map = isl_map_power(map, up->exact);
 	up->pow = isl_union_map_from_map(map);
 
-	return -1;
+	return isl_stat_error;
 }
 
 /* Construct a map [x] -> [x+1], with parameters prescribed by "dim".

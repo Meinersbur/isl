@@ -22,6 +22,7 @@
 #include <isl_stream_private.h>
 #include <isl/obj.h>
 #include "isl_polynomial_private.h"
+#include <isl/union_set.h>
 #include <isl/union_map.h>
 #include <isl_mat_private.h>
 #include <isl_aff_private.h>
@@ -2700,7 +2701,7 @@ static __isl_give isl_basic_map *basic_map_read(__isl_keep isl_stream *s)
 			"more than one disjunct", goto error);
 
 	if (map->n == 0)
-		bmap = isl_basic_map_empty_like_map(map);
+		bmap = isl_basic_map_empty(isl_map_get_space(map));
 	else
 		bmap = isl_basic_map_copy(map->p[0]);
 
