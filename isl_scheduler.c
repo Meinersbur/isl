@@ -76,7 +76,7 @@ struct isl_schedule_constraints {
 	isl_union_map *constraint[isl_edge_last + 1];
 };
 
- __isl_give isl_schedule_constraints *isl_schedule_constraints_copy(
+__isl_give isl_schedule_constraints *isl_schedule_constraints_copy(
 	__isl_keep isl_schedule_constraints *sc)
 {
 	isl_ctx *ctx;

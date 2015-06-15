@@ -16,7 +16,7 @@ uint32_t isl_imath_hash(mp_int v, uint32_t hash)
  */
 int isl_imath_fits_slong_p(mp_int op)
 {
-	unsigned long out;
+	long out;
 	mp_result res = mp_int_to_int(op, &out);
 	return res == MP_OK;
 }

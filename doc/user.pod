@@ -553,6 +553,10 @@ in which the object was created.
 	#include <isl/flow.h>
 	isl_ctx *isl_restriction_get_ctx(
 		__isl_keep isl_restriction *restr);
+	isl_ctx *isl_union_access_info_get_ctx(
+		__isl_keep isl_union_access_info *access);
+	isl_ctx *isl_union_flow_get_ctx(
+		__isl_keep isl_union_flow *flow);
 
 	#include <isl/schedule.h>
 	isl_ctx *isl_schedule_get_ctx(
@@ -3774,6 +3778,11 @@ the following functions can be used.
 		enum isl_dim_type type, unsigned first, unsigned n);
 	isl_bool isl_multi_pw_aff_involves_dims(
 		__isl_keep isl_multi_pw_aff *mpa,
+		enum isl_dim_type type, unsigned first, unsigned n);
+
+	#include <isl/polynomial.h>
+	isl_bool isl_qpolynomial_involves_dims(
+		__isl_keep isl_qpolynomial *qp,
 		enum isl_dim_type type, unsigned first, unsigned n);
 
 Similarly, the following functions can be used to check whether
@@ -8252,7 +8261,7 @@ while the output C<isl_union_flow> object describes
 the resulting dependence relations and the subsets of the
 sink relations for which no source was found.
 
-An C<isl_union_access_info> is created, modified and freed using
+An C<isl_union_access_info> is created, modified, copied and freed using
 the following functions.
 
 	#include <isl/flow.h>
@@ -8275,6 +8284,9 @@ the following functions.
 	isl_union_access_info_set_schedule_map(
 		__isl_take isl_union_access_info *access,
 		__isl_take isl_union_map *schedule_map);
+	__isl_give isl_union_access_info *
+	isl_union_access_info_copy(
+		__isl_keep isl_union_access_info *access);
 	__isl_null isl_union_access_info *
 	isl_union_access_info_free(
 		__isl_take isl_union_access_info *access);
