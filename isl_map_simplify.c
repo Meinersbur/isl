@@ -12,7 +12,6 @@
  * B.P. 105 - 78153 Le Chesnay, France
  */
 
-#include <strings.h>
 #include <isl_ctx_private.h>
 #include <isl_map_private.h>
 #include "isl_equalities.h"
