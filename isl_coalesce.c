@@ -2464,7 +2464,7 @@ static enum isl_change coalesce_pair(int i, int j,
 
 /* Return the maximum of "a" and "b".
  */
-static inline int isl_max(int a, int b)
+static int isl_max(int a, int b)
 {
 	return a > b ? a : b;
 }
