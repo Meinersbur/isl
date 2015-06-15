@@ -10,6 +10,11 @@
 #define ffs __builtin_ffs
 #endif
 
+#if !HAVE_DECL_FFS && !HAVE_DECL___BUILTIN_FFS && HAVE_DECL__BITSCANFORWARD
+int isl_ffs(int i);
+#define ffs isl_ffs
+#endif
+
 #ifdef GCC_WARN_UNUSED_RESULT
 #define WARN_UNUSED	GCC_WARN_UNUSED_RESULT
 #else

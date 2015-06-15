@@ -70,6 +70,12 @@ AS_IF([test "x$with_int" == "ximath-32"], [
 
 AC_CHECK_DECLS(ffs,[],[],[#include <strings.h>])
 AC_CHECK_DECLS(__builtin_ffs,[],[],[])
+AC_CHECK_DECLS([_BitScanForward],[],[],[#include <intrin.h>])
+if test "x$ac_cv_have_decl_ffs" = xno -a \
+		"x$ac_cv_have_decl___builtin_ffs" = xno -a \
+		"x$ac_cv_have_decl__BitScanForward" = xno; then
+	AC_MSG_ERROR([No ffs implementation found])
+fi
 
 AC_SUBST(CLANG_CXXFLAGS)
 AC_SUBST(CLANG_LDFLAGS)
