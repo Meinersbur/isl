@@ -86,6 +86,11 @@ if test "x$ac_cv_have_decl_strncasecmp" = xno -a \
 		"x$ac_cv_have_decl__strnicmp" = xno; then
 	AC_MSG_ERROR([No strncasecmp implementation found])
 fi
+AC_CHECK_DECLS([snprintf,_snprintf],[],[],[#include <stdio.h>])
+if test "x$ac_cv_have_decl_snprintf" = xno -a \
+		"x$ac_cv_have_decl__snprintf" = xno; then
+	AC_MSG_ERROR([No snprintf implementation found])
+fi
 
 AC_SUBST(CLANG_CXXFLAGS)
 AC_SUBST(CLANG_LDFLAGS)
