@@ -76,6 +76,16 @@ if test "x$ac_cv_have_decl_ffs" = xno -a \
 		"x$ac_cv_have_decl__BitScanForward" = xno; then
 	AC_MSG_ERROR([No ffs implementation found])
 fi
+AC_CHECK_DECLS([strcasecmp,strncasecmp],[],[],[#include <strings.h>])
+AC_CHECK_DECLS([_stricmp,_strnicmp],[],[],[#include <string.h>])
+if test "x$ac_cv_have_decl_strcasecmp" = xno -a \
+		"x$ac_cv_have_decl__stricmp" = xno; then
+	AC_MSG_ERROR([No strcasecmp implementation found])
+fi
+if test "x$ac_cv_have_decl_strncasecmp" = xno -a \
+		"x$ac_cv_have_decl__strnicmp" = xno; then
+	AC_MSG_ERROR([No strncasecmp implementation found])
+fi
 
 AC_SUBST(CLANG_CXXFLAGS)
 AC_SUBST(CLANG_LDFLAGS)
