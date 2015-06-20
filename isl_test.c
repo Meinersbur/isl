@@ -1277,6 +1277,11 @@ struct {
 			"(n >= 1 and a >= 0 and b <= 2148 - n - a and "
 			"b >= 0) }",
 	  "{ [m, n, ku, kl] }" },
+	{ "{ [a, a, b] : a >= 10 }",
+	  "{ [a, b, c] : c >= a and c <= b and c >= 2 }",
+	  "{ [a, a, a] : a >= 10 }" },
+	{ "{ [i, j] : i >= 0 and i + j >= 0 }", "{ [i, j] : i <= 0 }",
+	  "{ [0, j] : j >= 0 }" },
 };
 
 static int test_gist(struct isl_ctx *ctx)
