@@ -2306,6 +2306,8 @@ static __isl_give isl_basic_set *update_ineq(__isl_take isl_basic_set *bset,
 
 	if (!bset)
 		return NULL;
+	if (tab && tab->empty)
+		return isl_basic_set_set_to_empty(bset);
 
 	n_ineq = bset->n_ineq;
 	for (i = n_ineq - 1; i >= 0; --i) {
