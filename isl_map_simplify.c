@@ -1927,6 +1927,8 @@ error:
 /* For each inequality in "ineq" that is a shifted (more relaxed)
  * copy of an inequality in "context", mark the corresponding entry
  * in "row" with -1.
+ * If an inequality only has a non-negative constant term, then
+ * mark it as well.
  */
 static isl_stat mark_shifted_constraints(__isl_keep isl_mat *ineq,
 	__isl_keep isl_basic_set *context, int *row)
@@ -1946,8 +1948,14 @@ static isl_stat mark_shifted_constraints(__isl_keep isl_mat *ineq,
 	n_ineq = isl_mat_rows(ineq);
 	total = isl_mat_cols(ineq) - 1;
 	for (k = 0; k < n_ineq; ++k) {
+		int l;
 		isl_bool redundant;
 
+		l = isl_seq_first_non_zero(ineq->row[k] + 1, total);
+		if (l < 0 && isl_int_is_nonneg(ineq->row[k][0])) {
+			row[k] = -1;
+			continue;
+		}
 		redundant = constraint_index_is_redundant(&ci, ineq->row[k]);
 		if (redundant < 0)
 			goto error;
@@ -2338,8 +2346,12 @@ static __isl_give isl_basic_set *update_ineq_free(
 }
 
 /* Remove all information from bset that is redundant in the context
- * of context.  Both bset and context are assumed to be full-dimensional.
- * "ineq" contains the inequalities of "bset".
+ * of context.  The context is assumed to be full-dimensional.
+ * "ineq" contains the (possibly transformed) inequalities of "bset",
+ * in the same order.
+ * The (explicit) equalities of "bset" are assumed to have been taken
+ * into account by the transformation such that only the inequalities
+ * are relevant.
  *
  * "row" keeps track of the constraint index of a "bset" inequality in "tab".
  * A value of -1 means that the inequality is obviously redundant and may
@@ -2378,8 +2390,7 @@ static __isl_give isl_basic_set *uset_gist_full(__isl_take isl_basic_set *bset,
 	if (!bset || !ineq || !context)
 		goto error;
 
-	if (isl_basic_set_is_universe(bset) ||
-	    isl_basic_set_is_universe(context)) {
+	if (bset->n_ineq == 0 || isl_basic_set_is_universe(context)) {
 		isl_basic_set_free(context);
 		isl_mat_free(ineq);
 		return bset;
@@ -2496,20 +2507,76 @@ static __isl_give isl_basic_set *uset_gist_uncompressed(
  * of "context", for the case where the combined equalities of
  * "bset" and "context" allow for a compression that can be obtained
  * by preapplication of "T".
- * Preapplication of "T2" moves back to the original space.
+ *
+ * "bset" itself is not transformed by "T".  Instead, the inequalities
+ * are extracted from "bset" and those are transformed by "T".
+ * uset_gist_full then determines which of the transformed inequalities
+ * are redundant with respect to the transformed "context" and removes
+ * the corresponding inequalities from "bset".
+ *
+ * After preapplying "T" to the inequalities, any common factor is
+ * removed from the coefficients.  If this results in a tightening
+ * of the constant term, then the same tightening is applied to
+ * the corresponding untransformed inequality in "bset".
+ * That is, if after plugging in T, a constraint f(x) >= 0 is of the form
+ *
+ *	g f'(x) + r >= 0
+ *
+ * with 0 <= r < g, then it is equivalent to
+ *
+ *	f'(x) >= 0
+ *
+ * This means that f(x) >= 0 is equivalent to f(x) - r >= 0 in the affine
+ * subspace compressed by T since the latter would be transformed to
+ *
+ *	g f'(x) >= 0
  */
 static __isl_give isl_basic_set *uset_gist_compressed(
 	__isl_take isl_basic_set *bset, __isl_take isl_basic_set *context,
-	__isl_take isl_mat *T, __isl_take isl_mat *T2)
+	__isl_take isl_mat *T)
 {
+	isl_ctx *ctx;
 	isl_mat *ineq;
-
-	bset = isl_basic_set_preimage(bset, isl_mat_copy(T));
-	context = isl_basic_set_preimage(context, T);
+	int i, n_row, n_col;
+	isl_int rem;
 
 	ineq = extract_ineq(bset);
-	bset = uset_gist_full(bset, ineq, context);
-	return isl_basic_set_preimage(bset, T2);
+	ineq = isl_mat_product(ineq, isl_mat_copy(T));
+	context = isl_basic_set_preimage(context, T);
+
+	if (!ineq)
+		goto error;
+
+	ctx = isl_mat_get_ctx(ineq);
+	n_row = isl_mat_rows(ineq);
+	n_col = isl_mat_cols(ineq);
+	isl_int_init(rem);
+	for (i = 0; i < n_row; ++i) {
+		isl_seq_gcd(ineq->row[i] + 1, n_col - 1, &ctx->normalize_gcd);
+		if (isl_int_is_zero(ctx->normalize_gcd))
+			continue;
+		if (isl_int_is_one(ctx->normalize_gcd))
+			continue;
+		isl_seq_scale_down(ineq->row[i] + 1, ineq->row[i] + 1,
+				    ctx->normalize_gcd, n_col - 1);
+		isl_int_fdiv_r(rem, ineq->row[i][0], ctx->normalize_gcd);
+		isl_int_fdiv_q(ineq->row[i][0],
+				ineq->row[i][0], ctx->normalize_gcd);
+		if (isl_int_is_zero(rem))
+			continue;
+		bset = isl_basic_set_cow(bset);
+		if (!bset)
+			break;
+		isl_int_sub(bset->ineq[i][0], bset->ineq[i][0], rem);
+	}
+	isl_int_clear(rem);
+
+	return uset_gist_full(bset, ineq, context);
+error:
+	isl_mat_free(ineq);
+	isl_basic_set_free(context);
+	isl_basic_set_free(bset);
+	return NULL;
 }
 
 /* Remove all information from bset that is redundant in the context
@@ -2537,7 +2604,7 @@ static __isl_give isl_basic_set *uset_gist(__isl_take isl_basic_set *bset,
 	__isl_take isl_basic_set *context)
 {
 	isl_mat *eq;
-	isl_mat *T, *T2;
+	isl_mat *T;
 	isl_basic_set *aff;
 	isl_basic_set *aff_context;
 	unsigned total;
@@ -2565,10 +2632,9 @@ static __isl_give isl_basic_set *uset_gist(__isl_take isl_basic_set *bset,
 	total = isl_basic_set_total_dim(bset);
 	eq = isl_mat_sub_alloc6(bset->ctx, aff->eq, 0, aff->n_eq, 0, 1 + total);
 	eq = isl_mat_cow(eq);
-	T = isl_mat_variable_compression(eq, &T2);
+	T = isl_mat_variable_compression(eq, NULL);
 	if (T && T->n_col == 0) {
 		isl_mat_free(T);
-		isl_mat_free(T2);
 		isl_basic_set_free(context);
 		isl_basic_set_free(aff);
 		return isl_basic_set_set_to_empty(bset);
@@ -2576,7 +2642,7 @@ static __isl_give isl_basic_set *uset_gist(__isl_take isl_basic_set *bset,
 
 	aff_context = isl_basic_set_affine_hull(isl_basic_set_copy(context));
 
-	bset = uset_gist_compressed(bset, context, T, T2);
+	bset = uset_gist_compressed(bset, context, T);
 	bset = isl_basic_set_intersect(bset, aff);
 	bset = isl_basic_set_reduce_using_equalities(bset, aff_context);
 
