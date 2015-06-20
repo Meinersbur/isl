@@ -2209,7 +2209,7 @@ static __isl_give isl_basic_set *drop_irrelevant_constraints(
 static __isl_give isl_basic_set *uset_gist_full(__isl_take isl_basic_set *bset,
 	__isl_take isl_basic_set *context)
 {
-	int i, k;
+	int i;
 	isl_basic_set *combined = NULL;
 	struct isl_tab *tab = NULL;
 	unsigned context_ineq;
@@ -2262,25 +2262,21 @@ static __isl_give isl_basic_set *uset_gist_full(__isl_take isl_basic_set *bset,
 		goto error;
 	total = isl_basic_set_total_dim(bset);
 	for (i = context_ineq; i < bset->n_ineq; ++i) {
+		isl_basic_set *test;
 		int is_empty;
+
 		if (tab->con[i].is_redundant)
 			continue;
-		tab->con[i].is_redundant = 1;
-		combined = isl_basic_set_dup(bset);
-		combined = isl_basic_set_update_from_tab(combined, tab);
-		combined = isl_basic_set_extend_constraints(combined, 0, 1);
-		k = isl_basic_set_alloc_inequality(combined);
-		if (k < 0)
-			goto error;
-		isl_seq_neg(combined->ineq[k], bset->ineq[i], 1 + total);
-		isl_int_sub_ui(combined->ineq[k][0], combined->ineq[k][0], 1);
-		is_empty = isl_basic_set_is_empty(combined);
+		test = isl_basic_set_dup(bset);
+		if (isl_inequality_negate(test, i) < 0)
+			test = isl_basic_set_free(test);
+		test = isl_basic_set_update_from_tab(test, tab);
+		is_empty = isl_basic_set_is_empty(test);
+		isl_basic_set_free(test);
 		if (is_empty < 0)
 			goto error;
-		isl_basic_set_free(combined);
-		combined = NULL;
-		if (!is_empty)
-			tab->con[i].is_redundant = 0;
+		if (is_empty)
+			tab->con[i].is_redundant = 1;
 	}
 	for (i = 0; i < context_ineq; ++i)
 		tab->con[i].is_redundant = 1;
