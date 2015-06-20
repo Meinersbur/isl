@@ -2295,7 +2295,9 @@ static int all_neg(int *row, int n)
  *
  * If the row entry is -1, then drop the inequality.
  * Otherwise, if the constraint is marked redundant in the tableau,
- * then drop the inequality.
+ * then drop the inequality.  Similarly, if it is marked as an equality
+ * in the tableau, then turn the inequality into an equality and
+ * perform Gaussian elimination.
  */
 static __isl_give isl_basic_set *update_ineq(__isl_take isl_basic_set *bset,
 	__isl_keep int *row, struct isl_tab *tab)
@@ -2303,6 +2305,7 @@ static __isl_give isl_basic_set *update_ineq(__isl_take isl_basic_set *bset,
 	int i;
 	unsigned n_ineq;
 	unsigned n_eq;
+	int found_equality = 0;
 
 	if (!bset)
 		return NULL;
@@ -2319,12 +2322,17 @@ static __isl_give isl_basic_set *update_ineq(__isl_take isl_basic_set *bset,
 		if (!tab)
 			continue;
 		n_eq = tab->n_eq;
-		if (isl_tab_is_redundant(tab, n_eq + row[i])) {
+		if (isl_tab_is_equality(tab, n_eq + row[i])) {
+			isl_basic_map_inequality_to_equality(bset, i);
+			found_equality = 1;
+		} else if (isl_tab_is_redundant(tab, n_eq + row[i])) {
 			if (isl_basic_set_drop_inequality(bset, i) < 0)
 				return isl_basic_set_free(bset);
 		}
 	}
 
+	if (found_equality)
+		bset = isl_basic_set_gauss(bset, NULL);
 	bset = isl_basic_set_finalize(bset);
 	return bset;
 }
@@ -2432,6 +2440,8 @@ static __isl_give isl_basic_set *uset_gist_full(__isl_take isl_basic_set *bset,
 			goto error;
 		row[i] = r++;
 	}
+	if (isl_tab_detect_implicit_equalities(tab) < 0)
+		goto error;
 	if (isl_tab_detect_redundant(tab) < 0)
 		goto error;
 	total = isl_basic_set_total_dim(bset);
