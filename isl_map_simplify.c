@@ -2356,7 +2356,7 @@ static __isl_give isl_basic_set *update_ineq_free(
 }
 
 /* Remove all information from bset that is redundant in the context
- * of context.  The context is assumed to be full-dimensional.
+ * of context.
  * "ineq" contains the (possibly transformed) inequalities of "bset",
  * in the same order.
  * The (explicit) equalities of "bset" are assumed to have been taken
@@ -2394,7 +2394,7 @@ static __isl_give isl_basic_set *uset_gist_full(__isl_take isl_basic_set *bset,
 	isl_ctx *ctx;
 	isl_basic_set *combined = NULL;
 	struct isl_tab *tab = NULL;
-	unsigned context_ineq;
+	unsigned n_eq, context_ineq;
 	unsigned total;
 
 	if (!bset || !ineq || !context)
@@ -2422,12 +2422,13 @@ static __isl_give isl_basic_set *uset_gist_full(__isl_take isl_basic_set *bset,
 	if (isl_basic_set_is_universe(context))
 		return update_ineq_free(bset, ineq, context, row, NULL);
 
+	n_eq = context->n_eq;
 	context_ineq = context->n_ineq;
 	combined = isl_basic_set_cow(isl_basic_set_copy(context));
 	combined = isl_basic_set_extend_constraints(combined, 0, bset->n_ineq);
 	tab = isl_tab_from_basic_set(combined, 0);
 	for (i = 0; i < context_ineq; ++i)
-		if (isl_tab_freeze_constraint(tab, i) < 0)
+		if (isl_tab_freeze_constraint(tab, n_eq + i) < 0)
 			goto error;
 	if (isl_tab_extend_cons(tab, bset->n_ineq) < 0)
 		goto error;
@@ -2452,7 +2453,7 @@ static __isl_give isl_basic_set *uset_gist_full(__isl_take isl_basic_set *bset,
 		if (row[i] < 0)
 			continue;
 		r = row[i];
-		if (tab->con[r].is_redundant)
+		if (tab->con[n_eq + r].is_redundant)
 			continue;
 		test = isl_basic_set_dup(combined);
 		if (isl_inequality_negate(test, r) < 0)
@@ -2463,7 +2464,7 @@ static __isl_give isl_basic_set *uset_gist_full(__isl_take isl_basic_set *bset,
 		if (is_empty < 0)
 			goto error;
 		if (is_empty)
-			tab->con[r].is_redundant = 1;
+			tab->con[n_eq + r].is_redundant = 1;
 	}
 	bset = update_ineq_free(bset, ineq, context, row, tab);
 	if (bset) {
