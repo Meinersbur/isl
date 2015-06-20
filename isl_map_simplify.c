@@ -2457,6 +2457,33 @@ error:
 	return NULL;
 }
 
+/* Remove all information from "bset" that is redundant in the context
+ * of "context", for the case where both "bset" and "context" are
+ * full-dimensional.
+ */
+static __isl_give isl_basic_set *uset_gist_uncompressed(
+	__isl_take isl_basic_set *bset, __isl_take isl_basic_set *context)
+{
+	return uset_gist_full(bset, context);
+}
+
+/* Remove all information from "bset" that is redundant in the context
+ * of "context", for the case where the combined equalities of
+ * "bset" and "context" allow for a compression that can be obtained
+ * by preapplication of "T".
+ * Preapplication of "T2" moves back to the original space.
+ */
+static __isl_give isl_basic_set *uset_gist_compressed(
+	__isl_take isl_basic_set *bset, __isl_take isl_basic_set *context,
+	__isl_take isl_mat *T, __isl_take isl_mat *T2)
+{
+	bset = isl_basic_set_preimage(bset, isl_mat_copy(T));
+	context = isl_basic_set_preimage(context, T);
+
+	bset = uset_gist_full(bset, context);
+	return isl_basic_set_preimage(bset, T2);
+}
+
 /* Remove all information from bset that is redundant in the context
  * of context.  In particular, equalities that are linear combinations
  * of those in context are removed.  Then the inequalities that are
@@ -2505,7 +2532,7 @@ static __isl_give isl_basic_set *uset_gist(__isl_take isl_basic_set *bset,
 	bset = isl_basic_set_sort_constraints(bset);
 	if (aff->n_eq == 0) {
 		isl_basic_set_free(aff);
-		return uset_gist_full(bset, context);
+		return uset_gist_uncompressed(bset, context);
 	}
 	total = isl_basic_set_total_dim(bset);
 	eq = isl_mat_sub_alloc6(bset->ctx, aff->eq, 0, aff->n_eq, 0, 1 + total);
@@ -2521,11 +2548,7 @@ static __isl_give isl_basic_set *uset_gist(__isl_take isl_basic_set *bset,
 
 	aff_context = isl_basic_set_affine_hull(isl_basic_set_copy(context));
 
-	bset = isl_basic_set_preimage(bset, isl_mat_copy(T));
-	context = isl_basic_set_preimage(context, T);
-
-	bset = uset_gist_full(bset, context);
-	bset = isl_basic_set_preimage(bset, T2);
+	bset = uset_gist_compressed(bset, context, T, T2);
 	bset = isl_basic_set_intersect(bset, aff);
 	bset = isl_basic_set_reduce_using_equalities(bset, aff_context);
 
