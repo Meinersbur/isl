@@ -805,17 +805,34 @@ static void constraint_index_free(struct isl_constraint_index *ci)
 	free(ci->index);
 }
 
-static int hash_index(struct isl_constraint_index *ci,
-			struct isl_basic_map *bmap, int k)
+/* Return the position in ci->index that contains the address of
+ * an inequality that is equal to *ineq up to the constant term,
+ * provided this address is not identical to "ineq".
+ * If there is no such inequality, then return the position where
+ * such an inequality should be inserted.
+ */
+static int hash_index_ineq(struct isl_constraint_index *ci, isl_int **ineq)
 {
 	int h;
-	unsigned total = ci->total;
-	uint32_t hash = isl_seq_get_hash_bits(bmap->ineq[k]+1, total, ci->bits);
+	uint32_t hash = isl_seq_get_hash_bits((*ineq) + 1, ci->total, ci->bits);
 	for (h = hash; ci->index[h]; h = (h+1) % ci->size)
-		if (&bmap->ineq[k] != ci->index[h] &&
-		    isl_seq_eq(bmap->ineq[k]+1, ci->index[h][0]+1, total))
+		if (ineq != ci->index[h] &&
+		    isl_seq_eq((*ineq) + 1, ci->index[h][0]+1, ci->total))
 			break;
 	return h;
+}
+
+/* Return the position in ci->index that contains the address of
+ * an inequality that is equal to the k'th inequality of "bmap"
+ * up to the constant term, provided it does not point to the very
+ * same inequality.
+ * If there is no such inequality, then return the position where
+ * such an inequality should be inserted.
+ */
+static int hash_index(struct isl_constraint_index *ci,
+	__isl_keep isl_basic_map *bmap, int k)
+{
+	return hash_index_ineq(ci, &bmap->ineq[k]);
 }
 
 static int set_hash_index(struct isl_constraint_index *ci,
