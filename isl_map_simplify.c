@@ -2604,8 +2604,8 @@ error:
  *
  * We first compute the intersection of the integer affine hulls
  * of "bset" and "context",
- * compute the gist inside this intersection and then add back
- * those equalities that are not implied by the context.
+ * compute the gist inside this intersection and then reduce
+ * the constraints with respect to the equalities of the context.
  *
  * If two constraints are mutually redundant, then uset_gist_full
  * will remove the second of those constraints.  We therefore first
@@ -2651,17 +2651,16 @@ static __isl_give isl_basic_set *uset_gist(__isl_take isl_basic_set *bset,
 	eq = isl_mat_sub_alloc6(bset->ctx, aff->eq, 0, aff->n_eq, 0, 1 + total);
 	eq = isl_mat_cow(eq);
 	T = isl_mat_variable_compression(eq, NULL);
+	isl_basic_set_free(aff);
 	if (T && T->n_col == 0) {
 		isl_mat_free(T);
 		isl_basic_set_free(context);
-		isl_basic_set_free(aff);
 		return isl_basic_set_set_to_empty(bset);
 	}
 
 	aff_context = isl_basic_set_affine_hull(isl_basic_set_copy(context));
 
 	bset = uset_gist_compressed(bset, context, T);
-	bset = isl_basic_set_intersect(bset, aff);
 	bset = isl_basic_set_reduce_using_equalities(bset, aff_context);
 
 	if (bset) {
