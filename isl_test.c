@@ -1279,9 +1279,18 @@ struct {
 	  "{ [m, n, ku, kl] }" },
 	{ "{ [a, a, b] : a >= 10 }",
 	  "{ [a, b, c] : c >= a and c <= b and c >= 2 }",
-	  "{ [a, a, a] : a >= 10 }" },
+	  "{ [a, a, b] : a >= 10 }" },
 	{ "{ [i, j] : i >= 0 and i + j >= 0 }", "{ [i, j] : i <= 0 }",
 	  "{ [0, j] : j >= 0 }" },
+	/* Check that no constraints on i6 are introduced in the gist */
+	{ "[t1] -> { [i4, i6] : exists (e0 = floor((1530 - 4t1 - 5i4)/20): "
+		"20e0 <= 1530 - 4t1 - 5i4 and 20e0 >= 1511 - 4t1 - 5i4 and "
+		"5e0 <= 381 - t1 and i4 <= 1) }",
+	  "[t1] -> { [i4, i6] : exists (e0 = floor((-t1 + i6)/5): "
+		"5e0 = -t1 + i6 and i6 <= 6 and i6 >= 3) }",
+	  "[t1] -> { [i4, i6] : exists (e0 = floor((1530 - 4t1 - 5i4)/20): "
+		"i4 <= 1 and 5e0 <= 381 - t1 and 20e0 <= 1530 - 4t1 - 5i4 and "
+		"20e0 >= 1511 - 4t1 - 5i4) }" },
 };
 
 static int test_gist(struct isl_ctx *ctx)

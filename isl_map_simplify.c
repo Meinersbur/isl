@@ -2602,8 +2602,9 @@ error:
  * that are irrelevant for computing the gist of "bset".
  * Alternatively, we could factorize the intersection of "context" and "bset".
  *
- * We first compute the integer affine hull of the intersection,
- * compute the gist inside this affine hull and then add back
+ * We first compute the intersection of the integer affine hulls
+ * of "bset" and "context",
+ * compute the gist inside this intersection and then add back
  * those equalities that are not implied by the context.
  *
  * If two constraints are mutually redundant, then uset_gist_full
@@ -2627,9 +2628,13 @@ static __isl_give isl_basic_set *uset_gist(__isl_take isl_basic_set *bset,
 
 	context = drop_irrelevant_constraints(context, bset);
 
+	bset = isl_basic_set_detect_equalities(bset);
 	aff = isl_basic_set_copy(bset);
-	aff = isl_basic_set_intersect(aff, isl_basic_set_copy(context));
-	aff = isl_basic_set_affine_hull(aff);
+	aff = isl_basic_set_plain_affine_hull(aff);
+	context = isl_basic_set_detect_equalities(context);
+	aff_context = isl_basic_set_copy(context);
+	aff_context = isl_basic_set_plain_affine_hull(aff_context);
+	aff = isl_basic_set_intersect(aff, aff_context);
 	if (!aff)
 		goto error;
 	if (isl_basic_set_plain_is_empty(aff)) {
