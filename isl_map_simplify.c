@@ -2182,7 +2182,6 @@ static __isl_give isl_basic_set *uset_gist_full(__isl_take isl_basic_set *bset,
 
 	isl_tab_free(tab);
 done:
-	bset = isl_basic_set_simplify(bset);
 	bset = isl_basic_set_finalize(bset);
 	isl_basic_set_free(context);
 	return bset;
