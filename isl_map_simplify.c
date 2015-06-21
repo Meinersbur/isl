@@ -2725,7 +2725,7 @@ struct isl_basic_map *isl_basic_map_gist(struct isl_basic_map *bmap,
 {
 	isl_basic_set *bset, *eq;
 	isl_basic_map *eq_bmap;
-	unsigned n_div, n_eq, n_ineq;
+	unsigned total, n_div, extra, n_eq, n_ineq;
 
 	if (!bmap || !context)
 		goto error;
@@ -2751,11 +2751,15 @@ struct isl_basic_map *isl_basic_map_gist(struct isl_basic_map *bmap,
 		goto error;
 
 	context = isl_basic_map_align_divs(context, bmap);
-	bmap = isl_basic_map_align_divs(bmap, context);
-	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	n_div = isl_basic_map_dim(context, isl_dim_div);
+	total = isl_basic_map_dim(bmap, isl_dim_all);
+	extra = n_div - isl_basic_map_dim(bmap, isl_dim_div);
 
-	bset = uset_gist(isl_basic_map_underlying_set(isl_basic_map_copy(bmap)),
+	bset = isl_basic_map_underlying_set(isl_basic_map_copy(bmap));
+	bset = isl_basic_set_add_dims(bset, isl_dim_set, extra);
+	bset = uset_gist(bset,
 		    isl_basic_map_underlying_set(isl_basic_map_copy(context)));
+	bset = isl_basic_set_project_out(bset, isl_dim_set, total, extra);
 
 	if (!bset || bset->n_eq == 0 || n_div == 0 ||
 	    isl_basic_set_plain_is_empty(bset)) {
