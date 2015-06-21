@@ -59,6 +59,9 @@ imath|imath-32)
 	AX_DETECT_IMATH
 	;;
 esac
+if test "x$with_int" = "ximath-32" -a "x$GCC" = "xyes"; then
+	MP_CPPFLAGS="-std=gnu99 $MP_CPPFLAGS"
+fi
 
 AM_CONDITIONAL(IMATH_FOR_MP, test x$with_int = ximath -o x$with_int = ximath-32)
 AM_CONDITIONAL(GMP_FOR_MP, test x$with_int = xgmp)
