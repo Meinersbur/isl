@@ -2592,6 +2592,33 @@ error:
 	return NULL;
 }
 
+/* Project "bset" onto the variables that are involved in "template".
+ */
+static __isl_give isl_basic_set *project_onto_involved(
+	__isl_take isl_basic_set *bset, __isl_keep isl_basic_set *template)
+{
+	int i, n;
+
+	if (!bset || !template)
+		return isl_basic_set_free(bset);
+
+	n = isl_basic_set_dim(template, isl_dim_set);
+
+	for (i = 0; i < n; ++i) {
+		isl_bool involved;
+
+		involved = isl_basic_set_involves_dims(template,
+							isl_dim_set, i, 1);
+		if (involved < 0)
+			return isl_basic_set_free(bset);
+		if (involved)
+			continue;
+		bset = isl_basic_set_eliminate_vars(bset, i, 1);
+	}
+
+	return bset;
+}
+
 /* Remove all information from bset that is redundant in the context
  * of context.  In particular, equalities that are linear combinations
  * of those in context are removed.  Then the inequalities that are
@@ -2605,7 +2632,8 @@ error:
  * We first compute the intersection of the integer affine hulls
  * of "bset" and "context",
  * compute the gist inside this intersection and then reduce
- * the constraints with respect to the equalities of the context.
+ * the constraints with respect to the equalities of the context
+ * that only involve variables already involved in the input.
  *
  * If two constraints are mutually redundant, then uset_gist_full
  * will remove the second of those constraints.  We therefore first
@@ -2659,6 +2687,7 @@ static __isl_give isl_basic_set *uset_gist(__isl_take isl_basic_set *bset,
 	}
 
 	aff_context = isl_basic_set_affine_hull(isl_basic_set_copy(context));
+	aff_context = project_onto_involved(aff_context, bset);
 
 	bset = uset_gist_compressed(bset, context, T);
 	bset = isl_basic_set_reduce_using_equalities(bset, aff_context);
