@@ -4073,7 +4073,7 @@ __isl_give isl_set *isl_multi_aff_lex_ge_set(__isl_take isl_multi_aff *ma1,
 #undef PARTS
 #define PARTS pw_multi_aff
 
-#include <isl_union_single.c>
+#include <isl_union_multi.c>
 #include <isl_union_neg.c>
 
 /* Given a function "cmp" that returns the set of elements where
