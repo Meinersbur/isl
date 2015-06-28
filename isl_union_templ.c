@@ -210,6 +210,23 @@ static struct isl_hash_table_entry *FN(UNION,find_part_entry)(
 		"expression over a given domain", return NULL);
 }
 
+/* Remove "part_entry" from the hash table of "u".
+ */
+static __isl_give UNION *FN(UNION,remove_part_entry)(__isl_take UNION *u,
+	struct isl_hash_table_entry *part_entry)
+{
+	isl_ctx *ctx;
+
+	if (!u || !part_entry)
+		return FN(UNION,free)(u);
+
+	ctx = FN(UNION,get_ctx)(u);
+	isl_hash_table_remove(ctx, &u->table, part_entry);
+	FN(PART,free)(part_entry->data);
+
+	return u;
+}
+
 /* Extract the element of "u" living in "space" (ignoring parameters).
  *
  * Return the ZERO element if "u" does not contain any element
@@ -296,10 +313,8 @@ static __isl_give UNION *FN(UNION,add_part_generic)(__isl_take UNION *u,
 		empty = FN(PART,IS_ZERO)(part);
 		if (empty < 0)
 			goto error;
-		if (empty) {
-			FN(PART,free)(entry->data);
-			isl_hash_table_remove(u->space->ctx, &u->table, entry);
-		}
+		if (empty)
+			u = FN(UNION,remove_part_entry)(u, entry);
 		FN(PART,free)(part);
 	}
 
