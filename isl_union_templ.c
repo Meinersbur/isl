@@ -1309,18 +1309,12 @@ __isl_give UNION *FN(UNION,set_dim_name)(__isl_take UNION *u,
 }
 
 /* Reset the user pointer on all identifiers of parameters and tuples
- * of the space of "part" and add the result to *res.
+ * of the space of "part" and return the result.
  */
-static isl_stat FN(UNION,reset_user_entry)(__isl_take PART *part, void *user)
+static __isl_give PART *FN(UNION,reset_user_entry)(__isl_take PART *part,
+	void *user)
 {
-	UNION **res = user;
-
-	part = FN(PART,reset_user)(part);
-	*res = FN(FN(UNION,add),PARTS)(*res, part);
-	if (!*res)
-		return isl_stat_error;
-
-	return isl_stat_ok;
+	return FN(PART,reset_user)(part);
 }
 
 /* Reset the user pointer on all identifiers of parameters and tuples
@@ -1329,16 +1323,9 @@ static isl_stat FN(UNION,reset_user_entry)(__isl_take PART *part, void *user)
 __isl_give UNION *FN(UNION,reset_user)(__isl_take UNION *u)
 {
 	isl_space *space;
-	UNION *res;
 
 	space = FN(UNION,get_space)(u);
 	space = isl_space_reset_user(space);
-	res = FN(UNION,alloc_same_size_on_space)(u, space);
-	if (FN(FN(UNION,foreach),PARTS)(u,
-					&FN(UNION,reset_user_entry), &res) < 0)
-		res = FN(UNION,free)(res);
-
-	FN(UNION,free)(u);
-
-	return res;
+	return FN(UNION,transform_space)(u, space, &FN(UNION,reset_user_entry),
+					NULL);
 }
