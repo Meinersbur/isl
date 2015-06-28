@@ -706,23 +706,15 @@ __isl_give UNION *FN(UNION,sub)(__isl_take UNION *u1, __isl_take UNION *u2)
 
 S(UNION,any_set_data) {
 	isl_set *set;
-	UNION *res;
 	__isl_give PW *(*fn)(__isl_take PW*, __isl_take isl_set*);
 };
 
-static isl_stat FN(UNION,any_set_entry)(void **entry, void *user)
+static __isl_give PART *FN(UNION,any_set_entry)(__isl_take PART *part,
+	void *user)
 {
 	S(UNION,any_set_data) *data = user;
-	PW *pw = *entry;
 
-	pw = FN(PW,copy)(pw);
-	pw = data->fn(pw, isl_set_copy(data->set));
-
-	data->res = FN(FN(UNION,add),PARTS)(data->res, pw);
-	if (!data->res)
-		return isl_stat_error;
-
-	return isl_stat_ok;
+	return data->fn(part, isl_set_copy(data->set));
 }
 
 /* Update each element of "u" by calling "fn" on the element and "set".
@@ -731,7 +723,7 @@ static __isl_give UNION *FN(UNION,any_set_op)(__isl_take UNION *u,
 	__isl_take isl_set *set,
 	__isl_give PW *(*fn)(__isl_take PW*, __isl_take isl_set*))
 {
-	S(UNION,any_set_data) data = { NULL, NULL, fn };
+	S(UNION,any_set_data) data = { NULL, fn };
 
 	u = FN(UNION,align_params)(u, isl_set_get_space(set));
 	set = isl_set_align_params(set, FN(UNION,get_space)(u));
@@ -740,18 +732,12 @@ static __isl_give UNION *FN(UNION,any_set_op)(__isl_take UNION *u,
 		goto error;
 
 	data.set = set;
-	data.res = FN(UNION,alloc_same_size)(u);
-	if (isl_hash_table_foreach(u->space->ctx, &u->table,
-				   &FN(UNION,any_set_entry), &data) < 0)
-		goto error;
-
-	FN(UNION,free)(u);
+	u = FN(UNION,transform)(u, &FN(UNION,any_set_entry), &data);
 	isl_set_free(set);
-	return data.res;
+	return u;
 error:
 	FN(UNION,free)(u);
 	isl_set_free(set);
-	FN(UNION,free)(data.res);
 	return NULL;
 }
 
