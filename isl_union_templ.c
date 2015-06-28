@@ -1225,29 +1225,21 @@ error:
 
 /* Internal data structure for isl_union_*_drop_dims.
  * type, first and n are passed to isl_*_drop_dims.
- * res collects the results.
  */
 S(UNION,drop_dims_data) {
 	enum isl_dim_type type;
 	unsigned first;
 	unsigned n;
-
-	UNION *res;
 };
 
-/* Drop the parameters specified by "data" from "part" and
- * add the results to data->res.
+/* Drop the parameters specified by "data" from "part" and return the result.
  */
-static isl_stat FN(UNION,drop_dims_entry)(__isl_take PART *part, void *user)
+static __isl_give PART *FN(UNION,drop_dims_entry)(__isl_take PART *part,
+	void *user)
 {
 	S(UNION,drop_dims_data) *data = user;
 
-	part = FN(PART,drop_dims)(part, data->type, data->first, data->n);
-	data->res = FN(FN(UNION,add),PARTS)(data->res, part);
-	if (!data->res)
-		return isl_stat_error;
-
-	return isl_stat_ok;
+	return FN(PART,drop_dims)(part, data->type, data->first, data->n);
 }
 
 /* Drop the specified parameters from "u".
@@ -1269,14 +1261,8 @@ __isl_give UNION *FN(UNION,drop_dims)( __isl_take UNION *u,
 
 	space = FN(UNION,get_space)(u);
 	space = isl_space_drop_dims(space, type, first, n);
-	data.res = FN(UNION,alloc_same_size_on_space)(u, space);
-	if (FN(FN(UNION,foreach),PARTS)(u,
-					&FN(UNION,drop_dims_entry), &data) < 0)
-		data.res = FN(UNION,free)(data.res);
-
-	FN(UNION,free)(u);
-
-	return data.res;
+	return FN(UNION,transform_space)(u, space, &FN(UNION,drop_dims_entry),
+					&data);
 }
 
 /* Internal data structure for isl_union_*_set_dim_name.
