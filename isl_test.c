@@ -4387,6 +4387,35 @@ int test_union_pw(isl_ctx *ctx)
 	return 0;
 }
 
+/* Test that isl_union_pw_qpolynomial_eval picks up the function
+ * defined over the correct domain space.
+ */
+static int test_eval(isl_ctx *ctx)
+{
+	const char *str;
+	isl_point *pnt;
+	isl_set *set;
+	isl_union_pw_qpolynomial *upwqp;
+	isl_val *v;
+	int cmp;
+
+	str = "{ A[x] -> x^2; B[x] -> -x^2 }";
+	upwqp = isl_union_pw_qpolynomial_read_from_str(ctx, str);
+	str = "{ A[6] }";
+	set = isl_set_read_from_str(ctx, str);
+	pnt = isl_set_sample_point(set);
+	v = isl_union_pw_qpolynomial_eval(upwqp, pnt);
+	cmp = isl_val_cmp_si(v, 36);
+	isl_val_free(v);
+
+	if (!v)
+		return -1;
+	if (cmp != 0)
+		isl_die(ctx, isl_error_unknown, "unexpected value", return -1);
+
+	return 0;
+}
+
 int test_output(isl_ctx *ctx)
 {
 	char *s;
@@ -5928,6 +5957,7 @@ struct {
 	{ "schedule tree grouping", &test_schedule_tree_group },
 	{ "tile", &test_tile },
 	{ "union_pw", &test_union_pw },
+	{ "eval", &test_eval },
 	{ "parse", &test_parse },
 	{ "single-valued", &test_sv },
 	{ "affine hull", &test_affine_hull },
