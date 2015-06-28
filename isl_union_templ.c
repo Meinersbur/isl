@@ -421,29 +421,27 @@ static __isl_give UNION *FN(UNION,transform_space)(__isl_take UNION *u,
 	return data.res;
 }
 
-static isl_stat FN(UNION,add_part)(__isl_take PART *part, void *user)
+/* Return a UNION that lives in the same space as "u" and that is obtained
+ * by applying "fn" to each of the entries in "u".
+ */
+static __isl_give UNION *FN(UNION,transform)(__isl_take UNION *u,
+	__isl_give PART *(*fn)(__isl_take PART *part, void *user), void *user)
 {
-	UNION **u = (UNION **)user;
+	return FN(UNION,transform_space)(u, FN(UNION,get_space)(u), fn, user);
+}
 
-	*u = FN(FN(UNION,add),PARTS)(*u, part);
-
-	return isl_stat_ok;
+/* An isl_union_*_transform callback for use in isl_union_*_dup
+ * that simply returns "part".
+ */
+static __isl_give PART *FN(UNION,copy_part)(__isl_take PART *part, void *user)
+{
+	return part;
 }
 
 __isl_give UNION *FN(UNION,dup)(__isl_keep UNION *u)
 {
-	UNION *dup;
-
-	if (!u)
-		return NULL;
-
-	dup = FN(UNION,alloc_same_size)(u);
-	if (FN(FN(UNION,foreach),PARTS)(u, &FN(UNION,add_part), &dup) < 0)
-		goto error;
-	return dup;
-error:
-	FN(UNION,free)(dup);
-	return NULL;
+	u = FN(UNION,copy)(u);
+	return FN(UNION,transform)(u, &FN(UNION,copy_part), NULL);
 }
 
 __isl_give UNION *FN(UNION,cow)(__isl_take UNION *u)
