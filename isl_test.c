@@ -21,6 +21,7 @@
 #include <isl_ctx_private.h>
 #include <isl_map_private.h>
 #include <isl_aff_private.h>
+#include <isl_space_private.h>
 #include <isl/set.h>
 #include <isl/flow.h>
 #include <isl_constraint_private.h>
@@ -5914,10 +5915,37 @@ static int test_tile(isl_ctx *ctx)
 	return 0;
 }
 
+/* Check that the domain hash of a space is equal to the hash
+ * of the domain of the space.
+ */
+static int test_domain_hash(isl_ctx *ctx)
+{
+	isl_map *map;
+	isl_space *space;
+	uint32_t hash1, hash2;
+
+	map = isl_map_read_from_str(ctx, "[n] -> { A[B[x] -> C[]] -> D[] }");
+	space = isl_map_get_space(map);
+	isl_map_free(map);
+	hash1 = isl_space_get_domain_hash(space);
+	space = isl_space_domain(space);
+	hash2 = isl_space_get_hash(space);
+	isl_space_free(space);
+
+	if (!space)
+		return -1;
+	if (hash1 != hash2)
+		isl_die(ctx, isl_error_unknown,
+			"domain hash not equal to hash of domain", return -1);
+
+	return 0;
+}
+
 struct {
 	const char *name;
 	int (*fn)(isl_ctx *ctx);
 } tests [] = {
+	{ "domain hash", &test_domain_hash },
 	{ "dual", &test_dual },
 	{ "dependence analysis", &test_flow },
 	{ "val", &test_val },
