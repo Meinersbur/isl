@@ -1268,28 +1268,21 @@ __isl_give UNION *FN(UNION,drop_dims)( __isl_take UNION *u,
 /* Internal data structure for isl_union_*_set_dim_name.
  * pos is the position of the parameter that needs to be renamed.
  * s is the new name.
- * res collects the results.
  */
 S(UNION,set_dim_name_data) {
 	unsigned pos;
 	const char *s;
-
-	UNION *res;
 };
 
 /* Change the name of the parameter at position data->pos of "part" to data->s
- * and add the result to data->res.
+ * and return the result.
  */
-static isl_stat FN(UNION,set_dim_name_entry)(__isl_take PART *part, void *user)
+static __isl_give PART *FN(UNION,set_dim_name_entry)(__isl_take PART *part,
+	void *user)
 {
 	S(UNION,set_dim_name_data) *data = user;
 
-	part = FN(PART,set_dim_name)(part, isl_dim_param, data->pos, data->s);
-	data->res = FN(FN(UNION,add),PARTS)(data->res, part);
-	if (!data->res)
-		return isl_stat_error;
-
-	return isl_stat_ok;
+	return FN(PART,set_dim_name)(part, isl_dim_param, data->pos, data->s);
 }
 
 /* Change the name of the parameter at position "pos" to "s".
@@ -1311,15 +1304,8 @@ __isl_give UNION *FN(UNION,set_dim_name)(__isl_take UNION *u,
 
 	space = FN(UNION,get_space)(u);
 	space = isl_space_set_dim_name(space, type, pos, s);
-	data.res = FN(UNION,alloc_same_size_on_space)(u, space);
-
-	if (FN(FN(UNION,foreach),PARTS)(u,
-				    &FN(UNION,set_dim_name_entry), &data) < 0)
-		data.res = FN(UNION,free)(data.res);
-
-	FN(UNION,free)(u);
-
-	return data.res;
+	return FN(UNION,transform_space)(u, space,
+					&FN(UNION,set_dim_name_entry), &data);
 }
 
 /* Reset the user pointer on all identifiers of parameters and tuples
