@@ -847,31 +847,20 @@ __isl_give UNION *FN(UNION,intersect_domain)(__isl_take UNION *u,
 	return FN(UNION,match_domain_op)(u, uset, &FN(PW,intersect_domain));
 }
 
-/* Internal data structure for isl_union_*_subtract_domain.
- * uset is the set that needs to be removed from the domain.
- * res collects the results.
- */
-S(UNION,subtract_domain_data) {
-	isl_union_set *uset;
-	UNION *res;
-};
-
 /* Take the set (which may be empty) in data->uset that lives
  * in the same space as the domain of "pw", subtract it from the domain
- * of "pw" and add the result to data->res.
+ * of "part" and return the result.
  */
-static isl_stat FN(UNION,subtract_domain_entry)(__isl_take PW *pw, void *user)
+static __isl_give PART *FN(UNION,subtract_domain_entry)(__isl_take PART *part,
+	void *user)
 {
-	S(UNION,subtract_domain_data) *data = user;
+	isl_union_set *uset = user;
 	isl_space *space;
 	isl_set *set;
 
-	space = FN(PW,get_domain_space)(pw);
-	set = isl_union_set_extract_set(data->uset, space);
-	pw = FN(PW,subtract_domain)(pw, set);
-	data->res = FN(FN(UNION,add),PARTS)(data->res, pw);
-
-	return isl_stat_ok;
+	space = FN(PART,get_domain_space)(part);
+	set = isl_union_set_extract_set(uset, space);
+	return FN(PART,subtract_domain)(part, set);
 }
 
 /* Subtract "uset' from the domain of "u".
@@ -879,24 +868,9 @@ static isl_stat FN(UNION,subtract_domain_entry)(__isl_take PW *pw, void *user)
 __isl_give UNION *FN(UNION,subtract_domain)(__isl_take UNION *u,
 	__isl_take isl_union_set *uset)
 {
-	S(UNION,subtract_domain_data) data;
-
-	if (!u || !uset)
-		goto error;
-
-	data.uset = uset;
-	data.res = FN(UNION,alloc_same_size)(u);
-	if (FN(FN(UNION,foreach),PARTS)(u,
-				&FN(UNION,subtract_domain_entry), &data) < 0)
-		data.res = FN(UNION,free)(data.res);
-
-	FN(UNION,free)(u);
+	u = FN(UNION,transform)(u, &FN(UNION,subtract_domain_entry), uset);
 	isl_union_set_free(uset);
-	return data.res;
-error:
-	FN(UNION,free)(u);
-	isl_union_set_free(uset);
-	return NULL;
+	return u;
 }
 
 __isl_give UNION *FN(UNION,gist)(__isl_take UNION *u,
