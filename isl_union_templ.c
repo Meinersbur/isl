@@ -319,6 +319,37 @@ __isl_give UNION *FN(FN(UNION,add),PARTS)(__isl_take UNION *u,
 	return FN(UNION,add_part_generic)(u, part, 1);
 }
 
+#ifdef HAS_TYPE
+/* Allocate a UNION with the same type and the same size as "u" and
+ * with space "space".
+ */
+static __isl_give UNION *FN(UNION,alloc_same_size_on_space)(__isl_keep UNION *u,
+	__isl_take isl_space *space)
+{
+	if (!u)
+		space = isl_space_free(space);
+	return FN(UNION,alloc)(space, u->type, u->table.n);
+}
+#else
+/* Allocate a UNION with the same size as "u" and with space "space".
+ */
+static __isl_give UNION *FN(UNION,alloc_same_size_on_space)(__isl_keep UNION *u,
+	__isl_take isl_space *space)
+{
+	if (!u)
+		space = isl_space_free(space);
+	return FN(UNION,alloc)(space, u->table.n);
+}
+#endif
+
+/* Allocate a UNION with the same space, the same type (if any) and
+ * the same size as "u".
+ */
+static __isl_give UNION *FN(UNION,alloc_same_size)(__isl_keep UNION *u)
+{
+	return FN(UNION,alloc_same_size_on_space)(u, FN(UNION,get_space)(u));
+}
+
 static isl_stat FN(UNION,add_part)(__isl_take PART *part, void *user)
 {
 	UNION **u = (UNION **)user;
@@ -335,11 +366,7 @@ __isl_give UNION *FN(UNION,dup)(__isl_keep UNION *u)
 	if (!u)
 		return NULL;
 
-#ifdef HAS_TYPE
-	dup = FN(UNION,ZERO)(isl_space_copy(u->space), u->type);
-#else
-	dup = FN(UNION,ZERO)(isl_space_copy(u->space));
-#endif
+	dup = FN(UNION,alloc_same_size)(u);
 	if (FN(FN(UNION,foreach),PARTS)(u, &FN(UNION,add_part), &dup) < 0)
 		goto error;
 	return dup;
@@ -407,15 +434,13 @@ static __isl_give UNION *FN(UNION,realign_domain)(__isl_take UNION *u,
 	__isl_take isl_reordering *r)
 {
 	S(UNION,align) data = { NULL, NULL };
+	isl_space *space;
 
 	if (!u || !r)
 		goto error;
 
-#ifdef HAS_TYPE
-	data.res = FN(UNION,alloc)(isl_space_copy(r->dim), u->type, u->table.n);
-#else
-	data.res = FN(UNION,alloc)(isl_space_copy(r->dim), u->table.n);
-#endif
+	space = isl_space_copy(r->dim);
+	data.res = FN(UNION,alloc_same_size_on_space)(u, space);
 	data.exp = r;
 	if (FN(FN(UNION,foreach),PARTS)(u, &FN(UNION,align_entry), &data) < 0)
 		data.res = FN(UNION,free)(data.res);
@@ -587,12 +612,7 @@ static __isl_give UNION *FN(UNION,match_bin_op)(__isl_take UNION *u1,
 		goto error;
 
 	data.u2 = u2;
-#ifdef HAS_TYPE
-	data.res = FN(UNION,alloc)(isl_space_copy(u1->space), u1->type,
-				    u1->table.n);
-#else
-	data.res = FN(UNION,alloc)(isl_space_copy(u1->space), u1->table.n);
-#endif
+	data.res = FN(UNION,alloc_same_size)(u1);
 	if (isl_hash_table_foreach(u1->space->ctx, &u1->table,
 				    &FN(UNION,match_bin_entry), &data) < 0)
 		goto error;
@@ -667,12 +687,7 @@ static __isl_give UNION *FN(UNION,any_set_op)(__isl_take UNION *u,
 		goto error;
 
 	data.set = set;
-#ifdef HAS_TYPE
-	data.res = FN(UNION,alloc)(isl_space_copy(u->space), u->type,
-					u->table.n);
-#else
-	data.res = FN(UNION,alloc)(isl_space_copy(u->space), u->table.n);
-#endif
+	data.res = FN(UNION,alloc_same_size)(u);
 	if (isl_hash_table_foreach(u->space->ctx, &u->table,
 				   &FN(UNION,any_set_entry), &data) < 0)
 		goto error;
@@ -765,12 +780,7 @@ static __isl_give UNION *FN(UNION,match_domain_op)(__isl_take UNION *u,
 		goto error;
 
 	data.uset = uset;
-#ifdef HAS_TYPE
-	data.res = FN(UNION,alloc)(isl_space_copy(u->space), u->type,
-					u->table.n);
-#else
-	data.res = FN(UNION,alloc)(isl_space_copy(u->space), u->table.n);
-#endif
+	data.res = FN(UNION,alloc_same_size)(u);
 	if (isl_hash_table_foreach(u->space->ctx, &u->table,
 				   &FN(UNION,match_domain_entry), &data) < 0)
 		goto error;
@@ -836,12 +846,7 @@ __isl_give UNION *FN(UNION,subtract_domain)(__isl_take UNION *u,
 		goto error;
 
 	data.uset = uset;
-#ifdef HAS_TYPE
-	data.res = FN(UNION,alloc)(isl_space_copy(u->space), u->type,
-					u->table.n);
-#else
-	data.res = FN(UNION,alloc)(isl_space_copy(u->space), u->table.n);
-#endif
+	data.res = FN(UNION,alloc_same_size)(u);
 	if (FN(FN(UNION,foreach),PARTS)(u,
 				&FN(UNION,subtract_domain_entry), &data) < 0)
 		data.res = FN(UNION,free)(data.res);
@@ -1198,11 +1203,7 @@ __isl_give UNION *FN(UNION,drop_dims)( __isl_take UNION *u,
 
 	space = FN(UNION,get_space)(u);
 	space = isl_space_drop_dims(space, type, first, n);
-#ifdef HAS_TYPE
-	data.res = FN(UNION,alloc)(space, u->type, u->table.n);
-#else
-	data.res = FN(UNION,alloc)(space, u->table.n);
-#endif
+	data.res = FN(UNION,alloc_same_size_on_space)(u, space);
 	if (FN(FN(UNION,foreach),PARTS)(u,
 					&FN(UNION,drop_dims_entry), &data) < 0)
 		data.res = FN(UNION,free)(data.res);
@@ -1258,11 +1259,7 @@ __isl_give UNION *FN(UNION,set_dim_name)(__isl_take UNION *u,
 
 	space = FN(UNION,get_space)(u);
 	space = isl_space_set_dim_name(space, type, pos, s);
-#ifdef HAS_TYPE
-	data.res = FN(UNION,alloc)(space, u->type, u->table.n);
-#else
-	data.res = FN(UNION,alloc)(space, u->table.n);
-#endif
+	data.res = FN(UNION,alloc_same_size_on_space)(u, space);
 
 	if (FN(FN(UNION,foreach),PARTS)(u,
 				    &FN(UNION,set_dim_name_entry), &data) < 0)
@@ -1296,16 +1293,9 @@ __isl_give UNION *FN(UNION,reset_user)(__isl_take UNION *u)
 	isl_space *space;
 	UNION *res;
 
-	if (!u)
-		return NULL;
-
 	space = FN(UNION,get_space)(u);
 	space = isl_space_reset_user(space);
-#ifdef HAS_TYPE
-	res = FN(UNION,alloc)(space, u->type, u->table.n);
-#else
-	res = FN(UNION,alloc)(space, u->table.n);
-#endif
+	res = FN(UNION,alloc_same_size_on_space)(u, space);
 	if (FN(FN(UNION,foreach),PARTS)(u,
 					&FN(UNION,reset_user_entry), &res) < 0)
 		res = FN(UNION,free)(res);
