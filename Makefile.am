@@ -323,6 +323,7 @@ EXTRA_DIST = \
 	print_templ.c \
 	isl_power_templ.c \
 	isl_pw_templ.c \
+	isl_union_macro.h \
 	isl_union_templ.c \
 	isl.py \
 	doc/CodingStyle \

@@ -11,11 +11,7 @@
  */
 
 #include <isl_hash_private.h>
-
-#define xFN(TYPE,NAME) TYPE ## _ ## NAME
-#define FN(TYPE,NAME) xFN(TYPE,NAME)
-#define xS(TYPE,NAME) struct TYPE ## _ ## NAME
-#define S(TYPE,NAME) xS(TYPE,NAME)
+#include <isl_union_macro.h>
 
 /* A union of expressions defined over different domain spaces.
  * "space" describes the parameters.
