@@ -895,13 +895,21 @@ error:
 }
 #endif
 
+/* Coalesce an entry in a UNION.  Coalescing is performed in-place.
+ * Since the UNION may have several references, the entry is only
+ * replaced if the coalescing is successful.
+ */
 static isl_stat FN(UNION,coalesce_entry)(void **entry, void *user)
 {
-	PART **part = (PART **) entry;
+	PART **part_p = (PART **) entry;
+	PART *part;
 
-	*part = FN(PART,coalesce)(*part);
-	if (!*part)
+	part = FN(PART,copy)(*part_p);
+	part = FN(PW,coalesce)(part);
+	if (!part)
 		return isl_stat_error;
+	FN(PART,free)(*part_p);
+	*part_p = part;
 
 	return isl_stat_ok;
 }
