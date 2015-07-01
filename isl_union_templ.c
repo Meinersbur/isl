@@ -655,34 +655,34 @@ S(UNION,match_bin_data) {
 	__isl_give PART *(*fn)(__isl_take PART *, __isl_take PART *);
 };
 
-/* Check if data->u2 has an element living in the same space as *entry.
+/* Check if data->u2 has an element living in the same space as "part".
  * If so, call data->fn on the two elements and add the result to
  * data->res.
  */
-static isl_stat FN(UNION,match_bin_entry)(void **entry, void *user)
+static isl_stat FN(UNION,match_bin_entry)(__isl_take PART *part, void *user)
 {
 	S(UNION,match_bin_data) *data = user;
 	struct isl_hash_table_entry *entry2;
 	isl_space *space;
-	PART *part = *entry;
 	PART *part2;
 
 	space = FN(PART,get_space)(part);
 	entry2 = FN(UNION,find_part_entry)(data->u2, space, 0);
 	isl_space_free(space);
 	if (!entry2)
-		return isl_stat_error;
-	if (entry2 == isl_hash_table_entry_none)
+		goto error;
+	if (entry2 == isl_hash_table_entry_none) {
+		FN(PART,free)(part);
 		return isl_stat_ok;
+	}
 
 	part2 = entry2->data;
 	if (!isl_space_tuple_is_equal(part->dim, isl_dim_out,
 					part2->dim, isl_dim_out))
 		isl_die(FN(UNION,get_ctx)(data->u2), isl_error_invalid,
 			"entries should have the same range space",
-			return isl_stat_error);
+			goto error);
 
-	part = FN(PART, copy)(part);
 	part = data->fn(part, FN(PART, copy)(entry2->data));
 
 	data->res = FN(FN(UNION,add),PARTS)(data->res, part);
@@ -690,6 +690,9 @@ static isl_stat FN(UNION,match_bin_entry)(void **entry, void *user)
 		return isl_stat_error;
 
 	return isl_stat_ok;
+error:
+	FN(PART,free)(part);
+	return isl_stat_error;
 }
 
 /* This function is currently only used from isl_polynomial.c
@@ -716,7 +719,7 @@ static __isl_give UNION *FN(UNION,match_bin_op)(__isl_take UNION *u1,
 
 	data.u2 = u2;
 	data.res = FN(UNION,alloc_same_size)(u1);
-	if (isl_hash_table_foreach(u1->space->ctx, &u1->table,
+	if (FN(FN(UNION,foreach),PARTS)(u1,
 				    &FN(UNION,match_bin_entry), &data) < 0)
 		goto error;
 
