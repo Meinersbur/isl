@@ -826,29 +826,29 @@ static int FN(UNION,set_has_dim)(const void *entry, const void *val)
 }
 
 /* Find the set in data->uset that lives in the same space as the domain
- * of *entry, apply data->fn to *entry and this set (if any), and add
+ * of "part", apply data->fn to *entry and this set (if any), and add
  * the result to data->res.
  */
-static isl_stat FN(UNION,match_domain_entry)(void **entry, void *user)
+static isl_stat FN(UNION,match_domain_entry)(__isl_take PART *part, void *user)
 {
 	S(UNION,match_domain_data) *data = user;
 	uint32_t hash;
 	struct isl_hash_table_entry *entry2;
-	PW *pw = *entry;
 	isl_space *space;
 
-	space = FN(PW,get_domain_space)(pw);
+	space = FN(PART,get_domain_space)(part);
 	hash = isl_space_get_hash(space);
 	entry2 = isl_hash_table_find(data->uset->dim->ctx, &data->uset->table,
 				     hash, &FN(UNION,set_has_dim), space, 0);
 	isl_space_free(space);
-	if (!entry2)
+	if (!entry2) {
+		FN(PART,free)(part);
 		return isl_stat_ok;
+	}
 
-	pw = FN(PW,copy)(pw);
-	pw = data->fn(pw, isl_set_copy(entry2->data));
+	part = data->fn(part, isl_set_copy(entry2->data));
 
-	data->res = FN(FN(UNION,add),PARTS)(data->res, pw);
+	data->res = FN(FN(UNION,add),PARTS)(data->res, part);
 	if (!data->res)
 		return isl_stat_error;
 
@@ -873,7 +873,7 @@ static __isl_give UNION *FN(UNION,match_domain_op)(__isl_take UNION *u,
 
 	data.uset = uset;
 	data.res = FN(UNION,alloc_same_size)(u);
-	if (isl_hash_table_foreach(u->space->ctx, &u->table,
+	if (FN(FN(UNION,foreach),PARTS)(u,
 				   &FN(UNION,match_domain_entry), &data) < 0)
 		goto error;
 
