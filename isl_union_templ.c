@@ -897,10 +897,10 @@ error:
 
 static isl_stat FN(UNION,coalesce_entry)(void **entry, void *user)
 {
-	PW **pw = (PW **)entry;
+	PART **part = (PART **) entry;
 
-	*pw = FN(PW,coalesce)(*pw);
-	if (!*pw)
+	*part = FN(PART,coalesce)(*part);
+	if (!*part)
 		return isl_stat_error;
 
 	return isl_stat_ok;
