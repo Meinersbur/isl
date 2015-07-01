@@ -365,6 +365,19 @@ static __isl_give UNION *FN(UNION,alloc_same_size)(__isl_keep UNION *u)
 	return FN(UNION,alloc_same_size_on_space)(u, FN(UNION,get_space)(u));
 }
 
+/* Call "fn" on each part entry of "u".
+ */
+static isl_stat FN(UNION,foreach_inplace)(__isl_keep UNION *u,
+	isl_stat (*fn)(void **part, void *user), void *user)
+{
+	isl_ctx *ctx;
+
+	if (!u)
+		return isl_stat_error;
+	ctx = FN(UNION,get_ctx)(u);
+	return isl_hash_table_foreach(ctx, &u->table, fn, user);
+}
+
 static isl_stat FN(UNION,add_part)(__isl_take PART *part, void *user)
 {
 	UNION **u = (UNION **)user;
@@ -904,11 +917,7 @@ static isl_stat FN(UNION,coalesce_entry)(void **entry, void *user)
 
 __isl_give UNION *FN(UNION,coalesce)(__isl_take UNION *u)
 {
-	if (!u)
-		return NULL;
-
-	if (isl_hash_table_foreach(u->space->ctx, &u->table,
-				   &FN(UNION,coalesce_entry), NULL) < 0)
+	if (FN(UNION,foreach_inplace)(u, &FN(UNION,coalesce_entry), NULL) < 0)
 		goto error;
 
 	return u;
@@ -1172,7 +1181,7 @@ isl_bool FN(UNION,plain_is_equal)(__isl_keep UNION *u1, __isl_keep UNION *u2)
 		goto error;
 
 	data.u2 = u2;
-	if (isl_hash_table_foreach(u1->space->ctx, &u1->table,
+	if (FN(UNION,foreach_inplace)(u1,
 			       &FN(UNION,plain_is_equal_entry), &data) < 0 &&
 	    data.is_equal)
 		goto error;
