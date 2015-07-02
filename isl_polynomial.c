@@ -2817,7 +2817,7 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_from_qpolynomial(
 #undef PARTS
 #define PARTS pw_qpolynomial
 
-#include <isl_union_templ.c>
+#include <isl_union_single.c>
 #include <isl_union_eval.c>
 #include <isl_union_neg.c>
 
