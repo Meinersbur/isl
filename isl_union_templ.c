@@ -1037,20 +1037,14 @@ __isl_give UNION *FN(UNION,mul_isl_int)(__isl_take UNION *u, isl_int v)
 	return u;
 }
 
-/* Multiply *entry by the isl_val "user".
- *
- * Return 0 on success and -1 on error.
+/* Multiply "part" by the isl_val "user" and return the result.
  */
-static isl_stat FN(UNION,scale_val_entry)(void **entry, void *user)
+static __isl_give PART *FN(UNION,scale_val_entry)(__isl_take PART *part,
+	void *user)
 {
-	PW **pw = (PW **)entry;
 	isl_val *v = user;
 
-	*pw = FN(PW,scale_val)(*pw, isl_val_copy(v));
-	if (!*pw)
-		return isl_stat_error;
-
-	return isl_stat_ok;
+	return FN(PART,scale_val)(part, isl_val_copy(v));
 }
 
 /* Multiply "u" by "v" and return the result.
@@ -1082,15 +1076,9 @@ __isl_give UNION *FN(UNION,scale_val)(__isl_take UNION *u,
 		isl_die(isl_val_get_ctx(v), isl_error_invalid,
 			"expecting rational factor", goto error);
 
-	u = FN(UNION,cow)(u);
+	u = FN(UNION,transform_inplace)(u, &FN(UNION,scale_val_entry), v);
 	if (isl_val_is_neg(v))
 		u = FN(UNION,negate_type)(u);
-	if (!u)
-		return NULL;
-
-	if (isl_hash_table_foreach(u->space->ctx, &u->table,
-				    &FN(UNION,scale_val_entry), v) < 0)
-		goto error;
 
 	isl_val_free(v);
 	return u;
