@@ -1152,36 +1152,6 @@ error:
 	return isl_bool_error;
 }
 
-#ifndef NO_NEG
-/* Replace *entry by its opposite.
- *
- * Return 0 on success and -1 on error.
- */
-static isl_stat FN(UNION,neg_entry)(void **entry, void *user)
-{
-	PW **pw = (PW **) entry;
-
-	*pw = FN(PW,neg)(*pw);
-
-	return *pw ? isl_stat_ok : isl_stat_error;
-}
-
-/* Return the opposite of "u".
- */
-__isl_give UNION *FN(UNION,neg)(__isl_take UNION *u)
-{
-	u = FN(UNION,cow)(u);
-	if (!u)
-		return NULL;
-
-	if (isl_hash_table_foreach(u->space->ctx, &u->table,
-				   &FN(UNION,neg_entry), NULL) < 0)
-		return FN(UNION,free)(u);
-
-	return u;
-}
-#endif
-
 /* Internal data structure for isl_union_*_drop_dims.
  * type, first and n are passed to isl_*_drop_dims.
  * res collects the results.

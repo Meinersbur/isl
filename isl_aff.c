@@ -2579,6 +2579,7 @@ __isl_give isl_pw_aff *isl_pw_aff_from_aff(__isl_take isl_aff *aff)
 #define PARTS pw_aff
 
 #include <isl_union_templ.c>
+#include <isl_union_neg.c>
 
 static __isl_give isl_set *align_params_pw_pw_set_and(
 	__isl_take isl_pw_aff *pwaff1, __isl_take isl_pw_aff *pwaff2,
@@ -4073,6 +4074,7 @@ __isl_give isl_set *isl_multi_aff_lex_ge_set(__isl_take isl_multi_aff *ma1,
 #define PARTS pw_multi_aff
 
 #include <isl_union_templ.c>
+#include <isl_union_neg.c>
 
 /* Given a function "cmp" that returns the set of elements where
  * "ma1" is "better" than "ma2", return the intersection of this

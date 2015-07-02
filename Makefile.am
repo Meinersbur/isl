@@ -326,6 +326,7 @@ EXTRA_DIST = \
 	isl_union_macro.h \
 	isl_union_templ.c \
 	isl_union_eval.c \
+	isl_union_neg.c \
 	isl.py \
 	doc/CodingStyle \
 	doc/SubmittingPatches \
