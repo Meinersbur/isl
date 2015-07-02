@@ -5722,7 +5722,7 @@ struct isl_union_pw_multi_aff_bin_data {
 	isl_union_pw_multi_aff *upma2;
 	isl_union_pw_multi_aff *res;
 	isl_pw_multi_aff *pma;
-	isl_stat (*fn)(void **entry, void *user);
+	isl_stat (*fn)(__isl_take isl_pw_multi_aff *pma, void *user);
 };
 
 /* Given an isl_pw_multi_aff from upma1, store it in data->pma
@@ -5734,7 +5734,7 @@ static isl_stat bin_entry(void **entry, void *user)
 	isl_pw_multi_aff *pma = *entry;
 
 	data->pma = pma;
-	if (isl_hash_table_foreach(data->upma2->space->ctx, &data->upma2->table,
+	if (isl_union_pw_multi_aff_foreach_pw_multi_aff(data->upma2,
 				   data->fn, data) < 0)
 		return isl_stat_error;
 
@@ -5749,7 +5749,7 @@ static isl_stat bin_entry(void **entry, void *user)
 static __isl_give isl_union_pw_multi_aff *bin_op(
 	__isl_take isl_union_pw_multi_aff *upma1,
 	__isl_take isl_union_pw_multi_aff *upma2,
-	isl_stat (*fn)(void **entry, void *user))
+	isl_stat (*fn)(__isl_take isl_pw_multi_aff *pma, void *user))
 {
 	isl_space *space;
 	struct isl_union_pw_multi_aff_bin_data data = { NULL, NULL, NULL, fn };
@@ -5827,21 +5827,22 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_flat_range_product(
 					    &pw_multi_aff_flat_range_product);
 }
 
-/* If data->pma and *entry have the same domain space, then compute
+/* If data->pma and "pma2" have the same domain space, then compute
  * their flat range product and the result to data->res.
  */
-static isl_stat flat_range_product_entry(void **entry, void *user)
+static isl_stat flat_range_product_entry(__isl_take isl_pw_multi_aff *pma2,
+	void *user)
 {
 	struct isl_union_pw_multi_aff_bin_data *data = user;
-	isl_pw_multi_aff *pma2 = *entry;
 
 	if (!isl_space_tuple_is_equal(data->pma->dim, isl_dim_in,
-				 pma2->dim, isl_dim_in))
+				 pma2->dim, isl_dim_in)) {
+		isl_pw_multi_aff_free(pma2);
 		return isl_stat_ok;
+	}
 
 	pma2 = isl_pw_multi_aff_flat_range_product(
-					isl_pw_multi_aff_copy(data->pma),
-					isl_pw_multi_aff_copy(pma2));
+					isl_pw_multi_aff_copy(data->pma), pma2);
 
 	data->res = isl_union_pw_multi_aff_add_pw_multi_aff(data->res, pma2);
 
@@ -7118,18 +7119,18 @@ __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_multi_val_on_domain(
 /* Compute the pullback of data->pma by the function represented by "pma2",
  * provided the spaces match, and add the results to data->res.
  */
-static isl_stat pullback_entry(void **entry, void *user)
+static isl_stat pullback_entry(__isl_take isl_pw_multi_aff *pma2, void *user)
 {
 	struct isl_union_pw_multi_aff_bin_data *data = user;
-	isl_pw_multi_aff *pma2 = *entry;
 
 	if (!isl_space_tuple_is_equal(data->pma->dim, isl_dim_in,
-				 pma2->dim, isl_dim_out))
+				 pma2->dim, isl_dim_out)) {
+		isl_pw_multi_aff_free(pma2);
 		return isl_stat_ok;
+	}
 
 	pma2 = isl_pw_multi_aff_pullback_pw_multi_aff(
-					isl_pw_multi_aff_copy(data->pma),
-					isl_pw_multi_aff_copy(pma2));
+					isl_pw_multi_aff_copy(data->pma), pma2);
 
 	data->res = isl_union_pw_multi_aff_add_pw_multi_aff(data->res, pma2);
 	if (!data->res)
