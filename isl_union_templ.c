@@ -943,6 +943,27 @@ error:
 	return NULL;
 }
 
+#ifdef HAS_TYPE
+/* Negate the type of "u".
+ */
+static __isl_give UNION *FN(UNION,negate_type)(__isl_take UNION *u)
+{
+	u = FN(UNION,cow)(u);
+	if (!u)
+		return NULL;
+	u->type = isl_fold_type_negate(u->type);
+	return u;
+}
+#else
+/* Negate the type of "u".
+ * Since "u" does not have a type, do nothing.
+ */
+static __isl_give UNION *FN(UNION,negate_type)(__isl_take UNION *u)
+{
+	return u;
+}
+#endif
+
 static isl_stat FN(UNION,mul_isl_int_entry)(void **entry, void *user)
 {
 	PW **pw = (PW **)entry;
@@ -973,13 +994,11 @@ __isl_give UNION *FN(UNION,mul_isl_int)(__isl_take UNION *u, isl_int v)
 	}
 
 	u = FN(UNION,cow)(u);
+	if (isl_int_is_neg(v))
+		u = FN(UNION,negate_type)(u);
 	if (!u)
 		return NULL;
 
-#ifdef HAS_TYPE
-	if (isl_int_is_neg(v))
-		u->type = isl_fold_type_negate(u->type);
-#endif
 	if (isl_hash_table_foreach(u->space->ctx, &u->table,
 				    &FN(UNION,mul_isl_int_entry), &v) < 0)
 		goto error;
@@ -1036,13 +1055,11 @@ __isl_give UNION *FN(UNION,scale_val)(__isl_take UNION *u,
 			"expecting rational factor", goto error);
 
 	u = FN(UNION,cow)(u);
+	if (isl_val_is_neg(v))
+		u = FN(UNION,negate_type)(u);
 	if (!u)
 		return NULL;
 
-#ifdef HAS_TYPE
-	if (isl_val_is_neg(v))
-		u->type = isl_fold_type_negate(u->type);
-#endif
 	if (isl_hash_table_foreach(u->space->ctx, &u->table,
 				    &FN(UNION,scale_val_entry), v) < 0)
 		goto error;
@@ -1091,13 +1108,11 @@ __isl_give UNION *FN(UNION,scale_down_val)(__isl_take UNION *u,
 			"cannot scale down by zero", goto error);
 
 	u = FN(UNION,cow)(u);
+	if (isl_val_is_neg(v))
+		u = FN(UNION,negate_type)(u);
 	if (!u)
 		return NULL;
 
-#ifdef HAS_TYPE
-	if (isl_val_is_neg(v))
-		u->type = isl_fold_type_negate(u->type);
-#endif
 	if (isl_hash_table_foreach(FN(UNION,get_ctx)(u), &u->table,
 				    &FN(UNION,scale_down_val_entry), v) < 0)
 		goto error;
