@@ -7265,18 +7265,11 @@ static __isl_give isl_union_pw_aff *isl_union_pw_aff_reset_domain_space(
 	return data.res;
 }
 
-/* Replace the entry of isl_union_pw_aff to which "entry" points
- * by its floor.
+/* Return the floor of "pa".
  */
-static isl_stat floor_entry(void **entry, void *user)
+static __isl_give isl_pw_aff *floor_entry(__isl_take isl_pw_aff *pa, void *user)
 {
-	isl_pw_aff **pa = (isl_pw_aff **) entry;
-
-	*pa = isl_pw_aff_floor(*pa);
-	if (!*pa)
-		return isl_stat_error;
-
-	return isl_stat_ok;
+	return isl_pw_aff_floor(pa);
 }
 
 /* Given f, return floor(f).
@@ -7284,17 +7277,7 @@ static isl_stat floor_entry(void **entry, void *user)
 __isl_give isl_union_pw_aff *isl_union_pw_aff_floor(
 	__isl_take isl_union_pw_aff *upa)
 {
-	isl_ctx *ctx;
-
-	upa = isl_union_pw_aff_cow(upa);
-	if (!upa)
-		return NULL;
-
-	ctx = isl_union_pw_aff_get_ctx(upa);
-	if (isl_hash_table_foreach(ctx, &upa->table, &floor_entry, NULL) < 0)
-		upa = isl_union_pw_aff_free(upa);
-
-	return upa;
+	return isl_union_pw_aff_transform_inplace(upa, &floor_entry, NULL);
 }
 
 /* Compute
