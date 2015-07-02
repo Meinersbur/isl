@@ -378,6 +378,16 @@ static isl_stat FN(UNION,foreach_inplace)(__isl_keep UNION *u,
 	return isl_hash_table_foreach(ctx, &u->table, fn, user);
 }
 
+/* Does "u" have a single reference?
+ * That is, can we change "u" inplace?
+ */
+static isl_bool FN(UNION,has_single_reference)(__isl_keep UNION *u)
+{
+	if (!u)
+		return isl_bool_error;
+	return u->ref == 1;
+}
+
 /* Internal data structure for isl_union_*_transform_space.
  * "fn' is applied to each entry in the input.
  * "res" collects the results.
@@ -428,6 +438,43 @@ static __isl_give UNION *FN(UNION,transform)(__isl_take UNION *u,
 	__isl_give PART *(*fn)(__isl_take PART *part, void *user), void *user)
 {
 	return FN(UNION,transform_space)(u, FN(UNION,get_space)(u), fn, user);
+}
+
+/* Apply data->fn to *part and store the result back into *part.
+ */
+static isl_stat FN(UNION,transform_inplace_entry)(void **part, void *user)
+{
+	S(UNION,transform_data) *data = (S(UNION,transform_data) *) user;
+
+	*part = data->fn(*part, data->user);
+	if (!*part)
+		return isl_stat_error;
+	return isl_stat_ok;
+}
+
+/* Update "u" by applying "fn" to each entry.
+ * This operation is assumed not to change the number of entries nor
+ * the spaces of the entries.
+ *
+ * If there is only one reference to "u", then change "u" inplace.
+ * Otherwise, create a new UNION from "u" and discard the original.
+ */
+static __isl_give UNION *FN(UNION,transform_inplace)(__isl_take UNION *u,
+	__isl_give PART *(*fn)(__isl_take PART *part, void *user), void *user)
+{
+	isl_bool single_ref;
+
+	single_ref = FN(UNION,has_single_reference)(u);
+	if (single_ref < 0)
+		return FN(UNION,free)(u);
+	if (single_ref) {
+		S(UNION,transform_data) data = { fn, user };
+		if (FN(UNION,foreach_inplace)(u,
+				&FN(UNION,transform_inplace_entry), &data) < 0)
+			return FN(UNION,free)(u);
+		return u;
+	}
+	return FN(UNION,transform)(u, fn, user);
 }
 
 /* An isl_union_*_transform callback for use in isl_union_*_dup
@@ -958,16 +1005,12 @@ static __isl_give UNION *FN(UNION,negate_type)(__isl_take UNION *u)
 }
 #endif
 
-static isl_stat FN(UNION,mul_isl_int_entry)(void **entry, void *user)
+static __isl_give PART *FN(UNION,mul_isl_int_entry)(__isl_take PART *part,
+	void *user)
 {
-	PW **pw = (PW **)entry;
 	isl_int *v = user;
 
-	*pw = FN(PW,mul_isl_int)(*pw, *v);
-	if (!*pw)
-		return isl_stat_error;
-
-	return isl_stat_ok;
+	return FN(PW,mul_isl_int)(part, *v);
 }
 
 __isl_give UNION *FN(UNION,mul_isl_int)(__isl_take UNION *u, isl_int v)
@@ -987,20 +1030,11 @@ __isl_give UNION *FN(UNION,mul_isl_int)(__isl_take UNION *u, isl_int v)
 		return zero;
 	}
 
-	u = FN(UNION,cow)(u);
+	u = FN(UNION,transform_inplace)(u, &FN(UNION,mul_isl_int_entry), &v);
 	if (isl_int_is_neg(v))
 		u = FN(UNION,negate_type)(u);
-	if (!u)
-		return NULL;
-
-	if (isl_hash_table_foreach(u->space->ctx, &u->table,
-				    &FN(UNION,mul_isl_int_entry), &v) < 0)
-		goto error;
 
 	return u;
-error:
-	FN(UNION,free)(u);
-	return NULL;
 }
 
 /* Multiply *entry by the isl_val "user".
