@@ -267,9 +267,36 @@ error:
 	return NULL;
 }
 
+/* Check that the domain of "part" is disjoint from the domain of the entries
+ * in "u" that are defined on the same domain space, but have a different
+ * target space.
+ * Since a UNION is currently not allowed to contain two entries
+ * with the same domain space, there cannot be any such other entry.
+ */
+static isl_stat FN(UNION,check_disjoint_domain_other)(__isl_keep UNION *u,
+	__isl_keep PART *part)
+{
+	return isl_stat_ok;
+}
+
+/* Check that the domain of "part1" is disjoint from the domain of "part2".
+ * This check is performed before "part2" is added to a UNION to ensure
+ * that the UNION expression remains a function.
+ * Since a UNION is currently not allowed to contain two entries
+ * with the same domain space, fail unconditionally.
+ */
+static isl_stat FN(UNION,check_disjoint_domain)(__isl_keep PART *part1,
+	__isl_keep PART *part2)
+{
+	isl_die(FN(PART,get_ctx)(part1), isl_error_invalid,
+		"additional part should live on separate space",
+		return isl_stat_error);
+}
+
 /* Add "part" to "u".
  * If "disjoint" is set, then "u" is not allowed to already have
- * a part that is defined on the same space as "part".
+ * a part that is defined over a domain that overlaps with the domain
+ * of "part".
  * Otherwise, compute the union sum of "part" and the part in "u"
  * defined on the same space.
  */
@@ -298,6 +325,8 @@ static __isl_give UNION *FN(UNION,add_part_generic)(__isl_take UNION *u,
 	if (!u)
 		goto error;
 
+	if (FN(UNION,check_disjoint_domain_other)(u, part) < 0)
+		goto error;
 	entry = FN(UNION,find_part_entry)(u, part->dim, 1);
 	if (!entry)
 		goto error;
@@ -305,10 +334,9 @@ static __isl_give UNION *FN(UNION,add_part_generic)(__isl_take UNION *u,
 	if (!entry->data)
 		entry->data = part;
 	else {
-		if (disjoint)
-			isl_die(FN(UNION,get_ctx)(u), isl_error_invalid,
-				"additional part should live on separate "
-				"space", goto error);
+		if (disjoint &&
+		    FN(UNION,check_disjoint_domain)(entry->data, part) < 0)
+			goto error;
 		entry->data = FN(PART,union_add_)(entry->data,
 						FN(PART,copy)(part));
 		if (!entry->data)
