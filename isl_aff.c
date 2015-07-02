@@ -5728,17 +5728,17 @@ struct isl_union_pw_multi_aff_bin_data {
 /* Given an isl_pw_multi_aff from upma1, store it in data->pma
  * and call data->fn for each isl_pw_multi_aff in data->upma2.
  */
-static isl_stat bin_entry(void **entry, void *user)
+static isl_stat bin_entry(__isl_take isl_pw_multi_aff *pma, void *user)
 {
 	struct isl_union_pw_multi_aff_bin_data *data = user;
-	isl_pw_multi_aff *pma = *entry;
+	isl_stat r;
 
 	data->pma = pma;
-	if (isl_union_pw_multi_aff_foreach_pw_multi_aff(data->upma2,
-				   data->fn, data) < 0)
-		return isl_stat_error;
+	r = isl_union_pw_multi_aff_foreach_pw_multi_aff(data->upma2,
+				   data->fn, data);
+	isl_pw_multi_aff_free(pma);
 
-	return isl_stat_ok;
+	return r;
 }
 
 /* Call "fn" on each pair of isl_pw_multi_affs in "upma1" and "upma2".
@@ -5764,7 +5764,7 @@ static __isl_give isl_union_pw_multi_aff *bin_op(
 
 	data.upma2 = upma2;
 	data.res = isl_union_pw_multi_aff_alloc_same_size(upma1);
-	if (isl_hash_table_foreach(upma1->space->ctx, &upma1->table,
+	if (isl_union_pw_multi_aff_foreach_pw_multi_aff(upma1,
 				   &bin_entry, &data) < 0)
 		goto error;
 
