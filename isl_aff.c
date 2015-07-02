@@ -7602,17 +7602,17 @@ struct isl_union_pw_aff_pullback_upma_data {
 /* Check if "pma" can be plugged into data->pa.
  * If so, perform the pullback and add the result to data->res.
  */
-static isl_stat pa_pb_pma(void **entry, void *user)
+static isl_stat pa_pb_pma(__isl_take isl_pw_multi_aff *pma, void *user)
 {
 	struct isl_union_pw_aff_pullback_upma_data *data = user;
-	isl_pw_multi_aff *pma = *entry;
 	isl_pw_aff *pa;
 
 	if (!isl_space_tuple_is_equal(data->pa->dim, isl_dim_in,
-				 pma->dim, isl_dim_out))
+				 pma->dim, isl_dim_out)) {
+		isl_pw_multi_aff_free(pma);
 		return isl_stat_ok;
+	}
 
-	pma = isl_pw_multi_aff_copy(pma);
 	pa = isl_pw_aff_copy(data->pa);
 	pa = isl_pw_aff_pullback_pw_multi_aff(pa, pma);
 
@@ -7627,12 +7627,10 @@ static isl_stat pa_pb_pma(void **entry, void *user)
 static isl_stat upa_pb_upma(void **entry, void *user)
 {
 	struct isl_union_pw_aff_pullback_upma_data *data = user;
-	isl_ctx *ctx;
 	isl_pw_aff *pa = *entry;
 
 	data->pa = pa;
-	ctx = isl_union_pw_multi_aff_get_ctx(data->upma);
-	if (isl_hash_table_foreach(ctx, &data->upma->table,
+	if (isl_union_pw_multi_aff_foreach_pw_multi_aff(data->upma,
 				   &pa_pb_pma, data) < 0)
 		return isl_stat_error;
 
