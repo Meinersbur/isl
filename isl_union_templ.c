@@ -1166,12 +1166,19 @@ static isl_stat FN(UNION,plain_is_equal_entry)(void **entry, void *user)
 isl_bool FN(UNION,plain_is_equal)(__isl_keep UNION *u1, __isl_keep UNION *u2)
 {
 	S(UNION,plain_is_equal_data) data = { NULL, isl_bool_true };
+	int n1, n2;
 
 	if (!u1 || !u2)
 		return isl_bool_error;
 	if (u1 == u2)
 		return isl_bool_true;
 	if (u1->table.n != u2->table.n)
+		return isl_bool_false;
+	n1 = FN(FN(UNION,n),PARTS)(u1);
+	n2 = FN(FN(UNION,n),PARTS)(u2);
+	if (n1 < 0 || n2 < 0)
+		return isl_bool_error;
+	if (n1 != n2)
 		return isl_bool_false;
 
 	u1 = FN(UNION,copy)(u1);
