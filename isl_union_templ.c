@@ -206,18 +206,13 @@ static struct isl_hash_table_entry *FN(UNION,find_part_entry)(
 	uint32_t hash;
 	struct isl_hash_table_entry *entry;
 	isl_bool equal;
-	isl_space *domain;
 	PART *part;
 
-	if (!u)
+	if (!u || !space)
 		return NULL;
 
 	ctx = FN(UNION,get_ctx)(u);
-	domain = isl_space_domain(isl_space_copy(space));
-	if (!domain)
-		return NULL;
-	hash = isl_space_get_hash(domain);
-	isl_space_free(domain);
+	hash = isl_space_get_domain_hash(space);
 	entry = isl_hash_table_find(ctx, &u->table, hash,
 			&FN(UNION,has_same_domain_space), space, reserve);
 	if (!entry)
