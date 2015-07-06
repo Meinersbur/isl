@@ -378,6 +378,49 @@ static isl_stat FN(UNION,foreach_inplace)(__isl_keep UNION *u,
 	return isl_hash_table_foreach(ctx, &u->table, fn, user);
 }
 
+/* Internal data structure for isl_union_*_transform_space.
+ * "fn' is applied to each entry in the input.
+ * "res" collects the results.
+ */
+S(UNION,transform_data)
+{
+	__isl_give PART *(*fn)(__isl_take PART *part, void *user);
+	void *user;
+
+	UNION *res;
+};
+
+/* Apply data->fn to "part" and add the result to data->res.
+ */
+static isl_stat FN(UNION,transform_entry)(__isl_take PART *part, void *user)
+{
+	S(UNION,transform_data) *data = (S(UNION,transform_data) *)user;
+
+	part = data->fn(part, data->user);
+	data->res = FN(FN(UNION,add),PARTS)(data->res, part);
+	if (!data->res)
+		return isl_stat_error;
+
+	return isl_stat_ok;
+}
+
+/* Return a UNION living in "space" that is obtained by applying "fn"
+ * to each of the entries in "u".
+ */
+static __isl_give UNION *FN(UNION,transform_space)(__isl_take UNION *u,
+	isl_space *space,
+	__isl_give PART *(*fn)(__isl_take PART *part, void *user), void *user)
+{
+	S(UNION,transform_data) data = { fn, user };
+
+	data.res = FN(UNION,alloc_same_size_on_space)(u, space);
+	if (FN(FN(UNION,foreach),PARTS)(u,
+					&FN(UNION,transform_entry), &data) < 0)
+		data.res = FN(UNION,free)(data.res);
+	FN(UNION,free)(u);
+	return data.res;
+}
+
 static isl_stat FN(UNION,add_part)(__isl_take PART *part, void *user)
 {
 	UNION **u = (UNION **)user;
@@ -437,23 +480,13 @@ __isl_null UNION *FN(UNION,free)(__isl_take UNION *u)
 	return NULL;
 }
 
-S(UNION,align) {
-	isl_reordering *exp;
-	UNION *res;
-};
-
-static isl_stat FN(UNION,align_entry)(__isl_take PART *part, void *user)
+static __isl_give PART *FN(UNION,align_entry)(__isl_take PART *part, void *user)
 {
-	isl_reordering *exp;
-	S(UNION,align) *data = user;
+	isl_reordering *exp = user;
 
-	exp = isl_reordering_extend_space(isl_reordering_copy(data->exp),
+	exp = isl_reordering_extend_space(isl_reordering_copy(exp),
 				    FN(PART,get_domain_space)(part));
-
-	data->res = FN(FN(UNION,add),PARTS)(data->res,
-					    FN(PART,realign_domain)(part, exp));
-
-	return isl_stat_ok;
+	return FN(PART,realign_domain)(part, exp);
 }
 
 /* Reorder the parameters of "u" according to the given reordering.
@@ -461,21 +494,15 @@ static isl_stat FN(UNION,align_entry)(__isl_take PART *part, void *user)
 static __isl_give UNION *FN(UNION,realign_domain)(__isl_take UNION *u,
 	__isl_take isl_reordering *r)
 {
-	S(UNION,align) data = { NULL, NULL };
 	isl_space *space;
 
 	if (!u || !r)
 		goto error;
 
 	space = isl_space_copy(r->dim);
-	data.res = FN(UNION,alloc_same_size_on_space)(u, space);
-	data.exp = r;
-	if (FN(FN(UNION,foreach),PARTS)(u, &FN(UNION,align_entry), &data) < 0)
-		data.res = FN(UNION,free)(data.res);
-
-	isl_reordering_free(data.exp);
-	FN(UNION,free)(u);
-	return data.res;
+	u = FN(UNION,transform_space)(u, space, &FN(UNION,align_entry), r);
+	isl_reordering_free(r);
+	return u;
 error:
 	FN(UNION,free)(u);
 	isl_reordering_free(r);
