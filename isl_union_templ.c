@@ -138,7 +138,10 @@ static isl_stat FN(UNION,call_on_copy)(void **entry, void *user)
 	PART *part = *entry;
 	S(UNION,foreach_data) *data = (S(UNION,foreach_data) *)user;
 
-	return data->fn(FN(PART,copy)(part), data->user);
+	part = FN(PART,copy)(part);
+	if (!part)
+		return isl_stat_error;
+	return data->fn(part, data->user);
 }
 
 isl_stat FN(FN(UNION,foreach),PARTS)(__isl_keep UNION *u,
