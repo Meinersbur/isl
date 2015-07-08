@@ -760,23 +760,65 @@ static unsigned int round_up(unsigned int v)
 	return old_v << 1;
 }
 
-static int hash_index(isl_int ***index, unsigned int size, int bits,
+/* Hash table of inequalities in a basic map.
+ * "index" is an array of addresses of inequalities in the basic map, some
+ * of which are NULL.  The inequalities are hashed on the coefficients
+ * except the constant term.
+ * "size" is the number of elements in the array and is always a power of two
+ * "bits" is the number of bits need to represent an index into the array.
+ */
+struct isl_constraint_index {
+	unsigned int size;
+	int bits;
+	isl_int ***index;
+};
+
+/* Fill in the "ci" data structure for holding the inequalities of "bmap".
+ */
+static isl_stat create_constraint_index(struct isl_constraint_index *ci,
+	__isl_keep isl_basic_map *bmap)
+{
+	isl_ctx *ctx;
+
+	ci->index = NULL;
+	if (!bmap)
+		return isl_stat_error;
+	if (bmap->n_ineq == 0)
+		return isl_stat_ok;
+	ci->size = round_up(4 * (bmap->n_ineq + 1) / 3 - 1);
+	ci->bits = ffs(ci->size) - 1;
+	ctx = isl_basic_map_get_ctx(bmap);
+	ci->index = isl_calloc_array(ctx, isl_int **, ci->size);
+	if (!ci->index)
+		return isl_stat_error;
+
+	return isl_stat_ok;
+}
+
+/* Free the memory allocated by create_constraint_index.
+ */
+static void constraint_index_free(struct isl_constraint_index *ci)
+{
+	free(ci->index);
+}
+
+static int hash_index(struct isl_constraint_index *ci,
 			struct isl_basic_map *bmap, int k)
 {
 	int h;
 	unsigned total = isl_basic_map_total_dim(bmap);
-	uint32_t hash = isl_seq_get_hash_bits(bmap->ineq[k]+1, total, bits);
-	for (h = hash; index[h]; h = (h+1) % size)
-		if (&bmap->ineq[k] != index[h] &&
-		    isl_seq_eq(bmap->ineq[k]+1, index[h][0]+1, total))
+	uint32_t hash = isl_seq_get_hash_bits(bmap->ineq[k]+1, total, ci->bits);
+	for (h = hash; ci->index[h]; h = (h+1) % ci->size)
+		if (&bmap->ineq[k] != ci->index[h] &&
+		    isl_seq_eq(bmap->ineq[k]+1, ci->index[h][0]+1, total))
 			break;
 	return h;
 }
 
-static int set_hash_index(isl_int ***index, unsigned int size, int bits,
+static int set_hash_index(struct isl_constraint_index *ci,
 			  struct isl_basic_set *bset, int k)
 {
-	return hash_index(index, size, bits, (struct isl_basic_map *)bset, k);
+	return hash_index(ci, bset, k);
 }
 
 /* If we can eliminate more than one div, then we need to make
@@ -1196,36 +1238,28 @@ static struct isl_basic_map *check_for_div_constraints(
 __isl_give isl_basic_map *isl_basic_map_remove_duplicate_constraints(
 	__isl_take isl_basic_map *bmap, int *progress, int detect_divs)
 {
-	unsigned int size;
-	isl_int ***index;
+	struct isl_constraint_index ci;
 	int k, l, h;
-	int bits;
 	unsigned total = isl_basic_map_total_dim(bmap);
 	isl_int sum;
-	isl_ctx *ctx;
 
 	if (!bmap || bmap->n_ineq <= 1)
 		return bmap;
 
-	size = round_up(4 * (bmap->n_ineq+1) / 3 - 1);
-	if (size == 0)
-		return bmap;
-	bits = ffs(size) - 1;
-	ctx = isl_basic_map_get_ctx(bmap);
-	index = isl_calloc_array(ctx, isl_int **, size);
-	if (!index)
+	if (create_constraint_index(&ci, bmap) < 0)
 		return bmap;
 
-	index[isl_seq_get_hash_bits(bmap->ineq[0]+1, total, bits)] = &bmap->ineq[0];
+	h = isl_seq_get_hash_bits(bmap->ineq[0] + 1, total, ci.bits);
+	ci.index[h] = &bmap->ineq[0];
 	for (k = 1; k < bmap->n_ineq; ++k) {
-		h = hash_index(index, size, bits, bmap, k);
-		if (!index[h]) {
-			index[h] = &bmap->ineq[k];
+		h = hash_index(&ci, bmap, k);
+		if (!ci.index[h]) {
+			ci.index[h] = &bmap->ineq[k];
 			continue;
 		}
 		if (progress)
 			*progress = 1;
-		l = index[h] - &bmap->ineq[0];
+		l = ci.index[h] - &bmap->ineq[0];
 		if (isl_int_lt(bmap->ineq[k][0], bmap->ineq[l][0]))
 			swap_inequality(bmap, k, l);
 		isl_basic_map_drop_inequality(bmap, k);
@@ -1234,11 +1268,11 @@ __isl_give isl_basic_map *isl_basic_map_remove_duplicate_constraints(
 	isl_int_init(sum);
 	for (k = 0; k < bmap->n_ineq-1; ++k) {
 		isl_seq_neg(bmap->ineq[k]+1, bmap->ineq[k]+1, total);
-		h = hash_index(index, size, bits, bmap, k);
+		h = hash_index(&ci, bmap, k);
 		isl_seq_neg(bmap->ineq[k]+1, bmap->ineq[k]+1, total);
-		if (!index[h])
+		if (!ci.index[h])
 			continue;
-		l = index[h] - &bmap->ineq[0];
+		l = ci.index[h] - &bmap->ineq[0];
 		isl_int_add(sum, bmap->ineq[k][0], bmap->ineq[l][0]);
 		if (isl_int_is_pos(sum)) {
 			if (detect_divs)
@@ -1262,7 +1296,7 @@ __isl_give isl_basic_map *isl_basic_map_remove_duplicate_constraints(
 	}
 	isl_int_clear(sum);
 
-	free(index);
+	constraint_index_free(&ci);
 	return bmap;
 }
 
@@ -1831,33 +1865,26 @@ error:
 static struct isl_basic_set *remove_shifted_constraints(
 	struct isl_basic_set *bset, struct isl_basic_set *context)
 {
-	unsigned int size;
-	isl_int ***index;
-	int bits;
+	struct isl_constraint_index ci;
 	int k, h, l;
-	isl_ctx *ctx;
 
 	if (!bset || !context)
 		return bset;
 
-	size = round_up(4 * (context->n_ineq+1) / 3 - 1);
-	if (size == 0)
+	if (context->n_ineq == 0)
 		return bset;
-	bits = ffs(size) - 1;
-	ctx = isl_basic_set_get_ctx(bset);
-	index = isl_calloc_array(ctx, isl_int **, size);
-	if (!index)
+	if (create_constraint_index(&ci, context) < 0)
 		return bset;
 
 	for (k = 0; k < context->n_ineq; ++k) {
-		h = set_hash_index(index, size, bits, context, k);
-		index[h] = &context->ineq[k];
+		h = set_hash_index(&ci, context, k);
+		ci.index[h] = &context->ineq[k];
 	}
 	for (k = 0; k < bset->n_ineq; ++k) {
-		h = set_hash_index(index, size, bits, bset, k);
-		if (!index[h])
+		h = set_hash_index(&ci, bset, k);
+		if (!ci.index[h])
 			continue;
-		l = index[h] - &context->ineq[0];
+		l = ci.index[h] - &context->ineq[0];
 		if (isl_int_lt(bset->ineq[k][0], context->ineq[l][0]))
 			continue;
 		bset = isl_basic_set_cow(bset);
@@ -1866,10 +1893,10 @@ static struct isl_basic_set *remove_shifted_constraints(
 		isl_basic_set_drop_inequality(bset, k);
 		--k;
 	}
-	free(index);
+	constraint_index_free(&ci);
 	return bset;
 error:
-	free(index);
+	constraint_index_free(&ci);
 	return bset;
 }
 
