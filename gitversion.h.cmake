@@ -1,1 +1,1 @@
-#define GIT_HEAD_ID "@GIT_SHA1@"
+#define GIT_HEAD_ID "@GIT_HEAD_ID@"

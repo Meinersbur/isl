@@ -1,14 +1,29 @@
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 cmake_minimum_required(VERSION 3.2)
 
 project("isl" C)
-set(ISL_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-set(ISL_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
+if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/isl/isl_ctx.c")
+  set(ISL_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/isl")
+elseif (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/isl_ctx.c")
+  set(ISL_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+else ()
+  message(FATAL_ERROR "Cannot find ISL source dir")
+endif ()
+set(ISL_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+
+set(IMATH_SOURCE_DIR "${ISL_SOURCE_DIR}/imath")
+set(IMATH_BINARY_DIR "${ISL_BINARY_DIR}/imath")
 
 
-option(ISL_BUILD_OBJECT_LIBRARY "Make object libraries" OFF)
-set(ISL_INT "gmp" CACHE STRING "Which package to use to represent multi-precision integers (gmp|imath)")
+## Configure options
+set(ISL_INT "imath" CACHE STRING "Which package to use to represent multi-precision integers (gmp|imath)")
+option(ISL_SMALL_INT_OPT "Use small integer optimization" ON)
 
+
+# Process configure options
+if (NOT ISL_INT MATCHES "^imath|gmp$")
+  message(FATAL_ERROR "Unsupported option for ISL_INT: ${ISL_INT}")
+endif ()
 
 set(USE_GMP_FOR_MP OFF)
 if (ISL_INT STREQUAL "gmp")
@@ -20,61 +35,157 @@ if (ISL_INT STREQUAL "imath")
   set(USE_IMATH_FOR_MP ON)
 endif ()
 
+if (USE_SMALL_INT_OPT)
+  set(USE_SMALL_INT_OPT ON)
+endif ()
 
+
+## Search for libraries
 if (USE_GMP_FOR_MP)
   find_package(Gmp REQUIRED)
 endif ()
 find_package(PipLib QUIET)
 
 
+## Platform introspection
+# Determine version of isl
+if (EXISTS "${ISL_SOURCE_DIR}/GIT_HEAD_ID")
+  # The source comes from a 'make dist' archive
+  file(READ "${ISL_SOURCE_DIR}/GIT_HEAD_ID" GIT_HEAD_ID)
+  string(STRIP "${GIT_HEAD_ID}" GIT_HEAD_ID)
+elseif (EXISTS "${ISL_SOURCE_DIR}/gitversion.h")
+  # The source directory is preconfigured
+  file(READ "${ISL_SOURCE_DIR}/gitversion.h" GITVERSION_H)
+  string(REGEX REPLACE ".*\\\"([^\\\"]*)\\\".*" "\\1" GIT_HEAD_ID "${GITVERSION_H}")
+elseif (EXISTS "${ISL_SOURCE_DIR}/.git" AND "${ISL_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}")
+  # This is the GIT repository itself
+  # GetGitRevisionDescription uses CMAKE_CURRENT_SOURCE_DIR to look for the .git directory, so it must refer to ISL's source directory
+  include(GetGitRevisionDescription)
+  git_describe(GIT_HEAD_ID)
+else ()
+  # Unknown revision
+  set(GIT_HEAD_ID "UNKNOWN")
+endif ()
+message(STATUS "ISL version: ${GIT_HEAD_ID}")
 
-include(GetGitRevisionDescription)
-get_git_head_revision(GIT_REFSPEC GIT_SHA1)
 
-#if (MSVC_IDE)
-include(CheckCXXSourceCompiles)
-function (CHECK_CXX_TYPE_EXISTS _type _files _variable)
-  set(_includes "")
-  foreach (file_name ${_files})
-     set(_includes "${_includes}#include<${file_name}>\n")
-  endforeach()
-  CHECK_CXX_SOURCE_COMPILES("
-    ${_includes} ${_type} typeVar;
-    int main() {
-        return 0;
-    }
-    " ${_variable})
-endfunction ()
-#else ()
+# Determine compiler characteristics
+if ("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
+  set(CMAKE_COMPILER_IS_CLANGCC ON)
+endif()
+
+
 include(CheckCSourceCompiles)
-function (CHECK_C_TYPE_EXISTS _type _files _variable)
-  set(_includes "")
-  foreach (file_name ${_files})
-     set(_includes "${_includes}#include<${file_name}>\n")
-  endforeach()
-  CHECK_C_SOURCE_COMPILES("
-    ${_includes} ${_type} typeVar;
-    int main() {
-        return 0;
-    }
-    " ${_variable})
-endfunction ()
-#endif ()
 
-function (CHECK_TYPE_EXISTS _type _files _variable)
-  if (MSVC_IDE)
-    CHECK_CXX_TYPE_EXISTS(${_type} "${_files}" ${_variable} ${ARGN})
+function (check_c_source_compiles_numeric _prog _var)
+  check_c_source_compiles("${_prog}" "${_var}")
+  if ("${${_var}}")
+    set("${_var}" 1 PARENT_SCOPE)
   else ()
-    CHECK_C_TYPE_EXISTS(${_type} "${_files}" ${_variable} ${ARGN})
+    set("${_var}" 0 PARENT_SCOPE)
   endif ()
 endfunction ()
 
-CHECK_TYPE_EXISTS(uint8_t "" HAVE_UINT8T)
-CHECK_TYPE_EXISTS(uint8_t "stdint.h" HAVE_STDINT_H)
-CHECK_TYPE_EXISTS(uint8_t "inttypes.h" HAVE_INTTYPES_H)
-CHECK_TYPE_EXISTS(uint8_t "sys/types.h" HAVE_SYS_INTTYPES_H)
+function (check_c_type_exists _type _files _variable)
+  set(_includes "")
+  foreach (file_name ${_files})
+     set(_includes "${_includes}#include<${file_name}>\n")
+  endforeach()
+  check_c_source_compiles("
+    ${_includes}
+    ${_type} typeVar;
+    int main() {
+        return 0;
+    }
+    " ${_variable})
+endfunction ()
+
+
+check_c_source_compiles("
+  int func(void) __attribute__((__warn_unused_result__));
+  int main() { return 0; }
+  " HAS_ATTRIBUTE_WARN_UNUSED_RESULT)
+set(GCC_WARN_UNUSED_RESULT)
+if (HAS_ATTRIBUTE_WARN_UNUSED_RESULT)
+  set(GCC_WARN_UNUSED_RESULT "__attribute__((__warn_unused_result__))")
+endif ()
+
+check_c_source_compiles("
+  static void foo(void) __attribute__ ((unused));
+  int main() { return 0; }
+  " HAVE___ATTRIBUTE__)
+
+
+check_c_source_compiles_numeric("
+  #include <strings.h>
+  int main() { ffs(0); return 0; }
+  " HAVE_DECL_FFS)
+
+check_c_source_compiles_numeric("
+  int main() { __builtin_ffs(0); return 0; }
+  " HAVE_DECL___BUILTIN_FFS)
+
+check_c_source_compiles_numeric("
+  #include <intrin.h>
+  int main() { _BitScanForward(NULL, 0); return 0; }
+  " HAVE_DECL__BITSCANFORWARD)
+
+if (NOT HAVE_DECL_FFS AND NOT HAVE_DECL___BUILTIN_FFS AND NOT HAVE_DECL___BUILTIN_FFS)
+  message(FATAL_ERROR "No ffs implementation found")
+endif ()
+
+
+check_c_source_compiles_numeric("
+  #include <strings.h>
+  int main() { strcasecmp(\"\", \"\"); return 0; }
+  " HAVE_DECL_STRCASECMP)
+
+check_c_source_compiles_numeric("
+  #include <string.h>
+  int main() { _stricmp(\"\", \"\"); return 0; }
+  " HAVE_DECL__STRICMP)
+
+if (NOT HAVE_DECL_STRCASECMP AND NOT HAVE_DECL__STRICMP)
+  message(FATAL_ERROR "No strcasecmp implementation found")
+endif ()
+
+
+check_c_source_compiles_numeric("
+  #include <strings.h>
+  int main() { strncasecmp(\"\", \"\", 0); return 0; }
+  " HAVE_DECL_STRNCASECMP)
+
+check_c_source_compiles_numeric("
+  #include <string.h>
+  int main() { _strnicmp(\"\", \"\", 0); return 0; }
+  " HAVE_DECL__STRNICMP)
+
+if (NOT HAVE_DECL_STRNCASECMP AND NOT HAVE_DECL__STRNICMP)
+  message(FATAL_ERROR "No strncasecmp implementation found")
+endif ()
+
+
+check_c_source_compiles_numeric("
+  #include <stdio.h>
+  int main() { snprintf((void*)0, 0, \"\"); return 0; }
+  " HAVE_DECL_SNPRINTF)
+
+check_c_source_compiles_numeric("
+  #include <stdio.h>
+  int main() { _snprintf((void*)0, 0, \"\"); return 0; }
+  " HAVE_DECL__SNPRINTF)
+
+if (NOT HAVE_DECL_SNPRINTF AND NOT HAVE_DECL__SNPRINTF)
+  message(FATAL_ERROR "No snprintf implementation found")
+endif ()
+
+
+check_c_type_exists(uint8_t "" HAVE_UINT8T)
+check_c_type_exists(uint8_t "stdint.h" HAVE_STDINT_H)
+check_c_type_exists(uint8_t "inttypes.h" HAVE_INTTYPES_H)
+check_c_type_exists(uint8_t "sys/types.h" HAVE_SYS_INTTYPES_H)
 if (HAVE_UINT8T)
-  set(INCLUDE_STDINT_H)
+  set(INCLUDE_STDINT_H "")
 elseif (HAVE_STDINT_H)
   set(INCLUDE_STDINT_H "#include <stdint.h>")
 elseif (HAVE_INTTYPES_H)
@@ -84,46 +195,46 @@ elseif (HAVE_SYS_INTTYPES_H)
 else ()
   message(FATAL_ERROR "No stdint.h or compatible found")
 endif ()
-#configure_file("${ISL_SOURCE_DIR}/include/isl/stdint.h.cmake" "${ISL_BINARY_DIR}/include/isl/stdint.h")
-#configure_file("${ISL_SOURCE_DIR}/include/isl/config.h.cmake" "${ISL_BINARY_DIR}/include/isl/config.h")
 
-include_directories("${ISL_BINARY_DIR}/include" "${ISL_SOURCE_DIR}" "${ISL_SOURCE_DIR}/include" "${ISL_SOURCE_DIR}/imath" ${GMP_INCLUDE_DIRS} ${PIPLIB_INCLUDE_DIRS})
-if (MSVC)
-  add_definitions("/FI\"${ISL_SOURCE_DIR}/unicompat.h\"")
-endif ()
+# Write configure result
+configure_file("${ISL_SOURCE_DIR}/gitversion.h.cmake" "${ISL_BINARY_DIR}/gitversion.h")
+configure_file("${ISL_SOURCE_DIR}/isl_config.h.cmake" "${ISL_BINARY_DIR}/isl_config.h")
+file(WRITE "${ISL_BINARY_DIR}/include/isl/stdint.h" "${INCLUDE_STDINT_H}")
 
 
-set(CMAKE_C_STANDARD 99)
-set(CMAKE_C_STANDARD_REQUIRED ON)
 
-if ("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
-  set(CMAKE_COMPILER_IS_CLANGCC ON)
-endif()
+function (prepend_path _list _prefix _var)
+  set(_result)
+  foreach (_filename IN LISTS "${_list}")
+    list(APPEND _result "${_prefix}/${_filename}")
+  endforeach ()
+  set("${_var}" ${_result} PARENT_SCOPE)
+endfunction ()
 
+
+# General compiler options
 if (CMAKE_COMPILER_IS_CLANGCC OR CMAKE_COMPILER_IS_GNUCC)
-   add_definitions(-Wall)
+   add_definitions("-Wall")
 endif ()
 
-# Workaround: cmake removes /usr/include from include_directories(...)
-#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -I${GMP_INCLUDE_DIR}")
-
-#Workaround
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -fgnu89-inline")
 
 
+## IMath library
 if (USE_IMATH_FOR_MP)
-  add_subdirectory(imath)
+	set(libimath_sources
+		gmp_compat.c
+		imath.c
+		imrat.c
+	)
+	prepend_path(libimath_sources "${IMATH_SOURCE_DIR}" libimath_sources)
+
+	add_library(imath ${libimath_sources})
+	target_include_directories(imath PUBLIC "${IMATH_SOURCE_DIR}")
 endif ()
 
-
-
-configure_file(${ISL_SOURCE_DIR}/isl_config.h.cmake ${ISL_BINARY_DIR}/include/isl_config.h)
-configure_file(${ISL_SOURCE_DIR}/gitversion.h.cmake ${ISL_BINARY_DIR}/include/gitversion.h)
-
-
-
-set(libisl_sources
-  isl_aff.c
+## ISL Library
+set(libisl_common_sources
+	isl_aff.c
 	isl_affine_hull.c
 	isl_arg.c
 	isl_ast.c
@@ -196,103 +307,93 @@ set(libisl_sources
 	isl_schedule_tree.c
 	isl_schedule_band.c
 	isl_scheduler.c
+)
+prepend_path(libisl_common_sources "${ISL_SOURCE_DIR}" libisl_common_sources)
+
+set(libisl_gmp_sources
 	isl_gmp.c
 	isl_val_gmp.c
 )
+prepend_path(libisl_gmp_sources "${ISL_SOURCE_DIR}" libisl_gmp_sources)
+
+set(libisl_imath_sources
+	isl_imath.c
+	isl_val_imath.c
+)
+prepend_path(libisl_imath_sources "${ISL_SOURCE_DIR}" libisl_imath_sources)
+
+set(libisl_imath32_sources
+	isl_imath.c
+	isl_int_sioimath.c
+	isl_val_sioimath.c
+)
+prepend_path(libisl_imath32_sources "${ISL_SOURCE_DIR}" libisl_imath32_sources)
 
 
-file(GLOB libisl_headers ${ISL_SOURCE_DIR}/*.h ${ISL_SOURCE_DIR}/include/isl/*.h)
-if (MSVC_IDE)
-  SET_SOURCE_FILES_PROPERTIES( ${libisl_sources} PROPERTIES LANGUAGE CXX )
+set(libisl_sources ${libisl_common_sources})
+if (USE_GMP_FOR_MP)
+  list(APPEND libisl_sources ${libisl_gmp_sources})
+elseif (USE_IMATH_FOR_MP)
+  if (USE_SMALL_INT_OPT)
+    list(APPEND libisl_sources ${libisl_imath32_sources})
+  else ()
+    list(APPEND libisl_sources ${libisl_imath_sources})
+  endif ()
 endif ()
 
-set(_outheaders)
-foreach( _headerpath ${libisl_headers} )
-  set( _src ${_headerpath} )
-  get_filename_component(_headerfile "${_headerpath}" NAME)
-  set( _dst ${ISL_BINARY_DIR}/include/${_headerfile} )
-  add_custom_command(OUTPUT ${_dst}
-    DEPENDS ${_src}
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_src}" "${_dst}"
-    COMMENT "Copying ${_headerfile}...")
-  list(APPEND _outheaders "${_dst}")
-endforeach ()
-add_custom_target(isl-headers DEPENDS ${_outheaders})
-set_target_properties(isl-headers PROPERTIES FOLDER "Isl")
 
-#if (ISL_BUILD_OBJECT_LIBRARY)
-#  add_library(isl OBJECT ${libisl_sources} ${libisl_headers})
-#  set(ISL_LIBRARY CACHE INTERNAL "")
-#  set(ISL_OBJECTS "$<TARGET_OBJECTS:isl>" CACHE INTERNAL "")
-#else ()
-#  add_library(isl ${libisl_sources} ${libisl_headers})
-#  target_link_libraries(isl ${GMP_LIBRARIES} ${PIPLIB_LIBRARIES})
-#  add_dependencies(isl isl-headers)
-#  set(ISL_LIBRARY isl CACHE INTERNAL "")
-#  set(ISL_OBJECTS CACHE INTERNAL "")
-#endif ()
-
-#set(CMAKE_C_FLAGS "-std=c99 ${CMAKE_C_FLAGS}")
-
- 
-add_library(isl ${libisl_sources} ${libisl_headers})
-target_include_directories(isl PUBLIC "${ISL_SOURCE_DIR}/include")
+add_library(isl ${libisl_sources})
+set_target_properties(isl PROPERTIES C_STANDARD 99)
+target_include_directories(isl PRIVATE "${ISL_SOURCE_DIR}" ${GMP_INCLUDE_DIRS} ${PIPLIB_INCLUDE_DIRS})
+target_include_directories(isl PUBLIC "${ISL_BINARY_DIR}/include" "${ISL_SOURCE_DIR}/include")
+target_link_libraries(isl ${PIPLIB_LIBRARIES})
 if (USE_GMP_FOR_MP)
   target_link_libraries(isl PUBLIC ${GMP_LIBRARIES})
+elseif (USE_IMATH_FOR_MP)
+  target_link_libraries(isl PUBLIC imath)
 endif()
-set_target_properties(isl PROPERTIES FOLDER "Isl")
 
 
-set(isl_libs "${ISL_LIBRARY}" ${PIPLIB_LIBRARIES})
-if (USE_GMP_FOR_MP OR USE_LONG_FOR_MP)
-  list(APPEND isl_libs ${GMP_LIBRARIES})
-endif()
-if (USE_IMATH_FOR_MP)
-  list(APPEND isl_libs "imath")
-endif()
-set(ISL_LIBRARIES isl ${isl_libs} CACHE INTERNAL "")
-set(ISL_INCLUDE_DIR "${ISL_SOURCE_DIR}/include" CACHE INTERNAL "")
-set(ISL_INCLUDE_DIRS "${ISL_INCLUDE_DIR}" "${ISL_BINARY_DIR}/include" ${PIPLIB_INCLUDE_DIRS} ${GMP_INCLUDE_DIRS} CACHE INTERNAL "")
-set(ISL_TARGET "isl" CACHE INTERNAL "")
-set(ISL_FOUND TRUE CACHE INTERNAL "")
-function(add_isl_executable _name)
+# Auxiliary executables
+macro (add_isl_executable _name)
   set(_sources ${ARGN})
-  if (MSVC_IDE)
-    SET_SOURCE_FILES_PROPERTIES( ${_sources} PROPERTIES LANGUAGE CXX )
-  endif ()
-  add_executable(${_name} ${_sources} ${ISL_OBJECTS})
-  set_target_properties(${_name} PROPERTIES FOLDER "Isl")
-  target_link_libraries(${_name} isl ${ISL_LIBRARIES})
-endfunction()
-
-#add_definitions("-DISL_TEST_SRCDIR=\\\"${ISL_SOURCE_DIR}\\\"")
-#add_definitions("-DISL_TEST_SRCDIR=\\"${ISL_SOURCE_DIR}\\"")
-#add_definitions("-DISL_TEST_SRCDIR='${ISL_SOURCE_DIR}'")
+  add_executable("${_name}" ${_sources})
+  target_include_directories("${_name}" PRIVATE "${ISL_SOURCE_DIR}")
+  target_link_libraries("${_name}" isl)
+endmacro ()
 
 
+add_isl_executable(isl_test "${ISL_SOURCE_DIR}/isl_test.c")
+add_isl_executable(isl_test_int "${ISL_SOURCE_DIR}/isl_test_int.c")
+if (USE_IMATH_FOR_MP)
+  add_isl_executable(isl_test_imath "${ISL_SOURCE_DIR}/isl_test_imath.c")
+endif ()
+add_isl_executable(isl_polyhedron_sample "${ISL_SOURCE_DIR}/polyhedron_sample.c")
+add_isl_executable(isl_pip "${ISL_SOURCE_DIR}/pip.c")
+add_isl_executable(isl_polyhedron_minimize "${ISL_SOURCE_DIR}/polyhedron_minimize.c")
+add_isl_executable(isl_polytope_scan "${ISL_SOURCE_DIR}/polytope_scan.c")
+add_isl_executable(isl_polyhedron_detect_equalities "${ISL_SOURCE_DIR}/polyhedron_detect_equalities.c")
+add_isl_executable(isl_cat "${ISL_SOURCE_DIR}/cat.c")
+add_isl_executable(isl_closure "${ISL_SOURCE_DIR}/closure.c")
+add_isl_executable(isl_bound "${ISL_SOURCE_DIR}/bound.c")
+add_isl_executable(isl_codegen "${ISL_SOURCE_DIR}/codegen.c")
 
-add_isl_executable(isl_test isl_test.c)
-#add_isl_executable(isl_inttest isl_inttest.c)
-add_isl_executable(isl_polyhedron_sample polyhedron_sample.c)
-add_isl_executable(isl_pip pip.c)
-add_isl_executable(isl_polyhedron_minimize polyhedron_minimize.c)
-add_isl_executable(isl_polytope_scan polytope_scan.c)
-add_isl_executable(isl_polyhedron_detect_equalities polyhedron_detect_equalities.c)
-add_isl_executable(isl_cat cat.c)
-add_isl_executable(isl_closure closure.c)
-add_isl_executable(isl_bound bound.c)
-add_isl_executable(isl_codegen codegen.c)
+# Testing
+enable_testing()
 
-# TODO: Should not be here, but handled by LLVM
-#set_property(GLOBAL APPEND PROPERTY LLVM_EXPORTS "isl")
-
-add_custom_target(run-isl_test
-  COMMAND srcdir=${ISL_SOURCE_DIR} "$<TARGET_FILE:isl_test>"
-  COMMENT "Running isl_test"
+add_test(NAME isl_test_int
+  COMMAND "$<TARGET_FILE:isl_test_int>"
 )
-#isl_test codegen_test.sh pip_test.sh bound_test.sh
-
-add_custom_target(run-codegen_test
-  COMMAND srcdir=${ISL_SOURCE_DIR} "${ISL_SOURCE_DIR}/codegen_test.sh"
-  COMMENT "Running codegen_test"
+if (USE_IMATH_FOR_MP)
+	add_test(NAME isl_test_imath
+		COMMAND "$<TARGET_FILE:isl_test_imath>"
+	)
+endif ()
+add_test(NAME isl_test
+  COMMAND "$<TARGET_FILE:isl_test>"
 )
+add_test(NAME codegen_test
+  COMMAND "${ISL_SOURCE_DIR}/codegen_test.sh"
+)
+set_tests_properties(isl_test codegen_test PROPERTIES ENVIRONMENT "srcdir=${ISL_SOURCE_DIR}")
+
