@@ -1,4 +1,4 @@
-AC_INIT([isl], [0.15], [isl-development@googlegroups.com])
+AC_INIT([isl], [0.15], [isl@meinersbur.de])
 AC_CONFIG_AUX_DIR([.])
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([foreign])
@@ -253,9 +253,9 @@ AH_BOTTOM([#include <isl_config_post.h>])
 AC_CONFIG_HEADERS(isl_config.h)
 AC_CONFIG_FILES(Makefile)
 AC_CONFIG_FILES(doc/Makefile)
-if test $with_clang = system; then
+AM_COND_IF([HAVE_CLANG], [
 	AC_CONFIG_FILES(interface/Makefile)
-fi
+]);
 AC_CONFIG_FILES([bound_test.sh], [chmod +x bound_test.sh])
 AC_CONFIG_FILES([codegen_test.sh], [chmod +x codegen_test.sh])
 AC_CONFIG_FILES([pip_test.sh], [chmod +x pip_test.sh])

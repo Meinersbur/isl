@@ -1,5 +1,5 @@
 Integer Set Library (ISL)
-branch with CMake build system
+branch for pencilcc
 -------------------------
 
 The orignal project's website can be found at http://isl.gforge.inria.fr/ and
@@ -8,10 +8,7 @@ its discussion takes place on the mailing list isl-development@googlegroups.com.
 For discussions about this branch please use the Github tools
 (https://github.com/Meinersbur/isl) or contact the author (isl@meinersbur.de).
 
-This branch adds the files necessary to compile ISL using CMake. It is not a
-feature-complete replacement of the autotools build system, but has been created
-for convinience in order to user builder such as Ninja or Visual Studio. The
-autotools-based build system remains in place.
+This branch is used by pencilcc (https://github.com/Meinersbur/pencilcc).
 
 
 Original README
