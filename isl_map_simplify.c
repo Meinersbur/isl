@@ -821,6 +821,24 @@ static int set_hash_index(struct isl_constraint_index *ci,
 	return hash_index(ci, bset, k);
 }
 
+/* Fill in the "ci" data structure with the inequalities of "bset".
+ */
+static isl_stat setup_constraint_index(struct isl_constraint_index *ci,
+	__isl_keep isl_basic_set *bset)
+{
+	int k, h;
+
+	if (create_constraint_index(ci, bset) < 0)
+		return isl_stat_error;
+
+	for (k = 0; k < bset->n_ineq; ++k) {
+		h = set_hash_index(ci, bset, k);
+		ci->index[h] = &bset->ineq[k];
+	}
+
+	return isl_stat_ok;
+}
+
 /* If we can eliminate more than one div, then we need to make
  * sure we do it from last div to first div, in order not to
  * change the position of the other divs that still need to
@@ -1873,13 +1891,9 @@ static struct isl_basic_set *remove_shifted_constraints(
 
 	if (context->n_ineq == 0)
 		return bset;
-	if (create_constraint_index(&ci, context) < 0)
+	if (setup_constraint_index(&ci, context) < 0)
 		return bset;
 
-	for (k = 0; k < context->n_ineq; ++k) {
-		h = set_hash_index(&ci, context, k);
-		ci.index[h] = &context->ineq[k];
-	}
 	for (k = 0; k < bset->n_ineq; ++k) {
 		h = set_hash_index(&ci, bset, k);
 		if (!ci.index[h])
