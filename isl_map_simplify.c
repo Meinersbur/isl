@@ -766,11 +766,13 @@ static unsigned int round_up(unsigned int v)
  * except the constant term.
  * "size" is the number of elements in the array and is always a power of two
  * "bits" is the number of bits need to represent an index into the array.
+ * "total" is the total dimension of the basic map.
  */
 struct isl_constraint_index {
 	unsigned int size;
 	int bits;
 	isl_int ***index;
+	unsigned total;
 };
 
 /* Fill in the "ci" data structure for holding the inequalities of "bmap".
@@ -783,6 +785,7 @@ static isl_stat create_constraint_index(struct isl_constraint_index *ci,
 	ci->index = NULL;
 	if (!bmap)
 		return isl_stat_error;
+	ci->total = isl_basic_set_total_dim(bmap);
 	if (bmap->n_ineq == 0)
 		return isl_stat_ok;
 	ci->size = round_up(4 * (bmap->n_ineq + 1) / 3 - 1);
@@ -806,7 +809,7 @@ static int hash_index(struct isl_constraint_index *ci,
 			struct isl_basic_map *bmap, int k)
 {
 	int h;
-	unsigned total = isl_basic_map_total_dim(bmap);
+	unsigned total = ci->total;
 	uint32_t hash = isl_seq_get_hash_bits(bmap->ineq[k]+1, total, ci->bits);
 	for (h = hash; ci->index[h]; h = (h+1) % ci->size)
 		if (&bmap->ineq[k] != ci->index[h] &&
