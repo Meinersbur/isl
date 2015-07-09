@@ -4696,6 +4696,17 @@ struct isl_set *isl_set_to_underlying_set(struct isl_set *set)
 __isl_give isl_basic_map *isl_basic_map_reset_space(
 	__isl_take isl_basic_map *bmap, __isl_take isl_space *space)
 {
+	isl_bool equal;
+
+	if (!bmap)
+		goto error;
+	equal = isl_space_is_equal(bmap->dim, space);
+	if (equal < 0)
+		goto error;
+	if (equal) {
+		isl_space_free(space);
+		return bmap;
+	}
 	bmap = isl_basic_map_cow(bmap);
 	if (!bmap || !space)
 		goto error;
