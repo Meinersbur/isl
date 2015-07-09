@@ -4694,21 +4694,21 @@ struct isl_set *isl_set_to_underlying_set(struct isl_set *set)
 }
 
 __isl_give isl_basic_map *isl_basic_map_reset_space(
-	__isl_take isl_basic_map *bmap, __isl_take isl_space *dim)
+	__isl_take isl_basic_map *bmap, __isl_take isl_space *space)
 {
 	bmap = isl_basic_map_cow(bmap);
-	if (!bmap || !dim)
+	if (!bmap || !space)
 		goto error;
 
 	isl_space_free(bmap->dim);
-	bmap->dim = dim;
+	bmap->dim = space;
 
 	bmap = isl_basic_map_finalize(bmap);
 
 	return bmap;
 error:
 	isl_basic_map_free(bmap);
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
