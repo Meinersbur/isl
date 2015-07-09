@@ -2071,23 +2071,31 @@ static void update_groups(int dim, int *group, isl_int *c)
 	}
 }
 
-/* Drop constraints from "context" that are irrelevant for computing
- * the gist of "bset".
- *
- * In particular, drop constraints in variables that are not related
- * to any of the variables involved in the constraints of "bset"
- * in the sense that there is no sequence of constraints that connects them.
+/* Allocate an array of groups of variables, one for each variable
+ * in "context", initialized to zero.
+ */
+static int *alloc_groups(__isl_keep isl_basic_set *context)
+{
+	isl_ctx *ctx;
+	int dim;
+
+	dim = isl_basic_set_dim(context, isl_dim_set);
+	ctx = isl_basic_set_get_ctx(context);
+	return isl_calloc_array(ctx, int, dim);
+}
+
+/* Drop constraints from "context" that only involve variables that are
+ * not related to any of the variables marked with a "-1" in "group".
  *
  * We construct groups of variables that collect variables that
  * (indirectly) appear in some common constraint of "context".
  * Each group is identified by the first variable in the group,
- * except for the special group of variables that appear in "bset"
- * (or are related to those variables), which is identified by -1.
+ * except for the special group of variables that was already identified
+ * in the input as -1 (or are related to those variables).
  * If group[i] is equal to i (or -1), then the group of i is i (or -1),
  * otherwise the group of i is the group of group[i].
  *
- * We first initialize the -1 group with the variables that appear in "bset".
- * Then we initialize groups for the remaining variables.
+ * We first initialize groups for the remaining variables.
  * Then we iterate over the constraints of "context" and update the
  * group of the variables in the constraint by the smallest group.
  * Finally, we resolve indirect references to groups by running over
@@ -2096,39 +2104,14 @@ static void update_groups(int dim, int *group, isl_int *c)
  * After computing the groups, we drop constraints that do not involve
  * any variables in the -1 group.
  */
-static __isl_give isl_basic_set *drop_irrelevant_constraints(
-	__isl_take isl_basic_set *context, __isl_keep isl_basic_set *bset)
+static __isl_give isl_basic_set *group_and_drop_irrelevant_constraints(
+	__isl_take isl_basic_set *context, __isl_take int *group)
 {
-	isl_ctx *ctx;
-	int *group;
 	int dim;
-	int i, j;
+	int i;
 	int last;
 
-	if (!context || !bset)
-		return isl_basic_set_free(context);
-
-	dim = isl_basic_set_dim(bset, isl_dim_set);
-	ctx = isl_basic_set_get_ctx(bset);
-	group = isl_calloc_array(ctx, int, dim);
-
-	if (!group)
-		goto error;
-
-	for (i = 0; i < dim; ++i) {
-		for (j = 0; j < bset->n_eq; ++j)
-			if (!isl_int_is_zero(bset->eq[j][1 + i]))
-				break;
-		if (j < bset->n_eq) {
-			group[i] = -1;
-			continue;
-		}
-		for (j = 0; j < bset->n_ineq; ++j)
-			if (!isl_int_is_zero(bset->ineq[j][1 + i]))
-				break;
-		if (j < bset->n_ineq)
-			group[i] = -1;
-	}
+	dim = isl_basic_set_dim(context, isl_dim_set);
 
 	last = -1;
 	for (i = 0; i < dim; ++i)
@@ -2155,9 +2138,50 @@ static __isl_give isl_basic_set *drop_irrelevant_constraints(
 
 	free(group);
 	return context;
-error:
-	free(group);
-	return isl_basic_set_free(context);
+}
+
+/* Drop constraints from "context" that are irrelevant for computing
+ * the gist of "bset".
+ *
+ * In particular, drop constraints in variables that are not related
+ * to any of the variables involved in the constraints of "bset"
+ * in the sense that there is no sequence of constraints that connects them.
+ *
+ * We first mark all variables that appear in "bset" as belonging
+ * to a "-1" group and then continue with group_and_drop_irrelevant_constraints.
+ */
+static __isl_give isl_basic_set *drop_irrelevant_constraints(
+	__isl_take isl_basic_set *context, __isl_keep isl_basic_set *bset)
+{
+	int *group;
+	int dim;
+	int i, j;
+
+	if (!context || !bset)
+		return isl_basic_set_free(context);
+
+	group = alloc_groups(context);
+
+	if (!group)
+		return isl_basic_set_free(context);
+
+	dim = isl_basic_set_dim(bset, isl_dim_set);
+	for (i = 0; i < dim; ++i) {
+		for (j = 0; j < bset->n_eq; ++j)
+			if (!isl_int_is_zero(bset->eq[j][1 + i]))
+				break;
+		if (j < bset->n_eq) {
+			group[i] = -1;
+			continue;
+		}
+		for (j = 0; j < bset->n_ineq; ++j)
+			if (!isl_int_is_zero(bset->ineq[j][1 + i]))
+				break;
+		if (j < bset->n_ineq)
+			group[i] = -1;
+	}
+
+	return group_and_drop_irrelevant_constraints(context, group);
 }
 
 /* Remove all information from bset that is redundant in the context
