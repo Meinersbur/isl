@@ -256,6 +256,7 @@ set(libisl_common_sources
 	isl_equalities.c
 	isl_factorization.c
 	isl_farkas.c
+	isl_ffs.c
 	isl_flow.c
 	isl_fold.c
 	isl_hash.c
