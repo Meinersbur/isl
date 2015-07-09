@@ -4566,9 +4566,10 @@ struct isl_basic_map *isl_basic_map_overlying_set(
 	isl_assert(ctx, isl_basic_set_n_param(bset) == 0, goto error);
 	isl_assert(ctx, bset->dim->n_out == isl_basic_map_total_dim(like),
 			goto error);
-	if (isl_space_is_equal(bset->dim, like->dim) && like->n_div == 0) {
+	if (like->n_div == 0) {
+		isl_space *space = isl_basic_map_get_space(like);
 		isl_basic_map_free(like);
-		return (struct isl_basic_map *)bset;
+		return isl_basic_map_reset_space(bset, space);
 	}
 	bset = isl_basic_set_cow(bset);
 	if (!bset)
