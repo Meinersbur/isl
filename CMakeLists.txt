@@ -204,11 +204,11 @@ file(WRITE "${ISL_BINARY_DIR}/include/isl/stdint.h" "${INCLUDE_STDINT_H}")
 
 
 function (prepend_path _list _prefix _var)
-  set(_result)
+  set(result)
   foreach (_filename IN LISTS "${_list}")
-    list(APPEND _result "${_prefix}/${_filename}")
+    list(APPEND result "${_prefix}/${_filename}")
   endforeach ()
-  set("${_var}" ${_result} PARENT_SCOPE)
+  set("${_var}" ${result} PARENT_SCOPE)
 endfunction ()
 
 
@@ -311,17 +311,20 @@ set(libisl_common_sources
 )
 prepend_path(libisl_common_sources "${ISL_SOURCE_DIR}" libisl_common_sources)
 
+
 set(libisl_gmp_sources
 	isl_gmp.c
 	isl_val_gmp.c
 )
 prepend_path(libisl_gmp_sources "${ISL_SOURCE_DIR}" libisl_gmp_sources)
 
+
 set(libisl_imath_sources
 	isl_imath.c
 	isl_val_imath.c
 )
 prepend_path(libisl_imath_sources "${ISL_SOURCE_DIR}" libisl_imath_sources)
+
 
 set(libisl_imath32_sources
 	isl_imath.c
