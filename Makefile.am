@@ -341,7 +341,6 @@ EXTRA_DIST = \
 	isl_power_templ.c \
 	isl_pw_templ.c \
 	isl_union_templ.c \
-	isl.py \
 	doc/CodingStyle \
 	doc/SubmittingPatches \
 	doc/chicago.bst \
@@ -357,16 +356,8 @@ EXTRA_DIST = \
 	imath/imath.h \
 	imath/imrat.c \
 	imath/imrat.h \
-	interface/all.h \
-	interface/isl.py.top \
-	interface/extract_interface.cc \
-	interface/extract_interface.h \
-	interface/isl.py \
-	interface/Makefile.am \
-	interface/Makefile.in \
-	interface/python.cc \
-	interface/python.h \
-	test_inputs
+	test_inputs \
+	interface
 
 dist-hook:
 	echo @GIT_HEAD_VERSION@ > $(distdir)/GIT_HEAD_ID
@@ -378,21 +369,3 @@ pkgconfig_DATA = $(pkgconfig_libfile)
 
 gitversion.h: @GIT_HEAD@
 	$(AM_V_GEN)echo '#define GIT_HEAD_ID "'@GIT_HEAD_VERSION@'"' > $@
-
-install-data-local: $(srcdir)/isl.py
-	@libisl=`sed -ne "/^library_names=/{s/.*='//;s/'$$//;s/ .*//;p;}" \
-		 $(builddir)/libisl.la`; \
-	case $$libisl in \
-	'') echo Cannot find isl library name. GDB bindings not installed.;; \
-	*) echo $(INSTALL_DATA) $(srcdir)/isl.py \
-		$(DESTDIR)$(libdir)/$$libisl-gdb.py; \
-	test -z "$(libdir)" || $(MKDIR_P) "$(DESTDIR)$(libdir)"; \
-	$(INSTALL_DATA) $(srcdir)/isl.py $(DESTDIR)$(libdir)/$$libisl-gdb.py; esac
-
-uninstall-local:
-	@libisl=`sed -ne "/^library_names=/{s/.*='//;s/'$$//;s/ .*//;p;}" \
-	$(builddir)/libisl.la`; \
-	if test -n "$$libisl"; then \
-		echo " ( cd '$(DESTDIR)$(libdir)' && rm $$libisl-gdb.py)"; \
-		( cd '$(DESTDIR)$(libdir)' && rm -f $$libisl-gdb.py); \
-	fi

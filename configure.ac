@@ -1,8 +1,7 @@
-AC_INIT([isl], [0.15], [isl-development@googlegroups.com])
+AC_INIT([isl], [0.15], [isl@meinersbur.de])
 AC_CONFIG_AUX_DIR([.])
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([foreign])
-AM_MAINTAINER_MODE([enable])
 m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 AC_SUBST(versioninfo)
 versioninfo=15:0:0

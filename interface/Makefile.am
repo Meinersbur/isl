@@ -5,10 +5,6 @@ noinst_PROGRAMS = extract_interface
 AM_CXXFLAGS = $(CLANG_CXXFLAGS)
 AM_LDFLAGS = $(CLANG_LDFLAGS)
 
-EXTRA_DIST = \
-	isl.py \
-	all.h extract_interface.cc extract_interface.h python.cc python.h
-
 includes = -I$(top_builddir) -I$(top_srcdir) \
 	-I$(top_builddir)/include -I$(top_srcdir)/include
 
@@ -31,3 +27,6 @@ isl.py: extract_interface isl.py.top
 	(cat $(srcdir)/isl.py.top; \
 		./extract_interface$(EXEEXT) $(includes) $(srcdir)/all.h) \
 			> isl.py
+
+dist-hook: isl.py
+	cp isl.py $(distdir)/
