@@ -3668,6 +3668,11 @@ static int is_any_trivial(struct isl_sched_graph *graph,
 /* Construct a schedule row for each node such that as many dependences
  * as possible are carried and then continue with the next band.
  *
+ * Note that despite the fact that the problem is solved using a rational
+ * solver, the solution is guaranteed to be integral.
+ * Specifically, the dependence distance lower bounds e_i (and therefore
+ * also their sum) are integers.  See Lemma 5 of [1].
+ *
  * If the computed schedule row turns out to be trivial on one or
  * more nodes where it should not be trivial, then we throw it away
  * and try again on each component separately.
@@ -3684,6 +3689,10 @@ static int is_any_trivial(struct isl_sched_graph *graph,
  * of the schedule tree and continue with the construction of the schedule.
  * This insertion and the continued construction is performed by split_scaled
  * after optionally checking for non-trivial common divisors.
+ *
+ * [1] P. Feautrier, Some Efficient Solutions to the Affine Scheduling
+ *     Problem, Part II: Multi-Dimensional Time.
+ *     In Intl. Journal of Parallel Programming, 1992.
  */
 static __isl_give isl_schedule_node *carry_dependences(
 	__isl_take isl_schedule_node *node, struct isl_sched_graph *graph)
