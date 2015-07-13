@@ -10,11 +10,17 @@
  * and Ecole Normale Superieure, 45 rue d'Ulm, 75230 Paris, France
  */
 
+#include <isl_hash_private.h>
+
 #define xFN(TYPE,NAME) TYPE ## _ ## NAME
 #define FN(TYPE,NAME) xFN(TYPE,NAME)
 #define xS(TYPE,NAME) struct TYPE ## _ ## NAME
 #define S(TYPE,NAME) xS(TYPE,NAME)
 
+/* A union of expressions defined over different domain spaces.
+ * "space" describes the parameters.
+ * The entries of "table" are keyed on the domain space of the entry.
+ */
 struct UNION {
 	int ref;
 #ifdef HAS_TYPE
@@ -151,16 +157,6 @@ isl_stat FN(FN(UNION,foreach),PARTS)(__isl_keep UNION *u,
 				      &FN(UNION,call_on_copy), &data);
 }
 
-/* Is the space of "entry" equal to "space"?
- */
-static int FN(UNION,has_space)(const void *entry, const void *val)
-{
-	PART *part = (PART *)entry;
-	isl_space *space = (isl_space *) val;
-
-	return isl_space_is_equal(part->dim, space);
-}
-
 /* This function is not currently used by isl_aff.c.
  */
 static int FN(UNION,has_domain_space)(const void *entry, const void *val)
@@ -194,6 +190,54 @@ static int FN(UNION,has_same_domain_space)(const void *entry, const void *val)
 					space, isl_dim_in);
 }
 
+/* Return the entry, if any, in "u" that lives in "space".
+ * If "reserve" is set, then an entry is created if it does not exist yet.
+ * Return NULL on error and isl_hash_table_entry_none if no entry was found.
+ * Note that when "reserve" is set, the function will never return
+ * isl_hash_table_entry_none.
+ *
+ * First look for the entry (if any) with the same domain space.
+ * If it exists, then check if the range space also matches.
+ */
+static struct isl_hash_table_entry *FN(UNION,find_part_entry)(
+	__isl_keep UNION *u, __isl_keep isl_space *space, int reserve)
+{
+	isl_ctx *ctx;
+	uint32_t hash;
+	struct isl_hash_table_entry *entry;
+	isl_bool equal;
+	isl_space *domain;
+	PART *part;
+
+	if (!u)
+		return NULL;
+
+	ctx = FN(UNION,get_ctx)(u);
+	domain = isl_space_domain(isl_space_copy(space));
+	if (!domain)
+		return NULL;
+	hash = isl_space_get_hash(domain);
+	isl_space_free(domain);
+	entry = isl_hash_table_find(ctx, &u->table, hash,
+			&FN(UNION,has_same_domain_space), space, reserve);
+	if (!entry)
+		return reserve ? NULL : isl_hash_table_entry_none;
+	if (reserve && !entry->data)
+		return entry;
+	part = entry->data;
+	equal = isl_space_tuple_is_equal(part->dim, isl_dim_out,
+					    space, isl_dim_out);
+	if (equal < 0)
+		return NULL;
+	if (equal)
+		return entry;
+	if (!reserve)
+		return isl_hash_table_entry_none;
+	isl_die(FN(UNION,get_ctx)(u), isl_error_invalid,
+		"union expression can only contain a single "
+		"expression over a given domain", return NULL);
+}
+
 /* Extract the element of "u" living in "space" (ignoring parameters).
  *
  * Return the ZERO element if "u" does not contain any element
@@ -202,7 +246,6 @@ static int FN(UNION,has_same_domain_space)(const void *entry, const void *val)
 __isl_give PART *FN(FN(UNION,extract),PARTS)(__isl_keep UNION *u,
 	__isl_take isl_space *space)
 {
-	uint32_t hash;
 	struct isl_hash_table_entry *entry;
 
 	if (!u || !space)
@@ -216,10 +259,10 @@ __isl_give PART *FN(FN(UNION,extract),PARTS)(__isl_keep UNION *u,
 			goto error;
 	}
 
-	hash = isl_space_get_hash(space);
-	entry = isl_hash_table_find(u->space->ctx, &u->table, hash,
-				    &FN(UNION,has_space), space, 0);
+	entry = FN(UNION,find_part_entry)(u, space, 0);
 	if (!entry)
+		goto error;
+	if (entry == isl_hash_table_entry_none)
 #ifdef HAS_TYPE
 		return FN(PART,ZERO)(space, u->type);
 #else
@@ -242,7 +285,6 @@ static __isl_give UNION *FN(UNION,add_part_generic)(__isl_take UNION *u,
 	__isl_take PART *part, int disjoint)
 {
 	int empty;
-	uint32_t hash;
 	struct isl_hash_table_entry *entry;
 
 	if (!part)
@@ -264,26 +306,17 @@ static __isl_give UNION *FN(UNION,add_part_generic)(__isl_take UNION *u,
 	if (!u)
 		goto error;
 
-	hash = isl_space_get_hash(part->dim);
-	entry = isl_hash_table_find(u->space->ctx, &u->table, hash,
-				    &FN(UNION,has_same_domain_space),
-				    part->dim, 1);
+	entry = FN(UNION,find_part_entry)(u, part->dim, 1);
 	if (!entry)
 		goto error;
 
 	if (!entry->data)
 		entry->data = part;
 	else {
-		PART *entry_part = entry->data;
 		if (disjoint)
 			isl_die(FN(UNION,get_ctx)(u), isl_error_invalid,
 				"additional part should live on separate "
 				"space", goto error);
-		if (!isl_space_tuple_is_equal(entry_part->dim, isl_dim_out,
-						part->dim, isl_dim_out))
-			isl_die(FN(UNION,get_ctx)(u), isl_error_invalid,
-				"union expression can only contain a single "
-				"expression over a given domain", goto error);
 		entry->data = FN(PART,union_add_)(entry->data,
 						FN(PART,copy)(part));
 		if (!entry->data)
@@ -529,19 +562,17 @@ S(UNION,match_bin_data) {
 static isl_stat FN(UNION,match_bin_entry)(void **entry, void *user)
 {
 	S(UNION,match_bin_data) *data = user;
-	uint32_t hash;
 	struct isl_hash_table_entry *entry2;
 	isl_space *space;
 	PART *part = *entry;
 	PART *part2;
 
 	space = FN(PART,get_space)(part);
-	hash = isl_space_get_hash(space);
-	entry2 = isl_hash_table_find(data->u2->space->ctx, &data->u2->table,
-				     hash, &FN(UNION,has_same_domain_space),
-				     space, 0);
+	entry2 = FN(UNION,find_part_entry)(data->u2, space, 0);
 	isl_space_free(space);
 	if (!entry2)
+		return isl_stat_error;
+	if (entry2 == isl_hash_table_entry_none)
 		return isl_stat_ok;
 
 	part2 = entry2->data;
@@ -895,13 +926,21 @@ error:
 }
 #endif
 
+/* Coalesce an entry in a UNION.  Coalescing is performed in-place.
+ * Since the UNION may have several references, the entry is only
+ * replaced if the coalescing is successful.
+ */
 static isl_stat FN(UNION,coalesce_entry)(void **entry, void *user)
 {
-	PW **pw = (PW **)entry;
+	PART **part_p = (PART **) entry;
+	PART *part;
 
-	*pw = FN(PW,coalesce)(*pw);
-	if (!*pw)
+	part = FN(PART,copy)(*part_p);
+	part = FN(PW,coalesce)(part);
+	if (!part)
 		return isl_stat_error;
+	FN(PART,free)(*part_p);
+	*part_p = part;
 
 	return isl_stat_ok;
 }
@@ -1123,16 +1162,15 @@ S(UNION,plain_is_equal_data)
 static isl_stat FN(UNION,plain_is_equal_entry)(void **entry, void *user)
 {
 	S(UNION,plain_is_equal_data) *data = user;
-	uint32_t hash;
 	struct isl_hash_table_entry *entry2;
 	PW *pw = *entry;
 
-	hash = isl_space_get_hash(pw->dim);
-	entry2 = isl_hash_table_find(data->u2->space->ctx, &data->u2->table,
-				     hash, &FN(UNION,has_same_domain_space),
-				     pw->dim, 0);
-	if (!entry2) {
-		data->is_equal = isl_bool_false;
+	entry2 = FN(UNION,find_part_entry)(data->u2, pw->dim, 0);
+	if (!entry2 || entry2 == isl_hash_table_entry_none) {
+		if (!entry2)
+			data->is_equal = isl_bool_error;
+		else
+			data->is_equal = isl_bool_false;
 		return isl_stat_error;
 	}
 
