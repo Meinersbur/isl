@@ -1453,12 +1453,14 @@ static __isl_give isl_ast_graft *create_node_scaled(
 	bounds = isl_ast_build_specialize_basic_set(sub_build, bounds);
 	sub_build = isl_ast_build_set_loop_bounds(sub_build,
 						isl_basic_set_copy(bounds));
-	sub_build = isl_ast_build_set_pending_generated(sub_build,
-						isl_basic_set_copy(bounds));
 	degenerate = isl_ast_build_has_value(sub_build);
 	eliminated = isl_ast_build_has_affine_value(sub_build, depth);
 	if (degenerate < 0 || eliminated < 0)
 		executed = isl_union_map_free(executed);
+	if (!degenerate)
+		bounds = isl_ast_build_compute_gist_basic_set(build, bounds);
+	sub_build = isl_ast_build_set_pending_generated(sub_build,
+						isl_basic_set_copy(bounds));
 	if (eliminated)
 		executed = plug_in_values(executed, sub_build);
 	else
@@ -1484,8 +1486,6 @@ static __isl_give isl_ast_graft *create_node_scaled(
 	graft = isl_ast_graft_alloc_from_children(children,
 			    isl_set_copy(guard), enforced, build, sub_build);
 
-	if (!degenerate)
-		bounds = isl_ast_build_compute_gist_basic_set(build, bounds);
 	if (!eliminated) {
 		isl_ast_build *for_build;
 
