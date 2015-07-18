@@ -174,12 +174,15 @@ static Driver *construct_driver(const char *binary, DiagnosticsEngine &Diags)
 }
 #endif
 
-/* Clang changed its API from 3.5 to 3.6, we fix this with a simple overloaded
- * function here.
+namespace clang { namespace driver { class Job; } }
+
+/* Clang changed its API from 3.5 to 3.6 and once more in 3.7.
+ * We fix this with a simple overloaded function here.
  */
 struct ClangAPI {
 	static Job *command(Job *J) { return J; }
 	static Job *command(Job &J) { return &J; }
+	static Command *command(Command &C) { return &C; }
 };
 
 /* Create a CompilerInvocation object that stores the command line
