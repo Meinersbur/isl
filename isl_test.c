@@ -1597,6 +1597,7 @@ struct {
 		"32e0 >= -31 + i2 and 32e0 <= 30 + i2 and 32e0 <= 31 + i1 and "
 		"32e0 <= 31 + i0)) or "
 		"i0 >= 0 }" },
+	{ 1, "{ [a, b, c] : 2b = 1 + a and 2c = 2 + a; [0, 0, 0] }" },
 };
 
 /* A specialized coalescing test case that would result
