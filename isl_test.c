@@ -1104,6 +1104,30 @@ int test_affine_hull(struct isl_ctx *ctx)
 	return 0;
 }
 
+static int test_simple_hull(struct isl_ctx *ctx)
+{
+	const char *str;
+	isl_set *set;
+	isl_basic_set *bset;
+	isl_bool is_empty;
+
+	str = "{ [x, y] : 3y <= 2x and y >= -2 + 2x and 2y >= 2 - x;"
+		"[y, x] : 3y <= 2x and y >= -2 + 2x and 2y >= 2 - x }";
+	set = isl_set_read_from_str(ctx, str);
+	bset = isl_set_simple_hull(set);
+	is_empty = isl_basic_set_is_empty(bset);
+	isl_basic_set_free(bset);
+
+	if (is_empty == isl_bool_error)
+		return -1;
+
+	if (is_empty == isl_bool_false)
+		isl_die(ctx, isl_error_unknown, "Empty set should be detected",
+			return -1);
+
+	return 0;
+}
+
 void test_convex_hull_case(struct isl_ctx *ctx, const char *name)
 {
 	char *filename;
@@ -5962,6 +5986,7 @@ struct {
 	{ "parse", &test_parse },
 	{ "single-valued", &test_sv },
 	{ "affine hull", &test_affine_hull },
+	{ "simple_hull", &test_simple_hull },
 	{ "coalesce", &test_coalesce },
 	{ "factorize", &test_factorize },
 	{ "subset", &test_subset },
