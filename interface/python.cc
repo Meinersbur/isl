@@ -143,7 +143,12 @@ static bool first_arg_is_isl_ctx(FunctionDecl *fd)
 static bool is_isl_type(QualType type)
 {
 	if (type->isPointerType()) {
-		string s = type->getPointeeType().getAsString();
+		string s;
+
+		type = type->getPointeeType();
+		if (type->isFunctionType())
+			return false;
+		s = type.getAsString();
 		return s.substr(0, 4) == "isl_";
 	}
 
