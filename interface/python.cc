@@ -1,5 +1,5 @@
 /*
- * Copyright 2011 Sven Verdoolaege. All rights reserved.
+ * Copyright 2011,2015 Sven Verdoolaege. All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -160,6 +160,19 @@ static bool is_isl_type(QualType type)
 	return false;
 }
 
+/* Is "type" the type isl_bool?
+ */
+static bool is_isl_bool(QualType type)
+{
+	string s;
+
+	if (type->isPointerType())
+		return false;
+
+	s = type.getAsString();
+	return s == "isl_bool";
+}
+
 /* Is "type" that of a pointer to a function?
  */
 static bool is_callback(QualType type)
@@ -290,6 +303,9 @@ static void print_arg_in_call(FunctionDecl *fd, int arg)
  *
  * If the function consumes a reference, then we pass it a copy of
  * the actual argument.
+ *
+ * If the return type is isl_bool, then convert the result to
+ * a Python boolean, raising an error on isl_bool_error.
  */
 void isl_class::print_method(FunctionDecl *method, bool subclass, string super)
 {
@@ -362,7 +378,13 @@ void isl_class::print_method(FunctionDecl *method, bool subclass, string super)
 			printf("            raise exc_info[0][0], "
 				"exc_info[0][1], exc_info[0][2]\n");
 		}
-		printf("        return res\n");
+		if (is_isl_bool(method->getReturnType())) {
+			printf("        if res < 0:\n");
+			printf("            raise\n");
+			printf("        return bool(res)\n");
+		} else {
+			printf("        return res\n");
+		}
 	}
 }
 
@@ -421,12 +443,17 @@ void isl_class::print_constructor(FunctionDecl *cons)
 /* Tell ctypes about the return type of "fd".
  * In particular, if "fd" returns a pointer to an isl object,
  * then tell ctypes it returns a "c_void_p".
+ * Similarly, if "fd" returns an isl_bool,
+ * then tell ctypes it returns a "c_bool".
  */
 static void print_restype(FunctionDecl *fd)
 {
 	string fullname = fd->getName();
-	if (is_isl_type(fd->getReturnType()))
+	QualType type = fd->getReturnType();
+	if (is_isl_type(type))
 		printf("isl.%s.restype = c_void_p\n", fullname.c_str());
+	else if (is_isl_bool(type))
+		printf("isl.%s.restype = c_bool\n", fullname.c_str());
 }
 
 /* Tell ctypes about the types of the arguments of the constructor "fd".
