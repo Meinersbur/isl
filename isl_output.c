@@ -233,7 +233,7 @@ static enum isl_dim_type pos2type(__isl_keep isl_space *dim, unsigned *pos)
 static __isl_give isl_printer *print_div(__isl_keep isl_space *dim,
 	__isl_keep isl_mat *div, int pos, __isl_take isl_printer *p);
 
-static __isl_give isl_printer *print_term(__isl_keep isl_space *dim,
+static __isl_give isl_printer *print_term(__isl_keep isl_space *space,
 	__isl_keep isl_mat *div,
 	isl_int c, unsigned pos, __isl_take isl_printer *p, int latex)
 {
@@ -243,7 +243,7 @@ static __isl_give isl_printer *print_term(__isl_keep isl_space *dim,
 	if (pos == 0)
 		return isl_printer_print_isl_int(p, c);
 
-	type = pos2type(dim, &pos);
+	type = pos2type(space, &pos);
 	print_div_def = type == isl_dim_div && div &&
 			!isl_int_is_zero(div->row[pos][0]);
 
@@ -257,9 +257,9 @@ static __isl_give isl_printer *print_term(__isl_keep isl_space *dim,
 			p = isl_printer_print_str(p, "*");
 	}
 	if (print_div_def)
-		p = print_div(dim, div, pos, p);
+		p = print_div(space, div, pos, p);
 	else
-		p = print_name(dim, p, type, pos, latex);
+		p = print_name(space, p, type, pos, latex);
 	return p;
 }
 
