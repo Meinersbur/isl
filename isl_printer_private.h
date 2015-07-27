@@ -1,3 +1,6 @@
+#ifndef ISL_PRINTER_PRIVATE_H
+#define ISL_PRINTER_PRIVATE_H
+
 #include <isl/printer.h>
 #include <isl_yaml.h>
 
@@ -32,3 +35,5 @@ struct isl_printer {
 	int			yaml_size;
 	enum isl_yaml_state	*yaml_state;
 };
+
+#endif
