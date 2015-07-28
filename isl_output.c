@@ -562,13 +562,17 @@ static __isl_give isl_printer *print_div(__isl_keep isl_space *dim,
 	return p;
 }
 
-/* Print a comma separated list of div names, with their definitions
- * (provided that they have a definition and we are printing in isl format).
+/* Print a comma separated list of div names, except those that have
+ * a definition that can be printed.
+ * If "print_defined_divs" is set, then those div names are printed
+ * as well, along with their definitions.
  */
 static __isl_give isl_printer *print_div_list(__isl_take isl_printer *p,
-	__isl_keep isl_space *space, __isl_keep isl_mat *div, int latex)
+	__isl_keep isl_space *space, __isl_keep isl_mat *div, int latex,
+	int print_defined_divs)
 {
 	int i;
+	int first = 1;
 	unsigned n_div;
 
 	if (!p || !space || !div)
@@ -577,17 +581,37 @@ static __isl_give isl_printer *print_div_list(__isl_take isl_printer *p,
 	n_div = isl_mat_rows(div);
 
 	for (i = 0; i < n_div; ++i) {
-		if (i)
+		if (!print_defined_divs && can_print_div_expr(p, div, i))
+			continue;
+		if (!first)
 			p = isl_printer_print_str(p, ", ");
 		p = print_name(space, p, isl_dim_div, i, latex);
-		if (p->output_format != ISL_FORMAT_ISL ||
-		    isl_int_is_zero(div->row[i][0]))
+		first = 0;
+		if (!can_print_div_expr(p, div, i))
 			continue;
 		p = isl_printer_print_str(p, " = ");
 		p = print_div(space, div, i, p);
 	}
 
 	return p;
+}
+
+/* Does printing "bmap" require an "exists" clause?
+ * That is, are there any local variables without an explicit representation?
+ */
+static isl_bool need_exists(__isl_keep isl_printer *p,
+	__isl_keep isl_basic_map *bmap, __isl_keep isl_mat *div)
+{
+	int i;
+
+	if (!p || !bmap)
+		return isl_bool_error;
+	if (bmap->n_div == 0)
+		return isl_bool_false;
+	for (i = 0; i < bmap->n_div; ++i)
+		if (!can_print_div_expr(p, div, i))
+			return isl_bool_true;
+	return isl_bool_false;
 }
 
 /* Print the constraints of "bmap" to "p".
@@ -599,11 +623,16 @@ static __isl_give isl_printer *print_disjunct(__isl_keep isl_basic_map *bmap,
 	__isl_keep isl_space *space, __isl_take isl_printer *p, int latex)
 {
 	isl_mat *div;
+	isl_bool exists;
 
 	div = isl_basic_map_get_divs(bmap);
-	if (bmap->n_div > 0) {
+	if (p->dump)
+		exists = bmap->n_div > 0;
+	else
+		exists = need_exists(p, bmap, div);
+	if (exists >= 0 && exists) {
 		p = isl_printer_print_str(p, s_open_exists[latex]);
-		p = print_div_list(p, space, div, latex);
+		p = print_div_list(p, space, div, latex, p->dump);
 		p = isl_printer_print_str(p, ": ");
 	}
 
@@ -612,7 +641,7 @@ static __isl_give isl_printer *print_disjunct(__isl_keep isl_basic_map *bmap,
 	p = print_constraints(bmap, space, div, p, latex);
 	isl_mat_free(div);
 
-	if (bmap->n_div > 0)
+	if (exists >= 0 && exists)
 		p = isl_printer_print_str(p, s_close_exists[latex]);
 	return p;
 }
@@ -2068,7 +2097,7 @@ __isl_give isl_printer *isl_printer_print_local_space(__isl_take isl_printer *p,
 	if (n_div > 0) {
 		p = isl_printer_print_str(p, " : ");
 		p = isl_printer_print_str(p, s_open_exists[0]);
-		p = print_div_list(p, ls->dim, ls->div, 0);
+		p = print_div_list(p, ls->dim, ls->div, 0, 1);
 		p = isl_printer_print_str(p, s_close_exists[0]);
 	} else if (isl_space_is_params(ls->dim))
 		p = isl_printer_print_str(p, s_such_that[0]);
