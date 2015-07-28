@@ -422,7 +422,7 @@ static __isl_give isl_printer *print_omega_parameters(__isl_keep isl_space *dim,
 }
 
 static __isl_give isl_printer *print_constraint(struct isl_basic_map *bmap,
-	__isl_keep isl_space *dim, __isl_take isl_printer *p,
+	__isl_keep isl_space *space, __isl_take isl_printer *p,
 	isl_int *c, int last, const char *op, int first_constraint, int latex)
 {
 	if (!first_constraint)
@@ -430,14 +430,14 @@ static __isl_give isl_printer *print_constraint(struct isl_basic_map *bmap,
 
 	isl_int_abs(c[last], c[last]);
 
-	p = print_term(dim, NULL, c[last], last, p, latex);
+	p = print_term(space, NULL, c[last], last, p, latex);
 
 	p = isl_printer_print_str(p, " ");
 	p = isl_printer_print_str(p, op);
 	p = isl_printer_print_str(p, " ");
 
 	isl_int_set_si(c[last], 0);
-	p = print_affine(bmap, dim, p, c);
+	p = print_affine(bmap, space, p, c);
 
 	return p;
 }
