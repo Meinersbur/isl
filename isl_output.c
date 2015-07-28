@@ -515,7 +515,12 @@ error:
 static __isl_give isl_printer *print_div(__isl_keep isl_space *dim,
 	__isl_keep isl_mat *div, int pos, __isl_take isl_printer *p)
 {
-	int c = p->output_format == ISL_FORMAT_C;
+	int c;
+
+	if (!p || !div)
+		return isl_printer_free(p);
+
+	c = p->output_format == ISL_FORMAT_C;
 	p = isl_printer_print_str(p, c ? "floord(" : "floor((");
 	p = print_affine_of_len(dim, div, p,
 				div->row[pos] + 1, div->n_col - 1);
