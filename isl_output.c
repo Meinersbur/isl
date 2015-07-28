@@ -2030,6 +2030,7 @@ __isl_give isl_printer *isl_printer_print_local_space(__isl_take isl_printer *p,
 		p = isl_printer_print_str(p, " : ");
 		p = isl_printer_print_str(p, s_open_exists[0]);
 		p = print_div_list(p, ls->dim, ls->div, 0);
+		p = isl_printer_print_str(p, s_close_exists[0]);
 	} else if (isl_space_is_params(ls->dim))
 		p = isl_printer_print_str(p, s_such_that[0]);
 	p = isl_printer_print_str(p, " }");
