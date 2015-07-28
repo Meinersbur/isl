@@ -554,7 +554,7 @@ static __isl_give isl_printer *print_div_list(__isl_take isl_printer *p,
 }
 
 static __isl_give isl_printer *print_disjunct(__isl_keep isl_basic_map *bmap,
-	__isl_keep isl_space *dim, __isl_take isl_printer *p, int latex)
+	__isl_keep isl_space *space, __isl_take isl_printer *p, int latex)
 {
 	if (bmap->n_div > 0) {
 		isl_space *space;
@@ -569,7 +569,7 @@ static __isl_give isl_printer *print_disjunct(__isl_keep isl_basic_map *bmap,
 		p = isl_printer_print_str(p, ": ");
 	}
 
-	p = print_constraints(bmap, dim, p, latex);
+	p = print_constraints(bmap, space, p, latex);
 
 	if (bmap->n_div > 0)
 		p = isl_printer_print_str(p, s_close_exists[latex]);
