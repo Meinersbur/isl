@@ -175,7 +175,7 @@ static int count_same_name(__isl_keep isl_space *dim,
 	return count;
 }
 
-static __isl_give isl_printer *print_name(__isl_keep isl_space *dim,
+static __isl_give isl_printer *print_name(__isl_keep isl_space *space,
 	__isl_take isl_printer *p, enum isl_dim_type type, unsigned pos,
 	int latex)
 {
@@ -183,7 +183,8 @@ static __isl_give isl_printer *print_name(__isl_keep isl_space *dim,
 	char buffer[20];
 	int primes;
 
-	name = type == isl_dim_div ? NULL : isl_space_get_dim_name(dim, type, pos);
+	name = type == isl_dim_div ? NULL
+				   : isl_space_get_dim_name(space, type, pos);
 
 	if (!name) {
 		const char *prefix;
@@ -191,14 +192,14 @@ static __isl_give isl_printer *print_name(__isl_keep isl_space *dim,
 			prefix = s_param_prefix[latex];
 		else if (type == isl_dim_div)
 			prefix = s_div_prefix[latex];
-		else if (isl_space_is_set(dim) || type == isl_dim_in)
+		else if (isl_space_is_set(space) || type == isl_dim_in)
 			prefix = s_input_prefix[latex];
 		else
 			prefix = s_output_prefix[latex];
 		snprintf(buffer, sizeof(buffer), "%s%d", prefix, pos);
 		name = buffer;
 	}
-	primes = count_same_name(dim, name == buffer ? isl_dim_div : type,
+	primes = count_same_name(space, name == buffer ? isl_dim_div : type,
 				 pos, name);
 	p = isl_printer_print_str(p, name);
 	while (primes-- > 0)
