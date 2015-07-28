@@ -443,7 +443,7 @@ static __isl_give isl_printer *print_constraint(struct isl_basic_map *bmap,
 }
 
 static __isl_give isl_printer *print_constraints(__isl_keep isl_basic_map *bmap,
-	__isl_keep isl_space *dim, __isl_take isl_printer *p, int latex)
+	__isl_keep isl_space *space, __isl_take isl_printer *p, int latex)
 {
 	int i;
 	struct isl_vec *c;
@@ -465,7 +465,7 @@ static __isl_give isl_printer *print_constraints(__isl_keep isl_basic_map *bmap,
 			isl_seq_cpy(c->el, bmap->eq[i], 1 + total);
 		else
 			isl_seq_neg(c->el, bmap->eq[i], 1 + total);
-		p = print_constraint(bmap, dim, p, c->el, l,
+		p = print_constraint(bmap, space, p, c->el, l,
 				    "=", i == bmap->n_eq - 1, latex);
 	}
 	for (i = 0; i < bmap->n_ineq; ++i) {
@@ -480,7 +480,7 @@ static __isl_give isl_printer *print_constraints(__isl_keep isl_basic_map *bmap,
 		else
 			isl_seq_neg(c->el, bmap->ineq[i], 1 + total);
 		op = s < 0 ? s_le[latex] : s_ge[latex];
-		p = print_constraint(bmap, dim, p, c->el, l,
+		p = print_constraint(bmap, space, p, c->el, l,
 					op, !bmap->n_eq && !i, latex);
 	}
 
