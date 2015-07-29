@@ -684,7 +684,8 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_gist_params(
 
 #define NO_SUB
 
-#include <isl_union_templ.c>
+#include <isl_union_single.c>
+#include <isl_union_eval.c>
 
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_empty(enum isl_fold type,
 	__isl_take isl_space *dim)
@@ -1412,10 +1413,9 @@ static isl_stat add_pwqp(__isl_take isl_pw_qpolynomial *pwqp, void *user)
 		entry->data = isl_pw_qpolynomial_fold_add(entry->data, pwf);
 		if (!entry->data)
 			return isl_stat_error;
-		if (isl_pw_qpolynomial_fold_is_zero(entry->data)) {
-			isl_pw_qpolynomial_fold_free(entry->data);
-			isl_hash_table_remove(ctx, &(*upwf)->table, entry);
-		}
+		if (isl_pw_qpolynomial_fold_is_zero(entry->data))
+			*upwf = isl_union_pw_qpolynomial_fold_remove_part_entry(
+								*upwf, entry);
 	}
 
 	return isl_stat_ok;
