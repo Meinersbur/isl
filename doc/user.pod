@@ -4346,10 +4346,11 @@ on a given parameter domain using the following functions.
 	__isl_give isl_set *isl_set_from_params(
 		__isl_take isl_set *set);
 
-=item * Constructing a relation from a set
+=item * Constructing a relation from one or two sets
 
-Create a relation with the given set as domain or range.
-The range or domain of the created relation is a zero-dimensional
+Create a relation with the given set(s) as domain and/or range.
+If only the domain or the range is specified, then
+the range or domain of the created relation is a zero-dimensional
 flat anonymous space.
 
 	#include <isl/space.h>
@@ -4372,6 +4373,12 @@ flat anonymous space.
 		__isl_take isl_set *set);
 	__isl_give isl_map *isl_map_from_range(
 		__isl_take isl_set *set);
+
+	#include <isl/union_map.h>
+	__isl_give isl_union_map *
+	isl_union_map_from_domain_and_range(
+		__isl_take isl_union_set *domain,
+		__isl_take isl_union_set *range);
 
 	#include <isl/val.h>
 	__isl_give isl_multi_val *isl_multi_val_from_range(
