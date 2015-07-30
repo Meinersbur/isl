@@ -369,3 +369,10 @@ install-data-local: $(srcdir)/isl.py
 		$(DESTDIR)$(libdir)/$$libisl-gdb.py; \
 	test -z "$(libdir)" || $(MKDIR_P) "$(DESTDIR)$(libdir)"; \
 	$(INSTALL_DATA) $(srcdir)/isl.py $(DESTDIR)$(libdir)/$$libisl-gdb.py; esac
+
+uninstall-local:
+	@libisl=`sed -ne "/^library_names=/{s/.*='//;s/'$$//;s/ .*//;p;}" \
+		 $(builddir)/libisl.la`; \
+	if test -n "$${libisl}"; then \
+		rm -f $(DESTDIR)$(libdir)/$$libisl-gdb.py; \
+	fi
