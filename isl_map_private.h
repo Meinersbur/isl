@@ -459,7 +459,7 @@ int isl_map_plain_is_fixed(__isl_keep isl_map *map,
 	enum isl_dim_type type, unsigned pos, isl_int *val);
 
 int isl_basic_map_output_defining_equality(__isl_keep isl_basic_map *bmap,
-	int pos);
+	int pos, int *div, int *ineq);
 
 __isl_give isl_basic_map *isl_basic_map_reduce_coefficients(
 	__isl_take isl_basic_map *bmap);

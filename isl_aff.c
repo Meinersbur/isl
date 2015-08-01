@@ -4444,20 +4444,63 @@ static __isl_give isl_aff *subtract_initial(__isl_take isl_aff *aff,
  * then the affine expression is
  *
  *	(f(i) + g(i))/a - h(j)/(-a)
+ *
+ *
+ * If "div" refers to an integer division (i.e., it is smaller than
+ * the number of integer divisions), then the equality constraint
+ * does involve an integer division (the one at position "div") that
+ * is defined in terms of output dimensions.  However, this integer
+ * division can be eliminated by exploiting a pair of constraints
+ * x >= l and x <= l + n, with n smaller than the coefficient of "div"
+ * in the equality constraint.  "ineq" refers to inequality x >= l, i.e.,
+ * -l + x >= 0.
+ * In particular, let
+ *
+ *	x = e(i) + m floor(...)
+ *
+ * with e(i) the expression derived above and floor(...) the integer
+ * division involving output dimensions.
+ * From
+ *
+ *	l <= x <= l + n,
+ *
+ * we have
+ *
+ *	0 <= x - l <= n
+ *
+ * This means
+ *
+ *	e(i) + m floor(...) - l = (e(i) + m floor(...) - l) mod m
+ *	                        = (e(i) - l) mod m
+ *
+ * Therefore,
+ *
+ *	x - l = (e(i) - l) mod m
+ *
+ * or
+ *
+ *	x = ((e(i) - l) mod m) + l
+ *
+ * The variable "shift" below contains the expression -l, which may
+ * also involve a linear combination of earlier output dimensions.
  */
 static __isl_give isl_aff *extract_aff_from_equality(
-	__isl_keep isl_basic_map *bmap, int pos, int eq,
+	__isl_keep isl_basic_map *bmap, int pos, int eq, int div, int ineq,
 	__isl_keep isl_multi_aff *ma)
 {
 	unsigned o_out;
 	unsigned n_div, n_out;
+	isl_ctx *ctx;
 	isl_local_space *ls;
-	isl_aff *aff;
+	isl_aff *aff, *shift;
+	isl_val *mod;
 
+	ctx = isl_basic_map_get_ctx(bmap);
 	ls = isl_basic_map_get_local_space(bmap);
-	aff = isl_aff_alloc(isl_local_space_domain(ls));
+	ls = isl_local_space_domain(ls);
+	aff = isl_aff_alloc(isl_local_space_copy(ls));
 	if (!aff)
-		return NULL;
+		goto error;
 	o_out = isl_basic_map_offset(bmap, isl_dim_out);
 	n_out = isl_basic_map_dim(bmap, isl_dim_out);
 	n_div = isl_basic_map_dim(bmap, isl_dim_div);
@@ -4470,16 +4513,40 @@ static __isl_give isl_aff *extract_aff_from_equality(
 		isl_seq_neg(aff->v->el + 1 + o_out,
 			    bmap->eq[eq] + o_out + n_out, n_div);
 	}
+	if (div < n_div)
+		isl_int_set_si(aff->v->el[1 + o_out + div], 0);
 	isl_int_abs(aff->v->el[0], bmap->eq[eq][o_out + pos]);
 	aff = subtract_initial(aff, ma, pos, bmap->eq[eq] + o_out,
 			    bmap->eq[eq][o_out + pos]);
+	if (div < n_div) {
+		shift = isl_aff_alloc(isl_local_space_copy(ls));
+		if (!shift)
+			goto error;
+		isl_seq_cpy(shift->v->el + 1, bmap->ineq[ineq], o_out);
+		isl_seq_cpy(shift->v->el + 1 + o_out,
+			    bmap->ineq[ineq] + o_out + n_out, n_div);
+		isl_int_set_si(shift->v->el[0], 1);
+		shift = subtract_initial(shift, ma, pos,
+					bmap->ineq[ineq] + o_out, ctx->negone);
+		aff = isl_aff_add(aff, isl_aff_copy(shift));
+		mod = isl_val_int_from_isl_int(ctx,
+					    bmap->eq[eq][o_out + n_out + div]);
+		mod = isl_val_abs(mod);
+		aff = isl_aff_mod_val(aff, mod);
+		aff = isl_aff_sub(aff, shift);
+	}
 
+	isl_local_space_free(ls);
 	return aff;
+error:
+	isl_local_space_free(ls);
+	isl_aff_free(aff);
+	return NULL;
 }
 
 /* Given a basic map with output dimensions defined
  * in terms of the parameters input dimensions and earlier
- * output dimensions using an equality,
+ * output dimensions using an equality (and possibly a pair on inequalities),
  * extract an isl_aff that expresses output dimension "pos" in terms
  * of the parameters and input dimensions.
  * Note that this expression may involve integer divisions defined
@@ -4492,16 +4559,16 @@ static __isl_give isl_aff *extract_aff_from_equality(
 static __isl_give isl_aff *extract_isl_aff_from_basic_map(
 	__isl_keep isl_basic_map *bmap, int pos, __isl_keep isl_multi_aff *ma)
 {
-	int eq;
+	int eq, div, ineq;
 	isl_aff *aff;
 
 	if (!bmap)
 		return NULL;
-	eq = isl_basic_map_output_defining_equality(bmap, pos);
+	eq = isl_basic_map_output_defining_equality(bmap, pos, &div, &ineq);
 	if (eq >= bmap->n_eq)
 		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
 			"unable to find suitable equality", return NULL);
-	aff = extract_aff_from_equality(bmap, pos, eq, ma);
+	aff = extract_aff_from_equality(bmap, pos, eq, div, ineq, ma);
 
 	aff = isl_aff_remove_unused_divs(aff);
 	return aff;

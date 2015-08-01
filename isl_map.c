@@ -10362,18 +10362,103 @@ static int first_div_may_involve_output(__isl_keep isl_basic_map *bmap,
 	return first + n;
 }
 
+/* Look for a pair of inequality constraints in "bmap" of the form
+ *
+ *	-l + i >= 0		or		i >= l
+ * and
+ *	n + l - i >= 0		or		i <= l + n
+ *
+ * with n < "m" and i the output dimension at position "pos".
+ * (Note that n >= 0 as otherwise the two constraints would conflict.)
+ * Furthermore, "l" is only allowed to involve parameters, input dimensions
+ * and earlier output dimensions, as well as integer divisions that do
+ * not involve any of the output dimensions.
+ *
+ * Return the index of the first inequality constraint or bmap->n_ineq
+ * if no such pair can be found.
+ */
+static int find_modulo_constraint_pair(__isl_keep isl_basic_map *bmap,
+	int pos, isl_int m)
+{
+	int i, j;
+	isl_ctx *ctx;
+	unsigned total;
+	unsigned n_div, o_div;
+	unsigned n_out, o_out;
+	int less;
+
+	if (!bmap)
+		return -1;
+
+	ctx = isl_basic_map_get_ctx(bmap);
+	total = isl_basic_map_total_dim(bmap);
+	n_out = isl_basic_map_dim(bmap, isl_dim_out);
+	o_out = isl_basic_map_offset(bmap, isl_dim_out);
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	o_div = isl_basic_map_offset(bmap, isl_dim_div);
+	for (i = 0; i < bmap->n_ineq; ++i) {
+		if (!isl_int_abs_eq(bmap->ineq[i][o_out + pos], ctx->one))
+			continue;
+		if (isl_seq_first_non_zero(bmap->ineq[i] + o_out + pos + 1,
+					n_out - (pos + 1)) != -1)
+			continue;
+		if (first_div_may_involve_output(bmap, bmap->ineq[i] + o_div,
+						0, n_div) < n_div)
+			continue;
+		for (j = i + 1; j < bmap->n_ineq; ++j) {
+			if (!isl_int_abs_eq(bmap->ineq[j][o_out + pos],
+					    ctx->one))
+				continue;
+			if (!isl_seq_is_neg(bmap->ineq[i] + 1,
+					    bmap->ineq[j] + 1, total))
+				continue;
+			break;
+		}
+		if (j >= bmap->n_ineq)
+			continue;
+		isl_int_add(bmap->ineq[i][0],
+			    bmap->ineq[i][0], bmap->ineq[j][0]);
+		less = isl_int_abs_lt(bmap->ineq[i][0], m);
+		isl_int_sub(bmap->ineq[i][0],
+			    bmap->ineq[i][0], bmap->ineq[j][0]);
+		if (!less)
+			continue;
+		if (isl_int_is_one(bmap->ineq[i][o_out + pos]))
+			return i;
+		else
+			return j;
+	}
+
+	return bmap->n_ineq;
+}
+
 /* Return the index of the equality of "bmap" that defines
  * the output dimension "pos" in terms of earlier dimensions.
  * The equality may also involve integer divisions, as long
  * as those integer divisions are defined in terms of
  * parameters or input dimensions.
+ * In this case, *div is set to the number of integer divisions and
+ * *ineq is set to the number of inequality constraints (provided
+ * div and ineq are not NULL).
+ *
+ * The equality may also involve a single integer division involving
+ * the output dimensions (typically only output dimension "pos") as
+ * long as the coefficient of output dimension "pos" is 1 or -1 and
+ * there is a pair of constraints i >= l and i <= l + n, with i referring
+ * to output dimension "pos", l an expression involving only earlier
+ * dimensions and n smaller than the coefficient of the integer division
+ * in the equality.  In this case, the output dimension can be defined
+ * in terms of a modulo expression that does not involve the integer division.
+ * *div is then set to this single integer division and
+ * *ineq is set to the index of constraint i >= l.
+ *
  * Return bmap->n_eq if there is no such equality.
  * Return -1 on error.
  */
 int isl_basic_map_output_defining_equality(__isl_keep isl_basic_map *bmap,
-	int pos)
+	int pos, int *div, int *ineq)
 {
-	int j, k;
+	int j, k, l;
 	unsigned n_out, o_out;
 	unsigned n_div, o_div;
 
@@ -10385,6 +10470,10 @@ int isl_basic_map_output_defining_equality(__isl_keep isl_basic_map *bmap,
 	n_div = isl_basic_map_dim(bmap, isl_dim_div);
 	o_div = isl_basic_map_offset(bmap, isl_dim_div);
 
+	if (ineq)
+		*ineq = bmap->n_ineq;
+	if (div)
+		*div = n_div;
 	for (j = 0; j < bmap->n_eq; ++j) {
 		if (isl_int_is_zero(bmap->eq[j][o_out + pos]))
 			continue;
@@ -10395,6 +10484,23 @@ int isl_basic_map_output_defining_equality(__isl_keep isl_basic_map *bmap,
 						0, n_div);
 		if (k >= n_div)
 			return j;
+		if (!isl_int_is_one(bmap->eq[j][o_out + pos]) &&
+		    !isl_int_is_negone(bmap->eq[j][o_out + pos]))
+			continue;
+		if (first_div_may_involve_output(bmap, bmap->eq[j] + o_div,
+						k + 1, n_div - (k+1)) < n_div)
+			continue;
+		l = find_modulo_constraint_pair(bmap, pos,
+						bmap->eq[j][o_div + k]);
+		if (l < 0)
+			return -1;
+		if (l >= bmap->n_ineq)
+			continue;
+		if (div)
+			*div = k;
+		if (ineq)
+			*ineq = l;
+		return j;
 	}
 
 	return bmap->n_eq;
@@ -10418,7 +10524,8 @@ isl_bool isl_basic_map_plain_is_single_valued(__isl_keep isl_basic_map *bmap)
 	for (i = 0; i < n_out; ++i) {
 		int eq;
 
-		eq = isl_basic_map_output_defining_equality(bmap, i);
+		eq = isl_basic_map_output_defining_equality(bmap, i,
+							    NULL, NULL);
 		if (eq < 0)
 			return isl_bool_error;
 		if (eq >= bmap->n_eq)
