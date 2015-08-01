@@ -10339,6 +10339,29 @@ static int div_may_involve_output(__isl_keep isl_basic_map *bmap, int div)
 	return 0;
 }
 
+/* Return the first integer division of "bmap" in the range
+ * [first, first + n[ that may depend on any output dimensions and
+ * that has a non-zero coefficient in "c" (where the first coefficient
+ * in "c" corresponds to integer division "first").
+ */
+static int first_div_may_involve_output(__isl_keep isl_basic_map *bmap,
+	isl_int *c, int first, int n)
+{
+	int k;
+
+	if (!bmap)
+		return -1;
+
+	for (k = first; k < first + n; ++k) {
+		if (isl_int_is_zero(c[k]))
+			continue;
+		if (div_may_involve_output(bmap, k))
+			return k;
+	}
+
+	return first + n;
+}
+
 /* Return the index of the equality of "bmap" that defines
  * the output dimension "pos" in terms of earlier dimensions.
  * The equality may also involve integer divisions, as long
@@ -10368,12 +10391,8 @@ int isl_basic_map_output_defining_equality(__isl_keep isl_basic_map *bmap,
 		if (isl_seq_first_non_zero(bmap->eq[j] + o_out + pos + 1,
 					n_out - (pos + 1)) != -1)
 			continue;
-		for (k = 0; k < n_div; ++k) {
-			if (isl_int_is_zero(bmap->eq[j][o_div + k]))
-				continue;
-			if (div_may_involve_output(bmap, k))
-				break;
-		}
+		k = first_div_may_involve_output(bmap, bmap->eq[j] + o_div,
+						0, n_div);
 		if (k >= n_div)
 			return j;
 	}
