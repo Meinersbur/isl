@@ -4380,6 +4380,58 @@ error:
 	return NULL;
 }
 
+/* Extract an affine expression that expresses the single output dimension
+ * of "bmap" in terms of the parameters and input dimensions from
+ * equality "eq".
+ * Note that this expression may involve integer divisions defined
+ * in terms of parameters and input dimensions.
+ *
+ * If the equality is of the form
+ *
+ *	f(i) + a x + g(i) = 0,
+ *
+ * with f(i) a linear combinations of the parameters and input dimensions and
+ * g(i) a linear combination of integer divisions defined in terms of the same,
+ * then the affine expression is
+ *
+ *	(-f(i) - g(i))/a
+ *
+ * If the equality is of the form
+ *
+ *	f(i) - a x + g(i) = 0,
+ *
+ * then the affine expression is
+ *
+ *	(f(i) + g(i))/a
+ */
+static __isl_give isl_aff *extract_aff_from_equality(
+	__isl_keep isl_basic_map *bmap, int eq)
+{
+	unsigned offset;
+	unsigned n_div;
+	isl_local_space *ls;
+	isl_aff *aff;
+
+	ls = isl_basic_map_get_local_space(bmap);
+	aff = isl_aff_alloc(isl_local_space_domain(ls));
+	if (!aff)
+		return NULL;
+	offset = isl_basic_map_offset(bmap, isl_dim_out);
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	if (isl_int_is_neg(bmap->eq[eq][offset])) {
+		isl_seq_cpy(aff->v->el + 1, bmap->eq[eq], offset);
+		isl_seq_cpy(aff->v->el + 1 + offset, bmap->eq[eq] + offset + 1,
+			    n_div);
+	} else {
+		isl_seq_neg(aff->v->el + 1, bmap->eq[eq], offset);
+		isl_seq_neg(aff->v->el + 1 + offset, bmap->eq[eq] + offset + 1,
+			    n_div);
+	}
+	isl_int_abs(aff->v->el[0], bmap->eq[eq][offset]);
+
+	return aff;
+}
+
 /* Given a basic map with a single output dimension that is defined
  * in terms of the parameters and input dimensions using an equality,
  * extract an isl_aff that expresses the output dimension in terms
@@ -4394,9 +4446,6 @@ static __isl_give isl_aff *extract_isl_aff_from_basic_map(
 	__isl_take isl_basic_map *bmap)
 {
 	int eq;
-	unsigned offset;
-	unsigned n_div;
-	isl_local_space *ls;
 	isl_aff *aff;
 
 	if (!bmap)
@@ -4409,22 +4458,7 @@ static __isl_give isl_aff *extract_isl_aff_from_basic_map(
 	if (eq >= bmap->n_eq)
 		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
 			"unable to find suitable equality", goto error);
-	ls = isl_basic_map_get_local_space(bmap);
-	aff = isl_aff_alloc(isl_local_space_domain(ls));
-	if (!aff)
-		goto error;
-	offset = isl_basic_map_offset(bmap, isl_dim_out);
-	n_div = isl_basic_map_dim(bmap, isl_dim_div);
-	if (isl_int_is_neg(bmap->eq[eq][offset])) {
-		isl_seq_cpy(aff->v->el + 1, bmap->eq[eq], offset);
-		isl_seq_cpy(aff->v->el + 1 + offset, bmap->eq[eq] + offset + 1,
-			    n_div);
-	} else {
-		isl_seq_neg(aff->v->el + 1, bmap->eq[eq], offset);
-		isl_seq_neg(aff->v->el + 1 + offset, bmap->eq[eq] + offset + 1,
-			    n_div);
-	}
-	isl_int_abs(aff->v->el[0], bmap->eq[eq][offset]);
+	aff = extract_aff_from_equality(bmap, eq);
 	isl_basic_map_free(bmap);
 
 	aff = isl_aff_remove_unused_divs(aff);
