@@ -5013,7 +5013,8 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_map(__isl_take isl_map *map)
 	if (!map)
 		return NULL;
 
-	hull = isl_map_affine_hull(isl_map_copy(map));
+	map = isl_map_detect_equalities(map);
+	hull = isl_map_unshifted_simple_hull(isl_map_copy(map));
 	sv = isl_basic_map_plain_is_single_valued(hull);
 	if (sv >= 0 && sv)
 		return plain_pw_multi_aff_from_map(isl_map_domain(map), hull);
