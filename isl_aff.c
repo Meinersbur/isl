@@ -5002,7 +5002,7 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_stride(
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_map(__isl_take isl_map *map)
 {
 	int i, j;
-	int sv;
+	isl_bool sv;
 	isl_basic_map *hull;
 	unsigned n_out;
 	unsigned o_out;
