@@ -4843,6 +4843,9 @@ const char *set_conversion_tests[] = {
 	"[N] -> { [i,j] : exists a : i = 4 a and N - 1 <= i, 2j <= N }",
 	"[N] -> { [[i]->[j]] : exists a : i = 4 a and N - 1 <= i, 2j <= N }",
 	"[N] -> { [3*floor(N/2) + 5*floor(N/3)] }",
+	"[a, b] -> { [c, d] : (4*floor((-a + c)/4) = -a + c and "
+			"32*floor((-b + d)/32) = -b + d and 5 <= c <= 8 and "
+			"-3 + c <= d <= 28 + c) }",
 };
 
 /* Check that converting from isl_set to isl_pw_multi_aff and back
@@ -4881,6 +4884,9 @@ const char *conversion_tests[] = {
 	    "e2 = [(-d + f)/9]: 3e0 = a - 2c and 9e1 = -4 + b - 5d and "
 	    "9e2 = -d + f and f >= 0 and f <= 8 and 9e >= -5 - 2a and "
 	    "9e <= -2 - 2a) }",
+	"{ [a, b] -> [c] : exists (e0 = floor((-a - b + c)/5): "
+	    "5e0 = -a - b + c and c >= -a and c <= 4 - a) }",
+	"{ [a, b] -> [c] : exists d : 18 * d = -3 - a + 2c and 1 <= c <= 3 }",
 };
 
 /* Check that converting from isl_map to isl_pw_multi_aff and back
