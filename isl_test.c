@@ -4875,32 +4875,38 @@ static int test_set_conversion(isl_ctx *ctx)
 	return 0;
 }
 
+const char *conversion_tests[] = {
+	"{ [a, b, c, d] -> s0[a, b, e, f] : "
+	    "exists (e0 = [(a - 2c)/3], e1 = [(-4 + b - 5d)/9], "
+	    "e2 = [(-d + f)/9]: 3e0 = a - 2c and 9e1 = -4 + b - 5d and "
+	    "9e2 = -d + f and f >= 0 and f <= 8 and 9e >= -5 - 2a and "
+	    "9e <= -2 - 2a) }",
+};
+
 /* Check that converting from isl_map to isl_pw_multi_aff and back
  * to isl_map produces the original isl_map.
  */
 static int test_map_conversion(isl_ctx *ctx)
 {
-	const char *str;
+	int i;
 	isl_map *map1, *map2;
 	isl_pw_multi_aff *pma;
 	int equal;
 
-	str = "{ [a, b, c, d] -> s0[a, b, e, f] : "
-		"exists (e0 = [(a - 2c)/3], e1 = [(-4 + b - 5d)/9], "
-		"e2 = [(-d + f)/9]: 3e0 = a - 2c and 9e1 = -4 + b - 5d and "
-		"9e2 = -d + f and f >= 0 and f <= 8 and 9e >= -5 - 2a and "
-		"9e <= -2 - 2a) }";
-	map1 = isl_map_read_from_str(ctx, str);
-	pma = isl_pw_multi_aff_from_map(isl_map_copy(map1));
-	map2 = isl_map_from_pw_multi_aff(pma);
-	equal = isl_map_is_equal(map1, map2);
-	isl_map_free(map1);
-	isl_map_free(map2);
+	for (i = 0; i < ARRAY_SIZE(conversion_tests); ++i) {
+		map1 = isl_map_read_from_str(ctx, conversion_tests[i]);
+		pma = isl_pw_multi_aff_from_map(isl_map_copy(map1));
+		map2 = isl_map_from_pw_multi_aff(pma);
+		equal = isl_map_is_equal(map1, map2);
+		isl_map_free(map1);
+		isl_map_free(map2);
 
-	if (equal < 0)
-		return -1;
-	if (!equal)
-		isl_die(ctx, isl_error_unknown, "bad conversion", return -1);
+		if (equal < 0)
+			return -1;
+		if (!equal)
+			isl_die(ctx, isl_error_unknown, "bad conversion",
+				return -1);
+	}
 
 	return 0;
 }
