@@ -177,7 +177,11 @@ static isl_stat add_domain(__isl_take isl_map *executed,
  * On the other hand, we only perform the test after having taken the gist
  * of the domain as the resulting map is the one from which the call
  * expression is constructed.  Using this map to construct the call
- * expression usually yields simpler results.
+ * expression usually yields simpler results in cases where the original
+ * map is not obviously single-valued.
+ * If the original map is obviously single-valued, then the gist
+ * operation is skipped.
+ *
  * Because we perform the single-valuedness test on the gisted map,
  * we may in rare cases fail to recognize that the inverse schedule
  * is single-valued.  This becomes problematic if this happens
@@ -207,6 +211,12 @@ static isl_stat generate_domain(__isl_take isl_map *executed, void *user)
 		isl_map_free(executed);
 		return isl_stat_ok;
 	}
+
+	sv = isl_map_plain_is_single_valued(executed);
+	if (sv < 0)
+		goto error;
+	if (sv)
+		return add_domain(executed, isl_map_copy(executed), data);
 
 	executed = isl_map_coalesce(executed);
 	map = isl_map_copy(executed);
