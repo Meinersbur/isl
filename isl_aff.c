@@ -1242,7 +1242,7 @@ __isl_give isl_aff *isl_aff_neg(__isl_take isl_aff *aff)
  * expression, but we would also need to check that no other divs are
  * defined in terms of them.
  */
-__isl_give isl_aff *isl_aff_remove_unused_divs( __isl_take isl_aff *aff)
+__isl_give isl_aff *isl_aff_remove_unused_divs(__isl_take isl_aff *aff)
 {
 	int pos;
 	int off;
