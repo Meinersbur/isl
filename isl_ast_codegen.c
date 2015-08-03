@@ -141,8 +141,8 @@ static isl_stat add_domain(__isl_take isl_map *executed,
 	guard = isl_set_intersect(guard,
 				    isl_ast_build_get_pending(data->build));
 	guard = isl_set_coalesce(guard);
-	guard = isl_ast_build_specialize(data->build, guard);
 	guard = isl_set_gist(guard, isl_ast_build_get_generated(data->build));
+	guard = isl_ast_build_specialize(data->build, guard);
 
 	build = isl_ast_build_copy(data->build);
 	build = isl_ast_build_replace_pending_by_guard(build,
