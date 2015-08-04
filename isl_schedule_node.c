@@ -772,7 +772,7 @@ __isl_give isl_union_map *isl_schedule_node_get_prefix_schedule_union_map(
  * there is also a filter ancestor that filters out all the extended
  * domain elements.
  *
- * Essentially, this functions intersected the domain of the output
+ * Essentially, this function intersects the domain of the output
  * of isl_schedule_node_get_prefix_schedule_union_map with the output
  * of isl_schedule_node_get_domain, except that it only traverses
  * the ancestors of "node" once.
