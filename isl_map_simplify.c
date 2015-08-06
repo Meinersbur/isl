@@ -3364,23 +3364,23 @@ static int div_find_coalesce(struct isl_basic_map *bmap, int *pairs,
  *	f_l e_u + f_u e_l + f_l - 1 + f_u - 1 + 1 >= f_u f_l g
  */
 static void construct_test_ineq(struct isl_basic_map *bmap, int i,
-	int l, int u, isl_int *ineq, isl_int g, isl_int fl, isl_int fu)
+	int l, int u, isl_int *ineq, isl_int *g, isl_int *fl, isl_int *fu)
 {
 	unsigned dim;
 	dim = isl_space_dim(bmap->dim, isl_dim_all);
 
-	isl_int_gcd(g, bmap->ineq[l][1 + dim + i], bmap->ineq[u][1 + dim + i]);
-	isl_int_divexact(fl, bmap->ineq[l][1 + dim + i], g);
-	isl_int_divexact(fu, bmap->ineq[u][1 + dim + i], g);
-	isl_int_neg(fu, fu);
-	isl_seq_combine(ineq, fl, bmap->ineq[u], fu, bmap->ineq[l],
+	isl_int_gcd(*g, bmap->ineq[l][1 + dim + i], bmap->ineq[u][1 + dim + i]);
+	isl_int_divexact(*fl, bmap->ineq[l][1 + dim + i], *g);
+	isl_int_divexact(*fu, bmap->ineq[u][1 + dim + i], *g);
+	isl_int_neg(*fu, *fu);
+	isl_seq_combine(ineq, *fl, bmap->ineq[u], *fu, bmap->ineq[l],
 			1 + dim + bmap->n_div);
-	isl_int_add(ineq[0], ineq[0], fl);
-	isl_int_add(ineq[0], ineq[0], fu);
+	isl_int_add(ineq[0], ineq[0], *fl);
+	isl_int_add(ineq[0], ineq[0], *fu);
 	isl_int_sub_ui(ineq[0], ineq[0], 1);
-	isl_int_mul(g, g, fl);
-	isl_int_mul(g, g, fu);
-	isl_int_sub(ineq[0], ineq[0], g);
+	isl_int_mul(*g, *g, *fl);
+	isl_int_mul(*g, *g, *fu);
+	isl_int_sub(ineq[0], ineq[0], *g);
 }
 
 /* Remove more kinds of divs that are not strictly needed.
@@ -3433,7 +3433,7 @@ static struct isl_basic_map *drop_more_redundant_divs(
 				if (!isl_int_is_neg(bmap->ineq[u][1 + dim + i]))
 					continue;
 				construct_test_ineq(bmap, i, l, u,
-						    vec->el, g, fl, fu);
+						    vec->el, &g, &fl, &fu);
 				res = isl_tab_min(tab, vec->el,
 						  bmap->ctx->one, &g, NULL, 0);
 				if (res == isl_lp_error)
