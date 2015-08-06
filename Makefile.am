@@ -303,6 +303,8 @@ deprecated_HEADERS = \
 	include/isl/deprecated/val_int.h \
 	include/isl/deprecated/vec_int.h
 
+BUILT_SOURCES = gitversion.h
+
 EXTRA_DIST = \
 	LICENSE \
 	isl_config_post.h \
