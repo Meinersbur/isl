@@ -305,6 +305,16 @@ deprecated_HEADERS = \
 
 BUILT_SOURCES = gitversion.h
 
+CLEANFILES = \
+	gitversion.h
+
+DISTCLEANFILES = \
+	isl-uninstalled.sh \
+	isl-uninstalled.pc \
+	isl.pc \
+	isl.pc.in \
+	include/isl/stdint.h
+
 EXTRA_DIST = \
 	LICENSE \
 	isl_config_post.h \
