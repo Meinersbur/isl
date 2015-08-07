@@ -2064,6 +2064,7 @@ int isl_tab_add_eq(struct isl_tab *tab, isl_int *eq)
 
 	if (tab->cone) {
 		isl_int_init(cst);
+		isl_int_set_si(cst, 0);
 		isl_int_swap(eq[0], cst);
 	}
 	r = isl_tab_add_row(tab, eq);
