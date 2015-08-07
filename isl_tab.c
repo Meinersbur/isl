@@ -1883,6 +1883,7 @@ int isl_tab_add_ineq(struct isl_tab *tab, isl_int *ineq)
 	}
 	if (tab->cone) {
 		isl_int_init(cst);
+		isl_int_set_si(cst, 0);
 		isl_int_swap(ineq[0], cst);
 	}
 	r = isl_tab_add_row(tab, ineq);
