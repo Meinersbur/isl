@@ -174,6 +174,14 @@ struct {
 	  "{ [a] -> [2a] : a >= 0; [a] -> [0] : a < 0 }" },
 	{ "{ [a] -> [(a * 2 : a >= 0; 0 : a < 0)] }",
 	  "{ [a] -> [2a] : a >= 0; [a] -> [0] : a < 0 }" },
+	{ "{ [a,b] -> [i,j] : a,b << i,j }",
+	  "{ [a,b] -> [i,j] : a < i or (a = i and b < j) }" },
+	{ "{ [a,b] -> [i,j] : a,b <<= i,j }",
+	  "{ [a,b] -> [i,j] : a < i or (a = i and b <= j) }" },
+	{ "{ [a,b] -> [i,j] : a,b >> i,j }",
+	  "{ [a,b] -> [i,j] : a > i or (a = i and b > j) }" },
+	{ "{ [a,b] -> [i,j] : a,b >>= i,j }",
+	  "{ [a,b] -> [i,j] : a > i or (a = i and b >= j) }" },
 };
 
 int test_parse(struct isl_ctx *ctx)
