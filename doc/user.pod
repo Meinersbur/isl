@@ -2728,6 +2728,10 @@ then this space also needs to be a set space.
 	__isl_give isl_multi_aff *isl_multi_aff_from_aff_list(
 		__isl_take isl_space *space,
 		__isl_take isl_aff_list *list);
+	__isl_give isl_multi_pw_aff *
+	isl_multi_pw_aff_from_pw_aff_list(
+		__isl_take isl_space *space,
+		__isl_take isl_pw_aff_list *list);
 	__isl_give isl_multi_union_pw_aff *
 	isl_multi_union_pw_aff_from_union_pw_aff_list(
 		__isl_take isl_space *space,
