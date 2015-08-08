@@ -1458,7 +1458,8 @@ static __isl_give isl_set *construct_constraints(
 static __isl_give isl_map *add_constraint(__isl_keep isl_stream *s,
 	struct vars *v, __isl_take isl_map *map, int rational)
 {
-	struct isl_token *tok = NULL;
+	struct isl_token *tok;
+	int type;
 	isl_pw_aff_list *list1 = NULL, *list2 = NULL;
 	isl_set *set;
 
@@ -1471,17 +1472,16 @@ static __isl_give isl_map *add_constraint(__isl_keep isl_stream *s,
 		isl_stream_error(s, tok, "missing operator");
 		if (tok)
 			isl_stream_push_token(s, tok);
-		tok = NULL;
 		goto error;
 	}
+	type = tok->type;
+	isl_token_free(tok);
 	for (;;) {
 		list2 = accept_affine_list(s, isl_set_get_space(set), v);
 		if (!list2)
 			goto error;
 
-		set = construct_constraints(set, tok->type, list1, list2,
-						rational);
-		isl_token_free(tok);
+		set = construct_constraints(set, type, list1, list2, rational);
 		isl_pw_aff_list_free(list1);
 		list1 = list2;
 
@@ -1491,13 +1491,13 @@ static __isl_give isl_map *add_constraint(__isl_keep isl_stream *s,
 				isl_stream_push_token(s, tok);
 			break;
 		}
+		type = tok->type;
+		isl_token_free(tok);
 	}
 	isl_pw_aff_list_free(list1);
 
 	return isl_set_unwrap(set);
 error:
-	if (tok)
-		isl_token_free(tok);
 	isl_pw_aff_list_free(list1);
 	isl_pw_aff_list_free(list2);
 	isl_set_free(set);
