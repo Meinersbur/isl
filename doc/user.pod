@@ -4636,6 +4636,9 @@ basic set or relation.
 	__isl_give isl_union_pw_multi_aff *
 	isl_union_pw_multi_aff_coalesce(
 		__isl_take isl_union_pw_multi_aff *upma);
+	__isl_give isl_multi_union_pw_aff *
+	isl_multi_union_pw_aff_coalesce(
+		__isl_take isl_multi_union_pw_aff *aff);
 
 	#include <isl/polynomial.h>
 	__isl_give isl_pw_qpolynomial_fold *
@@ -7578,6 +7581,15 @@ redundant.
 	__isl_give isl_schedule *isl_schedule_intersect_domain(
 		__isl_take isl_schedule *schedule,
 		__isl_take isl_union_set *domain);
+
+The following function can be used to simplify the domain
+of a schedule with a domain node as root with respect to the given
+parameter domain.
+
+	#include <isl/schedule.h>
+	__isl_give isl_schedule *isl_schedule_gist_domain_params(
+		__isl_take isl_schedule *schedule,
+		__isl_take isl_set *context);
 
 The following function resets the user pointers on all parameter
 and tuple identifiers referenced by the nodes of the given schedule.

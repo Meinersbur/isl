@@ -310,6 +310,8 @@ deprecated_HEADERS = \
 	include/isl/deprecated/val_int.h \
 	include/isl/deprecated/vec_int.h
 
+BUILT_SOURCES = gitversion.h
+
 CLEANFILES = \
 	gitversion.h
 
@@ -319,7 +321,6 @@ DISTCLEANFILES = \
 	isl.pc \
 	isl.pc.in \
 	include/isl/stdint.h
-
 
 EXTRA_DIST = \
 	LICENSE \
@@ -335,6 +336,7 @@ EXTRA_DIST = \
 	isl_multi_apply_templ.c \
 	isl_multi_apply_set.c \
 	isl_multi_apply_union_set.c \
+	isl_multi_coalesce.c \
 	isl_multi_floor.c \
 	isl_multi_gist.c \
 	isl_multi_intersect.c \
@@ -347,6 +349,7 @@ EXTRA_DIST = \
 	isl_union_multi.c \
 	isl_union_eval.c \
 	isl_union_neg.c \
+	isl.py \
 	doc/CodingStyle \
 	doc/SubmittingPatches \
 	doc/chicago.bst \
@@ -362,9 +365,9 @@ EXTRA_DIST = \
 	imath/imath.h \
 	imath/imrat.c \
 	imath/imrat.h \
-	test_inputs \
-	isl.py \
-	interface
+	interface/all.h \
+	interface/isl.py.top \
+	test_inputs
 
 dist-hook:
 	echo @GIT_HEAD_VERSION@ > $(distdir)/GIT_HEAD_ID
@@ -376,3 +379,20 @@ pkgconfig_DATA = $(pkgconfig_libfile)
 
 gitversion.h: @GIT_HEAD@
 	$(AM_V_GEN)echo '#define GIT_HEAD_ID "'@GIT_HEAD_VERSION@'"' > $@
+
+install-data-local: $(srcdir)/isl.py
+	@libisl=`sed -ne "/^library_names=/{s/.*='//;s/'$$//;s/ .*//;p;}" \
+		 $(builddir)/libisl.la`; \
+	case $$libisl in \
+	'') echo Cannot find isl library name. GDB bindings not installed.;; \
+	*) echo $(INSTALL_DATA) $(srcdir)/isl.py \
+		$(DESTDIR)$(libdir)/$$libisl-gdb.py; \
+	test -z "$(libdir)" || $(MKDIR_P) "$(DESTDIR)$(libdir)"; \
+	$(INSTALL_DATA) $(srcdir)/isl.py $(DESTDIR)$(libdir)/$$libisl-gdb.py; esac
+
+uninstall-local:
+	@libisl=`sed -ne "/^library_names=/{s/.*='//;s/'$$//;s/ .*//;p;}" \
+		 $(builddir)/libisl.la`; \
+	if test -n "$${libisl}"; then \
+		rm -f $(DESTDIR)$(libdir)/$$libisl-gdb.py; \
+	fi

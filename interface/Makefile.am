@@ -20,6 +20,8 @@ extract_interface_LDADD = \
 	-lclangAnalysis -lclangAST -lclangLex -lclangBasic -lclangDriver \
 	$(CLANG_LIBS) $(CLANG_LDFLAGS)
 
+CLEANFILES = isl.py
+
 test: extract_interface
 	./extract_interface$(EXEEXT) $(includes) $(srcdir)/all.h
 
