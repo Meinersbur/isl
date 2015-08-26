@@ -445,12 +445,18 @@ static __isl_give isl_printer *print_constraint(struct isl_basic_map *bmap,
 	return p;
 }
 
+/* Print the constraints of "bmap" to "p".
+ * The names of the variables are taken from "space" and
+ * the integer division definitions are taken from "div".
+ * Div constraints are only printed in "dump" mode.
+ */
 static __isl_give isl_printer *print_constraints(__isl_keep isl_basic_map *bmap,
 	__isl_keep isl_space *space, __isl_take isl_printer *p, int latex)
 {
 	int i;
 	struct isl_vec *c;
 	unsigned total = isl_basic_map_total_dim(bmap);
+	unsigned o_div = isl_basic_map_offset(bmap, isl_dim_div);
 	int first = 1;
 
 	c = isl_vec_alloc(bmap->ctx, 1 + total);
@@ -478,6 +484,10 @@ static __isl_give isl_printer *print_constraints(__isl_keep isl_basic_map *bmap,
 		int s;
 		const char *op;
 		if (l < 0)
+			continue;
+		if (!p->dump && l >= o_div &&
+		    isl_basic_map_is_div_constraint(bmap, bmap->ineq[i],
+						    l - o_div))
 			continue;
 		s = isl_int_sgn(bmap->ineq[i][l]);
 		if (s < 0)
