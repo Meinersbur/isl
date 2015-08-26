@@ -471,9 +471,13 @@ static int next_is_opposite(__isl_keep isl_basic_map *bmap, int i, int last)
 /* Return a string representation of the operator used when
  * printing a constraint where the LHS is greater than or equal to the LHS
  * (sign > 0) or smaller than or equal to the LHS (sign < 0).
+ * If "strict" is set, then return the strict version of the comparison
+ * operator.
  */
-static const char *constraint_op(int sign, int latex)
+static const char *constraint_op(int sign, int strict, int latex)
 {
+	if (strict)
+		return sign < 0 ? "<" : ">";
 	if (sign < 0)
 		return s_le[latex];
 	else
@@ -580,6 +584,10 @@ static __isl_give isl_printer *print_constraint(struct isl_basic_map *bmap,
  * instead.  In fact, the "a x" part is not printed explicitly, but
  * reused from the next constraint, which is therefore treated as
  * a first constraint in the conjunction.
+ *
+ * If the constant term of "f" is -1, then "f" is replaced by "f + 1" and
+ * the comparison operator is replaced by the strict variant.
+ * Essentially, ">= 1" is replaced by "> 0".
  */
 static __isl_give isl_printer *print_constraints(__isl_keep isl_basic_map *bmap,
 	__isl_keep isl_space *space, __isl_keep isl_mat *div,
@@ -587,6 +595,7 @@ static __isl_give isl_printer *print_constraints(__isl_keep isl_basic_map *bmap,
 {
 	int i;
 	isl_vec *c = NULL;
+	int rational = ISL_F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL);
 	unsigned total = isl_basic_map_total_dim(bmap);
 	unsigned o_div = isl_basic_map_offset(bmap, isl_dim_div);
 	int first = 1;
@@ -619,6 +628,7 @@ static __isl_give isl_printer *print_constraints(__isl_keep isl_basic_map *bmap,
 	}
 	for (i = 0; i < bmap->n_ineq; ++i) {
 		int l = isl_seq_last_non_zero(bmap->ineq[i], 1 + total);
+		int strict;
 		int s;
 		const char *op;
 		if (l < 0)
@@ -628,17 +638,20 @@ static __isl_give isl_printer *print_constraints(__isl_keep isl_basic_map *bmap,
 						    l - o_div))
 			continue;
 		s = isl_int_sgn(bmap->ineq[i][l]);
+		strict = !rational && isl_int_is_negone(bmap->ineq[i][0]);
 		if (s < 0)
 			isl_seq_cpy(c->el, bmap->ineq[i], 1 + total);
 		else
 			isl_seq_neg(c->el, bmap->ineq[i], 1 + total);
+		if (strict)
+			isl_int_set_si(c->el[0], 0);
 		if (!p->dump && next_is_opposite(bmap, i, l)) {
-			op = constraint_op(-s, latex);
+			op = constraint_op(-s, strict, latex);
 			p = print_half_constraint(bmap, space, div, p, c->el, l,
 						op, first, latex);
 			first = 1;
 		} else {
-			op = constraint_op(s, latex);
+			op = constraint_op(s, strict, latex);
 			p = print_constraint(bmap, space, div, p, c->el, l,
 						op, first, latex);
 			first = 0;
