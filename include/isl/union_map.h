@@ -72,6 +72,7 @@ __isl_give isl_union_map *isl_union_map_simple_hull(
 __isl_export
 __isl_give isl_union_map *isl_union_map_coalesce(
 	__isl_take isl_union_map *umap);
+__isl_export
 __isl_give isl_union_map *isl_union_map_compute_divs(
 	__isl_take isl_union_map *umap);
 __isl_export
