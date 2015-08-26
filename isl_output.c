@@ -445,6 +445,29 @@ static __isl_give isl_printer *print_omega_parameters(__isl_keep isl_space *dim,
 	return p;
 }
 
+/* Does the inequality constraint following "i" in "bmap"
+ * have an opposite value for the same last coefficient?
+ * "last" is the position of the last coefficient of inequality "i".
+ * If the next constraint is a div constraint, then it is ignored
+ * since div constraints are not printed.
+ */
+static int next_is_opposite(__isl_keep isl_basic_map *bmap, int i, int last)
+{
+	unsigned total = isl_basic_map_total_dim(bmap);
+	unsigned o_div = isl_basic_map_offset(bmap, isl_dim_div);
+
+	if (i + 1 >= bmap->n_ineq)
+		return 0;
+	if (isl_seq_last_non_zero(bmap->ineq[i + 1], 1 + total) != last)
+		return 0;
+	if (last >= o_div &&
+	    isl_basic_map_is_div_constraint(bmap, bmap->ineq[i + 1],
+					    last - o_div))
+		return 0;
+	return isl_int_abs_eq(bmap->ineq[i][last], bmap->ineq[i + 1][last]) &&
+		!isl_int_eq(bmap->ineq[i][last], bmap->ineq[i + 1][last]);
+}
+
 /* Return a string representation of the operator used when
  * printing a constraint where the LHS is greater than or equal to the LHS
  * (sign > 0) or smaller than or equal to the LHS (sign < 0).
@@ -455,6 +478,37 @@ static const char *constraint_op(int sign, int latex)
 		return s_le[latex];
 	else
 		return s_ge[latex];
+}
+
+/* Print one side of a constraint "c" from "bmap" to "p", with
+ * the variable names taken from "space" and the integer division definitions
+ * taken from "div".
+ * "last" is the position of the last non-zero coefficient.
+ * Let c' be the result of zeroing out this coefficient, then
+ * the partial constraint
+ *
+ *	c' op
+ *
+ * is printed.
+ * "first_constraint" is set if this is the first constraint
+ * in the conjunction.
+ */
+static __isl_give isl_printer *print_half_constraint(struct isl_basic_map *bmap,
+	__isl_keep isl_space *space, __isl_keep isl_mat *div,
+	__isl_take isl_printer *p, isl_int *c, int last, const char *op,
+	int first_constraint, int latex)
+{
+	if (!first_constraint)
+		p = isl_printer_print_str(p, s_and[latex]);
+
+	isl_int_set_si(c[last], 0);
+	p = print_affine(bmap, space, div, p, c);
+
+	p = isl_printer_print_str(p, " ");
+	p = isl_printer_print_str(p, op);
+	p = isl_printer_print_str(p, " ");
+
+	return p;
 }
 
 /* Print a constraint "c" from "bmap" to "p", with the variable names
@@ -496,6 +550,36 @@ static __isl_give isl_printer *print_constraint(struct isl_basic_map *bmap,
  * the integer division definitions are taken from "div".
  * Div constraints are only printed in "dump" mode.
  * The constraints are sorted prior to printing (except in "dump" mode).
+ *
+ * If x is the last variable with a non-zero coefficient,
+ * then a lower bound
+ *
+ *	f - a x >= 0
+ *
+ * is printed as
+ *
+ *	a x <= f
+ *
+ * while an upper bound
+ *
+ *	f + a x >= 0
+ *
+ * is printed as
+ *
+ *	a x >= -f
+ *
+ * If the next constraint has an opposite sign for the same last coefficient,
+ * then it is printed as
+ *
+ *	f >= a x
+ *
+ * or
+ *
+ *	-f <= a x
+ *
+ * instead.  In fact, the "a x" part is not printed explicitly, but
+ * reused from the next constraint, which is therefore treated as
+ * a first constraint in the conjunction.
  */
 static __isl_give isl_printer *print_constraints(__isl_keep isl_basic_map *bmap,
 	__isl_keep isl_space *space, __isl_keep isl_mat *div,
@@ -548,10 +632,17 @@ static __isl_give isl_printer *print_constraints(__isl_keep isl_basic_map *bmap,
 			isl_seq_cpy(c->el, bmap->ineq[i], 1 + total);
 		else
 			isl_seq_neg(c->el, bmap->ineq[i], 1 + total);
-		op = constraint_op(s, latex);
-		p = print_constraint(bmap, space, div, p, c->el, l,
-					op, first, latex);
-		first = 0;
+		if (!p->dump && next_is_opposite(bmap, i, l)) {
+			op = constraint_op(-s, latex);
+			p = print_half_constraint(bmap, space, div, p, c->el, l,
+						op, first, latex);
+			first = 1;
+		} else {
+			op = constraint_op(s, latex);
+			p = print_constraint(bmap, space, div, p, c->el, l,
+						op, first, latex);
+			first = 0;
+		}
 	}
 
 	isl_basic_map_free(bmap);

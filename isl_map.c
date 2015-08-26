@@ -8838,6 +8838,8 @@ int isl_set_plain_dim_has_fixed_lower_bound(__isl_keep isl_set *set,
  * For constraints that have the same latest variable, those
  * with the same coefficient for this latest variable (first in absolute value
  * and then in actual value) are grouped together.
+ * This is useful for detecting pairs of constraints that can
+ * be chained in their printed representation.
  *
  * Finally, within a group, constraints are sorted according to
  * their coefficients (excluding the constant term).
