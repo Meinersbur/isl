@@ -445,6 +445,18 @@ static __isl_give isl_printer *print_omega_parameters(__isl_keep isl_space *dim,
 	return p;
 }
 
+/* Return a string representation of the operator used when
+ * printing a constraint where the LHS is greater than or equal to the LHS
+ * (sign > 0) or smaller than or equal to the LHS (sign < 0).
+ */
+static const char *constraint_op(int sign, int latex)
+{
+	if (sign < 0)
+		return s_le[latex];
+	else
+		return s_ge[latex];
+}
+
 /* Print a constraint "c" from "bmap" to "p", with the variable names
  * taken from "space" and the integer division definitions taken from "div".
  * "last" is the position of the last non-zero coefficient, which is
@@ -536,7 +548,7 @@ static __isl_give isl_printer *print_constraints(__isl_keep isl_basic_map *bmap,
 			isl_seq_cpy(c->el, bmap->ineq[i], 1 + total);
 		else
 			isl_seq_neg(c->el, bmap->ineq[i], 1 + total);
-		op = s < 0 ? s_le[latex] : s_ge[latex];
+		op = constraint_op(s, latex);
 		p = print_constraint(bmap, space, div, p, c->el, l,
 					op, first, latex);
 		first = 0;
