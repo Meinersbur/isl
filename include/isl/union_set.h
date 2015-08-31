@@ -55,6 +55,7 @@ __isl_give isl_union_set *isl_union_set_lexmax(__isl_take isl_union_set *uset);
 
 __isl_give isl_union_set *isl_union_set_add_set(__isl_take isl_union_set *uset,
 	__isl_take isl_set *set);
+__isl_export
 __isl_give isl_union_set *isl_union_set_union(__isl_take isl_union_set *uset1,
 	__isl_take isl_union_set *uset2);
 __isl_export
