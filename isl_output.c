@@ -407,20 +407,20 @@ static __isl_give isl_printer *print_nested_map_dim(__isl_take isl_printer *p,
 	return p;
 }
 
-static __isl_give isl_printer *print_space(__isl_keep isl_space *dim,
+static __isl_give isl_printer *print_space(__isl_keep isl_space *space,
 	__isl_take isl_printer *p, int rational,
 	struct isl_print_space_data *data)
 {
 	if (rational && !data->latex)
 		p = isl_printer_print_str(p, "rat: ");
-	if (isl_space_is_params(dim))
+	if (isl_space_is_params(space))
 		;
-	else if (isl_space_is_set(dim))
-		p = print_tuple(dim, p, isl_dim_set, data);
+	else if (isl_space_is_set(space))
+		p = print_tuple(space, p, isl_dim_set, data);
 	else {
-		p = print_tuple(dim, p, isl_dim_in, data);
+		p = print_tuple(space, p, isl_dim_in, data);
 		p = isl_printer_print_str(p, s_to[data->latex]);
-		p = print_tuple(dim, p, isl_dim_out, data);
+		p = print_tuple(space, p, isl_dim_out, data);
 	}
 
 	return p;
