@@ -2329,6 +2329,8 @@ A singleton set can be created from a point using
 		__isl_take isl_point *pnt);
 	__isl_give isl_set *isl_set_from_point(
 		__isl_take isl_point *pnt);
+	__isl_give isl_union_set *isl_union_set_from_point(
+		__isl_take isl_point *pnt);
 
 and a box can be created from two opposite extremal points using
 

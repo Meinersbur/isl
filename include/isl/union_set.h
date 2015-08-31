@@ -122,6 +122,8 @@ isl_stat isl_union_set_foreach_point(__isl_keep isl_union_set *uset,
 
 __isl_give isl_basic_set *isl_union_set_sample(__isl_take isl_union_set *uset);
 
+__isl_give isl_union_set *isl_union_set_from_point(__isl_take isl_point *pnt);
+
 __isl_give isl_union_set *isl_union_set_lift(__isl_take isl_union_set *uset);
 
 __isl_give isl_union_map *isl_union_set_lex_lt_union_set(
