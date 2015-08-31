@@ -2444,6 +2444,14 @@ __isl_give isl_basic_set *isl_union_set_sample(__isl_take isl_union_set *uset)
 	return (isl_basic_set *)isl_union_map_sample(uset);
 }
 
+/* Return an element in "uset" in the form of an isl_point.
+ * Return a void isl_point if "uset" is empty.
+ */
+__isl_give isl_point *isl_union_set_sample_point(__isl_take isl_union_set *uset)
+{
+	return isl_basic_set_sample_point(isl_union_set_sample(uset));
+}
+
 struct isl_forall_data {
 	isl_bool res;
 	isl_bool (*fn)(__isl_keep isl_map *map);
