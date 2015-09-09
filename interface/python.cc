@@ -36,17 +36,20 @@
 #include <stdio.h>
 #include <iostream>
 #include <map>
+#include <vector>
 #include <clang/AST/Attr.h>
 #include "extract_interface.h"
 #include "python.h"
 
-/* Is the given type declaration marked as being a subtype of some other
- * type?  If so, return that other type in "super".
+/* Return a sequence of the types of which the given type declaration is
+ * marked as being a subtype.
  */
-static bool is_subclass(RecordDecl *decl, string &super)
+static vector<string> find_superclasses(RecordDecl *decl)
 {
+	vector<string> super;
+
 	if (!decl->hasAttrs())
-		return false;
+		return super;
 
 	string sub = "isl_subclass";
 	size_t len = sub.length();
@@ -57,12 +60,12 @@ static bool is_subclass(RecordDecl *decl, string &super)
 			continue;
 		string s = ann->getAnnotation().str();
 		if (s.substr(0, len) == sub) {
-			super = s.substr(len + 1, s.length() - len  - 2);
-			return true;
+			s = s.substr(len + 1, s.length() - len  - 2);
+			super.push_back(s);
 		}
 	}
 
-	return false;
+	return super;
 }
 
 /* Is decl marked as a constructor?
@@ -91,7 +94,7 @@ struct isl_class {
 
 	void print(map<string, isl_class> &classes, set<string> &done);
 	void print_constructor(FunctionDecl *method);
-	void print_method(FunctionDecl *method, bool subclass, string super);
+	void print_method(FunctionDecl *method, vector<string> super);
 };
 
 /* Return the class that has a name that matches the initial part
@@ -286,8 +289,7 @@ static void print_arg_in_call(FunctionDecl *fd, int arg)
 }
 
 /* Print a python method corresponding to the C function "method".
- * "subclass" is set if the method belongs to a class that is a subclass
- * of some other class ("super").
+ * "super" contains the superclasses of the class to which the method belongs.
  *
  * If the function has a callback argument, then it also has a "user"
  * argument.  Since Python has closures, there is no need for such
@@ -299,7 +301,8 @@ static void print_arg_in_call(FunctionDecl *fd, int arg)
  * we check if the corresponding actual argument is of the right type.
  * If not, we try to convert it to the right type.
  * It that doesn't work and if subclass is set, we try to convert self
- * to the type of the superclass and call the corresponding method.
+ * to the type of the first superclass in "super" and
+ * call the corresponding method.
  *
  * If the function consumes a reference, then we pass it a copy of
  * the actual argument.
@@ -307,7 +310,7 @@ static void print_arg_in_call(FunctionDecl *fd, int arg)
  * If the return type is isl_bool, then convert the result to
  * a Python boolean, raising an error on isl_bool_error.
  */
-void isl_class::print_method(FunctionDecl *method, bool subclass, string super)
+void isl_class::print_method(FunctionDecl *method, vector<string> super)
 {
 	string fullname = method->getName();
 	string cname = fullname.substr(name.length() + 1);
@@ -338,9 +341,9 @@ void isl_class::print_method(FunctionDecl *method, bool subclass, string super)
 		printf("                arg%d = %s(arg%d)\n",
 			i, type.c_str(), i);
 		printf("        except:\n");
-		if (i > 0 && subclass) {
+		if (i > 0 && super.size() > 0) {
 			printf("            return %s(arg0).%s(",
-				type2python(super).c_str(), cname.c_str());
+				type2python(super[0]).c_str(), cname.c_str());
 			for (int i = 1; i < num_params - drop_user; ++i) {
 				if (i != 1)
 					printf(", ");
@@ -440,15 +443,20 @@ void isl_class::print_constructor(FunctionDecl *cons)
 	printf("            return\n");
 }
 
-/* Print the header of the class "name".
- * If subclass is true, then "super" is the name of the single superclass.
+/* Print the header of the class "name" with superclasses "super".
  */
-static void print_class_header(const string &name, bool subclass,
-	const string &super)
+static void print_class_header(const string &name, const vector<string> &super)
 {
 	printf("class %s", name.c_str());
-	if (subclass)
-		printf("(%s)", type2python(super).c_str());
+	if (super.size() > 0) {
+		printf("(");
+		for (int i = 0; i < super.size(); ++i) {
+			if (i > 0)
+				printf(", ");
+			printf("%s", type2python(super[i]).c_str());
+		}
+		printf(")");
+	}
 	printf(":\n");
 }
 
@@ -493,8 +501,8 @@ static void print_argtypes(FunctionDecl *fd)
 
 /* Print out the definition of this isl_class.
  *
- * We first check if this isl_class is a subclass of some other class.
- * If it is, we make sure the superclass is printed out first.
+ * We first check if this isl_class is a subclass of one or more other classes.
+ * If it is, we make sure those superclasses are printed out first.
  *
  * Then we print a constructor with several cases, one for constructing
  * a Python object from a return value and one for each function that
@@ -509,17 +517,17 @@ static void print_argtypes(FunctionDecl *fd)
  */
 void isl_class::print(map<string, isl_class> &classes, set<string> &done)
 {
-	string super;
 	string p_name = type2python(name);
 	set<FunctionDecl *>::iterator in;
-	bool subclass = is_subclass(type, super);
+	vector<string> super = find_superclasses(type);
 
-	if (subclass && done.find(super) == done.end())
-		classes[super].print(classes, done);
+	for (int i = 0; i < super.size(); ++i)
+		if (done.find(super[i]) == done.end())
+			classes[super[i]].print(classes, done);
 	done.insert(name);
 
 	printf("\n");
-	print_class_header(p_name, subclass, super);
+	print_class_header(p_name, super);
 	printf("    def __init__(self, *args, **keywords):\n");
 
 	printf("        if \"ptr\" in keywords:\n");
@@ -543,7 +551,7 @@ void isl_class::print(map<string, isl_class> &classes, set<string> &done)
 		p_name.c_str());
 
 	for (in = methods.begin(); in != methods.end(); ++in)
-		print_method(*in, subclass, super);
+		print_method(*in, super);
 
 	printf("\n");
 	for (in = constructors.begin(); in != constructors.end(); ++in) {
