@@ -3588,6 +3588,61 @@ static __isl_give isl_union_pw_aff *read_union_pw_aff_with_dom(
 	return upa;
 }
 
+/* Read an isl_union_pw_aff from "s".
+ *
+ * First check if there are any paramters, then read in the opening brace
+ * and use read_union_pw_aff_with_dom to read in the body of
+ * the isl_union_pw_aff.  Finally, read the closing brace.
+ */
+__isl_give isl_union_pw_aff *isl_stream_read_union_pw_aff(
+	__isl_keep isl_stream *s)
+{
+	struct vars *v;
+	isl_set *dom;
+	isl_union_pw_aff *upa = NULL;
+
+	v = vars_new(s->ctx);
+	if (!v)
+		return NULL;
+
+	dom = isl_set_universe(isl_space_params_alloc(s->ctx, 0));
+	if (next_is_tuple(s)) {
+		dom = read_map_tuple(s, dom, isl_dim_param, v, 1, 0);
+		if (isl_stream_eat(s, ISL_TOKEN_TO))
+			goto error;
+	}
+	if (isl_stream_eat(s, '{'))
+		goto error;
+
+	upa = read_union_pw_aff_with_dom(s, isl_set_copy(dom), v);
+
+	if (isl_stream_eat(s, '}'))
+		goto error;
+
+	vars_free(v);
+	isl_set_free(dom);
+	return upa;
+error:
+	vars_free(v);
+	isl_set_free(dom);
+	isl_union_pw_aff_free(upa);
+	return NULL;
+}
+
+/* Read an isl_union_pw_aff from "str".
+ */
+__isl_give isl_union_pw_aff *isl_union_pw_aff_read_from_str(isl_ctx *ctx,
+	const char *str)
+{
+	isl_union_pw_aff *upa;
+	isl_stream *s = isl_stream_new_str(ctx, str);
+	if (!s)
+		return NULL;
+	upa = isl_stream_read_union_pw_aff(s);
+	isl_stream_free(s);
+	return upa;
+}
+
 /* This function is called for each element in a tuple inside
  * isl_stream_read_multi_union_pw_aff.
  *

@@ -816,6 +816,8 @@ __isl_give isl_union_set *isl_union_pw_aff_zero_union_set(
 __isl_give isl_union_map *isl_union_map_from_union_pw_aff(
 	__isl_take isl_union_pw_aff *upa);
 
+__isl_give isl_union_pw_aff *isl_union_pw_aff_read_from_str(isl_ctx *ctx,
+	const char *str);
 __isl_give char *isl_union_pw_aff_to_str(__isl_keep isl_union_pw_aff *upa);
 __isl_give isl_printer *isl_printer_print_union_pw_aff(
 	__isl_take isl_printer *p, __isl_keep isl_union_pw_aff *upa);
