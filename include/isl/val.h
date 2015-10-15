@@ -15,7 +15,7 @@ typedef struct isl_val isl_val;
 
 ISL_DECLARE_LIST(val)
 
-struct isl_multi_val;
+struct __isl_export isl_multi_val;
 typedef struct isl_multi_val isl_multi_val;
 
 ISL_DECLARE_MULTI(val)
