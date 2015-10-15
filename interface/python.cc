@@ -95,7 +95,7 @@ struct isl_class {
 };
 
 /* Return the class that has a name that matches the initial part
- * of the namd of function "fd".
+ * of the name of function "fd".
  */
 static isl_class &method2class(map<string, isl_class> &classes,
 	FunctionDecl *fd)
