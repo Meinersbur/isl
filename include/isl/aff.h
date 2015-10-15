@@ -488,10 +488,13 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_union_lexmax(
 __isl_give isl_multi_aff *isl_multi_aff_flatten_domain(
 	__isl_take isl_multi_aff *ma);
 
+__isl_export
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_range_product(
 	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2);
+__isl_export
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_flat_range_product(
 	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2);
+__isl_export
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_product(
 	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2);
 
@@ -639,6 +642,7 @@ __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_scale_down_val(
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_scale_multi_val(
 	__isl_take isl_union_pw_multi_aff *upma, __isl_take isl_multi_val *mv);
 
+__isl_export
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_flat_range_product(
 	__isl_take isl_union_pw_multi_aff *upma1,
 	__isl_take isl_union_pw_multi_aff *upma2);
