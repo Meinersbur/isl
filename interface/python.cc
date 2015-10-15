@@ -95,9 +95,9 @@ struct isl_class {
 };
 
 /* Return the class that has a name that matches the initial part
- * of the name of function "fd".
+ * of the name of function "fd" or NULL if no such class could be found.
  */
-static isl_class &method2class(map<string, isl_class> &classes,
+static isl_class *method2class(map<string, isl_class> &classes,
 	FunctionDecl *fd)
 {
 	string best;
@@ -109,7 +109,12 @@ static isl_class &method2class(map<string, isl_class> &classes,
 			best = ci->first;
 	}
 
-	return classes[best];
+	if (classes.find(best) == classes.end()) {
+		cerr << "Unable to find class of " << name << endl;
+		return NULL;
+	}
+
+	return &classes[best];
 }
 
 /* Is "type" the type "isl_ctx *"?
@@ -511,11 +516,13 @@ void generate_python(set<RecordDecl *> &types, set<FunctionDecl *> functions)
 
 	set<FunctionDecl *>::iterator in;
 	for (in = functions.begin(); in != functions.end(); ++in) {
-		isl_class &c = method2class(classes, *in);
+		isl_class *c = method2class(classes, *in);
+		if (!c)
+			continue;
 		if (is_constructor(*in))
-			c.constructors.insert(*in);
+			c->constructors.insert(*in);
 		else
-			c.methods.insert(*in);
+			c->methods.insert(*in);
 	}
 
 	for (ci = classes.begin(); ci != classes.end(); ++ci) {
