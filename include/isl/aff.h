@@ -89,6 +89,7 @@ __isl_give isl_aff *isl_aff_mul(__isl_take isl_aff *aff1,
 	__isl_take isl_aff *aff2);
 __isl_give isl_aff *isl_aff_div(__isl_take isl_aff *aff1,
 	__isl_take isl_aff *aff2);
+__isl_export
 __isl_give isl_aff *isl_aff_add(__isl_take isl_aff *aff1,
 	__isl_take isl_aff *aff2);
 __isl_give isl_aff *isl_aff_sub(__isl_take isl_aff *aff1,
@@ -181,6 +182,7 @@ __isl_give isl_pw_aff *isl_pw_aff_union_min(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2);
 __isl_give isl_pw_aff *isl_pw_aff_union_max(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2);
+__isl_export
 __isl_give isl_pw_aff *isl_pw_aff_union_add(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2);
 
@@ -218,6 +220,7 @@ __isl_give isl_pw_aff *isl_pw_aff_mul(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2);
 __isl_give isl_pw_aff *isl_pw_aff_div(__isl_take isl_pw_aff *pa1,
 	__isl_take isl_pw_aff *pa2);
+__isl_export
 __isl_give isl_pw_aff *isl_pw_aff_add(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2);
 __isl_give isl_pw_aff *isl_pw_aff_sub(__isl_take isl_pw_aff *pwaff1,
@@ -460,12 +463,14 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_fix_si(
 	__isl_take isl_pw_multi_aff *pma, enum isl_dim_type type,
 	unsigned pos, int value);
 
+__isl_export
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_union_add(
 	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2);
 
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_neg(
 	__isl_take isl_pw_multi_aff *pma);
 
+__isl_export
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_add(
 	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2);
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_sub(
@@ -625,9 +630,11 @@ __isl_give isl_union_set *isl_union_pw_multi_aff_domain(
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_neg(
 	__isl_take isl_union_pw_multi_aff *upma);
 
+__isl_export
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_add(
 	__isl_take isl_union_pw_multi_aff *upma1,
 	__isl_take isl_union_pw_multi_aff *upma2);
+__isl_export
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_union_add(
 	__isl_take isl_union_pw_multi_aff *upma1,
 	__isl_take isl_union_pw_multi_aff *upma2);
@@ -788,8 +795,10 @@ __isl_give isl_union_set *isl_union_pw_aff_domain(
 __isl_give isl_union_pw_aff *isl_union_pw_aff_neg(
 	__isl_take isl_union_pw_aff *upa);
 
+__isl_export
 __isl_give isl_union_pw_aff *isl_union_pw_aff_add(
 	__isl_take isl_union_pw_aff *upa1, __isl_take isl_union_pw_aff *upa2);
+__isl_export
 __isl_give isl_union_pw_aff *isl_union_pw_aff_union_add(
 	__isl_take isl_union_pw_aff *upa1, __isl_take isl_union_pw_aff *upa2);
 __isl_give isl_union_pw_aff *isl_union_pw_aff_sub(
@@ -900,6 +909,7 @@ __isl_give isl_union_pw_multi_aff *
 isl_union_pw_multi_aff_from_multi_union_pw_aff(
 	__isl_take isl_multi_union_pw_aff *mupa);
 
+__isl_export
 __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_union_add(
 	__isl_take isl_multi_union_pw_aff *mupa1,
 	__isl_take isl_multi_union_pw_aff *mupa2);
