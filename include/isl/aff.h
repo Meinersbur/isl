@@ -671,6 +671,7 @@ __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_subtract_domain(
 	__isl_take isl_union_pw_multi_aff *upma,
 	__isl_take isl_union_set *uset);
 
+__isl_overload
 __isl_give isl_union_map *isl_union_map_from_union_pw_multi_aff(
 	__isl_take isl_union_pw_multi_aff *upma);
 
@@ -933,6 +934,7 @@ isl_multi_union_pw_aff_from_union_pw_multi_aff(
 
 __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_from_union_map(
 	__isl_take isl_union_map *umap);
+__isl_overload
 __isl_give isl_union_map *isl_union_map_from_multi_union_pw_aff(
 	__isl_take isl_multi_union_pw_aff *mupa);
 
