@@ -92,6 +92,8 @@ struct isl_class {
 	set<FunctionDecl *> constructors;
 	set<FunctionDecl *> methods;
 
+	bool is_static(FunctionDecl *method);
+
 	void print(map<string, isl_class> &classes, set<string> &done);
 	void print_constructor(FunctionDecl *method);
 	void print_method(FunctionDecl *method, vector<string> super);
@@ -215,10 +217,28 @@ static string type2python(string name)
 	return name.substr(4);
 }
 
-/* Print the header of the method "name" with "n_arg" arguments.
+/* Should "method" be considered to be a static method?
+ * That is, is the first argument something other than
+ * an instance of the class?
  */
-static void print_method_header(const string &name, int n_arg)
+bool isl_class::is_static(FunctionDecl *method)
 {
+	ParmVarDecl *param = method->getParamDecl(0);
+	QualType type = param->getOriginalType();
+
+	if (!is_isl_type(type))
+		return true;
+	return extract_type(type) != name;
+}
+
+/* Print the header of the method "name" with "n_arg" arguments.
+ * If "is_static" is set, then mark the python method as static.
+ */
+static void print_method_header(bool is_static, const string &name, int n_arg)
+{
+	if (is_static)
+		printf("    @staticmethod\n");
+
 	printf("    def %s(arg0", name.c_str());
 	for (int i = 1; i < n_arg; ++i)
 		printf(", arg%d", i);
@@ -301,6 +321,9 @@ static void print_arg_in_call(FunctionDecl *fd, int arg)
 /* Print a python method corresponding to the C function "method".
  * "super" contains the superclasses of the class to which the method belongs.
  *
+ * If the first argument of "method" is something other than an instance
+ * of the class, then mark the python method as static.
+ *
  * If the function has a callback argument, then it also has a "user"
  * argument.  Since Python has closures, there is no need for such
  * a user argument in the Python interface, so we simply drop it.
@@ -334,7 +357,7 @@ void isl_class::print_method(FunctionDecl *method, vector<string> super)
 			drop_user = 1;
 	}
 
-	print_method_header(cname, num_params - drop_user);
+	print_method_header(is_static(method), cname, num_params - drop_user);
 
 	for (int i = 0; i < num_params; ++i) {
 		ParmVarDecl *param = method->getParamDecl(i);
