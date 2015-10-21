@@ -727,7 +727,12 @@ void isl_class::print(map<string, isl_class> &classes, set<string> &done)
 	printf("        libc.free(ptr)\n");
 	printf("        return res\n");
 	printf("    def __repr__(self):\n");
-	printf("        return 'isl.%s(\"%%s\")' %% str(self)\n",
+	printf("        s = str(self)\n");
+	printf("        if '\"' in s:\n");
+	printf("            return 'isl.%s(\"\"\"%%s\"\"\")' %% s\n",
+		p_name.c_str());
+	printf("        else:\n");
+	printf("            return 'isl.%s(\"%%s\")' %% s\n",
 		p_name.c_str());
 
 	for (it = methods.begin(); it != methods.end(); ++it)
