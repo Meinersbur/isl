@@ -215,6 +215,7 @@ __isl_give isl_schedule_node *isl_schedule_node_align_params(
 __isl_give isl_printer *isl_printer_print_schedule_node(
 	__isl_take isl_printer *p, __isl_keep isl_schedule_node *node);
 void isl_schedule_node_dump(__isl_keep isl_schedule_node *node);
+__isl_give char *isl_schedule_node_to_str(__isl_keep isl_schedule_node *node);
 
 #if defined(__cplusplus)
 }

@@ -4428,3 +4428,24 @@ void isl_schedule_node_dump(__isl_keep isl_schedule_node *node)
 
 	isl_printer_free(printer);
 }
+
+/* Return a string representation of "node".
+ * Print the schedule node in block format as it would otherwise
+ * look identical to the entire schedule.
+ */
+__isl_give char *isl_schedule_node_to_str(__isl_keep isl_schedule_node *node)
+{
+	isl_printer *printer;
+	char *s;
+
+	if (!node)
+		return NULL;
+
+	printer = isl_printer_to_str(isl_schedule_node_get_ctx(node));
+	printer = isl_printer_set_yaml_style(printer, ISL_YAML_STYLE_BLOCK);
+	printer = isl_printer_print_schedule_node(printer, node);
+	s = isl_printer_get_str(printer);
+	isl_printer_free(printer);
+
+	return s;
+}
