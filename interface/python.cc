@@ -249,6 +249,29 @@ static void print_callback(QualType type, int arg)
 	printf("        cb = fn(cb_func)\n");
 }
 
+/* Print the argument at position "arg" in call to "fd".
+ *
+ * If the argument is a callback, then print a reference to
+ * the callback wrapper "cb".
+ * Otherwise, if the argument is marked as consuming a reference,
+ * then pass a copy of the the pointer stored in the corresponding
+ * argument passed to the Python method.
+ * Otherwise, pass this pointer itself.
+ */
+static void print_arg_in_call(FunctionDecl *fd, int arg)
+{
+	ParmVarDecl *param = fd->getParamDecl(arg);
+	QualType type = param->getOriginalType();
+	if (is_callback(type)) {
+		printf("cb");
+	} else if (takes(param)) {
+		string type_s = extract_type(type);
+		printf("isl.%s_copy(arg%d.ptr)", type_s.c_str(), arg);
+	} else {
+		printf("arg%d.ptr", arg);
+	}
+}
+
 /* Print a python method corresponding to the C function "method".
  * "subclass" is set if the method belongs to a class that is a subclass
  * of some other class ("super").
@@ -319,20 +342,10 @@ void isl_class::print_method(FunctionDecl *method, bool subclass, string super)
 		print_callback(type->getPointeeType(), i);
 	}
 	printf("        res = isl.%s(", fullname.c_str());
-	if (takes(method->getParamDecl(0)))
-		printf("isl.%s_copy(arg0.ptr)", name.c_str());
-	else
-		printf("arg0.ptr");
+	print_arg_in_call(method, 0);
 	for (int i = 1; i < num_params - drop_user; ++i) {
-		ParmVarDecl *param = method->getParamDecl(i);
-		QualType type = param->getOriginalType();
-		if (is_callback(type))
-			printf(", cb");
-		else if (takes(param)) {
-			string type_s = extract_type(type);
-			printf(", isl.%s_copy(arg%d.ptr)", type_s.c_str(), i);
-		} else
-			printf(", arg%d.ptr", i);
+		printf(", ");
+		print_arg_in_call(method, i);
 	}
 	if (drop_user)
 		printf(", None");
