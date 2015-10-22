@@ -405,6 +405,17 @@ void isl_class::print_constructor(FunctionDecl *cons)
 	printf("            return\n");
 }
 
+/* Tell ctypes about the return type of "fd".
+ * In particular, if "fd" returns a pointer to an isl object,
+ * then tell ctypes it returns a "c_void_p".
+ */
+static void print_restype(FunctionDecl *fd)
+{
+	string fullname = fd->getName();
+	if (is_isl_type(fd->getReturnType()))
+		printf("isl.%s.restype = c_void_p\n", fullname.c_str());
+}
+
 /* Print out the definition of this isl_class.
  *
  * We first check if this isl_class is a subclass of some other class.
@@ -465,7 +476,7 @@ void isl_class::print(map<string, isl_class> &classes, set<string> &done)
 	printf("\n");
 	for (in = constructors.begin(); in != constructors.end(); ++in) {
 		string fullname = (*in)->getName();
-		printf("isl.%s.restype = c_void_p\n", fullname.c_str());
+		print_restype(*in);
 		printf("isl.%s.argtypes = [", fullname.c_str());
 		for (int i = 0; i < (*in)->getNumParams(); ++i) {
 			ParmVarDecl *param = (*in)->getParamDecl(i);
@@ -483,11 +494,8 @@ void isl_class::print(map<string, isl_class> &classes, set<string> &done)
 		}
 		printf("]\n");
 	}
-	for (in = methods.begin(); in != methods.end(); ++in) {
-		string fullname = (*in)->getName();
-		if (is_isl_type((*in)->getReturnType()))
-			printf("isl.%s.restype = c_void_p\n", fullname.c_str());
-	}
+	for (in = methods.begin(); in != methods.end(); ++in)
+		print_restype(*in);
 	printf("isl.%s_free.argtypes = [c_void_p]\n", name.c_str());
 	printf("isl.%s_to_str.argtypes = [c_void_p]\n", name.c_str());
 	printf("isl.%s_to_str.restype = POINTER(c_char)\n", name.c_str());
