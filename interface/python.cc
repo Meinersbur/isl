@@ -355,7 +355,8 @@ static void print_callback(QualType type, int arg)
  * Otherwise, if the argument is marked as consuming a reference,
  * then pass a copy of the the pointer stored in the corresponding
  * argument passed to the Python method.
- * Otherwise, pass this pointer itself.
+ * Otherwise, if the argument is a pointer, then pass this pointer itself.
+ * Otherwise, pass the argument directly.
  */
 static void print_arg_in_call(FunctionDecl *fd, int arg, int skip)
 {
@@ -366,8 +367,10 @@ static void print_arg_in_call(FunctionDecl *fd, int arg, int skip)
 	} else if (takes(param)) {
 		string type_s = extract_type(type);
 		printf("isl.%s_copy(arg%d.ptr)", type_s.c_str(), arg - skip);
-	} else {
+	} else if (type->isPointerType()) {
 		printf("arg%d.ptr", arg - skip);
+	} else {
+		printf("arg%d", arg - skip);
 	}
 }
 
