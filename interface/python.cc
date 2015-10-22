@@ -416,6 +416,29 @@ static void print_restype(FunctionDecl *fd)
 		printf("isl.%s.restype = c_void_p\n", fullname.c_str());
 }
 
+/* Tell ctypes about the types of the arguments of the constructor "fd".
+ */
+static void print_argtypes(FunctionDecl *fd)
+{
+	string fullname = fd->getName();
+	printf("isl.%s.argtypes = [", fullname.c_str());
+	for (int i = 0; i < fd->getNumParams(); ++i) {
+		ParmVarDecl *param = fd->getParamDecl(i);
+		QualType type = param->getOriginalType();
+		if (i)
+			printf(", ");
+		if (is_isl_ctx(type))
+			printf("Context");
+		else if (is_isl_type(type))
+			printf("c_void_p");
+		else if (is_string(type))
+			printf("c_char_p");
+		else
+			printf("c_int");
+	}
+	printf("]\n");
+}
+
 /* Print out the definition of this isl_class.
  *
  * We first check if this isl_class is a subclass of some other class.
@@ -475,24 +498,8 @@ void isl_class::print(map<string, isl_class> &classes, set<string> &done)
 
 	printf("\n");
 	for (in = constructors.begin(); in != constructors.end(); ++in) {
-		string fullname = (*in)->getName();
 		print_restype(*in);
-		printf("isl.%s.argtypes = [", fullname.c_str());
-		for (int i = 0; i < (*in)->getNumParams(); ++i) {
-			ParmVarDecl *param = (*in)->getParamDecl(i);
-			QualType type = param->getOriginalType();
-			if (i)
-				printf(", ");
-			if (is_isl_ctx(type))
-				printf("Context");
-			else if (is_isl_type(type))
-				printf("c_void_p");
-			else if (is_string(type))
-				printf("c_char_p");
-			else
-				printf("c_int");
-		}
-		printf("]\n");
+		print_argtypes(*in);
 	}
 	for (in = methods.begin(); in != methods.end(); ++in)
 		print_restype(*in);
