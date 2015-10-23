@@ -7392,6 +7392,8 @@ assigns a different value to two domain elements, while all previous
 schedule dimensions in the same band assign them the same value,
 then the two domain elements are ordered according to these two
 different values.
+Each expression is required to be total in the domain elements
+that reach the band node.
 
 =item C<isl_schedule_node_expansion>
 
