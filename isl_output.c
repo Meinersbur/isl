@@ -858,15 +858,13 @@ static __isl_give isl_printer *isl_basic_map_print_isl(
 	return p;
 }
 
-static __isl_give isl_printer *print_disjuncts(__isl_keep isl_map *map,
+/* Print the disjuncts of a map (or set) "map" to "p".
+ */
+static __isl_give isl_printer *print_disjuncts_core(__isl_keep isl_map *map,
 	__isl_take isl_printer *p, int latex)
 {
 	int i;
 
-	if (isl_map_plain_is_universe(map))
-		return p;
-
-	p = isl_printer_print_str(p, s_such_that[latex]);
 	if (map->n == 0)
 		p = isl_printer_print_str(p, "1 = 0");
 	for (i = 0; i < map->n; ++i) {
@@ -879,6 +877,68 @@ static __isl_give isl_printer *print_disjuncts(__isl_keep isl_map *map,
 			p = isl_printer_print_str(p, ")");
 	}
 	return p;
+}
+
+/* Print the disjuncts of a map (or set) "map" to "p".
+ * "hull" describes constraints shared by all disjuncts of "map".
+ *
+ * Print the disjuncts as a conjunction of "hull" and
+ * the result of removing the constraints of "hull" from "map".
+ * If this result turns out to be the universe, then simply print "hull".
+ */
+static __isl_give isl_printer *print_disjuncts_in_hull(__isl_keep isl_map *map,
+	__isl_take isl_basic_map *hull, __isl_take isl_printer *p, int latex)
+{
+	isl_bool is_universe;
+
+	p = print_disjunct(hull, map->dim, p, latex);
+	map = isl_map_plain_gist_basic_map(isl_map_copy(map), hull);
+	is_universe = isl_map_plain_is_universe(map);
+	if (is_universe < 0)
+		goto error;
+	if (!is_universe) {
+		p = isl_printer_print_str(p, s_and[latex]);
+		p = isl_printer_print_str(p, "(");
+		p = print_disjuncts_core(map, p, latex);
+		p = isl_printer_print_str(p, ")");
+	}
+	isl_map_free(map);
+
+	return p;
+error:
+	isl_map_free(map);
+	isl_printer_free(p);
+	return NULL;
+}
+
+/* Print the disjuncts of a map (or set) "map" to "p".
+ *
+ * If there are at least two disjuncts and "dump" mode is not turned out,
+ * check for any shared constraints among all disjuncts.
+ * If there are any, then print them separately in print_disjuncts_in_hull.
+ */
+static __isl_give isl_printer *print_disjuncts(__isl_keep isl_map *map,
+	__isl_take isl_printer *p, int latex)
+{
+	if (isl_map_plain_is_universe(map))
+		return p;
+
+	p = isl_printer_print_str(p, s_such_that[latex]);
+
+	if (!p->dump && map->n >= 2) {
+		isl_basic_map *hull;
+		isl_bool is_universe;
+
+		hull = isl_map_plain_unshifted_simple_hull(isl_map_copy(map));
+		is_universe = isl_basic_map_is_universe(hull);
+		if (is_universe < 0)
+			p = isl_printer_free(p);
+		else if (!is_universe)
+			return print_disjuncts_in_hull(map, hull, p, latex);
+		isl_basic_map_free(hull);
+	}
+
+	return print_disjuncts_core(map, p, latex);
 }
 
 /* Print the disjuncts of a map (or set).
