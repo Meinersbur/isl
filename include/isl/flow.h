@@ -6,6 +6,7 @@
 #include <isl/union_set_type.h>
 #include <isl/union_map_type.h>
 #include <isl/schedule.h>
+#include <isl/printer.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -89,6 +90,11 @@ __isl_null isl_union_access_info *isl_union_access_info_free(
 	__isl_take isl_union_access_info *access);
 
 isl_ctx *isl_union_access_info_get_ctx(
+	__isl_keep isl_union_access_info *access);
+
+__isl_give isl_printer *isl_printer_print_union_access_info(
+	__isl_take isl_printer *p, __isl_keep isl_union_access_info *access);
+__isl_give char *isl_union_access_info_to_str(
 	__isl_keep isl_union_access_info *access);
 
 __isl_give isl_union_flow *isl_union_access_info_compute_flow(

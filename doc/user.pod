@@ -8476,6 +8476,19 @@ the access relations.  In particular, the domains of the access
 relations are effectively intersected with the domain of the schedule
 and only the resulting accesses are considered by the dependence analysis.
 
+A representation of the information contained in an object
+of type C<isl_union_access_info> can be obtained using
+
+	#include <isl/flow.h>
+	__isl_give isl_printer *
+	isl_printer_print_union_access_info(
+		__isl_take isl_printer *p,
+		__isl_keep isl_union_access_info *access);
+	__isl_give char *isl_union_access_info_to_str(
+		__isl_keep isl_union_access_info *access);
+
+C<isl_union_access_info_to_str> prints the information in flow format.
+
 The output of C<isl_union_access_info_compute_flow> can be examined
 and freed using the following functions.
 

@@ -1400,6 +1400,70 @@ __isl_give isl_union_access_info *isl_union_access_info_copy(
 	return copy;
 }
 
+/* Print a key-value pair of a YAML mapping to "p",
+ * with key "name" and value "umap".
+ */
+static __isl_give isl_printer *print_union_map_field(__isl_take isl_printer *p,
+	const char *name, __isl_keep isl_union_map *umap)
+{
+	p = isl_printer_print_str(p, name);
+	p = isl_printer_yaml_next(p);
+	p = isl_printer_print_str(p, "\"");
+	p = isl_printer_print_union_map(p, umap);
+	p = isl_printer_print_str(p, "\"");
+	p = isl_printer_yaml_next(p);
+
+	return p;
+}
+
+/* Print the information contained in "access" to "p".
+ * The information is printed as a YAML document.
+ */
+__isl_give isl_printer *isl_printer_print_union_access_info(
+	__isl_take isl_printer *p, __isl_keep isl_union_access_info *access)
+{
+	if (!access)
+		return isl_printer_free(p);
+
+	p = isl_printer_yaml_start_mapping(p);
+	p = print_union_map_field(p, "sink", access->sink);
+	p = print_union_map_field(p, "must_source", access->must_source);
+	p = print_union_map_field(p, "may_source", access->may_source);
+	if (access->schedule) {
+		p = isl_printer_print_str(p, "schedule");
+		p = isl_printer_yaml_next(p);
+		p = isl_printer_print_schedule(p, access->schedule);
+		p = isl_printer_yaml_next(p);
+	} else {
+		p = print_union_map_field(p, "schedule_map",
+						access->schedule_map);
+	}
+	p = isl_printer_yaml_end_mapping(p);
+
+	return p;
+}
+
+/* Return a string representation of the information in "access".
+ * The information is printed in flow format.
+ */
+__isl_give char *isl_union_access_info_to_str(
+	__isl_keep isl_union_access_info *access)
+{
+	isl_printer *p;
+	char *s;
+
+	if (!access)
+		return NULL;
+
+	p = isl_printer_to_str(isl_union_access_info_get_ctx(access));
+	p = isl_printer_set_yaml_style(p, ISL_YAML_STYLE_FLOW);
+	p = isl_printer_print_union_access_info(p, access);
+	s = isl_printer_get_str(p);
+	isl_printer_free(p);
+
+	return s;
+}
+
 /* Update the fields of "access" such that they all have the same parameters,
  * keeping in mind that the schedule_map field may be NULL and ignoring
  * the schedule field.
