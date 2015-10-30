@@ -8530,6 +8530,18 @@ That is, it contains those sink access that do not contribute to any
 of the elements in the relation returned
 by C<isl_union_flow_get_must_dependence>.
 
+A representation of the information contained in an object
+of type C<isl_union_flow> can be obtained using
+
+	#include <isl/flow.h>
+	__isl_give isl_printer *isl_printer_print_union_flow(
+		__isl_take isl_printer *p,
+		__isl_keep isl_union_flow *flow);
+	__isl_give char *isl_union_flow_to_str(
+		__isl_keep isl_union_flow *flow);
+
+C<isl_union_flow_to_str> prints the information in flow format.
+
 =head3 Low-level Interface
 
 A lower-level interface is provided by the following functions.
