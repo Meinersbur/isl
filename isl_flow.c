@@ -167,6 +167,8 @@ struct isl_labeled_map {
  *
  * domain_map is an auxiliary map that maps the sink access relation
  * to the domain of this access relation.
+ * This field is only needed when restrict_fn is set and
+ * the field itself is set by isl_access_info_compute_flow.
  *
  * restrict_fn is a callback that (if not NULL) will be called
  * right before any lexicographical maximization.
@@ -1088,8 +1090,7 @@ __isl_give isl_flow *isl_access_info_compute_flow(__isl_take isl_access_info *ac
 		goto error;
 
 	for (j = 0; j < res->n_source; ++j) {
-		res->dep[j].map = isl_map_apply_range(res->dep[j].map,
-					isl_map_copy(acc->domain_map));
+		res->dep[j].map = isl_map_range_factor_domain(res->dep[j].map);
 		if (!res->dep[j].map)
 			goto error;
 	}
