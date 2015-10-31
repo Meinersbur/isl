@@ -1064,18 +1064,17 @@ error:
  *
  * To deal with multi-valued sink access relations, the sink iteration
  * domain is first extended with dimensions that correspond to the data
- * space.  After the computation is finished, these extra dimensions are
- * projected out again.
+ * space.  However, these extra dimensions are not projected out again.
+ * It is up to the caller to decide whether these dimensions should be kept.
  */
-__isl_give isl_flow *isl_access_info_compute_flow(__isl_take isl_access_info *acc)
+static __isl_give isl_flow *access_info_compute_flow_core(
+	__isl_take isl_access_info *acc)
 {
-	int j;
 	struct isl_flow *res = NULL;
 
 	if (!acc)
 		return NULL;
 
-	acc->domain_map = isl_map_domain_map(isl_map_copy(acc->sink.map));
 	acc->sink.map = isl_map_range_map(acc->sink.map);
 	if (!acc->sink.map)
 		goto error;
@@ -1086,21 +1085,53 @@ __isl_give isl_flow *isl_access_info_compute_flow(__isl_take isl_access_info *ac
 		acc = isl_access_info_sort_sources(acc);
 		res = compute_val_based_dependences(acc);
 	}
+	isl_access_info_free(acc);
 	if (!res)
+		return NULL;
+	if (!res->must_no_source || !res->may_no_source)
 		goto error;
+	return res;
+error:
+	isl_flow_free(res);
+	return NULL;
+}
+
+/* Given a "sink" access, a list of n "source" accesses,
+ * compute for each iteration of the sink access
+ * and for each element accessed by that iteration,
+ * the source access in the list that last accessed the
+ * element accessed by the sink access before this sink access.
+ * Each access is given as a map from the loop iterators
+ * to the array indices.
+ * The result is a list of n relations between source and sink
+ * iterations and a subset of the domain of the sink access,
+ * corresponding to those iterations that access an element
+ * not previously accessed.
+ *
+ * To deal with multi-valued sink access relations,
+ * access_info_compute_flow_core extends the sink iteration domain
+ * with dimensions that correspond to the data space.  These extra dimensions
+ * are projected out from the result of access_info_compute_flow_core.
+ */
+__isl_give isl_flow *isl_access_info_compute_flow(__isl_take isl_access_info *acc)
+{
+	int j;
+	struct isl_flow *res;
+
+	if (!acc)
+		return NULL;
+
+	acc->domain_map = isl_map_domain_map(isl_map_copy(acc->sink.map));
+	res = access_info_compute_flow_core(acc);
 
 	for (j = 0; j < res->n_source; ++j) {
 		res->dep[j].map = isl_map_range_factor_domain(res->dep[j].map);
 		if (!res->dep[j].map)
 			goto error;
 	}
-	if (!res->must_no_source || !res->may_no_source)
-		goto error;
 
-	isl_access_info_free(acc);
 	return res;
 error:
-	isl_access_info_free(acc);
 	isl_flow_free(res);
 	return NULL;
 }
