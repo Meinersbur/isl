@@ -1646,6 +1646,25 @@ error:
  * to the iteration domains prior to the dependence analysis by
  * replacing the iteration domain D, by the wrapped map [S -> D].
  * Replace these wrapped maps by the original D.
+ *
+ * In particular, the dependences computed by access_info_compute_flow_core
+ * are of the form
+ *
+ *	[S -> D] -> [[S' -> D'] -> A]
+ *
+ * The schedule dimensions are projected out by first currying the range,
+ * resulting in
+ *
+ *	[S -> D] -> [S' -> [D' -> A]]
+ *
+ * and then computing the factor range
+ *
+ *	D -> [D' -> A]
+ *
+ * Finally, the accessed elements are projected out as well,
+ * resulting in
+ *
+ *	D -> D'
  */
 static __isl_give isl_union_flow *isl_union_flow_drop_schedule(
 	__isl_take isl_union_flow *flow)
@@ -1653,8 +1672,12 @@ static __isl_give isl_union_flow *isl_union_flow_drop_schedule(
 	if (!flow)
 		return NULL;
 
+	flow->must_dep = isl_union_map_range_curry(flow->must_dep);
 	flow->must_dep = isl_union_map_factor_range(flow->must_dep);
+	flow->must_dep = isl_union_map_range_factor_domain(flow->must_dep);
+	flow->may_dep = isl_union_map_range_curry(flow->may_dep);
 	flow->may_dep = isl_union_map_factor_range(flow->may_dep);
+	flow->may_dep = isl_union_map_range_factor_domain(flow->may_dep);
 	flow->must_no_source =
 		isl_union_map_domain_factor_range(flow->must_no_source);
 	flow->may_no_source =
@@ -1786,7 +1809,7 @@ static int before(void *first, void *second)
 
 /* Given a sink access, look for all the source accesses that access
  * the same array and perform dataflow analysis on them using
- * isl_access_info_compute_flow.
+ * isl_access_info_compute_flow_core.
  */
 static isl_stat compute_flow(__isl_take isl_map *map, void *user)
 {
@@ -1833,7 +1856,7 @@ static isl_stat compute_flow(__isl_take isl_map *map, void *user)
 					&collect_matching_array, data) < 0)
 		goto error;
 
-	flow = isl_access_info_compute_flow(data->accesses);
+	flow = access_info_compute_flow_core(data->accesses);
 	data->accesses = NULL;
 
 	if (!flow)
