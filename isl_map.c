@@ -10582,6 +10582,35 @@ isl_bool isl_set_is_wrapping(__isl_keep isl_set *set)
 	return isl_space_is_wrapping(set->dim);
 }
 
+/* Modify the space of "map" through a call to "change".
+ * If "can_change" is set (not NULL), then first call it to check
+ * if the modification is allowed, printing the error message "cannot_change"
+ * if it is not.
+ */
+static __isl_give isl_map *isl_map_change_space(__isl_take isl_map *map,
+	isl_bool (*can_change)(__isl_keep isl_map *map),
+	const char *cannot_change,
+	__isl_give isl_space *(*change)(__isl_take isl_space *space))
+{
+	isl_bool ok;
+	isl_space *space;
+
+	if (!map)
+		return NULL;
+
+	ok = can_change ? can_change(map) : isl_bool_true;
+	if (ok < 0)
+		return isl_map_free(map);
+	if (!ok)
+		isl_die(isl_map_get_ctx(map), isl_error_invalid, cannot_change,
+			return isl_map_free(map));
+
+	space = change(isl_map_get_space(map));
+	map = isl_map_reset_space(map, space);
+
+	return map;
+}
+
 /* Is the domain of "map" a wrapped relation?
  */
 isl_bool isl_map_domain_is_wrapping(__isl_keep isl_map *map)
@@ -10620,27 +10649,11 @@ error:
 	return NULL;
 }
 
+/* Given a map A -> B, return the set (A -> B).
+ */
 __isl_give isl_set *isl_map_wrap(__isl_take isl_map *map)
 {
-	int i;
-
-	map = isl_map_cow(map);
-	if (!map)
-		return NULL;
-
-	for (i = 0; i < map->n; ++i) {
-		map->p[i] = (isl_basic_map *)isl_basic_map_wrap(map->p[i]);
-		if (!map->p[i])
-			goto error;
-	}
-	map->dim = isl_space_wrap(map->dim);
-	if (!map->dim)
-		goto error;
-
-	return (isl_set *)map;
-error:
-	isl_map_free(map);
-	return NULL;
+	return isl_map_change_space(map, NULL, NULL, &isl_space_wrap);
 }
 
 __isl_give isl_basic_map *isl_basic_set_unwrap(__isl_take isl_basic_set *bset)
@@ -10661,35 +10674,13 @@ error:
 	return NULL;
 }
 
+/* Given a set (A -> B), return the map A -> B.
+ * Error out if "set" is not of the form (A -> B).
+ */
 __isl_give isl_map *isl_set_unwrap(__isl_take isl_set *set)
 {
-	int i;
-
-	if (!set)
-		return NULL;
-
-	if (!isl_set_is_wrapping(set))
-		isl_die(set->ctx, isl_error_invalid, "not a wrapping set",
-			goto error);
-
-	set = isl_set_cow(set);
-	if (!set)
-		return NULL;
-
-	for (i = 0; i < set->n; ++i) {
-		set->p[i] = (isl_basic_set *)isl_basic_set_unwrap(set->p[i]);
-		if (!set->p[i])
-			goto error;
-	}
-
-	set->dim = isl_space_unwrap(set->dim);
-	if (!set->dim)
-		goto error;
-
-	return (isl_map *)set;
-error:
-	isl_set_free(set);
-	return NULL;
+	return isl_map_change_space(set, &isl_set_is_wrapping,
+				    "not a wrapping set", &isl_space_unwrap);
 }
 
 __isl_give isl_basic_map *isl_basic_map_reset(__isl_take isl_basic_map *bmap,
@@ -10826,33 +10817,17 @@ error:
 	return NULL;
 }
 
+/* Remove any internal structure from the spaces of domain and range of "map".
+ */
 __isl_give isl_map *isl_map_flatten(__isl_take isl_map *map)
 {
-	int i;
-
 	if (!map)
 		return NULL;
 
 	if (!map->dim->nested[0] && !map->dim->nested[1])
 		return map;
 
-	map = isl_map_cow(map);
-	if (!map)
-		return NULL;
-
-	for (i = 0; i < map->n; ++i) {
-		map->p[i] = isl_basic_map_flatten(map->p[i]);
-		if (!map->p[i])
-			goto error;
-	}
-	map->dim = isl_space_flatten(map->dim);
-	if (!map->dim)
-		goto error;
-
-	return map;
-error:
-	isl_map_free(map);
-	return NULL;
+	return isl_map_change_space(map, NULL, NULL, &isl_space_flatten);
 }
 
 __isl_give isl_set *isl_set_flatten(__isl_take isl_set *set)
@@ -10873,62 +10848,30 @@ __isl_give isl_map *isl_set_flatten_map(__isl_take isl_set *set)
 	return map;
 }
 
+/* Remove any internal structure from the space of the domain of "map".
+ */
 __isl_give isl_map *isl_map_flatten_domain(__isl_take isl_map *map)
 {
-	int i;
-
 	if (!map)
 		return NULL;
 
 	if (!map->dim->nested[0])
 		return map;
 
-	map = isl_map_cow(map);
-	if (!map)
-		return NULL;
-
-	for (i = 0; i < map->n; ++i) {
-		map->p[i] = isl_basic_map_flatten_domain(map->p[i]);
-		if (!map->p[i])
-			goto error;
-	}
-	map->dim = isl_space_flatten_domain(map->dim);
-	if (!map->dim)
-		goto error;
-
-	return map;
-error:
-	isl_map_free(map);
-	return NULL;
+	return isl_map_change_space(map, NULL, NULL, &isl_space_flatten_domain);
 }
 
+/* Remove any internal structure from the space of the range of "map".
+ */
 __isl_give isl_map *isl_map_flatten_range(__isl_take isl_map *map)
 {
-	int i;
-
 	if (!map)
 		return NULL;
 
 	if (!map->dim->nested[1])
 		return map;
 
-	map = isl_map_cow(map);
-	if (!map)
-		return NULL;
-
-	for (i = 0; i < map->n; ++i) {
-		map->p[i] = isl_basic_map_flatten_range(map->p[i]);
-		if (!map->p[i])
-			goto error;
-	}
-	map->dim = isl_space_flatten_range(map->dim);
-	if (!map->dim)
-		goto error;
-
-	return map;
-error:
-	isl_map_free(map);
-	return NULL;
+	return isl_map_change_space(map, NULL, NULL, &isl_space_flatten_range);
 }
 
 /* Reorder the dimensions of "bmap" according to the given dim_map
@@ -11396,33 +11339,8 @@ error:
  */
 __isl_give isl_map *isl_map_curry(__isl_take isl_map *map)
 {
-	int i;
-
-	if (!map)
-		return NULL;
-
-	if (!isl_map_can_curry(map))
-		isl_die(map->ctx, isl_error_invalid, "map cannot be curried",
-			goto error);
-
-	map = isl_map_cow(map);
-	if (!map)
-		return NULL;
-
-	for (i = 0; i < map->n; ++i) {
-		map->p[i] = isl_basic_map_curry(map->p[i]);
-		if (!map->p[i])
-			goto error;
-	}
-
-	map->dim = isl_space_curry(map->dim);
-	if (!map->dim)
-		goto error;
-
-	return map;
-error:
-	isl_map_free(map);
-	return NULL;
+	return isl_map_change_space(map, &isl_map_can_curry,
+				    "map cannot be curried", &isl_space_curry);
 }
 
 /* Can we apply isl_basic_map_uncurry to "bmap"?
@@ -11474,30 +11392,8 @@ __isl_give isl_basic_map *isl_basic_map_uncurry(__isl_take isl_basic_map *bmap)
  */
 __isl_give isl_map *isl_map_uncurry(__isl_take isl_map *map)
 {
-	int i;
-
-	if (!map)
-		return NULL;
-
-	if (!isl_map_can_uncurry(map))
-		isl_die(map->ctx, isl_error_invalid, "map cannot be uncurried",
-			return isl_map_free(map));
-
-	map = isl_map_cow(map);
-	if (!map)
-		return NULL;
-
-	for (i = 0; i < map->n; ++i) {
-		map->p[i] = isl_basic_map_uncurry(map->p[i]);
-		if (!map->p[i])
-			return isl_map_free(map);
-	}
-
-	map->dim = isl_space_uncurry(map->dim);
-	if (!map->dim)
-		return isl_map_free(map);
-
-	return map;
+	return isl_map_change_space(map, &isl_map_can_uncurry,
+				"map cannot be uncurried", &isl_space_uncurry);
 }
 
 /* Construct a basic map mapping the domain of the affine expression
