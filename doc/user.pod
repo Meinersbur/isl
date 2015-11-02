@@ -3915,6 +3915,13 @@ Check whether the domain of the (basic) relation is a wrapped relation.
 
 Check whether the range of the (basic) relation is a wrapped relation.
 
+	#include <isl/space.h>
+	isl_bool isl_space_can_range_curry(
+		__isl_keep isl_space *space);
+
+Check whether the domain of the relation wrapped in the range of
+the input is itself a wrapped relation.
+
 =item * Special Values
 
 	#include <isl/aff.h>
@@ -5166,6 +5173,13 @@ move the range of the nested relation out of the domain
 and use it as the domain of a nested relation in the range,
 with the original range as range of this nested relation.
 The C<uncurry> functions perform the inverse operation.
+
+	#include <isl/space.h>
+	__isl_give isl_space *isl_space_range_curry(
+		__isl_take isl_space *space);
+
+This function applies the currying to the relation that
+is nested inside the range of the input.
 
 =item * Aligning parameters
 
