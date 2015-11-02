@@ -11262,6 +11262,7 @@ __isl_give isl_basic_map *isl_basic_map_zip(__isl_take isl_basic_map *bmap)
 	bmap->dim = isl_space_zip(bmap->dim);
 	if (!bmap->dim)
 		goto error;
+	bmap = isl_basic_map_mark_final(bmap);
 	return bmap;
 error:
 	isl_basic_map_free(bmap);
