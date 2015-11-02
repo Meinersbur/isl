@@ -11425,6 +11425,7 @@ __isl_give isl_basic_map *isl_basic_map_uncurry(__isl_take isl_basic_map *bmap)
 	bmap->dim = isl_space_uncurry(bmap->dim);
 	if (!bmap->dim)
 		return isl_basic_map_free(bmap);
+	bmap = isl_basic_map_mark_final(bmap);
 	return bmap;
 }
 
