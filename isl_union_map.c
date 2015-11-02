@@ -2930,6 +2930,32 @@ __isl_give isl_union_map *isl_union_map_curry(__isl_take isl_union_map *umap)
 	return cond_un_op(umap, &curry_entry);
 }
 
+/* If *entry is of the form A -> ((B -> C) -> D), then apply
+ * isl_map_range_curry to it and add the result to *res.
+ */
+static isl_stat range_curry_entry(void **entry, void *user)
+{
+	isl_map *map = *entry;
+	isl_union_map **res = user;
+
+	if (!isl_map_can_range_curry(map))
+		return isl_stat_ok;
+
+	map = isl_map_range_curry(isl_map_copy(map));
+	*res = isl_union_map_add_map(*res, map);
+
+	return isl_stat_ok;
+}
+
+/* Given a union map, take the maps of the form A -> ((B -> C) -> D) and
+ * return the union of the corresponding maps A -> (B -> (C -> D)).
+ */
+__isl_give isl_union_map *isl_union_map_range_curry(
+	__isl_take isl_union_map *umap)
+{
+	return cond_un_op(umap, &range_curry_entry);
+}
+
 static isl_stat lift_entry(void **entry, void *user)
 {
 	isl_set *set = *entry;

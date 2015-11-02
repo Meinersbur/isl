@@ -5186,6 +5186,10 @@ The C<uncurry> functions perform the inverse operation.
 	__isl_give isl_map *isl_map_range_curry(
 		__isl_take isl_map *map);
 
+	#include <isl/union_map.h>
+	__isl_give isl_union_map *isl_union_map_range_curry(
+		__isl_take isl_union_map *umap);
+
 These functions apply the currying to the relation that
 is nested inside the range of the input.
 
