@@ -3919,6 +3919,10 @@ Check whether the range of the (basic) relation is a wrapped relation.
 	isl_bool isl_space_can_range_curry(
 		__isl_keep isl_space *space);
 
+	#include <isl/map.h>
+	isl_bool isl_map_can_range_curry(
+		__isl_keep isl_map *map);
+
 Check whether the domain of the relation wrapped in the range of
 the input is itself a wrapped relation.
 
@@ -5178,7 +5182,11 @@ The C<uncurry> functions perform the inverse operation.
 	__isl_give isl_space *isl_space_range_curry(
 		__isl_take isl_space *space);
 
-This function applies the currying to the relation that
+	#include <isl/map.h>
+	__isl_give isl_map *isl_map_range_curry(
+		__isl_take isl_map *map);
+
+These functions apply the currying to the relation that
 is nested inside the range of the input.
 
 =item * Aligning parameters

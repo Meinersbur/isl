@@ -11343,6 +11343,28 @@ __isl_give isl_map *isl_map_curry(__isl_take isl_map *map)
 				    "map cannot be curried", &isl_space_curry);
 }
 
+/* Can isl_map_range_curry be applied to "map"?
+ * That is, does it have a nested relation in its range,
+ * the domain of which is itself a nested relation?
+ */
+isl_bool isl_map_can_range_curry(__isl_keep isl_map *map)
+{
+	if (!map)
+		return isl_bool_error;
+
+	return isl_space_can_range_curry(map->dim);
+}
+
+/* Given a map A -> ((B -> C) -> D), return the corresponding map
+ * A -> (B -> (C -> D)).
+ */
+__isl_give isl_map *isl_map_range_curry(__isl_take isl_map *map)
+{
+	return isl_map_change_space(map, &isl_map_can_range_curry,
+				    "map range cannot be curried",
+				    &isl_space_range_curry);
+}
+
 /* Can we apply isl_basic_map_uncurry to "bmap"?
  * That is, does it have a nested relation in its domain?
  */
