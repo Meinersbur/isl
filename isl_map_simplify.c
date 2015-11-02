@@ -1440,12 +1440,25 @@ static struct isl_basic_map *remove_redundant_divs(struct isl_basic_map *bmap)
 	return bmap;
 }
 
-struct isl_basic_map *isl_basic_map_finalize(struct isl_basic_map *bmap)
+/* Mark "bmap" as final, without checking for obviously redundant
+ * integer divisions.  This function should be used when "bmap"
+ * is known not to involve any such integer divisions.
+ */
+__isl_give isl_basic_map *isl_basic_map_mark_final(
+	__isl_take isl_basic_map *bmap)
 {
-	bmap = remove_redundant_divs(bmap);
 	if (!bmap)
 		return NULL;
 	ISL_F_SET(bmap, ISL_BASIC_SET_FINAL);
+	return bmap;
+}
+
+/* Mark "bmap" as final, after removing obviously redundant integer divisions.
+ */
+struct isl_basic_map *isl_basic_map_finalize(struct isl_basic_map *bmap)
+{
+	bmap = remove_redundant_divs(bmap);
+	bmap = isl_basic_map_mark_final(bmap);
 	return bmap;
 }
 
