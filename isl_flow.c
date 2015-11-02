@@ -2265,6 +2265,24 @@ error:
 /* Given a scheduled sink access relation "sink", compute the corresponding
  * dependences on the sources in "data" and add the computed dependences
  * to "uf".
+ *
+ * The dependences computed by access_info_compute_flow_core are of the form
+ *
+ *	[S -> I] -> [[S' -> I'] -> A]
+ *
+ * The schedule dimensions are projected out by first currying the range,
+ * resulting in
+ *
+ *	[S -> I] -> [S' -> [I' -> A]]
+ *
+ * and then computing the factor range
+ *
+ *	I -> [I' -> A]
+ *
+ * Finally, the accessed elements are projected out as well,
+ * resulting in
+ *
+ *	I -> I'
  */
 static __isl_give isl_union_flow *compute_single_flow(
 	__isl_take isl_union_flow *uf, struct isl_scheduled_access *sink,
@@ -2282,7 +2300,7 @@ static __isl_give isl_union_flow *compute_single_flow(
 					&before_node, data->n_source);
 	access = add_matching_sources(access, sink, data);
 
-	flow = isl_access_info_compute_flow(access);
+	flow = access_info_compute_flow_core(access);
 	if (!flow)
 		return isl_union_flow_free(uf);
 
@@ -2296,7 +2314,9 @@ static __isl_give isl_union_flow *compute_single_flow(
 	for (i = 0; i < flow->n_source; ++i) {
 		isl_union_map *dep;
 
-		map = isl_map_factor_range(isl_map_copy(flow->dep[i].map));
+		map = isl_map_range_curry(isl_map_copy(flow->dep[i].map));
+		map = isl_map_factor_range(map);
+		map = isl_map_range_factor_domain(map);
 		dep = isl_union_map_from_map(map);
 		if (flow->dep[i].must)
 			uf->must_dep = isl_union_map_union(uf->must_dep, dep);
