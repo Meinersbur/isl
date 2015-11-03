@@ -270,12 +270,13 @@ __isl_give isl_factorizer *isl_basic_set_factorizer(
 {
 	int i, j, n, done;
 	isl_mat *H, *U, *Q;
-	isl_size nvar;
+	isl_size nvar, first;
 	struct isl_factor_groups g = { 0 };
 	isl_factorizer *f;
 
 	nvar = isl_basic_set_dim(bset, isl_dim_set);
-	if (nvar < 0 || isl_basic_set_check_no_locals(bset) < 0)
+	first = isl_basic_set_var_offset(bset, isl_dim_set);
+	if (nvar < 0 || first < 0 || isl_basic_set_check_no_locals(bset) < 0)
 		return NULL;
 
 	if (nvar <= 1)
@@ -285,9 +286,9 @@ __isl_give isl_factorizer *isl_basic_set_factorizer(
 	if (!H)
 		return NULL;
 	isl_mat_sub_copy(bset->ctx, H->row, bset->eq, bset->n_eq,
-		0, 1 + isl_space_offset(bset->dim, isl_dim_set), nvar);
+		0, 1 + first, nvar);
 	isl_mat_sub_copy(bset->ctx, H->row + bset->n_eq, bset->ineq, bset->n_ineq,
-		0, 1 + isl_space_offset(bset->dim, isl_dim_set), nvar);
+		0, 1 + first, nvar);
 	H = isl_mat_left_hermite(H, 0, &U, &Q);
 
 	if (init_groups(&g, H) < 0)
