@@ -2016,7 +2016,7 @@ static __isl_give isl_aff *isl_aff_substitute_equalities_lifted(
 	__isl_take isl_aff *aff, __isl_take isl_basic_set *eq)
 {
 	int i, j;
-	unsigned total;
+	unsigned o_div;
 	unsigned n_div;
 
 	if (!eq)
@@ -2036,14 +2036,14 @@ static __isl_give isl_aff *isl_aff_substitute_equalities_lifted(
 	if (!aff->ls || !aff->v)
 		goto error;
 
-	total = 1 + isl_space_dim(eq->dim, isl_dim_all);
+	o_div = isl_basic_set_offset(eq, isl_dim_div);
 	n_div = eq->n_div;
 	for (i = 0; i < eq->n_eq; ++i) {
-		j = isl_seq_last_non_zero(eq->eq[i], total + n_div);
-		if (j < 0 || j == 0 || j >= total)
+		j = isl_seq_last_non_zero(eq->eq[i], o_div + n_div);
+		if (j < 0 || j == 0 || j >= o_div)
 			continue;
 
-		isl_seq_elim(aff->v->el + 1, eq->eq[i], j, total,
+		isl_seq_elim(aff->v->el + 1, eq->eq[i], j, o_div,
 				&aff->v->el[0]);
 	}
 
