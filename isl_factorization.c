@@ -97,8 +97,7 @@ __isl_give isl_factorizer *isl_factorizer_groups(__isl_keep isl_basic_set *bset,
 	__isl_take isl_mat *Q, __isl_take isl_mat *U, int n, int *len)
 {
 	int i;
-	isl_size nvar;
-	unsigned ovar;
+	isl_size nvar, off;
 	isl_space *space;
 	isl_basic_set *dom;
 	isl_basic_set *ran;
@@ -107,11 +106,11 @@ __isl_give isl_factorizer *isl_factorizer_groups(__isl_keep isl_basic_set *bset,
 	isl_mat *id;
 
 	nvar = isl_basic_set_dim(bset, isl_dim_set);
-	if (nvar < 0 || !Q || !U)
+	off = isl_basic_set_var_offset(bset, isl_dim_set);
+	if (nvar < 0 || off < 0 || !Q || !U)
 		goto error;
 
-	ovar = 1 + isl_space_offset(bset->dim, isl_dim_set);
-	id = isl_mat_identity(bset->ctx, ovar);
+	id = isl_mat_identity(bset->ctx, 1 + off);
 	Q = isl_mat_diagonal(isl_mat_copy(id), Q);
 	U = isl_mat_diagonal(id, U);
 
