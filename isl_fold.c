@@ -1314,7 +1314,7 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_morph_domain(
 		goto error;
 
 	isl_space_free(fold->dim);
-	fold->dim = isl_space_copy(morph->ran->dim);
+	fold->dim = isl_morph_get_ran_space(morph);
 	if (!fold->dim)
 		goto error;
 
