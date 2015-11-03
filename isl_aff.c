@@ -2732,7 +2732,6 @@ static __isl_give isl_aff *isl_aff_zero_in_space(__isl_take isl_space *space)
 
 #define NO_OPT
 #define NO_LIFT
-#define NO_MORPH
 
 #include <isl_pw_templ.c>
 #include <isl_pw_bind_domain_templ.c>
@@ -4368,7 +4367,6 @@ __isl_give isl_set *isl_multi_aff_lex_gt_set(__isl_take isl_multi_aff *ma1,
 #define NO_OPT
 #define NO_INSERT_DIMS
 #define NO_LIFT
-#define NO_MORPH
 
 #include <isl_pw_templ.c>
 #include <isl_pw_bind_domain_templ.c>
