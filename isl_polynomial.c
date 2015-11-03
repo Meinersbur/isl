@@ -4389,13 +4389,12 @@ __isl_give isl_qpolynomial *isl_qpolynomial_morph_domain(
 	isl_mat *mat, *diag;
 
 	qp = isl_qpolynomial_cow(qp);
-	if (!qp || !morph)
+
+	space = isl_qpolynomial_peek_domain_space(qp);
+	if (isl_morph_check_applies(morph, space) < 0)
 		goto error;
 
 	ctx = isl_qpolynomial_get_ctx(qp);
-	space = isl_qpolynomial_peek_domain_space(qp);
-	isl_assert(ctx, isl_space_is_equal(space, morph->dom->dim), goto error);
-
 	n_sub = morph->inv->n_row - 1;
 	if (morph->inv->n_row != morph->inv->n_col)
 		n_sub += qp->div->n_row;

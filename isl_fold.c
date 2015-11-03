@@ -1367,15 +1367,11 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_morph_domain(
 	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_morph *morph)
 {
 	int i;
-	isl_ctx *ctx;
 	isl_space *space;
 
-	if (!fold || !morph)
-		goto error;
-
-	ctx = fold->dim->ctx;
 	space = isl_qpolynomial_fold_peek_domain_space(fold);
-	isl_assert(ctx, isl_space_is_equal(space, morph->dom->dim), goto error);
+	if (isl_morph_check_applies(morph, space) < 0)
+		goto error;
 
 	fold = isl_qpolynomial_fold_cow(fold);
 	if (!fold)
