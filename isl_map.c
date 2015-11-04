@@ -1521,7 +1521,9 @@ int isl_basic_map_free_equality(struct isl_basic_map *bmap, unsigned n)
 {
 	if (!bmap)
 		return -1;
-	isl_assert(bmap->ctx, n <= bmap->n_eq, return -1);
+	if (n > bmap->n_eq)
+		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
+			"invalid number of equalities", return -1);
 	bmap->n_eq -= n;
 	return 0;
 }
