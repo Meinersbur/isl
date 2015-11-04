@@ -11259,6 +11259,17 @@ error:
 	return NULL;
 }
 
+/* Do "bset" and "space" have the same parameters?
+ */
+isl_bool isl_basic_set_space_has_equal_params(__isl_keep isl_basic_set *bset,
+	__isl_keep isl_space *space)
+{
+	isl_space *bset_space;
+
+	bset_space = isl_basic_set_peek_space(bset);
+	return isl_space_match(bset_space, isl_dim_param, space, isl_dim_param);
+}
+
 /* Align the parameters of "bset" to those of "model", introducing
  * additional parameters if needed.
  */

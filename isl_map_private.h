@@ -438,6 +438,8 @@ isl_stat isl_map_check_named_params(__isl_keep isl_map *map);
 
 isl_bool isl_map_has_equal_params(__isl_keep isl_map *map1,
 	__isl_keep isl_map *map2);
+isl_bool isl_basic_set_space_has_equal_params(__isl_keep isl_basic_set *bset,
+	__isl_keep isl_space *space);
 
 __isl_give isl_map *isl_map_align_params_map_map_and(
 	__isl_take isl_map *map1, __isl_take isl_map *map2,
