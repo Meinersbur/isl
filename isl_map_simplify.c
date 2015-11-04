@@ -306,11 +306,13 @@ static __isl_give isl_basic_map *eliminate_var_using_equality(
 	isl_size v_div;
 	int k;
 	int last_div;
+	isl_ctx *ctx;
 
 	total = isl_basic_map_dim(bmap, isl_dim_all);
 	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
 	if (total < 0 || v_div < 0)
 		return isl_basic_map_free(bmap);
+	ctx = isl_basic_map_get_ctx(bmap);
 	last_div = isl_seq_last_non_zero(eq + 1 + v_div, bmap->n_div);
 	for (k = 0; k < bmap->n_eq; ++k) {
 		if (bmap->eq[k] == eq)
@@ -320,7 +322,7 @@ static __isl_give isl_basic_map *eliminate_var_using_equality(
 		if (progress)
 			*progress = 1;
 		isl_seq_elim(bmap->eq[k], eq, 1+pos, 1+total, NULL);
-		isl_seq_normalize(bmap->ctx, bmap->eq[k], 1 + total);
+		isl_seq_normalize(ctx, bmap->eq[k], 1 + total);
 	}
 
 	for (k = 0; k < bmap->n_ineq; ++k) {
@@ -329,7 +331,7 @@ static __isl_give isl_basic_map *eliminate_var_using_equality(
 		if (progress)
 			*progress = 1;
 		isl_seq_elim(bmap->ineq[k], eq, 1+pos, 1+total, NULL);
-		isl_seq_normalize(bmap->ctx, bmap->ineq[k], 1 + total);
+		isl_seq_normalize(ctx, bmap->ineq[k], 1 + total);
 		ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_REDUNDANT);
 		ISL_F_CLR(bmap, ISL_BASIC_MAP_SORTED);
 		ISL_F_CLR(bmap, ISL_BASIC_MAP_REDUCED_COEFFICIENTS);
