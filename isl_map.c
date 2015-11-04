@@ -3904,11 +3904,14 @@ struct isl_basic_map *isl_basic_map_apply_domain(
 	if (!bmap1 || !bmap2)
 		goto error;
 
-	isl_assert(bmap1->ctx,
-	    isl_basic_map_n_in(bmap1) == isl_basic_map_n_in(bmap2), goto error);
-	isl_assert(bmap1->ctx,
-	    isl_basic_map_n_param(bmap1) == isl_basic_map_n_param(bmap2),
-	    goto error);
+	if (!isl_space_match(bmap1->dim, isl_dim_param,
+				bmap2->dim, isl_dim_param))
+		isl_die(isl_basic_map_get_ctx(bmap1), isl_error_invalid,
+			"parameters don't match", goto error);
+	if (!isl_space_tuple_is_equal(bmap1->dim, isl_dim_in,
+					bmap2->dim, isl_dim_in))
+		isl_die(isl_basic_map_get_ctx(bmap1), isl_error_invalid,
+			"spaces don't match", goto error);
 
 	bmap1 = isl_basic_map_reverse(bmap1);
 	bmap1 = isl_basic_map_apply_range(bmap1, bmap2);
