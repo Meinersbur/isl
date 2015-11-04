@@ -1084,7 +1084,7 @@ static isl_bool ok_to_set_div_from_bound(__isl_keep isl_basic_map *bmap,
 	int div, int ineq)
 {
 	int j;
-	unsigned total = 1 + isl_space_dim(bmap->dim, isl_dim_all);
+	unsigned total = isl_basic_map_offset(bmap, isl_dim_div);
 
 	/* Not defined in terms of unknown divs */
 	for (j = 0; j < bmap->n_div; ++j) {
