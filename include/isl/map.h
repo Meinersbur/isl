@@ -224,7 +224,7 @@ struct isl_basic_map *isl_basic_map_neg(struct isl_basic_map *bmap);
 
 __isl_give isl_map *isl_map_sum(__isl_take isl_map *map1,
 	__isl_take isl_map *map2);
-struct isl_map *isl_map_neg(struct isl_map *map);
+__isl_give isl_map *isl_map_neg(__isl_take isl_map *map);
 __isl_give isl_map *isl_map_floordiv_val(__isl_take isl_map *map,
 	__isl_take isl_val *d);
 

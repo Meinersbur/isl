@@ -5213,6 +5213,20 @@ All parameters need to be named.
 
 =item * Unary Arithmetic Operations
 
+	#include <isl/set.h>
+	__isl_give isl_set *isl_set_neg(
+		__isl_take isl_set *set);
+	#include <isl/map.h>
+	__isl_give isl_map *isl_map_neg(
+		__isl_take isl_map *map);
+
+C<isl_set_neg> constructs a set containing the opposites of
+the elements in its argument.
+The domain of the result of C<isl_map_neg> is the same
+as the domain of its argument.  The corresponding range
+elements are the opposites of the corresponding range
+elements in the argument.
+
 	#include <isl/val.h>
 	__isl_give isl_multi_val *isl_multi_val_neg(
 		__isl_take isl_multi_val *mv);
