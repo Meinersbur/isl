@@ -4758,7 +4758,7 @@ static __isl_give isl_basic_map *isl_basic_map_drop_redundant_divs_ineq(
 	__isl_take isl_basic_map *bmap)
 {
 	int i, j;
-	unsigned off;
+	int off;
 	int *pairs = NULL;
 	int n = 0;
 	int n_ineq;
@@ -4768,7 +4768,9 @@ static __isl_give isl_basic_map *isl_basic_map_drop_redundant_divs_ineq(
 	if (bmap->n_div == 0)
 		return bmap;
 
-	off = isl_space_dim(bmap->dim, isl_dim_all);
+	off = isl_basic_map_var_offset(bmap, isl_dim_div);
+	if (off < 0)
+		return isl_basic_map_free(bmap);
 	pairs = isl_calloc_array(bmap->ctx, int, bmap->n_div);
 	if (!pairs)
 		goto error;
