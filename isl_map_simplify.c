@@ -4318,13 +4318,16 @@ static __isl_give isl_basic_map *coalesce_divs(__isl_take isl_basic_map *bmap,
 {
 	isl_ctx *ctx;
 	isl_int m;
-	unsigned dim, total;
+	int v_div;
+	unsigned total;
 	int i;
 
 	ctx = isl_basic_map_get_ctx(bmap);
 
-	dim = isl_space_dim(bmap->dim, isl_dim_all);
-	total = 1 + dim + bmap->n_div;
+	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
+	if (v_div < 0)
+		return isl_basic_map_free(bmap);
+	total = 1 + v_div + bmap->n_div;
 
 	isl_int_init(m);
 	isl_int_add(m, bmap->ineq[l][0], bmap->ineq[u][0]);
@@ -4333,19 +4336,19 @@ static __isl_give isl_basic_map *coalesce_divs(__isl_take isl_basic_map *bmap,
 	for (i = 0; i < bmap->n_ineq; ++i) {
 		if (i == l || i == u)
 			continue;
-		if (isl_int_is_zero(bmap->ineq[i][1 + dim + div2]))
+		if (isl_int_is_zero(bmap->ineq[i][1 + v_div + div2]))
 			continue;
-		if (isl_int_is_zero(bmap->ineq[i][1 + dim + div1])) {
-			if (isl_int_is_pos(bmap->ineq[i][1 + dim + div2]))
+		if (isl_int_is_zero(bmap->ineq[i][1 + v_div + div1])) {
+			if (isl_int_is_pos(bmap->ineq[i][1 + v_div + div2]))
 				isl_seq_combine(bmap->ineq[i], m, bmap->ineq[i],
 						ctx->one, bmap->ineq[l], total);
 			else
 				isl_seq_combine(bmap->ineq[i], m, bmap->ineq[i],
 						ctx->one, bmap->ineq[u], total);
 		}
-		isl_int_set(bmap->ineq[i][1 + dim + div2],
-			    bmap->ineq[i][1 + dim + div1]);
-		isl_int_set_si(bmap->ineq[i][1 + dim + div1], 0);
+		isl_int_set(bmap->ineq[i][1 + v_div + div2],
+			    bmap->ineq[i][1 + v_div + div1]);
+		isl_int_set_si(bmap->ineq[i][1 + v_div + div1], 0);
 	}
 
 	isl_int_clear(m);
