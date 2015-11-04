@@ -4376,21 +4376,24 @@ static __isl_give isl_basic_map *coalesce_or_drop_more_redundant_divs(
 	__isl_take isl_basic_map *bmap, int *pairs, int n)
 {
 	int i, l, u;
-	unsigned dim, n_div;
+	int v_div;
+	unsigned n_div;
 
-	dim = isl_space_dim(bmap->dim, isl_dim_all);
+	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
+	if (v_div < 0)
+		return isl_basic_map_free(bmap);
 
 	n_div = isl_basic_map_dim(bmap, isl_dim_div);
 	for (i = 0; i < n_div; ++i) {
 		if (!pairs[i])
 			continue;
 		for (l = 0; l < bmap->n_ineq; ++l) {
-			if (!isl_int_is_one(bmap->ineq[l][1 + dim + i]))
+			if (!isl_int_is_one(bmap->ineq[l][1 + v_div + i]))
 				continue;
 			for (u = 0; u < bmap->n_ineq; ++u) {
 				int c;
 
-				if (!isl_int_is_negone(bmap->ineq[u][1+dim+i]))
+				if (!isl_int_is_negone(bmap->ineq[u][1+v_div+i]))
 					continue;
 				c = div_find_coalesce(bmap, pairs, i, l, u);
 				if (c < 0)
