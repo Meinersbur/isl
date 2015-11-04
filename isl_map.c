@@ -3439,6 +3439,23 @@ void isl_map_print_internal(struct isl_map *map, FILE *out, int indent)
 	}
 }
 
+/* Check that the space of "bset" is the same as that of the domain of "bmap".
+ */
+static isl_stat isl_basic_map_check_compatible_domain(
+	__isl_keep isl_basic_map *bmap, __isl_keep isl_basic_set *bset)
+{
+	isl_bool ok;
+
+	ok = isl_basic_map_compatible_domain(bmap, bset);
+	if (ok < 0)
+		return isl_stat_error;
+	if (!ok)
+		isl_die(isl_basic_set_get_ctx(bset), isl_error_invalid,
+			"incompatible spaces", return isl_stat_error);
+
+	return isl_stat_ok;
+}
+
 __isl_give isl_basic_map *isl_basic_map_intersect_domain(
 	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *bset)
 {
@@ -3451,9 +3468,9 @@ __isl_give isl_basic_map *isl_basic_map_intersect_domain(
 	dim = isl_basic_set_dim(bset, isl_dim_set);
 	if (dim < 0)
 		goto error;
-	if (dim != 0)
-		isl_assert(bset->ctx,
-		    isl_basic_map_compatible_domain(bmap, bset), goto error);
+	if (dim != 0 &&
+	    isl_basic_map_check_compatible_domain(bmap, bset) < 0)
+		goto error;
 
 	bmap = isl_basic_map_cow(bmap);
 	if (!bmap)
@@ -4637,11 +4654,8 @@ error:
 __isl_give isl_basic_set *isl_basic_set_apply(__isl_take isl_basic_set *bset,
 	__isl_take isl_basic_map *bmap)
 {
-	if (!bset || !bmap)
+	if (isl_basic_map_check_compatible_domain(bmap, bset) < 0)
 		goto error;
-
-	isl_assert(bset->ctx, isl_basic_map_compatible_domain(bmap, bset),
-		    goto error);
 
 	return bset_from_bmap(isl_basic_map_apply_range(bset_to_bmap(bset),
 							bmap));
