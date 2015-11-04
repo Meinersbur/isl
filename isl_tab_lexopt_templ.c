@@ -152,11 +152,13 @@ static __isl_give TYPE *SF(basic_map_partial_lexopt,SUFFIX)(
 {
 	isl_bool par = isl_bool_false;
 	int first, second;
+	isl_ctx *ctx;
 
 	if (!bmap)
 		goto error;
 
-	if (bmap->ctx->opt->pip_symmetry)
+	ctx = isl_basic_map_get_ctx(bmap);
+	if (ctx->opt->pip_symmetry)
 		par = parallel_constraints(bmap, &first, &second);
 	if (par < 0)
 		goto error;
