@@ -1454,7 +1454,7 @@ isl_bool isl_basic_set_is_div_constraint(__isl_keep isl_basic_set *bset,
 static isl_bool div_is_redundant(__isl_keep isl_basic_map *bmap, int div)
 {
 	int i;
-	unsigned pos = 1 + isl_space_dim(bmap->dim, isl_dim_all) + div;
+	unsigned pos = isl_basic_map_offset(bmap, isl_dim_div) + div;
 
 	for (i = 0; i < bmap->n_eq; ++i)
 		if (!isl_int_is_zero(bmap->eq[i][pos]))
