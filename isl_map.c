@@ -209,6 +209,16 @@ unsigned isl_map_n_param(__isl_keep const isl_map *map)
 	return map ? map->dim->nparam : 0;
 }
 
+/* Return the number of equality constraints in the description of "bmap".
+ * Return -1 on error.
+ */
+int isl_basic_map_n_equality(__isl_keep isl_basic_map *bmap)
+{
+	if (!bmap)
+		return -1;
+	return bmap->n_eq;
+}
+
 /* Do "bmap1" and "bmap2" have the same parameters?
  */
 static isl_bool isl_basic_map_has_equal_params(__isl_keep isl_basic_map *bmap1,
