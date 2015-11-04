@@ -4170,7 +4170,7 @@ static struct isl_basic_map *drop_more_redundant_divs(
 {
 	struct isl_tab *tab = NULL;
 	struct isl_vec *vec = NULL;
-	unsigned dim;
+	unsigned off;
 	int remove = -1;
 	isl_int g, fl, fu;
 
@@ -4181,8 +4181,8 @@ static struct isl_basic_map *drop_more_redundant_divs(
 	if (!bmap)
 		goto error;
 
-	dim = isl_space_dim(bmap->dim, isl_dim_all);
-	vec = isl_vec_alloc(bmap->ctx, 1 + dim + bmap->n_div);
+	off = isl_basic_map_offset(bmap, isl_dim_div);
+	vec = isl_vec_alloc(bmap->ctx, off + bmap->n_div);
 	if (!vec)
 		goto error;
 
@@ -4203,10 +4203,10 @@ static struct isl_basic_map *drop_more_redundant_divs(
 
 		i = best;
 		for (l = 0; l < bmap->n_ineq; ++l) {
-			if (!isl_int_is_pos(bmap->ineq[l][1 + dim + i]))
+			if (!isl_int_is_pos(bmap->ineq[l][off + i]))
 				continue;
 			for (u = 0; u < bmap->n_ineq; ++u) {
-				if (!isl_int_is_neg(bmap->ineq[u][1 + dim + i]))
+				if (!isl_int_is_neg(bmap->ineq[u][off + i]))
 					continue;
 				construct_test_ineq(bmap, i, l, u,
 						    vec->el, &g, &fl, &fu);
