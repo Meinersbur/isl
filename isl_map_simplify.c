@@ -1408,7 +1408,7 @@ isl_bool isl_basic_map_is_div_constraint(__isl_keep isl_basic_map *bmap,
 	if (!bmap)
 		return isl_bool_error;
 
-	pos = 1 + isl_space_dim(bmap->dim, isl_dim_all) + div;
+	pos = isl_basic_map_offset(bmap, isl_dim_div) + div;
 
 	if (isl_int_eq(constraint[pos], bmap->div[div][0])) {
 		int neg;
