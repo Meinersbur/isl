@@ -1063,7 +1063,7 @@ error:
 static __isl_give isl_basic_map *set_div_from_lower_bound(
 	__isl_take isl_basic_map *bmap, int div, int ineq)
 {
-	unsigned total = 1 + isl_space_dim(bmap->dim, isl_dim_all);
+	unsigned total = isl_basic_map_offset(bmap, isl_dim_div);
 
 	isl_seq_neg(bmap->div[div] + 1, bmap->ineq[ineq], total + bmap->n_div);
 	isl_int_set(bmap->div[div][0], bmap->ineq[ineq][total + div]);
