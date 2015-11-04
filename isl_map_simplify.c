@@ -1155,7 +1155,7 @@ static __isl_give isl_basic_map *check_for_div_constraints(
 	int *progress)
 {
 	int i;
-	unsigned total = 1 + isl_space_dim(bmap->dim, isl_dim_all);
+	unsigned total = isl_basic_map_offset(bmap, isl_dim_div);
 
 	for (i = 0; i < bmap->n_div; ++i) {
 		isl_bool set_div;
