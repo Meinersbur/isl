@@ -132,6 +132,7 @@ struct isl_vec *opt_at(struct isl_basic_set *bset,
 	struct isl_vec *params, int max)
 {
 	unsigned dim;
+	isl_ctx *ctx;
 	struct isl_vec *opt;
 	struct isl_vec *obj;
 	int i;
@@ -140,16 +141,17 @@ struct isl_vec *opt_at(struct isl_basic_set *bset,
 
 	bset = plug_in_parameters(bset, params);
 
+	ctx = isl_basic_set_get_ctx(bset);
 	if (isl_basic_set_plain_is_empty(bset)) {
-		opt = isl_vec_alloc(bset->ctx, 0);
+		opt = isl_vec_alloc(ctx, 0);
 		isl_basic_set_free(bset);
 		return opt;
 	}
 
-	opt = isl_vec_alloc(bset->ctx, 1 + dim);
+	opt = isl_vec_alloc(ctx, 1 + dim);
 	assert(opt);
 
-	obj = isl_vec_alloc(bset->ctx, 1 + dim);
+	obj = isl_vec_alloc(ctx, 1 + dim);
 	assert(obj);
 
 	isl_int_set_si(opt->el[0], 1);
@@ -174,7 +176,7 @@ struct isl_vec *opt_at(struct isl_basic_set *bset,
 	return opt;
 empty:
 	isl_vec_free(opt);
-	opt = isl_vec_alloc(bset->ctx, 0);
+	opt = isl_vec_alloc(ctx, 0);
 	isl_basic_set_free(bset);
 	isl_vec_free(obj);
 
