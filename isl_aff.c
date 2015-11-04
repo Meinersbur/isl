@@ -4800,7 +4800,7 @@ static __isl_give isl_multi_aff *range_map(__isl_take isl_aff *aff, int d,
  *
  * We basically plug (1) into "map", resulting in a map with "a"
  * in the range instead of "x".  The corresponding isl_pw_multi_aff
- * defining "a" is then plugged back into (1) to obtain a definition fro "x".
+ * defining "a" is then plugged back into (1) to obtain a definition for "x".
  *
  * Specifically, given the input map
  *
@@ -4914,8 +4914,8 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_stride(
  *
  *	x = m a + f(..)
  *
- * with m greater than 1, a some combination of existentiall quantified
- * variables and f and expression in the parameters and input dimensions.
+ * with m greater than 1, a some combination of existentially quantified
+ * variables and f an expression in the parameters and input dimensions.
  * If so, we remove the stride in pw_multi_aff_from_map_stride.
  *
  * Otherwise, we continue with pw_multi_aff_from_map_check_div for a further
