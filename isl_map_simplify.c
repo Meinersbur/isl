@@ -1317,7 +1317,7 @@ static __isl_give isl_basic_map *eliminate_unit_divs(
 		return NULL;
 
 	ctx = isl_basic_map_get_ctx(bmap);
-	total = 1 + isl_space_dim(bmap->dim, isl_dim_all);
+	total = isl_basic_map_offset(bmap, isl_dim_div);
 
 	for (i = 0; i < bmap->n_div; ++i) {
 		if (isl_int_is_zero(bmap->div[i][0]))
