@@ -5233,14 +5233,12 @@ error:
 static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_div(
 	__isl_take isl_map *map, __isl_take isl_basic_map *hull, int d, int i)
 {
-	isl_ctx *ctx;
 	isl_space *space = NULL;
 	isl_local_space *ls;
 	isl_multi_aff *ma;
 	isl_aff *aff;
 	isl_vec *v;
 	isl_map *insert;
-	isl_size v_out;
 	isl_size n_in;
 	isl_pw_multi_aff *pma;
 	isl_bool is_set;
@@ -5249,18 +5247,12 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_div(
 	if (is_set < 0)
 		goto error;
 
-	v_out = isl_basic_map_var_offset(hull, isl_dim_out);
-	ctx = isl_map_get_ctx(map);
 	space = isl_space_domain(isl_map_get_space(map));
 	n_in = isl_space_dim(space, isl_dim_set);
-	if (v_out < 0 || n_in < 0)
+	if (n_in < 0)
 		goto error;
 
-	v = isl_vec_alloc(ctx, 1 + 1 + v_out);
-	if (v) {
-		isl_int_neg(v->el[0], hull->ineq[i][1 + v_out + d]);
-		isl_seq_cpy(v->el + 1, hull->ineq[i], 1 + v_out);
-	}
+	v = isl_basic_map_inequality_extract_output_upper_bound(hull, i, d);
 	isl_basic_map_free(hull);
 
 	ls = isl_local_space_from_space(isl_space_copy(space));

@@ -14308,6 +14308,37 @@ __isl_give isl_set *isl_set_preimage_multi_pw_aff(__isl_take isl_set *set,
 	return isl_map_preimage_multi_pw_aff(set, isl_dim_set, mpa);
 }
 
+/* Given that inequality "ineq" of "bmap" expresses an upper bound
+ * on the output dimension "pos" in terms of the parameters and
+ * the input dimensions, extract this upper bound.
+ *
+ * That is, the inequality is of the form
+ *
+ *	e(...) + c - m x >= 0
+ *
+ * where e only depends on parameters and input dimensions.
+ * Return (e(...) + c) / m, with the denominator m in the first position.
+ */
+__isl_give isl_vec *isl_basic_map_inequality_extract_output_upper_bound(
+	__isl_keep isl_basic_map *bmap, int ineq, int pos)
+{
+	isl_ctx *ctx;
+	isl_vec *v;
+	isl_size v_out;
+
+	v_out = isl_basic_map_var_offset(bmap, isl_dim_out);
+	if (v_out < 0)
+		return NULL;
+	ctx = isl_basic_map_get_ctx(bmap);
+	v = isl_vec_alloc(ctx, 1 + 1 + v_out);
+	if (!v)
+		return NULL;
+	isl_int_neg(v->el[0], bmap->ineq[ineq][1 + v_out + pos]);
+	isl_seq_cpy(v->el + 1, bmap->ineq[ineq], 1 + v_out);
+
+	return v;
+}
+
 /* Return a copy of the equality constraints of "bset" as a matrix.
  */
 __isl_give isl_mat *isl_basic_set_extract_equalities(

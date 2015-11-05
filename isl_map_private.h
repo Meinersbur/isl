@@ -583,6 +583,9 @@ isl_stat isl_map_check_equal_space(__isl_keep isl_map *map1,
 isl_bool isl_basic_map_applies_range(__isl_keep isl_basic_map *bmap1,
 	__isl_keep isl_basic_map *bmap2);
 
+__isl_give isl_vec *isl_basic_map_inequality_extract_output_upper_bound(
+	__isl_keep isl_basic_map *bmap, int ineq, int pos);
+
 __isl_give isl_mat *isl_basic_set_extract_equalities(
 	__isl_keep isl_basic_set *bset);
 
