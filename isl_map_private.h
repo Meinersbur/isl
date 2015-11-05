@@ -432,6 +432,7 @@ __isl_give isl_basic_map *isl_basic_map_expand_divs(
 
 int isl_basic_set_n_equality(__isl_keep isl_basic_set *bset);
 int isl_basic_map_n_equality(__isl_keep isl_basic_map *bmap);
+int isl_basic_map_n_inequality(__isl_keep isl_basic_map *bmap);
 
 __isl_give isl_basic_map *isl_basic_map_mark_div_unknown(
 	__isl_take isl_basic_map *bmap, int div);
