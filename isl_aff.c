@@ -5281,35 +5281,6 @@ error:
 	return NULL;
 }
 
-/* Is constraint "c" of the form
- *
- *	e(...) + c1 - m x >= 0
- *
- * or
- *
- *	-e(...) + c2 + m x >= 0
- *
- * where m > 1 and e only depends on parameters and input dimensions?
- *
- * "offset" is the offset of the output dimensions
- * "pos" is the position of output dimension x.
- */
-static int is_potential_div_constraint(isl_int *c, int offset, int d, int total)
-{
-	if (isl_int_is_zero(c[offset + d]))
-		return 0;
-	if (isl_int_is_one(c[offset + d]))
-		return 0;
-	if (isl_int_is_negone(c[offset + d]))
-		return 0;
-	if (isl_seq_first_non_zero(c + offset, d) != -1)
-		return 0;
-	if (isl_seq_first_non_zero(c + offset + d + 1,
-				    total - (offset + d + 1)) != -1)
-		return 0;
-	return 1;
-}
-
 /* Try and create an isl_pw_multi_aff that is equivalent to the given isl_map.
  *
  * As a special case, we first check if there is any pair of constraints,
@@ -5348,47 +5319,25 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_check_div(
 {
 	int d;
 	isl_size dim;
-	int i, j;
+	isl_size i;
 	isl_size n_ineq;
-	isl_size v_out;
-	isl_size total;
-	isl_int sum;
 	isl_basic_map *hull;
 
 	hull = isl_map_unshifted_simple_hull(isl_map_copy(map));
 	dim = isl_map_dim(map, isl_dim_out);
-	total = isl_basic_map_dim(hull, isl_dim_all);
-	v_out = isl_basic_map_var_offset(hull, isl_dim_out);
 	n_ineq = isl_basic_map_n_inequality(hull);
-	if (dim < 0 || total < 0 || v_out < 0 || n_ineq < 0)
+	if (dim < 0 || n_ineq < 0)
 		goto error;
 
-	isl_int_init(sum);
+	dim = isl_map_dim(map, isl_dim_out);
 	for (d = 0; d < dim; ++d) {
-		for (i = 0; i < n_ineq; ++i) {
-			if (!is_potential_div_constraint(hull->ineq[i],
-						    1 + v_out, d, 1 + total))
-				continue;
-			for (j = i + 1; j < n_ineq; ++j) {
-				if (!isl_seq_is_neg(hull->ineq[i] + 1,
-						hull->ineq[j] + 1, total))
-					continue;
-				isl_int_add(sum, hull->ineq[i][0],
-						hull->ineq[j][0]);
-				if (isl_int_abs_lt(sum,
-						hull->ineq[i][1 + v_out + d]))
-					break;
-
-			}
-			if (j >= n_ineq)
-				continue;
-			isl_int_clear(sum);
-			if (isl_int_is_pos(hull->ineq[j][1 + v_out + d]))
-				j = i;
-			return pw_multi_aff_from_map_div(map, hull, d, j);
-		}
+		i = isl_basic_map_find_output_upper_div_constraint(hull, d);
+		if (i < 0)
+			goto error;
+		if (i >= n_ineq)
+			continue;
+		return pw_multi_aff_from_map_div(map, hull, d, i);
 	}
-	isl_int_clear(sum);
 	isl_basic_map_free(hull);
 	return pw_multi_aff_from_map_base(map);
 error:

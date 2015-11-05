@@ -14339,6 +14339,100 @@ __isl_give isl_vec *isl_basic_map_inequality_extract_output_upper_bound(
 	return v;
 }
 
+/* Is constraint "c" of the form
+ *
+ *	e(...) + c1 - m x >= 0
+ *
+ * or
+ *
+ *	-e(...) + c2 + m x >= 0
+ *
+ * where m > 1 and e only depends on parameters and input dimensions?
+ *
+ * "offset" is the offset of the output dimensions
+ * "pos" is the position of output dimension x.
+ */
+static int is_potential_div_constraint(isl_int *c, int offset, int d, int total)
+{
+	if (isl_int_is_zero(c[offset + d]))
+		return 0;
+	if (isl_int_is_one(c[offset + d]))
+		return 0;
+	if (isl_int_is_negone(c[offset + d]))
+		return 0;
+	if (isl_seq_first_non_zero(c + offset, d) != -1)
+		return 0;
+	if (isl_seq_first_non_zero(c + offset + d + 1,
+				    total - (offset + d + 1)) != -1)
+		return 0;
+	return 1;
+}
+
+/* Look for a pair of constraints
+ *
+ *	e(...) + c1 - m x >= 0		i.e.,		m x <= e(...) + c1
+ *
+ * and
+ *
+ *	-e(...) + c2 + m x >= 0		i.e.,		m x >= e(...) - c2
+ *
+ * that express that the output dimension x at position "pos"
+ * is some integer division of an expression in terms of the parameters and
+ * input dimension.
+ * If such a pair can be found, then return the index
+ * of the upper bound constraint, m x <= e(...) + c1.
+ * Otherwise, return an index beyond the number of constraints.
+ *
+ * In order for the constraints above to express an integer division,
+ * m needs to be greater than 1 and such that
+ *
+ *	c1 + c2 < m			i.e.,		-c2 >= c1 - (m - 1)
+ *
+ * In particular, this ensures that
+ *
+ *	x = floor((e(...) + c1) / m)
+ */
+isl_size isl_basic_map_find_output_upper_div_constraint(
+	__isl_keep isl_basic_map *bmap, int pos)
+{
+	int i, j;
+	isl_size n_ineq;
+	isl_size v_out;
+	isl_size total;
+	isl_int sum;
+
+	total = isl_basic_map_dim(bmap, isl_dim_all);
+	v_out = isl_basic_map_var_offset(bmap, isl_dim_out);
+	n_ineq = isl_basic_map_n_inequality(bmap);
+	if (total < 0 || v_out < 0 || n_ineq < 0)
+		return isl_size_error;
+
+	isl_int_init(sum);
+	for (i = 0; i < n_ineq; ++i) {
+		if (!is_potential_div_constraint(bmap->ineq[i],
+						1 + v_out, pos, 1 + total))
+			continue;
+		for (j = i + 1; j < n_ineq; ++j) {
+			if (!isl_seq_is_neg(bmap->ineq[i] + 1,
+					bmap->ineq[j] + 1, total))
+				continue;
+			isl_int_add(sum, bmap->ineq[i][0], bmap->ineq[j][0]);
+			if (isl_int_abs_lt(sum, bmap->ineq[i][1 + v_out + pos]))
+				break;
+		}
+		if (j < n_ineq)
+			break;
+	}
+	isl_int_clear(sum);
+
+	if (i >= n_ineq)
+		return n_ineq;
+	if (isl_int_is_pos(bmap->ineq[j][1 + v_out + pos]))
+		return i;
+	else
+		return j;
+}
+
 /* Return a copy of the equality constraints of "bset" as a matrix.
  */
 __isl_give isl_mat *isl_basic_set_extract_equalities(
