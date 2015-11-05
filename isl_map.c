@@ -13386,6 +13386,22 @@ __isl_give isl_set *isl_set_preimage_multi_pw_aff(__isl_take isl_set *set,
 	return isl_map_preimage_multi_pw_aff(set, isl_dim_set, mpa);
 }
 
+/* Return a copy of the equality constraints of "bset" as a matrix.
+ */
+__isl_give isl_mat *isl_basic_set_extract_equalities(
+	__isl_keep isl_basic_set *bset)
+{
+	isl_ctx *ctx;
+	unsigned total;
+
+	if (!bset)
+		return NULL;
+
+	ctx = isl_basic_set_get_ctx(bset);
+	total = 1 + isl_basic_set_dim(bset, isl_dim_all);
+	return isl_mat_sub_alloc6(ctx, bset->eq, 0, bset->n_eq, 0, total);
+}
+
 /* Are the "n" "coefficients" starting at "first" of the integer division
  * expressions at position "pos1" in "bmap1" and "pos2" in "bmap2" equal
  * to each other?
