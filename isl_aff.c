@@ -5348,7 +5348,8 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_check_div(
 {
 	int d;
 	isl_size dim;
-	int i, j, n;
+	int i, j;
+	isl_size n_ineq;
 	int offset;
 	isl_size total;
 	isl_int sum;
@@ -5357,18 +5358,18 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_check_div(
 	hull = isl_map_unshifted_simple_hull(isl_map_copy(map));
 	dim = isl_map_dim(map, isl_dim_out);
 	total = isl_basic_map_dim(hull, isl_dim_all);
-	if (dim < 0 || total < 0)
+	n_ineq = isl_basic_map_n_inequality(hull);
+	if (dim < 0 || total < 0 || n_ineq < 0)
 		goto error;
 
 	isl_int_init(sum);
 	offset = isl_basic_map_offset(hull, isl_dim_out);
-	n = hull->n_ineq;
 	for (d = 0; d < dim; ++d) {
-		for (i = 0; i < n; ++i) {
+		for (i = 0; i < n_ineq; ++i) {
 			if (!is_potential_div_constraint(hull->ineq[i],
 							offset, d, 1 + total))
 				continue;
-			for (j = i + 1; j < n; ++j) {
+			for (j = i + 1; j < n_ineq; ++j) {
 				if (!isl_seq_is_neg(hull->ineq[i] + 1,
 						hull->ineq[j] + 1, total))
 					continue;
@@ -5379,7 +5380,7 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_check_div(
 					break;
 
 			}
-			if (j >= n)
+			if (j >= n_ineq)
 				continue;
 			isl_int_clear(sum);
 			if (isl_int_is_pos(hull->ineq[j][offset + d]))
