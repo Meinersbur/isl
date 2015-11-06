@@ -157,33 +157,6 @@ error:
 	return -1;
 }
 
-static __isl_give isl_basic_set *isl_basic_set_add_equality(
-	__isl_take isl_basic_set *bset, isl_int *c)
-{
-	int i;
-	unsigned dim;
-
-	if (!bset)
-		return NULL;
-
-	if (ISL_F_ISSET(bset, ISL_BASIC_SET_EMPTY))
-		return bset;
-
-	isl_assert(bset->ctx, isl_basic_set_n_param(bset) == 0, goto error);
-	isl_assert(bset->ctx, bset->n_div == 0, goto error);
-	dim = isl_basic_set_n_dim(bset);
-	bset = isl_basic_set_cow(bset);
-	bset = isl_basic_set_extend(bset, 0, dim, 0, 1, 0);
-	i = isl_basic_set_alloc_equality(bset);
-	if (i < 0)
-		goto error;
-	isl_seq_cpy(bset->eq[i], c, 1 + dim);
-	return bset;
-error:
-	isl_basic_set_free(bset);
-	return NULL;
-}
-
 static __isl_give isl_set *isl_set_add_basic_set_equality(
 	__isl_take isl_set *set, isl_int *c)
 {
@@ -193,7 +166,7 @@ static __isl_give isl_set *isl_set_add_basic_set_equality(
 	if (!set)
 		return NULL;
 	for (i = 0; i < set->n; ++i) {
-		set->p[i] = isl_basic_set_add_equality(set->p[i], c);
+		set->p[i] = isl_basic_set_add_eq(set->p[i], c);
 		if (!set->p[i])
 			goto error;
 	}
@@ -573,11 +546,11 @@ static __isl_give isl_basic_set *extend(__isl_take isl_basic_set *hull,
 
 	for (i = 0; i < hull->n_ineq; ++i) {
 		facet = compute_facet(set, hull->ineq[i]);
-		facet = isl_basic_set_add_equality(facet, hull->ineq[i]);
+		facet = isl_basic_set_add_eq(facet, hull->ineq[i]);
 		facet = isl_basic_set_gauss(facet, NULL);
 		facet = isl_basic_set_normalize_constraints(facet);
 		hull_facet = isl_basic_set_copy(hull);
-		hull_facet = isl_basic_set_add_equality(hull_facet, hull->ineq[i]);
+		hull_facet = isl_basic_set_add_eq(hull_facet, hull->ineq[i]);
 		hull_facet = isl_basic_set_gauss(hull_facet, NULL);
 		hull_facet = isl_basic_set_normalize_constraints(hull_facet);
 		if (!facet || !hull_facet)
