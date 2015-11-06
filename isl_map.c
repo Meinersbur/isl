@@ -2832,6 +2832,7 @@ isl_bool isl_set_involves_dims(__isl_keep isl_set *set,
 
 /* Drop all constraints in bmap that involve any of the dimensions
  * first to first+n-1.
+ * This function only performs the actual removal of constraints.
  */
 static __isl_give isl_basic_map *isl_basic_map_drop_constraints_involving(
 	__isl_take isl_basic_map *bmap, unsigned first, unsigned n)
@@ -2858,12 +2859,12 @@ static __isl_give isl_basic_map *isl_basic_map_drop_constraints_involving(
 		isl_basic_map_drop_inequality(bmap, i);
 	}
 
-	bmap = isl_basic_map_add_known_div_constraints(bmap);
 	return bmap;
 }
 
 /* Drop all constraints in bset that involve any of the dimensions
  * first to first+n-1.
+ * This function only performs the actual removal of constraints.
  */
 __isl_give isl_basic_set *isl_basic_set_drop_constraints_involving(
 	__isl_take isl_basic_set *bset, unsigned first, unsigned n)
@@ -2938,7 +2939,9 @@ __isl_give isl_basic_map *isl_basic_map_drop_constraints_involving_dims(
 
 	bmap = isl_basic_map_remove_divs_involving_dims(bmap, type, first, n);
 	first += isl_basic_map_offset(bmap, type) - 1;
-	return isl_basic_map_drop_constraints_involving(bmap, first, n);
+	bmap = isl_basic_map_drop_constraints_involving(bmap, first, n);
+	bmap = isl_basic_map_add_known_div_constraints(bmap);
+	return bmap;
 }
 
 /* Drop all constraints in bset that involve any of the dimensions
