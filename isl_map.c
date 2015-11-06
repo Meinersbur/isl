@@ -1597,6 +1597,7 @@ __isl_give isl_basic_map *isl_basic_map_add_eq(__isl_take isl_basic_map *bmap,
 {
 	int k;
 
+	bmap = isl_basic_map_cow(bmap);
 	bmap = isl_basic_map_extend_constraints(bmap, 1, 0);
 	if (!bmap)
 		return NULL;
@@ -1621,6 +1622,7 @@ __isl_give isl_basic_map *isl_basic_map_add_ineq(__isl_take isl_basic_map *bmap,
 {
 	int k;
 
+	bmap = isl_basic_map_cow(bmap);
 	bmap = isl_basic_map_extend_constraints(bmap, 0, 1);
 	if (!bmap)
 		return NULL;
@@ -3695,7 +3697,6 @@ static __isl_give isl_map *map_intersect_add_constraint(
 		isl_map_free(map2);
 		return map1;
 	}
-	map1->p[0] = isl_basic_map_cow(map1->p[0]);
 	if (map2->p[0]->n_eq == 1)
 		map1->p[0] = isl_basic_map_add_eq(map1->p[0], map2->p[0]->eq[0]);
 	else
