@@ -417,7 +417,7 @@ static __isl_give int *get_div_purity(__isl_keep isl_basic_set *bset)
 	return div_purity;
 }
 
-/* Given a path with the as yet unconstrained length at position "pos",
+/* Given a path with the as yet unconstrained length at div position "pos",
  * check if setting the length to zero results in only the identity
  * mapping.
  */
@@ -426,25 +426,15 @@ static isl_bool empty_path_is_identity(__isl_keep isl_basic_map *path,
 {
 	isl_basic_map *test = NULL;
 	isl_basic_map *id = NULL;
-	int k;
 	isl_bool is_id;
 
 	test = isl_basic_map_copy(path);
-	test = isl_basic_map_extend_constraints(test, 1, 0);
-	k = isl_basic_map_alloc_equality(test);
-	if (k < 0)
-		goto error;
-	isl_seq_clr(test->eq[k], 1 + isl_basic_map_total_dim(test));
-	isl_int_set_si(test->eq[k][pos], 1);
-	test = isl_basic_map_gauss(test, NULL);
+	test = isl_basic_map_fix_si(test, isl_dim_div, pos, 0);
 	id = isl_basic_map_identity(isl_basic_map_get_space(path));
 	is_id = isl_basic_map_is_equal(test, id);
 	isl_basic_map_free(test);
 	isl_basic_map_free(id);
 	return is_id;
-error:
-	isl_basic_map_free(test);
-	return isl_bool_error;
 }
 
 /* If any of the constraints is found to be impure then this function
@@ -628,7 +618,7 @@ static __isl_give isl_map *path_along_delta(__isl_take isl_space *space,
 		path = isl_basic_map_gauss(path, NULL);
 	}
 
-	is_id = empty_path_is_identity(path, off + d);
+	is_id = empty_path_is_identity(path, n_div + d);
 	if (is_id < 0)
 		goto error;
 
