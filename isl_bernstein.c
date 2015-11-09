@@ -90,7 +90,8 @@ error:
 }
 
 /* Check whether the bound associated to the selection "k" is tight,
- * which is the case if we select exactly one vertex and if that vertex
+ * which is the case if we select exactly one vertex (i.e., one of the
+ * exponents in "k" is exactly "d") and if that vertex
  * is integral for all values of the parameters.
  */
 static int is_tight(int *k, int n, int d, isl_cell *cell)
@@ -99,11 +100,10 @@ static int is_tight(int *k, int n, int d, isl_cell *cell)
 
 	for (i = 0; i < n; ++i) {
 		int v;
-		if (k[i] != d) {
-			if (k[i])
-				return 0;
+		if (!k[i])
 			continue;
-		}
+		if (k[i] != d)
+			return 0;
 		v = cell->ids[n - 1 - i];
 		return vertex_is_integral(cell->vertices->v[v].vertex);
 	}
