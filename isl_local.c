@@ -11,6 +11,16 @@
 #include <isl_seq.h>
 #include <isl_local.h>
 
+/* Return the isl_ctx to which "local" belongs.
+ */
+isl_ctx *isl_local_get_ctx(__isl_keep isl_local *local)
+{
+	if (!local)
+		return NULL;
+
+	return isl_mat_get_ctx(local);
+}
+
 /* Given local variables "local",
  * is the variable at position "pos" marked as not having
  * an explicit representation?
@@ -26,7 +36,7 @@ isl_bool isl_local_div_is_marked_unknown(__isl_keep isl_local *local, int pos)
 	if (!local)
 		return isl_bool_error;
 	if (pos < 0 || pos >= mat->n_row)
-		isl_die(isl_mat_get_ctx(mat), isl_error_invalid,
+		isl_die(isl_local_get_ctx(local), isl_error_invalid,
 			"position out of bounds", return isl_bool_error);
 	return isl_int_is_zero(mat->row[pos][0]);
 }
@@ -47,7 +57,7 @@ isl_bool isl_local_div_is_known(__isl_keep isl_local *local, int pos)
 	if (!local)
 		return isl_bool_error;
 	if (pos < 0 || pos >= mat->n_row)
-		isl_die(isl_mat_get_ctx(mat), isl_error_invalid,
+		isl_die(isl_local_get_ctx(local), isl_error_invalid,
 			"position out of bounds", return isl_bool_error);
 
 	marked = isl_local_div_is_marked_unknown(local, pos);
