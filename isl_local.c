@@ -299,6 +299,32 @@ error:
 	return NULL;
 }
 
+/* Move the "n" variables starting at "src_pos" of "local" to "dst_pos".
+ *
+ * Moving local variables is not allowed.
+ */
+__isl_give isl_local *isl_local_move_vars(__isl_take isl_local *local,
+	unsigned dst_pos, unsigned src_pos, unsigned n)
+{
+	isl_mat *mat = local;
+	isl_size v_div;
+
+	v_div = isl_local_var_offset(local, isl_dim_div);
+	if (v_div < 0)
+		return isl_local_free(local);
+	if (n == 0)
+		return local;
+
+	if (dst_pos >= v_div || src_pos >= v_div)
+		isl_die(isl_local_get_ctx(local), isl_error_invalid,
+			"cannot move local variables",
+			return isl_local_free(local));
+
+	mat = isl_mat_move_cols(mat, 2 + dst_pos, 2 + src_pos, n);
+
+	return isl_local_alloc_from_mat(mat);
+}
+
 /* Extend a vector "v" representing an integer point
  * in the domain space of "local"
  * to one that also includes values for the local variables.

@@ -1613,11 +1613,11 @@ __isl_give isl_local_space *isl_local_space_move_dims(
 	v_dst = isl_local_space_var_offset(ls, dst_type);
 	if (v_src < 0 || v_dst < 0)
 		return isl_local_space_free(ls);
-	g_src_pos = 1 + 1 + v_src + src_pos;
-	g_dst_pos = 1 + 1 + v_dst + dst_pos;
+	g_src_pos = v_src + src_pos;
+	g_dst_pos = v_dst + dst_pos;
 	if (dst_type > src_type)
 		g_dst_pos -= n;
-	ls->div = isl_mat_move_cols(ls->div, g_dst_pos, g_src_pos, n);
+	ls->div = isl_local_move_vars(ls->div, g_dst_pos, g_src_pos, n);
 	if (!ls->div)
 		return isl_local_space_free(ls);
 	ls->dim = isl_space_move_dims(ls->dim, dst_type, dst_pos,
