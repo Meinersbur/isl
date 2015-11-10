@@ -26,6 +26,7 @@
 #include <isl/union_set.h>
 #include <isl/union_map.h>
 #include <isl/constraint.h>
+#include <isl_local.h>
 #include <isl_local_space_private.h>
 #include <isl_aff_private.h>
 #include <isl_val_private.h>
@@ -274,7 +275,7 @@ static isl_bool can_print_div_expr(__isl_keep isl_printer *p,
 		return isl_bool_false;
 	if (!div)
 		return isl_bool_false;
-	return !isl_int_is_zero(div->row[pos][0]);
+	return isl_bool_not(isl_local_div_is_marked_unknown(div, pos));
 }
 
 static __isl_give isl_printer *print_div(__isl_keep isl_space *dim,
