@@ -15,7 +15,7 @@
 #include <isl_mat_private.h>
 #include <isl_reordering.h>
 #include <isl_seq.h>
-#include <isl_local.h>
+#include <isl_local_private.h>
 
 /* Return the isl_ctx to which "local" belongs.
  */
