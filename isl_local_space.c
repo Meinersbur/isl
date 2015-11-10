@@ -490,7 +490,7 @@ __isl_keep isl_local *isl_local_space_peek_local(__isl_keep isl_local_space *ls)
 
 /* Return a copy of the local variables of "ls".
  */
-__isl_keep isl_local *isl_local_space_get_local(__isl_keep isl_local_space *ls)
+__isl_give isl_local *isl_local_space_get_local(__isl_keep isl_local_space *ls)
 {
 	return isl_local_copy(isl_local_space_peek_local(ls));
 }
