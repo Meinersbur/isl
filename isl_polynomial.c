@@ -4225,41 +4225,6 @@ __isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_mul(
 						&isl_pw_qpolynomial_mul);
 }
 
-/* Reorder the columns of the given div definitions according to the
- * given reordering.
- */
-static __isl_give isl_mat *reorder_divs(__isl_take isl_mat *div,
-	__isl_take isl_reordering *r)
-{
-	int i, j;
-	isl_mat *mat;
-	int extra;
-
-	if (!div || !r)
-		goto error;
-
-	extra = isl_space_dim(r->dim, isl_dim_all) + div->n_row - r->len;
-	mat = isl_mat_alloc(div->ctx, div->n_row, div->n_col + extra);
-	if (!mat)
-		goto error;
-
-	for (i = 0; i < div->n_row; ++i) {
-		isl_seq_cpy(mat->row[i], div->row[i], 2);
-		isl_seq_clr(mat->row[i] + 2, mat->n_col - 2);
-		for (j = 0; j < r->len; ++j)
-			isl_int_set(mat->row[i][2 + r->pos[j]],
-				    div->row[i][2 + j]);
-	}
-
-	isl_reordering_free(r);
-	isl_mat_free(div);
-	return mat;
-error:
-	isl_reordering_free(r);
-	isl_mat_free(div);
-	return NULL;
-}
-
 /* Reorder the dimension of "qp" according to the given reordering.
  */
 __isl_give isl_qpolynomial *isl_qpolynomial_realign_domain(
@@ -4273,7 +4238,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_realign_domain(
 	if (!r)
 		goto error;
 
-	qp->div = reorder_divs(qp->div, isl_reordering_copy(r));
+	qp->div = isl_local_reorder(qp->div, isl_reordering_copy(r));
 	if (!qp->div)
 		goto error;
 
