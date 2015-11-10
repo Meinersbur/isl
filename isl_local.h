@@ -15,6 +15,9 @@ isl_bool isl_local_divs_known(__isl_keep isl_local *local);
 
 int isl_local_cmp(__isl_keep isl_local *local1, __isl_keep isl_local *local2);
 
+isl_size isl_local_var_offset(__isl_keep isl_local *local,
+	enum isl_dim_type type);
+
 __isl_give isl_local *isl_local_reorder(__isl_take isl_local *local,
 	__isl_take isl_reordering *r);
 

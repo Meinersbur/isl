@@ -1,6 +1,7 @@
 /*
  * Copyright 2011      INRIA Saclay
  * Copyright 2014      Ecole Normale Superieure
+ * Copyright 2015      Sven Verdoolaege
  *
  * Use of this software is governed by the MIT license
  *
@@ -227,6 +228,32 @@ int isl_local_cmp(__isl_keep isl_local *local1, __isl_keep isl_local *local2)
 	}
 
 	return 0;
+}
+
+/* Return the position of the variables of the given type
+ * within the sequence of variables of "local".
+ *
+ * Only the position of the local variables can be obtained.
+ * It is equal to the total number of variables minus
+ * the number of local variables.
+ */
+isl_size isl_local_var_offset(__isl_keep isl_local *local,
+	enum isl_dim_type type)
+{
+	isl_size n_div, n_all;
+
+	if (!local)
+		return isl_size_error;
+	if (type != isl_dim_div)
+		isl_die(isl_local_get_ctx(local), isl_error_unsupported,
+			"only the offset of the local variables "
+			"can be obtained", return isl_size_error);
+
+	n_div = isl_local_dim(local, isl_dim_div);
+	n_all = isl_local_dim(local, isl_dim_all);
+	if (n_div < 0 || n_all < 0)
+		return isl_size_error;
+	return n_all - n_div;
 }
 
 /* Reorder the columns of the given local variables according to the
