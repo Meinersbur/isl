@@ -38,6 +38,13 @@ __isl_give isl_local *isl_local_alloc_from_mat(__isl_take isl_mat *mat)
 	return mat;
 }
 
+/* Return a new reference to "local".
+ */
+__isl_give isl_local *isl_local_copy(__isl_keep isl_local *local)
+{
+	return isl_local_alloc_from_mat(isl_mat_copy(local));
+}
+
 /* Free "local" and return NULL.
  */
 __isl_null isl_local *isl_local_free(__isl_take isl_local *local)
