@@ -21,15 +21,36 @@ isl_ctx *isl_local_get_ctx(__isl_keep isl_local *local)
 	return isl_mat_get_ctx(local);
 }
 
-/* Check that "pos" is a valid position for a variable in "local".
+/* Return the number of local variables (isl_dim_div),
+ * the number of other variables (isl_dim_set) or
+ * the total number of variables (isl_dim_all) in "local".
+ *
+ * Other types do not have any meaning for an isl_local object.
  */
-static isl_stat isl_local_check_pos(__isl_keep isl_local *local, int pos)
+int isl_local_dim(__isl_keep isl_local *local, enum isl_dim_type type)
 {
 	isl_mat *mat = local;
 
 	if (!local)
+		return 0;
+	if (type == isl_dim_div)
+		return isl_mat_rows(mat);
+	if (type == isl_dim_all)
+		return isl_mat_cols(mat) - 2;
+	if (type == isl_dim_set)
+		return isl_local_dim(local, isl_dim_all) -
+			isl_local_dim(local, isl_dim_div);
+	isl_die(isl_local_get_ctx(local), isl_error_unsupported,
+		"unsupported dimension type", return 0);
+}
+
+/* Check that "pos" is a valid position for a variable in "local".
+ */
+static isl_stat isl_local_check_pos(__isl_keep isl_local *local, int pos)
+{
+	if (!local)
 		return isl_stat_error;
-	if (pos < 0 || pos >= mat->n_row)
+	if (pos < 0 || pos >= isl_local_dim(local, isl_dim_div))
 		isl_die(isl_local_get_ctx(local), isl_error_invalid,
 			"position out of bounds", return isl_stat_error);
 	return isl_stat_ok;
@@ -72,7 +93,7 @@ isl_bool isl_local_div_is_known(__isl_keep isl_local *local, int pos)
 	if (marked < 0 || marked)
 		return isl_bool_not(marked);
 
-	n = isl_mat_rows(mat);
+	n = isl_local_dim(local, isl_dim_div);
 	off = isl_mat_cols(mat) - n;
 
 	for (i = n - 1; i >= 0; --i) {
