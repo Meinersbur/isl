@@ -1815,3 +1815,19 @@ error:
 	isl_point_free(pnt);
 	return NULL;
 }
+
+/* Do any of the local variables in "ls" depend on the specified dimensions?
+ */
+isl_bool isl_local_space_involves_dims(__isl_keep isl_local_space *ls,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	isl_local *local;
+	isl_size off;
+
+	off = isl_local_space_var_offset(ls, type);
+	if (off < 0 || isl_local_space_check_range(ls, type, first, n) < 0)
+		return isl_bool_error;
+
+	local = isl_local_space_peek_local(ls);
+	return isl_local_involves_vars(local, off + first, n);
+}
