@@ -6909,6 +6909,18 @@ error:
 	return NULL;
 }
 
+/* Does local variable "div" of "bmap" have an explicit representation?
+ */
+isl_bool isl_basic_map_div_is_known(__isl_keep isl_basic_map *bmap, int div)
+{
+	if (!bmap)
+		return isl_bool_error;
+	if (div < 0 || div >= isl_basic_map_dim(bmap, isl_dim_div))
+		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
+			"position out of bounds", return isl_bool_error);
+	return !isl_int_is_zero(bmap->div[div][0]);
+}
+
 /* Does "bmap" have an explicit representation for all local variables?
  */
 isl_bool isl_basic_map_divs_known(__isl_keep isl_basic_map *bmap)
@@ -6921,7 +6933,7 @@ isl_bool isl_basic_map_divs_known(__isl_keep isl_basic_map *bmap)
 
 	off = isl_space_dim(bmap->dim, isl_dim_all);
 	for (i = 0; i < bmap->n_div; ++i) {
-		if (isl_int_is_zero(bmap->div[i][0]))
+		if (!isl_basic_map_div_is_known(bmap, i))
 			return isl_bool_false;
 		isl_assert(bmap->ctx, isl_int_is_zero(bmap->div[i][1+1+off+i]),
 				return isl_bool_error);
