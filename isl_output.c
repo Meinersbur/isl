@@ -2163,13 +2163,16 @@ static __isl_give isl_printer *print_affine_c(__isl_take isl_printer *p,
 	return print_partial_affine_c(p, space, bset, c, len);
 }
 
+static __isl_give isl_printer *print_ls_affine_c(__isl_take isl_printer *p,
+	__isl_keep isl_local_space *ls, isl_int *c);
+
 /* We skip the constraint if it is implied by the div expression.
  *
  * *first indicates whether this is the first constraint in the conjunction and
  * is updated if the constraint is actually printed.
  */
 static __isl_give isl_printer *print_constraint_c(__isl_take isl_printer *p,
-	__isl_keep isl_space *dim,
+	__isl_keep isl_local_space *ls,
 	__isl_keep isl_basic_set *bset, isl_int *c, const char *op, int *first)
 {
 	unsigned o_div;
@@ -2190,7 +2193,7 @@ static __isl_give isl_printer *print_constraint_c(__isl_take isl_printer *p,
 	if (!*first)
 		p = isl_printer_print_str(p, " && ");
 
-	p = print_affine_c(p, dim, bset, c);
+	p = print_ls_affine_c(p, ls, c);
 	p = isl_printer_print_str(p, " ");
 	p = isl_printer_print_str(p, op);
 	p = isl_printer_print_str(p, " 0");
@@ -2219,7 +2222,7 @@ static __isl_give isl_printer *print_basic_set_c(__isl_take isl_printer *p,
 	for (i = 0; i < bset->n_eq; ++i) {
 		j = isl_seq_last_non_zero(bset->eq[i] + 1 + total, n_div);
 		if (j < 0)
-			p = print_constraint_c(p, space, bset,
+			p = print_constraint_c(p, ls, bset,
 						bset->eq[i], "==", &first);
 		else {
 			if (i)
@@ -2235,7 +2238,7 @@ static __isl_give isl_printer *print_basic_set_c(__isl_take isl_printer *p,
 		}
 	}
 	for (i = 0; i < bset->n_ineq; ++i)
-		p = print_constraint_c(p, space, bset, bset->ineq[i], ">=",
+		p = print_constraint_c(p, ls, bset, bset->ineq[i], ">=",
 					&first);
 	isl_local_space_free(ls);
 	return p;
@@ -2724,9 +2727,6 @@ error:
 	isl_printer_free(p);
 	return NULL;
 }
-
-static __isl_give isl_printer *print_ls_affine_c(__isl_take isl_printer *p,
-	__isl_keep isl_local_space *ls, isl_int *c);
 
 static __isl_give isl_printer *print_ls_name_c(__isl_take isl_printer *p,
 	__isl_keep isl_local_space *ls, enum isl_dim_type type, unsigned pos)
