@@ -2174,7 +2174,7 @@ error:
  * the div array too as the number of rows in this array is assumed
  * to be equal to extra.
  */
-struct isl_basic_map *isl_basic_map_drop(struct isl_basic_map *bmap,
+__isl_give isl_basic_map *isl_basic_map_drop(__isl_take isl_basic_map *bmap,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
 	int i;
