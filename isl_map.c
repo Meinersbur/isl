@@ -2833,6 +2833,9 @@ isl_bool isl_set_involves_dims(__isl_keep isl_set *set,
 /* Drop all constraints in bmap that involve any of the dimensions
  * first to first+n-1.
  * This function only performs the actual removal of constraints.
+ *
+ * This function should not call finalize since it is used by
+ * remove_redundant_divs, which in turn is called by isl_basic_map_finalize.
  */
 __isl_give isl_basic_map *isl_basic_map_drop_constraints_involving(
 	__isl_take isl_basic_map *bmap, unsigned first, unsigned n)
