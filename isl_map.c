@@ -2217,10 +2217,11 @@ __isl_give isl_basic_map *isl_basic_map_drop(__isl_take isl_basic_map *bmap,
 	unsigned left;
 
 	if (!bmap)
-		goto error;
+		return NULL;
 
 	dim = isl_basic_map_dim(bmap, type);
-	isl_assert(bmap->ctx, first + n <= dim, goto error);
+	isl_assert(bmap->ctx, first + n <= dim,
+		return isl_basic_map_free(bmap););
 
 	if (n == 0 && !isl_space_is_named_or_nested(bmap->dim, type))
 		return bmap;
@@ -2243,21 +2244,18 @@ __isl_give isl_basic_map *isl_basic_map_drop(__isl_take isl_basic_map *bmap,
 	if (type == isl_dim_div) {
 		bmap = move_divs_last(bmap, first, n);
 		if (!bmap)
-			goto error;
+			return NULL;
 		if (isl_basic_map_free_div(bmap, n) < 0)
 			return isl_basic_map_free(bmap);
 	} else
 		bmap->dim = isl_space_drop_dims(bmap->dim, type, first, n);
 	if (!bmap->dim)
-		goto error;
+		return isl_basic_map_free(bmap);
 
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_REDUNDANT);
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_SORTED);
 	bmap = isl_basic_map_simplify(bmap);
 	return isl_basic_map_finalize(bmap);
-error:
-	isl_basic_map_free(bmap);
-	return NULL;
 }
 
 __isl_give isl_basic_set *isl_basic_set_drop(__isl_take isl_basic_set *bset,
