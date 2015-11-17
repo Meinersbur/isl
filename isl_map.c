@@ -2313,8 +2313,11 @@ __isl_give isl_set *isl_set_drop(__isl_take isl_set *set,
 	return set_from_map(isl_map_drop(set_to_map(set), type, first, n));
 }
 
-/*
- * We don't cow, as the div is assumed to be redundant.
+/* Drop the integer division at position "div", which is assumed
+ * not to appear in any of the constraints or
+ * in any of the other integer divisions.
+ *
+ * Since the integer division is redundant, there is no need to cow.
  */
 __isl_give isl_basic_map *isl_basic_map_drop_div(
 	__isl_take isl_basic_map *bmap, unsigned div)
@@ -2332,14 +2335,8 @@ __isl_give isl_basic_map *isl_basic_map_drop_div(
 	for (i = 0; i < bmap->n_eq; ++i)
 		constraint_drop_vars(bmap->eq[i]+pos, 1, bmap->extra-div-1);
 
-	for (i = 0; i < bmap->n_ineq; ++i) {
-		if (!isl_int_is_zero(bmap->ineq[i][pos])) {
-			isl_basic_map_drop_inequality(bmap, i);
-			--i;
-			continue;
-		}
+	for (i = 0; i < bmap->n_ineq; ++i)
 		constraint_drop_vars(bmap->ineq[i]+pos, 1, bmap->extra-div-1);
-	}
 
 	for (i = 0; i < bmap->n_div; ++i)
 		constraint_drop_vars(bmap->div[i]+1+pos, 1, bmap->extra-div-1);
