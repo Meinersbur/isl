@@ -2340,43 +2340,7 @@ __isl_give isl_set *isl_set_drop(__isl_take isl_set *set,
 __isl_give isl_basic_map *isl_basic_map_drop_div(
 	__isl_take isl_basic_map *bmap, unsigned div)
 {
-	int i;
-	unsigned pos;
-
-	if (!bmap)
-		goto error;
-
-	pos = 1 + isl_space_dim(bmap->dim, isl_dim_all) + div;
-
-	isl_assert(bmap->ctx, div < bmap->n_div, goto error);
-
-	for (i = 0; i < bmap->n_eq; ++i)
-		constraint_drop_vars(bmap->eq[i]+pos, 1, bmap->extra-div-1);
-
-	for (i = 0; i < bmap->n_ineq; ++i)
-		constraint_drop_vars(bmap->ineq[i]+pos, 1, bmap->extra-div-1);
-
-	for (i = 0; i < bmap->n_div; ++i)
-		constraint_drop_vars(bmap->div[i]+1+pos, 1, bmap->extra-div-1);
-
-	if (div != bmap->n_div - 1) {
-		int j;
-		isl_int *t = bmap->div[div];
-
-		for (j = div; j < bmap->n_div - 1; ++j)
-			bmap->div[j] = bmap->div[j+1];
-
-		bmap->div[bmap->n_div - 1] = t;
-	}
-	ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_REDUNDANT);
-	ISL_F_CLR(bmap, ISL_BASIC_MAP_SORTED);
-	if (isl_basic_map_free_div(bmap, 1) < 0)
-		return isl_basic_map_free(bmap);
-
-	return bmap;
-error:
-	isl_basic_map_free(bmap);
-	return NULL;
+	return isl_basic_map_drop_core(bmap, isl_dim_div, div, 1);
 }
 
 /* Eliminate the specified n dimensions starting at first from the
