@@ -2834,7 +2834,7 @@ isl_bool isl_set_involves_dims(__isl_keep isl_set *set,
  * first to first+n-1.
  * This function only performs the actual removal of constraints.
  */
-static __isl_give isl_basic_map *isl_basic_map_drop_constraints_involving(
+__isl_give isl_basic_map *isl_basic_map_drop_constraints_involving(
 	__isl_take isl_basic_map *bmap, unsigned first, unsigned n)
 {
 	int i;
