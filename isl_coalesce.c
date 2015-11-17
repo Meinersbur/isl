@@ -3041,7 +3041,8 @@ static __isl_give isl_aff_list *set_up_substitutions(
 		isl_aff *aff;
 
 		if (j < n_div_j &&
-		    isl_seq_eq(bmap_i->div[i], bmap_j->div[j], 2 + total)) {
+		    isl_basic_map_equal_div_expr_part(bmap_i, i, bmap_j, j,
+						    0, 2 + total)) {
 			++j;
 			list = isl_aff_list_add(list, isl_aff_copy(aff_nan));
 			continue;

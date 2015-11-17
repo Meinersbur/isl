@@ -528,4 +528,8 @@ int isl_basic_set_count_upto(__isl_keep isl_basic_set *bset,
 	isl_int max, isl_int *count);
 int isl_set_count_upto(__isl_keep isl_set *set, isl_int max, isl_int *count);
 
+isl_bool isl_basic_map_equal_div_expr_part(__isl_keep isl_basic_map *bmap1,
+	int pos1, __isl_keep isl_basic_map *bmap2, int pos2,
+	unsigned first, unsigned n);
+
 #endif

@@ -13366,6 +13366,24 @@ __isl_give isl_set *isl_set_preimage_multi_pw_aff(__isl_take isl_set *set,
 	return isl_map_preimage_multi_pw_aff(set, isl_dim_set, mpa);
 }
 
+/* Are the "n" "coefficients" starting at "first" of the integer division
+ * expressions at position "pos1" in "bmap1" and "pos2" in "bmap2" equal
+ * to each other?
+ * The "coefficient" at position 0 is the denominator.
+ * The "coefficient" at position 1 is the constant term.
+ */
+isl_bool isl_basic_map_equal_div_expr_part(__isl_keep isl_basic_map *bmap1,
+	int pos1, __isl_keep isl_basic_map *bmap2, int pos2,
+	unsigned first, unsigned n)
+{
+	if (isl_basic_map_check_range(bmap1, isl_dim_div, pos1, 1) < 0)
+		return isl_bool_error;
+	if (isl_basic_map_check_range(bmap2, isl_dim_div, pos2, 1) < 0)
+		return isl_bool_error;
+	return isl_seq_eq(bmap1->div[pos1] + first,
+			  bmap2->div[pos2] + first, n);
+}
+
 /* Is the point "inner" internal to inequality constraint "ineq"
  * of "bset"?
  * The point is considered to be internal to the inequality constraint,
