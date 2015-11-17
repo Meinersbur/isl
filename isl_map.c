@@ -2202,14 +2202,17 @@ static isl_stat isl_map_check_range(__isl_keep isl_map *map,
 }
 
 /* Drop "n" dimensions of type "type" starting at "first".
+ * Perform the core computation, without cowing or
+ * simplifying and finalizing the result.
  *
  * In principle, this frees up some extra variables as the number
  * of columns remains constant, but we would have to extend
  * the div array too as the number of rows in this array is assumed
  * to be equal to extra.
  */
-__isl_give isl_basic_map *isl_basic_map_drop(__isl_take isl_basic_map *bmap,
-	enum isl_dim_type type, unsigned first, unsigned n)
+__isl_give isl_basic_map *isl_basic_map_drop_core(
+	__isl_take isl_basic_map *bmap, enum isl_dim_type type,
+	unsigned first, unsigned n)
 {
 	int i;
 	unsigned dim;
@@ -2222,13 +2225,6 @@ __isl_give isl_basic_map *isl_basic_map_drop(__isl_take isl_basic_map *bmap,
 	dim = isl_basic_map_dim(bmap, type);
 	isl_assert(bmap->ctx, first + n <= dim,
 		return isl_basic_map_free(bmap););
-
-	if (n == 0 && !isl_space_is_named_or_nested(bmap->dim, type))
-		return bmap;
-
-	bmap = isl_basic_map_cow(bmap);
-	if (!bmap)
-		return NULL;
 
 	offset = isl_basic_map_offset(bmap, type) + first;
 	left = isl_basic_map_total_dim(bmap) - (offset - 1) - n;
@@ -2254,6 +2250,30 @@ __isl_give isl_basic_map *isl_basic_map_drop(__isl_take isl_basic_map *bmap,
 
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_REDUNDANT);
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_SORTED);
+	return bmap;
+}
+
+/* Drop "n" dimensions of type "type" starting at "first".
+ *
+ * In principle, this frees up some extra variables as the number
+ * of columns remains constant, but we would have to extend
+ * the div array too as the number of rows in this array is assumed
+ * to be equal to extra.
+ */
+__isl_give isl_basic_map *isl_basic_map_drop(__isl_take isl_basic_map *bmap,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	if (!bmap)
+		return NULL;
+	if (n == 0 && !isl_space_is_named_or_nested(bmap->dim, type))
+		return bmap;
+
+	bmap = isl_basic_map_cow(bmap);
+	if (!bmap)
+		return NULL;
+
+	bmap = isl_basic_map_drop_core(bmap, type, first, n);
+
 	bmap = isl_basic_map_simplify(bmap);
 	return isl_basic_map_finalize(bmap);
 }
