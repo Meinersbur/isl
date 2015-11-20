@@ -85,18 +85,21 @@ static bool takes(Decl *decl)
 /* isl_class collects all constructors and methods for an isl "class".
  * "name" is the name of the class.
  * "type" is the declaration that introduces the type.
+ * "methods" contains the set of methods, grouped by method name.
  */
 struct isl_class {
 	string name;
 	RecordDecl *type;
 	set<FunctionDecl *> constructors;
-	set<FunctionDecl *> methods;
+	map<string, set<FunctionDecl *> > methods;
 
 	bool is_static(FunctionDecl *method);
 
 	void print(map<string, isl_class> &classes, set<string> &done);
 	void print_constructor(FunctionDecl *method);
 	void print_method(FunctionDecl *method, vector<string> super);
+	void print_method(const set<FunctionDecl *> &methods,
+		vector<string> super);
 };
 
 /* Return the class that has a name that matches the initial part
@@ -421,6 +424,18 @@ void isl_class::print_method(FunctionDecl *method, vector<string> super)
 	}
 }
 
+/* Print python methods corresponding to the C functions "methods".
+ * "super" contains the superclasses of the class to which the method belongs.
+ */
+void isl_class::print_method(const set<FunctionDecl *> &methods,
+	vector<string> super)
+{
+	set<FunctionDecl *>::const_iterator it;
+
+	for (it = methods.begin(); it != methods.end(); ++it)
+		print_method(*it, super);
+}
+
 /* Print part of the constructor for this isl_class.
  *
  * In particular, check if the actual arguments correspond to the
@@ -549,6 +564,7 @@ void isl_class::print(map<string, isl_class> &classes, set<string> &done)
 {
 	string p_name = type2python(name);
 	set<FunctionDecl *>::iterator in;
+	map<string, set<FunctionDecl *> >::iterator it;
 	vector<string> super = find_superclasses(type);
 
 	for (int i = 0; i < super.size(); ++i)
@@ -580,16 +596,17 @@ void isl_class::print(map<string, isl_class> &classes, set<string> &done)
 	printf("        return 'isl.%s(\"%%s\")' %% str(self)\n",
 		p_name.c_str());
 
-	for (in = methods.begin(); in != methods.end(); ++in)
-		print_method(*in, super);
+	for (it = methods.begin(); it != methods.end(); ++it)
+		print_method(it->second, super);
 
 	printf("\n");
 	for (in = constructors.begin(); in != constructors.end(); ++in) {
 		print_restype(*in);
 		print_argtypes(*in);
 	}
-	for (in = methods.begin(); in != methods.end(); ++in)
-		print_restype(*in);
+	for (it = methods.begin(); it != methods.end(); ++it)
+		for (in = it->second.begin(); in != it->second.end(); ++in)
+			print_restype(*in);
 	printf("isl.%s_free.argtypes = [c_void_p]\n", name.c_str());
 	printf("isl.%s_to_str.argtypes = [c_void_p]\n", name.c_str());
 	printf("isl.%s_to_str.restype = POINTER(c_char)\n", name.c_str());
@@ -621,10 +638,13 @@ void generate_python(set<RecordDecl *> &types, set<FunctionDecl *> functions)
 		isl_class *c = method2class(classes, *in);
 		if (!c)
 			continue;
-		if (is_constructor(*in))
+		if (is_constructor(*in)) {
 			c->constructors.insert(*in);
-		else
-			c->methods.insert(*in);
+		} else {
+			FunctionDecl *method = *in;
+			string fullname = method->getName();
+			c->methods[fullname].insert(method);
+		}
 	}
 
 	for (ci = classes.begin(); ci != classes.end(); ++ci) {
