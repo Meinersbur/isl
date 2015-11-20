@@ -99,6 +99,10 @@ __isl_give isl_union_map *isl_union_flow_get_must_dependence(
 	__isl_keep isl_union_flow *flow);
 __isl_give isl_union_map *isl_union_flow_get_may_dependence(
 	__isl_keep isl_union_flow *flow);
+__isl_give isl_union_map *isl_union_flow_get_full_must_dependence(
+	__isl_keep isl_union_flow *flow);
+__isl_give isl_union_map *isl_union_flow_get_full_may_dependence(
+	__isl_keep isl_union_flow *flow);
 __isl_give isl_union_map *isl_union_flow_get_must_no_source(
 	__isl_keep isl_union_flow *flow);
 __isl_give isl_union_map *isl_union_flow_get_may_no_source(

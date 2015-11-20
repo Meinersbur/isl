@@ -1546,6 +1546,28 @@ void isl_union_flow_dump(__isl_keep isl_union_flow *flow)
 	isl_union_map_dump(flow->may_no_source);
 }
 
+/* Return the full definite dependences in "flow", with accessed elements.
+ */
+__isl_give isl_union_map *isl_union_flow_get_full_must_dependence(
+	__isl_keep isl_union_flow *flow)
+{
+	if (!flow)
+		return NULL;
+	return isl_union_map_copy(flow->must_dep);
+}
+
+/* Return the full possible dependences in "flow", including the definite
+ * dependences, with accessed elements.
+ */
+__isl_give isl_union_map *isl_union_flow_get_full_may_dependence(
+	__isl_keep isl_union_flow *flow)
+{
+	if (!flow)
+		return NULL;
+	return isl_union_map_union(isl_union_map_copy(flow->must_dep),
+				    isl_union_map_copy(flow->may_dep));
+}
+
 /* Return the definite dependences in "flow", without the accessed elements.
  */
 __isl_give isl_union_map *isl_union_flow_get_must_dependence(
