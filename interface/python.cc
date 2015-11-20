@@ -68,6 +68,13 @@ static vector<string> find_superclasses(RecordDecl *decl)
 	return super;
 }
 
+/* Is decl marked as being part of an overloaded method?
+ */
+static bool is_overload(Decl *decl)
+{
+	return has_annotation(decl, "isl_overload");
+}
+
 /* Is decl marked as a constructor?
  */
 static bool is_constructor(Decl *decl)
@@ -98,8 +105,9 @@ struct isl_class {
 	void print(map<string, isl_class> &classes, set<string> &done);
 	void print_constructor(FunctionDecl *method);
 	void print_method(FunctionDecl *method, vector<string> super);
-	void print_method(const set<FunctionDecl *> &methods,
-		vector<string> super);
+	void print_method_overload(FunctionDecl *method, vector<string> super);
+	void print_method(const string &fullname,
+		const set<FunctionDecl *> &methods, vector<string> super);
 };
 
 /* Return the class that has a name that matches the initial part
@@ -218,6 +226,34 @@ static string extract_type(QualType type)
 static string type2python(string name)
 {
 	return name.substr(4);
+}
+
+/* If "method" is overloaded, then drop the suffix of "name"
+ * corresponding to the type of the final argument and
+ * return the modified name (or the original name if
+ * no modifications were made).
+ */
+static string drop_type_suffix(string name, FunctionDecl *method)
+{
+	int num_params;
+	ParmVarDecl *param;
+	string type;
+	size_t name_len, type_len;
+
+	if (!is_overload(method))
+		return name;
+
+	num_params = method->getNumParams();
+	param = method->getParamDecl(num_params - 1);
+	type = extract_type(param->getOriginalType());
+	type = type.substr(4);
+	name_len = name.length();
+	type_len = type.length();
+
+	if (name_len > type_len && name.substr(name_len - type_len) == type)
+		name = name.substr(0, name_len - type_len - 1);
+
+	return name;
 }
 
 /* Should "method" be considered to be a static method?
@@ -424,16 +460,79 @@ void isl_class::print_method(FunctionDecl *method, vector<string> super)
 	}
 }
 
-/* Print python methods corresponding to the C functions "methods".
+/* Print part of an overloaded python method corresponding to the C function
+ * "method".
  * "super" contains the superclasses of the class to which the method belongs.
+ *
+ * In particular, print code to test whether the arguments passed to
+ * the python method correspond to the arguments expected by "method"
+ * and to call "method" if they do.
  */
-void isl_class::print_method(const set<FunctionDecl *> &methods,
+void isl_class::print_method_overload(FunctionDecl *method,
 	vector<string> super)
 {
+	string fullname = method->getName();
+	int num_params = method->getNumParams();
+	int first;
+	string type;
+
+	first = is_static(method) ? 0 : 1;
+
+	printf("        if ");
+	for (int i = first; i < num_params; ++i) {
+		if (i > first)
+			printf(" and ");
+		ParmVarDecl *param = method->getParamDecl(i);
+		if (is_isl_type(param->getOriginalType())) {
+			string type;
+			type = extract_type(param->getOriginalType());
+			type = type2python(type);
+			printf("arg%d.__class__ is %s", i, type.c_str());
+		} else
+			printf("type(arg%d) == str", i);
+	}
+	printf(":\n");
+	printf("            res = isl.%s(", fullname.c_str());
+	print_arg_in_call(method, 0);
+	for (int i = 1; i < num_params; ++i) {
+		printf(", ");
+		print_arg_in_call(method, i);
+	}
+	printf(")\n");
+	type = type2python(extract_type(method->getReturnType()));
+	printf("            return %s(ctx=arg0.ctx, ptr=res)\n", type.c_str());
+}
+
+/* Print a python method with a name derived from "fullname"
+ * corresponding to the C functions "methods".
+ * "super" contains the superclasses of the class to which the method belongs.
+ *
+ * If "methods" consists of a single element that is not marked overloaded,
+ * the use print_method to print the method.
+ * Otherwise, print an overloaded method with pieces corresponding
+ * to each function in "methods".
+ */
+void isl_class::print_method(const string &fullname,
+	const set<FunctionDecl *> &methods, vector<string> super)
+{
+	string cname;
 	set<FunctionDecl *>::const_iterator it;
+	int num_params;
+	FunctionDecl *any_method;
+
+	any_method = *methods.begin();
+	if (methods.size() == 1 && !is_overload(any_method)) {
+		print_method(any_method, super);
+		return;
+	}
+
+	cname = fullname.substr(name.length() + 1);
+	num_params = any_method->getNumParams();
+
+	print_method_header(is_static(any_method), cname, num_params);
 
 	for (it = methods.begin(); it != methods.end(); ++it)
-		print_method(*it, super);
+		print_method_overload(*it, super);
 }
 
 /* Print part of the constructor for this isl_class.
@@ -597,7 +696,7 @@ void isl_class::print(map<string, isl_class> &classes, set<string> &done)
 		p_name.c_str());
 
 	for (it = methods.begin(); it != methods.end(); ++it)
-		print_method(it->second, super);
+		print_method(it->first, it->second, super);
 
 	printf("\n");
 	for (in = constructors.begin(); in != constructors.end(); ++in) {
@@ -614,7 +713,9 @@ void isl_class::print(map<string, isl_class> &classes, set<string> &done)
 
 /* Generate a python interface based on the extracted types and functions.
  * We first collect all functions that belong to a certain type,
- * separating constructors from regular methods.
+ * separating constructors from regular methods.  If there are any
+ * overloaded functions, then they are grouped based on their name
+ * after removing the argument type suffix.
  *
  * Then we print out each class in turn.  If one of these is a subclass
  * of some other class, it will make sure the superclass is printed out first.
@@ -643,6 +744,7 @@ void generate_python(set<RecordDecl *> &types, set<FunctionDecl *> functions)
 		} else {
 			FunctionDecl *method = *in;
 			string fullname = method->getName();
+			fullname = drop_type_suffix(fullname, method);
 			c->methods[fullname].insert(method);
 		}
 	}
