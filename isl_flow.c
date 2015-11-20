@@ -1491,8 +1491,13 @@ isl_union_access_info_introduce_schedule(
 
 /* This structure represents the result of a dependence analysis computation.
  *
- * "must_dep" represents the definite dependences.
- * "may_dep" represents the non-definite dependences.
+ * "must_dep" represents the full definite dependences
+ * "may_dep" represents the full non-definite dependences.
+ * Both are of the form
+ *
+ *	[Source] -> [[Sink -> Data]]
+ *
+ * (after the schedule dimensions have been projected out).
  * "must_no_source" represents the subset of the sink accesses for which
  * definitely no source was found.
  * "may_no_source" represents the subset of the sink accesses for which
@@ -1541,26 +1546,32 @@ void isl_union_flow_dump(__isl_keep isl_union_flow *flow)
 	isl_union_map_dump(flow->may_no_source);
 }
 
-/* Return the definite dependences in "flow".
+/* Return the definite dependences in "flow", without the accessed elements.
  */
 __isl_give isl_union_map *isl_union_flow_get_must_dependence(
 	__isl_keep isl_union_flow *flow)
 {
+	isl_union_map *dep;
+
 	if (!flow)
 		return NULL;
-	return isl_union_map_copy(flow->must_dep);
+	dep = isl_union_map_copy(flow->must_dep);
+	return isl_union_map_range_factor_domain(dep);
 }
 
 /* Return the possible dependences in "flow", including the definite
- * dependences.
+ * dependences, without the accessed elements.
  */
 __isl_give isl_union_map *isl_union_flow_get_may_dependence(
 	__isl_keep isl_union_flow *flow)
 {
+	isl_union_map *dep;
+
 	if (!flow)
 		return NULL;
-	return isl_union_map_union(isl_union_map_copy(flow->must_dep),
+	dep = isl_union_map_union(isl_union_map_copy(flow->must_dep),
 				    isl_union_map_copy(flow->may_dep));
+	return isl_union_map_range_factor_domain(dep);
 }
 
 /* Return the non-definite dependences in "flow".
@@ -1660,11 +1671,6 @@ error:
  * and then computing the factor range
  *
  *	D -> [D' -> A]
- *
- * Finally, the accessed elements are projected out as well,
- * resulting in
- *
- *	D -> D'
  */
 static __isl_give isl_union_flow *isl_union_flow_drop_schedule(
 	__isl_take isl_union_flow *flow)
@@ -1674,10 +1680,8 @@ static __isl_give isl_union_flow *isl_union_flow_drop_schedule(
 
 	flow->must_dep = isl_union_map_range_curry(flow->must_dep);
 	flow->must_dep = isl_union_map_factor_range(flow->must_dep);
-	flow->must_dep = isl_union_map_range_factor_domain(flow->must_dep);
 	flow->may_dep = isl_union_map_range_curry(flow->may_dep);
 	flow->may_dep = isl_union_map_factor_range(flow->may_dep);
-	flow->may_dep = isl_union_map_range_factor_domain(flow->may_dep);
 	flow->must_no_source =
 		isl_union_map_domain_factor_range(flow->must_no_source);
 	flow->may_no_source =
@@ -2301,11 +2305,6 @@ error:
  * and then computing the factor range
  *
  *	I -> [I' -> A]
- *
- * Finally, the accessed elements are projected out as well,
- * resulting in
- *
- *	I -> I'
  */
 static __isl_give isl_union_flow *compute_single_flow(
 	__isl_take isl_union_flow *uf, struct isl_scheduled_access *sink,
@@ -2339,7 +2338,6 @@ static __isl_give isl_union_flow *compute_single_flow(
 
 		map = isl_map_range_curry(isl_map_copy(flow->dep[i].map));
 		map = isl_map_factor_range(map);
-		map = isl_map_range_factor_domain(map);
 		dep = isl_union_map_from_map(map);
 		if (flow->dep[i].must)
 			uf->must_dep = isl_union_map_union(uf->must_dep, dep);
