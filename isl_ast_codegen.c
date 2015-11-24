@@ -3379,6 +3379,34 @@ error:
 
 /* Generate code for a single component, after shifting (if any)
  * has been applied, in case the schedule was specified as a schedule tree.
+ * In particular, do so for the specified sequence of subsets
+ * of the schedule domain, "before", "isolated", "after" and "other",
+ * where only the "isolated" part is considered to be isolated.
+ */
+static __isl_give isl_ast_graft_list *generate_shifted_component_parts(
+	__isl_take isl_union_map *executed, __isl_take isl_set *before,
+	__isl_take isl_set *isolated, __isl_take isl_set *after,
+	__isl_take isl_set *other, __isl_take isl_ast_build *build)
+{
+	isl_ast_graft_list *list, *res;
+
+	res = generate_shifted_component_tree_part(executed, before, build, 0);
+	list = generate_shifted_component_tree_part(executed, isolated,
+						    build, 1);
+	res = isl_ast_graft_list_concat(res, list);
+	list = generate_shifted_component_tree_part(executed, after, build, 0);
+	res = isl_ast_graft_list_concat(res, list);
+	list = generate_shifted_component_tree_part(executed, other, build, 0);
+	res = isl_ast_graft_list_concat(res, list);
+
+	isl_union_map_free(executed);
+	isl_ast_build_free(build);
+
+	return res;
+}
+
+/* Generate code for a single component, after shifting (if any)
+ * has been applied, in case the schedule was specified as a schedule tree.
  *
  * We first check if the user has specified an isolated schedule domain
  * and that we are not already outside of this isolated schedule domain.
@@ -3402,7 +3430,6 @@ static __isl_give isl_ast_graft_list *generate_shifted_component_tree(
 	isl_basic_set *hull;
 	isl_set *isolated, *before, *after, *test;
 	isl_map *gt, *lt;
-	isl_ast_graft_list *list, *res;
 
 	build = isl_ast_build_extract_isolated(build);
 	has_isolate = isl_ast_build_has_isolated(build);
@@ -3447,19 +3474,8 @@ static __isl_give isl_ast_graft_list *generate_shifted_component_tree(
 	after = isl_set_subtract(after, isl_set_copy(before));
 	before = isl_set_subtract(before, isl_set_copy(isolated));
 
-	res = generate_shifted_component_tree_part(executed, before, build, 0);
-	list = generate_shifted_component_tree_part(executed, isolated,
-						    build, 1);
-	res = isl_ast_graft_list_concat(res, list);
-	list = generate_shifted_component_tree_part(executed, after, build, 0);
-	res = isl_ast_graft_list_concat(res, list);
-	list = generate_shifted_component_tree_part(executed, domain, build, 0);
-	res = isl_ast_graft_list_concat(res, list);
-
-	isl_union_map_free(executed);
-	isl_ast_build_free(build);
-
-	return res;
+	return generate_shifted_component_parts(executed, before, isolated,
+						after, domain, build);
 error:
 	isl_set_free(domain);
 	isl_set_free(isolated);
