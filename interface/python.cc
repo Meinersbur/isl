@@ -440,6 +440,18 @@ void isl_class::print_constructor(FunctionDecl *cons)
 	printf("            return\n");
 }
 
+/* Print the header of the class "name".
+ * If subclass is true, then "super" is the name of the single superclass.
+ */
+static void print_class_header(const string &name, bool subclass,
+	const string &super)
+{
+	printf("class %s", name.c_str());
+	if (subclass)
+		printf("(%s)", type2python(super).c_str());
+	printf(":\n");
+}
+
 /* Tell ctypes about the return type of "fd".
  * In particular, if "fd" returns a pointer to an isl object,
  * then tell ctypes it returns a "c_void_p".
@@ -507,10 +519,7 @@ void isl_class::print(map<string, isl_class> &classes, set<string> &done)
 	done.insert(name);
 
 	printf("\n");
-	printf("class %s", p_name.c_str());
-	if (subclass)
-		printf("(%s)", type2python(super).c_str());
-	printf(":\n");
+	print_class_header(p_name, subclass, super);
 	printf("    def __init__(self, *args, **keywords):\n");
 
 	printf("        if \"ptr\" in keywords:\n");
