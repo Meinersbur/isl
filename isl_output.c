@@ -1970,23 +1970,23 @@ error:
 }
 
 static __isl_give isl_printer *isl_printer_print_space_isl(
-	__isl_take isl_printer *p, __isl_keep isl_space *dim)
+	__isl_take isl_printer *p, __isl_keep isl_space *space)
 {
 	struct isl_print_space_data data = { 0 };
 
-	if (!dim)
+	if (!space)
 		goto error;
 
-	if (isl_space_dim(dim, isl_dim_param) > 0) {
-		p = print_tuple(dim, p, isl_dim_param, &data);
+	if (isl_space_dim(space, isl_dim_param) > 0) {
+		p = print_tuple(space, p, isl_dim_param, &data);
 		p = isl_printer_print_str(p, " -> ");
 	}
 
 	p = isl_printer_print_str(p, "{ ");
-	if (isl_space_is_params(dim))
+	if (isl_space_is_params(space))
 		p = isl_printer_print_str(p, s_such_that[0]);
 	else
-		p = print_space(dim, p, 0, &data);
+		p = print_space(space, p, 0, &data);
 	p = isl_printer_print_str(p, " }");
 
 	return p;
