@@ -898,17 +898,17 @@ static __isl_give isl_printer *print_split_map(__isl_take isl_printer *p,
 
 	data.print_dim = &print_dim_eq;
 	for (i = 0; i < n; ++i) {
-		isl_space *dim;
+		isl_space *space;
 
 		if (!split[i].map)
 			break;
-		dim = split[i].map->dim;
+		space = split[i].map->dim;
 		rational = split[i].map->n > 0 &&
 		    ISL_F_ISSET(split[i].map->p[0], ISL_BASIC_MAP_RATIONAL);
 		if (i)
 			p = isl_printer_print_str(p, "; ");
 		data.user = split[i].aff;
-		p = print_space(dim, p, rational, &data);
+		p = print_space(space, p, rational, &data);
 		p = print_disjuncts_map(split[i].map, p, 0);
 	}
 
