@@ -1426,6 +1426,16 @@ static __isl_give isl_map *read_map_tuple(__isl_keep isl_stream *s,
 	return map_from_tuple(tuple, map, type, v, rational);
 }
 
+/* Construct constraints of the form
+ *
+ *	a op b
+ *
+ * where a is an element in "left", op is an operator of type "type" and
+ * b is an element in "right", add the constraints to "set" and return
+ * the result.
+ * "rational" is set if the constraints should be treated as
+ * a rational constraints.
+ */
 static __isl_give isl_set *construct_constraints(
 	__isl_take isl_set *set, int type,
 	__isl_keep isl_pw_aff_list *left, __isl_keep isl_pw_aff_list *right,
