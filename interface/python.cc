@@ -272,13 +272,22 @@ bool isl_class::is_static(FunctionDecl *method)
 
 /* Print the header of the method "name" with "n_arg" arguments.
  * If "is_static" is set, then mark the python method as static.
+ *
+ * If the method is called "from", then rename it to "convert_from"
+ * because "from" is a python keyword.
  */
 static void print_method_header(bool is_static, const string &name, int n_arg)
 {
+	const char *s;
+
 	if (is_static)
 		printf("    @staticmethod\n");
 
-	printf("    def %s(arg0", name.c_str());
+	s = name.c_str();
+	if (name == "from")
+		s = "convert_from";
+
+	printf("    def %s(arg0", s);
 	for (int i = 1; i < n_arg; ++i)
 		printf(", arg%d", i);
 	printf("):\n");
