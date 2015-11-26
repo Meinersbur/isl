@@ -215,6 +215,16 @@ static string type2python(string name)
 	return name.substr(4);
 }
 
+/* Print the header of the method "name" with "n_arg" arguments.
+ */
+static void print_method_header(const string &name, int n_arg)
+{
+	printf("    def %s(arg0", name.c_str());
+	for (int i = 1; i < n_arg; ++i)
+		printf(", arg%d", i);
+	printf("):\n");
+}
+
 /* Construct a wrapper for a callback argument (at position "arg").
  * Assign the wrapper to "cb".  We assume here that a function call
  * has at most one callback argument.
@@ -324,10 +334,7 @@ void isl_class::print_method(FunctionDecl *method, vector<string> super)
 			drop_user = 1;
 	}
 
-	printf("    def %s(arg0", cname.c_str());
-	for (int i = 1; i < num_params - drop_user; ++i)
-		printf(", arg%d", i);
-	printf("):\n");
+	print_method_header(cname, num_params - drop_user);
 
 	for (int i = 0; i < num_params; ++i) {
 		ParmVarDecl *param = method->getParamDecl(i);
