@@ -119,8 +119,66 @@ static int test_parse_multi_val(isl_ctx *ctx, const char *str)
 	return mv ? 0 : -1;
 }
 
+/* Pairs of binary relation representations that should represent
+ * the same binary relations.
+ */
+struct {
+	const char *map1;
+	const char *map2;
+} parse_map_equal_tests[] = {
+	{ "{ [x,y]  : [([x/2]+y)/3] >= 1 }",
+	  "{ [x, y] : 2y >= 6 - x }" },
+	{ "{ [x,y] : x <= min(y, 2*y+3) }",
+	  "{ [x,y] : x <= y, 2*y + 3 }" },
+	{ "{ [x,y] : x >= min(y, 2*y+3) }",
+	  "{ [x, y] : (y <= x and y >= -3) or (2y <= -3 + x and y <= -4) }" },
+	{ "[n] -> { [c1] : c1>=0 and c1<=floord(n-4,3) }",
+	  "[n] -> { [c1] : c1 >= 0 and 3c1 <= -4 + n }" },
+	{ "{ [i,j] -> [i] : i < j; [i,j] -> [j] : j <= i }",
+	  "{ [i,j] -> [min(i,j)] }" },
+	{ "{ [i,j] : i != j }",
+	  "{ [i,j] : i < j or i > j }" },
+	{ "{ [i,j] : (i+1)*2 >= j }",
+	  "{ [i, j] : j <= 2 + 2i }" },
+	{ "{ [i] -> [i > 0 ? 4 : 5] }",
+	  "{ [i] -> [5] : i <= 0; [i] -> [4] : i >= 1 }" },
+	{ "[N=2,M] -> { [i=[(M+N)/4]] }",
+	  "[N, M] -> { [i] : N = 2 and 4i <= 2 + M and 4i >= -1 + M }" },
+	{ "{ [x] : x >= 0 }",
+	  "{ [x] : x-0 >= 0 }" },
+	{ "{ [i] : ((i > 10)) }",
+	  "{ [i] : i >= 11 }" },
+	{ "{ [i] -> [0] }",
+	  "{ [i] -> [0 * i] }" },
+	{ "{ [a] -> [b] : (not false) }",
+	  "{ [a] -> [b] : true }" },
+	{ "{ [i] : i/2 <= 5 }",
+	  "{ [i] : i <= 10 }" },
+	{ "{Sym=[n] [i] : i <= n }",
+	  "[n] -> { [i] : i <= n }" },
+	{ "{ [*] }",
+	  "{ [a] }" },
+	{ "{ [i] : 2*floor(i/2) = i }",
+	  "{ [i] : exists a : i = 2 a }" },
+	{ "{ [a] -> [b] : a = 5 implies b = 5 }",
+	  "{ [a] -> [b] : a != 5 or b = 5 }" },
+	{ "{ [a] -> [a - 1 : a > 0] }",
+	  "{ [a] -> [a - 1] : a > 0 }" },
+	{ "{ [a] -> [a - 1 : a > 0; a : a <= 0] }",
+	  "{ [a] -> [a - 1] : a > 0; [a] -> [a] : a <= 0 }" },
+	{ "{ [a] -> [(a) * 2 : a >= 0; 0 : a < 0] }",
+	  "{ [a] -> [2a] : a >= 0; [a] -> [0] : a < 0 }" },
+	{ "{ [a] -> [(a * 2) : a >= 0; 0 : a < 0] }",
+	  "{ [a] -> [2a] : a >= 0; [a] -> [0] : a < 0 }" },
+	{ "{ [a] -> [(a * 2 : a >= 0); 0 : a < 0] }",
+	  "{ [a] -> [2a] : a >= 0; [a] -> [0] : a < 0 }" },
+	{ "{ [a] -> [(a * 2 : a >= 0; 0 : a < 0)] }",
+	  "{ [a] -> [2a] : a >= 0; [a] -> [0] : a < 0 }" },
+};
+
 int test_parse(struct isl_ctx *ctx)
 {
+	int i;
 	isl_map *map, *map2;
 	const char *str, *str2;
 
@@ -145,18 +203,12 @@ int test_parse(struct isl_ctx *ctx)
 	test_parse_map(ctx, "{ [p1, y1, y2] -> [2, y1, y2] : "
 				"p1 = 1 && (y1 <= y2 || y2 = 0) }");
 
-	str = "{ [x,y]  : [([x/2]+y)/3] >= 1 }";
-	str2 = "{ [x, y] : 2y >= 6 - x }";
-	if (test_parse_map_equal(ctx, str, str2) < 0)
-		return -1;
-
-	if (test_parse_map_equal(ctx, "{ [x,y] : x <= min(y, 2*y+3) }",
-				      "{ [x,y] : x <= y, 2*y + 3 }") < 0)
-		return -1;
-	str = "{ [x, y] : (y <= x and y >= -3) or (2y <= -3 + x and y <= -4) }";
-	if (test_parse_map_equal(ctx, "{ [x,y] : x >= min(y, 2*y+3) }",
-					str) < 0)
-		return -1;
+	for (i = 0; i < ARRAY_SIZE(parse_map_equal_tests); ++i) {
+		str = parse_map_equal_tests[i].map1;
+		str2 = parse_map_equal_tests[i].map2;
+		if (test_parse_map_equal(ctx, str, str2) < 0)
+			return -1;
+	}
 
 	str = "{[new,old] -> [new+1-2*[(new+1)/2],old+1-2*[(old+1)/2]]}";
 	map = isl_map_read_from_str(ctx, str);
@@ -177,102 +229,10 @@ int test_parse(struct isl_ctx *ctx)
 	isl_map_free(map);
 	isl_map_free(map2);
 
-	str = "[n] -> { [c1] : c1>=0 and c1<=floord(n-4,3) }";
-	str2 = "[n] -> { [c1] : c1 >= 0 and 3c1 <= -4 + n }";
-	if (test_parse_map_equal(ctx, str, str2) < 0)
-		return -1;
-
-	str = "{ [i,j] -> [i] : i < j; [i,j] -> [j] : j <= i }";
-	str2 = "{ [i,j] -> [min(i,j)] }";
-	if (test_parse_map_equal(ctx, str, str2) < 0)
-		return -1;
-
-	str = "{ [i,j] : i != j }";
-	str2 = "{ [i,j] : i < j or i > j }";
-	if (test_parse_map_equal(ctx, str, str2) < 0)
-		return -1;
-
-	str = "{ [i,j] : (i+1)*2 >= j }";
-	str2 = "{ [i, j] : j <= 2 + 2i }";
-	if (test_parse_map_equal(ctx, str, str2) < 0)
-		return -1;
-
-	str = "{ [i] -> [i > 0 ? 4 : 5] }";
-	str2 = "{ [i] -> [5] : i <= 0; [i] -> [4] : i >= 1 }";
-	if (test_parse_map_equal(ctx, str, str2) < 0)
-		return -1;
-
-	str = "[N=2,M] -> { [i=[(M+N)/4]] }";
-	str2 = "[N, M] -> { [i] : N = 2 and 4i <= 2 + M and 4i >= -1 + M }";
-	if (test_parse_map_equal(ctx, str, str2) < 0)
-		return -1;
-
-	str = "{ [x] : x >= 0 }";
-	str2 = "{ [x] : x-0 >= 0 }";
-	if (test_parse_map_equal(ctx, str, str2) < 0)
-		return -1;
-
-	str = "{ [i] : ((i > 10)) }";
-	str2 = "{ [i] : i >= 11 }";
-	if (test_parse_map_equal(ctx, str, str2) < 0)
-		return -1;
-
-	str = "{ [i] -> [0] }";
-	str2 = "{ [i] -> [0 * i] }";
-	if (test_parse_map_equal(ctx, str, str2) < 0)
-		return -1;
-
 	test_parse_pwqp(ctx, "{ [i] -> i + [ (i + [i/3])/2 ] }");
 	test_parse_map(ctx, "{ S1[i] -> [([i/10]),i%10] : 0 <= i <= 45 }");
 	test_parse_pwaff(ctx, "{ [i] -> [i + 1] : i > 0; [a] -> [a] : a < 0 }");
 	test_parse_pwqp(ctx, "{ [x] -> ([(x)/2] * [(x)/3]) }");
-
-	if (test_parse_map_equal(ctx, "{ [a] -> [b] : (not false) }",
-				      "{ [a] -> [b] : true }") < 0)
-		return -1;
-
-	if (test_parse_map_equal(ctx, "{ [i] : i/2 <= 5 }",
-				      "{ [i] : i <= 10 }") < 0)
-		return -1;
-
-	if (test_parse_map_equal(ctx, "{Sym=[n] [i] : i <= n }",
-				      "[n] -> { [i] : i <= n }") < 0)
-		return -1;
-
-	if (test_parse_map_equal(ctx, "{ [*] }", "{ [a] }") < 0)
-		return -1;
-
-	if (test_parse_map_equal(ctx, "{ [i] : 2*floor(i/2) = i }",
-				      "{ [i] : exists a : i = 2 a }") < 0)
-		return -1;
-
-	if (test_parse_map_equal(ctx, "{ [a] -> [b] : a = 5 implies b = 5 }",
-				      "{ [a] -> [b] : a != 5 or b = 5 }") < 0)
-		return -1;
-
-	if (test_parse_map_equal(ctx, "{ [a] -> [a - 1 : a > 0] }",
-				      "{ [a] -> [a - 1] : a > 0 }") < 0)
-		return -1;
-	if (test_parse_map_equal(ctx,
-	    "{ [a] -> [a - 1 : a > 0; a : a <= 0] }",
-	    "{ [a] -> [a - 1] : a > 0; [a] -> [a] : a <= 0 }") < 0)
-		return -1;
-	if (test_parse_map_equal(ctx,
-	    "{ [a] -> [(a) * 2 : a >= 0; 0 : a < 0] }",
-	    "{ [a] -> [2a] : a >= 0; [a] -> [0] : a < 0 }") < 0)
-		return -1;
-	if (test_parse_map_equal(ctx,
-	    "{ [a] -> [(a * 2) : a >= 0; 0 : a < 0] }",
-	    "{ [a] -> [2a] : a >= 0; [a] -> [0] : a < 0 }") < 0)
-		return -1;
-	if (test_parse_map_equal(ctx,
-	    "{ [a] -> [(a * 2 : a >= 0); 0 : a < 0] }",
-	    "{ [a] -> [2a] : a >= 0; [a] -> [0] : a < 0 }") < 0)
-		return -1;
-	if (test_parse_map_equal(ctx,
-	    "{ [a] -> [(a * 2 : a >= 0; 0 : a < 0)] }",
-	    "{ [a] -> [2a] : a >= 0; [a] -> [0] : a < 0 }") < 0)
-		return -1;
 
 	return 0;
 }
