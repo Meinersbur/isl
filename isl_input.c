@@ -1455,6 +1455,22 @@ static __isl_give isl_set *construct_constraints(
 	return isl_set_intersect(set, cond);
 }
 
+/* Read a constraint from "s", add it to "map" and return the result.
+ * "v" contains a description of the identifiers parsed so far.
+ * "rational" is set if the constraint should be treated as
+ * a rational constraint.
+ * The constraint read from "s" may be applied to multiple pairs
+ * of affine expressions and may be chained.
+ * In particular, a list of affine expressions is read, followed
+ * by a comparison operator and another list of affine expressions.
+ * The comparison operator is then applied to each pair of elements
+ * in the two lists and the results are added to "map".
+ * If the next token is another comparison operator, then another
+ * list of affine expressions is read and the process repeats.
+ *
+ * The processing is performed on a wrapped copy of "map" because
+ * an affine expression cannot have a binary relation as domain.
+ */
 static __isl_give isl_map *add_constraint(__isl_keep isl_stream *s,
 	struct vars *v, __isl_take isl_map *map, int rational)
 {
