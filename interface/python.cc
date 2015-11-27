@@ -629,26 +629,33 @@ static void print_restype(FunctionDecl *fd)
 		printf("isl.%s.restype = c_bool\n", fullname.c_str());
 }
 
-/* Tell ctypes about the types of the arguments of the constructor "fd".
+/* Tell ctypes about the types of the arguments of the function "fd".
  */
 static void print_argtypes(FunctionDecl *fd)
 {
 	string fullname = fd->getName();
+	int n = fd->getNumParams();
+	int drop_user = 0;
+
 	printf("isl.%s.argtypes = [", fullname.c_str());
-	for (int i = 0; i < fd->getNumParams(); ++i) {
+	for (int i = 0; i < n - drop_user; ++i) {
 		ParmVarDecl *param = fd->getParamDecl(i);
 		QualType type = param->getOriginalType();
+		if (is_callback(type))
+			drop_user = 1;
 		if (i)
 			printf(", ");
 		if (is_isl_ctx(type))
 			printf("Context");
-		else if (is_isl_type(type))
+		else if (is_isl_type(type) || is_callback(type))
 			printf("c_void_p");
 		else if (is_string(type))
 			printf("c_char_p");
 		else
 			printf("c_int");
 	}
+	if (drop_user)
+		printf(", c_void_p");
 	printf("]\n");
 }
 
@@ -713,8 +720,10 @@ void isl_class::print(map<string, isl_class> &classes, set<string> &done)
 		print_argtypes(*in);
 	}
 	for (it = methods.begin(); it != methods.end(); ++it)
-		for (in = it->second.begin(); in != it->second.end(); ++in)
+		for (in = it->second.begin(); in != it->second.end(); ++in) {
 			print_restype(*in);
+			print_argtypes(*in);
+		}
 	printf("isl.%s_free.argtypes = [c_void_p]\n", name.c_str());
 	printf("isl.%s_to_str.argtypes = [c_void_p]\n", name.c_str());
 	printf("isl.%s_to_str.restype = POINTER(c_char)\n", name.c_str());
