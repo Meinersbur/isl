@@ -287,9 +287,12 @@ static void print_method_header(bool is_static, const string &name, int n_arg)
 	if (name == "from")
 		s = "convert_from";
 
-	printf("    def %s(arg0", s);
-	for (int i = 1; i < n_arg; ++i)
-		printf(", arg%d", i);
+	printf("    def %s(", s);
+	for (int i = 0; i < n_arg; ++i) {
+		if (i)
+			printf(", ");
+		printf("arg%d", i);
+	}
 	printf("):\n");
 }
 
@@ -344,6 +347,8 @@ static void print_callback(QualType type, int arg)
 }
 
 /* Print the argument at position "arg" in call to "fd".
+ * "skip" is the number of initial arguments of "fd" that are
+ * skipped in the Python method.
  *
  * If the argument is a callback, then print a reference to
  * the callback wrapper "cb".
@@ -352,7 +357,7 @@ static void print_callback(QualType type, int arg)
  * argument passed to the Python method.
  * Otherwise, pass this pointer itself.
  */
-static void print_arg_in_call(FunctionDecl *fd, int arg)
+static void print_arg_in_call(FunctionDecl *fd, int arg, int skip)
 {
 	ParmVarDecl *param = fd->getParamDecl(arg);
 	QualType type = param->getOriginalType();
@@ -360,9 +365,9 @@ static void print_arg_in_call(FunctionDecl *fd, int arg)
 		printf("cb");
 	} else if (takes(param)) {
 		string type_s = extract_type(type);
-		printf("isl.%s_copy(arg%d.ptr)", type_s.c_str(), arg);
+		printf("isl.%s_copy(arg%d.ptr)", type_s.c_str(), arg - skip);
 	} else {
-		printf("arg%d.ptr", arg);
+		printf("arg%d.ptr", arg - skip);
 	}
 }
 
@@ -371,6 +376,8 @@ static void print_arg_in_call(FunctionDecl *fd, int arg)
  *
  * If the first argument of "method" is something other than an instance
  * of the class, then mark the python method as static.
+ * If, moreover, this first argument is an isl_ctx, then remove
+ * it from the arguments of the Python method.
  *
  * If the function has a callback argument, then it also has a "user"
  * argument.  Since Python has closures, there is no need for such
@@ -397,6 +404,7 @@ void isl_class::print_method(FunctionDecl *method, vector<string> super)
 	string cname = fullname.substr(name.length() + 1);
 	int num_params = method->getNumParams();
 	int drop_user = 0;
+	int drop_ctx = first_arg_is_isl_ctx(method);
 
 	for (int i = 1; i < num_params; ++i) {
 		ParmVarDecl *param = method->getParamDecl(i);
@@ -405,9 +413,10 @@ void isl_class::print_method(FunctionDecl *method, vector<string> super)
 			drop_user = 1;
 	}
 
-	print_method_header(is_static(method), cname, num_params - drop_user);
+	print_method_header(is_static(method), cname,
+			    num_params - drop_ctx - drop_user);
 
-	for (int i = 0; i < num_params; ++i) {
+	for (int i = drop_ctx; i < num_params; ++i) {
 		ParmVarDecl *param = method->getParamDecl(i);
 		string type;
 		if (!is_isl_type(param->getOriginalType()))
@@ -415,11 +424,11 @@ void isl_class::print_method(FunctionDecl *method, vector<string> super)
 		type = type2python(extract_type(param->getOriginalType()));
 		printf("        try:\n");
 		printf("            if not arg%d.__class__ is %s:\n",
-			i, type.c_str());
+			i - drop_ctx, type.c_str());
 		printf("                arg%d = %s(arg%d)\n",
-			i, type.c_str(), i);
+			i - drop_ctx, type.c_str(), i - drop_ctx);
 		printf("        except:\n");
-		if (i > 0 && super.size() > 0) {
+		if (!drop_ctx && i > 0 && super.size() > 0) {
 			printf("            return %s(arg0).%s(",
 				type2python(super[0]).c_str(), cname.c_str());
 			for (int i = 1; i < num_params - drop_user; ++i) {
@@ -436,13 +445,20 @@ void isl_class::print_method(FunctionDecl *method, vector<string> super)
 		QualType type = param->getOriginalType();
 		if (!is_callback(type))
 			continue;
-		print_callback(type->getPointeeType(), i);
+		print_callback(type->getPointeeType(), i - drop_ctx);
 	}
+	if (drop_ctx)
+		printf("        ctx = Context.getDefaultInstance()\n");
+	else
+		printf("        ctx = arg0.ctx\n");
 	printf("        res = isl.%s(", fullname.c_str());
-	print_arg_in_call(method, 0);
+	if (drop_ctx)
+		printf("ctx");
+	else
+		print_arg_in_call(method, 0, 0);
 	for (int i = 1; i < num_params - drop_user; ++i) {
 		printf(", ");
-		print_arg_in_call(method, i);
+		print_arg_in_call(method, i, drop_ctx);
 	}
 	if (drop_user)
 		printf(", None");
@@ -451,7 +467,7 @@ void isl_class::print_method(FunctionDecl *method, vector<string> super)
 	if (is_isl_type(method->getReturnType())) {
 		string type;
 		type = type2python(extract_type(method->getReturnType()));
-		printf("        return %s(ctx=arg0.ctx, ptr=res)\n",
+		printf("        return %s(ctx=ctx, ptr=res)\n",
 			type.c_str());
 	} else {
 		if (drop_user) {
@@ -502,10 +518,10 @@ void isl_class::print_method_overload(FunctionDecl *method,
 	}
 	printf(":\n");
 	printf("            res = isl.%s(", fullname.c_str());
-	print_arg_in_call(method, 0);
+	print_arg_in_call(method, 0, 0);
 	for (int i = 1; i < num_params; ++i) {
 		printf(", ");
-		print_arg_in_call(method, i);
+		print_arg_in_call(method, i, 0);
 	}
 	printf(")\n");
 	type = type2python(extract_type(method->getReturnType()));
