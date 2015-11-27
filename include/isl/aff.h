@@ -340,9 +340,6 @@ __isl_give isl_multi_aff *isl_multi_aff_multi_val_on_space(
 
 __isl_give isl_multi_aff *isl_multi_aff_floor(__isl_take isl_multi_aff *ma);
 
-__isl_give isl_multi_aff *isl_multi_aff_product(
-	__isl_take isl_multi_aff *ma1, __isl_take isl_multi_aff *ma2);
-
 __isl_give isl_multi_aff *isl_multi_aff_gist_params(
 	__isl_take isl_multi_aff *maff, __isl_take isl_set *context);
 __isl_give isl_multi_aff *isl_multi_aff_gist(__isl_take isl_multi_aff *maff,
