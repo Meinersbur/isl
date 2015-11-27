@@ -229,6 +229,7 @@ __isl_give isl_map *isl_map_from_union_map(__isl_take isl_union_map *umap);
 
 __isl_give isl_basic_map *isl_union_map_sample(__isl_take isl_union_map *umap);
 
+__isl_overload
 __isl_give isl_union_map *isl_union_map_fixed_power_val(
 	__isl_take isl_union_map *umap, __isl_take isl_val *exp);
 __isl_give isl_union_map *isl_union_map_power(__isl_take isl_union_map *umap,
