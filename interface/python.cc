@@ -579,14 +579,17 @@ void isl_class::print_constructor(FunctionDecl *cons)
 	printf("        if len(args) == %d", num_params - drop_ctx);
 	for (int i = drop_ctx; i < num_params; ++i) {
 		ParmVarDecl *param = cons->getParamDecl(i);
-		if (is_isl_type(param->getOriginalType())) {
-			string type;
-			type = extract_type(param->getOriginalType());
-			type = type2python(type);
+		QualType type = param->getOriginalType();
+		if (is_isl_type(type)) {
+			string s;
+			s = type2python(extract_type(type));
 			printf(" and args[%d].__class__ is %s",
-				i - drop_ctx, type.c_str());
-		} else
+				i - drop_ctx, s.c_str());
+		} else if (type->isPointerType()) {
 			printf(" and type(args[%d]) == str", i - drop_ctx);
+		} else {
+			printf(" and type(args[%d]) == int", i - drop_ctx);
+		}
 	}
 	printf(":\n");
 	printf("            self.ctx = Context.getDefaultInstance()\n");
