@@ -3889,12 +3889,22 @@ i.e., whether both domain and range are nested relations.
 
 =item * Currying
 
+	#include <isl/space.h>
+	isl_bool isl_space_can_curry(
+		__isl_keep isl_space *space);
+
+	#include <isl/map.h>
 	isl_bool isl_basic_map_can_curry(
 		__isl_keep isl_basic_map *bmap);
 	isl_bool isl_map_can_curry(__isl_keep isl_map *map);
 
 Check whether the domain of the (basic) relation is a wrapped relation.
 
+	#include <isl/space.h>
+	__isl_give isl_space *isl_space_uncurry(
+		__isl_take isl_space *space);
+
+	#include <isl/map.h>
 	isl_bool isl_basic_map_can_uncurry(
 		__isl_keep isl_basic_map *bmap);
 	isl_bool isl_map_can_uncurry(__isl_keep isl_map *map);
