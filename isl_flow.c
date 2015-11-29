@@ -1457,7 +1457,7 @@ isl_union_access_info_introduce_schedule(
 	return access;
 }
 
-/* This structure epresents the result of a dependence analysis computation.
+/* This structure represents the result of a dependence analysis computation.
  *
  * "must_dep" represents the definite dependences.
  * "may_dep" represents the non-definite dependences.
