@@ -20,6 +20,14 @@
 
 #define ARRAY_SIZE(array) (sizeof(array)/sizeof(*array))
 
+/* Visual Studio before VS2015 does not support the inline keyword when
+ * compiling in C mode because it was introduced in C99 which it does not
+ * officially support.  Instead, it has a proprietary extension using __inline.
+ */
+#if defined(_MSC_VER) && (_MSC_VER < 1900)
+#define inline __inline
+#endif
+
 /* The type to represent integers optimized for small values. It is either a
  * pointer to an mp_int ( = mpz_t*; big representation) or an int32_t (small
  * represenation) with a discriminator at the least significant bit. In big
