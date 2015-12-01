@@ -312,11 +312,16 @@ static __isl_give isl_printer *print_affine_of_len(__isl_keep isl_space *dim,
 	return p;
 }
 
+/* Print an affine expression "c" corresponding to a constraint in "bmap"
+ * to "p", with the variable names taken from "space" and
+ * the integer division definitions taken from "div".
+ */
 static __isl_give isl_printer *print_affine(__isl_keep isl_basic_map *bmap,
-	__isl_keep isl_space *space, __isl_take isl_printer *p, isl_int *c)
+	__isl_keep isl_space *space, __isl_keep isl_mat *div,
+	__isl_take isl_printer *p, isl_int *c)
 {
 	unsigned len = 1 + isl_basic_map_total_dim(bmap);
-	return print_affine_of_len(space, NULL, p, c, len);
+	return print_affine_of_len(space, div, p, c, len);
 }
 
 /* offset is the offset of local_dim inside data->type of data->space.
@@ -440,8 +445,21 @@ static __isl_give isl_printer *print_omega_parameters(__isl_keep isl_space *dim,
 	return p;
 }
 
+/* Print a constraint "c" from "bmap" to "p", with the variable names
+ * taken from "space" and the integer division definitions taken from "div".
+ * "last" is the position of the last non-zero coefficient, which is
+ * moreover assumed to be negative.
+ * Let c' be the result of zeroing out this coefficient, then
+ * the constraint is printed in the form
+ *
+ *	-c[last] op c'
+ *
+ * "first_constraint" is set if this is the first constraint
+ * in the conjunction.
+ */
 static __isl_give isl_printer *print_constraint(struct isl_basic_map *bmap,
-	__isl_keep isl_space *space, __isl_take isl_printer *p,
+	__isl_keep isl_space *space, __isl_keep isl_mat *div,
+	__isl_take isl_printer *p,
 	isl_int *c, int last, const char *op, int first_constraint, int latex)
 {
 	if (!first_constraint)
@@ -449,14 +467,14 @@ static __isl_give isl_printer *print_constraint(struct isl_basic_map *bmap,
 
 	isl_int_abs(c[last], c[last]);
 
-	p = print_term(space, NULL, c[last], last, p, latex);
+	p = print_term(space, div, c[last], last, p, latex);
 
 	p = isl_printer_print_str(p, " ");
 	p = isl_printer_print_str(p, op);
 	p = isl_printer_print_str(p, " ");
 
 	isl_int_set_si(c[last], 0);
-	p = print_affine(bmap, space, p, c);
+	p = print_affine(bmap, space, div, p, c);
 
 	return p;
 }
@@ -467,7 +485,8 @@ static __isl_give isl_printer *print_constraint(struct isl_basic_map *bmap,
  * Div constraints are only printed in "dump" mode.
  */
 static __isl_give isl_printer *print_constraints(__isl_keep isl_basic_map *bmap,
-	__isl_keep isl_space *space, __isl_take isl_printer *p, int latex)
+	__isl_keep isl_space *space, __isl_keep isl_mat *div,
+	__isl_take isl_printer *p, int latex)
 {
 	int i;
 	struct isl_vec *c;
@@ -491,7 +510,7 @@ static __isl_give isl_printer *print_constraints(__isl_keep isl_basic_map *bmap,
 			isl_seq_cpy(c->el, bmap->eq[i], 1 + total);
 		else
 			isl_seq_neg(c->el, bmap->eq[i], 1 + total);
-		p = print_constraint(bmap, space, p, c->el, l,
+		p = print_constraint(bmap, space, div, p, c->el, l,
 				    "=", first, latex);
 		first = 0;
 	}
@@ -511,7 +530,7 @@ static __isl_give isl_printer *print_constraints(__isl_keep isl_basic_map *bmap,
 		else
 			isl_seq_neg(c->el, bmap->ineq[i], 1 + total);
 		op = s < 0 ? s_le[latex] : s_ge[latex];
-		p = print_constraint(bmap, space, p, c->el, l,
+		p = print_constraint(bmap, space, div, p, c->el, l,
 					op, first, latex);
 		first = 0;
 	}
@@ -571,20 +590,27 @@ static __isl_give isl_printer *print_div_list(__isl_take isl_printer *p,
 	return p;
 }
 
+/* Print the constraints of "bmap" to "p".
+ * The names of the variables are taken from "space".
+ * "latex" is set if the constraints should be printed in LaTeX format.
+ * Do not print inline explicit div representations in "dump" mode.
+ */
 static __isl_give isl_printer *print_disjunct(__isl_keep isl_basic_map *bmap,
 	__isl_keep isl_space *space, __isl_take isl_printer *p, int latex)
 {
-	if (bmap->n_div > 0) {
-		isl_mat *div;
+	isl_mat *div;
 
-		div = isl_basic_map_get_divs(bmap);
+	div = isl_basic_map_get_divs(bmap);
+	if (bmap->n_div > 0) {
 		p = isl_printer_print_str(p, s_open_exists[latex]);
 		p = print_div_list(p, space, div, latex);
-		isl_mat_free(div);
 		p = isl_printer_print_str(p, ": ");
 	}
 
-	p = print_constraints(bmap, space, p, latex);
+	if (p->dump)
+		div = isl_mat_free(div);
+	p = print_constraints(bmap, space, div, p, latex);
+	isl_mat_free(div);
 
 	if (bmap->n_div > 0)
 		p = isl_printer_print_str(p, s_close_exists[latex]);
