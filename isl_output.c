@@ -234,6 +234,18 @@ static enum isl_dim_type pos2type(__isl_keep isl_space *dim, unsigned *pos)
 	return type;
 }
 
+/* Can the div expression of the integer division at position "row" of "div"
+ * be printed?
+ * In particular, are the div expressions available and does the selected
+ * variable have a known explicit representation?
+ */
+static isl_bool can_print_div_expr(__isl_keep isl_mat *div, int pos)
+{
+	if (!div)
+		return isl_bool_false;
+	return !isl_int_is_zero(div->row[pos][0]);
+}
+
 static __isl_give isl_printer *print_div(__isl_keep isl_space *dim,
 	__isl_keep isl_mat *div, int pos, __isl_take isl_printer *p);
 
@@ -248,8 +260,7 @@ static __isl_give isl_printer *print_term(__isl_keep isl_space *space,
 		return isl_printer_print_isl_int(p, c);
 
 	type = pos2type(space, &pos);
-	print_div_def = type == isl_dim_div && div &&
-			!isl_int_is_zero(div->row[pos][0]);
+	print_div_def = type == isl_dim_div && can_print_div_expr(div, pos);
 
 	if (isl_int_is_one(c))
 		;
