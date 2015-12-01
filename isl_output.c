@@ -175,6 +175,9 @@ static int count_same_name(__isl_keep isl_space *dim,
 	return count;
 }
 
+/* Print the name of the variable of type "type" and position "pos"
+ * in "space" to "p".
+ */
 static __isl_give isl_printer *print_name(__isl_keep isl_space *space,
 	__isl_take isl_printer *p, enum isl_dim_type type, unsigned pos,
 	int latex)
