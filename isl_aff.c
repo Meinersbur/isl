@@ -4556,12 +4556,22 @@ __isl_give isl_multi_aff *isl_multi_aff_from_basic_set_equalities(
  * Since some applications expect the result of isl_pw_multi_aff_from_map
  * to only contain integer affine expressions, we compute the floor
  * of the expression before returning.
+ *
+ * Remove all constraints involving local variables without
+ * an explicit representation (resulting in the removal of those
+ * local variables) prior to the actual extraction to ensure
+ * that the local spaces in which the resulting affine expressions
+ * are created do not contain any unknown local variables.
+ * Removing such constraints is safe because constraints involving
+ * unknown local variables are not used to determine whether
+ * a basic map is obviously single-valued.
  */
 static __isl_give isl_pw_multi_aff *plain_pw_multi_aff_from_map(
 	__isl_take isl_set *domain, __isl_take isl_basic_map *bmap)
 {
 	isl_multi_aff *ma;
 
+	bmap = isl_basic_map_drop_constraint_involving_unknown_divs(bmap);
 	ma = extract_isl_multi_aff_from_basic_map(bmap);
 	ma = isl_multi_aff_floor(ma);
 	return isl_pw_multi_aff_alloc(domain, ma);
