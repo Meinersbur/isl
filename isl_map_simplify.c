@@ -1843,6 +1843,50 @@ __isl_give isl_basic_set *isl_basic_set_eliminate(
 	return isl_basic_map_eliminate(bset, type, first, n);
 }
 
+/* Remove all constraints from "bmap" that reference any unknown local
+ * variables (directly or indirectly).
+ *
+ * Dropping all constraints on a local variable will make it redundant,
+ * so it will get removed implicitly by
+ * isl_basic_map_drop_constraints_involving_dims.  Some other local
+ * variables may also end up becoming redundant if they only appear
+ * in constraints together with the unknown local variable.
+ * Therefore, start over after calling
+ * isl_basic_map_drop_constraints_involving_dims.
+ */
+__isl_give isl_basic_map *isl_basic_map_drop_constraint_involving_unknown_divs(
+	__isl_take isl_basic_map *bmap)
+{
+	isl_bool known;
+	int i, n_div, o_div;
+
+	known = isl_basic_map_divs_known(bmap);
+	if (known < 0)
+		return isl_basic_map_free(bmap);
+	if (known)
+		return bmap;
+
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	o_div = isl_basic_map_offset(bmap, isl_dim_div) - 1;
+
+	for (i = 0; i < n_div; ++i) {
+		known = isl_basic_map_div_is_known(bmap, i);
+		if (known < 0)
+			return isl_basic_map_free(bmap);
+		if (known)
+			continue;
+		bmap = remove_dependent_vars(bmap, o_div + i);
+		bmap = isl_basic_map_drop_constraints_involving_dims(bmap,
+							    isl_dim_div, i, 1);
+		if (!bmap)
+			return NULL;
+		n_div = isl_basic_map_dim(bmap, isl_dim_div);
+		i = -1;
+	}
+
+	return bmap;
+}
+
 /* Don't assume equalities are in order, because align_divs
  * may have changed the order of the divs.
  */
