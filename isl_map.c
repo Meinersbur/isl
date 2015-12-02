@@ -6909,22 +6909,24 @@ error:
 	return NULL;
 }
 
-int isl_basic_map_divs_known(__isl_keep isl_basic_map *bmap)
+/* Does "bmap" have an explicit representation for all local variables?
+ */
+isl_bool isl_basic_map_divs_known(__isl_keep isl_basic_map *bmap)
 {
 	int i;
 	unsigned off;
 
 	if (!bmap)
-		return -1;
+		return isl_bool_error;
 
 	off = isl_space_dim(bmap->dim, isl_dim_all);
 	for (i = 0; i < bmap->n_div; ++i) {
 		if (isl_int_is_zero(bmap->div[i][0]))
-			return 0;
+			return isl_bool_false;
 		isl_assert(bmap->ctx, isl_int_is_zero(bmap->div[i][1+1+off+i]),
-				return -1);
+				return isl_bool_error);
 	}
-	return 1;
+	return isl_bool_true;
 }
 
 static int map_divs_known(__isl_keep isl_map *map)
