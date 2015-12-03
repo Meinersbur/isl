@@ -4380,35 +4380,77 @@ error:
 	return NULL;
 }
 
-/* Extract an affine expression that expresses the single output dimension
+/* Subtract the initial "n" elements in "ma" with coefficients in "c" and
+ * denominator "denom".
+ * "denom" is allowed to be negative, in which case the actual denominator
+ * is -denom and the expressions are added instead.
+ */
+static __isl_give isl_aff *subtract_initial(__isl_take isl_aff *aff,
+	__isl_keep isl_multi_aff *ma, int n, isl_int *c, isl_int denom)
+{
+	int i, first;
+	int sign;
+	isl_int d;
+
+	first = isl_seq_first_non_zero(c, n);
+	if (first == -1)
+		return aff;
+
+	sign = isl_int_sgn(denom);
+	isl_int_init(d);
+	isl_int_abs(d, denom);
+	for (i = first; i < n; ++i) {
+		isl_aff *aff_i;
+
+		if (isl_int_is_zero(c[i]))
+			continue;
+		aff_i = isl_multi_aff_get_aff(ma, i);
+		aff_i = isl_aff_scale(aff_i, c[i]);
+		aff_i = isl_aff_scale_down(aff_i, d);
+		if (sign >= 0)
+			aff = isl_aff_sub(aff, aff_i);
+		else
+			aff = isl_aff_add(aff, aff_i);
+	}
+	isl_int_clear(d);
+
+	return aff;
+}
+
+/* Extract an affine expression that expresses the output dimension "pos"
  * of "bmap" in terms of the parameters and input dimensions from
  * equality "eq".
  * Note that this expression may involve integer divisions defined
  * in terms of parameters and input dimensions.
+ * The equality may also involve references to earlier (but not later)
+ * output dimensions.  These are replaced by the corresponding elements
+ * in "ma".
  *
  * If the equality is of the form
  *
- *	f(i) + a x + g(i) = 0,
+ *	f(i) + h(j) + a x + g(i) = 0,
  *
- * with f(i) a linear combinations of the parameters and input dimensions and
- * g(i) a linear combination of integer divisions defined in terms of the same,
+ * with f(i) a linear combinations of the parameters and input dimensions,
+ * g(i) a linear combination of integer divisions defined in terms of the same
+ * and h(j) a linear combinations of earlier output dimensions,
  * then the affine expression is
  *
- *	(-f(i) - g(i))/a
+ *	(-f(i) - g(i))/a - h(j)/a
  *
  * If the equality is of the form
  *
- *	f(i) - a x + g(i) = 0,
+ *	f(i) + h(j) - a x + g(i) = 0,
  *
  * then the affine expression is
  *
- *	(f(i) + g(i))/a
+ *	(f(i) + g(i))/a - h(j)/(-a)
  */
 static __isl_give isl_aff *extract_aff_from_equality(
-	__isl_keep isl_basic_map *bmap, int eq)
+	__isl_keep isl_basic_map *bmap, int pos, int eq,
+	__isl_keep isl_multi_aff *ma)
 {
-	unsigned offset;
-	unsigned n_div;
+	unsigned o_out;
+	unsigned n_div, n_out;
 	isl_local_space *ls;
 	isl_aff *aff;
 
@@ -4416,56 +4458,53 @@ static __isl_give isl_aff *extract_aff_from_equality(
 	aff = isl_aff_alloc(isl_local_space_domain(ls));
 	if (!aff)
 		return NULL;
-	offset = isl_basic_map_offset(bmap, isl_dim_out);
+	o_out = isl_basic_map_offset(bmap, isl_dim_out);
+	n_out = isl_basic_map_dim(bmap, isl_dim_out);
 	n_div = isl_basic_map_dim(bmap, isl_dim_div);
-	if (isl_int_is_neg(bmap->eq[eq][offset])) {
-		isl_seq_cpy(aff->v->el + 1, bmap->eq[eq], offset);
-		isl_seq_cpy(aff->v->el + 1 + offset, bmap->eq[eq] + offset + 1,
-			    n_div);
+	if (isl_int_is_neg(bmap->eq[eq][o_out + pos])) {
+		isl_seq_cpy(aff->v->el + 1, bmap->eq[eq], o_out);
+		isl_seq_cpy(aff->v->el + 1 + o_out,
+			    bmap->eq[eq] + o_out + n_out, n_div);
 	} else {
-		isl_seq_neg(aff->v->el + 1, bmap->eq[eq], offset);
-		isl_seq_neg(aff->v->el + 1 + offset, bmap->eq[eq] + offset + 1,
-			    n_div);
+		isl_seq_neg(aff->v->el + 1, bmap->eq[eq], o_out);
+		isl_seq_neg(aff->v->el + 1 + o_out,
+			    bmap->eq[eq] + o_out + n_out, n_div);
 	}
-	isl_int_abs(aff->v->el[0], bmap->eq[eq][offset]);
+	isl_int_abs(aff->v->el[0], bmap->eq[eq][o_out + pos]);
+	aff = subtract_initial(aff, ma, pos, bmap->eq[eq] + o_out,
+			    bmap->eq[eq][o_out + pos]);
 
 	return aff;
 }
 
-/* Given a basic map with a single output dimension that is defined
- * in terms of the parameters and input dimensions using an equality,
- * extract an isl_aff that expresses the output dimension in terms
+/* Given a basic map with output dimensions defined
+ * in terms of the parameters input dimensions and earlier
+ * output dimensions using an equality,
+ * extract an isl_aff that expresses output dimension "pos" in terms
  * of the parameters and input dimensions.
  * Note that this expression may involve integer divisions defined
  * in terms of parameters and input dimensions.
+ * "ma" contains the expressions corresponding to earlier output dimensions.
  *
  * This function shares some similarities with
  * isl_basic_map_has_defining_equality and isl_constraint_get_bound.
  */
 static __isl_give isl_aff *extract_isl_aff_from_basic_map(
-	__isl_take isl_basic_map *bmap)
+	__isl_keep isl_basic_map *bmap, int pos, __isl_keep isl_multi_aff *ma)
 {
 	int eq;
 	isl_aff *aff;
 
 	if (!bmap)
 		return NULL;
-	if (isl_basic_map_dim(bmap, isl_dim_out) != 1)
-		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
-			"basic map should have a single output dimension",
-			goto error);
-	eq = isl_basic_map_output_defining_equality(bmap, 0);
+	eq = isl_basic_map_output_defining_equality(bmap, pos);
 	if (eq >= bmap->n_eq)
 		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
-			"unable to find suitable equality", goto error);
-	aff = extract_aff_from_equality(bmap, eq);
-	isl_basic_map_free(bmap);
+			"unable to find suitable equality", return NULL);
+	aff = extract_aff_from_equality(bmap, pos, eq, ma);
 
 	aff = isl_aff_remove_unused_divs(aff);
 	return aff;
-error:
-	isl_basic_map_free(bmap);
-	return NULL;
 }
 
 /* Given a basic map where each output dimension is defined
@@ -4487,14 +4526,9 @@ static __isl_give isl_multi_aff *extract_isl_multi_aff_from_basic_map(
 	n_out = isl_basic_map_dim(bmap, isl_dim_out);
 
 	for (i = 0; i < n_out; ++i) {
-		isl_basic_map *bmap_i;
 		isl_aff *aff;
 
-		bmap_i = isl_basic_map_copy(bmap);
-		bmap_i = isl_basic_map_project_out(bmap_i, isl_dim_out,
-							i + 1, n_out - (1 + i));
-		bmap_i = isl_basic_map_project_out(bmap_i, isl_dim_out, 0, i);
-		aff = extract_isl_aff_from_basic_map(bmap_i);
+		aff = extract_isl_aff_from_basic_map(bmap, i, ma);
 		ma = isl_multi_aff_set_aff(ma, i, aff);
 	}
 
