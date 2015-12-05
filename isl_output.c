@@ -294,10 +294,10 @@ static __isl_give isl_printer *print_affine_of_len(__isl_keep isl_space *dim,
 }
 
 static __isl_give isl_printer *print_affine(__isl_keep isl_basic_map *bmap,
-	__isl_keep isl_space *dim, __isl_take isl_printer *p, isl_int *c)
+	__isl_keep isl_space *space, __isl_take isl_printer *p, isl_int *c)
 {
 	unsigned len = 1 + isl_basic_map_total_dim(bmap);
-	return print_affine_of_len(dim, NULL, p, c, len);
+	return print_affine_of_len(space, NULL, p, c, len);
 }
 
 /* offset is the offset of local_dim inside data->type of data->space.
