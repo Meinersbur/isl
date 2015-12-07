@@ -1887,6 +1887,42 @@ __isl_give isl_basic_map *isl_basic_map_drop_constraint_involving_unknown_divs(
 	return bmap;
 }
 
+/* Remove all constraints from "map" that reference any unknown local
+ * variables (directly or indirectly).
+ *
+ * Since constraints may get dropped from the basic maps,
+ * they may no longer be disjoint from each other.
+ */
+__isl_give isl_map *isl_map_drop_constraint_involving_unknown_divs(
+	__isl_take isl_map *map)
+{
+	int i;
+	isl_bool known;
+
+	known = isl_map_divs_known(map);
+	if (known < 0)
+		return isl_map_free(map);
+	if (known)
+		return map;
+
+	map = isl_map_cow(map);
+	if (!map)
+		return NULL;
+
+	for (i = 0; i < map->n; ++i) {
+		map->p[i] =
+		    isl_basic_map_drop_constraint_involving_unknown_divs(
+								    map->p[i]);
+		if (!map->p[i])
+			return isl_map_free(map);
+	}
+
+	if (map->n > 1)
+		ISL_F_CLR(map, ISL_MAP_DISJOINT);
+
+	return map;
+}
+
 /* Don't assume equalities are in order, because align_divs
  * may have changed the order of the divs.
  */
