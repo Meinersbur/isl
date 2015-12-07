@@ -6941,12 +6941,15 @@ isl_bool isl_basic_map_divs_known(__isl_keep isl_basic_map *bmap)
 	return isl_bool_true;
 }
 
-static int map_divs_known(__isl_keep isl_map *map)
+/* Do all basic maps in "map" have an explicit representation
+ * for all local variables?
+ */
+isl_bool isl_map_divs_known(__isl_keep isl_map *map)
 {
 	int i;
 
 	if (!map)
-		return -1;
+		return isl_bool_error;
 
 	for (i = 0; i < map->n; ++i) {
 		int known = isl_basic_map_divs_known(map->p[i]);
@@ -6954,7 +6957,7 @@ static int map_divs_known(__isl_keep isl_map *map)
 			return known;
 	}
 
-	return 1;
+	return isl_bool_true;
 }
 
 /* If bmap contains any unknown divs, then compute explicit
@@ -6999,7 +7002,7 @@ struct isl_map *isl_map_compute_divs(struct isl_map *map)
 	if (map->n == 0)
 		return map;
 
-	known = map_divs_known(map);
+	known = isl_map_divs_known(map);
 	if (known < 0) {
 		isl_map_free(map);
 		return NULL;

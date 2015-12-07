@@ -405,6 +405,7 @@ __isl_give isl_basic_set *isl_basic_set_expand_divs(
 
 isl_bool isl_basic_map_div_is_known(__isl_keep isl_basic_map *bmap, int div);
 isl_bool isl_basic_map_divs_known(__isl_keep isl_basic_map *bmap);
+isl_bool isl_map_divs_known(__isl_keep isl_map *map);
 __isl_give isl_mat *isl_basic_set_get_divs(__isl_keep isl_basic_set *bset);
 __isl_give isl_mat *isl_basic_map_get_divs(__isl_keep isl_basic_map *bmap);
 
