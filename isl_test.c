@@ -1073,6 +1073,49 @@ int test_affine_hull(struct isl_ctx *ctx)
 	return 0;
 }
 
+/* Pairs of maps and the corresponding expected results of
+ * isl_map_plain_unshifted_simple_hull.
+ */
+struct {
+	const char *map;
+	const char *hull;
+} plain_unshifted_simple_hull_tests[] = {
+	{ "{ [i] -> [j] : i >= 1 and j >= 1 or i >= 2 and j <= 10 }",
+	  "{ [i] -> [j] : i >= 1 }" },
+	{ "{ [n] -> [i,j,k] : (i mod 3 = 2 and j mod 4 = 2) or "
+		"(j mod 4 = 2 and k mod 6 = n) }",
+	  "{ [n] -> [i,j,k] : j mod 4 = 2 }" },
+};
+
+/* Basic tests for isl_map_plain_unshifted_simple_hull.
+ */
+static int test_plain_unshifted_simple_hull(isl_ctx *ctx)
+{
+	int i;
+	isl_map *map;
+	isl_basic_map *hull, *expected;
+	isl_bool equal;
+
+	for (i = 0; i < ARRAY_SIZE(plain_unshifted_simple_hull_tests); ++i) {
+		const char *str;
+		str = plain_unshifted_simple_hull_tests[i].map;
+		map = isl_map_read_from_str(ctx, str);
+		str = plain_unshifted_simple_hull_tests[i].hull;
+		expected = isl_basic_map_read_from_str(ctx, str);
+		hull = isl_map_plain_unshifted_simple_hull(map);
+		equal = isl_basic_map_is_equal(hull, expected);
+		isl_basic_map_free(hull);
+		isl_basic_map_free(expected);
+		if (equal < 0)
+			return -1;
+		if (!equal)
+			isl_die(ctx, isl_error_unknown, "unexpected hull",
+				return -1);
+	}
+
+	return 0;
+}
+
 static int test_simple_hull(struct isl_ctx *ctx)
 {
 	const char *str;
@@ -1093,6 +1136,9 @@ static int test_simple_hull(struct isl_ctx *ctx)
 	if (is_empty == isl_bool_false)
 		isl_die(ctx, isl_error_unknown, "Empty set should be detected",
 			return -1);
+
+	if (test_plain_unshifted_simple_hull(ctx) < 0)
+		return -1;
 
 	return 0;
 }
