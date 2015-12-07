@@ -1272,6 +1272,55 @@ void test_gist_case(struct isl_ctx *ctx, const char *name)
 	fclose(input);
 }
 
+/* Inputs to isl_map_plain_gist_basic_map, along with the expected output.
+ */
+struct {
+	const char *map;
+	const char *context;
+	const char *gist;
+} plain_gist_tests[] = {
+	{ "{ [i] -> [j] : i >= 1 and j >= 1 or i >= 2 and j <= 10 }",
+	  "{ [i] -> [j] : i >= 1 }",
+	  "{ [i] -> [j] : j >= 1 or i >= 2 and j <= 10 }" },
+	{ "{ [n] -> [i,j,k] : (i mod 3 = 2 and j mod 4 = 2) or "
+		"(j mod 4 = 2 and k mod 6 = n) }",
+	  "{ [n] -> [i,j,k] : j mod 4 = 2 }",
+	  "{ [n] -> [i,j,k] : (i mod 3 = 2) or (k mod 6 = n) }" },
+	{ "{ [i] -> [j] : i > j and (exists a,b : i <= 2a + 5b <= 2) }",
+	  "{ [i] -> [j] : i > j }",
+	  "{ [i] -> [j] : exists a,b : i <= 2a + 5b <= 2 }" },
+};
+
+/* Basic tests for isl_map_plain_gist_basic_map.
+ */
+static int test_plain_gist(isl_ctx *ctx)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(plain_gist_tests); ++i) {
+		const char *str;
+		int equal;
+		isl_map *map, *gist;
+		isl_basic_map *context;
+
+		map = isl_map_read_from_str(ctx, plain_gist_tests[i].map);
+		str = plain_gist_tests[i].context;
+		context = isl_basic_map_read_from_str(ctx, str);
+		map = isl_map_plain_gist_basic_map(map, context);
+		gist = isl_map_read_from_str(ctx, plain_gist_tests[i].gist);
+		equal = isl_map_is_equal(map, gist);
+		isl_map_free(map);
+		isl_map_free(gist);
+		if (equal < 0)
+			return -1;
+		if (!equal)
+			isl_die(ctx, isl_error_unknown,
+				"incorrect gist result", return -1);
+	}
+
+	return 0;
+}
+
 struct {
 	const char *set;
 	const char *context;
@@ -1410,6 +1459,9 @@ static int test_gist(struct isl_ctx *ctx)
 		isl_die(ctx, isl_error_unknown, "expecting single div",
 			isl_map_free(map1); return -1);
 	isl_map_free(map1);
+
+	if (test_plain_gist(ctx) < 0)
+		return -1;
 
 	return 0;
 }
