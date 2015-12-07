@@ -8871,6 +8871,21 @@ static int sort_constraint_cmp(const void *p1, const void *p2, void *arg)
 	return isl_seq_cmp(*c1 + 1, *c2 + 1, size);
 }
 
+/* Return -1 if the constraint "c1" of "bmap" is sorted before "c2"
+ * by isl_basic_map_sort_constraints, 1 if it is sorted after "c2"
+ * and 0 if the two constraints are the same (up to the constant term).
+ */
+int isl_basic_map_constraint_cmp(__isl_keep isl_basic_map *bmap,
+	isl_int *c1, isl_int *c2)
+{
+	unsigned total;
+
+	if (!bmap)
+		return -2;
+	total = isl_basic_map_total_dim(bmap);
+	return sort_constraint_cmp(&c1, &c2, &total);
+}
+
 __isl_give isl_basic_map *isl_basic_map_sort_constraints(
 	__isl_take isl_basic_map *bmap)
 {
