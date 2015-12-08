@@ -372,11 +372,9 @@ __isl_give isl_basic_map *isl_basic_map_from_local_space(
 		if (isl_basic_map_alloc_div(bmap) < 0)
 			goto error;
 
-	for (i = 0; i < n_div; ++i) {
+	for (i = 0; i < n_div; ++i)
 		isl_seq_cpy(bmap->div[i], ls->div->row[i], ls->div->n_col);
-		if (isl_basic_map_add_div_constraints(bmap, i) < 0)
-			goto error;
-	}
+	bmap = add_known_div_constraints(bmap);
 					
 	isl_local_space_free(ls);
 	return bmap;
