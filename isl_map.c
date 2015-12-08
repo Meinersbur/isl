@@ -322,6 +322,38 @@ __isl_give isl_local_space *isl_basic_set_get_local_space(
 	return isl_basic_map_get_local_space(bset);
 }
 
+/* For each known div d = floor(f/m), add the constraints
+ *
+ *		f - m d >= 0
+ *		-(f-(n-1)) + m d >= 0
+ *
+ * Do not finalize the result.
+ */
+static __isl_give isl_basic_map *add_known_div_constraints(
+	__isl_take isl_basic_map *bmap)
+{
+	int i;
+	unsigned n_div;
+
+	if (!bmap)
+		return NULL;
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	if (n_div == 0)
+		return bmap;
+	bmap = isl_basic_map_cow(bmap);
+	bmap = isl_basic_map_extend_constraints(bmap, 0, 2 * n_div);
+	if (!bmap)
+		return NULL;
+	for (i = 0; i < n_div; ++i) {
+		if (isl_int_is_zero(bmap->div[i][0]))
+			continue;
+		if (isl_basic_map_add_div_constraints(bmap, i) < 0)
+			return isl_basic_map_free(bmap);
+	}
+
+	return bmap;
+}
+
 __isl_give isl_basic_map *isl_basic_map_from_local_space(
 	__isl_take isl_local_space *ls)
 {
@@ -4432,11 +4464,13 @@ int isl_basic_map_add_div_constraints(struct isl_basic_map *bmap, unsigned div)
  *
  *		f - m d >= 0
  *		-(f-(n-1)) + m d >= 0
+ *
+ * Remove duplicate constraints in case of some these div constraints
+ * already appear in "bmap".
  */
 __isl_give isl_basic_map *isl_basic_map_add_known_div_constraints(
 	__isl_take isl_basic_map *bmap)
 {
-	int i;
 	unsigned n_div;
 
 	if (!bmap)
@@ -4444,17 +4478,8 @@ __isl_give isl_basic_map *isl_basic_map_add_known_div_constraints(
 	n_div = isl_basic_map_dim(bmap, isl_dim_div);
 	if (n_div == 0)
 		return bmap;
-	bmap = isl_basic_map_cow(bmap);
-	bmap = isl_basic_map_extend_constraints(bmap, 0, 2 * n_div);
-	if (!bmap)
-		return NULL;
-	for (i = 0; i < n_div; ++i) {
-		if (isl_int_is_zero(bmap->div[i][0]))
-			continue;
-		if (isl_basic_map_add_div_constraints(bmap, i) < 0)
-			return isl_basic_map_free(bmap);
-	}
 
+	bmap = add_known_div_constraints(bmap);
 	bmap = isl_basic_map_remove_duplicate_constraints(bmap, NULL, 0);
 	bmap = isl_basic_map_finalize(bmap);
 	return bmap;
