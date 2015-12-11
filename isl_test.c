@@ -1722,13 +1722,55 @@ static int test_coalesce(struct isl_ctx *ctx)
 	return 0;
 }
 
+/* Construct a representation of the graph on the right of Figure 1
+ * in "Computing the Transitive Closure of a Union of
+ * Affine Integer Tuple Relations".
+ */
+static __isl_give isl_map *cocoa_fig_1_right_graph(isl_ctx *ctx)
+{
+	isl_set *dom;
+	isl_map *up, *right;
+
+	dom = isl_set_read_from_str(ctx,
+		"{ [x,y] : x >= 0 and -2 x + 3 y >= 0 and x <= 3 and "
+			"2 x - 3 y + 3 >= 0 }");
+	right = isl_map_read_from_str(ctx,
+		"{ [x,y] -> [x2,y2] : x2 = x + 1 and y2 = y }");
+	up = isl_map_read_from_str(ctx,
+		"{ [x,y] -> [x2,y2] : x2 = x and y2 = y + 1 }");
+	right = isl_map_intersect_domain(right, isl_set_copy(dom));
+	right = isl_map_intersect_range(right, isl_set_copy(dom));
+	up = isl_map_intersect_domain(up, isl_set_copy(dom));
+	up = isl_map_intersect_range(up, dom);
+	return isl_map_union(up, right);
+}
+
+/* Construct a representation of the power of the graph
+ * on the right of Figure 1 in "Computing the Transitive Closure of
+ * a Union of Affine Integer Tuple Relations".
+ */
+static __isl_give isl_map *cocoa_fig_1_right_power(isl_ctx *ctx)
+{
+	return isl_map_read_from_str(ctx,
+		"{ [1] -> [[0,0] -> [0,1]]; [2] -> [[0,0] -> [1,1]]; "
+		"  [1] -> [[0,1] -> [1,1]]; [1] -> [[2,2] -> [3,2]]; "
+		"  [2] -> [[2,2] -> [3,3]]; [1] -> [[3,2] -> [3,3]] }");
+}
+
+/* Construct a representation of the transitive closure of the graph
+ * on the right of Figure 1 in "Computing the Transitive Closure of
+ * a Union of Affine Integer Tuple Relations".
+ */
+static __isl_give isl_map *cocoa_fig_1_right_tc(isl_ctx *ctx)
+{
+	return isl_set_unwrap(isl_map_range(cocoa_fig_1_right_power(ctx)));
+}
+
 static int test_closure(isl_ctx *ctx)
 {
 	const char *str;
-	isl_set *dom;
-	isl_map *up, *right;
 	isl_map *map, *map2;
-	int exact;
+	int exact, equal;
 
 	/* COCOA example 1 */
 	map = isl_map_read_from_str(ctx,
@@ -1837,27 +1879,26 @@ static int test_closure(isl_ctx *ctx)
 	isl_map_free(map2);
 	isl_map_free(map);
 
-	/* COCOA Fig.1 right */
-	dom = isl_set_read_from_str(ctx,
-		"{ [x,y] : x >= 0 and -2 x + 3 y >= 0 and x <= 3 and "
-			"2 x - 3 y + 3 >= 0 }");
-	right = isl_map_read_from_str(ctx,
-		"{ [x,y] -> [x2,y2] : x2 = x + 1 and y2 = y }");
-	up = isl_map_read_from_str(ctx,
-		"{ [x,y] -> [x2,y2] : x2 = x and y2 = y + 1 }");
-	right = isl_map_intersect_domain(right, isl_set_copy(dom));
-	right = isl_map_intersect_range(right, isl_set_copy(dom));
-	up = isl_map_intersect_domain(up, isl_set_copy(dom));
-	up = isl_map_intersect_range(up, dom);
-	map = isl_map_union(up, right);
+	map = cocoa_fig_1_right_graph(ctx);
 	map = isl_map_transitive_closure(map, &exact);
 	assert(exact);
-	map2 = isl_map_read_from_str(ctx,
-		"{ [0,0] -> [0,1]; [0,0] -> [1,1]; [0,1] -> [1,1]; "
-		"  [2,2] -> [3,2]; [2,2] -> [3,3]; [3,2] -> [3,3] }");
+	map2 = cocoa_fig_1_right_tc(ctx);
 	assert(isl_map_is_equal(map, map2));
 	isl_map_free(map2);
 	isl_map_free(map);
+
+	map = cocoa_fig_1_right_graph(ctx);
+	map = isl_map_power(map, &exact);
+	map2 = cocoa_fig_1_right_power(ctx);
+	equal = isl_map_is_equal(map, map2);
+	isl_map_free(map2);
+	isl_map_free(map);
+	if (equal < 0)
+		return -1;
+	if (!exact)
+		isl_die(ctx, isl_error_unknown, "power not exact", return -1);
+	if (!equal)
+		isl_die(ctx, isl_error_unknown, "unexpected power", return -1);
 
 	/* COCOA Theorem 1 counter example */
 	map = isl_map_read_from_str(ctx,

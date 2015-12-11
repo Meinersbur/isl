@@ -128,6 +128,8 @@ __isl_give isl_basic_set *isl_basic_set_simplify(
 __isl_give isl_basic_map *isl_basic_map_alloc(isl_ctx *ctx,
 	unsigned nparam, unsigned in, unsigned out, unsigned extra,
 	unsigned n_eq, unsigned n_ineq);
+__isl_give isl_basic_map *isl_basic_map_mark_final(
+	__isl_take isl_basic_map *bmap);
 __isl_give isl_basic_map *isl_basic_map_finalize(
 	__isl_take isl_basic_map *bmap);
 __isl_give isl_basic_map *isl_basic_map_extend(__isl_take isl_basic_map *base,
