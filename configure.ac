@@ -227,6 +227,10 @@ system)
 	AC_CHECK_HEADER([llvm/ADT/OwningPtr.h],
 		[AC_DEFINE([HAVE_ADT_OWNINGPTR_H], [],
 			   [Define if llvm/ADT/OwningPtr.h exists])])
+	AC_EGREP_HEADER([initializeBuiltins],
+		[clang/Basic/Builtins.h], [],
+		[AC_DEFINE([initializeBuiltins], [InitializeBuiltins],
+		[Define to InitializeBuiltins for older versions of clang])])
 	AC_LANG_POP
 	CPPFLAGS="$SAVE_CPPFLAGS"
 

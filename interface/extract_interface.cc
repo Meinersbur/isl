@@ -375,7 +375,7 @@ int main(int argc, char *argv[])
 	create_preprocessor(Clang);
 	Preprocessor &PP = Clang->getPreprocessor();
 
-	PP.getBuiltinInfo().InitializeBuiltins(PP.getIdentifierTable(), LO);
+	PP.getBuiltinInfo().initializeBuiltins(PP.getIdentifierTable(), LO);
 
 	const FileEntry *file = Clang->getFileManager().getFile(InputFilename);
 	assert(file);
