@@ -86,6 +86,9 @@ isl_bool isl_schedule_node_is_subtree_anchored(
 __isl_give isl_schedule_node *isl_schedule_node_group(
 	__isl_take isl_schedule_node *node, __isl_take isl_id *group_id);
 
+__isl_give isl_schedule_node *isl_schedule_node_sequence_splice_child(
+	__isl_take isl_schedule_node *node, int pos);
+
 __isl_give isl_space *isl_schedule_node_band_get_space(
 	__isl_keep isl_schedule_node *node);
 __isl_give isl_multi_union_pw_aff *isl_schedule_node_band_get_partial_schedule(

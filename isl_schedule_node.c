@@ -2171,6 +2171,50 @@ error:
 	return NULL;
 }
 
+/* Given a sequence node "node", with a child at position "pos" that
+ * is also a sequence node, attach the children of that node directly
+ * as children of "node" at that position, replacing the original child.
+ *
+ * The filters of these children are intersected with the filter
+ * of the child at position "pos".
+ */
+__isl_give isl_schedule_node *isl_schedule_node_sequence_splice_child(
+	__isl_take isl_schedule_node *node, int pos)
+{
+	int i, n;
+	isl_union_set *filter;
+	isl_schedule_node *child;
+	isl_schedule_tree *tree;
+
+	if (!node)
+		return NULL;
+	if (isl_schedule_node_get_type(node) != isl_schedule_node_sequence)
+		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
+			"not a sequence node", isl_schedule_node_free(node));
+	node = isl_schedule_node_child(node, pos);
+	node = isl_schedule_node_child(node, 0);
+	if (isl_schedule_node_get_type(node) != isl_schedule_node_sequence)
+		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
+			"not a sequence node", isl_schedule_node_free(node));
+	child = isl_schedule_node_copy(node);
+	node = isl_schedule_node_parent(node);
+	filter = isl_schedule_node_filter_get_filter(node);
+	n = isl_schedule_node_n_children(child);
+	for (i = 0; i < n; ++i) {
+		child = isl_schedule_node_child(child, i);
+		child = isl_schedule_node_filter_intersect_filter(child,
+						isl_union_set_copy(filter));
+		child = isl_schedule_node_parent(child);
+	}
+	isl_union_set_free(filter);
+	tree = isl_schedule_node_get_tree(child);
+	isl_schedule_node_free(child);
+	node = isl_schedule_node_parent(node);
+	node = isl_schedule_node_sequence_splice(node, pos, tree);
+
+	return node;
+}
+
 /* Update the ancestors of "node" to point to the tree that "node"
  * now points to.
  * That is, replace the child in the original parent that corresponds
