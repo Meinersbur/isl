@@ -3155,18 +3155,18 @@ static __isl_give isl_schedule_node *compute_split_schedule(
 	ctx = isl_schedule_node_get_ctx(node);
 	filters = extract_split(ctx, graph);
 	node = isl_schedule_node_insert_sequence(node, filters);
-	node = isl_schedule_node_child(node, 0);
+	node = isl_schedule_node_child(node, 1);
 	node = isl_schedule_node_child(node, 0);
 
 	node = compute_sub_schedule(node, ctx, graph,
-				&node_scc_at_most, &edge_dst_scc_at_most,
-				graph->src_scc, 0);
-	node = isl_schedule_node_parent(node);
-	node = isl_schedule_node_next_sibling(node);
-	node = isl_schedule_node_child(node, 0);
-	node = compute_sub_schedule(node, ctx, graph,
 				&node_scc_at_least, &edge_src_scc_at_least,
 				graph->src_scc + 1, 0);
+	node = isl_schedule_node_parent(node);
+	node = isl_schedule_node_previous_sibling(node);
+	node = isl_schedule_node_child(node, 0);
+	node = compute_sub_schedule(node, ctx, graph,
+				&node_scc_at_most, &edge_dst_scc_at_most,
+				graph->src_scc, 0);
 	node = isl_schedule_node_parent(node);
 	node = isl_schedule_node_parent(node);
 
