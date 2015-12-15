@@ -4213,7 +4213,8 @@ __isl_give isl_schedule_node *isl_schedule_node_graft_after(
 
 /* Split the domain elements that reach "node" into those that satisfy
  * "filter" and those that do not.  Arrange for the first subset to be
- * executed after the second subset.
+ * executed before or after the second subset, depending on the value
+ * of "before".
  * Return a pointer to the tree corresponding to the second subset,
  * except when this subset is empty in which case the original pointer
  * is returned.
@@ -4224,8 +4225,9 @@ __isl_give isl_schedule_node *isl_schedule_node_graft_after(
  * The children in the sequence are copies of the original subtree,
  * simplified with respect to their filters.
  */
-__isl_give isl_schedule_node *isl_schedule_node_order_after(
-	__isl_take isl_schedule_node *node, __isl_take isl_union_set *filter)
+static __isl_give isl_schedule_node *isl_schedule_node_order_before_or_after(
+	__isl_take isl_schedule_node *node, __isl_take isl_union_set *filter,
+	int before)
 {
 	enum isl_schedule_node_type ancestors[] =
 		{ isl_schedule_node_filter, isl_schedule_node_sequence };
@@ -4269,9 +4271,14 @@ __isl_give isl_schedule_node *isl_schedule_node_order_after(
 	isl_schedule_node_free(node2);
 	tree1 = isl_schedule_tree_insert_filter(tree1, node_filter);
 	tree2 = isl_schedule_tree_insert_filter(tree2, filter);
-	tree1 = isl_schedule_tree_sequence_pair(tree1, tree2);
 
-	node = graft_or_splice(node, tree1, 0);
+	if (before) {
+		tree1 = isl_schedule_tree_sequence_pair(tree2, tree1);
+		node = graft_or_splice(node, tree1, 1);
+	} else {
+		tree1 = isl_schedule_tree_sequence_pair(tree1, tree2);
+		node = graft_or_splice(node, tree1, 0);
+	}
 
 	return node;
 error:
@@ -4279,6 +4286,32 @@ error:
 	isl_union_set_free(filter);
 	isl_union_set_free(node_filter);
 	return NULL;
+}
+
+/* Split the domain elements that reach "node" into those that satisfy
+ * "filter" and those that do not.  Arrange for the first subset to be
+ * executed before the second subset.
+ * Return a pointer to the tree corresponding to the second subset,
+ * except when this subset is empty in which case the original pointer
+ * is returned.
+ */
+__isl_give isl_schedule_node *isl_schedule_node_order_before(
+	__isl_take isl_schedule_node *node, __isl_take isl_union_set *filter)
+{
+	return isl_schedule_node_order_before_or_after(node, filter, 1);
+}
+
+/* Split the domain elements that reach "node" into those that satisfy
+ * "filter" and those that do not.  Arrange for the first subset to be
+ * executed after the second subset.
+ * Return a pointer to the tree corresponding to the second subset,
+ * except when this subset is empty in which case the original pointer
+ * is returned.
+ */
+__isl_give isl_schedule_node *isl_schedule_node_order_after(
+	__isl_take isl_schedule_node *node, __isl_take isl_union_set *filter)
+{
+	return isl_schedule_node_order_before_or_after(node, filter, 0);
 }
 
 /* Reset the user pointer on all identifiers of parameters and tuples

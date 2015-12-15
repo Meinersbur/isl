@@ -205,6 +205,8 @@ __isl_give isl_schedule_node *isl_schedule_node_cut(
 __isl_give isl_schedule_node *isl_schedule_node_delete(
 	__isl_take isl_schedule_node *node);
 
+__isl_give isl_schedule_node *isl_schedule_node_order_before(
+	__isl_take isl_schedule_node *node, __isl_take isl_union_set *filter);
 __isl_give isl_schedule_node *isl_schedule_node_order_after(
 	__isl_take isl_schedule_node *node, __isl_take isl_union_set *filter);
 

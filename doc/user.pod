@@ -8336,14 +8336,20 @@ position as the node pointed to by C<node> in the original tree.
 
 	#include <isl/schedule_node.h>
 	__isl_give isl_schedule_node *
+	isl_schedule_node_order_before(
+		__isl_take isl_schedule_node *node,
+		__isl_take isl_union_set *filter);
+	__isl_give isl_schedule_node *
 	isl_schedule_node_order_after(
 		__isl_take isl_schedule_node *node,
 		__isl_take isl_union_set *filter);
 
-This function splits the domain elements that reach C<node>
+These functions split the domain elements that reach C<node>
 into those that satisfy C<filter> and those that do not and
 arranges for the elements that do satisfy the filter to be
-executed after those that do not.  The order is imposed by
+executed before (in case of C<isl_schedule_node_order_before>)
+or after (in case of C<isl_schedule_node_order_after>)
+those that do not.  The order is imposed by
 a sequence node, possibly reusing the grandparent of C<node>
 on two copies of the subtree attached to the original C<node>.
 Both copies are simplified with respect to their filter.
