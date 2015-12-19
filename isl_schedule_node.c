@@ -2418,6 +2418,8 @@ __isl_give isl_schedule_node *isl_schedule_node_insert_mark(
  * with filters described by "filters", attach this sequence
  * of filter tree nodes as children to a new tree of type "type" and
  * replace the original subtree of "node" by this new tree.
+ * Each copy of the original subtree is simplified with respect
+ * to the corresponding filter.
  */
 static __isl_give isl_schedule_node *isl_schedule_node_insert_children(
 	__isl_take isl_schedule_node *node,
@@ -2439,11 +2441,16 @@ static __isl_give isl_schedule_node *isl_schedule_node_insert_children(
 	n = isl_union_set_list_n_union_set(filters);
 	list = isl_schedule_tree_list_alloc(ctx, n);
 	for (i = 0; i < n; ++i) {
+		isl_schedule_node *node_i;
 		isl_schedule_tree *tree;
 		isl_union_set *filter;
 
-		tree = isl_schedule_node_get_tree(node);
 		filter = isl_union_set_list_get_union_set(filters, i);
+		node_i = isl_schedule_node_copy(node);
+		node_i = isl_schedule_node_gist(node_i,
+						isl_union_set_copy(filter));
+		tree = isl_schedule_node_get_tree(node_i);
+		isl_schedule_node_free(node_i);
 		tree = isl_schedule_tree_insert_filter(tree, filter);
 		list = isl_schedule_tree_list_add(list, tree);
 	}
