@@ -3,6 +3,7 @@
 
 #include <isl/schedule_node.h>
 #include <isl_schedule_band.h>
+#include <isl_schedule_tree.h>
 
 /* An isl_schedule_node points to a particular location in a schedule tree.
  *
