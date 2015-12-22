@@ -2128,6 +2128,11 @@ To iterate over all the sets or maps in a union set or map, use
 		isl_stat (*fn)(__isl_take isl_map *map, void *user),
 		void *user);
 
+These functions call the callback function once for each
+(pair of) space(s) for which there are elements in the input.
+The argument to the callback contains all elements in the input
+with that (pair of) space(s).
+
 The number of sets or maps in a union set or map can be obtained
 from
 
