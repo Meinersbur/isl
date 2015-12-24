@@ -507,6 +507,10 @@ static int node_scc_at_least(struct isl_sched_node *node, int scc)
  * The weight is also only used during clustering and it is
  * an indication of how many schedule dimensions on either side
  * of the schedule constraints can be aligned.
+ * If the weight is negative, then this means that this edge was postponed
+ * by has_bounded_distances or any_no_merge.  The original weight can
+ * be retrieved by adding 1 + graph->max_weight, with "graph"
+ * the graph containing this edge.
  */
 struct isl_sched_edge {
 	isl_map *map;
@@ -657,6 +661,9 @@ static int is_conditional_validity(struct isl_sched_edge *edge)
  *
  * scc represents the number of components
  * weak is set if the components are weakly connected
+ *
+ * max_weight is used during clustering and represents the maximal
+ * weight of the relevant proximity edges.
  */
 struct isl_sched_graph {
 	isl_map_to_basic_set *intra_hmap;
@@ -690,6 +697,8 @@ struct isl_sched_graph {
 
 	int scc;
 	int weak;
+
+	int max_weight;
 };
 
 /* Initialize node_table based on the list of nodes.
@@ -5132,18 +5141,79 @@ static isl_bool distance_is_bounded(__isl_keep isl_set *set, int pos)
 	return bounded;
 }
 
-/* Does the edge "edge" have bounded dependence distances
+/* Does the set "set" have a fixed (but possible parametric) value
+ * at dimension "pos"?
+ */
+static isl_bool has_single_value(__isl_keep isl_set *set, int pos)
+{
+	int n;
+	isl_bool single;
+
+	if (!set)
+		return isl_bool_error;
+	set = isl_set_copy(set);
+	n = isl_set_dim(set, isl_dim_set);
+	set = isl_set_project_out(set, isl_dim_set, pos + 1, n - (pos + 1));
+	set = isl_set_project_out(set, isl_dim_set, 0, pos);
+	single = isl_set_is_singleton(set);
+	isl_set_free(set);
+
+	return single;
+}
+
+/* Does "map" have a fixed (but possible parametric) value
+ * at dimension "pos" of either its domain or its range?
+ */
+static isl_bool has_singular_src_or_dst(__isl_keep isl_map *map, int pos)
+{
+	isl_set *set;
+	isl_bool single;
+
+	set = isl_map_domain(isl_map_copy(map));
+	single = has_single_value(set, pos);
+	isl_set_free(set);
+
+	if (single < 0 || single)
+		return single;
+
+	set = isl_map_range(isl_map_copy(map));
+	single = has_single_value(set, pos);
+	isl_set_free(set);
+
+	return single;
+}
+
+/* Does the edge "edge" from "graph" have bounded dependence distances
  * in the merged graph "merge_graph" of a selection of clusters in "c"?
  *
  * Extract the complete transformations of the source and destination
  * nodes of the edge, apply them to the edge constraints and
  * compute the differences.  Finally, check if these differences are bounded
  * in each direction.
+ *
+ * If the dimension of the band is greater than the number of
+ * dimensions that can be expected to be optimized by the edge
+ * (based on its weight), then also allow the differences to be unbounded
+ * in the remaining dimensions, but only if either the source or
+ * the destination has a fixed value in that direction.
+ * This allows a statement that produces values that are used by
+ * several instance of another statement to be merged with that
+ * other statement.
+ * However, merging such clusters will introduce an inherently
+ * large proximity distance inside the merged cluster, meaning
+ * that proximity distances will no longer be optimized in
+ * subsequent merges.  These merges are therefore only allowed
+ * after all other possible merges have been tried.
+ * The first time such a merge is encountered, the weight of the edge
+ * is replaced by a negative weight.  The second time (i.e., after
+ * all merges over edges with a non-negative weight have been tried),
+ * the merge is allowed.
  */
 static isl_bool has_bounded_distances(isl_ctx *ctx, struct isl_sched_edge *edge,
-	struct isl_clustering *c, struct isl_sched_graph *merge_graph)
+	struct isl_sched_graph *graph, struct isl_clustering *c,
+	struct isl_sched_graph *merge_graph)
 {
-	int i, n;
+	int i, n, n_slack;
 	isl_bool bounded;
 	isl_map *map, *t;
 	isl_set *dist;
@@ -5153,25 +5223,42 @@ static isl_bool has_bounded_distances(isl_ctx *ctx, struct isl_sched_edge *edge,
 	map = isl_map_apply_domain(map, t);
 	t = extract_node_transformation(ctx, edge->dst, c, merge_graph);
 	map = isl_map_apply_range(map, t);
-	dist = isl_map_deltas(map);
+	dist = isl_map_deltas(isl_map_copy(map));
 
 	bounded = isl_bool_true;
 	n = isl_set_dim(dist, isl_dim_set);
+	n_slack = n - edge->weight;
+	if (edge->weight < 0)
+		n_slack -= graph->max_weight + 1;
 	for (i = 0; i < n; ++i) {
-		isl_bool bounded_i;
+		isl_bool bounded_i, singular_i;
 
 		bounded_i = distance_is_bounded(dist, i);
 		if (bounded_i < 0)
 			goto error;
 		if (bounded_i)
 			continue;
+		if (edge->weight >= 0)
+			bounded = isl_bool_false;
+		n_slack--;
+		if (n_slack < 0)
+			break;
+		singular_i = has_singular_src_or_dst(map, i);
+		if (singular_i < 0)
+			goto error;
+		if (singular_i)
+			continue;
 		bounded = isl_bool_false;
 		break;
 	}
+	if (!bounded && i >= n && edge->weight >= 0)
+		edge->weight -= graph->max_weight + 1;
+	isl_map_free(map);
 	isl_set_free(dist);
 
 	return bounded;
 error:
+	isl_map_free(map);
 	isl_set_free(dist);
 	return isl_bool_error;
 }
@@ -5206,7 +5293,8 @@ static isl_bool ok_to_merge_proximity(isl_ctx *ctx,
 		if (c->scc_cluster[edge->dst->scc] ==
 		    c->scc_cluster[edge->src->scc])
 			continue;
-		bounded = has_bounded_distances(ctx, edge, c, merge_graph);
+		bounded = has_bounded_distances(ctx, edge, graph, c,
+						merge_graph);
 		if (bounded < 0 || bounded)
 			return bounded;
 	}
@@ -5422,21 +5510,35 @@ error:
 
 /* Is there any edge marked "no_merge" between two SCCs that are
  * about to be merged (i.e., that are set in "scc_in_merge")?
+ * "merge_edge" is the proximity edge along which the clusters of SCCs
+ * are going to be merged.
+ *
+ * If there is any edge between two SCCs with a negative weight,
+ * while the weight of "merge_edge" is non-negative, then this
+ * means that the edge was postponed.  "merge_edge" should then
+ * also be postponed since merging along the edge with negative weight should
+ * be postponed until all edges with non-negative weight have been tried.
+ * Replace the weight of "merge_edge" by a negative weight as well and
+ * tell the caller not to attempt a merge.
  */
-static int any_no_merge(struct isl_sched_graph *graph, int *scc_in_merge)
+static int any_no_merge(struct isl_sched_graph *graph, int *scc_in_merge,
+	struct isl_sched_edge *merge_edge)
 {
 	int i;
 
 	for (i = 0; i < graph->n_edge; ++i) {
 		struct isl_sched_edge *edge = &graph->edge[i];
 
-		if (!edge->no_merge)
-			continue;
 		if (!scc_in_merge[edge->src->scc])
 			continue;
 		if (!scc_in_merge[edge->dst->scc])
 			continue;
-		return 1;
+		if (edge->no_merge)
+			return 1;
+		if (merge_edge->weight >= 0 && edge->weight < 0) {
+			merge_edge->weight -= graph->max_weight + 1;
+			return 1;
+		}
 	}
 
 	return 0;
@@ -5453,24 +5555,29 @@ static int any_no_merge(struct isl_sched_graph *graph, int *scc_in_merge)
  * of intermediate clusters.
  * If there is already a no_merge edge between any pair of such SCCs,
  * then simply mark the current edge as no_merge as well.
+ * Likewise, if any of those edges was postponed by has_bounded_distances,
+ * then postpone the current edge as well.
  * Otherwise, try and merge the clusters and mark "edge" as "no_merge"
- * if the clusters did not end up getting merged.
+ * if the clusters did not end up getting merged, unless the non-merge
+ * is due to the fact that the edge was postponed.  This postponement
+ * can be recognized by a change in weight (from non-negative to negative).
  */
 static isl_stat merge_clusters_along_edge(isl_ctx *ctx,
 	struct isl_sched_graph *graph, int edge, struct isl_clustering *c)
 {
 	isl_bool merged;
+	int edge_weight = graph->edge[edge].weight;
 
 	if (mark_merge_sccs(ctx, graph, edge, c) < 0)
 		return isl_stat_error;
 
-	if (any_no_merge(graph, c->scc_in_merge))
+	if (any_no_merge(graph, c->scc_in_merge, &graph->edge[edge]))
 		merged = isl_bool_false;
 	else
 		merged = try_merge(ctx, graph, c);
 	if (merged < 0)
 		return isl_stat_error;
-	if (!merged)
+	if (!merged && edge_weight == graph->edge[edge].weight)
 		graph->edge[edge].no_merge = 1;
 
 	return isl_stat_ok;
@@ -5607,6 +5714,9 @@ static isl_stat extract_clusters(isl_ctx *ctx, struct isl_sched_graph *graph,
 /* Compute weights on the proximity edges of "graph" that can
  * be used by find_proximity to find the most appropriate
  * proximity edge to use to merge two clusters in "c".
+ * The weights are also used by has_bounded_distances to determine
+ * whether the merge should be allowed.
+ * Store the maximum of the computed weights in graph->max_weight.
  *
  * The computed weight is a measure for the number of remaining schedule
  * dimensions that can still be completely aligned.
@@ -5621,6 +5731,8 @@ static isl_stat compute_weights(struct isl_sched_graph *graph,
 	struct isl_clustering *c)
 {
 	int i;
+
+	graph->max_weight = 0;
 
 	for (i = 0; i < graph->n_edge; ++i) {
 		struct isl_sched_edge *edge = &graph->edge[i];
@@ -5658,6 +5770,9 @@ static isl_stat compute_weights(struct isl_sched_graph *graph,
 			return isl_stat_error;
 		edge->weight = hull->n_eq;
 		isl_basic_map_free(hull);
+
+		if (edge->weight > graph->max_weight)
+			graph->max_weight = edge->weight;
 	}
 
 	return isl_stat_ok;
