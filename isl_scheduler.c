@@ -406,6 +406,7 @@ static __isl_give int isl_schedule_constraints_n_map(
  *	coefficients; the first rank columns span the linear part of
  *	the schedule rows
  * cinv is the inverse of cmap.
+ * ctrans is the transpose of cmap.
  * start is the first variable in the LP problem in the sequences that
  *	represents the schedule coefficients of this node
  * nvar is the dimension of the domain
@@ -435,6 +436,7 @@ struct isl_sched_node {
 	int	 rank;
 	isl_mat *cmap;
 	isl_mat *cinv;
+	isl_mat *ctrans;
 	int	 start;
 	int	 nvar;
 	int	 nparam;
@@ -956,6 +958,7 @@ static void graph_free(isl_ctx *ctx, struct isl_sched_graph *graph)
 			isl_map_free(graph->node[i].sched_map);
 			isl_mat_free(graph->node[i].cmap);
 			isl_mat_free(graph->node[i].cinv);
+			isl_mat_free(graph->node[i].ctrans);
 			if (graph->root)
 				free(graph->node[i].coincident);
 		}
@@ -2083,12 +2086,14 @@ static int node_update_cmap(struct isl_sched_node *node)
 	H = isl_mat_left_hermite(H, 0, &U, &Q);
 	isl_mat_free(node->cmap);
 	isl_mat_free(node->cinv);
+	isl_mat_free(node->ctrans);
+	node->ctrans = isl_mat_copy(Q);
 	node->cmap = isl_mat_transpose(Q);
 	node->cinv = isl_mat_transpose(U);
 	node->rank = isl_mat_initial_non_zero_cols(H);
 	isl_mat_free(H);
 
-	if (!node->cmap || !node->cinv || node->rank < 0)
+	if (!node->cmap || !node->cinv || !node->ctrans || node->rank < 0)
 		return -1;
 	return 0;
 }
