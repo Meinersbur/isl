@@ -2776,7 +2776,7 @@ static __isl_give isl_union_set_list *extract_sccs(isl_ctx *ctx,
 }
 
 /* Return a list of two unions of universe domains, one for the SCCs up
- * to and including graph->src_scc and another for the other SCCS.
+ * to and including graph->src_scc and another for the other SCCs.
  */
 static __isl_give isl_union_set_list *extract_split(isl_ctx *ctx,
 	struct isl_sched_graph *graph)
@@ -3036,7 +3036,7 @@ static int reset_band(struct isl_sched_graph *graph)
 /* Split the current graph into two parts and compute a schedule for each
  * part individually.  In particular, one part consists of all SCCs up
  * to and including graph->src_scc, while the other part contains the other
- * SCCS.  The split is enforced by a sequence node inserted at position "node"
+ * SCCs.  The split is enforced by a sequence node inserted at position "node"
  * in the schedule tree.  Return the updated schedule node.
  *
  * The current band is reset. It would be possible to reuse
