@@ -2088,6 +2088,39 @@ error:
 	return NULL;
 }
 
+/* Intersect the filter of filter node "node" with "filter".
+ *
+ * If the filter of the node is already a subset of "filter",
+ * then leave the node unchanged.
+ */
+__isl_give isl_schedule_node *isl_schedule_node_filter_intersect_filter(
+	__isl_take isl_schedule_node *node, __isl_take isl_union_set *filter)
+{
+	isl_union_set *node_filter = NULL;
+	isl_bool subset;
+
+	if (!node || !filter)
+		goto error;
+
+	node_filter = isl_schedule_node_filter_get_filter(node);
+	subset = isl_union_set_is_subset(node_filter, filter);
+	if (subset < 0)
+		goto error;
+	if (subset) {
+		isl_union_set_free(node_filter);
+		isl_union_set_free(filter);
+		return node;
+	}
+	node_filter = isl_union_set_intersect(node_filter, filter);
+	node = isl_schedule_node_filter_set_filter(node, node_filter);
+	return node;
+error:
+	isl_schedule_node_free(node);
+	isl_union_set_free(node_filter);
+	isl_union_set_free(filter);
+	return NULL;
+}
+
 /* Return the guard of the guard node "node".
  */
 __isl_give isl_set *isl_schedule_node_guard_get_guard(
