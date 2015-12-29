@@ -1085,13 +1085,14 @@ static __isl_give isl_flow *access_info_compute_flow_core(
 		acc = isl_access_info_sort_sources(acc);
 		res = compute_val_based_dependences(acc);
 	}
-	isl_access_info_free(acc);
+	acc = isl_access_info_free(acc);
 	if (!res)
 		return NULL;
 	if (!res->must_no_source || !res->may_no_source)
 		goto error;
 	return res;
 error:
+	isl_access_info_free(acc);
 	isl_flow_free(res);
 	return NULL;
 }
