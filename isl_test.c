@@ -1622,6 +1622,10 @@ struct {
 		"32e0 <= 31 + i0)) or "
 		"i0 >= 0 }" },
 	{ 1, "{ [a, b, c] : 2b = 1 + a and 2c = 2 + a; [0, 0, 0] }" },
+	{ 1, "{ [a, a, b, c] : 32*floor((a)/32) = a and 2*floor((b)/2) = b and "
+				"2*floor((c)/2) = c and 0 <= a <= 192;"
+		"[224, 224, b, c] : 2*floor((b)/2) = b and 2*floor((c)/2) = c }"
+	},
 };
 
 /* A specialized coalescing test case that would result
