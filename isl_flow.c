@@ -1124,6 +1124,8 @@ __isl_give isl_flow *isl_access_info_compute_flow(__isl_take isl_access_info *ac
 
 	acc->domain_map = isl_map_domain_map(isl_map_copy(acc->sink.map));
 	res = access_info_compute_flow_core(acc);
+	if (!res)
+		return NULL;
 
 	for (j = 0; j < res->n_source; ++j) {
 		res->dep[j].map = isl_map_range_factor_domain(res->dep[j].map);
