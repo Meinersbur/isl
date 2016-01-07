@@ -859,9 +859,11 @@ static __isl_give isl_printer *isl_basic_map_print_isl(
 }
 
 /* Print the disjuncts of a map (or set) "map" to "p".
+ * The names of the variables are taken from "space".
+ * "latex" is set if the constraints should be printed in LaTeX format.
  */
 static __isl_give isl_printer *print_disjuncts_core(__isl_keep isl_map *map,
-	__isl_take isl_printer *p, int latex)
+	__isl_keep isl_space *space, __isl_take isl_printer *p, int latex)
 {
 	int i;
 
@@ -872,7 +874,7 @@ static __isl_give isl_printer *print_disjuncts_core(__isl_keep isl_map *map,
 			p = isl_printer_print_str(p, s_or[latex]);
 		if (map->n > 1 && map->p[i]->n_eq + map->p[i]->n_ineq > 1)
 			p = isl_printer_print_str(p, "(");
-		p = print_disjunct(map->p[i], map->dim, p, latex);
+		p = print_disjunct(map->p[i], space, p, latex);
 		if (map->n > 1 && map->p[i]->n_eq + map->p[i]->n_ineq > 1)
 			p = isl_printer_print_str(p, ")");
 	}
@@ -880,18 +882,21 @@ static __isl_give isl_printer *print_disjuncts_core(__isl_keep isl_map *map,
 }
 
 /* Print the disjuncts of a map (or set) "map" to "p".
+ * The names of the variables are taken from "space".
  * "hull" describes constraints shared by all disjuncts of "map".
+ * "latex" is set if the constraints should be printed in LaTeX format.
  *
  * Print the disjuncts as a conjunction of "hull" and
  * the result of removing the constraints of "hull" from "map".
  * If this result turns out to be the universe, then simply print "hull".
  */
 static __isl_give isl_printer *print_disjuncts_in_hull(__isl_keep isl_map *map,
-	__isl_take isl_basic_map *hull, __isl_take isl_printer *p, int latex)
+	__isl_keep isl_space *space, __isl_take isl_basic_map *hull,
+	__isl_take isl_printer *p, int latex)
 {
 	isl_bool is_universe;
 
-	p = print_disjunct(hull, map->dim, p, latex);
+	p = print_disjunct(hull, space, p, latex);
 	map = isl_map_plain_gist_basic_map(isl_map_copy(map), hull);
 	is_universe = isl_map_plain_is_universe(map);
 	if (is_universe < 0)
@@ -899,7 +904,7 @@ static __isl_give isl_printer *print_disjuncts_in_hull(__isl_keep isl_map *map,
 	if (!is_universe) {
 		p = isl_printer_print_str(p, s_and[latex]);
 		p = isl_printer_print_str(p, "(");
-		p = print_disjuncts_core(map, p, latex);
+		p = print_disjuncts_core(map, space, p, latex);
 		p = isl_printer_print_str(p, ")");
 	}
 	isl_map_free(map);
@@ -912,13 +917,15 @@ error:
 }
 
 /* Print the disjuncts of a map (or set) "map" to "p".
+ * The names of the variables are taken from "space".
+ * "latex" is set if the constraints should be printed in LaTeX format.
  *
  * If there are at least two disjuncts and "dump" mode is not turned out,
  * check for any shared constraints among all disjuncts.
  * If there are any, then print them separately in print_disjuncts_in_hull.
  */
 static __isl_give isl_printer *print_disjuncts(__isl_keep isl_map *map,
-	__isl_take isl_printer *p, int latex)
+	__isl_keep isl_space *space, __isl_take isl_printer *p, int latex)
 {
 	if (isl_map_plain_is_universe(map))
 		return p;
@@ -934,25 +941,29 @@ static __isl_give isl_printer *print_disjuncts(__isl_keep isl_map *map,
 		if (is_universe < 0)
 			p = isl_printer_free(p);
 		else if (!is_universe)
-			return print_disjuncts_in_hull(map, hull, p, latex);
+			return print_disjuncts_in_hull(map, space, hull,
+							p, latex);
 		isl_basic_map_free(hull);
 	}
 
-	return print_disjuncts_core(map, p, latex);
+	return print_disjuncts_core(map, space, p, latex);
 }
 
 /* Print the disjuncts of a map (or set).
+ * The names of the variables are taken from "space".
+ * "latex" is set if the constraints should be printed in LaTeX format.
+ *
  * If the map turns out to be a universal parameter domain, then
  * we need to print the colon.  Otherwise, the output looks identical
  * to the empty set.
  */
 static __isl_give isl_printer *print_disjuncts_map(__isl_keep isl_map *map,
-	__isl_take isl_printer *p, int latex)
+	__isl_keep isl_space *space, __isl_take isl_printer *p, int latex)
 {
 	if (isl_map_plain_is_universe(map) && isl_space_is_params(map->dim))
 		return isl_printer_print_str(p, s_such_that[latex]);
 	else
-		return print_disjuncts(map, p, latex);
+		return print_disjuncts(map, space, p, latex);
 }
 
 struct isl_aff_split {
@@ -1143,7 +1154,7 @@ static __isl_give isl_printer *print_dim_eq(__isl_take isl_printer *p,
 }
 
 static __isl_give isl_printer *print_split_map(__isl_take isl_printer *p,
-	struct isl_aff_split *split, int n)
+	struct isl_aff_split *split, int n, __isl_keep isl_space *space)
 {
 	struct isl_print_space_data data = { 0 };
 	int i;
@@ -1151,18 +1162,15 @@ static __isl_give isl_printer *print_split_map(__isl_take isl_printer *p,
 
 	data.print_dim = &print_dim_eq;
 	for (i = 0; i < n; ++i) {
-		isl_space *space;
-
 		if (!split[i].map)
 			break;
-		space = split[i].map->dim;
 		rational = split[i].map->n > 0 &&
 		    ISL_F_ISSET(split[i].map->p[0], ISL_BASIC_MAP_RATIONAL);
 		if (i)
 			p = isl_printer_print_str(p, "; ");
 		data.user = split[i].aff;
 		p = isl_print_space(space, p, rational, &data);
-		p = print_disjuncts_map(split[i].map, p, 0);
+		p = print_disjuncts_map(split[i].map, space, p, 0);
 	}
 
 	return p;
@@ -1178,12 +1186,12 @@ static __isl_give isl_printer *isl_map_print_isl_body(__isl_keep isl_map *map,
 	if (!p->dump && map->n > 0)
 		split = split_aff(map);
 	if (split) {
-		p = print_split_map(p, split, map->n);
+		p = print_split_map(p, split, map->n, map->dim);
 	} else {
 		rational = map->n > 0 &&
 		    ISL_F_ISSET(map->p[0], ISL_BASIC_MAP_RATIONAL);
 		p = isl_print_space(map->dim, p, rational, &data);
-		p = print_disjuncts_map(map, p, 0);
+		p = print_disjuncts_map(map, map->dim, p, 0);
 	}
 	free_split(split, map->n);
 	return p;
@@ -1218,7 +1226,7 @@ static __isl_give isl_printer *print_latex_map(__isl_keep isl_map *map,
 	data.print_dim = &print_dim_eq;
 	data.user = aff;
 	p = isl_print_space(map->dim, p, 0, &data);
-	p = print_disjuncts_map(map, p, 1);
+	p = print_disjuncts_map(map, map->dim, p, 1);
 	p = isl_printer_print_str(p, s_close_set[1]);
 
 	return p;
@@ -1702,14 +1710,18 @@ static __isl_give isl_printer *isl_pwqp_print_isl_body(
 	int i = 0;
 
 	for (i = 0; i < pwqp->n; ++i) {
+		isl_space *space;
+
 		if (i)
 			p = isl_printer_print_str(p, "; ");
-		if (!isl_space_is_params(pwqp->p[i].set->dim)) {
-			p = isl_print_space(pwqp->p[i].set->dim, p, 0, &data);
+		space = isl_qpolynomial_get_domain_space(pwqp->p[i].qp);
+		if (!isl_space_is_params(space)) {
+			p = isl_print_space(space, p, 0, &data);
 			p = isl_printer_print_str(p, " -> ");
 		}
 		p = print_qpolynomial(p, pwqp->p[i].qp);
-		p = print_disjuncts((isl_map *)pwqp->p[i].set, p, 0);
+		p = print_disjuncts((isl_map *)pwqp->p[i].set, space, p, 0);
+		isl_space_free(space);
 	}
 
 	return p;
@@ -1765,14 +1777,18 @@ static __isl_give isl_printer *isl_pwf_print_isl_body(
 	int i = 0;
 
 	for (i = 0; i < pwf->n; ++i) {
+		isl_space *space;
+
 		if (i)
 			p = isl_printer_print_str(p, "; ");
-		if (!isl_space_is_params(pwf->p[i].set->dim)) {
-			p = isl_print_space(pwf->p[i].set->dim, p, 0, &data);
+		space = isl_qpolynomial_fold_get_domain_space(pwf->p[i].fold);
+		if (!isl_space_is_params(space)) {
+			p = isl_print_space(space, p, 0, &data);
 			p = isl_printer_print_str(p, " -> ");
 		}
 		p = qpolynomial_fold_print(pwf->p[i].fold, p);
-		p = print_disjuncts((isl_map *)pwf->p[i].set, p, 0);
+		p = print_disjuncts((isl_map *)pwf->p[i].set, space, p, 0);
+		isl_space_free(space);
 	}
 
 	return p;
@@ -2366,10 +2382,14 @@ static __isl_give isl_printer *print_pw_aff_body(
 		return isl_printer_free(p);
 
 	for (i = 0; i < pa->n; ++i) {
+		isl_space *space;
+
 		if (i)
 			p = isl_printer_print_str(p, "; ");
 		p = print_aff(p, pa->p[i].aff);
-		p = print_disjuncts((isl_map *)pa->p[i].set, p, 0);
+		space = isl_aff_get_domain_space(pa->p[i].aff);
+		p = print_disjuncts((isl_map *)pa->p[i].set, space, p, 0);
+		isl_space_free(space);
 	}
 
 	return p;
@@ -2706,10 +2726,14 @@ static __isl_give isl_printer *print_pw_multi_aff_body(
 		goto error;
 
 	for (i = 0; i < pma->n; ++i) {
+		isl_space *space;
+
 		if (i)
 			p = isl_printer_print_str(p, "; ");
 		p = print_multi_aff(p, pma->p[i].maff);
-		p = print_disjuncts((isl_map *)pma->p[i].set, p, 0);
+		space = isl_multi_aff_get_domain_space(pma->p[i].maff);
+		p = print_disjuncts((isl_map *)pma->p[i].set, space, p, 0);
+		isl_space_free(space);
 	}
 	return p;
 error:
@@ -2884,10 +2908,14 @@ static __isl_give isl_printer *print_dim_mpa(__isl_take isl_printer *p,
 	if (need_parens)
 		p = isl_printer_print_str(p, "(");
 	for (i = 0; i < pa->n; ++i) {
+		isl_space *space;
+
 		if (i)
 			p = isl_printer_print_str(p, "; ");
 		p = print_aff_body(p, pa->p[i].aff);
-		p = print_disjuncts(pa->p[i].set, p, 0);
+		space = isl_aff_get_domain_space(pa->p[i].aff);
+		p = print_disjuncts(pa->p[i].set, space, p, 0);
+		isl_space_free(space);
 	}
 	if (need_parens)
 		p = isl_printer_print_str(p, ")");
