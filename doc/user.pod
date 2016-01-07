@@ -988,6 +988,9 @@ of the original object.
 		__isl_keep isl_qpolynomial *qp);
 	__isl_give isl_space *isl_qpolynomial_get_space(
 		__isl_keep isl_qpolynomial *qp);
+	__isl_give isl_space *
+	isl_qpolynomial_fold_get_domain_space(
+		__isl_keep isl_qpolynomial_fold *fold);
 	__isl_give isl_space *isl_qpolynomial_fold_get_space(
 		__isl_keep isl_qpolynomial_fold *fold);
 	__isl_give isl_space *isl_pw_qpolynomial_get_domain_space(
