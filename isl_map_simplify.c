@@ -3842,20 +3842,19 @@ error:
  *
  * A lower bound on div2
  *
- *	n div2 + t >= 0
+ *	div2 + t >= 0
  *
  * can be replaced by
  *
- *	(n * (m div 2 + div1) + m t + n f)/g >= 0
+ *	m div2 + div1 + m t + f >= 0
  *
- * with g = gcd(m,n).
  * An upper bound
  *
- *	-n div2 + t >= 0
+ *	-div2 + t >= 0
  *
  * can be replaced by
  *
- *	(-n * (m div2 + div1) + m t + n f')/g >= 0
+ *	-(m div2 + div1) + m t + f' >= 0
  *
  * These constraint are those that we would obtain from eliminating
  * div1 using Fourier-Motzkin.
@@ -3866,17 +3865,16 @@ error:
 static struct isl_basic_map *coalesce_divs(struct isl_basic_map *bmap,
 	unsigned div1, unsigned div2, unsigned l, unsigned u)
 {
-	isl_int a;
-	isl_int b;
+	isl_ctx *ctx;
 	isl_int m;
 	unsigned dim, total;
 	int i;
 
+	ctx = isl_basic_map_get_ctx(bmap);
+
 	dim = isl_space_dim(bmap->dim, isl_dim_all);
 	total = 1 + dim + bmap->n_div;
 
-	isl_int_init(a);
-	isl_int_init(b);
 	isl_int_init(m);
 	isl_int_add(m, bmap->ineq[l][0], bmap->ineq[u][0]);
 	isl_int_add_ui(m, m, 1);
@@ -3886,26 +3884,14 @@ static struct isl_basic_map *coalesce_divs(struct isl_basic_map *bmap,
 			continue;
 		if (isl_int_is_zero(bmap->ineq[i][1 + dim + div2]))
 			continue;
-		if (isl_int_is_zero(bmap->ineq[i][1 + dim + div1])) {
-			isl_int_gcd(b, m, bmap->ineq[i][1 + dim + div2]);
-			isl_int_divexact(a, m, b);
-			isl_int_divexact(b, bmap->ineq[i][1 + dim + div2], b);
-			if (isl_int_is_pos(b)) {
-				isl_seq_combine(bmap->ineq[i], a, bmap->ineq[i],
-						b, bmap->ineq[l], total);
-			} else {
-				isl_int_neg(b, b);
-				isl_seq_combine(bmap->ineq[i], a, bmap->ineq[i],
-						b, bmap->ineq[u], total);
-			}
-		}
+		if (isl_int_is_zero(bmap->ineq[i][1 + dim + div1]))
+			isl_seq_combine(bmap->ineq[i], m, bmap->ineq[i],
+					ctx->one, bmap->ineq[l], total);
 		isl_int_set(bmap->ineq[i][1 + dim + div2],
 			    bmap->ineq[i][1 + dim + div1]);
 		isl_int_set_si(bmap->ineq[i][1 + dim + div1], 0);
 	}
 
-	isl_int_clear(a);
-	isl_int_clear(b);
 	isl_int_clear(m);
 	if (l > u) {
 		isl_basic_map_drop_inequality(bmap, l);
