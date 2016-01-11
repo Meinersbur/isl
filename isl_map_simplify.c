@@ -3550,6 +3550,13 @@ isl_bool isl_set_is_disjoint(__isl_keep isl_set *set1, __isl_keep isl_set *set2)
 	return isl_map_is_disjoint(set1, set2);
 }
 
+/* Is "v" equal to 0, 1 or -1?
+ */
+static int is_zero_or_one(isl_int v)
+{
+	return isl_int_is_zero(v) || isl_int_is_one(v) || isl_int_is_negone(v);
+}
+
 /* Check if we can combine a given div with lower bound l and upper
  * bound u with some other div and if so return that other div.
  * Otherwise return -1.
@@ -3575,6 +3582,8 @@ isl_bool isl_set_is_disjoint(__isl_keep isl_set *set1, __isl_keep isl_set *set2)
  *
  *	e + f (a + m b) >= 0
  *
+ * Furthermore, in the constraints that only contain b, the coefficient
+ * of b should be equal to 1 or -1.
  * If so, we return b so that "a + m b" can be replaced by
  * a single div "c = a + m b".
  */
@@ -3631,8 +3640,11 @@ static int div_find_coalesce(struct isl_basic_map *bmap, int *pairs,
 			int valid;
 			if (j == l || j == u)
 				continue;
-			if (isl_int_is_zero(bmap->ineq[j][1 + dim + div]))
-				continue;
+			if (isl_int_is_zero(bmap->ineq[j][1 + dim + div])) {
+				if (is_zero_or_one(bmap->ineq[j][1 + dim + i]))
+					continue;
+				break;
+			}
 			if (isl_int_is_zero(bmap->ineq[j][1 + dim + i]))
 				break;
 			isl_int_mul(bmap->ineq[j][1 + dim + div],
@@ -3813,6 +3825,7 @@ error:
  * The new div will appear in the location that contains div2.
  * We need to modify all constraints that contain
  * div2 = (div - div1) / m
+ * The coefficient of div2 is known to be equal to 1 or -1.
  * (If a constraint does not contain div2, it will also not contain div1.)
  * If the constraint also contains div1, then we know they appear
  * as f (div1 + m div2) and we can simply replace (div1 + m div2) by div,

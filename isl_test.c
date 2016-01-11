@@ -182,6 +182,11 @@ struct {
 	  "{ [a,b] -> [i,j] : a > i or (a = i and b > j) }" },
 	{ "{ [a,b] -> [i,j] : a,b >>= i,j }",
 	  "{ [a,b] -> [i,j] : a > i or (a = i and b >= j) }" },
+	{ "{ [n] -> [i] : exists (a, b, c: 8b <= i - 32a and "
+			    "8b >= -7 + i - 32 a and b >= 0 and b <= 3 and "
+			    "8c < n - 32a and i < n and c >= 0 and "
+			    "c <= 3 and c >= -4a) }",
+	  "{ [n] -> [i] : 0 <= i < n }" },
 };
 
 int test_parse(struct isl_ctx *ctx)
