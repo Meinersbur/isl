@@ -3804,7 +3804,7 @@ error:
 	return NULL;
 }
 
-/* Given a pair of divs div1 and div2 such that, expect for the lower bound l
+/* Given a pair of divs div1 and div2 such that, except for the lower bound l
  * and the upper bound u, div1 always occurs together with div2 in the form 
  * (div1 + m div2), where m is the constant range on the variable div1
  * allowed by l and u, replace the pair div1 and div2 by a single
