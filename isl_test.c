@@ -187,6 +187,9 @@ struct {
 			    "8c < n - 32a and i < n and c >= 0 and "
 			    "c <= 3 and c >= -4a) }",
 	  "{ [n] -> [i] : 0 <= i < n }" },
+	{ "{ [x] -> [] : exists (a, b: 0 <= a <= 1 and 0 <= b <= 3 and "
+			    "2b <= x - 8a and 2b >= -1 + x - 8a) }",
+	  "{ [x] -> [] : 0 <= x <= 15 }" },
 };
 
 int test_parse(struct isl_ctx *ctx)
