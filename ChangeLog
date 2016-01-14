@@ -1,3 +1,8 @@
+version: 0.16.1
+date: Thu Jan 14 18:08:06 CET 2016
+changes:
+	- fix bug in simplification
+---
 version: 0.16
 date: Tue Jan 12 09:56:16 CET 2016
 changes:
