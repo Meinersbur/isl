@@ -2896,6 +2896,7 @@ struct {
 			"4e0 >= 58 + i0 - i1 and i0 >= 2 and i0 <= 511 and "
 			"4e0 >= -61 + i0 + i1)) or "
 		"(i1 <= 66 - i0 and i0 >= 2 and i1 >= 59 + i0) }", 1 },
+	{ "[a, b] -> { : a = 0 and b = -1 }", "[b, a] -> { : b >= -10 }", 1 },
 };
 
 static int test_subset(isl_ctx *ctx)
