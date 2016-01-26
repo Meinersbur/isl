@@ -369,13 +369,17 @@ int main(int argc, char *argv[])
 	PO.addMacroDef("__isl_keep=__attribute__((annotate(\"isl_keep\")))");
 	PO.addMacroDef("__isl_take=__attribute__((annotate(\"isl_take\")))");
 	PO.addMacroDef("__isl_export=__attribute__((annotate(\"isl_export\")))");
+	PO.addMacroDef("__isl_overload="
+	    "__attribute__((annotate(\"isl_overload\"))) "
+	    "__attribute__((annotate(\"isl_export\")))");
+	PO.addMacroDef("__isl_subclass(super)=__attribute__((annotate(\"isl_subclass(\" #super \")\"))) __attribute__((annotate(\"isl_export\")))");
 	PO.addMacroDef("__isl_constructor=__attribute__((annotate(\"isl_constructor\"))) __attribute__((annotate(\"isl_export\")))");
 	PO.addMacroDef("__isl_subclass(super)=__attribute__((annotate(\"isl_subclass(\" #super \")\"))) __attribute__((annotate(\"isl_export\")))");
 
 	create_preprocessor(Clang);
 	Preprocessor &PP = Clang->getPreprocessor();
 
-	PP.getBuiltinInfo().InitializeBuiltins(PP.getIdentifierTable(), LO);
+	PP.getBuiltinInfo().initializeBuiltins(PP.getIdentifierTable(), LO);
 
 	const FileEntry *file = Clang->getFileManager().getFile(InputFilename);
 	assert(file);

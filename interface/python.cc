@@ -1,5 +1,5 @@
 /*
- * Copyright 2011 Sven Verdoolaege. All rights reserved.
+ * Copyright 2011,2015 Sven Verdoolaege. All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -36,17 +36,20 @@
 #include <stdio.h>
 #include <iostream>
 #include <map>
+#include <vector>
 #include <clang/AST/Attr.h>
 #include "extract_interface.h"
 #include "python.h"
 
-/* Is the given type declaration marked as being a subtype of some other
- * type?  If so, return that other type in "super".
+/* Return a sequence of the types of which the given type declaration is
+ * marked as being a subtype.
  */
-static bool is_subclass(RecordDecl *decl, string &super)
+static vector<string> find_superclasses(RecordDecl *decl)
 {
+	vector<string> super;
+
 	if (!decl->hasAttrs())
-		return false;
+		return super;
 
 	string sub = "isl_subclass";
 	size_t len = sub.length();
@@ -57,12 +60,19 @@ static bool is_subclass(RecordDecl *decl, string &super)
 			continue;
 		string s = ann->getAnnotation().str();
 		if (s.substr(0, len) == sub) {
-			super = s.substr(len + 1, s.length() - len  - 2);
-			return true;
+			s = s.substr(len + 1, s.length() - len  - 2);
+			super.push_back(s);
 		}
 	}
 
-	return false;
+	return super;
+}
+
+/* Is decl marked as being part of an overloaded method?
+ */
+static bool is_overload(Decl *decl)
+{
+	return has_annotation(decl, "isl_overload");
 }
 
 /* Is decl marked as a constructor?
@@ -82,22 +92,28 @@ static bool takes(Decl *decl)
 /* isl_class collects all constructors and methods for an isl "class".
  * "name" is the name of the class.
  * "type" is the declaration that introduces the type.
+ * "methods" contains the set of methods, grouped by method name.
  */
 struct isl_class {
 	string name;
 	RecordDecl *type;
 	set<FunctionDecl *> constructors;
-	set<FunctionDecl *> methods;
+	map<string, set<FunctionDecl *> > methods;
+
+	bool is_static(FunctionDecl *method);
 
 	void print(map<string, isl_class> &classes, set<string> &done);
 	void print_constructor(FunctionDecl *method);
-	void print_method(FunctionDecl *method, bool subclass, string super);
+	void print_method(FunctionDecl *method, vector<string> super);
+	void print_method_overload(FunctionDecl *method, vector<string> super);
+	void print_method(const string &fullname,
+		const set<FunctionDecl *> &methods, vector<string> super);
 };
 
 /* Return the class that has a name that matches the initial part
- * of the namd of function "fd".
+ * of the name of function "fd" or NULL if no such class could be found.
  */
-static isl_class &method2class(map<string, isl_class> &classes,
+static isl_class *method2class(map<string, isl_class> &classes,
 	FunctionDecl *fd)
 {
 	string best;
@@ -109,7 +125,12 @@ static isl_class &method2class(map<string, isl_class> &classes,
 			best = ci->first;
 	}
 
-	return classes[best];
+	if (classes.find(best) == classes.end()) {
+		cerr << "Unable to find class of " << name << endl;
+		return NULL;
+	}
+
+	return &classes[best];
 }
 
 /* Is "type" the type "isl_ctx *"?
@@ -155,6 +176,19 @@ static bool is_isl_type(QualType type)
 	return false;
 }
 
+/* Is "type" the type isl_bool?
+ */
+static bool is_isl_bool(QualType type)
+{
+	string s;
+
+	if (type->isPointerType())
+		return false;
+
+	s = type.getAsString();
+	return s == "isl_bool";
+}
+
 /* Is "type" that of a pointer to a function?
  */
 static bool is_callback(QualType type)
@@ -192,6 +226,74 @@ static string extract_type(QualType type)
 static string type2python(string name)
 {
 	return name.substr(4);
+}
+
+/* If "method" is overloaded, then drop the suffix of "name"
+ * corresponding to the type of the final argument and
+ * return the modified name (or the original name if
+ * no modifications were made).
+ */
+static string drop_type_suffix(string name, FunctionDecl *method)
+{
+	int num_params;
+	ParmVarDecl *param;
+	string type;
+	size_t name_len, type_len;
+
+	if (!is_overload(method))
+		return name;
+
+	num_params = method->getNumParams();
+	param = method->getParamDecl(num_params - 1);
+	type = extract_type(param->getOriginalType());
+	type = type.substr(4);
+	name_len = name.length();
+	type_len = type.length();
+
+	if (name_len > type_len && name.substr(name_len - type_len) == type)
+		name = name.substr(0, name_len - type_len - 1);
+
+	return name;
+}
+
+/* Should "method" be considered to be a static method?
+ * That is, is the first argument something other than
+ * an instance of the class?
+ */
+bool isl_class::is_static(FunctionDecl *method)
+{
+	ParmVarDecl *param = method->getParamDecl(0);
+	QualType type = param->getOriginalType();
+
+	if (!is_isl_type(type))
+		return true;
+	return extract_type(type) != name;
+}
+
+/* Print the header of the method "name" with "n_arg" arguments.
+ * If "is_static" is set, then mark the python method as static.
+ *
+ * If the method is called "from", then rename it to "convert_from"
+ * because "from" is a python keyword.
+ */
+static void print_method_header(bool is_static, const string &name, int n_arg)
+{
+	const char *s;
+
+	if (is_static)
+		printf("    @staticmethod\n");
+
+	s = name.c_str();
+	if (name == "from")
+		s = "convert_from";
+
+	printf("    def %s(", s);
+	for (int i = 0; i < n_arg; ++i) {
+		if (i)
+			printf(", ");
+		printf("arg%d", i);
+	}
+	printf("):\n");
 }
 
 /* Construct a wrapper for a callback argument (at position "arg").
@@ -244,9 +346,41 @@ static void print_callback(QualType type, int arg)
 	printf("        cb = fn(cb_func)\n");
 }
 
+/* Print the argument at position "arg" in call to "fd".
+ * "skip" is the number of initial arguments of "fd" that are
+ * skipped in the Python method.
+ *
+ * If the argument is a callback, then print a reference to
+ * the callback wrapper "cb".
+ * Otherwise, if the argument is marked as consuming a reference,
+ * then pass a copy of the the pointer stored in the corresponding
+ * argument passed to the Python method.
+ * Otherwise, if the argument is a pointer, then pass this pointer itself.
+ * Otherwise, pass the argument directly.
+ */
+static void print_arg_in_call(FunctionDecl *fd, int arg, int skip)
+{
+	ParmVarDecl *param = fd->getParamDecl(arg);
+	QualType type = param->getOriginalType();
+	if (is_callback(type)) {
+		printf("cb");
+	} else if (takes(param)) {
+		string type_s = extract_type(type);
+		printf("isl.%s_copy(arg%d.ptr)", type_s.c_str(), arg - skip);
+	} else if (type->isPointerType()) {
+		printf("arg%d.ptr", arg - skip);
+	} else {
+		printf("arg%d", arg - skip);
+	}
+}
+
 /* Print a python method corresponding to the C function "method".
- * "subclass" is set if the method belongs to a class that is a subclass
- * of some other class ("super").
+ * "super" contains the superclasses of the class to which the method belongs.
+ *
+ * If the first argument of "method" is something other than an instance
+ * of the class, then mark the python method as static.
+ * If, moreover, this first argument is an isl_ctx, then remove
+ * it from the arguments of the Python method.
  *
  * If the function has a callback argument, then it also has a "user"
  * argument.  Since Python has closures, there is no need for such
@@ -258,17 +392,22 @@ static void print_callback(QualType type, int arg)
  * we check if the corresponding actual argument is of the right type.
  * If not, we try to convert it to the right type.
  * It that doesn't work and if subclass is set, we try to convert self
- * to the type of the superclass and call the corresponding method.
+ * to the type of the first superclass in "super" and
+ * call the corresponding method.
  *
  * If the function consumes a reference, then we pass it a copy of
  * the actual argument.
+ *
+ * If the return type is isl_bool, then convert the result to
+ * a Python boolean, raising an error on isl_bool_error.
  */
-void isl_class::print_method(FunctionDecl *method, bool subclass, string super)
+void isl_class::print_method(FunctionDecl *method, vector<string> super)
 {
 	string fullname = method->getName();
 	string cname = fullname.substr(name.length() + 1);
 	int num_params = method->getNumParams();
 	int drop_user = 0;
+	int drop_ctx = first_arg_is_isl_ctx(method);
 
 	for (int i = 1; i < num_params; ++i) {
 		ParmVarDecl *param = method->getParamDecl(i);
@@ -277,12 +416,10 @@ void isl_class::print_method(FunctionDecl *method, bool subclass, string super)
 			drop_user = 1;
 	}
 
-	printf("    def %s(arg0", cname.c_str());
-	for (int i = 1; i < num_params - drop_user; ++i)
-		printf(", arg%d", i);
-	printf("):\n");
+	print_method_header(is_static(method), cname,
+			    num_params - drop_ctx - drop_user);
 
-	for (int i = 0; i < num_params; ++i) {
+	for (int i = drop_ctx; i < num_params; ++i) {
 		ParmVarDecl *param = method->getParamDecl(i);
 		string type;
 		if (!is_isl_type(param->getOriginalType()))
@@ -290,13 +427,13 @@ void isl_class::print_method(FunctionDecl *method, bool subclass, string super)
 		type = type2python(extract_type(param->getOriginalType()));
 		printf("        try:\n");
 		printf("            if not arg%d.__class__ is %s:\n",
-			i, type.c_str());
+			i - drop_ctx, type.c_str());
 		printf("                arg%d = %s(arg%d)\n",
-			i, type.c_str(), i);
+			i - drop_ctx, type.c_str(), i - drop_ctx);
 		printf("        except:\n");
-		if (i > 0 && subclass) {
+		if (!drop_ctx && i > 0 && super.size() > 0) {
 			printf("            return %s(arg0).%s(",
-				type2python(super).c_str(), cname.c_str());
+				type2python(super[0]).c_str(), cname.c_str());
 			for (int i = 1; i < num_params - drop_user; ++i) {
 				if (i != 1)
 					printf(", ");
@@ -311,23 +448,20 @@ void isl_class::print_method(FunctionDecl *method, bool subclass, string super)
 		QualType type = param->getOriginalType();
 		if (!is_callback(type))
 			continue;
-		print_callback(type->getPointeeType(), i);
+		print_callback(type->getPointeeType(), i - drop_ctx);
 	}
-	printf("        res = isl.%s(", fullname.c_str());
-	if (takes(method->getParamDecl(0)))
-		printf("isl.%s_copy(arg0.ptr)", name.c_str());
+	if (drop_ctx)
+		printf("        ctx = Context.getDefaultInstance()\n");
 	else
-		printf("arg0.ptr");
+		printf("        ctx = arg0.ctx\n");
+	printf("        res = isl.%s(", fullname.c_str());
+	if (drop_ctx)
+		printf("ctx");
+	else
+		print_arg_in_call(method, 0, 0);
 	for (int i = 1; i < num_params - drop_user; ++i) {
-		ParmVarDecl *param = method->getParamDecl(i);
-		QualType type = param->getOriginalType();
-		if (is_callback(type))
-			printf(", cb");
-		else if (takes(param)) {
-			string type_s = extract_type(type);
-			printf(", isl.%s_copy(arg%d.ptr)", type_s.c_str(), i);
-		} else
-			printf(", arg%d.ptr", i);
+		printf(", ");
+		print_arg_in_call(method, i, drop_ctx);
 	}
 	if (drop_user)
 		printf(", None");
@@ -336,7 +470,7 @@ void isl_class::print_method(FunctionDecl *method, bool subclass, string super)
 	if (is_isl_type(method->getReturnType())) {
 		string type;
 		type = type2python(extract_type(method->getReturnType()));
-		printf("        return %s(ctx=arg0.ctx, ptr=res)\n",
+		printf("        return %s(ctx=ctx, ptr=res)\n",
 			type.c_str());
 	} else {
 		if (drop_user) {
@@ -344,8 +478,89 @@ void isl_class::print_method(FunctionDecl *method, bool subclass, string super)
 			printf("            raise exc_info[0][0], "
 				"exc_info[0][1], exc_info[0][2]\n");
 		}
-		printf("        return res\n");
+		if (is_isl_bool(method->getReturnType())) {
+			printf("        if res < 0:\n");
+			printf("            raise\n");
+			printf("        return bool(res)\n");
+		} else {
+			printf("        return res\n");
+		}
 	}
+}
+
+/* Print part of an overloaded python method corresponding to the C function
+ * "method".
+ * "super" contains the superclasses of the class to which the method belongs.
+ *
+ * In particular, print code to test whether the arguments passed to
+ * the python method correspond to the arguments expected by "method"
+ * and to call "method" if they do.
+ */
+void isl_class::print_method_overload(FunctionDecl *method,
+	vector<string> super)
+{
+	string fullname = method->getName();
+	int num_params = method->getNumParams();
+	int first;
+	string type;
+
+	first = is_static(method) ? 0 : 1;
+
+	printf("        if ");
+	for (int i = first; i < num_params; ++i) {
+		if (i > first)
+			printf(" and ");
+		ParmVarDecl *param = method->getParamDecl(i);
+		if (is_isl_type(param->getOriginalType())) {
+			string type;
+			type = extract_type(param->getOriginalType());
+			type = type2python(type);
+			printf("arg%d.__class__ is %s", i, type.c_str());
+		} else
+			printf("type(arg%d) == str", i);
+	}
+	printf(":\n");
+	printf("            res = isl.%s(", fullname.c_str());
+	print_arg_in_call(method, 0, 0);
+	for (int i = 1; i < num_params; ++i) {
+		printf(", ");
+		print_arg_in_call(method, i, 0);
+	}
+	printf(")\n");
+	type = type2python(extract_type(method->getReturnType()));
+	printf("            return %s(ctx=arg0.ctx, ptr=res)\n", type.c_str());
+}
+
+/* Print a python method with a name derived from "fullname"
+ * corresponding to the C functions "methods".
+ * "super" contains the superclasses of the class to which the method belongs.
+ *
+ * If "methods" consists of a single element that is not marked overloaded,
+ * the use print_method to print the method.
+ * Otherwise, print an overloaded method with pieces corresponding
+ * to each function in "methods".
+ */
+void isl_class::print_method(const string &fullname,
+	const set<FunctionDecl *> &methods, vector<string> super)
+{
+	string cname;
+	set<FunctionDecl *>::const_iterator it;
+	int num_params;
+	FunctionDecl *any_method;
+
+	any_method = *methods.begin();
+	if (methods.size() == 1 && !is_overload(any_method)) {
+		print_method(any_method, super);
+		return;
+	}
+
+	cname = fullname.substr(name.length() + 1);
+	num_params = any_method->getNumParams();
+
+	print_method_header(is_static(any_method), cname, num_params);
+
+	for (it = methods.begin(); it != methods.end(); ++it)
+		print_method_overload(*it, super);
 }
 
 /* Print part of the constructor for this isl_class.
@@ -367,14 +582,17 @@ void isl_class::print_constructor(FunctionDecl *cons)
 	printf("        if len(args) == %d", num_params - drop_ctx);
 	for (int i = drop_ctx; i < num_params; ++i) {
 		ParmVarDecl *param = cons->getParamDecl(i);
-		if (is_isl_type(param->getOriginalType())) {
-			string type;
-			type = extract_type(param->getOriginalType());
-			type = type2python(type);
+		QualType type = param->getOriginalType();
+		if (is_isl_type(type)) {
+			string s;
+			s = type2python(extract_type(type));
 			printf(" and args[%d].__class__ is %s",
-				i - drop_ctx, type.c_str());
-		} else
+				i - drop_ctx, s.c_str());
+		} else if (type->isPointerType()) {
 			printf(" and type(args[%d]) == str", i - drop_ctx);
+		} else {
+			printf(" and type(args[%d]) == int", i - drop_ctx);
+		}
 	}
 	printf(":\n");
 	printf("            self.ctx = Context.getDefaultInstance()\n");
@@ -400,10 +618,73 @@ void isl_class::print_constructor(FunctionDecl *cons)
 	printf("            return\n");
 }
 
+/* Print the header of the class "name" with superclasses "super".
+ */
+static void print_class_header(const string &name, const vector<string> &super)
+{
+	printf("class %s", name.c_str());
+	if (super.size() > 0) {
+		printf("(");
+		for (int i = 0; i < super.size(); ++i) {
+			if (i > 0)
+				printf(", ");
+			printf("%s", type2python(super[i]).c_str());
+		}
+		printf(")");
+	}
+	printf(":\n");
+}
+
+/* Tell ctypes about the return type of "fd".
+ * In particular, if "fd" returns a pointer to an isl object,
+ * then tell ctypes it returns a "c_void_p".
+ * Similarly, if "fd" returns an isl_bool,
+ * then tell ctypes it returns a "c_bool".
+ */
+static void print_restype(FunctionDecl *fd)
+{
+	string fullname = fd->getName();
+	QualType type = fd->getReturnType();
+	if (is_isl_type(type))
+		printf("isl.%s.restype = c_void_p\n", fullname.c_str());
+	else if (is_isl_bool(type))
+		printf("isl.%s.restype = c_bool\n", fullname.c_str());
+}
+
+/* Tell ctypes about the types of the arguments of the function "fd".
+ */
+static void print_argtypes(FunctionDecl *fd)
+{
+	string fullname = fd->getName();
+	int n = fd->getNumParams();
+	int drop_user = 0;
+
+	printf("isl.%s.argtypes = [", fullname.c_str());
+	for (int i = 0; i < n - drop_user; ++i) {
+		ParmVarDecl *param = fd->getParamDecl(i);
+		QualType type = param->getOriginalType();
+		if (is_callback(type))
+			drop_user = 1;
+		if (i)
+			printf(", ");
+		if (is_isl_ctx(type))
+			printf("Context");
+		else if (is_isl_type(type) || is_callback(type))
+			printf("c_void_p");
+		else if (is_string(type))
+			printf("c_char_p");
+		else
+			printf("c_int");
+	}
+	if (drop_user)
+		printf(", c_void_p");
+	printf("]\n");
+}
+
 /* Print out the definition of this isl_class.
  *
- * We first check if this isl_class is a subclass of some other class.
- * If it is, we make sure the superclass is printed out first.
+ * We first check if this isl_class is a subclass of one or more other classes.
+ * If it is, we make sure those superclasses are printed out first.
  *
  * Then we print a constructor with several cases, one for constructing
  * a Python object from a return value and one for each function that
@@ -418,20 +699,18 @@ void isl_class::print_constructor(FunctionDecl *cons)
  */
 void isl_class::print(map<string, isl_class> &classes, set<string> &done)
 {
-	string super;
 	string p_name = type2python(name);
 	set<FunctionDecl *>::iterator in;
-	bool subclass = is_subclass(type, super);
+	map<string, set<FunctionDecl *> >::iterator it;
+	vector<string> super = find_superclasses(type);
 
-	if (subclass && done.find(super) == done.end())
-		classes[super].print(classes, done);
+	for (int i = 0; i < super.size(); ++i)
+		if (done.find(super[i]) == done.end())
+			classes[super[i]].print(classes, done);
 	done.insert(name);
 
 	printf("\n");
-	printf("class %s", p_name.c_str());
-	if (subclass)
-		printf("(%s)", type2python(super).c_str());
-	printf(":\n");
+	print_class_header(p_name, super);
 	printf("    def __init__(self, *args, **keywords):\n");
 
 	printf("        if \"ptr\" in keywords:\n");
@@ -451,38 +730,27 @@ void isl_class::print(map<string, isl_class> &classes, set<string> &done)
 	printf("        libc.free(ptr)\n");
 	printf("        return res\n");
 	printf("    def __repr__(self):\n");
-	printf("        return 'isl.%s(\"%%s\")' %% str(self)\n",
+	printf("        s = str(self)\n");
+	printf("        if '\"' in s:\n");
+	printf("            return 'isl.%s(\"\"\"%%s\"\"\")' %% s\n",
+		p_name.c_str());
+	printf("        else:\n");
+	printf("            return 'isl.%s(\"%%s\")' %% s\n",
 		p_name.c_str());
 
-	for (in = methods.begin(); in != methods.end(); ++in)
-		print_method(*in, subclass, super);
+	for (it = methods.begin(); it != methods.end(); ++it)
+		print_method(it->first, it->second, super);
 
 	printf("\n");
 	for (in = constructors.begin(); in != constructors.end(); ++in) {
-		string fullname = (*in)->getName();
-		printf("isl.%s.restype = c_void_p\n", fullname.c_str());
-		printf("isl.%s.argtypes = [", fullname.c_str());
-		for (int i = 0; i < (*in)->getNumParams(); ++i) {
-			ParmVarDecl *param = (*in)->getParamDecl(i);
-			QualType type = param->getOriginalType();
-			if (i)
-				printf(", ");
-			if (is_isl_ctx(type))
-				printf("Context");
-			else if (is_isl_type(type))
-				printf("c_void_p");
-			else if (is_string(type))
-				printf("c_char_p");
-			else
-				printf("c_int");
+		print_restype(*in);
+		print_argtypes(*in);
+	}
+	for (it = methods.begin(); it != methods.end(); ++it)
+		for (in = it->second.begin(); in != it->second.end(); ++in) {
+			print_restype(*in);
+			print_argtypes(*in);
 		}
-		printf("]\n");
-	}
-	for (in = methods.begin(); in != methods.end(); ++in) {
-		string fullname = (*in)->getName();
-		if (is_isl_type((*in)->getReturnType()))
-			printf("isl.%s.restype = c_void_p\n", fullname.c_str());
-	}
 	printf("isl.%s_free.argtypes = [c_void_p]\n", name.c_str());
 	printf("isl.%s_to_str.argtypes = [c_void_p]\n", name.c_str());
 	printf("isl.%s_to_str.restype = POINTER(c_char)\n", name.c_str());
@@ -490,7 +758,9 @@ void isl_class::print(map<string, isl_class> &classes, set<string> &done)
 
 /* Generate a python interface based on the extracted types and functions.
  * We first collect all functions that belong to a certain type,
- * separating constructors from regular methods.
+ * separating constructors from regular methods.  If there are any
+ * overloaded functions, then they are grouped based on their name
+ * after removing the argument type suffix.
  *
  * Then we print out each class in turn.  If one of these is a subclass
  * of some other class, it will make sure the superclass is printed out first.
@@ -511,11 +781,17 @@ void generate_python(set<RecordDecl *> &types, set<FunctionDecl *> functions)
 
 	set<FunctionDecl *>::iterator in;
 	for (in = functions.begin(); in != functions.end(); ++in) {
-		isl_class &c = method2class(classes, *in);
-		if (is_constructor(*in))
-			c.constructors.insert(*in);
-		else
-			c.methods.insert(*in);
+		isl_class *c = method2class(classes, *in);
+		if (!c)
+			continue;
+		if (is_constructor(*in)) {
+			c->constructors.insert(*in);
+		} else {
+			FunctionDecl *method = *in;
+			string fullname = method->getName();
+			fullname = drop_type_suffix(fullname, method);
+			c->methods[fullname].insert(method);
+		}
 	}
 
 	for (ci = classes.begin(); ci != classes.end(); ++ci) {

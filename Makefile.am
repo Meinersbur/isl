@@ -140,6 +140,7 @@ libisl_la_SOURCES = \
 	isl_options.c \
 	isl_options_private.h \
 	isl_output.c \
+	isl_output_private.h \
 	isl_point_private.h \
 	isl_point.c \
 	isl_polynomial_private.h \
