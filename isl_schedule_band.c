@@ -1168,8 +1168,7 @@ error:
  * We apply the transformation even if "n" is zero to ensure consistent
  * behavior with respect to changes in the schedule space.
  *
- * The loop AST generation types for the isolated part become
- * meaningless after dropping dimensions, so we remove them.
+ * The caller is responsible for updating the isolate option.
  */
 __isl_give isl_schedule_band *isl_schedule_band_drop(
 	__isl_take isl_schedule_band *band, int pos, int n)
@@ -1195,8 +1194,10 @@ __isl_give isl_schedule_band *isl_schedule_band_drop(
 	if (band->loop_type)
 		for (i = pos + n; i < band->n; ++i)
 			band->loop_type[i - n] = band->loop_type[i];
-	free(band->isolate_loop_type);
-	band->isolate_loop_type = NULL;
+	if (band->isolate_loop_type)
+		for (i = pos + n; i < band->n; ++i)
+			band->isolate_loop_type[i - n] =
+						    band->isolate_loop_type[i];
 
 	band->n -= n;
 

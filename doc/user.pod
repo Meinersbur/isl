@@ -8504,6 +8504,8 @@ using the following function.
 The resulting outer band node contains the first C<pos> dimensions of
 the schedule of C<node> while the inner band contains the remaining dimensions.
 The schedules of the two band nodes live in anonymous spaces.
+The loop AST generation type options and the isolate option
+are split over the the two band nodes.
 
 A band node can be moved down to the leaves of the subtree rooted
 at the band node using the following function.

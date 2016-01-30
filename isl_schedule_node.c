@@ -1959,14 +1959,18 @@ __isl_give isl_schedule_node *isl_schedule_node_band_sink(
 /* Split "node" into two nested band nodes, one with the first "pos"
  * dimensions and one with the remaining dimensions.
  * The schedules of the two band nodes live in anonymous spaces.
+ * The loop AST generation type options and the isolate option
+ * are split over the the two band nodes.
  */
 __isl_give isl_schedule_node *isl_schedule_node_band_split(
 	__isl_take isl_schedule_node *node, int pos)
 {
+	int depth;
 	isl_schedule_tree *tree;
 
+	depth = isl_schedule_node_get_schedule_depth(node);
 	tree = isl_schedule_node_get_tree(node);
-	tree = isl_schedule_tree_band_split(tree, pos);
+	tree = isl_schedule_tree_band_split(tree, pos, depth);
 	return isl_schedule_node_graft_tree(node, tree);
 }
 

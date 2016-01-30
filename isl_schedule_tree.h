@@ -232,7 +232,7 @@ __isl_give isl_schedule_tree *isl_schedule_tree_band_shift(
 	__isl_take isl_schedule_tree *tree,
 	__isl_take isl_multi_union_pw_aff *shift);
 __isl_give isl_schedule_tree *isl_schedule_tree_band_split(
-	__isl_take isl_schedule_tree *tree, int pos);
+	__isl_take isl_schedule_tree *tree, int pos, int depth);
 __isl_give isl_schedule_tree *isl_schedule_tree_band_gist(
 	__isl_take isl_schedule_tree *tree, __isl_take isl_union_set *context);
 
