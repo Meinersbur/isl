@@ -1284,6 +1284,22 @@ error:
 	return NULL;
 }
 
+/* Return the "isolate" option associated to the band tree root of "tree",
+ * which is assumed to appear at schedule depth "depth".
+ */
+__isl_give isl_set *isl_schedule_tree_band_get_ast_isolate_option(
+	__isl_keep isl_schedule_tree *tree, int depth)
+{
+	if (!tree)
+		return NULL;
+
+	if (tree->type != isl_schedule_node_band)
+		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_invalid,
+			"not a band node", return NULL);
+
+	return isl_schedule_band_get_ast_isolate_option(tree->band, depth);
+}
+
 /* Return the context of the context tree root.
  */
 __isl_give isl_set *isl_schedule_tree_context_get_context(

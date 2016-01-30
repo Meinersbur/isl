@@ -907,6 +907,33 @@ error:
 	return NULL;
 }
 
+/* Return the "isolate" option associated to "band", assuming
+ * it at appears at schedule depth "depth".
+ *
+ * The isolate option is of the form
+ *
+ *	isolate[[flattened outer bands] -> band]
+ */
+__isl_give isl_set *isl_schedule_band_get_ast_isolate_option(
+	__isl_keep isl_schedule_band *band, int depth)
+{
+	isl_space *space;
+	isl_set *isolate;
+
+	if (!band)
+		return NULL;
+
+	space = isl_schedule_band_get_space(band);
+	space = isl_space_from_range(space);
+	space = isl_space_add_dims(space, isl_dim_in, depth);
+	space = isl_space_wrap(space);
+	space = isl_space_set_tuple_name(space, isl_dim_set, "isolate");
+
+	isolate = isl_union_set_extract_set(band->ast_build_options, space);
+
+	return isolate;
+}
+
 /* Multiply the partial schedule of "band" with the factors in "mv".
  * Replace the result by its greatest integer part to ensure
  * that the schedule is always integral.

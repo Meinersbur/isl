@@ -1670,6 +1670,20 @@ error:
 	return NULL;
 }
 
+/* Return the "isolate" option associated to band node "node".
+ */
+__isl_give isl_set *isl_schedule_node_band_get_ast_isolate_option(
+	__isl_keep isl_schedule_node *node)
+{
+	int depth;
+
+	if (!node)
+		return NULL;
+
+	depth = isl_schedule_node_get_schedule_depth(node);
+	return isl_schedule_tree_band_get_ast_isolate_option(node->tree, depth);
+}
+
 /* Make sure that that spaces of "node" and "mv" are the same.
  * Return -1 on error, reporting the error to the user.
  */
