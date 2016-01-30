@@ -934,6 +934,30 @@ __isl_give isl_set *isl_schedule_band_get_ast_isolate_option(
 	return isolate;
 }
 
+/* Replace the option "drop" in the AST build options by "add".
+ * That is, remove "drop" and add "add".
+ */
+__isl_give isl_schedule_band *isl_schedule_band_replace_ast_build_option(
+	__isl_take isl_schedule_band *band, __isl_take isl_set *drop,
+	__isl_take isl_set *add)
+{
+	isl_union_set *options;
+
+	band = isl_schedule_band_cow(band);
+	if (!band)
+		return NULL;
+
+	options = band->ast_build_options;
+	options = isl_union_set_subtract(options, isl_union_set_from_set(drop));
+	options = isl_union_set_union(options, isl_union_set_from_set(add));
+	band->ast_build_options = options;
+
+	if (!band->ast_build_options)
+		return isl_schedule_band_free(band);
+
+	return band;
+}
+
 /* Multiply the partial schedule of "band" with the factors in "mv".
  * Replace the result by its greatest integer part to ensure
  * that the schedule is always integral.
