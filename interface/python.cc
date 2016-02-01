@@ -625,7 +625,7 @@ static void print_class_header(const string &name, const vector<string> &super)
 	printf("class %s", name.c_str());
 	if (super.size() > 0) {
 		printf("(");
-		for (int i = 0; i < super.size(); ++i) {
+		for (unsigned i = 0; i < super.size(); ++i) {
 			if (i > 0)
 				printf(", ");
 			printf("%s", type2python(super[i]).c_str());
