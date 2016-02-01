@@ -704,7 +704,7 @@ void isl_class::print(map<string, isl_class> &classes, set<string> &done)
 	map<string, set<FunctionDecl *> >::iterator it;
 	vector<string> super = find_superclasses(type);
 
-	for (int i = 0; i < super.size(); ++i)
+	for (unsigned i = 0; i < super.size(); ++i)
 		if (done.find(super[i]) == done.end())
 			classes[super[i]].print(classes, done);
 	done.insert(name);
