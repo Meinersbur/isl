@@ -362,7 +362,7 @@ int main(int argc, char *argv[])
 	PreprocessorOptions &PO = Clang->getPreprocessorOpts();
 	HSO.ResourceDir = ResourceDir;
 
-	for (int i = 0; i < Includes.size(); ++i)
+	for (llvm::cl::list<string>::size_type i = 0; i < Includes.size(); ++i)
 		add_path(HSO, Includes[i]);
 
 	PO.addMacroDef("__isl_give=__attribute__((annotate(\"isl_give\")))");
