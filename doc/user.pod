@@ -3627,6 +3627,25 @@ the file.  When called on a string printer, the buffer is cleared.
 	__isl_give isl_printer *isl_printer_flush(
 		__isl_take isl_printer *p);
 
+The following functions allow the user to attach
+notes to a printer in order to keep track of additional state.
+
+	#include <isl/printer.h>
+	isl_bool isl_printer_has_note(__isl_keep isl_printer *p,
+		__isl_keep isl_id *id);
+	__isl_give isl_id *isl_printer_get_note(
+		__isl_keep isl_printer *p, __isl_take isl_id *id);
+	__isl_give isl_printer *isl_printer_set_note(
+		__isl_take isl_printer *p,
+		__isl_take isl_id *id, __isl_take isl_id *note);
+
+C<isl_printer_set_note> associates the given note to the given
+identifier in the printer.
+C<isl_printer_get_note> retrieves a note associated to an
+identifier, while
+C<isl_printer_has_note> checks if there is such a note.
+C<isl_printer_get_note> fails if the requested note does not exist.
+
 Alternatively, a string representation can be obtained
 directly using the following functions, which always print
 in isl format.
