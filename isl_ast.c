@@ -1332,6 +1332,7 @@ static char *op_str[] = {
 	[isl_ast_op_add] = "+",
 	[isl_ast_op_sub] = "-",
 	[isl_ast_op_mul] = "*",
+	[isl_ast_op_fdiv_q] = "floord",
 	[isl_ast_op_pdiv_q] = "/",
 	[isl_ast_op_pdiv_r] = "%",
 	[isl_ast_op_zdiv_r] = "%",
@@ -1580,7 +1581,9 @@ __isl_give isl_printer *isl_printer_print_ast_expr(__isl_take isl_printer *p,
 			break;
 		}
 		if (expr->u.op.op == isl_ast_op_fdiv_q) {
-			p = isl_printer_print_str(p, "floord(");
+			const char *name = op_str[isl_ast_op_fdiv_q];
+			p = isl_printer_print_str(p, name);
+			p = isl_printer_print_str(p, "(");
 			p = isl_printer_print_ast_expr(p, expr->u.op.args[0]);
 			p = isl_printer_print_str(p, ", ");
 			p = isl_printer_print_ast_expr(p, expr->u.op.args[1]);
@@ -2144,20 +2147,26 @@ __isl_give isl_printer *isl_ast_op_type_print_macro(
 	switch (type) {
 	case isl_ast_op_min:
 		p = isl_printer_start_line(p);
+		p = isl_printer_print_str(p, "#define ");
+		p = isl_printer_print_str(p, op_str[type]);
 		p = isl_printer_print_str(p,
-			"#define min(x,y)    ((x) < (y) ? (x) : (y))");
+			"(x,y)    ((x) < (y) ? (x) : (y))");
 		p = isl_printer_end_line(p);
 		break;
 	case isl_ast_op_max:
 		p = isl_printer_start_line(p);
+		p = isl_printer_print_str(p, "#define ");
+		p = isl_printer_print_str(p, op_str[type]);
 		p = isl_printer_print_str(p,
-			"#define max(x,y)    ((x) > (y) ? (x) : (y))");
+			"(x,y)    ((x) > (y) ? (x) : (y))");
 		p = isl_printer_end_line(p);
 		break;
 	case isl_ast_op_fdiv_q:
 		p = isl_printer_start_line(p);
+		p = isl_printer_print_str(p, "#define ");
+		p = isl_printer_print_str(p, op_str[type]);
 		p = isl_printer_print_str(p,
-			"#define floord(n,d) "
+			"(n,d) "
 			"(((n)<0) ? -((-(n)+(d)-1)/(d)) : (n)/(d))");
 		p = isl_printer_end_line(p);
 		break;
