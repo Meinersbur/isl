@@ -7,6 +7,8 @@
  * Ecole Normale Superieure, 45 rue d’Ulm, 75230 Paris, France
  */
 
+#include <string.h>
+
 #include <isl_ast_private.h>
 
 #undef BASE
@@ -1490,6 +1492,157 @@ static __isl_give isl_printer *print_sub_expr(__isl_take isl_printer *p,
 	return p;
 }
 
+#define isl_ast_op_last	isl_ast_op_address_of
+
+/* Data structure that holds the user-specified textual
+ * representations for the operators.
+ * The entries are either NULL or copies of strings.
+ * A NULL entry means that the default name should be used.
+ */
+struct isl_ast_op_names {
+	char *op_str[isl_ast_op_last + 1];
+};
+
+/* Create an empty struct isl_ast_op_names.
+ */
+static void *create_names(isl_ctx *ctx)
+{
+	return isl_calloc_type(ctx, struct isl_ast_op_names);
+}
+
+/* Free a struct isl_ast_op_names along with all memory
+ * owned by the struct.
+ */
+static void free_names(void *user)
+{
+	int i;
+	struct isl_ast_op_names *names = user;
+
+	if (!user)
+		return;
+
+	for (i = 0; i <= isl_ast_op_last; ++i)
+		free(names->op_str[i]);
+	free(user);
+}
+
+/* Create an identifier that is used to store
+ * an isl_ast_op_names note.
+ */
+static __isl_give isl_id *names_id(isl_ctx *ctx)
+{
+	return isl_id_alloc(ctx, "isl_ast_op_type_names", NULL);
+}
+
+/* Ensure that "p" has a note identified by "id".
+ * If there is no such note yet, then it is created by "note_create" and
+ * scheduled do be freed by "note_free".
+ */
+static __isl_give isl_printer *alloc_note(__isl_take isl_printer *p,
+	__isl_keep isl_id *id, void *(*note_create)(isl_ctx *),
+	void (*note_free)(void *))
+{
+	isl_ctx *ctx;
+	isl_id *note_id;
+	isl_bool has_note;
+	void *note;
+
+	has_note = isl_printer_has_note(p, id);
+	if (has_note < 0)
+		return isl_printer_free(p);
+	if (has_note)
+		return p;
+
+	ctx = isl_printer_get_ctx(p);
+	note = note_create(ctx);
+	if (!note)
+		return isl_printer_free(p);
+	note_id = isl_id_alloc(ctx, NULL, note);
+	if (!note_id)
+		note_free(note);
+	else
+		note_id = isl_id_set_free_user(note_id, note_free);
+
+	p = isl_printer_set_note(p, isl_id_copy(id), note_id);
+
+	return p;
+}
+
+/* Ensure that "p" has an isl_ast_op_names note identified by "id".
+ */
+static __isl_give isl_printer *alloc_names(__isl_take isl_printer *p,
+	__isl_keep isl_id *id)
+{
+	return alloc_note(p, id, &create_names, &free_names);
+}
+
+/* Retrieve the note identified by "id" from "p".
+ * The note is assumed to exist.
+ */
+static void *get_note(__isl_keep isl_printer *p, __isl_keep isl_id *id)
+{
+	void *note;
+
+	id = isl_printer_get_note(p, isl_id_copy(id));
+	note = isl_id_get_user(id);
+	isl_id_free(id);
+
+	return note;
+}
+
+/* Use "name" to print operations of type "type" to "p".
+ *
+ * Store the name in an isl_ast_op_names note attached to "p", such that
+ * it can be retrieved by get_op_str.
+ */
+__isl_give isl_printer *isl_ast_op_type_set_print_name(
+	__isl_take isl_printer *p, enum isl_ast_op_type type,
+	__isl_keep const char *name)
+{
+	isl_id *id;
+	struct isl_ast_op_names *names;
+
+	if (!p)
+		return NULL;
+	if (type > isl_ast_op_last)
+		isl_die(isl_printer_get_ctx(p), isl_error_invalid,
+			"invalid type", return isl_printer_free(p));
+
+	id = names_id(isl_printer_get_ctx(p));
+	p = alloc_names(p, id);
+	names = get_note(p, id);
+	isl_id_free(id);
+	if (!names)
+		return isl_printer_free(p);
+	free(names->op_str[type]);
+	names->op_str[type] = strdup(name);
+
+	return p;
+}
+
+/* Return the textual representation of "type".
+ *
+ * If there is a user-specified name in an isl_ast_op_names note
+ * associated to "p", then return that.
+ * Otherwise, return the default name in op_str.
+ */
+static const char *get_op_str(__isl_keep isl_printer *p,
+	enum isl_ast_op_type type)
+{
+	isl_id *id;
+	isl_bool has_names;
+	struct isl_ast_op_names *names = NULL;
+
+	id = names_id(isl_printer_get_ctx(p));
+	has_names = isl_printer_has_note(p, id);
+	if (has_names >= 0 && has_names)
+		names = get_note(p, id);
+	isl_id_free(id);
+	if (names && names->op_str[type])
+		return names->op_str[type];
+	return op_str[type];
+}
+
 /* Print a min or max reduction "expr".
  */
 static __isl_give isl_printer *print_min_max(__isl_take isl_printer *p,
@@ -1498,7 +1651,7 @@ static __isl_give isl_printer *print_min_max(__isl_take isl_printer *p,
 	int i = 0;
 
 	for (i = 1; i < expr->u.op.n_arg; ++i) {
-		p = isl_printer_print_str(p, op_str[expr->u.op.op]);
+		p = isl_printer_print_str(p, get_op_str(p, expr->u.op.op));
 		p = isl_printer_print_str(p, "(");
 	}
 	p = isl_printer_print_ast_expr(p, expr->u.op.args[0]);
@@ -1575,13 +1728,14 @@ __isl_give isl_printer *isl_printer_print_ast_expr(__isl_take isl_printer *p,
 			break;
 		}
 		if (expr->u.op.n_arg == 1) {
-			p = isl_printer_print_str(p, op_str[expr->u.op.op]);
+			p = isl_printer_print_str(p,
+						get_op_str(p, expr->u.op.op));
 			p = print_sub_expr(p, expr->u.op.op,
 						expr->u.op.args[0], 0);
 			break;
 		}
 		if (expr->u.op.op == isl_ast_op_fdiv_q) {
-			const char *name = op_str[isl_ast_op_fdiv_q];
+			const char *name = get_op_str(p, isl_ast_op_fdiv_q);
 			p = isl_printer_print_str(p, name);
 			p = isl_printer_print_str(p, "(");
 			p = isl_printer_print_ast_expr(p, expr->u.op.args[0]);
@@ -1611,7 +1765,7 @@ __isl_give isl_printer *isl_printer_print_ast_expr(__isl_take isl_printer *p,
 		p = print_sub_expr(p, expr->u.op.op, expr->u.op.args[0], 1);
 		if (expr->u.op.op != isl_ast_op_member)
 			p = isl_printer_print_str(p, " ");
-		p = isl_printer_print_str(p, op_str[expr->u.op.op]);
+		p = isl_printer_print_str(p, get_op_str(p, expr->u.op.op));
 		if (expr->u.op.op != isl_ast_op_member)
 			p = isl_printer_print_str(p, " ");
 		p = print_sub_expr(p, expr->u.op.op, expr->u.op.args[1], 0);
@@ -2148,7 +2302,7 @@ __isl_give isl_printer *isl_ast_op_type_print_macro(
 	case isl_ast_op_min:
 		p = isl_printer_start_line(p);
 		p = isl_printer_print_str(p, "#define ");
-		p = isl_printer_print_str(p, op_str[type]);
+		p = isl_printer_print_str(p, get_op_str(p, type));
 		p = isl_printer_print_str(p,
 			"(x,y)    ((x) < (y) ? (x) : (y))");
 		p = isl_printer_end_line(p);
@@ -2156,7 +2310,7 @@ __isl_give isl_printer *isl_ast_op_type_print_macro(
 	case isl_ast_op_max:
 		p = isl_printer_start_line(p);
 		p = isl_printer_print_str(p, "#define ");
-		p = isl_printer_print_str(p, op_str[type]);
+		p = isl_printer_print_str(p, get_op_str(p, type));
 		p = isl_printer_print_str(p,
 			"(x,y)    ((x) > (y) ? (x) : (y))");
 		p = isl_printer_end_line(p);
@@ -2164,7 +2318,7 @@ __isl_give isl_printer *isl_ast_op_type_print_macro(
 	case isl_ast_op_fdiv_q:
 		p = isl_printer_start_line(p);
 		p = isl_printer_print_str(p, "#define ");
-		p = isl_printer_print_str(p, op_str[type]);
+		p = isl_printer_print_str(p, get_op_str(p, type));
 		p = isl_printer_print_str(p,
 			"(n,d) "
 			"(((n)<0) ? -((-(n)+(d)-1)/(d)) : (n)/(d))");
