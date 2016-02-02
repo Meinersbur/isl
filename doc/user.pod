@@ -7253,7 +7253,8 @@ Lists can be printed using
 Associative arrays map isl objects of a specific type to isl objects
 of some (other) specific type.  They are defined for several pairs
 of types, including (C<isl_map>, C<isl_basic_set>),
-(C<isl_id>, C<isl_ast_expr>) and.
+(C<isl_id>, C<isl_ast_expr>),
+(C<isl_id>, C<isl_id>) and
 (C<isl_id>, C<isl_pw_aff>).
 Here, we take associative arrays that map C<isl_id>s to C<isl_ast_expr>s
 as an example.
