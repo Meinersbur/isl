@@ -3,13 +3,11 @@
 
 #include <stdio.h>
 #include <isl/ctx.h>
+#include <isl/printer_type.h>
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
-
-struct isl_printer;
-typedef struct isl_printer isl_printer;
 
 __isl_give isl_printer *isl_printer_to_file(isl_ctx *ctx, FILE *file);
 __isl_give isl_printer *isl_printer_to_str(isl_ctx *ctx);

@@ -275,6 +275,7 @@ pkginclude_HEADERS = \
 	include/isl/polynomial.h \
 	include/isl/polynomial_type.h \
 	include/isl/printer.h \
+	include/isl/printer_type.h \
 	include/isl/schedule.h \
 	include/isl/schedule_node.h \
 	include/isl/schedule_type.h \
