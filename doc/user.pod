@@ -869,7 +869,7 @@ using the following functions.
 		__isl_keep const char *name, void *user);
 	__isl_give isl_id *isl_id_set_free_user(
 		__isl_take isl_id *id,
-		__isl_give void (*free_user)(void *user));
+		void (*free_user)(void *user));
 	__isl_give isl_id *isl_id_copy(isl_id *id);
 	__isl_null isl_id *isl_id_free(__isl_take isl_id *id);
 
