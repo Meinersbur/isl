@@ -2293,11 +2293,101 @@ static int ast_node_list_required_macros(__isl_keep isl_ast_node_list *list,
 	return macros;
 }
 
+/* Data structure for keeping track of whether a macro definition
+ * for a given type has already been printed.
+ * The value is zero if no definition has been printed and non-zero otherwise.
+ */
+struct isl_ast_op_printed {
+	char printed[isl_ast_op_last + 1];
+};
+
+/* Create an empty struct isl_ast_op_printed.
+ */
+static void *create_printed(isl_ctx *ctx)
+{
+	return isl_calloc_type(ctx, struct isl_ast_op_printed);
+}
+
+/* Free a struct isl_ast_op_printed.
+ */
+static void free_printed(void *user)
+{
+	free(user);
+}
+
+/* Ensure that "p" has an isl_ast_op_printed note identified by "id".
+ */
+static __isl_give isl_printer *alloc_printed(__isl_take isl_printer *p,
+	__isl_keep isl_id *id)
+{
+	return alloc_note(p, id, &create_printed, &free_printed);
+}
+
+/* Create an identifier that is used to store
+ * an isl_ast_op_printed note.
+ */
+static __isl_give isl_id *printed_id(isl_ctx *ctx)
+{
+	return isl_id_alloc(ctx, "isl_ast_op_type_printed", NULL);
+}
+
+/* Did the user specify that a macro definition should only be
+ * printed once and has a macro definition for "type" already
+ * been printed to "p"?
+ * If definitions should only be printed once, but a definition
+ * for "p" has not yet been printed, then mark it as having been
+ * printed so that it will not printed again.
+ * The actual printing is taken care of by the caller.
+ */
+static isl_bool already_printed_once(__isl_keep isl_printer *p,
+	enum isl_ast_op_type type)
+{
+	isl_ctx *ctx;
+	isl_id *id;
+	struct isl_ast_op_printed *printed;
+
+	if (!p)
+		return isl_bool_error;
+
+	ctx = isl_printer_get_ctx(p);
+	if (!isl_options_get_ast_print_macro_once(ctx))
+		return isl_bool_false;
+
+	if (type > isl_ast_op_last)
+		isl_die(isl_printer_get_ctx(p), isl_error_invalid,
+			"invalid type", return isl_bool_error);
+
+	id = printed_id(isl_printer_get_ctx(p));
+	p = alloc_printed(p, id);
+	printed = get_note(p, id);
+	isl_id_free(id);
+	if (!printed)
+		return isl_bool_error;
+
+	if (printed->printed[type])
+		return isl_bool_true;
+
+	printed->printed[type] = 1;
+	return isl_bool_false;
+}
+
 /* Print a macro definition for the operator "type".
+ *
+ * If the user has specified that a macro definition should
+ * only be printed once to any given printer and if the macro definition
+ * has already been printed to "p", then do not print the definition.
  */
 __isl_give isl_printer *isl_ast_op_type_print_macro(
 	enum isl_ast_op_type type, __isl_take isl_printer *p)
 {
+	isl_bool skip;
+
+	skip = already_printed_once(p, type);
+	if (skip < 0)
+		return isl_printer_free(p);
+	if (skip)
+		return p;
+
 	switch (type) {
 	case isl_ast_op_min:
 		p = isl_printer_start_line(p);
