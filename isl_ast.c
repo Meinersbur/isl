@@ -2201,7 +2201,7 @@ static isl_stat ast_op_type_print_macro(enum isl_ast_op_type type, void *user)
 }
 
 /* Print macro definitions for all the macros used in the result
- * of printing "node.
+ * of printing "node".
  */
 __isl_give isl_printer *isl_ast_node_print_macros(
 	__isl_keep isl_ast_node *node, __isl_take isl_printer *p)
