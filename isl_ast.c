@@ -2331,6 +2331,22 @@ __isl_give isl_printer *isl_ast_op_type_print_macro(
 	return p;
 }
 
+/* Call "fn" for each type of operation represented in the "macros"
+ * bit vector.
+ */
+static isl_stat foreach_ast_op_type(int macros,
+	isl_stat (*fn)(enum isl_ast_op_type type, void *user), void *user)
+{
+	if (macros & ISL_AST_MACRO_MIN && fn(isl_ast_op_min, user) < 0)
+		return isl_stat_error;
+	if (macros & ISL_AST_MACRO_MAX && fn(isl_ast_op_max, user) < 0)
+		return isl_stat_error;
+	if (macros & ISL_AST_MACRO_FLOORD && fn(isl_ast_op_fdiv_q, user) < 0)
+		return isl_stat_error;
+
+	return isl_stat_ok;
+}
+
 /* Call "fn" for each type of operation that appears in "node"
  * and that requires a macro definition.
  */
@@ -2343,15 +2359,7 @@ isl_stat isl_ast_node_foreach_ast_op_type(__isl_keep isl_ast_node *node,
 		return isl_stat_error;
 
 	macros = ast_node_required_macros(node, 0);
-
-	if (macros & ISL_AST_MACRO_MIN && fn(isl_ast_op_min, user) < 0)
-		return isl_stat_error;
-	if (macros & ISL_AST_MACRO_MAX && fn(isl_ast_op_max, user) < 0)
-		return isl_stat_error;
-	if (macros & ISL_AST_MACRO_FLOORD && fn(isl_ast_op_fdiv_q, user) < 0)
-		return isl_stat_error;
-
-	return isl_stat_ok;
+	return foreach_ast_op_type(macros, fn, user);
 }
 
 static isl_stat ast_op_type_print_macro(enum isl_ast_op_type type, void *user)
