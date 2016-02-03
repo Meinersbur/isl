@@ -2387,6 +2387,18 @@ static isl_stat ast_op_type_print_macro(enum isl_ast_op_type type, void *user)
 }
 
 /* Print macro definitions for all the macros used in the result
+ * of printing "expr".
+ */
+__isl_give isl_printer *isl_ast_expr_print_macros(
+	__isl_keep isl_ast_expr *expr, __isl_take isl_printer *p)
+{
+	if (isl_ast_expr_foreach_ast_op_type(expr,
+					    &ast_op_type_print_macro, &p) < 0)
+		return isl_printer_free(p);
+	return p;
+}
+
+/* Print macro definitions for all the macros used in the result
  * of printing "node".
  */
 __isl_give isl_printer *isl_ast_node_print_macros(

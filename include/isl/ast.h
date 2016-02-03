@@ -159,6 +159,8 @@ __isl_give isl_printer *isl_ast_op_type_set_print_name(
 	__isl_keep const char *name);
 __isl_give isl_printer *isl_ast_op_type_print_macro(
 	enum isl_ast_op_type type, __isl_take isl_printer *p);
+__isl_give isl_printer *isl_ast_expr_print_macros(
+	__isl_keep isl_ast_expr *expr, __isl_take isl_printer *p);
 __isl_give isl_printer *isl_ast_node_print_macros(
 	__isl_keep isl_ast_node *node, __isl_take isl_printer *p);
 __isl_give isl_printer *isl_ast_node_print(__isl_keep isl_ast_node *node,
