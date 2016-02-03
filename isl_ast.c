@@ -2347,6 +2347,21 @@ static isl_stat foreach_ast_op_type(int macros,
 	return isl_stat_ok;
 }
 
+/* Call "fn" for each type of operation that appears in "expr"
+ * and that requires a macro definition.
+ */
+isl_stat isl_ast_expr_foreach_ast_op_type(__isl_keep isl_ast_expr *expr,
+	isl_stat (*fn)(enum isl_ast_op_type type, void *user), void *user)
+{
+	int macros;
+
+	if (!expr)
+		return isl_stat_error;
+
+	macros = ast_expr_required_macros(expr, 0);
+	return foreach_ast_op_type(macros, fn, user);
+}
+
 /* Call "fn" for each type of operation that appears in "node"
  * and that requires a macro definition.
  */
