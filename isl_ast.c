@@ -1321,6 +1321,84 @@ error:
 	return isl_ast_node_free(node);
 }
 
+/* Traverse the elements of "list" and all their descendants
+ * in depth first preorder.
+ *
+ * Return isl_stat_ok on success and isl_stat_error on failure.
+ */
+static isl_stat nodelist_foreach(__isl_keep isl_ast_node_list *list,
+	isl_bool (*fn)(__isl_keep isl_ast_node *node, void *user), void *user)
+{
+	int i;
+
+	if (!list)
+		return isl_stat_error;
+
+	for (i = 0; i < list->n; ++i) {
+		isl_stat ok;
+		isl_ast_node *node = list->p[i];
+
+		ok = isl_ast_node_foreach_descendant_top_down(node, fn, user);
+		if (ok < 0)
+			return isl_stat_error;
+	}
+
+	return isl_stat_ok;
+}
+
+/* Traverse the descendants of "node" (including the node itself)
+ * in depth first preorder.
+ *
+ * If "fn" returns isl_bool_error on any of the nodes, then the traversal
+ * is aborted.
+ * If "fn" returns isl_bool_false on any of the nodes, then the subtree rooted
+ * at that node is skipped.
+ *
+ * Return isl_stat_ok on success and isl_stat_error on failure.
+ */
+isl_stat isl_ast_node_foreach_descendant_top_down(
+	__isl_keep isl_ast_node *node,
+	isl_bool (*fn)(__isl_keep isl_ast_node *node, void *user), void *user)
+{
+	isl_bool more;
+	isl_stat ok;
+
+	if (!node)
+		return isl_stat_error;
+
+	more = fn(node, user);
+	if (more < 0)
+		return isl_stat_error;
+	if (!more)
+		return isl_stat_ok;
+
+	switch (node->type) {
+	case isl_ast_node_for:
+		node = node->u.f.body;
+		return isl_ast_node_foreach_descendant_top_down(node, fn, user);
+	case isl_ast_node_if:
+		ok = isl_ast_node_foreach_descendant_top_down(node->u.i.then,
+								fn, user);
+		if (ok < 0)
+			return isl_stat_error;
+		if (!node->u.i.else_node)
+			return isl_stat_ok;
+		node = node->u.i.else_node;
+		return isl_ast_node_foreach_descendant_top_down(node, fn, user);
+	case isl_ast_node_block:
+		return nodelist_foreach(node->u.b.children, fn, user);
+	case isl_ast_node_mark:
+		node = node->u.m.node;
+		return isl_ast_node_foreach_descendant_top_down(node, fn, user);
+	case isl_ast_node_user:
+		break;
+	case isl_ast_node_error:
+		return isl_stat_error;
+	}
+
+	return isl_stat_ok;
+}
+
 /* Textual C representation of the various operators.
  */
 static char *op_str[] = {

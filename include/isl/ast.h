@@ -125,6 +125,10 @@ __isl_give isl_ast_node *isl_ast_node_mark_get_node(
 __isl_give isl_ast_expr *isl_ast_node_user_get_expr(
 	__isl_keep isl_ast_node *node);
 
+isl_stat isl_ast_node_foreach_descendant_top_down(
+	__isl_keep isl_ast_node *node,
+	isl_bool (*fn)(__isl_keep isl_ast_node *node, void *user), void *user);
+
 __isl_give isl_printer *isl_printer_print_ast_node(__isl_take isl_printer *p,
 	__isl_keep isl_ast_node *node);
 void isl_ast_node_dump(__isl_keep isl_ast_node *node);

@@ -9161,6 +9161,21 @@ C<isl_ast_node_mark_get_node> returns the child node that is being marked.
 	__isl_give isl_ast_expr *isl_ast_node_user_get_expr(
 		__isl_keep isl_ast_node *node);
 
+All descendants of a specific node in the AST (including the node itself)
+can be visited
+in depth-first pre-order using the following function.
+
+	#include <isl/ast.h>
+	isl_stat isl_ast_node_foreach_descendant_top_down(
+		__isl_keep isl_ast_node *node,
+		isl_bool (*fn)(__isl_keep isl_ast_node *node,
+			void *user), void *user);
+
+The callback function should return C<isl_bool_true> if the children
+of the given node should be visited and C<isl_bool_false> if they should not.
+It should return C<isl_bool_error> in case of failure, in which case
+the entire traversal is aborted.
+
 Each of the returned C<isl_ast_expr>s can in turn be inspected using
 the following functions.
 
