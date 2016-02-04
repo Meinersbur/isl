@@ -311,20 +311,20 @@ static void print_callback(QualType type, int arg)
 
 	printf("        exc_info = [None]\n");
 	printf("        fn = CFUNCTYPE(c_int");
-	for (int i = 0; i < n_arg - 1; ++i) {
+	for (unsigned i = 0; i < n_arg - 1; ++i) {
 		QualType arg_type = fn->getArgType(i);
 		assert(is_isl_type(arg_type));
 		printf(", c_void_p");
 	}
 	printf(", c_void_p)\n");
 	printf("        def cb_func(");
-	for (int i = 0; i < n_arg; ++i) {
+	for (unsigned i = 0; i < n_arg; ++i) {
 		if (i)
 			printf(", ");
 		printf("cb_arg%d", i);
 	}
 	printf("):\n");
-	for (int i = 0; i < n_arg - 1; ++i) {
+	for (unsigned i = 0; i < n_arg - 1; ++i) {
 		string arg_type;
 		arg_type = type2python(extract_type(fn->getArgType(i)));
 		printf("            cb_arg%d = %s(ctx=arg0.ctx, "
@@ -332,7 +332,7 @@ static void print_callback(QualType type, int arg)
 	}
 	printf("            try:\n");
 	printf("                arg%d(", arg);
-	for (int i = 0; i < n_arg - 1; ++i) {
+	for (unsigned i = 0; i < n_arg - 1; ++i) {
 		if (i)
 			printf(", ");
 		printf("cb_arg%d", i);
@@ -625,7 +625,7 @@ static void print_class_header(const string &name, const vector<string> &super)
 	printf("class %s", name.c_str());
 	if (super.size() > 0) {
 		printf("(");
-		for (int i = 0; i < super.size(); ++i) {
+		for (unsigned i = 0; i < super.size(); ++i) {
 			if (i > 0)
 				printf(", ");
 			printf("%s", type2python(super[i]).c_str());
@@ -704,7 +704,7 @@ void isl_class::print(map<string, isl_class> &classes, set<string> &done)
 	map<string, set<FunctionDecl *> >::iterator it;
 	vector<string> super = find_superclasses(type);
 
-	for (int i = 0; i < super.size(); ++i)
+	for (unsigned i = 0; i < super.size(); ++i)
 		if (done.find(super[i]) == done.end())
 			classes[super[i]].print(classes, done);
 	done.insert(name);
