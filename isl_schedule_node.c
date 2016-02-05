@@ -4345,7 +4345,7 @@ static __isl_give isl_schedule_node *isl_schedule_node_order_before_or_after(
 	node2 = isl_schedule_node_gist(node2, isl_union_set_copy(filter));
 	tree1 = isl_schedule_node_get_tree(node);
 	tree2 = isl_schedule_node_get_tree(node2);
-	isl_schedule_node_free(node2);
+
 	tree1 = isl_schedule_tree_insert_filter(tree1, node_filter);
 	tree2 = isl_schedule_tree_insert_filter(tree2, filter);
 
@@ -4356,6 +4356,9 @@ static __isl_give isl_schedule_node *isl_schedule_node_order_before_or_after(
 		tree1 = isl_schedule_tree_sequence_pair(tree1, tree2);
 		node = graft_or_splice(node, tree1, 0);
 	}
+
+	/* MK Bug: node2 owns a schedule which contains tree2 as a member. Freeing node2 therefore will also free tree2; Hope that  */
+	isl_schedule_node_free(node2);
 
 	return node;
 error:
