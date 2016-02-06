@@ -3952,6 +3952,26 @@ static struct isl_basic_map *coalesce_or_drop_more_redundant_divs(
 	return drop_more_redundant_divs(bmap, pairs, n);
 }
 
+/* Are the "n" coefficients starting at "first" of inequality constraints
+ * "i" and "j" of "bmap" opposite to each other?
+ */
+static int is_opposite_part(__isl_keep isl_basic_map *bmap, int i, int j,
+	int first, int n)
+{
+	return isl_seq_is_neg(bmap->ineq[i] + first, bmap->ineq[j] + first, n);
+}
+
+/* Are inequality constraints "i" and "j" of "bmap" opposite to each other,
+ * apart from the constant term?
+ */
+static int is_opposite(__isl_keep isl_basic_map *bmap, int i, int j)
+{
+	unsigned total;
+
+	total = isl_basic_map_dim(bmap, isl_dim_all);
+	return is_opposite_part(bmap, i, j, 1, total);
+}
+
 /* Remove divs that are not strictly needed.
  * In particular, if a div only occurs positively (or negatively)
  * in constraints, then it can simply be dropped.
@@ -4026,11 +4046,7 @@ struct isl_basic_map *isl_basic_map_drop_redundant_divs(
 			free(pairs);
 			return isl_basic_map_drop_redundant_divs(bmap);
 		}
-		if (pairs[i] != 1)
-			continue;
-		if (!isl_seq_is_neg(bmap->ineq[last_pos] + 1,
-				    bmap->ineq[last_neg] + 1,
-				    off + bmap->n_div))
+		if (pairs[i] != 1 || !is_opposite(bmap, last_pos, last_neg))
 			continue;
 
 		isl_int_add(bmap->ineq[last_pos][0],
