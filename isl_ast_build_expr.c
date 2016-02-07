@@ -1592,54 +1592,86 @@ struct isl_from_pw_aff_data {
 	isl_set *dom;
 };
 
-/* This function is called during the construction of an isl_ast_expr
- * that evaluates an isl_pw_aff.
- * Adjust data->next to take into account this piece.
- *
- * If this is the last pair, then data->next is set to evaluate aff
- * and the domain is ignored.
- * Otherwise, data->next is set to a select operation that selects
+/* Extend the expression in data->next to take into account
+ * the piece (set, aff), allowing for a further extension
+ * for the next piece(s).
+ * In particular, data->next is set to a select operation that selects
  * an isl_ast_expr corresponding to "aff" on "set" and to an expression
  * that will be filled in by later calls otherwise.
  *
- * In both cases, the constraints of "set" are added to the generated
+ * The constraints of "set" are added to the generated
  * constraints of the build such that they can be exploited to simplify
  * the AST expression constructed from "aff".
+ */
+static isl_stat build_intermediate_piece(struct isl_from_pw_aff_data *data,
+	__isl_take isl_set *set, __isl_take isl_aff *aff)
+{
+	isl_ctx *ctx;
+	isl_ast_build *build;
+	isl_ast_expr *ternary, *arg;
+	isl_set *gist;
+
+	ctx = isl_set_get_ctx(set);
+	ternary = isl_ast_expr_alloc_op(ctx, isl_ast_op_select, 3);
+	gist = isl_set_gist(isl_set_copy(set), isl_set_copy(data->dom));
+	arg = isl_ast_build_expr_from_set_internal(data->build, gist);
+	ternary = isl_ast_expr_set_op_arg(ternary, 0, arg);
+	build = isl_ast_build_copy(data->build);
+	build = isl_ast_build_restrict_generated(build, set);
+	arg = isl_ast_expr_from_aff(aff, build);
+	isl_ast_build_free(build);
+	ternary = isl_ast_expr_set_op_arg(ternary, 1, arg);
+	if (!ternary)
+		return isl_stat_error;
+
+	*data->next = ternary;
+	data->next = &ternary->u.op.args[2];
+
+	return isl_stat_ok;
+}
+
+/* Extend the expression in data->next to take into account
+ * the final piece (set, aff).
+ * In particular, data->next is set to evaluate aff
+ * and the domain is ignored.
+ *
+ * The constraints of "set" are however added to the generated
+ * constraints of the build such that they can be exploited to simplify
+ * the AST expression constructed from "aff".
+ */
+static isl_stat build_last_piece(struct isl_from_pw_aff_data *data,
+	__isl_take isl_set *set, __isl_take isl_aff *aff)
+{
+	isl_ast_build *build;
+
+	build = isl_ast_build_copy(data->build);
+	build = isl_ast_build_restrict_generated(build, set);
+	*data->next = isl_ast_expr_from_aff(aff, build);
+	isl_ast_build_free(build);
+	if (!*data->next)
+		return isl_stat_error;
+
+	return isl_stat_ok;
+}
+
+/* This function is called during the construction of an isl_ast_expr
+ * that evaluates an isl_pw_aff.
+ * Adjust data->next to take into account this piece, calling
+ * build_intermediate_piece or build_last_piece depending
+ * on whether this is the final piece.
  */
 static isl_stat ast_expr_from_pw_aff(__isl_take isl_set *set,
 	__isl_take isl_aff *aff, void *user)
 {
 	struct isl_from_pw_aff_data *data = user;
-	isl_ctx *ctx;
-	isl_ast_build *build;
 
-	ctx = isl_set_get_ctx(set);
 	data->n--;
 	if (data->n == 0) {
-		build = isl_ast_build_copy(data->build);
-		build = isl_ast_build_restrict_generated(build, set);
-		*data->next = isl_ast_expr_from_aff(aff, build);
-		isl_ast_build_free(build);
-		if (!*data->next)
+		if (build_last_piece(data, set, aff) < 0)
 			return isl_stat_error;
 	} else {
-		isl_ast_expr *ternary, *arg;
-		isl_set *gist;
-
-		ternary = isl_ast_expr_alloc_op(ctx, isl_ast_op_select, 3);
-		gist = isl_set_gist(isl_set_copy(set), isl_set_copy(data->dom));
-		arg = isl_ast_build_expr_from_set_internal(data->build, gist);
-		ternary = isl_ast_expr_set_op_arg(ternary, 0, arg);
-		build = isl_ast_build_copy(data->build);
-		build = isl_ast_build_restrict_generated(build, set);
-		arg = isl_ast_expr_from_aff(aff, build);
-		isl_ast_build_free(build);
-		ternary = isl_ast_expr_set_op_arg(ternary, 1, arg);
-		if (!ternary)
+		if (build_intermediate_piece(data, set, aff) < 0)
 			return isl_stat_error;
-
-		*data->next = ternary;
-		data->next = &ternary->u.op.args[2];
 	}
 
 	return isl_stat_ok;
