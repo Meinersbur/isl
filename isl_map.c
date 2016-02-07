@@ -9271,6 +9271,36 @@ __isl_give isl_basic_set *isl_basic_set_list_intersect(
 	return isl_basic_map_list_intersect(list);
 }
 
+/* Return the union of the elements in the non-empty list "list".
+ * All elements are assumed to live in the same space.
+ */
+__isl_give isl_set *isl_set_list_union(__isl_take isl_set_list *list)
+{
+	int i, n;
+	isl_set *set;
+
+	if (!list)
+		return NULL;
+	n = isl_set_list_n_set(list);
+	if (n < 1)
+		isl_die(isl_set_list_get_ctx(list), isl_error_invalid,
+			"expecting non-empty list", goto error);
+
+	set = isl_set_list_get_set(list, 0);
+	for (i = 1; i < n; ++i) {
+		isl_set *set_i;
+
+		set_i = isl_set_list_get_set(list, i);
+		set = isl_set_union(set, set_i);
+	}
+
+	isl_set_list_free(list);
+	return set;
+error:
+	isl_set_list_free(list);
+	return NULL;
+}
+
 /* Return the Cartesian product of the basic sets in list (in the given order).
  */
 __isl_give isl_basic_set *isl_basic_set_list_product(
