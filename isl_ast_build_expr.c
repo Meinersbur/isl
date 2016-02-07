@@ -1577,50 +1577,81 @@ __isl_give isl_ast_expr *isl_ast_build_expr_from_set(
 	return isl_ast_build_expr_from_set_internal(build, set);
 }
 
+/* State of data about previous pieces in
+ * isl_ast_build_expr_from_pw_aff_internal.
+ *
+ * isl_state_none: no data about previous pieces
+ * isl_state_single: data about a single previous piece
+ */
+enum isl_from_pw_aff_state {
+	isl_state_none,
+	isl_state_single
+};
+
 /* Internal data structure for isl_ast_build_expr_from_pw_aff_internal.
  *
  * "build" specifies the domain against which the result is simplified.
- * "n" is the number of pieces left to handle.
  * "next" points to where the next part of the constructed expression
  * should be stored.
  * "dom" is the domain of the entire isl_pw_aff.
+ *
+ * If "state" is isl_state_none, then "set" and "aff" are not used.
+ * If "state" is isl_state_single, then "set" and "aff" contain the
+ * previous piece.
  */
 struct isl_from_pw_aff_data {
 	isl_ast_build *build;
-	int n;
 	isl_ast_expr **next;
 	isl_set *dom;
+
+	enum isl_from_pw_aff_state state;
+	isl_set *set;
+	isl_aff *aff;
 };
 
+/* Store "set" and "aff" in "data" as a single piece.
+ */
+static void set_single(struct isl_from_pw_aff_data *data,
+	__isl_take isl_set *set, __isl_take isl_aff *aff)
+{
+	data->state = isl_state_single;
+	data->set = set;
+	data->aff = aff;
+}
+
 /* Extend the expression in data->next to take into account
- * the piece (set, aff), allowing for a further extension
+ * the piece in "data", allowing for a further extension
  * for the next piece(s).
  * In particular, data->next is set to a select operation that selects
- * an isl_ast_expr corresponding to "aff" on "set" and to an expression
+ * an isl_ast_expr corresponding to data->aff on data->set and to an expression
  * that will be filled in by later calls otherwise.
+ * Afterwards, the state of "data" is set to isl_state_none.
  *
- * The constraints of "set" are added to the generated
+ * The constraints of data->set are added to the generated
  * constraints of the build such that they can be exploited to simplify
- * the AST expression constructed from "aff".
+ * the AST expression constructed from data->aff.
  */
-static isl_stat build_intermediate_piece(struct isl_from_pw_aff_data *data,
-	__isl_take isl_set *set, __isl_take isl_aff *aff)
+static isl_stat build_intermediate_piece(struct isl_from_pw_aff_data *data)
 {
 	isl_ctx *ctx;
 	isl_ast_build *build;
 	isl_ast_expr *ternary, *arg;
-	isl_set *gist;
+	isl_set *set, *gist;
 
-	ctx = isl_set_get_ctx(set);
+	set = isl_set_copy(data->set);
+	data->set = NULL;
+	ctx = isl_ast_build_get_ctx(data->build);
 	ternary = isl_ast_expr_alloc_op(ctx, isl_ast_op_select, 3);
 	gist = isl_set_gist(isl_set_copy(set), isl_set_copy(data->dom));
 	arg = isl_ast_build_expr_from_set_internal(data->build, gist);
 	ternary = isl_ast_expr_set_op_arg(ternary, 0, arg);
 	build = isl_ast_build_copy(data->build);
 	build = isl_ast_build_restrict_generated(build, set);
-	arg = isl_ast_expr_from_aff(aff, build);
+	arg = isl_ast_expr_from_aff(data->aff, build);
+	data->aff = NULL;
 	isl_ast_build_free(build);
 	ternary = isl_ast_expr_set_op_arg(ternary, 1, arg);
+	data->state = isl_state_none;
 	if (!ternary)
 		return isl_stat_error;
 
@@ -1631,23 +1662,31 @@ static isl_stat build_intermediate_piece(struct isl_from_pw_aff_data *data,
 }
 
 /* Extend the expression in data->next to take into account
- * the final piece (set, aff).
- * In particular, data->next is set to evaluate aff
+ * the final piece in "data".
+ * In particular, data->next is set to evaluate data->aff
  * and the domain is ignored.
  *
- * The constraints of "set" are however added to the generated
+ * The constraints of data->set are however added to the generated
  * constraints of the build such that they can be exploited to simplify
- * the AST expression constructed from "aff".
+ * the AST expression constructed from data->aff.
  */
-static isl_stat build_last_piece(struct isl_from_pw_aff_data *data,
-	__isl_take isl_set *set, __isl_take isl_aff *aff)
+static isl_stat build_last_piece(struct isl_from_pw_aff_data *data)
 {
 	isl_ast_build *build;
+	isl_set *set;
 
+	if (data->state == isl_state_none)
+		isl_die(isl_ast_build_get_ctx(data->build), isl_error_invalid,
+			"cannot handle void expression", return isl_stat_error);
+
+	set = data->set;
+	data->set = NULL;
 	build = isl_ast_build_copy(data->build);
 	build = isl_ast_build_restrict_generated(build, set);
-	*data->next = isl_ast_expr_from_aff(aff, build);
+	*data->next = isl_ast_expr_from_aff(data->aff, build);
+	data->aff = NULL;
 	isl_ast_build_free(build);
+	data->state = isl_state_none;
 	if (!*data->next)
 		return isl_stat_error;
 
@@ -1656,25 +1695,26 @@ static isl_stat build_last_piece(struct isl_from_pw_aff_data *data,
 
 /* This function is called during the construction of an isl_ast_expr
  * that evaluates an isl_pw_aff.
- * Adjust data->next to take into account this piece, calling
- * build_intermediate_piece or build_last_piece depending
- * on whether this is the final piece.
+ * Adjust data->next to take into account the previous piece, if any,
+ * by calling build_intermediate_piece and then store the current piece
+ * in "data" for later handling.
  */
 static isl_stat ast_expr_from_pw_aff(__isl_take isl_set *set,
 	__isl_take isl_aff *aff, void *user)
 {
 	struct isl_from_pw_aff_data *data = user;
 
-	data->n--;
-	if (data->n == 0) {
-		if (build_last_piece(data, set, aff) < 0)
-			return isl_stat_error;
-	} else {
-		if (build_intermediate_piece(data, set, aff) < 0)
-			return isl_stat_error;
+	if (data->state != isl_state_none) {
+		if (build_intermediate_piece(data) < 0)
+			goto error;
 	}
+	set_single(data, set, aff);
 
 	return isl_stat_ok;
+error:
+	isl_set_free(set);
+	isl_aff_free(aff);
+	return isl_stat_error;
 }
 
 /* Construct an isl_ast_expr that evaluates "pa".
@@ -1694,17 +1734,19 @@ __isl_give isl_ast_expr *isl_ast_build_expr_from_pw_aff_internal(
 		return NULL;
 
 	data.build = build;
-	data.n = isl_pw_aff_n_piece(pa);
 	data.next = &res;
 	data.dom = isl_pw_aff_domain(isl_pw_aff_copy(pa));
+	data.state = isl_state_none;
+	data.aff = NULL;
+	data.set = NULL;
 
-	if (isl_pw_aff_foreach_piece(pa, &ast_expr_from_pw_aff, &data) < 0)
+	if (isl_pw_aff_foreach_piece(pa, &ast_expr_from_pw_aff, &data) < 0 ||
+	    build_last_piece(&data) < 0)
 		res = isl_ast_expr_free(res);
-	else if (!res)
-		isl_die(isl_pw_aff_get_ctx(pa), isl_error_invalid,
-			"cannot handle void expression", res = NULL);
 
 	isl_pw_aff_free(pa);
+	isl_set_free(data.set);
+	isl_aff_free(data.aff);
 	isl_set_free(data.dom);
 	return res;
 }
