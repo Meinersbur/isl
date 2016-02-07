@@ -9662,6 +9662,10 @@ A block will always be printed by setting the following option.
 	isl_stat isl_options_set_ast_build_prefer_pdiv(isl_ctx *ctx,
 		int val);
 	int isl_options_get_ast_build_prefer_pdiv(isl_ctx *ctx);
+	isl_stat isl_options_set_ast_build_detect_min_max(
+		isl_ctx *ctx, int val);
+	int isl_options_get_ast_build_detect_min_max(
+		isl_ctx *ctx);
 	isl_stat isl_options_set_ast_build_exploit_nested_bounds(
 		isl_ctx *ctx, int val);
 	int isl_options_get_ast_build_exploit_nested_bounds(
@@ -9713,6 +9717,12 @@ C<isl_ast_op_pdiv_r> operators.
 If this options is turned on, then C<isl> will try to convert
 some of the C<isl_ast_op_fdiv_q> operators to (expressions containing)
 C<isl_ast_op_pdiv_q> or C<isl_ast_op_pdiv_r> operators.
+
+=item * ast_build_detect_min_max
+
+If this option is turned on, then C<isl> will try and detect
+min or max-expressions when building AST expressions from
+piecewise affine expressions.
 
 =item * ast_build_exploit_nested_bounds
 

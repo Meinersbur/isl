@@ -56,6 +56,7 @@ struct isl_options {
 
 	int			ast_build_atomic_upper_bound;
 	int			ast_build_prefer_pdiv;
+	int			ast_build_detect_min_max;
 	int			ast_build_exploit_nested_bounds;
 	int			ast_build_group_coscheduled;
 	int			ast_build_separation_bounds;

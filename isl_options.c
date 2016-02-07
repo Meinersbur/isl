@@ -188,6 +188,8 @@ ISL_ARG_BOOL(struct isl_options, ast_build_atomic_upper_bound, 0,
 	"ast-build-atomic-upper-bound", 1, "generate atomic upper bounds")
 ISL_ARG_BOOL(struct isl_options, ast_build_prefer_pdiv, 0,
 	"ast-build-prefer-pdiv", 1, "prefer pdiv operation over fdiv")
+ISL_ARG_BOOL(struct isl_options, ast_build_detect_min_max, 0,
+	"ast-build-detect-min-max", 0, "detect min/max expressions")
 ISL_ARG_BOOL(struct isl_options, ast_build_exploit_nested_bounds, 0,
 	"ast-build-exploit-nested-bounds", 1,
 	"simplify conditions based on bounds of nested for loops")
@@ -303,6 +305,11 @@ ISL_CTX_SET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
 	ast_build_prefer_pdiv)
 ISL_CTX_GET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
 	ast_build_prefer_pdiv)
+
+ISL_CTX_SET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
+	ast_build_detect_min_max)
+ISL_CTX_GET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
+	ast_build_detect_min_max)
 
 ISL_CTX_SET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
 	ast_build_exploit_nested_bounds)
