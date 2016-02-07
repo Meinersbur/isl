@@ -3986,6 +3986,60 @@ static __isl_give isl_basic_map *drop_redundant_divs_again(
 	return isl_basic_map_drop_redundant_divs(bmap);
 }
 
+/* Is "div" the single unknown existentially quantified variable
+ * in inequality constraint "ineq" of "bmap"?
+ * "div" is known to have a non-zero coefficient in "ineq".
+ */
+static int single_unknown(__isl_keep isl_basic_map *bmap, int ineq, int div)
+{
+	int i;
+	unsigned n_div, o_div;
+
+	if (isl_basic_map_div_is_known(bmap, div))
+		return 0;
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	if (n_div == 1)
+		return 1;
+	o_div = isl_basic_map_offset(bmap, isl_dim_div);
+	for (i = 0; i < n_div; ++i) {
+		if (i == div)
+			continue;
+		if (isl_int_is_zero(bmap->ineq[ineq][o_div + i]))
+			continue;
+		if (!isl_basic_map_div_is_known(bmap, i))
+			return 0;
+	}
+
+	return 1;
+}
+
+/* Does integer division "div" have coefficient 1 in inequality constraint
+ * "ineq" of "map"?
+ */
+static int has_coef_one(__isl_keep isl_basic_map *bmap, int div, int ineq)
+{
+	unsigned o_div;
+
+	o_div = isl_basic_map_offset(bmap, isl_dim_div);
+	if (isl_int_is_one(bmap->ineq[ineq][o_div + div]))
+		return 1;
+
+	return 0;
+}
+
+/* Turn inequality constraint "ineq" of "bmap" into an equality and
+ * then try and drop redundant divs again,
+ * freeing the temporary data structure "pairs" that was associated
+ * to the old version of "bmap".
+ */
+static __isl_give isl_basic_map *set_eq_and_try_again(
+	__isl_take isl_basic_map *bmap, int ineq, __isl_take int *pairs)
+{
+	bmap = isl_basic_map_cow(bmap);
+	isl_basic_map_inequality_to_equality(bmap, ineq);
+	return drop_redundant_divs_again(bmap, pairs, 1);
+}
+
 /* Remove divs that are not strictly needed.
  * In particular, if a div only occurs positively (or negatively)
  * in constraints, then it can simply be dropped.
@@ -3996,6 +4050,17 @@ static __isl_give isl_basic_map *drop_redundant_divs_again(
  * div, i.e., if one plus this sum is greater than or equal to
  * the (absolute value) of the coefficient of the div in the constraints,
  * then we can also simply drop the div.
+ *
+ * If an existentially quantified variable does not have an explicit
+ * representation, appears in only a single lower bound that does not
+ * involve any other such existentially quantified variables and appears
+ * in this lower bound with coefficient 1,
+ * then fix the variable to the value of the lower bound.  That is,
+ * turn the inequality into an equality.
+ * If for any value of the other variables, there is any value
+ * for the existentially quantified variable satisfying the constraints,
+ * then this lower bound also satisfies the constraints.
+ * It is therefore safe to pick this lower bound.
  *
  * We skip divs that appear in equalities or in the definition of other divs.
  * Divs that appear in the definition of other divs usually occur in at least
@@ -4059,8 +4124,18 @@ struct isl_basic_map *isl_basic_map_drop_redundant_divs(
 			bmap = isl_basic_map_drop_div(bmap, i);
 			return drop_redundant_divs_again(bmap, pairs, 0);
 		}
-		if (pairs[i] != 1 || !is_opposite(bmap, last_pos, last_neg))
+		if (pairs[i] != 1 || !is_opposite(bmap, last_pos, last_neg)) {
+			int single;
+			if (pos != 1)
+				continue;
+			single = single_unknown(bmap, last_pos, i);
+			if (!single)
+				continue;
+			if (has_coef_one(bmap, i, last_pos))
+				return set_eq_and_try_again(bmap, last_pos,
+							    pairs);
 			continue;
+		}
 
 		isl_int_add(bmap->ineq[last_pos][0],
 			    bmap->ineq[last_pos][0], bmap->ineq[last_neg][0]);
