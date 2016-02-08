@@ -3960,7 +3960,7 @@ static struct isl_basic_map *coalesce_or_drop_more_redundant_divs(
  * term and if the sum of the constant terms is such that for any value
  * of the other values, there is always at least one integer value of the
  * div, i.e., if one plus this sum is greater than or equal to
- * the (absolute value) of the coefficent of the div in the constraints,
+ * the (absolute value) of the coefficient of the div in the constraints,
  * then we can also simply drop the div.
  *
  * We skip divs that appear in equalities or in the definition of other divs.
