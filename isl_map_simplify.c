@@ -3972,6 +3972,20 @@ static int is_opposite(__isl_keep isl_basic_map *bmap, int i, int j)
 	return is_opposite_part(bmap, i, j, 1, total);
 }
 
+/* Restart isl_basic_map_drop_redundant_divs after "bmap" has
+ * been modified, simplying it if "simplify" is set.
+ * Free the temporary data structure "pairs" that was associated
+ * to the old version of "bmap".
+ */
+static __isl_give isl_basic_map *drop_redundant_divs_again(
+	__isl_take isl_basic_map *bmap, __isl_take int *pairs, int simplify)
+{
+	if (simplify)
+		bmap = isl_basic_map_simplify(bmap);
+	free(pairs);
+	return isl_basic_map_drop_redundant_divs(bmap);
+}
+
 /* Remove divs that are not strictly needed.
  * In particular, if a div only occurs positively (or negatively)
  * in constraints, then it can simply be dropped.
@@ -4043,8 +4057,7 @@ struct isl_basic_map *isl_basic_map_drop_redundant_divs(
 				if (!isl_int_is_zero(bmap->ineq[j][1+off+i]))
 					isl_basic_map_drop_inequality(bmap, j);
 			bmap = isl_basic_map_drop_div(bmap, i);
-			free(pairs);
-			return isl_basic_map_drop_redundant_divs(bmap);
+			return drop_redundant_divs_again(bmap, pairs, 0);
 		}
 		if (pairs[i] != 1 || !is_opposite(bmap, last_pos, last_neg))
 			continue;
@@ -4067,9 +4080,7 @@ struct isl_basic_map *isl_basic_map_drop_redundant_divs(
 				continue;
 			}
 			bmap = set_div_from_lower_bound(bmap, i, last_pos);
-			bmap = isl_basic_map_simplify(bmap);
-			free(pairs);
-			return isl_basic_map_drop_redundant_divs(bmap);
+			return drop_redundant_divs_again(bmap, pairs, 1);
 		}
 		if (last_pos > last_neg) {
 			isl_basic_map_drop_inequality(bmap, last_pos);
@@ -4079,8 +4090,7 @@ struct isl_basic_map *isl_basic_map_drop_redundant_divs(
 			isl_basic_map_drop_inequality(bmap, last_pos);
 		}
 		bmap = isl_basic_map_drop_div(bmap, i);
-		free(pairs);
-		return isl_basic_map_drop_redundant_divs(bmap);
+		return drop_redundant_divs_again(bmap, pairs, 0);
 	}
 
 	if (n > 0)
