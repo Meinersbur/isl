@@ -16,8 +16,6 @@ ISL_DECLARE_LIST(schedule_tree)
  * The leaves of a tree are not explicitly represented inside
  * the isl_schedule_tree, except when the tree consists of only a leaf.
  *
- * If type is isl_schedule_node_leaf, then ref has a negative value.
- *
  * The "band" field is valid when type is isl_schedule_node_band.
  * The "context" field is valid when type is isl_schedule_node_context
  * and represents constraints on the flat product of the outer band nodes,
