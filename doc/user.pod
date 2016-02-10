@@ -9714,7 +9714,7 @@ If this option is turned off, then the AST generation will
 produce ASTs that may only contain C<isl_ast_op_fdiv_q>
 operators, but no C<isl_ast_op_pdiv_q> or
 C<isl_ast_op_pdiv_r> operators.
-If this options is turned on, then C<isl> will try to convert
+If this option is turned on, then C<isl> will try to convert
 some of the C<isl_ast_op_fdiv_q> operators to (expressions containing)
 C<isl_ast_op_pdiv_q> or C<isl_ast_op_pdiv_r> operators.
 
