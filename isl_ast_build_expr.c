@@ -1577,6 +1577,14 @@ __isl_give isl_ast_expr *isl_ast_build_expr_from_set(
 	return isl_ast_build_expr_from_set_internal(build, set);
 }
 
+/* Internal data structure for isl_ast_build_expr_from_pw_aff_internal.
+ *
+ * "build" specifies the domain against which the result is simplified.
+ * "n" is the number of pieces left to handle.
+ * "next" points to where the next part of the constructed expression
+ * should be stored.
+ * "dom" is the domain of the entire isl_pw_aff.
+ */
 struct isl_from_pw_aff_data {
 	isl_ast_build *build;
 	int n;
@@ -1587,9 +1595,6 @@ struct isl_from_pw_aff_data {
 /* This function is called during the construction of an isl_ast_expr
  * that evaluates an isl_pw_aff.
  * Adjust data->next to take into account this piece.
- *
- * data->n is the number of pairs of set and aff to go.
- * data->dom is the domain of the entire isl_pw_aff.
  *
  * If this is the last pair, then data->next is set to evaluate aff
  * and the domain is ignored.
