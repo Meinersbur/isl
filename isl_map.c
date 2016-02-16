@@ -6570,37 +6570,37 @@ error:
 static struct isl_set *set_parameter_preimage(
 	struct isl_set *set, struct isl_mat *mat)
 {
-	isl_space *dim = NULL;
+	isl_space *space = NULL;
 	unsigned nparam;
 
 	if (!set || !mat)
 		goto error;
 
-	dim = isl_space_copy(set->dim);
-	dim = isl_space_cow(dim);
-	if (!dim)
+	space = isl_space_copy(set->dim);
+	space = isl_space_cow(space);
+	if (!space)
 		goto error;
 
 	nparam = isl_set_dim(set, isl_dim_param);
 
 	isl_assert(set->ctx, mat->n_row == 1 + nparam, goto error);
 
-	dim->nparam = 0;
-	dim->n_out = nparam;
-	isl_set_reset_space(set, dim);
+	space->nparam = 0;
+	space->n_out = nparam;
+	isl_set_reset_space(set, space);
 	set = isl_set_preimage(set, mat);
 	if (!set)
 		goto error2;
-	dim = isl_space_copy(set->dim);
-	dim = isl_space_cow(dim);
-	if (!dim)
+	space = isl_space_copy(set->dim);
+	space = isl_space_cow(space);
+	if (!space)
 		goto error2;
-	dim->nparam = dim->n_out;
-	dim->n_out = 0;
-	isl_set_reset_space(set, dim);
+	space->nparam = space->n_out;
+	space->n_out = 0;
+	isl_set_reset_space(set, space);
 	return set;
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	isl_mat_free(mat);
 error2:
 	isl_set_free(set);
