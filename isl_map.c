@@ -6576,22 +6576,22 @@ static struct isl_set *set_parameter_preimage(
 	if (!set || !mat)
 		goto error;
 
-	space = isl_space_copy(set->dim);
+	space = isl_set_get_space(set);
 	space = isl_space_cow(space);
 	if (!space)
 		goto error;
 
 	nparam = isl_set_dim(set, isl_dim_param);
 
-	isl_assert(set->ctx, mat->n_row == 1 + nparam, goto error);
+	if (mat->n_row != 1 + nparam)
+		isl_die(isl_set_get_ctx(set), isl_error_internal,
+			"unexpected number of rows", goto error);
 
 	space->nparam = 0;
 	space->n_out = nparam;
 	set = isl_set_reset_space(set, space);
 	set = isl_set_preimage(set, mat);
-	if (!set)
-		goto error2;
-	space = isl_space_copy(set->dim);
+	space = isl_set_get_space(set);
 	space = isl_space_cow(space);
 	if (!space)
 		goto error2;
