@@ -6567,8 +6567,8 @@ error:
 /* Apply a preimage specified by "mat" on the parameters of "set".
  * set is assumed to have only parameters and divs.
  */
-static struct isl_set *set_parameter_preimage(
-	struct isl_set *set, struct isl_mat *mat)
+static __isl_give isl_set *set_parameter_preimage(__isl_take isl_set *set,
+	__isl_take isl_mat *mat)
 {
 	isl_space *space;
 	unsigned nparam;
