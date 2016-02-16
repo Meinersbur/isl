@@ -6570,15 +6570,10 @@ error:
 static struct isl_set *set_parameter_preimage(
 	struct isl_set *set, struct isl_mat *mat)
 {
-	isl_space *space = NULL;
+	isl_space *space;
 	unsigned nparam;
 
 	if (!set || !mat)
-		goto error;
-
-	space = isl_set_get_space(set);
-	space = isl_space_cow(space);
-	if (!space)
 		goto error;
 
 	nparam = isl_set_dim(set, isl_dim_param);
@@ -6587,22 +6582,19 @@ static struct isl_set *set_parameter_preimage(
 		isl_die(isl_set_get_ctx(set), isl_error_internal,
 			"unexpected number of rows", goto error);
 
-	space->nparam = 0;
-	space->n_out = nparam;
+	space = isl_set_get_space(set);
+	space = isl_space_move_dims(space, isl_dim_set, 0,
+				    isl_dim_param, 0, nparam);
 	set = isl_set_reset_space(set, space);
 	set = isl_set_preimage(set, mat);
+	nparam = isl_set_dim(set, isl_dim_out);
 	space = isl_set_get_space(set);
-	space = isl_space_cow(space);
-	if (!space)
-		goto error2;
-	space->nparam = space->n_out;
-	space->n_out = 0;
+	space = isl_space_move_dims(space, isl_dim_param, 0,
+				    isl_dim_out, 0, nparam);
 	set = isl_set_reset_space(set, space);
 	return set;
 error:
-	isl_space_free(space);
 	isl_mat_free(mat);
-error2:
 	isl_set_free(set);
 	return NULL;
 }
