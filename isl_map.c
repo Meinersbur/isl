@@ -6587,7 +6587,7 @@ static struct isl_set *set_parameter_preimage(
 
 	space->nparam = 0;
 	space->n_out = nparam;
-	isl_set_reset_space(set, space);
+	set = isl_set_reset_space(set, space);
 	set = isl_set_preimage(set, mat);
 	if (!set)
 		goto error2;
@@ -6597,7 +6597,7 @@ static struct isl_set *set_parameter_preimage(
 		goto error2;
 	space->nparam = space->n_out;
 	space->n_out = 0;
-	isl_set_reset_space(set, space);
+	set = isl_set_reset_space(set, space);
 	return set;
 error:
 	isl_space_free(space);
