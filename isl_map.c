@@ -6925,7 +6925,7 @@ static struct isl_map *compute_divs(struct isl_basic_map *bmap)
 	unsigned	 nparam;
 	unsigned	 n_in;
 	unsigned	 n_out;
-	unsigned n_known;
+	int n_known;
 	int i;
 
 	bmap = isl_basic_map_sort_divs(bmap);
@@ -6933,9 +6933,9 @@ static struct isl_map *compute_divs(struct isl_basic_map *bmap)
 	if (!bmap)
 		return NULL;
 
-	for (n_known = 0; n_known < bmap->n_div; ++n_known)
-		if (isl_int_is_zero(bmap->div[n_known][0]))
-			break;
+	n_known = isl_basic_map_first_unknown_div(bmap);
+	if (n_known < 0)
+		return isl_map_from_basic_map(isl_basic_map_free(bmap));
 
 	nparam = isl_basic_map_dim(bmap, isl_dim_param);
 	n_in = isl_basic_map_dim(bmap, isl_dim_in);
@@ -6979,20 +6979,37 @@ isl_bool isl_basic_map_div_is_known(__isl_keep isl_basic_map *bmap, int div)
 	return !isl_int_is_zero(bmap->div[div][0]);
 }
 
-/* Does "bmap" have an explicit representation for all local variables?
+/* Return the position of the first local variable that does not
+ * have an explicit representation.
+ * Return the total number of local variables if they all have
+ * an explicit representation.
+ * Return -1 on error.
  */
-isl_bool isl_basic_map_divs_known(__isl_keep isl_basic_map *bmap)
+int isl_basic_map_first_unknown_div(__isl_keep isl_basic_map *bmap)
 {
 	int i;
 
 	if (!bmap)
-		return isl_bool_error;
+		return -1;
 
 	for (i = 0; i < bmap->n_div; ++i) {
 		if (!isl_basic_map_div_is_known(bmap, i))
-			return isl_bool_false;
+			return i;
 	}
-	return isl_bool_true;
+	return bmap->n_div;
+}
+
+/* Does "bmap" have an explicit representation for all local variables?
+ */
+isl_bool isl_basic_map_divs_known(__isl_keep isl_basic_map *bmap)
+{
+	int first, n;
+
+	n = isl_basic_map_dim(bmap, isl_dim_div);
+	first = isl_basic_map_first_unknown_div(bmap);
+	if (first < 0)
+		return isl_bool_error;
+	return first == n;
 }
 
 /* Do all basic maps in "map" have an explicit representation
