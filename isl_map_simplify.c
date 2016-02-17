@@ -4241,7 +4241,8 @@ static __isl_give isl_basic_map *fix_cst_lower(__isl_take isl_basic_map *bmap,
 	return isl_basic_map_drop_redundant_divs(bmap);
 }
 
-/* Remove divs that are not strictly needed.
+/* Remove divs that are not strictly needed based on the inequality
+ * constraints.
  * In particular, if a div only occurs positively (or negatively)
  * in constraints, then it can simply be dropped.
  * Also, if a div occurs in only two constraints and if moreover
@@ -4282,8 +4283,8 @@ static __isl_give isl_basic_map *fix_cst_lower(__isl_take isl_basic_map *bmap,
  * If any divs are left after these simple checks then we move on
  * to more complicated cases in drop_more_redundant_divs.
  */
-struct isl_basic_map *isl_basic_map_drop_redundant_divs(
-	struct isl_basic_map *bmap)
+static __isl_give isl_basic_map *isl_basic_map_drop_redundant_divs_ineq(
+	__isl_take isl_basic_map *bmap)
 {
 	int i, j;
 	unsigned off;
@@ -4394,6 +4395,177 @@ error:
 	free(pairs);
 	isl_basic_map_free(bmap);
 	return NULL;
+}
+
+/* Consider the coefficients at "c" as a row vector and replace
+ * them with their product with "T".  "T" is assumed to be a square matrix.
+ */
+static isl_stat preimage(isl_int *c, __isl_keep isl_mat *T)
+{
+	int n;
+	isl_ctx *ctx;
+	isl_vec *v;
+
+	if (!T)
+		return isl_stat_error;
+	n = isl_mat_rows(T);
+	if (isl_seq_first_non_zero(c, n) == -1)
+		return isl_stat_ok;
+	ctx = isl_mat_get_ctx(T);
+	v = isl_vec_alloc(ctx, n);
+	if (!v)
+		return isl_stat_error;
+	isl_seq_swp_or_cpy(v->el, c, n);
+	v = isl_vec_mat_product(v, isl_mat_copy(T));
+	if (!v)
+		return isl_stat_error;
+	isl_seq_swp_or_cpy(c, v->el, n);
+	isl_vec_free(v);
+
+	return isl_stat_ok;
+}
+
+/* Plug in T for the variables in "bmap" starting at "pos".
+ * T is a linear unimodular matrix, i.e., without constant term.
+ */
+static __isl_give isl_basic_map *isl_basic_map_preimage_vars(
+	__isl_take isl_basic_map *bmap, unsigned pos, __isl_take isl_mat *T)
+{
+	int i;
+	unsigned n, total;
+
+	bmap = isl_basic_map_cow(bmap);
+	if (!bmap || !T)
+		goto error;
+
+	n = isl_mat_cols(T);
+	if (n != isl_mat_rows(T))
+		isl_die(isl_mat_get_ctx(T), isl_error_invalid,
+			"expecting square matrix", goto error);
+
+	total = isl_basic_map_dim(bmap, isl_dim_all);
+	if (pos + n > total || pos + n < pos)
+		isl_die(isl_mat_get_ctx(T), isl_error_invalid,
+			"invalid range", goto error);
+
+	for (i = 0; i < bmap->n_eq; ++i)
+		if (preimage(bmap->eq[i] + 1 + pos, T) < 0)
+			goto error;
+	for (i = 0; i < bmap->n_ineq; ++i)
+		if (preimage(bmap->ineq[i] + 1 + pos, T) < 0)
+			goto error;
+	for (i = 0; i < bmap->n_div; ++i) {
+		if (!isl_basic_map_div_is_known(bmap, i))
+			continue;
+		if (preimage(bmap->div[i] + 1 + 1 + pos, T) < 0)
+			goto error;
+	}
+
+	isl_mat_free(T);
+	return bmap;
+error:
+	isl_basic_map_free(bmap);
+	isl_mat_free(T);
+	return NULL;
+}
+
+/* Remove divs that are not strictly needed.
+ *
+ * First look for an equality constraint involving two or more
+ * existentially quantified variables without an explicit
+ * representation.  Replace the combination that appears
+ * in the equality constraint by a single existentially quantified
+ * variable such that the equality can be used to derive
+ * an explicit representation for the variable.
+ * If there are no more such equality constraints, then continue
+ * with isl_basic_map_drop_redundant_divs_ineq.
+ *
+ * In particular, if the equality constraint is of the form
+ *
+ *	f(x) + \sum_i c_i a_i = 0
+ *
+ * with a_i existentially quantified variable without explicit
+ * representation, then apply a transformation on the existentially
+ * quantified variables to turn the constraint into
+ *
+ *	f(x) + g a_1' = 0
+ *
+ * with g the gcd of the c_i.
+ * In order to easily identify which existentially quantified variables
+ * have a complete explicit representation, i.e., without being defined
+ * in terms of other existentially quantified variables without
+ * an explicit representation, the existentially quantified variables
+ * are first sorted.
+ *
+ * The variable transformation is computed by extending the row
+ * [c_1/g ... c_n/g] to a unimodular matrix, obtaining the transformation
+ *
+ *	[a_1']   [c_1/g ... c_n/g]   [ a_1 ]
+ *	[a_2']                       [ a_2 ]
+ *	 ...   =         U             ....
+ *	[a_n']            	     [ a_n ]
+ *
+ * with [c_1/g ... c_n/g] representing the first row of U.
+ * The inverse of U is then plugged into the original constraints.
+ * The call to isl_basic_map_simplify makes sure the explicit
+ * representation for a_1' is extracted from the equality constraint.
+ */
+__isl_give isl_basic_map *isl_basic_map_drop_redundant_divs(
+	__isl_take isl_basic_map *bmap)
+{
+	int first;
+	int i;
+	unsigned o_div, n_div;
+	int l;
+	isl_ctx *ctx;
+	isl_mat *T;
+
+	if (!bmap)
+		return NULL;
+	if (isl_basic_map_divs_known(bmap))
+		return isl_basic_map_drop_redundant_divs_ineq(bmap);
+	if (bmap->n_eq == 0)
+		return isl_basic_map_drop_redundant_divs_ineq(bmap);
+	bmap = isl_basic_map_sort_divs(bmap);
+	if (!bmap)
+		return NULL;
+
+	first = isl_basic_map_first_unknown_div(bmap);
+	if (first < 0)
+		return isl_basic_map_free(bmap);
+
+	o_div = isl_basic_map_offset(bmap, isl_dim_div);
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+
+	for (i = 0; i < bmap->n_eq; ++i) {
+		l = isl_seq_first_non_zero(bmap->eq[i] + o_div + first,
+					    n_div - (first));
+		if (l < 0)
+			continue;
+		l += first;
+		if (isl_seq_first_non_zero(bmap->eq[i] + o_div + l + 1,
+					    n_div - (l + 1)) == -1)
+			continue;
+		break;
+	}
+	if (i >= bmap->n_eq)
+		return isl_basic_map_drop_redundant_divs_ineq(bmap);
+
+	ctx = isl_basic_map_get_ctx(bmap);
+	T = isl_mat_alloc(ctx, n_div - l, n_div - l);
+	if (!T)
+		return isl_basic_map_free(bmap);
+	isl_seq_cpy(T->row[0], bmap->eq[i] + o_div + l, n_div - l);
+	T = isl_mat_normalize_row(T, 0);
+	T = isl_mat_unimodular_complete(T, 1);
+	T = isl_mat_right_inverse(T);
+
+	for (i = l; i < n_div; ++i)
+		bmap = isl_basic_map_mark_div_unknown(bmap, i);
+	bmap = isl_basic_map_preimage_vars(bmap, o_div - 1 + l, T);
+	bmap = isl_basic_map_simplify(bmap);
+
+	return isl_basic_map_drop_redundant_divs(bmap);
 }
 
 struct isl_basic_set *isl_basic_set_drop_redundant_divs(

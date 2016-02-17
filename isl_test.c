@@ -5823,7 +5823,7 @@ static int test_multi_pw_aff(isl_ctx *ctx)
  * is empty and would end up in an infinite loop if it didn't test
  * explicitly for empty basic maps in the outer loop.
  */
-static int test_simplify(isl_ctx *ctx)
+static int test_simplify_1(isl_ctx *ctx)
 {
 	const char *str;
 	isl_basic_set *bset;
@@ -5843,6 +5843,39 @@ static int test_simplify(isl_ctx *ctx)
 		isl_die(ctx, isl_error_unknown,
 			"basic set should be empty", return -1);
 
+	return 0;
+}
+
+/* Check that the equality in the set description below
+ * is simplified away.
+ */
+static int test_simplify_2(isl_ctx *ctx)
+{
+	const char *str;
+	isl_basic_set *bset;
+	isl_bool universe;
+
+	str = "{ [a] : exists e0, e1: 32e1 = 31 + 31a + 31e0 }";
+	bset = isl_basic_set_read_from_str(ctx, str);
+	universe = isl_basic_set_plain_is_universe(bset);
+	isl_basic_set_free(bset);
+
+	if (universe < 0)
+		return -1;
+	if (!universe)
+		isl_die(ctx, isl_error_unknown,
+			"equality not simplified away", return -1);
+	return 0;
+}
+
+/* Some simplification tests.
+ */
+static int test_simplify(isl_ctx *ctx)
+{
+	if (test_simplify_1(ctx) < 0)
+		return -1;
+	if (test_simplify_2(ctx) < 0)
+		return -1;
 	return 0;
 }
 
