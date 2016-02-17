@@ -1692,7 +1692,9 @@ static struct isl_basic_map *remove_dependent_vars(struct isl_basic_map *bmap,
 			continue;
 		if (isl_int_is_zero(bmap->div[i][1+1+pos]))
 			continue;
-		isl_int_set_si(bmap->div[i][0], 0);
+		bmap = isl_basic_map_mark_div_unknown(bmap, i);
+		if (!bmap)
+			return NULL;
 	}
 	return bmap;
 }

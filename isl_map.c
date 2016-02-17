@@ -6967,6 +6967,27 @@ error:
 	return NULL;
 }
 
+/* Remove the explicit representation of local variable "div",
+ * if there is any.
+ */
+__isl_give isl_basic_map *isl_basic_map_mark_div_unknown(
+	__isl_take isl_basic_map *bmap, int div)
+{
+	isl_bool known;
+
+	known = isl_basic_map_div_is_known(bmap, div);
+	if (known < 0)
+		return isl_basic_map_free(bmap);
+	if (!known)
+		return bmap;
+
+	bmap = isl_basic_map_cow(bmap);
+	if (!bmap)
+		return NULL;
+	isl_int_set_si(bmap->div[div][0], 0);
+	return bmap;
+}
+
 /* Does local variable "div" of "bmap" have an explicit representation?
  */
 isl_bool isl_basic_map_div_is_known(__isl_keep isl_basic_map *bmap, int div)

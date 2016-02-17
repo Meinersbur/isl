@@ -412,6 +412,8 @@ __isl_give isl_basic_map *isl_basic_map_from_local_space(
 __isl_give isl_basic_set *isl_basic_set_expand_divs(
 	__isl_take isl_basic_set *bset, __isl_take isl_mat *div, int *exp);
 
+__isl_give isl_basic_map *isl_basic_map_mark_div_unknown(
+	__isl_take isl_basic_map *bmap, int div);
 isl_bool isl_basic_map_div_is_known(__isl_keep isl_basic_map *bmap, int div);
 int isl_basic_map_first_unknown_div(__isl_keep isl_basic_map *bmap);
 isl_bool isl_basic_map_divs_known(__isl_keep isl_basic_map *bmap);
