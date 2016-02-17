@@ -5147,6 +5147,8 @@ struct {
 	    "B[i] -> D[i] : exists a : i = 2 a + 1 }",
 	  "{ A[i] -> B[2i] }",
 	  "{ A[i] -> C[2i] }" },
+	{ "{ A[i] -> B[i] }", "{ C[i] -> A[(i + floor(i/3))/2] }",
+	  "{ C[i] -> B[j] : 2j = i + floor(i/3) }" },
 };
 
 static int test_preimage_union_map(isl_ctx *ctx)
