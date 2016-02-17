@@ -441,6 +441,8 @@ __isl_give isl_mat *isl_mat_parameter_compression_ext(__isl_take isl_mat *B,
  *
  * The input is given as a matrix B = [ -c M ] and the output is a
  * matrix that maps [1 x'] to [1 x].
+ * The number of equality constraints in B is assumed to be smaller than
+ * or equal to the number of variables x.
  * If T2 is not NULL, then *T2 is set to a matrix mapping [1 x] to [1 x'].
  *
  * First compute the (left) Hermite normal form of M,
@@ -486,6 +488,9 @@ __isl_give isl_mat *isl_mat_variable_compression(__isl_take isl_mat *B,
 
 	ctx = isl_mat_get_ctx(B);
 	dim = B->n_col - 1;
+	if (dim < B->n_row)
+		isl_die(ctx, isl_error_invalid, "too many equality constraints",
+			goto error);
 	H = isl_mat_sub_alloc(B, 0, B->n_row, 1, dim);
 	H = isl_mat_left_hermite(H, 0, &U, T2);
 	if (!H || !U || (T2 && !*T2))
