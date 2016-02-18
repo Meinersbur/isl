@@ -2228,6 +2228,10 @@ struct {
 } opt_tests[] = {
 	{ "{ [-1]; [1] }", "{ [x] -> [x] }", &isl_set_min_val, "-1" },
 	{ "{ [-1]; [1] }", "{ [x] -> [x] }", &isl_set_max_val, "1" },
+	{ "{ [a, b] : 0 <= a, b <= 100 and b mod 2 = 0}",
+	  "{ [a, b] -> [floor((b - 2*floor((-a)/4))/5)] }",
+	  &isl_set_max_val, "30" },
+
 };
 
 /* Perform basic isl_set_min_val and isl_set_max_val tests.

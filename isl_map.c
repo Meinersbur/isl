@@ -8100,6 +8100,12 @@ error:
 /* Apply the expansion computed by isl_merge_divs.
  * The expansion itself is given by "exp" while the resulting
  * list of divs is given by "div".
+ *
+ * Move the integer divisions of "bset" into the right position
+ * according to "exp" and then introduce the additional integer
+ * divisions, adding div constraints.
+ * The moving should be done first to avoid moving coefficients
+ * in the definitions of the extra integer divisions.
  */
 __isl_give isl_basic_set *isl_basic_set_expand_divs(
 	__isl_take isl_basic_set *bset, __isl_take isl_mat *div, int *exp)
@@ -8124,12 +8130,15 @@ __isl_give isl_basic_set *isl_basic_set_expand_divs(
 		if (isl_basic_set_alloc_div(bset) < 0)
 			goto error;
 
-	j = n_div - 1;
-	for (i = div->n_row - 1; i >= 0; --i) {
-		if (j >= 0 && exp[j] == i) {
-			if (i != j)
-				isl_basic_map_swap_div(bset, i, j);
-			j--;
+	for (j = n_div - 1; j >= 0; --j) {
+		if (exp[j] == j)
+			break;
+		isl_basic_map_swap_div(bset, j, exp[j]);
+	}
+	j = 0;
+	for (i = 0; i < div->n_row; ++i) {
+		if (j < n_div && exp[j] == i) {
+			j++;
 		} else {
 			isl_seq_cpy(bset->div[i], div->row[i], div->n_col);
 			if (isl_basic_map_add_div_constraints(bset, i) < 0)
