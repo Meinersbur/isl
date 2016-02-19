@@ -317,6 +317,8 @@ struct isl_map *isl_map_drop_inputs(
 		struct isl_map *map, unsigned first, unsigned n);
 struct isl_map *isl_map_drop(struct isl_map *map,
 	enum isl_dim_type type, unsigned first, unsigned n);
+__isl_give isl_basic_map *isl_basic_map_drop_unrelated_constraints(
+	__isl_take isl_basic_map *bmap, __isl_take int *group);
 
 __isl_give isl_basic_map *isl_basic_map_remove_duplicate_constraints(
 	__isl_take isl_basic_map *bmap, int *progress, int detect_divs);
