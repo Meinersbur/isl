@@ -3534,8 +3534,50 @@ static __isl_give isl_basic_map *insert_div_rows(__isl_take isl_basic_map *bmap,
 	return bmap;
 }
 
+/* Drop constraints from "bmap" that only involve the variables
+ * of "type" in the range [first, first + n] that are not related
+ * to any of the variables outside that interval.
+ * These constraints cannot influence the values for the variables
+ * outside the interval, except in case they cause "bmap" to be empty.
+ * Only drop the constraints if "bmap" is known to be non-empty.
+ */
+static __isl_give isl_basic_map *drop_irrelevant_constraints(
+	__isl_take isl_basic_map *bmap, enum isl_dim_type type,
+	unsigned first, unsigned n)
+{
+	int i;
+	int *groups;
+	unsigned dim, n_div;
+	isl_bool non_empty;
+
+	non_empty = isl_basic_map_plain_is_non_empty(bmap);
+	if (non_empty < 0)
+		return isl_basic_map_free(bmap);
+	if (!non_empty)
+		return bmap;
+
+	dim = isl_basic_map_dim(bmap, isl_dim_all);
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	groups = isl_calloc_array(isl_basic_map_get_ctx(bmap), int, dim);
+	if (!groups)
+		return isl_basic_map_free(bmap);
+	first += isl_basic_map_offset(bmap, type) - 1;
+	for (i = 0; i < first; ++i)
+		groups[i] = -1;
+	for (i = first + n; i < dim - n_div; ++i)
+		groups[i] = -1;
+
+	bmap = isl_basic_map_drop_unrelated_constraints(bmap, groups);
+
+	return bmap;
+}
+
 /* Turn the n dimensions of type type, starting at first
  * into existentially quantified variables.
+ *
+ * If a subset of the projected out variables are unrelated
+ * to any of the variables that remain, then the constraints
+ * involving this subset are simply dropped first.
  */
 __isl_give isl_basic_map *isl_basic_map_project_out(
 		__isl_take isl_basic_map *bmap,
@@ -3548,6 +3590,7 @@ __isl_give isl_basic_map *isl_basic_map_project_out(
 			"cannot project out existentially quantified variables",
 			return isl_basic_map_free(bmap));
 
+	bmap = drop_irrelevant_constraints(bmap, type, first, n);
 	if (!bmap)
 		return NULL;
 
