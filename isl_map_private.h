@@ -444,6 +444,7 @@ __isl_give isl_set *isl_set_gist_params_basic_set(__isl_take isl_set *set,
 
 int isl_map_compatible_range(__isl_keep isl_map *map, __isl_keep isl_set *set);
 
+isl_bool isl_basic_map_plain_is_non_empty(__isl_keep isl_basic_map *bmap);
 isl_bool isl_basic_map_plain_is_single_valued(__isl_keep isl_basic_map *bmap);
 
 int isl_map_is_set(__isl_keep isl_map *map);

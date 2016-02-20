@@ -7958,8 +7958,7 @@ isl_bool isl_basic_map_is_empty(__isl_keep isl_basic_map *bmap)
 {
 	struct isl_basic_set *bset = NULL;
 	struct isl_vec *sample = NULL;
-	isl_bool empty;
-	unsigned total;
+	isl_bool empty, non_empty;
 
 	if (!bmap)
 		return isl_bool_error;
@@ -7978,14 +7977,11 @@ isl_bool isl_basic_map_is_empty(__isl_keep isl_basic_map *bmap)
 		return empty;
 	}
 
-	total = 1 + isl_basic_map_total_dim(bmap);
-	if (bmap->sample && bmap->sample->size == total) {
-		int contains = isl_basic_map_contains(bmap, bmap->sample);
-		if (contains < 0)
-			return isl_bool_error;
-		if (contains)
-			return isl_bool_false;
-	}
+	non_empty = isl_basic_map_plain_is_non_empty(bmap);
+	if (non_empty < 0)
+		return isl_bool_error;
+	if (non_empty)
+		return isl_bool_false;
 	isl_vec_free(bmap->sample);
 	bmap->sample = NULL;
 	bset = isl_basic_map_underlying_set(isl_basic_map_copy(bmap));
@@ -8015,6 +8011,24 @@ isl_bool isl_basic_set_plain_is_empty(__isl_keep isl_basic_set *bset)
 	if (!bset)
 		return isl_bool_error;
 	return ISL_F_ISSET(bset, ISL_BASIC_SET_EMPTY);
+}
+
+/* Is "bmap" known to be non-empty?
+ *
+ * That is, is the cached sample still valid?
+ */
+isl_bool isl_basic_map_plain_is_non_empty(__isl_keep isl_basic_map *bmap)
+{
+	unsigned total;
+
+	if (!bmap)
+		return isl_bool_error;
+	if (!bmap->sample)
+		return isl_bool_false;
+	total = 1 + isl_basic_map_total_dim(bmap);
+	if (bmap->sample->size != total)
+		return isl_bool_false;
+	return isl_basic_map_contains(bmap, bmap->sample);
 }
 
 isl_bool isl_basic_set_is_empty(__isl_keep isl_basic_set *bset)
