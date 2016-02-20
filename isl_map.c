@@ -3543,6 +3543,10 @@ __isl_give isl_basic_map *isl_basic_map_project_out(
 {
 	if (n == 0)
 		return basic_map_space_reset(bmap, type);
+	if (type == isl_dim_div)
+		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
+			"cannot project out existentially quantified variables",
+			return isl_basic_map_free(bmap));
 
 	if (!bmap)
 		return NULL;
