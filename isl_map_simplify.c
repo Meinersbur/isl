@@ -2167,12 +2167,16 @@ static __isl_give isl_basic_set *drop_unrelated_constraints(
 		return bset;
 
 	for (i = bset->n_eq - 1; i >= 0; --i)
-		if (!is_related(bset->eq[i] + 1, dim, relevant))
-			isl_basic_set_drop_equality(bset, i);
+		if (!is_related(bset->eq[i] + 1, dim, relevant)) {
+			if (isl_basic_set_drop_equality(bset, i) < 0)
+				return isl_basic_set_free(bset);
+		}
 
 	for (i = bset->n_ineq - 1; i >= 0; --i)
-		if (!is_related(bset->ineq[i] + 1, dim, relevant))
-			isl_basic_set_drop_inequality(bset, i);
+		if (!is_related(bset->ineq[i] + 1, dim, relevant)) {
+			if (isl_basic_set_drop_inequality(bset, i) < 0)
+				return isl_basic_set_free(bset);
+		}
 
 	return bset;
 }
