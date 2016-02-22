@@ -2802,7 +2802,7 @@ struct isl_basic_map *isl_basic_map_intersect_range(
 		isl_assert(bset->ctx,
 		    isl_basic_map_compatible_range(bmap, bset), goto error);
 
-	if (isl_basic_set_is_universe(bset)) {
+	if (isl_basic_set_plain_is_universe(bset)) {
 		isl_basic_set_free(bset);
 		return bmap;
 	}
@@ -7966,11 +7966,18 @@ isl_bool isl_set_is_strict_subset(__isl_keep isl_set *set1,
  *
  * That is, does it not have any constraints?
  */
-static isl_bool isl_basic_map_plain_is_universe(__isl_keep isl_basic_map *bmap)
+isl_bool isl_basic_map_plain_is_universe(__isl_keep isl_basic_map *bmap)
 {
 	if (!bmap)
 		return isl_bool_error;
 	return bmap->n_eq == 0 && bmap->n_ineq == 0;
+}
+
+/* Is "bset" obviously equal to the universe with the same space?
+ */
+isl_bool isl_basic_set_plain_is_universe(__isl_keep isl_basic_set *bset)
+{
+	return isl_basic_map_plain_is_universe(bset);
 }
 
 /* If "c" does not involve any existentially quantified variables,

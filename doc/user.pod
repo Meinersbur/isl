@@ -3719,8 +3719,12 @@ is already known to be empty.
 
 =item * Universality
 
+	isl_bool isl_basic_set_plain_is_universe(
+		__isl_keep isl_basic_set *bset);
 	isl_bool isl_basic_set_is_universe(
 		__isl_keep isl_basic_set *bset);
+	isl_bool isl_basic_map_plain_is_universe(
+		__isl_keep isl_basic_map *bmap);
 	isl_bool isl_basic_map_is_universe(
 		__isl_keep isl_basic_map *bmap);
 	isl_bool isl_set_plain_is_universe(

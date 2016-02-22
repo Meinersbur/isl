@@ -2504,7 +2504,7 @@ static __isl_give isl_basic_set *uset_gist_full(__isl_take isl_basic_set *bset,
 	if (!bset || !ineq || !context)
 		goto error;
 
-	if (bset->n_ineq == 0 || isl_basic_set_is_universe(context)) {
+	if (bset->n_ineq == 0 || isl_basic_set_plain_is_universe(context)) {
 		isl_basic_set_free(context);
 		isl_mat_free(ineq);
 		return bset;
@@ -2523,7 +2523,7 @@ static __isl_give isl_basic_set *uset_gist_full(__isl_take isl_basic_set *bset,
 	context = drop_irrelevant_constraints_marked(context, ineq, row);
 	if (!context)
 		goto error;
-	if (isl_basic_set_is_universe(context))
+	if (isl_basic_set_plain_is_universe(context))
 		return update_ineq_free(bset, ineq, context, row, NULL);
 
 	n_eq = context->n_eq;
@@ -2839,7 +2839,7 @@ struct isl_basic_map *isl_basic_map_gist(struct isl_basic_map *bmap,
 	if (!bmap || !context)
 		goto error;
 
-	if (isl_basic_map_is_universe(bmap)) {
+	if (isl_basic_map_plain_is_universe(bmap)) {
 		isl_basic_map_free(context);
 		return bmap;
 	}
@@ -3069,9 +3069,9 @@ __isl_give isl_basic_map *isl_basic_map_plain_gist(
 {
 	isl_bool done, known;
 
-	done = isl_basic_map_is_universe(context);
+	done = isl_basic_map_plain_is_universe(context);
 	if (done == isl_bool_false)
-		done = isl_basic_map_is_universe(bmap);
+		done = isl_basic_map_plain_is_universe(bmap);
 	if (done == isl_bool_false)
 		done = isl_basic_map_plain_is_empty(context);
 	if (done == isl_bool_false)
@@ -3131,7 +3131,7 @@ __isl_give isl_map *isl_map_plain_gist_basic_map(__isl_take isl_map *map,
 	int i;
 	isl_bool univ, known;
 
-	univ = isl_basic_map_is_universe(context);
+	univ = isl_basic_map_plain_is_universe(context);
 	if (univ < 0)
 		goto error;
 	if (univ) {
@@ -3151,7 +3151,7 @@ __isl_give isl_map *isl_map_plain_gist_basic_map(__isl_take isl_map *map,
 	for (i = 0; i < map->n; ++i) {
 		map->p[i] = isl_basic_map_plain_gist(map->p[i],
 						isl_basic_map_copy(context));
-		univ = isl_basic_map_is_universe(map->p[i]);
+		univ = isl_basic_map_plain_is_universe(map->p[i]);
 		if (univ < 0)
 			goto error;
 		if (univ && map->n > 1)
@@ -3522,11 +3522,11 @@ isl_bool isl_basic_map_is_disjoint(__isl_keep isl_basic_map *bmap1,
 	if (disjoint < 0 || disjoint)
 		return disjoint;
 
-	intersect = isl_basic_map_is_universe(bmap1);
+	intersect = isl_basic_map_plain_is_universe(bmap1);
 	if (intersect < 0 || intersect)
 		return intersect < 0 ? isl_bool_error : isl_bool_false;
 
-	intersect = isl_basic_map_is_universe(bmap2);
+	intersect = isl_basic_map_plain_is_universe(bmap2);
 	if (intersect < 0 || intersect)
 		return intersect < 0 ? isl_bool_error : isl_bool_false;
 

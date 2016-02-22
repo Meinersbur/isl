@@ -220,6 +220,7 @@ __isl_give isl_set *isl_set_from_params(__isl_take isl_set *set);
 int isl_basic_set_dims_get_sign(__isl_keep isl_basic_set *bset,
 	enum isl_dim_type type, unsigned pos, unsigned n, int *signs);
 
+isl_bool isl_basic_set_plain_is_universe(__isl_keep isl_basic_set *bset);
 isl_bool isl_basic_set_is_universe(__isl_keep isl_basic_set *bset);
 isl_bool isl_basic_set_plain_is_empty(__isl_keep isl_basic_set *bset);
 __isl_export
