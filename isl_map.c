@@ -7915,18 +7915,68 @@ isl_bool isl_set_is_strict_subset(__isl_keep isl_set *set1,
 	return isl_map_is_strict_subset((isl_map *)set1, (isl_map *)set2);
 }
 
-isl_bool isl_basic_map_is_universe(__isl_keep isl_basic_map *bmap)
+/* Is "bmap" obviously equal to the universe with the same space?
+ *
+ * That is, does it not have any constraints?
+ */
+static isl_bool isl_basic_map_plain_is_universe(__isl_keep isl_basic_map *bmap)
 {
 	if (!bmap)
 		return isl_bool_error;
 	return bmap->n_eq == 0 && bmap->n_ineq == 0;
 }
 
+/* If "c" does not involve any existentially quantified variables,
+ * then set *univ to false and abort
+ */
+static isl_stat involves_divs(__isl_take isl_constraint *c, void *user)
+{
+	isl_bool *univ = user;
+	unsigned n;
+
+	n = isl_constraint_dim(c, isl_dim_div);
+	*univ = isl_constraint_involves_dims(c, isl_dim_div, 0, n);
+	isl_constraint_free(c);
+	if (*univ < 0 || !*univ)
+		return isl_stat_error;
+	return isl_stat_ok;
+}
+
+/* Is "bmap" equal to the universe with the same space?
+ *
+ * First check if it is obviously equal to the universe.
+ * If not and if there are any constraints not involving
+ * existentially quantified variables, then it is certainly
+ * not equal to the universe.
+ * Otherwise, check if the universe is a subset of "bmap".
+ */
+isl_bool isl_basic_map_is_universe(__isl_keep isl_basic_map *bmap)
+{
+	isl_bool univ;
+	isl_basic_map *test;
+
+	univ = isl_basic_map_plain_is_universe(bmap);
+	if (univ < 0 || univ)
+		return univ;
+	if (isl_basic_map_dim(bmap, isl_dim_div) == 0)
+		return isl_bool_false;
+	univ = isl_bool_true;
+	if (isl_basic_map_foreach_constraint(bmap, &involves_divs, &univ) < 0 &&
+	    univ)
+		return isl_bool_error;
+	if (univ < 0 || !univ)
+		return univ;
+	test = isl_basic_map_universe(isl_basic_map_get_space(bmap));
+	univ = isl_basic_map_is_subset(test, bmap);
+	isl_basic_map_free(test);
+	return univ;
+}
+
+/* Is "bset" equal to the universe with the same space?
+ */
 isl_bool isl_basic_set_is_universe(__isl_keep isl_basic_set *bset)
 {
-	if (!bset)
-		return isl_bool_error;
-	return bset->n_eq == 0 && bset->n_ineq == 0;
+	return isl_basic_map_is_universe(bset);
 }
 
 isl_bool isl_map_plain_is_universe(__isl_keep isl_map *map)
@@ -7937,7 +7987,7 @@ isl_bool isl_map_plain_is_universe(__isl_keep isl_map *map)
 		return isl_bool_error;
 
 	for (i = 0; i < map->n; ++i) {
-		isl_bool r = isl_basic_map_is_universe(map->p[i]);
+		isl_bool r = isl_basic_map_plain_is_universe(map->p[i]);
 		if (r < 0 || r)
 			return r;
 	}
@@ -7963,7 +8013,7 @@ isl_bool isl_basic_map_is_empty(__isl_keep isl_basic_map *bmap)
 	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
 		return isl_bool_true;
 
-	if (isl_basic_map_is_universe(bmap))
+	if (isl_basic_map_plain_is_universe(bmap))
 		return isl_bool_false;
 
 	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL)) {
