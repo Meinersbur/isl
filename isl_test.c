@@ -6262,10 +6262,34 @@ static int test_domain_hash(isl_ctx *ctx)
 	return 0;
 }
 
+/* Check that a universe basic set that is not obviously equal to the universe
+ * is still recognized as being equal to the universe.
+ */
+static int test_universe(isl_ctx *ctx)
+{
+	const char *s;
+	isl_basic_set *bset;
+	isl_bool is_univ;
+
+	s = "{ [] : exists x, y : 3y <= 2x and y >= -3 + 2x and 2y >= 2 - x }";
+	bset = isl_basic_set_read_from_str(ctx, s);
+	is_univ = isl_basic_set_is_universe(bset);
+	isl_basic_set_free(bset);
+
+	if (is_univ < 0)
+		return -1;
+	if (!is_univ)
+		isl_die(ctx, isl_error_unknown,
+			"not recognized as universe set", return -1);
+
+	return 0;
+}
+
 struct {
 	const char *name;
 	int (*fn)(isl_ctx *ctx);
 } tests [] = {
+	{ "universe", &test_universe },
 	{ "domain hash", &test_domain_hash },
 	{ "dual", &test_dual },
 	{ "dependence analysis", &test_flow },
