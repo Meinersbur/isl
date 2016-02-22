@@ -8100,6 +8100,12 @@ error:
 /* Apply the expansion computed by isl_merge_divs.
  * The expansion itself is given by "exp" while the resulting
  * list of divs is given by "div".
+ *
+ * Move the integer divisions of "bset" into the right position
+ * according to "exp" and then introduce the additional integer
+ * divisions, adding div constraints.
+ * The moving should be done first to avoid moving coefficients
+ * in the definitions of the extra integer divisions.
  */
 __isl_give isl_basic_set *isl_basic_set_expand_divs(
 	__isl_take isl_basic_set *bset, __isl_take isl_mat *div, int *exp)
@@ -8124,12 +8130,15 @@ __isl_give isl_basic_set *isl_basic_set_expand_divs(
 		if (isl_basic_set_alloc_div(bset) < 0)
 			goto error;
 
-	j = n_div - 1;
-	for (i = div->n_row - 1; i >= 0; --i) {
-		if (j >= 0 && exp[j] == i) {
-			if (i != j)
-				isl_basic_map_swap_div(bset, i, j);
-			j--;
+	for (j = n_div - 1; j >= 0; --j) {
+		if (exp[j] == j)
+			break;
+		isl_basic_map_swap_div(bset, j, exp[j]);
+	}
+	j = 0;
+	for (i = 0; i < div->n_row; ++i) {
+		if (j < n_div && exp[j] == i) {
+			j++;
 		} else {
 			isl_seq_cpy(bset->div[i], div->row[i], div->n_col);
 			if (isl_basic_map_add_div_constraints(bset, i) < 0)
@@ -12323,22 +12332,27 @@ static int multi_aff_strides(__isl_keep isl_multi_aff *ma)
  *	f_i y + h_i = m_i alpha_i
  *
  * with alpha_i an additional existentially quantified variable.
+ *
+ * The input variables of "ma" correspond to a subset of the variables
+ * of "bmap".  There are "n_before" variables in "bmap" before this
+ * subset and "n_after" variables after this subset.
+ * The integer divisions of the affine expressions in "ma" are assumed
+ * to have been aligned.  There are "n_div_ma" of them and
+ * they appear first in "bmap", straight after the "n_after" variables.
  */
 static __isl_give isl_basic_map *add_ma_strides(
 	__isl_take isl_basic_map *bmap, __isl_keep isl_multi_aff *ma,
-	int n_before, int n_after)
+	int n_before, int n_after, int n_div_ma)
 {
 	int i, k;
 	int div;
 	int total;
 	int n_param;
 	int n_in;
-	int n_div;
 
 	total = isl_basic_map_total_dim(bmap);
 	n_param = isl_multi_aff_dim(ma, isl_dim_param);
 	n_in = isl_multi_aff_dim(ma, isl_dim_in);
-	n_div = isl_multi_aff_dim(ma, isl_dim_div);
 	for (i = 0; i < ma->n; ++i) {
 		int o_bmap = 0, o_ma = 1;
 
@@ -12362,9 +12376,9 @@ static __isl_give isl_basic_map *add_ma_strides(
 		isl_seq_clr(bmap->eq[k] + o_bmap, n_after);
 		o_bmap += n_after;
 		isl_seq_cpy(bmap->eq[k] + o_bmap,
-			    ma->p[i]->v->el + o_ma, n_div);
-		o_bmap += n_div;
-		o_ma += n_div;
+			    ma->p[i]->v->el + o_ma, n_div_ma);
+		o_bmap += n_div_ma;
+		o_ma += n_div_ma;
 		isl_seq_clr(bmap->eq[k] + o_bmap, 1 + total - o_bmap);
 		isl_int_neg(bmap->eq[k][1 + total], ma->p[i]->v->el[0]);
 		total++;
@@ -12513,7 +12527,7 @@ __isl_give isl_basic_map *isl_basic_map_preimage_multi_aff(
 	}
 
 	if (strides)
-		res = add_ma_strides(res, ma, n_before, n_after);
+		res = add_ma_strides(res, ma, n_before, n_after, n_div_ma);
 
 	isl_int_clear(f);
 	isl_int_clear(c1);

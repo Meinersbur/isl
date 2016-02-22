@@ -2219,35 +2219,49 @@ static int test_lexmin(struct isl_ctx *ctx)
 	return 0;
 }
 
-/* Check that isl_set_min_val and isl_set_max_val compute the correct
- * result on non-convex inputs.
+struct {
+	const char *set;
+	const char *obj;
+	__isl_give isl_val *(*fn)(__isl_keep isl_set *set,
+		__isl_keep isl_aff *obj);
+	const char *res;
+} opt_tests[] = {
+	{ "{ [-1]; [1] }", "{ [x] -> [x] }", &isl_set_min_val, "-1" },
+	{ "{ [-1]; [1] }", "{ [x] -> [x] }", &isl_set_max_val, "1" },
+	{ "{ [a, b] : 0 <= a, b <= 100 and b mod 2 = 0}",
+	  "{ [a, b] -> [floor((b - 2*floor((-a)/4))/5)] }",
+	  &isl_set_max_val, "30" },
+
+};
+
+/* Perform basic isl_set_min_val and isl_set_max_val tests.
+ * In particular, check the results on non-convex inputs.
  */
 static int test_min(struct isl_ctx *ctx)
 {
+	int i;
 	isl_set *set;
-	isl_aff *aff;
-	isl_val *val;
-	int min_ok, max_ok;
+	isl_aff *obj;
+	isl_val *val, *res;
+	isl_bool ok;
 
-	set = isl_set_read_from_str(ctx, "{ [-1]; [1] }");
-	aff = isl_aff_read_from_str(ctx, "{ [x] -> [x] }");
-	val = isl_set_min_val(set, aff);
-	min_ok = isl_val_is_negone(val);
-	isl_val_free(val);
-	val = isl_set_max_val(set, aff);
-	max_ok = isl_val_is_one(val);
-	isl_val_free(val);
-	isl_aff_free(aff);
-	isl_set_free(set);
+	for (i = 0; i < ARRAY_SIZE(opt_tests); ++i) {
+		set = isl_set_read_from_str(ctx, opt_tests[i].set);
+		obj = isl_aff_read_from_str(ctx, opt_tests[i].obj);
+		res = isl_val_read_from_str(ctx, opt_tests[i].res);
+		val = opt_tests[i].fn(set, obj);
+		ok = isl_val_eq(res, val);
+		isl_val_free(res);
+		isl_val_free(val);
+		isl_aff_free(obj);
+		isl_set_free(set);
 
-	if (min_ok < 0 || max_ok < 0)
-		return -1;
-	if (!min_ok)
-		isl_die(ctx, isl_error_unknown,
-			"unexpected minimum", return -1);
-	if (!max_ok)
-		isl_die(ctx, isl_error_unknown,
-			"unexpected maximum", return -1);
+		if (ok < 0)
+			return -1;
+		if (!ok)
+			isl_die(ctx, isl_error_unknown,
+				"unexpected optimum", return -1);
+	}
 
 	return 0;
 }
@@ -5181,6 +5195,8 @@ struct {
 	    "B[i] -> D[i] : exists a : i = 2 a + 1 }",
 	  "{ A[i] -> B[2i] }",
 	  "{ A[i] -> C[2i] }" },
+	{ "{ A[i] -> B[i] }", "{ C[i] -> A[(i + floor(i/3))/2] }",
+	  "{ C[i] -> B[j] : 2j = i + floor(i/3) }" },
 };
 
 static int test_preimage_union_map(isl_ctx *ctx)
