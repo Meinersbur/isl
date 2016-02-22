@@ -6984,17 +6984,13 @@ isl_bool isl_basic_map_div_is_known(__isl_keep isl_basic_map *bmap, int div)
 isl_bool isl_basic_map_divs_known(__isl_keep isl_basic_map *bmap)
 {
 	int i;
-	unsigned off;
 
 	if (!bmap)
 		return isl_bool_error;
 
-	off = isl_space_dim(bmap->dim, isl_dim_all);
 	for (i = 0; i < bmap->n_div; ++i) {
 		if (!isl_basic_map_div_is_known(bmap, i))
 			return isl_bool_false;
-		isl_assert(bmap->ctx, isl_int_is_zero(bmap->div[i][1+1+off+i]),
-				return isl_bool_error);
 	}
 	return isl_bool_true;
 }
@@ -8184,6 +8180,10 @@ struct isl_basic_map *isl_basic_map_order_divs(struct isl_basic_map *bmap)
 							    bmap->n_div-i);
 		if (pos == -1)
 			continue;
+		if (pos == 0)
+			isl_die(isl_basic_map_get_ctx(bmap), isl_error_internal,
+				"integer division depends on itself",
+				return isl_basic_map_free(bmap));
 		isl_basic_map_swap_div(bmap, i, i + pos);
 		--i;
 	}
