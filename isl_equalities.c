@@ -475,6 +475,7 @@ __isl_give isl_mat *isl_mat_variable_compression(__isl_take isl_mat *B,
 	__isl_give isl_mat **T2)
 {
 	int i;
+	isl_ctx *ctx;
 	struct isl_mat *H = NULL, *C = NULL, *H1, *U = NULL, *U1, *U2, *TC;
 	unsigned dim;
 
@@ -483,6 +484,7 @@ __isl_give isl_mat *isl_mat_variable_compression(__isl_take isl_mat *B,
 	if (!B)
 		goto error;
 
+	ctx = isl_mat_get_ctx(B);
 	dim = B->n_col - 1;
 	H = isl_mat_sub_alloc(B, 0, B->n_row, 1, dim);
 	H = isl_mat_left_hermite(H, 0, &U, T2);
@@ -494,11 +496,11 @@ __isl_give isl_mat *isl_mat_variable_compression(__isl_take isl_mat *B,
 		if (!*T2)
 			goto error;
 	}
-	C = isl_mat_alloc(B->ctx, 1+B->n_row, 1);
+	C = isl_mat_alloc(ctx, 1 + B->n_row, 1);
 	if (!C)
 		goto error;
 	isl_int_set_si(C->row[0][0], 1);
-	isl_mat_sub_neg(C->ctx, C->row+1, B->row, B->n_row, 0, 0, 1);
+	isl_mat_sub_neg(ctx, C->row + 1, B->row, B->n_row, 0, 0, 1);
 	H1 = isl_mat_sub_alloc(H, 0, H->n_row, 0, H->n_row);
 	H1 = isl_mat_lin_to_aff(H1);
 	TC = isl_mat_inverse_product(H1, C);
@@ -508,7 +510,6 @@ __isl_give isl_mat *isl_mat_variable_compression(__isl_take isl_mat *B,
 	if (!isl_int_is_one(TC->row[0][0])) {
 		for (i = 0; i < B->n_row; ++i) {
 			if (!isl_int_is_divisible_by(TC->row[1+i][0], TC->row[0][0])) {
-				struct isl_ctx *ctx = B->ctx;
 				isl_mat_free(B);
 				isl_mat_free(TC);
 				isl_mat_free(U);
