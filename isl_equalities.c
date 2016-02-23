@@ -430,6 +430,29 @@ __isl_give isl_mat *isl_mat_parameter_compression_ext(__isl_take isl_mat *B,
 	return isl_mat_parameter_compression(B, d);
 }
 
+/* Return a compression matrix that indicates that there are no solutions
+ * to the original constraints.  In particular, return a zero-column
+ * matrix with 1 + dim rows.  If "T2" is not NULL, then assign *T2
+ * the inverse of this matrix.  *T2 may already have been assigned
+ * matrix, so free it first.
+ * "free1", "free2" and "free3" are temporary matrices that are
+ * not useful when an empty compression is returned.  They are
+ * simply freed.
+ */
+static __isl_give isl_mat *empty_compression(isl_ctx *ctx, unsigned dim,
+	__isl_give isl_mat **T2, __isl_take isl_mat *free1,
+	__isl_take isl_mat *free2, __isl_take isl_mat *free3)
+{
+	isl_mat_free(free1);
+	isl_mat_free(free2);
+	isl_mat_free(free3);
+	if (T2) {
+		isl_mat_free(*T2);
+		*T2 = isl_mat_alloc(ctx, 0, 1 + dim);
+	}
+	return isl_mat_alloc(ctx, 1 + dim, 0);
+}
+
 /* Given a set of equalities
  *
  *		M x - c = 0
@@ -514,16 +537,8 @@ __isl_give isl_mat *isl_mat_variable_compression(__isl_take isl_mat *B,
 	isl_mat_free(H);
 	if (!isl_int_is_one(C->row[0][0])) {
 		for (i = 0; i < B->n_row; ++i) {
-			if (!isl_int_is_divisible_by(C->row[1+i][0], C->row[0][0])) {
-				isl_mat_free(B);
-				isl_mat_free(C);
-				isl_mat_free(U);
-				if (T2) {
-					isl_mat_free(*T2);
-					*T2 = isl_mat_alloc(ctx, 0, 1 + dim);
-				}
-				return isl_mat_alloc(ctx, 1 + dim, 0);
-			}
+			if (!isl_int_is_divisible_by(C->row[1+i][0], C->row[0][0]))
+				return empty_compression(ctx, dim, T2, B, C, U);
 			isl_seq_scale_down(C->row[1+i], C->row[1+i], C->row[0][0], 1);
 		}
 		isl_int_set_si(C->row[0][0], 1);
