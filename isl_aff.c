@@ -6209,6 +6209,7 @@ error:
 #include <isl_multi_apply_set.c>
 #include <isl_multi_coalesce.c>
 #include <isl_multi_gist.c>
+#include <isl_multi_hash.c>
 #include <isl_multi_intersect.c>
 
 /* Scale the elements of "pma" by the corresponding elements of "mv".

@@ -336,6 +336,7 @@ EXTRA_DIST = \
 	isl_multi_coalesce.c \
 	isl_multi_floor.c \
 	isl_multi_gist.c \
+	isl_multi_hash.c \
 	isl_multi_intersect.c \
 	print_templ.c \
 	isl_power_templ.c \

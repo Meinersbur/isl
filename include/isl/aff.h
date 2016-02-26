@@ -692,6 +692,8 @@ void isl_union_pw_multi_aff_dump(__isl_keep isl_union_pw_multi_aff *upma);
 __isl_give char *isl_union_pw_multi_aff_to_str(
 	__isl_keep isl_union_pw_multi_aff *upma);
 
+uint32_t isl_multi_pw_aff_get_hash(__isl_keep isl_multi_pw_aff *mpa);
+
 __isl_give isl_multi_pw_aff *isl_multi_pw_aff_identity(
 	__isl_take isl_space *space);
 __isl_constructor
