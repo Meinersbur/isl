@@ -24,6 +24,24 @@ isl_ctx *isl_local_space_get_ctx(__isl_keep isl_local_space *ls)
 	return ls ? ls->dim->ctx : NULL;
 }
 
+/* Return a hash value that digests "ls".
+ */
+uint32_t isl_local_space_get_hash(__isl_keep isl_local_space *ls)
+{
+	uint32_t hash, space_hash, div_hash;
+
+	if (!ls)
+		return 0;
+
+	hash = isl_hash_init();
+	space_hash = isl_space_get_hash(ls->dim);
+	isl_hash_hash(hash, space_hash);
+	div_hash = isl_mat_get_hash(ls->div);
+	isl_hash_hash(hash, div_hash);
+
+	return hash;
+}
+
 __isl_give isl_local_space *isl_local_space_alloc_div(__isl_take isl_space *dim,
 	__isl_take isl_mat *div)
 {

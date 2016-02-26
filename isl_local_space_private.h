@@ -12,6 +12,8 @@ struct isl_local_space {
 	isl_mat *div;
 };
 
+uint32_t isl_local_space_get_hash(__isl_keep isl_local_space *ls);
+
 __isl_give isl_local_space *isl_local_space_alloc(__isl_take isl_space *dim,
 	unsigned n_div);
 __isl_give isl_local_space *isl_local_space_alloc_div(__isl_take isl_space *dim,
