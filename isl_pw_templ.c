@@ -14,10 +14,7 @@
 #include <isl/aff.h>
 #include <isl_val_private.h>
 
-#define xFN(TYPE,NAME) TYPE ## _ ## NAME
-#define FN(TYPE,NAME) xFN(TYPE,NAME)
-#define xS(TYPE,NAME) struct TYPE ## _ ## NAME
-#define S(TYPE,NAME) xS(TYPE,NAME)
+#include <isl_pw_macro.h>
 
 #ifdef HAS_TYPE
 __isl_give PW *FN(PW,alloc_size)(__isl_take isl_space *dim,
