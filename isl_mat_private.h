@@ -20,6 +20,8 @@ struct isl_mat {
 	struct isl_blk block;
 };
 
+uint32_t isl_mat_get_hash(__isl_keep isl_mat *mat);
+
 __isl_give isl_mat *isl_mat_sub_alloc(__isl_keep isl_mat *mat,
 	unsigned first_row, unsigned n_row, unsigned first_col, unsigned n_col);
 __isl_give isl_mat *isl_mat_sub_alloc6(isl_ctx *ctx, isl_int **row,

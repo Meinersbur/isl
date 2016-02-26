@@ -24,6 +24,29 @@ isl_ctx *isl_mat_get_ctx(__isl_keep isl_mat *mat)
 	return mat ? mat->ctx : NULL;
 }
 
+/* Return a hash value that digests "mat".
+ */
+uint32_t isl_mat_get_hash(__isl_keep isl_mat *mat)
+{
+	int i;
+	uint32_t hash;
+
+	if (!mat)
+		return 0;
+
+	hash = isl_hash_init();
+	isl_hash_byte(hash, mat->n_row & 0xFF);
+	isl_hash_byte(hash, mat->n_col & 0xFF);
+	for (i = 0; i < mat->n_row; ++i) {
+		uint32_t row_hash;
+
+		row_hash = isl_seq_get_hash(mat->row[i], mat->n_col);
+		isl_hash_hash(hash, row_hash);
+	}
+
+	return hash;
+}
+
 struct isl_mat *isl_mat_alloc(struct isl_ctx *ctx,
 	unsigned n_row, unsigned n_col)
 {
