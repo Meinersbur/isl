@@ -275,6 +275,24 @@ isl_ctx *isl_aff_get_ctx(__isl_keep isl_aff *aff)
 	return aff ? isl_local_space_get_ctx(aff->ls) : NULL;
 }
 
+/* Return a hash value that digests "aff".
+ */
+uint32_t isl_aff_get_hash(__isl_keep isl_aff *aff)
+{
+	uint32_t hash, ls_hash, v_hash;
+
+	if (!aff)
+		return 0;
+
+	hash = isl_hash_init();
+	ls_hash = isl_local_space_get_hash(aff->ls);
+	isl_hash_hash(hash, ls_hash);
+	v_hash = isl_vec_get_hash(aff->v);
+	isl_hash_hash(hash, v_hash);
+
+	return hash;
+}
+
 /* Externally, an isl_aff has a map space, but internally, the
  * ls field corresponds to the domain of that space.
  */

@@ -25,6 +25,7 @@ __isl_give isl_aff *isl_aff_copy(__isl_keep isl_aff *aff);
 __isl_null isl_aff *isl_aff_free(__isl_take isl_aff *aff);
 
 isl_ctx *isl_aff_get_ctx(__isl_keep isl_aff *aff);
+uint32_t isl_aff_get_hash(__isl_keep isl_aff *aff);
 
 int isl_aff_dim(__isl_keep isl_aff *aff, enum isl_dim_type type);
 isl_bool isl_aff_involves_dims(__isl_keep isl_aff *aff,
