@@ -261,6 +261,7 @@ pkginclude_HEADERS = \
 	include/isl/ilp.h \
 	include/isl/hash.h \
 	include/isl/hmap.h \
+	include/isl/hmap_templ.c \
 	include/isl/list.h \
 	include/isl/local_space.h \
 	include/isl/lp.h \
@@ -329,7 +330,6 @@ EXTRA_DIST = \
 	LICENSE \
 	isl_config_post.h \
 	basis_reduction_templ.c \
-	isl_hmap_templ.c \
 	isl_list_templ.c \
 	isl_list_templ.h \
 	isl_map_lexopt_templ.c \

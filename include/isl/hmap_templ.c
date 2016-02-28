@@ -13,36 +13,30 @@
 #include <isl/ctx.h>
 #include <isl/hash.h>
 
-#define xCAT(A,B) A ## B
-#define CAT(A,B) xCAT(A,B)
-#define KEY CAT(isl_,KEY_BASE)
-#define VAL CAT(isl_,VAL_BASE)
-#define xFN(TYPE,NAME) TYPE ## _ ## NAME
-#define FN(TYPE,NAME) xFN(TYPE,NAME)
-#define xHMAP(KEY,VAL_BASE) KEY ## _to_ ## VAL_BASE
-#define yHMAP(KEY,VAL_BASE) xHMAP(KEY,VAL_BASE)
-#define HMAP yHMAP(KEY,VAL_BASE)
-#define HMAP_BASE yHMAP(KEY_BASE,VAL_BASE)
-#define xS(TYPE1,TYPE2,NAME) struct isl_ ## TYPE1 ## _ ## TYPE2 ## _ ## NAME
-#define yS(TYPE1,TYPE2,NAME) xS(TYPE1,TYPE2,NAME)
-#define S(NAME) yS(KEY_BASE,VAL_BASE,NAME)
+#define ISL_xCAT(A,B) A ## B
+#define ISL_CAT(A,B) ISL_xCAT(A,B)
+#define ISL_xFN(TYPE,NAME) TYPE ## _ ## NAME
+#define ISL_FN(TYPE,NAME) ISL_xFN(TYPE,NAME)
+#define ISL_xS(TYPE1,TYPE2,NAME) struct isl_ ## TYPE1 ## _ ## TYPE2 ## _ ## NAME
+#define ISL_yS(TYPE1,TYPE2,NAME) ISL_xS(TYPE1,TYPE2,NAME)
+#define ISL_S(NAME) ISL_yS(ISL_KEY,ISL_VAL,NAME)
 
-struct HMAP {
+struct ISL_HMAP {
 	int ref;
 	isl_ctx *ctx;
 	struct isl_hash_table table;
 };
 
-S(pair) {
-	KEY *key;
-	VAL *val;
+ISL_S(pair) {
+	ISL_KEY *key;
+	ISL_VAL *val;
 };
 
-__isl_give HMAP *FN(HMAP,alloc)(isl_ctx *ctx, int min_size)
+__isl_give ISL_HMAP *ISL_FN(ISL_HMAP,alloc)(isl_ctx *ctx, int min_size)
 {
-	HMAP *hmap;
+	ISL_HMAP *hmap;
 
-	hmap = isl_calloc_type(ctx, HMAP);
+	hmap = isl_calloc_type(ctx, ISL_HMAP);
 	if (!hmap)
 		return NULL;
 
@@ -51,22 +45,22 @@ __isl_give HMAP *FN(HMAP,alloc)(isl_ctx *ctx, int min_size)
 	hmap->ref = 1;
 
 	if (isl_hash_table_init(ctx, &hmap->table, min_size) < 0)
-		return FN(HMAP,free)(hmap);
+		return ISL_FN(ISL_HMAP,free)(hmap);
 
 	return hmap;
 }
 
 static isl_stat free_pair(void **entry, void *user)
 {
-	S(pair) *pair = *entry;
-	FN(KEY,free)(pair->key);
-	FN(VAL,free)(pair->val);
+	ISL_S(pair) *pair = *entry;
+	ISL_FN(ISL_KEY,free)(pair->key);
+	ISL_FN(ISL_VAL,free)(pair->val);
 	free(pair);
 	*entry = NULL;
 	return isl_stat_ok;
 }
 
-__isl_null HMAP *FN(HMAP,free)(__isl_take HMAP *hmap)
+__isl_null ISL_HMAP *ISL_FN(ISL_HMAP,free)(__isl_take ISL_HMAP *hmap)
 {
 	if (!hmap)
 		return NULL;
@@ -79,7 +73,7 @@ __isl_null HMAP *FN(HMAP,free)(__isl_take HMAP *hmap)
 	return NULL;
 }
 
-isl_ctx *FN(HMAP,get_ctx)(__isl_keep HMAP *hmap)
+isl_ctx *ISL_FN(ISL_HMAP,get_ctx)(__isl_keep ISL_HMAP *hmap)
 {
 	return hmap ? hmap->ctx : NULL;
 }
@@ -87,12 +81,12 @@ isl_ctx *FN(HMAP,get_ctx)(__isl_keep HMAP *hmap)
 /* Add a mapping from "key" to "val" to the associative array
  * pointed to by user.
  */
-static isl_stat add_key_val(__isl_take KEY *key, __isl_take VAL *val,
+static isl_stat add_key_val(__isl_take ISL_KEY *key, __isl_take ISL_VAL *val,
 	void *user)
 {
-	HMAP **hmap = (HMAP **) user;
+	ISL_HMAP **hmap = (ISL_HMAP **) user;
 
-	*hmap = FN(HMAP,set)(*hmap, key, val);
+	*hmap = ISL_FN(ISL_HMAP,set)(*hmap, key, val);
 
 	if (!*hmap)
 		return isl_stat_error;
@@ -100,21 +94,21 @@ static isl_stat add_key_val(__isl_take KEY *key, __isl_take VAL *val,
 	return isl_stat_ok;
 }
 
-__isl_give HMAP *FN(HMAP,dup)(__isl_keep HMAP *hmap)
+__isl_give ISL_HMAP *ISL_FN(ISL_HMAP,dup)(__isl_keep ISL_HMAP *hmap)
 {
-	HMAP *dup;
+	ISL_HMAP *dup;
 
 	if (!hmap)
 		return NULL;
 
-	dup = FN(HMAP,alloc)(hmap->ctx, hmap->table.n);
-	if (FN(HMAP,foreach)(hmap, &add_key_val, &dup) < 0)
-		return FN(HMAP,free)(dup);
+	dup = ISL_FN(ISL_HMAP,alloc)(hmap->ctx, hmap->table.n);
+	if (ISL_FN(ISL_HMAP,foreach)(hmap, &add_key_val, &dup) < 0)
+		return ISL_FN(ISL_HMAP,free)(dup);
 
 	return dup;
 }
 
-__isl_give HMAP *FN(HMAP,cow)(__isl_take HMAP *hmap)
+__isl_give ISL_HMAP *ISL_FN(ISL_HMAP,cow)(__isl_take ISL_HMAP *hmap)
 {
 	if (!hmap)
 		return NULL;
@@ -122,10 +116,10 @@ __isl_give HMAP *FN(HMAP,cow)(__isl_take HMAP *hmap)
 	if (hmap->ref == 1)
 		return hmap;
 	hmap->ref--;
-	return FN(HMAP,dup)(hmap);
+	return ISL_FN(ISL_HMAP,dup)(hmap);
 }
 
-__isl_give HMAP *FN(HMAP,copy)(__isl_keep HMAP *hmap)
+__isl_give ISL_HMAP *ISL_FN(ISL_HMAP,copy)(__isl_keep ISL_HMAP *hmap)
 {
 	if (!hmap)
 		return NULL;
@@ -136,10 +130,10 @@ __isl_give HMAP *FN(HMAP,copy)(__isl_keep HMAP *hmap)
 
 static int has_key(const void *entry, const void *c_key)
 {
-	const S(pair) *pair = entry;
-	KEY *key = (KEY *) c_key;
+	const ISL_S(pair) *pair = entry;
+	ISL_KEY *key = (ISL_KEY *) c_key;
 
-	return KEY_EQUAL(pair->key, key);
+	return ISL_KEY_IS_EQUAL(pair->key, key);
 }
 
 /* If "hmap" contains a value associated to "key", then return
@@ -149,18 +143,18 @@ static int has_key(const void *entry, const void *c_key)
  * If an error occurs, then return
  * (isl_bool_error, NULL).
  */
-__isl_give ISL_MAYBE(VAL) FN(HMAP,try_get)(__isl_keep HMAP *hmap,
-	__isl_keep KEY *key)
+__isl_give ISL_MAYBE(ISL_VAL) ISL_FN(ISL_HMAP,try_get)(
+	__isl_keep ISL_HMAP *hmap, __isl_keep ISL_KEY *key)
 {
 	struct isl_hash_table_entry *entry;
-	S(pair) *pair;
+	ISL_S(pair) *pair;
 	uint32_t hash;
-	ISL_MAYBE(VAL) res = { isl_bool_false, NULL };
+	ISL_MAYBE(ISL_VAL) res = { isl_bool_false, NULL };
 
 	if (!hmap || !key)
 		goto error;
 
-	hash = FN(KEY,get_hash)(key);
+	hash = ISL_FN(ISL_KEY,get_hash)(key);
 	entry = isl_hash_table_find(hmap->ctx, &hmap->table, hash,
 					&has_key, key, 0);
 
@@ -170,7 +164,7 @@ __isl_give ISL_MAYBE(VAL) FN(HMAP,try_get)(__isl_keep HMAP *hmap,
 	pair = entry->data;
 
 	res.valid = isl_bool_true;
-	res.value = FN(VAL,copy)(pair->val);
+	res.value = ISL_FN(ISL_VAL,copy)(pair->val);
 	if (!res.value)
 		res.valid = isl_bool_error;
 	return res;
@@ -184,12 +178,13 @@ error:
  * isl_bool_true.  Otherwise, return isl_bool_false.
  * Return isl_bool_error on error.
  */
-isl_bool FN(HMAP,has)(__isl_keep HMAP *hmap, __isl_keep KEY *key)
+isl_bool ISL_FN(ISL_HMAP,has)(__isl_keep ISL_HMAP *hmap,
+	__isl_keep ISL_KEY *key)
 {
-	ISL_MAYBE(VAL) res;
+	ISL_MAYBE(ISL_VAL) res;
 
-	res = FN(HMAP,try_get)(hmap, key);
-	FN(VAL,free)(res.value);
+	res = ISL_FN(ISL_HMAP,try_get)(hmap, key);
+	ISL_FN(ISL_VAL,free)(res.value);
 
 	return res.valid;
 }
@@ -198,12 +193,13 @@ isl_bool FN(HMAP,has)(__isl_keep HMAP *hmap, __isl_keep KEY *key)
  * a copy of that value.  Otherwise, return NULL.
  * Return NULL on error.
  */
-__isl_give VAL *FN(HMAP,get)(__isl_keep HMAP *hmap, __isl_take KEY *key)
+__isl_give ISL_VAL *ISL_FN(ISL_HMAP,get)(__isl_keep ISL_HMAP *hmap,
+	__isl_take ISL_KEY *key)
 {
-	VAL *res;
+	ISL_VAL *res;
 
-	res = FN(HMAP,try_get)(hmap, key).value;
-	FN(KEY,free)(key);
+	res = ISL_FN(ISL_HMAP,try_get)(hmap, key).value;
+	ISL_FN(ISL_KEY,free)(key);
 	return res;
 }
 
@@ -212,29 +208,30 @@ __isl_give VAL *FN(HMAP,get)(__isl_keep HMAP *hmap, __isl_take KEY *key)
  *
  * If "key" is not mapped to anything, then we leave "hmap" untouched"
  */
-__isl_give HMAP *FN(HMAP,drop)(__isl_take HMAP *hmap, __isl_take KEY *key)
+__isl_give ISL_HMAP *ISL_FN(ISL_HMAP,drop)(__isl_take ISL_HMAP *hmap,
+	__isl_take ISL_KEY *key)
 {
 	struct isl_hash_table_entry *entry;
-	S(pair) *pair;
+	ISL_S(pair) *pair;
 	uint32_t hash;
 
 	if (!hmap || !key)
 		goto error;
 
-	hash = FN(KEY,get_hash)(key);
+	hash = ISL_FN(ISL_KEY,get_hash)(key);
 	entry = isl_hash_table_find(hmap->ctx, &hmap->table, hash,
 					&has_key, key, 0);
 	if (!entry) {
-		FN(KEY,free)(key);
+		ISL_FN(ISL_KEY,free)(key);
 		return hmap;
 	}
 
-	hmap = FN(HMAP,cow)(hmap);
+	hmap = ISL_FN(ISL_HMAP,cow)(hmap);
 	if (!hmap)
 		goto error;
 	entry = isl_hash_table_find(hmap->ctx, &hmap->table, hash,
 					&has_key, key, 0);
-	FN(KEY,free)(key);
+	ISL_FN(ISL_KEY,free)(key);
 
 	if (!entry)
 		isl_die(hmap->ctx, isl_error_internal,
@@ -242,14 +239,14 @@ __isl_give HMAP *FN(HMAP,drop)(__isl_take HMAP *hmap, __isl_take KEY *key)
 
 	pair = entry->data;
 	isl_hash_table_remove(hmap->ctx, &hmap->table, entry);
-	FN(KEY,free)(pair->key);
-	FN(VAL,free)(pair->val);
+	ISL_FN(ISL_KEY,free)(pair->key);
+	ISL_FN(ISL_VAL,free)(pair->val);
 	free(pair);
 
 	return hmap;
 error:
-	FN(KEY,free)(key);
-	FN(HMAP,free)(hmap);
+	ISL_FN(ISL_KEY,free)(key);
+	ISL_FN(ISL_HMAP,free)(hmap);
 	return NULL;
 }
 
@@ -259,33 +256,33 @@ error:
  * If key happened to be mapped to "val" already, then we leave
  * "hmap" untouched.
  */
-__isl_give HMAP *FN(HMAP,set)(__isl_take HMAP *hmap,
-	__isl_take KEY *key, __isl_take VAL *val)
+__isl_give ISL_HMAP *ISL_FN(ISL_HMAP,set)(__isl_take ISL_HMAP *hmap,
+	__isl_take ISL_KEY *key, __isl_take ISL_VAL *val)
 {
 	struct isl_hash_table_entry *entry;
-	S(pair) *pair;
+	ISL_S(pair) *pair;
 	uint32_t hash;
 
 	if (!hmap || !key || !val)
 		goto error;
 
-	hash = FN(KEY,get_hash)(key);
+	hash = ISL_FN(ISL_KEY,get_hash)(key);
 	entry = isl_hash_table_find(hmap->ctx, &hmap->table, hash,
 					&has_key, key, 0);
 	if (entry) {
 		int equal;
 		pair = entry->data;
-		equal = VAL_EQUAL(pair->val, val);
+		equal = ISL_VAL_IS_EQUAL(pair->val, val);
 		if (equal < 0)
 			goto error;
 		if (equal) {
-			FN(KEY,free)(key);
-			FN(VAL,free)(val);
+			ISL_FN(ISL_KEY,free)(key);
+			ISL_FN(ISL_VAL,free)(val);
 			return hmap;
 		}
 	}
 
-	hmap = FN(HMAP,cow)(hmap);
+	hmap = ISL_FN(ISL_HMAP,cow)(hmap);
 	if (!hmap)
 		goto error;
 
@@ -297,13 +294,13 @@ __isl_give HMAP *FN(HMAP,set)(__isl_take HMAP *hmap,
 
 	if (entry->data) {
 		pair = entry->data;
-		FN(VAL,free)(pair->val);
+		ISL_FN(ISL_VAL,free)(pair->val);
 		pair->val = val;
-		FN(KEY,free)(key);
+		ISL_FN(ISL_KEY,free)(key);
 		return hmap;
 	}
 
-	pair = isl_alloc_type(hmap->ctx, S(pair));
+	pair = isl_alloc_type(hmap->ctx, ISL_S(pair));
 	if (!pair)
 		goto error;
 
@@ -312,9 +309,9 @@ __isl_give HMAP *FN(HMAP,set)(__isl_take HMAP *hmap,
 	pair->val = val;
 	return hmap;
 error:
-	FN(KEY,free)(key);
-	FN(VAL,free)(val);
-	return FN(HMAP,free)(hmap);
+	ISL_FN(ISL_KEY,free)(key);
+	ISL_FN(ISL_VAL,free)(val);
+	return ISL_FN(ISL_HMAP,free)(hmap);
 }
 
 /* Internal data structure for isl_map_to_basic_set_foreach.
@@ -322,8 +319,9 @@ error:
  * fn is the function that should be called on each entry.
  * user is the user-specified final argument to fn.
  */
-S(foreach_data) {
-	isl_stat (*fn)(__isl_take KEY *key, __isl_take VAL *val, void *user);
+ISL_S(foreach_data) {
+	isl_stat (*fn)(__isl_take ISL_KEY *key, __isl_take ISL_VAL *val,
+		void *user);
 	void *user;
 };
 
@@ -331,20 +329,21 @@ S(foreach_data) {
  */
 static isl_stat call_on_copy(void **entry, void *user)
 {
-	S(pair) *pair = *entry;
-	S(foreach_data) *data = (S(foreach_data) *) user;
+	ISL_S(pair) *pair = *entry;
+	ISL_S(foreach_data) *data = (ISL_S(foreach_data) *) user;
 
-	return data->fn(FN(KEY,copy)(pair->key), FN(VAL,copy)(pair->val),
-			data->user);
+	return data->fn(ISL_FN(ISL_KEY,copy)(pair->key),
+			ISL_FN(ISL_VAL,copy)(pair->val), data->user);
 }
 
 /* Call "fn" on each pair of key and value in "hmap".
  */
-isl_stat FN(HMAP,foreach)(__isl_keep HMAP *hmap,
-	isl_stat (*fn)(__isl_take KEY *key, __isl_take VAL *val, void *user),
+isl_stat ISL_FN(ISL_HMAP,foreach)(__isl_keep ISL_HMAP *hmap,
+	isl_stat (*fn)(__isl_take ISL_KEY *key, __isl_take ISL_VAL *val,
+		void *user),
 	void *user)
 {
-	S(foreach_data) data = { fn, user };
+	ISL_S(foreach_data) data = { fn, user };
 
 	if (!hmap)
 		return isl_stat_error;
@@ -358,35 +357,36 @@ isl_stat FN(HMAP,foreach)(__isl_keep HMAP *hmap,
  * p is the printer on which the associative array is being printed.
  * first is set if the current key-value pair is the first to be printed.
  */
-S(print_data) {
+ISL_S(print_data) {
 	isl_printer *p;
 	int first;
 };
 
 /* Print the given key-value pair to data->p.
  */
-static isl_stat print_pair(__isl_take KEY *key, __isl_take VAL *val, void *user)
+static isl_stat print_pair(__isl_take ISL_KEY *key, __isl_take ISL_VAL *val,
+	void *user)
 {
-	S(print_data) *data = user;
+	ISL_S(print_data) *data = user;
 
 	if (!data->first)
 		data->p = isl_printer_print_str(data->p, ", ");
-	data->p = FN(isl_printer_print,KEY_BASE)(data->p, key);
+	data->p = ISL_KEY_PRINT(data->p, key);
 	data->p = isl_printer_print_str(data->p, ": ");
-	data->p = FN(isl_printer_print,VAL_BASE)(data->p, val);
+	data->p = ISL_VAL_PRINT(data->p, val);
 	data->first = 0;
 
-	FN(KEY,free)(key);
-	FN(VAL,free)(val);
+	ISL_FN(ISL_KEY,free)(key);
+	ISL_FN(ISL_VAL,free)(val);
 	return isl_stat_ok;
 }
 
 /* Print the associative array to "p".
  */
-__isl_give isl_printer *FN(isl_printer_print,HMAP_BASE)(
-	__isl_take isl_printer *p, __isl_keep HMAP *hmap)
+__isl_give isl_printer *ISL_FN(isl_printer_print,ISL_HMAP_SUFFIX)(
+	__isl_take isl_printer *p, __isl_keep ISL_HMAP *hmap)
 {
-	S(print_data) data;
+	ISL_S(print_data) data;
 
 	if (!p || !hmap)
 		return isl_printer_free(p);
@@ -394,7 +394,7 @@ __isl_give isl_printer *FN(isl_printer_print,HMAP_BASE)(
 	p = isl_printer_print_str(p, "{");
 	data.p = p;
 	data.first = 1;
-	if (FN(HMAP,foreach)(hmap, &print_pair, &data) < 0)
+	if (ISL_FN(ISL_HMAP,foreach)(hmap, &print_pair, &data) < 0)
 		data.p = isl_printer_free(data.p);
 	p = data.p;
 	p = isl_printer_print_str(p, "}");
@@ -402,15 +402,15 @@ __isl_give isl_printer *FN(isl_printer_print,HMAP_BASE)(
 	return p;
 }
 
-void FN(HMAP,dump)(__isl_keep HMAP *hmap)
+void ISL_FN(ISL_HMAP,dump)(__isl_keep ISL_HMAP *hmap)
 {
 	isl_printer *printer;
 
 	if (!hmap)
 		return;
 
-	printer = isl_printer_to_file(FN(HMAP,get_ctx)(hmap), stderr);
-	printer = FN(isl_printer_print,HMAP_BASE)(printer, hmap);
+	printer = isl_printer_to_file(ISL_FN(ISL_HMAP,get_ctx)(hmap), stderr);
+	printer = ISL_FN(isl_printer_print,ISL_HMAP_SUFFIX)(printer, hmap);
 	printer = isl_printer_end_line(printer);
 
 	isl_printer_free(printer);
