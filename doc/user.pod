@@ -590,7 +590,12 @@ In particular, the C<isl_bool> type has three possible values:
 C<isl_bool_true> (a positive integer value), indicating I<true> or I<yes>;
 C<isl_bool_false> (the integer value zero), indicating I<false> or I<no>; and
 C<isl_bool_error> (a negative integer value), indicating that something
-went wrong.
+went wrong.  The following function can be used to negate an C<isl_bool>,
+where the negation of C<isl_bool_error> is C<isl_bool_error> again.
+
+	#include <isl/val.h>
+	isl_bool isl_bool_not(isl_bool b);
+
 The C<isl_stat> type has two possible values:
 C<isl_stat_ok> (the integer value zero), indicating a successful
 operation; and
