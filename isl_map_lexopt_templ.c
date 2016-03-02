@@ -49,7 +49,7 @@ static __isl_give TYPE *SF(basic_map_partial_lexopt,SUFFIX)(
 
 	res = SF(isl_basic_map_partial_lexopt,SUFFIX)(isl_basic_map_copy(bmap),
 			isl_basic_set_copy(dom->p[0]), empty, max);
-		
+
 	for (i = 1; i < dom->n; ++i) {
 		TYPE *res_i;
 		isl_set *empty_i;
