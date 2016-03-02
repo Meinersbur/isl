@@ -369,7 +369,11 @@ __isl_give isl_multi_aff *isl_multi_aff_move_dims(__isl_take isl_multi_aff *ma,
 	enum isl_dim_type dst_type, unsigned dst_pos,
 	enum isl_dim_type src_type, unsigned src_pos, unsigned n);
 
+__isl_give isl_set *isl_multi_aff_lex_lt_set(__isl_take isl_multi_aff *ma1,
+	__isl_take isl_multi_aff *ma2);
 __isl_give isl_set *isl_multi_aff_lex_le_set(__isl_take isl_multi_aff *ma1,
+	__isl_take isl_multi_aff *ma2);
+__isl_give isl_set *isl_multi_aff_lex_gt_set(__isl_take isl_multi_aff *ma1,
 	__isl_take isl_multi_aff *ma2);
 __isl_give isl_set *isl_multi_aff_lex_ge_set(__isl_take isl_multi_aff *ma1,
 	__isl_take isl_multi_aff *ma2);

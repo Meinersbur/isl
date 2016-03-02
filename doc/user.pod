@@ -6132,7 +6132,13 @@ into the first expression.
 	__isl_give isl_set *isl_multi_aff_lex_le_set(
 		__isl_take isl_multi_aff *ma1,
 		__isl_take isl_multi_aff *ma2);
+	__isl_give isl_set *isl_multi_aff_lex_lt_set(
+		__isl_take isl_multi_aff *ma1,
+		__isl_take isl_multi_aff *ma2);
 	__isl_give isl_set *isl_multi_aff_lex_ge_set(
+		__isl_take isl_multi_aff *ma1,
+		__isl_take isl_multi_aff *ma2);
+	__isl_give isl_set *isl_multi_aff_lex_gt_set(
 		__isl_take isl_multi_aff *ma1,
 		__isl_take isl_multi_aff *ma2);
 
