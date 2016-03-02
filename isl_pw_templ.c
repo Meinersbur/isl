@@ -1884,18 +1884,25 @@ __isl_give PW *FN(PW,scale)(__isl_take PW *pw, isl_int v)
 
 /* Return -1 if the piece "p1" should be sorted before "p2"
  * and 1 if it should be sorted after "p2".
+ * Return 0 if they do not need to be sorted in a specific order.
  *
- * The two pieces are compared on the basis of their domains.
+ * The two pieces are compared on the basis of their function value expressions.
  */
-static int FN(PW,sort_set_cmp)(const void *p1, const void *p2, void *arg)
+static int FN(PW,sort_field_cmp)(const void *p1, const void *p2, void *arg)
 {
-	isl_set *set1 = *(isl_set * const *)p1;
-	isl_set *set2 = *(isl_set * const *)p2;
+	struct FN(PW,piece) const *pc1 = p1;
+	struct FN(PW,piece) const *pc2 = p2;
 
-	return isl_set_plain_cmp(set1, set2);
+	return FN(EL,plain_cmp)(pc1->FIELD, pc2->FIELD);
 }
 
-/* We normalize in place, but if anything goes wrong we need
+/* Apply some normalization to "pw".
+ * In particular, sort the pieces according to their function value
+ * expressions and then combine pairs of adjacent pieces with
+ * the same such expression.
+ * Finally, normalize the domains of the pieces.
+ *
+ * We normalize in place, but if anything goes wrong we need
  * to return NULL, so we need to make sure we don't change the
  * meaning of any possible other copies of "pw".
  */
@@ -1906,19 +1913,10 @@ __isl_give PW *FN(PW,normalize)(__isl_take PW *pw)
 
 	if (!pw)
 		return NULL;
-	for (i = 0; i < pw->n; ++i) {
-		set = isl_set_normalize(isl_set_copy(pw->p[i].set));
-		if (!set)
-			return FN(PW,free)(pw);
-		isl_set_free(pw->p[i].set);
-		pw->p[i].set = set;
-	}
 	if (isl_sort(pw->p, pw->n, sizeof(pw->p[0]),
-		    &FN(PW,sort_set_cmp), NULL) < 0)
+		    &FN(PW,sort_field_cmp), NULL) < 0)
 		return FN(PW,free)(pw);
 	for (i = pw->n - 1; i >= 1; --i) {
-		if (!isl_set_plain_is_equal(pw->p[i - 1].set, pw->p[i].set))
-			continue;
 		if (!FN(EL,plain_is_equal)(pw->p[i - 1].FIELD, pw->p[i].FIELD))
 			continue;
 		set = isl_set_union(isl_set_copy(pw->p[i - 1].set),
@@ -1932,6 +1930,13 @@ __isl_give PW *FN(PW,normalize)(__isl_take PW *pw)
 		for (j = i + 1; j < pw->n; ++j)
 			pw->p[j - 1] = pw->p[j];
 		pw->n--;
+	}
+	for (i = 0; i < pw->n; ++i) {
+		set = isl_set_normalize(isl_set_copy(pw->p[i].set));
+		if (!set)
+			return FN(PW,free)(pw);
+		isl_set_free(pw->p[i].set);
+		pw->p[i].set = set;
 	}
 
 	return pw;
