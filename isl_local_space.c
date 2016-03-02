@@ -181,19 +181,11 @@ isl_bool isl_local_space_is_equal(__isl_keep isl_local_space *ls1,
  *
  * Return -1 if "ls1" is "smaller" than "ls2", 1 if "ls1" is "greater"
  * than "ls2" and 0 if they are equal.
- *
- * The order is fairly arbitrary.  We do "prefer" divs that only involve
- * earlier dimensions in the sense that we consider local spaces where
- * the first differing div involves earlier dimensions to be smaller.
  */
 int isl_local_space_cmp(__isl_keep isl_local_space *ls1,
 	__isl_keep isl_local_space *ls2)
 {
-	int i;
 	int cmp;
-	int known1, known2;
-	int last1, last2;
-	int n_col;
 
 	if (ls1 == ls2)
 		return 0;
@@ -206,29 +198,7 @@ int isl_local_space_cmp(__isl_keep isl_local_space *ls1,
 	if (cmp != 0)
 		return cmp;
 
-	if (ls1->div->n_row != ls2->div->n_row)
-		return ls1->div->n_row - ls2->div->n_row;
-
-	n_col = isl_mat_cols(ls1->div);
-	for (i = 0; i < ls1->div->n_row; ++i) {
-		known1 = isl_local_space_div_is_known(ls1, i);
-		known2 = isl_local_space_div_is_known(ls2, i);
-		if (!known1 && !known2)
-			continue;
-		if (!known1)
-			return 1;
-		if (!known2)
-			return -1;
-		last1 = isl_seq_last_non_zero(ls1->div->row[i] + 1, n_col - 1);
-		last2 = isl_seq_last_non_zero(ls2->div->row[i] + 1, n_col - 1);
-		if (last1 != last2)
-			return last1 - last2;
-		cmp = isl_seq_cmp(ls1->div->row[i], ls2->div->row[i], n_col);
-		if (cmp != 0)
-			return cmp;
-	}
-
-	return 0;
+	return isl_local_cmp(ls1->div, ls2->div);
 }
 
 int isl_local_space_dim(__isl_keep isl_local_space *ls,
