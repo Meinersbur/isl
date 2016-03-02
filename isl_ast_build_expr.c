@@ -1619,6 +1619,15 @@ struct isl_from_pw_aff_data {
 	isl_aff_list *aff_list;
 };
 
+/* Initialize "data" to an unused piece.
+ */
+static void set_none(struct isl_from_pw_aff_data *data)
+{
+	data->state = isl_state_none;
+	data->aff_list = NULL;
+	data->set_list = NULL;
+}
+
 /* Store "set" and "aff" in "data" as a single piece.
  */
 static void set_single(struct isl_from_pw_aff_data *data,
@@ -1933,9 +1942,7 @@ __isl_give isl_ast_expr *isl_ast_build_expr_from_pw_aff_internal(
 	data.build = build;
 	data.next = &res;
 	data.dom = isl_pw_aff_domain(isl_pw_aff_copy(pa));
-	data.state = isl_state_none;
-	data.aff_list = NULL;
-	data.set_list = NULL;
+	set_none(&data);
 
 	if (isl_pw_aff_foreach_piece(pa, &ast_expr_from_pw_aff, &data) < 0 ||
 	    build_last_piece(&data) < 0)
