@@ -1604,9 +1604,14 @@ enum isl_from_pw_aff_state {
  * If "state" is isl_state_max, then "set_list" and "aff_list" contain
  * a sequence of several previous subpieces that are equal to the maximum
  * of the entries in "aff_list" over the union of "set_list"
+ *
+ * During the construction of the pieces, "set" is NULL.
+ * After the construction, "set" is set to the union of the elements
+ * in "set_list", at which point "set_list" is set to NULL.
  */
 struct isl_from_pw_aff_piece {
 	enum isl_from_pw_aff_state state;
+	isl_set *set;
 	isl_set_list *set_list;
 	isl_aff_list *aff_list;
 };
@@ -1667,6 +1672,7 @@ static void isl_from_pw_aff_data_clear(struct isl_from_pw_aff_data *data)
 		return;
 
 	for (i = 0; i < data->max; ++i) {
+		isl_set_free(data->p[i].set);
 		isl_set_list_free(data->p[i].set_list);
 		isl_aff_list_free(data->p[i].aff_list);
 	}
@@ -1772,12 +1778,12 @@ error:
  * the piece at position "pos" in "data", allowing for a further extension
  * for the next piece(s).
  * In particular, "next" is set to a select operation that selects
- * an isl_ast_expr corresponding to data->aff_list on data->set_list and
+ * an isl_ast_expr corresponding to data->aff_list on data->set and
  * to an expression that will be filled in by later calls.
  * Return a pointer to this location.
  * Afterwards, the state of "data" is set to isl_state_none.
  *
- * The constraints of data->set_list are added to the generated
+ * The constraints of data->set are added to the generated
  * constraints of the build such that they can be exploited to simplify
  * the AST expression constructed from data->aff_list.
  */
@@ -1789,10 +1795,8 @@ static isl_ast_expr **add_intermediate_piece(struct isl_from_pw_aff_data *data,
 	isl_ast_expr *ternary, *arg;
 	isl_set *set, *gist;
 
-	set = isl_set_list_union(data->p[pos].set_list);
-	if (data->p[pos].state != isl_state_single)
-		set = isl_set_coalesce(set);
-	data->p[pos].set_list = NULL;
+	set = data->p[pos].set;
+	data->p[pos].set = NULL;
 	ctx = isl_ast_build_get_ctx(data->build);
 	ternary = isl_ast_expr_alloc_op(ctx, isl_ast_op_select, 3);
 	gist = isl_set_gist(isl_set_copy(set), isl_set_copy(data->dom));
@@ -1819,7 +1823,7 @@ static isl_ast_expr **add_intermediate_piece(struct isl_from_pw_aff_data *data,
  * and the domain is ignored.
  * Return isl_stat_ok on success and isl_stat_error on failure.
  *
- * The constraints of data->set_list are however added to the generated
+ * The constraints of data->set are however added to the generated
  * constraints of the build such that they can be exploited to simplify
  * the AST expression constructed from data->aff_list.
  */
@@ -1827,18 +1831,14 @@ static isl_stat add_last_piece(struct isl_from_pw_aff_data *data,
 	int pos, isl_ast_expr **next)
 {
 	isl_ast_build *build;
-	isl_set *set;
 
 	if (data->p[pos].state == isl_state_none)
 		isl_die(isl_ast_build_get_ctx(data->build), isl_error_invalid,
 			"cannot handle void expression", return isl_stat_error);
 
-	set = isl_set_list_union(data->p[pos].set_list);
-	if (data->p[pos].state != isl_state_single)
-		set = isl_set_coalesce(set);
-	data->p[pos].set_list = NULL;
 	build = isl_ast_build_copy(data->build);
-	build = isl_ast_build_restrict_generated(build, set);
+	build = isl_ast_build_restrict_generated(build, data->p[pos].set);
+	data->p[pos].set = NULL;
 	*next = ast_expr_from_aff_list(data->p[pos].aff_list,
 						data->p[pos].state, build);
 	data->p[pos].aff_list = NULL;
@@ -1856,6 +1856,8 @@ static isl_stat add_last_piece(struct isl_from_pw_aff_data *data,
  * When this function is called, data->n points to the current piece.
  * If this is an effective piece, then first increment data->n such
  * that data->n contains the number of pieces.
+ * The "set_list" fields are subsequently replaced by the corresponding
+ * "set" fields.
  *
  * Construct intermediate AST expressions for the initial pieces and
  * finish off with the final pieces.
@@ -1871,6 +1873,13 @@ static isl_ast_expr *build_pieces(struct isl_from_pw_aff_data *data)
 	if (data->n == 0)
 		isl_die(isl_ast_build_get_ctx(data->build), isl_error_invalid,
 			"cannot handle void expression", return NULL);
+
+	for (i = 0; i < data->n; ++i) {
+		data->p[i].set = isl_set_list_union(data->p[i].set_list);
+		if (data->p[i].state != isl_state_single)
+			data->p[i].set = isl_set_coalesce(data->p[i].set);
+		data->p[i].set_list = NULL;
+	}
 
 	for (i = 0; i + 1 < data->n; ++i) {
 		next = add_intermediate_piece(data, i, next);
