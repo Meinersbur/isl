@@ -139,6 +139,9 @@ __isl_give isl_qpolynomial *isl_qpolynomial_add_on_domain(
 	__isl_take isl_qpolynomial *qp1,
 	__isl_take isl_qpolynomial *qp2);
 
+int isl_qpolynomial_plain_cmp(__isl_keep isl_qpolynomial *qp1,
+	__isl_keep isl_qpolynomial *qp2);
+
 int isl_qpolynomial_degree(__isl_keep isl_qpolynomial *poly);
 __isl_give isl_qpolynomial *isl_qpolynomial_coeff(
 	__isl_keep isl_qpolynomial *poly,
