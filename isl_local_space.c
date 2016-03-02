@@ -18,6 +18,7 @@
 #include <isl_aff_private.h>
 #include <isl_vec_private.h>
 #include <isl_seq.h>
+#include <isl_local.h>
 
 isl_ctx *isl_local_space_get_ctx(__isl_keep isl_local_space *ls)
 {
@@ -752,10 +753,7 @@ isl_bool isl_local_space_div_is_known(__isl_keep isl_local_space *ls, int div)
 {
 	if (!ls)
 		return isl_bool_error;
-	if (div < 0 || div >= ls->div->n_row)
-		isl_die(isl_local_space_get_ctx(ls), isl_error_invalid,
-			"position out of bounds", return isl_bool_error);
-	return !isl_int_is_zero(ls->div->row[div][0]);
+	return isl_local_div_is_known(ls->div, div);
 }
 
 /* Does "ls" have an explicit representation for all local variables?

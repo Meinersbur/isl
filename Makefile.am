@@ -114,6 +114,8 @@ libisl_la_SOURCES = \
 	isl_ilp_private.h \
 	isl_input.c \
 	isl_int.h \
+	isl_local.h \
+	isl_local.c \
 	isl_local_space_private.h \
 	isl_local_space.c \
 	isl_lp.c \
