@@ -3798,6 +3798,7 @@ error:
 
 #include <isl_multi_templ.c>
 #include <isl_multi_apply_set.c>
+#include <isl_multi_cmp.c>
 #include <isl_multi_floor.c>
 #include <isl_multi_gist.c>
 
