@@ -2004,7 +2004,8 @@ C<isl_dim_in>, C<isl_dim_out> and C<isl_dim_div> for relations.
 A (basic or union) set or relation can also be constructed from a
 (union) (piecewise) (multiple) affine expression
 or a list of affine expressions
-(See L</"Functions">).
+(See L</"Functions">), provided these affine expressions do not
+involve any NaN.
 
 	__isl_give isl_basic_map *isl_basic_map_from_aff(
 		__isl_take isl_aff *aff);
