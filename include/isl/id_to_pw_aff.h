@@ -3,6 +3,7 @@
 
 #include <isl/id.h>
 #include <isl/aff_type.h>
+#include <isl/maybe_pw_aff.h>
 
 #define ISL_KEY_BASE	id
 #define ISL_VAL_BASE	pw_aff

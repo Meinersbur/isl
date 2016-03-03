@@ -142,23 +142,20 @@ static int has_key(const void *entry, const void *c_key)
 	return KEY_EQUAL(pair->key, key);
 }
 
-isl_bool FN(HMAP,has)(__isl_keep HMAP *hmap, __isl_keep KEY *key)
-{
-	uint32_t hash;
-
-	if (!hmap)
-		return isl_bool_error;
-
-	hash = FN(KEY,get_hash)(key);
-	return !!isl_hash_table_find(hmap->ctx, &hmap->table, hash,
-					&has_key, key, 0);
-}
-
-__isl_give VAL *FN(HMAP,get)(__isl_keep HMAP *hmap, __isl_take KEY *key)
+/* If "hmap" contains a value associated to "key", then return
+ * (isl_bool_true, copy of value).
+ * Otherwise, return
+ * (isl_bool_false, NULL).
+ * If an error occurs, then return
+ * (isl_bool_error, NULL).
+ */
+__isl_give ISL_MAYBE(VAL) FN(HMAP,try_get)(__isl_keep HMAP *hmap,
+	__isl_keep KEY *key)
 {
 	struct isl_hash_table_entry *entry;
 	S(pair) *pair;
 	uint32_t hash;
+	ISL_MAYBE(VAL) res = { isl_bool_false, NULL };
 
 	if (!hmap || !key)
 		goto error;
@@ -166,17 +163,48 @@ __isl_give VAL *FN(HMAP,get)(__isl_keep HMAP *hmap, __isl_take KEY *key)
 	hash = FN(KEY,get_hash)(key);
 	entry = isl_hash_table_find(hmap->ctx, &hmap->table, hash,
 					&has_key, key, 0);
-	FN(KEY,free)(key);
 
 	if (!entry)
-		return NULL;
+		return res;
 
 	pair = entry->data;
 
-	return FN(VAL,copy)(pair->val);
+	res.valid = isl_bool_true;
+	res.value = FN(VAL,copy)(pair->val);
+	if (!res.value)
+		res.valid = isl_bool_error;
+	return res;
 error:
+	res.valid = isl_bool_error;
+	res.value = NULL;
+	return res;
+}
+
+/* If "hmap" contains a value associated to "key", then return
+ * isl_bool_true.  Otherwise, return isl_bool_false.
+ * Return isl_bool_error on error.
+ */
+isl_bool FN(HMAP,has)(__isl_keep HMAP *hmap, __isl_keep KEY *key)
+{
+	ISL_MAYBE(VAL) res;
+
+	res = FN(HMAP,try_get)(hmap, key);
+	FN(VAL,free)(res.value);
+
+	return res.valid;
+}
+
+/* If "hmap" contains a value associated to "key", then return
+ * a copy of that value.  Otherwise, return NULL.
+ * Return NULL on error.
+ */
+__isl_give VAL *FN(HMAP,get)(__isl_keep HMAP *hmap, __isl_take KEY *key)
+{
+	VAL *res;
+
+	res = FN(HMAP,try_get)(hmap, key).value;
 	FN(KEY,free)(key);
-	return NULL;
+	return res;
 }
 
 /* Remove the mapping between "key" and its associated value (if any)

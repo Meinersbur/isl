@@ -3,6 +3,7 @@
 
 #include <isl/set_type.h>
 #include <isl/map_type.h>
+#include <isl/maybe_basic_set.h>
 
 #define ISL_KEY_BASE	map
 #define ISL_VAL_BASE	basic_set

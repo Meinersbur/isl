@@ -2,6 +2,7 @@
 #define ISL_ID_TO_ID_H
 
 #include <isl/id.h>
+#include <isl/maybe_id.h>
 
 #define ISL_KEY_BASE	id
 #define ISL_VAL_BASE	id

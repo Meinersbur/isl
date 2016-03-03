@@ -268,6 +268,12 @@ pkginclude_HEADERS = \
 	include/isl/map.h \
 	include/isl/map_to_basic_set.h \
 	include/isl/map_type.h \
+	include/isl/maybe.h \
+	include/isl/maybe_ast_expr.h \
+	include/isl/maybe_basic_set.h \
+	include/isl/maybe_id.h \
+	include/isl/maybe_pw_aff.h \
+	include/isl/maybe_templ.h \
 	include/isl/multi.h \
 	include/isl/obj.h \
 	include/isl/options.h \

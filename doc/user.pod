@@ -7312,6 +7312,10 @@ The associative array will be grown automatically as needed.
 Associative arrays can be inspected using the following functions.
 
 	#include <isl/id_to_ast_expr.h>
+	__isl_give isl_maybe_isl_ast_expr
+	isl_id_to_ast_expr_try_get(
+		__isl_keep isl_id_to_ast_expr *id2expr,
+		__isl_keep isl_id *key);
 	isl_bool isl_id_to_ast_expr_has(
 		__isl_keep isl_id_to_ast_expr *id2expr,
 		__isl_keep isl_id *key);
@@ -7324,7 +7328,18 @@ Associative arrays can be inspected using the following functions.
 			__isl_take isl_ast_expr *val, void *user),
 		void *user);
 
-They can be modified using the following function.
+The function C<isl_id_to_ast_expr_try_get> returns a structure
+containing two elements, C<valid> and C<value>.
+If there is a value associated to the key, then C<valid>
+is set to C<isl_bool_true> and C<value> contains a copy of
+the associated value.  Otherwise C<value> is C<NULL> and
+C<valid> may be C<isl_bool_error> or C<isl_bool_false> depending
+on whether some error has occurred or there simply is no associated value.
+The function C<isl_id_to_ast_expr_has> returns the C<valid> field
+in the structure and
+the function C<isl_id_to_ast_expr_get> returns the C<value> field.
+
+Associative arrays can be modified using the following functions.
 
 	#include <isl/id_to_ast_expr.h>
 	__isl_give isl_id_to_ast_expr *isl_id_to_ast_expr_set(

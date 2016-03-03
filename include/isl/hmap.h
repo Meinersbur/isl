@@ -1,4 +1,5 @@
 #include <isl/ctx.h>
+#include <isl/maybe.h>
 #include <isl/printer.h>
 
 #if defined(__cplusplus)
@@ -25,6 +26,8 @@ __isl_null ISL_HMAP *ISL_FN(ISL_HMAP,free)(__isl_take ISL_HMAP *hmap);
 
 isl_ctx *ISL_FN(ISL_HMAP,get_ctx)(__isl_keep ISL_HMAP *hmap);
 
+__isl_give ISL_MAYBE(ISL_VAL) ISL_FN(ISL_HMAP,try_get)(
+	__isl_keep ISL_HMAP *hmap, __isl_keep ISL_KEY *key);
 isl_bool ISL_FN(ISL_HMAP,has)(__isl_keep ISL_HMAP *hmap,
 	__isl_keep ISL_KEY *key);
 __isl_give ISL_VAL *ISL_FN(ISL_HMAP,get)(__isl_keep ISL_HMAP *hmap,
