@@ -1098,30 +1098,22 @@ __isl_give PW *FN(PW,sort)(__isl_take PW *pw)
 	return pw;
 }
 
+/* Coalesce the domains of "pw".
+ *
+ * Prior to the actual coalescing, first sort the pieces such that
+ * pieces with the same function value expression are combined
+ * into a single piece, the combined domain of which can then
+ * be coalesced.
+ */
 __isl_give PW *FN(PW,coalesce)(__isl_take PW *pw)
 {
-	int i, j;
+	int i;
 
+	pw = FN(PW,sort)(pw);
 	if (!pw)
 		return NULL;
-	if (pw->n == 0)
-		return pw;
 
-	for (i = pw->n - 1; i >= 0; --i) {
-		for (j = i - 1; j >= 0; --j) {
-			if (!FN(EL,plain_is_equal)(pw->p[i].FIELD,
-							pw->p[j].FIELD))
-				continue;
-			pw->p[j].set = isl_set_union(pw->p[j].set,
-							pw->p[i].set);
-			FN(EL,free)(pw->p[i].FIELD);
-			if (i != pw->n - 1)
-				pw->p[i] = pw->p[pw->n - 1];
-			pw->n--;
-			break;
-		}
-		if (j >= 0)
-			continue;
+	for (i = 0; i < pw->n; ++i) {
 		pw->p[i].set = isl_set_coalesce(pw->p[i].set);
 		if (!pw->p[i].set)
 			goto error;
