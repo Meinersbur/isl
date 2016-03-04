@@ -1044,6 +1044,60 @@ __isl_give PW *FN(PW,gist_params)(__isl_take PW *pw,
 						&FN(PW,gist_params_aligned));
 }
 
+/* Return -1 if the piece "p1" should be sorted before "p2"
+ * and 1 if it should be sorted after "p2".
+ * Return 0 if they do not need to be sorted in a specific order.
+ *
+ * The two pieces are compared on the basis of their function value expressions.
+ */
+static int FN(PW,sort_field_cmp)(const void *p1, const void *p2, void *arg)
+{
+	struct FN(PW,piece) const *pc1 = p1;
+	struct FN(PW,piece) const *pc2 = p2;
+
+	return FN(EL,plain_cmp)(pc1->FIELD, pc2->FIELD);
+}
+
+/* Sort the pieces of "pw" according to their function value
+ * expressions and then combine pairs of adjacent pieces with
+ * the same such expression.
+ *
+ * The sorting is performed in place because it does not
+ * change the meaning of "pw", but care needs to be
+ * taken not to change any possible other copies of "pw"
+ * in case anything goes wrong.
+ */
+__isl_give PW *FN(PW,sort)(__isl_take PW *pw)
+{
+	int i, j;
+	isl_set *set;
+
+	if (!pw)
+		return NULL;
+	if (pw->n <= 1)
+		return pw;
+	if (isl_sort(pw->p, pw->n, sizeof(pw->p[0]),
+		    &FN(PW,sort_field_cmp), NULL) < 0)
+		return FN(PW,free)(pw);
+	for (i = pw->n - 1; i >= 1; --i) {
+		if (!FN(EL,plain_is_equal)(pw->p[i - 1].FIELD, pw->p[i].FIELD))
+			continue;
+		set = isl_set_union(isl_set_copy(pw->p[i - 1].set),
+				    isl_set_copy(pw->p[i].set));
+		if (!set)
+			return FN(PW,free)(pw);
+		isl_set_free(pw->p[i].set);
+		FN(EL,free)(pw->p[i].FIELD);
+		isl_set_free(pw->p[i - 1].set);
+		pw->p[i - 1].set = set;
+		for (j = i + 1; j < pw->n; ++j)
+			pw->p[j - 1] = pw->p[j];
+		pw->n--;
+	}
+
+	return pw;
+}
+
 __isl_give PW *FN(PW,coalesce)(__isl_take PW *pw)
 {
 	int i, j;
@@ -1882,25 +1936,10 @@ __isl_give PW *FN(PW,scale)(__isl_take PW *pw, isl_int v)
 	return FN(PW,mul_isl_int)(pw, v);
 }
 
-/* Return -1 if the piece "p1" should be sorted before "p2"
- * and 1 if it should be sorted after "p2".
- * Return 0 if they do not need to be sorted in a specific order.
- *
- * The two pieces are compared on the basis of their function value expressions.
- */
-static int FN(PW,sort_field_cmp)(const void *p1, const void *p2, void *arg)
-{
-	struct FN(PW,piece) const *pc1 = p1;
-	struct FN(PW,piece) const *pc2 = p2;
-
-	return FN(EL,plain_cmp)(pc1->FIELD, pc2->FIELD);
-}
-
 /* Apply some normalization to "pw".
  * In particular, sort the pieces according to their function value
- * expressions and then combine pairs of adjacent pieces with
- * the same such expression.
- * Finally, normalize the domains of the pieces.
+ * expressions, combining pairs of adjacent pieces with
+ * the same such expression, and then normalize the domains of the pieces.
  *
  * We normalize in place, but if anything goes wrong we need
  * to return NULL, so we need to make sure we don't change the
@@ -1908,29 +1947,12 @@ static int FN(PW,sort_field_cmp)(const void *p1, const void *p2, void *arg)
  */
 __isl_give PW *FN(PW,normalize)(__isl_take PW *pw)
 {
-	int i, j;
+	int i;
 	isl_set *set;
 
+	pw = FN(PW,sort)(pw);
 	if (!pw)
 		return NULL;
-	if (isl_sort(pw->p, pw->n, sizeof(pw->p[0]),
-		    &FN(PW,sort_field_cmp), NULL) < 0)
-		return FN(PW,free)(pw);
-	for (i = pw->n - 1; i >= 1; --i) {
-		if (!FN(EL,plain_is_equal)(pw->p[i - 1].FIELD, pw->p[i].FIELD))
-			continue;
-		set = isl_set_union(isl_set_copy(pw->p[i - 1].set),
-				    isl_set_copy(pw->p[i].set));
-		if (!set)
-			return FN(PW,free)(pw);
-		isl_set_free(pw->p[i].set);
-		FN(EL,free)(pw->p[i].FIELD);
-		isl_set_free(pw->p[i - 1].set);
-		pw->p[i - 1].set = set;
-		for (j = i + 1; j < pw->n; ++j)
-			pw->p[j - 1] = pw->p[j];
-		pw->n--;
-	}
 	for (i = 0; i < pw->n; ++i) {
 		set = isl_set_normalize(isl_set_copy(pw->p[i].set));
 		if (!set)
