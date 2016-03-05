@@ -3272,11 +3272,15 @@ static __isl_give isl_pw_aff *isl_pw_aff_select(
  * If "cond" involves and NaN, then we conservatively return a NaN
  * on its entire domain.  In principle, we could consider the pieces
  * where it is NaN separately from those where it is not.
+ *
+ * If "pwaff_true" and "pwaff_false" are obviously equal to each other,
+ * then only use the domain of "cond" to restrict the domain.
  */
 __isl_give isl_pw_aff *isl_pw_aff_cond(__isl_take isl_pw_aff *cond,
 	__isl_take isl_pw_aff *pwaff_true, __isl_take isl_pw_aff *pwaff_false)
 {
 	isl_set *cond_true, *cond_false;
+	isl_bool equal;
 
 	if (!cond)
 		goto error;
@@ -3287,6 +3291,21 @@ __isl_give isl_pw_aff *isl_pw_aff_cond(__isl_take isl_pw_aff *cond,
 		isl_pw_aff_free(pwaff_true);
 		isl_pw_aff_free(pwaff_false);
 		return isl_pw_aff_nan_on_domain(ls);
+	}
+
+	pwaff_true = isl_pw_aff_align_params(pwaff_true,
+					    isl_pw_aff_get_space(pwaff_false));
+	pwaff_false = isl_pw_aff_align_params(pwaff_false,
+					    isl_pw_aff_get_space(pwaff_true));
+	equal = isl_pw_aff_plain_is_equal(pwaff_true, pwaff_false);
+	if (equal < 0)
+		goto error;
+	if (equal) {
+		isl_set *dom;
+
+		dom = isl_set_coalesce(isl_pw_aff_domain(cond));
+		isl_pw_aff_free(pwaff_false);
+		return isl_pw_aff_intersect_domain(pwaff_true, dom);
 	}
 
 	cond_true = isl_pw_aff_non_zero_set(isl_pw_aff_copy(cond));
@@ -3319,6 +3338,24 @@ isl_bool isl_pw_aff_is_cst(__isl_keep isl_pw_aff *pwaff)
 
 	for (i = 0; i < pwaff->n; ++i) {
 		isl_bool is_cst = isl_aff_is_cst(pwaff->p[i].aff);
+		if (is_cst < 0 || !is_cst)
+			return is_cst;
+	}
+
+	return isl_bool_true;
+}
+
+/* Are all elements of "mpa" piecewise constants?
+ */
+isl_bool isl_multi_pw_aff_is_cst(__isl_keep isl_multi_pw_aff *mpa)
+{
+	int i;
+
+	if (!mpa)
+		return isl_bool_error;
+
+	for (i = 0; i < mpa->n; ++i) {
+		isl_bool is_cst = isl_pw_aff_is_cst(mpa->p[i]);
 		if (is_cst < 0 || !is_cst)
 			return is_cst;
 	}
