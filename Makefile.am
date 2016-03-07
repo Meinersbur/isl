@@ -352,6 +352,7 @@ EXTRA_DIST = \
 	isl_pw_macro.h \
 	isl_pw_templ.c \
 	isl_pw_hash.c \
+	isl_pw_union_opt.c \
 	isl_union_macro.h \
 	isl_union_templ.c \
 	isl_union_single.c \
