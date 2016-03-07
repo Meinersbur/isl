@@ -3396,6 +3396,28 @@ int isl_basic_set_plain_is_disjoint(__isl_keep isl_basic_set *bset1,
 					      (struct isl_basic_map *)bset2);
 }
 
+/* Does "test" hold for all pairs of basic maps in "map1" and "map2"?
+ */
+static isl_bool all_pairs(__isl_keep isl_map *map1, __isl_keep isl_map *map2,
+	isl_bool (*test)(__isl_keep isl_basic_map *bmap1,
+		__isl_keep isl_basic_map *bmap2))
+{
+	int i, j;
+
+	if (!map1 || !map2)
+		return isl_bool_error;
+
+	for (i = 0; i < map1->n; ++i) {
+		for (j = 0; j < map2->n; ++j) {
+			isl_bool d = test(map1->p[i], map2->p[j]);
+			if (d != isl_bool_true)
+				return d;
+		}
+	}
+
+	return isl_bool_true;
+}
+
 /* Are "map1" and "map2" obviously disjoint?
  *
  * If one of them is empty or if they live in different spaces (ignoring
@@ -3412,7 +3434,6 @@ int isl_basic_set_plain_is_disjoint(__isl_keep isl_basic_set *bset1,
 isl_bool isl_map_plain_is_disjoint(__isl_keep isl_map *map1,
 	__isl_keep isl_map *map2)
 {
-	int i, j;
 	isl_bool disjoint;
 	isl_bool intersect;
 	isl_bool match;
@@ -3447,15 +3468,7 @@ isl_bool isl_map_plain_is_disjoint(__isl_keep isl_map *map1,
 	if (intersect < 0 || intersect)
 		return intersect < 0 ? isl_bool_error : isl_bool_false;
 
-	for (i = 0; i < map1->n; ++i) {
-		for (j = 0; j < map2->n; ++j) {
-			isl_bool d = isl_basic_map_plain_is_disjoint(map1->p[i],
-								   map2->p[j]);
-			if (d != isl_bool_true)
-				return d;
-		}
-	}
-	return isl_bool_true;
+	return all_pairs(map1, map2, &isl_basic_map_plain_is_disjoint);
 }
 
 /* Are "map1" and "map2" disjoint?
