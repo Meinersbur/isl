@@ -12,6 +12,7 @@
  */
 
 #include <isl/aff.h>
+#include <isl_sort.h>
 #include <isl_val_private.h>
 
 #include <isl_pw_macro.h>
@@ -1881,7 +1882,12 @@ __isl_give PW *FN(PW,scale)(__isl_take PW *pw, isl_int v)
 	return FN(PW,mul_isl_int)(pw, v);
 }
 
-static int FN(PW,qsort_set_cmp)(const void *p1, const void *p2)
+/* Return -1 if the piece "p1" should be sorted before "p2"
+ * and 1 if it should be sorted after "p2".
+ *
+ * The two pieces are compared on the basis of their domains.
+ */
+static int FN(PW,sort_set_cmp)(const void *p1, const void *p2, void *arg)
 {
 	isl_set *set1 = *(isl_set * const *)p1;
 	isl_set *set2 = *(isl_set * const *)p2;
@@ -1907,7 +1913,9 @@ __isl_give PW *FN(PW,normalize)(__isl_take PW *pw)
 		isl_set_free(pw->p[i].set);
 		pw->p[i].set = set;
 	}
-	qsort(pw->p, pw->n, sizeof(pw->p[0]), &FN(PW,qsort_set_cmp));
+	if (isl_sort(pw->p, pw->n, sizeof(pw->p[0]),
+		    &FN(PW,sort_set_cmp), NULL) < 0)
+		return FN(PW,free)(pw);
 	for (i = pw->n - 1; i >= 1; --i) {
 		if (!isl_set_plain_is_equal(pw->p[i - 1].set, pw->p[i].set))
 			continue;
