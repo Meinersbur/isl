@@ -6117,13 +6117,16 @@ __isl_give isl_pw_multi_aff *isl_basic_map_lexmin_pw_multi_aff(
 /* Given a map "map", compute the lexicographically minimal
  * (or maximal) image element for each domain element in dom,
  * in the form of an isl_pw_multi_aff.
- * Set *empty to those elements in dom that do not have an image element.
+ * If "empty" is not NULL, then set *empty to those elements in dom that
+ * do not have an image element.
  *
  * We first compute the lexicographically minimal or maximal element
  * in the first basic map.  This results in a partial solution "res"
  * and a subset "todo" of dom that still need to be handled.
  * We then consider each of the remaining maps in "map" and successively
  * update both "res" and "todo".
+ * If "empty" is NULL, then the todo sets are not needed and therefore
+ * also not computed.
  */
 static __isl_give isl_pw_multi_aff *isl_map_partial_lexopt_aligned_pw_multi_aff(
 	__isl_take isl_map *map, __isl_take isl_set *dom,
@@ -6146,22 +6149,24 @@ static __isl_give isl_pw_multi_aff *isl_map_partial_lexopt_aligned_pw_multi_aff(
 
 	res = basic_map_partial_lexopt_pw_multi_aff(
 					    isl_basic_map_copy(map->p[0]),
-					    isl_set_copy(dom), &todo, max);
+					    isl_set_copy(dom), empty, max);
 
+	if (empty)
+		todo = *empty;
 	for (i = 1; i < map->n; ++i) {
 		isl_pw_multi_aff *res_i;
-		isl_set *todo_i;
 
 		res_i = basic_map_partial_lexopt_pw_multi_aff(
 					    isl_basic_map_copy(map->p[i]),
-					    isl_set_copy(dom), &todo_i, max);
+					    isl_set_copy(dom), empty, max);
 
 		if (max)
 			res = isl_pw_multi_aff_union_lexmax(res, res_i);
 		else
 			res = isl_pw_multi_aff_union_lexmin(res, res_i);
 
-		todo = isl_set_intersect(todo, todo_i);
+		if (empty)
+			todo = isl_set_intersect(todo, *empty);
 	}
 
 	isl_set_free(dom);
@@ -6169,8 +6174,6 @@ static __isl_give isl_pw_multi_aff *isl_map_partial_lexopt_aligned_pw_multi_aff(
 
 	if (empty)
 		*empty = todo;
-	else
-		isl_set_free(todo);
 
 	return res;
 error:
