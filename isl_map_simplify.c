@@ -3462,6 +3462,8 @@ isl_bool isl_map_plain_is_disjoint(__isl_keep isl_map *map1,
  *
  * They are disjoint if they are "obviously disjoint" or if one of them
  * is empty.  Otherwise, they are not disjoint if one of them is universal.
+ * If the two inputs are (obviously) equal and not empty, then they are
+ * not disjoint.
  * If none of these cases apply, we compute the intersection and see if
  * the result is empty.
  */
@@ -3490,6 +3492,10 @@ isl_bool isl_map_is_disjoint(__isl_keep isl_map *map1, __isl_keep isl_map *map2)
 	intersect = isl_map_plain_is_universe(map2);
 	if (intersect < 0 || intersect)
 		return intersect < 0 ? isl_bool_error : isl_bool_false;
+
+	intersect = isl_map_plain_is_equal(map1, map2);
+	if (intersect < 0 || intersect)
+		return isl_bool_not(intersect);
 
 	test = isl_map_intersect(isl_map_copy(map1), isl_map_copy(map2));
 	disjoint = isl_map_is_empty(test);
