@@ -3418,24 +3418,16 @@ static isl_bool all_pairs(__isl_keep isl_map *map1, __isl_keep isl_map *map2,
 	return isl_bool_true;
 }
 
-/* Are "map1" and "map2" obviously disjoint?
+/* Are "map1" and "map2" obviously disjoint, based on information
+ * that can be derived without looking at the individual basic maps?
  *
- * If one of them is empty or if they live in different spaces (ignoring
- * parameters), then they are clearly disjoint.
- *
- * If they have different parameters, then we skip any further tests.
- *
- * If they are obviously equal, but not obviously empty, then we will
- * not be able to detect if they are disjoint.
- *
- * Otherwise we check if each basic map in "map1" is obviously disjoint
- * from each basic map in "map2".
+ * In particular, if one of them is empty or if they live in different spaces
+ * (ignoring parameters), then they are clearly disjoint.
  */
-isl_bool isl_map_plain_is_disjoint(__isl_keep isl_map *map1,
+static isl_bool isl_map_plain_is_disjoint_global(__isl_keep isl_map *map1,
 	__isl_keep isl_map *map2)
 {
 	isl_bool disjoint;
-	isl_bool intersect;
 	isl_bool match;
 
 	if (!map1 || !map2)
@@ -3458,6 +3450,34 @@ isl_bool isl_map_plain_is_disjoint(__isl_keep isl_map *map1,
 				map2->dim, isl_dim_out);
 	if (match < 0 || !match)
 		return match < 0 ? isl_bool_error : isl_bool_true;
+
+	return isl_bool_false;
+}
+
+/* Are "map1" and "map2" obviously disjoint?
+ *
+ * If one of them is empty or if they live in different spaces (ignoring
+ * parameters), then they are clearly disjoint.
+ * This is checked by isl_map_plain_is_disjoint_global.
+ *
+ * If they have different parameters, then we skip any further tests.
+ *
+ * If they are obviously equal, but not obviously empty, then we will
+ * not be able to detect if they are disjoint.
+ *
+ * Otherwise we check if each basic map in "map1" is obviously disjoint
+ * from each basic map in "map2".
+ */
+isl_bool isl_map_plain_is_disjoint(__isl_keep isl_map *map1,
+	__isl_keep isl_map *map2)
+{
+	isl_bool disjoint;
+	isl_bool intersect;
+	isl_bool match;
+
+	disjoint = isl_map_plain_is_disjoint_global(map1, map2);
+	if (disjoint < 0 || disjoint)
+		return disjoint;
 
 	match = isl_space_match(map1->dim, isl_dim_param,
 				map2->dim, isl_dim_param);
