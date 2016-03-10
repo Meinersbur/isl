@@ -767,9 +767,11 @@ isl_bool isl_local_space_divs_known(__isl_keep isl_local_space *ls)
 	if (!ls)
 		return isl_bool_error;
 
-	for (i = 0; i < ls->div->n_row; ++i)
-		if (isl_int_is_zero(ls->div->row[i][0]))
-			return isl_bool_false;
+	for (i = 0; i < ls->div->n_row; ++i) {
+		isl_bool known = isl_local_space_div_is_known(ls, i);
+		if (known < 0 || !known)
+			return known;
+	}
 
 	return isl_bool_true;
 }
