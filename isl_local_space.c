@@ -748,13 +748,13 @@ error:
 
 /* Does "ls" have an explicit representation for div "div"?
  */
-int isl_local_space_div_is_known(__isl_keep isl_local_space *ls, int div)
+isl_bool isl_local_space_div_is_known(__isl_keep isl_local_space *ls, int div)
 {
 	if (!ls)
-		return -1;
+		return isl_bool_error;
 	if (div < 0 || div >= ls->div->n_row)
 		isl_die(isl_local_space_get_ctx(ls), isl_error_invalid,
-			"position out of bounds", return -1);
+			"position out of bounds", return isl_bool_error);
 	return !isl_int_is_zero(ls->div->row[div][0]);
 }
 
