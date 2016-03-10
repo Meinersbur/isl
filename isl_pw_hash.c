@@ -1,3 +1,11 @@
+/*
+ * Copyright 2016      Sven Verdoolaege
+ *
+ * Use of this software is governed by the MIT license
+ *
+ * Written by Sven Verdoolaege
+ */
+
 #include <isl_pw_macro.h>
 #include <isl/hash.h>
 
