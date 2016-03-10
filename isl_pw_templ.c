@@ -1891,7 +1891,7 @@ static int FN(PW,qsort_set_cmp)(const void *p1, const void *p2)
 
 /* We normalize in place, but if anything goes wrong we need
  * to return NULL, so we need to make sure we don't change the
- * meaning of any possible other copies of map.
+ * meaning of any possible other copies of "pw".
  */
 __isl_give PW *FN(PW,normalize)(__isl_take PW *pw)
 {
