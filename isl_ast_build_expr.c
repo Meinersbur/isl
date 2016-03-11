@@ -17,7 +17,7 @@
 #include <isl_ast_build_private.h>
 
 /* Compute the "opposite" of the (numerator of the) argument of a div
- * with denonimator "d".
+ * with denominator "d".
  *
  * In particular, compute
  *
