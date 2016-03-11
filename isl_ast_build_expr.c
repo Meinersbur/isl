@@ -15,6 +15,7 @@
 #include <isl_ast_build_expr.h>
 #include <isl_ast_private.h>
 #include <isl_ast_build_private.h>
+#include <isl_sort.h>
 
 /* Compute the "opposite" of the (numerator of the) argument of a div
  * with denominator "d".
@@ -1850,6 +1851,25 @@ static isl_stat add_last_piece(struct isl_from_pw_aff_data *data,
 	return isl_stat_ok;
 }
 
+/* Return -1 if the piece "p1" should be sorted before "p2"
+ * and 1 if it should be sorted after "p2".
+ * Return 0 if they do not need to be sorted in a specific order.
+ *
+ * Pieces are sorted according to the number of disjuncts
+ * in their domains.
+ */
+static int sort_pieces_cmp(const void *p1, const void *p2, void *arg)
+{
+	const struct isl_from_pw_aff_piece *piece1 = p1;
+	const struct isl_from_pw_aff_piece *piece2 = p2;
+	int n1, n2;
+
+	n1 = isl_set_n_basic_set(piece1->set);
+	n2 = isl_set_n_basic_set(piece2->set);
+
+	return n1 - n2;
+}
+
 /* Construct an isl_ast_expr from the pieces in "data".
  * Return the result or NULL on failure.
  *
@@ -1857,7 +1877,8 @@ static isl_stat add_last_piece(struct isl_from_pw_aff_data *data,
  * If this is an effective piece, then first increment data->n such
  * that data->n contains the number of pieces.
  * The "set_list" fields are subsequently replaced by the corresponding
- * "set" fields.
+ * "set" fields, after which the pieces are sorted according to
+ * the number of disjuncts in these "set" fields.
  *
  * Construct intermediate AST expressions for the initial pieces and
  * finish off with the final pieces.
@@ -1880,6 +1901,10 @@ static isl_ast_expr *build_pieces(struct isl_from_pw_aff_data *data)
 			data->p[i].set = isl_set_coalesce(data->p[i].set);
 		data->p[i].set_list = NULL;
 	}
+
+	if (isl_sort(data->p, data->n, sizeof(data->p[0]),
+			&sort_pieces_cmp, NULL) < 0)
+		return isl_ast_expr_free(res);
 
 	for (i = 0; i + 1 < data->n; ++i) {
 		next = add_intermediate_piece(data, i, next);
