@@ -1383,6 +1383,21 @@ struct {
 	{ "{ [0, 0, q, p] : -5 <= q <= 5 and p >= 0 }",
 	  "{ [a, b, q, p] : b >= 1 + a }",
 	  "{ [a, b, q, p] : false }" },
+	{ "[n] -> { [x] : x = n && x mod 32 = 0 }",
+	  "[n] -> { [x] : x mod 32 = 0 }",
+	  "[n] -> { [x = n] }" },
+	{ "{ [x] : x mod 6 = 0 }", "{ [x] : x mod 3 = 0 }",
+	  "{ [x] : x mod 2 = 0 }" },
+	{ "{ [x] : x mod 3200 = 0 }", "{ [x] : x mod 10000 = 0 }",
+	  "{ [x] : x mod 128 = 0 }" },
+	{ "{ [x] : x mod 3200 = 0 }", "{ [x] : x mod 10 = 0 }",
+	  "{ [x] : x mod 3200 = 0 }" },
+	{ "{ [a, b, c] : a mod 2 = 0 and a = c }",
+	  "{ [a, b, c] : b mod 2 = 0 and b = c }",
+	  "{ [a, b, c = a] }" },
+	{ "{ [a, b, c] : a mod 6 = 0 and a = c }",
+	  "{ [a, b, c] : b mod 2 = 0 and b = c }",
+	  "{ [a, b, c = a] : a mod 3 = 0 }" },
 };
 
 /* Check that isl_set_gist behaves as expected.
