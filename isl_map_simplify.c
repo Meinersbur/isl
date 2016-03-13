@@ -3123,7 +3123,7 @@ static __isl_give isl_map *replace_by_disjunct(__isl_take isl_map *map,
 
 /* Remove the constraints in "context" from "map".
  * If any of the disjuncts in the result turns out to be the universe,
- * the return this universe.
+ * then return this universe.
  * "context" is assumed to have explicit representations
  * for all local variables.
  */
