@@ -621,7 +621,7 @@ static int is_conditional_validity(struct isl_sched_edge *edge)
  * inter_hmap is a cache, mapping dependence relations to their dual,
  *	for dependences between distinct nodes
  * if compression is involved then the key for these maps
- * it the original, uncompressed dependence relation, while
+ * is the original, uncompressed dependence relation, while
  * the value is the dual of the compressed dependence relation.
  *
  * n is the number of nodes
