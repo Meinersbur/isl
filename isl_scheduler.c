@@ -301,6 +301,17 @@ __isl_give isl_union_map *isl_schedule_constraints_get_coincidence(
 	return isl_union_map_copy(sc->constraint[isl_edge_coincidence]);
 }
 
+/* Return the proximity constraints of "sc".
+ */
+__isl_give isl_union_map *isl_schedule_constraints_get_proximity(
+	__isl_keep isl_schedule_constraints *sc)
+{
+	if (!sc)
+		return NULL;
+
+	return isl_union_map_copy(sc->constraint[isl_edge_proximity]);
+}
+
 /* Return the conditional validity constraints of "sc".
  */
 __isl_give isl_union_map *isl_schedule_constraints_get_conditional_validity(
