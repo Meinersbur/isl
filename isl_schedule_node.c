@@ -1,6 +1,7 @@
 /*
  * Copyright 2013-2014 Ecole Normale Superieure
  * Copyright 2014      INRIA Rocquencourt
+ * Copyright 2016      Sven Verdoolaege
  *
  * Use of this software is governed by the MIT license
  *
@@ -4479,6 +4480,98 @@ __isl_give isl_schedule_node *isl_schedule_node_pullback_union_pw_multi_aff(
 	tree = isl_schedule_tree_pullback_union_pw_multi_aff(tree, upma);
 	node = isl_schedule_node_graft_tree(node, tree);
 
+	return node;
+}
+
+/* Internal data structure for isl_schedule_node_expand.
+ * "tree" is the tree that needs to be plugged in in all the leaves.
+ * "domain" is the set of domain elements in the original leaves
+ * to which the tree applies.
+ */
+struct isl_schedule_expand_data {
+	isl_schedule_tree *tree;
+	isl_union_set *domain;
+};
+
+/* If "node" is a leaf, then plug in data->tree, simplifying it
+ * within its new context.
+ *
+ * If there are any domain elements at the leaf where the tree
+ * should not be plugged in (i.e., there are elements not in data->domain)
+ * then first extend the tree to only apply to the elements in data->domain
+ * by constructing a set node that selects data->tree for elements
+ * in data->domain and a leaf for the other elements.
+ */
+static __isl_give isl_schedule_node *expand(__isl_take isl_schedule_node *node,
+	void *user)
+{
+	struct isl_schedule_expand_data *data = user;
+	isl_schedule_tree *tree, *leaf;
+	isl_union_set *domain, *left;
+	isl_bool empty;
+
+	if (isl_schedule_node_get_type(node) != isl_schedule_node_leaf)
+		return node;
+
+	domain = isl_schedule_node_get_domain(node);
+	tree = isl_schedule_tree_copy(data->tree);
+
+	left = isl_union_set_copy(domain);
+	left = isl_union_set_subtract(left, isl_union_set_copy(data->domain));
+	empty = isl_union_set_is_empty(left);
+	if (empty >= 0 && !empty) {
+		leaf = isl_schedule_node_get_leaf(node);
+		leaf = isl_schedule_tree_insert_filter(leaf, left);
+		left = isl_union_set_copy(data->domain);
+		tree = isl_schedule_tree_insert_filter(tree, left);
+		tree = isl_schedule_tree_set_pair(tree, leaf);
+	} else {
+		if (empty < 0)
+			node = isl_schedule_node_free(node);
+		isl_union_set_free(left);
+	}
+
+	node = isl_schedule_node_graft_tree(node, tree);
+	node = isl_schedule_node_gist(node, domain);
+
+	return node;
+}
+
+/* Expand the tree rooted at "node" by extending all leaves
+ * with an expansion node with as child "tree".
+ * The expansion is determined by "contraction" and "domain".
+ * That is, the elements of "domain" are contracted according
+ * to "contraction".  The expansion relation is then the inverse
+ * of "contraction" with its range intersected with "domain".
+ *
+ * Insert the appropriate expansion node on top of "tree" and
+ * then plug in the result in all leaves of "node".
+ */
+__isl_give isl_schedule_node *isl_schedule_node_expand(
+	__isl_take isl_schedule_node *node,
+	__isl_take isl_union_pw_multi_aff *contraction,
+	__isl_take isl_union_set *domain,
+	__isl_take isl_schedule_tree *tree)
+{
+	struct isl_schedule_expand_data data;
+	isl_union_map *expansion;
+	isl_union_pw_multi_aff *copy;
+
+	if (!node || !contraction || !tree)
+		node = isl_schedule_node_free(node);
+
+	copy = isl_union_pw_multi_aff_copy(contraction);
+	expansion = isl_union_map_from_union_pw_multi_aff(copy);
+	expansion = isl_union_map_reverse(expansion);
+	expansion = isl_union_map_intersect_range(expansion, domain);
+	data.domain = isl_union_map_domain(isl_union_map_copy(expansion));
+
+	tree = isl_schedule_tree_insert_expansion(tree, contraction, expansion);
+	data.tree = tree;
+
+	node = isl_schedule_node_map_descendant_bottom_up(node, &expand, &data);
+	isl_union_set_free(data.domain);
+	isl_schedule_tree_free(data.tree);
 	return node;
 }
 

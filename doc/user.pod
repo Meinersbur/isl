@@ -7796,6 +7796,19 @@ any expansion nodes.
 		__isl_take isl_schedule *schedule,
 		__isl_take isl_union_pw_multi_aff *upma);
 
+The following function can be used to plug in the schedule C<expansion>
+in the leaves of C<schedule>, where C<contraction> describes how
+the domain elements of C<expansion> map to the domain elements
+at the original leaves of C<schedule>.
+The resulting schedule will contain expansion nodes, unless
+C<contraction> is an identity function.
+
+	#include <isl/schedule.h>
+	__isl_give isl_schedule *isl_schedule_expand(
+		__isl_take isl_schedule *schedule,
+		__isl_take isl_union_pw_multi_aff *contraction,
+		__isl_take isl_schedule *expansion);
+
 An C<isl_union_map> representation of the schedule can be obtained
 from an C<isl_schedule> using the following function.
 

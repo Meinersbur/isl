@@ -148,6 +148,9 @@ __isl_overload
 __isl_give isl_schedule *isl_schedule_pullback_union_pw_multi_aff(
 	__isl_take isl_schedule *schedule,
 	__isl_take isl_union_pw_multi_aff *upma);
+__isl_give isl_schedule *isl_schedule_expand(__isl_take isl_schedule *schedule,
+	__isl_take isl_union_pw_multi_aff *contraction,
+	__isl_take isl_schedule *expansion);
 
 __isl_give isl_band_list *isl_schedule_get_band_forest(
 	__isl_keep isl_schedule *schedule);
