@@ -8296,14 +8296,13 @@ isl_union_pw_multi_aff_from_multi_union_pw_aff(
 	if (!mupa)
 		return NULL;
 
-	space = isl_multi_union_pw_aff_get_space(mupa);
-
 	n = isl_multi_union_pw_aff_dim(mupa, isl_dim_set);
 	if (n == 0)
 		isl_die(isl_multi_union_pw_aff_get_ctx(mupa), isl_error_invalid,
 			"cannot determine domain of zero-dimensional "
 			"isl_multi_union_pw_aff", goto error);
 
+	space = isl_multi_union_pw_aff_get_space(mupa);
 	upa = isl_multi_union_pw_aff_get_union_pw_aff(mupa, 0);
 	upma = isl_union_pw_multi_aff_from_union_pw_aff(upa);
 
