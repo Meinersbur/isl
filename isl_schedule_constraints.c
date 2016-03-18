@@ -469,17 +469,16 @@ static __isl_give isl_printer *print_constraint(__isl_take isl_printer *p,
 	return p;
 }
 
-void isl_schedule_constraints_dump(__isl_keep isl_schedule_constraints *sc)
+/* Print "sc" to "p"
+ *
+ * In particular, print the isl_schedule_constraints object as a YAML document.
+ */
+__isl_give isl_printer *isl_printer_print_schedule_constraints(
+	__isl_take isl_printer *p, __isl_keep isl_schedule_constraints *sc)
 {
-	isl_ctx *ctx;
-	isl_printer *p;
-
 	if (!sc)
-		return;
+		return isl_printer_free(p);
 
-	ctx = isl_schedule_constraints_get_ctx(sc);
-	p = isl_printer_to_file(ctx, stderr);
-	p = isl_printer_set_yaml_style(p, ISL_YAML_STYLE_BLOCK);
 	p = isl_printer_yaml_start_mapping(p);
 	p = isl_printer_print_str(p, key_str[isl_sc_key_domain]);
 	p = isl_printer_yaml_next(p);
@@ -496,8 +495,12 @@ void isl_schedule_constraints_dump(__isl_keep isl_schedule_constraints *sc)
 	p = print_constraint(p, sc, isl_edge_conditional_validity);
 	p = isl_printer_yaml_end_mapping(p);
 
-	isl_printer_free(p);
+	return p;
 }
+
+#undef BASE
+#define BASE schedule_constraints
+#include <print_templ_yaml.c>
 
 /* Align the parameters of the fields of "sc".
  */
