@@ -8894,6 +8894,10 @@ and manipulated using the following functions.
 		__isl_take isl_schedule_constraints *sc,
 		__isl_take isl_union_map *condition,
 		__isl_take isl_union_map *validity);
+	__isl_give isl_schedule_constraints *
+	isl_schedule_constraints_apply(
+		__isl_take isl_schedule_constraints *sc,
+		__isl_take isl_union_map *umap);
 	__isl_null isl_schedule_constraints *
 	isl_schedule_constraints_free(
 		__isl_take isl_schedule_constraints *sc);
@@ -8938,6 +8942,11 @@ by the user.  Conditions and conditional validity constraints are only
 considered adjacent to each other if the entire wrapped relation matches.
 In particular, a relation with a tag will never be considered adjacent
 to a relation without a tag.
+
+The function C<isl_schedule_constraints_compute_schedule> takes
+schedule constraints that are defined on some set of domain elements
+and transforms them to schedule constraints on the elements
+to which these domain elements are mapped by the given transformation.
 
 An C<isl_schedule_constraints> object can be inspected
 using the following functions.

@@ -83,6 +83,10 @@ __isl_give isl_union_map *
 isl_schedule_constraints_get_conditional_validity_condition(
 	__isl_keep isl_schedule_constraints *sc);
 
+__isl_give isl_schedule_constraints *isl_schedule_constraints_apply(
+	__isl_take isl_schedule_constraints *sc,
+	__isl_take isl_union_map *umap);
+
 void isl_schedule_constraints_dump(__isl_keep isl_schedule_constraints *sc);
 
 __isl_give isl_schedule *isl_schedule_constraints_compute_schedule(

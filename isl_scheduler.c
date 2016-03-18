@@ -1,7 +1,7 @@
 /*
  * Copyright 2011      INRIA Saclay
  * Copyright 2012-2014 Ecole Normale Superieure
- * Copyright 2015      Sven Verdoolaege
+ * Copyright 2015-2016 Sven Verdoolaege
  *
  * Use of this software is governed by the MIT license
  *
@@ -334,6 +334,99 @@ isl_schedule_constraints_get_conditional_validity_condition(
 		return NULL;
 
 	return isl_union_map_copy(sc->constraint[isl_edge_condition]);
+}
+
+/* Can a schedule constraint of type "type" be tagged?
+ */
+static int may_be_tagged(enum isl_edge_type type)
+{
+	if (type == isl_edge_condition || type == isl_edge_conditional_validity)
+		return 1;
+	return 0;
+}
+
+/* Apply "umap" to the domains of the wrapped relations
+ * inside the domain and range of "c".
+ *
+ * That is, for each map of the form
+ *
+ *	[D -> S] -> [E -> T]
+ *
+ * in "c", apply "umap" to D and E.
+ *
+ * D is exposed by currying the relation to
+ *
+ *	D -> [S -> [E -> T]]
+ *
+ * E is exposed by doing the same to the inverse of "c".
+ */
+static __isl_give isl_union_map *apply_factor_domain(
+	__isl_take isl_union_map *c, __isl_keep isl_union_map *umap)
+{
+	c = isl_union_map_curry(c);
+	c = isl_union_map_apply_domain(c, isl_union_map_copy(umap));
+	c = isl_union_map_uncurry(c);
+
+	c = isl_union_map_reverse(c);
+	c = isl_union_map_curry(c);
+	c = isl_union_map_apply_domain(c, isl_union_map_copy(umap));
+	c = isl_union_map_uncurry(c);
+	c = isl_union_map_reverse(c);
+
+	return c;
+}
+
+/* Apply "umap" to domain and range of "c".
+ * If "tag" is set, then "c" may contain tags and then "umap"
+ * needs to be applied to the domains of the wrapped relations
+ * inside the domain and range of "c".
+ */
+static __isl_give isl_union_map *apply(__isl_take isl_union_map *c,
+	__isl_keep isl_union_map *umap, int tag)
+{
+	isl_union_map *t;
+
+	if (tag)
+		t = isl_union_map_copy(c);
+	c = isl_union_map_apply_domain(c, isl_union_map_copy(umap));
+	c = isl_union_map_apply_range(c, isl_union_map_copy(umap));
+	if (!tag)
+		return c;
+	t = apply_factor_domain(t, umap);
+	c = isl_union_map_union(c, t);
+	return c;
+}
+
+/* Apply "umap" to the domain of the schedule constraints "sc".
+ *
+ * The two sides of the various schedule constraints are adjusted
+ * accordingly.
+ */
+__isl_give isl_schedule_constraints *isl_schedule_constraints_apply(
+	__isl_take isl_schedule_constraints *sc,
+	__isl_take isl_union_map *umap)
+{
+	enum isl_edge_type i;
+
+	if (!sc || !umap)
+		goto error;
+
+	for (i = isl_edge_first; i <= isl_edge_last; ++i) {
+		int tag = may_be_tagged(i);
+
+		sc->constraint[i] = apply(sc->constraint[i], umap, tag);
+		if (!sc->constraint[i])
+			goto error;
+	}
+	sc->domain = isl_union_set_apply(sc->domain, umap);
+	if (!sc->domain)
+		return isl_schedule_constraints_free(sc);
+
+	return sc;
+error:
+	isl_schedule_constraints_free(sc);
+	isl_union_map_free(umap);
+	return NULL;
 }
 
 void isl_schedule_constraints_dump(__isl_keep isl_schedule_constraints *sc)
