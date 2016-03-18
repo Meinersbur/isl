@@ -428,25 +428,75 @@ error:
 	return NULL;
 }
 
+/* An enumeration of the various keys that may appear in a YAML mapping
+ * of an isl_schedule_constraints object.
+ * The keys for the edge types are assumed to have the same values
+ * as the edge types in isl_edge_type.
+ */
+enum isl_sc_key {
+	isl_sc_key_validity = isl_edge_validity,
+	isl_sc_key_coincidence = isl_edge_coincidence,
+	isl_sc_key_condition = isl_edge_condition,
+	isl_sc_key_conditional_validity = isl_edge_conditional_validity,
+	isl_sc_key_proximity = isl_edge_proximity,
+	isl_sc_key_domain,
+	isl_sc_key_context,
+};
+
+/* Textual representations of the YAML keys for an isl_schedule_constraints
+ * object.
+ */
+static char *key_str[] = {
+	[isl_sc_key_validity] = "validity",
+	[isl_sc_key_coincidence] = "coincidence",
+	[isl_sc_key_condition] = "condition",
+	[isl_sc_key_conditional_validity] = "conditional_validity",
+	[isl_sc_key_proximity] = "proximity",
+	[isl_sc_key_domain] = "domain",
+	[isl_sc_key_context] = "context",
+};
+
+/* Print a key, value pair for the edge of type "type" in "sc" to "p".
+ */
+static __isl_give isl_printer *print_constraint(__isl_take isl_printer *p,
+	__isl_keep isl_schedule_constraints *sc, enum isl_edge_type type)
+{
+	p = isl_printer_print_str(p, key_str[type]);
+	p = isl_printer_yaml_next(p);
+	p = isl_printer_print_union_map(p, sc->constraint[type]);
+	p = isl_printer_yaml_next(p);
+
+	return p;
+}
+
 void isl_schedule_constraints_dump(__isl_keep isl_schedule_constraints *sc)
 {
+	isl_ctx *ctx;
+	isl_printer *p;
+
 	if (!sc)
 		return;
 
-	fprintf(stderr, "domain: ");
-	isl_union_set_dump(sc->domain);
-	fprintf(stderr, "context: ");
-	isl_set_dump(sc->context);
-	fprintf(stderr, "validity: ");
-	isl_union_map_dump(sc->constraint[isl_edge_validity]);
-	fprintf(stderr, "proximity: ");
-	isl_union_map_dump(sc->constraint[isl_edge_proximity]);
-	fprintf(stderr, "coincidence: ");
-	isl_union_map_dump(sc->constraint[isl_edge_coincidence]);
-	fprintf(stderr, "condition: ");
-	isl_union_map_dump(sc->constraint[isl_edge_condition]);
-	fprintf(stderr, "conditional_validity: ");
-	isl_union_map_dump(sc->constraint[isl_edge_conditional_validity]);
+	ctx = isl_schedule_constraints_get_ctx(sc);
+	p = isl_printer_to_file(ctx, stderr);
+	p = isl_printer_set_yaml_style(p, ISL_YAML_STYLE_BLOCK);
+	p = isl_printer_yaml_start_mapping(p);
+	p = isl_printer_print_str(p, key_str[isl_sc_key_domain]);
+	p = isl_printer_yaml_next(p);
+	p = isl_printer_print_union_set(p, sc->domain);
+	p = isl_printer_yaml_next(p);
+	p = isl_printer_print_str(p, key_str[isl_sc_key_context]);
+	p = isl_printer_yaml_next(p);
+	p = isl_printer_print_set(p, sc->context);
+	p = isl_printer_yaml_next(p);
+	p = print_constraint(p, sc, isl_edge_validity);
+	p = print_constraint(p, sc, isl_edge_proximity);
+	p = print_constraint(p, sc, isl_edge_coincidence);
+	p = print_constraint(p, sc, isl_edge_condition);
+	p = print_constraint(p, sc, isl_edge_conditional_validity);
+	p = isl_printer_yaml_end_mapping(p);
+
+	isl_printer_free(p);
 }
 
 /* Align the parameters of the fields of "sc".
