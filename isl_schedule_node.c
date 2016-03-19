@@ -1901,7 +1901,10 @@ error:
  * If the node only has a leaf child, then nothing needs to be done.
  * Otherwise, the child of the node is removed and the result is
  * appended to all the leaves in the subtree rooted at the original child.
- * The original node is then replaced by the result of this operation.
+ * Since the node is moved to the leaves, it needs to be expanded
+ * according to the expansion, if any, defined by that subtree.
+ * In the end, the original node is replaced by the result of
+ * attaching copies of the expanded node to the leaves.
  *
  * If any of the nodes in the subtree rooted at "node" depend on
  * the set of outer band nodes then we refuse to sink the band node.
@@ -1911,6 +1914,7 @@ __isl_give isl_schedule_node *isl_schedule_node_band_sink(
 {
 	enum isl_schedule_node_type type;
 	isl_schedule_tree *tree, *child;
+	isl_union_pw_multi_aff *contraction;
 	int anchored;
 
 	if (!node)
@@ -1930,9 +1934,12 @@ __isl_give isl_schedule_node *isl_schedule_node_band_sink(
 	if (isl_schedule_tree_n_children(node->tree) == 0)
 		return node;
 
+	contraction = isl_schedule_node_get_subtree_contraction(node);
+
 	tree = isl_schedule_node_get_tree(node);
 	child = isl_schedule_tree_get_child(tree, 0);
 	tree = isl_schedule_tree_reset_children(tree);
+	tree = isl_schedule_tree_pullback_union_pw_multi_aff(tree, contraction);
 	tree = isl_schedule_tree_append_to_leaves(child, tree);
 
 	return isl_schedule_node_graft_tree(node, tree);
