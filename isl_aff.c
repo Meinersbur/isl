@@ -6369,10 +6369,15 @@ __isl_give isl_multi_pw_aff *isl_multi_pw_aff_from_pw_multi_aff(
  *
  * We first check if they are obviously equal.
  * If not, we convert them to maps and check if those are equal.
+ *
+ * If "pa1" or "pa2" contain any NaNs, then they are considered
+ * not to be the same.  A NaN is not equal to anything, not even
+ * to another NaN.
  */
 int isl_pw_aff_is_equal(__isl_keep isl_pw_aff *pa1, __isl_keep isl_pw_aff *pa2)
 {
 	int equal;
+	isl_bool has_nan;
 	isl_map *map1, *map2;
 
 	if (!pa1 || !pa2)
@@ -6381,6 +6386,13 @@ int isl_pw_aff_is_equal(__isl_keep isl_pw_aff *pa1, __isl_keep isl_pw_aff *pa2)
 	equal = isl_pw_aff_plain_is_equal(pa1, pa2);
 	if (equal < 0 || equal)
 		return equal;
+	has_nan = isl_pw_aff_involves_nan(pa1);
+	if (has_nan >= 0 && !has_nan)
+		has_nan = isl_pw_aff_involves_nan(pa2);
+	if (has_nan < 0)
+		return -1;
+	if (has_nan)
+		return 0;
 
 	map1 = map_from_pw_aff(isl_pw_aff_copy(pa1));
 	map2 = map_from_pw_aff(isl_pw_aff_copy(pa2));
@@ -8199,14 +8211,13 @@ isl_union_pw_multi_aff_from_multi_union_pw_aff(
 	if (!mupa)
 		return NULL;
 
-	space = isl_multi_union_pw_aff_get_space(mupa);
-
 	n = isl_multi_union_pw_aff_dim(mupa, isl_dim_set);
 	if (n == 0)
 		isl_die(isl_multi_union_pw_aff_get_ctx(mupa), isl_error_invalid,
 			"cannot determine domain of zero-dimensional "
 			"isl_multi_union_pw_aff", goto error);
 
+	space = isl_multi_union_pw_aff_get_space(mupa);
 	upa = isl_multi_union_pw_aff_get_union_pw_aff(mupa, 0);
 	upma = isl_union_pw_multi_aff_from_union_pw_aff(upa);
 

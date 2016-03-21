@@ -11830,16 +11830,25 @@ __isl_give isl_map *isl_map_uncurry(__isl_take isl_map *map)
 
 /* Construct a basic map mapping the domain of the affine expression
  * to a one-dimensional range prescribed by the affine expression.
+ *
+ * A NaN affine expression cannot be converted to a basic map.
  */
 __isl_give isl_basic_map *isl_basic_map_from_aff(__isl_take isl_aff *aff)
 {
 	int k;
 	int pos;
+	isl_bool is_nan;
 	isl_local_space *ls;
-	isl_basic_map *bmap;
+	isl_basic_map *bmap = NULL;
 
 	if (!aff)
 		return NULL;
+	is_nan = isl_aff_is_nan(aff);
+	if (is_nan < 0)
+		goto error;
+	if (is_nan)
+		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
+			"cannot convert NaN", goto error);
 
 	ls = isl_aff_get_local_space(aff);
 	bmap = isl_basic_map_from_local_space(ls);
