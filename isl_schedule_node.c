@@ -3198,11 +3198,26 @@ static __isl_give isl_schedule_node *gist_enter_expansion(
  *
  * In particular, remove the element in data->filters that was added by
  * gist_enter_expansion and decrement the number of outer expansions.
+ *
+ * The expansion has already been simplified in gist_enter_expansion.
+ * If this simplification results in an identity expansion, then
+ * it is removed here.
  */
 static __isl_give isl_schedule_node *gist_leave_expansion(
 	__isl_take isl_schedule_node *node, struct isl_node_gist_data *data)
 {
 	int n;
+	isl_bool identity;
+	isl_union_map *expansion;
+
+	expansion = isl_schedule_node_expansion_get_expansion(node);
+	identity = isl_union_map_is_identity(expansion);
+	isl_union_map_free(expansion);
+
+	if (identity < 0)
+		node = isl_schedule_node_free(node);
+	else if (identity)
+		node = isl_schedule_node_delete(node);
 
 	n = isl_union_set_list_n_union_set(data->filters);
 	data->filters = isl_union_set_list_drop(data->filters, n - 1, 1);
