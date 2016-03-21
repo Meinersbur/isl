@@ -3,6 +3,7 @@
  * Copyright 2010      INRIA Saclay
  * Copyright 2012-2014 Ecole Normale Superieure
  * Copyright 2014      INRIA Rocquencourt
+ * Copyright 2016      Sven Verdoolaege
  *
  * Use of this software is governed by the MIT license
  *
@@ -10896,6 +10897,32 @@ isl_bool isl_map_is_bijective(__isl_keep isl_map *map)
 isl_bool isl_set_is_singleton(__isl_keep isl_set *set)
 {
 	return isl_map_is_single_valued((isl_map *)set);
+}
+
+/* Does "map" only map elements to themselves?
+ *
+ * If the domain and range spaces are different, then "map"
+ * is considered not to be an identity relation, even if it is empty.
+ * Otherwise, construct the maximal identity relation and
+ * check whether "map" is a subset of this relation.
+ */
+isl_bool isl_map_is_identity(__isl_keep isl_map *map)
+{
+	isl_space *space;
+	isl_map *id;
+	isl_bool equal, is_identity;
+
+	space = isl_map_get_space(map);
+	equal = isl_space_tuple_is_equal(space, isl_dim_in, space, isl_dim_out);
+	isl_space_free(space);
+	if (equal < 0 || !equal)
+		return equal;
+
+	id = isl_map_identity(isl_map_get_space(map));
+	is_identity = isl_map_is_subset(map, id);
+	isl_map_free(id);
+
+	return is_identity;
 }
 
 int isl_map_is_translation(__isl_keep isl_map *map)

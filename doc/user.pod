@@ -3772,6 +3772,15 @@ is already known to be empty.
 	isl_bool isl_union_map_is_bijective(
 		__isl_keep isl_union_map *umap);
 
+=item * Identity
+
+The following function tests whether the given relation
+only maps elements to themselves.
+
+	#include <isl/map.h>
+	isl_bool isl_map_is_identity(
+		__isl_keep isl_map *map);
+
 =item * Position
 
 	__isl_give isl_val *
