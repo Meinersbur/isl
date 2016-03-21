@@ -3194,6 +3194,24 @@ static __isl_give isl_schedule_node *gist_enter_expansion(
 	return node;
 }
 
+/* Leave the expansion node "node" during a isl_schedule_node_gist traversal.
+ *
+ * In particular, remove the element in data->filters that was added by
+ * gist_enter_expansion and decrement the number of outer expansions.
+ */
+static __isl_give isl_schedule_node *gist_leave_expansion(
+	__isl_take isl_schedule_node *node, struct isl_node_gist_data *data)
+{
+	int n;
+
+	n = isl_union_set_list_n_union_set(data->filters);
+	data->filters = isl_union_set_list_drop(data->filters, n - 1, 1);
+
+	data->n_expansion--;
+
+	return node;
+}
+
 /* Enter the extension node "node" during a isl_schedule_node_gist traversal.
  *
  * In particular, add an extra element to data->filters containing
@@ -3341,9 +3359,7 @@ static __isl_give isl_schedule_node *gist_enter(
  * the node.  There is no need to compute any gist here, since we
  * already did that when we entered the node.
  *
- * If the current node is an expansion, then we decrement
- * the number of outer expansions and remove the element
- * in data->filters that was added by gist_enter_expansion.
+ * Expansion nodes are handled by gist_leave_expansion.
  *
  * If the current node is an extension, then remove the element
  * in data->filters that was added by gist_enter_extension.
@@ -3374,7 +3390,8 @@ static __isl_give isl_schedule_node *gist_leave(
 	case isl_schedule_node_error:
 		return isl_schedule_node_free(node);
 	case isl_schedule_node_expansion:
-		data->n_expansion--;
+		node = gist_leave_expansion(node, data);
+		break;
 	case isl_schedule_node_extension:
 	case isl_schedule_node_filter:
 		n = isl_union_set_list_n_union_set(data->filters);
