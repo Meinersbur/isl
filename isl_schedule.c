@@ -169,9 +169,6 @@ isl_ctx *isl_schedule_get_ctx(__isl_keep isl_schedule *schedule)
 }
 
 /* Return a pointer to the leaf of "schedule".
- *
- * Even though these leaves are not reference counted, we still
- * indicate that this function does not return a copy.
  */
 __isl_keep isl_schedule_tree *isl_schedule_peek_leaf(
 	__isl_keep isl_schedule *schedule)

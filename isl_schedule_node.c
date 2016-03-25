@@ -101,9 +101,6 @@ isl_ctx *isl_schedule_node_get_ctx(__isl_keep isl_schedule_node *node)
 }
 
 /* Return a pointer to the leaf of the schedule into which "node" points.
- *
- * Even though these leaves are not reference counted, we still
- * indicate that this function does not return a copy.
  */
 __isl_keep isl_schedule_tree *isl_schedule_node_peek_leaf(
 	__isl_keep isl_schedule_node *node)
@@ -111,11 +108,7 @@ __isl_keep isl_schedule_tree *isl_schedule_node_peek_leaf(
 	return node ? isl_schedule_peek_leaf(node->schedule) : NULL;
 }
 
-/* Return a pointer to the leaf of the schedule into which "node" points.
- *
- * Even though these leaves are not reference counted, we still
- * return a "copy" of the leaf here such that it can still be "freed"
- * by the user.
+/* Return a copy of the leaf of the schedule into which "node" points.
  */
 __isl_give isl_schedule_tree *isl_schedule_node_get_leaf(
 	__isl_keep isl_schedule_node *node)
