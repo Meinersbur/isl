@@ -3683,7 +3683,7 @@ in isl format.
 
 	#include <isl/aff.h>
 	__isl_give char *isl_multi_aff_to_str(
-		__isl_keep isl_multi_aff *aff);
+		__isl_keep isl_multi_aff *ma);
 	__isl_give char *isl_union_pw_aff_to_str(
 		__isl_keep isl_union_pw_aff *upa);
 	__isl_give char *isl_union_pw_multi_aff_to_str(
