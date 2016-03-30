@@ -1124,6 +1124,46 @@ static int test_plain_unshifted_simple_hull(isl_ctx *ctx)
 	return 0;
 }
 
+/* Pairs of sets and the corresponding expected results of
+ * isl_set_unshifted_simple_hull.
+ */
+struct {
+	const char *set;
+	const char *hull;
+} unshifted_simple_hull_tests[] = {
+	{ "{ [0,x,y] : x <= -1; [1,x,y] : x <= y <= -x; [2,x,y] : x <= 1 }",
+	  "{ [t,x,y] : 0 <= t <= 2 and x <= 1 }" },
+};
+
+/* Basic tests for isl_set_unshifted_simple_hull.
+ */
+static int test_unshifted_simple_hull(isl_ctx *ctx)
+{
+	int i;
+	isl_set *set;
+	isl_basic_set *hull, *expected;
+	isl_bool equal;
+
+	for (i = 0; i < ARRAY_SIZE(unshifted_simple_hull_tests); ++i) {
+		const char *str;
+		str = unshifted_simple_hull_tests[i].set;
+		set = isl_set_read_from_str(ctx, str);
+		str = unshifted_simple_hull_tests[i].hull;
+		expected = isl_basic_set_read_from_str(ctx, str);
+		hull = isl_set_unshifted_simple_hull(set);
+		equal = isl_basic_set_is_equal(hull, expected);
+		isl_basic_set_free(hull);
+		isl_basic_set_free(expected);
+		if (equal < 0)
+			return -1;
+		if (!equal)
+			isl_die(ctx, isl_error_unknown, "unexpected hull",
+				return -1);
+	}
+
+	return 0;
+}
+
 static int test_simple_hull(struct isl_ctx *ctx)
 {
 	const char *str;
@@ -1146,6 +1186,8 @@ static int test_simple_hull(struct isl_ctx *ctx)
 			return -1);
 
 	if (test_plain_unshifted_simple_hull(ctx) < 0)
+		return -1;
+	if (test_unshifted_simple_hull(ctx) < 0)
 		return -1;
 
 	return 0;
