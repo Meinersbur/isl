@@ -2381,6 +2381,12 @@ static __isl_give isl_basic_map *map_simple_hull_trivial(
 /* Compute a superset of the convex hull of map that is described
  * by only (translates of) the constraints in the constituents of map.
  * Translation is only allowed if "shift" is set.
+ *
+ * Sort the constraints before removing redundant constraints
+ * in order to indicate a preference of which constraints should
+ * be preserved.  In particular, pairs of constraints that are
+ * sorted together are preferred to either both be preserved
+ * or both be removed.
  */
 static __isl_give isl_basic_map *map_simple_hull(__isl_take isl_map *map,
 	int shift)
@@ -2408,6 +2414,7 @@ static __isl_give isl_basic_map *map_simple_hull(__isl_take isl_map *map,
 	hull = isl_basic_map_overlying_set(bset, model);
 
 	hull = isl_basic_map_intersect(hull, affine_hull);
+	hull = isl_basic_map_sort_constraints(hull);
 	hull = isl_basic_map_remove_redundancies(hull);
 
 	if (!hull)
