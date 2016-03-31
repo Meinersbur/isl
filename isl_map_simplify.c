@@ -3561,6 +3561,12 @@ static __isl_give isl_map *replace_by_universe(__isl_take isl_map *map,
  * If "map" and "context" are identical to each other, then we can
  * return the corresponding universe.
  *
+ * If either "map" or "context" consists of multiple disjuncts,
+ * then check if "context" happens to be a subset of "map",
+ * in which case all constraints can be removed.
+ * In case of multiple disjuncts, the standard procedure
+ * may not be able to detect that all constraints can be removed.
+ *
  * If none of these cases apply, we have to work a bit harder.
  * During this computation, we make use of a single disjunct context,
  * so if the original context consists of more than one disjunct
@@ -3576,6 +3582,8 @@ static __isl_give isl_map *map_gist(__isl_take isl_map *map,
 {
 	int equal;
 	int is_universe;
+	int single_disjunct_map, single_disjunct_context;
+	isl_bool subset;
 	isl_basic_map *hull;
 
 	is_universe = isl_map_plain_is_universe(map);
@@ -3594,10 +3602,20 @@ static __isl_give isl_map *map_gist(__isl_take isl_map *map,
 	if (equal)
 		return replace_by_universe(map, context);
 
+	single_disjunct_map = isl_map_n_basic_map(map) == 1;
+	single_disjunct_context = isl_map_n_basic_map(context) == 1;
+	if (!single_disjunct_map || !single_disjunct_context) {
+		subset = isl_map_is_subset(context, map);
+		if (subset < 0)
+			goto error;
+		if (subset)
+			return replace_by_universe(map, context);
+	}
+
 	context = isl_map_compute_divs(context);
 	if (!context)
 		goto error;
-	if (isl_map_n_basic_map(context) == 1) {
+	if (single_disjunct_context) {
 		hull = isl_map_simple_hull(context);
 	} else {
 		isl_ctx *ctx;

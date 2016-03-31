@@ -1440,6 +1440,12 @@ struct {
 	{ "{ [a, b, c] : a mod 6 = 0 and a = c }",
 	  "{ [a, b, c] : b mod 2 = 0 and b = c }",
 	  "{ [a, b, c = a] : a mod 3 = 0 }" },
+	{ "{ [x] : 0 <= x <= 4 or 6 <= x <= 9 }",
+	  "{ [x] : 1 <= x <= 3 or 7 <= x <= 8 }",
+	  "{ [x] }" },
+	{ "{ [x,y] : x < 0 and 0 <= y <= 4 or x >= -2 and -x <= y <= 10 + x }",
+	  "{ [x,y] : 1 <= y <= 3 }",
+	  "{ [x,y] }" },
 };
 
 /* Check that isl_set_gist behaves as expected.
