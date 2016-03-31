@@ -3539,6 +3539,19 @@ error:
 	return NULL;
 }
 
+/* Replace "map" by a universe map in the same space and free "drop".
+ */
+static __isl_give isl_map *replace_by_universe(__isl_take isl_map *map,
+	__isl_take isl_map *drop)
+{
+	isl_map *res;
+
+	res = isl_map_universe(isl_map_get_space(map));
+	isl_map_free(map);
+	isl_map_free(drop);
+	return res;
+}
+
 /* Return a map that has the same intersection with "context" as "map"
  * and that is as "simple" as possible.
  *
@@ -3578,12 +3591,8 @@ static __isl_give isl_map *map_gist(__isl_take isl_map *map,
 	equal = isl_map_plain_is_equal(map, context);
 	if (equal < 0)
 		goto error;
-	if (equal) {
-		isl_map *res = isl_map_universe(isl_map_get_space(map));
-		isl_map_free(map);
-		isl_map_free(context);
-		return res;
-	}
+	if (equal)
+		return replace_by_universe(map, context);
 
 	context = isl_map_compute_divs(context);
 	if (!context)
