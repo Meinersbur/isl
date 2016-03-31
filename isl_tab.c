@@ -2986,6 +2986,30 @@ static int con_is_redundant(struct isl_tab *tab, struct isl_tab_var *var)
 	}
 }
 
+/* Return an isl_tab_var that has been marked or NULL if no such
+ * variable can be found.
+ * The marked field has only been set for variables that
+ * appear in non-redundant rows or non-dead columns.
+ */
+static struct isl_tab_var *select_marked(struct isl_tab *tab)
+{
+	int i;
+	struct isl_tab_var *var;
+
+	for (i = tab->n_redundant; i < tab->n_row; ++i) {
+		var = isl_tab_var_from_row(tab, i);
+		if (var->marked)
+			return var;
+	}
+	for (i = tab->n_dead; i < tab->n_col; ++i) {
+		var = var_from_col(tab, i);
+		if (var->marked)
+			return var;
+	}
+
+	return NULL;
+}
+
 /* Check for (near) redundant constraints.
  * A constraint is redundant if it is non-negative and if
  * its minimal value (temporarily ignoring the non-negativity) is either
@@ -3028,20 +3052,9 @@ int isl_tab_detect_redundant(struct isl_tab *tab)
 	while (n_marked) {
 		struct isl_tab_var *var;
 		int red;
-		for (i = tab->n_redundant; i < tab->n_row; ++i) {
-			var = isl_tab_var_from_row(tab, i);
-			if (var->marked)
-				break;
-		}
-		if (i == tab->n_row) {
-			for (i = tab->n_dead; i < tab->n_col; ++i) {
-				var = var_from_col(tab, i);
-				if (var->marked)
-					break;
-			}
-			if (i == tab->n_col)
-				break;
-		}
+		var = select_marked(tab);
+		if (!var)
+			break;
 		var->marked = 0;
 		n_marked--;
 		red = con_is_redundant(tab, var);
