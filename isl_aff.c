@@ -2355,6 +2355,15 @@ __isl_give isl_basic_set *isl_aff_eq_basic_set(__isl_take isl_aff *aff1,
 	return isl_aff_zero_basic_set(aff1);
 }
 
+/* Return a set containing those elements in the shared space
+ * of aff1 and aff2 where aff1 and aff2 are equal.
+ */
+__isl_give isl_set *isl_aff_eq_set(__isl_take isl_aff *aff1,
+	__isl_take isl_aff *aff2)
+{
+	return isl_set_from_basic_set(isl_aff_eq_basic_set(aff1, aff2));
+}
+
 __isl_give isl_aff *isl_aff_add_on_domain(__isl_keep isl_set *dom,
 	__isl_take isl_aff *aff1, __isl_take isl_aff *aff2)
 {
