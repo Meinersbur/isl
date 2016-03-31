@@ -130,6 +130,8 @@ __isl_give isl_aff *isl_aff_pullback_multi_aff(__isl_take isl_aff *aff,
 __isl_give isl_basic_set *isl_aff_zero_basic_set(__isl_take isl_aff *aff);
 __isl_give isl_basic_set *isl_aff_neg_basic_set(__isl_take isl_aff *aff);
 
+__isl_give isl_basic_set *isl_aff_eq_basic_set(__isl_take isl_aff *aff1,
+	__isl_take isl_aff *aff2);
 __isl_give isl_basic_set *isl_aff_le_basic_set(__isl_take isl_aff *aff1,
 	__isl_take isl_aff *aff2);
 __isl_give isl_set *isl_aff_le_set(__isl_take isl_aff *aff1,
