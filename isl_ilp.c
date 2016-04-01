@@ -595,7 +595,7 @@ __isl_give isl_val *isl_basic_set_max_val(__isl_keep isl_basic_set *bset,
  * expression "obj" over the points in "set".
  *
  * Return infinity or negative infinity if the optimal value is unbounded and
- * NaN if "bset" is empty.
+ * NaN if "set" is empty.
  *
  * Call isl_set_opt and translate the results.
  */
@@ -621,7 +621,7 @@ __isl_give isl_val *isl_set_opt_val(__isl_keep isl_set *set, int max,
  * expression "obj" over the points in "set".
  *
  * Return infinity or negative infinity if the optimal value is unbounded and
- * NaN if "bset" is empty.
+ * NaN if "set" is empty.
  */
 __isl_give isl_val *isl_set_min_val(__isl_keep isl_set *set,
 	__isl_keep isl_aff *obj)
@@ -633,7 +633,7 @@ __isl_give isl_val *isl_set_min_val(__isl_keep isl_set *set,
  * expression "obj" over the points in "set".
  *
  * Return infinity or negative infinity if the optimal value is unbounded and
- * NaN if "bset" is empty.
+ * NaN if "set" is empty.
  */
 __isl_give isl_val *isl_set_max_val(__isl_keep isl_set *set,
 	__isl_keep isl_aff *obj)
