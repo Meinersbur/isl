@@ -92,6 +92,8 @@ __isl_give isl_schedule_constraints *isl_schedule_constraints_apply(
 	__isl_take isl_schedule_constraints *sc,
 	__isl_take isl_union_map *umap);
 
+__isl_give isl_schedule_constraints *isl_schedule_constraints_read_from_file(
+	isl_ctx *ctx, FILE *input);
 __isl_give isl_printer *isl_printer_print_schedule_constraints(
 	__isl_take isl_printer *p, __isl_keep isl_schedule_constraints *sc);
 void isl_schedule_constraints_dump(__isl_keep isl_schedule_constraints *sc);

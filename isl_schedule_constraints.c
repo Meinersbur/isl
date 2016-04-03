@@ -8,12 +8,15 @@
  * Ecole Normale Superieure, 45 rue d'Ulm, 75230 Paris, France
  */
 
+#include <string.h>
+
 #include <isl_schedule_constraints.h>
 #include <isl/schedule.h>
 #include <isl/set.h>
 #include <isl/map.h>
 #include <isl/union_set.h>
 #include <isl/union_map.h>
+#include <isl/stream.h>
 
 /* The constraints that need to be satisfied by a schedule on "domain".
  *
@@ -132,6 +135,25 @@ __isl_give isl_schedule_constraints *isl_schedule_constraints_on_domain(
 	sc->domain = domain;
 	return isl_schedule_constraints_init(sc);
 error:
+	isl_union_set_free(domain);
+	return NULL;
+}
+
+/* Replace the domain of "sc" by "domain".
+ */
+static __isl_give isl_schedule_constraints *isl_schedule_constraints_set_domain(
+	__isl_take isl_schedule_constraints *sc,
+	__isl_take isl_union_set *domain)
+{
+	if (!sc || !domain)
+		goto error;
+
+	isl_union_set_free(sc->domain);
+	sc->domain = domain;
+
+	return sc;
+error:
+	isl_schedule_constraints_free(sc);
 	isl_union_set_free(domain);
 	return NULL;
 }
@@ -434,6 +456,7 @@ error:
  * as the edge types in isl_edge_type.
  */
 enum isl_sc_key {
+	isl_sc_key_error = -1,
 	isl_sc_key_validity = isl_edge_validity,
 	isl_sc_key_coincidence = isl_edge_coincidence,
 	isl_sc_key_condition = isl_edge_condition,
@@ -441,6 +464,7 @@ enum isl_sc_key {
 	isl_sc_key_proximity = isl_edge_proximity,
 	isl_sc_key_domain,
 	isl_sc_key_context,
+	isl_sc_key_end
 };
 
 /* Textual representations of the YAML keys for an isl_schedule_constraints
@@ -501,6 +525,159 @@ __isl_give isl_printer *isl_printer_print_schedule_constraints(
 #undef BASE
 #define BASE schedule_constraints
 #include <print_templ_yaml.c>
+
+/* Extract a mapping key from the token "tok".
+ * Return isl_sc_key_error on error, i.e., if "tok" does not
+ * correspond to any known key.
+ */
+static enum isl_sc_key extract_key(__isl_keep isl_stream *s,
+	struct isl_token *tok)
+{
+	int type;
+	char *name;
+	isl_ctx *ctx;
+	enum isl_sc_key key;
+
+	if (!tok)
+		return isl_sc_key_error;
+	type = isl_token_get_type(tok);
+	if (type != ISL_TOKEN_IDENT && type != ISL_TOKEN_STRING) {
+		isl_stream_error(s, tok, "expecting key");
+		return isl_sc_key_error;
+	}
+
+	ctx = isl_stream_get_ctx(s);
+	name = isl_token_get_str(ctx, tok);
+	if (!name)
+		return isl_sc_key_error;
+
+	for (key = 0; key < isl_sc_key_end; ++key) {
+		if (!strcmp(name, key_str[key]))
+			break;
+	}
+	free(name);
+
+	if (key >= isl_sc_key_end)
+		isl_die(ctx, isl_error_invalid, "unknown key",
+			return isl_sc_key_error);
+	return key;
+}
+
+/* Read a key from "s" and return the corresponding enum.
+ * Return isl_sc_key_error on error, i.e., if the first token
+ * on the stream does not correspond to any known key.
+ */
+static enum isl_sc_key get_key(__isl_keep isl_stream *s)
+{
+	struct isl_token *tok;
+	enum isl_sc_key key;
+
+	tok = isl_stream_next_token(s);
+	key = extract_key(s, tok);
+	isl_token_free(tok);
+
+	return key;
+}
+
+#undef BASE
+#define BASE set
+#include "read_in_string_templ.c"
+
+#undef BASE
+#define BASE union_set
+#include "read_in_string_templ.c"
+
+#undef BASE
+#define BASE union_map
+#include "read_in_string_templ.c"
+
+/* Read an isl_schedule_constraints object from "s".
+ *
+ * Start off with an empty (invalid) isl_schedule_constraints object and
+ * then fill up the fields based on the input.
+ * The input needs to contain at least a description of the domain.
+ * The other fields are set to defaults by isl_schedule_constraints_init
+ * if they are not specified in the input.
+ */
+__isl_give isl_schedule_constraints *isl_stream_read_schedule_constraints(
+	isl_stream *s)
+{
+	isl_ctx *ctx;
+	isl_schedule_constraints *sc;
+	int more;
+	int domain_set = 0;
+
+	if (isl_stream_yaml_read_start_mapping(s))
+		return NULL;
+
+	ctx = isl_stream_get_ctx(s);
+	sc = isl_schedule_constraints_alloc(ctx);
+	while ((more = isl_stream_yaml_next(s)) > 0) {
+		enum isl_sc_key key;
+		isl_set *context;
+		isl_union_set *domain;
+		isl_union_map *constraints;
+
+		key = get_key(s);
+		if (isl_stream_yaml_next(s) < 0)
+			return isl_schedule_constraints_free(sc);
+		switch (key) {
+		case isl_sc_key_end:
+		case isl_sc_key_error:
+			return isl_schedule_constraints_free(sc);
+		case isl_sc_key_domain:
+			domain_set = 1;
+			domain = read_union_set(s);
+			sc = isl_schedule_constraints_set_domain(sc, domain);
+			if (!sc)
+				return NULL;
+			break;
+		case isl_sc_key_context:
+			context = read_set(s);
+			sc = isl_schedule_constraints_set_context(sc, context);
+			if (!sc)
+				return NULL;
+			break;
+		default:
+			constraints = read_union_map(s);
+			sc = isl_schedule_constraints_set(sc, key, constraints);
+			if (!sc)
+				return NULL;
+			break;
+		}
+	}
+	if (more < 0)
+		return isl_schedule_constraints_free(sc);
+
+	if (isl_stream_yaml_read_end_mapping(s) < 0) {
+		isl_stream_error(s, NULL, "unexpected extra elements");
+		return isl_schedule_constraints_free(sc);
+	}
+
+	if (!domain_set) {
+		isl_stream_error(s, NULL, "no domain specified");
+		return isl_schedule_constraints_free(sc);
+	}
+
+	return isl_schedule_constraints_init(sc);
+}
+
+/* Read an isl_schedule_constraints object from the file "input".
+ */
+__isl_give isl_schedule_constraints *isl_schedule_constraints_read_from_file(
+	isl_ctx *ctx, FILE *input)
+{
+	struct isl_stream *s;
+	isl_schedule_constraints *sc;
+
+	s = isl_stream_new_file(ctx, input);
+	if (!s)
+		return NULL;
+	sc = isl_stream_read_schedule_constraints(s);
+	isl_stream_free(s);
+
+	return sc;
+}
 
 /* Align the parameters of the fields of "sc".
  */
