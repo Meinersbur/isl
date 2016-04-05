@@ -2261,7 +2261,7 @@ static int edge_multiplicity(struct isl_sched_edge *edge, int carry,
 	int use_coincidence)
 {
 	if (carry)
-		return is_any_validity(edge) ? 1 : 0;
+		return 1;
 	if (is_proximity(edge) || is_local(edge))
 		return 2;
 	if (use_coincidence && is_coincidence(edge))
@@ -3753,6 +3753,10 @@ static int count_all_constraints(struct isl_sched_graph *graph,
 	*n_eq = *n_ineq = 0;
 	for (i = 0; i < graph->n_edge; ++i) {
 		struct isl_sched_edge *edge= &graph->edge[i];
+
+		if (!is_any_validity(edge))
+			continue;
+
 		for (j = 0; j < edge->map->n; ++j) {
 			isl_basic_map *bmap;
 			isl_map *map;
