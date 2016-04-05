@@ -2436,6 +2436,28 @@ static int add_bound_coefficient_constraints(isl_ctx *ctx,
 	return 0;
 }
 
+/* Add a constraint to graph->lp that equates the value at position
+ * "sum_pos" to the sum of the "n" values starting at "first".
+ */
+static isl_stat add_sum_constraint(struct isl_sched_graph *graph,
+	int sum_pos, int first, int n)
+{
+	int i, k;
+	int total;
+
+	total = isl_basic_set_dim(graph->lp, isl_dim_set);
+
+	k = isl_basic_set_alloc_equality(graph->lp);
+	if (k < 0)
+		return isl_stat_error;
+	isl_seq_clr(graph->lp->eq[k], 1 +  total);
+	isl_int_set_si(graph->lp->eq[k][1 + sum_pos], -1);
+	for (i = 0; i < n; ++i)
+		isl_int_set_si(graph->lp->eq[k][1 + first + i], 1);
+
+	return isl_stat_ok;
+}
+
 /* Construct an ILP problem for finding schedule coefficients
  * that result in non-negative, but small dependence distances
  * over all dependences.
@@ -2507,13 +2529,8 @@ static isl_stat setup_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
 
 	graph->lp = isl_basic_set_alloc_space(space, 0, n_eq, n_ineq);
 
-	k = isl_basic_set_alloc_equality(graph->lp);
-	if (k < 0)
+	if (add_sum_constraint(graph, 0, param_pos, 2 * nparam) < 0)
 		return isl_stat_error;
-	isl_seq_clr(graph->lp->eq[k], 1 +  total);
-	isl_int_set_si(graph->lp->eq[k][1], -1);
-	for (i = 0; i < 2 * nparam; ++i)
-		isl_int_set_si(graph->lp->eq[k][1 + param_pos + i], 1);
 
 	if (parametric) {
 		k = isl_basic_set_alloc_equality(graph->lp);
