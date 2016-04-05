@@ -2325,6 +2325,23 @@ static int count_constraints(struct isl_sched_graph *graph,
 	return 0;
 }
 
+/* Count the number of constraints that will be added by
+ * add_bound_constant_constraints to bound the values of the constant terms
+ * and increment *n_eq and *n_ineq accordingly.
+ *
+ * In practice, add_bound_constant_constraints only adds inequalities.
+ */
+static isl_stat count_bound_constant_constraints(isl_ctx *ctx,
+	struct isl_sched_graph *graph, int *n_eq, int *n_ineq)
+{
+	if (isl_options_get_schedule_max_constant_term(ctx) == -1)
+		return isl_stat_ok;
+
+	*n_ineq += graph->n;
+
+	return isl_stat_ok;
+}
+
 /* Add constraints to bound the values of the constant terms in the schedule,
  * if requested by the user.
  *
@@ -2464,9 +2481,6 @@ static isl_stat setup_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
 	int parametric;
 	int param_pos;
 	int n_eq, n_ineq;
-	int max_constant_term;
-
-	max_constant_term = ctx->opt->schedule_max_constant_term;
 
 	parametric = ctx->opt->schedule_parametric;
 	nparam = isl_space_dim(graph->node[0].space, isl_dim_param);
@@ -2482,14 +2496,14 @@ static isl_stat setup_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
 
 	if (count_constraints(graph, &n_eq, &n_ineq, use_coincidence) < 0)
 		return isl_stat_error;
+	if (count_bound_constant_constraints(ctx, graph, &n_eq, &n_ineq) < 0)
+		return isl_stat_error;
 	if (count_bound_coefficient_constraints(ctx, graph, &n_eq, &n_ineq) < 0)
 		return isl_stat_error;
 
 	space = isl_space_set_alloc(ctx, 0, total);
 	isl_basic_set_free(graph->lp);
 	n_eq += 2 + parametric;
-	if (max_constant_term != -1)
-		n_ineq += graph->n;
 
 	graph->lp = isl_basic_set_alloc_space(space, 0, n_eq, n_ineq);
 
