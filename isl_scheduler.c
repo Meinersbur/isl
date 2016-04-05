@@ -2423,7 +2423,7 @@ static int setup_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
 	int k;
 	unsigned nparam;
 	unsigned total;
-	isl_space *dim;
+	isl_space *space;
 	int parametric;
 	int param_pos;
 	int n_eq, n_ineq;
@@ -2448,13 +2448,13 @@ static int setup_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
 	if (count_bound_coefficient_constraints(ctx, graph, &n_eq, &n_ineq) < 0)
 		return -1;
 
-	dim = isl_space_set_alloc(ctx, 0, total);
+	space = isl_space_set_alloc(ctx, 0, total);
 	isl_basic_set_free(graph->lp);
 	n_eq += 2 + parametric;
 	if (max_constant_term != -1)
 		n_ineq += graph->n;
 
-	graph->lp = isl_basic_set_alloc_space(dim, 0, n_eq, n_ineq);
+	graph->lp = isl_basic_set_alloc_space(space, 0, n_eq, n_ineq);
 
 	k = isl_basic_set_alloc_equality(graph->lp);
 	if (k < 0)
