@@ -2489,6 +2489,38 @@ static isl_stat add_param_sum_constraint(struct isl_sched_graph *graph,
 	return isl_stat_ok;
 }
 
+/* Add a constraint to graph->lp that equates the value at position
+ * "sum_pos" to the sum of the variable coefficients of all nodes.
+ *
+ * Within each node, the coefficients have the following order:
+ *	- c_i_0
+ *	- positive and negative parts of c_i_n (if parametric)
+ *	- positive and negative parts of c_i_x
+ */
+static isl_stat add_var_sum_constraint(struct isl_sched_graph *graph,
+	int sum_pos)
+{
+	int i, j, k;
+	int total;
+
+	total = isl_basic_set_dim(graph->lp, isl_dim_set);
+
+	k = isl_basic_set_alloc_equality(graph->lp);
+	if (k < 0)
+		return isl_stat_error;
+	isl_seq_clr(graph->lp->eq[k], 1 +  total);
+	isl_int_set_si(graph->lp->eq[k][1 + sum_pos], -1);
+	for (i = 0; i < graph->n; ++i) {
+		struct isl_sched_node *node = &graph->node[i];
+		int pos = 1 + node->start + 1 + 2 * node->nparam;
+
+		for (j = 0; j < 2 * node->nvar; ++j)
+			isl_int_set_si(graph->lp->eq[k][pos + j], 1);
+	}
+
+	return isl_stat_ok;
+}
+
 /* Construct an ILP problem for finding schedule coefficients
  * that result in non-negative, but small dependence distances
  * over all dependences.
@@ -2526,8 +2558,7 @@ static isl_stat add_param_sum_constraint(struct isl_sched_graph *graph,
 static isl_stat setup_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
 	int use_coincidence)
 {
-	int i, j;
-	int k;
+	int i;
 	unsigned nparam;
 	unsigned total;
 	isl_space *space;
@@ -2564,20 +2595,8 @@ static isl_stat setup_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
 		return isl_stat_error;
 	if (parametric && add_param_sum_constraint(graph, 2) < 0)
 		return isl_stat_error;
-
-	k = isl_basic_set_alloc_equality(graph->lp);
-	if (k < 0)
+	if (add_var_sum_constraint(graph, 3) < 0)
 		return isl_stat_error;
-	isl_seq_clr(graph->lp->eq[k], 1 +  total);
-	isl_int_set_si(graph->lp->eq[k][4], -1);
-	for (i = 0; i < graph->n; ++i) {
-		struct isl_sched_node *node = &graph->node[i];
-		int pos = 1 + node->start + 1 + 2 * node->nparam;
-
-		for (j = 0; j < 2 * node->nvar; ++j)
-			isl_int_set_si(graph->lp->eq[k][pos + j], 1);
-	}
-
 	if (add_bound_constant_constraints(ctx, graph) < 0)
 		return isl_stat_error;
 	if (add_bound_coefficient_constraints(ctx, graph) < 0)
@@ -3779,7 +3798,7 @@ static int count_all_constraints(struct isl_sched_graph *graph,
  */
 static isl_stat setup_carry_lp(isl_ctx *ctx, struct isl_sched_graph *graph)
 {
-	int i, j;
+	int i;
 	int k;
 	isl_space *dim;
 	unsigned total;
@@ -3818,19 +3837,8 @@ static isl_stat setup_carry_lp(isl_ctx *ctx, struct isl_sched_graph *graph)
 
 	if (add_param_sum_constraint(graph, 1) < 0)
 		return isl_stat_error;
-
-	k = isl_basic_set_alloc_equality(graph->lp);
-	if (k < 0)
+	if (add_var_sum_constraint(graph, 2) < 0)
 		return isl_stat_error;
-	isl_seq_clr(graph->lp->eq[k], 1 +  total);
-	isl_int_set_si(graph->lp->eq[k][3], -1);
-	for (i = 0; i < graph->n; ++i) {
-		struct isl_sched_node *node = &graph->node[i];
-		int pos = 1 + node->start + 1 + 2 * node->nparam;
-
-		for (j = 0; j < 2 * node->nvar; ++j)
-			isl_int_set_si(graph->lp->eq[k][pos + j], 1);
-	}
 
 	for (i = 0; i < n_edge; ++i) {
 		k = isl_basic_set_alloc_inequality(graph->lp);
