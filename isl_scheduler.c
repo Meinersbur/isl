@@ -2232,6 +2232,13 @@ static int node_update_cmap(struct isl_sched_node *node)
 	return 0;
 }
 
+/* Is "edge" marked as a validity or a conditional validity edge?
+ */
+static int is_any_validity(struct isl_sched_edge *edge)
+{
+	return is_validity(edge) || is_conditional_validity(edge);
+}
+
 /* How many times should we count the constraints in "edge"?
  *
  * If carry is set, then we are counting the number of
@@ -2253,10 +2260,8 @@ static int node_update_cmap(struct isl_sched_node *node)
 static int edge_multiplicity(struct isl_sched_edge *edge, int carry,
 	int use_coincidence)
 {
-	if (carry && !is_validity(edge) && !is_conditional_validity(edge))
-		return 0;
 	if (carry)
-		return 1;
+		return is_any_validity(edge) ? 1 : 0;
 	if (is_proximity(edge) || is_local(edge))
 		return 2;
 	if (use_coincidence && is_coincidence(edge))
@@ -3713,7 +3718,7 @@ static int add_all_constraints(struct isl_sched_graph *graph)
 	for (i = 0; i < graph->n_edge; ++i) {
 		struct isl_sched_edge *edge= &graph->edge[i];
 
-		if (!is_validity(edge) && !is_conditional_validity(edge))
+		if (!is_any_validity(edge))
 			continue;
 
 		for (j = 0; j < edge->map->n; ++j) {
@@ -4208,8 +4213,7 @@ static int has_validity_edges(struct isl_sched_graph *graph)
 			return -1;
 		if (empty)
 			continue;
-		if (is_validity(&graph->edge[i]) ||
-		    is_conditional_validity(&graph->edge[i]))
+		if (is_any_validity(&graph->edge[i]))
 			return 1;
 	}
 
