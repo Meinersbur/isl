@@ -2416,7 +2416,7 @@ static int add_bound_coefficient_constraints(isl_ctx *ctx,
  * If "use_coincidence" is set, then we treat coincidence edges as local edges.
  * Otherwise, we ignore them.
  */
-static int setup_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
+static isl_stat setup_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
 	int use_coincidence)
 {
 	int i, j;
@@ -2438,15 +2438,15 @@ static int setup_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
 	for (i = 0; i < graph->n; ++i) {
 		struct isl_sched_node *node = &graph->node[graph->sorted[i]];
 		if (node_update_cmap(node) < 0)
-			return -1;
+			return isl_stat_error;
 		node->start = total;
 		total += 1 + 2 * (node->nparam + node->nvar);
 	}
 
 	if (count_constraints(graph, &n_eq, &n_ineq, use_coincidence) < 0)
-		return -1;
+		return isl_stat_error;
 	if (count_bound_coefficient_constraints(ctx, graph, &n_eq, &n_ineq) < 0)
-		return -1;
+		return isl_stat_error;
 
 	space = isl_space_set_alloc(ctx, 0, total);
 	isl_basic_set_free(graph->lp);
@@ -2458,7 +2458,7 @@ static int setup_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
 
 	k = isl_basic_set_alloc_equality(graph->lp);
 	if (k < 0)
-		return -1;
+		return isl_stat_error;
 	isl_seq_clr(graph->lp->eq[k], 1 +  total);
 	isl_int_set_si(graph->lp->eq[k][1], -1);
 	for (i = 0; i < 2 * nparam; ++i)
@@ -2467,7 +2467,7 @@ static int setup_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
 	if (parametric) {
 		k = isl_basic_set_alloc_equality(graph->lp);
 		if (k < 0)
-			return -1;
+			return isl_stat_error;
 		isl_seq_clr(graph->lp->eq[k], 1 +  total);
 		isl_int_set_si(graph->lp->eq[k][3], -1);
 		for (i = 0; i < graph->n; ++i) {
@@ -2480,7 +2480,7 @@ static int setup_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
 
 	k = isl_basic_set_alloc_equality(graph->lp);
 	if (k < 0)
-		return -1;
+		return isl_stat_error;
 	isl_seq_clr(graph->lp->eq[k], 1 +  total);
 	isl_int_set_si(graph->lp->eq[k][4], -1);
 	for (i = 0; i < graph->n; ++i) {
@@ -2496,20 +2496,20 @@ static int setup_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
 			struct isl_sched_node *node = &graph->node[i];
 			k = isl_basic_set_alloc_inequality(graph->lp);
 			if (k < 0)
-				return -1;
+				return isl_stat_error;
 			isl_seq_clr(graph->lp->ineq[k], 1 +  total);
 			isl_int_set_si(graph->lp->ineq[k][1 + node->start], -1);
 			isl_int_set_si(graph->lp->ineq[k][0], max_constant_term);
 		}
 
 	if (add_bound_coefficient_constraints(ctx, graph) < 0)
-		return -1;
+		return isl_stat_error;
 	if (add_all_validity_constraints(graph, use_coincidence) < 0)
-		return -1;
+		return isl_stat_error;
 	if (add_all_proximity_constraints(graph, use_coincidence) < 0)
-		return -1;
+		return isl_stat_error;
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Analyze the conflicting constraint found by
