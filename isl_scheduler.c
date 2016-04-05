@@ -2325,6 +2325,43 @@ static int count_constraints(struct isl_sched_graph *graph,
 	return 0;
 }
 
+/* Add constraints to bound the values of the constant terms in the schedule,
+ * if requested by the user.
+ *
+ * The maximal value of the constant terms is defined by the option
+ * "schedule_max_constant_term".
+ *
+ * Within each node, the coefficients have the following order:
+ *	- c_i_0
+ *	- positive and negative parts of c_i_n (if parametric)
+ *	- positive and negative parts of c_i_x
+ */
+static isl_stat add_bound_constant_constraints(isl_ctx *ctx,
+	struct isl_sched_graph *graph)
+{
+	int i, k;
+	int max;
+	int total;
+
+	max = isl_options_get_schedule_max_constant_term(ctx);
+	if (max == -1)
+		return isl_stat_ok;
+
+	total = isl_basic_set_dim(graph->lp, isl_dim_set);
+
+	for (i = 0; i < graph->n; ++i) {
+		struct isl_sched_node *node = &graph->node[i];
+		k = isl_basic_set_alloc_inequality(graph->lp);
+		if (k < 0)
+			return isl_stat_error;
+		isl_seq_clr(graph->lp->ineq[k], 1 +  total);
+		isl_int_set_si(graph->lp->ineq[k][1 + node->start], -1);
+		isl_int_set_si(graph->lp->ineq[k][0], max);
+	}
+
+	return isl_stat_ok;
+}
+
 /* Count the number of constraints that will be added by
  * add_bound_coefficient_constraints and increment *n_eq and *n_ineq
  * accordingly.
@@ -2491,17 +2528,8 @@ static isl_stat setup_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
 			isl_int_set_si(graph->lp->eq[k][pos + j], 1);
 	}
 
-	if (max_constant_term != -1)
-		for (i = 0; i < graph->n; ++i) {
-			struct isl_sched_node *node = &graph->node[i];
-			k = isl_basic_set_alloc_inequality(graph->lp);
-			if (k < 0)
-				return isl_stat_error;
-			isl_seq_clr(graph->lp->ineq[k], 1 +  total);
-			isl_int_set_si(graph->lp->ineq[k][1 + node->start], -1);
-			isl_int_set_si(graph->lp->ineq[k][0], max_constant_term);
-		}
-
+	if (add_bound_constant_constraints(ctx, graph) < 0)
+		return isl_stat_error;
 	if (add_bound_coefficient_constraints(ctx, graph) < 0)
 		return isl_stat_error;
 	if (add_all_validity_constraints(graph, use_coincidence) < 0)
