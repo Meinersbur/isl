@@ -14,7 +14,7 @@
 extern "C" {
 #endif
 
-struct isl_schedule_constraints;
+struct __isl_export isl_schedule_constraints;
 typedef struct isl_schedule_constraints isl_schedule_constraints;
 
 isl_stat isl_options_set_schedule_max_coefficient(isl_ctx *ctx, int val);
@@ -72,18 +72,25 @@ __isl_null isl_schedule_constraints *isl_schedule_constraints_free(
 
 isl_ctx *isl_schedule_constraints_get_ctx(
 	__isl_keep isl_schedule_constraints *sc);
+__isl_export
 __isl_give isl_union_set *isl_schedule_constraints_get_domain(
 	__isl_keep isl_schedule_constraints *sc);
+__isl_export
 __isl_give isl_set *isl_schedule_constraints_get_context(
 	__isl_keep isl_schedule_constraints *sc);
+__isl_export
 __isl_give isl_union_map *isl_schedule_constraints_get_validity(
 	__isl_keep isl_schedule_constraints *sc);
+__isl_export
 __isl_give isl_union_map *isl_schedule_constraints_get_coincidence(
 	__isl_keep isl_schedule_constraints *sc);
+__isl_export
 __isl_give isl_union_map *isl_schedule_constraints_get_proximity(
 	__isl_keep isl_schedule_constraints *sc);
+__isl_export
 __isl_give isl_union_map *isl_schedule_constraints_get_conditional_validity(
 	__isl_keep isl_schedule_constraints *sc);
+__isl_export
 __isl_give isl_union_map *
 isl_schedule_constraints_get_conditional_validity_condition(
 	__isl_keep isl_schedule_constraints *sc);
@@ -92,6 +99,7 @@ __isl_give isl_schedule_constraints *isl_schedule_constraints_apply(
 	__isl_take isl_schedule_constraints *sc,
 	__isl_take isl_union_map *umap);
 
+__isl_constructor
 __isl_give isl_schedule_constraints *isl_schedule_constraints_read_from_str(
 	isl_ctx *ctx, const char *str);
 __isl_give isl_schedule_constraints *isl_schedule_constraints_read_from_file(
