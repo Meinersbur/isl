@@ -11,6 +11,7 @@
 #define ISL_MAP_PRIVATE_H
 
 #define isl_basic_set	isl_basic_map
+#define isl_maybe_isl_basic_set	isl_maybe_isl_basic_map
 #define isl_set		isl_map
 #define isl_basic_set_list	isl_basic_map_list
 #define isl_set_list	isl_map_list

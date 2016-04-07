@@ -1124,6 +1124,46 @@ static int test_plain_unshifted_simple_hull(isl_ctx *ctx)
 	return 0;
 }
 
+/* Pairs of sets and the corresponding expected results of
+ * isl_set_unshifted_simple_hull.
+ */
+struct {
+	const char *set;
+	const char *hull;
+} unshifted_simple_hull_tests[] = {
+	{ "{ [0,x,y] : x <= -1; [1,x,y] : x <= y <= -x; [2,x,y] : x <= 1 }",
+	  "{ [t,x,y] : 0 <= t <= 2 and x <= 1 }" },
+};
+
+/* Basic tests for isl_set_unshifted_simple_hull.
+ */
+static int test_unshifted_simple_hull(isl_ctx *ctx)
+{
+	int i;
+	isl_set *set;
+	isl_basic_set *hull, *expected;
+	isl_bool equal;
+
+	for (i = 0; i < ARRAY_SIZE(unshifted_simple_hull_tests); ++i) {
+		const char *str;
+		str = unshifted_simple_hull_tests[i].set;
+		set = isl_set_read_from_str(ctx, str);
+		str = unshifted_simple_hull_tests[i].hull;
+		expected = isl_basic_set_read_from_str(ctx, str);
+		hull = isl_set_unshifted_simple_hull(set);
+		equal = isl_basic_set_is_equal(hull, expected);
+		isl_basic_set_free(hull);
+		isl_basic_set_free(expected);
+		if (equal < 0)
+			return -1;
+		if (!equal)
+			isl_die(ctx, isl_error_unknown, "unexpected hull",
+				return -1);
+	}
+
+	return 0;
+}
+
 static int test_simple_hull(struct isl_ctx *ctx)
 {
 	const char *str;
@@ -1146,6 +1186,8 @@ static int test_simple_hull(struct isl_ctx *ctx)
 			return -1);
 
 	if (test_plain_unshifted_simple_hull(ctx) < 0)
+		return -1;
+	if (test_unshifted_simple_hull(ctx) < 0)
 		return -1;
 
 	return 0;
@@ -1383,8 +1425,37 @@ struct {
 	{ "{ [0, 0, q, p] : -5 <= q <= 5 and p >= 0 }",
 	  "{ [a, b, q, p] : b >= 1 + a }",
 	  "{ [a, b, q, p] : false }" },
+	{ "[n] -> { [x] : x = n && x mod 32 = 0 }",
+	  "[n] -> { [x] : x mod 32 = 0 }",
+	  "[n] -> { [x = n] }" },
+	{ "{ [x] : x mod 6 = 0 }", "{ [x] : x mod 3 = 0 }",
+	  "{ [x] : x mod 2 = 0 }" },
+	{ "{ [x] : x mod 3200 = 0 }", "{ [x] : x mod 10000 = 0 }",
+	  "{ [x] : x mod 128 = 0 }" },
+	{ "{ [x] : x mod 3200 = 0 }", "{ [x] : x mod 10 = 0 }",
+	  "{ [x] : x mod 3200 = 0 }" },
+	{ "{ [a, b, c] : a mod 2 = 0 and a = c }",
+	  "{ [a, b, c] : b mod 2 = 0 and b = c }",
+	  "{ [a, b, c = a] }" },
+	{ "{ [a, b, c] : a mod 6 = 0 and a = c }",
+	  "{ [a, b, c] : b mod 2 = 0 and b = c }",
+	  "{ [a, b, c = a] : a mod 3 = 0 }" },
+	{ "{ [x] : 0 <= x <= 4 or 6 <= x <= 9 }",
+	  "{ [x] : 1 <= x <= 3 or 7 <= x <= 8 }",
+	  "{ [x] }" },
+	{ "{ [x,y] : x < 0 and 0 <= y <= 4 or x >= -2 and -x <= y <= 10 + x }",
+	  "{ [x,y] : 1 <= y <= 3 }",
+	  "{ [x,y] }" },
 };
 
+/* Check that isl_set_gist behaves as expected.
+ *
+ * For the test cases in gist_tests, besides checking that the result
+ * is as expected, also check that applying the gist operation does
+ * not modify the input set (an earlier version of isl would do that) and
+ * that the test case is consistent, i.e., that the gist has the same
+ * intersection with the context as the input set.
+ */
 static int test_gist(struct isl_ctx *ctx)
 {
 	int i;
@@ -1394,22 +1465,25 @@ static int test_gist(struct isl_ctx *ctx)
 	int equal;
 
 	for (i = 0; i < ARRAY_SIZE(gist_tests); ++i) {
-		int equal_input;
-		isl_set *set1, *set2, *copy;
+		int equal_input, equal_intersection;
+		isl_set *set1, *set2, *copy, *context;
 
 		set1 = isl_set_read_from_str(ctx, gist_tests[i].set);
-		set2 = isl_set_read_from_str(ctx, gist_tests[i].context);
+		context = isl_set_read_from_str(ctx, gist_tests[i].context);
 		copy = isl_set_copy(set1);
-		set1 = isl_set_gist(set1, set2);
+		set1 = isl_set_gist(set1, isl_set_copy(context));
 		set2 = isl_set_read_from_str(ctx, gist_tests[i].gist);
 		equal = isl_set_is_equal(set1, set2);
 		isl_set_free(set1);
-		isl_set_free(set2);
 		set1 = isl_set_read_from_str(ctx, gist_tests[i].set);
 		equal_input = isl_set_is_equal(set1, copy);
-		isl_set_free(set1);
 		isl_set_free(copy);
-		if (equal < 0 || equal_input < 0)
+		set1 = isl_set_intersect(set1, isl_set_copy(context));
+		set2 = isl_set_intersect(set2, context);
+		equal_intersection = isl_set_is_equal(set1, set2);
+		isl_set_free(set2);
+		isl_set_free(set1);
+		if (equal < 0 || equal_input < 0 || equal_intersection < 0)
 			return -1;
 		if (!equal)
 			isl_die(ctx, isl_error_unknown,
@@ -1417,6 +1491,9 @@ static int test_gist(struct isl_ctx *ctx)
 		if (!equal_input)
 			isl_die(ctx, isl_error_unknown,
 				"gist modified input", return -1);
+		if (!equal_input)
+			isl_die(ctx, isl_error_unknown,
+				"inconsistent gist test case", return -1);
 	}
 
 	test_gist_case(ctx, "gist1");

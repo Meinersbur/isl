@@ -3,6 +3,7 @@
  * Copyright 2010      INRIA Saclay
  * Copyright 2012-2014 Ecole Normale Superieure
  * Copyright 2014      INRIA Rocquencourt
+ * Copyright 2016      Sven Verdoolaege
  *
  * Use of this software is governed by the MIT license
  *
@@ -6117,13 +6118,16 @@ __isl_give isl_pw_multi_aff *isl_basic_map_lexmin_pw_multi_aff(
 /* Given a map "map", compute the lexicographically minimal
  * (or maximal) image element for each domain element in dom,
  * in the form of an isl_pw_multi_aff.
- * Set *empty to those elements in dom that do not have an image element.
+ * If "empty" is not NULL, then set *empty to those elements in dom that
+ * do not have an image element.
  *
  * We first compute the lexicographically minimal or maximal element
  * in the first basic map.  This results in a partial solution "res"
  * and a subset "todo" of dom that still need to be handled.
  * We then consider each of the remaining maps in "map" and successively
  * update both "res" and "todo".
+ * If "empty" is NULL, then the todo sets are not needed and therefore
+ * also not computed.
  */
 static __isl_give isl_pw_multi_aff *isl_map_partial_lexopt_aligned_pw_multi_aff(
 	__isl_take isl_map *map, __isl_take isl_set *dom,
@@ -6146,22 +6150,24 @@ static __isl_give isl_pw_multi_aff *isl_map_partial_lexopt_aligned_pw_multi_aff(
 
 	res = basic_map_partial_lexopt_pw_multi_aff(
 					    isl_basic_map_copy(map->p[0]),
-					    isl_set_copy(dom), &todo, max);
+					    isl_set_copy(dom), empty, max);
 
+	if (empty)
+		todo = *empty;
 	for (i = 1; i < map->n; ++i) {
 		isl_pw_multi_aff *res_i;
-		isl_set *todo_i;
 
 		res_i = basic_map_partial_lexopt_pw_multi_aff(
 					    isl_basic_map_copy(map->p[i]),
-					    isl_set_copy(dom), &todo_i, max);
+					    isl_set_copy(dom), empty, max);
 
 		if (max)
 			res = isl_pw_multi_aff_union_lexmax(res, res_i);
 		else
 			res = isl_pw_multi_aff_union_lexmin(res, res_i);
 
-		todo = isl_set_intersect(todo, todo_i);
+		if (empty)
+			todo = isl_set_intersect(todo, *empty);
 	}
 
 	isl_set_free(dom);
@@ -6169,8 +6175,6 @@ static __isl_give isl_pw_multi_aff *isl_map_partial_lexopt_aligned_pw_multi_aff(
 
 	if (empty)
 		*empty = todo;
-	else
-		isl_set_free(todo);
 
 	return res;
 error:
@@ -10895,6 +10899,32 @@ isl_bool isl_set_is_singleton(__isl_keep isl_set *set)
 	return isl_map_is_single_valued((isl_map *)set);
 }
 
+/* Does "map" only map elements to themselves?
+ *
+ * If the domain and range spaces are different, then "map"
+ * is considered not to be an identity relation, even if it is empty.
+ * Otherwise, construct the maximal identity relation and
+ * check whether "map" is a subset of this relation.
+ */
+isl_bool isl_map_is_identity(__isl_keep isl_map *map)
+{
+	isl_space *space;
+	isl_map *id;
+	isl_bool equal, is_identity;
+
+	space = isl_map_get_space(map);
+	equal = isl_space_tuple_is_equal(space, isl_dim_in, space, isl_dim_out);
+	isl_space_free(space);
+	if (equal < 0 || !equal)
+		return equal;
+
+	id = isl_map_identity(isl_map_get_space(map));
+	is_identity = isl_map_is_subset(map, id);
+	isl_map_free(id);
+
+	return is_identity;
+}
+
 int isl_map_is_translation(__isl_keep isl_map *map)
 {
 	int ok;
@@ -11827,16 +11857,25 @@ __isl_give isl_map *isl_map_uncurry(__isl_take isl_map *map)
 
 /* Construct a basic map mapping the domain of the affine expression
  * to a one-dimensional range prescribed by the affine expression.
+ *
+ * A NaN affine expression cannot be converted to a basic map.
  */
 __isl_give isl_basic_map *isl_basic_map_from_aff(__isl_take isl_aff *aff)
 {
 	int k;
 	int pos;
+	isl_bool is_nan;
 	isl_local_space *ls;
-	isl_basic_map *bmap;
+	isl_basic_map *bmap = NULL;
 
 	if (!aff)
 		return NULL;
+	is_nan = isl_aff_is_nan(aff);
+	if (is_nan < 0)
+		goto error;
+	if (is_nan)
+		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
+			"cannot convert NaN", goto error);
 
 	ls = isl_aff_get_local_space(aff);
 	bmap = isl_basic_map_from_local_space(ls);

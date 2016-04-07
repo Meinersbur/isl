@@ -1,7 +1,7 @@
 /*
  * Copyright 2011      INRIA Saclay
  * Copyright 2012-2014 Ecole Normale Superieure
- * Copyright 2015      Sven Verdoolaege
+ * Copyright 2015-2016 Sven Verdoolaege
  *
  * Use of this software is governed by the MIT license
  *
@@ -301,6 +301,17 @@ __isl_give isl_union_map *isl_schedule_constraints_get_coincidence(
 	return isl_union_map_copy(sc->constraint[isl_edge_coincidence]);
 }
 
+/* Return the proximity constraints of "sc".
+ */
+__isl_give isl_union_map *isl_schedule_constraints_get_proximity(
+	__isl_keep isl_schedule_constraints *sc)
+{
+	if (!sc)
+		return NULL;
+
+	return isl_union_map_copy(sc->constraint[isl_edge_proximity]);
+}
+
 /* Return the conditional validity constraints of "sc".
  */
 __isl_give isl_union_map *isl_schedule_constraints_get_conditional_validity(
@@ -323,6 +334,99 @@ isl_schedule_constraints_get_conditional_validity_condition(
 		return NULL;
 
 	return isl_union_map_copy(sc->constraint[isl_edge_condition]);
+}
+
+/* Can a schedule constraint of type "type" be tagged?
+ */
+static int may_be_tagged(enum isl_edge_type type)
+{
+	if (type == isl_edge_condition || type == isl_edge_conditional_validity)
+		return 1;
+	return 0;
+}
+
+/* Apply "umap" to the domains of the wrapped relations
+ * inside the domain and range of "c".
+ *
+ * That is, for each map of the form
+ *
+ *	[D -> S] -> [E -> T]
+ *
+ * in "c", apply "umap" to D and E.
+ *
+ * D is exposed by currying the relation to
+ *
+ *	D -> [S -> [E -> T]]
+ *
+ * E is exposed by doing the same to the inverse of "c".
+ */
+static __isl_give isl_union_map *apply_factor_domain(
+	__isl_take isl_union_map *c, __isl_keep isl_union_map *umap)
+{
+	c = isl_union_map_curry(c);
+	c = isl_union_map_apply_domain(c, isl_union_map_copy(umap));
+	c = isl_union_map_uncurry(c);
+
+	c = isl_union_map_reverse(c);
+	c = isl_union_map_curry(c);
+	c = isl_union_map_apply_domain(c, isl_union_map_copy(umap));
+	c = isl_union_map_uncurry(c);
+	c = isl_union_map_reverse(c);
+
+	return c;
+}
+
+/* Apply "umap" to domain and range of "c".
+ * If "tag" is set, then "c" may contain tags and then "umap"
+ * needs to be applied to the domains of the wrapped relations
+ * inside the domain and range of "c".
+ */
+static __isl_give isl_union_map *apply(__isl_take isl_union_map *c,
+	__isl_keep isl_union_map *umap, int tag)
+{
+	isl_union_map *t;
+
+	if (tag)
+		t = isl_union_map_copy(c);
+	c = isl_union_map_apply_domain(c, isl_union_map_copy(umap));
+	c = isl_union_map_apply_range(c, isl_union_map_copy(umap));
+	if (!tag)
+		return c;
+	t = apply_factor_domain(t, umap);
+	c = isl_union_map_union(c, t);
+	return c;
+}
+
+/* Apply "umap" to the domain of the schedule constraints "sc".
+ *
+ * The two sides of the various schedule constraints are adjusted
+ * accordingly.
+ */
+__isl_give isl_schedule_constraints *isl_schedule_constraints_apply(
+	__isl_take isl_schedule_constraints *sc,
+	__isl_take isl_union_map *umap)
+{
+	enum isl_edge_type i;
+
+	if (!sc || !umap)
+		goto error;
+
+	for (i = isl_edge_first; i <= isl_edge_last; ++i) {
+		int tag = may_be_tagged(i);
+
+		sc->constraint[i] = apply(sc->constraint[i], umap, tag);
+		if (!sc->constraint[i])
+			goto error;
+	}
+	sc->domain = isl_union_set_apply(sc->domain, umap);
+	if (!sc->domain)
+		return isl_schedule_constraints_free(sc);
+
+	return sc;
+error:
+	isl_schedule_constraints_free(sc);
+	isl_union_map_free(umap);
+	return NULL;
 }
 
 void isl_schedule_constraints_dump(__isl_keep isl_schedule_constraints *sc)
@@ -621,7 +725,7 @@ static int is_conditional_validity(struct isl_sched_edge *edge)
  * inter_hmap is a cache, mapping dependence relations to their dual,
  *	for dependences between distinct nodes
  * if compression is involved then the key for these maps
- * it the original, uncompressed dependence relation, while
+ * is the original, uncompressed dependence relation, while
  * the value is the dual of the compressed dependence relation.
  *
  * n is the number of nodes
@@ -1583,9 +1687,13 @@ static __isl_give isl_basic_set *intra_coefficients(
 	isl_set *delta;
 	isl_map *key;
 	isl_basic_set *coef;
+	isl_maybe_isl_basic_set m;
 
-	if (isl_map_to_basic_set_has(graph->intra_hmap, map))
-		return isl_map_to_basic_set_get(graph->intra_hmap, map);
+	m = isl_map_to_basic_set_try_get(graph->intra_hmap, map);
+	if (m.valid < 0 || m.valid) {
+		isl_map_free(map);
+		return m.value;
+	}
 
 	key = isl_map_copy(map);
 	if (node->compressed) {
@@ -1620,9 +1728,13 @@ static __isl_give isl_basic_set *inter_coefficients(
 	isl_set *set;
 	isl_map *key;
 	isl_basic_set *coef;
+	isl_maybe_isl_basic_set m;
 
-	if (isl_map_to_basic_set_has(graph->inter_hmap, map))
-		return isl_map_to_basic_set_get(graph->inter_hmap, map);
+	m = isl_map_to_basic_set_try_get(graph->inter_hmap, map);
+	if (m.valid < 0 || m.valid) {
+		isl_map_free(map);
+		return m.value;
+	}
 
 	key = isl_map_copy(map);
 	if (edge->src->compressed)

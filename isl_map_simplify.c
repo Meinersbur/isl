@@ -2815,6 +2815,369 @@ error:
 	return NULL;
 }
 
+/* Return the number of equality constraints in "bmap" that involve
+ * local variables.  This function assumes that Gaussian elimination
+ * has been applied to the equality constraints.
+ */
+static int n_div_eq(__isl_keep isl_basic_map *bmap)
+{
+	int i;
+	int total, n_div;
+
+	if (!bmap)
+		return -1;
+
+	if (bmap->n_eq == 0)
+		return 0;
+
+	total = isl_basic_map_dim(bmap, isl_dim_all);
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	total -= n_div;
+
+	for (i = 0; i < bmap->n_eq; ++i)
+		if (isl_seq_first_non_zero(bmap->eq[i] + 1 + total,
+					    n_div) == -1)
+			return i;
+
+	return bmap->n_eq;
+}
+
+/* Construct a basic map in "space" defined by the equality constraints in "eq".
+ * The constraints are assumed not to involve any local variables.
+ */
+static __isl_give isl_basic_map *basic_map_from_equalities(
+	__isl_take isl_space *space, __isl_take isl_mat *eq)
+{
+	int i, k;
+	isl_basic_map *bmap = NULL;
+
+	if (!space || !eq)
+		goto error;
+
+	if (1 + isl_space_dim(space, isl_dim_all) != eq->n_col)
+		isl_die(isl_space_get_ctx(space), isl_error_internal,
+			"unexpected number of columns", goto error);
+
+	bmap = isl_basic_map_alloc_space(isl_space_copy(space),
+					    0, eq->n_row, 0);
+	for (i = 0; i < eq->n_row; ++i) {
+		k = isl_basic_map_alloc_equality(bmap);
+		if (k < 0)
+			goto error;
+		isl_seq_cpy(bmap->eq[k], eq->row[i], eq->n_col);
+	}
+
+	isl_space_free(space);
+	isl_mat_free(eq);
+	return bmap;
+error:
+	isl_space_free(space);
+	isl_mat_free(eq);
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+/* Construct and return a variable compression based on the equality
+ * constraints in "bmap1" and "bmap2" that do not involve the local variables.
+ * "n1" is the number of (initial) equality constraints in "bmap1"
+ * that do involve local variables.
+ * "n2" is the number of (initial) equality constraints in "bmap2"
+ * that do involve local variables.
+ * "total" is the total number of other variables.
+ * This function assumes that Gaussian elimination
+ * has been applied to the equality constraints in both "bmap1" and "bmap2"
+ * such that the equality constraints not involving local variables
+ * are those that start at "n1" or "n2".
+ *
+ * If either of "bmap1" and "bmap2" does not have such equality constraints,
+ * then simply compute the compression based on the equality constraints
+ * in the other basic map.
+ * Otherwise, combine the equality constraints from both into a new
+ * basic map such that Gaussian elimination can be applied to this combination
+ * and then construct a variable compression from the resulting
+ * equality constraints.
+ */
+static __isl_give isl_mat *combined_variable_compression(
+	__isl_keep isl_basic_map *bmap1, int n1,
+	__isl_keep isl_basic_map *bmap2, int n2, int total)
+{
+	isl_ctx *ctx;
+	isl_mat *E1, *E2, *V;
+	isl_basic_map *bmap;
+
+	ctx = isl_basic_map_get_ctx(bmap1);
+	if (bmap1->n_eq == n1) {
+		E2 = isl_mat_sub_alloc6(ctx, bmap2->eq,
+					n2, bmap2->n_eq - n2, 0, 1 + total);
+		return isl_mat_variable_compression(E2, NULL);
+	}
+	if (bmap2->n_eq == n2) {
+		E1 = isl_mat_sub_alloc6(ctx, bmap1->eq,
+					n1, bmap1->n_eq - n1, 0, 1 + total);
+		return isl_mat_variable_compression(E1, NULL);
+	}
+	E1 = isl_mat_sub_alloc6(ctx, bmap1->eq,
+				n1, bmap1->n_eq - n1, 0, 1 + total);
+	E2 = isl_mat_sub_alloc6(ctx, bmap2->eq,
+				n2, bmap2->n_eq - n2, 0, 1 + total);
+	E1 = isl_mat_concat(E1, E2);
+	bmap = basic_map_from_equalities(isl_basic_map_get_space(bmap1), E1);
+	bmap = isl_basic_map_gauss(bmap, NULL);
+	if (!bmap)
+		return NULL;
+	E1 = isl_mat_sub_alloc6(ctx, bmap->eq, 0, bmap->n_eq, 0, 1 + total);
+	V = isl_mat_variable_compression(E1, NULL);
+	isl_basic_map_free(bmap);
+
+	return V;
+}
+
+/* Extract the stride constraints from "bmap", compressed
+ * with respect to both the stride constraints in "context" and
+ * the remaining equality constraints in both "bmap" and "context".
+ * "bmap_n_eq" is the number of (initial) stride constraints in "bmap".
+ * "context_n_eq" is the number of (initial) stride constraints in "context".
+ *
+ * Let x be all variables in "bmap" (and "context") other than the local
+ * variables.  First compute a variable compression
+ *
+ *	x = V x'
+ *
+ * based on the non-stride equality constraints in "bmap" and "context".
+ * Consider the stride constraints of "context",
+ *
+ *	A(x) + B(y) = 0
+ *
+ * with y the local variables and plug in the variable compression,
+ * resulting in
+ *
+ *	A(V x') + B(y) = 0
+ *
+ * Use these constraints to compute a parameter compression on x'
+ *
+ *	x' = T x''
+ *
+ * Now consider the stride constraints of "bmap"
+ *
+ *	C(x) + D(y) = 0
+ *
+ * and plug in x = V*T x''.
+ * That is, return A = [C*V*T D].
+ */
+static __isl_give isl_mat *extract_compressed_stride_constraints(
+	__isl_keep isl_basic_map *bmap, int bmap_n_eq,
+	__isl_keep isl_basic_map *context, int context_n_eq)
+{
+	int total, n_div;
+	isl_ctx *ctx;
+	isl_mat *A, *B, *T, *V;
+
+	total = isl_basic_map_dim(context, isl_dim_all);
+	n_div = isl_basic_map_dim(context, isl_dim_div);
+	total -= n_div;
+
+	ctx = isl_basic_map_get_ctx(bmap);
+
+	V = combined_variable_compression(bmap, bmap_n_eq,
+						context, context_n_eq, total);
+
+	A = isl_mat_sub_alloc6(ctx, context->eq, 0, context_n_eq, 0, 1 + total);
+	B = isl_mat_sub_alloc6(ctx, context->eq,
+				0, context_n_eq, 1 + total, n_div);
+	A = isl_mat_product(A, isl_mat_copy(V));
+	T = isl_mat_parameter_compression_ext(A, B);
+	T = isl_mat_product(V, T);
+
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	T = isl_mat_diagonal(T, isl_mat_identity(ctx, n_div));
+
+	A = isl_mat_sub_alloc6(ctx, bmap->eq,
+				0, bmap_n_eq, 0, 1 + total + n_div);
+	A = isl_mat_product(A, T);
+
+	return A;
+}
+
+/* Remove the prime factors from *g that have an exponent that
+ * is strictly smaller than the exponent in "c".
+ * All exponents in *g are known to be smaller than or equal
+ * to those in "c".
+ *
+ * That is, if *g is equal to
+ *
+ *	p_1^{e_1} p_2^{e_2} ... p_n^{e_n}
+ *
+ * and "c" is equal to
+ *
+ *	p_1^{f_1} p_2^{f_2} ... p_n^{f_n}
+ *
+ * then update *g to
+ *
+ *	p_1^{e_1 * (e_1 = f_1)} p_2^{e_2 * (e_2 = f_2)} ...
+ *		p_n^{e_n * (e_n = f_n)}
+ *
+ * If e_i = f_i, then c / *g does not have any p_i factors and therefore
+ * neither does the gcd of *g and c / *g.
+ * If e_i < f_i, then the gcd of *g and c / *g has a positive
+ * power min(e_i, s_i) of p_i with s_i = f_i - e_i among its factors.
+ * Dividing *g by this gcd therefore strictly reduces the exponent
+ * of the prime factors that need to be removed, while leaving the
+ * other prime factors untouched.
+ * Repeating this process until gcd(*g, c / *g) = 1 therefore
+ * removes all undesired factors, without removing any others.
+ */
+static void remove_incomplete_powers(isl_int *g, isl_int c)
+{
+	isl_int t;
+
+	isl_int_init(t);
+	for (;;) {
+		isl_int_divexact(t, c, *g);
+		isl_int_gcd(t, t, *g);
+		if (isl_int_is_one(t))
+			break;
+		isl_int_divexact(*g, *g, t);
+	}
+	isl_int_clear(t);
+}
+
+/* Reduce the "n" stride constraints in "bmap" based on a copy "A"
+ * of the same stride constraints in a compressed space that exploits
+ * all equalities in the context and the other equalities in "bmap".
+ *
+ * If the stride constraints of "bmap" are of the form
+ *
+ *	C(x) + D(y) = 0
+ *
+ * then A is of the form
+ *
+ *	B(x') + D(y) = 0
+ *
+ * If any of these constraints involves only a single local variable y,
+ * then the constraint appears as
+ *
+ *	f(x) + m y_i = 0
+ *
+ * in "bmap" and as
+ *
+ *	h(x') + m y_i = 0
+ *
+ * in "A".
+ *
+ * Let g be the gcd of m and the coefficients of h.
+ * Then, in particular, g is a divisor of the coefficients of h and
+ *
+ *	f(x) = h(x')
+ *
+ * is known to be a multiple of g.
+ * If some prime factor in m appears with the same exponent in g,
+ * then it can be removed from m because f(x) is already known
+ * to be a multiple of g and therefore in particular of this power
+ * of the prime factors.
+ * Prime factors that appear with a smaller exponent in g cannot
+ * be removed from m.
+ * Let g' be the divisor of g containing all prime factors that
+ * appear with the same exponent in m and g, then
+ *
+ *	f(x) + m y_i = 0
+ *
+ * can be replaced by
+ *
+ *	f(x) + m/g' y_i' = 0
+ *
+ * Note that (if g' != 1) this changes the explicit representation
+ * of y_i to that of y_i', so the integer division at position i
+ * is marked unknown and later recomputed by a call to
+ * isl_basic_map_gauss.
+ */
+static __isl_give isl_basic_map *reduce_stride_constraints(
+	__isl_take isl_basic_map *bmap, int n, __isl_keep isl_mat *A)
+{
+	int i;
+	int total, n_div;
+	int any = 0;
+	isl_int gcd;
+
+	if (!bmap || !A)
+		return isl_basic_map_free(bmap);
+
+	total = isl_basic_map_dim(bmap, isl_dim_all);
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	total -= n_div;
+
+	isl_int_init(gcd);
+	for (i = 0; i < n; ++i) {
+		int div;
+
+		div = isl_seq_first_non_zero(bmap->eq[i] + 1 + total, n_div);
+		if (div < 0)
+			isl_die(isl_basic_map_get_ctx(bmap), isl_error_internal,
+				"equality constraints modified unexpectedly",
+				goto error);
+		if (isl_seq_first_non_zero(bmap->eq[i] + 1 + total + div + 1,
+						n_div - div - 1) != -1)
+			continue;
+		if (isl_mat_row_gcd(A, i, &gcd) < 0)
+			goto error;
+		if (isl_int_is_one(gcd))
+			continue;
+		remove_incomplete_powers(&gcd, bmap->eq[i][1 + total + div]);
+		if (isl_int_is_one(gcd))
+			continue;
+		isl_int_divexact(bmap->eq[i][1 + total + div],
+				bmap->eq[i][1 + total + div], gcd);
+		bmap = isl_basic_map_mark_div_unknown(bmap, div);
+		if (!bmap)
+			goto error;
+		any = 1;
+	}
+	isl_int_clear(gcd);
+
+	if (any)
+		bmap = isl_basic_map_gauss(bmap, NULL);
+
+	return bmap;
+error:
+	isl_int_clear(gcd);
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
+/* Simplify the stride constraints in "bmap" based on
+ * the remaining equality constraints in "bmap" and all equality
+ * constraints in "context".
+ * Only do this if both "bmap" and "context" have stride constraints.
+ *
+ * First extract a copy of the stride constraints in "bmap" in a compressed
+ * space exploiting all the other equality constraints and then
+ * use this compressed copy to simplify the original stride constraints.
+ */
+static __isl_give isl_basic_map *gist_strides(__isl_take isl_basic_map *bmap,
+	__isl_keep isl_basic_map *context)
+{
+	int bmap_n_eq, context_n_eq;
+	isl_mat *A;
+
+	if (!bmap || !context)
+		return isl_basic_map_free(bmap);
+
+	bmap_n_eq = n_div_eq(bmap);
+	context_n_eq = n_div_eq(context);
+
+	if (bmap_n_eq < 0 || context_n_eq < 0)
+		return isl_basic_map_free(bmap);
+	if (bmap_n_eq == 0 || context_n_eq == 0)
+		return bmap;
+
+	A = extract_compressed_stride_constraints(bmap, bmap_n_eq,
+						    context, context_n_eq);
+	bmap = reduce_stride_constraints(bmap, bmap_n_eq, A);
+
+	isl_mat_free(A);
+
+	return bmap;
+}
+
 /* Return a basic map that has the same intersection with "context" as "bmap"
  * and that is as "simple" as possible.
  *
@@ -2830,6 +3193,10 @@ error:
  * this form that are most obviously redundant with respect to
  * the context.  We also remove those div constraints that are
  * redundant with respect to the other constraints in the result.
+ *
+ * The stride constraints among the equality constraints in "bmap" are
+ * also simplified with respecting to the other equality constraints
+ * in "bmap" and with respect to all equality constraints in "context".
  */
 struct isl_basic_map *isl_basic_map_gist(struct isl_basic_map *bmap,
 	struct isl_basic_map *context)
@@ -2888,6 +3255,7 @@ struct isl_basic_map *isl_basic_map_gist(struct isl_basic_map *bmap,
 		bset = isl_basic_set_free(bset);
 
 	eq_bmap = isl_basic_map_overlying_set(eq, isl_basic_map_copy(bmap));
+	eq_bmap = gist_strides(eq_bmap, context);
 	eq_bmap = isl_basic_map_remove_shifted_constraints(eq_bmap, context);
 	bmap = isl_basic_map_overlying_set(bset, bmap);
 	bmap = isl_basic_map_intersect(bmap, eq_bmap);
@@ -3123,7 +3491,7 @@ static __isl_give isl_map *replace_by_disjunct(__isl_take isl_map *map,
 
 /* Remove the constraints in "context" from "map".
  * If any of the disjuncts in the result turns out to be the universe,
- * the return this universe.
+ * then return this universe.
  * "context" is assumed to have explicit representations
  * for all local variables.
  */
@@ -3171,6 +3539,19 @@ error:
 	return NULL;
 }
 
+/* Replace "map" by a universe map in the same space and free "drop".
+ */
+static __isl_give isl_map *replace_by_universe(__isl_take isl_map *map,
+	__isl_take isl_map *drop)
+{
+	isl_map *res;
+
+	res = isl_map_universe(isl_map_get_space(map));
+	isl_map_free(map);
+	isl_map_free(drop);
+	return res;
+}
+
 /* Return a map that has the same intersection with "context" as "map"
  * and that is as "simple" as possible.
  *
@@ -3179,6 +3560,12 @@ error:
  * to simplify "map"
  * If "map" and "context" are identical to each other, then we can
  * return the corresponding universe.
+ *
+ * If either "map" or "context" consists of multiple disjuncts,
+ * then check if "context" happens to be a subset of "map",
+ * in which case all constraints can be removed.
+ * In case of multiple disjuncts, the standard procedure
+ * may not be able to detect that all constraints can be removed.
  *
  * If none of these cases apply, we have to work a bit harder.
  * During this computation, we make use of a single disjunct context,
@@ -3195,6 +3582,8 @@ static __isl_give isl_map *map_gist(__isl_take isl_map *map,
 {
 	int equal;
 	int is_universe;
+	int single_disjunct_map, single_disjunct_context;
+	isl_bool subset;
 	isl_basic_map *hull;
 
 	is_universe = isl_map_plain_is_universe(map);
@@ -3210,17 +3599,23 @@ static __isl_give isl_map *map_gist(__isl_take isl_map *map,
 	equal = isl_map_plain_is_equal(map, context);
 	if (equal < 0)
 		goto error;
-	if (equal) {
-		isl_map *res = isl_map_universe(isl_map_get_space(map));
-		isl_map_free(map);
-		isl_map_free(context);
-		return res;
+	if (equal)
+		return replace_by_universe(map, context);
+
+	single_disjunct_map = isl_map_n_basic_map(map) == 1;
+	single_disjunct_context = isl_map_n_basic_map(context) == 1;
+	if (!single_disjunct_map || !single_disjunct_context) {
+		subset = isl_map_is_subset(context, map);
+		if (subset < 0)
+			goto error;
+		if (subset)
+			return replace_by_universe(map, context);
 	}
 
 	context = isl_map_compute_divs(context);
 	if (!context)
 		goto error;
-	if (isl_map_n_basic_map(context) == 1) {
+	if (single_disjunct_context) {
 		hull = isl_map_simple_hull(context);
 	} else {
 		isl_ctx *ctx;
@@ -3396,25 +3791,38 @@ int isl_basic_set_plain_is_disjoint(__isl_keep isl_basic_set *bset1,
 					      (struct isl_basic_map *)bset2);
 }
 
-/* Are "map1" and "map2" obviously disjoint?
- *
- * If one of them is empty or if they live in different spaces (ignoring
- * parameters), then they are clearly disjoint.
- *
- * If they have different parameters, then we skip any further tests.
- *
- * If they are obviously equal, but not obviously empty, then we will
- * not be able to detect if they are disjoint.
- *
- * Otherwise we check if each basic map in "map1" is obviously disjoint
- * from each basic map in "map2".
+/* Does "test" hold for all pairs of basic maps in "map1" and "map2"?
  */
-isl_bool isl_map_plain_is_disjoint(__isl_keep isl_map *map1,
-	__isl_keep isl_map *map2)
+static isl_bool all_pairs(__isl_keep isl_map *map1, __isl_keep isl_map *map2,
+	isl_bool (*test)(__isl_keep isl_basic_map *bmap1,
+		__isl_keep isl_basic_map *bmap2))
 {
 	int i, j;
+
+	if (!map1 || !map2)
+		return isl_bool_error;
+
+	for (i = 0; i < map1->n; ++i) {
+		for (j = 0; j < map2->n; ++j) {
+			isl_bool d = test(map1->p[i], map2->p[j]);
+			if (d != isl_bool_true)
+				return d;
+		}
+	}
+
+	return isl_bool_true;
+}
+
+/* Are "map1" and "map2" obviously disjoint, based on information
+ * that can be derived without looking at the individual basic maps?
+ *
+ * In particular, if one of them is empty or if they live in different spaces
+ * (ignoring parameters), then they are clearly disjoint.
+ */
+static isl_bool isl_map_plain_is_disjoint_global(__isl_keep isl_map *map1,
+	__isl_keep isl_map *map2)
+{
 	isl_bool disjoint;
-	isl_bool intersect;
 	isl_bool match;
 
 	if (!map1 || !map2)
@@ -3438,6 +3846,34 @@ isl_bool isl_map_plain_is_disjoint(__isl_keep isl_map *map1,
 	if (match < 0 || !match)
 		return match < 0 ? isl_bool_error : isl_bool_true;
 
+	return isl_bool_false;
+}
+
+/* Are "map1" and "map2" obviously disjoint?
+ *
+ * If one of them is empty or if they live in different spaces (ignoring
+ * parameters), then they are clearly disjoint.
+ * This is checked by isl_map_plain_is_disjoint_global.
+ *
+ * If they have different parameters, then we skip any further tests.
+ *
+ * If they are obviously equal, but not obviously empty, then we will
+ * not be able to detect if they are disjoint.
+ *
+ * Otherwise we check if each basic map in "map1" is obviously disjoint
+ * from each basic map in "map2".
+ */
+isl_bool isl_map_plain_is_disjoint(__isl_keep isl_map *map1,
+	__isl_keep isl_map *map2)
+{
+	isl_bool disjoint;
+	isl_bool intersect;
+	isl_bool match;
+
+	disjoint = isl_map_plain_is_disjoint_global(map1, map2);
+	if (disjoint < 0 || disjoint)
+		return disjoint;
+
 	match = isl_space_match(map1->dim, isl_dim_param,
 				map2->dim, isl_dim_param);
 	if (match < 0 || !match)
@@ -3447,31 +3883,24 @@ isl_bool isl_map_plain_is_disjoint(__isl_keep isl_map *map1,
 	if (intersect < 0 || intersect)
 		return intersect < 0 ? isl_bool_error : isl_bool_false;
 
-	for (i = 0; i < map1->n; ++i) {
-		for (j = 0; j < map2->n; ++j) {
-			isl_bool d = isl_basic_map_plain_is_disjoint(map1->p[i],
-								   map2->p[j]);
-			if (d != isl_bool_true)
-				return d;
-		}
-	}
-	return isl_bool_true;
+	return all_pairs(map1, map2, &isl_basic_map_plain_is_disjoint);
 }
 
 /* Are "map1" and "map2" disjoint?
  *
  * They are disjoint if they are "obviously disjoint" or if one of them
  * is empty.  Otherwise, they are not disjoint if one of them is universal.
- * If none of these cases apply, we compute the intersection and see if
- * the result is empty.
+ * If the two inputs are (obviously) equal and not empty, then they are
+ * not disjoint.
+ * If none of these cases apply, then check if all pairs of basic maps
+ * are disjoint.
  */
 isl_bool isl_map_is_disjoint(__isl_keep isl_map *map1, __isl_keep isl_map *map2)
 {
 	isl_bool disjoint;
 	isl_bool intersect;
-	isl_map *test;
 
-	disjoint = isl_map_plain_is_disjoint(map1, map2);
+	disjoint = isl_map_plain_is_disjoint_global(map1, map2);
 	if (disjoint < 0 || disjoint)
 		return disjoint;
 
@@ -3491,11 +3920,11 @@ isl_bool isl_map_is_disjoint(__isl_keep isl_map *map1, __isl_keep isl_map *map2)
 	if (intersect < 0 || intersect)
 		return intersect < 0 ? isl_bool_error : isl_bool_false;
 
-	test = isl_map_intersect(isl_map_copy(map1), isl_map_copy(map2));
-	disjoint = isl_map_is_empty(test);
-	isl_map_free(test);
+	intersect = isl_map_plain_is_equal(map1, map2);
+	if (intersect < 0 || intersect)
+		return isl_bool_not(intersect);
 
-	return disjoint;
+	return all_pairs(map1, map2, &isl_basic_map_is_disjoint);
 }
 
 /* Are "bmap1" and "bmap2" disjoint?
