@@ -3673,6 +3673,38 @@ __isl_give isl_set *isl_set_project_out(__isl_take isl_set *set,
 	return (isl_set *)isl_map_project_out((isl_map *)set, type, first, n);
 }
 
+/* Return a map that projects the elements in "set" onto their
+ * "n" set dimensions starting at "first".
+ * "type" should be equal to isl_dim_set.
+ */
+__isl_give isl_map *isl_set_project_onto_map(__isl_take isl_set *set,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	int i;
+	int dim;
+	isl_map *map;
+
+	if (!set)
+		return NULL;
+	if (type != isl_dim_set)
+		isl_die(isl_set_get_ctx(set), isl_error_invalid,
+			"only set dimensions can be projected out", goto error);
+	dim = isl_set_dim(set, isl_dim_set);
+	if (first + n > dim || first + n < first)
+		isl_die(isl_set_get_ctx(set), isl_error_invalid,
+			"index out of bounds", goto error);
+
+	map = isl_map_from_domain(set);
+	map = isl_map_add_dims(map, isl_dim_out, n);
+	for (i = 0; i < n; ++i)
+		map = isl_map_equate(map, isl_dim_in, first + i,
+					isl_dim_out, i);
+	return map;
+error:
+	isl_set_free(set);
+	return NULL;
+}
+
 static struct isl_basic_map *add_divs(struct isl_basic_map *bmap, unsigned n)
 {
 	int i, j;
