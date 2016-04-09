@@ -7316,8 +7316,8 @@ Lists can be inspected using the following functions.
 The function C<isl_set_list_foreach_scc> calls C<fn> on each of the
 strongly connected components of the graph with as vertices the elements
 of C<list> and a directed edge from vertex C<b> to vertex C<a>
-iff C<follows(a, b)> returns C<1>.  The callbacks C<follows> and C<fn>
-should return C<-1> on error.
+iff C<follows(a, b)> returns C<isl_bool_true>.  The callbacks C<follows> and
+C<fn> should return C<isl_bool_error> or C<isl_stat_error> on error.
 
 Lists can be printed using
 
