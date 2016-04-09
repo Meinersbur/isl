@@ -7309,7 +7309,7 @@ Lists can be inspected using the following functions.
 		__isl_keep isl_set_list *list,
 		isl_bool (*follows)(__isl_keep isl_set *a,
 			__isl_keep isl_set *b, void *user),
-		void *follows_user
+		void *follows_user,
 		isl_stat (*fn)(__isl_take isl_set *el, void *user),
 		void *fn_user);
 
