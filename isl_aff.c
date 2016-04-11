@@ -1718,7 +1718,7 @@ __isl_give isl_aff *isl_aff_ceil(__isl_take isl_aff *aff)
  * The expansion itself is given by "exp" while the resulting
  * list of divs is given by "div".
  */
-__isl_give isl_aff *isl_aff_expand_divs( __isl_take isl_aff *aff,
+__isl_give isl_aff *isl_aff_expand_divs(__isl_take isl_aff *aff,
 	__isl_take isl_mat *div, int *exp)
 {
 	int i, j;
