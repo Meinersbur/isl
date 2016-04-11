@@ -5524,6 +5524,9 @@ __isl_give isl_multi_aff *isl_multi_aff_pullback_multi_aff(
 
 /* Extend the local space of "dst" to include the divs
  * in the local space of "src".
+ *
+ * If "src" does not have any divs or if the local spaces of "dst" and
+ * "src" are the same, then no extension is required.
  */
 __isl_give isl_aff *isl_aff_align_divs(__isl_take isl_aff *dst,
 	__isl_keep isl_aff *src)
@@ -5548,6 +5551,11 @@ __isl_give isl_aff *isl_aff_align_divs(__isl_take isl_aff *dst,
 
 	src_n_div = isl_local_space_dim(src->ls, isl_dim_div);
 	if (src_n_div == 0)
+		return dst;
+	equal = isl_local_space_is_equal(src->ls, dst->ls);
+	if (equal < 0)
+		return isl_aff_free(dst);
+	if (equal)
 		return dst;
 
 	dst_n_div = isl_local_space_dim(dst->ls, isl_dim_div);
