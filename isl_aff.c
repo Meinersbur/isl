@@ -5531,13 +5531,17 @@ __isl_give isl_aff *isl_aff_align_divs(__isl_take isl_aff *dst,
 	isl_ctx *ctx;
 	int *exp1 = NULL;
 	int *exp2 = NULL;
+	isl_bool equal;
 	isl_mat *div;
 
 	if (!src || !dst)
 		return isl_aff_free(dst);
 
 	ctx = isl_aff_get_ctx(src);
-	if (!isl_space_is_equal(src->ls->dim, dst->ls->dim))
+	equal = isl_local_space_has_equal_space(src->ls, dst->ls);
+	if (equal < 0)
+		return isl_aff_free(dst);
+	if (!equal)
 		isl_die(ctx, isl_error_invalid,
 			"spaces don't match", goto error);
 
