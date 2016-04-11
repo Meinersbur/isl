@@ -5529,6 +5529,7 @@ __isl_give isl_aff *isl_aff_align_divs(__isl_take isl_aff *dst,
 	__isl_keep isl_aff *src)
 {
 	isl_ctx *ctx;
+	int src_n_div, dst_n_div;
 	int *exp1 = NULL;
 	int *exp2 = NULL;
 	isl_bool equal;
@@ -5545,12 +5546,14 @@ __isl_give isl_aff *isl_aff_align_divs(__isl_take isl_aff *dst,
 		isl_die(ctx, isl_error_invalid,
 			"spaces don't match", goto error);
 
-	if (src->ls->div->n_row == 0)
+	src_n_div = isl_local_space_dim(src->ls, isl_dim_div);
+	if (src_n_div == 0)
 		return dst;
 
-	exp1 = isl_alloc_array(ctx, int, src->ls->div->n_row);
-	exp2 = isl_alloc_array(ctx, int, dst->ls->div->n_row);
-	if (!exp1 || (dst->ls->div->n_row && !exp2))
+	dst_n_div = isl_local_space_dim(dst->ls, isl_dim_div);
+	exp1 = isl_alloc_array(ctx, int, src_n_div);
+	exp2 = isl_alloc_array(ctx, int, dst_n_div);
+	if (!exp1 || (dst_n_div && !exp2))
 		goto error;
 
 	div = isl_merge_divs(src->ls->div, dst->ls->div, exp1, exp2);
