@@ -1734,10 +1734,9 @@ __isl_give isl_aff *isl_aff_expand_divs(__isl_take isl_aff *aff,
 	offset = 1 + isl_local_space_offset(aff->ls, isl_dim_div);
 
 	aff->v = isl_vec_expand(aff->v, offset, old_n_div, exp, new_n_div);
-	aff->ls = isl_local_space_replace_divs(aff->ls, isl_mat_copy(div));
+	aff->ls = isl_local_space_replace_divs(aff->ls, div);
 	if (!aff->v || !aff->ls)
-		goto error;
-	isl_mat_free(div);
+		return isl_aff_free(aff);
 	return aff;
 error:
 	isl_aff_free(aff);
