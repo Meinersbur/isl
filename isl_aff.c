@@ -1721,7 +1721,6 @@ __isl_give isl_aff *isl_aff_ceil(__isl_take isl_aff *aff)
 __isl_give isl_aff *isl_aff_expand_divs(__isl_take isl_aff *aff,
 	__isl_take isl_mat *div, int *exp)
 {
-	int i, j;
 	int old_n_div;
 	int new_n_div;
 	int offset;
@@ -1732,28 +1731,11 @@ __isl_give isl_aff *isl_aff_expand_divs(__isl_take isl_aff *aff,
 
 	old_n_div = isl_local_space_dim(aff->ls, isl_dim_div);
 	new_n_div = isl_mat_rows(div);
-	if (new_n_div < old_n_div)
-		isl_die(isl_mat_get_ctx(div), isl_error_invalid,
-			"not an expansion", goto error);
-
-	aff->v = isl_vec_extend(aff->v, aff->v->size + new_n_div - old_n_div);
-	if (!aff->v)
-		goto error;
-
 	offset = 1 + isl_local_space_offset(aff->ls, isl_dim_div);
-	j = old_n_div - 1;
-	for (i = new_n_div - 1; i >= 0; --i) {
-		if (j >= 0 && exp[j] == i) {
-			if (i != j)
-				isl_int_swap(aff->v->el[offset + i],
-					     aff->v->el[offset + j]);
-			j--;
-		} else
-			isl_int_set_si(aff->v->el[offset + i], 0);
-	}
 
+	aff->v = isl_vec_expand(aff->v, offset, old_n_div, exp, new_n_div);
 	aff->ls = isl_local_space_replace_divs(aff->ls, isl_mat_copy(div));
-	if (!aff->ls)
+	if (!aff->v || !aff->ls)
 		goto error;
 	isl_mat_free(div);
 	return aff;
