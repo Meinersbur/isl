@@ -9120,6 +9120,12 @@ If this option is set, then we try to construct schedules
 where the outermost scheduling dimension in each band
 satisfies the coincidence constraints.
 
+=item * schedule_algorithm
+
+Selects the scheduling algorithm to be used.
+Available scheduling algorithms are C<ISL_SCHEDULE_ALGORITHM_ISL>
+and C<ISL_SCHEDULE_ALGORITHM_FEAUTRIER>.
+
 =item * schedule_split_scaled
 
 If this option is set, then we try to construct schedules in which the
@@ -9128,12 +9134,6 @@ the scheduling rows for all nodes in the graphs have a common non-trivial
 divisor.
 The constant term is then placed in a separate band and the linear
 part is reduced.
-
-=item * schedule_algorithm
-
-Selects the scheduling algorithm to be used.
-Available scheduling algorithms are C<ISL_SCHEDULE_ALGORITHM_ISL>
-and C<ISL_SCHEDULE_ALGORITHM_FEAUTRIER>.
 
 =item * schedule_separate_components
 
