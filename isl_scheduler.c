@@ -4142,13 +4142,36 @@ static int is_any_trivial(struct isl_sched_graph *graph,
 	return 0;
 }
 
-/* Construct a schedule row for each node such that as many dependences
- * as possible are carried and then continue with the next band.
+/* Does the solution "sol" of the LP problem constructed by setup_carry_lp
+ * carry any of the "n_edge" groups of dependences?
+ * The value in the first position is the sum of (1 - e_i) over all "n_edge"
+ * edges, with 0 <= e_i <= 1 equal to 1 when the dependences represented
+ * by the edge are carried by the solution.
+ * If the sum of the (1 - e_i) is smaller than "n_edge" then at least
+ * one of those is carried.
  *
  * Note that despite the fact that the problem is solved using a rational
  * solver, the solution is guaranteed to be integral.
  * Specifically, the dependence distance lower bounds e_i (and therefore
  * also their sum) are integers.  See Lemma 5 of [1].
+ *
+ * Any potential denominator of the sum is cleared by this function.
+ * The denominator is not relevant for any of the other elements
+ * in the solution.
+ *
+ * [1] P. Feautrier, Some Efficient Solutions to the Affine Scheduling
+ *     Problem, Part II: Multi-Dimensional Time.
+ *     In Intl. Journal of Parallel Programming, 1992.
+ */
+static int carries_dependences(__isl_keep isl_vec *sol, int n_edge)
+{
+	isl_int_divexact(sol->el[1], sol->el[1], sol->el[0]);
+	isl_int_set_si(sol->el[0], 1);
+	return isl_int_cmp_si(sol->el[1], n_edge) < 0;
+}
+
+/* Construct a schedule row for each node such that as many dependences
+ * as possible are carried and then continue with the next band.
  *
  * If the computed schedule row turns out to be trivial on one or
  * more nodes where it should not be trivial, then we throw it away
@@ -4166,10 +4189,6 @@ static int is_any_trivial(struct isl_sched_graph *graph,
  * of the schedule tree and continue with the construction of the schedule.
  * This insertion and the continued construction is performed by split_scaled
  * after optionally checking for non-trivial common divisors.
- *
- * [1] P. Feautrier, Some Efficient Solutions to the Affine Scheduling
- *     Problem, Part II: Multi-Dimensional Time.
- *     In Intl. Journal of Parallel Programming, 1992.
  */
 static __isl_give isl_schedule_node *carry_dependences(
 	__isl_take isl_schedule_node *node, struct isl_sched_graph *graph)
@@ -4204,8 +4223,7 @@ static __isl_give isl_schedule_node *carry_dependences(
 			return isl_schedule_node_free(node));
 	}
 
-	isl_int_divexact(sol->el[1], sol->el[1], sol->el[0]);
-	if (isl_int_cmp_si(sol->el[1], n_edge) >= 0) {
+	if (!carries_dependences(sol, n_edge)) {
 		isl_vec_free(sol);
 		isl_die(ctx, isl_error_unknown,
 			"unable to carry dependences",
