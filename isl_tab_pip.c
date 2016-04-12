@@ -5258,6 +5258,27 @@ error:
 	return NULL;
 }
 
+/* Add the equality with coefficients "eq" to "tl", updating the optimal
+ * solution if needed.
+ * The equality is added as two opposite inequality constraints.
+ */
+__isl_give isl_tab_lexmin *isl_tab_lexmin_add_eq(__isl_take isl_tab_lexmin *tl,
+	isl_int *eq)
+{
+	if (!tl || !eq)
+		return isl_tab_lexmin_free(tl);
+
+	isl_seq_neg(eq, eq, 1 + tl->tab->n_var);
+	tl->tab = add_lexmin_ineq(tl->tab, eq);
+	isl_seq_neg(eq, eq, 1 + tl->tab->n_var);
+	tl->tab = add_lexmin_ineq(tl->tab, eq);
+
+	if (!tl->tab)
+		return isl_tab_lexmin_free(tl);
+
+	return tl;
+}
+
 /* Return the lexicographically smallest rational point in the basic set
  * from which "tl" was constructed.
  * If the original input was empty, then return a zero-length vector.
