@@ -9134,6 +9134,9 @@ the scheduling rows for all nodes in the graphs have a common non-trivial
 divisor.
 The constant term is then placed in a separate band and the linear
 part is reduced.
+This option is only effective when the Feautrier style scheduler is
+being used, either as the main scheduler or as a fallback for the
+Pluto-like scheduler.
 
 =item * schedule_separate_components
 
