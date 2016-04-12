@@ -4170,6 +4170,41 @@ static int carries_dependences(__isl_keep isl_vec *sol, int n_edge)
 	return isl_int_cmp_si(sol->el[1], n_edge) < 0;
 }
 
+/* Return the lexicographically smallest rational point in "lp",
+ * assuming that all variables are non-negative and performing some
+ * additional sanity checks.
+ * In particular, "lp" should not be empty by construction.
+ * Double check that this is the case.
+ * Also, check that dependences are carried for at least one of
+ * the "n_edge" edges.
+ */
+static __isl_give isl_vec *non_neg_lexmin(__isl_take isl_basic_set *lp,
+	int n_edge)
+{
+	isl_ctx *ctx;
+	isl_vec *sol;
+
+	if (!lp)
+		return NULL;
+	ctx = isl_basic_set_get_ctx(lp);
+	sol = isl_tab_basic_set_non_neg_lexmin(lp);
+	if (!sol)
+		return NULL;
+	if (sol->size == 0)
+		isl_die(ctx, isl_error_internal,
+			"error in schedule construction",
+			return isl_vec_free(sol));
+
+	if (!carries_dependences(sol, n_edge)) {
+		isl_vec_free(sol);
+		isl_die(ctx, isl_error_unknown,
+			"unable to carry dependences",
+			return isl_vec_free(sol));
+	}
+
+	return sol;
+}
+
 /* Construct a schedule row for each node such that as many dependences
  * as possible are carried and then continue with the next band.
  *
@@ -4212,23 +4247,9 @@ static __isl_give isl_schedule_node *carry_dependences(
 		return isl_schedule_node_free(node);
 
 	lp = isl_basic_set_copy(graph->lp);
-	sol = isl_tab_basic_set_non_neg_lexmin(lp);
+	sol = non_neg_lexmin(lp, n_edge);
 	if (!sol)
 		return isl_schedule_node_free(node);
-
-	if (sol->size == 0) {
-		isl_vec_free(sol);
-		isl_die(ctx, isl_error_internal,
-			"error in schedule construction",
-			return isl_schedule_node_free(node));
-	}
-
-	if (!carries_dependences(sol, n_edge)) {
-		isl_vec_free(sol);
-		isl_die(ctx, isl_error_unknown,
-			"unable to carry dependences",
-			return isl_schedule_node_free(node));
-	}
 
 	trivial = is_any_trivial(graph, sol);
 	if (trivial < 0) {
