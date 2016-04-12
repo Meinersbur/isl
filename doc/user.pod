@@ -9054,6 +9054,10 @@ L</"Schedule Trees">.
 		isl_ctx *ctx, int val);
 	int isl_options_get_schedule_split_scaled(
 		isl_ctx *ctx);
+	isl_stat isl_options_set_schedule_treat_coalescing(
+		isl_ctx *ctx, int val);
+	int isl_options_get_schedule_treat_coalescing(
+		isl_ctx *ctx);
 	isl_stat isl_options_set_schedule_algorithm(
 		isl_ctx *ctx, int val);
 	int isl_options_get_schedule_algorithm(
@@ -9144,6 +9148,16 @@ part is reduced.
 This option is only effective when the Feautrier style scheduler is
 being used, either as the main scheduler or as a fallback for the
 Pluto-like scheduler.
+
+=item * schedule_treat_coalescing
+
+If this option is set, then the scheduler will try and avoid
+producing schedules that perform loop coalescing.
+In particular, for the Pluto-like scheduler, this option places
+bounds on the schedule coefficients based on the sizes of the instance sets.
+For the Feautrier style scheduler, this option detects potentially
+coalescing schedules and then tries to adjust the schedule to avoid
+the coalescing.
 
 =item * schedule_separate_components
 

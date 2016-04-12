@@ -3679,6 +3679,10 @@ static int test_conflicting_context_schedule(isl_ctx *ctx)
  * the coefficients.  Earlier versions of isl would take this
  * bound into account while carrying dependences, breaking
  * fundamental assumptions.
+ * On the other hand, the dependence carrying step now tries
+ * to prevent loop coalescing by default, so check that indeed
+ * no loop coalescing occurs by comparing the computed schedule
+ * to the expected non-coalescing schedule.
  */
 static int test_bounded_coefficients_schedule(isl_ctx *ctx)
 {
@@ -3687,6 +3691,8 @@ static int test_bounded_coefficients_schedule(isl_ctx *ctx)
 	isl_union_map *D;
 	isl_schedule_constraints *sc;
 	isl_schedule *schedule;
+	isl_union_map *sched1, *sched2;
+	isl_bool equal;
 
 	domain = "{ C[i0, i1] : 2 <= i0 <= 3999 and 0 <= i1 <= -1 + i0 }";
 	dep = "{ C[i0, i1] -> C[i0, 1 + i1] : i0 <= 3999 and i1 >= 0 and "
@@ -3702,10 +3708,19 @@ static int test_bounded_coefficients_schedule(isl_ctx *ctx)
 	schedule = isl_schedule_constraints_compute_schedule(sc);
 	isl_options_set_schedule_max_coefficient(ctx, -1);
 	isl_options_set_schedule_outer_coincidence(ctx, 0);
+	sched1 = isl_schedule_get_map(schedule);
 	isl_schedule_free(schedule);
 
-	if (!schedule)
+	sched2 = isl_union_map_read_from_str(ctx, "{ C[x,y] -> [x,y] }");
+	equal = isl_union_map_is_equal(sched1, sched2);
+	isl_union_map_free(sched1);
+	isl_union_map_free(sched2);
+
+	if (equal < 0)
 		return -1;
+	if (!equal)
+		isl_die(ctx, isl_error_unknown,
+			"unexpected schedule", return -1);
 
 	return 0;
 }
@@ -3714,6 +3729,7 @@ int test_schedule(isl_ctx *ctx)
 {
 	const char *D, *W, *R, *V, *P, *S;
 	int max_coincidence;
+	int treat_coalescing;
 
 	/* Handle resulting schedule with zero bands. */
 	if (test_one_schedule(ctx, "{[]}", "{}", "{}", "{[] -> []}", 0, 0) < 0)
@@ -3927,8 +3943,11 @@ int test_schedule(isl_ctx *ctx)
 		"[i0, 5i0 + i1, 6i0 + i1 + i2, 1 + 6i0 + i1 + i2 + i3, 1];"
 	    "Stmt_for_body7[i0, i1, i2] -> [0, 5i0, 6i0 + i1, 6i0 + i2, 0] }";
 
+	treat_coalescing = isl_options_get_schedule_treat_coalescing(ctx);
+	isl_options_set_schedule_treat_coalescing(ctx, 0);
 	if (test_special_schedule(ctx, D, V, P, S) < 0)
 		return -1;
+	isl_options_set_schedule_treat_coalescing(ctx, treat_coalescing);
 
 	D = "{ S_0[i, j] : i >= 1 and i <= 10 and j >= 1 and j <= 8 }";
 	V = "{ S_0[i, j] -> S_0[i, 1 + j] : i >= 1 and i <= 10 and "
