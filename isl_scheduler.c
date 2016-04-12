@@ -5572,7 +5572,6 @@ static isl_stat transform(isl_ctx *ctx, struct isl_sched_graph *graph,
 	graph->n_total_row += n_new;
 	graph->n_row += n_new;
 
-
 	return isl_stat_ok;
 }
 
