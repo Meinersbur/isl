@@ -2718,6 +2718,38 @@ static __isl_give isl_vec *solve_lp(struct isl_sched_graph *graph)
 	return sol;
 }
 
+/* Extract the coefficients for the variables of "node" from "sol".
+ *
+ * Within each node, the coefficients have the following order:
+ *	- c_i_0
+ *	- positive and negative parts of c_i_n (if parametric)
+ *	- positive and negative parts of c_i_x
+ *
+ * The c_i_x^- appear before their c_i_x^+ counterpart.
+ *
+ * Return c_i_x = c_i_x^+ - c_i_x^-
+ */
+static __isl_give isl_vec *extract_var_coef(struct isl_sched_node *node,
+	__isl_keep isl_vec *sol)
+{
+	int i;
+	int pos;
+	isl_vec *csol;
+
+	if (!sol)
+		return NULL;
+	csol = isl_vec_alloc(isl_vec_get_ctx(sol), node->nvar);
+	if (!csol)
+		return NULL;
+
+	pos = 1 + node->start + 1 + 2 * node->nparam;
+	for (i = 0; i < node->nvar; ++i)
+		isl_int_sub(csol->el[i],
+			    sol->el[pos + 2 * i + 1], sol->el[pos + 2 * i]);
+
+	return csol;
+}
+
 /* Update the schedules of all nodes based on the given solution
  * of the LP problem.
  * The new row is added to the current band.
@@ -2753,7 +2785,7 @@ static int update_schedule(struct isl_sched_graph *graph,
 		int row = isl_mat_rows(node->sched);
 
 		isl_vec_free(csol);
-		csol = isl_vec_alloc(sol->ctx, node->nvar);
+		csol = extract_var_coef(node, sol);
 		if (!csol)
 			goto error;
 
@@ -2764,16 +2796,13 @@ static int update_schedule(struct isl_sched_graph *graph,
 			goto error;
 		node->sched = isl_mat_set_element(node->sched, row, 0,
 						  sol->el[1 + pos]);
-		for (j = 0; j < node->nparam + node->nvar; ++j)
+		for (j = 0; j < node->nparam; ++j)
 			isl_int_sub(sol->el[1 + pos + 1 + 2 * j + 1],
 				    sol->el[1 + pos + 1 + 2 * j + 1],
 				    sol->el[1 + pos + 1 + 2 * j]);
 		for (j = 0; j < node->nparam; ++j)
 			node->sched = isl_mat_set_element(node->sched,
 					row, 1 + j, sol->el[1+pos+1+2*j+1]);
-		for (j = 0; j < node->nvar; ++j)
-			isl_int_set(csol->el[j],
-				    sol->el[1+pos+1+2*(node->nparam+j)+1]);
 		if (use_cmap)
 			csol = isl_mat_vec_product(isl_mat_copy(node->cmap),
 						   csol);
@@ -3991,10 +4020,7 @@ error:
  */
 static int is_trivial(struct isl_sched_node *node, __isl_keep isl_vec *sol)
 {
-	int i;
-	int pos;
 	int trivial;
-	isl_ctx *ctx;
 	isl_vec *node_sol;
 
 	if (!sol)
@@ -4002,19 +4028,8 @@ static int is_trivial(struct isl_sched_node *node, __isl_keep isl_vec *sol)
 	if (node->nvar == node->rank)
 		return 0;
 
-	ctx = isl_vec_get_ctx(sol);
-	node_sol = isl_vec_alloc(ctx, node->nvar);
-	if (!node_sol)
-		return -1;
-
-	pos = 1 + node->start + 1 + 2 * node->nparam;
-
-	for (i = 0; i < node->nvar; ++i)
-		isl_int_sub(node_sol->el[i],
-			    sol->el[pos + 2 * i + 1], sol->el[pos + 2 * i]);
-
+	node_sol = extract_var_coef(node, sol);
 	node_sol = isl_mat_vec_product(isl_mat_copy(node->cinv), node_sol);
-
 	if (!node_sol)
 		return -1;
 
