@@ -4182,12 +4182,15 @@ static __isl_give isl_vec *non_neg_lexmin(__isl_take isl_basic_set *lp,
 	int n_edge)
 {
 	isl_ctx *ctx;
+	isl_tab_lexmin *tl;
 	isl_vec *sol;
 
 	if (!lp)
 		return NULL;
 	ctx = isl_basic_set_get_ctx(lp);
-	sol = isl_tab_basic_set_non_neg_lexmin(lp);
+	tl = isl_tab_lexmin_from_basic_set(lp);
+	sol = isl_tab_lexmin_get_solution(tl);
+	isl_tab_lexmin_free(tl);
 	if (!sol)
 		return NULL;
 	if (sol->size == 0)
