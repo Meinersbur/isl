@@ -1181,9 +1181,9 @@ static int has_any_defining_equality(__isl_keep isl_basic_set *bset)
 	return 0;
 }
 
-/* Add a new node to the graph representing the given space.
+/* Add a new node to the graph representing the given instance set.
  * "nvar" is the (possibly compressed) number of variables and
- * may be smaller than then number of set variables in "space"
+ * may be smaller than then number of set variables in "set"
  * if "compressed" is set.
  * If "compressed" is set, then "hull" represents the constraints
  * that were used to derive the compression, while "compress" and
@@ -1193,26 +1193,28 @@ static int has_any_defining_equality(__isl_keep isl_basic_set *bset)
  * should be NULL.
  */
 static isl_stat add_node(struct isl_sched_graph *graph,
-	__isl_take isl_space *space, int nvar, int compressed,
+	__isl_take isl_set *set, int nvar, int compressed,
 	__isl_take isl_set *hull, __isl_take isl_multi_aff *compress,
 	__isl_take isl_multi_aff *decompress)
 {
 	int nparam;
 	isl_ctx *ctx;
 	isl_mat *sched;
+	isl_space *space;
 	int *coincident;
 	struct isl_sched_node *node;
 
-	if (!space)
+	if (!set)
 		return isl_stat_error;
 
-	ctx = isl_space_get_ctx(space);
-	nparam = isl_space_dim(space, isl_dim_param);
+	ctx = isl_set_get_ctx(set);
+	nparam = isl_set_dim(set, isl_dim_param);
 	if (!ctx->opt->schedule_parametric)
 		nparam = 0;
 	sched = isl_mat_alloc(ctx, 0, 1 + nparam + nvar);
 	node = &graph->node[graph->n];
 	graph->n++;
+	space = isl_set_get_space(set);
 	node->space = space;
 	node->nvar = nvar;
 	node->nparam = nparam;
@@ -1224,6 +1226,7 @@ static isl_stat add_node(struct isl_sched_graph *graph,
 	node->hull = hull;
 	node->compress = compress;
 	node->decompress = decompress;
+	isl_set_free(set);
 
 	if (!space || !sched || (graph->max_row && !coincident))
 		return isl_stat_error;
@@ -1243,24 +1246,22 @@ static isl_stat extract_node(__isl_take isl_set *set, void *user)
 {
 	int nvar;
 	int has_equality;
-	isl_space *space;
 	isl_basic_set *hull;
 	isl_set *hull_set;
 	isl_morph *morph;
 	isl_multi_aff *compress, *decompress;
 	struct isl_sched_graph *graph = user;
 
-	space = isl_set_get_space(set);
-	hull = isl_set_affine_hull(set);
+	hull = isl_set_affine_hull(isl_set_copy(set));
 	hull = isl_basic_set_remove_divs(hull);
-	nvar = isl_space_dim(space, isl_dim_set);
+	nvar = isl_set_dim(set, isl_dim_set);
 	has_equality = has_any_defining_equality(hull);
 
 	if (has_equality < 0)
 		goto error;
 	if (!has_equality) {
 		isl_basic_set_free(hull);
-		return add_node(graph, space, nvar, 0, NULL, NULL, NULL);
+		return add_node(graph, set, nvar, 0, NULL, NULL, NULL);
 	}
 
 	morph = isl_basic_set_variable_compression(hull, isl_dim_set);
@@ -1271,10 +1272,10 @@ static isl_stat extract_node(__isl_take isl_set *set, void *user)
 	isl_morph_free(morph);
 
 	hull_set = isl_set_from_basic_set(hull);
-	return add_node(graph, space, nvar, 1, hull_set, compress, decompress);
+	return add_node(graph, set, nvar, 1, hull_set, compress, decompress);
 error:
 	isl_basic_set_free(hull);
-	isl_space_free(space);
+	isl_set_free(set);
 	return isl_stat_error;
 }
 
