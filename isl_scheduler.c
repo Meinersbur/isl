@@ -4142,6 +4142,24 @@ static int is_any_trivial(struct isl_sched_graph *graph,
 	return 0;
 }
 
+/* Return the lexicographically smallest rational point in the basic set
+ * from which "tl" was constructed, double checking that this input set
+ * was not empty.
+ */
+static __isl_give isl_vec *non_empty_solution(__isl_keep isl_tab_lexmin *tl)
+{
+	isl_vec *sol;
+
+	sol = isl_tab_lexmin_get_solution(tl);
+	if (!sol)
+		return NULL;
+	if (sol->size == 0)
+		isl_die(isl_vec_get_ctx(sol), isl_error_internal,
+			"error in schedule construction",
+			return isl_vec_free(sol));
+	return sol;
+}
+
 /* Does the solution "sol" of the LP problem constructed by setup_carry_lp
  * carry any of the "n_edge" groups of dependences?
  * The value in the first position is the sum of (1 - e_i) over all "n_edge"
@@ -4189,14 +4207,10 @@ static __isl_give isl_vec *non_neg_lexmin(__isl_take isl_basic_set *lp,
 		return NULL;
 	ctx = isl_basic_set_get_ctx(lp);
 	tl = isl_tab_lexmin_from_basic_set(lp);
-	sol = isl_tab_lexmin_get_solution(tl);
+	sol = non_empty_solution(tl);
 	isl_tab_lexmin_free(tl);
 	if (!sol)
 		return NULL;
-	if (sol->size == 0)
-		isl_die(ctx, isl_error_internal,
-			"error in schedule construction",
-			return isl_vec_free(sol));
 
 	if (!carries_dependences(sol, n_edge)) {
 		isl_vec_free(sol);
