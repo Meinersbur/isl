@@ -2439,16 +2439,42 @@ static int count_bound_coefficient_constraints(isl_ctx *ctx,
 
 /* Add constraints to graph->lp that bound the values of
  * the variable and parameter schedule coefficients of "node" to "max".
+ *
+ * For parameter coefficients, this amounts to adding a constraint
+ *
+ *	c_n <= max
+ *
+ * i.e.,
+ *
+ *	-c_n + max >= 0
+ *
+ * The variables coefficients are, however, not represented directly.
+ * Instead, the variables coefficients c_x are written as a linear
+ * combination c_x = cmap c_z of some other coefficients c_z,
+ * which are in turn encoded as c_z = c_z^+ - c_z^-.
+ * Let a_j be the elements of row i of node->cmap, then
+ *
+ *	-max <= c_x_i <= max
+ *
+ * is encoded as
+ *
+ *	-max <= \sum_j a_j (c_z_j^+ - c_z_j^-) <= max
+ *
+ * or
+ *
+ *	-\sum_j a_j (c_z_j^+ - c_z_j^-) + max >= 0
+ *	\sum_j a_j (c_z_j^+ - c_z_j^-) + max >= 0
  */
-static isl_stat node_add_coefficient_constraints(struct isl_sched_graph *graph,
-	struct isl_sched_node *node, int max)
+static isl_stat node_add_coefficient_constraints(isl_ctx *ctx,
+	struct isl_sched_graph *graph, struct isl_sched_node *node, int max)
 {
-	int j, k;
+	int i, j, k;
 	int total;
+	isl_vec *ineq;
 
 	total = isl_basic_set_dim(graph->lp, isl_dim_set);
 
-	for (j = 0; j < node->nparam + 2 * node->nvar; ++j) {
+	for (j = 0; j < node->nparam; ++j) {
 		int dim;
 		k = isl_basic_set_alloc_inequality(graph->lp);
 		if (k < 0)
@@ -2459,7 +2485,38 @@ static isl_stat node_add_coefficient_constraints(struct isl_sched_graph *graph,
 		isl_int_set_si(graph->lp->ineq[k][0], max);
 	}
 
+	ineq = isl_vec_alloc(ctx, 1 + total);
+	ineq = isl_vec_clr(ineq);
+	if (!ineq)
+		return isl_stat_error;
+	for (i = 0; i < node->nvar; ++i) {
+		int pos = 1 + node_var_coef_offset(node);
+
+		for (j = 0; j < node->nvar; ++j) {
+			isl_int_set(ineq->el[pos + 2 * j],
+					node->cmap->row[i][j]);
+			isl_int_neg(ineq->el[pos + 2 * j + 1],
+					node->cmap->row[i][j]);
+		}
+		isl_int_set_si(ineq->el[0], max);
+
+		k = isl_basic_set_alloc_inequality(graph->lp);
+		if (k < 0)
+			goto error;
+		isl_seq_cpy(graph->lp->ineq[k], ineq->el, 1 + total);
+
+		isl_seq_neg(ineq->el + pos, ineq->el + pos, 2 * node->nvar);
+		k = isl_basic_set_alloc_inequality(graph->lp);
+		if (k < 0)
+			goto error;
+		isl_seq_cpy(graph->lp->ineq[k], ineq->el, 1 + total);
+	}
+	isl_vec_free(ineq);
+
 	return isl_stat_ok;
+error:
+	isl_vec_free(ineq);
+	return isl_stat_error;
 }
 
 /* Add constraints that bound the values of the variable and parameter
@@ -2482,7 +2539,7 @@ static isl_stat add_bound_coefficient_constraints(isl_ctx *ctx,
 	for (i = 0; i < graph->n; ++i) {
 		struct isl_sched_node *node = &graph->node[i];
 
-		if (node_add_coefficient_constraints(graph, node, max) < 0)
+		if (node_add_coefficient_constraints(ctx, graph, node, max) < 0)
 			return isl_stat_error;
 	}
 
