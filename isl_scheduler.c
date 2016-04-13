@@ -2373,7 +2373,7 @@ static int add_bound_coefficient_constraints(isl_ctx *ctx,
 			if (k < 0)
 				return -1;
 			dim = 1 + node->start + 1 + j;
-			isl_seq_clr(graph->lp->ineq[k], 1 +  total);
+			isl_seq_clr(graph->lp->ineq[k], 1 + total);
 			isl_int_set_si(graph->lp->ineq[k][dim], -1);
 			isl_int_set_si(graph->lp->ineq[k][0], max_coefficient);
 		}
