@@ -2428,7 +2428,7 @@ static int count_bound_coefficient_constraints(isl_ctx *ctx,
 {
 	int i;
 
-	if (ctx->opt->schedule_max_coefficient == -1)
+	if (isl_options_get_schedule_max_coefficient(ctx) == -1)
 		return 0;
 
 	for (i = 0; i < graph->n; ++i)
