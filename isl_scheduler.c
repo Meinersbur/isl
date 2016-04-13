@@ -2443,7 +2443,7 @@ static int count_bound_coefficient_constraints(isl_ctx *ctx,
  * The maximal value of the coefficients is defined by the option
  * 'schedule_max_coefficient'.
  */
-static int add_bound_coefficient_constraints(isl_ctx *ctx,
+static isl_stat add_bound_coefficient_constraints(isl_ctx *ctx,
 	struct isl_sched_graph *graph)
 {
 	int i, j, k;
@@ -2453,7 +2453,7 @@ static int add_bound_coefficient_constraints(isl_ctx *ctx,
 	max_coefficient = ctx->opt->schedule_max_coefficient;
 
 	if (max_coefficient == -1)
-		return 0;
+		return isl_stat_ok;
 
 	total = isl_basic_set_total_dim(graph->lp);
 
@@ -2463,7 +2463,7 @@ static int add_bound_coefficient_constraints(isl_ctx *ctx,
 			int dim;
 			k = isl_basic_set_alloc_inequality(graph->lp);
 			if (k < 0)
-				return -1;
+				return isl_stat_error;
 			dim = 1 + node->start + 1 + j;
 			isl_seq_clr(graph->lp->ineq[k], 1 + total);
 			isl_int_set_si(graph->lp->ineq[k][dim], -1);
@@ -2471,7 +2471,7 @@ static int add_bound_coefficient_constraints(isl_ctx *ctx,
 		}
 	}
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Add a constraint to graph->lp that equates the value at position
