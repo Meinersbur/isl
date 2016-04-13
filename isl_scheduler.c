@@ -2450,7 +2450,7 @@ static isl_stat add_bound_coefficient_constraints(isl_ctx *ctx,
 	int max_coefficient;
 	int total;
 
-	max_coefficient = ctx->opt->schedule_max_coefficient;
+	max_coefficient = isl_options_get_schedule_max_coefficient(ctx);
 
 	if (max_coefficient == -1)
 		return isl_stat_ok;
