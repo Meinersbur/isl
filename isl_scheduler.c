@@ -1833,7 +1833,7 @@ static int add_inter_validity_constraints(struct isl_sched_graph *graph,
 	unsigned total;
 	isl_map *map = isl_map_copy(edge->map);
 	isl_ctx *ctx = isl_map_get_ctx(map);
-	isl_space *dim;
+	isl_space *space;
 	isl_dim_map *dim_map;
 	isl_basic_set *coef;
 	struct isl_sched_node *src = edge->src;
@@ -1841,12 +1841,13 @@ static int add_inter_validity_constraints(struct isl_sched_graph *graph,
 
 	coef = inter_coefficients(graph, edge, map);
 
-	dim = isl_space_domain(isl_space_unwrap(isl_basic_set_get_space(coef)));
+	space = isl_space_unwrap(isl_basic_set_get_space(coef));
+	space = isl_space_domain(space);
 
 	coef = isl_basic_set_transform_dims(coef, isl_dim_set,
-		    isl_space_dim(dim, isl_dim_set), isl_mat_copy(src->cmap));
+		    isl_space_dim(space, isl_dim_set), isl_mat_copy(src->cmap));
 	coef = isl_basic_set_transform_dims(coef, isl_dim_set,
-		    isl_space_dim(dim, isl_dim_set) + src->nvar,
+		    isl_space_dim(space, isl_dim_set) + src->nvar,
 		    isl_mat_copy(dst->cmap));
 	if (!coef)
 		goto error;
@@ -1858,20 +1859,20 @@ static int add_inter_validity_constraints(struct isl_sched_graph *graph,
 	isl_dim_map_range(dim_map, dst->start + 1, 2, 1, 1, dst->nparam, -1);
 	isl_dim_map_range(dim_map, dst->start + 2, 2, 1, 1, dst->nparam, 1);
 	isl_dim_map_range(dim_map, dst->start + 2 * dst->nparam + 1, 2,
-			  isl_space_dim(dim, isl_dim_set) + src->nvar, 1,
+			  isl_space_dim(space, isl_dim_set) + src->nvar, 1,
 			  dst->nvar, -1);
 	isl_dim_map_range(dim_map, dst->start + 2 * dst->nparam + 2, 2,
-			  isl_space_dim(dim, isl_dim_set) + src->nvar, 1,
+			  isl_space_dim(space, isl_dim_set) + src->nvar, 1,
 			  dst->nvar, 1);
 
 	isl_dim_map_range(dim_map, src->start, 0, 0, 0, 1, -1);
 	isl_dim_map_range(dim_map, src->start + 1, 2, 1, 1, src->nparam, 1);
 	isl_dim_map_range(dim_map, src->start + 2, 2, 1, 1, src->nparam, -1);
 	isl_dim_map_range(dim_map, src->start + 2 * src->nparam + 1, 2,
-			  isl_space_dim(dim, isl_dim_set), 1,
+			  isl_space_dim(space, isl_dim_set), 1,
 			  src->nvar, 1);
 	isl_dim_map_range(dim_map, src->start + 2 * src->nparam + 2, 2,
-			  isl_space_dim(dim, isl_dim_set), 1,
+			  isl_space_dim(space, isl_dim_set), 1,
 			  src->nvar, -1);
 
 	edge->start = graph->lp->n_ineq;
@@ -1881,12 +1882,12 @@ static int add_inter_validity_constraints(struct isl_sched_graph *graph,
 							   coef, dim_map);
 	if (!graph->lp)
 		goto error;
-	isl_space_free(dim);
+	isl_space_free(space);
 	edge->end = graph->lp->n_ineq;
 
 	return 0;
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	return -1;
 }
 
