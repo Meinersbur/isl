@@ -1201,6 +1201,7 @@ static isl_stat add_node(struct isl_sched_graph *graph,
 	isl_ctx *ctx;
 	isl_mat *sched;
 	int *coincident;
+	struct isl_sched_node *node;
 
 	if (!space)
 		return isl_stat_error;
@@ -1210,18 +1211,19 @@ static isl_stat add_node(struct isl_sched_graph *graph,
 	if (!ctx->opt->schedule_parametric)
 		nparam = 0;
 	sched = isl_mat_alloc(ctx, 0, 1 + nparam + nvar);
-	graph->node[graph->n].space = space;
-	graph->node[graph->n].nvar = nvar;
-	graph->node[graph->n].nparam = nparam;
-	graph->node[graph->n].sched = sched;
-	graph->node[graph->n].sched_map = NULL;
-	coincident = isl_calloc_array(ctx, int, graph->max_row);
-	graph->node[graph->n].coincident = coincident;
-	graph->node[graph->n].compressed = compressed;
-	graph->node[graph->n].hull = hull;
-	graph->node[graph->n].compress = compress;
-	graph->node[graph->n].decompress = decompress;
+	node = &graph->node[graph->n];
 	graph->n++;
+	node->space = space;
+	node->nvar = nvar;
+	node->nparam = nparam;
+	node->sched = sched;
+	node->sched_map = NULL;
+	coincident = isl_calloc_array(ctx, int, graph->max_row);
+	node->coincident = coincident;
+	node->compressed = compressed;
+	node->hull = hull;
+	node->compress = compress;
+	node->decompress = decompress;
 
 	if (!space || !sched || (graph->max_row && !coincident))
 		return isl_stat_error;
