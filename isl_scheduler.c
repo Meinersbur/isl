@@ -1935,7 +1935,7 @@ error:
  * by add_all_validity_constraints and therefore also have
  * their distances bounded by 0 from below.
  */
-static int add_intra_proximity_constraints(struct isl_sched_graph *graph,
+static isl_stat add_intra_proximity_constraints(struct isl_sched_graph *graph,
 	struct isl_sched_edge *edge, int s, int local)
 {
 	unsigned total;
@@ -1978,10 +1978,10 @@ static int add_intra_proximity_constraints(struct isl_sched_graph *graph,
 							   coef, dim_map);
 	isl_space_free(space);
 
-	return 0;
+	return isl_stat_ok;
 error:
 	isl_space_free(space);
-	return -1;
+	return isl_stat_error;
 }
 
 /* Add constraints to graph->lp that bound the dependence distance for the given
