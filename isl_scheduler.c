@@ -1774,37 +1774,38 @@ static int add_intra_validity_constraints(struct isl_sched_graph *graph,
 	unsigned total;
 	isl_map *map = isl_map_copy(edge->map);
 	isl_ctx *ctx = isl_map_get_ctx(map);
-	isl_space *dim;
+	isl_space *space;
 	isl_dim_map *dim_map;
 	isl_basic_set *coef;
 	struct isl_sched_node *node = edge->src;
 
 	coef = intra_coefficients(graph, node, map);
 
-	dim = isl_space_domain(isl_space_unwrap(isl_basic_set_get_space(coef)));
+	space = isl_space_unwrap(isl_basic_set_get_space(coef));
+	space = isl_space_domain(space);
 
 	coef = isl_basic_set_transform_dims(coef, isl_dim_set,
-		    isl_space_dim(dim, isl_dim_set), isl_mat_copy(node->cmap));
+		isl_space_dim(space, isl_dim_set), isl_mat_copy(node->cmap));
 	if (!coef)
 		goto error;
 
 	total = isl_basic_set_total_dim(graph->lp);
 	dim_map = isl_dim_map_alloc(ctx, total);
 	isl_dim_map_range(dim_map, node->start + 2 * node->nparam + 1, 2,
-			  isl_space_dim(dim, isl_dim_set), 1,
+			  isl_space_dim(space, isl_dim_set), 1,
 			  node->nvar, -1);
 	isl_dim_map_range(dim_map, node->start + 2 * node->nparam + 2, 2,
-			  isl_space_dim(dim, isl_dim_set), 1,
+			  isl_space_dim(space, isl_dim_set), 1,
 			  node->nvar, 1);
 	graph->lp = isl_basic_set_extend_constraints(graph->lp,
 			coef->n_eq, coef->n_ineq);
 	graph->lp = isl_basic_set_add_constraints_dim_map(graph->lp,
 							   coef, dim_map);
-	isl_space_free(dim);
+	isl_space_free(space);
 
 	return 0;
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	return -1;
 }
 
