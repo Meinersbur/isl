@@ -1751,6 +1751,38 @@ static __isl_give isl_basic_set *inter_coefficients(
 	return coef;
 }
 
+/* Construct an isl_dim_map for mapping constraints on coefficients
+ * for "node" to the corresponding positions in graph->lp.
+ * "offset" is the offset of the coefficients for the variables
+ * in the input constraints.
+ * "s" is the sign of the mapping.
+ *
+ * The input constraints are given in terms of the coefficients (c_0, c_n, c_x).
+ * The mapping produced by this function essentially plugs in
+ * (0, 0, c_i_x^+ - c_i_x^-) if s = 1 and
+ * (0, 0, -c_i_x^+ + c_i_x^-) if s = -1.
+ * In graph->lp, the c_i_x^- appear before their c_i_x^+ counterpart.
+ *
+ * The caller can extend the mapping to also map the other coefficients
+ * (and therefore not plug in 0).
+ */
+static __isl_give isl_dim_map *intra_dim_map(isl_ctx *ctx,
+	struct isl_sched_graph *graph, struct isl_sched_node *node,
+	int offset, int s)
+{
+	int pos;
+	unsigned total;
+	isl_dim_map *dim_map;
+
+	total = isl_basic_set_total_dim(graph->lp);
+	pos = node->start + 1 + 2 * node->nparam;
+	dim_map = isl_dim_map_alloc(ctx, total);
+	isl_dim_map_range(dim_map, pos, 2, offset, 1, node->nvar, -s);
+	isl_dim_map_range(dim_map, pos + 1, 2, offset, 1, node->nvar, s);
+
+	return dim_map;
+}
+
 /* Add constraints to graph->lp that force validity for the given
  * dependence from a node i to itself.
  * That is, add constraints that enforce
@@ -1771,7 +1803,7 @@ static __isl_give isl_basic_set *inter_coefficients(
 static isl_stat add_intra_validity_constraints(struct isl_sched_graph *graph,
 	struct isl_sched_edge *edge)
 {
-	unsigned total;
+	int offset;
 	isl_map *map = isl_map_copy(edge->map);
 	isl_ctx *ctx = isl_map_get_ctx(map);
 	isl_space *space;
@@ -1783,30 +1815,21 @@ static isl_stat add_intra_validity_constraints(struct isl_sched_graph *graph,
 
 	space = isl_space_unwrap(isl_basic_set_get_space(coef));
 	space = isl_space_domain(space);
+	offset = isl_space_dim(space, isl_dim_set);
+	isl_space_free(space);
 
 	coef = isl_basic_set_transform_dims(coef, isl_dim_set,
-		isl_space_dim(space, isl_dim_set), isl_mat_copy(node->cmap));
+					    offset, isl_mat_copy(node->cmap));
 	if (!coef)
-		goto error;
+		return isl_stat_error;
 
-	total = isl_basic_set_total_dim(graph->lp);
-	dim_map = isl_dim_map_alloc(ctx, total);
-	isl_dim_map_range(dim_map, node->start + 2 * node->nparam + 1, 2,
-			  isl_space_dim(space, isl_dim_set), 1,
-			  node->nvar, -1);
-	isl_dim_map_range(dim_map, node->start + 2 * node->nparam + 2, 2,
-			  isl_space_dim(space, isl_dim_set), 1,
-			  node->nvar, 1);
+	dim_map = intra_dim_map(ctx, graph, node, offset, 1);
 	graph->lp = isl_basic_set_extend_constraints(graph->lp,
 			coef->n_eq, coef->n_ineq);
 	graph->lp = isl_basic_set_add_constraints_dim_map(graph->lp,
 							   coef, dim_map);
-	isl_space_free(space);
 
 	return isl_stat_ok;
-error:
-	isl_space_free(space);
-	return isl_stat_error;
 }
 
 /* Add constraints to graph->lp that force validity for the given
@@ -1938,7 +1961,7 @@ error:
 static isl_stat add_intra_proximity_constraints(struct isl_sched_graph *graph,
 	struct isl_sched_edge *edge, int s, int local)
 {
-	unsigned total;
+	int offset;
 	unsigned nparam;
 	isl_map *map = isl_map_copy(edge->map);
 	isl_ctx *ctx = isl_map_get_ctx(map);
@@ -1951,37 +1974,28 @@ static isl_stat add_intra_proximity_constraints(struct isl_sched_graph *graph,
 
 	space = isl_space_unwrap(isl_basic_set_get_space(coef));
 	space = isl_space_domain(space);
+	offset = isl_space_dim(space, isl_dim_set);
+	isl_space_free(space);
 
 	coef = isl_basic_set_transform_dims(coef, isl_dim_set,
-		isl_space_dim(space, isl_dim_set), isl_mat_copy(node->cmap));
+					    offset, isl_mat_copy(node->cmap));
 	if (!coef)
-		goto error;
+		return isl_stat_error;
 
 	nparam = isl_space_dim(node->space, isl_dim_param);
-	total = isl_basic_set_total_dim(graph->lp);
-	dim_map = isl_dim_map_alloc(ctx, total);
+	dim_map = intra_dim_map(ctx, graph, node, offset, -s);
 
 	if (!local) {
 		isl_dim_map_range(dim_map, 1, 0, 0, 0, 1, 1);
 		isl_dim_map_range(dim_map, 4, 2, 1, 1, nparam, -1);
 		isl_dim_map_range(dim_map, 5, 2, 1, 1, nparam, 1);
 	}
-	isl_dim_map_range(dim_map, node->start + 2 * node->nparam + 1, 2,
-			  isl_space_dim(space, isl_dim_set), 1,
-			  node->nvar, s);
-	isl_dim_map_range(dim_map, node->start + 2 * node->nparam + 2, 2,
-			  isl_space_dim(space, isl_dim_set), 1,
-			  node->nvar, -s);
 	graph->lp = isl_basic_set_extend_constraints(graph->lp,
 			coef->n_eq, coef->n_ineq);
 	graph->lp = isl_basic_set_add_constraints_dim_map(graph->lp,
 							   coef, dim_map);
-	isl_space_free(space);
 
 	return isl_stat_ok;
-error:
-	isl_space_free(space);
-	return isl_stat_error;
 }
 
 /* Add constraints to graph->lp that bound the dependence distance for the given
@@ -3613,7 +3627,7 @@ static __isl_give isl_schedule_node *compute_next_band(
 static int add_intra_constraints(struct isl_sched_graph *graph,
 	struct isl_sched_edge *edge, __isl_take isl_map *map, int pos)
 {
-	unsigned total;
+	int offset;
 	isl_ctx *ctx = isl_map_get_ctx(map);
 	isl_space *space;
 	isl_dim_map *dim_map;
@@ -3626,21 +3640,15 @@ static int add_intra_constraints(struct isl_sched_graph *graph,
 
 	space = isl_space_unwrap(isl_basic_set_get_space(coef));
 	space = isl_space_domain(space);
+	offset = isl_space_dim(space, isl_dim_set);
+	isl_space_free(space);
 
-	total = isl_basic_set_total_dim(graph->lp);
-	dim_map = isl_dim_map_alloc(ctx, total);
+	dim_map = intra_dim_map(ctx, graph, node, offset, 1);
 	isl_dim_map_range(dim_map, 3 + pos, 0, 0, 0, 1, -1);
-	isl_dim_map_range(dim_map, node->start + 2 * node->nparam + 1, 2,
-			  isl_space_dim(space, isl_dim_set), 1,
-			  node->nvar, -1);
-	isl_dim_map_range(dim_map, node->start + 2 * node->nparam + 2, 2,
-			  isl_space_dim(space, isl_dim_set), 1,
-			  node->nvar, 1);
 	graph->lp = isl_basic_set_extend_constraints(graph->lp,
 			coef->n_eq, coef->n_ineq);
 	graph->lp = isl_basic_set_add_constraints_dim_map(graph->lp,
 							   coef, dim_map);
-	isl_space_free(space);
 
 	return 0;
 }
