@@ -1768,7 +1768,7 @@ static __isl_give isl_basic_set *inter_coefficients(
  * but for the coefficients of c_i_x written as a linear combination
  * of the columns in node->cmap.
  */
-static int add_intra_validity_constraints(struct isl_sched_graph *graph,
+static isl_stat add_intra_validity_constraints(struct isl_sched_graph *graph,
 	struct isl_sched_edge *edge)
 {
 	unsigned total;
@@ -1803,10 +1803,10 @@ static int add_intra_validity_constraints(struct isl_sched_graph *graph,
 							   coef, dim_map);
 	isl_space_free(space);
 
-	return 0;
+	return isl_stat_ok;
 error:
 	isl_space_free(space);
-	return -1;
+	return isl_stat_error;
 }
 
 /* Add constraints to graph->lp that force validity for the given
