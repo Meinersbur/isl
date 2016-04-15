@@ -1827,7 +1827,7 @@ error:
  * but for the coefficients of c_*_x written as a linear combination
  * of the columns in node->cmap.
  */
-static int add_inter_validity_constraints(struct isl_sched_graph *graph,
+static isl_stat add_inter_validity_constraints(struct isl_sched_graph *graph,
 	struct isl_sched_edge *edge)
 {
 	unsigned total;
@@ -1885,10 +1885,10 @@ static int add_inter_validity_constraints(struct isl_sched_graph *graph,
 	isl_space_free(space);
 	edge->end = graph->lp->n_ineq;
 
-	return 0;
+	return isl_stat_ok;
 error:
 	isl_space_free(space);
-	return -1;
+	return isl_stat_error;
 }
 
 /* Add constraints to graph->lp that bound the dependence distance for the given
