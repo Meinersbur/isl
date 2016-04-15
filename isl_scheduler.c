@@ -1766,8 +1766,7 @@ static int coef_var_offset(__isl_keep isl_basic_set *coef)
 	isl_space *space;
 
 	space = isl_space_unwrap(isl_basic_set_get_space(coef));
-	space = isl_space_domain(space);
-	offset = isl_space_dim(space, isl_dim_set);
+	offset = isl_space_dim(space, isl_dim_in);
 	isl_space_free(space);
 
 	return offset;
