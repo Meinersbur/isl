@@ -1772,6 +1772,19 @@ static int coef_var_offset(__isl_keep isl_basic_set *coef)
 	return offset;
 }
 
+/* Return the offset of the coefficients of the variables of "node"
+ * within the (I)LP.
+ *
+ * Within each node, the coefficients have the following order:
+ *	- c_i_0
+ *	- positive and negative parts of c_i_n (if parametric)
+ *	- positive and negative parts of c_i_x
+ */
+static int node_var_coef_offset(struct isl_sched_node *node)
+{
+	return node->start + 1 + 2 * node->nparam;
+}
+
 /* Construct an isl_dim_map for mapping constraints on coefficients
  * for "node" to the corresponding positions in graph->lp.
  * "offset" is the offset of the coefficients for the variables
@@ -1796,7 +1809,7 @@ static __isl_give isl_dim_map *intra_dim_map(isl_ctx *ctx,
 	isl_dim_map *dim_map;
 
 	total = isl_basic_set_total_dim(graph->lp);
-	pos = node->start + 1 + 2 * node->nparam;
+	pos = node_var_coef_offset(node);
 	dim_map = isl_dim_map_alloc(ctx, total);
 	isl_dim_map_range(dim_map, pos, 2, offset, 1, node->nvar, -s);
 	isl_dim_map_range(dim_map, pos + 1, 2, offset, 1, node->nvar, s);
@@ -1836,7 +1849,7 @@ static __isl_give isl_dim_map *inter_dim_map(isl_ctx *ctx,
 	isl_dim_map_range(dim_map, dst->start, 0, 0, 0, 1, s);
 	isl_dim_map_range(dim_map, dst->start + 1, 2, 1, 1, dst->nparam, -s);
 	isl_dim_map_range(dim_map, dst->start + 2, 2, 1, 1, dst->nparam, s);
-	pos = dst->start + 1 + 2 * dst->nparam;
+	pos = node_var_coef_offset(dst);
 	isl_dim_map_range(dim_map, pos, 2, offset + src->nvar, 1,
 			  dst->nvar, -s);
 	isl_dim_map_range(dim_map, pos + 1, 2, offset + src->nvar, 1,
@@ -1845,7 +1858,7 @@ static __isl_give isl_dim_map *inter_dim_map(isl_ctx *ctx,
 	isl_dim_map_range(dim_map, src->start, 0, 0, 0, 1, -s);
 	isl_dim_map_range(dim_map, src->start + 1, 2, 1, 1, src->nparam, s);
 	isl_dim_map_range(dim_map, src->start + 2, 2, 1, 1, src->nparam, -s);
-	pos = src->start + 1 + 2 * src->nparam;
+	pos = node_var_coef_offset(src);
 	isl_dim_map_range(dim_map, pos, 2, offset, 1, src->nvar, s);
 	isl_dim_map_range(dim_map, pos + 1, 2, offset, 1, src->nvar, -s);
 
@@ -2540,7 +2553,7 @@ static isl_stat add_var_sum_constraint(struct isl_sched_graph *graph,
 	isl_int_set_si(graph->lp->eq[k][1 + sum_pos], -1);
 	for (i = 0; i < graph->n; ++i) {
 		struct isl_sched_node *node = &graph->node[i];
-		int pos = 1 + node->start + 1 + 2 * node->nparam;
+		int pos = 1 + node_var_coef_offset(node);
 
 		for (j = 0; j < 2 * node->nvar; ++j)
 			isl_int_set_si(graph->lp->eq[k][pos + j], 1);
@@ -2706,7 +2719,7 @@ static __isl_give isl_vec *solve_lp(struct isl_sched_graph *graph)
 	for (i = 0; i < graph->n; ++i) {
 		struct isl_sched_node *node = &graph->node[i];
 		int skip = node->rank;
-		graph->region[i].pos = node->start + 1 + 2*(node->nparam+skip);
+		graph->region[i].pos = node_var_coef_offset(node) + 2 * skip;
 		if (needs_row(graph, node))
 			graph->region[i].len = 2 * (node->nvar - skip);
 		else
@@ -2742,7 +2755,7 @@ static __isl_give isl_vec *extract_var_coef(struct isl_sched_node *node,
 	if (!csol)
 		return NULL;
 
-	pos = 1 + node->start + 1 + 2 * node->nparam;
+	pos = 1 + node_var_coef_offset(node);
 	for (i = 0; i < node->nvar; ++i)
 		isl_int_sub(csol->el[i],
 			    sol->el[pos + 2 * i + 1], sol->el[pos + 2 * i]);
