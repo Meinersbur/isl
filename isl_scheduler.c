@@ -3699,7 +3699,7 @@ static int count_all_constraints(struct isl_sched_graph *graph,
  * The constraints are those from the (validity) edges plus three equalities
  * to express the sums and n_edge inequalities to express e_i <= 1.
  */
-static int setup_carry_lp(isl_ctx *ctx, struct isl_sched_graph *graph)
+static isl_stat setup_carry_lp(isl_ctx *ctx, struct isl_sched_graph *graph)
 {
 	int i, j;
 	int k;
@@ -3720,7 +3720,7 @@ static int setup_carry_lp(isl_ctx *ctx, struct isl_sched_graph *graph)
 	}
 
 	if (count_all_constraints(graph, &n_eq, &n_ineq) < 0)
-		return -1;
+		return isl_stat_error;
 
 	dim = isl_space_set_alloc(ctx, 0, total);
 	isl_basic_set_free(graph->lp);
@@ -3731,7 +3731,7 @@ static int setup_carry_lp(isl_ctx *ctx, struct isl_sched_graph *graph)
 
 	k = isl_basic_set_alloc_equality(graph->lp);
 	if (k < 0)
-		return -1;
+		return isl_stat_error;
 	isl_seq_clr(graph->lp->eq[k], 1 +  total);
 	isl_int_set_si(graph->lp->eq[k][0], -n_edge);
 	isl_int_set_si(graph->lp->eq[k][1], 1);
@@ -3740,7 +3740,7 @@ static int setup_carry_lp(isl_ctx *ctx, struct isl_sched_graph *graph)
 
 	k = isl_basic_set_alloc_equality(graph->lp);
 	if (k < 0)
-		return -1;
+		return isl_stat_error;
 	isl_seq_clr(graph->lp->eq[k], 1 +  total);
 	isl_int_set_si(graph->lp->eq[k][2], -1);
 	for (i = 0; i < graph->n; ++i) {
@@ -3752,7 +3752,7 @@ static int setup_carry_lp(isl_ctx *ctx, struct isl_sched_graph *graph)
 
 	k = isl_basic_set_alloc_equality(graph->lp);
 	if (k < 0)
-		return -1;
+		return isl_stat_error;
 	isl_seq_clr(graph->lp->eq[k], 1 +  total);
 	isl_int_set_si(graph->lp->eq[k][3], -1);
 	for (i = 0; i < graph->n; ++i) {
@@ -3766,16 +3766,16 @@ static int setup_carry_lp(isl_ctx *ctx, struct isl_sched_graph *graph)
 	for (i = 0; i < n_edge; ++i) {
 		k = isl_basic_set_alloc_inequality(graph->lp);
 		if (k < 0)
-			return -1;
+			return isl_stat_error;
 		isl_seq_clr(graph->lp->ineq[k], 1 +  total);
 		isl_int_set_si(graph->lp->ineq[k][4 + i], -1);
 		isl_int_set_si(graph->lp->ineq[k][0], 1);
 	}
 
 	if (add_all_constraints(graph) < 0)
-		return -1;
+		return isl_stat_error;
 
-	return 0;
+	return isl_stat_ok;
 }
 
 static __isl_give isl_schedule_node *compute_component_schedule(
