@@ -8850,9 +8850,6 @@ whereas C<isl_restriction_empty> is essentially equivalent to
 
 =head2 Scheduling
 
-B<The functionality described in this section is fairly new
-and may be subject to change.>
-
 	#include <isl/schedule.h>
 	__isl_give isl_schedule *
 	isl_schedule_constraints_compute_schedule(
