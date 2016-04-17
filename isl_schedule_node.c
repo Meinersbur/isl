@@ -216,10 +216,6 @@ __isl_give isl_schedule_node *isl_schedule_node_copy(
 }
 
 /* Free "node" and return NULL.
- *
- * Since the node may point to a leaf of its schedule, which
- * point to a field inside the schedule, we need to make sure
- * we free the tree before freeing the schedule.
  */
 __isl_null isl_schedule_node *isl_schedule_node_free(
 	__isl_take isl_schedule_node *node)
