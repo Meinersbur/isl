@@ -269,6 +269,7 @@ typedef struct isl_tab_lexmin isl_tab_lexmin;
 
 __isl_give isl_tab_lexmin *isl_tab_lexmin_from_basic_set(
 	__isl_take isl_basic_set *bset);
+int isl_tab_lexmin_dim(__isl_keep isl_tab_lexmin *tl);
 __isl_give isl_tab_lexmin *isl_tab_lexmin_add_eq(__isl_take isl_tab_lexmin *tl,
 	isl_int *eq);
 __isl_give isl_vec *isl_tab_lexmin_get_solution(__isl_keep isl_tab_lexmin *tl);

@@ -5258,6 +5258,13 @@ error:
 	return NULL;
 }
 
+/* Return the dimension of the set represented by "tl".
+ */
+int isl_tab_lexmin_dim(__isl_keep isl_tab_lexmin *tl)
+{
+	return tl ? tl->tab->n_var : -1;
+}
+
 /* Add the equality with coefficients "eq" to "tl", updating the optimal
  * solution if needed.
  * The equality is added as two opposite inequality constraints.
