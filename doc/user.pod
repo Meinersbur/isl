@@ -291,7 +291,7 @@ under the MIT license.
 
 The source of C<isl> can be obtained either as a tarball
 or from the git repository.  Both are available from
-L<http://freshmeat.net/projects/isl/>.
+L<http://isl.gforge.inria.fr/>.
 The installation process depends on how you obtained
 the source.
 
