@@ -54,6 +54,9 @@ useprefix=true]{biblatex}
 \renewcommand{\subsectionautorefname}{Section}
 \renewcommand{\algorithmautorefname}{Algorithm}
 
+\DeclareFieldFormat{date}{\hypertarget{\thefield{entrykey}}{#1}}
+\def\isl{\hyperlink{Verdoolaege2010isl}{\texttt{isl}}\xspace}
+
 \def\Z{\mathbb{Z}}
 \def\Q{\mathbb{Q}}
 
@@ -81,6 +84,10 @@ useprefix=true]{biblatex}
 \chapter{Implementation Details}
 
 \input{implementation}
+
+\chapter{Further Reading}
+
+\input{reading}
 
 \printbibliography
 

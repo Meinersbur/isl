@@ -366,6 +366,7 @@ EXTRA_DIST = \
 	doc/isl.bib \
 	doc/mypod2latex \
 	doc/manual.tex \
+	doc/reading.tex \
 	doc/user.pod \
 	imath/gmp_compat.c \
 	imath/gmp_compat.h \
