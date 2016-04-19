@@ -320,3 +320,28 @@ ignore={ },
     year = 2010,
     month = apr,
 }
+
+@inproceedings{Verdoolaege2015impact,
+ author = {Verdoolaege, Sven},
+ title = {Integer Set Coalescing},
+ booktitle = {Proceedings of the 5th International Workshop on
+	Polyhedral Compilation Techniques},
+ year   = 2015,
+ month  = Jan,
+ address = {Amsterdam, The Netherlands},
+ abstract = {
+In polyhedral compilation, various core concepts such as the set
+of statement instances, the access relations, the dependences and
+the schedule are represented or approximated using sets and binary
+relations of sequences of integers bounded by (quasi-)affine constraints.
+When these sets and relations are represented in disjunctive normal form,
+it is important to keep the number of disjuncts small, both for efficiency
+and to improve the computation of transitive closure overapproximations
+and AST generation.  This paper describes the set coalescing operation
+of isl that looks for opportunities to combine several disjuncts into
+a single disjunct without affecting the elements in the set.  The main
+purpose of the paper is to explain the various heuristics and to prove
+their correctness.
+ },
+	doi = "10.13140/2.1.1313.6968",
+}
