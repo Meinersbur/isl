@@ -21,7 +21,7 @@ user.tex: user.pod
 manual.pdf: manual.tex user.tex $(srcdir)/implementation.tex
 	(cd ..; echo "@GIT_HEAD_VERSION@") > version.tex
 	$(PDFLATEX) $<
-	bibtex manual
+	biber manual
 	$(PDFLATEX) $<
 	$(PDFLATEX) $<
 user.html: user.pod

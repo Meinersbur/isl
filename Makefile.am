@@ -362,8 +362,6 @@ EXTRA_DIST = \
 	isl.py \
 	doc/CodingStyle \
 	doc/SubmittingPatches \
-	doc/chicago.bst \
-	doc/chicago.sty \
 	doc/implementation.tex \
 	doc/isl.bib \
 	doc/mypod2latex \
