@@ -3274,7 +3274,7 @@ use the following functions.
 		__isl_keep isl_union_pw_aff *upa);
 	isl_stat isl_union_pw_aff_foreach_pw_aff(
 		__isl_keep isl_union_pw_aff *upa,
-		isl_stat (*fn)(__isl_take isl_pw_aff *ma,
+		isl_stat (*fn)(__isl_take isl_pw_aff *pa,
 			void *user), void *user);
 	int isl_union_pw_multi_aff_n_pw_multi_aff(
 		__isl_keep isl_union_pw_multi_aff *upma);

@@ -815,7 +815,7 @@ __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_from_union_pw_aff(
 int isl_union_pw_aff_n_pw_aff(__isl_keep isl_union_pw_aff *upa);
 
 isl_stat isl_union_pw_aff_foreach_pw_aff(__isl_keep isl_union_pw_aff *upa,
-	isl_stat (*fn)(__isl_take isl_pw_aff *ma, void *user), void *user);
+	isl_stat (*fn)(__isl_take isl_pw_aff *pa, void *user), void *user);
 __isl_give isl_pw_aff *isl_union_pw_aff_extract_pw_aff(
 	__isl_keep isl_union_pw_aff *upa, __isl_take isl_space *space);
 
