@@ -7309,15 +7309,15 @@ Lists can be inspected using the following functions.
 		__isl_keep isl_set_list *list,
 		isl_bool (*follows)(__isl_keep isl_set *a,
 			__isl_keep isl_set *b, void *user),
-		void *follows_user
+		void *follows_user,
 		isl_stat (*fn)(__isl_take isl_set *el, void *user),
 		void *fn_user);
 
 The function C<isl_set_list_foreach_scc> calls C<fn> on each of the
 strongly connected components of the graph with as vertices the elements
 of C<list> and a directed edge from vertex C<b> to vertex C<a>
-iff C<follows(a, b)> returns C<1>.  The callbacks C<follows> and C<fn>
-should return C<-1> on error.
+iff C<follows(a, b)> returns C<isl_bool_true>.  The callbacks C<follows> and
+C<fn> should return C<isl_bool_error> or C<isl_stat_error> on error.
 
 Lists can be printed using
 
@@ -8850,9 +8850,6 @@ whereas C<isl_restriction_empty> is essentially equivalent to
 
 =head2 Scheduling
 
-B<The functionality described in this section is fairly new
-and may be subject to change.>
-
 	#include <isl/schedule.h>
 	__isl_give isl_schedule *
 	isl_schedule_constraints_compute_schedule(
@@ -9123,6 +9120,12 @@ If this option is set, then we try to construct schedules
 where the outermost scheduling dimension in each band
 satisfies the coincidence constraints.
 
+=item * schedule_algorithm
+
+Selects the scheduling algorithm to be used.
+Available scheduling algorithms are C<ISL_SCHEDULE_ALGORITHM_ISL>
+and C<ISL_SCHEDULE_ALGORITHM_FEAUTRIER>.
+
 =item * schedule_split_scaled
 
 If this option is set, then we try to construct schedules in which the
@@ -9131,12 +9134,9 @@ the scheduling rows for all nodes in the graphs have a common non-trivial
 divisor.
 The constant term is then placed in a separate band and the linear
 part is reduced.
-
-=item * schedule_algorithm
-
-Selects the scheduling algorithm to be used.
-Available scheduling algorithms are C<ISL_SCHEDULE_ALGORITHM_ISL>
-and C<ISL_SCHEDULE_ALGORITHM_FEAUTRIER>.
+This option is only effective when the Feautrier style scheduler is
+being used, either as the main scheduler or as a fallback for the
+Pluto-like scheduler.
 
 =item * schedule_separate_components
 
