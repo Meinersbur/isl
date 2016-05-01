@@ -3725,6 +3725,36 @@ static int test_bounded_coefficients_schedule(isl_ctx *ctx)
 	return 0;
 }
 
+/* Check that a set of schedule constraints that only allow for
+ * a coalescing schedule still produces a schedule even if the user
+ * request a non-coalescing schedule.  Earlier versions of isl
+ * would not handle this case correctly.
+ */
+static int test_coalescing_schedule(isl_ctx *ctx)
+{
+	const char *domain, *dep;
+	isl_union_set *I;
+	isl_union_map *D;
+	isl_schedule_constraints *sc;
+	isl_schedule *schedule;
+	int treat_coalescing;
+
+	domain = "{ S[a, b] : 0 <= a <= 1 and 0 <= b <= 1 }";
+	dep = "{ S[a, b] -> S[a + b, 1 - b] }";
+	I = isl_union_set_read_from_str(ctx, domain);
+	D = isl_union_map_read_from_str(ctx, dep);
+	sc = isl_schedule_constraints_on_domain(I);
+	sc = isl_schedule_constraints_set_validity(sc, D);
+	treat_coalescing = isl_options_get_schedule_treat_coalescing(ctx);
+	isl_options_set_schedule_treat_coalescing(ctx, 1);
+	schedule = isl_schedule_constraints_compute_schedule(sc);
+	isl_options_set_schedule_treat_coalescing(ctx, treat_coalescing);
+	isl_schedule_free(schedule);
+	if (!schedule)
+		return -1;
+	return 0;
+}
+
 int test_schedule(isl_ctx *ctx)
 {
 	const char *D, *W, *R, *V, *P, *S;
@@ -4032,6 +4062,8 @@ int test_schedule(isl_ctx *ctx)
 		return -1;
 
 	if (test_bounded_coefficients_schedule(ctx) < 0)
+		return -1;
+	if (test_coalescing_schedule(ctx) < 0)
 		return -1;
 
 	return 0;

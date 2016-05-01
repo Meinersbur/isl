@@ -4523,6 +4523,7 @@ static __isl_give isl_vec *non_neg_lexmin(struct isl_sched_graph *graph,
 			sol = prev;
 			break;
 		}
+		prev = isl_vec_free(prev);
 		if (!treat_coalescing)
 			break;
 		for (i = 0; i < graph->n; ++i) {
@@ -4535,13 +4536,11 @@ static __isl_give isl_vec *non_neg_lexmin(struct isl_sched_graph *graph,
 				break;
 		}
 		if (i < graph->n) {
-			isl_vec_free(prev);
 			prev = sol;
 			tl = zero_out_node_coef(tl, &graph->node[i], pos);
 		}
 	} while (i < graph->n);
 
-	isl_vec_free(prev);
 	isl_tab_lexmin_free(tl);
 
 	return sol;
