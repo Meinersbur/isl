@@ -5213,7 +5213,6 @@ struct isl_tab_lexmin {
 	isl_ctx *ctx;
 	struct isl_tab *tab;
 };
-typedef struct isl_tab_lexmin isl_tab_lexmin;
 
 /* Free "tl" and return NULL.
  */
