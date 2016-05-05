@@ -384,6 +384,12 @@ EXTRA_DIST = \
 	imath/imrat.h \
 	interface/all.h \
 	interface/isl.py.top \
+	interface/Makefile.am \
+	interface/Makefile.in \
+	interface/python.cc \
+	interface/python.h \
+	interface/extract_interface.cc \
+	interface/extract_interface.h \
 	test_inputs
 
 dist-hook:
