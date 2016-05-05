@@ -84,7 +84,7 @@ error:
  * 0 and "expanded".
  */
 __isl_give isl_vec *isl_vec_expand(__isl_take isl_vec *vec, int pos, int n,
-	int exp[n], int expanded)
+	int *exp, int expanded)
 {
 	int i, j;
 	int old_size, extra;
