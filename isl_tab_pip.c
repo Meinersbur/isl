@@ -4999,7 +4999,7 @@ static int is_optimal(__isl_keep isl_vec *sol, int n_op)
 }
 
 /* Add constraints to "tab" that ensure that any solution is significantly
- * better that that represented by "sol".  That is, find the first
+ * better than that represented by "sol".  That is, find the first
  * relevant (within first n_op) non-zero coefficient and force it (along
  * with all previous coefficients) to be zero.
  * If the solution is already optimal (all relevant coefficients are zero),
