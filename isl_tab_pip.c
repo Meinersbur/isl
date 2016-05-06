@@ -5276,6 +5276,8 @@ __isl_give isl_tab_lexmin *isl_tab_lexmin_add_eq(__isl_take isl_tab_lexmin *tl,
 	if (!tl || !eq)
 		return isl_tab_lexmin_free(tl);
 
+	if (isl_tab_extend_cons(tl->tab, 2) < 0)
+		return isl_tab_lexmin_free(tl);
 	n_var = tl->tab->n_var;
 	isl_seq_neg(eq, eq, 1 + n_var);
 	tl->tab = add_lexmin_ineq(tl->tab, eq);
