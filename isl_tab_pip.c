@@ -5271,12 +5271,15 @@ int isl_tab_lexmin_dim(__isl_keep isl_tab_lexmin *tl)
 __isl_give isl_tab_lexmin *isl_tab_lexmin_add_eq(__isl_take isl_tab_lexmin *tl,
 	isl_int *eq)
 {
+	unsigned n_var;
+
 	if (!tl || !eq)
 		return isl_tab_lexmin_free(tl);
 
-	isl_seq_neg(eq, eq, 1 + tl->tab->n_var);
+	n_var = tl->tab->n_var;
+	isl_seq_neg(eq, eq, 1 + n_var);
 	tl->tab = add_lexmin_ineq(tl->tab, eq);
-	isl_seq_neg(eq, eq, 1 + tl->tab->n_var);
+	isl_seq_neg(eq, eq, 1 + n_var);
 	tl->tab = add_lexmin_ineq(tl->tab, eq);
 
 	if (!tl->tab)
