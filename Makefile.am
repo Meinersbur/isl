@@ -161,6 +161,8 @@ libisl_la_SOURCES = \
 	isl_schedule_tree.c \
 	isl_schedule_tree.h \
 	isl_schedule_private.h \
+	isl_schedule_constraints.c \
+	isl_schedule_constraints.h \
 	isl_scheduler.c \
 	isl_set_list.c \
 	isl_sort.c \
