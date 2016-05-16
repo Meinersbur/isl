@@ -494,6 +494,37 @@ isl_schedule_constraints_align_params(__isl_take isl_schedule_constraints *sc)
 	return sc;
 }
 
+/* Add the number of basic maps in "map" to *n.
+ */
+static isl_stat add_n_basic_map(__isl_take isl_map *map, void *user)
+{
+	int *n = user;
+
+	*n += isl_map_n_basic_map(map);
+	isl_map_free(map);
+
+	return isl_stat_ok;
+}
+
+/* Return the total number of isl_basic_maps in the constraints of "sc".
+ * Return -1 on error.
+ */
+static int isl_schedule_constraints_n_basic_map(
+	__isl_keep isl_schedule_constraints *sc)
+{
+	enum isl_edge_type i;
+	int n = 0;
+
+	if (!sc)
+		return -1;
+	for (i = isl_edge_first; i <= isl_edge_last; ++i)
+		if (isl_union_map_foreach_map(sc->constraint[i],
+						&add_n_basic_map, &n) < 0)
+			return -1;
+
+	return n;
+}
+
 /* Return the total number of isl_maps in the constraints of "sc".
  */
 static int isl_schedule_constraints_n_map(
@@ -1149,18 +1180,6 @@ static isl_stat init_n_maxvar(__isl_take isl_set *set, void *user)
 	return isl_stat_ok;
 }
 
-/* Add the number of basic maps in "map" to *n.
- */
-static isl_stat add_n_basic_map(__isl_take isl_map *map, void *user)
-{
-	int *n = user;
-
-	*n += isl_map_n_basic_map(map);
-	isl_map_free(map);
-
-	return isl_stat_ok;
-}
-
 /* Compute the number of rows that should be allocated for the schedule.
  * In particular, we need one row for each variable or one row
  * for each basic map in the dependences.
@@ -1170,18 +1189,15 @@ static isl_stat add_n_basic_map(__isl_take isl_map *map, void *user)
 static isl_stat compute_max_row(struct isl_sched_graph *graph,
 	__isl_keep isl_schedule_constraints *sc)
 {
-	enum isl_edge_type i;
 	int n_edge;
 
 	graph->n = 0;
 	graph->maxvar = 0;
 	if (isl_union_set_foreach_set(sc->domain, &init_n_maxvar, graph) < 0)
 		return isl_stat_error;
-	n_edge = 0;
-	for (i = isl_edge_first; i <= isl_edge_last; ++i)
-		if (isl_union_map_foreach_map(sc->constraint[i],
-						&add_n_basic_map, &n_edge) < 0)
-			return isl_stat_error;
+	n_edge = isl_schedule_constraints_n_basic_map(sc);
+	if (n_edge < 0)
+		return isl_stat_error;
 	graph->max_row = n_edge + graph->maxvar;
 
 	return isl_stat_ok;
