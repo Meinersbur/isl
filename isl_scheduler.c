@@ -1743,7 +1743,7 @@ static isl_stat graph_init(struct isl_sched_graph *graph,
 	graph->n = 0;
 	domain = isl_schedule_constraints_get_domain(sc);
 	domain = isl_union_set_intersect_params(domain,
-						isl_set_copy(sc->context));
+				    isl_schedule_constraints_get_context(sc));
 	r = isl_union_set_foreach_set(domain, &extract_node, graph);
 	isl_union_set_free(domain);
 	if (r < 0)
