@@ -1206,10 +1206,15 @@ static isl_stat compute_max_row(struct isl_sched_graph *graph,
 	__isl_keep isl_schedule_constraints *sc)
 {
 	int n_edge;
+	isl_stat r;
+	isl_union_set *domain;
 
 	graph->n = 0;
 	graph->maxvar = 0;
-	if (isl_union_set_foreach_set(sc->domain, &init_n_maxvar, graph) < 0)
+	domain = isl_schedule_constraints_get_domain(sc);
+	r = isl_union_set_foreach_set(domain, &init_n_maxvar, graph);
+	isl_union_set_free(domain);
+	if (r < 0)
 		return isl_stat_error;
 	n_edge = isl_schedule_constraints_n_basic_map(sc);
 	if (n_edge < 0)
