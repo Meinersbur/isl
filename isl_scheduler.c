@@ -1731,6 +1731,7 @@ static isl_stat graph_init(struct isl_sched_graph *graph,
 {
 	isl_ctx *ctx;
 	isl_union_set *domain;
+	isl_union_map *c;
 	struct isl_extract_edge_data data;
 	enum isl_edge_type i;
 	isl_stat r;
@@ -1761,16 +1762,25 @@ static isl_stat graph_init(struct isl_sched_graph *graph,
 		return isl_stat_error;
 	if (graph_init_table(ctx, graph) < 0)
 		return isl_stat_error;
-	for (i = isl_edge_first; i <= isl_edge_last; ++i)
-		graph->max_edge[i] = isl_union_map_n_map(sc->constraint[i]);
+	for (i = isl_edge_first; i <= isl_edge_last; ++i) {
+		c = isl_schedule_constraints_get(sc, i);
+		graph->max_edge[i] = isl_union_map_n_map(c);
+		isl_union_map_free(c);
+		if (!c)
+			return isl_stat_error;
+	}
 	if (graph_init_edge_tables(ctx, graph) < 0)
 		return isl_stat_error;
 	graph->n_edge = 0;
 	data.graph = graph;
 	for (i = isl_edge_first; i <= isl_edge_last; ++i) {
+		isl_stat r;
+
 		data.type = i;
-		if (isl_union_map_foreach_map(sc->constraint[i],
-						&extract_edge, &data) < 0)
+		c = isl_schedule_constraints_get(sc, i);
+		r = isl_union_map_foreach_map(c, &extract_edge, &data);
+		isl_union_map_free(c);
+		if (r < 0)
 			return isl_stat_error;
 	}
 
