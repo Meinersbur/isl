@@ -496,7 +496,7 @@ isl_schedule_constraints_align_params(__isl_take isl_schedule_constraints *sc)
 
 /* Return the total number of isl_maps in the constraints of "sc".
  */
-static __isl_give int isl_schedule_constraints_n_map(
+static int isl_schedule_constraints_n_map(
 	__isl_keep isl_schedule_constraints *sc)
 {
 	enum isl_edge_type i;
