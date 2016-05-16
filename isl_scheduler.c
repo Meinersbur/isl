@@ -344,6 +344,27 @@ isl_schedule_constraints_get_conditional_validity_condition(
 	return isl_schedule_constraints_get(sc, isl_edge_condition);
 }
 
+/* Add "c" to the constraints of type "type" in "sc".
+ */
+__isl_give isl_schedule_constraints *isl_schedule_constraints_add(
+	__isl_take isl_schedule_constraints *sc, enum isl_edge_type type,
+	__isl_take isl_union_map *c)
+{
+	if (!sc || !c)
+		goto error;
+
+	c = isl_union_map_union(sc->constraint[type], c);
+	sc->constraint[type] = c;
+	if (!c)
+		return isl_schedule_constraints_free(sc);
+
+	return sc;
+error:
+	isl_schedule_constraints_free(sc);
+	isl_union_map_free(c);
+	return NULL;
+}
+
 /* Can a schedule constraint of type "type" be tagged?
  */
 static int may_be_tagged(enum isl_edge_type type)
@@ -5488,10 +5509,8 @@ static __isl_give isl_schedule_constraints *add_non_conditional_constraints(
 			continue;
 		if (!is_type(edge, t))
 			continue;
-		sc->constraint[t] = isl_union_map_union(sc->constraint[t],
+		sc = isl_schedule_constraints_add(sc, t,
 						    isl_union_map_copy(umap));
-		if (!sc->constraint[t])
-			return isl_schedule_constraints_free(sc);
 	}
 
 	return sc;
@@ -5520,10 +5539,9 @@ static __isl_give isl_schedule_constraints *add_conditional_constraints(
 		tagged = isl_union_map_apply_domain(tagged,
 					isl_union_map_copy(umap));
 		tagged = isl_union_map_zip(tagged);
-		sc->constraint[t] = isl_union_map_union(sc->constraint[t],
-						    tagged);
-		if (!sc->constraint[t])
-			return isl_schedule_constraints_free(sc);
+		sc = isl_schedule_constraints_add(sc, t, tagged);
+		if (!sc)
+			return NULL;
 	}
 
 	return sc;
