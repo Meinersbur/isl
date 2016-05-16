@@ -292,15 +292,23 @@ __isl_give isl_set *isl_schedule_constraints_get_context(
 	return isl_set_copy(sc->context);
 }
 
+/* Return the constraints of type "type" in "sc".
+ */
+__isl_give isl_union_map *isl_schedule_constraints_get(
+	__isl_keep isl_schedule_constraints *sc, enum isl_edge_type type)
+{
+	if (!sc)
+		return NULL;
+
+	return isl_union_map_copy(sc->constraint[type]);
+}
+
 /* Return the validity constraints of "sc".
  */
 __isl_give isl_union_map *isl_schedule_constraints_get_validity(
 	__isl_keep isl_schedule_constraints *sc)
 {
-	if (!sc)
-		return NULL;
-
-	return isl_union_map_copy(sc->constraint[isl_edge_validity]);
+	return isl_schedule_constraints_get(sc, isl_edge_validity);
 }
 
 /* Return the coincidence constraints of "sc".
@@ -308,10 +316,7 @@ __isl_give isl_union_map *isl_schedule_constraints_get_validity(
 __isl_give isl_union_map *isl_schedule_constraints_get_coincidence(
 	__isl_keep isl_schedule_constraints *sc)
 {
-	if (!sc)
-		return NULL;
-
-	return isl_union_map_copy(sc->constraint[isl_edge_coincidence]);
+	return isl_schedule_constraints_get(sc, isl_edge_coincidence);
 }
 
 /* Return the proximity constraints of "sc".
@@ -319,10 +324,7 @@ __isl_give isl_union_map *isl_schedule_constraints_get_coincidence(
 __isl_give isl_union_map *isl_schedule_constraints_get_proximity(
 	__isl_keep isl_schedule_constraints *sc)
 {
-	if (!sc)
-		return NULL;
-
-	return isl_union_map_copy(sc->constraint[isl_edge_proximity]);
+	return isl_schedule_constraints_get(sc, isl_edge_proximity);
 }
 
 /* Return the conditional validity constraints of "sc".
@@ -330,11 +332,7 @@ __isl_give isl_union_map *isl_schedule_constraints_get_proximity(
 __isl_give isl_union_map *isl_schedule_constraints_get_conditional_validity(
 	__isl_keep isl_schedule_constraints *sc)
 {
-	if (!sc)
-		return NULL;
-
-	return
-	    isl_union_map_copy(sc->constraint[isl_edge_conditional_validity]);
+	return isl_schedule_constraints_get(sc, isl_edge_conditional_validity);
 }
 
 /* Return the conditions for the conditional validity constraints of "sc".
@@ -343,10 +341,7 @@ __isl_give isl_union_map *
 isl_schedule_constraints_get_conditional_validity_condition(
 	__isl_keep isl_schedule_constraints *sc)
 {
-	if (!sc)
-		return NULL;
-
-	return isl_union_map_copy(sc->constraint[isl_edge_condition]);
+	return isl_schedule_constraints_get(sc, isl_edge_condition);
 }
 
 /* Can a schedule constraint of type "type" be tagged?
