@@ -281,6 +281,17 @@ __isl_give isl_union_set *isl_schedule_constraints_get_domain(
 	return isl_union_set_copy(sc->domain);
 }
 
+/* Return the context of "sc".
+ */
+__isl_give isl_set *isl_schedule_constraints_get_context(
+	__isl_keep isl_schedule_constraints *sc)
+{
+	if (!sc)
+		return NULL;
+
+	return isl_set_copy(sc->context);
+}
+
 /* Return the validity constraints of "sc".
  */
 __isl_give isl_union_map *isl_schedule_constraints_get_validity(

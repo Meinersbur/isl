@@ -74,6 +74,8 @@ isl_ctx *isl_schedule_constraints_get_ctx(
 	__isl_keep isl_schedule_constraints *sc);
 __isl_give isl_union_set *isl_schedule_constraints_get_domain(
 	__isl_keep isl_schedule_constraints *sc);
+__isl_give isl_set *isl_schedule_constraints_get_context(
+	__isl_keep isl_schedule_constraints *sc);
 __isl_give isl_union_map *isl_schedule_constraints_get_validity(
 	__isl_keep isl_schedule_constraints *sc);
 __isl_give isl_union_map *isl_schedule_constraints_get_coincidence(
