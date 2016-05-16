@@ -1167,7 +1167,7 @@ static isl_stat add_n_basic_map(__isl_take isl_map *map, void *user)
  * Note that it is practically impossible to exhaust both
  * the number of dependences and the number of variables.
  */
-static int compute_max_row(struct isl_sched_graph *graph,
+static isl_stat compute_max_row(struct isl_sched_graph *graph,
 	__isl_keep isl_schedule_constraints *sc)
 {
 	enum isl_edge_type i;
@@ -1176,15 +1176,15 @@ static int compute_max_row(struct isl_sched_graph *graph,
 	graph->n = 0;
 	graph->maxvar = 0;
 	if (isl_union_set_foreach_set(sc->domain, &init_n_maxvar, graph) < 0)
-		return -1;
+		return isl_stat_error;
 	n_edge = 0;
 	for (i = isl_edge_first; i <= isl_edge_last; ++i)
 		if (isl_union_map_foreach_map(sc->constraint[i],
 						&add_n_basic_map, &n_edge) < 0)
-			return -1;
+			return isl_stat_error;
 	graph->max_row = n_edge + graph->maxvar;
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Does "bset" have any defining equalities for its set variables?
