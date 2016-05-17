@@ -69,6 +69,16 @@ __isl_give isl_schedule_constraints *isl_schedule_constraints_copy(
 	return sc_copy;
 }
 
+/* Construct an empty (invalid) isl_schedule_constraints object.
+ * The caller is responsible for setting the domain and initializing
+ * all the other fields, e.g., by calling isl_schedule_constraints_init.
+ */
+static __isl_give isl_schedule_constraints *isl_schedule_constraints_alloc(
+	isl_ctx *ctx)
+{
+	return isl_calloc_type(ctx, struct isl_schedule_constraints);
+}
+
 /* Initialize all the fields of "sc", except domain, which is assumed
  * to have been set by the caller.
  */
@@ -115,7 +125,7 @@ __isl_give isl_schedule_constraints *isl_schedule_constraints_on_domain(
 		return NULL;
 
 	ctx = isl_union_set_get_ctx(domain);
-	sc = isl_calloc_type(ctx, struct isl_schedule_constraints);
+	sc = isl_schedule_constraints_alloc(ctx);
 	if (!sc)
 		goto error;
 
