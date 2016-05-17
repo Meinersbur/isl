@@ -5,7 +5,8 @@ for (int c0 = 0; c0 <= 99; c0 += 1) {
   } else if (c0 >= 7) {
     for (int c1 = 0; c1 <= 99; c1 += 1)
       A(c0, c1);
-  } else
+  } else {
     for (int c1 = 0; c1 <= 99; c1 += 1)
       A(c0, c1);
+  }
 }
