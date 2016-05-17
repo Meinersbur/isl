@@ -69,31 +69,27 @@ __isl_give isl_schedule_constraints *isl_schedule_constraints_copy(
 	return sc_copy;
 }
 
-/* Construct an isl_schedule_constraints object for computing a schedule
- * on "domain".  The initial object does not impose any constraints.
+/* Initialize all the fields of "sc", except domain, which is assumed
+ * to have been set by the caller.
  */
-__isl_give isl_schedule_constraints *isl_schedule_constraints_on_domain(
-	__isl_take isl_union_set *domain)
+static __isl_give isl_schedule_constraints *isl_schedule_constraints_init(
+	__isl_take isl_schedule_constraints *sc)
 {
-	isl_ctx *ctx;
 	isl_space *space;
-	isl_schedule_constraints *sc;
 	isl_union_map *empty;
 	enum isl_edge_type i;
 
-	if (!domain)
-		return NULL;
-
-	ctx = isl_union_set_get_ctx(domain);
-	sc = isl_calloc_type(ctx, struct isl_schedule_constraints);
 	if (!sc)
-		goto error;
-
-	space = isl_union_set_get_space(domain);
-	sc->domain = domain;
-	sc->context = isl_set_universe(isl_space_copy(space));
+		return NULL;
+	if (!sc->domain)
+		return isl_schedule_constraints_free(sc);
+	space = isl_union_set_get_space(sc->domain);
+	if (!sc->context)
+		sc->context = isl_set_universe(isl_space_copy(space));
 	empty = isl_union_map_empty(space);
 	for (i = isl_edge_first; i <= isl_edge_last; ++i) {
+		if (sc->constraint[i])
+			continue;
 		sc->constraint[i] = isl_union_map_copy(empty);
 		if (!sc->constraint[i])
 			sc->domain = isl_union_set_free(sc->domain);
@@ -104,6 +100,27 @@ __isl_give isl_schedule_constraints *isl_schedule_constraints_on_domain(
 		return isl_schedule_constraints_free(sc);
 
 	return sc;
+}
+
+/* Construct an isl_schedule_constraints object for computing a schedule
+ * on "domain".  The initial object does not impose any constraints.
+ */
+__isl_give isl_schedule_constraints *isl_schedule_constraints_on_domain(
+	__isl_take isl_union_set *domain)
+{
+	isl_ctx *ctx;
+	isl_schedule_constraints *sc;
+
+	if (!domain)
+		return NULL;
+
+	ctx = isl_union_set_get_ctx(domain);
+	sc = isl_calloc_type(ctx, struct isl_schedule_constraints);
+	if (!sc)
+		goto error;
+
+	sc->domain = domain;
+	return isl_schedule_constraints_init(sc);
 error:
 	isl_union_set_free(domain);
 	return NULL;
