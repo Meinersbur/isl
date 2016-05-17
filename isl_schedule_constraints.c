@@ -127,23 +127,32 @@ error:
 	return NULL;
 }
 
+/* Replace the constraints of type "type" in "sc" by "c".
+ */
+static __isl_give isl_schedule_constraints *isl_schedule_constraints_set(
+	__isl_take isl_schedule_constraints *sc, enum isl_edge_type type,
+	__isl_take isl_union_map *c)
+{
+	if (!sc || !c)
+		goto error;
+
+	isl_union_map_free(sc->constraint[type]);
+	sc->constraint[type] = c;
+
+	return sc;
+error:
+	isl_schedule_constraints_free(sc);
+	isl_union_map_free(c);
+	return NULL;
+}
+
 /* Replace the validity constraints of "sc" by "validity".
  */
 __isl_give isl_schedule_constraints *isl_schedule_constraints_set_validity(
 	__isl_take isl_schedule_constraints *sc,
 	__isl_take isl_union_map *validity)
 {
-	if (!sc || !validity)
-		goto error;
-
-	isl_union_map_free(sc->constraint[isl_edge_validity]);
-	sc->constraint[isl_edge_validity] = validity;
-
-	return sc;
-error:
-	isl_schedule_constraints_free(sc);
-	isl_union_map_free(validity);
-	return NULL;
+	return isl_schedule_constraints_set(sc, isl_edge_validity, validity);
 }
 
 /* Replace the coincidence constraints of "sc" by "coincidence".
@@ -152,17 +161,8 @@ __isl_give isl_schedule_constraints *isl_schedule_constraints_set_coincidence(
 	__isl_take isl_schedule_constraints *sc,
 	__isl_take isl_union_map *coincidence)
 {
-	if (!sc || !coincidence)
-		goto error;
-
-	isl_union_map_free(sc->constraint[isl_edge_coincidence]);
-	sc->constraint[isl_edge_coincidence] = coincidence;
-
-	return sc;
-error:
-	isl_schedule_constraints_free(sc);
-	isl_union_map_free(coincidence);
-	return NULL;
+	return isl_schedule_constraints_set(sc, isl_edge_coincidence,
+						coincidence);
 }
 
 /* Replace the proximity constraints of "sc" by "proximity".
@@ -171,17 +171,7 @@ __isl_give isl_schedule_constraints *isl_schedule_constraints_set_proximity(
 	__isl_take isl_schedule_constraints *sc,
 	__isl_take isl_union_map *proximity)
 {
-	if (!sc || !proximity)
-		goto error;
-
-	isl_union_map_free(sc->constraint[isl_edge_proximity]);
-	sc->constraint[isl_edge_proximity] = proximity;
-
-	return sc;
-error:
-	isl_schedule_constraints_free(sc);
-	isl_union_map_free(proximity);
-	return NULL;
+	return isl_schedule_constraints_set(sc, isl_edge_proximity, proximity);
 }
 
 /* Replace the conditional validity constraints of "sc" by "condition"
@@ -193,20 +183,10 @@ isl_schedule_constraints_set_conditional_validity(
 	__isl_take isl_union_map *condition,
 	__isl_take isl_union_map *validity)
 {
-	if (!sc || !condition || !validity)
-		goto error;
-
-	isl_union_map_free(sc->constraint[isl_edge_condition]);
-	sc->constraint[isl_edge_condition] = condition;
-	isl_union_map_free(sc->constraint[isl_edge_conditional_validity]);
-	sc->constraint[isl_edge_conditional_validity] = validity;
-
+	sc = isl_schedule_constraints_set(sc, isl_edge_condition, condition);
+	sc = isl_schedule_constraints_set(sc, isl_edge_conditional_validity,
+						validity);
 	return sc;
-error:
-	isl_schedule_constraints_free(sc);
-	isl_union_map_free(condition);
-	isl_union_map_free(validity);
-	return NULL;
 }
 
 __isl_null isl_schedule_constraints *isl_schedule_constraints_free(
