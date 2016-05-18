@@ -106,6 +106,8 @@ __isl_give isl_basic_map *isl_basic_map_remove_redundancies(
 		goto error;
 	bmap = isl_basic_map_update_from_tab(bmap, tab);
 	isl_tab_free(tab);
+	if (!bmap)
+		return NULL;
 	ISL_F_SET(bmap, ISL_BASIC_MAP_NO_IMPLICIT);
 	ISL_F_SET(bmap, ISL_BASIC_MAP_NO_REDUNDANT);
 	return bmap;
