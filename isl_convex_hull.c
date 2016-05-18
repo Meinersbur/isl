@@ -80,7 +80,7 @@ int isl_basic_set_constraint_is_redundant(struct isl_basic_set **bset,
  * is the same if the constraint is removed, then the constraint is redundant.
  *
  * Alternatively, we could have intersected the basic map with the
- * corresponding equality and the checked if the dimension was that
+ * corresponding equality and then checked if the dimension was that
  * of a facet.
  */
 __isl_give isl_basic_map *isl_basic_map_remove_redundancies(
