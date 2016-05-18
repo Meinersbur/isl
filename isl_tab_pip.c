@@ -2158,7 +2158,7 @@ error:
  * Given two rows in the main tableau, if the inequality corresponding
  * to the first row is redundant with respect to that of the second row
  * in the current tableau, then it is better to split on the second row,
- * since in the positive part, both row will be positive.
+ * since in the positive part, both rows will be positive.
  * (In the negative part a pivot will have to be performed and just about
  * anything can happen to the sign of the other row.)
  *
