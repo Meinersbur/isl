@@ -2580,31 +2580,31 @@ int isl_inequality_negate(struct isl_basic_map *bmap, unsigned pos)
 	return 0;
 }
 
-__isl_give isl_set *isl_set_alloc_space(__isl_take isl_space *dim, int n,
+__isl_give isl_set *isl_set_alloc_space(__isl_take isl_space *space, int n,
 	unsigned flags)
 {
 	struct isl_set *set;
 
-	if (!dim)
+	if (!space)
 		return NULL;
-	isl_assert(dim->ctx, dim->n_in == 0, goto error);
-	isl_assert(dim->ctx, n >= 0, goto error);
-	set = isl_alloc(dim->ctx, struct isl_set,
+	isl_assert(space->ctx, space->n_in == 0, goto error);
+	isl_assert(space->ctx, n >= 0, goto error);
+	set = isl_alloc(space->ctx, struct isl_set,
 			sizeof(struct isl_set) +
 			(n - 1) * sizeof(struct isl_basic_set *));
 	if (!set)
 		goto error;
 
-	set->ctx = dim->ctx;
+	set->ctx = space->ctx;
 	isl_ctx_ref(set->ctx);
 	set->ref = 1;
 	set->size = n;
 	set->n = 0;
-	set->dim = dim;
+	set->dim = space;
 	set->flags = flags;
 	return set;
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
