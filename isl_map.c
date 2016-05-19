@@ -1673,18 +1673,42 @@ struct isl_basic_map *isl_basic_map_cow(struct isl_basic_map *bmap)
 	return bmap;
 }
 
+/* Clear all cached information in "map", either because it is about
+ * to be modified or because it is being freed.
+ * Always return the same pointer that is passed in.
+ * This is needed for the use in isl_map_free.
+ */
+static __isl_give isl_map *clear_caches(__isl_take isl_map *map)
+{
+	isl_basic_map_free(map->cached_simple_hull[0]);
+	isl_basic_map_free(map->cached_simple_hull[1]);
+	map->cached_simple_hull[0] = NULL;
+	map->cached_simple_hull[1] = NULL;
+	return map;
+}
+
 struct isl_set *isl_set_cow(struct isl_set *set)
 {
 	return isl_map_cow(set);
 }
 
+/* Return an isl_map that is equal to "map" and that has only
+ * a single reference.
+ *
+ * If the original input already has only one reference, then
+ * simply return it, but clear all cached information, since
+ * it may be rendered invalid by the operations that will be
+ * performed on the result.
+ *
+ * Otherwise, create a duplicate (without any cached information).
+ */
 struct isl_map *isl_map_cow(struct isl_map *map)
 {
 	if (!map)
 		return NULL;
 
 	if (map->ref == 1)
-		return map;
+		return clear_caches(map);
 	map->ref--;
 	return isl_map_dup(map);
 }
@@ -5242,6 +5266,10 @@ __isl_give isl_map *isl_map_from_domain_and_range(__isl_take isl_set *domain,
 	return isl_map_apply_range(isl_map_reverse(domain), range);
 }
 
+/* Return a newly allocated isl_map with given space and flags and
+ * room for "n" basic maps.
+ * Make sure that all cached information is cleared.
+ */
 __isl_give isl_map *isl_map_alloc_space(__isl_take isl_space *space, int n,
 	unsigned flags)
 {
@@ -5252,7 +5280,7 @@ __isl_give isl_map *isl_map_alloc_space(__isl_take isl_space *space, int n,
 	if (n < 0)
 		isl_die(space->ctx, isl_error_internal,
 			"negative number of basic maps", goto error);
-	map = isl_alloc(space->ctx, struct isl_map,
+	map = isl_calloc(space->ctx, struct isl_map,
 			sizeof(struct isl_map) +
 			(n - 1) * sizeof(struct isl_basic_map *));
 	if (!map)
@@ -5429,6 +5457,7 @@ __isl_null isl_map *isl_map_free(__isl_take isl_map *map)
 	if (--map->ref > 0)
 		return NULL;
 
+	clear_caches(map);
 	isl_ctx_deref(map->ctx);
 	for (i = 0; i < map->n; ++i)
 		isl_basic_map_free(map->p[i]);

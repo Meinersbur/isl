@@ -88,6 +88,10 @@ struct isl_basic_map {
  * Currently, the isl_set structure is identical to the isl_map structure
  * and the library depends on this correspondence internally.
  * However, users should not depend on this correspondence.
+ *
+ * "cached_simple_hull" contains copies of the unshifted and shifted
+ * simple hulls, if they have already been computed.  Otherwise,
+ * the entries are NULL.
  */
 struct isl_map {
 	int ref;
@@ -96,6 +100,7 @@ struct isl_map {
 #define ISL_SET_DISJOINT		(1 << 0)
 #define ISL_SET_NORMALIZED		(1 << 1)
 	unsigned flags;
+	isl_basic_map *cached_simple_hull[2];
 
 	struct isl_ctx *ctx;
 
