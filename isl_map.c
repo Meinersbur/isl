@@ -2583,26 +2583,12 @@ int isl_inequality_negate(struct isl_basic_map *bmap, unsigned pos)
 __isl_give isl_set *isl_set_alloc_space(__isl_take isl_space *space, int n,
 	unsigned flags)
 {
-	struct isl_set *set;
-
 	if (!space)
 		return NULL;
-	isl_assert(space->ctx, space->n_in == 0, goto error);
-	isl_assert(space->ctx, n >= 0, goto error);
-	set = isl_alloc(space->ctx, struct isl_set,
-			sizeof(struct isl_set) +
-			(n - 1) * sizeof(struct isl_basic_set *));
-	if (!set)
-		goto error;
-
-	set->ctx = space->ctx;
-	isl_ctx_ref(set->ctx);
-	set->ref = 1;
-	set->size = n;
-	set->n = 0;
-	set->dim = space;
-	set->flags = flags;
-	return set;
+	if (isl_space_dim(space, isl_dim_in) != 0)
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
+			"set cannot have input dimensions", goto error);
+	return isl_map_alloc_space(space, n, flags);
 error:
 	isl_space_free(space);
 	return NULL;
