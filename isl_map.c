@@ -2679,21 +2679,7 @@ __isl_give isl_set *isl_set_add_basic_set(__isl_take isl_set *set,
 
 __isl_null isl_set *isl_set_free(__isl_take isl_set *set)
 {
-	int i;
-
-	if (!set)
-		return NULL;
-
-	if (--set->ref > 0)
-		return NULL;
-
-	isl_ctx_deref(set->ctx);
-	for (i = 0; i < set->n; ++i)
-		isl_basic_set_free(set->p[i]);
-	isl_space_free(set->dim);
-	free(set);
-
-	return NULL;
+	return isl_map_free(set);
 }
 
 void isl_set_print_internal(struct isl_set *set, FILE *out, int indent)
