@@ -1675,13 +1675,7 @@ struct isl_basic_map *isl_basic_map_cow(struct isl_basic_map *bmap)
 
 struct isl_set *isl_set_cow(struct isl_set *set)
 {
-	if (!set)
-		return NULL;
-
-	if (set->ref == 1)
-		return set;
-	set->ref--;
-	return isl_set_dup(set);
+	return isl_map_cow(set);
 }
 
 struct isl_map *isl_map_cow(struct isl_map *map)
