@@ -5276,32 +5276,32 @@ __isl_give isl_map *isl_map_from_domain_and_range(__isl_take isl_set *domain,
 	return isl_map_apply_range(isl_map_reverse(domain), range);
 }
 
-__isl_give isl_map *isl_map_alloc_space(__isl_take isl_space *dim, int n,
+__isl_give isl_map *isl_map_alloc_space(__isl_take isl_space *space, int n,
 	unsigned flags)
 {
 	struct isl_map *map;
 
-	if (!dim)
+	if (!space)
 		return NULL;
 	if (n < 0)
-		isl_die(dim->ctx, isl_error_internal,
+		isl_die(space->ctx, isl_error_internal,
 			"negative number of basic maps", goto error);
-	map = isl_alloc(dim->ctx, struct isl_map,
+	map = isl_alloc(space->ctx, struct isl_map,
 			sizeof(struct isl_map) +
 			(n - 1) * sizeof(struct isl_basic_map *));
 	if (!map)
 		goto error;
 
-	map->ctx = dim->ctx;
+	map->ctx = space->ctx;
 	isl_ctx_ref(map->ctx);
 	map->ref = 1;
 	map->size = n;
 	map->n = 0;
-	map->dim = dim;
+	map->dim = space;
 	map->flags = flags;
 	return map;
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
