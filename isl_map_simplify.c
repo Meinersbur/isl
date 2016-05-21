@@ -4817,18 +4817,15 @@ static __isl_give isl_basic_map *isl_basic_map_drop_redundant_divs_ineq(
 			       bmap->ineq[last_pos][0], 1);
 		isl_int_sub(bmap->ineq[last_pos][0],
 			    bmap->ineq[last_pos][0], bmap->ineq[last_neg][0]);
-		if (!redundant) {
-			if (defined ||
-			    !ok_to_set_div_from_bound(bmap, i, last_pos)) {
-				pairs[i] = 0;
-				--n;
-				continue;
-			}
+		if (redundant)
+			return drop_div_and_try_again(bmap, i,
+						    last_pos, last_neg, pairs);
+		if (!defined && ok_to_set_div_from_bound(bmap, i, last_pos)) {
 			bmap = set_div_from_lower_bound(bmap, i, last_pos);
 			return drop_redundant_divs_again(bmap, pairs, 1);
 		}
-		return drop_div_and_try_again(bmap, i, last_pos, last_neg,
-						pairs);
+		pairs[i] = 0;
+		--n;
 	}
 
 	if (n > 0)
