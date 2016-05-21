@@ -4518,6 +4518,27 @@ static __isl_give isl_basic_map *set_eq_and_try_again(
 	return drop_redundant_divs_again(bmap, pairs, 1);
 }
 
+/* Drop the integer division at position "div", along with the two
+ * inequality constraints "ineq1" and "ineq2" in which it appears
+ * from "bmap" and then try and drop redundant divs again,
+ * freeing the temporary data structure "pairs" that was associated
+ * to the old version of "bmap".
+ */
+static __isl_give isl_basic_map *drop_div_and_try_again(
+	__isl_take isl_basic_map *bmap, int div, int ineq1, int ineq2,
+	__isl_take int *pairs)
+{
+	if (ineq1 > ineq2) {
+		isl_basic_map_drop_inequality(bmap, ineq1);
+		isl_basic_map_drop_inequality(bmap, ineq2);
+	} else {
+		isl_basic_map_drop_inequality(bmap, ineq2);
+		isl_basic_map_drop_inequality(bmap, ineq1);
+	}
+	bmap = isl_basic_map_drop_div(bmap, div);
+	return drop_redundant_divs_again(bmap, pairs, 0);
+}
+
 /* Given two inequality constraints
  *
  *	f(x) + n d + c >= 0,		(ineq)
@@ -4806,15 +4827,8 @@ static __isl_give isl_basic_map *isl_basic_map_drop_redundant_divs_ineq(
 			bmap = set_div_from_lower_bound(bmap, i, last_pos);
 			return drop_redundant_divs_again(bmap, pairs, 1);
 		}
-		if (last_pos > last_neg) {
-			isl_basic_map_drop_inequality(bmap, last_pos);
-			isl_basic_map_drop_inequality(bmap, last_neg);
-		} else {
-			isl_basic_map_drop_inequality(bmap, last_neg);
-			isl_basic_map_drop_inequality(bmap, last_pos);
-		}
-		bmap = isl_basic_map_drop_div(bmap, i);
-		return drop_redundant_divs_again(bmap, pairs, 0);
+		return drop_div_and_try_again(bmap, i, last_pos, last_neg,
+						pairs);
 	}
 
 	if (n > 0)
