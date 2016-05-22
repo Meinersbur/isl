@@ -5049,6 +5049,15 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_map(__isl_take isl_map *map)
 	if (!map)
 		return NULL;
 
+	if (isl_map_n_basic_map(map) == 1) {
+		hull = isl_map_unshifted_simple_hull(isl_map_copy(map));
+		hull = isl_basic_map_plain_affine_hull(hull);
+		sv = isl_basic_map_plain_is_single_valued(hull);
+		if (sv >= 0 && sv)
+			return plain_pw_multi_aff_from_map(isl_map_domain(map),
+							    hull);
+		isl_basic_map_free(hull);
+	}
 	map = isl_map_detect_equalities(map);
 	hull = isl_map_unshifted_simple_hull(isl_map_copy(map));
 	sv = isl_basic_map_plain_is_single_valued(hull);
