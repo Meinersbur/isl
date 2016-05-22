@@ -4162,7 +4162,7 @@ static void construct_test_ineq(struct isl_basic_map *bmap, int i,
 /* Remove more kinds of divs that are not strictly needed.
  * In particular, if all pairs of lower and upper bounds on a div
  * are such that they allow at least one integer value of the div,
- * the we can eliminate the div using Fourier-Motzkin without
+ * then we can eliminate the div using Fourier-Motzkin without
  * introducing any spurious solutions.
  */
 static struct isl_basic_map *drop_more_redundant_divs(
