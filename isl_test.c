@@ -637,6 +637,8 @@ static int test_val(isl_ctx *ctx)
  */
 static const char *elimination_tests[] = {
 	"{ [i,j] : 2 * [i/2] + 3 * [j/4] <= 10 and 2 i = j }",
+	"{ [m, w] : exists a : w - 2m - 5 <= 3a <= m - 2w }",
+	"{ [m, w] : exists a : w >= 0 and a < m and -1 + w <= a <= 2m - w }",
 };
 
 /* Check that redundant existentially quantified variables are

@@ -4183,6 +4183,15 @@ static isl_bool test_ineq_is_satisfied(__isl_keep isl_basic_map *bmap,
  * That is, the test constraint is
  *
  *	f_l e_u + f_u e_l + f_l - 1 + f_u - 1 + 1 >= f_u f_l g
+ *
+ * or
+ *
+ *	f_l e_u + f_u e_l + f_l - 1 + f_u - 1 + 1 - f_u f_l g >= 0
+ *
+ * If the coefficients of f_l e_u + f_u e_l have a common divisor g',
+ * then the constraint can be scaled down by a factor g',
+ * with the constant term replaced by
+ * floor((f_l e_{u,0} + f_u e_{l,0} + f_l - 1 + f_u - 1 + 1 - f_u f_l g)/g').
  */
 static isl_bool int_between_bounds(__isl_keep isl_basic_map *bmap, int i,
 	int l, int u, struct test_ineq_data *data)
@@ -4204,6 +4213,13 @@ static isl_bool int_between_bounds(__isl_keep isl_basic_map *bmap, int i,
 	isl_int_mul(data->g, data->g, data->fl);
 	isl_int_mul(data->g, data->g, data->fu);
 	isl_int_sub(data->v->el[0], data->v->el[0], data->g);
+
+	isl_seq_gcd(data->v->el + 1, offset - 1 + n_div, &data->g);
+	if (isl_int_is_one(data->g) || isl_int_is_zero(data->g))
+		return test_ineq_is_satisfied(bmap, data);
+	isl_int_fdiv_q(data->v->el[0], data->v->el[0], data->g);
+	isl_seq_scale_down(data->v->el + 1, data->v->el + 1, data->g,
+			    offset - 1 + n_div);
 
 	return test_ineq_is_satisfied(bmap, data);
 }
