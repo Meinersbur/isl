@@ -4137,9 +4137,27 @@ static void test_ineq_data_clear(struct test_ineq_data *data)
 	isl_int_clear(data->fu);
 }
 
-/* Given a lower and an upper bound on div i, construct an inequality
- * that when nonnegative ensures that this pair of bounds always allows
- * for an integer value of the given div.
+/* Is the inequality stored in data->v satisfied by "bmap"?
+ * That is, does it only attain non-negative values?
+ * data->tab is a tableau corresponding to "bmap".
+ */
+static isl_bool test_ineq_is_satisfied(__isl_keep isl_basic_map *bmap,
+	struct test_ineq_data *data)
+{
+	isl_ctx *ctx;
+	enum isl_lp_result res;
+
+	ctx = isl_basic_map_get_ctx(bmap);
+	res = isl_tab_min(data->tab, data->v->el, ctx->one, &data->g, NULL, 0);
+	if (res == isl_lp_error)
+		return isl_bool_error;
+	return res == isl_lp_ok && isl_int_is_nonneg(data->g);
+}
+
+/* Given a lower and an upper bound on div i, do they always allow
+ * for an integer value of the given div?
+ * Determine this property by constructing an inequality
+ * such that the property is guaranteed when the inequality is nonnegative.
  * The lower bound is inequality l, while the upper bound is inequality u.
  * The constructed inequality is stored in data->v.
  *
@@ -4166,7 +4184,7 @@ static void test_ineq_data_clear(struct test_ineq_data *data)
  *
  *	f_l e_u + f_u e_l + f_l - 1 + f_u - 1 + 1 >= f_u f_l g
  */
-static void construct_test_ineq(struct isl_basic_map *bmap, int i,
+static isl_bool int_between_bounds(__isl_keep isl_basic_map *bmap, int i,
 	int l, int u, struct test_ineq_data *data)
 {
 	unsigned offset, n_div;
@@ -4186,6 +4204,8 @@ static void construct_test_ineq(struct isl_basic_map *bmap, int i,
 	isl_int_mul(data->g, data->g, data->fl);
 	isl_int_mul(data->g, data->g, data->fu);
 	isl_int_sub(data->v->el[0], data->v->el[0], data->g);
+
+	return test_ineq_is_satisfied(bmap, data);
 }
 
 /* Remove more kinds of divs that are not strictly needed.
@@ -4226,7 +4246,7 @@ static struct isl_basic_map *drop_more_redundant_divs(
 	while (n > 0) {
 		int i, l, u;
 		int best = -1;
-		enum isl_lp_result res = isl_lp_ok;
+		isl_bool has_int;
 
 		for (i = 0; i < n_div; ++i) {
 			if (!pairs[i])
@@ -4247,20 +4267,19 @@ static struct isl_basic_map *drop_more_redundant_divs(
 					continue;
 				if (isl_int_is_negone(bmap->ineq[u][off + i]))
 					continue;
-				construct_test_ineq(bmap, i, l, u, &data);
-				res = isl_tab_min(data.tab, data.v->el,
-						  ctx->one, &data.g, NULL, 0);
-				if (res == isl_lp_error)
+				has_int = int_between_bounds(bmap, i, l, u,
+								&data);
+				if (has_int < 0)
 					goto error;
-				if (res == isl_lp_empty)
+				if (data.tab->empty)
 					break;
-				if (res != isl_lp_ok || isl_int_is_neg(data.g))
+				if (!has_int)
 					break;
 			}
 			if (u < bmap->n_ineq)
 				break;
 		}
-		if (res == isl_lp_empty) {
+		if (data.tab->empty) {
 			bmap = isl_basic_map_set_to_empty(bmap);
 			break;
 		}
