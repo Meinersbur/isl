@@ -4113,7 +4113,8 @@ static int div_find_coalesce(struct isl_basic_map *bmap, int *pairs,
  * an inequality that ensures that a pair of bounds always allows
  * for an integer value.
  *
- * "tab" is the tableau in which the inequality is evaluated.
+ * "tab" is the tableau in which the inequality is evaluated.  It may
+ * be NULL until it is actually needed.
  * "v" contains the inequality coefficients.
  * "g", "fl" and "fu" are temporary scalars used during the construction and
  * evaluation.
@@ -4148,6 +4149,8 @@ static isl_bool test_ineq_is_satisfied(__isl_keep isl_basic_map *bmap,
 	enum isl_lp_result res;
 
 	ctx = isl_basic_map_get_ctx(bmap);
+	if (!data->tab)
+		data->tab = isl_tab_from_basic_map(bmap, 0);
 	res = isl_tab_min(data->tab, data->v->el, ctx->one, &data->g, NULL, 0);
 	if (res == isl_lp_error)
 		return isl_bool_error;
@@ -4278,8 +4281,6 @@ static struct isl_basic_map *drop_more_redundant_divs(
 	if (!data.v)
 		goto error;
 
-	data.tab = isl_tab_from_basic_map(bmap, 0);
-
 	while (n > 0) {
 		int i, l, u;
 		int best = -1;
@@ -4308,7 +4309,7 @@ static struct isl_basic_map *drop_more_redundant_divs(
 								&data);
 				if (has_int < 0)
 					goto error;
-				if (data.tab->empty)
+				if (data.tab && data.tab->empty)
 					break;
 				if (!has_int)
 					break;
@@ -4316,7 +4317,7 @@ static struct isl_basic_map *drop_more_redundant_divs(
 			if (u < bmap->n_ineq)
 				break;
 		}
-		if (data.tab->empty) {
+		if (data.tab && data.tab->empty) {
 			bmap = isl_basic_map_set_to_empty(bmap);
 			break;
 		}
