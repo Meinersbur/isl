@@ -4165,6 +4165,11 @@ static void construct_test_ineq(struct isl_basic_map *bmap, int i,
  * are such that they allow at least one integer value of the div,
  * then we can eliminate the div using Fourier-Motzkin without
  * introducing any spurious solutions.
+ *
+ * If at least one of the two constraints has a unit coefficient for the div,
+ * then the presence of such a value is guaranteed so there is no need to check.
+ * In particular, the value attained by the bound with unit coefficient
+ * can serve as this intermediate value.
  */
 static struct isl_basic_map *drop_more_redundant_divs(
 	struct isl_basic_map *bmap, int *pairs, int n)
@@ -4209,8 +4214,12 @@ static struct isl_basic_map *drop_more_redundant_divs(
 		for (l = 0; l < bmap->n_ineq; ++l) {
 			if (!isl_int_is_pos(bmap->ineq[l][off + i]))
 				continue;
+			if (isl_int_is_one(bmap->ineq[l][off + i]))
+				continue;
 			for (u = 0; u < bmap->n_ineq; ++u) {
 				if (!isl_int_is_neg(bmap->ineq[u][off + i]))
+					continue;
+				if (isl_int_is_negone(bmap->ineq[u][off + i]))
 					continue;
 				construct_test_ineq(bmap, i, l, u,
 						    vec->el, &g, &fl, &fu);
