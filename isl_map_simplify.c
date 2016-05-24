@@ -4168,6 +4168,7 @@ static void construct_test_ineq(struct isl_basic_map *bmap, int i,
 static struct isl_basic_map *drop_more_redundant_divs(
 	struct isl_basic_map *bmap, int *pairs, int n)
 {
+	isl_ctx *ctx;
 	struct isl_tab *tab = NULL;
 	struct isl_vec *vec = NULL;
 	unsigned off, n_div;
@@ -4181,9 +4182,10 @@ static struct isl_basic_map *drop_more_redundant_divs(
 	if (!bmap)
 		goto error;
 
+	ctx = isl_basic_map_get_ctx(bmap);
 	off = isl_basic_map_offset(bmap, isl_dim_div);
 	n_div = isl_basic_map_dim(bmap, isl_dim_div);
-	vec = isl_vec_alloc(bmap->ctx, off + n_div);
+	vec = isl_vec_alloc(ctx, off + n_div);
 	if (!vec)
 		goto error;
 
@@ -4212,7 +4214,7 @@ static struct isl_basic_map *drop_more_redundant_divs(
 				construct_test_ineq(bmap, i, l, u,
 						    vec->el, &g, &fl, &fu);
 				res = isl_tab_min(tab, vec->el,
-						  bmap->ctx->one, &g, NULL, 0);
+						  ctx->one, &g, NULL, 0);
 				if (res == isl_lp_error)
 					goto error;
 				if (res == isl_lp_empty)
