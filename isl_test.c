@@ -632,9 +632,38 @@ static int test_val(isl_ctx *ctx)
 	return 0;
 }
 
+/* Sets described using existentially quantified variables that
+ * can also be described without.
+ */
+static const char *elimination_tests[] = {
+	"{ [i,j] : 2 * [i/2] + 3 * [j/4] <= 10 and 2 i = j }",
+};
+
+/* Check that redundant existentially quantified variables are
+ * getting removed.
+ */
+static int test_elimination(isl_ctx *ctx)
+{
+	int i;
+	unsigned n;
+	isl_basic_set *bset;
+
+	for (i = 0; i < ARRAY_SIZE(elimination_tests); ++i) {
+		bset = isl_basic_set_read_from_str(ctx, elimination_tests[i]);
+		n = isl_basic_set_dim(bset, isl_dim_div);
+		isl_basic_set_free(bset);
+		if (!bset)
+			return -1;
+		if (n != 0)
+			isl_die(ctx, isl_error_unknown,
+				"expecting no existentials", return -1);
+	}
+
+	return 0;
+}
+
 static int test_div(isl_ctx *ctx)
 {
-	unsigned n;
 	const char *str;
 	int empty;
 	isl_int v;
@@ -941,15 +970,8 @@ static int test_div(isl_ctx *ctx)
 	if (!set)
 		return -1;
 
-	str = "{ [i,j] : 2*[i/2] + 3 * [j/4] <= 10 and 2 i = j }";
-	bset = isl_basic_set_read_from_str(ctx, str);
-	n = isl_basic_set_dim(bset, isl_dim_div);
-	isl_basic_set_free(bset);
-	if (!bset)
+	if (test_elimination(ctx) < 0)
 		return -1;
-	if (n != 0)
-		isl_die(ctx, isl_error_unknown,
-			"expecting no existentials", return -1);
 
 	str = "{ [i,j,k] : 3 + i + 2j >= 0 and 2 * [(i+2j)/4] <= k }";
 	set = isl_set_read_from_str(ctx, str);
