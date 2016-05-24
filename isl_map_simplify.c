@@ -4202,6 +4202,9 @@ static isl_bool test_ineq_is_satisfied(__isl_keep isl_basic_map *bmap,
  * term of the scaled down test constraint, then the test constraint
  * is known to hold and no explicit evaluation is required.
  * This is essentially the Omega test.
+ *
+ * If the test constraint consists of only a constant term, then
+ * it is sufficient to look at the sign of this constant term.
  */
 static isl_bool int_between_bounds(__isl_keep isl_basic_map *bmap, int i,
 	int l, int u, struct test_ineq_data *data)
@@ -4225,7 +4228,9 @@ static isl_bool int_between_bounds(__isl_keep isl_basic_map *bmap, int i,
 	isl_int_sub(data->fl, data->v->el[0], data->g);
 
 	isl_seq_gcd(data->v->el + 1, offset - 1 + n_div, &data->g);
-	if (isl_int_is_one(data->g) || isl_int_is_zero(data->g)) {
+	if (isl_int_is_zero(data->g))
+		return isl_int_is_nonneg(data->fl);
+	if (isl_int_is_one(data->g)) {
 		isl_int_set(data->v->el[0], data->fl);
 		return test_ineq_is_satisfied(bmap, data);
 	}
