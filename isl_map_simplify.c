@@ -4142,15 +4142,16 @@ static int div_find_coalesce(struct isl_basic_map *bmap, int *pairs,
 static void construct_test_ineq(struct isl_basic_map *bmap, int i,
 	int l, int u, isl_int *ineq, isl_int *g, isl_int *fl, isl_int *fu)
 {
-	unsigned offset;
+	unsigned offset, n_div;
 	offset = isl_basic_map_offset(bmap, isl_dim_div);
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
 
 	isl_int_gcd(*g, bmap->ineq[l][offset + i], bmap->ineq[u][offset + i]);
 	isl_int_divexact(*fl, bmap->ineq[l][offset + i], *g);
 	isl_int_divexact(*fu, bmap->ineq[u][offset + i], *g);
 	isl_int_neg(*fu, *fu);
 	isl_seq_combine(ineq, *fl, bmap->ineq[u], *fu, bmap->ineq[l],
-			offset + bmap->n_div);
+			offset + n_div);
 	isl_int_add(ineq[0], ineq[0], *fl);
 	isl_int_add(ineq[0], ineq[0], *fu);
 	isl_int_sub_ui(ineq[0], ineq[0], 1);
