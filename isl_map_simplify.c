@@ -4192,6 +4192,16 @@ static isl_bool test_ineq_is_satisfied(__isl_keep isl_basic_map *bmap,
  * then the constraint can be scaled down by a factor g',
  * with the constant term replaced by
  * floor((f_l e_{u,0} + f_u e_{l,0} + f_l - 1 + f_u - 1 + 1 - f_u f_l g)/g').
+ * Note that the result of applying Fourier-Motzkin to this pair
+ * of constraints is
+ *
+ *	f_l e_u + f_u e_l >= 0
+ *
+ * If the constant term of the scaled down version of this constraint,
+ * i.e., floor((f_l e_{u,0} + f_u e_{l,0})/g') is equal to the constant
+ * term of the scaled down test constraint, then the test constraint
+ * is known to hold and no explicit evaluation is required.
+ * This is essentially the Omega test.
  */
 static isl_bool int_between_bounds(__isl_keep isl_basic_map *bmap, int i,
 	int l, int u, struct test_ineq_data *data)
@@ -4207,17 +4217,23 @@ static isl_bool int_between_bounds(__isl_keep isl_basic_map *bmap, int i,
 	isl_int_neg(data->fu, data->fu);
 	isl_seq_combine(data->v->el, data->fl, bmap->ineq[u],
 			data->fu, bmap->ineq[l], offset + n_div);
-	isl_int_add(data->v->el[0], data->v->el[0], data->fl);
-	isl_int_add(data->v->el[0], data->v->el[0], data->fu);
-	isl_int_sub_ui(data->v->el[0], data->v->el[0], 1);
 	isl_int_mul(data->g, data->g, data->fl);
 	isl_int_mul(data->g, data->g, data->fu);
-	isl_int_sub(data->v->el[0], data->v->el[0], data->g);
+	isl_int_sub(data->g, data->g, data->fl);
+	isl_int_sub(data->g, data->g, data->fu);
+	isl_int_add_ui(data->g, data->g, 1);
+	isl_int_sub(data->fl, data->v->el[0], data->g);
 
 	isl_seq_gcd(data->v->el + 1, offset - 1 + n_div, &data->g);
-	if (isl_int_is_one(data->g) || isl_int_is_zero(data->g))
+	if (isl_int_is_one(data->g) || isl_int_is_zero(data->g)) {
+		isl_int_set(data->v->el[0], data->fl);
 		return test_ineq_is_satisfied(bmap, data);
+	}
+	isl_int_fdiv_q(data->fl, data->fl, data->g);
 	isl_int_fdiv_q(data->v->el[0], data->v->el[0], data->g);
+	if (isl_int_eq(data->fl, data->v->el[0]))
+		return isl_bool_true;
+	isl_int_set(data->v->el[0], data->fl);
 	isl_seq_scale_down(data->v->el + 1, data->v->el + 1, data->g,
 			    offset - 1 + n_div);
 
