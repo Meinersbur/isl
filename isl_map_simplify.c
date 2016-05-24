@@ -4170,7 +4170,7 @@ static struct isl_basic_map *drop_more_redundant_divs(
 {
 	struct isl_tab *tab = NULL;
 	struct isl_vec *vec = NULL;
-	unsigned off;
+	unsigned off, n_div;
 	int remove = -1;
 	isl_int g, fl, fu;
 
@@ -4182,7 +4182,8 @@ static struct isl_basic_map *drop_more_redundant_divs(
 		goto error;
 
 	off = isl_basic_map_offset(bmap, isl_dim_div);
-	vec = isl_vec_alloc(bmap->ctx, off + bmap->n_div);
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	vec = isl_vec_alloc(bmap->ctx, off + n_div);
 	if (!vec)
 		goto error;
 
@@ -4193,7 +4194,7 @@ static struct isl_basic_map *drop_more_redundant_divs(
 		int best = -1;
 		enum isl_lp_result res = isl_lp_ok;
 
-		for (i = 0; i < bmap->n_div; ++i) {
+		for (i = 0; i < n_div; ++i) {
 			if (!pairs[i])
 				continue;
 			if (best >= 0 && pairs[best] <= pairs[i])
