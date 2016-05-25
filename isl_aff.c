@@ -4970,7 +4970,7 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_stride(
  * from the affine hull of "map" and its domain.
  *
  * Otherwise, we check if any of the output dimensions is "strided".
- * That is, we check if can be written as
+ * That is, we check if it can be written as
  *
  *	x = m a + f(..)
  *
