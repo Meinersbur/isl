@@ -4191,7 +4191,7 @@ static struct isl_basic_map *drop_more_redundant_divs(
 	while (n > 0) {
 		int i, l, u;
 		int best = -1;
-		enum isl_lp_result res;
+		enum isl_lp_result res = isl_lp_ok;
 
 		for (i = 0; i < bmap->n_div; ++i) {
 			if (!pairs[i])
@@ -4214,15 +4214,17 @@ static struct isl_basic_map *drop_more_redundant_divs(
 						  bmap->ctx->one, &g, NULL, 0);
 				if (res == isl_lp_error)
 					goto error;
-				if (res == isl_lp_empty) {
-					bmap = isl_basic_map_set_to_empty(bmap);
+				if (res == isl_lp_empty)
 					break;
-				}
 				if (res != isl_lp_ok || isl_int_is_neg(g))
 					break;
 			}
 			if (u < bmap->n_ineq)
 				break;
+		}
+		if (res == isl_lp_empty) {
+			bmap = isl_basic_map_set_to_empty(bmap);
+			break;
 		}
 		if (l == bmap->n_ineq) {
 			remove = i;
