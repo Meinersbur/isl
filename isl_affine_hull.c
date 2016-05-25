@@ -668,7 +668,7 @@ __isl_give isl_set *isl_set_drop_constraints_involving_dims(
 	return isl_map_drop_constraints_involving_dims(set, type, first, n);
 }
 
-/* Construct an initial underapproximatino of the hull of "bset"
+/* Construct an initial underapproximation of the hull of "bset"
  * from "sample" and any of its adjacent points that also belong to "bset".
  */
 static __isl_give isl_basic_set *initialize_hull(__isl_keep isl_basic_set *bset,
