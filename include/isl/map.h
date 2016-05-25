@@ -136,6 +136,8 @@ __isl_give isl_basic_map *isl_map_simple_hull(__isl_take isl_map *map);
 __isl_export
 __isl_give isl_basic_map *isl_map_unshifted_simple_hull(
 	__isl_take isl_map *map);
+__isl_give isl_basic_map *isl_map_plain_unshifted_simple_hull(
+	__isl_take isl_map *map);
 __isl_give isl_basic_map *isl_map_unshifted_simple_hull_from_map_list(
 	__isl_take isl_map *map, __isl_take isl_map_list *list);
 

@@ -466,8 +466,6 @@ int isl_basic_set_plain_dim_is_fixed(__isl_keep isl_basic_set *bset,
 __isl_give isl_map *isl_map_plain_gist_basic_map(__isl_take isl_map *map,
 	__isl_take isl_basic_map *context);
 
-__isl_give isl_basic_map *isl_map_plain_unshifted_simple_hull(
-	__isl_take isl_map *map);
 __isl_give isl_basic_set *isl_basic_set_plain_affine_hull(
 	__isl_take isl_basic_set *bset);
 __isl_give isl_basic_map *isl_basic_map_plain_affine_hull(

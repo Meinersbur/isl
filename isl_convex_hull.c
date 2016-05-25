@@ -2659,6 +2659,17 @@ __isl_give isl_basic_map *isl_map_plain_unshifted_simple_hull(
 	return hull;
 }
 
+/* Compute a superset of the convex hull of "set" that is described
+ * by only the constraints in the constituents of "set".
+ * In particular, the result is composed of constraints that appear
+ * in each of the basic sets of "set"
+ */
+__isl_give isl_basic_set *isl_set_plain_unshifted_simple_hull(
+	__isl_take isl_set *set)
+{
+	return isl_map_plain_unshifted_simple_hull(set);
+}
+
 /* Check if "ineq" is a bound on "set" and, if so, add it to "hull".
  *
  * For each basic set in "set", we first check if the basic set
