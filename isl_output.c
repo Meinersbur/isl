@@ -634,6 +634,7 @@ static __isl_give isl_printer *print_constraints(__isl_keep isl_basic_map *bmap,
 		if (l < 0)
 			continue;
 		if (!p->dump && l >= o_div &&
+		    can_print_div_expr(p, div, l - o_div) &&
 		    isl_basic_map_is_div_constraint(bmap, bmap->ineq[i],
 						    l - o_div))
 			continue;
