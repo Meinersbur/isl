@@ -1514,6 +1514,17 @@ static void init_status(struct isl_coalesce_info *info)
 	info->eq = info->ineq = NULL;
 }
 
+/* Free the memory allocated by the "eq" and "ineq" fields of "info".
+ * This function assumes that init_status has been called on "info" first,
+ * after which the "eq" and "ineq" fields may or may not have been
+ * assigned a newly allocated array.
+ */
+static void clear_status(struct isl_coalesce_info *info)
+{
+	free(info->eq);
+	free(info->ineq);
+}
+
 /* Check if the union of the given pair of basic maps
  * can be represented by a single basic map.
  * If so, replace the pair by the single basic map and return
@@ -1668,16 +1679,12 @@ static enum isl_change coalesce_local_pair(int i, int j,
 	}
 
 done:
-	free(info[i].eq);
-	free(info[j].eq);
-	free(info[i].ineq);
-	free(info[j].ineq);
+	clear_status(&info[i]);
+	clear_status(&info[j]);
 	return change;
 error:
-	free(info[i].eq);
-	free(info[j].eq);
-	free(info[i].ineq);
-	free(info[j].ineq);
+	clear_status(&info[i]);
+	clear_status(&info[j]);
 	return isl_change_error;
 }
 
