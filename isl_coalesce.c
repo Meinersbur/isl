@@ -1805,16 +1805,28 @@ static int same_divs(__isl_keep isl_basic_map *bmap1,
 	return 1;
 }
 
-/* Does "bmap" contain the basic map represented by the tableau "tab"
- * after expanding the divs of "bmap" to match those of "tab"?
+/* Check if the union of "bmap" and the basic map represented by info[j]
+ * can be represented by a single basic map,
+ * after expanding the divs of "bmap" to match those of info[j].
+ * If so, replace the pair by the single basic map and return
+ * isl_change_drop_first, isl_change_drop_second or isl_change_fuse.
+ * Otherwise, return isl_change_none.
+ *
+ * In particular, check if the expanded "bmap" contains the basic map
+ * represented by the tableau info[j].tab.  That is, this function
+ * can only return isl_change_drop_second or isl_change_none.
  * The expansion is performed using the divs "div" and expansion "exp"
  * computed by the caller.
- * Then we check if all constraints of the expanded "bmap" are valid for "tab".
+ * Then we check if all constraints of the expanded "bmap" are valid for
+ * info[j].tab.
+ *
+ * If "i" is not equal to -1, then "bmap" is equal to info[i].bmap.
  */
-static int contains_with_expanded_divs(__isl_keep isl_basic_map *bmap,
-	struct isl_tab *tab, __isl_keep isl_mat *div, int *exp)
+static enum isl_change coalesce_with_expanded_divs(
+	__isl_keep isl_basic_map *bmap, int i, int j,
+	struct isl_coalesce_info *info, __isl_keep isl_mat *div, int *exp)
 {
-	int superset = 0;
+	enum isl_change change = isl_change_none;
 	int *eq_i = NULL;
 	int *ineq_i = NULL;
 
@@ -1824,7 +1836,7 @@ static int contains_with_expanded_divs(__isl_keep isl_basic_map *bmap,
 	if (!bmap)
 		goto error;
 
-	eq_i = eq_status_in(bmap, tab);
+	eq_i = eq_status_in(bmap, info[j].tab);
 	if (bmap->n_eq && !eq_i)
 		goto error;
 	if (any(eq_i, 2 * bmap->n_eq, STATUS_ERROR))
@@ -1832,7 +1844,7 @@ static int contains_with_expanded_divs(__isl_keep isl_basic_map *bmap,
 	if (any(eq_i, 2 * bmap->n_eq, STATUS_SEPARATE))
 		goto done;
 
-	ineq_i = ineq_status_in(bmap, NULL, tab);
+	ineq_i = ineq_status_in(bmap, NULL, info[j].tab);
 	if (bmap->n_ineq && !ineq_i)
 		goto error;
 	if (any(ineq_i, bmap->n_ineq, STATUS_ERROR))
@@ -1841,39 +1853,51 @@ static int contains_with_expanded_divs(__isl_keep isl_basic_map *bmap,
 		goto done;
 
 	if (all(eq_i, 2 * bmap->n_eq, STATUS_VALID) &&
-	    all(ineq_i, bmap->n_ineq, STATUS_VALID))
-		superset = 1;
+	    all(ineq_i, bmap->n_ineq, STATUS_VALID)) {
+		drop(&info[j]);
+		change = isl_change_drop_second;
+	}
 
 done:
 	isl_basic_map_free(bmap);
 	free(eq_i);
 	free(ineq_i);
-	return superset;
+	return change;
 error:
 	isl_basic_map_free(bmap);
 	free(eq_i);
 	free(ineq_i);
-	return -1;
+	return isl_change_error;
 }
 
-/* Does "bmap_i" contain the basic map represented by "info_j"
- * after aligning the divs of "bmap_i" to those of "info_j".
+/* Check if the union of "bmap_i" and the basic map represented by info[j]
+ * can be represented by a single basic map,
+ * after aligning the divs of "bmap_i" to match those of info[j].
+ * If so, replace the pair by the single basic map and return
+ * isl_change_drop_first, isl_change_drop_second or isl_change_fuse.
+ * Otherwise, return isl_change_none.
+ *
+ * In particular, check if "bmap_i" contains the basic map represented by
+ * info[j] after aligning the divs of "bmap_i" to those of info[j].
  * Note that this can only succeed if the number of divs of "bmap_i"
- * is smaller than (or equal to) the number of divs of "info_j".
+ * is smaller than (or equal to) the number of divs of info[j].
  *
  * We first check if the divs of "bmap_i" are all known and form a subset
- * of those of "bmap_j".  If so, we pass control over to
- * contains_with_expanded_divs.
+ * of those of info[j].bmap.  If so, we pass control over to
+ * coalesce_with_expanded_divs.
+ *
+ * If "i" is not equal to -1, then "bmap" is equal to info[i].bmap.
  */
-static int contains_after_aligning_divs(__isl_keep isl_basic_map *bmap_i,
-	struct isl_coalesce_info *info_j)
+static enum isl_change coalesce_after_aligning_divs(
+	__isl_keep isl_basic_map *bmap_i, int i, int j,
+	struct isl_coalesce_info *info)
 {
 	int known;
 	isl_mat *div_i, *div_j, *div;
 	int *exp1 = NULL;
 	int *exp2 = NULL;
 	isl_ctx *ctx;
-	int subset;
+	enum isl_change change;
 
 	known = isl_basic_map_divs_known(bmap_i);
 	if (known < 0 || !known)
@@ -1882,7 +1906,7 @@ static int contains_after_aligning_divs(__isl_keep isl_basic_map *bmap_i,
 	ctx = isl_basic_map_get_ctx(bmap_i);
 
 	div_i = isl_basic_map_get_divs(bmap_i);
-	div_j = isl_basic_map_get_divs(info_j->bmap);
+	div_j = isl_basic_map_get_divs(info[j].bmap);
 
 	if (!div_i || !div_j)
 		goto error;
@@ -1897,10 +1921,10 @@ static int contains_after_aligning_divs(__isl_keep isl_basic_map *bmap_i,
 		goto error;
 
 	if (div->n_row == div_j->n_row)
-		subset = contains_with_expanded_divs(bmap_i,
-							info_j->tab, div, exp1);
+		change = coalesce_with_expanded_divs(bmap_i,
+							i, j, info, div, exp1);
 	else
-		subset = 0;
+		change = isl_change_none;
 
 	isl_mat_free(div);
 
@@ -1910,43 +1934,18 @@ static int contains_after_aligning_divs(__isl_keep isl_basic_map *bmap_i,
 	free(exp2);
 	free(exp1);
 
-	return subset;
+	return change;
 error:
 	isl_mat_free(div_i);
 	isl_mat_free(div_j);
 	free(exp1);
 	free(exp2);
-	return -1;
-}
-
-/* Check if the basic map "j" is a subset of basic map "i",
- * if "i" has fewer divs that "j".
- * If so, remove basic map "j".
- *
- * If the two basic maps have the same number of divs, then
- * they must necessarily be different.  Otherwise, we would have
- * called coalesce_local_pair.  We therefore don't try anything
- * in this case.
- */
-static int coalesced_subset(int i, int j, struct isl_coalesce_info *info)
-{
-	int superset;
-
-	if (info[i].bmap->n_div >= info[j].bmap->n_div)
-		return 0;
-
-	superset = contains_after_aligning_divs(info[i].bmap, &info[j]);
-	if (superset < 0)
-		return -1;
-	if (superset)
-		drop(&info[j]);
-
-	return superset;
+	return isl_change_error;
 }
 
 /* Check if basic map "j" is a subset of basic map "i" after
  * exploiting the extra equalities of "j" to simplify the divs of "i".
- * If so, remove basic map "j".
+ * If so, remove basic map "j" and return isl_change_drop_second.
  *
  * If "j" does not have any equalities or if they are the same
  * as those of "i", then we cannot exploit them to simplify the divs.
@@ -1961,16 +1960,17 @@ static int coalesced_subset(int i, int j, struct isl_coalesce_info *info)
  * "i" still has more divs than "j", then there is no way we can
  * align the divs of "i" to those of "j".
  */
-static int coalesced_subset_with_equalities(int i, int j,
+static enum isl_change coalesce_subset_with_equalities(int i, int j,
 	struct isl_coalesce_info *info)
 {
 	isl_basic_map *hull_i, *hull_j, *bmap_i;
-	int equal, empty, subset;
+	int equal, empty;
+	enum isl_change change;
 
 	if (info[j].bmap->n_eq == 0)
-		return 0;
+		return isl_change_none;
 	if (info[i].bmap->n_div == 0)
-		return 0;
+		return isl_change_none;
 
 	hull_i = isl_basic_map_copy(info[i].bmap);
 	hull_i = isl_basic_map_plain_affine_hull(hull_i);
@@ -1984,33 +1984,35 @@ static int coalesced_subset_with_equalities(int i, int j,
 
 	if (equal < 0 || equal || empty < 0 || empty) {
 		isl_basic_map_free(hull_j);
-		return equal < 0 || empty < 0 ? -1 : 0;
+		if (equal < 0 || empty < 0)
+			return isl_change_error;
+		return isl_change_none;
 	}
 
 	bmap_i = isl_basic_map_copy(info[i].bmap);
 	bmap_i = isl_basic_map_intersect(bmap_i, hull_j);
 	if (!bmap_i)
-		return -1;
+		return isl_change_error;
 
 	if (bmap_i->n_div > info[j].bmap->n_div) {
 		isl_basic_map_free(bmap_i);
-		return 0;
+		return isl_change_none;
 	}
 
-	subset = contains_after_aligning_divs(bmap_i, &info[j]);
+	change = coalesce_after_aligning_divs(bmap_i, -1, j, info);
 
 	isl_basic_map_free(bmap_i);
 
-	if (subset < 0)
-		return -1;
-	if (subset)
-		drop(&info[j]);
-
-	return subset;
+	return change;
 }
 
-/* Check if one of the basic maps is a subset of the other and, if so,
- * drop the subset.
+/* Check if the union of and the basic maps represented by info[i] and info[j]
+ * can be represented by a single basic map, by aligning or equating
+ * their integer divisions.
+ * If so, replace the pair by the single basic map and return
+ * isl_change_drop_first, isl_change_drop_second or isl_change_fuse.
+ * Otherwise, return isl_change_none.
+ *
  * Note that we only perform any test if the number of divs is different
  * in the two basic maps.  In case the number of divs is the same,
  * we have already established that the divs are different
@@ -2019,26 +2021,28 @@ static int coalesced_subset_with_equalities(int i, int j,
  * the number of divs of basic map j, then we check if j is a subset of i
  * and vice versa.
  */
-static enum isl_change check_coalesce_subset(int i, int j,
+static enum isl_change coalesce_divs(int i, int j,
 	struct isl_coalesce_info *info)
 {
-	int changed;
+	enum isl_change change = isl_change_none;
 
-	changed = coalesced_subset(i, j, info);
-	if (changed < 0 || changed)
-		return changed < 0 ? isl_change_error : isl_change_drop_second;
+	if (info[i].bmap->n_div < info[j].bmap->n_div)
+		change = coalesce_after_aligning_divs(info[i].bmap, i, j, info);
+	if (change != isl_change_none)
+		return change;
 
-	changed = coalesced_subset(j, i, info);
-	if (changed < 0 || changed)
-		return changed < 0 ? isl_change_error : isl_change_drop_first;
+	if (info[j].bmap->n_div < info[i].bmap->n_div)
+		change = coalesce_after_aligning_divs(info[j].bmap, j, i, info);
+	if (change != isl_change_none)
+		return invert_change(change);
 
-	changed = coalesced_subset_with_equalities(i, j, info);
-	if (changed < 0 || changed)
-		return changed < 0 ? isl_change_error : isl_change_drop_second;
+	change = coalesce_subset_with_equalities(i, j, info);
+	if (change != isl_change_none)
+		return change;
 
-	changed = coalesced_subset_with_equalities(j, i, info);
-	if (changed < 0 || changed)
-		return changed < 0 ? isl_change_error : isl_change_drop_first;
+	change = coalesce_subset_with_equalities(j, i, info);
+	if (change != isl_change_none)
+		return invert_change(change);
 
 	return isl_change_none;
 }
@@ -2455,7 +2459,7 @@ static enum isl_change coalesce_pair(int i, int j,
 			return change;
 	}
 
-	change = check_coalesce_subset(i, j, info);
+	change = coalesce_divs(i, j, info);
 	if (change != isl_change_none)
 		return change;
 
