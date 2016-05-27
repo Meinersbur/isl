@@ -1507,6 +1507,13 @@ unbounded:
 	return change;
 }
 
+/* Initialize the "eq" and "ineq" fields of "info".
+ */
+static void init_status(struct isl_coalesce_info *info)
+{
+	info->eq = info->ineq = NULL;
+}
+
 /* Check if the union of the given pair of basic maps
  * can be represented by a single basic map.
  * If so, replace the pair by the single basic map and return
@@ -1595,8 +1602,8 @@ static enum isl_change coalesce_local_pair(int i, int j,
 {
 	enum isl_change change = isl_change_none;
 
-	info[i].eq = info[i].ineq = NULL;
-	info[j].eq = info[j].ineq = NULL;
+	init_status(&info[i]);
+	init_status(&info[j]);
 
 	info[i].eq = eq_status_in(info[i].bmap, info[j].tab);
 	if (info[i].bmap->n_eq && !info[i].eq)
