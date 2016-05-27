@@ -1874,52 +1874,54 @@ static int same_divs(__isl_keep isl_basic_map *bmap1,
  * info[j].tab.
  *
  * If "i" is not equal to -1, then "bmap" is equal to info[i].bmap.
+ * In this case, the positions of the constraints of info[i].bmap
+ * with respect to the basic map represented by info[j] are stored
+ * in info[i].
  */
 static enum isl_change coalesce_with_expanded_divs(
 	__isl_keep isl_basic_map *bmap, int i, int j,
 	struct isl_coalesce_info *info, __isl_keep isl_mat *div, int *exp)
 {
 	enum isl_change change = isl_change_none;
-	int *eq_i = NULL;
-	int *ineq_i = NULL;
+	struct isl_coalesce_info info_local, *info_i;
 
+	info_i = i >= 0 ? &info[i] : &info_local;
+	init_status(info_i);
 	bmap = isl_basic_map_copy(bmap);
 	bmap = isl_basic_map_expand_divs(bmap, isl_mat_copy(div), exp);
 
 	if (!bmap)
 		goto error;
 
-	eq_i = eq_status_in(bmap, info[j].tab);
-	if (bmap->n_eq && !eq_i)
+	info_i->eq = eq_status_in(bmap, info[j].tab);
+	if (bmap->n_eq && !info_i->eq)
 		goto error;
-	if (any(eq_i, 2 * bmap->n_eq, STATUS_ERROR))
+	if (any(info_i->eq, 2 * bmap->n_eq, STATUS_ERROR))
 		goto error;
-	if (any(eq_i, 2 * bmap->n_eq, STATUS_SEPARATE))
+	if (any(info_i->eq, 2 * bmap->n_eq, STATUS_SEPARATE))
 		goto done;
 
-	ineq_i = ineq_status_in(bmap, NULL, info[j].tab);
-	if (bmap->n_ineq && !ineq_i)
+	info_i->ineq = ineq_status_in(bmap, NULL, info[j].tab);
+	if (bmap->n_ineq && !info_i->ineq)
 		goto error;
-	if (any(ineq_i, bmap->n_ineq, STATUS_ERROR))
+	if (any(info_i->ineq, bmap->n_ineq, STATUS_ERROR))
 		goto error;
-	if (any(ineq_i, bmap->n_ineq, STATUS_SEPARATE))
+	if (any(info_i->ineq, bmap->n_ineq, STATUS_SEPARATE))
 		goto done;
 
-	if (all(eq_i, 2 * bmap->n_eq, STATUS_VALID) &&
-	    all(ineq_i, bmap->n_ineq, STATUS_VALID)) {
+	if (all(info_i->eq, 2 * bmap->n_eq, STATUS_VALID) &&
+	    all(info_i->ineq, bmap->n_ineq, STATUS_VALID)) {
 		drop(&info[j]);
 		change = isl_change_drop_second;
 	}
 
 done:
 	isl_basic_map_free(bmap);
-	free(eq_i);
-	free(ineq_i);
+	clear_status(info_i);
 	return change;
 error:
 	isl_basic_map_free(bmap);
-	free(eq_i);
-	free(ineq_i);
+	clear_status(info_i);
 	return isl_change_error;
 }
 
