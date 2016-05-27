@@ -1839,6 +1839,18 @@ struct {
 	},
 	{ 1, "[n] -> { [a,b] : (exists e : 1 <= a <= 7e and 9e <= b <= n) or "
 				"(0 <= a <= b <= n) }" },
+	{ 1, "{ [a, b] : 0 <= a <= 2 and b >= 0 and "
+		"((0 < b <= 13) or (2*floor((a + b)/2) >= -5 + a + 2b)) }" },
+	{ 1, "{ [a] : (2 <= a <= 5) or (a mod 2 = 1 and 1 <= a <= 5) }" },
+	{ 1, "{ [a, b, c] : (b = -1 + a and 0 < a <= 3 and "
+				"9*floor((-4a + 2c)/9) <= -3 - 4a + 2c) or "
+			"(exists (e0 = floor((-16 + 2c)/9): a = 4 and "
+				"b = 3 and 9e0 <= -19 + 2c)) }" },
+	{ 0, "{ [a, b, c] : (b <= 2 and b <= -2 + a) or "
+			"(b = -1 + a and 0 < a <= 3 and "
+				"9*floor((-4a + 2c)/9) <= -3 - 4a + 2c) or "
+			"(exists (e0 = floor((-16 + 2c)/9): a = 4 and "
+				"b = 3 and 9e0 <= -19 + 2c)) }" },
 };
 
 /* A specialized coalescing test case that would result

@@ -3,6 +3,7 @@
  * Copyright 2010      INRIA Saclay
  * Copyright 2012-2013 Ecole Normale Superieure
  * Copyright 2014      INRIA Rocquencourt
+ * Copyright 2016      Sven Verdoolaege
  *
  * Use of this software is governed by the MIT license
  *
@@ -1858,6 +1859,131 @@ static int same_divs(__isl_keep isl_basic_map *bmap1,
 	return 1;
 }
 
+/* Expand info->tab in the same way info->bmap was expanded in
+ * isl_basic_map_expand_divs using the expansion "exp" and
+ * update info->ineq with respect to the redundant constraints
+ * in the resulting tableau.
+ * In particular, introduce extra variables corresponding
+ * to the extra integer divisions and add the div constraints
+ * that were added to info->bmap after info->tab was created
+ * from the original info->bmap.
+ * info->ineq was computed without a tableau and therefore
+ * does not take into account the redundant constraints
+ * in the tableau.  Mark them here.
+ */
+static isl_stat expand_tab(struct isl_coalesce_info *info, int *exp)
+{
+	unsigned total, pos, n_div;
+	int extra_var;
+	int i, n, j, n_ineq;
+	unsigned n_eq;
+
+	total = isl_basic_map_dim(info->bmap, isl_dim_all);
+	n_div = isl_basic_map_dim(info->bmap, isl_dim_div);
+	pos = total - n_div;
+	extra_var = total - info->tab->n_var;
+	n = n_div - extra_var;
+
+	if (isl_tab_extend_vars(info->tab, extra_var) < 0)
+		return isl_stat_error;
+	if (isl_tab_extend_cons(info->tab, 2 * extra_var) < 0)
+		return isl_stat_error;
+
+	i = 0;
+	for (j = 0; j < n_div; ++j) {
+		if (i < n && exp[i] == j) {
+			++i;
+			continue;
+		}
+		if (isl_tab_insert_var(info->tab, pos + j) < 0)
+			return isl_stat_error;
+	}
+
+	n_ineq = info->tab->n_con - info->tab->n_eq;
+	for (i = n_ineq; i < info->bmap->n_ineq; ++i)
+		if (isl_tab_add_ineq(info->tab, info->bmap->ineq[i]) < 0)
+			return isl_stat_error;
+
+	n_eq = info->bmap->n_eq;
+	for (i = 0; i < info->bmap->n_ineq; ++i) {
+		if (isl_tab_is_redundant(info->tab, n_eq + i))
+			info->ineq[i] = STATUS_REDUNDANT;
+	}
+
+	return isl_stat_ok;
+}
+
+/* Check if the union of the basic maps represented by info[i] and info[j]
+ * can be represented by a single basic map,
+ * after expanding the divs of info[i] to match those of info[j].
+ * If so, replace the pair by the single basic map and return
+ * isl_change_drop_first, isl_change_drop_second or isl_change_fuse.
+ * Otherwise, return isl_change_none.
+ *
+ * The caller has already checked for info[j] being a subset of info[i].
+ * If some of the divs of info[j] are unknown, then the expanded info[i]
+ * will not have the corresponding div constraints.  The other patterns
+ * therefore cannot apply.  Skip the computation in this case.
+ *
+ * The expansion is performed using the divs "div" and expansion "exp"
+ * computed by the caller.
+ * info[i].bmap has already been expanded and the result is passed in
+ * as "bmap".
+ * The "eq" and "ineq" fields of info[i] reflect the status of
+ * the constraints of the expanded "bmap" with respect to info[j].tab.
+ * However, inequality constraints that are redundant in info[i].tab
+ * have not yet been marked as such because no tableau was available.
+ *
+ * Replace info[i].bmap by "bmap" and expand info[i].tab as well,
+ * updating info[i].ineq with respect to the redundant constraints.
+ * Then try and coalesce the expanded info[i] with info[j],
+ * reusing the information in info[i].eq and info[i].ineq.
+ * If this does not result in any coalescing or if it results in info[j]
+ * getting dropped (which should not happen in practice, since the case
+ * of info[j] being a subset of info[i] has already been checked by
+ * the caller), then revert info[i] to its original state.
+ */
+static enum isl_change coalesce_expand_tab_divs(__isl_take isl_basic_map *bmap,
+	int i, int j, struct isl_coalesce_info *info, __isl_keep isl_mat *div,
+	int *exp)
+{
+	isl_bool known;
+	isl_basic_map *bmap_i;
+	struct isl_tab_undo *snap;
+	enum isl_change change = isl_change_none;
+
+	known = isl_basic_map_divs_known(info[j].bmap);
+	if (known < 0 || !known) {
+		clear_status(&info[i]);
+		isl_basic_map_free(bmap);
+		return known < 0 ? isl_change_error : isl_change_none;
+	}
+
+	bmap_i = info[i].bmap;
+	info[i].bmap = isl_basic_map_copy(bmap);
+	snap = isl_tab_snap(info[i].tab);
+	if (!info[i].bmap || expand_tab(&info[i], exp) < 0)
+		change = isl_change_error;
+
+	init_status(&info[j]);
+	if (change == isl_change_none)
+		change = coalesce_local_pair_reuse(i, j, info);
+	else
+		clear_status(&info[i]);
+	if (change != isl_change_none && change != isl_change_drop_second) {
+		isl_basic_map_free(bmap_i);
+	} else {
+		isl_basic_map_free(info[i].bmap);
+		info[i].bmap = bmap_i;
+
+		if (isl_tab_rollback(info[i].tab, snap) < 0)
+			change = isl_change_error;
+	}
+
+	isl_basic_map_free(bmap);
+	return change;
+}
+
 /* Check if the union of "bmap" and the basic map represented by info[j]
  * can be represented by a single basic map,
  * after expanding the divs of "bmap" to match those of info[j].
@@ -1866,8 +1992,7 @@ static int same_divs(__isl_keep isl_basic_map *bmap1,
  * Otherwise, return isl_change_none.
  *
  * In particular, check if the expanded "bmap" contains the basic map
- * represented by the tableau info[j].tab.  That is, this function
- * can only return isl_change_drop_second or isl_change_none.
+ * represented by the tableau info[j].tab.
  * The expansion is performed using the divs "div" and expansion "exp"
  * computed by the caller.
  * Then we check if all constraints of the expanded "bmap" are valid for
@@ -1877,6 +2002,11 @@ static int same_divs(__isl_keep isl_basic_map *bmap1,
  * In this case, the positions of the constraints of info[i].bmap
  * with respect to the basic map represented by info[j] are stored
  * in info[i].
+ *
+ * If the expanded "bmap" does not contain the basic map
+ * represented by the tableau info[j].tab and if "i" is not -1,
+ * i.e., if the original "bmap" is info[i].bmap, then expand info[i].tab
+ * as well and check if that results in coalescing.
  */
 static enum isl_change coalesce_with_expanded_divs(
 	__isl_keep isl_basic_map *bmap, int i, int j,
@@ -1914,6 +2044,9 @@ static enum isl_change coalesce_with_expanded_divs(
 		drop(&info[j]);
 		change = isl_change_drop_second;
 	}
+
+	if (change == isl_change_none && i != -1)
+		return coalesce_expand_tab_divs(bmap, i, j, info, div, exp);
 
 done:
 	isl_basic_map_free(bmap);
