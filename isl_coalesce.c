@@ -1523,6 +1523,15 @@ static void set_eq_status_in(struct isl_coalesce_info *info,
 	info->eq = eq_status_in(info->bmap, tab);
 }
 
+/* Set info->ineq to the positions of the inequalities of info->bmap
+ * with respect to the basic map represented by "tab".
+ */
+static void set_ineq_status_in(struct isl_coalesce_info *info,
+	struct isl_tab *tab)
+{
+	info->ineq = ineq_status_in(info->bmap, info->tab, tab);
+}
+
 /* Free the memory allocated by the "eq" and "ineq" fields of "info".
  * This function assumes that init_status has been called on "info" first,
  * after which the "eq" and "ineq" fields may or may not have been
@@ -1641,7 +1650,7 @@ static enum isl_change coalesce_local_pair(int i, int j,
 	if (any(info[j].eq, 2 * info[j].bmap->n_eq, STATUS_SEPARATE))
 		goto done;
 
-	info[i].ineq = ineq_status_in(info[i].bmap, info[i].tab, info[j].tab);
+	set_ineq_status_in(&info[i], info[j].tab);
 	if (info[i].bmap->n_ineq && !info[i].ineq)
 		goto error;
 	if (any(info[i].ineq, info[i].bmap->n_ineq, STATUS_ERROR))
@@ -1649,7 +1658,7 @@ static enum isl_change coalesce_local_pair(int i, int j,
 	if (any(info[i].ineq, info[i].bmap->n_ineq, STATUS_SEPARATE))
 		goto done;
 
-	info[j].ineq = ineq_status_in(info[j].bmap, info[j].tab, info[i].tab);
+	set_ineq_status_in(&info[j], info[i].tab);
 	if (info[j].bmap->n_ineq && !info[j].ineq)
 		goto error;
 	if (any(info[j].ineq, info[j].bmap->n_ineq, STATUS_ERROR))
