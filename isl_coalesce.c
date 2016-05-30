@@ -1346,6 +1346,7 @@ error:
  * of i at n cut constraints, each time by at most one,
  * try to compute wrapping constraints and replace the two
  * basic maps by a single basic map.
+ * Only inequality constraints of i are assumed to cut j.
  * The other constraints of i are assumed to be valid for j.
  *
  * For each cut constraint t(x) >= 0 of i, we add the relaxed version
@@ -1369,7 +1370,7 @@ error:
  * the union, then we give up.
  * Otherwise, the pair of basic maps is replaced by their union.
  */
-static enum isl_change wrap_in_facets(int i, int j, int *cuts, int n,
+static enum isl_change wrap_in_facets(int i, int j, int n,
 	struct isl_coalesce_info *info)
 {
 	enum isl_change change = isl_change_none;
@@ -1399,10 +1400,12 @@ static enum isl_change wrap_in_facets(int i, int j, int *cuts, int n,
 
 	wraps.mat->n_row = 0;
 
-	for (k = 0; k < n; ++k) {
+	for (k = 0; k < info[i].bmap->n_ineq; ++k) {
+		if (info[i].ineq[k] != STATUS_CUT)
+			continue;
 		w = wraps.mat->n_row++;
 		isl_seq_cpy(wraps.mat->row[w],
-			    info[i].bmap->ineq[cuts[k]], 1 + total);
+			    info[i].bmap->ineq[k], 1 + total);
 		isl_int_add_ui(wraps.mat->row[w][0], wraps.mat->row[w][0], 1);
 		if (isl_tab_add_eq(info[j].tab, wraps.mat->row[w]) < 0)
 			goto error;
@@ -1423,7 +1426,7 @@ static enum isl_change wrap_in_facets(int i, int j, int *cuts, int n,
 			break;
 	}
 
-	if (k == n)
+	if (k == info[i].bmap->n_ineq)
 		change = fuse(i, j, info, wraps.mat, 0, 1);
 
 	wraps_free(&wraps);
@@ -1501,8 +1504,6 @@ static enum isl_change can_wrap_in_set(int i, int j,
 	enum isl_change change = isl_change_none;
 	int k, m;
 	int n;
-	int *cuts = NULL;
-	isl_ctx *ctx;
 
 	if (ISL_F_ISSET(info[i].bmap, ISL_BASIC_MAP_RATIONAL) ||
 	    ISL_F_ISSET(info[j].bmap, ISL_BASIC_MAP_RATIONAL))
@@ -1511,11 +1512,6 @@ static enum isl_change can_wrap_in_set(int i, int j,
 	n = count(info[i].ineq, info[i].bmap->n_ineq, STATUS_CUT);
 	if (n == 0)
 		return isl_change_none;
-
-	ctx = isl_basic_map_get_ctx(info[i].bmap);
-	cuts = isl_alloc_array(ctx, int, n);
-	if (!cuts)
-		return isl_change_error;
 
 	for (k = 0, m = 0; m < n; ++k) {
 		enum isl_ineq_type type;
@@ -1529,22 +1525,16 @@ static enum isl_change can_wrap_in_set(int i, int j,
 		isl_int_sub_ui(info[i].bmap->ineq[k][0],
 				info[i].bmap->ineq[k][0], 1);
 		if (type == isl_ineq_error)
-			goto error;
+			return isl_change_error;
 		if (type != isl_ineq_redundant)
 			break;
-		cuts[m] = k;
 		++m;
 	}
 
 	if (m == n)
-		change = wrap_in_facets(i, j, cuts, n, info);
-
-	free(cuts);
+		change = wrap_in_facets(i, j, n, info);
 
 	return change;
-error:
-	free(cuts);
-	return isl_change_error;
 }
 
 /* Check if either i or j has only cut inequalities that can
