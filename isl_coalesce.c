@@ -1501,8 +1501,7 @@ error:
 static enum isl_change can_wrap_in_set(int i, int j,
 	struct isl_coalesce_info *info)
 {
-	enum isl_change change = isl_change_none;
-	int k, m;
+	int k;
 	int n;
 
 	if (ISL_F_ISSET(info[i].bmap, ISL_BASIC_MAP_RATIONAL) ||
@@ -1513,7 +1512,7 @@ static enum isl_change can_wrap_in_set(int i, int j,
 	if (n == 0)
 		return isl_change_none;
 
-	for (k = 0, m = 0; m < n; ++k) {
+	for (k = 0; k < info[i].bmap->n_ineq; ++k) {
 		enum isl_ineq_type type;
 
 		if (info[i].ineq[k] != STATUS_CUT)
@@ -1527,14 +1526,10 @@ static enum isl_change can_wrap_in_set(int i, int j,
 		if (type == isl_ineq_error)
 			return isl_change_error;
 		if (type != isl_ineq_redundant)
-			break;
-		++m;
+			return isl_change_none;
 	}
 
-	if (m == n)
-		change = wrap_in_facets(i, j, n, info);
-
-	return change;
+	return wrap_in_facets(i, j, n, info);
 }
 
 /* Check if either i or j has only cut inequalities that can
