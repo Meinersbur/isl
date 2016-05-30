@@ -1390,6 +1390,8 @@ static isl_stat wrap_in_facet(struct isl_wraps *wraps, int w,
  * basic maps by a single basic map.
  * Only inequality constraints of i are assumed to cut j.
  * The other constraints of i are assumed to be valid for j.
+ * "set_i" is the underlying set of basic map i.
+ * "wraps" has been initialized to be of the right size.
  *
  * For each cut constraint t(x) >= 0 of i, we add the relaxed version
  * t(x) + 1 >= 0, along with wrapping constraints for all constraints
@@ -1399,6 +1401,48 @@ static isl_stat wrap_in_facet(struct isl_wraps *wraps, int w,
  * If any wrapping fails, i.e., if we cannot wrap to touch
  * the union, then we give up.
  * Otherwise, the pair of basic maps is replaced by their union.
+ */
+static enum isl_change try_wrap_in_facets(int i, int j,
+	struct isl_coalesce_info *info, struct isl_wraps *wraps,
+	__isl_keep isl_set *set_i)
+{
+	int k, w;
+	unsigned total;
+	struct isl_tab_undo *snap;
+
+	total = isl_basic_map_total_dim(info[i].bmap);
+
+	snap = isl_tab_snap(info[j].tab);
+
+	wraps->mat->n_row = 0;
+
+	for (k = 0; k < info[i].bmap->n_ineq; ++k) {
+		if (info[i].ineq[k] != STATUS_CUT)
+			continue;
+		w = wraps->mat->n_row++;
+		isl_seq_cpy(wraps->mat->row[w],
+			    info[i].bmap->ineq[k], 1 + total);
+		if (wrap_in_facet(wraps, w, &info[j], set_i, snap) < 0)
+			return isl_change_error;
+
+		if (!wraps->mat->n_row)
+			return isl_change_none;
+	}
+
+	return fuse(i, j, info, wraps->mat, 0, 1);
+}
+
+/* Given a pair of basic maps i and j such that j sticks out
+ * of i at n cut constraints, each time by at most one,
+ * try to compute wrapping constraints and replace the two
+ * basic maps by a single basic map.
+ * Only inequality constraints of i are assumed to cut j.
+ * The other constraints of i are assumed to be valid for j.
+ *
+ * The core computation is performed by try_wrap_in_facets.
+ * This function simply extracts an underlying set representation
+ * of basic map i and initializes the data structure for keeping
+ * track of wrapping constraints.
  */
 static enum isl_change wrap_in_facets(int i, int j, int n,
 	struct isl_coalesce_info *info)
@@ -1410,8 +1454,6 @@ static enum isl_change wrap_in_facets(int i, int j, int n,
 	isl_set *set_i = NULL;
 	unsigned total = isl_basic_map_total_dim(info[i].bmap);
 	int max_wrap;
-	int k, w;
-	struct isl_tab_undo *snap;
 
 	if (isl_tab_extend_cons(info[j].tab, 1) < 0)
 		return isl_change_error;
@@ -1426,25 +1468,7 @@ static enum isl_change wrap_in_facets(int i, int j, int n,
 	if (!set_i || !wraps.mat)
 		goto error;
 
-	snap = isl_tab_snap(info[j].tab);
-
-	wraps.mat->n_row = 0;
-
-	for (k = 0; k < info[i].bmap->n_ineq; ++k) {
-		if (info[i].ineq[k] != STATUS_CUT)
-			continue;
-		w = wraps.mat->n_row++;
-		isl_seq_cpy(wraps.mat->row[w],
-			    info[i].bmap->ineq[k], 1 + total);
-		if (wrap_in_facet(&wraps, w, &info[j], set_i, snap) < 0)
-			goto error;
-
-		if (!wraps.mat->n_row)
-			break;
-	}
-
-	if (k == info[i].bmap->n_ineq)
-		change = fuse(i, j, info, wraps.mat, 0, 1);
+	change = try_wrap_in_facets(i, j, info, &wraps, set_i);
 
 	wraps_free(&wraps);
 	isl_set_free(set_i);
