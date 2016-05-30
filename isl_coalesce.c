@@ -1182,7 +1182,7 @@ static enum isl_change wrap_in_facets(int i, int j, int *cuts, int n,
 	struct isl_tab_undo *snap;
 
 	if (isl_tab_extend_cons(info[j].tab, 1) < 0)
-		goto error;
+		return isl_change_error;
 
 	max_wrap = 1 + 2 * info[j].bmap->n_eq + info[j].bmap->n_ineq;
 	max_wrap *= n;
