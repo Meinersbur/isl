@@ -1851,6 +1851,10 @@ struct {
 				"9*floor((-4a + 2c)/9) <= -3 - 4a + 2c) or "
 			"(exists (e0 = floor((-16 + 2c)/9): a = 4 and "
 				"b = 3 and 9e0 <= -19 + 2c)) }" },
+	{ 1, "{ [y, x] : (x - y) mod 3 = 2 and 2 <= y <= 200 and 0 <= x <= 2;"
+		"[1, 0] }" },
+	{ 1, "{ [x, y] : (x - y) mod 3 = 2 and 2 <= y <= 200 and 0 <= x <= 2;"
+		"[0, 1] }" },
 };
 
 /* A specialized coalescing test case that would result

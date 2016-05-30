@@ -16,6 +16,7 @@
  * B.P. 105 - 78153 Le Chesnay, France
  */
 
+#include <isl_ctx_private.h>
 #include "isl_map_private.h"
 #include <isl_seq.h>
 #include <isl/options.h>
@@ -24,6 +25,7 @@
 #include <isl_local_space_private.h>
 #include <isl_vec_private.h>
 #include <isl_aff_private.h>
+#include <isl_equalities.h>
 
 #define STATUS_ERROR		-1
 #define STATUS_REDUNDANT	 1
@@ -699,14 +701,210 @@ static enum isl_change check_adj_ineq(int i, int j,
 	return isl_change_none;
 }
 
+/* Given an affine transformation matrix "T", does row "row" represent
+ * anything other than a unit vector (possibly shifted by a constant)
+ * that is not involved in any of the other rows?
+ *
+ * That is, if a constraint involves the variable corresponding to
+ * the row, then could its preimage by "T" have any coefficients
+ * that are different from those in the original constraint?
+ */
+static int not_unique_unit_row(__isl_keep isl_mat *T, int row)
+{
+	int i, j;
+	int len = T->n_col - 1;
+
+	i = isl_seq_first_non_zero(T->row[row] + 1, len);
+	if (i < 0)
+		return 1;
+	if (!isl_int_is_one(T->row[row][1 + i]) &&
+	    !isl_int_is_negone(T->row[row][1 + i]))
+		return 1;
+
+	j = isl_seq_first_non_zero(T->row[row] + 1 + i + 1, len - (i + 1));
+	if (j >= 0)
+		return 1;
+
+	for (j = 1; j < T->n_row; ++j) {
+		if (j == row)
+			continue;
+		if (!isl_int_is_zero(T->row[j][1 + i]))
+			return 1;
+	}
+
+	return 0;
+}
+
+/* Does inequality constraint "ineq" of "bmap" involve any of
+ * the variables marked in "affected"?
+ * "total" is the total number of variables, i.e., the number
+ * of entries in "affected".
+ */
+static int is_affected(__isl_keep isl_basic_map *bmap, int ineq, int *affected,
+	int total)
+{
+	int i;
+
+	for (i = 0; i < total; ++i) {
+		if (!affected[i])
+			continue;
+		if (!isl_int_is_zero(bmap->ineq[ineq][1 + i]))
+			return 1;
+	}
+
+	return 0;
+}
+
+/* Given the compressed version of inequality constraint "ineq"
+ * of info->bmap in "v", check if the constraint can be tightened,
+ * where the compression is based on an equality constraint valid
+ * for info->tab.
+ * If so, add the tightened version of the inequality constraint
+ * to info->tab.  "v" may be modified by this function.
+ *
+ * That is, if the compressed constraint is of the form
+ *
+ *	m f() + c >= 0
+ *
+ * with 0 < c < m, then it is equivalent to
+ *
+ *	f() >= 0
+ *
+ * This means that c can also be subtracted from the original,
+ * uncompressed constraint without affecting the integer points
+ * in info->tab.  Add this tightened constraint as an extra row
+ * to info->tab to make this information explicitly available.
+ */
+static __isl_give isl_vec *try_tightening(struct isl_coalesce_info *info,
+	int ineq, __isl_take isl_vec *v)
+{
+	isl_ctx *ctx;
+	int r;
+
+	if (!v)
+		return NULL;
+
+	ctx = isl_vec_get_ctx(v);
+	isl_seq_gcd(v->el + 1, v->size - 1, &ctx->normalize_gcd);
+	if (isl_int_is_zero(ctx->normalize_gcd) ||
+	    isl_int_is_one(ctx->normalize_gcd)) {
+		return v;
+	}
+
+	v = isl_vec_cow(v);
+	if (!v)
+		return NULL;
+
+	isl_int_fdiv_r(v->el[0], v->el[0], ctx->normalize_gcd);
+	if (isl_int_is_zero(v->el[0]))
+		return v;
+
+	if (isl_tab_extend_cons(info->tab, 1) < 0)
+		return isl_vec_free(v);
+
+	isl_int_sub(info->bmap->ineq[ineq][0],
+		    info->bmap->ineq[ineq][0], v->el[0]);
+	r = isl_tab_add_ineq(info->tab, info->bmap->ineq[ineq]);
+	isl_int_add(info->bmap->ineq[ineq][0],
+		    info->bmap->ineq[ineq][0], v->el[0]);
+
+	if (r < 0)
+		return isl_vec_free(v);
+
+	return v;
+}
+
+/* Tighten the constraints on the facet represented by info->tab.
+ * In particular, on input, info->tab represents the result
+ * of replacing constraint k of info->bmap, i.e., f_k >= 0,
+ * by the adjacent equality, i.e., f_k + 1 = 0.
+ *
+ * Compute a variable compression from the equality constraint f_k + 1 = 0
+ * and use it to tighten the other constraints of info->bmap,
+ * updating info->tab (and leaving info->bmap untouched).
+ * The compression handles essentially two cases, one where a variable
+ * is assigned a fixed value and can therefore be eliminated, and one
+ * where one variable is a shifted multiple of some other variable and
+ * can therefore be replaced by that multiple.
+ * Gaussian elimination would also work for the first case, but for
+ * the second case, the effectiveness would depend on the order
+ * of the variables.
+ * After compression, some of the constraints may have coefficients
+ * with a common divisor.  If this divisor does not divide the constant
+ * term, then the constraint can be tightened.
+ * The tightening is performed on the tableau info->tab by introducing
+ * extra (temporary) constraints.
+ *
+ * Only constraints that are possibly affected by the compression are
+ * considered.  In particular, if the constraint only involves variables
+ * that are directly mapped to a distinct set of other variables, then
+ * no common divisor can be introduced and no tightening can occur.
+ */
+static isl_stat tighten_on_relaxed_facet(struct isl_coalesce_info *info,
+	int k)
+{
+	unsigned total;
+	isl_ctx *ctx;
+	isl_vec *v = NULL;
+	isl_mat *T;
+	int i;
+	int *affected;
+
+	ctx = isl_basic_map_get_ctx(info->bmap);
+	total = isl_basic_map_total_dim(info->bmap);
+	isl_int_add_ui(info->bmap->ineq[k][0], info->bmap->ineq[k][0], 1);
+	T = isl_mat_sub_alloc6(ctx, info->bmap->ineq, k, 1, 0, 1 + total);
+	T = isl_mat_variable_compression(T, NULL);
+	isl_int_sub_ui(info->bmap->ineq[k][0], info->bmap->ineq[k][0], 1);
+	if (!T)
+		return isl_stat_error;
+	if (T->n_col == 0) {
+		isl_mat_free(T);
+		return isl_stat_ok;
+	}
+
+	affected = isl_alloc_array(ctx, int, total);
+	if (!affected)
+		goto error;
+
+	for (i = 0; i < total; ++i)
+		affected[i] = not_unique_unit_row(T, 1 + i);
+
+	for (i = 0; i < info->bmap->n_ineq; ++i) {
+		if (i == k)
+			continue;
+		if (!is_affected(info->bmap, i, affected, total))
+			continue;
+		v = isl_vec_alloc(ctx, 1 + total);
+		if (!v)
+			goto error;
+		isl_seq_cpy(v->el, info->bmap->ineq[i], 1 + total);
+		v = isl_vec_mat_product(v, isl_mat_copy(T));
+		v = try_tightening(info, i, v);
+		isl_vec_free(v);
+		if (!v)
+			goto error;
+	}
+
+	isl_mat_free(T);
+	free(affected);
+	return isl_stat_ok;
+error:
+	isl_mat_free(T);
+	free(affected);
+	return isl_stat_error;
+}
+
 /* Basic map "i" has an inequality "k" that is adjacent to some equality
  * of basic map "j".  All the other inequalities are valid for "j".
  * Check if basic map "j" forms an extension of basic map "i".
  *
  * In particular, we relax constraint "k", compute the corresponding
  * facet and check whether it is included in the other basic map.
- * If so, we know that relaxing the constraint extends the basic
- * map with exactly the other basic map (we already know that this
+ * Before testing for inclusion, the constraints on the facet
+ * are tightened to increase the chance of an inclusion being detected.
+ * If the facet is included, we know that relaxing the constraint extends
+ * the basic map with exactly the other basic map (we already know that this
  * other basic map is included in the extension, because there
  * were no "cut" inequalities in "i") and we can replace the
  * two basic maps by this extension.
@@ -738,6 +936,8 @@ static enum isl_change is_adj_eq_extension(int i, int j, int k,
 		return isl_change_error;
 	snap2 = isl_tab_snap(info[i].tab);
 	if (isl_tab_select_facet(info[i].tab, n_eq + k) < 0)
+		return isl_change_error;
+	if (tighten_on_relaxed_facet(&info[i], k) < 0)
 		return isl_change_error;
 	super = contains(&info[j], info[i].tab);
 	if (super < 0)
