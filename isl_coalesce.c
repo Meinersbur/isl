@@ -1456,6 +1456,20 @@ error:
 	return isl_change_error;
 }
 
+/* Return the effect of inequality "ineq" on the tableau "tab",
+ * after relaxing the constant term of "ineq" by one.
+ */
+static enum isl_ineq_type type_of_relaxed(struct isl_tab *tab, isl_int *ineq)
+{
+	enum isl_ineq_type type;
+
+	isl_int_add_ui(ineq[0], ineq[0], 1);
+	type = isl_tab_ineq_type(tab, ineq);
+	isl_int_sub_ui(ineq[0], ineq[0], 1);
+
+	return type;
+}
+
 /* Given two basic sets i and j such that i has no cut equalities,
  * check if relaxing all the cut inequalities of i by one turns
  * them into valid constraint for j and check if we can wrap in
@@ -1535,11 +1549,7 @@ static enum isl_change can_wrap_in_set(int i, int j,
 		if (info[i].ineq[k] != STATUS_CUT)
 			continue;
 
-		isl_int_add_ui(info[i].bmap->ineq[k][0],
-				info[i].bmap->ineq[k][0], 1);
-		type = isl_tab_ineq_type(info[j].tab, info[i].bmap->ineq[k]);
-		isl_int_sub_ui(info[i].bmap->ineq[k][0],
-				info[i].bmap->ineq[k][0], 1);
+		type = type_of_relaxed(info[j].tab, info[i].bmap->ineq[k]);
 		if (type == isl_ineq_error)
 			return isl_change_error;
 		if (type != isl_ineq_redundant)
