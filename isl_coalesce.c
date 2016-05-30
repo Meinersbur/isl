@@ -1342,17 +1342,14 @@ error:
 	return isl_change_error;
 }
 
-/* Given a pair of basic maps i and j such that j sticks out
- * of i at n cut constraints, each time by at most one,
- * try to compute wrapping constraints and replace the two
- * basic maps by a single basic map.
- * Only inequality constraints of i are assumed to cut j.
- * The other constraints of i are assumed to be valid for j.
- *
- * For each cut constraint t(x) >= 0 of i, we add the relaxed version
- * t(x) + 1 >= 0, along with wrapping constraints for all constraints
+/* Given a cut constraint t(x) >= 0 of basic map i, stored in row "w"
+ * of wrap.mat, replace it by its relaxed version t(x) + 1 >= 0, and
+ * add wrapping constraints to wrap.mat for all constraints
  * of basic map j that bound the part of basic map j that sticks out
  * of the cut constraint.
+ * "set_i" is the underlying set of basic map i.
+ * If any wrapping fails, then wraps->mat.n_row is reset to zero.
+ *
  * In particular, we first intersect basic map j with t(x) + 1 = 0.
  * If the result is empty, then t(x) >= 0 was actually a valid constraint
  * (with respect to the integer points), so we add t(x) >= 0 instead.
@@ -1365,6 +1362,39 @@ error:
  * therefore be more relaxed compared to the original constraint.
  * Since the original constraint is valid for basic map j, so is
  * the wrapped constraint.
+ */
+static isl_stat wrap_in_facet(struct isl_wraps *wraps, int w,
+	struct isl_coalesce_info *info_j, __isl_keep isl_set *set_i,
+	struct isl_tab_undo *snap)
+{
+	isl_int_add_ui(wraps->mat->row[w][0], wraps->mat->row[w][0], 1);
+	if (isl_tab_add_eq(info_j->tab, wraps->mat->row[w]) < 0)
+		return isl_stat_error;
+	if (isl_tab_detect_redundant(info_j->tab) < 0)
+		return isl_stat_error;
+
+	if (info_j->tab->empty)
+		isl_int_sub_ui(wraps->mat->row[w][0], wraps->mat->row[w][0], 1);
+	else if (add_wraps(wraps, info_j, wraps->mat->row[w], set_i) < 0)
+		return isl_stat_error;
+
+	if (isl_tab_rollback(info_j->tab, snap) < 0)
+		return isl_stat_error;
+
+	return isl_stat_ok;
+}
+
+/* Given a pair of basic maps i and j such that j sticks out
+ * of i at n cut constraints, each time by at most one,
+ * try to compute wrapping constraints and replace the two
+ * basic maps by a single basic map.
+ * Only inequality constraints of i are assumed to cut j.
+ * The other constraints of i are assumed to be valid for j.
+ *
+ * For each cut constraint t(x) >= 0 of i, we add the relaxed version
+ * t(x) + 1 >= 0, along with wrapping constraints for all constraints
+ * of basic map j that bound the part of basic map j that sticks out
+ * of the cut constraint.
  *
  * If any wrapping fails, i.e., if we cannot wrap to touch
  * the union, then we give up.
@@ -1406,20 +1436,7 @@ static enum isl_change wrap_in_facets(int i, int j, int n,
 		w = wraps.mat->n_row++;
 		isl_seq_cpy(wraps.mat->row[w],
 			    info[i].bmap->ineq[k], 1 + total);
-		isl_int_add_ui(wraps.mat->row[w][0], wraps.mat->row[w][0], 1);
-		if (isl_tab_add_eq(info[j].tab, wraps.mat->row[w]) < 0)
-			goto error;
-		if (isl_tab_detect_redundant(info[j].tab) < 0)
-			goto error;
-
-		if (info[j].tab->empty)
-			isl_int_sub_ui(wraps.mat->row[w][0],
-					wraps.mat->row[w][0], 1);
-		else if (add_wraps(&wraps, &info[j],
-				    wraps.mat->row[w], set_i) < 0)
-			goto error;
-
-		if (isl_tab_rollback(info[j].tab, snap) < 0)
+		if (wrap_in_facet(&wraps, w, &info[j], set_i, snap) < 0)
 			goto error;
 
 		if (!wraps.mat->n_row)
