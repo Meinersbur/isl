@@ -1388,7 +1388,6 @@ static isl_stat wrap_in_facet(struct isl_wraps *wraps, int w,
  * of i at n cut constraints, each time by at most one,
  * try to compute wrapping constraints and replace the two
  * basic maps by a single basic map.
- * Only inequality constraints of i are assumed to cut j.
  * The other constraints of i are assumed to be valid for j.
  * "set_i" is the underlying set of basic map i.
  * "wraps" has been initialized to be of the right size.
@@ -1406,7 +1405,7 @@ static enum isl_change try_wrap_in_facets(int i, int j,
 	struct isl_coalesce_info *info, struct isl_wraps *wraps,
 	__isl_keep isl_set *set_i)
 {
-	int k, w;
+	int k, l, w;
 	unsigned total;
 	struct isl_tab_undo *snap;
 
@@ -1415,6 +1414,25 @@ static enum isl_change try_wrap_in_facets(int i, int j,
 	snap = isl_tab_snap(info[j].tab);
 
 	wraps->mat->n_row = 0;
+
+	for (k = 0; k < info[i].bmap->n_eq; ++k) {
+		for (l = 0; l < 2; ++l) {
+			if (info[i].eq[2 * k + l] != STATUS_CUT)
+				continue;
+			w = wraps->mat->n_row++;
+			if (l == 0)
+				isl_seq_neg(wraps->mat->row[w],
+					    info[i].bmap->eq[k], 1 + total);
+			else
+				isl_seq_cpy(wraps->mat->row[w],
+					    info[i].bmap->eq[k], 1 + total);
+			if (wrap_in_facet(wraps, w, &info[j], set_i, snap) < 0)
+				return isl_change_error;
+
+			if (!wraps->mat->n_row)
+				return isl_change_none;
+		}
+	}
 
 	for (k = 0; k < info[i].bmap->n_ineq; ++k) {
 		if (info[i].ineq[k] != STATUS_CUT)
@@ -1436,7 +1454,6 @@ static enum isl_change try_wrap_in_facets(int i, int j,
  * of i at n cut constraints, each time by at most one,
  * try to compute wrapping constraints and replace the two
  * basic maps by a single basic map.
- * Only inequality constraints of i are assumed to cut j.
  * The other constraints of i are assumed to be valid for j.
  *
  * The core computation is performed by try_wrap_in_facets.
@@ -1494,8 +1511,8 @@ static enum isl_ineq_type type_of_relaxed(struct isl_tab *tab, isl_int *ineq)
 	return type;
 }
 
-/* Given two basic sets i and j such that i has no cut equalities,
- * check if relaxing all the cut inequalities of i by one turns
+/* Given two basic sets i and j,
+ * check if relaxing all the cut constraints of i by one turns
  * them into valid constraint for j and check if we can wrap in
  * the bits that are sticking out.
  * If so, replace the pair by their union.
@@ -1556,16 +1573,41 @@ static enum isl_ineq_type type_of_relaxed(struct isl_tab *tab, isl_int *ineq)
 static enum isl_change can_wrap_in_set(int i, int j,
 	struct isl_coalesce_info *info)
 {
-	int k;
+	int k, l;
 	int n;
+	unsigned total;
 
 	if (ISL_F_ISSET(info[i].bmap, ISL_BASIC_MAP_RATIONAL) ||
 	    ISL_F_ISSET(info[j].bmap, ISL_BASIC_MAP_RATIONAL))
 		return isl_change_none;
 
-	n = count(info[i].ineq, info[i].bmap->n_ineq, STATUS_CUT);
+	n = count(info[i].eq, 2 * info[i].bmap->n_eq, STATUS_CUT);
+	n += count(info[i].ineq, info[i].bmap->n_ineq, STATUS_CUT);
 	if (n == 0)
 		return isl_change_none;
+
+	total = isl_basic_map_total_dim(info[i].bmap);
+	for (k = 0; k < info[i].bmap->n_eq; ++k) {
+		for (l = 0; l < 2; ++l) {
+			enum isl_ineq_type type;
+
+			if (info[i].eq[2 * k + l] != STATUS_CUT)
+				continue;
+
+			if (l == 0)
+				isl_seq_neg(info[i].bmap->eq[k],
+					    info[i].bmap->eq[k], 1 + total);
+			type = type_of_relaxed(info[j].tab,
+					    info[i].bmap->eq[k]);
+			if (l == 0)
+				isl_seq_neg(info[i].bmap->eq[k],
+					    info[i].bmap->eq[k], 1 + total);
+			if (type == isl_ineq_error)
+				return isl_change_error;
+			if (type != isl_ineq_redundant)
+				return isl_change_none;
+		}
+	}
 
 	for (k = 0; k < info[i].bmap->n_ineq; ++k) {
 		enum isl_ineq_type type;
@@ -1583,7 +1625,7 @@ static enum isl_change can_wrap_in_set(int i, int j,
 	return wrap_in_facets(i, j, n, info);
 }
 
-/* Check if either i or j has only cut inequalities that can
+/* Check if either i or j has only cut constraints that can
  * be used to wrap in (a facet of) the other basic set.
  * if so, replace the pair by their union.
  */
@@ -1591,13 +1633,11 @@ static enum isl_change check_wrap(int i, int j, struct isl_coalesce_info *info)
 {
 	enum isl_change change = isl_change_none;
 
-	if (!any(info[i].eq, 2 * info[i].bmap->n_eq, STATUS_CUT))
-		change = can_wrap_in_set(i, j, info);
+	change = can_wrap_in_set(i, j, info);
 	if (change != isl_change_none)
 		return change;
 
-	if (!any(info[j].eq, 2 * info[j].bmap->n_eq, STATUS_CUT))
-		change = can_wrap_in_set(j, i, info);
+	change = can_wrap_in_set(j, i, info);
 	return change;
 }
 
