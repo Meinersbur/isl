@@ -179,6 +179,36 @@ struct isl_coalesce_info {
 	int *ineq;
 };
 
+/* Are all non-redundant constraints of the basic map represented by "info"
+ * either valid or cut constraints with respect to the other basic map?
+ */
+static int all_valid_or_cut(struct isl_coalesce_info *info)
+{
+	int i;
+
+	for (i = 0; i < 2 * info->bmap->n_eq; ++i) {
+		if (info->eq[i] == STATUS_REDUNDANT)
+			continue;
+		if (info->eq[i] == STATUS_VALID)
+			continue;
+		if (info->eq[i] == STATUS_CUT)
+			continue;
+		return 0;
+	}
+
+	for (i = 0; i < info->bmap->n_ineq; ++i) {
+		if (info->ineq[i] == STATUS_REDUNDANT)
+			continue;
+		if (info->ineq[i] == STATUS_VALID)
+			continue;
+		if (info->ineq[i] == STATUS_CUT)
+			continue;
+		return 0;
+	}
+
+	return 1;
+}
+
 /* Compute the hash of the (apparent) affine hull of info->bmap (with
  * the existentially quantified variables removed) and store it
  * in info->hash.
@@ -1645,6 +1675,10 @@ static enum isl_change check_wrap(int i, int j, struct isl_coalesce_info *info)
  * to inequality.  Make sure that only one of the basic maps has
  * such an equality and that the other basic map has exactly one
  * inequality adjacent to an equality.
+ * If the other basic map does not have such an inequality, then
+ * check if all its constraints are either valid or cut constraints
+ * and, if so, try wrapping in the first map into the second.
+ *
  * We call the basic map that has the inequality "i" and the basic
  * map that has the equality "j".
  * If "i" has any "cut" (in)equality, then relaxing the inequality
@@ -1669,11 +1703,15 @@ static enum isl_change check_adj_eq(int i, int j,
 
 	/* j has an equality adjacent to an inequality in i */
 
+	if (count(info[i].ineq, info[i].bmap->n_ineq, STATUS_ADJ_EQ) != 1) {
+		if (all_valid_or_cut(&info[i]))
+			return can_wrap_in_set(i, j, info);
+		return isl_change_none;
+	}
 	if (any(info[i].eq, 2 * info[i].bmap->n_eq, STATUS_CUT))
 		return isl_change_none;
 	any_cut = any(info[i].ineq, info[i].bmap->n_ineq, STATUS_CUT);
-	if (count(info[i].ineq, info[i].bmap->n_ineq, STATUS_ADJ_EQ) != 1 ||
-	    any(info[j].ineq, info[j].bmap->n_ineq, STATUS_ADJ_EQ) ||
+	if (any(info[j].ineq, info[j].bmap->n_ineq, STATUS_ADJ_EQ) ||
 	    any(info[i].ineq, info[i].bmap->n_ineq, STATUS_ADJ_INEQ) ||
 	    any(info[j].ineq, info[j].bmap->n_ineq, STATUS_ADJ_INEQ))
 		/* ADJ EQ TOO MANY */

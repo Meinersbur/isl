@@ -1856,6 +1856,7 @@ struct {
 	{ 1, "{ [x, y] : (x - y) mod 3 = 2 and 2 <= y <= 200 and 0 <= x <= 2;"
 		"[0, 1] }" },
 	{ 1, "{ [1, y] : -1 <= y <= 1; [x, -x] : 0 <= x <= 1 }" },
+	{ 1, "{ [1, y] : 0 <= y <= 1; [x, -x] : 0 <= x <= 1 }" },
 };
 
 /* A specialized coalescing test case that would result
