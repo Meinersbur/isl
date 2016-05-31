@@ -1155,7 +1155,7 @@ static __isl_give isl_printer *print_dim_eq(__isl_take isl_printer *p,
 			p = isl_printer_print_str(p, " = ");
 		}
 		pos += 1 + isl_space_offset(data->space, data->type);
-		p = print_affine_of_len(eq->dim, NULL, p, eq->eq[j], pos);
+		p = print_affine_of_len(data->space, NULL, p, eq->eq[j], pos);
 	} else {
 		p = print_name(data->space, p, data->type, pos, data->latex);
 	}
