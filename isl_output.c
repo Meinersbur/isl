@@ -238,7 +238,7 @@ static enum isl_dim_type pos2type(__isl_keep isl_space *dim, unsigned *pos)
  * be printed?
  * In particular, are the div expressions available and does the selected
  * variable have a known explicit representation?
- * Furthermore, the Omega format does not allow and div expressions
+ * Furthermore, the Omega format does not allow any div expressions
  * to be printed.
  */
 static isl_bool can_print_div_expr(__isl_keep isl_printer *p,
