@@ -241,7 +241,9 @@ __isl_constructor
 __isl_give isl_set *isl_set_from_basic_set(__isl_take isl_basic_set *bset);
 __isl_export
 __isl_give isl_basic_set *isl_set_sample(__isl_take isl_set *set);
+__isl_export
 __isl_give isl_point *isl_basic_set_sample_point(__isl_take isl_basic_set *bset);
+__isl_export
 __isl_give isl_point *isl_set_sample_point(__isl_take isl_set *set);
 __isl_export
 __isl_give isl_set *isl_set_detect_equalities(__isl_take isl_set *set);
