@@ -173,6 +173,7 @@ int isl_pw_qpolynomial_find_dim_by_name(__isl_keep isl_pw_qpolynomial *pwqp,
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_reset_user(
 	__isl_take isl_pw_qpolynomial *pwqp);
 
+__isl_export
 __isl_give isl_set *isl_pw_qpolynomial_domain(__isl_take isl_pw_qpolynomial *pwqp);
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_intersect_domain(
 	__isl_take isl_pw_qpolynomial *pwpq, __isl_take isl_set *set);
@@ -496,6 +497,7 @@ __isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_scale_val(
 __isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_scale_down_val(
 	__isl_take isl_union_pw_qpolynomial *upwqp, __isl_take isl_val *v);
 
+__isl_export
 __isl_give isl_union_set *isl_union_pw_qpolynomial_domain(
 	__isl_take isl_union_pw_qpolynomial *upwqp);
 __isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_intersect_domain(
