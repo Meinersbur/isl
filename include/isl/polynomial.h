@@ -227,6 +227,7 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_fix_val(
 	__isl_take isl_pw_qpolynomial *pwqp,
 	enum isl_dim_type type, unsigned n, __isl_take isl_val *v);
 
+__isl_export
 __isl_give isl_val *isl_pw_qpolynomial_eval(
 	__isl_take isl_pw_qpolynomial *pwqp, __isl_take isl_point *pnt);
 
@@ -527,6 +528,7 @@ __isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_drop_dims(
 __isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_reset_user(
 	__isl_take isl_union_pw_qpolynomial *upwqp);
 
+__isl_export
 __isl_give isl_val *isl_union_pw_qpolynomial_eval(
 	__isl_take isl_union_pw_qpolynomial *upwqp, __isl_take isl_point *pnt);
 
