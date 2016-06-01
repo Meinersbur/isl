@@ -2149,6 +2149,14 @@ error:
  * start considering the elements in "list".
  * When this function returns, the total number of variables in "tab"
  * is equal to "dim" plus the number of elements in "list".
+ *
+ * The newly added existentially quantified variables are not given
+ * an explicit representation because the corresponding div constraints
+ * do not appear in info->bmap.  These constraints are not added
+ * to info->bmap because for internal consistency, they would need to
+ * be added to info->tab as well, where they could combine with the equality
+ * that is added later to result in constraints that do not hold
+ * in the original input.
  */
 static int add_sub_vars(struct isl_coalesce_info *info,
 	__isl_keep isl_aff_list *list, int dim, int extra_var)
@@ -2179,6 +2187,9 @@ static int add_sub_vars(struct isl_coalesce_info *info,
 			return -1;
 		d = isl_basic_map_alloc_div(info->bmap);
 		if (d < 0)
+			return -1;
+		info->bmap = isl_basic_map_mark_div_unknown(info->bmap, d);
+		if (!info->bmap)
 			return -1;
 		for (j = d; j > i; --j)
 			isl_basic_map_swap_div(info->bmap, j - 1, j);
