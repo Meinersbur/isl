@@ -750,6 +750,8 @@ static __isl_give isl_printer *print_disjunct(__isl_keep isl_basic_map *bmap,
 	isl_mat *div;
 	isl_bool exists;
 
+	if (!p)
+		return NULL;
 	div = isl_basic_map_get_divs(bmap);
 	if (p->dump)
 		exists = bmap->n_div > 0;
