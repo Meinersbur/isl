@@ -933,6 +933,8 @@ static __isl_give isl_printer *print_disjuncts(__isl_keep isl_map *map,
 		return p;
 
 	p = isl_printer_print_str(p, s_such_that[latex]);
+	if (!p)
+		return NULL;
 
 	if (!p->dump && map->n >= 2) {
 		isl_basic_map *hull;
