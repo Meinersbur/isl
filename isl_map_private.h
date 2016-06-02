@@ -417,6 +417,8 @@ __isl_give isl_basic_map *isl_basic_map_from_local_space(
 	__isl_take isl_local_space *ls);
 __isl_give isl_basic_set *isl_basic_set_expand_divs(
 	__isl_take isl_basic_set *bset, __isl_take isl_mat *div, int *exp);
+__isl_give isl_basic_map *isl_basic_map_expand_divs(
+	__isl_take isl_basic_set *bmap, __isl_take isl_mat *div, int *exp);
 
 __isl_give isl_basic_map *isl_basic_map_mark_div_unknown(
 	__isl_take isl_basic_map *bmap, int div);

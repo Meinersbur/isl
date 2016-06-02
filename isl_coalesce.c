@@ -1819,7 +1819,7 @@ static int contains_with_expanded_divs(__isl_keep isl_basic_map *bmap,
 	int *ineq_i = NULL;
 
 	bmap = isl_basic_map_copy(bmap);
-	bmap = isl_basic_set_expand_divs(bmap, isl_mat_copy(div), exp);
+	bmap = isl_basic_map_expand_divs(bmap, isl_mat_copy(div), exp);
 
 	if (!bmap)
 		goto error;
