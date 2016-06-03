@@ -326,7 +326,7 @@ __isl_give isl_local_space *isl_basic_set_get_local_space(
 /* For each known div d = floor(f/m), add the constraints
  *
  *		f - m d >= 0
- *		-(f-(n-1)) + m d >= 0
+ *		-(f-(m-1)) + m d >= 0
  *
  * Do not finalize the result.
  */
@@ -4483,7 +4483,7 @@ static int add_upper_div_constraint(__isl_keep isl_basic_map *bmap,
 
 /* For a div d = floor(f/m), add the constraint
  *
- *		-(f-(n-1)) + m d >= 0
+ *		-(f-(m-1)) + m d >= 0
  */
 static int add_lower_div_constraint(__isl_keep isl_basic_map *bmap,
 	unsigned pos, isl_int *div)
@@ -4505,11 +4505,11 @@ static int add_lower_div_constraint(__isl_keep isl_basic_map *bmap,
 /* For a div d = floor(f/m), add the constraints
  *
  *		f - m d >= 0
- *		-(f-(n-1)) + m d >= 0
+ *		-(f-(m-1)) + m d >= 0
  *
  * Note that the second constraint is the negation of
  *
- *		f - m d >= n
+ *		f - m d >= m
  */
 int isl_basic_map_add_div_constraints_var(__isl_keep isl_basic_map *bmap,
 	unsigned pos, isl_int *div)
@@ -4540,7 +4540,7 @@ int isl_basic_map_add_div_constraints(struct isl_basic_map *bmap, unsigned div)
 /* For each known div d = floor(f/m), add the constraints
  *
  *		f - m d >= 0
- *		-(f-(n-1)) + m d >= 0
+ *		-(f-(m-1)) + m d >= 0
  *
  * Remove duplicate constraints in case of some these div constraints
  * already appear in "bmap".
@@ -4571,7 +4571,7 @@ __isl_give isl_basic_map *isl_basic_map_add_known_div_constraints(
  *
  * if sign < 0 or the constraint
  *
- *		-(f-(n-1)) + m d >= 0
+ *		-(f-(m-1)) + m d >= 0
  *
  * if sign > 0.
  */
