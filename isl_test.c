@@ -1837,6 +1837,8 @@ struct {
 				"2*floor((c)/2) = c and 0 <= a <= 192;"
 		"[224, 224, b, c] : 2*floor((b)/2) = b and 2*floor((c)/2) = c }"
 	},
+	{ 1, "[n] -> { [a,b] : (exists e : 1 <= a <= 7e and 9e <= b <= n) or "
+				"(0 <= a <= b <= n) }" },
 };
 
 /* A specialized coalescing test case that would result
@@ -4873,6 +4875,40 @@ static int test_eval(isl_ctx *ctx)
 	return 0;
 }
 
+/* Descriptions of sets that are tested for reparsing after printing.
+ */
+const char *output_tests[] = {
+	"{ [1, y] : 0 <= y <= 1; [x, -x] : 0 <= x <= 1 }",
+};
+
+/* Check that printing a set and reparsing a set from the printed output
+ * results in the same set.
+ */
+static int test_output_set(isl_ctx *ctx)
+{
+	int i;
+	char *str;
+	isl_set *set1, *set2;
+	isl_bool equal;
+
+	for (i = 0; i < ARRAY_SIZE(output_tests); ++i) {
+		set1 = isl_set_read_from_str(ctx, output_tests[i]);
+		str = isl_set_to_str(set1);
+		set2 = isl_set_read_from_str(ctx, str);
+		free(str);
+		equal = isl_set_is_equal(set1, set2);
+		isl_set_free(set1);
+		isl_set_free(set2);
+		if (equal < 0)
+			return -1;
+		if (!equal)
+			isl_die(ctx, isl_error_unknown,
+				"parsed output not the same", return -1);
+	}
+
+	return 0;
+}
+
 int test_output(isl_ctx *ctx)
 {
 	char *s;
@@ -4880,6 +4916,9 @@ int test_output(isl_ctx *ctx)
 	isl_pw_aff *pa;
 	isl_printer *p;
 	int equal;
+
+	if (test_output_set(ctx) < 0)
+		return -1;
 
 	str = "[x] -> { [1] : x % 4 <= 2; [2] : x = 3 }";
 	pa = isl_pw_aff_read_from_str(ctx, str);
