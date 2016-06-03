@@ -8253,6 +8253,8 @@ __isl_give isl_basic_set *isl_basic_set_expand_divs(
 			j++;
 		} else {
 			isl_seq_cpy(bset->div[i], div->row[i], div->n_col);
+			if (!isl_basic_map_div_is_known(bset, i))
+				continue;
 			if (isl_basic_map_add_div_constraints(bset, i) < 0)
 				goto error;
 		}

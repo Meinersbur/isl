@@ -1813,6 +1813,8 @@ struct {
 				"2*floor((c)/2) = c and 0 <= a <= 192;"
 		"[224, 224, b, c] : 2*floor((b)/2) = b and 2*floor((c)/2) = c }"
 	},
+	{ 1, "[n] -> { [a,b] : (exists e : 1 <= a <= 7e and 9e <= b <= n) or "
+				"(0 <= a <= b <= n) }" },
 };
 
 /* A specialized coalescing test case that would result
