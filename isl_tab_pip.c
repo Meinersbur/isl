@@ -3397,7 +3397,7 @@ error:
 	return NULL;
 }
 
-static struct isl_context *isl_context_alloc(struct isl_basic_set *dom)
+static struct isl_context *isl_context_alloc(__isl_keep isl_basic_set *dom)
 {
 	if (!dom)
 		return NULL;
