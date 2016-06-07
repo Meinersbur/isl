@@ -3370,7 +3370,7 @@ struct isl_context_op isl_context_gbr_op = {
 	context_gbr_free,
 };
 
-static struct isl_context *isl_context_gbr_alloc(struct isl_basic_set *dom)
+static struct isl_context *isl_context_gbr_alloc(__isl_keep isl_basic_set *dom)
 {
 	struct isl_context_gbr *cgbr;
 
