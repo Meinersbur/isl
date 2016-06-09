@@ -7842,8 +7842,18 @@ static isl_bool map_is_equal(__isl_keep isl_map *map1, __isl_keep isl_map *map2)
 	return is_subset;
 }
 
+/* Is "map1" equal to "map2"?
+ *
+ * First check if they are obviously equal.
+ * If not, then perform a more detailed analysis.
+ */
 isl_bool isl_map_is_equal(__isl_keep isl_map *map1, __isl_keep isl_map *map2)
 {
+	isl_bool equal;
+
+	equal = isl_map_plain_is_equal(map1, map2);
+	if (equal < 0 || equal)
+		return equal;
 	return isl_map_align_params_map_map_and_test(map1, map2, &map_is_equal);
 }
 
