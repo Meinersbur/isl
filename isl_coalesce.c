@@ -438,7 +438,7 @@ static enum isl_change fuse(int i, int j, struct isl_coalesce_info *info,
 	if (detect_equalities)
 		fused = isl_basic_map_detect_inequality_pairs(fused, NULL);
 	fused = isl_basic_map_gauss(fused, NULL);
-	ISL_F_SET(fused, ISL_BASIC_MAP_FINAL);
+	fused = isl_basic_map_finalize(fused);
 	if (ISL_F_ISSET(info[i].bmap, ISL_BASIC_MAP_RATIONAL) &&
 	    ISL_F_ISSET(info[j].bmap, ISL_BASIC_MAP_RATIONAL))
 		ISL_F_SET(fused, ISL_BASIC_MAP_RATIONAL);
