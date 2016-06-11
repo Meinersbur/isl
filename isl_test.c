@@ -1861,6 +1861,9 @@ struct {
 	       "[x, y] : 0 <= x <= 10 and x - 4*floor(x/4) > 1 and y <= 0; "
 	       "[x, y] : 0 <= x <= 10 and x - 5*floor(x/5) <= 1 and 0 < y; "
 	       "[x, y] : 0 <= x <= 10 and x - 5*floor(x/5) > 1 and 0 < y }" },
+	{ 1, "{ [x, 0] : 0 <= x <= 10 and x mod 2 = 0; "
+	       "[x, 0] : 0 <= x <= 10 and x mod 2 = 1; "
+	       "[x, y] : 0 <= x <= 10 and 1 <= y <= 10 }" },
 };
 
 /* A specialized coalescing test case that would result

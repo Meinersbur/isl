@@ -389,8 +389,8 @@ static int number_of_constraints_increases(int i, int j,
  * is assumed to be the same, the actual definitions may be different.
  * We only copy the definition from one of the basic map if it is
  * the same as that of the other basic map.  Otherwise, we mark
- * the integer division as unknown and schedule for the basic map
- * to be simplified in an attempt to recover the integer division definition.
+ * the integer division as unknown and simplify the basic map
+ * in an attempt to recover the integer division definition.
  */
 static enum isl_change fuse(int i, int j, struct isl_coalesce_info *info,
 	__isl_keep isl_mat *extra, int detect_equalities, int check_number)
@@ -401,6 +401,7 @@ static enum isl_change fuse(int i, int j, struct isl_coalesce_info *info,
 	unsigned total = isl_basic_map_total_dim(info[i].bmap);
 	unsigned extra_rows = extra ? extra->n_row : 0;
 	unsigned n_eq, n_ineq;
+	int simplify = 0;
 
 	if (j < i)
 		return fuse(j, i, info, extra, detect_equalities, check_number);
@@ -424,7 +425,7 @@ static enum isl_change fuse(int i, int j, struct isl_coalesce_info *info,
 				1 + 1 + total);
 		} else {
 			isl_int_set_si(fused->div[l][0], 0);
-			info[i].simplify = 1;
+			simplify = 1;
 		}
 	}
 
@@ -438,6 +439,10 @@ static enum isl_change fuse(int i, int j, struct isl_coalesce_info *info,
 	if (detect_equalities)
 		fused = isl_basic_map_detect_inequality_pairs(fused, NULL);
 	fused = isl_basic_map_gauss(fused, NULL);
+	if (simplify || info[j].simplify) {
+		fused = isl_basic_map_simplify(fused);
+		info[i].simplify = 0;
+	}
 	fused = isl_basic_map_finalize(fused);
 	if (ISL_F_ISSET(info[i].bmap, ISL_BASIC_MAP_RATIONAL) &&
 	    ISL_F_ISSET(info[j].bmap, ISL_BASIC_MAP_RATIONAL))
@@ -454,7 +459,6 @@ static enum isl_change fuse(int i, int j, struct isl_coalesce_info *info,
 		return isl_change_none;
 	}
 
-	info[i].simplify |= info[j].simplify;
 	isl_basic_map_free(info[i].bmap);
 	info[i].bmap = fused;
 	isl_tab_free(info[i].tab);
