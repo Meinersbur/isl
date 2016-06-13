@@ -3090,6 +3090,9 @@ static int last_non_zero_var_col(struct isl_tab *tab, isl_int *p)
  * that is one or negative one, we use it to kill a column
  * in the main tableau.  Otherwise, we discard the tentatively
  * added row.
+ * This tentative addition of equality constraints turns
+ * on the undo facility of the tableau.  Turn it off again
+ * at the end, assuming it was turned off to begin with.
  *
  * Return 0 on success and -1 on failure.
  */
@@ -3098,7 +3101,11 @@ static int propagate_equalities(struct isl_context_gbr *cgbr,
 {
 	int i;
 	struct isl_vec *eq = NULL;
+	isl_bool needs_undo;
 
+	needs_undo = isl_tab_need_undo(tab);
+	if (needs_undo < 0)
+		goto error;
 	eq = isl_vec_alloc(tab->mat->ctx, 1 + tab->n_var);
 	if (!eq)
 		goto error;
@@ -3141,6 +3148,8 @@ static int propagate_equalities(struct isl_context_gbr *cgbr,
 			goto error;
 	}
 
+	if (!needs_undo)
+		isl_tab_clear_undo(tab);
 	isl_vec_free(eq);
 
 	return 0;
