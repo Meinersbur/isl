@@ -1,6 +1,7 @@
 /*
  * Copyright 2008-2009 Katholieke Universiteit Leuven
  * Copyright 2010      INRIA Saclay
+ * Copyright 2016      Sven Verdoolaege
  *
  * Use of this software is governed by the MIT license
  *
@@ -4176,6 +4177,74 @@ static __isl_give isl_map *basic_map_partial_lexopt_base_map(
 	return result;
 }
 
+/* Return a count of the number of occurrences of the "n" first
+ * variables in the inequality constraints of "bmap".
+ */
+static __isl_give int *count_occurrences(__isl_keep isl_basic_map *bmap,
+	int n)
+{
+	int i, j;
+	isl_ctx *ctx;
+	int *occurrences;
+
+	if (!bmap)
+		return NULL;
+	ctx = isl_basic_map_get_ctx(bmap);
+	occurrences = isl_calloc_array(ctx, int, n);
+	if (!occurrences)
+		return NULL;
+
+	for (i = 0; i < bmap->n_ineq; ++i) {
+		for (j = 0; j < n; ++j) {
+			if (!isl_int_is_zero(bmap->ineq[i][1 + j]))
+				occurrences[j]++;
+		}
+	}
+
+	return occurrences;
+}
+
+/* Do all of the "n" variables with non-zero coefficients in "c"
+ * occur in exactly a single constraint.
+ * "occurrences" is an array of length "n" containing the number
+ * of occurrences of each of the variables in the inequality constraints.
+ */
+static int single_occurrence(int n, isl_int *c, int *occurrences)
+{
+	int i;
+
+	for (i = 0; i < n; ++i) {
+		if (isl_int_is_zero(c[i]))
+			continue;
+		if (occurrences[i] != 1)
+			return 0;
+	}
+
+	return 1;
+}
+
+/* Do all of the "n" initial variables that occur in inequality constraint
+ * "ineq" of "bmap" only occur in that constraint?
+ */
+static int all_single_occurrence(__isl_keep isl_basic_map *bmap, int ineq,
+	int n)
+{
+	int i, j;
+
+	for (i = 0; i < n; ++i) {
+		if (isl_int_is_zero(bmap->ineq[ineq][1 + i]))
+			continue;
+		for (j = 0; j < bmap->n_ineq; ++j) {
+			if (j == ineq)
+				continue;
+			if (!isl_int_is_zero(bmap->ineq[j][1 + i]))
+				return 0;
+		}
+	}
+
+	return 1;
+}
+
 /* Structure used during detection of parallel constraints.
  * n_in: number of "input" variables: isl_dim_param + isl_dim_in
  * n_out: number of "output" variables: isl_dim_out + isl_dim_div
@@ -4204,6 +4273,8 @@ static int constraint_equal(const void *entry, const void *val)
  * Note that the coefficients of the existentially quantified
  * variables need to be zero since the existentially quantified
  * of the result are usually not the same as those of the input.
+ * Furthermore, check that each of the input variables that occur
+ * in those constraints does not occur in any other constraint.
  * If so, return 1 and return the row indices of the two constraints
  * in *first and *second.
  */
@@ -4212,6 +4283,7 @@ static int parallel_constraints(__isl_keep isl_basic_map *bmap,
 {
 	int i;
 	isl_ctx *ctx;
+	int *occurrences = NULL;
 	struct isl_hash_table *table = NULL;
 	struct isl_hash_table_entry *entry;
 	struct isl_constraint_equal_info info;
@@ -4225,6 +4297,9 @@ static int parallel_constraints(__isl_keep isl_basic_map *bmap,
 
 	info.n_in = isl_basic_map_dim(bmap, isl_dim_param) +
 		    isl_basic_map_dim(bmap, isl_dim_in);
+	occurrences = count_occurrences(bmap, info.n_in);
+	if (info.n_in && !occurrences)
+		goto error;
 	info.bmap = bmap;
 	n_out = isl_basic_map_dim(bmap, isl_dim_out);
 	n_div = isl_basic_map_dim(bmap, isl_dim_div);
@@ -4236,6 +4311,9 @@ static int parallel_constraints(__isl_keep isl_basic_map *bmap,
 		if (isl_seq_first_non_zero(info.val, n_out) < 0)
 			continue;
 		if (isl_seq_first_non_zero(info.val + n_out, n_div) >= 0)
+			continue;
+		if (!single_occurrence(info.n_in, bmap->ineq[i] + 1,
+					occurrences))
 			continue;
 		hash = isl_seq_get_hash(info.val, info.n_out);
 		entry = isl_hash_table_find(ctx, table, hash,
@@ -4253,10 +4331,12 @@ static int parallel_constraints(__isl_keep isl_basic_map *bmap,
 	}
 
 	isl_hash_table_free(ctx, table);
+	free(occurrences);
 
 	return i < bmap->n_ineq;
 error:
 	isl_hash_table_free(ctx, table);
+	free(occurrences);
 	return -1;
 }
 
@@ -4572,6 +4652,10 @@ static __isl_give union isl_lex_res basic_map_partial_lexopt_symm_map_core(
  * basic_map_partial_lexopt (possibly finding more parallel constraints)
  * and plug in the definition of the minimum in the result.
  *
+ * As in parallel_constraints, only inequality constraints that only
+ * involve input variables that do not occur in any other inequality
+ * constraints are considered.
+ *
  * More specifically, given a set of constraints
  *
  *	a x + b_i(p) >= 0
@@ -4628,7 +4712,8 @@ static union isl_lex_res basic_map_partial_lexopt_symm(
 	list[1] = second;
 	isl_seq_cpy(var->el, bmap->ineq[first] + 1 + n_in, n_out);
 	for (i = second + 1, n = 2; i < bmap->n_ineq; ++i) {
-		if (isl_seq_eq(var->el, bmap->ineq[i] + 1 + n_in, n_out))
+		if (isl_seq_eq(var->el, bmap->ineq[i] + 1 + n_in, n_out) &&
+		    all_single_occurrence(bmap, i, n_in))
 			list[n++] = i;
 	}
 

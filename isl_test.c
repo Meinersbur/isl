@@ -2256,6 +2256,19 @@ struct {
 	  "[K, N] -> { [x, y] -> [1 + x, N] : x >= -6 + 2N and "
 		"x <= -5 + 2N and x >= -1 + 3K - N and x <= -2 + K + N and "
 		"x >= 4 }" },
+	{ "{ [i, k, j] -> [a, b, c, d] : 8*floor((b)/8) = b and k <= 255 and "
+		"a <= 255 and c <= 255 and d <= 255 - j and "
+		"255 - j <= 7d <= 7 - i and 240d <= 239 + a and "
+		"247d <= 247 + k - j and 247d <= 247 + k - b and "
+		"247d <= 247 + i and 248 - b <= 248d <= c and "
+		"254d >= i - a + b and 254d >= -a + b and "
+		"255d >= -i + a - b and 1792d >= -63736 + 257b }",
+	  "{ [i, k, j] -> "
+	    "[-127762 + i + 502j, -62992 + 248j, 63240 - 248j, 255 - j] : "
+		"k <= 255 and 7j >= 1778 + i and 246j >= 62738 - k and "
+		"247j >= 62738 - i and 509j <= 129795 + i and "
+		"742j >= 188724 - i; "
+	    "[0, k, j] -> [1, 0, 248, 1] : k <= 255 and 248 <= j <= 254, k }" },
 };
 
 static int test_lexmin(struct isl_ctx *ctx)
