@@ -3236,7 +3236,7 @@ int isl_tab_is_redundant(struct isl_tab *tab, int con)
 	return tab->con[con].is_row && tab->con[con].index < tab->n_redundant;
 }
 
-/* Take a snapshot of the tableau that can be restored by s call to
+/* Take a snapshot of the tableau that can be restored by a call to
  * isl_tab_rollback.
  */
 struct isl_tab_undo *isl_tab_snap(struct isl_tab *tab)
