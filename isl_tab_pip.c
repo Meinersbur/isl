@@ -4204,7 +4204,6 @@ static int constraint_equal(const void *entry, const void *val)
  * Note that the coefficients of the existentially quantified
  * variables need to be zero since the existentially quantified
  * of the result are usually not the same as those of the input.
- * the isl_dim_out and isl_dim_div dimensions.
  * If so, return 1 and return the row indices of the two constraints
  * in *first and *second.
  */
