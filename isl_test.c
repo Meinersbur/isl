@@ -2230,8 +2230,37 @@ static int test_lex(struct isl_ctx *ctx)
 	return 0;
 }
 
+/* Inputs for isl_map_lexmin tests.
+ * "map" is the input and "lexmin" is the expected result.
+ */
+struct {
+	const char *map;
+	const char *lexmin;
+} lexmin_tests [] = {
+	{ "{ [x] -> [y] : x <= y <= 10; [x] -> [5] : -8 <= x <= 8 }",
+	  "{ [x] -> [5] : 6 <= x <= 8; "
+	    "[x] -> [x] : x <= 5 or (9 <= x <= 10) }" },
+	{ "{ [x] -> [y] : 4y = x or 4y = -1 + x or 4y = -2 + x }",
+	  "{ [x] -> [y] : 4y = x or 4y = -1 + x or 4y = -2 + x }" },
+	{ "{ [x] -> [y] : x = 4y; [x] -> [y] : x = 2y }",
+	  "{ [x] -> [y] : (4y = x and x >= 0) or "
+		"(exists (e0 = [(x)/4], e1 = [(-2 + x)/4]: 2y = x and "
+		"4e1 = -2 + x and 4e0 <= -1 + x and 4e0 >= -3 + x)) or "
+		"(exists (e0 = [(x)/4]: 2y = x and 4e0 = x and x <= -4)) }" },
+	{ "{ T[a] -> S[b, c] : a = 4b-2c and c >= b }",
+	  "{ T[a] -> S[b, c] : 2b = a and 2c = a }" },
+	/* Check that empty pieces are properly combined. */
+	{ "[K, N] -> { [x, y] -> [a, b] : K+2<=N<=K+4 and x>=4 and "
+		"2N-6<=x<K+N and N-1<=a<=K+N-1 and N+b-6<=a<=2N-4 and "
+		"b<=2N-3K+a and 3b<=4N-K+1 and b>=N and a>=x+1 }",
+	  "[K, N] -> { [x, y] -> [1 + x, N] : x >= -6 + 2N and "
+		"x <= -5 + 2N and x >= -1 + 3K - N and x <= -2 + K + N and "
+		"x >= 4 }" },
+};
+
 static int test_lexmin(struct isl_ctx *ctx)
 {
+	int i;
 	int equal;
 	const char *str;
 	isl_basic_map *bmap;
@@ -2266,35 +2295,20 @@ static int test_lexmin(struct isl_ctx *ctx)
 	assert(!isl_set_is_empty(set));
 	isl_set_free(set);
 
-	str = "{ [x] -> [y] : x <= y <= 10; [x] -> [5] : -8 <= x <= 8 }";
-	map = isl_map_read_from_str(ctx, str);
-	map = isl_map_lexmin(map);
-	str = "{ [x] -> [5] : 6 <= x <= 8; "
-		"[x] -> [x] : x <= 5 or (9 <= x <= 10) }";
-	map2 = isl_map_read_from_str(ctx, str);
-	assert(isl_map_is_equal(map, map2));
-	isl_map_free(map);
-	isl_map_free(map2);
+	for (i = 0; i < ARRAY_SIZE(lexmin_tests); ++i) {
+		map = isl_map_read_from_str(ctx, lexmin_tests[i].map);
+		map = isl_map_lexmin(map);
+		map2 = isl_map_read_from_str(ctx, lexmin_tests[i].lexmin);
+		equal = isl_map_is_equal(map, map2);
+		isl_map_free(map);
+		isl_map_free(map2);
 
-	str = "{ [x] -> [y] : 4y = x or 4y = -1 + x or 4y = -2 + x }";
-	map = isl_map_read_from_str(ctx, str);
-	map2 = isl_map_copy(map);
-	map = isl_map_lexmin(map);
-	assert(isl_map_is_equal(map, map2));
-	isl_map_free(map);
-	isl_map_free(map2);
-
-	str = "{ [x] -> [y] : x = 4y; [x] -> [y] : x = 2y }";
-	map = isl_map_read_from_str(ctx, str);
-	map = isl_map_lexmin(map);
-	str = "{ [x] -> [y] : (4y = x and x >= 0) or "
-		"(exists (e0 = [(x)/4], e1 = [(-2 + x)/4]: 2y = x and "
-		"4e1 = -2 + x and 4e0 <= -1 + x and 4e0 >= -3 + x)) or "
-		"(exists (e0 = [(x)/4]: 2y = x and 4e0 = x and x <= -4)) }";
-	map2 = isl_map_read_from_str(ctx, str);
-	assert(isl_map_is_equal(map, map2));
-	isl_map_free(map);
-	isl_map_free(map2);
+		if (equal < 0)
+			return -1;
+		if (!equal)
+			isl_die(ctx, isl_error_unknown,
+				"unexpected result", return -1);
+	}
 
 	str = "{ [i] -> [i', j] : j = i - 8i' and i' >= 0 and i' <= 7 and "
 				" 8i' <= i and 8i' >= -7 + i }";
@@ -2302,29 +2316,6 @@ static int test_lexmin(struct isl_ctx *ctx)
 	pma = isl_basic_map_lexmin_pw_multi_aff(isl_basic_map_copy(bmap));
 	map2 = isl_map_from_pw_multi_aff(pma);
 	map = isl_map_from_basic_map(bmap);
-	assert(isl_map_is_equal(map, map2));
-	isl_map_free(map);
-	isl_map_free(map2);
-
-	str = "{ T[a] -> S[b, c] : a = 4b-2c and c >= b }";
-	map = isl_map_read_from_str(ctx, str);
-	map = isl_map_lexmin(map);
-	str = "{ T[a] -> S[b, c] : 2b = a and 2c = a }";
-	map2 = isl_map_read_from_str(ctx, str);
-	assert(isl_map_is_equal(map, map2));
-	isl_map_free(map);
-	isl_map_free(map2);
-
-	/* Check that empty pieces are properly combined. */
-	str = "[K, N] -> { [x, y] -> [a, b] : K+2<=N<=K+4 and x>=4 and "
-		"2N-6<=x<K+N and N-1<=a<=K+N-1 and N+b-6<=a<=2N-4 and "
-		"b<=2N-3K+a and 3b<=4N-K+1 and b>=N and a>=x+1 }";
-	map = isl_map_read_from_str(ctx, str);
-	map = isl_map_lexmin(map);
-	str = "[K, N] -> { [x, y] -> [1 + x, N] : x >= -6 + 2N and "
-		"x <= -5 + 2N and x >= -1 + 3K - N and x <= -2 + K + N and "
-		"x >= 4 }";
-	map2 = isl_map_read_from_str(ctx, str);
 	assert(isl_map_is_equal(map, map2));
 	isl_map_free(map);
 	isl_map_free(map2);
