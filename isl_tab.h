@@ -248,6 +248,8 @@ void isl_tab_dump(__isl_keep struct isl_tab *tab);
 #define ISL_OPT_MAX		(1 << 0)
 /* Compute full instead of partial optimum; also, domain argument is NULL. */
 #define ISL_OPT_FULL		(1 << 1)
+/* Result should be free of (unknown) quantified variables. */
+#define ISL_OPT_QE		(1 << 2)
 __isl_give isl_map *isl_tab_basic_map_partial_lexopt(
 	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
 	__isl_give isl_set **empty, unsigned flags);

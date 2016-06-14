@@ -6254,6 +6254,15 @@ __isl_give isl_set *isl_set_partial_lexmax(
 			dom, empty);
 }
 
+/* Compute the lexicographic minimum (or maximum if "flags" includes
+ * ISL_OPT_MAX) of "bset" over its parametric domain.
+ */
+__isl_give isl_set *isl_basic_set_lexopt(__isl_take isl_basic_set *bset,
+	unsigned flags)
+{
+	return isl_basic_map_lexopt(bset, flags);
+}
+
 __isl_give isl_map *isl_basic_map_lexmax(__isl_take isl_basic_map *bmap)
 {
 	return isl_basic_map_lexopt(bmap, ISL_OPT_MAX);
@@ -6267,6 +6276,18 @@ __isl_give isl_set *isl_basic_set_lexmin(__isl_take isl_basic_set *bset)
 __isl_give isl_set *isl_basic_set_lexmax(__isl_take isl_basic_set *bset)
 {
 	return (isl_set *)isl_basic_map_lexmax((isl_basic_map *)bset);
+}
+
+/* Compute the lexicographic minimum of "bset" over its parametric domain
+ * for the purpose of quantifier elimination.
+ * That is, find an explicit representation for all the existentially
+ * quantified variables in "bset" by computing their lexicographic
+ * minimum.
+ */
+static __isl_give isl_set *isl_basic_set_lexmin_compute_divs(
+	__isl_take isl_basic_set *bset)
+{
+	return isl_basic_set_lexopt(bset, ISL_OPT_QE);
 }
 
 /* Extract the first and only affine expression from list
@@ -6580,7 +6601,7 @@ static __isl_give isl_set *base_compute_divs(__isl_take isl_basic_set *bset)
 	if (!bset)
 		return NULL;
 	if (bset->n_eq == 0)
-		return isl_basic_set_lexmin(bset);
+		return isl_basic_set_lexmin_compute_divs(bset);
 
 	morph1 = isl_basic_set_parameter_compression(bset);
 	bset = isl_morph_basic_set(isl_morph_copy(morph1), bset);
@@ -6590,7 +6611,7 @@ static __isl_give isl_set *base_compute_divs(__isl_take isl_basic_set *bset)
 	n = isl_basic_set_dim(bset, isl_dim_set);
 	bset = isl_basic_set_project_out(bset, isl_dim_set, 0, n);
 
-	set = isl_basic_set_lexmin(bset);
+	set = isl_basic_set_lexmin_compute_divs(bset);
 
 	set = isl_morph_set(isl_morph_inverse(morph1), set);
 
