@@ -6118,7 +6118,7 @@ static __isl_give isl_basic_set *extract_domain(__isl_keep isl_basic_map *bmap)
  */
 static __isl_give isl_pw_multi_aff *isl_map_partial_lexopt_aligned_pw_multi_aff(
 	__isl_take isl_map *map, __isl_take isl_set *dom,
-	__isl_give isl_set **empty, int max)
+	__isl_give isl_set **empty, unsigned flags)
 {
 	int i;
 	isl_pw_multi_aff *res;
@@ -6137,7 +6137,7 @@ static __isl_give isl_pw_multi_aff *isl_map_partial_lexopt_aligned_pw_multi_aff(
 
 	res = basic_map_partial_lexopt_pw_multi_aff(
 					    isl_basic_map_copy(map->p[0]),
-					    isl_set_copy(dom), empty, max);
+					    isl_set_copy(dom), empty, flags);
 
 	if (empty)
 		todo = *empty;
@@ -6146,9 +6146,9 @@ static __isl_give isl_pw_multi_aff *isl_map_partial_lexopt_aligned_pw_multi_aff(
 
 		res_i = basic_map_partial_lexopt_pw_multi_aff(
 					    isl_basic_map_copy(map->p[i]),
-					    isl_set_copy(dom), empty, max);
+					    isl_set_copy(dom), empty, flags);
 
-		if (max)
+		if (ISL_FL_ISSET(flags, ISL_OPT_MAX))
 			res = isl_pw_multi_aff_union_lexmax(res, res_i);
 		else
 			res = isl_pw_multi_aff_union_lexmin(res, res_i);
@@ -6203,8 +6203,8 @@ error:
  * even more splintering.
  */
 static __isl_give isl_map *isl_map_partial_lexopt_aligned(
-		__isl_take isl_map *map, __isl_take isl_set *dom,
-		__isl_give isl_set **empty, int max)
+	__isl_take isl_map *map, __isl_take isl_set *dom,
+	__isl_give isl_set **empty, unsigned flags)
 {
 	struct isl_map *res;
 	isl_pw_multi_aff *pma;
@@ -6222,12 +6222,13 @@ static __isl_give isl_map *isl_map_partial_lexopt_aligned(
 
 	if (map->n == 1) {
 		res = basic_map_partial_lexopt(isl_basic_map_copy(map->p[0]),
-						dom, empty, max);
+						dom, empty, flags);
 		isl_map_free(map);
 		return res;
 	}
 
-	pma = isl_map_partial_lexopt_aligned_pw_multi_aff(map, dom, empty, max);
+	pma = isl_map_partial_lexopt_aligned_pw_multi_aff(map, dom, empty,
+							flags);
 	return isl_map_from_pw_multi_aff(pma);
 error:
 	if (empty)
@@ -6241,7 +6242,7 @@ __isl_give isl_map *isl_map_partial_lexmax(
 		__isl_take isl_map *map, __isl_take isl_set *dom,
 		__isl_give isl_set **empty)
 {
-	return isl_map_partial_lexopt(map, dom, empty, 1);
+	return isl_map_partial_lexopt(map, dom, empty, ISL_OPT_MAX);
 }
 
 __isl_give isl_map *isl_map_partial_lexmin(
@@ -6271,7 +6272,7 @@ __isl_give isl_set *isl_set_partial_lexmax(
 
 __isl_give isl_map *isl_basic_map_lexmax(__isl_take isl_basic_map *bmap)
 {
-	return isl_basic_map_lexopt(bmap, 1);
+	return isl_basic_map_lexopt(bmap, ISL_OPT_MAX);
 }
 
 __isl_give isl_set *isl_basic_set_lexmin(__isl_take isl_basic_set *bset)

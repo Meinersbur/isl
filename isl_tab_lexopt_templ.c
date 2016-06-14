@@ -167,8 +167,8 @@ error:
 	return NULL;
 }
 
-/* Compute the lexicographic minimum (or maximum if "max" is set)
- * of "bmap" over the domain "dom" and return the result as
+/* Compute the lexicographic minimum (or maximum if "flags" includes
+ * ISL_OPT_MAX) of "bmap" over the domain "dom" and return the result as
  * either a map or a piecewise multi-affine expression depending on TYPE.
  * If "empty" is not NULL, then *empty is assigned a set that
  * contains those parts of the domain where there is no solution.
@@ -188,8 +188,9 @@ error:
  */
 __isl_give TYPE *SF(isl_tab_basic_map_partial_lexopt,SUFFIX)(
 	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
-	__isl_give isl_set **empty, int max)
+	__isl_give isl_set **empty, unsigned flags)
 {
+	int max;
 	isl_bool compatible;
 
 	if (empty)
@@ -202,6 +203,7 @@ __isl_give TYPE *SF(isl_tab_basic_map_partial_lexopt,SUFFIX)(
 		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
 			"domain does not match input", goto error);
 
+	max = ISL_FL_ISSET(flags, ISL_OPT_MAX);
 	if (isl_basic_set_dim(dom, isl_dim_all) == 0)
 		return SF(basic_map_partial_lexopt,SUFFIX)(bmap, dom, empty,
 							    max);
