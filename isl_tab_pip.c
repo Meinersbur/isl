@@ -4657,8 +4657,18 @@ static __isl_give isl_map *basic_map_partial_lexopt_symm_core(
  * inequalities and transferring them to the context.  More importantly,
  * it ensures that those inequalities are transferred first and not
  * intermixed with inequalities that actually split the domain.
+ *
+ * If the caller does not require the absence of existentially quantified
+ * variables in the result (i.e., if ISL_OPT_QE is not set in "flags"),
+ * then the actual domain of "bmap" can be used.  This ensures that
+ * the domain does not need to be split at all just to separate out
+ * pieces of the domain that do not have a solution from piece that do.
+ * This domain cannot be used in general because it may involve
+ * (unknown) existentially quantified variables which will then also
+ * appear in the solution.
  */
-static __isl_give isl_basic_set *extract_domain(__isl_keep isl_basic_map *bmap)
+static __isl_give isl_basic_set *extract_domain(__isl_keep isl_basic_map *bmap,
+	unsigned flags)
 {
 	int n_div;
 	int n_out;
@@ -4666,10 +4676,12 @@ static __isl_give isl_basic_set *extract_domain(__isl_keep isl_basic_map *bmap)
 	n_div = isl_basic_map_dim(bmap, isl_dim_div);
 	n_out = isl_basic_map_dim(bmap, isl_dim_out);
 	bmap = isl_basic_map_copy(bmap);
-	bmap = isl_basic_map_drop_constraints_involving_dims(bmap,
+	if (ISL_FL_ISSET(flags, ISL_OPT_QE)) {
+		bmap = isl_basic_map_drop_constraints_involving_dims(bmap,
 							isl_dim_div, 0, n_div);
-	bmap = isl_basic_map_drop_constraints_involving_dims(bmap,
+		bmap = isl_basic_map_drop_constraints_involving_dims(bmap,
 							isl_dim_out, 0, n_out);
+	}
 	return isl_basic_map_domain(bmap);
 }
 

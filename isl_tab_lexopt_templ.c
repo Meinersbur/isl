@@ -203,7 +203,7 @@ __isl_give TYPE *SF(isl_tab_basic_map_partial_lexopt,SUFFIX)(
 
 	full = ISL_FL_ISSET(flags, ISL_OPT_FULL);
 	if (full)
-		dom = extract_domain(bmap);
+		dom = extract_domain(bmap, flags);
 	compatible = isl_basic_map_compatible_domain(bmap, dom);
 	if (compatible < 0)
 		goto error;
