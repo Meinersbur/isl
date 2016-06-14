@@ -5958,8 +5958,8 @@ static __isl_give isl_pw_multi_aff *basic_map_partial_lexopt_symm_pma(
 		    first, second, &basic_map_partial_lexopt_symm_pma_core).pma;
 }
 
-/* Recursive part of isl_basic_map_partial_lexopt_pw_multi_aff, after detecting
- * equalities and removing redundant constraints.
+/* Recursive part of isl_tab_basic_map_partial_lexopt_pw_multi_aff, after
+ * detecting equalities and removing redundant constraints.
  *
  * We first check if there are any parallel constraints (left).
  * If not, we are in the base case.
@@ -6011,7 +6011,7 @@ error:
  * for symmetries on the constraints, before we set up the main tableau.
  * It is then no good to look for symmetries on possibly redundant constraints.
  */
-__isl_give isl_pw_multi_aff *isl_basic_map_partial_lexopt_pw_multi_aff(
+__isl_give isl_pw_multi_aff *isl_tab_basic_map_partial_lexopt_pw_multi_aff(
 	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
 	__isl_give isl_set **empty, int max)
 {

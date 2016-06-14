@@ -6101,6 +6101,23 @@ __isl_give isl_set *isl_basic_set_partial_lexmax(
 	return isl_basic_map_partial_lexmax(bset, dom, empty);
 }
 
+/* Compute the lexicographic minimum (or maximum if "max" is set)
+ * of "bmap" over the domain "dom" and return the result as a piecewise
+ * multi-affine expression.
+ * If "empty" is not NULL, then *empty is assigned a set that
+ * contains those parts of the domain where there is no solution.
+ * If "bmap" is marked as rational (ISL_BASIC_MAP_RATIONAL),
+ * then the rational optimum is computed.  Otherwise, the integral optimum
+ * is computed.
+ */
+static __isl_give isl_pw_multi_aff *isl_basic_map_partial_lexopt_pw_multi_aff(
+	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
+	__isl_give isl_set **empty, int max)
+{
+	return isl_tab_basic_map_partial_lexopt_pw_multi_aff(bmap, dom, empty,
+							    max);
+}
+
 __isl_give isl_pw_multi_aff *isl_basic_map_partial_lexmin_pw_multi_aff(
 	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
 	__isl_give isl_set **empty)
