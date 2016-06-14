@@ -4612,12 +4612,6 @@ static __isl_give isl_map *basic_map_partial_lexopt(
 	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
 	__isl_give isl_set **empty, int max);
 
-union isl_lex_res {
-	void *p;
-	isl_map *map;
-	isl_pw_multi_aff *pma;
-};
-
 /* This function is called from basic_map_partial_lexopt_symm.
  * The last variable of "bmap" and "dom" corresponds to the minimum
  * of the bounds in "cst".  "map_space" is the space of the original
@@ -4627,14 +4621,13 @@ union isl_lex_res {
  * We recursively call basic_map_partial_lexopt and then plug in
  * the definition of the minimum in the result.
  */
-static __isl_give union isl_lex_res basic_map_partial_lexopt_symm_core(
+static __isl_give isl_map *basic_map_partial_lexopt_symm_core(
 	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
 	__isl_give isl_set **empty, int max, __isl_take isl_mat *cst,
 	__isl_take isl_space *map_space, __isl_take isl_space *set_space)
 {
 	isl_map *opt;
 	isl_set *min_expr;
-	union isl_lex_res res;
 
 	min_expr = set_minimum(isl_basic_set_get_space(dom), isl_mat_copy(cst));
 
@@ -4649,220 +4642,14 @@ static __isl_give union isl_lex_res basic_map_partial_lexopt_symm_core(
 	opt = split_domain(opt, min_expr, cst);
 	opt = isl_map_reset_space(opt, map_space);
 
-	res.map = opt;
-	return res;
+	return opt;
 }
 
-/* Given a basic map with at least two parallel constraints (as found
- * by the function parallel_constraints), first look for more constraints
- * parallel to the two constraint and replace the found list of parallel
- * constraints by a single constraint with as "input" part the minimum
- * of the input parts of the list of constraints.  Then, recursively call
- * basic_map_partial_lexopt (possibly finding more parallel constraints)
- * and plug in the definition of the minimum in the result.
- *
- * As in parallel_constraints, only inequality constraints that only
- * involve input variables that do not occur in any other inequality
- * constraints are considered.
- *
- * More specifically, given a set of constraints
- *
- *	a x + b_i(p) >= 0
- *
- * Replace this set by a single constraint
- *
- *	a x + u >= 0
- *
- * with u a new parameter with constraints
- *
- *	u <= b_i(p)
- *
- * Any solution to the new system is also a solution for the original system
- * since
- *
- *	a x >= -u >= -b_i(p)
- *
- * Moreover, m = min_i(b_i(p)) satisfies the constraints on u and can
- * therefore be plugged into the solution.
- */
-static union isl_lex_res basic_map_partial_lexopt_symm(
-	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
-	__isl_give isl_set **empty, int max, int first, int second,
-	__isl_give union isl_lex_res (*core)(__isl_take isl_basic_map *bmap,
-					    __isl_take isl_basic_set *dom,
-					    __isl_give isl_set **empty,
-					    int max, __isl_take isl_mat *cst,
-					    __isl_take isl_space *map_space,
-					    __isl_take isl_space *set_space))
-{
-	int i, n, k;
-	int *list = NULL;
-	unsigned n_in, n_out, n_div;
-	isl_ctx *ctx;
-	isl_vec *var = NULL;
-	isl_mat *cst = NULL;
-	isl_space *map_space, *set_space;
-	union isl_lex_res res;
-
-	map_space = isl_basic_map_get_space(bmap);
-	set_space = empty ? isl_basic_set_get_space(dom) : NULL;
-
-	n_in = isl_basic_map_dim(bmap, isl_dim_param) +
-	       isl_basic_map_dim(bmap, isl_dim_in);
-	n_out = isl_basic_map_dim(bmap, isl_dim_all) - n_in;
-
-	ctx = isl_basic_map_get_ctx(bmap);
-	list = isl_alloc_array(ctx, int, bmap->n_ineq);
-	var = isl_vec_alloc(ctx, n_out);
-	if ((bmap->n_ineq && !list) || (n_out && !var))
-		goto error;
-
-	list[0] = first;
-	list[1] = second;
-	isl_seq_cpy(var->el, bmap->ineq[first] + 1 + n_in, n_out);
-	for (i = second + 1, n = 2; i < bmap->n_ineq; ++i) {
-		if (isl_seq_eq(var->el, bmap->ineq[i] + 1 + n_in, n_out) &&
-		    all_single_occurrence(bmap, i, n_in))
-			list[n++] = i;
-	}
-
-	cst = isl_mat_alloc(ctx, n, 1 + n_in);
-	if (!cst)
-		goto error;
-
-	for (i = 0; i < n; ++i)
-		isl_seq_cpy(cst->row[i], bmap->ineq[list[i]], 1 + n_in);
-
-	bmap = isl_basic_map_cow(bmap);
-	if (!bmap)
-		goto error;
-	for (i = n - 1; i >= 0; --i)
-		if (isl_basic_map_drop_inequality(bmap, list[i]) < 0)
-			goto error;
-
-	bmap = isl_basic_map_add_dims(bmap, isl_dim_in, 1);
-	bmap = isl_basic_map_extend_constraints(bmap, 0, 1);
-	k = isl_basic_map_alloc_inequality(bmap);
-	if (k < 0)
-		goto error;
-	isl_seq_clr(bmap->ineq[k], 1 + n_in);
-	isl_int_set_si(bmap->ineq[k][1 + n_in], 1);
-	isl_seq_cpy(bmap->ineq[k] + 1 + n_in + 1, var->el, n_out);
-	bmap = isl_basic_map_finalize(bmap);
-
-	n_div = isl_basic_set_dim(dom, isl_dim_div);
-	dom = isl_basic_set_add_dims(dom, isl_dim_set, 1);
-	dom = isl_basic_set_extend_constraints(dom, 0, n);
-	for (i = 0; i < n; ++i) {
-		k = isl_basic_set_alloc_inequality(dom);
-		if (k < 0)
-			goto error;
-		isl_seq_cpy(dom->ineq[k], cst->row[i], 1 + n_in);
-		isl_int_set_si(dom->ineq[k][1 + n_in], -1);
-		isl_seq_clr(dom->ineq[k] + 1 + n_in + 1, n_div);
-	}
-
-	isl_vec_free(var);
-	free(list);
-
-	return core(bmap, dom, empty, max, cst, map_space, set_space);
-error:
-	isl_space_free(map_space);
-	isl_space_free(set_space);
-	isl_mat_free(cst);
-	isl_vec_free(var);
-	free(list);
-	isl_basic_set_free(dom);
-	isl_basic_map_free(bmap);
-	res.p = NULL;
-	return res;
-}
-
-static __isl_give isl_map *basic_map_partial_lexopt_symm_map(
-	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
-	__isl_give isl_set **empty, int max, int first, int second)
-{
-	return basic_map_partial_lexopt_symm(bmap, dom, empty, max,
-		    first, second, &basic_map_partial_lexopt_symm_core).map;
-}
-
-/* Recursive part of isl_tab_basic_map_partial_lexopt, after detecting
- * equalities and removing redundant constraints.
- *
- * We first check if there are any parallel constraints (left).
- * If not, we are in the base case.
- * If there are parallel constraints, we replace them by a single
- * constraint in basic_map_partial_lexopt_symm and then call
- * this function recursively to look for more parallel constraints.
- */
-static __isl_give isl_map *basic_map_partial_lexopt(
-	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
-	__isl_give isl_set **empty, int max)
-{
-	int par = 0;
-	int first, second;
-
-	if (!bmap)
-		goto error;
-
-	if (bmap->ctx->opt->pip_symmetry)
-		par = parallel_constraints(bmap, &first, &second);
-	if (par < 0)
-		goto error;
-	if (!par)
-		return basic_map_partial_lexopt_base(bmap, dom, empty, max);
-	
-	return basic_map_partial_lexopt_symm_map(bmap, dom, empty, max,
-						 first, second);
-error:
-	isl_basic_set_free(dom);
-	isl_basic_map_free(bmap);
-	return NULL;
-}
-
-/* Compute the lexicographic minimum (or maximum if "max" is set)
- * of "bmap" over the domain "dom" and return the result as a map.
- * If "empty" is not NULL, then *empty is assigned a set that
- * contains those parts of the domain where there is no solution.
- * If "bmap" is marked as rational (ISL_BASIC_MAP_RATIONAL),
- * then we compute the rational optimum.  Otherwise, we compute
- * the integral optimum.
- *
- * We perform some preprocessing.  As the PILP solver does not
- * handle implicit equalities very well, we first make sure all
- * the equalities are explicitly available.
- *
- * We also add context constraints to the basic map and remove
- * redundant constraints.  This is only needed because of the
- * way we handle simple symmetries.  In particular, we currently look
- * for symmetries on the constraints, before we set up the main tableau.
- * It is then no good to look for symmetries on possibly redundant constraints.
- */
-__isl_give isl_map *isl_tab_basic_map_partial_lexopt(
-	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
-	__isl_give isl_set **empty, int max)
-{
-	if (empty)
-		*empty = NULL;
-	if (!bmap || !dom)
-		goto error;
-
-	isl_assert(bmap->ctx,
-	    isl_basic_map_compatible_domain(bmap, dom), goto error);
-
-	if (isl_basic_set_dim(dom, isl_dim_all) == 0)
-		return basic_map_partial_lexopt(bmap, dom, empty, max);
-
-	bmap = isl_basic_map_intersect_domain(bmap, isl_basic_set_copy(dom));
-	bmap = isl_basic_map_detect_equalities(bmap);
-	bmap = isl_basic_map_remove_redundancies(bmap);
-
-	return basic_map_partial_lexopt(bmap, dom, empty, max);
-error:
-	isl_basic_set_free(dom);
-	isl_basic_map_free(bmap);
-	return NULL;
-}
+#undef TYPE
+#define TYPE	isl_map
+#undef SUFFIX
+#define SUFFIX
+#include "isl_tab_lexopt_templ.c"
 
 struct isl_sol_for {
 	struct isl_sol	sol;
@@ -5921,7 +5708,7 @@ static __isl_give isl_pw_multi_aff *basic_map_partial_lexopt_pw_multi_aff(
  * We recursively call basic_map_partial_lexopt and then plug in
  * the definition of the minimum in the result.
  */
-static __isl_give union isl_lex_res
+static __isl_give isl_pw_multi_aff *
 basic_map_partial_lexopt_symm_core_pw_multi_aff(
 	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
 	__isl_give isl_set **empty, int max, __isl_take isl_mat *cst,
@@ -5930,7 +5717,6 @@ basic_map_partial_lexopt_symm_core_pw_multi_aff(
 	isl_pw_multi_aff *opt;
 	isl_pw_aff *min_expr_pa;
 	isl_set *min_expr;
-	union isl_lex_res res;
 
 	min_expr = set_minimum(isl_basic_set_get_space(dom), isl_mat_copy(cst));
 	min_expr_pa = set_minimum_pa(isl_basic_set_get_space(dom),
@@ -5947,96 +5733,11 @@ basic_map_partial_lexopt_symm_core_pw_multi_aff(
 	opt = split_domain_pma(opt, min_expr_pa, min_expr, cst);
 	opt = isl_pw_multi_aff_reset_space(opt, map_space);
 
-	res.pma = opt;
-	return res;
+	return opt;
 }
 
-static __isl_give isl_pw_multi_aff *basic_map_partial_lexopt_symm_pma(
-	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
-	__isl_give isl_set **empty, int max, int first, int second)
-{
-	return basic_map_partial_lexopt_symm(bmap, dom, empty, max,
-		    first, second,
-		    &basic_map_partial_lexopt_symm_core_pw_multi_aff).pma;
-}
-
-/* Recursive part of isl_tab_basic_map_partial_lexopt_pw_multi_aff, after
- * detecting equalities and removing redundant constraints.
- *
- * We first check if there are any parallel constraints (left).
- * If not, we are in the base case.
- * If there are parallel constraints, we replace them by a single
- * constraint in basic_map_partial_lexopt_symm_pma and then call
- * this function recursively to look for more parallel constraints.
- */
-static __isl_give isl_pw_multi_aff *basic_map_partial_lexopt_pw_multi_aff(
-	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
-	__isl_give isl_set **empty, int max)
-{
-	int par = 0;
-	int first, second;
-
-	if (!bmap)
-		goto error;
-
-	if (bmap->ctx->opt->pip_symmetry)
-		par = parallel_constraints(bmap, &first, &second);
-	if (par < 0)
-		goto error;
-	if (!par)
-		return basic_map_partial_lexopt_base_pw_multi_aff(bmap, dom,
-								empty, max);
-	
-	return basic_map_partial_lexopt_symm_pma(bmap, dom, empty, max,
-						 first, second);
-error:
-	isl_basic_set_free(dom);
-	isl_basic_map_free(bmap);
-	return NULL;
-}
-
-/* Compute the lexicographic minimum (or maximum if "max" is set)
- * of "bmap" over the domain "dom" and return the result as a piecewise
- * multi-affine expression.
- * If "empty" is not NULL, then *empty is assigned a set that
- * contains those parts of the domain where there is no solution.
- * If "bmap" is marked as rational (ISL_BASIC_MAP_RATIONAL),
- * then we compute the rational optimum.  Otherwise, we compute
- * the integral optimum.
- *
- * We perform some preprocessing.  As the PILP solver does not
- * handle implicit equalities very well, we first make sure all
- * the equalities are explicitly available.
- *
- * We also add context constraints to the basic map and remove
- * redundant constraints.  This is only needed because of the
- * way we handle simple symmetries.  In particular, we currently look
- * for symmetries on the constraints, before we set up the main tableau.
- * It is then no good to look for symmetries on possibly redundant constraints.
- */
-__isl_give isl_pw_multi_aff *isl_tab_basic_map_partial_lexopt_pw_multi_aff(
-	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
-	__isl_give isl_set **empty, int max)
-{
-	if (empty)
-		*empty = NULL;
-	if (!bmap || !dom)
-		goto error;
-
-	isl_assert(bmap->ctx,
-	    isl_basic_map_compatible_domain(bmap, dom), goto error);
-
-	if (isl_basic_set_dim(dom, isl_dim_all) == 0)
-		return basic_map_partial_lexopt_pw_multi_aff(bmap, dom, empty,
-							    max);
-
-	bmap = isl_basic_map_intersect_domain(bmap, isl_basic_set_copy(dom));
-	bmap = isl_basic_map_detect_equalities(bmap);
-	bmap = isl_basic_map_remove_redundancies(bmap);
-
-	return basic_map_partial_lexopt_pw_multi_aff(bmap, dom, empty, max);
-error:
-	isl_basic_set_free(dom);
-	isl_basic_map_free(bmap);
-	return NULL;
-}
+#undef TYPE
+#define TYPE	isl_pw_multi_aff
+#undef SUFFIX
+#define SUFFIX	_pw_multi_aff
+#include "isl_tab_lexopt_templ.c"
