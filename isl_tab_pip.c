@@ -4165,7 +4165,7 @@ error:
  *
  * We call basic_map_partial_lexopt_base_sol and extract the results.
  */
-static __isl_give isl_map *basic_map_partial_lexopt_base_map(
+static __isl_give isl_map *basic_map_partial_lexopt_base(
 	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
 	__isl_give isl_set **empty, int max)
 {
@@ -4627,7 +4627,7 @@ union isl_lex_res {
  * We recursively call basic_map_partial_lexopt and then plug in
  * the definition of the minimum in the result.
  */
-static __isl_give union isl_lex_res basic_map_partial_lexopt_symm_map_core(
+static __isl_give union isl_lex_res basic_map_partial_lexopt_symm_core(
 	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
 	__isl_give isl_set **empty, int max, __isl_take isl_mat *cst,
 	__isl_take isl_space *map_space, __isl_take isl_space *set_space)
@@ -4783,7 +4783,7 @@ static __isl_give isl_map *basic_map_partial_lexopt_symm_map(
 	__isl_give isl_set **empty, int max, int first, int second)
 {
 	return basic_map_partial_lexopt_symm(bmap, dom, empty, max,
-		    first, second, &basic_map_partial_lexopt_symm_map_core).map;
+		    first, second, &basic_map_partial_lexopt_symm_core).map;
 }
 
 /* Recursive part of isl_tab_basic_map_partial_lexopt, after detecting
@@ -4810,7 +4810,7 @@ static __isl_give isl_map *basic_map_partial_lexopt(
 	if (par < 0)
 		goto error;
 	if (!par)
-		return basic_map_partial_lexopt_base_map(bmap, dom, empty, max);
+		return basic_map_partial_lexopt_base(bmap, dom, empty, max);
 	
 	return basic_map_partial_lexopt_symm_map(bmap, dom, empty, max,
 						 first, second);
