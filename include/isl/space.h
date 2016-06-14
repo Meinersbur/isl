@@ -156,7 +156,7 @@ isl_bool isl_space_is_equal(__isl_keep isl_space *space1,
 isl_bool isl_space_tuple_is_equal(__isl_keep isl_space *space1,
 	enum isl_dim_type type1, __isl_keep isl_space *space2,
 	enum isl_dim_type type2);
-int isl_space_match(__isl_keep isl_space *space1, enum isl_dim_type type1,
+isl_bool isl_space_match(__isl_keep isl_space *space1, enum isl_dim_type type1,
 	__isl_keep isl_space *space2, enum isl_dim_type type2);
 ISL_DEPRECATED
 int isl_space_tuple_match(__isl_keep isl_space *space1, enum isl_dim_type type1,

@@ -850,11 +850,11 @@ static int match(__isl_keep isl_space *space1, enum isl_dim_type type1,
 	return 1;
 }
 
-int isl_space_match(__isl_keep isl_space *space1, enum isl_dim_type type1,
+isl_bool isl_space_match(__isl_keep isl_space *space1, enum isl_dim_type type1,
 	__isl_keep isl_space *space2, enum isl_dim_type type2)
 {
 	if (!space1 || !space2)
-		return -1;
+		return isl_bool_error;
 
 	return match(space1, type1, space2, type2);
 }
