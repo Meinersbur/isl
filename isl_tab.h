@@ -244,9 +244,9 @@ int isl_tab_unrestrict(struct isl_tab *tab, int con) WARN_UNUSED;
 
 void isl_tab_dump(__isl_keep struct isl_tab *tab);
 
-struct isl_map *isl_tab_basic_map_partial_lexopt(
-		struct isl_basic_map *bmap, struct isl_basic_set *dom,
-		struct isl_set **empty, int max);
+__isl_give isl_map *isl_tab_basic_map_partial_lexopt(
+	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
+	__isl_give isl_set **empty, int max);
 __isl_give isl_pw_multi_aff *isl_basic_map_partial_lexopt_pw_multi_aff(
 	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
 	__isl_give isl_set **empty, int max);

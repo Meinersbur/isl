@@ -4838,9 +4838,9 @@ error:
  * for symmetries on the constraints, before we set up the main tableau.
  * It is then no good to look for symmetries on possibly redundant constraints.
  */
-struct isl_map *isl_tab_basic_map_partial_lexopt(
-		struct isl_basic_map *bmap, struct isl_basic_set *dom,
-		struct isl_set **empty, int max)
+__isl_give isl_map *isl_tab_basic_map_partial_lexopt(
+	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
+	__isl_give isl_set **empty, int max)
 {
 	if (empty)
 		*empty = NULL;
