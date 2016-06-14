@@ -172,6 +172,9 @@ error:
  * either a map or a piecewise multi-affine expression depending on TYPE.
  * If "empty" is not NULL, then *empty is assigned a set that
  * contains those parts of the domain where there is no solution.
+ * If "flags" includes ISL_OPT_FULL, then "dom" is NULL and the optimum
+ * should be computed over the domain of "bmap".  "empty" is also NULL
+ * in this case.
  * If "bmap" is marked as rational (ISL_BASIC_MAP_RATIONAL),
  * then we compute the rational optimum.  Otherwise, we compute
  * the integral optimum.
@@ -185,17 +188,22 @@ error:
  * way we handle simple symmetries.  In particular, we currently look
  * for symmetries on the constraints, before we set up the main tableau.
  * It is then no good to look for symmetries on possibly redundant constraints.
+ * If the domain was extracted from the basic map, then there is
+ * no need to add back those constraints again.
  */
 __isl_give TYPE *SF(isl_tab_basic_map_partial_lexopt,SUFFIX)(
 	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
 	__isl_give isl_set **empty, unsigned flags)
 {
-	int max;
+	int max, full;
 	isl_bool compatible;
 
 	if (empty)
 		*empty = NULL;
 
+	full = ISL_FL_ISSET(flags, ISL_OPT_FULL);
+	if (full)
+		dom = extract_domain(bmap);
 	compatible = isl_basic_map_compatible_domain(bmap, dom);
 	if (compatible < 0)
 		goto error;
@@ -208,7 +216,9 @@ __isl_give TYPE *SF(isl_tab_basic_map_partial_lexopt,SUFFIX)(
 		return SF(basic_map_partial_lexopt,SUFFIX)(bmap, dom, empty,
 							    max);
 
-	bmap = isl_basic_map_intersect_domain(bmap, isl_basic_set_copy(dom));
+	if (!full)
+		bmap = isl_basic_map_intersect_domain(bmap,
+						    isl_basic_set_copy(dom));
 	bmap = isl_basic_map_detect_equalities(bmap);
 	bmap = isl_basic_map_remove_redundancies(bmap);
 

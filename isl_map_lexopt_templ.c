@@ -21,6 +21,9 @@
  * ISL_OPT_MAX) of "bmap" over the domain "dom" and return the result.
  * If "empty" is not NULL, then *empty is assigned a set that
  * contains those parts of the domain where there is no solution.
+ * If "flags" includes ISL_OPT_FULL, then "dom" is NULL and the optimum
+ * should be computed over the domain of "bmap".  "empty" is also NULL
+ * in this case.
  * If "bmap" is marked as rational (ISL_BASIC_MAP_RATIONAL),
  * then the rational optimum is computed.  Otherwise, the integral optimum
  * is computed.
@@ -131,10 +134,8 @@ error:
 __isl_give TYPE *SF(isl_basic_map_lexopt,SUFFIX)(
 	__isl_take isl_basic_map *bmap, unsigned flags)
 {
-	isl_basic_set *dom;
-
-	dom = extract_domain(bmap);
-	return SF(isl_basic_map_partial_lexopt,SUFFIX)(bmap, dom, NULL, flags);
+	ISL_FL_SET(flags, ISL_OPT_FULL);
+	return SF(isl_basic_map_partial_lexopt,SUFFIX)(bmap, NULL, NULL, flags);
 }
 
 __isl_give TYPE *SF(isl_basic_map_lexmin,SUFFIX)(__isl_take isl_basic_map *bmap)
