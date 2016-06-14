@@ -190,13 +190,17 @@ __isl_give TYPE *SF(isl_tab_basic_map_partial_lexopt,SUFFIX)(
 	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
 	__isl_give isl_set **empty, int max)
 {
+	isl_bool compatible;
+
 	if (empty)
 		*empty = NULL;
-	if (!bmap || !dom)
-		goto error;
 
-	isl_assert(bmap->ctx,
-	    isl_basic_map_compatible_domain(bmap, dom), goto error);
+	compatible = isl_basic_map_compatible_domain(bmap, dom);
+	if (compatible < 0)
+		goto error;
+	if (!compatible)
+		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
+			"domain does not match input", goto error);
 
 	if (isl_basic_set_dim(dom, isl_dim_all) == 0)
 		return SF(basic_map_partial_lexopt,SUFFIX)(bmap, dom, empty,
