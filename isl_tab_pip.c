@@ -4118,7 +4118,7 @@ error:
  * because they will be added one by one in the given order
  * during the construction of the solution map.
  */
-static struct isl_sol *basic_map_partial_lexopt_base(
+static struct isl_sol *basic_map_partial_lexopt_base_sol(
 	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
 	__isl_give isl_set **empty, int max,
 	struct isl_sol *(*init)(__isl_keep isl_basic_map *bmap,
@@ -4163,7 +4163,7 @@ error:
 /* Base case of isl_tab_basic_map_partial_lexopt, after removing
  * some obvious symmetries.
  *
- * We call basic_map_partial_lexopt_base and extract the results.
+ * We call basic_map_partial_lexopt_base_sol and extract the results.
  */
 static __isl_give isl_map *basic_map_partial_lexopt_base_map(
 	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
@@ -4173,8 +4173,8 @@ static __isl_give isl_map *basic_map_partial_lexopt_base_map(
 	struct isl_sol *sol;
 	struct isl_sol_map *sol_map;
 
-	sol = basic_map_partial_lexopt_base(bmap, dom, empty, max,
-					    &sol_map_init);
+	sol = basic_map_partial_lexopt_base_sol(bmap, dom, empty, max,
+						&sol_map_init);
 	if (!sol)
 		return NULL;
 	sol_map = (struct isl_sol_map *) sol;
@@ -5739,7 +5739,7 @@ error:
 /* Base case of isl_tab_basic_map_partial_lexopt, after removing
  * some obvious symmetries.
  *
- * We call basic_map_partial_lexopt_base and extract the results.
+ * We call basic_map_partial_lexopt_base_sol and extract the results.
  */
 static __isl_give isl_pw_multi_aff *basic_map_partial_lexopt_base_pma(
 	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
@@ -5749,8 +5749,8 @@ static __isl_give isl_pw_multi_aff *basic_map_partial_lexopt_base_pma(
 	struct isl_sol *sol;
 	struct isl_sol_pma *sol_pma;
 
-	sol = basic_map_partial_lexopt_base(bmap, dom, empty, max,
-					    &sol_pma_init);
+	sol = basic_map_partial_lexopt_base_sol(bmap, dom, empty, max,
+						&sol_pma_init);
 	if (!sol)
 		return NULL;
 	sol_pma = (struct isl_sol_pma *) sol;
