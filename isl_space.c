@@ -850,13 +850,13 @@ static int match(__isl_keep isl_space *space1, enum isl_dim_type type1,
 	return 1;
 }
 
-int isl_space_match(__isl_keep isl_space *dim1, enum isl_dim_type dim1_type,
-	__isl_keep isl_space *dim2, enum isl_dim_type dim2_type)
+int isl_space_match(__isl_keep isl_space *space1, enum isl_dim_type type1,
+	__isl_keep isl_space *space2, enum isl_dim_type type2)
 {
-	if (!dim1 || !dim2)
+	if (!space1 || !space2)
 		return -1;
 
-	return match(dim1, dim1_type, dim2, dim2_type);
+	return match(space1, type1, space2, type2);
 }
 
 static void get_ids(__isl_keep isl_space *dim, enum isl_dim_type type,
