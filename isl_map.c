@@ -6066,86 +6066,6 @@ error:
 	return NULL;
 }
 
-static __isl_give isl_map *isl_basic_map_partial_lexopt(
-	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
-	__isl_give isl_set **empty, int max)
-{
-	return isl_tab_basic_map_partial_lexopt(bmap, dom, empty, max);
-}
-
-__isl_give isl_map *isl_basic_map_partial_lexmax(
-	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
-	__isl_give isl_set **empty)
-{
-	return isl_basic_map_partial_lexopt(bmap, dom, empty, 1);
-}
-
-__isl_give isl_map *isl_basic_map_partial_lexmin(
-	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
-	__isl_give isl_set **empty)
-{
-	return isl_basic_map_partial_lexopt(bmap, dom, empty, 0);
-}
-
-__isl_give isl_set *isl_basic_set_partial_lexmin(
-	__isl_take isl_basic_set *bset, __isl_take isl_basic_set *dom,
-	__isl_give isl_set **empty)
-{
-	return isl_basic_map_partial_lexmin(bset, dom, empty);
-}
-
-__isl_give isl_set *isl_basic_set_partial_lexmax(
-	__isl_take isl_basic_set *bset, __isl_take isl_basic_set *dom,
-	__isl_give isl_set **empty)
-{
-	return isl_basic_map_partial_lexmax(bset, dom, empty);
-}
-
-/* Compute the lexicographic minimum (or maximum if "max" is set)
- * of "bmap" over the domain "dom" and return the result as a piecewise
- * multi-affine expression.
- * If "empty" is not NULL, then *empty is assigned a set that
- * contains those parts of the domain where there is no solution.
- * If "bmap" is marked as rational (ISL_BASIC_MAP_RATIONAL),
- * then the rational optimum is computed.  Otherwise, the integral optimum
- * is computed.
- */
-static __isl_give isl_pw_multi_aff *isl_basic_map_partial_lexopt_pw_multi_aff(
-	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
-	__isl_give isl_set **empty, int max)
-{
-	return isl_tab_basic_map_partial_lexopt_pw_multi_aff(bmap, dom, empty,
-							    max);
-}
-
-__isl_give isl_pw_multi_aff *isl_basic_map_partial_lexmin_pw_multi_aff(
-	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
-	__isl_give isl_set **empty)
-{
-	return isl_basic_map_partial_lexopt_pw_multi_aff(bmap, dom, empty, 0);
-}
-
-__isl_give isl_pw_multi_aff *isl_basic_map_partial_lexmax_pw_multi_aff(
-	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
-	__isl_give isl_set **empty)
-{
-	return isl_basic_map_partial_lexopt_pw_multi_aff(bmap, dom, empty, 1);
-}
-
-__isl_give isl_pw_multi_aff *isl_basic_set_partial_lexmin_pw_multi_aff(
-	__isl_take isl_basic_set *bset, __isl_take isl_basic_set *dom,
-	__isl_give isl_set **empty)
-{
-	return isl_basic_map_partial_lexmin_pw_multi_aff(bset, dom, empty);
-}
-
-__isl_give isl_pw_multi_aff *isl_basic_set_partial_lexmax_pw_multi_aff(
-	__isl_take isl_basic_set *bset, __isl_take isl_basic_set *dom,
-	__isl_give isl_set **empty)
-{
-	return isl_basic_map_partial_lexmax_pw_multi_aff(bset, dom, empty);
-}
-
 /* Extract a domain from "bmap" for the purpose of computing
  * a lexicographic optimum.
  *
@@ -6170,21 +6090,6 @@ static __isl_give isl_basic_set *extract_domain(__isl_keep isl_basic_map *bmap)
 	bmap = isl_basic_map_drop_constraints_involving_dims(bmap,
 							isl_dim_out, 0, n_out);
 	return isl_basic_map_domain(bmap);
-}
-
-__isl_give isl_pw_multi_aff *isl_basic_map_lexopt_pw_multi_aff(
-	__isl_take isl_basic_map *bmap, int max)
-{
-	isl_basic_set *dom;
-
-	dom = extract_domain(bmap);
-	return isl_basic_map_partial_lexopt_pw_multi_aff(bmap, dom, NULL, max);
-}
-
-__isl_give isl_pw_multi_aff *isl_basic_map_lexmin_pw_multi_aff(
-	__isl_take isl_basic_map *bmap)
-{
-	return isl_basic_map_lexopt_pw_multi_aff(bmap, 0);
 }
 
 #undef TYPE
@@ -6362,22 +6267,6 @@ __isl_give isl_set *isl_set_partial_lexmax(
 	return (struct isl_set *)
 		isl_map_partial_lexmax((struct isl_map *)set,
 			dom, empty);
-}
-
-/* Compute the lexicographic minimum (or maximum if "max" is set)
- * of "bmap" over its domain.
- */
-__isl_give isl_map *isl_basic_map_lexopt(__isl_take isl_basic_map *bmap, int max)
-{
-	isl_basic_set *dom;
-
-	dom = extract_domain(bmap);
-	return isl_basic_map_partial_lexopt(bmap, dom, NULL, max);
-}
-
-__isl_give isl_map *isl_basic_map_lexmin(__isl_take isl_basic_map *bmap)
-{
-	return isl_basic_map_lexopt(bmap, 0);
 }
 
 __isl_give isl_map *isl_basic_map_lexmax(__isl_take isl_basic_map *bmap)

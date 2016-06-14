@@ -17,6 +17,50 @@
 #define xSF(TYPE,SUFFIX) TYPE ## SUFFIX
 #define SF(TYPE,SUFFIX) xSF(TYPE,SUFFIX)
 
+/* Compute the lexicographic minimum (or maximum if "max" is set)
+ * of "bmap" over the domain "dom" and return the result.
+ * If "empty" is not NULL, then *empty is assigned a set that
+ * contains those parts of the domain where there is no solution.
+ * If "bmap" is marked as rational (ISL_BASIC_MAP_RATIONAL),
+ * then the rational optimum is computed.  Otherwise, the integral optimum
+ * is computed.
+ */
+static __isl_give TYPE *SF(isl_basic_map_partial_lexopt,SUFFIX)(
+	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
+	__isl_give isl_set **empty, int max)
+{
+	return SF(isl_tab_basic_map_partial_lexopt,SUFFIX)(bmap, dom, empty,
+							    max);
+}
+
+__isl_give TYPE *SF(isl_basic_map_partial_lexmax,SUFFIX)(
+	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
+	__isl_give isl_set **empty)
+{
+	return SF(isl_basic_map_partial_lexopt,SUFFIX)(bmap, dom, empty, 1);
+}
+
+__isl_give TYPE *SF(isl_basic_map_partial_lexmin,SUFFIX)(
+	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
+	__isl_give isl_set **empty)
+{
+	return SF(isl_basic_map_partial_lexopt,SUFFIX)(bmap, dom, empty, 0);
+}
+
+__isl_give TYPE *SF(isl_basic_set_partial_lexmin,SUFFIX)(
+	__isl_take isl_basic_set *bset, __isl_take isl_basic_set *dom,
+	__isl_give isl_set **empty)
+{
+	return SF(isl_basic_map_partial_lexmin,SUFFIX)(bset, dom, empty);
+}
+
+__isl_give TYPE *SF(isl_basic_set_partial_lexmax,SUFFIX)(
+	__isl_take isl_basic_set *bset, __isl_take isl_basic_set *dom,
+	__isl_give isl_set **empty)
+{
+	return SF(isl_basic_map_partial_lexmax,SUFFIX)(bset, dom, empty);
+}
+
 /* Given a basic map "bmap", compute the lexicographically minimal
  * (or maximal) image element for each domain element in dom.
  * If empty is not NULL, then set *empty to those elements in dom
@@ -77,6 +121,23 @@ error:
 	isl_set_free(dom);
 	isl_basic_map_free(bmap);
 	return NULL;
+}
+
+/* Compute the lexicographic minimum (or maximum if "max" is set)
+ * of "bmap" over its domain.
+ */
+__isl_give TYPE *SF(isl_basic_map_lexopt,SUFFIX)(
+	__isl_take isl_basic_map *bmap, int max)
+{
+	isl_basic_set *dom;
+
+	dom = extract_domain(bmap);
+	return SF(isl_basic_map_partial_lexopt,SUFFIX)(bmap, dom, NULL, max);
+}
+
+__isl_give TYPE *SF(isl_basic_map_lexmin,SUFFIX)(__isl_take isl_basic_map *bmap)
+{
+	return SF(isl_basic_map_lexopt,SUFFIX)(bmap, 0);
 }
 
 static __isl_give TYPE *SF(isl_map_partial_lexopt_aligned,SUFFIX)(
