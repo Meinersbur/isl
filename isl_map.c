@@ -6066,43 +6066,39 @@ error:
 	return NULL;
 }
 
-static struct isl_map *isl_basic_map_partial_lexopt(
-		struct isl_basic_map *bmap, struct isl_basic_set *dom,
-		struct isl_set **empty, int max)
+static __isl_give isl_map *isl_basic_map_partial_lexopt(
+	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
+	__isl_give isl_set **empty, int max)
 {
 	return isl_tab_basic_map_partial_lexopt(bmap, dom, empty, max);
 }
 
-struct isl_map *isl_basic_map_partial_lexmax(
-		struct isl_basic_map *bmap, struct isl_basic_set *dom,
-		struct isl_set **empty)
+__isl_give isl_map *isl_basic_map_partial_lexmax(
+	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
+	__isl_give isl_set **empty)
 {
 	return isl_basic_map_partial_lexopt(bmap, dom, empty, 1);
 }
 
-struct isl_map *isl_basic_map_partial_lexmin(
-		struct isl_basic_map *bmap, struct isl_basic_set *dom,
-		struct isl_set **empty)
+__isl_give isl_map *isl_basic_map_partial_lexmin(
+	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
+	__isl_give isl_set **empty)
 {
 	return isl_basic_map_partial_lexopt(bmap, dom, empty, 0);
 }
 
-struct isl_set *isl_basic_set_partial_lexmin(
-		struct isl_basic_set *bset, struct isl_basic_set *dom,
-		struct isl_set **empty)
+__isl_give isl_set *isl_basic_set_partial_lexmin(
+	__isl_take isl_basic_set *bset, __isl_take isl_basic_set *dom,
+	__isl_give isl_set **empty)
 {
-	return (struct isl_set *)
-		isl_basic_map_partial_lexmin((struct isl_basic_map *)bset,
-			dom, empty);
+	return isl_basic_map_partial_lexmin(bset, dom, empty);
 }
 
-struct isl_set *isl_basic_set_partial_lexmax(
-		struct isl_basic_set *bset, struct isl_basic_set *dom,
-		struct isl_set **empty)
+__isl_give isl_set *isl_basic_set_partial_lexmax(
+	__isl_take isl_basic_set *bset, __isl_take isl_basic_set *dom,
+	__isl_give isl_set **empty)
 {
-	return (struct isl_set *)
-		isl_basic_map_partial_lexmax((struct isl_basic_map *)bset,
-			dom, empty);
+	return isl_basic_map_partial_lexmax(bset, dom, empty);
 }
 
 __isl_give isl_pw_multi_aff *isl_basic_map_partial_lexmin_pw_multi_aff(
