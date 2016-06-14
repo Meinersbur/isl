@@ -6081,6 +6081,9 @@ error:
  * in the form of an isl_pw_multi_aff.
  * If "empty" is not NULL, then set *empty to those elements in dom that
  * do not have an image element.
+ * If "flags" includes ISL_OPT_FULL, then "dom" is NULL and the optimum
+ * should be computed over the domain of "map".  "empty" is also NULL
+ * in this case.
  *
  * We first compute the lexicographically minimal or maximal element
  * in the first basic map.  This results in a partial solution "res"
@@ -6095,10 +6098,12 @@ static __isl_give isl_pw_multi_aff *isl_map_partial_lexopt_aligned_pw_multi_aff(
 	__isl_give isl_set **empty, unsigned flags)
 {
 	int i;
+	int full;
 	isl_pw_multi_aff *res;
 	isl_set *todo;
 
-	if (!map || !dom)
+	full = ISL_FL_ISSET(flags, ISL_OPT_FULL);
+	if (!map || (!full && !dom))
 		goto error;
 
 	if (isl_map_plain_is_empty(map)) {
@@ -6161,6 +6166,9 @@ error:
  * in the form of an isl_map.
  * If "empty" is not NULL, then set *empty to those elements in "dom" that
  * do not have an image element.
+ * If "flags" includes ISL_OPT_FULL, then "dom" is NULL and the optimum
+ * should be computed over the domain of "map".  "empty" is also NULL
+ * in this case.
  *
  * If the input consists of more than one disjunct, then first
  * compute the desired result in the form of an isl_pw_multi_aff and
@@ -6180,10 +6188,12 @@ static __isl_give isl_map *isl_map_partial_lexopt_aligned(
 	__isl_take isl_map *map, __isl_take isl_set *dom,
 	__isl_give isl_set **empty, unsigned flags)
 {
+	int full;
 	struct isl_map *res;
 	isl_pw_multi_aff *pma;
 
-	if (!map || !dom)
+	full = ISL_FL_ISSET(flags, ISL_OPT_FULL);
+	if (!map || (!full && !dom))
 		goto error;
 
 	if (isl_map_plain_is_empty(map)) {

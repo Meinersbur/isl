@@ -70,11 +70,18 @@ __isl_give TYPE *SF(isl_basic_set_partial_lexmax,SUFFIX)(
  * (or maximal) image element for each domain element in dom.
  * If empty is not NULL, then set *empty to those elements in dom
  * that do not have an image element.
+ * If "flags" includes ISL_OPT_FULL, then "dom" is NULL and the optimum
+ * should be computed over the domain of "bmap".  "empty" is also NULL
+ * in this case.
  *
  * We first make sure the basic sets in dom are disjoint and then
  * simply collect the results over each of the basic sets separately.
  * We could probably improve the efficiency a bit by moving the union
  * domain down into the parametric integer programming.
+ *
+ * If a full optimum is being computed (i.e., "flags" includes ISL_OPT_FULL),
+ * then no domain is given and there is then also no need to consider
+ * the disjuncts of the domain.
  */
 static __isl_give TYPE *SF(basic_map_partial_lexopt,SUFFIX)(
 	__isl_take isl_basic_map *bmap, __isl_take isl_set *dom,
@@ -83,6 +90,10 @@ static __isl_give TYPE *SF(basic_map_partial_lexopt,SUFFIX)(
 	int i;
 	TYPE *res;
 	isl_set *all_empty;
+
+	if (ISL_FL_ISSET(flags, ISL_OPT_FULL))
+		return SF(isl_basic_map_partial_lexopt,SUFFIX)(bmap, NULL,
+								empty, flags);
 
 	dom = isl_set_make_disjoint(dom);
 	if (!dom)
@@ -146,6 +157,11 @@ __isl_give TYPE *SF(isl_basic_map_lexmin,SUFFIX)(__isl_take isl_basic_map *bmap)
 static __isl_give TYPE *SF(isl_map_partial_lexopt_aligned,SUFFIX)(
 	__isl_take isl_map *map, __isl_take isl_set *dom,
 	__isl_give isl_set **empty, unsigned flags);
+/* This function is currently only used when TYPE is defined as isl_map. */
+static __isl_give TYPE *SF(isl_map_partial_lexopt,SUFFIX)(
+	__isl_take isl_map *map, __isl_take isl_set *dom,
+	__isl_give isl_set **empty, unsigned flags)
+	__attribute__ ((unused));
 
 /* Given a map "map", compute the lexicographically minimal
  * (or maximal) image element for each domain element in dom.
@@ -178,20 +194,15 @@ error:
 	return NULL;
 }
 
+/* Compute the lexicographic minimum (or maximum if "flags" includes
+ * ISL_OPT_MAX) of "map" over its domain.
+ */
 __isl_give TYPE *SF(isl_map_lexopt,SUFFIX)(__isl_take isl_map *map,
 	unsigned flags)
 {
-	isl_set *dom = NULL;
-	isl_space *dom_space;
-
-	if (!map)
-		goto error;
-	dom_space = isl_space_domain(isl_space_copy(map->dim));
-	dom = isl_set_universe(dom_space);
-	return SF(isl_map_partial_lexopt,SUFFIX)(map, dom, NULL, flags);
-error:
-	isl_map_free(map);
-	return NULL;
+	ISL_FL_SET(flags, ISL_OPT_FULL);
+	return SF(isl_map_partial_lexopt_aligned,SUFFIX)(map, NULL, NULL,
+							flags);
 }
 
 __isl_give TYPE *SF(isl_map_lexmin,SUFFIX)(__isl_take isl_map *map)
