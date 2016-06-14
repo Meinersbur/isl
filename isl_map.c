@@ -200,12 +200,12 @@ int isl_map_compatible_domain(struct isl_map *map, struct isl_set *set)
 					set->dim, isl_dim_set);
 }
 
-int isl_basic_map_compatible_domain(__isl_keep isl_basic_map *bmap,
+isl_bool isl_basic_map_compatible_domain(__isl_keep isl_basic_map *bmap,
 	__isl_keep isl_basic_set *bset)
 {
-	int m;
+	isl_bool m;
 	if (!bmap || !bset)
-		return -1;
+		return isl_bool_error;
 	m = isl_space_match(bmap->dim, isl_dim_param, bset->dim, isl_dim_param);
 	if (m < 0 || !m)
 		return m;
