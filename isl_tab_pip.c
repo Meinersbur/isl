@@ -5741,7 +5741,7 @@ error:
  *
  * We call basic_map_partial_lexopt_base_sol and extract the results.
  */
-static __isl_give isl_pw_multi_aff *basic_map_partial_lexopt_base_pma(
+static __isl_give isl_pw_multi_aff *basic_map_partial_lexopt_base_pw_multi_aff(
 	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
 	__isl_give isl_set **empty, int max)
 {
@@ -5908,7 +5908,7 @@ error:
 	return NULL;
 }
 
-static __isl_give isl_pw_multi_aff *basic_map_partial_lexopt_pma(
+static __isl_give isl_pw_multi_aff *basic_map_partial_lexopt_pw_multi_aff(
 	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
 	__isl_give isl_set **empty, int max);
 
@@ -5921,7 +5921,8 @@ static __isl_give isl_pw_multi_aff *basic_map_partial_lexopt_pma(
  * We recursively call basic_map_partial_lexopt and then plug in
  * the definition of the minimum in the result.
  */
-static __isl_give union isl_lex_res basic_map_partial_lexopt_symm_pma_core(
+static __isl_give union isl_lex_res
+basic_map_partial_lexopt_symm_core_pw_multi_aff(
 	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
 	__isl_give isl_set **empty, int max, __isl_take isl_mat *cst,
 	__isl_take isl_space *map_space, __isl_take isl_space *set_space)
@@ -5935,7 +5936,7 @@ static __isl_give union isl_lex_res basic_map_partial_lexopt_symm_pma_core(
 	min_expr_pa = set_minimum_pa(isl_basic_set_get_space(dom),
 					isl_mat_copy(cst));
 
-	opt = basic_map_partial_lexopt_pma(bmap, dom, empty, max);
+	opt = basic_map_partial_lexopt_pw_multi_aff(bmap, dom, empty, max);
 
 	if (empty) {
 		*empty = split(*empty,
@@ -5955,7 +5956,8 @@ static __isl_give isl_pw_multi_aff *basic_map_partial_lexopt_symm_pma(
 	__isl_give isl_set **empty, int max, int first, int second)
 {
 	return basic_map_partial_lexopt_symm(bmap, dom, empty, max,
-		    first, second, &basic_map_partial_lexopt_symm_pma_core).pma;
+		    first, second,
+		    &basic_map_partial_lexopt_symm_core_pw_multi_aff).pma;
 }
 
 /* Recursive part of isl_tab_basic_map_partial_lexopt_pw_multi_aff, after
@@ -5967,7 +5969,7 @@ static __isl_give isl_pw_multi_aff *basic_map_partial_lexopt_symm_pma(
  * constraint in basic_map_partial_lexopt_symm_pma and then call
  * this function recursively to look for more parallel constraints.
  */
-static __isl_give isl_pw_multi_aff *basic_map_partial_lexopt_pma(
+static __isl_give isl_pw_multi_aff *basic_map_partial_lexopt_pw_multi_aff(
 	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
 	__isl_give isl_set **empty, int max)
 {
@@ -5982,7 +5984,8 @@ static __isl_give isl_pw_multi_aff *basic_map_partial_lexopt_pma(
 	if (par < 0)
 		goto error;
 	if (!par)
-		return basic_map_partial_lexopt_base_pma(bmap, dom, empty, max);
+		return basic_map_partial_lexopt_base_pw_multi_aff(bmap, dom,
+								empty, max);
 	
 	return basic_map_partial_lexopt_symm_pma(bmap, dom, empty, max,
 						 first, second);
@@ -6024,13 +6027,14 @@ __isl_give isl_pw_multi_aff *isl_tab_basic_map_partial_lexopt_pw_multi_aff(
 	    isl_basic_map_compatible_domain(bmap, dom), goto error);
 
 	if (isl_basic_set_dim(dom, isl_dim_all) == 0)
-		return basic_map_partial_lexopt_pma(bmap, dom, empty, max);
+		return basic_map_partial_lexopt_pw_multi_aff(bmap, dom, empty,
+							    max);
 
 	bmap = isl_basic_map_intersect_domain(bmap, isl_basic_set_copy(dom));
 	bmap = isl_basic_map_detect_equalities(bmap);
 	bmap = isl_basic_map_remove_redundancies(bmap);
 
-	return basic_map_partial_lexopt_pma(bmap, dom, empty, max);
+	return basic_map_partial_lexopt_pw_multi_aff(bmap, dom, empty, max);
 error:
 	isl_basic_set_free(dom);
 	isl_basic_map_free(bmap);
