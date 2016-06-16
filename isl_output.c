@@ -1194,6 +1194,8 @@ static __isl_give isl_printer *isl_map_print_isl_body(__isl_keep isl_map *map,
 	struct isl_aff_split *split = NULL;
 	int rational;
 
+	if (!p || !map)
+		return isl_printer_free(p);
 	if (!p->dump && map->n > 0)
 		split = split_aff(map);
 	if (split) {
