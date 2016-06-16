@@ -2208,14 +2208,14 @@ static __isl_give isl_printer *print_union_pw_qpolynomial_fold_isl(
 {
 	struct isl_union_print_data data;
 	struct isl_print_space_data space_data = { 0 };
-	isl_space *dim;
+	isl_space *space;
 
-	dim = isl_union_pw_qpolynomial_fold_get_space(upwf);
-	if (isl_space_dim(dim, isl_dim_param) > 0) {
-		p = print_tuple(dim, p, isl_dim_param, &space_data);
+	space = isl_union_pw_qpolynomial_fold_get_space(upwf);
+	if (isl_space_dim(space, isl_dim_param) > 0) {
+		p = print_tuple(space, p, isl_dim_param, &space_data);
 		p = isl_printer_print_str(p, " -> ");
 	}
-	isl_space_free(dim);
+	isl_space_free(space);
 	p = isl_printer_print_str(p, "{ ");
 	data.p = p;
 	data.first = 1;
