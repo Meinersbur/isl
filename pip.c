@@ -94,32 +94,43 @@ static struct isl_basic_set *to_parameter_domain(struct isl_basic_set *context)
 	return context;
 }
 
+/* Plug in the initial values of "params" for the parameters in "bset" and
+ * return the result.  The remaining entries in "params", if any,
+ * correspond to the existentially quantified variables in the description
+ * of the original context and can be ignored.
+ */
 static __isl_give isl_basic_set *plug_in_parameters(
 	__isl_take isl_basic_set *bset, __isl_take isl_vec *params)
 {
-	int i;
+	int i, n;
 
-	for (i = 0; i < params->size - 1; ++i)
+	n = isl_basic_set_dim(bset, isl_dim_param);
+	for (i = 0; i < n; ++i)
 		bset = isl_basic_set_fix(bset,
 					 isl_dim_param, i, params->el[1 + i]);
 
-	bset = isl_basic_set_remove_dims(bset,
-					 isl_dim_param, 0, params->size - 1);
+	bset = isl_basic_set_remove_dims(bset, isl_dim_param, 0, n);
 
 	isl_vec_free(params);
 
 	return bset;
 }
 
+/* Plug in the initial values of "params" for the parameters in "set" and
+ * return the result.  The remaining entries in "params", if any,
+ * correspond to the existentially quantified variables in the description
+ * of the original context and can be ignored.
+ */
 static __isl_give isl_set *set_plug_in_parameters(__isl_take isl_set *set,
 	__isl_take isl_vec *params)
 {
-	int i;
+	int i, n;
 
-	for (i = 0; i < params->size - 1; ++i)
+	n = isl_set_dim(set, isl_dim_param);
+	for (i = 0; i < n; ++i)
 		set = isl_set_fix(set, isl_dim_param, i, params->el[1 + i]);
 
-	set = isl_set_remove_dims(set, isl_dim_param, 0, params->size - 1);
+	set = isl_set_remove_dims(set, isl_dim_param, 0, n);
 
 	isl_vec_free(params);
 
