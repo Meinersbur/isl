@@ -28,6 +28,7 @@
 #include <isl_local_space_private.h>
 #include <isl_aff_private.h>
 #include <isl_val_private.h>
+#include <isl_constraint_private.h>
 #include <isl/ast_build.h>
 #include <isl_sort.h>
 #include <isl_output_private.h>
@@ -2255,17 +2256,43 @@ error:
 	return NULL;
 }
 
+/* Print the isl_constraint "c" to "p".
+ */
 __isl_give isl_printer *isl_printer_print_constraint(__isl_take isl_printer *p,
 	__isl_keep isl_constraint *c)
 {
-	isl_basic_map *bmap;
+	struct isl_print_space_data data = { 0 };
+	isl_local_space *ls;
+	isl_space *space;
+	isl_bool exists;
 
 	if (!p || !c)
 		goto error;
 
-	bmap = isl_basic_map_from_constraint(isl_constraint_copy(c));
-	p = isl_printer_print_basic_map(p, bmap);
-	isl_basic_map_free(bmap);
+	ls = isl_constraint_get_local_space(c);
+	if (!ls)
+		return isl_printer_free(p);
+	space = isl_local_space_get_space(ls);
+	p = print_param_tuple(p, space, &data);
+	p = isl_printer_print_str(p, "{ ");
+	p = isl_print_space(space, p, 0, &data);
+	p = isl_printer_print_str(p, " : ");
+	exists = need_exists(p, ls->div);
+	if (exists < 0)
+		p = isl_printer_free(p);
+	if (exists >= 0 && exists)
+		p = open_exists(p, space, ls->div, 0);
+	p = print_affine_of_len(space, ls->div, p, c->v->el, c->v->size);
+	if (isl_constraint_is_equality(c))
+		p = isl_printer_print_str(p, " = 0");
+	else
+		p = isl_printer_print_str(p, " >= 0");
+	if (exists >= 0 && exists)
+		p = isl_printer_print_str(p, s_close_exists[0]);
+	p = isl_printer_print_str(p, " }");
+	isl_space_free(space);
+	isl_local_space_free(ls);
+
 	return p;
 error:
 	isl_printer_free(p);
