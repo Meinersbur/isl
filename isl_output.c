@@ -748,23 +748,25 @@ static isl_bool need_exists(__isl_keep isl_printer *p,
 static __isl_give isl_printer *print_disjunct(__isl_keep isl_basic_map *bmap,
 	__isl_keep isl_space *space, __isl_take isl_printer *p, int latex)
 {
+	int dump;
 	isl_mat *div;
 	isl_bool exists;
 
 	if (!p)
 		return NULL;
+	dump = p->dump;
 	div = isl_basic_map_get_divs(bmap);
-	if (p->dump)
+	if (dump)
 		exists = bmap->n_div > 0;
 	else
 		exists = need_exists(p, bmap, div);
 	if (exists >= 0 && exists) {
 		p = isl_printer_print_str(p, s_open_exists[latex]);
-		p = print_div_list(p, space, div, latex, p->dump);
+		p = print_div_list(p, space, div, latex, dump);
 		p = isl_printer_print_str(p, ": ");
 	}
 
-	if (p->dump)
+	if (dump)
 		div = isl_mat_free(div);
 	p = print_constraints(bmap, space, div, p, latex);
 	isl_mat_free(div);
