@@ -18,6 +18,7 @@
 #include <isl_mat_private.h>
 #include <isl_vec_private.h>
 #include <isl_aff_private.h>
+#include <isl_constraint_private.h>
 #include <isl_options_private.h>
 #include <isl_config.h>
 
@@ -5381,8 +5382,114 @@ error:
 	sol->sol.error = 1;
 }
 
+/* Return the equality constraint in "bset" that defines existentially
+ * quantified variable "pos" in terms of earlier dimensions.
+ * The equality constraint is guaranteed to exist by the caller.
+ * If "c" is not NULL, then it is the result of a previous call
+ * to this function for the same variable, so simply return the input "c"
+ * in that case.
+ */
+static __isl_give isl_constraint *get_equality(__isl_keep isl_basic_set *bset,
+	int pos, __isl_take isl_constraint *c)
+{
+	int r;
+
+	if (c)
+		return c;
+	r = isl_basic_set_has_defining_equality(bset, isl_dim_div, pos, &c);
+	if (r < 0)
+		return NULL;
+	if (!r)
+		isl_die(isl_basic_set_get_ctx(bset), isl_error_internal,
+			"unexpected missing equality", return NULL);
+	return c;
+}
+
+/* Given a set "dom", of which only the first "n_known" existentially
+ * quantified variables have a known explicit representation, and
+ * a matrix "M", the rows of which are defined in terms of the dimensions
+ * of "dom", eliminate all references to the existentially quantified
+ * variables without a known explicit representation from "M"
+ * by exploiting the equality constraints of "dom".
+ *
+ * In particular, for each of those existentially quantified variables,
+ * if there are non-zero entries in the corresponding column of "M",
+ * then look for an equality constraint of "dom" that defines that variable
+ * in terms of earlier variables and use it to clear the entries.
+ *
+ * In particular, if the equality is of the form
+ *
+ *	f() + a alpha = 0
+ *
+ * while the matrix entry is b/d (with d the global denominator of "M"),
+ * then first scale the matrix such that the entry becomes b'/d' with
+ * b' a multiple of a.  Do this by multiplying the entire matrix
+ * by abs(a/gcd(a,b)).  Then subtract the equality multiplied by b'/a
+ * from the row of "M" to clear the entry.
+ */
+static __isl_give isl_mat *eliminate_unknown_divs(__isl_take isl_mat *M,
+	__isl_keep isl_basic_set *dom, int n_known)
+{
+	int i, j, n_div, off;
+	isl_int t;
+	isl_constraint *c = NULL;
+
+	if (!M)
+		return NULL;
+
+	n_div = isl_basic_set_dim(dom, isl_dim_div);
+	off = M->n_col - n_div;
+
+	isl_int_init(t);
+	for (i = n_div - 1; i >= n_known; --i) {
+		for (j = 1; j < M->n_row; ++j) {
+			if (isl_int_is_zero(M->row[j][off + i]))
+				continue;
+			c = get_equality(dom, i, c);
+			if (!c)
+				goto error;
+			isl_int_gcd(t, M->row[j][off + i], c->v->el[off + i]);
+			isl_int_divexact(t, c->v->el[off + i], t);
+			isl_int_abs(t, t);
+			M = isl_mat_scale(M, t);
+			M = isl_mat_cow(M);
+			if (!M)
+				goto error;
+			isl_int_divexact(t,
+					M->row[j][off + i], c->v->el[off + i]);
+			isl_seq_submul(M->row[j], t, c->v->el, M->n_col);
+		}
+		c = isl_constraint_free(c);
+	}
+	isl_int_clear(t);
+
+	return M;
+error:
+	isl_int_clear(t);
+	isl_constraint_free(c);
+	isl_mat_free(M);
+	return NULL;
+}
+
+/* Return the index of the last known div of "bset" after "start" and
+ * up to (but not including) "end".
+ * Return "start" if there is no such known div.
+ */
+static int last_known_div_after(__isl_keep isl_basic_set *bset,
+	int start, int end)
+{
+	for (end = end - 1; end > start; --end) {
+		if (isl_basic_set_div_is_known(bset, end))
+			return end;
+	}
+
+	return start;
+}
+
 /* Set the affine expressions in "ma" according to the rows in "M", which
  * are defined over the local space "ls".
+ * The matrix "M" may have extra (zero) columns beyond the number
+ * of variables in "ls".
  */
 static __isl_give isl_multi_aff *set_from_affine_matrix(
 	__isl_take isl_multi_aff *ma, __isl_take isl_local_space *ls,
@@ -5411,6 +5518,26 @@ static __isl_give isl_multi_aff *set_from_affine_matrix(
  * matrix "M" that maps the dimensions of the context to the
  * output variables, construct an isl_pw_multi_aff with a single
  * cell corresponding to "dom" and affine expressions copied from "M".
+ *
+ * Note that the description of the initial context may have involved
+ * existentially quantified variables, in which case they also appear
+ * in "dom".  These need to be removed before creating the affine
+ * expression because an affine expression cannot be defined in terms
+ * of existentially quantified variables without a known representation.
+ * In particular, they are first moved to the end in both "dom" and "M" and
+ * then ignored in "M".  In principle, the final columns of "M"
+ * (i.e., those that will be ignored) should be zero at this stage
+ * because align_context_divs adds the existentially quantified
+ * variables of the context to the main tableau without any constraints.
+ * The computed minimal value can therefore not depend on these variables.
+ * However, additional integer divisions that get added for parametric cuts
+ * get added to the end and they may happen to be equal to some affine
+ * expression involving the original existentially quantified variables.
+ * These equality constraints are then propagated to the main tableau
+ * such that the computed minimum can in fact depend on those existentially
+ * quantified variables.  This dependence can however be removed again
+ * by exploiting the equality constraints in "dom".
+ * eliminate_unknown_divs takes care of this.
  */
 static void sol_pma_add(struct isl_sol_pma *sol,
 	__isl_take isl_basic_set *dom, __isl_take isl_mat *M)
@@ -5418,9 +5545,28 @@ static void sol_pma_add(struct isl_sol_pma *sol,
 	isl_local_space *ls;
 	isl_multi_aff *maff;
 	isl_pw_multi_aff *pma;
+	int n_div, n_known, end, off;
+
+	n_div = isl_basic_set_dim(dom, isl_dim_div);
+	off = M->n_col - n_div;
+	end = n_div;
+	for (n_known = 0; n_known < end; ++n_known) {
+		if (isl_basic_set_div_is_known(dom, n_known))
+			continue;
+		end = last_known_div_after(dom, n_known, end);
+		if (end == n_known)
+			break;
+		isl_basic_set_swap_div(dom, n_known, end);
+		M = isl_mat_swap_cols(M, off + n_known, off + end);
+	}
+	dom = isl_basic_set_gauss(dom, NULL);
+	if (n_known < n_div)
+		M = eliminate_unknown_divs(M, dom, n_known);
 
 	maff = isl_multi_aff_alloc(isl_pw_multi_aff_get_space(sol->pma));
 	ls = isl_basic_set_get_local_space(dom);
+	ls = isl_local_space_drop_dims(ls, isl_dim_div,
+					n_known, n_div - n_known);
 	maff = set_from_affine_matrix(maff, ls, M);
 	dom = isl_basic_set_simplify(dom);
 	dom = isl_basic_set_finalize(dom);
