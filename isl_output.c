@@ -752,6 +752,29 @@ static isl_bool need_exists(__isl_keep isl_printer *p, __isl_keep isl_mat *div)
 	return isl_bool_false;
 }
 
+/* Print the start of an exists clause, i.e.,
+ *
+ *	(exists variables:
+ *
+ * In dump mode, local variables with an explicit definition are printed
+ * as well because they will not be printed inline.
+ */
+static __isl_give isl_printer *open_exists(__isl_take isl_printer *p,
+	__isl_keep isl_space *space, __isl_keep isl_mat *div, int latex)
+{
+	int dump;
+
+	if (!p)
+		return NULL;
+
+	dump = p->dump;
+	p = isl_printer_print_str(p, s_open_exists[latex]);
+	p = print_div_list(p, space, div, latex, dump);
+	p = isl_printer_print_str(p, ": ");
+
+	return p;
+}
+
 /* Print the constraints of "bmap" to "p".
  * The names of the variables are taken from "space".
  * "latex" is set if the constraints should be printed in LaTeX format.
@@ -769,11 +792,8 @@ static __isl_give isl_printer *print_disjunct(__isl_keep isl_basic_map *bmap,
 	dump = p->dump;
 	div = isl_basic_map_get_divs(bmap);
 	exists = need_exists(p, div);
-	if (exists >= 0 && exists) {
-		p = isl_printer_print_str(p, s_open_exists[latex]);
-		p = print_div_list(p, space, div, latex, dump);
-		p = isl_printer_print_str(p, ": ");
-	}
+	if (exists >= 0 && exists)
+		p = open_exists(p, space, div, latex);
 
 	if (dump)
 		div = isl_mat_free(div);
