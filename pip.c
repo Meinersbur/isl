@@ -94,7 +94,8 @@ static struct isl_basic_set *to_parameter_domain(struct isl_basic_set *context)
 	return context;
 }
 
-isl_basic_set *plug_in_parameters(isl_basic_set *bset, struct isl_vec *params)
+static __isl_give isl_basic_set *plug_in_parameters(
+	__isl_take isl_basic_set *bset, __isl_take isl_vec *params)
 {
 	int i;
 
