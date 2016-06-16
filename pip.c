@@ -111,7 +111,8 @@ static __isl_give isl_basic_set *plug_in_parameters(
 	return bset;
 }
 
-isl_set *set_plug_in_parameters(isl_set *set, struct isl_vec *params)
+static __isl_give isl_set *set_plug_in_parameters(__isl_take isl_set *set,
+	__isl_take isl_vec *params)
 {
 	int i;
 
