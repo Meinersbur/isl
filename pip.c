@@ -128,8 +128,8 @@ isl_set *set_plug_in_parameters(isl_set *set, struct isl_vec *params)
  * element of bset for the given values of the parameters, by
  * successively solving an ilp problem in each direction.
  */
-struct isl_vec *opt_at(struct isl_basic_set *bset,
-	struct isl_vec *params, int max)
+static __isl_give isl_vec *opt_at(__isl_take isl_basic_set *bset,
+	__isl_take isl_vec *params, int max)
 {
 	unsigned dim;
 	isl_ctx *ctx;
