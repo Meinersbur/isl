@@ -729,19 +729,20 @@ static __isl_give isl_printer *print_div_list(__isl_take isl_printer *p,
 	return p;
 }
 
-/* Does printing "bmap" require an "exists" clause?
+/* Does printing an object with local variables described by "div"
+ * require an "exists" clause?
  * That is, are there any local variables without an explicit representation?
  */
-static isl_bool need_exists(__isl_keep isl_printer *p,
-	__isl_keep isl_basic_map *bmap, __isl_keep isl_mat *div)
+static isl_bool need_exists(__isl_keep isl_printer *p, __isl_keep isl_mat *div)
 {
-	int i;
+	int i, n;
 
-	if (!p || !bmap)
+	if (!p || !div)
 		return isl_bool_error;
-	if (bmap->n_div == 0)
+	n = isl_mat_rows(div);
+	if (n == 0)
 		return isl_bool_false;
-	for (i = 0; i < bmap->n_div; ++i)
+	for (i = 0; i < n; ++i)
 		if (!can_print_div_expr(p, div, i))
 			return isl_bool_true;
 	return isl_bool_false;
@@ -766,7 +767,7 @@ static __isl_give isl_printer *print_disjunct(__isl_keep isl_basic_map *bmap,
 	if (dump)
 		exists = bmap->n_div > 0;
 	else
-		exists = need_exists(p, bmap, div);
+		exists = need_exists(p, div);
 	if (exists >= 0 && exists) {
 		p = isl_printer_print_str(p, s_open_exists[latex]);
 		p = print_div_list(p, space, div, latex, dump);
