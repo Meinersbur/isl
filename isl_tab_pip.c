@@ -5381,6 +5381,32 @@ error:
 	sol->sol.error = 1;
 }
 
+/* Set the affine expressions in "ma" according to the rows in "M", which
+ * are defined over the local space "ls".
+ */
+static __isl_give isl_multi_aff *set_from_affine_matrix(
+	__isl_take isl_multi_aff *ma, __isl_take isl_local_space *ls,
+	__isl_take isl_mat *M)
+{
+	int i, dim;
+	isl_aff *aff;
+
+	dim = isl_local_space_dim(ls, isl_dim_all);
+	for (i = 1; i < M->n_row; ++i) {
+		aff = isl_aff_alloc(isl_local_space_copy(ls));
+		if (aff) {
+			isl_int_set(aff->v->el[0], M->row[0][0]);
+			isl_seq_cpy(aff->v->el + 1, M->row[i], 1 + dim);
+		}
+		aff = isl_aff_normalize(aff);
+		ma = isl_multi_aff_set_aff(ma, i - 1, aff);
+	}
+	isl_local_space_free(ls);
+	isl_mat_free(M);
+
+	return ma;
+}
+
 /* Given a basic map "dom" that represents the context and an affine
  * matrix "M" that maps the dimensions of the context to the
  * output variables, construct an isl_pw_multi_aff with a single
@@ -5389,25 +5415,13 @@ error:
 static void sol_pma_add(struct isl_sol_pma *sol,
 	__isl_take isl_basic_set *dom, __isl_take isl_mat *M)
 {
-	int i;
 	isl_local_space *ls;
-	isl_aff *aff;
 	isl_multi_aff *maff;
 	isl_pw_multi_aff *pma;
 
 	maff = isl_multi_aff_alloc(isl_pw_multi_aff_get_space(sol->pma));
 	ls = isl_basic_set_get_local_space(dom);
-	for (i = 1; i < M->n_row; ++i) {
-		aff = isl_aff_alloc(isl_local_space_copy(ls));
-		if (aff) {
-			isl_int_set(aff->v->el[0], M->row[0][0]);
-			isl_seq_cpy(aff->v->el + 1, M->row[i], M->n_col);
-		}
-		aff = isl_aff_normalize(aff);
-		maff = isl_multi_aff_set_aff(maff, i - 1, aff);
-	}
-	isl_local_space_free(ls);
-	isl_mat_free(M);
+	maff = set_from_affine_matrix(maff, ls, M);
 	dom = isl_basic_set_simplify(dom);
 	dom = isl_basic_set_finalize(dom);
 	pma = isl_pw_multi_aff_alloc(isl_set_from_basic_set(dom), maff);
