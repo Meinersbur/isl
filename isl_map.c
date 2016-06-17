@@ -2313,22 +2313,22 @@ isl_bool isl_set_involves_dims(__isl_keep isl_set *set,
 /* Return true if the definition of the given div is unknown or depends
  * on unknown divs.
  */
-static int div_is_unknown(__isl_keep isl_basic_map *bmap, int div)
+static isl_bool div_is_unknown(__isl_keep isl_basic_map *bmap, int div)
 {
 	int i;
 	unsigned div_offset = isl_basic_map_offset(bmap, isl_dim_div);
 
 	if (isl_int_is_zero(bmap->div[div][0]))
-		return 1;
+		return isl_bool_true;
 
 	for (i = bmap->n_div - 1; i >= 0; --i) {
 		if (isl_int_is_zero(bmap->div[div][1 + div_offset + i]))
 			continue;
 		if (div_is_unknown(bmap, i))
-			return 1;
+			return isl_bool_true;
 	}
 
-	return 0;
+	return isl_bool_false;
 }
 
 /* Remove all divs that are unknown or defined in terms of unknown divs.
