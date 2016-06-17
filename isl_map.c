@@ -2310,25 +2310,33 @@ isl_bool isl_set_involves_dims(__isl_keep isl_set *set,
 	return isl_map_involves_dims(set, type, first, n);
 }
 
-/* Return true if the definition of the given div is unknown or depends
- * on unknown divs.
+/* Does local variable "div" of "bmap" have a complete explicit representation?
+ * Having a complete explicit representation requires not only
+ * an explicit representation, but also that all local variables
+ * that appear in this explicit representation in turn have
+ * a complete explicit representation.
  */
-static isl_bool div_is_unknown(__isl_keep isl_basic_map *bmap, int div)
+isl_bool isl_basic_map_div_is_known(__isl_keep isl_basic_map *bmap, int div)
 {
 	int i;
 	unsigned div_offset = isl_basic_map_offset(bmap, isl_dim_div);
+	isl_bool marked;
 
-	if (isl_int_is_zero(bmap->div[div][0]))
-		return isl_bool_true;
+	marked = isl_basic_map_div_is_marked_unknown(bmap, div);
+	if (marked < 0 || marked)
+		return isl_bool_not(marked);
 
 	for (i = bmap->n_div - 1; i >= 0; --i) {
+		isl_bool known;
+
 		if (isl_int_is_zero(bmap->div[div][1 + div_offset + i]))
 			continue;
-		if (div_is_unknown(bmap, i))
-			return isl_bool_true;
+		known = isl_basic_map_div_is_known(bmap, i);
+		if (known < 0 || !known)
+			return known;
 	}
 
-	return isl_bool_false;
+	return isl_bool_true;
 }
 
 /* Remove all divs that are unknown or defined in terms of unknown divs.
@@ -2342,7 +2350,7 @@ __isl_give isl_basic_map *isl_basic_map_remove_unknown_divs(
 		return NULL;
 
 	for (i = bmap->n_div - 1; i >= 0; --i) {
-		if (!div_is_unknown(bmap, i))
+		if (isl_basic_map_div_is_known(bmap, i))
 			continue;
 		bmap = isl_basic_map_remove_dims(bmap, isl_dim_div, i, 1);
 		if (!bmap)
@@ -6924,12 +6932,12 @@ error:
 __isl_give isl_basic_map *isl_basic_map_mark_div_unknown(
 	__isl_take isl_basic_map *bmap, int div)
 {
-	isl_bool known;
+	isl_bool unknown;
 
-	known = isl_basic_map_div_is_known(bmap, div);
-	if (known < 0)
+	unknown = isl_basic_map_div_is_marked_unknown(bmap, div);
+	if (unknown < 0)
 		return isl_basic_map_free(bmap);
-	if (!known)
+	if (unknown)
 		return bmap;
 
 	bmap = isl_basic_map_cow(bmap);
@@ -6939,16 +6947,22 @@ __isl_give isl_basic_map *isl_basic_map_mark_div_unknown(
 	return bmap;
 }
 
-/* Does local variable "div" of "bmap" have an explicit representation?
+/* Is local variable "div" of "bmap" marked as not having an explicit
+ * representation?
+ * Note that even if "div" is not marked in this way and therefore
+ * has an explicit representation, this representation may still
+ * depend (indirectly) on other local variables that do not
+ * have an explicit representation.
  */
-isl_bool isl_basic_map_div_is_known(__isl_keep isl_basic_map *bmap, int div)
+isl_bool isl_basic_map_div_is_marked_unknown(__isl_keep isl_basic_map *bmap,
+	int div)
 {
 	if (!bmap)
 		return isl_bool_error;
 	if (div < 0 || div >= isl_basic_map_dim(bmap, isl_dim_div))
 		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
 			"position out of bounds", return isl_bool_error);
-	return !isl_int_is_zero(bmap->div[div][0]);
+	return isl_int_is_zero(bmap->div[div][0]);
 }
 
 /* Return the position of the first local variable that does not
@@ -8248,7 +8262,7 @@ __isl_give isl_basic_map *isl_basic_map_expand_divs(
 			j++;
 		} else {
 			isl_seq_cpy(bmap->div[i], div->row[i], div->n_col);
-			if (!isl_basic_map_div_is_known(bmap, i))
+			if (isl_basic_map_div_is_marked_unknown(bmap, i))
 				continue;
 			if (isl_basic_map_add_div_constraints(bmap, i) < 0)
 				goto error;
