@@ -1735,6 +1735,33 @@ static enum isl_change check_wrap(int i, int j, struct isl_coalesce_info *info)
 	return change;
 }
 
+/* Check if all inequality constraints of "i" that cut "j" cease
+ * to be cut constraints if they are relaxed by one.
+ * If so, collect the cut constraints in "list".
+ * The caller is responsible for allocating "list".
+ */
+static isl_bool all_cut_by_one(int i, int j, struct isl_coalesce_info *info,
+	int *list)
+{
+	int l, n;
+
+	n = 0;
+	for (l = 0; l < info[i].bmap->n_ineq; ++l) {
+		enum isl_ineq_type type;
+
+		if (info[i].ineq[l] != STATUS_CUT)
+			continue;
+		type = type_of_relaxed(info[j].tab, info[i].bmap->ineq[l]);
+		if (type == isl_ineq_error)
+			return isl_bool_error;
+		if (type != isl_ineq_redundant)
+			return isl_bool_false;
+		list[n++] = l;
+	}
+
+	return isl_bool_true;
+}
+
 /* Given two basic maps such that "j" has at least one equality constraint
  * that is adjacent to an inequality constraint of "i" and such that "i" has
  * exactly one inequality constraint that is adjacent to an equality
@@ -1744,29 +1771,48 @@ static enum isl_change check_wrap(int i, int j, struct isl_coalesce_info *info)
  * or cut constraints of the other basic map.
  * However, none of the equality constraints of "i" are cut constraints.
  *
- * If "i" has any "cut" (in)equality, then relaxing the inequality
- * by one would not result in a basic map that contains the other
- * basic map.  However, it may still be possible to wrap in the other
- * basic map.
+ * If "i" has any "cut" inequality constraints, then check if relaxing
+ * each of them by one is sufficient for them to become valid.
+ * If so, check if the inequality constraint adjacent to an equality
+ * constraint of "j" along with all these cut constraints
+ * can be relaxed by one to contain exactly "j".
+ * Otherwise, or if this fails, check if "j" can be wrapped into "i".
  */
 static enum isl_change check_single_adj_eq(int i, int j,
 	struct isl_coalesce_info *info)
 {
 	enum isl_change change = isl_change_none;
 	int k;
-	int any_cut;
+	int n_cut;
+	int *relax;
+	isl_ctx *ctx;
+	isl_bool try_relax;
 
-	any_cut = any(info[i].ineq, info[i].bmap->n_ineq, STATUS_CUT);
+	n_cut = count(info[i].ineq, info[i].bmap->n_ineq, STATUS_CUT);
 
 	k = find(info[i].ineq, info[i].bmap->n_ineq, STATUS_ADJ_EQ);
 
-	if (!any_cut) {
-		change = is_relaxed_extension(i, j, 1, &k, info);
-		if (change != isl_change_none)
-			return change;
+	if (n_cut > 0) {
+		ctx = isl_basic_map_get_ctx(info[i].bmap);
+		relax = isl_calloc_array(ctx, int, 1 + n_cut);
+		if (!relax)
+			return isl_change_error;
+		relax[0] = k;
+		try_relax = all_cut_by_one(i, j, info, relax + 1);
+		if (try_relax < 0)
+			change = isl_change_error;
+	} else {
+		try_relax = isl_bool_true;
+		relax = &k;
 	}
+	if (try_relax && change == isl_change_none)
+		change = is_relaxed_extension(i, j, 1 + n_cut, relax, info);
+	if (n_cut > 0)
+		free(relax);
+	if (change != isl_change_none)
+		return change;
 
-	change = can_wrap_in_facet(i, j, k, info, any_cut);
+	change = can_wrap_in_facet(i, j, k, info, n_cut > 0);
 
 	return change;
 }
