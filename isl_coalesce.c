@@ -1701,6 +1701,42 @@ static enum isl_change check_wrap(int i, int j, struct isl_coalesce_info *info)
 	return change;
 }
 
+/* Given two basic maps such that "j" has at least one equality constraint
+ * that is adjacent to an inequality constraint of "i" and such that "i" has
+ * exactly one inequality constraint that is adjacent to an equality
+ * constraint of "j", check whether "i" can be extended to include "j" or
+ * whether "j" can be wrapped into "i".
+ * All remaining constraints of "i" and "j" are assumed to be valid
+ * or cut constraints of the other basic map.
+ * However, none of the equality constraints of "i" are cut constraints.
+ *
+ * If "i" has any "cut" (in)equality, then relaxing the inequality
+ * by one would not result in a basic map that contains the other
+ * basic map.  However, it may still be possible to wrap in the other
+ * basic map.
+ */
+static enum isl_change check_single_adj_eq(int i, int j,
+	struct isl_coalesce_info *info)
+{
+	enum isl_change change = isl_change_none;
+	int k;
+	int any_cut;
+
+	any_cut = any(info[i].ineq, info[i].bmap->n_ineq, STATUS_CUT);
+
+	k = find(info[i].ineq, info[i].bmap->n_ineq, STATUS_ADJ_EQ);
+
+	if (!any_cut) {
+		change = is_adj_eq_extension(i, j, k, info);
+		if (change != isl_change_none)
+			return change;
+	}
+
+	change = can_wrap_in_facet(i, j, k, info, any_cut);
+
+	return change;
+}
+
 /* At least one of the basic maps has an equality that is adjacent
  * to inequality.  Make sure that only one of the basic maps has
  * such an equality and that the other basic map has exactly one
@@ -1708,21 +1744,12 @@ static enum isl_change check_wrap(int i, int j, struct isl_coalesce_info *info)
  * If the other basic map does not have such an inequality, then
  * check if all its constraints are either valid or cut constraints
  * and, if so, try wrapping in the first map into the second.
- *
- * We call the basic map that has the inequality "i" and the basic
- * map that has the equality "j".
- * If "i" has any "cut" (in)equality, then relaxing the inequality
- * by one would not result in a basic map that contains the other
- * basic map.  However, it may still be possible to wrap in the other
- * basic map.
+ * Otherwise, try to extend one basic map with the other or
+ * wrap one basic map in the other.
  */
 static enum isl_change check_adj_eq(int i, int j,
 	struct isl_coalesce_info *info)
 {
-	enum isl_change change = isl_change_none;
-	int k;
-	int any_cut;
-
 	if (any(info[i].eq, 2 * info[i].bmap->n_eq, STATUS_ADJ_INEQ) &&
 	    any(info[j].eq, 2 * info[j].bmap->n_eq, STATUS_ADJ_INEQ))
 		/* ADJ EQ TOO MANY */
@@ -1740,24 +1767,13 @@ static enum isl_change check_adj_eq(int i, int j,
 	}
 	if (any(info[i].eq, 2 * info[i].bmap->n_eq, STATUS_CUT))
 		return isl_change_none;
-	any_cut = any(info[i].ineq, info[i].bmap->n_ineq, STATUS_CUT);
 	if (any(info[j].ineq, info[j].bmap->n_ineq, STATUS_ADJ_EQ) ||
 	    any(info[i].ineq, info[i].bmap->n_ineq, STATUS_ADJ_INEQ) ||
 	    any(info[j].ineq, info[j].bmap->n_ineq, STATUS_ADJ_INEQ))
 		/* ADJ EQ TOO MANY */
 		return isl_change_none;
 
-	k = find(info[i].ineq, info[i].bmap->n_ineq, STATUS_ADJ_EQ);
-
-	if (!any_cut) {
-		change = is_adj_eq_extension(i, j, k, info);
-		if (change != isl_change_none)
-			return change;
-	}
-
-	change = can_wrap_in_facet(i, j, k, info, any_cut);
-
-	return change;
+	return check_single_adj_eq(i, j, info);
 }
 
 /* The two basic maps lie on adjacent hyperplanes.  In particular,
