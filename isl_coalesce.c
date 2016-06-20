@@ -867,11 +867,14 @@ static __isl_give isl_vec *try_tightening(struct isl_coalesce_info *info,
 /* Tighten the (non-redundant) constraints on the facet represented
  * by info->tab.
  * In particular, on input, info->tab represents the result
- * of replacing constraint k of info->bmap, i.e., f_k >= 0,
- * by the adjacent equality, i.e., f_k + 1 = 0.
+ * of relaxing the "n" inequality constraints of info->bmap in "relaxed"
+ * by one, i.e., replacing f_i >= 0 by f_i + 1 >= 0, and then
+ * replacing the one at index "l" by the corresponding equality,
+ * i.e., f_k + 1 = 0, with k = relaxed[l].
  *
  * Compute a variable compression from the equality constraint f_k + 1 = 0
- * and use it to tighten the other constraints of info->bmap,
+ * and use it to tighten the other constraints of info->bmap
+ * (that is, all constraints that have not been relaxed),
  * updating info->tab (and leaving info->bmap untouched).
  * The compression handles essentially two cases, one where a variable
  * is assigned a fixed value and can therefore be eliminated, and one
@@ -899,15 +902,17 @@ static __isl_give isl_vec *try_tightening(struct isl_coalesce_info *info,
  * the fusion detection should not exploit them.
  */
 static isl_stat tighten_on_relaxed_facet(struct isl_coalesce_info *info,
-	int k)
+	int n, int *relaxed, int l)
 {
 	unsigned total;
 	isl_ctx *ctx;
 	isl_vec *v = NULL;
 	isl_mat *T;
 	int i;
+	int k;
 	int *affected;
 
+	k = relaxed[l];
 	ctx = isl_basic_map_get_ctx(info->bmap);
 	total = isl_basic_map_total_dim(info->bmap);
 	isl_int_add_ui(info->bmap->ineq[k][0], info->bmap->ineq[k][0], 1);
@@ -929,7 +934,7 @@ static isl_stat tighten_on_relaxed_facet(struct isl_coalesce_info *info,
 		affected[i] = not_unique_unit_row(T, 1 + i);
 
 	for (i = 0; i < info->bmap->n_ineq; ++i) {
-		if (i == k)
+		if (any(relaxed, n, i))
 			continue;
 		if (info->ineq[i] == STATUS_REDUNDANT)
 			continue;
@@ -1027,7 +1032,7 @@ static enum isl_change is_adj_eq_extension(int i, int j, int k,
 	snap2 = isl_tab_snap(info[i].tab);
 	if (isl_tab_select_facet(info[i].tab, n_eq + k) < 0)
 		return isl_change_error;
-	if (tighten_on_relaxed_facet(&info[i], k) < 0)
+	if (tighten_on_relaxed_facet(&info[i], 1, &k, 0) < 0)
 		return isl_change_error;
 	super = contains(&info[j], info[i].tab);
 	if (super < 0)
