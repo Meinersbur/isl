@@ -997,18 +997,20 @@ static enum isl_change extend(int i, int j, int n, int *relax,
 	return isl_change_fuse;
 }
 
-/* Basic map "i" has an inequality "k" that is adjacent to some equality
- * of basic map "j".  All the other inequalities are valid for "j".
+/* Basic map "i" has "n" inequality constraints (collected in "relax")
+ * that are such that they include basic map "j" if they are relaxed
+ * by one.  All the other inequalities are valid for "j".
  * Check if basic map "j" forms an extension of basic map "i".
  *
- * In particular, we relax constraint "k", compute the corresponding
- * facet and check whether it is included in the other basic map.
- * Before testing for inclusion, the constraints on the facet
+ * In particular, relax the constraints in "relax", compute the corresponding
+ * facets one by one and check whether each of these is included
+ * in the other basic map.
+ * Before testing for inclusion, the constraints on each facet
  * are tightened to increase the chance of an inclusion being detected.
- * If the facet is included, we know that relaxing the constraint extends
+ * If each facet is included, we know that relaxing the constraints extends
  * the basic map with exactly the other basic map (we already know that this
- * other basic map is included in the extension, because there
- * were no "cut" inequalities in "i") and we can replace the
+ * other basic map is included in the extension, because all other
+ * inequality constraints are valid of "j") and we can replace the
  * two basic maps by this extension.
  *        ____			  _____
  *       /    || 		 /     |
@@ -1016,38 +1018,52 @@ static enum isl_change extend(int i, int j, int n, int *relax,
  *      \     ||   	=>	\      |
  *       \    ||		 \     |
  *        \___||		  \____|
+ *
+ *
+ *	 \			|\
+ *	|\\			| \
+ *	| \\			|  \
+ *	|  |		=>	|  /
+ *	| /			| /
+ *	|/			|/
  */
-static enum isl_change is_adj_eq_extension(int i, int j, int k,
+static enum isl_change is_relaxed_extension(int i, int j, int n, int *relax,
 	struct isl_coalesce_info *info)
 {
-	int change = isl_change_none;
+	int l;
 	int super;
 	struct isl_tab_undo *snap, *snap2;
 	unsigned n_eq = info[i].bmap->n_eq;
 
-	if (isl_tab_is_equality(info[i].tab, n_eq + k))
-		return isl_change_none;
+	for (l = 0; l < n; ++l)
+		if (isl_tab_is_equality(info[i].tab, n_eq + relax[l]))
+			return isl_change_none;
 
 	snap = isl_tab_snap(info[i].tab);
-	if (isl_tab_relax(info[i].tab, n_eq + k) < 0)
-		return isl_change_error;
+	for (l = 0; l < n; ++l)
+		if (isl_tab_relax(info[i].tab, n_eq + relax[l]) < 0)
+			return isl_change_error;
 	snap2 = isl_tab_snap(info[i].tab);
-	if (isl_tab_select_facet(info[i].tab, n_eq + k) < 0)
-		return isl_change_error;
-	if (tighten_on_relaxed_facet(&info[i], 1, &k, 0) < 0)
-		return isl_change_error;
-	super = contains(&info[j], info[i].tab);
-	if (super < 0)
-		return isl_change_error;
-	if (super) {
+	for (l = 0; l < n; ++l) {
 		if (isl_tab_rollback(info[i].tab, snap2) < 0)
 			return isl_change_error;
-		return extend(i, j, 1, &k, info);
-	} else
+		if (isl_tab_select_facet(info[i].tab, n_eq + relax[l]) < 0)
+			return isl_change_error;
+		if (tighten_on_relaxed_facet(&info[i], n, relax, l) < 0)
+			return isl_change_error;
+		super = contains(&info[j], info[i].tab);
+		if (super < 0)
+			return isl_change_error;
+		if (super)
+			continue;
 		if (isl_tab_rollback(info[i].tab, snap) < 0)
 			return isl_change_error;
+		return isl_change_none;
+	}
 
-	return change;
+	if (isl_tab_rollback(info[i].tab, snap2) < 0)
+		return isl_change_error;
+	return extend(i, j, n, relax, info);
 }
 
 /* Data structure that keeps track of the wrapping constraints
@@ -1745,7 +1761,7 @@ static enum isl_change check_single_adj_eq(int i, int j,
 	k = find(info[i].ineq, info[i].bmap->n_ineq, STATUS_ADJ_EQ);
 
 	if (!any_cut) {
-		change = is_adj_eq_extension(i, j, k, info);
+		change = is_relaxed_extension(i, j, 1, &k, info);
 		if (change != isl_change_none)
 			return change;
 	}
