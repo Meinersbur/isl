@@ -131,6 +131,19 @@ static int any(int *con, unsigned len, int status)
 	return 0;
 }
 
+/* Return the first position of "status" in the list "con" of length "len".
+ * Return -1 if there is no such entry.
+ */
+static int find(int *con, unsigned len, int status)
+{
+	int i;
+
+	for (i = 0; i < len ; ++i)
+		if (con[i] == status)
+			return i;
+	return -1;
+}
+
 static int count(int *con, unsigned len, int status)
 {
 	int i;
@@ -639,10 +652,8 @@ static enum isl_change is_adj_ineq_extension(int i, int j,
 	if (isl_tab_extend_cons(info[i].tab, 1 + info[j].bmap->n_ineq) < 0)
 		return isl_change_error;
 
-	for (k = 0; k < info[i].bmap->n_ineq; ++k)
-		if (info[i].ineq[k] == STATUS_ADJ_INEQ)
-			break;
-	if (k >= info[i].bmap->n_ineq)
+	k = find(info[i].ineq, info[i].bmap->n_ineq, STATUS_ADJ_INEQ);
+	if (k < 0)
 		isl_die(isl_basic_map_get_ctx(info[i].bmap), isl_error_internal,
 			"info[i].ineq should have exactly one STATUS_ADJ_INEQ",
 			return isl_change_error);
@@ -1736,9 +1747,7 @@ static enum isl_change check_adj_eq(int i, int j,
 		/* ADJ EQ TOO MANY */
 		return isl_change_none;
 
-	for (k = 0; k < info[i].bmap->n_ineq; ++k)
-		if (info[i].ineq[k] == STATUS_ADJ_EQ)
-			break;
+	k = find(info[i].ineq, info[i].bmap->n_ineq, STATUS_ADJ_EQ);
 
 	if (!any_cut) {
 		change = is_adj_eq_extension(i, j, k, info);
@@ -1786,9 +1795,7 @@ static enum isl_change check_eq_adj_eq(int i, int j,
 	if (count(info[i].eq, 2 * info[i].bmap->n_eq, STATUS_ADJ_EQ) != 1)
 		detect_equalities = 1;
 
-	for (k = 0; k < 2 * info[i].bmap->n_eq ; ++k)
-		if (info[i].eq[k] == STATUS_ADJ_EQ)
-			break;
+	k = find(info[i].eq, 2 * info[i].bmap->n_eq, STATUS_ADJ_EQ);
 
 	set_i = set_from_updated_bmap(info[i].bmap, info[i].tab);
 	set_j = set_from_updated_bmap(info[j].bmap, info[j].tab);
