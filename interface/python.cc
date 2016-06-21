@@ -41,6 +41,16 @@
 #include "extract_interface.h"
 #include "python.h"
 
+static void die(const char *msg) __attribute__((noreturn));
+
+/* Print error message "msg" and abort.
+ */
+static void die(const char *msg)
+{
+	fprintf(stderr, "%s", msg);
+	abort();
+}
+
 /* Return a sequence of the types of which the given type declaration is
  * marked as being a subtype.
  */
@@ -312,8 +322,8 @@ static void print_callback(QualType type, int arg)
 	printf("        exc_info = [None]\n");
 	printf("        fn = CFUNCTYPE(c_int");
 	for (unsigned i = 0; i < n_arg - 1; ++i) {
-		QualType arg_type = fn->getArgType(i);
-		assert(is_isl_type(arg_type));
+		if (!is_isl_type(fn->getArgType(i)))
+			die("Argument has non-isl type");
 		printf(", c_void_p");
 	}
 	printf(", c_void_p)\n");
