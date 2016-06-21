@@ -2010,13 +2010,21 @@ error:
 	return NULL;
 }
 
+/* Does the sample value of row "row" of "tab" involve the big parameter,
+ * if any?
+ */
+static int row_is_big(struct isl_tab *tab, int row)
+{
+	return tab->M && !isl_int_is_zero(tab->mat->row[row][2]);
+}
+
 static int row_is_manifestly_zero(struct isl_tab *tab, int row)
 {
 	unsigned off = 2 + tab->M;
 
 	if (!isl_int_is_zero(tab->mat->row[row][1]))
 		return 0;
-	if (tab->M && !isl_int_is_zero(tab->mat->row[row][2]))
+	if (row_is_big(tab, row))
 		return 0;
 	return isl_seq_first_non_zero(tab->mat->row[row] + off + tab->n_dead,
 					tab->n_col - tab->n_dead) == -1;
@@ -3187,7 +3195,7 @@ int isl_tab_is_equality(struct isl_tab *tab, int con)
 
 	off = 2 + tab->M;
 	return isl_int_is_zero(tab->mat->row[row][1]) &&
-		(!tab->M || isl_int_is_zero(tab->mat->row[row][2])) &&
+		!row_is_big(tab, row) &&
 		isl_seq_first_non_zero(tab->mat->row[row] + off + tab->n_dead,
 					tab->n_col - tab->n_dead) == -1;
 }
