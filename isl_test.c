@@ -1878,6 +1878,12 @@ struct {
 			"(a < 0 and 3*floor((a)/3) < a) }" },
 	{ 1, "{ [a] : (a <= 0 and 3*floor((a)/3) = a) or "
 			"(a < -1 and 3*floor((a)/3) < a) }" },
+	{ 1, "{ [a, b] : a <= 1024 and b >= 0 and "
+		"((-31 - a + b <= 32*floor((-1 - a)/32) <= -33 + b and "
+		  "32*floor((-1 - a)/32) <= -16 + b + 16*floor((-1 - a)/16))"
+		"or (2 <= a <= 15 and b < a)) }" },
+	{ 1, "{ [a] : a > 0 and ((16*floor((a)/16) < a and "
+			"32*floor((a)/32) < a) or a <= 15) }" },
 };
 
 /* A specialized coalescing test case that would result

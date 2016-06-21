@@ -2320,10 +2320,87 @@ static isl_stat copy_ineq(struct isl_tab *tab, __isl_keep isl_basic_map *bmap)
 /* Description of an integer division that is added
  * during an expansion.
  * "pos" is the position of the corresponding variable.
+ * "cst" indicates whether this integer division has a fixed value.
+ * "val" contains the fixed value, if the value is fixed.
  */
 struct isl_expanded {
 	int pos;
+	isl_bool cst;
+	isl_int val;
 };
+
+/* For each of the "n" integer division variables "expanded",
+ * if the variable has a fixed value, then add two inequality
+ * constraints expressing the fixed value.
+ * Otherwise, add the corresponding div constraints.
+ * The caller is responsible for removing the div constraints
+ * that it added for all these "n" integer divisions.
+ *
+ * The div constraints and the pair of inequality constraints
+ * forcing the fixed value cannot both be added for a given variable
+ * as the combination may render some of the original constraints redundant.
+ * These would then be ignored during the coalescing detection,
+ * while they could remain in the fused result.
+ *
+ * The two added inequality constraints are
+ *
+ *	-a + v >= 0
+ *	a - v >= 0
+ *
+ * with "a" the variable and "v" its fixed value.
+ * The facet corresponding to one of these two constraints is selected
+ * in the tableau to ensure that the pair of inequality constraints
+ * is treated as an equality constraint.
+ *
+ * The information in info->ineq is thrown away because it was
+ * computed in terms of div constraints, while some of those
+ * have now been replaced by these pairs of inequality constraints.
+ */
+static isl_stat fix_constant_divs(struct isl_coalesce_info *info,
+	int n, struct isl_expanded *expanded)
+{
+	unsigned o_div;
+	int i;
+	isl_vec *ineq;
+
+	o_div = isl_basic_map_offset(info->bmap, isl_dim_div) - 1;
+	ineq = isl_vec_alloc(isl_tab_get_ctx(info->tab), 1 + info->tab->n_var);
+	if (!ineq)
+		return isl_stat_error;
+	isl_seq_clr(ineq->el + 1, info->tab->n_var);
+
+	for (i = 0; i < n; ++i) {
+		if (!expanded[i].cst) {
+			info->bmap = isl_basic_map_extend_constraints(
+						info->bmap, 0, 2);
+			if (isl_basic_map_add_div_constraints(info->bmap,
+						expanded[i].pos - o_div) < 0)
+				break;
+		} else {
+			isl_int_set_si(ineq->el[1 + expanded[i].pos], -1);
+			isl_int_set(ineq->el[0], expanded[i].val);
+			info->bmap = isl_basic_map_add_ineq(info->bmap,
+								ineq->el);
+			isl_int_set_si(ineq->el[1 + expanded[i].pos], 1);
+			isl_int_neg(ineq->el[0], expanded[i].val);
+			info->bmap = isl_basic_map_add_ineq(info->bmap,
+								ineq->el);
+			isl_int_set_si(ineq->el[1 + expanded[i].pos], 0);
+		}
+		if (copy_ineq(info->tab, info->bmap) < 0)
+			break;
+		if (expanded[i].cst &&
+		    isl_tab_select_facet(info->tab, info->tab->n_con - 1) < 0)
+			break;
+	}
+
+	isl_vec_free(ineq);
+
+	clear_status(info);
+	init_status(info);
+
+	return i < n ? isl_stat_error : isl_stat_ok;
+}
 
 /* Insert the "n" integer division variables "expanded"
  * into info->tab and info->bmap and
@@ -2341,18 +2418,27 @@ struct isl_expanded {
  * to the extra integer divisions and add the div constraints
  * that were added to "bmap" after info->tab was created
  * from info->bmap.
+ * Furthermore, check if these extra integer divisions happen
+ * to attain a fixed integer value in info->tab.
+ * If so, replace the corresponding div constraints by pairs
+ * of inequality constraints that fix these
+ * integer divisions to their single integer values.
  * Replace info->bmap by "bmap" to match the changes to info->tab.
  * info->ineq was computed without a tableau and therefore
  * does not take into account the redundant constraints
  * in the tableau.  Mark them here.
  * There is no need to check the newly added div constraints
  * since they cannot be redundant.
+ * The redundancy check is not performed when constants have been discovered
+ * since info->ineq is completely thrown away in this case.
  */
 static isl_stat tab_insert_divs(struct isl_coalesce_info *info,
 	int n, struct isl_expanded *expanded, __isl_take isl_basic_map *bmap)
 {
 	int i, n_ineq;
 	unsigned n_eq;
+	struct isl_tab_undo *snap;
+	int any;
 
 	if (!bmap)
 		return isl_stat_error;
@@ -2371,12 +2457,34 @@ static isl_stat tab_insert_divs(struct isl_coalesce_info *info,
 			goto error;
 	}
 
+	snap = isl_tab_snap(info->tab);
+
 	n_ineq = info->tab->n_con - info->tab->n_eq;
 	if (copy_ineq(info->tab, bmap) < 0)
 		goto error;
 
 	isl_basic_map_free(info->bmap);
 	info->bmap = bmap;
+
+	any = 0;
+	for (i = 0; i < n; ++i) {
+		expanded[i].cst = isl_tab_is_constant(info->tab,
+					    expanded[i].pos, &expanded[i].val);
+		if (expanded[i].cst < 0)
+			return isl_stat_error;
+		if (expanded[i].cst)
+			any = 1;
+	}
+
+	if (any) {
+		if (isl_tab_rollback(info->tab, snap) < 0)
+			return isl_stat_error;
+		info->bmap = isl_basic_map_cow(info->bmap);
+		if (isl_basic_map_free_inequality(info->bmap, 2 * n) < 0)
+			return isl_stat_error;
+
+		return fix_constant_divs(info, n, expanded);
+	}
 
 	n_eq = info->bmap->n_eq;
 	for (i = 0; i < n_ineq; ++i) {
@@ -2434,8 +2542,13 @@ static isl_stat expand_tab(struct isl_coalesce_info *info, int *exp,
 		expanded[k++].pos = pos + j;
 	}
 
+	for (k = 0; k < extra_var; ++k)
+		isl_int_init(expanded[k].val);
+
 	r = tab_insert_divs(info, extra_var, expanded, bmap);
 
+	for (k = 0; k < extra_var; ++k)
+		isl_int_clear(expanded[k].val);
 	free(expanded);
 
 	return r;
