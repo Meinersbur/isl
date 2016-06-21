@@ -615,8 +615,11 @@ static int contains(struct isl_coalesce_info *info, struct isl_tab *tab)
  * In particular, we replace constraint k, say f >= 0, by constraint
  * f <= -1, add the inequalities of "j" that are valid for "i"
  * and check if the result is a subset of basic map "j".
- * If so, then we know that this result is exactly equal to basic map "j"
- * since all its constraints are valid for basic map "j".
+ * To improve the chances of the subset relation being detected,
+ * any variable that only attains a single integer value
+ * in the tableau of "i" is first fixed to that value.
+ * If the result is a subset, then we know that this result is exactly equal
+ * to basic map "j" since all its constraints are valid for basic map "j".
  * By combining the valid constraints of "i" (all equalities and all
  * inequalities except "k") and the valid constraints of "j" we therefore
  * obtain a basic map that is equal to their union.
@@ -677,6 +680,8 @@ static enum isl_change is_adj_ineq_extension(int i, int j,
 		if (isl_tab_add_ineq(info[i].tab, info[j].bmap->ineq[k]) < 0)
 			return isl_change_error;
 	}
+	if (isl_tab_detect_constants(info[i].tab) < 0)
+		return isl_change_error;
 
 	super = contains(&info[j], info[i].tab);
 	if (super < 0)
