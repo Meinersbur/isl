@@ -2901,8 +2901,9 @@ static int may_be_equality(struct isl_tab *tab, int row)
  *
  * Pick the last constraint variable that is marked and
  * that appears in either a non-redundant row or a non-dead columns.
- * Since the returned variable is tested for being a redundant constraint,
- * there is no need to return any tab variable that corresponds to a variable.
+ * Since the returned variable is tested for being a redundant constraint or
+ * an implicit equality, there is no need to return any tab variable that
+ * corresponds to a variable.
  */
 static struct isl_tab_var *select_marked(struct isl_tab *tab)
 {
@@ -2939,6 +2940,7 @@ static struct isl_tab_var *select_marked(struct isl_tab *tab)
  * Otherwise, if the maximal value is strictly less than one (and the
  * tableau is integer), then we restrict the value to being zero
  * by adding an opposite non-negative variable.
+ * The order in which the variables are considered is not important.
  */
 int isl_tab_detect_implicit_equalities(struct isl_tab *tab)
 {
@@ -2969,20 +2971,9 @@ int isl_tab_detect_implicit_equalities(struct isl_tab *tab)
 	while (n_marked) {
 		struct isl_tab_var *var;
 		int sgn;
-		for (i = tab->n_redundant; i < tab->n_row; ++i) {
-			var = isl_tab_var_from_row(tab, i);
-			if (var->marked)
-				break;
-		}
-		if (i == tab->n_row) {
-			for (i = tab->n_dead; i < tab->n_col; ++i) {
-				var = var_from_col(tab, i);
-				if (var->marked)
-					break;
-			}
-			if (i == tab->n_col)
-				break;
-		}
+		var = select_marked(tab);
+		if (!var)
+			break;
 		var->marked = 0;
 		n_marked--;
 		sgn = sign_of_max(tab, var);
