@@ -3530,6 +3530,29 @@ isl_bool isl_tab_is_constant(struct isl_tab *tab, int var, isl_int *value)
 	return get_constant(tab, &tab->var[var], value);
 }
 
+/* Check if any of the variables of "tab" can only attain a single (integer)
+ * value, and, if so, add equality constraints to fix those variables
+ * to these single values.
+ *
+ * For rational tableaus, nothing needs to be done.
+ */
+isl_stat isl_tab_detect_constants(struct isl_tab *tab)
+{
+	int i;
+
+	if (!tab)
+		return isl_stat_error;
+	if (tab->rational)
+		return isl_stat_ok;
+
+	for (i = 0; i < tab->n_var; ++i) {
+		if (get_constant(tab, &tab->var[i], NULL) < 0)
+			return isl_stat_error;
+	}
+
+	return isl_stat_ok;
+}
+
 /* Take a snapshot of the tableau that can be restored by a call to
  * isl_tab_rollback.
  */
