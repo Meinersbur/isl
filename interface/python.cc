@@ -228,7 +228,7 @@ static string extract_type(QualType type)
 {
 	if (type->isPointerType())
 		return type->getPointeeType().getAsString();
-	assert(0);
+	die("Cannot extract type from non-pointer type");
 }
 
 /* Drop the "isl_" initial part of the type name "name".
