@@ -181,6 +181,8 @@ __isl_give isl_printer *isl_ast_node_if_print(__isl_keep isl_ast_node *node,
 	__isl_take isl_printer *p,
 	__isl_take isl_ast_print_options *options);
 
+__isl_give char *isl_ast_node_to_C_str(__isl_keep isl_ast_node *node);
+
 #if defined(__cplusplus)
 }
 #endif

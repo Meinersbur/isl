@@ -9716,9 +9716,12 @@ Basic printing can be performed using the following functions.
 		__isl_keep isl_ast_expr *expr);
 	__isl_give char *isl_ast_expr_to_C_str(
 		__isl_keep isl_ast_expr *expr);
+	__isl_give char *isl_ast_node_to_C_str(
+		__isl_keep isl_ast_node *node);
 
-The function C<isl_ast_expr_to_C_str> is a convenience function
-that returns a string representation of the input in C format.
+The functions C<isl_ast_expr_to_C_str> and
+C<isl_ast_node_to_C_str> are convenience functions
+that return a string representation of the input in C format.
 
 More advanced printing can be performed using the following functions.
 
