@@ -955,6 +955,41 @@ error:
 	return isl_stat_error;
 }
 
+/* Replace the basic maps "i" and "j" by an extension of "i"
+ * along inequality constraint "k" by one.
+ * The tableau info[i].tab has already been extended.
+ * Extend info[i].bmap accordingly by relaxing constraint "k" by one.
+ * Each integer division that does not have exactly the same
+ * definition in "i" and "j" is marked unknown and the basic map
+ * is scheduled to be simplified in an attempt to recover
+ * the integer division definition.
+ * Place the extension in the position that is the smallest of i and j.
+ */
+static enum isl_change extend(int i, int j, int k,
+	struct isl_coalesce_info *info)
+{
+	int l;
+	unsigned total;
+
+	info[i].bmap = isl_basic_map_cow(info[i].bmap);
+	if (!info[i].bmap)
+		return isl_change_error;
+	total = isl_basic_map_total_dim(info[i].bmap);
+	for (l = 0; l < info[i].bmap->n_div; ++l)
+		if (!isl_seq_eq(info[i].bmap->div[l],
+				info[j].bmap->div[l], 1 + 1 + total)) {
+			isl_int_set_si(info[i].bmap->div[l][0], 0);
+			info[i].simplify = 1;
+		}
+	isl_int_add_ui(info[i].bmap->ineq[k][0],
+			info[i].bmap->ineq[k][0], 1);
+	ISL_F_SET(info[i].bmap, ISL_BASIC_MAP_FINAL);
+	drop(&info[j]);
+	if (j < i)
+		exchange(&info[i], &info[j]);
+	return isl_change_fuse;
+}
+
 /* Basic map "i" has an inequality "k" that is adjacent to some equality
  * of basic map "j".  All the other inequalities are valid for "j".
  * Check if basic map "j" forms an extension of basic map "i".
@@ -968,11 +1003,6 @@ error:
  * other basic map is included in the extension, because there
  * were no "cut" inequalities in "i") and we can replace the
  * two basic maps by this extension.
- * Each integer division that does not have exactly the same
- * definition in "i" and "j" is marked unknown and the basic map
- * is scheduled to be simplified in an attempt to recover
- * the integer division definition.
- * Place this extension in the position that is the smallest of i and j.
  *        ____			  _____
  *       /    || 		 /     |
  *      /     ||  		/      |
@@ -1003,28 +1033,9 @@ static enum isl_change is_adj_eq_extension(int i, int j, int k,
 	if (super < 0)
 		return isl_change_error;
 	if (super) {
-		int l;
-		unsigned total;
-
 		if (isl_tab_rollback(info[i].tab, snap2) < 0)
 			return isl_change_error;
-		info[i].bmap = isl_basic_map_cow(info[i].bmap);
-		if (!info[i].bmap)
-			return isl_change_error;
-		total = isl_basic_map_total_dim(info[i].bmap);
-		for (l = 0; l < info[i].bmap->n_div; ++l)
-			if (!isl_seq_eq(info[i].bmap->div[l],
-					info[j].bmap->div[l], 1 + 1 + total)) {
-				isl_int_set_si(info[i].bmap->div[l][0], 0);
-				info[i].simplify = 1;
-			}
-		isl_int_add_ui(info[i].bmap->ineq[k][0],
-				info[i].bmap->ineq[k][0], 1);
-		ISL_F_SET(info[i].bmap, ISL_BASIC_MAP_FINAL);
-		drop(&info[j]);
-		if (j < i)
-			exchange(&info[i], &info[j]);
-		change = isl_change_fuse;
+		return extend(i, j, k, info);
 	} else
 		if (isl_tab_rollback(info[i].tab, snap) < 0)
 			return isl_change_error;
