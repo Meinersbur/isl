@@ -5519,7 +5519,7 @@ static int test_ast(isl_ctx *ctx)
 	expr = isl_ast_expr_neg(expr);
 	expr2 = isl_ast_expr_neg(expr2);
 	equal = isl_ast_expr_is_equal(expr, expr2);
-	str = isl_ast_expr_to_str(expr);
+	str = isl_ast_expr_to_C_str(expr);
 	ok = str ? !strcmp(str, "-(A + B)") : -1;
 	free(str);
 	isl_ast_expr_free(expr);
@@ -5539,7 +5539,7 @@ static int test_ast(isl_ctx *ctx)
 	expr = isl_ast_expr_add(expr1, expr2);
 	expr3 = isl_ast_expr_from_id(isl_id_alloc(ctx, "C", NULL));
 	expr = isl_ast_expr_sub(expr3, expr);
-	str = isl_ast_expr_to_str(expr);
+	str = isl_ast_expr_to_C_str(expr);
 	ok = str ? !strcmp(str, "C - (A + B)") : -1;
 	free(str);
 	isl_ast_expr_free(expr);

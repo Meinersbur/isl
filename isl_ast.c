@@ -2587,3 +2587,24 @@ __isl_give isl_printer *isl_ast_node_print_macros(
 		return isl_printer_free(p);
 	return p;
 }
+
+/* Return a string containing C code representing this isl_ast_expr.
+ */
+__isl_give char *isl_ast_expr_to_C_str(__isl_keep isl_ast_expr *expr)
+{
+	isl_printer *p;
+	char *str;
+
+	if (!expr)
+		return NULL;
+
+	p = isl_printer_to_str(isl_ast_expr_get_ctx(expr));
+	p = isl_printer_set_output_format(p, ISL_FORMAT_C);
+	p = isl_printer_print_ast_expr(p, expr);
+
+	str = isl_printer_get_str(p);
+
+	isl_printer_free(p);
+
+	return str;
+}
