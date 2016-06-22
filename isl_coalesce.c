@@ -961,16 +961,17 @@ error:
 }
 
 /* Replace the basic maps "i" and "j" by an extension of "i"
- * along inequality constraint "k" by one.
+ * along the "n" inequality constraints in "relax" by one.
  * The tableau info[i].tab has already been extended.
- * Extend info[i].bmap accordingly by relaxing constraint "k" by one.
+ * Extend info[i].bmap accordingly by relaxing all constraints in "relax"
+ * by one.
  * Each integer division that does not have exactly the same
  * definition in "i" and "j" is marked unknown and the basic map
  * is scheduled to be simplified in an attempt to recover
  * the integer division definition.
  * Place the extension in the position that is the smallest of i and j.
  */
-static enum isl_change extend(int i, int j, int k,
+static enum isl_change extend(int i, int j, int n, int *relax,
 	struct isl_coalesce_info *info)
 {
 	int l;
@@ -986,8 +987,9 @@ static enum isl_change extend(int i, int j, int k,
 			isl_int_set_si(info[i].bmap->div[l][0], 0);
 			info[i].simplify = 1;
 		}
-	isl_int_add_ui(info[i].bmap->ineq[k][0],
-			info[i].bmap->ineq[k][0], 1);
+	for (l = 0; l < n; ++l)
+		isl_int_add_ui(info[i].bmap->ineq[relax[l]][0],
+				info[i].bmap->ineq[relax[l]][0], 1);
 	ISL_F_SET(info[i].bmap, ISL_BASIC_MAP_FINAL);
 	drop(&info[j]);
 	if (j < i)
@@ -1040,7 +1042,7 @@ static enum isl_change is_adj_eq_extension(int i, int j, int k,
 	if (super) {
 		if (isl_tab_rollback(info[i].tab, snap2) < 0)
 			return isl_change_error;
-		return extend(i, j, k, info);
+		return extend(i, j, 1, &k, info);
 	} else
 		if (isl_tab_rollback(info[i].tab, snap) < 0)
 			return isl_change_error;
