@@ -1007,6 +1007,9 @@ static enum isl_change extend(int i, int j, int n, int *relax,
  * in the other basic map.
  * Before testing for inclusion, the constraints on each facet
  * are tightened to increase the chance of an inclusion being detected.
+ * (Adding the valid constraints of "j" to the tableau of "i", as is done
+ * in is_adj_ineq_extension, may further increase those chances, but this
+ * is not currently done.)
  * If each facet is included, we know that relaxing the constraints extends
  * the basic map with exactly the other basic map (we already know that this
  * other basic map is included in the extension, because all other
