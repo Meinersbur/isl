@@ -2584,6 +2584,22 @@ struct isl_vec *isl_tab_get_sample_value(struct isl_tab *tab)
 	return vec;
 }
 
+/* Store the sample value of "var" of "tab" rounded up (if sgn > 0)
+ * or down (if sgn < 0) to the nearest integer in *v.
+ */
+static void get_rounded_sample_value(struct isl_tab *tab,
+	struct isl_tab_var *var, int sgn, isl_int *v)
+{
+	if (!var->is_row)
+		isl_int_set_si(*v, 0);
+	else if (sgn > 0)
+		isl_int_cdiv_q(*v, tab->mat->row[var->index][1],
+				   tab->mat->row[var->index][0]);
+	else
+		isl_int_fdiv_q(*v, tab->mat->row[var->index][1],
+				   tab->mat->row[var->index][0]);
+}
+
 /* Update "bmap" based on the results of the tableau "tab".
  * In particular, implicit equalities are made explicit, redundant constraints
  * are removed and if the sample value happens to be integer, it is stored
@@ -3272,8 +3288,7 @@ enum isl_lp_result isl_tab_min(struct isl_tab *tab,
 			isl_int_set(*opt, tab->mat->row[var->index][1]);
 			isl_int_set(*opt_denom, tab->mat->row[var->index][0]);
 		} else
-			isl_int_cdiv_q(*opt, tab->mat->row[var->index][1],
-					     tab->mat->row[var->index][0]);
+			get_rounded_sample_value(tab, var, 1, opt);
 	}
 	if (isl_tab_rollback(tab, snap) < 0)
 		return isl_lp_error;
