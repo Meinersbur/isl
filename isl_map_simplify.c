@@ -381,26 +381,39 @@ struct isl_basic_set *isl_basic_set_normalize_constraints(
 	return bset_from_bmap(isl_basic_map_normalize_constraints(bmap));
 }
 
-/* Assuming the variable at position "pos" has an integer coefficient
- * in integer division "div", extract it from this integer division.
+/* Reduce the coefficient of the variable at position "pos"
+ * in integer division "div", such that it lies in the half-open
+ * interval (1/2,1/2], extracting any excess value from this integer division.
  * "pos" is as determined by isl_basic_map_offset, i.e., pos == 0
  * corresponds to the constant term.
  *
  * That is, the integer division is of the form
  *
- *	floor((... + c * d * x_pos + ...)/d)
+ *	floor((... + (c * d + r) * x_pos + ...)/d)
  *
+ * with -d < 2 * r <= d.
  * Replace it by
  *
- *	floor((... + 0 * x_pos + ...)/d) + c * x_pos
+ *	floor((... + r * x_pos + ...)/d) + c * x_pos
+ *
+ * If 2 * ((c * d + r) % d) <= d, then c = floor((c * d + r)/d).
+ * Otherwise, c = floor((c * d + r)/d) + 1.
+ *
+ * This is the same normalization that is performed by isl_aff_floor.
  */
-static __isl_give isl_basic_map *remove_var_from_div(
+static __isl_give isl_basic_map *reduce_coefficient_in_div(
 	__isl_take isl_basic_map *bmap, int div, int pos)
 {
 	isl_int shift;
+	int add_one;
 
 	isl_int_init(shift);
-	isl_int_divexact(shift, bmap->div[div][1 + pos], bmap->div[div][0]);
+	isl_int_fdiv_r(shift, bmap->div[div][1 + pos], bmap->div[div][0]);
+	isl_int_mul_ui(shift, shift, 2);
+	add_one = isl_int_gt(shift, bmap->div[div][0]);
+	isl_int_fdiv_q(shift, bmap->div[div][1 + pos], bmap->div[div][0]);
+	if (add_one)
+		isl_int_add_ui(shift, shift, 1);
 	isl_int_neg(shift, shift);
 	bmap = isl_basic_map_shift_div(bmap, div, pos, shift);
 	isl_int_clear(shift);
@@ -408,22 +421,49 @@ static __isl_give isl_basic_map *remove_var_from_div(
 	return bmap;
 }
 
-/* Check if integer division "div" has any integral coefficient
- * (or constant term).  If so, extract them from the integer division.
+/* Does the coefficient of the variable at position "pos"
+ * in integer division "div" need to be reduced?
+ * That is, does it lie outside the half-open interval (1/2,1/2]?
+ * The coefficient c/d lies outside this interval if abs(2 * c) >= d and
+ * 2 * c != d.
  */
-static __isl_give isl_basic_map *remove_independent_vars_from_div(
+static isl_bool needs_reduction(__isl_keep isl_basic_map *bmap, int div,
+	int pos)
+{
+	isl_bool r;
+
+	if (isl_int_is_zero(bmap->div[div][1 + pos]))
+		return isl_bool_false;
+
+	isl_int_mul_ui(bmap->div[div][1 + pos], bmap->div[div][1 + pos], 2);
+	r = isl_int_abs_ge(bmap->div[div][1 + pos], bmap->div[div][0]) &&
+	    !isl_int_eq(bmap->div[div][1 + pos], bmap->div[div][0]);
+	isl_int_divexact_ui(bmap->div[div][1 + pos],
+			    bmap->div[div][1 + pos], 2);
+
+	return r;
+}
+
+/* Reduce the coefficients (including the constant term) of
+ * integer division "div", if needed.
+ * In particular, make sure all coefficients lie in
+ * the half-open interval (1/2,1/2].
+ */
+static __isl_give isl_basic_map *reduce_div_coefficients_of_div(
 	__isl_take isl_basic_map *bmap, int div)
 {
 	int i;
 	unsigned total = 1 + isl_basic_map_total_dim(bmap);
 
 	for (i = 0; i < total; ++i) {
-		if (isl_int_is_zero(bmap->div[div][1 + i]))
+		isl_bool reduce;
+
+		reduce = needs_reduction(bmap, div, i);
+		if (reduce < 0)
+			return isl_basic_map_free(bmap);
+		if (!reduce)
 			continue;
-		if (!isl_int_is_divisible_by(bmap->div[div][1 + i],
-					     bmap->div[div][0]))
-			continue;
-		bmap = remove_var_from_div(bmap, div, i);
+		bmap = reduce_coefficient_in_div(bmap, div, i);
 		if (!bmap)
 			break;
 	}
@@ -431,10 +471,12 @@ static __isl_give isl_basic_map *remove_independent_vars_from_div(
 	return bmap;
 }
 
-/* Check if any known integer division has any integral coefficient
- * (or constant term).  If so, extract them from the integer division.
+/* Reduce the coefficients (including the constant term) of
+ * the known integer divisions, if needed
+ * In particular, make sure all coefficients lie in
+ * the half-open interval (1/2,1/2].
  */
-static __isl_give isl_basic_map *remove_independent_vars_from_divs(
+static __isl_give isl_basic_map *reduce_div_coefficients(
 	__isl_take isl_basic_map *bmap)
 {
 	int i;
@@ -447,7 +489,7 @@ static __isl_give isl_basic_map *remove_independent_vars_from_divs(
 	for (i = 0; i < bmap->n_div; ++i) {
 		if (isl_int_is_zero(bmap->div[i][0]))
 			continue;
-		bmap = remove_independent_vars_from_div(bmap, i);
+		bmap = reduce_div_coefficients_of_div(bmap, i);
 		if (!bmap)
 			break;
 	}
@@ -1570,7 +1612,7 @@ struct isl_basic_map *isl_basic_map_simplify(struct isl_basic_map *bmap)
 		if (isl_basic_map_plain_is_empty(bmap))
 			break;
 		bmap = isl_basic_map_normalize_constraints(bmap);
-		bmap = remove_independent_vars_from_divs(bmap);
+		bmap = reduce_div_coefficients(bmap);
 		bmap = normalize_div_expressions(bmap);
 		bmap = remove_duplicate_divs(bmap, &progress);
 		bmap = eliminate_unit_divs(bmap, &progress);

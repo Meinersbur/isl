@@ -1529,6 +1529,8 @@ __isl_give isl_aff *isl_aff_normalize(__isl_take isl_aff *aff)
  * create a new div d = [r/m] and return the expression q + d.
  * The coefficients in r are taken to lie between -m/2 and m/2.
  *
+ * reduce_div_coefficients performs the same normalization.
+ *
  * As a special case, floor(NaN) = NaN.
  */
 __isl_give isl_aff *isl_aff_floor(__isl_take isl_aff *aff)

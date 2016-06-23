@@ -1895,6 +1895,12 @@ struct {
 	{ 1, "[n, m] -> { S_0[i] : (-n + i) mod 3 = 0 and m >= 3 + n and "
 			    "i >= n and 3*floor((2 + n + 2m)/3) <= n + 3m - i; "
 			 "S_0[n] : n <= m <= 2 + n }" },
+	{ 1, "{ [a, b] : exists (e0: 0 <= a <= 1 and b >= 0 and "
+			"2e0 >= -5 + a + 2b and 2e0 >= -1 + a + b and "
+			"2e0 <= a + b); "
+		"[a, b] : exists (e0: 0 <= a <= 1 and 2e0 >= -5 + a + 2b and "
+			"2e0 >= -1 - a + b and 2e0 <= -a + b and "
+			"2e0 < -a + 2b) }" },
 };
 
 /* A specialized coalescing test case that would result
