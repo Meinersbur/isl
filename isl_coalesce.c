@@ -2446,10 +2446,16 @@ static isl_stat harmonize_divs_with_hulls(struct isl_coalesce_info *info1,
  *
  * Then, extract the equality constraints and continue with
  * harmonize_divs_with_hulls.
+ *
+ * If the equality constraints of both basic maps are the same,
+ * then there is no need to perform any shifting since
+ * the coefficients of the integer divisions should have been
+ * reduced in the same way.
  */
 static isl_stat harmonize_divs(struct isl_coalesce_info *info1,
 	struct isl_coalesce_info *info2)
 {
+	isl_bool equal;
 	isl_basic_map *bmap1, *bmap2;
 	isl_basic_set *eq1, *eq2;
 	isl_stat r;
@@ -2469,7 +2475,13 @@ static isl_stat harmonize_divs(struct isl_coalesce_info *info1,
 	bmap2 = isl_basic_map_copy(info2->bmap);
 	eq1 = isl_basic_map_wrap(isl_basic_map_plain_affine_hull(bmap1));
 	eq2 = isl_basic_map_wrap(isl_basic_map_plain_affine_hull(bmap2));
-	r = harmonize_divs_with_hulls(info1, info2, eq1, eq2);
+	equal = isl_basic_set_plain_is_equal(eq1, eq2);
+	if (equal < 0)
+		r = isl_stat_error;
+	else if (equal)
+		r = isl_stat_ok;
+	else
+		r = harmonize_divs_with_hulls(info1, info2, eq1, eq2);
 	isl_basic_set_free(eq1);
 	isl_basic_set_free(eq2);
 
