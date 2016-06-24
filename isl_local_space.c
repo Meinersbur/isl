@@ -725,13 +725,28 @@ error:
 	return NULL;
 }
 
-/* Does "ls" have an explicit representation for div "div"?
+/* Is the local variable "div" of "ls" marked as not having
+ * an explicit representation?
+ * Note that even if this variable is not marked in this way and therefore
+ * does have an explicit representation, this representation may still
+ * depend (indirectly) on other local variables that do not
+ * have an explicit representation.
+ */
+isl_bool isl_local_space_div_is_marked_unknown(__isl_keep isl_local_space *ls,
+	int div)
+{
+	if (!ls)
+		return isl_bool_error;
+	return isl_local_div_is_marked_unknown(ls->div, div);
+}
+
+/* Does "ls" have a complete explicit representation for div "div"?
  */
 isl_bool isl_local_space_div_is_known(__isl_keep isl_local_space *ls, int div)
 {
 	if (!ls)
 		return isl_bool_error;
-	return isl_bool_not(isl_local_div_is_marked_unknown(ls->div, div));
+	return isl_local_div_is_known(ls->div, div);
 }
 
 /* Does "ls" have an explicit representation for all local variables?
@@ -744,9 +759,9 @@ isl_bool isl_local_space_divs_known(__isl_keep isl_local_space *ls)
 		return isl_bool_error;
 
 	for (i = 0; i < ls->div->n_row; ++i) {
-		isl_bool known = isl_local_space_div_is_known(ls, i);
-		if (known < 0 || !known)
-			return known;
+		isl_bool unknown = isl_local_space_div_is_marked_unknown(ls, i);
+		if (unknown < 0 || unknown)
+			return isl_bool_not(unknown);
 	}
 
 	return isl_bool_true;
