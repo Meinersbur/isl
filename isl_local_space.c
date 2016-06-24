@@ -731,7 +731,7 @@ isl_bool isl_local_space_div_is_known(__isl_keep isl_local_space *ls, int div)
 {
 	if (!ls)
 		return isl_bool_error;
-	return isl_local_div_is_known(ls->div, div);
+	return isl_bool_not(isl_local_div_is_marked_unknown(ls->div, div));
 }
 
 /* Does "ls" have an explicit representation for all local variables?
