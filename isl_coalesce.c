@@ -25,6 +25,7 @@
 #include "isl_tab.h"
 #include <isl_mat_private.h>
 #include <isl_local_space_private.h>
+#include <isl_val_private.h>
 #include <isl_vec_private.h>
 #include <isl_aff_private.h>
 #include <isl_equalities.h>
@@ -2200,20 +2201,69 @@ static isl_stat shift_div(struct isl_coalesce_info *info, int div,
 	return isl_stat_ok;
 }
 
+/* If "shift" is an integer constant, then shift the integer division
+ * at position "div" of the basic map represented by "info" by "shift".
+ * If "shift" is not an integer constant, then do nothing.
+ * If "shift" is equal to zero, then no shift needs to be performed either.
+ *
+ * That is, if the integer division has the form
+ *
+ *	floor(f(x)/d)
+ *
+ * then replace it by
+ *
+ *	floor((f(x) + shift * d)/d) - shift
+ */
+static isl_stat shift_if_cst_int(struct isl_coalesce_info *info, int div,
+	__isl_keep isl_aff *shift)
+{
+	isl_bool cst;
+	isl_stat r;
+	isl_int d;
+	isl_val *c;
+
+	cst = isl_aff_is_cst(shift);
+	if (cst < 0 || !cst)
+		return cst < 0 ? isl_stat_error : isl_stat_ok;
+
+	c = isl_aff_get_constant_val(shift);
+	cst = isl_val_is_int(c);
+	if (cst >= 0 && cst)
+		cst = isl_bool_not(isl_val_is_zero(c));
+	if (cst < 0 || !cst) {
+		isl_val_free(c);
+		return cst < 0 ? isl_stat_error : isl_stat_ok;
+	}
+
+	isl_int_init(d);
+	r = isl_val_get_num_isl_int(c, &d);
+	if (r >= 0)
+		r = shift_div(info, div, d);
+	isl_int_clear(d);
+
+	isl_val_free(c);
+
+	return r;
+}
+
 /* Check if some of the divs in the basic map represented by "info1"
  * are shifts of the corresponding divs in the basic map represented
- * by "info2".  If so, align them with those of "info2".
- * Only do this if "info1" and "info2" have the same number
+ * by "info2", taking into account the equality constraints "eq1" of "info1"
+ * and "eq2" of "info2".  If so, align them with those of "info2".
+ * "info1" and "info2" are assumed to have the same number
  * of integer divisions.
  *
  * An integer division is considered to be a shift of another integer
- * division if one is equal to the other plus a constant.
+ * division if, after simplification with respect to the equality
+ * constraints of the other basic map, one is equal to the other
+ * plus a constant.
  *
  * In particular, for each pair of integer divisions, if both are known,
- * have identical coefficients (apart from the constant term) and
- * if the difference between the constant terms (taking into account
- * the denominator) is an integer, then move the difference outside.
- * That is, if one integer division is of the form
+ * have the same denominator and are not already equal to each other,
+ * simplify each with respect to the equality constraints
+ * of the other basic map.  If the difference is an integer constant,
+ * then move this difference outside.
+ * That is, if, after simplification, one integer division is of the form
  *
  *	floor((f(x) + c_1)/d)
  *
@@ -2224,13 +2274,74 @@ static isl_stat shift_div(struct isl_coalesce_info *info, int div,
  * and n = (c_2 - c_1)/d is an integer, then replace the first
  * integer division by
  *
- *	floor((f(x) + c_1 + n * d)/d) - n = floor((f(x) + c_2)/d) - n
+ *	floor((f_1(x) + c_1 + n * d)/d) - n,
+ *
+ * where floor((f_1(x) + c_1 + n * d)/d) = floor((f2(x) + c_2)/d)
+ * after simplification with respect to the equality constraints.
+ */
+static isl_stat harmonize_divs_with_hulls(struct isl_coalesce_info *info1,
+	struct isl_coalesce_info *info2, __isl_keep isl_basic_set *eq1,
+	__isl_keep isl_basic_set *eq2)
+{
+	int i;
+	int total;
+	isl_local_space *ls1, *ls2;
+
+	total = isl_basic_map_total_dim(info1->bmap);
+	ls1 = isl_local_space_wrap(isl_basic_map_get_local_space(info1->bmap));
+	ls2 = isl_local_space_wrap(isl_basic_map_get_local_space(info2->bmap));
+	for (i = 0; i < info1->bmap->n_div; ++i) {
+		isl_stat r;
+		isl_aff *div1, *div2;
+
+		if (!isl_local_space_div_is_known(ls1, i) ||
+		    !isl_local_space_div_is_known(ls2, i))
+			continue;
+		if (isl_int_ne(info1->bmap->div[i][0], info2->bmap->div[i][0]))
+			continue;
+		if (isl_seq_eq(info1->bmap->div[i] + 1,
+				info2->bmap->div[i] + 1, 1 + total))
+			continue;
+		div1 = isl_local_space_get_div(ls1, i);
+		div2 = isl_local_space_get_div(ls2, i);
+		div1 = isl_aff_substitute_equalities(div1,
+						    isl_basic_set_copy(eq2));
+		div2 = isl_aff_substitute_equalities(div2,
+						    isl_basic_set_copy(eq1));
+		div2 = isl_aff_sub(div2, div1);
+		r = shift_if_cst_int(info1, i, div2);
+		isl_aff_free(div2);
+		if (r < 0)
+			break;
+	}
+	isl_local_space_free(ls1);
+	isl_local_space_free(ls2);
+
+	if (i < info1->bmap->n_div)
+		return isl_stat_error;
+	return isl_stat_ok;
+}
+
+/* Check if some of the divs in the basic map represented by "info1"
+ * are shifts of the corresponding divs in the basic map represented
+ * by "info2".  If so, align them with those of "info2".
+ * Only do this if "info1" and "info2" have the same number
+ * of integer divisions.
+ *
+ * An integer division is considered to be a shift of another integer
+ * division if, after simplification with respect to the equality
+ * constraints of the other basic map, one is equal to the other
+ * plus a constant.
+ *
+ * Extract the equality constraints and continue with
+ * harmonize_divs_with_hulls.
  */
 static isl_stat harmonize_divs(struct isl_coalesce_info *info1,
 	struct isl_coalesce_info *info2)
 {
-	int i;
-	int total;
+	isl_basic_map *bmap1, *bmap2;
+	isl_basic_set *eq1, *eq2;
+	isl_stat r;
 
 	if (!info1->bmap || !info2->bmap)
 		return isl_stat_error;
@@ -2240,33 +2351,15 @@ static isl_stat harmonize_divs(struct isl_coalesce_info *info1,
 	if (info1->bmap->n_div == 0)
 		return isl_stat_ok;
 
-	total = isl_basic_map_total_dim(info1->bmap);
-	for (i = 0; i < info1->bmap->n_div; ++i) {
-		isl_int d;
-		isl_stat r = isl_stat_ok;
+	bmap1 = isl_basic_map_copy(info1->bmap);
+	bmap2 = isl_basic_map_copy(info2->bmap);
+	eq1 = isl_basic_map_wrap(isl_basic_map_plain_affine_hull(bmap1));
+	eq2 = isl_basic_map_wrap(isl_basic_map_plain_affine_hull(bmap2));
+	r = harmonize_divs_with_hulls(info1, info2, eq1, eq2);
+	isl_basic_set_free(eq1);
+	isl_basic_set_free(eq2);
 
-		if (isl_int_is_zero(info1->bmap->div[i][0]) ||
-		    isl_int_is_zero(info2->bmap->div[i][0]))
-			continue;
-		if (isl_int_ne(info1->bmap->div[i][0], info2->bmap->div[i][0]))
-			continue;
-		if (isl_int_eq(info1->bmap->div[i][1], info2->bmap->div[i][1]))
-			continue;
-		if (!isl_seq_eq(info1->bmap->div[i] + 2,
-				info2->bmap->div[i] + 2, total))
-			continue;
-		isl_int_init(d);
-		isl_int_sub(d, info2->bmap->div[i][1], info1->bmap->div[i][1]);
-		if (isl_int_is_divisible_by(d, info1->bmap->div[i][0])) {
-			isl_int_divexact(d, d, info1->bmap->div[i][0]);
-			r = shift_div(info1, i, d);
-		}
-		isl_int_clear(d);
-		if (r < 0)
-			return isl_stat_error;
-	}
-
-	return isl_stat_ok;
+	return r;
 }
 
 /* Do the two basic maps live in the same local space, i.e.,
