@@ -2226,19 +2226,19 @@ static isl_stat shift_div(struct isl_coalesce_info *info, int div,
  *
  *	floor((f(x) + c_1 + n * d)/d) - n = floor((f(x) + c_2)/d) - n
  */
-static int harmonize_divs(struct isl_coalesce_info *info1,
+static isl_stat harmonize_divs(struct isl_coalesce_info *info1,
 	struct isl_coalesce_info *info2)
 {
 	int i;
 	int total;
 
 	if (!info1->bmap || !info2->bmap)
-		return -1;
+		return isl_stat_error;
 
 	if (info1->bmap->n_div != info2->bmap->n_div)
-		return 0;
+		return isl_stat_ok;
 	if (info1->bmap->n_div == 0)
-		return 0;
+		return isl_stat_ok;
 
 	total = isl_basic_map_total_dim(info1->bmap);
 	for (i = 0; i < info1->bmap->n_div; ++i) {
@@ -2263,10 +2263,10 @@ static int harmonize_divs(struct isl_coalesce_info *info1,
 		}
 		isl_int_clear(d);
 		if (r < 0)
-			return -1;
+			return isl_stat_error;
 	}
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Do the two basic maps live in the same local space, i.e.,
