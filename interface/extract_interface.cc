@@ -339,6 +339,27 @@ static void create_main_file_id(SourceManager &SM, const FileEntry *file)
 
 #endif
 
+#ifdef SETLANGDEFAULTS_TAKES_5_ARGUMENTS
+
+static void set_lang_defaults(CompilerInstance *Clang)
+{
+	PreprocessorOptions &PO = Clang->getPreprocessorOpts();
+	TargetOptions &TO = Clang->getTargetOpts();
+	llvm::Triple T(TO.Triple);
+	CompilerInvocation::setLangDefaults(Clang->getLangOpts(), IK_C, T, PO,
+					    LangStandard::lang_unspecified);
+}
+
+#else
+
+static void set_lang_defaults(CompilerInstance *Clang)
+{
+	CompilerInvocation::setLangDefaults(Clang->getLangOpts(), IK_C,
+					    LangStandard::lang_unspecified);
+}
+
+#endif
+
 int main(int argc, char *argv[])
 {
 	llvm::cl::ParseCommandLineOptions(argc, argv);
@@ -355,8 +376,7 @@ int main(int argc, char *argv[])
 	Clang->createSourceManager(Clang->getFileManager());
 	TargetInfo *target = create_target_info(Clang, Diags);
 	Clang->setTarget(target);
-	CompilerInvocation::setLangDefaults(Clang->getLangOpts(), IK_C,
-					    LangStandard::lang_unspecified);
+	set_lang_defaults(Clang);
 	HeaderSearchOptions &HSO = Clang->getHeaderSearchOpts();
 	LangOptions &LO = Clang->getLangOpts();
 	PreprocessorOptions &PO = Clang->getPreprocessorOpts();
