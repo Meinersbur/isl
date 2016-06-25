@@ -2183,20 +2183,21 @@ static enum isl_change coalesce_local_pair(int i, int j,
  *
  *	floor((f(x) + shift * d)/d) - shift
  */
-static int shift_div(struct isl_coalesce_info *info, int div, isl_int shift)
+static isl_stat shift_div(struct isl_coalesce_info *info, int div,
+	isl_int shift)
 {
 	unsigned total;
 
 	info->bmap = isl_basic_map_shift_div(info->bmap, div, 0, shift);
 	if (!info->bmap)
-		return -1;
+		return isl_stat_error;
 
 	total = isl_basic_map_dim(info->bmap, isl_dim_all);
 	total -= isl_basic_map_dim(info->bmap, isl_dim_div);
 	if (isl_tab_shift_var(info->tab, total + div, shift) < 0)
-		return -1;
+		return isl_stat_error;
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Check if some of the divs in the basic map represented by "info1"
@@ -2242,7 +2243,7 @@ static int harmonize_divs(struct isl_coalesce_info *info1,
 	total = isl_basic_map_total_dim(info1->bmap);
 	for (i = 0; i < info1->bmap->n_div; ++i) {
 		isl_int d;
-		int r = 0;
+		isl_stat r = isl_stat_ok;
 
 		if (isl_int_is_zero(info1->bmap->div[i][0]) ||
 		    isl_int_is_zero(info2->bmap->div[i][0]))
