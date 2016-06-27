@@ -1838,7 +1838,7 @@ __isl_give isl_printer *isl_printer_print_ast_expr(__isl_take isl_printer *p,
 		if (expr->u.op.n_arg != 2)
 			isl_die(isl_printer_get_ctx(p), isl_error_internal,
 				"operation should have two arguments",
-				goto error);
+				return isl_printer_free(p));
 		p = print_sub_expr(p, expr->u.op.op, expr->u.op.args[0], 1);
 		if (expr->u.op.op != isl_ast_op_member)
 			p = isl_printer_print_str(p, " ");
@@ -1858,9 +1858,6 @@ __isl_give isl_printer *isl_printer_print_ast_expr(__isl_take isl_printer *p,
 	}
 
 	return p;
-error:
-	isl_printer_free(p);
-	return NULL;
 }
 
 /* Print "node" to "p" in "isl format".
