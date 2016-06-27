@@ -1785,9 +1785,6 @@ static __isl_give isl_printer *print_access(__isl_take isl_printer *p,
 }
 
 /* Print "expr" to "p".
- *
- * If we are printing in isl format, then we also print an indication
- * of the size of the expression (if it was computed).
  */
 __isl_give isl_printer *isl_printer_print_ast_expr(__isl_take isl_printer *p,
 	__isl_keep isl_ast_expr *expr)
