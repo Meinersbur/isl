@@ -1403,7 +1403,7 @@ isl_stat isl_ast_node_foreach_descendant_top_down(
 
 /* Textual C representation of the various operators.
  */
-static char *op_str[] = {
+static char *op_str_c[] = {
 	[isl_ast_op_and] = "&&",
 	[isl_ast_op_and_then] = "&&",
 	[isl_ast_op_or] = "||",
@@ -1514,6 +1514,9 @@ static int is_div_mod(enum isl_ast_op_type op)
 	       op == isl_ast_op_zdiv_r;
 }
 
+static __isl_give isl_printer *print_ast_expr_c(__isl_take isl_printer *p,
+	__isl_keep isl_ast_expr *expr);
+
 /* Do we need/want parentheses around "expr" as a subexpression of
  * an "op" operation?  If "left" is set, then "expr" is the left-most
  * operand.
@@ -1554,10 +1557,10 @@ static int sub_expr_need_parens(enum isl_ast_op_type op,
 	return 0;
 }
 
-/* Print "expr" as a subexpression of an "op" operation.
+/* Print "expr" as a subexpression of an "op" operation in C format.
  * If "left" is set, then "expr" is the left-most operand.
  */
-static __isl_give isl_printer *print_sub_expr(__isl_take isl_printer *p,
+static __isl_give isl_printer *print_sub_expr_c(__isl_take isl_printer *p,
 	enum isl_ast_op_type op, __isl_keep isl_ast_expr *expr, int left)
 {
 	int need_parens;
@@ -1566,7 +1569,7 @@ static __isl_give isl_printer *print_sub_expr(__isl_take isl_printer *p,
 
 	if (need_parens)
 		p = isl_printer_print_str(p, "(");
-	p = isl_printer_print_ast_expr(p, expr);
+	p = print_ast_expr_c(p, expr);
 	if (need_parens)
 		p = isl_printer_print_str(p, ")");
 	return p;
@@ -1575,7 +1578,7 @@ static __isl_give isl_printer *print_sub_expr(__isl_take isl_printer *p,
 #define isl_ast_op_last	isl_ast_op_address_of
 
 /* Data structure that holds the user-specified textual
- * representations for the operators.
+ * representations for the operators in C format.
  * The entries are either NULL or copies of strings.
  * A NULL entry means that the default name should be used.
  */
@@ -1700,13 +1703,13 @@ __isl_give isl_printer *isl_ast_op_type_set_print_name(
 	return p;
 }
 
-/* Return the textual representation of "type".
+/* Return the textual representation of "type" in C format.
  *
  * If there is a user-specified name in an isl_ast_op_names note
  * associated to "p", then return that.
  * Otherwise, return the default name in op_str.
  */
-static const char *get_op_str(__isl_keep isl_printer *p,
+static const char *get_op_str_c(__isl_keep isl_printer *p,
 	enum isl_ast_op_type type)
 {
 	isl_id *id;
@@ -1720,73 +1723,73 @@ static const char *get_op_str(__isl_keep isl_printer *p,
 	isl_id_free(id);
 	if (names && names->op_str[type])
 		return names->op_str[type];
-	return op_str[type];
+	return op_str_c[type];
 }
 
-/* Print a min or max reduction "expr".
+/* Print a min or max reduction "expr" in C format.
  */
-static __isl_give isl_printer *print_min_max(__isl_take isl_printer *p,
+static __isl_give isl_printer *print_min_max_c(__isl_take isl_printer *p,
 	__isl_keep isl_ast_expr *expr)
 {
 	int i = 0;
 
 	for (i = 1; i < expr->u.op.n_arg; ++i) {
-		p = isl_printer_print_str(p, get_op_str(p, expr->u.op.op));
+		p = isl_printer_print_str(p, get_op_str_c(p, expr->u.op.op));
 		p = isl_printer_print_str(p, "(");
 	}
 	p = isl_printer_print_ast_expr(p, expr->u.op.args[0]);
 	for (i = 1; i < expr->u.op.n_arg; ++i) {
 		p = isl_printer_print_str(p, ", ");
-		p = isl_printer_print_ast_expr(p, expr->u.op.args[i]);
+		p = print_ast_expr_c(p, expr->u.op.args[i]);
 		p = isl_printer_print_str(p, ")");
 	}
 
 	return p;
 }
 
-/* Print a function call "expr".
+/* Print a function call "expr" in C format.
  *
  * The first argument represents the function to be called.
  */
-static __isl_give isl_printer *print_call(__isl_take isl_printer *p,
+static __isl_give isl_printer *print_call_c(__isl_take isl_printer *p,
 	__isl_keep isl_ast_expr *expr)
 {
 	int i = 0;
 
-	p = isl_printer_print_ast_expr(p, expr->u.op.args[0]);
+	p = print_ast_expr_c(p, expr->u.op.args[0]);
 	p = isl_printer_print_str(p, "(");
 	for (i = 1; i < expr->u.op.n_arg; ++i) {
 		if (i != 1)
 			p = isl_printer_print_str(p, ", ");
-		p = isl_printer_print_ast_expr(p, expr->u.op.args[i]);
+		p = print_ast_expr_c(p, expr->u.op.args[i]);
 	}
 	p = isl_printer_print_str(p, ")");
 
 	return p;
 }
 
-/* Print an array access "expr".
+/* Print an array access "expr" in C format.
  *
  * The first argument represents the array being accessed.
  */
-static __isl_give isl_printer *print_access(__isl_take isl_printer *p,
+static __isl_give isl_printer *print_access_c(__isl_take isl_printer *p,
 	__isl_keep isl_ast_expr *expr)
 {
 	int i = 0;
 
-	p = isl_printer_print_ast_expr(p, expr->u.op.args[0]);
+	p = print_ast_expr_c(p, expr->u.op.args[0]);
 	for (i = 1; i < expr->u.op.n_arg; ++i) {
 		p = isl_printer_print_str(p, "[");
-		p = isl_printer_print_ast_expr(p, expr->u.op.args[i]);
+		p = print_ast_expr_c(p, expr->u.op.args[i]);
 		p = isl_printer_print_str(p, "]");
 	}
 
 	return p;
 }
 
-/* Print "expr" to "p".
+/* Print "expr" to "p" in C format.
  */
-__isl_give isl_printer *isl_printer_print_ast_expr(__isl_take isl_printer *p,
+static __isl_give isl_printer *print_ast_expr_c(__isl_take isl_printer *p,
 	__isl_keep isl_ast_expr *expr)
 {
 	if (!p)
@@ -1797,55 +1800,55 @@ __isl_give isl_printer *isl_printer_print_ast_expr(__isl_take isl_printer *p,
 	switch (expr->type) {
 	case isl_ast_expr_op:
 		if (expr->u.op.op == isl_ast_op_call) {
-			p = print_call(p, expr);
+			p = print_call_c(p, expr);
 			break;
 		}
 		if (expr->u.op.op == isl_ast_op_access) {
-			p = print_access(p, expr);
+			p = print_access_c(p, expr);
 			break;
 		}
 		if (expr->u.op.n_arg == 1) {
 			p = isl_printer_print_str(p,
-						get_op_str(p, expr->u.op.op));
-			p = print_sub_expr(p, expr->u.op.op,
+						get_op_str_c(p, expr->u.op.op));
+			p = print_sub_expr_c(p, expr->u.op.op,
 						expr->u.op.args[0], 0);
 			break;
 		}
 		if (expr->u.op.op == isl_ast_op_fdiv_q) {
-			const char *name = get_op_str(p, isl_ast_op_fdiv_q);
+			const char *name = get_op_str_c(p, isl_ast_op_fdiv_q);
 			p = isl_printer_print_str(p, name);
 			p = isl_printer_print_str(p, "(");
-			p = isl_printer_print_ast_expr(p, expr->u.op.args[0]);
+			p = print_ast_expr_c(p, expr->u.op.args[0]);
 			p = isl_printer_print_str(p, ", ");
-			p = isl_printer_print_ast_expr(p, expr->u.op.args[1]);
+			p = print_ast_expr_c(p, expr->u.op.args[1]);
 			p = isl_printer_print_str(p, ")");
 			break;
 		}
 		if (expr->u.op.op == isl_ast_op_max ||
 		    expr->u.op.op == isl_ast_op_min) {
-			p = print_min_max(p, expr);
+			p = print_min_max_c(p, expr);
 			break;
 		}
 		if (expr->u.op.op == isl_ast_op_cond ||
 		    expr->u.op.op == isl_ast_op_select) {
-			p = isl_printer_print_ast_expr(p, expr->u.op.args[0]);
+			p = print_ast_expr_c(p, expr->u.op.args[0]);
 			p = isl_printer_print_str(p, " ? ");
-			p = isl_printer_print_ast_expr(p, expr->u.op.args[1]);
+			p = print_ast_expr_c(p, expr->u.op.args[1]);
 			p = isl_printer_print_str(p, " : ");
-			p = isl_printer_print_ast_expr(p, expr->u.op.args[2]);
+			p = print_ast_expr_c(p, expr->u.op.args[2]);
 			break;
 		}
 		if (expr->u.op.n_arg != 2)
 			isl_die(isl_printer_get_ctx(p), isl_error_internal,
 				"operation should have two arguments",
 				return isl_printer_free(p));
-		p = print_sub_expr(p, expr->u.op.op, expr->u.op.args[0], 1);
+		p = print_sub_expr_c(p, expr->u.op.op, expr->u.op.args[0], 1);
 		if (expr->u.op.op != isl_ast_op_member)
 			p = isl_printer_print_str(p, " ");
-		p = isl_printer_print_str(p, get_op_str(p, expr->u.op.op));
+		p = isl_printer_print_str(p, get_op_str_c(p, expr->u.op.op));
 		if (expr->u.op.op != isl_ast_op_member)
 			p = isl_printer_print_str(p, " ");
-		p = print_sub_expr(p, expr->u.op.op, expr->u.op.args[1], 0);
+		p = print_sub_expr_c(p, expr->u.op.op, expr->u.op.args[1], 0);
 		break;
 	case isl_ast_expr_id:
 		p = isl_printer_print_str(p, isl_id_get_name(expr->u.id));
@@ -1855,6 +1858,34 @@ __isl_give isl_printer *isl_printer_print_ast_expr(__isl_take isl_printer *p,
 		break;
 	case isl_ast_expr_error:
 		break;
+	}
+
+	return p;
+}
+
+/* Print "expr" to "p".
+ *
+ * Only an isl and a C format are supported.
+ * The isl format is currently the same as the C format.
+ */
+__isl_give isl_printer *isl_printer_print_ast_expr(__isl_take isl_printer *p,
+	__isl_keep isl_ast_expr *expr)
+{
+	int format;
+
+	if (!p)
+		return NULL;
+
+	format = isl_printer_get_output_format(p);
+	switch (format) {
+	case ISL_FORMAT_ISL:
+	case ISL_FORMAT_C:
+		p = print_ast_expr_c(p, expr);
+		break;
+	default:
+		isl_die(isl_printer_get_ctx(p), isl_error_unsupported,
+			"output format not supported for ast_expr",
+			return isl_printer_free(p));
 	}
 
 	return p;
@@ -2475,7 +2506,7 @@ __isl_give isl_printer *isl_ast_op_type_print_macro(
 	case isl_ast_op_min:
 		p = isl_printer_start_line(p);
 		p = isl_printer_print_str(p, "#define ");
-		p = isl_printer_print_str(p, get_op_str(p, type));
+		p = isl_printer_print_str(p, get_op_str_c(p, type));
 		p = isl_printer_print_str(p,
 			"(x,y)    ((x) < (y) ? (x) : (y))");
 		p = isl_printer_end_line(p);
@@ -2483,7 +2514,7 @@ __isl_give isl_printer *isl_ast_op_type_print_macro(
 	case isl_ast_op_max:
 		p = isl_printer_start_line(p);
 		p = isl_printer_print_str(p, "#define ");
-		p = isl_printer_print_str(p, get_op_str(p, type));
+		p = isl_printer_print_str(p, get_op_str_c(p, type));
 		p = isl_printer_print_str(p,
 			"(x,y)    ((x) > (y) ? (x) : (y))");
 		p = isl_printer_end_line(p);
@@ -2491,7 +2522,7 @@ __isl_give isl_printer *isl_ast_op_type_print_macro(
 	case isl_ast_op_fdiv_q:
 		p = isl_printer_start_line(p);
 		p = isl_printer_print_str(p, "#define ");
-		p = isl_printer_print_str(p, get_op_str(p, type));
+		p = isl_printer_print_str(p, get_op_str_c(p, type));
 		p = isl_printer_print_str(p,
 			"(n,d) "
 			"(((n)<0) ? -((-(n)+(d)-1)/(d)) : (n)/(d))");
