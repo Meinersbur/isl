@@ -10088,7 +10088,8 @@ This option may also be set directly using
 C<isl_schedule_node_band_member_set_isolate_ast_loop_type>.
 The atomic/separate/unroll choice for the remaining part is determined
 by the regular C<atomic>, C<separate> or C<unroll> option.
-The use of the C<isolate> option causes any tree containing the node
+Since the C<isolate> option references outer schedule dimensions,
+its use in a band node causes any tree containing the node
 to be considered anchored.
 
 As an example, consider the isolation of full tiles from partial tiles
