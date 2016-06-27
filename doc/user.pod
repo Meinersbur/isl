@@ -7664,7 +7664,7 @@ A filter node does not impose any ordering, but rather intersects
 the set of domain elements that the current subtree refers to
 with a given union set.  The subtree of the filter node only
 refers to domain elements in the intersection.
-A filter node is typically only used a child of a sequence or
+A filter node is typically only used as a child of a sequence or
 set node.
 
 =item C<isl_schedule_node_leaf>
