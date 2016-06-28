@@ -2010,63 +2010,114 @@ __isl_give isl_printer *isl_printer_print_ast_expr(__isl_take isl_printer *p,
 	return p;
 }
 
+static __isl_give isl_printer *print_ast_node_isl(__isl_take isl_printer *p,
+	__isl_keep isl_ast_node *node);
+
+/* Print a YAML sequence containing the entries in "list" to "p".
+ */
+static __isl_give isl_printer *print_ast_node_list(__isl_take isl_printer *p,
+	__isl_keep isl_ast_node_list *list)
+{
+	int i, n;
+
+	n = isl_ast_node_list_n_ast_node(list);
+	if (n < 0)
+		return isl_printer_free(p);
+
+	p = isl_printer_yaml_start_sequence(p);
+	for (i = 0; i < n; ++i) {
+		isl_ast_node *node;
+
+		node = isl_ast_node_list_get_ast_node(list, i);
+		p = print_ast_node_isl(p, node);
+		isl_ast_node_free(node);
+		p = isl_printer_yaml_next(p);
+	}
+	p = isl_printer_yaml_end_sequence(p);
+
+	return p;
+}
+
 /* Print "node" to "p" in "isl format".
+ *
+ * In particular, print the isl_ast_node as a YAML document.
  */
 static __isl_give isl_printer *print_ast_node_isl(__isl_take isl_printer *p,
 	__isl_keep isl_ast_node *node)
 {
-	p = isl_printer_print_str(p, "(");
 	switch (node->type) {
 	case isl_ast_node_for:
+		p = isl_printer_yaml_start_mapping(p);
 		if (node->u.f.degenerate) {
+			p = isl_printer_print_str(p, "value");
+			p = isl_printer_yaml_next(p);
 			p = isl_printer_print_ast_expr(p, node->u.f.init);
+			p = isl_printer_yaml_next(p);
 		} else {
-			p = isl_printer_print_str(p, "init: ");
+			p = isl_printer_print_str(p, "init");
+			p = isl_printer_yaml_next(p);
 			p = isl_printer_print_ast_expr(p, node->u.f.init);
-			p = isl_printer_print_str(p, ", ");
-			p = isl_printer_print_str(p, "cond: ");
+			p = isl_printer_yaml_next(p);
+			p = isl_printer_print_str(p, "cond");
+			p = isl_printer_yaml_next(p);
 			p = isl_printer_print_ast_expr(p, node->u.f.cond);
-			p = isl_printer_print_str(p, ", ");
-			p = isl_printer_print_str(p, "inc: ");
+			p = isl_printer_yaml_next(p);
+			p = isl_printer_print_str(p, "inc");
+			p = isl_printer_yaml_next(p);
 			p = isl_printer_print_ast_expr(p, node->u.f.inc);
+			p = isl_printer_yaml_next(p);
 		}
 		if (node->u.f.body) {
-			p = isl_printer_print_str(p, ", ");
-			p = isl_printer_print_str(p, "body: ");
+			p = isl_printer_print_str(p, "body");
+			p = isl_printer_yaml_next(p);
 			p = isl_printer_print_ast_node(p, node->u.f.body);
+			p = isl_printer_yaml_next(p);
 		}
+		p = isl_printer_yaml_end_mapping(p);
 		break;
 	case isl_ast_node_mark:
-		p = isl_printer_print_str(p, "mark: ");
+		p = isl_printer_yaml_start_mapping(p);
+		p = isl_printer_print_str(p, "mark");
+		p = isl_printer_yaml_next(p);
 		p = isl_printer_print_id(p, node->u.m.mark);
-		p = isl_printer_print_str(p, ", ");
-		p = isl_printer_print_str(p, "node: ");
+		p = isl_printer_yaml_next(p);
+		p = isl_printer_print_str(p, "node");
+		p = isl_printer_yaml_next(p);
 		p = isl_printer_print_ast_node(p, node->u.m.node);
+		p = isl_printer_yaml_end_mapping(p);
 		break;
 	case isl_ast_node_user:
+		p = isl_printer_yaml_start_mapping(p);
+		p = isl_printer_print_str(p, "user");
+		p = isl_printer_yaml_next(p);
 		p = isl_printer_print_ast_expr(p, node->u.e.expr);
+		p = isl_printer_yaml_end_mapping(p);
 		break;
 	case isl_ast_node_if:
-		p = isl_printer_print_str(p, "guard: ");
+		p = isl_printer_yaml_start_mapping(p);
+		p = isl_printer_print_str(p, "guard");
+		p = isl_printer_yaml_next(p);
 		p = isl_printer_print_ast_expr(p, node->u.i.guard);
+		p = isl_printer_yaml_next(p);
 		if (node->u.i.then) {
-			p = isl_printer_print_str(p, ", ");
-			p = isl_printer_print_str(p, "then: ");
+			p = isl_printer_print_str(p, "then");
+			p = isl_printer_yaml_next(p);
 			p = isl_printer_print_ast_node(p, node->u.i.then);
+			p = isl_printer_yaml_next(p);
 		}
 		if (node->u.i.else_node) {
-			p = isl_printer_print_str(p, ", ");
-			p = isl_printer_print_str(p, "else: ");
+			p = isl_printer_print_str(p, "else");
+			p = isl_printer_yaml_next(p);
 			p = isl_printer_print_ast_node(p, node->u.i.else_node);
 		}
+		p = isl_printer_yaml_end_mapping(p);
 		break;
 	case isl_ast_node_block:
-		p = isl_printer_print_ast_node_list(p, node->u.b.children);
+		p = print_ast_node_list(p, node->u.b.children);
 		break;
 	case isl_ast_node_error:
 		break;
 	}
-	p = isl_printer_print_str(p, ")");
 	return p;
 }
 
