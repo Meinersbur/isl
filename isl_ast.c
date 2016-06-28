@@ -1898,6 +1898,7 @@ static __isl_give isl_printer *print_ast_node_isl(__isl_take isl_printer *p,
 		p = isl_printer_print_str(p, ", ");
 		p = isl_printer_print_str(p, "node: ");
 		p = isl_printer_print_ast_node(p, node->u.m.node);
+		break;
 	case isl_ast_node_user:
 		p = isl_printer_print_ast_expr(p, node->u.e.expr);
 		break;
