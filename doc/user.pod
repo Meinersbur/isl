@@ -253,6 +253,18 @@ is now obtained by turning on the C<schedule_serialize_sccs> option.
 
 =back
 
+=head3 Changes since isl-0.17
+
+=over
+
+=item * The function C<isl_printer_print_ast_expr> no longer prints
+in C format by default.  To print in C format, the output format
+of the printer needs to have been explicitly set to C<ISL_FORMAT_C>.
+As a result, the function C<isl_ast_expr_to_str> no longer prints
+the expression in C format.  Use C<isl_ast_expr_to_C_str> instead.
+
+=back
+
 =head1 License
 
 C<isl> is released under the MIT license.

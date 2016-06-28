@@ -1863,10 +1863,127 @@ static __isl_give isl_printer *print_ast_expr_c(__isl_take isl_printer *p,
 	return p;
 }
 
+/* Textual representation of the isl_ast_op_type elements
+ * for use in a YAML representation of an isl_ast_expr.
+ */
+static char *op_str[] = {
+	[isl_ast_op_and] = "and",
+	[isl_ast_op_and_then] = "and_then",
+	[isl_ast_op_or] = "or",
+	[isl_ast_op_or_else] = "or_else",
+	[isl_ast_op_max] = "max",
+	[isl_ast_op_min] = "min",
+	[isl_ast_op_minus] = "minus",
+	[isl_ast_op_add] = "add",
+	[isl_ast_op_sub] = "sub",
+	[isl_ast_op_mul] = "mul",
+	[isl_ast_op_div] = "div",
+	[isl_ast_op_fdiv_q] = "fdiv_q",
+	[isl_ast_op_pdiv_q] = "pdiv_q",
+	[isl_ast_op_pdiv_r] = "pdiv_r",
+	[isl_ast_op_zdiv_r] = "zdiv_r",
+	[isl_ast_op_cond] = "cond",
+	[isl_ast_op_select] = "select",
+	[isl_ast_op_eq] = "eq",
+	[isl_ast_op_le] = "le",
+	[isl_ast_op_lt] = "lt",
+	[isl_ast_op_ge] = "ge",
+	[isl_ast_op_gt] = "gt",
+	[isl_ast_op_call] = "call",
+	[isl_ast_op_access] = "access",
+	[isl_ast_op_member] = "member",
+	[isl_ast_op_address_of] = "address_of"
+};
+
+static __isl_give isl_printer *print_ast_expr_isl(__isl_take isl_printer *p,
+	__isl_keep isl_ast_expr *expr);
+
+/* Print the arguments of "expr" to "p" in isl format.
+ *
+ * If there are no arguments, then nothing needs to be printed.
+ * Otherwise add an "args" key to the current mapping with as value
+ * the list of arguments of "expr".
+ */
+static __isl_give isl_printer *print_arguments(__isl_take isl_printer *p,
+	__isl_keep isl_ast_expr *expr)
+{
+	int i, n;
+
+	n = isl_ast_expr_get_op_n_arg(expr);
+	if (n < 0)
+		return isl_printer_free(p);
+	if (n == 0)
+		return p;
+
+	p = isl_printer_print_str(p, "args");
+	p = isl_printer_yaml_next(p);
+	p = isl_printer_yaml_start_sequence(p);
+	for (i = 0; i < n; ++i) {
+		isl_ast_expr *arg;
+
+		arg = isl_ast_expr_get_op_arg(expr, i);
+		p = print_ast_expr_isl(p, arg);
+		isl_ast_expr_free(arg);
+		p = isl_printer_yaml_next(p);
+	}
+	p = isl_printer_yaml_end_sequence(p);
+
+	return p;
+}
+
+/* Print "expr" to "p" in isl format.
+ *
+ * In particular, print the isl_ast_expr as a YAML document.
+ */
+static __isl_give isl_printer *print_ast_expr_isl(__isl_take isl_printer *p,
+	__isl_keep isl_ast_expr *expr)
+{
+	enum isl_ast_expr_type type;
+	enum isl_ast_op_type op;
+	isl_id *id;
+	isl_val *v;
+
+	if (!expr)
+		return isl_printer_free(p);
+
+	p = isl_printer_yaml_start_mapping(p);
+	type = isl_ast_expr_get_type(expr);
+	switch (type) {
+	case isl_ast_expr_error:
+		return isl_printer_free(p);
+	case isl_ast_expr_op:
+		op = isl_ast_expr_get_op_type(expr);
+		if (op == isl_ast_op_error)
+			return isl_printer_free(p);
+		p = isl_printer_print_str(p, "op");
+		p = isl_printer_yaml_next(p);
+		p = isl_printer_print_str(p, op_str[op]);
+		p = isl_printer_yaml_next(p);
+		p = print_arguments(p, expr);
+		break;
+	case isl_ast_expr_id:
+		p = isl_printer_print_str(p, "id");
+		p = isl_printer_yaml_next(p);
+		id = isl_ast_expr_get_id(expr);
+		p = isl_printer_print_id(p, id);
+		isl_id_free(id);
+		break;
+	case isl_ast_expr_int:
+		p = isl_printer_print_str(p, "val");
+		p = isl_printer_yaml_next(p);
+		v = isl_ast_expr_get_val(expr);
+		p = isl_printer_print_val(p, v);
+		isl_val_free(v);
+		break;
+	}
+	p = isl_printer_yaml_end_mapping(p);
+
+	return p;
+}
+
 /* Print "expr" to "p".
  *
  * Only an isl and a C format are supported.
- * The isl format is currently the same as the C format.
  */
 __isl_give isl_printer *isl_printer_print_ast_expr(__isl_take isl_printer *p,
 	__isl_keep isl_ast_expr *expr)
@@ -1879,6 +1996,8 @@ __isl_give isl_printer *isl_printer_print_ast_expr(__isl_take isl_printer *p,
 	format = isl_printer_get_output_format(p);
 	switch (format) {
 	case ISL_FORMAT_ISL:
+		p = print_ast_expr_isl(p, expr);
+		break;
 	case ISL_FORMAT_C:
 		p = print_ast_expr_c(p, expr);
 		break;
