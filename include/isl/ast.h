@@ -133,6 +133,7 @@ isl_stat isl_ast_node_foreach_descendant_top_down(
 __isl_give isl_printer *isl_printer_print_ast_node(__isl_take isl_printer *p,
 	__isl_keep isl_ast_node *node);
 void isl_ast_node_dump(__isl_keep isl_ast_node *node);
+__isl_give char *isl_ast_node_to_str(__isl_keep isl_ast_node *node);
 
 __isl_give isl_ast_print_options *isl_ast_print_options_alloc(isl_ctx *ctx);
 __isl_give isl_ast_print_options *isl_ast_print_options_copy(
