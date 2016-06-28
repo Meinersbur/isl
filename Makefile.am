@@ -348,6 +348,7 @@ EXTRA_DIST = \
 	isl_multi_hash.c \
 	isl_multi_intersect.c \
 	print_templ.c \
+	print_templ_yaml.c \
 	isl_power_templ.c \
 	isl_pw_macro.h \
 	isl_pw_templ.c \
