@@ -2048,6 +2048,10 @@ static __isl_give isl_printer *print_ast_node_isl(__isl_take isl_printer *p,
 	switch (node->type) {
 	case isl_ast_node_for:
 		p = isl_printer_yaml_start_mapping(p);
+		p = isl_printer_print_str(p, "iterator");
+		p = isl_printer_yaml_next(p);
+		p = isl_printer_print_ast_expr(p, node->u.f.iterator);
+		p = isl_printer_yaml_next(p);
 		if (node->u.f.degenerate) {
 			p = isl_printer_print_str(p, "value");
 			p = isl_printer_yaml_next(p);
