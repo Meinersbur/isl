@@ -672,10 +672,11 @@ int isl_space_find_dim_by_name(__isl_keep isl_space *space,
 
 	offset = isl_space_offset(space, type);
 	n = isl_space_dim(space, type);
-	for (i = 0; i < n && offset + i < space->n_id; ++i)
-		if (space->ids[offset + i]->name &&
-		    !strcmp(space->ids[offset + i]->name, name))
+	for (i = 0; i < n && offset + i < space->n_id; ++i) {
+		isl_id *id = get_id(space, type, i);
+		if (id && id->name && !strcmp(id->name, name))
 			return i;
+	}
 
 	return -1;
 }
