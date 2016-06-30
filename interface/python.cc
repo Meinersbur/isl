@@ -110,12 +110,14 @@ static bool gives(Decl *decl)
  * "name" is the name of the class.
  * "type" is the declaration that introduces the type.
  * "methods" contains the set of methods, grouped by method name.
+ * "fn_to_str" is a reference to the *_to_str method of this class, if any.
  */
 struct isl_class {
 	string name;
 	RecordDecl *type;
 	set<FunctionDecl *> constructors;
 	map<string, set<FunctionDecl *> > methods;
+	FunctionDecl *fn_to_str;
 
 	bool is_static(FunctionDecl *method);
 
@@ -771,7 +773,8 @@ void isl_class::print_method_type(FunctionDecl *fd)
 	print_argtypes(fd);
 }
 
-/* Print declarations for methods printing the class representation.
+/* Print declarations for methods printing the class representation,
+ * provided there is a corresponding *_to_str function.
  *
  * In particular, provide an implementation of __str__ and __repr__ methods to
  * override the default representation used by python. Python uses __str__ to
@@ -784,9 +787,13 @@ void isl_class::print_method_type(FunctionDecl *fd)
  */
 void isl_class::print_representation(const string &python_name)
 {
+	if (!fn_to_str)
+		return;
+
 	printf("    def __str__(arg0):\n");
 	print_type_check(python_name, 0, false, "", "", -1);
-	printf("        ptr = isl.%s_to_str(arg0.ptr)\n", name.c_str());
+	printf("        ptr = isl.%s(arg0.ptr)\n",
+		string(fn_to_str->getName()).c_str());
 	printf("        res = str(cast(ptr, c_char_p).value)\n");
 	printf("        libc.free(ptr)\n");
 	printf("        return res\n");
@@ -804,8 +811,9 @@ void isl_class::print_representation(const string &python_name)
  *
  * To be able to call C functions it is necessary to explicitly set their
  * argument and result types.  Do this for all exported constructors and
- * methods.  Assuming each exported class has *_to_str and *_free methods,
- * also unconditionally set types for these methods.
+ * methods, as well as for the *_to_str method, if it exists.
+ * Assuming each exported class has a *_free method,
+ * also unconditionally set the type of such methods.
  */
 void isl_class::print_method_types()
 {
@@ -820,8 +828,8 @@ void isl_class::print_method_types()
 			print_method_type(*in);
 
 	printf("isl.%s_free.argtypes = [c_void_p]\n", name.c_str());
-	printf("isl.%s_to_str.argtypes = [c_void_p]\n", name.c_str());
-	printf("isl.%s_to_str.restype = POINTER(c_char)\n", name.c_str());
+	if (fn_to_str)
+		print_method_type(fn_to_str);
 }
 
 /* Print out the definition of this isl_class.
@@ -880,7 +888,8 @@ void isl_class::print(map<string, isl_class> &classes, set<string> &done)
 
 /* Generate a python interface based on the extracted types and functions.
  * We first collect all functions that belong to a certain type,
- * separating constructors from regular methods.  If there are any
+ * separating constructors from regular methods and keeping track
+ * of the _to_str function, if any, separately.  If there are any
  * overloaded functions, then they are grouped based on their name
  * after removing the argument type suffix.
  *
@@ -888,21 +897,34 @@ void isl_class::print(map<string, isl_class> &classes, set<string> &done)
  * of some other class, it will make sure the superclass is printed out first.
  */
 void generate_python(set<RecordDecl *> &exported_types,
-	set<FunctionDecl *> exported_functions)
+	set<FunctionDecl *> exported_functions, set<FunctionDecl *> functions)
 {
 	map<string, isl_class> classes;
 	map<string, isl_class>::iterator ci;
 	set<string> done;
+	map<string, FunctionDecl *> functions_by_name;
+
+	set<FunctionDecl *>::iterator in;
+	for (in = functions.begin(); in != functions.end(); ++in) {
+		FunctionDecl *decl = *in;
+		functions_by_name[decl->getName()] = decl;
+	}
 
 	set<RecordDecl *>::iterator it;
 	for (it = exported_types.begin(); it != exported_types.end(); ++it) {
 		RecordDecl *decl = *it;
+		map<string, FunctionDecl *>::iterator i;
+
 		string name = decl->getName();
 		classes[name].name = name;
 		classes[name].type = decl;
+		classes[name].fn_to_str = NULL;
+
+		i = functions_by_name.find(name + "_to_str");
+		if (i != functions_by_name.end())
+			classes[name].fn_to_str = i->second;
 	}
 
-	set<FunctionDecl *>::iterator in;
 	for (in = exported_functions.begin(); in != exported_functions.end();
 	     ++in) {
 		isl_class *c = method2class(classes, *in);
