@@ -202,7 +202,7 @@ static void sol_free(struct isl_sol *sol)
  * onto the stack of partial solutions.
  */
 static void sol_push_sol(struct isl_sol *sol,
-	struct isl_basic_set *dom, struct isl_mat *M)
+	__isl_take isl_basic_set *dom, __isl_take isl_mat *M)
 {
 	struct isl_partial_sol *partial;
 
