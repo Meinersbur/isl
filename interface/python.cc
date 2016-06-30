@@ -115,6 +115,7 @@ struct isl_class {
 	void print(map<string, isl_class> &classes, set<string> &done);
 	void print_constructor(FunctionDecl *method);
 	void print_representation(const string &python_name);
+	void print_method_types();
 	void print_method(FunctionDecl *method, vector<string> super);
 	void print_method_overload(FunctionDecl *method, vector<string> super);
 	void print_method(const string &fullname,
@@ -717,6 +718,32 @@ void isl_class::print_representation(const string &python_name)
 		python_name.c_str());
 }
 
+/* Print code to set method type signatures.
+ *
+ * To be able to call C functions it is necessary to explicitly set their
+ * argument and result types.  Do this for all exported constructors and
+ * methods.  Assuming each exported class has *_to_str and *_free methods,
+ * also unconditionally set types for these methods.
+ */
+void isl_class::print_method_types()
+{
+	set<FunctionDecl *>::iterator in;
+	map<string, set<FunctionDecl *> >::iterator it;
+
+	for (in = constructors.begin(); in != constructors.end(); ++in) {
+		print_restype(*in);
+		print_argtypes(*in);
+	}
+	for (it = methods.begin(); it != methods.end(); ++it)
+		for (in = it->second.begin(); in != it->second.end(); ++in) {
+			print_restype(*in);
+			print_argtypes(*in);
+		}
+	printf("isl.%s_free.argtypes = [c_void_p]\n", name.c_str());
+	printf("isl.%s_to_str.argtypes = [c_void_p]\n", name.c_str());
+	printf("isl.%s_to_str.restype = POINTER(c_char)\n", name.c_str());
+}
+
 /* Print out the definition of this isl_class.
  *
  * We first check if this isl_class is a subclass of one or more other classes.
@@ -767,18 +794,8 @@ void isl_class::print(map<string, isl_class> &classes, set<string> &done)
 		print_method(it->first, it->second, super);
 
 	printf("\n");
-	for (in = constructors.begin(); in != constructors.end(); ++in) {
-		print_restype(*in);
-		print_argtypes(*in);
-	}
-	for (it = methods.begin(); it != methods.end(); ++it)
-		for (in = it->second.begin(); in != it->second.end(); ++in) {
-			print_restype(*in);
-			print_argtypes(*in);
-		}
-	printf("isl.%s_free.argtypes = [c_void_p]\n", name.c_str());
-	printf("isl.%s_to_str.argtypes = [c_void_p]\n", name.c_str());
-	printf("isl.%s_to_str.restype = POINTER(c_char)\n", name.c_str());
+
+	print_method_types();
 }
 
 /* Generate a python interface based on the extracted types and functions.
