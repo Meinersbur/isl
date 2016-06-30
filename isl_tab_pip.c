@@ -227,6 +227,65 @@ error:
 	sol->error = 1;
 }
 
+/* Check that the final columns of "M", starting at "first", are zero.
+ */
+static isl_stat check_final_columns_are_zero(__isl_keep isl_mat *M,
+	unsigned first)
+{
+	int i;
+	unsigned rows, cols, n;
+
+	if (!M)
+		return isl_stat_error;
+	rows = isl_mat_rows(M);
+	cols = isl_mat_cols(M);
+	n = cols - first;
+	for (i = 0; i < rows; ++i)
+		if (isl_seq_first_non_zero(M->row[i] + first, n) != -1)
+			isl_die(isl_mat_get_ctx(M), isl_error_internal,
+				"final columns should be zero",
+				return isl_stat_error);
+	return isl_stat_ok;
+}
+
+/* Set the affine expressions in "ma" according to the rows in "M", which
+ * are defined over the local space "ls".
+ * The matrix "M" may have extra (zero) columns beyond the number
+ * of variables in "ls".
+ */
+static __isl_give isl_multi_aff *set_from_affine_matrix(
+	__isl_take isl_multi_aff *ma, __isl_take isl_local_space *ls,
+	__isl_take isl_mat *M)
+{
+	int i, dim;
+	isl_aff *aff;
+
+	if (!ma || !ls || !M)
+		goto error;
+
+	dim = isl_local_space_dim(ls, isl_dim_all);
+	if (check_final_columns_are_zero(M, 1 + dim) < 0)
+		goto error;
+	for (i = 1; i < M->n_row; ++i) {
+		aff = isl_aff_alloc(isl_local_space_copy(ls));
+		if (aff) {
+			isl_int_set(aff->v->el[0], M->row[0][0]);
+			isl_seq_cpy(aff->v->el + 1, M->row[i], 1 + dim);
+		}
+		aff = isl_aff_normalize(aff);
+		ma = isl_multi_aff_set_aff(ma, i - 1, aff);
+	}
+	isl_local_space_free(ls);
+	isl_mat_free(M);
+
+	return ma;
+error:
+	isl_local_space_free(ls);
+	isl_mat_free(M);
+	isl_multi_aff_free(ma);
+	return NULL;
+}
+
 /* Pop one partial solution from the partial solution stack and
  * pass it on to sol->add or sol->add_empty.
  */
@@ -5365,65 +5424,6 @@ static void sol_pma_add_empty(struct isl_sol_pma *sol,
 error:
 	isl_basic_set_free(bset);
 	sol->sol.error = 1;
-}
-
-/* Check that the final columns of "M", starting at "first", are zero.
- */
-static isl_stat check_final_columns_are_zero(__isl_keep isl_mat *M,
-	unsigned first)
-{
-	int i;
-	unsigned rows, cols, n;
-
-	if (!M)
-		return isl_stat_error;
-	rows = isl_mat_rows(M);
-	cols = isl_mat_cols(M);
-	n = cols - first;
-	for (i = 0; i < rows; ++i)
-		if (isl_seq_first_non_zero(M->row[i] + first, n) != -1)
-			isl_die(isl_mat_get_ctx(M), isl_error_internal,
-				"final columns should be zero",
-				return isl_stat_error);
-	return isl_stat_ok;
-}
-
-/* Set the affine expressions in "ma" according to the rows in "M", which
- * are defined over the local space "ls".
- * The matrix "M" may have extra (zero) columns beyond the number
- * of variables in "ls".
- */
-static __isl_give isl_multi_aff *set_from_affine_matrix(
-	__isl_take isl_multi_aff *ma, __isl_take isl_local_space *ls,
-	__isl_take isl_mat *M)
-{
-	int i, dim;
-	isl_aff *aff;
-
-	if (!ma || !ls || !M)
-		goto error;
-
-	dim = isl_local_space_dim(ls, isl_dim_all);
-	if (check_final_columns_are_zero(M, 1 + dim) < 0)
-		goto error;
-	for (i = 1; i < M->n_row; ++i) {
-		aff = isl_aff_alloc(isl_local_space_copy(ls));
-		if (aff) {
-			isl_int_set(aff->v->el[0], M->row[0][0]);
-			isl_seq_cpy(aff->v->el + 1, M->row[i], 1 + dim);
-		}
-		aff = isl_aff_normalize(aff);
-		ma = isl_multi_aff_set_aff(ma, i - 1, aff);
-	}
-	isl_local_space_free(ls);
-	isl_mat_free(M);
-
-	return ma;
-error:
-	isl_local_space_free(ls);
-	isl_mat_free(M);
-	isl_multi_aff_free(ma);
-	return NULL;
 }
 
 /* Given a basic set "dom" that represents the context and an affine
