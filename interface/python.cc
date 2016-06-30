@@ -807,14 +807,15 @@ void isl_class::print(map<string, isl_class> &classes, set<string> &done)
  * Then we print out each class in turn.  If one of these is a subclass
  * of some other class, it will make sure the superclass is printed out first.
  */
-void generate_python(set<RecordDecl *> &types, set<FunctionDecl *> functions)
+void generate_python(set<RecordDecl *> &exported_types,
+	set<FunctionDecl *> exported_functions)
 {
 	map<string, isl_class> classes;
 	map<string, isl_class>::iterator ci;
 	set<string> done;
 
 	set<RecordDecl *>::iterator it;
-	for (it = types.begin(); it != types.end(); ++it) {
+	for (it = exported_types.begin(); it != exported_types.end(); ++it) {
 		RecordDecl *decl = *it;
 		string name = decl->getName();
 		classes[name].name = name;
@@ -822,7 +823,8 @@ void generate_python(set<RecordDecl *> &types, set<FunctionDecl *> functions)
 	}
 
 	set<FunctionDecl *>::iterator in;
-	for (in = functions.begin(); in != functions.end(); ++in) {
+	for (in = exported_functions.begin(); in != exported_functions.end();
+	     ++in) {
 		isl_class *c = method2class(classes, *in);
 		if (!c)
 			continue;

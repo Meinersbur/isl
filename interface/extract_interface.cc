@@ -117,13 +117,13 @@ static bool is_exported(Decl *decl)
 }
 
 /* Collect all types and functions that are annotated "isl_export"
- * in "types" and "function".
+ * in "exported_types" and "exported_function".
  *
  * We currently only consider single declarations.
  */
 struct MyASTConsumer : public ASTConsumer {
-	set<RecordDecl *> types;
-	set<FunctionDecl *> functions;
+	set<RecordDecl *> exported_types;
+	set<FunctionDecl *> exported_functions;
 
 	virtual HandleTopLevelDeclReturn HandleTopLevelDecl(DeclGroupRef D) {
 		Decl *decl;
@@ -135,10 +135,10 @@ struct MyASTConsumer : public ASTConsumer {
 			return HandleTopLevelDeclContinue;
 		switch (decl->getKind()) {
 		case Decl::Record:
-			types.insert(cast<RecordDecl>(decl));
+			exported_types.insert(cast<RecordDecl>(decl));
 			break;
 		case Decl::Function:
-			functions.insert(cast<FunctionDecl>(decl));
+			exported_functions.insert(cast<FunctionDecl>(decl));
 			break;
 		default:
 			break;
@@ -413,7 +413,7 @@ int main(int argc, char *argv[])
 	ParseAST(*sema);
 	Diags.getClient()->EndSourceFile();
 
-	generate_python(consumer.types, consumer.functions);
+	generate_python(consumer.exported_types, consumer.exported_functions);
 
 	delete sema;
 	delete Clang;
