@@ -10633,7 +10633,8 @@ all integer points in the polytope.
 
 =head2 C<isl_codegen>
 
-Given a schedule, a context set and an options relation,
+Given either a schedule tree or a sequence consisting of
+a schedule map, a context set and an options relation,
 C<isl_codegen> prints out an AST that scans the domain elements
 of the schedule in the order of their image(s) taking into account
 the constraints in the context set.
