@@ -263,30 +263,30 @@ static struct isl_basic_set *sol_domain(struct isl_sol *sol)
 /* Check whether two partial solutions have the same mapping, where n_div
  * is the number of divs that the two partial solutions have in common.
  */
-static int same_solution(struct isl_partial_sol *s1, struct isl_partial_sol *s2,
-	unsigned n_div)
+static isl_bool same_solution(struct isl_partial_sol *s1,
+	struct isl_partial_sol *s2, unsigned n_div)
 {
 	int i;
 	unsigned dim;
 
 	if (!s1->M != !s2->M)
-		return 0;
+		return isl_bool_false;
 	if (!s1->M)
-		return 1;
+		return isl_bool_true;
 
 	dim = isl_basic_set_total_dim(s1->dom) - s1->dom->n_div;
 
 	for (i = 0; i < s1->M->n_row; ++i) {
 		if (isl_seq_first_non_zero(s1->M->row[i]+1+dim+n_div,
 					    s1->M->n_col-1-dim-n_div) != -1)
-			return 0;
+			return isl_bool_false;
 		if (isl_seq_first_non_zero(s2->M->row[i]+1+dim+n_div,
 					    s2->M->n_col-1-dim-n_div) != -1)
-			return 0;
+			return isl_bool_false;
 		if (!isl_seq_eq(s1->M->row[i], s2->M->row[i], 1+dim+n_div))
-			return 0;
+			return isl_bool_false;
 	}
-	return 1;
+	return isl_bool_true;
 }
 
 /* Pop all solutions from the partial solution stack that were pushed onto
@@ -320,11 +320,15 @@ static void sol_pop(struct isl_sol *sol)
 		return;
 
 	if (partial->next && partial->next->level == partial->level) {
+		isl_bool same;
 		n_div = isl_basic_set_dim(
 				sol->context->op->peek_basic_set(sol->context),
 				isl_dim_div);
 
-		if (!same_solution(partial, partial->next, n_div)) {
+		same = same_solution(partial, partial->next, n_div);
+		if (same < 0)
+			goto error;
+		if (!same) {
 			sol_pop_one(sol);
 			sol_pop_one(sol);
 		} else {
