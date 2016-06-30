@@ -10595,7 +10595,8 @@ C<isl_ast_build_get_schedule> having any particular value.
 Although C<isl> is mainly meant to be used as a library,
 it also contains some basic applications that use some
 of the functionality of C<isl>.
-The input may be specified in either the L<isl format>
+For applications that take one or more polytopes or polyhedra
+as input, this input may be specified in either the L<isl format>
 or the L<PolyLib format>.
 
 =head2 C<isl_polyhedron_sample>
