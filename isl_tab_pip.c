@@ -178,7 +178,7 @@ struct isl_sol {
 	struct isl_context *context;
 	struct isl_partial_sol *partial;
 	void (*add)(struct isl_sol *sol,
-			    struct isl_basic_set *dom, struct isl_mat *M);
+		__isl_take isl_basic_set *dom, __isl_take isl_mat *M);
 	void (*add_empty)(struct isl_sol *sol, struct isl_basic_set *bset);
 	void (*free)(struct isl_sol *sol);
 	struct isl_sol_callback	dec_level;
@@ -620,7 +620,7 @@ static void sol_map_add_empty_wrap(struct isl_sol *sol,
  * is added, with d the common denominator of M.
  */
 static void sol_map_add(struct isl_sol_map *sol,
-	struct isl_basic_set *dom, struct isl_mat *M)
+	__isl_take isl_basic_set *dom, __isl_take isl_mat *M)
 {
 	int i;
 	struct isl_basic_map *bmap = NULL;
@@ -700,7 +700,7 @@ error:
 }
 
 static void sol_map_add_wrap(struct isl_sol *sol,
-	struct isl_basic_set *dom, struct isl_mat *M)
+	__isl_take isl_basic_set *dom, __isl_take isl_mat *M)
 {
 	sol_map_add((struct isl_sol_map *)sol, dom, M);
 }
@@ -4785,7 +4785,7 @@ static void sol_for_free_wrap(struct isl_sol *sol)
  * affine expressions in the list is equal to the number of output variables.
  */
 static void sol_for_add(struct isl_sol_for *sol,
-	struct isl_basic_set *dom, struct isl_mat *M)
+	__isl_take isl_basic_set *dom, __isl_take isl_mat *M)
 {
 	int i;
 	isl_ctx *ctx;
@@ -4825,7 +4825,7 @@ error:
 }
 
 static void sol_for_add_wrap(struct isl_sol *sol,
-	struct isl_basic_set *dom, struct isl_mat *M)
+	__isl_take isl_basic_set *dom, __isl_take isl_mat *M)
 {
 	sol_for_add((struct isl_sol_for *)sol, dom, M);
 }
