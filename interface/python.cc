@@ -111,6 +111,7 @@ static bool gives(Decl *decl)
  * "type" is the declaration that introduces the type.
  * "methods" contains the set of methods, grouped by method name.
  * "fn_to_str" is a reference to the *_to_str method of this class, if any.
+ * "fn_free" is a reference to the *_free method of this class, if any.
  */
 struct isl_class {
 	string name;
@@ -118,6 +119,7 @@ struct isl_class {
 	set<FunctionDecl *> constructors;
 	map<string, set<FunctionDecl *> > methods;
 	FunctionDecl *fn_to_str;
+	FunctionDecl *fn_free;
 
 	bool is_static(FunctionDecl *method);
 
@@ -827,7 +829,7 @@ void isl_class::print_method_types()
 		for (in = it->second.begin(); in != it->second.end(); ++in)
 			print_method_type(*in);
 
-	printf("isl.%s_free.argtypes = [c_void_p]\n", name.c_str());
+	print_method_type(fn_free);
 	if (fn_to_str)
 		print_method_type(fn_to_str);
 }
@@ -889,7 +891,7 @@ void isl_class::print(map<string, isl_class> &classes, set<string> &done)
 /* Generate a python interface based on the extracted types and functions.
  * We first collect all functions that belong to a certain type,
  * separating constructors from regular methods and keeping track
- * of the _to_str function, if any, separately.  If there are any
+ * of the _to_str and _free functions, if any, separately.  If there are any
  * overloaded functions, then they are grouped based on their name
  * after removing the argument type suffix.
  *
@@ -919,10 +921,16 @@ void generate_python(set<RecordDecl *> &exported_types,
 		classes[name].name = name;
 		classes[name].type = decl;
 		classes[name].fn_to_str = NULL;
+		classes[name].fn_free = NULL;
 
 		i = functions_by_name.find(name + "_to_str");
 		if (i != functions_by_name.end())
 			classes[name].fn_to_str = i->second;
+
+		i = functions_by_name.find (name + "_free");
+		if (i == functions_by_name.end())
+			die("No _free function found");
+		classes[name].fn_free = i->second;
 	}
 
 	for (in = exported_functions.begin(); in != exported_functions.end();
