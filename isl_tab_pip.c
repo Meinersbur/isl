@@ -170,6 +170,7 @@ struct isl_sol_callback {
  * a minimization problem, which means that the variables in the
  * tableau have value "M - x" rather than "M + x".
  * "n_out" is the number of output dimensions in the input.
+ * "space" is the space in which the solution (and also the input) lives.
  *
  * The context tableau is owned by isl_sol and is updated incrementally.
  *
@@ -187,6 +188,7 @@ struct isl_sol {
 	int level;
 	int max;
 	int n_out;
+	isl_space *space;
 	struct isl_context *context;
 	struct isl_partial_sol *partial;
 	void (*add)(struct isl_sol *sol,
@@ -207,6 +209,7 @@ static void sol_free(struct isl_sol *sol)
 		isl_mat_free(partial->M);
 		free(partial);
 	}
+	isl_space_free(sol->space);
 	if (sol->context)
 		sol->context->op->free(sol->context);
 	sol->free(sol);
@@ -3550,9 +3553,10 @@ static isl_stat sol_init(struct isl_sol *sol, __isl_keep isl_basic_map *bmap,
 	sol->dec_level.sol = sol;
 	sol->max = max;
 	sol->n_out = isl_basic_map_dim(bmap, isl_dim_out);
+	sol->space = isl_basic_map_get_space(bmap);
 
 	sol->context = isl_context_alloc(dom);
-	if (!sol->context)
+	if (!sol->space || !sol->context)
 		return isl_stat_error;
 
 	return isl_stat_ok;
@@ -3569,6 +3573,7 @@ static struct isl_sol *sol_map_init(__isl_keep isl_basic_map *bmap,
 	__isl_take isl_basic_set *dom, int track_empty, int max)
 {
 	struct isl_sol_map *sol_map = NULL;
+	isl_space *space;
 
 	if (!bmap)
 		goto error;
@@ -3582,8 +3587,8 @@ static struct isl_sol *sol_map_init(__isl_keep isl_basic_map *bmap,
 		goto error;
 	sol_map->sol.add = &sol_map_add_wrap;
 	sol_map->sol.add_empty = track_empty ? &sol_map_add_empty_wrap : NULL;
-	sol_map->map = isl_map_alloc_space(isl_basic_map_get_space(bmap), 1,
-					    ISL_MAP_DISJOINT);
+	space = isl_space_copy(sol_map->sol.space);
+	sol_map->map = isl_map_alloc_space(space, 1, ISL_MAP_DISJOINT);
 	if (!sol_map->map)
 		goto error;
 
@@ -5458,7 +5463,7 @@ static void sol_pma_add(struct isl_sol_pma *sol,
 	n_div = isl_basic_set_dim(dom, isl_dim_div);
 	n_known = n_div - sol->sol.context->n_unknown;
 
-	maff = isl_multi_aff_alloc(isl_pw_multi_aff_get_space(sol->pma));
+	maff = isl_multi_aff_alloc(isl_space_copy(sol->sol.space));
 	ls = isl_basic_set_get_local_space(dom);
 	ls = isl_local_space_drop_dims(ls, isl_dim_div,
 					n_known, n_div - n_known);
@@ -5494,6 +5499,7 @@ static struct isl_sol *sol_pma_init(__isl_keep isl_basic_map *bmap,
 	__isl_take isl_basic_set *dom, int track_empty, int max)
 {
 	struct isl_sol_pma *sol_pma = NULL;
+	isl_space *space;
 
 	if (!bmap)
 		goto error;
@@ -5507,7 +5513,8 @@ static struct isl_sol *sol_pma_init(__isl_keep isl_basic_map *bmap,
 		goto error;
 	sol_pma->sol.add = &sol_pma_add_wrap;
 	sol_pma->sol.add_empty = track_empty ? &sol_pma_add_empty_wrap : NULL;
-	sol_pma->pma = isl_pw_multi_aff_empty(isl_basic_map_get_space(bmap));
+	space = isl_space_copy(sol_pma->sol.space);
+	sol_pma->pma = isl_pw_multi_aff_empty(space);
 	if (!sol_pma->pma)
 		goto error;
 
