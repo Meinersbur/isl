@@ -114,6 +114,7 @@ struct isl_class {
 
 	void print(map<string, isl_class> &classes, set<string> &done);
 	void print_constructor(FunctionDecl *method);
+	void print_representation(const string &python_name);
 	void print_method(FunctionDecl *method, vector<string> super);
 	void print_method_overload(FunctionDecl *method, vector<string> super);
 	void print_method(const string &fullname,
@@ -691,6 +692,31 @@ static void print_argtypes(FunctionDecl *fd)
 	printf("]\n");
 }
 
+/* Print declarations for methods printing the class representation.
+ *
+ * In particular, provide an implementation of __str__ and __repr__ methods to
+ * override the default representation used by python. Python uses __str__ to
+ * pretty print the class (e.g., when calling print(obj)) and uses __repr__
+ * when printing a precise representation of an object (e.g., when dumping it
+ * in the REPL console).
+ */
+void isl_class::print_representation(const string &python_name)
+{
+	printf("    def __str__(self):\n");
+	printf("        ptr = isl.%s_to_str(self.ptr)\n", name.c_str());
+	printf("        res = str(cast(ptr, c_char_p).value)\n");
+	printf("        libc.free(ptr)\n");
+	printf("        return res\n");
+	printf("    def __repr__(self):\n");
+	printf("        s = str(self)\n");
+	printf("        if '\"' in s:\n");
+	printf("            return 'isl.%s(\"\"\"%%s\"\"\")' %% s\n",
+		python_name.c_str());
+	printf("        else:\n");
+	printf("            return 'isl.%s(\"%%s\")' %% s\n",
+		python_name.c_str());
+}
+
 /* Print out the definition of this isl_class.
  *
  * We first check if this isl_class is a subclass of one or more other classes.
@@ -734,19 +760,8 @@ void isl_class::print(map<string, isl_class> &classes, set<string> &done)
 	printf("    def __del__(self):\n");
 	printf("        if hasattr(self, 'ptr'):\n");
 	printf("            isl.%s_free(self.ptr)\n", name.c_str());
-	printf("    def __str__(self):\n");
-	printf("        ptr = isl.%s_to_str(self.ptr)\n", name.c_str());
-	printf("        res = str(cast(ptr, c_char_p).value)\n");
-	printf("        libc.free(ptr)\n");
-	printf("        return res\n");
-	printf("    def __repr__(self):\n");
-	printf("        s = str(self)\n");
-	printf("        if '\"' in s:\n");
-	printf("            return 'isl.%s(\"\"\"%%s\"\"\")' %% s\n",
-		p_name.c_str());
-	printf("        else:\n");
-	printf("            return 'isl.%s(\"%%s\")' %% s\n",
-		p_name.c_str());
+
+	print_representation(p_name);
 
 	for (it = methods.begin(); it != methods.end(); ++it)
 		print_method(it->first, it->second, super);
