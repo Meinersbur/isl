@@ -115,6 +115,7 @@ struct isl_class {
 	void print(map<string, isl_class> &classes, set<string> &done);
 	void print_constructor(FunctionDecl *method);
 	void print_representation(const string &python_name);
+	void print_method_type(FunctionDecl *fd);
 	void print_method_types();
 	void print_method(FunctionDecl *method, vector<string> super);
 	void print_method_overload(FunctionDecl *method, vector<string> super);
@@ -693,6 +694,14 @@ static void print_argtypes(FunctionDecl *fd)
 	printf("]\n");
 }
 
+/* Print type definitions for the method 'fd'.
+ */
+void isl_class::print_method_type(FunctionDecl *fd)
+{
+	print_restype(fd);
+	print_argtypes(fd);
+}
+
 /* Print declarations for methods printing the class representation.
  *
  * In particular, provide an implementation of __str__ and __repr__ methods to
@@ -730,15 +739,13 @@ void isl_class::print_method_types()
 	set<FunctionDecl *>::iterator in;
 	map<string, set<FunctionDecl *> >::iterator it;
 
-	for (in = constructors.begin(); in != constructors.end(); ++in) {
-		print_restype(*in);
-		print_argtypes(*in);
-	}
+	for (in = constructors.begin(); in != constructors.end(); ++in)
+		print_method_type(*in);
+
 	for (it = methods.begin(); it != methods.end(); ++it)
-		for (in = it->second.begin(); in != it->second.end(); ++in) {
-			print_restype(*in);
-			print_argtypes(*in);
-		}
+		for (in = it->second.begin(); in != it->second.end(); ++in)
+			print_method_type(*in);
+
 	printf("isl.%s_free.argtypes = [c_void_p]\n", name.c_str());
 	printf("isl.%s_to_str.argtypes = [c_void_p]\n", name.c_str());
 	printf("isl.%s_to_str.restype = POINTER(c_char)\n", name.c_str());
