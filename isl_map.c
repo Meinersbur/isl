@@ -6387,6 +6387,15 @@ static __isl_give isl_pw_aff *map_dim_opt(__isl_take isl_map *map, int pos,
 	return pwaff;
 }
 
+/* Compute the minimum of the given output dimension as a function of the
+ * parameters and input dimensions, but independently of
+ * the other output dimensions.
+ */
+__isl_give isl_pw_aff *isl_map_dim_min(__isl_take isl_map *map, int pos)
+{
+	return map_dim_opt(map, pos, 0);
+}
+
 /* Compute the maximum of the given output dimension as a function of the
  * parameters and input dimensions, but independently of
  * the other output dimensions.

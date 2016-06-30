@@ -5044,6 +5044,8 @@ NaN if the problem is empty.
 		__isl_take isl_set *set, int pos);
 	__isl_give isl_pw_aff *isl_set_dim_max(
 		__isl_take isl_set *set, int pos);
+	__isl_give isl_pw_aff *isl_map_dim_min(
+		__isl_take isl_map *map, int pos);
 	__isl_give isl_pw_aff *isl_map_dim_max(
 		__isl_take isl_map *map, int pos);
 
