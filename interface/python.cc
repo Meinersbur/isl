@@ -99,6 +99,13 @@ static bool takes(Decl *decl)
 	return has_annotation(decl, "isl_take");
 }
 
+/* Is decl marked as returning a reference that is required to be freed.
+ */
+static bool gives(Decl *decl)
+{
+	return has_annotation(decl, "isl_give");
+}
+
 /* isl_class collects all constructors and methods for an isl "class".
  * "name" is the name of the class.
  * "type" is the declaration that introduces the type.
@@ -200,6 +207,23 @@ static bool is_isl_bool(QualType type)
 
 	s = type.getAsString();
 	return s == "isl_bool";
+}
+
+/* Is "type" that of a pointer to char.
+ */
+static bool is_string_type(QualType type)
+{
+	if (type->isPointerType()) {
+		string s;
+
+		type = type->getPointeeType();
+		if (type->isFunctionType())
+			return false;
+		s = type.getAsString();
+		return s == "const char" || "char";
+	}
+
+	return false;
 }
 
 /* Is "type" that of a pointer to a function?
@@ -390,6 +414,10 @@ static void print_arg_in_call(FunctionDecl *fd, int arg, int skip)
 /* Print the return statement of the python method corresponding
  * to the C function "method".
  *
+ * If the return type is a (const) char *, then convert the result
+ * to a Python string, raising an error on NULL and freeing
+ * the C string if needed.
+ *
  * If the return type is isl_bool, then convert the result to
  * a Python boolean, raising an error on isl_bool_error.
  */
@@ -402,6 +430,15 @@ static void print_method_return(FunctionDecl *method)
 
 		type = type2python(extract_type(return_type));
 		printf("        return %s(ctx=ctx, ptr=res)\n", type.c_str());
+	} else if (is_string_type(return_type)) {
+		printf("        if res == 0:\n");
+		printf("            raise\n");
+		printf("        string = str(cast(res, c_char_p).value)\n");
+
+		if (gives(method))
+			printf("        libc.free(res)\n");
+
+		printf("        return string\n");
 	} else if (is_isl_bool(return_type)) {
 		printf("        if res < 0:\n");
 		printf("            raise\n");
@@ -662,6 +699,7 @@ static void print_class_header(const string &name, const vector<string> &super)
  * then tell ctypes it returns a "c_void_p".
  * Similarly, if "fd" returns an isl_bool,
  * then tell ctypes it returns a "c_bool".
+ * If "fd" returns a char *, then simply tell ctypes.
  */
 static void print_restype(FunctionDecl *fd)
 {
@@ -671,6 +709,8 @@ static void print_restype(FunctionDecl *fd)
 		printf("isl.%s.restype = c_void_p\n", fullname.c_str());
 	else if (is_isl_bool(type))
 		printf("isl.%s.restype = c_bool\n", fullname.c_str());
+	else if (is_string_type(type))
+		printf("isl.%s.restype = POINTER(c_char)\n", fullname.c_str());
 }
 
 /* Tell ctypes about the types of the arguments of the function "fd".
