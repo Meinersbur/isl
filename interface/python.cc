@@ -465,8 +465,8 @@ static void print_method_return(FunctionDecl *method)
  * including the object on which the method is called,
  * we check if the corresponding actual argument is of the right type.
  * If not, we try to convert it to the right type.
- * It that doesn't work and if subclass is set, we try to convert self
- * to the type of the first superclass in "super" and
+ * If that doesn't work and if "super" contains at least one element, we try
+ * to convert self to the type of the first superclass in "super" and
  * call the corresponding method.
  *
  * If the function consumes a reference, then we pass it a copy of
