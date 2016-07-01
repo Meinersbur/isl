@@ -333,6 +333,37 @@ static void print_method_header(bool is_static, const string &name, int n_arg)
 	printf("):\n");
 }
 
+/* Print a check that the argument in position "pos" is of type "type".
+ * If this fails and if "upcast" is set, then convert the first
+ * argument to "super" and call the method "name" on it, passing
+ * the remaining of the "n" arguments.
+ * If the check fails and "upcast" is not set, then simply raise
+ * an exception.
+ * If "upcast" is not set, then the "super", "name" and "n" arguments
+ * to this function are ignored.
+ */
+static void print_type_check(const string &type, int pos, bool upcast,
+	const string &super, const string &name, int n)
+{
+	printf("        try:\n");
+	printf("            if not arg%d.__class__ is %s:\n",
+		pos, type.c_str());
+	printf("                arg%d = %s(arg%d)\n",
+		pos, type.c_str(), pos);
+	printf("        except:\n");
+	if (upcast) {
+		printf("            return %s(arg0).%s(",
+			type2python(super).c_str(), name.c_str());
+		for (int i = 1; i < n; ++i) {
+			if (i != 1)
+				printf(", ");
+			printf("arg%d", i);
+		}
+		printf(")\n");
+	} else
+		printf("            raise\n");
+}
+
 /* Construct a wrapper for a callback argument (at position "arg").
  * Assign the wrapper to "cb".  We assume here that a function call
  * has at most one callback argument.
@@ -496,23 +527,12 @@ void isl_class::print_method(FunctionDecl *method, vector<string> super)
 		if (!is_isl_type(param->getOriginalType()))
 			continue;
 		type = type2python(extract_type(param->getOriginalType()));
-		printf("        try:\n");
-		printf("            if not arg%d.__class__ is %s:\n",
-			i - drop_ctx, type.c_str());
-		printf("                arg%d = %s(arg%d)\n",
-			i - drop_ctx, type.c_str(), i - drop_ctx);
-		printf("        except:\n");
-		if (!drop_ctx && i > 0 && super.size() > 0) {
-			printf("            return %s(arg0).%s(",
-				type2python(super[0]).c_str(), cname.c_str());
-			for (int i = 1; i < num_params - drop_user; ++i) {
-				if (i != 1)
-					printf(", ");
-				printf("arg%d", i);
-			}
-			printf(")\n");
-		} else
-			printf("            raise\n");
+		if (!drop_ctx && i > 0 && super.size() > 0)
+			print_type_check(type, i - drop_ctx, true, super[0],
+					cname, num_params - drop_user);
+		else
+			print_type_check(type, i - drop_ctx, false, "",
+					cname, -1);
 	}
 	for (int i = 1; i < num_params; ++i) {
 		ParmVarDecl *param = method->getParamDecl(i);
