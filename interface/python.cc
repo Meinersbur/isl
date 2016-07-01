@@ -778,11 +778,15 @@ void isl_class::print_method_type(FunctionDecl *fd)
  * pretty print the class (e.g., when calling print(obj)) and uses __repr__
  * when printing a precise representation of an object (e.g., when dumping it
  * in the REPL console).
+ *
+ * Check the type of the argument before calling the *_to_str function
+ * on it in case the method was called on an object from a subclass.
  */
 void isl_class::print_representation(const string &python_name)
 {
-	printf("    def __str__(self):\n");
-	printf("        ptr = isl.%s_to_str(self.ptr)\n", name.c_str());
+	printf("    def __str__(arg0):\n");
+	print_type_check(python_name, 0, false, "", "", -1);
+	printf("        ptr = isl.%s_to_str(arg0.ptr)\n", name.c_str());
 	printf("        res = str(cast(ptr, c_char_p).value)\n");
 	printf("        libc.free(ptr)\n");
 	printf("        return res\n");
