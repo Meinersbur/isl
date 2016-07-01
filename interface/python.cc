@@ -387,6 +387,30 @@ static void print_arg_in_call(FunctionDecl *fd, int arg, int skip)
 	}
 }
 
+/* Print the return statement of the python method corresponding
+ * to the C function "method".
+ *
+ * If the return type is isl_bool, then convert the result to
+ * a Python boolean, raising an error on isl_bool_error.
+ */
+static void print_method_return(FunctionDecl *method)
+{
+	QualType return_type = method->getReturnType();
+
+	if (is_isl_type(return_type)) {
+		string type;
+
+		type = type2python(extract_type(return_type));
+		printf("        return %s(ctx=ctx, ptr=res)\n", type.c_str());
+	} else if (is_isl_bool(return_type)) {
+		printf("        if res < 0:\n");
+		printf("            raise\n");
+		printf("        return bool(res)\n");
+	} else {
+		printf("        return res\n");
+	}
+}
+
 /* Print a python method corresponding to the C function "method".
  * "super" contains the superclasses of the class to which the method belongs.
  *
@@ -410,9 +434,6 @@ static void print_arg_in_call(FunctionDecl *fd, int arg, int skip)
  *
  * If the function consumes a reference, then we pass it a copy of
  * the actual argument.
- *
- * If the return type is isl_bool, then convert the result to
- * a Python boolean, raising an error on isl_bool_error.
  */
 void isl_class::print_method(FunctionDecl *method, vector<string> super)
 {
@@ -480,25 +501,13 @@ void isl_class::print_method(FunctionDecl *method, vector<string> super)
 		printf(", None");
 	printf(")\n");
 
-	if (is_isl_type(method->getReturnType())) {
-		string type;
-		type = type2python(extract_type(method->getReturnType()));
-		printf("        return %s(ctx=ctx, ptr=res)\n",
-			type.c_str());
-	} else {
-		if (drop_user) {
-			printf("        if exc_info[0] != None:\n");
-			printf("            raise exc_info[0][0], "
-				"exc_info[0][1], exc_info[0][2]\n");
-		}
-		if (is_isl_bool(method->getReturnType())) {
-			printf("        if res < 0:\n");
-			printf("            raise\n");
-			printf("        return bool(res)\n");
-		} else {
-			printf("        return res\n");
-		}
+	if (drop_user) {
+		printf("        if exc_info[0] != None:\n");
+		printf("            raise exc_info[0][0], "
+			"exc_info[0][1], exc_info[0][2]\n");
 	}
+
+	print_method_return(method);
 }
 
 /* Print part of an overloaded python method corresponding to the C function
