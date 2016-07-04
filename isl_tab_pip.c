@@ -392,6 +392,39 @@ static isl_bool same_solution(struct isl_partial_sol *s1,
 	return isl_multi_aff_plain_is_equal(s1->ma, s2->ma);
 }
 
+/* Combine the initial two partial solution of "sol" into
+ * a partial solution with the current context domain of "sol" and
+ * the function description of the second partial solution in the list.
+ * The level of the new partial solution is set to the current level.
+ *
+ * That is, the first two partial solutions (D1,M1) and (D2,M2) are
+ * replaced by (D,M2), where D is the domain of "sol", which is assumed
+ * to be the union of D1 and D2, while M1 is assumed to be equal to M2
+ * (at least on D1).
+ */
+static isl_stat combine_initial_into_second(struct isl_sol *sol)
+{
+	struct isl_partial_sol *partial;
+	isl_basic_set *bset;
+
+	partial = sol->partial;
+
+	bset = sol_domain(sol);
+	isl_basic_set_free(partial->next->dom);
+	partial->next->dom = bset;
+	partial->next->level = sol->level;
+
+	if (!bset)
+		return isl_stat_error;
+
+	sol->partial = partial->next;
+	isl_basic_set_free(partial->dom);
+	isl_multi_aff_free(partial->ma);
+	free(partial);
+
+	return isl_stat_ok;
+}
+
 /* Pop all solutions from the partial solution stack that were pushed onto
  * the stack at levels that are deeper than the current level.
  * If the two topmost elements on the stack have the same level
@@ -431,20 +464,8 @@ static void sol_pop(struct isl_sol *sol)
 			sol_pop_one(sol);
 			sol_pop_one(sol);
 		} else {
-			struct isl_basic_set *bset;
-
-			bset = sol_domain(sol);
-			isl_basic_set_free(partial->next->dom);
-			partial->next->dom = bset;
-			partial->next->level = sol->level;
-
-			if (!bset)
+			if (combine_initial_into_second(sol) < 0)
 				goto error;
-
-			sol->partial = partial->next;
-			isl_basic_set_free(partial->dom);
-			isl_multi_aff_free(partial->ma);
-			free(partial);
 		}
 	} else
 		sol_pop_one(sol);
