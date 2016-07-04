@@ -4883,8 +4883,27 @@ static int test_disjoint(isl_ctx *ctx)
 	return 0;
 }
 
+/* Inputs for isl_pw_multi_aff_is_equal tests.
+ * "f1" and "f2" are the two function that need to be compared.
+ * "equal" is the expected result.
+ */
+struct {
+	int equal;
+	const char *f1;
+	const char *f2;
+} pma_equal_tests[] = {
+	{ 1, "[N] -> { [floor(N/2)] : 0 <= N <= 1 }",
+	     "[N] -> { [0] : 0 <= N <= 1 }" },
+	{ 1, "[N] -> { [floor(N/2)] : 0 <= N <= 2 }",
+	     "[N] -> { [0] : 0 <= N <= 1; [1] : N = 2 }" },
+	{ 0, "[N] -> { [floor(N/2)] : 0 <= N <= 2 }",
+	     "[N] -> { [0] : 0 <= N <= 1 }" },
+	{ 0, "{ [NaN] }", "{ [NaN] }" },
+};
+
 int test_equal(isl_ctx *ctx)
 {
+	int i;
 	const char *str;
 	isl_set *set, *set2;
 	int equal;
@@ -4900,6 +4919,22 @@ int test_equal(isl_ctx *ctx)
 		return -1;
 	if (equal)
 		isl_die(ctx, isl_error_unknown, "unexpected result", return -1);
+
+	for (i = 0; i < ARRAY_SIZE(pma_equal_tests); ++i) {
+		int expected = pma_equal_tests[i].equal;
+		isl_pw_multi_aff *f1, *f2;
+
+		f1 = isl_pw_multi_aff_read_from_str(ctx, pma_equal_tests[i].f1);
+		f2 = isl_pw_multi_aff_read_from_str(ctx, pma_equal_tests[i].f2);
+		equal = isl_pw_multi_aff_is_equal(f1, f2);
+		isl_pw_multi_aff_free(f1);
+		isl_pw_multi_aff_free(f2);
+		if (equal < 0)
+			return -1;
+		if (equal != expected)
+			isl_die(ctx, isl_error_unknown,
+				"unexpected equality result", return -1);
+	}
 
 	return 0;
 }

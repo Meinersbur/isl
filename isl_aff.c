@@ -6476,6 +6476,43 @@ isl_bool isl_multi_pw_aff_is_equal(__isl_keep isl_multi_pw_aff *mpa1,
 	return isl_bool_true;
 }
 
+/* Do "pma1" and "pma2" represent the same function?
+ *
+ * First check if they are obviously equal.
+ * If not, then convert them to maps and check if those are equal.
+ *
+ * If "pa1" or "pa2" contain any NaNs, then they are considered
+ * not to be the same.  A NaN is not equal to anything, not even
+ * to another NaN.
+ */
+isl_bool isl_pw_multi_aff_is_equal(__isl_keep isl_pw_multi_aff *pma1,
+	__isl_keep isl_pw_multi_aff *pma2)
+{
+	isl_bool equal;
+	isl_bool has_nan;
+	isl_map *map1, *map2;
+
+	if (!pma1 || !pma2)
+		return isl_bool_error;
+
+	equal = isl_pw_multi_aff_plain_is_equal(pma1, pma2);
+	if (equal < 0 || equal)
+		return equal;
+	has_nan = isl_pw_multi_aff_involves_nan(pma1);
+	if (has_nan >= 0 && !has_nan)
+		has_nan = isl_pw_multi_aff_involves_nan(pma2);
+	if (has_nan < 0 || has_nan)
+		return isl_bool_not(has_nan);
+
+	map1 = isl_map_from_pw_multi_aff(isl_pw_multi_aff_copy(pma1));
+	map2 = isl_map_from_pw_multi_aff(isl_pw_multi_aff_copy(pma2));
+	equal = isl_map_is_equal(map1, map2);
+	isl_map_free(map1);
+	isl_map_free(map2);
+
+	return equal;
+}
+
 /* Compute the pullback of "mpa" by the function represented by "ma".
  * In other words, plug in "ma" in "mpa".
  *

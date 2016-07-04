@@ -481,6 +481,8 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_set_dim_id(
 isl_bool isl_pw_multi_aff_involves_nan(__isl_keep isl_pw_multi_aff *pma);
 isl_bool isl_pw_multi_aff_plain_is_equal(__isl_keep isl_pw_multi_aff *pma1,
 	__isl_keep isl_pw_multi_aff *pma2);
+isl_bool isl_pw_multi_aff_is_equal(__isl_keep isl_pw_multi_aff *pma1,
+	__isl_keep isl_pw_multi_aff *pma2);
 
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_fix_si(
 	__isl_take isl_pw_multi_aff *pma, enum isl_dim_type type,
