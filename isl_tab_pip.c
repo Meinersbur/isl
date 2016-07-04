@@ -425,6 +425,33 @@ static isl_stat combine_initial_into_second(struct isl_sol *sol)
 	return isl_stat_ok;
 }
 
+/* The initial two partial solutions of "sol" are known to be at
+ * the same level.
+ * If they represent the same solution (on different parts of the domain),
+ * then combine them into a single solution at the current level.
+ * Otherwise, pop them both.
+ */
+static isl_stat combine_initial_if_equal(struct isl_sol *sol)
+{
+	struct isl_partial_sol *partial;
+	isl_bool same;
+
+	partial = sol->partial;
+
+	same = same_solution(partial, partial->next);
+	if (same < 0)
+		return isl_stat_error;
+	if (!same) {
+		sol_pop_one(sol);
+		sol_pop_one(sol);
+	} else {
+		if (combine_initial_into_second(sol) < 0)
+			return isl_stat_error;
+	}
+
+	return isl_stat_ok;
+}
+
 /* Pop all solutions from the partial solution stack that were pushed onto
  * the stack at levels that are deeper than the current level.
  * If the two topmost elements on the stack have the same level
@@ -455,18 +482,8 @@ static void sol_pop(struct isl_sol *sol)
 		return;
 
 	if (partial->next && partial->next->level == partial->level) {
-		isl_bool same;
-
-		same = same_solution(partial, partial->next);
-		if (same < 0)
+		if (combine_initial_if_equal(sol) < 0)
 			goto error;
-		if (!same) {
-			sol_pop_one(sol);
-			sol_pop_one(sol);
-		} else {
-			if (combine_initial_into_second(sol) < 0)
-				goto error;
-		}
 	} else
 		sol_pop_one(sol);
 
