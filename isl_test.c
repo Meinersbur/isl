@@ -1901,6 +1901,8 @@ struct {
 		"[a, b] : exists (e0: 0 <= a <= 1 and 2e0 >= -5 + a + 2b and "
 			"2e0 >= -1 - a + b and 2e0 <= -a + b and "
 			"2e0 < -a + 2b) }" },
+	{ 1, "{ [i, j, i - 8j] : 8 <= i <= 63 and -7 + i <= 8j <= i; "
+		"[i, 0, i] : 0 <= i <= 7 }" },
 };
 
 /* A specialized coalescing test case that would result

@@ -80,9 +80,6 @@ static int *eq_status_in(__isl_keep isl_basic_map *bmap_i,
 			if (eq[2 * k + l] == STATUS_ERROR)
 				goto error;
 		}
-		if (eq[2 * k] == STATUS_SEPARATE ||
-		    eq[2 * k + 1] == STATUS_SEPARATE)
-			break;
 	}
 
 	return eq;
@@ -1996,6 +1993,56 @@ static void clear_status(struct isl_coalesce_info *info)
 	free(info->ineq);
 }
 
+/* Are all inequality constraints of the basic map represented by "info"
+ * valid for the other basic map, except for a single constraint
+ * that is adjacent to an inequality constraint of the other basic map?
+ */
+static int all_ineq_valid_or_single_adj_ineq(struct isl_coalesce_info *info)
+{
+	int i;
+	int k = -1;
+
+	for (i = 0; i < info->bmap->n_ineq; ++i) {
+		if (info->ineq[i] == STATUS_REDUNDANT)
+			continue;
+		if (info->ineq[i] == STATUS_VALID)
+			continue;
+		if (info->ineq[i] != STATUS_ADJ_INEQ)
+			return 0;
+		if (k != -1)
+			return 0;
+		k = i;
+	}
+
+	return k != -1;
+}
+
+/* Basic map "i" has one or more equality constraints that separate it
+ * from basic map "j".  Check if it happens to be an extension
+ * of basic map "j".
+ * In particular, check that all constraints of "j" are valid for "i",
+ * except for one inequality constraint that is adjacent
+ * to an inequality constraints of "i".
+ * If so, check for "i" being an extension of "j" by calling
+ * is_adj_ineq_extension.
+ *
+ * Clean up the memory allocated for keeping track of the status
+ * of the constraints before returning.
+ */
+static enum isl_change separating_equality(int i, int j,
+	struct isl_coalesce_info *info)
+{
+	enum isl_change change = isl_change_none;
+
+	if (all(info[j].eq, 2 * info[j].bmap->n_eq, STATUS_VALID) &&
+	    all_ineq_valid_or_single_adj_ineq(&info[j]))
+		change = is_adj_ineq_extension(j, i, info);
+
+	clear_status(&info[i]);
+	clear_status(&info[j]);
+	return change;
+}
+
 /* Check if the union of the given pair of basic maps
  * can be represented by a single basic map.
  * If so, replace the pair by the single basic map and return
@@ -2092,16 +2139,12 @@ static enum isl_change coalesce_local_pair_reuse(int i, int j,
 		goto error;
 	if (any(info[i].eq, 2 * info[i].bmap->n_eq, STATUS_ERROR))
 		goto error;
-	if (any(info[i].eq, 2 * info[i].bmap->n_eq, STATUS_SEPARATE))
-		goto done;
 
 	set_eq_status_in(&info[j], info[i].tab);
 	if (info[j].bmap->n_eq && !info[j].eq)
 		goto error;
 	if (any(info[j].eq, 2 * info[j].bmap->n_eq, STATUS_ERROR))
 		goto error;
-	if (any(info[j].eq, 2 * info[j].bmap->n_eq, STATUS_SEPARATE))
-		goto done;
 
 	set_ineq_status_in(&info[i], info[j].tab);
 	if (info[i].bmap->n_ineq && !info[i].ineq)
@@ -2118,6 +2161,11 @@ static enum isl_change coalesce_local_pair_reuse(int i, int j,
 		goto error;
 	if (any(info[j].ineq, info[j].bmap->n_ineq, STATUS_SEPARATE))
 		goto done;
+
+	if (any(info[i].eq, 2 * info[i].bmap->n_eq, STATUS_SEPARATE))
+		return separating_equality(i, j, info);
+	if (any(info[j].eq, 2 * info[j].bmap->n_eq, STATUS_SEPARATE))
+		return separating_equality(j, i, info);
 
 	if (all(info[i].eq, 2 * info[i].bmap->n_eq, STATUS_VALID) &&
 	    all(info[i].ineq, info[i].bmap->n_ineq, STATUS_VALID)) {
