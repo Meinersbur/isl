@@ -392,6 +392,26 @@ static isl_bool same_solution(struct isl_partial_sol *s1,
 	return isl_multi_aff_plain_is_equal(s1->ma, s2->ma);
 }
 
+/* Swap the initial two partial solutions in "sol".
+ *
+ * That is, go from
+ *
+ *	sol->partial = p1; p1->next = p2; p2->next = p3
+ *
+ * to
+ *
+ *	sol->partial = p2; p2->next = p1; p1->next = p3
+ */
+static void swap_initial(struct isl_sol *sol)
+{
+	struct isl_partial_sol *partial;
+
+	partial = sol->partial;
+	sol->partial = partial->next;
+	partial->next = partial->next->next;
+	sol->partial->next = partial;
+}
+
 /* Combine the initial two partial solution of "sol" into
  * a partial solution with the current context domain of "sol" and
  * the function description of the second partial solution in the list.
@@ -425,11 +445,45 @@ static isl_stat combine_initial_into_second(struct isl_sol *sol)
 	return isl_stat_ok;
 }
 
+/* Are "ma1" and "ma2" equal to each other on "dom"?
+ *
+ * Combine "ma1" and "ma2" with "dom" and check if the results are the same.
+ * "dom" may have existentially quantified variables.  Eliminate them first
+ * as otherwise they would have to be eliminated twice, in a more complicated
+ * context.
+ */
+static isl_bool equal_on_domain(__isl_keep isl_multi_aff *ma1,
+	__isl_keep isl_multi_aff *ma2, __isl_keep isl_basic_set *dom)
+{
+	isl_set *set;
+	isl_pw_multi_aff *pma1, *pma2;
+	isl_bool equal;
+
+	set = isl_basic_set_compute_divs(isl_basic_set_copy(dom));
+	pma1 = isl_pw_multi_aff_alloc(isl_set_copy(set),
+					isl_multi_aff_copy(ma1));
+	pma2 = isl_pw_multi_aff_alloc(set, isl_multi_aff_copy(ma2));
+	equal = isl_pw_multi_aff_is_equal(pma1, pma2);
+	isl_pw_multi_aff_free(pma1);
+	isl_pw_multi_aff_free(pma2);
+
+	return equal;
+}
+
 /* The initial two partial solutions of "sol" are known to be at
  * the same level.
  * If they represent the same solution (on different parts of the domain),
  * then combine them into a single solution at the current level.
  * Otherwise, pop them both.
+ *
+ * Even if the two partial solution are not obviously the same,
+ * one may still be a simplification of the other over its own domain.
+ * Also check if the two sets of affine functions are equal when
+ * restricted to one of the domains.  If so, combine the two
+ * using the set of affine functions on the other domain.
+ * That is, for two partial solutions (D1,M1) and (D2,M2),
+ * if M1 = M2 on D1, then the pair of partial solutions can
+ * be replaced by (D1+D2,M2) and similarly when M1 = M2 on D2.
  */
 static isl_stat combine_initial_if_equal(struct isl_sol *sol)
 {
@@ -441,13 +495,25 @@ static isl_stat combine_initial_if_equal(struct isl_sol *sol)
 	same = same_solution(partial, partial->next);
 	if (same < 0)
 		return isl_stat_error;
-	if (!same) {
-		sol_pop_one(sol);
-		sol_pop_one(sol);
-	} else {
-		if (combine_initial_into_second(sol) < 0)
+	if (same)
+		return combine_initial_into_second(sol);
+	if (partial->ma && partial->next->ma) {
+		same = equal_on_domain(partial->ma, partial->next->ma,
+					partial->dom);
+		if (same < 0)
 			return isl_stat_error;
+		if (same)
+			return combine_initial_into_second(sol);
+		same = equal_on_domain(partial->ma, partial->next->ma,
+					partial->next->dom);
+		if (same) {
+			swap_initial(sol);
+			return combine_initial_into_second(sol);
+		}
 	}
+
+	sol_pop_one(sol);
+	sol_pop_one(sol);
 
 	return isl_stat_ok;
 }
