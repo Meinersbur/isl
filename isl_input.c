@@ -3325,29 +3325,101 @@ static __isl_give isl_multi_pw_aff *extract_mpa_from_tuple(
 	return mpa;
 }
 
+/* Read a tuple of affine expressions, together with optional constraints
+ * on the domain from "s".  "dom" represents the initial constraints
+ * on the domain.
+ *
+ * The isl_multi_aff may live in either a set or a map space.
+ * First read the first tuple and check if it is followed by a "->".
+ * If so, convert the tuple into the domain of the isl_multi_pw_aff and
+ * read in the next tuple.  This tuple (or the first tuple if it was
+ * not followed by a "->") is then converted into an isl_multi_pw_aff
+ * through a call to extract_mpa_from_tuple.
+ * The result is converted to an isl_pw_multi_aff and
+ * its domain is intersected with the domain.
+ */
+static __isl_give isl_pw_multi_aff *read_conditional_multi_aff(
+	__isl_keep isl_stream *s, __isl_take isl_set *dom, struct vars *v)
+{
+	isl_multi_pw_aff *tuple;
+	isl_multi_pw_aff *mpa;
+	isl_pw_multi_aff *pma;
+	int n = v->n;
+
+	tuple = read_tuple(s, v, 0, 0);
+	if (!tuple)
+		goto error;
+	if (isl_stream_eat_if_available(s, ISL_TOKEN_TO)) {
+		isl_map *map = map_from_tuple(tuple, dom, isl_dim_in, v, 0);
+		dom = isl_map_domain(map);
+		tuple = read_tuple(s, v, 0, 0);
+		if (!tuple)
+			goto error;
+	}
+
+	dom = read_optional_formula(s, dom, v, 0);
+
+	vars_drop(v, v->n - n);
+
+	mpa = extract_mpa_from_tuple(isl_set_get_space(dom), tuple);
+	isl_multi_pw_aff_free(tuple);
+	pma = isl_pw_multi_aff_from_multi_pw_aff(mpa);
+	pma = isl_pw_multi_aff_intersect_domain(pma, dom);
+
+	return pma;
+error:
+	isl_set_free(dom);
+	return NULL;
+}
+
 /* Read an isl_pw_multi_aff from "s".
- * We currently read a generic object and if it turns out to be a set or
- * a map, we convert that to an isl_pw_multi_aff.
- * It would be more efficient if we were to construct the isl_pw_multi_aff
- * directly.
+ *
+ * In particular, first read the parameters and then read a sequence
+ * of one or more tuples of affine expressions with optional conditions and
+ * add them up.
  */
 __isl_give isl_pw_multi_aff *isl_stream_read_pw_multi_aff(
 	__isl_keep isl_stream *s)
 {
-	struct isl_obj obj;
+	struct vars *v;
+	isl_set *dom;
+	isl_pw_multi_aff *pma = NULL;
 
-	obj = obj_read(s);
-	if (!obj.v)
+	v = vars_new(s->ctx);
+	if (!v)
 		return NULL;
 
-	if (obj.type == isl_obj_map)
-		return isl_pw_multi_aff_from_map(obj.v);
-	if (obj.type == isl_obj_set)
-		return isl_pw_multi_aff_from_set(obj.v);
+	dom = isl_set_universe(isl_space_params_alloc(s->ctx, 0));
+	if (next_is_tuple(s)) {
+		dom = read_map_tuple(s, dom, isl_dim_param, v, 1, 0);
+		if (isl_stream_eat(s, ISL_TOKEN_TO))
+			goto error;
+	}
+	if (isl_stream_eat(s, '{'))
+		goto error;
 
-	obj.type->free(obj.v);
-	isl_die(s->ctx, isl_error_invalid, "unexpected object type",
-		return NULL);
+	pma = read_conditional_multi_aff(s, isl_set_copy(dom), v);
+
+	while (isl_stream_eat_if_available(s, ';')) {
+		isl_pw_multi_aff *pma2;
+
+		pma2 = read_conditional_multi_aff(s, isl_set_copy(dom), v);
+		pma = isl_pw_multi_aff_union_add(pma, pma2);
+		if (!pma)
+			goto error;
+	}
+
+	if (isl_stream_eat(s, '}'))
+		goto error;
+
+	isl_set_free(dom);
+	vars_free(v);
+	return pma;
+error:
+	isl_pw_multi_aff_free(pma);
+	isl_set_free(dom);
+	vars_free(v);
+	return NULL;
 }
 
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_read_from_str(isl_ctx *ctx,
