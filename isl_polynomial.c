@@ -2925,6 +2925,8 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_from_qpolynomial(
 	return isl_pw_qpolynomial_alloc(dom, qp);
 }
 
+#define isl_qpolynomial_involves_nan isl_qpolynomial_is_nan
+
 #undef PW
 #define PW isl_pw_qpolynomial
 #undef EL

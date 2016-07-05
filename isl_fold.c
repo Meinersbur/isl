@@ -652,6 +652,8 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_gist_params(
 	return isl_qpolynomial_fold_gist(fold, dom_context);
 }
 
+#define isl_qpolynomial_fold_involves_nan isl_qpolynomial_fold_is_nan
+
 #define HAS_TYPE
 
 #undef PW

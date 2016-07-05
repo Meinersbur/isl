@@ -1604,6 +1604,8 @@ int isl_val_check_match_domain_space(__isl_keep isl_val *v,
 	return 0;
 }
 
+#define isl_val_involves_nan isl_val_is_nan
+
 #undef BASE
 #define BASE val
 

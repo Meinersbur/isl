@@ -509,26 +509,6 @@ isl_bool isl_aff_is_nan(__isl_keep isl_aff *aff)
 	return isl_seq_first_non_zero(aff->v->el, 2) < 0;
 }
 
-/* Does "pa" involve any NaNs?
- */
-isl_bool isl_pw_aff_involves_nan(__isl_keep isl_pw_aff *pa)
-{
-	int i;
-
-	if (!pa)
-		return isl_bool_error;
-	if (pa->n == 0)
-		return isl_bool_false;
-
-	for (i = 0; i < pa->n; ++i) {
-		isl_bool is_nan = isl_aff_is_nan(pa->p[i].aff);
-		if (is_nan < 0 || is_nan)
-			return is_nan;
-	}
-
-	return isl_bool_false;
-}
-
 /* Are "aff1" and "aff2" obviously equal?
  *
  * NaN is not equal to anything, not even to another NaN.
@@ -2589,6 +2569,8 @@ __isl_give isl_pw_aff *isl_pw_aff_from_aff(__isl_take isl_aff *aff)
 	isl_set *dom = isl_set_universe(isl_aff_get_domain_space(aff));
 	return isl_pw_aff_alloc(dom, aff);
 }
+
+#define isl_aff_involves_nan isl_aff_is_nan
 
 #undef PW
 #define PW isl_pw_aff

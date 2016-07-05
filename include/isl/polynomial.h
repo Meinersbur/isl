@@ -135,6 +135,7 @@ void isl_qpolynomial_dump(__isl_keep isl_qpolynomial *qp);
 
 isl_ctx *isl_pw_qpolynomial_get_ctx(__isl_keep isl_pw_qpolynomial *pwqp);
 
+isl_bool isl_pw_qpolynomial_involves_nan(__isl_keep isl_pw_qpolynomial *pwqp);
 isl_bool isl_pw_qpolynomial_plain_is_equal(__isl_keep isl_pw_qpolynomial *pwqp1,
 	__isl_keep isl_pw_qpolynomial *pwqp2);
 
@@ -331,6 +332,8 @@ void isl_qpolynomial_fold_dump(__isl_keep isl_qpolynomial_fold *fold);
 
 isl_ctx *isl_pw_qpolynomial_fold_get_ctx(__isl_keep isl_pw_qpolynomial_fold *pwf);
 
+isl_bool isl_pw_qpolynomial_fold_involves_nan(
+	__isl_keep isl_pw_qpolynomial_fold *pwf);
 isl_bool isl_pw_qpolynomial_fold_plain_is_equal(
 	__isl_keep isl_pw_qpolynomial_fold *pwf1,
 	__isl_keep isl_pw_qpolynomial_fold *pwf2);
@@ -460,6 +463,8 @@ isl_ctx *isl_union_pw_qpolynomial_get_ctx(
 unsigned isl_union_pw_qpolynomial_dim(
 	__isl_keep isl_union_pw_qpolynomial *upwqp, enum isl_dim_type type);
 
+isl_bool isl_union_pw_qpolynomial_involves_nan(
+	__isl_keep isl_union_pw_qpolynomial *upwqp);
 isl_bool isl_union_pw_qpolynomial_plain_is_equal(
 	__isl_keep isl_union_pw_qpolynomial *upwqp1,
 	__isl_keep isl_union_pw_qpolynomial *upwqp2);
@@ -563,6 +568,8 @@ isl_ctx *isl_union_pw_qpolynomial_fold_get_ctx(
 unsigned isl_union_pw_qpolynomial_fold_dim(
 	__isl_keep isl_union_pw_qpolynomial_fold *upwf, enum isl_dim_type type);
 
+isl_bool isl_union_pw_qpolynomial_fold_involves_nan(
+	__isl_keep isl_union_pw_qpolynomial_fold *upwf);
 isl_bool isl_union_pw_qpolynomial_fold_plain_is_equal(
 	__isl_keep isl_union_pw_qpolynomial_fold *upwf1,
 	__isl_keep isl_union_pw_qpolynomial_fold *upwf2);

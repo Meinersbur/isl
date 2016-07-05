@@ -2001,6 +2001,26 @@ error:
 	return isl_bool_error;
 }
 
+/* Does "pw" involve any NaNs?
+ */
+isl_bool FN(PW,involves_nan)(__isl_keep PW *pw)
+{
+	int i;
+
+	if (!pw)
+		return isl_bool_error;
+	if (pw->n == 0)
+		return isl_bool_false;
+
+	for (i = 0; i < pw->n; ++i) {
+		isl_bool has_nan = FN(EL,involves_nan)(pw->p[i].FIELD);
+		if (has_nan < 0 || has_nan)
+			return has_nan;
+	}
+
+	return isl_bool_false;
+}
+
 #ifndef NO_PULLBACK
 static __isl_give PW *FN(PW,align_params_pw_multi_aff_and)(__isl_take PW *pw,
 	__isl_take isl_multi_aff *ma,
