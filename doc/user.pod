@@ -4052,6 +4052,8 @@ Check whether the given expression is a constant.
 		__isl_keep isl_pw_aff *pa);
 
 	#include <isl/polynomial.h>
+	isl_bool isl_qpolynomial_is_nan(
+		__isl_keep isl_qpolynomial *qp);
 	isl_bool isl_qpolynomial_fold_is_nan(
 		__isl_keep isl_qpolynomial_fold *fold);
 
