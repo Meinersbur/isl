@@ -1959,14 +1959,24 @@ __isl_give PW *FN(PW,normalize)(__isl_take PW *pw)
 /* Is pw1 obviously equal to pw2?
  * That is, do they have obviously identical cells and obviously identical
  * elements on each cell?
+ *
+ * If "pw1" or "pw2" contain any NaNs, then they are considered
+ * not to be the same.  A NaN is not equal to anything, not even
+ * to another NaN.
  */
 isl_bool FN(PW,plain_is_equal)(__isl_keep PW *pw1, __isl_keep PW *pw2)
 {
 	int i;
-	isl_bool equal;
+	isl_bool equal, has_nan;
 
 	if (!pw1 || !pw2)
 		return isl_bool_error;
+
+	has_nan = FN(PW,involves_nan)(pw1);
+	if (has_nan >= 0 && !has_nan)
+		has_nan = FN(PW,involves_nan)(pw2);
+	if (has_nan < 0 || has_nan)
+		return isl_bool_not(has_nan);
 
 	if (pw1 == pw2)
 		return isl_bool_true;
