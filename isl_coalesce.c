@@ -2134,18 +2134,6 @@ static enum isl_change coalesce_local_pair_reuse(int i, int j,
 {
 	enum isl_change change = isl_change_none;
 
-	set_eq_status_in(&info[i], info[j].tab);
-	if (info[i].bmap->n_eq && !info[i].eq)
-		goto error;
-	if (any(info[i].eq, 2 * info[i].bmap->n_eq, STATUS_ERROR))
-		goto error;
-
-	set_eq_status_in(&info[j], info[i].tab);
-	if (info[j].bmap->n_eq && !info[j].eq)
-		goto error;
-	if (any(info[j].eq, 2 * info[j].bmap->n_eq, STATUS_ERROR))
-		goto error;
-
 	set_ineq_status_in(&info[i], info[j].tab);
 	if (info[i].bmap->n_ineq && !info[i].ineq)
 		goto error;
@@ -2161,6 +2149,18 @@ static enum isl_change coalesce_local_pair_reuse(int i, int j,
 		goto error;
 	if (any(info[j].ineq, info[j].bmap->n_ineq, STATUS_SEPARATE))
 		goto done;
+
+	set_eq_status_in(&info[i], info[j].tab);
+	if (info[i].bmap->n_eq && !info[i].eq)
+		goto error;
+	if (any(info[i].eq, 2 * info[i].bmap->n_eq, STATUS_ERROR))
+		goto error;
+
+	set_eq_status_in(&info[j], info[i].tab);
+	if (info[j].bmap->n_eq && !info[j].eq)
+		goto error;
+	if (any(info[j].eq, 2 * info[j].bmap->n_eq, STATUS_ERROR))
+		goto error;
 
 	if (any(info[i].eq, 2 * info[i].bmap->n_eq, STATUS_SEPARATE))
 		return separating_equality(i, j, info);
