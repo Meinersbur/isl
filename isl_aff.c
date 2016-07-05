@@ -6400,14 +6400,15 @@ __isl_give isl_multi_pw_aff *isl_multi_pw_aff_from_pw_multi_aff(
  * not to be the same.  A NaN is not equal to anything, not even
  * to another NaN.
  */
-int isl_pw_aff_is_equal(__isl_keep isl_pw_aff *pa1, __isl_keep isl_pw_aff *pa2)
+isl_bool isl_pw_aff_is_equal(__isl_keep isl_pw_aff *pa1,
+	__isl_keep isl_pw_aff *pa2)
 {
-	int equal;
+	isl_bool equal;
 	isl_bool has_nan;
 	isl_map *map1, *map2;
 
 	if (!pa1 || !pa2)
-		return -1;
+		return isl_bool_error;
 
 	equal = isl_pw_aff_plain_is_equal(pa1, pa2);
 	if (equal < 0 || equal)
@@ -6416,9 +6417,9 @@ int isl_pw_aff_is_equal(__isl_keep isl_pw_aff *pa1, __isl_keep isl_pw_aff *pa2)
 	if (has_nan >= 0 && !has_nan)
 		has_nan = isl_pw_aff_involves_nan(pa2);
 	if (has_nan < 0)
-		return -1;
+		return isl_bool_error;
 	if (has_nan)
-		return 0;
+		return isl_bool_false;
 
 	map1 = map_from_pw_aff(isl_pw_aff_copy(pa1));
 	map2 = map_from_pw_aff(isl_pw_aff_copy(pa2));
