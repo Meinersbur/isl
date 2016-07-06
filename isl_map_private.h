@@ -380,6 +380,9 @@ __isl_give isl_map *isl_map_set_rational(__isl_take isl_map *map);
 int isl_map_has_rational(__isl_keep isl_map *map);
 int isl_set_has_rational(__isl_keep isl_set *set);
 
+__isl_give isl_basic_map *isl_basic_map_from_multi_aff2(
+	__isl_take isl_multi_aff *maff, int rational);
+
 struct isl_mat;
 
 struct isl_basic_set *isl_basic_set_preimage(struct isl_basic_set *bset,

@@ -11841,10 +11841,12 @@ __isl_give isl_map *isl_map_uncurry(__isl_take isl_map *map)
 
 /* Construct a basic map mapping the domain of the affine expression
  * to a one-dimensional range prescribed by the affine expression.
+ * If "rational" is set, then construct a rational basic map.
  *
  * A NaN affine expression cannot be converted to a basic map.
  */
-__isl_give isl_basic_map *isl_basic_map_from_aff(__isl_take isl_aff *aff)
+static __isl_give isl_basic_map *isl_basic_map_from_aff2(
+	__isl_take isl_aff *aff, int rational)
 {
 	int k;
 	int pos;
@@ -11875,12 +11877,22 @@ __isl_give isl_basic_map *isl_basic_map_from_aff(__isl_take isl_aff *aff)
 		    aff->v->size - (pos + 1));
 
 	isl_aff_free(aff);
+	if (rational)
+		bmap = isl_basic_map_set_rational(bmap);
 	bmap = isl_basic_map_finalize(bmap);
 	return bmap;
 error:
 	isl_aff_free(aff);
 	isl_basic_map_free(bmap);
 	return NULL;
+}
+
+/* Construct a basic map mapping the domain of the affine expression
+ * to a one-dimensional range prescribed by the affine expression.
+ */
+__isl_give isl_basic_map *isl_basic_map_from_aff(__isl_take isl_aff *aff)
+{
+	return isl_basic_map_from_aff2(aff, 0);
 }
 
 /* Construct a map mapping the domain of the affine expression
@@ -11897,9 +11909,10 @@ __isl_give isl_map *isl_map_from_aff(__isl_take isl_aff *aff)
 /* Construct a basic map mapping the domain the multi-affine expression
  * to its range, with each dimension in the range equated to the
  * corresponding affine expression.
+ * If "rational" is set, then construct a rational basic map.
  */
-__isl_give isl_basic_map *isl_basic_map_from_multi_aff(
-	__isl_take isl_multi_aff *maff)
+__isl_give isl_basic_map *isl_basic_map_from_multi_aff2(
+	__isl_take isl_multi_aff *maff, int rational)
 {
 	int i;
 	isl_space *space;
@@ -11914,13 +11927,15 @@ __isl_give isl_basic_map *isl_basic_map_from_multi_aff(
 
 	space = isl_space_domain(isl_multi_aff_get_space(maff));
 	bmap = isl_basic_map_universe(isl_space_from_domain(space));
+	if (rational)
+		bmap = isl_basic_map_set_rational(bmap);
 
 	for (i = 0; i < maff->n; ++i) {
 		isl_aff *aff;
 		isl_basic_map *bmap_i;
 
 		aff = isl_aff_copy(maff->p[i]);
-		bmap_i = isl_basic_map_from_aff(aff);
+		bmap_i = isl_basic_map_from_aff2(aff, rational);
 
 		bmap = isl_basic_map_flat_range_product(bmap, bmap_i);
 	}
@@ -11932,6 +11947,16 @@ __isl_give isl_basic_map *isl_basic_map_from_multi_aff(
 error:
 	isl_multi_aff_free(maff);
 	return NULL;
+}
+
+/* Construct a basic map mapping the domain the multi-affine expression
+ * to its range, with each dimension in the range equated to the
+ * corresponding affine expression.
+ */
+__isl_give isl_basic_map *isl_basic_map_from_multi_aff(
+	__isl_take isl_multi_aff *ma)
+{
+	return isl_basic_map_from_multi_aff2(ma, 0);
 }
 
 /* Construct a map mapping the domain the multi-affine expression
