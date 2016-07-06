@@ -159,6 +159,7 @@ struct isl_sol_callback {
  * can be read off from the tableau, the function "add" is called
  * on the isl_sol passed to find_solutions_main.  In a state where
  * the tableau is empty, "add_empty" is called instead.
+ * "free" is called to free the implementation specific fields, if any.
  *
  * "error" is set if some error has occurred.  This flag invalidates
  * the remainder of the data structure.
@@ -206,7 +207,10 @@ static void sol_free(struct isl_sol *sol)
 		isl_mat_free(partial->M);
 		free(partial);
 	}
+	if (sol->context)
+		sol->context->op->free(sol->context);
 	sol->free(sol);
+	free(sol);
 }
 
 /* Push a partial solution represented by a domain and mapping M
@@ -638,11 +642,8 @@ static void sol_map_free(struct isl_sol_map *sol_map)
 {
 	if (!sol_map)
 		return;
-	if (sol_map->sol.context)
-		sol_map->sol.context->op->free(sol_map->sol.context);
 	isl_map_free(sol_map->map);
 	isl_set_free(sol_map->empty);
-	free(sol_map);
 }
 
 static void sol_map_free_wrap(struct isl_sol *sol)
@@ -3601,7 +3602,7 @@ static struct isl_sol *sol_map_init(__isl_keep isl_basic_map *bmap,
 	return &sol_map->sol;
 error:
 	isl_basic_set_free(dom);
-	sol_map_free(sol_map);
+	sol_free(&sol_map->sol);
 	return NULL;
 }
 
@@ -4851,11 +4852,6 @@ struct isl_sol_for {
 
 static void sol_for_free(struct isl_sol_for *sol_for)
 {
-	if (!sol_for)
-		return;
-	if (sol_for->sol.context)
-		sol_for->sol.context->op->free(sol_for->sol.context);
-	free(sol_for);
 }
 
 static void sol_for_free_wrap(struct isl_sol *sol)
@@ -4948,7 +4944,7 @@ static struct isl_sol_for *sol_for_init(__isl_keep isl_basic_map *bmap, int max,
 	return sol_for;
 error:
 	isl_basic_set_free(dom);
-	sol_for_free(sol_for);
+	sol_free(&sol_for->sol);
 	return NULL;
 }
 
@@ -5417,11 +5413,8 @@ static void sol_pma_free(struct isl_sol_pma *sol_pma)
 {
 	if (!sol_pma)
 		return;
-	if (sol_pma->sol.context)
-		sol_pma->sol.context->op->free(sol_pma->sol.context);
 	isl_pw_multi_aff_free(sol_pma->pma);
 	isl_set_free(sol_pma->empty);
-	free(sol_pma);
 }
 
 /* This function is called for parts of the context where there is
@@ -5544,7 +5537,7 @@ static struct isl_sol *sol_pma_init(__isl_keep isl_basic_map *bmap,
 	return &sol_pma->sol;
 error:
 	isl_basic_set_free(dom);
-	sol_pma_free(sol_pma);
+	sol_free(&sol_pma->sol);
 	return NULL;
 }
 
