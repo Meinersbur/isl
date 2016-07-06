@@ -9601,12 +9601,16 @@ error:
 __isl_give isl_basic_map *isl_basic_map_range_product(
 	__isl_take isl_basic_map *bmap1, __isl_take isl_basic_map *bmap2)
 {
+	int rational;
 	isl_space *dim_result = NULL;
 	isl_basic_map *bmap;
 	unsigned in, out1, out2, nparam, total, pos;
 	struct isl_dim_map *dim_map1, *dim_map2;
 
-	if (!bmap1 || !bmap2)
+	rational = isl_basic_map_is_rational(bmap1);
+	if (rational >= 0 && rational)
+		rational = isl_basic_map_is_rational(bmap2);
+	if (!bmap1 || !bmap2 || rational < 0)
 		goto error;
 
 	if (!isl_space_match(bmap1->dim, isl_dim_param,
@@ -9640,6 +9644,8 @@ __isl_give isl_basic_map *isl_basic_map_range_product(
 			bmap1->n_ineq + bmap2->n_ineq);
 	bmap = isl_basic_map_add_constraints_dim_map(bmap, bmap1, dim_map1);
 	bmap = isl_basic_map_add_constraints_dim_map(bmap, bmap2, dim_map2);
+	if (rational)
+		bmap = isl_basic_map_set_rational(bmap);
 	bmap = isl_basic_map_simplify(bmap);
 	return isl_basic_map_finalize(bmap);
 error:
