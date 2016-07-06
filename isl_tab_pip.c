@@ -156,16 +156,27 @@ struct isl_sol_callback {
 /* isl_sol is an interface for constructing a solution to
  * a parametric integer linear programming problem.
  * Every time the algorithm reaches a state where a solution
- * can be read off from the tableau (including cases where the tableau
- * is empty), the function "add" is called on the isl_sol passed
- * to find_solutions_main.
+ * can be read off from the tableau, the function "add" is called
+ * on the isl_sol passed to find_solutions_main.  In a state where
+ * the tableau is empty, "add_empty" is called instead.
+ *
+ * "error" is set if some error has occurred.  This flag invalidates
+ * the remainder of the data structure.
+ * If "rational" is set, then a rational optimization is being performed.
+ * "level" is the current level in the tree with nodes for each
+ * split in the context.
+ * If "max" is set, then a maximization problem is being solved, rather than
+ * a minimization problem, which means that the variables in the
+ * tableau have value "M - x" rather than "M + x".
+ * "n_out" is the number of output dimensions in the input.
  *
  * The context tableau is owned by isl_sol and is updated incrementally.
  *
- * There are currently two implementations of this interface,
+ * There are currently three implementations of this interface,
  * isl_sol_map, which simply collects the solutions in an isl_map
  * and (optionally) the parts of the context where there is no solution
- * in an isl_set, and
+ * in an isl_set,
+ * isl_sol_pma, which collects an isl_pw_multi_aff instead, and
  * isl_sol_for, which calls a user-defined function for each part of
  * the solution.
  */
