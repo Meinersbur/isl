@@ -3538,6 +3538,29 @@ static struct isl_context *isl_context_alloc(__isl_keep isl_basic_set *dom)
 	return context;
 }
 
+/* Initialize some common fields of "sol", which keeps track
+ * of the solution of an optimization problem on "bmap" over
+ * the domain "dom".
+ * If "max" is set, then a maximization problem is being solved, rather than
+ * a minimization problem, which means that the variables in the
+ * tableau have value "M - x" rather than "M + x".
+ */
+static isl_stat sol_init(struct isl_sol *sol, __isl_keep isl_basic_map *bmap,
+	__isl_keep isl_basic_set *dom, int max)
+{
+	sol->rational = ISL_F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL);
+	sol->dec_level.callback.run = &sol_dec_level_wrap;
+	sol->dec_level.sol = sol;
+	sol->max = max;
+	sol->n_out = isl_basic_map_dim(bmap, isl_dim_out);
+
+	sol->context = isl_context_alloc(dom);
+	if (!sol->context)
+		return isl_stat_error;
+
+	return isl_stat_ok;
+}
+
 /* Construct an isl_sol_map structure for accumulating the solution.
  * If track_empty is set, then we also keep track of the parts
  * of the context where there is no solution.
@@ -3557,21 +3580,14 @@ static struct isl_sol *sol_map_init(__isl_keep isl_basic_map *bmap,
 	if (!sol_map)
 		goto error;
 
-	sol_map->sol.rational = ISL_F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL);
-	sol_map->sol.dec_level.callback.run = &sol_dec_level_wrap;
-	sol_map->sol.dec_level.sol = &sol_map->sol;
-	sol_map->sol.max = max;
-	sol_map->sol.n_out = isl_basic_map_dim(bmap, isl_dim_out);
+	if (sol_init(&sol_map->sol, bmap, dom, max) < 0)
+		goto error;
 	sol_map->sol.add = &sol_map_add_wrap;
 	sol_map->sol.add_empty = track_empty ? &sol_map_add_empty_wrap : NULL;
 	sol_map->sol.free = &sol_map_free_wrap;
 	sol_map->map = isl_map_alloc_space(isl_basic_map_get_space(bmap), 1,
 					    ISL_MAP_DISJOINT);
 	if (!sol_map->map)
-		goto error;
-
-	sol_map->sol.context = isl_context_alloc(dom);
-	if (!sol_map->sol.context)
 		goto error;
 
 	if (track_empty) {
@@ -4920,20 +4936,13 @@ static struct isl_sol_for *sol_for_init(__isl_keep isl_basic_map *bmap, int max,
 	dom_dim = isl_space_domain(isl_space_copy(bmap->dim));
 	dom = isl_basic_set_universe(dom_dim);
 
-	sol_for->sol.rational = ISL_F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL);
-	sol_for->sol.dec_level.callback.run = &sol_dec_level_wrap;
-	sol_for->sol.dec_level.sol = &sol_for->sol;
+	if (sol_init(&sol_for->sol, bmap, dom, max) < 0)
+		goto error;
 	sol_for->fn = fn;
 	sol_for->user = user;
-	sol_for->sol.max = max;
-	sol_for->sol.n_out = isl_basic_map_dim(bmap, isl_dim_out);
 	sol_for->sol.add = &sol_for_add_wrap;
 	sol_for->sol.add_empty = NULL;
 	sol_for->sol.free = &sol_for_free_wrap;
-
-	sol_for->sol.context = isl_context_alloc(dom);
-	if (!sol_for->sol.context)
-		goto error;
 
 	isl_basic_set_free(dom);
 	return sol_for;
@@ -5515,20 +5524,13 @@ static struct isl_sol *sol_pma_init(__isl_keep isl_basic_map *bmap,
 	if (!sol_pma)
 		goto error;
 
-	sol_pma->sol.rational = ISL_F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL);
-	sol_pma->sol.dec_level.callback.run = &sol_dec_level_wrap;
-	sol_pma->sol.dec_level.sol = &sol_pma->sol;
-	sol_pma->sol.max = max;
-	sol_pma->sol.n_out = isl_basic_map_dim(bmap, isl_dim_out);
+	if (sol_init(&sol_pma->sol, bmap, dom, max) < 0)
+		goto error;
 	sol_pma->sol.add = &sol_pma_add_wrap;
 	sol_pma->sol.add_empty = track_empty ? &sol_pma_add_empty_wrap : NULL;
 	sol_pma->sol.free = &sol_pma_free_wrap;
 	sol_pma->pma = isl_pw_multi_aff_empty(isl_basic_map_get_space(bmap));
 	if (!sol_pma->pma)
-		goto error;
-
-	sol_pma->sol.context = isl_context_alloc(dom);
-	if (!sol_pma->sol.context)
 		goto error;
 
 	if (track_empty) {
