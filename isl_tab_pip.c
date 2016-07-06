@@ -638,17 +638,11 @@ struct isl_sol_map {
 	struct isl_set	*empty;
 };
 
-static void sol_map_free(struct isl_sol_map *sol_map)
+static void sol_map_free(struct isl_sol *sol)
 {
-	if (!sol_map)
-		return;
+	struct isl_sol_map *sol_map = (struct isl_sol_map *) sol;
 	isl_map_free(sol_map->map);
 	isl_set_free(sol_map->empty);
-}
-
-static void sol_map_free_wrap(struct isl_sol *sol)
-{
-	sol_map_free((struct isl_sol_map *)sol);
 }
 
 /* This function is called for parts of the context where there is
@@ -3581,7 +3575,7 @@ static struct isl_sol *sol_map_init(__isl_keep isl_basic_map *bmap,
 	if (!sol_map)
 		goto error;
 
-	sol_map->sol.free = &sol_map_free_wrap;
+	sol_map->sol.free = &sol_map_free;
 	if (sol_init(&sol_map->sol, bmap, dom, max) < 0)
 		goto error;
 	sol_map->sol.add = &sol_map_add_wrap;
@@ -4850,13 +4844,8 @@ struct isl_sol_for {
 	void		*user;
 };
 
-static void sol_for_free(struct isl_sol_for *sol_for)
+static void sol_for_free(struct isl_sol *sol)
 {
-}
-
-static void sol_for_free_wrap(struct isl_sol *sol)
-{
-	sol_for_free((struct isl_sol_for *)sol);
 }
 
 /* Add the solution identified by the tableau and the context tableau.
@@ -4932,7 +4921,7 @@ static struct isl_sol_for *sol_for_init(__isl_keep isl_basic_map *bmap, int max,
 	dom_dim = isl_space_domain(isl_space_copy(bmap->dim));
 	dom = isl_basic_set_universe(dom_dim);
 
-	sol_for->sol.free = &sol_for_free_wrap;
+	sol_for->sol.free = &sol_for_free;
 	if (sol_init(&sol_for->sol, bmap, dom, max) < 0)
 		goto error;
 	sol_for->fn = fn;
@@ -5409,10 +5398,9 @@ struct isl_sol_pma {
 	isl_set *empty;
 };
 
-static void sol_pma_free(struct isl_sol_pma *sol_pma)
+static void sol_pma_free(struct isl_sol *sol)
 {
-	if (!sol_pma)
-		return;
+	struct isl_sol_pma *sol_pma = (struct isl_sol_pma *) sol;
 	isl_pw_multi_aff_free(sol_pma->pma);
 	isl_set_free(sol_pma->empty);
 }
@@ -5481,11 +5469,6 @@ static void sol_pma_add(struct isl_sol_pma *sol,
 		sol->sol.error = 1;
 }
 
-static void sol_pma_free_wrap(struct isl_sol *sol)
-{
-	sol_pma_free((struct isl_sol_pma *)sol);
-}
-
 static void sol_pma_add_empty_wrap(struct isl_sol *sol,
 	__isl_take isl_basic_set *bset)
 {
@@ -5517,7 +5500,7 @@ static struct isl_sol *sol_pma_init(__isl_keep isl_basic_map *bmap,
 	if (!sol_pma)
 		goto error;
 
-	sol_pma->sol.free = &sol_pma_free_wrap;
+	sol_pma->sol.free = &sol_pma_free;
 	if (sol_init(&sol_pma->sol, bmap, dom, max) < 0)
 		goto error;
 	sol_pma->sol.add = &sol_pma_add_wrap;
