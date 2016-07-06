@@ -3471,8 +3471,8 @@ static struct isl_context *isl_context_alloc(__isl_keep isl_basic_set *dom)
  * a minimization problem, which means that the variables in the
  * tableau have value "M - x" rather than "M + x".
  */
-static struct isl_sol *sol_map_init(struct isl_basic_map *bmap,
-	struct isl_basic_set *dom, int track_empty, int max)
+static struct isl_sol *sol_map_init(__isl_keep isl_basic_map *bmap,
+	__isl_take isl_basic_set *dom, int track_empty, int max)
 {
 	struct isl_sol_map *sol_map = NULL;
 
@@ -4830,7 +4830,7 @@ static void sol_for_add_wrap(struct isl_sol *sol,
 	sol_for_add((struct isl_sol_for *)sol, dom, M);
 }
 
-static struct isl_sol_for *sol_for_init(struct isl_basic_map *bmap, int max,
+static struct isl_sol_for *sol_for_init(__isl_keep isl_basic_map *bmap, int max,
 	int (*fn)(__isl_take isl_basic_set *dom, __isl_take isl_aff_list *list,
 		  void *user),
 	void *user)
