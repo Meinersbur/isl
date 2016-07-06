@@ -605,7 +605,7 @@ static void sol_map_add_empty_wrap(struct isl_sol *sol,
 	sol_map_add_empty((struct isl_sol_map *)sol, bset);
 }
 
-/* Given a basic map "dom" that represents the context and an affine
+/* Given a basic set "dom" that represents the context and an affine
  * matrix "M" that maps the dimensions of the context to the
  * output variables, construct a basic map with the same parameters
  * and divs as the context, the dimensions of the context as input
@@ -5422,7 +5422,7 @@ error:
 	return NULL;
 }
 
-/* Given a basic map "dom" that represents the context and an affine
+/* Given a basic set "dom" that represents the context and an affine
  * matrix "M" that maps the dimensions of the context to the
  * output variables, construct an isl_pw_multi_aff with a single
  * cell corresponding to "dom" and affine expressions copied from "M".
@@ -5434,7 +5434,7 @@ error:
  * of existentially quantified variables without a known representation.
  * Since newly added integer divisions are inserted before these
  * existentially quantified variables, they are still in the final
- * positions and the corresponding final columns "M" are zero
+ * positions and the corresponding final columns of "M" are zero
  * because align_context_divs adds the existentially quantified
  * variables of the context to the main tableau without any constraints and
  * any equality constraints that are added later on can only serve
