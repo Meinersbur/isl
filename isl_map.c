@@ -816,6 +816,50 @@ int isl_basic_map_is_rational(__isl_keep isl_basic_map *bmap)
 	return ISL_F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL);
 }
 
+/* Has "map" been marked as a rational map?
+ * In particular, have all basic maps in "map" been marked this way?
+ * An empty map is not considered to be rational.
+ * Maps where only some of the basic maps are marked rational
+ * are not allowed.
+ */
+isl_bool isl_map_is_rational(__isl_keep isl_map *map)
+{
+	int i;
+	isl_bool rational;
+
+	if (!map)
+		return isl_bool_error;
+	if (map->n == 0)
+		return isl_bool_false;
+	rational = isl_basic_map_is_rational(map->p[0]);
+	if (rational < 0)
+		return rational;
+	for (i = 1; i < map->n; ++i) {
+		isl_bool rational_i;
+
+		rational_i = isl_basic_map_is_rational(map->p[i]);
+		if (rational_i < 0)
+			return rational;
+		if (rational != rational_i)
+			isl_die(isl_map_get_ctx(map), isl_error_unsupported,
+				"mixed rational and integer basic maps "
+				"not supported", return isl_bool_error);
+	}
+
+	return rational;
+}
+
+/* Has "set" been marked as a rational set?
+ * In particular, have all basic set in "set" been marked this way?
+ * An empty set is not considered to be rational.
+ * Sets where only some of the basic sets are marked rational
+ * are not allowed.
+ */
+isl_bool isl_set_is_rational(__isl_keep isl_set *set)
+{
+	return isl_map_is_rational(set);
+}
+
 int isl_basic_set_is_rational(__isl_keep isl_basic_set *bset)
 {
 	return isl_basic_map_is_rational(bset);

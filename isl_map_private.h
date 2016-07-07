@@ -377,6 +377,9 @@ __isl_give isl_basic_map *isl_basic_map_set_rational(
 	__isl_take isl_basic_map *bmap);
 __isl_give isl_map *isl_map_set_rational(__isl_take isl_map *map);
 
+isl_bool isl_map_is_rational(__isl_keep isl_map *map);
+isl_bool isl_set_is_rational(__isl_keep isl_set *set);
+
 int isl_map_has_rational(__isl_keep isl_map *map);
 int isl_set_has_rational(__isl_keep isl_set *set);
 
