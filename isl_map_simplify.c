@@ -200,7 +200,8 @@ struct isl_basic_map *isl_basic_map_drop(struct isl_basic_map *bmap,
 		bmap = move_divs_last(bmap, first, n);
 		if (!bmap)
 			goto error;
-		isl_basic_map_free_div(bmap, n);
+		if (isl_basic_map_free_div(bmap, n) < 0)
+			return isl_basic_map_free(bmap);
 	} else
 		bmap->dim = isl_space_drop_dims(bmap->dim, type, first, n);
 	if (!bmap->dim)
