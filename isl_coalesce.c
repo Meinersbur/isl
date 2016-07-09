@@ -3444,10 +3444,11 @@ static isl_stat add_sub_vars(struct isl_coalesce_info *info,
 		if (d < 0)
 			return isl_stat_error;
 		info->bmap = isl_basic_map_mark_div_unknown(info->bmap, d);
+		for (j = d; j > i; --j)
+			info->bmap = isl_basic_map_swap_div(info->bmap,
+							    j - 1, j);
 		if (!info->bmap)
 			return isl_stat_error;
-		for (j = d; j > i; --j)
-			isl_basic_map_swap_div(info->bmap, j - 1, j);
 	}
 
 	return isl_stat_ok;

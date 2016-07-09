@@ -703,7 +703,9 @@ __isl_give isl_basic_map *isl_basic_map_sort_divs(
 		for (j = i - 1; j >= 0; --j) {
 			if (bmap_cmp_row(bmap, j, j + 1, total) <= 0)
 				break;
-			isl_basic_map_swap_div(bmap, j, j + 1);
+			bmap = isl_basic_map_swap_div(bmap, j, j + 1);
+			if (!bmap)
+				return NULL;
 		}
 	}
 

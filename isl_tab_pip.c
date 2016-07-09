@@ -4339,7 +4339,9 @@ static __isl_give isl_basic_map *align_context_divs(
 			isl_int_set_si(bmap->div[pos][0], 0);
 		}
 		if (pos != other + i)
-			isl_basic_map_swap_div(bmap, pos, other + i);
+			bmap = isl_basic_map_swap_div(bmap, pos, other + i);
+		if (!bmap)
+			return NULL;
 	}
 	return bmap;
 error:

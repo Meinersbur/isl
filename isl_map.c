@@ -1764,7 +1764,7 @@ __isl_give isl_basic_map *isl_basic_map_insert_div(
 	isl_int_set_si(bmap->div[k][div->size], 0);
 
 	for (i = k; i > pos; --i)
-		isl_basic_map_swap_div(bmap, i, i - 1);
+		bmap = isl_basic_map_swap_div(bmap, i, i - 1);
 
 	return bmap;
 }
@@ -2141,11 +2141,16 @@ static void swap_div(__isl_keep isl_basic_map *bmap, int a, int b)
 /* Swap divs "a" and "b" in "bmap" and adjust the constraints and
  * div definitions accordingly.
  */
-void isl_basic_map_swap_div(struct isl_basic_map *bmap, int a, int b)
+__isl_give isl_basic_map *isl_basic_map_swap_div(__isl_take isl_basic_map *bmap,
+	int a, int b)
 {
 	int i;
-	unsigned off = isl_space_dim(bmap->dim, isl_dim_all);
+	unsigned off;
 
+	if (!bmap)
+		return NULL;
+
+	off = isl_space_dim(bmap->dim, isl_dim_all);
 	swap_div(bmap, a, b);
 
 	for (i = 0; i < bmap->n_eq; ++i)
@@ -2157,6 +2162,8 @@ void isl_basic_map_swap_div(struct isl_basic_map *bmap, int a, int b)
 	for (i = 0; i < bmap->n_div; ++i)
 		isl_int_swap(bmap->div[i][1+1+off+a], bmap->div[i][1+1+off+b]);
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_SORTED);
+
+	return bmap;
 }
 
 static void constraint_drop_vars(isl_int *c, unsigned n, unsigned rem)
@@ -8772,7 +8779,9 @@ __isl_give isl_basic_map *isl_basic_map_order_divs(
 			isl_die(isl_basic_map_get_ctx(bmap), isl_error_internal,
 				"integer division depends on itself",
 				return isl_basic_map_free(bmap));
-		isl_basic_map_swap_div(bmap, i, i + pos);
+		bmap = isl_basic_map_swap_div(bmap, i, i + pos);
+		if (!bmap)
+			return NULL;
 		--i;
 	}
 	return bmap;
@@ -8846,7 +8855,9 @@ __isl_give isl_basic_map *isl_basic_map_expand_divs(
 	for (j = n_div - 1; j >= 0; --j) {
 		if (exp[j] == j)
 			break;
-		isl_basic_map_swap_div(bmap, j, exp[j]);
+		bmap = isl_basic_map_swap_div(bmap, j, exp[j]);
+		if (!bmap)
+			goto error;
 	}
 	j = 0;
 	for (i = 0; i < div->n_row; ++i) {
@@ -8958,7 +8969,9 @@ __isl_give isl_basic_map *isl_basic_map_align_divs(
 				goto error;
 		}
 		if (j != i)
-			isl_basic_map_swap_div(dst, i, j);
+			dst = isl_basic_map_swap_div(dst, i, j);
+		if (!dst)
+			goto error;
 	}
 	isl_basic_map_free(src);
 	return dst;
