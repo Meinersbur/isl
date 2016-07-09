@@ -1293,65 +1293,6 @@ isl_stat isl_mat_sub_transform(isl_int **row, unsigned n_row,
 	return isl_stat_ok;
 }
 
-/* Replace the variables x of type "type" starting at "first" in "bmap"
- * by x' with x = M x' with M the matrix trans.
- * That is, replace the corresponding coefficients c by c M.
- *
- * The transformation matrix should be a square matrix.
- */
-__isl_give isl_basic_map *isl_basic_map_transform_dims(
-	__isl_take isl_basic_map *bmap, enum isl_dim_type type, unsigned first,
-	__isl_take isl_mat *trans)
-{
-	unsigned pos;
-
-	bmap = isl_basic_map_cow(bmap);
-	if (!bmap || !trans)
-		goto error;
-
-	if (trans->n_row != trans->n_col)
-		isl_die(trans->ctx, isl_error_invalid,
-			"expecting square transformation matrix", goto error);
-	if (first + trans->n_row > isl_basic_map_dim(bmap, type))
-		isl_die(trans->ctx, isl_error_invalid,
-			"oversized transformation matrix", goto error);
-
-	pos = isl_basic_map_offset(bmap, type) + first;
-
-	if (isl_mat_sub_transform(bmap->eq, bmap->n_eq, pos,
-			isl_mat_copy(trans)) < 0)
-		goto error;
-	if (isl_mat_sub_transform(bmap->ineq, bmap->n_ineq, pos,
-		      isl_mat_copy(trans)) < 0)
-		goto error;
-	if (isl_mat_sub_transform(bmap->div, bmap->n_div, 1 + pos,
-		      isl_mat_copy(trans)) < 0)
-		goto error;
-
-	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
-	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED_DIVS);
-
-	isl_mat_free(trans);
-	return bmap;
-error:
-	isl_mat_free(trans);
-	isl_basic_map_free(bmap);
-	return NULL;
-}
-
-/* Replace the variables x of type "type" starting at "first" in "bset"
- * by x' with x = M x' with M the matrix trans.
- * That is, replace the corresponding coefficients c by c M.
- *
- * The transformation matrix should be a square matrix.
- */
-__isl_give isl_basic_set *isl_basic_set_transform_dims(
-	__isl_take isl_basic_set *bset, enum isl_dim_type type, unsigned first,
-	__isl_take isl_mat *trans)
-{
-	return isl_basic_map_transform_dims(bset, type, first, trans);
-}
-
 void isl_mat_print_internal(__isl_keep isl_mat *mat, FILE *out, int indent)
 {
 	int i, j;
