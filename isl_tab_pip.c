@@ -4639,7 +4639,7 @@ error:
  * an upper bound that is different from the upper bounds on which it
  * is defined.
  */
-static int need_split_basic_map(__isl_keep isl_basic_map *bmap,
+static isl_bool need_split_basic_map(__isl_keep isl_basic_map *bmap,
 	__isl_keep isl_mat *cst)
 {
 	int i, j;
@@ -4651,29 +4651,29 @@ static int need_split_basic_map(__isl_keep isl_basic_map *bmap,
 
 	for (i = 0; i < bmap->n_div; ++i)
 		if (!isl_int_is_zero(bmap->div[i][2 + pos]))
-			return 1;
+			return isl_bool_true;
 
 	for (i = 0; i < bmap->n_eq; ++i)
 		if (!isl_int_is_zero(bmap->eq[i][1 + pos]))
-			return 1;
+			return isl_bool_true;
 
 	for (i = 0; i < bmap->n_ineq; ++i) {
 		if (isl_int_is_nonneg(bmap->ineq[i][1 + pos]))
 			continue;
 		if (!isl_int_is_negone(bmap->ineq[i][1 + pos]))
-			return 1;
+			return isl_bool_true;
 		if (isl_seq_first_non_zero(bmap->ineq[i] + 1 + pos + 1,
 					   total - pos - 1) >= 0)
-			return 1;
+			return isl_bool_true;
 
 		for (j = 0; j < cst->n_row; ++j)
 			if (isl_seq_eq(bmap->ineq[i], cst->row[j], cst->n_col))
 				break;
 		if (j >= cst->n_row)
-			return 1;
+			return isl_bool_true;
 	}
 
-	return 0;
+	return isl_bool_false;
 }
 
 /* Given that the last set variable of "bset" represents the minimum
@@ -4684,7 +4684,7 @@ static int need_split_basic_map(__isl_keep isl_basic_map *bmap,
  * the position of the minimum is computed from "cst" and not
  * from "bmap".
  */
-static int need_split_basic_set(__isl_keep isl_basic_set *bset,
+static isl_bool need_split_basic_set(__isl_keep isl_basic_set *bset,
 	__isl_keep isl_mat *cst)
 {
 	return need_split_basic_map(bset_to_bmap(bset), cst);
@@ -4694,15 +4694,19 @@ static int need_split_basic_set(__isl_keep isl_basic_set *bset,
  * of the bounds in "cst", check whether we need to split the domain
  * based on which bound attains the minimum.
  */
-static int need_split_set(__isl_keep isl_set *set, __isl_keep isl_mat *cst)
+static isl_bool need_split_set(__isl_keep isl_set *set, __isl_keep isl_mat *cst)
 {
 	int i;
 
-	for (i = 0; i < set->n; ++i)
-		if (need_split_basic_set(set->p[i], cst))
-			return 1;
+	for (i = 0; i < set->n; ++i) {
+		isl_bool split;
 
-	return 0;
+		split = need_split_basic_set(set->p[i], cst);
+		if (split < 0 || split)
+			return split;
+	}
+
+	return isl_bool_false;
 }
 
 /* Given a set of which the last set variable is the minimum
@@ -4735,10 +4739,14 @@ static __isl_give isl_set *split(__isl_take isl_set *empty,
 	res = isl_set_empty(dim);
 
 	for (i = 0; i < empty->n; ++i) {
+		isl_bool split;
 		isl_set *set;
 
 		set = isl_set_from_basic_set(isl_basic_set_copy(empty->p[i]));
-		if (need_split_basic_set(empty->p[i], cst))
+		split = need_split_basic_set(empty->p[i], cst);
+		if (split < 0)
+			set = isl_set_free(set);
+		else if (split)
 			set = isl_set_intersect(set, isl_set_copy(min_expr));
 		set = isl_set_remove_dims(set, isl_dim_set, n_in - 1, 1);
 
@@ -4782,9 +4790,13 @@ static __isl_give isl_map *split_domain(__isl_take isl_map *opt,
 
 	for (i = 0; i < opt->n; ++i) {
 		isl_map *map;
+		isl_bool split;
 
 		map = isl_map_from_basic_map(isl_basic_map_copy(opt->p[i]));
-		if (need_split_basic_map(opt->p[i], cst))
+		split = need_split_basic_map(opt->p[i], cst);
+		if (split < 0)
+			map = isl_map_free(map);
+		else if (split)
 			map = isl_map_intersect_domain(map,
 						       isl_set_copy(min_expr));
 		map = isl_map_remove_dims(map, isl_dim_in, n_in - 1, 1);
@@ -5696,9 +5708,15 @@ static __isl_give isl_pw_multi_aff *split_domain_pma(
 		if (need_substitution(opt->p[i].maff))
 			pma = isl_pw_multi_aff_substitute(pma,
 					isl_dim_in, n_in - 1, min_expr_pa);
-		else if (need_split_set(opt->p[i].set, cst))
-			pma = isl_pw_multi_aff_intersect_domain(pma,
+		else {
+			isl_bool split;
+			split = need_split_set(opt->p[i].set, cst);
+			if (split < 0)
+				pma = isl_pw_multi_aff_free(pma);
+			else if (split)
+				pma = isl_pw_multi_aff_intersect_domain(pma,
 						       isl_set_copy(min_expr));
+		}
 		pma = isl_pw_multi_aff_project_out(pma,
 						    isl_dim_in, n_in - 1, 1);
 
