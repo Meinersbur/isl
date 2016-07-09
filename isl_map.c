@@ -50,6 +50,16 @@
 #include <set_to_map.c>
 #include <set_from_map.c>
 
+/* Treat "bset" as a basic map.
+ * Internally, isl_basic_set is defined to isl_basic_map, so in practice,
+ * this function performs a redundant cast.
+ */
+static __isl_keep const isl_basic_map *const_bset_to_bmap(
+	__isl_keep const isl_basic_set *bset)
+{
+	return (const isl_basic_map *) bset;
+}
+
 static unsigned n(__isl_keep isl_space *dim, enum isl_dim_type type)
 {
 	switch (type) {
@@ -160,9 +170,7 @@ unsigned isl_basic_set_n_param(__isl_keep isl_basic_set *bset)
 
 unsigned isl_basic_set_total_dim(__isl_keep const isl_basic_set *bset)
 {
-	if (!bset)
-		return 0;
-	return isl_space_dim(bset->dim, isl_dim_all) + bset->n_div;
+	return isl_basic_map_total_dim(const_bset_to_bmap(bset));
 }
 
 unsigned isl_set_n_dim(__isl_keep isl_set *set)
