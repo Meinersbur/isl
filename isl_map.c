@@ -2066,25 +2066,28 @@ struct isl_basic_map *isl_basic_map_remove_dims(struct isl_basic_map *bmap,
 /* Return true if the definition of the given div (recursively) involves
  * any of the given variables.
  */
-static int div_involves_vars(__isl_keep isl_basic_map *bmap, int div,
+static isl_bool div_involves_vars(__isl_keep isl_basic_map *bmap, int div,
 	unsigned first, unsigned n)
 {
 	int i;
 	unsigned div_offset = isl_basic_map_offset(bmap, isl_dim_div);
 
 	if (isl_int_is_zero(bmap->div[div][0]))
-		return 0;
+		return isl_bool_false;
 	if (isl_seq_first_non_zero(bmap->div[div] + 1 + first, n) >= 0)
-		return 1;
+		return isl_bool_true;
 
 	for (i = bmap->n_div - 1; i >= 0; --i) {
+		isl_bool involves;
+
 		if (isl_int_is_zero(bmap->div[div][1 + div_offset + i]))
 			continue;
-		if (div_involves_vars(bmap, i, first, n))
-			return 1;
+		involves = div_involves_vars(bmap, i, first, n);
+		if (involves < 0 || involves)
+			return involves;
 	}
 
-	return 0;
+	return isl_bool_false;
 }
 
 /* Try and add a lower and/or upper bound on "div" to "bmap"
@@ -2293,7 +2296,12 @@ __isl_give isl_basic_map *isl_basic_map_remove_divs_involving_dims(
 	first += isl_basic_map_offset(bmap, type);
 
 	for (i = bmap->n_div - 1; i >= 0; --i) {
-		if (!div_involves_vars(bmap, i, first, n))
+		isl_bool involves;
+
+		involves = div_involves_vars(bmap, i, first, n);
+		if (involves < 0)
+			return isl_basic_map_free(bmap);
+		if (!involves)
 			continue;
 		bmap = insert_bounds_on_div(bmap, i);
 		bmap = isl_basic_map_remove_dims(bmap, isl_dim_div, i, 1);
