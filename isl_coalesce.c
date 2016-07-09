@@ -3153,7 +3153,7 @@ static enum isl_change coalesce_divs(int i, int j,
 
 /* Does "bmap" involve any divs that themselves refer to divs?
  */
-static int has_nested_div(__isl_keep isl_basic_map *bmap)
+static isl_bool has_nested_div(__isl_keep isl_basic_map *bmap)
 {
 	int i;
 	unsigned total;
@@ -3166,9 +3166,9 @@ static int has_nested_div(__isl_keep isl_basic_map *bmap)
 	for (i = 0; i < n_div; ++i)
 		if (isl_seq_first_non_zero(bmap->div[i] + 2 + total,
 					    n_div) != -1)
-			return 1;
+			return isl_bool_true;
 
-	return 0;
+	return isl_bool_false;
 }
 
 /* Return a list of affine expressions, one for each integer division
@@ -3504,7 +3504,7 @@ error:
 static enum isl_change check_coalesce_eq(int i, int j,
 	struct isl_coalesce_info *info)
 {
-	int known, nested;
+	isl_bool known, nested;
 	enum isl_change change;
 
 	known = isl_basic_map_divs_known(info[i].bmap);
