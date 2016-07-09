@@ -1864,7 +1864,8 @@ struct isl_basic_map *isl_basic_map_set_to_empty(struct isl_basic_map *bmap)
 	if (!bmap)
 		goto error;
 	total = isl_basic_map_total_dim(bmap);
-	isl_basic_map_free_div(bmap, bmap->n_div);
+	if (isl_basic_map_free_div(bmap, bmap->n_div) < 0)
+		return isl_basic_map_free(bmap);
 	isl_basic_map_free_inequality(bmap, bmap->n_ineq);
 	if (bmap->n_eq > 0)
 		isl_basic_map_free_equality(bmap, bmap->n_eq-1);
