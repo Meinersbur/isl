@@ -1536,16 +1536,16 @@ __isl_give isl_basic_map *isl_basic_map_insert_div(
 	return bmap;
 }
 
-int isl_basic_map_free_div(struct isl_basic_map *bmap, unsigned n)
+isl_stat isl_basic_map_free_div(struct isl_basic_map *bmap, unsigned n)
 {
 	if (!bmap)
-		return -1;
-	isl_assert(bmap->ctx, n <= bmap->n_div, return -1);
+		return isl_stat_error;
+	isl_assert(bmap->ctx, n <= bmap->n_div, return isl_stat_error);
 	bmap->n_div -= n;
-	return 0;
+	return isl_stat_ok;
 }
 
-int isl_basic_set_free_div(struct isl_basic_set *bset, unsigned n)
+isl_stat isl_basic_set_free_div(struct isl_basic_set *bset, unsigned n)
 {
 	return isl_basic_map_free_div(bset_to_bmap(bset), n);
 }

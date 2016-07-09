@@ -313,7 +313,8 @@ __isl_give isl_basic_map *isl_basic_map_drop_div(
 		bmap->div[bmap->n_div - 1] = t;
 	}
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
-	isl_basic_map_free_div(bmap, 1);
+	if (isl_basic_map_free_div(bmap, 1) < 0)
+		return isl_basic_map_free(bmap);
 
 	return bmap;
 error:
