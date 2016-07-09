@@ -3271,7 +3271,7 @@ error:
  * that is added later to result in constraints that do not hold
  * in the original input.
  */
-static int add_sub_vars(struct isl_coalesce_info *info,
+static isl_stat add_sub_vars(struct isl_coalesce_info *info,
 	__isl_keep isl_aff_list *list, int dim, int extra_var)
 {
 	int i, j, n, d;
@@ -3282,7 +3282,7 @@ static int add_sub_vars(struct isl_coalesce_info *info,
 	info->bmap = isl_basic_map_extend_space(info->bmap, space,
 						extra_var, 0, 0);
 	if (!info->bmap)
-		return -1;
+		return isl_stat_error;
 	n = isl_aff_list_n_aff(list);
 	for (i = 0; i < n; ++i) {
 		int is_nan;
@@ -3292,23 +3292,23 @@ static int add_sub_vars(struct isl_coalesce_info *info,
 		is_nan = isl_aff_is_nan(aff);
 		isl_aff_free(aff);
 		if (is_nan < 0)
-			return -1;
+			return isl_stat_error;
 		if (is_nan)
 			continue;
 
 		if (isl_tab_insert_var(info->tab, dim + i) < 0)
-			return -1;
+			return isl_stat_error;
 		d = isl_basic_map_alloc_div(info->bmap);
 		if (d < 0)
-			return -1;
+			return isl_stat_error;
 		info->bmap = isl_basic_map_mark_div_unknown(info->bmap, d);
 		if (!info->bmap)
-			return -1;
+			return isl_stat_error;
 		for (j = d; j > i; --j)
 			isl_basic_map_swap_div(info->bmap, j - 1, j);
 	}
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* For each element in "list" that is not set to NaN, fix the corresponding
