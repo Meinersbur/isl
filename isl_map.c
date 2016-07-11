@@ -44,6 +44,7 @@
 #include <isl_options_private.h>
 #include <isl_morph.h>
 #include <isl_val_private.h>
+#include <isl_printer_private.h>
 
 #include <bset_to_bmap.c>
 #include <bset_from_bmap.c>
@@ -3169,125 +3170,11 @@ struct isl_map *isl_map_remove_inputs(struct isl_map *map,
 	return isl_map_remove_dims(map, isl_dim_in, first, n);
 }
 
-static void dump_term(struct isl_basic_map *bmap,
-			isl_int c, int pos, FILE *out)
-{
-	const char *name;
-	unsigned in = isl_basic_map_dim(bmap, isl_dim_in);
-	unsigned dim = in + isl_basic_map_dim(bmap, isl_dim_out);
-	unsigned nparam = isl_basic_map_dim(bmap, isl_dim_param);
-	if (!pos)
-		isl_int_print(out, c, 0);
-	else {
-		if (!isl_int_is_one(c))
-			isl_int_print(out, c, 0);
-		if (pos < 1 + nparam) {
-			name = isl_space_get_dim_name(bmap->dim,
-						isl_dim_param, pos - 1);
-			if (name)
-				fprintf(out, "%s", name);
-			else
-				fprintf(out, "p%d", pos - 1);
-		} else if (pos < 1 + nparam + in)
-			fprintf(out, "i%d", pos - 1 - nparam);
-		else if (pos < 1 + nparam + dim)
-			fprintf(out, "o%d", pos - 1 - nparam - in);
-		else
-			fprintf(out, "e%d", pos - 1 - nparam - dim);
-	}
-}
-
-static void dump_constraint_sign(struct isl_basic_map *bmap, isl_int *c,
-				int sign, FILE *out)
-{
-	int i;
-	int first;
-	unsigned len = 1 + isl_basic_map_total_dim(bmap);
-	isl_int v;
-
-	isl_int_init(v);
-	for (i = 0, first = 1; i < len; ++i) {
-		if (isl_int_sgn(c[i]) * sign <= 0)
-			continue;
-		if (!first)
-			fprintf(out, " + ");
-		first = 0;
-		isl_int_abs(v, c[i]);
-		dump_term(bmap, v, i, out);
-	}
-	isl_int_clear(v);
-	if (first)
-		fprintf(out, "0");
-}
-
-static void dump_constraint(struct isl_basic_map *bmap, isl_int *c,
-				const char *op, FILE *out, int indent)
-{
-	int i;
-
-	fprintf(out, "%*s", indent, "");
-
-	dump_constraint_sign(bmap, c, 1, out);
-	fprintf(out, " %s ", op);
-	dump_constraint_sign(bmap, c, -1, out);
-
-	fprintf(out, "\n");
-
-	for (i = bmap->n_div; i < bmap->extra; ++i) {
-		if (isl_int_is_zero(c[1+isl_space_dim(bmap->dim, isl_dim_all)+i]))
-			continue;
-		fprintf(out, "%*s", indent, "");
-		fprintf(out, "ERROR: unused div coefficient not zero\n");
-		abort();
-	}
-}
-
-static void dump_constraints(struct isl_basic_map *bmap,
-				isl_int **c, unsigned n,
-				const char *op, FILE *out, int indent)
-{
-	int i;
-
-	for (i = 0; i < n; ++i)
-		dump_constraint(bmap, c[i], op, out, indent);
-}
-
-static void dump_affine(struct isl_basic_map *bmap, isl_int *exp, FILE *out)
-{
-	int j;
-	int first = 1;
-	unsigned total = isl_basic_map_total_dim(bmap);
-
-	for (j = 0; j < 1 + total; ++j) {
-		if (isl_int_is_zero(exp[j]))
-			continue;
-		if (!first && isl_int_is_pos(exp[j]))
-			fprintf(out, "+");
-		dump_term(bmap, exp[j], j, out);
-		first = 0;
-	}
-}
-
-static void dump(struct isl_basic_map *bmap, FILE *out, int indent)
-{
-	int i;
-
-	dump_constraints(bmap, bmap->eq, bmap->n_eq, "=", out, indent);
-	dump_constraints(bmap, bmap->ineq, bmap->n_ineq, ">=", out, indent);
-
-	for (i = 0; i < bmap->n_div; ++i) {
-		fprintf(out, "%*s", indent, "");
-		fprintf(out, "e%d = [(", i);
-		dump_affine(bmap, bmap->div[i]+1, out);
-		fprintf(out, ")/");
-		isl_int_print(out, bmap->div[i][0], 0);
-		fprintf(out, "]\n");
-	}
-}
-
 void isl_basic_set_print_internal(struct isl_basic_set *bset,
 	FILE *out, int indent)
 {
+	isl_printer *p;
+
 	if (!bset) {
 		fprintf(out, "null basic set\n");
 		return;
@@ -3297,12 +3184,21 @@ void isl_basic_set_print_internal(struct isl_basic_set *bset,
 	fprintf(out, "ref: %d, nparam: %d, dim: %d, extra: %d, flags: %x\n",
 			bset->ref, bset->dim->nparam, bset->dim->n_out,
 			bset->extra, bset->flags);
-	dump(bset_to_bmap(bset), out, indent);
+
+	p = isl_printer_to_file(isl_basic_set_get_ctx(bset), out);
+	p = isl_printer_set_dump(p, 1);
+	p = isl_printer_set_indent(p, indent);
+	p = isl_printer_start_line(p);
+	p = isl_printer_print_basic_set(p, bset);
+	p = isl_printer_end_line(p);
+	isl_printer_free(p);
 }
 
 void isl_basic_map_print_internal(struct isl_basic_map *bmap,
 	FILE *out, int indent)
 {
+	isl_printer *p;
+
 	if (!bmap) {
 		fprintf(out, "null basic map\n");
 		return;
@@ -3314,7 +3210,14 @@ void isl_basic_map_print_internal(struct isl_basic_map *bmap,
 		bmap->ref,
 		bmap->dim->nparam, bmap->dim->n_in, bmap->dim->n_out,
 		bmap->extra, bmap->flags, bmap->dim->n_id);
-	dump(bmap, out, indent);
+
+	p = isl_printer_to_file(isl_basic_map_get_ctx(bmap), out);
+	p = isl_printer_set_dump(p, 1);
+	p = isl_printer_set_indent(p, indent);
+	p = isl_printer_start_line(p);
+	p = isl_printer_print_basic_map(p, bmap);
+	p = isl_printer_end_line(p);
+	isl_printer_free(p);
 }
 
 __isl_give isl_basic_map *isl_inequality_negate(__isl_take isl_basic_map *bmap,
