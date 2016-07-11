@@ -4824,7 +4824,7 @@ __isl_give isl_basic_map *isl_basic_map_from_basic_set(
  *
  *		f - m d >= 0
  */
-static int add_upper_div_constraint(__isl_keep isl_basic_map *bmap,
+static isl_stat add_upper_div_constraint(__isl_keep isl_basic_map *bmap,
 	unsigned pos, isl_int *div)
 {
 	int i;
@@ -4832,11 +4832,11 @@ static int add_upper_div_constraint(__isl_keep isl_basic_map *bmap,
 
 	i = isl_basic_map_alloc_inequality(bmap);
 	if (i < 0)
-		return -1;
+		return isl_stat_error;
 	isl_seq_cpy(bmap->ineq[i], div + 1, 1 + total);
 	isl_int_neg(bmap->ineq[i][1 + pos], div[0]);
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* For a div d = floor(f/m), add the constraint
