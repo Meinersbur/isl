@@ -8799,17 +8799,17 @@ static int find_div(__isl_keep isl_basic_map *dst,
 {
 	int i;
 	unsigned n_div;
-	unsigned total;
+	int v_div;
 
-	if (!dst || !src)
+	v_div = isl_basic_map_var_offset(src, isl_dim_div);
+	if (!dst || v_div < 0)
 		return -1;
 
-	total = isl_space_dim(src->dim, isl_dim_all);
 	n_div = isl_basic_map_dim(dst, isl_dim_div);
 	isl_assert(dst->ctx, div <= n_div, return -1);
 	for (i = div; i < n_div; ++i)
-		if (isl_seq_eq(dst->div[i], src->div[div], 1+1+total+div) &&
-		    isl_seq_first_non_zero(dst->div[i]+1+1+total+div,
+		if (isl_seq_eq(dst->div[i], src->div[div], 1+1+v_div+div) &&
+		    isl_seq_first_non_zero(dst->div[i] + 1 + 1 + v_div + div,
 						n_div - div) == -1)
 			return i;
 	return n_div;
