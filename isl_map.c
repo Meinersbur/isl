@@ -3775,9 +3775,9 @@ static __isl_give isl_map *map_intersect_add_constraint(
 	__isl_take isl_map *map1, __isl_take isl_map *map2)
 {
 	isl_assert(map1->ctx, map1->n == 1, goto error);
-	isl_assert(map2->ctx, map1->n == 1, goto error);
+	isl_assert(map2->ctx, map2->n == 1, goto error);
 	isl_assert(map1->ctx, map1->p[0]->n_div == 0, goto error);
-	isl_assert(map2->ctx, map1->p[0]->n_div == 0, goto error);
+	isl_assert(map2->ctx, map2->p[0]->n_div == 0, goto error);
 
 	if (map2->p[0]->n_eq + map2->p[0]->n_ineq != 1)
 		return isl_map_intersect(map2, map1);
