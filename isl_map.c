@@ -3784,6 +3784,23 @@ static isl_bool is_convex_no_locals(__isl_keep isl_map *map)
 	return isl_bool_true;
 }
 
+/* Check that "map" consists of a single disjunct, without any local variables.
+ */
+static isl_stat check_convex_no_locals(__isl_keep isl_map *map)
+{
+	isl_bool ok;
+
+	ok = is_convex_no_locals(map);
+	if (ok < 0)
+		return isl_stat_error;
+	if (ok)
+		return isl_stat_ok;
+
+	isl_die(isl_map_get_ctx(map), isl_error_internal,
+		"unexpectedly not convex or involving local variables",
+		return isl_stat_error);
+}
+
 /* Special case of isl_map_intersect, where both map1 and map2
  * are convex, without any divs and such that either map1 or map2
  * contains a single constraint.  This constraint is then simply
@@ -3792,8 +3809,9 @@ static isl_bool is_convex_no_locals(__isl_keep isl_map *map)
 static __isl_give isl_map *map_intersect_add_constraint(
 	__isl_take isl_map *map1, __isl_take isl_map *map2)
 {
-	isl_assert(map1->ctx, is_convex_no_locals(map1), goto error);
-	isl_assert(map2->ctx, is_convex_no_locals(map2), goto error);
+	if (check_convex_no_locals(map1) < 0 ||
+	    check_convex_no_locals(map2) < 0)
+		goto error;
 
 	if (map2->p[0]->n_eq + map2->p[0]->n_ineq != 1)
 		return isl_map_intersect(map2, map1);
