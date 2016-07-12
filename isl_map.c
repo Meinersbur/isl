@@ -10585,7 +10585,7 @@ __isl_give isl_basic_set_list *isl_set_get_basic_set_list(
 
 __isl_give isl_basic_set *isl_basic_set_lift(__isl_take isl_basic_set *bset)
 {
-	isl_space *dim;
+	isl_space *space;
 
 	if (!bset)
 		return NULL;
@@ -10594,12 +10594,12 @@ __isl_give isl_basic_set *isl_basic_set_lift(__isl_take isl_basic_set *bset)
 	if (!bset)
 		return NULL;
 
-	dim = isl_basic_set_get_space(bset);
-	dim = isl_space_lift(dim, bset->n_div);
-	if (!dim)
+	space = isl_basic_set_get_space(bset);
+	space = isl_space_lift(space, bset->n_div);
+	if (!space)
 		goto error;
 	isl_space_free(bset->dim);
-	bset->dim = dim;
+	bset->dim = space;
 	bset->extra -= bset->n_div;
 	bset->n_div = 0;
 
