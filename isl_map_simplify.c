@@ -234,23 +234,26 @@ static __isl_give isl_basic_map *reduce_div_coefficients(
  * The difference {a/m}/d in the argument satisfies 0 <= {a/m}/d < 1/d
  * and can therefore not influence the result of the floor.
  */
-static void normalize_div_expression(__isl_keep isl_basic_map *bmap, int div)
+static __isl_give isl_basic_map *normalize_div_expression(
+	__isl_take isl_basic_map *bmap, int div)
 {
 	unsigned total = isl_basic_map_total_dim(bmap);
 	isl_ctx *ctx = bmap->ctx;
 
 	if (isl_int_is_zero(bmap->div[div][0]))
-		return;
+		return bmap;
 	isl_seq_gcd(bmap->div[div] + 2, total, &ctx->normalize_gcd);
 	isl_int_gcd(ctx->normalize_gcd, ctx->normalize_gcd, bmap->div[div][0]);
 	if (isl_int_is_one(ctx->normalize_gcd))
-		return;
+		return bmap;
 	isl_int_fdiv_q(bmap->div[div][1], bmap->div[div][1],
 			ctx->normalize_gcd);
 	isl_int_divexact(bmap->div[div][0], bmap->div[div][0],
 			ctx->normalize_gcd);
 	isl_seq_scale_down(bmap->div[div] + 2, bmap->div[div] + 2,
 			ctx->normalize_gcd, total);
+
+	return bmap;
 }
 
 /* Remove any common factor in numerator and denominator of a div expression,
@@ -277,7 +280,7 @@ static __isl_give isl_basic_map *normalize_div_expressions(
 		return bmap;
 
 	for (i = 0; i < bmap->n_div; ++i)
-		normalize_div_expression(bmap, i);
+		bmap = normalize_div_expression(bmap, i);
 
 	return bmap;
 }
@@ -335,7 +338,9 @@ static __isl_give isl_basic_map *eliminate_var_using_equality(
 		if (last_div == -1 || (keep_divs && last_div < k)) {
 			isl_seq_elim(bmap->div[k]+1, eq,
 					1+pos, 1+total, &bmap->div[k][0]);
-			normalize_div_expression(bmap, k);
+			bmap = normalize_div_expression(bmap, k);
+			if (!bmap)
+				return NULL;
 		} else
 			isl_seq_clr(bmap->div[k], 1 + total);
 	}
