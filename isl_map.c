@@ -10828,32 +10828,35 @@ int isl_basic_set_dims_get_sign(__isl_keep isl_basic_set *bset,
  * Otherwise, we check if it actually depends on them or on any integer
  * divisions that may depend on them.
  */
-static int div_may_involve_output(__isl_keep isl_basic_map *bmap, int div)
+static isl_bool div_may_involve_output(__isl_keep isl_basic_map *bmap, int div)
 {
 	int i;
 	unsigned n_out, o_out;
 	unsigned n_div, o_div;
 
 	if (isl_int_is_zero(bmap->div[div][0]))
-		return 1;
+		return isl_bool_true;
 
 	n_out = isl_basic_map_dim(bmap, isl_dim_out);
 	o_out = isl_basic_map_offset(bmap, isl_dim_out);
 
 	if (isl_seq_first_non_zero(bmap->div[div] + 1 + o_out, n_out) != -1)
-		return 1;
+		return isl_bool_true;
 
 	n_div = isl_basic_map_dim(bmap, isl_dim_div);
 	o_div = isl_basic_map_offset(bmap, isl_dim_div);
 
 	for (i = 0; i < n_div; ++i) {
+		isl_bool may_involve;
+
 		if (isl_int_is_zero(bmap->div[div][1 + o_div + i]))
 			continue;
-		if (div_may_involve_output(bmap, i))
-			return 1;
+		may_involve = div_may_involve_output(bmap, i);
+		if (may_involve < 0 || may_involve)
+			return may_involve;
 	}
 
-	return 0;
+	return isl_bool_false;
 }
 
 /* Return the first integer division of "bmap" in the range
@@ -10870,9 +10873,14 @@ static int first_div_may_involve_output(__isl_keep isl_basic_map *bmap,
 		return -1;
 
 	for (k = first; k < first + n; ++k) {
+		isl_bool may_involve;
+
 		if (isl_int_is_zero(c[k]))
 			continue;
-		if (div_may_involve_output(bmap, k))
+		may_involve = div_may_involve_output(bmap, k);
+		if (may_involve < 0)
+			return -1;
+		if (may_involve)
 			return k;
 	}
 
