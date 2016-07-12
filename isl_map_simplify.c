@@ -605,7 +605,7 @@ static int ok_to_eliminate_div(struct isl_basic_map *bmap, isl_int *eq,
 
 	for (k = 0; k <= last_div; ++k) {
 		if (isl_int_is_zero(bmap->div[k][0]))
-			return 1;
+			continue;
 		if (!isl_int_is_zero(bmap->div[k][1 + 1 + pos]))
 			return 0;
 	}
