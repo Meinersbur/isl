@@ -11641,6 +11641,7 @@ __isl_give isl_basic_map *isl_basic_map_realign(__isl_take isl_basic_map *bmap,
 {
 	isl_basic_map *res;
 	unsigned flags;
+	unsigned n_div;
 
 	bmap = isl_basic_map_cow(bmap);
 	if (!bmap || !dim || !dim_map)
@@ -11650,8 +11651,8 @@ __isl_give isl_basic_map *isl_basic_map_realign(__isl_take isl_basic_map *bmap,
 	ISL_FL_CLR(flags, ISL_BASIC_MAP_FINAL);
 	ISL_FL_CLR(flags, ISL_BASIC_MAP_NORMALIZED);
 	ISL_FL_CLR(flags, ISL_BASIC_MAP_NORMALIZED_DIVS);
-	res = isl_basic_map_alloc_space(dim,
-			bmap->n_div, bmap->n_eq, bmap->n_ineq);
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	res = isl_basic_map_alloc_space(dim, n_div, bmap->n_eq, bmap->n_ineq);
 	res = isl_basic_map_add_constraints_dim_map(res, bmap, dim_map);
 	if (res)
 		res->flags = flags;
