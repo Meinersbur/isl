@@ -588,6 +588,9 @@ isl_bool isl_basic_map_applies_range(__isl_keep isl_basic_map *bmap1,
 __isl_give isl_vec *isl_basic_map_inequality_extract_output_upper_bound(
 	__isl_keep isl_basic_map *bmap, int ineq, int pos);
 
+isl_bool isl_basic_map_div_expr_involves_vars(__isl_keep isl_basic_map *bmap,
+	int div, unsigned first, unsigned n);
+
 isl_size isl_basic_map_find_output_upper_div_constraint(
 	__isl_keep isl_basic_map *bmap, int pos);
 

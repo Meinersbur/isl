@@ -5092,15 +5092,12 @@ static isl_bool any_div_involves_div(__isl_keep isl_basic_map *bmap, int div)
 		return isl_bool_error;
 
 	for (i = div + 1; i < n_div; ++i) {
-		isl_bool unknown;
+		isl_bool involves;
 
-		unknown = isl_basic_map_div_is_marked_unknown(bmap, i);
-		if (unknown < 0)
-			return isl_bool_error;
-		if (unknown)
-			continue;
-		if (!isl_int_is_zero(bmap->div[i][1 + 1 + v_div + div]))
-			return isl_bool_true;
+		involves = isl_basic_map_div_expr_involves_vars(bmap, i,
+								v_div + div, 1);
+		if (involves < 0 || involves)
+			return involves;
 	}
 
 	return isl_bool_false;

@@ -2671,6 +2671,23 @@ __isl_give isl_basic_map *isl_basic_map_remove_dims(
 	return bmap;
 }
 
+/* Does the local variable "div" of "bmap" have a known expression
+ * that involves the "n" variables starting at "first"?
+ */
+isl_bool isl_basic_map_div_expr_involves_vars(__isl_keep isl_basic_map *bmap,
+	int div, unsigned first, unsigned n)
+{
+	isl_bool unknown;
+
+	unknown = isl_basic_map_div_is_marked_unknown(bmap, div);
+	if (unknown < 0 || unknown)
+		return isl_bool_not(unknown);
+	if (isl_seq_first_non_zero(bmap->div[div] + 1 + 1 + first, n) >= 0)
+		return isl_bool_true;
+
+	return isl_bool_false;
+}
+
 /* Return true if the definition of the given div (recursively) involves
  * any of the given variables.
  */
@@ -2678,14 +2695,12 @@ static isl_bool div_involves_vars(__isl_keep isl_basic_map *bmap, int div,
 	unsigned first, unsigned n)
 {
 	int i;
-	isl_bool unknown;
+	isl_bool involves;
 	isl_size n_div, v_div;
 
-	unknown = isl_basic_map_div_is_marked_unknown(bmap, div);
-	if (unknown < 0 || unknown)
-		return isl_bool_not(unknown);
-	if (isl_seq_first_non_zero(bmap->div[div] + 1 + 1 + first, n) >= 0)
-		return isl_bool_true;
+	involves = isl_basic_map_div_expr_involves_vars(bmap, div, first, n);
+	if (involves < 0 || involves)
+		return involves;
 
 	n_div = isl_basic_map_dim(bmap, isl_dim_div);
 	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
