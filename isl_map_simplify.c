@@ -688,6 +688,45 @@ static struct isl_basic_map *eliminate_divs_ineq(
 	return bmap;
 }
 
+/* The last local variable involved in the equality constraint
+ * at position "eq" in "bmap" is the local variable at position "div".
+ * It can therefore be used to extract an explicit representation
+ * for that variable.
+ * Do so unless the local variable already has an explicit representation.
+ * Set *progress if anything is changed.
+ *
+ * The equality constraint is of the form
+ *
+ *	f(x) + n e >= 0
+ *
+ * with n a positive number.  The explicit representation derived from
+ * this constraint is
+ *
+ *	floor((-f(x))/n)
+ */
+static __isl_give isl_basic_map *set_div_from_eq(__isl_take isl_basic_map *bmap,
+	int div, int eq, int *progress)
+{
+	unsigned total, o_div;
+
+	if (!bmap)
+		return NULL;
+
+	if (!isl_int_is_zero(bmap->div[div][0]))
+		return bmap;
+
+	total = isl_basic_map_dim(bmap, isl_dim_all);
+	o_div = isl_basic_map_offset(bmap, isl_dim_div);
+	isl_seq_neg(bmap->div[div] + 1, bmap->eq[eq], 1 + total);
+	isl_int_set_si(bmap->div[div][1 + o_div + div], 0);
+	isl_int_set(bmap->div[div][0], bmap->eq[eq][o_div + div]);
+	if (progress)
+		*progress = 1;
+	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
+
+	return bmap;
+}
+
 struct isl_basic_map *isl_basic_map_gauss(
 	struct isl_basic_map *bmap, int *progress)
 {
@@ -724,17 +763,11 @@ struct isl_basic_map *isl_basic_map_gauss(
 		eliminate_var_using_equality(bmap, last_var, bmap->eq[done], 1,
 						progress);
 
-		if (last_var >= total_var &&
-		    isl_int_is_zero(bmap->div[last_var - total_var][0])) {
-			unsigned div = last_var - total_var;
-			isl_seq_neg(bmap->div[div]+1, bmap->eq[done], 1+total);
-			isl_int_set_si(bmap->div[div][1+1+last_var], 0);
-			isl_int_set(bmap->div[div][0],
-				    bmap->eq[done][1+last_var]);
-			if (progress)
-				*progress = 1;
-			ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
-		}
+		if (last_var >= total_var)
+			bmap = set_div_from_eq(bmap, last_var - total_var,
+						done, progress);
+		if (!bmap)
+			return NULL;
 	}
 	if (done == bmap->n_eq)
 		return bmap;
