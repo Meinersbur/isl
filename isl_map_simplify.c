@@ -634,7 +634,7 @@ static __isl_give isl_basic_map *eliminate_div(__isl_take isl_basic_map *bmap,
 /* Check if elimination of div "div" using equality "eq" would not
  * result in a div depending on a later div.
  */
-static int ok_to_eliminate_div(struct isl_basic_map *bmap, isl_int *eq,
+static isl_bool ok_to_eliminate_div(struct isl_basic_map *bmap, isl_int *eq,
 	unsigned div)
 {
 	int k;
@@ -644,16 +644,16 @@ static int ok_to_eliminate_div(struct isl_basic_map *bmap, isl_int *eq,
 
 	last_div = isl_seq_last_non_zero(eq + 1 + space_total, bmap->n_div);
 	if (last_div < 0 || last_div <= div)
-		return 1;
+		return isl_bool_true;
 
 	for (k = 0; k <= last_div; ++k) {
 		if (isl_int_is_zero(bmap->div[k][0]))
 			continue;
 		if (!isl_int_is_zero(bmap->div[k][1 + 1 + pos]))
-			return 0;
+			return isl_bool_false;
 	}
 
-	return 1;
+	return isl_bool_true;
 }
 
 /* Eliminate divs based on equalities
@@ -675,10 +675,15 @@ static struct isl_basic_map *eliminate_divs_eq(
 
 	for (d = bmap->n_div - 1; d >= 0 ; --d) {
 		for (i = 0; i < bmap->n_eq; ++i) {
+			isl_bool ok;
+
 			if (!isl_int_is_one(bmap->eq[i][off + d]) &&
 			    !isl_int_is_negone(bmap->eq[i][off + d]))
 				continue;
-			if (!ok_to_eliminate_div(bmap, bmap->eq[i], d))
+			ok = ok_to_eliminate_div(bmap, bmap->eq[i], d);
+			if (ok < 0)
+				return isl_basic_map_free(bmap);
+			if (!ok)
 				continue;
 			modified = 1;
 			*progress = 1;
