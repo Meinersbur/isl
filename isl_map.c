@@ -9358,8 +9358,8 @@ struct isl_basic_set *isl_basic_set_normalize(struct isl_basic_set *bset)
 	return bset_from_bmap(isl_basic_map_normalize(bset_to_bmap(bset)));
 }
 
-int isl_basic_map_plain_cmp(const __isl_keep isl_basic_map *bmap1,
-	const __isl_keep isl_basic_map *bmap2)
+int isl_basic_map_plain_cmp(__isl_keep isl_basic_map *bmap1,
+	__isl_keep isl_basic_map *bmap2)
 {
 	int i, cmp;
 	unsigned total;
@@ -9410,8 +9410,8 @@ int isl_basic_map_plain_cmp(const __isl_keep isl_basic_map *bmap1,
 	return 0;
 }
 
-int isl_basic_set_plain_cmp(const __isl_keep isl_basic_set *bset1,
-	const __isl_keep isl_basic_set *bset2)
+int isl_basic_set_plain_cmp(__isl_keep isl_basic_set *bset1,
+	__isl_keep isl_basic_set *bset2)
 {
 	return isl_basic_map_plain_cmp(bset1, bset2);
 }
@@ -9451,8 +9451,8 @@ isl_bool isl_basic_set_plain_is_equal(__isl_keep isl_basic_set *bset1,
 
 static int qsort_bmap_cmp(const void *p1, const void *p2)
 {
-	const struct isl_basic_map *bmap1 = *(const struct isl_basic_map **)p1;
-	const struct isl_basic_map *bmap2 = *(const struct isl_basic_map **)p2;
+	isl_basic_map *bmap1 = *(isl_basic_map **) p1;
+	isl_basic_map *bmap2 = *(isl_basic_map **) p2;
 
 	return isl_basic_map_plain_cmp(bmap1, bmap2);
 }
