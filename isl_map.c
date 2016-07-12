@@ -10323,12 +10323,13 @@ __isl_give isl_basic_map *isl_basic_map_align_divs(
 	isl_bool known;
 	int extended;
 	isl_size v_div;
-	isl_size dst_n_div;
+	isl_size dst_n_div, src_n_div;
 
-	if (!dst || !src)
+	src_n_div = isl_basic_map_dim(src, isl_dim_div);
+	if (!dst || src_n_div < 0)
 		return isl_basic_map_free(dst);
 
-	if (src->n_div == 0)
+	if (src_n_div == 0)
 		return dst;
 
 	known = isl_basic_map_divs_known(src);
@@ -10347,13 +10348,13 @@ __isl_give isl_basic_map *isl_basic_map_align_divs(
 	dst_n_div = isl_basic_map_dim(dst, isl_dim_div);
 	if (dst_n_div < 0)
 		dst = isl_basic_map_free(dst);
-	for (i = 0; i < src->n_div; ++i) {
+	for (i = 0; i < src_n_div; ++i) {
 		isl_size j = find_div(dst, src, i);
 		if (j < 0)
 			dst = isl_basic_map_free(dst);
 		if (j == dst_n_div) {
 			if (!extended) {
-				int extra = src->n_div - i;
+				int extra = src_n_div - i;
 				dst = isl_basic_map_cow(dst);
 				if (!dst)
 					return isl_basic_map_free(dst);
