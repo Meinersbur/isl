@@ -11607,13 +11607,17 @@ static isl_bool basic_map_dim_is_bounded(__isl_keep isl_basic_map *bmap,
 	enum isl_dim_type type, unsigned pos, int lower, int upper)
 {
 	int i;
+	isl_size n_div;
 
 	if (isl_basic_map_check_range(bmap, type, pos, 1) < 0)
 		return isl_bool_error;
 
 	pos += isl_basic_map_offset(bmap, type);
 
-	for (i = 0; i < bmap->n_div; ++i) {
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	if (n_div < 0)
+		return isl_bool_error;
+	for (i = 0; i < n_div; ++i) {
 		if (isl_int_is_zero(bmap->div[i][0]))
 			continue;
 		if (!isl_int_is_zero(bmap->div[i][1 + pos]))
