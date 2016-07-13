@@ -1323,19 +1323,21 @@ static isl_bool better_div_constraint(__isl_keep isl_basic_map *bmap,
 	int div, int ineq)
 {
 	unsigned total = isl_basic_map_offset(bmap, isl_dim_div);
+	isl_size n_div = isl_basic_map_dim(bmap, isl_dim_div);
 	int last_div;
 	int last_ineq;
 
+	if (n_div < 0)
+		return isl_bool_error;
 	if (isl_int_is_zero(bmap->div[div][0]))
 		return isl_bool_true;
 
 	if (isl_seq_last_non_zero(bmap->ineq[ineq] + total + div + 1,
-				  bmap->n_div - (div + 1)) >= 0)
+				  n_div - (div + 1)) >= 0)
 		return isl_bool_false;
 
 	last_ineq = isl_seq_last_non_zero(bmap->ineq[ineq], total + div);
-	last_div = isl_seq_last_non_zero(bmap->div[div] + 1,
-					 total + bmap->n_div);
+	last_div = isl_seq_last_non_zero(bmap->div[div] + 1, total + n_div);
 
 	return last_ineq < last_div;
 }
