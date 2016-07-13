@@ -1294,12 +1294,15 @@ static isl_bool ok_to_set_div_from_bound(__isl_keep isl_basic_map *bmap,
 
 	/* Not defined in terms of unknown divs */
 	for (j = 0; j < n_div; ++j) {
+		isl_bool unknown;
+
 		if (div == j)
 			continue;
 		if (isl_int_is_zero(bmap->ineq[ineq][total + j]))
 			continue;
-		if (isl_int_is_zero(bmap->div[j][0]))
-			return isl_bool_false;
+		unknown = isl_basic_map_div_is_marked_unknown(bmap, j);
+		if (unknown < 0 || unknown)
+			return isl_bool_not(unknown);
 	}
 
 	/* No other div defined in terms of this one => avoid loops */
