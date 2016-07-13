@@ -1496,11 +1496,13 @@ static __isl_give isl_basic_map *eliminate_selected_unit_divs(
 	int *progress)
 {
 	int i;
+	isl_size n_div;
 
-	if (!bmap)
-		return NULL;
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	if (n_div < 0)
+		return isl_basic_map_free(bmap);
 
-	for (i = 0; i < bmap->n_div; ++i) {
+	for (i = 0; i < n_div; ++i) {
 		isl_bool selected;
 
 		if (isl_int_is_zero(bmap->div[i][0]))
