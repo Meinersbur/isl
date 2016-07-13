@@ -1369,7 +1369,7 @@ static isl_bool ok_to_set_div_from_bound(struct isl_basic_map *bmap,
  * (disregarding the div that it would define) is in an earlier position
  * than the last variable involved in the current div expression.
  */
-static int better_div_constraint(__isl_keep isl_basic_map *bmap,
+static isl_bool better_div_constraint(__isl_keep isl_basic_map *bmap,
 	int div, int ineq)
 {
 	unsigned total = 1 + isl_space_dim(bmap->dim, isl_dim_all);
@@ -1377,11 +1377,11 @@ static int better_div_constraint(__isl_keep isl_basic_map *bmap,
 	int last_ineq;
 
 	if (isl_int_is_zero(bmap->div[div][0]))
-		return 1;
+		return isl_bool_true;
 
 	if (isl_seq_last_non_zero(bmap->ineq[ineq] + total + div + 1,
 				  bmap->n_div - (div + 1)) >= 0)
-		return 0;
+		return isl_bool_false;
 
 	last_ineq = isl_seq_last_non_zero(bmap->ineq[ineq], total + div);
 	last_div = isl_seq_last_non_zero(bmap->div[div] + 1,
@@ -1415,9 +1415,9 @@ static struct isl_basic_map *check_for_div_constraints(
 			continue;
 		if (isl_int_abs_ge(sum, bmap->ineq[k][total + i]))
 			continue;
-		if (!better_div_constraint(bmap, i, k))
-			continue;
-		set_div = ok_to_set_div_from_bound(bmap, i, k);
+		set_div = better_div_constraint(bmap, i, k);
+		if (set_div >= 0 && set_div)
+			set_div = ok_to_set_div_from_bound(bmap, i, k);
 		if (set_div < 0)
 			return isl_basic_map_free(bmap);
 		if (!set_div)
