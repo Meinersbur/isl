@@ -1287,9 +1287,13 @@ static isl_bool ok_to_set_div_from_bound(__isl_keep isl_basic_map *bmap,
 {
 	int j;
 	unsigned total = isl_basic_map_offset(bmap, isl_dim_div);
+	isl_size n_div = isl_basic_map_dim(bmap, isl_dim_div);
+
+	if (n_div < 0)
+		return isl_bool_error;
 
 	/* Not defined in terms of unknown divs */
-	for (j = 0; j < bmap->n_div; ++j) {
+	for (j = 0; j < n_div; ++j) {
 		if (div == j)
 			continue;
 		if (isl_int_is_zero(bmap->ineq[ineq][total + j]))
@@ -1299,7 +1303,7 @@ static isl_bool ok_to_set_div_from_bound(__isl_keep isl_basic_map *bmap,
 	}
 
 	/* No other div defined in terms of this one => avoid loops */
-	for (j = 0; j < bmap->n_div; ++j) {
+	for (j = 0; j < n_div; ++j) {
 		if (div == j)
 			continue;
 		if (isl_int_is_zero(bmap->div[j][0]))
