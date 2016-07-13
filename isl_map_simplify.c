@@ -1728,8 +1728,12 @@ static __isl_give isl_basic_map *check_for_div_constraints(
 {
 	int i;
 	unsigned total = isl_basic_map_offset(bmap, isl_dim_div);
+	isl_size n_div = isl_basic_map_dim(bmap, isl_dim_div);
 
-	for (i = 0; i < bmap->n_div; ++i) {
+	if (n_div < 0)
+		return isl_basic_map_free(bmap);
+
+	for (i = 0; i < n_div; ++i) {
 		isl_bool set_div;
 
 		if (isl_int_is_zero(bmap->ineq[k][total + i]))
