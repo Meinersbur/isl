@@ -1326,11 +1326,13 @@ static isl_bool better_div_constraint(__isl_keep isl_basic_map *bmap,
 	isl_size n_div = isl_basic_map_dim(bmap, isl_dim_div);
 	int last_div;
 	int last_ineq;
+	isl_bool unknown;
 
 	if (n_div < 0)
 		return isl_bool_error;
-	if (isl_int_is_zero(bmap->div[div][0]))
-		return isl_bool_true;
+	unknown = isl_basic_map_div_is_marked_unknown(bmap, div);
+	if (unknown < 0 || unknown)
+		return unknown;
 
 	if (isl_seq_any_non_zero(bmap->ineq[ineq] + total + div + 1,
 				  n_div - (div + 1)))
