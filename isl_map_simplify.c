@@ -1650,13 +1650,13 @@ struct isl_basic_set *isl_basic_set_simplify(struct isl_basic_set *bset)
 }
 
 
-int isl_basic_map_is_div_constraint(__isl_keep isl_basic_map *bmap,
+isl_bool isl_basic_map_is_div_constraint(__isl_keep isl_basic_map *bmap,
 	isl_int *constraint, unsigned div)
 {
 	unsigned pos;
 
 	if (!bmap)
-		return -1;
+		return isl_bool_error;
 
 	pos = 1 + isl_space_dim(bmap->dim, isl_dim_all) + div;
 
@@ -1670,23 +1670,23 @@ int isl_basic_map_is_div_constraint(__isl_keep isl_basic_map *bmap,
 		isl_int_add(bmap->div[div][1],
 				bmap->div[div][1], bmap->div[div][0]);
 		if (!neg)
-			return 0;
+			return isl_bool_false;
 		if (isl_seq_first_non_zero(constraint+pos+1,
 					    bmap->n_div-div-1) != -1)
-			return 0;
+			return isl_bool_false;
 	} else if (isl_int_abs_eq(constraint[pos], bmap->div[div][0])) {
 		if (!isl_seq_eq(constraint, bmap->div[div]+1, pos))
-			return 0;
+			return isl_bool_false;
 		if (isl_seq_first_non_zero(constraint+pos+1,
 					    bmap->n_div-div-1) != -1)
-			return 0;
+			return isl_bool_false;
 	} else
-		return 0;
+		return isl_bool_false;
 
-	return 1;
+	return isl_bool_true;
 }
 
-int isl_basic_set_is_div_constraint(__isl_keep isl_basic_set *bset,
+isl_bool isl_basic_set_is_div_constraint(__isl_keep isl_basic_set *bset,
 	isl_int *constraint, unsigned div)
 {
 	return isl_basic_map_is_div_constraint(bset, constraint, div);
@@ -1711,10 +1711,13 @@ static isl_bool div_is_redundant(struct isl_basic_map *bmap, int div)
 			return isl_bool_false;
 
 	for (i = 0; i < bmap->n_ineq; ++i) {
+		isl_bool red;
+
 		if (isl_int_is_zero(bmap->ineq[i][pos]))
 			continue;
-		if (!isl_basic_map_is_div_constraint(bmap, bmap->ineq[i], div))
-			return isl_bool_false;
+		red = isl_basic_map_is_div_constraint(bmap, bmap->ineq[i], div);
+		if (red < 0 || !red)
+			return red;
 	}
 
 	for (i = 0; i < bmap->n_div; ++i) {
