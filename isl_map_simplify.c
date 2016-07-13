@@ -1701,30 +1701,30 @@ int isl_basic_set_is_div_constraint(__isl_keep isl_basic_set *bset,
  *
  * then it can safely be removed.
  */
-static int div_is_redundant(struct isl_basic_map *bmap, int div)
+static isl_bool div_is_redundant(struct isl_basic_map *bmap, int div)
 {
 	int i;
 	unsigned pos = 1 + isl_space_dim(bmap->dim, isl_dim_all) + div;
 
 	for (i = 0; i < bmap->n_eq; ++i)
 		if (!isl_int_is_zero(bmap->eq[i][pos]))
-			return 0;
+			return isl_bool_false;
 
 	for (i = 0; i < bmap->n_ineq; ++i) {
 		if (isl_int_is_zero(bmap->ineq[i][pos]))
 			continue;
 		if (!isl_basic_map_is_div_constraint(bmap, bmap->ineq[i], div))
-			return 0;
+			return isl_bool_false;
 	}
 
 	for (i = 0; i < bmap->n_div; ++i) {
 		if (isl_int_is_zero(bmap->div[i][0]))
 			continue;
 		if (!isl_int_is_zero(bmap->div[i][1+pos]))
-			return 0;
+			return isl_bool_false;
 	}
 
-	return 1;
+	return isl_bool_true;
 }
 
 /*
@@ -1741,7 +1741,12 @@ static struct isl_basic_map *remove_redundant_divs(struct isl_basic_map *bmap)
 		return NULL;
 
 	for (i = bmap->n_div-1; i >= 0; --i) {
-		if (!div_is_redundant(bmap, i))
+		isl_bool redundant;
+
+		redundant = div_is_redundant(bmap, i);
+		if (redundant < 0)
+			return isl_basic_map_free(bmap);
+		if (!redundant)
 			continue;
 		bmap = isl_basic_map_drop_div(bmap, i);
 	}
