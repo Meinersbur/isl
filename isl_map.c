@@ -8034,6 +8034,16 @@ error:
 	return NULL;
 }
 
+/* Is the integer division at position "div" of "bmap" integral?
+ * That is, does it have denominator 1?
+ */
+isl_bool isl_basic_map_div_is_integral(__isl_keep isl_basic_map *bmap, int div)
+{
+	if (isl_basic_map_check_range(bmap, isl_dim_div, div, 1) < 0)
+		return isl_bool_error;
+	return isl_int_is_one(bmap->div[div][0]);
+}
+
 /* Remove the explicit representation of local variable "div",
  * if there is any.
  */

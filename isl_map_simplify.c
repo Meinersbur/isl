@@ -1507,11 +1507,11 @@ static __isl_give isl_basic_map *eliminate_selected_unit_divs(
 		isl_bool selected;
 
 		skip = isl_basic_map_div_is_marked_unknown(bmap, i);
+		if (skip >= 0 && !skip)
+			skip = isl_basic_map_div_is_integral(bmap, i);
 		if (skip < 0)
 			return isl_basic_map_free(bmap);
 		if (skip)
-			continue;
-		if (isl_int_is_one(bmap->div[i][0]))
 			continue;
 		selected = select(bmap, i);
 		if (selected < 0)

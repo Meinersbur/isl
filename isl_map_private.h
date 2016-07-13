@@ -453,6 +453,8 @@ isl_size isl_basic_map_n_equality(__isl_keep isl_basic_map *bmap);
 isl_size isl_basic_set_n_inequality(__isl_keep isl_basic_set *bset);
 isl_size isl_basic_map_n_inequality(__isl_keep isl_basic_map *bmap);
 
+isl_bool isl_basic_map_div_is_integral(__isl_keep isl_basic_map *bmap, int div);
+
 __isl_give isl_basic_map *isl_basic_map_mark_div_unknown(
 	__isl_take isl_basic_map *bmap, int div);
 isl_bool isl_basic_map_div_is_marked_unknown(__isl_keep isl_basic_map *bmap,
