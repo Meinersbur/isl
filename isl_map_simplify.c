@@ -1332,7 +1332,7 @@ static struct isl_basic_map *set_div_from_lower_bound(
  * any other undefined divs or if any known div is defined in
  * terms of the unknown div.
  */
-static int ok_to_set_div_from_bound(struct isl_basic_map *bmap,
+static isl_bool ok_to_set_div_from_bound(struct isl_basic_map *bmap,
 	int div, int ineq)
 {
 	int j;
@@ -1345,7 +1345,7 @@ static int ok_to_set_div_from_bound(struct isl_basic_map *bmap,
 		if (isl_int_is_zero(bmap->ineq[ineq][total + j]))
 			continue;
 		if (isl_int_is_zero(bmap->div[j][0]))
-			return 0;
+			return isl_bool_false;
 	}
 
 	/* No other div defined in terms of this one => avoid loops */
@@ -1355,10 +1355,10 @@ static int ok_to_set_div_from_bound(struct isl_basic_map *bmap,
 		if (isl_int_is_zero(bmap->div[j][0]))
 			continue;
 		if (!isl_int_is_zero(bmap->div[j][1 + total + div]))
-			return 0;
+			return isl_bool_false;
 	}
 
-	return 1;
+	return isl_bool_true;
 }
 
 /* Would an expression for div "div" based on inequality "ineq" of "bmap"
@@ -1409,13 +1409,18 @@ static struct isl_basic_map *check_for_div_constraints(
 	unsigned total = 1 + isl_space_dim(bmap->dim, isl_dim_all);
 
 	for (i = 0; i < bmap->n_div; ++i) {
+		isl_bool set_div;
+
 		if (isl_int_is_zero(bmap->ineq[k][total + i]))
 			continue;
 		if (isl_int_abs_ge(sum, bmap->ineq[k][total + i]))
 			continue;
 		if (!better_div_constraint(bmap, i, k))
 			continue;
-		if (!ok_to_set_div_from_bound(bmap, i, k))
+		set_div = ok_to_set_div_from_bound(bmap, i, k);
+		if (set_div < 0)
+			return isl_basic_map_free(bmap);
+		if (!set_div)
 			break;
 		if (isl_int_is_pos(bmap->ineq[k][total + i]))
 			bmap = set_div_from_lower_bound(bmap, i, k);
@@ -4975,6 +4980,7 @@ static __isl_give isl_basic_map *isl_basic_map_drop_redundant_divs_ineq(
 		int last_pos, last_neg;
 		int redundant;
 		int defined;
+		isl_bool set_div;
 
 		defined = !isl_int_is_zero(bmap->div[i][0]);
 		for (j = i; j < bmap->n_div; ++j)
@@ -5037,7 +5043,13 @@ static __isl_give isl_basic_map *isl_basic_map_drop_redundant_divs_ineq(
 		if (redundant)
 			return drop_div_and_try_again(bmap, i,
 						    last_pos, last_neg, pairs);
-		if (!defined && ok_to_set_div_from_bound(bmap, i, last_pos)) {
+		if (defined)
+			set_div = isl_bool_false;
+		else
+			set_div = ok_to_set_div_from_bound(bmap, i, last_pos);
+		if (set_div < 0)
+			return isl_basic_map_free(bmap);
+		if (set_div) {
 			bmap = set_div_from_lower_bound(bmap, i, last_pos);
 			return drop_redundant_divs_again(bmap, pairs, 1);
 		}
