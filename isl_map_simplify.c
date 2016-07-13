@@ -1503,9 +1503,13 @@ static __isl_give isl_basic_map *eliminate_selected_unit_divs(
 		return isl_basic_map_free(bmap);
 
 	for (i = 0; i < n_div; ++i) {
+		isl_bool skip;
 		isl_bool selected;
 
-		if (isl_int_is_zero(bmap->div[i][0]))
+		skip = isl_basic_map_div_is_marked_unknown(bmap, i);
+		if (skip < 0)
+			return isl_basic_map_free(bmap);
+		if (skip)
 			continue;
 		if (isl_int_is_one(bmap->div[i][0]))
 			continue;
