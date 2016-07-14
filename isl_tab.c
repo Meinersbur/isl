@@ -1624,9 +1624,10 @@ static isl_stat close_row(struct isl_tab *tab, struct isl_tab_var *var)
 		int recheck;
 		if (isl_int_is_zero(mat->row[var->index][off + j]))
 			continue;
-		isl_assert(tab->mat->ctx,
-		    isl_int_is_neg(mat->row[var->index][off + j]),
-		    return isl_stat_error);
+		if (isl_int_is_pos(mat->row[var->index][off + j]))
+			isl_die(isl_tab_get_ctx(tab), isl_error_internal,
+				"row cannot have positive coefficients",
+				return isl_stat_error);
 		recheck = isl_tab_kill_col(tab, j);
 		if (recheck < 0)
 			return isl_stat_error;
