@@ -1612,7 +1612,10 @@ static isl_stat close_row(struct isl_tab *tab, struct isl_tab_var *var)
 	struct isl_mat *mat = tab->mat;
 	unsigned off = 2 + tab->M;
 
-	isl_assert(tab->mat->ctx, var->is_nonneg, return isl_stat_error);
+	if (!var->is_nonneg)
+		isl_die(isl_tab_get_ctx(tab), isl_error_internal,
+			"expecting non-negative variable",
+			return isl_stat_error);
 	var->is_zero = 1;
 	if (tab->need_undo)
 		if (isl_tab_push_var(tab, isl_tab_undo_zero, var) < 0)
