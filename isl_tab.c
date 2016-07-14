@@ -2598,7 +2598,7 @@ struct isl_basic_set *isl_basic_set_update_from_tab(struct isl_basic_set *bset,
  * the resulting tableau is empty.
  * Otherwise, we know the value will be zero and we close the row.
  */
-static int cut_to_hyperplane(struct isl_tab *tab, struct isl_tab_var *var)
+static isl_stat cut_to_hyperplane(struct isl_tab *tab, struct isl_tab_var *var)
 {
 	unsigned r;
 	isl_int *row;
@@ -2606,12 +2606,12 @@ static int cut_to_hyperplane(struct isl_tab *tab, struct isl_tab_var *var)
 	unsigned off = 2 + tab->M;
 
 	if (var->is_zero)
-		return 0;
-	isl_assert(tab->mat->ctx, !var->is_redundant, return -1);
-	isl_assert(tab->mat->ctx, var->is_nonneg, return -1);
+		return isl_stat_ok;
+	isl_assert(tab->mat->ctx, !var->is_redundant, return isl_stat_error);
+	isl_assert(tab->mat->ctx, var->is_nonneg, return isl_stat_error);
 
 	if (isl_tab_extend_cons(tab, 1) < 0)
-		return -1;
+		return isl_stat_error;
 
 	r = tab->n_con;
 	tab->con[r].index = tab->n_row;
@@ -2637,24 +2637,24 @@ static int cut_to_hyperplane(struct isl_tab *tab, struct isl_tab_var *var)
 	tab->n_row++;
 	tab->n_con++;
 	if (isl_tab_push_var(tab, isl_tab_undo_allocate, &tab->con[r]) < 0)
-		return -1;
+		return isl_stat_error;
 
 	sgn = sign_of_max(tab, &tab->con[r]);
 	if (sgn < -1)
-		return -1;
+		return isl_stat_error;
 	if (sgn < 0) {
 		if (isl_tab_mark_empty(tab) < 0)
-			return -1;
-		return 0;
+			return isl_stat_error;
+		return isl_stat_ok;
 	}
 	tab->con[r].is_nonneg = 1;
 	if (isl_tab_push_var(tab, isl_tab_undo_nonneg, &tab->con[r]) < 0)
-		return -1;
+		return isl_stat_error;
 	/* sgn == 0 */
 	if (close_row(tab, &tab->con[r]) < 0)
-		return -1;
+		return isl_stat_error;
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Given a tableau "tab" and an inequality constraint "con" of the tableau,
