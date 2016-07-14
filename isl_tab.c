@@ -1603,10 +1603,20 @@ static int tab_is_manifestly_empty(struct isl_tab *tab)
  * Each of the non-negative variables with a negative coefficient can
  * then also be written as the negative sum of non-negative variables
  * and must therefore also be zero.
+ *
+ * If "temp_var" is set, then "var" is a temporary variable that
+ * will be removed after this function returns and for which
+ * no information is recorded on the undo stack.
+ * Do not add any undo records involving this variable in this case
+ * since the variable will have been removed before any future undo
+ * operations.  Also avoid marking the variable as redundant,
+ * since that either adds an undo record or needlessly removes the row
+ * (the caller will take care of removing the row).
  */
-static isl_stat close_row(struct isl_tab *tab, struct isl_tab_var *var)
-	WARN_UNUSED;
-static isl_stat close_row(struct isl_tab *tab, struct isl_tab_var *var)
+static isl_stat close_row(struct isl_tab *tab, struct isl_tab_var *var,
+	int temp_var) WARN_UNUSED;
+static isl_stat close_row(struct isl_tab *tab, struct isl_tab_var *var,
+	int temp_var)
 {
 	int j;
 	struct isl_mat *mat = tab->mat;
@@ -1617,7 +1627,7 @@ static isl_stat close_row(struct isl_tab *tab, struct isl_tab_var *var)
 			"expecting non-negative variable",
 			return isl_stat_error);
 	var->is_zero = 1;
-	if (tab->need_undo)
+	if (!temp_var && tab->need_undo)
 		if (isl_tab_push_var(tab, isl_tab_undo_zero, var) < 0)
 			return isl_stat_error;
 	for (j = tab->n_dead; j < tab->n_col; ++j) {
@@ -1634,7 +1644,7 @@ static isl_stat close_row(struct isl_tab *tab, struct isl_tab_var *var)
 		if (recheck)
 			--j;
 	}
-	if (isl_tab_mark_redundant(tab, var->index) < 0)
+	if (!temp_var && isl_tab_mark_redundant(tab, var->index) < 0)
 		return isl_stat_error;
 	if (tab_is_manifestly_empty(tab) && isl_tab_mark_empty(tab) < 0)
 		return isl_stat_error;
@@ -2457,7 +2467,7 @@ int isl_tab_cone_is_bounded(struct isl_tab *tab)
 				return -1;
 			if (sgn != 0)
 				return 0;
-			if (close_row(tab, var) < 0)
+			if (close_row(tab, var, 0) < 0)
 				return -1;
 			break;
 		}
@@ -2589,9 +2599,28 @@ struct isl_basic_set *isl_basic_set_update_from_tab(struct isl_basic_set *bset,
 		(struct isl_basic_map *)bset, tab);
 }
 
-/* Given a non-negative variable "var", add a new non-negative variable
- * that is the opposite of "var", ensuring that var can only attain the
- * value zero.
+/* Drop the last constraint added to "tab" in position "r".
+ * The constraint is expected to have remained in a row.
+ */
+static isl_stat drop_last_con_in_row(struct isl_tab *tab, int r)
+{
+	if (!tab->con[r].is_row)
+		isl_die(isl_tab_get_ctx(tab), isl_error_internal,
+			"row unexpectedly moved to column",
+			return isl_stat_error);
+	if (r + 1 != tab->n_con)
+		isl_die(isl_tab_get_ctx(tab), isl_error_internal,
+			"additional constraints added", return isl_stat_error);
+	if (drop_row(tab, tab->con[r].index) < 0)
+		return isl_stat_error;
+
+	return isl_stat_ok;
+}
+
+/* Given a non-negative variable "var", temporarily add a new non-negative
+ * variable that is the opposite of "var", ensuring that "var" can only attain
+ * the value zero.  The new variable is removed again before this function
+ * returns.  However, the effect of forcing "var" to be zero remains.
  * If var = n/d is a row variable, then the new variable = -n/d.
  * If var is a column variables, then the new variable = -var.
  * If the new variable cannot attain non-negative values, then
@@ -2638,22 +2667,22 @@ static isl_stat cut_to_hyperplane(struct isl_tab *tab, struct isl_tab_var *var)
 
 	tab->n_row++;
 	tab->n_con++;
-	if (isl_tab_push_var(tab, isl_tab_undo_allocate, &tab->con[r]) < 0)
-		return isl_stat_error;
 
 	sgn = sign_of_max(tab, &tab->con[r]);
 	if (sgn < -1)
 		return isl_stat_error;
 	if (sgn < 0) {
+		if (drop_last_con_in_row(tab, r) < 0)
+			return isl_stat_error;
 		if (isl_tab_mark_empty(tab) < 0)
 			return isl_stat_error;
 		return isl_stat_ok;
 	}
 	tab->con[r].is_nonneg = 1;
-	if (isl_tab_push_var(tab, isl_tab_undo_nonneg, &tab->con[r]) < 0)
-		return isl_stat_error;
 	/* sgn == 0 */
-	if (close_row(tab, &tab->con[r]) < 0)
+	if (close_row(tab, &tab->con[r], 1) < 0)
+		return isl_stat_error;
+	if (drop_last_con_in_row(tab, r) < 0)
 		return isl_stat_error;
 
 	return isl_stat_ok;
@@ -2884,7 +2913,7 @@ int isl_tab_detect_implicit_equalities(struct isl_tab *tab)
 		if (sgn < 0)
 			return -1;
 		if (sgn == 0) {
-			if (close_row(tab, var) < 0)
+			if (close_row(tab, var, 0) < 0)
 				return -1;
 		} else if (!tab->rational && !at_least_one(tab, var)) {
 			if (cut_to_hyperplane(tab, var) < 0)
