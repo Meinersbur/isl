@@ -1604,35 +1604,37 @@ static int tab_is_manifestly_empty(struct isl_tab *tab)
  * then also be written as the negative sum of non-negative variables
  * and must therefore also be zero.
  */
-static int close_row(struct isl_tab *tab, struct isl_tab_var *var) WARN_UNUSED;
-static int close_row(struct isl_tab *tab, struct isl_tab_var *var)
+static isl_stat close_row(struct isl_tab *tab, struct isl_tab_var *var)
+	WARN_UNUSED;
+static isl_stat close_row(struct isl_tab *tab, struct isl_tab_var *var)
 {
 	int j;
 	struct isl_mat *mat = tab->mat;
 	unsigned off = 2 + tab->M;
 
-	isl_assert(tab->mat->ctx, var->is_nonneg, return -1);
+	isl_assert(tab->mat->ctx, var->is_nonneg, return isl_stat_error);
 	var->is_zero = 1;
 	if (tab->need_undo)
 		if (isl_tab_push_var(tab, isl_tab_undo_zero, var) < 0)
-			return -1;
+			return isl_stat_error;
 	for (j = tab->n_dead; j < tab->n_col; ++j) {
 		int recheck;
 		if (isl_int_is_zero(mat->row[var->index][off + j]))
 			continue;
 		isl_assert(tab->mat->ctx,
-		    isl_int_is_neg(mat->row[var->index][off + j]), return -1);
+		    isl_int_is_neg(mat->row[var->index][off + j]),
+		    return isl_stat_error);
 		recheck = isl_tab_kill_col(tab, j);
 		if (recheck < 0)
-			return -1;
+			return isl_stat_error;
 		if (recheck)
 			--j;
 	}
 	if (isl_tab_mark_redundant(tab, var->index) < 0)
-		return -1;
+		return isl_stat_error;
 	if (tab_is_manifestly_empty(tab) && isl_tab_mark_empty(tab) < 0)
-		return -1;
-	return 0;
+		return isl_stat_error;
+	return isl_stat_ok;
 }
 
 /* Add a constraint to the tableau and allocate a row for it.
