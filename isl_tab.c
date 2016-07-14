@@ -2607,8 +2607,10 @@ static isl_stat cut_to_hyperplane(struct isl_tab *tab, struct isl_tab_var *var)
 
 	if (var->is_zero)
 		return isl_stat_ok;
-	isl_assert(tab->mat->ctx, !var->is_redundant, return isl_stat_error);
-	isl_assert(tab->mat->ctx, var->is_nonneg, return isl_stat_error);
+	if (var->is_redundant || !var->is_nonneg)
+		isl_die(isl_tab_get_ctx(tab), isl_error_invalid,
+			"expecting non-redundant non-negative variable",
+			return isl_stat_error);
 
 	if (isl_tab_extend_cons(tab, 1) < 0)
 		return isl_stat_error;
