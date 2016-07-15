@@ -14,7 +14,7 @@ void isl_dim_map_range(__isl_keep isl_dim_map *dim_map,
 	unsigned dst_pos, int dst_stride, unsigned src_pos, int src_stride,
 	unsigned n, int sign);
 void isl_dim_map_dim_range(__isl_keep isl_dim_map *dim_map,
-	isl_space *dim, enum isl_dim_type type,
+	__isl_keep isl_space *space, enum isl_dim_type type,
 	unsigned first, unsigned n, unsigned dst_pos);
 void isl_dim_map_dim(__isl_keep isl_dim_map *dim_map,
 	__isl_keep isl_space *space, enum isl_dim_type type, unsigned dst_pos);

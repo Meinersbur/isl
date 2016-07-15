@@ -60,16 +60,16 @@ void isl_dim_map_range(__isl_keep isl_dim_map *dim_map,
 }
 
 void isl_dim_map_dim_range(__isl_keep isl_dim_map *dim_map,
-	__isl_keep isl_space *dim, enum isl_dim_type type,
+	__isl_keep isl_space *space, enum isl_dim_type type,
 	unsigned first, unsigned n, unsigned dst_pos)
 {
 	int i;
 	unsigned src_pos;
 
-	if (!dim_map || !dim)
+	if (!dim_map || !space)
 		return;
 	
-	src_pos = 1 + isl_space_offset(dim, type);
+	src_pos = 1 + isl_space_offset(space, type);
 	for (i = 0; i < n; ++i) {
 		dim_map->m[1 + dst_pos + i].pos = src_pos + first + i;
 		dim_map->m[1 + dst_pos + i].sgn = 1;
