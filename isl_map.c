@@ -1712,8 +1712,9 @@ static void copy_div(struct isl_basic_map *dst_map, isl_int *dst,
 	copy_constraint(dst_map, dst+1, src_map, src+1, in_off, out_off, div_off);
 }
 
-static struct isl_basic_map *add_constraints(struct isl_basic_map *bmap1,
-		struct isl_basic_map *bmap2, unsigned i_pos, unsigned o_pos)
+static __isl_give isl_basic_map *add_constraints(
+	__isl_take isl_basic_map *bmap1, __isl_take isl_basic_map *bmap2,
+	unsigned i_pos, unsigned o_pos)
 {
 	int i;
 	unsigned div_off;
