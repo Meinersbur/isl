@@ -2327,7 +2327,7 @@ int isl_tab_add_div(struct isl_tab *tab, __isl_keep isl_vec *div,
 	if (k < 0)
 		return -1;
 	isl_seq_cpy(tab->bmap->div[k], div->el, div->size);
-	if (isl_tab_push(tab, isl_tab_undo_bmap_div) < 0)
+	if (isl_tab_push_var(tab, isl_tab_undo_bmap_div, &tab->var[r]) < 0)
 		return -1;
 
 	if (add_div_constraints(tab, k, add_ineq, user) < 0)
@@ -3409,14 +3409,20 @@ static int perform_undo_var(struct isl_tab *tab, struct isl_tab_undo *undo)
 }
 
 /* Undo the addition of an integer division to the basic map representation
- * of "tab".
+ * of "tab" in position "pos".
  */
-static isl_stat drop_bmap_div(struct isl_tab *tab)
+static isl_stat drop_bmap_div(struct isl_tab *tab, int pos)
 {
-	if (isl_basic_map_free_div(tab->bmap, 1) < 0)
+	int off;
+
+	off = tab->n_var - isl_basic_map_dim(tab->bmap, isl_dim_div);
+	if (isl_basic_map_drop_div(tab->bmap, pos - off) < 0)
 		return isl_stat_error;
-	if (tab->samples)
-		tab->samples->n_col--;
+	if (tab->samples) {
+		tab->samples = isl_mat_drop_cols(tab->samples, 1 + pos, 1);
+		if (!tab->samples)
+			return isl_stat_error;
+	}
 
 	return isl_stat_ok;
 }
@@ -3522,7 +3528,7 @@ static int perform_undo(struct isl_tab *tab, struct isl_tab_undo *undo)
 	case isl_tab_undo_bmap_ineq:
 		return isl_basic_map_free_inequality(tab->bmap, 1);
 	case isl_tab_undo_bmap_div:
-		return drop_bmap_div(tab);
+		return drop_bmap_div(tab, undo->u.var_index);
 	case isl_tab_undo_saved_basis:
 		if (restore_basis(tab, undo->u.col_var) < 0)
 			return -1;
