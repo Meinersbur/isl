@@ -5418,6 +5418,9 @@ static __isl_give isl_multi_aff *set_from_affine_matrix(
 	int i, dim;
 	isl_aff *aff;
 
+	if (!ma || !ls || !M)
+		goto error;
+
 	dim = isl_local_space_dim(ls, isl_dim_all);
 	for (i = 1; i < M->n_row; ++i) {
 		aff = isl_aff_alloc(isl_local_space_copy(ls));
@@ -5432,6 +5435,11 @@ static __isl_give isl_multi_aff *set_from_affine_matrix(
 	isl_mat_free(M);
 
 	return ma;
+error:
+	isl_local_space_free(ls);
+	isl_mat_free(M);
+	isl_multi_aff_free(ma);
+	return NULL;
 }
 
 /* Given a basic map "dom" that represents the context and an affine
