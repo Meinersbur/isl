@@ -91,8 +91,8 @@ struct isl_context_op {
 	/* return index of a div that corresponds to "div" */
 	int (*get_div)(struct isl_context *context, struct isl_tab *tab,
 			struct isl_vec *div);
-	/* add div "div" to context and return non-negativity */
-	isl_bool (*add_div)(struct isl_context *context,
+	/* insert div "div" to context at "pos" and return non-negativity */
+	isl_bool (*insert_div)(struct isl_context *context, int pos,
 		__isl_keep isl_vec *div);
 	int (*detect_equalities)(struct isl_context *context,
 			struct isl_tab *tab);
@@ -1861,10 +1861,10 @@ static int tab_has_valid_sample(struct isl_tab *tab, isl_int *ineq, int eq)
 	return i < tab->n_sample;
 }
 
-/* Add a div specified by "div" to the tableau "tab" and return
- * isl_bool_true if the div is obviously non-negative.
+/* Insert a div specified by "div" to the tableau "tab" at position "pos" and
+ * return isl_bool_true if the div is obviously non-negative.
  */
-static isl_bool context_tab_add_div(struct isl_tab *tab,
+static isl_bool context_tab_insert_div(struct isl_tab *tab, int pos,
 	__isl_keep isl_vec *div,
 	int (*add_ineq)(void *user, isl_int *), void *user)
 {
@@ -1873,7 +1873,7 @@ static isl_bool context_tab_add_div(struct isl_tab *tab,
 	struct isl_mat *samples;
 	int nonneg;
 
-	r = isl_tab_insert_div(tab, tab->n_var, div, add_ineq, user);
+	r = isl_tab_insert_div(tab, pos, div, add_ineq, user);
 	if (r < 0)
 		return isl_bool_error;
 	nonneg = tab->var[r].is_nonneg;
@@ -1890,6 +1890,10 @@ static isl_bool context_tab_add_div(struct isl_tab *tab,
 		isl_int_fdiv_q(samples->row[i][samples->n_col - 1],
 			       samples->row[i][samples->n_col - 1], div->el[0]);
 	}
+	tab->samples = isl_mat_move_cols(tab->samples, 1 + pos,
+					1 + tab->n_var - 1, 1);
+	if (!tab->samples)
+		return isl_bool_error;
 
 	return nonneg;
 }
@@ -1904,9 +1908,15 @@ static int add_div(struct isl_tab *tab, struct isl_context *context,
 	__isl_keep isl_vec *div)
 {
 	int r;
+	int pos;
 	isl_bool nonneg;
+	struct isl_tab *context_tab = context->op->peek_tab(context);
 
-	if ((nonneg = context->op->add_div(context, div)) < 0)
+	if (!context_tab)
+		goto error;
+
+	pos = context_tab->n_var;
+	if ((nonneg = context->op->insert_div(context, pos, div)) < 0)
 		goto error;
 
 	if (!context->op->is_ok(context))
@@ -2397,20 +2407,20 @@ static int context_lex_get_div(struct isl_context *context, struct isl_tab *tab,
 	return get_div(tab, context, div);
 }
 
-/* Add a div specified by "div" to the context tableau and return
- * isl_bool_true if the div is obviously non-negative.
+/* Insert a div specified by "div" to the context tableau at position "pos" and
+ * return isl_bool_true if the div is obviously non-negative.
  * context_tab_add_div will always return isl_bool_true, because all variables
  * in a isl_context_lex tableau are non-negative.
  * However, if we are using a big parameter in the context, then this only
  * reflects the non-negativity of the variable used to _encode_ the
  * div, i.e., div' = M + div, so we can't draw any conclusions.
  */
-static isl_bool context_lex_add_div(struct isl_context *context,
+static isl_bool context_lex_insert_div(struct isl_context *context, int pos,
 	__isl_keep isl_vec *div)
 {
 	struct isl_context_lex *clex = (struct isl_context_lex *)context;
 	isl_bool nonneg;
-	nonneg = context_tab_add_div(clex->tab, div,
+	nonneg = context_tab_insert_div(clex->tab, pos, div,
 					context_lex_add_ineq_wrap, context);
 	if (nonneg < 0)
 		return isl_bool_error;
@@ -2593,7 +2603,7 @@ struct isl_context_op isl_context_lex_op = {
 	context_lex_ineq_sign,
 	context_lex_test_ineq,
 	context_lex_get_div,
-	context_lex_add_div,
+	context_lex_insert_div,
 	context_lex_detect_equalities,
 	context_lex_best_split,
 	context_lex_is_empty,
@@ -3205,7 +3215,7 @@ static int context_gbr_get_div(struct isl_context *context, struct isl_tab *tab,
 	return get_div(tab, context, div);
 }
 
-static isl_bool context_gbr_add_div(struct isl_context *context,
+static isl_bool context_gbr_insert_div(struct isl_context *context, int pos,
 	__isl_keep isl_vec *div)
 {
 	struct isl_context_gbr *cgbr = (struct isl_context_gbr *)context;
@@ -3219,7 +3229,7 @@ static isl_bool context_gbr_add_div(struct isl_context *context,
 			return isl_bool_error;
 		if (isl_tab_extend_vars(cgbr->cone, 1) < 0)
 			return isl_bool_error;
-		if ((r = isl_tab_allocate_var(cgbr->cone)) <0)
+		if ((r = isl_tab_insert_var(cgbr->cone, pos)) <0)
 			return isl_bool_error;
 
 		cgbr->cone->bmap = isl_basic_map_insert_div(cgbr->cone->bmap,
@@ -3230,7 +3240,7 @@ static isl_bool context_gbr_add_div(struct isl_context *context,
 				    &cgbr->cone->var[r]) < 0)
 			return isl_bool_error;
 	}
-	return context_tab_add_div(cgbr->tab, div,
+	return context_tab_insert_div(cgbr->tab, pos, div,
 					context_gbr_add_ineq_wrap, context);
 }
 
@@ -3370,7 +3380,7 @@ struct isl_context_op isl_context_gbr_op = {
 	context_gbr_ineq_sign,
 	context_gbr_test_ineq,
 	context_gbr_get_div,
-	context_gbr_add_div,
+	context_gbr_insert_div,
 	context_gbr_detect_equalities,
 	context_gbr_best_split,
 	context_gbr_is_empty,
