@@ -2287,8 +2287,10 @@ static int div_is_nonneg(struct isl_tab *tab, __isl_keep isl_vec *div)
 	return 1;
 }
 
-/* Add an extra div, prescribed by "div" to the tableau and
+/* Insert an extra div, prescribed by "div", to the tableau and
  * the associated bmap (which is assumed to be non-NULL).
+ * The extra integer division is inserted at (tableau) position "pos".
+ * Return "pos" or -1 if an error occurred.
  *
  * If add_ineq is not NULL, then this function is used instead
  * of isl_tab_add_ineq to add the div constraints.
@@ -2296,12 +2298,12 @@ static int div_is_nonneg(struct isl_tab *tab, __isl_keep isl_vec *div)
  * wants to perform some extra processing when an inequality
  * is added to the tableau.
  */
-int isl_tab_add_div(struct isl_tab *tab, __isl_keep isl_vec *div,
+int isl_tab_insert_div(struct isl_tab *tab, int pos, __isl_keep isl_vec *div,
 	int (*add_ineq)(void *user, isl_int *), void *user)
 {
 	int r;
-	int k;
 	int nonneg;
+	int n_div, o_div;
 
 	if (!tab || !div)
 		return -1;
@@ -2311,6 +2313,11 @@ int isl_tab_add_div(struct isl_tab *tab, __isl_keep isl_vec *div,
 			"unexpected size", return -1);
 
 	isl_assert(tab->mat->ctx, tab->bmap, return -1);
+	n_div = isl_basic_map_dim(tab->bmap, isl_dim_div);
+	o_div = tab->n_var - n_div;
+	if (pos < o_div || pos > tab->n_var)
+		isl_die(isl_tab_get_ctx(tab), isl_error_invalid,
+			"invalid position", return -1);
 
 	nonneg = div_is_nonneg(tab, div);
 
@@ -2318,24 +2325,33 @@ int isl_tab_add_div(struct isl_tab *tab, __isl_keep isl_vec *div,
 		return -1;
 	if (isl_tab_extend_vars(tab, 1) < 0)
 		return -1;
-	r = isl_tab_allocate_var(tab);
+	r = isl_tab_insert_var(tab, pos);
 	if (r < 0)
 		return -1;
 
 	if (nonneg)
 		tab->var[r].is_nonneg = 1;
 
-	k = isl_basic_map_dim(tab->bmap, isl_dim_div);
-	tab->bmap = isl_basic_map_insert_div(tab->bmap, k, div);
+	tab->bmap = isl_basic_map_insert_div(tab->bmap, pos - o_div, div);
 	if (!tab->bmap)
 		return -1;
 	if (isl_tab_push_var(tab, isl_tab_undo_bmap_div, &tab->var[r]) < 0)
 		return -1;
 
-	if (add_div_constraints(tab, k, add_ineq, user) < 0)
+	if (add_div_constraints(tab, pos - o_div, add_ineq, user) < 0)
 		return -1;
 
 	return r;
+}
+
+/* Add an extra div, prescribed by "div", to the tableau and
+ * the associated bmap (which is assumed to be non-NULL).
+ */
+int isl_tab_add_div(struct isl_tab *tab, __isl_keep isl_vec *div)
+{
+	if (!tab)
+		return -1;
+	return isl_tab_insert_div(tab, tab->n_var, div, NULL, NULL);
 }
 
 /* If "track" is set, then we want to keep track of all constraints in tab

@@ -1873,7 +1873,7 @@ static isl_bool context_tab_add_div(struct isl_tab *tab,
 	struct isl_mat *samples;
 	int nonneg;
 
-	r = isl_tab_add_div(tab, div, add_ineq, user);
+	r = isl_tab_insert_div(tab, tab->n_var, div, add_ineq, user);
 	if (r < 0)
 		return isl_bool_error;
 	nonneg = tab->var[r].is_nonneg;
