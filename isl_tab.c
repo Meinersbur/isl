@@ -2306,6 +2306,10 @@ int isl_tab_add_div(struct isl_tab *tab, __isl_keep isl_vec *div,
 	if (!tab || !div)
 		return -1;
 
+	if (div->size != 1 + 1 + tab->n_var)
+		isl_die(isl_tab_get_ctx(tab), isl_error_invalid,
+			"unexpected size", return -1);
+
 	isl_assert(tab->mat->ctx, tab->bmap, return -1);
 
 	nonneg = div_is_nonneg(tab, div);
