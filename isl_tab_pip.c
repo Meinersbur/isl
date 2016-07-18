@@ -1861,9 +1861,10 @@ static int tab_has_valid_sample(struct isl_tab *tab, isl_int *ineq, int eq)
 }
 
 /* Add a div specified by "div" to the tableau "tab" and return
- * 1 if the div is obviously non-negative.
+ * isl_bool_true if the div is obviously non-negative.
  */
-static int context_tab_add_div(struct isl_tab *tab, __isl_keep isl_vec *div,
+static isl_bool context_tab_add_div(struct isl_tab *tab,
+	__isl_keep isl_vec *div,
 	int (*add_ineq)(void *user, isl_int *), void *user)
 {
 	int i;
@@ -1873,7 +1874,7 @@ static int context_tab_add_div(struct isl_tab *tab, __isl_keep isl_vec *div,
 
 	r = isl_tab_add_div(tab, div, add_ineq, user);
 	if (r < 0)
-		return -1;
+		return isl_bool_error;
 	nonneg = tab->var[r].is_nonneg;
 	tab->var[r].frozen = 1;
 
@@ -1881,7 +1882,7 @@ static int context_tab_add_div(struct isl_tab *tab, __isl_keep isl_vec *div,
 			tab->n_sample, 1 + tab->n_var);
 	tab->samples = samples;
 	if (!samples)
-		return -1;
+		return isl_bool_error;
 	for (i = tab->n_outside; i < samples->n_row; ++i) {
 		isl_seq_inner_product(div->el + 1, samples->row[i],
 			div->size - 1, &samples->row[i][samples->n_col - 1]);
@@ -2397,7 +2398,7 @@ static int context_lex_get_div(struct isl_context *context, struct isl_tab *tab,
 
 /* Add a div specified by "div" to the context tableau and return
  * 1 if the div is obviously non-negative.
- * context_tab_add_div will always return 1, because all variables
+ * context_tab_add_div will always return isl_bool_true, because all variables
  * in a isl_context_lex tableau are non-negative.
  * However, if we are using a big parameter in the context, then this only
  * reflects the non-negativity of the variable used to _encode_ the
@@ -2407,7 +2408,7 @@ static int context_lex_add_div(struct isl_context *context,
 	__isl_keep isl_vec *div)
 {
 	struct isl_context_lex *clex = (struct isl_context_lex *)context;
-	int nonneg;
+	isl_bool nonneg;
 	nonneg = context_tab_add_div(clex->tab, div,
 					context_lex_add_ineq_wrap, context);
 	if (nonneg < 0)
