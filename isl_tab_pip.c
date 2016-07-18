@@ -1863,7 +1863,7 @@ static int tab_has_valid_sample(struct isl_tab *tab, isl_int *ineq, int eq)
 /* Add a div specified by "div" to the tableau "tab" and return
  * 1 if the div is obviously non-negative.
  */
-static int context_tab_add_div(struct isl_tab *tab, struct isl_vec *div,
+static int context_tab_add_div(struct isl_tab *tab, __isl_keep isl_vec *div,
 	int (*add_ineq)(void *user, isl_int *), void *user)
 {
 	int i;
