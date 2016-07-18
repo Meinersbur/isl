@@ -6955,6 +6955,17 @@ int isl_basic_map_first_unknown_div(__isl_keep isl_basic_map *bmap)
 	return bmap->n_div;
 }
 
+/* Return the position of the first local variable that does not
+ * have an explicit representation.
+ * Return the total number of local variables if they all have
+ * an explicit representation.
+ * Return -1 on error.
+ */
+int isl_basic_set_first_unknown_div(__isl_keep isl_basic_set *bset)
+{
+	return isl_basic_map_first_unknown_div(bset);
+}
+
 /* Does "bmap" have an explicit representation for all local variables?
  */
 isl_bool isl_basic_map_divs_known(__isl_keep isl_basic_map *bmap)
