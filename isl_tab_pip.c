@@ -111,7 +111,7 @@ struct isl_context_op {
 	/* invalidate context */
 	void (*invalidate)(struct isl_context *context);
 	/* free context */
-	void (*free)(struct isl_context *context);
+	__isl_null struct isl_context *(*free)(struct isl_context *context);
 };
 
 struct isl_context {
@@ -2574,11 +2574,14 @@ static void context_lex_invalidate(struct isl_context *context)
 	clex->tab = NULL;
 }
 
-static void context_lex_free(struct isl_context *context)
+static __isl_null struct isl_context *context_lex_free(
+	struct isl_context *context)
 {
 	struct isl_context_lex *clex = (struct isl_context_lex *)context;
 	isl_tab_free(clex->tab);
 	free(clex);
+
+	return NULL;
 }
 
 struct isl_context_op isl_context_lex_op = {
@@ -3344,13 +3347,16 @@ static void context_gbr_invalidate(struct isl_context *context)
 	cgbr->tab = NULL;
 }
 
-static void context_gbr_free(struct isl_context *context)
+static __isl_null struct isl_context *context_gbr_free(
+	struct isl_context *context)
 {
 	struct isl_context_gbr *cgbr = (struct isl_context_gbr *)context;
 	isl_tab_free(cgbr->tab);
 	isl_tab_free(cgbr->shifted);
 	isl_tab_free(cgbr->cone);
 	free(cgbr);
+
+	return NULL;
 }
 
 struct isl_context_op isl_context_gbr_op = {
