@@ -92,7 +92,7 @@ struct isl_context_op {
 	int (*get_div)(struct isl_context *context, struct isl_tab *tab,
 			struct isl_vec *div);
 	/* add div "div" to context and return non-negativity */
-	int (*add_div)(struct isl_context *context, struct isl_vec *div);
+	int (*add_div)(struct isl_context *context, __isl_keep isl_vec *div);
 	int (*detect_equalities)(struct isl_context *context,
 			struct isl_tab *tab);
 	/* return row index of "best" split */
@@ -2403,7 +2403,8 @@ static int context_lex_get_div(struct isl_context *context, struct isl_tab *tab,
  * reflects the non-negativity of the variable used to _encode_ the
  * div, i.e., div' = M + div, so we can't draw any conclusions.
  */
-static int context_lex_add_div(struct isl_context *context, struct isl_vec *div)
+static int context_lex_add_div(struct isl_context *context,
+	__isl_keep isl_vec *div)
 {
 	struct isl_context_lex *clex = (struct isl_context_lex *)context;
 	int nonneg;
@@ -3199,7 +3200,8 @@ static int context_gbr_get_div(struct isl_context *context, struct isl_tab *tab,
 	return get_div(tab, context, div);
 }
 
-static int context_gbr_add_div(struct isl_context *context, struct isl_vec *div)
+static int context_gbr_add_div(struct isl_context *context,
+	__isl_keep isl_vec *div)
 {
 	struct isl_context_gbr *cgbr = (struct isl_context_gbr *)context;
 	if (cgbr->cone) {
