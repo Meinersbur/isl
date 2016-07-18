@@ -114,8 +114,14 @@ struct isl_context_op {
 	__isl_null struct isl_context *(*free)(struct isl_context *context);
 };
 
+/* Shared parts of context representation.
+ *
+ * "n_unknown" is the number of final unknown integer divisions
+ * in the input domain.
+ */
 struct isl_context {
 	struct isl_context_op *op;
+	int n_unknown;
 };
 
 struct isl_context_lex {
@@ -1903,6 +1909,11 @@ static isl_bool context_tab_insert_div(struct isl_tab *tab, int pos,
  * need to add an extra div.  In the context tableau, we also
  * need to express the meaning of the div.
  * Return the index of the div or -1 if anything went wrong.
+ *
+ * The new integer division is added before any unknown integer
+ * divisions in the context to ensure that it does not get
+ * equated to some linear combination involving unknown integer
+ * divisions.
  */
 static int add_div(struct isl_tab *tab, struct isl_context *context,
 	__isl_keep isl_vec *div)
@@ -1912,19 +1923,20 @@ static int add_div(struct isl_tab *tab, struct isl_context *context,
 	isl_bool nonneg;
 	struct isl_tab *context_tab = context->op->peek_tab(context);
 
-	if (!context_tab)
+	if (!tab || !context_tab)
 		goto error;
 
-	pos = context_tab->n_var;
+	pos = context_tab->n_var - context->n_unknown;
 	if ((nonneg = context->op->insert_div(context, pos, div)) < 0)
 		goto error;
 
 	if (!context->op->is_ok(context))
 		goto error;
 
+	pos = tab->n_var - context->n_unknown;
 	if (isl_tab_extend_vars(tab, 1) < 0)
 		goto error;
-	r = isl_tab_allocate_var(tab);
+	r = isl_tab_insert_var(tab, pos);
 	if (r < 0)
 		goto error;
 	if (nonneg)
@@ -1932,7 +1944,7 @@ static int add_div(struct isl_tab *tab, struct isl_context *context,
 	tab->var[r].frozen = 1;
 	tab->n_div++;
 
-	return tab->n_div - 1;
+	return tab->n_div - 1 - context->n_unknown;
 error:
 	context->op->invalidate(context);
 	return -1;
@@ -2014,7 +2026,7 @@ static int add_parametric_cut(struct isl_tab *tab, int row,
 	if (!div)
 		return -1;
 
-	n = tab->n_div;
+	n = tab->n_div - context->n_unknown;
 	d = context->op->get_div(context, tab, div);
 	isl_vec_free(div);
 	if (d < 0)
@@ -3419,15 +3431,34 @@ error:
 	return NULL;
 }
 
+/* Allocate a context corresponding to "dom".
+ * The representation specific fields are initialized by
+ * isl_context_lex_alloc or isl_context_gbr_alloc.
+ * The shared "n_unknown" field is initialized to the number
+ * of final unknown integer divisions in "dom".
+ */
 static struct isl_context *isl_context_alloc(__isl_keep isl_basic_set *dom)
 {
+	struct isl_context *context;
+	int first;
+
 	if (!dom)
 		return NULL;
 
 	if (dom->ctx->opt->context == ISL_CONTEXT_LEXMIN)
-		return isl_context_lex_alloc(dom);
+		context = isl_context_lex_alloc(dom);
 	else
-		return isl_context_gbr_alloc(dom);
+		context = isl_context_gbr_alloc(dom);
+
+	if (!context)
+		return NULL;
+
+	first = isl_basic_set_first_unknown_div(dom);
+	if (first < 0)
+		return context->op->free(context);
+	context->n_unknown = isl_basic_set_dim(dom, isl_dim_div) - first;
+
+	return context;
 }
 
 /* Construct an isl_sol_map structure for accumulating the solution.
