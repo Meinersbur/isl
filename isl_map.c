@@ -1446,6 +1446,7 @@ __isl_give isl_basic_map *isl_basic_map_add_div(__isl_take isl_basic_map *bmap,
 	if (k < 0)
 		return isl_basic_map_free(bmap);
 	isl_seq_cpy(bmap->div[k], div->el, div->size);
+	isl_int_set_si(bmap->div[k][div->size], 0);
 
 	return bmap;
 }
