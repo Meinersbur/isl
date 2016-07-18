@@ -269,7 +269,7 @@ struct isl_map *isl_map_drop_inputs(
 /*
  * We don't cow, as the div is assumed to be redundant.
  */
-static __isl_give isl_basic_map *isl_basic_map_drop_div(
+__isl_give isl_basic_map *isl_basic_map_drop_div(
 	__isl_take isl_basic_map *bmap, unsigned div)
 {
 	int i;
