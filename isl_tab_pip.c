@@ -1899,7 +1899,7 @@ static int context_tab_add_div(struct isl_tab *tab, __isl_keep isl_vec *div,
  * Return the index of the div or -1 if anything went wrong.
  */
 static int add_div(struct isl_tab *tab, struct isl_context *context,
-	struct isl_vec *div)
+	__isl_keep isl_vec *div)
 {
 	int r;
 	int nonneg;
