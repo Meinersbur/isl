@@ -2322,7 +2322,7 @@ int isl_tab_add_div(struct isl_tab *tab, __isl_keep isl_vec *div,
 		tab->var[r].is_nonneg = 1;
 
 	k = isl_basic_map_dim(tab->bmap, isl_dim_div);
-	tab->bmap = isl_basic_map_add_div(tab->bmap, div);
+	tab->bmap = isl_basic_map_insert_div(tab->bmap, k, div);
 	if (!tab->bmap)
 		return -1;
 	if (isl_tab_push_var(tab, isl_tab_undo_bmap_div, &tab->var[r]) < 0)

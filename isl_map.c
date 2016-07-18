@@ -1425,12 +1425,16 @@ int isl_basic_set_alloc_div(struct isl_basic_set *bset)
 	return isl_basic_map_alloc_div((struct isl_basic_map *)bset);
 }
 
-/* Add an extra integer division, prescribed by "div", to "bmap".
+/* Insert an extra integer division, prescribed by "div", to "bmap"
+ * at (integer division) position "pos".
+ *
+ * The integer division is first added at the end and then moved
+ * into the right position.
  */
-__isl_give isl_basic_map *isl_basic_map_add_div(__isl_take isl_basic_map *bmap,
-	__isl_keep isl_vec *div)
+__isl_give isl_basic_map *isl_basic_map_insert_div(
+	__isl_take isl_basic_map *bmap, int pos, __isl_keep isl_vec *div)
 {
-	int k;
+	int i, k, n_div;
 
 	bmap = isl_basic_map_cow(bmap);
 	if (!bmap || !div)
@@ -1439,6 +1443,10 @@ __isl_give isl_basic_map *isl_basic_map_add_div(__isl_take isl_basic_map *bmap,
 	if (div->size != 1 + 1 + isl_basic_map_dim(bmap, isl_dim_all))
 		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
 			"unexpected size", return isl_basic_map_free(bmap));
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	if (pos < 0 || pos > n_div)
+		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
+			"invalid position", return isl_basic_map_free(bmap));
 
 	bmap = isl_basic_map_extend_space(bmap,
 					isl_basic_map_get_space(bmap), 1, 0, 2);
@@ -1447,6 +1455,9 @@ __isl_give isl_basic_map *isl_basic_map_add_div(__isl_take isl_basic_map *bmap,
 		return isl_basic_map_free(bmap);
 	isl_seq_cpy(bmap->div[k], div->el, div->size);
 	isl_int_set_si(bmap->div[k][div->size], 0);
+
+	for (i = k; i > pos; --i)
+		isl_basic_map_swap_div(bmap, i, i - 1);
 
 	return bmap;
 }
