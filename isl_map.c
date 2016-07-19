@@ -12689,7 +12689,7 @@ error:
  * the "n_after" coefficients after the transformed range of dimensions
  * and the coefficients of the other divs in "bmap".
  */
-static int set_ma_divs(__isl_keep isl_basic_map *bmap,
+static __isl_give isl_basic_map *set_ma_divs(__isl_take isl_basic_map *bmap,
 	__isl_keep isl_multi_aff *ma, int n_before, int n_after, int n_div)
 {
 	int i;
@@ -12698,11 +12698,11 @@ static int set_ma_divs(__isl_keep isl_basic_map *bmap,
 	isl_local_space *ls;
 
 	if (n_div == 0)
-		return 0;
+		return bmap;
 
 	ls = isl_aff_get_domain_local_space(ma->u.p[0]);
 	if (!ls)
-		return -1;
+		return isl_basic_map_free(bmap);
 
 	n_param = isl_local_space_dim(ls, isl_dim_param);
 	n_set = isl_local_space_dim(ls, isl_dim_set);
@@ -12730,10 +12730,10 @@ static int set_ma_divs(__isl_keep isl_basic_map *bmap,
 	}
 
 	isl_local_space_free(ls);
-	return 0;
+	return bmap;
 error:
 	isl_local_space_free(ls);
-	return -1;
+	return isl_basic_map_free(bmap);
 }
 
 /* How many stride constraints does "ma" enforce?
@@ -12928,7 +12928,8 @@ __isl_give isl_basic_map *isl_basic_map_preimage_multi_aff(
 		if (isl_basic_map_alloc_div(res) < 0)
 			goto error;
 
-	if (set_ma_divs(res, ma, n_before, n_after, n_div_ma) < 0)
+	res = set_ma_divs(res, ma, n_before, n_after, n_div_ma);
+	if (!res)
 		goto error;
 
 	for (i = 0; i < bmap->n_eq; ++i) {
