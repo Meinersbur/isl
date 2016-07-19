@@ -3408,6 +3408,19 @@ static int perform_undo_var(struct isl_tab *tab, struct isl_tab_undo *undo)
 	return 0;
 }
 
+/* Undo the addition of an integer division to the basic map representation
+ * of "tab".
+ */
+static isl_stat drop_bmap_div(struct isl_tab *tab)
+{
+	if (isl_basic_map_free_div(tab->bmap, 1) < 0)
+		return isl_stat_error;
+	if (tab->samples)
+		tab->samples->n_col--;
+
+	return isl_stat_ok;
+}
+
 /* Restore the tableau to the state where the basic variables
  * are those in "col_var".
  * We first construct a list of variables that are currently in
@@ -3509,11 +3522,7 @@ static int perform_undo(struct isl_tab *tab, struct isl_tab_undo *undo)
 	case isl_tab_undo_bmap_ineq:
 		return isl_basic_map_free_inequality(tab->bmap, 1);
 	case isl_tab_undo_bmap_div:
-		if (isl_basic_map_free_div(tab->bmap, 1) < 0)
-			return -1;
-		if (tab->samples)
-			tab->samples->n_col--;
-		break;
+		return drop_bmap_div(tab);
 	case isl_tab_undo_saved_basis:
 		if (restore_basis(tab, undo->u.col_var) < 0)
 			return -1;
