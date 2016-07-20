@@ -10354,6 +10354,18 @@ int isl_basic_map_plain_cmp(__isl_keep isl_basic_map *bmap1,
 			return cmp;
 	}
 	for (i = 0; i < bmap1->n_div; ++i) {
+		isl_bool unknown1, unknown2;
+
+		unknown1 = isl_basic_map_div_is_marked_unknown(bmap1, i);
+		unknown2 = isl_basic_map_div_is_marked_unknown(bmap2, i);
+		if (unknown1 < 0 || unknown2 < 0)
+			return -1;
+		if (unknown1 && unknown2)
+			continue;
+		if (unknown1)
+			return 1;
+		if (unknown2)
+			return -1;
 		cmp = isl_seq_cmp(bmap1->div[i], bmap2->div[i], 1+1+total);
 		if (cmp)
 			return cmp;
