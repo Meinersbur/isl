@@ -1475,7 +1475,7 @@ static int room_for_ineq(struct isl_basic_map *bmap, unsigned n)
 	return bmap->n_ineq + n <= bmap->eq - bmap->ineq;
 }
 
-int isl_basic_map_alloc_inequality(struct isl_basic_map *bmap)
+int isl_basic_map_alloc_inequality(__isl_keep isl_basic_map *bmap)
 {
 	struct isl_ctx *ctx;
 	if (!bmap)
@@ -1492,7 +1492,7 @@ int isl_basic_map_alloc_inequality(struct isl_basic_map *bmap)
 	return bmap->n_ineq++;
 }
 
-int isl_basic_set_alloc_inequality(struct isl_basic_set *bset)
+int isl_basic_set_alloc_inequality(__isl_keep isl_basic_set *bset)
 {
 	return isl_basic_map_alloc_inequality(bset_to_bmap(bset));
 }
