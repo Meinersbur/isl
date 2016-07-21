@@ -196,7 +196,7 @@ error:
 }
 
 __isl_give isl_basic_map *isl_basic_map_set_rational(
-	__isl_take isl_basic_set *bmap)
+	__isl_take isl_basic_map *bmap)
 {
 	if (!bmap)
 		return NULL;
