@@ -8267,7 +8267,7 @@ __isl_give isl_basic_set *isl_basic_set_sort_divs(
  * in the definitions of the extra integer divisions.
  */
 __isl_give isl_basic_map *isl_basic_map_expand_divs(
-	__isl_take isl_basic_set *bmap, __isl_take isl_mat *div, int *exp)
+	__isl_take isl_basic_map *bmap, __isl_take isl_mat *div, int *exp)
 {
 	int i, j;
 	int n_div;
