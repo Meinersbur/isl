@@ -1271,7 +1271,7 @@ error:
 	return NULL;
 }
 
-static struct isl_basic_set *uset_convex_hull_wrap(struct isl_set *set);
+static __isl_give isl_basic_set *uset_convex_hull_wrap(__isl_take isl_set *set);
 static __isl_give isl_basic_set *modulo_affine_hull(
 	__isl_take isl_set *set, __isl_take isl_basic_set *affine_hull);
 
@@ -1717,7 +1717,7 @@ static struct isl_basic_set *proto_hull(struct isl_set *set, int *is_hull)
 	return common_constraints(hull, set, is_hull);
 }
 
-static struct isl_basic_set *uset_convex_hull_wrap(struct isl_set *set)
+static __isl_give isl_basic_set *uset_convex_hull_wrap(__isl_take isl_set *set)
 {
 	struct isl_basic_set *hull;
 	int is_hull;
