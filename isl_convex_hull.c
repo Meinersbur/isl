@@ -1288,8 +1288,8 @@ static __isl_give isl_basic_set *modulo_affine_hull(
  * If the convex hull of the two basic sets would have a non-trivial
  * lineality space, we first project out this lineality space.
  */
-static struct isl_basic_set *convex_hull_pair(struct isl_basic_set *bset1,
-	struct isl_basic_set *bset2)
+static __isl_give isl_basic_set *convex_hull_pair(
+	__isl_take isl_basic_set *bset1, __isl_take isl_basic_set *bset2)
 {
 	isl_basic_set *lin, *aff;
 	int bounded1, bounded2;
