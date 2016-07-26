@@ -759,8 +759,8 @@ static struct isl_basic_set *convex_hull_0d(struct isl_set *set)
  * to the two original basic sets, retaining only those corresponding
  * to the convex hull.
  */
-static struct isl_basic_set *convex_hull_pair_elim(struct isl_basic_set *bset1,
-	struct isl_basic_set *bset2)
+static __isl_give isl_basic_set *convex_hull_pair_elim(
+	__isl_take isl_basic_set *bset1, __isl_take isl_basic_set *bset2)
 {
 	int i, j, k;
 	struct isl_basic_set *bset[2];
