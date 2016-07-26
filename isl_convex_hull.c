@@ -939,7 +939,7 @@ error:
 	return NULL;
 }
 
-static struct isl_basic_set *uset_convex_hull(struct isl_set *set);
+static __isl_give isl_basic_set *uset_convex_hull(__isl_take isl_set *set);
 
 /* Given a set and a linear space "lin" of dimension n > 0,
  * project the linear space from the set, compute the convex hull
@@ -1739,7 +1739,7 @@ static __isl_give isl_basic_set *uset_convex_hull_wrap(__isl_take isl_set *set)
  * the Fourier-Motzkin elimination based convex hull.
  * We also handle a few special cases before checking the boundedness.
  */
-static struct isl_basic_set *uset_convex_hull(struct isl_set *set)
+static __isl_give isl_basic_set *uset_convex_hull(__isl_take isl_set *set)
 {
 	isl_bool bounded;
 	struct isl_basic_set *convex_hull = NULL;
