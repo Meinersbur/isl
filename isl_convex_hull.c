@@ -1400,9 +1400,9 @@ static struct isl_basic_set *uset_combined_lineality_space(struct isl_set *set)
 	if (!set)
 		return NULL;
 	if (set->n == 0) {
-		isl_space *dim = isl_set_get_space(set);
+		isl_space *space = isl_set_get_space(set);
 		isl_set_free(set);
-		return isl_basic_set_empty(dim);
+		return isl_basic_set_empty(space);
 	}
 
 	lin = isl_set_alloc_space(isl_set_get_space(set), set->n, 0);
