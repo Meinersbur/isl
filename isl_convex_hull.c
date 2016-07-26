@@ -1005,8 +1005,8 @@ error:
  * The next \alpha{ij} correspond to the equalities and come in pairs.
  * The final \alpha{ij} correspond to the inequalities.
  */
-static struct isl_basic_set *valid_direction_lp(
-	struct isl_basic_set *bset1, struct isl_basic_set *bset2)
+static __isl_give isl_basic_set *valid_direction_lp(
+	__isl_take isl_basic_set *bset1, __isl_take isl_basic_set *bset2)
 {
 	isl_space *dim;
 	struct isl_basic_set *lp;
