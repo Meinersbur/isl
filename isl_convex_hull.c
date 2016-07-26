@@ -1149,8 +1149,8 @@ error:
  * In particular, add the "positivity constraint" and then perform
  * the mapping.
  */
-static struct isl_basic_set *homogeneous_map(struct isl_basic_set *bset,
-	struct isl_mat *T)
+static __isl_give isl_basic_set *homogeneous_map(__isl_take isl_basic_set *bset,
+	__isl_take isl_mat *T)
 {
 	int k;
 
