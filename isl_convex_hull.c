@@ -735,7 +735,7 @@ error:
 	return NULL;
 }
 
-static struct isl_basic_set *convex_hull_0d(struct isl_set *set)
+static __isl_give isl_basic_set *convex_hull_0d(__isl_take isl_set *set)
 {
 	struct isl_basic_set *convex_hull;
 
