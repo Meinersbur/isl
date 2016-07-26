@@ -1848,8 +1848,6 @@ static struct isl_basic_set *uset_convex_hull(struct isl_set *set)
 	set = isl_set_set_rational(set);
 
 	if (!set)
-		goto error;
-	if (!set)
 		return NULL;
 	if (set->n == 1) {
 		convex_hull = isl_basic_set_copy(set->p[0]);
