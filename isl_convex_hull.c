@@ -961,8 +961,8 @@ static __isl_give isl_basic_set *uset_convex_hull(__isl_take isl_set *set);
  * we transform the hull back to the original space as A' Q_1 x >= b',
  * with Q_1 all but the last n rows of Q.
  */
-static struct isl_basic_set *modulo_lineality(struct isl_set *set,
-	struct isl_basic_set *lin)
+static __isl_give isl_basic_set *modulo_lineality(__isl_take isl_set *set,
+	__isl_take isl_basic_set *lin)
 {
 	unsigned total = isl_basic_set_total_dim(lin);
 	unsigned lin_dim;
