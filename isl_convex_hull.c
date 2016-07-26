@@ -1350,7 +1350,8 @@ error:
  * We basically just drop the constants and turn every inequality
  * into an equality.
  */
-struct isl_basic_set *isl_basic_set_lineality_space(struct isl_basic_set *bset)
+__isl_give isl_basic_set *isl_basic_set_lineality_space(
+	__isl_take isl_basic_set *bset)
 {
 	int i, k;
 	struct isl_basic_set *lin = NULL;

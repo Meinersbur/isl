@@ -360,7 +360,8 @@ struct isl_basic_map *isl_basic_map_drop_redundant_divs(
 	struct isl_basic_map *bmap);
 
 struct isl_basic_set *isl_basic_set_recession_cone(struct isl_basic_set *bset);
-struct isl_basic_set *isl_basic_set_lineality_space(struct isl_basic_set *bset);
+__isl_give isl_basic_set *isl_basic_set_lineality_space(
+	__isl_take isl_basic_set *bset);
 
 __isl_give isl_basic_set *isl_basic_set_set_integral(
 	__isl_take isl_basic_set *bset);
