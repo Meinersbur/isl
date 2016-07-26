@@ -883,8 +883,8 @@ isl_bool isl_set_is_bounded(__isl_keep isl_set *set)
  * with the negative of the recession cone of bset2 and then compute
  * the linear hull of the resulting cone.
  */
-static struct isl_basic_set *induced_lineality_space(
-	struct isl_basic_set *bset1, struct isl_basic_set *bset2)
+static __isl_give isl_basic_set *induced_lineality_space(
+	__isl_take isl_basic_set *bset1, __isl_take isl_basic_set *bset2)
 {
 	int i, k;
 	struct isl_basic_set *lin = NULL;
