@@ -615,7 +615,7 @@ error:
  * We simply collect the lower and upper bounds of each basic set
  * and the biggest of those.
  */
-static struct isl_basic_set *convex_hull_1d(struct isl_set *set)
+static __isl_give isl_basic_set *convex_hull_1d(__isl_take isl_set *set)
 {
 	struct isl_mat *c = NULL;
 	isl_int *lower = NULL;
