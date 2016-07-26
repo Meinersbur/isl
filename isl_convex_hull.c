@@ -1272,8 +1272,8 @@ error:
 }
 
 static struct isl_basic_set *uset_convex_hull_wrap(struct isl_set *set);
-static struct isl_basic_set *modulo_affine_hull(
-	struct isl_set *set, struct isl_basic_set *affine_hull);
+static __isl_give isl_basic_set *modulo_affine_hull(
+	__isl_take isl_set *set, __isl_take isl_basic_set *affine_hull);
 
 /* Compute the convex hull of a pair of basic sets without any parameters or
  * integer divisions.
@@ -1827,8 +1827,8 @@ error:
  * convex hull of the transformed set and then add the equalities back
  * (after performing the inverse transformation.
  */
-static struct isl_basic_set *modulo_affine_hull(
-	struct isl_set *set, struct isl_basic_set *affine_hull)
+static __isl_give isl_basic_set *modulo_affine_hull(
+	__isl_take isl_set *set, __isl_take isl_basic_set *affine_hull)
 {
 	struct isl_mat *T;
 	struct isl_mat *T2;
