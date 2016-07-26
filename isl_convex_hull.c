@@ -1874,7 +1874,7 @@ static __isl_give isl_basic_map *replace_map_by_empty_basic_map(
  * The implementation was inspired by "Extended Convex Hull" by Fukuda et al.,
  * specifically, the wrapping of facets to obtain new facets.
  */
-struct isl_basic_map *isl_map_convex_hull(struct isl_map *map)
+__isl_give isl_basic_map *isl_map_convex_hull(__isl_take isl_map *map)
 {
 	struct isl_basic_set *bset;
 	struct isl_basic_map *model = NULL;
