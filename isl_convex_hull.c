@@ -1229,8 +1229,8 @@ error:
  *
  * The polyhedron b + A x >= 0 is then the convex hull of the input polyhedra.
  */
-static struct isl_basic_set *convex_hull_pair_pointed(
-	struct isl_basic_set *bset1, struct isl_basic_set *bset2)
+static __isl_give isl_basic_set *convex_hull_pair_pointed(
+	__isl_take isl_basic_set *bset1, __isl_take isl_basic_set *bset2)
 {
 	struct isl_ctx *ctx = NULL;
 	struct isl_vec *dir = NULL;
