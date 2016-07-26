@@ -1086,8 +1086,8 @@ error:
  * Note that we simply pick any valid direction and make no attempt
  * to pick a "good" or even the "best" valid direction.
  */
-static struct isl_vec *valid_direction(
-	struct isl_basic_set *bset1, struct isl_basic_set *bset2)
+static __isl_give isl_vec *valid_direction(
+	__isl_take isl_basic_set *bset1, __isl_take isl_basic_set *bset2)
 {
 	struct isl_basic_set *lp;
 	struct isl_tab *tab;
