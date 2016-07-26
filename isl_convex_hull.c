@@ -1507,7 +1507,8 @@ static struct isl_basic_set *uset_combined_lineality_space(struct isl_set *set)
  * lineality space.  If any of the intermediate results has
  * a non-trivial lineality space, it is projected out.
  */
-static struct isl_basic_set *uset_convex_hull_unbounded(struct isl_set *set)
+static __isl_give isl_basic_set *uset_convex_hull_unbounded(
+	__isl_take isl_set *set)
 {
 	struct isl_basic_set *convex_hull = NULL;
 
