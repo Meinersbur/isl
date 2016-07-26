@@ -1392,7 +1392,8 @@ error:
 /* Compute the (linear) hull of the lineality spaces of the basic sets in the
  * "underlying" set "set".
  */
-static struct isl_basic_set *uset_combined_lineality_space(struct isl_set *set)
+static __isl_give isl_basic_set *uset_combined_lineality_space(
+	__isl_take isl_set *set)
 {
 	int i;
 	struct isl_set *lin = NULL;
