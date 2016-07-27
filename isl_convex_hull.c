@@ -183,7 +183,8 @@ error:
 	return NULL;
 }
 
-static struct isl_set *isl_set_add_basic_set_equality(struct isl_set *set, isl_int *c)
+static __isl_give isl_set *isl_set_add_basic_set_equality(
+	__isl_take isl_set *set, isl_int *c)
 {
 	int i;
 
