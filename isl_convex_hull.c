@@ -552,8 +552,8 @@ error:
  * using the technique in section "3.1 Ridge Generation" of
  * "Extended Convex Hull" by Fukuda et al.
  */
-static struct isl_basic_set *extend(struct isl_basic_set *hull,
-	struct isl_set *set)
+static __isl_give isl_basic_set *extend(__isl_take isl_basic_set *hull,
+	__isl_keep isl_set *set)
 {
 	int i, j, f;
 	int k;
