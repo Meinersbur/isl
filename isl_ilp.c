@@ -303,9 +303,8 @@ error:
  * If there is any equality among the points in "bset", then we first
  * project it out.  Otherwise, we continue with solve_ilp above.
  */
-enum isl_lp_result isl_basic_set_solve_ilp(struct isl_basic_set *bset, int max,
-				      isl_int *f, isl_int *opt,
-				      struct isl_vec **sol_p)
+enum isl_lp_result isl_basic_set_solve_ilp(__isl_keep isl_basic_set *bset,
+	int max, isl_int *f, isl_int *opt, __isl_give isl_vec **sol_p)
 {
 	unsigned dim;
 	enum isl_lp_result res;
