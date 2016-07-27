@@ -1578,8 +1578,8 @@ static int has_constraint(struct isl_ctx *ctx, struct isl_hash_table *table,
  * all other basic sets and is therefore the convex hull of set.
  * In this case we set *is_hull to 1.
  */
-static struct isl_basic_set *common_constraints(struct isl_basic_set *hull,
-	struct isl_set *set, int *is_hull)
+static __isl_give isl_basic_set *common_constraints(
+	__isl_take isl_basic_set *hull, __isl_keep isl_set *set, int *is_hull)
 {
 	int i, j, s, n;
 	int min_constraints;
