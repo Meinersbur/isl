@@ -499,7 +499,8 @@ error:
  * After computing the facets of the facet in the z' space,
  * we convert them back to the x space through Q.
  */
-static struct isl_basic_set *compute_facet(struct isl_set *set, isl_int *c)
+static __isl_give isl_basic_set *compute_facet(__isl_keep isl_set *set,
+	isl_int *c)
 {
 	struct isl_mat *m, *U, *Q;
 	struct isl_basic_set *facet = NULL;
