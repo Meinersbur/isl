@@ -219,7 +219,7 @@ error:
  *
  *			\sum_i x_{i,1} = 1
  */
-static struct isl_basic_set *wrap_constraints(struct isl_set *set)
+static __isl_give isl_basic_set *wrap_constraints(__isl_keep isl_set *set)
 {
 	struct isl_basic_set *lp;
 	unsigned n_eq;
