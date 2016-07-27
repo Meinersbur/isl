@@ -112,7 +112,7 @@ __isl_give isl_set *isl_set_remove_redundancies(__isl_take isl_set *set)
  * constraint c and if so, set the constant term such that the
  * resulting constraint is a bounding constraint for the set.
  */
-static int uset_is_bound(struct isl_set *set, isl_int *c, unsigned len)
+static int uset_is_bound(__isl_keep isl_set *set, isl_int *c, unsigned len)
 {
 	int first;
 	int j;
