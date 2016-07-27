@@ -1699,7 +1699,8 @@ error:
  * obvious facet constraints, if any.  If the result happens to
  * be the convex hull of "set" then *is_hull is set to 1.
  */
-static struct isl_basic_set *proto_hull(struct isl_set *set, int *is_hull)
+static __isl_give isl_basic_set *proto_hull(__isl_keep isl_set *set,
+	int *is_hull)
 {
 	struct isl_basic_set *hull;
 	unsigned n_ineq;
