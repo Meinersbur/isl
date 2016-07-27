@@ -1476,8 +1476,8 @@ error:
  * facet.
  * This function assumes that the given set is bounded.
  */
-static struct isl_basic_set *initial_hull(struct isl_basic_set *hull,
-	struct isl_set *set)
+static __isl_give isl_basic_set *initial_hull(__isl_take isl_basic_set *hull,
+	__isl_keep isl_set *set)
 {
 	struct isl_mat *bounds = NULL;
 	unsigned dim;
