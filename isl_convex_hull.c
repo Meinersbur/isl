@@ -27,7 +27,8 @@
 #include <bset_from_bmap.c>
 #include <set_to_map.c>
 
-static struct isl_basic_set *uset_convex_hull_wrap_bounded(struct isl_set *set);
+static __isl_give isl_basic_set *uset_convex_hull_wrap_bounded(
+	__isl_take isl_set *set);
 
 /* Remove redundant
  * constraints.  If the minimal value along the normal of a constraint
@@ -1792,7 +1793,8 @@ error:
  * without parameters or divs and where the convex hull of set is
  * known to be full-dimensional.
  */
-static struct isl_basic_set *uset_convex_hull_wrap_bounded(struct isl_set *set)
+static __isl_give isl_basic_set *uset_convex_hull_wrap_bounded(
+	__isl_take isl_set *set)
 {
 	struct isl_basic_set *convex_hull = NULL;
 
