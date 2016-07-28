@@ -2065,7 +2065,7 @@ error:
  *	  0 if "ineq" may attain arbitrarily small values on basic set "j"
  *	 -1 if some error occurred
  */
-static int is_bound(struct sh_data *data, struct isl_set *set, int j,
+static int is_bound(struct sh_data *data, __isl_keep isl_set *set, int j,
 	isl_int *ineq, int shift)
 {
 	enum isl_lp_result res;
