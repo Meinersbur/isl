@@ -104,7 +104,7 @@ static __isl_give isl_vec *initial_solution(__isl_keep isl_basic_set *bset,
 
 /* Restrict "bset" to those points with values for f in the interval [l, u].
  */
-static struct isl_basic_set *add_bounds(struct isl_basic_set *bset,
+static __isl_give isl_basic_set *add_bounds(__isl_take isl_basic_set *bset,
 	isl_int *f, isl_int l, isl_int u)
 {
 	int k;
