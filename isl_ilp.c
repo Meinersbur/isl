@@ -146,8 +146,8 @@ error:
  * If no point can be found, we update l to the upper bound of the interval
  * we checked (u or l+floor(u-l-1/2)) plus 1.
  */
-static struct isl_vec *solve_ilp_search(struct isl_basic_set *bset,
-	isl_int *f, isl_int *opt, struct isl_vec *sol, isl_int l, isl_int u)
+static __isl_give isl_vec *solve_ilp_search(__isl_keep isl_basic_set *bset,
+	isl_int *f, isl_int *opt, __isl_take isl_vec *sol, isl_int l, isl_int u)
 {
 	isl_int tmp;
 	int divide = 1;
