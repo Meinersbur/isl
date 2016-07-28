@@ -524,7 +524,7 @@ error:
 	return NULL;
 }
 
-static struct isl_vec *sample_bounded(struct isl_basic_set *bset);
+static __isl_give isl_vec *sample_bounded(__isl_take isl_basic_set *bset);
 
 /* Compute a sample point of the given basic set, based on the given,
  * non-trivial factorization.
@@ -601,7 +601,7 @@ error:
  * and then use isl_tab_sample to find a sample, passing it
  * the identity matrix as initial basis.
  */ 
-static struct isl_vec *sample_bounded(struct isl_basic_set *bset)
+static __isl_give isl_vec *sample_bounded(__isl_take isl_basic_set *bset)
 {
 	unsigned dim;
 	struct isl_vec *sample;
