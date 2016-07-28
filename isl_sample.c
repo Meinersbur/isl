@@ -1121,7 +1121,8 @@ error:
 	return NULL;
 }
 
-static struct isl_vec *basic_set_sample(struct isl_basic_set *bset, int bounded)
+static __isl_give isl_vec *basic_set_sample(__isl_take isl_basic_set *bset,
+	int bounded)
 {
 	struct isl_ctx *ctx;
 	unsigned dim;
