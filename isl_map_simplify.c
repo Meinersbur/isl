@@ -689,7 +689,7 @@ static int hash_index(struct isl_constraint_index *ci,
 }
 
 static int set_hash_index(struct isl_constraint_index *ci,
-			  struct isl_basic_set *bset, int k)
+	__isl_keep isl_basic_set *bset, int k)
 {
 	return hash_index(ci, bset, k);
 }
