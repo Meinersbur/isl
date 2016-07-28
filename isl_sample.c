@@ -1173,7 +1173,7 @@ __isl_give isl_vec *isl_basic_set_sample_vec(__isl_take isl_basic_set *bset)
 /* Compute an integer sample in "bset", where the caller guarantees
  * that "bset" is bounded.
  */
-struct isl_vec *isl_basic_set_sample_bounded(struct isl_basic_set *bset)
+__isl_give isl_vec *isl_basic_set_sample_bounded(__isl_take isl_basic_set *bset)
 {
 	return basic_set_sample(bset, 1);
 }
