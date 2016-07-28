@@ -119,8 +119,8 @@ error:
  * in the resulting bset, using the specified recurse function,
  * and then transform the sample back to the original space.
  */
-static struct isl_vec *sample_eq(struct isl_basic_set *bset,
-	struct isl_vec *(*recurse)(struct isl_basic_set *))
+static __isl_give isl_vec *sample_eq(__isl_take isl_basic_set *bset,
+	__isl_give isl_vec *(*recurse)(__isl_take isl_basic_set *))
 {
 	struct isl_mat *T;
 	struct isl_vec *sample;
