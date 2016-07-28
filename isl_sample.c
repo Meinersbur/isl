@@ -708,7 +708,7 @@ error:
 /* Given a basic set "bset", return any (possibly non-integer) point
  * in the basic set.
  */
-static struct isl_vec *rational_sample(struct isl_basic_set *bset)
+static __isl_give isl_vec *rational_sample(__isl_take isl_basic_set *bset)
 {
 	struct isl_tab *tab;
 	struct isl_vec *sample;
