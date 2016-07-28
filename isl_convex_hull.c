@@ -2026,7 +2026,7 @@ static int hash_basic_set(struct isl_hash_table *table,
 	return 0;
 }
 
-static struct sh_data *sh_data_alloc(struct isl_set *set, unsigned n_ineq)
+static struct sh_data *sh_data_alloc(__isl_keep isl_set *set, unsigned n_ineq)
 {
 	struct sh_data *data;
 	int i;
