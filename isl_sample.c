@@ -672,8 +672,8 @@ error:
  * where [1 s] is the sample value and I is the identity matrix of the
  * appropriate dimension.
  */
-static struct isl_basic_set *plug_in(struct isl_basic_set *bset,
-	struct isl_vec *sample)
+static __isl_give isl_basic_set *plug_in(__isl_take isl_basic_set *bset,
+	__isl_take isl_vec *sample)
 {
 	int i;
 	unsigned total;
