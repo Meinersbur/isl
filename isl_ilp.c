@@ -204,9 +204,8 @@ static struct isl_vec *solve_ilp_search(struct isl_basic_set *bset,
  *
  * We then call solve_ilp_search to perform a binary search on the interval.
  */
-static enum isl_lp_result solve_ilp(struct isl_basic_set *bset,
-				      isl_int *f, isl_int *opt,
-				      struct isl_vec **sol_p)
+static enum isl_lp_result solve_ilp(__isl_keep isl_basic_set *bset,
+	isl_int *f, isl_int *opt, __isl_give isl_vec **sol_p)
 {
 	enum isl_lp_result res;
 	isl_int l, u;
