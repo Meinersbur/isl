@@ -37,7 +37,7 @@ static __isl_give isl_vec *empty_sample(__isl_take isl_basic_set *bset)
  * As a special case, if bset is zero-dimensional, this
  * function creates a zero-dimensional sample point.
  */
-static struct isl_vec *zero_sample(struct isl_basic_set *bset)
+static __isl_give isl_vec *zero_sample(__isl_take isl_basic_set *bset)
 {
 	unsigned dim;
 	struct isl_vec *sample;
