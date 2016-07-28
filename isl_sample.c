@@ -816,8 +816,8 @@ error:
  * Then we simply round up the coordinates of x and return the
  * resulting integer point.
  */
-static struct isl_vec *round_up_in_cone(struct isl_vec *vec,
-	struct isl_basic_set *cone, struct isl_mat *U)
+static __isl_give isl_vec *round_up_in_cone(__isl_take isl_vec *vec,
+	__isl_take isl_basic_set *cone, __isl_take isl_mat *U)
 {
 	unsigned total;
 
