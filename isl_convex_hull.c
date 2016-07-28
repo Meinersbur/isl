@@ -2007,7 +2007,7 @@ static int hash_ineq(struct isl_ctx *ctx, struct isl_hash_table *table,
  * The value in the hash table is a pointer to the (in)equality of "bset".
  */
 static int hash_basic_set(struct isl_hash_table *table,
-				struct isl_basic_set *bset)
+	__isl_keep isl_basic_set *bset)
 {
 	int i, j;
 	unsigned dim = isl_basic_set_total_dim(bset);
