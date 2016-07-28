@@ -32,7 +32,8 @@
  * term.  This ensures that if x satisfies the resulting constraints,
  * then x plus any sum of unit vectors satisfies the original constraints.
  */
-static struct isl_basic_set *unit_box_base_points(struct isl_basic_set *bset)
+static __isl_give isl_basic_set *unit_box_base_points(
+	__isl_take isl_basic_set *bset)
 {
 	int i, j, k;
 	struct isl_basic_set *unit_box = NULL;
