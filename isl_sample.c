@@ -1100,7 +1100,7 @@ int isl_tab_set_initial_basis_with_cone(struct isl_tab *tab,
  * sample_with_cone.  Otherwise, we directly perform generalized basis
  * reduction.
  */
-static struct isl_vec *gbr_sample(struct isl_basic_set *bset)
+static __isl_give isl_vec *gbr_sample(__isl_take isl_basic_set *bset)
 {
 	unsigned dim;
 	struct isl_basic_set *cone;
