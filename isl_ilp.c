@@ -80,7 +80,8 @@ error:
  * and round it up to the nearest integer.
  * If not, we simply pick any integer point in "bset".
  */
-static struct isl_vec *initial_solution(struct isl_basic_set *bset, isl_int *f)
+static __isl_give isl_vec *initial_solution(__isl_keep isl_basic_set *bset,
+	isl_int *f)
 {
 	enum isl_lp_result res;
 	struct isl_basic_set *unit_box;
