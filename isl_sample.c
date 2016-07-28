@@ -52,7 +52,7 @@ static __isl_give isl_vec *zero_sample(__isl_take isl_basic_set *bset)
 	return sample;
 }
 
-static struct isl_vec *interval_sample(struct isl_basic_set *bset)
+static __isl_give isl_vec *interval_sample(__isl_take isl_basic_set *bset)
 {
 	int i;
 	isl_int t;
