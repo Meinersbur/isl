@@ -24,7 +24,7 @@
 #include <bset_from_bmap.c>
 #include <set_to_map.c>
 
-static struct isl_vec *empty_sample(struct isl_basic_set *bset)
+static __isl_give isl_vec *empty_sample(__isl_take isl_basic_set *bset)
 {
 	struct isl_vec *vec;
 
