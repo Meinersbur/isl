@@ -162,7 +162,6 @@ __isl_give isl_map *isl_map_finalize(__isl_take isl_map *map);
 
 __isl_give isl_basic_set *isl_basic_set_from_underlying_set(
 	__isl_take isl_basic_set *bset, __isl_take isl_basic_set *like);
-__isl_give isl_set *isl_set_to_underlying_set(__isl_take isl_set *set);
 
 __isl_give isl_map *isl_map_realign(__isl_take isl_map *map,
 	__isl_take isl_reordering *r);

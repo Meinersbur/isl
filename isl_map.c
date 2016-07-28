@@ -5115,11 +5115,6 @@ error:
 	return NULL;
 }
 
-struct isl_set *isl_set_to_underlying_set(struct isl_set *set)
-{
-	return set_from_map(isl_map_underlying_set(set_to_map(set)));
-}
-
 /* Replace the space of "bmap" by "space".
  *
  * If the space of "bmap" is identical to "space" (including the identifiers
