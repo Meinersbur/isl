@@ -2885,7 +2885,8 @@ static struct isl_vec *gbr_get_shifted_sample(struct isl_context_gbr *cgbr)
 	return sample;
 }
 
-static struct isl_basic_set *drop_constant_terms(struct isl_basic_set *bset)
+static __isl_give isl_basic_set *drop_constant_terms(
+	__isl_take isl_basic_set *bset)
 {
 	int i;
 
