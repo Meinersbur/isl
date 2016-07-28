@@ -5081,40 +5081,6 @@ struct isl_basic_set *isl_basic_set_from_underlying_set(
 							bset_to_bmap(like)));
 }
 
-struct isl_set *isl_set_from_underlying_set(
-	struct isl_set *set, struct isl_basic_set *like)
-{
-	int i;
-
-	if (!set || !like)
-		goto error;
-	isl_assert(set->ctx, set->dim->n_out == isl_basic_set_total_dim(like),
-		    goto error);
-	if (isl_space_is_equal(set->dim, like->dim) && like->n_div == 0) {
-		isl_basic_set_free(like);
-		return set;
-	}
-	set = isl_set_cow(set);
-	if (!set)
-		goto error;
-	for (i = 0; i < set->n; ++i) {
-		set->p[i] = isl_basic_set_from_underlying_set(set->p[i],
-						      isl_basic_set_copy(like));
-		if (!set->p[i])
-			goto error;
-	}
-	isl_space_free(set->dim);
-	set->dim = isl_space_copy(like->dim);
-	if (!set->dim)
-		goto error;
-	isl_basic_set_free(like);
-	return set;
-error:
-	isl_basic_set_free(like);
-	isl_set_free(set);
-	return NULL;
-}
-
 struct isl_set *isl_map_underlying_set(struct isl_map *map)
 {
 	int i;
