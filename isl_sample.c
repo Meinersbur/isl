@@ -758,8 +758,8 @@ static __isl_give isl_vec *rational_sample(__isl_take isl_basic_set *bset)
  * and we only have to add the smallest negative a_i (if any)
  * instead of the sum of all negative a_i.
  */
-static struct isl_basic_set *shift_cone(struct isl_basic_set *cone,
-	struct isl_vec *vec)
+static __isl_give isl_basic_set *shift_cone(__isl_take isl_basic_set *cone,
+	__isl_take isl_vec *vec)
 {
 	int i, j, k;
 	unsigned total;
