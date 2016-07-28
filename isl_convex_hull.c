@@ -2238,8 +2238,8 @@ error:
  * become a bound on the whole set.  If so, add the (relaxed) inequality
  * to "hull".  Relaxation is only allowed if "shift" is set.
  */
-static struct isl_basic_set *add_bounds(struct isl_basic_set *bset,
-	struct sh_data *data, struct isl_set *set, int i, int shift)
+static __isl_give isl_basic_set *add_bounds(__isl_take isl_basic_set *bset,
+	struct sh_data *data, __isl_keep isl_set *set, int i, int shift)
 {
 	int j, k;
 	unsigned dim = isl_basic_set_total_dim(bset);
