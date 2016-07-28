@@ -1897,8 +1897,8 @@ error:
 	return isl_stat_error;
 }
 
-static struct isl_basic_set *remove_shifted_constraints(
-	struct isl_basic_set *bset, struct isl_basic_set *context)
+static __isl_give isl_basic_set *remove_shifted_constraints(
+	__isl_take isl_basic_set *bset, __isl_keep isl_basic_set *context)
 {
 	struct isl_constraint_index ci;
 	int k;
