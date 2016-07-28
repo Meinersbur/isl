@@ -2156,8 +2156,8 @@ static void set_max_constant_term(struct sh_data *data, __isl_keep isl_set *set,
  * translate and the inequality is therefore known to be a bound
  * of this basic set.
  */
-static struct isl_basic_set *add_bound(struct isl_basic_set *hull,
-	struct sh_data *data, struct isl_set *set, int i, isl_int *ineq,
+static __isl_give isl_basic_set *add_bound(__isl_take isl_basic_set *hull,
+	struct sh_data *data, __isl_keep isl_set *set, int i, isl_int *ineq,
 	int shift)
 {
 	uint32_t c_hash;
