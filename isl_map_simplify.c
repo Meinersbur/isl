@@ -1125,8 +1125,9 @@ static isl_bool better_div_constraint(__isl_keep isl_basic_map *bmap,
  * any other undefined divs or if any known div is defined in
  * terms of the unknown div.
  */
-static struct isl_basic_map *check_for_div_constraints(
-	struct isl_basic_map *bmap, int k, int l, isl_int sum, int *progress)
+static __isl_give isl_basic_map *check_for_div_constraints(
+	__isl_take isl_basic_map *bmap, int k, int l, isl_int sum,
+	int *progress)
 {
 	int i;
 	unsigned total = 1 + isl_space_dim(bmap->dim, isl_dim_all);
