@@ -1785,7 +1785,7 @@ static void set_compute_elimination_index(struct isl_basic_set *bset, int *elim)
 }
 
 static int reduced_using_equalities(isl_int *dst, isl_int *src,
-	struct isl_basic_map *bmap, int *elim)
+	__isl_keep isl_basic_map *bmap, int *elim)
 {
 	int d;
 	int copied = 0;
