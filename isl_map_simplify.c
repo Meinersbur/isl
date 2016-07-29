@@ -1324,7 +1324,7 @@ static __isl_give isl_basic_map *set_div_from_lower_bound(
  * terms of the unknown div.
  */
 static isl_bool ok_to_set_div_from_bound(__isl_keep isl_basic_map *bmap,
-	int div, int ineq)
+	int div, isl_int *ineq)
 {
 	int j;
 	isl_size v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
@@ -1339,7 +1339,7 @@ static isl_bool ok_to_set_div_from_bound(__isl_keep isl_basic_map *bmap,
 
 		if (div == j)
 			continue;
-		if (isl_int_is_zero(bmap->ineq[ineq][1 + v_div + j]))
+		if (isl_int_is_zero(ineq[1 + v_div + j]))
 			continue;
 		unknown = isl_basic_map_div_is_marked_unknown(bmap, j);
 		if (unknown < 0 || unknown)
@@ -1787,7 +1787,8 @@ static __isl_give isl_basic_map *check_for_div_constraints(
 			continue;
 		set_div = better_div_constraint(bmap, i, bmap->ineq[c]);
 		if (set_div >= 0 && set_div)
-			set_div = ok_to_set_div_from_bound(bmap, i, c);
+			set_div = ok_to_set_div_from_bound(bmap, i,
+							    bmap->ineq[c]);
 		if (set_div < 0)
 			return isl_basic_map_free(bmap);
 		if (!set_div)
@@ -5721,7 +5722,8 @@ static __isl_give isl_basic_map *isl_basic_map_drop_redundant_divs_ineq(
 		if (defined)
 			set_div = isl_bool_false;
 		else
-			set_div = ok_to_set_div_from_bound(bmap, i, last_pos);
+			set_div = ok_to_set_div_from_bound(bmap, i,
+							bmap->ineq[last_pos]);
 		if (set_div < 0)
 			return isl_basic_map_free(bmap);
 		if (set_div) {
