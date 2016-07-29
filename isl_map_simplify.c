@@ -1813,8 +1813,8 @@ static int set_reduced_using_equalities(isl_int *dst, isl_int *src,
 					bset_to_bmap(bset), elim);
 }
 
-static struct isl_basic_set *isl_basic_set_reduce_using_equalities(
-	struct isl_basic_set *bset, struct isl_basic_set *context)
+static __isl_give isl_basic_set *isl_basic_set_reduce_using_equalities(
+	__isl_take isl_basic_set *bset, __isl_take isl_basic_set *context)
 {
 	int i;
 	int *elim;
