@@ -2567,6 +2567,8 @@ static __isl_give isl_basic_set *replace_by_empty(
  * of "context", for the case where the combined equalities of
  * "bset" and "context" allow for a compression that can be obtained
  * by preapplication of "T".
+ * If the compression of "context" is empty, meaning that "bset" and
+ * "context" do not intersect, then return the empty set.
  *
  * "bset" itself is not transformed by "T".  Instead, the inequalities
  * are extracted from "bset" and those are transformed by "T".
@@ -2610,7 +2612,7 @@ static __isl_give isl_basic_set *uset_gist_compressed(
 	if (isl_basic_set_plain_is_empty(context)) {
 		isl_mat_free(ineq);
 		isl_basic_set_free(context);
-		return isl_basic_set_set_to_empty(bset);
+		return replace_by_empty(bset);
 	}
 
 	ctx = isl_mat_get_ctx(ineq);

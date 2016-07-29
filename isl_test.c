@@ -1646,6 +1646,10 @@ static isl_stat test_gist_empty(isl_ctx *ctx)
 	context = "{ [] -> [a, b, c] : 2c = 2 + a }";
 	if (test_gist_empty_pair(ctx, map, context) < 0)
 		return isl_stat_error;
+	map = "{ [] -> [0, 0] }";
+	context = "{ [] -> [a, b] : a > b }";
+	if (test_gist_empty_pair(ctx, map, context) < 0)
+		return isl_stat_error;
 
 	return isl_stat_ok;
 }
