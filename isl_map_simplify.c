@@ -1035,8 +1035,8 @@ error:
 	return bmap;
 }
 
-static struct isl_basic_map *set_div_from_lower_bound(
-	struct isl_basic_map *bmap, int div, int ineq)
+static __isl_give isl_basic_map *set_div_from_lower_bound(
+	__isl_take isl_basic_map *bmap, int div, int ineq)
 {
 	unsigned total = 1 + isl_space_dim(bmap->dim, isl_dim_all);
 
