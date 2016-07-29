@@ -1807,7 +1807,7 @@ static int reduced_using_equalities(isl_int *dst, isl_int *src,
 }
 
 static int set_reduced_using_equalities(isl_int *dst, isl_int *src,
-	struct isl_basic_set *bset, int *elim)
+	__isl_keep isl_basic_set *bset, int *elim)
 {
 	return reduced_using_equalities(dst, src,
 					bset_to_bmap(bset), elim);
