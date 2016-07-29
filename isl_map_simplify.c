@@ -1761,7 +1761,7 @@ __isl_give isl_map *isl_map_drop_constraint_involving_unknown_divs(
 /* Don't assume equalities are in order, because align_divs
  * may have changed the order of the divs.
  */
-static void compute_elimination_index(struct isl_basic_map *bmap, int *elim)
+static void compute_elimination_index(__isl_keep isl_basic_map *bmap, int *elim)
 {
 	int d, i;
 	unsigned total;
