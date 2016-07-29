@@ -1779,7 +1779,8 @@ static void compute_elimination_index(__isl_keep isl_basic_map *bmap, int *elim)
 	}
 }
 
-static void set_compute_elimination_index(struct isl_basic_set *bset, int *elim)
+static void set_compute_elimination_index(__isl_keep isl_basic_set *bset,
+	int *elim)
 {
 	compute_elimination_index(bset_to_bmap(bset), elim);
 }
