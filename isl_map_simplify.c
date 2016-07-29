@@ -1055,7 +1055,7 @@ static struct isl_basic_map *set_div_from_lower_bound(
  * any other undefined divs or if any known div is defined in
  * terms of the unknown div.
  */
-static isl_bool ok_to_set_div_from_bound(struct isl_basic_map *bmap,
+static isl_bool ok_to_set_div_from_bound(__isl_keep isl_basic_map *bmap,
 	int div, int ineq)
 {
 	int j;
