@@ -1327,10 +1327,10 @@ static isl_bool ok_to_set_div_from_bound(__isl_keep isl_basic_map *bmap,
 	int div, int ineq)
 {
 	int j;
-	unsigned total = isl_basic_map_offset(bmap, isl_dim_div);
+	isl_size v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
 	isl_size n_div = isl_basic_map_dim(bmap, isl_dim_div);
 
-	if (n_div < 0)
+	if (v_div < 0 || n_div < 0)
 		return isl_bool_error;
 
 	/* Not defined in terms of unknown divs */
@@ -1339,7 +1339,7 @@ static isl_bool ok_to_set_div_from_bound(__isl_keep isl_basic_map *bmap,
 
 		if (div == j)
 			continue;
-		if (isl_int_is_zero(bmap->ineq[ineq][total + j]))
+		if (isl_int_is_zero(bmap->ineq[ineq][1 + v_div + j]))
 			continue;
 		unknown = isl_basic_map_div_is_marked_unknown(bmap, j);
 		if (unknown < 0 || unknown)
@@ -1352,7 +1352,7 @@ static isl_bool ok_to_set_div_from_bound(__isl_keep isl_basic_map *bmap,
 			continue;
 		if (isl_int_is_zero(bmap->div[j][0]))
 			continue;
-		if (!isl_int_is_zero(bmap->div[j][1 + total + div]))
+		if (!isl_int_is_zero(bmap->div[j][1 + 1 + v_div + div]))
 			return isl_bool_false;
 	}
 
