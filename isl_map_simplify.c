@@ -1359,8 +1359,8 @@ static isl_bool ok_to_set_div_from_bound(__isl_keep isl_basic_map *bmap,
 	return isl_bool_true;
 }
 
-/* Would an expression for div "div" based on inequality "ineq" of "bmap"
- * be a better expression than the current one?
+/* Would an expression for div "div" based on inequality "ineq"
+ * be a better expression than the current one in "bmap"?
  *
  * If we do not have any expression yet, then any expression would be better.
  * Otherwise we check if the last variable involved in the inequality
@@ -1368,7 +1368,7 @@ static isl_bool ok_to_set_div_from_bound(__isl_keep isl_basic_map *bmap,
  * than the last variable involved in the current div expression.
  */
 static isl_bool better_div_constraint(__isl_keep isl_basic_map *bmap,
-	int div, int ineq)
+	int div, isl_int *ineq)
 {
 	unsigned total = isl_basic_map_offset(bmap, isl_dim_div);
 	isl_size n_div = isl_basic_map_dim(bmap, isl_dim_div);
@@ -1382,11 +1382,10 @@ static isl_bool better_div_constraint(__isl_keep isl_basic_map *bmap,
 	if (unknown < 0 || unknown)
 		return unknown;
 
-	if (isl_seq_any_non_zero(bmap->ineq[ineq] + total + div + 1,
-				  n_div - (div + 1)))
+	if (isl_seq_any_non_zero(ineq + total + div + 1, n_div - (div + 1)))
 		return isl_bool_false;
 
-	last_ineq = isl_seq_last_non_zero(bmap->ineq[ineq], total + div);
+	last_ineq = isl_seq_last_non_zero(ineq, total + div);
 	last_div = isl_seq_last_non_zero(bmap->div[div] + 1, total + n_div);
 
 	return last_ineq < last_div;
@@ -1786,7 +1785,7 @@ static __isl_give isl_basic_map *check_for_div_constraints(
 			c = l;
 		if (isl_int_ge(sum, bmap->ineq[c][total + i]))
 			continue;
-		set_div = better_div_constraint(bmap, i, c);
+		set_div = better_div_constraint(bmap, i, bmap->ineq[c]);
 		if (set_div >= 0 && set_div)
 			set_div = ok_to_set_div_from_bound(bmap, i, c);
 		if (set_div < 0)
