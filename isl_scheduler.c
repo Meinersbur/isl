@@ -725,7 +725,7 @@ static int has_any_defining_equality(__isl_keep isl_basic_set *bset)
 
 	n = isl_basic_set_dim(bset, isl_dim_set);
 	for (i = 0; i < n; ++i) {
-		int has;
+		isl_bool has;
 
 		has = isl_basic_set_has_defining_equality(bset, isl_dim_set, i,
 							NULL);

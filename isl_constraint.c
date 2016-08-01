@@ -880,7 +880,7 @@ isl_bool isl_basic_map_has_defining_equality(
  *
  * If so, and if c is not NULL, then return a copy of this equality in *c.
  */
-int isl_basic_set_has_defining_equality(
+isl_bool isl_basic_set_has_defining_equality(
 	__isl_keep isl_basic_set *bset, enum isl_dim_type type, int pos,
 	__isl_give isl_constraint **c)
 {
