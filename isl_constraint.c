@@ -847,7 +847,7 @@ error:
  *
  * If so, and if c is not NULL, then return a copy of this equality in *c.
  */
-int isl_basic_map_has_defining_equality(
+isl_bool isl_basic_map_has_defining_equality(
 	__isl_keep isl_basic_map *bmap, enum isl_dim_type type, int pos,
 	__isl_give isl_constraint **c)
 {
@@ -856,10 +856,12 @@ int isl_basic_map_has_defining_equality(
 	unsigned total;
 
 	if (!bmap)
-		return -1;
+		return isl_bool_error;
 	offset = basic_map_offset(bmap, type);
 	total = isl_basic_map_total_dim(bmap);
-	isl_assert(bmap->ctx, pos < isl_basic_map_dim(bmap, type), return -1);
+	if (pos >= isl_basic_map_dim(bmap, type))
+		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
+			"invalid position", return isl_bool_error);
 	for (i = 0; i < bmap->n_eq; ++i) {
 		if (isl_int_is_zero(bmap->eq[i][offset + pos]) ||
 		    isl_seq_first_non_zero(bmap->eq[i]+offset+pos+1,
@@ -868,9 +870,9 @@ int isl_basic_map_has_defining_equality(
 		if (c)
 			*c = isl_basic_map_constraint(isl_basic_map_copy(bmap),
 								&bmap->eq[i]);
-		return 1;
+		return isl_bool_true;
 	}
-	return 0;
+	return isl_bool_false;
 }
 
 /* Is the variable of "type" at position "pos" of "bset" defined
