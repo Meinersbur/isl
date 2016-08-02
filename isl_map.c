@@ -6917,8 +6917,8 @@ __isl_give isl_pw_aff *isl_set_dim_min(__isl_take isl_set *set, int pos)
 /* Apply a preimage specified by "mat" on the parameters of "bset".
  * bset is assumed to have only parameters and divs.
  */
-static struct isl_basic_set *basic_set_parameter_preimage(
-	struct isl_basic_set *bset, struct isl_mat *mat)
+static __isl_give isl_basic_set *basic_set_parameter_preimage(
+	__isl_take isl_basic_set *bset, __isl_take isl_mat *mat)
 {
 	unsigned nparam;
 
