@@ -2235,8 +2235,8 @@ static int add_parametric_cut(struct isl_tab *tab, int row,
  * of the variables in all constraints are negated prior to adding them
  * to the tableau.
  */
-static struct isl_tab *tab_for_lexmin(struct isl_basic_map *bmap,
-	struct isl_basic_set *dom, unsigned M, int max)
+static __isl_give struct isl_tab *tab_for_lexmin(__isl_keep isl_basic_map *bmap,
+	__isl_keep isl_basic_set *dom, unsigned M, int max)
 {
 	int i;
 	struct isl_tab *tab;
