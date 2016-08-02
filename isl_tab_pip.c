@@ -5430,22 +5430,6 @@ __isl_give isl_vec *isl_tab_lexmin_get_solution(__isl_keep isl_tab_lexmin *tl)
 		return isl_tab_get_sample_value(tl->tab);
 }
 
-/* Return the lexicographically smallest rational point in "bset",
- * assuming that all variables are non-negative.
- * If "bset" is empty, then return a zero-length vector.
- */
-__isl_give isl_vec *isl_tab_basic_set_non_neg_lexmin(
-	__isl_take isl_basic_set *bset)
-{
-	isl_tab_lexmin *tl;
-	isl_vec *sol;
-
-	tl = isl_tab_lexmin_from_basic_set(bset);
-	sol = isl_tab_lexmin_get_solution(tl);
-	isl_tab_lexmin_free(tl);
-	return sol;
-}
-
 struct isl_sol_pma {
 	struct isl_sol	sol;
 	isl_pw_multi_aff *pma;
