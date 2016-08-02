@@ -828,7 +828,7 @@ static isl_bool map_is_subset(__isl_keep isl_map *map1,
 {
 	isl_bool is_subset = isl_bool_false;
 	isl_bool empty;
-	int rat1, rat2;
+	isl_bool rat1, rat2;
 
 	if (!map1 || !map2)
 		return isl_bool_error;

@@ -923,21 +923,19 @@ isl_bool isl_basic_map_has_rational(__isl_keep isl_basic_map *bmap)
 
 /* Does "map" contain any rational points?
  */
-int isl_map_has_rational(__isl_keep isl_map *map)
+isl_bool isl_map_has_rational(__isl_keep isl_map *map)
 {
 	int i;
 	isl_bool has_rational;
 
 	if (!map)
-		return -1;
+		return isl_bool_error;
 	for (i = 0; i < map->n; ++i) {
 		has_rational = isl_basic_map_has_rational(map->p[i]);
-		if (has_rational < 0)
-			return -1;
-		if (has_rational)
-			return 1;
+		if (has_rational < 0 || has_rational)
+			return has_rational;
 	}
-	return 0;
+	return isl_bool_false;
 }
 
 /* Does "set" contain any rational points?
