@@ -883,21 +883,21 @@ int isl_basic_set_is_rational(__isl_keep isl_basic_set *bset)
  * to an integer constant, then it has no rational points, even if it
  * is marked as rational.
  */
-int isl_basic_map_has_rational(__isl_keep isl_basic_map *bmap)
+isl_bool isl_basic_map_has_rational(__isl_keep isl_basic_map *bmap)
 {
-	int has_rational = 1;
+	isl_bool has_rational = isl_bool_true;
 	unsigned total;
 
 	if (!bmap)
-		return -1;
+		return isl_bool_error;
 	if (isl_basic_map_plain_is_empty(bmap))
-		return 0;
+		return isl_bool_false;
 	if (!isl_basic_map_is_rational(bmap))
-		return 0;
+		return isl_bool_false;
 	bmap = isl_basic_map_copy(bmap);
 	bmap = isl_basic_map_implicit_equalities(bmap);
 	if (!bmap)
-		return -1;
+		return isl_bool_error;
 	total = isl_basic_map_total_dim(bmap);
 	if (bmap->n_eq == total) {
 		int i, j;
@@ -914,7 +914,7 @@ int isl_basic_map_has_rational(__isl_keep isl_basic_map *bmap)
 				break;
 		}
 		if (i == bmap->n_eq)
-			has_rational = 0;
+			has_rational = isl_bool_false;
 	}
 	isl_basic_map_free(bmap);
 
@@ -926,7 +926,7 @@ int isl_basic_map_has_rational(__isl_keep isl_basic_map *bmap)
 int isl_map_has_rational(__isl_keep isl_map *map)
 {
 	int i;
-	int has_rational;
+	isl_bool has_rational;
 
 	if (!map)
 		return -1;
