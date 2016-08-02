@@ -821,10 +821,10 @@ __isl_give isl_set *isl_set_reset_user(__isl_take isl_set *set)
 	return isl_map_reset_user(set);
 }
 
-int isl_basic_map_is_rational(__isl_keep isl_basic_map *bmap)
+isl_bool isl_basic_map_is_rational(__isl_keep isl_basic_map *bmap)
 {
 	if (!bmap)
-		return -1;
+		return isl_bool_error;
 	return ISL_F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL);
 }
 
@@ -3487,6 +3487,7 @@ __isl_give isl_basic_map *isl_basic_map_insert_dims(
 	__isl_take isl_basic_map *bmap, enum isl_dim_type type,
 	unsigned pos, unsigned n)
 {
+	isl_bool rational;
 	isl_space *res_dim;
 	struct isl_basic_map *res;
 	struct isl_dim_map *dim_map;
@@ -3520,7 +3521,10 @@ __isl_give isl_basic_map *isl_basic_map_insert_dims(
 
 	res = isl_basic_map_alloc_space(res_dim,
 			bmap->n_div, bmap->n_eq, bmap->n_ineq);
-	if (isl_basic_map_is_rational(bmap))
+	rational = isl_basic_map_is_rational(bmap);
+	if (rational < 0)
+		res = isl_basic_map_free(res);
+	if (rational)
 		res = isl_basic_map_set_rational(res);
 	if (isl_basic_map_plain_is_empty(bmap)) {
 		isl_basic_map_free(bmap);
@@ -9910,7 +9914,7 @@ error:
 __isl_give isl_basic_map *isl_basic_map_range_product(
 	__isl_take isl_basic_map *bmap1, __isl_take isl_basic_map *bmap2)
 {
-	int rational;
+	isl_bool rational;
 	isl_space *dim_result = NULL;
 	isl_basic_map *bmap;
 	unsigned in, out1, out2, nparam, total, pos;
@@ -12972,7 +12976,8 @@ __isl_give isl_basic_map *isl_basic_map_preimage_multi_aff(
 	isl_basic_map *res = NULL;
 	int n_before, n_after, n_div_bmap, n_div_ma;
 	isl_int f, c1, c2, g;
-	int rational, strides;
+	isl_bool rational;
+	int strides;
 
 	isl_int_init(f);
 	isl_int_init(c1);
