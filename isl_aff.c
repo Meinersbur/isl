@@ -2787,7 +2787,7 @@ static __isl_give isl_set *pw_aff_locus(__isl_take isl_pw_aff *pwaff,
 	for (i = 0; i < pwaff->n; ++i) {
 		isl_basic_set *bset;
 		isl_set *set_i, *locus;
-		int rational;
+		isl_bool rational;
 
 		if (isl_aff_is_nan(pwaff->p[i].aff))
 			continue;

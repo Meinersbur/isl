@@ -940,7 +940,7 @@ isl_bool isl_map_has_rational(__isl_keep isl_map *map)
 
 /* Does "set" contain any rational points?
  */
-int isl_set_has_rational(__isl_keep isl_set *set)
+isl_bool isl_set_has_rational(__isl_keep isl_set *set)
 {
 	return isl_map_has_rational(set);
 }

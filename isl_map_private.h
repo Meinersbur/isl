@@ -390,7 +390,7 @@ isl_bool isl_map_is_rational(__isl_keep isl_map *map);
 isl_bool isl_set_is_rational(__isl_keep isl_set *set);
 
 isl_bool isl_map_has_rational(__isl_keep isl_map *map);
-int isl_set_has_rational(__isl_keep isl_set *set);
+isl_bool isl_set_has_rational(__isl_keep isl_set *set);
 
 __isl_give isl_basic_map *isl_basic_map_from_multi_aff2(
 	__isl_take isl_multi_aff *maff, int rational);
