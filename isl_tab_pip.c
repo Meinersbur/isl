@@ -4638,21 +4638,21 @@ error:
  *	b_i <= b_j	for j > i
  *	b_i <  b_j	for j < i
  */
-static __isl_give isl_set *set_minimum(__isl_take isl_space *dim,
+static __isl_give isl_set *set_minimum(__isl_take isl_space *space,
 	__isl_take isl_mat *var)
 {
 	int i, k;
 	isl_basic_set *bset = NULL;
 	isl_set *set = NULL;
 
-	if (!dim || !var)
+	if (!space || !var)
 		goto error;
 
-	set = isl_set_alloc_space(isl_space_copy(dim),
+	set = isl_set_alloc_space(isl_space_copy(space),
 				var->n_row, ISL_SET_DISJOINT);
 
 	for (i = 0; i < var->n_row; ++i) {
-		bset = isl_basic_set_alloc_space(isl_space_copy(dim), 0,
+		bset = isl_basic_set_alloc_space(isl_space_copy(space), 0,
 					       1, var->n_row - 1);
 		k = isl_basic_set_alloc_equality(bset);
 		if (k < 0)
@@ -4663,13 +4663,13 @@ static __isl_give isl_set *set_minimum(__isl_take isl_space *dim,
 		set = isl_set_add_basic_set(set, bset);
 	}
 
-	isl_space_free(dim);
+	isl_space_free(space);
 	isl_mat_free(var);
 	return set;
 error:
 	isl_basic_set_free(bset);
 	isl_set_free(set);
-	isl_space_free(dim);
+	isl_space_free(space);
 	isl_mat_free(var);
 	return NULL;
 }
