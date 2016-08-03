@@ -749,14 +749,20 @@ static enum isl_change is_adj_ineq_extension(int i, int j,
 {
 	int k;
 	struct isl_tab_undo *snap;
-	unsigned n_eq = info[i].bmap->n_eq;
+	isl_size n_eq_i, n_ineq_j;
 	isl_size total = isl_basic_map_dim(info[i].bmap, isl_dim_all);
 	isl_stat r;
 	isl_bool super;
 
 	if (total < 0)
 		return isl_change_error;
-	if (isl_tab_extend_cons(info[i].tab, 1 + info[j].bmap->n_ineq) < 0)
+
+	n_eq_i = isl_basic_map_n_equality(info[i].bmap);
+	n_ineq_j = isl_basic_map_n_inequality(info[j].bmap);
+	if (n_eq_i < 0 || n_ineq_j < 0)
+		return isl_change_error;
+
+	if (isl_tab_extend_cons(info[i].tab, 1 + n_ineq_j) < 0)
 		return isl_change_error;
 
 	k = find_ineq(&info[i], STATUS_ADJ_INEQ);
@@ -767,7 +773,7 @@ static enum isl_change is_adj_ineq_extension(int i, int j,
 
 	snap = isl_tab_snap(info[i].tab);
 
-	if (isl_tab_unrestrict(info[i].tab, n_eq + k) < 0)
+	if (isl_tab_unrestrict(info[i].tab, n_eq_i + k) < 0)
 		return isl_change_error;
 
 	isl_seq_neg(info[i].bmap->ineq[k], info[i].bmap->ineq[k], 1 + total);
@@ -778,7 +784,7 @@ static enum isl_change is_adj_ineq_extension(int i, int j,
 	if (r < 0)
 		return isl_change_error;
 
-	for (k = 0; k < info[j].bmap->n_ineq; ++k) {
+	for (k = 0; k < n_ineq_j; ++k) {
 		if (info[j].ineq[k] != STATUS_VALID)
 			continue;
 		if (isl_tab_add_ineq(info[i].tab, info[j].bmap->ineq[k]) < 0)
