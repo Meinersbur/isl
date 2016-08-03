@@ -54,7 +54,7 @@ int isl_union_map_is_transitively_closed(__isl_keep isl_union_map *umap)
 static __isl_give isl_map *set_path_length(__isl_take isl_map *map,
 	int exactly, int length)
 {
-	isl_space *dim;
+	isl_space *space;
 	struct isl_basic_map *bmap;
 	unsigned d;
 	unsigned nparam;
@@ -64,10 +64,10 @@ static __isl_give isl_map *set_path_length(__isl_take isl_map *map,
 	if (!map)
 		return NULL;
 
-	dim = isl_map_get_space(map);
-	d = isl_space_dim(dim, isl_dim_in);
-	nparam = isl_space_dim(dim, isl_dim_param);
-	bmap = isl_basic_map_alloc_space(dim, 0, 1, 1);
+	space = isl_map_get_space(map);
+	d = isl_space_dim(space, isl_dim_in);
+	nparam = isl_space_dim(space, isl_dim_param);
+	bmap = isl_basic_map_alloc_space(space, 0, 1, 1);
 	if (exactly) {
 		k = isl_basic_map_alloc_equality(bmap);
 		if (k < 0)
