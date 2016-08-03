@@ -237,6 +237,14 @@ int isl_basic_map_n_inequality(__isl_keep isl_basic_map *bmap)
 	return bmap->n_ineq;
 }
 
+/* Return the number of inequality constraints in the description of "bset".
+ * Return -1 on error.
+ */
+int isl_basic_set_n_inequality(__isl_keep isl_basic_set *bset)
+{
+	return isl_basic_map_n_inequality(bset_to_bmap(bset));
+}
+
 /* Do "bmap1" and "bmap2" have the same parameters?
  */
 static isl_bool isl_basic_map_has_equal_params(__isl_keep isl_basic_map *bmap1,
