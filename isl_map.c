@@ -6985,8 +6985,8 @@ error:
 /* Intersect the basic set "bset" with the affine space specified by the
  * equalities in "eq".
  */
-static struct isl_basic_set *basic_set_append_equalities(
-	struct isl_basic_set *bset, struct isl_mat *eq)
+static __isl_give isl_basic_set *basic_set_append_equalities(
+	__isl_take isl_basic_set *bset, __isl_take isl_mat *eq)
 {
 	int i, k;
 	unsigned len;
