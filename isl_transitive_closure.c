@@ -611,11 +611,11 @@ static __isl_give isl_map *path_along_delta(__isl_take isl_space *space,
 	path = add_delta_constraints(path, delta, off, nparam, d,
 				     div_purity, 0, &impurity);
 	if (impurity) {
-		isl_space *dim = isl_basic_set_get_space(delta);
+		isl_space *space = isl_basic_set_get_space(delta);
 		delta = isl_basic_set_project_out(delta,
 						  isl_dim_param, 0, nparam);
 		delta = isl_basic_set_add_dims(delta, isl_dim_param, nparam);
-		delta = isl_basic_set_reset_space(delta, dim);
+		delta = isl_basic_set_reset_space(delta, space);
 		if (!delta)
 			goto error;
 		path = isl_basic_map_extend_constraints(path, delta->n_eq,
