@@ -113,7 +113,7 @@ static int tab_add_constraint(struct isl_tab *tab,
 	unsigned tab_total;
 	unsigned bmap_total;
 	isl_vec *v;
-	int r;
+	isl_stat r;
 
 	if (!tab || !bmap)
 		return -1;

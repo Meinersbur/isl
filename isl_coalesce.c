@@ -648,7 +648,7 @@ static enum isl_change is_adj_ineq_extension(int i, int j,
 	struct isl_tab_undo *snap;
 	unsigned n_eq = info[i].bmap->n_eq;
 	unsigned total = isl_basic_map_total_dim(info[i].bmap);
-	int r;
+	isl_stat r;
 	isl_bool super;
 
 	if (isl_tab_extend_cons(info[i].tab, 1 + info[j].bmap->n_ineq) < 0)
@@ -833,7 +833,7 @@ static __isl_give isl_vec *try_tightening(struct isl_coalesce_info *info,
 	int ineq, __isl_take isl_vec *v)
 {
 	isl_ctx *ctx;
-	int r;
+	isl_stat r;
 
 	if (!v)
 		return NULL;

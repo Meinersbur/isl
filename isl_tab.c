@@ -1890,25 +1890,27 @@ static int drop_col(struct isl_tab *tab, int col)
  * This function assumes that at least one more row and at least
  * one more element in the constraint array are available in the tableau.
  */
-int isl_tab_add_ineq(struct isl_tab *tab, isl_int *ineq)
+isl_stat isl_tab_add_ineq(struct isl_tab *tab, isl_int *ineq)
 {
 	int r;
 	int sgn;
 	isl_int cst;
 
 	if (!tab)
-		return -1;
+		return isl_stat_error;
 	if (tab->bmap) {
 		struct isl_basic_map *bmap = tab->bmap;
 
-		isl_assert(tab->mat->ctx, tab->n_eq == bmap->n_eq, return -1);
+		isl_assert(tab->mat->ctx, tab->n_eq == bmap->n_eq,
+			return isl_stat_error);
 		isl_assert(tab->mat->ctx,
-			    tab->n_con == bmap->n_eq + bmap->n_ineq, return -1);
+			    tab->n_con == bmap->n_eq + bmap->n_ineq,
+			    return isl_stat_error);
 		tab->bmap = isl_basic_map_add_ineq(tab->bmap, ineq);
 		if (isl_tab_push(tab, isl_tab_undo_bmap_ineq) < 0)
-			return -1;
+			return isl_stat_error;
 		if (!tab->bmap)
-			return -1;
+			return isl_stat_error;
 	}
 	if (tab->cone) {
 		isl_int_init(cst);
@@ -1921,25 +1923,25 @@ int isl_tab_add_ineq(struct isl_tab *tab, isl_int *ineq)
 		isl_int_clear(cst);
 	}
 	if (r < 0)
-		return -1;
+		return isl_stat_error;
 	tab->con[r].is_nonneg = 1;
 	if (isl_tab_push_var(tab, isl_tab_undo_nonneg, &tab->con[r]) < 0)
-		return -1;
+		return isl_stat_error;
 	if (isl_tab_row_is_redundant(tab, tab->con[r].index)) {
 		if (isl_tab_mark_redundant(tab, tab->con[r].index) < 0)
-			return -1;
-		return 0;
+			return isl_stat_error;
+		return isl_stat_ok;
 	}
 
 	sgn = restore_row(tab, &tab->con[r]);
 	if (sgn < -1)
-		return -1;
+		return isl_stat_error;
 	if (sgn < 0)
 		return isl_tab_mark_empty(tab);
 	if (tab->con[r].is_row && isl_tab_row_is_redundant(tab, tab->con[r].index))
 		if (isl_tab_mark_redundant(tab, tab->con[r].index) < 0)
-			return -1;
-	return 0;
+			return isl_stat_error;
+	return isl_stat_ok;
 }
 
 /* Pivot a non-negative variable down until it reaches the value zero
