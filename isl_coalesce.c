@@ -220,6 +220,34 @@ static int any_ineq(struct isl_coalesce_info *info, int status)
 	return any(info->ineq, n_ineq, status);
 }
 
+/* Return the position of the first half on an equality constraint
+ * in the description of the basic map represented by "info" that
+ * has position "status" with respect to the other basic map.
+ * The returned value is twice the position of the equality constraint
+ * plus zero for the negative half and plus one for the positive half.
+ * Return -1 if there is no such entry.
+ */
+static int find_eq(struct isl_coalesce_info *info, int status)
+{
+	unsigned n_eq;
+
+	n_eq = isl_basic_map_n_equality(info->bmap);
+	return find(info->eq, 2 * n_eq, status);
+}
+
+/* Return the position of the first inequality constraint in the description
+ * of the basic map represented by "info" that
+ * has position "status" with respect to the other basic map.
+ * Return -1 if there is no such entry.
+ */
+static int find_ineq(struct isl_coalesce_info *info, int status)
+{
+	unsigned n_ineq;
+
+	n_ineq = isl_basic_map_n_inequality(info->bmap);
+	return find(info->ineq, n_ineq, status);
+}
+
 /* Return the number of (halves of) equality constraints in the description
  * of the basic map represented by "info" that
  * have position "status" with respect to the other basic map.
@@ -702,7 +730,7 @@ static enum isl_change is_adj_ineq_extension(int i, int j,
 	if (isl_tab_extend_cons(info[i].tab, 1 + info[j].bmap->n_ineq) < 0)
 		return isl_change_error;
 
-	k = find(info[i].ineq, info[i].bmap->n_ineq, STATUS_ADJ_INEQ);
+	k = find_ineq(&info[i], STATUS_ADJ_INEQ);
 	if (k < 0)
 		isl_die(isl_basic_map_get_ctx(info[i].bmap), isl_error_internal,
 			"info[i].ineq should have exactly one STATUS_ADJ_INEQ",
@@ -1872,7 +1900,7 @@ static enum isl_change check_single_adj_eq(int i, int j,
 
 	n_cut = count_ineq(&info[i], STATUS_CUT);
 
-	k = find(info[i].ineq, info[i].bmap->n_ineq, STATUS_ADJ_EQ);
+	k = find_ineq(&info[i], STATUS_ADJ_EQ);
 
 	if (n_cut > 0) {
 		ctx = isl_basic_map_get_ctx(info[i].bmap);
@@ -1973,7 +2001,7 @@ static enum isl_change check_eq_adj_eq(int i, int j,
 	if (count_eq(&info[i], STATUS_ADJ_EQ) != 1)
 		detect_equalities = 1;
 
-	k = find(info[i].eq, 2 * info[i].bmap->n_eq, STATUS_ADJ_EQ);
+	k = find_eq(&info[i], STATUS_ADJ_EQ);
 
 	set_i = set_from_updated_bmap(info[i].bmap, info[i].tab);
 	set_j = set_from_updated_bmap(info[j].bmap, info[j].tab);
