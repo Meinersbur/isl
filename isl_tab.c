@@ -980,15 +980,15 @@ int isl_tab_mark_rational(struct isl_tab *tab)
 	return 0;
 }
 
-int isl_tab_mark_empty(struct isl_tab *tab)
+isl_stat isl_tab_mark_empty(struct isl_tab *tab)
 {
 	if (!tab)
-		return -1;
+		return isl_stat_error;
 	if (!tab->empty && tab->need_undo)
 		if (isl_tab_push(tab, isl_tab_undo_empty) < 0)
-			return -1;
+			return isl_stat_error;
 	tab->empty = 1;
-	return 0;
+	return isl_stat_ok;
 }
 
 int isl_tab_freeze_constraint(struct isl_tab *tab, int con)

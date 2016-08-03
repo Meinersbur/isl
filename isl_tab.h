@@ -289,7 +289,7 @@ __isl_null isl_tab_lexmin *isl_tab_lexmin_free(__isl_take isl_tab_lexmin *tl);
 struct isl_tab_var *isl_tab_var_from_row(struct isl_tab *tab, int i);
 int isl_tab_mark_redundant(struct isl_tab *tab, int row) WARN_UNUSED;
 int isl_tab_mark_rational(struct isl_tab *tab) WARN_UNUSED;
-int isl_tab_mark_empty(struct isl_tab *tab) WARN_UNUSED;
+isl_stat isl_tab_mark_empty(struct isl_tab *tab) WARN_UNUSED;
 struct isl_tab *isl_tab_dup(struct isl_tab *tab);
 struct isl_tab *isl_tab_product(struct isl_tab *tab1, struct isl_tab *tab2);
 int isl_tab_extend_cons(struct isl_tab *tab, unsigned n_new) WARN_UNUSED;
