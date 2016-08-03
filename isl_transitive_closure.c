@@ -662,17 +662,17 @@ error:
  *
  *	{ [x,x_s] -> [y,y_s] : k = y_s - x_s > 0 }
  */
-static __isl_give isl_map *equate_parameter_to_length(__isl_take isl_space *dim,
-	unsigned param)
+static __isl_give isl_map *equate_parameter_to_length(
+	__isl_take isl_space *space, unsigned param)
 {
 	struct isl_basic_map *bmap;
 	unsigned d;
 	unsigned nparam;
 	int k;
 
-	d = isl_space_dim(dim, isl_dim_in);
-	nparam = isl_space_dim(dim, isl_dim_param);
-	bmap = isl_basic_map_alloc_space(dim, 0, 1, 1);
+	d = isl_space_dim(space, isl_dim_in);
+	nparam = isl_space_dim(space, isl_dim_param);
+	bmap = isl_basic_map_alloc_space(space, 0, 1, 1);
 	k = isl_basic_map_alloc_equality(bmap);
 	if (k < 0)
 		goto error;
