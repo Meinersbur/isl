@@ -220,6 +220,30 @@ static int any_ineq(struct isl_coalesce_info *info, int status)
 	return any(info->ineq, n_ineq, status);
 }
 
+/* Return the number of (halves of) equality constraints in the description
+ * of the basic map represented by "info" that
+ * have position "status" with respect to the other basic map.
+ */
+static int count_eq(struct isl_coalesce_info *info, int status)
+{
+	unsigned n_eq;
+
+	n_eq = isl_basic_map_n_equality(info->bmap);
+	return count(info->eq, 2 * n_eq, status);
+}
+
+/* Return the number of inequality constraints in the description
+ * of the basic map represented by "info" that
+ * have position "status" with respect to the other basic map.
+ */
+static int count_ineq(struct isl_coalesce_info *info, int status)
+{
+	unsigned n_ineq;
+
+	n_ineq = isl_basic_map_n_inequality(info->bmap);
+	return count(info->ineq, n_ineq, status);
+}
+
 /* Are all non-redundant constraints of the basic map represented by "info"
  * either valid or cut constraints with respect to the other basic map?
  */
@@ -756,8 +780,8 @@ static enum isl_change check_adj_ineq(int i, int j,
 	int count_i, count_j;
 	int cut_i, cut_j;
 
-	count_i = count(info[i].ineq, info[i].bmap->n_ineq, STATUS_ADJ_INEQ);
-	count_j = count(info[j].ineq, info[j].bmap->n_ineq, STATUS_ADJ_INEQ);
+	count_i = count_ineq(&info[i], STATUS_ADJ_INEQ);
+	count_j = count_ineq(&info[j], STATUS_ADJ_INEQ);
 
 	if (count_i != 1 && count_j != 1)
 		return isl_change_none;
@@ -1734,8 +1758,7 @@ static enum isl_change can_wrap_in_set(int i, int j,
 	    ISL_F_ISSET(info[j].bmap, ISL_BASIC_MAP_RATIONAL))
 		return isl_change_none;
 
-	n = count(info[i].eq, 2 * info[i].bmap->n_eq, STATUS_CUT);
-	n += count(info[i].ineq, info[i].bmap->n_ineq, STATUS_CUT);
+	n = count_eq(&info[i], STATUS_CUT) + count_ineq(&info[i], STATUS_CUT);
 	if (n == 0)
 		return isl_change_none;
 
@@ -1847,7 +1870,7 @@ static enum isl_change check_single_adj_eq(int i, int j,
 	isl_ctx *ctx;
 	isl_bool try_relax;
 
-	n_cut = count(info[i].ineq, info[i].bmap->n_ineq, STATUS_CUT);
+	n_cut = count_ineq(&info[i], STATUS_CUT);
 
 	k = find(info[i].ineq, info[i].bmap->n_ineq, STATUS_ADJ_EQ);
 
@@ -1899,7 +1922,7 @@ static enum isl_change check_adj_eq(int i, int j,
 
 	/* j has an equality adjacent to an inequality in i */
 
-	if (count(info[i].ineq, info[i].bmap->n_ineq, STATUS_ADJ_EQ) != 1) {
+	if (count_ineq(&info[i], STATUS_ADJ_EQ) != 1) {
 		if (all_valid_or_cut(&info[i]))
 			return can_wrap_in_set(i, j, info);
 		return isl_change_none;
@@ -1947,7 +1970,7 @@ static enum isl_change check_eq_adj_eq(int i, int j,
 	struct isl_vec *bound = NULL;
 	unsigned total = isl_basic_map_total_dim(info[i].bmap);
 
-	if (count(info[i].eq, 2 * info[i].bmap->n_eq, STATUS_ADJ_EQ) != 1)
+	if (count_eq(&info[i], STATUS_ADJ_EQ) != 1)
 		detect_equalities = 1;
 
 	k = find(info[i].eq, 2 * info[i].bmap->n_eq, STATUS_ADJ_EQ);
