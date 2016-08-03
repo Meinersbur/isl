@@ -196,6 +196,30 @@ struct isl_coalesce_info {
 	int *ineq;
 };
 
+/* Is there any (half of an) equality constraint in the description
+ * of the basic map represented by "info" that
+ * has position "status" with respect to the other basic map?
+ */
+static int any_eq(struct isl_coalesce_info *info, int status)
+{
+	unsigned n_eq;
+
+	n_eq = isl_basic_map_n_equality(info->bmap);
+	return any(info->eq, 2 * n_eq, status);
+}
+
+/* Is there any inequality constraint in the description
+ * of the basic map represented by "info" that
+ * has position "status" with respect to the other basic map?
+ */
+static int any_ineq(struct isl_coalesce_info *info, int status)
+{
+	unsigned n_ineq;
+
+	n_ineq = isl_basic_map_n_inequality(info->bmap);
+	return any(info->ineq, n_ineq, status);
+}
+
 /* Are all non-redundant constraints of the basic map represented by "info"
  * either valid or cut constraints with respect to the other basic map?
  */
@@ -738,10 +762,8 @@ static enum isl_change check_adj_ineq(int i, int j,
 	if (count_i != 1 && count_j != 1)
 		return isl_change_none;
 
-	cut_i = any(info[i].eq, 2 * info[i].bmap->n_eq, STATUS_CUT) ||
-		any(info[i].ineq, info[i].bmap->n_ineq, STATUS_CUT);
-	cut_j = any(info[j].eq, 2 * info[j].bmap->n_eq, STATUS_CUT) ||
-		any(info[j].ineq, info[j].bmap->n_ineq, STATUS_CUT);
+	cut_i = any_eq(&info[i], STATUS_CUT) || any_ineq(&info[i], STATUS_CUT);
+	cut_j = any_eq(&info[j], STATUS_CUT) || any_ineq(&info[j], STATUS_CUT);
 
 	if (!cut_i && !cut_j && count_i == 1 && count_j == 1)
 		return fuse(i, j, info, NULL, 0, 0);
@@ -1867,12 +1889,12 @@ static enum isl_change check_single_adj_eq(int i, int j,
 static enum isl_change check_adj_eq(int i, int j,
 	struct isl_coalesce_info *info)
 {
-	if (any(info[i].eq, 2 * info[i].bmap->n_eq, STATUS_ADJ_INEQ) &&
-	    any(info[j].eq, 2 * info[j].bmap->n_eq, STATUS_ADJ_INEQ))
+	if (any_eq(&info[i], STATUS_ADJ_INEQ) &&
+	    any_eq(&info[j], STATUS_ADJ_INEQ))
 		/* ADJ EQ TOO MANY */
 		return isl_change_none;
 
-	if (any(info[i].eq, 2 * info[i].bmap->n_eq, STATUS_ADJ_INEQ))
+	if (any_eq(&info[i], STATUS_ADJ_INEQ))
 		return check_adj_eq(j, i, info);
 
 	/* j has an equality adjacent to an inequality in i */
@@ -1882,11 +1904,11 @@ static enum isl_change check_adj_eq(int i, int j,
 			return can_wrap_in_set(i, j, info);
 		return isl_change_none;
 	}
-	if (any(info[i].eq, 2 * info[i].bmap->n_eq, STATUS_CUT))
+	if (any_eq(&info[i], STATUS_CUT))
 		return isl_change_none;
-	if (any(info[j].ineq, info[j].bmap->n_ineq, STATUS_ADJ_EQ) ||
-	    any(info[i].ineq, info[i].bmap->n_ineq, STATUS_ADJ_INEQ) ||
-	    any(info[j].ineq, info[j].bmap->n_ineq, STATUS_ADJ_INEQ))
+	if (any_ineq(&info[j], STATUS_ADJ_EQ) ||
+	    any_ineq(&info[i], STATUS_ADJ_INEQ) ||
+	    any_ineq(&info[j], STATUS_ADJ_INEQ))
 		/* ADJ EQ TOO MANY */
 		return isl_change_none;
 
@@ -2168,34 +2190,34 @@ static enum isl_change coalesce_local_pair_reuse(int i, int j,
 	set_ineq_status_in(&info[i], info[j].tab);
 	if (info[i].bmap->n_ineq && !info[i].ineq)
 		goto error;
-	if (any(info[i].ineq, info[i].bmap->n_ineq, STATUS_ERROR))
+	if (any_ineq(&info[i], STATUS_ERROR))
 		goto error;
-	if (any(info[i].ineq, info[i].bmap->n_ineq, STATUS_SEPARATE))
+	if (any_ineq(&info[i], STATUS_SEPARATE))
 		goto done;
 
 	set_ineq_status_in(&info[j], info[i].tab);
 	if (info[j].bmap->n_ineq && !info[j].ineq)
 		goto error;
-	if (any(info[j].ineq, info[j].bmap->n_ineq, STATUS_ERROR))
+	if (any_ineq(&info[j], STATUS_ERROR))
 		goto error;
-	if (any(info[j].ineq, info[j].bmap->n_ineq, STATUS_SEPARATE))
+	if (any_ineq(&info[j], STATUS_SEPARATE))
 		goto done;
 
 	set_eq_status_in(&info[i], info[j].tab);
 	if (info[i].bmap->n_eq && !info[i].eq)
 		goto error;
-	if (any(info[i].eq, 2 * info[i].bmap->n_eq, STATUS_ERROR))
+	if (any_eq(&info[i], STATUS_ERROR))
 		goto error;
 
 	set_eq_status_in(&info[j], info[i].tab);
 	if (info[j].bmap->n_eq && !info[j].eq)
 		goto error;
-	if (any(info[j].eq, 2 * info[j].bmap->n_eq, STATUS_ERROR))
+	if (any_eq(&info[j], STATUS_ERROR))
 		goto error;
 
-	if (any(info[i].eq, 2 * info[i].bmap->n_eq, STATUS_SEPARATE))
+	if (any_eq(&info[i], STATUS_SEPARATE))
 		return separating_equality(i, j, info);
-	if (any(info[j].eq, 2 * info[j].bmap->n_eq, STATUS_SEPARATE))
+	if (any_eq(&info[j], STATUS_SEPARATE))
 		return separating_equality(j, i, info);
 
 	if (all(info[i].eq, 2 * info[i].bmap->n_eq, STATUS_VALID) &&
@@ -2206,23 +2228,23 @@ static enum isl_change coalesce_local_pair_reuse(int i, int j,
 		   all(info[j].ineq, info[j].bmap->n_ineq, STATUS_VALID)) {
 		drop(&info[i]);
 		change = isl_change_drop_first;
-	} else if (any(info[i].eq, 2 * info[i].bmap->n_eq, STATUS_ADJ_EQ)) {
+	} else if (any_eq(&info[i], STATUS_ADJ_EQ)) {
 		change = check_eq_adj_eq(i, j, info);
-	} else if (any(info[j].eq, 2 * info[j].bmap->n_eq, STATUS_ADJ_EQ)) {
+	} else if (any_eq(&info[j], STATUS_ADJ_EQ)) {
 		change = check_eq_adj_eq(j, i, info);
-	} else if (any(info[i].eq, 2 * info[i].bmap->n_eq, STATUS_ADJ_INEQ) ||
-		   any(info[j].eq, 2 * info[j].bmap->n_eq, STATUS_ADJ_INEQ)) {
+	} else if (any_eq(&info[i], STATUS_ADJ_INEQ) ||
+		   any_eq(&info[j], STATUS_ADJ_INEQ)) {
 		change = check_adj_eq(i, j, info);
-	} else if (any(info[i].ineq, info[i].bmap->n_ineq, STATUS_ADJ_EQ) ||
-		   any(info[j].ineq, info[j].bmap->n_ineq, STATUS_ADJ_EQ)) {
+	} else if (any_ineq(&info[i], STATUS_ADJ_EQ) ||
+		   any_ineq(&info[j], STATUS_ADJ_EQ)) {
 		/* Can't happen */
 		/* BAD ADJ INEQ */
-	} else if (any(info[i].ineq, info[i].bmap->n_ineq, STATUS_ADJ_INEQ) ||
-		   any(info[j].ineq, info[j].bmap->n_ineq, STATUS_ADJ_INEQ)) {
+	} else if (any_ineq(&info[i], STATUS_ADJ_INEQ) ||
+		   any_ineq(&info[j], STATUS_ADJ_INEQ)) {
 		change = check_adj_ineq(i, j, info);
 	} else {
-		if (!any(info[i].eq, 2 * info[i].bmap->n_eq, STATUS_CUT) &&
-		    !any(info[j].eq, 2 * info[j].bmap->n_eq, STATUS_CUT))
+		if (!any_eq(&info[i], STATUS_CUT) &&
+		    !any_eq(&info[j], STATUS_CUT))
 			change = check_facets(i, j, info);
 		if (change == isl_change_none)
 			change = check_wrap(i, j, info);
@@ -2968,20 +2990,21 @@ static enum isl_change coalesce_with_expanded_divs(
 	if (!bmap)
 		goto error;
 
+	info_local.bmap = bmap;
 	info_i->eq = eq_status_in(bmap, info[j].tab);
 	if (bmap->n_eq && !info_i->eq)
 		goto error;
-	if (any(info_i->eq, 2 * bmap->n_eq, STATUS_ERROR))
+	if (any_eq(info_i, STATUS_ERROR))
 		goto error;
-	if (any(info_i->eq, 2 * bmap->n_eq, STATUS_SEPARATE))
+	if (any_eq(info_i, STATUS_SEPARATE))
 		goto done;
 
 	info_i->ineq = ineq_status_in(bmap, NULL, info[j].tab);
 	if (bmap->n_ineq && !info_i->ineq)
 		goto error;
-	if (any(info_i->ineq, bmap->n_ineq, STATUS_ERROR))
+	if (any_ineq(info_i, STATUS_ERROR))
 		goto error;
-	if (any(info_i->ineq, bmap->n_ineq, STATUS_SEPARATE))
+	if (any_ineq(info_i, STATUS_SEPARATE))
 		goto done;
 
 	if (all(info_i->eq, 2 * bmap->n_eq, STATUS_VALID) &&
