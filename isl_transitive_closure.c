@@ -563,7 +563,7 @@ error:
  *
  * to the constructed relation.
  */
-static __isl_give isl_map *path_along_delta(__isl_take isl_space *dim,
+static __isl_give isl_map *path_along_delta(__isl_take isl_space *space,
 	__isl_take isl_basic_set *delta)
 {
 	isl_basic_map *path = NULL;
@@ -581,7 +581,7 @@ static __isl_give isl_map *path_along_delta(__isl_take isl_space *dim,
 	n_div = isl_basic_set_dim(delta, isl_dim_div);
 	d = isl_basic_set_dim(delta, isl_dim_set);
 	nparam = isl_basic_set_dim(delta, isl_dim_param);
-	path = isl_basic_map_alloc_space(isl_space_copy(dim), n_div + d + 1,
+	path = isl_basic_map_alloc_space(isl_space_copy(space), n_div + d + 1,
 			d + 1 + delta->n_eq, delta->n_eq + delta->n_ineq + 1);
 	off = 1 + nparam + 2 * (d + 1) + n_div;
 
@@ -643,13 +643,13 @@ static __isl_give isl_map *path_along_delta(__isl_take isl_space *dim,
 	isl_basic_set_free(delta);
 	path = isl_basic_map_finalize(path);
 	if (is_id) {
-		isl_space_free(dim);
+		isl_space_free(space);
 		return isl_map_from_basic_map(path);
 	}
-	return isl_basic_map_union(path, isl_basic_map_identity(dim));
+	return isl_basic_map_union(path, isl_basic_map_identity(space));
 error:
 	free(div_purity);
-	isl_space_free(dim);
+	isl_space_free(space);
 	isl_basic_set_free(delta);
 	isl_basic_map_free(path);
 	return NULL;
