@@ -416,7 +416,7 @@ __isl_give isl_morph *isl_basic_set_variable_compression(
 	unsigned orest;
 	unsigned nrest;
 	int f_eq, n_eq;
-	isl_space *dim;
+	isl_space *space;
 	isl_mat *E, *Q, *C;
 	isl_basic_set *dom, *ran;
 
@@ -455,10 +455,10 @@ __isl_give isl_morph *isl_basic_set_variable_compression(
 	Q = isl_mat_diagonal(Q, isl_mat_identity(bset->ctx, nrest));
 	C = isl_mat_diagonal(C, isl_mat_identity(bset->ctx, nrest));
 
-	dim = isl_space_copy(bset->dim);
-	dim = isl_space_drop_dims(dim, type, 0, ntype);
-	dim = isl_space_add_dims(dim, type, ntype - n_eq);
-	ran = isl_basic_set_universe(dim);
+	space = isl_space_copy(bset->dim);
+	space = isl_space_drop_dims(space, type, 0, ntype);
+	space = isl_space_add_dims(space, type, ntype - n_eq);
+	ran = isl_basic_set_universe(space);
 	dom = copy_equalities(bset, f_eq, n_eq);
 
 	return isl_morph_alloc(dom, ran, Q, C);
