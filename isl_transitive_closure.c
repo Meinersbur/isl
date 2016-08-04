@@ -1476,7 +1476,7 @@ error:
 static int add_length(__isl_keep isl_map *map, isl_map ***grid, int n)
 {
 	int i, j, k;
-	isl_space *dim;
+	isl_space *space;
 	isl_basic_map *bstep;
 	isl_map *step;
 	unsigned nparam;
@@ -1484,13 +1484,15 @@ static int add_length(__isl_keep isl_map *map, isl_map ***grid, int n)
 	if (!map)
 		return -1;
 
-	dim = isl_map_get_space(map);
-	nparam = isl_space_dim(dim, isl_dim_param);
-	dim = isl_space_drop_dims(dim, isl_dim_in, 0, isl_space_dim(dim, isl_dim_in));
-	dim = isl_space_drop_dims(dim, isl_dim_out, 0, isl_space_dim(dim, isl_dim_out));
-	dim = isl_space_add_dims(dim, isl_dim_in, 1);
-	dim = isl_space_add_dims(dim, isl_dim_out, 1);
-	bstep = isl_basic_map_alloc_space(dim, 0, 1, 0);
+	space = isl_map_get_space(map);
+	nparam = isl_space_dim(space, isl_dim_param);
+	space = isl_space_drop_dims(space, isl_dim_in, 0,
+					isl_space_dim(space, isl_dim_in));
+	space = isl_space_drop_dims(space, isl_dim_out, 0,
+					isl_space_dim(space, isl_dim_out));
+	space = isl_space_add_dims(space, isl_dim_in, 1);
+	space = isl_space_add_dims(space, isl_dim_out, 1);
+	bstep = isl_basic_map_alloc_space(space, 0, 1, 0);
 	k = isl_basic_map_alloc_equality(bstep);
 	if (k < 0) {
 		isl_basic_map_free(bstep);
