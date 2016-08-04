@@ -1473,6 +1473,30 @@ error:
 	return -1;
 }
 
+/* Construct a map [x] -> [x+1], with parameters prescribed by "space".
+ */
+static __isl_give isl_map *increment(__isl_take isl_space *space)
+{
+	int k;
+	isl_basic_map *bmap;
+
+	space = isl_space_set_from_params(space);
+	space = isl_space_add_dims(space, isl_dim_set, 1);
+	space = isl_space_map_from_set(space);
+	bmap = isl_basic_map_alloc_space(space, 0, 1, 0);
+	k = isl_basic_map_alloc_equality(bmap);
+	if (k < 0)
+		goto error;
+	isl_seq_clr(bmap->eq[k], 1 + isl_basic_map_total_dim(bmap));
+	isl_int_set_si(bmap->eq[k][0], 1);
+	isl_int_set_si(bmap->eq[k][isl_basic_map_offset(bmap, isl_dim_in)], 1);
+	isl_int_set_si(bmap->eq[k][isl_basic_map_offset(bmap, isl_dim_out)], -1);
+	return isl_map_from_basic_map(bmap);
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
 /* Replace each entry in the n by n grid of maps by the cross product
  * with the relation { [i] -> [i + 1] }.
  */
@@ -2874,30 +2898,6 @@ static isl_stat power(__isl_take isl_map *map, void *user)
 	up->pow = isl_union_map_from_map(map);
 
 	return isl_stat_error;
-}
-
-/* Construct a map [x] -> [x+1], with parameters prescribed by "space".
- */
-static __isl_give isl_map *increment(__isl_take isl_space *space)
-{
-	int k;
-	isl_basic_map *bmap;
-
-	space = isl_space_set_from_params(space);
-	space = isl_space_add_dims(space, isl_dim_set, 1);
-	space = isl_space_map_from_set(space);
-	bmap = isl_basic_map_alloc_space(space, 0, 1, 0);
-	k = isl_basic_map_alloc_equality(bmap);
-	if (k < 0)
-		goto error;
-	isl_seq_clr(bmap->eq[k], 1 + isl_basic_map_total_dim(bmap));
-	isl_int_set_si(bmap->eq[k][0], 1);
-	isl_int_set_si(bmap->eq[k][isl_basic_map_offset(bmap, isl_dim_in)], 1);
-	isl_int_set_si(bmap->eq[k][isl_basic_map_offset(bmap, isl_dim_out)], -1);
-	return isl_map_from_basic_map(bmap);
-error:
-	isl_basic_map_free(bmap);
-	return NULL;
 }
 
 /* Construct a map [[x]->[y]] -> [y-x], with parameters prescribed by "dim".
