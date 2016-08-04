@@ -794,8 +794,8 @@ static int not_unique_unit_row(__isl_keep isl_mat *T, int row)
  * "total" is the total number of variables, i.e., the number
  * of entries in "affected".
  */
-static int is_affected(__isl_keep isl_basic_map *bmap, int ineq, int *affected,
-	int total)
+static isl_bool is_affected(__isl_keep isl_basic_map *bmap, int ineq,
+	int *affected, int total)
 {
 	int i;
 
@@ -803,10 +803,10 @@ static int is_affected(__isl_keep isl_basic_map *bmap, int ineq, int *affected,
 		if (!affected[i])
 			continue;
 		if (!isl_int_is_zero(bmap->ineq[ineq][1 + i]))
-			return 1;
+			return isl_bool_true;
 	}
 
-	return 0;
+	return isl_bool_false;
 }
 
 /* Given the compressed version of inequality constraint "ineq"
@@ -938,11 +938,15 @@ static isl_stat tighten_on_relaxed_facet(struct isl_coalesce_info *info,
 		affected[i] = not_unique_unit_row(T, 1 + i);
 
 	for (i = 0; i < info->bmap->n_ineq; ++i) {
+		isl_bool handle;
 		if (any(relaxed, n, i))
 			continue;
 		if (info->ineq[i] == STATUS_REDUNDANT)
 			continue;
-		if (!is_affected(info->bmap, i, affected, total))
+		handle = is_affected(info->bmap, i, affected, total);
+		if (handle < 0)
+			goto error;
+		if (!handle)
 			continue;
 		v = isl_vec_alloc(ctx, 1 + total);
 		if (!v)
