@@ -1502,35 +1502,15 @@ error:
  */
 static isl_stat add_length(__isl_keep isl_map *map, isl_map ***grid, int n)
 {
-	int i, j, k;
+	int i, j;
 	isl_space *space;
-	isl_basic_map *bstep;
 	isl_map *step;
-	unsigned nparam;
 
-	if (!map)
-		return isl_stat_error;
+	space = isl_space_params(isl_map_get_space(map));
+	step = increment(space);
 
-	space = isl_map_get_space(map);
-	nparam = isl_space_dim(space, isl_dim_param);
-	space = isl_space_drop_dims(space, isl_dim_in, 0,
-					isl_space_dim(space, isl_dim_in));
-	space = isl_space_drop_dims(space, isl_dim_out, 0,
-					isl_space_dim(space, isl_dim_out));
-	space = isl_space_add_dims(space, isl_dim_in, 1);
-	space = isl_space_add_dims(space, isl_dim_out, 1);
-	bstep = isl_basic_map_alloc_space(space, 0, 1, 0);
-	k = isl_basic_map_alloc_equality(bstep);
-	if (k < 0) {
-		isl_basic_map_free(bstep);
+	if (!step)
 		return isl_stat_error;
-	}
-	isl_seq_clr(bstep->eq[k], 1 + isl_basic_map_total_dim(bstep));
-	isl_int_set_si(bstep->eq[k][0], 1);
-	isl_int_set_si(bstep->eq[k][1 + nparam], 1);
-	isl_int_set_si(bstep->eq[k][1 + nparam + 1], -1);
-	bstep = isl_basic_map_finalize(bstep);
-	step = isl_map_from_basic_map(bstep);
 
 	for (i = 0; i < n; ++i)
 		for (j = 0; j < n; ++j)
