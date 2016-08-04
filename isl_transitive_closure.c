@@ -2883,8 +2883,9 @@ static __isl_give isl_union_map *increment(__isl_take isl_space *space)
 	int k;
 	isl_basic_map *bmap;
 
-	space = isl_space_add_dims(space, isl_dim_in, 1);
-	space = isl_space_add_dims(space, isl_dim_out, 1);
+	space = isl_space_set_from_params(space);
+	space = isl_space_add_dims(space, isl_dim_set, 1);
+	space = isl_space_map_from_set(space);
 	bmap = isl_basic_map_alloc_space(space, 0, 1, 0);
 	k = isl_basic_map_alloc_equality(bmap);
 	if (k < 0)
