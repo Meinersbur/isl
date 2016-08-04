@@ -2878,7 +2878,7 @@ static isl_stat power(__isl_take isl_map *map, void *user)
 
 /* Construct a map [x] -> [x+1], with parameters prescribed by "space".
  */
-static __isl_give isl_union_map *increment(__isl_take isl_space *space)
+static __isl_give isl_map *increment(__isl_take isl_space *space)
 {
 	int k;
 	isl_basic_map *bmap;
@@ -2894,7 +2894,7 @@ static __isl_give isl_union_map *increment(__isl_take isl_space *space)
 	isl_int_set_si(bmap->eq[k][0], 1);
 	isl_int_set_si(bmap->eq[k][isl_basic_map_offset(bmap, isl_dim_in)], 1);
 	isl_int_set_si(bmap->eq[k][isl_basic_map_offset(bmap, isl_dim_out)], -1);
-	return isl_union_map_from_map(isl_map_from_basic_map(bmap));
+	return isl_map_from_basic_map(bmap);
 error:
 	isl_basic_map_free(bmap);
 	return NULL;
@@ -2936,7 +2936,7 @@ __isl_give isl_union_map *isl_union_map_power(__isl_take isl_union_map *umap,
 		isl_union_map_free(umap);
 		return up.pow;
 	}
-	inc = increment(isl_union_map_get_space(umap));
+	inc = isl_union_map_from_map(increment(isl_union_map_get_space(umap)));
 	umap = isl_union_map_product(inc, umap);
 	umap = isl_union_map_transitive_closure(umap, exact);
 	umap = isl_union_map_zip(umap);
