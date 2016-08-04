@@ -2870,16 +2870,16 @@ static isl_stat power(__isl_take isl_map *map, void *user)
 	return isl_stat_error;
 }
 
-/* Construct a map [x] -> [x+1], with parameters prescribed by "dim".
+/* Construct a map [x] -> [x+1], with parameters prescribed by "space".
  */
-static __isl_give isl_union_map *increment(__isl_take isl_space *dim)
+static __isl_give isl_union_map *increment(__isl_take isl_space *space)
 {
 	int k;
 	isl_basic_map *bmap;
 
-	dim = isl_space_add_dims(dim, isl_dim_in, 1);
-	dim = isl_space_add_dims(dim, isl_dim_out, 1);
-	bmap = isl_basic_map_alloc_space(dim, 0, 1, 0);
+	space = isl_space_add_dims(space, isl_dim_in, 1);
+	space = isl_space_add_dims(space, isl_dim_out, 1);
+	bmap = isl_basic_map_alloc_space(space, 0, 1, 0);
 	k = isl_basic_map_alloc_equality(bmap);
 	if (k < 0)
 		goto error;
