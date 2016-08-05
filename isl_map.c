@@ -5018,15 +5018,15 @@ __isl_give isl_basic_map *isl_basic_map_more_at(__isl_take isl_space *space,
 	return isl_basic_map_finalize(bmap);
 }
 
-/* Return a relation on "dim" expressing i_[0..pos] >>= o_[0..pos]
+/* Return a relation on "space" expressing i_[0..pos] >>= o_[0..pos]
  */
 __isl_give isl_basic_map *isl_basic_map_more_or_equal_at(
-	__isl_take isl_space *dim, unsigned pos)
+	__isl_take isl_space *space, unsigned pos)
 {
 	int i;
 	isl_basic_map *bmap;
 
-	bmap = isl_basic_map_alloc_space(dim, 0, pos, 1);
+	bmap = isl_basic_map_alloc_space(space, 0, pos, 1);
 	for (i = 0; i < pos; ++i)
 		bmap = var_equal(bmap, i);
 	bmap = var_more_or_equal(bmap, pos);
