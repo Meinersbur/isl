@@ -1094,7 +1094,7 @@ struct isl_wraps {
  * in the equalities and inequalities of info->bmap that can be removed
  * if we end up applying wrapping.
  */
-static void wraps_update_max(struct isl_wraps *wraps,
+static isl_stat wraps_update_max(struct isl_wraps *wraps,
 	struct isl_coalesce_info *info)
 {
 	int k;
@@ -1122,6 +1122,8 @@ static void wraps_update_max(struct isl_wraps *wraps,
 	}
 
 	isl_int_clear(max_k);
+
+	return isl_stat_ok;
 }
 
 /* Initialize the isl_wraps data structure.
@@ -1145,8 +1147,10 @@ static isl_stat wraps_init(struct isl_wraps *wraps, __isl_take isl_mat *mat,
 		return isl_stat_ok;
 	isl_int_init(wraps->max);
 	isl_int_set_si(wraps->max, 0);
-	wraps_update_max(wraps, &info[i]);
-	wraps_update_max(wraps, &info[j]);
+	if (wraps_update_max(wraps, &info[i]) < 0)
+		return isl_stat_error;
+	if (wraps_update_max(wraps, &info[j]) < 0)
+		return isl_stat_error;
 
 	return isl_stat_ok;
 }
