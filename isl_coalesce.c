@@ -1130,7 +1130,7 @@ static void wraps_update_max(struct isl_wraps *wraps,
  * in the equalities and inequalities that can be removed if we end up
  * applying wrapping.
  */
-static void wraps_init(struct isl_wraps *wraps, __isl_take isl_mat *mat,
+static isl_stat wraps_init(struct isl_wraps *wraps, __isl_take isl_mat *mat,
 	struct isl_coalesce_info *info, int i, int j)
 {
 	isl_ctx *ctx;
@@ -1138,15 +1138,17 @@ static void wraps_init(struct isl_wraps *wraps, __isl_take isl_mat *mat,
 	wraps->bound = 0;
 	wraps->mat = mat;
 	if (!mat)
-		return;
+		return isl_stat_error;
 	ctx = isl_mat_get_ctx(mat);
 	wraps->bound = isl_options_get_coalesce_bounded_wrapping(ctx);
 	if (!wraps->bound)
-		return;
+		return isl_stat_ok;
 	isl_int_init(wraps->max);
 	isl_int_set_si(wraps->max, 0);
 	wraps_update_max(wraps, &info[i]);
 	wraps_update_max(wraps, &info[j]);
+
+	return isl_stat_ok;
 }
 
 /* Free the contents of the isl_wraps data structure.
@@ -1404,9 +1406,10 @@ static enum isl_change can_wrap_in_facet(int i, int j, int k,
 	mat = isl_mat_alloc(ctx, 2 * (info[i].bmap->n_eq + info[j].bmap->n_eq) +
 				    info[i].bmap->n_ineq + info[j].bmap->n_ineq,
 				    1 + total);
-	wraps_init(&wraps, mat, info, i, j);
+	if (wraps_init(&wraps, mat, info, i, j) < 0)
+		goto error;
 	bound = isl_vec_alloc(ctx, 1 + total);
-	if (!set_i || !set_j || !wraps.mat || !bound)
+	if (!set_i || !set_j || !bound)
 		goto error;
 
 	isl_seq_cpy(bound->el, info[i].bmap->ineq[k], 1 + total);
@@ -1586,8 +1589,9 @@ static enum isl_change wrap_in_facets(int i, int j, int n,
 	set_i = set_from_updated_bmap(info[i].bmap, info[i].tab);
 	ctx = isl_basic_map_get_ctx(info[i].bmap);
 	mat = isl_mat_alloc(ctx, max_wrap, 1 + total);
-	wraps_init(&wraps, mat, info, i, j);
-	if (!set_i || !wraps.mat)
+	if (wraps_init(&wraps, mat, info, i, j) < 0)
+		goto error;
+	if (!set_i)
 		goto error;
 
 	change = try_wrap_in_facets(i, j, info, &wraps, set_i);
@@ -1910,9 +1914,10 @@ static enum isl_change check_eq_adj_eq(int i, int j,
 	mat = isl_mat_alloc(ctx, 2 * (info[i].bmap->n_eq + info[j].bmap->n_eq) +
 				    info[i].bmap->n_ineq + info[j].bmap->n_ineq,
 				    1 + total);
-	wraps_init(&wraps, mat, info, i, j);
+	if (wraps_init(&wraps, mat, info, i, j) < 0)
+		goto error;
 	bound = isl_vec_alloc(ctx, 1 + total);
-	if (!set_i || !set_j || !wraps.mat || !bound)
+	if (!set_i || !set_j || !bound)
 		goto error;
 
 	if (k % 2 == 0)
