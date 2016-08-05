@@ -1920,13 +1920,6 @@ error:
 	return NULL;
 }
 
-struct isl_basic_set *isl_basic_set_add_constraints(struct isl_basic_set *bset1,
-		struct isl_basic_set *bset2, unsigned pos)
-{
-	return bset_from_bmap(add_constraints(bset_to_bmap(bset1),
-						bset_to_bmap(bset2), 0, pos));
-}
-
 __isl_give isl_basic_map *isl_basic_map_extend_space(
 	__isl_take isl_basic_map *base, __isl_take isl_space *space,
 	unsigned extra, unsigned n_eq, unsigned n_ineq)
