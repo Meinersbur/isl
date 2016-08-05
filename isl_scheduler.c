@@ -1598,6 +1598,18 @@ static __isl_give isl_dim_map *inter_dim_map(isl_ctx *ctx,
 	return dim_map;
 }
 
+/* Add the constraints from "src" to "dst" using "dim_map",
+ * after making sure there is enough room in "dst" for the extra constraints.
+ */
+static __isl_give isl_basic_set *add_constraints_dim_map(
+	__isl_take isl_basic_set *dst, __isl_take isl_basic_set *src,
+	__isl_take isl_dim_map *dim_map)
+{
+	dst = isl_basic_set_extend_constraints(dst, src->n_eq, src->n_ineq);
+	dst = isl_basic_set_add_constraints_dim_map(dst, src, dim_map);
+	return dst;
+}
+
 /* Add constraints to graph->lp that force validity for the given
  * dependence from a node i to itself.
  * That is, add constraints that enforce
@@ -1635,10 +1647,7 @@ static isl_stat add_intra_validity_constraints(struct isl_sched_graph *graph,
 		return isl_stat_error;
 
 	dim_map = intra_dim_map(ctx, graph, node, offset, 1);
-	graph->lp = isl_basic_set_extend_constraints(graph->lp,
-			coef->n_eq, coef->n_ineq);
-	graph->lp = isl_basic_set_add_constraints_dim_map(graph->lp,
-							   coef, dim_map);
+	graph->lp = add_constraints_dim_map(graph->lp, coef, dim_map);
 
 	return isl_stat_ok;
 }
@@ -1690,10 +1699,7 @@ static isl_stat add_inter_validity_constraints(struct isl_sched_graph *graph,
 	dim_map = inter_dim_map(ctx, graph, src, dst, offset, 1);
 
 	edge->start = graph->lp->n_ineq;
-	graph->lp = isl_basic_set_extend_constraints(graph->lp,
-			coef->n_eq, coef->n_ineq);
-	graph->lp = isl_basic_set_add_constraints_dim_map(graph->lp,
-							   coef, dim_map);
+	graph->lp = add_constraints_dim_map(graph->lp, coef, dim_map);
 	if (!graph->lp)
 		return isl_stat_error;
 	edge->end = graph->lp->n_ineq;
@@ -1773,10 +1779,7 @@ static isl_stat add_intra_proximity_constraints(struct isl_sched_graph *graph,
 		isl_dim_map_range(dim_map, 4, 2, 1, 1, nparam, -1);
 		isl_dim_map_range(dim_map, 5, 2, 1, 1, nparam, 1);
 	}
-	graph->lp = isl_basic_set_extend_constraints(graph->lp,
-			coef->n_eq, coef->n_ineq);
-	graph->lp = isl_basic_set_add_constraints_dim_map(graph->lp,
-							   coef, dim_map);
+	graph->lp = add_constraints_dim_map(graph->lp, coef, dim_map);
 
 	return isl_stat_ok;
 }
@@ -1864,10 +1867,7 @@ static isl_stat add_inter_proximity_constraints(struct isl_sched_graph *graph,
 		isl_dim_map_range(dim_map, 5, 2, 1, 1, nparam, 1);
 	}
 
-	graph->lp = isl_basic_set_extend_constraints(graph->lp,
-			coef->n_eq, coef->n_ineq);
-	graph->lp = isl_basic_set_add_constraints_dim_map(graph->lp,
-							   coef, dim_map);
+	graph->lp = add_constraints_dim_map(graph->lp, coef, dim_map);
 
 	return isl_stat_ok;
 }
@@ -3505,10 +3505,7 @@ static int add_intra_constraints(struct isl_sched_graph *graph,
 	offset = coef_var_offset(coef);
 	dim_map = intra_dim_map(ctx, graph, node, offset, 1);
 	isl_dim_map_range(dim_map, 3 + pos, 0, 0, 0, 1, -1);
-	graph->lp = isl_basic_set_extend_constraints(graph->lp,
-			coef->n_eq, coef->n_ineq);
-	graph->lp = isl_basic_set_add_constraints_dim_map(graph->lp,
-							   coef, dim_map);
+	graph->lp = add_constraints_dim_map(graph->lp, coef, dim_map);
 
 	return 0;
 }
@@ -3545,10 +3542,7 @@ static int add_inter_constraints(struct isl_sched_graph *graph,
 	offset = coef_var_offset(coef);
 	dim_map = inter_dim_map(ctx, graph, src, dst, offset, 1);
 	isl_dim_map_range(dim_map, 3 + pos, 0, 0, 0, 1, -1);
-	graph->lp = isl_basic_set_extend_constraints(graph->lp,
-			coef->n_eq, coef->n_ineq);
-	graph->lp = isl_basic_set_add_constraints_dim_map(graph->lp,
-							   coef, dim_map);
+	graph->lp = add_constraints_dim_map(graph->lp, coef, dim_map);
 
 	return 0;
 }
