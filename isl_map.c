@@ -5932,10 +5932,10 @@ __isl_give isl_basic_map *isl_basic_map_empty(__isl_take isl_space *dim)
 	return bmap;
 }
 
-__isl_give isl_basic_set *isl_basic_set_empty(__isl_take isl_space *dim)
+__isl_give isl_basic_set *isl_basic_set_empty(__isl_take isl_space *space)
 {
 	struct isl_basic_set *bset;
-	bset = isl_basic_set_alloc_space(dim, 0, 1, 0);
+	bset = isl_basic_set_alloc_space(space, 0, 1, 0);
 	bset = isl_basic_set_set_to_empty(bset);
 	return bset;
 }
