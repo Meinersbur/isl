@@ -2335,7 +2335,7 @@ __isl_give isl_set *isl_set_remove_divs_involving_dims(__isl_take isl_set *set,
 							      type, first, n));
 }
 
-/* Does the desciption of "bmap" depend on the specified dimensions?
+/* Does the description of "bmap" depend on the specified dimensions?
  * We also check whether the dimensions appear in any of the div definitions.
  * In principle there is no need for this check.  If the dimensions appear
  * in a div definition, they also appear in the defining constraints of that
@@ -4196,7 +4196,7 @@ error:
 	return NULL;
 }
 
-/* Add a constraints to "bmap" expressing i_pos < o_pos
+/* Add a constraint to "bmap" expressing i_pos < o_pos
  */
 static struct isl_basic_map *var_less(struct isl_basic_map *bmap, unsigned pos)
 {
@@ -4242,7 +4242,7 @@ error:
 	return NULL;
 }
 
-/* Add a constraints to "bmap" expressing i_pos > o_pos
+/* Add a constraint to "bmap" expressing i_pos > o_pos
  */
 static struct isl_basic_map *var_more(struct isl_basic_map *bmap, unsigned pos)
 {
@@ -4318,7 +4318,7 @@ __isl_give isl_basic_map *isl_basic_map_less_at(__isl_take isl_space *dim,
 	return isl_basic_map_finalize(bmap);
 }
 
-/* Return a relation on of dimension "dim" expressing i_[0..pos] <<= o_[0..pos]
+/* Return a relation on "dim" expressing i_[0..pos] <<= o_[0..pos]
  */
 __isl_give isl_basic_map *isl_basic_map_less_or_equal_at(
 	__isl_take isl_space *dim, unsigned pos)
@@ -4333,7 +4333,7 @@ __isl_give isl_basic_map *isl_basic_map_less_or_equal_at(
 	return isl_basic_map_finalize(bmap);
 }
 
-/* Return a relation on pairs of sets of dimension "dim" expressing i_pos > o_pos
+/* Return a relation on "dim" expressing i_pos > o_pos
  */
 __isl_give isl_basic_map *isl_basic_map_more_at(__isl_take isl_space *dim,
 	unsigned pos)
@@ -4350,7 +4350,7 @@ __isl_give isl_basic_map *isl_basic_map_more_at(__isl_take isl_space *dim,
 	return isl_basic_map_finalize(bmap);
 }
 
-/* Return a relation on of dimension "dim" expressing i_[0..pos] >>= o_[0..pos]
+/* Return a relation on "dim" expressing i_[0..pos] >>= o_[0..pos]
  */
 __isl_give isl_basic_map *isl_basic_map_more_or_equal_at(
 	__isl_take isl_space *dim, unsigned pos)
