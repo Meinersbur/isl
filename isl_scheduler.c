@@ -1605,7 +1605,11 @@ static __isl_give isl_basic_set *add_constraints_dim_map(
 	__isl_take isl_basic_set *dst, __isl_take isl_basic_set *src,
 	__isl_take isl_dim_map *dim_map)
 {
-	dst = isl_basic_set_extend_constraints(dst, src->n_eq, src->n_ineq);
+	int n_eq, n_ineq;
+
+	n_eq = isl_basic_set_n_equality(src);
+	n_ineq = isl_basic_set_n_inequality(src);
+	dst = isl_basic_set_extend_constraints(dst, n_eq, n_ineq);
 	dst = isl_basic_set_add_constraints_dim_map(dst, src, dim_map);
 	return dst;
 }
