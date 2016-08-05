@@ -46,7 +46,7 @@ static void expand_constraint(isl_vec *v, unsigned dim,
 /* Add all constraints of bmap to tab.  The equalities of bmap
  * are added as a pair of inequalities.
  */
-static int tab_add_constraints(struct isl_tab *tab,
+static isl_stat tab_add_constraints(struct isl_tab *tab,
 	__isl_keep isl_basic_map *bmap, int *div_map)
 {
 	int i;
@@ -56,18 +56,18 @@ static int tab_add_constraints(struct isl_tab *tab,
 	isl_vec *v;
 
 	if (!tab || !bmap)
-		return -1;
+		return isl_stat_error;
 
 	tab_total = isl_basic_map_total_dim(tab->bmap);
 	bmap_total = isl_basic_map_total_dim(bmap);
 	dim = isl_space_dim(tab->bmap->dim, isl_dim_all);
 
 	if (isl_tab_extend_cons(tab, 2 * bmap->n_eq + bmap->n_ineq) < 0)
-		return -1;
+		return isl_stat_error;
 
 	v = isl_vec_alloc(bmap->ctx, 1 + tab_total);
 	if (!v)
-		return -1;
+		return isl_stat_error;
 
 	for (i = 0; i < bmap->n_eq; ++i) {
 		expand_constraint(v, dim, bmap->eq[i], div_map, bmap->n_div);
@@ -91,10 +91,10 @@ static int tab_add_constraints(struct isl_tab *tab,
 	}
 
 	isl_vec_free(v);
-	return 0;
+	return isl_stat_ok;
 error:
 	isl_vec_free(v);
-	return -1;
+	return isl_stat_error;
 }
 
 /* Add a specific constraint of bmap (or its opposite) to tab.
