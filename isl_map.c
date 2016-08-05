@@ -4957,11 +4957,11 @@ error:
 }
 
 __isl_give isl_basic_map *isl_basic_map_equal(
-	__isl_take isl_space *dim, unsigned n_equal)
+	__isl_take isl_space *space, unsigned n_equal)
 {
 	int i;
 	struct isl_basic_map *bmap;
-	bmap = isl_basic_map_alloc_space(dim, 0, n_equal, 0);
+	bmap = isl_basic_map_alloc_space(space, 0, n_equal, 0);
 	if (!bmap)
 		return NULL;
 	for (i = 0; i < n_equal && bmap; ++i)
