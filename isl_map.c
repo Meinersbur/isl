@@ -1860,8 +1860,7 @@ __isl_give isl_basic_map *isl_basic_map_insert_div(
 	if (isl_basic_map_check_range(bmap, isl_dim_div, pos, 0) < 0)
 		return isl_basic_map_free(bmap);
 
-	bmap = isl_basic_map_extend_space(bmap,
-					isl_basic_map_get_space(bmap), 1, 0, 2);
+	bmap = isl_basic_map_extend(bmap, 1, 0, 2);
 	k = isl_basic_map_alloc_div(bmap);
 	if (k < 0)
 		return isl_basic_map_free(bmap);
@@ -1920,38 +1919,29 @@ error:
 	return NULL;
 }
 
-__isl_give isl_basic_map *isl_basic_map_extend_space(
-	__isl_take isl_basic_map *base, __isl_take isl_space *space,
+__isl_give isl_basic_map *isl_basic_map_extend(__isl_take isl_basic_map *base,
 	unsigned extra, unsigned n_eq, unsigned n_ineq)
 {
+	isl_space *space;
 	struct isl_basic_map *ext;
 	unsigned flags;
 	int dims_ok;
 
-	if (!space)
-		goto error;
-
 	if (!base)
 		goto error;
 
-	dims_ok = isl_space_is_equal(base->dim, space) &&
-		  base->extra >= base->n_div + extra;
+	dims_ok = base->extra >= base->n_div + extra;
 
 	if (dims_ok && room_for_con(base, n_eq + n_ineq) &&
-		       room_for_ineq(base, n_ineq)) {
-		isl_space_free(space);
+		       room_for_ineq(base, n_ineq))
 		return base;
-	}
 
-	isl_assert(base->ctx, base->dim->nparam <= space->nparam, goto error);
-	isl_assert(base->ctx, base->dim->n_in <= space->n_in, goto error);
-	isl_assert(base->ctx, base->dim->n_out <= space->n_out, goto error);
 	extra += base->extra;
 	n_eq += base->n_eq;
 	n_ineq += base->n_ineq;
 
+	space = isl_basic_map_get_space(base);
 	ext = isl_basic_map_alloc_space(space, extra, n_eq, n_ineq);
-	space = NULL;
 	if (!ext)
 		goto error;
 
@@ -1967,27 +1957,21 @@ __isl_give isl_basic_map *isl_basic_map_extend_space(
 	return ext;
 
 error:
-	isl_space_free(space);
 	isl_basic_map_free(base);
 	return NULL;
 }
 
-__isl_give isl_basic_set *isl_basic_set_extend_space(
-	__isl_take isl_basic_set *base,
-		__isl_take isl_space *dim, unsigned extra,
-		unsigned n_eq, unsigned n_ineq)
+__isl_give isl_basic_set *isl_basic_set_extend(__isl_take isl_basic_set *base,
+	unsigned extra, unsigned n_eq, unsigned n_ineq)
 {
-	return bset_from_bmap(isl_basic_map_extend_space(bset_to_bmap(base),
-						    dim, extra, n_eq, n_ineq));
+	return bset_from_bmap(isl_basic_map_extend(bset_to_bmap(base),
+						    extra, n_eq, n_ineq));
 }
 
 struct isl_basic_map *isl_basic_map_extend_constraints(
 		struct isl_basic_map *base, unsigned n_eq, unsigned n_ineq)
 {
-	if (!base)
-		return NULL;
-	return isl_basic_map_extend_space(base, isl_space_copy(base->dim),
-					0, n_eq, n_ineq);
+	return isl_basic_map_extend(base, 0, n_eq, n_ineq);
 }
 
 struct isl_basic_set *isl_basic_set_extend_constraints(
@@ -3474,7 +3458,7 @@ __isl_give isl_basic_map *isl_basic_map_intersect_domain(
 	bmap = isl_basic_map_cow(bmap);
 	if (!bmap)
 		goto error;
-	bmap = isl_basic_map_extend_space(bmap, isl_space_copy(bmap->dim),
+	bmap = isl_basic_map_extend(bmap,
 			bset->n_div, bset->n_eq, bset->n_ineq);
 	bmap_domain = isl_basic_map_from_domain(bset);
 	bmap = add_constraints(bmap, bmap_domain, 0, 0);
@@ -3527,7 +3511,7 @@ __isl_give isl_basic_map *isl_basic_map_intersect_range(
 	bmap = isl_basic_map_cow(bmap);
 	if (!bmap)
 		goto error;
-	bmap = isl_basic_map_extend_space(bmap, isl_space_copy(bmap->dim),
+	bmap = isl_basic_map_extend(bmap,
 			bset->n_div, bset->n_eq, bset->n_ineq);
 	bmap_range = bset_to_bmap(bset);
 	bmap = add_constraints(bmap, bmap_range, 0, 0);
@@ -3628,7 +3612,7 @@ __isl_give isl_basic_map *isl_basic_map_intersect(
 	bmap1 = isl_basic_map_cow(bmap1);
 	if (!bmap1)
 		goto error;
-	bmap1 = isl_basic_map_extend_space(bmap1, isl_space_copy(bmap1->dim),
+	bmap1 = isl_basic_map_extend(bmap1,
 			bmap2->n_div, bmap2->n_eq, bmap2->n_ineq);
 	bmap1 = add_constraints(bmap1, bmap2, 0, 0);
 
@@ -7272,8 +7256,7 @@ static __isl_give isl_basic_set *basic_set_append_equalities(
 	if (!bset || !eq)
 		goto error;
 
-	bset = isl_basic_set_extend_space(bset, isl_space_copy(bset->dim), 0,
-					eq->n_row, 0);
+	bset = isl_basic_set_extend(bset, 0, eq->n_row, 0);
 	if (!bset)
 		goto error;
 
@@ -9128,8 +9111,7 @@ __isl_give isl_basic_map *isl_basic_map_expand_divs(
 			"not an expansion", goto error);
 
 	n_div = bmap->n_div;
-	bmap = isl_basic_map_extend_space(bmap, isl_space_copy(bmap->dim),
-					    div->n_row - n_div, 0,
+	bmap = isl_basic_map_extend(bmap, div->n_row - n_div, 0,
 					    2 * (div->n_row - n_div));
 
 	for (i = n_div; i < div->n_row; ++i)
@@ -9254,8 +9236,7 @@ __isl_give isl_basic_map *isl_basic_map_align_divs(
 				dst = isl_basic_map_cow(dst);
 				if (!dst)
 					goto error;
-				dst = isl_basic_map_extend_space(dst,
-						isl_space_copy(dst->dim),
+				dst = isl_basic_map_extend(dst,
 						extra, 0, 2 * extra);
 				extended = 1;
 			}

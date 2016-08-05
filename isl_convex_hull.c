@@ -563,8 +563,7 @@ static __isl_give isl_basic_set *extend(__isl_take isl_basic_set *hull,
 		if (!facet || !hull_facet)
 			goto error;
 		hull = isl_basic_set_cow(hull);
-		hull = isl_basic_set_extend_space(hull,
-			isl_space_copy(hull->dim), 0, 0, facet->n_ineq);
+		hull = isl_basic_set_extend(hull, 0, 0, facet->n_ineq);
 		if (!hull)
 			goto error;
 		for (j = 0; j < facet->n_ineq; ++j) {

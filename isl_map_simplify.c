@@ -1066,8 +1066,7 @@ static __isl_give isl_basic_map *normalize_divs(__isl_take isl_basic_map *bmap,
 			needed++;
 	}
 	if (needed > dropped) {
-		bmap = isl_basic_map_extend_space(bmap, isl_space_copy(bmap->dim),
-				needed, needed, 0);
+		bmap = isl_basic_map_extend(bmap, needed, needed, 0);
 		if (!bmap)
 			goto error;
 	}
