@@ -4820,7 +4820,8 @@ error:
 
 /* Add a constraint to "bmap" expressing i_pos > o_pos
  */
-static struct isl_basic_map *var_more(struct isl_basic_map *bmap, unsigned pos)
+static __isl_give isl_basic_map *var_more(__isl_take isl_basic_map *bmap,
+	unsigned pos)
 {
 	int i;
 	unsigned nparam;
