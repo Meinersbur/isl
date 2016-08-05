@@ -5924,10 +5924,10 @@ error:
 	return NULL;
 }
 
-__isl_give isl_basic_map *isl_basic_map_empty(__isl_take isl_space *dim)
+__isl_give isl_basic_map *isl_basic_map_empty(__isl_take isl_space *space)
 {
 	struct isl_basic_map *bmap;
-	bmap = isl_basic_map_alloc_space(dim, 0, 1, 0);
+	bmap = isl_basic_map_alloc_space(space, 0, 1, 0);
 	bmap = isl_basic_map_set_to_empty(bmap);
 	return bmap;
 }
