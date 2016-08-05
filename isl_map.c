@@ -4750,7 +4750,8 @@ error:
 	return NULL;
 }
 
-static struct isl_basic_map *var_equal(struct isl_basic_map *bmap, unsigned pos)
+static __isl_give isl_basic_map *var_equal(__isl_take isl_basic_map *bmap,
+	unsigned pos)
 {
 	int i;
 	unsigned nparam;
