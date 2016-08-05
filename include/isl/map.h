@@ -119,7 +119,7 @@ __isl_give isl_basic_map *isl_basic_map_equal(
 	__isl_take isl_space *dim, unsigned n_equal);
 __isl_give isl_basic_map *isl_basic_map_less_at(__isl_take isl_space *dim,
 	unsigned pos);
-__isl_give isl_basic_map *isl_basic_map_more_at(__isl_take isl_space *dim,
+__isl_give isl_basic_map *isl_basic_map_more_at(__isl_take isl_space *space,
 	unsigned pos);
 __isl_give isl_basic_map *isl_basic_map_empty(__isl_take isl_space *space);
 __isl_give isl_basic_map *isl_basic_map_universe(__isl_take isl_space *space);

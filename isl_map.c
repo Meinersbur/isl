@@ -5001,14 +5001,14 @@ __isl_give isl_basic_map *isl_basic_map_less_or_equal_at(
 	return isl_basic_map_finalize(bmap);
 }
 
-/* Return a relation on "dim" expressing i_pos > o_pos
+/* Return a relation on "space" expressing i_pos > o_pos
  */
-__isl_give isl_basic_map *isl_basic_map_more_at(__isl_take isl_space *dim,
+__isl_give isl_basic_map *isl_basic_map_more_at(__isl_take isl_space *space,
 	unsigned pos)
 {
 	int i;
 	struct isl_basic_map *bmap;
-	bmap = isl_basic_map_alloc_space(dim, 0, pos, 1);
+	bmap = isl_basic_map_alloc_space(space, 0, pos, 1);
 	if (!bmap)
 		return NULL;
 	for (i = 0; i < pos && bmap; ++i)
