@@ -9412,55 +9412,6 @@ error:
 	return NULL;
 }
 
-/* Return the Cartesian product of the basic sets in list (in the given order).
- */
-__isl_give isl_basic_set *isl_basic_set_list_product(
-	__isl_take struct isl_basic_set_list *list)
-{
-	int i;
-	unsigned dim;
-	unsigned nparam;
-	unsigned extra;
-	unsigned n_eq;
-	unsigned n_ineq;
-	struct isl_basic_set *product = NULL;
-
-	if (!list)
-		goto error;
-	isl_assert(list->ctx, list->n > 0, goto error);
-	isl_assert(list->ctx, list->p[0], goto error);
-	nparam = isl_basic_set_n_param(list->p[0]);
-	dim = isl_basic_set_n_dim(list->p[0]);
-	extra = list->p[0]->n_div;
-	n_eq = list->p[0]->n_eq;
-	n_ineq = list->p[0]->n_ineq;
-	for (i = 1; i < list->n; ++i) {
-		isl_assert(list->ctx, list->p[i], goto error);
-		isl_assert(list->ctx,
-		    nparam == isl_basic_set_n_param(list->p[i]), goto error);
-		dim += isl_basic_set_n_dim(list->p[i]);
-		extra += list->p[i]->n_div;
-		n_eq += list->p[i]->n_eq;
-		n_ineq += list->p[i]->n_ineq;
-	}
-	product = isl_basic_set_alloc(list->ctx, nparam, dim, extra,
-					n_eq, n_ineq);
-	if (!product)
-		goto error;
-	dim = 0;
-	for (i = 0; i < list->n; ++i) {
-		isl_basic_set_add_constraints(product,
-					isl_basic_set_copy(list->p[i]), dim);
-		dim += isl_basic_set_n_dim(list->p[i]);
-	}
-	isl_basic_set_list_free(list);
-	return product;
-error:
-	isl_basic_set_free(product);
-	isl_basic_set_list_free(list);
-	return NULL;
-}
-
 struct isl_basic_map *isl_basic_map_product(
 		struct isl_basic_map *bmap1, struct isl_basic_map *bmap2)
 {

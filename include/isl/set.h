@@ -127,9 +127,6 @@ __isl_give isl_basic_set *isl_basic_set_remove_redundancies(
 __isl_give isl_set *isl_set_remove_redundancies(__isl_take isl_set *set);
 __isl_give isl_basic_set *isl_basic_set_list_intersect(
 	__isl_take struct isl_basic_set_list *list);
-ISL_DEPRECATED
-__isl_give isl_basic_set *isl_basic_set_list_product(
-	__isl_take struct isl_basic_set_list *list);
 
 __isl_give isl_set *isl_set_list_union(__isl_take isl_set_list *list);
 
