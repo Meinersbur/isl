@@ -12002,7 +12002,7 @@ __isl_give isl_mat *isl_basic_map_inequalities_matrix(
 }
 
 __isl_give isl_basic_map *isl_basic_map_from_constraint_matrices(
-	__isl_take isl_space *dim,
+	__isl_take isl_space *space,
 	__isl_take isl_mat *eq, __isl_take isl_mat *ineq, enum isl_dim_type c1,
 	enum isl_dim_type c2, enum isl_dim_type c3,
 	enum isl_dim_type c4, enum isl_dim_type c5)
@@ -12014,23 +12014,23 @@ __isl_give isl_basic_map *isl_basic_map_from_constraint_matrices(
 	int i, j, k, l;
 	int pos;
 
-	if (!dim || !eq || !ineq)
+	if (!space || !eq || !ineq)
 		goto error;
 
 	if (eq->n_col != ineq->n_col)
-		isl_die(dim->ctx, isl_error_invalid,
+		isl_die(space->ctx, isl_error_invalid,
 			"equalities and inequalities matrices should have "
 			"same number of columns", goto error);
 
-	total = 1 + isl_space_dim(dim, isl_dim_all);
+	total = 1 + isl_space_dim(space, isl_dim_all);
 
 	if (eq->n_col < total)
-		isl_die(dim->ctx, isl_error_invalid,
+		isl_die(space->ctx, isl_error_invalid,
 			"number of columns too small", goto error);
 
 	extra = eq->n_col - total;
 
-	bmap = isl_basic_map_alloc_space(isl_space_copy(dim), extra,
+	bmap = isl_basic_map_alloc_space(isl_space_copy(space), extra,
 				       eq->n_row, ineq->n_row);
 	if (!bmap)
 		goto error;
@@ -12067,14 +12067,14 @@ __isl_give isl_basic_map *isl_basic_map_from_constraint_matrices(
 		}
 	}
 
-	isl_space_free(dim);
+	isl_space_free(space);
 	isl_mat_free(eq);
 	isl_mat_free(ineq);
 
 	bmap = isl_basic_map_simplify(bmap);
 	return isl_basic_map_finalize(bmap);
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	isl_mat_free(eq);
 	isl_mat_free(ineq);
 	isl_basic_map_free(bmap);
