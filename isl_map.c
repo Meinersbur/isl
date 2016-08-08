@@ -8229,19 +8229,19 @@ error:
 	return NULL;
 }
 
-static __isl_give isl_basic_map *basic_map_identity(__isl_take isl_space *dims)
+static __isl_give isl_basic_map *basic_map_identity(__isl_take isl_space *space)
 {
 	struct isl_basic_map *bmap;
 	unsigned nparam;
 	unsigned dim;
 	int i;
 
-	if (!dims)
+	if (!space)
 		return NULL;
 
-	nparam = dims->nparam;
-	dim = dims->n_out;
-	bmap = isl_basic_map_alloc_space(dims, 0, dim, 0);
+	nparam = space->nparam;
+	dim = space->n_out;
+	bmap = isl_basic_map_alloc_space(space, 0, dim, 0);
 	if (!bmap)
 		goto error;
 
