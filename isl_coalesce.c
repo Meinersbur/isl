@@ -1336,7 +1336,7 @@ static __isl_give isl_set *set_from_updated_bmap(__isl_keep isl_basic_map *bmap,
  * If any of the wrapped constraints turn out to be invalid, then
  * check_wraps will reset wrap->n_row to zero.
  */
-static int add_wraps_around_facet(struct isl_wraps *wraps,
+static isl_stat add_wraps_around_facet(struct isl_wraps *wraps,
 	struct isl_coalesce_info *info, int k, isl_int *bound,
 	__isl_keep isl_set *set)
 {
@@ -1347,22 +1347,22 @@ static int add_wraps_around_facet(struct isl_wraps *wraps,
 	snap = isl_tab_snap(info->tab);
 
 	if (isl_tab_select_facet(info->tab, info->bmap->n_eq + k) < 0)
-		return -1;
+		return isl_stat_error;
 	if (isl_tab_detect_redundant(info->tab) < 0)
-		return -1;
+		return isl_stat_error;
 
 	isl_seq_neg(bound, info->bmap->ineq[k], 1 + total);
 
 	n = wraps->mat->n_row;
 	if (add_wraps(wraps, info, bound, set) < 0)
-		return -1;
+		return isl_stat_error;
 
 	if (isl_tab_rollback(info->tab, snap) < 0)
-		return -1;
+		return isl_stat_error;
 	if (check_wraps(wraps->mat, n, info->tab) < 0)
-		return -1;
+		return isl_stat_error;
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Given a basic set i with a constraint k that is adjacent to
