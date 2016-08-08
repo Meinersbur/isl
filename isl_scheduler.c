@@ -2071,8 +2071,8 @@ static isl_stat count_map_constraints(struct isl_sched_graph *graph,
 		coef = inter_coefficients(graph, edge, map);
 	if (!coef)
 		return isl_stat_error;
-	*n_eq += f * coef->n_eq;
-	*n_ineq += f * coef->n_ineq;
+	*n_eq += f * isl_basic_set_n_equality(coef);
+	*n_ineq += f * isl_basic_set_n_inequality(coef);
 	isl_basic_set_free(coef);
 
 	return isl_stat_ok;
