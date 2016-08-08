@@ -8233,32 +8233,13 @@ error:
 
 static __isl_give isl_basic_map *basic_map_identity(__isl_take isl_space *space)
 {
-	struct isl_basic_map *bmap;
-	unsigned nparam;
 	unsigned dim;
-	int i;
 
 	if (!space)
 		return NULL;
 
-	nparam = space->nparam;
 	dim = space->n_out;
-	bmap = isl_basic_map_alloc_space(space, 0, dim, 0);
-	if (!bmap)
-		goto error;
-
-	for (i = 0; i < dim; ++i) {
-		int j = isl_basic_map_alloc_equality(bmap);
-		if (j < 0)
-			goto error;
-		isl_seq_clr(bmap->eq[j], 1 + isl_basic_map_total_dim(bmap));
-		isl_int_set_si(bmap->eq[j][1+nparam+i], 1);
-		isl_int_set_si(bmap->eq[j][1+nparam+dim+i], -1);
-	}
-	return isl_basic_map_finalize(bmap);
-error:
-	isl_basic_map_free(bmap);
-	return NULL;
+	return isl_basic_map_equal(space, dim);
 }
 
 __isl_give isl_basic_map *isl_basic_map_identity(__isl_take isl_space *space)
