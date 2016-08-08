@@ -6053,7 +6053,7 @@ static isl_stat compute_weights(struct isl_sched_graph *graph,
 							isl_dim_out, 0, n_out);
 		if (!hull)
 			return isl_stat_error;
-		edge->weight = hull->n_eq;
+		edge->weight = isl_basic_map_n_equality(hull);
 		isl_basic_map_free(hull);
 
 		if (edge->weight > graph->max_weight)
