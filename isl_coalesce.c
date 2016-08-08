@@ -1222,8 +1222,8 @@ static int add_wrap(struct isl_wraps *wraps, int w, isl_int *bound,
  * constraints and a newly added wrapping constraint does not
  * satisfy the bound, then wraps->n_row is also reset to zero.
  */
-static int add_wraps(struct isl_wraps *wraps, struct isl_coalesce_info *info,
-	isl_int *bound, __isl_keep isl_set *set)
+static isl_stat add_wraps(struct isl_wraps *wraps,
+	struct isl_coalesce_info *info, isl_int *bound, __isl_keep isl_set *set)
 {
 	int l, m;
 	int w;
@@ -1246,7 +1246,7 @@ static int add_wraps(struct isl_wraps *wraps, struct isl_coalesce_info *info,
 
 		added = add_wrap(wraps, w, bound, bmap->ineq[l], len, set, 0);
 		if (added < 0)
-			return -1;
+			return isl_stat_error;
 		if (!added)
 			goto unbounded;
 		++w;
@@ -1263,7 +1263,7 @@ static int add_wraps(struct isl_wraps *wraps, struct isl_coalesce_info *info,
 			added = add_wrap(wraps, w, bound, bmap->eq[l], len,
 					set, !m);
 			if (added < 0)
-				return -1;
+				return isl_stat_error;
 			if (!added)
 				goto unbounded;
 			++w;
@@ -1271,10 +1271,10 @@ static int add_wraps(struct isl_wraps *wraps, struct isl_coalesce_info *info,
 	}
 
 	wraps->mat->n_row = w;
-	return 0;
+	return isl_stat_ok;
 unbounded:
 	wraps->mat->n_row = 0;
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Check if the constraints in "wraps" from "first" until the last
