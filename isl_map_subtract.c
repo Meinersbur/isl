@@ -726,14 +726,14 @@ isl_bool isl_basic_map_plain_is_singleton(__isl_keep isl_basic_map *bmap)
 	return bmap->n_eq == isl_basic_map_total_dim(bmap);
 }
 
-/* Return 1 if "map" contains a single element.
+/* Return true if "map" contains a single element.
  */
-int isl_map_plain_is_singleton(__isl_keep isl_map *map)
+isl_bool isl_map_plain_is_singleton(__isl_keep isl_map *map)
 {
 	if (!map)
-		return -1;
+		return isl_bool_error;
 	if (map->n != 1)
-		return 0;
+		return isl_bool_false;
 
 	return isl_basic_map_plain_is_singleton(map->p[0]);
 }
@@ -827,7 +827,7 @@ static isl_bool map_is_subset(__isl_keep isl_map *map1,
 	__isl_keep isl_map *map2)
 {
 	isl_bool is_subset = isl_bool_false;
-	isl_bool empty;
+	isl_bool empty, single;
 	isl_bool rat1, rat2;
 
 	if (!map1 || !map2)
@@ -858,8 +858,11 @@ static isl_bool map_is_subset(__isl_keep isl_map *map1,
 	if (isl_map_plain_is_universe(map2))
 		return isl_bool_true;
 
+	single = isl_map_plain_is_singleton(map1);
+	if (single < 0)
+		return isl_bool_error;
 	map2 = isl_map_compute_divs(isl_map_copy(map2));
-	if (isl_map_plain_is_singleton(map1)) {
+	if (single) {
 		is_subset = map_is_singleton_subset(map1, map2);
 		isl_map_free(map2);
 		return is_subset;
