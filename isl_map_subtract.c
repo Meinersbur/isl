@@ -713,16 +713,16 @@ static isl_bool map_diff_is_empty(__isl_keep isl_map *map1,
 	return is_empty;
 }
 
-/* Return 1 if "bmap" contains a single element.
+/* Return true if "bmap" contains a single element.
  */
-int isl_basic_map_plain_is_singleton(__isl_keep isl_basic_map *bmap)
+isl_bool isl_basic_map_plain_is_singleton(__isl_keep isl_basic_map *bmap)
 {
 	if (!bmap)
-		return -1;
+		return isl_bool_error;
 	if (bmap->n_div)
-		return 0;
+		return isl_bool_false;
 	if (bmap->n_ineq)
-		return 0;
+		return isl_bool_false;
 	return bmap->n_eq == isl_basic_map_total_dim(bmap);
 }
 
