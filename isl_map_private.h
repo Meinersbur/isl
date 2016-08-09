@@ -404,6 +404,8 @@ isl_stat isl_set_foreach_orthant(__isl_keep isl_set *set,
 	isl_stat (*fn)(__isl_take isl_set *orthant, int *signs, void *user),
 	void *user);
 
+isl_bool isl_basic_set_eq_is_stride(__isl_keep isl_basic_set *bset, int i);
+
 int isl_basic_map_add_div_constraints_var(__isl_keep isl_basic_map *bmap,
 	unsigned pos, isl_int *div);
 int isl_basic_set_add_div_constraints_var(__isl_keep isl_basic_set *bset,

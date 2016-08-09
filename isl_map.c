@@ -847,6 +847,53 @@ int isl_set_find_dim_by_name(__isl_keep isl_set *set, enum isl_dim_type type,
 	return isl_map_find_dim_by_name(set, type, name);
 }
 
+/* Check whether equality i of bset is a pure stride constraint
+ * on a single dimension, i.e., of the form
+ *
+ *	v = k e
+ *
+ * with k a constant and e an existentially quantified variable.
+ */
+isl_bool isl_basic_set_eq_is_stride(__isl_keep isl_basic_set *bset, int i)
+{
+	unsigned nparam;
+	unsigned d;
+	unsigned n_div;
+	int pos1;
+	int pos2;
+
+	if (!bset)
+		return isl_bool_error;
+
+	if (!isl_int_is_zero(bset->eq[i][0]))
+		return isl_bool_false;
+
+	nparam = isl_basic_set_dim(bset, isl_dim_param);
+	d = isl_basic_set_dim(bset, isl_dim_set);
+	n_div = isl_basic_set_dim(bset, isl_dim_div);
+
+	if (isl_seq_first_non_zero(bset->eq[i] + 1, nparam) != -1)
+		return isl_bool_false;
+	pos1 = isl_seq_first_non_zero(bset->eq[i] + 1 + nparam, d);
+	if (pos1 == -1)
+		return isl_bool_false;
+	if (isl_seq_first_non_zero(bset->eq[i] + 1 + nparam + pos1 + 1,
+					d - pos1 - 1) != -1)
+		return isl_bool_false;
+
+	pos2 = isl_seq_first_non_zero(bset->eq[i] + 1 + nparam + d, n_div);
+	if (pos2 == -1)
+		return isl_bool_false;
+	if (isl_seq_first_non_zero(bset->eq[i] + 1 + nparam + d  + pos2 + 1,
+				   n_div - pos2 - 1) != -1)
+		return isl_bool_false;
+	if (!isl_int_is_one(bset->eq[i][1 + nparam + pos1]) &&
+	    !isl_int_is_negone(bset->eq[i][1 + nparam + pos1]))
+		return isl_bool_false;
+
+	return isl_bool_true;
+}
+
 /* Reset the user pointer on all identifiers of parameters and tuples
  * of the space of "map".
  */
