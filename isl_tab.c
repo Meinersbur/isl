@@ -1855,14 +1855,15 @@ int isl_tab_add_row(struct isl_tab *tab, isl_int *line)
 	return r;
 }
 
-static int drop_row(struct isl_tab *tab, int row)
+static isl_stat drop_row(struct isl_tab *tab, int row)
 {
-	isl_assert(tab->mat->ctx, ~tab->row_var[row] == tab->n_con - 1, return -1);
+	isl_assert(tab->mat->ctx, ~tab->row_var[row] == tab->n_con - 1,
+		return isl_stat_error);
 	if (row != tab->n_row - 1)
 		swap_rows(tab, row, tab->n_row - 1);
 	tab->n_row--;
 	tab->n_con--;
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Drop the variable in column "col" along with the column.
