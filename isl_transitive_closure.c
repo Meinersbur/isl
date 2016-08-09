@@ -2122,7 +2122,7 @@ __isl_give isl_map *isl_map_reaching_path_lengths(__isl_take isl_map *map,
  *
  * with k a constant and e an existentially quantified variable.
  */
-static int is_eq_stride(__isl_keep isl_basic_set *bset, int i)
+static isl_bool is_eq_stride(__isl_keep isl_basic_set *bset, int i)
 {
 	unsigned nparam;
 	unsigned d;
@@ -2131,35 +2131,35 @@ static int is_eq_stride(__isl_keep isl_basic_set *bset, int i)
 	int pos2;
 
 	if (!bset)
-		return -1;
+		return isl_bool_error;
 
 	if (!isl_int_is_zero(bset->eq[i][0]))
-		return 0;
+		return isl_bool_false;
 
 	nparam = isl_basic_set_dim(bset, isl_dim_param);
 	d = isl_basic_set_dim(bset, isl_dim_set);
 	n_div = isl_basic_set_dim(bset, isl_dim_div);
 
 	if (isl_seq_first_non_zero(bset->eq[i] + 1, nparam) != -1)
-		return 0;
+		return isl_bool_false;
 	pos1 = isl_seq_first_non_zero(bset->eq[i] + 1 + nparam, d);
 	if (pos1 == -1)
-		return 0;
+		return isl_bool_false;
 	if (isl_seq_first_non_zero(bset->eq[i] + 1 + nparam + pos1 + 1, 
 					d - pos1 - 1) != -1)
-		return 0;
+		return isl_bool_false;
 
 	pos2 = isl_seq_first_non_zero(bset->eq[i] + 1 + nparam + d, n_div);
 	if (pos2 == -1)
-		return 0;
+		return isl_bool_false;
 	if (isl_seq_first_non_zero(bset->eq[i] + 1 + nparam + d  + pos2 + 1,
 				   n_div - pos2 - 1) != -1)
-		return 0;
+		return isl_bool_false;
 	if (!isl_int_is_one(bset->eq[i][1 + nparam + pos1]) &&
 	    !isl_int_is_negone(bset->eq[i][1 + nparam + pos1]))
-		return 0;
+		return isl_bool_false;
 
-	return 1;
+	return isl_bool_true;
 }
 
 /* Given a map, compute the smallest superset of this map that is of the form
