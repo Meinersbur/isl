@@ -3836,8 +3836,9 @@ static void drop_samples_since(struct isl_tab *tab, int n)
 	}
 }
 
-static int perform_undo(struct isl_tab *tab, struct isl_tab_undo *undo) WARN_UNUSED;
-static int perform_undo(struct isl_tab *tab, struct isl_tab_undo *undo)
+static isl_stat perform_undo(struct isl_tab *tab, struct isl_tab_undo *undo)
+	WARN_UNUSED;
+static isl_stat perform_undo(struct isl_tab *tab, struct isl_tab_undo *undo)
 {
 	switch (undo->type) {
 	case isl_tab_undo_rational:
@@ -3862,7 +3863,7 @@ static int perform_undo(struct isl_tab *tab, struct isl_tab_undo *undo)
 		return drop_bmap_div(tab, undo->u.var_index);
 	case isl_tab_undo_saved_basis:
 		if (restore_basis(tab, undo->u.col_var) < 0)
-			return -1;
+			return isl_stat_error;
 		break;
 	case isl_tab_undo_drop_sample:
 		tab->n_outside--;
@@ -3873,9 +3874,9 @@ static int perform_undo(struct isl_tab *tab, struct isl_tab_undo *undo)
 	case isl_tab_undo_callback:
 		return undo->u.callback->run(undo->u.callback);
 	default:
-		isl_assert(tab->mat->ctx, 0, return -1);
+		isl_assert(tab->mat->ctx, 0, return isl_stat_error);
 	}
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Return the tableau to the state it was in when the snapshot "snap"
