@@ -573,13 +573,13 @@ static void sol_dec_level(struct isl_sol *sol)
 	sol_pop(sol);
 }
 
-static int sol_dec_level_wrap(struct isl_tab_callback *cb)
+static isl_stat sol_dec_level_wrap(struct isl_tab_callback *cb)
 {
 	struct isl_sol_callback *callback = (struct isl_sol_callback *)cb;
 
 	sol_dec_level(callback->sol);
 
-	return callback->sol->error ? -1 : 0;
+	return callback->sol->error ? isl_stat_error : isl_stat_ok;
 }
 
 /* Move down to next level and push callback onto context tableau

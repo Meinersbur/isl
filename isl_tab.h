@@ -48,7 +48,7 @@ enum isl_tab_undo_type {
 };
 
 struct isl_tab_callback {
-	int (*run)(struct isl_tab_callback *cb);
+	isl_stat (*run)(struct isl_tab_callback *cb);
 };
 
 union isl_tab_undo_val {
