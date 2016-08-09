@@ -1871,7 +1871,7 @@ static int drop_row(struct isl_tab *tab, int row)
  * the contents of the col_var array in a state
  * before the removal of the variable.
  */
-static int drop_col(struct isl_tab *tab, int col)
+static isl_stat drop_col(struct isl_tab *tab, int col)
 {
 	int var;
 
@@ -1880,8 +1880,8 @@ static int drop_col(struct isl_tab *tab, int col)
 		swap_cols(tab, col, tab->n_col - 1);
 	tab->n_col--;
 	if (var_drop_entry(tab, var) < 0)
-		return -1;
-	return 0;
+		return isl_stat_error;
+	return isl_stat_ok;
 }
 
 /* Add inequality "ineq" and check if it conflicts with the
