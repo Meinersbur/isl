@@ -3623,14 +3623,14 @@ static isl_stat unrelax(struct isl_tab *tab, struct isl_tab_var *var)
  * In particular, mark the variable as being non-negative and make
  * sure the sample value respects this constraint.
  */
-static int ununrestrict(struct isl_tab *tab, struct isl_tab_var *var)
+static isl_stat ununrestrict(struct isl_tab *tab, struct isl_tab_var *var)
 {
 	var->is_nonneg = 1;
 
 	if (var->is_row && restore_row(tab, var) < -1)
-		return -1;
+		return isl_stat_error;
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Unmark the last redundant row in "tab" as being redundant.
