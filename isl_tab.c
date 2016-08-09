@@ -3585,21 +3585,23 @@ void isl_tab_clear_undo(struct isl_tab *tab)
 
 /* Undo the operation performed by isl_tab_relax.
  */
-static int unrelax(struct isl_tab *tab, struct isl_tab_var *var) WARN_UNUSED;
-static int unrelax(struct isl_tab *tab, struct isl_tab_var *var)
+static isl_stat unrelax(struct isl_tab *tab, struct isl_tab_var *var)
+	WARN_UNUSED;
+static isl_stat unrelax(struct isl_tab *tab, struct isl_tab_var *var)
 {
 	unsigned off = 2 + tab->M;
 
 	if (!var->is_row && !max_is_manifestly_unbounded(tab, var))
 		if (to_row(tab, var, 1) < 0)
-			return -1;
+			return isl_stat_error;
 
 	if (var->is_row) {
 		isl_int_sub(tab->mat->row[var->index][1],
 		    tab->mat->row[var->index][1], tab->mat->row[var->index][0]);
 		if (var->is_nonneg) {
 			int sgn = restore_row(tab, var);
-			isl_assert(tab->mat->ctx, sgn >= 0, return -1);
+			isl_assert(tab->mat->ctx, sgn >= 0,
+				return isl_stat_error);
 		}
 	} else {
 		int i;
@@ -3613,7 +3615,7 @@ static int unrelax(struct isl_tab *tab, struct isl_tab_var *var)
 
 	}
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Undo the operation performed by isl_tab_unrestrict.
