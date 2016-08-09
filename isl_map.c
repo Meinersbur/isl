@@ -1517,20 +1517,24 @@ int isl_basic_set_alloc_equality(struct isl_basic_set *bset)
 	return isl_basic_map_alloc_equality(bset_to_bmap(bset));
 }
 
-int isl_basic_map_free_equality(struct isl_basic_map *bmap, unsigned n)
+__isl_give isl_basic_map *isl_basic_map_free_equality(
+	__isl_take isl_basic_map *bmap, unsigned n)
 {
 	if (!bmap)
-		return -1;
+		return NULL;
 	if (n > bmap->n_eq)
 		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
-			"invalid number of equalities", return -1);
+			"invalid number of equalities",
+			isl_basic_map_free(bmap));
 	bmap->n_eq -= n;
-	return 0;
+	return bmap;
 }
 
-int isl_basic_set_free_equality(struct isl_basic_set *bset, unsigned n)
+__isl_give isl_basic_set *isl_basic_set_free_equality(
+	__isl_take isl_basic_set *bset, unsigned n)
 {
-	return isl_basic_map_free_equality(bset_to_bmap(bset), n);
+	return bset_from_bmap(isl_basic_map_free_equality(bset_to_bmap(bset),
+							    n));
 }
 
 int isl_basic_map_drop_equality(struct isl_basic_map *bmap, unsigned pos)
@@ -2044,9 +2048,11 @@ __isl_give isl_basic_map *isl_basic_map_set_to_empty(
 	if (isl_basic_map_free_div(bmap, bmap->n_div) < 0)
 		return isl_basic_map_free(bmap);
 	isl_basic_map_free_inequality(bmap, bmap->n_ineq);
-	if (bmap->n_eq > 0)
-		isl_basic_map_free_equality(bmap, bmap->n_eq-1);
-	else {
+	if (bmap->n_eq > 0) {
+		bmap = isl_basic_map_free_equality(bmap, bmap->n_eq - 1);
+		if (!bmap)
+			return NULL;
+	} else {
 		i = isl_basic_map_alloc_equality(bmap);
 		if (i < 0)
 			goto error;

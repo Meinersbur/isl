@@ -646,7 +646,7 @@ __isl_give isl_basic_map *isl_basic_map_gauss5(__isl_take isl_basic_map *bmap,
 		return isl_basic_map_set_to_empty(bmap);
 	}
 	n_drop = bmap->n_eq - done;
-	isl_basic_map_free_equality(bmap, n_drop);
+	bmap = isl_basic_map_free_equality(bmap, n_drop);
 	if (drop && drop(n_drop, user) < 0)
 		return isl_basic_map_free(bmap);
 	return bmap;
@@ -3182,8 +3182,7 @@ __isl_give isl_basic_map *isl_basic_map_gist(__isl_take isl_basic_map *bmap,
 	eq = isl_basic_set_cow(eq);
 	if (isl_basic_set_free_inequality(eq, n_ineq) < 0)
 		eq = isl_basic_set_free(eq);
-	if (isl_basic_set_free_equality(bset, n_eq) < 0)
-		bset = isl_basic_set_free(bset);
+	bset = isl_basic_set_free_equality(bset, n_eq);
 
 	eq_bmap = isl_basic_map_overlying_set(eq, isl_basic_map_copy(bmap));
 	eq_bmap = gist_strides(eq_bmap, context);
