@@ -2939,7 +2939,8 @@ static isl_stat tab_insert_divs(struct isl_coalesce_info *info,
 		if (isl_tab_rollback(info->tab, snap) < 0)
 			return isl_stat_error;
 		info->bmap = isl_basic_map_cow(info->bmap);
-		if (isl_basic_map_free_inequality(info->bmap, 2 * n) < 0)
+		info->bmap = isl_basic_map_free_inequality(info->bmap, 2 * n);
+		if (info->bmap < 0)
 			return isl_stat_error;
 
 		return fix_constant_divs(info, n, expanded);

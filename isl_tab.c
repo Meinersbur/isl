@@ -3996,7 +3996,8 @@ static isl_stat perform_undo(struct isl_tab *tab, struct isl_tab_undo *undo)
 		tab->bmap = isl_basic_map_free_equality(tab->bmap, 1);
 		return tab->bmap ? isl_stat_ok : isl_stat_error;
 	case isl_tab_undo_bmap_ineq:
-		return isl_basic_map_free_inequality(tab->bmap, 1);
+		tab->bmap = isl_basic_map_free_inequality(tab->bmap, 1);
+		return tab->bmap ? isl_stat_ok : isl_stat_error;
 	case isl_tab_undo_bmap_div:
 		return drop_bmap_div(tab, undo->u.var_index);
 	case isl_tab_undo_saved_basis:

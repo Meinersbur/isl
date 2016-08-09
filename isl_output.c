@@ -1264,8 +1264,7 @@ static __isl_give isl_basic_map *get_aff(__isl_take isl_basic_map *bmap)
 	bmap = isl_basic_map_cow(bmap);
 	if (!bmap)
 		return NULL;
-	if (isl_basic_map_free_inequality(bmap, bmap->n_ineq) < 0)
-		goto error;
+	bmap = isl_basic_map_free_inequality(bmap, bmap->n_ineq);
 
 	nparam = isl_basic_map_dim(bmap, isl_dim_param);
 	n_in = isl_basic_map_dim(bmap, isl_dim_in);

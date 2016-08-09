@@ -2221,10 +2221,8 @@ static __isl_give isl_basic_set *add_bound(__isl_take isl_basic_set *hull,
 		if (!bound)
 			break;
 	}
-	if (j < i) {
-		isl_basic_set_free_inequality(hull, 1);
-		return hull;
-	}
+	if (j < i)
+		return isl_basic_set_free_inequality(hull, 1);
 
 	for (j = i + 1; j < set->n; ++j) {
 		int bound;
@@ -2238,10 +2236,8 @@ static __isl_give isl_basic_set *add_bound(__isl_take isl_basic_set *hull,
 		if (!bound)
 			break;
 	}
-	if (j < set->n) {
-		isl_basic_set_free_inequality(hull, 1);
-		return hull;
-	}
+	if (j < set->n)
+		return isl_basic_set_free_inequality(hull, 1);
 
 	entry = isl_hash_table_find(hull->ctx, data->hull_table, c_hash,
 					has_ineq, &v, 1);

@@ -3180,8 +3180,7 @@ __isl_give isl_basic_map *isl_basic_map_gist(__isl_take isl_basic_map *bmap,
 	n_ineq = bset->n_ineq;
 	eq = isl_basic_set_copy(bset);
 	eq = isl_basic_set_cow(eq);
-	if (isl_basic_set_free_inequality(eq, n_ineq) < 0)
-		eq = isl_basic_set_free(eq);
+	eq = isl_basic_set_free_inequality(eq, n_ineq);
 	bset = isl_basic_set_free_equality(bset, n_eq);
 
 	eq_bmap = isl_basic_map_overlying_set(eq, isl_basic_map_copy(bmap));

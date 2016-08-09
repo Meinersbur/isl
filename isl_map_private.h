@@ -225,14 +225,16 @@ __isl_give isl_map *isl_map_alloc_space(__isl_take isl_space *dim, int n,
 
 int isl_basic_map_alloc_equality(struct isl_basic_map *bmap);
 int isl_basic_set_alloc_equality(struct isl_basic_set *bset);
-int isl_basic_set_free_inequality(struct isl_basic_set *bset, unsigned n);
+__isl_give isl_basic_set *isl_basic_set_free_inequality(
+	__isl_take isl_basic_set *bset, unsigned n);
 __isl_give isl_basic_map *isl_basic_map_free_equality(
 	__isl_take isl_basic_map *bmap, unsigned n);
 __isl_give isl_basic_set *isl_basic_set_free_equality(
 	__isl_take isl_basic_set *bset, unsigned n);
 int isl_basic_set_alloc_inequality(__isl_keep isl_basic_set *bset);
 int isl_basic_map_alloc_inequality(__isl_keep isl_basic_map *bmap);
-int isl_basic_map_free_inequality(struct isl_basic_map *bmap, unsigned n);
+__isl_give isl_basic_map *isl_basic_map_free_inequality(
+	__isl_take isl_basic_map *bmap, unsigned n);
 int isl_basic_map_alloc_div(struct isl_basic_map *bmap);
 __isl_give isl_basic_map *isl_basic_map_insert_div(
 	__isl_take isl_basic_map *bmap, int pos, __isl_keep isl_vec *div);
