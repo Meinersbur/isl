@@ -3656,8 +3656,9 @@ static isl_stat restore_last_redundant(struct isl_tab *tab)
 	return isl_stat_ok;
 }
 
-static int perform_undo_var(struct isl_tab *tab, struct isl_tab_undo *undo) WARN_UNUSED;
-static int perform_undo_var(struct isl_tab *tab, struct isl_tab_undo *undo)
+static isl_stat perform_undo_var(struct isl_tab *tab, struct isl_tab_undo *undo)
+	WARN_UNUSED;
+static isl_stat perform_undo_var(struct isl_tab *tab, struct isl_tab_undo *undo)
 {
 	struct isl_tab_var *var = var_from_index(tab, undo->u.var_index);
 	switch (undo->type) {
@@ -3679,19 +3680,20 @@ static int perform_undo_var(struct isl_tab *tab, struct isl_tab_undo *undo)
 		break;
 	case isl_tab_undo_allocate:
 		if (undo->u.var_index >= 0) {
-			isl_assert(tab->mat->ctx, !var->is_row, return -1);
+			isl_assert(tab->mat->ctx, !var->is_row,
+				return isl_stat_error);
 			return drop_col(tab, var->index);
 		}
 		if (!var->is_row) {
 			if (!max_is_manifestly_unbounded(tab, var)) {
 				if (to_row(tab, var, 1) < 0)
-					return -1;
+					return isl_stat_error;
 			} else if (!min_is_manifestly_unbounded(tab, var)) {
 				if (to_row(tab, var, -1) < 0)
-					return -1;
+					return isl_stat_error;
 			} else
 				if (to_row(tab, var, 0) < 0)
-					return -1;
+					return isl_stat_error;
 		}
 		return drop_row(tab, var->index);
 	case isl_tab_undo_relax:
@@ -3701,10 +3703,10 @@ static int perform_undo_var(struct isl_tab *tab, struct isl_tab_undo *undo)
 	default:
 		isl_die(tab->mat->ctx, isl_error_internal,
 			"perform_undo_var called on invalid undo record",
-			return -1);
+			return isl_stat_error);
 	}
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Restore all rows that have been marked redundant by isl_tab_mark_redundant
