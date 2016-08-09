@@ -1325,11 +1325,6 @@ int isl_basic_map_drop_equality(struct isl_basic_map *bmap, unsigned pos)
 	return 0;
 }
 
-int isl_basic_set_drop_equality(struct isl_basic_set *bset, unsigned pos)
-{
-	return isl_basic_map_drop_equality(bset_to_bmap(bset), pos);
-}
-
 /* Turn inequality "pos" of "bmap" into an equality.
  *
  * In particular, we move the inequality in front of the equalities
