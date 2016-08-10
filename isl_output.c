@@ -2098,7 +2098,7 @@ error:
 }
 
 static __isl_give isl_printer *print_qpolynomial_fold_c(
-	__isl_take isl_printer *p, __isl_keep isl_space *dim,
+	__isl_take isl_printer *p, __isl_keep isl_space *space,
 	__isl_keep isl_qpolynomial_fold *fold)
 {
 	int i;
@@ -2112,7 +2112,7 @@ static __isl_give isl_printer *print_qpolynomial_fold_c(
 	for (i = 0; i < fold->n; ++i) {
 		if (i)
 			p = isl_printer_print_str(p, ", ");
-		p = print_qpolynomial_c(p, dim, fold->qp[i]);
+		p = print_qpolynomial_c(p, space, fold->qp[i]);
 		if (i)
 			p = isl_printer_print_str(p, ")");
 	}
