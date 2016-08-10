@@ -2628,7 +2628,6 @@ static __isl_give isl_basic_map *insert_bounds_on_div_from_ineq(
 		isl_int_set_si(bmap->ineq[k][1 + total + div], -1);
 	}
 
-	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
 	return bmap;
 error:
 	isl_basic_map_free(bmap);
