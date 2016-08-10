@@ -336,7 +336,6 @@ static void eliminate_var_using_equality(struct isl_basic_map *bmap,
 			normalize_div_expression(bmap, k);
 		} else
 			isl_seq_clr(bmap->div[k], 1 + total);
-		ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
 	}
 }
 
