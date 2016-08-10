@@ -1618,7 +1618,6 @@ __isl_give isl_basic_map *isl_basic_map_eliminate_vars(
 				break;
 		}
 	}
-	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
 	if (need_gauss)
 		bmap = isl_basic_map_gauss(bmap, NULL);
 	return bmap;
