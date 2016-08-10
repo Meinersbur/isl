@@ -710,7 +710,7 @@ static struct isl_facet_todo *create_todo(struct isl_tab *tab, int con)
 	todo->bset = isl_basic_set_sort_constraints(todo->bset);
 	if (!todo->bset)
 		goto error;
-	ISL_F_SET(todo->bset, ISL_BASIC_SET_NORMALIZED);
+	ISL_F_SET(todo->bset, ISL_BASIC_SET_NO_REDUNDANT);
 	todo->tab = isl_tab_dup(tab);
 	if (!todo->tab)
 		goto error;

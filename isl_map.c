@@ -1429,7 +1429,6 @@ int isl_basic_map_alloc_equality(struct isl_basic_map *bmap)
 	isl_assert(ctx, room_for_con(bmap, 1), return -1);
 	isl_assert(ctx, (bmap->eq - bmap->ineq) + bmap->n_eq <= bmap->c_size,
 			return -1);
-	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_REDUNDANT);
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_IMPLICIT);
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_ALL_EQUALITIES);
@@ -1508,7 +1507,7 @@ void isl_basic_map_inequality_to_equality(
 	bmap->n_ineq--;
 	bmap->eq--;
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_REDUNDANT);
-	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
+	ISL_F_CLR(bmap, ISL_BASIC_MAP_SORTED);
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED_DIVS);
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_ALL_EQUALITIES);
 }
@@ -1527,7 +1526,7 @@ int isl_basic_map_alloc_inequality(__isl_keep isl_basic_map *bmap)
 	isl_assert(ctx, room_for_ineq(bmap, 1), return -1);
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_IMPLICIT);
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_REDUNDANT);
-	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
+	ISL_F_CLR(bmap, ISL_BASIC_MAP_SORTED);
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_ALL_EQUALITIES);
 	isl_seq_clr(bmap->ineq[bmap->n_ineq] +
 		      1 + isl_basic_map_total_dim(bmap),
@@ -1565,7 +1564,7 @@ int isl_basic_map_drop_inequality(struct isl_basic_map *bmap, unsigned pos)
 		t = bmap->ineq[pos];
 		bmap->ineq[pos] = bmap->ineq[bmap->n_ineq - 1];
 		bmap->ineq[bmap->n_ineq - 1] = t;
-		ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
+		ISL_F_CLR(bmap, ISL_BASIC_MAP_SORTED);
 	}
 	bmap->n_ineq--;
 	return 0;
@@ -2020,7 +2019,7 @@ static __isl_give isl_basic_map *isl_basic_map_swap_vars(
 
 	isl_blk_free(bmap->ctx, blk);
 
-	ISL_F_CLR(bmap, ISL_BASIC_SET_NORMALIZED);
+	ISL_F_CLR(bmap, ISL_BASIC_SET_SORTED);
 	bmap = isl_basic_map_gauss(bmap, NULL);
 	return isl_basic_map_finalize(bmap);
 error:
@@ -2156,7 +2155,7 @@ void isl_basic_map_swap_div(struct isl_basic_map *bmap, int a, int b)
 
 	for (i = 0; i < bmap->n_div; ++i)
 		isl_int_swap(bmap->div[i][1+1+off+a], bmap->div[i][1+1+off+b]);
-	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
+	ISL_F_CLR(bmap, ISL_BASIC_MAP_SORTED);
 }
 
 /* Swap divs "a" and "b" in "bset" and adjust the constraints and
@@ -2278,7 +2277,8 @@ __isl_give isl_basic_map *isl_basic_map_drop(__isl_take isl_basic_map *bmap,
 	if (!bmap->dim)
 		goto error;
 
-	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
+	ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_REDUNDANT);
+	ISL_F_CLR(bmap, ISL_BASIC_MAP_SORTED);
 	bmap = isl_basic_map_simplify(bmap);
 	return isl_basic_map_finalize(bmap);
 error:
@@ -2379,7 +2379,8 @@ __isl_give isl_basic_map *isl_basic_map_drop_div(
 
 		bmap->div[bmap->n_div - 1] = t;
 	}
-	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
+	ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_REDUNDANT);
+	ISL_F_CLR(bmap, ISL_BASIC_MAP_SORTED);
 	if (isl_basic_map_free_div(bmap, 1) < 0)
 		return isl_basic_map_free(bmap);
 
@@ -3347,7 +3348,8 @@ int isl_inequality_negate(struct isl_basic_map *bmap, unsigned pos)
 	isl_assert(bmap->ctx, pos < bmap->n_ineq, return -1);
 	isl_seq_neg(bmap->ineq[pos], bmap->ineq[pos], 1 + total);
 	isl_int_sub_ui(bmap->ineq[pos][0], bmap->ineq[pos][0], 1);
-	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
+	ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_REDUNDANT);
+	ISL_F_CLR(bmap, ISL_BASIC_MAP_SORTED);
 	return 0;
 }
 
@@ -4104,7 +4106,7 @@ __isl_give isl_basic_map *isl_basic_map_move_dims(
 	if (!bmap->dim)
 		goto error;
 
-	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
+	ISL_F_CLR(bmap, ISL_BASIC_MAP_SORTED);
 	bmap = isl_basic_map_gauss(bmap, NULL);
 	bmap = isl_basic_map_finalize(bmap);
 
@@ -9559,12 +9561,13 @@ __isl_give isl_basic_map *isl_basic_map_sort_constraints(
 		return NULL;
 	if (bmap->n_ineq == 0)
 		return bmap;
-	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_NORMALIZED))
+	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_SORTED))
 		return bmap;
 	total = isl_basic_map_total_dim(bmap);
 	if (isl_sort(bmap->ineq, bmap->n_ineq, sizeof(isl_int *),
 		    &sort_constraint_cmp, &total) < 0)
 		return isl_basic_map_free(bmap);
+	ISL_F_SET(bmap, ISL_BASIC_MAP_SORTED);
 	return bmap;
 }
 
@@ -9578,14 +9581,8 @@ __isl_give isl_basic_set *isl_basic_set_sort_constraints(
 __isl_give isl_basic_map *isl_basic_map_normalize(
 	__isl_take isl_basic_map *bmap)
 {
-	if (!bmap)
-		return NULL;
-	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_NORMALIZED))
-		return bmap;
 	bmap = isl_basic_map_remove_redundancies(bmap);
 	bmap = isl_basic_map_sort_constraints(bmap);
-	if (bmap)
-		ISL_F_SET(bmap, ISL_BASIC_MAP_NORMALIZED);
 	return bmap;
 }
 int isl_basic_map_plain_cmp(__isl_keep isl_basic_map *bmap1,
@@ -11679,7 +11676,7 @@ __isl_give isl_basic_map *isl_basic_map_realign(__isl_take isl_basic_map *bmap,
 
 	flags = bmap->flags;
 	ISL_FL_CLR(flags, ISL_BASIC_MAP_FINAL);
-	ISL_FL_CLR(flags, ISL_BASIC_MAP_NORMALIZED);
+	ISL_FL_CLR(flags, ISL_BASIC_MAP_SORTED);
 	ISL_FL_CLR(flags, ISL_BASIC_MAP_NORMALIZED_DIVS);
 	n_div = isl_basic_map_dim(bmap, isl_dim_div);
 	res = isl_basic_map_alloc_space(space, n_div, bmap->n_eq, bmap->n_ineq);
@@ -13592,7 +13589,7 @@ __isl_give isl_basic_map *isl_basic_map_transform_dims(
 		      isl_mat_copy(trans)) < 0)
 		goto error;
 
-	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
+	ISL_F_CLR(bmap, ISL_BASIC_MAP_SORTED);
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED_DIVS);
 
 	isl_mat_free(trans);
