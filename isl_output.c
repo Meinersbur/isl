@@ -1537,13 +1537,13 @@ static __isl_give isl_printer *print_pow(__isl_take isl_printer *p,
 }
 
 static __isl_give isl_printer *upoly_print(__isl_keep struct isl_upoly *up,
-	__isl_keep isl_space *dim, __isl_keep isl_mat *div,
+	__isl_keep isl_space *space, __isl_keep isl_mat *div,
 	__isl_take isl_printer *p, int outer)
 {
 	int i, n, first, print_parens;
 	struct isl_upoly_rec *rec;
 
-	if (!p || !up || !dim || !div)
+	if (!p || !up || !space || !div)
 		goto error;
 
 	if (isl_upoly_is_cst(up))
@@ -1554,7 +1554,7 @@ static __isl_give isl_printer *upoly_print(__isl_keep struct isl_upoly *up,
 		goto error;
 	n = upoly_rec_n_non_zero(rec);
 	print_parens = n > 1 ||
-		    (outer && rec->up.var >= isl_space_dim(dim, isl_dim_all));
+		    (outer && rec->up.var >= isl_space_dim(space, isl_dim_all));
 	if (print_parens)
 		p = isl_printer_print_str(p, "(");
 	for (i = 0, first = 1; i < rec->n; ++i) {
@@ -1574,7 +1574,7 @@ static __isl_give isl_printer *upoly_print(__isl_keep struct isl_upoly *up,
 			if (!first)
 				p = isl_printer_print_str(p, " + ");
 			if (i == 0 || !isl_upoly_is_one(rec->p[i]))
-				p = upoly_print(rec->p[i], dim, div, p, 0);
+				p = upoly_print(rec->p[i], space, div, p, 0);
 		}
 		first = 0;
 		if (i == 0)
@@ -1582,7 +1582,7 @@ static __isl_give isl_printer *upoly_print(__isl_keep struct isl_upoly *up,
 		if (!isl_upoly_is_one(rec->p[i]) &&
 		    !isl_upoly_is_negone(rec->p[i]))
 			p = isl_printer_print_str(p, " * ");
-		p = print_pow(p, dim, div, rec->up.var, i);
+		p = print_pow(p, space, div, rec->up.var, i);
 	}
 	if (print_parens)
 		p = isl_printer_print_str(p, ")");
