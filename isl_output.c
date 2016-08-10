@@ -2086,18 +2086,17 @@ static __isl_give isl_printer *print_ls_affine_c(__isl_take isl_printer *p,
  * is updated if the constraint is actually printed.
  */
 static __isl_give isl_printer *print_constraint_c(__isl_take isl_printer *p,
-	__isl_keep isl_local_space *ls,
-	__isl_keep isl_basic_set *bset, isl_int *c, const char *op, int *first)
+	__isl_keep isl_local_space *ls, isl_int *c, const char *op, int *first)
 {
 	unsigned o_div;
 	unsigned n_div;
 	int div;
 
-	o_div = isl_basic_set_offset(bset, isl_dim_div);
-	n_div = isl_basic_set_dim(bset, isl_dim_div);
+	o_div = isl_local_space_offset(ls, isl_dim_div);
+	n_div = isl_local_space_dim(ls, isl_dim_div);
 	div = isl_seq_last_non_zero(c + o_div, n_div);
 	if (div >= 0) {
-		isl_bool is_div = isl_basic_set_is_div_constraint(bset, c, div);
+		isl_bool is_div = isl_local_space_is_div_constraint(ls, c, div);
 		if (is_div < 0)
 			return isl_printer_free(p);
 		if (is_div)
@@ -2136,7 +2135,7 @@ static __isl_give isl_printer *print_basic_set_c(__isl_take isl_printer *p,
 	for (i = 0; i < bset->n_eq; ++i) {
 		j = isl_seq_last_non_zero(bset->eq[i] + 1 + total, n_div);
 		if (j < 0)
-			p = print_constraint_c(p, ls, bset,
+			p = print_constraint_c(p, ls,
 						bset->eq[i], "==", &first);
 		else {
 			if (i)
@@ -2152,8 +2151,7 @@ static __isl_give isl_printer *print_basic_set_c(__isl_take isl_printer *p,
 		}
 	}
 	for (i = 0; i < bset->n_ineq; ++i)
-		p = print_constraint_c(p, ls, bset, bset->ineq[i], ">=",
-					&first);
+		p = print_constraint_c(p, ls, bset->ineq[i], ">=", &first);
 	isl_local_space_free(ls);
 	return p;
 }
