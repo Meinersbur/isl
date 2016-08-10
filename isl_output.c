@@ -1536,6 +1536,10 @@ static __isl_give isl_printer *print_pow(__isl_take isl_printer *p,
 	return p;
 }
 
+/* Print the polynomial "up" defined over the domain space "space" and
+ * local variables defined by "div" to "p".
+ * If "outer" is set, then "up" is not nested inside another polynomial.
+ */
 static __isl_give isl_printer *upoly_print(__isl_keep struct isl_upoly *up,
 	__isl_keep isl_space *space, __isl_keep isl_mat *div,
 	__isl_take isl_printer *p, int outer)
@@ -1629,6 +1633,9 @@ error:
 	return NULL;
 }
 
+/* Print the quasi-polynomial "qp" to "p" in C format, with the variable names
+ * taken from the domain space "space".
+ */
 static __isl_give isl_printer *print_qpolynomial_c(__isl_take isl_printer *p,
 	__isl_keep isl_space *space, __isl_keep isl_qpolynomial *qp)
 {
@@ -2007,22 +2014,30 @@ static __isl_give isl_printer *print_set_c(__isl_take isl_printer *p,
 	return p;
 }
 
+/* Print the piecewise quasi-polynomial "pwqp" to "p" in C format.
+ */
 static __isl_give isl_printer *print_pw_qpolynomial_c(
 	__isl_take isl_printer *p, __isl_keep isl_pw_qpolynomial *pwqp)
 {
 	int i;
+	isl_space *space;
 
-	if (pwqp->n == 1 && isl_set_plain_is_universe(pwqp->p[0].set))
-		return print_qpolynomial_c(p, pwqp->dim, pwqp->p[0].qp);
+	space = isl_pw_qpolynomial_get_domain_space(pwqp);
+	if (pwqp->n == 1 && isl_set_plain_is_universe(pwqp->p[0].set)) {
+		p = print_qpolynomial_c(p, space, pwqp->p[0].qp);
+		isl_space_free(space);
+		return p;
+	}
 
 	for (i = 0; i < pwqp->n; ++i) {
 		p = isl_printer_print_str(p, "(");
-		p = print_set_c(p, pwqp->dim, pwqp->p[i].set);
+		p = print_set_c(p, space, pwqp->p[i].set);
 		p = isl_printer_print_str(p, ") ? (");
-		p = print_qpolynomial_c(p, pwqp->dim, pwqp->p[i].qp);
+		p = print_qpolynomial_c(p, space, pwqp->p[i].qp);
 		p = isl_printer_print_str(p, ") : ");
 	}
 
+	isl_space_free(space);
 	p = isl_printer_print_str(p, "0");
 	return p;
 }
@@ -2097,6 +2112,9 @@ error:
 	return NULL;
 }
 
+/* Print the quasi-polynomial reduction "fold" to "p" in C format,
+ * with the variable names taken from the domain space "space".
+ */
 static __isl_give isl_printer *print_qpolynomial_fold_c(
 	__isl_take isl_printer *p, __isl_keep isl_space *space,
 	__isl_keep isl_qpolynomial_fold *fold)
@@ -2135,22 +2153,30 @@ error:
 	return NULL;
 }
 
+/* Print the piecewise quasi-polynomial reduction "pwf" to "p" in C format.
+ */
 static __isl_give isl_printer *print_pw_qpolynomial_fold_c(
 	__isl_take isl_printer *p, __isl_keep isl_pw_qpolynomial_fold *pwf)
 {
 	int i;
+	isl_space *space;
 
-	if (pwf->n == 1 && isl_set_plain_is_universe(pwf->p[0].set))
-		return print_qpolynomial_fold_c(p, pwf->dim, pwf->p[0].fold);
+	space = isl_pw_qpolynomial_fold_get_domain_space(pwf);
+	if (pwf->n == 1 && isl_set_plain_is_universe(pwf->p[0].set)) {
+		p = print_qpolynomial_fold_c(p, space, pwf->p[0].fold);
+		isl_space_free(space);
+		return p;
+	}
 
 	for (i = 0; i < pwf->n; ++i) {
 		p = isl_printer_print_str(p, "(");
-		p = print_set_c(p, pwf->dim, pwf->p[i].set);
+		p = print_set_c(p, space, pwf->p[i].set);
 		p = isl_printer_print_str(p, ") ? (");
-		p = print_qpolynomial_fold_c(p, pwf->dim, pwf->p[i].fold);
+		p = print_qpolynomial_fold_c(p, space, pwf->p[i].fold);
 		p = isl_printer_print_str(p, ") : ");
 	}
 
+	isl_space_free(space);
 	p = isl_printer_print_str(p, "0");
 	return p;
 }
@@ -2784,18 +2810,24 @@ error:
 	return NULL;
 }
 
+/* Print the unnamed, single-dimensional piecewise multi affine expression "pma"
+ * to "p".
+ */
 static __isl_give isl_printer *print_unnamed_pw_multi_aff_c(
 	__isl_take isl_printer *p, __isl_keep isl_pw_multi_aff *pma)
 {
 	int i;
+	isl_space *space;
 
+	space = isl_pw_multi_aff_get_domain_space(pma);
 	for (i = 0; i < pma->n - 1; ++i) {
 		p = isl_printer_print_str(p, "(");
-		p = print_set_c(p, pma->dim, pma->p[i].set);
+		p = print_set_c(p, space, pma->p[i].set);
 		p = isl_printer_print_str(p, ") ? (");
 		p = print_aff_c(p, pma->p[i].maff->p[0]);
 		p = isl_printer_print_str(p, ") : ");
 	}
+	isl_space_free(space);
 
 	return print_aff_c(p, pma->p[pma->n - 1].maff->p[0]);
 }
