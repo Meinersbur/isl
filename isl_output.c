@@ -1630,7 +1630,7 @@ error:
 }
 
 static __isl_give isl_printer *print_qpolynomial_c(__isl_take isl_printer *p,
-	__isl_keep isl_space *dim, __isl_keep isl_qpolynomial *qp)
+	__isl_keep isl_space *space, __isl_keep isl_qpolynomial *qp)
 {
 	isl_int den;
 
@@ -1645,7 +1645,7 @@ static __isl_give isl_printer *print_qpolynomial_c(__isl_take isl_printer *p,
 		qp = isl_qpolynomial_mul(qp, f);
 	}
 	if (qp)
-		p = upoly_print(qp->upoly, dim, qp->div, p, 0);
+		p = upoly_print(qp->upoly, space, qp->div, p, 0);
 	else
 		p = isl_printer_free(p);
 	if (!isl_int_is_one(den)) {
