@@ -9039,21 +9039,21 @@ int isl_basic_map_plain_cmp(__isl_keep isl_basic_map *bmap1,
 {
 	int i, cmp;
 	unsigned total;
+	isl_space *space1, *space2;
 
 	if (!bmap1 || !bmap2)
 		return -1;
 
 	if (bmap1 == bmap2)
 		return 0;
+	space1 = isl_basic_map_peek_space(bmap1);
+	space2 = isl_basic_map_peek_space(bmap2);
+	cmp = isl_space_cmp(space1, space2);
+	if (cmp)
+		return cmp;
 	if (ISL_F_ISSET(bmap1, ISL_BASIC_MAP_RATIONAL) !=
 	    ISL_F_ISSET(bmap2, ISL_BASIC_MAP_RATIONAL))
 		return ISL_F_ISSET(bmap1, ISL_BASIC_MAP_RATIONAL) ? -1 : 1;
-	if (isl_basic_map_n_param(bmap1) != isl_basic_map_n_param(bmap2))
-		return isl_basic_map_n_param(bmap1) - isl_basic_map_n_param(bmap2);
-	if (isl_basic_map_n_in(bmap1) != isl_basic_map_n_in(bmap2))
-		return isl_basic_map_n_out(bmap1) - isl_basic_map_n_out(bmap2);
-	if (isl_basic_map_n_out(bmap1) != isl_basic_map_n_out(bmap2))
-		return isl_basic_map_n_out(bmap1) - isl_basic_map_n_out(bmap2);
 	if (ISL_F_ISSET(bmap1, ISL_BASIC_MAP_EMPTY) &&
 	    ISL_F_ISSET(bmap2, ISL_BASIC_MAP_EMPTY))
 		return 0;
