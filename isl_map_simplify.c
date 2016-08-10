@@ -535,7 +535,6 @@ static __isl_give isl_basic_map *set_div_from_eq(__isl_take isl_basic_map *bmap,
 	isl_int_set(bmap->div[div][0], bmap->eq[eq][o_div + div]);
 	if (progress)
 		*progress = 1;
-	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
 
 	return bmap;
 }
