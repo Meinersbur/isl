@@ -530,23 +530,24 @@ static void free_chamber_list(struct isl_chamber_list *list)
 /* Check whether the basic set "bset" is a superset of the basic set described
  * by "tab", i.e., check whether all constraints of "bset" are redundant.
  */
-static int bset_covers_tab(__isl_keep isl_basic_set *bset, struct isl_tab *tab)
+static isl_bool bset_covers_tab(__isl_keep isl_basic_set *bset,
+	struct isl_tab *tab)
 {
 	int i;
 
 	if (!bset || !tab)
-		return -1;
+		return isl_bool_error;
 
 	for (i = 0; i < bset->n_ineq; ++i) {
 		enum isl_ineq_type type = isl_tab_ineq_type(tab, bset->ineq[i]);
 		switch (type) {
-		case isl_ineq_error:		return -1;
+		case isl_ineq_error:		return isl_bool_error;
 		case isl_ineq_redundant:	continue;
-		default:			return 0;
+		default:			return isl_bool_false;
 		}
 	}
 
-	return 1;
+	return isl_bool_true;
 }
 
 static __isl_give isl_vertices *vertices_add_chambers(
