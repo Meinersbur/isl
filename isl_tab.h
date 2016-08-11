@@ -213,7 +213,8 @@ int isl_tab_add_valid_eq(struct isl_tab *tab, isl_int *eq) WARN_UNUSED;
 
 int isl_tab_freeze_constraint(struct isl_tab *tab, int con) WARN_UNUSED;
 
-int isl_tab_track_bmap(struct isl_tab *tab, __isl_take isl_basic_map *bmap) WARN_UNUSED;
+isl_stat isl_tab_track_bmap(struct isl_tab *tab, __isl_take isl_basic_map *bmap)
+	WARN_UNUSED;
 int isl_tab_track_bset(struct isl_tab *tab, __isl_take isl_basic_set *bset) WARN_UNUSED;
 __isl_keep isl_basic_set *isl_tab_peek_bset(struct isl_tab *tab);
 

@@ -4002,7 +4002,7 @@ error:
 	return isl_ineq_error;
 }
 
-int isl_tab_track_bmap(struct isl_tab *tab, __isl_take isl_basic_map *bmap)
+isl_stat isl_tab_track_bmap(struct isl_tab *tab, __isl_take isl_basic_map *bmap)
 {
 	bmap = isl_basic_map_cow(bmap);
 	if (!tab || !bmap)
@@ -4013,7 +4013,7 @@ int isl_tab_track_bmap(struct isl_tab *tab, __isl_take isl_basic_map *bmap)
 		if (!bmap)
 			goto error;
 		tab->bmap = bmap;
-		return 0;
+		return isl_stat_ok;
 	}
 
 	isl_assert(tab->mat->ctx, tab->n_eq == bmap->n_eq, goto error);
@@ -4022,10 +4022,10 @@ int isl_tab_track_bmap(struct isl_tab *tab, __isl_take isl_basic_map *bmap)
 
 	tab->bmap = bmap;
 
-	return 0;
+	return isl_stat_ok;
 error:
 	isl_basic_map_free(bmap);
-	return -1;
+	return isl_stat_error;
 }
 
 int isl_tab_track_bset(struct isl_tab *tab, __isl_take isl_basic_set *bset)
