@@ -9554,36 +9554,6 @@ isl_bool isl_set_plain_is_equal(__isl_keep isl_set *set1,
 	return isl_map_plain_is_equal(set_to_map(set1), set_to_map(set2));
 }
 
-/* Return an interval that ranges from min to max (inclusive)
- */
-struct isl_basic_set *isl_basic_set_interval(struct isl_ctx *ctx,
-	isl_int min, isl_int max)
-{
-	int k;
-	struct isl_basic_set *bset = NULL;
-
-	bset = isl_basic_set_alloc(ctx, 0, 1, 0, 0, 2);
-	if (!bset)
-		goto error;
-
-	k = isl_basic_set_alloc_inequality(bset);
-	if (k < 0)
-		goto error;
-	isl_int_set_si(bset->ineq[k][1], 1);
-	isl_int_neg(bset->ineq[k][0], min);
-
-	k = isl_basic_set_alloc_inequality(bset);
-	if (k < 0)
-		goto error;
-	isl_int_set_si(bset->ineq[k][1], -1);
-	isl_int_set(bset->ineq[k][0], max);
-
-	return bset;
-error:
-	isl_basic_set_free(bset);
-	return NULL;
-}
-
 /* Return the basic maps in "map" as a list.
  */
 __isl_give isl_basic_map_list *isl_map_get_basic_map_list(
