@@ -4655,7 +4655,7 @@ __isl_give isl_set *isl_set_neg(__isl_take isl_set *set)
 /* Given a basic map A -> f(A) and an integer d, construct a basic map
  * A -> floor(f(A)/d).
  */
-struct isl_basic_map *isl_basic_map_floordiv(struct isl_basic_map *bmap,
+__isl_give isl_basic_map *isl_basic_map_floordiv(__isl_take isl_basic_map *bmap,
 		isl_int d)
 {
 	unsigned n_in, n_out, nparam, total, pos;
