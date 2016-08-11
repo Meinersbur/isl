@@ -12584,7 +12584,7 @@ static int set_ma_divs(__isl_keep isl_basic_map *bmap,
 		o_bmap += n_div;
 		o_ls += n_div;
 		isl_seq_clr(bmap->div[i] + o_bmap, bmap->n_div - n_div);
-		if (isl_basic_set_add_div_constraints(bmap, i) < 0)
+		if (isl_basic_map_add_div_constraints(bmap, i) < 0)
 			goto error;
 	}
 
@@ -12824,7 +12824,7 @@ __isl_give isl_basic_map *isl_basic_map_preimage_multi_aff(
 	isl_int_clear(g);
 	isl_basic_map_free(bmap);
 	isl_multi_aff_free(ma);
-	res = isl_basic_set_simplify(res);
+	res = isl_basic_map_simplify(res);
 	return isl_basic_map_finalize(res);
 error:
 	isl_int_clear(f);
