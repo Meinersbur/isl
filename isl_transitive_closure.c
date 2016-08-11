@@ -284,15 +284,15 @@ error:
 /* Check whether the parametric constant term of constraint c is never
  * positive in "bset".
  */
-static int parametric_constant_never_positive(__isl_keep isl_basic_set *bset,
-	isl_int *c, int *div_purity)
+static isl_bool parametric_constant_never_positive(
+	__isl_keep isl_basic_set *bset, isl_int *c, int *div_purity)
 {
 	unsigned d;
 	unsigned n_div;
 	unsigned nparam;
 	int i;
 	int k;
-	int empty;
+	isl_bool empty;
 
 	n_div = isl_basic_set_dim(bset, isl_dim_div);
 	d = isl_basic_set_dim(bset, isl_dim_set);
@@ -319,7 +319,7 @@ static int parametric_constant_never_positive(__isl_keep isl_basic_set *bset,
 	return empty;
 error:
 	isl_basic_set_free(bset);
-	return -1;
+	return isl_bool_error;
 }
 
 /* Return PURE_PARAM if only the coefficients of the parameters are non-zero.
@@ -335,7 +335,7 @@ static int purity(__isl_keep isl_basic_set *bset, isl_int *c, int *div_purity,
 	unsigned d;
 	unsigned n_div;
 	unsigned nparam;
-	int empty;
+	isl_bool empty;
 	int i;
 	int p = 0, v = 0;
 
