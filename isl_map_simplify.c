@@ -1424,7 +1424,7 @@ __isl_give isl_basic_map *isl_basic_map_detect_inequality_pairs(
  * We skip integral divs, i.e., those with denominator 1, as we would
  * risk eliminating the div from the div constraints.  We do not need
  * to handle those divs here anyway since the div constraints will turn
- * out to form an equality and this equality can then be use to eliminate
+ * out to form an equality and this equality can then be used to eliminate
  * the div from all constraints.
  */
 static __isl_give isl_basic_map *eliminate_unit_divs(
