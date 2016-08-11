@@ -4951,11 +4951,6 @@ int isl_basic_map_add_div_constraint(__isl_keep isl_basic_map *bmap,
 		return add_lower_div_constraint(bmap, div_pos, bmap->div[div]);
 }
 
-int isl_basic_set_add_div_constraints(struct isl_basic_set *bset, unsigned div)
-{
-	return isl_basic_map_add_div_constraints(bset, div);
-}
-
 struct isl_basic_set *isl_basic_map_underlying_set(
 		struct isl_basic_map *bmap)
 {
