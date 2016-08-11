@@ -8319,13 +8319,13 @@ error:
 
 /* Construct the half-space x_pos >= 0.
  */
-static __isl_give isl_basic_set *nonneg_halfspace(__isl_take isl_space *dim,
+static __isl_give isl_basic_set *nonneg_halfspace(__isl_take isl_space *space,
 	int pos)
 {
 	int k;
 	isl_basic_set *nonneg;
 
-	nonneg = isl_basic_set_alloc_space(dim, 0, 0, 1);
+	nonneg = isl_basic_set_alloc_space(space, 0, 0, 1);
 	k = isl_basic_set_alloc_inequality(nonneg);
 	if (k < 0)
 		goto error;
