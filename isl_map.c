@@ -6055,13 +6055,14 @@ __isl_give isl_basic_set *isl_basic_set_universe(__isl_take isl_space *space)
 	return bset;
 }
 
-__isl_give isl_basic_map *isl_basic_map_nat_universe(__isl_take isl_space *dim)
+__isl_give isl_basic_map *isl_basic_map_nat_universe(
+	__isl_take isl_space *space)
 {
 	int i;
-	unsigned total = isl_space_dim(dim, isl_dim_all);
+	unsigned total = isl_space_dim(space, isl_dim_all);
 	isl_basic_map *bmap;
 
-	bmap= isl_basic_map_alloc_space(dim, 0, 0, total);
+	bmap = isl_basic_map_alloc_space(space, 0, 0, total);
 	for (i = 0; i < total; ++i) {
 		int k = isl_basic_map_alloc_inequality(bmap);
 		if (k < 0)
