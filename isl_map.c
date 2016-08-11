@@ -8739,8 +8739,8 @@ __isl_give isl_basic_set *isl_basic_set_expand_divs(
  * Returns -1 if no corresponding div was found and the position
  * of the corresponding div in dst otherwise.
  */
-static int find_div(struct isl_basic_map *dst,
-			struct isl_basic_map *src, unsigned div)
+static int find_div(__isl_keep isl_basic_map *dst,
+	__isl_keep isl_basic_map *src, unsigned div)
 {
 	int i;
 
