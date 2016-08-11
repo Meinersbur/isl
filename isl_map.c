@@ -8340,12 +8340,13 @@ error:
 
 /* Construct the half-space x_pos <= -1.
  */
-static __isl_give isl_basic_set *neg_halfspace(__isl_take isl_space *dim, int pos)
+static __isl_give isl_basic_set *neg_halfspace(__isl_take isl_space *space,
+	int pos)
 {
 	int k;
 	isl_basic_set *neg;
 
-	neg = isl_basic_set_alloc_space(dim, 0, 0, 1);
+	neg = isl_basic_set_alloc_space(space, 0, 0, 1);
 	k = isl_basic_set_alloc_inequality(neg);
 	if (k < 0)
 		goto error;
