@@ -6101,26 +6101,6 @@ __isl_give isl_basic_map *isl_basic_map_upper_bound_si(
 	return basic_map_bound_si(bmap, type, pos, value, 1);
 }
 
-struct isl_basic_set *isl_basic_set_lower_bound_dim(struct isl_basic_set *bset,
-	unsigned dim, isl_int value)
-{
-	int j;
-
-	bset = isl_basic_set_cow(bset);
-	bset = isl_basic_set_extend_constraints(bset, 0, 1);
-	j = isl_basic_set_alloc_inequality(bset);
-	if (j < 0)
-		goto error;
-	isl_seq_clr(bset->ineq[j], 1 + isl_basic_set_total_dim(bset));
-	isl_int_set_si(bset->ineq[j][1 + isl_basic_set_n_param(bset) + dim], 1);
-	isl_int_neg(bset->ineq[j][0], value);
-	bset = isl_basic_set_simplify(bset);
-	return isl_basic_set_finalize(bset);
-error:
-	isl_basic_set_free(bset);
-	return NULL;
-}
-
 static __isl_give isl_map *map_bound_si(__isl_take isl_map *map,
 	enum isl_dim_type type, unsigned pos, int value, int upper)
 {
