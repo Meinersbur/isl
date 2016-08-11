@@ -2789,9 +2789,8 @@ static isl_stat fix_constant_divs(struct isl_coalesce_info *info,
 		if (!expanded[i].cst) {
 			info->bmap = isl_basic_map_extend_constraints(
 						info->bmap, 0, 2);
-			if (isl_basic_map_add_div_constraints(info->bmap,
-						expanded[i].pos - o_div) < 0)
-				break;
+			info->bmap = isl_basic_map_add_div_constraints(
+					info->bmap, expanded[i].pos - o_div);
 		} else {
 			isl_int_set_si(ineq->el[1 + expanded[i].pos], -1);
 			isl_int_set(ineq->el[0], expanded[i].val);

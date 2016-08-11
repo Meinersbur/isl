@@ -366,7 +366,8 @@ __isl_give isl_map *isl_map_project_onto(__isl_take isl_map *map,
 
 int isl_basic_map_add_div_constraint(__isl_keep isl_basic_map *bmap,
 	unsigned div, int sign);
-int isl_basic_map_add_div_constraints(struct isl_basic_map *bmap, unsigned div);
+__isl_give isl_basic_map *isl_basic_map_add_div_constraints(
+	__isl_take isl_basic_map *bmap, unsigned div);
 __isl_give isl_basic_map *isl_basic_map_add_known_div_constraints(
 	__isl_take isl_basic_map *bmap);
 __isl_give isl_basic_map *isl_basic_map_drop_redundant_divs(

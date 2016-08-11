@@ -5038,8 +5038,7 @@ __isl_give isl_basic_map *isl_basic_map_from_qpolynomial(
 			goto error;
 		isl_seq_cpy(bmap->div[k], qp->div->row[i], qp->div->n_col);
 		isl_int_set_si(bmap->div[k][qp->div->n_col], 0);
-		if (isl_basic_map_add_div_constraints(bmap, k) < 0)
-			goto error;
+		bmap = isl_basic_map_add_div_constraints(bmap, k);
 	}
 	k = isl_basic_map_alloc_equality(bmap);
 	if (k < 0)

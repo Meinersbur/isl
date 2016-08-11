@@ -484,8 +484,7 @@ static __isl_give isl_basic_map *add_known_div_constraints(
 	for (i = 0; i < n_div; ++i) {
 		if (isl_int_is_zero(bmap->div[i][0]))
 			continue;
-		if (isl_basic_map_add_div_constraints(bmap, i) < 0)
-			return isl_basic_map_free(bmap);
+		bmap = isl_basic_map_add_div_constraints(bmap, i);
 	}
 
 	return bmap;
@@ -5246,14 +5245,14 @@ static isl_stat add_lower_div_constraint(__isl_keep isl_basic_map *bmap,
  *
  *		f - m d >= m
  */
-int isl_basic_map_add_div_constraints(__isl_keep isl_basic_map *bmap,
-	unsigned pos)
+__isl_give isl_basic_map *isl_basic_map_add_div_constraints(
+	__isl_take isl_basic_map *bmap, unsigned pos)
 {
 	if (add_upper_div_constraint(bmap, pos) < 0)
-		return -1;
+		return isl_basic_map_free(bmap);
 	if (add_lower_div_constraint(bmap, pos) < 0)
-		return -1;
-	return 0;
+		return isl_basic_map_free(bmap);
+	return bmap;
 }
 
 /* For each known div d = floor(f/m), add the constraints
@@ -8855,7 +8854,8 @@ __isl_give isl_basic_map *isl_basic_map_expand_divs(
 			isl_seq_cpy(bmap->div[i], div->row[i], div->n_col);
 			if (isl_basic_map_div_is_marked_unknown(bmap, i))
 				continue;
-			if (isl_basic_map_add_div_constraints(bmap, i) < 0)
+			bmap = isl_basic_map_add_div_constraints(bmap, i);
+			if (!bmap)
 				goto error;
 		}
 	}
@@ -8953,7 +8953,8 @@ __isl_give isl_basic_map *isl_basic_map_align_divs(
 				goto error;
 			isl_seq_cpy(dst->div[j], src->div[i], 1+1+total+i);
 			isl_seq_clr(dst->div[j]+1+1+total+i, dst->n_div - i);
-			if (isl_basic_map_add_div_constraints(dst, j) < 0)
+			dst = isl_basic_map_add_div_constraints(dst, j);
+			if (!dst)
 				goto error;
 		}
 		if (j != i)
@@ -12713,7 +12714,8 @@ static __isl_give isl_basic_map *set_ma_divs(__isl_take isl_basic_map *bmap,
 		o_bmap += n_div;
 		o_ls += n_div;
 		isl_seq_clr(bmap->div[i] + o_bmap, bmap->n_div - n_div);
-		if (isl_basic_map_add_div_constraints(bmap, i) < 0)
+		bmap = isl_basic_map_add_div_constraints(bmap, i);
+		if (!bmap)
 			goto error;
 	}
 
