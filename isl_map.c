@@ -5190,8 +5190,8 @@ __isl_give isl_map *isl_map_lex_gt_map(__isl_take isl_map *map1,
  *
  *		f - m d >= 0
  */
-static isl_stat add_upper_div_constraint(__isl_keep isl_basic_map *bmap,
-	unsigned div)
+static __isl_give isl_basic_map *add_upper_div_constraint(
+	__isl_take isl_basic_map *bmap, unsigned div)
 {
 	int i;
 	int v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
@@ -5199,15 +5199,15 @@ static isl_stat add_upper_div_constraint(__isl_keep isl_basic_map *bmap,
 
 	n_div = isl_basic_map_dim(bmap, isl_dim_div);
 	if (v_div < 0)
-		return isl_stat_error;
+		return isl_basic_map_free(bmap);
 	pos = v_div + div;
 	i = isl_basic_map_alloc_inequality(bmap);
 	if (i < 0)
-		return isl_stat_error;
+		return isl_basic_map_free(bmap);
 	isl_seq_cpy(bmap->ineq[i], bmap->div[div] + 1, 1 + v_div + n_div);
 	isl_int_neg(bmap->ineq[i][1 + pos], bmap->div[div][0]);
 
-	return isl_stat_ok;
+	return bmap;
 }
 
 /* For the div d = floor(f/m) at position "div", add the constraint
@@ -5248,8 +5248,7 @@ static isl_stat add_lower_div_constraint(__isl_keep isl_basic_map *bmap,
 __isl_give isl_basic_map *isl_basic_map_add_div_constraints(
 	__isl_take isl_basic_map *bmap, unsigned pos)
 {
-	if (add_upper_div_constraint(bmap, pos) < 0)
-		return isl_basic_map_free(bmap);
+	bmap = add_upper_div_constraint(bmap, pos);
 	if (add_lower_div_constraint(bmap, pos) < 0)
 		return isl_basic_map_free(bmap);
 	return bmap;
@@ -5299,7 +5298,7 @@ __isl_give isl_basic_map *isl_basic_map_add_div_constraint(
 	isl_stat r;
 
 	if (sign < 0)
-		r = add_upper_div_constraint(bmap, div);
+		return add_upper_div_constraint(bmap, div);
 	else
 		r = add_lower_div_constraint(bmap, div);
 
