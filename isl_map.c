@@ -5293,13 +5293,19 @@ __isl_give isl_basic_map *isl_basic_map_add_known_div_constraints(
  *
  * if sign > 0.
  */
-int isl_basic_map_add_div_constraint(__isl_keep isl_basic_map *bmap,
-	unsigned div, int sign)
+__isl_give isl_basic_map *isl_basic_map_add_div_constraint(
+	__isl_take isl_basic_map *bmap, unsigned div, int sign)
 {
+	isl_stat r;
+
 	if (sign < 0)
-		return add_upper_div_constraint(bmap, div);
+		r = add_upper_div_constraint(bmap, div);
 	else
-		return add_lower_div_constraint(bmap, div);
+		r = add_lower_div_constraint(bmap, div);
+
+	if (r < 0)
+		return isl_basic_map_free(bmap);
+	return bmap;
 }
 
 __isl_give isl_basic_set *isl_basic_map_underlying_set(

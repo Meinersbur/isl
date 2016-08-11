@@ -1335,8 +1335,9 @@ static __isl_give isl_basic_map *eliminate_unit_divs(
 			}
 
 			bmap = isl_basic_map_extend_constraints(bmap, 0, 1);
-			if (isl_basic_map_add_div_constraint(bmap, i, s) < 0)
-				return isl_basic_map_free(bmap);
+			bmap = isl_basic_map_add_div_constraint(bmap, i, s);
+			if (!bmap)
+				return NULL;
 		}
 	}
 

@@ -364,8 +364,8 @@ __isl_give isl_set *isl_set_eliminate(__isl_take isl_set *set,
 __isl_give isl_map *isl_map_project_onto(__isl_take isl_map *map,
 	enum isl_dim_type type, unsigned first, unsigned n);
 
-int isl_basic_map_add_div_constraint(__isl_keep isl_basic_map *bmap,
-	unsigned div, int sign);
+__isl_give isl_basic_map *isl_basic_map_add_div_constraint(
+	__isl_take isl_basic_map *bmap, unsigned div, int sign);
 __isl_give isl_basic_map *isl_basic_map_add_div_constraints(
 	__isl_take isl_basic_map *bmap, unsigned div);
 __isl_give isl_basic_map *isl_basic_map_add_known_div_constraints(
