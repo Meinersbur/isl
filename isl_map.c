@@ -5767,7 +5767,7 @@ __isl_give isl_basic_map *isl_basic_map_domain_map(
 	__isl_take isl_basic_map *bmap)
 {
 	int i;
-	isl_space *dim;
+	isl_space *space;
 	isl_basic_map *domain;
 	int nparam, n_in, n_out;
 
@@ -5775,8 +5775,9 @@ __isl_give isl_basic_map *isl_basic_map_domain_map(
 	n_in = isl_basic_map_dim(bmap, isl_dim_in);
 	n_out = isl_basic_map_dim(bmap, isl_dim_out);
 
-	dim = isl_space_from_range(isl_space_domain(isl_basic_map_get_space(bmap)));
-	domain = isl_basic_map_universe(dim);
+	space = isl_basic_map_get_space(bmap);
+	space = isl_space_from_range(isl_space_domain(space));
+	domain = isl_basic_map_universe(space);
 
 	bmap = isl_basic_map_from_domain(isl_basic_map_wrap(bmap));
 	bmap = isl_basic_map_apply_range(bmap, domain);
