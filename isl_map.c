@@ -3777,10 +3777,24 @@ __isl_give isl_basic_set *isl_basic_set_intersect(
 							bset_to_bmap(bset2)));
 }
 
+/* Intersect the parameter domain of "bmap" with "bset".
+ *
+ * isl_basic_map_intersect handles this as a special case.
+ */
+__isl_give isl_basic_map *isl_basic_map_intersect_params(
+	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *bset)
+{
+	return isl_basic_map_intersect(bmap, bset);
+}
+
 __isl_give isl_basic_set *isl_basic_set_intersect_params(
 	__isl_take isl_basic_set *bset1, __isl_take isl_basic_set *bset2)
 {
-	return isl_basic_set_intersect(bset1, bset2);
+	isl_basic_map *bmap;
+
+	bmap = bset_to_bmap(bset1);
+	bmap = isl_basic_map_intersect_params(bmap, bset2);
+	return bset_from_bmap(bmap);
 }
 
 /* Does "map" consist of a single disjunct, without any local variables?

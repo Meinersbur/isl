@@ -1488,7 +1488,9 @@ class basic_map {
   inline isl::checked::union_map intersect_domain_factor_range(const isl::checked::union_map &factor) const;
   inline isl::checked::map intersect_domain_wrapped_domain(const isl::checked::set &domain) const;
   inline isl::checked::union_map intersect_domain_wrapped_domain(const isl::checked::union_set &domain) const;
+  inline isl::checked::basic_map intersect_params(isl::checked::basic_set bset) const;
   inline isl::checked::map intersect_params(const isl::checked::set &params) const;
+  inline isl::checked::basic_map intersect_params(const isl::checked::point &bset) const;
   inline isl::checked::basic_map intersect_range(isl::checked::basic_set bset) const;
   inline isl::checked::map intersect_range(const isl::checked::set &set) const;
   inline isl::checked::union_map intersect_range(const isl::checked::space &space) const;
@@ -7871,9 +7873,20 @@ isl::checked::union_map basic_map::intersect_domain_wrapped_domain(const isl::ch
   return isl::checked::map(*this).intersect_domain_wrapped_domain(domain);
 }
 
+isl::checked::basic_map basic_map::intersect_params(isl::checked::basic_set bset) const
+{
+  auto res = isl_basic_map_intersect_params(copy(), bset.release());
+  return manage(res);
+}
+
 isl::checked::map basic_map::intersect_params(const isl::checked::set &params) const
 {
   return isl::checked::map(*this).intersect_params(params);
+}
+
+isl::checked::basic_map basic_map::intersect_params(const isl::checked::point &bset) const
+{
+  return this->intersect_params(isl::checked::basic_set(bset));
 }
 
 isl::checked::basic_map basic_map::intersect_range(isl::checked::basic_set bset) const

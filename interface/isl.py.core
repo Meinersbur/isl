@@ -10586,6 +10586,21 @@ class basic_map(map):
         res = isl.isl_basic_map_intersect_domain(isl.isl_basic_map_copy(arg0.ptr), isl.isl_basic_set_copy(arg1.ptr))
         obj = basic_map(ctx=ctx, ptr=res)
         return obj
+    def intersect_params(arg0, arg1):
+        try:
+            if not arg0.__class__ is basic_map:
+                arg0 = basic_map(arg0)
+        except:
+            raise
+        try:
+            if not arg1.__class__ is basic_set:
+                arg1 = basic_set(arg1)
+        except:
+            return map(arg0).intersect_params(arg1)
+        ctx = arg0.ctx
+        res = isl.isl_basic_map_intersect_params(isl.isl_basic_map_copy(arg0.ptr), isl.isl_basic_set_copy(arg1.ptr))
+        obj = basic_map(ctx=ctx, ptr=res)
+        return obj
     def intersect_range(arg0, arg1):
         try:
             if not arg0.__class__ is basic_map:
@@ -10724,6 +10739,8 @@ isl.isl_basic_map_intersect.restype = c_void_p
 isl.isl_basic_map_intersect.argtypes = [c_void_p, c_void_p]
 isl.isl_basic_map_intersect_domain.restype = c_void_p
 isl.isl_basic_map_intersect_domain.argtypes = [c_void_p, c_void_p]
+isl.isl_basic_map_intersect_params.restype = c_void_p
+isl.isl_basic_map_intersect_params.argtypes = [c_void_p, c_void_p]
 isl.isl_basic_map_intersect_range.restype = c_void_p
 isl.isl_basic_map_intersect_range.argtypes = [c_void_p, c_void_p]
 isl.isl_basic_map_is_empty.argtypes = [c_void_p]

@@ -1554,7 +1554,9 @@ class basic_map {
   inline isl::union_map intersect_domain_factor_range(const isl::union_map &factor) const;
   inline isl::map intersect_domain_wrapped_domain(const isl::set &domain) const;
   inline isl::union_map intersect_domain_wrapped_domain(const isl::union_set &domain) const;
+  inline isl::basic_map intersect_params(isl::basic_set bset) const;
   inline isl::map intersect_params(const isl::set &params) const;
+  inline isl::basic_map intersect_params(const isl::point &bset) const;
   inline isl::basic_map intersect_range(isl::basic_set bset) const;
   inline isl::map intersect_range(const isl::set &set) const;
   inline isl::union_map intersect_range(const isl::space &space) const;
@@ -9201,11 +9203,30 @@ isl::union_map basic_map::intersect_domain_wrapped_domain(const isl::union_set &
   return isl::map(*this).intersect_domain_wrapped_domain(domain);
 }
 
+isl::basic_map basic_map::intersect_params(isl::basic_set bset) const
+{
+  if (!ptr || bset.is_null())
+    exception::throw_invalid("NULL input", __FILE__, __LINE__);
+  auto saved_ctx = ctx();
+  options_scoped_set_on_error saved_on_error(saved_ctx, exception::on_error);
+  auto res = isl_basic_map_intersect_params(copy(), bset.release());
+  if (!res)
+    exception::throw_last_error(saved_ctx);
+  return manage(res);
+}
+
 isl::map basic_map::intersect_params(const isl::set &params) const
 {
   if (!ptr)
     exception::throw_invalid("NULL input", __FILE__, __LINE__);
   return isl::map(*this).intersect_params(params);
+}
+
+isl::basic_map basic_map::intersect_params(const isl::point &bset) const
+{
+  if (!ptr)
+    exception::throw_invalid("NULL input", __FILE__, __LINE__);
+  return this->intersect_params(isl::basic_set(bset));
 }
 
 isl::basic_map basic_map::intersect_range(isl::basic_set bset) const

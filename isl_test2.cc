@@ -339,6 +339,11 @@ static void test_fixed_power(isl::ctx ctx)
  */
 static void test_intersect(isl::ctx ctx)
 {
+	C(arg<isl::basic_set>(&isl::basic_map::intersect_params), {
+	{ "[n] -> { A[x] -> B[y] }", "[n] -> { : n >= 0 }",
+	  "[n] -> { A[x] -> B[y] : n >= 0 }" },
+	});
+
 	C(&isl::union_map::intersect_domain_wrapped_domain, {
 	{ "{ [A[x] -> B[y]] -> C[z]; [D[x] -> A[y]] -> E[z] }",
 	  "{ A[0] }",
