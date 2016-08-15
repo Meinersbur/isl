@@ -423,8 +423,8 @@ static struct isl_basic_map *eliminate_divs_eq(
 
 /* Eliminate divs based on inequalities
  */
-static struct isl_basic_map *eliminate_divs_ineq(
-		struct isl_basic_map *bmap, int *progress)
+static __isl_give isl_basic_map *eliminate_divs_ineq(
+	__isl_take isl_basic_map *bmap, int *progress)
 {
 	int d;
 	int i;
