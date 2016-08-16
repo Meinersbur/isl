@@ -4455,7 +4455,6 @@ static int all_single_occurrence(__isl_keep isl_basic_map *bmap, int ineq,
  * val: the coefficients of the output variables
  */
 struct isl_constraint_equal_info {
-	isl_basic_map *bmap;
 	unsigned n_in;
 	unsigned n_out;
 	isl_int *val;
@@ -4504,7 +4503,6 @@ static isl_bool parallel_constraints(__isl_keep isl_basic_map *bmap,
 	occurrences = count_occurrences(bmap, info.n_in);
 	if (info.n_in && !occurrences)
 		goto error;
-	info.bmap = bmap;
 	n_out = isl_basic_map_dim(bmap, isl_dim_out);
 	n_div = isl_basic_map_dim(bmap, isl_dim_div);
 	info.n_out = n_out + n_div;
