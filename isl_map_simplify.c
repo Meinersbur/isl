@@ -3932,6 +3932,7 @@ static int div_find_coalesce(__isl_keep isl_basic_map *bmap, int *pairs,
 	int i, j;
 	unsigned dim, n_div;
 	int coalesce;
+	isl_bool opp;
 
 	n_div = isl_basic_map_dim(bmap, isl_dim_div);
 	if (n_div <= 1)
@@ -3942,9 +3943,9 @@ static int div_find_coalesce(__isl_keep isl_basic_map *bmap, int *pairs,
 	if (isl_seq_first_non_zero(bmap->ineq[l] + 1 + dim + div + 1,
 				   n_div - div - 1) != -1)
 		return n_div;
-	if (!isl_seq_is_neg(bmap->ineq[l] + 1, bmap->ineq[u] + 1,
-			    dim + n_div))
-		return n_div;
+	opp = is_opposite(bmap, l, u);
+	if (opp < 0 || !opp)
+		return opp < 0 ? -1 : n_div;
 
 	for (i = 0; i < n_div; ++i) {
 		if (isl_int_is_zero(bmap->div[i][0]))
