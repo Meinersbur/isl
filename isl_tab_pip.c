@@ -4479,10 +4479,10 @@ static int constraint_equal(const void *entry, const void *val)
  * of the result are usually not the same as those of the input.
  * Furthermore, check that each of the input variables that occur
  * in those constraints does not occur in any other constraint.
- * If so, return 1 and return the row indices of the two constraints
+ * If so, return true and return the row indices of the two constraints
  * in *first and *second.
  */
-static int parallel_constraints(__isl_keep isl_basic_map *bmap,
+static isl_bool parallel_constraints(__isl_keep isl_basic_map *bmap,
 	int *first, int *second)
 {
 	int i;
@@ -4541,7 +4541,7 @@ static int parallel_constraints(__isl_keep isl_basic_map *bmap,
 error:
 	isl_hash_table_free(ctx, table);
 	free(occurrences);
-	return -1;
+	return isl_bool_error;
 }
 
 /* Given a set of upper bounds in "var", add constraints to "bset"
