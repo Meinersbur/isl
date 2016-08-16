@@ -3875,6 +3875,26 @@ static int is_zero_or_one(isl_int v)
 	return isl_int_is_zero(v) || isl_int_is_one(v) || isl_int_is_negone(v);
 }
 
+/* Are the "n" coefficients starting at "first" of inequality constraints
+ * "i" and "j" of "bmap" opposite to each other?
+ */
+static int is_opposite_part(__isl_keep isl_basic_map *bmap, int i, int j,
+	int first, int n)
+{
+	return isl_seq_is_neg(bmap->ineq[i] + first, bmap->ineq[j] + first, n);
+}
+
+/* Are inequality constraints "i" and "j" of "bmap" opposite to each other,
+ * apart from the constant term?
+ */
+static isl_bool is_opposite(__isl_keep isl_basic_map *bmap, int i, int j)
+{
+	unsigned total;
+
+	total = isl_basic_map_dim(bmap, isl_dim_all);
+	return is_opposite_part(bmap, i, j, 1, total);
+}
+
 /* Check if we can combine a given div with lower bound l and upper
  * bound u with some other div and if so return that other div.
  * Otherwise, return a position beyond the integer divisions.
@@ -4381,26 +4401,6 @@ static int is_parallel_part(__isl_keep isl_basic_map *bmap, int i, int j,
 	int first, int n)
 {
 	return isl_seq_eq(bmap->ineq[i] + first, bmap->ineq[j] + first, n);
-}
-
-/* Are the "n" coefficients starting at "first" of inequality constraints
- * "i" and "j" of "bmap" opposite to each other?
- */
-static int is_opposite_part(__isl_keep isl_basic_map *bmap, int i, int j,
-	int first, int n)
-{
-	return isl_seq_is_neg(bmap->ineq[i] + first, bmap->ineq[j] + first, n);
-}
-
-/* Are inequality constraints "i" and "j" of "bmap" opposite to each other,
- * apart from the constant term?
- */
-static isl_bool is_opposite(__isl_keep isl_basic_map *bmap, int i, int j)
-{
-	unsigned total;
-
-	total = isl_basic_map_dim(bmap, isl_dim_all);
-	return is_opposite_part(bmap, i, j, 1, total);
 }
 
 /* Are inequality constraints "i" and "j" of "bmap" equal to each other,
