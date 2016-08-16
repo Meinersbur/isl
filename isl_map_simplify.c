@@ -541,8 +541,8 @@ static __isl_give isl_basic_map *set_div_from_eq(__isl_take isl_basic_map *bmap,
 	return bmap;
 }
 
-struct isl_basic_map *isl_basic_map_gauss(
-	struct isl_basic_map *bmap, int *progress)
+__isl_give isl_basic_map *isl_basic_map_gauss(__isl_take isl_basic_map *bmap,
+	int *progress)
 {
 	int k;
 	int done;
