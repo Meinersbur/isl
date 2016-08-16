@@ -885,8 +885,8 @@ static int n_pure_div_eq(struct isl_basic_map *bmap)
  * we have to replace each x'', i.e., the x'_k with (g_kk = 1),
  * by the corresponding row from C_2.
  */
-static struct isl_basic_map *normalize_divs(
-	struct isl_basic_map *bmap, int *progress)
+static __isl_give isl_basic_map *normalize_divs(__isl_take isl_basic_map *bmap,
+	int *progress)
 {
 	int i, j, k;
 	int total;
