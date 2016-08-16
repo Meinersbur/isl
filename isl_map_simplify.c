@@ -3877,7 +3877,8 @@ static int is_zero_or_one(isl_int v)
 
 /* Check if we can combine a given div with lower bound l and upper
  * bound u with some other div and if so return that other div.
- * Otherwise return -1.
+ * Otherwise, return a position beyond the integer divisions.
+ * Return -1 on error.
  *
  * We first check that
  *	- the bounds are opposites of each other (except for the constant
@@ -3909,26 +3910,27 @@ static int div_find_coalesce(__isl_keep isl_basic_map *bmap, int *pairs,
 	unsigned div, unsigned l, unsigned u)
 {
 	int i, j;
-	unsigned dim;
-	int coalesce = -1;
+	unsigned dim, n_div;
+	int coalesce;
 
-	if (bmap->n_div <= 1)
-		return -1;
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	if (n_div <= 1)
+		return n_div;
 	dim = isl_space_dim(bmap->dim, isl_dim_all);
 	if (isl_seq_first_non_zero(bmap->ineq[l] + 1 + dim, div) != -1)
-		return -1;
+		return n_div;
 	if (isl_seq_first_non_zero(bmap->ineq[l] + 1 + dim + div + 1,
-				   bmap->n_div - div - 1) != -1)
-		return -1;
+				   n_div - div - 1) != -1)
+		return n_div;
 	if (!isl_seq_is_neg(bmap->ineq[l] + 1, bmap->ineq[u] + 1,
-			    dim + bmap->n_div))
-		return -1;
+			    dim + n_div))
+		return n_div;
 
-	for (i = 0; i < bmap->n_div; ++i) {
+	for (i = 0; i < n_div; ++i) {
 		if (isl_int_is_zero(bmap->div[i][0]))
 			continue;
 		if (!isl_int_is_zero(bmap->div[i][1 + 1 + dim + div]))
-			return -1;
+			return n_div;
 	}
 
 	isl_int_add(bmap->ineq[l][0], bmap->ineq[l][0], bmap->ineq[u][0]);
@@ -3938,21 +3940,22 @@ static int div_find_coalesce(__isl_keep isl_basic_map *bmap, int *pairs,
 		bmap = isl_basic_map_copy(bmap);
 		bmap = isl_basic_map_set_to_empty(bmap);
 		isl_basic_map_free(bmap);
-		return -1;
+		return n_div;
 	}
 	isl_int_add_ui(bmap->ineq[l][0], bmap->ineq[l][0], 1);
-	for (i = 0; i < bmap->n_div; ++i) {
+	coalesce = n_div;
+	for (i = 0; i < n_div; ++i) {
 		if (i == div)
 			continue;
 		if (!pairs[i])
 			continue;
-		for (j = 0; j < bmap->n_div; ++j) {
+		for (j = 0; j < n_div; ++j) {
 			if (isl_int_is_zero(bmap->div[j][0]))
 				continue;
 			if (!isl_int_is_zero(bmap->div[j][1 + 1 + dim + i]))
 				break;
 		}
-		if (j < bmap->n_div)
+		if (j < n_div)
 			continue;
 		for (j = 0; j < bmap->n_ineq; ++j) {
 			int valid;
@@ -4331,11 +4334,12 @@ static __isl_give isl_basic_map *coalesce_or_drop_more_redundant_divs(
 	__isl_take isl_basic_map *bmap, int *pairs, int n)
 {
 	int i, l, u;
-	unsigned dim;
+	unsigned dim, n_div;
 
 	dim = isl_space_dim(bmap->dim, isl_dim_all);
 
-	for (i = 0; i < bmap->n_div; ++i) {
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	for (i = 0; i < n_div; ++i) {
 		if (!pairs[i])
 			continue;
 		for (l = 0; l < bmap->n_ineq; ++l) {
@@ -4348,6 +4352,8 @@ static __isl_give isl_basic_map *coalesce_or_drop_more_redundant_divs(
 					continue;
 				c = div_find_coalesce(bmap, pairs, i, l, u);
 				if (c < 0)
+					goto error;
+				if (c >= n_div)
 					continue;
 				free(pairs);
 				bmap = coalesce_divs(bmap, i, c, l, u);
@@ -4362,6 +4368,10 @@ static __isl_give isl_basic_map *coalesce_or_drop_more_redundant_divs(
 	}
 
 	return drop_more_redundant_divs(bmap, pairs, n);
+error:
+	free(pairs);
+	isl_basic_map_free(bmap);
+	return NULL;
 }
 
 /* Are the "n" coefficients starting at "first" of inequality constraints
