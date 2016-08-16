@@ -1221,9 +1221,8 @@ static __isl_give isl_vec *isl_basic_set_interior_point(
 int isl_vertices_foreach_disjoint_cell(__isl_keep isl_vertices *vertices,
 	int (*fn)(__isl_take isl_cell *cell, void *user), void *user)
 {
-	int i, j;
+	int i;
 	isl_vec *vec;
-	isl_int v;
 	isl_cell *cell;
 
 	if (!vertices)
@@ -1245,21 +1244,11 @@ int isl_vertices_foreach_disjoint_cell(__isl_keep isl_vertices *vertices,
 	if (!vec)
 		return -1;
 
-	isl_int_init(v);
-
 	for (i = 0; i < vertices->n_chambers; ++i) {
 		int r;
 		isl_basic_set *dom = isl_basic_set_copy(vertices->c[i].dom);
-		dom = isl_basic_set_cow(dom);
-		if (!dom)
-			goto error;
-		for (j = 0; i && j < dom->n_ineq; ++j) {
-			isl_seq_inner_product(vec->el, dom->ineq[j], vec->size,
-						&v);
-			if (!isl_int_is_neg(v))
-				continue;
-			isl_int_sub_ui(dom->ineq[j][0], dom->ineq[j][0], 1);
-		}
+		if (i)
+			dom = isl_basic_set_tighten_outward(dom, vec);
 		dom = isl_basic_set_set_integral(dom);
 		cell = isl_cell_alloc(isl_vertices_copy(vertices), dom, i);
 		if (!cell)
@@ -1269,12 +1258,10 @@ int isl_vertices_foreach_disjoint_cell(__isl_keep isl_vertices *vertices,
 			goto error;
 	}
 
-	isl_int_clear(v);
 	isl_vec_free(vec);
 
 	return 0;
 error:
-	isl_int_clear(v);
 	isl_vec_free(vec);
 	return -1;
 }

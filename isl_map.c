@@ -13047,3 +13047,28 @@ __isl_give isl_set *isl_set_preimage_multi_pw_aff(__isl_take isl_set *set,
 {
 	return isl_map_preimage_multi_pw_aff(set, isl_dim_set, mpa);
 }
+
+/* Tighten the inequality constraints of "bset" that are outward with respect
+ * to the point "vec".
+ * That is, tighten the constraints that are not satisfied by "vec".
+ */
+__isl_give isl_basic_set *isl_basic_set_tighten_outward(
+	__isl_take isl_basic_set *bset, __isl_keep isl_vec *vec)
+{
+	isl_ctx *ctx;
+	int j;
+
+	bset = isl_basic_set_cow(bset);
+	if (!bset)
+		return NULL;
+	ctx = isl_basic_set_get_ctx(bset);
+	for (j = 0; j < bset->n_ineq; ++j) {
+		isl_seq_inner_product(vec->el, bset->ineq[j], vec->size,
+					&ctx->normalize_gcd);
+		if (!isl_int_is_neg(ctx->normalize_gcd))
+			continue;
+		isl_int_sub_ui(bset->ineq[j][0], bset->ineq[j][0], 1);
+	}
+
+	return bset;
+}
