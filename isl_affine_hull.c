@@ -29,8 +29,8 @@
 #include <set_to_map.c>
 #include <set_from_map.c>
 
-struct isl_basic_map *isl_basic_map_implicit_equalities(
-						struct isl_basic_map *bmap)
+__isl_give isl_basic_map *isl_basic_map_implicit_equalities(
+	__isl_take isl_basic_map *bmap)
 {
 	struct isl_tab *tab;
 

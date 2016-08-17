@@ -298,8 +298,8 @@ struct isl_basic_map *isl_basic_map_normalize_constraints(
 	struct isl_basic_map *bmap);
 struct isl_basic_set *isl_basic_set_normalize_constraints(
 	struct isl_basic_set *bset);
-struct isl_basic_map *isl_basic_map_implicit_equalities(
-						struct isl_basic_map *bmap);
+__isl_give isl_basic_map *isl_basic_map_implicit_equalities(
+	__isl_take isl_basic_map *bmap);
 struct isl_basic_set *isl_basic_map_underlying_set(struct isl_basic_map *bmap);
 __isl_give isl_basic_set *isl_basic_set_underlying_set(
 		__isl_take isl_basic_set *bset);
