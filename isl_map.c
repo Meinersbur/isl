@@ -3296,9 +3296,6 @@ static __isl_give isl_map *map_intersect_add_constraint(
 	if (map2->p[0]->n_eq + map2->p[0]->n_ineq != 1)
 		return isl_map_intersect(map2, map1);
 
-	isl_assert(map2->ctx,
-		    map2->p[0]->n_eq + map2->p[0]->n_ineq == 1, goto error);
-
 	map1 = isl_map_cow(map1);
 	if (!map1)
 		goto error;
