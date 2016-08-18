@@ -4087,8 +4087,8 @@ static isl_bool int_between_bounds(__isl_keep isl_basic_map *bmap, int i,
  * In particular, the value attained by the bound with unit coefficient
  * can serve as this intermediate value.
  */
-static struct isl_basic_map *drop_more_redundant_divs(
-	struct isl_basic_map *bmap, int *pairs, int n)
+static __isl_give isl_basic_map *drop_more_redundant_divs(
+	__isl_take isl_basic_map *bmap, __isl_take int *pairs, int n)
 {
 	isl_ctx *ctx;
 	struct test_ineq_data data = { NULL, NULL };
