@@ -8972,15 +8972,15 @@ int isl_set_follows_at(__isl_keep isl_set *set1,
 	return follows;
 }
 
-static int isl_basic_map_plain_has_fixed_var(__isl_keep isl_basic_map *bmap,
-	unsigned pos, isl_int *val)
+static isl_bool isl_basic_map_plain_has_fixed_var(
+	__isl_keep isl_basic_map *bmap, unsigned pos, isl_int *val)
 {
 	int i;
 	int d;
 	unsigned total;
 
 	if (!bmap)
-		return -1;
+		return isl_bool_error;
 	total = isl_basic_map_total_dim(bmap);
 	for (i = 0, d = total-1; i < bmap->n_eq && d+1 > pos; ++i) {
 		for (; d+1 > pos; --d)
@@ -8989,16 +8989,16 @@ static int isl_basic_map_plain_has_fixed_var(__isl_keep isl_basic_map *bmap,
 		if (d != pos)
 			continue;
 		if (isl_seq_first_non_zero(bmap->eq[i]+1, d) != -1)
-			return 0;
+			return isl_bool_false;
 		if (isl_seq_first_non_zero(bmap->eq[i]+1+d+1, total-d-1) != -1)
-			return 0;
+			return isl_bool_false;
 		if (!isl_int_is_one(bmap->eq[i][1+d]))
-			return 0;
+			return isl_bool_false;
 		if (val)
 			isl_int_neg(*val, bmap->eq[i][0]);
-		return 1;
+		return isl_bool_true;
 	}
-	return 0;
+	return isl_bool_false;
 }
 
 static int isl_map_plain_has_fixed_var(__isl_keep isl_map *map,
@@ -9007,7 +9007,7 @@ static int isl_map_plain_has_fixed_var(__isl_keep isl_map *map,
 	int i;
 	isl_int v;
 	isl_int tmp;
-	int fixed;
+	isl_bool fixed;
 
 	if (!map)
 		return -1;
@@ -9018,10 +9018,10 @@ static int isl_map_plain_has_fixed_var(__isl_keep isl_map *map,
 	isl_int_init(v);
 	isl_int_init(tmp);
 	fixed = isl_basic_map_plain_has_fixed_var(map->p[0], pos, &v); 
-	for (i = 1; fixed == 1 && i < map->n; ++i) {
+	for (i = 1; fixed == isl_bool_true && i < map->n; ++i) {
 		fixed = isl_basic_map_plain_has_fixed_var(map->p[i], pos, &tmp); 
-		if (fixed == 1 && isl_int_ne(tmp, v))
-			fixed = 0;
+		if (fixed == isl_bool_true && isl_int_ne(tmp, v))
+			fixed = isl_bool_false;
 	}
 	if (val)
 		isl_int_set(*val, v);
