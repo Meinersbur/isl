@@ -4495,7 +4495,7 @@ error:
 struct isl_basic_map *isl_basic_map_apply_range(
 		struct isl_basic_map *bmap1, struct isl_basic_map *bmap2)
 {
-	isl_space *dim_result = NULL;
+	isl_space *space_result = NULL;
 	struct isl_basic_map *bmap;
 	unsigned n_in, n_out, n, nparam, total, pos;
 	struct isl_dim_map *dim_map1, *dim_map2;
@@ -4507,7 +4507,7 @@ struct isl_basic_map *isl_basic_map_apply_range(
 		isl_die(isl_basic_map_get_ctx(bmap1), isl_error_invalid,
 			"spaces don't match", goto error);
 
-	dim_result = isl_space_join(isl_space_copy(bmap1->dim),
+	space_result = isl_space_join(isl_space_copy(bmap1->dim),
 				  isl_space_copy(bmap2->dim));
 
 	n_in = isl_basic_map_dim(bmap1, isl_dim_in);
@@ -4527,7 +4527,7 @@ struct isl_basic_map *isl_basic_map_apply_range(
 	isl_dim_map_dim(dim_map1, bmap1->dim, isl_dim_out, pos += bmap2->n_div);
 	isl_dim_map_dim(dim_map2, bmap2->dim, isl_dim_in, pos);
 
-	bmap = isl_basic_map_alloc_space(dim_result,
+	bmap = isl_basic_map_alloc_space(space_result,
 			bmap1->n_div + bmap2->n_div + n,
 			bmap1->n_eq + bmap2->n_eq,
 			bmap1->n_ineq + bmap2->n_ineq);
