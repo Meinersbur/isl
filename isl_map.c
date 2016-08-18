@@ -11633,18 +11633,18 @@ __isl_give isl_map *isl_map_flatten_range(__isl_take isl_map *map)
 }
 
 /* Reorder the dimensions of "bmap" according to the given dim_map
- * and set the dimension specification to "dim" and
+ * and set the dimension specification to "space" and
  * perform Gaussian elimination on the result.
  */
 __isl_give isl_basic_map *isl_basic_map_realign(__isl_take isl_basic_map *bmap,
-	__isl_take isl_space *dim, __isl_take struct isl_dim_map *dim_map)
+	__isl_take isl_space *space, __isl_take struct isl_dim_map *dim_map)
 {
 	isl_basic_map *res;
 	unsigned flags;
 	unsigned n_div;
 
 	bmap = isl_basic_map_cow(bmap);
-	if (!bmap || !dim || !dim_map)
+	if (!bmap || !space || !dim_map)
 		goto error;
 
 	flags = bmap->flags;
@@ -11652,7 +11652,7 @@ __isl_give isl_basic_map *isl_basic_map_realign(__isl_take isl_basic_map *bmap,
 	ISL_FL_CLR(flags, ISL_BASIC_MAP_NORMALIZED);
 	ISL_FL_CLR(flags, ISL_BASIC_MAP_NORMALIZED_DIVS);
 	n_div = isl_basic_map_dim(bmap, isl_dim_div);
-	res = isl_basic_map_alloc_space(dim, n_div, bmap->n_eq, bmap->n_ineq);
+	res = isl_basic_map_alloc_space(space, n_div, bmap->n_eq, bmap->n_ineq);
 	res = isl_basic_map_add_constraints_dim_map(res, bmap, dim_map);
 	if (res)
 		res->flags = flags;
@@ -11662,7 +11662,7 @@ __isl_give isl_basic_map *isl_basic_map_realign(__isl_take isl_basic_map *bmap,
 error:
 	free(dim_map);
 	isl_basic_map_free(bmap);
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
