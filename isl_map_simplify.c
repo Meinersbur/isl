@@ -4721,15 +4721,15 @@ static int single_unknown(__isl_keep isl_basic_map *bmap, int ineq, int div)
 /* Does integer division "div" have coefficient 1 in inequality constraint
  * "ineq" of "map"?
  */
-static int has_coef_one(__isl_keep isl_basic_map *bmap, int div, int ineq)
+static isl_bool has_coef_one(__isl_keep isl_basic_map *bmap, int div, int ineq)
 {
 	unsigned o_div;
 
 	o_div = isl_basic_map_offset(bmap, isl_dim_div);
 	if (isl_int_is_one(bmap->ineq[ineq][o_div + div]))
-		return 1;
+		return isl_bool_true;
 
-	return 0;
+	return isl_bool_false;
 }
 
 /* Turn inequality constraint "ineq" of "bmap" into an equality and
@@ -5026,12 +5026,17 @@ static __isl_give isl_basic_map *isl_basic_map_drop_redundant_divs_ineq(
 			goto error;
 		if (!opp) {
 			int single, lower;
+			isl_bool one;
+
 			if (pos != 1)
 				continue;
 			single = single_unknown(bmap, last_pos, i);
 			if (!single)
 				continue;
-			if (has_coef_one(bmap, i, last_pos))
+			one = has_coef_one(bmap, i, last_pos);
+			if (one < 0)
+				goto error;
+			if (one)
 				return set_eq_and_try_again(bmap, last_pos,
 							    pairs);
 			lower = lower_bound_is_cst(bmap, i, last_pos);
