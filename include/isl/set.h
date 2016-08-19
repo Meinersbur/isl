@@ -440,9 +440,6 @@ isl_bool isl_set_plain_is_disjoint(__isl_keep isl_set *set1,
 
 uint32_t isl_set_get_hash(struct isl_set *set);
 
-ISL_DEPRECATED
-int isl_set_dim_is_unique(struct isl_set *set, unsigned dim);
-
 int isl_set_n_basic_set(__isl_keep isl_set *set);
 __isl_export
 isl_stat isl_set_foreach_basic_set(__isl_keep isl_set *set,
