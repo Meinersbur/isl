@@ -9096,51 +9096,6 @@ int isl_map_plain_input_is_fixed(__isl_keep isl_map *map,
 	return isl_map_plain_has_fixed_var(map, isl_map_n_param(map) + in, val);
 }
 
-/* Check if dimension dim has an (obvious) fixed lower bound and if so
- * and if val is not NULL, then return this lower bound in *val.
- */
-int isl_basic_set_plain_dim_has_fixed_lower_bound(
-	__isl_keep isl_basic_set *bset, unsigned dim, isl_int *val)
-{
-	int i, i_eq = -1, i_ineq = -1;
-	isl_int *c;
-	unsigned total;
-	unsigned nparam;
-
-	if (!bset)
-		return -1;
-	total = isl_basic_set_total_dim(bset);
-	nparam = isl_basic_set_n_param(bset);
-	for (i = 0; i < bset->n_eq; ++i) {
-		if (isl_int_is_zero(bset->eq[i][1+nparam+dim]))
-			continue;
-		if (i_eq != -1)
-			return 0;
-		i_eq = i;
-	}
-	for (i = 0; i < bset->n_ineq; ++i) {
-		if (!isl_int_is_pos(bset->ineq[i][1+nparam+dim]))
-			continue;
-		if (i_eq != -1 || i_ineq != -1)
-			return 0;
-		i_ineq = i;
-	}
-	if (i_eq == -1 && i_ineq == -1)
-		return 0;
-	c = i_eq != -1 ? bset->eq[i_eq] : bset->ineq[i_ineq];
-	/* The coefficient should always be one due to normalization. */
-	if (!isl_int_is_one(c[1+nparam+dim]))
-		return 0;
-	if (isl_seq_first_non_zero(c+1, nparam+dim) != -1)
-		return 0;
-	if (isl_seq_first_non_zero(c+1+nparam+dim+1,
-					total - nparam - dim - 1) != -1)
-		return 0;
-	if (val)
-		isl_int_neg(*val, c[0]);
-	return 1;
-}
-
 /* Return -1 if the constraint "c1" should be sorted before "c2"
  * and 1 if it should be sorted after "c2".
  * Return 0 if the two constraints are the same (up to the constant term).
