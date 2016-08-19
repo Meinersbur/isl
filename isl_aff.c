@@ -5350,7 +5350,7 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_check_div(
 	isl_size dim;
 	int i, j;
 	isl_size n_ineq;
-	int offset;
+	isl_size v_out;
 	isl_size total;
 	isl_int sum;
 	isl_basic_map *hull;
@@ -5358,16 +5358,16 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_check_div(
 	hull = isl_map_unshifted_simple_hull(isl_map_copy(map));
 	dim = isl_map_dim(map, isl_dim_out);
 	total = isl_basic_map_dim(hull, isl_dim_all);
+	v_out = isl_basic_map_var_offset(hull, isl_dim_out);
 	n_ineq = isl_basic_map_n_inequality(hull);
-	if (dim < 0 || total < 0 || n_ineq < 0)
+	if (dim < 0 || total < 0 || v_out < 0 || n_ineq < 0)
 		goto error;
 
 	isl_int_init(sum);
-	offset = isl_basic_map_offset(hull, isl_dim_out);
 	for (d = 0; d < dim; ++d) {
 		for (i = 0; i < n_ineq; ++i) {
 			if (!is_potential_div_constraint(hull->ineq[i],
-							offset, d, 1 + total))
+						    1 + v_out, d, 1 + total))
 				continue;
 			for (j = i + 1; j < n_ineq; ++j) {
 				if (!isl_seq_is_neg(hull->ineq[i] + 1,
@@ -5376,14 +5376,14 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_check_div(
 				isl_int_add(sum, hull->ineq[i][0],
 						hull->ineq[j][0]);
 				if (isl_int_abs_lt(sum,
-						    hull->ineq[i][offset + d]))
+						hull->ineq[i][1 + v_out + d]))
 					break;
 
 			}
 			if (j >= n_ineq)
 				continue;
 			isl_int_clear(sum);
-			if (isl_int_is_pos(hull->ineq[j][offset + d]))
+			if (isl_int_is_pos(hull->ineq[j][1 + v_out + d]))
 				j = i;
 			return pw_multi_aff_from_map_div(map, hull, d, j);
 		}
