@@ -4852,11 +4852,10 @@ static int lower_bound_is_cst(__isl_keep isl_basic_map *bmap, int div, int ineq)
 {
 	int i;
 	int lower = -1, upper = -1;
-	unsigned o_div, n_div;
+	unsigned o_div;
 	isl_int l, u;
 	int equal;
 
-	n_div = isl_basic_map_dim(bmap, isl_dim_div);
 	o_div = isl_basic_map_offset(bmap, isl_dim_div);
 	for (i = 0; i < bmap->n_ineq && (lower < 0 || upper < 0); ++i) {
 		if (i == ineq)
