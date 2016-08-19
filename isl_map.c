@@ -9955,24 +9955,6 @@ uint32_t isl_set_get_hash(__isl_keep isl_set *set)
 	return isl_map_get_hash(set_to_map(set));
 }
 
-/* Check if the value for dimension dim is completely determined
- * by the values of the other parameters and variables.
- * That is, check if dimension dim is involved in an equality.
- */
-int isl_basic_set_dim_is_unique(struct isl_basic_set *bset, unsigned dim)
-{
-	int i;
-	unsigned nparam;
-
-	if (!bset)
-		return -1;
-	nparam = isl_basic_set_n_param(bset);
-	for (i = 0; i < bset->n_eq; ++i)
-		if (!isl_int_is_zero(bset->eq[i][1 + nparam + dim]))
-			return 1;
-	return 0;
-}
-
 /* Return the number of basic maps in the (current) representation of "map".
  */
 int isl_map_n_basic_map(__isl_keep isl_map *map)
