@@ -4586,7 +4586,8 @@ static void lower_bound_from_opposite(__isl_keep isl_basic_map *bmap,
  *	ceil((-c1 - c)/n) = ceil((c0 - c)/n)
  *
  * If so, return the index of inequality f(x) + c0 >= 0.
- * Otherwise, return -1.
+ * Otherwise, return bmap->n_ineq.
+ * Return -1 on error.
  */
 static int lower_bound_is_cst(__isl_keep isl_basic_map *bmap, int div, int ineq)
 {
@@ -4614,7 +4615,7 @@ static int lower_bound_is_cst(__isl_keep isl_basic_map *bmap, int div, int ineq)
 	}
 
 	if (lower < 0 || upper < 0)
-		return -1;
+		return bmap->n_ineq;
 
 	isl_int_init(l);
 	isl_int_init(u);
@@ -4627,7 +4628,7 @@ static int lower_bound_is_cst(__isl_keep isl_basic_map *bmap, int div, int ineq)
 	isl_int_clear(l);
 	isl_int_clear(u);
 
-	return equal ? lower : -1;
+	return equal ? lower : bmap->n_ineq;
 }
 
 /* Given a lower bound constraint "ineq" on the existentially quantified
@@ -4716,6 +4717,7 @@ static __isl_give isl_basic_map *isl_basic_map_drop_redundant_divs_ineq(
 	unsigned off;
 	int *pairs = NULL;
 	int n = 0;
+	int n_ineq;
 
 	if (!bmap)
 		goto error;
@@ -4727,6 +4729,7 @@ static __isl_give isl_basic_map *isl_basic_map_drop_redundant_divs_ineq(
 	if (!pairs)
 		goto error;
 
+	n_ineq = isl_basic_map_n_inequality(bmap);
 	for (i = 0; i < bmap->n_div; ++i) {
 		int pos, neg;
 		int last_pos, last_neg;
@@ -4789,7 +4792,9 @@ static __isl_give isl_basic_map *isl_basic_map_drop_redundant_divs_ineq(
 				return set_eq_and_try_again(bmap, last_pos,
 							    pairs);
 			lower = lower_bound_is_cst(bmap, i, last_pos);
-			if (lower >= 0)
+			if (lower < 0)
+				goto error;
+			if (lower < n_ineq)
 				return fix_cst_lower(bmap, i, last_pos, lower,
 						pairs);
 			continue;
