@@ -9141,38 +9141,6 @@ int isl_basic_set_plain_dim_has_fixed_lower_bound(
 	return 1;
 }
 
-int isl_set_plain_dim_has_fixed_lower_bound(__isl_keep isl_set *set,
-	unsigned dim, isl_int *val)
-{
-	int i;
-	isl_int v;
-	isl_int tmp;
-	int fixed;
-
-	if (!set)
-		return -1;
-	if (set->n == 0)
-		return 0;
-	if (set->n == 1)
-		return isl_basic_set_plain_dim_has_fixed_lower_bound(set->p[0],
-								dim, val);
-	isl_int_init(v);
-	isl_int_init(tmp);
-	fixed = isl_basic_set_plain_dim_has_fixed_lower_bound(set->p[0],
-								dim, &v);
-	for (i = 1; fixed == 1 && i < set->n; ++i) {
-		fixed = isl_basic_set_plain_dim_has_fixed_lower_bound(set->p[i],
-								dim, &tmp);
-		if (fixed == 1 && isl_int_ne(tmp, v))
-			fixed = 0;
-	}
-	if (val)
-		isl_int_set(*val, v);
-	isl_int_clear(tmp);
-	isl_int_clear(v);
-	return fixed;
-}
-
 /* Return -1 if the constraint "c1" should be sorted before "c2"
  * and 1 if it should be sorted after "c2".
  * Return 0 if the two constraints are the same (up to the constant term).
