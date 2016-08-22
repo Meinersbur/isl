@@ -1186,21 +1186,21 @@ error:
 	return NULL;
 }
 
-__isl_give isl_basic_map *isl_basic_map_alloc_space(__isl_take isl_space *dim,
+__isl_give isl_basic_map *isl_basic_map_alloc_space(__isl_take isl_space *space,
 		unsigned extra, unsigned n_eq, unsigned n_ineq)
 {
 	struct isl_basic_map *bmap;
 
-	if (!dim)
+	if (!space)
 		return NULL;
-	bmap = isl_calloc_type(dim->ctx, struct isl_basic_map);
+	bmap = isl_calloc_type(space->ctx, struct isl_basic_map);
 	if (!bmap)
 		goto error;
-	bmap->dim = dim;
+	bmap->dim = space;
 
-	return basic_map_init(dim->ctx, bmap, extra, n_eq, n_ineq);
+	return basic_map_init(space->ctx, bmap, extra, n_eq, n_ineq);
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 

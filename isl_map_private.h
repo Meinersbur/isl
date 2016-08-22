@@ -216,7 +216,7 @@ __isl_give isl_basic_set *isl_basic_set_alloc_space(__isl_take isl_space *dim,
 		unsigned extra, unsigned n_eq, unsigned n_ineq);
 __isl_give isl_set *isl_set_alloc_space(__isl_take isl_space *dim, int n,
 	unsigned flags);
-__isl_give isl_basic_map *isl_basic_map_alloc_space(__isl_take isl_space *dim,
+__isl_give isl_basic_map *isl_basic_map_alloc_space(__isl_take isl_space *space,
 		unsigned extra, unsigned n_eq, unsigned n_ineq);
 __isl_give isl_map *isl_map_alloc_space(__isl_take isl_space *dim, int n,
 	unsigned flags);
