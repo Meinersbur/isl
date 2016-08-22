@@ -11228,17 +11228,17 @@ static int unique(isl_int *p, unsigned pos, unsigned len)
 	return 1;
 }
 
-int isl_basic_set_is_box(__isl_keep isl_basic_set *bset)
+isl_bool isl_basic_set_is_box(__isl_keep isl_basic_set *bset)
 {
 	int i, j;
 	unsigned nvar;
 	unsigned ovar;
 
 	if (!bset)
-		return -1;
+		return isl_bool_error;
 
 	if (isl_basic_set_dim(bset, isl_dim_div) != 0)
-		return 0;
+		return isl_bool_false;
 
 	nvar = isl_basic_set_dim(bset, isl_dim_set);
 	ovar = isl_space_offset(bset->dim, isl_dim_set);
@@ -11248,7 +11248,7 @@ int isl_basic_set_is_box(__isl_keep isl_basic_set *bset)
 			if (isl_int_is_zero(bset->eq[i][1 + ovar + j]))
 				continue;
 			if (!unique(bset->eq[i] + 1 + ovar, j, nvar))
-				return 0;
+				return isl_bool_false;
 			break;
 		}
 		if (i < bset->n_eq)
@@ -11257,17 +11257,17 @@ int isl_basic_set_is_box(__isl_keep isl_basic_set *bset)
 			if (isl_int_is_zero(bset->ineq[i][1 + ovar + j]))
 				continue;
 			if (!unique(bset->ineq[i] + 1 + ovar, j, nvar))
-				return 0;
+				return isl_bool_false;
 			if (isl_int_is_pos(bset->ineq[i][1 + ovar + j]))
 				lower = 1;
 			else
 				upper = 1;
 		}
 		if (!lower || !upper)
-			return 0;
+			return isl_bool_false;
 	}
 
-	return 1;
+	return isl_bool_true;
 }
 
 int isl_set_is_box(__isl_keep isl_set *set)
