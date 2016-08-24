@@ -1489,10 +1489,13 @@ struct isl_basic_map *isl_basic_map_simplify(struct isl_basic_map *bmap)
 	if (!bmap)
 		return NULL;
 	while (progress) {
+		isl_bool empty;
+
 		progress = 0;
-		if (!bmap)
-			break;
-		if (isl_basic_map_plain_is_empty(bmap))
+		empty = isl_basic_map_plain_is_empty(bmap);
+		if (empty < 0)
+			return isl_basic_map_free(bmap);
+		if (empty)
 			break;
 		bmap = isl_basic_map_normalize_constraints(bmap);
 		bmap = remove_independent_vars_from_divs(bmap);
