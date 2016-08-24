@@ -326,8 +326,6 @@ struct isl_set *isl_set_drop(struct isl_set *set,
 	enum isl_dim_type type, unsigned first, unsigned n);
 struct isl_basic_set *isl_basic_set_drop_dims(
 		struct isl_basic_set *bset, unsigned first, unsigned n);
-struct isl_map *isl_map_drop_inputs(
-		struct isl_map *map, unsigned first, unsigned n);
 struct isl_map *isl_map_drop(struct isl_map *map,
 	enum isl_dim_type type, unsigned first, unsigned n);
 __isl_give isl_basic_map *isl_basic_map_drop_unrelated_constraints(

@@ -228,12 +228,6 @@ struct isl_set *isl_set_drop(struct isl_set *set,
 	return set_from_map(isl_map_drop(set_to_map(set), type, first, n));
 }
 
-struct isl_map *isl_map_drop_inputs(
-		struct isl_map *map, unsigned first, unsigned n)
-{
-	return isl_map_drop(map, isl_dim_in, first, n);
-}
-
 /*
  * We don't cow, as the div is assumed to be redundant.
  */
