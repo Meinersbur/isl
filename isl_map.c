@@ -2421,8 +2421,9 @@ __isl_give isl_set *isl_set_remove_divs(__isl_take isl_set *set)
 	return isl_map_remove_divs(set);
 }
 
-struct isl_basic_map *isl_basic_map_remove_dims(struct isl_basic_map *bmap,
-	enum isl_dim_type type, unsigned first, unsigned n)
+__isl_give isl_basic_map *isl_basic_map_remove_dims(
+	__isl_take isl_basic_map *bmap, enum isl_dim_type type,
+	unsigned first, unsigned n)
 {
 	if (isl_basic_map_check_range(bmap, type, first, n) < 0)
 		return isl_basic_map_free(bmap);
