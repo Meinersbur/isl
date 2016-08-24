@@ -741,8 +741,8 @@ static isl_bool constraint_index_is_redundant(struct isl_constraint_index *ci,
  * change the position of the other divs that still need to
  * be removed.
  */
-static struct isl_basic_map *remove_duplicate_divs(
-	struct isl_basic_map *bmap, int *progress)
+static __isl_give isl_basic_map *remove_duplicate_divs(
+	__isl_take isl_basic_map *bmap, int *progress)
 {
 	unsigned int size;
 	int *index;
