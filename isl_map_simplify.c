@@ -1535,8 +1535,8 @@ static __isl_give isl_basic_map *remove_dependent_vars(
 /* Eliminate the specified variables from the constraints using
  * Fourier-Motzkin.  The variables themselves are not removed.
  */
-struct isl_basic_map *isl_basic_map_eliminate_vars(
-	struct isl_basic_map *bmap, unsigned pos, unsigned n)
+__isl_give isl_basic_map *isl_basic_map_eliminate_vars(
+	__isl_take isl_basic_map *bmap, unsigned pos, unsigned n)
 {
 	int d;
 	int i, j, k;
