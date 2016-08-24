@@ -1984,7 +1984,8 @@ error:
 	return NULL;
 }
 
-struct isl_basic_map *isl_basic_map_set_to_empty(struct isl_basic_map *bmap)
+__isl_give isl_basic_map *isl_basic_map_set_to_empty(
+	__isl_take isl_basic_map *bmap)
 {
 	int i = 0;
 	unsigned total;
