@@ -4695,27 +4695,33 @@ static __isl_give isl_basic_map *drop_redundant_divs_again(
  * in inequality constraint "ineq" of "bmap"?
  * "div" is known to have a non-zero coefficient in "ineq".
  */
-static int single_unknown(__isl_keep isl_basic_map *bmap, int ineq, int div)
+static isl_bool single_unknown(__isl_keep isl_basic_map *bmap, int ineq,
+	int div)
 {
 	int i;
 	unsigned n_div, o_div;
+	isl_bool known;
 
-	if (isl_basic_map_div_is_known(bmap, div))
-		return 0;
+	known = isl_basic_map_div_is_known(bmap, div);
+	if (known < 0 || known)
+		return isl_bool_not(known);
 	n_div = isl_basic_map_dim(bmap, isl_dim_div);
 	if (n_div == 1)
-		return 1;
+		return isl_bool_true;
 	o_div = isl_basic_map_offset(bmap, isl_dim_div);
 	for (i = 0; i < n_div; ++i) {
+		isl_bool known;
+
 		if (i == div)
 			continue;
 		if (isl_int_is_zero(bmap->ineq[ineq][o_div + i]))
 			continue;
-		if (!isl_basic_map_div_is_known(bmap, i))
-			return 0;
+		known = isl_basic_map_div_is_known(bmap, i);
+		if (known < 0 || !known)
+			return known;
 	}
 
-	return 1;
+	return isl_bool_true;
 }
 
 /* Does integer division "div" have coefficient 1 in inequality constraint
@@ -5025,12 +5031,14 @@ static __isl_give isl_basic_map *isl_basic_map_drop_redundant_divs_ineq(
 		if (opp < 0)
 			goto error;
 		if (!opp) {
-			int single, lower;
-			isl_bool one;
+			int lower;
+			isl_bool single, one;
 
 			if (pos != 1)
 				continue;
 			single = single_unknown(bmap, last_pos, i);
+			if (single < 0)
+				goto error;
 			if (!single)
 				continue;
 			one = has_coef_one(bmap, i, last_pos);
