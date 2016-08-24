@@ -4223,7 +4223,7 @@ error:
  * to store div2, but otherwise has a different meaning, any possible
  * explicit representation of the original div2 is removed.
  */
-static struct isl_basic_map *coalesce_divs(struct isl_basic_map *bmap,
+static __isl_give isl_basic_map *coalesce_divs(__isl_take isl_basic_map *bmap,
 	unsigned div1, unsigned div2, unsigned l, unsigned u)
 {
 	isl_ctx *ctx;
