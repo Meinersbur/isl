@@ -1496,7 +1496,7 @@ __isl_give isl_basic_map *isl_basic_map_mark_final(
 
 /* Mark "bmap" as final, after removing obviously redundant integer divisions.
  */
-struct isl_basic_map *isl_basic_map_finalize(struct isl_basic_map *bmap)
+__isl_give isl_basic_map *isl_basic_map_finalize(__isl_take isl_basic_map *bmap)
 {
 	bmap = remove_redundant_divs(bmap);
 	bmap = isl_basic_map_mark_final(bmap);
