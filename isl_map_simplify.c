@@ -1512,8 +1512,8 @@ struct isl_basic_set *isl_basic_set_finalize(struct isl_basic_set *bset)
  * The div itself is not removed.  Functions such as
  * eliminate_divs_ineq depend on the other divs remaining in place.
  */
-static struct isl_basic_map *remove_dependent_vars(struct isl_basic_map *bmap,
-									int pos)
+static __isl_give isl_basic_map *remove_dependent_vars(
+	__isl_take isl_basic_map *bmap, int pos)
 {
 	int i;
 
