@@ -1460,7 +1460,8 @@ static isl_bool div_is_redundant(struct isl_basic_map *bmap, int div)
  * when the divs of a basic map have been temporarily aligned
  * with the divs of another basic map.
  */
-static struct isl_basic_map *remove_redundant_divs(struct isl_basic_map *bmap)
+static __isl_give isl_basic_map *remove_redundant_divs(
+	__isl_take isl_basic_map *bmap)
 {
 	int i;
 
