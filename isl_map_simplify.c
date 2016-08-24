@@ -1425,7 +1425,7 @@ isl_bool isl_basic_set_is_div_constraint(__isl_keep isl_basic_set *bset,
  *
  * then it can safely be removed.
  */
-static isl_bool div_is_redundant(struct isl_basic_map *bmap, int div)
+static isl_bool div_is_redundant(__isl_keep isl_basic_map *bmap, int div)
 {
 	int i;
 	unsigned pos = 1 + isl_space_dim(bmap->dim, isl_dim_all) + div;
