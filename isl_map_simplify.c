@@ -4643,7 +4643,7 @@ static int is_opposite_part(__isl_keep isl_basic_map *bmap, int i, int j,
 /* Are inequality constraints "i" and "j" of "bmap" opposite to each other,
  * apart from the constant term?
  */
-static int is_opposite(__isl_keep isl_basic_map *bmap, int i, int j)
+static isl_bool is_opposite(__isl_keep isl_basic_map *bmap, int i, int j)
 {
 	unsigned total;
 
@@ -4985,7 +4985,7 @@ static __isl_give isl_basic_map *isl_basic_map_drop_redundant_divs_ineq(
 		int last_pos, last_neg;
 		int redundant;
 		int defined;
-		isl_bool set_div;
+		isl_bool opp, set_div;
 
 		defined = !isl_int_is_zero(bmap->div[i][0]);
 		for (j = i; j < bmap->n_div; ++j)
@@ -5018,7 +5018,13 @@ static __isl_give isl_basic_map *isl_basic_map_drop_redundant_divs_ineq(
 			bmap = isl_basic_map_drop_div(bmap, i);
 			return drop_redundant_divs_again(bmap, pairs, 0);
 		}
-		if (pairs[i] != 1 || !is_opposite(bmap, last_pos, last_neg)) {
+		if (pairs[i] != 1)
+			opp = isl_bool_false;
+		else
+			opp = is_opposite(bmap, last_pos, last_neg);
+		if (opp < 0)
+			goto error;
+		if (!opp) {
 			int single, lower;
 			if (pos != 1)
 				continue;
