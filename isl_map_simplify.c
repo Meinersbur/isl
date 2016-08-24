@@ -98,38 +98,6 @@ error:
 	return NULL;
 }
 
-struct isl_set *isl_set_drop_dims(
-		struct isl_set *set, unsigned first, unsigned n)
-{
-	int i;
-
-	if (!set)
-		goto error;
-
-	isl_assert(set->ctx, first + n <= set->dim->n_out, goto error);
-
-	if (n == 0 && !isl_space_get_tuple_name(set->dim, isl_dim_set))
-		return set;
-	set = isl_set_cow(set);
-	if (!set)
-		goto error;
-	set->dim = isl_space_drop_outputs(set->dim, first, n);
-	if (!set->dim)
-		goto error;
-
-	for (i = 0; i < set->n; ++i) {
-		set->p[i] = isl_basic_set_drop_dims(set->p[i], first, n);
-		if (!set->p[i])
-			goto error;
-	}
-
-	ISL_F_CLR(set, ISL_SET_NORMALIZED);
-	return set;
-error:
-	isl_set_free(set);
-	return NULL;
-}
-
 /* Move "n" divs starting at "first" to the end of the list of divs.
  */
 static struct isl_basic_map *move_divs_last(struct isl_basic_map *bmap,
