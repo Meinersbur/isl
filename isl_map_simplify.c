@@ -4279,8 +4279,8 @@ static __isl_give isl_basic_map *coalesce_divs(__isl_take isl_basic_map *bmap,
  * is any other div "c" with which we can coalesce the div
  * and if so, perform the coalescing.
  */
-static struct isl_basic_map *coalesce_or_drop_more_redundant_divs(
-	struct isl_basic_map *bmap, int *pairs, int n)
+static __isl_give isl_basic_map *coalesce_or_drop_more_redundant_divs(
+	__isl_take isl_basic_map *bmap, int *pairs, int n)
 {
 	int i, l, u;
 	unsigned dim;
