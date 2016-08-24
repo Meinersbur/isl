@@ -44,8 +44,8 @@ static void swap_inequality(struct isl_basic_map *bmap, int a, int b)
 	}
 }
 
-struct isl_basic_map *isl_basic_map_normalize_constraints(
-	struct isl_basic_map *bmap)
+__isl_give isl_basic_map *isl_basic_map_normalize_constraints(
+	__isl_take isl_basic_map *bmap)
 {
 	int i;
 	isl_int gcd;

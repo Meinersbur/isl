@@ -295,8 +295,8 @@ int isl_basic_map_plain_cmp(__isl_keep isl_basic_map *bmap1,
 	__isl_keep isl_basic_map *bmap2);
 isl_bool isl_basic_map_plain_is_equal(__isl_keep isl_basic_map *bmap1,
 	__isl_keep isl_basic_map *bmap2);
-struct isl_basic_map *isl_basic_map_normalize_constraints(
-	struct isl_basic_map *bmap);
+__isl_give isl_basic_map *isl_basic_map_normalize_constraints(
+	__isl_take isl_basic_map *bmap);
 struct isl_basic_set *isl_basic_set_normalize_constraints(
 	struct isl_basic_set *bset);
 __isl_give isl_basic_map *isl_basic_map_implicit_equalities(
