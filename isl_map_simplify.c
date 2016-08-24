@@ -357,7 +357,7 @@ static __isl_give isl_basic_map *eliminate_div(__isl_take isl_basic_map *bmap,
 /* Check if elimination of div "div" using equality "eq" would not
  * result in a div depending on a later div.
  */
-static isl_bool ok_to_eliminate_div(struct isl_basic_map *bmap, isl_int *eq,
+static isl_bool ok_to_eliminate_div(__isl_keep isl_basic_map *bmap, isl_int *eq,
 	unsigned div)
 {
 	int k;
