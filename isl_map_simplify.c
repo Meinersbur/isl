@@ -381,8 +381,8 @@ static isl_bool ok_to_eliminate_div(struct isl_basic_map *bmap, isl_int *eq,
 
 /* Eliminate divs based on equalities
  */
-static struct isl_basic_map *eliminate_divs_eq(
-		struct isl_basic_map *bmap, int *progress)
+static __isl_give isl_basic_map *eliminate_divs_eq(
+	__isl_take isl_basic_map *bmap, int *progress)
 {
 	int d;
 	int i;
