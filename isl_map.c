@@ -8605,7 +8605,8 @@ struct isl_set *isl_basic_set_union(
 }
 
 /* Order divs such that any div only depends on previous divs */
-struct isl_basic_map *isl_basic_map_order_divs(struct isl_basic_map *bmap)
+__isl_give isl_basic_map *isl_basic_map_order_divs(
+	__isl_take isl_basic_map *bmap)
 {
 	int i;
 	unsigned off;
