@@ -4268,8 +4268,8 @@ static int find_context_div(struct isl_basic_map *bmap,
  * after any other integer divisions that the map may have.
  * This function performs the required reordering.
  */
-static struct isl_basic_map *align_context_divs(struct isl_basic_map *bmap,
-	struct isl_basic_set *dom)
+static __isl_give isl_basic_map *align_context_divs(
+	__isl_take isl_basic_map *bmap, __isl_keep isl_basic_set *dom)
 {
 	int i;
 	int common = 0;
