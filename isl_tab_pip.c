@@ -4282,30 +4282,36 @@ error:
 
 /* Check if integer division "div" of "dom" also occurs in "bmap".
  * If so, return its position within the divs.
- * If not, return -1.
+ * Otherwise, return a position beyond the integer divisions.
  */
 static int find_context_div(__isl_keep isl_basic_map *bmap,
 	__isl_keep isl_basic_set *dom, unsigned div)
 {
 	int i;
-	unsigned b_dim = isl_space_dim(bmap->dim, isl_dim_all);
-	unsigned d_dim = isl_space_dim(dom->dim, isl_dim_all);
+	unsigned b_dim, d_dim, n_div;
+
+	if (!bmap || !dom)
+		return -1;
+
+	b_dim = isl_space_dim(bmap->dim, isl_dim_all);
+	d_dim = isl_space_dim(dom->dim, isl_dim_all);
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
 
 	if (isl_int_is_zero(dom->div[div][0]))
-		return -1;
+		return n_div;
 	if (isl_seq_first_non_zero(dom->div[div] + 2 + d_dim, dom->n_div) != -1)
-		return -1;
+		return n_div;
 
-	for (i = 0; i < bmap->n_div; ++i) {
+	for (i = 0; i < n_div; ++i) {
 		if (isl_int_is_zero(bmap->div[i][0]))
 			continue;
 		if (isl_seq_first_non_zero(bmap->div[i] + 2 + d_dim,
-					   (b_dim - d_dim) + bmap->n_div) != -1)
+					   (b_dim - d_dim) + n_div) != -1)
 			continue;
 		if (isl_seq_eq(bmap->div[i], dom->div[div], 2 + d_dim))
 			return i;
 	}
-	return -1;
+	return n_div;
 }
 
 /* The correspondence between the variables in the main tableau,
@@ -4328,11 +4334,20 @@ static __isl_give isl_basic_map *align_context_divs(
 	int i;
 	int common = 0;
 	int other;
+	unsigned bmap_n_div;
 
-	for (i = 0; i < dom->n_div; ++i)
-		if (find_context_div(bmap, dom, i) != -1)
+	bmap_n_div = isl_basic_map_dim(bmap, isl_dim_div);
+
+	for (i = 0; i < dom->n_div; ++i) {
+		int pos;
+
+		pos = find_context_div(bmap, dom, i);
+		if (pos < 0)
+			return isl_basic_map_free(bmap);
+		if (pos < bmap_n_div)
 			common++;
-	other = bmap->n_div - common;
+	}
+	other = bmap_n_div - common;
 	if (dom->n_div - common > 0) {
 		bmap = isl_basic_map_extend_space(bmap, isl_space_copy(bmap->dim),
 				dom->n_div - common, 0, 0);
@@ -4341,16 +4356,17 @@ static __isl_give isl_basic_map *align_context_divs(
 	}
 	for (i = 0; i < dom->n_div; ++i) {
 		int pos = find_context_div(bmap, dom, i);
-		if (pos < 0) {
+		if (pos < 0)
+			bmap = isl_basic_map_free(bmap);
+		if (pos >= bmap_n_div) {
 			pos = isl_basic_map_alloc_div(bmap);
 			if (pos < 0)
 				goto error;
 			isl_int_set_si(bmap->div[pos][0], 0);
+			bmap_n_div++;
 		}
 		if (pos != other + i)
 			bmap = isl_basic_map_swap_div(bmap, pos, other + i);
-		if (!bmap)
-			return NULL;
 	}
 	return bmap;
 error:
