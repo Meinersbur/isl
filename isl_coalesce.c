@@ -2545,7 +2545,7 @@ static isl_stat harmonize_divs(struct isl_coalesce_info *info1,
  * If either basic map has any unknown divs, then we can only assume
  * that they do not live in the same local space.
  */
-static int same_divs(__isl_keep isl_basic_map *bmap1,
+static isl_bool same_divs(__isl_keep isl_basic_map *bmap1,
 	__isl_keep isl_basic_map *bmap2)
 {
 	int i;
@@ -2553,12 +2553,12 @@ static int same_divs(__isl_keep isl_basic_map *bmap1,
 	int total;
 
 	if (!bmap1 || !bmap2)
-		return -1;
+		return isl_bool_error;
 	if (bmap1->n_div != bmap2->n_div)
-		return 0;
+		return isl_bool_false;
 
 	if (bmap1->n_div == 0)
-		return 1;
+		return isl_bool_true;
 
 	known = isl_basic_map_divs_known(bmap1);
 	if (known < 0 || !known)
@@ -3551,7 +3551,7 @@ static enum isl_change check_coalesce_eq(int i, int j,
 static enum isl_change coalesce_pair(int i, int j,
 	struct isl_coalesce_info *info)
 {
-	int same;
+	isl_bool same;
 	enum isl_change change;
 
 	if (harmonize_divs(&info[i], &info[j]) < 0)
