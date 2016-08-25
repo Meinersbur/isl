@@ -2549,7 +2549,7 @@ static int same_divs(__isl_keep isl_basic_map *bmap1,
 	__isl_keep isl_basic_map *bmap2)
 {
 	int i;
-	int known;
+	isl_bool known;
 	int total;
 
 	if (!bmap1 || !bmap2)
