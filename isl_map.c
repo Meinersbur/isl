@@ -8579,11 +8579,6 @@ __isl_give isl_basic_map *isl_map_copy_basic_map(__isl_keep isl_map *map)
 	return map_copy_basic_map(map);
 }
 
-struct isl_basic_set *isl_set_copy_basic_set(struct isl_set *set)
-{
-	return bset_from_bmap(map_copy_basic_map(set_to_map(set)));
-}
-
 static __isl_give isl_map *map_drop_basic_map(__isl_take isl_map *map,
 						__isl_keep isl_basic_map *bmap)
 {
@@ -8615,13 +8610,6 @@ __isl_give isl_map *isl_map_drop_basic_map(__isl_take isl_map *map,
 	__isl_keep isl_basic_map *bmap)
 {
 	return map_drop_basic_map(map, bmap);
-}
-
-struct isl_set *isl_set_drop_basic_set(struct isl_set *set,
-						struct isl_basic_set *bset)
-{
-	return set_from_map(map_drop_basic_map(set_to_map(set),
-						bset_to_bmap(bset)));
 }
 
 /* Given two basic sets bset1 and bset2, compute the maximal difference
