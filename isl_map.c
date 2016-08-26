@@ -9161,12 +9161,6 @@ struct isl_basic_map *isl_basic_map_normalize(struct isl_basic_map *bmap)
 		ISL_F_SET(bmap, ISL_BASIC_MAP_NORMALIZED);
 	return bmap;
 }
-
-struct isl_basic_set *isl_basic_set_normalize(struct isl_basic_set *bset)
-{
-	return bset_from_bmap(isl_basic_map_normalize(bset_to_bmap(bset)));
-}
-
 int isl_basic_map_plain_cmp(__isl_keep isl_basic_map *bmap1,
 	__isl_keep isl_basic_map *bmap2)
 {
