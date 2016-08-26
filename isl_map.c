@@ -1464,14 +1464,7 @@ __isl_give isl_basic_set *isl_basic_set_dup(__isl_keep isl_basic_set *bset)
 
 __isl_give isl_basic_set *isl_basic_set_copy(__isl_keep isl_basic_set *bset)
 {
-	if (!bset)
-		return NULL;
-
-	if (ISL_F_ISSET(bset, ISL_BASIC_SET_FINAL)) {
-		bset->ref++;
-		return bset;
-	}
-	return isl_basic_set_dup(bset);
+	return bset_from_bmap(isl_basic_map_copy(bset_to_bmap(bset)));
 }
 
 __isl_give isl_set *isl_set_copy(__isl_keep isl_set *set)
