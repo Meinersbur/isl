@@ -1545,11 +1545,6 @@ isl_stat isl_basic_map_free_div(struct isl_basic_map *bmap, unsigned n)
 	return isl_stat_ok;
 }
 
-isl_stat isl_basic_set_free_div(struct isl_basic_set *bset, unsigned n)
-{
-	return isl_basic_map_free_div(bset_to_bmap(bset), n);
-}
-
 /* Copy constraint from src to dst, putting the vars of src at offset
  * dim_off in dst and the divs of src at offset div_off in dst.
  * If both sets are actually map, then dim_off applies to the input
