@@ -8545,13 +8545,6 @@ __isl_give isl_basic_map *isl_basic_map_align_divs(
 	return dst;
 }
 
-struct isl_basic_set *isl_basic_set_align_divs(
-		struct isl_basic_set *dst, struct isl_basic_set *src)
-{
-	return bset_from_bmap(isl_basic_map_align_divs(bset_to_bmap(dst),
-							bset_to_bmap(src)));
-}
-
 struct isl_map *isl_map_align_divs(struct isl_map *map)
 {
 	int i;

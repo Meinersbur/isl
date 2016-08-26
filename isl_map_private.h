@@ -272,8 +272,6 @@ struct isl_basic_map *isl_basic_map_order_divs(struct isl_basic_map *bmap);
 __isl_give isl_map *isl_map_order_divs(__isl_take isl_map *map);
 struct isl_basic_map *isl_basic_map_align_divs(
 		struct isl_basic_map *dst, struct isl_basic_map *src);
-struct isl_basic_set *isl_basic_set_align_divs(
-		struct isl_basic_set *dst, struct isl_basic_set *src);
 __isl_give isl_map *isl_map_align_divs_to_basic_map_list(
 	__isl_take isl_map *map, __isl_keep isl_basic_map_list *list);
 __isl_give isl_basic_map_list *isl_basic_map_list_align_divs_to_basic_map(
