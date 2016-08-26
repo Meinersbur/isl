@@ -10277,9 +10277,9 @@ __isl_give isl_basic_set *isl_basic_set_expand_divs(
  * 
  * Return the position of the corresponding div in dst
  * if there is one.  Otherwise, return a position beyond the integer divisions.
- * Return -1 on error.
+ * Return isl_size_error on error.
  */
-static int find_div(__isl_keep isl_basic_map *dst,
+static isl_size find_div(__isl_keep isl_basic_map *dst,
 	__isl_keep isl_basic_map *src, unsigned div)
 {
 	int i;
@@ -10289,8 +10289,8 @@ static int find_div(__isl_keep isl_basic_map *dst,
 	v_div = isl_basic_map_var_offset(src, isl_dim_div);
 	n_div = isl_basic_map_dim(dst, isl_dim_div);
 	if (n_div < 0 || v_div < 0)
-		return -1;
-	isl_assert(dst->ctx, div <= n_div, return -1);
+		return isl_size_error;
+	isl_assert(dst->ctx, div <= n_div, return isl_size_error);
 	for (i = div; i < n_div; ++i)
 		if (isl_seq_eq(dst->div[i], src->div[div], 1+1+v_div+div) &&
 		    isl_seq_first_non_zero(dst->div[i] + 1 + 1 + v_div + div,
@@ -10348,7 +10348,7 @@ __isl_give isl_basic_map *isl_basic_map_align_divs(
 	if (dst_n_div < 0)
 		dst = isl_basic_map_free(dst);
 	for (i = 0; i < src->n_div; ++i) {
-		int j = find_div(dst, src, i);
+		isl_size j = find_div(dst, src, i);
 		if (j < 0)
 			dst = isl_basic_map_free(dst);
 		if (j == dst_n_div) {
