@@ -1231,7 +1231,7 @@ struct isl_basic_set *isl_basic_set_dup(struct isl_basic_set *bset)
 	return bset_from_bmap(dup);
 }
 
-struct isl_basic_set *isl_basic_set_copy(struct isl_basic_set *bset)
+__isl_give isl_basic_set *isl_basic_set_copy(__isl_keep isl_basic_set *bset)
 {
 	if (!bset)
 		return NULL;
