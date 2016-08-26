@@ -3775,7 +3775,7 @@ __isl_give isl_set *isl_set_intersect_params(__isl_take isl_set *set,
 	return isl_map_intersect_params(set, params);
 }
 
-struct isl_basic_map *isl_basic_map_reverse(struct isl_basic_map *bmap)
+__isl_give isl_basic_map *isl_basic_map_reverse(__isl_take isl_basic_map *bmap)
 {
 	isl_space *space;
 	unsigned pos, n1, n2;
