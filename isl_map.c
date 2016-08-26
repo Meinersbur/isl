@@ -8564,54 +8564,6 @@ struct isl_set *isl_set_remove_empty_parts(struct isl_set *set)
 	return set_from_map(isl_map_remove_empty_parts(set_to_map(set)));
 }
 
-static __isl_give isl_basic_map *map_copy_basic_map(__isl_keep isl_map *map)
-{
-	struct isl_basic_map *bmap;
-	if (!map || map->n == 0)
-		return NULL;
-	bmap = map->p[map->n-1];
-	isl_assert(map->ctx, ISL_F_ISSET(bmap, ISL_BASIC_SET_FINAL), return NULL);
-	return isl_basic_map_copy(bmap);
-}
-
-__isl_give isl_basic_map *isl_map_copy_basic_map(__isl_keep isl_map *map)
-{
-	return map_copy_basic_map(map);
-}
-
-static __isl_give isl_map *map_drop_basic_map(__isl_take isl_map *map,
-						__isl_keep isl_basic_map *bmap)
-{
-	int i;
-
-	if (!map || !bmap)
-		goto error;
-	for (i = map->n-1; i >= 0; --i) {
-		if (map->p[i] != bmap)
-			continue;
-		map = isl_map_cow(map);
-		if (!map)
-			goto error;
-		isl_basic_map_free(map->p[i]);
-		if (i != map->n-1) {
-			ISL_F_CLR(map, ISL_SET_NORMALIZED);
-			map->p[i] = map->p[map->n-1];
-		}
-		map->n--;
-		return map;
-	}
-	return map;
-error:
-	isl_map_free(map);
-	return NULL;
-}
-
-__isl_give isl_map *isl_map_drop_basic_map(__isl_take isl_map *map,
-	__isl_keep isl_basic_map *bmap)
-{
-	return map_drop_basic_map(map, bmap);
-}
-
 /* Given two basic sets bset1 and bset2, compute the maximal difference
  * between the values of dimension pos in bset1 and those in bset2
  * for any common value of the parameters and dimensions preceding pos.
