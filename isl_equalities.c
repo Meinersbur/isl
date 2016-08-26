@@ -732,7 +732,7 @@ error:
  * If i_dim does not belong to such a residue class, then *modulo
  * is set to 1 and *residue is set to 0.
  */
-int isl_basic_set_dim_residue_class(struct isl_basic_set *bset,
+int isl_basic_set_dim_residue_class(__isl_keep isl_basic_set *bset,
 	int pos, isl_int *modulo, isl_int *residue)
 {
 	isl_bool fixed;
