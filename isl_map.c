@@ -9359,7 +9359,8 @@ __isl_give isl_basic_set *isl_basic_set_sort_constraints(
 	return bset_from_bmap(isl_basic_map_sort_constraints(bmap));
 }
 
-struct isl_basic_map *isl_basic_map_normalize(struct isl_basic_map *bmap)
+__isl_give isl_basic_map *isl_basic_map_normalize(
+	__isl_take isl_basic_map *bmap)
 {
 	if (!bmap)
 		return NULL;
