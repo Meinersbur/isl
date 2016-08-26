@@ -1252,7 +1252,7 @@ struct isl_set *isl_set_copy(struct isl_set *set)
 	return set;
 }
 
-struct isl_basic_map *isl_basic_map_copy(struct isl_basic_map *bmap)
+__isl_give isl_basic_map *isl_basic_map_copy(__isl_keep isl_basic_map *bmap)
 {
 	if (!bmap)
 		return NULL;
