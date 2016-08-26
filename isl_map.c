@@ -8879,23 +8879,29 @@ __isl_give isl_basic_set *isl_basic_set_expand_divs(
 /* Look for a div in dst that corresponds to the div "div" in src.
  * The divs before "div" in src and dst are assumed to be the same.
  * 
- * Returns -1 if no corresponding div was found and the position
- * of the corresponding div in dst otherwise.
+ * Return the position of the corresponding div in dst
+ * if there is one.  Otherwise, return a position beyond the integer divisions.
+ * Return -1 on error.
  */
 static int find_div(__isl_keep isl_basic_map *dst,
 	__isl_keep isl_basic_map *src, unsigned div)
 {
 	int i;
+	unsigned n_div;
+	unsigned total;
 
-	unsigned total = isl_space_dim(src->dim, isl_dim_all);
+	if (!dst || !src)
+		return -1;
 
-	isl_assert(dst->ctx, div <= dst->n_div, return -1);
-	for (i = div; i < dst->n_div; ++i)
+	total = isl_space_dim(src->dim, isl_dim_all);
+	n_div = isl_basic_map_dim(dst, isl_dim_div);
+	isl_assert(dst->ctx, div <= n_div, return -1);
+	for (i = div; i < n_div; ++i)
 		if (isl_seq_eq(dst->div[i], src->div[div], 1+1+total+div) &&
 		    isl_seq_first_non_zero(dst->div[i]+1+1+total+div,
-						dst->n_div - div) == -1)
+						n_div - div) == -1)
 			return i;
-	return -1;
+	return n_div;
 }
 
 /* Align the divs of "dst" to those of "src", adding divs from "src"
@@ -8911,7 +8917,7 @@ __isl_give isl_basic_map *isl_basic_map_align_divs(
 	int i;
 	isl_bool known;
 	int extended;
-	unsigned total;
+	unsigned total, dst_n_div;
 
 	if (!dst || !src)
 		return isl_basic_map_free(dst);
@@ -8933,9 +8939,12 @@ __isl_give isl_basic_map *isl_basic_map_align_divs(
 
 	extended = 0;
 	total = isl_space_dim(src->dim, isl_dim_all);
+	dst_n_div = isl_basic_map_dim(dst, isl_dim_div);
 	for (i = 0; i < src->n_div; ++i) {
 		int j = find_div(dst, src, i);
-		if (j < 0) {
+		if (j < 0)
+			dst = isl_basic_map_free(dst);
+		if (j == dst_n_div) {
 			if (!extended) {
 				int extra = src->n_div - i;
 				dst = isl_basic_map_cow(dst);
@@ -8951,6 +8960,7 @@ __isl_give isl_basic_map *isl_basic_map_align_divs(
 				goto error;
 			isl_seq_cpy(dst->div[j], src->div[i], 1+1+total+i);
 			isl_seq_clr(dst->div[j]+1+1+total+i, dst->n_div - i);
+			dst_n_div++;
 			dst = isl_basic_map_add_div_constraints(dst, j);
 			if (!dst)
 				goto error;
