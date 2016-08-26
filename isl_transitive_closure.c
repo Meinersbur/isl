@@ -777,7 +777,7 @@ static __isl_give isl_map *construct_extended_path(__isl_take isl_space *dim,
 		delta = isl_basic_map_deltas(isl_basic_map_copy(map->p[i]));
 
 		for (j = 0; j < d; ++j) {
-			int fixed;
+			isl_bool fixed;
 
 			fixed = isl_basic_set_plain_dim_is_fixed(delta, j,
 							    &steps->row[n][j]);

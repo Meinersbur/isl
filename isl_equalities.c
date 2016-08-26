@@ -735,6 +735,7 @@ error:
 int isl_basic_set_dim_residue_class(struct isl_basic_set *bset,
 	int pos, isl_int *modulo, isl_int *residue)
 {
+	isl_bool fixed;
 	struct isl_ctx *ctx;
 	struct isl_mat *H = NULL, *U = NULL, *C, *H1, *U1;
 	unsigned total;
@@ -743,7 +744,10 @@ int isl_basic_set_dim_residue_class(struct isl_basic_set *bset,
 	if (!bset || !modulo || !residue)
 		return -1;
 
-	if (isl_basic_set_plain_dim_is_fixed(bset, pos, residue)) {
+	fixed = isl_basic_set_plain_dim_is_fixed(bset, pos, residue);
+	if (fixed < 0)
+		return -1;
+	if (fixed) {
 		isl_int_set_si(*modulo, 0);
 		return 0;
 	}

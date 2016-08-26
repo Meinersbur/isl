@@ -9030,8 +9030,8 @@ static int isl_map_plain_has_fixed_var(__isl_keep isl_map *map,
 	return fixed;
 }
 
-static int isl_basic_set_plain_has_fixed_var(__isl_keep isl_basic_set *bset,
-	unsigned pos, isl_int *val)
+static isl_bool isl_basic_set_plain_has_fixed_var(
+	__isl_keep isl_basic_set *bset, unsigned pos, isl_int *val)
 {
 	return isl_basic_map_plain_has_fixed_var(bset_to_bmap(bset),
 						pos, val);
@@ -9137,7 +9137,7 @@ int isl_set_plain_is_fixed(__isl_keep isl_set *set,
 /* Check if dimension dim has fixed value and if so and if val is not NULL,
  * then return this fixed value in *val.
  */
-int isl_basic_set_plain_dim_is_fixed(__isl_keep isl_basic_set *bset,
+isl_bool isl_basic_set_plain_dim_is_fixed(__isl_keep isl_basic_set *bset,
 	unsigned dim, isl_int *val)
 {
 	return isl_basic_set_plain_has_fixed_var(bset,
