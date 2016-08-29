@@ -188,9 +188,6 @@ __isl_give isl_basic_map *isl_basic_map_remove_dims(
 __isl_give isl_basic_map *isl_basic_map_eliminate(
 	__isl_take isl_basic_map *bmap,
 	enum isl_dim_type type, unsigned first, unsigned n);
-ISL_DEPRECATED
-__isl_give isl_basic_map *isl_basic_map_from_basic_set(
-	__isl_take isl_basic_set *bset, __isl_take isl_space *dim);
 __isl_export
 __isl_give isl_basic_map *isl_basic_map_sample(__isl_take isl_basic_map *bmap);
 __isl_export

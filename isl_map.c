@@ -4751,33 +4751,6 @@ __isl_give isl_map *isl_map_lex_gt_map(__isl_take isl_map *map1,
 	return map;
 }
 
-static __isl_give isl_basic_map *basic_map_from_basic_set(
-	__isl_take isl_basic_set *bset, __isl_take isl_space *dim)
-{
-	struct isl_basic_map *bmap;
-
-	bset = isl_basic_set_cow(bset);
-	if (!bset || !dim)
-		goto error;
-
-	isl_assert(bset->ctx, isl_space_compatible_internal(bset->dim, dim),
-		goto error);
-	isl_space_free(bset->dim);
-	bmap = bset_to_bmap(bset);
-	bmap->dim = dim;
-	return isl_basic_map_finalize(bmap);
-error:
-	isl_basic_set_free(bset);
-	isl_space_free(dim);
-	return NULL;
-}
-
-__isl_give isl_basic_map *isl_basic_map_from_basic_set(
-	__isl_take isl_basic_set *bset, __isl_take isl_space *space)
-{
-	return basic_map_from_basic_set(bset, space);
-}
-
 /* For a div d = floor(f/m), add the constraint
  *
  *		f - m d >= 0
