@@ -5452,33 +5452,6 @@ __isl_give isl_map *isl_set_wrapped_domain_map(__isl_take isl_set *set)
 	return map;
 }
 
-__isl_give isl_map *isl_map_from_set(__isl_take isl_set *set,
-	__isl_take isl_space *dim)
-{
-	int i;
-	struct isl_map *map = NULL;
-
-	set = isl_set_cow(set);
-	if (!set || !dim)
-		goto error;
-	isl_assert(set->ctx, isl_space_compatible_internal(set->dim, dim),
-		goto error);
-	map = set_to_map(set);
-	for (i = 0; i < set->n; ++i) {
-		map->p[i] = basic_map_from_basic_set(
-				set->p[i], isl_space_copy(dim));
-		if (!map->p[i])
-			goto error;
-	}
-	isl_space_free(map->dim);
-	map->dim = dim;
-	return map;
-error:
-	isl_space_free(dim);
-	isl_set_free(set);
-	return NULL;
-}
-
 __isl_give isl_basic_map *isl_basic_map_from_domain(
 	__isl_take isl_basic_set *bset)
 {
