@@ -2941,7 +2941,7 @@ isl_bool isl_basic_map_contains(__isl_keep isl_basic_map *bmap,
 
 	total = 1 + isl_basic_map_total_dim(bmap);
 	if (total != vec->size)
-		return isl_bool_error;
+		return isl_bool_false;
 
 	isl_int_init(s);
 
