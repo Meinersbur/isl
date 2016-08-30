@@ -3049,6 +3049,13 @@ Recall that the space in which a quasipolynomial lives is a map space
 with a one-dimensional range.  The C<domain> argument in some of
 the functions above corresponds to the domain of this map space.
 
+A quasi-polynomial that can also be represented as a quasi-affine expression
+can be converted using the function below.
+
+	#include <isl/polynomial.h>
+	__isl_give isl_aff *isl_qpolynomial_as_aff(
+		__isl_take isl_qpolynomial *qp);
+
 Quasipolynomials can be copied and freed again using the following
 functions.
 

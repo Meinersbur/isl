@@ -5393,13 +5393,13 @@ __isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_to_polynomial(
 				   &poly_entry, &sign);
 }
 
-__isl_give isl_basic_map *isl_basic_map_from_qpolynomial(
-	__isl_take isl_qpolynomial *qp)
+/* Return an isl_aff that is equivalent to "qp".
+ */
+__isl_give isl_aff *isl_qpolynomial_as_aff(__isl_take isl_qpolynomial *qp)
 {
 	isl_local_space *ls;
 	isl_vec *vec;
 	isl_aff *aff;
-	isl_basic_map *bmap;
 	isl_bool is_affine;
 
 	is_affine = isl_poly_is_affine(isl_qpolynomial_peek_poly(qp));
@@ -5411,10 +5411,15 @@ __isl_give isl_basic_map *isl_basic_map_from_qpolynomial(
 	ls = isl_qpolynomial_get_domain_local_space(qp);
 	vec = isl_qpolynomial_extract_affine(qp);
 	aff = isl_aff_alloc_vec(ls, vec);
-	bmap = isl_basic_map_from_aff(aff);
 	isl_qpolynomial_free(qp);
-	return bmap;
+	return aff;
 error:
 	isl_qpolynomial_free(qp);
 	return NULL;
+}
+
+__isl_give isl_basic_map *isl_basic_map_from_qpolynomial(
+	__isl_take isl_qpolynomial *qp)
+{
+	return isl_basic_map_from_aff(isl_qpolynomial_as_aff(qp));
 }
