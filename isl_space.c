@@ -766,7 +766,7 @@ static __isl_keep isl_space *nested(__isl_keep isl_space *dim,
 
 /* Are the two spaces the same, apart from positions and names of parameters?
  */
-static isl_bool isl_space_has_equal_tuples(__isl_keep isl_space *space1,
+isl_bool isl_space_has_equal_tuples(__isl_keep isl_space *space1,
 	__isl_keep isl_space *space2)
 {
 	if (!space1 || !space2)
