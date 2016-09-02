@@ -20,6 +20,7 @@
 #include <isl_vec_private.h>
 #include <isl_seq.h>
 
+#include <bset_from_bmap.c>
 #include <set_from_map.c>
 
 /* Check that the input living in "space" lives in a map space.
@@ -186,6 +187,18 @@ __isl_give isl_basic_map *isl_basic_map_from_multi_aff(
 	if (check_input_is_map(isl_multi_aff_peek_space(ma)) < 0)
 		ma = isl_multi_aff_free(ma);
 	return basic_map_from_multi_aff(ma);
+}
+
+/* Construct a basic set mapping the parameter domain
+ * of the multi-affine expression to its space, with each dimension
+ * in the space equated to the corresponding affine expression.
+ */
+__isl_give isl_basic_set *isl_basic_set_from_multi_aff(
+	__isl_take isl_multi_aff *ma)
+{
+	if (check_input_is_set(isl_multi_aff_peek_space(ma)) < 0)
+		ma = isl_multi_aff_free(ma);
+	return bset_from_bmap(isl_basic_map_from_multi_aff(ma));
 }
 
 /* Construct a map mapping the domain of the multi-affine expression
