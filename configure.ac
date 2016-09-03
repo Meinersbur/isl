@@ -248,7 +248,7 @@ system)
 		CompilerInvocation::setLangDefaults(Clang->getLangOpts(), IK_C,
 				T, PO, LangStandard::lang_unspecified);
 	], [AC_DEFINE([SETLANGDEFAULTS_TAKES_5_ARGUMENTS], [],
-		[Define if HeaderSearchOptions::AddPath takes 4 arguments])])
+	    [Define if CompilerInvocation::setLangDefaults takes 5 arguments])])
 	AC_LANG_POP
 	CPPFLAGS="$SAVE_CPPFLAGS"
 
