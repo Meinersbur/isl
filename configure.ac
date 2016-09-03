@@ -235,7 +235,11 @@ system)
 		[clang/Basic/Builtins.h], [],
 		[AC_DEFINE([initializeBuiltins], [InitializeBuiltins],
 		[Define to InitializeBuiltins for older versions of clang])])
-	AC_TRY_COMPILE([#include <clang/Frontend/CompilerInstance.h>], [
+	AC_TRY_COMPILE([
+		#include <clang/Basic/TargetOptions.h>
+		#include <clang/Lex/PreprocessorOptions.h>
+		#include <clang/Frontend/CompilerInstance.h>
+	], [
 		using namespace clang;
 		CompilerInstance *Clang;
 		TargetOptions TO;
