@@ -177,6 +177,10 @@ system)
 	AC_CHECK_HEADER([clang/Basic/DiagnosticOptions.h],
 		[AC_DEFINE([HAVE_BASIC_DIAGNOSTICOPTIONS_H], [],
 			   [Define if clang/Basic/DiagnosticOptions.h exists])])
+	AC_CHECK_HEADER([clang/Lex/PreprocessorOptions.h],
+		[AC_DEFINE([HAVE_LEX_PREPROCESSOROPTIONS_H], [],
+			   [Define if clang/Lex/PreprocessorOptions.h exists])],
+		[], [#include <clang/Basic/LLVM.h>])
 	AC_TRY_COMPILE([#include <clang/Basic/TargetInfo.h>], [
 		using namespace clang;
 		std::shared_ptr<TargetOptions> TO;
