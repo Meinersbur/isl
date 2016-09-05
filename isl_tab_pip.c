@@ -1993,7 +1993,7 @@ static int tab_has_valid_sample(struct isl_tab *tab, isl_int *ineq, int eq)
  */
 static isl_bool context_tab_insert_div(struct isl_tab *tab, int pos,
 	__isl_keep isl_vec *div,
-	int (*add_ineq)(void *user, isl_int *), void *user)
+	isl_stat (*add_ineq)(void *user, isl_int *), void *user)
 {
 	int i;
 	int r;
@@ -2451,11 +2451,11 @@ error:
 	clex->tab = NULL;
 }
 
-static int context_lex_add_ineq_wrap(void *user, isl_int *ineq)
+static isl_stat context_lex_add_ineq_wrap(void *user, isl_int *ineq)
 {
 	struct isl_context *context = (struct isl_context *)user;
 	context_lex_add_ineq(context, ineq, 0, 0);
-	return context->op->is_ok(context) ? 0 : -1;
+	return context->op->is_ok(context) ? isl_stat_ok : isl_stat_error;
 }
 
 /* Check which signs can be obtained by "ineq" on all the currently
@@ -3139,11 +3139,11 @@ error:
 	cgbr->tab = NULL;
 }
 
-static int context_gbr_add_ineq_wrap(void *user, isl_int *ineq)
+static isl_stat context_gbr_add_ineq_wrap(void *user, isl_int *ineq)
 {
 	struct isl_context *context = (struct isl_context *)user;
 	context_gbr_add_ineq(context, ineq, 0, 0);
-	return context->op->is_ok(context) ? 0 : -1;
+	return context->op->is_ok(context) ? isl_stat_ok : isl_stat_error;
 }
 
 static enum isl_tab_row_sign context_gbr_ineq_sign(struct isl_context *context,

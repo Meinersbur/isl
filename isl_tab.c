@@ -2231,8 +2231,8 @@ static struct isl_vec *ineq_for_div(struct isl_basic_map *bmap, unsigned div)
  * This function assumes that at least two more rows and at least
  * two more elements in the constraint array are available in the tableau.
  */
-static int add_div_constraints(struct isl_tab *tab, unsigned div,
-	int (*add_ineq)(void *user, isl_int *), void *user)
+static isl_stat add_div_constraints(struct isl_tab *tab, unsigned div,
+	isl_stat (*add_ineq)(void *user, isl_int *), void *user)
 {
 	unsigned total;
 	unsigned div_pos;
@@ -2314,7 +2314,7 @@ static int div_is_nonneg(struct isl_tab *tab, __isl_keep isl_vec *div)
  * is added to the tableau.
  */
 int isl_tab_insert_div(struct isl_tab *tab, int pos, __isl_keep isl_vec *div,
-	int (*add_ineq)(void *user, isl_int *), void *user)
+	isl_stat (*add_ineq)(void *user, isl_int *), void *user)
 {
 	int r;
 	int nonneg;
