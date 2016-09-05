@@ -998,7 +998,8 @@ static struct isl_vec *get_row_split_div(struct isl_tab *tab, int row)
  *
  *	m d <= e
  */
-static struct isl_vec *ineq_for_div(struct isl_basic_set *bset, unsigned div)
+static __isl_give isl_vec *ineq_for_div(__isl_keep isl_basic_set *bset,
+	unsigned div)
 {
 	unsigned total;
 	unsigned div_pos;
