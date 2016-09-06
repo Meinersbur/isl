@@ -2506,11 +2506,13 @@ static isl_stat is_subset_entry(void **entry, void *user)
 	struct isl_union_map_is_subset_data *data = user;
 	uint32_t hash;
 	struct isl_hash_table_entry *entry2;
+	isl_space *space;
 	isl_map *map = *entry;
 
-	hash = isl_space_get_hash(map->dim);
+	space = isl_map_peek_space(map);
+	hash = isl_space_get_hash(space);
 	entry2 = isl_hash_table_find(data->umap2->dim->ctx, &data->umap2->table,
-				     hash, &has_space, map->dim, 0);
+				     hash, &has_space, space, 0);
 	if (!entry2)
 		return isl_stat_error;
 	if (entry2 == isl_hash_table_entry_none) {
