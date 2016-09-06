@@ -416,6 +416,7 @@ __isl_give isl_union_map *isl_union_map_add_map(__isl_take isl_union_map *umap,
 	uint32_t hash;
 	struct isl_hash_table_entry *entry;
 	isl_bool aligned;
+	isl_space *space;
 
 	if (!map || !umap)
 		goto error;
@@ -438,9 +439,10 @@ __isl_give isl_union_map *isl_union_map_add_map(__isl_take isl_union_map *umap,
 	if (!map || !umap)
 		goto error;
 
-	hash = isl_space_get_hash(map->dim);
+	space = isl_map_peek_space(map);
+	hash = isl_space_get_hash(space);
 	entry = isl_hash_table_find(umap->dim->ctx, &umap->table, hash,
-				    &has_space, map->dim, 1);
+				    &has_space, space, 1);
 	if (!entry)
 		goto error;
 
