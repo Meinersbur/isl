@@ -556,6 +556,8 @@ isl_stat isl_basic_set_check_equal_space(__isl_keep isl_basic_set *bset1,
 	__isl_keep isl_basic_set *bset2);
 isl_stat isl_basic_map_check_equal_space(__isl_keep isl_basic_map *bmap1,
 	__isl_keep isl_basic_map *bmap2);
+isl_stat isl_map_basic_map_check_equal_space(__isl_keep isl_map *map,
+	__isl_keep isl_basic_map *bmap);
 
 __isl_give isl_mat *isl_basic_set_extract_equalities(
 	__isl_keep isl_basic_set *bset);

@@ -6239,7 +6239,8 @@ __isl_give isl_map *isl_map_add_basic_map(__isl_take isl_map *map,
 		isl_basic_map_free(bmap);
 		return map;
 	}
-	isl_assert(map->ctx, isl_space_is_equal(map->dim, bmap->dim), goto error);
+	if (isl_map_basic_map_check_equal_space(map, bmap) < 0)
+		goto error;
 	isl_assert(map->ctx, map->n < map->size, goto error);
 	map->p[map->n] = bmap;
 	map->n++;
@@ -8770,6 +8771,17 @@ isl_bool isl_set_has_equal_space(__isl_keep isl_set *set1,
 {
 	return isl_map_has_equal_space(set_to_map(set1), set_to_map(set2));
 }
+
+#undef TYPE1
+#define TYPE1		isl_map
+#undef TYPE2
+#define TYPE2		isl_basic_map
+#undef TYPE_PAIR
+#define TYPE_PAIR	isl_map_basic_map
+
+static
+#include "isl_type_has_equal_space_templ.c"
+#include "isl_type_check_equal_space_templ.c"
 
 static isl_bool map_is_equal(__isl_keep isl_map *map1, __isl_keep isl_map *map2)
 {

@@ -3223,9 +3223,8 @@ __isl_give isl_map *isl_map_gist_basic_map(__isl_take isl_map *map,
 
 	context = isl_basic_map_remove_redundancies(context);
 	map = isl_map_cow(map);
-	if (!map || !context)
+	if (isl_map_basic_map_check_equal_space(map, context) < 0)
 		goto error;
-	isl_assert(map->ctx, isl_space_is_equal(map->dim, context->dim), goto error);
 	map = isl_map_compute_divs(map);
 	if (!map)
 		goto error;
