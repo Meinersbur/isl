@@ -2205,6 +2205,21 @@ error:
 	return NULL;
 }
 
+/* Check that there are "n" dimensions of type "type" starting at "first"
+ * in "map".
+ */
+static isl_stat isl_map_check_range(__isl_keep isl_map *map,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	if (!map)
+		return isl_stat_error;
+	if (first + n > isl_map_dim(map, type) || first + n < first)
+		isl_die(isl_map_get_ctx(map), isl_error_invalid,
+			"position or range out of bounds",
+			return isl_stat_error);
+	return isl_stat_ok;
+}
+
 /* Drop "n" dimensions of type "type" starting at "first".
  *
  * In principle, this frees up some extra variables as the number
@@ -2275,10 +2290,8 @@ __isl_give isl_map *isl_map_drop(__isl_take isl_map *map,
 {
 	int i;
 
-	if (!map)
-		goto error;
-
-	isl_assert(map->ctx, first + n <= isl_map_dim(map, type), goto error);
+	if (isl_map_check_range(map, type, first, n) < 0)
+		return isl_map_free(map);
 
 	if (n == 0 && !isl_space_is_named_or_nested(map->dim, type))
 		return map;
@@ -2367,14 +2380,11 @@ __isl_give isl_map *isl_map_eliminate(__isl_take isl_map *map,
 {
 	int i;
 
-	if (!map)
-		return NULL;
 	if (n == 0)
 		return map;
 
-	if (first + n > isl_map_dim(map, type) || first + n < first)
-		isl_die(map->ctx, isl_error_invalid,
-			"index out of bounds", goto error);
+	if (isl_map_check_range(map, type, first, n) < 0)
+		return isl_map_free(map);
 
 	map = isl_map_cow(map);
 	if (!map)
@@ -2803,12 +2813,8 @@ isl_bool isl_map_involves_dims(__isl_keep isl_map *map,
 {
 	int i;
 
-	if (!map)
+	if (isl_map_check_range(map, type, first, n) < 0)
 		return isl_bool_error;
-
-	if (first + n > isl_map_dim(map, type))
-		isl_die(map->ctx, isl_error_invalid,
-			"index out of bounds", return isl_bool_error);
 
 	for (i = 0; i < map->n; ++i) {
 		isl_bool involves = isl_basic_map_involves_dims(map->p[i],
@@ -2962,15 +2968,9 @@ static __isl_give isl_map *drop_constraints(__isl_take isl_map *map,
 		enum isl_dim_type type, unsigned first, unsigned n))
 {
 	int i;
-	unsigned dim;
 
-	if (!map)
-		return NULL;
-
-	dim = isl_map_dim(map, type);
-	if (first + n > dim || first + n < first)
-		isl_die(isl_map_get_ctx(map), isl_error_invalid,
-			"index out of bounds", return isl_map_free(map));
+	if (isl_map_check_range(map, type, first, n) < 0)
+		return isl_map_free(map);
 
 	map = isl_map_cow(map);
 	if (!map)
@@ -3143,9 +3143,8 @@ __isl_give isl_map *isl_map_remove_dims(__isl_take isl_map *map,
 		return map;
 
 	map = isl_map_cow(map);
-	if (!map)
-		return NULL;
-	isl_assert(map->ctx, first + n <= isl_map_dim(map, type), goto error);
+	if (isl_map_check_range(map, type, first, n) < 0)
+		return isl_map_free(map);
 	
 	for (i = 0; i < map->n; ++i) {
 		map->p[i] = isl_basic_map_eliminate_vars(map->p[i],
@@ -4118,16 +4117,14 @@ __isl_give isl_map *isl_map_move_dims(__isl_take isl_map *map,
 {
 	int i;
 
-	if (!map)
-		return NULL;
 	if (n == 0) {
 		map = isl_map_reset(map, src_type);
 		map = isl_map_reset(map, dst_type);
 		return map;
 	}
 
-	isl_assert(map->ctx, src_pos + n <= isl_map_dim(map, src_type),
-		goto error);
+	if (isl_map_check_range(map, src_type, src_pos, n))
+		return isl_map_free(map);
 
 	if (dst_type == src_type && dst_pos == src_pos)
 		return map;
@@ -4355,13 +4352,11 @@ __isl_give isl_map *isl_map_project_out(__isl_take isl_map *map,
 {
 	int i;
 
-	if (!map)
-		return NULL;
-
 	if (n == 0)
 		return map_space_reset(map, type);
 
-	isl_assert(map->ctx, first + n <= isl_map_dim(map, type), goto error);
+	if (isl_map_check_range(map, type, first, n) < 0)
+		return isl_map_free(map);
 
 	map = isl_map_cow(map);
 	if (!map)
