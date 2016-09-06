@@ -3314,7 +3314,7 @@ error:
 
 /* Make sure "map" has room for at least "n" more basic maps.
  */
-struct isl_map *isl_map_grow(struct isl_map *map, int n)
+__isl_give isl_map *isl_map_grow(__isl_take isl_map *map, int n)
 {
 	int i;
 	struct isl_map *grown = NULL;

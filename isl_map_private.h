@@ -200,7 +200,7 @@ struct isl_basic_set *isl_basic_set_extend_space(struct isl_basic_set *base,
 struct isl_basic_set *isl_basic_set_add_constraints(struct isl_basic_set *bset1,
 		struct isl_basic_set *bset2, unsigned pos);
 
-struct isl_map *isl_map_grow(struct isl_map *map, int n);
+__isl_give isl_map *isl_map_grow(__isl_take isl_map *map, int n);
 struct isl_set *isl_set_grow(struct isl_set *set, int n);
 
 isl_bool isl_basic_set_contains(__isl_keep isl_basic_set *bset,
