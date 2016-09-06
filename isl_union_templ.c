@@ -673,7 +673,7 @@ S(UNION,match_domain_data) {
 	__isl_give PW *(*fn)(__isl_take PW*, __isl_take isl_set*);
 };
 
-static int FN(UNION,set_has_dim)(const void *entry, const void *val)
+static int FN(UNION,set_has_space)(const void *entry, const void *val)
 {
 	isl_set *set = (isl_set *)entry;
 	isl_space *space = (isl_space *)val;
@@ -695,7 +695,7 @@ static isl_stat FN(UNION,match_domain_entry)(__isl_take PART *part, void *user)
 	space = FN(PART,get_domain_space)(part);
 	hash = isl_space_get_hash(space);
 	entry2 = isl_hash_table_find(data->uset->dim->ctx, &data->uset->table,
-				     hash, &FN(UNION,set_has_dim), space, 0);
+				     hash, &FN(UNION,set_has_space), space, 0);
 	isl_space_free(space);
 	if (!entry2) {
 		FN(PART,free)(part);
