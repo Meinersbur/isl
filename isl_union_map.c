@@ -407,7 +407,7 @@ static isl_bool has_space(const void *entry, const void *val)
 	isl_map *map = (isl_map *)entry;
 	isl_space *space = (isl_space *) val;
 
-	return isl_space_is_equal(map->dim, space);
+	return isl_map_has_space(map, space);
 }
 
 __isl_give isl_union_map *isl_union_map_add_map(__isl_take isl_union_map *umap,
