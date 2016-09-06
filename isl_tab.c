@@ -4028,7 +4028,7 @@ error:
 	return isl_stat_error;
 }
 
-int isl_tab_track_bset(struct isl_tab *tab, __isl_take isl_basic_set *bset)
+isl_stat isl_tab_track_bset(struct isl_tab *tab, __isl_take isl_basic_set *bset)
 {
 	return isl_tab_track_bmap(tab, bset_to_bmap(bset));
 }
