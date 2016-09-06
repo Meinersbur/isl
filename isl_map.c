@@ -969,10 +969,10 @@ isl_bool isl_set_is_params(__isl_keep isl_set *set)
  * Users should never call this function.  Outside of isl,
  * a map can never be a parameter domain.
  */
-int isl_map_is_params(__isl_keep isl_map *map)
+isl_bool isl_map_is_params(__isl_keep isl_map *map)
 {
 	if (!map)
-		return -1;
+		return isl_bool_error;
 	return isl_space_is_params(map->dim);
 }
 
