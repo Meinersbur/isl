@@ -8535,16 +8535,28 @@ error:
 	return NULL;
 }
 
+/* Is the tuple of type "type1" of "map1" the same as
+ * the tuple of type "type2" of "map2"?
+ */
+isl_bool isl_map_tuple_is_equal(__isl_keep isl_map *map1,
+	enum isl_dim_type type1, __isl_keep isl_map *map2,
+	enum isl_dim_type type2)
+{
+	isl_space *space1, *space2;
+
+	space1 = isl_map_peek_space(map1);
+	space2 = isl_map_peek_space(map2);
+	return isl_space_tuple_is_equal(space1, type1, space2, type2);
+}
+
 /* Check that "map" is a transformation, i.e.,
  * that it relates elements from the same space.
  */
 isl_stat isl_map_check_transformation(__isl_keep isl_map *map)
 {
-	isl_space *space;
 	isl_bool equal;
 
-	space = isl_map_peek_space(map);
-	equal = isl_space_tuple_is_equal(space, isl_dim_in, space, isl_dim_out);
+	equal = isl_map_tuple_is_equal(map, isl_dim_in, map, isl_dim_out);
 	if (equal < 0)
 		return isl_stat_error;
 	if (!equal)
@@ -11764,13 +11776,10 @@ isl_bool isl_set_is_singleton(__isl_keep isl_set *set)
  */
 isl_bool isl_map_is_identity(__isl_keep isl_map *map)
 {
-	isl_space *space;
 	isl_map *id;
 	isl_bool equal, is_identity;
 
-	space = isl_map_get_space(map);
-	equal = isl_space_tuple_is_equal(space, isl_dim_in, space, isl_dim_out);
-	isl_space_free(space);
+	equal = isl_map_tuple_is_equal(map, isl_dim_in, map, isl_dim_out);
 	if (equal < 0 || !equal)
 		return equal;
 
