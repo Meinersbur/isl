@@ -6457,10 +6457,8 @@ static __isl_give isl_map *map_bound_si(__isl_take isl_map *map,
 	int i;
 
 	map = isl_map_cow(map);
-	if (!map)
-		return NULL;
-
-	isl_assert(map->ctx, pos < isl_map_dim(map, type), goto error);
+	if (isl_map_check_range(map, type, pos, 1) < 0)
+		return isl_map_free(map);
 	for (i = 0; i < map->n; ++i) {
 		map->p[i] = basic_map_bound_si(map->p[i],
 						 type, pos, value, upper);
