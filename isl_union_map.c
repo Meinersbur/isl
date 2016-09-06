@@ -348,7 +348,7 @@ isl_bool isl_union_map_space_has_equal_params(__isl_keep isl_union_map *umap,
 	return isl_space_has_equal_params(umap_space, space);
 }
 
-static int has_dim(const void *entry, const void *val)
+static int has_space(const void *entry, const void *val)
 {
 	isl_map *map = (isl_map *)entry;
 	isl_space *space = (isl_space *) val;
@@ -386,7 +386,7 @@ __isl_give isl_union_map *isl_union_map_add_map(__isl_take isl_union_map *umap,
 
 	hash = isl_space_get_hash(map->dim);
 	entry = isl_hash_table_find(umap->dim->ctx, &umap->table, hash,
-				    &has_dim, map->dim, 1);
+				    &has_space, map->dim, 1);
 	if (!entry)
 		goto error;
 
@@ -537,7 +537,7 @@ __isl_give isl_map *isl_union_map_extract_map(__isl_keep isl_union_map *umap,
 
 	hash = isl_space_get_hash(space);
 	entry = isl_hash_table_find(umap->dim->ctx, &umap->table, hash,
-				    &has_dim, space, 0);
+				    &has_space, space, 0);
 	if (!entry)
 		return isl_map_empty(space);
 	isl_space_free(space);
@@ -566,7 +566,7 @@ isl_bool isl_union_map_contains(__isl_keep isl_union_map *umap,
 
 	hash = isl_space_get_hash(space);
 	entry = isl_hash_table_find(umap->dim->ctx, &umap->table, hash,
-				    &has_dim, space, 0);
+				    &has_space, space, 0);
 	return !!entry;
 }
 
@@ -620,7 +620,7 @@ static isl_stat subtract_entry(void **entry, void *user)
 
 	hash = isl_space_get_hash(map->dim);
 	entry2 = isl_hash_table_find(data->umap2->dim->ctx, &data->umap2->table,
-				     hash, &has_dim, map->dim, 0);
+				     hash, &has_space, map->dim, 0);
 	map = isl_map_copy(map);
 	if (entry2) {
 		int empty;
@@ -793,7 +793,7 @@ static isl_stat match_bin_entry(void **entry, void *user)
 
 	hash = isl_space_get_hash(map->dim);
 	entry2 = isl_hash_table_find(data->umap2->dim->ctx, &data->umap2->table,
-				     hash, &has_dim, map->dim, 0);
+				     hash, &has_space, map->dim, 0);
 	if (!entry2)
 		return isl_stat_ok;
 
@@ -1004,7 +1004,7 @@ static isl_stat intersect_domain_entry(void **entry, void *user)
 	dim = isl_space_domain(dim);
 	hash = isl_space_get_hash(dim);
 	entry2 = isl_hash_table_find(data->umap2->dim->ctx, &data->umap2->table,
-				     hash, &has_dim, dim, 0);
+				     hash, &has_space, dim, 0);
 	isl_space_free(dim);
 	if (!entry2)
 		return isl_stat_ok;
@@ -1055,7 +1055,7 @@ static isl_stat subtract_domain_entry(void **entry, void *user)
 	dim = isl_space_domain(dim);
 	hash = isl_space_get_hash(dim);
 	entry2 = isl_hash_table_find(data->umap2->dim->ctx, &data->umap2->table,
-				     hash, &has_dim, dim, 0);
+				     hash, &has_space, dim, 0);
 	isl_space_free(dim);
 
 	map = isl_map_copy(map);
@@ -1106,7 +1106,7 @@ static isl_stat subtract_range_entry(void **entry, void *user)
 	space = isl_space_range(space);
 	hash = isl_space_get_hash(space);
 	entry2 = isl_hash_table_find(data->umap2->dim->ctx, &data->umap2->table,
-				     hash, &has_dim, space, 0);
+				     hash, &has_space, space, 0);
 	isl_space_free(space);
 
 	map = isl_map_copy(map);
@@ -1154,7 +1154,7 @@ static isl_stat gist_domain_entry(void **entry, void *user)
 	dim = isl_space_domain(dim);
 	hash = isl_space_get_hash(dim);
 	entry2 = isl_hash_table_find(data->umap2->dim->ctx, &data->umap2->table,
-				     hash, &has_dim, dim, 0);
+				     hash, &has_space, dim, 0);
 	isl_space_free(dim);
 	if (!entry2)
 		return isl_stat_ok;
@@ -1198,7 +1198,7 @@ static isl_stat gist_range_entry(void **entry, void *user)
 	space = isl_space_range(space);
 	hash = isl_space_get_hash(space);
 	entry2 = isl_hash_table_find(data->umap2->dim->ctx, &data->umap2->table,
-				     hash, &has_dim, space, 0);
+				     hash, &has_space, space, 0);
 	isl_space_free(space);
 	if (!entry2)
 		return isl_stat_ok;
@@ -1238,7 +1238,7 @@ static isl_stat intersect_range_entry(void **entry, void *user)
 	dim = isl_space_range(dim);
 	hash = isl_space_get_hash(dim);
 	entry2 = isl_hash_table_find(data->umap2->dim->ctx, &data->umap2->table,
-				     hash, &has_dim, dim, 0);
+				     hash, &has_space, dim, 0);
 	isl_space_free(dim);
 	if (!entry2)
 		return isl_stat_ok;
@@ -2176,7 +2176,7 @@ static isl_stat is_subset_entry(void **entry, void *user)
 
 	hash = isl_space_get_hash(map->dim);
 	entry2 = isl_hash_table_find(data->umap2->dim->ctx, &data->umap2->table,
-				     hash, &has_dim, map->dim, 0);
+				     hash, &has_space, map->dim, 0);
 	if (!entry2) {
 		int empty = isl_map_is_empty(map);
 		if (empty < 0)
@@ -2293,7 +2293,7 @@ static isl_stat is_disjoint_entry(void **entry, void *user)
 
 	hash = isl_space_get_hash(map->dim);
 	entry2 = isl_hash_table_find(data->umap2->dim->ctx, &data->umap2->table,
-				     hash, &has_dim, map->dim, 0);
+				     hash, &has_space, map->dim, 0);
 	if (!entry2)
 		return isl_stat_ok;
 
