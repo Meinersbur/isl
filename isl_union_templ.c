@@ -676,9 +676,9 @@ S(UNION,match_domain_data) {
 static int FN(UNION,set_has_dim)(const void *entry, const void *val)
 {
 	isl_set *set = (isl_set *)entry;
-	isl_space *dim = (isl_space *)val;
+	isl_space *space = (isl_space *)val;
 
-	return isl_space_is_equal(set->dim, dim);
+	return isl_space_is_equal(set->dim, space);
 }
 
 /* Find the set in data->uset that lives in the same space as the domain
