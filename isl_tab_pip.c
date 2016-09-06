@@ -2637,14 +2637,12 @@ static struct isl_tab *context_tab_for_lexmin(struct isl_basic_set *bset)
 	if (!bset)
 		return NULL;
 	tab = tab_for_lexmin(bset_to_bmap(bset), NULL, 1, 0);
-	if (!tab)
-		goto error;
 	if (isl_tab_track_bset(tab, bset) < 0)
 		goto error;
 	tab = isl_tab_init_samples(tab);
 	return tab;
 error:
-	isl_basic_set_free(bset);
+	isl_tab_free(tab);
 	return NULL;
 }
 
