@@ -4553,7 +4553,8 @@ error:
 /* Given two maps A -> f(A) and B -> g(B), construct a map
  * A \cap B -> f(A) + f(B)
  */
-struct isl_map *isl_map_sum(struct isl_map *map1, struct isl_map *map2)
+__isl_give isl_map *isl_map_sum(__isl_take isl_map *map1,
+	__isl_take isl_map *map2)
 {
 	struct isl_map *result;
 	int i, j;
