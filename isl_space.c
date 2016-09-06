@@ -2368,22 +2368,22 @@ __isl_give isl_space *isl_space_uncurry(__isl_take isl_space *space)
 			    isl_space_from_range(ran_ran));
 }
 
-int isl_space_has_named_params(__isl_keep isl_space *space)
+isl_bool isl_space_has_named_params(__isl_keep isl_space *space)
 {
 	int i;
 	unsigned off;
 
 	if (!space)
-		return -1;
+		return isl_bool_error;
 	if (space->nparam == 0)
-		return 1;
+		return isl_bool_true;
 	off = isl_space_offset(space, isl_dim_param);
 	if (off + space->nparam > space->n_id)
-		return 0;
+		return isl_bool_false;
 	for (i = 0; i < space->nparam; ++i)
 		if (!space->ids[off + i])
-			return 0;
-	return 1;
+			return isl_bool_false;
+	return isl_bool_true;
 }
 
 /* Align the initial parameters of dim1 to match the order in dim2.
