@@ -4227,7 +4227,7 @@ static __isl_give isl_set *fix_inactive(__isl_take isl_set *set,
 	if (!set || !qp)
 		goto error;
 
-	d = isl_space_dim(set->dim, isl_dim_all);
+	d = isl_set_dim(set, isl_dim_all);
 	active = isl_calloc_array(set->ctx, int, d);
 	if (set_active(qp, active) < 0)
 		goto error;
@@ -4241,8 +4241,8 @@ static __isl_give isl_set *fix_inactive(__isl_take isl_set *set,
 		return set;
 	}
 
-	nparam = isl_space_dim(set->dim, isl_dim_param);
-	nvar = isl_space_dim(set->dim, isl_dim_set);
+	nparam = isl_set_dim(set, isl_dim_param);
+	nvar = isl_set_dim(set, isl_dim_set);
 	for (i = 0; i < nparam; ++i) {
 		if (active[i])
 			continue;
