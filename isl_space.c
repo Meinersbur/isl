@@ -2368,20 +2368,20 @@ __isl_give isl_space *isl_space_uncurry(__isl_take isl_space *space)
 			    isl_space_from_range(ran_ran));
 }
 
-int isl_space_has_named_params(__isl_keep isl_space *dim)
+int isl_space_has_named_params(__isl_keep isl_space *space)
 {
 	int i;
 	unsigned off;
 
-	if (!dim)
+	if (!space)
 		return -1;
-	if (dim->nparam == 0)
+	if (space->nparam == 0)
 		return 1;
-	off = isl_space_offset(dim, isl_dim_param);
-	if (off + dim->nparam > dim->n_id)
+	off = isl_space_offset(space, isl_dim_param);
+	if (off + space->nparam > space->n_id)
 		return 0;
-	for (i = 0; i < dim->nparam; ++i)
-		if (!dim->ids[off + i])
+	for (i = 0; i < space->nparam; ++i)
+		if (!space->ids[off + i])
 			return 0;
 	return 1;
 }
