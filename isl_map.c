@@ -670,7 +670,7 @@ __isl_give isl_map *isl_map_set_tuple_id(__isl_take isl_map *map,
 
 	map->dim = isl_space_set_tuple_id(map->dim, type, id);
 
-	return isl_map_reset_space(map, isl_space_copy(map->dim));
+	return isl_map_reset_space(map, isl_map_get_space(map));
 error:
 	isl_id_free(id);
 	return NULL;
