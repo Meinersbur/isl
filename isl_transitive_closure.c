@@ -822,23 +822,24 @@ error:
 	return NULL;
 }
 
-static int isl_set_overlaps(__isl_keep isl_set *set1, __isl_keep isl_set *set2)
+static isl_bool isl_set_overlaps(__isl_keep isl_set *set1,
+	__isl_keep isl_set *set2)
 {
 	isl_set *i;
-	int no_overlap;
+	isl_bool no_overlap;
 
 	if (!set1 || !set2)
-		return -1;
+		return isl_bool_error;
 
 	if (!isl_space_tuple_is_equal(set1->dim, isl_dim_set,
 					set2->dim, isl_dim_set))
-		return 0;
+		return isl_bool_false;
 
 	i = isl_set_intersect(isl_set_copy(set1), isl_set_copy(set2));
 	no_overlap = isl_set_is_empty(i);
 	isl_set_free(i);
 
-	return no_overlap < 0 ? -1 : !no_overlap;
+	return isl_bool_not(no_overlap);
 }
 
 /* Given a union of basic maps R = \cup_i R_i \subseteq D \times D
@@ -867,7 +868,7 @@ static __isl_give isl_map *construct_component(__isl_take isl_space *dim,
 	struct isl_set *range = NULL;
 	struct isl_map *app = NULL;
 	struct isl_map *path = NULL;
-	int overlaps;
+	isl_bool overlaps;
 
 	domain = isl_map_domain(isl_map_copy(map));
 	domain = isl_set_coalesce(domain);
@@ -1040,7 +1041,7 @@ static int composability(__isl_keep isl_set *C, int i,
 
 	ok = LEFT | RIGHT;
 	for (j = 0; j < map->n && ok; ++j) {
-		int overlaps, subset;
+		isl_bool overlaps, subset;
 		if (j == i)
 			continue;
 
@@ -1440,7 +1441,7 @@ static int merge(isl_set **set, int *group, __isl_take isl_set *dom, int pos)
 	set[pos] = isl_set_copy(dom);
 
 	for (i = pos - 1; i >= 0; --i) {
-		int o;
+		isl_bool o;
 
 		if (group[i] != i)
 			continue;
