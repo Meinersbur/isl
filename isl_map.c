@@ -11178,6 +11178,7 @@ __isl_give isl_map *isl_map_align_params(__isl_take isl_map *map,
 	__isl_take isl_space *model)
 {
 	isl_ctx *ctx;
+	isl_bool aligned;
 
 	if (!map || !model)
 		goto error;
@@ -11188,7 +11189,10 @@ __isl_give isl_map *isl_map_align_params(__isl_take isl_map *map,
 			"model has unnamed parameters", goto error);
 	if (isl_map_check_named_params(map) < 0)
 		goto error;
-	if (!isl_space_match(map->dim, isl_dim_param, model, isl_dim_param)) {
+	aligned = isl_map_space_has_equal_params(map, model);
+	if (aligned < 0)
+		goto error;
+	if (!aligned) {
 		isl_reordering *exp;
 
 		model = isl_space_drop_dims(model, isl_dim_in,
@@ -11268,6 +11272,17 @@ isl_bool isl_basic_set_space_has_equal_params(__isl_keep isl_basic_set *bset,
 
 	bset_space = isl_basic_set_peek_space(bset);
 	return isl_space_match(bset_space, isl_dim_param, space, isl_dim_param);
+}
+
+/* Do "map" and "space" have the same parameters?
+ */
+isl_bool isl_map_space_has_equal_params(__isl_keep isl_map *map,
+	__isl_keep isl_space *space)
+{
+	isl_space *map_space;
+
+	map_space = isl_map_peek_space(map);
+	return isl_space_match(map_space, isl_dim_param, space, isl_dim_param);
 }
 
 /* Align the parameters of "bset" to those of "model", introducing
@@ -12677,10 +12692,15 @@ error:
 __isl_give isl_map *isl_map_preimage_multi_aff(__isl_take isl_map *map,
 	enum isl_dim_type type, __isl_take isl_multi_aff *ma)
 {
+	isl_bool aligned;
+
 	if (!map || !ma)
 		goto error;
 
-	if (isl_space_match(map->dim, isl_dim_param, ma->space, isl_dim_param))
+	aligned = isl_map_space_has_equal_params(map, ma->space);
+	if (aligned < 0)
+		goto error;
+	if (aligned)
 		return map_preimage_multi_aff(map, type, ma);
 
 	if (isl_map_check_named_params(map) < 0)
@@ -12797,10 +12817,15 @@ error:
 __isl_give isl_map *isl_map_preimage_pw_multi_aff(__isl_take isl_map *map,
 	enum isl_dim_type type, __isl_take isl_pw_multi_aff *pma)
 {
+	isl_bool aligned;
+
 	if (!map || !pma)
 		goto error;
 
-	if (isl_space_match(map->dim, isl_dim_param, pma->dim, isl_dim_param))
+	aligned = isl_map_space_has_equal_params(map, pma->dim);
+	if (aligned < 0)
+		goto error;
+	if (aligned)
 		return isl_map_preimage_pw_multi_aff_aligned(map, type, pma);
 
 	if (isl_map_check_named_params(map) < 0)

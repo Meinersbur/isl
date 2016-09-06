@@ -346,6 +346,7 @@ __isl_give isl_union_map *isl_union_map_add_map(__isl_take isl_union_map *umap,
 {
 	uint32_t hash;
 	struct isl_hash_table_entry *entry;
+	isl_bool aligned;
 
 	if (!map || !umap)
 		goto error;
@@ -355,7 +356,10 @@ __isl_give isl_union_map *isl_union_map_add_map(__isl_take isl_union_map *umap,
 		return umap;
 	}
 
-	if (!isl_space_match(map->dim, isl_dim_param, umap->dim, isl_dim_param)) {
+	aligned = isl_map_space_has_equal_params(map, umap->dim);
+	if (aligned < 0)
+		goto error;
+	if (!aligned) {
 		umap = isl_union_map_align_params(umap, isl_map_get_space(map));
 		map = isl_map_align_params(map, isl_union_map_get_space(umap));
 	}
