@@ -621,9 +621,13 @@ __isl_give isl_map *isl_map_subtract_domain(__isl_take isl_map *map,
 static __isl_give isl_map *map_subtract_range(__isl_take isl_map *map,
 	__isl_take isl_set *dom)
 {
+	isl_bool ok;
 	isl_map *ext_dom;
 
-	if (!isl_map_compatible_range(map, dom))
+	ok = isl_map_compatible_range(map, dom);
+	if (ok < 0)
+		goto error;
+	if (!ok)
 		isl_die(isl_set_get_ctx(dom), isl_error_invalid,
 			"incompatible spaces", goto error);
 	
