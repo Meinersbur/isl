@@ -2007,21 +2007,13 @@ static __isl_give isl_map *map_power(__isl_take isl_map *map,
 	if (exact)
 		*exact = 1;
 
-	if (!map)
-		return NULL;
-
-	isl_assert(map->ctx,
-		isl_map_dim(map, isl_dim_in) == isl_map_dim(map, isl_dim_out),
-		goto error);
+	if (isl_map_check_equal_tuples(map) < 0)
+		return isl_map_free(map);
 
 	app = construct_power(map, exact, project);
 
 	isl_map_free(map);
 	return app;
-error:
-	isl_map_free(map);
-	isl_map_free(app);
-	return NULL;
 }
 
 /* Compute the positive powers of "map", or an overapproximation.
