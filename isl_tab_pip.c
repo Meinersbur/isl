@@ -2749,7 +2749,7 @@ struct isl_context_op isl_context_lex_op = {
 	context_lex_free,
 };
 
-static struct isl_tab *context_tab_for_lexmin(struct isl_basic_set *bset)
+static struct isl_tab *context_tab_for_lexmin(__isl_take isl_basic_set *bset)
 {
 	struct isl_tab *tab;
 
