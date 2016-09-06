@@ -188,7 +188,8 @@ unsigned isl_basic_set_offset(struct isl_basic_set *bset,
 
 isl_bool isl_basic_map_may_be_set(__isl_keep isl_basic_map *bmap);
 int isl_map_may_be_set(__isl_keep isl_map *map);
-int isl_map_compatible_domain(__isl_keep isl_map *map, __isl_keep isl_set *set);
+isl_bool isl_map_compatible_domain(__isl_keep isl_map *map,
+	__isl_keep isl_set *set);
 isl_bool isl_basic_map_compatible_domain(__isl_keep isl_basic_map *bmap,
 	__isl_keep isl_basic_set *bset);
 isl_bool isl_basic_map_compatible_range(__isl_keep isl_basic_map *bmap,

@@ -202,11 +202,12 @@ unsigned isl_map_n_param(const struct isl_map *map)
 	return map ? map->dim->nparam : 0;
 }
 
-int isl_map_compatible_domain(__isl_keep isl_map *map, __isl_keep isl_set *set)
+isl_bool isl_map_compatible_domain(__isl_keep isl_map *map,
+	__isl_keep isl_set *set)
 {
-	int m;
+	isl_bool m;
 	if (!map || !set)
-		return -1;
+		return isl_bool_error;
 	m = isl_space_match(map->dim, isl_dim_param, set->dim, isl_dim_param);
 	if (m < 0 || !m)
 		return m;
@@ -7581,10 +7582,12 @@ __isl_give isl_map *isl_map_intersect_range(__isl_take isl_map *map,
 static __isl_give isl_map *map_intersect_domain(__isl_take isl_map *map,
 	__isl_take isl_set *set)
 {
-	if (!map || !set)
-		goto error;
+	isl_bool ok;
 
-	if (!isl_map_compatible_domain(map, set))
+	ok = isl_map_compatible_domain(map, set);
+	if (ok < 0)
+		goto error;
+	if (!ok)
 		isl_die(set->ctx, isl_error_invalid,
 			"incompatible spaces", goto error);
 
@@ -8717,9 +8720,14 @@ __isl_give isl_basic_map_list *isl_basic_map_list_align_divs_to_basic_map(
 static __isl_give isl_set *set_apply( __isl_take isl_set *set,
 	__isl_take isl_map *map)
 {
-	if (!set || !map)
+	isl_bool ok;
+
+	ok = isl_map_compatible_domain(map, set);
+	if (ok < 0)
 		goto error;
-	isl_assert(set->ctx, isl_map_compatible_domain(map, set), goto error);
+	if (!ok)
+		isl_die(isl_set_get_ctx(set), isl_error_invalid,
+			"incompatible spaces", goto error);
 	map = isl_map_intersect_domain(map, set);
 	set = isl_map_range(map);
 	return set;
