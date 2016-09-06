@@ -6367,9 +6367,8 @@ __isl_give isl_map *isl_map_fix_val(__isl_take isl_map *map,
 	if (!isl_val_is_int(v))
 		isl_die(isl_map_get_ctx(map), isl_error_invalid,
 			"expecting integer value", goto error);
-	if (pos >= isl_map_dim(map, type))
-		isl_die(isl_map_get_ctx(map), isl_error_invalid,
-			"index out of bounds", goto error);
+	if (isl_map_check_range(map, type, pos, 1) < 0)
+		goto error;
 	for (i = map->n - 1; i >= 0; --i) {
 		map->p[i] = isl_basic_map_fix_val(map->p[i], type, pos,
 							isl_val_copy(v));
