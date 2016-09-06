@@ -2365,6 +2365,23 @@ isl_bool isl_space_has_named_params(__isl_keep isl_space *space)
 	return isl_bool_true;
 }
 
+/* Check that "space" has only named parameters, reporting an error
+ * if it does not.
+ */
+isl_stat isl_space_check_named_params(__isl_keep isl_space *space)
+{
+	isl_bool named;
+
+	named = isl_space_has_named_params(space);
+	if (named < 0)
+		return isl_stat_error;
+	if (!named)
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
+			"unaligned unnamed parameters", return isl_stat_error);
+
+	return isl_stat_ok;
+}
+
 /* Align the initial parameters of dim1 to match the order in dim2.
  */
 __isl_give isl_space *isl_space_align_params(__isl_take isl_space *dim1,
