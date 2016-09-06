@@ -2265,7 +2265,7 @@ error:
 	return NULL;
 }
 
-struct isl_set *isl_set_drop(struct isl_set *set,
+__isl_give isl_set *isl_set_drop(__isl_take isl_set *set,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
 	return set_from_map(isl_map_drop(set_to_map(set), type, first, n));
