@@ -238,7 +238,7 @@ struct isl_map *isl_map_drop(struct isl_map *map,
 
 	isl_assert(map->ctx, first + n <= isl_map_dim(map, type), goto error);
 
-	if (n == 0 && !isl_space_get_tuple_name(map->dim, type))
+	if (n == 0 && !isl_space_is_named_or_nested(map->dim, type))
 		return map;
 	map = isl_map_cow(map);
 	if (!map)
