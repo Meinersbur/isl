@@ -119,7 +119,7 @@ unsigned isl_map_dim(__isl_keep isl_map *map, enum isl_dim_type type)
 
 unsigned isl_set_dim(__isl_keep isl_set *set, enum isl_dim_type type)
 {
-	return set ? n(set->dim, type) : 0;
+	return isl_map_dim(set_to_map(set), type);
 }
 
 /* Return the position of the variables of the given type
