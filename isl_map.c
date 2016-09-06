@@ -9087,15 +9087,6 @@ int isl_set_plain_dim_is_fixed(__isl_keep isl_set *set,
 	return isl_set_plain_has_fixed_var(set, isl_set_n_param(set) + dim, val);
 }
 
-/* Check if input variable in has fixed value and if so and if val is not NULL,
- * then return this fixed value in *val.
- */
-int isl_map_plain_input_is_fixed(__isl_keep isl_map *map,
-	unsigned in, isl_int *val)
-{
-	return isl_map_plain_has_fixed_var(map, isl_map_n_param(map) + in, val);
-}
-
 /* Return -1 if the constraint "c1" should be sorted before "c2"
  * and 1 if it should be sorted after "c2".
  * Return 0 if the two constraints are the same (up to the constant term).
