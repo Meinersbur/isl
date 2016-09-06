@@ -5892,16 +5892,12 @@ error:
 __isl_give isl_map *isl_map_range_map(__isl_take isl_map *map)
 {
 	int i;
-	isl_space *range_dim;
 
 	map = isl_map_cow(map);
 	if (!map)
 		return NULL;
 
-	range_dim = isl_space_range(isl_map_get_space(map));
-	range_dim = isl_space_from_range(range_dim);
-	map->dim = isl_space_from_domain(isl_space_wrap(map->dim));
-	map->dim = isl_space_join(map->dim, range_dim);
+	map->dim = isl_space_range_map(map->dim);
 	if (!map->dim)
 		goto error;
 	for (i = 0; i < map->n; ++i) {
