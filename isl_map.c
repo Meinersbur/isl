@@ -5698,7 +5698,7 @@ isl_bool isl_map_is_set(__isl_keep isl_map *map)
 	return isl_space_is_set(map->dim);
 }
 
-struct isl_set *isl_map_range(struct isl_map *map)
+__isl_give isl_set *isl_map_range(__isl_take isl_map *map)
 {
 	int i;
 	isl_bool is_set;
