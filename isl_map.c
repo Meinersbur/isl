@@ -5574,27 +5574,27 @@ static isl_stat check_map_space_equal_total_dim(__isl_keep isl_map *map,
 }
 
 __isl_give isl_map *isl_map_reset_space(__isl_take isl_map *map,
-	__isl_take isl_space *dim)
+	__isl_take isl_space *space)
 {
 	int i;
 
 	map = isl_map_cow(map);
-	if (!map || !dim)
+	if (!map || !space)
 		goto error;
 
 	for (i = 0; i < map->n; ++i) {
 		map->p[i] = isl_basic_map_reset_space(map->p[i],
-						    isl_space_copy(dim));
+						    isl_space_copy(space));
 		if (!map->p[i])
 			goto error;
 	}
 	isl_space_free(map->dim);
-	map->dim = dim;
+	map->dim = space;
 
 	return map;
 error:
 	isl_map_free(map);
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
