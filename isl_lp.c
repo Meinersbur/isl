@@ -107,7 +107,7 @@ enum isl_lp_result isl_map_solve_lp(__isl_keep isl_map *map, int max,
 		if (map->p[i]->n_div > max_div)
 			max_div = map->p[i]->n_div;
 	if (max_div > 0) {
-		unsigned total = isl_space_dim(map->dim, isl_dim_all);
+		unsigned total = isl_map_dim(map, isl_dim_all);
 		v = isl_vec_alloc(map->ctx, 1 + total + max_div);
 		if (!v)
 			return isl_lp_error;
