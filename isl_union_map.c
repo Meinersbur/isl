@@ -351,9 +351,9 @@ isl_bool isl_union_map_space_has_equal_params(__isl_keep isl_union_map *umap,
 static int has_dim(const void *entry, const void *val)
 {
 	isl_map *map = (isl_map *)entry;
-	isl_space *dim = (isl_space *)val;
+	isl_space *space = (isl_space *) val;
 
-	return isl_space_is_equal(map->dim, dim);
+	return isl_space_is_equal(map->dim, space);
 }
 
 __isl_give isl_union_map *isl_union_map_add_map(__isl_take isl_union_map *umap,
