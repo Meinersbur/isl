@@ -11285,6 +11285,14 @@ isl_bool isl_map_space_has_equal_params(__isl_keep isl_map *map,
 	return isl_space_match(map_space, isl_dim_param, space, isl_dim_param);
 }
 
+/* Do "set" and "space" have the same parameters?
+ */
+isl_bool isl_set_space_has_equal_params(__isl_keep isl_set *set,
+	__isl_keep isl_space *space)
+{
+	return isl_map_space_has_equal_params(set_to_map(set), space);
+}
+
 /* Align the parameters of "bset" to those of "model", introducing
  * additional parameters if needed.
  */
