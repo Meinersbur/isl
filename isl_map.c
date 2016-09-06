@@ -6208,7 +6208,7 @@ error:
 	return NULL;
 }
 
-struct isl_map *isl_map_fix_si(struct isl_map *map,
+__isl_give isl_map *isl_map_fix_si(__isl_take isl_map *map,
 		enum isl_dim_type type, unsigned pos, int value)
 {
 	int i;
