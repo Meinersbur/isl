@@ -537,10 +537,8 @@ static __isl_give isl_map *map_subtract( __isl_take isl_map *map1,
 	int equal, disjoint;
 	struct isl_map *diff;
 
-	if (!map1 || !map2)
+	if (isl_map_check_equal_space(map1, map2) < 0)
 		goto error;
-
-	isl_assert(map1->ctx, isl_space_is_equal(map1->dim, map2->dim), goto error);
 
 	equal = isl_map_plain_is_equal(map1, map2);
 	if (equal < 0)

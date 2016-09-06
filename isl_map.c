@@ -3778,11 +3778,8 @@ error:
 static __isl_give isl_map *map_intersect(__isl_take isl_map *map1,
 	__isl_take isl_map *map2)
 {
-	if (!map1 || !map2)
+	if (isl_map_check_equal_space(map1, map2) < 0)
 		goto error;
-	if (!isl_space_is_equal(map1->dim, map2->dim))
-		isl_die(isl_map_get_ctx(map1), isl_error_invalid,
-			"spaces don't match", goto error);
 	return map_intersect_internal(map1, map2);
 error:
 	isl_map_free(map1);
@@ -4741,10 +4738,8 @@ __isl_give isl_map *isl_map_sum(__isl_take isl_map *map1,
 	struct isl_map *result;
 	int i, j;
 
-	if (!map1 || !map2)
+	if (isl_map_check_equal_space(map1, map2) < 0)
 		goto error;
-
-	isl_assert(map1->ctx, isl_space_is_equal(map1->dim, map2->dim), goto error);
 
 	result = isl_map_alloc_space(isl_space_copy(map1->dim),
 				map1->n * map2->n, 0);
@@ -7825,12 +7820,8 @@ static __isl_give isl_map *map_union_disjoint(__isl_take isl_map *map1,
 	struct isl_map *map = NULL;
 	int is_universe;
 
-	if (!map1 || !map2)
+	if (isl_map_check_equal_space(map1, map2) < 0)
 		goto error;
-
-	if (!isl_space_is_equal(map1->dim, map2->dim))
-		isl_die(isl_map_get_ctx(map1), isl_error_invalid,
-			"spaces don't match", goto error);
 
 	if (map1->n == 0) {
 		isl_map_free(map1);
@@ -8765,6 +8756,7 @@ isl_stat isl_basic_set_check_equal_space(__isl_keep isl_basic_set *bset1,
 #define TYPE	isl_map
 
 #include "isl_type_has_equal_space_bin_templ.c"
+#include "isl_type_check_equal_space_templ.c"
 
 isl_bool isl_set_has_equal_space(__isl_keep isl_set *set1,
 	__isl_keep isl_set *set2)
