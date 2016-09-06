@@ -550,7 +550,8 @@ __isl_export
 isl_bool isl_map_is_bijective(__isl_keep isl_map *map);
 isl_bool isl_map_is_identity(__isl_keep isl_map *map);
 int isl_map_is_translation(__isl_keep isl_map *map);
-int isl_map_has_equal_space(__isl_keep isl_map *map1, __isl_keep isl_map *map2);
+isl_bool isl_map_has_equal_space(__isl_keep isl_map *map1,
+	__isl_keep isl_map *map2);
 
 isl_bool isl_basic_map_can_zip(__isl_keep isl_basic_map *bmap);
 isl_bool isl_map_can_zip(__isl_keep isl_map *map);
