@@ -8059,6 +8059,23 @@ error:
 	return NULL;
 }
 
+/* Check that domain and range of "map" are the same.
+ */
+isl_stat isl_map_check_equal_tuples(__isl_keep isl_map *map)
+{
+	isl_space *space;
+	isl_bool equal;
+
+	space = isl_map_peek_space(map);
+	equal = isl_space_tuple_is_equal(space, isl_dim_in, space, isl_dim_out);
+	if (equal < 0)
+		return isl_stat_error;
+	if (!equal)
+		isl_die(isl_map_get_ctx(map), isl_error_invalid,
+			"domain and range don't match", return isl_stat_error);
+	return isl_stat_ok;
+}
+
 /*
  * returns range - domain
  */
@@ -8144,13 +8161,8 @@ __isl_give isl_map *isl_map_deltas_map(__isl_take isl_map *map)
 	int i;
 	isl_space *domain_space;
 
-	if (!map)
-		return NULL;
-
-	if (!isl_space_tuple_is_equal(map->dim, isl_dim_in,
-					map->dim, isl_dim_out))
-		isl_die(map->ctx, isl_error_invalid,
-			"domain and range don't match", goto error);
+	if (isl_map_check_equal_tuples(map) < 0)
+		return isl_map_free(map);
 
 	map = isl_map_cow(map);
 	if (!map)
