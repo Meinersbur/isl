@@ -2233,7 +2233,7 @@ __isl_give isl_basic_set *isl_basic_set_drop(__isl_take isl_basic_set *bset,
 							type, first, n));
 }
 
-struct isl_map *isl_map_drop(struct isl_map *map,
+__isl_give isl_map *isl_map_drop(__isl_take isl_map *map,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
 	int i;
