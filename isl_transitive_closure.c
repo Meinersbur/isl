@@ -843,21 +843,7 @@ error:
 static isl_bool isl_set_overlaps(__isl_keep isl_set *set1,
 	__isl_keep isl_set *set2)
 {
-	isl_set *i;
-	isl_bool no_overlap;
-
-	if (!set1 || !set2)
-		return isl_bool_error;
-
-	if (!isl_space_tuple_is_equal(set1->dim, isl_dim_set,
-					set2->dim, isl_dim_set))
-		return isl_bool_false;
-
-	i = isl_set_intersect(isl_set_copy(set1), isl_set_copy(set2));
-	no_overlap = isl_set_is_empty(i);
-	isl_set_free(i);
-
-	return isl_bool_not(no_overlap);
+	return isl_bool_not(isl_set_is_disjoint(set1, set2));
 }
 
 /* Given a union of basic maps R = \cup_i R_i \subseteq D \times D
