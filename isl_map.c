@@ -9037,6 +9037,7 @@ isl_stat isl_basic_set_check_equal_space(__isl_keep isl_basic_set *bset1,
 
 #include "isl_type_has_equal_space_bin_templ.c"
 #include "isl_type_check_equal_space_templ.c"
+#include "isl_type_has_space_templ.c"
 
 isl_bool isl_set_has_equal_space(__isl_keep isl_set *set1,
 	__isl_keep isl_set *set2)
