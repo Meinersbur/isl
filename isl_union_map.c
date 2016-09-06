@@ -337,6 +337,10 @@ __isl_give isl_union_set *isl_union_set_align_params(
 	return isl_union_map_align_params(uset, model);
 }
 
+#undef TYPE
+#define TYPE	isl_union_map
+#include "isl_check_named_params_templ.c"
+
 __isl_give isl_union_map *isl_union_map_union(__isl_take isl_union_map *umap1,
 	__isl_take isl_union_map *umap2)
 {
